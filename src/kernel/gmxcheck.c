@@ -348,11 +348,12 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
 
 void chk_enx(char *fn)
 {
-  int      in,nre,frame,fnr,ndr;
-  char     **enm=NULL;
-  t_energy *ee=NULL;
-  bool     bShowTStep;
-  real     t,t0,old_t1,old_t2;
+  int       in,nre,frame,fnr,ndr;
+  char      **enm=NULL;
+  t_energy  *ee=NULL;
+  t_drblock dr;
+  bool      bShowTStep;
+  real      t,t0,old_t1,old_t2;
   
   fprintf(stderr,"Checking energy file %s\n\n",fn);
 
@@ -365,7 +366,7 @@ void chk_enx(char *fn)
   t0=NOTSET;
   bShowTStep=TRUE;
   snew(ee,nre);
-  while (do_enx(in,&t,&frame,&nre,ee,&ndr,NULL)) {
+  while (do_enx(in,&t,&frame,&nre,ee,&ndr,&dr)) {
     if (fnr>=2) {
       if ( fabs((t-old_t1)-(old_t1-old_t2)) > 
 	   0.1*(fabs(t-old_t1)+fabs(old_t1-old_t2)) ) {
