@@ -45,6 +45,7 @@ static char *SRCID_mkyaw_c = "$Id$";
 #include "string2.h"
 #include "strdb.h"
 #include "rdgroup.h"
+#include "macros.h"
 #include "vec.h"
 #include "typedefs.h"
 #include "gbutil.h"
@@ -56,10 +57,11 @@ static char *SRCID_mkyaw_c = "$Id$";
 void copy_atom(t_symtab *tab,t_atoms *a1,int i1,t_atoms *a2,int i2,
 	       rvec xin[],rvec xout[],rvec vin[],rvec vout[])
 {
-  a2->atom[i2]     = a1->atom[i1];
-  a2->atomname[i2] = put_symtab(tab,*a1->atomname[i1]);
-  a2->resname[a2->atom[i2].resnr] =
-    put_symtab(tab,*a1->resname[a1->atom[i1].resnr]);
+  int resnr = a1->atom[i1].resnr;
+  
+  a2->atom[i2]       = a1->atom[i1];
+  a2->atomname[i2]   = put_symtab(tab,*(a1->atomname[i1]));
+  a2->resname[resnr] = put_symtab(tab,*(a1->resname[resnr]));
   copy_rvec(xin[i1],xout[i2]);
   copy_rvec(vin[i1],vout[i2]);
 }
@@ -73,9 +75,9 @@ int main(int argc, char *argv[])
   };
   static bool bBack=FALSE,bDW=TRUE;
   t_pargs pa[] = {
-    { "-back",   FALSE, etBOOL, &bBack, 
+    { "-back",   FALSE, etBOOL, {&bBack}, 
       "Remove SW and DW" },
-    { "-dw",     FALSE, etBOOL, &bDW,
+    { "-dw",     FALSE, etBOOL, {&bDW},
       "Use both dummy and shell" }
   };
 #define NPA asize(pa)
@@ -124,14 +126,14 @@ int main(int argc, char *argv[])
       copy_atom(&tab,&atoms,i,&aout,iout,xin,xout,vin,vout);
       iout++;
       if (i >= 2) {
-	if (strstr(*atoms.atomname[i-2],"OW") != NULL) {
+	if (strstr(*(atoms.atomname[i-2]),"OW") != NULL) {
 	  if (bDW) {
 	    copy_atom(&tab,&atoms,i-2,&aout,iout,xin,xout,vin,vout);
 	    aout.atomname[iout] = put_symtab(&tab,"DW");
 	    iout++;
 	  }
 	  copy_atom(&tab,&atoms,i-2,&aout,iout,xin,xout,vin,vout);
-	  aout.atomname[iout] = put_symtab(&tab,"SW");
+	  aout.atomname[iout] = put_symtab(&tab,bDW ? "SW" : "MW");
 	  iout++;
 	}
       }

@@ -294,6 +294,7 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,
 		       int nmat,t_matrix mat[],t_psrec *psr)
 {
   char   buf[12];
+  char   *mylab;
   real   xxx;
   char   **xtick,**ytick;
   real   xx,yy,dy,xx00,yy00;
@@ -371,24 +372,34 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,
     
     /* Label on Y-axis */
     if (!psr->bYonce || i==nmat/2) {
-      ps_strfont(out,psr->Y.font,psr->Y.fontsize);
-      ps_rotate(out,TRUE);
-      xxx=x0-psr->X.majorticklen-psr->X.tickfontsize*strlength-DDD;
-      ps_ctext(out,yy00+box_height(&mat[i],psr)/2.0,612.5-xxx,
-	       mat[i].label_y,eXCenter);
-      ps_rotate(out,FALSE);
+      if (strlen(psr->Y.label) > 0) 
+	mylab = psr->Y.label;
+      else
+	mylab = mat[i].label_y;
+      if (strlen(mylab) > 0) {
+	fprintf(out,"%%%% Printing Y-label\n");
+	ps_strfont(out,psr->Y.font,psr->Y.fontsize);
+	ps_rotate(out,TRUE);
+	xxx=x0-psr->X.majorticklen-psr->X.tickfontsize*strlength-DDD;
+	ps_ctext(out,yy00+box_height(&mat[i],psr)/2.0,612.5-xxx,
+		 mylab,eXCenter);
+	ps_rotate(out,FALSE);
+      }
     }
     
     yy00+=box_height(&(mat[i]),psr)+box_dh(psr)+box_dh_top(IS_ONCE,psr);
   }
   /* Label on X-axis */  
-  ps_strfont(out,psr->X.font,psr->X.fontsize);
-  if (strlen(mat[0].label_x) == 0) 
-    ps_ctext(out,x0+w/2,y0-DDD-psr->X.majorticklen-psr->X.tickfontsize*FUDGE-
-	     psr->X.fontsize,psr->X.label,eXCenter);
+  if (strlen(psr->X.label) > 0) 
+    mylab = psr->X.label;
   else
+    mylab = mat[0].label_x;
+  if (strlen(mylab) > 0) {
+    fprintf(out,"%%%% Printing X-label\n");
+    ps_strfont(out,psr->X.font,psr->X.fontsize);
     ps_ctext(out,x0+w/2,y0-DDD-psr->X.majorticklen-psr->X.tickfontsize*FUDGE-
-	     psr->X.fontsize,mat[0].label_x,eXCenter);
+	     psr->X.fontsize,mylab,eXCenter);
+  }
 }
 
 static void draw_zerolines(FILE *out,real x0,real y0,real w,
