@@ -26,6 +26,7 @@ OBJ		= 	\
 		index.o		init.o		inloopc.o	\
 		invblock.o	javaio.o	lrutil.o	\
 		lutab.o		macros.o	main.o		\
+		mass.o						\
 		maths.o		matio.o		mdatom.o	\
 		mdebin.o	memdump.o	mshift.o	\
 		mvdata.o	mvxvf.o		names.o		\
