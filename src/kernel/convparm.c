@@ -263,9 +263,10 @@ void convert_params(int atnr,t_params nbtypes[],
   }
   enter_function(&(nbtypes[F_LJ]),  (t_functype)F_LJ,  idef,&maxtypes,TRUE);
   enter_function(&(nbtypes[F_BHAM]),(t_functype)F_BHAM,idef,&maxtypes,TRUE);
+  enter_function(&(nbtypes[F_POSRES]),(t_functype)F_POSRES,idef,&maxtypes,TRUE);
   for(i=0; (i<F_NRE); i++) {
     flags = interaction_function[i].flags;
-    if ((i != F_LJ) && (i != F_BHAM) &&
+    if ((i != F_LJ) && (i != F_BHAM) && (i != F_POSRES) &&
 	((flags & IF_BOND) || (flags & IF_DUMMY) || (flags & IF_CONSTRAINT)))
       enter_function(&(plist[i]),(t_functype)i,idef,&maxtypes,FALSE);
   }
