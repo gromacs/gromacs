@@ -232,16 +232,16 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   matrix       box;
   t_topology   *top;
   t_atoms      *atoms;
-  bool         *bPhobic;
+  bool         *bOut,*bPhobic;
   bool         bConnelly;
   bool         bResAt,bITP,bDGsol;
   real         *radius,*dgs_factor=NULL,*area=NULL,*surfacedots=NULL;
   real         at_area,*atom_area=NULL,*atom_area2=NULL;
   real         *res_a=NULL,*res_area=NULL,*res_area2=NULL;
   real         totarea,totvolume,harea,tarea,fluc2;
-  atom_id      *index,*findex;
-  int          nx,nphobic,npcheck;
-  char         *grpname,*fgrpname;
+  atom_id      **index,*findex;
+  int          *nx,nphobic,npcheck;
+  char         **grpname,*fgrpname;
   real         dgsolv;
 
   bITP   = opt2bSet("-i",nfile,fnm);
@@ -259,26 +259,32 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	    "Delta G of solvation\n");
   atomprop = get_atomprop();
   
-  fprintf(stderr,"Select group for calculation of surface and for output:\n");
-  get_index(&(top->atoms),ftp2fn_null(efNDX,nfile,fnm),1,&nx,&index,&grpname);
+  snew(nx,2);
+  snew(index,2);
+  snew(grpname,2);
+  fprintf(stderr,"Select a group for calculation of surface and a group for output:\n");
+  get_index(&(top->atoms),ftp2fn_null(efNDX,nfile,fnm),2,nx,index,grpname);
 
   if (bFindex) {
-    fprintf(stderr,"Select group of hydrophobic atoms:\n");
+    fprintf(stderr,"Select a group of hydrophobic atoms:\n");
     get_index(&(top->atoms),ftp2fn_null(efNDX,nfile,fnm),1,&nphobic,&findex,&fgrpname);
   }
-  
+  snew(bOut,natoms);
+  for(i=0; i<nx[1]; i++)
+    bOut[index[1][i]] = TRUE;
+
   /* Now compute atomic readii including solvent probe size */
   snew(radius,natoms);
-  snew(bPhobic,nx);
+  snew(bPhobic,nx[0]);
   if (bResAt) {
-    snew(atom_area,nx);
-    snew(atom_area2,nx);
+    snew(atom_area,nx[0]);
+    snew(atom_area2,nx[0]);
     snew(res_a,atoms->nres);
     snew(res_area,atoms->nres);
     snew(res_area2,atoms->nres);
   }
   if (bDGsol)
-    snew(dgs_factor,nx);
+    snew(dgs_factor,nx[0]);
 
   /* Get a Van der Waals radius for each atom */
   ndefault = 0;
@@ -295,12 +301,13 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   /* Determine which atom is counted as hydrophobic */
   if (bFindex) {
     npcheck = 0;
-    for(i=0; (i<nx); i++) {
-      ii = index[i];
+    for(i=0; (i<nx[0]); i++) {
+      ii = index[0][i];
       for(j=0; (j<nphobic); j++) {
 	if (findex[j] == ii) {
 	  bPhobic[i] = TRUE;
-	  npcheck++;
+	  if (bOut[ii])
+	    npcheck++;
 	}
       }
     }
@@ -311,11 +318,11 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   else
     nphobic = 0;
     
-  for(i=0; (i<nx); i++) {
-    ii = index[i];
+  for(i=0; (i<nx[0]); i++) {
+    ii = index[0][i];
     if (!bFindex) {
       bPhobic[i] = fabs(atoms->atom[ii].q) <= qcut;
-      if (bPhobic[i])
+      if (bPhobic[i] && bOut[ii])
 	nphobic++;
     }
     if (bDGsol)
@@ -331,7 +338,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	      BOOL(bPhobic[i]));
   }
   fprintf(stderr,"%d out of %d atoms were classified as hydrophobic\n",
-	  nphobic,nx);
+	  nphobic,nx[1]);
   
   done_atomprop(&atomprop);
   
@@ -353,7 +360,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     if (debug)
       write_sto_conf("check.pdb","pbc check",atoms,x,NULL,box);
 
-    if (nsc_dclm2(x,radius,nx,index,ndots,flag,&totarea,
+    if (nsc_dclm2(x,radius,nx[0],index[0],ndots,flag,&totarea,
 		  &area,&totvolume,&surfacedots,&nsurfacedots,
 		  bPBC ? box : NULL))
       gmx_fatal(FARGS,"Something wrong in nsc_dclm2");
@@ -369,19 +376,21 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     if (bResAt)
       for(i=0; i<atoms->nres; i++)
 	res_a[i] = 0;
-    for(i=0; (i<nx); i++) {
-      ii = index[i];
-      at_area = area[i];
-      if (bResAt) {
-	atom_area[i] += at_area;
-	atom_area2[i] += sqr(at_area);
-	res_a[atoms->atom[ii].resnr] += at_area;
+    for(i=0; (i<nx[0]); i++) {
+      ii = index[0][i];
+      if (bOut[ii]) {
+	at_area = area[i];
+	if (bResAt) {
+	  atom_area[i] += at_area;
+	  atom_area2[i] += sqr(at_area);
+	  res_a[atoms->atom[ii].resnr] += at_area;
+	}
+	tarea += at_area;
+	if (bDGsol)
+	  dgsolv += at_area*dgs_factor[i];
+	if (bPhobic[i])
+	  harea += at_area;
       }
-      tarea += at_area;
-      if (bDGsol)
-	dgsolv += at_area*dgs_factor[i];
-      if (bPhobic[i])
-	harea += at_area;
     }
     if (bResAt)
       for(i=0; i<atoms->nres; i++) {
@@ -415,7 +424,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
       res_area[i] /= nfr;
       res_area2[i] /= nfr;
     }
-    for(i=0; i<nx; i++) {
+    for(i=0; i<nx[0]; i++) {
       atom_area[i] /= nfr;
       atom_area2[i] /= nfr;
     }
@@ -432,10 +441,10 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	      "#define FCZ 1000\n"
 	      "; Atom  Type  fx   fy   fz\n");
     }
-    for(i=0; i<nx; i++) {
-      ii = index[i];
+    for(i=0; i<nx[0]; i++) {
+      ii = index[0][i];
       res = atoms->atom[ii].resnr;
-      if (i==nx-1 || res!=atoms->atom[index[i+1]].resnr) {
+      if (i==nx[0]-1 || res!=atoms->atom[index[0][i+1]].resnr) {
 	fluc2 = res_area2[res]-sqr(res_area[res]);
 	if (fluc2 < 0)
 	  fluc2 = 0;
@@ -444,7 +453,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
       fluc2 = atom_area2[i]-sqr(atom_area[i]);
       if (fluc2 < 0)
 	fluc2 = 0;
-      fprintf(fp2,"%d %g %g\n",index[i]+1,atom_area[i],sqrt(fluc2));
+      fprintf(fp2,"%d %g %g\n",index[0][i]+1,atom_area[i],sqrt(fluc2));
       if (bITP && (atom_area[i] > minarea))
 	fprintf(fp3,"%5d   1     FCX  FCX  FCZ\n",ii+1);
     }
