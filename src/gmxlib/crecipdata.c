@@ -1,4 +1,3 @@
-#include "vec.h"
 #ifdef GMX_RECIP
 const unsigned int crecipexptab[256] = {
   0x7e800000,0x7e000000,0x7d800000,0x7d000000,0x7c800000,0x7c000000,0x7b800000,0x7b000000,
