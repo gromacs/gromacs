@@ -184,8 +184,7 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("tinit",	ir->init_t,	0.0);
   RTYPE ("dt",		ir->delta_t,	0.001);
   ITYPE ("nsteps",      ir->nsteps,     1);
-  CTYPE ("number of steps and, number of steps for center of mass motion");
-  CTYPE ("removal");
+  CTYPE ("number of steps for center of mass motion removal");
   ITYPE ("nstcomm",	ir->nstcomm,	1);
   
   CCTYPE ("LANGEVIN DYNAMICS OPTIONS");
