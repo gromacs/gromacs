@@ -3,6 +3,8 @@
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
+SUBDIRS = . types
+
 include_HEADERS = \
 	3dview.h    	do_md.h		invblock.h  	nrjac.h		\
 	rwtop.h       	tpxio.h		assert.h    	do_nm.h		\
@@ -38,17 +40,3 @@ include_HEADERS = \
 	disre.h     	init.h          nr.h        	reorder.h   	\
 	tags.h		do_fit.h    	nrama.h     	\
 	rmpbc.h     	tgroup.h
-
-includetypesdir = ${includedir}/types
-
-includetypes_HEADERS = \
-	types/atoms.h    	types/edsams.h  	types/forcerec.h  \
-	types/ifunc.h		types/mdatom.h  	types/nsborder.h  \
-	types/simple.h		types/block.h   	types/energy.h    \
-	types/graph.h     	types/inputrec.h  	types/nblist.h 	  \
-	types/nsgrid.h    	types/symtab.h		types/commrec.h   \
-	types/enums.h   	types/group.h     	types/ishift.h    \
-	types/nbslist.h  	types/parm.h		types/topology.h  \
-	types/drblock.h  	types/filenm.h  	types/idef.h 	  \
-	types/matrix.h    	types/nrnb.h     	types/pulls.h	  \
-	types/trx.h
