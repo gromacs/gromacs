@@ -125,11 +125,11 @@ static void cmp_rvec(FILE *fp,char *s,int index,rvec i1,rvec i2,real ftol)
       2*fabs(i1[YY] - i2[YY]) > (fabs(i1[YY]) + fabs(i2[YY]))*ftol ||
       2*fabs(i1[ZZ] - i2[ZZ]) > (fabs(i1[ZZ]) + fabs(i2[ZZ]))*ftol) {
     if (index != -1)
-      fprintf(fp,"%s[%d] (%e,%e,%e - %e,%e,%e)\n",s,index,
-	      i1[XX],i1[YY],i1[ZZ],i2[XX],i2[YY],i2[ZZ]);
+      fprintf(fp,"%s[%5d] (%12.5e %12.5e %12.5e) - (%12.5e %12.5e %12.5e)\n",
+	      s,index,i1[XX],i1[YY],i1[ZZ],i2[XX],i2[YY],i2[ZZ]);
     else
-      fprintf(fp,"%s (%e,%e,%e - %e,%e,%e)\n",s,
-	      i1[XX],i1[YY],i1[ZZ],i2[XX],i2[YY],i2[ZZ]);
+      fprintf(fp,"%s (%12.5e %12.5e %12.5e) - (%12.5e %12.5e %12.5e)\n",
+	      s,i1[XX],i1[YY],i1[ZZ],i2[XX],i2[YY],i2[ZZ]);
   }
 }
 
@@ -137,10 +137,10 @@ static void cmp_ivec(FILE *fp,char *s,int index,ivec i1,ivec i2)
 {
   if ((i1[XX] != i2[XX]) || (i1[YY] != i2[YY]) || (i1[ZZ] != i2[ZZ])) {
     if (index != -1)
-      fprintf(fp,"%s[%d] (%d,%d,%d - %d,%d,%d)\n",s,index,
+      fprintf(fp,"%s[%5d] (%8d,%8d,%8d - %8d,%8d,%8d)\n",s,index,
 	      i1[XX],i1[YY],i1[ZZ],i2[XX],i2[YY],i2[ZZ]);
     else
-      fprintf(fp,"%s (%d,%d,%d - %d,%d,%d)\n",s,
+      fprintf(fp,"%s (%8d,%8d,%8d - %8d,%8d,%8d)\n",s,
 	      i1[XX],i1[YY],i1[ZZ],i2[XX],i2[YY],i2[ZZ]);
   }
 }
