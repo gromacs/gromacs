@@ -80,21 +80,30 @@ static int comp_xptr(const void *a,const void *b)
 
 static void do_my_pme(FILE *fp,real tm,bool bVerbose,t_inputrec *ir,
 		      rvec x[],rvec xbuf[],rvec f[],
-		      real charge[],real qbuf[],matrix box,bool bSort,
+		      real charge[],real qbuf[],real qqbuf[],
+		      matrix box,bool bSort,
 		      t_commrec *cr,t_nsborder *nsb,t_nrnb *nrnb,
 		      t_block *excl,real qtot,
-		      t_forcerec *fr,int index[],FILE *fp_xvg)
+		      t_forcerec *fr,int index[],FILE *fp_xvg,
+		      int ngroups,unsigned short cENER[])
 {
   real   ener,vcorr,q,xx,dvdl=0,vdip,vcharge;
   tensor vir,vir_corr,vir_tot;
   rvec   mu_tot[2];
-  int    i,m,ii;
-
+  int    i,m,ii,ig,jg;
+  real   **epme,*qptr;
+  
   /* Initiate local variables */  
   fr->f_el_recip = f;
   clear_mat(vir);
   clear_mat(vir_corr);
   
+  if (ngroups > 1) {
+    snew(epme,ngroups);
+    for(i=0; (i<ngroups); i++)
+      snew(epme[i],ngroups);
+  }
+    
   /* Put x is in the box, this part needs to be parallellized properly */
   /*put_atoms_in_box(box,nsb->natoms,x);*/
   /* Here sorting of X (and q) is done.
@@ -128,24 +137,57 @@ static void do_my_pme(FILE *fp,real tm,bool bVerbose,t_inputrec *ir,
     pr_rvec(debug,0,"qbuf",qbuf,nsb->natoms,TRUE);
     pr_rvecs(debug,0,"xbuf",xbuf,nsb->natoms);
     pr_rvecs(debug,0,"box",box,DIM);
-  }  
-  ener  = do_pme(fp,bVerbose,ir,xbuf,f,qbuf,qbuf,box,cr,
-		 nsb,nrnb,vir,fr->ewaldcoeff,0,&dvdl,FALSE);
-  vcorr = ewald_LRcorrection(fp,nsb,cr,fr,qbuf,qbuf,excl,xbuf,box,mu_tot,
-			     ir->ewald_geometry,ir->epsilon_surface,
-			     0,&dvdl,&vdip,&vcharge);
-  gmx_sum(1,&ener,cr);
-  gmx_sum(1,&vcorr,cr);
-  fprintf(fp,"Time: %10.3f Energy: %12.5e  Correction: %12.5e  Total: %12.5e\n",
-	  tm,ener,vcorr,ener+vcorr);
-  if (fp_xvg) 
-    fprintf(fp_xvg,"%10.3f %12.5e %12.5e %12.5e\n",tm,ener+vcorr,vdip,vcharge);
-  if (bVerbose) {
-    m_add(vir,vir_corr,vir_tot);
-    gmx_sum(9,vir_tot[0],cr);
-    pr_rvecs(fp,0,"virial",vir_tot,DIM); 
   }
-  fflush(fp);
+  for(ig=0; (ig>ngroups); ig++) {
+    for(jg=ig; (jg<ngroups); jg++) {
+      if (ngroups > 1) {
+	for(i=START(nsb); (i<START(nsb)+HOMENR(nsb)); i++) {
+	  if ((cENER[i] == ig) || (cENER[i] == jg))
+	    qqbuf[i] = qbuf[i];
+	  else
+	    qqbuf[i] = 0;
+	}
+	qptr = qqbuf;
+      }
+      else
+	qptr = qbuf;
+      ener  = do_pme(fp,bVerbose,ir,xbuf,f,qptr,qptr,box,cr,
+		     nsb,nrnb,vir,fr->ewaldcoeff,0,&dvdl,FALSE);
+      vcorr = ewald_LRcorrection(fp,nsb,cr,fr,qptr,qptr,excl,xbuf,box,mu_tot,
+				 ir->ewald_geometry,ir->epsilon_surface,
+				 0,&dvdl,&vdip,&vcharge);
+      gmx_sum(1,&ener,cr);
+      gmx_sum(1,&vcorr,cr);
+      if (ngroups > 1)
+	epme[ig][jg] = ener+vcorr;
+    }
+  }
+  if (ngroups > 1) {
+    if (fp_xvg) 
+      fprintf(fp_xvg,"%10.3f",tm);
+    for(ig=0; (ig>ngroups); ig++) {
+      for(jg=ig; (jg<ngroups); jg++) {
+	if (ig != jg)
+	  epme[ig][jg] -= epme[ig][ig]+epme[jg][jg];
+	if (fp_xvg) 
+	  fprintf(fp_xvg,"  %12.5e",epme[ig][jg]);
+      }
+    }
+    if (fp_xvg) 
+      fprintf(fp_xvg,"\n");
+  }
+  else {
+    fprintf(fp,"Time: %10.3f Energy: %12.5e  Correction: %12.5e  Total: %12.5e\n",
+	    tm,ener,vcorr,ener+vcorr);
+    if (fp_xvg) 
+      fprintf(fp_xvg,"%10.3f %12.5e %12.5e %12.5e\n",tm,ener+vcorr,vdip,vcharge);
+    if (bVerbose) {
+      m_add(vir,vir_corr,vir_tot);
+      gmx_sum(9,vir_tot[0],cr);
+      pr_rvecs(fp,0,"virial",vir_tot,DIM); 
+    }
+    fflush(fp);
+  }
 }
 
 int main(int argc,char *argv[])
@@ -154,7 +196,11 @@ int main(int argc,char *argv[])
     "The pmetest program tests the scaling of the PME code. When only given",
     "a tpr file it will compute PME for one frame. When given a trajectory",
     "it will do so for all the frames in the trajectory. Before the PME",
-    "routine is called the coordinates are sorted along the X-axis."
+    "routine is called the coordinates are sorted along the X-axis.[PAR]",
+    "As an extra service to the public the program can also compute",
+    "long-range Coulomb energies for components of the system. When the",
+    "[TT]-groups[tt] flag is given to the program the energy groups",
+    "from the tpr file will be read, and half an energy matrix computed."
   };
   t_commrec    *cr,*mcr;
   static t_filenm fnm[] = {
@@ -177,6 +223,7 @@ int main(int argc,char *argv[])
   static rvec grid = { -1, -1, -1 };
   static real rc   = 0.0;
   static real dtol = 0.0;
+  static bool bGroups = FALSE;
   static t_pargs pa[] = {
     { "-np",      FALSE, etINT, {&nnodes},
       "Number of nodes, must be the same as used for grompp" },
@@ -190,6 +237,8 @@ int main(int argc,char *argv[])
       "Number of grid cells in X, Y, Z dimension (if -1 use from tpr)" },
     { "-order",   FALSE, etINT, {&pme_order},
       "Order of the PME spreading algorithm" },
+    { "-groups",  FALSE, etBOOL, {&bGroups},
+      "Compute half an energy matrix based on the energy groups in your tpr file" },
     { "-rc",      FALSE, etREAL, {&rc},
       "Rcoulomb for Ewald summation" },
     { "-tol",     FALSE, etREAL, {&dtol},
@@ -209,7 +258,7 @@ int main(int argc,char *argv[])
   rvec        *x,*f,*xbuf;
   int         *index;
   bool        bCont;
-  real        *charge,*qbuf;
+  real        *charge,*qbuf,*qqbuf;
   matrix      box;
   
   /* Start the actual parallel code if necessary */
@@ -323,6 +372,7 @@ int main(int argc,char *argv[])
   snew(xbuf,natoms);
   snew(f,natoms);
   snew(qbuf,natoms);
+  snew(qqbuf,natoms);
   snew(index,natoms);
 
   /* Initialize the PME code */  
@@ -354,8 +404,9 @@ int main(int argc,char *argv[])
     MPI_Bcast(box[0],DIM*DIM,GMX_MPI_REAL,root,MPI_COMM_WORLD);
     MPI_Bcast(&t,1,GMX_MPI_REAL,root,MPI_COMM_WORLD);
   }
-  do_my_pme(stdlog,0,bVerbose,ir,x,xbuf,f,charge,qbuf,box,bSort,
-	    cr,nsb,&nrnb,&(top.atoms.excl),qtot,fr,index,NULL);
+  do_my_pme(stdlog,0,bVerbose,ir,x,xbuf,f,charge,qbuf,qqbuf,box,bSort,
+	    cr,nsb,&nrnb,&(top.atoms.excl),qtot,fr,index,NULL,
+	    bGroups ? ir->opts.ngener : 1,mdatoms->cENER);
 
   /* If we have a trajectry file, we will read the frames in it and compute
    * the PME energy.
@@ -381,8 +432,9 @@ int main(int argc,char *argv[])
       }
       rm_pbc(&top.idef,nsb->natoms,box,x,x);
       /* Call the PME wrapper function */
-      do_my_pme(stdlog,t,bVerbose,ir,x,xbuf,f,charge,qbuf,box,bSort,cr,
-		nsb,&nrnb,&(top.atoms.excl),qtot,fr,index,fp);
+      do_my_pme(stdlog,t,bVerbose,ir,x,xbuf,f,charge,qbuf,qqbuf,box,bSort,cr,
+		nsb,&nrnb,&(top.atoms.excl),qtot,fr,index,fp,
+		bGroups ? ir->opts.ngener : 1,mdatoms->cENER);
       /* Only the master processor reads more data */
       if (MASTER(cr))
 	bCont = read_next_x(status,&t,natoms,x,box);
