@@ -64,7 +64,7 @@
     called by the master node.
 */
 
-#define MAX_PULL_GROUPS 4
+#define MAX_PULL_GROUPS 20
 
 void print_afm(t_pull *pull, int step, real t) 
 {
@@ -160,7 +160,7 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   t_inpfile *inp;
   int ninp,i,nchar;
   char *tmp,*ptr;
-  char dummy[STRLEN];
+  char dummy[STRLEN],buf[STRLEN];
   char refbuf[STRLEN],grpbuf[MAX_PULL_GROUPS][STRLEN],
     refwbuf[STRLEN],wbuf[MAX_PULL_GROUPS][STRLEN],
     bf[MAX_PULL_GROUPS][STRLEN],
@@ -198,18 +198,22 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   ITYPE("Skip steps",       pull->nSkip,1);
   CTYPE("Runtype: afm, constraint, umbrella");
   EETYPE("runtype",         tmprun, runtypes, &nerror, TRUE);
+  CTYPE("Number of pull groups");
+  ITYPE("ngroups",          pull->ngrp,1);
+  if (pull->ngrp < 1 || pull->ngrp > MAX_PULL_GROUPS)
+    gmx_fatal(FARGS,"ngroups should be between 1 and %d",MAX_PULL_GROUPS);
   CTYPE("Groups to be pulled");
-  STYPE("group_1",          grpbuf[0], "");
-  STYPE("group_2",          grpbuf[1], "");
-  STYPE("group_3",          grpbuf[2], "");
-  STYPE("group_4",          grpbuf[3], "");
+  for(i=0; i<pull->ngrp; i++) {
+    sprintf(buf,"group_%d",i+1);
+    STYPE(buf,              grpbuf[i], "");
+  }
   CTYPE("The group for the reaction force.");
   STYPE("reference_group",  refbuf, "");
   CTYPE("Weights for all atoms in each group (default all 1)");
-  STYPE("weights_1",        wbuf[0],   "");
-  STYPE("weights_2",        wbuf[1],   "");
-  STYPE("weights_3",        wbuf[2],   "");
-  STYPE("weights_4",        wbuf[3],   "");
+  for(i=0; i<pull->ngrp; i++) {
+    sprintf(buf,"weights_%d",i+1);
+    STYPE(buf,              wbuf[i], "");
+  }
   STYPE("reference_weights", refwbuf, "");
   CTYPE("Ref. type: com, com_t0, dynamic, dynamic_t0");
   EETYPE("reftype",         tmpref, reftypes, &nerror, TRUE);
@@ -240,39 +244,37 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
    /* options for AFM type pulling simulations */
   CCTYPE("AFM OPTIONS");
   CTYPE("Pull rates in nm/ps");
-  RTYPE("afm_rate1",         AfmRate[0],    0.0);
-  RTYPE("afm_rate2",         AfmRate[1],    0.0);
-  RTYPE("afm_rate3",         AfmRate[2],    0.0);
-  RTYPE("afm_rate4",         AfmRate[3],    0.0);
+  for(i=0; i<pull->ngrp; i++) {
+    sprintf(buf,"afm_rate%d",i+1);
+    RTYPE(buf,              AfmRate[i], 0.0);
+  }
   CTYPE("Force constants in kJ/(mol*nm^2)");
-  RTYPE("afm_k1",            AfmK[0], 0.0);
-  RTYPE("afm_k2",            AfmK[1], 0.0);
-  RTYPE("afm_k3",            AfmK[2], 0.0);
-  RTYPE("afm_k4",            AfmK[3], 0.0);
+  for(i=0; i<pull->ngrp; i++) {
+    sprintf(buf,"afm_k%d",i+1);
+    RTYPE(buf,              AfmK[i], 0.0);
+  }
   CTYPE("Directions");
-  STYPE("afm_dir1",              DirTemp[0], "0.0 0.0 1.0");
-  STYPE("afm_dir2",              DirTemp[1], "0.0 0.0 1.0");
-  STYPE("afm_dir3",              DirTemp[2], "0.0 0.0 1.0");
-  STYPE("afm_dir4",              DirTemp[3], "0.0 0.0 1.0");
+  for(i=0; i<pull->ngrp; i++) {
+    sprintf(buf,"afm_dir%d",i+1);
+    STYPE(buf,              DirTemp[i], "0.0 0.0 1.0");
+  }
   CTYPE("Initial spring positions");
-  STYPE("afm_init1",              InitTemp[0], "0.0 0.0 0.0");
-  STYPE("afm_init2",              InitTemp[1], "0.0 0.0 0.0");
-  STYPE("afm_init3",              InitTemp[2], "0.0 0.0 0.0");
-  STYPE("afm_init4",              InitTemp[3], "0.0 0.0 0.0");
+  for(i=0; i<pull->ngrp; i++) {
+    sprintf(buf,"afm_init%d",i+1);
+    STYPE(buf,              InitTemp[i], "0.0 0.0 0.0");
+  }
   
   /* umbrella sampling options */
   CCTYPE("UMBRELLA SAMPLING OPTIONS");
   CTYPE("Force constants for umbrella sampling in kJ/(mol*nm^2)");
   CTYPE("Centers of umbrella potentials with respect to reference:");
   CTYPE("Ref - Pull.");
-  RTYPE("K1",            UmbCons[0], 0.0);
-  STYPE("Pos1",pos[0],"0.0 0.0 0.0");
-  RTYPE("K2",            UmbCons[1], 0.0);
-  STYPE("Pos2",pos[1],"0.0 0.0 0.0");
-  RTYPE("K3",            UmbCons[2], 0.0);
-  STYPE("Pos3",pos[2],"0.0 0.0 0.0");
-  RTYPE("K4",            UmbCons[3], 0.0);
-  STYPE("Pos4",pos[3],"0.0 0.0 0.0");
+  for(i=0; i<pull->ngrp; i++) {
+    sprintf(buf,"K%d",i+1);
+    RTYPE(buf,              UmbCons[i], 0.0);
+    sprintf(buf,"Pos%d",i+1);
+    STYPE(buf,              pos[i], "0.0 0.0 0.0");
+  }
 
   write_inpfile(outfile,ninp,inp);
   for(i=0; (i<ninp); i++) {
@@ -285,8 +287,10 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   pull->reftype = (t_pullreftype)tmpref;
 
   /* sort out the groups */
-  fprintf(stderr,"Groups: %s %s %s %s %s\n",
-          grpbuf[0],grpbuf[1],grpbuf[2],grpbuf[3],refbuf);
+  fprintf(stderr,"Groups:");
+  for(i=0; i<pull->ngrp; i++)
+    fprintf(stderr," %s",grpbuf[i]);
+  fprintf(stderr,"\n");
 
   if (!strcmp(refbuf, "")) {
     if (pull->runtype == eConstraint)
@@ -297,12 +301,6 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   else if (pull->AbsoluteRef == FALSE) {
     fprintf(stderr,"Reference Group:  %s\n",refbuf);
   }
-
-  if (!strcmp(grpbuf[0],""))
-    gmx_fatal(FARGS,"Need to specify at least group_1.");
-  pull->ngrp = 1;
-  for(i=0; i<MAX_PULL_GROUPS && strcmp(grpbuf[pull->ngrp],""); i++)
-    pull->ngrp++;
   
   fprintf(stderr,"Using %d pull groups\n",pull->ngrp);
   
