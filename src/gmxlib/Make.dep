@@ -143,3 +143,4 @@ xdrf.o:	xdrf.c
 xtcio.o:	xtcio.c
 xvgr.o:	xvgr.c
 xvgrtest.o:	xvgrtest.c
+vec.o:		vec.c

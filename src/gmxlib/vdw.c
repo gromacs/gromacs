@@ -46,7 +46,8 @@ int read_vdw(char *vdwdata,t_vdw **vdw)
   for (i=0; fgets(line,STRLEN,fp); i++) {
     srenew(*vdw,i+1);
     vdum=*vdw;
-    memcpy(name,line,5);
+    strncpy(name,line,6);
+    name[5]='\0';
     if ((int)strlen(name) < 2) 
       break; 
     sscanf(name,"%s",vdum[i].atomname);
@@ -94,11 +95,3 @@ real get_vdw(int nvdw,t_vdw vdw[],char *atom)
   else
     return vdw[best].distance;
 }
-
-
-
-
-
-
-
-

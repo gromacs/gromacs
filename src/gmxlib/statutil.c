@@ -28,6 +28,7 @@
  */
 #include <ctype.h>
 #include "sysstuff.h"
+#include "macros.h"
 #include "string2.h"
 #include "smalloc.h"
 #include "pbc.h"

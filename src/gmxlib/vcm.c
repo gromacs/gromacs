@@ -26,6 +26,7 @@
  * And Hey:
  * Great Red Oystrich Makes All Chemists Sane
  */
+#include "macros.h"
 #include "vcm.h"
 #include "vec.h"
 #include "smalloc.h"

@@ -20,7 +20,7 @@ OBJ		= force.o 	ns.o 		grid.o     	\
 		  disre.o	init.o 		stat.o 		\
 		  mvdata.o	steep.o		sim_util.o	\
 		  update.o 	tgroup.o	dummies.o	\
-                  block_tx.o	mvxvf.o		\
+                  block_tx.o	mvxvf.o		vec.o		\
 		  ebin.o	rbin.o		vcm.o		\
 		  mdebin.o	splittop.o	mdatom.o	\
 		  shakef.o	cshake.o	csettle.o	\

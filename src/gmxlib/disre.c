@@ -30,6 +30,7 @@
 #include "typedefs.h"
 #include "sysstuff.h"
 #include "smalloc.h"
+#include "macros.h"
 #include "vec.h"
 #include "futil.h"
 #include "xvgr.h"

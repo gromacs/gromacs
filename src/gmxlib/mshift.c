@@ -31,6 +31,7 @@
 #include "bondf.h"
 #include "smalloc.h"
 #include "fatal.h"
+#include "macros.h"
 #include "vec.h"
 #include "statusio.h"
 #include "statutil.h"

@@ -27,6 +27,7 @@
  * GROwing Monsters And Cloning Shrimps
  */
 #include <math.h>
+#include "macros.h"
 #include "vec.h"
 #include "fatal.h"
 #include "gstat.h"
