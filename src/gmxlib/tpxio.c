@@ -100,11 +100,11 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_int(ir->ndelta); 
     do_int(ir->nstcomm); 
     do_int(ir->nstcgsteep); 
-    do_int(ir->nstprint); 
+    do_int(ir->nstlog); 
     do_int(ir->nstxout); 
     do_int(ir->nstvout); 
     do_int(ir->nstfout); 
-    do_int(ir->nstgrp); 
+    do_int(ir->nstenergy); 
     do_int(ir->nstxtcout); 
     do_real(ir->init_t); 
     do_real(ir->delta_t); 

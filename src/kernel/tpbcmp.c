@@ -236,11 +236,11 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CII(nstlist);
   CII(ndelta);
   CII(nstcomm);
-  CII(nstprint);
+  CII(nstlog);
   CII(nstxout);
   CII(nstvout);
   CII(nstfout);
-  CII(nstgrp);
+  CII(nstenergy);
   CII(nstxtcout);
   CIR(init_t);
   CIR(delta_t);

@@ -141,11 +141,11 @@ do { \
       block##io(fp,(ir).nstlist); \
       block##io(fp,(ir).ndelta); \
       block##io(fp,(ir).nstcomm); \
-      block##io(fp,(ir).nstprint); \
+      block##io(fp,(ir).nstlog); \
       block##io(fp,(ir).nstxout); \
       block##io(fp,(ir).nstvout); \
       block##io(fp,(ir).nstfout); \
-      block##io(fp,(ir).nstgrp); \
+      block##io(fp,(ir).nstenergy); \
       block##io(fp,(ir).nstxtcout); \
       block##io(fp,(ir).init_t); \
       block##io(fp,(ir).delta_t); \

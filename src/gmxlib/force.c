@@ -318,7 +318,7 @@ void init_forcerec(FILE *log,
     fr->nmol=mols->nr;
     fr->mol_nr=make_invblock(mols,natoms);
     snew(fr->mol_epot,fr->nmol);
-    fr->nstcalc=ir->nstprint;
+    fr->nstcalc=ir->nstenergy;
   }
   
   if (fr->nbfp == NULL) {

@@ -52,11 +52,11 @@ typedef struct {
   int ndelta;		/* number of cells per rlong			*/
   int nstcomm;		/* number of steps after which center of mass	*/
                         /* motion is removed				*/
-  int nstprint;		/* number of steps after which energies printed	*/
+  int nstlog;		/* number of steps after which print to logfile	*/
   int nstxout;		/* number of steps after which X is output	*/
   int nstvout;		/* id. for V					*/
   int nstfout;		/* id. for F					*/
-  int nstgrp;		/* id. for group statistics			*/
+  int nstenergy;	/* number of steps after which energies printed */
   int nstxtcout;	/* id. for compressed trj (.xtc)		*/
   real init_t;		/* initial time (ps) 				*/
   real delta_t;		/* time step (ps)				*/
