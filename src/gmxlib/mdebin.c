@@ -330,6 +330,7 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,
   t_drblock *drblock;
   char buf[246];
   int i,j,n,ni,nj;
+  static int zero=0;
 
   drblock=get_drblock();
   if (drblock->ndr == 0)
@@ -337,7 +338,7 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,
   switch (mode) {
   case eprNORMAL:
     if (bEne || bDR)
-      do_enx(fp_ene,&time,&steps,(bEne) ? &md->ebin->nener : 0,
+      do_enx(fp_ene,&time,&steps,(bEne) ? &md->ebin->nener : &zero,
 	     md->ebin->e,&drblock->ndr,bDR ? drblock : NULL);
     if (log)
       fprintf(log,"   %12s   %12s   %12s   %12s\n"
