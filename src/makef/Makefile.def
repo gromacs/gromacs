@@ -21,6 +21,7 @@ SOLIB		:=$(LIBDIR)/$(SONAME)
 LINKLIB		:=-lgmx.$(CPU)
 STDTARGET	:=$(MKDIR)/Makefile.std
 SHAREIT		:=echo
+MKDEP		:= $(CC) -M
 #
 # Machine dependent stuff
 #

@@ -28,11 +28,11 @@
  */
 static char *SRCID_3dview_c = "$Id$";
 
-#include <sysstuff.h>
 #include <math.h>
-#include <smalloc.h>
-#include <macros.h>
-#include <physics.h>
+#include "sysstuff.h"
+#include "smalloc.h"
+#include "macros.h"
+#include "physics.h"
 #include "3dview.h"
 
 #define N 4

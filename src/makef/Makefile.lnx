@@ -50,6 +50,7 @@ HAVE_MOTIF	= yes
 #
 
 # GNU C compiler
+MKDEP		= $(CC) -MM
 CC		= gcc
 CCC		= gcc
 F77		= g77

@@ -26,7 +26,7 @@ COPYRGT	=	$(GMXHOME)/src/local/copyrgt
 PROGRAMS=	(cd bin/s10; ls; cd ../..)
 
 all:	dirs
-	$(foreach DIR,$(DIRS),cd $(DIR); $(MAKE) dep; $(MAKE); cd ..;)
+	$(foreach DIR,$(DIRS),cd $(DIR); $(MAKE); cd ..;)
 
 it:	
 	$(foreach DIR,$(LDIRS),cd $(DIR); $(MAKE); cd ..;)
