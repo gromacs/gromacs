@@ -236,11 +236,15 @@ static void split_blocks(bool bVerbose,int nprocs,
     ai   = cgs->a[cgs->index[i]];
     bSHK = ((i == 0) || 
 	    ((shknum[ai] == NO_ATID) || (shknum[ai] != shknum[ai-1])));
-    
-    if (ai > 0)
-      if (shknum[ai] != shknum[ai-1])
-	sbl++;
 
+    /* Increase the shake-block number only if ai is a real shake block
+     * (not something unshaken, or settled), and if its sblock number
+     * is different from ai-1
+     */
+    if (ai > 0)
+      if ((shknum[ai] != shknum[ai-1]) && (shknum[ai] != NO_ATID))
+	sbl++;
+	
     if (bSHK && (cgs->a[cgs->index[i+1]] > tload)) {
       if (debug) 
 	fprintf(debug,"%s %d: tload = %g, ai = %d, i = %d, sbl = %d\n",
@@ -251,6 +255,7 @@ static void split_blocks(bool bVerbose,int nprocs,
       maxatom[pid]         = ai;
       pid++;
     }
+    
   }
   /* Now the last one... */
   while (pid < nprocs) {
