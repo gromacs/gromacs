@@ -840,7 +840,7 @@ int main(int argc,char *argv[])
       if (bODR)
 	snew(odrms,nor);
       if (bORT || bODT) {
-	fprintf(stderr,"Select the orientation restraint labels you want\n");
+	fprintf(stderr,"Select the orientation restraint labels you want (-1 is all)\n");
 	fprintf(stderr,"End your selection with 0\n");
 	j = -1;
 	orsel = NULL;
@@ -849,17 +849,26 @@ int main(int argc,char *argv[])
 	  srenew(orsel,j+1);
 	  scanf("%d",&(orsel[j]));
 	} while (orsel[j] > 0);
-	norsel=0;
-	for(i=0; i<j; i++) {
-	  for(k=0; k<nor; k++)
-	    if (or_label[k] == orsel[i]) {
-	      orsel[norsel] = k;
-	      norsel++;
-	      break;
+	if (orsel[0] == -1) {
+	  fprintf(stderr,"Selecting all %d orientation restraints\n",nor);
+	  norsel = nor;
+	  srenew(orsel,nor);
+	  for(i=0; i<nor; i++)
+	    orsel[i] = i;
+	} else {
+	  /* Build the selection */
+	  norsel=0;
+	  for(i=0; i<j; i++) {
+	    for(k=0; k<nor; k++)
+	      if (or_label[k] == orsel[i]) {
+		orsel[norsel] = k;
+		norsel++;
+		break;
+	      }
+	    if (k == nor)
+	      fprintf(stderr,"Orientation restraint label %d not found\n",
+		      orsel[i]);
 	  }
-	  if (k == nor)
-	    fprintf(stderr,"Orientation restraint label %d not found\n",
-		    orsel[i]);
 	}
 	snew(odtleg,norsel);
 	for(i=0; i<norsel; i++) {
