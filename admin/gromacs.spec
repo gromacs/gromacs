@@ -9,7 +9,7 @@
 Summary: Molecular dynamics package (non-parallel version)
 Name: gromacs
 Version: 3.0.2
-Release: 1
+Release: 2
 Copyright: GPL
 Group: Applications/Science
 Prefix: /usr/local
@@ -39,7 +39,7 @@ gromacs-lammpi.
 Summary: Header files and static libraries for GROMACS
 Group: Applications/Science
 Prefix: %{prefix}
-Requires: fftw-devel >= 2.1.3, gromacs = 3.0-1
+Requires: fftw-devel >= 2.1.3, gromacs = %{version}-%{release}
 %description devel
 This package contains header files, static libraries,
 and a program example for the GROMACS molecular
