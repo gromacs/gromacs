@@ -421,17 +421,6 @@ static int pcompar(const void *a, const void *b)
     return d;
 }
 
-static void cp_param(t_param *dest,t_param *src)
-{
-  int j;
-  
-  for(j=0; (j<MAXATOMLIST); j++)
-    dest->a[j] = src->a[j];
-  for(j=0; (j<MAXFORCEPARAM); j++)
-    dest->c[j] = src->c[j];
-  strcpy(dest->s,src->s);
-}
-
 static void clean_bonds(t_params *ps)
 {
   int     i,j;
