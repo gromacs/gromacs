@@ -424,13 +424,48 @@
    HB1    HC   0.000     2
    HB2    HC   0.000     2
     CG    CB   0.000     3
-   ND1  NR5*   0.000     4
-   HD1     H   0.190     5
-   CD2  CR51   0.130     5
-   CE1  CR51   0.260     5
-   NE2   NR5  -0.580     5
-     C     C   0.380     6
-     O     O  -0.380     6
+   ND1  NR5*   0.000     3
+   HD1     H   0.190     3
+   CD2   CR5   0.130     3
+   HD2    HC   0.000     3
+   CE1   CR5   0.260     3
+   HE1    HC   0.000     3
+   NE2  NR5*  -0.580     3
+     C     C   0.380     4
+     O     O  -0.380     4
+ [ bonds ]
+     N     H
+     N    CA
+    CA    HA
+    CA    CB
+    CA     C
+    CB   HB1
+    CB   HB2
+    CB    CG
+    CG   ND1
+    CG   CD2
+   ND1   HD1
+   ND1   CE1
+   CD2   HD2
+   CD2   NE2
+   CE1   HE1
+   CE1   NE2
+     C     O
+    -C     N
+ [ impropers ]
+     N    -C    CA     H
+    CA     N     C    CB
+    CG   ND1   CD2    CB
+   CD2    CG   ND1   CE1
+   ND1    CG   CD2   NE2
+    CG   ND1   CE1   NE2
+    CG   CD2   NE2   CE1
+   CD2   NE2   CE1   ND1
+   ND1    CG   CE1   HD1
+   CE1   ND1   NE2   HE1
+   CD2    CG   NE2   HD2
+    -C   -CA     N    -O
+
  [ bonds ]
      N     H
      N    CA
@@ -1282,3 +1317,154 @@
     -C   -CA     N    -O
     CA     N     C    CB
     CB   CG2   CG1    CA
+    
+[ HEME ]
+ [ atoms ]
+    FE    FE   0.400     0
+    NA    NP  -0.100     0
+    NB    NP  -0.100     0
+    NC    NP  -0.100     0
+    ND    NP  -0.100     0
+   CHA  CR61   0.000     1
+   C1A   CHE   0.000     2
+   C2A   CHE   0.000     3
+   C3A   CHE   0.000     4
+   C4A   CHE   0.000     5
+   CMA   CH3   0.000     6
+   CAA   CH2   0.000     7
+   CBA   CH2   0.000     8
+   CGA     C   0.270     9
+   O1A    OM  -0.635     9
+   O2A    OM  -0.635     9
+   CHB  CR61   0.000    10
+   C1B   CHE   0.000    11
+   C2B   CHE   0.000    12
+   C3B   CHE   0.000    13
+   C4B   CHE   0.000    14
+   CMB   CH3   0.000    15
+   CAB  CR61   0.000    16
+   CBB   CH2   0.000    17
+   CHC  CR61   0.000    18
+   C1C   CHE   0.000    19
+   C2C   CHE   0.000    20
+   C3C   CHE   0.000    21
+   C4C   CHE   0.000    22
+   CMC   CH3   0.000    23
+   CAC  CR61   0.000    24
+   CBC   CH2   0.000    25
+   CHD  CR61   0.000    26
+   C1D   CHE   0.000    27
+   C2D   CHE   0.000    28
+   C3D   CHE   0.000    29
+   C4D   CHE   0.000    30
+   CMD   CH3   0.000    31
+   CAD   CH2   0.000    32
+   CBD   CH2   0.000    33
+   CGD     C   0.270    34
+   O1D    OM  -0.635    34
+   O2D    OM  -0.635    34
+ [ bonds ]
+    FE    NA
+    FE    NB
+    FE    NC
+    FE    ND
+    NA   C1A
+   C1A   C2A
+   C2A   C3A
+   C3A   C4A
+    NA   C4A
+   C2A   CAA
+   CAA   CBA
+   CBA   CGA
+   CGA   O1A
+   CGA   O2A
+   C3A   CMA
+   C4A   CHB
+   CHB   C1B
+    NB   C1B
+   C1B   C2B
+   C2B   C3B
+   C3B   C4B
+    NB   C4B
+   C2B   CMB
+   C3B   CAB
+   CAB   CBB
+   C4B   CHC
+   CHC   C1C
+    NC   C1C
+   C1C   C2C
+   C2C   C3C
+   C3C   C4C
+    NC   C4C
+   C2C   CMC
+   C3C   CAC
+   CAC   CBC
+   C4C   CHD
+   CHD   C1D
+    ND   C1D
+   C1D   C2D
+   C2D   C3D
+   C3D   C4D
+    ND   C4D
+   C2D   CMD
+   C3D   CAD
+   CAD   CBD
+   CBD   CGD
+   CGD   O1D
+   CGD   O2D
+   CHA   C4D
+   CHA   C1A
+ [ angles ]
+;   ai    aj    ak     
+    NA    FE    NC     ANG_180_0
+    NB    FE    ND     ANG_180_0
+ [ dihedrals ]
+;   ai    aj    ak    al      
+    ND    FE    NA   C1A       DIH_0_0_2
+    NA    FE    NB   C1B       DIH_0_0_2
+    NB    FE    NC   C1C       DIH_0_0_2
+    NC    FE    ND   C1D       DIH_0_0_2
+    FE    NA   C1A   CHA       DIH_0_0_2
+    FE    NA   C4A   C3A       DIH_0_0_2
+    FE    NB   C1B   CHB       DIH_0_0_2
+    FE    NB   C4B   C3B       DIH_0_0_2
+    FE    NC   C1C   CHC       DIH_0_0_2
+    FE    NC   C4C   C3C       DIH_0_0_2
+    FE    ND   C1D   CHD       DIH_0_0_2
+    FE    ND   C4D   CHA       DIH_0_0_2
+    NA   C1A   C2A   C3A       DIH_0_0_2
+   C1A   C2A   C3A   C4A       DIH_0_0_2
+   C2A   C3A   C4A    NA       DIH_0_0_2
+    NB   C1B   C2B   C3B       DIH_0_0_2
+   C1B   C2B   C3B   C4B       DIH_0_0_2
+   C2B   C3B   C4B    NB       DIH_0_0_2
+    NC   C1C   C2C   C3C       DIH_0_0_2
+   C1C   C2C   C3C   C4C       DIH_0_0_2
+   C2C   C3C   C4C    NC       DIH_0_0_2
+    ND   C1D   C2D   C3D       DIH_0_0_2
+   C1D   C2D   C3D   C4D       DIH_0_0_2
+   C2D   C3D   C4D    ND       DIH_0_0_2
+ [ impropers ]
+    FE   C1A   C4A    NA
+    FE   C1B   C4B    NB
+    FE   C1C   C4C    NC
+    FE   C1D   C4D    ND
+   CHA    NA   C2A   C1A
+   CHB    NA   C3A   C4A
+   CHB    NB   C2B   C1B
+   CHC    NB   C3B   C4B
+   CHC    NC   C2C   C1C
+   CHD    NC   C3C   C4C
+   CHD    ND   C2D   C1D
+   CHA    ND   C3D   C4D
+   C2A   C1A   C3A   CAA
+   C3A   C2A   C4A   CMA
+   C2B   C1B   C3B   CMB
+   C3B   C2B   C4B   CAB
+   C2C   C1C   C3C   CMC
+   C3C   C2C   C4C   CAC
+   C2D   C1D   C3D   CMD
+   C3D   C2D   C4D   CAD
+   CBA   O1A   O2A   CGA
+   CBD   O1D   O2D   CGD
+

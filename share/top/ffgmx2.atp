@@ -49,3 +49,6 @@
  MNH3   0       ;     Dummy mass in rigid tetraedrical NH3 group
  MCH3   0       ;     Dummy mass in rigid tetraedrical CH3 group
    MW   0       ;     Dummy mass in rigid tyrosine rings
+  CHE  12.01100 ;     HEME RING CARBON
+  CH3  15.03500 ;     
+  CH2  14.02700 ;     
