@@ -211,9 +211,9 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
 		  matrix box)
 {
   real     t,t0,lam,lam0,SAfac;
-  bool     bTYZ;
+  bool     bTYZ,bNEMD;
   char     *traj,*xtc_traj;
-  rvec     *v;
+  rvec     *v,mutot;
   t_nrnb   nrnb;
   t_mdebin *mdebin;
   int      fp_ene,m;
@@ -231,7 +231,7 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),top,x,&v,mdatoms,nsb);
   init_md(cr,&(parm->ir),&t,&t0,&lam,&lam0,&SAfac,
 	  &nrnb,&bTYZ,top,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,
-	  &mdebin,grps,vcm,force_vir,shake_vir,*mdatoms);
+	  &mdebin,grps,vcm,force_vir,shake_vir,*mdatoms,mutot,&bNEMD);
   init_groups(stdlog,*mdatoms,&(parm->ir.opts),grps);  
 
   /* Calculate intramolecular shift vectors to make molecules whole again */
