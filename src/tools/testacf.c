@@ -32,13 +32,14 @@ int main(int argc,char *argv[])
     "sin(a t)/(a t)"
   };
   t_filenm fnm[] = {
-    { efXVG, "-d", "ac-data", ffWRITE },
-    { efXVG, "-c", "ac-corr", ffWRITE }
+    { efXVG, "-d", "acf-data", ffWRITE },
+    { efXVG, "-c", "acf-corr", ffWRITE },
+    { efXVG, "-comb", "acf-comb.xvg", ffWRITE }
   };
 #define NFILE asize(fnm)
   int     npargs,i;
   int     seed=1993;
-  real    *data,x;
+  real    *data,*data2,x;
   t_pargs *ppa;
   
   CopyRight(stderr,argv[0]);
@@ -47,6 +48,8 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
   snew(data,nframes);
+  snew(data2,nframes);
+  
   fp = xvgropen(opt2fn("-d",NFILE,fnm),"testac","x","y");
   for(i=0; (i<nframes); i++) {
     x = a*i;
@@ -73,12 +76,19 @@ int main(int argc,char *argv[])
       break;
     }
     fprintf(fp,"%10g  %10g\n",x,data[i]);
+    data2[i] = data[i];
   }
   fclose(fp);
   
   do_autocorr(opt2fn("-c",NFILE,fnm),str[datatp],
 	      nframes,1,&data,a,eacNormal,TRUE,NULL,NULL);
 	      
+  fp = xvgropen(opt2fn("-comb",NFILE,fnm),"testac","x","y");
+  for(i=0; (i<nframes); i++) {
+    fprintf(fp,"%10g  %10g  %10g\n",a*i,data2[i],data[i]);
+  }
+  ffclose(fp);
+  
   thanx(stdout);
 
   return 0;

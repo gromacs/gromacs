@@ -233,7 +233,8 @@ static void low_do_four_core(int nfour,int nframes,real c1[],fftreal cfour[],
   sfree(ans);
 }
 
-static void do_ac_core(int nf2,int nframes,real corr[],real c1[],int nrestart,
+static void do_ac_core(int nframes,int nlag,
+		       real corr[],real c1[],int nrestart,
 		       unsigned long mode,bool bFull)
 {
   int     j,k,j3,jk3,m,n,nstart;
@@ -243,60 +244,61 @@ static void do_ac_core(int nf2,int nframes,real corr[],real c1[],int nrestart,
   if (bFull) {
     if (nrestart != 1) 
       fprintf(stderr,"WARNING: setting number of restarts to 1 for Full ACF\n");
-    nrestart=1;
+    nrestart = 1;
+    nstart   = nframes;
   }
   else if (nrestart < 1) {
     fprintf(stderr,"WARNING: setting number of restarts to 1\n");
     nrestart = 1;
+    nstart   = nframes - nlag;
   }
   if (debug)
-    fprintf(debug,"Starting do_ac_core: nf2=%d, nframes=%d, nrestart=%d,mode=%d\n",
-	    nf2,nframes,nrestart,mode);
+    fprintf(debug,"Starting do_ac_core: nframes=%d, nlag=%d, nrestart=%d,mode=%d\n",
+	    nframes,nlag,nrestart,mode);
   
-  for(j=0; (j<nf2); j++)
+  for(j=0; (j<nlag); j++)
     corr[j]=0;
 
-  switch (mode) {
-  case eacNormal:
-    for(j=0; (j<nf2); j++)
-      for(k=0; ((k<nf2) && (j+k < nframes)); k++) 
-	corr[k] += c1[j]*c1[j+k];
-    break;
+  /* Loop over starting points. */
+  for(j=0; (j<nstart); j+=nrestart) {
+    j3  = DIM*j;
     
-  case eacCos:
-    for(j=0; (j<nf2); j+=nrestart)
-      for(k=0; ((k<nf2) && (j+k < nframes)); k++) 
+    /* Loop over the correlation length for this starting point */
+    for(k=0; (k<nlag) && (j+k < nframes); k++) {
+      jk3 = DIM*(j+k);
+
+      /* Switch over possible ACF types. 
+       * It might be more efficient to put the loops inside the switch,
+       * but this is more clear, and save development time!
+       */      
+      switch (mode) {
+      case eacNormal:
+	corr[k] += c1[j]*c1[j+k];
+	break;
+    
+      case eacCos:
 	/* Compute the cos (phi(t)-phi(t+dt)) */
 	corr[k] += cos(c1[j]-c1[j+k]);
-    break;
+	break;
     
-  case eacP1:
-  case eacP2:
-  case eacP3:
-    for(j=0; (j<nf2); j+=nrestart)
-      for(k=0; ((k<nf2) && (j+k < nframes)); k++) {
-	j3  = DIM*j;
-	jk3 = DIM*(j+k);
+      case eacP1:
+      case eacP2:
+      case eacP3:
 	for(m=0; (m<DIM); m++) {
 	  xj[m] = c1[j3+m];
 	  xk[m] = c1[jk3+m];
 	}
 	cth=cos_angle(xj,xk);
-
+	
 	if (cth-1.0 > 1.0e-15) {
 	  fprintf(stderr,"j: %d, k: %d, xj:(%g,%g,%g), xk:(%g,%g,%g)\n",
 		  j,k,xj[XX],xj[YY],xj[ZZ],xk[XX],xk[YY],xk[ZZ]);
 	}
-
+	
 	corr[k] += LegendreP(cth,mode);  /* 1.5*cth*cth-0.5; */
-      }
-    break;
+	break;
     
-  case eacRcross:
-    for(j=0; (j<nf2); j+=nrestart)
-      for(k=0; ((k<nf2) && (j+k < nframes)); k++) {
-	j3  = DIM*j;
-	jk3 = DIM*(j+k);
+      case eacRcross:
 	for(m=0; (m<DIM); m++) {
 	  xj[m] = c1[j3+m];
 	  xk[m] = c1[jk3+m];
@@ -304,14 +306,10 @@ static void do_ac_core(int nf2,int nframes,real corr[],real c1[],int nrestart,
 	oprod(xj,xk,rr);
 	
 	corr[k] += iprod(rr,rr);
-      }
-    break;
+	
+	break;
     
-  case eacVector:
-    for(j=0; (j<nf2); j+=nrestart)
-      for(k=0; ((k<nf2) && (j+k < nframes)); k++) {
-	j3  = DIM*j;
-	jk3 = DIM*(j+k);
+      case eacVector:
 	for(m=0; (m<DIM); m++) {
 	  xj[m] = c1[j3+m];
 	  xk[m] = c1[jk3+m];
@@ -319,17 +317,19 @@ static void do_ac_core(int nf2,int nframes,real corr[],real c1[],int nrestart,
 	ccc = iprod(xj,xk);
 	
 	corr[k] += ccc;
+      
+	break;
+      default:
+	fatal_error(0,"\nInvalid mode (%d) in do_ac_core",mode);
       }
-    break;
-  default:
-    fatal_error(0,"\nInvalid mode (%d) in do_ac_core",mode);
+    }
   }
   /* Copy results to the data array */
-  for(j=0; (j<nf2); j++)
+  for(j=0; (j<nlag); j++)
     c1[j] = corr[j];
 }
 
-void normalize_acf(int nf2,int nlag,
+void normalize_acf(int nframes,int nf2,int nlag,
 		   real corr[],bool bFull,bool bFour,bool bNormalize)
 {
   int  j;
@@ -342,26 +342,31 @@ void normalize_acf(int nf2,int nlag,
   }
   
   /* Normalize the acf for the number of data points */
-  if (bFull || bFour) {
-    /* For the first point there are nf2 data entries, for the subsequent
-     * points j there are nf2-j points. We first correct for this.
-     */
-    for(j=0; (j<nf2); j++) 
-      corr[j] /= (nf2-j);
-  }
-  else {
-    /* For all the points there are nf2-nlag data entries.
-     * We first correct for this.
-     */
-    c0 = 1.0/(nf2-nlag);
-    for(j=0; (j<nlag); j++) 
-      corr[j] *= c0;
+  if (!bFour) {
+    if (bFull) {
+      /* For the first point there are nf2 data entries, for the subsequent
+       * points j there are nf2-j points. We first correct for this.
+       */
+      for(j=0; (j<nf2); j++) 
+	corr[j] /= (nf2-j);
+    }
+    else {
+      /* For all the points there are nframes-nlag data entries.
+       * We first correct for this.
+       */
+      c0 = 1.0/(nframes-nlag);
+      for(j=0; (j<nlag); j++) 
+	corr[j] *= c0;
+    }
   }
   /* Normalisation makes that c[0] = 1.0 and that other points are scaled
    * accordingly.
    */
   if (bNormalize) {
-    c0 = 1.0/corr[0];
+    if (corr[0] == 0.0)
+      c0 = 1.0;
+    else
+      c0 = 1.0/corr[0];
     for(j=0; (j<nlag); j++)
       corr[j] *= c0;
   }
@@ -706,7 +711,7 @@ void low_do_autocorr(char *fn,char *title,
     if (bFour)
       do_four_core(mode,nfour,ncorr,nframes,c1[i],csum,ctmp);
     else 
-      do_ac_core(ncorr,nframes,ctmp,c1[i],nrestart,mode,bFull);
+      do_ac_core(nframes,nlag,ctmp,c1[i],nrestart,mode,bFull);
   }
   fprintf(stderr,"\n");
   sfree(ctmp);
@@ -716,7 +721,7 @@ void low_do_autocorr(char *fn,char *title,
   if (bAver) {
     average_acf(ncorr,nitem,c1);
     
-    normalize_acf(ncorr,nlag,c1[0],bFull,bFour,bNormalize);
+    normalize_acf(nframes,ncorr,nlag,c1[0],bFull,bFour,bNormalize);
 
     if (tbeginfit < tendfit)
       fit_acf(ncorr,nfitparm,fitfn,fittitle,bVerbose,
@@ -729,7 +734,7 @@ void low_do_autocorr(char *fn,char *title,
   else {
     /* Not averaging. Normalize individual ACFs */
     for(i=0; (i<nitem); i++) 
-      normalize_acf(ncorr,nlag,c1[i],bFull,bFour,bNormalize);
+      normalize_acf(nframes,ncorr,nlag,c1[i],bFull,bFour,bNormalize);
       
     /* Now dump them all */
     for(j=0; (j<ncorr); j++) {
