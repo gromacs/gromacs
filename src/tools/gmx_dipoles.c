@@ -374,7 +374,8 @@ real calc_eps(double M_diff,double volume,double epsRF,double temp)
   return eps;
 }
 
-static void compute_avercos(int n,rvec dip[],real *dd,real *dd2,rvec axis)
+static void compute_avercos(int n,rvec dip[],real *dd,real *dd2,rvec axis,
+			    bool bPairs)
 {
   int    i,j,k;
   double dc,dc1,d,d2,n5,ddc1,ddc2,ddc3;
@@ -388,11 +389,12 @@ static void compute_avercos(int n,rvec dip[],real *dd,real *dd2,rvec axis)
     ddc1 += fabs(cos_angle(dip[i],xxx));
     ddc2 += fabs(cos_angle(dip[i],yyy));
     ddc3 += fabs(cos_angle(dip[i],zzz));
-    for(j=i+1; (j<n); j++,k++) {
-      dc  = cos_angle(dip[i],dip[j]);
-      d  += fabs(dc);
-      d2 += dc*dc;
-    }
+    if (bPairs) 
+      for(j=i+1; (j<n); j++,k++) {
+	dc  = cos_angle(dip[i],dip[j]);
+	d  += fabs(dc);
+	d2 += dc*dc;
+      }
   }
   *dd  = d/k;
   *dd2 = d2/k;
@@ -404,7 +406,7 @@ static void compute_avercos(int n,rvec dip[],real *dd,real *dd2,rvec axis)
 static void do_dip(char *fn,char *topf,
 		   char *out_mtot,char *out_eps,char *out_aver, 
 		   char *dipdist,bool bAverCorr,
-		   char *cosaver,
+		   char *cosaver,bool bPairs,
 		   bool bCorr,   char *corf,
 		   bool bGkr,    char *gkrfn,
 		   bool bQuad,   char *quadfn,
@@ -647,9 +649,13 @@ static void do_dip(char *fn,char *topf,
       M_av2[m] = M_av[m]*M_av[m];
     
     if (cosaver) {
-      compute_avercos(gnx,dipole,&dd,&dd2,dipaxis);
-      fprintf(caver,"%10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e\n",
-	      t,dd,dd2,dipaxis[XX],dipaxis[YY],dipaxis[ZZ]);
+      compute_avercos(gnx,dipole,&dd,&dd2,dipaxis,bPairs);
+      if (bPairs) 
+	fprintf(caver,"%10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e\n",
+		t,dd,dd2,dipaxis[XX],dipaxis[YY],dipaxis[ZZ]);
+      else
+	fprintf(caver,"%10.3e  %10.3e  %10.3e  %10.3e\n",
+		t,dipaxis[XX],dipaxis[YY],dipaxis[ZZ]);
     }
     
     if (bGkr) {
@@ -850,7 +856,7 @@ int gmx_dipoles(int argc,char *argv[])
   };
   static real mu_max=5, mu_aver=-1;
   static real epsilonRF=0.0, temp=300;
-  static bool bAverCorr=FALSE;
+  static bool bAverCorr=FALSE,bPairs=TRUE;
   static int  skip=0,nFA=0;
   t_pargs pa[] = {
     { "-mu",       FALSE, etREAL, {&mu_aver},
@@ -865,6 +871,8 @@ int gmx_dipoles(int argc,char *argv[])
       "average temperature of the simulation (needed for dielectric constant calculation)" },
     { "-avercorr", FALSE, etBOOL, {&bAverCorr},
       "calculate AC function of average dipole moment of the simulation box rather than average of AC function per molecule" },
+    { "-pairs",   FALSE, etBOOL, {&bPairs},
+      "Calculate |cos theta| between all pairs of molecules. May be slow" },
     { "-gkratom", FALSE, etINT, {&nFA},
       "Use the n-th atom of a molecule (starting from 1) to calculate the distance between molecules rather than the center of charge (when 0) in the calculation of distance dependent Kirkwood factors" }
   };
@@ -930,7 +938,7 @@ int gmx_dipoles(int argc,char *argv[])
 	 opt2fn("-o",NFILE,fnm),opt2fn("-eps",NFILE,fnm),
 	 opt2fn("-a",NFILE,fnm),opt2fn("-d",NFILE,fnm),
 	 bAverCorr,opt2fn_null("-cos",NFILE,fnm),
-	 bCorr,
+	 bPairs,bCorr,
 	 opt2fn("-c",NFILE,fnm),
 	 bGkr,    opt2fn("-g",NFILE,fnm),
 	 bQuad,   opt2fn("-q",NFILE,fnm),
