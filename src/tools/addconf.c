@@ -135,7 +135,7 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,
   
   /* check solvent with solute */
   for(i=0; i<atoms->nr; i++) {
-    if ( bVerbose && ( (i<10) || ((i+1)%10) || (i>atoms->nr-10) ) )
+    if ( bVerbose && ( (i<10) || ((i+1)%10==0) || (i>atoms->nr-10) ) )
       fprintf(stderr,"\r%d out of %d atoms checked",i+1,atoms->nr);
     for(j=0; j<atoms_solvt->nr; j++) 
       /* only check solvent that hasn't been marked for removal already */
@@ -150,7 +150,7 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,
   
   /* check solvent with itself */
   for(i=0; i<atoms_solvt->nr ;i++) {
-    if ( bVerbose && ( (i<10) || !((i+1)%10) || (i>atoms_solvt->nr-10) ) )
+    if ( bVerbose && ( (i<10) || ((i+1)%10==0) || (i>atoms_solvt->nr-10) ) )
       fprintf(stderr,"\rchecking atom %d out of %d",i+1,atoms_solvt->nr);
     
     /* check only atoms that haven't been marked for removal already and
