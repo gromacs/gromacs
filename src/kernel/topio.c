@@ -82,8 +82,7 @@ void gen_pairs(t_params *nbs,t_params *pairs,real fudge)
   assert(nrfp  == nrfpA);
   assert(nrfpA == nrfpB);
 
-  if (bVerbose) 
-    fprintf(stderr,"Generating 1-4 interactions: fudge = %g\n",fudge);
+  fprintf(stderr,"Generating 1-4 interactions: fudge = %g\n",fudge);
   if (debug) {
     fprintf(debug,"Fudge factor for 1-4 interactions: %g\n",fudge);
     fprintf(debug,"Holy Cow! there are %d types\n",ntp);
