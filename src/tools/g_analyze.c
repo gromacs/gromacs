@@ -54,7 +54,7 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
   char   *line;
   int    a,narg,n,sin,set,nchar;
   double dbl,tend=0;
-  bool   bEndOfSet,bTimeInRange;
+  bool   bEndOfSet,bTimeInRange,bFirstLine=TRUE;
   real   **val;
 
   if (linelen > llmax) {
@@ -77,6 +77,21 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
       line = line0;
       bEndOfSet = (line[0] == '&');
       if ((line[0] != '#') && (line[0] != '@') && !bEndOfSet) {
+
+	if (bFirstLine && bHaveT && line[0]!='\n') {
+	  /* Check the first line that should contain data */
+	  a = sscanf(line,"%lf%lf",&dbl,&dbl);
+	  if (a == 0) 
+	    fatal_error(0,"Expected a number in %s on line:\n%s",fn,line0);
+	  else if (a == 1) {
+	    fprintf(stderr,"Found only 1 number on line, "
+		    "assuming no time is present.\n");
+	    bHaveT = FALSE;
+	    if (nsets_in > 1)
+	      narg = 1;
+	  }
+	}
+
 	a = 0;
 	bTimeInRange = TRUE;
 	while ((a<narg || (nsets_in==1 && n==0)) && 
@@ -123,8 +138,9 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
 	if (bTimeInRange) {
 	  n++;
 	  if (a != narg)
-	    fprintf(stderr,"Invalid line in %s: '%s'\n",fn,line0);
+	    fprintf(stderr,"Invalid line in %s:\n%s",fn,line0);
 	}
+	bFirstLine = FALSE;
       }
     }
     if (sin==0) {
