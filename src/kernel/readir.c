@@ -167,7 +167,6 @@ void get_ir(char *mdparin,char *mdparout,
   snew(dumstr[1],STRLEN);
   CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
   STYPE ("title",	opts->title,	NULL);
-  ITYPE ("warnings", 	opts->warnings,	1);
   STYPE ("cpp",		opts->cpp,	"/lib/cpp");
   STYPE ("include",	opts->include,	NULL);
   STYPE ("define",	opts->define,	NULL);
