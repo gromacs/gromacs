@@ -476,14 +476,24 @@ AC_C_INLINE
 
 
 # Test stuff for ia32 and x86_64 assembly, and add objects/libraries.
-# 
 if test "$enable_ia32_sse" = "yes" -o "$enable_ia32_3dnow" = "yes" -o "$enable_x86_64_sse" = "yes"; then
   AC_MSG_CHECKING([whether your compiler can handle assembly files (*.s)])
+#
+# Use 64-bit registers (rsp/rbp) on x86_64
+#
+if test "$enable_x86_64_sse" = "yes"; then
+cat > conftestasm.s << EOF
+checkasm:
+        movl    %rsp, %rbp
+        ret
+EOF
+else
 cat > conftestasm.s << EOF
 checkasm:
         movl    %esp, %ebp
         ret
 EOF
+fi
   if AC_TRY_COMMAND($CC -c conftestasm.s); then
     if test -f conftestasm.o; then
       AC_MSG_RESULT([yes])
@@ -499,13 +509,23 @@ EOF
 # ok, cc understands assembly.
 # But does it understand the lock cmpxchg instruction (needed for atomicity on SMP)?
   AC_MSG_CHECKING([whether as understands 'lock cmpxchg'])
-   cat > conftest.s << EOF
+  if test "$enable_x86_64_sse" = "yes"; then
+    cat > conftest.s << EOF
 .intel_syntax noprefix 
 checkasm:
-        lock cmpxchg [[esi]], ebx 
+        lock cmpxchg [[rsi]], ebx 
         emms
         ret
 EOF
+  else
+    cat > conftest.s << EOF
+.intel_syntax noprefix
+checkasm:
+        lock cmpxchg [[esi]], ebx
+        emms
+        ret
+EOF
+  fi
     if AC_TRY_COMMAND($CC -c conftest.s); then
       AC_MSG_RESULT([yes])
     else
