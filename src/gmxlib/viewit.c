@@ -45,7 +45,7 @@ static int can_view_ftp[] = { 0,
   efEPS,           efXPM,         efXVG,          efPDB };
 #define NVIEW asize(can_view_ftp)
 static char* view_program[] = { NULL,
-  "ghostview",    "xv",           NULL,           "xterm -e rasmol" };
+  "ghostview",    "xv",       "xmgrace",          "xterm -e rasmol" };
 
 int can_view(int ftp)
 {
@@ -72,22 +72,16 @@ void do_view(char *fn, char *opts)
       strncpy(ext, ftp2ext(ftp), N_EXT);
       upstring(ext);
       sprintf(env, "GMX_VIEW_%s", ext);
-      switch(ftp) {
-      case efXVG:
-	if (!(cmd=getenv(env)))
-	  cmd = "xmgrace";
-	if (strcmp(cmd,"xmgrace") == 0)
-	  defopts = "-nxy";
-	break;
-      default:
-	if ( (n=can_view(ftp)) ) {
-	  if ( ! (cmd=getenv(env)) )
-	    cmd=view_program[n];
-	} else {
-	  fprintf(stderr,"Don't know how to view file %s",fn);
-	  return;
-	}
+      if ( (n=can_view(ftp)) ) {
+	if ( ! (cmd=getenv(env)) )
+	  cmd=view_program[n];
+      } else {
+	fprintf(stderr,"Don't know how to view file %s",fn);
+	return;
       }
+      /* Add command line option -nxy for xmgrace */
+      if (ftp == efXVG && strcmp(cmd,"xmgrace") == 0)
+	defopts = "-nxy";
       if ( strlen(cmd) ) {
 	sprintf(buf,"%s %s%s%s%s%s &",
 		cmd,
