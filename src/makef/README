@@ -46,7 +46,7 @@ PARALLEL_ONLY_MDRUN  Useful only when compiling parallel code on machines
 		     with the mpi (or pvm) library, such as IBM SP2.
 		     When set to yes only mdrun is made and placed
 		     in a directory ending in _mpi or _pvm,
-		     The libraries are also in seperate diretories.
+		     The libraries are also in seperate directories.
 
 #
 #	USER MODIFIABLE SECTION
