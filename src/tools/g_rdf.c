@@ -48,8 +48,9 @@ static char *SRCID_g_rdf_c = "$Id$";
 #include "calcgrid.h"
 #include "nrnb.h"
 #include "shift_util.h"
-#include "pppm.h"
+#include "pme.h"
 #include "gstat.h"
+#include "matio.h"
 
 static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 		   char *fnRDF,char *fnCNRDF, char *fnHQ,
@@ -306,17 +307,65 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   sfree(rdf);
 }
 
+typedef struct {
+  int  ndata;
+  real kkk;
+  real intensity;
+} t_xdata;
+
+int comp_xdata(const void *a,const void *b)
+{
+  t_xdata *xa,*xb;
+  real tmp;
+  
+  xa = (t_xdata *)a;
+  xb = (t_xdata *)b;
+  
+  if (xa->ndata == 0)
+    return 1;
+  else if (xb->ndata == 0)
+    return -1;
+  else {
+    tmp = xa->kkk - xb->kkk;
+    if (tmp < 0)
+      return -1;
+    else if (tmp > 0)
+      return 1;
+    else return 0;
+  }
+}
+
+static t_xdata *init_xdata(int nx,int ny)
+{
+  int     ix,iy,i,j,maxkx,maxky;
+  t_xdata *data;
+  
+  maxkx = (nx+1)/2;
+  maxky = (ny+1)/2;
+  snew(data,nx*ny);
+  for(i=0; (i<nx); i++) {
+    for(j=0; (j<ny); j++) {
+      ix = abs((i < maxkx) ? i : (i - nx)); 
+      iy = abs((j < maxky) ? j : (j - ny)); 
+      data[ix*ny+iy].kkk = sqrt(ix*ix+iy*iy);
+    }
+  }
+  return data;
+}
+
 static void extract_sq(t_fftgrid *fftgrid,int nbin,real factor,
-		       real count[],rvec box)
+		       real count[],rvec box,int npixel,real *map[],
+		       t_xdata data[])
 {
   int nx,ny,nz,la2,la12;
   t_fft_c *ptr,*p0;
-  int i,j,k,maxkx,maxky,maxkz,n,ind;
-  real k1,kxy2,kz2,k2,z,k_max;
+  int  i,j,k,maxkx,maxky,maxkz,n,ind,ix,iy;
+  real k1,kxy2,kz2,k2,z,k_max,kxy,kxy_max,cos_theta2,ttt;
   rvec lll,kk;
   
   calc_lll(box,lll);
-  k_max = nbin/factor;
+  k_max   = nbin/factor;
+  kxy_max = k_max/sqrt(3);
   unpack_fftgrid(fftgrid,&nx,&ny,&nz,&la2,&la12,FALSE,(t_fft_r **)&ptr);
   /* This bit copied from pme.c */
   maxkx = (nx+1)/2;
@@ -333,11 +382,30 @@ static void extract_sq(t_fftgrid *fftgrid,int nbin,real factor,
 	calc_k(lll,i,j,k,nx,ny,nz,kk);
 	kxy2 = sqr(kk[XX]) + sqr(kk[YY]);
 	k2   = kxy2+sqr(kk[ZZ]);
+	kxy  = sqrt(kxy2);
 	k1   = sqrt(k2);
 	ind  = k1*factor;
-	if (ind < nbin)
-	  /* Multiply intensity by sin(theta). Is this correct? */
-	  count[ind] += z*sqrt(kxy2/k2);
+	if (ind < nbin) {
+	  /* According to:
+	   * R. W. James (1962), 
+	   * The Optical Principles of the Diffraction of X-Rays,
+	   * Oxbow press, Woodbridge Connecticut
+	   * the intensity is proportional to (eq. 9.10):
+	   * I = C (1+cos^2 [2 theta])/2 FFT
+	   * And since
+	   * cos[2 theta] = cos^2[theta] - sin^2[theta] = 2 cos^2[theta] - 1 
+	   * we can compute the prefactor straight from cos[theta]
+	   */
+	  cos_theta2  = kxy2/k2;
+	  /*ttt         = z*0.5*(1+sqr(2*cos_theta2-1));*/
+	  ttt         = z*0.5*(1+cos_theta2);
+	  count[ind] += ttt;
+	  ix = ((i < maxkx) ? i : (i - nx)); 
+	  iy = ((j < maxky) ? j : (j - ny));
+	  map[npixel/2+ix][npixel/2+iy] += ttt; 
+	  data[abs(ix)*ny+abs(iy)].ndata     += 1;
+	  data[abs(ix)*ny+abs(iy)].intensity += ttt;
+	}
 	else
 	  fprintf(stderr,"k (%g) > k_max (%g)\n",k1,k_max);
       }
@@ -345,27 +413,30 @@ static void extract_sq(t_fftgrid *fftgrid,int nbin,real factor,
 }
 
 static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
-		  real grid)
+		  char *fnXPM,real grid,real lambda,real distance,
+		  int npixel,int nlevel)
 {
   FILE       *fp;
   int        status;
   char       title[STRLEN],*aname;
-  int        natoms,i,j,k,nbin,j0,j1,n,nframes;
-  real       *count;
+  int        natoms,i,j,k,nbin,j0,j1,n,nframes,pme_order;
+  real       *count,**map;
   char       *grpname;
   int        isize;
   atom_id    *index;
-  real       I0,t,k_max,factor,yfactor,segvol;
+  real       I0,C,t,k_max,factor,yfactor,segvol;
   rvec       *x,*xndx,box_size,kk,lll;
-  real       *fj,max_spacing,r;
+  real       fj0,*fj,max_spacing,r,lambda_1;
   bool       *bExcl,bTop;
   matrix     box;
   int        nx,ny,nz,nelectron;
   atom_id    ix,jx,**pairs;
+  splinevec  *theta;
   t_topology top;
   t_fftgrid  *fftgrid;
   t_nrnb     nrnb;
-  
+  t_xdata    *data;
+    
   bTop=read_tps_conf(fnTPS,title,&top,&x,NULL,box,TRUE);
 
   fprintf(stderr,"\nSelect group for structure factor computation:\n");
@@ -374,9 +445,9 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
     snew(xndx,isize);
   else
     xndx = x;
-  
   natoms=read_first_x(&status,fnTRX,&t,&x,box);
-
+  fprintf(stderr,"\n");
+  
   init_nrnb(&nrnb);
     
   if ( !natoms )
@@ -392,49 +463,82 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
   nelectron = 0;
   for(i=0; (i<isize); i++) {
     aname = *(top.atoms.atomname[index[i]]);
-    switch (aname[0]) {
-    case 'H':
-      fj[i] = 1;
-      break;
-    case 'C':
-      fj[i] = 6;
-      break;
-    case 'N':
-      fj[i] = 7;
-      break;
-    case 'O':
-      fj[i] = 8;
-      break;
-    case 'F':
-      fj[i] = 9;
-      break;
-    case 'S':
-      fj[i] = 16;
-      break;
-    default:
-      fprintf(stderr,"Warning: don't know number of electrons for atom %s\n",
-	      aname);
-      fj[i] = 1;
+    if (top.atoms.atom[i].ptype == eptAtom) {
+      switch (aname[0]) {
+      case 'H':
+	fj0 = 1;
+	break;
+      case 'C':
+	fj0 = 6;
+	break;
+      case 'N':
+	fj0 = 7;
+	break;
+      case 'O':
+	fj0 = 8;
+	break;
+      case 'F':
+	fj0 = 9;
+	break;
+      case 'S':
+	fj0 = 16;
+	break;
+      default:
+	fprintf(stderr,"Warning: don't know number of electrons for atom %s\n",
+		aname);
+	fj0 = 1;
+      }
     }
+    else
+      fj0 = 0;
+    /* Correct for partial charge */
+    fj[i] = fj0 - top.atoms.atom[index[i]].q;
+    
     nelectron += fj[i];
+
     I0 += sqr(fj[i]);
   }
+  if (debug) {
+    /* Dump scattering factors */
+    for(i=0; (i<isize); i++)
+      fprintf(debug,"Atom %3s-%5d q = %10.4f  f = %10.4f\n",
+	      *(top.atoms.atomname[index[i]]),index[i],
+	      top.atoms.atom[index[i]].q,fj[i]);
+  }
 
+  /* Just for efficiency */
+  lambda_1 = 1.0/lambda;
+
+  /* Constant for scattering */
+  C = sqr(1.0/(ELECTRONMASS_keV*KILO*ELECTRONVOLT*1e7*distance));
+  fprintf(stderr,"C is %g\n",C);
+        
+  /* This bit is dimensionless */
   nx = ny = nz = 0;
   max_spacing = calc_grid(box,grid,&nx,&ny,&nz,1);	
-
-  fftgrid = mk_fftgrid(stdout,FALSE,nx,ny,nz,FALSE);
+  pme_order = max(4,1+(0.2/grid));
+  npixel = max(nx,ny);
+  data   = init_xdata(nx,ny);
   
-  /* Determine largest k vector length */
+  fprintf(stderr,"Largest grid spacing: %g nm, pme_order %d, %dx%d pixel on images\n",
+	  max_spacing,pme_order,npixel,npixel);
+  init_pme(stdout,NULL,nx,ny,nz,pme_order,isize,FALSE);
+    
+  /* Determine largest k vector length. Now we change to dimensionless units
+   * by dividing by the wave length of incoming radiation.
+   */
   for(i=0; (i<DIM); i++)
-    box_size[i] = box[i][i];
+    box_size[i] = lambda_1*box[i][i];
   calc_lll(box_size,lll);
   calc_k(lll,nx/2,ny/2,nz/2,nx,ny,nz,kk);
   k_max = 1+norm(kk);
-  
+
   /* this is the S(q) array */
-  nbin = 200;
+  nbin = npixel;
   snew(count,nbin+1);
+  snew(map,npixel);
+  for(i=0; (i<npixel); i++)
+    snew(map[i],npixel);
   
   nframes = 0;
   do {
@@ -442,23 +546,24 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
      * an old routine from the PPPM code.
      */
     for(i=0; (i<DIM); i++)
-      box_size[i] = box[i][i];
+      for(j=0; (j<DIM); j++)
+	box[i][j] *= lambda_1;
+    for(j=0; (j<DIM); j++)
+      box_size[j] = box[j][j];
+    
+    /* Scale coordinates to the wavelength */
+    for(i=0; (i<isize); i++)
+      svmul(lambda_1,x[index[i]],xndx[i]);
+      
+    /* put local atoms on grid. */
+    fftgrid = spread_on_grid(stdout,isize,pme_order,xndx,fj,box,FALSE);
 
-    /* Make the grid empty */
-    clear_fftgrid(fftgrid);
-  
-    /* Put particles on a grid */
-    if (xndx != x) 
-      for(i=0; (i<isize); i++)
-	copy_rvec(x[index[i]],xndx[i]);
-    spread_q(stdout,TRUE,0,isize,xndx,fj,box_size,fftgrid,&nrnb);
- 
     /* FFT the density */
     gmxfft3D(fftgrid,FFTW_FORWARD,NULL);  
     
     /* Extract the Sq function and sum it into the average array */
     factor = nbin/k_max;
-    extract_sq(fftgrid,nbin,factor,count,box_size);
+    extract_sq(fftgrid,nbin,factor,count,box_size,npixel,map,data);
     
     nframes++;
   } while (read_next_x(status,&t,natoms,x,box));
@@ -469,24 +574,67 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
   sfree(x);
 
   /* Normalize it ?? */  
-  factor  = k_max*grid/(nbin);
-  yfactor = (1.0/nframes);
-  fp=xvgropen(fnSQ,"Structure Factor","q (/nm)","S(q)");
+  factor  = k_max/(nbin);
+  yfactor = (1.0/nframes)/*(1.0/fftgrid->nxyz)*/;
+  fp=xvgropen(fnSQ,"Structure Factor","q (1/lambda)","S(q)");
+  fprintf(fp,"@ subtitle \"Lambda = %g nm. Grid spacing = %g nm\"\n",
+	  lambda,grid);
   for(i=0; i<nbin; i++) {
-    r = (i+0.5)*factor;
-    segvol = sqr(r)*factor;
-    fprintf(fp,"%10g %10g\n",r,I0+count[i]*yfactor/segvol);
+    r = (i+0.5)*factor*2*M_PI*lambda_1;
+    segvol = 4*M_PI*sqr(r)*factor;
+    fprintf(fp,"%10g %10g\n",r,count[i]*yfactor/segvol);
   }
   ffclose(fp);
   
   do_view(fnSQ,NULL);
-  
-  done_fftgrid(fftgrid);
+
+  if (fnXPM) {
+    t_rgb rhi = { 0,0,0 }, rlo = { 1,1,1 };
+    real *tx,*ty,hi,inv_nframes;
+    int  maxkx,maxky;
+    
+    hi = 0;
+    inv_nframes = 1.0/nframes;
+    maxkx = (nx+1)/2;
+    maxky = (ny+1)/2;
+    snew(tx,npixel);
+    snew(ty,npixel);
+    for(i=0; (i<npixel); i++) {
+      tx[i] = i-npixel/2;
+      ty[i] = i-npixel/2;
+
+      for(j=0; (j<npixel); j++) { 
+	map[i][j] *= inv_nframes;
+	hi         = max(hi,map[i][j]);
+      }
+    }
+      
+    fp = ffopen(fnXPM,"w");
+    write_xpm(fp,"Diffraction Image","Intensity","kx","ky",
+	      nbin,nbin,tx,ty,map,0,hi,rlo,rhi,&nlevel);
+    fclose(fp);
+    sfree(tx);
+    sfree(ty);
+
+    /* qsort(data,nx*ny,sizeof(data[0]),comp_xdata);    
+       fp = ffopen("test.xvg","w");
+       for(i=0; (i<nx*ny); i++) {
+       if (data[i].ndata != 0) {
+       fprintf(fp,"%10.3f  %10.3f\n",data[i].kkk,data[i].intensity/data[i].ndata);
+       }
+       }
+       fclose(fp);
+    */
+  }
 }
 
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
+    "The structure of liquids can be studied by either neutron or X-ray",
+    "scattering. The most common way to describe liquid structure is by a",
+    "radial distribution function. However, this is not easy to obtain from",
+    "a scattering experiment.[PAR]",
     "g_rdf calculates radial distribution functions in different ways.",
     "The normal method is around a (set of) particle(s), the other method",
     "is around the center of mass of a set of particles.[PAR]",
@@ -505,7 +653,8 @@ int main(int argc,char *argv[])
     "spacing of which is determined by option [TT]-grid[tt]."
   };
   static bool bCM=FALSE;
-  static real cutoff=0, binwidth=0.005, grid = 0.1, fade=0.0;
+  static real cutoff=0,binwidth=0.005,grid=0.05,fade=0.0,lambda=0.1,distance=10;
+  static int  npixel=256,nlevel=20;
   t_pargs pa[] = {
     { "-bin",      FALSE, etREAL, {&binwidth},
       "Binwidth (nm)" },
@@ -516,7 +665,15 @@ int main(int argc,char *argv[])
     { "-fade",     FALSE, etREAL, {&fade},
       "From this distance onwards the RDF is tranformed by g'(r) = 1 + [g(r)-1] exp(-(r/fade-1)^2 to make it go to 1 smoothly. If fade is 0.0 nothing is done." },
     { "-grid",     FALSE, etREAL, {&grid},
-      "Grid spacing (in nm) for FFTs when computing structure factors" }
+      "Grid spacing (in nm) for FFTs when computing structure factors" },
+    { "-npixel",   FALSE, etINT,  {&npixel},
+      "[HIDDEN]# pixels per edge of the square detector plate" },
+    { "-nlevel",   FALSE, etINT,  {&nlevel},
+      "Number of different colors in the diffraction image" },
+    { "-distance", FALSE, etREAL, {&distance},
+      "[HIDDEN]Distance (in cm) from the sample to the detector" },
+    { "-wave",     FALSE, etREAL, {&lambda},
+      "Wavelength for X-rays/Neutrons for scattering. 0.1 nm corresponds to roughly 12 keV" }
   };
 #define NPA asize(pa)
   char       *fnTPS,*fnNDX;
@@ -530,6 +687,7 @@ int main(int argc,char *argv[])
     { efXVG, "-sq", "sq",     ffOPTWR },
     { efXVG, "-cn", "rdf_cn", ffOPTWR },
     { efXVG, "-hq", "hq",     ffOPTWR },
+    { efXPM, "-image", "sq",  ffOPTWR }
   };
 #define NFILE asize(fnm)
   
@@ -554,7 +712,7 @@ int main(int argc,char *argv[])
  
   if  (bSQ) 
     do_sq(fnNDX,fnTPS,ftp2fn(efTRX,NFILE,fnm),opt2fn("-sq",NFILE,fnm),
-	  grid);
+	  ftp2fn(efXPM,NFILE,fnm),grid,lambda,distance,npixel,nlevel);
   
   if (bRDF) 
     do_rdf(fnNDX,fnTPS,ftp2fn(efTRX,NFILE,fnm),
