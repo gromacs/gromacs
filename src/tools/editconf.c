@@ -51,6 +51,7 @@ static char *SRCID_editconf_c = "$Id$";
 #include "addconf.h"
 #include "tpxio.h"
 #include "pbc.h"
+#include "viewit.h"
 
 typedef struct {
   char   sanm[12];
@@ -499,7 +500,7 @@ int main(int argc, char *argv[])
 #define NFILE asize(fnm)
 
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,NPA,pa,
+  parse_common_args(&argc,argv,PCA_CAN_VIEW,FALSE,NFILE,fnm,NPA,pa,
 		    asize(desc),desc,asize(bugs),bugs);
 
   bIndex    = opt2bSet("-n",NFILE,fnm) || bNDEF;
@@ -745,7 +746,9 @@ int main(int argc, char *argv[])
       fclose(out);
     }  
   }
-  
+
+  do_view(outfile,NULL);
+    
   thanx(stderr);
   
   return 0;
