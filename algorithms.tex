@@ -84,18 +84,17 @@ comparing various system sizes; they are expected to be less severe than
 the errors resulting from an unnatural boundary with vacuum.
 
 There are several possible shapes for space-filling unit cells. Some,
-as the {\em truncated octahedron}~\cite{Adams79} approach a spherical
+as the {\em rhombic dodecahedron} and the 
+{\em truncated octahedron}~\cite{Adams79} approach a spherical
 shape better than a cubic box and are therefore more economical for
 studying an (approximately spherical) macromolecule in solution, since
 less solvent molecules are required to fill the box given a minimum
 distance between macromolecular images. However, a periodic system
-based on the truncated octahedron is equivalent to a periodic system
-based on a {\em triclinic} unit cell. The latter shape is the most
-general space-filling unit cell; it comprises all possible
-space-filling shapes~\cite{Bekker95}. Therefore {\gromacs} will in
-future versions be based on the triclinic unit and will not contain
-other unit cell shapes. However, in the present version
-only rectangular boxes are allowed.
+based on the rhombic dodecahedron or truncated octahedron is equivalent
+to a periodic system based on a {\em triclinic} unit cell.
+The latter shape is the most general space-filling unit cell;
+it comprises all possible space-filling shapes~\cite{Bekker95}.
+Therefore {\gromacs} is based on the triclinic unit cell.
   
 {\gromacs} uses periodic boundary conditions, combined with the {\em
 minimum image convention:} only one - the nearest - image of each
@@ -127,24 +126,49 @@ But often is is more efficient to simulate an isolated cluster of molecules
 in a large periodic box, since grid search can only be used in a periodic
 system.
 
-\normindex{Truncated octahedron}s are also supported, since they are a special
-case of a triclinic box. A truncated octahedron with box vector length
-$d$ is:
+\begin{figure}
+\centerline{
+\psfig{figure=plots/rhododec.eps,width=5cm}
+~~~~\psfig{figure=plots/truncoct.eps,width=5cm}
+}
+\caption {A rhombic dodecahedron and truncated octahedron
+(arbitrary orientations).}
+\label{fig:boxshapes}
+\end{figure}
+
+\subsubsection{Rhombic \normindex{dodecahedron}}
+A rhombic dodecahedron (\figref{boxshapes}) is the smallest and most regular
+space-filling unit cell. Each of the 12 image cells is at the same distance.
+The box vectors of a rhombic dodecahedron with image distance $d$ are:
 \beq
 {\bf a} = \left(\begin{array}{c} 1 \\ 0 \\ 0 \end{array}\right) d
-~~~~
+~,~~~
+{\bf b} = \left(\begin{array}{c} 0 \\ 1 \\ 0 \end{array}\right) d
+~,~~~
+{\bf c} = \left(\begin{array}{c} \frac{1}{2} \\ \frac{1}{2} \\ \frac{1}{2}\sqrt{2} \end{array}\right) d
+\eeq
+The volume is $a_x b_y c_z = \frac{1}{2}\sqrt{2} d^3 \approx 0.71 d^3$,
+which is 0.71 times the volume of a cubic box. This saves about 29\% of
+CPU-time when simulating a spherical or flexible molecule in solvent.
+
+\subsubsection{Truncated \normindex{octahedron}}
+A truncated octahedron (\figref{boxshapes}) with image distance $d$ is:
+\beq
+{\bf a} = \left(\begin{array}{c} 1 \\ 0 \\ 0 \end{array}\right) d
+~,~~~
 {\bf b} = \left(\begin{array}{c} \frac{1}{3} \\ \frac{2}{3}\sqrt{2} \\ 0 \end{array}\right) d
-~~~~
+~,~~~
 {\bf c} = \left(\begin{array}{c} -\frac{1}{3} \\ \frac{1}{3}\sqrt{2} \\ \frac{1}{3}\sqrt{6} \end{array}\right) d
 \eeq
 The volume is $a_x b_y c_z = \frac{4}{9} \sqrt{3} d^3 \approx 0.77 d^3$,
-which is 0.77 times the volume of a cubic box. This saves about 23\% of
-CPU-time when simulating a spherical or flexible molecule in solvent.
+which is 0.77 times the volume of a cubic box.
 
+\subsubsection{Cut-off restrictions}
 The minimum image convention implies that the cut-off radius used to
 truncate non-bonded interactions must not exceed half the shortest box
 vector for grid search:
 \beq
+\label{gridrc}
   R_c < \half \min(\|{\bf a}\|,\|{\bf b}\|,\|{\bf c}\|),
 \eeq
 otherwise more than one image would be within the cut-off distance of
@@ -157,7 +181,7 @@ direction of that edge {\em plus} two times the cut-off radius $R_c$.
 It is common to compromise in this respect, and make the solvent layer
 somewhat smaller in order to reduce the computational cost.
 For efficiency reasons the cut-off with simple search in triclinic boxes
-is more restriced:
+(grid search always uses eq. (\ref{gridrc})) is more restriced:
 \beq
 \label{simplerc}
 R_c < \half \min(a_x,b_y,c_z)
@@ -325,7 +349,7 @@ particles in a rectangular box.
 As shown in \figref{pbc}, it is possible to transform a
 triclinic box into a rectangular box.
 The output coordinates are always in a rectangular box, even when a
-truncated octahedron or triclinic box was used for the simulation.
+dodecahedron or triclinic box was used for the simulation.
 Equations (\ref{box_rot}) ensure
 that we can reset particles in a rectangular box by first shifting them with
 box vector ${\bf c}$, then with ${\bf b}$ and finally with ${\bf a}$.
@@ -395,15 +419,15 @@ corresponding to that image of $i$.
 As can been seen in \figref{grid}, for some images of $i$ the same
 grid cell might be searched. This is not a problem, since at most one
 image will ``see'' the $j$-particle, due to the minimum image convention.
-For every particle, less then 125 (5$^3$) neighboring cells are searched.
+For every particle, less than 125 (5$^3$) neighboring cells are searched.
 Therefore, the algorithm scales linear with the number of particles.
 Although the prefactor is large
 the scaling behavior makes the algorithm far superior over the
 standard $O(N^2)$ algorithm when the number of particles
 exceeds a few hundred.
 The grid search is equally fast for rectangular and triclinic boxes.
-Thus for most protein and peptide simulations the truncated
-octahedron will be the preferable box shape.
+Thus for most protein and peptide simulations the rhombic dodecahedron
+will be the preferable box shape.
 
 \subsubsection{Charge groups}
 Where applicable, neighbor searching is carried out on the basis of
