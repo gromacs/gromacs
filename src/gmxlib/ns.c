@@ -804,7 +804,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
 		  nr_in_cg,maxcg);
       
     snew(bexcl,cgs->nra);
-    debug_par();
+    debug_gmx();
 
     if ((ptr=getenv("NLIST")) != NULL) {
       sscanf(ptr,"%d",&NLJ_INC);
@@ -839,7 +839,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     }
     bFirst=FALSE;
   }
-  debug_par();
+  debug_gmx();
   
   /* Reset the neighbourlists */
   reset_neighbor_list(log,fr);
@@ -865,7 +865,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
       bSwitched=FALSE;
     }
   }
-  debug_par();
+  debug_gmx();
   
   if (bGrid) {
     /* Don't know why this all is... (DvdS 3/99) */
@@ -880,15 +880,15 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     if (fr->bDomDecomp) {
       sort_charge_groups(log,cr,cg_index,slab_index,fr->cg_cm,fr->Dimension);
     }
-    debug_par();
+    debug_gmx();
     
     fill_grid(log,fr->bDomDecomp,cg_index,
 	      grid,box,cgs->nr,fr->cg0,fr->hcg,fr->cg_cm);
-    debug_par();
+    debug_gmx();
 
     if (PAR(cr))
       mv_grid(cr,fr->bDomDecomp,cg_index,grid,nsb->workload);
-    debug_par();
+    debug_gmx();
       
     calc_elemnr(log,fr->bDomDecomp,cg_index,grid,start,end,cgs->nr);
     calc_ptrs(grid);
@@ -899,7 +899,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
       print_grid(debug,grid,fr->bDomDecomp,cg_index);
     }
   }
-  debug_par();
+  debug_gmx();
   
   /* Do the core! */
   if (bGrid)
@@ -912,7 +912,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     nsearch = ns_simple_core(log,fr,x,box,ngener,top,grps,md,box_size,
 			     bexcl,ns_buf);
   }
-  debug_par();
+  debug_gmx();
   
 #ifdef DEBUG
   pr_nsblock(log);

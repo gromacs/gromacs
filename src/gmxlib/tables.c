@@ -35,6 +35,7 @@ static char *SRCID_tables_c = "$Id$";
 #include "futil.h"
 #include "xvgr.h"
 #include "vec.h"
+#include "main.h"
 
 void spline(real x[],real y[],int n,real yp1,real ypn,real y2[])
 {
@@ -132,7 +133,6 @@ enum { etabLJ6, etabLJ12, etabLJ6David, etabLJ12David, etabDavid,
 bool bCoulomb[etabNR] = { FALSE, FALSE, FALSE, FALSE, TRUE,
 			  TRUE,  TRUE,  FALSE, FALSE, TRUE, FALSE }; 
 
-
 void read_table(int n0,int n,real x[],
 		real Vtab[],real Vtab2[],
 		real Ftab[],real Ftab2[],
@@ -195,11 +195,13 @@ void fill_table(int n0,int n,real x[],
   k_rf   = fr->k_rf;
   c_rf   = fr->c_rf;
   rffac2 = k_rf*2.0;
-  bTabTest = (getenv("TABTEST") != NULL);
+  bTabTest = (getenv("NOTABTEST") == NULL);
   if (bTabTest) {
     rmin  = pow(2*k_rf,-1.0/3.0);
     Vrmin = 1/rmin+k_rf*rmin*rmin;
     c_rf  = 0.0;
+    fprintf(stdlog,"Env. var. NOTABTEST is *not* set."
+	    " Truncating RF table at %g\n",rmin);
   }
   else {
     rmin  = rc;

@@ -266,7 +266,7 @@ void fill_grid(FILE *log,bool bDD,int cg_index[],
    * If not this will generate errors (SEGV). If you suspect this, turn on
    * DEBUG_PBC
    */
-  debug_par();
+  debug_gmx();
   for (i=cg0; (i<cg1); i++) {
     index = cg_index[i];
     ix    = dx*cg_cm[index][XX];
@@ -285,7 +285,7 @@ void fill_grid(FILE *log,bool bDD,int cg_index[],
     ci    = xyz2ci(nry,nrz,ix,iy,iz);
     cell_index[i] = ci;
   }
-  debug_par();
+  debug_gmx();
   for (; (i<ncg); i++) {
     cell_index[i]=NO_CELL;
   }

@@ -41,7 +41,6 @@ static char *SRCID_main_c = "$Id$";
 #include "futil.h"
 #include "filenm.h"
 
-/*#define DEBUGPAR */
 #define BUFSIZE	1024
 
 FILE *stdlog=NULL;
@@ -154,19 +153,17 @@ void open_log(char *lognm,t_commrec *cr)
   int  len,testlen,pid;
   char *buf,*host;
   
-#ifdef DEBUGPAR
-  debug_par();
-  fprintf(stderr,"OPEN_LOG: cr->pid = %d\n",cr->pid);
-#endif
+  debug_gmx();
+  
   /* Communicate the filename for logfile */
   if (cr->nprocs > 1) {
     if (MASTER(cr)) {
       len = strlen(lognm)+1;
       gmx_txs(cr->right,record(len));
       gmx_rxs(cr->left,record(testlen));
-#ifdef DEBUGPAR
-      fprintf(stderr,"cr->pid = %d, len = %d\n",cr->pid,testlen);
-#endif
+      
+      debug_gmx();
+      
       gmx_txs(cr->right,lognm,len);
       gmx_rxs(cr->left,lognm,len);
       if (len != testlen)
@@ -175,9 +172,8 @@ void open_log(char *lognm,t_commrec *cr)
     }
     else {
       gmx_rxs(cr->left,record(len));
-#ifdef DEBUGPAR
-      fprintf(stderr,"cr->pid = %d, len = %d\n",cr->pid,len);
-#endif
+      debug_gmx();
+      
       gmx_txs(cr->right,record(len));
       snew(lognm,len);
       gmx_rxs(cr->left,lognm,len);
@@ -185,9 +181,8 @@ void open_log(char *lognm,t_commrec *cr)
     }
   }
   
-#ifdef DEBUGPAR
-  debug_par();
-#endif
+  debug_gmx();
+
   /* Since log always ends with '.log' let's use this info */
   buf    = par_fn(lognm,efLOG,cr);
   stdlog = ffopen(buf,"w");
@@ -202,9 +197,7 @@ void open_log(char *lognm,t_commrec *cr)
   fprintf(stdlog,"Log file opened: pid %d, nprocs = %d, host = %s, process = %d\n",
 	  cr->pid,cr->nprocs,host ? host : "unknown",pid);
   fflush(stdlog);
-#ifdef DEBUGPAR
-  debug_par();
-#endif
+  debug_gmx();
 }
 
 static void comm_args(t_commrec *cr,int *argc,char ***argv)
@@ -243,7 +236,7 @@ static void comm_args(t_commrec *cr,int *argc,char ***argv)
     argv_tmp[*argc] = NULL;
     *argv = argv_tmp;
   }
-  debug_par();
+  debug_gmx();
 }
 
 t_commrec *init_par(int *argc,char ***argv_ptr)

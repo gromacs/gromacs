@@ -156,5 +156,7 @@ mgmxtest:	mgmxtest.o
 		$(LD) -o $@ $^  $(SYSLIBS) 
 compnl:		compnl.o
 		$(LD) -o $@ $^  $(SYSLIBS) 
+calcrf:		calcrf.o
+		$(LD) -o $@ $^  $(SYSLIBS) 
 
 include	Make.dep

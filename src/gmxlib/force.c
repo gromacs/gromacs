@@ -134,39 +134,33 @@ static void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
     }
     else
       *kappa = 0;
+
+    /* eps == 0 signals infinite dielectric */
+    if (eps == 0) {
+      *krf = 1/(2*Rc*Rc*Rc);
+      *crf = 0;
+    }
+    else {
+      k1      = (1+*kappa*Rc);
+      k2      = eps*sqr((real)(*kappa*Rc));
       
-    k1      = (1+*kappa*Rc);
-    k2      = eps*sqr((real)(*kappa*Rc));
-    krf0    = (eps-1)/((2*eps+1)*(Rc*Rc*Rc));
-    
+      *krf    = (((eps-1)*k1+k2)/((2*eps+1)*k1+k2)/(Rc*Rc*Rc));
+      *crf    = 1/Rc + *krf*Rc*Rc;
+    }
     *epsfac = ONE_4PI_EPS0;
-    *krf    = (((eps-1)*k1+k2)/((2*eps+1)*k1+k2)/(Rc*Rc*Rc));
-    *crf    = 1/Rc + *krf*Rc*Rc;
     rmin    = pow(*krf*2.0,-1.0/3.0);
     
-    if (getenv("NOCRF")) {
-      if (bFirst)
-	fprintf(log,"Warning: environment variable NOCRF set:\n"
-		"\tno energy correction for reaction fields\n");
-      *crf=0;
-    }
     if (bFirst) {
       if (eel == eelGRF)
 	please_cite(log,"Tironi95a");
       fprintf(log,"%s:\n"
-	      "epsRF = %10g, I   = %10g, volume = %10g, kappa = %10g\n"
-	      "rc    = %10g, krf = %10g, krf0   = %10g, crf   = %10g\n"
-	      "epsfac= %10g\n",
+	      "epsRF = %10g, I   = %10g, volume = %10g, kappa  = %10g\n"
+	      "rc    = %10g, krf = %10g, crf    = %10g, epsfac = %10g\n",
 	      eel_names[eel],eps,I,vol,*kappa,Rc,*krf,krf0,*crf,*epsfac);
       fprintf(log,
 	      "The electrostatics potential has its minimum at rc = %g\n",
 	      rmin);
-      rrc  = Rc*Rc/rmin;
-      kkrf = (((eps-1)*k1+k2)/((2*eps+1)*k1+k2)/(rrc*rrc*rrc));
-      rmin = pow(kkrf*2.0,-1.0/3.0);
-      fprintf(log,"Double testing: rrc = %g, kkrf = %g, rmin = %g\n",
-	      rrc,kkrf,rmin);
-	      
+      
       bFirst=FALSE;
     }
   }
@@ -174,7 +168,6 @@ static void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
     /* If we're not using a reaction field, set the factor to 0
      * and multiply the dielectric constant by 1/eps
      */
-    krf0    = 0.0;
     *kappa  = 0.0;
     *krf    = 0.0;
     *crf    = 0.0;

@@ -549,12 +549,12 @@ char *opt2fn_null(char *opt,int nfile,t_filenm fnm[])
   int i;
   
   for(i=0; (i<nfile); i++)
-    if (strcmp(opt,fnm[i].opt)==0)
+    if (strcmp(opt,fnm[i].opt)==0) {
       if (is_opt(fnm[i]) && !is_set(fnm[i]))
 	return NULL;
       else
 	return fnm[i].fn;
-
+    }
   fprintf(stderr,"No option %s\n",opt);
   return NULL;
 }
