@@ -45,13 +45,14 @@ static char *SRCID_pppm_c = "$Id$";
 #include "lrutil.h"
 #include "mdrun.h"
 #include "fftgrid.h"
+#include "pme.h"
 
 #define llim  (-1)
 #define ulim   (1)
 #define llim2 (-3)
 #define ulim2  (3)
 
-static void calc_invh(rvec box,int nx,int ny,int nz,rvec invh)
+void calc_invh(rvec box,int nx,int ny,int nz,rvec invh)
 {
   invh[XX] = nx/box[XX];
   invh[YY] = ny/box[YY];
@@ -144,7 +145,7 @@ static void calc_nxyz(int nx,int ny,int nz,
 }
 	
 static void spread_q(FILE *log,bool bVerbose,
-		     int start,int end,
+		     int start,int nr,
 		     rvec x[],real charge[],rvec box,
 		     t_fftgrid *grid,t_nrnb *nrnb)
 {
@@ -160,10 +161,10 @@ static void spread_q(FILE *log,bool bVerbose,
   int    i,iX,iY,iZ,index;
   int    jx,jy,jz,jcx,jcy,jcz;
   int    nxyz;
-  int    nx,ny,nz,la1,la2,la12;
-  t_fft_tp *ptr;
+  int    nx,ny,nz,la2,la12;
+  t_fft_r *ptr;
   
-  unpack_fftgrid(grid,&nx,&ny,&nz,&la1,&la2,&la12,&ptr);
+  unpack_fftgrid(grid,&nx,&ny,&nz,&la2,&la12,TRUE,&ptr);
   
   calc_invh(box,nx,ny,nz,invh);
 
@@ -177,7 +178,7 @@ static void spread_q(FILE *log,bool bVerbose,
     bFirst = FALSE;
   }
 
-  for(i=start; (i<end); i++) {
+  for(i=start; (i<start+nr); i++) {
     qi=charge[i];
 
     /* Each charge is spread over the nearest 27 grid cells,
@@ -204,12 +205,12 @@ static void spread_q(FILE *log,bool bVerbose,
 	    jcz   = nnz[iZ + jz];
 	    index = INDEX(jcx,jcy,jcz);
 	    qwt   = qi*WXYZ[nxyz];
-	    GR_INC(ptr[index],qwt);
+	    grid->ptr[index]+=qwt;
 #ifdef DEBUG
 	    qt   += qwt;
 	    if (bVerbose)
 	      fprintf(log,"spread %4d %2d %2d %2d  %10.3e, weight=%10.3e\n",
-		      index,jcx,jcy,jcz,GR_VALUE(ptr[index]),WXYZ[nxyz]);
+		      index,jcx,jcy,jcz,grid->ptr[index],WXYZ[nxyz]);
 #endif
 	  }
 	}
@@ -219,14 +220,14 @@ static void spread_q(FILE *log,bool bVerbose,
 #endif
     }
   }
-  inc_nrnb(nrnb,eNR_SPREADQ,9*(end-start));
-  inc_nrnb(nrnb,eNR_WEIGHTS,3*(end-start));
+  inc_nrnb(nrnb,eNR_SPREADQ,9*nr);
+  inc_nrnb(nrnb,eNR_WEIGHTS,3*nr);
 }
 
 real gather_inner(int JCXYZ[],real WXYZ[],int ixw[],int iyw[],int izw[],
-		  int la1,int la2,int la12,
+		  int la2,int la12,
 		  real c1x,real c1y,real c1z,real c2x,real c2y,real c2z,
-		  real qi,rvec f,t_fft_tp ptr[])
+		  real qi,rvec f,t_fft_r ptr[])
 {
   real pi,fX,fY,fZ,weight;
   int  jxyz,m,jcx,jcy,jcz;
@@ -249,21 +250,21 @@ real gather_inner(int JCXYZ[],real WXYZ[],int ixw[],int iyw[],int izw[],
     jcz0   = izw[jcz];
 
     /* Electrostatic Potential ! */
-    pi += weight * GR_VALUE(ptr[INDEX(jcx0,jcy0,jcz0)]);
+    pi += weight * ptr[INDEX(jcx0,jcy0,jcz0)];
 
     /* Forces */
-    fX += weight * ((c1x*(GR_VALUE(ptr[INDEX(ixw[jcx-1],jcy0,jcz0)]) - 
-			  GR_VALUE(ptr[INDEX(ixw[jcx+1],jcy0,jcz0)]) )) +
-		    (c2x*(GR_VALUE(ptr[INDEX(ixw[jcx-2],jcy0,jcz0)]) - 
-			  GR_VALUE(ptr[INDEX(ixw[jcx+2],jcy0,jcz0)]) )));
-    fY += weight * ((c1y*(GR_VALUE(ptr[INDEX(jcx0,iyw[jcy-1],jcz0)]) -
-			  GR_VALUE(ptr[INDEX(jcx0,iyw[jcy+1],jcz0)]) ))  +
-		    (c2y*(GR_VALUE(ptr[INDEX(jcx0,iyw[jcy-2],jcz0)]) -
-			  GR_VALUE(ptr[INDEX(jcx0,iyw[jcy+2],jcz0)]) )));
-    fZ += weight * ((c1z*(GR_VALUE(ptr[INDEX(jcx0,jcy0,izw[jcz-1])]) -
-			  GR_VALUE(ptr[INDEX(jcx0,jcy0,izw[jcz+1])]) ))  +
-		    (c2z*(GR_VALUE(ptr[INDEX(jcx0,jcy0,izw[jcz-2])]) -
-			  GR_VALUE(ptr[INDEX(jcx0,jcy0,izw[jcz+2])]) )));
+    fX += weight * ((c1x*(ptr[INDEX(ixw[jcx-1],jcy0,jcz0)] - 
+			  ptr[INDEX(ixw[jcx+1],jcy0,jcz0)] )) +
+		    (c2x*(ptr[INDEX(ixw[jcx-2],jcy0,jcz0)] - 
+			  ptr[INDEX(ixw[jcx+2],jcy0,jcz0)] )));
+    fY += weight * ((c1y*(ptr[INDEX(jcx0,iyw[jcy-1],jcz0)] -
+			  ptr[INDEX(jcx0,iyw[jcy+1],jcz0)] ))  +
+		    (c2y*(ptr[INDEX(jcx0,iyw[jcy-2],jcz0)] -
+			  ptr[INDEX(jcx0,iyw[jcy+2],jcz0)] )));
+    fZ += weight * ((c1z*(ptr[INDEX(jcx0,jcy0,izw[jcz-1])] -
+			  ptr[INDEX(jcx0,jcy0,izw[jcz+1])] ))  +
+		    (c2z*(ptr[INDEX(jcx0,jcy0,izw[jcz-2])] -
+			  ptr[INDEX(jcx0,jcy0,izw[jcz+2])] )));
   }
   f[XX] += qi*fX;
   f[YY] += qi*fY;
@@ -273,7 +274,7 @@ real gather_inner(int JCXYZ[],real WXYZ[],int ixw[],int iyw[],int izw[],
 }
 
 static real gather_f(FILE *log,bool bVerbose,
-		     int start,int end,rvec x[],rvec f[],real charge[],rvec box,
+		     int start,int nr,rvec x[],rvec f[],real charge[],rvec box,
 		     real pot[],t_fftgrid *grid,rvec beta,t_nrnb *nrnb)
 {
   static bool bFirst=TRUE;
@@ -288,10 +289,10 @@ static real gather_f(FILE *log,bool bVerbose,
   real   c1x,c1y,c1z,c2x,c2y,c2z;
   int    ixw[7],iyw[7],izw[7];
   int    ll;
-  int    nx,ny,nz,la1,la2,la12;
-  t_fft_tp *ptr;
+  int    nx,ny,nz,la2,la12;
+  t_fft_r *ptr;
   
-  unpack_fftgrid(grid,&nx,&ny,&nz,&la1,&la2,&la12,&ptr);
+  unpack_fftgrid(grid,&nx,&ny,&nz,&la2,&la12,TRUE,&ptr);
   
   calc_invh(box,nx,ny,nz,invh);
   
@@ -326,7 +327,7 @@ static real gather_f(FILE *log,bool bVerbose,
   }
 
   energy=0.0;  	  
-  for(i=start; (i<end); i++) {
+  for(i=start; (i<start+nr); i++) {
     /* Each charge is spread over the nearest 27 grid cells,
      * thus we loop over -1..1 in X,Y and Z direction
      * We apply the TSC (triangle shaped charge)
@@ -342,7 +343,7 @@ static real gather_f(FILE *log,bool bVerbose,
     }
     
     qi      = charge[i];
-    pi      = gather_inner(JCXYZ,WXYZ,ixw,iyw,izw,la1,la2,la12,
+    pi      = gather_inner(JCXYZ,WXYZ,ixw,iyw,izw,la2,la12,
 			   c1x,c1y,c1z,c2x,c2y,c2z,
 			   qi,f[i],ptr);
     
@@ -350,8 +351,8 @@ static real gather_f(FILE *log,bool bVerbose,
     pot[i]  = pi;
   }
   
-  inc_nrnb(nrnb,eNR_GATHERF,27*(end-start));
-  inc_nrnb(nrnb,eNR_WEIGHTS,3*(end-start));
+  inc_nrnb(nrnb,eNR_GATHERF,27*nr);
+  inc_nrnb(nrnb,eNR_WEIGHTS,3*nr);
   
   return energy*0.5;
 }
@@ -360,18 +361,31 @@ void convolution(FILE *fp,bool bVerbose,t_fftgrid *grid,real ***ghat)
 {
   int      i,j,k,index;
   real     gk;
-  int      nx,ny,nz,la1,la2,la12;
-  t_fft_tp *ptr;
+  int      nx,ny,nz,la2,la12;
+  t_fft_c  *ptr;
   int      *nTest;
+  int jstart,jend;
   
-  unpack_fftgrid(grid,&nx,&ny,&nz,&la1,&la2,&la12,&ptr);
+  unpack_fftgrid(grid,&nx,&ny,&nz,&la2,&la12,FALSE,(t_fft_r **)&ptr);
+
+#ifdef USE_MPI
+    jstart=grid->pfft.local_y_start_after_transpose;
+    jend=jstart+grid->pfft.local_ny_after_transpose;
+#else
+    jstart=0;
+    jend=ny;
+#endif
   
   snew(nTest,grid->nptr);
   for(i=0; (i<nx); i++) {
-    for(j=0; (j<ny); j++) {
-      for(k=0; (k<nz); k++) {
+      for(j=jstart; (j<jend); j++) { /* local cells */
+	  for(k=0;k<(nz/2+1); k++) {
 	gk    = ghat[i][j][k];
+#ifdef USE_MPI
+	      index = INDEX(j,i,k);
+#else
 	index = INDEX(i,j,k);
+#endif
 	ptr[index].re *= gk;
 	ptr[index].im *= gk;
 	nTest[index]++;
@@ -379,9 +393,13 @@ void convolution(FILE *fp,bool bVerbose,t_fftgrid *grid,real ***ghat)
     }
   }
   for(i=0; (i<nx); i++) {
-    for(j=0; (j<ny); j++) {
-      for(k=0; (k<nz); k++) {
+    for(j=jstart; (j<jend); j++) {
+      for(k=0; k<(nz/2+1); k++) {
+#ifdef USE_MPI
+	index = INDEX(j,i,k);
+#else
 	index = INDEX(i,j,k);
+#endif
 	if (nTest[index] != 1)
 	  fprintf(fp,"Index %d sucks, set %d times\n",index,nTest[index]);
       }
@@ -424,11 +442,6 @@ void solve_pppm(FILE *fp,t_commrec *cr,
   inc_nrnb(nrnb,eNR_CONV,ntot);
 }
 
-static void sum_qgrid(FILE *log,bool bVerbose,t_commrec *cr,
-		      t_nsborder *nsb,t_fftgrid *grid)
-{
-  ;
-}
 
 static rvec      beta;
 static real      ***ghat=NULL;
@@ -445,7 +458,7 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
 
   if (cr != NULL) {
     if (cr->nprocs > 1)
-      fatal_error(0,"No parallel PPPM yet...");
+	fprintf(log,"Initializing parallel PPPM.\n");
   }
   fprintf(log,"Will use the PPPM algorithm for long-range electrostatics\n");
  
@@ -503,7 +516,7 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
       pr_scalar_gk("optimghat.xvg",nx,ny,nz,box,ghat);
   }
   /* Now setup the FFT things */
-  grid = mk_fftgrid(log,PAR(cr),nx,ny,nz);
+  grid = mk_fftgrid(log,PAR(cr),nx,ny,nz,ir->bOptFFT);
 }
 
 real do_pppm(FILE *log,       bool bVerbose,
@@ -513,28 +526,32 @@ real do_pppm(FILE *log,       bool bVerbose,
 	     t_nsborder *nsb, t_nrnb *nrnb)
 {
   real    ener;
-  int     start,end;
+  int     start,nr;
   
   start = START(nsb);
-  end   = start+HOMENR(nsb);
+  nr   = HOMENR(nsb);
   
   /* Make the grid empty */
   clear_fftgrid(grid);
   
   /* First step: spreading the charges over the grid. */
-  spread_q(log,bVerbose,start,end,x,charge,box,grid,nrnb);
+  spread_q(log,bVerbose,start,nr,x,charge,box,grid,nrnb);
   
   /* In the parallel code we have to sum the grids from neighbouring processors */
   if (PAR(cr))
-    sum_qgrid(log,bVerbose,cr,nsb,grid);
+    sum_qgrid(log,bVerbose,cr,nsb,grid,TRUE);
   
   /* Second step: solving the poisson equation in Fourier space */
-  solve_pppm(log,NULL,grid,ghat,box,bVerbose,nrnb);
+  solve_pppm(log,cr,grid,ghat,box,bVerbose,nrnb);
+  
+  /* In the parallel code we have to sum once again... */
+  if (PAR(cr))
+    sum_qgrid(log,bVerbose,cr,nsb,grid,FALSE);
   
   /* Third and last step: gather the forces, energies and potential
    * from the grid.
    */
-  ener=gather_f(log,bVerbose,start,end,x,f,charge,box,phi,grid,beta,nrnb);
+  ener=gather_f(log,bVerbose,start,nr,x,f,charge,box,phi,grid,beta,nrnb);
   
   return ener;
 }
@@ -571,7 +588,7 @@ real do_opt_pppm(FILE *log,       bool bVerbose,
   spread_q(log,bVerbose,0,natoms,x,charge,box,grid,nrnb);
   
   /* Second step: solving the poisson equation in Fourier space */
-  solve_pppm(log,NULL,grid,ghat,box,bVerbose,nrnb);
+  solve_pppm(log,cr,grid,ghat,box,bVerbose,nrnb);
   
   /* Third and last step: gather the forces, energies and potential
    * from the grid.
