@@ -728,8 +728,12 @@ void push_excl(char *line, t_block2 *b2)
     n=sscanf(line,format,&j);
     if (n == 1) {
       if ((1 <= j) && (j <= b2->nr)) {
+	j--;
 	srenew(b2->a[i],++(b2->nra[i]));
-	b2->a[i][b2->nra[i]-1]=j-1;
+	b2->a[i][b2->nra[i]-1]=j;
+	/* also add the reverse exclusion! */
+	srenew(b2->a[j],++(b2->nra[j]));
+	b2->a[j][b2->nra[j]-1]=i;
 	strcat(base,"%*d");
       }
       else 
