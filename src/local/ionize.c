@@ -283,7 +283,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 {
   static FILE  *xvg,*ion;
   static char  *leg[] = { "Probability", "Primary Ionization", "Integral over PI", "KHole-Decay", "Integral over KD" };
-  static bool  bFirst = TRUE,bImpulse = TRUE,bExtraKinetic=TRUE;
+  static bool  bFirst = TRUE,bImpulse = TRUE,bExtraKinetic=FALSE;
   static real  t0,imax,width,inv_nratoms,rho,nphot,nkdecay,nkd_tot,
     ztot,protein_radius;
   static int   seed,dq_tot,ephot;
@@ -328,11 +328,8 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     nkd_tot = 0;
     inv_nratoms = 1.0/md->nr;
 
-    if (getenv("NOEKIN") != NULL)
-      bExtraKinetic = FALSE;
-    
-    if (getenv("NOIMPULSE") != NULL)
-      bImpulse = FALSE;
+    bExtraKinetic = (getenv("EXTRAEKIN") != NULL);
+    bImpulse      = (getenv("NOIMPULSE") == NULL);
     
     /* compute total charge of the system */
     ztot = 0;

@@ -503,7 +503,8 @@ rvec **read_whole_trj(char *fn,int isize,atom_id index[],int skip,int *nframe,
     }
     i++;
   } while (read_next_x(status,&t,*natom,x,box));
-  fprintf(stderr,"Allocated %d bytes for frames\n",max_nf*isize*sizeof(**xx));
+  fprintf(stderr,"Allocated %lu bytes for frames\n",
+	  (unsigned long) (max_nf*isize*sizeof(**xx)));
   fprintf(stderr,"Read %d frames from trajectory %s\n",i0,fn);
   *nframe = i0;
   sfree(x);

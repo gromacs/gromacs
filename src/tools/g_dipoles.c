@@ -391,7 +391,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   /* Correlation stuff */ 
   if (bCorr) {
     if (bAverCorr) {
-      fprintf(stderr,"Going to malloc %u bytes!\n",
+      fprintf(stderr,"Going to malloc %lu bytes!\n",
 	      DIM*nframes*sizeof(muall[0][0]));
       snew(muall,1);
       snew(muall[0],nframes*DIM);
@@ -401,7 +401,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
       }
     }
     else {
-      fprintf(stderr,"Going to malloc %u bytes!\n",
+      fprintf(stderr,"Going to malloc %lu bytes!\n",
 	      gnx*DIM*nframes*sizeof(muall[0][0]));
       snew(muall,gnx);
       for(i=0; (i<gnx); i++)
