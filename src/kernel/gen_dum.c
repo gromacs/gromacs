@@ -500,6 +500,7 @@ void do_dummies(int nrtp, t_restp rtp[],
   
   /* now renumber all the interactions, including 'newbonds': */
   for (ftype=0; ftype<=F_NRE; ftype++) {
+    /* this is so we don't have to write the same code for newbonds */
     if (ftype==F_NRE) {
       params=newbonds;
       nral=NRAL(F_BONDS);
@@ -620,8 +621,9 @@ void clean_dum_angles(t_params *psa, int natom,
       }
     }
     
-    /* keep all angles with no dummies in them */
-    if (ndum==0)
+    /* keep all angles with no dummies in them or 
+       with dummies with more than 3 constr. atoms */
+    if ( ndum == 0 && dumnral > 3 )
       bKeep=TRUE;
     
     /* check if all non-dummy atoms are used in construction: */
@@ -640,7 +642,7 @@ void clean_dum_angles(t_params *psa, int natom,
       }
     }
     
-    if ( ! bAll3FAD || ! bFirstTwo && dumnral<=3 ) {
+    if ( ! ( bAll3FAD && bFirstTwo ) )
       /* check if all constructing atoms are bound together */
       for (m=0; m<dumnral && !bKeep; m++) { /* all constr. atoms */
 	at1 = dumatoms[m];
@@ -655,7 +657,6 @@ void clean_dum_angles(t_params *psa, int natom,
 	if (!bPresent)
 	  bKeep=TRUE;
       }
-    }
     
     if ( bKeep ) {
       /* now copy the angle to the new array */
