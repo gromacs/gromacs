@@ -618,7 +618,7 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,real *lambda,
 
 int open_tpx(char *fn,char *mode)
 {
-  return fio_open(fn,m);
+  return fio_open(fn,mode);
 }    
  
 void close_tpx(int fp)

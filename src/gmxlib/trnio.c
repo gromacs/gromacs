@@ -244,7 +244,7 @@ bool fread_htrn(int fp,t_trnheader *trn,rvec *box,rvec *x,rvec *v,rvec *f)
 
 int open_trn(char *fn,char *mode)
 {
-  return fio_open(fn,m);
+  return fio_open(fn,mode);
 }
 
 void close_trn(int fp)
