@@ -216,7 +216,7 @@ int main(int argc,char *argv[])
   }
   
   if (opt2bSet("-ei",NFILE,fnm)) 
-    ed_open(NFILE,fnm,&edyn);
+    ed_open(NFILE,fnm,&edyn,cr);
     
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
   Flags = Flags | (bSepDVDL ? MD_SEPDVDL : 0);
