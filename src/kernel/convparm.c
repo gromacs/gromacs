@@ -166,13 +166,13 @@ static void assign_param(t_functype ftype,t_iparams *new,
 }
 
 static int enter_params(t_idef *idef, t_functype ftype,
-			real forceparams[MAXFORCEPARAM],int start,bool bNB)
+			real forceparams[MAXFORCEPARAM],int start,bool bAppend)
 {
   t_iparams new;
   int       type;
   
   assign_param(ftype,&new,forceparams);
-  if (!bNB) {
+  if (!bAppend) {
     for (type=start; (type<idef->ntypes); type++) {
       if (idef->functype[type]==ftype) {
 	if (memcmp(&new,&idef->iparams[type],(size_t)sizeof(new)) == 0)
@@ -198,16 +198,16 @@ static void append_interaction(t_ilist *ilist,
 {
   int i,where1;
   
-  where1=ilist->nr;
-  ilist->nr+=1+nral;
-  /* srenew(ilist->iatoms,ilist->nr); */
+  where1     = ilist->nr;
+  ilist->nr += nral+1;
+
   ilist->iatoms[where1++]=type;
-  for (i=0; i<nral; i++) 
+  for (i=0; (i<nral); i++) 
     ilist->iatoms[where1++]=a[i];
 }
 
 static void enter_function(t_params *p,t_functype ftype,
-                           t_idef *idef,int *maxtypes,bool bNB)
+                           t_idef *idef,int *maxtypes,bool bNB,bool bAppend)
 {
   int     k,type,nr,nral,delta,start;
   t_ilist *il;
@@ -228,7 +228,7 @@ static void enter_function(t_params *p,t_functype ftype,
 	fprintf(debug,"%s, line %d: srenewed idef->functype and idef->iparams to %d\n",
 		__FILE__,__LINE__,*maxtypes);
     }
-    type = enter_params(idef,ftype,p->param[k].c,start,bNB);
+    type = enter_params(idef,ftype,p->param[k].c,start,bAppend);
     if (!bNB)
       append_interaction(il,type,nral,p->param[k].a);
   }
@@ -261,14 +261,18 @@ void convert_params(int atnr,t_params nbtypes[],
     idef->il[i].nr=0;
     idef->il[i].iatoms=NULL;
   }
-  enter_function(&(nbtypes[F_LJ]),  (t_functype)F_LJ,  idef,&maxtypes,TRUE);
-  enter_function(&(nbtypes[F_BHAM]),(t_functype)F_BHAM,idef,&maxtypes,TRUE);
-  enter_function(&(nbtypes[F_POSRES]),(t_functype)F_POSRES,idef,&maxtypes,TRUE);
+  enter_function(&(nbtypes[F_LJ]),  (t_functype)F_LJ,  idef,
+		 &maxtypes,TRUE,TRUE);
+  enter_function(&(nbtypes[F_BHAM]),(t_functype)F_BHAM,idef,
+		 &maxtypes,TRUE,TRUE);
+  enter_function(&(plist[F_POSRES]),(t_functype)F_POSRES,idef,
+		 &maxtypes,FALSE,TRUE);
+		 
   for(i=0; (i<F_NRE); i++) {
     flags = interaction_function[i].flags;
     if ((i != F_LJ) && (i != F_BHAM) && (i != F_POSRES) &&
 	((flags & IF_BOND) || (flags & IF_DUMMY) || (flags & IF_CONSTRAINT)))
-      enter_function(&(plist[i]),(t_functype)i,idef,&maxtypes,FALSE);
+      enter_function(&(plist[i]),(t_functype)i,idef,&maxtypes,FALSE,FALSE);
   }
   if (debug)
     fprintf(debug,"%s, line %d: There are %d functypes in idef\n",
