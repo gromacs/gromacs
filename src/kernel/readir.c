@@ -291,10 +291,10 @@ void get_ir(char *mdparin,char *mdparout,
   ITYPE ("gen_seed",    opts->seed,     173529);
   
   /* Optimization */
-  CCTYPE ("OPTIMIZATIONS FOR WATER MODELS");
-  CTYPE ("Name of water in the index file");
+  CCTYPE ("OPTIMIZATIONS FOR SOLVENT MODELS");
+  CTYPE ("Type of solvent optimization");
   STYPE ("watertype",   opts->watertype,NULL);
-  CTYPE ("Number of atoms in water model. (Not implemented for non-three atom models)");
+  CTYPE ("Number of atoms in solvent model. (Not implemented for non-three atom models)");
   ITYPE ("nwatoms",     ir->nwatoms,    3);
 
   /* Shake stuff */
