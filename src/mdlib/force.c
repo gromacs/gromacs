@@ -660,7 +660,7 @@ void force(FILE       *fp,     int        step,
       break;
     case eelPME:
       Vlr = do_pme(fp,FALSE,ir,x,fr->flr,md->chargeA,
-		   box_size,cr,nsb,nrnb,lr_vir,fr->ewaldcoeff);
+		   box,cr,nsb,nrnb,lr_vir,fr->ewaldcoeff);
       break;
     case eelEWALD:
       Vlr = do_ewald(fp,FALSE,ir,x,fr->flr,md->chargeA,
