@@ -137,26 +137,16 @@ static void predict_shells(FILE *log,rvec x[],rvec v[],real dt,
   }
 }
 
-static void print_epot(FILE *fp,
-		       int mdstep,int count,real step,real epot,real df,
-		       bool bOptim,bool bLast)
+static void print_epot(FILE *fp,int mdstep,int count,real step,real epot,
+		       real df,bool bLast)
 {
-  if (bOptim) {
-    if (bLast)
-      fprintf(fp,"MDStep=%5d    EPot: %12.8e\n",mdstep,epot);
-    else if (count > 0)
-      fprintf(fp,"MDStep=%5d/%2d lamb: %6g, RMSF: %12.8e\n",
-	      mdstep,count,step,df);
-  }
-  else {
-    fprintf(fp,"MDStep=%5d/%2d lamb: %6g, EPot: %12.8e",
-	    mdstep,count,step,epot);
-    
-    if (count != 0)
-      fprintf(fp,", rmsF: %12.8e\n",df);
-    else
-      fprintf(fp,"\n");
-  }
+  fprintf(fp,"MDStep=%5d/%2d lamb: %6g, EPot: %12.8e",
+	  mdstep,count,step,epot);
+  
+  if (count != 0)
+    fprintf(fp,", rmsF: %12.8e\n",df);
+  else
+    fprintf(fp,"\n");
 }
 
 
@@ -208,41 +198,6 @@ static void dump_shells(FILE *fp,rvec x[],rvec f[],real ftol,int ns,t_shell s[])
   }
 }
 
-void set_nbfmask(t_forcerec *fr,t_mdatoms *md,int ngrp,bool bMask)
-{
-  static bool *bShell=NULL;
-  int    i,j,gid;
-
-  /* THIS CODE IS OUT OF ORDER */
-  return;
-    
-  if (!bShell) {
-    snew(bShell,ngrp);
-    /* Loop over atoms */
-    for(i=0; (i<md->nr); i++) 
-      /* If it is a shell, then set the value to TRUE */
-      if (md->ptype[i] == eptShell) {
-	gid = md->cENER[i];
-	assert(gid < ngrp);
-	assert(gid >= 0);
-	bShell[gid] = TRUE;
-      }
-  }
-  
-  /* Loop over all the energy groups */
-  for(i=0; (i<ngrp); i++)
-    for(j=i; (j<ngrp); j++) {
-      gid = GID(i,j,ngrp);
-      /* If either of the groups denote a group with shells, then */
-      /*
-          if (bShell[i] || bShell[j])
-	fr->bMask[gid] = bMask;
-      else
-	fr->bMask[gid] = !bMask;
-      */
-    }
-}
-
 int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 int mdstep,t_parm *parm,bool bDoNS,bool bStopCM,
 		 t_topology *top,real ener[],
@@ -253,7 +208,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 char *traj,real t,real lambda,
 		 int natoms,matrix box,bool *bConverged)
 {
-  static bool bFirst=TRUE,bOptim=FALSE;
+  static bool bFirst=TRUE;
   static rvec *pos[2],*force[2];
   real   Epot[2],df[2],Estore[F_NRE];
   tensor my_vir[2],vir_last;
@@ -271,11 +226,10 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   if (bFirst) {
     /* Allocate local arrays */
     for(i=0; (i<2); i++) {
-      snew(pos[i],nsb->natoms);
+      if (nshell > 0)
+	snew(pos[i],nsb->natoms);
       snew(force[i],nsb->natoms);
     }
-    bOptim = (getenv("SHELL_OPTIM") != NULL);
-    fprintf(log,"bOptim = %s\n",bool_names[bOptim]);
     bFirst = FALSE;
   }
   
@@ -288,8 +242,6 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 md->massT,(mdstep == 0));
    
   /* Calculate the forces first time around */
-  if (bOptim)
-    set_nbfmask(fr,md,parm->ir.opts.ngener,TRUE);
   clear_mat(my_vir[Min]);
   do_force(log,cr,parm,nsb,my_vir[Min],mdstep,nrnb,
 	   top,grps,x,v,force[Min],buf,md,ener,bVerbose && !PAR(cr),
@@ -303,19 +255,18 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   }
     
 #ifdef DEBUG
-  if (debug && 0) {
+  if (debug) {
     pr_rvecs(debug,0,"force0",force[Min],md->nr);
-    calc_f_dev(md->nr,md->chargeA,x,force[Min],&top->idef,&xiH,&xiS);
-    fprintf(log,"xiH = %e, xiS = %e\n",xiH,xiS);
   }
 #endif
-  /* Copy x to pos[Min] & pos[Try]: during minimization only the
-   * shell positions are updated, therefore the other particles must
-   * be set here.
-   */
-  memcpy(pos[Min],x,nsb->natoms*sizeof(x[0]));
-  memcpy(pos[Try],x,nsb->natoms*sizeof(x[0]));
-
+  if (nshell > 0) {
+    /* Copy x to pos[Min] & pos[Try]: during minimization only the
+     * shell positions are updated, therefore the other particles must
+     * be set here.
+     */
+    memcpy(pos[Min],x,nsb->natoms*sizeof(x[0]));
+    memcpy(pos[Try],x,nsb->natoms*sizeof(x[0]));
+  }
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(parm->ir.opts),grps,ener);
   Epot[Min]=ener[F_EPOT];
@@ -326,7 +277,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   step=step0;
   
   if (bVerbose && MASTER(cr) && (nshell > 0))
-    print_epot(stdout,mdstep,0,step,Epot[Min],df[Min],bOptim,FALSE);
+    print_epot(stdout,mdstep,0,step,Epot[Min],df[Min],FALSE);
 
   if (debug) {
     fprintf(debug,"%17s: %14.10e\n",
@@ -348,7 +299,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     /* New positions, Steepest descent */
     shell_pos_sd(log,step,pos[Min],pos[Try],force[Min],nshell,shells); 
 
-    if (debug && 0) {
+    if (debug) {
       pr_rvecs(debug,0,"pos[Try] b4 do_force",pos[Try] + start,homenr);
       pr_rvecs(debug,0,"pos[Min] b4 do_force",pos[Min] + start,homenr);
     }
@@ -376,12 +327,13 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
       gmx_sum(1,&Epot[Try],cr);
 
     if (bVerbose && MASTER(cr))
-      print_epot(stdout,mdstep,count,step,Epot[Try],df[Try],bOptim,FALSE);
+      print_epot(stdout,mdstep,count,step,Epot[Try],df[Try],FALSE);
       
     *bConverged = (df[Try] < ftol);
     bDone       = *bConverged || (step < 0.5);
     
-    if ((Epot[Try] < Epot[Min])) {
+    /* if ((Epot[Try] < Epot[Min])) { */
+    if ((df[Try] < df[Min])) {
       if (debug)
 	fprintf(debug,"Swapping Min and Try\n");
       Min  = Try;
@@ -393,53 +345,18 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   if (MASTER(cr) && !bDone) 
     fprintf(stderr,"EM did not converge in %d steps\n",number_steps);
   
-  /* Now compute the forces on the other particles (atom-atom) */
-  if (bOptim) {
-    /* Store the old energies */
-    for(i=0; (i<F_NRE); i++)
-      Estore[i] = ener[i];
-    /* Set the mask to only do atom-atom interactions */
-    set_nbfmask(fr,md,parm->ir.opts.ngener,FALSE);
-    /* Compute remaining forces and energies now */
-    do_force(log,cr,parm,nsb,vir_last,1,nrnb,
-	     top,grps,pos[Try],v,force[Try],buf,md,ener,bVerbose && !PAR(cr),
-	     lambda,graph,FALSE,TRUE,fr);
-    /* Sum the potential energy terms from group contributions */
-    sum_epot(&(parm->ir.opts),grps,ener);
-    
-    /* Sum over processors */
-    if (PAR(cr)) 
-      gmx_sum(NEPOT,Epot,cr);
-      
-    /* Add the stored energy contributions */
-    for(i=0; (i<F_NRE); i++)
-      ener[i] += Estore[i];
-      
-    /* Sum virial tensors */
-    m_add(vir_last,my_vir[Min],vir_part);
-    
-    /* Last output line */
-    if (bVerbose && MASTER(cr)) {
-      Epot[Try]=ener[F_EPOT];
-      print_epot(stdout,mdstep,count,step,Epot[Try],0.0,bOptim,TRUE);
-    }
-    /* Sum the forces from the previous calc. (shells only) 
-     * and the current calc (atoms only)
-     */
-    for(i=0; (i<nsb->natoms); i++)
-      rvec_add(force[Try][i],force[Min][i],f[i]);
-  }
-  else {
-    /* Parallelise this one! */
-    memcpy(f,force[Min],nsb->natoms*sizeof(f[0]));
-    /* CHECK VIRIAL */
-    copy_mat(my_vir[Min],vir_part);
-  }
+  /* Parallelise this one! */
+  memcpy(f,force[Min],nsb->natoms*sizeof(f[0]));
+  /* CHECK VIRIAL */
+  copy_mat(my_vir[Min],vir_part);
+  
   if (debug) {
     sprintf(cbuf,"myvir step %d",count);
     pr_rvecs(debug,0,cbuf,vir_part,DIM);
   }
-  memcpy(x,pos[Min],nsb->natoms*sizeof(x[0]));
+  if (nshell > 0)
+    memcpy(x,pos[Min],nsb->natoms*sizeof(x[0]));
+    
   return count; 
 }
 
