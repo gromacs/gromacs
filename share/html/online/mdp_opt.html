@@ -109,7 +109,7 @@ is done every once in a while, this is determined by
 <b><A HREF="#em">nstcgsteep</A></b>.
 <dt><b>sd</b>
 <dd> A leap-frog stochastic dynamics integrator. The temperature for
-one or more groups of atoms (<b><A HREF="#tc">tcgrps</A></b>)
+one or more groups of atoms (<b><A HREF="#tc">tc_grps</A></b>)
 is set with <b><A HREF="#tc">ref_t</A></b>,
 the inverse friction constant for each group is set with
 <b><A HREF="#tc">tau_t</A></b>. The parameter <b><A HREF="#tc">tcoupl</A></b>
@@ -146,11 +146,12 @@ rotation removal can only be done on the whole system
 
 <dl>
 <dt><h4>bd_temp: </b>(300) [K]</h4>
-<dd>temperature in ld run (controls thermal noise level)
+<dd>temperature in Brownian dynamics run (controls thermal noise level)
 <dt><h4>bd_fric: </b>(0) [amu ps<sup>-1</sup>]</h4>
-<dd>ld friction coefficient
+<dd>Brownian dynamics friction coefficient
 <dt><h4>ld_seed: </b>(1993) [integer]</h4>
-<dd>used to initialize random generator for thermal noise,
+<dd>used to initialize random generator for thermal noise
+for stochastic and Brownian dynamics,
 when <b>ld_seed</b> is set to -1, the seed is calculated as
 <tt>(time() + getpid()) % 1000000</tt>
 </dl>
