@@ -438,7 +438,9 @@ int main(int argc,char *argv[])
     ndots = 20;
     fprintf(stderr,"Ndots too small, setting it to %d\n",ndots);
   }
-  
+
+  please_cite(stderr,"Eisenhaber95");
+    
   sas_plot(NFILE,fnm,solsize,ndots,qcut,nskip,bSave,minarea,bPBC,dgs_default);
   
   do_view(opt2fn("-o",NFILE,fnm),"-nxy");

@@ -353,7 +353,12 @@ void please_cite(FILE *fp,char *key)
       "D. Eisenberg and A. D. McLachlan",
       "Solvation energy in protein folding and binding",
       "Nature",
-      319, 1986, 199, 203 }
+      319, 1986, 199, 203 },
+    { "Eisenhaber95",
+      "Frank Eisenhaber and Philip Lijnzaad and Patrick Argos and Chris Sander and Michael Scharf",
+      "The Double Cube Lattice Method: Efficient Approaches to Numerical Integration of Surface Area and Volume and to Dot Surface Contouring of Molecular Assemblies",
+      "J. Comp. Chem.",
+      16, 1995, 273, 284 },
   };
 #define NSTR (int)asize(citedb)
   
