@@ -272,8 +272,10 @@ void gen_nnb(t_nextnb *nnb,t_params plist[])
 
   /* now sort the bonds */
   prints("gen_excl before qsort",nrbonds,s);
-  qsort((void *) s,nrbonds,(size_t)sizeof(sortable),bond_sort);
-  prints("gen_excl after qsort",nrbonds,s);
+  if (nrbonds > 0) {
+    qsort((void *) s,nrbonds,(size_t)sizeof(sortable),bond_sort);
+    prints("gen_excl after qsort",nrbonds,s);
+  }
 
   do_gen(nrbonds,s,nnb);
   sfree(s);

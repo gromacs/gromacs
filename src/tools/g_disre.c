@@ -273,7 +273,7 @@ int main (int argc,char *argv[])
     for(i=0; (i<isize); i++) {
       index[i]++;
       snew(leg[i],12);
-      sprintf(leg[i],"index %u",index[i]);
+      sprintf(leg[i],"index %d",index[i]);
     }
     xvgr_legend(xvg,isize,leg);
   }

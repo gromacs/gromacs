@@ -171,7 +171,7 @@ static void rd_groups(t_block *grps,char **grpname,char *gnames[],
   if (grps->nr==0)
     fatal_error(0,"Error: no groups in indexfile");
   for(i=0; (i<grps->nr); i++)
-    fprintf(stderr,"Group %5d (%12s) has %5u elements\n",i,grpname[i],
+    fprintf(stderr,"Group %5d (%12s) has %5d elements\n",i,grpname[i],
 	   grps->index[i+1]-grps->index[i]);
   for(i=0; (i<ngrps); i++) {
     if (grps->nr > 1)

@@ -105,7 +105,7 @@ int main(int argc,char *argv[])
   fprintf(out,"[ position_restraints ]\n");
   fprintf(out,";%3s %5s %9s %10s %10s\n","i","funct","fcx","fcy","fcz");
   for(i=0; i<igrp; i++) 
-    fprintf(out,"%4u %4d %10g %10g %10g\n",
+    fprintf(out,"%4d %4d %10g %10g %10g\n",
 	    ind_grp[i]+1,1,fc[XX],fc[YY],fc[ZZ]);
   fclose(out);
   

@@ -84,7 +84,7 @@ void write_index(char *outf, t_block *b,char **gnames)
   for(i=0; (i<b->nr); i++) {
     fprintf(out,"[ %s ]\n",gnames[i]);
     for(k=0,j=b->index[i]; j<b->index[i+1]; j++,k++) {
-      fprintf(out,"%4u ",b->a[j]+1);
+      fprintf(out,"%4d ",b->a[j]+1);
       if ((k % 15) == 14)
 	fprintf(out,"\n");
     }

@@ -325,7 +325,7 @@ void print_block (FILE *out, char *szName,
     for (i=0; (i < block->nr); i++) {
       fprintf (out,"%6d",i+1);
       for (j=block->index[i]; (j < ((int)block->index[i+1])); j++)
-	fprintf (out,"%5u",block->a[j]+1);
+	fprintf (out,"%5d",block->a[j]+1);
       fprintf (out,"\n");
     }
     fprintf (out,"\n");
@@ -347,9 +347,9 @@ void print_excl(FILE *out, int natoms, t_excls excls[])
     fprintf (out,"; %4s    %s\n","i","excluded from i");
     for(i=0; i<natoms; i++)
       if (excls[i].nr > 0) {
-	fprintf (out,"%6u ",i+1);
+	fprintf (out,"%6d ",i+1);
 	for(j=0; j<excls[i].nr; j++)
-	  fprintf (out," %5u",excls[i].e[j]+1);
+	  fprintf (out," %5d",excls[i].e[j]+1);
 	fprintf (out,"\n");
       }
     fprintf (out,"\n");
