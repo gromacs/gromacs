@@ -181,9 +181,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Write start time and temperature */
   start_t=print_date_and_time(log,cr->pid,
 #ifdef XMDRUN
-			      "Started mdrun"
-#else
 			      "Started Xmdrun"
+#else
+			      "Started mdrun"
 #endif		      
 			      );
   
