@@ -49,14 +49,21 @@ static char *boxs_nm[] = {
   "Box-X", "Box-Y", "Box-Z","Volume","Density (SI)",
   "pV"
 };
-#define NBOXS asize(boxs_nm)
 
-static bool bShake,bPC;
+static char *tricl_boxs_nm[] = {
+  "Box-XX", "Box-YX", "Box-YY", "Box-ZX", "Box-ZY", "Box-ZZ",
+  "Volume", "Density (SI)", "pV"
+};
+
+#define NBOXS asize(boxs_nm)
+#define NTRICLBOXS asize(tricl_boxs_nm)
+
+static bool bShake,bPC,bTricl;
 static int  f_nre=0;
 
 t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
 		      bool bLR,bool bLJLR,bool bBHAM,bool b14,bool bFEP,
-		      bool bPcoupl,bool bDispCorr,t_commrec *cr)
+		      bool bPcoupl,bool bDispCorr,bool bTriclinic, bool bNoseHoover,t_commrec *cr)
 {
   char *ener_nm[F_NRE];
   static char *vir_nm[] = {
@@ -83,7 +90,7 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
     "#Surf*SurfTen"
   };
   static char *mu_nm[] = {
-    "Mu-X (D)", "Mu-Y (D)", "Mu-Z (D)"
+    "Mu-X", "Mu-Y", "Mu-Z"
   };
   static char *vcos_nm[] = {
     "2CosZ*Vel-X"
@@ -137,13 +144,15 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
   if (bShake) 
     bShake = (getenv("SHAKEVIR") != NULL);
   bPC    = bPcoupl;
+  bTricl = bTriclinic;
   
   /* Energy monitoring */
   snew(md,1);
   md->ebin  = mk_ebin();
   md->ie    = get_ebin_space(md->ebin,f_nre,ener_nm);
   if (bPC)
-    md->ib    = get_ebin_space(md->ebin,NBOXS,boxs_nm);
+    md->ib    = get_ebin_space(md->ebin, bTricl ? NTRICLBOXS :
+			       NBOXS, bTricl ? tricl_boxs_nm : boxs_nm);
   if (bShake) {
     md->isvir = get_ebin_space(md->ebin,asize(sv_nm),sv_nm);
     md->ifvir = get_ebin_space(md->ebin,asize(fv_nm),fv_nm);
@@ -205,20 +214,19 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
   }
   
   md->nTC=atoms->grps[egcTC].nr;
-  if (md->nTC > 1) {
-    snew(grpnms,2*md->nTC);
-    for(i=0; (i<md->nTC); i++) {
-      ni=atoms->grps[egcTC].nm_ind[i];
-      sprintf(buf,"T-%s",*(atoms->grpname[ni]));
-      grpnms[2*i]=strdup(buf);
+  snew(grpnms,2*md->nTC);
+  for(i=0; (i<md->nTC); i++) {
+    ni=atoms->grps[egcTC].nm_ind[i];
+    sprintf(buf,"T-%s",*(atoms->grpname[ni]));
+    grpnms[2*i]=strdup(buf);
+    if(bNoseHoover) 
+      sprintf(buf,"Xi-%s",*(atoms->grpname[ni]));
+    else 
       sprintf(buf,"Lamb-%s",*(atoms->grpname[ni]));
-      grpnms[2*i+1]=strdup(buf);
-    }
-    md->itc=get_ebin_space(md->ebin,2*md->nTC,grpnms);
-    sfree(grpnms);
+    grpnms[2*i+1]=strdup(buf);
   }
-  else
-    md->itc=0;
+  md->itc=get_ebin_space(md->ebin,2*md->nTC,grpnms);
+  sfree(grpnms);
   
   md->nU=atoms->grps[egcACC].nr;
   if (md->nU > 1) {
@@ -265,12 +273,13 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 		tensor vir,
 		tensor pres,
 		t_groups *grps,
-		rvec mu_tot)
+		rvec mu_tot, bool bNoseHoover)
 {
   static real *ttt=NULL;
   static rvec *uuu=NULL;
   int    i,j,k,kk,m,n,gid;
   real   bs[NBOXS];
+  real   tricl_bs[NTRICLBOXS];
   real   eee[egNR];
   real   ecopy[F_NRE];
   real   tmp;
@@ -278,19 +287,36 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
   copy_energy(ener,ecopy);
   add_ebin(md->ebin,md->ie,f_nre,ecopy,step);
   if (bPC || grps->cosacc.cos_accel != 0) {
-    for(m=0; (m<DIM); m++) 
-      bs[m]=box[m][m];
-    /* This is the volume */
-    bs[3] = bs[XX]*bs[YY]*bs[ZZ];
-    
-    /* This is the density */
-    bs[4] = (tmass*AMU)/(bs[3]*NANO*NANO*NANO);
-  }
+    if(bTricl) {
+      tricl_bs[0]=box[XX][XX];
+      tricl_bs[1]=box[YY][XX];
+      tricl_bs[2]=box[YY][YY];
+      tricl_bs[3]=box[ZZ][XX];
+      tricl_bs[4]=box[ZZ][YY];
+      tricl_bs[5]=box[ZZ][ZZ];
+      /* This is the volume */
+      tricl_bs[6]=tricl_bs[0]*tricl_bs[2]*tricl_bs[5];
+      /* This is the density */
+      tricl_bs[7] = (tmass*AMU)/(tricl_bs[6]*NANO*NANO*NANO);
+    } else {
+      for(m=0; (m<DIM); m++) 
+	bs[m]=box[m][m];
+      /* This is the volume */
+      bs[3] = bs[XX]*bs[YY]*bs[ZZ];      
+      /* This is the density */
+      bs[4] = (tmass*AMU)/(bs[3]*NANO*NANO*NANO);
+    }
+  }  
   if (bPC) {
     /* This is pV (in kJ/mol) */  
-    bs[5] = bs[3]*ener[F_PRES]/PRESFAC;
-    add_ebin(md->ebin,md->ib,NBOXS,bs,step);
-  }
+    if(bTricl) {
+      tricl_bs[8] = tricl_bs[6]*ener[F_PRES]/PRESFAC;
+      add_ebin(md->ebin,md->ib,NTRICLBOXS,tricl_bs,step);
+    } else {
+      bs[5] = bs[3]*ener[F_PRES]/PRESFAC;
+      add_ebin(md->ebin,md->ib,NBOXS,bs,step);
+    }
+  }  
   if (bShake) {
     add_ebin(md->ebin,md->isvir,9,svir[0],step);
     add_ebin(md->ebin,md->ifvir,9,fvir[0],step);
@@ -300,14 +326,18 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
   tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ];
   add_ebin(md->ebin,md->isurft,1,&tmp,step);
   add_ebin(md->ebin,md->imu,3,mu_tot,step);
+
   if (grps->cosacc.cos_accel != 0) {
     add_ebin(md->ebin,md->ivcos,1,&(grps->cosacc.vcos),step);
     /* 1/viscosity, unit 1/(kg m^-1 s^-1) */
-    tmp = 1/(grps->cosacc.cos_accel/(grps->cosacc.vcos*PICO)
-	     *bs[4]*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
-    add_ebin(md->ebin,md->ivisc,1,&tmp,step);
+    if(bTricl) 
+      tmp = 1/(grps->cosacc.cos_accel/(grps->cosacc.vcos*PICO)
+	       *tricl_bs[7]*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
+    else 
+      tmp = 1/(grps->cosacc.cos_accel/(grps->cosacc.vcos*PICO)
+	       *bs[4]*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
+    add_ebin(md->ebin,md->ivisc,1,&tmp,step);    
   }
-  
   if (md->nE > 1) {
     n=0;
     for(i=0; (i<md->nEg); i++) {
@@ -321,15 +351,17 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
       }
     }
   }
-  if (md->nTC > 1) {
-    if (ttt == NULL)
-      snew(ttt,2*md->nTC);
-    for(i=0; (i<md->nTC); i++) {
-      ttt[2*i]   = grps->tcstat[i].T;
+  
+  if(ttt == NULL) 
+    snew(ttt,2*md->nTC);
+  for(i=0; (i<md->nTC); i++) {
+    ttt[2*i]   = grps->tcstat[i].T;
+    if(bNoseHoover)
+      ttt[2*i+1] = grps->tcstat[i].xi;
+    else
       ttt[2*i+1] = grps->tcstat[i].lambda;
-    }
-    add_ebin(md->ebin,md->itc,2*md->nTC,ttt,step);
   }
+  add_ebin(md->ebin,md->itc,2*md->nTC,ttt,step);  
   
   if (md->nU > 1) {
     if (uuu == NULL)
@@ -407,7 +439,7 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,
 
     if (!bCompact) {
       if (bPC) {
-	pr_ebin(log,md->ebin,md->ib,NBOXS,5,mode,steps,TRUE);      
+	pr_ebin(log,md->ebin,md->ib, bTricl ? NTRICLBOXS : NBOXS,5,mode,steps,TRUE);      
 	fprintf(log,"\n");
       }
       if (bShake) {
@@ -439,7 +471,7 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,
 	      sprintf(buf,"%s-%s",*(atoms->grpname[ni]),*(atoms->grpname[nj]));
 	      grpnms[n++]=strdup(buf);
 	    }
-	}
+	  }
 	}
 	sprintf(buf,"Epot %s",kjm);
 	fprintf(log,"%15s   ",buf);

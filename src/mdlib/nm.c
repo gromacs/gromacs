@@ -96,7 +96,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   set_pot_bools(&(parm->ir),top,&bLR,&bLJLR,&bBHAM,&b14);
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),bLR,bLJLR,
 		     bBHAM,b14,parm->ir.efep!=efepNO,parm->ir.epc,
-		     parm->ir.bDispCorr,cr);
+		     parm->ir.bDispCorr,TRICLINIC(parm->ir.compress),(parm->ir.etc==etcNOSEHOOVER),cr);
 
   /* Compute initial EKin for all.. */
   calc_ke_part(TRUE,0,top->atoms.nr,
@@ -106,7 +106,11 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   /* Calculate Temperature coupling parameters lambda */
   ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
-  tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,lam0);
+  if(parm->ir.etc==etcBERENDSEN)
+    berendsen_tcoupl(&(parm->ir.opts),grps,parm->ir.delta_t,lam0);
+  else if(parm->ir.etc==etcNOSEHOOVER)
+    nosehoover_tcoupl(&(parm->ir.opts),grps,parm->ir.delta_t,lam0);
+
   where();
   
   /* Write start time and temperature */

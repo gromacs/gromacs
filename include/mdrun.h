@@ -114,7 +114,7 @@ extern void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 		    
 /* Initialization routines to make maintainance easier */ 
 extern void init_md(t_commrec *cr,
-		    t_inputrec *ir,real *t,real *t0,real *lambda,real *lam0,
+		    t_inputrec *ir,tensor box,real *t,real *t0,real *lambda,real *lam0,
 		    real *SAfactor,t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
 		    int nfile,t_filenm fnm[],char **traj,char **xtc_traj,
 		    int *fp_ene,FILE **fp_dgdl,

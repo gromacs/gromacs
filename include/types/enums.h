@@ -38,8 +38,16 @@ enum {
 };
 
 enum {
-  epcNO, epcISOTROPIC, epcSEMIISOTROPIC, epcANISOTROPIC,
-  epcSURFACETENSION, epcNR
+  etcNO, etcBERENDSEN, etcNOSEHOOVER, etcNR
+};
+
+enum {
+  epcNO, epcBERENDSEN, epcPARINELLORAHMAN, epcNR
+};
+
+enum {
+  epctISOTROPIC, epctSEMIISOTROPIC, epctANISOTROPIC,
+  epctSURFACETENSION, epctNR
 };
 
 enum {

@@ -204,7 +204,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   /* Init bin for energy stuff  */
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),bLR,bLJLR,
 		     bBHAM,b14,ir->efep!=efepNO,ir->epc,
-		     ir->bDispCorr,cr); 
+		     ir->bDispCorr,TRICLINIC(parm->ir.compress),(parm->ir.etc==etcNOSEHOOVER),cr); 
   
   /* Clear some matrix variables  */
   clear_mat(force_vir); 
@@ -339,7 +339,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	/* Store the new (lower) energies  */
 	upd_mdebin(mdebin,NULL,mdatoms->tmass,count,(real)count,
 		   ener,parm->box,shake_vir, 
-		   force_vir,parm->vir,parm->pres,grps,mu_tot); 
+		   force_vir,parm->vir,parm->pres,grps,mu_tot,(parm->ir.etc==etcNOSEHOOVER)); 
 	print_ebin(fp_ene,TRUE,FALSE,log,count,count,
 		   eprNORMAL,TRUE,mdebin,&(top->atoms));
 	fflush(log);

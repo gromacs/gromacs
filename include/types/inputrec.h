@@ -72,12 +72,13 @@ typedef struct {
   int  pme_order;       /* interpolation order for PME                  */
   real ewald_rtol;      /* Real space tolerance for Ewald, determines   */
                         /* the real/reciprocal space relative weight    */
-  bool surface_dipole;  /* Apply surface dipole correction to Ewald sum */
+  bool epsilon_surface; /* Epsilon for PME dipole correction            */
   bool bOptFFT;         /* optimize the fft plan at start               */
   int  ePBC;		/* Type of periodic boundary conditions		*/
   bool bUncStart;       /* Do not constrain the start configuration	*/
-  bool btc;		/* temperature coupling         		*/
-  int  epc;		/* pressure coupling type			*/
+  int  etc;		/* temperature coupling         		*/
+  int  epc;		/* pressure coupling                            */
+  int  epct;		/* pressure coupling type			*/
   real tau_p;		/* pressure coupling time (ps)			*/
   tensor ref_p;		/* reference pressure (kJ/(mol nm^3))		*/
   tensor compress;	/* compressability ((mol nm^3)/kJ) 		*/

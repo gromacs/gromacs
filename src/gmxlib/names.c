@@ -84,8 +84,16 @@ char *egrp_nm[egNR+1] = {
   "Coul-SR","LJ","Buck", "Coul-LR", "LJ-LR", "Coul-14", "LJ-14", NULL
 };
 
+char *etcoupl_names[etcNR+1] = {
+  "No", "Berendsen", "Nose-Hoover", NULL
+};
+
 char *epcoupl_names[epcNR+1] = {
-  "No", "Isotropic", "Semiisotropic", "Anisotropic", "Surface-Tension", NULL
+  "No", "Berendsen", "Parinello-Rahman", NULL
+};
+
+char *epcoupltype_names[epctNR+1] = {
+  "Isotropic", "Semiisotropic", "Anisotropic", "Surface-Tension", NULL
 };
 
 char *edisre_names[edrNR+1] = {

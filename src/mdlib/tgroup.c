@@ -43,13 +43,14 @@ static char *SRCID_tgroup_c = "$Id$";
 #include "assert.h"
 
 static void init_grptcstat(int ngtc,t_grp_tcstat tcstat[])
-{
-  int i;
+{ 
+  int i,j;
   
   for(i=0; (i<ngtc); i++) {
     tcstat[i].T=0;
     tcstat[i].lambda=1;
     clear_mat(tcstat[i].ekin);
+    tcstat[i].xi=0;
   }
 }
 
@@ -102,6 +103,7 @@ static void init_grpener(FILE *log,int ngener,t_grp_ener *estat)
 
 void init_groups(FILE *log,t_mdatoms *md,t_grpopts *opts,t_groups *grps)
 {
+  int i;
 #ifdef DEBUG
   fprintf(log,"ngtc: %d, ngacc: %d, ngener: %d\n",opts->ngtc,opts->ngacc,
 	  opts->ngener);
@@ -158,7 +160,7 @@ void accumulate_u(t_commrec *cr,t_grpopts *opts,t_groups *grps)
 
 static void accumulate_ekin(t_commrec *cr,t_grpopts *opts,t_groups *grps)
 {
-  int       g;
+  int g;
 
   for(g=0; (g<opts->ngtc); g++) 
     gmx_sum(DIM*DIM,grps->tcstat[g].ekin[0],cr);
@@ -176,6 +178,9 @@ void update_grps(int start,int homenr,t_groups *grps,
   }
 
   if (bNEMD) {
+    for (g=0; (g<opts->ngacc); g++)
+      clear_rvec(grps->grpstat[g].u);
+    
     for(n=start; (n<start+homenr); n++) {
       g=md->cACC[n];
       for(d=0; (d<DIM);d++) {

@@ -47,7 +47,7 @@ extern void print_nrnb(FILE *out, t_nrnb *nrnb);
 
 extern void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line);
 
-#ifdef DEBUG_NRNB
+#if DEBUG_NRNB
 #define inc_nrnb(nrnb,enr,inc) _inc_nrnb(nrnb,enr,inc,__FILE__,__LINE__)
 #else
 #define inc_nrnb(nrnb,enr,inc) (nrnb)->n[enr] += inc

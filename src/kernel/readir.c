@@ -171,11 +171,18 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     
     sprintf(err_buf,"pressure coupling with PPPM not implemented, use PME");
     CHECK(ir->coulombtype == eelPPPM);
+     
   } else if (ir->coulombtype == eelPPPM) {
     sprintf(warn_buf,"The pressure with PPPM is incorrect, if you need the pressure use PME");
     warning(NULL);
   }
   
+  /* TEMPERATURE COUPLING */
+  if(ir->etc==etcNOSEHOOVER && ir->epc==epcBERENDSEN) {
+    sprintf(warn_buf,"Using Berendsen pressure coupling invalidates the "
+	    "true ensemble for the Nose-Hoover thermostat");
+    warning(NULL);
+  }
   /* ELECTROSTATICS */
   /* More checks are in triple check (grompp.c) */
   sprintf(err_buf,"epsilon_r must be >= 0 instead of %g\n",ir->epsilon_r);
@@ -341,13 +348,13 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("EWALD/PME/PPPM parameters");
   ITYPE ("pme_order",   ir->pme_order,   4);
   RTYPE ("ewald_rtol",  ir->ewald_rtol, 0.00001);
-  EETYPE("surface_dipole", ir->surface_dipole, yesno_names, nerror,TRUE);
+  RTYPE ("epsilon_surface", ir->epsilon_surface, 0.0);
   EETYPE("optimize_fft",ir->bOptFFT,  yesno_names, nerror, FALSE);
 
   /* Coupling stuff */
   CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
   CTYPE ("Temperature coupling");
-  EETYPE("tcoupl",	ir->btc,        yesno_names, nerror, TRUE);
+  EETYPE("tcoupl",	ir->etc,        etcoupl_names, nerror, TRUE);
   CTYPE ("Groups to couple separately");
   STYPE ("tc-grps",     tcgrps,         NULL);
   CTYPE ("Time constant (ps) and reference temperature (K)");
@@ -355,6 +362,7 @@ void get_ir(char *mdparin,char *mdparout,
   STYPE ("ref-t",	ref_t,		NULL);
   CTYPE ("Pressure coupling");
   EETYPE("Pcoupl",	ir->epc,        epcoupl_names, nerror, TRUE);
+  EETYPE("Pcoupltype",	ir->epct,       epcoupltype_names, nerror, TRUE);
   CTYPE ("Time constant (ps), compressibility (1/bar) and reference P (bar)");
   RTYPE ("tau-p",	ir->tau_p,	1.0);
   STYPE ("compressibility",	dumstr[0],	NULL);
@@ -480,43 +488,35 @@ void get_ir(char *mdparin,char *mdparout,
     ir->epsilon_r = 1;
     }
   }
-  
   for(m=0; m<2; m++) {
     for(i=0; i<2*DIM; i++)
       dumdub[m][i]=0.0;
-    switch (ir->epc) {
-    case epcNO:
-      break;
-    case epcISOTROPIC:
-      if (sscanf(dumstr[m],"%lf",&(dumdub[m][XX]))==1)
-	dumdub[m][YY]=dumdub[m][ZZ]=dumdub[m][XX];
-      else {
-	fprintf(stderr,"ERROR: pressure coupling wrong number of values\n");
-	(*nerror)++;
-      }
-      break;
-    case epcSEMIISOTROPIC:
-    case epcSURFACETENSION:
-      if (sscanf(dumstr[m],"%lf%lf",
-		 &(dumdub[m][XX]),&(dumdub[m][ZZ]))==2) 
-	dumdub[m][YY]=dumdub[m][XX];
-      else {
-	fprintf(stderr,"ERROR: pressure coupling wrong number of values\n");
-	(*nerror)++;
-      }
+    if(ir->epc) {
+      switch (ir->epct) {
+      case epctISOTROPIC:
+	if (sscanf(dumstr[m],"%lf",&(dumdub[m][XX]))==1)
+	  dumdub[m][YY]=dumdub[m][ZZ]=dumdub[m][XX];
+	else
+	  fprintf(stderr,"pressure coupling not enough values\n");
 	break;
-    case epcANISOTROPIC:
-      if (sscanf(dumstr[m],"%lf%lf%lf%lf%lf%lf",
-		 &(dumdub[m][XX]),&(dumdub[m][YY]),&(dumdub[m][ZZ]),
-		 &(dumdub[m][3]),&(dumdub[m][4]),&(dumdub[m][5]))!=6)
-	{
-	  fprintf(stderr,"ERROR: pressure coupling wrong number of values\n");
-	  (*nerror)++;
-	}
-      break;
-    default:
-      fatal_error(0,"Pressure coupling type %s not implemented yet",
-		  epcoupl_names[ir->epc]);
+      case epctSEMIISOTROPIC:
+      case epctSURFACETENSION:
+	if (sscanf(dumstr[m],"%lf%lf",
+		   &(dumdub[m][XX]),&(dumdub[m][ZZ]))==2) 
+	  dumdub[m][YY]=dumdub[m][XX];
+	else
+	  fprintf(stderr,"pressure coupling not enough values\n");
+	break;
+      case epctANISOTROPIC:
+	if (sscanf(dumstr[m],"%lf%lf%lf%lf%lf%lf",
+		   &(dumdub[m][XX]),&(dumdub[m][YY]),&(dumdub[m][ZZ]),
+		   &(dumdub[m][3]),&(dumdub[m][4]),&(dumdub[m][5]))!=6) 
+	  fprintf(stderr,"pressure coupling not enough values\n");
+	break;
+      default:
+	fatal_error(0,"Pressure coupling type %s not implemented yet",
+		    epcoupltype_names[ir->epct]);
+      }
     }
   }
   clear_mat(ir->ref_p);
@@ -525,7 +525,7 @@ void get_ir(char *mdparin,char *mdparout,
     ir->ref_p[i][i]    = dumdub[1][i];
     ir->compress[i][i] = dumdub[0][i];
   }
-  if (ir->epc == epcANISOTROPIC) {
+  if (ir->epct == epctANISOTROPIC) {
     ir->ref_p[XX][YY] = dumdub[1][3];
     ir->ref_p[XX][ZZ] = dumdub[1][4];
     ir->ref_p[YY][ZZ] = dumdub[1][5];
@@ -821,18 +821,20 @@ void do_index(char *ndx,
       atoms->atom[i].grpnr[j]=NOGID;
   
   if (ir->bSimAnn) {
-    ir->btc=TRUE;
+    if(ir->etc==etcNO)
+      fatal_error(0,"You must select a temperature coupling algorithm "
+		  "for simulated annealing");
     if (ir->zero_temp_time == 0)
       fatal_error(0,"Cannot anneal to zero temp at t=0");
-  }
-  
+  }  
+
   ntau_t = str_nelem(tau_t,MAXPTR,ptr1);
   nref_t = str_nelem(ref_t,MAXPTR,ptr2);
   ntcg   = str_nelem(tcgrps,MAXPTR,ptr3);
   if ((ntau_t != ntcg) || (nref_t != ntcg)) 
     fatal_error(0,"Invalid T coupling input: %d groups, %d ref_t values and "
-		"%d tau_t values",ntcg,nref_t,ntau_t);
-  
+		"%d tau_t values",ntcg,nref_t,ntau_t);  
+
   do_numbering(atoms,ntcg,ptr3,grps,gnames,egcTC,"T-Coupling",
 	       restnm,forward,FALSE,bVerbose);
   nr=atoms->grps[egcTC].nr;
@@ -840,7 +842,7 @@ void do_index(char *ndx,
   snew(ir->opts.nrdf,nr);
   snew(ir->opts.tau_t,nr);
   snew(ir->opts.ref_t,nr);
-  if (ir->btc || ir->eI==eiSD) {
+  if (ir->etc || ir->eI==eiSD) {
     if (nr != nref_t)
       fatal_error(0,"Not enough ref_t and tau_t values!");
     for(i=0; (i<nr); i++) {

@@ -87,7 +87,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   t_pull     pulldata; /* for pull code */
   /* A boolean (disguised as a real) to terminate mdrun */  
   real       terminate=0;
-  
+
 #ifdef XMDRUN
   /* Shell stuff */
   int         nshell,count,nconverged=0;
@@ -111,7 +111,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   bRerunMD = (Flags & MD_RERUN) == MD_RERUN;
 
   /* Initial values */
-  init_md(cr,&parm->ir,&t,&t0,&lambda,&lam0,&SAfactor,&mynrnb,&bTYZ,top,
+  init_md(cr,&parm->ir,parm->box,&t,&t0,&lambda,&lam0,&SAfactor,&mynrnb,&bTYZ,top,
 	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&mdebin,grps,vcm,
 	  force_vir,shake_vir,mdatoms,mu_tot,&bNEMD);
   debug_gmx();
@@ -167,7 +167,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   /* Calculate Temperature coupling parameters lambda */
   ener[F_TEMP] = sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
-  tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor);
+  if(parm->ir.etc==etcBERENDSEN)
+    berendsen_tcoupl(&(parm->ir.opts),grps,
+		     parm->ir.delta_t,SAfactor);
+  else if(parm->ir.etc==etcNOSEHOOVER)
+    nosehoover_tcoupl(&(parm->ir.opts),grps,
+		      parm->ir.delta_t,SAfactor);
   debug_gmx();
   
 #ifdef XMDRUN
@@ -372,7 +377,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       }
       debug_gmx();
     }
-      
     clear_mat(shake_vir);
     
     /* Afm and Umbrella type pulling happens before the update, 
@@ -393,9 +397,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     /* This is also parallellized, but check code in update.c */
     update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
-	   &(parm->ir),SAfactor,mdatoms,
-           x,graph,f,buf,vold,v,vt,parm->pres,parm->box,
-           top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata,bNEMD);
+	   parm,SAfactor,mdatoms,
+           x,graph,f,buf,vold,vt,v,
+	   top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata,
+	   bNEMD);
     /* The coordinates (x) were unshifted in update */
     
 #ifdef DEBUG
@@ -408,9 +413,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       accumulate_u(cr,&(parm->ir.opts),grps);
       
     debug_gmx();
-      /* Calculate partial Kinetic Energy (for this processor) 
-       * per group! Parallelized
-       */
     if (grps->cosacc.cos_accel == 0)
       calc_ke_part(FALSE,START(nsb),HOMENR(nsb),vold,v,vt,&(parm->ir.opts),
 		   mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
@@ -418,6 +420,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       calc_ke_part_visc(FALSE,START(nsb),HOMENR(nsb),
 			parm->box,x,vold,v,vt,&(parm->ir.opts),
 			mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
+    
     debug_gmx();
     /* Calculate center of mass velocity if necessary, also parallellized */
     if (bStopCM)
@@ -522,9 +525,14 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
 #endif
       
-    /* Calculate Temperature coupling parameters lambda */
-    tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor);
-    
+    /* Calculate Temperature coupling parameters lambda and adjust
+     * target temp when doing simulated annealing
+     */
+    if(parm->ir.etc==etcBERENDSEN)
+      berendsen_tcoupl(&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor);
+    else if(parm->ir.etc==etcNOSEHOOVER)
+      nosehoover_tcoupl(&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor);
+
     /* Calculate pressure and apply LR correction if PPPM is used */
     calc_pres(fr->ePBC,parm->box,parm->ekin,parm->vir,parm->pres,
 	      (fr->eeltype==eelPPPM) ? ener[F_LR] : 0.0);
@@ -564,7 +572,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       bool do_ene,do_dr;
       
       upd_mdebin(mdebin,fp_dgdl,mdatoms->tmass,step,t,ener,parm->box,shake_vir,
-		 force_vir,parm->vir,parm->pres,grps,mu_tot);
+		 force_vir,parm->vir,parm->pres,grps,mu_tot,(parm->ir.etc==etcNOSEHOOVER));
       do_ene = do_per_step(step,parm->ir.nstenergy) || bLastStep;
       if (top->idef.il[F_DISRES].nr)
 	do_dr = do_per_step(step,parm->ir.nstdisreout) || bLastStep;

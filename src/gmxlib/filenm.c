@@ -216,7 +216,7 @@ char *ftp2defnm(int ftp)
 void pr_def(FILE *fp,int ftp)
 {
   t_deffile *df;
-  char *s,*ext,*desc,*flst;
+  char *s=NULL,*ext,*desc,*flst;
   
   df=&(deffile[ftp]);
   /* find default file extension and \tt-ify description */

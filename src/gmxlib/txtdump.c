@@ -223,7 +223,7 @@ void pr_grp_opts(FILE *out,int indent,char *title,t_grpopts *opts)
   fprintf(out,"tau_t:\t");
   for(i=0; (i<opts->ngtc); i++)
     fprintf(out,"  %10g",opts->tau_t[i]);
-  fprintf(out,"\n");
+  fprintf(out,"\n");  
   
   pr_indent(out,indent);
   fprintf(out,"acc:\t");
@@ -316,18 +316,19 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PR("delta_t",ir->delta_t);
     PR("xtcprec",ir->xtcprec);
     PI("solvent_opt",ir->solvent_opt);
-    PI("nsatoms",ir->nsatoms);
+    PI("nsatoms",ir->nsatoms); 
     PI("nkx",ir->nkx);
     PI("nky",ir->nky);
     PI("nkz",ir->nkz);
     PI("pme_order",ir->pme_order);
     PR("ewald_rtol",ir->ewald_rtol);
-    PS("surface_dipole",BOOL(ir->surface_dipole));
+    PR("epsilon_surface",ir->epsilon_surface);
     PS("optimize_fft",BOOL(ir->bOptFFT));
     PS("ePBC",EPBC(ir->ePBC));
     PS("bUncStart",BOOL(ir->bUncStart));
-    PS("btc",BOOL(ir->btc));
+    PS("etc",ETCOUPLTYPE(ir->etc));
     PS("epc",EPCOUPLTYPE(ir->epc));
+    PS("epc",EPCOUPLTYPETYPE(ir->epct));
     PR("tau_p",ir->tau_p);
     pr_rvecs(fp,indent,"ref_p",ir->ref_p,DIM);
     pr_rvecs(fp,indent,"compress",ir->compress,DIM);

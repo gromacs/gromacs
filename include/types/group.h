@@ -33,6 +33,8 @@ typedef struct {
   real    T;		/* Temperature	    */
   real    lambda;       /* T Scaling factor */
   tensor  ekin;		/* Kinetic energy   */
+  real    xi;           /* Nose-Hoover parameters */ 
+  real    s;
 } t_grp_tcstat;
 
 typedef struct {

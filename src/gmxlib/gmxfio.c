@@ -622,7 +622,7 @@ int fio_open(char *fn,char *mode)
 {
   t_fileio *fio=NULL;
   int      i,nfio=0;
-  char     *bf,*m;
+  char     *bf,*m=NULL;
   bool     bRead;
 
   if (fn2ftp(fn)==efTPA)

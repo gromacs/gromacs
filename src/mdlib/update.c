@@ -56,6 +56,8 @@ static char *SRCID_update_c = "$Id$";
 #include "edsam.h"
 #include "pull.h"
 
+
+
 static void calc_g(rvec x_unc,rvec x_cons,rvec g,double mdt_2)
 {
   int d;
@@ -88,94 +90,166 @@ static void do_both(rvec xold,rvec x_unc,rvec x,rvec g,
   v[ZZ]=(zz-xold [ZZ])*dt_1;
 }
 
+
 static void do_update(int start,int homenr,double dt,
-		      rvec lamb[],t_grp_acc gstat[],
-		      rvec accel[],ivec nFreeze[],
-		      real invmass[],unsigned short ptype[],
-		      unsigned short cFREEZE[],unsigned short cACC[],
-		      unsigned short cTC[],
-		      rvec x[],rvec xprime[],rvec v[],rvec vold[],rvec f[])
+		      rvec lamb[],t_grp_acc *gstat,t_grp_tcstat *tcstat,
+		      rvec accel[],ivec nFreeze[],real invmass[],
+		      unsigned short ptype[],unsigned short cFREEZE[],
+		      unsigned short cACC[],unsigned short cTC[],
+		      rvec x[],rvec xprime[],rvec v[],rvec vold[],
+		      rvec f[],matrix M,bool bExtended)
 {
-  double w_dt;
+  double imass,w_dt;
   int    gf,ga,gt;
-  real   vn,vv,va,vb;
-  real   uold,lg;
+  rvec   vrel;
+  real   vn,vv,va,vb,vnrel;
+  real   lg,xi,uold;
   int    n,d;
-  
-  for (n=start; n<start+homenr; n++) {  
-    w_dt = invmass[n]*dt;
-    gf   = cFREEZE[n];
-    ga   = cACC[n];
-    gt   = cTC[n];
-    
-    for (d=0; d<DIM; d++) {
-      vn             = v[n][d];
-      lg             = lamb[gt][d];
-      vold[n][d]     = vn;
+
+  if(bExtended) {
+    /* Update with coupling to extended ensembles, used for
+     * Nose-Hoover and Parinello-Rahman coupling
+     */
+    for (n=start; n<start+homenr; n++) {  
+      imass = invmass[n];
+      gf   = cFREEZE[n];
+      ga   = cACC[n];
+      gt   = cTC[n];
+      xi  = tcstat[gt].xi;
       
-      if ((ptype[n] != eptDummy) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
-	vv             = lg*(vn + f[n][d]*w_dt);
+      rvec_sub(v[n],gstat[ga].uold,vrel);
+
+      for (d=0; d<DIM; d++) {
+	lg             = lamb[gt][d]; 
+	vold[n][d]     = v[n][d];
+	
+	if ((ptype[n] != eptDummy) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
 	  
-	/* do not scale the mean velocities u */
-	uold           = gstat[ga].uold[d];
-	va             = vv + accel[ga][d]*dt;
-	vb             = va + (1.0-lg)*uold;
-	v[n][d]        = vb;
-	xprime[n][d]   = x[n][d]+vb*dt;
-      } else {
-	v[n][d]        = 0.0;
-	xprime[n][d]   = x[n][d];
+	  vnrel= lg*(vrel[d] + dt*(imass*f[n][d]-xi*vrel[d]-iprod(M[d],vrel)));  
+	  /* do not scale the mean velocities u */
+	  vn             = gstat[ga].uold[d] + accel[ga][d]*dt + vnrel; 
+	  v[n][d]        = vn;
+	  xprime[n][d]   = x[n][d]+vn*dt;
+	} else
+	  xprime[n][d]   = x[n][d];
+      }
+    }
+    
+  } else {
+    /* Classic version of update, used with berendsen coupling */
+    for (n=start; n<start+homenr; n++) {  
+      w_dt = invmass[n]*dt;
+      gf   = cFREEZE[n];
+      ga   = cACC[n];
+      gt   = cTC[n];
+      
+      for (d=0; d<DIM; d++) {
+	vn             = v[n][d];
+	lg             = lamb[gt][d];
+	vold[n][d]     = vn;
+	
+	if ((ptype[n] != eptDummy) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
+	  vv             = lg*(vn + f[n][d]*w_dt);
+          
+	  /* do not scale the mean velocities u */
+	  uold           = gstat[ga].uold[d];
+	  va             = vv + accel[ga][d]*dt;
+	  vb             = va + (1.0-lg)*uold;
+	  v[n][d]        = vb;
+	  xprime[n][d]   = x[n][d]+vb*dt;
+	} else {
+	  v[n][d]        = 0.0;
+	  xprime[n][d]   = x[n][d];
+	}
       }
     }
   }
 }
 
 static void do_update_visc(int start,int homenr,double dt,
-			   rvec lamb[],
-			   real invmass[],unsigned short ptype[],
-			   unsigned short cTC[],
-			   rvec x[],rvec xprime[],
-			   rvec v[],rvec vold[],rvec f[],
-			   matrix box,real cos_accel,real vcos)
+			   rvec lamb[],real invmass[],t_grp_tcstat *tcstat,
+			   unsigned short ptype[],unsigned short cTC[],
+			   rvec x[],rvec xprime[],rvec v[],rvec vold[],
+			   rvec f[],matrix M,matrix box,real
+			   cos_accel,real vcos,bool bExtended)
 {
-  double w_dt;
+  double imass,w_dt;
   int    gt;
-  real   vn,vv,va,vc;
-  real   lg;
-  real   fac,cosz;
+  real   vn,vc;
+  real   lg,xi,vv;
+  real   fac,cosz,mvcos;
+  rvec   vrel;
   int    n,d;
   
   fac = 2*M_PI/(box[ZZ][ZZ]);
-  
-  for (n=start; n<start+homenr; n++) {  
-    w_dt = invmass[n]*dt;
-    gt   = cTC[n];
-    cosz = cos(fac*x[n][ZZ]);
-    
-    for (d=0; d<DIM; d++) {
-      vn             = v[n][d];
-      lg             = lamb[gt][d];
-      vold[n][d]     = vn;
+
+  mvcos = 0;
+
+  if(bExtended) {
+    /* Update with coupling to extended ensembles, used for
+     * Nose-Hoover and Parinello-Rahman coupling
+     */
+    for (n=start; n<start+homenr; n++) {  
+      imass = invmass[n];
+      gt   = cTC[n];
+      cosz = cos(fac*x[n][ZZ]);
       
-      if ((ptype[n] != eptDummy) && (ptype[n] != eptShell)) {
-	if (d == XX) {
-	  vc           = cosz*vcos;
-	  /* Do not scale the cosine velocity profile */
-	  vv           = vc + lg*(vn - vc + f[n][d]*w_dt);
-	  /* Add the cosine accelaration profile */
-	  vv          += dt*cosz*cos_accel;
-	} else
-	  vv           = lg*(vn + f[n][d]*w_dt);
+      copy_rvec(v[n],vold[n]);
+      copy_rvec(v[n],vrel);
+      
+      vc            = cosz*vcos;
+      vrel[XX]     -= vc;
+      xi           = tcstat[gt].xi;
+      
+      for (d=0; d<DIM; d++) {
+	vn             = v[n][d];
+	lg             = lamb[gt][d];
 	
-	v[n][d]        = vv;
-	xprime[n][d]   = x[n][d]+vv*dt;
-      } else {
-	v[n][d]        = 0.0;
-	xprime[n][d]   = x[n][d];
+	if ((ptype[n] != eptDummy) && (ptype[n] != eptShell)) {
+	  vn              = lg*(vrel[d] + dt*(imass*f[n][d]-xi*vrel[d]-iprod(M[d],vrel)));
+	  if (d == XX) 
+	    vn           += vc + dt*cosz*cos_accel;
+	  
+	  v[n][d]        = vn;
+	  xprime[n][d]   = x[n][d]+vn*dt;
+	} else
+	  xprime[n][d]   = x[n][d];
+      }
+    }
+    
+  } else {
+    /* Classic version of update, used with berendsen coupling */
+    for (n=start; n<start+homenr; n++) {  
+      w_dt = invmass[n]*dt;
+      gt   = cTC[n];
+      cosz = cos(fac*x[n][ZZ]);
+      
+      for (d=0; d<DIM; d++) {
+	vn             = v[n][d];
+	lg             = lamb[gt][d];
+	vold[n][d]     = vn;
+	
+	if ((ptype[n] != eptDummy) && (ptype[n] != eptShell)) {
+	  if (d == XX) {
+	    vc           = cosz*vcos;
+	    /* Do not scale the cosine velocity profile */
+	    vv           = vc + lg*(vn - vc + f[n][d]*w_dt);
+	    /* Add the cosine accelaration profile */
+	    vv          += dt*cosz*cos_accel;
+	  } else
+	    vv           = lg*(vn + f[n][d]*w_dt);
+	  
+	  v[n][d]        = vv;
+	  xprime[n][d]   = x[n][d]+vv*dt;
+	} else {
+	  v[n][d]        = 0.0;
+	  xprime[n][d]   = x[n][d];
+	}
       }
     }
   }
 }
+
 
 static void do_update_sd(int start,int homenr,double dt,
 			 rvec accel[],ivec nFreeze[],
@@ -393,11 +467,12 @@ void calc_ke_part(bool bFirstStep,int start,int homenr,
       tcstat[gt].ekin[YY][d]+=hm*v_corrt[YY]*v_corrt[d];
       tcstat[gt].ekin[ZZ][d]+=hm*v_corrt[ZZ]*v_corrt[d];
     }
-    if (md->bPerturbed[n]) {
+    if (dvdlambda!=NULL && md->bPerturbed[n]) {
       dvdl-=0.5*(md->massB[n]-md->massA[n])*iprod(v_corrt,v_corrt);
     }
   }
-  *dvdlambda += dvdl;
+  if(dvdlambda!=NULL)
+    *dvdlambda += dvdl;
   
 #ifdef DEBUG
   fprintf(stdlog,"ekin: U=(%12e,%12e,%12e)\n",
@@ -454,34 +529,35 @@ void calc_ke_part_visc(bool bFirstStep,int start,int homenr,
       tcstat[gt].ekin[YY][d]+=hm*v_corrt[YY]*v_corrt[d];
       tcstat[gt].ekin[ZZ][d]+=hm*v_corrt[ZZ]*v_corrt[d];
     }
-    if (md->bPerturbed[n]) {
+    if (dvdlambda!=NULL && md->bPerturbed[n]) {
       dvdl-=0.5*(md->massB[n]-md->massA[n])*iprod(v_corrt,v_corrt);
     }
   }
-  *dvdlambda += dvdl;
+  if(dvdlambda!=NULL)
+    *dvdlambda += dvdl;
   cosacc->mvcos = mvcos;
 
   inc_nrnb(nrnb,eNR_EKIN,homenr);
 }
+
+
 
 void update(int          natoms, 	/* number of atoms in simulation */
 	    int      	 start,
 	    int          homenr,	/* number of home particles 	*/
 	    int          step,
 	    real         lambda,
-	    real         *dvdlambda, /* FEP stuff */
-	    t_inputrec   *ir,           /* input record with constants 	*/
+	    real         *dvdlambda,    /* FEP stuff */
+	    t_parm       *parm,         /* input record and box stuff	*/
 	    real         SAfactor,      /* simulated annealing factor   */
 	    t_mdatoms    *md,
-	    rvec         x[],	/* coordinates of home particles */
+	    rvec         x[],	        /* coordinates of home particles */
 	    t_graph      *graph,	
 	    rvec         force[], 	/* forces on home particles 	*/
 	    rvec         delta_f[],
 	    rvec         vold[],	/* Old velocities		   */
-	    rvec         v[], 		/* velocities of home particles */
-	    rvec         vt[],  	/* velocity at time t 		*/
-	    tensor       pressure, 	/* instantaneous pressure tensor */
-	    tensor       box,  		/* instantaneous box lengths 	*/
+	    rvec         vt[], 		/* velocities at whole timestep  */
+	    rvec         v[],  	        /* velocity at next halfstep   	*/
 	    t_topology   *top,
 	    t_groups     *grps,
 	    tensor       vir_part,
@@ -496,23 +572,24 @@ void update(int          natoms, 	/* number of atoms in simulation */
   static char      buf[256];
   static bool      bFirst=TRUE;
   static rvec      *xprime,*x_unc=NULL;
-  static int       ngtc,ngacc;
+  static int       ngtc,ngacc,ga;
   static rvec      *lamb;
   static t_edpar   edpar;
-  static bool      bConstraints;
-
+  static bool      bConstraints,bExtended;
   t_idef           *idef=&(top->idef);
   double           dt;
   real             dt_1,dt_2;
-  int              i,n,m,g;
-
+  int              i,n,m,g,vol;
+  matrix           M;
+  t_inputrec       *ir=&(parm->ir);
+  
   if (bFirst) {
-    bConstraints = init_constraints(stdlog,top,ir,md,
-				    start,homenr);
+    bConstraints = init_constraints(stdlog,top,&(parm->ir),md,start,homenr);
     bConstraints = bConstraints || pulldata->bPull;
-
+    bExtended    = (ir->etc==etcNOSEHOOVER) || (ir->epc==epcPARINELLORAHMAN);
+    
     if (edyn->bEdsam) 
-      init_edsam(stdlog,top,md,start,homenr,x,box,
+      init_edsam(stdlog,top,md,start,homenr,x,parm->box,
 		 edyn,&edpar);
     
     /* Allocate memory for xold, original atomic positions
@@ -520,13 +597,12 @@ void update(int          natoms, 	/* number of atoms in simulation */
      */
     snew(xprime,natoms);
     snew(x_unc,homenr);
-
     /* Copy the pointer to the external acceleration in the opts */
-    ngacc=ir->opts.ngacc;
-    
-    ngtc=ir->opts.ngtc;
-    snew(lamb,ir->opts.ngtc);
-    
+    ngacc=ir->opts.ngacc;    
+    ngtc=ir->opts.ngtc;    
+       
+    snew(lamb,ngtc);
+
     /* done with initializing */
     bFirst=FALSE;
   }
@@ -534,7 +610,8 @@ void update(int          natoms, 	/* number of atoms in simulation */
   dt   = ir->delta_t;
   dt_1 = 1.0/dt;
   dt_2 = 1.0/(dt*dt);
-  
+  vol  = det(parm->box);
+
   for(i=0; (i<ngtc); i++) {
     real l=grps->tcstat[i].lambda;
     
@@ -545,33 +622,30 @@ void update(int          natoms, 	/* number of atoms in simulation */
     lamb[i][YY]=l;
     lamb[i][ZZ]=l;
   }
-
-  if (bDoUpdate) {  
+  if (bDoUpdate) {
     /* update mean velocities */
     for (g=0; (g<ngacc); g++) {
       copy_rvec(grps->grpstat[g].u,grps->grpstat[g].uold);
       clear_rvec(grps->grpstat[g].u);
     }
-    
+    clear_mat(M);
+
+    if(ir->epc == epcPARINELLORAHMAN)
+      parinellorahman_pcoupl(&(parm->ir),step,parm->pres,parm->box,parm->boxv,M);
     /* Now do the actual update of velocities and positions */
     where();
     dump_it_all(stdlog,"Before update",natoms,x,xprime,v,vold,force);
     if (ir->eI==eiMD) {
       if (grps->cosacc.cos_accel == 0)
 	/* use normal version of update */
-	do_update(start,homenr,dt,
-		  lamb,grps->grpstat,
-		  ir->opts.acc,ir->opts.nFreeze,
-		  md->invmass,md->ptype,
-		  md->cFREEZE,md->cACC,md->cTC,
-		  x,xprime,v,vold,force);
+	do_update(start,homenr,dt,lamb,grps->grpstat,grps->tcstat,
+		  ir->opts.acc,ir->opts.nFreeze,md->invmass,md->ptype,
+		  md->cFREEZE,md->cACC,md->cTC,x,xprime,v,vold,force,M,
+		  bExtended);
       else
-	do_update_visc(start,homenr,dt,
-		       lamb,
-		       md->invmass,md->ptype,
-		       md->cTC,
-		       x,xprime,v,vold,force,
-		       box,grps->cosacc.cos_accel,grps->cosacc.vcos);
+	do_update_visc(start,homenr,dt,lamb,md->invmass,grps->tcstat,
+		       md->ptype,md->cTC,x,xprime,v,vold,force,M,
+		       parm->box,grps->cosacc.cos_accel,grps->cosacc.vcos,bExtended);
     } else if (ir->eI==eiSD)
       do_update_sd(start,homenr,dt,
 		   ir->opts.acc,ir->opts.nFreeze,
@@ -580,17 +654,16 @@ void update(int          natoms, 	/* number of atoms in simulation */
 		   x,xprime,v,vold,force,
 		   ir->opts.ngtc,ir->opts.tau_t,ir->opts.ref_t,
 		   &ir->ld_seed);
-    else
-      if (ir->eI==eiLD) 
+    else if (ir->eI==eiLD) 
       do_update_ld(start,homenr,dt,
 		   ir->opts.nFreeze,md->ptype,md->cFREEZE,
 		   x,xprime,v,vold,force,
 		   ir->ld_temp,ir->ld_fric,&ir->ld_seed);
     else
       fatal_error(0,"Don't know how to update coordinates");
-
+    
     where();
-    inc_nrnb(nrnb,eNR_UPDATE,homenr);
+    inc_nrnb(nrnb, bExtended ? eNR_EXTUPDATE : eNR_UPDATE,homenr);
     dump_it_all(stdlog,"After update",natoms,x,xprime,v,vold,force);
   }
   else {
@@ -601,71 +674,75 @@ void update(int          natoms, 	/* number of atoms in simulation */
       copy_rvec(v[n],xprime[n]);
     }
   }
-
+  
   /* 
    *  Steps (7C, 8C)
    *  APPLY CONSTRAINTS:
    *  BLOCK SHAKE 
    */
- 
+  
+  /* When doing PR pressure coupling we have to constrain the
+   * bonds in each iteration. If we are only using Nose-Hoover tcoupling
+   * it is enough to do this once though, since the relative velocities 
+   * after this will be normal to the bond vector
+   */
   if (bConstraints) {
     /* Copy Unconstrained X to temp array */
-    for(n=start; (n<start+homenr); n++)
-      copy_rvec(xprime[n],x_unc[n-start]);
-
-    /* Constrain the coordinates xprime */
-    constrain(stdlog,top,ir,step,md,start,homenr,x,xprime,box,
-	      lambda,dvdlambda,nrnb);
-
-    where();
-
-    dump_it_all(stdlog,"After Shake",natoms,x,xprime,v,vold,force);
-
-    /* apply Essential Dynamics constraints when required */
-    if (edyn->bEdsam)
-      do_edsam(stdlog,top,ir,step,md,start,homenr,xprime,x,
-	       x_unc,force,box,edyn,&edpar,bDoUpdate);
-
-    /* apply pull constraints when required. Act on xprime, the SHAKED
-       coordinates.  Don't do anything to f */
-    if (pulldata->bPull && pulldata->runtype != eAfm && 
-	pulldata->runtype != eUmbrella &&
-	pulldata->runtype != eTest) 
-      pull(pulldata,xprime,force,box,top,dt,step,homenr,md); 
-    
-    where();
-
-    if (bDoUpdate) {
-      real mdt_2;
+      for(n=start; (n<start+homenr); n++)
+	copy_rvec(xprime[n],x_unc[n-start]);
       
-      for(n=start; (n<start+homenr); n++) {
-	mdt_2 = dt_2*md->massT[n];
-	do_both(x[n],x_unc[n-start],xprime[n],delta_f[n],
-		v[n],mdt_2,dt_1);
-      }
-      where();
-
-      inc_nrnb(nrnb,eNR_SHAKE_V,homenr);
-      dump_it_all(stdlog,"After Shake-V",natoms,x,xprime,v,vold,force);
+      /* Constrain the coordinates xprime */
+      constrain(stdlog,top,ir,step,md,start,homenr,x,xprime,parm->box,
+		lambda,dvdlambda,nrnb);
+      
       where();
       
-      /* Calculate virial due to shake (for this proc) */
-      calc_vir(stdlog,homenr,&(x[start]),&(delta_f[start]),vir_part,cr);
-      inc_nrnb(nrnb,eNR_SHAKE_VIR,homenr);
-      where();
-    }
-  } 
+      dump_it_all(stdlog,"After Shake",natoms,x,xprime,v,vold,force);
+      
+      /* apply Essential Dynamics constraints when required */
+      if (edyn->bEdsam)
+	do_edsam(stdlog,top,ir,step,md,start,homenr,xprime,x,
+		 x_unc,force,parm->box,edyn,&edpar,bDoUpdate);
+      
+      /* apply pull constraints when required. Act on xprime, the SHAKED
+	 coordinates.  Don't do anything to f */
+      if (pulldata->bPull && pulldata->runtype != eAfm && 
+	  pulldata->runtype != eUmbrella &&
+	  pulldata->runtype != eTest) 
+	pull(pulldata,xprime,force,parm->box,top,dt,step,homenr,md); 
+      
+      where();      
+      
+      if (bDoUpdate) {
+	real mdt_2;
+	
+	for(n=start; (n<start+homenr); n++) {
+	  mdt_2 = dt_2*md->massT[n];
+	  do_both(x[n],x_unc[n-start],xprime[n],delta_f[n],
+		  v[n],mdt_2,dt_1);
+	}
+	where();
+	
+	inc_nrnb(nrnb,eNR_SHAKE_V,homenr);
+	dump_it_all(stdlog,"After Shake-V",natoms,x,xprime,v,vold,force);
+	where();
 
+	/* Calculate virial due to shake (for this proc) */
+	calc_vir(stdlog,homenr,&(x[start]),&(delta_f[start]),vir_part,cr);
+	inc_nrnb(nrnb,eNR_SHAKE_VIR,homenr);
+	where();
+      }  
+  }
   
   /* We must always unshift here, also if we did not shake
    * x was shifted in do_force */
   where();
   if ((graph->nnodes > 0) && bDoUpdate && (ir->ePBC != epbcNONE)) {
-      unshift_x(graph,box,x,xprime);
-      if(TRICLINIC(box))
-	  inc_nrnb(nrnb,eNR_SHIFTX*2,graph->nnodes);
-      else
-	  inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);	  
+    unshift_x(graph,parm->box,x,xprime);
+    if(TRICLINIC(parm->box))
+      inc_nrnb(nrnb,eNR_SHIFTX,2*graph->nnodes);
+    else
+      inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);	  
     for(n=start; (n<graph->start); n++)
       copy_rvec(xprime[n],x[n]);
     for(n=graph->start+graph->nnodes; (n<start+homenr); n++)
@@ -680,16 +757,27 @@ void update(int          natoms, 	/* number of atoms in simulation */
   
   if (bDoUpdate) {
     update_grps(start,homenr,grps,&(ir->opts),v,md,bNEMD);
-    if (ir->epc != epcNO)
-      do_pcoupl(ir,step,pressure,box,start,homenr,x,md->cFREEZE,nrnb,
-		ir->opts.nFreeze);
+    if (ir->epc == epcBERENDSEN)
+      berendsen_pcoupl(ir,step,parm->pres,parm->box,start,homenr,x,md->cFREEZE,nrnb,
+		       ir->opts.nFreeze);
+    else if (ir->epc == epcPARINELLORAHMAN) {
+      /* The box velocities were updated in do_pr_pcoupl in the update
+       * iteration, but we dont change the box vectors until we get here
+       * since we need to be able to shift/unshift above.
+       */
+      for(i=0;i<DIM;i++)
+	for(m=0;m<=i;m++)
+	  parm->box[i][m] += dt * parm->boxv[i][m];
+    }
+    correct_box(parm->box);
     where();
-     /* (un)shifting should NOT be done after this,
+    /* (un)shifting should NOT be done after this,
      * since the box vectors might have changed
      */
   }
 }
 
+  
 void correct_ekin(FILE *log,int start,int end,rvec v[],rvec vcm,real mass[],
 		  real tmass,tensor ekin)
 {

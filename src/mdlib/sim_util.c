@@ -381,13 +381,13 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
     /* Do a first SHAKE to reset particles... */
     clear_mat(shake_vir);
     update(nsb->natoms,start,homenr,-1,lambda,&ener[F_DVDL],
-	   &(parm->ir),1.0,md,x,graph,
-	   NULL,NULL,vold,x,NULL,parm->pres,parm->box,
-	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,pulldata,FALSE);
+	   parm,1.0,md,x,graph,
+	   NULL,NULL,vold,NULL,x,top,grps,shake_vir,cr,nrnb,bTYZ,
+	   FALSE,edyn,pulldata,FALSE);
     /* Compute coordinates at t=-dt, store them in buf */
     /* for(i=0; (i<nsb->natoms); i++) {*/
     for(i=start; (i<end); i++) {
-      for(m=0; (m<DIM); m++) {
+      for(m=0; (m<DIM); m++) { 
 	f[i][m]=x[i][m];
 	buf[i][m]=x[i][m]-dt*v[i][m];
       }
@@ -398,9 +398,9 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
      */
     clear_mat(shake_vir);
     update(nsb->natoms,start,homenr,
-	   0,lambda,&ener[F_DVDL],&(parm->ir),1.0,md,f,graph,
-	   NULL,NULL,vold,buf,NULL,parm->pres,parm->box,
-	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,pulldata,FALSE);
+	   0,lambda,&ener[F_DVDL],parm,1.0,md,f,graph,
+	   NULL,NULL,vold,NULL,buf,top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,
+	   edyn,pulldata,FALSE);
     
     /* Compute the velocities at t=-dt/2 using the coordinates at
      * t=-dt and t=0
@@ -417,9 +417,9 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
      */
     clear_mat(shake_vir);
     update(nsb->natoms,start,homenr,
-	   0,lambda,&ener[F_DVDL],&(parm->ir),1.0,md,f,graph,
-	   NULL,NULL,vold,buf,NULL,parm->pres,parm->box,
-	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,pulldata,FALSE);
+	   0,lambda,&ener[F_DVDL],parm,1.0,md,f,graph,
+	   NULL,NULL,vold,NULL,buf,top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,
+	   pulldata,FALSE);
     
     /* Compute the velocities at t=-dt/2 using the coordinates at
      * t=-dt and t=0

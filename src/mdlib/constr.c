@@ -342,7 +342,7 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
   if (bInit) {
     /* Output variables, initiate them right away */
     
-    if ((ir->btc) || (ir->epc != epcNO))
+    if ((ir->etc==etcBERENDSEN) || (ir->epc==epcBERENDSEN))
       please_cite(log,"Berendsen84a");
     
     /* Put the oxygen atoms in the owptr array */

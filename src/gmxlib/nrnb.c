@@ -65,12 +65,12 @@ static t_nrnb_data nbdata[eNRNB] = {
   { "Table-LJC-H2O",  166 },
   { "LJC-FreeEner",   101 },
   { "BHAM-FreeEner",  106 },
-  { "LJC-Ewald",      150 }, /* not correct yet, but not used either */
-  { "Coul-Ewald",     150 }, /* not correct yet, but not used either */
-  { "BHAM-Ewald",     150 }, /* not correct yet, but not used either */
-  { "LJC-Ewald-H2O",  150 }, /* not correct yet, but not used either */
-  { "Coul-Ewald-H2O", 150 }, /* not correct yet, but not used either */
-  { "BHAM-Ewald-H2O", 150 }, /* not correct yet, but not used either */
+  { "LJC-Ewald",      150 },
+  { "Coul-Ewald",     150 }, 
+  { "BHAM-Ewald",     150 }, 
+  { "LJC-Ewald-H2O",  150 }, 
+  { "Coul-Ewald-H2O", 150 },
+  { "BHAM-Ewald-H2O", 150 },
   { "Innerloop-Iatom", 10 },
   { "Calc Weights",    36 },
   { "Spread Q",         6 },
@@ -101,6 +101,7 @@ static t_nrnb_data nbdata[eNRNB] = {
   { "Water Pol.",      62 },
   { "Virial",          18 },
   { "Update",          31 },
+  { "Ext.ens. Update", 54 },
   { "Stop-CM",         10 },
   { "P-Coupling",       6 },
   { "Calc-Ekin",       27 },
@@ -158,7 +159,7 @@ void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line)
 {
   nrnb->n[enr]+=inc;
 #ifdef DEBUG
-  fprintf(stdlog,"nrnb %15s(%2d) incremented with %8d from file %s line %d\n",
+  printf("nrnb %15s(%2d) incremented with %8d from file %s line %d\n",
 	  nbdata[enr].name,enr,inc,file,line);
 #endif
 }

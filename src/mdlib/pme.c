@@ -212,7 +212,7 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
   /* do recip sum over local cells in grid */
   t_fft_c *ptr,*p0;
   int     nx,ny,nz,la2,la12;
-  int     kx,ky,kz,idx,idx0,maxkx,maxky,maxkz,kystart,kyend;
+  int     kx,ky,kz,idx,idx0,maxkx,maxky,maxkz,kystart=0,kyend=0;
   real    m2,mx,my,mz;
   real    factor=M_PI*M_PI/(ewaldcoeff*ewaldcoeff);
   real    ets2,struct2,vfactor,ets2vf;

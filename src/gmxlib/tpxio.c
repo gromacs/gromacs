@@ -48,12 +48,12 @@ static char *SRCID_tpxio_c = "$Id$";
 #include "vec.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version = 17;
+static int tpx_version = 18;
 /* This number should be the most recent incompatible version */
 static int tpx_incompatible_version = 9;
 /* This is the version of the file we are reading */
 static int file_version = 0;
-
+ 
 
 void _do_section(int fp,int key,bool bRead,char *src,int line)
 {
@@ -146,21 +146,39 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_int(ir->pme_order);
     do_real(ir->ewald_rtol);
 
-    if(file_version >= 17)
-      do_int(ir->surface_dipole);
-    else
-      ir->surface_dipole=FALSE;
+    if(file_version <=17) {
+      ir->epsilon_surface=0;
+      if(file_version==17)
+	do_int(idum);
+    } else
+      do_real(ir->epsilon_surface);
     
     do_int(ir->bOptFFT);
     do_int(ir->bUncStart); 
-    do_int(ir->btc); 
+    do_int(ir->etc);
+    /* before version 18, ir->etc was a bool (ir->btc),
+     * but the values 0 and 1 still mean no and
+     * berendsen temperature coupling, respectively.
+     */
     if (file_version <= 15)
       do_int(idum);
-    do_int(ir->epc); 
-    if (file_version <= 15) {
-      if (ir->epc == 5)
-	ir->epc = epcSURFACETENSION;
-      do_int(idum);
+    if(file_version <=17) {
+      do_int(ir->epct); 
+      if (file_version <= 15) {
+	if (ir->epct == 5)
+	  ir->epct = epctSURFACETENSION;
+	do_int(idum);
+      }
+      ir->epct -= 1;
+      /* we have removed the NO alternative at the beginning */
+      if(ir->epct==-1) {
+	ir->epc=epcNO;
+	ir->epct=epctISOTROPIC;
+      } else
+	ir->epc=epcBERENDSEN;
+    } else {
+      do_int(ir->epc);
+      do_int(ir->epct);
     }
     do_real(ir->tau_p); 
     if (file_version <= 15) {
@@ -256,8 +274,9 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
 	for(i=0; i<ir->opts.ngtc; i++)
 	  ir->opts.nrdf[i] = tmp[i];
 	sfree(tmp);
-     } else
+      } else {
 	ndo_real(ir->opts.nrdf, ir->opts.ngtc,bDum);
+      }
       ndo_real(ir->opts.ref_t,ir->opts.ngtc,bDum); 
       ndo_real(ir->opts.tau_t,ir->opts.ngtc,bDum); 
     }

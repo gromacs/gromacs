@@ -44,12 +44,12 @@ static char *SRCID_update_h = "$Id$";
 #include "pull.h"
 
 extern void update(int          natoms,	/* number of atoms in simulation */
-		   int      	 start,
+		   int      	start,
 		   int          homenr,	/* number of home particles 	*/
 		   int          step,
 		   real         lambda, /* FEP scaling parameter */
 		   real         *dvdlambda, /* FEP stuff */
-		   t_inputrec   *ir,    /* input record with constants 	*/
+		   t_parm       *parm,    /* input record and box stuff	*/
 		   real         SAfactor, /* simulated annealing factor   */
 		   t_mdatoms    *md,
 		   rvec         x[],	/* coordinates of home particles */
@@ -57,10 +57,8 @@ extern void update(int          natoms,	/* number of atoms in simulation */
 		   rvec         force[],/* forces on home particles 	*/
 		   rvec         delta_f[],
 		   rvec         vold[],	/* Old velocities		   */
-		   rvec         v[], 	/* velocities of home particles */
-		   rvec         vt[],  	/* velocity at time t 		*/
-		   tensor       pressure,/* instantaneous pressure tensor */
-		   tensor       box,  	/* instantaneous box lengths 	*/
+		   rvec         vt[], 	/* velocities at whole steps */
+		   rvec         v[],  	/* velocity at next halfstep   	*/
 		   t_topology   *top,
 		   t_groups     *grps,
 		   tensor       vir_part,
@@ -110,9 +108,11 @@ extern void calc_ke_part_visc(bool bFirstStep,int start,int homenr,
  */
 extern real run_aver(real old,real cur,int step,int nmem);
 
-extern void tcoupl(bool bTC,t_grpopts *opts,t_groups *grps,
-		   real dt,real SAfactor);
-/* Compute temperature scaling factors */
+extern void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,
+			     real dt,real SAfactor);
+extern void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,
+			      real dt,real SAfactor);
+/* Compute temperature scaling. For Nose-Hoover it is done in update. */
 
 extern real calc_temp(real ekin,real nrdf);
 /* Calculate the temperature */
@@ -123,10 +123,15 @@ extern void calc_pres(int ePBC,matrix box,
  * a long range correction based on Ewald/PPPM is made (see c-code)
  */
 
-extern void do_pcoupl(t_inputrec *ir,int step,tensor pres,
-		      matrix box,int start,int nr_atoms,
-		      rvec x[],unsigned short cFREEZE[],
-		      t_nrnb *nrnb,ivec nFreeze[]);
+extern void parinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
+				   tensor box,tensor boxv,tensor M);
+  
+extern void berendsen_pcoupl(t_inputrec *ir,int step,tensor pres,
+			     matrix box,int start,int nr_atoms,
+			     rvec x[],unsigned short cFREEZE[],
+			     t_nrnb *nrnb,ivec nFreeze[]);
+
+extern void correct_box(tensor box);
 		      
 extern void correct_ekin(FILE *log,int start,int end,rvec v[],
 			 rvec vcm,real mass[],real tmass,tensor ekin);

@@ -124,6 +124,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   double     cputime=0,realtime;
   t_parm     *parm;
   rvec       *buf,*f,*vold,*v,*vt,*x,box_size;
+  real       tmpr1,tmpr2;
   real       *ener;
   t_nrnb     *nrnb;
   t_nsborder *nsb;
@@ -271,7 +272,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   }
 }
 
-void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
+void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 	     real *lambda,real *lam0,real *SAfactor,
 	     t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
 	     int nfile,t_filenm fnm[],char **traj,char **xtc_traj,int *fp_ene,
@@ -320,7 +321,8 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 
     *mdebin = init_mdebin(*fp_ene,grps,&(top->atoms),&(top->idef),
 			  bLR,bLJLR,bBHAM,b14,ir->efep!=efepNO,ir->epc,
-			  ir->bDispCorr,cr);
+			  ir->bDispCorr,(TRICLINIC(ir->compress) || TRICLINIC(box)),
+			  (ir->etc==etcNOSEHOOVER),cr);
   }
   
   /* Initiate variables */  

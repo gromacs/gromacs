@@ -643,7 +643,7 @@ void force(FILE       *fp,     int        step,
 	      box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
     }
     if(TRICLINIC(box))
-	inc_nrnb(nrnb,eNR_SHIFTX*2,graph->nnodes);
+	inc_nrnb(nrnb,eNR_SHIFTX,2*graph->nnodes);
     else
 	inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
     debug_gmx();
@@ -675,7 +675,7 @@ void force(FILE       *fp,     int        step,
     if(fr->bEwald)
       Vcorr =
 	ewald_LRcorrection(fp,nsb,cr,fr,md->chargeA,excl,x,box_size,
-			   mu_tot,qsum,ir->surface_dipole,lr_vir);
+			   mu_tot,qsum,ir->epsilon_surface,lr_vir);
     else
       Vcorr = shift_LRcorrection(fp,nsb,cr,fr,md->chargeA,excl,x,TRUE,box_size,lr_vir);
     epot[F_LR] = Vlr + Vcorr;
