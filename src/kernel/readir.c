@@ -282,6 +282,7 @@ void get_ir(char *mdparin,char *mdparout,
   ITYPE ("nsteps",      ir->nsteps,     1);
   CTYPE ("number of steps for center of mass motion removal");
   ITYPE ("nstcomm",	ir->nstcomm,	1);
+  STYPE ("comm-grps",   vcm,            NULL);
   
   CCTYPE ("LANGEVIN DYNAMICS OPTIONS");
   CTYPE ("Temperature, friction coefficient (amu/ps) and random seed");
@@ -451,7 +452,6 @@ void get_ir(char *mdparin,char *mdparout,
   CCTYPE ("User defined thingies");
   STYPE ("user1-grps",  user1,          NULL);
   STYPE ("user2-grps",  user2,          NULL);
-  STYPE ("vcm-grps",    vcm,            NULL);
   ITYPE ("userint1",    ir->userint1,   0);
   ITYPE ("userint2",    ir->userint2,   0);
   ITYPE ("userint3",    ir->userint3,   0);
@@ -655,12 +655,15 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
 }
 
 static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
-		      int nstcomm,int ngvcm)
+		      char **gnames,int nstcomm)
 {
-  int     ai,aj,i,n,d,g,gi,gj,imin,jmin;
+  int     ai,aj,i,j,d,g,imin,jmin;
   t_iatom *ia;
-  int     *nrdf;
-  real    nrdf_tot,fac;
+  int     *nrdf,*na_vcm,na_tot;
+  double  *nrdf_vcm,nrdf_uc,n_sub;
+
+  if (nstcomm<0 && atoms->grps[egcVCM].nr>1)
+    fatal_error(0,"Can not remove rotation on more than one group");
 
   /* Calculate nrdf. 
    * First calc 3xnr-atoms for each group
@@ -669,8 +672,13 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
    * Only atoms and nuclei contribute to the degrees of freedom...
    */
 
-  for(i=0; (i<atoms->grps[egcTC].nr); i++)
+  snew(nrdf_vcm,atoms->grps[egcVCM].nr);
+  snew(na_vcm,atoms->grps[egcVCM].nr);
+  
+  for(i=0; i<atoms->grps[egcTC].nr; i++)
     opts->nrdf[i] = 0;
+  for(i=0; i<atoms->grps[egcVCM].nr; i++)
+    nrdf_vcm[i] = 0;
 
   snew(nrdf,atoms->nr);
   for(i=0; i<atoms->nr; i++) {
@@ -682,8 +690,8 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
       for(d=0; d<DIM; d++)
 	if (opts->nFreeze[g][d] == 0)
 	  nrdf[i] += 2; 
-      g = atoms->atom[i].grpnr[egcTC];
-      opts->nrdf[g] += 0.5*nrdf[i];
+      opts->nrdf[atoms->atom[i].grpnr[egcTC]] += 0.5*nrdf[i];
+      nrdf_vcm[atoms->atom[i].grpnr[egcVCM]] += 0.5*nrdf[i];
     }
   }
   ia=idef->il[F_SHAKE].iatoms;
@@ -693,8 +701,6 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
      */
     ai=ia[1];
     aj=ia[2];
-    gi=atoms->atom[ai].grpnr[egcTC];
-    gj=atoms->atom[aj].grpnr[egcTC];
     if (nrdf[ai] > 0)
       jmin = 1;
     else
@@ -707,40 +713,63 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
     jmin = min(jmin,nrdf[aj]);
     nrdf[ai] -= imin;
     nrdf[aj] -= jmin;
-    opts->nrdf[gi] -= 0.5*imin;
-    opts->nrdf[gj] -= 0.5*jmin;
+    opts->nrdf[atoms->atom[ai].grpnr[egcTC]] -= 0.5*imin;
+    opts->nrdf[atoms->atom[aj].grpnr[egcTC]] -= 0.5*jmin;
+    nrdf_vcm[atoms->atom[ai].grpnr[egcVCM]] -= 0.5*imin;
+    nrdf_vcm[atoms->atom[aj].grpnr[egcVCM]] -= 0.5*jmin;
     ia += 3;
     i += 3;
   }
   ia=idef->il[F_SETTLE].iatoms;
   for(i=0; (i<idef->il[F_SETTLE].nr); ) {
     ai=ia[1];
-    gi=atoms->atom[ai].grpnr[egcTC];
-    opts->nrdf[gi]-=3;
+    opts->nrdf[atoms->atom[ai].grpnr[egcTC]] -= 3;
+    nrdf_vcm[atoms->atom[ai].grpnr[egcVCM]] -= 3;
     ia+=2;
     i+=2;
   }
 
   if (nstcomm != 0) {
-    /* Subtract 3 from the total number of degrees of freedom
-     * when com translation is removed and 6 when rotation is
-     * removed as well.
+    /* Subtract 3 from the number of degrees of freedom in each vcm group
+     * when com translation is removed and 6 when rotation is removed
+     * as well.
      */
-    nrdf_tot = 0;
-    for(i=0; (i<atoms->grps[egcTC].nr); i++)
-      nrdf_tot += opts->nrdf[i];
     if (nstcomm > 0)
-      fac = (nrdf_tot-3*ngvcm)/nrdf_tot;
+      n_sub = 3;
     else
-      fac = (nrdf_tot-6*ngvcm)/nrdf_tot;
-    for(i=0; (i<atoms->grps[egcTC].nr); i++)
-      opts->nrdf[i] *= fac;
+      n_sub = 6;
+
+    for(i=0; i<atoms->grps[egcTC].nr; i++) {
+      /* Count the number of atoms of TC group i for every VCM group */
+      for(j=0; j<atoms->grps[egcVCM].nr; j++)
+	na_vcm[j] = 0;
+      na_tot = 0;
+      for(ai=0; ai<atoms->nr; ai++)
+	if (atoms->atom[ai].grpnr[egcTC] == i) {
+	  na_vcm[atoms->atom[ai].grpnr[egcVCM]]++;
+	  na_tot++;
+	}
+      /* Correct for VCM removal according to the fraction of each VCM
+       * group present in this TC group.
+       */
+      nrdf_uc = opts->nrdf[i];
+      opts->nrdf[i] = 0;
+      for(j=0; j<atoms->grps[egcVCM].nr; j++)
+	opts->nrdf[i] += nrdf_uc*((double)na_vcm[j]/(double)na_tot)*
+	  (nrdf_vcm[j] - n_sub)/nrdf_vcm[j];
+    }
   }
-  for(i=0; (i<atoms->grps[egcTC].nr); i++)
+  for(i=0; i<atoms->grps[egcTC].nr; i++) {
     if (opts->nrdf[i] < 0)
       opts->nrdf[i] = 0;
-
+    fprintf(stderr,
+	    "Number of degrees of freedom in T-Coupling group %s is %.2f\n",
+	    gnames[atoms->grps[egcTC].nm_ind[i]],opts->nrdf[i]);
+  }
+  
   sfree(nrdf);
+  sfree(nrdf_vcm);
+  sfree(na_vcm);
 }
 
 static void decode_cos(char *s,t_cosines *cosine)
@@ -907,7 +936,7 @@ void do_index(char *ndx,
 	       restnm,forward,FALSE,bVerbose);
 
   /* Now we have filled the freeze struct, so we can calculate NRDF */ 
-  calc_nrdf(atoms,idef,&(ir->opts),ir->nstcomm,nuser);
+  calc_nrdf(atoms,idef,&(ir->opts),gnames,ir->nstcomm);
   
   nuser=str_nelem(user1,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser1,"User1",
