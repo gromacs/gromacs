@@ -1,0 +1,16 @@
+#!/bin/csh
+
+set 	wd = $cwd
+cd $GMXHOME
+if ( ! -f man ) mkdir man
+cd man
+if ( ! -f man1 ) mkdir man1
+
+cd 	$GMXHOME/bin/s10
+foreach i ( * )
+if ( -x $i ) then
+$i -man 3
+if ( -f $i.1 ) mv $i.1 $GMXHOME/man/man1
+endif
+end
+
