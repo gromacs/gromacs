@@ -64,7 +64,7 @@ void print_time(FILE *out,time_t start,int step,t_inputrec *ir)
       /* We have done a full cycle let's update time_per_step */
       end=time(NULL);
       dt=difftime(end,start);
-      time_per_step=dt/step;
+      time_per_step=dt/(step+1);
     }
     dt=(ir->nsteps-step)*time_per_step;
 
