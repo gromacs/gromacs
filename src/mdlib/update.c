@@ -398,7 +398,7 @@ static void do_update_bd(int start,int homenr,double dt,
     invfr = 1.0/fr;
   } else
     for(n=0; n<ngtc; n++)
-      rf[n]  = sqrt(2.0*BOLTZ*ref_t[n]*tau_t[n]/dt);
+      rf[n]  = sqrt(2.0*BOLTZ*ref_t[n]/dt);
   
   jran = (unsigned long)((real)im*rando(seed));
 
@@ -412,8 +412,9 @@ static void do_update_bd(int start,int homenr,double dt,
 	if (fr)
 	  vv         = invfr*f[n][d] + rfac*fgauss(&jran);
 	else
-	  vv         = invmass[n]*tau_t[gt]*f[n][d] 
-	    + sqrt(invmass[n])*rf[gt]*fgauss(&jran);
+	  /* NOTE: invmass = 1/(mass*fric_const) */
+	  vv         = invmass[n]*f[n][d] 
+	               + sqrt(invmass[n])*rf[gt]*fgauss(&jran);
 
 	v[n][d]      = vv;
 	xprime[n][d] = x[n][d]+v[n][d]*dt;

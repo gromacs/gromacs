@@ -36,9 +36,11 @@ static char *SRCID_mdatom_c = "$Id$";
 #define ALMOST_ZERO 1e-30
 
 t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
-		    bool bMass1,bool bPert,bool bFree)
+		    bool bBD,real fric,real tau_t[],
+		    bool bPert,bool bFree)
 {
   int       i,np,g;
+  real      fr;
   double    tm;
   t_mdatoms *md;
   
@@ -69,15 +71,23 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
   np=0;
   tm=0.0;
   for(i=0; (i<md->nr); i++) {
-    if (bMass1) {
-      md->massA[i]	= 1;
-      md->massB[i]	= 1;
-      md->massT[i]	= 1;
+    if (bBD) {
+      /* Set the mass equal to the friction coefficient for BD.
+       * This is necessary for the constraint algorithms.
+       */
+      if (fric) {
+	md->massA[i]	= fric;
+	md->massB[i]	= fric;
+      } else {
+	fr = 1/tau_t[atoms->atom[i].grpnr[egcTC]];
+	md->massA[i]	= atoms->atom[i].m*fr;
+	md->massB[i]	= atoms->atom[i].mB*fr;
+      }
     } else {
       md->massA[i]	= atoms->atom[i].m;
       md->massB[i]	= atoms->atom[i].mB;
-      md->massT[i]	= atoms->atom[i].m;
     }
+    md->massT[i]	= md->massA[i];
     md->chargeA[i]	= atoms->atom[i].q;
     md->chargeB[i]	= atoms->atom[i].qB;
     md->resnr[i]	= atoms->atom[i].resnr;

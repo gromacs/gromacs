@@ -35,7 +35,8 @@ static char *SRCID_mdatoms_h = "$Id$";
 #include "typedefs.h"
 
 extern t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
-			   bool bMass1,bool bPert,bool bFree);
+			   bool bBD,real fric,real tau_t[],
+			   bool bPert,bool bFree);
 /* This routine copies the atoms->atom struct into a t_mdatoms struct
  * and then frees the atoms->atom struct if bFree is set.
  */
