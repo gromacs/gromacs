@@ -139,10 +139,11 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	    " turned off.");
     ir->bDispCorr = FALSE;
   }
-
+  
   sprintf(err_buf,"Twin-range neighbour searching (NS) with simple NS"
 	  " algorithm not implemented");
-  CHECK((ir->rcoulomb > ir->rlist) && (ir->ns_type == ensSIMPLE));
+  CHECK(((ir->rcoulomb > ir->rlist) || (ir->rvdw > ir->rlist)) 
+	&& (ir->ns_type == ensSIMPLE));
   
   /* PRESSURE COUPLING */
   if (ir->epc != epcNO) {
@@ -167,73 +168,53 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     CHECK((ir->eeltype != eelRF) && (ir->eeltype != eelGRF));
   }
   
-  sprintf(err_buf,"With eel_type = %s rcoulomb_switch must be < rcoulomb",
-	  eel_names[ir->eeltype]);
-  CHECK(((ir->eeltype == eelSHIFT) || (ir->eeltype == eelSWITCH)  ||
-	 (ir->eeltype == eelPPPM)  || (ir->eeltype == eelPOISSON) ||
-	 (ir->eeltype == eelPME))  &&
-	 (ir->rcoulomb_switch >= ir->rcoulomb));
-  
-  sprintf(err_buf,"rvdw (%g) may not be > rcoulomb (%g) when using twin range",
-	  ir->rvdw,ir->rcoulomb);
-  CHECK((ir->rvdw > ir->rcoulomb) && (ir->rcoulomb > ir->rlist));
-
-  if (((ir->eeltype == eelCUT) || (ir->eeltype == eelRF) ||
-       (ir->eeltype == eelGRF)) && 
-      (ir->rvdw > ir->rcoulomb)) {
-    sprintf(warn_buf,"With eel_type = %s it seems strange to have "
-	    "rvdw (%g) > rcoulomb (%g)",eel_names[ir->eeltype],
-	    ir->rvdw,ir->rcoulomb);
-    warning(NULL);
-  }
-    
-  sprintf(err_buf,"With vdw_type = %s rvdw_switch must be < rvdw",
-	  evdw_names[ir->vdwtype]);
-  CHECK(((ir->vdwtype == evdwSHIFT) || (ir->vdwtype == evdwSWITCH)) &&
-	(ir->rvdw_switch >= ir->rvdw));
-  if ((ir->vdwtype == evdwCUT) && (ir->rvdw_switch != ir->rvdw)) {
-    sprintf(warn_buf,
-	    "rvdw_switch should be equal to rvdw when using vdw_type = %s\n"
-	    "setting it to %g",
-	    evdw_names[ir->vdwtype],ir->rvdw);
-    warning(NULL);
-    ir->rvdw_switch = ir->rvdw;
+  if ((ir->eeltype == eelCUT) || 
+      (ir->eeltype == eelRF) || (ir->eeltype == eelGRF)) {
+    /* Cut-off electrostatics (may be tabulated) */
+    sprintf(err_buf,"With eel_type = %s rcoulomb must be >= rlist",
+	    eel_names[ir->eeltype]);
+    CHECK(ir->rlist > ir->rcoulomb);
+    sprintf(err_buf,"With eel_type = %s rcoulomb must be >= rvdw",
+	    eel_names[ir->eeltype]);
+    CHECK(ir->rvdw > ir->rcoulomb);
+    if ((ir->eeltype == eelRF) || (ir->eeltype == eelGRF)) {
+      /* reaction field (at the cut-off) */
+      if (ir->epsilon_r == 1.0) {
+	sprintf(warn_buf,"Using epsilon_r = 1.0 with %s does not make sense",
+		eel_names[ir->eeltype]);
+	warning(NULL);
+      }
+    }
+  } else {
+    /* Tabulated electrostatics (no cut-off) */
+    sprintf(err_buf,"With eel_type = %s rcoulomb must be <= rlist",
+	    eel_names[ir->eeltype]);
+    CHECK(ir->rcoulomb > ir->rlist);
+    sprintf(err_buf,"With eel_type = %s rcoulomb_switch must be < rcoulomb",
+	    eel_names[ir->eeltype]);
+    CHECK(ir->rcoulomb_switch > ir->rcoulomb);
+    if (ir->rcoulomb_switch > ir->rcoulomb-0.0999) { 
+      sprintf(warn_buf,"rcoulomb should be 0.1 to 0.3 nm larger than rcoulomb_switch to account for diffusion and the size of charge groups"); 
+      warning(NULL);
+    }
   }
   
   sprintf(err_buf,"When using eel_type = %s"
 	  " ref_t for temperature coupling should be > 0",
 	  eel_names[eelGRF]);
   CHECK((ir->eeltype == eelGRF) && (ir->opts.ref_t[0] <= 0));
-
-  if (((ir->eeltype == eelCUT) || (ir->eeltype == eelRF)  ||
-       (ir->eeltype == eelGRF)) && 
-      (ir->rcoulomb_switch != ir->rcoulomb)) {
-    sprintf(warn_buf,
-	    "rcoulomb_switch should be equal to rcoulomb when using eel_type = %s\n"
-	    "setting it to %g",
-	    eel_names[ir->eeltype],ir->rcoulomb);
-    warning(NULL);
-    ir->rcoulomb_switch = ir->rcoulomb;
-  }
-
-  if ((ir->rvdw_switch < ir->rvdw) && (ir->vdwtype != evdwCUT)) {
-    sprintf(warn_buf,
-	    "rvdw = rlist = %g, rvdw_switch = %g, will switch the VdW "
-	    "forces to zero exactly at the cut-off, to prevent cut-off "
-	    "effects rlist should be 0.1 to 0.3 nm larger than rvdw\n"
-	    "The shift and switch can be turned off by making rvdw_switch "
-	    "equal to rvdw\n",
-	    ir->rlist,ir->rvdw_switch);
-    warning(NULL);
-  }
   
-  if ((ir->eeltype == eelRF) || (ir->eeltype == eelGRF)) {
-    if (ir->epsilon_r == 1.0) {
-      sprintf(warn_buf,"Using epsilon_r = 1.0 with %s does not make sense"
-	      "setting eeltype to %s",
-	      eel_names[ir->eeltype],eel_names[eelCUT]);
+  if (ir->vdwtype == evdwCUT) {
+    sprintf(err_buf,"With vdwtype = %s rvdw must be >= rlist",
+	    eel_names[ir->vdwtype]);
+    CHECK(ir->rlist > ir->rvdw);
+  } else {
+    sprintf(err_buf,"With vdwtype = %s rvdw_switch must be < rvdw",
+	    evdw_names[ir->vdwtype]);
+    CHECK(ir->rvdw_switch >= ir->rvdw);
+    if (ir->rvdw_switch > ir->rvdw-0.0999) { 
+      sprintf(warn_buf,"rvdw should be 0.1 to 0.3 nm larger than rvdw_switch to account for diffusion and the size of charge groups"); 
       warning(NULL);
-      ir->eeltype = eelCUT;
     }
   }
 }
@@ -311,6 +292,7 @@ void get_ir(char *mdparin,char *mdparout,
   ITYPE ("deltagrid",	ir->ndelta,	2);
   CTYPE ("Box type, rectangular, triclinic, none");
   EETYPE("box",         ir->eBox,       eboxtype_names, nerror, TRUE);
+  CTYPE ("nblist cut-off");
   RTYPE ("rlist",	ir->rlist,	1.0);
 
   /* Electrostatics */
@@ -321,8 +303,6 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("rcoulomb_switch",	ir->rcoulomb_switch,	0.0);
   RTYPE ("rcoulomb",	ir->rcoulomb,	1.0);
   CTYPE ("Dielectric constant (DC) for cut-off or DC of reaction field");
-  CTYPE ("This may be set to 0 or inf to use infinite eps in combination");
-  CTYPE ("with (generalized) reaction field.");
   STYPE ("epsilon_r",   epsbuf,         "1");
   CTYPE ("Method for doing Van der Waals");
   EETYPE("vdw_type",	ir->vdwtype,    evdw_names, nerror, TRUE);
