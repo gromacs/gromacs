@@ -5,7 +5,7 @@
 
 $bindir = shift || die("Need argument bindir");
 
-@progs = ( "analyze",   "anaeig",  "angle",      "bond", 
+@ppp = ( "analyze",   "anaeig",  "angle",      "bond", 
 	   "bundle",    "chi",     "cluster",    "confrms", 
 	   "covar",     "density", "dielectric", "dih",  
 	   "dipoles",   "disre",   "dist",       "dyndom", 
@@ -17,6 +17,8 @@ $bindir = shift || die("Need argument bindir");
 	   "rotacf",    "saltbr",  "sas",        "sgangle", 
 	   "sorient",   "tcaf",    "traj",       "velacc", 
 	   "clustsize", "mdmat" );
+
+@progs = sort @ppp;
 
 $incfile = "gmx-ana.h";
 open(INC,">$incfile") || die ("Can not open $incfile for writing");
