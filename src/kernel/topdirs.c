@@ -268,6 +268,11 @@ int DS_Check_Order(DirStack *DS,directive d)
   directive d0;
   int       i=0;
 
+  /* Check if parameter definitions appear after a moleculetype directive */
+  if (d<d_moleculetype && DS_Search(DS,d_moleculetype))
+    return FALSE;
+
+  /* Check if all the necessary directives have appeared before directive d */
   if (necessary[d][0] == d_none)
     return TRUE;
   else {

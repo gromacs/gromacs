@@ -128,6 +128,7 @@ static char *ds[d_maxdir+1] = {
   "dihedraltypes",
   "nonbond_params",
   "blocktype",
+  /* All the directives above can not appear after moleculetype */
   "moleculetype",
   "atoms",
   "dummies2",

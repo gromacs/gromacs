@@ -330,9 +330,8 @@ static char **read_topol(char        *infile,
 	  else {
 	    /* we should print here which directives should have
 	       been present, and which actually are */
-	    sprintf(errbuf,"Invalid order in directives %s",dirstr);
-	    warning(errbuf);
-	    d = d_invalid;
+	    fatal_error(0,"Invalid order for directive %s, file \"%s\", line %d",dirstr,curfile,curline);
+	    /* d = d_invalid; */
 	  }
 	}
 	sfree(dirstr);
