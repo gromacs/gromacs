@@ -15,9 +15,15 @@ Methanol        2
 
 [ atoms ]
 ;   nr  type    resnr   residu  atom    cgnr    charge	mass
+#ifdef _FF_GROMOS96
 1       CMET     1       MeOH    Me1     1        0.176 15.035   
 2       OMET     1       MeOH    O2      1       -0.574 15.999 
 3       H        1       MeOH    H3      1        0.398  1.008 
+#else
+1       CMET     1       MeOH    Me1     1        0.29  15.035
+2       OMET     1       MeOH    O2      1       -0.69  15.999
+3       H        1       MeOH    H3      1        0.40   1.008
+#endif
 
 [ bonds ]
 ;  ai  aj funct           c0           c1
