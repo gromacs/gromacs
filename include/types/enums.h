@@ -73,7 +73,7 @@ enum {
 
 #define EEL_RF(e) ((e == eelRF) || (e == eelGRF) || (e == eelRF_OLD))
 
-#define EEL_FULL(e) ((e == eelPPPM) || (e == eelPOISSON) || (e ==  eelPME) || (e == eelEWALD))
+#define EEL_FULL(e) ((e == eelPPPM) || (e == eelPOISSON) || (e ==  eelPME) || (e ==  eelPMEUSER) || (e == eelEWALD))
 
 enum {
   evdwCUT, evdwSWITCH, evdwSHIFT, evdwUSER, evdwENCADSHIFT, evdwNR
