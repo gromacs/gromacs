@@ -1,3 +1,4 @@
+#!gmake
 #
 # Makefile for man pages
 #
