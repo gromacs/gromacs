@@ -553,7 +553,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   shift_self(graph,fr->shift_vec,x);
   fprintf(log,"Done rmpbc\n");
   
-  traj     = ftp2fn(efTRJ,nfile,fnm);
+  traj     = ftp2fn(efTRN,nfile,fnm);
   xtc_traj = ftp2fn(efXTC,nfile,fnm);
   where();
 
@@ -587,7 +587,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   clear_rvec(vcm);
   
-  if (parm->ir.bShakeFirst) 
+  if (!parm->ir.bUncStart) 
     do_shakefirst(log,bTYZ,lambda,ener,parm,nsb,md,x,vold,buf,f,v,
 		  graph,cr,nrnb,grps,fr,top,edyn);
   
@@ -779,6 +779,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
     ener[F_EKIN]=trace(parm->ekin);
     ener[F_ETOT]=ener[F_EPOT]+ener[F_EKIN];
+    
+    /* Check for excessively large energies */
+    if (fabs(ener[F_ETOT]) > 1e10) {
+      fprintf(stderr,"Energy too large (%g), giving up\n",ener[F_ETOT]);
+      break;
+    }
 #ifdef DEBUG
     fprintf(stderr,"Ekin 1: %14.10e", ener[F_EKIN]);
 #endif
@@ -787,7 +793,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	   step,parm->ir.ntcmemory);
     
     /* Calculate pressure ! */
-    calc_pres(parm->box,parm->ekin,parm->vir,parm->pres);
+    calc_pres(parm->box,parm->ekin,parm->vir,parm->pres,
+	      EEL_LR(fr->eeltype) ? ener[F_LR] : 0.0);
 
     /* Calculate long range corrections to pressure and energy */
     if (bTCR)
@@ -815,8 +822,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (MASTER(cr) && bVerbose && ((step % stepout)==0))
       print_time(stderr,start_t,step,&parm->ir);
   }
-  /*  t=t0+step*parm->ir.delta_t;
-  lambda=lam0+step*parm->ir.delta_lambda; */
   
   if (MASTER(cr)) {
     if (parm->ir.nstprint > 1)
@@ -846,9 +851,9 @@ int main(int argc,char *argv[])
   t_commrec    *cr;
   t_filenm fnm[] = {
     { efTPX, NULL,      NULL,       ffREAD },
-    { efTRJ, "-o",      NULL,       ffWRITE },
+    { efTRN, "-o",      NULL,       ffWRITE },
     { efXTC, "-x",      NULL,       ffOPTWR },
-    { efGRO, "-c",      "confout",  ffWRITE },
+    { efSTO, "-c",      "confout",  ffWRITE },
     { efHAT, "-hat",    "ghat",     ffOPTRD },
     { efENX, "-e",      "ener",     ffWRITE },
     { efLOG, "-g",      "md",       ffWRITE },

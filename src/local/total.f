@@ -737,7 +737,12 @@ C ******Write out results*********************
 1000	continue
         imodel=1 !to make it work for single structure
         goto 776
-777     STOP
+C       Hacked DvdS 10/98
+ 777	continue
+	print *,'Closing unit 3'
+	close(3)
+C
+	STOP
 	END
 C *******************************************************
 	SUBROUTINE VEC(at1,at2,at3,vx,vy,vz,r)

@@ -38,6 +38,6 @@ total:		total.o
 
 do_shift:	do_shift.o
 		$(LD) -o $@ $^ $(SYSLIBS)
-
-
+testpt:		testpt.o ionize.o
+		$(LD) -o $@ $^ $(SYSLIBS) -lm
 include	Make.dep
