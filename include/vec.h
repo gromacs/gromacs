@@ -129,9 +129,9 @@
 
 #define PR_VEC(a)       a[XX],a[YY],a[ZZ]
 
-#ifdef SOFTWARE_INVSQRT
-extern const unsigned int cinvsqrtexptab[];
-extern const unsigned int cinvsqrtfracttab[];
+#ifdef GMX_SOFTWARE_INVSQRT
+extern const unsigned int *  gmx_invsqrt_exptab;
+extern const unsigned int *  gmx_invsqrt_fracttab;
 #endif
 
 
@@ -142,7 +142,7 @@ typedef union
 } t_convert;
 
 
-#ifdef SOFTWARE_INVSQRT
+#ifdef GMX_SOFTWARE_INVSQRT
 static inline real invsqrt(real x)
 {
   const real  half=0.5;
@@ -151,18 +151,18 @@ static inline real invsqrt(real x)
   unsigned int exp,fract;
   real        lu;
   real        y;
-#ifdef DOUBLE
+#ifdef GMX_DOUBLE
   real        y2;
 #endif
  
   bit_pattern.fval=x;
   exp   = EXP_ADDR(bit_pattern.bval);
   fract = FRACT_ADDR(bit_pattern.bval);
-  result.bval=cinvsqrtexptab[exp] | cinvsqrtfracttab[fract];
+  result.bval=gmx_invsqrt_exptab[exp] | gmx_invsqrt_fracttab[fract];
   lu    = result.fval;
   
   y=(half*lu*(three-((x*lu)*lu)));
-#ifdef DOUBLE
+#ifdef GMX_DOUBLE
   y2=(half*y*(three-((x*y)*y)));
   
   return y2;                    /* 10 Flops */
