@@ -1,43 +1,18 @@
-/*
- *       $Id$
- *
- *       This source code is part of
- *
- *        G   R   O   M   A   C   S
- *
- * GROningen MAchine for Chemical Simulations
- *
- *            VERSION 2.0
- * 
- * Copyright (c) 1991-1997
- * BIOSON Research Institute, Dept. of Biophysical Chemistry
- * University of Groningen, The Netherlands
- * 
- * Please refer to:
- * GROMACS: A message-passing parallel molecular dynamics implementation
- * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
- * Comp. Phys. Comm. 91, 43-56 (1995)
- *
- * Also check out our WWW page:
- * http://rugmd0.chem.rug.nl/~gmx
- * or e-mail to:
- * gromacs@chem.rug.nl
- *
- * And Hey:
- * Great Red Owns Many ACres of Sand 
- */
 
-#ifndef _lrutil_h
-#define _lrutil_h
 
-static char *SRCID_lrutil_h = "$Id$";
+#ifndef _shift_util_h
+#define _shift_util_h
+
+static char *SRCID_shift_util_h = "";
 
 #include <math.h>
 #include "typedefs.h"
 #include "complex.h"
 
-extern void set_LRconsts(FILE *log,real r1,real rc,rvec box,t_forcerec *fr);
-/* Set constants necessary for Long Range electrostatics calculations */
+/* Routines to set global constants for speeding up the calculation
+ * of potentials, forces and gk-values.
+ */
+extern void set_shift_consts(FILE *log,real r1,real rc,rvec box,t_forcerec *fr);
 
 extern real gk(real k,real rc,real r1);
 /* Compute the Ghat function for a single k-value */
@@ -64,7 +39,7 @@ extern void calc_ener(FILE *fp,char *title,bool bHeader,
 		      int nmol,int natoms,
 		      real phi[],real charge[],t_block *excl);
 
-extern real calc_LRcorrections(FILE *fp,t_nsborder *nsb,
+extern real shift_LRcorrection(FILE *fp,t_nsborder *nsb,
 			       t_commrec *cr,t_forcerec *fr,
 			       real charge[],t_block *excl,rvec x[],
 			       bool bOld,rvec box_size,matrix lrvir);
@@ -72,7 +47,7 @@ extern real calc_LRcorrections(FILE *fp,t_nsborder *nsb,
  * when using long range electrostatics methods.
  * Part of this is a constant, it is computed only once and stored in
  * a local variable. The remainder is computed every step.
- * No PBC is taken into account!     (Some PBC now.. Erik 990712)
+ * PBC is taken into account. (Erik L.) 
  */
 
 extern void calc_weights(int iatom,int nx,int ny,int nz,
