@@ -54,7 +54,7 @@ Particle	& Symbol	\\
 \dline
 \end{tabular}
 }
-\caption{Particle types in Gromacs}
+\caption{Particle types in {\Gromacs}}
 \label{ta:ptype}
 \end{table}
 
@@ -118,7 +118,7 @@ Atomic detail is used except for hydrogen atoms bound to (aliphatic)
 carbon atoms, which are treated as {\em \normindex{united atoms}}. No
 special \normindex{hydrogen-bond} term is included.
 
-The last 10 atomtypes are extra atomtypes with respect to the GROMOS87
+The last 10 atomtypes are extra atomtypes with respect to the \gromosv{87}
 force field~\cite{biomos}: 
 \begin{itemize}
 \item F was taken from ref.~\cite{Buuren93a}, 
@@ -131,7 +131,7 @@ force field~\cite{biomos}:
 sure you use the references in your publications as mentioned above.}
 
 {\bf Note:} {\gromacs} makes use of the atom types as a name, {\em
-not} as a number (as e.g. in GROMOS).
+not} as a number (as e.g. in {\gromos}).
 
 \subsection{Nucleus}
 {\em Necessary for \normindex{polarisability}, not implemented yet.}
@@ -242,7 +242,7 @@ sigma		& $\sigma$	& nm		\\
 \dline
 \end{tabular}
 }
-\caption{Static atomtype properties in Gromacs}
+\caption{Static atomtype properties in {\Gromacs}}
 \label{tab:statprop}
 \end{table}
 
@@ -383,7 +383,7 @@ of course, or add new parameters for different/new atom types.
 \label{subsec:rtp}
 The file holding the residue database is {\tt ffgmx.rtp}. Originally
 this file contained building blocks (amino acids) for proteins, and is
-the {\gromacs} interpretation of the {\tt rt37c4.dat} file of GROMOS. So
+the {\gromacs} interpretation of the {\tt rt37c4.dat} file of {\gromos}. So
 the residue file contains information (bonds, charge, charge groups
 and improper dihedrals) for a frequently used building block. It is
 better {\em not} to change this file because it is standard input for
@@ -462,7 +462,7 @@ Parameters can be added to bonds, angles, dihedrals and impropers,
 these parameters override the standard parameters in the {\tt .itp} files.
 This should only be used in special cases. Instead of parameters, a
 string can be added for each bonded interaction, this is used in
-GROMOS96 {\tt .rtp} files. These strings are copied to the topolgy file
+\gromos{96} {\tt .rtp} files. These strings are copied to the topolgy file
 and can be replaced by force field parameters by the C-preprocessor in
 {\tt grompp} using {\tt \#define} statements.
 
@@ -530,9 +530,9 @@ two hydrogen atoms (n1,n2) are generated at a distance of 0.1 nm from
 atom i in tetrahedral conformation on the plane bissecting angle i-j-k
 with angle (n1-i-n2)=(n1-i-j)=(n1-i-k)=109.5
 \item[7]{\em two water hydrogens}\\
-two hydrogens are generated around atom i according to GROMOS water
-geometry. The symmetry axis will alternate between three coordinate
-axes in both directions
+two hydrogens are generated around atom i according to
+SPC~\cite{berendsen81} water geometry. The symmetry axis will
+alternate between three coordinate axes in both directions
 \item[8]{\em two carboxyl oxygens, -COO{$^-$}}\\
 two oxygens (n1,n2) are generated according to rule 3, at a distance
 of 0.136 nm from atom i and an angle (n1-i-j)=(n2-i-j)=117 degrees
@@ -549,9 +549,7 @@ atom to which the H atoms are connected. The other two or three depend
 on the code selected.
 \end{itemize}
 
-The program code to \normindex{generate hydrogen} positions were taken
-from the Gromos Package~\cite{biomos} and extended for options 5
-through 9. Note that option 9 is designed specifically to add a COOH
+Note that option 9 is designed specifically to add a COOH
 terminus. The others are in principle generic, i.e. they can be used
 to add any type of atom, except for the bondlength and angles which
 are fixed (as specified above). Note however that only the termini
@@ -1023,7 +1021,7 @@ in \normindex{constraints} instead of normal bonds.
 \subsection{Coordinate file}
 \label{subsec:grofile}
 Files with the {\tt .gro} file extension contain a molecular structure in 
-GROMOS87 format. A sample piece is included below:
+\gromos{87} format. A sample piece is included below:
 {\small\begin{verbatim}
 MD of 2 waters, reformat step, PA aug-91
     6
@@ -1056,7 +1054,7 @@ Or to be more precise, with title etc., it looks like this:
 
 {\bf Fortran format:} \verb'(i5,2a5,i5,3f8.3,3f8.4)'
 
-So \verb'confin.gro' is the gromacs coordinate file and is almost the
-same as the GROMOS87 file (for GROMOS users: when used with ntx=7). 
-The only difference is the box for which gromacs uses a tensor, not a
-vector.
+So \verb'confin.gro' is the {\gromacs} coordinate file and is almost
+the same as the \gromosv{87} file (for {\gromos} users: when used with
+ntx=7).  The only difference is the box for which {\gromacs} uses a
+tensor, not a vector.

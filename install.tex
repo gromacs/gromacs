@@ -15,7 +15,7 @@ updates, bug-fixes etc.
 For \myindex{commercial use} of the software, please contact us directly:
 {\tt gromacs@chem.rug.nl}
 
-\section{Porting gromacs.}
+\section{Porting {\gromacs}.}
 The {\gromacs} system is designed with portability as one major design
 goal. However there are a number of things we assume to be present on
 the system {\gromacs} is being ported on. We assume the following
@@ -32,7 +32,7 @@ features:
 \end{enumerate}
 
 These are the requirements of a single processor system. If you want
-to compile Gromacs on a multi processor environment there is another
+to compile {\gromacs} on a multi processor environment there is another
 requirement:
 
 \begin{enumerate}
@@ -58,7 +58,7 @@ multi-processor machine, you have two options.
 It may be clear that you will hardly ever need to write the routines
 yourself, but if you can't avoid it, here are some clues.
 The interface between these routines and the
-rest of the gromacs system is described in the file {\tt
+rest of the {\gromacs} system is described in the file {\tt
 \$GMXHOME/src/include/network.h} We will give a short description of the
 different routines below.
 
