@@ -931,12 +931,14 @@ int main(int argc,char *argv[])
     bTitle=FALSE; /* don't print title in two places at once */
     for (i=0; (i<nmat); i++) {
       strcpy(mat[i].label_y, mat[i].title);
-      strcpy(mat2[i].label_y, mat2[i].title);
+      if (mat2)
+	strcpy(mat2[i].label_y, mat2[i].title);
     }
   }
   if (rainbow[0][0] != 'n') {
     rainbow_map(rainbow[0],nmat,mat);
-    rainbow_map(rainbow[0],nmat,mat);
+    if (mat2)
+      rainbow_map(rainbow[0],nmat2,mat2);
   }
 
   w_legend = legend[0][0];
