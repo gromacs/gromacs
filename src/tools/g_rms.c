@@ -105,8 +105,7 @@ int main (int argc,char *argv[])
     
     "Option [TT]-fit[tt] controls the least-squares fitting of",
     "the structures on top of each other: complete fit (rotation and",
-    "translation), translation only, all structures in the matrix fitted",
-    "pairwise, or no fitting at all.[PAR]",
+    "translation), translation only, or no fitting at all.[PAR]",
     
     "With [TT]-f2[tt], the 'other structures' are taken from a second",
     "trajectory, this generates a comparison matrix of one trajectory",
@@ -118,7 +117,7 @@ int main (int argc,char *argv[])
     "analogously to the [TT]-m[tt] option. Only bonds between atoms in the",
     "comparison group are considered."
   };
-  static bool bPBC=TRUE,bSplit=FALSE;
+  static bool bPBC=TRUE,bFitAll=TRUE,bSplit=FALSE;
   static bool bDeltaLog=FALSE;
   static int  prev=0,freq=1,freq2=1,nlevels=80,avl=0;
   static real rmsd_user_max=-1,rmsd_user_min=-1, 
@@ -134,14 +133,14 @@ int main (int argc,char *argv[])
   char *whatxvglabel[ewNR] ={NULL, "RMSD (nm)", "\\8r\\4", "\\8r\\4\\ssc\\N"};
   /* strings and things for fitting methods */
   enum 
-    { efSel, efFit,      efReset,       efFitAll,      efNone , efNR };
+    { efSel, efFit,      efReset,       efNone , efNR };
   int efit;
   static char *fit[efNR] = 
-    { NULL, "rot+trans", "translation", "allpairs", "none" };
+    { NULL, "rot+trans", "translation", "none" };
   static char *fitgraphlabel[efNR] = 
-    { NULL, "lsq fit", "translational fit", "lsq fit", "no fit" };
+    { NULL, "lsq fit", "translational fit", "no fit" };
   static char *fitmatrixlabel[efNR] = 
-    { NULL, "lsq fit", "translational fit", "pairwise lsq fit", "no fit" };
+    { NULL, "lsq fit", "translational fit", "no fit" };
 
   t_pargs pa[] = {
     { "-what",  FALSE, etENUM, {what},  "Structural difference measure" },
@@ -149,6 +148,8 @@ int main (int argc,char *argv[])
     { "-fit",   FALSE, etENUM, {fit}, "Fit to reference structure" },
     { "-prev",  FALSE, etINT,  {&prev}, "Compare with previous frame" },
     { "-split", FALSE, etBOOL, {&bSplit},"Split graph where time is zero" },
+    { "-fitall",FALSE, etBOOL, {&bFitAll}, 
+      "HIDDENFit all pairs of structures in matrix" },
     { "-skip",  FALSE, etINT,  {&freq}, 
       "Only write every nr-th frame to matrix" },
     { "-skip2", FALSE, etINT,  {&freq2},
@@ -176,7 +177,7 @@ int main (int argc,char *argv[])
   int        maxframe=NFRAME,maxframe2=NFRAME;
   real       t,lambda,*w_rls,*w_rms,tmas,*w_rls_m=NULL,*w_rms_m=NULL;
   bool       bTruncOct,bNorm,bAv,bFreq2,bFile2,bMat,bBond,bDelta,bMirror,bMass;
-  bool       bFit,bReset,bFitAll;
+  bool       bFit,bReset;
   t_topology top;
   t_iatom    *iatom=NULL;
 
@@ -223,10 +224,9 @@ int main (int argc,char *argv[])
     please_cite(stdout,"Maiorov95");
   efit=nenum(fit);
   switch(efit) {
-  case efFit:    bFit=TRUE;  bReset=TRUE;  bFitAll=FALSE; break;
-  case efReset:  bFit=FALSE; bReset=TRUE;  bFitAll=FALSE; break;
-  case efFitAll: bFit=TRUE;  bReset=TRUE;  bFitAll=TRUE;  break;
-  case efNone:   bFit=FALSE; bReset=FALSE; bFitAll=FALSE; break;
+  case efFit:    bFit=TRUE;  bReset=TRUE;  break;
+  case efReset:  bFit=FALSE; bReset=TRUE;  break;
+  case efNone:   bFit=FALSE; bReset=FALSE; break;
   default:
     fatal_error(0,"Death horror: no such enum efit (%d)", efit);
     break;
