@@ -676,7 +676,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     /* This is just for testing. Nothing is actually done to Ekin
      * since that would require extra communication.
      */
-    if (!bNEMD && debug)
+    if (!bNEMD && debug && (vcm->nr > 0))
       correct_ekin(debug,START(nsb),START(nsb)+HOMENR(nsb),v,
 		   vcm->group_p[0],
 		   mdatoms->massT,mdatoms->tmass,parm->ekin);
