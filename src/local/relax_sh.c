@@ -213,7 +213,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 t_graph *graph,t_groups *grps,tensor vir_part,
 		 int nshell,t_shell shells[],t_forcerec *fr,
 		 char *traj,real t,real lambda,
-		 int natoms,matrix box,t_mdebin *mdebin,bool *bConverged)
+		 int natoms,matrix box,bool *bConverged)
 {
   static bool bFirst=TRUE,bOptim=FALSE;
   static rvec *pos[2],*force[2];
@@ -235,7 +235,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
       snew(pos[i],nsb->natoms);
       snew(force[i],nsb->natoms);
     }
-    bOptim = (getenv("NO_SHELL_OPTIM") == NULL);
+    bOptim = (getenv("SHELL_OPTIM") != NULL);
     fprintf(log,"bOptim = %s\n",bool_names[bOptim]);
     bFirst = FALSE;
   }

@@ -40,9 +40,9 @@ void do_glas(FILE *log,int start,int homenr,rvec x[],rvec f[],
 	     real ener[])
 {
   static bool   bFirst=TRUE,bGlas;
-  static real   d[2],pi6,pi12,rc9,rc4,rc10,rc3;
+  static real   d[2],pi6,pi12,rc9,rc4,rc10,rc3,rc;
   static real   *c6,*c12;
-  real wd,wdd,zi,fz,dd,d10,d4,d9,d3,r9,r3,sign,rc,cc6,cc12;
+  real wd,wdd,zi,fz,dd,d10,d4,d9,d3,r9,r3,sign,cc6,cc12;
   int  *type;
   int  i,j,ti;
   
@@ -79,8 +79,8 @@ void do_glas(FILE *log,int start,int homenr,rvec x[],rvec f[],
       snew(c12,atnr);
     
       for(i=0; (i<atnr); i++) {
-	c6[i]  = C6 (fr->nbfp,fr->ntype,i,i);
-	c12[i] = C12(fr->nbfp,fr->ntype,i,i);
+	c6[i]  = C6 (fr->nbfp,atnr,i,i);
+	c12[i] = C12(fr->nbfp,atnr,i,i);
       }
     }
     else

@@ -385,8 +385,8 @@ static void set_act_value(t_coupl_rec *tcr,int index,real val,int step)
   tcr->av_value[index]  = run_aver(tcr->av_value[index],val,step,tcr->nmemory);
 }
 
-static void upd_f_value(FILE *log,int atnr,real xi,real dt,real factor,real ff[],
-			int ati,int atj)
+static void upd_f_value(FILE *log,int atnr,real xi,real dt,real factor,
+			real ff[],int ati,int atj)
 {
   real fff;
   
@@ -426,7 +426,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   int         i,j,ati,atj,atnr2,type,ftype;
   real        deviation[eoObsNR],prdev[eoObsNR],epot0,dist,rmsf;
   real        ff6,ff12,ffa,ffb,ffc,ffq,factor,dt,mu_ind;
-  real        Epol,Eintern,Virial,muabs,xiH,xiS,xi6,xi12;
+  real        Epol,Eintern,Virial,muabs,xiH=-1,xiS=-1,xi6,xi12;
   rvec        fmol[2];
   bool        bTest,bPrint;
   t_coupl_LJ  *tclj;

@@ -306,13 +306,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     count=relax_shells(log,cr,bVerbose,step,parm,bNS,bStopCM,top,ener,
 		       x,vold,v,vt,fbuf[next],
 		       buf,mdatoms,nsb,&mynrnb,graph,grps,force_vir,
-		       nshell,shells,fr,traj,t,lambda,nsb->natoms,parm->box,mdebin,
+		       nshell,shells,fr,traj,t,lambda,nsb->natoms,parm->box,
 		       &bConverged);
     tcount+=count;
     
     if (bConverged)
       nconverged++;
-      
+    
     /* Calculate total dipole moment if necessary */
     calc_mu(nsb,x,mdatoms->chargeA,mu_tot);
 
@@ -346,7 +346,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     if (do_per_step(step,parm->ir.nstxout) || bLastStep) xx=x; else xx=NULL;
     if (do_per_step(step,parm->ir.nstvout) || bLastStep) vv=v; else vv=NULL;
-    if (do_per_step(step,parm->ir.nstfout) || bLastStep) ff=fbuf[next]; else ff=NULL;
+    if (do_per_step(step,parm->ir.nstfout) || bLastStep) 
+      ff=fbuf[next]; 
+    else ff=NULL;
     fp_trn = write_traj(log,cr,traj,nsb,step,t,lambda,
 			&mynrnb,nsb->natoms,xx,vv,ff,parm->box);
     where();
@@ -376,135 +378,112 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Check magnitude of the forces */
     fmax = f_max(cr->left,cr->right,cr->nprocs,START(nsb),
 		 START(nsb)+HOMENR(nsb),fbuf[next]);
-    if (bDynamicStep && (step > 0) && (fmax > 5000)) {
-      /* Force very big: reduce timestep */
-      /* This is the bit where integration of coordinates and velocities is done */
-      /* Compute coordinates at t=-dt, store them in buf */
-      for(i=0; (i<nsb->natoms); i++) {
-	for(m=0; (m<DIM); m++) {
-	  x[i][m] = x[i][m]-parm->ir.delta_t*v[i][m];
-	}
-      }
-      parm->ir.delta_t = 0.1*timestep;
-      fprintf(log,"Reducing time step to %g\n",parm->ir.delta_t);
-      
-      update(nsb->natoms,START(nsb),HOMENR(nsb),
-	     step,lambda,&ener[F_DVDL],&(parm->ir),FALSE,
-	     mdatoms,x,graph,
-	     fr->shift_vec,fbuf[cur],buf,vold,v,vt,parm->pres,parm->box,
-	     top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata);
+
+    /* This is the bit where integration of coordinates and velocities is done */
+    parm->ir.delta_t = timestep;
+    
+    update(nsb->natoms,START(nsb),HOMENR(nsb),
+	   step,lambda,&ener[F_DVDL],&(parm->ir),FALSE,
+	   mdatoms,x,graph,
+	   fr->shift_vec,fbuf[next],buf,vold,v,vt,parm->pres,parm->box,
+	   top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata);
+    
+    cur = next;
+    
+    if (PAR(cr)) 
+      accumulate_u(cr,&(parm->ir.opts),grps);
+    
+    /* Calculate partial Kinetic Energy (for this processor) 
+     * per group!
+     */
+    calc_ke_part(FALSE,START(nsb),HOMENR(nsb),
+		 vold,v,vt,&(parm->ir.opts),
+		 mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
+    where();
+    if (bStopCM)
+      calc_vcm(log,HOMENR(nsb),START(nsb),mdatoms->massT,v,vcm);
+    
+    /* Copy the partial virial to the global virial (to be summed) */
+    if (PAR(cr)) {
+      global_stat(log,cr,ener,force_vir,shake_vir,
+		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot,&terminate);
+      if (!bNS)
+	for(i=0; (i<grps->estat.nn); i++)
+	  grps->estat.ee[egLR][i] /= cr->nprocs;
     }
-    else {
-      /* This is the bit where integration of coordinates and velocities is done */
-      parm->ir.delta_t = timestep;
-      
-      update(nsb->natoms,START(nsb),HOMENR(nsb),
-	     step,lambda,&ener[F_DVDL],&(parm->ir),FALSE,
-	     mdatoms,x,graph,
-	     fr->shift_vec,fbuf[next],buf,vold,v,vt,parm->pres,parm->box,
-	     top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata);
+    else 
+      cp_nrnb(&(nrnb[0]),&mynrnb);
     
-      cur = next;
-      
-      if (PAR(cr)) 
-	accumulate_u(cr,&(parm->ir.opts),grps);
-      
-      /* Calculate partial Kinetic Energy (for this processor) 
-       * per group!
-       */
-      calc_ke_part(FALSE,START(nsb),HOMENR(nsb),
-		   vold,v,vt,&(parm->ir.opts),
-		   mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
-      where();
-      if (bStopCM)
-	calc_vcm(log,HOMENR(nsb),START(nsb),mdatoms->massT,v,vcm);
-      
-      /* Copy the partial virial to the global virial (to be summed) */
-      if (PAR(cr)) {
-	global_stat(log,cr,ener,force_vir,shake_vir,
-		    &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot,&terminate);
-	if (!bNS)
-	  for(i=0; (i<grps->estat.nn); i++)
-	    grps->estat.ee[egLR][i] /= cr->nprocs;
-      }
-      else 
-	cp_nrnb(&(nrnb[0]),&mynrnb);
-      
-      if (bStopCM) {
-	check_cm(log,vcm,mdatoms->tmass);
-	do_stopcm(log,HOMENR(nsb),START(nsb),v,vcm,mdatoms->tmass,mdatoms->invmass);
-	inc_nrnb(&mynrnb,eNR_STOPCM,HOMENR(nsb));
-      }
-      
-      /* Do fit to remove overall rotation */
-      if (bStopRot)
-	do_stoprot(log,top->atoms.nr,box_size,x,mdatoms->massT);
-      
-      /* Add force and shake contribution to the virial */
-      m_add(force_vir,shake_vir,parm->vir);
-      
-      /* Sum the potential energy terms from group contributions */
-      /* Now done in relax_shells */
-      /* sum_epot(&(parm->ir.opts),grps,ener); */
-      
-      /* Sum the kinetic energies of the groups & calc temp */
-      ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
-      ener[F_EKIN]=trace(parm->ekin);
-      ener[F_ETOT]=ener[F_EPOT]+ener[F_EKIN];
+    if (bStopCM) {
+      check_cm(log,vcm,mdatoms->tmass);
+      do_stopcm(log,HOMENR(nsb),START(nsb),v,vcm,mdatoms->tmass,mdatoms->invmass);
+      inc_nrnb(&mynrnb,eNR_STOPCM,HOMENR(nsb));
+    }
     
-      /* Check for excessively large energies */
-      if (fabs(ener[F_ETOT]) > 1e18) {
-	fprintf(stderr,"Energy too large (%g), giving up\n",ener[F_ETOT]);
-	break;
-      }
+    /* Do fit to remove overall rotation */
+    if (bStopRot)
+      do_stoprot(log,top->atoms.nr,box_size,x,mdatoms->massT);
+    
+    /* Add force and shake contribution to the virial */
+    m_add(force_vir,shake_vir,parm->vir);
       
-      /* Calculate Temperature coupling parameters lambda */
-      tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor,
-	     step,parm->ir.ntcmemory);
+    /* Sum the kinetic energies of the groups & calc temp */
+    ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
+    ener[F_EKIN]=trace(parm->ekin);
+    ener[F_ETOT]=ener[F_EPOT]+ener[F_EKIN];
+    
+    /* Check for excessively large energies */
+    if (fabs(ener[F_ETOT]) > 1e18) {
+      fprintf(stderr,"Energy too large (%g), giving up\n",ener[F_ETOT]);
+      break;
+    }
+    
+    /* Calculate Temperature coupling parameters lambda */
+    tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor,
+	   step,parm->ir.ntcmemory);
+    
+    /* Calculate pressure ! */
+    calc_pres(parm->box,parm->ekin,parm->vir,parm->pres,
+	      EEL_LR(fr->eeltype) ? ener[F_LR] : 0.0);
+    
+    /* Calculate long range corrections to pressure and energy */
+    if (bTCR)
+      set_avcsix(log,fr,mdatoms);
+    calc_dispcorr(log,parm->ir.bDispCorr,
+		  fr,mdatoms->nr,parm->box,parm->pres,parm->vir,ener);
+    
+    /* Only do GCT when the relaxation of shells (minimization) has converged,
+     * otherwise we might be coupling agains bogus energies. 
+     * In parallel we must always do this, because the other sims might
+     * update the FF.
+     */
+    if (bTCR)
+      do_coupling(log,nfile,fnm,tcr,t,step,ener,fr,
+		  &(parm->ir),MASTER(cr) || bMultiSim,
+		  mdatoms,&(top->idef),mu_aver,
+		  top->blocks[ebMOLS].nr,bMultiSim ? cr_msim : cr,
+		  parm->box,parm->vir,mu_tot,x,fbuf[next],bConverged);
+    
+    upd_mdebin(mdebin,mdatoms->tmass,step,ener,parm->box,shake_vir,
+	       force_vir,parm->vir,parm->pres,grps,mu_tot);
+    
+    where();
+    if ( MASTER(cr) ) {
+      bool do_ene,do_dr,do_log;
       
-      /* Calculate pressure ! */
-      calc_pres(parm->box,parm->ekin,parm->vir,parm->pres,
-		EEL_LR(fr->eeltype) ? ener[F_LR] : 0.0);
-      
-      /* Calculate long range corrections to pressure and energy */
-      if (bTCR)
-	set_avcsix(log,fr,mdatoms);
-      calc_dispcorr(log,parm->ir.bDispCorr,
-		    fr,mdatoms->nr,parm->box,parm->pres,parm->vir,ener);
-      
-      /* Only do GCT when the relaxation of shells (minimization) has converged,
-       * otherwise we might be coupling agains bogus energies. 
-       * In parallel we must always do this, because the other sims might
-       * update the FF.
-       */
-      if (bTCR)
-	do_coupling(log,nfile,fnm,tcr,t,step,ener,fr,
-		    &(parm->ir),MASTER(cr) || bMultiSim,
-		    mdatoms,&(top->idef),mu_aver,
-		    top->blocks[ebMOLS].nr,bMultiSim ? cr_msim : cr,
-		    parm->box,parm->vir,mu_tot,x,fbuf[next],bConverged);
-      
-      upd_mdebin(mdebin,mdatoms->tmass,step,ener,parm->box,shake_vir,
-		 force_vir,parm->vir,parm->pres,grps,mu_tot);
-      
-      where();
-      if ( MASTER(cr) ) {
-	bool do_ene,do_dr,do_log;
-	
-	do_ene = do_per_step(step,parm->ir.nstenergy) || bLastStep;
-	do_dr  = do_per_step(step,parm->ir.nstdisreout) || bLastStep;
-	do_log = do_per_step(step,parm->ir.nstlog) || bLastStep;
-	print_ebin(fp_ene,do_ene,do_dr,do_log?log:NULL,step,t,lambda,SAfactor,
-		   eprNORMAL,bCompact,mdebin,grps,&(top->atoms));
-	if (bVerbose)
-	  fflush(log);
-      }
-      
-      if (MASTER(cr) && bVerbose && ((step % stepout)==0)) {
-	if (nshell > 0)
-	  fprintf(stderr,"\n");
-	print_time(stderr,start_t,step,&parm->ir);
-      }
+      do_ene = do_per_step(step,parm->ir.nstenergy) || bLastStep;
+      do_dr  = do_per_step(step,parm->ir.nstdisreout) || bLastStep;
+      do_log = do_per_step(step,parm->ir.nstlog) || bLastStep;
+      print_ebin(fp_ene,do_ene,do_dr,do_log?log:NULL,step,t,lambda,SAfactor,
+		 eprNORMAL,bCompact,mdebin,grps,&(top->atoms));
+      if (bVerbose)
+	fflush(log);
+    }
+    
+    if (MASTER(cr) && bVerbose && ((step % stepout)==0)) {
+      if (nshell > 0)
+	fprintf(stderr,"\n");
+      print_time(stderr,start_t,step,&parm->ir);
     }
   }
   

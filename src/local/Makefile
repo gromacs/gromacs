@@ -48,6 +48,8 @@ testpt:		testpt.o ionize.o
 		$(LD) -o $@ $^ $(SYSLIBS) -lm
 anaf:		anaf.o
 		$(LD) -o $@ $^ $(SYSLIBS) -lm
+mkyaw:		mkyaw.o
+		$(LD) -o $@ $^ $(SYSLIBS) -lm
 
 include	Make.dep
 endif
