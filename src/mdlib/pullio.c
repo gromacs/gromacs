@@ -326,8 +326,7 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
 
   if (!strcmp(refbuf, "")) {
     if (pull->runtype == eConstraint)
-      fatal_error(0, "Constraint forces require a reference group to be sp
-ecified.\n");
+      fatal_error(0, "Constraint forces require a reference group to be specified.\n");
     pull->AbsoluteRef = TRUE;
     fprintf(stderr, "Pull code using absolute reference.\n");
   }
