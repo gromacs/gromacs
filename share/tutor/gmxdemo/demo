@@ -300,9 +300,9 @@ rcoulomb            =  1.0
 rvdw                =  1.0
 ; Berendsen temperature coupling is on in two groups
 Tcoupl              =  berendsen
-tau_t               =  0.1	0.1
-tc-grps		    =  protein	sol
-ref_t               =  300	300
+tau_t               =  0.1      	0.1
+tc-grps		    =  protein  	sol
+ref_t               =  300      	300
 ; Pressure coupling is not on
 Pcoupl              =  no
 tau_p               =  0.5
@@ -402,9 +402,9 @@ rcoulomb            =  1.0
 rvdw                =  1.0
 ; Berendsen temperature coupling is on in two groups
 Tcoupl              =  berendsen
-tau_t               =  0.1	0.1
-tc-grps		    =  protein	sol
-ref_t               =  300	300
+tau_t               =  0.1	     0.1
+tc-grps		    =  protein	     sol
+ref_t               =  300	     300
 ; Pressure coupling is not on
 Pcoupl              =  no
 tau_p               =  0.5
