@@ -34,7 +34,7 @@ PROGRAMS	= \
 		mdrun		nmrun		gmxcheck	\
 		gmxdump		luck
 else
-PROGRAMS	= mdrun		nmrun
+PROGRAMS	= mdrun
 endif
 
 include		$(STDTARGET)
@@ -50,7 +50,7 @@ tpbconv:	$(PGOBJ)	tpbconv.o	readir.o
 pdb2gmx:	$(POBJ) 
 		$(LD) -o $@ $^ $(SYSLIBS) 
 
-mdrun:		mdrun.o $(GMXHOME)/lib/$(GMXCPU)/libgmx.$(GMXCPU).a
+mdrun:		mdrun.o
 		$(LD) $(RUNLDOPT) -o $@ mdrun.o $(RUNSYSLIBS)
 
 mk_ghat:	mk_ghat.o
