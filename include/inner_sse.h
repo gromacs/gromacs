@@ -31,6 +31,10 @@ void inl1100_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
 		 float shiftvec[],float fshift[],int gid[],float pos[],
 		 float faction[],float charge[],float facel,float Vc[],
 		 int type[],int ntype,float nbfp[],float Vnb[]);
+void inl2100_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],float fshift[],int gid[],float pos[],
+		 float faction[],float charge[],float facel,float Vc[],
+		 float krf, int type[],int ntype,float nbfp[],float Vnb[]);
 void inl1110_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
 		 float shiftvec[],float fshift[],int gid[],float pos[],
 		 float faction[],float charge[],float facel,float Vc[],
@@ -40,14 +44,22 @@ void inl1120_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
 		 float shiftvec[],float fshift[],int gid[],float pos[],
 		 float faction[],float charge[],float facel,float Vc[],
 		 int type[],int ntype,float nbfp[],float Vnb[]);
+void inl2120_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],float fshift[],int gid[],float pos[],
+		 float faction[],float charge[],float facel,float Vc[],
+		 float krf, int type[],int ntype,float nbfp[],float Vnb[]);
 void inl1130_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
 		 float shiftvec[],float fshift[],int gid[],float pos[],
 		 float faction[],float charge[],float facel,float Vc[],
 		 int type[],int ntype,float nbfp[],float Vnb[]);
+void inl2130_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],float fshift[],int gid[],float pos[],
+		 float faction[],float charge[],float facel,float Vc[],
+		 float krf, int type[],int ntype,float nbfp[],float Vnb[]);
 void inl3000_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
 		 float shiftvec[],float fshift[],int gid[],float pos[],
 		 float faction[],float charge[],float facel,float Vc[],
-		 float tabscale,float VFtab[]);
+		 float tabscale,float VFtab[]); 
 void inl3010_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
 		 float shiftvec[],float fshift[],int gid[],float pos[],
 		 float faction[],float charge[],float facel,float Vc[],
