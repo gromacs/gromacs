@@ -346,7 +346,7 @@ int bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
   static  bool bFirst=TRUE;
   static  bool bSafe;
 
-  /* SOR Stuff from Barth et al. JCC 16 (1995) 1192-1209 */
+  /* SOR Stuff from Barth et al. JCC 16 (1996) 1192-1209 */
   static  bool bSOR=FALSE;
   static  real delta=0.1;
   static  real omega=1.0;
