@@ -51,7 +51,7 @@ int main(int argc,char *argv[])
     "and plot the rdf as a function of both distance and angle with",
     "a given axis.[PAR]",
     "The option -c is meant to avoid intramolecular peaks in the rdf plot.",
-    "It is however better to make a topology file with a higher number of",
+    "It is however better to supply a topology file with a higher number of",
     "exclusions. For eg. benzene a topology with nrexcl set to 5",
     "would eliminate all intramolecular contributions to the rdf." 
   };
@@ -79,7 +79,7 @@ int main(int argc,char *argv[])
   t_block    *excl,*block;
   t_filenm   fnm[] = {
     { efTRX, "-f", NULL,   ffREAD },
-    { efTPX, NULL, NULL,   ffREAD },
+    { efTPX, NULL, NULL,   ffOPTRD },
     { efNDX, NULL, NULL,   ffREAD },
     { efXVG, NULL, NULL,   ffWRITE },
     { efXVG, "-oa","angular", ffOPTWR }
@@ -100,9 +100,12 @@ int main(int argc,char *argv[])
     }
   }
    
-  top=read_top(ftp2fn(efTPX,NFILE,fnm));
-  mk_single_top(top);
-  excl=&(top->atoms.excl);
+  if (ftp2bSet(efTPX,NFILE,fnm)) {
+    top=read_top(ftp2fn(efTPX,NFILE,fnm));
+    mk_single_top(top);
+    excl=&(top->atoms.excl);
+  } else
+    excl=NULL;
   status=ftp2fn(efTRX,NFILE,fnm);
 
   if (bAll) {

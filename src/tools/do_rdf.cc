@@ -135,14 +135,16 @@ void c_rdf::add(real cutoff,t_block *excl,matrix box,rvec x[],
   else {
     for(i=0; (i < nx1); i++) {
       ix=index1[i];
-      bExcl=(bool *)calloc(excl->nr,sizeof(*bExcl));
-      for(j=excl->index[ix]; (j<excl->index[ix+1]); j++)
-	bExcl[excl->a[j]]=TRUE;
+      if (excl) {
+	bExcl=(bool *)calloc(excl->nr,sizeof(*bExcl));
+	for(j=excl->index[ix]; (j<excl->index[ix+1]); j++)
+	  bExcl[excl->a[j]]=TRUE;
+      } else
       if (!index2)
 	j0=i+1;
       for(j=j0; (j < j1); j++) {
 	jx=index3[j];
-	if (!bExcl[jx]) {
+	if (!excl || !bExcl[jx]) {
 	  pbc_dx(box,x[ix],x[jx],dx);
 	  r2=iprod(dx,dx);
 	  if ((r2 < hb2) && (r2 > cut2)) 
