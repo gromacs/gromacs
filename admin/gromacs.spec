@@ -8,7 +8,7 @@
 #
 Summary: Molecular dynamics package (non-parallel version)
 Name: gromacs
-Version: 3.1
+Version: 3.2
 Release: 1
 Copyright: GPL
 Group: Applications/Science
@@ -90,10 +90,12 @@ PATH="/sbin:$PATH" ldconfig
 %docdir %{prefix}/share/gromacs/html
 %{prefix}/share/gromacs/html/
 %{prefix}/man/*
-%{prefix}/lib/libgmx.so.2.0.0
-%{prefix}/lib/libgmx.so.2
-%{prefix}/lib/libmd.so.2.0.0
-%{prefix}/lib/libmd.so.2
+%{prefix}/lib/libgmx.so.3.0.0
+%{prefix}/lib/libgmx.so.3
+%{prefix}/lib/libmd.so.3.0.0
+%{prefix}/lib/libmd.so.3
+%{prefix}/lib/libgmxana.so.3.0.0
+%{prefix}/lib/libgmxana.so.3
 %files devel
 %defattr(-,root,root)
 %{prefix}/share/gromacs/template/*
@@ -103,6 +105,9 @@ PATH="/sbin:$PATH" ldconfig
 %{prefix}/lib/libmd.so
 %{prefix}/lib/libmd.a
 %{prefix}/lib/libmd.la
+%{prefix}/lib/libgmxana.so
+%{prefix}/lib/libgmxana.a
+%{prefix}/lib/libgmxana.la
 %{prefix}/include/gromacs/*
 
 
