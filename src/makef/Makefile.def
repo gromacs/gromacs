@@ -25,7 +25,7 @@ MKDEP		:= $(CC) -M
 # Machine dependent stuff
 #
 include		$(MKDIR)/Makefile.$(GMXCPU)
-RUNSYSLIBS      := -lmd.$(GMXCPU) -lgmx.$(GMXCPU) -lfftw.$(GMXCPU) $(SYSLIBS)
+RUNSYSLIBS      := $(LINKSTATIC) -lmd.$(GMXCPU) -lgmx.$(GMXCPU) -lfftw.$(GMXCPU) $(LINKDYNAMIC) $(SYSLIBS)
 SYSLIBS		:= -lgmx.$(GMXCPU) $(SYSLIBS)
 #
 # System independent definitions
