@@ -152,8 +152,8 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->dummy.f=old[5];
     break;
   case F_DUMMY3FAD:
-    new->dummy.a=old[1] * cos(DEG2RAD * old[0]);
-    new->dummy.b=old[1] * sin(DEG2RAD * old[0]);
+    new->dummy.a=old[0] * cos(DEG2RAD * old[1]);
+    new->dummy.b=old[0] * sin(DEG2RAD * old[1]);
     new->dummy.c=old[2];
     new->dummy.d=old[3];
     new->dummy.e=old[4];
