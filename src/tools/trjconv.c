@@ -209,7 +209,9 @@ int main(int argc,char *argv[])
     "them back. This has the effect that all molecules",
     "will remain whole (provided they were whole in the initial",
     "conformation), note that this ensures a continuous trajectory but",
-    "molecules may diffuse out of the box.",
+    "molecules may diffuse out of the box. The starting configuration",
+    "for this procedure is taken from the structure file, if one is",
+    "supplied, otherwise it is the first frame.",
     "Use [TT]-center[tt] to put the system in the center of the box.",
     "This is especially useful for multimeric proteins, since this",
     "procedure will ensure the subunits stay together in the trajectory",
@@ -229,7 +231,7 @@ int main(int argc,char *argv[])
     "by ignoring all frames with a time smaller than or equal to the previous",
     "frame.[PAR]",
     "The option [TT]-dump[tt] can be used to extract a frame at or near",
-    "one specific time from your trajectory.[PAR]"
+    "one specific time from your trajectory."
   };
   
   static char *pbc_opt[] = { NULL, "none", "whole", "inbox", "nojump", NULL };
@@ -540,14 +542,13 @@ int main(int argc,char *argv[])
       }
       
       /* determine if an atom jumped across the box and reset it if so */
-      /* don't do this for first frame! */
-      if (bNoJump && (frame!=0)) {
+      if (bNoJump && (bTPS || frame!=0)) {
 	for(i=0; (i<natoms); i++)
 	  for(d=0; (d<DIM); d++)
 	    if ( x[i][d]-xp[i][d] > 0.5*box[d][d] )
-	      x[i][d]-=box[d][d];
+	      x[i][d] -= box[d][d];
 	    else if ( x[i][d]-xp[i][d] < -0.5*box[d][d] )
-	      x[i][d]+=box[d][d];
+	      x[i][d] += box[d][d];
       }
       
       if (bPFit) {
