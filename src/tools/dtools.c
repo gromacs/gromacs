@@ -16,7 +16,8 @@ bool newres(int i,t_atom atom[])
 }
 
 t_correct *init_corr(int maxnit,int nstprint,int nbcheck,int nstranlist,
-		     bool bExplicit,bool bChiral,bool bDump,real lowdev)
+		     bool bExplicit,bool bChiral,bool bPep,
+		     bool bDump,real lowdev)
 {
   t_correct *c;
   
@@ -27,6 +28,7 @@ t_correct *init_corr(int maxnit,int nstprint,int nbcheck,int nstranlist,
   c->nstranlist = nstranlist;
   c->bExplicit  = bExplicit;
   c->bChiral    = bChiral;
+  c->bPep       = bPep;
   c->bDump      = bDump;
   c->lodev      = lowdev;
   c->maxdist    = 0;

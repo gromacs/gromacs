@@ -354,7 +354,7 @@ int main(int argc,char *argv[])
 	    fprintf(stderr,"Energy range adjusted: %f to %f\n",emin,emax);
 	  
 	  sprintf(fn,"%s%s",egrp_nm[m],ftp2fn(efXPM,NFILE,fnm));
-	  sprintf(label,"%s Interaction Energies\0",egrp_nm[m]);
+	  sprintf(label,"%s Interaction Energies",egrp_nm[m]);
 	  out=ffopen(fn,"w");
 	  if (emin>=emid)
 	    write_xpm(out,label,"Energy (kJ/mol)",
