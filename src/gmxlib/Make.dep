@@ -32,7 +32,7 @@ $(LIB)(3dview.o): 3dview.c $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/types/pulls.h \
  $(GMXHOME)/src/include/physics.h \
  $(GMXHOME)/src/include/3dview.h \
- $(GMXHOME)/src/include/pbc.h /home/spoel/gmx/src/include/vec.h \
+ $(GMXHOME)/src/include/pbc.h $(GMXHOME)/src/include/vec.h \
  $(GMXHOME)/src/include/maths.h
 $(LIB)(atomprop.o): atomprop.c $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/smalloc.h \
@@ -142,7 +142,7 @@ $(LIB)(block_tx.o): block_tx.c $(GMXHOME)/src/include/network.h \
 $(LIB)(bondfree.o): bondfree.c $(GMXHOME)/src/include/assert.h \
  $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/physics.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/types/simple.h \
  $(GMXHOME)/src/include/types/enums.h \
@@ -178,11 +178,11 @@ $(LIB)(bondfree.o): bondfree.c $(GMXHOME)/src/include/assert.h \
  $(GMXHOME)/src/include/tpxio.h \
  $(GMXHOME)/src/include/xdrf.h \
  $(GMXHOME)/src/include/bondf.h \
- $(GMXHOME)/src/include/nrnb.h /home/spoel/gmx/src/include/pbc.h \
+ $(GMXHOME)/src/include/nrnb.h $(GMXHOME)/src/include/pbc.h \
  $(GMXHOME)/src/include/smalloc.h \
- $(GMXHOME)/src/include/ns.h /home/spoel/gmx/src/include/tgroup.h \
+ $(GMXHOME)/src/include/ns.h $(GMXHOME)/src/include/tgroup.h \
  $(GMXHOME)/src/include/network.h \
- $(GMXHOME)/src/include/main.h /home/spoel/gmx/src/include/nsb.h \
+ $(GMXHOME)/src/include/main.h $(GMXHOME)/src/include/nsb.h \
  $(GMXHOME)/src/include/names.h \
  $(GMXHOME)/src/include/mshift.h \
  $(GMXHOME)/src/include/disre.h
@@ -219,7 +219,7 @@ $(LIB)(calch.o): calch.c $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/types/edsams.h \
  $(GMXHOME)/src/include/types/pulls.h \
  $(GMXHOME)/src/include/calch.h \
- $(GMXHOME)/src/include/maths.h /home/spoel/gmx/src/include/vec.h \
+ $(GMXHOME)/src/include/maths.h $(GMXHOME)/src/include/vec.h \
  $(GMXHOME)/src/include/physics.h
 calcrf.o: calcrf.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/sysstuff.h \
@@ -252,7 +252,7 @@ calcrf.o: calcrf.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/types/edsams.h \
  $(GMXHOME)/src/include/types/pulls.h \
  $(GMXHOME)/src/include/physics.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/copyrite.h \
  $(GMXHOME)/src/include/names.h
@@ -324,9 +324,9 @@ clincs.o: clincs.c $(GMXHOME)/src/include/main.h \
  $(GMXHOME)/src/include/update.h \
  $(GMXHOME)/src/include/mshift.h \
  $(GMXHOME)/src/include/tgroup.h \
- $(GMXHOME)/src/include/force.h /home/spoel/gmx/src/include/pbc.h \
- $(GMXHOME)/src/include/nsb.h /home/spoel/gmx/src/include/pull.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/force.h $(GMXHOME)/src/include/pbc.h \
+ $(GMXHOME)/src/include/nsb.h $(GMXHOME)/src/include/pull.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/physics.h
 comlib.o: comlib.c $(GMXHOME)/src/include/comlib.h
@@ -364,7 +364,7 @@ $(LIB)(confio.o): confio.c $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/string2.h \
  $(GMXHOME)/src/include/confio.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/symtab.h \
  $(GMXHOME)/src/include/assert.h \
  $(GMXHOME)/src/include/futil.h \
@@ -449,15 +449,15 @@ coupling.o: coupling.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/tgroup.h \
  $(GMXHOME)/src/include/network.h \
  $(GMXHOME)/src/include/main.h \
- $(GMXHOME)/src/include/force.h /home/spoel/gmx/src/include/pbc.h \
- $(GMXHOME)/src/include/nsb.h /home/spoel/gmx/src/include/pull.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/force.h $(GMXHOME)/src/include/pbc.h \
+ $(GMXHOME)/src/include/nsb.h $(GMXHOME)/src/include/pull.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/physics.h \
  $(GMXHOME)/src/include/names.h \
  $(GMXHOME)/src/include/txtdump.h \
  $(GMXHOME)/src/include/tpxio.h \
- $(GMXHOME)/src/include/xdrf.h /home/spoel/gmx/src/include/nrnb.h
+ $(GMXHOME)/src/include/xdrf.h $(GMXHOME)/src/include/nrnb.h
 $(LIB)(disre.o): disre.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/types/simple.h \
@@ -490,12 +490,12 @@ $(LIB)(disre.o): disre.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/types/pulls.h \
  $(GMXHOME)/src/include/smalloc.h \
  $(GMXHOME)/src/include/macros.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/futil.h \
  $(GMXHOME)/src/include/xvgr.h \
  $(GMXHOME)/src/include/viewit.h \
  $(GMXHOME)/src/include/bondf.h \
- $(GMXHOME)/src/include/nrnb.h /home/spoel/gmx/src/include/pbc.h \
+ $(GMXHOME)/src/include/nrnb.h $(GMXHOME)/src/include/pbc.h \
  $(GMXHOME)/src/include/copyrite.h \
  $(GMXHOME)/src/include/disre.h \
  $(GMXHOME)/src/include/main.h \
@@ -532,10 +532,10 @@ dlb.o: dlb.c $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/types/matrix.h \
  $(GMXHOME)/src/include/types/edsams.h \
  $(GMXHOME)/src/include/types/pulls.h \
- $(GMXHOME)/src/include/nsb.h /home/spoel/gmx/src/include/futil.h \
+ $(GMXHOME)/src/include/nsb.h $(GMXHOME)/src/include/futil.h \
  $(GMXHOME)/src/include/invblock.h \
  $(GMXHOME)/src/include/network.h \
- $(GMXHOME)/src/include/main.h /home/spoel/gmx/src/include/xvgr.h \
+ $(GMXHOME)/src/include/main.h $(GMXHOME)/src/include/xvgr.h \
  $(GMXHOME)/src/include/viewit.h \
  $(GMXHOME)/src/include/nrnb.h
 $(LIB)(do_fit.o): do_fit.c $(GMXHOME)/src/include/maths.h \
@@ -569,7 +569,7 @@ $(LIB)(do_fit.o): do_fit.c $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/types/matrix.h \
  $(GMXHOME)/src/include/types/edsams.h \
  $(GMXHOME)/src/include/types/pulls.h \
- $(GMXHOME)/src/include/nrjac.h /home/spoel/gmx/src/include/vec.h \
+ $(GMXHOME)/src/include/nrjac.h $(GMXHOME)/src/include/vec.h \
  $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/txtdump.h \
  $(GMXHOME)/src/include/tpxio.h \
@@ -673,7 +673,7 @@ $(LIB)(ewald_util.o): ewald_util.c $(GMXHOME)/src/include/assert.h \
  $(GMXHOME)/src/include/types/matrix.h \
  $(GMXHOME)/src/include/types/edsams.h \
  $(GMXHOME)/src/include/types/pulls.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/ewald_util.h \
  $(GMXHOME)/src/include/complex.h \
@@ -725,7 +725,7 @@ $(LIB)(fatal.o): fatal.c $(GMXHOME)/src/include/futil.h \
  $(GMXHOME)/src/include/statutil.h \
  $(GMXHOME)/src/include/filenm.h \
  $(GMXHOME)/src/include/readinp.h \
- $(GMXHOME)/src/include/wman.h /home/spoel/gmx/src/include/main.h \
+ $(GMXHOME)/src/include/wman.h $(GMXHOME)/src/include/main.h \
  $(GMXHOME)/src/include/network.h \
  $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/string2.h \
@@ -926,7 +926,7 @@ $(LIB)(gbutil.o): gbutil.c $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/types/matrix.h \
  $(GMXHOME)/src/include/types/edsams.h \
  $(GMXHOME)/src/include/types/pulls.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/gstat.h \
  $(GMXHOME)/src/include/statutil.h \
  $(GMXHOME)/src/include/filenm.h \
@@ -934,7 +934,7 @@ $(LIB)(gbutil.o): gbutil.c $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/readinp.h \
  $(GMXHOME)/src/include/wman.h \
  $(GMXHOME)/src/include/mshift.h \
- $(GMXHOME)/src/include/rmpbc.h /home/spoel/gmx/src/include/pbc.h
+ $(GMXHOME)/src/include/rmpbc.h $(GMXHOME)/src/include/pbc.h
 gmxfft.o: gmxfft.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/types/simple.h \
@@ -1033,7 +1033,7 @@ $(LIB)(ifunc.o): ifunc.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/types/edsams.h \
  $(GMXHOME)/src/include/types/pulls.h \
  $(GMXHOME)/src/include/bondf.h \
- $(GMXHOME)/src/include/nrnb.h /home/spoel/gmx/src/include/pbc.h \
+ $(GMXHOME)/src/include/nrnb.h $(GMXHOME)/src/include/pbc.h \
  $(GMXHOME)/src/include/disre.h
 $(LIB)(index.o): index.c $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/strdb.h \
@@ -1179,7 +1179,7 @@ libnet.o: libnet.c $(GMXHOME)/src/include/main.h \
  $(GMXHOME)/src/include/types/matrix.h \
  $(GMXHOME)/src/include/types/edsams.h \
  $(GMXHOME)/src/include/types/pulls.h \
- $(GMXHOME)/src/include/ns.h /home/spoel/gmx/src/include/pbc.h \
+ $(GMXHOME)/src/include/ns.h $(GMXHOME)/src/include/pbc.h \
  $(GMXHOME)/src/include/tgroup.h \
  $(GMXHOME)/src/include/nsb.h
 $(LIB)(macros.o): macros.c $(GMXHOME)/src/include/macros.h \
@@ -1529,7 +1529,7 @@ $(LIB)(mshift.o): mshift.c $(GMXHOME)/src/include/assert.h \
  $(GMXHOME)/src/include/types/edsams.h \
  $(GMXHOME)/src/include/types/pulls.h \
  $(GMXHOME)/src/include/macros.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/futil.h \
  $(GMXHOME)/src/include/copyrite.h \
  $(GMXHOME)/src/include/mshift.h \
@@ -1572,7 +1572,7 @@ $(LIB)(mvdata.o): mvdata.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/nsb.h \
  $(GMXHOME)/src/include/smalloc.h \
  $(GMXHOME)/src/include/symtab.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/tgroup.h \
  $(GMXHOME)/src/include/block_tx.h
@@ -1612,7 +1612,7 @@ $(LIB)(mvxvf.o): mvxvf.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/nsb.h \
  $(GMXHOME)/src/include/smalloc.h \
  $(GMXHOME)/src/include/symtab.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/tgroup.h \
  $(GMXHOME)/src/include/block_tx.h \
@@ -1716,7 +1716,7 @@ $(LIB)(nrama.o): nrama.c $(GMXHOME)/src/include/assert.h \
  $(GMXHOME)/src/include/types/pulls.h \
  $(GMXHOME)/src/include/random.h \
  $(GMXHOME)/src/include/bondf.h \
- $(GMXHOME)/src/include/nrnb.h /home/spoel/gmx/src/include/pbc.h \
+ $(GMXHOME)/src/include/nrnb.h $(GMXHOME)/src/include/pbc.h \
  $(GMXHOME)/src/include/futil.h \
  $(GMXHOME)/src/include/nrama.h \
  $(GMXHOME)/src/include/statutil.h \
@@ -1797,7 +1797,7 @@ $(LIB)(nrnb.o): nrnb.c $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/vveclib.h \
  $(GMXHOME)/src/include/names.h \
  $(GMXHOME)/src/include/macros.h \
- $(GMXHOME)/src/include/nrnb.h /home/spoel/gmx/src/include/main.h \
+ $(GMXHOME)/src/include/nrnb.h $(GMXHOME)/src/include/main.h \
  $(GMXHOME)/src/include/network.h \
  $(GMXHOME)/src/include/smalloc.h \
  $(GMXHOME)/src/include/copyrite.h
@@ -1839,7 +1839,7 @@ $(LIB)(pargs.o): pargs.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/smalloc.h \
  $(GMXHOME)/src/include/names.h \
  $(GMXHOME)/src/include/string2.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/macros.h
 $(LIB)(pbc.o): pbc.c $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/typedefs.h \
@@ -1871,7 +1871,7 @@ $(LIB)(pbc.o): pbc.c $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/types/matrix.h \
  $(GMXHOME)/src/include/types/edsams.h \
  $(GMXHOME)/src/include/types/pulls.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/main.h \
  $(GMXHOME)/src/include/network.h \
@@ -1911,7 +1911,7 @@ $(LIB)(pdbio.o): pdbio.c $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/types/matrix.h \
  $(GMXHOME)/src/include/types/edsams.h \
  $(GMXHOME)/src/include/types/pulls.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/smalloc.h \
  $(GMXHOME)/src/include/symtab.h \
@@ -1951,7 +1951,7 @@ $(LIB)(princ.o): princ.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/types/matrix.h \
  $(GMXHOME)/src/include/types/edsams.h \
  $(GMXHOME)/src/include/types/pulls.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/smalloc.h \
  $(GMXHOME)/src/include/gstat.h \
@@ -2058,7 +2058,7 @@ $(LIB)(random.o): random.c $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/types/matrix.h \
  $(GMXHOME)/src/include/types/edsams.h \
  $(GMXHOME)/src/include/types/pulls.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/random.h
 $(LIB)(rbin.o): rbin.c $(GMXHOME)/src/include/typedefs.h \
@@ -2268,13 +2268,13 @@ $(LIB)(rmpbc.o): rmpbc.c $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/types/pulls.h \
  $(GMXHOME)/src/include/smalloc.h \
  $(GMXHOME)/src/include/mshift.h \
- $(GMXHOME)/src/include/pbc.h /home/spoel/gmx/src/include/gstat.h \
+ $(GMXHOME)/src/include/pbc.h $(GMXHOME)/src/include/gstat.h \
  $(GMXHOME)/src/include/statutil.h \
  $(GMXHOME)/src/include/filenm.h \
  $(GMXHOME)/src/include/futil.h \
  $(GMXHOME)/src/include/readinp.h \
  $(GMXHOME)/src/include/wman.h \
- $(GMXHOME)/src/include/rmpbc.h /home/spoel/gmx/src/include/vec.h \
+ $(GMXHOME)/src/include/rmpbc.h $(GMXHOME)/src/include/vec.h \
  $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/macros.h
 sfac.o: sfac.c $(GMXHOME)/src/include/assert.h \
@@ -2316,7 +2316,7 @@ sfac.o: sfac.c $(GMXHOME)/src/include/assert.h \
  $(GMXHOME)/src/include/tpxio.h \
  $(GMXHOME)/src/include/xdrf.h \
  $(GMXHOME)/src/include/random.h sfac.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/futil.h \
  $(GMXHOME)/src/include/matio.h
@@ -2384,7 +2384,7 @@ $(LIB)(shift_util.o): shift_util.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/types/matrix.h \
  $(GMXHOME)/src/include/types/edsams.h \
  $(GMXHOME)/src/include/types/pulls.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/shift_util.h \
  $(GMXHOME)/src/include/complex.h \
@@ -2468,7 +2468,7 @@ $(LIB)(sortwater.o): sortwater.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/types/pulls.h \
  $(GMXHOME)/src/include/random.h \
  $(GMXHOME)/src/include/smalloc.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/sortwater.h
 $(LIB)(stat.o): stat.c $(GMXHOME)/src/include/typedefs.h \
@@ -2508,13 +2508,13 @@ $(LIB)(stat.o): stat.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/xdrf.h \
  $(GMXHOME)/src/include/names.h \
  $(GMXHOME)/src/include/physics.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/mvdata.h \
- $(GMXHOME)/src/include/nsb.h /home/spoel/gmx/src/include/force.h \
+ $(GMXHOME)/src/include/nsb.h $(GMXHOME)/src/include/force.h \
  $(GMXHOME)/src/include/pbc.h \
  $(GMXHOME)/src/include/tgroup.h \
- $(GMXHOME)/src/include/nrnb.h /home/spoel/gmx/src/include/vcm.h \
+ $(GMXHOME)/src/include/nrnb.h $(GMXHOME)/src/include/vcm.h \
  $(GMXHOME)/src/include/smalloc.h \
  $(GMXHOME)/src/include/futil.h \
  $(GMXHOME)/src/include/rbin.h \
@@ -2564,7 +2564,7 @@ $(LIB)(statutil.o): statutil.c $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/futil.h \
  $(GMXHOME)/src/include/readinp.h \
  $(GMXHOME)/src/include/wman.h \
- $(GMXHOME)/src/include/names.h /home/spoel/gmx/src/include/vec.h \
+ $(GMXHOME)/src/include/names.h $(GMXHOME)/src/include/vec.h \
  $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/tpxio.h \
  $(GMXHOME)/src/include/xdrf.h \
@@ -2710,7 +2710,7 @@ testbond.o: testbond.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/types/edsams.h \
  $(GMXHOME)/src/include/types/pulls.h \
  $(GMXHOME)/src/include/bondf.h \
- $(GMXHOME)/src/include/nrnb.h /home/spoel/gmx/src/include/pbc.h
+ $(GMXHOME)/src/include/nrnb.h $(GMXHOME)/src/include/pbc.h
 testfft.o: testfft.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/types/simple.h \
@@ -2754,14 +2754,14 @@ testfft.o: testfft.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/mdrun.h \
  $(GMXHOME)/src/include/tgroup.h \
  $(GMXHOME)/src/include/filenm.h \
- $(GMXHOME)/src/include/futil.h /home/spoel/gmx/src/include/nsb.h \
+ $(GMXHOME)/src/include/futil.h $(GMXHOME)/src/include/nsb.h \
  $(GMXHOME)/src/include/mshift.h \
- $(GMXHOME)/src/include/force.h /home/spoel/gmx/src/include/pbc.h \
+ $(GMXHOME)/src/include/force.h $(GMXHOME)/src/include/pbc.h \
  $(GMXHOME)/src/include/edsam.h \
  $(GMXHOME)/src/include/mdebin.h \
  $(GMXHOME)/src/include/ebin.h \
  $(GMXHOME)/src/include/enxio.h \
- $(GMXHOME)/src/include/xdrf.h /home/spoel/gmx/src/include/vcm.h
+ $(GMXHOME)/src/include/xdrf.h $(GMXHOME)/src/include/vcm.h
 testtab.o: testtab.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/types/simple.h \
@@ -2792,7 +2792,7 @@ testtab.o: testtab.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/types/matrix.h \
  $(GMXHOME)/src/include/types/edsams.h \
  $(GMXHOME)/src/include/types/pulls.h \
- $(GMXHOME)/src/include/force.h /home/spoel/gmx/src/include/pbc.h \
+ $(GMXHOME)/src/include/force.h $(GMXHOME)/src/include/pbc.h \
  $(GMXHOME)/src/include/nsb.h \
  $(GMXHOME)/src/include/network.h \
  $(GMXHOME)/src/include/main.h \
@@ -2875,7 +2875,7 @@ $(LIB)(tpxio.o): tpxio.c $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/confio.h \
  $(GMXHOME)/src/include/atomprop.h \
  $(GMXHOME)/src/include/copyrite.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h
 $(LIB)(trnio.o): trnio.c $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/smalloc.h \
  $(GMXHOME)/src/include/fatal.h \
@@ -2955,7 +2955,7 @@ $(LIB)(trxio.o): trxio.c $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/gmxfio.h \
  $(GMXHOME)/src/include/xdrf.h \
  $(GMXHOME)/src/include/trnio.h \
- $(GMXHOME)/src/include/names.h /home/spoel/gmx/src/include/vec.h \
+ $(GMXHOME)/src/include/names.h $(GMXHOME)/src/include/vec.h \
  $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/xtcio.h \
@@ -3032,7 +3032,7 @@ $(LIB)(txtdump.o): txtdump.c $(GMXHOME)/src/include/smalloc.h \
  $(GMXHOME)/src/include/tpxio.h \
  $(GMXHOME)/src/include/xdrf.h \
  $(GMXHOME)/src/include/string2.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/macros.h
 $(LIB)(typedefs.o): typedefs.c $(GMXHOME)/src/include/smalloc.h \
  $(GMXHOME)/src/include/assert.h \
@@ -3314,7 +3314,7 @@ $(LIB)(xtcio.o): xtcio.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/gmxfio.h \
  $(GMXHOME)/src/include/xtcio.h \
  $(GMXHOME)/src/include/smalloc.h \
- $(GMXHOME)/src/include/vec.h /home/spoel/gmx/src/include/maths.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
  $(GMXHOME)/src/include/macros.h \
  $(GMXHOME)/src/include/futil.h
 $(LIB)(xvgr.o): xvgr.c $(GMXHOME)/src/include/sysstuff.h \
