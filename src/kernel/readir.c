@@ -544,7 +544,7 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("orire-fc",	ir->orires_fc,	0.0);
   RTYPE ("orire-tau",	ir->orires_tau,	0.0);
   STYPE ("orire-fitgrp",orirefitgrp,    NULL);
-  CTYPE ("Output frequency for trace(SD) to energy file");
+  CTYPE ("Output frequency for trace(SD) and S to energy file");
   ITYPE ("nstorireout", ir->nstorireout, 100);
   CTYPE ("Dihedral angle restraints: No, Simple or Ensemble");
   EETYPE("dihre",       opts->eDihre,   edisre_names, nerror, TRUE);
