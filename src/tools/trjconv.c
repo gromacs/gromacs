@@ -533,8 +533,8 @@ int main(int argc,char *argv[])
       do {
 	if (!fr.bStep) {
 	  /* set the step */
-	  newstep++;
 	  fr.step = newstep;
+	  newstep++;
 	}
 	  
 	if (bSetBox) {
