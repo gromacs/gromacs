@@ -44,9 +44,6 @@
 extern FILE *stdlog;
 extern int  gmx_parallel; /* 1 when running in parallel */
 
-extern char *par_fn(char *base,int ftp,t_commrec *cr, char buf[], int bufsize);
-/* Add processor id in the filename right before the extension */
-
 extern void open_log(char *fn,t_commrec *cr);
 /* Open the log file, if necessary (nprocs > 1) the logfile name is
  * communicated around the ring.

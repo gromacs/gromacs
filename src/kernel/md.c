@@ -287,7 +287,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   atom_id     *grpindex;
   char        *grpname;
   t_coupl_rec *tcr=NULL;
-  rvec        *xcopy=NULL;
+  rvec        *xcopy=NULL,*vcopy=NULL;
   /* End of XMDRUN stuff */
 
   /* Turn on signal handling */
@@ -374,10 +374,12 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   /* Initiate data for the special cases */
   if (bFFscan) {
     snew(xcopy,nsb->natoms);
-    for(ii=0; (ii<nsb->natoms); ii++)
+    snew(vcopy,nsb->natoms);
+    for(ii=0; (ii<nsb->natoms); ii++) {
       copy_rvec(x[ii],xcopy[ii]);
-  }
-      
+      copy_rvec(v[ii],vcopy[ii]);
+    }
+  } 
   /* Write start time and temperature */
   start_t=print_date_and_time(log,cr->nodeid,"Started mdrun");
   
@@ -463,8 +465,10 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 
     /* Copy back starting coordinates in case we're doing a forcefield scan */
     if (bFFscan) {
-      for(ii=0; (ii<nsb->natoms); ii++)
+      for(ii=0; (ii<nsb->natoms); ii++) {
 	copy_rvec(xcopy[ii],x[ii]);
+	copy_rvec(vcopy[ii],v[ii]);
+      }
     }
     
     if (bDummies) {
@@ -609,11 +613,6 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     if (!bOK && !bFFscan)
       fatal_error(0,"Constraint error: Shake, Lincs or Settle could not solve the constrains");
     
-    /* The coordinates (x) were unshifted in update */
-    if (bFFscan && (!bShell || bConverged))
-      print_forcefield(log,ener[F_EPOT],HOMENR(nsb),f,buf,xcopy,
-		       &(top->blocks[ebMOLS]),mdatoms->massT); 
-    
     if (parm->ir.epc!=epcNO)
       correct_box(parm->box,fr,graph);
     /* (un)shifting should NOT be done after this,
@@ -755,6 +754,11 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     calc_dispcorr(log,parm->ir.eDispCorr,
 		  fr,mdatoms->nr,parm->box,parm->pres,parm->vir,ener);
 
+    /* The coordinates (x) were unshifted in update */
+    if (bFFscan && (!bShell || bConverged))
+      print_forcefield(log,ener,HOMENR(nsb),f,buf,xcopy,
+		       &(top->blocks[ebMOLS]),mdatoms->massT); 
+    
     if (bTCR) {
       /* Only do GCT when the relaxation of shells (minimization) has converged,
        * otherwise we might be coupling to bogus energies. 

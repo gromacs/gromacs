@@ -126,7 +126,7 @@ static int get_nodeid(FILE *log,int left,int right,int *nodeid,int *nnodes)
   return 1;
 }
 
-char *par_fn(char *base,int ftp,t_commrec *cr, char buf[], int bufsize)
+static void par_fn(char *base,int ftp,t_commrec *cr, char buf[], int bufsize)
 {
   int n;
   
@@ -144,8 +144,6 @@ char *par_fn(char *base,int ftp,t_commrec *cr, char buf[], int bufsize)
   
   /* Add extension again */
   strcat(buf,(ftp == efTPX) ? "tpr" : (ftp == efENX) ? "edr" : ftp2ext(ftp));
-  
-  return buf;
 }
 
 void check_multi_int(FILE *log,t_commrec *mcr,int val,char *name)
@@ -289,27 +287,13 @@ t_commrec *init_multisystem(t_commrec *cr,int nfile,t_filenm fnm[])
     /* Because of possible multiple extensions per type we must look 
      * at the actual file name 
      */
-<<<<<<< main.c
-    ftp = fn2ftp(fnm[i].fn);
-    if (ftp != efLOG) {
-#ifdef DEBUGPAR
-      fprintf(stderr,"Old file name: %s",fnm[i].fn);
-#endif
-      par_fn(fnm[i].fn,ftp,mcr,buf,255);
-      sfree(fnm[i].fn);
-      fnm[i].fn = strdup(buf);
-#ifdef DEBUGPAR
-      fprintf(stderr,", new: %s\n",fnm[i].fn);
-#endif
-=======
     ftp = fn2ftp(fnm[i].fns[0]);
     if (ftp != efLOG && ftp!= efTPX && ftp != efTPR && ftp != efTPS && ftp!=efTPA && ftp!=efTPB) {
       /* fprintf(stderr,"Old file name: %s",fnm[i].fns[0]); */
-      buf = par_fn(fnm[i].fns[0],ftp,mcr);
+      par_fn(fnm[i].fns[0],ftp,mcr,buf,255);
       sfree(fnm[i].fns[0]);
       fnm[i].fns[0] = strdup(buf);
       /* fprintf(stderr,", new: %s\n",fnm[i].fns[0]); */
->>>>>>> 1.30
     }
   }
 

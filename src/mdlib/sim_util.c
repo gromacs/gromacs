@@ -32,6 +32,7 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <math.h>
 #include "typedefs.h"
 #include "string2.h"
 #include "smalloc.h"
@@ -161,26 +162,37 @@ static void reset_energies(t_grpopts *opts,t_groups *grp,
  * The function should return the energy due to the electric field
  * (if any) but for now returns 0.
  */
-
-static real calc_f_el(int  start,int homenr,
+static void calc_f_el(FILE *fp,int  start,int homenr,
 		      real charge[],rvec x[],rvec f[],
-		      t_cosines Ex[],real t)
+		      t_cosines Ex[],t_cosines Et[],real t)
 {
-  real Emu,fmu,strength;
+  rvec Ext;
+  real t0;
   int  i,m;
   
-  Emu = 0;
-  for(m=0; (m<DIM); m++)
+  for(m=0; (m<DIM); m++) {
+    if (Et[m].n) {
+      if (Et[m].n == 3) {
+	t0 = Et[m].a[1];
+	Ext[m] = cos(Et[m].a[0]*(t-t0))*exp(-sqr(t-t0)/(2.0*sqr(Et[m].a[2])));
+      }
+      else
+	Ext[m] = cos(Et[m].a[0]*t);
+    }
+    else
+      Ext[m] = 1.0;
     if (Ex[m].n) {
       /* Convert the field strength from V/nm to MD-units */
-      strength = Ex[m].a[0]*FIELDFAC;
-      for(i=start; (i<start+homenr); i++) {
-	fmu      = charge[i]*strength;
-	f[i][m] += fmu;
-      } 
+      Ext[m] *= Ex[m].a[0]*FIELDFAC;
+      for(i=start; (i<start+homenr); i++) 
+	f[i][m] += charge[i]*Ext[m];
     }
-  
-  return Emu;
+    else
+      Ext[m] = 0;
+  }
+  if (fp &&debug) 
+    fprintf(fp,"%10g  %10g  %10g  %10g #EFIELD\n",t,
+	    Ext[XX]/FIELDFAC,Ext[YY]/FIELDFAC,Ext[ZZ]/FIELDFAC);
 }
 
 void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
@@ -303,7 +315,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
     pr_rvecs(debug,0,"vir_shifts",vir_part,DIM);
 
   /* Compute forces due to electric field */
-  calc_f_el(start,homenr,mdatoms->chargeT,x,f,parm->ir.ex,t);
+  calc_f_el(log,start,homenr,mdatoms->chargeT,x,f,parm->ir.ex,parm->ir.et,t);
 
   /* When using PME/Ewald we compute the long range virial (pme_vir) there.
    * otherwise we do it based on long range forces from twin range

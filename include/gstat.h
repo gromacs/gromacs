@@ -389,7 +389,7 @@ extern t_dlist *mk_dlist(FILE *log,
 			 int maxchi,int r0,int naa,char **aa);
 			 
 extern void pr_dlist(FILE *fp,int nl,t_dlist dl[],real dt,  int printtype,
-bool bPhi, bool bPsi,bool bChi,bool bOmega, int maxchi);
+		     bool bPhi, bool bPsi,bool bChi,bool bOmega, int maxchi);
 
 extern int pr_trans(FILE *fp,int nl,t_dlist dl[],real dt,int Xi);
 

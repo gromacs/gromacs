@@ -332,7 +332,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
       pos[Min]   = x;
       force[Min] = f;
     }
-    bInit  = (getenv("FORCEINIT") != NULL);
+    bInit  = getenv("FORCEINIT") != NULL;
     bFirst = FALSE;
   }
   
@@ -359,6 +359,9 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   /* Calculate the forces first time around */
   clear_mat(my_vir[Min]);
   clear_mat(pme_vir[Min]);
+  if (debug) {
+    pr_rvecs(debug,0,"x b4 do_force",x + start,homenr);
+  }
   do_force(log,cr,mcr,parm,nsb,my_vir[Min],pme_vir[Min],mdstep,nrnb,
 	   top,grps,x,v,force[Min],buf,md,ener,fcd,bVerbose && !PAR(cr),
 	   lambda,graph,bDoNS,FALSE,fr,mu_tot,FALSE,t);

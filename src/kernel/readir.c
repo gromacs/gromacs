@@ -930,7 +930,7 @@ static void decode_cos(char *s,t_cosines *cosine)
       for(i=0; (i<cosine->n); i++) {
 	strcpy(f1,format);
 	strcat(f1,"%lf%lf");
-	if (sscanf(t,f1,&a,&phi) != 2)
+	if (sscanf(t,f1,&a,&phi) < 2)
 	  fatal_error(0,"Invalid input for electric field shift: '%s'",t);
 	cosine->a[i]=a;
 	cosine->phi[i]=phi;

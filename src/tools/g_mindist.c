@@ -47,6 +47,7 @@
 #include "rdgroup.h"
 #include "tpxio.h"
 #include "rmpbc.h"
+#include "xtcio.h"
 
 static void periodic_dist(matrix box,rvec x[],int n,atom_id index[],
 			  real *rmin,real *rmax)
@@ -211,13 +212,8 @@ void dist_plot(char *fn,char *afile,char *dfile,
   int          trxout;
   char         buf[256];
   char         **leg;
-<<<<<<< g_mindist.c
-  real         t,md,**mdist=NULL;
-  int          nd,status;
-=======
   real         t,dmin,dmax,**mindres,**maxdres;
   int          nmin,nmax,status;
->>>>>>> 1.29
   int          i,j,k,natoms;
   int	       min1,min2,max1,max2;
   atom_id      oindex[2];

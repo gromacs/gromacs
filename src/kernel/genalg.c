@@ -463,7 +463,7 @@ bool print_ga(FILE *fp,t_genalg *ga,real rmsf,real energy,t_range range[],
     
     /*----Output part----------------------------------------------------------*/
     if (1 || bImproved || (nfeval == ga->NP)) {
-      fprintf(fp,"\nGen: %6d Cost:%8.3f  Ener: %8.3f RMSF: %8.3f  <Cost>: %8.3f\n",
+      fprintf(fp,"\nGen: %5d Cost:%8e  Ener: %8e RMSF: %8e  <Cost>: %8e\n",
 	      ga->gen,ga->cost[ga->imin],
 	      ga->energy[ga->imin],ga->rmsf[ga->imin],cmean);
       

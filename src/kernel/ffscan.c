@@ -67,19 +67,23 @@ int main(int argc,char *argv[])
     { efLOG, "-g",      "md",       ffWRITE },
     { efXVG, "-table",  "table",    ffOPTRD },
     { efDAT, "-parm",   "params",   ffREAD  },
-    { efDAT, "-ga",     "genalg",   ffOPTRD }
+    { efDAT, "-ga",     "genalg",   ffOPTRD },
+    { efGRO, "-c",      "junk",     ffWRITE },
+    { efENX, "-e",      "junk",     ffWRITE },
+    { efTRN, "-o",      "junk",     ffWRITE }
   };
 #define NFILE asize(fnm)
 
   /* Command line options !                         */
-  static real tol   = 0.1;
-  static real fmax  = 100;
-  static real epot  = 0.0;
-  static real npow  = 12.0;
-  static real ratio = 0.01;
-  static bool bComb = TRUE;
-  static bool bVerbose = TRUE;
-  static bool bLogEps  = FALSE;
+  static real tol       = 0.1;
+  static real fmax      = 100;
+  static real epot      = 0.0;
+  static real npow      = 12.0;
+  static real ratio     = 0.01;
+  static bool bComb     = TRUE;
+  static bool bVerbose  = TRUE;
+  static bool bLogEps   = FALSE;
+  static bool bPressure = FALSE;
   static t_pargs pa[] = {
     { "-tol",   FALSE, etREAL, {&tol},   "Energy tolerance (kJ/mol) (zero means everything is printed)" },
     { "-fmax",  FALSE, etREAL, {&fmax},  "Force tolerance (zero means everything is printed)" },
@@ -88,7 +92,8 @@ int main(int argc,char *argv[])
     { "-npow",  FALSE, etREAL, {&npow},  "Power for LJ in case of table use" },
     { "-ratio", FALSE, etREAL, {&ratio}, "Ratio for weighing RMS Force and Energy Deviation. Cost is ratio * RMS Force + abs(Energy Deviation). This probably should depend on your system." },
     { "-logeps",FALSE, etBOOL, {&bLogEps},  "Use a logarithmic scale for epsilon" },
-    { "-v",     FALSE, etBOOL, {&bVerbose}, "Be loud and noisy" }
+    { "-v",     FALSE, etBOOL, {&bVerbose}, "Be loud and noisy" },
+    { "-pres",  FALSE, etBOOL, {&bPressure}, "Use pressure and energy to fit paramters rather than RMS force and energy" }
   };
   unsigned  long Flags = 0;
   t_edsamyn edyn;
@@ -115,7 +120,7 @@ int main(int argc,char *argv[])
     please_cite(stdlog,"Berendsen95a");
   }
   
-  set_ffvars(tol,epot,npow,bComb,fmax,bLogEps,ratio);
+  set_ffvars(tol,epot,npow,bComb,fmax,bLogEps,ratio,bPressure);
   
   Flags = (Flags | MD_FFSCAN);
 

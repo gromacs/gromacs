@@ -557,9 +557,11 @@ search_atomtypes(t_atomtype *at,int *n,int typelist[],int thistype,
 {
   int i,nn,nrfp,j,k,found;
 
-  nn = *n;
+  nn    = *n;
   nrfp  = NRFP(ftype);
-
+  if (debug)
+    fprintf(debug,"atnr = %d, key = %d, nrfp = %d\n",
+	    atnr,key,nrfp);
   for(i=0; (i<nn); i++) {
     if (typelist[i] == thistype) /* This type number has already been added */
       break;
@@ -574,7 +576,7 @@ search_atomtypes(t_atomtype *at,int *n,int typelist[],int thistype,
 			(at->vol[typelist[i]] == at->vol[thistype]) &&
 			(at->surftens[typelist[i]] == at->surftens[thistype]));
     }
-    if(found) 
+    if (found) 
       break;
   }
   

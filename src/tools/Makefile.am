@@ -56,7 +56,7 @@ g_velacc_SOURCES     = 	g_velacc.c $(AUTOCORR_SRC)
 genbox_SOURCES       = 	genbox.c addconf.c addconf.h
 genion_SOURCES       = 	genion.c calcpot.c calcpot.h edittop.c
 cdist_SOURCES        =  cdist.c smooth.c bondlist.c residues.c dlist.c
-disco_SOURCES        =  disco.c correct.c discopar.c dtools.c
+disco_SOURCES        =  disco.c correct.c discopar.c dtools.c dlist.c
 anadock_SOURCES	     =  anadock.c lsq.c
 
 CLEANFILES   = 	*~ \\\#*

@@ -37,6 +37,7 @@
 #include "vec.h"
 #include "names.h"
 #include "disco.h"
+#include "gstat.h"
 
 char *edc_names[edcNR+1] = { "NONBND", "BOND", "DISRE", NULL };
 
@@ -183,7 +184,7 @@ void define_peptide_bonds(FILE *log,t_atoms *atoms,t_correct *c)
   t_dlist *dlist;
   
   naa   = get_strings("aminoacids.dat",&aa);
-  dlist = mk_dlist(log,atoms,&nlist,TRUE,TRUE,FALSE,0,1,naa,aa);
+  dlist = mk_dlist(log,atoms,&nlist,TRUE,TRUE,FALSE,FALSE,0,1,naa,aa);
   for(i=0; (i<naa); i++)
     sfree(aa[i]);
   sfree(aa);
@@ -202,7 +203,7 @@ void define_peptide_bonds(FILE *log,t_atoms *atoms,t_correct *c)
   }
   c->npep = npep;
   if (debug)
-    pr_dlist(debug,nlist,dlist,1.0);
+    pr_dlist(debug,nlist,dlist,1.0,0,TRUE,TRUE,FALSE,TRUE,0);
   sfree(dlist);
   fprintf(log,"There are %d peptide bonds\n",npep);
 }

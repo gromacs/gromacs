@@ -181,12 +181,13 @@ extern real calc_mu_aver(t_commrec *cr,t_nsborder *nsb,rvec x[],real q[],rvec mu
 extern void update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr);
 /* Modify the parameters */
 
-extern void print_forcefield(FILE *fp,real energy,int natoms,rvec f[],rvec fshake[],
+extern void print_forcefield(FILE *fp,real ener[],int natoms,rvec f[],
+			     rvec fshake[],
 			     rvec x[],t_block *mols,real mass[]);
 /* Print results */
 
 extern void set_ffvars(real ff_tol,real ff_epot,real ff_npow,bool ff_bComb,
-		       real ff_fmax,bool ff_bLogEps,real ratio);
+		       real ff_fmax,bool ff_bLogEps,real ratio,bool bPressure);
 /* Set variables for force scanning */
 
 #endif	/* _xmdrun_h */

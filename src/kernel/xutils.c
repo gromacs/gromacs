@@ -98,10 +98,11 @@ static real f_max   = 100;
 static real npow    = 12.0;
 static bool bComb   = TRUE;
 static bool bLogEps = FALSE;
+static bool bPres   = FALSE;
 static real ratio   = 0.01;
 
 void set_ffvars(real ff_tol,real ff_epot,real ff_npow,bool ff_bComb,
-		real ff_fmax,bool ff_bLogEps,real ff_ratio)
+		real ff_fmax,bool ff_bLogEps,real ff_ratio,bool bPressure)
 {
   tol     = ff_tol;
   epot    = ff_epot;
@@ -110,11 +111,12 @@ void set_ffvars(real ff_tol,real ff_epot,real ff_npow,bool ff_bComb,
   f_max   = ff_fmax;
   ratio   = ff_ratio;
   bLogEps = ff_bLogEps;
+  bPres   = bPressure;
 }
 
-real cost(real rmsf,real energy)
+real cost(real xxx,real energy)
 {
-  return ratio*rmsf+fabs(energy-epot);
+  return ratio*sqr(xxx)+sqr(energy-epot);
 }
 
 static char     *esenm[eseNR] = { "SIG", "EPS", "BHAMA", "BHAMB", "BHAMC" };
@@ -247,6 +249,8 @@ static void update_ff(t_forcerec *fr,int nparm,t_range range[],int param_val[])
       val = range[i].rval;
     else
       val = value_range(&range[i],param_val[i]);
+    if(debug)
+      fprintf(debug,"val = %g\n",val);
     switch (range[i].ptype) {
     case eseSIGMA:
       sigma[range[i].atype] = val;
@@ -281,8 +285,6 @@ static void update_ff(t_forcerec *fr,int nparm,t_range range[],int param_val[])
     for(i=0; (i<atnr); i++) {
       c6[i] = 4*eps[i]*pow(sigma[i],6.0);
       cn[i] = 4*eps[i]*pow(sigma[i],npow);
-      if (debug)
-	fprintf(debug,"c6[%d] = %12.5e  c12[%d] = %12.5e\n",i,c6[i],i,cn[i]);
     }
     for(i=0; (i<atnr); i++) {
       for(j=0; (j<=i); j++) {
@@ -338,8 +340,9 @@ void update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr)
 	      ntry,nparm);
     }
   }
-  else if (ga)
+  else if (ga) {
     update_ga(stdlog,range,ga);
+  }
   else {
     /* Increment the counter
      * Non-trivial, since this is nparm nested loops in principle 
@@ -365,18 +368,29 @@ void update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr)
   update_ff(fr,nparm,range,param_val);
 }
 
-static void print_range(FILE *fp,real rmsf,real energy)
+static void print_range(FILE *fp,real xxx,real energy)
 {
   int  i;
   
-  fprintf(fp,"%8.3f  %8.3f  %8.3f",cost(rmsf,energy),rmsf,energy);
+  fprintf(fp,"%8.3f  %8.3f  %8.3f",cost(xxx,energy),xxx,energy);
   for(i=0; (i<nparm); i++)
     fprintf(fp," %s %10g",esenm[range[i].ptype],range[i].rval);
   fprintf(fp," FF\n");
   fflush(fp);
 }
 
-static void print_grid(FILE *fp,real energy,int natoms,rvec f[],rvec fshake[],
+static real msf(int n,rvec f[])
+{
+  int i;
+  
+  real msf=0;
+  for(i=0; (i<n); i++)
+    msf += iprod(f[i],f[i]);
+
+  return msf/n;
+}
+
+static void print_grid(FILE *fp,real ener[],int natoms,rvec f[],rvec fshake[],
 		       rvec x[],t_block *mols,real mass[])
 {
   static bool bFirst = TRUE;
@@ -387,8 +401,8 @@ static void print_grid(FILE *fp,real energy,int natoms,rvec f[],rvec fshake[],
     "in the order they appear in the input file.",
     "------------------------------------------------------------------------" 
   };
+  real xxx;
   int  i;
-  real msf,rmsf;
   
   if (bFirst) {
     for(i=0; (i<asize(desc)); i++)
@@ -396,35 +410,39 @@ static void print_grid(FILE *fp,real energy,int natoms,rvec f[],rvec fshake[],
     fflush(fp);
     bFirst = FALSE;
   }
-  if ((tol == 0) || (fabs(energy-epot) < tol)) {
-    msf=0;
-    for(i=0; (i<natoms); i++)
-      msf += iprod(f[i],f[i]);
-    rmsf = sqrt(msf/natoms);
-    if ((f_max == 0) || (rmsf < f_max)) 
-      print_range(fp,rmsf,energy);
+  if ((tol == 0) || (fabs(ener[F_EPOT]-epot) < tol)) {
+    if (bPres)
+      xxx = ener[F_PRES];
+    else
+      xxx = sqrt(msf(natoms,f));
+    if ((f_max == 0) || (xxx < f_max)) 
+      print_range(fp,xxx,ener[F_EPOT]);
   }
 }
 
-void print_forcefield(FILE *fp,real energy,int natoms,rvec f[],rvec fshake[],
+void print_forcefield(FILE *fp,real ener[],int natoms,rvec f[],rvec fshake[],
 		      rvec x[],t_block *mols,real mass[])
 {
-  int  i;
-  real msf,rmsf;
-
+  real xxx;
+  
   if (ga) {
-    msf=0;
-    for(i=0; (i<natoms); i++)
-      msf += iprod(f[i],f[i]);
-    rmsf = sqrt(msf/natoms);
-    if (print_ga(fp,ga,rmsf,energy,range,tol)) {
+    if (bPres) 
+      xxx = ener[F_PRES];
+    else
+      xxx = sqrt(msf(natoms,f));
+    if (debug)
+      fprintf(fp,"%s: %12g, Energy-Epot: %12g, cost: %12g\n",
+	      bPres ? "Pressure" : "RMSF",
+	      xxx,ener[F_EPOT]-epot,cost(xxx,ener[F_EPOT]));
+    if (print_ga(fp,ga,xxx,ener[F_EPOT],range,tol)) {
       if (gmx_parallel)
 	gmx_finalize();
       fprintf(stderr,"\n");
       exit(0);
     }
+    fflush(fp);
   }
   else
-    print_grid(fp,energy,natoms,f,fshake,x,mols,mass);
+    print_grid(fp,ener,natoms,f,fshake,x,mols,mass);
 }
  
