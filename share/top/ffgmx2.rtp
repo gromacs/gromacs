@@ -61,7 +61,7 @@
    HD1    HC   0.000     4
    HD2    HC   0.000     4
     NE    NE  -0.110     4
-   HE1     H   0.240     4
+   HE     H   0.240     4
     CZ     C   0.340     4
    NH1    NZ  -0.260     4
   HH11     H   0.240     4
@@ -86,7 +86,7 @@
     CD   HD1
     CD   HD2
     CD    NE
-    NE   HE1
+    NE   HE
     NE    CZ
     CZ   NH1
     CZ   NH2
