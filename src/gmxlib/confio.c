@@ -639,7 +639,7 @@ void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
     else
       strcpy(nm," ??? ");
 
-    fprintf(out,"%5d%-5.5s%5.5s%5d",resnr+1,resnm,nm,(ai+1)%100000);
+    fprintf(out,"%5d%-5.5s%5.5s%5d",(resnr+1)%100000,resnm,nm,(ai+1)%100000);
     /* next fprintf uses built format string */
     if (v)
       fprintf(out,format,
