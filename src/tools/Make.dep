@@ -121,7 +121,6 @@ readev.o:	readev.c
 readev.o:	readev.h
 recomb.o:	recomb.c
 recomb.o:	recomb.h
-remove_sol.o:	remove_sol.c
 rmod.o:	rmod.c
 sas2mat.o:	sas2mat.c
 sortx.o:	sortx.c

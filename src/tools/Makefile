@@ -11,16 +11,16 @@ include		$(GMXHOME)/src/makef/Makefile.def
 #
 LIB		=
 POBJ		= g_hbond.o dah.o hbond.o list.o parse.o
-PROGRAMS	= g_rdf		g_msd		g_dist	\
+PROGRAMS	= g_rdf		g_msd		g_dist		\
 		  g_hbond	g_lifetime	merge_freq	\
 		  genbox 	genconf 	genion		\
 		  make_ndx	average		genpr 		\
-		  trjconv       mk_angndx	\
+		  trjconv       mk_angndx			\
 		  editconf	protonate	gendr		\
 		  g_rms		g_rama		g_disre		\
 		  g_gyrate	g_mindist	g_sgangle	\
-		  g_angle	g_dih		\
-		  g_bond	g_dipoles	\
+		  g_angle	g_dih				\
+		  g_bond	g_dipoles			\
 		  g_mdmat	g_energy	g_sas		\
 		  do_dssp	sas2mat         g_rmsdist	\
 		  g_density     g_potential     g_order         \
@@ -28,7 +28,7 @@ PROGRAMS	= g_rdf		g_msd		g_dist	\
                   g_h2order     g_com		g_rdens		\
 		  g_velacc	g_rotacf	g_enemat	\
 		  g_nmeig	g_chi		g_dielectric	\
-		  g_helix	waterins	wheel	        \
+		  g_helix	wheel	        		\
                   g_confrms     xpm2ps 
 
 ACOBJ	=	autocorr.o	expfit.o	polynomials.o	\
@@ -100,9 +100,6 @@ truncstat:	truncstat.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 average:	average.o
-		$(LD) -o $@ $^ $(SYSLIBS)
-
-remove_sol:	remove_sol.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 trjconv:	trjconv.o
