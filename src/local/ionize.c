@@ -11,7 +11,7 @@
 #include "ionize.h"
 #include "names.h"
 #include "futil.h"
-#include "id2.h"
+#include "ion_data.h"
 
 #define PREFIX "IONIZE: "
 
@@ -104,7 +104,7 @@ int number_L(t_cross_atom *ca)
 
 real cross(int eColl,t_cross_atom *ca)
 {
-  real c;
+  real c=0;
   int  nK,nL;
   
   switch (eColl) {
@@ -129,7 +129,7 @@ real cross(int eColl,t_cross_atom *ca)
 
 real prob_K(int eColl,t_cross_atom *ca)
 {
-  real Pl,Pk,P;
+  real Pl,Pk,P=0;
   
   if ((ca->z <= 2) || (ca->z == ca->n))
     return 0;
@@ -234,6 +234,22 @@ real rand_theta_incoh(int Eindex,int *seed)
   return (j-1+(rrr-intp[Eindex][j-1])/(intp[Eindex][j]-intp[Eindex][j-1]))*dx;
 }
 
+static void polar2cart(real phi,real theta,rvec v)
+{
+  v[XX] = cos(phi)*sin(theta);
+  v[YY] = sin(phi)*sin(theta);
+  v[ZZ] = cos(theta);
+}
+
+void rand_vector(rvec v,int *seed)
+{
+  real theta,phi;
+
+  theta = 180.0*rando(seed);
+  phi   = 360.0*rando(seed);
+  polar2cart(phi,theta,v);
+}
+
 bool khole_decay(FILE *log,t_cross_atom *ca,rvec v,int *seed,real dt,int atom)
 {
   rvec dv;
@@ -249,13 +265,9 @@ bool khole_decay(FILE *log,t_cross_atom *ca,rvec v,int *seed,real dt,int atom)
     ca->n++;
     ca->k--;
     /* Generate random vector */
-    do {
-      dv[XX] = 2*rando(seed)-1;
-      dv[YY] = 2*rando(seed)-1;
-      dv[ZZ] = 2*rando(seed)-1;
-      ndv = norm(dv);
-    } while (ndv == 0.0);
-    factor = ca->vAuger/ndv;
+    rand_vector(v,seed);
+
+    factor = ca->vAuger;
     fprintf(log,"DECAY: factor=%10g, dv = (%8.3f, %8.3f, %8.3f)\n",
 	    factor,dv[XX],dv[YY],dv[ZZ]);
     for(m=0; (m<DIM); m++)
@@ -273,15 +285,16 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   static char  *leg[] = { "Probability", "Primary Ionization", "Integral over PI", "KHole-Decay", "Integral over KD" };
   static bool  bFirst = TRUE;
   static bool  bImpulse = TRUE;
-  static real  t0,imax,width,inv_nratoms,rho,nphot,nkdecay,nkd_tot;
+  static real  t0,imax,width,inv_nratoms,rho,nphot,nkdecay,nkd_tot,
+    ztot,protein_radius;
   static int   seed,dq_tot,ephot;
   static t_cross_atom *ca;
   static int   Eindex=-1;
-  real r,factor,ndv,E_lost,cross_atom,dvz,rrc;
-  real pt,ptot,pphot,pcoll[ecollNR];
+  real r,factor,ndv,E_lost=0,cross_atom,dvz,rrc;
+  real pt,ptot,pphot,pcoll[ecollNR],mtot,delta_ekin;
   real incoh,incoh_abs,sigmaPincoh;
-  rvec dv;
-  bool bIonize,bKHole,bL;
+  rvec dv,ddv;
+  bool bIonize=FALSE,bKHole,bL;
   int  nK,nL;
   char *cc;
   int  i,j,k,kk,m,dq,nkhole;
@@ -310,12 +323,21 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
       fatal_error(0,PREFIX"Energy level of %d keV not supported",ephot);
     
     /* Initiate cross section data etc. */
-    ca    = mk_cross_atom(log,md,atomname,Eindex);
+    ca      = mk_cross_atom(log,md,atomname,Eindex);
     
-    dq_tot   = 0;
+    dq_tot  = 0;
     nkd_tot = 0;
     inv_nratoms = 1.0/md->nr;
 
+    /* compute total charge of the system */
+    ztot = 0;
+    mtot = 0;
+    for(i=0; (i<md->nr); i++) {
+      mtot += md->massA[i];
+      ztot += md->chargeA[i];
+    }
+    protein_radius = pow(mtot*AVOGADRO*1e-27*0.75/M_PI,1.0/3.0);
+    
     xvg   = xvgropen("ionize.xvg","Ionization Events","Time (ps)","()");
     xvgr_legend(xvg,asize(leg),leg);
     ion   = ffopen("ionize.log","w");
@@ -327,6 +349,9 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     fprintf(log,PREFIX"Electron_mass: %10.3e(keV) Atomic_mass: %10.3e(keV)\n"
 	    "Speed_of_light: %10.3e(nm/ps)\n",
 	    ELECTRONMASS_keV,ATOMICMASS_keV,SPEEDOFLIGHT);
+    fprintf(log,"Total charge on system: %g e. Total mass: %g u\n",
+	    ztot,mtot);
+    fprintf(log,"Estimated system radius to be %g nm\n",protein_radius);
     fflush(log);
     bFirst = FALSE;
   }
@@ -412,9 +437,8 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 		    (SPEEDOFLIGHT*sqrt(2*E_lost/ELECTRONMASS_keV)));
 	  
 	  /* Subtract momentum of recoiling electron */
-	  dv[XX] -= factor*cos(phi)*sin(theta);
-	  dv[YY] -= factor*sin(phi)*sin(theta);
-	  dv[ZZ] -= factor*cos(theta);
+	  polar2cart(phi,theta,ddv);
+	  rvec_dec(dv,ddv);
 	  
 	  if (debug)
 	    pr_rvec(debug,0,"ELL",dv,DIM);
@@ -494,7 +518,26 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     if (debug && (ca[i].n > 0))
       dump_ca(debug,&(ca[i]),i,__FILE__,__LINE__);
   }
-  where();
+  /* Now add random velocities corresponding to the energy depositied by 
+   * the leaving electrons.
+   */ 
+  if (dq > 0) {
+    delta_ekin = 0;
+    for(i=0; (i<dq); i++) {
+      delta_ekin += FACEL*ztot/protein_radius;
+      ztot+=1;
+    }
+    delta_ekin=fabs(delta_ekin);
+    fprintf(log,
+	    "%d leaving electrons deposited %g kJ/mol in the protein. Z=%.0f\n",
+	    dq,delta_ekin,ztot);
+    delta_ekin /= md->nr;
+    for(i=0; (i<md->nr); i++) {
+      rand_vector(dv,&seed);
+      svmul(sqrt(2*delta_ekin/md->massA[i]),dv,dv);
+      rvec_inc(v[i],dv);
+    }
+  }
   
   fprintf(ion,"\n");
   fprintf(xvg,"%10.5f  %10.3e  %6d  %6d  %6d  %6d\n",

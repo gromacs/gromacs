@@ -196,6 +196,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   atom_id    *grpindex;
   char       *grpname;
   t_pull     pulldata;
+  /* A boolean (disguised as a real) to terminate mdrun */  
+  real       terminate=0;
 
   /* Shell stuff */
   int         nshell;
@@ -239,7 +241,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
                mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,
-		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
+		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot,&terminate);
   clear_rvec(vcm);
 
   /* Calculate Temperature coupling parameters lambda */
@@ -420,7 +422,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       /* Copy the partial virial to the global virial (to be summed) */
       if (PAR(cr)) {
 	global_stat(log,cr,ener,force_vir,shake_vir,
-		    &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
+		    &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot,&terminate);
 	if (!bNS)
 	  for(i=0; (i<grps->estat.nn); i++)
 	    grps->estat.ee[egLR][i] /= cr->nprocs;
