@@ -332,13 +332,13 @@ static int *new_status(char *topfile,char *confin,
   return forward;
 }
 
-static void cont_status(char *slog,bool bGenVel, int step,
+static void cont_status(char *slog,bool bGenVel, real time,
 			t_inputrec *ir,int *natoms,
 			rvec **x,rvec **v,matrix box,
 			int *nre,
 			t_energy **e,
 			t_topology *sys)
-     /* If step == 0 read the last frame available which is complete */
+     /* If time == -1 read the last frame available which is complete */
 {
   FILE         *fp;
   t_statheader sh;
@@ -348,10 +348,10 @@ static void cont_status(char *slog,bool bGenVel, int step,
 
   fprintf(stderr,
 	  "Reading Coordinates,Velocities and Box size from old trajectory\n");
-  if (step == -1)
+  if (time == -1)
     fprintf(stderr,"Will read whole trajectory\n");
   else
-    fprintf(stderr,"Will read first %d steps\n",step);
+    fprintf(stderr,"Will read till time %g\n",time);
   fp=ffopen(slog,"r");
   rd_header(fp,&sh);
   if(sys->atoms.nr!=sh.natoms) {
@@ -365,8 +365,8 @@ static void cont_status(char *slog,bool bGenVel, int step,
   */
   snew(*e,sh.nre*sizeof((*e)[0]));
   
-  /* Now scan until the last set of box, x and v (step == 0)
-   * or the ones at step step.
+  /* Now scan until the last set of box, x and v (time == -1)
+   * or the ones at time time.
    * Or only until box and x if gen_vel is set.
    */
   sread=0;
@@ -386,10 +386,10 @@ static void cont_status(char *slog,bool bGenVel, int step,
 	       (bRead && (!bGenVel)) ? *v : NULL,
 	       NULL,nre,NULL,NULL);
     fprintf(stderr,"\r Step %d; Time = %6.2f",nstep,t);
-    if ( (step != -1) && (nstep >= step) )
-      break;
     if (bRead)
       sread++;
+    if ( (time != -1) && (t >= time) )
+      break;
   }
   fclose(fp);
   if (sread==0) 
@@ -532,10 +532,10 @@ int main (int argc, char *argv[])
     "from the cpp. Command line options to the c-preprocessor can be given",
     "in the [TT].mdp[tt] file. See your local manual (man cpp).[PAR]",
     "When using position restraints a file with restraint coordinates",
-    "should be supplied with [TT]-r[tt].[PAR].",
-    "Starting coordinates can be read from trajectory with [TT]-t[TT].",
+    "should be supplied with [TT]-r[tt].[PAR]",
+    "Starting coordinates can be read from trajectory with [TT]-t[tt].",
     "The last frame with coordinates and velocities will be read,",
-    "unless the [TT]-s[tt] option is used."
+    "unless the [TT]-time[tt] option is used."
   };
   static char *bugs[] = {
     "shuffling is sometimes buggy when used on systems when the number of"
@@ -554,24 +554,24 @@ int main (int argc, char *argv[])
   matrix       box;
   t_filenm fnm[] = {
     { efMDP, NULL,  NULL,    ffREAD },
-    { efMDP, "-po", "mdout", ffWRITE },
+    { efMDP, "-fo", "mdout", ffWRITE },
     { efSTX, "-c",  NULL,    ffREAD },
-    { efSTX, "-r",  NULL,    ffOPTRD },
-    { efNDX, NULL,  NULL,    ffOPTRD },
     { efTOP, NULL,  NULL,    ffREAD },
-    { efTPB, "-o",  NULL,    ffWRITE },
-    { efTRJ, "-t",  NULL,    ffOPTRD }
+    { efNDX, NULL,  NULL,    ffOPTRD },
+    { efSTX, "-r",  NULL,    ffOPTRD },
+    { efTRJ, "-t",  NULL,    ffOPTRD },
+    { efTPB, "-o",  NULL,    ffWRITE }
   };
 #define NFILE asize(fnm)
 
   /* Command line options */
   static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=FALSE,bEnsemble=FALSE;
-  static int  nprocs=1,nstep=-1;
+  static int  nprocs=1,time=-1;
   t_pargs pa[] = {
     { "-np",      FALSE, etINT,  &nprocs,
       "Generate statusfile for # processors" },
-    { "-s",       FALSE, etINT,  &nstep,
-      "Take the time frame at MD step step (with -t). The first step, larger than or equal to the given step number is used." },
+    { "-time",       FALSE, etINT,  &time,
+      "Take frame at or first after this time." },
     { "-v",       FALSE, etBOOL, &bVerbose,
       "Be loud and noisy" },
     { "-R",       FALSE, etBOOL, &bRenum,
@@ -610,7 +610,7 @@ int main (int argc, char *argv[])
   }
 	       
   /* PARAMETER file processing */
-  get_ir(ftp2fn(efMDP,NFILE,fnm),opt2fn("-po",NFILE,fnm),ir,opts);
+  get_ir(ftp2fn(efMDP,NFILE,fnm),opt2fn("-fo",NFILE,fnm),ir,opts);
 
   if (bVerbose) 
     fprintf(stderr,"checking input for internal consistency...\n");
@@ -635,11 +635,7 @@ int main (int argc, char *argv[])
     if (msys.plist[F_POSRES].nr > 0)
       fatal_error(0,"No position restraint file given!\n");
   }
-  /*if the options -s and -t are given read new x and v from trajectory file*/
-  /* slog
-   * nstep 
-   * if nstep == 0 read last readable step
-   */
+
   if (bRenum) 
     atype.nr=renum_atype(plist,&sys,atype.nr,ir,bVerbose);
   
@@ -660,8 +656,8 @@ int main (int argc, char *argv[])
 
   if (ftp2bSet(efTRJ,NFILE,fnm)) {
     if (bVerbose)
-      fprintf(stderr,"getting data from old statusfile...\n");
-    cont_status(ftp2fn(efTRJ,NFILE,fnm),opts->bGenVel,nstep,ir,&natoms,
+      fprintf(stderr,"getting data from old trajectory ...\n");
+    cont_status(ftp2fn(efTRJ,NFILE,fnm),opts->bGenVel,time,ir,&natoms,
 		&x,&v,box,&nre,&e,&sys);
   }
   /* This is also necessary for setting the multinr arrays */
