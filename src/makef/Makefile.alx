@@ -12,7 +12,7 @@
 #
 # The default is to use gnu compilers. Uncomment the next line if you have
 # the faster dec/compaq compilers.
-COMPAQ_COMPILERS = yes
+#COMPAQ_COMPILERS = yes
 
 SYSDEFS		= -DHAVE_ULONG -DCINVSQRT -DFINVSQRT -DHAVE_STRCASECMP -DHAVE_STRDUP
 
