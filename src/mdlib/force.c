@@ -475,6 +475,9 @@ void init_forcerec(FILE *fp,
   t_block *mols,*cgs;
   t_idef  *idef;
 
+  if (check_box(box))
+    fatal_error(0,check_box(box));
+
   cgs            = &(top->blocks[ebCGS]);
   mols           = &(top->blocks[ebMOLS]);
   idef           = &(top->idef);
