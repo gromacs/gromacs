@@ -197,7 +197,7 @@ real do_ewald(FILE *log,       bool bVerbose,
 	  lrvir[YY][ZZ]-=tmp*my*mz;
 	  lrvir[ZZ][ZZ]-=tmp*mz*mz;
 	  for(n=0;n<HOMENR(nsb);n++) {
-	    tmp=ak*(cs*tab_qxyz[n].im-ss*tab_qxyz[n].re);
+	    tmp=scale*ak*(cs*tab_qxyz[n].im-ss*tab_qxyz[n].re);
 	    f[n][XX]+=tmp*mx;
 	    f[n][YY]+=tmp*my;
 	    f[n][ZZ]+=tmp*mz;
