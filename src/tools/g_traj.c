@@ -299,10 +299,10 @@ static void write_pdb_bfac(char *fname,char *title,t_atoms *atoms,matrix box,
     if (max == 0)
       scale = 1;
     else
-      scale = 1.0/sqrt(max);
+      scale = 10.0/sqrt(max);
     
     fprintf(stdout,"Maximum %s is %g on atom %d %s, res. %s %d\n",
-	    title,1.0/(nfr*scale),maxi+1,*(atoms->atomname[maxi]),
+	    title,sqrt(max)/nfr,maxi+1,*(atoms->atomname[maxi]),
 	    *(atoms->resname[atoms->atom[maxi].resnr]),
 	    atoms->atom[maxi].resnr+1);
     
@@ -335,7 +335,7 @@ int main(int argc,char *argv[])
     "Options [TT]-cv[tt] and [TT]-cf[tt] write the average velocities",
     "and average forces as temperature factors to a pdb file with",
     "the average coordinates. The temperature factors are scaled such",
-    "that the maximum is one. To get the velocities or forces of one",
+    "that the maximum is 10. To get the velocities or forces of one",
     "frame set both [TT]-b[tt] and [TT]-e[tt] to the time of",
     "desired frame. When averaging over frames you might need to use",
     "the [TT]-nojump[tt] option to obtain the correct average coordinates."
