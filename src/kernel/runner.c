@@ -182,7 +182,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 
   /* Now do whatever the user wants us to do (how flexible...) */
   if (bNM) {
-    start_t=do_md(stdlog,cr,nfile,fnm,
+    start_t=do_nm(stdlog,cr,nfile,fnm,
 		  bVerbose,bCompact,nstepout,parm,grps,
 		  top,ener,x,vold,v,vt,f,buf,
 		  mdatoms,nsb,nrnb,graph,edyn);
