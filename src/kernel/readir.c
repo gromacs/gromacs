@@ -218,7 +218,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	    eel_names[ir->coulombtype]);
     CHECK(ir->rcoulomb != ir->rlist);
   }
-  else {
+  else if ((ir->coulombtype != eelSHIFT) && (ir->coulombtype != eelSWITCH)) {
     sprintf(err_buf,"rcoulomb must be >= rlist");
     CHECK(ir->rlist > ir->rcoulomb);
   }
@@ -243,8 +243,6 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     }
   }
   
-  sprintf(err_buf,"rvdw must be >= rlist");
-  CHECK(ir->rlist > ir->rvdw);
   if ((ir->vdwtype == evdwSWITCH) || (ir->vdwtype == evdwSHIFT)) {
     sprintf(err_buf,"With vdwtype = %s rvdw_switch must be < rvdw",
 	    evdw_names[ir->vdwtype]);
@@ -253,6 +251,9 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
       sprintf(warn_buf,"rvdw should be 0.1 to 0.3 nm larger than rvdw_switch to account for diffusion and the size of charge groups"); 
       warning(NULL);
     }
+  } else {
+    sprintf(err_buf,"rvdw must be >= rlist");
+    CHECK(ir->rlist > ir->rvdw);
   }
 }
 
