@@ -631,6 +631,8 @@ int main(int argc, char *argv[])
 
   printf("Analyzing pdb file\n");
   nchain=0;
+  /* keep the compiler happy */
+  pchain='?';
   chains=NULL;
   for (i=0; (i<natom); i++)
     if ((i==0) || (pdba_all.atom[i].chain!=pchain)) {
