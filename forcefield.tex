@@ -194,11 +194,16 @@ The coulomb interaction can be modified for homogeneous systems, by
 assuming a constant dielectric environment beyond the cutoff $r_c$
 with a dielectric constant of {$\epsrf$}. The interaction then reads:
 \beq
-V_{crf} ~=~     f \frac{q_i q_j}{\rij}\left[1+\frac{\epsrf-1}{2\epsrf+1}\frac{\rij^3}{r_c^3}\right] - f\frac{q_i q_j}{r_c}\frac{3\epsrf}{2\epsrf+1}
+V_{crf} ~=~
+  f \frac{q_i q_j}{\rij}\left[1+\frac{\epsrf-1}{2\epsrf+1}
+  \,\frac{\rij^3}{r_c^3}\right]
+  - f\frac{q_i q_j}{r_c}\,\frac{3\epsrf}{2\epsrf+1}
 \label{eqn:vcrf}
 \eeq
 in which the constant expression on the right makes the potential
-zero at the cutoff $r_c$. We can rewrite this for simplicity as
+zero at the cutoff $r_c$. For charged cut-off spheres this corresponds
+to neutralization with a homogeneous background charge.
+We can rewrite \eqnref{vcrf} for simplicity as
 \beq
 V_{crf} ~=~     f q_i q_j\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]
 \eeq
@@ -208,18 +213,20 @@ k_{rf}  &=&     \frac{1}{r_c^3}\,\frac{\epsrf-1}{(2\epsrf+1)}   \label{eqn:krf}\
 c_{rf}  &=&     \frac{1}{r_c}+k_{rf}\,r_c^2 ~=~ \frac{1}{r_c}\,\frac{3\epsrf}{(2\epsrf+1)}
 \label{eqn:crf}
 \eea
-For large $\epsrf$ the $k_{rf}$ goes to 0.5~$r_c^{-3}$,
+For large $\epsrf$ the $k_{rf}$ goes to $r_c^{-3}/2$,
 while for $\epsrf$ = 1 the correction vanishes.
-This makes it possible to use
-the same expression with and without reaction field, albeit at some
-computational cost. 
 In \figref{coul}
 the modified interaction is plotted, and it is clear that the derivative 
 with respect to $\rij$ (= -force) goes to zero at the cutoff distance.
 The force derived from this potential reads:
 \beq
 \ve{F}_i(\rvij) = f q_i q_j\left[\frac{1}{\rij^2} - 2 k_{rf}\rij\right]\rnorm
+\label{eqn:fcrf}
 \eeq
+The reaction-field correction should also be applied to all excluded
+atoms pairs, including self pairs, in which case the normal Coulomb
+term in \eqnsref{vcrf}{fcrf} is absent.
+
 Tironi {\etal} have introduced a generalized reaction field in which
 the dielectric continuum beyond the cutoff $r_c$ also has an ionic strength
 $I$~\cite{Tironi95}. In this case we can rewrite the constants $k_{rf}$ and 
