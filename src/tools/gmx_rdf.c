@@ -221,7 +221,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   
   /* initialize some handy things */
   copy_mat(box,box_check);
-  if (bXY && (box[ZZ][XX] == 0) && (box[ZZ][YY] == 0)) {
+  if (bXY) {
     /* Make sure the z-height does not influence the cut-off */
     box_check[ZZ][ZZ] = box[XX][XX];
   }
