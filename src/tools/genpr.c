@@ -37,111 +37,15 @@
 #include <config.h>
 #endif
 
-#include <math.h>
-#include "sysstuff.h"
-#include "statutil.h"
-#include "string.h"
-#include "copyrite.h"
-#include "smalloc.h"
-#include "typedefs.h"
-#include "confio.h"
-#include "futil.h"
-#include "macros.h"
-#include "index.h"
+#include <gmx_ana.h>
 
-int main(int argc,char *argv[])
+
+/* This is just a wrapper binary.
+* The code that used to be in g_disre.c is now in gmx_disre.c,
+* where the old main function is called gmx_disre().
+*/
+int 
+main(int argc,char *argv[]) 
 {
-  static char *desc[] = {
-    "genpr produces an include file for a topology containing",
-    "a list of atom numbers and three force constants for the",
-    "X, Y and Z direction. A single isotropic force constant may",
-    "be given on the command line instead of three components.[PAR]",
-    "WARNING: genpr only works for the first molecule.",
-    "Position restraints are interactions within molecules, therefore",
-    "they should be included within the correct [TT][ moleculetype ][tt]",
-    "block in the topology. Since the atom numbers in every moleculetype",
-    "in the topology start at 1 and the numbers in the input file for",
-    "genpr number consecutively from 1, genpr will only produce a useful",
-    "file for the first molecule.[PAR]",
-    "The -of option produces an index file that can be used for",
-    "freezing atoms. In this case the input file must be a pdb file."
-  };
-  static rvec    fc={1000.0,1000.0,1000.0};
-  static real    freeze_level;
-  t_pargs pa[] = {
-    { "-fc", FALSE, etRVEC, {fc}, 
-      "force constants (kJ mol-1 nm-2)" },
-    { "-freeze", FALSE, etREAL, {&freeze_level},
-      "if the -of option or this one is given an index file will be written containing atom numbers of all atoms that have a B-factor less than the level given here" }
-  };
-  
-  t_atoms atoms;
-  int     i;
-  FILE    *out;
-  int          igrp;
-  atom_id      *ind_grp;
-  char         *gn_grp;
-  char         title[STRLEN];
-  matrix       box;
-  bool         bFreeze;
-  
-  t_filenm fnm[] = {
-    { efSTX, "-f",  NULL,    ffREAD },
-    { efNDX, "-n",  NULL,    ffOPTRD },
-    { efITP, "-o",  "posre", ffWRITE },
-    { efNDX, "-of", "freeze",    ffOPTWR }
-  };
-#define NFILE asize(fnm)
-  
-  CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
-		    asize(desc),desc,0,NULL);
-  
-  bFreeze = opt2bSet("-of",NFILE,fnm) || opt2parg_bSet("-freeze",asize(pa),pa);
-  
-  if ( !opt2bSet("-n",NFILE,fnm) ) {
-    if ( !ftp2bSet(efSTX,NFILE,fnm) )
-      gmx_fatal(FARGS,"no index file and no structure file suplied");
-    else {
-      rvec *x,*v;
-      
-      get_stx_coordnum(ftp2fn(efSTX,NFILE,fnm),&(atoms.nr));
-      init_t_atoms(&atoms,atoms.nr,TRUE);
-      snew(x,atoms.nr);
-      snew(v,atoms.nr);
-      fprintf(stderr,"\nReading structure file\n");
-      read_stx_conf(ftp2fn(efSTX,NFILE,fnm),title,&atoms,x,v,box);
-      sfree(x);
-      sfree(v);
-    }
-  }
-  if (bFreeze) {
-    if (atoms.pdbinfo == NULL) 
-      gmx_fatal(FARGS,"No B-factors in input file %s, use a pdb file next time.",
-		  ftp2fn(efSTX,NFILE,fnm));
-    
-    out=opt2FILE("-of",NFILE,fnm,"w");
-    fprintf(out,"[ freeze ]\n");
-    for(i=0; (i<atoms.nr); i++) {
-      if (atoms.pdbinfo[i].bfac <= freeze_level)
-	fprintf(out,"%d\n",i+1);
-    }
-    fclose(out);
-  }
-  else {
-    printf("Select group to position restrain\n");
-    get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&igrp,&ind_grp,&gn_grp);
-    
-    out=ftp2FILE(efITP,NFILE,fnm,"w");
-    fprintf(out,"; position restraints for %s of %s\n\n",gn_grp,title);
-    fprintf(out,"[ position_restraints ]\n");
-    fprintf(out,";%3s %5s %9s %10s %10s\n","i","funct","fcx","fcy","fcz");
-    for(i=0; i<igrp; i++) 
-      fprintf(out,"%4d %4d %10g %10g %10g\n",
-	      ind_grp[i]+1,1,fc[XX],fc[YY],fc[ZZ]);
-    fclose(out);
-  }
-  thanx(stderr);
-  
-  return 0;
+  return gmx_genpr(argc,argv);
 }
