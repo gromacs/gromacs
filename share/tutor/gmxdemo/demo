@@ -230,7 +230,7 @@ echo "starting energy minimisation mdrun..."
 if ( $?DISPLAY ) then 
 	xterm -title mdrun -sb -e tail +0f output.mdrun_em &
 endif
-mdrun -s ${MOL}_em -o ${MOL}_em -c ${MOL}_b4pr -v >& ! output.mdrun_em 
+mdrun -nice 4 -s ${MOL}_em -o ${MOL}_em -c ${MOL}_b4pr -v >& ! output.mdrun_em 
 
 echo "mdrun finished"
 echo -n "Press <enter>"
@@ -354,7 +354,7 @@ echo "starting mdrun..."
 if ( $?DISPLAY ) then 
 	xterm -title mdrun -sb -e tail +0f output.mdrun_pr &
 endif
-mdrun -s ${MOL}_pr -o ${MOL}_pr -c ${MOL}_b4md -v >& ! output.mdrun_pr
+mdrun -nice 4 -s ${MOL}_pr -o ${MOL}_pr -c ${MOL}_b4md -v >& ! output.mdrun_pr
 
 echo "mdrun finished"
 echo -n "Press <enter>"
@@ -456,7 +456,7 @@ echo "starting mdrun..."
 if ( $?DISPLAY ) then 
 	xterm -title mdrun -sb -e tail +0f output.mdrun_md &
 endif
-mdrun -s ${MOL}_md -o ${MOL}_md -c ${MOL}_after_md -v >& ! output.mdrun_md
+mdrun -nice 4 -s ${MOL}_md -o ${MOL}_md -c ${MOL}_after_md -v >& ! output.mdrun_md
 
 echo "mdrun finished"
 echo -n "Press <enter>"
