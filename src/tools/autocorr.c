@@ -63,7 +63,7 @@ int sffn2effn(char **sffn)
   
   eFitFn = 0;
   for(i=0; i<effnNR; i++)
-    if (strcmp(s_ffn[0],s_ffn[i+1])==0)
+    if (strcmp(sffn[0],sffn[i+1])==0)
       eFitFn = i;
 
   return eFitFn;
