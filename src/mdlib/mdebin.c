@@ -456,7 +456,7 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
   }
   
   if (log) {
-    if (fcd->orires.nr)
+    if (mode==eprNORMAL && fcd->orires.nr>0)
       print_orires_log(log,fcd);
 
     fprintf(log,"   Energies %s\n",kjm);
