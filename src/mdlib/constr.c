@@ -188,10 +188,7 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
       type=iatom[j];
       len =idef->iparams[type].shake.dA;
       len1=idef->iparams[type].shake.dB;
-      if ((len==0 || len1==0) && len1!=len)
-	gmx_fatal(FARGS,"It is not allowed to have a constraint length "
-		    "zero and non-zero in the A and B topology");
-      if (len == 0)
+      if (len == 0 && len1 == 0)
 	nZeroLen++;
       (*bla1)[i]=a1;
       (*bla2)[i]=a2;
@@ -298,7 +295,7 @@ static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 
       /* Set the zero lengths to the old lengths */
       for(b=0; b<nc; b++)
-	if (bllen0[b]==0) {
+	if (bllen[b] == 0) {
 	  i = bla1[b];
 	  j = bla2[b];
 	  tmp =   sqr(x[i][XX]-x[j][XX])+
