@@ -259,7 +259,7 @@ static char **read_topol(char        *infile,
   directive  d,newd;
   t_block2   *block2;
   real       fudgeLJ=-1;    /* Multiplication factor to generate 1-4 from LJ */
-  bool       bGenPairs=FALSE;
+  bool       bReadDefaults,bGenPairs=FALSE;
   double     qt=0,qBt=0; /* total charge */
 
   /* open input and output file */
@@ -276,6 +276,7 @@ static char **read_topol(char        *infile,
   nb_funct = F_LJ;
   
   /* parse the actual file */
+  bReadDefaults = FALSE;
   while (fgets2(line,STRLEN-2,in) != NULL) {
     curline++;
     assert (pline = strdup(line));
@@ -347,6 +348,9 @@ static char **read_topol(char        *infile,
 	
 	switch (d) {
 	case d_defaults:
+	  if (bReadDefaults)
+	    warning("Found another defaults entry, will use the last one");
+	  bReadDefaults = TRUE;
 	  nscan = sscanf(pline,"%s%s%s%lf%lf",
 			 nb_str,comb_str,genpairs,&fLJ,&fQQ);
 	  if (nscan < 2)
