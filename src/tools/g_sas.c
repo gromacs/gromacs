@@ -52,6 +52,7 @@ void connelly_plot(char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
 {
   static char *atomnm="DOT";
   static char *resnm ="DOT";
+  static char *title ="Connely Dot Surface";
   FILE *fp;
   t_pdbatom *pdba;
   int  i,i0,k;
@@ -74,7 +75,7 @@ void connelly_plot(char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
     pdba[i0+i].dummy = 0.0;
   }
   fp=ffopen(fn,"w");
-  print_pdbatoms(fp,i0+ndots,pdba,box);
+  print_pdbatoms(fp,title,i0+ndots,pdba,box);
   fclose(fp);
   
   sfree(pdba);
