@@ -676,8 +676,7 @@ void low_do_autocorr(char *fn,char *title,
     k  = c0;
     if (k < c0)
       k++;
-    k++;
-    nfour = pow(2.0,(double)k);
+    nfour = 1<<k;
     if (debug)
       fprintf(debug,"Using FFT to calculate %s, #points for FFT = %d\n",
 	      title,nfour);
