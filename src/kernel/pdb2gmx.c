@@ -626,7 +626,8 @@ int main(int argc, char *argv[])
   t_aa_names *aan;
   char       fn[256],*top_fn,itp_fn[STRLEN],posre_fn[STRLEN],buf_fn[STRLEN];
   char       molname[STRLEN],title[STRLEN],resname[STRLEN],quote[STRLEN];
-  char       *c,*watres,forcefield[STRLEN];
+  char       *c,*watres,forcefield[STRLEN],fff[STRLEN];
+  char       rtp[STRLEN];
   int        nah,nNtdb,nCtdb,ntdblist;
   t_hackblock *ntdb,*ctdb,**tdblist;
   int        nssbonds;
@@ -713,19 +714,21 @@ int main(int argc, char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    0,NULL);
-  if(!strncmp(ff,"select",6)) {
+  if (strcmp(ff,"select") == 0) {
     /* Interactive forcefield selection */
     choose_ff(forcefield,sizeof(forcefield));
-  } else {
+  } 
+  else 
     sprintf(forcefield,"ff%s",ff);
-  }
-  { 
-    char rtp[STRLEN];
-   
-    sprintf(rtp,"%s.rtp",forcefield);
-    printf("Looking whether force field file %s exists\n",rtp);
-    fclose(libopen(rtp));
-  }
+  if (strlen(forcefield) > 2)
+    strcpy(fff,&(forcefield[2]));
+  else
+    gmx_incons(forcefield);
+    
+  sprintf(rtp,"%s.rtp",forcefield);
+  if (debug) 
+    fprintf(debug,"Looking whether force field file %s exists\n",rtp);
+  fclose(libopen(rtp));
   
   if (bInter) {
     /* if anything changes here, also change description of -inter */
@@ -1209,7 +1212,7 @@ int main(int argc, char *argv[])
   printf("You have succesfully generated a topology from: %s.\n",
 	 opt2fn("-f",NFILE,fnm));
   printf("The %s force field and the %s water model are used.\n",
-	 ff,watstr[0]);
+	 fff,watstr[0]);
   printf("Note that the default mechanism for selecting a force fields has\n"
 	 "changed, starting from GROMACS version 3.2.0\n");
   printf("\t\t--------- ETON ESAELP ------------\n");
