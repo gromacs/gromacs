@@ -40,9 +40,3 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
  * If rshell > 0, keep all the residues around the protein (0..natoms_prot-1)
  * that are within rshell distance.
  */
-
-extern void orient_mol(t_atoms *atoms,char *indexnm,rvec x[],rvec *v);
-/* Orient a molecule along its principal component axes. 
- * indexnm may be the name of an index file or null.
- */
- 

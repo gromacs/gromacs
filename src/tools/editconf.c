@@ -48,9 +48,10 @@ static char *SRCID_editconf_c = "$Id$";
 #include "rdgroup.h"
 #include "physics.h"
 #include "atomprop.h"
-#include "addconf.h"
 #include "tpxio.h"
 #include "pbc.h"
+#include "princ.h"
+#include "txtdump.h"
 #include "viewit.h"
 
 typedef struct {
@@ -130,6 +131,55 @@ real calc_geom(int isize,atom_id *index,
   }
   
   return sqrt(diam2);
+}
+
+void orient_mol(t_atoms *atoms,char *indexnm,rvec x[], rvec *v)
+{
+  int     isize;
+  atom_id *index,*simp;
+  char    *grpnames;
+  real    totmass;
+  int     i,m;
+  rvec    xcm,prcomp;
+  matrix  trans;
+  
+  /* Make an index for principal component analysis */
+  fprintf(stderr,"\nSelect group for orientation of molecule:\n");
+  get_index(atoms,indexnm,1,&isize,&index,&grpnames);
+  snew(simp,atoms->nr);
+  for(i=0; (i<atoms->nr); i++) {
+    simp[i]=i;
+    atoms->atom[i].m=1;
+  }
+  totmass = sub_xcm(x,atoms->nr,simp,atoms->atom,xcm,FALSE);
+  principal_comp(isize,index,atoms->atom,x,trans,prcomp);
+  
+  /* Check whether this trans matrix mirrors the molecule */
+  if (det(trans) < 0) {
+    if (debug)
+      fprintf(stderr,"Mirroring rotation matrix in Z direction\n");
+    for(m=0; (m<DIM); m++)
+      trans[ZZ][m] = -trans[ZZ][m];
+  }  
+  rotate_atoms(atoms->nr,simp,x,trans);
+  
+  if (debug) {
+    pr_rvecs(stderr,0,"Rot Matrix",trans,DIM);
+    fprintf(stderr,"Det(trans) = %g\n",det(trans));
+    
+    /* print principal component data */
+    fprintf(stderr,"Norm of principal axes before rotation: "
+	    "(%.3f, %.3f, %.3f)\n",prcomp[XX],prcomp[YY],prcomp[ZZ]);
+    fprintf(stderr,"Totmass = %g\n",totmass);
+    principal_comp(isize,index,atoms->atom,x,trans,prcomp);
+    rotate_atoms(atoms->nr,simp,x,trans);
+    if (v) 
+      rotate_atoms(atoms->nr,simp,v,trans);
+    pr_rvecs(stderr,0,"Rot Matrix",trans,DIM);
+  }
+  sfree(simp);
+  sfree(index);
+  sfree(grpnames);
 }
 
 void center_conf(int natom, rvec *x, rvec center, rvec geom_cent)

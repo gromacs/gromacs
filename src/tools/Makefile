@@ -87,8 +87,8 @@ trjorder:	trjorder.o
 g_rmsdist:	g_rmsdist.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-editconf:	editconf.o	addconf.o
-		$(LD) $(RUNLDOPT) -o $@ $^ $(RUNSYSLIBS)
+editconf:	editconf.o
+		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_energy:	g_energy.o	$(ACOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS)
