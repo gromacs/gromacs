@@ -53,14 +53,14 @@ tpbconv:	$(PGOBJ)	tpbconv.o	readir.o
 pdb2gmx:	$(POBJ) 
 		$(LD) -o $@ $^ $(SYSLIBS) 
 
-mdrun:		mdrun.o lib
-		$(LD) $(RUNLDOPT) -o $@ $^ $(RUNSYSLIBS)
+mdrun:		mdrun.o $(foreach OB,$(OBJ),$(LIB)($(OB)) )
+		$(LD) $(RUNLDOPT) -o $@ mdrun.o $(RUNSYSLIBS)
 
 mk_ghat:	mk_ghat.o
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS) $(SYSLIBS)
 
-nmrun:		nmrun.o lib
-		$(LD) $(RUNLDOPT) -o $@ $^ $(RUNSYSLIBS)
+nmrun:		nmrun.o $(foreach OB,$(OBJ),$(LIB)($(OB)) )
+		$(LD) $(RUNLDOPT) -o $@ nmrun.o $(RUNSYSLIBS)
 
 luck:		luck.o
 		$(LD) $^ -o $@ $(SYSLIBS)  
