@@ -215,17 +215,6 @@ Coulomb cut-off <b>rcoulomb</b>,
 where <b>rlist</b> <tt>&lt=</tt> <b>rvdw</b> <tt>&lt=</tt> <b>rcoulomb</b>.
 The dielectric constant is set with <b>epsilon_r</b>.
 
-<dt><b>PPPM</b>
-<dd>Particle-Particle Particle-Mesh algorithm for long range
-electrostatic interactions.
-Use for example <b>rlist</b><tt>=1.0</tt>, <b>rcoulomb_switch</b><tt>=0.0</TT>,
-<b>rcoulomb</b><tt>=0.85</TT>, <b>rvdw_switch</b><tt>=1.0</TT>
-and <b>rvdw</b><tt>=1.0</TT>. The grid
-dimensions are controlled by <b>fourierspacing</b>.
-Reasonable grid spacing for PPPM is 0.05-0.1 nm.
-See <tt>Shift</tt> for the details of the particle-particle potential.
-NOTE: Pressure scaling is not possible with PPPM.
-
 <dt><b>Ewald</b>
 <dd>Classical Ewald sum electrostatics. Use e.g. <b>rlist</b>=0.9,
 <b>rvdw</b>=0.9, <b>rcoulomb</b>=0.9. The highest magnitude of
@@ -238,13 +227,24 @@ reference - in most cases PME will perform much better.
 <dt><b>PME</b> 
 <dd>Fast Particle-Mesh Ewald electrostatics. Direct space is similar
 to the Ewald sum, while the reciprocal part is performed with
-FFTs. Grid dimensions are controlled as for PPPM, and the
+FFTs. Grid dimensions are controlled with <b>fourierspacing</b> and the
 interpolation order with <b>pme_order</b>. With a grid spacing of 0.1
-nm and (cubic interpolation) the electrostatic forces have an accuracy
+nm and cubic interpolation the electrostatic forces have an accuracy
 of 2-3e-4. Since the error from the vdw-cutoff is larger than this you
 might try 0.15 nm. When running in parallel the interpolation
 parallelizes better than the FFT, so try decreasing grid dimensions
 while increasing interpolation.
+
+<dt><b>PPPM</b>
+<dd>Particle-Particle Particle-Mesh algorithm for long range
+electrostatic interactions.
+Use for example <b>rlist</b><tt>=1.0</tt>, <b>rcoulomb_switch</b><tt>=0.0</TT>,
+<b>rcoulomb</b><tt>=0.85</TT>, <b>rvdw_switch</b><tt>=1.0</TT>
+and <b>rvdw</b><tt>=1.0</TT>. The grid
+dimensions are controlled by <b>fourierspacing</b>.
+Reasonable grid spacing for PPPM is 0.05-0.1 nm.
+See <tt>Shift</tt> for the details of the particle-particle potential.
+NOTE: the pressure in incorrect when using PPPM.
 
 <dt><b>Reaction-Field</b>
 <dd>Reaction field with Coulomb cut-off <b>rcoulomb</b>,
