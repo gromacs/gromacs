@@ -66,6 +66,11 @@ t_coupl_rec *init_coupling(FILE *log,int nfile,t_filenm fnm[],
   return tcr;
 }
 
+real Uintern(real ener[])
+{
+  return ener[F_SR]+ener[F_LJ]+ener[F_LR]+ener[F_LJLR];
+}
+
 static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,real ener[])
 {
   static FILE *prop;
@@ -134,7 +139,7 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,real ener[])
     }
   }
   fprintf(prop,"%10g  %12.5e  %12.5e  %12.5e  %12.5e\n",
-	  time,tcr->pres,ener[F_PRES],tcr->epot,ener[F_EPOT]);
+	  time,tcr->pres,ener[F_PRES],tcr->epot,Uintern(ener));
   fflush(prop);
   for(i=0; (i<tcr->nLJ); i++) {
     tclj=&(tcr->tcLJ[i]);
@@ -283,7 +288,7 @@ void do_coupling(FILE *log,t_coupl_rec *tcr,real t,int step,real ener[],
 
   int        i,j,ati,atj,type,ftype,nmem,nmol;
   real       deviation[eoNR];
-  real       f6,f12,fa,fb,fc,fq,factor,dt,mu_ind,Epol;
+  real       f6,f12,fa,fb,fc,fq,factor,dt,mu_ind,Epol,Eintern;
   bool       bTest,bPrint;
   t_coupl_LJ *tclj;
   t_coupl_BU *tcbu;
@@ -300,13 +305,17 @@ void do_coupling(FILE *log,t_coupl_rec *tcr,real t,int step,real ener[],
    */
   nmem=ir->userint2;
 
+  /* We want to optimize the LJ params, usually to the Vaporization energy 
+   * therefore we only count intermolecular degrees of freedom
+   */
+  Eintern = Uintern(ener);
   if (step == 0) {
     tcr->pres=ener[F_PRES];
-    tcr->epot=ener[F_EPOT];
+    tcr->epot=Eintern;
   }
 
   tcr->pres=run_aver(tcr->pres,ener[F_PRES],step,nmem);
-  tcr->epot=run_aver(tcr->epot,ener[F_EPOT],step,nmem);
+  tcr->epot=run_aver(tcr->epot,Eintern,step,nmem);
   
   if (bMaster && bPrint)
     pr_ff(tcr,t,idef,ener);
