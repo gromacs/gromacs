@@ -140,7 +140,6 @@ extern bool bDoView(void);
 #define PCA_CAN_TIME       (PCA_CAN_BEGIN | PCA_CAN_END)
 #define PCA_KEEP_ARGS      (1<<8)
 #define PCA_SILENT         (1<<9)
-#define PCA_NOGET_PARGS    (1<<10)
 #define PCA_NOEXIT_ON_ARGS (1<<11)
 #define PCA_QUIET          (1<<12)
 #define PCA_SET_NPRI       (1<<13)
