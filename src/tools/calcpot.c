@@ -231,6 +231,11 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   cr->nthreads = 1 ; cr->threadid = 0;
   open_log(ftp2fn(efLOG,nfile,fnm),cr);
 
+  if (parm->ir.efep) {
+    fprintf(stderr,"WARNING: turning of free energy, will use lambda=0\n");
+    parm->ir.efep = 0;
+  }
+
   init_nrnb(&nrnb);
   init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),top,x,&v,mdatoms,nsb);
   init_md(cr,&(parm->ir),parm->box,&t,&t0,&lam,&lam0,&SAfac,
@@ -258,7 +263,7 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   /* Initiate forcerecord */
   *fr = mk_forcerec();
   init_forcerec(stdlog,*fr,&(parm->ir),top,cr,*mdatoms,
-		nsb,parm->box,FALSE,NULL);
+		nsb,parm->box,FALSE,NULL,TRUE);
 
   /* Remove periodicity */  
   for(m=0; (m<DIM); m++)

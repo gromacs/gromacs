@@ -482,7 +482,8 @@ void init_forcerec(FILE *fp,
 		   t_nsborder *nsb,
 		   matrix     box,
 		   bool       bMolEpot,
-		   char       *tabfn)
+		   char       *tabfn,
+		   bool       bNoSolvOpt)
 {
   int     i,j,m,natoms,ngrp,tabelemsize;
   real    q,zsq,nrdf,T;
@@ -549,7 +550,7 @@ void init_forcerec(FILE *fp,
   fr->rcoulomb_switch = ir->rcoulomb_switch;
   fr->rcoulomb        = ir->rcoulomb;
   
-  if (getenv("GMX_NO_SOLV_OPT"))
+  if (bNoSolvOpt || getenv("GMX_NO_SOLV_OPT"))
     fr->bSolvOpt = FALSE;
   else
     fr->bSolvOpt = TRUE;
