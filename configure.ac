@@ -3,12 +3,12 @@
 #######################################################################
 
 AC_PREREQ(2.50)
-AC_INIT(GROMACS, 3.0.99-20011115, gromacs@gromacs.org)
+AC_INIT(GROMACS, 3.0.99-20020123, gmx-users@gromacs.org)
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(gromacs, 3.0.99-20011115)
+AM_INIT_AUTOMAKE(gromacs, 3.0.99-20020123)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 AM_CONFIG_HEADER(src/config.h)
 dnl This is the version info according to the libtool versioning system.
@@ -49,7 +49,7 @@ if test "$enable_fortran" = "yes"; then
   fi
 else
   GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} innerc.lo"
-  MDLIB_LIBOBJS="${MDLIB_LIBOBJS} clincs.lo csettle.lo cshake.lo"
+  MDLIB_LIBOBJS="${MDLIB_LIBOBJS} clincs.lo csettle.lo"
 fi
 # always use CC for linking:
 AC_SUBST(F77LINK,"\$(LINK)")
@@ -211,10 +211,6 @@ fi
 
 
 
-
-
-
-
 ############################################################
 # Checks for programs
 ############################################################
@@ -285,11 +281,46 @@ ACX_COMPILER_MAXOPT
 
 # Check x86 asm prerequisites and the capabilities of as
 if test "$enable_x86_asm" = "yes"; then
+  AC_MSG_CHECKING([whether your compiler can handle assembly files (*.s)])
+cat > conftestasm.s << EOF
+checkasm:
+	movl	%esp, %ebp
+	ret
+EOF
+  if AC_TRY_COMMAND($CC -c conftestasm.s); then
+    if test -f conftestasm.o; then
+      AC_MSG_RESULT([yes])
+    else
+      AC_MSG_RESULT([no])
+      AC_MSG_ERROR([Upgrade your compiler (or disable assembly loops).])
+    fi
+  else
+    AC_MSG_RESULT([no])
+    AC_MSG_ERROR([Upgrade your compiler (or disable assembly loops).])
+  fi
+
+# ok, gcc understands assembly, but can it handle SSE/3DNow/SSE2 instructions?
+
   if test "$enable_float" = "no"; then
-    AC_MSG_WARN([x86 assembly loops can only be used in single precision - disabling])
-    enable_x86_asm=no
+    AC_MSG_CHECKING([whether as fully supports intel syntax SSE2])
+cat > conftest.s << EOF
+.intel_syntax noprefix 
+checkasm:
+	emms
+	movupd xmm0,[[checkasm]]
+	emms
+	ret
+EOF
+    if AC_TRY_COMMAND($CC -c conftest.s); then
+      AC_MSG_RESULT([yes])
+    else
+      AC_MSG_RESULT([no]) 
+      AC_MSG_ERROR([Upgrade to a more recent binutils (or disable assembly loops).])
+    fi
+    GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} x86_cpuid.lo x86_sse2.lo"
+    AC_DEFINE([USE_X86_SSE2],,[Use X86 SSE2 multimedia assembly code])
   else 
-    AC_MSG_CHECKING([whether as fully supports intel syntax])
+    AC_MSG_CHECKING([whether as fully supports intel syntax SSE & 3DNow])
 cat > conftest.s << EOF
 .intel_syntax noprefix 
 checkasm:
@@ -306,7 +337,7 @@ EOF
       AC_MSG_ERROR([Upgrade to a more recent binutils (or disable assembly loops).])
     fi
     GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} x86_cpuid.lo x86_sse.lo x86_3dnow.lo"
-    AC_DEFINE([USE_X86_ASM],,[Use X86 SSE/3DNow multimedia assembly code])
+    AC_DEFINE([USE_X86_SSE_AND_3DNOW],,[Use X86 SSE/3DNow multimedia assembly code])
   fi
 fi
 
@@ -375,7 +406,7 @@ fi
 AC_DISABLE_SHARED
 AC_PROG_LIBTOOL
 AC_PROG_LN_S
-
+AC_SYS_LARGEFILE
 
 
 
@@ -384,7 +415,13 @@ AC_PROG_LN_S
 ############################################################################
 # Checks for libraries.
 ############################################################################
-#AC_CHECK_LIB(m,sqrt,,AC_MSG_ERROR([No math library found]))
+#
+# Don't add math library for intel compilers
+if $CC -V 2>&1 | grep 'Intel Corporation' > /dev/null 2>&1; then
+  AC_MSG_NOTICE([Using built-in math library with intel compiler])
+else
+  AC_CHECK_LIB(m,sqrt,,AC_MSG_ERROR([No math library found]))
+fi
 
 #####
 # IBM provides a MASS library with vectorized and optimized math stuff,
