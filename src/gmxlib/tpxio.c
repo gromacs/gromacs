@@ -449,6 +449,7 @@ static void do_atoms(t_atoms *atoms,bool bRead,t_symtab *symtab)
     snew(atoms->atomname,atoms->nr);
     snew(atoms->resname,atoms->nres);
     snew(atoms->grpname,atoms->ngrpname);
+    atoms->pdbinfo = NULL;
   }
   for(i=0; (i<atoms->nr); i++)
     do_atom(&atoms->atom[i],bRead);
