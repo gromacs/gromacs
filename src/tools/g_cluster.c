@@ -1241,7 +1241,7 @@ int main(int argc,char *argv[])
   
   if (bWriteDist)
     /* Plot the rmsd distribution */
-    rmsd_distribution(opt2fn("-dist",NFILE,fnm),rms,nlevels);
+    rmsd_distribution(opt2fn("-dist",NFILE,fnm),rms);
   
   if (bBinary) {
     for(i1=0; (i1 < nf); i1++) 
