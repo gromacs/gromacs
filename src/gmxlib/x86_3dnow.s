@@ -1371,6 +1371,8 @@ inl0300_3dnow:
 .equ		_dx2,		104
 .equ		_dy2,		108
 .equ		_dz2,		112						
+        push ebp
+        mov ebp,esp
         push eax
         push ebx
         push ecx
