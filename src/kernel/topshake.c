@@ -107,7 +107,7 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype *at,int nshake)
 	  for(ftype_a = 0; (ftype_a < F_NRE); ftype_a++) {
 	    if (interaction_function[ftype_a].flags & IF_ATYPE) {
 	      pr = &(plist[ftype_a]);
-
+	      
 	      for (i=0; (i < pr->nr); ) {
 		ang=&(pr->param[i]);
 #ifdef DEBUG
@@ -139,22 +139,20 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype *at,int nshake)
 		      b_jk=bond->C0;
 		    bFound = (b_ij!=0.0) && (b_jk!=0.0);
 		  }
-		  if (!bFound)
-		    fatal_error(0,"No bond information for bond %s-%s or %s-%s",
-				*info[ang->AI],*info[ang->AJ],
-				*info[ang->AJ],*info[ang->AK]);
-		  /* apply law of cosines */
-		  p.C0 = sqrt( b_ij*b_ij + b_jk*b_jk - 
-			       2.0*b_ij*b_jk*cos(DEG2RAD*ang->C0) );
-		  p.C1 = p.C0;
+		  if (bFound) {
+		    /* apply law of cosines */
+		    p.C0 = sqrt( b_ij*b_ij + b_jk*b_jk - 
+				 2.0*b_ij*b_jk*cos(DEG2RAD*ang->C0) );
+		    p.C1 = p.C0;
 #ifdef DEBUG
-		  printf("p: %d, q: %d, dist: %12.5e\n",p.AI,p.AJ,p.C0);
+		    printf("p: %d, q: %d, dist: %12.5e\n",p.AI,p.AJ,p.C0);
 #endif
-		  push_bondnow (&(plist[F_SHAKE]),&p);
-		  /* move the last bond to this position */
-		  copy_bond (pr,i,pr->nr-1);
-		  /* should free memory here!! */
-		  pr->nr--;
+		    push_bondnow (&(plist[F_SHAKE]),&p);
+		    /* move the last bond to this position */
+		    copy_bond (pr,i,pr->nr-1);
+		    /* should free memory here!! */
+		    pr->nr--;
+		  }
 		}
 		else
 		  i++;
