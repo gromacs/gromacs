@@ -88,7 +88,6 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
       line = line0;
       bEndOfSet = (line[0] == '&');
       if ((line[0] != '#') && (line[0] != '@') && !bEndOfSet) {
-
 	if (bFirstLine && bHaveT && line[0]!='\n') {
 	  /* Check the first line that should contain data */
 	  a = sscanf(line,"%lf%lf",&dbl,&dbl);
@@ -105,9 +104,8 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
 
 	a = 0;
 	bTimeInRange = TRUE;
-	while ((a<narg || (nsets_in==1 && n==0)) && 
-	       line[0]!='\n' && sscanf(line,"%lf%n",&dbl,&nchar)
-	       && bTimeInRange) {
+	while ((a<narg || (nsets_in==1 && n==0)) && line[0]!='\n' && 
+	       sscanf(line,"%lf%n",&dbl,&nchar) && bTimeInRange) {
 	  /* Use set=-1 as the time "set" */
 	  if (sin) {
 	    if (!bHaveT || (a>0))
