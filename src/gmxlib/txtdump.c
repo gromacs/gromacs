@@ -639,3 +639,31 @@ void pr_top(FILE *fp,int indent,char *title,t_topology *top)
   }
 }
 
+void pr_header(FILE *fp,int indent,char *title,t_tpxheader *sh)
+{
+  if (available(fp,sh,title))
+    {
+      indent=pr_title(fp,indent,title);
+      pr_indent(fp,indent);
+      fprintf(fp,"bIr    = %spresent\n",sh->bIr?"":"not ");
+      pr_indent(fp,indent);
+      fprintf(fp,"bBox   = %spresent\n",sh->bBox?"":"not ");
+      pr_indent(fp,indent);
+      fprintf(fp,"bTop   = %spresent\n",sh->bTop?"":"not ");
+      pr_indent(fp,indent);
+      fprintf(fp,"bX     = %spresent\n",sh->bX?"":"not ");
+      pr_indent(fp,indent);
+      fprintf(fp,"bV     = %spresent\n",sh->bV?"":"not ");
+      pr_indent(fp,indent);
+      fprintf(fp,"bF     = %spresent\n",sh->bF?"":"not ");
+      
+      pr_indent(fp,indent);
+      fprintf(fp,"natoms = %d\n",sh->natoms);
+      pr_indent(fp,indent);
+      fprintf(fp,"step   = %d\n",sh->step);
+      pr_indent(fp,indent);
+      fprintf(fp,"t      = %e\n",sh->t);
+      pr_indent(fp,indent);
+      fprintf(fp,"lambda = %e\n",sh->lambda);
+    }
+}
