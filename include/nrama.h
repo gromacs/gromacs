@@ -72,7 +72,7 @@ typedef struct {
   t_idef    *idef;
 } t_xrama;
 
-extern t_topology *init_rama(char *infile,char *topfile,t_xrama *xr);
+extern t_topology *init_rama(char *infile,char *topfile,t_xrama *xr,int mult);
 
 extern bool new_data(t_xrama *xr);
 

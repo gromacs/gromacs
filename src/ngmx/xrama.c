@@ -336,7 +336,8 @@ int main(int argc,char *argv[])
   XSetForeground(x11->disp,x11->gc,x11->fg);
   app=init_app(x11,argc,argv);
 
-  ramatop = init_rama(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),app->xr);
+  ramatop = init_rama(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
+		      app->xr,3);
   mk_gly(app);
   
   XMapWindow(x11->disp,app->wd.self);

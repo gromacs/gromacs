@@ -261,7 +261,7 @@ static void min_max(t_xrama *xr)
     }
 }
 
-static void get_dih_props(t_xrama *xr,t_idef *idef)
+static void get_dih_props(t_xrama *xr,t_idef *idef,int mult)
 {
   int     i,ft,ftype,nra;
   t_iatom *ia;
@@ -283,21 +283,25 @@ static void get_dih_props(t_xrama *xr,t_idef *idef)
       dd->mult=idef->iparams[ft].pdihs.mult;
       dd->phi0=idef->iparams[ft].pdihs.phiA;
     }
-    else {
-      fprintf(stderr,"Dihedral around %d,%d not found in topology. Using mult=3\n",
-	      xr->dih[i].ai[1],xr->dih[i].ai[2]);
-      dd->mult=3;
-      dd->phi0=180;
-    }
     
     i+=nra+1;
     ia+=nra+1;
+  }
+  /* Fill in defaults for values not in the topology */
+  for(i=0; (i<xr->ndih); i++) {
+    if (xr->dih[i].mult == 0) {
+      fprintf(stderr,
+	      "Dihedral around %d,%d not found in topology. Using mult=%d\n",
+	      xr->dih[i].ai[1],xr->dih[i].ai[2],mult);
+      xr->dih[i].mult=mult;
+      xr->dih[i].phi0=180;
+    }
   }
 }
 
 
 
-t_topology *init_rama(char *infile,char *topfile,t_xrama *xr)
+t_topology *init_rama(char *infile,char *topfile,t_xrama *xr,int mult)
 {
   t_topology *top;
   real   t;
@@ -306,7 +310,7 @@ t_topology *init_rama(char *infile,char *topfile,t_xrama *xr)
   
   /*get_dih2(xr,top->idef.functype,&(top->idef.bondeds),&(top->atoms));*/
   get_dih(xr,&(top->atoms));
-  get_dih_props(xr,&(top->idef));
+  get_dih_props(xr,&(top->idef),mult);
   xr->natoms=read_first_x(&xr->traj,infile,&t,&(xr->x),xr->box);
   xr->idef=&(top->idef);
   

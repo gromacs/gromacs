@@ -90,7 +90,7 @@ int gmx_rama(int argc,char *argv[])
 
 		      
   snew(xr,1);
-  init_rama(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),xr);
+  init_rama(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),xr,3);
   
   out=xvgropen(ftp2fn(efXVG,NFILE,fnm),"Ramachandran Plot","Phi","Psi");
   xvgr_line_props(out,0,elNone,ecFrank);
