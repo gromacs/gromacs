@@ -845,6 +845,13 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   /* end nmrun differences */
 
+#ifndef DOUBLE
+  fprintf(stderr,
+	  "WARNING: This version of GROMACS has been compiled in single precision,\n"
+	  "         which is usually not accurate enough for normal mode analysis.\n"
+	  "         For reliable results you should compile GROMACS in double precision.\n\n");
+#endif
+
   /* Initial values */
   t0           = parm->ir.init_t;
   lam0         = parm->ir.init_lambda;
