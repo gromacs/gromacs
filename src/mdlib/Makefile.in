@@ -1,0 +1,462 @@
+# Makefile.in generated automatically by automake 1.4d from Makefile.am
+
+# Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001
+# Free Software Foundation, Inc.
+# This Makefile.in is free software; the Free Software Foundation
+# gives unlimited permission to copy and/or distribute it,
+# with or without modifications, as long as this notice is preserved.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY, to the extent permitted by law; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
+
+SHELL = @SHELL@
+
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+VPATH = @srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+
+bindir = @bindir@
+sbindir = @sbindir@
+libexecdir = @libexecdir@
+datadir = @datadir@
+sysconfdir = @sysconfdir@
+sharedstatedir = @sharedstatedir@
+localstatedir = @localstatedir@
+libdir = @libdir@
+infodir = @infodir@
+mandir = @mandir@
+includedir = @includedir@
+oldincludedir = /usr/include
+
+pkgdatadir = $(datadir)/@PACKAGE@
+pkglibdir = $(libdir)/@PACKAGE@
+pkgincludedir = $(includedir)/@PACKAGE@
+
+top_builddir = ../..
+
+ACLOCAL = @ACLOCAL@
+AUTOCONF = @AUTOCONF@
+AUTOMAKE = @AUTOMAKE@
+AUTOHEADER = @AUTOHEADER@
+
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
+INSTALL_STRIP_FLAG =
+INSTALL_HEADER = $(INSTALL_DATA)
+transform = @program_transform_name@
+
+NORMAL_INSTALL = :
+PRE_INSTALL = :
+POST_INSTALL = :
+NORMAL_UNINSTALL = :
+PRE_UNINSTALL = :
+POST_UNINSTALL = :
+
+@SET_MAKE@
+host_alias = @host_alias@
+host_triplet = @host@
+AMDEP = @AMDEP@
+AMTAR = @AMTAR@
+AWK = @AWK@
+AXP_ASM_OBJ = @AXP_ASM_OBJ@
+BUILD_CC = @BUILD_CC@
+CC = @CC@
+CPP = @CPP@
+DEPDIR = @DEPDIR@
+F77 = @F77@
+FLIBS = @FLIBS@
+IDENT = @IDENT@
+INNER_C_OBJ = @INNER_C_OBJ@
+INNER_F77_OBJ = @INNER_F77_OBJ@
+MAKEINFO = @MAKEINFO@
+MOTIF_OBJ = @MOTIF_OBJ@
+MPICC = @MPICC@
+NASM = @NASM@
+NASMFLAGS = @NASMFLAGS@
+PACKAGE = @PACKAGE@
+PAR_OBJ = @PAR_OBJ@
+RANLIB = @RANLIB@
+SSE_OBJ = @SSE_OBJ@
+SUFFIX = @SUFFIX@
+TDN_OBJ = @TDN_OBJ@
+VERSION = @VERSION@
+X86_ASM_OBJ = @X86_ASM_OBJ@
+XDR_OBJ = @XDR_OBJ@
+_am_include = @_am_include@
+bindir = @bindir@
+install_sh = @install_sh@
+libdir = @libdir@
+
+#
+# Don't edit - this file is generated automatically from Makefile.am
+#
+
+
+#
+# Don't edit - this file is generated automatically from Makefile.am
+#
+
+# The asm suffix is for intel syntax assembly, and
+# the s suffix for at & t syntax.
+# S suffix files will be preprocessed by cpp, nasm
+# on the other hand can do this directly.
+
+
+SUFFIXES = .asm .S .F
+
+#################
+# We need a second compile command producing executables 
+# that can be run on the local host to make the innerloops.
+# In most cases this is identical to the normal one, but not
+# for cross-compilation. We also need it on parallel machines 
+# where the MPI executables cannot be run outside a batch queue.
+
+# This might be bad - but I don't know any other way to enable
+# us to type make <progname> in subdirs right now
+#AM_CPPFLAGS = -DHAVE_CONFIG_H
+
+BUILD_COMPILE = $(BUILD_CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+
+# This is necessary for VPATH to work, 
+# but it can probably be done in a nicer way...
+INCLUDES = @INCLUDES@ -I$(top_srcdir)/src/include
+
+lib_LIBRARIES = libmdXXX_SUFFIX_XXX.a
+
+libmdXXX_SUFFIX_XXX_a_SOURCES = \
+	calcmu.c	calcvir.c			\
+	congrad.c	constr.c	coupling.c	\
+	dummies.c	ebin.c		edsam.c		\
+	ewald.c         fftgrid.c	force.c  	\
+	ghat.c		init.c		md.c		\
+	mdatom.c	mdebin.c	nm.c		\
+	ns.c		nsb.c		nsgrid.c	\
+	pme.c		poisson.c	pppm.c		\
+	psgather.c	pull.c 		pullinit.c	\
+	pullio.c	pullutil.c	pssolve.c	\
+	psspread.c	runner.c	shakef.c	\
+	sim_util.c	splittop.c	steep.c		\
+	tables.c	tgroup.c	update.c	\
+	vcm.c		wnblist.c	poisson.h	\
+	splittop.h	wnblist.h
+
+
+EXTRA_libmdXXX_SUFFIX_XXX_a_SOURCES = \
+	cshake.c	csettle.c	clincs.c	\
+	fshake.f	fsettle.f	flincs.f	\
+	fshaked.f	fsettled.f	flincsd.f
+
+@USE_DOUBLE_TRUE@inner_f77_obj = @USE_DOUBLE_TRUE@fshaked.o	fsettled.o	flincsd.o
+@USE_DOUBLE_FALSE@inner_f77_obj = @USE_DOUBLE_FALSE@fshake.o	fsettle.o	flincs.o
+
+inner_c_obj = cshake.o	csettle.o	clincs.o
+
+libmdXXX_SUFFIX_XXX_a_LIBADD = @INNER_F77_OBJ@		@INNER_C_OBJ@
+libmdXXX_SUFFIX_XXX_a_DEPENDENCIES = @INNER_F77_OBJ@		@INNER_C_OBJ@
+
+# clean things explicitly, since the target names might have changed
+CLEANFILES = ${lib_LIBRARIES} *_d.a *_mpi.a *~ \\\#*
+subdir = src/mdlib
+mkinstalldirs = $(SHELL) $(top_srcdir)/./config/mkinstalldirs
+CONFIG_HEADER = ../../src/include/config.h
+CONFIG_CLEAN_FILES = 
+LIBRARIES =  $(lib_LIBRARIES)
+
+
+DEFS = @DEFS@ -I. -I$(srcdir) -I../../src/include
+CPPFLAGS = @CPPFLAGS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+X_CFLAGS = @X_CFLAGS@
+X_LIBS = @X_LIBS@
+X_EXTRA_LIBS = @X_EXTRA_LIBS@
+X_PRE_LIBS = @X_PRE_LIBS@
+libmdXXX_SUFFIX_XXX_a_AR = $(AR) cru
+am_libmdXXX_SUFFIX_XXX_a_OBJECTS =  calcmu.o calcvir.o congrad.o \
+constr.o coupling.o dummies.o ebin.o edsam.o ewald.o fftgrid.o force.o \
+ghat.o init.o md.o mdatom.o mdebin.o nm.o ns.o nsb.o nsgrid.o pme.o \
+poisson.o pppm.o psgather.o pull.o pullinit.o pullio.o pullutil.o \
+pssolve.o psspread.o runner.o shakef.o sim_util.o splittop.o steep.o \
+tables.o tgroup.o update.o vcm.o wnblist.o
+libmdXXX_SUFFIX_XXX_a_OBJECTS =  $(am_libmdXXX_SUFFIX_XXX_a_OBJECTS)
+AR = ar
+COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+CFLAGS = @CFLAGS@
+F77COMPILE = $(F77) $(AM_FFLAGS) $(FFLAGS)
+FFLAGS = @FFLAGS@
+F77LD = $(F77)
+F77LINK = $(F77LD) $(AM_FFLAGS) $(FFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+CCLD = $(CC)
+LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+DIST_SOURCES =  $(libmdXXX_SUFFIX_XXX_a_SOURCES) \
+$(EXTRA_libmdXXX_SUFFIX_XXX_a_SOURCES)
+depcomp = $(SHELL) $(top_srcdir)/./config/depcomp
+@AMDEP@DEP_FILES =  $(DEPDIR)/calcmu.Po $(DEPDIR)/calcvir.Po \
+@AMDEP@$(DEPDIR)/clincs.Po $(DEPDIR)/congrad.Po $(DEPDIR)/constr.Po \
+@AMDEP@$(DEPDIR)/coupling.Po $(DEPDIR)/csettle.Po $(DEPDIR)/cshake.Po \
+@AMDEP@$(DEPDIR)/dummies.Po $(DEPDIR)/ebin.Po $(DEPDIR)/edsam.Po \
+@AMDEP@$(DEPDIR)/ewald.Po $(DEPDIR)/fftgrid.Po $(DEPDIR)/force.Po \
+@AMDEP@$(DEPDIR)/ghat.Po $(DEPDIR)/init.Po $(DEPDIR)/md.Po \
+@AMDEP@$(DEPDIR)/mdatom.Po $(DEPDIR)/mdebin.Po $(DEPDIR)/nm.Po \
+@AMDEP@$(DEPDIR)/ns.Po $(DEPDIR)/nsb.Po $(DEPDIR)/nsgrid.Po \
+@AMDEP@$(DEPDIR)/pme.Po $(DEPDIR)/poisson.Po $(DEPDIR)/pppm.Po \
+@AMDEP@$(DEPDIR)/psgather.Po $(DEPDIR)/pssolve.Po $(DEPDIR)/psspread.Po \
+@AMDEP@$(DEPDIR)/pull.Po $(DEPDIR)/pullinit.Po $(DEPDIR)/pullio.Po \
+@AMDEP@$(DEPDIR)/pullutil.Po $(DEPDIR)/runner.Po $(DEPDIR)/shakef.Po \
+@AMDEP@$(DEPDIR)/sim_util.Po $(DEPDIR)/splittop.Po $(DEPDIR)/steep.Po \
+@AMDEP@$(DEPDIR)/tables.Po $(DEPDIR)/tgroup.Po $(DEPDIR)/update.Po \
+@AMDEP@$(DEPDIR)/vcm.Po $(DEPDIR)/wnblist.Po
+DIST_COMMON =  Makefile.am Makefile.in
+
+
+DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
+
+GZIP_ENV = --best
+SOURCES = $(libmdXXX_SUFFIX_XXX_a_SOURCES) $(EXTRA_libmdXXX_SUFFIX_XXX_a_SOURCES)
+OBJECTS = $(am_libmdXXX_SUFFIX_XXX_a_OBJECTS)
+
+all: all-am
+.SUFFIXES:
+.SUFFIXES: .asm .S .F .c .f .h .o
+$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) $(srcdir)/../Makefile.inc
+	cd $(top_srcdir) && $(AUTOMAKE) --gnu src/mdlib/Makefile
+
+Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
+	cd $(top_builddir) \
+	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= CONFIG_LINKS= $(SHELL) ./config.status
+
+
+mostlyclean-libLIBRARIES:
+
+clean-libLIBRARIES:
+	-test -z "$(lib_LIBRARIES)" || rm -f $(lib_LIBRARIES)
+
+distclean-libLIBRARIES:
+
+maintainer-clean-libLIBRARIES:
+
+install-libLIBRARIES: $(lib_LIBRARIES)
+	@$(NORMAL_INSTALL)
+	$(mkinstalldirs) $(DESTDIR)$(libdir)
+	@list='$(lib_LIBRARIES)'; for p in $$list; do \
+	  if test -f $$p; then \
+	    echo " $(INSTALL_DATA) $$p $(DESTDIR)$(libdir)/$$p"; \
+	    $(INSTALL_DATA) $$p $(DESTDIR)$(libdir)/$$p; \
+	  else :; fi; \
+	done
+	@$(POST_INSTALL)
+	@list='$(lib_LIBRARIES)'; for p in $$list; do \
+	  if test -f $$p; then \
+	    echo " $(RANLIB) $(DESTDIR)$(libdir)/$$p"; \
+	    $(RANLIB) $(DESTDIR)$(libdir)/$$p; \
+	  else :; fi; \
+	done
+
+uninstall-libLIBRARIES:
+	@$(NORMAL_UNINSTALL)
+	@list='$(lib_LIBRARIES)'; for p in $$list; do \
+	  echo " rm -f $(DESTDIR)$(libdir)/$$p"; \
+	  rm -f $(DESTDIR)$(libdir)/$$p; \
+	done
+
+mostlyclean-compile:
+	-rm -f *.o core *.core
+
+distclean-compile:
+	-rm -f *.tab.c
+
+libmdXXX_SUFFIX_XXX.a: $(libmdXXX_SUFFIX_XXX_a_OBJECTS) $(libmdXXX_SUFFIX_XXX_a_DEPENDENCIES)
+	-rm -f libmdXXX_SUFFIX_XXX.a
+	$(libmdXXX_SUFFIX_XXX_a_AR) libmdXXX_SUFFIX_XXX.a $(libmdXXX_SUFFIX_XXX_a_OBJECTS) $(libmdXXX_SUFFIX_XXX_a_LIBADD)
+	$(RANLIB) libmdXXX_SUFFIX_XXX.a
+.f.o:
+	$(F77COMPILE) -c -o $@ $<
+
+tags: TAGS
+
+ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
+	list='$(SOURCES) $(HEADERS) $(TAGS_FILES)'; \
+	unique=`for i in $$list; do \
+	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
+	  done | \
+	  $(AWK) '    { files[$$0] = 1; } \
+	       END { for (i in files) print i; }'`; \
+	mkid -fID $$unique $(LISP)
+
+TAGS: $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
+		$(TAGS_FILES) $(LISP)
+	tags=; \
+	here=`pwd`; \
+	list='$(SOURCES) $(HEADERS) $(TAGS_FILES)'; \
+	unique=`for i in $$list; do \
+	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
+	  done | \
+	  $(AWK) '    { files[$$0] = 1; } \
+	       END { for (i in files) print i; }'`; \
+	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+	  || etags $(ETAGS_ARGS) $$tags  $$unique $(LISP)
+
+GTAGS:
+	here=`CDPATH=: && cd $(top_builddir) && pwd` \
+	  && cd $(top_srcdir) \
+	  && gtags -i $$here
+
+distclean-tags:
+	-rm -f TAGS ID
+
+@AMDEP@@_am_include@ $(DEPDIR)/calcmu.Po
+@AMDEP@@_am_include@ $(DEPDIR)/calcvir.Po
+@AMDEP@@_am_include@ $(DEPDIR)/clincs.Po
+@AMDEP@@_am_include@ $(DEPDIR)/congrad.Po
+@AMDEP@@_am_include@ $(DEPDIR)/constr.Po
+@AMDEP@@_am_include@ $(DEPDIR)/coupling.Po
+@AMDEP@@_am_include@ $(DEPDIR)/csettle.Po
+@AMDEP@@_am_include@ $(DEPDIR)/cshake.Po
+@AMDEP@@_am_include@ $(DEPDIR)/dummies.Po
+@AMDEP@@_am_include@ $(DEPDIR)/ebin.Po
+@AMDEP@@_am_include@ $(DEPDIR)/edsam.Po
+@AMDEP@@_am_include@ $(DEPDIR)/ewald.Po
+@AMDEP@@_am_include@ $(DEPDIR)/fftgrid.Po
+@AMDEP@@_am_include@ $(DEPDIR)/force.Po
+@AMDEP@@_am_include@ $(DEPDIR)/ghat.Po
+@AMDEP@@_am_include@ $(DEPDIR)/init.Po
+@AMDEP@@_am_include@ $(DEPDIR)/md.Po
+@AMDEP@@_am_include@ $(DEPDIR)/mdatom.Po
+@AMDEP@@_am_include@ $(DEPDIR)/mdebin.Po
+@AMDEP@@_am_include@ $(DEPDIR)/nm.Po
+@AMDEP@@_am_include@ $(DEPDIR)/ns.Po
+@AMDEP@@_am_include@ $(DEPDIR)/nsb.Po
+@AMDEP@@_am_include@ $(DEPDIR)/nsgrid.Po
+@AMDEP@@_am_include@ $(DEPDIR)/pme.Po
+@AMDEP@@_am_include@ $(DEPDIR)/poisson.Po
+@AMDEP@@_am_include@ $(DEPDIR)/pppm.Po
+@AMDEP@@_am_include@ $(DEPDIR)/psgather.Po
+@AMDEP@@_am_include@ $(DEPDIR)/pssolve.Po
+@AMDEP@@_am_include@ $(DEPDIR)/psspread.Po
+@AMDEP@@_am_include@ $(DEPDIR)/pull.Po
+@AMDEP@@_am_include@ $(DEPDIR)/pullinit.Po
+@AMDEP@@_am_include@ $(DEPDIR)/pullio.Po
+@AMDEP@@_am_include@ $(DEPDIR)/pullutil.Po
+@AMDEP@@_am_include@ $(DEPDIR)/runner.Po
+@AMDEP@@_am_include@ $(DEPDIR)/shakef.Po
+@AMDEP@@_am_include@ $(DEPDIR)/sim_util.Po
+@AMDEP@@_am_include@ $(DEPDIR)/splittop.Po
+@AMDEP@@_am_include@ $(DEPDIR)/steep.Po
+@AMDEP@@_am_include@ $(DEPDIR)/tables.Po
+@AMDEP@@_am_include@ $(DEPDIR)/tgroup.Po
+@AMDEP@@_am_include@ $(DEPDIR)/update.Po
+@AMDEP@@_am_include@ $(DEPDIR)/vcm.Po
+@AMDEP@@_am_include@ $(DEPDIR)/wnblist.Po
+
+distclean-depend:
+	-rm -rf $(DEPDIR)
+
+@AMDEP@CCDEPMODE = @CCDEPMODE@
+
+.c.o:
+@AMDEP@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP@	depfile='$(DEPDIR)/$*.Po' tmpdepfile='$(DEPDIR)/$*.TPo' @AMDEPBACKSLASH@
+@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(COMPILE) -c -o $@ `test -f $< || echo '$(srcdir)/'`$<
+
+
+distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
+
+
+distdir: $(DISTFILES)
+	@for file in $(DISTFILES); do \
+	  d=$(srcdir); \
+	  if test -d $$d/$$file; then \
+	    cp -pR $$d/$$file $(distdir) \
+	    || exit 1; \
+	  else \
+	    test -f $(distdir)/$$file \
+	    || cp -p $$d/$$file $(distdir)/$$file \
+	    || exit 1; \
+	  fi; \
+	done
+info-am:
+info: info-am
+dvi-am:
+dvi: dvi-am
+check-am: all-am
+check: check-am
+installcheck-am:
+installcheck: installcheck-am
+install-exec-am: install-libLIBRARIES
+install-exec: install-exec-am
+
+install-data-am:
+install-data: install-data-am
+
+install-am: all-am
+	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
+install: install-am
+uninstall-am: uninstall-libLIBRARIES
+uninstall: uninstall-am
+all-am: Makefile $(LIBRARIES)
+install-strip:
+	$(MAKE) $(AM_MAKEFLAGS) INSTALL_STRIP_FLAG=-s install
+installdirs:
+	$(mkinstalldirs)  $(DESTDIR)$(libdir)
+
+
+mostlyclean-generic:
+
+clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
+
+distclean-generic:
+	-rm -f Makefile $(CONFIG_CLEAN_FILES)
+	-rm -f config.cache config.log stamp-h stamp-h[0-9]*
+
+maintainer-clean-generic:
+	@echo "This command is intended for maintainers to use"
+	@echo "it deletes files that may require special tools to rebuild."
+	-rm -f Makefile.in
+clean: clean-am
+
+clean-am: clean-generic clean-libLIBRARIES mostlyclean-am
+
+distclean: distclean-am
+
+distclean-am: clean-am distclean-compile distclean-depend \
+	distclean-generic distclean-libLIBRARIES distclean-tags
+
+maintainer-clean: maintainer-clean-am
+
+maintainer-clean-am: distclean-am maintainer-clean-generic \
+	maintainer-clean-libLIBRARIES
+
+mostlyclean: mostlyclean-am
+
+mostlyclean-am: mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libLIBRARIES
+
+.PHONY: check check-am clean clean-generic clean-libLIBRARIES distclean \
+	distclean-compile distclean-depend distclean-generic \
+	distclean-libLIBRARIES distclean-tags distdir dvi dvi-am info \
+	info-am install install-am install-data install-data-am \
+	install-exec install-exec-am install-libLIBRARIES install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic maintainer-clean-libLIBRARIES \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libLIBRARIES tags uninstall uninstall-am \
+	uninstall-libLIBRARIES
+
+.asm.o:
+	$(NASM) $(NASMFLAGS) $< -o $@
+.S.s:
+	$(CPP) $< > $@
+.F.f:	
+	$(CPP) $< > $@
+
+# Tell versions [3.59,3.63) of GNU make to not export all variables.
+# Otherwise a system limit (for SysV at least) may be exceeded.
+.NOEXPORT:

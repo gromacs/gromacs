@@ -112,14 +112,14 @@ AC_ARG_ENABLE(software-sqrt,
 #####
 
 AC_ARG_ENABLE(vectorized_recip,     
- [  --enable-vectorized-recip     Vectorize the reciprocal in LJ-only loops],
+ [  --enable-vectorized-recip     Vectorize 1/x in LJ-only loops],
  enable_vectorized_recip=$enableval, enable_vectorized_recip=no)
 
 
 #####
 
 AC_ARG_ENABLE(vectorized_sqrt,     
- [  --enable-vectorized-sqrt=A,B  Loops to vectorize, default none. 
+ [  --enable-vectorized-sqrt=A,B  Loops to vectorize (default none)
                                 Choices: normal,solvent,water,water-water],
  enable_vectorized_sqrt=$enableval, enable_vectorized_sqrt=no)
 
@@ -332,7 +332,13 @@ fi
 
 AC_PATH_PROG(IDENT,ident,no)
 if test "$IDENT" != "no"; then
-  AC_DEFINE(HAVE_IDENT,,[Does this machine have the ident command]) 
+  # seems as if we have the ident program, but does the
+  # compiler support it?
+  AC_MSG_CHECKING([whether the compiler supports ident])	
+  AC_TRY_CPP([#ident  "@(#) file.h 1.1 12/16/92"],[
+    AC_MSG_RESULT([yes]) 
+    AC_DEFINE(HAVE_IDENT,,[Does this machine have the ident command])],
+    AC_MSG_RESULT([no]))
 fi
 
 AC_PROG_RANLIB
@@ -349,30 +355,30 @@ fi
 ############################################################################
 # Checks for libraries.
 ############################################################################
+AC_CHECK_LIB(m,sqrt,,AC_MSG_ERROR([No math library found]))
+
 #####
 # IBM provides a MASS library with vectorized and optimized math stuff,
 # and an xlopt library which partly overlaps this. They must come before
-# libm in the link list.
+# libm in the link list, thus the test goes after m!
 if test "${host_vendor}" = "ibm"; then
+  AC_CHECK_LIB(xlopt,main)
+  AC_CHECK_LIB(mass,main)  
   vectmass=no
   case "$gmxcpu" in
     power4*)
-      AC_CHECK_LIB(massvp4,main,vectmass=yes)  ;;
+      AC_CHECK_LIB(massvp4,main,[vectmass=yes LIBS="$LIBS -lmassvp4"])  ;;
     power3*)
-      AC_CHECK_LIB(massvp3,main,vectmass=yes)  ;;
+      AC_CHECK_LIB(massvp3,main,[vectmass=yes LIBS="$LIBS -lmassvp3"])  ;;
     power2*)
-      AC_CHECK_LIB(massvp3,main,vectmass=yes)  ;;
+      AC_CHECK_LIB(massvp3,main,[vectmass=yes LIBS="$LIBS -lmassvp2"])  ;;
     *)
-      AC_CHECK_LIB(massv,main,vectmass=yes)  ;;
+      AC_CHECK_LIB(massv,main,[vectmass=yes LIBS="$LIBS -lmassv"])  ;;
   esac
-  AC_CHECK_LIB(mass,main)  
   if test "$vectmass" = "yes"; then
     AC_DEFINE(USE_IBM_MASS,,[Use the vectorized routines in IBM MASS library])
   fi
-AC_CHECK_LIB(xlopt,main)
 fi 
-
-AC_CHECK_LIB(m,sqrt,,AC_MSG_ERROR([No math library found]))
 
 if test "$enable_double" = "yes"; then
   precision=8
@@ -464,12 +470,21 @@ if test "$no_x" != "yes"; then
   use_x11="yes"
 else
   use_x11="no"
+  AM_CONDITIONAL(USE_X11,false)
 fi
 
 #### 
-# And collect the f77 libs to the linker - at least on Solaris, f77 stuff must go first
-LIBS="$FLIBS $LIBS"
-
+# And collect the f77 libs to the linker - on Solaris, f77 stuff must go first,
+# but on e.g. ibm the mass libraries must come before -lm...
+case "${host_cpu}-${host_os}" in
+  sparc*-solaris*)
+    LIBS="$FLIBS $LIBS"
+    ;;
+  *)
+    LIBS="$LIBS $FLIBS"
+    ;;
+esac
+    
 ########################################################################
 # Substitute things in output and header files.
 ########################################################################
