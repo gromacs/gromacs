@@ -282,8 +282,8 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
       else
 	mx = (kx-nx);
 
-      mhx = mx * rxx;
-      mhy = mx * ryx + my * ryy;
+      mhx = mx * rxx;             /* Obsolete ? */
+      mhy = mx * ryx + my * ryy;  /* Obsolete ? */
 
       bx = bsp_mod[XX][kx];
       if (bPar)
@@ -357,10 +357,12 @@ void gather_f_bsplines(t_fftgrid *grid,matrix recipbox,
   t_fft_r *ptr;
   int     xidx,yidx,zidx;
   real    tx,ty,dx,dy,qn;
-  real    fx,fy,fz,gval,tgz;
+  real    fx,fy,fz,gval,tgz,dgz;
+  real    gval1,gval2,gval3,gval4;
+  real    fxy1,fz1;
   real    *thx,*thy,*thz,*dthx,*dthy,*dthz;
   int     sn,norder,norder1,*idxptr,ind0;
-  real rxx,ryx,ryy,rzx,rzy,rzz;
+  real    rxx,ryx,ryy,rzx,rzy,rzz;
 
   unpack_fftgrid(grid,&nx,&ny,&nz,&la2,&la12,TRUE,&ptr);
  
@@ -395,35 +397,76 @@ void gather_f_bsplines(t_fftgrid *grid,matrix recipbox,
       yidx = idxptr[YY];
       zidx = idxptr[ZZ];
       
-      i0      = ii0+xidx; /* Pointer arithemtic */
+      i0      = ii0+xidx;   /* Pointer arithemtic */
       norder  = n*order;
       norder1 = norder+order;
       for(ithx=norder; (ithx<norder1); ithx++,i0++) {
 	i     = *i0;
 	tx    = thx[ithx];
 	dx    = dthx[ithx];
-	j0    = jj0+yidx; /* Pointer arithemtic */
+	j0    = jj0+yidx;   /* Pointer arithemtic */
 	
-	for(ithy=norder; (ithy<norder1); ithy++,j0++) {
-	  j     = *j0;
-	  ty    = thy[ithy];
-	  dy    = dthy[ithy];
-	  k0    = kk0+zidx; /* Pointer arithemtic */
-	  ind0  = INDEX(i,j,0);
-	  
-	  for(ithz=norder; (ithz<norder1); ithz++,k0++) {
-	    k     = *k0;
-	    gval  = ptr[ind0+k];
-	    tgz   = thz[ithz]*gval;
-	    fx   -= dx*ty*tgz;
-	    fy   -= tx*dy*tgz;
-	    fz   -= tx*ty*dthz[ithz]*gval;
+	if (order == 4) {
+	  for(ithy=norder; (ithy<norder1); ithy++,j0++) {
+	    j     = *j0;
+	    ty    = thy[ithy];
+	    dy    = dthy[ithy];
+	    k0    = kk0+zidx;     /* Pointer arithemtic */
+	    ind0  = INDEX(i,j,0);
+	    gval1 = ptr[ind0+k0[0]];
+	    gval2 = ptr[ind0+k0[1]];
+	    gval3 = ptr[ind0+k0[2]];
+	    gval4 = ptr[ind0+k0[3]];
+	    
+	    ithz  = norder;
+	    
+	    /* First iteration */
+	    fxy1  = thz[ithz]*gval1;
+	    fz1   = dthz[ithz]*gval1;
+	    ithz++;
+	    
+	    /* Second iteration */
+	    fxy1 += thz[ithz]*gval2;
+	    fz1  += dthz[ithz]*gval2;
+	    ithz++;
+	    
+	    /* Third iteration */
+	    fxy1 += thz[ithz]*gval3;
+	    fz1  += dthz[ithz]*gval3;
+	    ithz++;
+	    
+	    /* Fourth iteration */
+	    fxy1 += thz[ithz]*gval4;
+	    fz1  += dthz[ithz]*gval4;
+	    fx    = fx+dx*ty*fxy1;
+	    fy    = fy+tx*dy*fxy1;
+	    fz    = fz+tx*ty*fz1;
+	  }
+	}
+	else {
+	  for(ithy=norder; (ithy<norder1); ithy++,j0++) {
+	    j     = *j0;
+	    ty    = thy[ithy];
+	    dy    = dthy[ithy];
+	    k0    = kk0+zidx; /* Pointer arithemtic */
+	    ind0  = INDEX(i,j,0);
+	    
+	    fxy1 = fz1 = 0;
+	    for(ithz=norder; (ithz<norder1); ithz++,k0++) {
+	      k     = *k0;
+	      gval  = ptr[ind0+k];
+	      fxy1 += thz[ithz]*gval;
+	      fz1  += dthz[ithz]*gval;
+	    }
+	    fx += dx*ty*fxy1;
+	    fy += tx*dy*fxy1;
+	    fz += tx*ty*fz1;
 	  }
 	}
       }
-      f[n][XX]+=qn*( fx*nx*rxx + fy*ny*ryx + fz*nz*rzx );
-      f[n][YY]+=qn*(             fy*ny*ryy + fz*nz*rzy );
-      f[n][ZZ]+=qn*(                         fz*nz*rzz );
+      f[n][XX]-=qn*( fx*nx*rxx + fy*ny*ryx + fz*nz*rzx );
+      f[n][YY]-=qn*(             fy*ny*ryy + fz*nz*rzy );
+      f[n][ZZ]-=qn*(                         fz*nz*rzz );
     }
   }
   /* Since the energy and not forces are interpolated
