@@ -374,10 +374,22 @@ real calc_eps(double M_diff,double volume,double epsRF,double temp)
   return eps;
 }
 
+real compute_avercos(int n,rvec dip[])
+{
+  int    i,j,k;
+  double d;
+  
+  d=0;
+  for(i=k=0; (i<n); i++)
+    for(j=i+1; (j<n); j++,k++) 
+      d += fabs(cos_angle(dip[i],dip[j]));
+  return d/k;
+}
 
 static void do_dip(char *fn,char *topf,
 		   char *out_mtot,char *out_eps,char *out_aver, 
 		   char *dipdist,bool bAverCorr,
+		   char *cosaver,
 		   bool bCorr,   char *corf,
 		   bool bGkr,    char *gkrfn,
 		   bool bQuad,   char *quadfn,
@@ -408,7 +420,7 @@ static void do_dip(char *fn,char *topf,
   };
 #define NLEGAVER asize(leg_aver)
 
-  FILE       *outdd,*outmtot,*outaver,*outeps;
+  FILE       *outdd,*outmtot,*outaver,*outeps,*caver;
   rvec       *x,*dipole=NULL,mu_t,quad;
   t_gkrbin   *gkrbin;
   t_enxframe *fr;
@@ -497,7 +509,9 @@ static void do_dip(char *fn,char *topf,
 		     "Time (ps)","");
   outaver = xvgropen(out_aver,"Total dipole moment",
 		     "Time (ps)","D");
-		     
+  if (cosaver)
+    caver = xvgropen(cosaver,"Average pair orientation","Time (ps)","cos");
+    
   /* Write legends to all the files */
   xvgr_legend(outmtot,NLEGMTOT,leg_mtot);
   xvgr_legend(outaver,NLEGAVER,leg_aver);
@@ -606,7 +620,10 @@ static void do_dip(char *fn,char *topf,
     /* Compute square of total dipole */
     for(m=0; (m<DIM); m++)
       M_av2[m] = M_av[m]*M_av[m];
-      
+    
+    if (cosaver) 
+      fprintf(caver,"%10.3e  %10.3e\n",t,compute_avercos(gnx,dipole));
+    
     if (bGkr) {
       do_gkr(gkrbin,gnx,grpindex,mols->index,mols->a,x,dipole,box,
 	     atom,gkatom);
@@ -690,7 +707,9 @@ static void do_dip(char *fn,char *topf,
   fclose(outmtot);
   fclose(outaver);
   fclose(outeps);
-
+  if (cosaver)
+    fclose(caver);
+    
   vol_aver /= teller;
   printf("Average volume over run is %g\n",vol_aver);
   if (bGkr) 
@@ -826,17 +845,18 @@ int gmx_dipoles(int argc,char *argv[])
   char         *grpname;
   bool         bCorr,bQuad,bGkr,bMU;  
   t_filenm fnm[] = {
-    { efENX, "-enx", NULL,    ffOPTRD },
-    { efTRX, "-f", NULL,      ffREAD },
-    { efTPX, NULL, NULL,      ffREAD },
-    { efNDX, NULL, NULL,      ffOPTRD },
-    { efXVG, "-o", "Mtot",    ffWRITE },
-    { efXVG, "-eps","epsilon",ffWRITE },
-    { efXVG, "-a", "aver",    ffWRITE },
-    { efXVG, "-d", "dipdist", ffWRITE },
-    { efXVG, "-c", "dipcorr", ffOPTWR },
-    { efXVG, "-g", "gkr",     ffOPTWR },
-    { efXVG, "-q", "quadrupole", ffOPTWR },
+    { efENX, "-enx", NULL,         ffOPTRD },
+    { efTRX, "-f", NULL,           ffREAD },
+    { efTPX, NULL, NULL,           ffREAD },
+    { efNDX, NULL, NULL,           ffOPTRD },
+    { efXVG, "-o",   "Mtot",       ffWRITE },
+    { efXVG, "-eps", "epsilon",    ffWRITE },
+    { efXVG, "-a",   "aver",       ffWRITE },
+    { efXVG, "-d",   "dipdist",    ffWRITE },
+    { efXVG, "-c",   "dipcorr",    ffOPTWR },
+    { efXVG, "-g",   "gkr",        ffOPTWR },
+    { efXVG, "-cos", "cosaver",    ffOPTWR },
+    { efXVG, "-q",   "quadrupole", ffOPTWR },
   };
 #define NFILE asize(fnm)
   int     npargs;
@@ -881,7 +901,8 @@ int gmx_dipoles(int argc,char *argv[])
   do_dip(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
 	 opt2fn("-o",NFILE,fnm),opt2fn("-eps",NFILE,fnm),
 	 opt2fn("-a",NFILE,fnm),opt2fn("-d",NFILE,fnm),
-	 bAverCorr,bCorr,
+	 bAverCorr,opt2fn_null("-cos",NFILE,fnm),
+	 bCorr,
 	 opt2fn("-c",NFILE,fnm),
 	 bGkr,    opt2fn("-g",NFILE,fnm),
 	 bQuad,   opt2fn("-q",NFILE,fnm),
