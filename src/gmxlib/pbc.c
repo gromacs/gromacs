@@ -127,24 +127,30 @@ void init_pbc(matrix box)
   bInit   = TRUE;
 }
 
-void pbc_dx(const rvec x1, const rvec x2, rvec dx)
+int pbc_dx(const rvec x1, const rvec x2, rvec dx)
 {
   int i,j;
   rvec dx_start,try;
   real d2min,d2try;
+  ivec ishift;
 
   if (!bInit)
     fatal_error(0,"pbc_dx called before init_pbc");
   rvec_sub(x1,x2,dx);
+  clear_ivec(ishift);
   if (bSupported) {
     if (bTriclinic) {
       for(i=DIM-1; i>=0; i--)
 	if (dx[i] > gl_hbox[i])
-	  for (j=i; j>=0; j--)
+	  for (j=i; j>=0; j--) {
 	    dx[j] -= gl_box[i][j];
+	    ishift[j]--;
+	  }
 	else if (dx[i] <= gl_mhbox[i])
-	  for (j=i; j>=0; j--)
+	  for (j=i; j>=0; j--) {
 	    dx[j] += gl_box[i][j];
+	    ishift[j]++;
+	  }
       /* dx is the distance in a rectangular box */
       copy_rvec(dx,dx_start);
       d2min = norm2(dx);
@@ -161,12 +167,17 @@ void pbc_dx(const rvec x1, const rvec x2, rvec dx)
       }
     } else {
       for(i=0; i<DIM; i++)
-	if (dx[i] > gl_hbox[i])
+	if (dx[i] > gl_hbox[i]) {
 	  dx[i] -= gl_fbox[i];
-	else if (dx[i] <= gl_mhbox[i])
+	  ishift[i]--;
+	} else if (dx[i] <= gl_mhbox[i]) {
 	  dx[i] += gl_fbox[i];
+	  ishift[i]++;
+	}
     }
   }
+
+  return IVEC2IS(ishift);
 }
 
 bool image_rect(ivec xi,ivec xj,ivec box_size,real rlong2,int *shift,real *r2)

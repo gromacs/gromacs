@@ -65,9 +65,11 @@ extern "C" {
   extern void init_pbc(matrix box);
   /* Initiate the periodic boundary conditions. */
   
-  extern void pbc_dx(const rvec x1, const rvec x2, rvec dx);
-  /* Calculate the correct distance vector from x1 and x2 and put it in
-   * dx. init_pbc must be called before ever calling this routine
+  extern int pbc_dx(const rvec x1, const rvec x2, rvec dx);
+  /* Calculate the correct distance vector from x2 to x1 and put it in dx.
+   * Returns the ishift required to shift x1 at closest distance to x2;
+   * i.e. if 0<=ishift<SHIFTS then dx=shift_vec[ishift] (see calc_shifts below)
+   * init_pbc must be called before ever calling this routine
    * (this is done by put_charge_groups_in_box).
    */
 
@@ -102,14 +104,7 @@ extern "C" {
 
   extern void calc_shifts(matrix box,rvec box_size,rvec shift_vec[]);
   /* This routine calculates ths shift vectors necessary to use the
-   * ns routine. Note that for the truncated octahedron case too many
-   * shift vectors can be calculated: The ones for which exactly
-   * 2 of the k,l,m indexes are not 0 (12 vectors lying along the box
-   * edges. This can be compensated for by removing all the shift_vecs with
-   * (k+l+m) even. This is a feature of the way in which the counting is 
-   * done. It implies that, when using truncated octahedron,
-   * the shift codes 1,3,5,7,9,11,15,17,19,21,23,25 should never occur,
-   * that is, every second entry, EXCEPT the central box.
+   * ns routine.
    */
 
   extern void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
