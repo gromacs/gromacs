@@ -146,7 +146,7 @@ int gmx_rms (int argc,char *argv[])
     { NULL, "rot+trans", "translation", "none", NULL };
   char *fitgraphlabel[efNR+1] = 
     { NULL, "lsq fit", "translational fit", "no fit" };
-  
+  static int nrms = 1;
   t_pargs pa[] = {
     { "-what",  FALSE, etENUM, {what},  "Structural difference measure" },
     { "-pbc",   FALSE, etBOOL, {&bPBC}, "PBC check" },
@@ -169,6 +169,8 @@ int gmx_rms (int argc,char *argv[])
       "Minimum level in bond angle matrix" },
     { "-nlevels",FALSE,etINT,  {&nlevels}, 
       "Number of levels in the matrices" },
+    { "-ng",       FALSE, etINT, {&nrms},
+      "Number of groups to compute RMS between" },
     { "-dlog",  FALSE, etBOOL, {&bDeltaLog},
       "HIDDENUse a log x-axis in the delta t matrix"},
     { "-dmax",  FALSE, etREAL, {&delta_maxy},
@@ -191,7 +193,7 @@ int gmx_rms (int argc,char *argv[])
   int        status;
   char       buf[256],buf2[256];
   
-  int        nrms,ncons=0;
+  int        ncons=0;
   FILE       *fp;
   real       rlstot=0,**rls,**rlsm=NULL,*time,*time2,*rlsnorm=NULL,**rmsd_mat=NULL,
              **bond_mat=NULL,
@@ -320,13 +322,7 @@ int gmx_rms (int argc,char *argv[])
     }
   }
 
-  if (!bMat && !bBond) {
-    fprintf(stderr,"How many groups do you want to compare ? ");
-    scanf("%d",&nrms);
-
-    fprintf(stderr,"OK. I will compare %d group%s\n",nrms,(nrms>1)?"s":"");
-  }
-  else
+  if (bMat || bBond) 
     nrms=1;
 
   snew(gn_rms,nrms);

@@ -427,8 +427,9 @@ int gmx_mindist(int argc,char *argv[])
     "The [TT]-pi[tt] option is very slow."
   };
   
-  static bool bMat=FALSE,bPer=FALSE,bSplit=FALSE,bMax=FALSE;
+  static bool bMat=FALSE,bPBC=FALSE,bSplit=FALSE,bMax=FALSE;
   static real rcutoff=0.6;
+  static int  ng=1;
   t_pargs pa[] = {
     { "-matrix", FALSE, etBOOL, {&bMat},
       "Calculate half a matrix of group-group distances" },
@@ -436,10 +437,12 @@ int gmx_mindist(int argc,char *argv[])
       "Calculate *maximum* distance instead of minimum" },
     { "-d",      FALSE, etREAL, {&rcutoff},
       "Distance for contacts" },
-    { "-pi",     FALSE, etBOOL, {&bPer},
+    { "-pi",     FALSE, etBOOL, {&bPBC},
       "Calculate minimum distance with periodic images" },
     { "-split",  FALSE, etBOOL, {&bSplit},
       "Split graph where time is zero" },
+    { "-ng",       FALSE, etINT, {&ng},
+      "Number of secondary groups to compute distance to a central group" },
   };
   t_topology top;
   char       title[256];
@@ -448,7 +451,7 @@ int gmx_mindist(int argc,char *argv[])
   matrix     box;
   
   FILE      *atm;
-  int       i,j,ng,nres=0;
+  int       i,j,nres=0;
   char      *trxfnm,*tpsfnm,*ndxfnm,*distfnm,*numfnm,*atmfnm,*oxfnm,*resfnm;
   char      **grpname;
   int       *gnx;
@@ -482,25 +485,13 @@ int gmx_mindist(int argc,char *argv[])
   if (!tpsfnm && !ndxfnm)
     gmx_fatal(FARGS,"You have to specify either the index file or a tpr file");
   
-  if (bPer) {
+  if (bPBC) {
     ng = 1;
     fprintf(stderr,"Choose a group for distance calculation\n");
   } 
-  else {
-    if (bMat)
-      fprintf(stderr,"You can compute all distances between a number of groups\n"
-	      "How many groups do you want (>= 1) ?\n");
-    else
-      fprintf(stderr,"You can compute the distances between a first group\n"
-	      "and a number of other groups.\n"
-	      "How many other groups do you want (>= 1) ?\n");
-    ng = 0;
-    do {
-      scanf("%d",&ng);
-      if (!bMat)
-	ng++;
-    } while (ng < 1);
-  }
+  else if (!bMat)
+    ng++;
+  
   snew(gnx,ng);
   snew(index,ng);
   snew(grpname,ng);
@@ -531,7 +522,7 @@ int gmx_mindist(int argc,char *argv[])
     if (debug) dump_res(debug, nres, residues, gnx[0], index[0]);
   }
     
-  if (bPer)
+  if (bPBC)
     periodic_mindist_plot(trxfnm,distfnm,&top,gnx[0],index[0],bSplit);
   else
     dist_plot(trxfnm,atmfnm,distfnm,numfnm,resfnm,oxfnm,
@@ -539,7 +530,7 @@ int gmx_mindist(int argc,char *argv[])
 	      !bMax, nres, residues);
 
   do_view(distfnm,"-nxy");
-  if (!bPer)
+  if (!bPBC)
     do_view(numfnm,"-nxy");
   
   thanx(stderr);

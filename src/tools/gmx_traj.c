@@ -387,6 +387,7 @@ int gmx_traj(int argc,char *argv[])
   };
   static bool bMol=FALSE,bCom=FALSE,bNoJump=FALSE;
   static bool bX=TRUE,bY=TRUE,bZ=TRUE,bNorm=FALSE;
+  static int  ngroups=1;
   static real scale=0;
   t_pargs pa[] = {
     { "-com", FALSE, etBOOL, {&bCom},
@@ -401,6 +402,8 @@ int gmx_traj(int argc,char *argv[])
       "Plot Y-component" },
     { "-z", FALSE, etBOOL, {&bZ},
       "Plot Z-component" },
+    { "-ng",       FALSE, etINT, {&ngroups},
+      "Number of groups to consider" },
     { "-len", FALSE, etBOOL, {&bNorm},
       "Plot vector length" },
     { "-scale", FALSE, etREAL, {&scale},
@@ -419,7 +422,7 @@ int gmx_traj(int argc,char *argv[])
   matrix     topbox;
   int        status;
   int        i,j,n;
-  int        ngrps,nr_vfr,nr_ffr;
+  int        nr_vfr,nr_ffr;
   char       **grpname;
   int        *isize0,*isize;
   atom_id    **index0,**index;
@@ -482,24 +485,21 @@ int gmx_traj(int argc,char *argv[])
   else
     indexfn = ftp2fn_null(efNDX,NFILE,fnm);
 
-  if (bCom && !bMol) {
-    fprintf(stderr,"How many groups do you want to analyze? ");
-    scanf("%d",&ngrps);
-  } else
-    ngrps = 1;
-  snew(grpname,ngrps);
-  snew(isize0,ngrps);
-  snew(index0,ngrps);
-  get_index(&(top.atoms),indexfn,ngrps,isize0,index0,grpname);
+  if (!(bCom && !bMol))
+    ngroups = 1;
+  snew(grpname,ngroups);
+  snew(isize0,ngroups);
+  snew(index0,ngroups);
+  get_index(&(top.atoms),indexfn,ngroups,isize0,index0,grpname);
   
   if (bMol) {
     mols=&(top.blocks[ebMOLS]);
     a = mols->a;
     atndx = mols->index;
-    ngrps = isize0[0];
-    snew(isize,ngrps);
-    snew(index,ngrps);
-    for (i=0; i<ngrps; i++) {
+    ngroups = isize0[0];
+    snew(isize,ngroups);
+    snew(index,ngroups);
+    for (i=0; i<ngroups; i++) {
       isize[i] = atndx[index0[0][i]+1] - atndx[index0[0][i]];
       snew(index[i],isize[i]);
       for(j=0; j<isize[i]; j++)
@@ -522,20 +522,20 @@ int gmx_traj(int argc,char *argv[])
     outx = xvgropen(opt2fn("-ox",NFILE,fnm),
 		    bCom ? "Center of mass" : "Coordinate",
 		    xvgr_tlabel(),"Coordinate (nm)");
-    make_legend(outx,ngrps,isize0[0],index0[0],grpname,bCom,bMol,bDim);
+    make_legend(outx,ngroups,isize0[0],index0[0],grpname,bCom,bMol,bDim);
   }
   if (bOV) {
     flags = flags | TRX_READ_V;
     outv = xvgropen(opt2fn("-ov",NFILE,fnm),
 		    bCom ? "Center of mass velocity" : "Velocity",
 		    xvgr_tlabel(),"Velocity (nm/ps)");
-   make_legend(outv,ngrps,isize0[0],index0[0],grpname,bCom,bMol,bDim); 
+   make_legend(outv,ngroups,isize0[0],index0[0],grpname,bCom,bMol,bDim); 
   }
   if (bOF) {
     flags = flags | TRX_READ_F;
     outf = xvgropen(opt2fn("-of",NFILE,fnm),"Force",
 		    xvgr_tlabel(),"Force (kJ mol\\S-1\\N nm\\S-1\\N)");
-    make_legend(outf,ngrps,isize0[0],index0[0],grpname,bCom,bMol,bDim);
+    make_legend(outf,ngroups,isize0[0],index0[0],grpname,bCom,bMol,bDim);
   }
   if (bOB) {
     outb = xvgropen(opt2fn("-ob",NFILE,fnm),"Box vector elements",
@@ -550,7 +550,7 @@ int gmx_traj(int argc,char *argv[])
     bDum[DIM] = TRUE;
     flags = flags | TRX_READ_V;
     outt = xvgropen(opt2fn("-ot",NFILE,fnm),"Temperature",xvgr_tlabel(),"(K)");
-    make_legend(outt,ngrps,isize[0],index[0],grpname,bCom,bMol,bDum);
+    make_legend(outt,ngroups,isize[0],index[0],grpname,bCom,bMol,bDum);
   }
   if (bEKT) {
     bDum[XX] = FALSE;
@@ -560,7 +560,7 @@ int gmx_traj(int argc,char *argv[])
     flags = flags | TRX_READ_V;
     outekt = xvgropen(opt2fn("-ekt",NFILE,fnm),"Center of mass translation",
 		      xvgr_tlabel(),"Energy (kJ mol\\S-1\\N)");
-    make_legend(outekt,ngrps,isize[0],index[0],grpname,bCom,bMol,bDum);
+    make_legend(outekt,ngroups,isize[0],index[0],grpname,bCom,bMol,bDum);
   }
   if (bEKR) {
     bDum[XX] = FALSE;
@@ -570,7 +570,7 @@ int gmx_traj(int argc,char *argv[])
     flags = flags | TRX_READ_X | TRX_READ_V;
     outekr = xvgropen(opt2fn("-ekr",NFILE,fnm),"Center of mass rotation",
 		      xvgr_tlabel(),"Energy (kJ mol\\S-1\\N)");
-    make_legend(outekr,ngrps,isize[0],index[0],grpname,bCom,bMol,bDum);
+    make_legend(outekr,ngroups,isize[0],index[0],grpname,bCom,bMol,bDum);
   }
   if (bCV)
     flags = flags | TRX_READ_X | TRX_READ_V;
@@ -610,30 +610,30 @@ int gmx_traj(int argc,char *argv[])
       rm_pbc(&(top.idef),fr.natoms,fr.box,fr.x,fr.x);
 
     if (bOX && fr.bX)
-      print_data(outx,time,fr.x,mass,bCom,ngrps,isize,index,bDim);
+      print_data(outx,time,fr.x,mass,bCom,ngroups,isize,index,bDim);
     if (bOV && fr.bV)
-      print_data(outv,time,fr.v,mass,bCom,ngrps,isize,index,bDim);
+      print_data(outv,time,fr.v,mass,bCom,ngroups,isize,index,bDim);
     if (bOF && fr.bF)
-      print_data(outf,time,fr.f,NULL,bCom,ngrps,isize,index,bDim);
+      print_data(outf,time,fr.f,NULL,bCom,ngroups,isize,index,bDim);
     if (bOB && fr.bBox)
       fprintf(outb,"\t%g\t%g\t%g\t%g\t%g\t%g\t%g\n",fr.time,
 	      fr.box[XX][XX],fr.box[YY][YY],fr.box[ZZ][ZZ],
 	      fr.box[YY][XX],fr.box[ZZ][XX],fr.box[ZZ][YY]);
     if (bOT && fr.bV) {
       fprintf(outt," %g",time);
-      for(i=0; i<ngrps; i++)
+      for(i=0; i<ngroups; i++)
 	fprintf(outt,"\t%g",temp(fr.v,mass,isize[i],index[i]));
       fprintf(outt,"\n");
     }
     if (bEKT && fr.bV) {
       fprintf(outekt," %g",time);
-      for(i=0; i<ngrps; i++)
+      for(i=0; i<ngroups; i++)
 	fprintf(outekt,"\t%g",ektrans(fr.v,mass,isize[i],index[i]));
       fprintf(outekt,"\n");
     }
     if (bEKR && fr.bX && fr.bV) {
       fprintf(outekr," %g",time);
-      for(i=0; i<ngrps; i++)
+      for(i=0; i<ngroups; i++)
 	fprintf(outekr,"\t%g",ekrot(fr.x,fr.v,mass,isize[i],index[i]));
       fprintf(outekr,"\n");
     }

@@ -401,6 +401,7 @@ int gmx_density(int argc,char *argv[])
   static int  axis = 2;          /* normal to memb. default z  */
   static char *axtitle="Z"; 
   static int  nslices = 10;      /* nr of slices defined       */
+  static int  ngrps = 0;         /* nr. of groups              */
   static bool bSymmetrize=FALSE;
   static bool bCenter=FALSE;
   t_pargs pa[] = {
@@ -414,6 +415,8 @@ int gmx_density(int argc,char *argv[])
       "Calculate electron density instead of mass density" },
     { "-count",   FALSE, etBOOL, {&bCount},
       "Only count atoms in slices, no densities. Hydrogens are not counted"},
+    { "-ng",       FALSE, etINT, {&ngrps},
+      "Number of groups to compute densities of" },
     { "-symm",    FALSE, etBOOL, {&bSymmetrize},
       "Symmetrize the density along the axis, with respect to the center. Useful for bilayers." },
     { "-center",  FALSE, etBOOL, {&bCenter},
@@ -428,7 +431,6 @@ int gmx_density(int argc,char *argv[])
   real **density;        /* density per slice          */
   real slWidth;          /* width of one slice         */
   char **grpname;        /* groupnames                 */
-  int  ngrps = 0;        /* nr. of groups              */
   int  nr_electrons;     /* nr. electrons              */
   int  *ngx;             /* sizes of groups            */
   t_electron *el_tab;    /* tabel with nr. of electrons*/
@@ -465,9 +467,6 @@ int gmx_density(int argc,char *argv[])
     /* this sucks! mass is in amu, so a factor 1.66 is missing */
   }
 
-  printf("How many groups? ");
-  do { scanf("%d",&ngrps); } while (ngrps <= 0);
-  
   snew(grpname,ngrps);
   snew(index,ngrps);
   snew(ngx,ngrps);

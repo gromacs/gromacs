@@ -322,6 +322,7 @@ int gmx_potential(int argc,char *argv[])
   static int  axis = 2;                      /* normal to memb. default z  */
   static char *axtitle="Z"; 
   static int  nslices = 10;                  /* nr of slices defined       */
+  static int  ngrps   = 1;
   static bool bSpherical = FALSE;            /* default is bilayer types   */
   static real fudge_z = 0;                    /* translate coordinates      */
   t_pargs pa [] = {
@@ -338,6 +339,8 @@ int gmx_potential(int argc,char *argv[])
       "Translate all coordinates <distance> in the direction of the box" },
     { "-spherical", FALSE, etBOOL, {&bSpherical},
       "Calculate spherical thingie" },
+    { "-ng",       FALSE, etINT, {&ngrps},
+      "Number of groups to consider" }
   };
   static char *bugs[] = {
     "Discarding slices for integration should not be necessary."
@@ -348,8 +351,7 @@ int gmx_potential(int argc,char *argv[])
             **field,                        /* field per slice            */
             slWidth;                        /* width of one slice         */
   char      **grpname;            	    /* groupnames                 */
-  int       ngrps = 0,                      /* nr. of groups              */
-            *ngx;                           /* sizes of groups            */
+  int       *ngx;                           /* sizes of groups            */
   t_topology *top;                	    /* topology 		  */ 
   atom_id   **index;             	    /* indices for all groups     */
   t_filenm  fnm[] = {             	    /* files for g_order 	  */
@@ -372,9 +374,6 @@ int gmx_potential(int argc,char *argv[])
   
   top = read_top(ftp2fn(efTPX,NFILE,fnm));     /* read topology file */
 
-  printf("How many groups? ");
-  do { scanf("%d",&ngrps); } while (ngrps <= 0);
-  
   snew(grpname,ngrps);
   snew(index,ngrps);
   snew(ngx,ngrps);

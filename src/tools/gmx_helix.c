@@ -89,34 +89,6 @@ void dump_ahx(int nres,
   fclose(fp);
 }
 
-int get_prop(char prop[])
-{
-  static char *ppp[efhNR] = { 
-    "RAD", "TWIST", "RISE", "LEN", "NHX", "DIP", "RMS", "CPHI", 
-    "RMSA", "PHI", "PSI", "HB3", "HB4", "HB5", "CD222"
-  };
-  int i,n;
-  
-  fprintf(stderr,"Select something\n");
-  for(i=0; (i<efhNR); ) {
-    fprintf(stderr,"%2d: %10s",i,ppp[i]); i++;
-    if (i<efhNR) {
-      fprintf(stderr,"      %2d: %10s\n",i,ppp[i]);
-      i++;
-    }
-    else
-      fprintf(stderr,"\n");
-  }
-  do {
-    scanf("%d",&n);
-  } while ((n < 0) || (n >= efhNR));
-  
-  strcpy(prop,ppp[n]);
-  
-  return n;
-}
-
-
 void dump_otrj(FILE *otrj,int natoms,atom_id all_index[],rvec x[],
 	       real fac,rvec xav[])
 {
@@ -180,6 +152,10 @@ int gmx_helix(int argc,char *argv[])
     "[BB]10.[bb] Ellipticity at 222 nm according to [IT]Hirst and Brooks[it]",
     "[PAR]"
   };
+  static char *ppp[efhNR+2] = { 
+    NULL, "RAD", "TWIST", "RISE", "LEN", "NHX", "DIP", "RMS", "CPHI", 
+    "RMSA", "PHI", "PSI", "HB3", "HB4", "HB5", "CD222", NULL
+  };
   static bool bCheck=FALSE,bFit=TRUE,bDBG=FALSE,bEV=FALSE;
   static int  rStart=0,rEnd=0,r0=1;
   t_pargs pa [] = {
@@ -191,6 +167,8 @@ int gmx_helix(int argc,char *argv[])
       "Toggle fit to a perfect helix" },
     { "-db", FALSE, etBOOL,{&bDBG},
       "Print debug info" },
+    { "-prop", FALSE, etENUM, {ppp},
+      "Select property to weight eigenvectors with. WARNING experimental stuff" },
     { "-ev", FALSE, etBOOL,{&bEV},
       "Write a new 'trajectory' file for ED" },
     { "-ahxstart", FALSE, etINT, {&rStart},
@@ -265,7 +243,7 @@ int gmx_helix(int argc,char *argv[])
 
   if (opt2bSet("-to",NFILE,fnm)) {
     otrj=opt2FILE("-to",NFILE,fnm,"w");
-    nSel=get_prop(prop);
+    strcpy(prop,ppp[0]);
     fprintf(otrj,"%s Weighted Trajectory: %d atoms, NO box\n",prop,natoms);
   }
   else

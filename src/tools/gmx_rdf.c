@@ -146,13 +146,14 @@ real ** sf_table;
 
 static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 		   char *fnRDF,char *fnCNRDF, char *fnHQ,
-		   bool bCM,bool bXY,real cutoff,real binwidth,real fade)
+		   bool bCM,bool bXY,real cutoff,real binwidth,real fade,
+		   int ng)
 {
   FILE       *fp;
   int        status;
   char       outf1[STRLEN],outf2[STRLEN];
   char       title[STRLEN];
-  int        g,ng,natoms,i,j,k,nbin,j0,j1,n,nframes;
+  int        g,natoms,i,j,k,nbin,j0,j1,n,nframes;
   int        **count;
   char       **grpname;
   int        *isize,isize_cm=0,nrdf=0,max_i;
@@ -179,10 +180,6 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
       /* get exclusions from topology */
       excl=&(top.atoms.excl);
   }
-  fprintf(stderr,"\nHow many groups do you want to calculate the RDF of?\n");
-  do {
-    scanf("%d",&ng);
-  } while (ng < 1);
   snew(grpname,ng+1);
   snew(isize,ng+1);
   snew(index,ng+1);
@@ -1026,9 +1023,9 @@ void save_data (structure_factor * sf, char *file, int ngrps, real start_q,
 
 int
 do_scattering_intensity (char* fnTPS, char* fnNDX, char* fnXVG, char *fnTRX,
-		         real start_q,real end_q, real energy)
+		         real start_q,real end_q, real energy,int ng)
 {
-    int i,ng,*isize,status,flags = TRX_READ_X,**index_atp;
+    int i,*isize,status,flags = TRX_READ_X,**index_atp;
     char **grpname,title[STRLEN];
     atom_id **index;
     t_topology top;
@@ -1047,12 +1044,6 @@ do_scattering_intensity (char* fnTPS, char* fnNDX, char* fnXVG, char *fnTRX,
     sfree (xtop);
 
     /* groups stuff... */
-    fprintf (stderr,
-	     "\nHow many groups do you want to calculate the I(q) of?\n");
-    do {
-	scanf ("%d", &ng);
-    }
-    while (ng < 1);
     snew (isize, ng);
     snew (index, ng);
     snew (grpname, ng);
@@ -1135,7 +1126,7 @@ int gmx_rdf(int argc,char *argv[])
   };
   static bool bCM=FALSE,bXY=FALSE;
   static real cutoff=0,binwidth=0.002,grid=0.05,fade=0.0,lambda=0.1,distance=10;
-  static int  npixel=256,nlevel=20;
+  static int  npixel=256,nlevel=20,ngroups=1;
   static real start_q=0.0, end_q=60.0, energy=12.0;
   t_pargs pa[] = {
     { "-bin",      FALSE, etREAL, {&binwidth},
@@ -1146,6 +1137,8 @@ int gmx_rdf(int argc,char *argv[])
       "Use only the x and y components of the distance" },
     { "-cut",      FALSE, etREAL, {&cutoff},
       "Shortest distance (nm) to be considered"},
+    { "-ng",       FALSE, etINT, {&ngroups},
+      "Number of secondary groups to compute RDFs around a central group" },
     { "-fade",     FALSE, etREAL, {&fade},
       "From this distance onwards the RDF is tranformed by g'(r) = 1 + [g(r)-1] exp(-(r/fade-1)^2 to make it go to 1 smoothly. If fade is 0.0 nothing is done." },
     { "-grid",     FALSE, etREAL, {&grid},
@@ -1204,7 +1197,7 @@ int gmx_rdf(int argc,char *argv[])
  
   if  (bSQ) 
    do_scattering_intensity(fnTPS,fnNDX,opt2fn("-sq",NFILE,fnm),ftp2fn(efTRX,NFILE,fnm),
-		           start_q, end_q, energy  );
+		           start_q, end_q, energy, ngroups  );
 /* old structure factor code */
 /*    do_sq(fnNDX,fnTPS,ftp2fn(efTRX,NFILE,fnm),opt2fn("-sq",NFILE,fnm),
 	  ftp2fn(efXPM,NFILE,fnm),grid,lambda,distance,npixel,nlevel);
@@ -1213,7 +1206,7 @@ int gmx_rdf(int argc,char *argv[])
     do_rdf(fnNDX,fnTPS,ftp2fn(efTRX,NFILE,fnm),
 	   opt2fn("-o",NFILE,fnm),opt2fn_null("-cn",NFILE,fnm),
 	   opt2fn_null("-hq",NFILE,fnm),
-	   bCM,bXY,cutoff,binwidth,fade);
+	   bCM,bXY,cutoff,binwidth,fade,ngroups);
 
   thanx(stderr);
   

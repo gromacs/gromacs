@@ -157,11 +157,15 @@ int gmx_com(int argc,char *argv[])
     { efXVG, "-oe", "ekrot",ffOPTWR }
   };
 #define NFILE asize(fnm)
+  statuc int      ngrps;       /* the number of groups */
+  t_pargs pa[] = {
+    { "-ng",       FALSE, etINT, {&ngrps},
+      "Number of  groups to compute COM of" }
+  };
 
   static char  *axisX[]={ "Xx", "Xy", "Xz", "Xtot" };
  
   /* index stuff */
-  int      ngrps;       /* the number of groups */
   int      *isize;      /* the size of each group */
   char     **grpnames;  /* the name of each group */
   atom_id  **index;     /* the index array of each group */
@@ -184,7 +188,7 @@ int gmx_com(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,NFILE,fnm,
-		    0,NULL,asize(desc),desc,0,NULL);
+		    asize(pa),pa,asize(desc),desc,0,NULL);
   ftpout=fn2ftp(ftp2fn(efTRX,NFILE,fnm));
   bHaveV=((ftpout==efTRJ) || (ftpout==efTRR));
   bReadV=opt2bSet("-oe",NFILE,fnm);
@@ -197,10 +201,6 @@ int gmx_com(int argc,char *argv[])
   /* open input files, read topology and index */
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,box,TRUE);
   sfree(xtop);
-  
-  fprintf(stderr,"How many groups do you want to calc com of ? ");
-  scanf("%d",&ngrps);
-  fprintf(stderr,"OK. I will calc com of %d groups\n",ngrps);
   
   snew(grpnames,ngrps);
   snew(index,ngrps);

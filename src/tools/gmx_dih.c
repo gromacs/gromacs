@@ -52,18 +52,6 @@
 
 #define NOMIN 'X'
 
-static int get_nf(void)
-{
-  int nf;
-
-  do {
-    printf("Number of frames ? ");
-    fflush(stdout);
-  } while (scanf("%d",&nf) != 1);
-
-  return nf;
-}
-
 static void dump_dih(int nframes,char *title,real time[],real dih[])
 {
   FILE *out;
@@ -315,9 +303,6 @@ int gmx_dih(int argc,char *argv[])
     "appropriate bin. The output is then given as a number of dihedral",
     "conformations sorted according to occupancy."
   };
-  static char *bugs[] = {
-    "should not ask for number of frames"
-  };
   static int  mult = -1;
   static bool bSA  = FALSE;
   t_pargs pa[] = {
@@ -331,7 +316,7 @@ int gmx_dih(int argc,char *argv[])
   t_topology *top;
   real       **dih,*time;
   real       dd;
-  int        i,step,nframes;
+  int        i,nframes,maxframes=1000;
   t_filenm   fnm[] = {
     { efTRX, "-f", NULL, ffREAD },
     { efTPX, NULL, NULL, ffREAD },
@@ -341,7 +326,7 @@ int gmx_dih(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   
   if (mult != -1)
     fprintf(stderr,"Using %d for dihedral multiplicity rather than topology values\n",mult);
@@ -352,32 +337,33 @@ int gmx_dih(int argc,char *argv[])
   top=read_top(ftp2fn(efTPX,NFILE,fnm));
 	       
   /* Brute force malloc, may be too big... */
-  nframes=get_nf();
   snew(dih,xr->ndih);
   for(i=0; (i<xr->ndih); i++)
-    snew(dih[i],nframes);
-  snew(time,nframes);
+    snew(dih[i],maxframes);
+  snew(time,maxframes);
 
   fprintf(stderr,"\n");
-  for(step=0; (step<nframes); step++) {
-    if (!new_data(xr))
-      break;
+  nframes = 0;
+  while (new_data(xr)) {
     for(i=0; (i<xr->ndih); i++) {
       dd=xr->dih[i].ang*RAD2DEG;
       while (dd < 0)
 	dd+=360;
       while (dd > 360)
 	dd-=360;
-      dih[i][step]=dd;
+      dih[i][nframes]=dd;
     }
-    time[step]=xr->t;
+    time[nframes]=xr->t;
+    nframes++;
+    if (nframes > maxframes) {
+      maxframes += 1000;
+      for(i=0; (i<xr->ndih); i++)
+	srenew(dih[i],maxframes);
+      srenew(time,maxframes);
+    }
   } 
 
   fprintf(stderr,"\nCalculated all dihedrals, now analysing...\n");
-  if (step < nframes) {
-    nframes=step;
-    fprintf(stderr,"By the way, there were only %d frames\n",nframes);
-  }
 
   out=ftp2FILE(efOUT,NFILE,fnm,"w");
 
