@@ -170,7 +170,7 @@ int main(int argc,char *argv[])
   /*calc_vecs3(nx,ny,nz,pdba,bReset);*/
   
   fp=ftp2FILE(efPDB,NFILE,fnm,"w");
-  print_pdbatoms(fp,nmax,pdba,box);
+  print_pdbatoms(fp,NULL,nmax,pdba,box);
   fclose(fp);
 
   clear_mat(boxje);

@@ -88,6 +88,7 @@ int main (int argc,char *argv[])
   rvec         *x,*v,*xref;
   int          status;
   char         buf[256];
+  char         title[STRLEN];
   
   FILE         *fp;               /* the graphics file */
   int          resnr,pdb_i;
@@ -223,7 +224,7 @@ int main (int argc,char *argv[])
   
   if (ftp2bSet(efPDB,NFILE,fnm)) {
     fp    = ftp2FILE(efPDB,NFILE,fnm,"r");
-    npdba = read_pdbatoms(fp,&pdba,box,FALSE);
+    npdba = read_pdbatoms(fp,title,&pdba,box,FALSE);
     renumber_pdb(npdba,pdba);
     fclose(fp);
     pdba_trimnames(npdba,pdba);

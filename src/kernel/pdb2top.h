@@ -51,7 +51,7 @@ typedef struct {
   char *a1,*a2;
 } t_ssbond;
 
-extern void pdb2top(char *ff,char *fn,char *pr,char *molname,
+extern void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
 		    int nincl, char **incls, int nmol, char **mols,
 		    t_atoms *atoms,int nah,t_addh ah[],rvec x[],
 		    t_atomtype *atype,t_symtab *tab,
@@ -65,7 +65,7 @@ extern void pdb2top(char *ff,char *fn,char *pr,char *molname,
 		    int nssbonds,t_ssbond ssbonds[]);
 /* Create a topology ! */
 
-extern void write_top(char *ff,char *fn, char *pr,char *molname,
+extern void write_top(char *ff,char *fn, char *pr,char *title, char *molname,
 		      int nincl, char **incls, int nmol, char **mols,
 		      t_atoms *at,t_params plist[],int nrtp,t_restp rtp[],
 		      t_atomtype *atype,t_block *cgs);

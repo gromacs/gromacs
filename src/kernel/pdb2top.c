@@ -264,13 +264,13 @@ static t_block *make_cgs(t_atoms *at,int nrtp,t_restp rtp[])
   return cgs;
 }
 
-static void print_top_header(FILE *out, bool bITP, 
+static void print_top_header(FILE *out, char *title, bool bITP, 
 			     char *ff, int nincl, char **incls)
 {
   int i;
   
   fprintf(out,"; This is your %stopology file\n",bITP ? "include " : "");
-  fprintf(out,"; %s\n",cool_quote());
+  fprintf(out,"; %s\n",title[0]?title:cool_quote());
   
   if (!bITP) {
     fprintf(out,"; Include forcefield constants\n");
@@ -323,7 +323,7 @@ static void print_top_mols(FILE *out, int nmol, char **mols)
   
 }
 
-void write_top(char *ff,char *fn, char *pr,char *molname,
+void write_top(char *ff,char *fn, char *pr,char *title, char *molname,
 	       int nincl, char **incls, int nmol, char **mols,
 	       t_atoms *at,t_params plist[],int nrtp,t_restp rtp[],
 	       t_atomtype *atype,t_block *cgs)
@@ -334,7 +334,7 @@ void write_top(char *ff,char *fn, char *pr,char *molname,
   bITP=(fn2ftp(fn)==efITP);
   out=ffopen(fn,"w");
   
-  print_top_header(out,bITP,ff,nincl,incls);
+  print_top_header(out,title,bITP,ff,nincl,incls);
   
   if (at && atype && cgs) {
     fprintf(out,"[ %s ]\n",dir2str(d_moleculetype));
@@ -658,7 +658,7 @@ static void print_mass(t_atoms *atoms)
   fprintf(stderr,"Total mass in system %g a.m.u.\n",m);
 }
 
-void pdb2top(char *ff,char *fn,char *pr,char *molname,
+void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
 	     int nincl, char **incls, int nmol, char **mols,
 	     t_atoms *atoms,int nah,t_addh ah[],rvec x[],
 	     t_atomtype *atype,t_symtab *tab,
@@ -726,7 +726,7 @@ void pdb2top(char *ff,char *fn,char *pr,char *molname,
   print_mass(atoms);
   
   fprintf(stderr,"Writing topology file\n");
-  write_top(ff,fn,pr,molname,nincl,incls,nmol,mols,
+  write_top(ff,fn,pr,title,molname,nincl,incls,nmol,mols,
 	    atoms,plist,nrtp,rtp,atype,cgs);
   
   for (i=0; (i<F_NRE); i++)

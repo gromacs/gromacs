@@ -113,24 +113,24 @@ real calc_mass(t_atoms *atoms)
   return tmass;
 }
 
-void calc_geom(int natom, rvec *pdba, rvec geom_center, rvec min, rvec max)
+void calc_geom(int natom, rvec *x, rvec geom_center, rvec min, rvec max)
 {
   int i,j;
   
   clear_rvec(geom_center);
   for (j=0; (j<DIM); j++)
-    min[j]=max[j]=pdba[0][j];
+    min[j]=max[j]=x[0][j];
   for (i=0; (i<natom); i++) {
-    rvec_inc(geom_center,pdba[i]);
+    rvec_inc(geom_center,x[i]);
     for (j=0; (j<DIM); j++) {
-      if (pdba[i][j] < min[j]) min[j]=pdba[i][j];
-      if (pdba[i][j] > max[j]) max[j]=pdba[i][j];
+      if (x[i][j] < min[j]) min[j]=x[i][j];
+      if (x[i][j] > max[j]) max[j]=x[i][j];
     }
   }
   svmul(1./natom,geom_center,geom_center);
 }
 
-void center_conf(int natom, rvec *pdba, rvec center, rvec geom_cent)
+void center_conf(int natom, rvec *x, rvec center, rvec geom_cent)
 {
   int       i;
   rvec shift;
@@ -141,7 +141,7 @@ void center_conf(int natom, rvec *pdba, rvec center, rvec geom_cent)
 	 shift[XX],shift[YY],shift[ZZ]);
 
   for (i=0; (i<natom); i++) 
-    rvec_inc(pdba[i], shift);
+    rvec_inc(x[i], shift);
 }
 
 void scale_conf(int natom,rvec x[],matrix box,rvec scale)
@@ -154,22 +154,6 @@ void scale_conf(int natom,rvec x[],matrix box,rvec scale)
   }
   for (j=0; (j<DIM); j++)
     box[j][j] *= scale[j];
-}
-
-void print_pdbatoms_x(FILE *out,int natom,t_pdbatom pdba[])
-{
-  int i;
-  char buf[12];
-  
-  for(i=0; (i<natom); i++) {
-    sprintf(buf,"%s",pdba[i].resnm);
-    buf[3]='\0';
-    fprintf(out,pdbformat,
-            pdbtp[pdba[i].pdbtp],pdba[i].atomnr + 1,pdba[i].atomnm,
-            buf,pdba[i].chain,pdba[i].resnr + 1,
-            10*pdba[i].x[XX],10*pdba[i].x[YY],10*pdba[i].x[ZZ],
-            pdba[i].dummy,pdba[i].bfac);
-  }
 }
 
 void rm_gropbc(t_atoms *atoms,rvec x[],matrix box)
@@ -376,7 +360,7 @@ int main(int argc, char *argv[])
 
   FILE      *out;
   char      title[STRLEN];
-  int       natom,i,n_bfac;
+  int       natom,i,j,n_bfac;
   double    *bfac=NULL;
   int       *bfac_nr=NULL;
   t_atoms   atoms;
@@ -385,7 +369,8 @@ int main(int argc, char *argv[])
   atom_id   *index;
   rvec      *x,*v,gc,min,max,size;
   matrix    box;
-  bool      bSetSizeAll,bSetSize[DIM],bCubic,bDist,bSetCenter[DIM],bScale,bRho;
+  bool      bSetSizeAll,bSetSize[DIM],bCubic,bDist,bSetCenter[DIM];
+  bool      bHaveV,bScale,bRho;
   real      xs,ys,zs,xcent,ycent,zcent,d;
   t_filenm fnm[] = {
     { efSTX, "-f", NULL, ffREAD },
@@ -437,6 +422,12 @@ int main(int argc, char *argv[])
   snew(v,natom);
   read_stx_conf(fnm[0].fn,title,&atoms,x,v,box);
 
+  bHaveV=FALSE;
+  for (i=0; (i<natom) && !bHaveV; i++)
+    for (j=0; (j<DIM) && !bHaveV; j++)
+      bHaveV=bHaveV || (v[i][j]!=0);
+  printf("%svelocities found\n",bHaveV?"":"No ");
+  
   /* remove pbc */
   if (bRMPBC) 
     rm_gropbc(&atoms,x,box);
@@ -506,14 +497,14 @@ int main(int argc, char *argv[])
 	    1,&isize,&index,&groupnames);
     if (opt2bSet("-o",NFILE,fnm) || !opt2bSet("-op",NFILE,fnm)) {
       out=opt2FILE("-o",NFILE,fnm,"w");
-      write_hconf_indexed(out,cool_quote(),&atoms,isize,index,x,v,box); 
+      write_hconf_indexed(out,title,&atoms,isize,index,x,bHaveV?v:NULL,box); 
       fclose(out);
     }
     if (opt2bSet("-op",NFILE,fnm)) {
       if (opt2bSet("-bf",NFILE,fnm)) {
 	fatal_error(0,"combination not implemented: -bf -n  or -bf -ndef");
       } else {
-	write_pdb_conf_indexed(opt2fn("-op",NFILE,fnm),
+	write_pdb_conf_indexed(opt2fn("-op",NFILE,fnm),title,
 			       &atoms,x,box,isize,index); 
       }
     }
@@ -521,7 +512,7 @@ int main(int argc, char *argv[])
   else {
     if (opt2bSet("-o",NFILE,fnm) || !opt2bSet("-op",NFILE,fnm)) {
       out=opt2FILE("-o",NFILE,fnm,"w");
-      write_hconf(out,cool_quote(),&atoms,x,v,box); 
+      write_hconf(out,title,&atoms,x,bHaveV?v:NULL,box); 
       fclose(out);
     }
     if (opt2bSet("-op",NFILE,fnm)) {
@@ -539,7 +530,7 @@ int main(int argc, char *argv[])
       }
       
       out=opt2FILE("-op",NFILE,fnm,"w");
-      print_pdbatoms(out,atoms.nr,pdba,box);
+      print_pdbatoms(out,title,atoms.nr,pdba,box);
       if (bLegend)
 	pdb_legend(out,atoms.nr,atoms.nres,pdba);
       fclose(out);

@@ -144,7 +144,7 @@ int main(int argc,char *argv[])
     if (t >= nt) {
       fprintf(stderr,"\rt=%.1f",t);
       rm_pbc(&(top->idef),top->atoms.nr,box,x,x_s);
-      write_pdb_conf_indexed(pdbfile,atoms,x_s,box,gnx,index);
+      write_pdb_conf_indexed(pdbfile,NULL,atoms,x_s,box,gnx,index);
       
       tot=popen(total,"w");
       fprintf(tot,"%s\n%s\n3\nn\n%s\nn\n",pdbfile,tmpfile,randf);

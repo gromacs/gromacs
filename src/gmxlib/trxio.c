@@ -373,10 +373,11 @@ static int xyz_first_x(FILE *status, real *t, rvec **x, matrix box)
 static bool pdb_next_x(FILE *status,real *t,int natoms,rvec x[],matrix box)
 {
   t_pdbatom *pdb;
-  int i;
+  int       i;
+  char      title[STRLEN];
 
   *t=0.0;  
-  natoms = read_pdbatoms(status, &pdb, box, FALSE);
+  natoms = read_pdbatoms(status, title, &pdb, box, FALSE);
   fprintf(stderr,"\rRead frame %6d",frame++);
   
   for(i=0; (i<natoms); i++)
@@ -396,13 +397,14 @@ static int pdb_first_x(FILE *status, real *t, rvec **x, matrix box)
 {
   t_pdbatom *pdb;
   int i, natoms;
+  char      title[STRLEN];
   
   INITCOUNT;
   
   *t=0.0;
   fprintf(stderr,"Reading frames from pdb file.\n");
   frewind(status);
-  natoms = read_pdbatoms(status, &pdb, box, FALSE);
+  natoms = read_pdbatoms(status, title, &pdb, box, FALSE);
   fprintf(stderr,"No of atoms: %d.\n", natoms);
 
   if (box[XX][XX] == 0)

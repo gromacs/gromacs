@@ -107,7 +107,7 @@ static void export_it(t_gmx *gmx)
 	       &(gmx->man->top.atoms),gmx->man->x,gmx->man->x,gmx->man->box);
     break;
   case eExpPDB:
-    write_pdb_conf(gmx->confout,
+    write_pdb_conf(gmx->confout,NULL,
 		   &(gmx->man->top.atoms),
 		   gmx->man->x,gmx->man->box,FALSE);
     break;

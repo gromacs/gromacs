@@ -316,7 +316,7 @@ int main(int argc,char *argv[])
   do {
     if (t >= nt) {
       rm_pbc(&(top->idef),atoms->nr,box,x,x);
-      hwrite_pdb_conf_indexed(tapein,atoms,x,box,gnx,index);
+      hwrite_pdb_conf_indexed(tapein,NULL,atoms,x,box,gnx,index);
       rewind(tapein);
       dssp_main(bDoAcc,bVerbose);
       rewind(tapein);

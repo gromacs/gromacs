@@ -110,19 +110,27 @@ bool is_hydrogen(char *nm)
   return FALSE;
 }
 
-int read_pdbatoms(FILE *in,t_pdbatom **pdbaptr,matrix box,bool bFilterH)
+#define REMARK_SIM_BOX "REMARK    THIS IS A SIMULATION BOX"
+
+int read_pdbatoms(FILE *in,char *title, 
+		  t_pdbatom **pdbaptr,matrix box,bool bFilterH)
 {
   t_pdbatom *pdba=NULL;
   int  maxpdba=0;
+  bool bCOMPND,bSimBox;
   char line[STRLEN+1];
   char type[12],anr[12],anm[12],resnm[12],chain[12],resnr[12],
        xc[12],yc[12],zc[12],dumc[12],bfac[12],pdbresnr[12];
+  char *c,*d;
   int  natom;
   int  j,k;
 
   if (box != NULL) 
     clear_mat(box);
-  
+
+  bCOMPND=FALSE;
+  bSimBox=FALSE;
+  title[0]='\0';
   natom=0;
   while (fgets2(line,STRLEN,in) != NULL) {
     decompose_line(line,type,anr,anm,resnm,chain,resnr,xc,yc,zc,dumc,bfac,
@@ -158,25 +166,55 @@ int read_pdbatoms(FILE *in,t_pdbatom **pdbaptr,matrix box,bool bFilterH)
       pdba[natom].q = 0.0;
       pdba[natom].type = 0;
       natom++;
-    }
-    else {
+    } else {
       trim(type);
-      if (strncmp(type,"CRYST1",6)==0) {
-	if (box != NULL) {
+      if (!box[0][0] && (strncmp(type,"CRYST1",6)==0)) {
+	if (bSimBox) {
 	  sscanf(line,"%*s%s%s%s",xc,yc,zc);
 	  box[XX][XX] = atof(xc)*0.1;
 	  box[YY][YY] = atof(yc)*0.1;
 	  box[ZZ][ZZ] = atof(zc)*0.1;
+	} else 
+	  fprintf(stderr,"WARNING: ignoring data in CRYST1 entry "
+		  "(probably not a simulation box)\n");
+      } else if ( (title[0]=='\0') && ( (strncmp(type,"TITLE" ,5) == 0) || 
+					(strncmp(type,"HEADER",6) == 0) ) ) {
+	c=line+6;
+	/* skip HEADER or TITLE and spaces */
+	while (c && (c[0]!=' ')) c++;
+	while (c && (c[0]==' ')) c++;
+	/* truncate after title */
+	d=strstr(c,"   ");
+	if (d) {
+	  d[0]='\0';
 	}
-      }
-      else
-	if (bTER) {
-	  if (strcmp(type,"TER") == 0) 
-	    break;
-	} else {
-	  if (strcmp(type,"ENDMDL") == 0) 
-	    break;
+	if (strlen(c)>0)
+	  strcpy(title,c);
+      } else if ( (strncmp(type,"COMPND",6) == 0) && 
+		  (!strstr(line,": ")) || (strstr(line+6,"MOLECULE:")) ) {
+	if ( !(c=strstr(line+6,"MOLECULE:")) )
+	  c=line;
+	/* skip 'MOLECULE:' and spaces */
+	while (c && (c[0]!=' ')) c++;
+	while (c && (c[0]==' ')) c++;
+	/* truncate after title */
+	d=strstr(c,"   ");
+	if (d) {
+	  while ( (d[-1]==';') && d>c)  d--;
+	  d[0]='\0';
 	}
+	if (strlen(c)>0)
+	  if (bCOMPND) {
+	    strcat(title,"; ");
+	    strcat(title,c);
+	  } else
+	    strcpy(title,c);
+	bCOMPND=TRUE;
+      } else if ( ( bTER && (strcmp(type,"TER") == 0)) ||
+		  (!bTER && (strcmp(type,"ENDMDL") == 0)) ) 
+	break;
+      else if (strcmp(line,REMARK_SIM_BOX)==0)
+	bSimBox=TRUE;
     }
   }
   *pdbaptr=pdba;
@@ -201,14 +239,15 @@ void get_pdb_coordnum(char *infile,int *natoms)
   ffclose (in);
 }
 
-void print_pdbatoms(FILE *out,int natom,t_pdbatom pdba[],matrix box)
+void print_pdbatoms(FILE *out,char *title, 
+		    int natom,t_pdbatom pdba[],matrix box)
 {
   int i,resnr;
   char buf[12];
 
-  fprintf(out,"HEADER    %s\n",bromacs());
+  fprintf(out,"HEADER    %s\n",title[0]?title:bromacs());
   if (box != NULL) {
-    fprintf(out,"REMARK    THIS IS A SIMULATION BOX\n");
+    fprintf(out,REMARK_SIM_BOX"\n");
     fprintf(out,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",
 	    10*box[XX][XX],10*box[YY][YY],10*box[ZZ][ZZ],90.0,90.0,90.0);
   }

@@ -187,7 +187,7 @@ void pr_seqres(FILE *fp,int natom,t_pdbatom pdba[])
   fprintf(fp,"\n");
 }
 
-int read_pdball(char *inf, char *outf,
+int read_pdball(char *inf, char *outf,char *title,
 		t_pdbatom **pdbaptr, matrix box, bool bRetainH)
 /* Read a pdb file. (containing proteins) */
 {
@@ -196,11 +196,12 @@ int read_pdball(char *inf, char *outf,
   int       natom;
   
   /* READ IT */
-  fprintf(stderr,"Reading pdb file...\n");
+  printf("Reading pdb file...\n");
   in=ffopen(inf,"r");
-  natom=read_pdbatoms(in,&pdba,box,!bRetainH);
+  natom=read_pdbatoms(in,title,&pdba,box,!bRetainH);
   ffclose(in);
   *pdbaptr=pdba;
+  printf("'%s': %d atoms\n",title,natom);
   
   /* renumber and sort atoms */
   renumber_pdb(natom,pdba);
@@ -219,7 +220,7 @@ int read_pdball(char *inf, char *outf,
   /* Dump a 'clean' PDB file */
   out=ffopen(outf,"w");
   /* pr_seqres(out,natom,pdba); */
-  print_pdbatoms(out,natom,pdba,box);
+  print_pdbatoms(out,title,natom,pdba,box);
   ffclose(out);
   
   return natom;
@@ -339,11 +340,12 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
 
 static int remove_double_atoms(int natoms,t_pdbatom **pdbaptr)
 {
-  int     i,j,nres;
+  int     i,j,nres,oldnatoms;
   t_pdbatom *pdba;
   
   pdba=*pdbaptr;
   
+  oldnatoms=natoms;
   nres=pdba[natoms-1].resnr;
   printf("Checking for double atoms....\n");
   /* NOTE: natoms is modified inside the loop */
@@ -352,15 +354,16 @@ static int remove_double_atoms(int natoms,t_pdbatom **pdbaptr)
 	 (pdba[i-1].atomnr    == pdba[i].atomnr) &&
 	 (strcmp(pdba[i-1].atomnm,pdba[i].atomnm)==0) && 
 	 !( (pdba[i].resnr==nres) && (strcasecmp(pdba[i-1].atomnm,"O")==0) ) ) {
-      fprintf(stderr,"WARNING: deleting double atom (%d %s %s %c %d)\n",
-	      i + 1, pdba[i].atomnm, pdba[i].resnm, 
-	      pdba[i].chain, pdba[i].resnr + 1);
+      printf("deleting double atom (%d %s %s %c %d)\n",
+	     i + 1, pdba[i].atomnm, pdba[i].resnm, 
+	     pdba[i].chain, pdba[i].resnr + 1);
       natoms--;
       for (j=i; (j<natoms); j++)
 	pdba[j]=pdba[j+1];
     }
   }
-  printf("Now there are %d atoms\n",natoms);
+  if (natoms!=oldnatoms)
+    printf("Now there are %d atoms\n",natoms);
   *pdbaptr=pdba;
   
   return natoms;
@@ -447,7 +450,8 @@ void find_nc_ter(int natom,t_pdbatom pdba[],int *rn,int *rc/*,int ter_type[]*/)
 	*rc=rnr;
     }
   }
-  fprintf(stderr,"nres: %d, rN: %d, rC: %d\n",pdba[natom-1].resnr,*rn,*rc);
+  if (debug)
+    fprintf(debug,"nres: %d, rN: %d, rC: %d\n",pdba[natom-1].resnr,*rn,*rc);
 }
 
 int main(int argc, char *argv[])
@@ -520,7 +524,9 @@ int main(int argc, char *argv[])
   t_addh     *ah;
   t_symtab   tab;
   t_atomtype *atype;
-  char       fn[256],top_fn[STRLEN],itp_fn[STRLEN],molname[STRLEN],*c;
+  char       fn[256],top_fn[STRLEN],itp_fn[STRLEN];
+  char       molname[STRLEN],title[STRLEN];
+  char       *c;
   int        nah,nNtdb,nCtdb;
   t_terblock *ntdb,*ctdb,*sel_ntdb,*sel_ctdb;
   int        nssbonds;
@@ -595,14 +601,15 @@ int main(int argc, char *argv[])
     bLysH=FALSE;
     bHisMan=TRUE;
   }
-
-  natom=read_pdball(opt2fn("-f",NFILE,fnm),opt2fn("-q",NFILE,fnm),
+  
+  clear_mat(box);
+  natom=read_pdball(opt2fn("-f",NFILE,fnm),opt2fn("-q",NFILE,fnm),title,
 		    &pdba_all,box,bRetainH);
   
   if (natom==0)
     fatal_error(0,"No atoms found in pdb file %s\n",opt2fn("-f",NFILE,fnm));
 
-  fprintf(stderr,"Analyzing pdb file\n");
+  printf("Analyzing pdb file\n");
   pchain='\0';
   nchain=0;
   chains=NULL;
@@ -633,7 +640,7 @@ int main(int argc, char *argv[])
 	(strcasecmp(pdba_all[chains[i].start+j].resnm,"HOH") == 0);
     if (chains[i].bAllWat && (i>0) && chains[i-1].bAllWat) {
       /* this chain and previous chain contain only water: merge them */
-      printf("Merging chains %d and %d\n",i-1,i);
+      printf("Merging chains %c and %c\n",chains[i-1].chain,chains[i].chain);
       chains[i-1].natom += chains[i].natom;
       for (j=i+1; (j<nchain); j++) {
 	chains[j-1].chain = chains[j].chain;
@@ -671,27 +678,27 @@ int main(int argc, char *argv[])
       j--;
   if (j==0) j=1;
   
-  fprintf(stderr,"There are %d chains and %d residues with %d atoms\n",
+  printf("There are %d chains and %d residues with %d atoms\n",
 	  j,pdba_all[natom-1].resnr+1,natom);
 	  
-  fprintf(stderr,"%5s %5s %4s %6s\n","chain","start","#res","#atoms");
+  printf("%5s %5s %4s %6s\n","chain","start","#res","#atoms");
   for (i=0; (i<nchain); i++)
-    fprintf(stderr,"%d '%c' %5d %4d %6d %s\n",
-	    i+1,chains[i].chain,chains[i].start+1,
-	    pdba_all[chains[i+1].start-1].resnr + 1 -
-	    pdba_all[chains[i  ].start  ].resnr,
-	    chains[i+1].start-chains[i].start,
-	    chains[i].bAllWat ? "(only water)":"");
+    printf("%d '%c' %5d %4d %6d %s\n",
+	   i+1,chains[i].chain,chains[i].start+1,
+	   pdba_all[chains[i+1].start-1].resnr + 1 -
+	   pdba_all[chains[i  ].start  ].resnr,
+	   chains[i+1].start-chains[i].start,
+	   chains[i].bAllWat ? "(only water)":"");
   
   ff=choose_ff(bFFMan);
-  fprintf(stderr,"Using %s force field\n",ff);
+  printf("Using %s force field\n",ff);
   
   /* Read atomtypes... */
   open_symtab(&tab);
   atype=read_atype(ff,&tab);
     
   /* read residue database */
-  fprintf(stderr,"Reading residue database... (%s)\n",ff);
+  printf("Reading residue database... (%s)\n",ff);
   nrtp=read_resall(ff,&restp,&rb,&ra,&idih,atype,&tab);
   if (debug) {
     fprintf(debug,"\nResidue database with %d residues:\n\n\n",nrtp);
@@ -735,10 +742,10 @@ int main(int argc, char *argv[])
     nres =pdba[natom-1].resnr + 1 - nres;
     
     if (chains[chain].chain && ( chains[chain].chain != ' ' ) )
-      fprintf(stderr,"Processing chain %d '%c' (%d atoms, %d residues)\n",
+      printf("Processing chain %d '%c' (%d atoms, %d residues)\n",
 	      chain+1,chains[chain].chain,natom,nres);
     else
-      fprintf(stderr,"Processing chain %d (%d atoms, %d residues)\n",
+      printf("Processing chain %d (%d atoms, %d residues)\n",
 	      chain+1,natom,nres);
 
     process_chain(natom,pdba,bUnA,bUnA,bUnA,bLysH,bHisMan,bCysMan,
@@ -767,40 +774,40 @@ int main(int argc, char *argv[])
     if (debug) {
       sprintf(fn,"%c.pdb",chains[chain].chain);
       fp=ffopen(fn,"w");
-      print_pdbatoms(fp,natom,pdba,box);
+      print_pdbatoms(fp,title,natom,pdba,box);
       fclose(fp);
     }
 
     find_nc_ter(natom,pdba,&rN,&rC);
 
     if ( (rN<0) || (rC<0) )
-      fprintf(stderr,"No N- or C-terminus found: "
-	      "assuming this chain contains no protein\n");
+      printf("No N- or C-terminus found: "
+	     "assuming this chain contains no protein\n");
     
     /* set termini */
-    if (bTerMan || (rN>=0) || (nNtdb<4))
+    if ( (rN>=0) && (bTerMan || (nNtdb<4)) )
       sel_ntdb=choose_ter(nNtdb,ntdb,"Select N-terminus type (start)");
     else {
       if (strncmp(pdba[rN].resnm,"PRO",3))
 	sel_ntdb=&(ntdb[1]);
       else
 	sel_ntdb=&(ntdb[3]);
-      fprintf(stderr,"N-terminus: %s\n",sel_ntdb->bname);
+      printf("N-terminus: %s\n",sel_ntdb->bname);
     }
     
-    if (bTerMan || (rC>=0) || (nCtdb<2))
+    if ( (rC>=0) && (bTerMan || (nCtdb<2)) )
       sel_ctdb=choose_ter(nCtdb,ctdb,"Select C-terminus type (end)");
     else {
       sel_ctdb=&(ctdb[1]);
-      fprintf(stderr,"C-terminus: %s\n",ctdb[1].bname);
+      printf("C-terminus: %s\n",ctdb[1].bname);
     }
     
     /* Generate Hydrogen atoms (and termini) in the sequence */
     natom=add_h(natom,&pdba,nah,ah,&x,sel_ntdb,sel_ctdb,rN,rC);
-    fprintf(stderr,"Now there are %d residues with %d atoms\n",
+    printf("Now there are %d residues with %d atoms\n",
 	    pdba[natom-1].resnr+1,natom);
     if (debug)
-      print_pdbatoms(debug,natom,pdba,box);
+      print_pdbatoms(debug,title,natom,pdba,box);
     
     snew(atoms,1);
     pdb2atoms(natom,pdba,atoms,&dummy,&tab);
@@ -846,7 +853,8 @@ int main(int argc, char *argv[])
 
     write_posres(itp_fn,natom,pdba);
     
-    pdb2top(ff,top_fn,itp_fn,molname,nincl,incls,nmol,mols,atoms,nah,ah,x,
+    pdb2top(ff,top_fn,itp_fn,title,molname,
+	    nincl,incls,nmol,mols,atoms,nah,ah,x,
 	    atype,&tab,nrtp,rb,nrtp,restp,nrtp,ra,nrtp,idih,
 	    sel_ntdb,sel_ctdb,bH14,rN,rC,bAlldih,nssbonds,ssbonds);
     
@@ -865,8 +873,8 @@ int main(int argc, char *argv[])
   }
   /* check if .top file was already written */
   if (!bTopWritten)
-    write_top(ff,ftp2fn(efTOP,NFILE,fnm),NULL,NULL,nincl,incls,nmol,mols,
-	      NULL,NULL,0,NULL,NULL,NULL);
+    write_top(ff,ftp2fn(efTOP,NFILE,fnm),NULL,title,NULL,
+	      nincl,incls,nmol,mols,NULL,NULL,0,NULL,NULL,NULL);
 	      
   /* now merge all chains back together */
   natom=0;
@@ -875,8 +883,6 @@ int main(int argc, char *argv[])
     natom+=chains[i].natom;
     nres+=chains[i].atoms->nres;
   }
-  printf("Now we have a total of %d atoms and %d residues in our system\n",
-	 natom,nres);
   snew(atoms,1);
   atoms->nr=natom;
   snew(atoms->atom,natom);
@@ -905,12 +911,12 @@ int main(int argc, char *argv[])
   }
   printf("Now there are %d atoms and %d residues\n",k,l);
   
-  fprintf(stderr,"Writing coordinate file...\n");
+  printf("Writing coordinate file...\n");
   clear_rvec(box_space);
   if (box[0][0] == 0) 
     gen_box(0,atoms->nr,x,box,box_space,FALSE);
-  write_conf(ftp2fn(efGRO,NFILE,fnm),cool_quote(),atoms,x,NULL,box);
-  write_pdb_conf(opt2fn("-op",NFILE,fnm),atoms,x,box,FALSE);
+  write_conf(ftp2fn(efGRO,NFILE,fnm),title,atoms,x,NULL,box);
+  write_pdb_conf(opt2fn("-op",NFILE,fnm),title,atoms,x,box,FALSE);
 
   thanx(stdout);
   

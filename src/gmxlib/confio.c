@@ -402,7 +402,7 @@ void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
   char resnm[6],nm[6],format[100];
   int  ai,i,resnr,l,vpr;
 
-  fprintf (out,"%s\n",title);
+  fprintf (out,"%s\n",title[0]?title:bromacs());
   fprintf (out,"%5d\n",nx);
   /* build format string for printing, 
      something like "%8.3f" for x and "%8.4f" for v */
@@ -505,7 +505,8 @@ void write_conf(char *outfile, char *title, t_atoms *atoms,
   write_conf_p(outfile, title, atoms, 3, x, v, box);
 }
 
-void read_pdb_conf(char *infile,t_atoms *atoms,rvec x[],matrix box)
+void read_pdb_conf(char *infile,char *title, 
+		   t_atoms *atoms,rvec x[],matrix box)
 {
   FILE      *in;
   t_symtab  tab;
@@ -514,7 +515,7 @@ void read_pdb_conf(char *infile,t_atoms *atoms,rvec x[],matrix box)
   int       i,natom;
   
   in    = ffopen(infile,"r");
-  natom = read_pdbatoms(in,&pdba,box,FALSE);
+  natom = read_pdbatoms(in,title,&pdba,box,FALSE);
   ffclose(in);
 
   open_symtab(&tab);  
@@ -550,8 +551,8 @@ void change_name(char *name)
   }
 }
     
-void write_pdb_conf(char *outfile,t_atoms *atoms,rvec x[],matrix box,
-		    bool bChange)
+void write_pdb_conf(char *outfile,char *title,
+		    t_atoms *atoms,rvec x[],matrix box,bool bChange)
 {
   char resnm[6],nm[6],chain;
   int  i,resnr;
@@ -559,8 +560,8 @@ void write_pdb_conf(char *outfile,t_atoms *atoms,rvec x[],matrix box,
 
   out=ffopen(outfile,"w");
 
-  fprintf(out,"HEADER    %s\n",bromacs());
-  if (box != NULL) {
+  fprintf(out,"HEADER    %s\n",title[0]?title:bromacs());
+  if (box) {
     fprintf(out,"REMARK    THIS IS A SIMULATION BOX\n");
     fprintf(out,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",
 	    10*box[XX][XX],10*box[YY][YY],10*box[ZZ][ZZ],90.0,90.0,90.0);
@@ -616,13 +617,14 @@ void write_pdb_confs(char *outfile,t_atoms **atoms,rvec *x[],int number)
   ffclose(out);
 }
 
-void hwrite_pdb_conf_indexed(FILE *out,t_atoms *atoms,rvec x[],matrix box,
+void hwrite_pdb_conf_indexed(FILE *out,char *title, 
+			     t_atoms *atoms,rvec x[],matrix box,
 			     int gnx,atom_id index[])
 {
   char resnm[6],nm[6],chain;
   int  ii,i,resnr;
 
-  fprintf(out,"HEADER    %s\n",bromacs());
+  fprintf(out,"HEADER    %s\n",title[0]?title:bromacs());
   if (box != NULL) {
     fprintf(out,"REMARK    THIS IS A SIMULATION BOX\n");
     fprintf(out,"CRYST1%9.3f%9.3f%9.3f %6.2f%6.2f%6.2f P 1            1\n",
@@ -647,13 +649,14 @@ void hwrite_pdb_conf_indexed(FILE *out,t_atoms *atoms,rvec x[],matrix box,
   fprintf(out,"TER\n");
 }
 
-void write_pdb_conf_indexed(char *outfile,t_atoms *atoms,rvec x[],matrix box,
+void write_pdb_conf_indexed(char *outfile,char *title,
+			    t_atoms *atoms,rvec x[],matrix box,
 			    int gnx,atom_id index[])
 {
   FILE *out;
 
   out=ffopen(outfile,"w");
-  hwrite_pdb_conf_indexed(out,atoms,x,box,gnx,index);
+  hwrite_pdb_conf_indexed(out,title,atoms,x,box,gnx,index);
   fflush(out);
   ffclose(out);
 }
@@ -812,7 +815,7 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
   case efPDB:
   case efBRK:
   case efENT:
-    read_pdb_conf(infile, atoms, x, box);
+    read_pdb_conf(infile, title, atoms, x, box);
     break;
   case efTPR:
   case efTPB:

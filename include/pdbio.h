@@ -58,7 +58,8 @@ typedef struct {
 extern void pdb_use_ter(bool bSet);
 /* set read_pdbatoms to read upto 'TER' of 'ENDMDL' (default, bSet=FALSE) */
 
-extern int read_pdbatoms(FILE *in,t_pdbatom **pdbaptr,matrix box,bool bFilterH);
+extern int read_pdbatoms(FILE *in,char *title,
+			 t_pdbatom **pdbaptr,matrix box,bool bFilterH);
 /* Read a pdb file and extract ATOM and HETATM fields.
  * The pdbaptr will point to an array of pdb atoms on return.
  * Function returns number of atoms found.
@@ -77,7 +78,8 @@ extern bool is_hydrogen(char *nm);
 extern void pdba_trimnames(int natom,t_pdbatom pdba[]);
 /* Remove leading and trailing spaces from all names */
 
-extern void print_pdbatoms(FILE *out,int natom,t_pdbatom pdba[],matrix box);
+extern void print_pdbatoms(FILE *out,char *title,
+			   int natom,t_pdbatom pdba[],matrix box);
 /* Print the pdbatoms in proper format */
 
 extern void renumber_pdb(int natom,t_pdbatom pdba[]);

@@ -309,7 +309,7 @@ int main(int argc,char *argv[])
   do {
     if (t >= nt) {
       rm_pbc(&(top->idef),atoms->nr,box,x,x);
-      write_pdb_conf_indexed(pdbfile,atoms,x,box,gnx,index);
+      write_pdb_conf_indexed(pdbfile,NULL,atoms,x,box,gnx,index);
       system(dssp);
       strip_dssp(tmpfile,nres,r0,bPhbres,t,dt,ss,acc,acct,&mat,average_area);
       remove(tmpfile);
