@@ -453,7 +453,7 @@ void write_xpm_map3(FILE *out,int n_x,int n_y,int *nlevels,
   if (!((mid > lo) && (mid < hi)))
     fatal_error(0,"Lo: %f, Mid: %f, Hi: %f\n",lo,mid,hi);
 
-  fprintf(out,"static char * gv_xpm[] = {\n");
+  fprintf(out,"static char *gromacs_xpm[] = {\n");
   fprintf(out,"\"%d %d   %d %d\",\n",
 	  n_x,n_y,*nlevels,(*nlevels <= NMAP) ? 1 : 2);
 
@@ -507,7 +507,7 @@ void write_xpm_map(FILE *out,int n_x, int n_y,int *nlevels,real lo,real hi,
     *nlevels=2;
   }
 
-  fprintf(out,"static char * gv_xpm[] = {\n");
+  fprintf(out,"static char *gromacs_xpm[] = {\n");
   fprintf(out,"\"%d %d   %d %d\",\n",
 	  n_x,n_y,*nlevels,(*nlevels <= NMAP) ? 1 : 2);
 
@@ -579,7 +579,7 @@ void write_xpm_m(FILE *out, t_matrix m)
   bOneChar=(m.map[0].code.c2 == 0);
   write_xpm_header(out,m.title,m.legend,m.label_x,m.label_y,
 		   m.bDiscrete);
-  fprintf(out,"static char * gv_xpm[] = {\n");
+  fprintf(out,"static char *gromacs_xpm[] = {\n");
   fprintf(out,"\"%d %d   %d %d\",\n",m.nx,m.ny,m.nmap,bOneChar ? 1 : 2);
   for(i=0; (i<m.nmap); i++) 
     fprintf(out,"\"%c%c c #%02X%02X%02X \" /* \"%s\" */,\n",
