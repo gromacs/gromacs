@@ -54,6 +54,7 @@ static char *SRCID_pme_c = "$Id$";
  */ 
 
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 #include "typedefs.h"
 #include "txtdump.h"

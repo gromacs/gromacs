@@ -93,7 +93,7 @@ void check_trn(char *fn)
     fatal_error(0,"%s is not a trj file, exiting\n",fn);
 }
 
-#ifndef _win_
+#if (!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64)
 void do_trunc(char *fn, real t0)
 {
   int          in;
@@ -290,7 +290,7 @@ int main(int argc,char *argv[])
       "Read and write velocities if possible" },
     { "-force", FALSE, etBOOL, {&bForce},
       "Read and write forces if possible" },
-#ifndef _win_
+#if (!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64)
     { "-trunc", FALSE, etTIME, {&ttrunc},
       "Truncate input trj file after this time (%t)" },
 #endif
@@ -354,7 +354,7 @@ int main(int argc,char *argv[])
   /* Check command line */
   in_file=opt2fn("-f",NFILE,fnm);
   if (ttrunc != -1) {
-#ifndef _win_
+#if (!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64)
     do_trunc(in_file,ttrunc);
 #endif
   }

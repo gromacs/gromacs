@@ -30,6 +30,10 @@
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
 static char *SRCID_pgutil_c = "$Id$";
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include "string2.h"
 #include "pgutil.h"
 #include "string.h"
 	

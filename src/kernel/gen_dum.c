@@ -30,9 +30,13 @@
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
 static char *SRCID_gen_dum_c = "$Id$";
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+#include "string2.h"
 #include "assert.h"
 #include "gen_dum.h"
 #include "smalloc.h"
