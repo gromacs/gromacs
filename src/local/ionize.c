@@ -290,36 +290,6 @@ void rand_vector(rvec v,int *seed)
   polar2cart(phi,theta,v);
 }
 
-bool khole_decay(FILE *log,t_cross_atom *ca,rvec v,int *seed,real dt,int atom)
-{
-  rvec dv;
-  real ndv,factor;
-  int  m;
-  
-  if ((ca->vAuger < 0) || (recoil[ca->z].tau == 0)) {
-    dump_ca(stderr,ca,atom,__FILE__,__LINE__);
-    exit(1);
-  }
-  if (rando(seed) < dt/recoil[ca->z].tau) {
-    if (debug)
-      fprintf(debug,"DECAY: Going to decay a k hole\n");
-    ca->n++;
-    ca->k--;
-    /* Generate random vector */
-    rand_vector(dv,seed);
-
-    factor = ca->vAuger;
-    if (debug)
-      fprintf(debug,"DECAY: factor=%10g, dv = (%8.3f, %8.3f, %8.3f)\n",
-	      factor,dv[XX],dv[YY],dv[ZZ]);
-    for(m=0; (m<DIM); m++)
-      v[m] += dv[m]*factor;
-    return TRUE;
-  }
-  else
-    return FALSE;
-}
-
 real electron_cross_section(FILE *fp,rvec v,real mass,int nelec)
 {
   /* Compute cross section for electrons */
@@ -392,18 +362,55 @@ void add_electron(FILE *fp,t_mdatoms *md,t_electron_db *edb,int ion,
     ee = edb->elec0+edb->nelec++;
     md->chargeA[ee] = md->chargeB[ee] = md->chargeT[ee] = -1;
     md->typeA[ee]   = md->typeB[ee]   = edb->elmin_type;
-    copy_rvec(x[ion],x[ee]);
+
     /* Velocity! */
     svmul(-md->massA[ion]*md->invmass[ee],dv,v[ee]);
     /* Do a first step to prevent the elctron from being on top of the 
      * nucleus, move it 1 A from the nucleus 
      */
-    nv = norm(v[ee]);
+    nv = 1.0/norm(v[ee]);
     for(m=0; (m<DIM); m++) 
-      x[ee][m] += v[ee][m]*dt;
+      x[ee][m] = x[ion][m] + v[ee][m]*nv*0.05;
   } 
   else
     fatal_error(0,PREFIX"No more particles to turn into electrons\n");
+}
+
+bool khole_decay(FILE *fp,t_cross_atom *ca,rvec x[],rvec v[],int ion,
+		 int *seed,real dt,bool bElectron,
+		 t_mdatoms *md,t_electron_db *edb)
+{
+  rvec dv;
+  real ndv,factor;
+  int  m;
+  
+  if ((ca->vAuger < 0) || (recoil[ca->z].tau == 0)) {
+    dump_ca(stderr,ca,ion,__FILE__,__LINE__);
+    exit(1);
+  }
+  if (rando(seed) < dt/recoil[ca->z].tau) {
+    if (debug)
+      fprintf(debug,"DECAY: Going to decay a k hole\n");
+    ca->n++;
+    ca->k--;
+    /* Generate random vector */
+    rand_vector(dv,seed);
+
+    factor = ca->vAuger;
+    if (debug)
+      fprintf(debug,"DECAY: factor=%10g, dv = (%8.3f, %8.3f, %8.3f)\n",
+	      factor,dv[XX],dv[YY],dv[ZZ]);
+    svmul(factor,dv,dv);
+    rvec_inc(v[ion],dv);
+
+    /* Now put the electron in place */
+    if (bElectron)    
+      add_electron(fp,md,edb,ion,x,v,dv,dt);
+
+    return TRUE;
+  }
+  else
+    return FALSE;
 }
 
 void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
@@ -680,7 +687,8 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     /* Now check old event: Loop over k holes! */
     nkh = ca[i].k;
     for (kk = 0; (kk < nkh); kk++) 
-      if (khole_decay(fp,&(ca[i]),v[i],&seed,ir->delta_t,i)) {
+      if (khole_decay(fp,&(ca[i]),x,v,i,&seed,ir->delta_t,
+		      bElectron,md,&edb)) {
 	nkdecay ++;
 	ndecay[i]++;
       }
