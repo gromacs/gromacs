@@ -362,7 +362,7 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,real h,
 	     psr->X.fontsize,mat[0].label_x,eXCenter);
 }
 
-static void box_dim(int nmat,t_matrix mat[],t_psrec *psr,
+static void box_dim(int nmat,t_matrix mat[],t_matrix *mat2,t_psrec *psr,
 		    real *w,real *h,real *dw,real *dh)
 {
   int i,maxytick;
@@ -388,7 +388,7 @@ static void box_dim(int nmat,t_matrix mat[],t_psrec *psr,
   dhh=0;
   if (mat[0].label_x[0])
     dhh+=psr->X.fontsize+2*DDD;
-  if (mat[0].legend[0]==0)
+  if ((mat[0].legend[0]==0) && (mat2==NULL || (mat2[0].legend[0]==0)))
     dhh+=psr->legfontsize*FUDGE+2*DDD;
   else
     dhh+=2*(psr->legfontsize*FUDGE+2*DDD);
@@ -406,7 +406,7 @@ static void box_dim(int nmat,t_matrix mat[],t_psrec *psr,
 }
 
 void xpm_mat(char *outf,
-	     int nmat,t_matrix *mat,t_matrix *mat2,bool bDiag)
+	     int nmat,t_matrix *mat,t_matrix *mat2,bool bDiag,bool bFirstDiag)
 {
   FILE   *out;
   char   buf[100];
@@ -449,11 +449,10 @@ void xpm_mat(char *outf,
        }
        for(x=0; (x<mat[i].nx); x++) {
 	 for(y=0; (y<mat[i].nx); y++) {
-	   if (x<=y) { /* upper left  -> map1 */
+	   if ((x<y) || ((x==y) && bFirstDiag)) /* upper left  -> map1 */
 	     col=mat[i].matrix[x][y];
-	   } else  {   /* lower right -> map2 */
+	   else /* lower right -> map2 */
 	     col=nmap1+mat[i].matrix[x][y];
-	   }
 	   if ((bDiag) || (x!=y))
 	     mat[i].matrix[x][y]=col;
 	   else
@@ -473,7 +472,7 @@ void xpm_mat(char *outf,
 }
 
 void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
-	    bool bDiag,bool bTitle,bool bLegend,
+	    bool bDiag,bool bFirstDiag,bool bTitle,bool bLegend,
 	    real boxx,real boxy,char *m2p,char *m2pout)
 {
   char   buf[256];
@@ -525,7 +524,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   psr->bTitle = bTitle;
 
   /* Set up size of box for nice colors */
-  box_dim(nmat,mat,psr,&w,&h,&dw,&dh);
+  box_dim(nmat,mat,mat2,psr,&w,&h,&dw,&dh);
   
   /* Set up bounding box */
   W=w+dw;
@@ -581,13 +580,13 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
       xx=x0+x*psr->xboxsize;
       ps_moveto(out,xx,y0);
       y=0;
-      bMap1=(!mat2 || (x<=y));
+      bMap1 = (!mat2 || (x<y || (x==y && bFirstDiag)));
       if ((bDiag) || (x!=y))
 	col = mat[i].matrix[x][y];
       else
 	col = -1;
       for(nexty=1; (nexty<=mat[i].ny); nexty++) {
-	bNextMap1=(!mat2 || (x<=nexty));
+	bNextMap1 = (!mat2 || (x<nexty || (x==nexty && bFirstDiag)));
 	  /* TRUE:  upper left  -> map1 */
 	  /* FALSE: lower right -> map2 */
 	if ((nexty==mat[i].ny) || (!bDiag && (x==nexty)))
@@ -631,29 +630,36 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
 }
 
 void do_mat(int nmat,t_matrix *mat,int nmat2,t_matrix *mat2,
-	    bool bDiag,bool bTitle,bool bLegend,real boxx,real boxy,
+	    bool bDiag,bool bFirstDiag,bool bTitle,bool bLegend,
+	    real boxx,real boxy,
 	    char *epsfile,char *xpmfile,char *m2p,char *m2pout)
 {
-  int      i,j,k;
+  int      i,j,k,copy_start;
 
   if (mat2) {
-    for (k=0; (k<nmat); k++)
-      for (j=0; (j<mat[k].ny); j++)
-	for (i=j+1; (i<mat[k].nx); i++) {
-	  if ((mat2[k].nx!=mat[k].nx) || (mat2[k].ny!=mat[k].ny)) 
-	    fatal_error(0,"WAKE UP!! Size of frame %d in 2nd matrix file (%dx%d) does not match size of 1st matrix (%dx%d) or the other way around.\n",
-			k,mat2[k].nx,mat2[k].ny,mat[k].nx,mat[k].ny);
+    for (k=0; (k<nmat); k++) {
+      if ((mat2[k].nx!=mat[k].nx) || (mat2[k].ny!=mat[k].ny)) 
+	fatal_error(0,"WAKE UP!! Size of frame %d in 2nd matrix file (%dx%d) does not match size of 1st matrix (%dx%d) or the other way around.\n",
+		    k,mat2[k].nx,mat2[k].ny,mat[k].nx,mat[k].ny);
+      for (j=0; (j<mat[k].ny); j++) {
+	if (bFirstDiag)
+	  copy_start = j+1;
+	else
+	  copy_start = j;
+	for (i=copy_start; (i<mat[k].nx); i++)
 	  mat[k].matrix[i][j]=mat2[k].matrix[i][j];
-	}
+      }
+    }
   }
   for(i=0; (i<nmat); i++) 
     fprintf(stderr,"Matrix %d is %d x %d\n",i,mat[i].nx,mat[i].ny);
 
   
   if (epsfile!=NULL)
-    ps_mat(epsfile,nmat,mat,mat2,bDiag,bTitle,bLegend,boxx,boxy,m2p,m2pout);
+    ps_mat(epsfile,nmat,mat,mat2,bDiag,bFirstDiag,
+	   bTitle,bLegend,boxx,boxy,m2p,m2pout);
   if (xpmfile!=NULL)
-    xpm_mat(xpmfile,nmat,mat,mat2,bDiag);
+    xpm_mat(xpmfile,nmat,mat,mat2,bDiag,bFirstDiag);
 }
 
 void rainbow_map(char *rainbow, int nmat, t_matrix mat[])
@@ -708,12 +714,13 @@ int main(int argc,char *argv[])
     "files will be read simultaneously and the upper left half of the",
     "first one ([TT]-f[tt]) is plotted together with the lower right",
     "half of the second one ([TT]-f2[tt]). The diagonal will contain",
-    "values from the first matrix file ([TT]-f[tt]). Plotting of the",
-    "diagonal values can be suppressed altogether using [TT]-nodiag[tt].[PAR]",
+    "values from the matrix file selected with [TT]-diag[tt].",
+    "Plotting of the diagonal values can be suppressed altogether by",
+    "setting [TT]-diag[tt] to [TT]none[tt].[PAR]",
     "If the color coding and legend labels of both matrices are identical,",
     "only one legend will be displayed, else two separate legends are",
     "displayed.[PAR]",
-    "[TT]-title[tt] can be set to [TT]no[tt] to suppress the title, or to",
+    "[TT]-title[tt] can be set to [TT]none[tt] to suppress the title, or to",
     "[TT]ylabel[tt] to show the title in the Y-label position (alongside",
     "the Y-axis).[PAR]",
     "With the [TT]-rainbow[tt] option dull grey-scale matrices can be turned",
@@ -725,19 +732,20 @@ int main(int argc,char *argv[])
   char      *fn,*epsfile=NULL,*xpmfile=NULL;
   int       i,nmat,nmat2;
   t_matrix *mat=NULL,*mat2=NULL;
-  bool      bTitle;
-  static bool bDiag=TRUE,bLegend=TRUE;
+  bool      bTitle,bDiag,bFirstDiag;
+  static bool bLegend=TRUE;
   static real boxx=0,boxy=0;
-  static char *title[] = { NULL, "top", "no", "ylabel", NULL };
+  static char *title[]   = { NULL, "top", "ylabel", "none", NULL };
+  static char *diag[]    = { NULL, "first", "second", "none", NULL };
   static char *rainbow[] = { NULL, "no", "blue", "red", NULL };
   t_pargs pa[] = {
-    { "-title",  FALSE, etENUM, title,   "Show title at" },
-    { "-legend", FALSE, etBOOL, &bLegend,  "Show legend" },
-    { "-diag",   FALSE, etBOOL, &bDiag,    "Plot diagonal" },
-    { "-bx",     FALSE, etREAL, &boxx,
+    { "-title",   FALSE, etENUM, title,   "Show title at" },
+    { "-legend",  FALSE, etBOOL, &bLegend,"Show legend" },
+    { "-diag",    FALSE, etENUM, &diag,   "Diagonal" },
+    { "-bx",      FALSE, etREAL, &boxx,
       "Box x-size (also y-size when -by is not set)" },
-    { "-by",     FALSE, etREAL, &boxy,   "Box y-size" },
-    { "-rainbow",  FALSE, etENUM, rainbow, "Rainbow colors, convert white to" }
+    { "-by",      FALSE, etREAL, &boxy,     "Box y-size" },
+    { "-rainbow", FALSE, etENUM, rainbow, "Rainbow colors, convert white to" }
   };
   t_filenm  fnm[] = {
     { efXPM, "-f",  NULL,      ffREAD },
@@ -760,6 +768,9 @@ int main(int argc,char *argv[])
     xpmfile=opt2fn("-xpm",NFILE,fnm);
   if ((epsfile==NULL) && (xpmfile==NULL))
     epsfile=ftp2fn(efEPS,NFILE,fnm);
+
+  bDiag      = (diag[0][0] != 'n');
+  bFirstDiag = (diag[0][0] != 's');
   
   fn=opt2fn("-f",NFILE,fnm);
   nmat=read_xpm_matrix(fn,&mat);
@@ -789,7 +800,7 @@ int main(int argc,char *argv[])
     rainbow_map(rainbow[0],nmat2,mat2);
   }
 
-  do_mat(nmat,mat,nmat2,mat2,bDiag,bTitle,bLegend,
+  do_mat(nmat,mat,nmat2,mat2,bDiag,bFirstDiag,bTitle,bLegend,
 	 boxx,boxy,epsfile,xpmfile,
 	 opt2fn_null("-di",NFILE,fnm),opt2fn_null("-do",NFILE,fnm));
   
