@@ -201,42 +201,39 @@ void set_avcsix(FILE *log,t_forcerec *fr,t_idef *idef,t_mdatoms *mdatoms)
 			 mdatoms->typeA,fr->bBHAM);
 }
 
-static void  set_bham_b_max(FILE *log,t_forcerec *fr,
-			    t_idef *idef,t_mdatoms *mdatoms)
+static void set_bham_b_max(FILE *log,t_forcerec *fr,
+			   t_idef *idef,t_mdatoms *mdatoms)
 {
   int  i,j,tpi,tpj,ntypes,natoms,*type;
   real b,bmin;
   real **nbfp;
 
-  fr->bham_b_max = 0;
+  fprintf(log,"Determining largest Buckingham b parameter for table\n");
+  nbfp   = fr->nbfp;
+  ntypes = idef->atnr;
+  type   = mdatoms->typeA;
+  natoms = mdatoms->nr;
+
   bmin           = -1;
-  if (fr->bBHAM) {
-    fprintf(log,"Determining largest Buckingham b parameter for table\n");
-    nbfp   = fr->nbfp;
-    ntypes = idef->atnr;
-    type   = mdatoms->typeA;
-    natoms = mdatoms->nr;
+  fr->bham_b_max = 0;
+  for(i=0; (i<natoms); i++) {
+    tpi = type[i];
+    if (tpi >= ntypes)
+      fatal_error(0,"Atomtype[%d] = %d, maximum = %d",i,tpi,ntypes);
     
-    fr->bham_b_max = 0;
-    for(i=0; (i<natoms); i++) {
-      tpi = type[i];
-      if (tpi >= ntypes)
-	fatal_error(0,"Atomtype[%d] = %d, maximum = %d",i,tpi,ntypes);
-      
-      for(j=0; (j<natoms); j++) {
-	tpj   = type[j];
-	if (tpj >= ntypes)
-	  fatal_error(0,"Atomtype[%d] = %d, maximum = %d",j,tpj,ntypes);
-	b = (nbfp)[(tpi)][3*(tpj)+1];
-	if (b > fr->bham_b_max)
-	  fr->bham_b_max = b;
-	if ((b < bmin) || (bmin==-1))
-	  bmin = b;
-      }
+    for(j=0; (j<natoms); j++) {
+      tpj   = type[j];
+      if (tpj >= ntypes)
+	fatal_error(0,"Atomtype[%d] = %d, maximum = %d",j,tpj,ntypes);
+      b = (nbfp)[(tpi)][3*(tpj)+1];
+      if (b > fr->bham_b_max)
+	fr->bham_b_max = b;
+      if ((b < bmin) || (bmin==-1))
+	bmin = b;
     }
-    fprintf(log,"Buckingham b parameters, min: %g, max: %g\n",
-	    bmin,fr->bham_b_max);
   }
+  fprintf(log,"Buckingham b parameters, min: %g, max: %g\n",
+	  bmin,fr->bham_b_max);
 }
 
 void init_forcerec(FILE *log,
@@ -391,8 +388,10 @@ void init_forcerec(FILE *log,
   fprintf(log,"Cut-off's:   NS: %g   Coulomb: %g   %s: %g\n",
 	  fr->rshort,fr->rc,fr->bBHAM ? "BHAM":"LJ",fr->rvdw);
   
-  set_avcsix(log,fr,idef,mdatoms);
-  set_bham_b_max(log,fr,idef,mdatoms);
+  if (ir->bDispCorr)
+    set_avcsix(log,fr,idef,mdatoms);
+  if (fr->bBHAM)
+    set_bham_b_max(log,fr,idef,mdatoms);
 
   /* Now update the rest of the vars */
   update_forcerec(log,fr,box);
