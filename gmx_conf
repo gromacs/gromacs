@@ -112,7 +112,7 @@ cat	> $RC << EOD
 #
 
 # remove previous GROMACS environment, if present
-source NOGMX -quiet
+source $PATHPREFIX/NOGMX -quiet
 
 # This is were the sources are
 setenv GMXHOME	$PATHPREFIX
