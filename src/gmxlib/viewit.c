@@ -65,7 +65,7 @@ int can_view(int ftp)
 void do_view(char *fn, char *opts)
 {
 #define N_EXT 3
-  char buf[STRLEN], env[20], ext[N_EXT];
+  char buf[STRLEN], env[20], ext[N_EXT+1];
   const char *cmd;
   int ftp, n;
   
