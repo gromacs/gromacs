@@ -1,4 +1,4 @@
-; Some esoteric OPLS atomtypes are not freely available (or deprecated).
+; Some esoteric OPLS atomtypes are not freely available (or depreciated).
 ; Interaction types involving these have been commented out.
   
 [ bondtypes ]

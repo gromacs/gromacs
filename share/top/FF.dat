@@ -6,8 +6,8 @@ ffG45a3  GROMOS96 45a3 force field (Schuler JCC 2001 22 1205)
 ffG53a5  GROMOS96 53a5 force field (JCC 2004 vol 25 pag 1656) 
 ffG53a6  GROMOS96 53a6 force field (JCC 2004 vol 25 pag 1656) 
 ffoplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)
-ffgmx    [DEPRECATED] Gromacs force field (see manual)
-ffgmx2   [DEPRECATED] Gromacs force field with hydrogens for NMR
+ffgmx    [DEPRECIATED] Gromacs force field (see manual)
+ffgmx2   [DEPRECIATED] Gromacs force field with hydrogens for NMR
 ffencadv Encad all-atom force field, using scaled-down vacuum charges
 ffencads Encad all-atom force field, using full solvent charges    
 
