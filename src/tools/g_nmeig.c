@@ -92,14 +92,6 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,0,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL); 
 
-  out=xvgropen(ftp2fn(efXVG,NFILE,fnm), 
-                 "Eigenvalues","Eigenvector index","Eigenvalue"); 
-
-  if (bM)
-    fprintf(out,"@ subtitle \"of mass weighted Hessian matrix\"\n");
-  else 
-    fprintf(out,"@ subtitle \"of Hessian matrix\"\n");
-
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&top_x,NULL,box,bM);
 
   /*open Hessian matrix and read first 'line' */
@@ -205,6 +197,17 @@ int main(int argc,char *argv[])
   }
 
   /* now write the output */
+  fprintf (stderr,"Writing eigenvalues...\n");
+  out=xvgropen(ftp2fn(efXVG,NFILE,fnm), 
+	       "Eigenvalues","Eigenvector index","Eigenvalue");
+  if (bM)
+    fprintf(out,"@ subtitle \"of mass weighted Hessian matrix\"\n");
+  else 
+    fprintf(out,"@ subtitle \"of Hessian matrix\"\n");
+  for (i=0; i<ndim; i++)
+    fprintf (out,"%6d %15g\n",i+1,rdum1[i]);
+  fclose(out);
+  
   if (begin<1)
     begin=1;
   if (end>ndim)
