@@ -51,6 +51,12 @@ enum { U11, U22, U33, U12, U13, U23 };
 extern void pdb_use_ter(bool bSet);
 /* set read_pdbatoms to read upto 'TER' of 'ENDMDL' (default, bSet=FALSE) */
 
+extern void write_pdbfile_indexed(FILE *out,char *title,
+				  t_atoms *atoms,rvec x[],matrix box,
+				  char chain, bool bEndmodel,
+				  atom_id nindex, atom_id index[]);
+/* REALLY low level */
+
 extern void write_pdbfile(FILE *out,char *title,
 			  t_atoms *atoms,rvec x[],matrix box,char chain,
 			  bool bEndmodel);
