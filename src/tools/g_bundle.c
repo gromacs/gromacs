@@ -193,7 +193,7 @@ int main(int argc,char *argv[])
 	"Use the Z-axis as reference iso the average axis" }
   };
   FILE       *out,*flen,*fdist,*fz,*ftilt,*ftiltr,*ftiltl;
-  FILE       *fkink,*fkinkr,*fkinkl;
+  FILE       *fkink=NULL,*fkinkr=NULL,*fkinkl=NULL;
   int        status,fpdb;
   t_topology top;
   rvec       *xtop;
