@@ -272,18 +272,17 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
 	
       /* Add extra comment for enumerateds */
       if (pa[i].type == etENUM) {
-	srenew(desc,strlen(desc)+16);
-	strcat(desc," Choices are: ");
+	srenew(desc,strlen(desc)+10);
+	strcat(desc,": ");
 	for(k=0; (pa[i].u.c[k] != NULL); k++) {
 	  srenew(desc,strlen(desc)+strlen(pa[i].u.c[k])+4);
 	  strcat(desc,pa[i].u.c[k]);
-	  if (k == 0) {
-	    srenew(desc,strlen(desc)+12);
-	    strcat(desc," (default)");
-	  }
 	  /* Print a comma everywhere but at the last one */
 	  if (pa[i].u.c[k+1] != NULL)
-	    strcat(desc,", ");
+	    if (pa[i].u.c[k+2] == NULL)
+	      strcat(desc," or ");
+	    else
+	      strcat(desc,", ");
 	}
       }
 	
