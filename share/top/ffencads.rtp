@@ -1098,9 +1098,9 @@
    CG2  HG21
    CG2  HG22
    CG2  HG23
-   CD1  HD11
-   CD1  HD12
-   CD1  HD13
+    CD   HD1
+    CD   HD2
+    CD   HD3
      C     O
     -C     N
  [ dihedrals ]
@@ -1109,18 +1109,18 @@
     N      CA     CB    CG1		
     N      CA      C     +N
    CA      CB    CG2   HG23		
-   CA      CB    CG1    CD1	
-   CB     CG1    CD1   HD13	
+   CA      CB    CG1     CD	
+   CB     CG1     CD    HD3	
  [ impropers ]
     -C     CA      N      H      improper_X_X_N_X    
      N      C     CA     HA      improper_X_X_C_X
      N      C     CA     CB      improper_N_A_C1_C
     CA    CG1     CB    CG2      improper_C1_C2_C1_C3
     CA    CG1     CB     HB      improper_X_X_C_X	
-	CB    CD1    CG1   HG11      improper_X_X_C_X	
-	CB    CD1    CG1   HG12      improper_X_X_C_X	
-   CG1   HD13    CD1   HD11      improper_X_X_C_X	
-   CG1   HD13    CD1   HD12      improper_X_X_C_X	
+    CB     CD    CG1   HG11      improper_X_X_C_X	
+    CB     CD    CG1   HG12      improper_X_X_C_X	
+   CG1    HD3     CD    HD1      improper_X_X_C_X	
+   CG1    HD3     CD    HD2      improper_X_X_C_X	
     CB   HG23    CG2   HG21      improper_X_X_C_X	
     CB   HG23    CG2   HG22      improper_X_X_C_X	
     CA     +N      C      O      improper_X_X_A_X  
@@ -1147,7 +1147,7 @@
   HD22    H     0.119     5
   HD23    H     0.119     5
      C    Aprime    0.380     6
-     O    O    -0.380     6
+     O    O    	-0.380     6
  [ bonds ]
      N     H
      N    CA

@@ -1128,25 +1128,25 @@
 
 [ ILE ]
  [ atoms ]
-     N    N1   -0.333     0
-     H    HN    0.333     0
-    CA    C1   -0.119     1
-    HA    H     0.119     1
-    CB    C1   -0.119     2
-    HB    H     0.119     2
-   CG2    C3   -0.357     3
-  HG21    H     0.119     3
-  HG22    H     0.119     3
-  HG23    H     0.119     3
-   CG1    C2   -0.238     4
-  HG11    H     0.119     4
-  HG12    H     0.119     4
-    CD    C3   -0.357     5
-   HD1    H     0.119     5
-   HD2    H     0.119     5
-   HD3    H     0.119     5
-     C    Aprime    0.380     6
-     O    O    -0.380     6
+     N    N1      -0.333     0
+     H    HN       0.333     0
+    CA    C1      -0.119     1
+    HA    H        0.119     1
+    CB    C1      -0.119     2
+    HB    H        0.119     2
+   CG2    C3      -0.357     3
+  HG21    H        0.119     3
+  HG22    H        0.119     3
+  HG23    H        0.119     3
+   CG1    C2      -0.238     4
+  HG11    H        0.119     4
+  HG12    H        0.119     4
+    CD    C3      -0.357     5
+   HD1    H        0.119     5
+   HD2    H        0.119     5
+   HD3    H        0.119     5
+     C    Aprime   0.380     6
+     O    O    	  -0.380     6
  [ bonds ]
      N     H
      N    CA
@@ -1162,9 +1162,9 @@
    CG2  HG21
    CG2  HG22
    CG2  HG23
-   CD1  HD11
-   CD1  HD12
-   CD1  HD13
+    CD   HD1
+    CD   HD2
+    CD   HD3
      C     O
     -C     N
  [ dihedrals ]
@@ -1173,18 +1173,18 @@
     N      CA     CB    CG1		
     N      CA      C     +N
    CA      CB    CG2   HG23		
-   CA      CB    CG1    CD1	
-   CB     CG1    CD1   HD13	
+   CA      CB    CG1     CD	
+   CB     CG1     CD    HD3	
  [ impropers ]
     -C     CA      N      H      improper_X_X_N_X    
      N      C     CA     HA      improper_X_X_C_X
      N      C     CA     CB      improper_N_A_C1_C
     CA    CG1     CB    CG2      improper_C1_C2_C1_C3
     CA    CG1     CB     HB      improper_X_X_C_X	
-	CB    CD1    CG1   HG11      improper_X_X_C_X	
-	CB    CD1    CG1   HG12      improper_X_X_C_X	
-   CG1   HD13    CD1   HD11      improper_X_X_C_X	
-   CG1   HD13    CD1   HD12      improper_X_X_C_X	
+    CB     CD    CG1   HG11      improper_X_X_C_X	
+    CB     CD    CG1   HG12      improper_X_X_C_X	
+   CG1    HD3     CD    HD1      improper_X_X_C_X	
+   CG1    HD3     CD    HD2      improper_X_X_C_X	
     CB   HG23    CG2   HG21      improper_X_X_C_X	
     CB   HG23    CG2   HG22      improper_X_X_C_X	
     CA     +N      C      O      improper_X_X_A_X  
