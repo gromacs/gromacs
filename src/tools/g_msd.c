@@ -79,7 +79,7 @@ static bool in_data(t_corr *this,int nx00)
   return this->nframes-this->n_offs[nx00]; 
 }
 
-t_corr *init_corr(int nrgrp,int type,real dim_factor,
+t_corr *init_corr(int nrgrp,int type,int axis,real dim_factor,
 		  bool bMass,bool bMol,t_topology *top)
 {
   t_corr  *this;
@@ -88,6 +88,7 @@ t_corr *init_corr(int nrgrp,int type,real dim_factor,
 
   snew(this,1);
   this->type      = type;
+  this->axis      = axis;
   this->ngrp      = nrgrp;
   this->nframes   = 0;
   this->nlast     = 0;
@@ -487,7 +488,7 @@ void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
   else
     get_index(&top->atoms,ndx,nrgrp,gnx,index,grpname);
 
-  msd = init_corr(nrgrp,type,dim_factor,bMW,bMol,top);
+  msd = init_corr(nrgrp,type,axis,dim_factor,bMW,bMol,top);
   
   corr_loop(msd,ftp2fn(efTRX,NFILE,fnm),gnx,index,
 	    bMol ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
