@@ -112,7 +112,7 @@ void main(int argc,char *argv[])
   rmax2 = sqr(rmax);
   rcut  = 0.45*min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ]));
   rcut2 = sqr(rcut);
-  rbinw = 0.025;
+  rbinw = 0.02;
   invbw = 1/rbinw;
   
   ntot = 0;
