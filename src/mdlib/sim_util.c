@@ -349,22 +349,28 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
 		   t_groups *grps,t_forcerec *fr,t_topology *top,
 		   t_edsamyn *edyn,t_pull *pulldata)
 {
-  int    i,m;
+  int    i,m,start,homenr,end;
   tensor shake_vir;
+  double mass,tmass,vcm[4];
   real   dt=parm->ir.delta_t;
   real   dt_1;
 
   if ((top->idef.il[F_SHAKE].nr > 0)   ||
       (top->idef.il[F_SETTLE].nr > 0)) {
+    start  = START(nsb);
+    homenr = HOMENR(nsb);
+    end    = start+homenr;
+    if (debug)
+      fprintf(debug,"vcm: start=%d, homenr=%d, end=%d\n",start,homenr,end);
     /* Do a first SHAKE to reset particles... */
     clear_mat(shake_vir);
-    update(nsb->natoms,START(nsb),HOMENR(nsb),
-	   -1,lambda,&ener[F_DVDL],
+    update(nsb->natoms,start,homenr,-1,lambda,&ener[F_DVDL],
 	   &(parm->ir),md,x,graph,
 	   fr->shift_vec,NULL,NULL,vold,x,NULL,parm->pres,parm->box,
 	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,pulldata,FALSE);
     /* Compute coordinates at t=-dt, store them in buf */
-    for(i=0; (i<nsb->natoms); i++) {
+    /* for(i=0; (i<nsb->natoms); i++) {*/
+    for(i=start; (i<end); i++) {
       for(m=0; (m<DIM); m++) {
 	f[i][m]=x[i][m];
 	buf[i][m]=x[i][m]-dt*v[i][m];
@@ -375,7 +381,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
      * as reference coordinates.
      */
     clear_mat(shake_vir);
-    update(nsb->natoms,START(nsb),HOMENR(nsb),
+    update(nsb->natoms,start,homenr,
 	   0,lambda,&ener[F_DVDL],&(parm->ir),md,f,graph,
 	   fr->shift_vec,NULL,NULL,vold,buf,NULL,parm->pres,parm->box,
 	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,pulldata,FALSE);
@@ -384,7 +390,8 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
      * t=-dt and t=0
      */
     dt_1=1.0/dt;
-    for(i=0; (i<nsb->natoms); i++) {
+    for(i=start; (i<end); i++) {
+      /*for(i=0; (i<nsb->natoms); i++) {*/
       for(m=0; (m<DIM); m++)
 	v[i][m]=(x[i][m]-f[i][m])*dt_1;
     }
@@ -393,18 +400,43 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
      * as reference coordinates.
      */
     clear_mat(shake_vir);
-    update(nsb->natoms,START(nsb),HOMENR(nsb),
+    update(nsb->natoms,start,homenr,
 	   0,lambda,&ener[F_DVDL],&(parm->ir),md,f,graph,
 	   fr->shift_vec,NULL,NULL,vold,buf,NULL,parm->pres,parm->box,
 	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,pulldata,FALSE);
     
     /* Compute the velocities at t=-dt/2 using the coordinates at
      * t=-dt and t=0
+     * Compute velocity of center of mass and total mass
      */
+    for(m=0; (m<8); m++)
+      vcm[m] = 0;
     dt_1=1.0/dt;
-    for(i=0; (i<nsb->natoms); i++) {
-      for(m=0; (m<DIM); m++)
+    for(i=start; (i<end); i++) {
+      /*for(i=0; (i<nsb->natoms); i++) {*/
+      mass = md->massA[i];
+      for(m=0; (m<DIM); m++) {
 	v[i][m]=(x[i][m]-f[i][m])*dt_1;
+	vcm[m] += v[i][m]*mass;
+      }
+      vcm[3] += mass;
+    }
+    /* Compute the global sum of vcm */
+    if (debug)
+      fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
+	      " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],vcm[3]);
+    if (PAR(cr))
+      gmx_sumd(8,vcm,cr);
+    tmass = vcm[3];
+    for(m=0; (m<DIM); m++)
+      vcm[m] /= tmass;
+    if (debug) 
+      fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
+	      " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],tmass);
+    /* Now we have the velocity of center of mass, let's remove it */
+    for(i=start; (i<end); i++) {
+      for(m=0; (m<DIM); m++)
+	v[i][m] -= vcm[m];
     }
   }
 }
