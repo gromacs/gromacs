@@ -281,6 +281,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CII(nkz);
   CII(pme_order);
   CIR(ewald_rtol);
+  CIB(surface_dipole);
   CIB(bOptFFT);
   CIB(bUncStart);
   CIB(btc);
