@@ -34,7 +34,6 @@ static char *SRCID_vcm_c = "$Id$";
 #include "vcm.h"
 #include "vec.h"
 #include "smalloc.h"
-#include "do_fit.h"
 #include "names.h"
 #include "txtdump.h"
 #include "network.h"
@@ -187,6 +186,8 @@ void do_stopcm_grp(FILE *fp,int start,int homenr,rvec x[],rvec v[],
 
 static void get_minv(tensor A,tensor B)
 {
+  int    m,n;
+  double fac,rfac;
   tensor tmp;
 
   tmp[XX][XX] =  A[YY][YY] + A[ZZ][ZZ];
@@ -198,7 +199,19 @@ static void get_minv(tensor A,tensor B)
   tmp[XX][ZZ] = -A[XX][ZZ];
   tmp[YY][ZZ] = -A[YY][ZZ];
   tmp[ZZ][ZZ] =  A[XX][XX] + A[YY][YY];
+  
+  /* This is a hack to prevent very large determinants */
+  rfac  = (tmp[XX][XX]+tmp[YY][YY]+tmp[ZZ][ZZ])/3;
+  if (rfac == 0.0) 
+    fatal_error(0,"Can not stop center of mass: maybe 2dimensional system");
+  fac = 1.0/rfac;
+  for(m=0; (m<DIM); m++)
+    for(n=0; (n<DIM); n++)
+      tmp[m][n] *= fac;
   m_inv(tmp,B);
+  for(m=0; (m<DIM); m++)
+    for(n=0; (n<DIM); n++)
+      B[m][n] *= fac;
 }
 
 void check_cm_grp(FILE *fp,t_vcm *vcm)
@@ -263,7 +276,7 @@ void check_cm_grp(FILE *fp,t_vcm *vcm)
       ekcm *= 0.5*vcm->group_mass[g];
       
       if ((ekcm > 1) || debug)
-	fprintf(fp,"Large VCM(group %s): %12.5f, %12.5f, %12.5f, ekin-cm: %12.5f\n",
+	fprintf(fp,"Large VCM(group %s): %12.5f, %12.5f, %12.5f, ekin-cm: %12.5e\n",
 		vcm->group_name[g],vcm->group_v[g][XX],
 		vcm->group_v[g][YY],vcm->group_v[g][ZZ],ekcm);
       
@@ -271,7 +284,7 @@ void check_cm_grp(FILE *fp,t_vcm *vcm)
 	ekrot = 0.5*iprod(vcm->group_j[g],vcm->group_w[g]);
 	if ((ekrot > 1) || debug) {
 	  tm    = vcm->group_mass[g];
-	  fprintf(fp,"Group %s with mass %12.5f, Ekrot %12.5f Det(I) = %12.5f\n",
+	  fprintf(fp,"Group %s with mass %12.5e, Ekrot %12.5e Det(I) = %12.5e\n",
 		  vcm->group_name[g],tm,ekrot,det(vcm->group_i[g]));
 	  fprintf(fp,"  COM: %12.5f  %12.5f  %12.5f\n",
 		  vcm->group_x[g][XX],vcm->group_x[g][YY],vcm->group_x[g][ZZ]);
