@@ -323,7 +323,9 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     /* This is the new energy  */
     Fmax[TRY]=f_max(cr->left,cr->right,nsb->nprocs,start,end,force[TRY]);
     Epot[TRY]=ener[F_EPOT];
-    
+    if (count == 0)
+      Epot[Min] = Epot[TRY];
+      
     /* Print it if necessary  */
     if (bVerbose && MASTER(cr)) { 
       fprintf(stderr,"Step = %5d, Dmax = %7.2e nm, Epot = %12.5e Fmax = %11.5e%c",
