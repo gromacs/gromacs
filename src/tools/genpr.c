@@ -38,6 +38,7 @@ static char *SRCID_genpr_c = "$Id$";
 #include "confio.h"
 #include "futil.h"
 #include "macros.h"
+#include "rdgroup.h"
 
 int main(int argc,char *argv[])
 {
@@ -48,34 +49,58 @@ int main(int argc,char *argv[])
     "be given on the command line instead of three components.[PAR]",
     "This list is used as the position restraint list"
   };
-  static int     a1=-1,a2=-1;
   static rvec    fc={1000.0,1000.0,1000.0};
   t_pargs pa[] = {
     { "-fc", FALSE, etRVEC, &fc, 
-      "force constant (kJ/mol nm^2)" },
-    { "-a1", FALSE, etINT,  &a1, "first atom (numbering from 1)" },
-    { "-a2", FALSE, etINT,  &a2, "last atom" }
+      "force constants (kJ mol-1 nm-2)" }
   };
+  
+  t_atoms atoms;
   int     i;
   FILE    *out;
+  int          igrp;
+  atom_id      *ind_grp;
+  char         *gn_grp;
+  char         title[STRLEN];
+  matrix       box;
+  
   t_filenm fnm[] = {
+    { efSTX, "-f", NULL, ffREAD },
+    { efNDX, "-n", NULL, ffOPTRD },
     { efITP, "-o", "posre", ffWRITE }
   };
 #define NFILE asize(fnm)
-
+  
   CopyRight(stdout,argv[0]);
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
-
-  if ((a1 == -1) || (a2 == -1)) 
-    fatal_error(0,"a1 (%d) or a2 (%d) not set",a1,a2);
+  
+  if ( !ftp2bSet(efNDX,NFILE,fnm) )
+    if ( !ftp2bSet(efSTX,NFILE,fnm) )
+      fatal_error(0,"no index file and no structure file suplied");
+    else {
+      rvec *x,*v;
       
+      get_stx_coordnum(ftp2fn(efSTX,NFILE,fnm),&(atoms.nr));
+      init_t_atoms(&atoms,atoms.nr,TRUE);
+      snew(x,atoms.nr);
+      snew(v,atoms.nr);
+      fprintf(stderr,"\nReading structure file\n");
+      read_stx_conf(ftp2fn(efSTX,NFILE,fnm),title,&atoms,x,v,box);
+      sfree(x);
+      sfree(v);
+    }
+  
+  printf("Select group to position restrain\n");
+  get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&igrp,&ind_grp,&gn_grp);
+  
   out=ftp2FILE(efITP,NFILE,fnm,"w");
+  fprintf(out,"; position restraints for %s of %s\n\n",gn_grp,title);
   fprintf(out,"[ position_restraints ]\n");
-  fprintf(out,";%7s%8s%8s\n","i","funct","fc");
-  for(i=a1; (i<=a2); i++) 
-    fprintf(out,"%8d%8d  %8.0f  %8.0f  %8.0f\n",
-	    i,1,fc[XX],fc[YY],fc[ZZ]);
+  fprintf(out,";%3s %5s %9s %10s %10s\n","i","funct","fcx","fcy","fcz");
+  for(i=0; i<igrp; i++) 
+    fprintf(out,"%4u %4d %10g %10g %10g\n",
+	    ind_grp[i]+1,1,fc[XX],fc[YY],fc[ZZ]);
   fclose(out);
   
   thanx(stdout);
