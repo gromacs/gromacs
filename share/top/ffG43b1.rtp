@@ -5988,10 +5988,10 @@ FC10A   FC1   FC2   FC3    gi_1
   C2D   C3D   CAD   CBD    gd_20
   C3D   CAD   CBD   CGD    gd_17
   CAD   CBD   CGD   O1D    gd_20
-  ND    FE    NA   C1A       0       0       2
-  NA    FE    NB   C1B       0       0       2
-  NB    FE    NC   C1C       0       0       2
-  NC    FE    ND   C1D       0       0       2
+  ND    FE    NA   C1A       0       0       4
+  NA    FE    NB   C1B       0       0       4
+  NB    FE    NC   C1C       0       0       4
+  NC    FE    ND   C1D       0       0       4
 [ CYT* ]
  [ atoms ]
   C4*   CH1    0.160     0
