@@ -207,9 +207,9 @@ void calc_shifts(matrix box,rvec box_size,rvec shift_vec[],bool bTruncOct)
       }
 }
 
-void put_atoms_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
-		      matrix box,rvec box_size,t_block *cgs,
-		      rvec pos[],rvec shift_vec[],rvec cg_cm[])
+void put_charge_groups_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
+			      matrix box,rvec box_size,t_block *cgs,
+			      rvec pos[],rvec shift_vec[],rvec cg_cm[])
 {
   int  icg,ai,k,k0,k1,d;
   rvec b,cg;
@@ -263,7 +263,7 @@ void put_atoms_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
   }
 }
 
-void put_all_atoms_in_box(int natoms,matrix box,rvec x[])
+void put_atoms_in_box(int natoms,matrix box,rvec x[])
 {
   int i,m;
  

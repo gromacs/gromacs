@@ -50,7 +50,7 @@ extern void init_pbc(matrix box,bool bTruncOct);
 extern void pbc_dx(matrix box,rvec x1, rvec x2, rvec dx);
 /* Calculate the correct distance vector from x1 and x2 and put it in
  * dx. init_pbc must be called before ever calling this routine
- * (this is done by put_atoms_in_box).
+ * (this is done by put_charge_groups_in_box).
  * The box parameter is obsolete and must be removed.
  */
 
@@ -96,18 +96,17 @@ extern void calc_shifts(matrix box,rvec box_size,rvec shift_vec[],
  * that is, every second entry, EXCEPT the central box.
  */
 
-extern void put_atoms_in_box (FILE *log,int cg0,int cg1,bool bTruncOct,
-			      matrix box,rvec box_size,t_block *cgs,
-			      rvec pos[],rvec shift_vec[],rvec cg_cm[]);
-/* This routine puts the atoms in the periodic box, keeping charge groups
+extern void 
+  put_charge_groups_in_box (FILE *log,int cg0,int cg1,bool bTruncOct,
+			    matrix box,rvec box_size,t_block *cgs,
+			    rvec pos[],rvec shift_vec[],rvec cg_cm[]);
+/* This routine puts charge groups in the periodic box, keeping them
  * together. When bTruncOct==TRUE a truncated octahedron
  * box is used. There are no checks: the first element of the box matrix
  * is taken to be the box edge.
- * When any atom can is more than one box-length out in any direction,
- * the program is terminated with an error message to log.
  */
  
-extern void put_all_atoms_in_box(int natoms,matrix box,rvec x[]);
+extern void put_atoms_in_box(int natoms,matrix box,rvec x[]);
 /* This puts ALL atoms in the box, not caring about charge gorups! */
 
 #ifdef CPLUSPLUS

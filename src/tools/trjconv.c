@@ -642,7 +642,7 @@ int main(int argc,char *argv[])
 	     Peter Tieleman, Mon Jul 15 1996
 	     */
 	  if (bInBox)
-	    put_all_atoms_in_box(isize,box,xout);
+	    put_atoms_in_box(isize,box,xout);
 	  
 	  if (opt2parg_bSet("-shift",asize(pa),pa))
 	    for(i=0; (i<isize); i++)

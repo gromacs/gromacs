@@ -321,7 +321,7 @@ int main(int argc,char *argv[])
   pr_f("f_excl.dat",natoms,f_excl);
   
   /* Compute the short range potential */
-  put_all_atoms_in_box(natoms,box,x);
+  put_atoms_in_box(natoms,box,x);
   vsr=phi_sr(log,natoms,x,charge,ir.rlong,ir.rshort,box_size,phi_s,excl,f_sr,
 	     bOld); 
   pr_f("f_sr.dat",natoms,f_sr);
