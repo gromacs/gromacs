@@ -326,6 +326,7 @@ void visualize_box(FILE *out,int a0,int r0,matrix box,rvec gridsize)
   rvec    *vert,shift;
   int     nx,ny,nz,nbox,nat;
   int     i,j,x,y,z;
+  int     rectedge[24] = { 0,1, 1,3, 3,2, 0,2, 0,4, 1,5, 3,7, 2,6, 4,5, 5,7, 7,6, 6,4 };
 
   a0++;
   r0++;
@@ -334,34 +335,48 @@ void visualize_box(FILE *out,int a0,int r0,matrix box,rvec gridsize)
   ny = (int)(gridsize[YY]+0.5);
   nz = (int)(gridsize[ZZ]+0.5);
   nbox = nx*ny*nz;
-  nat = nbox*NCUCVERT;
-  snew(vert,nat);
-  calc_compact_unitcell_vertices(box,vert);
-  j = 0;
-  for(z=0; z<nz; z++)
-    for(y=0; y<ny; y++)
-      for(x=0; x<nx; x++) {
-	for(i=0; i<DIM; i++)
-	  shift[i] = x*box[0][i]+y*box[1][i]+z*box[2][i];
-	for(i=0; i<NCUCVERT; i++) {
-	  rvec_add(vert[i],shift,vert[j]);
-	  j++;
+  if (TRICLINIC(box)) {
+    nat = nbox*NCUCVERT;
+    snew(vert,nat);
+    calc_compact_unitcell_vertices(box,vert);
+    j = 0;
+    for(z=0; z<nz; z++)
+      for(y=0; y<ny; y++)
+	for(x=0; x<nx; x++) {
+	  for(i=0; i<DIM; i++)
+	    shift[i] = x*box[0][i]+y*box[1][i]+z*box[2][i];
+	  for(i=0; i<NCUCVERT; i++) {
+	    rvec_add(vert[i],shift,vert[j]);
+	    j++;
+	  }
 	}
-      }
-  
-  for(i=0; i<nat; i++)
-    fprintf(out,"%-6s%5u  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f\n",
-	    "ATOM",a0+i,"C","BOX",'K'+i/NCUCVERT,r0+i,
-	    10*vert[i][XX],10*vert[i][YY],10*vert[i][ZZ]);
-  
-  edge = compact_unitcell_edges();
-  for(j=0; j<nbox; j++)
-    for(i=0; i<NCUCEDGE; i++)
-      fprintf(out,"CONECT%5d%5d\n",
-	      a0 + j*NCUCVERT + edge[2*i],
-	      a0 + j*NCUCVERT + edge[2*i+1]);
-  
-  sfree(vert);
+    
+    for(i=0; i<nat; i++)
+      fprintf(out,"%-6s%5u  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f\n",
+	      "ATOM",a0+i,"C","BOX",'K'+i/NCUCVERT,r0+i,
+	      10*vert[i][XX],10*vert[i][YY],10*vert[i][ZZ]);
+    
+    edge = compact_unitcell_edges();
+    for(j=0; j<nbox; j++)
+      for(i=0; i<NCUCEDGE; i++)
+	fprintf(out,"CONECT%5d%5d\n",
+		a0 + j*NCUCVERT + edge[2*i],
+		a0 + j*NCUCVERT + edge[2*i+1]);
+    
+    sfree(vert);
+  } else {
+    i=0;
+    for(z=0; z<=1; z++)
+      for(y=0; y<=1; y++)
+	for(x=0; x<=1; x++) {
+	  fprintf(out,"%-6s%5u  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f\n",
+	      "ATOM",a0+i,"C","BOX",'K'+i/8,r0+i,
+	      x*10*box[XX][XX],y*10*box[YY][YY],z*10*box[ZZ][ZZ]);
+	  i++;
+	}
+    for(i=0; i<24; i+=2)
+      fprintf(out,"CONECT%5d%5d\n",a0+rectedge[i],a0+rectedge[i+1]);
+  }
 }
 
 int main(int argc, char *argv[])
