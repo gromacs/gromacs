@@ -64,8 +64,8 @@ int main(int argc,char *argv[])
   static int  begin=1,end=100;
   t_pargs pa[] = {
     { "-m",  FALSE, etBOOL, {&bM},
-      "Divide elements of Hessian by product of sqrt(mass) of involved"
-      "atoms prior to diagonalization. This should be used for 'Normal Modes'"
+      "Divide elements of Hessian by product of sqrt(mass) of involved "
+      "atoms prior to diagonalization. This should be used for 'Normal Modes' "
       "analysis" },
     { "-first", FALSE, etINT, {&begin},     
       "First eigenvector to write away" },
