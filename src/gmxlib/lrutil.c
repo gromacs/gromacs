@@ -505,7 +505,8 @@ void write_grid_pqr(char *fn,int nx,int ny,int nz,real ***phi)
 }
 
 
-real analyse_diff(FILE *log,int natom,rvec ffour[],rvec fpppm[],
+real analyse_diff(FILE *log,char *label,
+		  int natom,rvec ffour[],rvec fpppm[],
 		  real phi_f[],real phi_p[],real phi_sr[],
 		  char *fcorr,char *pcorr,char *ftotcorr,char *ptotcorr)
 {
@@ -531,7 +532,8 @@ real analyse_diff(FILE *log,int natom,rvec ffour[],rvec fpppm[],
   }
   
   rmsf = sqrt(f2sum/(3.0*natom));
-  fprintf(log,"\n********************************\nERROR ANALYSIS\n");
+  fprintf(log,"\n********************************\nERROR ANALYSIS for %s\n",
+	  label);
   fprintf(log,"%-10s%12s%12s\n","Error:","Max Abs","RMS");
   fprintf(log,"%-10s  %10.3f  %10.3f\n","Force",fmax,rmsf);
   fprintf(log,"%-10s  %10.3f  %10.3f\n","Potential",pmax,sqrt(p2sum/(natom)));
