@@ -65,12 +65,21 @@ static t_nrnb_data nbdata[eNRNB] = {
   { "Table-LJC-H2O",  166 },
   { "LJC-FreeEner",   101 },
   { "BHAM-FreeEner",  106 },
+  { "LJC-Ewald",      150 }, /* not correct yet */
+  { "Coul-Ewald",     150 }, /* not correct yet */
+  { "BHAM-Ewald",     150 }, /* not correct yet */
+  { "LJC-Ewald-H2O",  150 }, /* not correct yet */
+  { "Coul-Ewald-H2O", 150 }, /* not correct yet */
+  { "BHAM-Ewald-H2O", 150 }, /* not correct yet */
   { "Innerloop-Iatom", 10 },
   { "Calc Weights",    36 },
   { "Spread Q",         6 },
+  { "Spread Q Bspline",50 }, /* not correct yet */
   { "Gather F",        23 },
+  { "Gather F Bspline",50 }, /* not correct yet */
   { "3D-FFT",           8 },
   { "Convolution",      4 },
+  { "Solve PME",       50 }, /* not correct yet */
   { "NS-Pairs",        21 },
   { "Reset In Box",     9 },
   { "Shift-X",          6 },
@@ -202,11 +211,13 @@ void print_perf(FILE *out,double cputime,double realtime,real runtime,
     fprintf(out,"%12s %10s","","");
     pr_difftime(out,cputime);
   }
+  if(runtime>0) { /* runtime=0 means calc energies only */
   fprintf(out,"%12s %10s %10s %10s %10s\n",
 	  "","(Mnbf/s)","(MFlops)","(ps/CPU hour)","(CPU hour/ns)");
   fprintf(out,"%12s %10.3f %10.3f %10.3f %10.3f\n","Performance:",
 	  nbfs/cputime,mflop/cputime,
 	  runtime*3600/cputime,1000*cputime/(3600*runtime));
+  }
 }
 
 int cost_nrnb(int enr)
