@@ -90,7 +90,7 @@ int main(int argc,char *argv[])
     bFrac,          /* calculate fraction too?  */
     bTrans,         /* worry about transtions too? */
     bCorr;          /* correlation function ? */    
-  real       t,aa,fraction;       /* fraction trans dihedrals */
+  real       t,aa,aver,fraction;       /* fraction trans dihedrals */
   double     tfrac;
   char       title[256];
   real       **dih;          /* mega array with all dih. angles at all times*/
@@ -257,8 +257,14 @@ int main(int argc,char *argv[])
   for(last=maxangstat; (last >= 0) && (angstat[last] == 0) ; last--)
     ;
 
-  fprintf(stderr,"Found points in the range from %d to %d (max %d)\n",
-	  first,last,maxangstat);
+  aver=0;
+  for(i=0; (i<nframes); i++)
+    aver+=aver_angle[i];
+  aver/=nframes;
+  
+  fprintf(stderr,"Found points in the range from %d to %d (max %d), "
+	  "average %g\n",
+	  first,last,maxangstat,aver*RAD2DEG);
     
   if (mult == 3)
     sprintf(title,"Angle Distribution: %s",grpname);
@@ -269,6 +275,7 @@ int main(int argc,char *argv[])
     fprintf(stderr,"Order parameter S^2 = %g\n",S2);
   }
   out=xvgropen(opt2fn("-od",NFILE,fnm),title,"Degrees","");
+  fprintf(out,"@    subtitle \"\average angle: %g\\So\\N\"\n",aver*RAD2DEG);
   norm_fac=1.0/(nangles*nframes*maxang/maxangstat);
   for(i=first; (i<=last); i++) 
     fprintf(out,"%10g  %10f\n",
