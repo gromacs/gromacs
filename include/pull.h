@@ -84,7 +84,7 @@ typedef struct {
   t_pullgrp  *dyna;       /* dynamic groups for use with local constraints */
   t_pullruntype  runtype; /* start, afm, constraint, umbrella, test */
   t_pullreftype  reftype; /* com, com_t0, dynamic, dynamic_t0 */
-  dvec       dims;        /* used to select components for constraint */
+  ivec       dims;        /* used to select components for constraint */
   int        bDir;        /* use only the direction dir */
   dvec       dir;         /* direction */
   real       r;           /* radius of cylinder for dynamic COM */

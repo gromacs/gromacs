@@ -189,16 +189,16 @@ static void string2dvec(char buf[], dvec nums)
 void read_pullparams(t_pull *pull, char *infile, char *outfile) 
 {
   t_inpfile *inp;
-  int ninp,i;
-  char *tmp;           /* for the input parsing macros */
-  char dummy[STRLEN];  /* idem */
+  int ninp,i,nchar;
+  char *tmp,*ptr;
+  char dummy[STRLEN];
   char refbuf[STRLEN],grpbuf[MAX_PULL_GROUPS][STRLEN],
     refwbuf[STRLEN],wbuf[MAX_PULL_GROUPS][STRLEN],
     bf[MAX_PULL_GROUPS][STRLEN],
     pos[MAX_PULL_GROUPS][STRLEN],
-    dims[STRLEN],dir[STRLEN];
+    pulldim[STRLEN],pulldim1[STRLEN],condir[STRLEN];
   char DirTemp[MAX_PULL_GROUPS][STRLEN], InitTemp[MAX_PULL_GROUPS][STRLEN];
-  real UmbCons[MAX_PULL_GROUPS];
+  real AfmRate[MAX_PULL_GROUPS],AfmK[MAX_PULL_GROUPS],UmbCons[MAX_PULL_GROUPS];
 
   int bReverse; int tmpref; int tmprun; 
 
@@ -251,8 +251,8 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   EETYPE("reftype",         tmpref, reftypes, &nerror, TRUE);
   CTYPE("Use running average for reflag steps for com calculation");
   ITYPE("reflag",           pull->reflag, 1);
-  CTYPE("Select components for the pull vector. default: z-only");
-  STYPE("direction",       dims, "0.0 0.0 1.0");
+  CTYPE("Select components for the pull vector. default: Y Y Y");
+  STYPE("pulldim",          pulldim, "Y Y Y");
 
   /* options for dynamic reference groups */
   CTYPE("DYNAMIC REFERENCE GROUP OPTIONS");
@@ -267,7 +267,7 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   /* constraint run options */
   CCTYPE("CONSTRAINT RUN OPTIONS");
   CTYPE("Direction, default: 0 0 0, no direction");
-  STYPE("constraint_direction",        dir, "0.0 0.0 0");
+  STYPE("constraint_direction",        condir, "0.0 0.0 0");
   CTYPE("Rate of chance of the constraint length, in nm/ps");
   RTYPE("constraint_rate",    pull->constr_rate, 0);
   CTYPE("Tolerance of constraints, in nm");
@@ -276,15 +276,15 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
    /* options for AFM type pulling simulations */
   CCTYPE("AFM OPTIONS");
   CTYPE("Pull rates in nm/ps");
-  RTYPE("afm_rate1",         pull->grp[0].AfmRate,    0.0);
-  RTYPE("afm_rate2",         pull->grp[1].AfmRate,    0.0);
-  RTYPE("afm_rate3",         pull->grp[2].AfmRate,    0.0);
-  RTYPE("afm_rate4",         pull->grp[3].AfmRate,    0.0);
+  RTYPE("afm_rate1",         AfmRate[0],    0.0);
+  RTYPE("afm_rate2",         AfmRate[1],    0.0);
+  RTYPE("afm_rate3",         AfmRate[2],    0.0);
+  RTYPE("afm_rate4",         AfmRate[3],    0.0);
   CTYPE("Force constants in kJ/(mol*nm^2)");
-  RTYPE("afm_k1",    pull->grp[0].AfmK, 0.0);
-  RTYPE("afm_k2",    pull->grp[1].AfmK, 0.0);
-  RTYPE("afm_k3",    pull->grp[2].AfmK, 0.0);
-  RTYPE("afm_k4",    pull->grp[3].AfmK, 0.0);
+  RTYPE("afm_k1",            AfmK[0], 0.0);
+  RTYPE("afm_k2",            AfmK[1], 0.0);
+  RTYPE("afm_k3",            AfmK[2], 0.0);
+  RTYPE("afm_k4",            AfmK[3], 0.0);
   CTYPE("Directions");
   STYPE("afm_dir1",              DirTemp[0], "0.0 0.0 1.0");
   STYPE("afm_dir2",              DirTemp[1], "0.0 0.0 1.0");
@@ -345,9 +345,11 @@ ecified.\n");
   snew(pull->grp,pull->ngrp);
   for(i=0; i<pull->ngrp; i++)
     init_pullgrp(&pull->grp[i],grpbuf[i],wbuf[i],UmbCons[i]);
-
+  
   if (pull->runtype == eAfm) {
     for (i=0; i<pull->ngrp; ++i) {
+      pull->grp[i].AfmRate = AfmRate[i];
+      pull->grp[i].AfmK = AfmK[i];
       string2dvec(DirTemp[i], pull->grp[i].AfmVec);
       string2dvec(InitTemp[i], pull->grp[i].AfmInit);
     }
@@ -362,15 +364,27 @@ ecified.\n");
   }
   /* End Modification */
 
-  string2dvec(dims,pull->dims);
-  for(i=0; i<DIM; i++)
-    if (pull->dims[i] != 0)
+  ptr = pulldim;
+  for(i=0; i<DIM; i++) {
+    if (sscanf(ptr,"%s%n",pulldim1,&nchar) != 1)
+      fatal_error(0,"Less than 3 pull dimensions given in pulldim: '%s'",
+		  pulldim);
+    
+    if (strncasecmp(pulldim1,"N",1) == 0) {
+      pull->dims[i] = 0;
+    } else if (strncasecmp(pulldim1,"Y",1) == 0) {
       pull->dims[i] = 1;
+    } else {
+      fatal_error(0,"Please use Y(ES) or N(O) for pulldim only (not %s)",
+		  pulldim1);
+    }
+    ptr += nchar;
+  }
 
-  fprintf(stderr,"Using distance components %2.1f %2.1f %2.1f\n",
+  fprintf(stderr,"Using distance components %d %d %d\n",
 	  pull->dims[0],pull->dims[1],pull->dims[2]);
 
-  string2dvec(dir,pull->dir);
+  string2dvec(condir,pull->dir);
   if (pull->runtype != eConstraint ||
       (pull->dir[XX] == 0 && pull->dir[YY] == 0 && pull->dir[ZZ] == 0)) {
     pull->bDir = FALSE;
@@ -408,7 +422,7 @@ void print_pull_header(t_pull * pull)
     fprintf(pull->out,"CONSTRAINT\t3.0\n");
 
   for(i=0;i<3;++i) {
-    fprintf(pull->out,"%f\t",pull->dims[i]);
+    fprintf(pull->out,"%d\t",pull->dims[i]);
   }
   fprintf(pull->out,"\n");
 
