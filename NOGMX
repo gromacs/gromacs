@@ -17,7 +17,9 @@ if ( $shell == "/bin/tcsh" ) then
 endif
 
 if ( ($?LD_LIBRARY_PATH) && ($?GMXHOME) && (($?GMXCPU) || ($?CPU)) ) then
-  if ( ! $?GMXCPU ) setenv GMXCPU $CPU
+  if ( (! $?GMXCPU) && ($?CPU) ) then
+    setenv GMXCPU $CPU
+  endif
   unsetenv TEMPPATH
   unsetenv PATHSET
   foreach i ( `echo $LD_LIBRARY_PATH | sed "s/:/ /g"` )
