@@ -490,8 +490,11 @@ static void at2bonds(t_params *ps,
 	if (bAlldih) {
 	  /* if bAlldih is true, don't check for hydrogens */
 	  if ((ai=search_atom(rb0->rbond[k].ai,j,natoms,aname)) != -1) 
-	    if ((aj=search_atom(rb0->rbond[k].aj,j,natoms,aname)) != -1) 
-	      add_param(ps,ai,aj,rb0->rbond[k].c);
+	    if ((aj=search_atom(rb0->rbond[k].aj,j,natoms,aname)) != -1)
+	      if ((!is_hydrogen(rb0->rbond[k].ai) && 
+		  !is_hydrogen(rb0->rbond[k].aj)) ||
+		  (atom[ai].resnr == atom[aj].resnr))
+		add_param(ps,ai,aj,rb0->rbond[k].c);
 	} else {     
 	  /* else do the normal thing */
 	  if (!is_hydrogen(rb0->rbond[k].ai) && 
