@@ -18,7 +18,7 @@ include		$(GMXHOME)/src/makef/Makefile.def
 LIB		= 
 XOBJ		= do_gct.o init_sh.o gctio.o glaasje.o ionize.o relax_sh.o
 ifneq ($(PARALLEL_ONLY_MDRUN),yes)
-PROGRAMS	= my_dssp
+PROGRAMS	= my_dssp xmdrun
 endif
 
 #
