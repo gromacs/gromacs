@@ -600,8 +600,11 @@ void fit_acf(int ncorr,int nfitparm,bool bVerbose,
     jmax = 5;
   else
     jmax = 1;
-  fitparm[0]=fitparm[1]=fitparm[2] = 1.0;
+  /* Good initial guess, this increases the change of convergence */
+  fitparm[0] = sum;
+  fitparm[1] = fitparm[2] = 1.0;
   for(j=0; ((j<jmax) && (tStart < tendfit)); j++) {
+    /* Use the previous fitparm as starting values for the next fit */
     snew(sig,ncorr);
     nf_int = min(ncorr,(int)((tStart+1e-4)/dt));
     sum    = print_and_integrate(debug,nf_int,dt,c1,1);
