@@ -14,7 +14,7 @@ POBJ		= g_hbond.o dah.o hbond.o list.o parse.o
 PROGRAMS	= g_rdf		g_msd		g_dist		\
 		  g_hbond	g_lifetime	merge_freq	\
 		  genbox 	genconf 	genion		\
-		  make_ndx	average		genpr 		\
+		  make_ndx	genpr 		\
 		  trjconv       mk_angndx	eneconv		\
 		  editconf	protonate	gendr		\
 		  g_rms		g_rama		g_disre		\
