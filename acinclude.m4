@@ -606,7 +606,7 @@ case "${host_cpu}-${host_os}" in
       xCFLAGS="$xCFLAGS -SWP:heur=fdms,nhms,fdnms" 
       xFFLAGS="$xFFLAGS -SWP:heur=fdms,nhms,fdnms" 
     fi
-    LDFLAGS="$LDFLAGS -woff 84"
+    xLDFLAGS="-woff 84"
 
     # Normally we want -n32 for performance, but in some
     # rare cases it should be possible to override it in the flags.
@@ -622,27 +622,27 @@ case "${host_cpu}-${host_os}" in
       r12000*)
 	xCFLAGS="$IRIXOBJFLAG -r12000 -mips4 $xCFLAGS"
 	xFFLAGS="$IRIXOBJFLAG -r12000 -mips4 $xFFLAGS"
-	xLDFLAGS="$IRIXOBJFLAG -r12000 -mips4"
+	xLDFLAGS="$IRIXOBJFLAG -r12000 -mips4 $xLDFLAGS"
 	;;
       r10000*)
 	xCFLAGS="$IRIXOBJFLAG -r10000 -mips4 $xCFLAGS"
 	xFFLAGS="$IRIXOBJFLAG -r10000 -mips4 $xFFLAGS"
-	xLDFLAGS="$IRIXOBJFLAG -r10000 -mips4"
+	xLDFLAGS="$IRIXOBJFLAG -r10000 -mips4 $xLDFLAGS"
 	;;
       r8000*)
 	xCFLAGS="$IRIXOBJFLAG -r8000 -mips4 $xCFLAGS"
 	xFFLAGS="$IRIXOBJFLAG -r8000 -mips4 $xFFLAGS"
-	xLDFLAGS="$IRIXOBJFLAG -r8000 -mips4"
+	xLDFLAGS="$IRIXOBJFLAG -r8000 -mips4 $xLDFLAGS"
 	;;
       r5000*)
 	xCFLAGS="$IRIXOBJFLAG -r5000 -mips4 $xCFLAGS"
 	xFFLAGS="$IRIXOBJFLAG -r5000 -mips4 $xFFLAGS"
-	xLDFLAGS="$IRIXOBJFLAG -r5000 -mips4"
+	xLDFLAGS="$IRIXOBJFLAG -r5000 -mips4 $xLDFLAGS"
 	;;
       *)		
 	xCFLAGS="$IRIXOBJFLAG $xCFLAGS"
 	xFFLAGS="$IRIXOBJFLAG $xFFLAGS"
-	xLDFLAGS="$IRIXOBJFLAG"
+	xLDFLAGS="$IRIXOBJFLAG $xLDFLAGS"
 	;;
     esac
     ;;
