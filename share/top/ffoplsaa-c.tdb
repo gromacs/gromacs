@@ -8,7 +8,7 @@ C	C     	opls_271   12.0110    0.700
 2	8	C	CA	N
 	O 	opls_272   15.9994   -0.800
 [ impropers ]
-C	O1	O2	CA	improper_O_C_X_Y
+CA	O1	 C     O2	improper_O_C_X_Y
 [ delete ]
 O
 
@@ -20,7 +20,8 @@ C	C     	opls_271   12.0110    0.700
 2	8	C	CA	N
 	O 	opls_272   15.9994   -0.800
 [ impropers ]
-C	O1	O2	CA	improper_O_C_X_Y
+CA	O1	 C     O2	improper_O_C_X_Y
+
 [ delete ]
 O
 
@@ -32,7 +33,8 @@ C	C     	opls_271   12.0110    0.700
 2	8	C	CA	N
 	O 	opls_272   15.9994   -0.800
 [ impropers ]
-C	O1	O2	CA	improper_O_C_X_Y
+CA	O1	 C     O2	improper_O_C_X_Y
+
 
 [ delete ]
 O
@@ -45,7 +47,8 @@ C	C     	opls_271   12.0110    0.700
 2	8	C	CA	N
 	O 	opls_272   15.9994   -0.800
 [ impropers ]
-C	O1	O2	CA	improper_O_C_X_Y
+CA	O1	 C     O2	improper_O_C_X_Y
+
 
 [ delete ]
 O
@@ -58,7 +61,8 @@ C	C	opls_271   12.0110    0.700
 2	8	C	CA	N
 	O	opls_272   15.9994   -0.800
 [ impropers ]
-C	O1	O2	CA	improper_O_C_X_Y
+CA	O1	 C     O2	improper_O_C_X_Y
+
 
 [ delete ]
 O
@@ -71,7 +75,8 @@ C	C	opls_271   12.0110    0.700
 2	8	C	CA	N
 	O	opls_272   15.9994   -0.800
 [ impropers ]
-C	O1	O2	CA	improper_O_C_X_Y
+CA	O1	 C     O2	improper_O_C_X_Y
+
 
 [ delete ]
 O
@@ -86,7 +91,8 @@ O	O	opls_268   15.9994  -0.530
 1	2	O	C	CA
 	HO	opls_270    1.0080   0.450
 [ impropers ]
-C	OT 	 O	CA	improper_O_C_X_Y
+CA	OT      C      O         improper_O_C_X_Y
+
 
 [ COOH ]
 [ replace ]
@@ -98,7 +104,8 @@ O	O	opls_268   15.9994  -0.530
 1	2	O	C	CA
 	HO	opls_270    1.0080   0.450
 [ impropers ]
-C	OT	 O	CA	improper_O_C_X_Y
+CA	OT      C      O         improper_O_C_X_Y
+
 
 
  
