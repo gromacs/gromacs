@@ -277,7 +277,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   real        timestep=0;
   double      tcount=0;
   bool        bShell,bIonize=FALSE,bGlas=FALSE;
-  bool        bTCR=FALSE,bConverged=FALSE,bOK;
+  bool        bTCR=FALSE,bConverged=TRUE,bOK;
   real        mu_aver=0,fmax;
   int         gnx,ii;
   atom_id     *grpindex;
