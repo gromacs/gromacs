@@ -483,10 +483,14 @@ void read_eigenvectors(char *file,int *natoms,bool *bFit,
   }
   *bDMA = (head.lambda > 0.5);
   if ((head.t<=-0.01) || (head.t>=0.01))
-    fatal_error(0,"%s does not start with t=0, which should be the average "
-		"structure. This might not be a eigenvector file.",file);
-  fprintf(stderr,"Read %smass weighted average structure with %d atoms from %s\n",
-	  *bDMA ? "" : "non ",*natoms,file);
+    fprintf(stderr,"WARNING: %s does not start with t=0, which should be the "
+	    "average structure. This might not be a eigenvector file. "
+	    "Can not calculate projections without an average structure.\n",
+	    file);
+  else
+    fprintf(stderr,
+	    "Read %smass weighted average structure with %d atoms from %s\n",
+	    *bDMA ? "" : "non ",*natoms,file);
   
   snew(x,*natoms);
   snew_size=0;
