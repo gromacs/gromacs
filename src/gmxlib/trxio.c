@@ -635,7 +635,7 @@ static int pdb_first_x(FILE *status, real *t, rvec **x, matrix box)
   fprintf(stderr,"Reading frames from pdb file.\n");
   frewind(status);
   get_pdb_coordnum(status, &natoms);
-  fprintf(stderr,"Nr of atoms: %d.\n", natoms);
+  fprintf(stderr,"Number of atoms: %d\n", natoms);
   if (natoms==0)
     fatal_error(0,"No coordinates in pdb file\n");
   frewind(status);
