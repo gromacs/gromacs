@@ -145,7 +145,19 @@ static void copy_t_rbonded(t_rbonded *s, t_rbonded *d)
   d->s = safe_strdup(s->s);
 }
 
-void merge_t_bondeds(t_rbondeds s[], t_rbondeds d[])
+static bool contains_char(t_rbonded *s,char c)
+{
+  int i;
+  bool bRet;
+  
+  bRet = FALSE;
+  for(i=0; i<MAXATOMLIST; i++)
+    if (s->a[i] && s->a[i][0]==c)
+      bRet = TRUE;
+  
+  return bRet;
+}
+void merge_t_bondeds(t_rbondeds s[], t_rbondeds d[],bool bMin,bool bPlus)
 {
   int i, j;
   
@@ -154,8 +166,11 @@ void merge_t_bondeds(t_rbondeds s[], t_rbondeds d[])
       /* make space */
       srenew(d[i].b, d[i].nb + s[i].nb);
       for(j=0; j < s[i].nb; j++)
-	copy_t_rbonded(&s[i].b[j], &d[i].b[ d[i].nb + j ]);
-      d[i].nb += s[i].nb;
+	if (!(bMin && contains_char(&s[i].b[j],'-'))
+	    && !(bPlus && contains_char(&s[i].b[j],'+'))) {
+	  copy_t_rbonded(&s[i].b[j], &d[i].b[ d[i].nb ]);
+	  d[i].nb ++;
+	}
     }
 }
 
@@ -180,7 +195,7 @@ void copy_t_restp(t_restp *s, t_restp *d)
     d->rb[i].nb = 0;
     d->rb[i].b = NULL;
   }
-  merge_t_bondeds(s->rb, d->rb);
+  merge_t_bondeds(s->rb, d->rb,FALSE,FALSE);
 }
 
 void copy_t_hack(t_hack *s, t_hack *d)
@@ -220,7 +235,7 @@ void merge_hacks(t_hackblock *s, t_hackblock *d)
 void merge_t_hackblock(t_hackblock *s, t_hackblock *d)
 {
   merge_hacks(s, d);
-  merge_t_bondeds(s->rb, d->rb);
+  merge_t_bondeds(s->rb, d->rb,FALSE,FALSE);
 }
 
 void copy_t_hackblock(t_hackblock *s, t_hackblock *d)

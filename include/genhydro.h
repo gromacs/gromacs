@@ -36,9 +36,11 @@ static char *SRCID_genhydro_h = "$Id$";
 #include "hackblock.h"
 
 extern int add_h(t_atoms **pdbaptr, rvec *xptr[], int nah, t_hackblock ah[],
-		 t_hackblock *ntdb, t_hackblock *ctdb, int rN, int rC);
+		 t_hackblock *ntdb, t_hackblock *ctdb, 
+		 int nterpairs, int *rN, int *rC);
 /* Generate hydrogen atoms and N and C terminal patches.
  * ntdb and ctdb may be NULL, no replacement will be done then.
+ * int nterpairs is the number of termini pairs in the molecule
  * rN is the residue number of the N-terminus,
  * rC is the residue number of the C-terminus
  * return the New total number of atoms 

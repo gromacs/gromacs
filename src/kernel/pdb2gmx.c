@@ -464,13 +464,13 @@ static int remove_duplicate_atoms(t_atoms *pdba,rvec x[])
   return pdba->nr;
 }
 
-void find_nc_ter(t_atoms *pdba,int *rn,int *rc)
+void find_nc_ter(t_atoms *pdba,int r0,int r1,int *rn,int *rc)
 {
   int rnr;
   
   *rn=-1;
   *rc=-1;
-  for(rnr=0; (rnr<pdba->nres); rnr++) {
+  for(rnr=r0; rnr<r1; rnr++) {
     if ((*rn == -1) && (is_protein(*pdba->resname[rnr])))
 	*rn=rnr;
     if ((*rc != rnr) && (is_protein(*pdba->resname[rnr])))
@@ -506,6 +506,10 @@ int main(int argc, char *argv[])
     "criterium, specified by the maximum hydrogen-donor-acceptor angle",
     "and donor-acceptor distance, which are set by [TT]-angle[tt] and",
     "[TT]-dist[tt] respectively.[PAR]",
+
+    "Option [TT]-merge[tt] will ask if you want to merge consecutive chains",
+    "into one molecule, this can be useful for connecting chains with a",
+    "disulfide brigde.[PAR]",
     
     "pdb2gmx will also check the occupancy field of the pdb file.",
     "If any of the occupanccies are not one, indicating that the atom is",
@@ -560,11 +564,17 @@ int main(int argc, char *argv[])
     int  start;
     int  natom;
     bool bAllWat;
+    int  nterpairs;
+    int  *chainstart;
   } t_pdbchain;
 
   typedef struct {
     char chain;
     bool bAllWat;
+    int nterpairs;
+    int *chainstart;
+    int *rN;
+    int *rC;
     t_atoms *pdba;
     rvec *x;
   } t_chain;
@@ -574,10 +584,10 @@ int main(int argc, char *argv[])
   t_atoms    pdba_all,*pdba;
   t_atoms    *atoms;
   t_block    *block;
-  int        chain,nchain,nwaterchain;
-  t_pdbchain *pdbchains;
-  t_chain    *chains;
-  char       pchain;
+  int        chain,nch,nwaterchain;
+  t_pdbchain *pdb_ch;
+  t_chain    *chains,*cc;
+  char       pchain,select[STRLEN];
   int        nincl,nmol;
   char       **incls;
   t_mols     *mols;
@@ -585,7 +595,7 @@ int main(int argc, char *argv[])
   matrix     box;
   rvec       box_space;
   char       *ff;
-  int        i,j,k,l,nrtp,rN,rC;
+  int        i,j,k,l,nrtp;
   int        *swap_index,si;
   int        bts[ebtsNR];
   t_restp    *restp;
@@ -613,8 +623,8 @@ int main(int argc, char *argv[])
   };
 #define NFILE asize(fnm)
   
-  /* Command line arguments msut be static */
-  static bool bNewRTP=FALSE;
+  /* Command line arguments must be static */
+  static bool bNewRTP=FALSE,bMerge=FALSE;
   static bool bInter=FALSE, bCysMan=FALSE; 
   static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan=FALSE;
   static bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
@@ -630,6 +640,8 @@ int main(int argc, char *argv[])
       "HIDDENLong bond warning distance" },
     { "-sb",     FALSE, etREAL, {&short_bond_dist},
       "HIDDENShort bond warning distance" },
+    { "-merge", FALSE, etBOOL, {&bMerge},
+      "Merge multiple chains into one molecule"},
     { "-inter",  FALSE, etBOOL, {&bInter},
       "Set the next 6 options to interactive"},
     { "-ss",     FALSE, etBOOL, {&bCysMan}, 
@@ -710,69 +722,92 @@ int main(int argc, char *argv[])
     fatal_error(0,"No atoms found in pdb file %s\n",opt2fn("-f",NFILE,fnm));
 
   printf("Analyzing pdb file\n");
-  nchain=0;
+  nch=0;
   nwaterchain=0;
   /* keep the compiler happy */
   pchain='?';
-  pdbchains=NULL;
+  pdb_ch=NULL;
   for (i=0; (i<natom); i++) {
     bWat = strcasecmp(*pdba_all.resname[pdba_all.atom[i].resnr],"HOH") == 0;
     if ((i==0) || (pdba_all.atom[i].chain!=pchain) || (bWat != bPrevWat)) {
+      if (bMerge && i>0 && !bWat) {
+	printf("Merge chain '%c' and '%c'? (n/y) ",
+	       pchain,pdba_all.atom[i].chain);
+	gets(select);
+      } else
+	select[0] = 'n';
       pchain=pdba_all.atom[i].chain;
-      /* set natom for previous chain */
-      if (nchain > 0)
-	pdbchains[nchain-1].natom=i-pdbchains[nchain-1].start;
-      if (bWat) {
-	nwaterchain++;
-	pdba_all.atom[i].chain='\0';
+      if (select[0] == 'y') {
+	pdb_ch[nch-1].chainstart[pdb_ch[nch-1].nterpairs] = 
+	  pdba_all.atom[i].resnr;
+	pdb_ch[nch-1].nterpairs++;
+	srenew(pdb_ch[nch-1].chainstart,pdb_ch[nch-1].nterpairs+1);
+      } else {
+	/* set natom for previous chain */
+	if (nch > 0)
+	  pdb_ch[nch-1].natom=i-pdb_ch[nch-1].start;
+	if (bWat) {
+	  nwaterchain++;
+	  pdba_all.atom[i].chain='\0';
+	}
+	/* check if chain identifier was used before */
+	for (j=0; (j<nch); j++)
+	  if ((pdb_ch[j].chain != '\0') && (pdb_ch[j].chain != ' ') &&
+	      (pdb_ch[j].chain == pdba_all.atom[i].chain))
+	    fatal_error(0,"Chain identifier '%c' was used "
+			"in two non-sequential blocks (residue %d, atom %d)",
+			pdba_all.atom[i].chain,pdba_all.atom[i].resnr+1,i+1);
+	srenew(pdb_ch,nch+1);
+	pdb_ch[nch].chain=pdba_all.atom[i].chain;
+	pdb_ch[nch].start=i;
+	pdb_ch[nch].bAllWat=bWat;
+	if (bWat)
+	  pdb_ch[nch].nterpairs=0;
+	else
+	  pdb_ch[nch].nterpairs=1;
+	snew(pdb_ch[nch].chainstart,pdb_ch[nch].nterpairs+1);
+	pdb_ch[nch].chainstart[nch]=0;
+	nch++;
       }
-      /* check if chain identifier was used before */
-      for (j=0; (j<nchain); j++)
-	if ((pdbchains[j].chain != '\0') && (pdbchains[j].chain != ' ') &&
-	    (pdbchains[j].chain == pdba_all.atom[i].chain))
-	  fatal_error(0,"Chain identifier '%c' was used "
-		      "in two non-sequential blocks (residue %d, atom %d)",
-		      pdba_all.atom[i].chain,pdba_all.atom[i].resnr+1,i+1);
-      srenew(pdbchains,nchain+1);
-      pdbchains[nchain].chain=pdba_all.atom[i].chain;
-      pdbchains[nchain].start=i;
-      pdbchains[nchain].bAllWat=bWat;
-      nchain++;
     }
     bPrevWat=bWat;
   }
-  pdbchains[nchain-1].natom=natom-pdbchains[nchain-1].start;
+  pdb_ch[nch-1].natom=natom-pdb_ch[nch-1].start;
   
   /* set all the water blocks at the end of the chain */
-  snew(swap_index,nchain);
+  snew(swap_index,nch);
   j=0;
-  for(i=0; i<nchain; i++)
-    if (!pdbchains[i].bAllWat) {
+  for(i=0; i<nch; i++)
+    if (!pdb_ch[i].bAllWat) {
       swap_index[j]=i;
       j++;
     }
-  for(i=0; i<nchain; i++)
-    if (pdbchains[i].bAllWat) {
+  for(i=0; i<nch; i++)
+    if (pdb_ch[i].bAllWat) {
       swap_index[j]=i;
       j++;
     }
   if (nwaterchain>1)
     printf("Moved all the water blocks to the end\n");
 
-  snew(chains,nchain);
+  snew(chains,nch);
   /* copy pdb data and x for all chains */
-  for (i=0; (i<nchain); i++) {
+  for (i=0; (i<nch); i++) {
     si=swap_index[i];
-    chains[i].chain   = pdbchains[si].chain;
-    chains[i].bAllWat = pdbchains[si].bAllWat; 
+    chains[i].chain   = pdb_ch[si].chain;
+    chains[i].bAllWat = pdb_ch[si].bAllWat;
+    chains[i].nterpairs = pdb_ch[si].nterpairs;
+    chains[i].chainstart = pdb_ch[si].chainstart;
+    snew(chains[i].rN,pdb_ch[si].nterpairs);
+    snew(chains[i].rC,pdb_ch[si].nterpairs);
     /* check for empty chain identifiers */
-    if ((nchain-nwaterchain>1) && !pdbchains[si].bAllWat && 
+    if ((nch-nwaterchain>1) && !pdb_ch[si].bAllWat && 
 	((chains[i].chain=='\0') || (chains[i].chain==' '))) {
       bUsed=TRUE;
       for(k='A'; (k<='Z') && bUsed; k++) {
 	bUsed=FALSE;
-	for(j=0; j<nchain; j++)
-	  bUsed=bUsed || (!pdbchains[j].bAllWat && (chains[j].chain==k));
+	for(j=0; j<nch; j++)
+	  bUsed=bUsed || (!pdb_ch[j].bAllWat && (chains[j].chain==k));
 	if (!bUsed) {
 	  printf("Gave chain %d chain identifier '%c'\n",i+1,k);
 	  chains[i].chain=k;
@@ -780,17 +815,17 @@ int main(int argc, char *argv[])
       }
     }
     snew(chains[i].pdba,1);
-    init_t_atoms(chains[i].pdba,pdbchains[si].natom,TRUE);
+    init_t_atoms(chains[i].pdba,pdb_ch[si].natom,TRUE);
     snew(chains[i].x,chains[i].pdba->nr);
     for (j=0; j<chains[i].pdba->nr; j++) {
-      chains[i].pdba->atom[j]=pdba_all.atom[pdbchains[si].start+j];
+      chains[i].pdba->atom[j]=pdba_all.atom[pdb_ch[si].start+j];
       snew(chains[i].pdba->atomname[j],1);
       *chains[i].pdba->atomname[j] = 
-	strdup(*pdba_all.atomname[pdbchains[si].start+j]);
+	strdup(*pdba_all.atomname[pdb_ch[si].start+j]);
       /* make all chain identifiers equal to that off the chain */
-      chains[i].pdba->atom[j].chain=pdbchains[si].chain;
-      chains[i].pdba->pdbinfo[j]=pdba_all.pdbinfo[pdbchains[si].start+j];
-      copy_rvec(pdbx[pdbchains[si].start+j],chains[i].x[j]);
+      chains[i].pdba->atom[j].chain=pdb_ch[si].chain;
+      chains[i].pdba->pdbinfo[j]=pdba_all.pdbinfo[pdb_ch[si].start+j];
+      copy_rvec(pdbx[pdb_ch[si].start+j],chains[i].x[j]);
     }
     /* Renumber the residues assuming that the numbers are continuous */
     k    = chains[i].pdba->atom[0].resnr;
@@ -805,13 +840,17 @@ int main(int argc, char *argv[])
     }
   }
 
+  if (bMerge)
+    printf("\nMerged %d chains into one molecule\n\n",
+	   pdb_ch[0].nterpairs);
+
   printf("There are %d chains and %d blocks of water and "
 	 "%d residues with %d atoms\n",
-	 nchain-nwaterchain,nwaterchain,
+	 nch-nwaterchain,nwaterchain,
 	 pdba_all.atom[natom-1].resnr+1,natom);
 	  
   printf("\n  %5s  %4s %6s\n","chain","#res","#atoms");
-  for (i=0; (i<nchain); i++)
+  for (i=0; (i<nch); i++)
     printf("  %d '%c'%s  %4d %6d  %s\n",
 	   i+1, chains[i].chain, chains[i].chain?"":" ",
 	   chains[i].pdba->nres, chains[i].pdba->nr,
@@ -854,16 +893,18 @@ int main(int argc, char *argv[])
   incls=NULL;
   mols=NULL;
   nres=0;
-  for(chain=0; (chain<nchain); chain++) {
+  for(chain=0; (chain<nch); chain++) {
+    cc = &(chains[chain]);
+
     /* set pdba, natom and nres to the current chain */
-    pdba =chains[chain].pdba;
-    x    =chains[chain].x;
-    natom=chains[chain].pdba->nr;
-    nres =chains[chain].pdba->nres;
+    pdba =cc->pdba;
+    x    =cc->x;
+    natom=cc->pdba->nr;
+    nres =cc->pdba->nres;
     
-    if (chains[chain].chain && ( chains[chain].chain != ' ' ) )
+    if (cc->chain && ( cc->chain != ' ' ) )
       printf("Processing chain %d '%c' (%d atoms, %d residues)\n",
-	      chain+1,chains[chain].chain,natom,nres);
+	      chain+1,cc->chain,natom,nres);
     else
       printf("Processing chain %d (%d atoms, %d residues)\n",
 	      chain+1,natom,nres);
@@ -893,38 +934,42 @@ int main(int argc, char *argv[])
 	      "without sorting no check for duplicate atoms can be done\n");
     
     if (debug) {
-      if ( chains[chain].chain == '\0' || chains[chain].chain == ' ')
+      if ( cc->chain == '\0' || cc->chain == ' ')
 	sprintf(fn,"chain.pdb");
       else
-	sprintf(fn,"chain_%c.pdb",chains[chain].chain);
+	sprintf(fn,"chain_%c.pdb",cc->chain);
       write_sto_conf(fn,title,pdba,x,NULL,box);
     }
-    
-    find_nc_ter(pdba,&rN,&rC);
-    
-    if ( (rN<0) || (rC<0) ) {
-      printf("No N- or C-terminus found: "
-	     "this chain appears to contain no protein\n");
-    } else {
-      /* set termini */
-      if ( (rN>=0) && (bTerMan || (nNtdb<4)) )
-	sel_ntdb=choose_ter(nNtdb,ntdb,"Select N-terminus type (start)");
-      else
-	if (strncmp(*pdba->resname[pdba->atom[rN].resnr],"PRO",3))
-	  sel_ntdb=&(ntdb[1]);
-	else
-	  sel_ntdb=&(ntdb[3]);
-      printf("N-terminus: %s\n",sel_ntdb->name);
+
+    for(i=0; i<cc->nterpairs; i++) {
+      cc->chainstart[cc->nterpairs] = pdba->nres;
+      find_nc_ter(pdba,cc->chainstart[i],cc->chainstart[i+1],
+		  &(cc->rN[i]),&(cc->rC[i]));    
       
-      if ( (rC>=0) && (bTerMan || (nCtdb<2)) )
-	sel_ctdb=choose_ter(nCtdb,ctdb,"Select C-terminus type (end)");
-      else
-	sel_ctdb=&(ctdb[1]);
-      printf("C-terminus: %s\n",sel_ctdb->name);
+      if ( (cc->rN[i]<0) || (cc->rC[i]<0) ) {
+	printf("No N- or C-terminus found: "
+	       "this chain appears to contain no protein\n");
+      } else {
+	/* set termini */
+	if ( (cc->rN[i]>=0) && (bTerMan || (nNtdb<4)) )
+	  sel_ntdb=choose_ter(nNtdb,ntdb,"Select N-terminus type (start)");
+	  else
+	    if (strncmp(*pdba->resname[pdba->atom[cc->rN[i]].resnr],"PRO",3))
+	    sel_ntdb=&(ntdb[1]);
+	    else
+	      sel_ntdb=&(ntdb[3]);
+	printf("N-terminus: %s\n",sel_ntdb->name);
+	
+	if ( (cc->rC[i]>=0) && (bTerMan || (nCtdb<2)) )
+	  sel_ctdb=choose_ter(nCtdb,ctdb,"Select C-terminus type (end)");
+	else
+	  sel_ctdb=&(ctdb[1]);
+	printf("C-terminus: %s\n",sel_ctdb->name);
+      }
     }
-    
+
     /* Generate Hydrogen atoms (and termini) in the sequence */
-    natom=add_h(&pdba,&x,nah,ah,sel_ntdb,sel_ctdb,rN,rC);
+    natom=add_h(&pdba,&x,nah,ah,sel_ntdb,sel_ctdb,cc->nterpairs,cc->rN,cc->rC);
     printf("Now there are %d residues with %d atoms\n",
 	   pdba->nres,pdba->nr);
     if (debug) write_pdbfile(debug,title,pdba,x,box,0,TRUE);
@@ -938,27 +983,27 @@ int main(int argc, char *argv[])
     strcpy(posre_fn,ftp2fn(efITP,NFILE,fnm));
     
     /* make up molecule name(s) */
-    if (chains[chain].bAllWat) 
+    if (cc->bAllWat) 
       sprintf(molname,"Water");
-    else if ( chains[chain].chain == '\0' || chains[chain].chain == ' ' )
+    else if ( cc->chain == '\0' || cc->chain == ' ' )
       sprintf(molname,"Protein");
     else
-      sprintf(molname,"Protein_%c",chains[chain].chain);
+      sprintf(molname,"Protein_%c",cc->chain);
     
-    if ((nchain-nwaterchain>1) && !chains[chain].bAllWat) {
+    if ((nch-nwaterchain>1) && !cc->bAllWat) {
       bITP=TRUE;
       strcpy(itp_fn,top_fn);
       printf("Chain time...\n");
       c=strrchr(itp_fn,'.');
-      if ( chains[chain].chain == '\0' || chains[chain].chain == ' ' )
+      if ( cc->chain == '\0' || cc->chain == ' ' )
 	sprintf(c,".itp");
       else
-	sprintf(c,"_%c.itp",chains[chain].chain);
+	sprintf(c,"_%c.itp",cc->chain);
       c=strrchr(posre_fn,'.');
-      if ( chains[chain].chain == '\0' || chains[chain].chain == ' ' )
+      if ( cc->chain == '\0' || cc->chain == ' ' )
 	sprintf(c,".itp");
       else
-	sprintf(c,"_%c.itp",chains[chain].chain);
+	sprintf(c,"_%c.itp",cc->chain);
       
       nincl++;
       srenew(incls,nincl);
@@ -968,7 +1013,7 @@ int main(int argc, char *argv[])
       bITP=FALSE;
 
     srenew(mols,nmol+1);
-    if (chains[chain].bAllWat) {
+    if (cc->bAllWat) {
       mols[nmol].name = strdup("SOL");
       mols[nmol].nr   = pdba->nres;
     } else {
@@ -980,7 +1025,7 @@ int main(int argc, char *argv[])
     if (bITP)
       print_top_comment(itp_file,title,TRUE);
 
-    if (chains[chain].bAllWat)
+    if (cc->bAllWat)
       top_file2=NULL;
     else
       if (bITP)
@@ -989,25 +1034,25 @@ int main(int argc, char *argv[])
 	top_file2=top_file;
     
     pdb2top(top_file2,posre_fn,molname,pdba,&x,atype,&tab,bts,nrtp,restp,
-	    sel_ntdb,sel_ctdb,bH14,rN,rC,bAlldih,
+	    sel_ntdb,sel_ctdb,bH14,cc->nterpairs,cc->rN,cc->rC,bAlldih,
 	    bDummies,bDummyAromatics,mHmult,nssbonds,ssbonds,NREXCL, 
 	    long_bond_dist, short_bond_dist);
     
-    if (!chains[chain].bAllWat)
+    if (!cc->bAllWat)
       write_posres(posre_fn,pdba);
 
     if (bITP)
       fclose(itp_file);
 
     /* pdba and natom have been reassigned somewhere so: */
-    chains[chain].pdba = pdba;
-    chains[chain].x = x;
+    cc->pdba = pdba;
+    cc->x = x;
     
     if (debug) {
-      if ( chains[chain].chain == '\0' || chains[chain].chain == ' ' )
+      if ( cc->chain == '\0' || cc->chain == ' ' )
 	sprintf(fn,"chain.pdb");
       else
-	sprintf(fn,"chain_%c.pdb",chains[chain].chain);
+	sprintf(fn,"chain_%c.pdb",cc->chain);
       write_sto_conf(fn,cool_quote(),pdba,x,NULL,box);
     }
   }
@@ -1018,7 +1063,7 @@ int main(int argc, char *argv[])
   /* now merge all chains back together */
   natom=0;
   nres=0;
-  for (i=0; (i<nchain); i++) {
+  for (i=0; (i<nch); i++) {
     natom+=chains[i].pdba->nr;
     nres+=chains[i].pdba->nres;
   }
@@ -1032,8 +1077,8 @@ int main(int argc, char *argv[])
   snew(x,natom);
   k=0;
   l=0;
-  for (i=0; (i<nchain); i++) {
-    if (nchain>1)
+  for (i=0; (i<nch); i++) {
+    if (nch>1)
       printf("Including chain %d in system: %d atoms %d residues\n",
 	     i+1,chains[i].pdba->nr,chains[i].pdba->nres);
     for (j=0; (j<chains[i].pdba->nr); j++) {
@@ -1050,7 +1095,7 @@ int main(int argc, char *argv[])
     }
   }
   
-  if (nchain>1) {
+  if (nch>1) {
     fprintf(stderr,"Now there are %d atoms and %d residues\n",k,l);
     print_sums(atoms, TRUE);
   }

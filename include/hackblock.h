@@ -105,8 +105,12 @@ extern void clear_t_hackblock(t_hackblock *hb);
 extern void clear_t_hack(t_hack *hack);
 /* reset struct */
 
-extern void merge_t_bondeds(t_rbondeds s[], t_rbondeds d[]);
-/* add s[].b[] to d[].b[] */
+extern void merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], 
+			    bool bMin, bool bPlus);
+/* add s[].b[] to d[].b[]
+ * If bMin==TRUE, don't copy bondeds with atoms starting with '-'
+ * If bPlus==TRUE, don't copy bondeds with atoms starting with '+'
+ */
      
 extern void copy_t_restp(t_restp *s, t_restp *d);
 extern void copy_t_hack(t_hack *s, t_hack *d);

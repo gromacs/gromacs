@@ -97,18 +97,18 @@ void dump_ab(FILE *out,int natom,int nab[], t_hack *ab[], bool bHeader)
 
 static t_hackblock *get_hackblocks(t_atoms *pdba, int nah, t_hackblock ah[],
 				   t_hackblock *ntdb, t_hackblock *ctdb, 
-				   int rN, int rC)
+				   int nterpairs, int *rN, int *rC)
 {
-  int rnr;
+  int i,rnr;
   t_hackblock *hb,*ahptr;
 
   /* make space */
   snew(hb,pdba->nres);
   /* first the termini */
-  if ( rN >= 0 )
-    copy_t_hackblock(ntdb, &hb[rN]);
-  if ( rC >= 0 )
-    merge_t_hackblock(ctdb, &hb[rC]);
+  for(i=0; i<nterpairs; i++) {
+    copy_t_hackblock(ntdb, &hb[rN[i]]);
+    merge_t_hackblock(ctdb, &hb[rC[i]]);
+  }
   /* then the whole hdb */
   for(rnr=0; rnr < pdba->nres; rnr++) {
     ahptr=search_h_db(nah,ah,*pdba->resname[rnr]);
@@ -194,16 +194,24 @@ static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
 }
 
 static void expand_hackblocks(t_atoms *pdba, t_hackblock hb[], 
-			      int nab[], t_hack *ab[], int rN, int rC)
+			      int nab[], t_hack *ab[], 
+			      int nterpairs, int *rN, int *rC)
 {
-  int i;
+  int i,j;
+  bool bN,bC;
   
-  for(i=0; i < pdba->nr; i++)
+  for(i=0; i < pdba->nr; i++) {
+    bN = FALSE;
+    for(j=0; j<nterpairs && !bN; j++)
+      bN = pdba->atom[i].resnr==rN[j];
+    bC = FALSE;
+    for(j=0; j<nterpairs && !bC; j++)
+      bC = pdba->atom[i].resnr==rC[j];
+
     /* add hacks to this atom */
     expand_hackblocks_one(&hb[pdba->atom[i].resnr], *pdba->atomname[i], 
-			  &nab[i], &ab[i], 
-			  pdba->atom[i].resnr==rN, 
-			  pdba->atom[i].resnr==rC);
+			  &nab[i], &ab[i], bN, bC);
+  }
   if (debug) fprintf(debug,"\n");
 }
 
@@ -282,7 +290,8 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[])
 }
 
 int add_h(t_atoms **pdbaptr, rvec *xptr[], int nah, t_hackblock ah[],
-	  t_hackblock *ntdb, t_hackblock *ctdb, int rN, int rC)
+	  t_hackblock *ntdb, t_hackblock *ctdb, 
+	  int nterpairs, int *rN, int *rC)
 {
   t_atoms     *newpdba,*pdba;
   bool        bSet;
@@ -297,13 +306,13 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[], int nah, t_hackblock ah[],
   pdba=*pdbaptr;
   natom=pdba->nr;
   /* first get all the hackblocks for each residue: */
-  hb = get_hackblocks(pdba, nah, ah, ntdb, ctdb, rN, rC);
+  hb = get_hackblocks(pdba, nah, ah, ntdb, ctdb, nterpairs, rN, rC);
   if (debug) dump_hb(debug, pdba->nres, hb);
   
   /* expand the hackblocks to atom level */
   snew(nab,natom);
   snew(ab,natom);
-  expand_hackblocks(pdba, hb, nab, ab, rN, rC);
+  expand_hackblocks(pdba, hb, nab, ab, nterpairs, rN, rC);
   free_t_hackblock(pdba->nres, &hb);
   
   if (debug) dump_ab(debug, natom, nab, ab, TRUE);
@@ -416,5 +425,5 @@ void protonate(t_atoms **atoms,rvec **x)
   }
   deprotonate(*atoms,*x);
   
-  add_h(atoms,x,nah,ah,NULL,NULL,0,0);
+  add_h(atoms,x,nah,ah,NULL,NULL,0,NULL,NULL);
 }
