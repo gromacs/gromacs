@@ -297,7 +297,13 @@ void please_cite(FILE *fp,char *key)
    "D. van der Spoel and P. J. van Maaren and H. J. C. Berendsen",
    "A systematic study of water models for molecular simulation. Derivation of models optimized for use with a reaction-field.",
    "J. Chem. Phys.",
-   "108 1998 10220 10230"
+   "108 1998 10220 10230",
+   
+   "Wishart98a",
+   "D. S. Wishart and A. M. Nip",
+   "Protein Chemical Shift Analysis: A Practical Guide",
+   "Biochem. Cell Biol.",
+   "76 1998 153-163"
   };
 #define NSTR (int)asize(citedb)
   
