@@ -425,7 +425,7 @@ atom index, followed by one or more atom indices. All non-bonded
 interactions between the first atom and the other atoms will be excluded.
 
 \section{\normindex{Constraint}s}
-\label{subsec:constraints}
+\label{sec:constraints}
 Constraints are defined in the {\tt [~constraints~]} section.
 The format is two atom numbers followed by the function type,
 which can be 1 or 2 and the constraint distance.
@@ -434,7 +434,7 @@ for generating exclusions and while type 2 is not (see \ssecref{excl}).
 The distances are constrained using the LINCS or the SHAKE algorithm,
 which can be selected in the {\tt *.mdp} file.
 Both types of constraints can be perturbed in free-energy calculations
-by adding a second constraint distance.
+by adding a second constraint distance (see \ssecref{constraintforce}).
 
 We have also implemented the \normindex{SETTLE} algorithm~\cite{Miyamoto92}
 which is an analytical solution of SHAKE specifically for water. 
@@ -1161,6 +1161,7 @@ files contain lines like:
 \end{verbatim}}
 
 \subsection{\swapindex{Constraint}{force}}
+\label{subsec:constraintforce}
 The constraint force between two atoms in one molecule can be calculated
 with the free energy perturbation code by adding a constraint between the
 two atoms, with a different length in the A and B topology. When the B length
