@@ -40,7 +40,7 @@ static char *SRCID_pme_h = "$Id$";
 extern real do_pme(FILE *log,       bool bVerbose,
 		   t_inputrec *ir,
 		   rvec x[],        rvec f[],
-		   real charge[],   rvec box,
+		   real charge[],   matrix box,
 		   t_commrec *cr,
 		   t_nsborder *nsb, t_nrnb *nrnb,
 		   matrix lrvir,real ewaldcoeff);
