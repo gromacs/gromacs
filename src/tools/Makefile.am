@@ -29,13 +29,8 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	g_sorient.c 	g_tcaf.c	g_traj.c	g_velacc.c	\
 	g_clustsize.c	g_mdmat.c	g_wham.c
 
-
-bin_PROGRAMS = \
-	average		do_dssp		editconf	eneconv		\
-	gmx-ana		genbox		genconf		genpr		\
-	make_ndx	mk_angndx	trjcat		trjconv        	\
-	trjorder	wheel		xpm2ps		genion		\
-	anadock		cdist		disco           g_wham		\
+xxx     = \
+	g_wham		\
 	g_analyze	g_anaeig	g_angle	      	g_bond	 	\
 	g_bundle	g_chi	     	g_cluster	g_confrms	\
 	g_covar	     	g_density	g_dielectric	g_dih	  	\
@@ -49,6 +44,13 @@ bin_PROGRAMS = \
 	g_sorient	g_tcaf	    	g_traj	       	g_velacc	\
 	g_clustsize	g_mdmat
 
+bin_PROGRAMS = \
+	average		do_dssp		editconf	eneconv		\
+	gmx-ana		genbox		genconf		genpr		\
+	make_ndx	mk_angndx	trjcat		trjconv        	\
+	trjorder	wheel		xpm2ps		genion		\
+	anadock		cdist		disco           
+
 
 genbox_SOURCES       = 	genbox.c addconf.c addconf.h
 genion_SOURCES       = 	genion.c calcpot.c calcpot.h edittop.c
@@ -61,7 +63,7 @@ LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 
 gmx-ana.c:	gmx-ana.pl
 		chmod +x gmx-ana.pl
-		./gmx-ana.pl $(bin_PROGRAMS)
+		./gmx-ana.pl $(xxx)
 
 # link the mpi library to non-mpi names if the latter are not present
 install-exec-hook:
@@ -72,6 +74,7 @@ install-exec-hook:
 	  (cd $$libdir && test -e $$libname.a -a ! -e $$nompi.a && $(LN_S) $$libname.a $$nompi.a ; exit 0); \
 	  (cd $$libdir && test -e $$libname.so -a ! -e $$nompi.so && $(LN_S) $$libname.so $$nompi.so ; exit 0); \
 	fi; 
+	/bin/cp $(xxx) $(bindir)
 
 CLEANFILES   = *.la *~ \\\#*
 
