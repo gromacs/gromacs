@@ -29,24 +29,22 @@ OBJ		= \
 		fatal.o		ffscanf.o	filenm.o	\
 		futil.o		gbutil.o	genhydro.o	\
 		fnbf.o		gmxfio.o	h_db.o		\
-		ifunc.o		index.o		\
-		invblock.o	javaio.o	\
-		lutab.o		macros.o	main.o		\
-		maths.o		matio.o		lrutil.o	\
-		memdump.o	mshift.o	mvdata.o	\
-		mvxvf.o		names.o		network.o	\
-		nrama.o		nrjac.o		nrnb.o		\
-		pargs.o		pbc.o		pdbio.o		\
-		princ.o		\
-		rando.o		random.o	rbin.o		\
-		rdgroup.o	readinp.o	replace.o	\
-		rmpbc.o		smalloc.o	stat.o		\
-		statutil.o	strdb.o		string2.o	\
-		symtab.o	\
+		ifunc.o		index.o		invblock.o	\
+		javaio.o	lutab.o		macros.o	\
+		main.o		maths.o		matio.o		\
+		lrutil.o	memdump.o	mshift.o	\
+		mvdata.o	mvxvf.o		names.o		\
+		network.o	nrama.o		nrjac.o		\
+		nrnb.o		pargs.o		pbc.o		\
+		pdbio.o		princ.o		rando.o		\
+		random.o	rbin.o		rdgroup.o	\
+		readinp.o	replace.o	rmpbc.o		\
+		smalloc.o	stat.o		statutil.o	\
+		strdb.o		string2.o	symtab.o	\
 		tpxio.o		trnio.o		trxio.o		\
 		txtdump.o	typedefs.o	wgms.o		\
-		wman.o		writeps.o	\
-		xdrd.o		xtcio.o		xvgr.o
+		wman.o		writeps.o	xdrd.o		\
+		xtcio.o		xvgr.o
 
 ifeq ($(USEF77),yes)
 OBJ		+= innerf.o
@@ -168,7 +166,7 @@ $(LIB)(fnbf.o):		fnbf.m4 inner.m4 $(M4MAC) $(M4FILE) $(CPUMAKEF)
 
 $(LIB)(innerf.o):	mkinl.c Makefile $(CPUMAKEF)
 			$(CC) $(C-FLAGS) -g -c $(SYSDEFS) mkinl.c 
-			$(CC) -o mkinl mkinl.o
+			$(CC) $(C-FLAGS) -g -o mkinl mkinl.o
 			./mkinl 0 1
 			$(F77) $(FFLAGS) -c innerf.f
 			$(AR) $(ARFLAGS) $(LIB) innerf.o
@@ -177,7 +175,7 @@ $(LIB)(innerf.o):	mkinl.c Makefile $(CPUMAKEF)
 $(LIB)(innerc.o):	mkinl.c inner.m4 Makefile $(CPUMAKEF)
 			$(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) inner.m4 > inner.h
 			$(CC) $(C-FLAGS) -g -c $(SYSDEFS) mkinl.c 
-			$(CC) -o mkinl mkinl.o
+			$(CC) $(C-FLAGS) -g -o mkinl mkinl.o
 			./mkinl 1 1
 			$(RM) mkinl
 			$(CC) $(C-FLAGS) -c innerc.c
@@ -186,5 +184,3 @@ $(LIB)(innerc.o):	mkinl.c inner.m4 Makefile $(CPUMAKEF)
 
 include	Make.dep
 endif
-
-
