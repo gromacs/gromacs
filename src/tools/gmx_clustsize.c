@@ -66,7 +66,7 @@
 static void clust_size(char *ndx,char *trx,char *xpm,
 		       char *xpmw,char *ncl,char *acl, 
 		       char *mcl,char *histo,char *tempf,
-		       bool bMol,char *tpr,
+		       bool bMol,bool bPBC,char *tpr,
 		       real cut,int nskip,int nlevels,
 		       t_rgb rmid,t_rgb rhi)
 {
@@ -74,7 +74,6 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   atom_id *index=NULL;
   int     nindex,natoms,status;
   rvec    *x=NULL,*v=NULL,dx;
-  matrix  box;
   t_pbc   pbc;
   char    *gname;
   char    timebuf[32];
@@ -134,7 +133,8 @@ static void clust_size(char *ndx,char *trx,char *xpm,
     t_y[i] = i+1;
   do {
     if ((nskip == 0) || ((nskip > 0) && ((nframe % nskip) == 0))) {
-      set_pbc(&pbc,box);
+      if (bPBC)
+	set_pbc(&pbc,fr.box);
       max_clust_size = 1;
       max_clust_ind  = -1;
       
@@ -166,14 +166,20 @@ static void clust_size(char *ndx,char *trx,char *xpm,
 		aii = mols->a[ii];
 		for(jj=mols->index[aj]; !bSame && (jj<mols->index[aj+1]); jj++) {
 		  ajj   = mols->a[jj];
-		  pbc_dx(&pbc,x[aii],x[ajj],dx);
+		  if (bPBC)
+		    pbc_dx(&pbc,x[aii],x[ajj],dx);
+		  else
+		    rvec_sub(x[aii],x[ajj],dx);
 		  dx2   = iprod(dx,dx);
 		  bSame = (dx2 < cut2);
 		}
 	      }
 	    }
 	    else {
-	      pbc_dx(&pbc,x[ai],x[aj],dx);
+	      if (bPBC)
+		pbc_dx(&pbc,x[ai],x[aj],dx);
+	      else
+		rvec_sub(x[ai],x[aj],dx);
 	      dx2 = iprod(dx,dx);
 	      bSame = (dx2 < cut2);
 	    }
@@ -316,6 +322,7 @@ int gmx_clustsize(int argc,char *argv[])
   static int  nskip    = 0;
   static int  nlevels  = 20;
   static bool bMol     = FALSE;
+  static bool bPBC     = TRUE;
   static rvec rlo      = { 1.0, 1.0, 0.0 };
   static rvec rhi      = { 0.0, 0.0, 1.0 };
   t_pargs pa[] = {
@@ -323,6 +330,8 @@ int gmx_clustsize(int argc,char *argv[])
       "Largest distance (nm) to be considered in a cluster" },
     { "-mol",      FALSE, etBOOL, {&bMol},
       "Cluster molecules rather than atoms (needs tpr file)" },
+    { "-pbc",      FALSE, etBOOL, {&bPBC},
+      "Use periodic boundary conditions" },
     { "-nskip",    FALSE, etINT,  {&nskip},
       "Number of frames to skip between writing" },
     { "-nlevels",  FALSE, etINT,  {&nlevels},
@@ -364,7 +373,7 @@ int gmx_clustsize(int argc,char *argv[])
 	     opt2fn("-nc",NFILE,fnm),opt2fn("-ac",NFILE,fnm),
 	     opt2fn("-mc",NFILE,fnm),opt2fn("-hc",NFILE,fnm),
 	     opt2fn("-temp",NFILE,fnm),
-	     bMol,ftp2fn(efTPR,NFILE,fnm),
+	     bMol,bPBC,ftp2fn(efTPR,NFILE,fnm),
 	     cutoff,nskip,nlevels,rgblo,rgbhi);
 
   thanx(stderr);
