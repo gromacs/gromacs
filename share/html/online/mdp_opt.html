@@ -26,7 +26,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, nstcomm, comm_grps)
 <li><A HREF="#ld"><b>langevin dynamics</b></A> (bd_temp, bd_fric, ld_seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
-<li><a HREF="#xmdrun"><b>shell molecular dynamics</a></a>(niter)
+<li><a HREF="#xmdrun"><b>shell molecular dynamics</b></a>(emtol,niter)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
 <li><A HREF="#nl"><b>neighbor searching</b></A> (nstlist, ns_type, pbc, rlist)
 <li><A HREF="#el"><b>electrostatics and VdW</b></A> (coulombtype, rcoulomb_switch, rcoulomb, vdwtype, rvdw_switch, rvdw, epsilon_r, DispCorr, fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, optimize_fft)
@@ -179,7 +179,11 @@ conjugate gradient energy minimization.
 
 <A NAME="xmdrun"><br>
 <hr>
-<h3><!--Idx-->Shell Molecular Dynamics<!--EIdx--></h3>
+<h3><!--Idx-->Shell Molecular Dynamics<!--EIdx--></h3> The shell
+molecular dynamics program <b>xmdrun</b> optimizes the positions of
+the shells at every time step until either the RMS force on the shells
+is less than emtol, or a maximum number of iterations (niter) has been
+reached
 <dl>
 <dt><h4>emtol: </b>(100.0) [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</h4>
 <dd>the minimization is converged when the maximum force is smaller than 
