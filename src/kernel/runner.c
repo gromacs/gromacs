@@ -63,6 +63,20 @@ bool optRerunMDset (int nfile, t_filenm fnm[])
   return opt2bSet("-rerun",nfile,fnm);
 }
 
+void get_cmparm(t_inputrec *ir,int step,bool *bStopCM,bool *bStopRot)
+{
+  if (ir->nstcomm == 0) {
+    *bStopCM  = FALSE;
+    *bStopRot = FALSE;
+  } else if (ir->nstcomm > 0) {
+    *bStopCM  = do_per_step(step,ir->nstcomm);
+    *bStopRot = FALSE;
+  } else {
+    *bStopCM  = FALSE;
+    *bStopRot = do_per_step(step,-ir->nstcomm);
+  }
+}
+
 void finish_run(FILE *log,t_commrec *cr,
 		char *confout,
                 t_nsborder *nsb,

@@ -53,7 +53,7 @@ pdb2gmx:	$(POBJ)
 		$(LD) -o $@ $^ $(SYSLIBS) 
 
 mdrun:		mdrun.o $(RUNOBJ)
-		$(LD) $(RUNLDOPT) -o $@ $^ $(LINKLIB) $(FFTLIBS) $(SYSLIBS)
+		$(LD) $(RUNLDOPT) -p -o $@ $^ $(LINKLIB) $(FFTLIBS) $(SYSLIBS)
 
 mk_ghat:	mk_ghat.o
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS) $(SYSLIBS)

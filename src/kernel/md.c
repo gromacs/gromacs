@@ -68,7 +68,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	  force_vir,shake_vir,mdatoms);
   
   /* Remove periodicity */  
-  do_pbc_first(log,parm,box_size,fr,graph,x);
+  if (parm->ir.eBox != ebtNONE)
+    do_pbc_first(log,parm,box_size,fr,graph,x);
   
   if (!parm->ir.bUncStart) 
     do_shakefirst(log,bTYZ,lambda,ener,parm,nsb,mdatoms,x,vold,buf,f,v,
@@ -127,16 +128,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       bNS = TRUE;
     else {
       /* Stop Center of Mass motion */
-      if (parm->ir.nstcomm == 0) {
-	bStopCM  = FALSE;
-	bStopRot = FALSE;
-      } else if (parm->ir.nstcomm > 0) {
-	bStopCM  = do_per_step(step,parm->ir.nstcomm);
-	bStopRot = FALSE;
-      } else {
-	bStopCM  = FALSE;
-	bStopRot = do_per_step(step,-parm->ir.nstcomm);
-      }
+      get_cmparm(&parm->ir,step,&bStopCM,&bStopRot);
+    
       /* Determine whether or not to do Neighbour Searching */
       bNS=((parm->ir.nstlist && ((step % parm->ir.nstlist)==0)) || (step==0));
     }
