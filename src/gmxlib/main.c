@@ -52,16 +52,9 @@
 #define BUFSIZE	1024
 
 
-#ifdef USE_THREADS
-/* These are a couple of Global mutex variables that
- * we use when writing to log files, so we avoid different
- * threads printing to the same file at once. (It wont crash,
- * but the print statements would be completely mixed up)
- */
-pthread_mutex_t gmx_logfile_mtx = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t gmx_stdout_mtx  = PTHREAD_MUTEX_INITIALIZER;
 
-#endif
+
+
 
 FILE *stdlog=NULL;
 int  gmx_parallel_env=0;
