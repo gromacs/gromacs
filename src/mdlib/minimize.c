@@ -193,9 +193,9 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 {
   static char *CG="Conjugate Gradients";
   double gpa,gpb;
-  real   lambda,fmax,testf,zet,w,smin;
+  double EpotA=0.0,EpotB=0.0,a=0.0,b,beta=0.0,zet,w;
+  real   lambda,fmax,testf,smin;
   rvec   *p,*f,*xprime,*xx,*ff;
-  real   EpotA=0.0,EpotB=0.0,a=0.0,b,beta=0.0;
   real   fnorm,pnorm,fnorm_old;
   t_vcm      *vcm;
   t_mdebin   *mdebin;
@@ -411,16 +411,14 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     zet = 3.0 * (EpotA-EpotB) / (b-a) + gpa + gpb;
     w   = zet*zet - gpa*gpb;
     if (w < 0.0) {
-      fprintf(stderr,"Negative w: %20.12e\n",w);
-      fprintf(stderr,"z= %20.12e\n",zet);
-      fprintf(stderr,"gpa= %20.12e, gpb= %20.12e\n",gpa,gpb);
-      fprintf(stderr,"a= %20.12e, b= %20.12e\n",a,b);
-      fprintf(stderr,"EpotA= %20.12e, EpotB= %20.12e\n",EpotA,EpotB);
-      fprintf(stderr,"Negative number for sqrt encountered (%f)\n",w);
-
+      if (debug) {
+	fprintf(debug,"Negative w: %20.12e\n",w);
+	fprintf(debug,"z= %20.12e\n",zet);
+	fprintf(debug,"gpa= %20.12e, gpb= %20.12e\n",gpa,gpb);
+	fprintf(debug,"a= %20.12e, b= %20.12e\n",a,b);
+	fprintf(debug,"EpotA= %20.12e, EpotB= %20.12e\n",EpotA,EpotB);
+      }
       bBeta0 = TRUE;      
-      /* fprintf(stderr,"Terminating minimization\n");
-	 break; */
     } 
     else {
       w    = sqrt(w);
@@ -467,10 +465,13 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     }   
     /* new search direction */
     /* beta = 0 means steepest descents */
-    if (bBeta0 || (nstcg && ((count % nstcg)==0)))
+    if (bBeta0 || (nstcg && ((count % nstcg)==0))) {
+      if (bVerbose)
+	fprintf(stderr,"\rNew search direction\n");
       beta = 0.0;
+    }
     else
-      beta = fnorm*fnorm/(fnorm_old*fnorm_old);
+      beta = sqr(fnorm/fnorm_old);
     
     /* update x, fnorm_old */
     for (i=start; i<end; i++)
