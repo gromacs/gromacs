@@ -125,30 +125,31 @@ void calc_h_pos(int nht,int nh[],int a[],rvec x[])
   }
   
   /* construct one, two or three dihedral hydrogens */
-  rij = 0.e0;
-  for(m=0; (m<DIM); m++) {
-    xh     = x[AJ][m];
-    sij[m] = x[AI][m]-xh;
-    sb[m]  = xh-x[AK][m];
-    rij   += sqr(sij[m]);
+  if ((nht != 5) && (nht !=6) && (nht != 7)) {
+    rij = 0.e0;
+    for(m=0; (m<DIM); m++) {
+      xh     = x[AJ][m];
+      sij[m] = x[AI][m]-xh;
+      sb[m]  = xh-x[AK][m];
+      rij   += sqr(sij[m]);
+    }
+    rij = sqrt(rij);
+    sa[XX] = sij[YY]*sb[ZZ]-sij[ZZ]*sb[YY];
+    sa[YY] = sij[ZZ]*sb[XX]-sij[XX]*sb[ZZ];
+    sa[ZZ] = sij[XX]*sb[YY]-sij[YY]*sb[XX];
+    ra = 0.e0;
+    for(m=0; (m<DIM); m++) {
+      sij[m] = sij[m]/rij;
+      ra    += sqr(sa[m]);
+    }
+    ra = sqrt(ra);
+    for(m=0; (m<DIM); m++) 
+      sa[m] = sa[m]/ra;
+    
+    sb[XX] = sa[YY]*sij[ZZ]-sa[ZZ]*sij[YY];
+    sb[YY] = sa[ZZ]*sij[XX]-sa[XX]*sij[ZZ];
+    sb[ZZ] = sa[XX]*sij[YY]-sa[YY]*sij[XX];
   }
-  
-  rij = sqrt(rij);
-  sa[XX] = sij[YY]*sb[ZZ]-sij[ZZ]*sb[YY];
-  sa[YY] = sij[ZZ]*sb[XX]-sij[XX]*sb[ZZ];
-  sa[ZZ] = sij[XX]*sb[YY]-sij[YY]*sb[XX];
-  ra = 0.e0;
-  for(m=0; (m<DIM); m++) {
-    sij[m] = sij[m]/rij;
-    ra    += sqr(sa[m]);
-  }
-  ra = sqrt(ra);
-  for(m=0; (m<DIM); m++) 
-    sa[m] = sa[m]/ra;
-
-  sb[XX] = sa[YY]*sij[ZZ]-sa[ZZ]*sij[YY];
-  sb[YY] = sa[ZZ]*sij[XX]-sa[XX]*sij[ZZ];
-  sb[ZZ] = sa[XX]*sij[YY]-sa[YY]*sij[XX];
 
   switch (nht) {
   case 2:
