@@ -348,6 +348,10 @@ int main (int argc,char *argv[])
 	j=0;
       for (i=0;i<natoms;i++)
 	copy_rvec(mat_x[j][i],xp[i]);
+      if (bFit) {  
+	reset_x(ifit,ind_fit,natom,all_at,xp,w_rls);
+	do_fit(header.natoms,w_rls,x,xp);
+      }
     }    
 
     for(j=0; (j<nrms); j++) 
