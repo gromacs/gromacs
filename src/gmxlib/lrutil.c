@@ -488,6 +488,23 @@ void write_pqr(char *fn,t_atoms *atoms,rvec x[],real phi[],real dx)
   fclose(fp);
 }
 
+void write_grid_pqr(char *fn,int nx,int ny,int nz,real ***phi)
+{
+  FILE *fp;
+  int  i,j,k,rnr=0;
+  real fac=4.0;
+  
+  fp=ffopen(fn,"w");
+  for(i=0; (i<nx); i++)
+    for(j=0; (j<ny); j++)
+      for(k=0; (k<nz); k++,rnr++)
+	fprintf(fp,"%-6s%5d  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+		"ATOM",(i+1),"C","C",' ',
+		1+((rnr+1) % 10000),fac*i,fac*j,fac*k,0.0,phi[i][j][k]);
+  fclose(fp);
+}
+
+
 real analyse_diff(FILE *log,int natom,rvec ffour[],rvec fpppm[],
 		  real phi_f[],real phi_p[],real phi_sr[],
 		  char *fcorr,char *pcorr,char *ftotcorr,char *ptotcorr)

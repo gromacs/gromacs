@@ -104,6 +104,7 @@ extern void print_phi(char *fn,int natoms,rvec x[],real phi[]);
 extern void plot_qtab(char *fn,int nx,int ny,int nz,real ***qtab);
 /* Plot a charge table to a postscript matrix */
 
+extern void write_grid_pqr(char *fn,int nx,int ny,int nz,real ***phi);
 extern void write_pqr(char *fn,t_atoms *atoms,rvec x[],real phi[],real dx);
 /* Write a pdb file where the potential phi is printed as B-factor (for
  * viewing with rasmol). All atoms are moved over a distance dx in the X 
