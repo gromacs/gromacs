@@ -49,6 +49,7 @@ static bool bTriclinic,bSupported;
 static rvec gl_fbox,gl_hbox,gl_mhbox,*tric_vec=NULL;
 static matrix gl_box;
 static int ntric_vec;
+static real sure_dist2;
 
 char *check_box(matrix box)
 {
@@ -88,6 +89,11 @@ void init_pbc(matrix box,bool bTruncOct)
     bTriclinic = TRICLINIC(box);
     if (bTriclinic) {
       copy_mat(box,gl_box);
+      /* When a 'shifted' distance is within this number, it is the shortest
+       * possible distance of all shifts.
+       */
+      sure_dist2 = 0.25*min(norm2(box[XX]),
+			    min(norm2(box[YY]),norm2(box[ZZ])));
       /* Make shift vectors, assuming the box is not very skewed */
       diagonal2 = norm2(gl_fbox);
       ntric_vec = 0;
@@ -133,13 +139,15 @@ void pbc_dx(rvec x1, rvec x2, rvec dx)
       copy_rvec(dx,dx_start);
       d2min = norm2(dx);
       /* now try all possible shifts */
-      for(i=0; i<ntric_vec; i++) {
+      i=0;
+      while ((d2min > sure_dist2) && (i < ntric_vec)) {
 	rvec_add(dx_start,tric_vec[i],try);
 	d2try = norm2(try);
 	if (d2try < d2min) {
 	  copy_rvec(try,dx);
 	  d2min = d2try;
 	}
+	i++;
       }
     } else {
       for(i=0; i<DIM; i++)
