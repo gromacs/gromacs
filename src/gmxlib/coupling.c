@@ -37,7 +37,7 @@ void calc_pres(matrix box,tensor ekin,tensor vir,tensor pres,real Elr)
   fac=PRESFAC*2.0/det(box);
   for(n=0; (n<DIM); n++)
     for(m=0; (m<DIM); m++)
-      pres[n][m]=(ekin[n][m]-vir[n][m]-Plr)*fac;
+      pres[n][m]=(ekin[n][m]-vir[n][m]+Plr)*fac;
       
   if (debug) {
     pr_rvecs(debug,0,"PC: pres",pres,DIM);
