@@ -939,6 +939,7 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, int
     fio_setprecision(fp,bDouble);
     do_int(precision);
     fver = tpx_version;
+    fgen = tpx_generation;
   }
   
   /* Check versions! */
