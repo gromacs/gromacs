@@ -126,8 +126,14 @@ extern int check_times(real t);
  *          1 if t>tend
  */
 
+extern char *time_unit(void);
+/* return time unit (e.g. ps or ns) */
+
 extern char *time_label(void);
-/* return time unit label (e.g. ps or ns) */
+/* return time unit label (e.g. "Time (ps)") */
+
+extern char *xvgr_tlabel(void);
+/* retrun x-axis time label for xmgr */
 
 extern real time_factor(void);
 /* return time conversion factor from ps (i.e. 1e-3 for ps->ns) */

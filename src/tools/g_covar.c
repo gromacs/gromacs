@@ -442,7 +442,7 @@ int main(int argc,char *argv[])
   fprintf(out,"Working directory: %s\n\n",str);
 
   fprintf(out,"Read %d frames from %s (time %g to %g %s)\n",nframes,trxfile,
-	  convert_time(tstart),convert_time(tend),time_label());
+	  convert_time(tstart),convert_time(tend),time_unit());
   if (bFit)
     fprintf(out,"Read reference structure for fit from %s\n",fitfile);
   if (ndxfile)

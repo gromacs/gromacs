@@ -499,11 +499,11 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
 
   fprintf(stderr,"\nSelect group for structure factor computation:\n");
   get_index(&top.atoms,fnNDX,1,&isize,&index,&grpname);
+  natoms=read_first_x(&status,fnTRX,&t,&x,box);
   if (isize < top.atoms.nr)
     snew(xndx,isize);
   else
     xndx = x;
-  natoms=read_first_x(&status,fnTRX,&t,&x,box);
   fprintf(stderr,"\n");
   
   init_nrnb(&nrnb);

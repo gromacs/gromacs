@@ -293,7 +293,7 @@ int main(int argc,char *argv[])
   FILE       *outx=NULL,*outv=NULL,*outf=NULL,*outb=NULL,*outt=NULL,*outekr=NULL;
   t_topology top;
   real       *mass,time;
-  char       title[STRLEN],*indexfn,timelabel[256];
+  char       title[STRLEN],*indexfn;
   t_trxframe fr;
   int        flags;
   rvec       *xtop,*xp=NULL;
@@ -390,32 +390,30 @@ int main(int argc,char *argv[])
   } else
     mass = NULL;
 
-  sprintf(timelabel, "Time (%s)", time_label());
-
   flags = 0;
   if (bOX) {
     flags = flags | TRX_READ_X;
     outx = xvgropen(opt2fn("-ox",NFILE,fnm),
 		    bCom ? "Center of mass" : "Coordinate",
-		    timelabel,"Coordinate (nm)");
+		    xvgr_tlabel(),"Coordinate (nm)");
     make_legend(outx,ngrps,isize0[0],index0[0],grpname,bCom,bMol,bDim);
   }
   if (bOV) {
     flags = flags | TRX_READ_V;
     outv = xvgropen(opt2fn("-ov",NFILE,fnm),
 		    bCom ? "Center of mass velocity" : "Velocity",
-		    timelabel,"Velocity (nm/ps)");
+		    xvgr_tlabel(),"Velocity (nm/ps)");
    make_legend(outv,ngrps,isize0[0],index0[0],grpname,bCom,bMol,bDim); 
   }
   if (bOF) {
     flags = flags | TRX_READ_F;
     outf = xvgropen(opt2fn("-of",NFILE,fnm),"Force",
-		    timelabel,"Force (kJ mol\\S-1\\N nm\\S-1\\N)");
+		    xvgr_tlabel(),"Force (kJ mol\\S-1\\N nm\\S-1\\N)");
     make_legend(outf,ngrps,isize0[0],index0[0],grpname,bCom,bMol,bDim);
   }
   if (bOB) {
     outb = xvgropen(opt2fn("-ob",NFILE,fnm),"Box vector elements",
-		    timelabel,"(nm)");
+		    xvgr_tlabel(),"(nm)");
    
     xvgr_legend(outb,6,box_leg);
   }
@@ -425,7 +423,7 @@ int main(int argc,char *argv[])
     bDum[ZZ] = FALSE;
     bDum[DIM] = TRUE;
     flags = flags | TRX_READ_V;
-    outt = xvgropen(opt2fn("-ot",NFILE,fnm),"Temperature",timelabel,"(K)");
+    outt = xvgropen(opt2fn("-ot",NFILE,fnm),"Temperature",xvgr_tlabel(),"(K)");
     make_legend(outt,ngrps,isize[0],index[0],grpname,bCom,bMol,bDum);
   }
   if (bEKR) {
@@ -435,7 +433,7 @@ int main(int argc,char *argv[])
     bDum[DIM] = TRUE;
     flags = flags | TRX_READ_X | TRX_READ_V;
     outekr = xvgropen(opt2fn("-ekr",NFILE,fnm),"Center of mass rotation",
-		      timelabel,"Energy (kJ mol\\S-1\\N)");
+		      xvgr_tlabel(),"Energy (kJ mol\\S-1\\N)");
     make_legend(outekr,ngrps,isize[0],index[0],grpname,bCom,bMol,bDum);
   }
   if (flags == 0 && !bOB) {

@@ -644,7 +644,8 @@ int main(int argc,char *argv[])
 	      fr.time += tshift;
 
 	  if (bTDump)
-	    fprintf(stderr,"\nDumping frame at t= %g\n",fr.time);
+	    fprintf(stderr,"\nDumping frame at t= %g %s\n",
+		    convert_time(fr.time),time_unit());
 
 	/* check for writing at each delta_t */
 	  bDoIt=(delta_t == 0);

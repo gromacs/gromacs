@@ -202,7 +202,7 @@ int main(int argc,char *argv[])
   t_atoms    outatoms;
   real       t,comp;
   int        natoms;
-  char       *grpname[MAX_ENDS],title[256],timelabel[256],*anm="CA",*rnm="GLY";
+  char       *grpname[MAX_ENDS],title[256],*anm="CA",*rnm="GLY";
   int        i,j,gnx[MAX_ENDS];
   atom_id    *index[MAX_ENDS];
   t_bundle   bun;
@@ -258,29 +258,27 @@ int main(int argc,char *argv[])
   snew(bun.dir,n);
   snew(bun.len,n);
 
-  sprintf(timelabel, "Time (%s)", time_label());
-  
   flen   = xvgropen(opt2fn("-ol",NFILE,fnm),"Axis lengths",
-		    timelabel,"(nm)");
+		    xvgr_tlabel(),"(nm)");
   fdist  = xvgropen(opt2fn("-od",NFILE,fnm),"Distance of axis centers",
-		    timelabel,"(nm)");
+		    xvgr_tlabel(),"(nm)");
   fz     = xvgropen(opt2fn("-oz",NFILE,fnm),"Z-shift of axis centers",
-		    timelabel,"(nm)");
+		    xvgr_tlabel(),"(nm)");
   ftilt  = xvgropen(opt2fn("-ot",NFILE,fnm),"Axis tilts",
-		    timelabel,"(degrees)");
+		    xvgr_tlabel(),"(degrees)");
   ftiltr = xvgropen(opt2fn("-otr",NFILE,fnm),"Radial axis tilts",
-		    timelabel,"(degrees)");
+		    xvgr_tlabel(),"(degrees)");
   ftiltl = xvgropen(opt2fn("-otl",NFILE,fnm),"Lateral axis tilts",
-		    timelabel,"(degrees)");
+		    xvgr_tlabel(),"(degrees)");
   
   if (bKink) {
     fkink  = xvgropen(opt2fn("-ok",NFILE,fnm),"Kink angles",
-		      timelabel,"(degrees)");
+		      xvgr_tlabel(),"(degrees)");
     fkinkr = xvgropen(opt2fn("-okr",NFILE,fnm),"Radial kink angles",
-		      timelabel,"(degrees)");
+		      xvgr_tlabel(),"(degrees)");
     fprintf(fkinkr,"@ subtitle \"+ = ) (   - = ( )\"\n");
     fkinkl = xvgropen(opt2fn("-okl",NFILE,fnm),"Lateral kink angles",
-		      timelabel,"(degrees)");
+		      xvgr_tlabel(),"(degrees)");
   }
 
   if (opt2bSet("-oa",NFILE,fnm)) {

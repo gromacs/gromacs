@@ -72,6 +72,8 @@ static char *timestr[] = { NULL, "fs", "ps", "ns", "us", "ms", "s",
 			   "m",              "h",                NULL };
 real timefactors[]     = { 0,    1e3,  1,    1e-3, 1e-6, 1e-9, 1e-12, 
 			   (1.0/60.0)*1e-12, (1.0/3600.0)*1e-12, 0 };
+static char *xvgrtimestr[] = { NULL, "fs", "ps", "ns", "\\8m\\4s", "ms", "s",
+			       "m", "h", NULL };
 static bool  bView=FALSE;
 static unsigned long uFlags=0;
 static char  *program=NULL;
@@ -151,9 +153,28 @@ int check_times(real t)
   return check_times2(t,t,t,t);
 }
 
-char *time_label(void)
+char *time_unit(void)
 {
   return timestr[0];
+}
+
+char *time_label(void)
+{
+  static char label[20];
+
+  sprintf(label,"Time (%s)",timestr[0] ? timestr[0] : "ps");
+
+  return label;
+}
+
+char *xvgr_tlabel(void)
+{
+  static char label[20];
+
+  sprintf(label,"Time (%s)",
+	  nenum(timestr) ? xvgrtimestr[nenum(timestr)] : "ps");
+
+  return label;
 }
 
 #define INIT_TIME_FACTOR \
@@ -195,6 +216,7 @@ void default_time(void)
 {
   timestr[0] = timestr[1];
   timefactor = timefactors[1];
+  xvgrtimestr[0] = xvgrtimestr[1];
 }
 
 static void set_default_time_unit(char *select)
@@ -207,12 +229,15 @@ static void set_default_time_unit(char *select)
   if (strcmp(timestr[i], select)==0) {
     timestr[0] = timestr[i];
     timefactors[0] = timefactors[i];
+    xvgrtimestr[0] = xvgrtimestr[i];
     for(j=i; j>1; j--) {
       timestr[j]=timestr[j-1];
       timefactors[j]=timefactors[j-1];
+      xvgrtimestr[j]=xvgrtimestr[j-1];
     }
     timestr[1]=timestr[0];
     timefactors[1]=timefactors[0];
+    xvgrtimestr[1]=xvgrtimestr[0];
   }
 }
 
@@ -356,7 +381,7 @@ static int add_parg(int npargs,t_pargs **pa,t_pargs *pa_add)
   return npargs+1;
 }
 
-static char *mk_desc(t_pargs *pa, char *time_unit)
+static char *mk_desc(t_pargs *pa, char *time_unit_str)
 {
   char *newdesc=NULL,*ndesc=NULL,*ptr=NULL;
   int  len,k;
@@ -386,10 +411,10 @@ static char *mk_desc(t_pargs *pa, char *time_unit)
     while( (ptr=strstr(newdesc,TUNITLABEL)) != NULL ) {
       ptr[0]='\0';
       ptr+=NTUNIT;
-      len+=strlen(time_unit)-NTUNIT;
+      len+=strlen(time_unit_str)-NTUNIT;
       snew(ndesc,len);
       strcpy(ndesc,newdesc);
-      strcat(ndesc,time_unit);
+      strcat(ndesc,time_unit_str);
       strcat(ndesc,ptr);
       sfree(newdesc);
       newdesc=ndesc;
@@ -634,7 +659,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     memcpy(&(pa[i]),&(all_pa[k]),(size_t)sizeof(pa[i]));
   
   for(i=0; (i<npall); i++)
-    all_pa[i].desc = mk_desc(&(all_pa[i]), time_label() );
+    all_pa[i].desc = mk_desc(&(all_pa[i]), time_unit() );
 
   bExit = bHelp || (strcmp(manstr[0],"no") != 0);
 
