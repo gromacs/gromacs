@@ -43,6 +43,7 @@ static char *SRCID_gmxdump_c = "$Id$";
 #include "enxio.h"
 #include "assert.h"
 #include "smalloc.h"
+#include "names.h"
 #include "gmxfio.h"
 #include "tpxio.h"
 #include "trnio.h"
@@ -50,7 +51,7 @@ static char *SRCID_gmxdump_c = "$Id$";
 
 static void list_tpx(char *fn, bool bAltLayout)
 {
-  int         step,natoms,fp,indent;
+  int         step,natoms,fp,indent,i,j,**gcount,atot;
   real        t,lambda;
   rvec        *x,*v,*f;
   matrix      box;
@@ -99,6 +100,26 @@ static void list_tpx(char *fn, bool bAltLayout)
 	pr_top(stdout,indent,"topology",&(top));
       }
   }
+  snew(gcount,egcNR);
+  for(i=0; (i<egcNR); i++) 
+    snew(gcount[i],top.atoms.grps[i].nr);
+  
+  for(i=0; (i<top.atoms.nr); i++) {
+    for(j=0; (j<egcNR); j++) 
+      gcount[j][top.atoms.atom[i].grpnr[j]]++;
+  }
+  printf("Group statistics\n");
+  for(i=0; (i<egcNR); i++) {
+    atot=0;
+    printf("%-12s: ",gtypes[i]);
+    for(j=0; (j<top.atoms.grps[i].nr); j++) {
+      printf("  %5d",gcount[i][j]);
+      atot+=gcount[i][j];
+    }
+    printf("  (total %d atoms)\n",atot);
+    sfree(gcount[i]);
+  }
+  sfree(gcount);
   
   sfree(x);
   sfree(v);

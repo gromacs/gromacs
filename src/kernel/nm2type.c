@@ -117,12 +117,19 @@ void dump_nm2type(FILE *fp,int nnm,t_nm2type nm2t[])
   }
 }
 
-char *nm2type(int nnm,t_nm2type nm2t[],char *elem,int nbonds)
+char *nm2type(int nnm,t_nm2type nm2t[],char *nm,int nbonds)
 {
   int i;
-  
+
+  /* First check for names */  
   for(i=0; (i<nnm); i++) {
-    if ((strcasecmp(nm2t[i].elem,elem) == 0) &&
+    if ((strcasecmp(nm2t[i].elem,nm) == 0) &&
+	(nm2t[i].nbonds == nbonds))
+      return nm2t[i].type;
+  }
+  /* Then for element */
+  for(i=0; (i<nnm); i++) {
+    if ((nm2t[i].elem[0] == nm[0]) &&
 	(nm2t[i].nbonds == nbonds))
       return nm2t[i].type;
   }

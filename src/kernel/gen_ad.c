@@ -546,6 +546,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, bool bH14,
   int     i,j,j1,k,k1,l,l1,m,n;
   int     maxang,maxdih,maxidih,maxpai;
   int     nang,ndih,npai,nidih,nbd;
+  int     dang,ddih;
   bool    bFound;
   
   /* These are the angles, pairs, impropers and dihedrals that we generate
@@ -556,8 +557,10 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, bool bH14,
   nidih   = 0;
   npai    = 0;
   ndih    = 0;
-  maxang  = 6*nnb->nr;
-  maxdih  = maxpai = maxidih = 24*nnb->nr;
+  dang    = 6*nnb->nr;
+  ddih    = 24*nnb->nr;
+  maxang  = dang;
+  maxdih  = maxpai = maxidih = ddih;
   snew(ang, maxang);
   snew(dih, maxdih);
   snew(pai, maxpai);
@@ -573,8 +576,11 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, bool bH14,
 	/* For all first neighbours of j1 */
 	k1=nnb->a[j1][1][k];
 	if (k1 != i) {
-	  if (nang == maxang)
-	    fatal_error(0,"Too many angles (%d) generated!\n",nang);
+	  if (nang == maxang) {
+	    srenew(ang,maxang+dang);
+	    memset(ang+maxang,0,sizeof(ang[0]));
+	    maxang += dang;
+	  }
 	  ang[nang].AJ=j1;
 	  if (i < k1) {
 	    ang[nang].AI=i;
@@ -622,8 +628,15 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, bool bH14,
 	    /* For all first neighbours of k1 */
 	    l1=nnb->a[k1][1][l];
 	    if ((l1 != i) && (l1 != j1)) {
-	      if (ndih == maxdih)
-		fatal_error(0,"Too many dihedrals (%d) generated!\n",ndih);
+	      if (ndih == maxdih) {
+		srenew(dih,maxdih+ddih);
+		memset(dih+maxdih,0,sizeof(dih[0]));
+		srenew(idih,maxdih+ddih);
+		memset(idih+maxdih,0,sizeof(idih[0]));
+		srenew(pai,maxdih+ddih);
+		memset(pai+maxdih,0,sizeof(pai[0]));
+		maxdih += ddih;
+	      }
 	      if (j1 < k1) {
 		dih[ndih].AI=i;
 		dih[ndih].AJ=j1;
