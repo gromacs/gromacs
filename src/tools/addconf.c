@@ -188,17 +188,14 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   static t_nrnb     nrnb;
   static t_commrec  *cr;
   static t_groups   *grps;
-  static bool       bHaveLJ;
   static int        *cg_index;
 
-  t_atom     *atom;
-  int        i,j,m,natoms,nx,ny,nz,ngid,res0;
+  int        i,j,m,natoms,nx,ny,nz,res0;
   ivec       *nFreeze;
   rvec       box_size;
   real       lambda=0,dvdlambda=0;
 
   natoms = atoms->nr;
-  atom   = atoms->atom;
     
   if (bFirst) {
     /* Charge group index */  
@@ -262,8 +259,6 @@ void do_nsgrid(FILE *fp,bool bVerbose,
       pr_forcerec(debug,fr,cr);
     
     /* Prepare for neighboursearching */
-    ngid    = 1;
-    bHaveLJ = TRUE;
     init_nrnb(&nrnb);
 
     /* Group stuff */
@@ -295,21 +290,6 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     fprintf(stderr,"Succesfully made neighbourlist\n");
 }
 
-real calc_n2max(matrix box,real rlong)
-{
-  rvec dx;
-  real lmax,n2;
-  int  i,n,imax;
-  
-  for(i=0; (i<DIM); i++) {
-    n     = 2*box[i][i]/rlong;
-    dx[i] = box[i][i]/n;
-  }
-  n2 = 2*norm2(dx);
-  
-  return n2;
-}
-
 bool bXor(bool b1,bool b2)
 {
   return (b1 && !b2) || (b2 && !b1);
@@ -321,7 +301,7 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
 {
   t_nblist   *nlist;
   t_atoms    *atoms_all;
-  real       max_vdw,*r_prot,*r_all,n2,n2max,r2,ib1,ib2;
+  real       max_vdw,*r_prot,*r_all,n2,r2,ib1,ib2;
   int        natoms_prot,natoms_solvt;
   int        i,j,jj,m,j0,j1,jnr,inr,iprot,is1,is2;
   int        prev,resnr,nresadd,d,k,ncells,maxincell;
@@ -372,7 +352,6 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
 	     
   /* Do neighboursearching step */
   do_nsgrid(stdout,bVerbose,box,x_all,atoms_all,max_vdw);
-  n2max = calc_n2max(box,max_vdw);
   
   /* check solvent with solute */
   nlist = &(fr->nlist_sr[eNL_VDW]);
