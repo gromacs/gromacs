@@ -198,7 +198,7 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,rvec *v,real *r)
       r[i]=newr[i];
     }
     sfree(newx);
-    sfree(newv);
+    if (v) sfree(newv);
     sfree(newr);
   }
   sfree(moltypes);
