@@ -89,7 +89,7 @@ int main(int argc,char *argv[])
   t_topology top;
   t_atoms    *atoms;  
   drvec      *xav;
-  rvec       *x,*xread,*xref;
+  rvec       *x,*xread,*xref,*xproj;
   matrix     box,zerobox;
   double     *matd;
   real       t,tstart,tend,*mat,dev,trace,sum,*eigval,inv_nframes;
@@ -188,6 +188,7 @@ int main(int argc,char *argv[])
 
   snew(x,natoms);
   snew(xav,natoms);
+  snew(xproj,natoms);
   ndim=natoms*DIM;
   snew(matd,ndim*ndim);
 #ifndef DOUBLE
@@ -248,7 +249,7 @@ int main(int argc,char *argv[])
   if (bRef) {
     /* copy the reference structure to the ouput array x */
     for (i=0; i<natoms; i++)
-      copy_rvec(xref[index[i]],x[i]);
+      copy_rvec(xref[index[i]],xproj[i]);
     /* correct the covariance matrix for the mass */
     for (j=0; j<natoms; j++) 
       for (dj=0; dj<DIM; dj++) 
@@ -261,7 +262,7 @@ int main(int argc,char *argv[])
     /* copy the average structure to the ouput array x */
     for (i=0; i<natoms; i++)
       for(d=0; d<DIM; d++)
-	x[i][d] = xav[i][d];
+	xproj[i][d] = xav[i][d];
     /* correct the covariance matrix for the mass and the average */
     for (j=0; j<natoms; j++) 
       for (dj=0; dj<DIM; dj++) 
@@ -346,7 +347,7 @@ int main(int argc,char *argv[])
   }
 
   write_eigenvectors(eigvecfile,natoms,mat,TRUE,1,end,
-		     WriteXref,x,bDiffMass1,x,bM);
+		     WriteXref,x,bDiffMass1,xproj,bM);
 
   out = ffopen(logfile,"w");
 
