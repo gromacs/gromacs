@@ -122,7 +122,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   snew(parm,1);
   snew(nrnb,cr->nprocs);
   
-  if (bVerbose) 
+  if (bVerbose && MASTER(cr)) 
     fprintf(stderr,"Getting Loaded...\n");
 
   if (PAR(cr)) {
@@ -149,7 +149,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   snew(vt,nsb->natoms);
   snew(vold,nsb->natoms);
 
-  if (bVerbose)
+  if (bVerbose && MASTER(cr))
     fprintf(stderr,"Loaded with Money\n\n");
 
   /* Index numbers for parallellism... */
@@ -227,7 +227,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
       }
     }
     
-    if (parm->ir.nstxtcout != 0) { 
+    if ((parm->ir.nstxtcout != 0) && MASTER(cr)) { 
       close_xtc_traj();
     }
 
