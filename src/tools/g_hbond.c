@@ -48,6 +48,7 @@ static char *SRCID_g_hbond_c = "$Id$";
 #include "xvgr.h"
 #include "gstat.h"
 #include "matio.h"
+#include "lutab.h"
 #include <math.h>
 
 #define max_hx 7
@@ -496,18 +497,18 @@ int main(int argc,char *argv[])
 #define FRINC 100
 #define HBINC 100
   
-#define ngrps 3
-#define ogrp (gr1-grp)
-#define insgrp grI/grINC
+#define NRGRPS 3
+#define OGRP (gr1-grp)
+#define INSGRP grI/grINC
   
-#define hbNO 0
-#define hbYES 1<<0
-#define hbINS 1<<1
-#define hbYESINS hbYES|hbINS
-#define hbNR (1<<2)
-  char  hbmap [hbNR]={ ' ',    'o',      '-',       '*' };
-  char *hbdesc[hbNR]={ "None", "Present","Inserted","Present & Inserted" };
-  t_rgb hbrgb [hbNR]={ {1,1,1},{1,0,0},  {0,0,1},   {1,0,1} };
+#define HB_NO 0
+#define HB_YES 1<<0
+#define HB_INS 1<<1
+#define HB_YESINS HB_YES|HB_INS
+#define HB_NR (1<<2)
+  char  hbmap [HB_NR]={ ' ',    'o',      '-',       '*' };
+  char *hbdesc[HB_NR]={ "None", "Present", "Inserted", "Present & Inserted" };
+  t_rgb hbrgb [HB_NR]={ {1,1,1},{1,0,0},  {0,0,1},   {1,0,1} };
   
   int     status;
   t_topology top;
@@ -556,9 +557,9 @@ int main(int argc,char *argv[])
   if (bSelected) {
     /* analyze selected hydrogen bonds */
     fprintf(stderr,"Select group with selected atoms:\n");
-    snew(grpnames,ngrps);
-    snew(index,ngrps);
-    snew(isize,ngrps);
+    snew(grpnames,NRGRPS);
+    snew(index,NRGRPS);
+    snew(isize,NRGRPS);
     get_index(&(top.atoms),opt2fn("-sel",NFILE,fnm),
 	      1,isize,index,grpnames);
     if (isize[0] % 3)
@@ -577,9 +578,9 @@ int main(int argc,char *argv[])
   } else {
     /* analyze all hydrogen bonds: get group(s) */
     fprintf(stderr,"Specify 2 groups to analyze:\n");
-    snew(grpnames,ngrps);
-    snew(index,ngrps);
-    snew(isize,ngrps);
+    snew(grpnames,NRGRPS);
+    snew(index,NRGRPS);
+    snew(isize,NRGRPS);
     get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
 	      2,isize,index,grpnames);
     
@@ -606,14 +607,14 @@ int main(int argc,char *argv[])
   if (bInsert) {
     fprintf(stderr,"Specify group for insertion analysis:\n");
     get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
-	      1,&(isize[insgrp]),&(index[insgrp]),&(grpnames[insgrp]));
+	      1,&(isize[INSGRP]),&(index[INSGRP]),&(grpnames[INSGRP]));
     fprintf(stderr,"Checking for overlap...\n");
-    for (i=0; (i<isize[insgrp]); i++)
+    for (i=0; (i<isize[INSGRP]); i++)
       for (grp=0; grp<(bTwo?2:1); grp++)
 	for (j=0; (j<isize[grp]); j++)
-	  if (index[insgrp][i] == index[grp][j]) 
+	  if (index[INSGRP][i] == index[grp][j]) 
 	    fatal_error(0,"Partial overlap between groups '%s' and '%s'",
-			grpnames[grp],grpnames[insgrp]);
+			grpnames[grp],grpnames[INSGRP]);
     fpins=ffopen("insert.dat","w");
     fprintf(fpins,"%4s: %15s -> %15s (%7s) - %15s (%7s)\n",
 	    "time","insert","donor","distang","acceptor","distang");
@@ -706,7 +707,7 @@ int main(int argc,char *argv[])
     for (i=0; i<max_hx; i++)
       nhx[nframes][i]=0;
     for (i=0; i<max_nrhb; i++)
-      hbexist[i][nframes]=hbNO;
+      hbexist[i][nframes]=HB_NO;
     
     /* loop over all gridcells (xi,yi,zi)      */
     /* Removed confusing macro, DvdS 27/12/98  */
@@ -724,8 +725,8 @@ int main(int argc,char *argv[])
 	      /* loop over all adjacent gridcells (xj,yj,zj) */
 	      /* This is a macro!!! */
 	      LOOPGRIDINNER(xj,yj,zj,xjj,yjj,zjj,xi,yi,zi,ngrid) {
-		jcell=&grid[xj][yj][zj][ogrp+grA];
-		/* loop over acceptor atoms from other group (ogrp) 
+		jcell=&grid[xj][yj][zj][OGRP+grA];
+		/* loop over acceptor atoms from other group (OGRP) 
 		 * in this adjacent gridcell (jcell) 
 		 */
 		for (aj=0; aj<jcell->nr; aj++) {
@@ -736,7 +737,7 @@ int main(int argc,char *argv[])
 		    for (k=0; (k<donors[grp][i].nrhb) && (idx==NOTSET); k++)
 		      if (j == donors[grp][i].hb[k].a)
 			idx=k;
-		    if ( is_hbond(a[ grp+grD][i],a[ grp+grH][i],a[ogrp+grA][j],
+		    if ( is_hbond(a[ grp+grD][i],a[ grp+grH][i],a[OGRP+grA][j],
 				  rcut,ccut,x,bBox,hbox,&dist,&ang) ) {
 		      /* add to index if not already there */
 		      if (idx==NOTSET) {
@@ -758,7 +759,7 @@ int main(int argc,char *argv[])
 			nrhb++;
 		      }
 		      /* update matrix */
-		      hbexist[donors[grp][i].hb[idx].nr][nframes] |= hbYES;
+		      hbexist[donors[grp][i].hb[idx].nr][nframes] |= HB_YES;
 		      
 		      /* count number of hbonds per frame */
 		      nhb[nframes]++;
@@ -770,7 +771,7 @@ int main(int argc,char *argv[])
 		      
 		      if (!bTwo) {
 			resdist=abs(top.atoms.atom[a[ grp+grD][i]].resnr-
-				    top.atoms.atom[a[ogrp+grA][j]].resnr);
+				    top.atoms.atom[a[OGRP+grA][j]].resnr);
 			if (resdist >= max_hx) 
 			  resdist = max_hx-1;
 			nhx[nframes][resdist]++;
@@ -815,7 +816,7 @@ int main(int argc,char *argv[])
 			  k=kcell->atoms[ak];
 			  if (is_hbond(a[    grID][k],
 				       a[    grIH][k],
-				       a[ogrp+grA][j],
+				       a[OGRP+grA][j],
 				       rcut,ccut,x,bBox,hbox,&dist,&ang))
 			    if (dist<ins_a_dist) {
 			      ins_a=TRUE;
@@ -854,7 +855,7 @@ int main(int argc,char *argv[])
 			}
 			
 			/* mark insertion in hbond index */
-			hbexist[donors[grp][i].hb[idx].nr][nframes] |= hbINS;
+			hbexist[donors[grp][i].hb[idx].nr][nframes] |= HB_INS;
 			
 			/* print insertion info to file */
 			fprintf(fpins,
@@ -870,10 +871,10 @@ int main(int argc,char *argv[])
 				top.atoms.atom[a[grp+grD][i]].resnr+1,
 				*top.atoms.atomname[a[grp+grD][i]],
 				ins_d_dist,ins_d_ang*RAD2DEG,
-				a[ogrp+grA][j]+1,
-				*top.atoms.resname[top.atoms.atom[a[ogrp+grA][j]].resnr],
-				top.atoms.atom[a[ogrp+grA][j]].resnr+1,
-				*top.atoms.atomname[a[ogrp+grA][j]],
+				a[OGRP+grA][j]+1,
+				*top.atoms.resname[top.atoms.atom[a[OGRP+grA][j]].resnr],
+				top.atoms.atom[a[OGRP+grA][j]].resnr+1,
+				*top.atoms.atomname[a[OGRP+grA][j]],
 				ins_a_dist,ins_a_ang*RAD2DEG);
 		      }
 		    }
@@ -954,7 +955,7 @@ int main(int argc,char *argv[])
       for(i=0; i<nrhb; i++) {
 	snew(rhbex[i],nframes);
 	for(j=0; j<nframes; j++)
-	  rhbex[i][j]=(hbexist[i][j] & hbYES);
+	  rhbex[i][j]=(hbexist[i][j] & HB_YES);
       }
       low_do_autocorr(opt2fn("-ac",NFILE,fnm), "Hydrogen Bond Autocorrelation",
 		      nframes,nrhb,-1,rhbex,time[1]-time[0],eacNormal,1,
@@ -989,7 +990,7 @@ int main(int argc,char *argv[])
       sprintf(mat.label_y,"Hydrogen Bond Index");
       mat.bDiscrete=TRUE;
       if (bInsert)
-	mat.nmap=hbNR;
+	mat.nmap=HB_NR;
       else
 	mat.nmap=2;
       snew(mat.map,mat.nmap);
@@ -1040,7 +1041,7 @@ int main(int argc,char *argv[])
 	  fprintf(fp,"%6u %6u %6u\n",
 		  a[ grp+grD][i]+1,
 		  a[ grp+grH][i]+1,
-		  a[ogrp+grA][donors[grp][i].hb[j].a]+1);
+		  a[OGRP+grA][donors[grp][i].hb[j].a]+1);
     if (bInsert) {
       if (bTwo)
 	fprintf(fp,"[ insert_%s->%s-%s ]",
