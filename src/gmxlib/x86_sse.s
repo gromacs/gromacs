@@ -15361,7 +15361,7 @@ inl2120_sse:
 	mulss  xmm2, [esp + _twelve]
 	subss  xmm2, xmm1
 
-	movaps xmm1, xmm0	/* xmm1=r */inv
+	movaps xmm1, xmm0	/* xmm1=rinv */
 	movaps xmm3, [esp + _krsqO]
 	addps  xmm0, xmm3	/* xmm0=rinv+ krsq */
 	mulps  xmm3, [esp + _two]
@@ -17774,7 +17774,7 @@ inl2020_sse:
 	movaps xmm4, xmm0
 	mulps  xmm4, xmm4	/* xmm4=rinvsq */
 
-	movaps xmm1, xmm0	/* xmm1=r */inv
+	movaps xmm1, xmm0	/* xmm1=rinv */
 	movaps xmm3, [esp + _krsqO]
 	addps  xmm0, xmm3	/* xmm0=rinv+ krsq */
 	subps  xmm0, [esp + _crf] /* xmm0=rinv+ krsq-crf */
