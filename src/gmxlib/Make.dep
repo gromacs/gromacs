@@ -480,6 +480,7 @@ dumxdrf.o: $(GMXHOME)/src/include/types/matrix.h
 dumxdrf.o: $(GMXHOME)/src/include/types/edsams.h
 dumxdrf.o: $(GMXHOME)/src/include/types/pulls.h
 dumxdrf.o: $(GMXHOME)/src/include/xdrf.h
+$(LIB)(enxio.o): $(GMXHOME)/src/include/futil.h
 $(LIB)(enxio.o): $(GMXHOME)/src/include/typedefs.h
 $(LIB)(enxio.o): $(GMXHOME)/src/include/sysstuff.h
 $(LIB)(enxio.o): $(GMXHOME)/src/include/types/simple.h
@@ -509,7 +510,6 @@ $(LIB)(enxio.o): $(GMXHOME)/src/include/types/parm.h
 $(LIB)(enxio.o): $(GMXHOME)/src/include/types/matrix.h
 $(LIB)(enxio.o): $(GMXHOME)/src/include/types/edsams.h
 $(LIB)(enxio.o): $(GMXHOME)/src/include/types/pulls.h
-$(LIB)(enxio.o): $(GMXHOME)/src/include/futil.h
 $(LIB)(enxio.o): $(GMXHOME)/src/include/string2.h
 $(LIB)(enxio.o): $(GMXHOME)/src/include/smalloc.h
 $(LIB)(enxio.o): $(GMXHOME)/src/include/gmxfio.h
@@ -1406,6 +1406,8 @@ $(LIB)(mgmx.o): $(GMXHOME)/src/include/readinp.h
 $(LIB)(mgmx.o): $(GMXHOME)/src/include/wman.h
 $(LIB)(mgmx.o): $(GMXHOME)/src/include/macros.h
 $(LIB)(mgmx.o): $(GMXHOME)/src/include/names.h
+mgmxtest.o: $(GMXHOME)/src/include/copyrite.h
+mgmxtest.o: $(GMXHOME)/src/include/statutil.h
 mgmxtest.o: $(GMXHOME)/src/include/typedefs.h
 mgmxtest.o: $(GMXHOME)/src/include/sysstuff.h
 mgmxtest.o: $(GMXHOME)/src/include/types/simple.h
@@ -1435,8 +1437,6 @@ mgmxtest.o: $(GMXHOME)/src/include/types/parm.h
 mgmxtest.o: $(GMXHOME)/src/include/types/matrix.h
 mgmxtest.o: $(GMXHOME)/src/include/types/edsams.h
 mgmxtest.o: $(GMXHOME)/src/include/types/pulls.h
-mgmxtest.o: $(GMXHOME)/src/include/copyrite.h
-mgmxtest.o: $(GMXHOME)/src/include/statutil.h
 mgmxtest.o: $(GMXHOME)/src/include/filenm.h
 mgmxtest.o: $(GMXHOME)/src/include/futil.h
 mgmxtest.o: $(GMXHOME)/src/include/readinp.h
@@ -2981,8 +2981,11 @@ $(LIB)(txtdump.o): $(GMXHOME)/src/include/string2.h
 $(LIB)(txtdump.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(txtdump.o): $(GMXHOME)/src/include/maths.h
 $(LIB)(txtdump.o): $(GMXHOME)/src/include/macros.h
-$(LIB)(typedefs.o): $(GMXHOME)/src/include/typedefs.h
+$(LIB)(typedefs.o): $(GMXHOME)/src/include/smalloc.h
+$(LIB)(typedefs.o): $(GMXHOME)/src/include/assert.h
 $(LIB)(typedefs.o): $(GMXHOME)/src/include/sysstuff.h
+$(LIB)(typedefs.o): $(GMXHOME)/src/include/symtab.h
+$(LIB)(typedefs.o): $(GMXHOME)/src/include/typedefs.h
 $(LIB)(typedefs.o): $(GMXHOME)/src/include/types/simple.h
 $(LIB)(typedefs.o): $(GMXHOME)/src/include/types/enums.h
 $(LIB)(typedefs.o): $(GMXHOME)/src/include/types/block.h
@@ -3010,9 +3013,6 @@ $(LIB)(typedefs.o): $(GMXHOME)/src/include/types/parm.h
 $(LIB)(typedefs.o): $(GMXHOME)/src/include/types/matrix.h
 $(LIB)(typedefs.o): $(GMXHOME)/src/include/types/edsams.h
 $(LIB)(typedefs.o): $(GMXHOME)/src/include/types/pulls.h
-$(LIB)(typedefs.o): $(GMXHOME)/src/include/smalloc.h
-$(LIB)(typedefs.o): $(GMXHOME)/src/include/assert.h
-$(LIB)(typedefs.o): $(GMXHOME)/src/include/symtab.h
 $(LIB)(wgms.o): $(GMXHOME)/src/include/gstat.h
 $(LIB)(wgms.o): $(GMXHOME)/src/include/typedefs.h
 $(LIB)(wgms.o): $(GMXHOME)/src/include/sysstuff.h

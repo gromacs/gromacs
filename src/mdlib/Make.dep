@@ -172,6 +172,7 @@ $(LIB)(congrad.o): $(GMXHOME)/src/include/enxio.h
 $(LIB)(congrad.o): $(GMXHOME)/src/include/dummies.h
 $(LIB)(congrad.o): $(GMXHOME)/src/include/mdrun.h
 $(LIB)(congrad.o): $(GMXHOME)/src/include/edsam.h
+$(LIB)(constr.o): $(GMXHOME)/src/include/confio.h
 $(LIB)(constr.o): $(GMXHOME)/src/include/typedefs.h
 $(LIB)(constr.o): $(GMXHOME)/src/include/sysstuff.h
 $(LIB)(constr.o): $(GMXHOME)/src/include/types/simple.h
@@ -201,7 +202,6 @@ $(LIB)(constr.o): $(GMXHOME)/src/include/types/parm.h
 $(LIB)(constr.o): $(GMXHOME)/src/include/types/matrix.h
 $(LIB)(constr.o): $(GMXHOME)/src/include/types/edsams.h
 $(LIB)(constr.o): $(GMXHOME)/src/include/types/pulls.h
-$(LIB)(constr.o): $(GMXHOME)/src/include/confio.h
 $(LIB)(constr.o): $(GMXHOME)/src/include/constr.h
 $(LIB)(constr.o): $(GMXHOME)/src/include/callf77.h
 $(LIB)(constr.o): $(GMXHOME)/src/include/copyrite.h
@@ -1292,7 +1292,7 @@ $(LIB)(psspread.o): $(GMXHOME)/src/include/nrnb.h
 $(LIB)(psspread.o): $(GMXHOME)/src/include/shift_util.h
 $(LIB)(psspread.o): $(GMXHOME)/src/include/complex.h
 $(LIB)(psspread.o): $(GMXHOME)/src/include/physics.h
-$(LIB)(pull.o): $(GMXHOME)/src/include/fatal.h
+$(LIB)(pull.o): $(GMXHOME)/src/include/futil.h
 $(LIB)(pull.o): $(GMXHOME)/src/include/typedefs.h
 $(LIB)(pull.o): $(GMXHOME)/src/include/sysstuff.h
 $(LIB)(pull.o): $(GMXHOME)/src/include/types/simple.h
@@ -1307,6 +1307,7 @@ $(LIB)(pull.o): $(GMXHOME)/src/include/types/inputrec.h
 $(LIB)(pull.o): $(GMXHOME)/src/include/types/nsborder.h
 $(LIB)(pull.o): $(GMXHOME)/src/include/types/ishift.h
 $(LIB)(pull.o): $(GMXHOME)/src/include/types/graph.h
+$(LIB)(pull.o): $(GMXHOME)/src/include/fatal.h
 $(LIB)(pull.o): $(GMXHOME)/src/include/types/nrnb.h
 $(LIB)(pull.o): $(GMXHOME)/src/include/types/nblist.h
 $(LIB)(pull.o): $(GMXHOME)/src/include/types/nsgrid.h
@@ -1321,7 +1322,6 @@ $(LIB)(pull.o): $(GMXHOME)/src/include/types/parm.h
 $(LIB)(pull.o): $(GMXHOME)/src/include/types/matrix.h
 $(LIB)(pull.o): $(GMXHOME)/src/include/types/edsams.h
 $(LIB)(pull.o): $(GMXHOME)/src/include/types/pulls.h
-$(LIB)(pull.o): $(GMXHOME)/src/include/futil.h
 $(LIB)(pull.o): $(GMXHOME)/src/include/rdgroup.h
 $(LIB)(pull.o): $(GMXHOME)/src/include/statutil.h
 $(LIB)(pull.o): $(GMXHOME)/src/include/filenm.h
@@ -1764,6 +1764,7 @@ $(LIB)(tables.o): $(GMXHOME)/src/include/types/parm.h
 $(LIB)(tables.o): $(GMXHOME)/src/include/types/matrix.h
 $(LIB)(tables.o): $(GMXHOME)/src/include/types/edsams.h
 $(LIB)(tables.o): $(GMXHOME)/src/include/types/pulls.h
+$(LIB)(tables.o): $(GMXHOME)/src/include/names.h
 $(LIB)(tables.o): $(GMXHOME)/src/include/smalloc.h
 $(LIB)(tables.o): $(GMXHOME)/src/include/futil.h
 $(LIB)(tables.o): $(GMXHOME)/src/include/xvgr.h
