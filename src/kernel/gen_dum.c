@@ -47,7 +47,7 @@ void do_dummies(t_atoms *at,t_atomtype *atype,t_symtab *symtab,
   int     i,j,k,i0,n,m,l,resnr,add,nadd,ndum;
   int     na[4];
   ushort  type,tpM;
-  char    name[STRLEN],tpstr[STRLEN],bname[STRLEN],*bres;
+  char    name[STRLEN],dumatnm[STRLEN],bname[STRLEN],*bres;
   bool    *bProcessed,bWild,bNterm;
   t_restp *rtpp=NULL;
 
@@ -103,20 +103,22 @@ void do_dummies(t_atoms *at,t_atomtype *atype,t_symtab *symtab,
 	  m=0;
 	  if (debug) fprintf(debug,"Dummies: ");
 	  while ( (j<at->nr) && (m<ddb[n].ndum) &&
-		  ( !is_hydrogen(ddb[n].dum[m].na[0]) || 
-		    (j==i) || is_hydrogen(*(at->atomname[j]))) ) {
-	    strcpy(tpstr,ddb[n].dum[m].na[0]);
+		  ( (j==i) /* always check typed atom, might be dummy */ ||
+		    is_hydrogen(*(at->atomname[j])) ||
+		    !is_hydrogen(ddb[n].dum[m].na[0]) ) ) {
+	    strcpy(dumatnm,ddb[n].dum[m].na[0]);
 	    if (debug && bProcessed[j]) fprintf(debug,"P%d ",j+1);
 	    if (!bProcessed[j] && 
-		(strncasecmp(tpstr,*(at->atomname[j]),strlen(tpstr))==0) ) {
-	      if (debug) fprintf(debug,"%d:'%s' ",j+1,tpstr);
+		(strncasecmp(dumatnm,*(at->atomname[j]),
+			     strlen(dumatnm))==0) ) {
+	      if (debug) fprintf(debug,"%d:'%s' ",j+1,dumatnm);
 	      bProcessed[j]=TRUE;
 	      (*is_dummy)[j]=TRUE;
 	      ndum++;
 	      m++;
 	    }
 	    j++;
-	  }  
+	  }
  	  if (debug) fprintf(debug,"\n");
 	  if (m<ddb[n].ndum)
 	    fprintf(stderr,
@@ -529,7 +531,7 @@ void do_dum_top(t_params *psb, t_params *psd2, t_params *psd3,
   ushort  type;
   bool    *bProcessed,bWild,bLookH,bNterm;
   t_restp *rp;
-  char    *bres,bname[STRLEN],tpstr[STRLEN];
+  char    *bres,bname[STRLEN],dumatnm[STRLEN];
   t_dmbp  *c;
 
   bWild=FALSE;
@@ -632,14 +634,14 @@ void do_dum_top(t_params *psb, t_params *psd2, t_params *psd3,
 	snew(ad,ddb[n].ndum);
 	for (m=0; (m<ddb[n].ndum); m++) {
 	  ad[m]=NOTSET;
-	  strcpy(tpstr,ddb[n].dum[m].na[0]);
+	  strcpy(dumatnm,ddb[n].dum[m].na[0]);
 	  if (!bWild || 
-	      strncasecmp(tpstr,*(at->atomname[i]),strlen(tpstr))==0) {
+	      strncasecmp(dumatnm,*(at->atomname[i]),strlen(dumatnm))==0) {
 	    bLookH=is_hydrogen(ddb[n].dum[m].na[0]);
 	    while ( (j<at->nr) && (ad[m]==NOTSET) && 
 		    (resnr == at->atom[j].resnr) &&
 		    (!bLookH || (j==i) || is_hydrogen(*(at->atomname[j]))) ) {
-	      if (strncasecmp(tpstr,*(at->atomname[j]),strlen(tpstr))==0) {
+	      if (strncasecmp(dumatnm,*(at->atomname[j]),strlen(dumatnm))==0) {
 		bProcessed[j]=TRUE;/* mark dummy atom */
 		ad[m]=j;
 	      }
@@ -649,7 +651,7 @@ void do_dum_top(t_params *psb, t_params *psd2, t_params *psd3,
 	      fprintf(stderr,
 		      "Skipped dummy atom %s on atom type %s in residue %s%d "
 		      "(probably ok)\n",
-		      tpstr,ddb[n].bname,*(at->resname[resnr]),resnr+1);
+		      dumatnm,ddb[n].bname,*(at->resname[resnr]),resnr+1);
 	  }
 	}
 	if (debug) {
