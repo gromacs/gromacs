@@ -154,7 +154,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   t_mdebin   *mdebin; 
   t_nrnb mynrnb; 
   t_inputrec *ir;
-  bool   bNS=TRUE,bDone,bAbort,bLR,bLJLR,bBHAM,b14; 
+  bool   bNS=TRUE,bDone,bAbort,bLR,bLJLR,bBHAM,b14,do_log; 
   time_t start_t; 
   tensor force_vir,shake_vir; 
   rvec   mu_tot;
@@ -295,6 +295,10 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     /* Sum the potential energy terms from group contributions  */
     sum_epot(&(ir->opts),grps,ener); 
 
+    do_log = do_per_step(count,parm->ir.nstlog);
+    if (MASTER(cr) && do_log)
+      print_ebin_header(log,count,count,lambda,0.0);
+
     if (bConstrain) {
       fmax=f_max(cr->left,cr->right,nsb->nprocs,start,end,force[TRY]);
       constepsize=ustep/fmax;
@@ -328,11 +332,10 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       
     /* Print it if necessary  */
     if (MASTER(cr)) { 
-      bool do_ene,do_log;
+      bool do_ene;
       do_ene = do_per_step(count,parm->ir.nstenergy);
-      do_log = do_per_step(count,parm->ir.nstlog);
-      print_ebin(fp_ene,do_ene,FALSE,do_log?log:NULL,count,count,lambda,0.0,
-		 eprNORMAL,TRUE,mdebin,grps,&(top->atoms));
+      print_ebin(fp_ene,do_ene,FALSE,do_log?log:NULL,count,count,
+		 eprNORMAL,TRUE,mdebin,&(top->atoms));
       fflush(log);
 
       if (bVerbose) {

@@ -75,7 +75,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
   bool       bNS,bStopCM,bStopRot,bTYZ,bRerunMD,bNotLastFrame=FALSE,bLastStep,
-             bNEMD;
+             bNEMD,do_log;
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
   char       *traj,*xtc_traj; /* normal and compressed trajectory filename */
@@ -224,6 +224,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	       
     bLastStep=(step==parm->ir.nsteps);
 
+    do_log = do_per_step(step,parm->ir.nstlog) || bLastStep;
+    
     if (bRerunMD)
       /* for rerun MD always do Neighbour Searching */
       bNS = ((parm->ir.nstlist!=0) || (step==0));
@@ -320,6 +322,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	SAfactor = 0;
     }
 
+    if (MASTER(cr) && do_log)
+      print_ebin_header(log,step,t,lambda,SAfactor);
+    
     if (bDummies)
       /* Spread the force on dummy particle to the other particles... 
        * This is parallellized
@@ -539,7 +544,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     /* Output stuff */
     if ( MASTER(cr) ) {
-      bool do_ene,do_log,do_dr;
+      bool do_ene,do_dr;
       
       upd_mdebin(mdebin,fp_dgdl,mdatoms->tmass,step,t,ener,parm->box,shake_vir,
 		 force_vir,parm->vir,parm->pres,grps,mu_tot);
@@ -548,9 +553,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	do_dr = do_per_step(step,parm->ir.nstdisreout) || bLastStep;
       else
 	do_dr = FALSE; 
-      do_log = do_per_step(step,parm->ir.nstlog) || bLastStep;
-      print_ebin(fp_ene,do_ene,do_dr,do_log?log:NULL,step,t,lambda,SAfactor,
-		 eprNORMAL,bCompact,mdebin,grps,&(top->atoms));
+      print_ebin(fp_ene,do_ene,do_dr,do_log?log:NULL,step,t,
+		 eprNORMAL,bCompact,mdebin,&(top->atoms));
       if (bVerbose)
 	fflush(log);
     }
@@ -592,10 +596,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     sfree(ct);
   }
   if (MASTER(cr)) {
-    print_ebin(fp_ene,FALSE,FALSE,log,step,t,lambda,SAfactor,
-	       eprAVER,FALSE,mdebin,grps,&(top->atoms));
-    print_ebin(fp_ene,FALSE,FALSE,log,step,t,lambda,SAfactor,
-	       eprRMS,FALSE,mdebin,grps,&(top->atoms));
+    print_ebin(fp_ene,FALSE,FALSE,log,step,t,
+	       eprAVER,FALSE,mdebin,&(top->atoms));
+    print_ebin(fp_ene,FALSE,FALSE,log,step,t,
+	       eprRMS,FALSE,mdebin,&(top->atoms));
     close_enx(fp_ene);
     if (!bRerunMD && parm->ir.nstxtcout)
       close_xtc_traj();

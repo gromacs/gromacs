@@ -362,10 +362,16 @@ static void pprint(FILE *log,char *s)
   fprintf(log,"  ======>\n\n");
 }
 
+void print_ebin_header(FILE *log,int steps,real time,real lamb,real SAfactor)
+{
+  fprintf(log,"   %12s   %12s   %12s   %12s\n"
+	  "   %12d   %12.5f   %12.5f   %12.5f\n\n",
+	  "Step","Time","Lambda","Annealing",steps,time,lamb,SAfactor);
+}
+
 void print_ebin(int fp_ene,bool bEne,bool bDR,
-		FILE *log,int steps,real time,real lamb,
-		real SAfactor,int mode,bool bCompact,
-		t_mdebin *md,t_groups *grps,t_atoms *atoms)
+		FILE *log,int steps,real time,int mode,bool bCompact,
+		t_mdebin *md,t_atoms *atoms)
 {
   static char **grpnms=NULL;
   static char *kjm="(kJ/mol)";
@@ -377,15 +383,12 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,
   drblock=get_drblock();
   if (drblock->ndr == 0)
     drblock=NULL;
+
   switch (mode) {
   case eprNORMAL:
     if (bEne || bDR)
       do_enx(fp_ene,&time,&steps,(bEne) ? &md->ebin->nener : &zero,
 	     md->ebin->e,&drblock->ndr,bDR ? drblock : NULL);
-    if (log)
-      fprintf(log,"   %12s   %12s   %12s   %12s\n"
-	      "   %12d   %12.5f   %12.5f   %12.5f\n\n",
-	      "Step","Time","Lambda","Annealing",steps,time,lamb,SAfactor);
     break;
   case eprAVER:
     if (log) pprint(log,"A V E R A G E S");
@@ -396,74 +399,74 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,
   default:
     fatal_error(0,"Invalid print mode (%d)",mode);
   }
-
+  
   if (log) {
     fprintf(log,"   Energies %s\n",kjm);
     pr_ebin(log,md->ebin,md->ie,f_nre,5,mode,steps,TRUE);  
     fprintf(log,"\n");
-  }
-  
-  if (log && !bCompact) {
-    if (bPC) {
-      pr_ebin(log,md->ebin,md->ib,NBOXS,5,mode,steps,TRUE);      
+
+    if (!bCompact) {
+      if (bPC) {
+	pr_ebin(log,md->ebin,md->ib,NBOXS,5,mode,steps,TRUE);      
+	fprintf(log,"\n");
+      }
+      if (bShake) {
+	fprintf(log,"   Shake Virial %s\n",kjm);
+	pr_ebin(log,md->ebin,md->isvir,9,3,mode,steps,FALSE);  
+	fprintf(log,"\n");
+	fprintf(log,"   Force Virial %s\n",kjm);
+	pr_ebin(log,md->ebin,md->ifvir,9,3,mode,steps,FALSE);  
       fprintf(log,"\n");
-    }
-    if (bShake) {
-      fprintf(log,"   Shake Virial %s\n",kjm);
-      pr_ebin(log,md->ebin,md->isvir,9,3,mode,steps,FALSE);  
+      }
+      fprintf(log,"   Total Virial %s\n",kjm);
+      pr_ebin(log,md->ebin,md->ivir,9,3,mode,steps,FALSE);   
       fprintf(log,"\n");
-      fprintf(log,"   Force Virial %s\n",kjm);
-      pr_ebin(log,md->ebin,md->ifvir,9,3,mode,steps,FALSE);  
+      fprintf(log,"   Pressure (bar)\n");
+      pr_ebin(log,md->ebin,md->ipres,9,3,mode,steps,FALSE);  
       fprintf(log,"\n");
-    }
-    fprintf(log,"   Total Virial %s\n",kjm);
-    pr_ebin(log,md->ebin,md->ivir,9,3,mode,steps,FALSE);   
-    fprintf(log,"\n");
-    fprintf(log,"   Pressure (bar)\n");
-    pr_ebin(log,md->ebin,md->ipres,9,3,mode,steps,FALSE);  
-    fprintf(log,"\n");
-    fprintf(log,"   Total Dipole (Debye)\n");
-    pr_ebin(log,md->ebin,md->imu,3,3,mode,steps,FALSE);    
-    fprintf(log,"\n");
-    
-    if (md->nE > 1) {
-      if (grpnms==NULL) {
-	snew(grpnms,md->nE);
-	n=0;
-	for(i=0; (i<md->nEg); i++) {
-	  ni=atoms->grps[egcENER].nm_ind[i];
-	  for(j=i; (j<md->nEg); j++) {
-	    nj=atoms->grps[egcENER].nm_ind[j];
-	    sprintf(buf,"%s-%s",*(atoms->grpname[ni]),*(atoms->grpname[nj]));
-	    grpnms[n++]=strdup(buf);
-	  }
+      fprintf(log,"   Total Dipole (Debye)\n");
+      pr_ebin(log,md->ebin,md->imu,3,3,mode,steps,FALSE);    
+      fprintf(log,"\n");
+      
+      if (md->nE > 1) {
+	if (grpnms==NULL) {
+	  snew(grpnms,md->nE);
+	  n=0;
+	  for(i=0; (i<md->nEg); i++) {
+	    ni=atoms->grps[egcENER].nm_ind[i];
+	    for(j=i; (j<md->nEg); j++) {
+	      nj=atoms->grps[egcENER].nm_ind[j];
+	      sprintf(buf,"%s-%s",*(atoms->grpname[ni]),*(atoms->grpname[nj]));
+	      grpnms[n++]=strdup(buf);
+	    }
 	}
+	}
+	sprintf(buf,"Epot %s",kjm);
+	fprintf(log,"%15s   ",buf);
+	for(i=0; (i<egNR); i++) 
+	  if (bEInd[i])
+	    fprintf(log,"%12s   ",egrp_nm[i]);
+	fprintf(log,"\n");
+	for(i=0; (i<md->nE); i++) {
+	  fprintf(log,"%15s",grpnms[i]);
+	  pr_ebin(log,md->ebin,md->igrp[i],md->nEc,md->nEc,mode,steps,FALSE);
+	}
+	fprintf(log,"\n");
       }
-      sprintf(buf,"Epot %s",kjm);
-      fprintf(log,"%15s   ",buf);
-      for(i=0; (i<egNR); i++) 
-	if (bEInd[i])
-	  fprintf(log,"%12s   ",egrp_nm[i]);
+      if (md->nTC > 1) {
+	pr_ebin(log,md->ebin,md->itc,2*md->nTC,4,mode,steps,TRUE);
       fprintf(log,"\n");
-      for(i=0; (i<md->nE); i++) {
-	fprintf(log,"%15s",grpnms[i]);
-	pr_ebin(log,md->ebin,md->igrp[i],md->nEc,md->nEc,mode,steps,FALSE);
       }
-      fprintf(log,"\n");
-    }
-    if (md->nTC > 1) {
-      pr_ebin(log,md->ebin,md->itc,2*md->nTC,4,mode,steps,TRUE);
-      fprintf(log,"\n");
-    }
-    if (md->nU > 1) {
-      fprintf(log,"%15s   %12s   %12s   %12s\n",
-	      "Group","Ux","Uy","Uz");
-      for(i=0; (i<md->nU); i++) {
-	ni=atoms->grps[egcACC].nm_ind[i];
-	fprintf(log,"%15s",*atoms->grpname[ni]);
-	pr_ebin(log,md->ebin,md->iu+3*i,3,3,mode,steps,FALSE);
+      if (md->nU > 1) {
+	fprintf(log,"%15s   %12s   %12s   %12s\n",
+		"Group","Ux","Uy","Uz");
+	for(i=0; (i<md->nU); i++) {
+	  ni=atoms->grps[egcACC].nm_ind[i];
+	  fprintf(log,"%15s",*atoms->grpname[ni]);
+	  pr_ebin(log,md->ebin,md->iu+3*i,3,3,mode,steps,FALSE);
+	}
+	fprintf(log,"\n");
       }
-      fprintf(log,"\n");
     }
   }
 }

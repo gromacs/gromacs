@@ -177,9 +177,11 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   where();
   	
   /* Print only if we are the master processor */
-  if (MASTER(cr))
-    print_ebin(fp_ene,TRUE,FALSE,log,count,count,lambda,0.0,eprNORMAL,TRUE,
-	       mdebin,grps,&(top->atoms));
+  if (MASTER(cr)) {
+    print_ebin_header(log,count,count,lambda,0.0);
+    print_ebin(fp_ene,TRUE,FALSE,log,count,count,eprNORMAL,
+	       TRUE,mdebin,&(top->atoms));
+  }
   where();
   
   /* This is the starting energy */
@@ -366,8 +368,9 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		 ener,parm->box,shake_vir,
 		 force_vir,parm->vir,parm->pres,grps,mu_tot);
       /* Print the energies allways when we should be verbose */
-      print_ebin(fp_ene,TRUE,FALSE,log,count,count,lambda,0.0,eprNORMAL,TRUE,
-		 mdebin,grps,&(top->atoms));
+      print_ebin_header(log,count,count,lambda,0.0);
+      print_ebin(fp_ene,TRUE,FALSE,log,count,count,eprNORMAL,
+		 TRUE,mdebin,&(top->atoms));
     }
     
     /* Stop when the maximum force lies below tolerance */
