@@ -76,7 +76,7 @@ for almost all cases the PME method below will perform much better.
 If you still want to employ classical Ewald summation enter this in
 your {\tt .mdp} file, if the side of your box is about $3$~nm:
 \begin{verbatim}
-eeltype         = Ewald
+coulombtype     = Ewald
 rvdw            = 0.9
 rlist           = 0.9
 rcoulomb        = 0.9
@@ -114,7 +114,7 @@ overhead in setting up grids and transforms.
 To use Particle-mesh Ewald summation in {\gromacs}, specify the
 following lines in your {\tt .mdp} file:
 \begin{verbatim}
-eeltype         = PME
+coulombtype     = PME
 rvdw            = 0.9
 rlist           = 0.9
 rcoulomb        = 0.9
@@ -180,7 +180,7 @@ pressure) but not necessarily the individual pressure components!
 To use the PPPM algorithm in {\gromacs}, specify the
 following lines in your {\tt .mdp} file:
 \begin{verbatim}
-eeltype         = PPPM
+coulombtype     = PPPM
 rlist           = 1.0
 rcoulomb        = 0.85
 rcoulomb_switch = 0.0
