@@ -205,24 +205,25 @@ void print_gkrbin(char *fn,t_gkrbin *gb,
 bool read_mu_from_enx(int fmu,int Vol,ivec iMu,rvec mu,real *vol,
 		      real *t,int step,int nre)
 {
-  int      i,ndr;
-  bool     eof;
-  t_energy *ee;  
+  static   t_energy *ee = NULL;  
+  int      i,nnre,ndr;
+  bool     bCont;
 
-  snew(ee,nre);
+  if (ee == NULL)
+    snew(ee,nre);
 
-  eof = do_enx(fmu,t,&step,&nre,ee,&ndr,NULL);
-
-  if (eof) {
+  bCont = do_enx(fmu,t,&step,&nnre,ee,&ndr,NULL);
+  if (nnre != nre) 
+    fprintf(stderr,"Something strange: expected %d entries in energy file at step %d\n(time %g) but found %d entries\n",nre,step,*t,nnre);
+  
+  if (bCont) {
     if (Vol != -1)          /* we've got Volume in the energy file */
       *vol = ee[Vol].e;
-    for (i=0;(i<DIM);i++)
+    for (i=0; (i<DIM); i++)
       mu[i]=ee[iMu[i]].e;
   }
- 
-  free(ee);
- 
-  return eof;
+  
+  return bCont;
 }
 
 
@@ -240,49 +241,33 @@ void mol_dip(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec mu)
   }
 }
 
-#define NDIM 3          /* We will be using a numerical recipes routine */
-
 void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec quad)
 {
-  int  i,k,kk,m,n,niter;
-  real q,r2,mass,masstot;
-  rvec com;          /* center of mass */
-  rvec r;            /* distance of atoms to center of mass */
-  rvec xmass;
-  real rcom_m,rcom_n;
-  tensor quadrupole;
+  int    i,k,kk,m,n,niter;
+  real   q,r2,mass,masstot;
+  rvec   com;          /* center of mass */
+  rvec   r;            /* distance of atoms to center of mass */
+  real   rcom_m,rcom_n;
   double **inten;
-  double dd[NDIM],**ev,tmp;
+  double dd[DIM],**ev,tmp;
 
-  snew(inten,NDIM);
-  snew(ev,NDIM);
-  for(i=0; (i<NDIM); i++) {
-    snew(inten[i],NDIM);
-    snew(ev[i],NDIM);
+  snew(inten,DIM);
+  snew(ev,DIM);
+  for(i=0; (i<DIM); i++) {
+    snew(inten[i],DIM);
+    snew(ev[i],DIM);
     dd[i]=0.0;
   }
 
-  for(i=0; (i<NDIM); i++)
-    for(m=0; (m<NDIM); m++)
-      inten[i][m]=0;
-  
-  clear_rvec(quad);
+  /* Compute center of mass */
   clear_rvec(com);
-  clear_mat(quadrupole);
-
-  clear_rvec(xmass);
-
   masstot = 0.0;
-
   for(k=k0; (k<k1); k++) {
-    kk = ma[k];
-    mass = atom[kk].m;
+    kk       = ma[k];
+    mass     = atom[kk].m;
     masstot += mass;
-    /*    svmul(mass,x[k],xmass[k]); */
-    for(i=0; (i<DIM); i++) {
-      xmass[i] = mass*x[k][i];
-    }
-    rvec_inc(com,xmass);
+    for(i=0; (i<DIM); i++)
+      com[i] += mass*x[k][i];
   }
   svmul((1.0/masstot),com,com);
 
@@ -293,26 +278,30 @@ void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec quad)
 
 #define delta(a,b) (( a == b ) ? 1.0 : 0.0)
 
+  for(m=0; (m<DIM); m++) 
+    for(n=0; (n<DIM); n++)
+      inten[m][n] = 0;
   for(k=k0; (k<k1); k++) {       /* loop over atoms in a molecule */
     kk = ma[k];
     q  = (atom[kk].q)*100.0;
     rvec_sub(x[k],com,r);
     r2 = iprod(r,r);
-    for(m=0; (m<DIM); m++) {
-      for(n=0; (n<DIM); n++) {  
-	quadrupole[m][n]+=0.5*q*(3.0*r[m]*r[n] - r2*delta(m,n))*EANG2CM*CM2D;
-	inten[m][n]=quadrupole[m][n];
-      }
-    }
+    for(m=0; (m<DIM); m++)
+      for(n=0; (n<DIM); n++)
+	inten[m][n] += 0.5*q*(3.0*r[m]*r[n] - r2*delta(m,n))*EANG2CM*CM2D;
   }
-#ifdef DEBUG
-  pr_rvecs(stdout,0,"Quadrupole",quadrupole,DIM);
-#endif
-
-  /* We've got the quadrupole tensor, now diagonalize the sucker */
+  if (debug)
+    for(i=0; (i<DIM); i++) 
+      fprintf(debug,"Q[%d] = %8.3f  %8.3f  %8.3f\n",
+	      i,inten[i][XX],inten[i][YY],inten[i][ZZ]);
   
+  /* We've got the quadrupole tensor, now diagonalize the sucker */
   jacobi(inten,3,dd,ev,&niter);
 
+  if (debug)
+    for(i=0; (i<DIM); i++) 
+      fprintf(debug,"Q'[%d] = %8.3f  %8.3f  %8.3f\n",
+	      i,ev[i][XX],ev[i][YY],ev[i][ZZ]);
   /* Sort the eigenvalues, for water we know that the order is as follows:
    *
    * Q_yy, Q_zz, Q_xx
@@ -330,23 +319,22 @@ void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec quad)
   SWAP(1);
   SWAP(0);
 
-  quad[0]=dd[2];  /* yy */
-  quad[1]=dd[0];  /* zz */
-  quad[2]=dd[1];  /* xx */
+  for(m=0; (m<DIM); m++) {
+    quad[0]=dd[2];  /* yy */
+    quad[1]=dd[0];  /* zz */
+    quad[2]=dd[1];  /* xx */
+  }
 
-#ifdef DEBUG
-  pr_rvec(stdout,0,"Quadrupole",quad,DIM);
-#endif
+  if (debug)
+    pr_rvec(debug,0,"Quadrupole",quad,DIM);
 
   /* clean-up */
-  for(i=0; (i<NDIM); i++) {
+  for(i=0; (i<DIM); i++) {
     sfree(inten[i]);
     sfree(ev[i]);
   }
   sfree(inten);
   sfree(ev);
-
-  /*  sfree(xmass); */
 }
 
 /*
@@ -406,8 +394,8 @@ static void do_dip(char *fn,char *topf,
   };
 #define NLEGAVER asize(leg_aver)
 
-  FILE  *outdd,*outmtot,*outaver,*outeps;
-  rvec       *x,*dipole=NULL,mu_t,M_av,M_av2,Q_av,Q_av2,*quadrupole=NULL;
+  FILE       *outdd,*outmtot,*outaver,*outeps;
+  rvec       *x,*dipole=NULL,mu_t,M_av,M_av2,quad;
   t_gkrbin   *gkrbin;
   int        nframes=1000,fmu=0,nre,timecheck=0;
   char       **enm=NULL;
@@ -417,11 +405,11 @@ static void do_dip(char *fn,char *topf,
   real       t,t0,t1,dt;
   double     M_diff=0,epsilon;
   double     mu_ave,mu_mol,M2_ave=0,M_ave2=0;
-  rvec       quad_ave,quad_mol;
+  t_lsq      *Qlsq,mulsq;
   ivec       iMu;
   int        iVol;
   real       M_XX,M_YY,M_ZZ,M_XX2,M_YY2,M_ZZ2,Gk=0,g_k=0;
-  real       **muall=NULL,**quadall=NULL;
+  real       **muall=NULL;
   t_topology *top;
   t_atom     *atom=NULL;
   t_block    *mols=NULL;
@@ -472,20 +460,11 @@ static void do_dip(char *fn,char *topf,
     if (bAverCorr) {
       snew(muall,1);
       snew(muall[0],nframes*DIM);
-      if (bQuad) {
-	snew(quadall,1);
-	snew(quadall[0],nframes*DIM);
-      }
     }
     else {
       snew(muall,gnx);
       for(i=0; (i<gnx); i++)
 	snew(muall[i],nframes*DIM);
-      if (bQuad) {
-	snew(quadall,gnx);
-	for(i=0; (i<gnx); i++)
-	  snew(quadall[i],nframes*DIM);
-      }
     }
   }
 
@@ -494,9 +473,13 @@ static void do_dip(char *fn,char *topf,
    */
   if (!bMU)
     snew(dipole,gnx);
-  if (bQuad)
-    snew(quadrupole,gnx);
-    
+
+  /* Statistics */
+  snew(Qlsq,DIM);
+  for(i=0; (i<DIM); i++) 
+    init_lsq(&(Qlsq[i]));
+  init_lsq(&mulsq);
+  
   /* Open all the files */
   outmtot = xvgropen(out_mtot,
 		     "Total dipole moment of the simulation box vs. time",
@@ -515,6 +498,7 @@ static void do_dip(char *fn,char *topf,
   else
     xvgr_legend(outeps,NLEGEPS,leg_eps);
     
+  clear_rvec(mu_t);
   teller = 0;
   /* Read the first frame from energy or traj file */
   if (bMU)
@@ -544,9 +528,6 @@ static void do_dip(char *fn,char *topf,
   M_ZZ=M_ZZ2 = 0.0;
   mu_ave     = 0.0;
 
-  if (bQuad)
-    clear_rvec(quad_ave);
-
   if (bGkr) {
     /* Use 0.7 iso 0.5 to account for pressure scaling */
     rcut   = 0.7*sqrt(sqr(box[XX][XX])+sqr(box[YY][YY])+sqr(box[ZZ][ZZ]));
@@ -561,16 +542,10 @@ static void do_dip(char *fn,char *topf,
       nframes += 1000;
       if (bAverCorr) {
 	srenew(muall[0],nframes*DIM);
-	if (bQuad) 
-	  srenew(quadall[0],nframes*DIM);
       }
       else {
 	for(i=0; (i<gnx); i++)
 	  srenew(muall[i],nframes*DIM);
-	if (bQuad) {
-	  for(i=0; (i<gnx); i++)
-	    srenew(quadall[i],nframes*DIM);
-	}
       }
     }
     t1 = t;
@@ -580,32 +555,28 @@ static void do_dip(char *fn,char *topf,
     clear_rvec(M_av2);
 
     if (bMU) {
-      if (timecheck == 0) {
-	for(m=0; (m<DIM); m++) {
-	  M_av[m]  += mu_t[m];          /* M per frame */
-	  M_av2[m] += mu_t[m]*mu_t[m];  /* M^2 per frame */
-	}
-      }
-    } 
+      for(m=0; (m<DIM); m++) {
+	M_av[m]  += mu_t[m];          /* M per frame */
+	M_av2[m] += mu_t[m]*mu_t[m];  /* M^2 per frame */
+      } 
+    }
     else {
       /* Begin loop of all molecules in frame */
       for(i=0; (i<gnx); i++) {
 	int gi = grpindex ? grpindex[i] : i;
 	mol_dip(mols->index[gi],mols->index[gi+1],mols->a,x,atom,dipole[i]);
-	if (bQuad)
+	add_lsq(&mulsq,0,norm(dipole[i]));
+	if (bQuad) {
 	  mol_quad(mols->index[gi],mols->index[gi+1],
-		   mols->a,x,atom,quadrupole[i]);
-	
+		   mols->a,x,atom,quad);
+	  for(m=0; (m<DIM); m++)
+	    add_lsq(&Qlsq[m],0,quad[m]);
+	}
 	if (bCorr && !bAverCorr) {
 	  tel3=DIM*teller;
 	  muall[i][tel3+XX] = dipole[i][XX];
 	  muall[i][tel3+YY] = dipole[i][YY];
 	  muall[i][tel3+ZZ] = dipole[i][ZZ];
-	  if (bQuad) {
-	    quadall[i][tel3+XX] = quadrupole[i][XX];
-	    quadall[i][tel3+YY] = quadrupole[i][YY];
-	    quadall[i][tel3+ZZ] = quadrupole[i][ZZ];
-	  }
 	}
 	mu_mol = 0.0;
 	for(m=0; (m<DIM); m++) {
@@ -614,14 +585,6 @@ static void do_dip(char *fn,char *topf,
 	}
 
 	mu_ave += sqrt(mu_mol);                   /* calc. the average mu */
-	if (bQuad) {
-	  clear_rvec(quad_mol);
-	  for(m=0; (m<DIM); m++) {
-	    Q_av[m]  += quadrupole[i][m];                    /* Q per frame */
-	    quad_mol[m]  += quadrupole[i][m]*quadrupole[i][m];  
-	    quad_ave[m] += quadrupole[i][m];
-	  }
-	}
 	
 	/* Update the dipole distribution */
 	ibin = (ndipbin*sqrt(mu_mol)/mu_max);
@@ -629,12 +592,9 @@ static void do_dip(char *fn,char *topf,
 	  dipole_bin[ibin]++;
       } /* End loop of all molecules in frame */
       
-      /* Compute square of total dipole an quadrupole */
-      for(m=0; (m<DIM); m++) {
+      /* Compute square of total dipole */
+      for(m=0; (m<DIM); m++)
 	M_av2[m] = sqr(M_av[m]);
-	if (bQuad)
-	  Q_av2[m] = sqr(Q_av[m]);
-      }
     }    
     if (bGkr) {
       init_pbc(box,FALSE);
@@ -647,11 +607,6 @@ static void do_dip(char *fn,char *topf,
       muall[0][tel3+XX] = M_av[XX];
       muall[0][tel3+YY] = M_av[YY];
       muall[0][tel3+ZZ] = M_av[ZZ];
-      if (bQuad) {
-	quadall[0][tel3+XX] = Q_av[XX];
-	quadall[0][tel3+YY] = Q_av[YY];
-	quadall[0][tel3+ZZ] = Q_av[ZZ];
-      }
     }
 
     /* Write to file the total dipole moment of the box, and its components 
@@ -717,6 +672,7 @@ static void do_dip(char *fn,char *topf,
       bCont = read_mu_from_enx(fmu,iVol,iMu,mu_t,&volume,&t,teller,nre); 
     else
       bCont = read_next_x(status,&t,natom,x,box);
+    /*bCont = bCont && (check_times(t,t) == 0);*/
   } while(bCont);
   
   if (!bMU)
@@ -751,17 +707,21 @@ static void do_dip(char *fn,char *topf,
     }
   }
   if (!bMU) {
-    printf("\n\nAverage dipole moment (Debye)\n");
-    printf(" Tot= %g\n",  (mu_ave/gnx)/teller);
+    printf("\nDipole moment (Debye)\n");
+    printf("---------------------\n");
+    printf("Average  = %8.4f  Std. Dev. = %8.4f  Error = %8.4f\n",
+	   aver_lsq(&mulsq),sigma_lsq(&mulsq),error_lsq(&mulsq));
     if (bQuad) {
-      printf("Average quadrupole moment (Debye-Ang)\n");
-      printf(" XX=  %g  YY=  %g ZZ=  %g norm= %g asymm= %g\n\n",  
-	      quad_ave[XX]/(gnx*teller),
-	      quad_ave[YY]/(gnx*teller),
-	      quad_ave[ZZ]/(gnx*teller),
-	      norm(quad_ave)/(gnx*teller),
-	      (quad_ave[ZZ] - quad_ave[XX])/ quad_ave[YY]);
+      printf("\nQuadrupole moment (Debye-Ang)\n");
+      printf("-----------------------------\n");
+      printf("Averages  = %8.4f  %8.4f  %8.4f\n",
+	     aver_lsq(&Qlsq[XX]),aver_lsq(&Qlsq[YY]),aver_lsq(&Qlsq[ZZ]));
+      printf("Std. Dev. = %8.4f  %8.4f  %8.4f\n",
+	     sigma_lsq(&Qlsq[XX]),sigma_lsq(&Qlsq[YY]),sigma_lsq(&Qlsq[ZZ]));
+      printf("Error     = %8.4f  %8.4f  %8.4f\n",
+	     error_lsq(&Qlsq[XX]),error_lsq(&Qlsq[YY]),error_lsq(&Qlsq[ZZ]));
     }
+    printf("\n");
   }
   printf("The following averages for the complete trajectory have been calculated:\n\n");
   printf(" Total < M_x > = %g Debye\n", M_XX/teller);

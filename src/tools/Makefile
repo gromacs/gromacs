@@ -115,7 +115,7 @@ g_tcaf:		g_tcaf.o	$(ACOBJ)
 g_angle:	g_angle.o  	anadih.o	$(ACOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-g_dipoles:	g_dipoles.o  	$(ACOBJ)
+g_dipoles:	g_dipoles.o  	$(ACOBJ) lsq.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_dip2:		g_dip2.o  	$(ACOBJ)
