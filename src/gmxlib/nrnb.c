@@ -121,6 +121,7 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "GB Coulomb + LJ",               61  }, /* nb_kernel410 */
     { "GB Coulomb + VdW(T)",           78  }, /* nb_kernel430 */
     { "Outer nonbonded loop",          10  },
+    { "1-4 Coul(T) + LJ(T)",           90  }, /* 90 is without FE! */
   { "Calc Weights",                    36  },
   { "Spread Q",                        6   },
   { "Spread Q Bspline",                2   }, 

@@ -571,6 +571,8 @@ do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
                 rvec_inc(fshift[shift_vir],f14[0]);
                 rvec_dec(fshift[CENTRAL],f14[0]);
             }
+
+	    /* flops: eNR_KERNEL_OUTER + eNR_KERNEL330 + 12 */
         }
     }
     return 0.0;
