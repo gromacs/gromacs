@@ -249,16 +249,16 @@ static int check_atom_names(char *fn1, char *fn2, t_atoms *at1, t_atoms *at2,
       idx=forward[i];
     else
       idx=i;
-    if (strcmp( *(at1->atomname[idx]) , *(at2->atomname[i]) ) != 0) {
+    if (strcmp( *(at1->atomname[i]) , *(at2->atomname[idx]) ) != 0) {
       if (nmismatch < MAXMISMATCH)
 	fprintf(stderr,
 		"Warning: atom names in %s and %s don't match (%s - %s)\n",
-		fn1, fn2, *(at1->atomname[idx]), *(at2->atomname[i]));
+		fn1, fn2, *(at1->atomname[i]), *(at2->atomname[idx]));
       else if (nmismatch == MAXMISMATCH)
 	fprintf(stderr,"(more than %d non-matching atom names)\n",MAXMISMATCH);
       nmismatch++;
     }
-      }
+  }
   return nmismatch;
 }
 
@@ -337,7 +337,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
 			 *natoms,*x,*v,Nsim,Sims);
     }
     
-    nmismatch=check_atom_names(topfile, confin, confat, &(sys->atoms), forward);
+    nmismatch=check_atom_names(topfile, confin, &(sys->atoms), confat,forward);
     free_t_atoms(confat);
     sfree(confat);
     
