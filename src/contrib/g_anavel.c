@@ -33,6 +33,10 @@
  * And Hey:
  * Good gRace! Old Maple Actually Chews Slate
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "macros.h"

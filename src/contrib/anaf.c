@@ -33,6 +33,10 @@
  * And Hey:
  * Giving Russians Opium May Alter Current Situation
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <math.h>

@@ -33,6 +33,10 @@
  * And Hey:
  * Good gRace! Old Maple Actually Chews Slate
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "filenm.h"
 #include "futil.h"
 #include "wman.h"
