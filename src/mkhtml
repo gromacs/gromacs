@@ -1,6 +1,6 @@
 #!/bin/csh -f
 
-setenv VER 	1.6
+setenv VER 	2.0
 setenv HTML	$GMXHOME/html
 if ( ! -d $HTML ) mkdir $HTML
 setenv GIFDIR   $HTML/gif
