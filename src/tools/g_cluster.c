@@ -134,23 +134,7 @@ void mc_optimize(FILE *log,t_mat *m,int maxiter,int *seed,real kT)
   cp_index(nn,low_index,m->m_ind);
 }
 
-static void calc_dist_ind(int nind,atom_id index[],
-			  rvec x[],matrix box,real **d)
-{
-  int     i,j;
-  real    *xi;
-  rvec    dx;
-
-  for(i=0; (i<nind-1); i++) {
-    xi=x[index[i]];
-    for(j=i+1; (j<nind); j++) {
-      pbc_dx(xi,x[index[j]],dx);
-      d[i][j]=norm(dx);
-    }
-  }
-}
-
-static void calc_dist(int nind,rvec x[],matrix box,real **d)
+static void calc_dist(int nind,rvec x[],real **d)
 {
   int     i,j;
   real    *xi;
@@ -261,7 +245,7 @@ static int ccomp(const void *a,const void *b)
   return da->clust - db->clust;
 }
 
-void gather(FILE *log,t_mat *m,real cutoff,t_clusters *clust)
+void gather(t_mat *m,real cutoff,t_clusters *clust)
 {
   t_clustid *c;
   t_dist    *d;
@@ -717,7 +701,7 @@ int main(int argc,char *argv[])
     { "-cutoff", FALSE, etREAL, &rmsdcut,
       "RMSD cut-off (nm) for two structures to be similar" },
     { "-max",   FALSE, etREAL, &scalemax,
-      "Maximum level in matrices" },
+      "Maximum level in RMSD matrix" },
     { "-skip",  FALSE, etINT, &skip,
       "Only analyze every nr-th frame" },
     { "-av",  FALSE, etBOOL, &bAv,
@@ -725,7 +709,7 @@ int main(int argc,char *argv[])
     { "-method",FALSE, etENUM, method,
       "Method for cluster determination" },
     { "-binary",FALSE, etBOOL, &bBinary,
-      "Treat the RMSD matrix as consisting of 0 and 1, where the cut-off is given by the value you put in for rms-cut" },
+      "Treat the RMSD matrix as consisting of 0 and 1, where the cut-off is given by -cutoff" },
     { "-M",     FALSE, etINT,  &M,
       "Number of nearest neighbours considered for Jarvis-Patrick algorithm, 0 is use cutoff" },
     { "-P",     FALSE, etINT,  &P,
@@ -822,9 +806,9 @@ int main(int argc,char *argv[])
   } else {
     fprintf(stderr,"Computing %dx%d RMS distance deviation matrix\n",nf,nf);
     for(i1=0; (i1<nf); i1++) {
-      calc_dist(isize,xx[i1],box,d1);
+      calc_dist(isize,xx[i1],d1);
       for(i2=i1+1; (i2<nf); i2++) {
-	calc_dist(isize,xx[i2],box,d2);
+	calc_dist(isize,xx[i2],d2);
 	set_mat_entry(rms,i1,i2,rms_dist(isize,d1,d2));
       }
       nrms -= (nf-i1-1);
@@ -868,7 +852,7 @@ int main(int argc,char *argv[])
   snew(clust.cl,nf);
   if (m_linkage) 
     /* Now sort the matrix and write it out again */
-    gather(log,rms,rmsdcut,&clust);
+    gather(rms,rmsdcut,&clust);
   else if (m_diagonalize) {
     /* Do a diagonalization */
     snew(eigval,nf);
@@ -920,7 +904,8 @@ int main(int argc,char *argv[])
   rhi.r=0.0, rhi.g=0.0, rhi.b=0.0;
   
   fp = opt2FILE("-o",NFILE,fnm,"w");
-  write_xpm(fp,"RMSD","RMSD (nm)","Time (ps)","Time (ps)",
+  write_xpm(fp,bRMSdist ? "RMS Distance Deviation" : "RMS Deviation",
+	    "RMSD (nm)","Time (ps)","Time (ps)",
 	    nf,nf,time,time,rms->mat,0.0,rms->maxrms,rlo,rhi,&nlevels);
   ffclose(fp);
   xv_file(opt2fn("-o",NFILE,fnm),NULL);	
