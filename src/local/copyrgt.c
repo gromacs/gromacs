@@ -60,7 +60,7 @@ void head(FILE *out, char *fn)
 #define NH1 asize(head1)
 #define NCR asize(CopyrightText)
 #define NH2 asize(head2)
-  int i
+  int i;
 
   fprintf(out,"/*\n");
   fprintf(out," *       $id$\n");
