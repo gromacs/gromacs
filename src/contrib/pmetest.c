@@ -47,21 +47,77 @@
 #include "futil.h"
 #include "vec.h"
 #include "ewald_util.h"
+#include "nsb.h"
+#include "pme.h"
+
+rvec *xptr=NULL;
+
+static int comp_xptr(const void *a,const void *b)
+{
+  int  va,vb;
+  real dx;
+  
+  va = *(int *)a;
+  vb = *(int *)b;
+  
+  if ((dx = (xptr[va][XX] - xptr[vb][XX])) < 0)
+    return -1;
+  else if (dx > 0)
+    return 1;
+  else
+    return 0;
+}
 
 static void do_my_pme(FILE *fp,bool bVerbose,t_inputrec *ir,
-		      rvec x[],rvec f[],real charge[],matrix box,
+		      rvec x[],rvec xbuf[],rvec f[],
+		      real charge[],real qbuf[],matrix box,
 		      t_commrec *cr,t_nsborder *nsb,t_nrnb *nrnb,
-		     real ewaldcoeff)
+		      real ewaldcoeff,t_block *excl,real qtot,
+		      int index[])
 {
-  real   ener;
-  tensor vir;
+  real   ener,vcorr,q;
+  tensor vir,vir_corr,vir_tot;
+  rvec   mu_tot;
+  int    i,m,ii;
+  t_forcerec *fr;
   
+  snew(fr,1);
+  fr->ewaldcoeff = ewaldcoeff;
+  fr->f_el_recip = f;
   clear_mat(vir);
+  clear_mat(vir_corr);
   
-  ener = do_pme(fp,bVerbose,ir,x,f,charge,box,cr,
-		nsb,nrnb,vir,ewaldcoeff,FALSE);
-  fprintf(fp,"Energy: %12.5e\n",ener);
-  pr_rvecs(fp,0,"virial",vir,DIM);
+  /* Assume x is in the box */
+  clear_rvec(mu_tot);
+  for(i=0; (i<nsb->natoms); i++) {
+    q = charge[i];
+    for(m=0; (m<DIM); m++) 
+      mu_tot[m] += q*x[i][m];
+    clear_rvec(f[i]);
+    index[i] = i;
+  }
+  /* Here should sorting of X (and q) be done */
+  xptr = x;
+  qsort(index,sizeof(index[0]),nsb->natoms,comp_xptr);
+  for(i=0; (i<nsb->natoms); i++) {
+    ii = index[i];
+    qbuf[i] = charge[ii];
+    copy_rvec(x[ii],xbuf[i]);
+  }
+  
+  put_atoms_in_box(box,nsb->natoms,x);      
+  ener  = do_pme(fp,bVerbose,ir,xbuf,f,qbuf,box,cr,
+		 nsb,nrnb,vir,ewaldcoeff,FALSE);
+  vcorr = ewald_LRcorrection(fp,nsb,cr,fr,qbuf,excl,
+			     xbuf,box,mu_tot,qtot,
+			     ir->ewald_geometry,ir->epsilon_surface,
+			     vir_corr);
+  fprintf(fp,"Energy: %12.5e  Correction: %12.5e  Total: %12.5e\n",
+	  ener,vcorr,ener+vcorr);
+  if (bVerbose) {
+    m_add(vir,vir_corr,vir_tot);
+    pr_rvecs(fp,0,"virial",vir_tot,DIM); 
+  }
 }
 
 int main(int argc,char *argv[])
@@ -77,7 +133,7 @@ int main(int argc,char *argv[])
     { efTPX, NULL,      NULL,       ffREAD  },
     { efTRN, "-o",      NULL,       ffWRITE },
     { efLOG, "-g",      "pmetest",  ffWRITE },
-    { efTRX, "-x",      NULL,       ffOPTRD }
+    { efTRX, "-f",      NULL,       ffOPTRD }
   };
 #define NFILE asize(fnm)
 
@@ -89,8 +145,8 @@ int main(int argc,char *argv[])
   static int  nthreads=1;
   static int  pme_order=4;
   static rvec grid = { -1, -1, -1 };
-  static real rc   = 0.9;
-  static real dtol = 1e-4;
+  static real rc   = 0.0;
+  static real dtol = 0.0;
   static t_pargs pa[] = {
     { "-np",      FALSE, etINT, {&nnodes},
       "Number of nodes, must be the same as used for grompp" },
@@ -101,7 +157,11 @@ int main(int argc,char *argv[])
     { "-grid",    FALSE, etRVEC,{&grid},
       "Number of grid cells in X, Y, Z dimension (if -1 use from tpr)" },
     { "-order",   FALSE, etINT, {&pme_order},
-      "Order of the PME spreading algorithm" }
+      "Order of the PME spreading algorithm" },
+    { "-rc",      FALSE, etREAL, {&rc},
+      "Rcoulomb for Ewald summation" },
+    { "-tol",     FALSE, etREAL, {&dtol},
+      "Tolerance for Ewald summation" }
   };
   t_inputrec  ir;
   t_topology  top;
@@ -110,22 +170,24 @@ int main(int argc,char *argv[])
   t_nsborder  *nsb;
   char        title[STRLEN];
   int         natoms,step,status,i;
-  real        t,lambda,ewaldcoeff;
-  rvec        *x,*f;
-  real        *charge;
+  real        t,lambda,ewaldcoeff,qtot;
+  rvec        *x,*f,*xbuf;
+  int         *index;
+  real        *charge,*qbuf;
   matrix      box;
   
   cr = init_par(&argc,&argv);
 
-  if (MASTER(cr))
+  if (MASTER(cr)) {
     CopyRight(stderr,argv[0]);
 
-  parse_common_args(&argc,argv,
-		    PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_BE_NICE |
-		    PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET),
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
-  bVerbose = bVerbose && MASTER(cr);
-    
+    parse_common_args(&argc,argv,
+		      PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_BE_NICE |
+		      PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET),
+		      NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+    bVerbose = bVerbose && MASTER(cr);
+  }
+  
 #ifndef USE_MPI
   if (nnodes > 1) 
     gmx_fatal(FARGS,"GROMACS compiled without MPI support - can't do parallel runs");
@@ -137,54 +199,86 @@ int main(int argc,char *argv[])
 
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
 
-  /* Read tpr file etc. */
-  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&tpx,FALSE,NULL,NULL);
-  snew(x,tpx.natoms);
-  snew(f,tpx.natoms);
-  snew(charge,tpx.natoms);
-  read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
-	   box,&natoms,x,NULL,NULL,&top);
-  /* Charges */
-  snew(charge,tpx.natoms);
-  for(i=0; (i<tpx.natoms); i++) 
-    charge[i] = top.atoms.atom[i].q;
+  if (MASTER(cr)) {
+    /* Read tpr file etc. */
+    read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&tpx,FALSE,NULL,NULL);
+    snew(x,tpx.natoms);
+    snew(xbuf,tpx.natoms);
+    snew(f,tpx.natoms);
+    snew(charge,tpx.natoms);
+    snew(qbuf,tpx.natoms);
+    snew(index,tpx.natoms);
+    read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
+	     box,&natoms,x,NULL,NULL,&top);
+    /* Charges */
+    qtot = 0;
+    snew(charge,tpx.natoms);
+    for(i=0; (i<tpx.natoms); i++) {
+      charge[i] = top.atoms.atom[i].q;
+      qtot += charge[i];
+    }
   
-  /* Grid stuff */
-  if (opt2parg_bSet("-grid",asize(pa),pa)) {
-    ir.nkx = grid[XX];
-    ir.nky = grid[YY];
-    ir.nkz = grid[ZZ];
+    /* Grid stuff */
+    if (opt2parg_bSet("-grid",asize(pa),pa)) {
+      ir.nkx = grid[XX];
+      ir.nky = grid[YY];
+      ir.nkz = grid[ZZ];
+    }
+    if ((ir.nkx <= 0) || (ir.nky <= 0) || (ir.nkz <= 0))
+      gmx_fatal(FARGS,"PME grid = %d %d %d",ir.nkx,ir.nky,ir.nkz);
+    if (opt2parg_bSet("-rc",asize(pa),pa)) {
+      ir.rcoulomb = rc;
+    }
+    if (ir.rcoulomb <= 0)
+      gmx_fatal(FARGS,"rcoulomb should be > 0 (not %f)",ir.rcoulomb);
+    if (opt2parg_bSet("-tol",asize(pa),pa)) {
+      ir.ewald_rtol = dtol;
+    }
+    if (ir.ewald_rtol <= 0)
+      gmx_fatal(FARGS,"ewald_tol should be > 0 (not %f)",ir.ewald_rtol);
+    ewaldcoeff = calc_ewaldcoeff(ir.rcoulomb,ir.ewald_rtol);
+    if (MASTER(cr))
+      fprintf(stdlog,"Ewald parameters:\n"
+	      "rc         = %12.5e\n"
+	      "tol        = %12.5e\n"
+	      "ewaldcoeff = %12.5e\n"
+	      "grid       = %4d %4d %4d\n",
+	      ir.rcoulomb,dtol,ewaldcoeff,ir.nkx,ir.nky,ir.nkz);
+    
+    if (PAR(cr)) {
+      /* Distribute the data over processors */
+      if (MASTER(cr)) {
+      }
+      else {
+      }
+    }
   }
-  if ((ir.nkx <= 0) || (ir.nky <= 0) || (ir.nkz <= 0))
-    gmx_fatal(FARGS,"PME grid = %d %d %d",ir.nkx,ir.nky,ir.nkz);
   
   init_pme(stdlog,cr,ir.nkx,ir.nky,ir.nkz,pme_order,
 	   tpx.natoms,bOptFFT,ewald_geometry);
   init_nrnb(&nrnb);
-  snew(nsb,1);
+  
   /* Add parallellization code here */
   snew(nsb,1);
+  calc_nsb(stdlog,&(top.blocks[ebCGS]),cr->nnodes,nsb,0);
+  print_nsb(stdlog,"pmetest",nsb);  
   
-  ewaldcoeff = calc_ewaldcoeff(rc,dtol);
-  fprintf(stdlog,"Ewald parameters:\n"
-	  "rc         = %12.5e\n"
-	  "dtol       = %12.5e\n"
-	  "ewaldcoeff = %12.5e\n"
-	  "grid       = %4d %4d %4d\n",
-	  rc,dtol,ewaldcoeff,ir.nkx,ir.nky,ir.nkz);
-	  
-  fprintf(stdlog,"Results based on tpr file %s\n",ftp2fn(efTPX,NFILE,fnm));
-  fflush(stdlog);
+  fprintf(stdlog,"-----\n"
+	  "Results based on tpr file %s\n",ftp2fn(efTPX,NFILE,fnm));
+  do_my_pme(stdlog,bVerbose,&ir,x,xbuf,f,charge,qbuf,box,
+	    cr,nsb,&nrnb,ewaldcoeff,&(top.atoms.excl),qtot,index);
   
-  do_my_pme(stdlog,bVerbose,&ir,x,f,charge,box,cr,nsb,&nrnb,ewaldcoeff);
   if (ftp2bSet(efTRX,NFILE,fnm)) {
-    fprintf(stdlog,"Results based on trx file %s\n",ftp2fn(efTRX,NFILE,fnm));
+    fprintf(stdlog,"-----\n"
+	    "Results based on trx file %s\n",ftp2fn(efTRX,NFILE,fnm));
     sfree(x);
     natoms = read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
     if (natoms != top.atoms.nr)
       gmx_fatal(FARGS,"natoms in trx = %d, in tpr = %d",natoms,top.atoms.nr);
     do {
-      do_my_pme(stdlog,bVerbose,&ir,x,f,charge,box,cr,nsb,&nrnb,ewaldcoeff);
+      fprintf(stdlog,"-----\nTime: %.3f\n",t);
+      do_my_pme(stdlog,bVerbose,&ir,x,xbuf,f,charge,qbuf,box,cr,
+		nsb,&nrnb,ewaldcoeff,&(top.atoms.excl),qtot,index);
     } while (read_next_x(status,&t,natoms,x,box));
     close_trx(status);
   }
