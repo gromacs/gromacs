@@ -37,6 +37,39 @@ static char *SRCID_do_fit_c = "$Id$";
 
 #define EPS  1.0e-09
 
+real rmsdev_ind(int nind,atom_id index[],real mass[],rvec x[],rvec xp[])
+{
+  int  i,j,m;
+  real sqd,totmass;
+  
+  sqd = 0;
+  totmass = 0;
+  for(j=0; j<nind; j++) {
+    i=index[j];
+    totmass += mass[i];
+    for(m=0; m<DIM; m++)
+      sqd += mass[i]*(x[i][m]-xp[i][m])*(x[i][m]-xp[i][m]);
+  }
+  
+  return sqrt(sqd/totmass);
+}
+
+real rmsdev(int natoms,real mass[],rvec x[],rvec xp[])
+{
+  int  i,m;
+  real sqd,totmass;
+  
+  sqd = 0;
+  totmass = 0;
+  for(i=0; i<natoms; i++) {
+    totmass += mass[i];
+    for(m=0; m<DIM; m++)
+      sqd += mass[i]*(x[i][m]-xp[i][m])*(x[i][m]-xp[i][m]);
+  }
+  
+  return sqrt(sqd/totmass);
+}
+
 void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
 {
   int    c,r,n,j,m,i,irot;

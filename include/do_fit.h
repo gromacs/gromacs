@@ -35,6 +35,13 @@ static char *SRCID_do_fit_h = "$Id$";
 #ifdef HAVE_IDENT
 #ident	"@(#) do_fit.h 1.8 2/2/97"
 #endif /* HAVE_IDENT */
+extern real rmsdev_ind(int nind,atom_id index[],real mass[],
+		       rvec x[],rvec xp[]);
+/* Returns the RMS Deviation betweem x and xp over all atoms in index */
+
+extern real rmsdev(int natoms,real mass[],rvec x[],rvec xp[]);
+/* Returns the RMS Deviation betweem x and xp over all atoms */
+
 extern void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x);
 /* Do a least squares fit of x to xp. Atoms which have zero mass
  * (w_rls[i]) are not take into account in fitting.
