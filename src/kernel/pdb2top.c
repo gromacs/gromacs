@@ -200,14 +200,15 @@ static void print_top_water(FILE *out)
   fprintf(out,"#endif\n\n");
 }
 
-static void print_top_system(FILE *out)
+static void print_top_system(FILE *out, char *title)
 {
   fprintf(out,"[ %s ]\n",dir2str(d_system));
   fprintf(out,"; Name\n");
-  fprintf(out,"Protein in Water\n\n");
+  fprintf(out,"%s\n\n",title[0]?title:"Protein");
 }
 
-void print_top_mols(FILE *out, int nincl, char **incls, int nmol, t_mols *mols)
+void print_top_mols(FILE *out, char *title, 
+		    int nincl, char **incls, int nmol, t_mols *mols)
 {
   int i;
   
@@ -219,7 +220,7 @@ void print_top_mols(FILE *out, int nincl, char **incls, int nmol, t_mols *mols)
   }
 
   print_top_water(out);
-  print_top_system(out);
+  print_top_system(out, title);
 
   fprintf(out,"[ %s ]\n",dir2str(d_molecules));
   fprintf(out,"; %-15s %5s\n","Compound","#mols");
