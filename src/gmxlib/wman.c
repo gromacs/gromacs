@@ -258,12 +258,12 @@ static void write_texman(FILE *out,char *program,
   if (npargs > 0) {
     fprintf(out,"\\vspace{-2ex}\\begin{tabbing}\n");
     fprintf(out,"\n{\\normalsize \\bf Other options}\\nopagebreak\\\\\n");
-    fprintf(out,"{\\tt ~~~~~~~~~} \\= vector \\= "
-	    "{\\tt ~~~~~~~~} \\= \\nopagebreak\\kill\n");
+    fprintf(out,"{\\tt ~~~~~~~~~~} \\= vector \\= "
+	    "{\\tt ~~~~~~~} \\= \\nopagebreak\\kill\n");
     for(i=0; (i<npargs); i++) {
       if (strlen(check_tex(pa_val(&(pa[i])))) <= 8)
 	fprintf(out,"\\> {\\tt %s} \\'\\> %s \\'\\> {\\tt %s} \\' "
-		"\\parbox[t]{0.7\\linewidth}{%s}\\\\\n",
+		"\\parbox[t]{0.68\\linewidth}{%s}\\\\\n",
 		check_tex(pa[i].option),argtp[pa[i].type],
 		check_tex(pa_val(&(pa[i]))),
 		check_tex(pa[i].desc));
@@ -452,7 +452,7 @@ static void write_htmlman(FILE *out,
   fprintf(out,"<LINK rel=stylesheet href=\"style.css\" type=\"text/css\">\n");
   fprintf(out,"<BODY text=\"#000000\" bgcolor=\"#FFFFFF\" link=\"#0000EF\" vlink=\"#650065\" alink=\"#FF0000\">\n");
   fprintf(out,"<H2>%s</H2>\n",program);
-  fprintf(out,"<CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 COLS=2 WIDTH=\"98%\">\n");
+  fprintf(out,"<CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 COLS=2 WIDTH=\"98%%\">\n");
   fprintf(out,"<TR>\n<TD><font size=-1><A HREF=\"../online.html\">Main Table of Contents</A></font></TD>\n");
   fprintf(out,"<TD ALIGN=RIGHT><B>%s</B></TR>\n",GromacsVersion());
   fprintf(out,"<TR><TD><font size=-1><A HREF=\"http://www.gromacs.org\">GROMACS homepage</A></font></TD>\n");
