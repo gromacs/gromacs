@@ -1436,5 +1436,21 @@
  [ atoms ]
     BA   opls_414   2.000     0
 
+; Metal ions 
+[ CU ]
+ [ atoms ]
+    CU   Cu2+       2.000     0
 
+[ FE ]
+ [ atoms ]
+    FE   Fe2+       2.000     0
+
+[ ZN ]
+ [ atoms ]
+    ZN   Zn2+       2.000     0
+
+; And argon...
+[ Ar ]
+ [ atoms ]
+    Ar     Ar       0.000     0
 
