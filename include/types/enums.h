@@ -43,11 +43,11 @@ enum {
 };
 
 enum {
-  eelCUT,     eelRF,     eelGRF,   eelPME,  eelPPPM, 
+  eelCUT,     eelRF,     eelGRF,   eelPME,  eelEWALD,  eelPPPM, 
   eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelNR
 };
 
-#define EEL_LR(e) ((e == eelPPPM) || (e == eelPOISSON) || (e == eelPME))
+#define EEL_LR(e) ((e == eelPPPM) || (e == eelPOISSON) || (e ==  eelPME) || (e == eelEWALD))
 
 enum {
   evdwCUT,    evdwSWITCH, evdwSHIFT, evdwUSER, evdwNR
