@@ -47,7 +47,7 @@ foreach $p ( @ARGV ) {
 	    
 	open(PPP,">$p") || die ("Can not open $p for writing");
 	printf (PPP "#!/bin/csh -f\n");
-	printf (PPP "gmx-ana -type $ppp \$argv\n");
+	printf (PPP "gmx-ana -type $kkk[1] \$argv\n");
 	close(PPP);
 	chmod(0755,$oldprog);
 	printf (INC "extern int $ppp(int argc,char *argv[]);\n\n");
