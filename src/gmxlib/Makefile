@@ -11,7 +11,7 @@ include		$(GMXHOME)/src/makef/Makefile.def
 #
 M4 		= m4
 M4FILE		= $(CPU).m4
-LIBRARY		= libgmx
+LIB		= $(GMXHOME)/lib/$(CPU)/libgmx.$(CPU).a
 OBJ		= 	\
 		3dview.o	block_tx.o	bondfree.o	\
 		buffer.o	calch.o		calcmu.o	\
@@ -167,3 +167,4 @@ fitter:		fitter.o
 mgmxtest:	mgmxtest.o 	mgmx.o	widget.o statutil.o
 		$(LD) -o $@ $^  $(SYSLIBS) 
 
+include	Make.dep
