@@ -204,8 +204,8 @@ wheel:		wheel.o
 mkice:		mkice.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-g_rdf:		g_rdf.o 	do_rdf.o	rdfn.o		rdfang.o
-		$(CCLD) -o $@ $^ $(SYSLIBS)
+g_rdf:		g_rdf.o
+		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_msd:		g_msd.o	lsq.o
 		$(LD) -o $@ $^ $(SYSLIBS)
