@@ -266,7 +266,7 @@ real calc_orires_dev(t_commrec *mcr,
     invr = invsqrt(r2);
     /* Calculate the prefactor for the D tensor, this includes the factor 3! */
     pfac = ip[type].orires.c*invr*invr*3;
-    for(i=0; i<ip[type].orires.pow; i++)
+    for(i=0; i<ip[type].orires.power; i++)
       pfac *= invr;
     Dinsl[d][0] = pfac*(2*r[0]*r[0] + r[1]*r[1] - r2);
     Dinsl[d][1] = pfac*(2*r[0]*r[1]);
@@ -421,7 +421,7 @@ real orires(int nfa,t_iatom forceatoms[],t_iparams ip[],
       invr  = invsqrt(r2);
       invr2 = invr*invr;
       ex    = ip[type].orires.ex;
-      power = ip[type].orires.pow;
+      power = ip[type].orires.power;
       fc    = smooth_fc*ip[type].orires.kfac;
       dev   = od->otav[d] - ip[type].orires.obs;
       

@@ -442,7 +442,7 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
   case F_ORIRES:
     do_int (iparams->orires.ex);
     do_int (iparams->orires.label);
-    do_int (iparams->orires.pow);
+    do_int (iparams->orires.power);
     do_real(iparams->orires.c);
     do_real(iparams->orires.obs);
     do_real(iparams->orires.kfac);

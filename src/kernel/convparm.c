@@ -141,7 +141,7 @@ static void assign_param(t_functype ftype,t_iparams *new,
       fatal_error(0,"Found experiment number for orientation restraints which is smaller than 1 (%d)",old[0]);
     new->orires.ex    = old[0] - 1;
     new->orires.label = old[1];
-    new->orires.pow   = old[2];
+    new->orires.power = old[2];
     new->orires.c     = old[3];
     new->orires.obs   = old[4];
     new->orires.kfac  = old[5];
