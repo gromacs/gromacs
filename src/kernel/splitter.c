@@ -596,7 +596,8 @@ void split_top(bool bVerbose,int nprocs,t_topology *top)
       atom = sblock.multinr[j];
       mj   = NO_ATID;
       for(k=(j == 0) ? 0 : sblock.multinr[j-1]; (k<atom); k++)
-	mj = max(mj,sblinv[k]);
+	if (sblinv[k] != NO_ATID)
+	  mj = max(mj,(int)sblinv[k]);
       if (mj == NO_ATID) 
 	mj = (j == 0) ? -1 : top->blocks[ebSBLOCKS].multinr[j-1]-1;
       

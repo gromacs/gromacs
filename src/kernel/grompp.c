@@ -291,6 +291,7 @@ static int check_atom_names(char *fn1, char *fn2, t_atoms *at1, t_atoms *at2,
 }
 
 static int *new_status(char *topfile,char *topppfile,char *confin,
+		       char *ndxout,
 		       t_gromppopts *opts,t_inputrec *ir,
 		       bool bGenVel,bool bVerbose,
 		       bool bSort,int *natoms,
@@ -362,7 +363,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
     if (ntab > 0) {
       if (bVerbose)
 	fprintf(stderr,"Shuffling coordinates...\n");
-      forward=shuffle_xv("deshuf.ndx",bSort,bVerbose,
+      forward=shuffle_xv(ndxout,bSort,bVerbose,
 			 ntab,tab,nrmols,molinfo,
 			 *natoms,*x,*v,Nsim,Sims);
     }
@@ -659,10 +660,6 @@ int main (int argc, char *argv[])
     "can see the contents of the run input file with the [TT]gmxdump[tt]",
     "program."
   };
-  static char *bugs[] = {
-    "shuffling is sometimes buggy when used on systems when the number of "
-    "molecules of a certain type is smaller than the number of processors."
-  };
   t_gromppopts *opts;
   t_topology   *sys;
   t_molinfo    msys;
@@ -684,6 +681,7 @@ int main (int argc, char *argv[])
     { efSTX, "-c",  NULL,        ffREAD  },
     { efSTX, "-r",  NULL,        ffOPTRD },
     { efNDX, NULL,  NULL,        ffOPTRD },
+    { efNDX, "-deshuf", "deshuf",ffOPTWR },
     { efTOP, NULL,  NULL,        ffREAD  },
     { efTOP, "-pp", "processed", ffOPTWR },
     { efTPX, "-o",  NULL,        ffWRITE },
@@ -692,7 +690,7 @@ int main (int argc, char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
-  static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=FALSE;
+  static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=TRUE;
   static bool bRmDumBds=TRUE,bSort=FALSE;
   static int  nprocs=1,maxwarn=10;
   static real fr_time=-1;
@@ -725,7 +723,7 @@ int main (int argc, char *argv[])
   
   /* Parse the command line */
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
-		    asize(desc),desc,asize(bugs),bugs);
+		    asize(desc),desc,0,NULL);
   
   if ((nprocs > 0) && (nprocs <= MAXPROC))
     printf("creating statusfile for %d processor%s...\n",
@@ -785,6 +783,7 @@ int main (int argc, char *argv[])
   if (!fexist(fn)) 
     fatal_error(0,"%s does not exist",fn);
   forward=new_status(fn,opt2fn_null("-pp",NFILE,fnm),opt2fn("-c",NFILE,fnm),
+		     opt2fn("-deshuf",NFILE,fnm),
 		     opts,ir,bGenVel,bVerbose,bSort,&natoms,&x,&v,box,
 		     &atype,sys,&msys,plist,bShuffle ? nprocs : 1,
 		     (opts->eDisre==edrEnsemble),opts->bMorse,&nerror);
