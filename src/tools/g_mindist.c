@@ -89,7 +89,8 @@ static void periodic_dist(matrix box,rvec x[],int n,atom_id index[],
 }
 
 static void periodic_mindist_plot(char *trxfn,char *outfn,
-				  t_topology *top,int n,atom_id index[])
+				  t_topology *top,int n,atom_id index[],
+				  bool bSplit)
 {
   FILE   *out;
   char   *leg[5] = { "min per.","max int.","box1","box2","box3" };
@@ -99,19 +100,21 @@ static void periodic_mindist_plot(char *trxfn,char *outfn,
   matrix box;
   int    natoms;
   real   r,rmin,rmax,rmint,tmint;
-
+  bool   bFirst;
+  
   natoms=read_first_x(&status,trxfn,&t,&x,box);
   
   check_index(NULL,n,index,NULL,natoms);
-
+  
   out = xvgropen(outfn,"Minimum distance to periodic image",
-		 "Time (ps)","Distance (nm)");
+		 time_label(),"Distance (nm)");
   fprintf(out,"@ subtitle \"and maximum internal distance\"\n");
   xvgr_legend(out,5,leg);
-
+    
   rmint = box[XX][XX];
   tmint = 0;
-
+  
+  bFirst=TRUE;  
   do {
     rm_pbc(&(top->idef),natoms,box,x,x);
     periodic_dist(box,x,n,index,&rmin,&rmax);
@@ -119,53 +122,54 @@ static void periodic_mindist_plot(char *trxfn,char *outfn,
       rmint = rmin;
       tmint = t;
     }
-    fprintf(out,"\t%g\t%6.3f %6.3f %6.3f %6.3f %6.3f\n",t,rmin,rmax,
-	    norm(box[0]),norm(box[1]),norm(box[2]));
+    if ( bSplit && !bFirst && abs(t/time_factor())<1e-5 )
+      fprintf(out, "&\n");
+    fprintf(out,"\t%g\t%6.3f %6.3f %6.3f %6.3f %6.3f\n",
+	    convert_time(t),rmin,rmax,norm(box[0]),norm(box[1]),norm(box[2]));
+    bFirst=FALSE;
   } while(read_next_x(status,&t,natoms,x,box));
-
+    
   fclose(out);
-
+  
   fprintf(stdout,
-	  "\nThe shortest periodic distance is %g (nm) at time %g (ps)\n",
-	  rmint,tmint);
+	  "\nThe shortest periodic distance is %g (nm) at time %g (%s)\n",
+	  rmint,convert_time(tmint),time_unit());
 }
 
-static void calc_mindist(real MinDist,
-			 matrix box, rvec x[], 
-			 int nx1,int nx2,
-			 atom_id index1[], atom_id index2[],
-			 real *md, int *nd,
-			 int *ixmin, int *jxmin)
+static void calc_dist(real rcut, matrix box, rvec x[], 
+		      int nx1,int nx2, atom_id index1[], atom_id index2[],
+		      real *rmin, real *rmax, int *nmin, int *nmax,
+		      int *ixmin, int *jxmin, int *ixmax, int *jxmax)
 {
   int     i,j,j0=0,j1;
   int     ix,jx;
   atom_id *index3;
   rvec    dx;
-  int     numd=0;
-  real    r2,rmin2,r_2;
-
+  real    r2,rmin2,rmax2,rcut2;
+  
   *ixmin = -1;
   *jxmin = -1;
+  *ixmax = -1;
+  *jxmax = -1;
+  *nmin = 0;
+  *nmax = 0;
   
-/*   real    hb2; */
-/*   hb2=(sqr(box[XX][XX])+sqr(box[YY][YY])+sqr(box[ZZ][ZZ]))*0.5; */
+  rcut2=sqr(rcut);
   
-  r_2=sqr(MinDist);
-
   /* Must init pbc every step because of pressure coupling */
   init_pbc(box);
   if (index2) {
     j0=0;
     j1=nx2;
     index3=index2;
-  }
-  else {
+  } else {
     j1=nx1;
     index3=index1;
   }
-
-  rmin2=1000.0;
-
+  
+  rmin2=1e12;
+  rmax2=-1e12;
+  
   for(i=0; (i < nx1); i++) {
     ix=index1[i];
     if (!index2)
@@ -175,117 +179,64 @@ static void calc_mindist(real MinDist,
       if (ix != jx) {
 	pbc_dx(x[ix],x[jx],dx);
 	r2=iprod(dx,dx);
-	if (r2 < rmin2)
+	if (r2 < rmin2) {
 	  rmin2=r2;
-	if (r2 < r_2) {
-	  numd++;
 	  *ixmin=ix;
 	  *jxmin=jx;
 	}
-      }
-    }
-  }
-  *md=sqrt(rmin2);
-  *nd=numd;
-}
-
-static void calc_maxdist(real MaxDist,
-			 matrix box, rvec x[], 
-			 int nx1,int nx2,
-			 atom_id index1[], atom_id index2[],
-			 real *md, int *nd,
-			 int *ixmax, int *jxmax)
-{
-  int     i,j,j0=0,j1;
-  int     ix,jx;
-  atom_id *index3;
-  rvec    dx;
-  int     numd=0;
-  real    r2,rmax2,r_2;
-
-  *ixmax = -1;
-  *jxmax = -1;
-  
-/*   real    hb2; */
-/*   hb2=(sqr(box[XX][XX])+sqr(box[YY][YY])+sqr(box[ZZ][ZZ]))*0.5; */
-  
-  r_2=sqr(MaxDist);
-
-  /* Must init pbc every step because of pressure coupling */
-  init_pbc(box);
-  if (index2) {
-    j0     = 0;
-    j1     = nx2;
-    index3 = index2;
-  }
-  else {
-    j1     = nx1;
-    index3 = index1;
-  }
-
-  rmax2=0.0;
-
-  for(i=0; (i < nx1); i++) {
-    ix=index1[i];
-    if (!index2)
-      j0=i+1;
-    for(j=j0; (j < j1); j++) {
-      jx=index3[j];
-      if (ix != jx) {
-	pbc_dx(x[ix],x[jx],dx);
-	r2=iprod(dx,dx);
-	if (r2 > rmax2)
+	if (r2 > rmax2) {
 	  rmax2=r2;
-	if (r2 > r_2) {
-	  numd++;
 	  *ixmax=ix;
 	  *jxmax=jx;
 	}
+	if (r2 < rcut2)
+	  *nmin++;
+	else if (r2 > rcut2)
+	  *nmax++;
       }
     }
   }
-  *md=sqrt(rmax2);
-  *nd=numd;
+  *rmin = sqrt(rmin2);
+  *rmax = sqrt(rmax2);
 }
 
-void dist_plot(char *fn,FILE *atm,real mmd,
-	       char *dfile, char *nfile, char *rfile, bool bMat,
-	       int ng,atom_id *index[], int gnx[], char *grpn[],
+void dist_plot(char *fn,char *afile,char *dfile,
+	       char *nfile,char *rfile,char *xfile,
+	       real rcut,bool bMat,t_atoms *atoms,
+	       int ng,atom_id *index[],int gnx[],char *grpn[],bool bSplit,
 	       bool bMin, int nres, atom_id *residue)
 {
-  typedef void t_cd_fn(real,matrix,rvec *,int,int,atom_id *,atom_id *,
-		     real *,int *,int *,int *);
-  
-  FILE         *dist,*num;
+  FILE         *atm,*dist,*num;
+  int          trxout;
   char         buf[256];
   char         **leg;
-  real         t,md,**mdist;
-  int          nd,status;
+  real         t,dmin,dmax,**mindres,**maxdres;
+  int          nmin,nmax,status;
   int          i,j,k,natoms;
-  int	       mm1,mm2;
+  int	       min1,min2,max1,max2;
+  atom_id      oindex[2];
   rvec         *x0;
   matrix       box;
-  t_cd_fn      *calc_dist;
-  
-  if (bMin)
-    calc_dist = calc_mindist;
-  else
-    calc_dist = calc_maxdist;
+  t_trxframe   frout;
+  bool         bFirst;
   
   if ((natoms=read_first_x(&status,fn,&t,&x0,box))==0)
     fatal_error(0,"Could not read coordinates from statusfile\n");
-
-  sprintf(buf,"Number of Contacts %s %g nm",bMin ? "<" : ">",mmd);
-  dist=xvgropen(dfile,"Mmimum Distance","Time (ps)","Distance (nm)");
-  num=xvgropen(nfile,buf,"Time (ps)","Number");
-
+  
+  sprintf(buf,"%simum Distance",bMin ? "Min" : "Max");
+  dist= xvgropen(dfile,buf,time_label(),"Distance (nm)");
+  sprintf(buf,"Number of Contacts %s %g nm",bMin ? "<" : ">",rcut);
+  num = nfile ? xvgropen(nfile,buf,time_label(),"Number") : NULL;
+  atm = afile ? ffopen(afile,"w") : NULL;
+  trxout = xfile ? open_trx(xfile,"w") : NOTSET;
+  
   if (bMat) {
     if (ng == 1) {
       snew(leg,1);
       sprintf(buf,"Internal in %s",grpn[0]);
       leg[0]=strdup(buf);
       xvgr_legend(dist,0,leg);
-      xvgr_legend(num,0,leg);
+      if (num) xvgr_legend(num,0,leg);
     } 
     else {
       snew(leg,(ng*(ng-1))/2);
@@ -296,7 +247,7 @@ void dist_plot(char *fn,FILE *atm,real mmd,
 	}
       }
       xvgr_legend(dist,j,leg);
-      xvgr_legend(num,j,leg);
+      if (num) xvgr_legend(num,j,leg);
     }
   }
   else {  
@@ -306,69 +257,87 @@ void dist_plot(char *fn,FILE *atm,real mmd,
       leg[i]=strdup(buf);
     }
     xvgr_legend(dist,ng-1,leg);
-    xvgr_legend(num,ng-1,leg);
-  }    
+    if (num) xvgr_legend(num,ng-1,leg);
+  }
   j=0;
   if (nres) {
-    snew(mdist, ng-1);
+    snew(mindres, ng-1);
+    snew(maxdres, ng-1);
     for(i=1; i<ng; i++) {
-      snew(mdist[i-1], nres);
-      if (bMin)
-	for(j=0; j<nres; j++)
-	  mdist[i-1][j]=1e6;
+      snew(mindres[i-1], nres);
+      snew(maxdres[i-1], nres);
+      for(j=0; j<nres; j++)
+	mindres[i-1][j]=1e6;
+      /* maxdres[*][*] is already 0 */
     }
   }
+  bFirst=TRUE;  
   do {
-    fprintf(dist,"%12g",t);
-    fprintf(num,"%12g",t);
-
+    if ( bSplit && !bFirst && abs(t/time_factor())<1e-5 ) {
+      fprintf(dist, "&\n");
+      if (num) fprintf(num, "&\n");
+      if (atm) fprintf(atm, "&\n");
+    }
+    fprintf(dist,"%12g",convert_time(t));
+    if (num) fprintf(num,"%12g",convert_time(t));
+    
     if (bMat) {
       if (ng == 1) {
-	calc_dist(mmd,box,x0,gnx[0],gnx[0],
-		  index[0],index[0],&md,&nd,
-		  &mm1,&mm2);
-	fprintf(dist,"  %12g",md);
-	fprintf(num,"  %8d",nd);
+	calc_dist(rcut,box,x0,gnx[0],gnx[0],index[0],index[0],
+		  &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2);
+	fprintf(dist,"  %12g",bMin?dmin:dmax);
+	if (num) fprintf(num,"  %8d",bMin?nmin:nmax);
       }
       else {
 	for(i=0; (i<ng-1); i++) {
 	  for(k=i+1; (k<ng); k++) {
-	    calc_dist(mmd,box,x0,gnx[i],gnx[k],
-		      index[i],index[k],&md,&nd,
-		      &mm1,&mm2);
-	    fprintf(dist,"  %12g",md);
-	    fprintf(num,"  %8d",nd);
+	    calc_dist(rcut,box,x0,gnx[i],gnx[k],index[i],index[k],
+		      &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2);
+	    fprintf(dist,"  %12g",bMin?dmin:dmax);
+	    if (num) fprintf(num,"  %8d",bMin?nmin:nmax);
 	  }
 	}
       }
     }
     else {    
       for(i=1; (i<ng); i++) {
-	calc_dist(mmd,box,x0,gnx[0],gnx[i],
-		  index[0],index[i],&md,&nd,
-		  &mm1,&mm2);
-	fprintf(dist,"  %12g",md);
-	fprintf(num,"  %8d",nd);
+	calc_dist(rcut,box,x0,gnx[0],gnx[i],index[0],index[i],
+		  &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2);
+	fprintf(dist,"  %12g",bMin?dmin:dmax);
+	if (num) fprintf(num,"  %8d",bMin?nmin:nmax);
 	if (nres) {
 	  for(j=0; j<nres; j++) {
-	    calc_dist(mmd,box,x0,
-		      residue[j+1]-residue[j],gnx[i],
-		      &(index[0][residue[j]]),index[i],&md,&nd,&mm1,&mm2);
-	    mdist[i-1][j] = bMin?min(mdist[i-1][j],md):max(mdist[i-1][j],md);
-      }    
-    }
+	    calc_dist(rcut,box,x0,residue[j+1]-residue[j],gnx[i],
+		      &(index[0][residue[j]]),index[i],
+		      &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2);
+	    mindres[i-1][j] = min(mindres[i-1][j],dmin);
+	    maxdres[i-1][j] = max(maxdres[i-1][j],dmax);
+	  }
+	}
       }
     }
     fprintf(dist,"\n");
-    fprintf(num,"\n");
-    if (mm1 != -1)
-      fprintf(atm,"%12g  %12d  %12d\n",t,mm1,mm2);
+    if (num) 
+      fprintf(num,"\n");
+    if ( bMin?min1:max1 != -1 )
+      if (atm)
+	fprintf(atm,"%12g  %12d  %12d\n",
+		convert_time(t),bMin?min1:max1+1,bMin?min2:max2+1);
+    
+    if (trxout>=0) {
+      oindex[0]=bMin?min1:max1;
+      oindex[1]=bMin?min2:max2;
+      write_trx(trxout,2,oindex,atoms,i,t,box,x0,NULL);
+    }
+    bFirst=FALSE;
   } while (read_next_x(status,&t,natoms,x0,box));
   
   close_trj(status);
   fclose(dist);
-  fclose(num);
-
+  if (num) fclose(num);
+  if (atm) fclose(atm);
+  if (trxout>=0) close_xtc(trxout);
+  
   if(nres) {
     FILE *res;
     
@@ -378,11 +347,10 @@ void dist_plot(char *fn,FILE *atm,real mmd,
     for(j=0; j<nres; j++) {
       fprintf(res, "%4d", j+1);
       for(i=1; i<ng; i++) {
-	fprintf(res, " %7g", mdist[i-1][j]);
+	fprintf(res, " %7g", bMin ? mindres[i-1][j] : maxdres[i-1][j]);
       }
       fprintf(res, "\n");
     }
-    
   }
   
   sfree(x0);
@@ -448,17 +416,19 @@ int main(int argc,char *argv[])
     "The [TT]-pi[tt] option is very slow."
   };
   
-  static bool bMat=FALSE,bPer=FALSE,bMax=FALSE;
-  static real mindist=0.6;
+  static bool bMat=FALSE,bPer=FALSE,bSplit=FALSE,bMax=FALSE;
+  static real rcutoff=0.6;
   t_pargs pa[] = {
     { "-matrix", FALSE, etBOOL, {&bMat},
       "Calculate half a matrix of group-group distances" },
     { "-max",    FALSE, etBOOL, {&bMax},
       "Calculate *maximum* distance instead of minimum" },
-    { "-d",      FALSE, etREAL, {&mindist},
+    { "-d",      FALSE, etREAL, {&rcutoff},
       "Distance for contacts" },
-    { "-pi",      FALSE, etBOOL, {&bPer},
-      "Calculate minimum distance with periodic images" }
+    { "-pi",     FALSE, etBOOL, {&bPer},
+      "Calculate minimum distance with periodic images" },
+    { "-split",  FALSE, etBOOL, {&bSplit},
+      "Split graph where time is zero" },
   };
   t_topology top;
   char       title[256];
@@ -468,27 +438,35 @@ int main(int argc,char *argv[])
   
   FILE      *atm;
   int       i,j,ng,nres=0;
-  char      *tps,*ndx,*res,**grpname;
+  char      *trxfnm,*tpsfnm,*ndxfnm,*distfnm,*numfnm,*atmfnm,*oxfnm,*resfnm;
+  char      **grpname;
   int       *gnx;
   atom_id   **index, *residues=NULL;
   t_filenm  fnm[] = {
-    { efTRX, "-f", NULL,  ffREAD },
-    { efTPS, NULL, NULL,  ffOPTRD },
-    { efNDX, NULL, NULL,  ffOPTRD },
-    { efXVG, "-od","mindist",ffWRITE },
-    { efXVG, "-on","numcont", ffWRITE },
-    { efXVG, "-or","mindistres", ffOPTWR },
-    { efOUT, "-o","atm-pair", ffWRITE }
+    { efTRX, "-f",  NULL,      ffREAD },
+    { efTPS,  NULL, NULL,      ffOPTRD },
+    { efNDX,  NULL, NULL,      ffOPTRD },
+    { efXVG, "-od","mindist",  ffWRITE },
+    { efXVG, "-on","numcont",  ffOPTWR },
+    { efOUT, "-o", "atm-pair", ffOPTWR },
+    { efTRX, "-ox","mindist",  ffOPTWR },
+    { efXVG, "-or","mindistres", ffOPTWR }
   };
 #define NFILE asize(fnm)
 
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
+  parse_common_args(&argc,argv,
+		    PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
 
-  tps = ftp2fn_null(efTPS,NFILE,fnm);
-  ndx = ftp2fn_null(efNDX,NFILE,fnm);
-  res = opt2fn_null("-or",NFILE,fnm);
+  trxfnm = ftp2fn(efTRX,NFILE,fnm);
+  tpsfnm = ftp2fn_null(efTPS,NFILE,fnm);
+  ndxfnm = ftp2fn_null(efNDX,NFILE,fnm);
+  distfnm= opt2fn("-od",NFILE,fnm);
+  numfnm = opt2fn_null("-on",NFILE,fnm);
+  atmfnm = ftp2fn_null(efOUT,NFILE,fnm);
+  oxfnm  = opt2fn_null("-ox",NFILE,fnm);
+  resfnm = opt2fn_null("-or",NFILE,fnm);
   
   if (bPer) {
     ng = 1;
@@ -512,10 +490,10 @@ int main(int argc,char *argv[])
   snew(index,ng);
   snew(grpname,ng);
 
-  if (tps || ndx==NULL)
-    read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,FALSE);
+  if (tpsfnm || !ndxfnm)
+    read_tps_conf(tpsfnm,title,&top,&x,NULL,box,FALSE);
   
-  get_index(&top.atoms,ndx,ng,gnx,index,grpname);
+  get_index(&top.atoms,ndxfnm,ng,gnx,index,grpname);
 
   if (bMat && (ng == 1)) {
     ng = gnx[0];
@@ -532,27 +510,22 @@ int main(int argc,char *argv[])
     }
     gnx[0] = 1;
   }
-    
-  if (res) {
+  
+  if (resfnm) {
     nres=find_residues(&top.atoms, gnx[0], index[0], &residues);
     if (debug) dump_res(debug, nres, residues, gnx[0], index[0]);
   }
     
-  if (bPer) {
-    periodic_mindist_plot(ftp2fn(efTRX,NFILE,fnm),opt2fn("-od",NFILE,fnm),
-			  &top,gnx[0],index[0]);
-  } else {
-    atm=ftp2FILE(efOUT,NFILE,fnm,"w");
-    dist_plot(ftp2fn(efTRX,NFILE,fnm),atm,mindist,
-	      opt2fn("-od",NFILE,fnm),opt2fn("-on",NFILE,fnm),
-	      opt2fn_null("-or",NFILE,fnm),
-	      bMat,ng,index,gnx,grpname,!bMax,nres,residues);
-    fclose(atm);
-  }
+  if (bPer)
+    periodic_mindist_plot(trxfnm,distfnm,&top,gnx[0],index[0],bSplit);
+  else
+    dist_plot(trxfnm,atmfnm,distfnm,numfnm,resfnm,oxfnm,
+	      rcutoff,bMat,&top.atoms,ng,index,gnx,grpname,bSplit,
+	      !bMax, nres, residues);
 
-  do_view(opt2fn("-od",NFILE,fnm),"-nxy");
+  do_view(distfnm,"-nxy");
   if (!bPer)
-    do_view(opt2fn("-on",NFILE,fnm),"-nxy");
+    do_view(numfnm,"-nxy");
   
   thanx(stderr);
   
