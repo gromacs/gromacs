@@ -504,6 +504,13 @@ int main(int argc, char *argv[])
     "and donor-acceptor distance, which are set by [TT]-angle[tt] and",
     "[TT]-dist[tt] respectively.[PAR]",
     
+    "pdb2gmx will also check the occupancy field of the pdb file.",
+    "If any of the occupanccies are not one, indicating that the atom is",
+    "not resolved well in the structure, a warning message is issued.",
+    "When a pdb file does not originate from an X-Ray structure determination",
+    "all occupancy fields may be zero. Either way, it is up to the user",
+    "to verify the correctness of the input data (read the article!).[PAR]", 
+    
     "During processing the atoms will be reordered according to Gromacs",
     "conventions. With [TT]-n[tt] an index file can be generated that",
     "contains one group reordered in the same way. This allows you to",
