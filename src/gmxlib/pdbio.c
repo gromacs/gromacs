@@ -40,27 +40,85 @@ static char *SRCID_pdbio_c = "$Id$";
 #include "copyrite.h"
 #include "futil.h"
 	
-static char *pdbtp[epdbNR]={"ATOM  ","HETATM"};
+static char *pdbtp[epdbNR]={
+  "ATOM  ","HETATM", "ANISOU", "CRYST1",
+  "COMPND", "ENDMDL", "TER", "HEADER", "TITLE", "REMARK" 
+};
+
 static char *pdbformat="%6s%5d  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n";
 /* This is THE format */
+static char *anisouformat="%6s%5d %-4.4s %3.3s %c%4d  %-6d%-6d%-6d%-6d%-6d%-6d  %3s%-2s%2s\n";
 static bool bTER=FALSE;
+#define REMARK_SIM_BOX "REMARK    THIS IS A SIMULATION BOX"
+
 
 void pdb_use_ter(bool bSet)
 {
   bTER=bSet;
 }
 
-static void decompose_line(char line[],char type[],char anr[],char anm[],
-			   char resnm[],char chain[],char resnr[],char xc[],
-			   char yc[],char zc[],char dumc[],char bfac[],
-			   char pdbresnr[])
+int line2type(char *line)
 {
-  int j,k;
-  char nc='\0';
+  int  k;
+  char type[8];
   
-  j=0;
-  for(k=0; (k<6); k++,j++) type[k]=line[j];
-  type[k]=nc;
+  for(k=0; (k<6); k++) 
+    type[k]=line[k];
+  type[k]='\0';
+  
+  for(k=0; (k<epdbNR); k++)
+    if (strncmp(type,pdbtp[k],strlen(pdbtp[k])) == 0)
+      break;
+  
+  return k;
+}
+
+static void read_anisou(char line[],int natom,t_pdbatom pdba[])
+{
+  int  i,j,k,atomnr;
+  char nc='\0';
+  char anr[12],anm[12];
+
+  /* Skip over type */  
+  j=6;
+  for(k=0; (k<5); k++,j++) anr[k]=line[j];
+  anr[k]=nc;
+  j++;
+  for(k=0; (k<4); k++,j++) anm[k]=line[j];
+  anm[k]=nc;
+  j++;
+
+  /* Search backwards for number and name only */
+  atomnr = atoi(anr);
+  for(i=natom-1; (i>=0); i--)
+    if ((strcmp(anm,pdba[i].atomnm) == 0) && (atomnr == pdba[i].atomnr))
+      break;
+  if (i < 0)
+    fprintf(stderr,"Skipping ANISOU record (atom %s %d not found)\n",
+	    anm,atomnr);
+  else {
+    if (sscanf(line+29,"%d%d%d%d%d%d",
+	       &pdba[i].uij[U11],&pdba[i].uij[U22],&pdba[i].uij[U33],
+	       &pdba[i].uij[U12],&pdba[i].uij[U13],&pdba[i].uij[U23]) == 6) {
+      pdba[i].bAnisotropic = TRUE;
+    }
+    else {
+      fprintf(stderr,"Invalid ANISOU record for atom %d\n",i);
+      pdba[i].bAnisotropic = FALSE;
+    }     
+  }
+}
+
+static int read_atom(char line[],int natom,int *maxpdba,
+		     t_pdbatom **pdba,bool bFilterH)
+{
+  int  j,k;
+  char nc='\0';
+  char anr[12],anm[12],resnm[12],chain[12],resnr[12];
+  char xc[12],yc[12],zc[12],dumc[12],bfac[12],pdbresnr[12];
+
+  /* Skip over type */  
+  j=6;
   for(k=0; (k<5); k++,j++) anr[k]=line[j];
   anr[k]=nc;
   j++;
@@ -70,7 +128,7 @@ static void decompose_line(char line[],char type[],char anr[],char anm[],
   for(k=0; (k<4); k++,j++) 
     resnm[k]=line[j];
   resnm[k]=nc;
-  /*j++;*/
+
   for(k=0; (k<1); k++,j++)
     chain[k]=line[j];
   chain[k]=nc;
@@ -83,17 +141,52 @@ static void decompose_line(char line[],char type[],char anr[],char anm[],
   for( ;(k<8); k++,j++)
     pdbresnr[k]=line[j];
   pdbresnr[k]=nc;
-  /*j+=4;*/
+
+  /* X,Y,Z Coordinate */
   for(k=0; (k<8); k++,j++) xc[k]=line[j];
   xc[k]=nc;
   for(k=0; (k<8); k++,j++) yc[k]=line[j];
   yc[k]=nc;
   for(k=0; (k<8); k++,j++) zc[k]=line[j];
   zc[k]=nc;
+  
+  /* Weight */
   for(k=0; (k<6); k++,j++) dumc[k]=line[j];
   dumc[k]=nc;
+  
+  /* B-Factor */
   for(k=0; (k<6); k++,j++) bfac[k]=line[j];
   bfac[k]=nc;
+  
+  /* Should we filter out the hydrogens ? */
+  if (bFilterH && (is_hydrogen(anm)))
+    return natom;
+  
+  if (natom >= *maxpdba) {
+    *maxpdba+=256;
+    srenew(*pdba,*maxpdba);
+    /* Clear new entries! */
+    for(k=natom; (k<*maxpdba); k++)
+      memset(&((*pdba)[k]),0,(size_t)sizeof((*pdba)[k]));
+  }
+  (*pdba)[natom].pdbtp=j;
+  (*pdba)[natom].atomnr=atoi(anr);
+  strcpy((*pdba)[natom].atomnm,anm);
+  strcpy((*pdba)[natom].resnm,resnm);
+  strcpy((*pdba)[natom].pdbresnr,pdbresnr);
+  (*pdba)[natom].chain=chain[0];
+  (*pdba)[natom].resnr=atoi(resnr);
+  (*pdba)[natom].x[XX]=atof(xc)*0.1;
+  (*pdba)[natom].x[YY]=atof(yc)*0.1;
+  (*pdba)[natom].x[ZZ]=atof(zc)*0.1;
+  (*pdba)[natom].bfac=atof(bfac);
+  (*pdba)[natom].dummy=atof(dumc);
+  (*pdba)[natom].m = 0.0;
+  (*pdba)[natom].q = 0.0;
+  (*pdba)[natom].type = 0;
+  natom++;
+  
+  return natom;
 }
 
 bool is_hydrogen(char *nm)
@@ -110,8 +203,6 @@ bool is_hydrogen(char *nm)
   return FALSE;
 }
 
-#define REMARK_SIM_BOX "REMARK    THIS IS A SIMULATION BOX"
-
 int read_pdbatoms(FILE *in,char *title, 
 		  t_pdbatom **pdbaptr,matrix box,bool bFilterH)
 {
@@ -119,8 +210,8 @@ int read_pdbatoms(FILE *in,char *title,
   int  maxpdba=0;
   bool bCOMPND,bSimBox;
   char line[STRLEN+1];
-  char type[12],anr[12],anm[12],resnm[12],chain[12],resnr[12],
-       xc[12],yc[12],zc[12],dumc[12],bfac[12],pdbresnr[12];
+  char xc[12],yc[12],zc[12];
+  int  line_type;
   char *c,*d;
   int  natom;
   int  j,k;
@@ -133,65 +224,48 @@ int read_pdbatoms(FILE *in,char *title,
   title[0]='\0';
   natom=0;
   while (fgets2(line,STRLEN,in) != NULL) {
-    decompose_line(line,type,anr,anm,resnm,chain,resnr,xc,yc,zc,dumc,bfac,
-		   pdbresnr);
-    for(j=0; (j<epdbNR); j++)
-      if (strncmp(type,pdbtp[j],6) == 0) 
-	break;
-    if (j < epdbNR) {
-      /* Should we filter out the hydrogens ? */
-      if (bFilterH && (is_hydrogen(anm)))
-	continue;
+    line_type = line2type(line);
+    
+    switch(line_type) {
+    case epdbATOM:
+    case epdbHETATM:
+      natom = read_atom(line,natom,&maxpdba,&pdba,bFilterH);
+      break;
+      
+    case epdbANISOU:
+      read_anisou(line,natom,pdba);
+      break;
+
+    case epdbCRYST1:      
+      if (!box[0][0] && bSimBox) {
+	sscanf(line,"%*s%s%s%s",xc,yc,zc);
+	box[XX][XX] = atof(xc)*0.1;
+	box[YY][YY] = atof(yc)*0.1;
+	box[ZZ][ZZ] = atof(zc)*0.1;
 	
-      if (natom >= maxpdba) {
-	maxpdba+=256;
-	srenew(pdba,maxpdba);
-	/* Clear new entries! */
-	for(k=natom; (k<maxpdba); k++)
-	  memset(&(pdba[k]),0,(size_t)sizeof(pdba[k]));
+	bSimBox = FALSE;
+      } else 
+	fprintf(stderr,"WARNING: ignoring data in CRYST1 entry "
+		"(probably not a simulation box)\n");
+      break;
+
+    case epdbTITLE:
+    case epdbHEADER:      
+      c=line+6;
+      /* skip HEADER or TITLE and spaces */
+      while (c && (c[0]!=' ')) c++;
+      while (c && (c[0]==' ')) c++;
+      /* truncate after title */
+      d=strstr(c,"   ");
+      if (d) {
+	d[0]='\0';
       }
-      pdba[natom].pdbtp=j;
-      pdba[natom].atomnr=atoi(anr);
-      strcpy(pdba[natom].atomnm,anm);
-      strcpy(pdba[natom].resnm,resnm);
-      strcpy(pdba[natom].pdbresnr,pdbresnr);
-      pdba[natom].chain=chain[0];
-      pdba[natom].resnr=atoi(resnr);
-      pdba[natom].x[XX]=atof(xc)*0.1;
-      pdba[natom].x[YY]=atof(yc)*0.1;
-      pdba[natom].x[ZZ]=atof(zc)*0.1;
-      pdba[natom].bfac=atof(bfac);
-      pdba[natom].dummy=atof(dumc);
-      pdba[natom].m = 0.0;
-      pdba[natom].q = 0.0;
-      pdba[natom].type = 0;
-      natom++;
-    } else {
-      trim(type);
-      if (!box[0][0] && (strncmp(type,"CRYST1",6)==0)) {
-	if (bSimBox) {
-	  sscanf(line,"%*s%s%s%s",xc,yc,zc);
-	  box[XX][XX] = atof(xc)*0.1;
-	  box[YY][YY] = atof(yc)*0.1;
-	  box[ZZ][ZZ] = atof(zc)*0.1;
-	} else 
-	  fprintf(stderr,"WARNING: ignoring data in CRYST1 entry "
-		  "(probably not a simulation box)\n");
-      } else if ( (title[0]=='\0') && ( (strncmp(type,"TITLE" ,5) == 0) || 
-					(strncmp(type,"HEADER",6) == 0) ) ) {
-	c=line+6;
-	/* skip HEADER or TITLE and spaces */
-	while (c && (c[0]!=' ')) c++;
-	while (c && (c[0]==' ')) c++;
-	/* truncate after title */
-	d=strstr(c,"   ");
-	if (d) {
-	  d[0]='\0';
-	}
-	if (strlen(c)>0)
-	  strcpy(title,c);
-      } else if ( (strncmp(type,"COMPND",6) == 0) && 
-		  (!strstr(line,": ")) || (strstr(line+6,"MOLECULE:")) ) {
+      if (strlen(c)>0)
+	strcpy(title,c);
+      break;
+      
+    case epdbCOMPND:
+      if ((!strstr(line,": ")) || (strstr(line+6,"MOLECULE:"))) {
 	if ( !(c=strstr(line+6,"MOLECULE:")) )
 	  c=line;
 	/* skip 'MOLECULE:' and spaces */
@@ -210,14 +284,22 @@ int read_pdbatoms(FILE *in,char *title,
 	  } else
 	    strcpy(title,c);
 	bCOMPND=TRUE;
-      } else if ( ( bTER && (strcmp(type,"TER") == 0)) ||
-		  (!bTER && (strcmp(type,"ENDMDL") == 0)) ) 
-	break;
-      else if (strcmp(line,REMARK_SIM_BOX)==0)
+      } 
+      break;
+      
+    case epdbREMARK:
+      if (strcmp(line,REMARK_SIM_BOX)==0)
 	bSimBox=TRUE;
+      break;
+      
+    case epdbTER:
+    case epdbENDMDL:
+    default:
+      break;
     }
   }
   *pdbaptr=pdba;
+  
   return natom;
 }
 
@@ -268,6 +350,14 @@ void print_pdbatoms(FILE *out,char *title,
 	    buf,pdba[i].chain,resnr,
 	    10*pdba[i].x[XX],10*pdba[i].x[YY],10*pdba[i].x[ZZ],
 	    pdba[i].dummy,pdba[i].bfac);
+    if (pdba[i].bAnisotropic)
+      fprintf(out,anisouformat,
+	      pdbtp[pdba[i].pdbtp],pdba[i].atomnr + 1,pdba[i].atomnm,
+	      buf,pdba[i].chain,resnr,
+	      pdba[i].uij[U11],pdba[i].uij[U22],pdba[i].uij[U33],
+	      pdba[i].uij[U12],pdba[i].uij[U13],pdba[i].uij[U23],
+	      "A","C","0");
+	      
   }
   fprintf(out,"%s\n",bTER?"TER":"ENDMDL");
 }

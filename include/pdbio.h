@@ -39,8 +39,15 @@ static char *SRCID_pdbio_h = "$Id$";
 #include "typedefs.h"
 #include "symtab.h"
 
-enum { epdbATOM, epdbHETATM, epdbNR };
+/* Enumerated type for pdb records. The other entries are ignored
+ * when reading a pdb file 
+ */
+enum { epdbATOM, epdbHETATM, epdbANISOU, epdbCRYST1, epdbCOMPND, 
+       epdbENDMDL, epdbTER, epdbHEADER, epdbTITLE, epdbREMARK, epdbNR };
 
+/* Enumerated value for indexing an uij entry (anisotropic temperature factors) */
+enum { U11, U22, U33, U12, U13, U23 };
+       
 typedef struct {
   int  pdbtp;
   int  atomnr;
@@ -52,6 +59,8 @@ typedef struct {
   rvec x;
   real bfac,dummy;
   real m,q;
+  bool bAnisotropic;
+  int  uij[6];
   int  type;
 } t_pdbatom;
 
