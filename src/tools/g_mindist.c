@@ -249,23 +249,23 @@ static void calc_maxdist(real MaxDist,
 }
 
 void dist_plot(char *fn,FILE *atm,real mmd,
-	       char *dfile,char *nfile,bool bMat,
+	       char *dfile, char *nfile, char *rfile, bool bMat,
 	       int ng,atom_id *index[], int gnx[], char *grpn[],
-	       bool bMin)
+	       bool bMin, int nres, atom_id *residue)
 {
-  typedef void cd_fn(real,matrix,rvec *,int,int,atom_id *,atom_id *,
+  typedef void t_cd_fn(real,matrix,rvec *,int,int,atom_id *,atom_id *,
 		     real *,int *,int *,int *);
   
   FILE         *dist,*num;
   char         buf[256];
   char         **leg;
-  real         t,md;
+  real         t,md,**mdist;
   int          nd,status;
   int          i,j,k,natoms;
   int	       mm1,mm2;
   rvec         *x0;
   matrix       box;
-  cd_fn        *calc_dist;
+  t_cd_fn      *calc_dist;
   
   if (bMin)
     calc_dist = calc_mindist;
@@ -309,6 +309,15 @@ void dist_plot(char *fn,FILE *atm,real mmd,
     xvgr_legend(num,ng-1,leg);
   }    
   j=0;
+  if (nres) {
+    snew(mdist, ng-1);
+    for(i=1; i<ng; i++) {
+      snew(mdist[i-1], nres);
+      if (bMin)
+	for(j=0; j<nres; j++)
+	  mdist[i-1][j]=1e6;
+    }
+  }
   do {
     fprintf(dist,"%12g",t);
     fprintf(num,"%12g",t);
@@ -340,7 +349,15 @@ void dist_plot(char *fn,FILE *atm,real mmd,
 		  &mm1,&mm2);
 	fprintf(dist,"  %12g",md);
 	fprintf(num,"  %8d",nd);
+	if (nres) {
+	  for(j=0; j<nres; j++) {
+	    calc_dist(mmd,box,x0,
+		      residue[j+1]-residue[j],gnx[i],
+		      &(index[0][residue[j]]),index[i],&md,&nd,&mm1,&mm2);
+	    mdist[i-1][j] = bMin?min(mdist[i-1][j],md):max(mdist[i-1][j],md);
       }    
+    }
+      }
     }
     fprintf(dist,"\n");
     fprintf(num,"\n");
@@ -352,7 +369,61 @@ void dist_plot(char *fn,FILE *atm,real mmd,
   fclose(dist);
   fclose(num);
 
+  if(nres) {
+    FILE *res;
+    
+    sprintf(buf,"%simum Distance",bMin ? "Min" : "Max");
+    res=xvgropen(rfile,buf,"Residue (#)","Distance (nm)");
+    xvgr_legend(res,ng-1,leg);
+    for(j=0; j<nres; j++) {
+      fprintf(res, "%4d", j+1);
+      for(i=1; i<ng; i++) {
+	fprintf(res, " %7g", mdist[i-1][j]);
+      }
+      fprintf(res, "\n");
+    }
+    
+  }
+  
   sfree(x0);
+}
+
+int find_residues(t_atoms *atoms, int n, atom_id index[], atom_id **resindex)
+{
+  int i;
+  int nres,resnr, presnr;
+  int *residx;
+  
+  /* build index of first atom numbers for each residue */  
+  presnr = NOTSET;
+  snew(residx, atoms->nres);
+  for(i=0; i<n; i++) {
+    resnr = atoms->atom[index[i]].resnr;
+    if (resnr != presnr) {
+      residx[nres]=i;
+      nres++;
+      presnr=resnr;
+    }
+  }
+  if (debug) printf("Found %d residues out of %d (%d/%d atoms)\n", 
+		    nres, atoms->nres, atoms->nr, n);
+  srenew(residx, nres+1);
+  /* mark end of last residue */
+  residx[nres]=n+1;
+  *resindex = residx;
+  return nres;
+}
+
+void dump_res(FILE *out, int nres, atom_id *resindex, int n, atom_id index[])
+{
+  int i,j;
+  
+  for(i=0; i<nres-1; i++) {
+    fprintf(out,"Res %d (%d):", i, resindex[i+1]-resindex[i]);
+    for(j=resindex[i]; j<resindex[i+1]; j++)
+      fprintf(out," %d(%d)", j, index[j]);
+    fprintf(out,"\n");
+  }
 }
 
 int main(int argc,char *argv[])
@@ -361,7 +432,9 @@ int main(int argc,char *argv[])
     "g_mindist computes the distance between one group and a number of",
     "other groups.",
     "Both the minimum distance and the number of contacts within a given",
-    "distance are written to two separate output files.[PAR]",
+    "distance are written to two separate output files.",
+    "With [TT]-or[tt], minimum distances to each residue in the first",
+    "group are determined and plotted as a function of reisdue number.[PAR]",
     "With option [TT]-pi[tt] the minimum distance of a group to its",
     "periodic image is plotted. This is useful for checking if a protein",
     "has seen its periodic image during a simulation. Only one shift in",
@@ -394,16 +467,17 @@ int main(int argc,char *argv[])
   matrix     box;
   
   FILE      *atm;
-  int       i,ng;
-  char      *tps,*ndx,**grpname;
+  int       i,j,ng,nres=0;
+  char      *tps,*ndx,*res,**grpname;
   int       *gnx;
-  atom_id   **index;
+  atom_id   **index, *residues=NULL;
   t_filenm  fnm[] = {
     { efTRX, "-f", NULL,  ffREAD },
     { efTPS, NULL, NULL,  ffOPTRD },
     { efNDX, NULL, NULL,  ffOPTRD },
     { efXVG, "-od","mindist",ffWRITE },
     { efXVG, "-on","numcont", ffWRITE },
+    { efXVG, "-or","mindistres", ffOPTWR },
     { efOUT, "-o","atm-pair", ffWRITE }
   };
 #define NFILE asize(fnm)
@@ -414,6 +488,7 @@ int main(int argc,char *argv[])
 
   tps = ftp2fn_null(efTPS,NFILE,fnm);
   ndx = ftp2fn_null(efNDX,NFILE,fnm);
+  res = opt2fn_null("-or",NFILE,fnm);
   
   if (bPer) {
     ng = 1;
@@ -458,6 +533,11 @@ int main(int argc,char *argv[])
     gnx[0] = 1;
   }
     
+  if (res) {
+    nres=find_residues(&top.atoms, gnx[0], index[0], &residues);
+    if (debug) dump_res(debug, nres, residues, gnx[0], index[0]);
+  }
+    
   if (bPer) {
     periodic_mindist_plot(ftp2fn(efTRX,NFILE,fnm),opt2fn("-od",NFILE,fnm),
 			  &top,gnx[0],index[0]);
@@ -465,7 +545,8 @@ int main(int argc,char *argv[])
     atm=ftp2FILE(efOUT,NFILE,fnm,"w");
     dist_plot(ftp2fn(efTRX,NFILE,fnm),atm,mindist,
 	      opt2fn("-od",NFILE,fnm),opt2fn("-on",NFILE,fnm),
-	      bMat,ng,index,gnx,grpname,!bMax);
+	      opt2fn_null("-or",NFILE,fnm),
+	      bMat,ng,index,gnx,grpname,!bMax,nres,residues);
     fclose(atm);
   }
 
