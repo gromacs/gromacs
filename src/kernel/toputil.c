@@ -61,6 +61,19 @@ int at2type(char *str,t_atomtype *at)
   return i;
 }
 
+int name2index(char *str, char ***typenames, int ntypes)
+{
+  int i;
+
+  for (i=0; (i<ntypes) && strcasecmp(str,*(typenames[i])); i++)
+    ;
+  if (i == ntypes) 
+    fatal_error(0,"Bonded/nonbonded atom type '%s' not found!",str);
+  
+  return i;
+}
+
+
 char *type2nm(int nt, t_atomtype *at)
 {
   if ((nt < 0) || (nt >= at->nr))
@@ -114,7 +127,14 @@ void init_atomtype (t_atomtype *at)
   at->nr   = 0;
   at->atom     = NULL;
   at->atomname = NULL;
+  at->bondatomtype = NULL;
   at->nb       = NULL;
+}
+
+void init_bond_atomtype (t_bond_atomtype *bat)
+{
+  bat->nr   = 0;
+  bat->atomname = NULL;
 }
 
 void init_plist(t_params plist[])

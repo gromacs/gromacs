@@ -90,8 +90,15 @@ typedef struct {
   int           nr;		/* The number of atomtypes		*/
   t_atom	*atom;		/* Array of atoms			*/
   char          ***atomname;	/* Names of the atomtypes		*/
+  int           *bondatomtype;  /* bond_atomtype for each atomtype      */
   t_param	*nb;		/* Nonbonded force default params	*/
 } t_atomtype;
+
+typedef struct {
+  int           nr;             /* Number of bond_atomtypes             */
+  char          ***atomname;    /* Names of the bond_atomtypes          */
+} t_bond_atomtype;
+
 
 typedef enum {
   d_defaults,

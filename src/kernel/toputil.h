@@ -34,15 +34,14 @@
 #define _toputil_h
 
 static char *SRCID_toputil_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) toputil.h 1.25 19 Nov 1995"
-#endif /* HAVE_IDENT */
 
 #include "grompp.h"
 
 /* UTILITIES */
 
 extern int at2type(char *str, t_atomtype *at);
+
+extern int name2index(char *str, char ***typenames, int ntypes);
 
 extern char *type2nm(int nt, t_atomtype *at);
 
@@ -55,6 +54,8 @@ extern void set_p_string(t_param *p,char *s);
 extern void init_plist(t_params plist[]);
 
 extern void init_atomtype (t_atomtype *at);
+
+extern void init_bond_atomtype (t_bond_atomtype *bat);
 
 extern void init_molinfo(t_molinfo *mol);
 
