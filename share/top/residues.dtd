@@ -65,7 +65,8 @@
 
 <!ELEMENT residue (ratom+,rbond*,rangle*,rimproper*,rdihedral*,raddh*)>
 <!ATTLIST residue
-          restype ID #REQUIRED>
+          restype  ID    #REQUIRED
+	  longname CDATA #REQUIRED>
 <!-- We can not use ID here for atom names since there is no -->
 <!-- hope to make them unique, e.g. all amino acids have the -->
 <!-- same name for backbone atoms.                           -->
@@ -132,6 +133,25 @@
           addname CDATA #REQUIRED
           addbond CDATA #REQUIRED>
 
+<!-- Generic stuff to define proteins etc. as built up from blocks -->
+<!-- such as amino acids and HEME etc.                             -->
+<!ELEMENT macromolecule (mblock+,mlink*,mmod*)>
+<!ATTLIST macromolecule
+          mname ID #REQUIRED>
+<!ELEMENT mblock EMPTY>
+<!ATTLIST mblock
+          resname   ID    #REQUIRED
+          restype   IDREF #REQUIRED
+          protonated ( no | polar | all ) "polar">
+<!ELEMENT mlink EMPTY>
+<!ATTLIST mlink
+          mlinktype  ( peptide | disulphide | special ) "peptide"
+          resname   IDREFS #REQUIRED>
+<!ELEMENT mmod EMPTY>
+<!ATTLIST mmod
+          resname IDREF #REQUIRED
+          modtype IDREF #REQUIRED>
+	  
 <!-- Generic stuff to define proteins etc. as built up from blocks -->
 <!-- such as amino acids and HEME etc.                             -->
 <!ELEMENT macromolecule (mblock+,mlink*,mmod*)>

@@ -550,9 +550,9 @@ void write_xml(char *fn,char *title,t_inputrec *ir,rvec *box,
   if (f)
     add_xml_rvecs(myroot,exmlFORCES,natoms,f);
   
-  xmlSetDocCompressMode(doc,1);
+  xmlSetDocCompressMode(doc,0);
   xmlIndentTreeOutput = 1;
-  if (xmlSaveFormatFile(fn,doc,2) == 0)
+  if (xmlSaveFormatFileEnc(fn,doc,"ISO-8859-1",2) == 0)
     fatal_error(0,"Saving file %s",fn);
   xmlFreeDoc(doc);
 }
