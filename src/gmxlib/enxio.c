@@ -203,7 +203,7 @@ int open_enx(char *fn,char *mode)
 bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
 	    int *ndr,t_drblock *drblock)
 {
-  int       i;
+  int       i,ndisre=0,nuser=0;
   t_eheader eh;
   bool      bRead,bOK,bOK1;
   real      tmp;
@@ -237,9 +237,23 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
       fprintf(stderr,"\rReading frame %6d time %8.3f           ",framenr,eh.t);
     framenr++;
   }
-  *t    = eh.t;
-  *step = eh.step;
-  *nre  = eh.nre;
+  /* Check sanity of this header */
+  if (( eh.step >= 0 ) && ( eh.nre > 0) && (eh.nuser == 0)) {
+    *t     = eh.t;
+    *step  = eh.step;
+    *nre   = eh.nre;
+    ndisre = eh.ndisre;
+    nuser  = 0;
+  }
+  else {
+    fprintf(stderr,"\nWARNING: there may be something wrong with energy file %s\n",
+	    fio_getname(fp));
+    fprintf(stderr,"Found: step=%d, nre=%d, ndisre=%d, nuser=%d time=%g.\n"
+	    "Trying to skip frame expect a crash though\n",
+	    eh.step,eh.nre,eh.ndisre,eh.nuser,eh.t);
+    ndisre = 0;
+    nuser  = 0;
+  }
   for(i=0; (i<*nre); i++) {
     bOK = bOK && do_real(ener[i].e);
     tmp=ener[i].eav;
@@ -252,7 +266,7 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
     ener[i].esum=tmp;
     bOK = bOK && do_real(ener[i].e2sum);
   }
-  if (eh.ndisre) {
+  if (ndisre) {
     if (drblock->ndr == 0) {
       snew(drblock->rav,eh.ndisre);
       snew(drblock->rt,eh.ndisre);
@@ -268,8 +282,7 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
   else
     if (bRead)
       *ndr = 0;
-    
-  if (eh.u_size) {
+  if (nuser) {
     fatal_error(0,"Can't handle user blocks");
   }
   if (!bOK) {
