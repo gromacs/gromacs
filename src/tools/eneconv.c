@@ -131,7 +131,7 @@ static int scan_ene_files(char **fnms, int nfiles,
 			  real *readtime, real *timestep, int *nremax)
 {
   /* Check number of energy terms and start time of all files */
-  int f,i,in,nre,nremin,ndr,nresav=0,step;
+  int f,i,in,nre,nremin=0,ndr,nresav=0,step;
   real t1,t2;
   char      **enm=NULL,inputstring[STRLEN];
   t_drblock dr;
@@ -159,7 +159,7 @@ static int scan_ene_files(char **fnms, int nfiles,
 		"Energy files don't match, different number of energies:\n"
 		" %s: %d\n %s: %d\n",fnms[f-1],nresav,fnms[f],nre);
 	fprintf(stderr,
-		"\nContinu conversion using only the first %d terms (n/y)?\n"
+		"\nContinue conversion using only the first %d terms (n/y)?\n"
 		"(you should be sure that the energy terms match)\n",nremin);
 	fgets(inputstring,STRLEN-1,stdin);
 	if (inputstring[0]!='y' && inputstring[0]!='Y') {
@@ -179,7 +179,6 @@ static int scan_ene_files(char **fnms, int nfiles,
     enm = NULL;
     sfree(ee);
   }
-  sfree(ee);
   return nremin;
 }
 
