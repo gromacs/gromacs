@@ -1073,14 +1073,14 @@ $\sigma_{ij}=\sqrt{\sigma_i\,\sigma_j}$),
 2 (supply $\sigma$ and $\epsilon$,
 $\sigma_{ij}=\frac{1}{2}(\sigma_i+\sigma_j)$) or
 3 (supply $\sigma$ and $\epsilon$, $\sigma_{ij}=\sqrt{\sigma_i\,\sigma_j}$)
-\item generate pairs = no (get 1-4 interactions from pair list) or yes
-(generate 1-4 interactions from normal Lennard-Jones parameters using
-FudgeLJ and FudgeQQ)
-\item FudgeLJ = factor to change Lennard-Jones 1-4 interactions
-\item FudgeQQ = factor to change electrostatic 1-4 interactions
+\item generate pairs = no (the default, get 1-4 interactions from pair list)
+or yes (generate 1-4 interactions from normal Lennard-Jones parameters using
+FudgeLJ)
+\item FudgeLJ = factor to change Lennard-Jones 1-4 interactions, default 1
+\item FudgeQQ = factor to change electrostatic 1-4 interactions, default 1
 \end{itemize}
-{\bf note:} FudgeLJ and FudgeQQ only need to be specified when
-generate pairs is set to 'yes'.
+{\bf note:} generate pairs, FudgeLJ and FudgeQQ are optional,
+FudgeLJ is only used when generate pairs is set to 'yes'.
 
 % move these figures so they end up on facing pages 
 % (first figure on even page)
