@@ -640,10 +640,11 @@ int main(int argc,char *argv[])
 	else {
 	  /* make the fit index in xref instead of xtop */
 	  nfit=natoms;
+	  snew(ifit,natoms);
 	  snew(w_rls,nfit);
 	  for(i=0; (i<nfit); i++) {
-	    w_rls[i]=atoms->atom[ifit[i]].m;
 	    ifit[i]=i;
+	    w_rls[i]=atoms->atom[ifit[i]].m;
 	  }
 	}
       }
