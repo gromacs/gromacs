@@ -749,14 +749,14 @@ static char *concat_str(char *dtitle,int ndesc,char *desc[],
   sfree(buf);
   if (ndesc == 0) 
     append_str(&ptr,&blen,&maxlen,"none?",0);
-    
+
+  /* Count the length of the strings together */    
   dlen   = 0;
-  descer = NULL;
   for(i=0; (i<ndesc); i++) {
-    slen = strlen(desc[i])+1;
-    srenew(descer,dlen+slen+4);
-    descer[dlen] = '\0';
-    dlen += slen;
+    dlen += strlen(desc[i])+1;
+  }
+  snew(descer,dlen+1);
+  for(i=0; (i<ndesc); i++) {
     strcat(descer,desc[i]);
     if (i < ndesc-1)
       strcat(descer," ");
@@ -764,6 +764,7 @@ static char *concat_str(char *dtitle,int ndesc,char *desc[],
   append_str(&ptr,&blen,&maxlen,descer,0);
   sfree(descer);
   if (nbugs > 0) {
+    append_str(&ptr,&blen,&maxlen," ",0);
     append_str(&ptr,&blen,&maxlen,btitle,0);
     buf=strdup(btitle);
     for(i=0; (buf[i] != '\0'); i++)
@@ -848,7 +849,7 @@ static int mk_about(Widget base)
     "a dialog box which should make life a bit easier for those new to the",
     "programs. A drawback of this approach is that the options are usually",
     "short, and therefore not very desriptive. In the GUI there is a line with",
-    "extra information at the button, which informs you about the option under",
+    "extra information at the bottom, which informs you about the option under",
     "the mouse cursor.[PAR]",
     "Note that in the following description all possible elements of the GUI",
     "are described, but your program need not have all these option types.[PAR]",
@@ -864,10 +865,12 @@ static int mk_about(Widget base)
     "a limited set of values (enumerated in programmers jargon). This is implemented",
     "in the GUI using a popup menu.[PAR]",
     "In the fourth pane you find the options which require you to type (yuckie!)",
-    "an numeric or textual argument (note that the description window indicates",
+    "a numeric or textual argument (note that the description window indicates",
     "which kind of argument). The validity of what you type is *not* checked",
     "by the GUI as this does not know what the options mean. Instead the program",
     "using the GUI will (hopefully) verify that your input is meaningful.[PAR]",
+    "In the fifth pane you find the usual buttons, [BB]OK[bb], [BB]Cancel[bb],",
+    "[BB]Help[bb], and [BB]About[bb] which presumably don't need any explanation.[PAR]",
     "The GUI was written by David van der Spoel (comments to spoel@xray.bmc.uu.se)[PAR]",
     "And hey:[BR]",
     NULL
@@ -1122,7 +1125,8 @@ void gmx_gui(int *argc,char *argv[],
   Widget           gmxBase;
   XtAppContext     appcontext;
   String           Fallbacks[] = {
-    "*gmxdlg.background:        lightgrey",
+    "*gmx*background:           lightgrey",
+    /*"*gmxdlg.background:        lightgrey",
     "*gmxbutton.background:     lightskyblue",
     "*gmxtoggle.background:     lightgrey",
     "*gmxedit.background:       lightgoldenrod1",
@@ -1130,9 +1134,9 @@ void gmx_gui(int *argc,char *argv[],
     "*gmxsep.background:        darkgrey",
     "*gmxhelp.background:       lightgoldenrod1",
     "*gmxhelpSW.background:     lightgrey",
-    "*gmxhelpSW.*.background:  lightgrey",
+    "*gmxhelpSW.*.background:   lightgrey",
     "*gmxfile.*.background:     lightgrey",
-    "*gmxfile.Text.background:  lightgoldenrod1",
+    "*gmxfile.Text.background:  lightgoldenrod1",*/
     NULL
   };
   

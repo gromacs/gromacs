@@ -406,7 +406,7 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
     npall = add_parg(npall,&(all_pa),&begin_pa);
   if (FF(PCA_CAN_END))
     npall = add_parg(npall,&(all_pa),&end_pa);
-  if (FF(PCA_CAN_END))
+  if (FF(PCA_CAN_VIEW))
     npall = add_parg(npall,&(all_pa),&view_pa);
 
   /* Now append the program specific arguments */
