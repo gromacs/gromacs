@@ -119,10 +119,10 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
       warning(NULL);
       ir->ns_type = ensSIMPLE;
     }
-    if (ir->bDispCorr) {
+    if (ir->eDispCorr != edispcNO) {
       warning("Can not have long-range dispersion correction without PBC,"
 	      " turned off.");
-      ir->bDispCorr = FALSE;
+      ir->eDispCorr = edispcNO;
     }
   }
 
@@ -351,7 +351,7 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("rvdw",	ir->rvdw,	1.0);
     
   CTYPE ("Apply long range dispersion corrections for Energy and Pressure");
-  EETYPE("bDispCorr",   ir->bDispCorr,  yesno_names, nerror, TRUE);
+  EETYPE("DispCorr",    ir->eDispCorr,  edispc_names, nerror, TRUE);
   CTYPE ("Spacing for the PME/PPPM FFT grid");
   RTYPE ("fourierspacing", opts->fourierspacing,0.12);
   CTYPE ("FFT grid size, when a value is 0 fourierspacing will be used");
@@ -486,7 +486,7 @@ void get_ir(char *mdparin,char *mdparout,
     else {
       sprintf(warn_buf,"Invalid value for epsilon_r: %s, setting to 1",epsbuf);
       warning(NULL);
-    ir->epsilon_r = 1;
+      ir->epsilon_r = 1;
     }
   }
   for(m=0; m<2; m++) {

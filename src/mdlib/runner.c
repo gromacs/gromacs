@@ -319,7 +319,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 
     *mdebin = init_mdebin(*fp_ene,grps,&(top->atoms),&(top->idef),
 			  bLR,bLJLR,bBHAM,b14,ir->efep!=efepNO,ir->epc,
-			  ir->bDispCorr,(TRICLINIC(ir->compress) || TRICLINIC(box)),
+			  ir->eDispCorr,(TRICLINIC(ir->compress) || TRICLINIC(box)),
 			  (ir->etc==etcNOSEHOOVER),cr);
   }
   
@@ -349,7 +349,10 @@ void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,
   fprintf(log,"Removing pbc first time\n");
   calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
   mk_mshift(log,graph,parm->box,x);
-  shift_self(graph,parm->box,x);
+  if (getenv ("NOPBC") == NULL)
+    shift_self(graph,parm->box,x);
+  else
+    fprintf(log,"Not doing first shift_self\n");
   fprintf(log,"Done rmpbc\n");
 }
 

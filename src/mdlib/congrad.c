@@ -125,7 +125,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   /* Init bin for energy stuff */
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),
 		     bLR,bLJLR,bBHAM,b14,parm->ir.efep!=efepNO,parm->ir.epc,
-		     parm->ir.bDispCorr,TRICLINIC(parm->ir.compress),(parm->ir.etc==etcNOSEHOOVER),cr); 
+		     parm->ir.eDispCorr,TRICLINIC(parm->ir.compress),(parm->ir.etc==etcNOSEHOOVER),cr); 
 
   /* Clear some matrix variables */
   clear_mat(force_vir);

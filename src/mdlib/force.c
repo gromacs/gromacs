@@ -645,7 +645,7 @@ void init_forcerec(FILE *fp,
     fprintf(fp,"Cut-off's:   NS: %g   Coulomb: %g   %s: %g\n",
 	    fr->rlist,fr->rcoulomb,fr->bBHAM ? "BHAM":"LJ",fr->rvdw);
   
-  if (ir->bDispCorr)
+  if (ir->eDispCorr != edispcNO)
     set_avcsix(fp,fr,mdatoms);
   if (fr->bBHAM)
     set_bham_b_max(fp,fr,mdatoms);

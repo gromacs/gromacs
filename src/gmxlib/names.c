@@ -124,3 +124,7 @@ char *efep_names[efepNR+1] = {
 char *esolv_names[esolNR+1] = {
   "General", "MNO Solvent", "Water", "Water-Water", NULL
 };
+
+char *edispc_names[edispcNR+1] = {
+  "No", "EnerPres", "Ener"
+};

@@ -426,6 +426,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	   bNEMD);
     /* The coordinates (x) were unshifted in update */
 
+    /* The forces due to shake are in buf. Before we can do the shake_virial
+     * calculation we have to construct dummies again. Their displacement
+    
     /* Non-equilibrium MD: this is parallellized, but only does communication
      * when there really is NEMD.
      */
@@ -565,7 +568,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 #endif
 
     /* Calculate long range corrections to pressure and energy */
-    calc_dispcorr(log,parm->ir.bDispCorr,
+    calc_dispcorr(log,parm->ir.eDispCorr,
 		  fr,mdatoms->nr,parm->box,parm->pres,parm->vir,ener);
 
 #ifdef XMDRUN

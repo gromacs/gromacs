@@ -206,7 +206,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   /* Init bin for energy stuff  */
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),bLR,bLJLR,
 		     bBHAM,b14,ir->efep!=efepNO,ir->epc,
-		     ir->bDispCorr,TRICLINIC(parm->ir.compress),(parm->ir.etc==etcNOSEHOOVER),cr); 
+		     ir->eDispCorr,TRICLINIC(parm->ir.compress),(parm->ir.etc==etcNOSEHOOVER),cr); 
   
   /* Clear some matrix variables  */
   clear_mat(force_vir); 

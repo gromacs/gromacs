@@ -260,13 +260,16 @@ int main (int argc, char *argv[])
 
   /* Command line options */
   static real start_t = -1.0, extend_t = 0.0, until_t = 0.0;
+  static bool bUncStart = TRUE;
   static t_pargs pa[] = {
-    { "-time", FALSE, etREAL, {&start_t}, 
+    { "-time",          FALSE, etREAL, {&start_t}, 
       "Continue from frame at this time (ps) instead of the last frame" },
-    { "-extend", FALSE, etREAL, {&extend_t}, 
+    { "-extend",        FALSE, etREAL, {&extend_t}, 
       "Extend runtime by this amount (ps)" },
-    { "-until", FALSE, etREAL, {&until_t}, 
+    { "-until",         FALSE, etREAL, {&until_t}, 
       "Extend runtime until this ending time (ps)" },
+    { "-unconstrained", FALSE, etBOOL, {&bUncStart},
+      "For a continuous trajectory, the constraints should not be solved before the first step (default)" }
   };
   int nerror = 0;
   
@@ -286,6 +289,11 @@ int main (int argc, char *argv[])
   snew(v,tpx.natoms);
   snew(ir,1);
   read_tpx(top_fn,&step,&run_t,&run_lambda,ir,box,&natoms,x,v,NULL,&top);
+
+  if (ir->bUncStart != bUncStart)
+    fprintf(stderr,"Modifying ir->bUncStart to %s\n",bool_names[bUncStart]);
+  ir->bUncStart = bUncStart;
+  
   run_step   = 0;
 
   if (ftp2bSet(efTRN,NFILE,fnm)) {

@@ -470,36 +470,43 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
   }
 }
 
-void calc_dispcorr(FILE *log,bool bDispCorr,t_forcerec *fr,int natoms,
+void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
 		   matrix box,tensor pres,tensor virial,real ener[])
 {
   static bool bFirst=TRUE;
   real vol,rc3,spres,svir;
   int  m;
   
-  if (bDispCorr) {
+  ener[F_DISPCORR] = 0.0;
+  ener[F_PRES]     = trace(pres)/3.0;
+  
+  if (eDispCorr != edispcNO) {
     vol           = det(box);
     /* Forget the (small) effect of the shift on the LJ energy *
      * when fr->bLJShift = TRUE                                */  
     rc3              = fr->rvdw*fr->rvdw*fr->rvdw;
     ener[F_DISPCORR] = -2.0*natoms*natoms*M_PI*fr->avcsix/(3.0*vol*rc3);
-    spres            = 2.0*ener[F_DISPCORR]*PRESFAC/vol;
-    svir             = -6.0*ener[F_DISPCORR];
-    ener[F_PRES]     = trace(pres)/3.0+spres;
-    for(m=0; (m<DIM); m++) {
-      pres[m][m]    += spres;
-      virial[m][m]  += svir;
+    if (eDispCorr == edispcEnerPres) {
+      spres            = 2.0*ener[F_DISPCORR]*PRESFAC/vol;
+      svir             = -6.0*ener[F_DISPCORR];
+      ener[F_PRES]    += spres;
+      for(m=0; (m<DIM); m++) {
+	pres[m][m]    += spres;
+	virial[m][m]  += svir;
+      }
+    }
+    else {
+      spres = 0;
+      svir  = 0;
     }
     if (bFirst) {
-      fprintf(log,
-	      "Long Range LJ corrections: Epot=%10g, Pres=%10g, Vir=%10g\n",
-	      ener[F_DISPCORR],spres,svir);
+      if (eDispCorr == edispcEner)
+	fprintf(log,"Long Range LJ corr. to Epot: %10g\n",ener[F_DISPCORR]);
+      else if (eDispCorr == edispcEnerPres)
+	fprintf(log,"Long Range LJ corr. to Epot: %10g, Pres: %10g, Vir: %10g\n",
+		ener[F_DISPCORR],spres,svir);
       bFirst = FALSE;
     }
-  }
-  else {
-    ener[F_DISPCORR] = 0.0;
-    ener[F_PRES]     = trace(pres)/3.0;
   }
   ener[F_EPOT] += ener[F_DISPCORR];
   ener[F_ETOT] += ener[F_DISPCORR];

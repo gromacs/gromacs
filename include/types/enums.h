@@ -101,3 +101,7 @@ enum {
   esolNO, esolMNO, esolWATER, esolWATERWATER, esolNR
 };
 
+/* Dispersion correction */
+enum {
+  edispcNO, edispcEnerPres, edispcEner, edispcNR
+}; 
