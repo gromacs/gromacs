@@ -418,10 +418,13 @@ is {\tt Y} are output.
 Apart from obvious limitations that are simply not implemented (\emph{e.g.} a
 better umbrella sampling and analysis scheme), there is one important
 limitation: constraint forces can \textbf{only} be calculated between
-molecules or groups of molecules. If a group contains part of a
-molecule of which the bondlengths are constrained, SHAKE or LINCS and
-the constraint force calculation here will interfere with each other,
-making the results unreliable. 
+groups that are not connected by constraints to the rest of the system.
+If a group contains part of a molecule of which the bondlengths
+are constrained, SHAKE or LINCS and the constraint force calculation
+here will interfere with each other, making the results unreliable.
+This means that for simulations with {\tt constraints = all-bonds}
+in the {\tt .mdp} file
+pulling is limited to whole molecules or groups of molecules.
 In some cases this limitation can be avoided by using the free energy code,
 see \secref{fepmf}.
 
@@ -452,11 +455,11 @@ A potential of mean force between two atoms can be calculated
 by connecting them with a harmonic potential or a constraint
 (for this purpose there a special potentials that avoid the generation of
 extra exclusions, see \ssecref{excl}).
-When the position of the minimum or the constraint length is 1 n more
+When the position of the minimum or the constraint length is 1 nm more
 in state B than in state A, the restraint or constraint force is given
 by $\partial H/\partial \lambda$.
 The distance between the atoms can be changed as a function of $\lambda$
-and time by setting {\tt delta-lambda} in the {\tt mdp} file.
+and time by setting {\tt delta-lambda} in the {\tt .mdp} file.
 The results should be identical (although not numerically
 due to the different implementations) to the results of the pull code
 with umbrella sampling and constraint pulling.
@@ -897,7 +900,7 @@ the MD program will read a single file (the name can be changed with
 option {\tt -table}) with seven columns of table lookup data in the
 order: $x$, $f(x)$, $f''(x)$, $g(x)$, $g''(x)$, $h(x)$, $h''(x)$.
  The $x$ should run from 0 to $r_c+1$ (the value table extension can be
-changed in the {\tt mdp} file).
+changed in the {\tt .mdp} file).
 You can choose the spacing you like; for the standard tables {\gromacs}
 using a spacing of 0.002 and 0.0005 nm when you run in single
 and double precision, respectively.  In this
