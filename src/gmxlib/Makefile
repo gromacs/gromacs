@@ -110,7 +110,7 @@ include		$(STDTARGET)
 
 testfft:	testfft.o
 		$(LD) -o $@ $^ $(SYSLIBS) -lcomplib.sgimath
-testtab:	testtab.o	tables.o	lrutil.o
+testtab:	testtab.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 tstsqrtc:	tstsqrtc.o
 		$(LD) -o $@ $^ $(SYSLIBS)
@@ -142,20 +142,13 @@ prfn:		prfn.o
 repfirst:	repfirst.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-testlr:		testlr.o	ewald.o		pppm.o	\
-		ghat.o		lrutil.o	fftgrid.o	\
-		poisson.o	psgather.o	psspread.o	\
-		pssolve.o
+testlr:		testlr.o	ewald.o
 		$(LD) -p -o $@ $^  $(SYSLIBS) $(FFTLIBS)
 
-optghat:	optghat.o	pppm.o		ghat.o		\
-		lrutil.o	fftgrid.o	ewald.o	\
+optghat:	optghat.o	ewald.o	\
 		nrutil.o	powell.o	linmin.o	\
 		brent.o		f1dim.o		mnbrak.o
 		$(LD) -o $@ $^  $(SYSLIBS) $(FFTLIBS)
-
-testwc:		testwc.o	coupling.o
-		$(LD) -o $@ $^  $(SYSLIBS)
 
 gentab:		gentab.o
 		$(LD) -o $@ $^  $(SYSLIBS) 
@@ -164,7 +157,7 @@ lfft:		lfft.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 fitter:		fitter.o
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS)
-mgmxtest:	mgmxtest.o 	mgmx.o	widget.o statutil.o
+mgmxtest:	mgmxtest.o
 		$(LD) -o $@ $^  $(SYSLIBS) 
 
 include	Make.dep
