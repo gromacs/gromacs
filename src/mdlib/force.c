@@ -494,13 +494,17 @@ void init_forcerec(FILE *fp,
   fr->rlistlong  = max(ir->rlist,max(ir->rcoulomb,ir->rvdw));
   fr->eeltype    = ir->coulombtype;
   fr->vdwtype    = ir->vdwtype;
-  fr->bTwinRange = (fr->rlistlong > fr->rlist);
-  fr->bEwald     = ((fr->eeltype == eelPME) || (fr->eeltype == eelEWALD));
-  fr->bvdwtab    = (fr->vdwtype != evdwCUT);
-  fr->bRF        = (((fr->eeltype == eelRF) || (fr->eeltype == eelGRF)) &&
-		    (fr->vdwtype == evdwCUT));
-  fr->bcoultab   = (((fr->eeltype != eelCUT) && !fr->bRF) || (fr->bEwald));
+  fr->bTwinRange = fr->rlistlong > fr->rlist;
+  fr->bEwald     = fr->eeltype==eelPME || fr->eeltype==eelEWALD;
+  fr->bvdwtab    = fr->vdwtype != evdwCUT;
+  fr->bRF        = (fr->eeltype==eelRF || fr->eeltype==eelGRF) &&
+		    fr->vdwtype==evdwCUT;
+  fr->bcoultab   = (fr->eeltype!=eelCUT && !fr->bRF) || fr->bEwald;
 
+  if (getenv("GMX_FORCE_TABLES")) {
+    fr->bvdwtab  = TRUE;
+    fr->bcoultab = TRUE;
+  }
   if (fp) {
     fprintf(fp,"Table routines are used for coulomb: %s\n",bool_names[fr->bcoultab]);
     fprintf(fp,"Table routines are used for vdw:     %s\n",bool_names[fr->bvdwtab ]);
@@ -709,12 +713,12 @@ void init_forcerec(FILE *fp,
    * tables too, to improve cache performance.
    */
   tabelemsize=fr->bBHAM ? 16 : 12;
-  snew(fr->coultab,4*fr->ntab*sizeof(real));
-  snew(fr->vdwtab,(tabelemsize-4)*fr->ntab*sizeof(real));  
-  for(i=0;i<fr->tabscale;i++) {
-    for(j=0;j<4;j++) 
+  snew(fr->coultab,4*(fr->ntab+1)*sizeof(real));
+  snew(fr->vdwtab,(tabelemsize-4)*(fr->ntab+1)*sizeof(real));  
+  for(i=0; i<=fr->ntab; i++) {
+    for(j=0; j<4; j++) 
       fr->coultab[4*i+j]=fr->coulvdwtab[tabelemsize*i+j];
-    for(j=0;j<(tabelemsize-4);j++) 
+    for(j=0; j<tabelemsize-4; j++) 
       fr->vdwtab[(tabelemsize-4)*i+j]=fr->coulvdwtab[tabelemsize*i+4+j];
   }
   if (!fr->mno_index)
