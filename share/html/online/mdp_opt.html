@@ -30,7 +30,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#nl"><b>neighbor searching</b></A> (nstlist, ns_type, pbc, rlist)
 <li><A HREF="#el"><b>electrostatics and VdW</b></A> (coulombtype, rcoulomb_switch, rcoulomb, vdwtype, rvdw_switch, rvdw, epsilon_r, bDispCorr, fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, optimize_fft)
 <li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, tc_grps, tau_t, ref_t)
-<li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, tau_p, compressibility, ref_p)
+<li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, pcoupltype, tau_p, compressibility, ref_p)
 <li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, zero_temp_time)
 <li><A HREF="#vel"><b>velocity generation</b></A> (gen_vel, gen_temp, gen_seed)
 <li><A HREF="#sol"><b>solvent optimization</b></A> (solvent_optimization)
@@ -396,11 +396,17 @@ at start.
 <dd><dl compact>
 <dt><b>no</b>
 <dd>No temperature coupling. 
-<dt><b>yes</b>
+<dt><b>berendsen</b>
 <dd>Temperature coupling with a Berendsen-thermostat to a bath with
 temperature <b>ref_t</b> [K], with time constant <b>tau_t</b> [ps].
 Several groups can be coupled separately, these are specified in the
 <b>tc_grps</b> field separated by spaces.
+<dt><b>nose-hoover</b>
+<dd>Temperature coupling with a by using a Nose-Hoover extended
+ensemble. The reference temperature and coupling groups are selected
+as above, but in this case <b>tau_t</b> [ps] controls the period
+of the temperature fluctuations at equilibrium, which is slightly
+different from a relaxation time.
 </dl>
 
 <dt><h4>tc_grps:</h4>
@@ -420,8 +426,28 @@ Several groups can be coupled separately, these are specified in the
 <dd><dl compact>
 <dt><b>no</b>
 <dd>No pressure coupling. This means a fixed box size.
+<dt><b>berendsen</b>
+<dd>Exponential relaxation pressure coupling with time constant
+<b>tau_p</b> [ps]. The box is scaled every timestep. It has been
+argued that this does not yield a correct thermodynamic ensemble,
+but it is the most efficient way to scale a box at the beginning
+of a run.
+<dt><b>Parinello-Rahman</b>
+<dd>Extended-ensemble pressure coupling where the box vectors
+are subject to an equation of motion. The equation of motion for
+the atoms is coupled to this. No instantaneous scaling takes place.
+As for Nose-Hoover temperature coupling the time constant <b>tau_p</b>
+[ps] is the period of pressure fluctuations at equilibrium. This is
+probably a better method when you want to apply pressure scaling
+during data collection, but beware that you can get very large
+oscillations if you are starting from a different pressure.
+</dl>
+
+<dl>
+<dt><h4>pcoupltype:</h4>
+<dd><dl compact>
 <dt><b>isotropic</b>
-<dd>Pressure coupling with time constant <b>tau_p</b> [ps].
+<dd>Isotropic pressure coupling with time constant <b>tau_p</b> [ps].
 The compressibility and reference pressure are set with
 <b>compressibility</b> [bar<sup>-1</sup>] and <b>ref_p</b> [bar], one
 value is needed.
@@ -450,7 +476,8 @@ The value for the z-compressibility should be reasonably accurate since it
 influences the converge of the surface-tension, it can also be set to zero
 to have a box with constant height.
 <dt><b>triclinic</b>
-<dd>Not supported yet.
+<dd>Fully dynamic box - supported, but experimental. You should
+provide six values for the compressibility and reference pressure.
 </dl>
 
 <dt><h4>tau_p: </b>(1) [ps]</h4>
@@ -811,6 +838,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#el2">optimize_fft</A><br>
 <A HREF="#nl">pbc</A><br>
 <A HREF="#pc">pcoupl</A><br>
+<A HREF="#pc">pcoupltype</A><br>
 <A HREF="#el2">pme_order</A><br>
 <A HREF="#pc">ref_p</A><br>
 <A HREF="#tc">ref_t</A><br>
