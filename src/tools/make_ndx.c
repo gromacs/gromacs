@@ -406,7 +406,7 @@ static void remove_group(int nr,int nr2,t_block *block,char ***gn)
   
   for(j=0; j<=nr2-nr; j++) {
     if ((nr<0) || (nr>=block->nr))
-      printf("Selected group does not exist: %d\n",nr+j);
+      printf("Group %d does not exist\n",nr+j);
     else {
       shift=block->index[nr+1]-block->index[nr];
       for(i=block->index[nr+1]; i<block->nra; i++)
@@ -578,10 +578,13 @@ static bool parse_entry(char **string,t_atoms *atoms,
     bCompl=FALSE;
 
   if (parse_int(string,&sel_nr1)) {
-    copy_group(sel_nr1,block,nr,index);
-    strcpy(gname,(*gn)[sel_nr1]);
-    printf("Copied index group %d\n",sel_nr1);
-    bRet=TRUE;
+    if ((sel_nr1>=0) && (sel_nr1<block->nr)) {
+      copy_group(sel_nr1,block,nr,index);
+      strcpy(gname,(*gn)[sel_nr1]);
+      printf("Copied index group %d\n",sel_nr1);
+      bRet=TRUE;
+    } else
+      printf("Group %d does not exist\n",sel_nr1); 
   } 
   else if ((*string)[0]=='a') {
     (*string)++;
