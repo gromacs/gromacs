@@ -44,6 +44,7 @@ static char *SRCID_filenm_c = "$Id$";
 /* Use bitflag ... */
 #define IS_SET(fn) ((fn.flag & ffSET) != 0)
 #define IS_OPT(fn) ((fn.flag & ffOPT) != 0)
+#define IS_MULT(fn) ((fn.flag & ffMULT) != 0)
 #define UN_SET(fn) (fn.flag = (fn.flag & ~ffSET))
 #define DO_SET(fn) (fn.flag = (fn.flag |  ffSET))
 
@@ -541,6 +542,8 @@ void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
 	    set_filenm(&fnm[j],argv[i],TRUE);
 	    bRemove[i]=TRUE;
 	    i++;
+	    /* only repeat for 'multiple' file options: */
+	    if ( ! IS_MULT(fnm[j]) ) break;
 	  }
 
 	  break; /* jump out of 'j' loop */
