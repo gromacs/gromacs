@@ -34,16 +34,22 @@ static char *SRCID_ifunc_c = "$Id$";
 
 #define def_bond(str,lstr,nra,nrpa,nrpb,ind,func) \
    {str,lstr,(nra),(nrpa),(nrpb),IF_BOND,(ind),(func)}
+   
 #define def_connect(str,lstr,nra,nrpa,nrpb,ind,func) \
    {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_CONNECT,(ind),(func)}
-#define def_dumm(str,lstr,nra,nrpa,nrpb,ind,func) \
-   {str,lstr,(nra),(nrpa),(nrpb),IF_DUMMY,(ind),(func)}
+   
+#define def_dumm(str,lstr,nra,nrpa) \
+   {str,lstr,(nra),(nrpa),0,IF_DUMMY | IF_CONNECT, -1, unimplemented}
+   
 #define def_shk(str,lstr,nra,nrpa,nrpb,ind,func)  \
    {str,lstr,(nra),(nrpa),(nrpb),IF_SHAKE,(ind),(func)}
+   
 #define def_shkcon(str,lstr,nra,nrpa,nrpb,ind,func)  \
    {str,lstr,(nra),(nrpa),(nrpb),IF_SHAKE | IF_CONNECT,(ind),(func)}
+   
 #define def_nb(str,lstr,nra,nrp)                  \
    {str,lstr,(nra),(nrp),0,IF_NULL,-1,unimplemented}
+   
 #define def_nofc(str,lstr)                        \
    {str,lstr,0,0,0,IF_NULL,-1,unimplemented}
 
@@ -66,11 +72,11 @@ t_interaction_function interaction_function[F_NRE]=
   def_bond   ("RBDIHS",   "Ryckaert-Bell.", 4, 6, 0,  eNR_RB, rbdihs),
   def_shkcon ("SHAKE",    "Shake",          2, 1, 1,  -1, unimplemented),
   def_shk    ("SETTLE",   "Settle",         1, 2, 0,  -1, unimplemented),
-  def_dumm   ("DUMMY1",   "Dummy1",         3, 1, 0,  -1, unimplemented),
-  def_dumm   ("DUMMY2",   "Dummy2",         4, 2, 0,  -1, unimplemented),
-  def_dumm   ("DUMMY2FD", "Dummy2'",        4, 2, 0,  -1, unimplemented),
-  def_dumm   ("DUMMY2FAD","Dummy2''",       4, 2, 0,  -1, unimplemented),
-  def_dumm   ("DUMMY3",   "Dummy3",         4, 3, 0,  -1, unimplemented),
+  def_dumm   ("DUMMY1",   "Dummy1",         3, 1),
+  def_dumm   ("DUMMY2",   "Dummy2",         4, 2),
+  def_dumm   ("DUMMY2FD", "Dummy2'",        4, 2),
+  def_dumm   ("DUMMY2FAD","Dummy2''",       4, 2),
+  def_dumm   ("DUMMY3",   "Dummy3",         4, 3),
   def_nofc   ("SR",       "Coulomb (SR)"),
   def_nofc   ("EPOT",     "Potential"), 
   def_nofc   ("EKIN",     "Kinetic En."),
