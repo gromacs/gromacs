@@ -340,7 +340,8 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
   rvec    *xread,*x;
   real    t,inp,**inprod=NULL,min=0,max=0;
   char    str[STRLEN],str2[STRLEN],**ylabel,*c;
-  
+  real    fact;
+
   snew(x,natoms);
   
   if (bExtrAll)
@@ -486,10 +487,16 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
     snew(b,nframes);
     atnm=strdup("C");
     resnm=strdup("PRJ");
+
+    if(nframes>10000)
+      fact=10000.0/nframes;
+    else
+      fact=1.0;
+
     for(i=0; i<nframes; i++) {
       atoms.resname[i]=&resnm;
       atoms.atomname[i]=&atnm;
-      atoms.atom[i].resnr=i;
+      atoms.atom[i].resnr=ceil(i*fact);
       x[i][XX]=inprod[0][i];
       x[i][YY]=inprod[1][i];
       x[i][ZZ]=inprod[2][i];
