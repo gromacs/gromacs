@@ -165,6 +165,7 @@ void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
 		    "the number of orientation restraints");
     check_multi_int(fplog,mcr,od->nref,
 		    "the number of fit atoms for orientation restraining");
+    check_multi_int(fplog,mcr,ir->nsteps,"nsteps");
     /* Copy the reference coordinates from the master to the other nodes */
     gmx_sum(DIM*od->nref,od->xref[0],mcr);
   }
