@@ -68,7 +68,55 @@ static char *SRCID_xmdrun_c = "$Id$";
 #include "glaasje.h"
 #include "edsam.h"
 #include "calcmu.h"
-#include "ionize.h"
+/* #include "ionize.h" */
+
+real mol_dipole(int k0,int k1,atom_id ma[],rvec x[],real q[])
+{
+  int  k,kk,m;
+  rvec mu;
+  
+  clear_rvec(mu);
+  for(k=k0; (k<k1); k++) {
+    kk = ma[k];
+    for(m=0; (m<DIM); m++) 
+      mu[m] += q[kk]*x[kk][m];
+  }
+  return norm(mu);  /* Dipole moment of this molecule in e nm */
+}
+
+real calc_mu_aver(t_commrec *cr,t_nsborder *nsb,rvec x[],real q[],rvec mu,
+		  t_topology *top,t_mdatoms *md,int gnx,atom_id grpindex[])
+{
+  int i,start,end,m;
+  real    mu_mol,mu_ave;
+  t_atom  *atom;
+  t_block *mols;
+ 
+  start = START(nsb);
+  end   = start + HOMENR(nsb);  
+  
+  atom = top->atoms.atom;
+  mols = &(top->blocks[ebMOLS]);
+  /*
+  clear_rvec(mu);
+  for(i=start; (i<end); i++)
+    for(m=0; (m<DIM); m++)
+      mu[m] += q[i]*x[i][m];
+  if (PAR(cr)) {
+    gmx_sum(DIM,mu,cr);
+  }
+  */
+  /* I guess we have to parallelise this one! */
+
+  mu_ave = 0.0;
+  for(i=0; (i<gnx); i++) {
+    int gi = grpindex[i];
+    mu_ave += mol_dipole(mols->index[gi],mols->index[gi+1],mols->a,x,q);
+  }
+
+  return(mu_ave/gnx);
+}
+
 
 void Etcoupl(bool bTC,t_grpopts *opts,t_groups *grps,real dt,real SAfactor,
 	     int step,int nmem)
@@ -249,7 +297,7 @@ static int relax_shells(FILE *ene,FILE *log,t_commrec *cr,
 #define  Try1 ((Min+1) % 3)
 #define  Try2 ((Min+2) % 3)
 
-  if (bFirst) {
+   if (bFirst) {
     /* Allocate local arrays */
     for(i=0; (i<3); i++) {
       snew(pos[i],nsb->natoms);
@@ -270,7 +318,9 @@ static int relax_shells(FILE *ene,FILE *log,t_commrec *cr,
   do_force(log,cr,parm,nsb,vir_part,mdstep,nrnb,
 	   top,grps,x,v,force[Min],buf,md,ener,bVerbose && !PAR(cr),
 	   lambda,graph,bDoNS,FALSE,fr);
-  rmsF[0]=rms_force(force[Min],nas,as,nbs,bs);
+
+  if ((nas != 0) || (nbs != 0)) 
+    rmsF[0]=rms_force(force[Min],nas,as,nbs,bs);
   
   /* Copy x to pos[Min] & pos[Try1]: during minimization only the
    * shell positions are updated, therefore the other particles must
@@ -404,14 +454,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   t_forcerec *fr;
   t_mdebin   *mdebin;
   FILE       *ene,*fmu;
-  int        step,nre,k,n,count;
+  int        fp_ene,step,k,n,count;
   double     tcount;
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
-  bool       bNS,bStopCM,bTYZ,bLR,bBHAM,b14,bMU;
+  bool       bNS,bStopCM,bStopRot,bTYZ,bLR,bBHAM,b14,bMU;
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
-  real       etmp[F_NRE];
   char       strbuf[256];
   char       *traj;
   char       *xtc_traj; /* compressed trajectory filename */
@@ -431,20 +480,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   int         nbs;
   t_atomshell *as;
   t_bondshell *bs;
-    
-  /* Initial values */
-  t = t0       = parm->ir.init_t;
-  if (parm->ir.bSimAnn) {
-    SAfactor = 1.0  - t0/parm->ir.zero_temp_time;
-    if (SAfactor < 0) 
-      SAfactor = 0;
-  } else
-    SAfactor     = 1.0;
-  lam0         = parm->ir.init_lambda;
-  nre          = F_NRE;
-  tcount       = 0;
-  
-  where();
 
   /* check if "-mu" is used */
   bMU = opt2bSet("-mu",nfile,fnm);
@@ -452,6 +487,26 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     fmu = opt2FILE("-mu",nfile,fnm,"w");
 
   rd_index(ftp2fn(efNDX,nfile,fnm),1,&gnx,&grpindex,&grpname);
+    
+  /* Initial values */
+  t = t0       = parm->ir.init_t;
+  if (parm->ir.bPert) {
+    lam0         = parm->ir.init_lambda;
+    lambda       = lam0;
+  }
+  else {
+    lam0   = 0.0;
+    lambda = 0.0;
+  } 
+  if (parm->ir.bSimAnn) {
+    SAfactor = 1.0  - t0/parm->ir.zero_temp_time;
+    if (SAfactor < 0) 
+      SAfactor = 0;
+  } else
+    SAfactor     = 1.0;
+  tcount       = 0;
+  
+  where();
 
   /* Check Environment variables */
   bTCR=ftp2bSet(efGCT,nfile,fnm);
@@ -462,25 +517,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       fprintf(stderr,"*NO* General Coupling Theory ! ? !\n");
   }
 
-  /* Initial values */
-  t0           = parm->ir.init_t;
-  if (parm->ir.bPert) {
-    lam0         = parm->ir.init_lambda;
-    lambda       = lam0;
-    fprintf(log,"Doing Free Energy Perturbation calculation. Lam0 = %g\n",
-	    lam0);
-  }
-  else {
-    lam0   = 0.0;
-    lambda = 0.0;
-  } 
-  
   /* Check Environment variables */
   bTYZ=getenv("TYZ") != NULL;
   
   init_nrnb(&mynrnb);
   
-  fr       = mk_forcerec();
+  fr=mk_forcerec();
   init_forcerec(log,fr,&(parm->ir),&(top->blocks[ebMOLS]),cr,
 		&(top->blocks[ebCGS]),&(top->idef),md,parm->box,FALSE);
   for(m=0; (m<DIM); m++)
@@ -494,7 +536,22 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   traj     = ftp2fn(efTRJ,nfile,fnm);
   xtc_traj = ftp2fn(efXTC,nfile,fnm);
+  where();
+
+  bLR      = (parm->ir.rlong > parm->ir.rshort);
+  bBHAM    = (top->idef.functype[0]==F_BHAM);
+  b14      = (top->idef.il[F_LJ14].nr > 0);
   
+  if (MASTER(cr)) {
+    fp_ene=open_enx(ftp2fn(efENX,nfile,fnm),"w");
+    mdebin=init_mdebin(fp_ene,grps,&(top->atoms),bLR,bBHAM,b14);
+  }
+  else {
+    fp_ene = -1;
+    mdebin = NULL;
+  }
+
+  /* Sat Jan  3 19:49:58 CET 1998 PvM
   if (MASTER(cr))
     ene=ftp2FILE(efENE,nfile,fnm,"w");
   else
@@ -504,7 +561,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   bBHAM  = (top->idef.functype[0]==F_BHAM);
   b14    = (top->idef.il[F_LJ14].nr > 0);
   mdebin = init_mdebin(ene,grps,&(top->atoms),bLR,bBHAM,b14);
-  
+  */
+
   /*  init_dummies(log,md,START(nsb),HOMENR(nsb)); */
   where();
   
@@ -515,16 +573,22 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		  graph,cr,nrnb,grps,fr,top,edyn);
   
   /* Compute initial EKin for all.. */
+  clear_mat(force_vir);
+  clear_mat(shake_vir);
   calc_ke_part(TRUE,0,top->atoms.nr,
                vold,v,vt,&(parm->ir.opts),
                md,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
+  if (PAR(cr)) 
+    global_stat(log,cr,ener,force_vir,shake_vir,
+		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm);
+  clear_rvec(vcm);
+
   /* Compute initial EKin for all.. dit zat er in gmx151 nog wel in???? 
   clear_mat(force_vir);
   clear_mat(shake_vir);
   calc_ke_part(TRUE,0,top->atoms.nr,
                vold,v,vt,&(parm->ir.opts),
-               md,grps,&mynrnb,
-	       lambda,&ener[F_DVDLKIN]);
+               md,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,
 		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm);
@@ -541,13 +605,22 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   where();
   
   /* Write start time and temperature */
-  sprintf(strbuf,"Starting %s",Program());
+  sprintf(strbuf,"Started %s",Program());
   start_t=print_date_and_time(log,cr->pid,strbuf);
   if (MASTER(cr)) {
     fprintf(log,"Initial temperature: %g K\n",ener[F_TEMP]);
-    printf("starting %s '%s'\n%d steps, %8.1f ps.\n\n",Program(),
+    printf("starting %s '%s'\n%d steps, %8.1f ps.\n\n",strbuf,
 	   *(top->name),parm->ir.nsteps,parm->ir.nsteps*parm->ir.delta_t);
   }
+
+  /* Initiate PPPM if necessary 
+  if (fr->eeltype == eelPPPM) {
+    bool bGGhat = ! fexist(ftp2fn(efHAT,nfile,fnm));
+    (void)do_pppm(log,FALSE,bGGhat,ftp2fn(efHAT,nfile,fnm),
+		  &parm->ir,top->atoms.nr,x,f,md->chargeT,box_size,
+		  fr->phi,cr,&mynrnb);
+  }
+  */
 
   /***********************************************************
    *
@@ -556,9 +629,20 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
    ************************************************************/
   for (step=0; (step<parm->ir.nsteps); step++) {
     /* Stop Center of Mass motion */
-    bStopCM=do_per_step(step,parm->ir.nstcomm);
-
-    ionize(log,mdatoms,top->atoms.atomname,t,&parm->ir);
+    /*    bStopCM=do_per_step(step,parm->ir.nstcomm); */
+      /* Stop Center of Mass motion */
+    if (parm->ir.nstcomm == 0) {
+      bStopCM=FALSE;
+      bStopRot=FALSE;
+    } else if (parm->ir.nstcomm > 0) {
+      bStopCM=do_per_step(step,parm->ir.nstcomm);
+      bStopRot=FALSE;
+    } else {
+      bStopCM=FALSE;
+      bStopRot=do_per_step(step,-parm->ir.nstcomm);
+    }
+    
+    /* ionize(log,md,top->atoms.atomname,t,&parm->ir); */
 
     /* Determine whether or not to do Neighbour Searching */
     bNS=((parm->ir.nstlist && ((step % parm->ir.nstlist)==0)) || (step==0));
@@ -570,10 +654,19 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Calculate total dipole moment of the simulation box and the average
        dipole moment of the molecules */    
 
-    mu_aver=calc_mu(cr,nsb,x,md->chargeA,mu_tot,top,md,gnx,grpindex);
-    
-    if (bMU && MASTER(cr))
-      write_mu(fmu,mu_tot,parm->box);
+    /* Do I need this one??? PvM */
+    /* Set values for invmass etc. 
+    init_mdatoms(md,lambda,FALSE);
+    */
+
+    /* Calculate total dipole moment if necessary */
+    if (bMU) {
+      calc_mu(cr,nsb,x,md->chargeT,mu_tot);
+      if (MASTER(cr))
+	write_mu(fmu,mu_tot,parm->box);
+    }
+
+    mu_aver=calc_mu_aver(cr,nsb,x,md->chargeA,mu_tot,top,md,gnx,grpindex);
     
     /* Now is the time to relax the shells */
     count=relax_shells(ene,log,cr,bVerbose,step,parm,
@@ -591,20 +684,22 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (bTCR && MASTER(cr) && (step == 0)) 
       tcr=init_coupling(log,nfile,fnm,cr,fr,md,&(top->idef));
 
-    /* Spread the force on dummy particle to the other particles... */
-    spread_dummy_f(log,x,f,&mynrnb,&top->idef);
 
     /* Now we have the energies and forces corresponding to the 
      * coordinates at time t. 
      * We must output all of this before the update.
      */
     t        = t0   + step*parm->ir.delta_t;
-    lambda   = lam0 + step*parm->ir.delta_lambda;
+    if (parm->ir.bPert)
+      lambda   = lam0 + step*parm->ir.delta_lambda;
     if (parm->ir.bSimAnn) {
       SAfactor = 1.0  - t/parm->ir.zero_temp_time;
       if (SAfactor < 0) 
 	SAfactor = 0;
     }
+
+    /* Spread the force on dummy particle to the other particles... */
+    spread_dummy_f(log,x,f,&mynrnb,&top->idef);
     
     if (do_per_step(step,parm->ir.nstxout)) xx=x; else xx=NULL;
     if (do_per_step(step,parm->ir.nstvout)) vv=v; else vv=NULL;
@@ -620,6 +715,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
 
     where();
+
     clear_mat(shake_vir);
     update(nsb->natoms,START(nsb),HOMENR(nsb),
 	   0,lambda,&ener[F_DVDL],&(parm->ir),FALSE,
@@ -656,6 +752,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       inc_nrnb(&mynrnb,eNR_STOPCM,HOMENR(nsb));
     }
     
+    /* Do fit to remove overall rotation */
+    if (bStopRot)
+      do_stoprot(log,top->atoms.nr,box_size,x,md->massT);
+    
     /* Add force and shake contribution to the virial */
     m_add(force_vir,shake_vir,parm->vir);
     
@@ -689,8 +789,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
                
     where();
     if ((MASTER(cr) && do_per_step(step,parm->ir.nstprint))) {
-      print_ebin(ene,log,step,t,lambda,SAfactor,eprNORMAL,bCompact,
-                 mdebin,grps,&(top->atoms));
+      print_ebin(fp_ene,log,step,t,lambda,SAfactor,
+		 eprNORMAL,bCompact,mdebin,grps,&(top->atoms));
     }
     if (bVerbose)
       fflush(log);
@@ -698,8 +798,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (MASTER(cr) && bVerbose && ((step % stepout)==0))
       print_time(stderr,start_t,step,&parm->ir);
   }
-  t=t0+step*parm->ir.delta_t;
-  lambda=lam0+step*parm->ir.delta_lambda;
+  /*  t=t0+step*parm->ir.delta_t;
+  lambda=lam0+step*parm->ir.delta_lambda; */
   
   if (MASTER(cr)) {
     if (parm->ir.nstprint > 1)
@@ -722,8 +822,27 @@ int main(int argc,char *argv[])
   static char *desc[] = {
     "xmdrun is the experimental MD program. New features are tested in this",
     "program before being implemented in the default mdrun. Currently under",
-    "investigation are: polarizibility, glass and Free energy perturbation."
+    "investigation are: polarizibility, glass and Free energy perturbation.",
+    "When the [BB]-mu[bb] option is given the total dipole of the simulation",
+    "box will be written to a file at every step of the simulation.",
+    "This file is in binary and can only be read by [TT]g_dipoles[tt]."
   };
+
+  t_commrec    *cr;
+  t_filenm fnm[] = {
+    { efTPX, NULL, NULL,       ffREAD },
+    { efTRJ, "-o", NULL,       ffWRITE },
+    { efXTC, "-x", NULL,       ffOPTWR },
+    { efGRO, "-c",  "confout", ffWRITE },
+    { efGCT, "-j",  "wham",    FALSE },
+    { efGCT, "-jo", "bam",     FALSE },
+    { efENX, "-e",  "ener",    ffWRITE },
+    { efLOG, "-g",  "md",      ffWRITE },
+    { efDAT, "-mu", "dipole",  ffOPTWR },
+    { efNDX, "-n",  "mols",    ffREAD }
+  };
+#define NFILE asize(fnm)
+
   /* Command line options ! */
   static bool bVerbose=FALSE,bCompact=TRUE;
   static int  nprocs=1,nDLB=0,nstepout=10;
@@ -741,20 +860,6 @@ int main(int argc,char *argv[])
 
   int          i;
 
-  t_commrec    *cr;
-  t_filenm fnm[] = {
-    { efTPB, NULL, NULL,      ffREAD },
-    { efTRJ, "-o", NULL,      ffWRITE },
-    { efXTC, "-x", NULL,      ffOPTWR },
-    { efGRO, "-c", "confout", ffWRITE },
-    { efGCT, "-j", "wham",    FALSE },
-    { efGCT, "-jo", "bam",    FALSE },
-    { efENE, "-e", "ener",    ffWRITE },
-    { efLOG, "-g", "md",      ffWRITE },
-    { efDAT, "-mu", "dipole", ffOPTWR },
-    { efNDX, "-n", "mols",    ffREAD }
-  };
-#define NFILE asize(fnm)
   t_edsamyn edyn;
   
   stdlog = stderr;
