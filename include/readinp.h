@@ -65,8 +65,10 @@ extern int get_eenum(int *ninp,t_inpfile **inp,char *name,char **defs);
 #define CTYPE(s)  STYPE("; "s,dummy,NULL)
 /* This last one prints a comment line where you can add some explanation */
 
-/* This structure is used for parsing arguments off the comand line*/
-enum { etINT, etREAL, etSTR, etBOOL, etNR };
+/* This structure is used for parsing arguments off the comand line */
+enum { etINT, etREAL, etSTR, etBOOL, etRVEC, etNR };
+/* names to print in help info */
+static char *argtp[etNR] = { "int", "real", "string", "bool", "vector" };
 
 typedef struct {
   char *option;
@@ -78,6 +80,7 @@ typedef struct {
     real *r;
     char **c;
     bool *b;
+    rvec *rv;
   } u;
   char *desc;
 } t_pargs;

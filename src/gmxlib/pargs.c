@@ -37,6 +37,7 @@ static char *SRCID_pargs_c = "$Id$";
 #include "smalloc.h"
 #include "names.h"
 #include "string2.h"
+#include "vec.h"
 
 void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
 {
@@ -63,8 +64,7 @@ void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
 	  pa[j].bSet = TRUE;
 	  bKeep[i] = FALSE;
 	}
-      }
-      else if (strcmp(pa[j].option,argv[i])== 0) {
+      } else if (strcmp(pa[j].option,argv[i])== 0) {
 	if (pa[j].bSet)
 	  fprintf(stderr,"Setting option %s more than once!\n",pa[j].option);
 	pa[j].bSet = TRUE;
@@ -78,6 +78,20 @@ void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
 	  break;
 	case etSTR:
 	  *(pa[j].u.c) = sscan(*argc,argv,&i);
+	  break;
+	case etRVEC:
+	  (*pa[j].u.rv)[0] = dscan(*argc,argv,&i);
+	  if ( (i+1 == *argc) || (argv[i+1][0]=='-') )
+	    (*pa[j].u.rv)[1] = (*pa[j].u.rv)[2] = (*pa[j].u.rv)[0];
+	  else {
+	    bKeep[i] = FALSE;
+	    (*pa[j].u.rv)[1] = dscan(*argc,argv,&i);
+	    if ( (i+1 == *argc) || (argv[i+1][0]=='-') )
+	      fatal_error(0,"%s: vector must have 1 or 3 real parameters",
+			  pa[j].option);
+	    bKeep[i] = FALSE;
+	    (*pa[j].u.rv)[2] = dscan(*argc,argv,&i);
+	  }
 	  break;
 	default:
 	  fatal_error(0,"Invalid type %d in pargs",pa[j].type);
@@ -181,9 +195,12 @@ char *pa_val(t_pargs *pa)
   case etSTR:
     if (*(pa->u.c))
       if (strlen(*(pa->u.c)) >= 256)
-	fatal_error(0,"Argument to long: \"%d\"\n",*(pa->u.c));
+	fatal_error(0,"Argument too long: \"%d\"\n",*(pa->u.c));
       else
 	strcpy(buf,*(pa->u.c));
+    break;
+  case etRVEC:
+    sprintf(buf,"%g %g %g",(*pa->u.rv)[0],(*pa->u.rv)[1],(*pa->u.rv)[2]);
     break;
   }
   return buf;
@@ -191,7 +208,6 @@ char *pa_val(t_pargs *pa)
 
 void print_pargs(FILE *fp, int npargs,t_pargs pa[])
 {
-  static char *argtp[etNR] = { "int", "real", "string", "bool" };
   bool bShowHidden;
   char buf[32],buf2[256];
   char *ptr,*desc,*wdesc;
@@ -215,8 +231,7 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
       if (bShowHidden && ptr) {
 	snew(desc,strlen(ptr)+4);
 	sprintf(desc,"[hidden] %s",ptr+6);
-      }
-      else
+      } else
 	desc=strdup(pa[i].desc);
 	
       if (bShowHidden || (ptr == NULL)) {
@@ -224,8 +239,8 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
 	  sprintf(buf,"-[no]%s",pa[i].option+1);
 	else
 	  strcpy(buf,pa[i].option);
-	sprintf(buf2,"%12s %6s %6s  %s\n",buf,argtp[pa[i].type],
-		pa_val(&(pa[i])),desc);
+	sprintf(buf2,"%12s %6s %6s  %s\n",
+		buf,argtp[pa[i].type],pa_val(&(pa[i])),desc);
 	if (strlen(buf)>((OPTLEN+TYPELEN)-strlen(argtp[pa[i].type]))) {
 	  buf2[strlen(buf)]='\n';  
 	  for(j=strlen(buf2); j>strlen(buf); j--)
