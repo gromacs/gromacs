@@ -250,18 +250,11 @@ void print_perf(FILE *out,double nodetime,double realtime,real runtime,
       fprintf(out,"\tParallel run - timing based on wallclock.\n");
   }
 
-<<<<<<< nrnb.c
   fprintf(out,"   RF=Reaction-Field  FE=Free Energy  SCFE=Soft-Core/Free Energy\n");
   fprintf(out,"   T=Tabulated        W3=SPC/TIP3p    W4=TIP4p (single or pairs)\n\n");
   
   fprintf(out,"%-29s    %12s  %12s  %8s\n",
 	  "Computing:","M-Number","M-Flops","% of Flops");
-=======
-  fprintf(out,"   RF=Reaction-field  Free=Free Energy  SC=Softcore\n");
-  fprintf(out,"   T=Tabulated        S=Solvent         W=Water     WW=Water-Water\n\n");
-  fprintf(out," %-21s  %8s %14s %14s %8s\n",
-	  "Computing:","Function","M-Number","M-Flops","% Flops");
->>>>>>> 1.45
   fprintf(out,"%s\n",myline);
   mflop=0.0;
   tfrac=0.0;
@@ -271,13 +264,8 @@ void print_perf(FILE *out,double nodetime,double realtime,real runtime,
     frac   = 100.0*mni*nbdata[i].flop/tflop;
     tfrac += frac;
     if (mni != 0)
-<<<<<<< nrnb.c
       fprintf(out,"%-29s    %12.6f  %12.6f  %6.1f\n",
 	      nbdata[i].name,mni,mni*nbdata[i].flop,frac);
-=======
-      fprintf(out," %-21s  %8s %14.6f %14.6f  %6.1f\n",
-	      nbdata[i].name,nbdata[i].loop,mni,mni*nbdata[i].flop,frac);
->>>>>>> 1.45
   }
   fprintf(out,"%s\n",myline);
   fprintf(out," %-21s  %8s %14s %14.6f  %6.1f\n",
