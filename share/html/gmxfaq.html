@@ -176,6 +176,14 @@ NOTE: you have to specify the full path of the MPI mdrun binary.
 The newest version of MPI does not require the <TT>-np</TT> option
 after <TT>mdrun</TT>.
 <P>
+Newer MPI versions on SGI's can officially not run in the background.
+To prevent mdrun from hanging when you log out, use the following csh script:
+<PRE>
+#!/bin/csh -f
+mpirun -np &lt;nr&gt; &lt;dir&gt;/mdrun -s topol.tpr &gt; &amp; log &amp;
+exit
+</PRE>
+<P>
 
 <A NAME="speed">
 <DT><HR><B><FONT COLOR="#FF0000">I want to run GROMACS faster. Now what?</FONT></B>
@@ -418,6 +426,9 @@ this will suppress most output.
 <LI>Your disk might be full. Eventually this will lead to
 <TT>mdrun</TT> crashing, but since output is buffered, it might take a
 while for <TT>mdrun</TT> to realize it can't write.
+
+<LI>If you are running with MPI on an SGI you need a script,
+see <A HREF="#MPI">I want to run GROMACS multi-processor.</A>
 
 </UL>
 <P>
