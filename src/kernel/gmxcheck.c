@@ -124,6 +124,7 @@ void chk_trj(char *fn)
 	INC(sh,count,x_size);
 	INC(sh,count,v_size);
 	INC(sh,count,f_size);
+#undef INC
       }
       fpos = fio_ftell(status);
     }
@@ -176,7 +177,7 @@ void chk_trj(char *fn)
 	fprintf(stderr,"frame %d at t=%g is incomplete\n",j,tt);
     break;
   default:
-    fprintf(stderr,"Sorry %s not supported yet\n",fn);
+    fatal_error(0,"trajectory file .%s not supported\n",ftp2ext(ftp));
   }
 
   fprintf(stderr,"\n\n# Atoms     %d\n",natoms);
