@@ -158,8 +158,11 @@ endif
 # you might consider commenting out the following line:
 setenv	IAMCOOL	$COOL
 
+if ( -f complete ) source complete
+
 # end of script
 EOD
 
 echo	'Done, it is compile time now.'
-echo	'Source GMXRC and read instructions in the README file'
+echo	'Source GMXRC and read instructions in'
+echo	'http://rugmd4.chem.rug.nl/~gmx/readme2.0.html'
