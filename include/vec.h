@@ -224,7 +224,7 @@ static inline void dvec_add(const dvec a,const dvec b,dvec c)
   c[ZZ]=z;
 }
 
-static inline void rvec_inc(rvec a,rvec b)
+static inline void rvec_inc(rvec a,const rvec b)
 {
   real x,y,z;
   
@@ -237,7 +237,7 @@ static inline void rvec_inc(rvec a,rvec b)
   a[ZZ]=z;
 }
 
-static inline void ivec_inc(ivec a,ivec b)
+static inline void ivec_inc(ivec a,const ivec b)
 {
   int x,y,z;
 
@@ -276,7 +276,7 @@ static inline void dvec_sub(const dvec a,const dvec b,dvec c)
   c[ZZ]=z;
 }
 
-static inline void rvec_dec(rvec a,rvec b)
+static inline void rvec_dec(rvec a,const rvec b)
 {
   real x,y,z;
   
@@ -330,21 +330,21 @@ static inline void copy_mat(matrix a,matrix b)
   copy_rvec(a[ZZ],b[ZZ]);
 }
 
-static inline void svmul(real a,rvec v1,rvec v2)
+static inline void svmul(real a,const rvec v1,rvec v2)
 {
   v2[XX]=a*v1[XX];
   v2[YY]=a*v1[YY];
   v2[ZZ]=a*v1[ZZ];
 }
 
-static inline void dsvmul(double a,dvec v1,dvec v2)
+static inline void dsvmul(double a,const dvec v1,dvec v2)
 {
   v2[XX]=a*v1[XX];
   v2[YY]=a*v1[YY];
   v2[ZZ]=a*v1[ZZ];
 }
 
-static inline real distance2(rvec v1, rvec v2)
+static inline real distance2(const rvec v1,const rvec v2)
 {
   return sqr(v2[XX]-v1[XX]) + sqr(v2[YY]-v1[YY]) + sqr(v2[ZZ]-v1[ZZ]);
 }
@@ -393,37 +393,37 @@ static inline void clear_mat(matrix a)
   a[ZZ][XX]=a[ZZ][YY]=a[ZZ][ZZ]=nul;
 }
 
-static inline real iprod(rvec a,rvec b)
+static inline real iprod(const rvec a,const rvec b)
 {
   return (a[XX]*b[XX]+a[YY]*b[YY]+a[ZZ]*b[ZZ]);
 }
 
-static inline double diprod(dvec a,dvec b)
+static inline double diprod(const dvec a,const dvec b)
 {
   return (a[XX]*b[XX]+a[YY]*b[YY]+a[ZZ]*b[ZZ]);
 }
 
-static inline real iiprod(ivec a,ivec b)
+static inline real iiprod(const ivec a,const ivec b)
 {
   return (a[XX]*b[XX]+a[YY]*b[YY]+a[ZZ]*b[ZZ]);
 }
 
-static inline real norm2(rvec a)
+static inline real norm2(const rvec a)
 {
   return a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ];
 }
 
-static inline real norm(rvec a)
+static inline real norm(const rvec a)
 {
   return sqrt(a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ]);
 }
 
-static inline double dnorm(dvec a)
+static inline double dnorm(const dvec a)
 {
   return sqrt(a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ]);
 }
 
-static inline real cos_angle(rvec a,rvec b)
+static inline real cos_angle(const rvec a,const rvec b)
 {
   /* 
    *                  ax*bx + ay*by + az*bz
@@ -452,7 +452,7 @@ static inline real cos_angle(rvec a,rvec b)
   return cos;
 }
 
-static inline real cos_angle_no_table(rvec a,rvec b)
+static inline real cos_angle_no_table(const rvec a,const rvec b)
 {
   /* This version does not need the invsqrt lookup table */
   real   cos;
@@ -477,7 +477,7 @@ static inline real cos_angle_no_table(rvec a,rvec b)
   return cos;
 }
 
-static inline void oprod(rvec a,rvec b,rvec c)
+static inline void oprod(const rvec a,const rvec b,rvec c)
 {
   c[XX]=a[YY]*b[ZZ]-a[ZZ]*b[YY];
   c[YY]=a[ZZ]*b[XX]-a[XX]*b[ZZ];
@@ -608,14 +608,14 @@ static inline void m_inv(matrix src,matrix dest)
   dest[ZZ][ZZ]= c*(src[XX][XX]*src[YY][YY]-src[YY][XX]*src[XX][YY]);
 }
 
-static inline void mvmul(matrix a,rvec src,rvec dest)
+static inline void mvmul(matrix a,const rvec src,rvec dest)
 {
   dest[XX]=a[XX][XX]*src[XX]+a[XX][YY]*src[YY]+a[XX][ZZ]*src[ZZ];
   dest[YY]=a[YY][XX]*src[XX]+a[YY][YY]*src[YY]+a[YY][ZZ]*src[ZZ];
   dest[ZZ]=a[ZZ][XX]*src[XX]+a[ZZ][YY]*src[YY]+a[ZZ][ZZ]*src[ZZ];
 }
 
-static inline void unitv(rvec src,rvec dest)
+static inline void unitv(const rvec src,rvec dest)
 {
   real linv;
   
@@ -625,7 +625,7 @@ static inline void unitv(rvec src,rvec dest)
   dest[ZZ]=linv*src[ZZ];
 }
 
-static inline void unitv_no_table(rvec src,rvec dest)
+static inline void unitv_no_table(const rvec src,rvec dest)
 {
   real linv;
   
@@ -658,5 +658,3 @@ static inline int _mod(int a,int b,char *file,int line)
 #define mod(a,b)    _mod((a),(b),__FILE__,__LINE__)
 
 #endif	/* _vec_h */
-
-
