@@ -94,7 +94,7 @@ extern void do_dih_fup(FILE *log,int i,int j,int k,int l,real ddphi,
   extern t_ifunc bonds,g96bonds,morsebonds;
   extern t_ifunc angles,g96angles;
   extern t_ifunc pdihs,idihs,rbdihs;
-  extern t_ifunc water_pol,posres,do_14,unimplemented;
+  extern t_ifunc water_pol,posres,angres,angresz,do_14,unimplemented;
 
 #ifdef CPLUSPLUS
 }

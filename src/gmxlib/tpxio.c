@@ -244,6 +244,8 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
   case F_BONDS:
   case F_G96BONDS:
   case F_IDIHS:
+  case F_ANGRES:
+  case F_ANGRESZ:
     do_harm(iparams,bRead);
     break;
   case F_BHAM:

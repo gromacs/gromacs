@@ -447,7 +447,9 @@ static char **read_topol(char        *infile,
 	case d_angles:
 	case d_constraints:
 	case d_settles:
-	case d_position_restraints: 
+	case d_position_restraints:
+	case d_angle_restraints:
+	case d_angle_restraints_z:
 	case d_distance_restraints: 
 	case d_dihedrals:
 	  push_bond(d,plist,mi0->plist,&(mi0->atoms),pline);

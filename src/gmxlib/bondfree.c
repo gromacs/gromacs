@@ -529,6 +529,33 @@ real dopdihs(real cpA,real cpB,real phiA,real phiB,int mult,
   /* That was 40 flops */
 }
 
+static real dopdihs_ra(real cpA,real cpB,real phiA,real phiB,int mult,
+		       real phi,real lambda,real *V,real *F)
+     /* equivalent to dopdihs, except that this is the "real" *
+      * dihedral function 1-cos(mult*phi-phi0) instead of     *
+      * 1+cos(mult*phi-phi0)                                  */
+{
+  real v,dvdl,mdphi,v1,sdphi,ddphi;
+  real L1   = 1.0-lambda;
+  real ph0  = DEG2RAD*(L1*phiA+lambda*phiB);
+  real cp   = L1*cpA + lambda*cpB;
+  
+  mdphi = mult*phi-ph0;
+  sdphi = sin(mdphi);
+  ddphi = cp*mult*sdphi;
+  v1    = 1.0-cos(mdphi);
+  v     = cp*v1;
+  
+  dvdl  = (cpB-cpA)*v1 - cp*(phiA-phiB)*sdphi;
+  
+  *V = v;
+  *F = ddphi;
+  
+  return dvdl;
+  
+  /* That was 40 flops */
+}
+
 real pdihs(FILE *log,int nbonds,
 	   t_iatom forceatoms[],t_iparams forceparams[],
 	   rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
@@ -635,6 +662,103 @@ real posres(FILE *log,int nbonds,
     vtot += v;
   }
   return vtot;
+}
+
+static real low_angres(FILE *log,int nbonds,
+		       t_iatom forceatoms[],t_iparams forceparams[],
+		       rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
+		       matrix box,real lambda,real *dvdlambda,
+		       t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+		       bool bZAxis)
+{
+  int  i,m,type,ai,aj,ak,al,t;
+  real phi,cos_phi,sign,vid,vtot,dVdphi;
+  rvec r_ij,r_kl,f_i,f_k;
+  real st,sth,sin_phi,nrij2,nrkl2,c,cij,ckl;
+  
+  vtot = 0.0;
+  for(i=0; i<nbonds; ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+    pbc_rvec_sub(x[aj],x[ai],r_ij);            	/*  3		*/
+    if (!bZAxis) {
+      ak   = forceatoms[i++];
+      al   = forceatoms[i++];
+      pbc_rvec_sub(x[al],x[ak],r_kl);           /*  3		*/
+    } else {
+      r_kl[XX] = 0;
+      r_kl[YY] = 0;
+      r_kl[ZZ] = 1;
+    }
+
+    cos_phi = cos_angle(r_ij,r_kl);		/* 25		*/
+    phi     = acos(cos_phi);                    /* 10           */
+
+    *dvdlambda += dopdihs_ra(forceparams[type].pdihs.cpA,
+			     forceparams[type].pdihs.cpB,
+			     forceparams[type].pdihs.phiA,
+			     forceparams[type].pdihs.phiB,
+			     forceparams[type].pdihs.mult,
+			     phi,lambda,&vid,&dVdphi); /*  40  */
+    
+    vtot += vid;
+
+    sin_phi = sin(phi);			        /*  10		*/
+    if (fabs(sin_phi) < 1e-12)
+      sin_phi=1e-12;
+    st  = -dVdphi/sin_phi;		        /*  10		*/
+    sth = st*cos_phi;				/*   1		*/
+    nrij2 = iprod(r_ij,r_ij);			/*   5		*/
+    nrkl2 = iprod(r_kl,r_kl);                   /*   5          */
+    
+    c   = st*invsqrt(nrij2*nrkl2);		/*  11		*/ 
+    cij = sth/nrij2;				/*  10		*/
+    ckl = sth/nrkl2;				/*  10		*/
+    
+    for (m=0; m<DIM; m++) {			/*  18+18       */
+      f_i[m] = (c*r_kl[m]-cij*r_ij[m]);
+      f[ai][m] += f_i[m];
+      f[aj][m] -= f_i[m];
+      if (!bZAxis) {
+	f_k[m] = (c*r_ij[m]-ckl*r_kl[m]);
+	f[ak][m] += f_k[m];
+	f[al][m] -= f_k[m];
+      }
+    }
+    t=SHIFT_INDEX(g,ai);
+    rvec_inc(fr->fshift[t],f_i);
+    t=SHIFT_INDEX(g,aj);
+    rvec_dec(fr->fshift[t],f_i);
+    if (!bZAxis) {
+      t=SHIFT_INDEX(g,ak);
+      rvec_inc(fr->fshift[t],f_k);
+      t=SHIFT_INDEX(g,al);
+      rvec_dec(fr->fshift[t],f_k);
+    }
+  }
+
+  return vtot;  /*  191 / 164 (bZAxis)  total  */
+}
+
+real angres(FILE *log,int nbonds,
+	    t_iatom forceatoms[],t_iparams forceparams[],
+	    rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
+	    matrix box,real lambda,real *dvdlambda,
+	    t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
+{
+  return low_angres(log,nbonds,forceatoms,forceparams,x,f,fr,g,box,
+		    lambda,dvdlambda,md,ngrp,egnb,egcoul,FALSE);
+}
+
+real angresz(FILE *log,int nbonds,
+	     t_iatom forceatoms[],t_iparams forceparams[],
+	     rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
+	     matrix box,real lambda,real *dvdlambda,
+	     t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
+{
+  return low_angres(log,nbonds,forceatoms,forceparams,x,f,fr,g,box,
+		    lambda,dvdlambda,md,ngrp,egnb,egcoul,TRUE);
 }
 
 real unimplemented(FILE *log,int nbonds,

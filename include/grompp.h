@@ -96,6 +96,8 @@ typedef enum {
   d_system,
   d_molecules,
   d_position_restraints,
+  d_angle_restraints,
+  d_angle_restraints_z,
   d_distance_restraints,
   d_maxdir,
   d_invalid,
@@ -127,6 +129,8 @@ static char *ds[d_maxdir+1] = {
   "system",
   "molecules",
   "position_restraints",
+  "angle_restraints",
+  "angle_restraints_z",
   "distance_restraints",
   "invalid"
   };

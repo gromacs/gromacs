@@ -117,6 +117,10 @@ int ifunc_index(directive d,int type)
     default:
       fatal_error(0,"Invalid position restraint type %d",type);
     }
+  case d_angle_restraints:
+    return F_ANGRES;
+  case d_angle_restraints_z:
+    return F_ANGRESZ;
   case d_distance_restraints:
     return F_DISRES;
   default:
@@ -193,6 +197,8 @@ void DS_Init(DirStack **DS)
     set_nec(&(necessary[d_system]),d_moleculetype,d_none);
     set_nec(&(necessary[d_molecules]),d_system,d_none);
     set_nec(&(necessary[d_position_restraints]),d_atoms,d_none);
+    set_nec(&(necessary[d_angle_restraints]),d_atoms,d_none);
+    set_nec(&(necessary[d_angle_restraints_z]),d_atoms,d_none);
     set_nec(&(necessary[d_distance_restraints]),d_atoms,d_none);
     for(i=0; (i<d_maxdir); i++) {
       if (debug)

@@ -407,6 +407,8 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 	    iparams->lj14.c6B,iparams->lj14.c12B);
     break;
   case F_PDIHS:
+  case F_ANGRES:
+  case F_ANGRESZ:
     fprintf(fp,"phiA=%15.8e, cpA=%15.8e, phiB=%15.8e, cpB=%15.8e, mult=%d\n",
 	    iparams->pdihs.phiA,iparams->pdihs.cpA,
 	    iparams->pdihs.phiB,iparams->pdihs.cpB,

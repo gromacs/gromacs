@@ -103,6 +103,8 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->lj.c12 = old[1];
     break;
   case F_PDIHS:
+  case F_ANGRES:
+  case F_ANGRESZ:
     new->pdihs.phiA=old[0];
     new->pdihs.cpA =old[1];
     new->pdihs.mult=old[2];

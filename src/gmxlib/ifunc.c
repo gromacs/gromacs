@@ -75,6 +75,8 @@ t_interaction_function interaction_function[F_NRE]=
   def_nofc   ("DISPCORR", "Disper. corr."),
   def_bonded ("PDIHS",    "Proper Dih.",     4, 3, 3,  eNR_PROPER, pdihs),
   def_bonded ("POSRES",   "Position Rest.",  1, 3, 0,  eNR_POSRES, posres),
+  def_bonded ("ANGRES",   "Angle Rest.",     4, 3, 3,  eNR_ANGRES, angres),
+  def_bonded ("ANGRESZ",  "Angle Rest. Z",   2, 3, 3,  eNR_ANGRESZ, angresz),
   def_bonded ("RBDIHS",   "Ryckaert-Bell.",  4, 6, 0,  eNR_RB, rbdihs),
   def_shkcon ("SHAKE",    "Shake",           2, 1, 1,  -1, unimplemented),
   def_shk    ("SHAKENC",  "Shake (No Conn.)",2, 1, 1,  -1, unimplemented),

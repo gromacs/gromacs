@@ -55,6 +55,8 @@ enum {
   F_DISPCORR,
   F_PDIHS, 
   F_POSRES,
+  F_ANGRES,
+  F_ANGRESZ,
   F_RBDIHS,
   F_SHAKE,
   F_SHAKENC,
