@@ -126,8 +126,8 @@ _vecinvsqrt_sse2:
 	mov ebx, [ebp + 12]	
 	mov ecx, [ebp + 16]
     mov edx, ecx
-	movupd xmm6,[sse2_three]
-	movupd xmm7,[sse2_minushalf]
+	movapd xmm6,[sse2_three]
+	movapd xmm7,[sse2_minushalf]
     shr ecx, 2
 	jnz .vecinvsqrt_loop4
 	jmp .vecinvsqrt_iter2
@@ -241,7 +241,7 @@ _vecrecip_sse2:
 	mov ebx, [ebp + 12]	
 	mov ecx, [ebp + 16]
     mov edx, ecx
-	movupd xmm6,[sse2_two]
+	movapd xmm6,[sse2_two]
     shr ecx, 2
 	jnz .vecrecip_loop4
     jmp .vecrecip_iter2
@@ -390,9 +390,9 @@ _inl0100_sse2:
 
 	emms
 
-	movupd xmm1, [sse2_two]
-	movupd xmm2, [sse2_six]
-	movupd xmm3, [sse2_twelve]
+	movapd xmm1, [sse2_two]
+	movapd xmm2, [sse2_six]
+	movapd xmm3, [sse2_twelve]
 	movapd [esp + i0100_two], xmm1
 	movapd [esp + i0100_six],  xmm2
 	movapd [esp + i0100_twelve], xmm3
@@ -483,8 +483,11 @@ _inl0100_sse2:
 	add eax, edi
 	add ebx, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	movupd xmm7, [esi + ebx*8]	;# c6b c12b 
+	movlpd xmm6, [esi + eax*8]
+	movlpd xmm7, [esi + ebx*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+	
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -624,8 +627,10 @@ _inl0100_sse2:
 	mov edi, [esp + i0100_ntia]
 	add eax, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	xorpd xmm7, xmm7
+	movlpd xmm6, [esi + eax*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+
+		xorpd xmm7, xmm7
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -874,9 +879,9 @@ _inl0300_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_two]
-	movupd xmm2, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_two]
+	movapd xmm2, [sse2_three]
 	movsd xmm3, [ebp + i0300_tabscale]
 	movapd [esp + i0300_half],  xmm0
 	movapd [esp + i0300_two], xmm1
@@ -969,8 +974,11 @@ _inl0300_sse2:
 	add eax, edi
 	add ebx, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	movupd xmm7, [esi + ebx*8]	;# c6b c12b 
+	movlpd xmm6, [esi + eax*8]
+	movlpd xmm7, [esi + ebx*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+	
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -1059,14 +1067,19 @@ _inl0300_sse2:
 	movd ebx, mm6
 
 	;# dispersion 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -1091,14 +1104,19 @@ _inl0300_sse2:
 	movapd [esp + i0300_vnbtot], xmm5
 
 	;# repulsion 
-	movupd xmm4, [esi + eax*8 + 32]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8 + 32]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8 + 32]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8 + 32]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 40]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 40]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 48]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 48]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 48]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 48]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 56]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 56]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -1189,7 +1207,9 @@ _inl0300_sse2:
 	mov edi, [esp + i0300_ntia]
 	add eax, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
+	movlpd xmm6, [esi + eax*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+
 	xorpd xmm7, xmm7
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
@@ -1269,13 +1289,16 @@ _inl0300_sse2:
 	mov  esi, [ebp + i0300_VFtab]
 
 	;# dispersion 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1  
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1  
@@ -1301,13 +1324,16 @@ _inl0300_sse2:
 	movlpd [esp + i0300_vnbtot], xmm5
 
 	;# repulsion 
-	movupd xmm4, [esi + eax*8 + 32]	;# Y1 F1 
+	movlpd xmm4, [esi + eax*8 + 32]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 40]	;# Y1 F1 
 	xorpd xmm3,xmm3	
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1  
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 48]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 48]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 56]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1  
@@ -1502,8 +1528,8 @@ _inl1000_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
 	movapd [esp + i1000_half],  xmm0
 	movapd [esp + i1000_three], xmm1
 
@@ -1969,8 +1995,8 @@ _inl1020_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
 	movapd [esp + i1020_half],  xmm0
 	movapd [esp + i1020_three], xmm1
 
@@ -2733,11 +2759,13 @@ i1020_updateouterdata:
 	addpd xmm6, xmm0
 
 	;# increment fshift force 
-	movupd xmm3, [esi + edx*8]
+	movlpd xmm3, [esi + edx*8]
+	movhpd xmm3, [esi + edx*8 + 8]
 	movsd  xmm4, [esi + edx*8 + 16]
 	addpd  xmm3, xmm6
 	addsd  xmm4, xmm7
-	movupd [esi + edx*8],    xmm3
+	movlpd [esi + edx*8],     xmm3
+	movhpd [esi + edx*8 + 8], xmm3
 	movsd  [esi + edx*8 + 16], xmm4
 
 	mov   edx, [ebp + i1020_gid]  
@@ -2906,8 +2934,8 @@ _inl1030_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
 	movapd [esp + i1030_half],  xmm0
 	movapd [esp + i1030_three], xmm1
 	
@@ -4437,11 +4465,13 @@ i1030_updateouterdata:
 	addpd xmm6, xmm0
 
 	;# increment fshift force 
-	movupd xmm3, [esi + edx*8]
+	movlpd xmm3, [esi + edx*8]
+	movhpd xmm3, [esi + edx*8 + 8]
 	movsd  xmm4, [esi + edx*8 + 16]
 	addpd  xmm3, xmm6
 	addsd  xmm4, xmm7
-	movupd [esi + edx*8],    xmm3
+	movlpd [esi + edx*8],     xmm3
+	movhpd [esi + edx*8 + 8], xmm3
 	movsd  [esi + edx*8 + 16], xmm4
 
 	mov   edx, [ebp + i1030_gid]  
@@ -4550,10 +4580,10 @@ _inl1100_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
-	movupd xmm2, [sse2_six]
-	movupd xmm3, [sse2_twelve]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
+	movapd xmm2, [sse2_six]
+	movapd xmm3, [sse2_twelve]
 	movapd [esp + i1100_half],  xmm0
 	movapd [esp + i1100_three], xmm1
 	movapd [esp + i1100_six],  xmm2
@@ -4660,8 +4690,11 @@ i1100_unroll_loop:
 	add eax, edi
 	add ebx, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	movupd xmm7, [esi + ebx*8]	;# c6b c12b 
+	movlpd xmm6, [esi + eax*8]
+	movlpd xmm7, [esi + ebx*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+	
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -4818,7 +4851,9 @@ i1100_dosingle:
 	mov edi, [esp + i1100_ntia]
 	add eax, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
+	movlpd xmm6, [esi + eax*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+
 	xorpd xmm7, xmm7
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
@@ -5097,11 +5132,11 @@ _inl2100_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
-	movupd xmm2, [sse2_six]
-	movupd xmm3, [sse2_twelve]
-	movupd xmm4, [sse2_two]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
+	movapd xmm2, [sse2_six]
+	movapd xmm3, [sse2_twelve]
+	movapd xmm4, [sse2_two]
 	movsd xmm5, [ebp + i2100_argkrf]
 	movsd xmm6, [ebp + i2100_argcrf]
 	
@@ -5216,8 +5251,11 @@ _inl2100_sse2:
 	add eax, edi
 	add ebx, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	movupd xmm7, [esi + ebx*8]	;# c6b c12b 
+	movlpd xmm6, [esi + eax*8]
+	movlpd xmm7, [esi + ebx*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+	
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -5380,7 +5418,9 @@ _inl2100_sse2:
 	mov edi, [esp + i2100_ntia]
 	add eax, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
+	movlpd xmm6, [esi + eax*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+
 	xorpd xmm7, xmm7
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
@@ -5654,9 +5694,9 @@ _inl2000_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
-	movupd xmm4, [sse2_two]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
+	movapd xmm4, [sse2_two]
 	movsd xmm5, [ebp + i2000_argkrf]
 	movsd xmm6, [ebp + i2000_argcrf]
 	
@@ -6155,10 +6195,10 @@ _inl1120_sse2:
 	mov [esp + i1120_salign], eax
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
-	movupd xmm2, [sse2_six]
-	movupd xmm3, [sse2_twelve]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
+	movapd xmm2, [sse2_six]
+	movapd xmm3, [sse2_twelve]
 	movapd [esp + i1120_half],  xmm0
 	movapd [esp + i1120_three], xmm1
 	movapd [esp + i1120_six],  xmm2
@@ -6306,8 +6346,11 @@ i1120_unroll_loop:
 	add eax, edi
 	add ebx, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	movupd xmm7, [esi + ebx*8]	;# c6b c12b 
+	movlpd xmm6, [esi + eax*8]
+	movlpd xmm7, [esi + ebx*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+	
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -6627,7 +6670,9 @@ i1120_dosingle:
 	mov edi, [esp + i1120_ntia]
 	add eax, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
+	movlpd xmm6, [esi + eax*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+
 	xorpd xmm7, xmm7
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
@@ -6995,11 +7040,13 @@ i1120_updateouterdata:
 	addpd xmm6, xmm0
 
 	;# increment fshift force 
-	movupd xmm3, [esi + edx*8]
+	movlpd xmm3, [esi + edx*8]
+	movhpd xmm3, [esi + edx*8 + 8]
 	movsd  xmm4, [esi + edx*8 + 16]
 	addpd  xmm3, xmm6
 	addsd  xmm4, xmm7
-	movupd [esi + edx*8],    xmm3
+	movlpd [esi + edx*8],     xmm3
+	movhpd [esi + edx*8 + 8], xmm3
 	movsd  [esi + edx*8 + 16], xmm4
 
 	mov   edx, [ebp + i1120_gid]  
@@ -7189,10 +7236,10 @@ _inl1130_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
-	movupd xmm2, [sse2_six]
-	movupd xmm3, [sse2_twelve]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
+	movapd xmm2, [sse2_six]
+	movapd xmm3, [sse2_twelve]
 	movapd [esp + i1130_half],  xmm0
 	movapd [esp + i1130_three], xmm1
 	movapd [esp + i1130_six],  xmm2
@@ -7228,7 +7275,8 @@ _inl1130_sse2:
 	imul  ecx, [ebp + i1130_ntype]      ;# ecx = ntia = 2*ntype*type[ii0] 
 	add   edx, ecx
 	mov   eax, [ebp + i1130_nbfp]
-	movupd xmm0, [eax + edx*8]
+	movlpd xmm0, [eax + edx*8]
+	movhpd xmm0, [eax + edx*8 + 8]
 	movhlps xmm1, xmm0
 	shufpd xmm0, xmm0, 0
 	shufpd xmm1, xmm1, 0	
@@ -8776,11 +8824,13 @@ i1130_updateouterdata:
 	addpd xmm6, xmm0
 
 	;# increment fshift force 
-	movupd xmm3, [esi + edx*8]
+	movlpd xmm3, [esi + edx*8]
+	movhpd xmm3, [esi + edx*8 + 8]
 	movsd  xmm4, [esi + edx*8 + 16]
 	addpd  xmm3, xmm6
 	addsd  xmm4, xmm7
-	movupd [esi + edx*8],    xmm3
+	movlpd [esi + edx*8],     xmm3
+	movhpd [esi + edx*8 + 8], xmm3
 	movsd  [esi + edx*8 + 16], xmm4
 
 	mov   edx, [ebp + i1130_gid]  
@@ -8928,11 +8978,11 @@ _inl2120_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
-	movupd xmm2, [sse2_six]
-	movupd xmm3, [sse2_twelve]
-	movupd xmm4, [sse2_two]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
+	movapd xmm2, [sse2_six]
+	movapd xmm3, [sse2_twelve]
+	movapd xmm4, [sse2_two]
 	movsd xmm5, [ebp + i2120_argkrf]
 	movsd xmm6, [ebp + i2120_argcrf]
 
@@ -9088,8 +9138,11 @@ _inl2120_sse2:
 	add eax, edi
 	add ebx, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	movupd xmm7, [esi + ebx*8]	;# c6b c12b 
+	movlpd xmm6, [esi + eax*8]
+	movlpd xmm7, [esi + ebx*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+	
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -9441,7 +9494,9 @@ _inl2120_sse2:
 	mov edi, [esp + i2120_ntia]
 	add eax, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
+	movlpd xmm6, [esi + eax*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+
 	xorpd xmm7, xmm7
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
@@ -9849,11 +9904,13 @@ _inl2120_sse2:
 	addpd xmm6, xmm0
 
 	;# increment fshift force 
-	movupd xmm3, [esi + edx*8]
+	movlpd xmm3, [esi + edx*8]
+	movhpd xmm3, [esi + edx*8 + 8]
 	movsd  xmm4, [esi + edx*8 + 16]
 	addpd  xmm3, xmm6
 	addsd  xmm4, xmm7
-	movupd [esi + edx*8],    xmm3
+	movlpd [esi + edx*8],     xmm3
+	movhpd [esi + edx*8 + 8], xmm3
 	movsd  [esi + edx*8 + 16], xmm4
 
 	mov   edx, [ebp + i2120_gid]  
@@ -10048,11 +10105,11 @@ _inl2130_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
-	movupd xmm2, [sse2_six]
-	movupd xmm3, [sse2_twelve]
-	movupd xmm4, [sse2_two]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
+	movapd xmm2, [sse2_six]
+	movapd xmm3, [sse2_twelve]
+	movapd xmm4, [sse2_two]
 	movsd xmm5, [ebp + i2130_argkrf]
 	movsd xmm6, [ebp + i2130_argcrf]
 	
@@ -10096,7 +10153,8 @@ _inl2130_sse2:
 	imul  ecx, [ebp + i2130_ntype]      ;# ecx = ntia = 2*ntype*type[ii0] 
 	add   edx, ecx
 	mov   eax, [ebp + i2130_nbfp]
-	movupd xmm0, [eax + edx*8] 
+	movlpd xmm0, [eax + edx*8]
+	movhpd xmm0, [eax + edx*8 + 8]
 	movhlps xmm1, xmm0
 	shufpd xmm0, xmm0, 0
 	shufpd xmm1, xmm1, 0
@@ -11825,11 +11883,13 @@ _inl2130_sse2:
 	addpd xmm6, xmm0
 
 	;# increment fshift force 
-	movupd xmm3, [esi + edx*8]
+	movlpd xmm3, [esi + edx*8]
+	movhpd xmm3, [esi + edx*8 + 8]
 	movsd  xmm4, [esi + edx*8 + 16]
 	addpd  xmm3, xmm6
 	addsd  xmm4, xmm7
-	movupd [esi + edx*8],    xmm3
+	movlpd [esi + edx*8],     xmm3
+	movhpd [esi + edx*8 + 8], xmm3
 	movsd  [esi + edx*8 + 16], xmm4
 
 	mov   edx, [ebp + i2130_gid]  
@@ -11969,9 +12029,9 @@ _inl2020_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
-	movupd xmm4, [sse2_two]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
+	movapd xmm4, [sse2_two]
 	movsd xmm5, [ebp + i2020_argkrf]
 	movsd xmm6, [ebp + i2020_argcrf]
 
@@ -12801,11 +12861,13 @@ _inl2020_sse2:
 	addpd xmm6, xmm0
 
 	;# increment fshift force 
-	movupd xmm3, [esi + edx*8]
+	movlpd xmm3, [esi + edx*8]
+	movhpd xmm3, [esi + edx*8 + 8]
 	movsd  xmm4, [esi + edx*8 + 16]
 	addpd  xmm3, xmm6
 	addsd  xmm4, xmm7
-	movupd [esi + edx*8],    xmm3
+	movlpd [esi + edx*8],     xmm3
+	movhpd [esi + edx*8 + 8], xmm3
 	movsd  [esi + edx*8 + 16], xmm4
 
 	mov   edx, [ebp + i2020_gid]  
@@ -12979,9 +13041,9 @@ _inl2030_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
-	movupd xmm4, [sse2_two]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
+	movapd xmm4, [sse2_two]
 	movsd xmm5, [ebp + i2030_argkrf]
 	movsd xmm6, [ebp + i2030_argcrf]
 	
@@ -14709,11 +14771,13 @@ _inl2030_sse2:
 	addpd xmm6, xmm0
 
 	;# increment fshift force 
-	movupd xmm3, [esi + edx*8]
+	movlpd xmm3, [esi + edx*8]
+	movhpd xmm3, [esi + edx*8 + 8]
 	movsd  xmm4, [esi + edx*8 + 16]
 	addpd  xmm3, xmm6
 	addsd  xmm4, xmm7
-	movupd [esi + edx*8],    xmm3
+	movlpd [esi + edx*8],     xmm3
+	movhpd [esi + edx*8 + 8], xmm3
 	movsd  [esi + edx*8 + 16], xmm4
 
 	mov   edx, [ebp + i2030_gid]  
@@ -14815,9 +14879,9 @@ _inl3000_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_two]
-	movupd xmm2, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_two]
+	movapd xmm2, [sse2_three]
 	movsd xmm3, [ebp + i3000_tabscale]
 	movapd [esp + i3000_half],  xmm0
 	movapd [esp + i3000_two], xmm1
@@ -14986,14 +15050,19 @@ _inl3000_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -15149,13 +15218,16 @@ _inl3000_sse2:
 	mov  esi, [ebp + i3000_VFtab]
 
 	;# Coulomb 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1  
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1  
@@ -15385,9 +15457,9 @@ _inl3020_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_two]
-	movupd xmm2, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_two]
+	movapd xmm2, [sse2_three]
 	movsd xmm3, [ebp + i3020_tabscale]
 	
 	movapd [esp + i3020_half],  xmm0
@@ -15691,14 +15763,19 @@ _inl3020_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -15763,14 +15840,19 @@ _inl3020_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -15837,14 +15919,19 @@ _inl3020_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -16102,13 +16189,16 @@ _inl3020_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3020_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
 	xorpd xmm3, xmm3	
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -16171,13 +16261,16 @@ _inl3020_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3020_VFtab]
 	
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1  
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -16242,13 +16335,16 @@ _inl3020_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3020_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -16412,11 +16508,13 @@ _inl3020_sse2:
 	addpd xmm6, xmm0
 
 	;# increment fshift force 
-	movupd xmm3, [esi + edx*8]
+	movlpd xmm3, [esi + edx*8]
+	movhpd xmm3, [esi + edx*8 + 8]
 	movsd  xmm4, [esi + edx*8 + 16]
 	addpd  xmm3, xmm6
 	addsd  xmm4, xmm7
-	movupd [esi + edx*8],    xmm3
+	movlpd [esi + edx*8],     xmm3
+	movhpd [esi + edx*8 + 8], xmm3
 	movsd  [esi + edx*8 + 16], xmm4
 
 	mov   edx, [ebp + i3020_gid]  
@@ -16589,9 +16687,9 @@ _inl3030_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_two]
-	movupd xmm2, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_two]
+	movapd xmm2, [sse2_three]
 	movsd xmm3, [ebp + i3030_tabscale]
 	movapd [esp + i3030_half],  xmm0
 	movapd [esp + i3030_two],  xmm1
@@ -17095,14 +17193,19 @@ _inl3030_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -17170,14 +17273,19 @@ _inl3030_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -17243,14 +17351,19 @@ _inl3030_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -17316,14 +17429,19 @@ _inl3030_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -17388,14 +17506,19 @@ _inl3030_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -17460,14 +17583,19 @@ _inl3030_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -17532,14 +17660,19 @@ _inl3030_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -17604,14 +17737,19 @@ _inl3030_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -17676,14 +17814,19 @@ _inl3030_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -18161,13 +18304,16 @@ _inl3030_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3030_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1  
@@ -18233,13 +18379,16 @@ _inl3030_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3030_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1  
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -18303,13 +18452,16 @@ _inl3030_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3030_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -18373,13 +18525,16 @@ _inl3030_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3030_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -18442,13 +18597,16 @@ _inl3030_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3030_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -18511,13 +18669,17 @@ _inl3030_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3030_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -18580,13 +18742,17 @@ _inl3030_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3030_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -18649,13 +18815,17 @@ _inl3030_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3030_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -18718,13 +18888,17 @@ _inl3030_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3030_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -18906,11 +19080,13 @@ _inl3030_sse2:
 	addpd xmm6, xmm0
 
 	;# increment fshift force 
-	movupd xmm3, [esi + edx*8]
+	movlpd xmm3, [esi + edx*8]
+	movhpd xmm3, [esi + edx*8 + 8]
 	movsd  xmm4, [esi + edx*8 + 16]
 	addpd  xmm3, xmm6
 	addsd  xmm4, xmm7
-	movupd [esi + edx*8],    xmm3
+	movlpd [esi + edx*8],     xmm3
+	movhpd [esi + edx*8 + 8], xmm3
 	movsd  [esi + edx*8 + 16], xmm4
 
 	mov   edx, [ebp + i3030_gid]  
@@ -19022,11 +19198,11 @@ _inl3100_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_two]
-	movupd xmm2, [sse2_three]
-	movupd xmm3, [sse2_six]
-	movupd xmm4, [sse2_twelve]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_two]
+	movapd xmm2, [sse2_three]
+	movapd xmm3, [sse2_six]
+	movapd xmm4, [sse2_twelve]
 	movsd xmm5, [ebp + i3100_tabscale]
 	movapd [esp + i3100_half],  xmm0
 	movapd [esp + i3100_two], xmm1
@@ -19137,8 +19313,11 @@ _inl3100_sse2:
 	add eax, edi
 	add ebx, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	movupd xmm7, [esi + ebx*8]	;# c6b c12b 
+	movlpd xmm6, [esi + eax*8]
+	movlpd xmm7, [esi + ebx*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+	
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -19226,14 +19405,19 @@ _inl3100_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -19350,7 +19534,9 @@ _inl3100_sse2:
 	mov edi, [esp + i3100_ntia]
 	add eax, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
+	movlpd xmm6, [esi + eax*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+
 	xorpd xmm7, xmm7
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
@@ -19429,13 +19615,17 @@ _inl3100_sse2:
 	
 	mov  esi, [ebp + i3100_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -19707,11 +19897,11 @@ _inl3120_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_two]
-	movupd xmm2, [sse2_three]
-	movupd xmm3, [sse2_six]
-	movupd xmm4, [sse2_twelve]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_two]
+	movapd xmm2, [sse2_three]
+	movapd xmm3, [sse2_six]
+	movapd xmm4, [sse2_twelve]
 	movsd xmm5, [ebp + i3120_tabscale]
 	
 	movapd [esp + i3120_half],  xmm0
@@ -19862,8 +20052,11 @@ _inl3120_sse2:
 	add eax, edi
 	add ebx, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	movupd xmm7, [esi + ebx*8]	;# c6b c12b 
+	movlpd xmm6, [esi + eax*8]
+	movlpd xmm7, [esi + ebx*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+	
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -20047,14 +20240,19 @@ _inl3120_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -20138,14 +20336,19 @@ _inl3120_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -20212,14 +20415,19 @@ _inl3120_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -20320,7 +20528,9 @@ _inl3120_sse2:
 	mov edi, [esp + i3120_ntia]
 	add eax, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
+	movlpd xmm6, [esi + eax*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+
 	xorpd xmm7, xmm7
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
@@ -20495,13 +20705,17 @@ _inl3120_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3120_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -20583,13 +20797,17 @@ _inl3120_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3120_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -20654,13 +20872,17 @@ _inl3120_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3120_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -20823,11 +21045,13 @@ _inl3120_sse2:
 	addpd xmm6, xmm0
 
 	;# increment fshift force 
-	movupd xmm3, [esi + edx*8]
+	movlpd xmm3, [esi + edx*8]
+	movhpd xmm3, [esi + edx*8 + 8]
 	movsd  xmm4, [esi + edx*8 + 16]
 	addpd  xmm3, xmm6
 	addsd  xmm4, xmm7
-	movupd [esi + edx*8],    xmm3
+	movlpd [esi + edx*8],     xmm3
+	movhpd [esi + edx*8 + 8], xmm3
 	movsd  [esi + edx*8 + 16], xmm4
 
 	mov   edx, [ebp + i3120_gid]  
@@ -21022,11 +21246,11 @@ _inl3130_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_two]
-	movupd xmm2, [sse2_three]
-	movupd xmm3, [sse2_six]
-	movupd xmm4, [sse2_twelve]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_two]
+	movapd xmm2, [sse2_three]
+	movapd xmm3, [sse2_six]
+	movapd xmm4, [sse2_twelve]
 	movsd xmm5, [ebp + i3130_tabscale]
 	movapd [esp + i3130_half],  xmm0
 	movapd [esp + i3130_two],  xmm1
@@ -21066,7 +21290,8 @@ _inl3130_sse2:
 	imul  ecx, [ebp + i3130_ntype]      ;# ecx = ntia = 2*ntype*type[ii0] 
 	add   edx, ecx
 	mov   eax, [ebp + i3130_nbfp]
-	movupd xmm0, [eax + edx*8] 
+	movlpd xmm0, [eax + edx*8]
+	movhpd xmm0, [eax + edx*8 + 8]
 	movhlps xmm1, xmm0
 	shufpd xmm0, xmm0, 0
 	shufpd xmm1, xmm1, 0
@@ -21548,14 +21773,19 @@ _inl3130_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -21642,14 +21872,19 @@ _inl3130_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -21715,14 +21950,19 @@ _inl3130_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -21788,14 +22028,19 @@ _inl3130_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -21860,14 +22105,19 @@ _inl3130_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -21932,14 +22182,19 @@ _inl3130_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -22004,14 +22259,19 @@ _inl3130_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -22076,14 +22336,19 @@ _inl3130_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -22148,14 +22413,19 @@ _inl3130_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -22633,13 +22903,17 @@ _inl3130_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3130_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1  
@@ -22724,13 +22998,17 @@ _inl3130_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3130_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1  
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -22794,13 +23072,17 @@ _inl3130_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3130_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -22864,13 +23146,17 @@ _inl3130_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3130_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -22933,13 +23219,17 @@ _inl3130_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3130_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -23002,13 +23292,17 @@ _inl3130_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3130_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -23071,13 +23365,17 @@ _inl3130_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3130_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -23140,13 +23438,17 @@ _inl3130_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3130_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -23209,13 +23511,17 @@ _inl3130_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + i3130_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -23397,11 +23703,13 @@ _inl3130_sse2:
 	addpd xmm6, xmm0
 
 	;# increment fshift force 
-	movupd xmm3, [esi + edx*8]
+	movlpd xmm3, [esi + edx*8]
+	movhpd xmm3, [esi + edx*8 + 8]
 	movsd  xmm4, [esi + edx*8 + 16]
 	addpd  xmm3, xmm6
 	addsd  xmm4, xmm7
-	movupd [esi + edx*8],    xmm3
+	movlpd [esi + edx*8],     xmm3
+	movhpd [esi + edx*8 + 8], xmm3
 	movsd  [esi + edx*8 + 16], xmm4
 
 	mov   edx, [ebp + i3130_gid]  
@@ -23523,9 +23831,9 @@ _inl3300_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_two]
-	movupd xmm2, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_two]
+	movapd xmm2, [sse2_three]
 	movsd xmm3, [ebp + i3300_tabscale]
 	movapd [esp + i3300_half],  xmm0
 	movapd [esp + i3300_two], xmm1
@@ -23635,8 +23943,11 @@ _inl3300_sse2:
 	add eax, edi
 	add ebx, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	movupd xmm7, [esi + ebx*8]	;# c6b c12b 
+	movlpd xmm6, [esi + eax*8]
+	movlpd xmm7, [esi + ebx*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+	
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -23728,14 +24039,19 @@ _inl3300_sse2:
 	lea   ebx, [ebx + ebx*2]	;# idx*=3 (12 total now) 
 
 	;# Coulomb 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -23762,14 +24078,19 @@ _inl3300_sse2:
 	movapd [esp + i3300_fscal], xmm3
 
 	;# Dispersion 
-	movupd xmm4, [esi + eax*8 + 32]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8 + 32]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8 + 32]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8 + 32]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 40]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 40]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 48]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 48]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 48]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 48]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 56]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 56]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -23795,14 +24116,19 @@ _inl3300_sse2:
 	movapd [esp + i3300_vnbtot], xmm5
 
 	;# Repulsion 
-	movupd xmm4, [esi + eax*8 + 64]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8 + 64]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8 + 64]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8 + 64]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 72]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 72]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 80]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 80]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 80]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 80]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 88]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 88]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -23897,7 +24223,9 @@ _inl3300_sse2:
 	mov edi, [esp + i3300_ntia]
 	add eax, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
+	movlpd xmm6, [esi + eax*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+
 	xorpd xmm7, xmm7
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
@@ -23979,13 +24307,17 @@ _inl3300_sse2:
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 
 	;# Coulomb 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -24013,13 +24345,17 @@ _inl3300_sse2:
 	movapd [esp + i3300_fscal], xmm3
 
 	;# Dispersion 
-	movupd xmm4, [esi + eax*8 + 32]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8 + 32]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 40]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 48]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 48]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 56]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -24047,13 +24383,17 @@ _inl3300_sse2:
 	movlpd [esp + i3300_vnbtot], xmm5
 
 	;# Repulsion 
-	movupd xmm4, [esi + eax*8 + 64]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8 + 64]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 72]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 80]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 80]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 88]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -24300,9 +24640,9 @@ _inl3320_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_two]
-	movupd xmm2, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_two]
+	movapd xmm2, [sse2_three]
 	movsd xmm5, [ebp + i3320_tabscale]
 	
 	movapd [esp + i3320_half],  xmm0
@@ -24451,8 +24791,11 @@ _inl3320_sse2:
 	add eax, edi
 	add ebx, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	movupd xmm7, [esi + ebx*8]	;# c6b c12b 
+	movlpd xmm6, [esi + eax*8]
+	movlpd xmm7, [esi + ebx*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+	
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -24638,14 +24981,19 @@ _inl3320_sse2:
 	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now) 
 	lea   ebx, [ebx + ebx*2]
 	
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -24669,14 +25017,20 @@ _inl3320_sse2:
 	movapd [esp + i3320_vctot], xmm5 
 	
 	;# Dispersion 
-	movupd xmm4, [esi + eax*8 + 32]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8 + 32]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8 + 32]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8 + 32]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 40]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 40]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 48]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 48]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 48]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 48]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 56]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 56]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -24700,14 +25054,19 @@ _inl3320_sse2:
 	movapd [esp + i3320_vnbtot], xmm5
 	
 	;# Repulsion 
-	movupd xmm4, [esi + eax*8 + 64]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8 + 64]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8 + 64]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8 + 64]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 72]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 72]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 80]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 80]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 80]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 80]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 88]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 88]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -24781,14 +25140,19 @@ _inl3320_sse2:
 	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now) 	
 	lea   ebx, [ebx + ebx*2]
 	
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -24857,14 +25221,19 @@ _inl3320_sse2:
 	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)
 	lea   ebx, [ebx + ebx*2]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -24965,7 +25334,8 @@ _inl3320_sse2:
 	mov edi, [esp + i3320_ntia]
 	add eax, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
+	movlpd xmm6, [esi + eax*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
 	xorpd xmm7, xmm7
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
@@ -25140,13 +25510,17 @@ _inl3320_sse2:
 	mov  esi, [ebp + i3320_VFtab]
 	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now) 	
 	
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -25172,13 +25546,17 @@ _inl3320_sse2:
 	movlpd [esp + i3320_vctot], xmm5 
 	
 	;# Dispersion 
-	movupd xmm4, [esi + eax*8 + 32]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8 + 32]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 40]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 48]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 48]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 56]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -25203,13 +25581,17 @@ _inl3320_sse2:
 	movsd [esp + i3320_vnbtot], xmm5
 	
 	;# Repulsion 
-	movupd xmm4, [esi + eax*8 + 64]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8 + 64]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 72]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 80]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 80]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 88]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -25274,13 +25656,17 @@ _inl3320_sse2:
 	mov  esi, [ebp + i3320_VFtab]
 	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)	
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -25346,13 +25732,17 @@ _inl3320_sse2:
 	mov  esi, [ebp + i3320_VFtab]
 	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)	
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -25515,11 +25905,13 @@ _inl3320_sse2:
 	addpd xmm6, xmm0
 
 	;# increment fshift force 
-	movupd xmm3, [esi + edx*8]
+	movlpd xmm3, [esi + edx*8]
+	movhpd xmm3, [esi + edx*8 + 8]
 	movsd  xmm4, [esi + edx*8 + 16]
 	addpd  xmm3, xmm6
 	addsd  xmm4, xmm7
-	movupd [esi + edx*8],    xmm3
+	movlpd [esi + edx*8],     xmm3
+	movhpd [esi + edx*8 + 8], xmm3
 	movsd  [esi + edx*8 + 16], xmm4
 
 	mov   edx, [ebp + i3320_gid]  
@@ -25715,9 +26107,9 @@ _inl3330_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_two]
-	movupd xmm2, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_two]
+	movapd xmm2, [sse2_three]
 	movsd xmm3, [ebp + i3330_tabscale]
 	movapd [esp + i3330_half],  xmm0
 	movapd [esp + i3330_two],  xmm1
@@ -25755,7 +26147,8 @@ _inl3330_sse2:
 	imul  ecx, [ebp + i3330_ntype]      ;# ecx = ntia = 2*ntype*type[ii0] 
 	add   edx, ecx
 	mov   eax, [ebp + i3330_nbfp]
-	movupd xmm0, [eax + edx*8]
+	movlpd xmm0, [eax + edx*8]
+	movhpd xmm0, [eax + edx*8 + 8]
 	movhlps xmm1, xmm0
 	shufpd xmm0, xmm0, 0
 	shufpd xmm1, xmm1, 0
@@ -26239,14 +26632,19 @@ _inl3330_sse2:
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 	lea   ebx, [ebx + ebx*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -26273,14 +26671,19 @@ _inl3330_sse2:
 	movapd [esp + i3330_fscal], xmm3
 
 	;# Dispersion 
-	movupd xmm4, [esi + eax*8 + 32]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8 + 32]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8 + 32]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8 + 32]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 40]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 40]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 48]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 48]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 48]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 48]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 56]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 56]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -26306,14 +26709,19 @@ _inl3330_sse2:
 	movapd [esp + i3330_vnbtot], xmm5
 
 	;# Repulsion 
-	movupd xmm4, [esi + eax*8 + 64]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8 + 64]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8 + 64]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8 + 64]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 72]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 72]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 80]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 80]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 80]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 80]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 88]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 88]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -26384,14 +26792,19 @@ _inl3330_sse2:
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 	lea   ebx, [ebx + ebx*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -26459,14 +26872,19 @@ _inl3330_sse2:
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 	lea   ebx, [ebx + ebx*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -26534,14 +26952,19 @@ _inl3330_sse2:
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 	lea   ebx, [ebx + ebx*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -26608,14 +27031,19 @@ _inl3330_sse2:
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 	lea   ebx, [ebx + ebx*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -26682,14 +27110,19 @@ _inl3330_sse2:
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 	lea   ebx, [ebx + ebx*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -26756,14 +27189,19 @@ _inl3330_sse2:
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 	lea   ebx, [ebx + ebx*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -26830,14 +27268,19 @@ _inl3330_sse2:
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 	lea   ebx, [ebx + ebx*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -26904,14 +27347,19 @@ _inl3330_sse2:
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 	lea   ebx, [ebx + ebx*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -27390,13 +27838,17 @@ _inl3330_sse2:
 	mov  esi, [ebp + i3330_VFtab]
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1  
@@ -27425,13 +27877,17 @@ _inl3330_sse2:
 	movapd [esp + i3330_fscal], xmm3
 
 	;# Dispersion 
-	movupd xmm4, [esi + eax*8 + 32]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8 + 32]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 40]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 48]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 48]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 56]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -27458,13 +27914,17 @@ _inl3330_sse2:
 	movlpd [esp + i3330_vnbtot], xmm5
 
 	;# Repulsion 
-	movupd xmm4, [esi + eax*8 + 64]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8 + 64]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 72]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 80]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 80]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 88]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -27532,13 +27992,17 @@ _inl3330_sse2:
 	mov  esi, [ebp + i3330_VFtab]
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1  
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -27603,13 +28067,17 @@ _inl3330_sse2:
 	mov  esi, [ebp + i3330_VFtab]
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -27674,13 +28142,17 @@ _inl3330_sse2:
 	mov  esi, [ebp + i3330_VFtab]
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -27744,13 +28216,17 @@ _inl3330_sse2:
 	mov  esi, [ebp + i3330_VFtab]
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -27814,13 +28290,17 @@ _inl3330_sse2:
 	mov  esi, [ebp + i3330_VFtab]
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -27884,13 +28364,17 @@ _inl3330_sse2:
 	mov  esi, [ebp + i3330_VFtab]
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -27954,13 +28438,17 @@ _inl3330_sse2:
 	mov  esi, [ebp + i3330_VFtab]
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -28024,13 +28512,17 @@ _inl3330_sse2:
 	mov  esi, [ebp + i3330_VFtab]
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -28212,11 +28704,13 @@ _inl3330_sse2:
 	addpd xmm6, xmm0
 
 	;# increment fshift force 
-	movupd xmm3, [esi + edx*8]
+	movlpd xmm3, [esi + edx*8]
+	movhpd xmm3, [esi + edx*8 + 8]
 	movsd  xmm4, [esi + edx*8 + 16]
 	addpd  xmm3, xmm6
 	addsd  xmm4, xmm7
-	movupd [esi + edx*8],    xmm3
+	movlpd [esi + edx*8],     xmm3
+	movhpd [esi + edx*8 + 8], xmm3
 	movsd  [esi + edx*8 + 16], xmm4
 
 	mov   edx, [ebp + i3330_gid]  
@@ -28321,7 +28815,7 @@ _mcinl0100_sse2:
 
 	emms
 
-	movupd xmm1, [sse2_two]
+	movapd xmm1, [sse2_two]
 	movapd [esp + mci0100_two], xmm1
 
 	;# assume we have at least one i particle - start directly 	
@@ -28405,8 +28899,11 @@ _mcinl0100_sse2:
 	add eax, edi
 	add ebx, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	movupd xmm7, [esi + ebx*8]	;# c6b c12b 
+	movlpd xmm6, [esi + eax*8]
+	movlpd xmm7, [esi + ebx*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+	
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -28499,7 +28996,9 @@ _mcinl0100_sse2:
 	mov edi, [esp + mci0100_ntia]
 	add eax, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
+	movlpd xmm6, [esi + eax*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+
 	xorpd xmm7, xmm7
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
@@ -28660,8 +29159,8 @@ _mcinl0300_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm2, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm2, [sse2_three]
 	movsd xmm3, [ebp + mci0300_tabscale]
 	movapd [esp + mci0300_half],  xmm0
 	movapd [esp + mci0300_three],  xmm2
@@ -28748,8 +29247,11 @@ _mcinl0300_sse2:
 	add eax, edi
 	add ebx, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	movupd xmm7, [esi + ebx*8]	;# c6b c12b 
+	movlpd xmm6, [esi + eax*8]
+	movlpd xmm7, [esi + ebx*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+	
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -28834,14 +29336,19 @@ _mcinl0300_sse2:
 	movd ebx, mm6
 
 	;# dispersion 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -28860,14 +29367,19 @@ _mcinl0300_sse2:
 	movapd [esp + mci0300_vnbtot], xmm5
 
 	;# repulsion 
-	movupd xmm4, [esi + eax*8 + 32]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8 + 32]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8 + 32]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8 + 32]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 40]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 40]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 48]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 48]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 48]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 48]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 56]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 56]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -28908,7 +29420,9 @@ _mcinl0300_sse2:
 	mov edi, [esp + mci0300_ntia]
 	add eax, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
+	movlpd xmm6, [esi + eax*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+
 	xorpd xmm7, xmm7
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
@@ -28984,13 +29498,17 @@ _mcinl0300_sse2:
 	mov  esi, [ebp + mci0300_VFtab]
 
 	;# dispersion 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1  
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1  
@@ -29010,13 +29528,17 @@ _mcinl0300_sse2:
 	movlpd [esp + mci0300_vnbtot], xmm5
 
 	;# repulsion 
-	movupd xmm4, [esi + eax*8 + 32]	;# Y1 F1 
+	movlpd xmm4, [esi + eax*8 + 32]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 40]	;# Y1 F1 
+
 	xorpd xmm3,xmm3	
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1  
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 48]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 48]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 56]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1  
@@ -29122,8 +29644,8 @@ _mcinl1000_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
 	movapd [esp + mci1000_half],  xmm0
 	movapd [esp + mci1000_three], xmm1
 
@@ -29437,8 +29959,8 @@ _mcinl1020_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
 	movapd [esp + mci1020_half],  xmm0
 	movapd [esp + mci1020_three], xmm1
 
@@ -29995,8 +30517,8 @@ _mcinl1030_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
 	movapd [esp + mci1030_half],  xmm0
 	movapd [esp + mci1030_three], xmm1
 	
@@ -30921,8 +31443,8 @@ _mcinl1100_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
 	movapd [esp + mci1100_half],  xmm0
 	movapd [esp + mci1100_three], xmm1
 
@@ -31022,8 +31544,11 @@ mci1100_unroll_loop:
 	add eax, edi
 	add ebx, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	movupd xmm7, [esi + ebx*8]	;# c6b c12b 
+	movlpd xmm6, [esi + eax*8]
+	movlpd xmm7, [esi + ebx*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+	
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -31134,7 +31659,9 @@ mci1100_dosingle:
 	mov edi, [esp + mci1100_ntia]
 	add eax, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
+	movlpd xmm6, [esi + eax*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+
 	xorpd xmm7, xmm7
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
@@ -31322,8 +31849,8 @@ _mcinl2100_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
 	movsd xmm5, [ebp + mci2100_argkrf]
 	movsd xmm6, [ebp + mci2100_argcrf]
 	
@@ -31430,8 +31957,11 @@ _mcinl2100_sse2:
 	add eax, edi
 	add ebx, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	movupd xmm7, [esi + ebx*8]	;# c6b c12b 
+	movlpd xmm6, [esi + eax*8]
+	movlpd xmm7, [esi + ebx*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+	
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -31545,7 +32075,9 @@ _mcinl2100_sse2:
 	mov edi, [esp + mci2100_ntia]
 	add eax, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
+	movlpd xmm6, [esi + eax*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+
 	xorpd xmm7, xmm7
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
@@ -31728,8 +32260,8 @@ _mcinl2000_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
 	movsd xmm5, [ebp + mci2000_argkrf]
 	movsd xmm6, [ebp + mci2000_argcrf]
 	
@@ -32070,8 +32602,8 @@ _mcinl1120_sse2:
 	mov [esp + mci1120_salign], eax
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
 	movapd [esp + mci1120_half],  xmm0
 	movapd [esp + mci1120_three], xmm1
 
@@ -32206,8 +32738,11 @@ mci1120_unroll_loop:
 	add eax, edi
 	add ebx, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	movupd xmm7, [esi + ebx*8]	;# c6b c12b 
+	movlpd xmm6, [esi + eax*8]
+	movlpd xmm7, [esi + ebx*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+	
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -32414,7 +32949,9 @@ mci1120_dosingle:
 	mov edi, [esp + mci1120_ntia]
 	add eax, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
+	movlpd xmm6, [esi + eax*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+
 	xorpd xmm7, xmm7
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
@@ -32726,8 +33263,8 @@ _mcinl1130_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
 	movapd [esp + mci1130_half],  xmm0
 	movapd [esp + mci1130_three], xmm1
 
@@ -32761,7 +33298,8 @@ _mcinl1130_sse2:
 	imul  ecx, [ebp + mci1130_ntype]      ;# ecx = ntia = 2*ntype*type[ii0] 
 	add   edx, ecx
 	mov   eax, [ebp + mci1130_nbfp]
-	movupd xmm0, [eax + edx*8]
+	movlpd xmm0, [eax + edx*8]
+	movhpd xmm0, [eax + edx*8 + 8]
 	movhlps xmm1, xmm0
 	shufpd xmm0, xmm0, 0
 	shufpd xmm1, xmm1, 0	
@@ -33720,8 +34258,8 @@ _mcinl2120_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
 	movsd xmm5, [ebp + mci2120_argkrf]
 	movsd xmm6, [ebp + mci2120_argcrf]
 
@@ -33864,8 +34402,11 @@ _mcinl2120_sse2:
 	add eax, edi
 	add ebx, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	movupd xmm7, [esi + ebx*8]	;# c6b c12b 
+	movlpd xmm6, [esi + eax*8]
+	movlpd xmm7, [esi + ebx*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+	
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -34094,7 +34635,9 @@ _mcinl2120_sse2:
 	mov edi, [esp + mci2120_ntia]
 	add eax, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
+	movlpd xmm6, [esi + eax*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+
 	xorpd xmm7, xmm7
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
@@ -34430,8 +34973,8 @@ _mcinl2130_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
 	movsd xmm5, [ebp + mci2130_argkrf]
 	movsd xmm6, [ebp + mci2130_argcrf]
 	
@@ -34472,7 +35015,8 @@ _mcinl2130_sse2:
 	imul  ecx, [ebp + mci2130_ntype]      ;# ecx = ntia = 2*ntype*type[ii0] 
 	add   edx, ecx
 	mov   eax, [ebp + mci2130_nbfp]
-	movupd xmm0, [eax + edx*8] 
+	movlpd xmm0, [eax + edx*8]
+	movhpd xmm0, [eax + edx*8 + 8]
 	movhlps xmm1, xmm0
 	shufpd xmm0, xmm0, 0
 	shufpd xmm1, xmm1, 0
@@ -35605,8 +36149,8 @@ _mcinl2020_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
 	movsd xmm5, [ebp + mci2020_argkrf]
 	movsd xmm6, [ebp + mci2020_argcrf]
 
@@ -36207,8 +36751,8 @@ _mcinl2030_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm1, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm1, [sse2_three]
 	movsd xmm5, [ebp + mci2030_argkrf]
 	movsd xmm6, [ebp + mci2030_argcrf]
 	
@@ -37246,8 +37790,8 @@ _mcinl3000_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm2, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm2, [sse2_three]
 	movsd xmm3, [ebp + mci3000_tabscale]
 	movapd [esp + mci3000_half],  xmm0
 	movapd [esp + mci3000_three],  xmm2
@@ -37401,14 +37945,19 @@ _mcinl3000_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -37509,13 +38058,16 @@ _mcinl3000_sse2:
 	mov  esi, [ebp + mci3000_VFtab]
 
 	;# Coulomb 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1  
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1  
@@ -37641,8 +38193,8 @@ _mcinl3020_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm2, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm2, [sse2_three]
 	movsd xmm3, [ebp + mci3020_tabscale]
 	
 	movapd [esp + mci3020_half],  xmm0
@@ -37920,14 +38472,19 @@ _mcinl3020_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -37961,14 +38518,19 @@ _mcinl3020_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -38002,14 +38564,19 @@ _mcinl3020_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -38202,13 +38769,17 @@ _mcinl3020_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3020_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3	
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -38240,13 +38811,17 @@ _mcinl3020_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3020_VFtab]
 	
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1  
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -38279,13 +38854,17 @@ _mcinl3020_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3020_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -38427,8 +39006,8 @@ _mcinl3030_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm2, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm2, [sse2_three]
 	movsd xmm3, [ebp + mci3030_tabscale]
 	movapd [esp + mci3030_half],  xmm0
 	movapd [esp + mci3030_three], xmm2
@@ -38892,14 +39471,19 @@ _mcinl3030_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -38936,14 +39520,19 @@ _mcinl3030_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -38979,14 +39568,19 @@ _mcinl3030_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -39022,14 +39616,19 @@ _mcinl3030_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -39064,14 +39663,20 @@ _mcinl3030_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -39106,14 +39711,20 @@ _mcinl3030_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -39148,14 +39759,20 @@ _mcinl3030_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -39190,14 +39807,20 @@ _mcinl3030_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -39232,14 +39855,20 @@ _mcinl3030_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -39606,13 +40235,17 @@ _mcinl3030_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3030_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1  
@@ -39647,13 +40280,17 @@ _mcinl3030_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3030_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1  
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -39687,13 +40324,17 @@ _mcinl3030_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3030_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -39727,13 +40368,17 @@ _mcinl3030_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3030_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -39766,13 +40411,17 @@ _mcinl3030_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3030_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -39805,13 +40454,17 @@ _mcinl3030_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3030_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -39844,13 +40497,17 @@ _mcinl3030_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3030_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -39883,13 +40540,17 @@ _mcinl3030_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3030_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -39922,13 +40583,17 @@ _mcinl3030_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3030_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -40046,8 +40711,8 @@ _mcinl3100_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm2, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm2, [sse2_three]
 	movsd xmm5, [ebp + mci3100_tabscale]
 	movapd [esp + mci3100_half],  xmm0
 	movapd [esp + mci3100_three],  xmm2
@@ -40150,8 +40815,11 @@ _mcinl3100_sse2:
 	add eax, edi
 	add ebx, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	movupd xmm7, [esi + ebx*8]	;# c6b c12b 
+	movlpd xmm6, [esi + eax*8]
+	movlpd xmm7, [esi + ebx*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+	
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -40232,14 +40900,20 @@ _mcinl3100_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -40306,7 +40980,9 @@ _mcinl3100_sse2:
 	mov edi, [esp + mci3100_ntia]
 	add eax, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
+	movlpd xmm6, [esi + eax*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+
 	xorpd xmm7, xmm7
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
@@ -40381,13 +41057,17 @@ _mcinl3100_sse2:
 	
 	mov  esi, [ebp + mci3100_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -40551,8 +41231,8 @@ _mcinl3120_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm2, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm2, [sse2_three]
 	movsd xmm5, [ebp + mci3120_tabscale]
 	
 	movapd [esp + mci3120_half],  xmm0
@@ -40691,8 +41371,11 @@ _mcinl3120_sse2:
 	add eax, edi
 	add ebx, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	movupd xmm7, [esi + ebx*8]	;# c6b c12b 
+	movlpd xmm6, [esi + eax*8]
+	movlpd xmm7, [esi + ebx*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+	
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -40864,14 +41547,20 @@ _mcinl3120_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -40923,14 +41612,20 @@ _mcinl3120_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -40964,14 +41659,20 @@ _mcinl3120_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -41020,7 +41721,9 @@ _mcinl3120_sse2:
 	mov edi, [esp + mci3120_ntia]
 	add eax, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
+	movlpd xmm6, [esi + eax*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+
 	xorpd xmm7, xmm7
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
@@ -41183,13 +41886,17 @@ _mcinl3120_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3120_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -41238,13 +41945,17 @@ _mcinl3120_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3120_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -41276,13 +41987,17 @@ _mcinl3120_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3120_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -41444,8 +42159,8 @@ _mcinl3130_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm2, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm2, [sse2_three]
 	movsd xmm5, [ebp + mci3130_tabscale]
 	movapd [esp + mci3130_half],  xmm0
 	movapd [esp + mci3130_three], xmm2
@@ -41482,7 +42197,8 @@ _mcinl3130_sse2:
 	imul  ecx, [ebp + mci3130_ntype]      ;# ecx = ntia = 2*ntype*type[ii0] 
 	add   edx, ecx
 	mov   eax, [ebp + mci3130_nbfp]
-	movupd xmm0, [eax + edx*8] 
+	movlpd xmm0, [eax + edx*8]
+	movhpd xmm0, [eax + edx*8 + 8]
 	movhlps xmm1, xmm0
 	shufpd xmm0, xmm0, 0
 	shufpd xmm1, xmm1, 0
@@ -41924,14 +42640,20 @@ _mcinl3130_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -41983,14 +42705,20 @@ _mcinl3130_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -42026,14 +42754,20 @@ _mcinl3130_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -42069,14 +42803,20 @@ _mcinl3130_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -42111,14 +42851,20 @@ _mcinl3130_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -42153,14 +42899,20 @@ _mcinl3130_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -42195,14 +42947,20 @@ _mcinl3130_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -42237,14 +42995,20 @@ _mcinl3130_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -42279,14 +43043,20 @@ _mcinl3130_sse2:
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -42654,13 +43424,17 @@ _mcinl3130_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3130_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1  
@@ -42710,13 +43484,17 @@ _mcinl3130_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3130_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1  
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -42750,13 +43528,17 @@ _mcinl3130_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3130_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -42790,13 +43572,17 @@ _mcinl3130_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3130_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -42829,13 +43615,17 @@ _mcinl3130_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3130_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -42868,13 +43658,17 @@ _mcinl3130_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3130_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -42907,13 +43701,17 @@ _mcinl3130_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3130_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -42946,13 +43744,17 @@ _mcinl3130_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3130_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -42985,13 +43787,17 @@ _mcinl3130_sse2:
 	shl eax, 2		;# idx *= 4 
 	mov  esi, [ebp + mci3130_VFtab]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -43121,8 +43927,8 @@ _mcinl3300_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm2, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm2, [sse2_three]
 	movsd xmm3, [ebp + mci3300_tabscale]
 	movapd [esp + mci3300_half],  xmm0
 	movapd [esp + mci3300_three],  xmm2
@@ -43226,8 +44032,11 @@ _mcinl3300_sse2:
 	add eax, edi
 	add ebx, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	movupd xmm7, [esi + ebx*8]	;# c6b c12b 
+	movlpd xmm6, [esi + eax*8]
+	movlpd xmm7, [esi + ebx*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+	
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -43310,14 +44119,20 @@ _mcinl3300_sse2:
 	lea   ebx, [ebx + ebx*2]	;# idx*=3 (12 total now) 
 
 	;# Coulomb 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -43337,14 +44152,20 @@ _mcinl3300_sse2:
 	movapd [esp + mci3300_vctot], xmm5 
 
 	;# Dispersion 
-	movupd xmm4, [esi + eax*8 + 32]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8 + 32]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8 + 32]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8 + 32]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 40]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 40]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 48]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 48]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 48]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 48]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 56]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 56]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -43362,14 +44183,20 @@ _mcinl3300_sse2:
 	movapd [esp + mci3300_vnbtot], xmm5
 
 	;# Repulsion 
-	movupd xmm4, [esi + eax*8 + 64]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8 + 64]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8 + 64]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8 + 64]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 72]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 72]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 80]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 80]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 80]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 80]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 88]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 88]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -43414,7 +44241,9 @@ _mcinl3300_sse2:
 	mov edi, [esp + mci3300_ntia]
 	add eax, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
+	movlpd xmm6, [esi + eax*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+
 	xorpd xmm7, xmm7
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
@@ -43490,13 +44319,17 @@ _mcinl3300_sse2:
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 
 	;# Coulomb 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -43517,13 +44350,17 @@ _mcinl3300_sse2:
 	movlpd [esp + mci3300_vctot], xmm5 
 
 	;# Dispersion 
-	movupd xmm4, [esi + eax*8 + 32]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8 + 32]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 40]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 48]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 48]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 56]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -43544,13 +44381,17 @@ _mcinl3300_sse2:
 	movlpd [esp + mci3300_vnbtot], xmm5
 
 	;# Repulsion 
-	movupd xmm4, [esi + eax*8 + 64]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8 + 64]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 72]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 80]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 80]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 88]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -43693,8 +44534,8 @@ _mcinl3320_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm2, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm2, [sse2_three]
 	movsd xmm5, [ebp + mci3320_tabscale]
 	
 	movapd [esp + mci3320_half],  xmm0
@@ -43831,8 +44672,11 @@ _mcinl3320_sse2:
 	add eax, edi
 	add ebx, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
-	movupd xmm7, [esi + ebx*8]	;# c6b c12b 
+	movlpd xmm6, [esi + eax*8]
+	movlpd xmm7, [esi + ebx*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+	
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
 	unpckhpd xmm6, xmm7
@@ -44006,14 +44850,20 @@ _mcinl3320_sse2:
 	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now) 
 	lea   ebx, [ebx + ebx*2]
 	
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -44033,14 +44883,20 @@ _mcinl3320_sse2:
 	movapd [esp + mci3320_vctot], xmm5 
 	
 	;# Dispersion 
-	movupd xmm4, [esi + eax*8 + 32]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8 + 32]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8 + 32]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8 + 32]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 40]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 40]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 48]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 48]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 48]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 48]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 56]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 56]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -44058,14 +44914,20 @@ _mcinl3320_sse2:
 	movapd [esp + mci3320_vnbtot], xmm5
 	
 	;# Repulsion 
-	movupd xmm4, [esi + eax*8 + 64]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8 + 64]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8 + 64]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8 + 64]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 72]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 72]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 80]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 80]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 80]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 80]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 88]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 88]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -44099,14 +44961,20 @@ _mcinl3320_sse2:
 	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now) 	
 	lea   ebx, [ebx + ebx*2]
 	
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -44142,14 +45010,20 @@ _mcinl3320_sse2:
 	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)
 	lea   ebx, [ebx + ebx*2]
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -44198,7 +45072,9 @@ _mcinl3320_sse2:
 	mov edi, [esp + mci3320_ntia]
 	add eax, edi
 
-	movupd xmm6, [esi + eax*8]	;# c6a c12a 
+	movlpd xmm6, [esi + eax*8]
+	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+
 	xorpd xmm7, xmm7
 	movapd xmm4, xmm6
 	unpcklpd xmm4, xmm7
@@ -44361,13 +45237,17 @@ _mcinl3320_sse2:
 	mov  esi, [ebp + mci3320_VFtab]
 	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now) 	
 	
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -44389,13 +45269,17 @@ _mcinl3320_sse2:
 	movlpd [esp + mci3320_vctot], xmm5 
 	
 	;# Dispersion 
-	movupd xmm4, [esi + eax*8 + 32]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8 + 32]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 40]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 48]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 48]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 56]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -44414,13 +45298,17 @@ _mcinl3320_sse2:
 	movsd [esp + mci3320_vnbtot], xmm5
 	
 	;# Repulsion 
-	movupd xmm4, [esi + eax*8 + 64]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8 + 64]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 72]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 80]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 80]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 88]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -44452,13 +45340,17 @@ _mcinl3320_sse2:
 	mov  esi, [ebp + mci3320_VFtab]
 	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)	
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -44491,13 +45383,17 @@ _mcinl3320_sse2:
 	mov  esi, [ebp + mci3320_VFtab]
 	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)	
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -44660,8 +45556,8 @@ _mcinl3330_sse2:
 
 	emms
 
-	movupd xmm0, [sse2_half]
-	movupd xmm2, [sse2_three]
+	movapd xmm0, [sse2_half]
+	movapd xmm2, [sse2_three]
 	movsd xmm3, [ebp + mci3330_tabscale]
 	movapd [esp + mci3330_half],  xmm0
 	movapd [esp + mci3330_three], xmm2
@@ -44698,7 +45594,8 @@ _mcinl3330_sse2:
 	imul  ecx, [ebp + mci3330_ntype]      ;# ecx = ntia = 2*ntype*type[ii0] 
 	add   edx, ecx
 	mov   eax, [ebp + mci3330_nbfp]
-	movupd xmm0, [eax + edx*8]
+	movlpd xmm0, [eax + edx*8]
+	movhpd xmm0, [eax + edx*8 + 8]
 	movhlps xmm1, xmm0
 	shufpd xmm0, xmm0, 0
 	shufpd xmm1, xmm1, 0
@@ -45142,14 +46039,20 @@ _mcinl3330_sse2:
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 	lea   ebx, [ebx + ebx*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -45169,14 +46072,20 @@ _mcinl3330_sse2:
     movapd [esp + mci3330_vctot], xmm5
 
 	;# Dispersion 
-	movupd xmm4, [esi + eax*8 + 32]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8 + 32]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8 + 32]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8 + 32]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 40]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 40]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 48]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 48]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 48]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 48]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 56]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 56]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -45194,14 +46103,20 @@ _mcinl3330_sse2:
 	movapd [esp + mci3330_vnbtot], xmm5
 
 	;# Repulsion 
-	movupd xmm4, [esi + eax*8 + 64]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8 + 64]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8 + 64]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8 + 64]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 72]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 72]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 80]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 80]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 80]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 80]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 88]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 88]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -45238,14 +46153,19 @@ _mcinl3330_sse2:
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 	lea   ebx, [ebx + ebx*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -45283,14 +46203,20 @@ _mcinl3330_sse2:
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 	lea   ebx, [ebx + ebx*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -45328,14 +46254,20 @@ _mcinl3330_sse2:
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 	lea   ebx, [ebx + ebx*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -45372,14 +46304,20 @@ _mcinl3330_sse2:
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 	lea   ebx, [ebx + ebx*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -45416,14 +46354,20 @@ _mcinl3330_sse2:
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 	lea   ebx, [ebx + ebx*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -45460,14 +46404,20 @@ _mcinl3330_sse2:
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 	lea   ebx, [ebx + ebx*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -45504,14 +46454,20 @@ _mcinl3330_sse2:
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 	lea   ebx, [ebx + ebx*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -45548,14 +46504,20 @@ _mcinl3330_sse2:
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 	lea   ebx, [ebx + ebx*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
-	movupd xmm3, [esi + ebx*8]	;# Y2 F2 
+	movlpd xmm4, [esi + eax*8]	;# Y1 	
+	movlpd xmm3, [esi + ebx*8]	;# Y2 
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
+	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
+
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 Y2 
 	unpckhpd xmm5, xmm3	;# F1 F2 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
-	movupd xmm3, [esi + ebx*8 + 16]	;# G2 H2 
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1  	
+	movlpd xmm3, [esi + ebx*8 + 16]	;# G2 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 G2 
 	unpckhpd xmm7, xmm3	;# H1 H2 
@@ -45923,13 +46885,17 @@ _mcinl3330_sse2:
 	mov  esi, [ebp + mci3330_VFtab]
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1  
@@ -45951,13 +46917,17 @@ _mcinl3330_sse2:
     movlpd [esp + mci3330_vctot], xmm5
 
 	;# Dispersion 
-	movupd xmm4, [esi + eax*8 + 32]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8 + 32]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 40]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 48]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 48]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 56]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -45976,13 +46946,17 @@ _mcinl3330_sse2:
 	movlpd [esp + mci3330_vnbtot], xmm5
 
 	;# Repulsion 
-	movupd xmm4, [esi + eax*8 + 64]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8 + 64]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 72]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 80]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 80]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 88]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -46016,13 +46990,17 @@ _mcinl3330_sse2:
 	mov  esi, [ebp + mci3330_VFtab]
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1  
 	unpckhpd xmm5, xmm3	;# F1  
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -46057,13 +47035,17 @@ _mcinl3330_sse2:
 	mov  esi, [ebp + mci3330_VFtab]
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -46098,13 +47080,17 @@ _mcinl3330_sse2:
 	mov  esi, [ebp + mci3330_VFtab]
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -46138,13 +47124,17 @@ _mcinl3330_sse2:
 	mov  esi, [ebp + mci3330_VFtab]
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -46178,13 +47168,17 @@ _mcinl3330_sse2:
 	mov  esi, [ebp + mci3330_VFtab]
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -46218,13 +47212,17 @@ _mcinl3330_sse2:
 	mov  esi, [ebp + mci3330_VFtab]
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -46258,13 +47256,17 @@ _mcinl3330_sse2:
 	mov  esi, [ebp + mci3330_VFtab]
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
@@ -46298,13 +47300,17 @@ _mcinl3330_sse2:
 	mov  esi, [ebp + mci3330_VFtab]
 	lea   eax, [eax + eax*2]	;# idx*=3 (12 total now) 
 
-	movupd xmm4, [esi + eax*8]	;# Y1 F1 	
+	movlpd xmm4, [esi + eax*8]	;# Y1
+	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 
+
 	xorpd xmm3, xmm3
 	movapd xmm5, xmm4
 	unpcklpd xmm4, xmm3	;# Y1 
 	unpckhpd xmm5, xmm3	;# F1 
 
-	movupd xmm6, [esi + eax*8 + 16]	;# G1 H1 	
+	movlpd xmm6, [esi + eax*8 + 16]	;# G1 
+	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 
+
 	xorpd xmm3, xmm3
 	movapd xmm7, xmm6
 	unpcklpd xmm6, xmm3	;# G1 
