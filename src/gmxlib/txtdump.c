@@ -38,9 +38,8 @@
 #endif
 
 /* This file is completely threadsafe - please keep it that way! */
-#ifdef USE_THREADS
-#include <pthread.h>
-#endif
+#include <gmx_thread.h>
+
 
 #include <stdio.h>
 #include "smalloc.h"
