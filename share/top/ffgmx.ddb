@@ -49,16 +49,16 @@
 [ NR5* ]
  [ dummies ]
 ; atom  from              type  a         b
-  H     *     *     *     2    -0.63959  -0.63959
+  H     *     *     *     4     0.5      -0.1
 
 [ CR5 ]
  [ dummies ]
 ; atom  from              type  a         b
-  H     *     *     *     2    -0.79412  -0.79412
+  H     *     *     *     4     0.5      -0.1
 
 ; next is calc'ed for CR6-HCR: C-C=0.139, C-H=0.108 all angles 120
 ; this will be mostly correct for all others
 [ CR6 ]
  [ dummies ]
 ; atom  from              type  a         b
-  H     *     *     *     2    -0.77698  -0.77698
+  H     *     *     *     4     0.5      -0.1
