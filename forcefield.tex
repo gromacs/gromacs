@@ -1903,11 +1903,11 @@ virial can be derived analytically, if we assume a homogeneous
 system beyond the cut-off distance $r_c$. The dispersion energy
 between two particles is written as:
 \beq
-V(\rij)	~=~	- C_6 \rij^{-6}
+V(\rij)	~=~	- C_6\,\rij^{-6}
 \eeq
 and the corresponding force is
 \beq
-\Fvij	~=~	- 6\,C_6 \rij^{-8}\rvij
+\Fvij	~=~	- 6\,C_6\,\rij^{-8}\rvij
 \eeq
 In a periodic system it is not easy to calculate the full potentials,
 so usually a cut-off is applied, which can be abrupt or smooth.
@@ -1915,25 +1915,37 @@ We will call the potential and force with cut-off $V_c$ and $\ve{F}_c$.
 The long-range contribution to the dispersion energy
 in a system with $N$ particles and particle density $\rho$ = $N/V$ is:
 \beq
+\label{eqn:enercorr}
 V_{lr}  ~=~ \half N \rho\int_0^{\infty}   4\pi r^2 g(r) \left( V(r) -V_c(r) \right) {\dr}
 \eeq
-which we can integrate assuming that the radial distribution function $g(r)$ 
-is 1 beyond the cut-off:
-\beq
-V_{lr}  ~=~ \half N \rho\int_0^{\infty}   4\pi r^2 \left( V(r) -V_c(r) \right) {\dr}
-\eeq
-For a shifted function we need to start the integration at 0.
-This introduces a (relatively small) error,
-because at short range $g(r)$ is not 1.
-
-For a plain cut-off at $r_c$ the integration can be performed analytically~\cite{Allen87}:
+We will integrate this for the shift function, which is the most general
+form of Van der Waals interaction available in Gromacs.
+The shift function has a constant difference $S$ from 0 to $r_1$
+and is 0 beyond the cut-off distance $r_c$.
+We can integrate \eqnref{enercorr} assuming that the density in the sphere
+within $r_1$ is equal to the global density and
+the radial distribution function $g(r)$ is 1 beyond $r_1$:
 \bea
-V_{lr} & = & \half N \rho\int_{r_c}^{\infty}   4\pi r^2 C_6 r^{-6} {\dr} \\
-       & = & -\frac{2}{3} \pi N \rho\, C_6 r_c^{-3}
+\nonumber
+V_{lr}  &=& \half N \left(
+  \rho\int_0^{r_1}  4\pi r^2 g(r) \, C_6 \,S\,{\dr}
++ \rho\int_{r_1}^{r_c}  4\pi r^2 \left( V(r) -V_c(r) \right) {\dr}
++ \rho\int_{r_c}^{\infty}  4\pi r^2 V(r) \, {\dr}
+\right) \\
+& = & \half N \left(\left(\frac{4}{3}\pi \rho r_1^{3} - 1\right) C_6 \,S
++ \rho\int_{r_1}^{r_c} 4\pi r^2 \left( V(r) -V_c(r) \right) {\dr}
+-\frac{4}{3} \pi N \rho\, C_6\,r_c^{-3}
+\right)
+\eea
+where the term $-1$ corrects for the self-interaction.
+For a plain cut-off we only need to assume that $g(r)$ is 1 beyond $r_c$
+and the correction reduces to~\cite{Allen87}:
+\bea
+V_{lr} & = & -\frac{2}{3} \pi N \rho\, C_6\,r_c^{-3}
 \eea
 If we consider for example a box of pure water, simulated with a cut-off
 of 0.9 nm and a density of 1 g cm$^{-3}$ this correction is 
--0.25 kJ mol$^{-1}$.
+-0.75 kJ mol$^{-1}$ per molecule.
 
 For a homogeneous mixture we need to define 
 an {\em average dispersion constant}:
@@ -1951,7 +1963,7 @@ $\avcsix$ for both components is comparable.
 The scalar virial of the system due to the dispersion interaction between
 two particles $i$ and $j$ is given by:
 \beq
-\Xi	~=~	-\half \rvij \cdot \Fvij ~=~	3\,C_6 \rij^{-6}
+\Xi	~=~	-\half \rvij \cdot \Fvij ~=~	3\,C_6\,\rij^{-6}
 \eeq
 The pressure is given by:
 \beq
@@ -1959,22 +1971,27 @@ P	~=~	\frac{2}{3\,V}\left(E_{kin} - \Xi\right)
 \eeq
 The long-range correction to the virial is given by:
 \beq
-\Xi_{lr} ~=~ \half N \rho \int_0^{\infty} 4\pi r^2 \, (\Xi -\Xi_c) \dr
+\Xi_{lr} ~=~ \half N \rho \int_0^{\infty} 4\pi r^2 g(r) (\Xi -\Xi_c) \,\dr
 \eeq
 We can again integrate the long range contribution to the 
-virial for a plain cut-off~\cite{Allen87}:
+virial assuming $g(r)$ is 1 beyond $r_1$:
 \bea
-\Xi_{lr}&=&	\half N \rho \int_{r_c}^{\infty} 4\pi r^2 3\,C_6 \rij^{-6}\,  \dr	\nonumber\\
-	&=&	6 \pi N \rho\,C_6  \int_{r_c}^{\infty} \rij^{-4}\dr \nonumber\\
-	&=&	2 \pi N C_6 \rho r_c^{-3}
+\Xi_{lr}&=&	\half N \rho \left(
+    \int_{r_1}^{r_c}  4 \pi r^2 (\Xi -\Xi_c)  \,\dr
+  + \int_{r_c}^{\infty} 4 \pi r^2 3\,C_6\,\rij^{-6}\,  \dr
+\right)	\nonumber\\
+        &=&     \half N \rho \left(
+    \int_{r_1}^{r_c} 4 \pi r^2 (\Xi -\Xi_c) \, \dr
+  + 4 \pi C_6 \, r_c^{-3} \right)
 \eea
-The corresponding correction to the pressure is
+For a plain cut-off the correction to the pressure is~\cite{Allen87}:
 \beq
-P_{lr}	~=~	-\frac{4}{3} \pi C_6 \rho^2 r_c^{-3}
+P_{lr}	~=~	-\frac{4}{3} \pi C_6\, \rho^2 r_c^{-3}
 \eeq
 Using the same example of a water box, the correction to the virial is
-3 kJ mol$^{-1}$ the corresponding correction to the pressure for 
-SPC water at liquid density is approx. -280 bar.
+0.75 kJ mol$^{-1}$ per molecule,
+the corresponding correction to the pressure for 
+SPC water is approximately -280 bar.
 
 For homogeneous mixtures we can again use the average dispersion constant
 $\avcsix$ (\eqnref{avcsix}):
