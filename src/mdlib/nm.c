@@ -58,13 +58,11 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   bool       bNS,bStopCM,bTYZ,bLR,bLJLR,bBHAM,b14,bBox;
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
-  char       *mtx,*enerfile,wfile[80];
   int        i,m;
   rvec       vcm;
   rvec       *xx,*vv,*ff;
   
   /* added with respect to mdrun */
-
   int        idum,jdum,kdum;
   real       der_range=1.0e-6,fmax;
   rvec       *dfdx;
@@ -94,13 +92,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     shift_self(graph,fr->shift_vec,x);
   }
 
-  mtx=ftp2fn(efMTX,nfile,fnm);
- 
-  /* Open the enrgy file */   
-  if (MASTER(cr)) 
-    fp_ene=open_enx(ftp2fn(efENX,nfile,fnm),"w"); 
-  else 
-    fp_ene=-1;
+  fp_ene=-1;
   set_pot_bools(&(parm->ir),top,&bLR,&bLJLR,&bBHAM,&b14);
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),bLR,bLJLR,
 		     bBHAM,b14,parm->ir.efep!=efepNO,parm->ir.epc,
@@ -178,24 +170,24 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       if (bBox)
 	/* Shift back the coordinates, since we're not calling update */
 	unshift_self(graph,fr->shift_vec,x);
-
+      
       for (jdum=0; (jdum<top->atoms.nr); jdum++) {
 	for (kdum=0; (kdum<DIM); kdum++) {
 	  dfdx[jdum][kdum]=f[jdum][kdum];  
 	}
       }
-
+      
       x[step][idum]=x[step][idum]+2.0*der_range;
-
+      
       clear_mat(force_vir);
-
+      
       do_force(log,cr,parm,nsb,force_vir,2*(step*DIM+idum)+1,&mynrnb,
 	       top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
 	       lambda,graph,bNS,FALSE,fr);
       if (bBox)
 	/* Shift back the coordinates, since we're not calling update */
 	unshift_self(graph,fr->shift_vec,x);
-
+      
       for (jdum=0; (jdum<top->atoms.nr); jdum++) {
 	for (kdum=0; (kdum<DIM); kdum++) {
 	  dfdx[jdum][kdum]=(f[jdum][kdum]-dfdx[jdum][kdum])/2.0e-6;
@@ -203,15 +195,13 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       }
 
       /* store derivatives now, diagonalization later */
-
       xx=dfdx;
-      write_traj(log,cr,mtx,
+      write_traj(log,cr,ftp2fn(efMTX,nfile,fnm),
 		 nsb,step,t,lambda,nrnb,nsb->natoms,xx,vv,ff,parm->box);
 
       /* x is restored to original */
-
       x[step][idum]=x[step][idum]-der_range;
-
+      
       if (bVerbose)
 	fflush(log);
       
