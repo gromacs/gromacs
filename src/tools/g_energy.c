@@ -274,7 +274,7 @@ static void einstein_visco(char *fn,char *fni,int nsets,int nframes,real **sum,
     fprintf(fp0,"\n");
     fprintf(fp1,"%10g",0.5*(time[i]+time[i-1])-time[0]);
     for(m=0; (m<=nsets); m++) {
-      fprintf(fp1,"  %10g",av[m]-avold[m]/dt);
+      fprintf(fp1,"  %10g",(av[m]-avold[m])/dt);
       avold[m] = av[m];
     }
     fprintf(fp1,"\n");
