@@ -157,7 +157,7 @@ int main(int argc,char *argv[])
   };
   static real      width=0.12;
   t_pargs pa[] = {
-    { "-width", FALSE, etREAL, &width, "bin width for radial axis" }
+    { "-width", FALSE, etREAL, {&width}, "bin width for radial axis" }
   };
   
   char      *grp1,**grpname;                /* groupnames                 */

@@ -223,13 +223,13 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
 		    int *eignr,rvec **eigvec,
 		    int noutvec,int *outvec)
 {
-  FILE    *xvgrout;
-  int     status,out,nat,i,j,d,v,vec,nfr,nframes,snew_size,frame;
+  FILE    *xvgrout=NULL;
+  int     status,out=0,nat,i,j,d,v,vec,nfr,nframes=0,snew_size,frame;
   int     noutvec_extr,*imin,*imax;
   atom_id *all_at;
   matrix  box;
   rvec    *xread,*x;
-  real    t,inp,**inprod,min,max;
+  real    t,inp,**inprod=NULL,min=0,max=0;
   char    str[STRLEN],str2[STRLEN],**ylabel,*c;
   
   snew(x,natoms);
@@ -498,15 +498,15 @@ int main(int argc,char *argv[])
   static int  first=1,last=8,skip=1,nextr=2;
   static real max=0.0;
   t_pargs pa[] = {
-    { "-first", FALSE, etINT, &first,     
+    { "-first", FALSE, etINT, {&first},     
       "First eigenvector for analysis (-1 is select)" },
-    { "-last",  FALSE, etINT, &last, 
+    { "-last",  FALSE, etINT, {&last}, 
       "Last eigenvector for analysis (-1 is till the last)" },
-     { "-skip",  FALSE, etINT, &skip,
+     { "-skip",  FALSE, etINT, {&skip},
       "Only analyse every nr-th frame" },
-    { "-max",  FALSE, etREAL, &max, 
+    { "-max",  FALSE, etREAL, {&max}, 
       "Maximum for projection of the eigenvector on the average structure, max=0 gives the extremes" },
-    { "-nframes",  FALSE, etINT, &nextr, 
+    { "-nframes",  FALSE, etINT, {&nextr}, 
       "Number of frames for the extremes output" }
   };
 #define NPA asize(pa)
@@ -514,7 +514,7 @@ int main(int argc,char *argv[])
   FILE       *out;
   int        status,trjout;
   t_topology top;
-  t_atoms    *atoms;
+  t_atoms    *atoms=NULL;
   rvec       *xtop,*xref1,*xref2;
   bool       bDMR1,bDMA1,bDMR2,bDMA2;
   int        nvec1,nvec2,*eignr1=NULL,*eignr2=NULL;

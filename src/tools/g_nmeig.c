@@ -63,11 +63,11 @@ int main(int argc,char *argv[])
   static bool bM=TRUE;
   static int  begin=1,end=100;
   t_pargs pa[] = {
-    { "-m",  FALSE, etBOOL, &bM,
+    { "-m",  FALSE, etBOOL, {&bM},
       "Divide elements of Hessian by product of sqrt(mass) of involved atoms prior to diagonalization. This should be used for 'Normal Modes' analyses" },
-    { "-first", FALSE, etINT, &begin,     
+    { "-first", FALSE, etINT, {&begin},     
       "First eigenvector to write away" },
-    { "-last",  FALSE, etINT, &end, 
+    { "-last",  FALSE, etINT, {&end}, 
       "Last eigenvector to write away" }
   };
   FILE       *out;

@@ -173,20 +173,20 @@ int main(int argc,char *argv[])
   
   static real t0=-1, timestep=-1, delta_t=0.0, toffset=0;
   t_pargs pa[] = {
-    { "-dt",       FALSE,  etREAL, &delta_t,
+    { "-dt",       FALSE,  etREAL, {&delta_t},
       "only write out frame when t MOD delta_t = offset" },
-    { "-offset",   FALSE, etREAL, &toffset,
+    { "-offset",   FALSE, etREAL, {&toffset},
       "time offset for -dt option" },
-    { "-t0",       FALSE, etREAL, &t0, 
+    { "-t0",       FALSE, etREAL, {&t0}, 
       "change starting time" },
-    { "-timestep", FALSE, etREAL, &timestep, 
+    { "-timestep", FALSE, etREAL, {&timestep}, 
       "change timestep between frames" }
   };
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
-  
+  tstart=0;
   snew(fnms,argc-1);
   nfile=0;
   bSetTime=FALSE;

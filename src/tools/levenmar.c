@@ -224,7 +224,7 @@ void free_convert_matrix(real **b, int nrl, int nrh, int ncl, int nch)
 void gaussj(real **a, int n, real **b, int m)
 {
   int *indxc,*indxr,*ipiv;
-  int i,icol,irow,j,k,l,ll;
+  int i,icol=0,irow=0,j,k,l,ll;
   real big,dum,pivinv;
   
   indxc=ivector(1,n);

@@ -749,29 +749,29 @@ int main(int argc,char *argv[])
   static char *maxchistr[] = { NULL, "0", "1", "2", "3",  "4", "5", "6", NULL };
   static bool bRama=FALSE,bShift=FALSE,bViol=FALSE,bRamOmega=FALSE;
   t_pargs pa[] = {
-    { "-r0",  FALSE, etINT, &r0,
+    { "-r0",  FALSE, etINT, {&r0},
       "starting residue" },
-    { "-phi",  FALSE, etBOOL, &bPhi,
+    { "-phi",  FALSE, etBOOL, {&bPhi},
       "Output for Phi dihedral angles" },
-    { "-psi",  FALSE, etBOOL, &bPsi,
+    { "-psi",  FALSE, etBOOL, {&bPsi},
       "Output for Psi dihedral angles" },
-    { "-omega",FALSE, etBOOL, &bOmega,  
+    { "-omega",FALSE, etBOOL, {&bOmega},  
       "Output for Omega dihedrals (peptide bonds)" },
-    { "-rama", FALSE, etBOOL, &bRama,
+    { "-rama", FALSE, etBOOL, {&bRama},
       "Generate Phi/Psi and Chi1/Chi2 ramachandran plots" },
-    { "-viol", FALSE, etBOOL, &bViol,
+    { "-viol", FALSE, etBOOL, {&bViol},
       "Write a file that gives 0 or 1 for violated Ramachandran angles" },
-    { "-all",  FALSE, etBOOL, &bAll,
+    { "-all",  FALSE, etBOOL, {&bAll},
       "Output separate files for every dihedral." },
-    { "-shift", FALSE, etBOOL, &bShift,
+    { "-shift", FALSE, etBOOL, {&bShift},
 	"Compute chemical shifts from Phi/Psi angles" },
-    { "-run", FALSE, etINT, &ndeg,
+    { "-run", FALSE, etINT, {&ndeg},
       "perform running average over ndeg degrees for histograms" },
-    { "-maxchi", FALSE, etENUM, maxchistr,
+    { "-maxchi", FALSE, etENUM, {maxchistr},
       "calculate first ndih Chi dihedrals" },
-    { "-ramomega",FALSE,etBOOL, &bRamOmega,
+    { "-ramomega",FALSE,etBOOL, {&bRamOmega},
       "compute average omega as a function of phi/psi and plot it in an xpm plot" },
-    { "-bfact", FALSE, etREAL, &bfac_init,
+    { "-bfact", FALSE, etREAL, {&bfac_init},
       "bfactor value for pdb file for atoms with no calculated dihedral order parameter"}
   };
 
@@ -782,7 +782,7 @@ int main(int argc,char *argv[])
   t_dlist    *dlist;
   char       **aa;
   bool       bChi,bCorr;
-  real       dt;
+  real       dt=0;
 
   atom_id    isize,*index;
   int        ndih,nf;

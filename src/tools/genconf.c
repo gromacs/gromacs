@@ -139,11 +139,11 @@ int main(int argc, char *argv[])
   static rvec max_rot={90,90,90}; /* maximum rotation */
 /*  static rvec max_tr={0,0,0}; */    /* maximum translation */
   t_pargs pa[] = {
-    { "-nbox",  FALSE, etRVEC, &nrbox,  "Number of boxes" },
-    { "-dist",  FALSE, etRVEC, &dist,   "Distance between boxes" },
-    { "-seed",  FALSE, etINT,  &seed,   "Random generator seed" },
-    { "-rot",   FALSE, etBOOL, &bRandom,"Randomly rotate conformations" },
-    { "-maxrot",FALSE, etRVEC, &max_rot,"Maximum random rotation" },
+    { "-nbox",  FALSE, etRVEC, {&nrbox},  "Number of boxes" },
+    { "-dist",  FALSE, etRVEC, {&dist},   "Distance between boxes" },
+    { "-seed",  FALSE, etINT,  {&seed},   "Random generator seed" },
+    { "-rot",   FALSE, etBOOL, {&bRandom},"Randomly rotate conformations" },
+    { "-maxrot",FALSE, etRVEC, {&max_rot},"Maximum random rotation" },
     /*
     { "-maxtrans",FALSE, etRVEC, &max_tr),  "Max translation" },
     */

@@ -169,9 +169,9 @@ int main (int argc,char *argv[])
   };
   static bool bAverX=FALSE,bAniso=FALSE;
   t_pargs pargs[] = { 
-    { "-aver", FALSE, etBOOL, &bAverX,
+    { "-aver", FALSE, etBOOL, {&bAverX},
       "Calculate average coordinates first. Requires reading the coordinates twice" },
-    { "-aniso",FALSE, etBOOL, &bAniso,
+    { "-aniso",FALSE, etBOOL, {&bAniso},
       "Compute anisotropic termperature factors" }
   };
   int          step,nre,natom,natoms,i,g,m,teller=0;
@@ -198,7 +198,7 @@ int main (int argc,char *argv[])
   char         *grpnames;
 
   real         bfac,pdb_bfac;
-  matrix       *U;
+  matrix       *U=NULL;
   atom_id      aid;
   rvec         *rmsf_xx,*rmsf_x,tmp;
   real         *rmsf;

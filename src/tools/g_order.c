@@ -97,7 +97,7 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
     z_ave,z1,z2;     /* average z, used to det. which slice atom is in */
   int natoms,        /* nr. atoms in trj                         */
     nr_tails,        /* nr tails, just to check if index file is correct */
-    size,            /* nr. of atoms in group. same as nr_tails, normally */  
+    size=0,          /* nr. of atoms in group. same as nr_tails, normally */  
     i,j,m,k,l,teller = 0,
     slice,           /* current slice number                     */
     nr_frames = 0,
@@ -317,7 +317,7 @@ void order_plot(rvec order[], real *slOrder[], char *afile, char *bfile,
   }
 }
 
-void main(int argc,char *argv[])
+int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "Compute the order parameter per atom for carbon tails. For atom i the",
@@ -337,14 +337,14 @@ void main(int argc,char *argv[])
   static bool bSzonly = FALSE;                /* True if only Sz is wanted  */
   static bool bUnsat = FALSE;                 /* True if carbons are unsat. */
   t_pargs pa[] = {
-    { "-d",      FALSE, etSTR, &axtitle, 
+    { "-d",      FALSE, etSTR, {&axtitle}, 
       "Take the normal on the membrane in direction X, Y or Z." },
-    { "-sl",     FALSE, etINT, &nslices,
+    { "-sl",     FALSE, etINT, {&nslices},
       "Calculate order parameter as function of boxlength, dividing the box"
       " in #nr slices." },
-    { "-szonly", FALSE, etBOOL,&bSzonly,
+    { "-szonly", FALSE, etBOOL,{&bSzonly},
       "Only give Sz element of order tensor. (axis can be specified with -d)" },
-    { "-unsat",  FALSE, etBOOL,&bUnsat,
+    { "-unsat",  FALSE, etBOOL,{&bUnsat},
       "Calculate order parameters for unsaturated carbons. Note that this can"
       "not be mixed with normal order parameters." }
   };
@@ -434,4 +434,5 @@ order[4]); */
   xvgr_file(opt2fn("-od",NFILE,fnm), NULL);     /* view xvgr file */
 
   thanx(stdout);
+  return 0;
 }

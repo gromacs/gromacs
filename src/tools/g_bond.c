@@ -49,10 +49,10 @@ void do_bonds(FILE *log,char *fn,char *outf,int gnx,atom_id index[],
 {
 #define MAXTAB 1000
   FILE   *out;
-  int    *btab;
+  int    *btab=NULL;
   real   b0=0,b1,db=0;
   real   bond;
-  t_lsq  b_one,*b_all;
+  t_lsq  b_one,*b_all=NULL;
   /*real   mean, mean2, sqrdev2, sigma2; 
     int    counter;*/
   rvec   *x;
@@ -176,11 +176,11 @@ int main(int argc,char *argv[])
   static real blen=-1.0,tol=0.1;
   static bool bAver=TRUE;
   t_pargs pa[] = {
-    { "-blen", FALSE, etREAL, &blen, 
+    { "-blen", FALSE, etREAL, {&blen}, 
       "Bond length. By default length of first bond" },
-    { "-tol",  FALSE, etREAL, &tol, 
+    { "-tol",  FALSE, etREAL, {&tol}, 
       "Half width of distribution as fraction of blen" },
-    { "-aver", FALSE, etBOOL, &bAver,
+    { "-aver", FALSE, etBOOL, {&bAver},
       "Sum up distributions" }
   };
   FILE      *fp;

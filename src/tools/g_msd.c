@@ -577,17 +577,17 @@ int main(int argc,char *argv[])
   static real dt         = 0; 
   static bool bMW        = TRUE;
   t_pargs pa[] = {
-    { "-type",    FALSE, etENUM, normtype,
+    { "-type",    FALSE, etENUM, {normtype},
       "Compute diffusion coefficient in one direction" },
-    { "-lateral", FALSE, etENUM, axtitle, 
+    { "-lateral", FALSE, etENUM, {axtitle}, 
       "Calculate the lateral diffusion in a plane perpendicular to" },
-    { "-ngroup",  FALSE, etINT,  &ngroup,
+    { "-ngroup",  FALSE, etINT,  {&ngroup},
       "Number of groups to calculate MSD for" },
-    { "-mw",      FALSE, etBOOL, &bMW,
+    { "-mw",      FALSE, etBOOL, {&bMW},
       "Mass weighted MSD" },
-    { "-nrestart",FALSE, etINT,  &nrestart,
+    { "-nrestart",FALSE, etINT,  {&nrestart},
       "Number of restarting points in trajectory" },
-    { "-dt",      FALSE, etREAL, &dt,
+    { "-dt",      FALSE, etREAL, {&dt},
       "Time between restarting points in trajectory (only with -nrestart > 1)" }
   };
   static char *bugs[] = {

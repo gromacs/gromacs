@@ -70,11 +70,11 @@ int main(int argc,char *argv[])
   static bool bFit=TRUE,bM=FALSE;
   static int  end=-1;
   t_pargs pa[] = {
-    { "-fit",  FALSE, etBOOL, &bFit,
+    { "-fit",  FALSE, etBOOL, {&bFit},
       "Fit to a reference structure"},
-    { "-mwa",  FALSE, etBOOL, &bM,
+    { "-mwa",  FALSE, etBOOL, {&bM},
       "Mass-weighted covariance analysis"},
-    { "-last",  FALSE, etINT, &end, 
+    { "-last",  FALSE, etINT, {&end}, 
       "Last eigenvector to write away (-1 is till the last)" }
   };
   FILE       *out;
@@ -84,7 +84,7 @@ int main(int argc,char *argv[])
   rvec       *x,*xread,*xref,*xav;
   matrix     box,zerobox;
   real       t,*mat,dev,trace,sum,*eigval,inv_nframes;
-  real       xj,*sqrtm,*w_rls;
+  real       xj,*sqrtm,*w_rls=NULL;
   int        ntopatoms,step;
   int        natoms,nat,ndim,count,nframes;
   int        WriteXref;
@@ -275,12 +275,12 @@ int main(int argc,char *argv[])
   }
   fclose(out);  
 
-  if (end==-1)
+  if (end==-1) {
     if (nframes-1 < ndim)
       end=nframes-1;
     else
       end=ndim;
-
+  }
   if (bFit) {
     /* misuse lambda: 0/1 mass weighted analysis no/yes */
     if (nfit==natoms) {

@@ -1,3 +1,4 @@
+
 /*
  *       $Id$
  *
@@ -77,35 +78,35 @@ int main (int argc,char *argv[])
               bond_user_max=-1,bond_user_min=-1,
               delta_maxy=0.0;
   t_pargs pa[] = {
-    { "-pbc", FALSE, etBOOL, &bPBC,
+    { "-pbc", FALSE, etBOOL, {&bPBC},
       "PBC check" },
-    { "-fit",FALSE, etBOOL, &bFit,
+    { "-fit",FALSE, etBOOL, {&bFit},
       "Fit to reference structure" },
-    { "-ns", FALSE, etBOOL, &bNano  ,
+    { "-ns", FALSE, etBOOL, {&bNano}  ,
       "ns on axis instead of ps"},
-    { "-prev", FALSE, etINT, &prev,
+    { "-prev", FALSE, etINT, {&prev},
       "Calculate rmsd with previous frame" },
-    { "-fitall",FALSE,etBOOL,&bFitAll,
+    { "-fitall",FALSE,etBOOL,{&bFitAll},
       "Fit all pairs of structures in matrix" },
-    { "-skip", FALSE, etINT, &freq,
+    { "-skip", FALSE, etINT, {&freq},
       "Only write every nr-th frame to matrix" },
-    { "-skip2", FALSE, etINT, &freq2,
+    { "-skip2", FALSE, etINT, {&freq2},
       "Only write every nr-th frame to matrix" },
-    { "-max", FALSE, etREAL, &rmsd_user_max,
+    { "-max", FALSE, etREAL, {&rmsd_user_max},
       "Maximum level in RMSD matrix" },
-    { "-min", FALSE, etREAL, &rmsd_user_min,
+    { "-min", FALSE, etREAL, {&rmsd_user_min},
       "Minimum level in RMSD matrix" },
-    { "-bmax", FALSE, etREAL, &bond_user_max,
+    { "-bmax", FALSE, etREAL, {&bond_user_max},
       "Maximum level in bond angle matrix" },
-    { "-bmin", FALSE, etREAL, &bond_user_min,
+    { "-bmin", FALSE, etREAL, {&bond_user_min},
       "Minimum level in bond angle matrix" },
-    { "-nlevels", FALSE, etINT, &nlevels,
+    { "-nlevels", FALSE, etINT, {&nlevels},
       "Number of levels in the matrices" },
-    { "-dlog", FALSE, etBOOL, &bDeltaLog,
+    { "-dlog", FALSE, etBOOL, {&bDeltaLog},
       "HIDDENUse a log x-axis in the delta t matrix"},
-    { "-dmax", FALSE, etREAL, &delta_maxy,
+    { "-dmax", FALSE, etREAL, {&delta_maxy},
       "HIDDENMaximum rmsd in delta matrix" },
-    { "-aver", FALSE, etINT, &avl,
+    { "-aver", FALSE, etINT, {&avl},
       "HIDDENAverage over this distance in the RMSD matrix" }
   };
   int          step,nre,natoms,natoms2;
@@ -116,23 +117,25 @@ int main (int argc,char *argv[])
   bool         bTruncOct,bNorm,bAv,bFreq2,bFile2,bMat,bBond,bDelta;
   
   t_topology   top;
-  t_iatom     *iatom;
+  t_iatom     *iatom=NULL;
 
   matrix       box;
-  rvec         *x,*xp,**mat_x,**mat_x2,*mat_x2_j,**mat_b,**mat_b2,vec;
+  rvec         *x,*xp,**mat_x=NULL,**mat_x2,*mat_x2_j=NULL,**mat_b=NULL,
+               **mat_b2=NULL,vec;
   int          status;
   char         buf[256],tstr[12];
   
-  int          nrms,ncons;
+  int          nrms,ncons=0;
   FILE         *fp;
-  real         rlstot,**rls,*time,*time2,*rlsnorm,**rmsd_mat,**bond_mat,
+  real         rlstot=0,**rls,*time,*time2,*rlsnorm=NULL,**rmsd_mat=NULL,
+               **bond_mat=NULL,
                *axis,*axis2,*del_xaxis,*del_yaxis,
                rmsd_max,rmsd_min,bond_max,bond_min,ang,ipr;
-  real         **rmsdav_mat,av_tot,weight,weight_tot;
-  real         **delta,delta_max,delta_scalex,delta_scaley,*delta_tot;
-  int          delta_xsize,del_lev=100,mx,my,abs_my;
+  real         **rmsdav_mat=NULL,av_tot,weight,weight_tot;
+  real         **delta=NULL,delta_max,delta_scalex=0,delta_scaley=0,*delta_tot;
+  int          delta_xsize=0,del_lev=100,mx,my,abs_my;
   bool         bA1,bA2,bPrev,bTop;
-  int          ifit,*irms,ibond,*ind_bond;
+  int          ifit,*irms,ibond=0,*ind_bond=NULL;
   atom_id      *ind_fit,**ind_rms,*all_at;
   char         *gn_fit,**gn_rms,*bigbuf;
   t_rgb        rlo,rhi;

@@ -220,7 +220,7 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,
   int  i,j,nfitpnts;
   real integral,fittedfunc;
   real *parm,*dparm;
-  real AA,tau1,tau2,srAA,srtau1,srtau2;  
+  real AA=0,tau1=0,tau2=0,srAA=0,srtau1,srtau2=0;  
   real *x,*y,*dy;
   real ftol = 1e-4;
 

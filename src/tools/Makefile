@@ -222,7 +222,7 @@ g_msd:		g_msd.o	lsq.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_hbond:	g_hbond.o	$(ACOBJ)
-		$(LD) -g -o $@ $^ $(SYSLIBS)
+		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_enemat:	g_enemat.o
 		$(LD) -o $@ $^ $(SYSLIBS)

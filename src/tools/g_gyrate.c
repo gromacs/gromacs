@@ -94,9 +94,9 @@ int main(int argc,char *argv[])
   };
   static bool bQ=FALSE,bRot=FALSE;
   t_pargs pa[] = {
-    { "-q", FALSE, etBOOL, &bQ,
+    { "-q", FALSE, etBOOL, {&bQ},
       "Use absolute value of the charge of an atom as weighting factor instead of mass" },
-    { "-p", FALSE, etBOOL, &bRot,
+    { "-p", FALSE, etBOOL, {&bRot},
       "Calculate the radii of gyration about the principal axes." }
   };
   FILE       *out;

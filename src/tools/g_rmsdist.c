@@ -158,7 +158,7 @@ real rms_diff(int isize,real **d,real **d_r)
   return sqrt(r2);
 }
 
-void main (int argc,char *argv[])
+int main (int argc,char *argv[])
 {
   static char *desc[] = {
     "g_rmsdist computes the root mean square deviation of atom distances,",
@@ -185,7 +185,7 @@ void main (int argc,char *argv[])
   atom_id  *index;
   char     *grpname;
   real     **d_r,**d,**dtot,**dtot2,**mean,**rms,**rmsc,*resnr;
-  real     **dtot1_3,**dtot1_6;
+  real     **dtot1_3=NULL,**dtot1_6=NULL;
   real     rmsnow,meanmax,rmsmax,rmscmax;
   real     max1_3,max1_6;
   t_rgb    rlo,rhi;
@@ -195,9 +195,9 @@ void main (int argc,char *argv[])
   static int  nlevels=40;
   static real scalemax=-1.0;
   t_pargs pa[] = {
-    { "-nlevels",   FALSE, etINT,  &nlevels,
+    { "-nlevels",   FALSE, etINT,  {&nlevels},
       "Discretize rms in # levels" },
-    { "-max",   FALSE, etREAL, &scalemax,
+    { "-max",   FALSE, etREAL, {&scalemax},
       "Maximum level in matrices" }
   };
   t_filenm fnm[] = {
@@ -326,4 +326,5 @@ void main (int argc,char *argv[])
   xvgr_file(ftp2fn(efXVG,NFILE,fnm),NULL);
  
   thanx(stdout);
+  return 0;
 }

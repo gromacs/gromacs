@@ -62,11 +62,11 @@ int main(int argc,char *argv[])
   static bool bCM=FALSE;
   static real cutoff=0, binwidth=0.005;
   t_pargs pa[] = {
-    { "-bin",      FALSE, etREAL, &binwidth,
+    { "-bin",      FALSE, etREAL, {&binwidth},
       "Binwidth (nm)" },
-    { "-com",      FALSE, etBOOL, &bCM,
+    { "-com",      FALSE, etBOOL, {&bCM},
       "RDF with respect to the center of mass of first group" },
-    { "-cut",      FALSE, etREAL, &cutoff,
+    { "-cut",      FALSE, etREAL, {&cutoff},
       "Shortest distance (nm) to be considered"},
   };
 #define NPA asize(pa)

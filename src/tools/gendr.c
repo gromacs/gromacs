@@ -225,7 +225,7 @@ int main (int argc,char *argv[])
   
   static int r0=1;
   t_pargs pa[] = {
-    { "-r", FALSE, etINT, &r0, "starting residue number" }
+    { "-r", FALSE, etINT, {&r0}, "starting residue number" }
   };
 
   FILE        *in,*out;

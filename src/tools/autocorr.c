@@ -200,7 +200,7 @@ void correl(fftreal data1[],fftreal data2[],int n,fftreal ans[])
 static void low_do_four_core(int nfour,int nframes,real c1[],fftreal cfour[],
 			     int nCos,bool bPadding)
 {
-  int  i;
+  int  i=0;
   fftreal aver,*ans;
 
   aver = 0.0;
@@ -733,21 +733,21 @@ static char *Nparm[] = { NULL, "1", "2", NULL };
 t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
 {
   t_pargs acfpa[] = {
-    { "-acflen",     FALSE, etINT,  &acf.nout,
+    { "-acflen",     FALSE, etINT,  {&acf.nout},
       "Length of the ACF, default is half the number of frames" },
-    { "-normalize",FALSE, etBOOL, &acf.bNormalize,
+    { "-normalize",FALSE, etBOOL, {&acf.bNormalize},
       "Normalize ACF" },
-    { "-fft",      FALSE, etBOOL, &acf.bFour,
+    { "-fft",      FALSE, etBOOL, {&acf.bFour},
       "HIDDENUse fast fourier transform for correlation function" },
-    { "-nrestart", FALSE, etINT,  &acf.nrestart,
+    { "-nrestart", FALSE, etINT,  {&acf.nrestart},
       "HIDDENNumber of frames between time origins for ACF when no FFT is used" },
-    { "-P",        FALSE, etENUM, Leg,
+    { "-P",        FALSE, etENUM, {Leg},
       "Order of Legendre polynomial for ACF (0 indicates none)" },
-    { "-nparm",    FALSE, etENUM, Nparm,
+    { "-nparm",    FALSE, etENUM, {Nparm},
       "Number of parameters in exponential fit" },
-    { "-beginfit", FALSE, etREAL, &acf.tbeginfit,
+    { "-beginfit", FALSE, etREAL, {&acf.tbeginfit},
       "Time where to begin the exponential fit of the correlation function" },
-    { "-endfit",   FALSE, etREAL, &acf.tendfit,
+    { "-endfit",   FALSE, etREAL, {&acf.tendfit},
       "Time where to end the exponential fit of the correlation function" },
    };
 #define NPA asize(acfpa)

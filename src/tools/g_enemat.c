@@ -86,24 +86,24 @@ int main(int argc,char *argv[])
   static bool bCoul=TRUE,bCoulLR=FALSE,bCoul14=FALSE;
   static bool bLJ=TRUE,bLJ14=FALSE,bBham=FALSE,bFree=TRUE;
   t_pargs pa[] = {
-    { "-sum",  FALSE, etBOOL, &bSum,
+    { "-sum",  FALSE, etBOOL, {&bSum},
       "Sum the energy terms selected rather than display them all" },
-    { "-skip", FALSE, etINT,  &skip,
+    { "-skip", FALSE, etINT,  {&skip},
       "Skip number of frames between data points" },
-    { "-mean", FALSE, etBOOL, &bMeanEmtx,
+    { "-mean", FALSE, etBOOL, {&bMeanEmtx},
       "with -groups calculates matrix of mean energies in stead of "
       "matrix for each timestep" },
-    { "-nlevels", FALSE, etINT, &nlevels,"number of levels for matrix colors"},
-    { "-max",FALSE, etREAL, &cutmax,"max value for energies"},
-    { "-min",FALSE, etREAL, &cutmin,"min value for energies"},
-    { "-coul", FALSE, etBOOL, &bCoul,"calculate Coulomb SR energies"},
-    { "-coulr", FALSE, etBOOL, &bCoulLR,"calculate Coulomb LR energies"},
-    { "-coul14",FALSE, etBOOL, &bCoul14,"calculate Coulomb 1-4 energies"},
-    { "-lj", FALSE, etBOOL, &bLJ,"calculate Lennard-Jones SR energies"},
-    { "-lj14",FALSE, etBOOL, &bLJ14,"calculate Lennard-Jones 1-4 energies"},
-    { "-bham",FALSE, etBOOL, &bBham,"calculate Buckingham energies"},
-    { "-free",FALSE, etBOOL, &bFree,"calculate free energy"},
-    { "-temp",FALSE, etREAL, &reftemp,
+    { "-nlevels", FALSE, etINT, {&nlevels},"number of levels for matrix colors"},
+    { "-max",FALSE, etREAL, {&cutmax},"max value for energies"},
+    { "-min",FALSE, etREAL, {&cutmin},"min value for energies"},
+    { "-coul", FALSE, etBOOL, {&bCoul},"calculate Coulomb SR energies"},
+    { "-coulr", FALSE, etBOOL, {&bCoulLR},"calculate Coulomb LR energies"},
+    { "-coul14",FALSE, etBOOL, {&bCoul14},"calculate Coulomb 1-4 energies"},
+    { "-lj", FALSE, etBOOL, {&bLJ},"calculate Lennard-Jones SR energies"},
+    { "-lj14",FALSE, etBOOL, {&bLJ14},"calculate Lennard-Jones 1-4 energies"},
+    { "-bham",FALSE, etBOOL, {&bBham},"calculate Buckingham energies"},
+    { "-free",FALSE, etBOOL, {&bFree},"calculate free energy"},
+    { "-temp",FALSE, etREAL, {&reftemp},
       "reference temperature for free energy calculation"}
   };
   /* We will define egSP more energy-groups: 
@@ -113,7 +113,7 @@ int main(int argc,char *argv[])
   bool       egrp_use[egNR+egSP];
   int        in;
   FILE       *out;
-  int        timecheck;
+  int        timecheck=0;
   t_energy   *ee;
   t_drblock  dr;
   int        teller=0,nre,step;
@@ -121,18 +121,18 @@ int main(int argc,char *argv[])
   bool       bCont,bRef;
   bool       bCutmax,bCutmin;
   real       **eneset,*time=NULL;
-  int        *set,i,j,k,prevk,m,n,nset,nenergy,ndr;
+  int        *set,i,j,k,prevk,m=0,n,nset,nenergy,ndr;
   char       **enm,**groups;
   char       groupname[255],fn[255];
   int        ngroups;
   t_rgb      rlo,rhi,rmid;
   real       emax,emid,emin;
   real       ***emat,**etot,*groupnr;
-  double     beta,expE,**e,*eaver,*efree;
+  double     beta,expE,**e,*eaver,*efree=NULL;
   char       label[234];
-  char       **ereflines,**erefres;
-  real       *eref,*edif;
-  int        neref;
+  char       **ereflines,**erefres=NULL;
+  real       *eref=NULL,*edif=NULL;
+  int        neref=0;
   
   t_filenm   fnm[] = {
     { efENX, "-f", NULL, ffOPTRD },

@@ -96,7 +96,7 @@ void calc_potential(char *fn, atom_id **index, int gnx[],
       **slCount,         /* nr. of atoms in one slice for a group */
       i,j,n,             /* loop indices */
       teller = 0,      
-      ax1, ax2,
+      ax1=0, ax2=0,
       nr_frames = 0,     /* number of frames */
       slice;             /* current slice */
   real slVolume;         /* volume of slice for spherical averaging */
@@ -298,7 +298,7 @@ void plot_potential(real *potential[], real *charge[], real *field[],
   fclose(fie);
 }
 
-void main(int argc,char *argv[])
+int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "Compute the electrostatical potential across the box. The potential is"
@@ -316,18 +316,18 @@ void main(int argc,char *argv[])
   static bool bSpherical = FALSE;            /* default is bilayer types   */
   static real fudge_z = 0;                    /* translate coordinates      */
   t_pargs pa [] = {
-    { "-d",   FALSE, etSTR, &axtitle, 
+    { "-d",   FALSE, etSTR, {&axtitle}, 
       "Take the normal on the membrane in direction X, Y or Z." },
-    { "-sl",  FALSE, etINT, &nslices,
+    { "-sl",  FALSE, etINT, {&nslices},
       "Calculate potential as function of boxlength, dividing the box"
       " in #nr slices." } ,
-    { "-cb",  FALSE, etINT, &cb,
+    { "-cb",  FALSE, etINT, {&cb},
       "Discard first #nr slices of box for integration" },
-    { "-ce",  FALSE, etINT, &ce,
+    { "-ce",  FALSE, etINT, {&ce},
       "Discard last #nr slices of box for integration" },
-    { "-tz",  FALSE, etREAL, &fudge_z,
+    { "-tz",  FALSE, etREAL, {&fudge_z},
       "Translate all coordinates <distance> in the direction of the box" },
-    { "-spherical", FALSE, etBOOL, &bSpherical,
+    { "-spherical", FALSE, etBOOL, {&bSpherical},
       "Calculate spherical thingie" },
   };
   static char *bugs[] = {
@@ -387,6 +387,7 @@ void main(int argc,char *argv[])
   xvgr_file(opt2fn("-of",NFILE,fnm), NULL);      /* view xvgr file */
 
   thanx(stdout);
+  return 0;
 }
 
 

@@ -137,9 +137,9 @@ int main(int argc,char *argv[])
   static bool bSep=FALSE;
   static real truncate=1000.0;
   t_pargs pa[] = {
-    { "-t",   FALSE, etREAL, &truncate,
+    { "-t",   FALSE, etREAL, {&truncate},
       "trunc distance" },
-    { "-sep", FALSE, etBOOL, &bSep,
+    { "-sep", FALSE, etBOOL, {&bSep},
       "Use separate files for each interaction (may be MANY)" }
   };
   t_filenm   fnm[] = {

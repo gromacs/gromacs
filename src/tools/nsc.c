@@ -526,10 +526,10 @@ int nsc_dclm(
   int jat, j, jj, jjj, jx, jy, jz;
   int distribution;
   int l;
-  int maxnei, nnei, last, maxdots;
+  int maxnei, nnei, last, maxdots=0;
   point_int wkdot=NULL, wkbox=NULL, wkat1=NULL, wkatm=NULL;
   Neighb  *wknb, *ctnb;
-  int iii1, iii2, iiat, lfnr, i_at, j_at;
+  int iii1, iii2, iiat, lfnr=0, i_at, j_at;
   real dx, dy, dz, dd, ai, aisq, ajsq, aj, as, a;
   real xi, yi, zi, xs=0., ys=0., zs=0.;
   real dotarea, area, vol=0.;

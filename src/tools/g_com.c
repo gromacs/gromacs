@@ -159,7 +159,7 @@ int main(int argc,char *argv[])
   t_topology top;
   int      g;           /* group counter */
   char     format[STRLEN],filename[STRLEN],title[STRLEN];
-  FILE     **outX,*outek;
+  FILE     **outX,*outek=NULL;
   int      status,ftpout;
   int      i,j,idum,step,natoms;
   real     t,rdum;

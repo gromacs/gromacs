@@ -203,13 +203,13 @@ int main(int argc,char *argv[])
   static char *title=NULL;
   static int  r0=1;
   t_pargs pa [] = {
-    { "-r0",  FALSE, etINT, &r0,
+    { "-r0",  FALSE, etINT, {&r0},
       "The first residue number in the sequence" },
-    { "-rot0",FALSE, etREAL,&rot0,
+    { "-rot0",FALSE, etREAL,{&rot0},
       "Rotate around an angle initially (90 degrees makes sense)" },
-    { "-T",   FALSE, etSTR, &title,
+    { "-T",   FALSE, etSTR, {&title},
       "Plot a title in the center of the wheel (must be shorter than 10 characters, or it will overwrite the wheel)" },
-    { "-nn",  FALSE, etBOOL,&bNum,
+    { "-nn",  FALSE, etBOOL,{&bNum},
       "Toggle numbers" }
   };
   t_filenm  fnm[] = {

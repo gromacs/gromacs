@@ -531,10 +531,10 @@ static void analyze_clusters(int nf,t_clusters *clust,real **rmsd,
 {
   FILE *fp;
   char buf[STRLEN],buf1[20],buf2[20];
-  int  trxout;
-  int  i,i1,i2,cl,nstr,*structure,first,midstr;
+  int  trxout=0;
+  int  i,i1,i2,cl,nstr,*structure,first=0,midstr;
   real r,clrmsd,midrmsd;
-  rvec *xtpsi,*xav,*xnatom;
+  rvec *xtpsi=NULL,*xav=NULL,*xnatom=NULL;
   matrix zerobox;
 
   clear_mat(zerobox);
@@ -610,7 +610,7 @@ static void analyze_clusters(int nf,t_clusters *clust,real **rmsd,
       sprintf(buf1,"%5s","");
       sprintf(buf2,"%5s","");
     }
-    sprintf(buf,"%3d | %3d%s | %6.f%s |",
+    sprintf(buf,"%3d | %3d%s | %6f%s |",
 	    cl,nstr,buf1,time[midstr],buf2);
     fprintf(stderr,buf);
     fprintf(log,buf);
@@ -620,8 +620,8 @@ static void analyze_clusters(int nf,t_clusters *clust,real **rmsd,
       else
 	buf[0] = '\0';
       i1 = structure[i];
-      fprintf(stderr,"%s %6.f",buf,time[i1]);
-      fprintf(log,"%s %6.f",buf,time[i1]);
+      fprintf(stderr,"%s %6f",buf,time[i1]);
+      fprintf(log,"%s %6f",buf,time[i1]);
     }
     fprintf(stderr,"\n");
     fprintf(log,"\n");
@@ -699,7 +699,7 @@ int main(int argc,char *argv[])
   real         t,t1,t2;
 
   matrix       box;
-  rvec         *xtps,*x1,*x2,**xx;
+  rvec         *xtps,*x1,*x2,**xx=NULL;
   char         *fn;
   t_clusters   clust;
   t_mat        *rms;
@@ -711,11 +711,11 @@ int main(int argc,char *argv[])
   t_matrix     *readmat;
   
   int      status1,status2,isize,nbytes;
-  atom_id  *index,*alli;
+  atom_id  *index,*alli=NULL;
   char     *grpname;
-  real     rmsd,**d1,**d2,*time,*mass;
+  real     rmsd,**d1,**d2,*time,*mass=NULL;
   char     buf[STRLEN];
-  bool     bAnalyze,bJP_RMSD,bReadMat,bReadTraj;
+  bool     bAnalyze,bJP_RMSD=FALSE,bReadMat,bReadTraj;
   
   static char *method[] = { NULL, "linkage", "jarvis-patrick","monte-carlo",
 			    "diagonalization", NULL };
@@ -726,31 +726,31 @@ int main(int argc,char *argv[])
   static real kT=1e-3;
   static int  M=10,P=3;
   t_pargs pa[] = {
-    { "-dista",FALSE, etBOOL, &bRMSdist,
+    { "-dista",FALSE, etBOOL, {&bRMSdist},
       "Use RMSD of distances instead of RMS deviation" },
-    { "-nlevels",   FALSE, etINT,  &nlevels,
+    { "-nlevels",   FALSE, etINT,  {&nlevels},
       "Discretize RMSD matrix in # levels" },
-    { "-cutoff", FALSE, etREAL, &rmsdcut,
+    { "-cutoff", FALSE, etREAL, {&rmsdcut},
       "RMSD cut-off (nm) for two structures to be similar" },
-    { "-max",   FALSE, etREAL, &scalemax,
+    { "-max",   FALSE, etREAL, {&scalemax},
       "Maximum level in RMSD matrix" },
-    { "-skip",  FALSE, etINT, &skip,
+    { "-skip",  FALSE, etINT, {&skip},
       "Only analyze every nr-th frame" },
-    { "-av",  FALSE, etBOOL, &bAv,
+    { "-av",  FALSE, etBOOL, {&bAv},
       "Write average iso middle structure for each cluster" },
-    { "-method",FALSE, etENUM, method,
+    { "-method",FALSE, etENUM, {method},
       "Method for cluster determination" },
-    { "-binary",FALSE, etBOOL, &bBinary,
+    { "-binary",FALSE, etBOOL, {&bBinary},
       "Treat the RMSD matrix as consisting of 0 and 1, where the cut-off is given by -cutoff" },
-    { "-M",     FALSE, etINT,  &M,
+    { "-M",     FALSE, etINT,  {&M},
       "Number of nearest neighbours considered for Jarvis-Patrick algorithm, 0 is use cutoff" },
-    { "-P",     FALSE, etINT,  &P,
+    { "-P",     FALSE, etINT,  {&P},
       "Number of identical nearest neighbors required to form a cluster" },
-    { "-seed",  FALSE, etINT,  &seed,
+    { "-seed",  FALSE, etINT,  {&seed},
       "Random number seed for Monte Carlo clustering algorithm" },
-    { "-niter", FALSE, etINT,  &niter,
+    { "-niter", FALSE, etINT,  {&niter},
       "Number of iterations for MC" },
-    { "-kT",    FALSE, etREAL, &kT,
+    { "-kT",    FALSE, etREAL, {&kT},
       "Boltzmann weighting factor for Monte Carlo optimization (zero turns off uphill steps)" }
   };
   t_filenm fnm[] = {

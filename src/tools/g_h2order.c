@@ -241,9 +241,9 @@ int main(int argc,char *argv[])
   static char *axtitle="Z"; 
   static int  nslices = 0;                    /* nr of slices defined       */
   t_pargs pa[] = {
-    { "-d",   FALSE, etSTR, &axtitle, 
+    { "-d",   FALSE, etSTR, {&axtitle}, 
       "Take the normal on the membrane in direction X, Y or Z." },
-    { "-sl",  FALSE, etINT, &nslices,
+    { "-sl",  FALSE, etINT, {&nslices},
       "Calculate order parameter as function of boxlength, dividing the box"
       " in #nr slices."}
   };

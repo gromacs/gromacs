@@ -111,7 +111,7 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
   int natoms,            /* nr. atoms in trj */
       status,  
       i,n,               /* loop indices */
-      ax1, ax2,
+      ax1=0, ax2=0,
       nr_frames = 0,     /* number of frames */
       slice;             /* current slice */
   t_electron *found;     /* found by bsearch */
@@ -213,7 +213,7 @@ void calc_density(char *fn, atom_id **index, int gnx[],
       **slCount,         /* nr. of atoms in one slice for a group */
       i,j,n,               /* loop indices */
       teller = 0,      
-      ax1, ax2,
+      ax1=0, ax2=0,
       nr_frames = 0,     /* number of frames */
       slice;             /* current slice */
   real t, 
@@ -334,7 +334,7 @@ void plot_density(real *slDensity[], char *afile, int nslices,
   fclose(den);
 }
  
-void main(int argc,char *argv[])
+int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "Compute partial densities across the box, using an index file. Densities",
@@ -350,15 +350,15 @@ void main(int argc,char *argv[])
   static char *axtitle="Z"; 
   static int  nslices = 10;                    /* nr of slices defined       */
   t_pargs pa[] = {
-    { "-d", FALSE, etSTR, &axtitle, 
+    { "-d", FALSE, etSTR, {&axtitle}, 
       "Take the normal on the membrane in direction X, Y or Z." },
-    { "-sl",  FALSE, etINT, &nslices,
+    { "-sl",  FALSE, etINT, {&nslices},
       "Divide the box in #nr slices." },
-    { "-number",  FALSE, etBOOL, &bNumber,
+    { "-number",  FALSE, etBOOL, {&bNumber},
       "Calculate number density instead of mass density. Hydrogens are not counted!" },
-    { "-ed",      FALSE, etBOOL, &bElectron,
+    { "-ed",      FALSE, etBOOL, {&bElectron},
       "Calculate electron density instead of mass density" },
-    { "-count",   FALSE, etBOOL, &bCount,
+    { "-count",   FALSE, etBOOL, {&bCount},
       "Only count atoms in slices, no densities. Hydrogens are not counted"}
   };
 
@@ -430,6 +430,7 @@ void main(int argc,char *argv[])
   
   xvgr_file(opt2fn("-o",NFILE,fnm), NULL);       /* view xvgr file */
   thanx(stdout);
+  return 0;
 }
 
 

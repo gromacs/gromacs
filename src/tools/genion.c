@@ -154,7 +154,7 @@ void sort_ions(int nw,int repl[],int index[],t_atoms *atoms,rvec x[],
 {
   int i,j,k,r,np,nn,starta,startr,npi,nni;
   rvec *xt;
-  char **pptr,**nptr;
+  char **pptr=NULL,**nptr=NULL;
 
   snew(xt,atoms->nr);
 
@@ -236,17 +236,17 @@ int main(int argc, char *argv[])
   static int  seed=1993;
   static bool bRandom=FALSE;
   static t_pargs pa[] = {
-    { "-p",    FALSE, etINT,  &p_num, "Number of positive ions"       },
-    { "-pn",   FALSE, etSTR,  &p_name,"Name of the positive ion"      },
-    { "-pq",   FALSE, etREAL, &p_q,   "Charge of the positive ion"    },
-    { "-n",    FALSE, etINT,  &n_num, "Number of negative ions"       },
-    { "-nn",   FALSE, etSTR,  &n_name,"Name of the negative ion"      },
-    { "-nq",   FALSE, etREAL, &n_q,   "Charge of the negative ion"    },
-    { "-rmin", FALSE, etREAL, &rmin,  "Minimum distance between ions" },
-    { "-w1",   FALSE, etINT,  &w1,    "First water atom to be cosidered (counting from 1)" },
-    { "-nw",   FALSE, etINT,  &nw,    "Number of water molecules" },
-    { "-random",FALSE,etBOOL, &bRandom,"Use random placement of ions instead of based on potential. The rmin option should still work" },
-    { "-seed", FALSE, etINT,  &seed,  "Seed for random number generator" }
+    { "-p",    FALSE, etINT,  {&p_num}, "Number of positive ions"       },
+    { "-pn",   FALSE, etSTR,  {&p_name},"Name of the positive ion"      },
+    { "-pq",   FALSE, etREAL, {&p_q},   "Charge of the positive ion"    },
+    { "-n",    FALSE, etINT,  {&n_num}, "Number of negative ions"       },
+    { "-nn",   FALSE, etSTR,  {&n_name},"Name of the negative ion"      },
+    { "-nq",   FALSE, etREAL, {&n_q},   "Charge of the negative ion"    },
+    { "-rmin", FALSE, etREAL, {&rmin},  "Minimum distance between ions" },
+    { "-w1",   FALSE, etINT,  {&w1},    "First water atom to be cosidered (counting from 1)" },
+    { "-nw",   FALSE, etINT,  {&nw},    "Number of water molecules" },
+    { "-random",FALSE,etBOOL, {&bRandom},"Use random placement of ions instead of based on potential. The rmin option should still work" },
+    { "-seed", FALSE, etINT,  {&seed},  "Seed for random number generator" }
   };
   t_topology  *top;
   t_parm      parm;

@@ -136,7 +136,7 @@ static int vphi(t_dih *dih,real phi,int mult)
   static real m6[] = { 30, 90, 150, 210, 270, 330 };
 
   real phiref;
-  int  vpp;
+  int  vpp=0;
   
   phiref=RAD2DEG*(phi-dih->phi0);
   while (phiref < 0)
@@ -309,9 +309,9 @@ int main(int argc,char *argv[])
   static int  mult = -1;
   static bool bSA  = FALSE;
   t_pargs pa[] = {
-    { "-sa", FALSE, etBOOL, &bSA,
+    { "-sa", FALSE, etBOOL, {&bSA},
       "Perform cluster analysis in dihedral space instead of analysing dihedral transitions." },
-    { "-mult", FALSE, etINT, &mult,
+    { "-mult", FALSE, etINT, {&mult},
       "mulitiplicity for dihedral angles (by default read from topology)" }
   };
   FILE       *out;

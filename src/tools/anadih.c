@@ -400,13 +400,13 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
       (*trans_frac)[teller] = fraction;
       
       /* Change Ryckaert-Bellemans dihedrals to polymer convention */
-      if (bRb)
+      if (bRb) {
 	for(i=0; (i<nangles); i++)
 	  if (angles[cur][i] <= 0.0) 
 	    angles[cur][i] += M_PI;
 	  else
 	    angles[cur][i] -= M_PI;
-      
+      }
       /* Periodicity in dihedral space... */
       if (teller > 1) {
 	for(i=0; (i<nangles); i++) {

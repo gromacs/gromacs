@@ -51,7 +51,7 @@ int main(int argc,char *argv[])
   };
   static rvec    fc={1000.0,1000.0,1000.0};
   t_pargs pa[] = {
-    { "-fc", FALSE, etRVEC, &fc, 
+    { "-fc", FALSE, etRVEC, {&fc}, 
       "force constants (kJ mol-1 nm-2)" }
   };
   
@@ -75,7 +75,7 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
   
-  if ( !ftp2bSet(efNDX,NFILE,fnm) )
+  if ( !ftp2bSet(efNDX,NFILE,fnm) ) {
     if ( !ftp2bSet(efSTX,NFILE,fnm) )
       fatal_error(0,"no index file and no structure file suplied");
     else {
@@ -90,7 +90,7 @@ int main(int argc,char *argv[])
       sfree(x);
       sfree(v);
     }
-  
+  }
   printf("Select group to position restrain\n");
   get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&igrp,&ind_grp,&gn_grp);
   

@@ -94,7 +94,7 @@ typedef struct {
 
 void sort_molecule(t_atoms *atoms,rvec *x,real *r,int left, int right)
 {
-  int molnr,atnr,i,j,moltp,nrmoltypes,resnr;
+  int molnr,atnr,i,j,moltp=0,nrmoltypes,resnr;
   t_moltypes *moltypes;
   int *tps;
   t_atoms *newatoms;
@@ -602,11 +602,11 @@ int main(int argc,char *argv[])
   static real r_distance=0.105;
   static rvec new_box={0.0,0.0,0.0};
   t_pargs pa[] = {
-    { "-box",   FALSE,etRVEC,&new_box,   "box size" },
-    { "-nmol",  FALSE,etINT ,&nmol_ins,  "no of extra molecules to insert" },
-    { "-seed",  FALSE,etINT ,&seed,      "random generator seed"},
-    { "-vdwd",  FALSE,etREAL,&r_distance,"default vdwaals distance"},
-    { "-boxtype",FALSE,etINT,&ntb, "HIDDENbox type 0=rectangular; "
+    { "-box",   FALSE,etRVEC,{&new_box},   "box size" },
+    { "-nmol",  FALSE,etINT ,{&nmol_ins},  "no of extra molecules to insert" },
+    { "-seed",  FALSE,etINT ,{&seed},      "random generator seed"},
+    { "-vdwd",  FALSE,etREAL,{&r_distance},"default vdwaals distance"},
+    { "-boxtype",FALSE,etINT,{&ntb}, "HIDDENbox type 0=rectangular; "
       "1=truncated octahedron (only rectangular boxes are fully implemented)"}
   };
 

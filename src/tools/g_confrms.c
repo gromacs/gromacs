@@ -90,8 +90,8 @@ int main (int argc,char *argv[])
   static bool bSecond=FALSE,bRmpbc=FALSE;
   
   t_pargs pa[] = {
-    { "-one", FALSE, etBOOL, &bSecond, "Only write the fitted structure to file" },
-    { "-pbc", FALSE, etBOOL, &bRmpbc, "Try to make molecules whole again" }
+    { "-one", FALSE, etBOOL, {&bSecond}, "Only write the fitted structure to file" },
+    { "-pbc", FALSE, etBOOL, {&bRmpbc}, "Try to make molecules whole again" }
   };
   t_filenm fnm[] = {
     { efTPS, "-f1",  "conf1.gro", ffREAD  },
@@ -108,7 +108,7 @@ int main (int argc,char *argv[])
   char    title_1[STRLEN],title_2[STRLEN],*name1,*name2;
   t_topology top;
   t_atoms atoms_1,atoms_2;
-  int     natoms_1,natoms_2,warn;
+  int     natoms_1,natoms_2,warn=0;
   matrix  box;
   atom_id at;
   real    *w_rls,mass,totmass;

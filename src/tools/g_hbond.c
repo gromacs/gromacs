@@ -468,17 +468,17 @@ int main(int argc,char *argv[])
   static bool bNitAcc=TRUE,bInsert=FALSE;
   /* options */
   t_pargs pa [] = {
-    { "-ins",  FALSE, etBOOL, &bInsert,
+    { "-ins",  FALSE, etBOOL, {&bInsert},
       "analyze solvent insertion" },
-    { "-a",    FALSE, etREAL, &acut,
+    { "-a",    FALSE, etREAL, {&acut},
       "cutoff angle (degrees, Donor - Hydrogen - Acceptor)" },
-    { "-r",    FALSE, etREAL, &rcut,
+    { "-r",    FALSE, etREAL, {&rcut},
       "cutoff radius (nm, Hydrogen - Acceptor)" },
-    { "-abin", FALSE, etREAL, &abin,
+    { "-abin", FALSE, etREAL, {&abin},
       "binwidth angle distribution (degrees)" },
-    { "-rbin", FALSE, etREAL, &rbin,
+    { "-rbin", FALSE, etREAL, {&rbin},
       "binwidth distance distribution (nm)" },
-    { "-nitacc",FALSE,etBOOL, &bNitAcc,
+    { "-nitacc",FALSE,etBOOL, {&bNitAcc},
       "regard nitrogen atoms as acceptors" }
   };
 
@@ -529,7 +529,7 @@ int main(int argc,char *argv[])
   int     xj,yj,zj,aj,xjj,yjj,zjj;
   int     xk,yk,zk,ak,xkk,ykk,zkk;
   bool    bSelected,bStop,bTwo,bHBMap,new,was,bBox;
-  bool    *insert;
+  bool    *insert=NULL;
   int     nr_a[grNR];
   atom_id *a[grNR];
   int     grp;
@@ -537,7 +537,7 @@ int main(int argc,char *argv[])
   t_hx    *nhx;
   int     max_nrhb,nrhb,nabin,nrbin,bin,resdist,idx;
   unsigned char **hbexist;
-  FILE       *fp,*fpins;
+  FILE       *fp,*fpins=NULL;
   t_gridcell ***grid;
   t_ncell    *icell,*jcell,*kcell;
   ivec       ngrid;
@@ -798,7 +798,7 @@ int main(int argc,char *argv[])
 			 selected bonds: check for inserted */
 		      bool ins_d, ins_a;
 		      real ins_d_dist, ins_d_ang, ins_a_dist, ins_a_ang;
-		      int  ins_d_k,ins_a_k;
+		      int  ins_d_k=0,ins_a_k=0;
 		      
 		      ins_d=ins_a=FALSE;
 		      ins_d_dist=ins_d_ang=ins_a_dist=ins_a_ang=1e6;

@@ -44,7 +44,7 @@ static char *SRCID_g_dist_c = "$Id$";
 #include "gstat.h"
 #include "pbc.h"
 
-void main(int argc,char *argv[])
+int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_dist can calculate the distance between the centers of mass of two",
@@ -75,7 +75,7 @@ void main(int argc,char *argv[])
   static real cut=0;
 
   static t_pargs pa[] = {
-    { "-dist",      FALSE, etREAL, &cut,
+    { "-dist",      FALSE, etREAL, {&cut},
       "Print all atoms in group 2 closer than dist to the center of mass of group 1" },
   };
 #define NPA asize(pa)
@@ -182,4 +182,5 @@ void main(int argc,char *argv[])
   close_trj(status);
   
   thanx(stdout);
+  return 0;
 }

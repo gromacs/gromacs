@@ -37,7 +37,7 @@ static char *SRCID_polynomials_c = "$Id$";
 real LegendreP(real x,unsigned long m)
 
 {
-  real polynomial,x2,x3;
+  real polynomial=0,x2,x3;
 
   switch (m) {
   case eacP0:

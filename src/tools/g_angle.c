@@ -63,15 +63,15 @@ int main(int argc,char *argv[])
   static bool bALL=FALSE,bChandler=FALSE,bAverCorr=FALSE;
   static real binwidth=1;
   t_pargs pa[] = {
-    { "-type", FALSE, etENUM, opt,
+    { "-type", FALSE, etENUM, {opt},
       "Type of angle to analyse" },
-    { "-all",    FALSE,  etBOOL, &bALL,
+    { "-all",    FALSE,  etBOOL, {&bALL},
       "Plot all angles separately in the averages file, in the order of appearance in the index file." },
-    { "-binwidth", FALSE, etREAL, &binwidth,
+    { "-binwidth", FALSE, etREAL, {&binwidth},
       "binwidth (degrees) for calculating the distribution" },
-    { "-chandler", FALSE,  etBOOL, &bChandler,
+    { "-chandler", FALSE,  etBOOL, {&bChandler},
       "Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine correlation function. Trans is defined as phi < -60 || phi > 60." },
-    { "-avercorr", FALSE,  etBOOL, &bAverCorr,
+    { "-avercorr", FALSE,  etBOOL, {&bAverCorr},
       "Average the correlation functions for the individual angles/dihedrals" }
   };
   static char *bugs[] = {
@@ -92,9 +92,9 @@ int main(int argc,char *argv[])
     bTrans,         /* worry about transtions too? */
     bCorr;          /* correlation function ? */    
   real       t,aa,aver,fraction;       /* fraction trans dihedrals */
-  double     tfrac;
+  double     tfrac=0;
   char       title[256];
-  real       **dih;          /* mega array with all dih. angles at all times*/
+  real       **dih=NULL;          /* mega array with all dih. angles at all times*/
   char       buf[80];       
   real       *time,*trans_frac,*aver_angle;
   t_filenm   fnm[] = {
@@ -111,7 +111,7 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
   int     npargs;
   t_pargs *ppa;
-
+  
   CopyRight(stderr,argv[0]);
   npargs = asize(pa);
   ppa    = add_acf_pargs(&npargs,pa);

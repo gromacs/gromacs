@@ -329,26 +329,26 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
     "G\\sk",
     "epsilon"
   };
-  rvec       *x,*dipole,mu_t,M_av,M_av2,Q_av,Q_av2,*quadrupole;
-  real       *gkr;
-  int        *gkcount;
-  int        fmu,nre,timecheck;
+  rvec       *x,*dipole=NULL,mu_t,M_av,M_av2,Q_av,Q_av2,*quadrupole=NULL;
+  real       *gkr=NULL;
+  int        *gkcount=NULL;
+  int        fmu=0,nre,timecheck=0;
   char       **enm=NULL;
-  real       rcut;
+  real       rcut=0;
   matrix     box;
   bool       bCont;
   real       t,t0,t1,dt;
-  double     M_sqr_ave,M_ave_sqr,M_diff,epsilon;
-  double     mu_ave,mu_mol,M2_ave,M_ave2;
+  double     M_sqr_ave,M_ave_sqr,M_diff=0,epsilon;
+  double     mu_ave,mu_mol,M2_ave=0,M_ave2=0;
   rvec       quad_ave,quad_mol;
   ivec       iMu;
-  int        Vol;
-  real       M_XX,M_YY,M_ZZ,M_XX2,M_YY2,M_ZZ2,Gk,g_k;
-  real       **muall,**quadall;
+  int        Vol=0;
+  real       M_XX,M_YY,M_ZZ,M_XX2,M_YY2,M_ZZ2,Gk=0,g_k=0;
+  real       **muall=NULL,**quadall=NULL;
   t_topology *top;
-  t_atom     *atom;
-  t_block    *mols;
-  int        i,j,k,m,natom,nmol,status,teller,tel3;
+  t_atom     *atom=NULL;
+  t_block    *mols=NULL;
+  int        i,j,k,m,natom=0,nmol,status,teller,tel3;
   int        *bin,ibin;
   real       volume;
   unsigned long mode;
@@ -725,19 +725,19 @@ int main(int argc,char *argv[])
   static bool bAverCorr=FALSE,bFA=FALSE;
   static int  nframes = 10;
   t_pargs pa[] = {
-    { "-nframes", FALSE, etINT, &nframes,
+    { "-nframes", FALSE, etINT, {&nframes},
       "Number of frames in trajectory (overestimating is OK)" },
-    { "-mu",       FALSE, etREAL, &mu,
+    { "-mu",       FALSE, etREAL, {&mu},
       "dipole of a single molecule (in Debye)" },
-    { "-mumax",    FALSE, etREAL, &mu_max,
+    { "-mumax",    FALSE, etREAL, {&mu_max},
       "max dipole in Debye (for histrogram)" },
-    { "-epsilonRF",    FALSE, etREAL, &epsilonRF,
+    { "-epsilonRF",    FALSE, etREAL, {&epsilonRF},
       "epsilon of the reaction field used during the simulation, needed for dieclectric constant calculation. WARNING: 0.0 means infinity (default)" },
-    { "-temp",    FALSE, etREAL, &temp,
+    { "-temp",    FALSE, etREAL, {&temp},
       "average temperature of the simulation (needed for dielectric constant calculation)" },
-    { "-avercorr", FALSE, etBOOL, &bAverCorr,
+    { "-avercorr", FALSE, etBOOL, {&bAverCorr},
       "calculate AC function of average dipole moment of the simulation box rather than average of AC function per molecule" },
-    { "-firstatom", FALSE, etBOOL, &bFA,
+    { "-firstatom", FALSE, etBOOL, {&bFA},
       "Use the first atom of a molecule (water ?) to calculate the distance between molecules rather than the center of geometry in the calculation of distance dependent Kirkwood factors" }
   };
   int          gnx;

@@ -196,13 +196,13 @@ int main(int argc,char *argv[])
   static int  ndots   = 24,nskip=1;
   static real qcut    = 0.2;
   t_pargs pa[] = {
-    { "-solsize", FALSE, etREAL, &solsize,
+    { "-solsize", FALSE, etREAL, {&solsize},
 	"Radius of the solvent probe (nm)" },
-    { "-ndots",   FALSE, etINT,  &ndots,
+    { "-ndots",   FALSE, etINT,  {&ndots},
 	"Number of dots per sphere, more dots means more accuracy" },
-    { "-qmax",    FALSE, etREAL, &qcut,
+    { "-qmax",    FALSE, etREAL, {&qcut},
 	"The maximum charge (e, absolute value) of a hydrophobic atom" },
-    { "-skip",    FALSE, etINT,  &nskip,
+    { "-skip",    FALSE, etINT,  {&nskip},
       "Do only every nth frame" }
   };
   t_filenm  fnm[] = {

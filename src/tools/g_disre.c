@@ -195,13 +195,13 @@ int main (int argc,char *argv[])
   static bool bProt=FALSE;
   static int  ntop = 6;
   t_pargs pa[] = {
-    { "-prot", FALSE, etBOOL, &bProt,
+    { "-prot", FALSE, etBOOL, {&bProt},
       "Protonate protein every step. This currently does not add terminal hydrogens, and therefore works only when the termini are capped." },
-    { "-ntop", FALSE, etINT,  &ntop,
+    { "-ntop", FALSE, etINT,  {&ntop},
       "Number of large violations that are stored in the log file every step" }
   };
   
-  FILE        *out,*aver,*numv,*maxxv,*xvg;
+  FILE        *out,*aver,*numv,*maxxv,*xvg=NULL;
   t_inputrec  *ir;
   t_topology  *top;
   t_atoms     *atoms=NULL;
@@ -217,7 +217,7 @@ int main (int argc,char *argv[])
   atom_id     *index=NULL;
   char        *grpname;
   char        **leg;
-  real        *vvindex;
+  real        *vvindex=NULL;
   t_mdatoms   *mdatoms;
   
   t_filenm fnm[] = {

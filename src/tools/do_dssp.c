@@ -329,11 +329,11 @@ int main(int argc,char *argv[])
   static bool bVerbose;
   static char *ss_string="HEBT"; 
   t_pargs pa[] = {
-    { "-v",  FALSE, etBOOL, &bVerbose,
+    { "-v",  FALSE, etBOOL, {&bVerbose},
       "HIDDENGenerate miles of useless information" },
-    { "-dt", FALSE, etREAL, &dt,
+    { "-dt", FALSE, etREAL, {&dt},
       "Only analyze a frame each dt picoseconds" },
-    { "-sss", FALSE, etSTR, &ss_string,
+    { "-sss", FALSE, etSTR, {&ss_string},
       "Secondary structures for structure count"}
   };
   

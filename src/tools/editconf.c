@@ -325,27 +325,27 @@ int main(int argc, char *argv[])
   static rvec center={0.0,0.0,0.0},rotangles={0.0,0.0,0.0};
   static char *label="A";
   t_pargs pa[] = {
-    { "-ndef",   FALSE, etBOOL, &bNDEF, 
+    { "-ndef",   FALSE, etBOOL, {&bNDEF}, 
       "Choose output from default index groups" },    
-    { "-d",      FALSE, etREAL, &dist, 
+    { "-d",      FALSE, etREAL, {&dist}, 
       "Distance between the solute and the rectangular box" }, 
-    { "-dc",     FALSE, etREAL, &dist,
+    { "-dc",     FALSE, etREAL, {&dist},
       "Distance between the solute and the cubic box" },
-    { "-box",    FALSE, etRVEC, &newbox, "Size of box" },
-    { "-c",      FALSE, etBOOL, &bCenter,
+    { "-box",    FALSE, etRVEC, {&newbox}, "Size of box" },
+    { "-c",      FALSE, etBOOL, {&bCenter},
       "Center molecule in box (implied by -d -dc -box)" },
-    { "-center", FALSE, etRVEC, &center, "Coordinates of geometrical center"},
-    { "-rotate", FALSE, etRVEC, rotangles,
+    { "-center", FALSE, etRVEC, {&center}, "Coordinates of geometrical center"},
+    { "-rotate", FALSE, etRVEC, {rotangles},
       "Rotation around the X, Y and Z axes in degrees" },
-    { "-princ",  FALSE, etBOOL, &bOrient, "Orient molecule(s) along their principal axes" },
-    { "-scale",  FALSE, etRVEC, &scale, "Scaling factor" },
-    { "-density",FALSE, etREAL, &rho, 
+    { "-princ",  FALSE, etBOOL, {&bOrient}, "Orient molecule(s) along their principal axes" },
+    { "-scale",  FALSE, etRVEC, {&scale}, "Scaling factor" },
+    { "-density",FALSE, etREAL, {&rho}, 
       "Density (g/l) of the output box achieved by scaling" },
-    { "-pbc",    FALSE, etBOOL, &bRMPBC, 
+    { "-pbc",    FALSE, etBOOL, {&bRMPBC}, 
       "Remove the periodicity (make molecule whole again)" },
-    { "-atom",   FALSE, etBOOL, &peratom, "Force B-factor attachment per atom" },
-    { "-legend", FALSE, etBOOL, &bLegend, "Make B-factor legend" },
-    { "-label",  FALSE, etSTR,  &label,   "Add chain label for all residues" }
+    { "-atom",   FALSE, etBOOL, {&peratom}, "Force B-factor attachment per atom" },
+    { "-legend", FALSE, etBOOL, {&bLegend}, "Make B-factor legend" },
+    { "-label",  FALSE, etSTR,  {&label},   "Add chain label for all residues" }
   };
 #define NPA asize(pa)
 

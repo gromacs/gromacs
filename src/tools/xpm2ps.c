@@ -467,9 +467,9 @@ void xpm_mat(char *outf,
        mat[i].nmap=nmap;
        mat[i].map=map;
        if (mat2 && (strcmp(mat[i].title,mat2[i].title) != 0))
-	 sprintf(mat[i].title,"%s / %s\0",mat[i].title,mat2[i].title);
+	 sprintf(mat[i].title,"%s / %s",mat[i].title,mat2[i].title);
        if (mat2 && (strcmp(mat[i].legend,mat2[i].legend) != 0))
-	 sprintf(mat[i].legend,"%s / %s\0",mat[i].legend,mat2[i].legend); 
+	 sprintf(mat[i].legend,"%s / %s",mat[i].legend,mat2[i].legend); 
        write_xpm_m(out,mat[i]);
        }
    }
@@ -484,11 +484,11 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   FILE   *out;
   t_psrec  psrec,*psr;
   int    W,H;
-  int    i,x,y,col,leg;
+  int    i,x,y,col,leg=0;
   real   x0,y0,xx;
   real   w,h,dw,dh;
-  int       nmap1,nmap2,leg_nmap;
-  t_mapping *map1,*map2,*leg_map;
+  int       nmap1=0,nmap2=0,leg_nmap;
+  t_mapping *map1=NULL,*map2=NULL,*leg_map;
   bool   bMap1,bNextMap1,bDiscrete;
   
   get_params(libfn(m2p),m2pout,&psrec);
@@ -557,7 +557,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
     if (!mat2 || (strcmp(mat[nmat-1].title,mat2[nmat-1].title) == 0))
       strcpy(buf,mat[nmat-1].title);
     else
-      sprintf(buf,"%s / %s\0",mat[nmat-1].title,mat2[nmat-1].title);
+      sprintf(buf,"%s / %s",mat[nmat-1].title,mat2[nmat-1].title);
     ps_ctext(out,x0+w/2,y0+h+2*DDD+psr->titfontsize,
 	     buf,eXCenter);
   }
@@ -572,7 +572,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
       if (!mat2 || (strcmp(mat[i].title,mat2[i].title) == 0))
 	strcpy(buf,mat[i].title);
       else
-	sprintf(buf,"%s / %s\0",mat[i].title,mat2[i].title);
+	sprintf(buf,"%s / %s",mat[i].title,mat2[i].title);
       ps_ctext(out,x0+w/2,y0+box_height(&(mat[i]),psr)+psr->titfontsize,
 	       buf,eXCenter);
     }
@@ -756,13 +756,13 @@ int main(int argc,char *argv[])
   static char *diag[]    = { NULL, "first", "second", "none", NULL };
   static char *rainbow[] = { NULL, "no", "blue", "red", NULL };
   t_pargs pa[] = {
-    { "-title",   FALSE, etENUM, title,   "Show title at" },
-    { "-legend",  FALSE, etENUM, legend,  "Show legend" },
-    { "-diag",    FALSE, etENUM, diag,    "Diagonal" },
-    { "-bx",      FALSE, etREAL, &boxx,
+    { "-title",   FALSE, etENUM, {title},   "Show title at" },
+    { "-legend",  FALSE, etENUM, {legend},  "Show legend" },
+    { "-diag",    FALSE, etENUM, {diag},    "Diagonal" },
+    { "-bx",      FALSE, etREAL, {&boxx},
       "Box x-size (also y-size when -by is not set)" },
-    { "-by",      FALSE, etREAL, &boxy,   "Box y-size" },
-    { "-rainbow", FALSE, etENUM, rainbow, "Rainbow colors, convert white to" }
+    { "-by",      FALSE, etREAL, {&boxy},   "Box y-size" },
+    { "-rainbow", FALSE, etENUM, {rainbow}, "Rainbow colors, convert white to" }
   };
   t_filenm  fnm[] = {
     { efXPM, "-f",  NULL,      ffREAD },

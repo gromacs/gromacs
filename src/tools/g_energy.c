@@ -291,7 +291,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
   real Dt,a,b,aver,avertot,stddev,delta_t,sigma,totaldrift;
   real xxx,integral,intBulk;
   real sfrac,oldfrac,diffsum,diffav,fstep,pr_aver,pr_stddev,fluct2;
-  double beta,expE,expEtot,*gibbs;
+  double beta=0,expE,expEtot,*gibbs=NULL;
   int  nsteps,iset;
   real x1m,x1mk,Temp=-1,Pres=-1,VarV=-1,Vaver=-1,VarT=-1;
   int  i,j,m,k;
@@ -511,27 +511,27 @@ int main(int argc,char *argv[])
   static int  skip=0,nmol=1,ndf=3;
   static real reftemp=300.0,ezero=0;
   t_pargs pa[] = {
-    { "-G",   FALSE, etBOOL,  &bGibbs,
+    { "-G",   FALSE, etBOOL,  {&bGibbs},
       "Do a free energy estimate" },
-    { "-Gtemp", FALSE, etREAL,&reftemp,
+    { "-Gtemp", FALSE, etREAL,{&reftemp},
       "Reference temperature for free energy calculation" },
-    { "-zero", FALSE, etREAL, &ezero,
+    { "-zero", FALSE, etREAL, {&ezero},
       "Subtract a zero-point energy" },
-    { "-sum",  FALSE, etBOOL, &bSum,
+    { "-sum",  FALSE, etBOOL, {&bSum},
       "Sum the energy terms selected rather than display them all" },
-    { "-dp",   FALSE, etBOOL, &bDp,
+    { "-dp",   FALSE, etBOOL, {&bDp},
       "Print energies in high precision" },
-    { "-mutot",FALSE, etBOOL, &bMutot,
+    { "-mutot",FALSE, etBOOL, {&bMutot},
       "Compute the total dipole moment from the components" },
-    { "-skip", FALSE, etINT,  &skip,
+    { "-skip", FALSE, etINT,  {&skip},
       "Skip number of frames between data points" },
-    { "-aver", FALSE, etBOOL, &bAll,
+    { "-aver", FALSE, etBOOL, {&bAll},
       "Print also the X1,t and sigma1,t, only if only 1 energy is requested" },
-    { "-nmol", FALSE, etINT,  &nmol,
+    { "-nmol", FALSE, etINT,  {&nmol},
       "Number of molecules in your sample: the energies are divided by this number" },
-    { "-ndf",  FALSE, etINT,  &ndf,
+    { "-ndf",  FALSE, etINT,  {&ndf},
       "Number of degrees of freedom per molecule. Necessary for calculating the heat capacity" },
-    { "-fluc", FALSE, etBOOL, &bFluct,
+    { "-fluc", FALSE, etBOOL, {&bFluct},
       "Calculate autocorrelation of energy fluctuations rather than energy itself" }
   };
   static char *drleg[] = {
@@ -544,11 +544,11 @@ int main(int argc,char *argv[])
     "Volume",  "Pressure"
   };
   
-  FILE       *out,*fp_pairs;
+  FILE       *out,*fp_pairs=NULL;
   FILE       **drout;
   int        fp;
   int        ndr;
-  int        timecheck;
+  int        timecheck=0;
   t_topology top;
   t_inputrec ir;
   t_energy   *oldee,**ee;
@@ -559,11 +559,11 @@ int main(int argc,char *argv[])
 #define NEXT (1-cur)
   real       *bounds,*violaver=NULL;
   int        *index,*pair;
-  int        nbounds,npairs;
+  int        nbounds=0,npairs;
   bool       bDisRe,bDRAll,bStarted,bCont,bEDR,bVisco;
   double     sum,sumaver,sumt;
-  real       **eneset,*time;
-  int        *set,i,j,k,nset,sss,nenergy;
+  real       **eneset=NULL,*time=NULL;
+  int        *set=NULL,i,j,k,nset,sss,nenergy;
   char       **enm=NULL,**leg=NULL,**pairleg;
   char       **nms;
   t_filenm   fnm[] = {

@@ -193,9 +193,9 @@ int main(int argc,char *argv[])
   static bool bMat=FALSE;
   static real mindist=0.6;
   t_pargs pa[] = {
-    { "-matrix", FALSE, etBOOL, &bMat,
+    { "-matrix", FALSE, etBOOL, {&bMat},
       "Calculate half a matrix of group-group distances" },
-    { "-d",      FALSE, etREAL, &mindist,
+    { "-d",      FALSE, etREAL, {&mindist},
       "Distance for contacts" }
   };
   FILE      *atm;

@@ -51,7 +51,7 @@ bool bCase=FALSE;
 static int or_groups(atom_id nr1,atom_id *at1,atom_id nr2,atom_id *at2,
 		     atom_id *nr,atom_id *at)
 {
-  atom_id i1,i2,max;
+  atom_id i1,i2,max=0;
   bool bNotIncr;
 
   *nr=0;
@@ -656,7 +656,7 @@ static void list_residues(t_atoms *atoms)
   for(i=0; i<atoms->nr; i++) {
     resnr = atoms->atom[i].resnr;
     if ((resnr != prev_resnr) || (i==atoms->nr-1)) {
-      if (bDiff=strcmp(*atoms->resname[resnr],*atoms->resname[start]) || 
+      if ((bDiff=strcmp(*atoms->resname[resnr],*atoms->resname[start])) || 
 	  (i==atoms->nr-1)) {
 	if (bDiff)
 	  end = prev_resnr;
@@ -713,7 +713,7 @@ static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
     printf(" 'chain' char       'case': %s         'q': save and quit\n",
 	   bCase ? "case insensitive" : "case sensitive  "); 
     printf("\n> ");
-    gets(inp_string);
+    fgets(inp_string,STRLEN,stdin);
     printf("\n");
     string=inp_string;
     while (string[0]==' ')

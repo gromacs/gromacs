@@ -150,11 +150,11 @@ int main(int argc,char *argv[])
   static bool bAtom=FALSE;
   static int  nlevels=40;
   t_pargs pa[] = { 
-    { "-t",   FALSE, etREAL, &truncate,
+    { "-t",   FALSE, etREAL, {&truncate},
       "trunc distance" },
-    { "-nlevels",   FALSE, etINT,  &nlevels,
+    { "-nlevels",   FALSE, etINT,  {&nlevels},
       "Discretize distance in # levels" },
-    { "-dt",  FALSE, etREAL, &dt,
+    { "-dt",  FALSE, etREAL, {&dt},
       "Only analyze a frame each dt picoseconds" }
   };
   t_filenm   fnm[] = {

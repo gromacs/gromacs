@@ -118,7 +118,7 @@ int main(int argc,char *argv[])
   };
   static char *opt[] = { NULL, "angle", "g96-angle", "dihedral", "improper", "ryckaert-bellemans", "phi-psi", NULL };
   t_pargs pa[] = {
-    { "-type", FALSE, etENUM, opt,
+    { "-type", FALSE, etENUM, {opt},
       "Type of angle" }
   };
   

@@ -71,7 +71,7 @@ int main(int argc,char *argv[])
   static bool bVec    = FALSE;
 
   t_pargs pa[] = {
-    { "-d",   FALSE, etBOOL, &bVec,
+    { "-d",   FALSE, etBOOL, {&bVec},
       "Use index doublets (vectors) for correlation function instead of triplets (planes)" }
   };
 

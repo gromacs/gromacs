@@ -60,15 +60,15 @@ int main(int argc,char *argv[])
   static int  nstruct=100,first=7,last=-1,seed=-1;
   static real temp=300.0;
   t_pargs pa[] = {
-    { "-temp",  FALSE, etREAL, &temp, 
+    { "-temp",  FALSE, etREAL, {&temp}, 
       "Temperature in Kelvin" },
-    { "-seed", FALSE, etINT, &seed,     
+    { "-seed", FALSE, etINT, {&seed},     
       "Random seed, -1 generates a seed from time and pid" },
-    { "-num", FALSE, etINT, &nstruct,     
+    { "-num", FALSE, etINT, {&nstruct},     
       "Number of structures to generate" },
-    { "-first", FALSE, etINT, &first,     
+    { "-first", FALSE, etINT, {&first},     
       "First eigenvector to use (-1 is select)" },
-    { "-last",  FALSE, etINT, &last, 
+    { "-last",  FALSE, etINT, {&last}, 
       "Last eigenvector to use (-1 is till the last)" }
   };
 #define NPA asize(pa)
