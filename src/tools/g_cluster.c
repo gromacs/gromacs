@@ -953,8 +953,29 @@ int main(int argc,char *argv[])
     "the smallest average distance to the others or the average structure",
     "or all structures for each cluster will be written to a trajectory",
     "file. When writing all structures, separate numbered files are made",
-    "for each cluster."
+    "for each cluster.[PAR]"
     
+    "Two output files are always written:[BR]",
+    "[TT]-o[tt] writes the RMSD values in the upper left half of the matrix",
+    "and a graphical depiction of the clusters in the lower right half",
+    "(depends on [TT]-max[tt] and [TT]-keepfree[tt]).[BR]",
+    "[TT]-g[tt] writes information on the options used and a detailed list",
+    "of all clusters and their members.[PAR]",
+    
+    "Additionally, a number of optional output files can be written:[BR]",
+    "[TT]-dist[tt] writes the RMSD distribution.[BR]",
+    "[TT]-ev[tt] writes the eigenvectors of the RMSD matrix",
+    "diagonalization.[BR]",
+    "[TT]-sz[tt] writes the cluster sizes.[BR]",
+    "[TT]-tr[tt] writes a matrix of the number transitions between",
+    "cluster pairs.[BR]",
+    "[TT]-ntr[tt] writes the total number of transitions to or from",
+    "each cluster.[BR]",
+    "[TT]-clid[tt] writes the cluster number as a function of time.[BR]",
+    "[TT]-cl[tt] writes average (with option [TT]-av[tt]) or central",
+    "structure of each cluster or writes numbered files with cluster members",
+    "for a selected set of clusters (with option [TT]-wcl[tt], depends on",
+    "[TT]-nst[tt] and [TT]-rmsmin[tt]).[BR]",
   };
   
   FILE         *fp,*log;
