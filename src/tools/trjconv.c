@@ -496,8 +496,8 @@ int main(int argc,char *argv[])
       
       /* open output for writing */
       if ((bAppend) && (fexist(out_file))) {
-      strcpy(filemode,"a");
-      fprintf(stderr,"APPENDING to existing file %s\n",out_file);
+	strcpy(filemode,"a");
+	fprintf(stderr,"APPENDING to existing file %s\n",out_file);
       } else
 	strcpy(filemode,"w");
       switch (ftp) {
@@ -714,11 +714,11 @@ int main(int argc,char *argv[])
 		  frout.bTime = TRUE;
 		}
 		write_g96_conf(out,&frout,-1,NULL);
-		if (bSeparate) {
-		  ffclose(out);
-		  out = NULL;
-		  file_nr++;
-		}
+	      }
+	      if (bSeparate) {
+		ffclose(out);
+		out = NULL;
+		file_nr++;
 	      }
 	      break;
 	    default:
