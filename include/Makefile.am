@@ -38,5 +38,5 @@ include_HEADERS = \
 	readinp.h   	sysstuff.h    	xvgr.h 		delay.h     	\
 	index.h         nhash.h     	renum.h     	systest.h	\
 	disre.h     	init.h          nr.h        	reorder.h   	\
-	tags.h		do_fit.h    	nrama.h     	\
+	tags.h		do_fit.h    	inout.h         nrama.h     	\
 	rmpbc.h     	tgroup.h

@@ -174,14 +174,6 @@ extern void gmx_sumd(int nr,double r[],t_commrec *cr);
  *
  ******************************************************/
 
-#ifdef USE_CM5
-#include "cm5io.h"
-#endif
-
-#ifdef USE_PVM3
-#include "pvmio.h"
-#endif
-
 #ifdef USE_MPI
 #include "mpiio.h"
 #endif
