@@ -63,7 +63,7 @@ gromacs.ps:	gromacs.dvi
 		dvips -M -o $@ $^
 
 letter.ps:	gromacs.dvi
-		dvips -M -t Letter -O 0cm,-1cm -o $@ $^
+		dvips -M -t Letter -O 0cm,-0.9cm -o $@ $^
 
 %.aux:		%.tex
 
