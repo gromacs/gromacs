@@ -3,10 +3,10 @@
 setenv VER 	2.0
 setenv HTML	$GMXHOME/html
 if ( ! -d $HTML ) mkdir $HTML
-setenv MANDIR   online$VER
+setenv MANDIR   online
 setenv HTMLOL   $HTML/$MANDIR
 if ( ! -d $HTMLOL ) mkdir $HTMLOL
-setenv	INDEX	$HTML/online$VER.html
+setenv	INDEX	$HTML/$MANDIR.html
 if ( -f $INDEX ) \rm $INDEX
 
 cat > $INDEX << EOD
