@@ -44,6 +44,11 @@ extern void do_dummies(int nrtp, t_restp rtp[],
 		       int *dummy_type[], int *cgnr[],
 		       int fbonds);
 
+extern void do_dum_aromatics(int nrtp, t_restp rtp[], t_atomtype *atype, 
+			     t_atoms *at, t_symtab *symtab, rvec *x[], 
+			     t_params plist[], t_params *newbonds,
+			     int *dummy_type[], int *cgnr[]);
+
 extern void do_h_mass(t_params *psb, bool is_dum[], t_atoms *at, real mHmult);
 
 extern void clean_dum_bonds(t_params *ps, int dummy_type[]);
