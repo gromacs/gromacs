@@ -34,8 +34,11 @@ AUXFS = algorithms	analyse		averages	defunits	\
 
 AUXFILES = $(foreach FILE,$(AUXFS), $(FILE).aux)
 TEXFILES = $(foreach FILE,$(TEXFS), $(FILE).tex)
-
-all:		ps	pdf
+#
+# ps is made as a dependency to booklet.ps, 
+# pdf as a dependency to booklet.pdf,
+# and letter.ps as a dependency to letterbooklet.ps
+all:		booklet.ps letterbooklet.ps booklet.pdf	
 
 ps:		gromacs.ps
 
@@ -167,9 +170,6 @@ clean:
 		$(RM) *.log *.lof *.lot *.bbl *.blg *.toc *.dvi *.aux *.ps *~ #*# *.idx *.ilg *.ind *.out
 		$(RM) progman.tex
 		$(RMDIR) progman
-
-
-
 
 
 
