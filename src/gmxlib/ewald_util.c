@@ -90,7 +90,6 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 			matrix box,rvec mu_tot,real qsum, int ewald_geometry,
 			real epsilon_surface,matrix lr_vir)
 {
-  unsigned long long t1,t2,t3,dt;
   static  bool bFirst=TRUE;
   static  real Vself;
 
@@ -120,7 +119,6 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   Vdipole = 0;
   Vcharge = 0;
 
-  t1 = get_cycles();
   if (epsilon_surface == 0)
     dipole_coeff=0;
   else { 
@@ -286,9 +284,6 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
     }
   }
 
-  t2 = get_cycles();
-
-  printf("EWALD-UTIL: %d\n",t2-t1);
   /* Return the correction to the energy */
   return (Vdipole+Vcharge-Vself-Vexcl);
 }

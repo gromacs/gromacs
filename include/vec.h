@@ -48,7 +48,7 @@ static char *SRCID_vec_h = "$Id$";
   collection of in-line ready operations:
   
   lookup-table optimized scalar operations:
-  real invsqrt(float x)
+  real invsqrt(real x)
   void vecinvsqrt(real in[],real out[],int n)
   void vecrecip(real in[],real out[],int n)
   real sqr(real x)
@@ -125,7 +125,7 @@ typedef union
 
 
 #ifdef SOFTWARE_INVSQRT
-static inline real invsqrt(float x)
+static inline real invsqrt(real x)
 {
   const real  half=0.5;
   const real  three=3.0;
