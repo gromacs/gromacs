@@ -52,6 +52,9 @@ extern void do_view(char *fn, char *opts);
  * defaults are provided, can be overriden with environment vars 
  */
 
+extern void view_all(int nf, t_filenm fnm[]);
+/* calls do_view for all viewable output files in fnm[] */
+ 
 #ifdef CPLUSPLUS
 }
 #endif
