@@ -280,7 +280,7 @@ int main(int argc,char *argv[])
     "in case a new version of [BB]GROMACS[bb] requires this."
   };
   
-  static bool  bPBC=FALSE,bInBox=FALSE,bAppend=FALSE,bVels=TRUE;
+  static bool  bPBC=FALSE,bNoJump=FALSE,bInBox=FALSE,bAppend=FALSE,bVels=TRUE;
   static bool  bCenter=FALSE,bCompress=FALSE;
   static bool  bFit=FALSE,bIFit=FALSE,bBox=TRUE;
   static bool  bTer=FALSE,/*bPatch=FALSE,*/bCheckDouble=FALSE;
@@ -294,6 +294,8 @@ int main(int argc,char *argv[])
       "make sure all atoms are inside box" },
     { "-pbc", FALSE,  etBOOL, &bPBC,
       "make sure molecules are not broken into parts in output" },
+    { "-removejump",FALSE,  etBOOL, &bNoJump,
+      "make sure atoms don't jump across the box" },
     { "-center", FALSE,  etBOOL, &bCenter,
       "center atoms in box" },
     { "-xshift", FALSE, etREAL, &xshift,
@@ -398,7 +400,13 @@ int main(int argc,char *argv[])
     bExec     = opt2parg_bSet("-exec", asize(pa), pa);
     bTimeStep = opt2parg_bSet("-timestep", asize(pa), pa);
     bTDump    = opt2parg_bSet("-dump", asize(pa), pa);
+    if (bNoJump && bPBC) {
+      fprintf(stderr,
+	      "WARNING: both -pbc and -removejump specified: ignoring -pbc\n");
+      bPBC=FALSE;
+    }
     pdb_use_ter(bTer);
+    /* prec is in nr of decimal places, xtcprec is a multiplication factor: */
     xtcpr=1;
     for (i=0; i<prec; i++)
       xtcpr*=10;
@@ -453,7 +461,7 @@ int main(int argc,char *argv[])
     
     /* skipping */  
     if (skip_nr <= 0) {
-      fprintf(stderr,"The number of files to skip is <= 0. "
+      fprintf(stderr,"The number of frames to skip is <= 0. "
 	      "Writing out all frames.\n\n");
       skip_nr = 1;
     } 
@@ -480,9 +488,9 @@ int main(int argc,char *argv[])
 		1,&ifit,&ind_fit,&gn_fit);
 
       if (ifit < 3) 
-	fatal_error(0,"Need >= 3 points to fit!\n");
-    }  
-
+	fatal_error(0,"Need at least 3 points to fit!\n");
+    }
+    
     if (bIndex) {
       fprintf(stderr,"Select group for output\n");
       get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
@@ -497,7 +505,7 @@ int main(int argc,char *argv[])
 	index[i]=i;
       isize=natoms; 
     }
-
+    
     if (bFit) {
       snew(w_rls,header.natoms);
       for(i=0; (i<ifit); i++)
@@ -587,6 +595,16 @@ int main(int argc,char *argv[])
 	bDumpFrame = (t >= tdump-(0.5*dt) ) && (t <= tdump+(0.5*dt) );
       }
       
+      /* determine if an atom jumped across the box and reset it if so */
+      if (bNoJump) {
+	for(i=0; (i<natoms); i++)
+	  for(d=0; (d<DIM); d++)
+	    if ( x[i][d]-xp[i][d] > 0.5*box[d][d] )
+	      x[i][d]-=box[d][d];
+	    else if ( x[i][d]-xp[i][d] < -0.5*box[d][d] )
+	      x[i][d]+=box[d][d];
+      }
+      
       if (bIFit) {
 	/* Now modify the coords according to the flags,
 	   for normal fit, this is only done for output frames */
@@ -594,6 +612,10 @@ int main(int argc,char *argv[])
 	
 	reset_x(ifit,ind_fit,isize,index,x,w_rls);
 	do_fit(natoms,w_rls,xp,x);
+      }
+      
+      /* store this set of coordinates for future use */
+      if (bIFit || bNoJump) {
 	for(i=0; (i<natoms); i++) {
 	  copy_rvec(x[i],xp[i]);
 	  rvec_inc(x[i],shift);
@@ -636,7 +658,7 @@ int main(int argc,char *argv[])
 	  }
 	  if ( ((outframe % SKIP) == 0) || (outframe < SKIP) )
 	    fprintf(stderr,"->  frame %6d time %8.3f",outframe,t);
-	 
+	  
 	  if (!bIFit) {
 	    /* Now modify the coords according to the flags,
 	       for IFit we did this already! */
