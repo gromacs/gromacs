@@ -246,6 +246,10 @@ static void add_dum_atoms(t_params plist[], int dummy_type[],
 #define bNH 0.100
 #define bOH 0.100
 /* it does not make sense to change these angles: */
+/* Jesus... they are HARDCODED FOR A *SPECIFIC* FORCEFIELD ??????? 
+ * It makes every sense in the world to change them... the above is
+ * just bad coding. Sorry, but I'm getting quite pissed off trying to fix this... /EL
+ */ 
 #define aR6  (DEG2RAD*120)
 #define aR6H (M_PI-0.5*aR6)
 #define aR5  (DEG2RAD*108)
@@ -265,7 +269,7 @@ static int gen_dums_6ring(t_atoms *at, int *dummy_type[], t_params plist[],
 	 atCZ, atHZ, atNR };
   
   int i,ndum;
-  real a,b,dCGCE,tmp1,tmp2,mtot;
+   real a,b,dCGCE,tmp1,tmp2,mtot;
   /* CG, CE1 and CE2 stay and each get 1/3 of the total mass, 
      rest gets dummified */
 
@@ -675,6 +679,7 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
      PHE, TRP, TYR and HIS to a construction of dummy atoms */
   enum                    { resPHE, resTRP, resTYR, resHIS, resNR };
   char *resnms[resNR]   = {   "PHE",  "TRP",  "TYR",  "HIS" };
+  /* HIS can be known as HISH, HIS1, HISA, etc. too */
   bool bPartial[resNR]  = {  FALSE,  FALSE,  FALSE,   TRUE  };
   /* the atnms for every residue MUST correspond to the enums in the 
      gen_dums_* (one for each residue) routines! */
@@ -812,8 +817,8 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
       count_bonds(i, &plist[F_BONDS], at->atomname, 
 		  &nrbonds, &nrHatoms, Hatoms, &Heavy, &nrheavies, heavies);
       /* get Heavy atom type */
-      tpHeavy=get_atype(Heavy,at,nrtp,rtp);
-      strcpy(tpname,type2nm(tpHeavy,atype));
+      strncpy(tpname,*at->atomname[Heavy],9);
+
       bWARNING=FALSE;
       bAddDumParam=TRUE;
       /* nested if's which check nrHatoms, nrbonds and tpname */
@@ -865,6 +870,13 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
 	for (j=0; j<nrHatoms; j++)
 	  (*dummy_type)[Hatoms[j]] = Hat_dummy_type[j];
 	/* get dummy mass type from first char of heavy atom type (N or C) */
+
+	/* Jesus, this code is REALLY fucked up... everything is hardcoded;
+	 * specific bond lengths and angles, atom names, and now even 
+	 * atom TYPE names? I've changed this to PDB name, but ALL this dummy
+	 * code should be tossed, in my not so humble opinion....
+	 */
+
 	sprintf(name,"M%cH3",tpname[0]);
 	tpM=nm2type(name,atype);
 	/* make space for 2 masses: shift all atoms starting with 'Heavy' */
@@ -953,7 +965,7 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
       if (bWARNING)
 	fprintf(stderr,
 		"Warning: cannot convert atom %d %s (bound to a heavy atom "
-		"type %s with \n"
+		"%s with \n"
 		"         %d bonds and %d bound hydrogens atoms) to dummy "
 		"atom\n",
 		i+1,*(at->atomname[i]),tpname,nrbonds,nrHatoms);

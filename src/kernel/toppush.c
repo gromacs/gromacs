@@ -415,22 +415,22 @@ void push_dihedraltype(directive d,t_params bt[],char ***typenames,int ntypes,ch
   if(nn>=3 && strlen(alc[2])==1 && isdigit(alc[2][0])) {
     nral=2;
     ft    = atoi(alc[nral]);
-    /* Move atom types around a bit and use '*' for wildcard atoms
+    /* Move atom types around a bit and use 'X' for wildcard atoms
      * to create a 4-atom dihedral definition with arbitrary atoms in
      * position 1 and 4.
      */
     if(alc[2][0]=='2') {
       /* improper - the two atomtypes are 1,4. Use wildcards for 2,3 */
       strcpy(alc[3],alc[1]);
-      sprintf(alc[2],"*");
-      sprintf(alc[1],"*");
+      sprintf(alc[2],"X");
+      sprintf(alc[1],"X");
       /* alc[0] stays put */
     } else {
       /* proper - the two atomtypes are 2,3. Use wildcards for 1,4 */
-      sprintf(alc[3],"*");
+      sprintf(alc[3],"X");
       strcpy(alc[2],alc[1]);
       strcpy(alc[1],alc[0]);
-      sprintf(alc[0],"*");
+      sprintf(alc[0],"X");
     }
   } else if(nn==5 && strlen(alc[4])==1 && isdigit(alc[4][0])) {
     nral=4;
@@ -451,7 +451,7 @@ void push_dihedraltype(directive d,t_params bt[],char ***typenames,int ntypes,ch
       c[nn] = 0.0;
   }
   for(i=0; (i<4); i++) {
-    if(!strcmp(alc[i],"*"))
+    if(!strcmp(alc[i],"X"))
       p.a[i]=-1;
     else
     p.a[i]=name2index(alc[i],typenames,ntypes); 
@@ -1028,6 +1028,17 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 		get_warning_file(),get_warning_line(),
 		interaction_function[ftype].longname,
 		param.c[2],param.c[5]);
+
+  /* Dont add R-B dihedrals where all parameters are zero (no interaction) */
+  if (ftype==F_RBDIHS) {
+    nr=0;
+    for(i=0;i<nrfp;i++) {
+      if(param.c[i]!=0)
+	nr++;
+    }
+    if(nr==0)
+      return;
+  }
 
   /* Put the values in the appropriate arrays */
   push_bondnow (&bond[ftype],&param);

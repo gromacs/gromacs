@@ -471,12 +471,14 @@ void find_nc_ter(t_atoms *pdba,int r0,int r1,int *rn,int *rc)
   
   *rn=-1;
   *rc=-1;
+
   for(rnr=r0; rnr<r1; rnr++) {
     if ((*rn == -1) && (is_protein(*pdba->resname[rnr])))
 	*rn=rnr;
     if ((*rc != rnr) && (is_protein(*pdba->resname[rnr])))
       *rc=rnr;
   }
+
   if (debug) fprintf(debug,"nres: %d, rN: %d, rC: %d\n",pdba->nres,*rn,*rc);
 }
 
@@ -545,8 +547,7 @@ int main(int argc, char *argv[])
     "done by increasing the hydrogen-mass by a factor of 4. This is also",
     "done for water hydrogens to slow down the rotational motion of water.",
     "The increase in mass of the hydrogens is subtracted from the bonded",
-    "(heavy) atom so that the total mass of the system remains the same.",
-    "Reference Feenstra et al., J. Comput. Chem. 20, 786 (1999)."
+    "(heavy) atom so that the total mass of the system remains the same."
   };
 
   typedef struct {
@@ -967,7 +968,7 @@ int main(int argc, char *argv[])
 	 * (or a generic terminus if no-residue specific is available).
 	 */
 	/* First the N terminus */
-	strncpy(resname,*pdba->resname[pdba->atom[cc->rN[i]].resnr],3);
+	strncpy(resname,*pdba->resname[cc->rN[i]],3);
 	tdblist=filter_ter(nNtdb,ntdb,resname,&ntdblist);
 	if(ntdblist==0)
 	  fatal_error(0,"No suitable N-terminus found in database");
@@ -980,7 +981,7 @@ int main(int argc, char *argv[])
 	sfree(tdblist);
 	
 	/* And the C terminus */
-	strncpy(resname,*pdba->resname[pdba->atom[cc->rC[i]].resnr],3);
+	strncpy(resname,*pdba->resname[cc->rC[i]],3);
 	tdblist=filter_ter(nCtdb,ctdb,resname,&ntdblist);
 	if(ntdblist==0)
 	  fatal_error(0,"No suitable C-terminus found in database");

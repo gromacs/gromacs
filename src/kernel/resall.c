@@ -65,8 +65,19 @@ t_atomtype *read_atype(char *adb,t_symtab *tab)
       fatal_error(0,"nratt >= MAXAT(%d). Increase the latter",MAXAT);
     if (feof(in))
       break;
-    if (fgets2(buf,STRLEN,in) == NULL)
+
+    /* Skip blank or comment-only lines */
+    do {
+      fgets2(buf,STRLEN,in);
+      if(buf) {
+	strip_comment(buf);
+	trim(buf);
+      }
+    } while (buf && strlen(buf)==0);
+
+    if(buf==NULL)
       break;
+    
     if (sscanf(buf,"%s%lf",name,&m) != 2)
       break;
     set_at(&(at->atom[nratt]),m,0.0,nratt,0);
