@@ -209,7 +209,6 @@ void low_rmsd_dist(char *fn,real maxrms,int nn,real **mat)
     fprintf(fp,"%10g  %10d\n",i/fac,histo[i]);
   fclose(fp);
   sfree(histo);
-  xvgr_file(fn,NULL);
 }
 
 void rmsd_distribution(char *fn,t_mat *rms)
