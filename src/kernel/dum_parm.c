@@ -686,6 +686,9 @@ static void clean_dum_bonds(t_params *plist, t_pindex pindex[],
   atom_id  dumatoms[MAXATOMLIST];
   bool     bKeep,bRemove,bUsed,bPresent,bThisFD,bThisOUT,bAllFD,bFirstTwo;
   t_params *ps;
+
+  if (cftype == F_CONNBONDS)
+    return;
   
   ps = &(plist[cftype]);
   dumnral=0;
