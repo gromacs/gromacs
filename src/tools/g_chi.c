@@ -154,7 +154,7 @@ void pr_dlist(FILE *fp,int nl,t_dlist dl[],real dt)
     pr_props(fp,&dl[i],edOmega,dt);
     for(Xi=0; Xi<MAXCHI; Xi++)
       if (dl[i].atm.Cn[Xi+3] != -1) {
-	fprintf(fp,"   Chi%d[%4d,%4d,%4d,%4d]",Xi,dl[i].atm.Cn[Xi],
+	fprintf(fp,"   Chi%d[%4d,%4d,%4d,%4d]",Xi+1,dl[i].atm.Cn[Xi],
 		dl[i].atm.Cn[Xi+1],dl[i].atm.Cn[Xi+2],
 		dl[i].atm.Cn[Xi+3]);
 	pr_props(fp,&dl[i],Xi+2,dt);
@@ -166,6 +166,7 @@ void pr_dlist(FILE *fp,int nl,t_dlist dl[],real dt)
 bool has_dihedral(int Dih,t_dlist *dl)
 {
   bool b = FALSE;
+  int  ddd;
   
 #define BBB(x) (dl->atm.##x != -1)
   switch (Dih) {
@@ -184,7 +185,8 @@ bool has_dihedral(int Dih,t_dlist *dl)
   case edChi4:
   case edChi5:
   case edChi6:
-    b = (BBB(Cn[Dih-2]) && BBB(Cn[Dih-1]) && BBB(Cn[Dih]) && BBB(Cn[Dih+1]));
+    ddd = Dih - edChi1;
+    b   = (BBB(Cn[ddd]) && BBB(Cn[ddd+1]) && BBB(Cn[ddd+2]) && BBB(Cn[ddd+3]));
     break;
   default:
     pr_dlist(stdout,1,dl,1);
@@ -247,7 +249,8 @@ t_dlist *mk_dlist(FILE *log,
 	       (strcmp(*(atoms->atomname[i]),"SD") == 0)  ||
 	       (strcmp(*(atoms->atomname[i]),"OD1") == 0) ||
 	       (strcmp(*(atoms->atomname[i]),"ND1") == 0) ||
-	       (strcmp(*(atoms->atomname[i]),"HG")  == 0))
+	       (strcmp(*(atoms->atomname[i]),"HG")  == 0) ||
+	       (strcmp(*(atoms->atomname[i]),"HG1")  == 0))
 	atm.Cn[4]=i;
       else if ((strcmp(*(atoms->atomname[i]),"CE") == 0) ||
 	       (strcmp(*(atoms->atomname[i]),"CE1") == 0) ||
@@ -771,6 +774,7 @@ static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
 #define NMAT 60
   real **mat,phi,psi,omega,axis[NMAT],lo,hi;
   t_rgb rlo = { 1.0, 1.0, 0.0 };
+  t_rgb rmid= { 0.0, 1.0, 0.0 };
   t_rgb rhi = { 0.0, 0.0, 1.0 };
   
   for(i=0; (i<nlist); i++) {
@@ -802,7 +806,7 @@ static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
 	  fprintf(gp,"%d\n",!bAllowed(dih[Phi][j],RAD2DEG*dih[Psi][j]));
 	if (bOm) {
 	  omega = RAD2DEG*dih[Om][j];
-	  mat[phi/6+30][psi/6+30] += omega;
+	  mat[(int)(phi/6)+30][(int)(psi/6)+30] += omega;
 	}
       }
       if (bViol)
@@ -810,7 +814,7 @@ static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
       fclose(fp);
       if (bOm) {
 	sprintf(fn,"ramomega%s.xpm",dlist[i].name);
-	fp = ffopen(fn,"r");
+	fp = ffopen(fn,"w");
 	lo = hi = 0;
 	for(j=0; (j<NMAT); j++)
 	  for(k=0; (k<NMAT); k++) {
@@ -830,8 +834,8 @@ static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
 	lo += 180;
 	hi += 180;
 	nlevels = 20;
-	write_xpm(fp,"Omega/Ramachandran Plot","Deg","Phi","Psi",
-		  NMAT,NMAT,axis,axis,mat,lo,hi,rlo,rhi,&nlevels);
+	write_xpm3(fp,"Omega/Ramachandran Plot","Deg","Phi","Psi",
+		   NMAT,NMAT,axis,axis,mat,lo,180.0,hi,rlo,rmid,rhi,&nlevels);
 	fclose(fp);
 	for(j=0; (j<NMAT); j++)
 	  sfree(mat[j]);
@@ -849,6 +853,8 @@ static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
 	fprintf(fp,"%10g  %10g\n",RAD2DEG*dih[Xi1][j],RAD2DEG*dih[Xi2][j]);
       fclose(fp);
     }
+    else 
+      fprintf(stderr,"No chi1 & chi2 angle for %s\n",dlist[i].name);
   }
 }
 
@@ -1018,7 +1024,7 @@ int main(int argc,char *argv[])
   FILE       *fp,*log;
   char       title[256];
   int        status,natoms,i,j,k,l;
-  bool       bChi,bRamOmega;
+  bool       bChi;
   t_topology top;
   rvec       *x,*xref,*xav;
   real       t,t0,t1,lambda;
@@ -1060,7 +1066,6 @@ int main(int argc,char *argv[])
   
   log=ffopen(ftp2fn(efLOG,NFILE,fnm),"w");
 
-  bRamOmega = opt2bSet("-r",NFILE,fnm);
   if (bRamOmega) {
     bOmega = TRUE;
     bPhi   = TRUE;
