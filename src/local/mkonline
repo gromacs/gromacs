@@ -13,7 +13,7 @@ if ( ! -d $TEXDIR ) set TEXDIR = .
 set TEXIDX	= $TEXDIR/proglist.tex
 set PROGFILE	= programs.txt
 
-set GENERAL 	= "getting_started:Getting_Started flow:Flow_Chart files:File_Formats mdp_opt:mdp_options count:Top_of_the_Pops"
+set GENERAL 	= "getting_started:Getting_Started flow:Flow_Chart files:File_Formats mdp_opt:mdp_options"
 
 set olddir = `pwd`
 cd $GMXHOME/bin/$GMXCPU
@@ -40,8 +40,6 @@ echo "<TABLE BORDER=0 CELLSPACING=0 CELLPADDING=10>" >> $HTMLIDX
 echo "<TR>" >> $HTMLIDX
 echo "<TD VALIGN=top WIDTH=25%>" >> $HTMLIDX
 echo "<h3>General</h3>" >> $HTMLIDX
-echo "<A HREF=changes$VER.html>New features</a>" >> $HTMLIDX
-echo "<br>" >> $HTMLIDX
 foreach i ( $GENERAL )
   set file = `echo $i | cut -d: -f1`
   set desc = `echo $i | cut -d: -f2 | sed 's/_/ /g'`
@@ -62,7 +60,8 @@ echo "</TD>" >> $HTMLIDX
 echo "</TR>" >> $HTMLIDX
 echo "</TABLE>" >> $HTMLIDX
 echo "<IMG SRC=gif/rainbow.gif WIDTH=100% HEIGHT=7>" >> $HTMLIDX
-echo "<h3>Programs by topic</h3>" >> $HTMLIDX
+echo "<h3>Programs by Topic</h3>" >> $HTMLIDX
+echo "<multicol cols=3> " >> $HTMLIDX
 awk -F '|' -v mandir=$MANDIR '{\
   if (NF) {\
     if ( $1 == "HEAD" ) {\
@@ -71,31 +70,23 @@ awk -F '|' -v mandir=$MANDIR '{\
     }\
   }\
 }' $PROGFILE >> $HTMLIDX
-echo "<table>" >> $HTMLIDX
+echo "</multicol> " >> $HTMLIDX
 awk -F '|' -v mandir=$MANDIR '{\
   if (NF) {\
     if ( $1 == "HEAD" ) {\
       hnr++;\
-      printf("<A NAME=\"HNR%d\">\n",hnr);\
+      printf("\n<A NAME=\"HNR%d\">\n",hnr);\
+      printf("<TABLE CELLSPACING=1>\n<TR><TD>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");\
       printf("<TR><TD COLSPAN=2><b>%s</b>\n",$2);\
     } else if ( $1 == "END" ) {\
-      printf("<TR><TD>&nbsp;<TD>\n");\
+      printf("</TABLE>\n");\
     } else {\
       printf("<TR><TD><A HREF=\"%s/%s.html\">%s</A><TD>%s\n",mandir,$1,$1,$2);\
     }\
   }\
 }' $PROGFILE >> $HTMLIDX
-echo "</table>" >> $HTMLIDX
 echo "<IMG SRC=gif/rainbow.gif WIDTH=100% HEIGHT=7>" >> $HTMLIDX
 echo "<p>" >> $HTMLIDX
-echo "You can also get a postscript version of the GROMACS manual " >> $HTMLIDX
-echo "(not up to date) from the " >> $HTMLIDX
-echo "<a href=software.html>software</a> page." >> $HTMLIDX
-echo "<p>" >> $HTMLIDX
-echo "Also still available:" >> $HTMLIDX
-echo "<B><A HREF=online1.6.html>Gromacs 1.6 Online Manual</A></B>" >> $HTMLIDX
-echo "<P>" >> $HTMLIDX
-echo "<IMG SRC=gif/rainbow.gif WIDTH=100% HEIGHT=7>" >> $HTMLIDX
 echo "</BODY>" >> $HTMLIDX
 echo "</HTML>" >> $HTMLIDX
 
