@@ -195,7 +195,7 @@ static void add_j_to_nblist(t_nblist nlist[],int gid,int j_atom)
   nlist[gid].nrj ++;
 }
 
-inline void put_in_list(FILE *log,t_iparams ip[],int atnr,int nWater,
+static void put_in_list(FILE *log,t_iparams ip[],int atnr,int nWater,
 			int ngener,t_mdatoms *md,
 			int icg,int nj,atom_id jjcg[],
 			atom_id index[],atom_id a[],
@@ -568,7 +568,7 @@ static bool get_dx(int cx,int Nx,int tx,int delta,int *dx0,int *dx1)
  *
  ****************************************************/
 
-inline static void do_longrange(FILE *log,t_topology *top,t_forcerec *fr,
+static void do_longrange(FILE *log,t_topology *top,t_forcerec *fr,
 			 int ngener,t_mdatoms *md,int icg,int nlr,
 			 atom_id lr[],t_excl bexcl[],int shift,
 			 rvec x[],rvec box_size,t_nrnb *nrnb,
