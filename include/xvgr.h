@@ -122,6 +122,11 @@ extern void dump_xvg(char *fn,char *title,int nx,int ny,real **y);
  * ny columns to a file.
  */
 
+/***************************************************
+ *            XV  ROUTINES
+ ***************************************************/
+extern void xv_file(char *fn,char *opts);
+/* View a file using xv */
 
 /****************************************************
  *           Some statistics utilities 

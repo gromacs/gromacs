@@ -97,6 +97,16 @@ void xvgr_file(char *fn,char *opts)
   }
 }
 
+void xv_file(char *fn,char *opts)
+{
+  char   doit[STRLEN];
+
+  if (bDoView()) {
+    sprintf(doit,"xv %s %s &",opts ? opts : "",fn);
+    system(doit);
+  }
+}
+
 void xvgr_view(FILE *out,real xmin,real ymin,real xmax,real ymax)
 {
   fprintf(out,"@ view %g, %g, %g, %g\n",xmin,ymin,xmax,ymax);
