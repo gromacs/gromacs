@@ -26,6 +26,30 @@
  * And Hey:
  * GRowing Old MAkes el Chrono Sweat
  */
+
+/* IMPORTANT FOR DEVELOPERS:
+ *
+ * Triclinic pme stuff isn't entirely trivial, and we've experienced
+ * some bugs during development (many of them due to me). To avoid
+ * this in the future, please check the following things if you make
+ * changes in this file:
+ *
+ * 1. You should obtain identical (at least to the PME precision)
+ *    energies, forces, and virial for
+ *    a rectangular box and a triclinic one where the z (or y) axis is
+ *    tilted a whole box side. For instance you could use these boxes:
+ *
+ *    rectangular       triclinic
+ *     2  0  0           2  0  0
+ *     0  2  0           0  2  0
+ *     0  0  6           2  2  6
+ *
+ * 2. You should check the energy conservation in a triclinic box.
+ *
+ * It might seem an overkill, but better safe than sorry.
+ * /Erik 001109
+ */ 
+
 static char *SRCID_pme_c = "$Id$";
 
 #include <stdio.h>
@@ -84,14 +108,13 @@ static void calc_idx(int natoms,matrix recipbox,
   asm("fldcw %0" : : "m" (*&x86_cw));
   #define x86trunc(a,b) asm("fld %1\nfistpl %0\n" : "=m" (*&b) : "f" (a));
 #endif
-  
+ 
   rxx = recipbox[XX][XX];
   ryx = recipbox[YY][XX];
   ryy = recipbox[YY][YY];
   rzx = recipbox[ZZ][XX];
   rzy = recipbox[ZZ][YY];
   rzz = recipbox[ZZ][ZZ];
-
 
   for(i=0; (i<natoms); i++) {
     xptr   = x[i];
@@ -101,7 +124,7 @@ static void calc_idx(int natoms,matrix recipbox,
     tx = nx + nx * ( xptr[XX] * rxx + xptr[YY] * ryx + xptr[ZZ] * rzx );
     ty = ny + ny * (                  xptr[YY] * ryy + xptr[ZZ] * rzy );
     tz = nz + nz * (                                   xptr[ZZ] * rzz );
-
+    
 #if (defined __GNUC__ && defined _lnx_ && defined FAST_X86TRUNC)
     x86trunc(tx,tix);
     x86trunc(ty,tiy);
@@ -111,7 +134,7 @@ static void calc_idx(int natoms,matrix recipbox,
     tiy = (int)(ty);
     tiz = (int)(tz);
 #endif
-    
+
     fractx[i][XX] = tx - tix;
     fractx[i][YY] = ty - tiy;
     fractx[i][ZZ] = tz - tiz;   
@@ -119,7 +142,7 @@ static void calc_idx(int natoms,matrix recipbox,
     idxptr[XX] = nnx[tix];
     idxptr[YY] = nny[tiy];
     idxptr[ZZ] = nnz[tiz];
-  }
+  }  
 #if (defined __GNUC__ && defined _lnx_ && defined FAST_X86TRUNC)  
   asm("fldcw %0" : : "m" (*&x86_cwsave));
 #endif
@@ -131,16 +154,16 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForward)
   static t_fft_r *tmp;
   int i;
   static int localsize;
-  static int maxnode;
+  static int maxproc;
 
 #ifdef USE_MPI
   if(bFirst) {
     localsize=grid->la12r*grid->pfft.local_nx;
     if(!grid->workspace)
       snew(tmp,localsize);
-    maxnode=grid->nx/grid->pfft.local_nx;
+    maxproc=grid->nx/grid->pfft.local_nx;
   }
-  /* NOTE: FFTW doesnt necessarily use all nodes for the fft;
+  /* NOTE: FFTW doesnt necessarily use all processors for the fft;
      * above I assume that the ones that do have equal amounts of data.
      * this is bad since its not guaranteed by fftw, but works for now...
      * This will be fixed in the next release.
@@ -149,16 +172,16 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForward)
   if(grid->workspace)
     tmp=grid->workspace;
   if(bForward) { /* sum contributions to local grid */
-    for(i=0;i<maxnode;i++) {
+    for(i=0;i<maxproc;i++) {
       MPI_Reduce(grid->ptr+i*localsize, /*ptr arithm.     */
 		 tmp,localsize,      
 		 GMX_MPI_REAL,MPI_SUM,i,MPI_COMM_WORLD);
     }
-    if(cr->nodeid<maxnode)
-      memcpy(grid->ptr+cr->nodeid*localsize,tmp,localsize*sizeof(t_fft_r));
+    if(cr->pid<maxproc)
+      memcpy(grid->ptr+cr->pid*localsize,tmp,localsize*sizeof(t_fft_r));
   }
-  else { /* distribute local grid to all nodes */
-    for(i=0;i<maxnode;i++)
+  else { /* distribute local grid to all processors */
+    for(i=0;i<maxproc;i++)
       MPI_Bcast(grid->ptr+i*localsize, /* ptr arithm     */
 		localsize,       
 		GMX_MPI_REAL,i,MPI_COMM_WORLD);
@@ -223,7 +246,7 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
 }
 
 real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
-	       splinevec bsp_mod,matrix box,
+	       splinevec bsp_mod,matrix recipbox,
 	       matrix vir,t_commrec *cr)
 {
   /* do recip sum over local cells in grid */
@@ -243,13 +266,13 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
   
   unpack_fftgrid(grid,&nx,&ny,&nz,&la2,&la12,FALSE,(t_fft_r **)&ptr);
   clear_mat(vir);
-
-  rxx = box[XX][XX]/norm2(box[XX]);
-  ryx = box[YY][XX]/norm2(box[YY]);
-  ryy = box[YY][YY]/norm2(box[YY]);
-  rzx = box[ZZ][XX]/norm2(box[ZZ]);
-  rzy = box[ZZ][YY]/norm2(box[ZZ]);
-  rzz = box[ZZ][ZZ]/norm2(box[ZZ]);
+   
+  rxx = recipbox[XX][XX];
+  ryx = recipbox[YY][XX];
+  ryy = recipbox[YY][YY];
+  rzx = recipbox[ZZ][XX];
+  rzy = recipbox[ZZ][YY];
+  rzz = recipbox[ZZ][ZZ];
  
   maxkx = (nx+1)/2;
   maxky = (ny+1)/2;
@@ -269,27 +292,31 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
     kystart = 0;
     kyend   = ny;
   }
+  
   for(ky=kystart; (ky<kyend); ky++) {  /* our local cells */
+    
     if(ky<maxky)
       my = ky;
     else
       my = (ky-ny);
     by = M_PI*vol*bsp_mod[YY][ky];
     
-    for(kx=0; (kx<nx); kx++) {
+    for(kx=0; (kx<nx); kx++) {    
       if(kx < maxkx)
 	mx = kx;
       else
 	mx = (kx-nx);
 
-      mhx = mx * rxx;             /* Obsolete ? */
-      mhy = mx * ryx + my * ryy;  /* Obsolete ? */
+      mhx = mx * rxx;
+      mhy = mx * ryx + my * ryy;
 
       bx = bsp_mod[XX][kx];
+      
       if (bPar)
 	p0 = ptr + INDEX(ky,kx,0); /* Pointer Arithmetic */
       else
 	p0 = ptr + INDEX(kx,ky,0); /* Pointer Arithmetic */
+
       for(kz=0; (kz<maxkz); kz++,p0++)  {
 	if ((kx==0) && (ky==0) && (kz==0))
 	  continue;
@@ -297,9 +324,7 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
 	d2      = p0->im;
 	mz      = kz;
 
-	mhx = mx * rxx + my * ryx + mz * rzx;
-	mhy =            my * ryy + mz * rzy;
-	mhz =                       mz * rzz;
+	mhz = mx * rzx + my * rzy + mz * rzz;
 
 	m2      = mhx*mhx+mhy*mhy+mhz*mhz;
 	denom   = m2*bx*by*bsp_mod[ZZ][kz];
@@ -336,8 +361,8 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
   vir[ZZ][YY] = viryz;
   vir[ZZ][ZZ] = virzz;
   
-  for(nx=0;nx<DIM;nx++)
-    for(ny=0;ny<DIM;ny++)
+  for(nx=0;nx<DIM;nx++) 
+    for(ny=0;ny<DIM;ny++) 
       vir[nx][ny]*=0.25;
   /* this virial seems ok for isotropic scaling, but I'm
    * experiencing problems on semiisotropic membranes */
@@ -346,7 +371,7 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
   return(0.5*energy);
 }
 
-void gather_f_bsplines(t_fftgrid *grid,matrix box,
+void gather_f_bsplines(t_fftgrid *grid,matrix recipbox,
 		       ivec idx[],rvec f[],real *charge,splinevec theta,
 		       splinevec dtheta,int nr,int order,
 		       int nnx[],int nny[],int nnz[])
@@ -376,13 +401,12 @@ void gather_f_bsplines(t_fftgrid *grid,matrix box,
   jj0  = nny+ny+1-order;
   kk0  = nnz+nz+1-order;
   
-  rxx = box[XX][XX]/norm2(box[XX]);
-  ryx = box[YY][XX]/norm2(box[YY]);
-  ryy = box[YY][YY]/norm2(box[YY]);
-  rzx = box[ZZ][XX]/norm2(box[ZZ]);
-  rzy = box[ZZ][YY]/norm2(box[ZZ]);
-  rzz = box[ZZ][ZZ]/norm2(box[ZZ]);
-
+  rxx = recipbox[XX][XX];
+  ryx = recipbox[YY][XX];
+  ryy = recipbox[YY][YY];
+  rzx = recipbox[ZZ][XX];
+  rzy = recipbox[ZZ][YY];
+  rzz = recipbox[ZZ][ZZ];
 
 
   for(n=0; (n<nr); n++) {
@@ -401,72 +425,72 @@ void gather_f_bsplines(t_fftgrid *grid,matrix box,
       norder  = n*order;
       norder1 = norder+order;
       for(ithx=norder; (ithx<norder1); ithx++,i0++) {
-	i     = *i0;
-	tx    = thx[ithx];
-	dx    = dthx[ithx];
-	j0    = jj0+yidx;   /* Pointer arithemtic */
-	
-	if (order == 4) {
-	  for(ithy=norder; (ithy<norder1); ithy++,j0++) {
-	    j     = *j0;
-	    ty    = thy[ithy];
-	    dy    = dthy[ithy];
-	    k0    = kk0+zidx;     /* Pointer arithemtic */
-	    ind0  = INDEX(i,j,0);
-	    gval1 = ptr[ind0+k0[0]];
-	    gval2 = ptr[ind0+k0[1]];
-	    gval3 = ptr[ind0+k0[2]];
-	    gval4 = ptr[ind0+k0[3]];
-	    
-	    ithz  = norder;
-	    
-	    /* First iteration */
-	    fxy1  = thz[ithz]*gval1;
-	    fz1   = dthz[ithz]*gval1;
-	    ithz++;
-	    
-	    /* Second iteration */
-	    fxy1 += thz[ithz]*gval2;
-	    fz1  += dthz[ithz]*gval2;
-	    ithz++;
-	    
-	    /* Third iteration */
-	    fxy1 += thz[ithz]*gval3;
-	    fz1  += dthz[ithz]*gval3;
-	    ithz++;
-	    
-	    /* Fourth iteration */
-	    fxy1 += thz[ithz]*gval4;
-	    fz1  += dthz[ithz]*gval4;
-	    fx    = fx+dx*ty*fxy1;
-	    fy    = fy+tx*dy*fxy1;
-	    fz    = fz+tx*ty*fz1;
-	  }
-	}
-	else {
-	  for(ithy=norder; (ithy<norder1); ithy++,j0++) {
-	    j     = *j0;
-	    ty    = thy[ithy];
-	    dy    = dthy[ithy];
-	    k0    = kk0+zidx; /* Pointer arithemtic */
-	    ind0  = INDEX(i,j,0);
-	    
-	    fxy1 = fz1 = 0;
-	    for(ithz=norder; (ithz<norder1); ithz++,k0++) {
-	      k     = *k0;
-	      gval  = ptr[ind0+k];
-	      fxy1 += thz[ithz]*gval;
-	      fz1  += dthz[ithz]*gval;
-	    }
-	    fx += dx*ty*fxy1;
-	    fy += tx*dy*fxy1;
-	    fz += tx*ty*fz1;
-	  }
-	}
+        i     = *i0;
+        tx    = thx[ithx];
+        dx    = dthx[ithx];
+        j0    = jj0+yidx;   /* Pointer arithemtic */
+
+        if (order == 4) {
+          for(ithy=norder; (ithy<norder1); ithy++,j0++) {
+            j     = *j0;
+            ty    = thy[ithy];
+            dy    = dthy[ithy];
+            k0    = kk0+zidx;     /* Pointer arithemtic */
+            ind0  = INDEX(i,j,0);
+            gval1 = ptr[ind0+k0[0]];
+            gval2 = ptr[ind0+k0[1]];
+            gval3 = ptr[ind0+k0[2]];
+            gval4 = ptr[ind0+k0[3]];
+            
+            ithz  = norder;
+            
+            /* First iteration */
+            fxy1  = thz[ithz]*gval1;
+            fz1   = dthz[ithz]*gval1;
+            ithz++;
+            
+            /* Second iteration */
+            fxy1 += thz[ithz]*gval2;
+            fz1  += dthz[ithz]*gval2;
+            ithz++;
+            
+            /* Third iteration */
+            fxy1 += thz[ithz]*gval3;
+            fz1  += dthz[ithz]*gval3;
+            ithz++;
+            
+            /* Fourth iteration */
+            fxy1 += thz[ithz]*gval4;
+            fz1  += dthz[ithz]*gval4;
+            fx    = fx+dx*ty*fxy1;
+            fy    = fy+tx*dy*fxy1;
+            fz    = fz+tx*ty*fz1;    
+          } 
+        }
+	   else {
+        	  for(ithy=norder; (ithy<norder1); ithy++,j0++) {
+            j     = *j0;
+            ty    = thy[ithy];
+            dy    = dthy[ithy];
+            k0    = kk0+zidx; /* Pointer arithemtic */
+            ind0  = INDEX(i,j,0);
+            
+            fxy1 = fz1 = 0;
+            for(ithz=norder; (ithz<norder1); ithz++,k0++) {
+              k     = *k0;
+              gval  = ptr[ind0+k];
+              fxy1 += thz[ithz]*gval;
+              fz1  += dthz[ithz]*gval;
+            }
+            fx += dx*ty*fxy1;
+            fy += tx*dy*fxy1;
+            fz += tx*ty*fz1; 
+          } 
+        } 
       }
-      f[n][XX]-=qn*( fx*nx*rxx + fy*ny*ryx + fz*nz*rzx );
-      f[n][YY]-=qn*(             fy*ny*ryy + fz*nz*rzy );
-      f[n][ZZ]-=qn*(                         fz*nz*rzz );
+      f[n][XX] -= qn*( fx*nx*rxx );
+      f[n][YY] -= qn*( fx*nx*ryx + fy*ny*ryy );
+      f[n][ZZ] -= qn*( fx*nx*rzx + fy*ny*rzy + fz*nz*rzz );
     }
   }
   /* Since the energy and not forces are interpolated
@@ -626,7 +650,7 @@ void init_pme(FILE *log,t_commrec *cr,t_nsborder *nsb,t_inputrec *ir)
     fprintf(log,"Parallelized PME sum used.\n");
     if(nx%(cr->nnodes)!=0)
       fprintf(log,"Warning: For load balance, "
-	      "fourier_nx should be divisible by the number of nodes\n");
+	      "fourier_nx should be divisible by NNODES\n");
   } 
  
   /* allocate space for things */
@@ -660,8 +684,8 @@ real do_pme(FILE *logfile,   bool bVerbose,
   
   calc_recipbox(box,recipbox); 
   
-  vol=box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
-
+  vol=det(box);
+  
   /* Compute fftgrid index for all atoms, with help of some extra variables */
   if (!idx) {
     snew(idx,HOMENR(nsb));
@@ -677,37 +701,35 @@ real do_pme(FILE *logfile,   bool bVerbose,
   }    
   calc_idx(HOMENR(nsb),recipbox,x+START(nsb),fractx,
 	   idx,nx,ny,nz,nnx,nny,nnz);
-   
   /* make local bsplines  */
   make_bsplines(theta,dtheta,ir->pme_order,nx,ny,nz,fractx,idx,
 		charge+START(nsb),HOMENR(nsb));
   /* put local atoms on grid. */
   spread_q_bsplines(grid,idx,charge+START(nsb),
 		    theta,HOMENR(nsb),ir->pme_order,nnx,nny,nnz);
-  
   inc_nrnb(nrnb,eNR_SPREADQBSP,
 	   ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
   
-  /* sum contributions to local grid from other nodes */
+  /* sum contributions to local grid from other processors */
   if (PAR(cr))
     sum_qgrid(cr,nsb,grid,TRUE);
   
   /* do 3d-fft */ 
   gmxfft3D(grid,FFTW_FORWARD,cr);
-  
-  /* solve in k-space for our local cells */
-  energy=solve_pme(grid,ewaldcoeff,vol,bsp_mod,box,vir,cr);
-  inc_nrnb(nrnb,eNR_SOLVEPME,nx*ny*nz*0.5);
 
+  /* solve in k-space for our local cells */
+  energy=solve_pme(grid,ewaldcoeff,vol,bsp_mod,recipbox,vir,cr);
+  inc_nrnb(nrnb,eNR_SOLVEPME,nx*ny*nz*0.5);
+ 
   /* do 3d-invfft */
   gmxfft3D(grid,FFTW_BACKWARD,cr);
-   
-  /* distribute local grid to all nodes */
+  
+  /* distribute local grid to all processors */
   if (PAR(cr))
     sum_qgrid(cr,nsb,grid,FALSE);
   
   /* interpolate forces for our local atoms */
-  gather_f_bsplines(grid,box,idx,f+START(nsb),charge+START(nsb),
+  gather_f_bsplines(grid,recipbox,idx,f+START(nsb),charge+START(nsb),
 		    theta,dtheta,HOMENR(nsb),ir->pme_order,
 		    nnx,nny,nnz);
 
