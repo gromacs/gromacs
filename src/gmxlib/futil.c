@@ -411,10 +411,10 @@ char *low_libfn(char *file, bool bFatal)
     if (lib != NULL) {
       env_is_set=TRUE;
       strcpy(libpath,lib);
-    } else {
-      if (!get_libdir(libpath))
-	strcpy(libpath,GMXLIBDIR);
-    }
+    } 
+    else if (!get_libdir(libpath))
+      strcpy(libpath,GMXLIBDIR);
+    
     bFirst=0;
   }
 

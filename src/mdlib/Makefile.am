@@ -15,13 +15,13 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	congrad.c	constr.c	coupling.c	\
 	dummies.c	ebin.c		edsam.c		\
 	ewald.c         fftgrid.c	force.c  	\
-	ghat.c		init.c		md.c		\
+	ghat.c		init.c			\
 	mdatom.c	mdebin.c	nm.c		\
 	ns.c		nsb.c		nsgrid.c	\
 	pme.c		poisson.c	pppm.c		\
 	psgather.c	pull.c 		pullinit.c	\
 	pullio.c	pullutil.c	pssolve.c	\
-	psspread.c	runner.c	shakef.c	\
+	psspread.c	shakef.c	\
 	sim_util.c	splittop.c	steep.c		\
 	tables.c	tgroup.c	update.c	\
 	vcm.c		wnblist.c	poisson.h	\

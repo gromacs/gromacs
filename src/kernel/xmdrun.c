@@ -67,92 +67,12 @@ static char *SRCID_xmdrun_c = "$Id$";
 #include "mdebin.h"
 #include "disre.h"
 #include "dummies.h"
-#include "init_sh.h"
-#include "do_gct.h"
 #include "physics.h"
 #include "sim_util.h"
 #include "block_tx.h"
 #include "rdgroup.h"
-#include "glaasje.h"
 #include "edsam.h"
 #include "calcmu.h"
-#include "ionize.h" 
-
-static t_commrec *cr_msim;
-
-t_commrec *init_msim(t_commrec *cr,int nfile,t_filenm fnm[])
-{
-  t_commrec *cr_new;
-  int  i,ftp;
-  char *buf;
-  
-  cr_msim = cr;
-  snew(cr_new,1);
-  cr_new->nodeid = 0;
-  cr_new->nnodes = 1;
-  cr_new->left   = cr->left;
-  cr_new->right  = cr->right;
-  
-  /* Patch file names (except log which has been done already) */
-  for(i=0; (i<nfile); i++) {
-    /* Because of possible multiple extensions per type we must look 
-     * at the actual file name 
-     */
-    ftp = fn2ftp(fnm[i].fn);
-    if (ftp != efLOG) {
-#ifdef DEBUGPAR
-      fprintf(stderr,"Old file name: %s",fnm[i].fn);
-#endif
-      buf = par_fn(fnm[i].fn,ftp,cr);
-      sfree(fnm[i].fn);
-      fnm[i].fn = strdup(buf);
-#ifdef DEBUGPAR
-      fprintf(stderr,", new: %s\n",fnm[i].fn);
-#endif
-    }
-  }
-  
-  return cr_new;
-}
-
-real mol_dipole(int k0,int k1,atom_id ma[],rvec x[],real q[])
-{
-  int  k,kk,m;
-  rvec mu;
-  
-  clear_rvec(mu);
-  for(k=k0; (k<k1); k++) {
-    kk = ma[k];
-    for(m=0; (m<DIM); m++) 
-      mu[m] += q[kk]*x[kk][m];
-  }
-  return norm(mu);  /* Dipole moment of this molecule in e nm */
-}
-
-real calc_mu_aver(t_commrec *cr,t_nsborder *nsb,rvec x[],real q[],rvec mu,
-		  t_topology *top,t_mdatoms *md,int gnx,atom_id grpindex[])
-{
-  int     i;
-  real    mu_ave;
-  t_block *mols;
-    
-  mols = &(top->blocks[ebMOLS]);
-
-  /* I guess we have to parallelise this one! */
-
-  if (gnx > 0) {
-    mu_ave = 0.0;
-    for(i=0; (i<gnx); i++) {
-      int gi = grpindex[i];
-      mu_ave += mol_dipole(mols->index[gi],mols->index[gi+1],mols->a,x,q);
-    }
-    
-    return(mu_ave/gnx);
-  }
-  else
-    return 0;
-}
 
 #define XMDRUN
-#include "../mdlib/md.c"
-#include "../kernel/mdrun.c"
+#include "mdrun.c"
