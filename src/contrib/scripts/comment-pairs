@@ -1,0 +1,9 @@
+#!/usr/bin/awk -f
+
+BEGIN   { pre=""; }
+/^\[/   { pre=""; }
+/pairs/ { pre=";"; }
+
+{ print pre$0; }
+
+#last line
