@@ -76,8 +76,11 @@ endif
 Make.dep:
 	touch Make.dep
 
-clean:
-		$(RM) $(EXECUTABLES) *.o *.l *~ *.bak \#*\# 
+oclean:
+	$(RM) $(EXECUTABLES) *.o *.l *~ *.bak \#*\#
+
+clean:	oclean
+	$(RM) $(LIB)
 
 .c.o:
 		$(CC) $(C-FLAGS) -c $<

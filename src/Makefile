@@ -62,7 +62,7 @@ copyrgt:
 	$(foreach DIR,$(TELLDIRS),echo $(DIR); cd $(DIR); $(COPYRGT) *.c; $(COPYRGT) *.h; $(COPYRGT) *.cc; cd $(GMXHOME)/src;)
 
 oclean: 
-	$(foreach dir,$(DIRS),cd $(dir); mkdir obj_$(CPU) ; mv *.o obj_$(CPU) ; cd ..;)
+	$(foreach dir,$(DIRS),cd $(dir); $(MAKE) oclean; cd ..;)
 
 oget:   
 	$(foreach dir,$(DIRS),cd $(dir); mv obj_$(CPU)/*.o . ; cd ..;)
