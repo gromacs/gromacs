@@ -45,9 +45,12 @@
 #include "copyrite.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version  = 4;
+static int tpx_version  = 5;
+/* This number should be the most recent incompatible version */
+static int tpx_incompatible_version = 3; 
 /* This is the version of the file we are reading */
 static int file_version = 0;
+
 
 void _do_section(int fp,int key,bool bRead,char *src,int line)
 {
@@ -197,15 +200,24 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
       ndo_real(ir->et[j].a,  ir->et[j].n,bDum);
       ndo_real(ir->et[j].phi,ir->et[j].n,bDum);
     }
-  }  
-  /* New version of the inputrec will work like this */
-  if (file_version >= 2) {
-    /* Do version 2 specific things */
-  }  
+  }
   if (file_version != tpx_version) {
     /* Give a warning about features that are not accessible */
-    fprintf(stderr,"WARNING: tpx file_version %d, software version %d\n",
-	    tpx_version,file_version);
+    fprintf(stderr,"Warning: tpx file_version %d, software version %d\n",
+	    file_version,tpx_version);
+  }
+  /* set things which are in 5 but not in 4 */
+  if (file_version == 4) {
+    ir->ns_dr = 0.2;
+    fprintf(stderr,"Set ns_dr to %g\n",ir->ns_dr);
+    ir->bLJshift = FALSE;
+    fprintf(stderr,"Set bLJshift to %s\n",bool_names[ir->bLJshift]);
+    ir->nstdisreout = ir->nstenergy;
+    fprintf(stderr,"Set nstdisreout to nstenergy (%d)\n",ir->nstdisreout);
+  } else {
+    do_real(ir->ns_dr);
+    do_int(ir->bLJshift);
+    do_int(ir->nstdisreout);
   }
 }
 
@@ -549,7 +561,7 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)
   
   /* Check versions! */
   do_int(file_version);
-  if (file_version != tpx_version) 
+  if (file_version <= tpx_incompatible_version) 
     fatal_error(0,"ERROR: reading tpx file (%s) version %d with version %d program",
 		fio_getname(fp),file_version,tpx_version);
     

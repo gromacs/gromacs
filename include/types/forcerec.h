@@ -42,6 +42,10 @@ typedef struct {
       
   /* Fudge factors */
   real fudgeQQ;
+
+  /* Lennard-Jones stuff */
+  bool bLJshift;
+  real rlj;
     
   /* PPPM & Shifting stuff */
   real r1,rc;

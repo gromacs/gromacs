@@ -333,10 +333,15 @@ void fill_table(int n0,int n,real x[],
 void make_tables(t_forcerec *fr,bool bVerbose)
 {
   char *fns[3]    = { "ctab.xvg", "dtab.xvg", "rtab.xvg"  };
+  /*
   int  pppmtab[3] = { etabDavid,  etabLJ6David,   etabLJ12David };
   int  rftab[3]   = { etabRF,     etabLJ6,   etabLJ12 };
   int  normtab[3] = { etabCOUL,   etabLJ6,   etabLJ12 };
   int  swtab[3]   = { etabCOULsw, etabLJ6sw, etabLJ12sw  };
+  */
+  int  ljtab[2]   = { etabLJ6,      etabLJ12 };
+  int  ljshtab[2] = { etabLJ6David, etabLJ12David };
+  int  ljswtab[2] = { etabLJ6sw,    etabLJ12sw  };
   FILE     *fp;
   real     x0,y0,yp;
   int      i,j,k,n0,n,tabsel;
@@ -370,23 +375,35 @@ void make_tables(t_forcerec *fr,bool bVerbose)
 
   for(k=0; (k<3); k++) {
     /* Check which table we have to use */
-    switch (fr->eeltype) {
-    case eelPPPM:
-    case eelPOISSON:
-    case eelSHIFT:
-      tabsel = pppmtab[k];
-      break;
-    case eelRF:
-    case eelGRF:
-      tabsel = rftab[k];
-      break;
-    case eelSWITCH:
-      tabsel = swtab[k];
-      break;
-    case eelUSER:
-    default:
-      tabsel = normtab[k];
-    }      
+    if (k==0)
+      switch (fr->eeltype) {
+      case eelPPPM:
+      case eelPOISSON:
+      case eelSHIFT:
+	tabsel = etabDavid;
+	break;
+      case eelRF:
+      case eelGRF:
+	tabsel = etabRF;
+	break;
+      case eelSWITCH:
+	tabsel = etabCOULsw;
+	break;
+      case eelUSER:
+      default:
+	tabsel = etabCOUL;
+      }
+    else
+      switch (fr->eeltype) {
+      case eelSWITCH:
+	tabsel = ljswtab[k-1];
+	break;
+      default:
+	if (fr->bLJshift)
+	  tabsel = ljshtab[k-1];
+	else
+	  tabsel = ljtab[k-1];
+      }  
     if (fr->eeltype == eelUSER) {
       /* Read tables from file */
       read_table(n0,n,x,Vtab,Vtab2,Ftab,Ftab2,fns[k],fr);

@@ -290,6 +290,7 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PS("disre_mixed",BOOL(ir->bDisreMixed));
     PR("dr_fc",ir->dr_fc);
     PR("dr_tau",ir->dr_tau);
+    PR("nstdisreout",ir->nstdisreout);
     PR("em_stepsize",ir->em_stepsize);
     PR("em_tol",ir->em_tol);
     PI("nstcgsteep",ir->nstcgsteep);

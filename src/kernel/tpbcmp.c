@@ -265,6 +265,8 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CII(eeltype);
   CIR(rshort);
   CIR(rlong);
+  CIR(ns_dr);
+  CII(bLJshift);
   CII(bLJcorr);
   CIR(epsilon_r);
   CIR(shake_tol);
@@ -277,6 +279,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CIB(bDisreMixed);
   CIR(dr_fc);
   CIR(dr_tau);
+  CII(nstdisreout);
   CIR(em_stepsize);
   CIR(em_tol);
   CII(nstcgsteep);

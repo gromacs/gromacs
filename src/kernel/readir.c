@@ -102,6 +102,12 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     BS((ir->epc && (ir->compress[XX]+ir->compress[YY]+ir->compress[ZZ] <= 0)),
       "compressibility must be > 0 when using pressure coupling%s\n","");
   }
+  if (ir->rshort > ir->rlong) {
+    fprintf(stderr,
+	    "ERROR: rlong (%g) must be equal to or larger than rshort (%g)\n",
+	    ir->rlong,ir->rshort);
+    (*nerror)++;
+  }
   if ((ir->rshort == 0.0) && (ir->rlong == 0.0))
     BS((ir->eBox != ebtNONE),
        "ERROR: can not have cut-off to zero (=infinite) with periodic\n"
@@ -130,21 +136,14 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	    "not implemented\n");
     (*nerror)++;
   }
-  if ((ir->eeltype == eelSHIFT) || (ir->eeltype == eelSWITCH)) {
+  if ((ir->eeltype == eelPPPM) || (ir->eeltype == eelSHIFT) || 
+      (ir->eeltype == eelSWITCH)) {
     if (ir->rshort >= ir->rlong) {
-      fprintf(stderr,"ERROR: rlong (%g) must be longer than rshort (%g) "
+      fprintf(stderr,"ERROR: rlong (%g) must be larger than rshort (%g) "
 	      "when using %s\n",ir->rlong,ir->rshort,eel_names[ir->eeltype]);
       (*nerror)++;
     }
   } else if ((ir->eeltype == eelRF) || (ir->eeltype == eelGRF)) {
-    if (ir->rlong != ir->rshort) {
-      sprintf(warn_buf,
-	      "specifying different rlong (%g) and rshort (%g) "
-	      "when using %s is useless, since only rshort is used.\n",
-	      ir->rlong,ir->rshort,eel_names[ir->eeltype]);
-      warning(NULL);
-      ir->rlong=ir->rshort;
-    }
     if (ir->epsilon_r == 1.0) {
       sprintf(warn_buf,"Using epsilon_r = 1.0 with %s does not make sense",
 	      eel_names[ir->eeltype]);
@@ -224,7 +223,10 @@ void get_ir(char *mdparin,char *mdparout,
   ITYPE ("deltagrid",	ir->ndelta,	2);
   CTYPE ("Box type, rectangular, triclinic, none");
   EETYPE("box",         ir->eBox,       eboxtype_names, nerror, TRUE);
-  
+  CTYPE ("Extra shell for neighborsearching to accommodate for diffusion between");
+  CTYPE ("nblist updates and for the size of charge groups, for PPPM, Shift and User");
+  RTYPE("ns_dr",        ir->ns_dr,      0.2);
+
   /* Electrostatics */
   CCTYPE ("OPTIONS FOR ELECTROSTATICS");
   CTYPE ("Method for doing electrostatics");
@@ -234,6 +236,8 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("rlong",	ir->rlong,	1.0);
   CTYPE ("Dielectric constant (DC) for twin-range or DC of reaction field");
   RTYPE ("epsilon_r",   ir->epsilon_r,  1.0);
+  CTYPE ("Shift the LJ potential (not used with Twin-Range and User)");
+  EETYPE("bLJshift",    ir->bLJshift,    yesno_names, nerror, TRUE);
   CTYPE ("Apply long range dispersion corrections for Energy and Pressure");
   EETYPE("bLJcorr",     ir->bLJcorr,    yesno_names, nerror, TRUE);
   CTYPE ("Some thingies for future use");
@@ -321,6 +325,8 @@ void get_ir(char *mdparin,char *mdparout,
   EETYPE("disre_mixed", ir->bDisreMixed, yesno_names, nerror, TRUE);
   RTYPE ("disre_fc",	ir->dr_fc,	1000.0);
   RTYPE ("disre_tau",	ir->dr_tau,	10.0);
+  CTYPE ("Output frequency for pair distances to energy file");
+  ITYPE ("nstdisreout", ir->nstdisreout, 100);
   
   /* Free energy stuff */
   CCTYPE ("Free energy control stuff");

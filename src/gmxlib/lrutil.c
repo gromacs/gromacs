@@ -68,9 +68,9 @@ void set_LRconsts(FILE *log,real r1,real rc,rvec box,t_forcerec *fr)
   FourPi_V=4.0*M_PI/Vol;
 
   fprintf(log,"Constants for short-range and fourier stuff:\n"
-	  "r1 = %10.3f,  rc = %10.3f,  rsearch = % 10.3f\n"
+	  "r1 = %10.3f,  rc = %10.3f\n"
 	  "A  = %10.3e,  B  = %10.3e,  C  = %10.3e, FourPi_V = %10.3e\n",
-	  r1,rc,fr->rc,A,B,C,FourPi_V);
+	  r1,rc,A,B,C,FourPi_V);
 
   /* Constants derived by Mathematica */
   c1 = -40*rc*rc    + 50*rc*r1    - 16*r1*r1;

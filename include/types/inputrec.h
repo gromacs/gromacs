@@ -81,7 +81,9 @@ typedef struct {
   int  eeltype;		/* Type of electrostatics treatment             */
   real rshort;		/* short range pairlist cutoff (nm)		*/
   real rlong;		/* long range pairlist cutoff (nm)		*/
+  real ns_dr;           /* shell size for diffusion and charge groups   */  
   real epsilon_r;       /* relative dielectric constant                 */
+  bool bLJshift;        /* use shifted LJ                               */ 
   bool bLJcorr;         /* Perform Long range corrections for LJ        */
   real shake_tol;	/* tolerance for shake				*/
   real fudgeLJ;		/* Fudge factor for 1-4 interactions		*/
@@ -93,6 +95,7 @@ typedef struct {
   int  eDisre;          /* distance restraining type                    */
   int  eDisreWeighting; /* type of weighting of pairs in one restraints	*/
   bool bDisreMixed;     /* Use comb of time averaged and instan. viol's	*/
+  int  nstdisreout;     /* frequency of writing pair distances to enx   */ 
   real dr_tau;		/* time constant for memory function in disres 	*/
   real em_stepsize;	/* The stepsize for updating			*/
   real em_tol;		/* The tolerance				*/

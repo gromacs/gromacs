@@ -412,7 +412,9 @@ void calc_ljcorr(FILE *log,bool bLJcorr,t_forcerec *fr,int natoms,
   
   if (bLJcorr) {
     vol           = det(box);
-    rc3           = fr->rshort*fr->rshort*fr->rshort;
+    /* Forget the (small) effect of the shift on the LJ energy *
+     * when fr->bLJShift = TRUE                                */  
+    rc3           = fr->rlj*fr->rlj*fr->rlj;
     ener[F_LJLR]  = -2.0*natoms*natoms*M_PI*fr->avcsix/(3.0*vol*rc3);
     spres         = 2.0*ener[F_LJLR]*PRESFAC/vol;
     svir          = -6.0*ener[F_LJLR];

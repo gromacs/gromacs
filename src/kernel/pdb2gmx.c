@@ -521,12 +521,15 @@ int main(int argc, char *argv[])
     "The program should be able to select the protonation on pH, and also "
     "should allow for selection of ASPH instead of ASP.",
   };
-  
   typedef struct {
     char chain;
     int  start;
     int  natom;
-    int  nres;
+    bool bAllWat;
+  } t_pdbchain;
+
+  typedef struct {
+    char chain;
     bool bAllWat;
     t_atoms *pdba;
     rvec *x;
@@ -538,6 +541,7 @@ int main(int argc, char *argv[])
   t_atoms    *atoms;
   t_block    *block;
   int        chain,nchain,nwaterchain;
+  t_pdbchain *pdbchains;
   t_chain    *chains;
   char       pchain;
   int        nincl,nmol;
@@ -548,6 +552,7 @@ int main(int argc, char *argv[])
   rvec       box_space;
   char       *ff;
   int        i,j,k,l,nrtp,rN,rC;
+  int        *swap_index,si;
   t_restp    *restp;
   t_resbond  *rb;
   t_resang   *ra;
@@ -668,43 +673,63 @@ int main(int argc, char *argv[])
   nwaterchain=0;
   /* keep the compiler happy */
   pchain='?';
-  chains=NULL;
+  pdbchains=NULL;
   for (i=0; (i<natom); i++) {
     bWat = strcasecmp(*pdba_all.resname[pdba_all.atom[i].resnr],"HOH") == 0;
     if ((i==0) || (pdba_all.atom[i].chain!=pchain) || (bWat != bPrevWat)) {
       pchain=pdba_all.atom[i].chain;
       /* set natom for previous chain */
       if (nchain > 0)
-	chains[nchain-1].natom=i-chains[nchain-1].start;
+	pdbchains[nchain-1].natom=i-pdbchains[nchain-1].start;
       /* check if chain identifier was used before */
       for (j=0; (j<nchain); j++)
-	if ((chains[j].chain != '\0') && (chains[j].chain != ' ') &&
-	    (chains[j].chain == pdba_all.atom[i].chain))
+	if ((pdbchains[j].chain != '\0') && (pdbchains[j].chain != ' ') &&
+	    (pdbchains[j].chain == pdba_all.atom[i].chain))
 	  fatal_error(0,"Chain identifier '%c' was used "
 		      "in two non-sequential blocks (residue %d, atom %d)",
 		      pdba_all.atom[i].chain,pdba_all.atom[i].resnr+1,i+1);
-      srenew(chains,nchain+1);
-      chains[nchain].chain=pdba_all.atom[i].chain;
-      chains[nchain].start=i;
-      chains[nchain].bAllWat=bWat;
+      srenew(pdbchains,nchain+1);
+      pdbchains[nchain].chain=pdba_all.atom[i].chain;
+      pdbchains[nchain].start=i;
+      pdbchains[nchain].bAllWat=bWat;
       if (bWat)
 	nwaterchain++;
       nchain++;
     }
     bPrevWat=bWat;
   }
-  chains[nchain-1].natom=natom-chains[nchain-1].start;
+  pdbchains[nchain-1].natom=natom-pdbchains[nchain-1].start;
 
+  /* set all the water blocks at the end off the chain */
+  snew(swap_index,nchain);
+  j=0;
+  for(i=0; i<nchain; i++)
+    if (!pdbchains[i].bAllWat) {
+      swap_index[j]=i;
+      j++;
+    }
+  for(i=0; i<nchain; i++)
+    if (pdbchains[i].bAllWat) {
+      swap_index[j]=i;
+      j++;
+    }
+  if (nwaterchain>1)
+    printf("Moved all the water blocks to the end\n");
+
+  snew(chains,nchain);
   /* copy pdb data and x for all chains */
   for (i=0; (i<nchain); i++) {
+    si=swap_index[i];
+    chains[i].chain   = pdbchains[si].chain;
+    chains[i].bAllWat = pdbchains[si].bAllWat; 
     /* check for empty chain identifiers */
-    if ((nchain-nwaterchain>1) && !chains[i].bAllWat && 
+    if ((nchain-nwaterchain>1) && !pdbchains[si].bAllWat && 
 	((chains[i].chain=='\0') || (chains[i].chain==' '))) {
       bUsed=TRUE;
       for(k='A'; (k<='Z') && bUsed; k++) {
 	bUsed=FALSE;
 	for(j=0; j<nchain; j++)
-	  bUsed=bUsed || (!chains[j].bAllWat && (chains[j].chain==k));
+	  bUsed=bUsed || (!pdbchains[j].bAllWat && (chains[j].chain==k));
 	if (!bUsed) {
 	  printf("Gave chain %d chain identifier '%c'\n",i+1,k);
 	  chains[i].chain=k;
@@ -712,24 +737,24 @@ int main(int argc, char *argv[])
       }
     }
     snew(chains[i].pdba,1);
-    init_t_atoms(chains[i].pdba,chains[i].natom,TRUE);
-    snew(chains[i].x,chains[i].natom);
-    for (j=0; j<chains[i].natom; j++) {
-      chains[i].pdba->atom[j]=pdba_all.atom[chains[i].start+j];
+    init_t_atoms(chains[i].pdba,pdbchains[si].natom,TRUE);
+    snew(chains[i].x,chains[i].pdba->nr);
+    for (j=0; j<chains[i].pdba->nr; j++) {
+      chains[i].pdba->atom[j]=pdba_all.atom[pdbchains[si].start+j];
       snew(chains[i].pdba->atomname[j],1);
       *chains[i].pdba->atomname[j] = 
-	strdup(*pdba_all.atomname[chains[i].start+j]);
+	strdup(*pdba_all.atomname[pdbchains[si].start+j]);
       /* make all chain identifiers equal to that off the chain */
-      chains[i].pdba->atom[j].chain=chains[i].chain;
-      chains[i].pdba->pdbinfo[j]=pdba_all.pdbinfo[chains[i].start+j];
-      copy_rvec(pdbx[chains[i].start+j],chains[i].x[j]);
+      chains[i].pdba->atom[j].chain=pdbchains[si].chain;
+      chains[i].pdba->pdbinfo[j]=pdba_all.pdbinfo[pdbchains[si].start+j];
+      copy_rvec(pdbx[pdbchains[si].start+j],chains[i].x[j]);
     }
     /* Renumber the residues assuming that the numbers are continuous */
-    k=chains[i].pdba->atom[0].resnr;
-    nres=chains[i].pdba->atom[chains[i].natom-1].resnr - k + 1;
-    chains[i].pdba->nres=nres;
-    for(j=0; j<chains[i].natom; j++)
-      chains[i].pdba->atom[j].resnr-=k;
+    k    = chains[i].pdba->atom[0].resnr;
+    nres = chains[i].pdba->atom[chains[i].pdba->nr-1].resnr - k + 1;
+    chains[i].pdba->nres = nres;
+    for(j=0; j<chains[i].pdba->nr; j++)
+      chains[i].pdba->atom[j].resnr -= k;
     snew(chains[i].pdba->resname,nres);
     for(j=0; j<nres; j++) {
       snew(chains[i].pdba->resname[j],1);
@@ -737,23 +762,14 @@ int main(int argc, char *argv[])
     }
   }
 
-  /* chains[nchain].start will simply contain the total natom */
-  srenew(chains,nchain+1);
-  chains[nchain].chain='\0';
-  chains[nchain].start=natom;
-  
-  for (i=0; (i<nchain); i++)
-    chains[i].nres = (pdba_all.atom[chains[i+1].start-1].resnr+1 -
-		      pdba_all.atom[chains[i  ].start  ].resnr);
-  
   printf("There are %d chains and %d blocks of water and %d residues with %d atoms\n",
 	  nchain-nwaterchain,nwaterchain,pdba_all.atom[natom-1].resnr+1,natom);
 	  
   printf("\n  %5s  %4s %6s\n","chain","#res","#atoms");
   for (i=0; (i<nchain); i++)
     printf("  %d '%c'  %4d %6d  %s\n",
-	   i+1,chains[i].chain,chains[i].nres,
-	   chains[i+1].start-chains[i].start,
+	   i+1,chains[i].chain,chains[i].pdba->nres,
+	   chains[i].pdba->nr,
 	   chains[i].bAllWat ? "(only water)":"");
   
   ff=choose_ff(bFFMan);
@@ -815,8 +831,8 @@ int main(int argc, char *argv[])
     /* set pdba, natom and nres to the current chain */
     pdba =chains[chain].pdba;
     x    =chains[chain].x;
-    natom=chains[chain].natom;
-    nres =chains[chain].nres;
+    natom=chains[chain].pdba->nr;
+    nres =chains[chain].pdba->nres;
     
     if (chains[chain].chain && ( chains[chain].chain != ' ' ) )
       printf("Processing chain %d '%c' (%d atoms, %d residues)\n",
@@ -960,7 +976,6 @@ int main(int argc, char *argv[])
 
     /* pdba and natom have been reassigned somewhere so: */
     chains[chain].pdba = pdba;
-    chains[chain].natom= pdba->nr;
     chains[chain].x = x;
     
     if (debug) {
@@ -984,7 +999,7 @@ int main(int argc, char *argv[])
   natom=0;
   nres=0;
   for (i=0; (i<nchain); i++) {
-    natom+=chains[i].natom;
+    natom+=chains[i].pdba->nr;
     nres+=chains[i].pdba->nres;
   }
   snew(atoms,1);
@@ -997,8 +1012,8 @@ int main(int argc, char *argv[])
   for (i=0; (i<nchain); i++) {
     if (nchain>1)
       printf("Including chain %d in system: %d atoms %d residues\n",
-	     i+1,chains[i].natom,chains[i].pdba->nres);
-    for (j=0; (j<chains[i].natom); j++) {
+	     i+1,chains[i].pdba->nr,chains[i].pdba->nres);
+    for (j=0; (j<chains[i].pdba->nr); j++) {
       atoms->atom[k]=chains[i].pdba->atom[j];
       atoms->atom[k].resnr+=l; /* l is processed nr of residues */
       atoms->atomname[k]=chains[i].pdba->atomname[j];

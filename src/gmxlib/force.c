@@ -162,7 +162,7 @@ static void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
 void update_forcerec(FILE *log,t_forcerec *fr,matrix box)
 {
   calc_rffac(log,fr->eeltype,
-	     fr->epsilon_r,fr->rshort,fr->temp,fr->zsquare,box,
+	     fr->epsilon_r,fr->rc,fr->temp,fr->zsquare,box,
 	     &fr->kappa,&fr->epsfac,&fr->k_rf,&fr->c_rf);
 }
 
@@ -215,17 +215,17 @@ void init_forcerec(FILE *log,
 		   bool bMolEpot)
 {
   int  i,j,m,natoms,nrdf,ngrp;
-  real q,zsq,dr,T;
+  real q,zsq,T;
   rvec box_size;
   
   natoms         = mdatoms->nr;
-  fr->rshort     = ir->rshort;
-  fr->rlong      = ir->rlong;
   fr->epsilon_r  = ir->epsilon_r;
   fr->fudgeQQ    = ir->fudgeQQ;
   fr->ndelta     = ir->ndelta;
   fr->eeltype    = ir->eeltype;
   if (fr->eeltype == eelTWIN) {
+    fr->rshort     = ir->rshort;
+    fr->rlong      = ir->rlong;
     fr->nWater   = ir->solvent_opt;
     fr->bTwinRange = (fr->rlong > fr->rshort);
   }
@@ -243,8 +243,8 @@ void init_forcerec(FILE *log,
   fr->temp    = 0.0;
   
   /* Electrostatics stuff */
-  fr->r1         = fr->rshort;
-  fr->rc         = fr->rlong;
+  fr->r1      = ir->rshort;
+  fr->rc      = ir->rlong;
   if (fr->eeltype == eelGRF) {
     zsq = 0.0;
     for (i=0; (i<cgs->nr); i++) {
@@ -264,16 +264,20 @@ void init_forcerec(FILE *log,
     }
     if (nrdf == 0) 
       fatal_error(0,"No degrees of freedom!");
-    fr->temp = T/nrdf;
-    fr->rc   = fr->rshort;
+    fr->temp   = T/nrdf;
+    fr->rshort = ir->rlong;
+    fr->rlong  = fr->rshort;
   }
   else if (fr->eeltype == eelRF) {
-    fr->rc   = fr->rshort;
+    fr->rshort = ir->rlong;
+    fr->rlong  = fr->rshort;
   }
   else if (fr->eeltype == eelSWITCH) {
-    fr->rshort     = fr->rlong;
+    fr->rshort = ir->rlong;
+    fr->rlong  = fr->rshort;
   }
-  else if (EEL_LR(fr->eeltype) || (fr->eeltype == eelSHIFT) ) {
+  else if (EEL_LR(fr->eeltype) || (fr->eeltype == eelSHIFT) || 
+	   (fr->eeltype == eelUSER)) {
     /* We must use the long range cut-off for neighboursearching...
      * An extra range of e.g. 0.1 nm (half the size of a charge group)
      * is necessary for neighboursearching. This allows diffusion 
@@ -283,25 +287,43 @@ void init_forcerec(FILE *log,
      * only those with the center of geometry within the cut-off.
      * (therefore we have to add half the size of a charge group, plus
      * something to account for diffusion if we have nstlist > 1)
-     * dr should actually be a parameter in the mdp file.
      */
-    dr = ir->userreal4;
-    if (dr == 0.0)
-      dr = 0.2;
-    fr->rshort = fr->rlong = fr->rc+dr;
+    fr->rshort = ir->rlong+ir->ns_dr;
+    fr->rlong  = fr->rshort;
     
     for(m=0; (m<DIM); m++) {
       box_size[m]=box[m][m];
       if (fr->rshort >= box_size[m]*0.5)
 	fatal_error(0,"Cut-off too large for box. Should be less then %g\n",
-		    box_size[m]*0.5-dr);
+		    box_size[m]*0.5-ir->ns_dr);
     }
     if (fr->phi == NULL)
       snew(fr->phi,mdatoms->nr);
     
-    set_LRconsts(log,fr->r1,fr->rc,box_size,fr);
+    if (fr->eeltype != eelUSER)
+      set_LRconsts(log,fr->r1,fr->rc,box_size,fr);
   }
-  
+
+  /* Lennard-Jones stuff */
+  if ((fr->eeltype==eelTWIN) || (fr->eeltype==eelSWITCH)) {
+    fr->bLJshift = FALSE;
+    fr->rlj      = fr->rshort;
+  } else {
+    if (fr->eeltype==eelUSER)
+      fr->bLJshift = FALSE;
+    else
+      fr->bLJshift = ir->bLJshift;
+    if (fr->bLJshift)
+      fr->rlj    = fr->rc;
+    else
+      fr->rlj    = fr->rshort;
+  }
+
+  if (fr->bLJshift)
+    fprintf(log,"Using shifted Lennard-Jones, switch between %g and %g\n",
+	    fr->r1,fr->rlj);
+  fprintf(log,"Cut-off's:   NS: %g   Coulomb: %g   LJ: %g\n",
+	  fr->rshort,fr->rc,fr->rlj);
   
   /* Initiate arrays */
   if (fr->bTwinRange || (EEL_LR(fr->eeltype))) {
