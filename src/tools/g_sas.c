@@ -47,8 +47,73 @@ static char *SRCID_g_sas_c = "$Id$";
 #include "confio.h"
 #include "rmpbc.h"
 
+typedef struct {
+  atom_id  aa,ab;
+  real     d2a,d2b;
+} t_conect;
+
+void add_rec(t_conect c[],atom_id i,atom_id j,real d2)
+{
+  if (c[i].aa == NO_ATID) {
+    c[i].aa  = j;
+    c[i].d2a = d2;
+  }
+  else if (c[i].ab == NO_ATID) {
+    c[i].ab  = j;
+    c[i].d2b = d2;
+  }
+  else if (d2 < c[i].d2a) {
+    c[i].aa  = j;
+    c[i].d2a = d2;
+  }
+  else if (d2 < c[i].d2b) {
+    c[i].ab  = j;
+    c[i].d2b = d2;
+  }
+  /* Swap them if necessary: a must be larger than b */
+  if (c[i].d2a < c[i].d2b) {
+    j        = c[i].ab;
+    c[i].ab  = c[i].aa;
+    c[i].aa  = j;
+    d2       = c[i].d2b;
+    c[i].d2b = c[i].d2a;
+    c[i].d2a = d2;
+  }
+}
+
+void do_conect(char *fn,int n,rvec x[])
+{
+  FILE     *fp;
+  int      i,j;
+  t_conect *c;
+  rvec     dx;
+  real     d2;
+  
+  fprintf(stderr,"Building CONECT records\n");
+  snew(c,n);
+  for(i=0; (i<n); i++) 
+    c[i].aa = c[i].ab = NO_ATID;
+  
+  for(i=0; (i<n); i++) {
+    for(j=i+1; (j<n); j++) {
+      rvec_sub(x[i],x[j],dx);
+      d2 = iprod(dx,dx);
+      add_rec(c,i,j,d2);
+      add_rec(c,j,i,d2);
+    }
+  }
+  fp = ffopen(fn,"a");
+  for(i=0; (i<n); i++) {
+    if ((c[i].aa == NO_ATID) || (c[i].ab == NO_ATID))
+      fprintf(stderr,"Warning dot %d has no conections\n",i+1);
+    fprintf(fp,"CONECT%5d%5d%5d\n",i+1,c[i].aa+1,c[i].ab+1);
+  }
+  ffclose(fp);
+  sfree(c);
+}
+
 void connelly_plot(char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
-		   t_symtab *symtab,matrix box)
+		   t_symtab *symtab,matrix box,bool bSave)
 {
   static char *atomnm="DOT";
   static char *resnm ="DOT";
@@ -56,34 +121,59 @@ void connelly_plot(char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
 
   int  i,i0,ii0,k;
   rvec *xnew;
-  
-  i0 = atoms->nr;
-  srenew(atoms->atom,atoms->nr+ndots);
-  srenew(atoms->atomname,atoms->nr+ndots);
-  srenew(atoms->resname,atoms->nr+ndots);
-  srenew(atoms->pdbinfo,atoms->nr+ndots);
-  snew(xnew,atoms->nr+ndots);
-  for(i=0; (i<atoms->nr); i++)
-    copy_rvec(x[i],xnew[i]);
-  for(i=k=0; (i<ndots); i++) {
-    ii0 = i0+i;
-    atoms->resname[ii0]  = put_symtab(symtab,resnm);
-    atoms->atomname[ii0] = put_symtab(symtab,atomnm);
-    strcpy(atoms->pdbinfo[ii0].pdbresnr,"1");
-    atoms->pdbinfo[ii0].type = epdbATOM;
-    atoms->atom[ii0].chain = ' ';
-    atoms->pdbinfo[ii0].atomnr= ii0;
-    atoms->atom[ii0].resnr = 1;
-    xnew[ii0][XX] = dots[k++];
-    xnew[ii0][YY] = dots[k++];
-    xnew[ii0][ZZ] = dots[k++];
-    atoms->pdbinfo[ii0].bfac  = 0.0;
-    atoms->pdbinfo[ii0].occup = 0.0;
+  t_atoms aaa;
+
+  if (bSave) {  
+    i0 = atoms->nr;
+    srenew(atoms->atom,atoms->nr+ndots);
+    srenew(atoms->atomname,atoms->nr+ndots);
+    srenew(atoms->resname,atoms->nr+ndots);
+    srenew(atoms->pdbinfo,atoms->nr+ndots);
+    snew(xnew,atoms->nr+ndots);
+    for(i=0; (i<atoms->nr); i++)
+      copy_rvec(x[i],xnew[i]);
+    for(i=k=0; (i<ndots); i++) {
+      ii0 = i0+i;
+      atoms->resname[ii0]  = put_symtab(symtab,resnm);
+      atoms->atomname[ii0] = put_symtab(symtab,atomnm);
+      strcpy(atoms->pdbinfo[ii0].pdbresnr,"1");
+      atoms->pdbinfo[ii0].type = epdbATOM;
+      atoms->atom[ii0].chain = ' ';
+      atoms->pdbinfo[ii0].atomnr= ii0;
+      atoms->atom[ii0].resnr = 1;
+      xnew[ii0][XX] = dots[k++];
+      xnew[ii0][YY] = dots[k++];
+      xnew[ii0][ZZ] = dots[k++];
+      atoms->pdbinfo[ii0].bfac  = 0.0;
+      atoms->pdbinfo[ii0].occup = 0.0;
+    }
+    atoms->nr = i0+ndots;
+    write_sto_conf(fn,title,atoms,xnew,NULL,box);
+    atoms->nr = i0;
   }
-  atoms->nr = i0+ndots;
-  write_sto_conf(fn,title,atoms,xnew,NULL,box);
-  atoms->nr = i0;
-  
+  else {
+    init_t_atoms(&aaa,ndots,TRUE);
+    snew(xnew,ndots);
+    for(i=k=0; (i<ndots); i++) {
+      ii0 = i;
+      aaa.resname[ii0]  = put_symtab(symtab,resnm);
+      aaa.atomname[ii0] = put_symtab(symtab,atomnm);
+      strcpy(aaa.pdbinfo[ii0].pdbresnr,"1");
+      aaa.pdbinfo[ii0].type = epdbATOM;
+      aaa.atom[ii0].chain = ' ';
+      aaa.pdbinfo[ii0].atomnr= ii0;
+      aaa.atom[ii0].resnr = 0;
+      xnew[ii0][XX] = dots[k++];
+      xnew[ii0][YY] = dots[k++];
+      xnew[ii0][ZZ] = dots[k++];
+      aaa.pdbinfo[ii0].bfac  = 0.0;
+      aaa.pdbinfo[ii0].occup = 0.0;
+    }
+    aaa.nr = ndots;
+    write_sto_conf(fn,title,&aaa,xnew,NULL,box);
+    do_conect(fn,ndots,xnew);
+    free_t_atoms(&aaa);
+  }
   sfree(xnew);
 }
 
@@ -114,9 +204,9 @@ real calc_radius(char *atom)
 }
 
 void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
-	      real qcut,int nskip)
+	      real qcut,int nskip,bool bSave,real minarea)
 {
-  FILE         *fp,*fp2=NULL;
+  FILE         *fp,*fp2=NULL,*fp3;
   real         t;
   int          status;
   int          i,ii,j,natoms,flag,nsurfacedots;
@@ -125,17 +215,22 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   t_topology   *top;
   bool         *bPhobic;
   bool         bConnelly;
-  bool         bAtom, bIndex;
+  bool         bAtom,bIndex,bITP;
   real         *radius,*area=NULL,*surfacedots=NULL;
   real         *atom_area,*atom_area2;
-  real         totarea,totvolume,harea,tarea_ndx;
+  real         totarea,totvolume,harea,tarea_ndx,resarea;
   atom_id      *index;
-  int          nx;
+  int          nx,ires;
   char         *grpname;
   real         stddev;
 
-  bAtom = opt2bSet("-ao",nfile,fnm);
+  bAtom  = opt2bSet("-ao",nfile,fnm);
   bIndex = opt2bSet("-n",nfile,fnm);
+  bITP   = opt2bSet("-i",nfile,fnm);
+  if (bITP && !bAtom)
+    fprintf(stderr,"WARNING: "
+	    "Can not generate position restraints from surface atoms\n"
+	    "without -ao option\n");
   if ((natoms=read_first_x(&status,ftp2fn(efTRX,nfile,fnm),
 			   &t,&x,box))==0)
     fatal_error(0,"Could not read coordinates from statusfile\n");
@@ -188,7 +283,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
       if (bConnelly)
 	connelly_plot(ftp2fn(efPDB,nfile,fnm),
 		      nsurfacedots,surfacedots,x,&(top->atoms),
-		      &(top->symtab),box);
+		      &(top->symtab),box,bSave);
       
       harea = 0; tarea_ndx = 0;
       if (bIndex) {
@@ -220,6 +315,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   
   fprintf(stderr,"\n");
   close_trj(status);
+  fclose(fp);
   
   /* if necessary, print areas per atom to file too: */
   if (bAtom) {
@@ -228,13 +324,40 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	fprintf(fp2,"%d %g %g\n",i+1,atom_area[index[i]]/j,
 		atom_area2[index[i]]/j);
     } else {
+      fp = xvgropen(opt2fn("-r",nfile,fnm),"Area per residue","Residue",
+		    "Area (nm\\S2\\N)");
+      if (bITP) {
+	fp3 = ftp2FILE(efITP,nfile,fnm,"w");
+	fprintf(fp3,"[ position_restraints ]\n"
+		"#define FCX 1000\n"
+		"#define FCY 1000\n"
+		"#define FCZ 1000\n"
+		"; Atom  Type  fx   fy   fz\n");
+      }
+      ires    = top->atoms.atom[0].resnr-1;
+      resarea = 0;
       for (i=0;i<natoms;i++) {
+	if (top->atoms.atom[i].resnr != ires) {
+	  if (i > 0)
+	    fprintf(fp,"%10d  %10g\n",ires,resarea);
+	  resarea = 0;
+	  ires    = top->atoms.atom[i].resnr;
+	}
+	else
+	  resarea += atom_area[i]/j;
 	stddev = atom_area2[i]/j; 
+	if (bITP && (atom_area2[i]/j > minarea))
+	  fprintf(fp3,"%5d   1     FCX  FCX  FCZ\n",i+1);
 	if (stddev > 0) 
 	  stddev = sqrt(stddev);
 	fprintf(fp2,"%d %g %g\n",i+1,atom_area[i]/j,stddev);
       }
+      fprintf(fp,"%10d  %10g\n",ires,resarea);
+      if (bITP)
+	fclose(fp3);
+      fclose(fp);
     }
+    fclose(fp2);
   }
 
   sfree(x);
@@ -243,12 +366,20 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "g_sas computes hydrophobic and total solvent accessible surface area."
+    "g_sas computes hydrophobic and total solvent accessible surface area.",
+    "As a side effect the Connolly surface can be generated as well in",
+    "a pdb file where the nodes are represented as atoms and the vertices",
+    "connecting the nearest nodes as CONECT records. The area can be plotted",
+    "per atom and per residue as well (option -ao). In combination with",
+    "the latter option an [TT]itp[tt] file can be generated (option -i)",
+    "which can be used to restrain surface atoms."
   };
 
   static real solsize = 0.14;
   static int  ndots   = 24,nskip=1;
   static real qcut    = 0.2;
+  static real minarea = 0.5;
+  static bool bSave   = TRUE;
   t_pargs pa[] = {
     { "-solsize", FALSE, etREAL, {&solsize},
 	"Radius of the solvent probe (nm)" },
@@ -256,16 +387,22 @@ int main(int argc,char *argv[])
 	"Number of dots per sphere, more dots means more accuracy" },
     { "-qmax",    FALSE, etREAL, {&qcut},
 	"The maximum charge (e, absolute value) of a hydrophobic atom" },
+    { "-minarea", FALSE, etREAL, {&minarea},
+	"The maximum charge (e, absolute value) of a hydrophobic atom" },
     { "-skip",    FALSE, etINT,  {&nskip},
-      "Do only every nth frame" }
+      "Do only every nth frame" },
+    { "-prot",    FALSE, etBOOL, {&bSave},
+      "Output the protein to the connelly pdb file too" }
   };
   t_filenm  fnm[] = {
     { efTRX, "-f",   NULL,       ffREAD },
     { efTPX, "-s",   NULL,       ffREAD },
     { efXVG, "-o",   "area",     ffWRITE },
+    { efXVG, "-r",   "resarea",  ffWRITE },
     { efPDB, "-q",   "connelly", ffOPTWR },
     { efXVG, "-ao",  "atomarea", ffOPTWR },
-    { efNDX, "-n",   "index",    ffOPTRD }
+    { efNDX, "-n",   "index",    ffOPTRD },
+    { efITP, "-i",   "surfat",   ffOPTWR }
   };
 #define NFILE asize(fnm)
 
@@ -281,7 +418,7 @@ int main(int argc,char *argv[])
     fprintf(stderr,"Ndots too small, setting it to %d\n",ndots);
   }
   
-  sas_plot(NFILE,fnm,solsize,ndots,qcut,nskip);
+  sas_plot(NFILE,fnm,solsize,ndots,qcut,nskip,bSave,minarea);
   
   xvgr_file(opt2fn("-o",NFILE,fnm),"-nxy");
   xvgr_file(opt2fn("-ao",NFILE,fnm),"-xydy");
