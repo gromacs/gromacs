@@ -84,6 +84,9 @@ typedef struct
 #define NRFP(ftype) (interaction_function[(ftype)].nrfpA+interaction_function[(ftype)].nrfpB)
 #define NRAL(ftype) (interaction_function[(ftype)].nratoms)
 
+#define IS_CHEMBOND(ftype) (interaction_function[(ftype)].nratoms==2 && interaction_function[(ftype)].flags & IF_CONNECT)
+/* IS_CHEMBOND tells if function type ftype represents a chemical bond */
+
 extern t_interaction_function interaction_function[F_NRE];
 /* initialised interaction functions descriptor				*/
 
