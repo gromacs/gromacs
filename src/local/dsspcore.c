@@ -1,5 +1,5 @@
 /*
- *       @(#) dsspcore.c 1.2 2/8/97
+ *       $Id$
  *
  *       This source code is part of
  *
@@ -7,12 +7,12 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 1.51
+ *            VERSION 1.6
  * 
- * Copyright (c) 1990-1996,
- * BIOSON Research Institute, Dept. of Biophysical Chemistry,
+ * Copyright (c) 1991-1997
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry
  * University of Groningen, The Netherlands
- *
+ * 
  * Please refer to:
  * GROMACS: A message-passing parallel molecular dynamics implementation
  * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
@@ -24,9 +24,9 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * GRowing Old MAkes el Chrono Sweat
+ * Green Red Orange Magenta Azure Cyan Skyblue
  */
-
+static char *SRCID_dsspcore_c = "$Id$";
 
 /* Output from p2c, the Pascal-to-C translator */
 /* From input file "dssp.p" */

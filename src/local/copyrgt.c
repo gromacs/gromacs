@@ -1,5 +1,5 @@
 /*
- *        @(#) copyrgt.c 1.19 10/17/97
+ *       $Id$
  *
  *       This source code is part of
  *
@@ -7,12 +7,12 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 2.0b
+ *            VERSION 1.6
  * 
- * Copyright (c) 1990-1997,
- * BIOSON Research Institute, Dept. of Biophysical Chemistry,
+ * Copyright (c) 1991-1997
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry
  * University of Groningen, The Netherlands
- *
+ * 
  * Please refer to:
  * GROMACS: A message-passing parallel molecular dynamics implementation
  * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
@@ -24,8 +24,10 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * Good ROcking Metal Altar for Chronical Sinners
+ * Green Red Orange Magenta Azure Cyan Skyblue
  */
+static char *SRCID_copyrgt_c = "$Id$";
+
 #include "stdio.h"
 #include "stdlib.h"
 #include "macros.h"
@@ -33,7 +35,7 @@
 #include "futil.h"
 #include "copyrite.h"
 
-void head(FILE *out, char *fn)
+void head(FILE *out, char *fn_, bool bH)
 {
   static char *head1[]= {
     " *",
@@ -75,23 +77,31 @@ void head(FILE *out, char *fn)
 
   fprintf(out," * %s\n */\n",bromacs());
   /* NOTE: the "" are to mislead CVS so it will not replace by version info */
-  fprintf(out,"static char *SRCID = \"$""Id""$\"\n");
+  if (bH) {
+    fprintf(out,"\n");
+    fprintf(out,"#ifndef _%s\n",fn_);
+    fprintf(out,"#define _%s\n",fn_);
+    fprintf(out,"\n");
+  }
+  fprintf(out,"static char *SRCID_%s = \"$""Id""$\";\n",fn_);
+  fprintf(out,"\n");
 }
 
 void cr(char *fn)
 {
   FILE *in,*out;
 #define MAXS 10240
-  char buf[1024],line[MAXS+1];
-  bool bSet;
+  char ofn[1024],line[MAXS+1];
+  char *p,*fn_;
+  bool bSet,bH;
   
-  sprintf(buf,"%s.bak",fn);
+  sprintf(ofn,"%s.bak",fn);
   
-  if (rename(fn,buf) != 0) {
-    perror(buf);
+  if (rename(fn,ofn) != 0) {
+    perror(ofn);
     exit(1);
   }
-  in=ffopen(buf,"r");
+  in=ffopen(ofn,"r");
   out=ffopen(fn,"w");
   bSet=FALSE;
   
@@ -107,10 +117,21 @@ void cr(char *fn)
       /* File does start with comment, so delete it and add new */
       while ((strstr(line,"*/") == NULL) && (!feof(in)))
 	fgets2(line,MAXS,in);
-      if ((strstr(line,"*/") != NULL) && (!feof(in)))
-	fgets2(line,MAXS,in);
     }
-    head(out,fn);
+    fn_=strdup(fn);
+    p=strchr(fn_,'.');
+    if (p)
+      p[0]='_';
+    bH=FALSE;
+    do {
+      fgets2(line,MAXS,in);
+      if ( (strstr(line,fn_) != NULL) && 
+	   (strstr(line,"#define") != NULL) )
+	bH=TRUE;
+    } while ( ( (strstr(line,fn_) != NULL)  ||
+		(strstr(line,"static char *SRCID") != NULL) ||
+		(strlen(line)==0) ) && (!feof(in) ) );
+    head(out,fn_,bH);
     do {
       fprintf(out,"%s\n",line);
     } while (!feof(in) && fgets2(line,MAXS,in));

@@ -1,5 +1,5 @@
 /*
- *       @(#) copyrgt.c 1.12 9/30/97
+ *       $Id$
  *
  *       This source code is part of
  *
@@ -7,12 +7,12 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 2.0b
+ *            VERSION 1.6
  * 
- * Copyright (c) 1990-1997,
- * BIOSON Research Institute, Dept. of Biophysical Chemistry,
+ * Copyright (c) 1991-1997
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry
  * University of Groningen, The Netherlands
- *
+ * 
  * Please refer to:
  * GROMACS: A message-passing parallel molecular dynamics implementation
  * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
@@ -27,8 +27,10 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
-#ifndef	_comtest_h
-#define	_comtest_h
+#ifndef _comtest_h
+#define _comtest_h
+
+static char *SRCID_comtest_h = "$Id$";
 
 #ifdef HAVE_IDENT
 #ident	"@(#) comtest.h 1.3 11/23/92"

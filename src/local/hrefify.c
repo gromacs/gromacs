@@ -1,5 +1,5 @@
 /*
- *       @(#) hrefify.c 1.3 10/21/97
+ *       $Id$
  *
  *       This source code is part of
  *
@@ -7,7 +7,7 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 2.0b
+ *            VERSION 1.6
  * 
  * Copyright (c) 1991-1997
  * BIOSON Research Institute, Dept. of Biophysical Chemistry
@@ -24,8 +24,10 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * GRowing Old MAkes el Chrono Sweat
+ * GROningen MAchine for Chemical Simulation
  */
+static char *SRCID_hrefify_c = "$Id$";
+
 #include <math.h>
 #include <string.h>
 #include "smalloc.h"

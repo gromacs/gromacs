@@ -1,5 +1,5 @@
 /*
- *       @(#) copyrgt.c 1.12 9/30/97
+ *       $Id$
  *
  *       This source code is part of
  *
@@ -7,12 +7,12 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 2.0b
+ *            VERSION 1.6
  * 
- * Copyright (c) 1990-1997,
- * BIOSON Research Institute, Dept. of Biophysical Chemistry,
+ * Copyright (c) 1991-1997
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry
  * University of Groningen, The Netherlands
- *
+ * 
  * Please refer to:
  * GROMACS: A message-passing parallel molecular dynamics implementation
  * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
@@ -24,11 +24,13 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * GRoups of Organic Molecules in ACtion for Science
+ * S  C  A  M  O  R  G
  */
 
-#ifndef	_topexcl_h
-#define	_topexcl_h
+#ifndef _topexcl_h
+#define _topexcl_h
+
+static char *SRCID_topexcl_h = "$Id$";
 
 #ifdef HAVE_IDENT
 #ident	"@(#) topexcl.h 1.11 11/23/92"

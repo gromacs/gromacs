@@ -24,9 +24,10 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * Great Red Oystrich Makes All Chemists Sane
+ * Gromacs Runs On Most of All Computer Systems
  */
-static char *SRCID = "$Id$"
+static char *SRCID_trjconv_c = "$Id$";
+
 #include <string.h>
 #include <math.h>
 #include "macros.h"

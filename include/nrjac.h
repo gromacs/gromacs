@@ -1,5 +1,5 @@
 /*
- *       @(#) copyrgt.c 1.12 9/30/97
+ *       $Id$
  *
  *       This source code is part of
  *
@@ -7,12 +7,12 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 2.0b
+ *            VERSION 1.6
  * 
- * Copyright (c) 1990-1997,
- * BIOSON Research Institute, Dept. of Biophysical Chemistry,
+ * Copyright (c) 1991-1997
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry
  * University of Groningen, The Netherlands
- *
+ * 
  * Please refer to:
  * GROMACS: A message-passing parallel molecular dynamics implementation
  * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
@@ -24,10 +24,13 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * GROwing Monsters And Cloning Shrimps
+ * GRowing Old MAkes el Chrono Sweat
  */
+
 #ifndef _nrjac_h
 #define _nrjac_h
+
+static char *SRCID_nrjac_h = "$Id$";
 
 extern void jacobi(double a[7][7],int n,double d[7],double v[7][7],int *nrot);
 

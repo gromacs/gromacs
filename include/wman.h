@@ -1,5 +1,5 @@
 /*
- *       @(#) wman.h 1.11 10/2/97
+ *       $Id$
  *
  *       This source code is part of
  *
@@ -7,12 +7,12 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 1.51
+ *            VERSION 1.6
  * 
- * Copyright (c) 1990-1996,
- * BIOSON Research Institute, Dept. of Biophysical Chemistry,
+ * Copyright (c) 1991-1997
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry
  * University of Groningen, The Netherlands
- *
+ * 
  * Please refer to:
  * GROMACS: A message-passing parallel molecular dynamics implementation
  * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
@@ -24,11 +24,13 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * GRoups of Organic Molecules in ACtion for Science
+ * Gnomes, ROck Monsters And Chili Sauce
  */
 
-#ifndef	_wman_h
-#define	_wman_h
+#ifndef _wman_h
+#define _wman_h
+
+static char *SRCID_wman_h = "$Id$";
 
 #ifdef HAVE_IDENT
 #ident	"@(#) wman.h 1.11 10/2/97"

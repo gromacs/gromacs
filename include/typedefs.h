@@ -1,5 +1,5 @@
 /*
- *       @(#) typedefs.h 1.99 10/14/97
+ *       $Id$
  *
  *       This source code is part of
  *
@@ -7,12 +7,12 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 1.51
+ *            VERSION 1.6
  * 
- * Copyright (c) 1990-1996,
- * BIOSON Research Institute, Dept. of Biophysical Chemistry,
+ * Copyright (c) 1991-1997
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry
  * University of Groningen, The Netherlands
- *
+ * 
  * Please refer to:
  * GROMACS: A message-passing parallel molecular dynamics implementation
  * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
@@ -24,11 +24,13 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * Giant Rising Ordinary Mutants for A Clerical Setup
+ * GROup of MAchos and Cynical Suckers
  */
 
-#ifndef	_typedefs_h
-#define	_typedefs_h
+#ifndef _typedefs_h
+#define _typedefs_h
+
+static char *SRCID_typedefs_h = "$Id$";
 
 #ifdef CPLUSPLUS
 extern "C" {

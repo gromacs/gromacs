@@ -1,5 +1,5 @@
 /*
- *       @(#) copyrgt.c 1.12 9/30/97
+ *       $Id$
  *
  *       This source code is part of
  *
@@ -7,12 +7,12 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 2.0b
+ *            VERSION 1.6
  * 
- * Copyright (c) 1990-1997,
- * BIOSON Research Institute, Dept. of Biophysical Chemistry,
+ * Copyright (c) 1991-1997
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry
  * University of Groningen, The Netherlands
- *
+ * 
  * Please refer to:
  * GROMACS: A message-passing parallel molecular dynamics implementation
  * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
@@ -24,18 +24,18 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * GROtesk MACabre and Sinister
+ * GRoups of Organic Molecules in ACtion for Science
  */
 
-#ifndef	_readcomp_h
-#define	_readcomp_h
+#ifndef _readcomp_h
+#define _readcomp_h
+
+static char *SRCID_readcomp_h = "$Id$";
 
 #ifdef HAVE_IDENT
 #ident	"@(#) readcomp.h 1.12 25 Jan 1993"
 #endif /* HAVE_IDENT */
 
-#ifndef _readcompiled_h
-#define _readcompiled_h
 #include "typedefs.h"
 
 /*
@@ -60,5 +60,4 @@ typedef struct
 extern void read_compiled(char *compiled,t_procdl **dpl,t_atoms *atoms,
                           t_nbs *nb,t_exclrec *excl);
 
-#endif
 #endif	/* _readcomp_h */

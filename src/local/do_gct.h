@@ -1,5 +1,5 @@
 /*
- *       @(#) do_gct.h 1.10 2/16/97
+ *       $Id$
  *
  *       This source code is part of
  *
@@ -7,12 +7,12 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 1.51
+ *            VERSION 1.6
  * 
- * Copyright (c) 1990-1996,
- * BIOSON Research Institute, Dept. of Biophysical Chemistry,
+ * Copyright (c) 1991-1997
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry
  * University of Groningen, The Netherlands
- *
+ * 
  * Please refer to:
  * GROMACS: A message-passing parallel molecular dynamics implementation
  * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
@@ -24,10 +24,13 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * Good gRace! Old Maple Actually Chews Slate
+ * Good ROcking Metal Altar for Chronical Sinners
  */
+
 #ifndef _do_gct_h
 #define _do_gct_h
+
+static char *SRCID_do_gct_h = "$Id$";
 
 #include <stdio.h>
 #include "typedefs.h"

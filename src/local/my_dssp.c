@@ -1,5 +1,5 @@
 /*
- *       @(#) copyrgt.c 1.14 9/19/97
+ *       $Id$
  *
  *       This source code is part of
  *
@@ -9,10 +9,10 @@
  *
  *            VERSION 1.6
  * 
- * Copyright (c) 1990-1996,
- * BIOSON Research Institute, Dept. of Biophysical Chemistry,
+ * Copyright (c) 1991-1997
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry
  * University of Groningen, The Netherlands
- *
+ * 
  * Please refer to:
  * GROMACS: A message-passing parallel molecular dynamics implementation
  * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
@@ -24,8 +24,10 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * GROningen MAchine for Chemical Simulation
  */
+static char *SRCID_my_dssp_c = "$Id$";
+
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "string2.h"
