@@ -288,45 +288,43 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   int  i,k,npall;
   t_pargs *all_pa;
   t_pargs pca_pa[] = {
+    { "-h",    FALSE, etBOOL, &bHelp,     
+      "Print help info and quit" }, 
+    { "-hidden", FALSE, etBOOL, &bHidden,
+      "HIDDENPrint hidden options" },
+    { "-quiet",FALSE, etBOOL, &bQuiet,
+      "HIDDENDo not print help info" },
+    { "-man",  FALSE, etINT,  &mantp,
+      "HIDDENManual type: 0=none, 1=tex, 2=html, 3=nroff, 4=ascii, 5=java" },
+    { "-debug",FALSE, etBOOL, &bDebug,
+      "HIDDENwrite file with debug information" },
+    { "-nice", FALSE, etINT,  &nicelevel, 
+      "Set the nicelevel" },
+#ifdef _SGI_
+    { "-npri", FALSE, etINT,  &npri,
+      "Set non blocking priority (SGI only) try 250" },
+#ifdef USE_SGI_FPE
+    { "-exception", FALSE, etBOOL, &bExcept,
+      "HIDDENTurn on exception handling" },
+#endif
+#endif
     { "-b",    FALSE, etREAL, &tbegin,        
       "First frame (ps) to read from trajectory" },
     { "-e",    FALSE, etREAL, &tend,        
       "Last frame (ps) to read from trajectory" },
     { "-w",    FALSE, etBOOL, &bView,     
-      "View output using xvgr or ghostview" },
-    { "-nice", FALSE, etINT,  &nicelevel, 
-      "Set the nicelevel" },
-    { "-debug",FALSE, etBOOL, &bDebug,
-      "HIDDENwrite file with debug information" },
-    { "-h",    FALSE, etBOOL, &bHelp,     
-      "Print help info and quit" },
-    { "-quiet",FALSE, etBOOL, &bQuiet,
-      "HIDDENDo not print help info" },
-    { "-hidden", FALSE, etBOOL, &bHidden,
-      "HIDDENPrint hidden options" },
-    { "-man",  FALSE, etINT,  &mantp,
-      "HIDDENManual type: 0=none, 1=tex, 2=html, 3=nroff, 4=ascii, 5=java" }
-#ifdef _SGI_
-#ifdef USE_SGI_FPE
-    ,
-    { "-exception", FALSE, etBOOL, &bExcept,
-      "HIDDENTurn on exception handling" }
-#endif
-    ,
-    { "-npri", FALSE, etINT,  &npri,
-      "Set non blocking priority (SGI only) try 250" }
-#endif
+      "View output using xvgr or ghostview" }
   };
 #define NPCA_PA asize(pca_pa)
   bool bFlags[NPCA_PA] = 
 #ifdef _SGI_
 #ifdef USE_SGI_FPE
-  { 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 };
+  { 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0 };
 #else
-  { 0, 0, 0, 1, 1, 1, 1, 1, 1, 1 };
+  { 1, 1, 1, 1, 1, 1, 1, 0, 0, 0 };
 #endif
 #else
-  { 0, 0, 0, 1, 1, 1, 1, 1, 1 };
+  { 1, 1, 1, 1, 1, 1, 0, 0, 0 };
 #endif
   
   /* First do file stuff */
@@ -343,9 +341,9 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
     nicelevel = 19;
     
   /* Check whether we have to add -b -e or -w options */
-  bFlags[0] = (bool) (Flags & PCA_CAN_BEGIN);
-  bFlags[1] = (bool) (Flags & PCA_CAN_END);
-  bFlags[2] = (bool) (Flags & PCA_CAN_VIEW);
+  bFlags[NPCA_PA-3] = (bool) (Flags & PCA_CAN_BEGIN);
+  bFlags[NPCA_PA-2] = (bool) (Flags & PCA_CAN_END);
+  bFlags[NPCA_PA-1] = (bool) (Flags & PCA_CAN_VIEW);
     
   snew(all_pa,NPCA_PA+npargs);
   for(i=npall=0; (i<NPCA_PA); i++)
