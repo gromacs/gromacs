@@ -869,7 +869,7 @@ static int gen_dums_trp(t_atomtype *atype, rvec *newx[],
   srenew(*newdummy_type,at->nr+*nadd);
   srenew(*newcgnr,at->nr+*nadd);
   for(j=0; j<NMASS; j++)
-    newatomname[at->nr+*nadd-1-j]=NULL; 
+    newatomname[at->nr+*nadd-1-j]=NULL;
   
   /* Dummy masses will be placed at the center-of-mass in each ring. */
 
@@ -941,18 +941,26 @@ static int gen_dums_trp(t_atomtype *atype, rvec *newx[],
 #undef NMASS
 }
 
-static int gen_dums_tyr(t_atoms *at, int *dummy_type[], t_params plist[], 
-			int nrfound, int *ats, t_dumtop *dumtop, int ndumtop)
+
+static int gen_dums_tyr(t_atomtype *atype, rvec *newx[],
+			t_atom *newatom[], char ***newatomname[], 
+			int *o2n[], int *newdummy_type[], int *newcgnr[],
+			t_symtab *symtab, int *nadd, rvec x[], int *cgnr[],
+			t_atoms *at, int *dummy_type[], t_params plist[], 
+			int nrfound, int *ats, int add_shift, t_dumtop *dumtop, int ndumtop)
 {
-  int ndum,i;
-  real dCGCE,dCEOH,dCGHH,tmp1,a,b;
+  int ndum,i,i0,j,atM,tpM;
+  real dCGCE,dCEOH,dCGM,tmp1,a,b;
   real bond_cc,bond_ch,bond_co,bond_oh,angle_coh;
   real xcom,ycom,mtot;
+  real vmass,vdist,mM;
+  rvec r1;
+  char name[10];
 
   /* these MUST correspond to the atnms array in do_dum_aromatics! */
   enum { atCG, atCD1, atHD1, atCD2, atHD2, atCE1, atHE1, atCE2, atHE2, 
 	 atCZ, atOH, atHH, atNR };
-  real x[atNR],y[atNR];
+  real xi[atNR],yi[atNR];
   /* CG, CE1, CE2 (as in general 6-ring) and OH and HH stay, 
      rest gets dummified.
      Now we have two linked triangles with one improper keeping them flat */
@@ -967,33 +975,33 @@ static int gen_dums_tyr(t_atoms *at, int *dummy_type[], t_params plist[],
   bond_oh=get_ddb_bond(dumtop,ndumtop,"TYR","OH","HH");
   angle_coh=DEG2RAD*get_ddb_angle(dumtop,ndumtop,"TYR","CZ","OH","HH");
   
-  x[atCG]=-bond_cc+bond_cc*cos(ANGLE_6RING);
-  y[atCG]=0;
-  x[atCD1]=-bond_cc;
-  y[atCD1]=bond_cc*sin(0.5*ANGLE_6RING);
-  x[atHD1]=x[atCD1]+bond_ch*cos(ANGLE_6RING);
-  y[atHD1]=y[atCD1]+bond_ch*sin(ANGLE_6RING);
-  x[atCE1]=0;
-  y[atCE1]=y[atCD1];
-  x[atHE1]=x[atCE1]-bond_ch*cos(ANGLE_6RING);
-  y[atHE1]=y[atCE1]+bond_ch*sin(ANGLE_6RING);
-  x[atCD2]=x[atCD1];
-  y[atCD2]=-y[atCD1];
-  x[atHD2]=x[atHD1];
-  y[atHD2]=-y[atHD1];
-  x[atCE2]=x[atCE1];
-  y[atCE2]=-y[atCE1];
-  x[atHE2]=x[atHE1];
-  y[atHE2]=-y[atHE1];
-  x[atCZ]=bond_cc*cos(0.5*ANGLE_6RING);
-  y[atCZ]=0;
-  x[atOH]=x[atCZ]+bond_co;
-  y[atOH]=0;
+  xi[atCG]=-bond_cc+bond_cc*cos(ANGLE_6RING);
+  yi[atCG]=0;
+  xi[atCD1]=-bond_cc;
+  yi[atCD1]=bond_cc*sin(0.5*ANGLE_6RING);
+  xi[atHD1]=xi[atCD1]+bond_ch*cos(ANGLE_6RING);
+  yi[atHD1]=yi[atCD1]+bond_ch*sin(ANGLE_6RING);
+  xi[atCE1]=0;
+  yi[atCE1]=yi[atCD1];
+  xi[atHE1]=xi[atCE1]-bond_ch*cos(ANGLE_6RING);
+  yi[atHE1]=yi[atCE1]+bond_ch*sin(ANGLE_6RING);
+  xi[atCD2]=xi[atCD1];
+  yi[atCD2]=-yi[atCD1];
+  xi[atHD2]=xi[atHD1];
+  yi[atHD2]=-yi[atHD1];
+  xi[atCE2]=xi[atCE1];
+  yi[atCE2]=-yi[atCE1];
+  xi[atHE2]=xi[atHE1];
+  yi[atHE2]=-yi[atHE1];
+  xi[atCZ]=bond_cc*cos(0.5*ANGLE_6RING);
+  yi[atCZ]=0;
+  xi[atOH]=xi[atCZ]+bond_co;
+  yi[atOH]=0;
 
   xcom=ycom=mtot=0;
   for(i=0;i<atOH;i++) {
-    xcom+=x[i]*at->atom[ats[i]].m;
-    ycom+=y[i]*at->atom[ats[i]].m;
+    xcom+=xi[i]*at->atom[ats[i]].m;
+    ycom+=yi[i]*at->atom[ats[i]].m;
     mtot+=at->atom[ats[i]].m;
   }
   xcom/=mtot;
@@ -1015,12 +1023,69 @@ static int gen_dums_tyr(t_atoms *at, int *dummy_type[], t_params plist[],
   dCEOH = sqrt( cosrule(bond_cc,bond_co,ANGLE_6RING) );
   my_add_param(&(plist[F_SHAKENC]),ats[atCE1],ats[atOH],dCEOH);
   my_add_param(&(plist[F_SHAKENC]),ats[atCE2],ats[atOH],dCEOH);
+
+  /* We also want to constrain the angle C-O-H, but since CZ is constructed
+   * we need to introduce a constraint to CG.
+   * CG is much further away, so that will lead to instabilities in LINCS
+   * when we constrain both CG-HH and OH-HH distances. Instead of requiring
+   * the use of lincs_order=8 we introduce a dummy mass three times further
+   * away from OH than HH. The mass is accordingly a third, with the remaining
+   * 2/3 moved to OH. This shouldnt cause any problems since the forces will
+   * apply to the HH constructed atom and not directly on the virtual mass.
+   */
+
+  vdist=2.0*bond_oh;
+  mM=at->atom[ats[atHH]].m/2.0;
+  at->atom[ats[atOH]].m+=mM;  /* add 1/2 of original H mass */
+  at->atom[ats[atOH]].mB+=mM; /* add 1/2 of original H mass */
+  at->atom[ats[atHH]].m=at->atom[ats[atHH]].mB=0;
+  
+  /* get dummy mass type */
+  tpM=nm2type("MW",atype);
+  /* make space for 1 mass: shift HH only */
+  i0=ats[atHH];
+  atM=i0+*nadd;
+  if (debug)
+     fprintf(stderr,"Inserting 1 dummy mass at %d\n",(*o2n)[i0]+1);
+  (*nadd)++;
+  for(j=i0; j<at->nr; j++)
+    (*o2n)[j]=j+*nadd;
+  srenew(*newx,at->nr+*nadd);
+  srenew(*newatom,at->nr+*nadd);
+  srenew(*newatomname,at->nr+*nadd);
+  srenew(*newdummy_type,at->nr+*nadd);
+  srenew(*newcgnr,at->nr+*nadd);
+  newatomname[at->nr+*nadd-1]=NULL; 
+  
+  /* Calc the dummy mass initial position */
+  rvec_sub(x[ats[atHH]],x[ats[atOH]],r1);
+  svmul(2.0,r1,r1);
+  rvec_add(r1,x[ats[atHH]],(*newx)[atM]);
+  
+  strcpy(name,"MW1");
+  (*newatomname)  [atM]       = put_symtab(symtab,name);
+  (*newatom)      [atM].m     = (*newatom)[atM].mB    = mM;
+  (*newatom)      [atM].q     = (*newatom)[atM].qB    = 0.0;
+  (*newatom)      [atM].type  = (*newatom)[atM].typeB = tpM;
+  (*newatom)      [atM].ptype = eptAtom;
+  (*newatom)      [atM].resnr = at->atom[i0].resnr;
+  (*newatom)      [atM].chain = at->atom[i0].chain;
+  (*newdummy_type)[atM]       = NOTSET;
+  (*newcgnr)      [atM]       = (*cgnr)[i0]; 
+  /* renumber cgnr: */
+  for(i=i0; i<at->nr; i++)
+    (*cgnr)[i]++;
+
+  (*dummy_type)[ats[atHH]] = F_DUMMY2;
+  ndum++;
   /* assume we also want the COH angle constrained: */
   tmp1 = bond_cc*cos(0.5*ANGLE_6RING) + dCGCE*sin(ANGLE_6RING*0.5) + bond_co;
-  dCGHH = sqrt( cosrule(tmp1,bond_oh,angle_coh) );
-  (*dummy_type)[ats[atHH]]=F_SHAKE;
-  my_add_param(&(plist[F_SHAKENC]),ats[atCG],ats[atHH],dCGHH);
-  
+  dCGM = sqrt( cosrule(tmp1,vdist,angle_coh) );
+  my_add_param(&(plist[F_SHAKENC]),ats[atCG],add_shift+atM,dCGM);
+  my_add_param(&(plist[F_SHAKENC]),ats[atOH],add_shift+atM,vdist);
+
+  add_dum2_param(&plist[F_DUMMY2],
+		 ats[atHH],ats[atOH],add_shift+atM,1.0/2.0);
   return ndum;
 }
       
@@ -1393,7 +1458,9 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
 	break;
       case resTYR: 
 	if (debug) fprintf(stderr,"TYR at %d\n",o2n[ats[0]]+1);
-	ndum+=gen_dums_tyr(at, dummy_type, plist, nrfound, ats, dumtop, ndumtop);
+	ndum+=gen_dums_tyr(atype, &newx, &newatom, &newatomname, &o2n, 
+			   &newdummy_type, &newcgnr, symtab, &nadd, *x, cgnr,
+			   at, dummy_type, plist, nrfound, ats, add_shift, dumtop, ndumtop);
 	break;
       case resHIS: 
 	if (debug) fprintf(stderr,"HIS at %d\n",o2n[ats[0]]+1);
