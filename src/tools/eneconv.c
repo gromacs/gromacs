@@ -398,7 +398,7 @@ int main(int argc,char *argv[])
   };
   int       in,out=0;
   t_energy  *ee,*lastee,*outee,*startee;
-  int       step,laststep,outstep,startstep;
+  int       step,laststep,outstep,startstep,noutfr;
   int       nre,nremax,this_nre,nfile,i,j,kkk,ndr,nset,*set=NULL;
   real      t=0,outt=-1; 
   char      **fnms;
@@ -485,6 +485,7 @@ int main(int argc,char *argv[])
   else
     startee=NULL;
 
+  noutfr=0;
   bFirst=TRUE;
 
   for(i=0;i<nfile;i++) {
@@ -514,8 +515,9 @@ int main(int argc,char *argv[])
       }
       t=tadjust+t1;
 
-      bWrite = (((begin < 0) || ((begin >= 0) && (t >=(begin-GMX_REAL_EPS)))) && 
-		((end   < 0) || ((end   >= 0) && (t <= (end+GMX_REAL_EPS)))));
+      bWrite = ((begin<0 || (begin>=0 && (t >= begin-GMX_REAL_EPS))) && 
+		(end  <0 || (end  >=0 && (t <= end  +GMX_REAL_EPS))) &&
+		(t < settime[i+1]-GMX_REAL_EPS));
 		
       if (bError)      
 	if((end > 0) && (t>(end+GMX_REAL_EPS))) {
@@ -535,7 +537,7 @@ int main(int argc,char *argv[])
       }	  
       
       /* determine if we should write it */
-      if (bWrite && ((delta_t==0) || (bRmod(t-toffset,delta_t)))) {
+      if (bWrite && (delta_t==0 || bRmod(t-toffset,delta_t))) {
 	outt=t;
 	if(bNewOutput) {
 	  bNewOutput=FALSE;
@@ -550,7 +552,9 @@ int main(int argc,char *argv[])
 	  }
 	}
 	do_enx(out,&outt,&outstep,&nre,outee,&ndr,&dr);
-	fprintf(stderr,"\rWriting step %d, time %f        ",outstep,outt);
+	if (noutfr % 10 == 0)
+	  fprintf(stderr,"Writing frame time %g    ",outt);
+	noutfr++;
       }
     }
     /* copy statistics to old */
@@ -590,11 +594,13 @@ int main(int argc,char *argv[])
 
     fprintf(stderr,"\n");
   }
-  if(outstep==0)
-      fprintf(stderr,"No frames written.\n");
-  else
-      fprintf(stderr,"Last frame written was at step %d, time %f\n",outstep,outt);
-  
+  if (noutfr == 0)
+    fprintf(stderr,"No frames written.\n");
+  else {
+    fprintf(stderr,"Last frame written was at step %d, time %f\n",outstep,outt);
+    fprintf(stderr,"Wrote %d frames\n",noutfr);
+  }
+
   thanx(stderr);
   return 0;
 }
