@@ -675,6 +675,7 @@ Description of the file layout:
       before is meaningless and generates a warning.
 \item using {\tt [~molecules~]} without having used
       {\tt [~system~]} before is meaningless and generates a warning.
+\item after {\tt [~system~]} the only allowed directive is {\tt [~molecules~]}
 \item using an unknown string in {\tt [~]} causes all the data until
       the next directive to be ignored, and generates a warning.
 \end{itemize}
@@ -759,15 +760,6 @@ Urea         3
        1       1      1000      1000      1000  ; Restrain to a point
        2       1      1000         0      1000  ; Restrain to a line (Y-axis)
        3       1      1000         0         0  ; Restrain to a plane (Y-Z-plane)
- 
-[ distance_restraints ]
-; This you wouldn't use normally for a molecule like Urea,
-; but it's here for didactical purposes
-;     ai      aj     type    index     type'  low     up1     up2     fac
-       1       6        1        0         1  0.0     0.4     0.5     1.0 
-; The following two restraints are taken together (index both 1)
-       1       7        1        1         1  0.0     0.3     0.4     1.0 
-       1       8        1        1         1  0.0     0.3     0.4     1.0 
 
 ; Include SPC water topology
 #include "spc.itp"
@@ -841,11 +833,6 @@ in {\tt [~pairs~]}!!
 to reference positions (\secref{posre}). 
 The reference positions are read from a 
 separate coordinate file by \normindex{grompp}.
-
-{\bf {\tt [~distance\_restraints~]} :} put restraints on the distance 
-between particles, usually based on experimental data from NMR experiments
-(NOE data). The form of the potential function is determined by the
-parameters given below (see \secref{disre}).
 
 {\bf {\tt \#include "spc.itp"} :} includes a topology file that was already
 constructed (see next section, molecule.itp).
