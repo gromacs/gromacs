@@ -30,6 +30,8 @@ extern void done_matrix(int n1,real ***m);
 
 extern t_mat *init_mat(int n1,bool b1D);
 
+extern void enlarge_mat(t_mat *m,int deltan);
+
 extern void reset_index(t_mat *m);
 
 extern void swap_rows(t_mat *m,int isw,int jsw);
@@ -43,6 +45,8 @@ extern real row_energy(int n1,int row,real *mat,int m_ind[]);
 extern real mat_energy(t_mat *mat);
 
 extern void swap_mat(t_mat *m);
+
+extern void low_rms_dist(char *fn,real maxrms,int nn,real **mat);
 
 extern void rms_distribution(char *fn,t_mat *m);
 

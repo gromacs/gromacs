@@ -54,6 +54,28 @@ t_mat *init_mat(int n1,bool b1D)
   return m;
 }
 
+void enlarge_mat(t_mat *m,int deltan)
+{
+  int i,j;
+  
+  srenew(m->erow,m->nn+deltan);
+  srenew(m->m_ind,m->nn+deltan);
+  srenew(m->mat,m->nn+deltan);
+  
+  /* Reallocate existing rows in the matrix, and set them to zero */
+  for(i=0; (i<m->nn); i++) {
+    srenew(m->mat[i],m->nn+deltan);
+    for(j=m->nn; (j<m->nn+deltan); j++)
+      m->mat[i][j] = 0;
+  }
+  /* Allocate new rows of the matrix, set energies to zero */
+  for(i=m->nn; (i<m->nn+deltan); i++) {
+    m->erow[i]  = 0;
+    snew(m->mat[i],m->nn+deltan);
+  }
+  m->nn += deltan;
+}
+
 void reset_index(t_mat *m)
 {
   int i;
@@ -141,17 +163,17 @@ void swap_mat(t_mat *m)
   done_mat(&tmp);
 }
 
-void rms_distribution(char *fn,t_mat *rms)
+void low_rms_dist(char *fn,real maxrms,int nn,real **mat)
 {
   FILE   *fp;
   int    i,j,*histo;
   real   fac;
   
-  fac = 100/rms->maxrms;
+  fac = 100/maxrms;
   snew(histo,101);
-  for(i=0; (i<rms->nn); i++) 
-    for(j=i+1; (j<rms->nn); j++)
-      histo[(int)(fac*rms->mat[i][j])]++;
+  for(i=0; (i<nn); i++) 
+    for(j=i+1; (j<nn); j++)
+      histo[(int)(fac*mat[i][j])]++;
       
   fp = xvgropen(fn,"RMS Distribution","RMS (nm)","a.u.");
   for(i=0; (i<101); i++)
@@ -159,6 +181,11 @@ void rms_distribution(char *fn,t_mat *rms)
   fclose(fp);
   sfree(histo);
   xvgr_file(fn,NULL);
+}
+
+void rms_distribution(char *fn,t_mat *rms)
+{
+  low_rms_dist(fn,rms->maxrms,rms->nn,rms->mat);
 }
 
 t_clustid *new_clustid(int n1)

@@ -46,6 +46,7 @@ static char *SRCID_g_rms_c = "$Id$";
 #include "do_fit.h"
 #include "matio.h"
 #include "tpxio.h"
+#include "cmat.h"
 
 int main (int argc,char *argv[])
 {
@@ -142,6 +143,7 @@ int main (int argc,char *argv[])
     { efNDX, NULL,  NULL,    ffOPTRD },
     { efXVG, NULL,  "rmsd",  ffWRITE },
     { efXVG, "-a",  "avgrp", ffOPTWR },
+    { efXVG, "-dist","rms-dist", ffOPTWR },
     { efXPM, "-m",  "rmsd",  ffOPTWR },
     { efDAT, "-bin","rmsd",  ffOPTWR },
     { efXPM, "-bm", "bond",  ffOPTWR }
@@ -524,6 +526,10 @@ int main (int argc,char *argv[])
       write_xpm(opt2FILE("-m",NFILE,fnm,"w"),buf,"RMSD (nm)",tstr,tstr,
 		   tel_mat,tel_mat2,axis,axis2,
 		   rmsd_mat,rmsd_min,rmsd_max,rlo,rhi,&nlevels);
+      /* Print the distribution of RMSD values */
+      if (opt2bSet("-dist",NFILE,fnm)) 
+	low_rms_dist(opt2fn("-dist",NFILE,fnm),tel_mat,rmsd_max,rmsd_mat);
+		     
       if (bDelta) {
 	snew(delta_tot,delta_xsize);
 	for(j=0; j<tel_mat-1; j++) {
