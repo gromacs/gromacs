@@ -285,9 +285,9 @@ inl0100_sse:
 .equ		_ix,		0
 .equ		_iy,	        16
 .equ		_iz,            32
-.equ		_xdx,           48
-.equ		_xdy,           64
-.equ		_xdz,           80
+.equ		_dx,            48
+.equ		_dy,            64
+.equ		_dz,            80
 .equ		_two,           96		
 .equ		_c6,		112
 .equ		_c12,		128
