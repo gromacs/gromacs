@@ -68,10 +68,11 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,
   rvec    *x=NULL,dx;
   matrix  box;
   char    *gname;
-  real    t,dx2,cut2,**cs_dist=NULL,*t_x=NULL,*t_y;
-  int     i,j,k,ai,aj,ak,ci,cj,nframe,nclust,n_x,n_y;
-  int     *clust_index,*clust_size,max_size=0;
-  t_rgb   rlo = { 1.0, 1.0, 1.0 },rhi = { 0.0, 0.0, 0.0 };
+  real    t,dx2,cut2,**cs_dist=NULL,*t_x=NULL,*t_y,mid;
+  int     i,j,k,ai,aj,ak,ci,cj,nframe,nclust,n_x,n_y,max_size=0;
+  int     *clust_index,*clust_size;
+  t_rgb   rlo = { 1.0, 1.0, 1.0 },
+		  rmid = { 1.0, 1.0, 0.0 },rhi = { 0.0, 0.0, 1.0 };
   
   fp = xvgropen(ncl,"Number of clusters","Time (ps)","N");
   rd_index(ndx,1,&nindex,&index,&gname);
@@ -124,7 +125,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,
 	ci = clust_size[i];
 	if (ci > 0) {
 	  nclust++;
-	  cs_dist[n_x-1][ci-1]+=ci/(real)nindex;
+	  cs_dist[n_x-1][ci-1] += 100.0*ci/(real)nindex;
 	  max_size = max(max_size,ci);
 	}
       }
@@ -135,10 +136,17 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,
   close_trx(status);
   fclose(fp);
 
+  /* Look for the smallest entry that is not zero */
+  mid = 100.0;
+  for(i=0; (i<n_x); i++)
+    for(j=0; (j<max_size); j++) 
+      if ((cs_dist[i][j] > 0) && (cs_dist[i][j] < mid))
+	mid = cs_dist[i][j];
+      
   fp = ffopen(xpm,"w");
-  write_xpm(fp,"Cluster size distribution","Fraction","Time (ps)","Size",
-	    n_x,max_size,t_x,t_y,cs_dist,0,1.0,/*(real) max_size,*/
-	    rlo,rhi,&nlevels);
+  write_xpm3(fp,"Cluster size distribution","Fraction (%)","Time (ps)","Size",
+	     n_x,max_size-1,t_x,t_y,cs_dist,0,mid,100.0,
+	     rlo,rmid,rhi,&nlevels);
   fclose(fp);
 	        
   sfree(clust_index);
