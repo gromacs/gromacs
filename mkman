@@ -32,7 +32,7 @@ foreach program ( $PROGRAMS )
       grep -v "Use dialog box GUI to edit command line options" $program.tex >! mkman_temp.tex
       grep -v "Set non blocking priority" mkman_temp.tex >! $program.tex
       \rm mkman_temp.tex
-      echo "\\input{"$MANDIR"/"$program"}" >> $INDEX
+      echo "\input{"$MANDIR"/"$program"}" >> $INDEX
     endif
   endif
 end

@@ -392,4 +392,6 @@ local minimum! The faster converging {\em conjugate gradient method}
 steps. In general, steepest descents will bring you close to the
 nearest local minimum very quickly, while conjugate gradients brings
 you {\em very} close to the local minimum, but performs worse far away
-from the minimum.
+from the minimum. {\gromacs} also supports the L-BFGS minimizer, which
+is mostly comparable to {\em conjugate gradient method}, but in some 
+cases converges faster.

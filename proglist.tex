@@ -1,2 +1,180 @@
-%\\begin{description}
-%\\end{description}
+\begin{description}
+\item {\large\bf Generating topologies and coordinates}
+\vspace{-2ex}\begin{tabbing}
+{\bf mk\_angndx} \= \kill
+{\bf pdb2gmx} \> converts pdb files to topology and coordinate files \\
+{\bf x2top} \> generates a primitive topology from coordinates  \\
+{\bf editconf} \> edits the box and writes subgroups  \\
+{\bf genbox} \> solvates a system \\
+{\bf genion} \> generates mono atomic ions on energetically favorable positions \\
+{\bf genconf} \> multiplies a conformation in 'random' orientations \\
+{\bf genpr} \> generates position restraints for index groups \\
+{\bf protonate} \> protonates structures \\
+\end{tabbing}\vspace{-2ex}
+
+\item {\large\bf Running a simulation}
+\vspace{-2ex}\begin{tabbing}
+{\bf mk\_angndx} \= \kill
+{\bf grompp} \> makes a run input file \\
+{\bf tpbconv} \> makes a run input file for restarting a crashed run \\
+{\bf mdrun} \> performs a simulation \\
+\end{tabbing}\vspace{-2ex}
+
+\item {\large\bf Viewing trajectories}
+\vspace{-2ex}\begin{tabbing}
+{\bf mk\_angndx} \= \kill
+{\bf ngmx} \> displays a trajectory \\
+{\bf trjconv} \> converts trajectories to {\eg} pdb which can be viewed with {\eg} rasmol \\
+\end{tabbing}\vspace{-2ex}
+
+\item {\large\bf Processing energies}
+\vspace{-2ex}\begin{tabbing}
+{\bf mk\_angndx} \= \kill
+{\bf g\_energy} \> writes energies to xvg files and displays averages \\
+{\bf g\_enemat} \> extracts an energy matrix from an energy file \\
+{\bf mdrun} \> with -rerun (re)calculates energies for trajectory frames \\
+\end{tabbing}\vspace{-2ex}
+
+\item {\large\bf Converting files}
+\vspace{-2ex}\begin{tabbing}
+{\bf mk\_angndx} \= \kill
+{\bf editconf} \> converts and manipulates structure files \\
+{\bf trjconv} \> converts and manipulates trajectory files \\
+{\bf trjcat} \> concatenates trajectory files \\
+{\bf eneconv} \> converts energy files \\
+{\bf xmp2ps} \> converts XPM matrices to encapsulated postscript (or XPM) \\
+\end{tabbing}\vspace{-2ex}
+
+\item {\large\bf Tools}
+\vspace{-2ex}\begin{tabbing}
+{\bf mk\_angndx} \= \kill
+{\bf make\_ndx} \> makes index files \\
+{\bf mk\_angndx} \> generates index files for g\_angle \\
+{\bf gmxcheck} \> checks and compares files \\
+{\bf gmxdump} \> makes binary files human readable \\
+{\bf g\_traj} \> plots x, v and f of selected atoms/groups (and more) from a trajectory \\
+{\bf g\_analyze} \> analyzes data sets \\
+{\bf trjorder} \> orders molecules according to their distance to a group \\
+{\bf g\_filter} \> frequency filters trajectories, useful for making smooth movies \\
+{\bf g\_lie} \> free energy estimate from linear combinations \\
+{\bf g\_dyndom} \> interpolate and extrapolate structure rotations \\
+{\bf g\_morph} \> linear interpolation of conformations  \\
+{\bf g\_wham} \> weighted histogram analysis after umbrella sampling \\
+{\bf ffscan} \> scan and modify force field data for a single point energy calculation \\
+{\bf xpm2ps} \> convert XPM (XPixelMap) file to postscript \\
+\end{tabbing}\vspace{-2ex}
+
+\item {\large\bf Distances between structures}
+\vspace{-2ex}\begin{tabbing}
+{\bf mk\_angndx} \= \kill
+{\bf g\_rms} \> calculates rmsd's with a reference structure and rmsd matrices \\
+{\bf g\_confrms} \> fits two structures and calculates the rmsd  \\
+{\bf g\_cluster} \> clusters structures \\
+{\bf g\_rmsf} \> calculates atomic fluctuations \\
+{\bf disco} \> distance geometry calculation with the CONCOORD algorithm \\
+{\bf cdist} \> create input for disco \\
+\end{tabbing}\vspace{-2ex}
+
+\item {\large\bf Distances in structures over time}
+\vspace{-2ex}\begin{tabbing}
+{\bf mk\_angndx} \= \kill
+{\bf g\_mindist} \> calculates the minimum distance between two groups \\
+{\bf g\_dist} \> calculates the distances between the centers of mass of two groups \\
+{\bf g\_bond} \> calculates distances between atoms \\
+{\bf g\_mdmat} \> calculates residue contact maps \\
+{\bf g\_rmsdist} \> calculates atom pair distances averaged with power 2, -3 or -6 \\
+\end{tabbing}\vspace{-2ex}
+
+\item {\large\bf Mass distribution properties over time}
+\vspace{-2ex}\begin{tabbing}
+{\bf mk\_angndx} \= \kill
+{\bf g\_traj} \> plots x, v, f, box, temperature and rotational energy \\
+{\bf g\_gyrate} \> calculates the radius of gyration \\
+{\bf g\_msd} \> calculates mean square displacements \\
+{\bf g\_rotacf} \> calculates the rotational correlation function for molecules \\
+{\bf g\_rdf} \> calculates radial distribution functions \\
+\end{tabbing}\vspace{-2ex}
+
+\item {\large\bf Analyzing bonded interactions}
+\vspace{-2ex}\begin{tabbing}
+{\bf mk\_angndx} \= \kill
+{\bf g\_bond} \> calculates bond length distributions \\
+{\bf mk\_angndx} \> generates index files for g\_angle \\
+{\bf g\_angle} \> calculates distributions and correlations for angles and dihedrals \\
+{\bf g\_dih} \> analyzes dihedral transitions \\
+\end{tabbing}\vspace{-2ex}
+
+\item {\large\bf Structural properties}
+\vspace{-2ex}\begin{tabbing}
+{\bf mk\_angndx} \= \kill
+{\bf g\_hbond} \> computes and analyzes hydrogen bonds \\
+{\bf g\_saltbr} \> computes salt bridges \\
+{\bf g\_sas} \> computes solvent accessible surface area \\
+{\bf g\_order} \> computes the order parameter per atom for carbon tails \\
+{\bf g\_sgangle} \> computes the angle and distance between two groups \\
+{\bf g\_sorient} \> analyzes solvent orientation around solutes \\
+{\bf g\_bundle} \> analyzes bundles of axes, {\eg} helices \\
+{\bf g\_disre} \> analyzes distance restraints \\
+{\bf g\_clustsize} \> calculate size distributions of atomic clusters \\
+{\bf disco} \> distance geometry calculation with the CONCOORD algorithm \\
+{\bf cdist} \> create input for disco \\
+{\bf anadock} \> cluster structures from Autodock runs \\
+\end{tabbing}\vspace{-2ex}
+
+\item {\large\bf Kinetic properties}
+\vspace{-2ex}\begin{tabbing}
+{\bf mk\_angndx} \= \kill
+{\bf g\_traj} \> plots x, v, f, box, temperature and rotational energy \\
+{\bf g\_velacc} \> calculates velocity autocorrelation functions \\
+{\bf g\_tcaf} \> calculates viscosities of liquids \\
+\end{tabbing}\vspace{-2ex}
+
+\item {\large\bf Electrostatic properties}
+\vspace{-2ex}\begin{tabbing}
+{\bf mk\_angndx} \= \kill
+{\bf genion} \> generates mono atomic ions on energetically favorable positions \\
+{\bf g\_potential} \> calculates the electrostatic potential across the box \\
+{\bf g\_dipoles} \> computes the total dipole plus fluctuations \\
+{\bf g\_dielectric} \> calculates frequency dependent dielectric constants \\
+\end{tabbing}\vspace{-2ex}
+
+\item {\large\bf Protein specific analysis}
+\vspace{-2ex}\begin{tabbing}
+{\bf mk\_angndx} \= \kill
+{\bf do\_dssp} \> assigns secondary structure and calculates solvent accessible surface area \\
+{\bf g\_chi} \> calculates everything you want to know about chi and other dihedrals \\
+{\bf g\_helix} \> calculates everything you want to know about helices \\
+{\bf g\_rama} \> computes Ramachandran plots \\
+{\bf xrama} \> shows animated Ramachandran plots \\
+{\bf wheel} \> plots helical wheels \\
+\end{tabbing}\vspace{-2ex}
+
+\item {\large\bf Interfaces}
+\vspace{-2ex}\begin{tabbing}
+{\bf mk\_angndx} \= \kill
+{\bf g\_potential} \> calculates the electrostatic potential across the box \\
+{\bf g\_density} \> calculates the density of the system \\
+{\bf g\_order} \> computes the order parameter per atom for carbon tails \\
+{\bf g\_h2order} \> computes the orientation of water molecules \\
+{\bf g\_bundle} \> analyzes bundles of axes, {\eg} transmembrane helices \\
+\end{tabbing}\vspace{-2ex}
+
+\item {\large\bf Covariance analysis}
+\vspace{-2ex}\begin{tabbing}
+{\bf mk\_angndx} \= \kill
+{\bf g\_covar} \> calculates and diagonalizes the covariance matrix \\
+{\bf g\_anaeig} \> analyzes the eigenvectors \\
+\end{tabbing}\vspace{-2ex}
+
+\item {\large\bf Normal modes}
+\vspace{-2ex}\begin{tabbing}
+{\bf mk\_angndx} \= \kill
+{\bf grompp} \> makes a run input file \\
+{\bf mdrun} \> finds a potential energy minimum \\
+{\bf mdrun} \> calculates the Hessian \\
+{\bf g\_nmeig} \> diagonalizes the Hessian  \\
+{\bf g\_anaeig} \> analyzes the normal modes \\
+{\bf g\_nmens} \> generates an ensemble of structures from the normal modes \\
+\end{tabbing}\vspace{-2ex}
+
+\end{description}

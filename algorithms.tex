@@ -1265,26 +1265,24 @@ This angle is set by the user in the input file for \verb'mdrun'.
 \section{Simulated Annealing}
 \label{sec:SA}
 The well known \swapindex{simulated}{annealing}
-(SA) protocol is implemented
-in a simple way into {\gromacs}. A modification of the temperature coupling
-scheme is used as a very basic implementation of the SA algorithm. The
-method works as follows: the reference temperature for coupling $T_0$
-(\eqnref{Tcoupling})
-is not constant but can be varied linearly:
-\beq
-T_0({\rm step}) = T_0 * (\lambda_0 + \Delta\lambda * {\rm step})
-\label{eqn:SA}
-\eeq
-if $\lambda_0$ = 1 and $\Delta\lambda$ is 0 this is the plain MD
-algorithm. Note that for standard SA $\Delta\lambda$  must be negative.
-When $T_0$(step) $<$ 0 it is set to 0, as negative temperatures do not have
-a physical meaning. This ``feature'' 
-allows for an annealing strategy in which
-at first the temperature is scaled down linearly until 0 K, 
-and when more steps
-are taken the simulation proceeds at 0 K. Since the weak coupling scheme
-does not couple instantaneously, the actual temperature will
-always be slightly higher than 0 K.
+(SA) protocol is supported in {\gromacs}, and you can even couple multiple
+groups of atoms separately with an arbitrary number of reference temperatures
+that change during the simulation. The annealing is implemented by simply 
+changing the current reference temperature for each group in the temperature
+coupling, so the actual relaxation and coupling properties depends on the
+type of thermostat you use and how hard you are coupling it. Since we are
+changing the reference temperature it is important to remember that the system
+will NOT instantaneously reach this value - you need to allow for the inherent
+relaxation time in the coupling algorithm too. If you are changing the 
+annealing reference temperature faster than the temperature relaxation you
+will probably end up with a crash when the difference becomes too large.
+
+The annealing protocol is specified as a series of corresponding times and 
+reference temperatures for each group, and you can also choose whether you only
+want a single sequence (after which the temperature will be coupled to the 
+last reference value), or if the annealing should be periodic and restart at 
+the first reference point once the sequence is completed. You can mix and
+match both types of annealing and non-annealed groups in your simulation.
 
 \newcommand{\vrond}{\stackrel{\circ}{\ve{r}}}
 \newcommand{\rond}{\stackrel{\circ}{r}}
@@ -1371,8 +1369,7 @@ BD is an option of the \verb'mdrun' program.
 \section{Energy Minimization}
 \label{sec:EM}
 Energy minimization in {\gromacs} can be done using 
-a steepest descent or conjugate gradient method.
-EM is just an option of the {\tt mdrun} program.
+steepest descent, conjugate gradients, or l-bfgs (limited-memory Broyden-Fletcher-Goldfarb-Shanno quasi-Newtonian minimizer... we prefer the abbreviation). EM is just an option of the {\tt mdrun} program.
 
 \subsection{\normindex{Steepest Descent}}
 Although steepest descent is certainly not the most efficient
@@ -1422,6 +1419,24 @@ since the accuracy of conjugate gradient is only required for minimization
 prior to a normal mode analysis, which can not be performed with constraints.
 For most other purposes steepest descent is efficient enough.
 
+\subsection{\normindex{L-BFGS}}
+The original BFGS algorithm works by successively creating better 
+approximations of the inverse Hessian matrix, and moving the system to the 
+currently estimated minimum. The memory requirements for this are proportional
+to the square of the number of particles, so it is not practical for large
+systems like biomolecules. Instead, we use the L-BFGS algorithm of Nocedal, 
+which approximates the inverse Hessian by a fixed number of corrections from
+previous steps. This sliding-window technique is almost as efficient as the
+original method, but the memory requirements are much lower - proportional
+to the number of particles multiplied with the correction steps. In practice
+we have found it to converge faster than conjugate gradients, but due to the
+correction steps it is not yet parallelized.  It is also noteworthy that
+switched or shifted interactions usually improve the convergence, since 
+sharp cut-offs means the potential function at the current coordinates is
+slightly different from the previous steps used to build the inverse Hessian
+approximation. 
+
+
 \section{Normal Mode Analysis}
 \normindex{Normal mode analysis}~\cite{Levitt83,Go83,BBrooks83b} 
 can be performed using {\gromacs}, by diagonalization of the mass-weighted
@@ -1455,7 +1470,7 @@ for a usual Normal Mode calculation, it is necessary to completely minimize
 the energy prior to computation of the Hessian.
 What tolerance is required depends on the type of system,
 but a rough indication is 0.001 kJ mol$^{-1}$.
-This should be done with conjugate gradient in double precision.
+This should be done with conjugate gradients or l-bfgs in double precision.
 
 A number of {\gromacs} programs are involved in these
 calculations. First the energy should be minimized using {\tt mdrun}.
@@ -1471,6 +1486,7 @@ Ensembles of structures at any temperature and for any subset of
 normal modes can be generated with {\tt \normindex{g\_nmens}}.
 An overview of normal mode analysis and the related principal component
 analysis (see \secref{covanal}) can be found in~\cite{Hayward95b}.
+
 
 \section{\normindex{Free energy calculations}}
 \label{sec:fecalc}
