@@ -63,6 +63,10 @@ typedef struct {
   int *nb;
 } t_nnb;
   
+/* Set colors for plotting: white = zero RMS, black = maximum */
+t_rgb rlo = { 1.0, 1.0, 1.0 };
+t_rgb rhi = { 0.0, 0.0, 0.0 };
+  
 void pr_energy(FILE *fp,real e)
 {
   fprintf(fp,"Energy: %8.4f\n",e);  
@@ -172,62 +176,6 @@ static real rms_dist(int isize,real **d,real **d_r)
   return sqrt(r2);
 }
 
-static real **mcpy=NULL;
-static int  nnn=0;
-
-int rcomp(const void *a,const void *b)
-{
-  real *ra,*rb;
-  
-  ra = (real *)a;
-  rb = (real *)b;
-  
-  if ((*ra) < (*rb))
-    return -1;
-  else if ((*ra) > (*rb))
-    return 1;
-    
-  return 0;
-}
-
-static int icomp(const void *a,const void *b)
-{
-  int ia,ib;
-  
-  ia = *(int *)a;
-  ib = *(int *)b;
-  
-  if (mcpy[ia][nnn] < mcpy[ib][nnn])
-    return -1;
-  else if (mcpy[ia][nnn] > mcpy[ib][nnn])
-    return 1;
-  else
-    return 0;  
-}
-
-void sort_matrix(int n1,real **mat)
-{
-  int i,j,*index;
-
-  snew(index,n1);
-  snew(mcpy,n1);
-  for(i=0; (i<n1); i++) {
-    index[i] = i;
-    snew(mcpy[i],n1);
-    for(j=0; (j<n1); j++)
-      mcpy[i][j] = mat[i][j];
-  }
-  fprintf(stderr,"Going to sort the RMSD matrix.\n");  
-  qsort(index,n1,sizeof(*index),icomp);
-  /* Copy the matrix back */
-  for(i=0; (i<n1); i++)
-    for(j=0; (j<n1); j++)
-      mat[i][j] = mcpy[index[i]][index[j]];
-  /* done_mat(n1,mcpy); 
-     sfree(mcpy);*/
-  sfree(index);
-}
-
 static int rms_dist_comp(const void *a,const void *b)
 {
   t_dist *da,*db;
@@ -269,6 +217,7 @@ void gather(t_mat *m,real cutoff,t_clusters *clust)
   t_dist    *d;
   int       i,j,k,nn,cid,n1,diff;
   bool      bChange;
+  real      **mcpy=NULL;
   
   /* First we sort the entries in the RMSD matrix */
   n1 = m->nn;
@@ -286,9 +235,7 @@ void gather(t_mat *m,real cutoff,t_clusters *clust)
   /* Now we make a cluster index for all of the conformations */
   c = new_clustid(n1);
     
-  /* Now we check the closest structures, and equalize their cluster
-   * numbers 
-   */
+  /* Now we check the closest structures, and equalize their cluster numbers */
   fprintf(stderr,"Linking structures ");
   do {
     fprintf(stderr,"*");
@@ -375,6 +322,7 @@ static void jarvis_patrick(int n1,real **mat,int M,int P,
   int       **nnb;
   int       i,j,k,cid,diff,max;
   bool      bChange;
+  real      **mcpy=NULL;
 
   if (rmsdcut < 0)
     rmsdcut = 10000;
@@ -546,10 +494,10 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
 
   if (debug) dump_nnb(debug, "Nearest neighborlist after sort.\n", n1, nnb);
   
-  /* turn first structure with all its neighbors into cluster
+  /* turn first structure with all its neighbors (largest) into cluster
      remove them from pool of structures and repeat for all remaining */
-  fprintf(stderr,"Finding clusters\n");
-  /* cluster id's start at 1 */
+  fprintf(stderr,"Finding clusters %4d", 0);
+  /* cluster id's start at 1: */
   k=1;
   while(nnb[0].nr) {
     /* set cluster id (k) for first item in neighborlist */
@@ -573,12 +521,16 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
       /* now j1 is the new number of neighbors */
       nnb[i].nr=j1;
     }
-    /* sort again, because we have new # neighbors: */
-    qsort(nnb,n1,sizeof(nnb[0]),nrnb_comp);
+    /* sort again on nnb[].nr, because we have new # neighbors: */
+    /* but we only need to sort upto i, i.e. when nnb[].nr>0 */
+    qsort(nnb,i,sizeof(nnb[0]),nrnb_comp);
     
+    fprintf(stderr,"\b\b\b\b%4d",k);
     /* new cluster id */
     k++;
   }
+  fprintf(stderr,"\n");
+  sfree(nnb);
   if (debug) {
     fprintf(debug,"Clusters (%d):\n", k);
     for(i=0; i<n1; i++)
@@ -590,18 +542,18 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
 }
 
 rvec **read_whole_trj(char *fn,int isize,atom_id index[],int skip,int *nframe,
-		      int *natom, real **time)
+		      real **time)
 {
   rvec   **xx,*x;
   matrix box;
   real   t;
   int    i,i0,j,max_nf;
-  int    nbytes,status;
+  int    nbytes,status,natom;
   
   max_nf = 0;
   xx     = NULL;
   *time  = NULL;
-  *natom = read_first_x(&status,fn,&t,&x,box);
+  natom = read_first_x(&status,fn,&t,&x,box);
   i  = 0;
   i0 = 0;
   do {
@@ -616,10 +568,10 @@ rvec **read_whole_trj(char *fn,int isize,atom_id index[],int skip,int *nframe,
       for(j=0; (j<isize); j++) 
 	copy_rvec(x[index[j]],xx[i0][j]);
       (*time)[i0] = t;
-	i0 ++;
+      i0 ++;
     }
     i++;
-  } while (read_next_x(status,&t,*natom,x,box));
+  } while (read_next_x(status,&t,natom,x,box));
   fprintf(stderr,"Allocated %lu bytes for frames\n",
 	  (unsigned long) (max_nf*isize*sizeof(**xx)));
   fprintf(stderr,"Read %d frames from trajectory %s\n",i0,fn);
@@ -656,30 +608,35 @@ static void plot_clusters(int nf, real **mat, real val, t_clusters *clust,
   }
 }
 
-static void analyze_clusters(int nf,t_clusters *clust,real **rmsd,
-			     t_atoms *atoms,int natom,
-			     int isize,atom_id *index,atom_id *alli,
-			     rvec **xx,real *time,real *mass,
-			     rvec *xtps,char *trxfn,char *sizefn,
-			     bool bAverage,bool bFirstIsMiddle, bool bWriteAll,
+static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
+			     int natom, t_atoms *atoms, rvec *xtps, 
+			     real *mass, rvec **xx, real *time,
+			     int ifsize, atom_id *fitidx,
+			     int iosize, atom_id *outidx,
+			     char *trxfn, char *sizefn, char *transfn,
+			     bool bAverage, bool bFirstIsMiddle,
+			     int write_ncl, int write_nst, real rmsmin,
 			     FILE *logf)
 {
   FILE *fp;
-  char buf[STRLEN],buf1[20],buf2[20],*ext;
-  int  trxout=0;
-  int  i,i1,i2,cl,nstr,*structure,first=0,midstr;
+  char buf[STRLEN],buf1[20],buf2[20],*ext,*trxsfn;
+  int  trxout=0,trxsout=0;
+  int  i,i1,i2,cl,nstr,*structure,first=0,midstr,ntrans,maxtrans,nlevels;
+  bool *bWrite;
   real r,clrmsd,midrmsd;
-  rvec *xtpsi=NULL,*xav=NULL,*xnatom=NULL;
+  real **trans,*axis;
+  rvec *xav=NULL;
   matrix zerobox;
 
   clear_mat(zerobox);
 
   sprintf(buf,"\nFound %d clusters\n\n",clust->ncl);
-  fprintf(stderr,buf);
-  fprintf(logf,buf);
+  fprintf(stderr,"%s",buf);
+  fprintf(logf,"%s",buf);
+  trxsfn=NULL;
   if (trxfn) {
     /* do we write all structures? */
-    if (bWriteAll) {
+    if (write_ncl) {
       if (strchr(trxfn,'%'))
 	fatal_error(0,"will not number filename %s containing '%c'",trxfn,'%');
       /* number of digits needed in numbering */
@@ -692,28 +649,51 @@ static void analyze_clusters(int nf,t_clusters *clust,real **rmsd,
       ext++;
       /* insert e.g. '%03d' between fn and ext */
       sprintf(buf,"%s%%0%dd.%s",trxfn,i1,ext);
-      srenew(trxfn,strlen(buf)+1);
-      strcpy(trxfn, buf);
+      snew(trxsfn,strlen(buf)+1);
+      strcpy(trxsfn, buf);
+      ext--;
+      ext[0] = '.';
+      snew(bWrite,nf);
     }
     sprintf(buf,"Writing %s structure%s for each cluster to %s\n",
-	    bWriteAll ? "all" : bAverage ? "average" : "middle",
-	    bWriteAll ? "s" : "", trxfn);
+	    write_ncl ? "all" : bAverage ? "average" : "middle",
+	    write_ncl ? "s" : "", trxfn);
     fprintf(stderr,"%s",buf);
     fprintf(logf,"%s",buf);
   
     /* Prepare a reference structure for the orientation of the clusters  */
-    snew(xtpsi,isize);
-    for(i=0; i<isize; i++)
-      copy_rvec(xtps[index[i]],xtpsi[i]);
-    reset_x(isize,alli,isize,alli,xtpsi,mass);
-    if (!bWriteAll)
-      trxout = open_trx(trxfn,"w");
+    reset_x(ifsize,fitidx,natom,NULL,xtps,mass);
+    trxout = open_trx(trxfn,"w");
     /* Calculate the average structure in each cluster,               *
      * all structures are fitted to the first struture of the cluster */
-    snew(xav,isize);
-    snew(xnatom,natom);
+    snew(xav,natom);
   }
   snew(structure,nf);
+  if (transfn) {
+    snew(trans,clust->ncl);
+    snew(axis,clust->ncl);
+    for(i=0; i<clust->ncl; i++) {
+      axis[i]=i+1;
+      snew(trans[i],clust->ncl);
+    }
+    ntrans=0;
+    maxtrans=0;
+    for(i=1; i<nf; i++)
+      if(clust->cl[i] != clust->cl[i-1]) {
+	ntrans++;
+	trans[clust->cl[i-1]-1][clust->cl[i]-1]++;
+	maxtrans = max(maxtrans, trans[clust->cl[i]-1][clust->cl[i-1]-1]);
+      }
+    fprintf(stderr,"Counted %d transitions in total, max %d per cluster\n",
+	    ntrans,maxtrans);
+    fp=ffopen(transfn,"w");
+    nlevels = min(maxtrans+1, 80);
+    write_xpm(fp,"Cluster Transitions","# transitions",
+	      "from cluster","to cluster", 
+	      clust->ncl, clust->ncl, axis, axis, trans, 
+	      0, maxtrans, rlo, rhi, &nlevels);
+    ffclose(fp);
+  }
   if (sizefn) {
     fp=xvgropen(sizefn,"Cluster Sizes","Cluster #","# Structures");
     fprintf(fp,"@g%d type %s\n",0,"bar");
@@ -722,21 +702,21 @@ static void analyze_clusters(int nf,t_clusters *clust,real **rmsd,
 	  "cl.","#st","rmsd","middle","rmsd");
   for(cl=1; cl<=clust->ncl; cl++) {
     if (xav)
-      for(i=0; i<isize;i++)
+      for(i=0; i<natom;i++)
 	clear_rvec(xav[i]);
     nstr=0;
     for(i1=0; i1<nf; i1++)
       if (clust->cl[i1] == cl) {
 	structure[nstr] = i1;
 	nstr++;
-	if (trxfn && bAverage) {
-	  reset_x(isize,alli,isize,alli,xx[i1],mass);
+	if (trxfn && (bAverage || write_ncl) ) {
+	  reset_x(ifsize,fitidx,natom,NULL,xx[i1],mass);
 	  if (nstr == 1)
 	    first = i1;
 	  else
-	    do_fit(isize,mass,xx[first],xx[i1]);
+	    do_fit(natom,mass,xx[first],xx[i1]);
 	  if (xav)
-	    for(i=0; i<isize; i++)
+	    for(i=0; i<natom; i++)
 	      rvec_inc(xav[i],xx[i1][i]);
 	}
       }
@@ -784,40 +764,44 @@ static void analyze_clusters(int nf,t_clusters *clust,real **rmsd,
     fprintf(logf,"\n");
 
     if (trxfn) {
-      if (bWriteAll) {
+      for(i=0; i<nstr; i++)
+	bWrite[i]=FALSE;
+      if ( cl < write_ncl+1 && nstr > write_nst ) {
 	/* Dump all structures for this cluster */
 	/* generate numbered filename (there is a %d in trxfn!) */
-	sprintf(buf,trxfn,cl);
-	trxout = open_trx(buf,"w");
-	for(i=0; i<nstr; i++)
-	  write_trx(trxout,isize,index,atoms,0,time[structure[i]],zerobox,
-		    xx[structure[i]],NULL);
-	close_trx(trxout);
-      } else {
-	/* Dump the average structure for this cluster */
-	if (bAverage) {
-	  r = 1.0/nstr;
-	  for(i=0; i<isize; i++)
-	    svmul(r,xav[i],xav[i]);
-	} else {
-	  for(i=0; i<isize; i++)
-	    copy_rvec(xx[midstr][i],xav[i]);
-	  reset_x(isize,alli,isize,alli,xav,mass);
+	sprintf(buf,trxsfn,cl);
+	trxsout = open_trx(buf,"w");
+	for(i=0; i<nstr; i++) {
+	  bWrite[i] = TRUE;
+	  if (rmsmin>0.0)
+	    for(i1=0; i1<i && bWrite[i]; i1++)
+	      if (bWrite[i1])
+		bWrite[i] = rmsd[structure[i1]][structure[i]] > rmsmin;
+	  if (bWrite[i])
+	    write_trx(trxsout,iosize,outidx,atoms,0,time[structure[i]],zerobox,
+		      xx[structure[i]],NULL);
 	}
-	do_fit(isize,mass,xtpsi,xav);
-	for(i=0; i<isize; i++)
-	  copy_rvec(xav[i],xnatom[index[i]]);
-	r = cl;
-	write_trx(trxout,isize,index,atoms,0,r,zerobox,xnatom,NULL);
+	close_trx(trxsout);
+      } 
+      /* Dump the average structure for this cluster */
+      if (bAverage) {
+	r = 1.0/nstr;
+	for(i=0; i<natom; i++)
+	  svmul(r,xav[i],xav[i]);
+      } else {
+	for(i=0; i<natom; i++)
+	  copy_rvec(xx[midstr][i],xav[i]);
+	reset_x(ifsize,fitidx,natom,NULL,xav,mass);
       }
+      do_fit(natom,mass,xtps,xav);
+      r = cl;
+      write_trx(trxout,iosize,outidx,atoms,0,r,zerobox,xav,NULL);
     }
   }
   if (trxfn) {
-    if (!bWriteAll)
+    if (!write_ncl)
       close_trx(trxout);
-    sfree(xtpsi);
     sfree(xav);
-    sfree(xnatom);
   }
   sfree(structure);
 }
@@ -828,12 +812,17 @@ static void convert_mat(t_matrix *mat,t_mat *rms)
 
   rms->n1 = mat->nx;
   matrix2real(mat,rms->mat);
+  /* free input xpm matrix data */
+  for(i=0; i<mat->nx; i++)
+    sfree(mat->matrix[i]);
+  sfree(mat->matrix);
   
   for(i=0; i<mat->nx; i++)
     for(j=i; j<mat->nx; j++) {
       rms->sumrms += rms->mat[i][j];
-      if (rms->mat[i][j] > rms->maxrms)
-	rms->maxrms = rms->mat[i][j];
+      rms->maxrms = max(rms->maxrms, rms->mat[i][j]);
+      if (j!=i)
+	rms->minrms = min(rms->minrms, rms->mat[i][j]);
     }
   rms->nn = mat->nx;
 }  
@@ -878,27 +867,26 @@ int main(int argc,char *argv[])
   };
   
   FILE         *fp,*log;
-  int          natom,i1,i2,i1s,i2s,i,teller,nf,nrms;
+  int          i,i1,i2,j,nf,nrms;
   real         t,t1,t2;
 
   matrix       box;
-  rvec         *xtps,*x1,*x2,**xx=NULL;
-  char         *fn;
+  rvec         *xtps,*usextps,*x1,*x2,**xx=NULL;
+  char         *fn,*trx_out_fn;
   t_clusters   clust;
   t_mat        *rms;
-  real         **rmsmat;
   real         *resnr,*eigval;
   t_topology   top;
+  t_atoms      useatoms;
   bool         bSameF;
-  t_rgb        rlo,rhi;
   t_matrix     *readmat;
   
-  int      status1,status2,isize,nbytes;
-  atom_id  *index,*alli=NULL;
+  int      status1,status2,isize,ifsize=0,iosize=0,nbytes;
+  atom_id  *index, *fitidx, *outidx;
   char     *grpname;
   real     rmsd,**d1,**d2,*time,*mass=NULL;
   char     buf[STRLEN];
-  bool     bAnalyze,bJP_RMSD=FALSE,bReadMat,bReadTraj,bWriteDist;
+  bool     bAnalyze,bUseRmsdCut,bJP_RMSD=FALSE,bReadMat,bReadTraj,bWriteDist;
 
   int method;  
   static char *methodname[] = { 
@@ -908,9 +896,9 @@ int main(int argc,char *argv[])
   enum { m_null, m_linkage, m_jarvis_patrick, 
 	 m_monte_carlo, m_diagonalize, m_gromos, m_nr };
   static int  nlevels=40,keepfree=-4,skip=1;
-  static real scalemax=-1.0,rmsdcut=0.1;
-  static bool bRMSdist=FALSE,bBinary=FALSE,bAverage=FALSE,bWriteAll=FALSE;
-  static int  niter=10000,seed=1993;
+  static real scalemax=-1.0,rmsdcut=0.1,rmsmin=0.0;
+  static bool bRMSdist=FALSE,bBinary=FALSE,bAverage=FALSE;
+  static int  niter=10000,seed=1993,write_ncl=0,write_nst=1;
   static real kT=1e-3;
   static int  M=10,P=3;
   t_pargs pa[] = {
@@ -922,15 +910,19 @@ int main(int argc,char *argv[])
       "if >0 # levels not to use when coloring clusters; "
       "if <0 nlevels/-keepfree+1 levels will not be used"},
     { "-cutoff",FALSE, etREAL, {&rmsdcut},
-      "RMSD cut-off (nm) for two structures to be similar" },
+      "RMSD cut-off (nm) for two structures to be neighbor" },
     { "-max",   FALSE, etREAL, {&scalemax},
       "Maximum level in RMSD matrix" },
     { "-skip",  FALSE, etINT,  {&skip},
       "Only analyze every nr-th frame" },
     { "-av",    FALSE, etBOOL, {&bAverage},
       "Write average iso middle structure for each cluster" },
-    { "-all",   FALSE, etBOOL, {&bWriteAll},
-      "Write all structures for each cluster to numbered files" },
+    { "-wcl",   FALSE, etINT,  {&write_ncl},
+      "Write all structures for first # clusters to numbered files" },
+    { "-nst",   FALSE, etINT,  {&write_nst},
+      "Only write all structures if more than # per cluster" },
+    { "-rmsmin",FALSE, etREAL, {&rmsmin},
+      "minimum rms difference with rest of cluster for writing structures" },
     { "-method",FALSE, etENUM, {methodname},
       "Method for cluster determination" },
     { "-binary",FALSE, etBOOL, {&bBinary},
@@ -958,7 +950,8 @@ int main(int argc,char *argv[])
     { efLOG, "-g",    "cluster",    ffWRITE },
     { efXVG, "-dist", "rmsd-dist",  ffOPTWR },
     { efXVG, "-ev",   "rmsd-eig",   ffOPTWR },
-    { efXVG, "-sz",   "clust-size.xvg",ffOPTWR},
+    { efXVG, "-sz",   "clust-size", ffOPTWR},
+    { efXPM, "-trans","clust-trans",ffOPTWR},
     { efTRX, "-cl",   "clusters.pdb", ffOPTWR }
   };
 #define NFILE asize(fnm)
@@ -971,11 +964,19 @@ int main(int argc,char *argv[])
   bReadMat   = opt2bSet("-dm",NFILE,fnm);
   bReadTraj  = opt2bSet("-f",NFILE,fnm) || !bReadMat;
   bWriteDist = opt2bSet("-dist",NFILE,fnm) || !bReadMat;
-  if (opt2bSet("-cl",NFILE,fnm) && !bReadTraj)
+  if ( opt2parg_bSet("-av",asize(pa),pa) ||
+       opt2parg_bSet("-wcl",asize(pa),pa) ||
+       opt2parg_bSet("-nst",asize(pa),pa) ||
+       opt2parg_bSet("-minrms",asize(pa),pa) ||
+       opt2bSet("-cl",NFILE,fnm) )
+    trx_out_fn = opt2fn("-cl",NFILE,fnm);
+  else
+    trx_out_fn = NULL;
+  if (trx_out_fn && !bReadTraj)
     fprintf(stderr,"\n"
  	    "Warning: cannot write cluster structures without "
 	    "reading trajectory\n"
-	    "         ignoring option -cl %s\n", opt2fn("-cl",NFILE,fnm));
+	    "         ignoring option -cl %s\n", trx_out_fn);
 
   method=1;
   while ( method < m_nr && strcasecmp(methodname[0], methodname[method])!=0 )
@@ -984,7 +985,7 @@ int main(int argc,char *argv[])
   
   bAnalyze = (method == m_linkage || method == m_jarvis_patrick ||
 	      method == m_gromos );
-
+  
   /* Open log file */
   log = ftp2FILE(efLOG,NFILE,fnm,"w");
 
@@ -992,23 +993,27 @@ int main(int argc,char *argv[])
   fprintf(log,"Using %s method for clustering\n",methodname[0]);
 
   /* check input */
+  bUseRmsdCut = FALSE;
   if (method == m_jarvis_patrick) {
     bJP_RMSD = (M == 0) || opt2parg_bSet("-cutoff",asize(pa),pa);
     if ((M<0) || (M == 1))
       fatal_error(0,"M (%d) must be 0 or larger than 1",M);
-    if (M < 2)
+    if (M < 2) {
       sprintf(buf,"Will use P=%d and RMSD cutoff (%g)",P,rmsdcut);
-    else {
+      bUseRmsdCut = TRUE;
+    } else {
       if (P >= M)
 	fatal_error(0,"Number of neighbors required (P) must be less than M");
-      if (bJP_RMSD)
+      if (bJP_RMSD) {
 	sprintf(buf,"Will use P=%d, M=%d and RMSD cutoff (%g)",P,M,rmsdcut);
-      else
+	bUseRmsdCut = TRUE;
+      } else
 	sprintf(buf,"Will use P=%d, M=%d",P,M);
     }
     fprintf(stderr,"%s for determining the neighbors\n\n",buf);
     fprintf(log,"%s for determining the neighbors\n\n",buf);
-  }
+  } else /* method != m_jarvis */
+    bUseRmsdCut = bBinary || method == m_linkage || method == m_gromos;
 
   if (skip < 1)
     fatal_error(0,"skip (%d) should be >= 1",skip);
@@ -1018,12 +1023,46 @@ int main(int argc,char *argv[])
     /* don't read mass-database as masses (and top) are not used */
     read_tps_conf(ftp2fn(efTPS,NFILE,fnm),buf,&top,&xtps,NULL,box,bAnalyze);
     
-    fprintf(stderr,"\nSelect group for %soutput:\n",
-	    bReadMat?"":"RMSD calculation and ");
+    fprintf(stderr,"\nSelect group for least squares fit%s:\n",
+	    bReadMat?"":" and RMSD calculation");
     get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
-	      1,&isize,&index,&grpname);
+	      1,&ifsize,&fitidx,&grpname);
+    if (trx_out_fn) {
+      fprintf(stderr,"\nSelect group for output:\n");
+      get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
+		1,&iosize,&outidx,&grpname);
+      /* merge and convert both index groups: */
+      /* first copy outidx to index. let outidx refer to elements in index */
+      snew(index,iosize);
+      isize = iosize;
+      for(i=0; i<iosize; i++) {
+	index[i]=outidx[i];
+	outidx[i]=i;
+      }
+      /* now lookup elements from fitidx in index, add them if necessary
+	 and also let fitidx refer to elements in index */
+      for(i=0; i<ifsize; i++) {
+	j=0;
+	while (j<isize && index[j]!=fitidx[i])
+	  j++;
+	if (j>=isize) {
+	  /* slow this way, but doesn't matter much */
+	  isize++;
+	  srenew(index,isize);
+	}
+	index[j]=fitidx[i];
+	fitidx[i]=j;
+      }
+    } else { /* !trx_out_fn */
+      isize = ifsize;
+      snew(index, isize);
+      for(i=0; i<ifsize; i++) {
+	index[i]=fitidx[i];
+	fitidx[i]=i;
+      }
+    }
   }
-  /* Initiate arrays */  
+  /* Initiate arrays */
   snew(d1,isize);
   snew(d2,isize);
   for(i=0; (i<isize); i++) {
@@ -1032,23 +1071,19 @@ int main(int argc,char *argv[])
   }
 
   if (bReadTraj) {
-    /*set box type*/
     init_pbc(box,FALSE);
     
     /* Loop over first coordinate file */
     fn = opt2fn("-f",NFILE,fnm);
     
-    xx = read_whole_trj(fn,isize,index,skip,&nf,&natom,&time);
+    xx = read_whole_trj(fn,isize,index,skip,&nf,&time);
     if (!bRMSdist || bAnalyze) {
       /* Center all frames on zero */
-      snew(alli,isize);
-      for(i=0; i<isize; i++)
-	alli[i] = i;
       snew(mass,isize);
-      for(i=0; i<isize; i++)
-	mass[i] = top.atoms.atom[index[i]].m;
+      for(i=0; i<ifsize; i++)
+	mass[fitidx[i]] = top.atoms.atom[index[fitidx[i]]].m;
       for(i=0; i<nf; i++)
-	reset_x(isize,alli,isize,alli,xx[i],mass);
+	reset_x(ifsize,fitidx,isize,NULL,xx[i],mass);
     }
   }
   if (bReadMat) {
@@ -1059,8 +1094,8 @@ int main(int argc,char *argv[])
       fatal_error(0,"Matrix (%dx%d) is not square",
 		  readmat[0].nx,readmat[0].ny);
     if (bReadTraj && bAnalyze && (readmat[0].nx != nf))
-      fatal_error(0,"Matrix size (%dx%d) does not match the number of frames (%d)",
-	      readmat[0].nx,readmat[0].ny,nf);
+      fatal_error(0,"Matrix size (%dx%d) does not match the number of "
+		  "frames (%d)",readmat[0].nx,readmat[0].ny,nf);
 
     nf = readmat[0].nx;
     sfree(time);
@@ -1101,25 +1136,28 @@ int main(int argc,char *argv[])
     }
     fprintf(stderr,"\n\n");
   }
-  sprintf(buf,"The maximum RMSD is %g nm\n"
+  sprintf(buf,"The RMSD ranges from %g to %g nm\n"
 	  "Average RMSD is %g\n"
 	  "Number of structures for matrix %d\n"
 	  "Energy of the matrix is %g nm\n",
-	  rms->maxrms,2*rms->sumrms/(nf*(nf-1)),nf,mat_energy(rms));
-  fprintf(stderr,buf);
-  fprintf(log,buf);
-
+	  rms->minrms,rms->maxrms,2*rms->sumrms/(nf*(nf-1)),
+	  nf,mat_energy(rms));
+  fprintf(stderr,"%s",buf);
+  fprintf(log,"%s",buf);
+  if (bUseRmsdCut && (rmsdcut < rms->minrms || rmsdcut > rms->maxrms) )
+    fprintf(stderr,"WARNING: rmsd cutoff %g is outside range of rmsd values "
+	    "%g to %g\n",rmsdcut,rms->minrms,rms->maxrms);
+  if (bAnalyze && (rmsmin < rms->minrms) )
+    fprintf(stderr,"WARNING: rmsd minimum %g is below lowest rmsd value %g\n",
+	    rmsmin,rms->minrms);
+  if (bAnalyze && (rmsmin > rmsdcut) )
+    fprintf(stderr,"WARNING: rmsd minimum %g is above rmsd cutoff %g\n",
+	    rmsmin,rmsdcut);
+  
   if (bWriteDist)
     /* Plot the rmsd distribution */
     rmsd_distribution(opt2fn("-dist",NFILE,fnm),rms);
- 
-  snew(rmsmat,nf);
-  for(i1=0; (i1 < nf); i1++) {
-    snew(rmsmat[i1],nf);
-    for(i2=0; (i2 < nf); i2++)
-      rmsmat[i1][i2] = rms->mat[i1][i2];
-  }
-
+  
   if (bBinary) {
     for(i1=0; (i1 < nf); i1++) 
       for(i2=0; (i2 < nf); i2++)
@@ -1138,17 +1176,17 @@ int main(int argc,char *argv[])
   case m_diagonalize:
     /* Do a diagonalization */
     snew(eigval,nf);
-    /*for(i1=0; (i1<nf); i1++)
-      for(i2=0; (i2<nf); i2++)
-      rms[i1][i2] = maxrms - rms[i1][i2];*/
     ql77(nf,rms->mat[0],eigval); 
-    fp = xvgropen(opt2fn("-ev",NFILE,fnm),"Eigenvalues","index","value");
+    fp = xvgropen(opt2fn("-ev",NFILE,fnm),"RMSD matrix Eigenvalues",
+		  "Eigenvector index","Eigenvalues (nm\\S2\\N)");
     for(i=0; (i<nf); i++)
       fprintf(fp,"%10d  %10g\n",i,eigval[i]);
     ffclose(fp);
     break;
   case m_monte_carlo:
     mc_optimize(log,rms,niter,&seed,kT);
+    swap_mat(rms);
+    reset_index(rms);
     break;
   case m_jarvis_patrick:
     jarvis_patrick(rms->nn,rms->mat,M,P,bJP_RMSD ? rmsdcut : -1,&clust);
@@ -1159,25 +1197,30 @@ int main(int argc,char *argv[])
   default:
     fatal_error(0,"unknown method \"%s\"",methodname[0]);
   }
-
+  
   if (method == m_monte_carlo || method == m_diagonalize)
     fprintf(stderr,"Energy of the matrix after clustering is %g nm\n",
 	    mat_energy(rms));
-  swap_mat(rms);
-  reset_index(rms);
-  
-  /* Write the rmsd-matrix to the upper-left part of the matrix */
-  for(i1=0; (i1 < nf); i1++)
-    for(i2=i1; (i2 < nf); i2++)
-      rms->mat[i1][i2] = rmsmat[i1][i2];
   
   if (bAnalyze) {
     plot_clusters(nf,rms->mat,rms->maxrms,&clust,nlevels,keepfree);
-    analyze_clusters(nf,&clust,rmsmat,&(top.atoms),natom,isize,index,alli,
-		     xx,time,mass,xtps,
-		     bReadTraj ? opt2fn_null("-cl",NFILE,fnm) : NULL, 
+    init_t_atoms(&useatoms,isize,FALSE);
+    snew(usextps, isize);
+    useatoms.resname=top.atoms.resname;
+    for(i=0; i<isize; i++) {
+      useatoms.atomname[i]=top.atoms.atomname[index[i]];
+      useatoms.atom[i].resnr=top.atoms.atom[index[i]].resnr;
+      useatoms.nres=max(useatoms.nres,useatoms.atom[i].resnr+1);
+      copy_rvec(xtps[index[i]],usextps[i]);
+    }
+    useatoms.nr=isize;
+    analyze_clusters(nf,&clust,rms->mat,isize,&useatoms,usextps,mass,xx,time,
+		     ifsize,fitidx,iosize,outidx,
+		     bReadTraj?trx_out_fn:NULL, 
 		     opt2fn_null("-sz",NFILE,fnm), 
-		     bAverage, method==m_gromos, bWriteAll, log);
+		     opt2fn_null("-trans",NFILE,fnm),
+		     bAverage, method==m_gromos, write_ncl, write_nst, rmsmin,
+		     log);
   }
   ffclose(log);
   
@@ -1188,10 +1231,6 @@ int main(int argc,char *argv[])
 	 if (rms->mat[i1][i2])
 	   rms->mat[i1][i2] = rms->maxrms;
 
-  /* Set colors for plotting: white = zero RMS, black = maximum */
-  rlo.r=1.0, rlo.g=1.0, rlo.b=1.0;
-  rhi.r=0.0, rhi.g=0.0, rhi.b=0.0;
-  
   fp = opt2FILE("-o",NFILE,fnm,"w");
   fprintf(stderr,"Writing rms distance/clustering matrix ");
   if (bReadMat) {
@@ -1212,6 +1251,8 @@ int main(int argc,char *argv[])
     do_view(opt2fn_null("-ev",NFILE,fnm),NULL);
   if (bWriteDist)
     do_view(opt2fn("-dist",NFILE,fnm),NULL);
+  if (bAnalyze)
+    do_view(opt2fn_null("-trans",NFILE,fnm),NULL);
 
   /* Thank the user for her patience */  
   thanx(stderr);
