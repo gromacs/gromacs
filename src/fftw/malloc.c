@@ -1,29 +1,19 @@
 /*
- * Copyright (c) 1997 Massachusetts Institute of Technology
+ * Copyright (c) 1997,1998 Massachusetts Institute of Technology
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to use, copy, modify, and distribute the Software without
- * restriction, provided the Software, including any modified copies made
- * under this license, is not distributed for a fee, subject to
- * the following conditions:
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- * IN NO EVENT SHALL THE MASSACHUSETTS INSTITUTE OF TECHNOLOGY BE LIABLE
- * FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- * Except as contained in this notice, the name of the Massachusetts
- * Institute of Technology shall not be used in advertising or otherwise
- * to promote the sale, use or other dealings in this Software without
- * prior written authorization from the Massachusetts Institute of
- * Technology.
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
 
@@ -37,20 +27,23 @@
 #include <cilk-compat.h>
 #endif
 
-#include <fftw.h>
+#include <fftw-int.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-int fftw_malloc_cnt = 0;
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+
 void *(*fftw_malloc_hook) (size_t n) = (void *(*)(size_t n)) 0;
 void (*fftw_free_hook) (void *p) = (void (*)(void *p)) 0;
+void (*fftw_die_hook) (const char *error_string) = (void (*)(const char *)) 0;
 
-#define FFTW_MALLOC_DEBUG 0
-/* sorry for this debugging hack ... */
-#define COMMA ,
-
-#if FFTW_MALLOC_DEBUG
-#define WHEN_DEBUG(a) a
+/**********************************************************
+ *   DEBUGGING CODE
+ **********************************************************/
+#ifdef FFTW_DEBUG
+static int fftw_malloc_cnt = 0;
 
 /*
  * debugging malloc/free.  Initialize every malloced and freed area to
@@ -61,7 +54,7 @@ void (*fftw_free_hook) (void *p) = (void (*)(void *p)) 0;
  * This code is a quick and dirty hack -- use at your own risk.
  */
 
-int fftw_malloc_total = 0;
+static int fftw_malloc_total = 0, fftw_malloc_max = 0, fftw_malloc_cnt_max = 0;
 
 #define MAGIC 0xABadCafe
 #define PAD_FACTOR 2
@@ -72,7 +65,7 @@ int fftw_malloc_total = 0;
 #if VERBOSE_ALLOCATION
 #define WHEN_VERBOSE(a) a
 #else
-#define WHEN_VERBOSE(a) 
+#define WHEN_VERBOSE(a)
 #endif
 
 void *fftw_malloc(size_t n)
@@ -80,27 +73,32 @@ void *fftw_malloc(size_t n)
      char *p;
      int i;
 
-     WHEN_VERBOSE({
-	  printf("FFTW_MALLOC %d\n",n);
-	  fflush(stdout);
-     })
-
-     if (n == 0)
+     WHEN_VERBOSE( {
+		  printf("FFTW_MALLOC %d\n", n);
+		  fflush(stdout);
+		  })
+	 if (n == 0)
 	  fftw_die("Tried to allocate a block of zero size!\n");
 
      fftw_malloc_total += n;
 
-     p = (char *) malloc(PAD_FACTOR*n + TWOINTS);
+     if (fftw_malloc_total > fftw_malloc_max)
+	  fftw_malloc_max = fftw_malloc_total;
+
+     p = (char *) malloc(PAD_FACTOR * n + TWOINTS);
      if (!p)
 	  fftw_die("fftw_malloc: out of memory\n");
 
      /* store the size in a known position */
      ((int *) p)[0] = n;
      ((int *) p)[1] = MAGIC;
-     for (i = 0; i < PAD_FACTOR*n; ++i)
+     for (i = 0; i < PAD_FACTOR * n; ++i)
 	  p[i + TWOINTS] = (char) (i ^ 0xDEADBEEF);
 
      ++fftw_malloc_cnt;
+
+     if (fftw_malloc_cnt > fftw_malloc_cnt_max)
+	  fftw_malloc_cnt_max = fftw_malloc_cnt;
 
      /* skip the size we stored previously */
      return (void *) (p + TWOINTS);
@@ -120,46 +118,56 @@ void fftw_free(void *p)
 	  int n = ((int *) q)[0];
 	  int magic = ((int *) q)[1];
 	  int i;
-	  
-	  WHEN_VERBOSE({
-	       printf("FFTW_FREE %d\n",n);
-	       fflush(stdout);
-	  })
-	  
-	  if (n == 0)
+
+	  WHEN_VERBOSE( {
+		       printf("FFTW_FREE %d\n", n);
+		       fflush(stdout);
+		       })
+	      if (n == 0)
 	       fftw_die("Tried to free a freed pointer!\n");
-	  *((int *) q) = 0; /* set to zero to detect duplicate free's */
-	  
+	  *((int *) q) = 0;	/* set to zero to detect duplicate free's */
+
 	  if (magic != MAGIC)
-	       fftw_die("Wrong magic in fftw_free()!\n");	       
+	       fftw_die("Wrong magic in fftw_free()!\n");
 	  ((int *) q)[1] = ~MAGIC;
 
 	  if (n < 0)
 	       fftw_die("Tried to free block with corrupt size descriptor!\n");
-	  
+
 	  fftw_malloc_total -= n;
-	  
+
 	  if (fftw_malloc_total < 0)
 	       fftw_die("fftw_malloc_total went negative!\n");
-	  
+
 	  /* check for writing past end of array: */
-	  for (i = n; i < PAD_FACTOR*n; ++i)
-	       if (q[i+TWOINTS] != (char) (i ^ 0xDEADBEEF)) {
+	  for (i = n; i < PAD_FACTOR * n; ++i)
+	       if (q[i + TWOINTS] != (char) (i ^ 0xDEADBEEF)) {
+		    fflush(stdout);
 		    fprintf(stderr, "Byte %d past end of array has changed!\n",
 			    i - n + 1);
 		    fftw_die("Array bounds overwritten!\n");
 	       }
-	  
-	  for (i = 0; i < PAD_FACTOR*n; ++i)
+	  for (i = 0; i < PAD_FACTOR * n; ++i)
 	       q[i + TWOINTS] = (char) (i ^ 0xBEEFDEAD);
 
 	  --fftw_malloc_cnt;
+
+	  if (fftw_malloc_cnt < 0)
+	       fftw_die("fftw_malloc_cnt went negative!\n");
+
+	  if (fftw_malloc_cnt == 0 && fftw_malloc_total > 0 ||
+	      fftw_malloc_cnt > 0 && fftw_malloc_total == 0)
+	       fftw_die("fftw_malloc_cnt/total not zero at the same time!\n");
+
 	  free(q);
      }
 }
 
-#else				/* production version, no hacks */
-#define WHEN_DEBUG(a) 
+#else
+/**********************************************************
+ *   NON DEBUGGING CODE
+ **********************************************************/
+/* production version, no hacks */
 
 void *fftw_malloc(size_t n)
 {
@@ -193,10 +201,14 @@ void fftw_free(void *p)
 #endif
 
 /* die when fatal errors occur */
-void fftw_die(char *s)
+void fftw_die(const char *s)
 {
-     fprintf(stderr, "%s", s);
-     exit(1);
+     if (fftw_die_hook)
+	  fftw_die_hook(s);
+
+     fflush(stdout);
+     fprintf(stderr, "fftw: %s", s);
+     exit(EXIT_FAILURE);
 }
 
 /* check for memory leaks when debugging */
@@ -204,17 +216,37 @@ void fftw_check_memory_leaks(void)
 {
      extern int fftw_node_cnt, fftw_plan_cnt, fftw_twiddle_size;
 
-     if (WHEN_DEBUG(fftw_malloc_cnt ||)
-	 WHEN_DEBUG(fftw_malloc_total ||)
+#ifdef FFTW_DEBUG
+     if (fftw_malloc_cnt || fftw_malloc_total ||
 	 fftw_node_cnt || fftw_plan_cnt || fftw_twiddle_size) {
+	  fflush(stdout);
 	  fprintf(stderr,
 		  "MEMORY LEAK!!!\n"
-		  WHEN_DEBUG("fftw_malloc = %d")
+		  "fftw_malloc = %d"
 		  " node=%d plan=%d twiddle=%d\n"
-		  WHEN_DEBUG("fftw_malloc_total = %d\n"), 
-		  WHEN_DEBUG(fftw_malloc_cnt COMMA)
-		  fftw_node_cnt, fftw_plan_cnt, fftw_twiddle_size
-		  WHEN_DEBUG(COMMA fftw_malloc_total));
-	  exit(1);
+		  "fftw_malloc_total = %d\n",
+		  fftw_malloc_cnt,
+		  fftw_node_cnt, fftw_plan_cnt, fftw_twiddle_size,
+		  fftw_malloc_total);
+	  exit(EXIT_FAILURE);
      }
+#else
+     if (fftw_node_cnt || fftw_plan_cnt || fftw_twiddle_size) {
+	  fflush(stdout);
+	  fprintf(stderr,
+		  "MEMORY LEAK!!!\n"
+		  " node=%d plan=%d twiddle=%d\n",
+		  fftw_node_cnt, fftw_plan_cnt, fftw_twiddle_size);
+	  exit(EXIT_FAILURE);
+     }
+#endif
+}
+
+void fftw_print_max_memory_usage(void)
+{
+#ifdef FFTW_DEBUG
+     printf("\nMaximum number of blocks allocated = %d\n"
+	    "Maximum number of bytes allocated  = %0.3f kB\n",
+	    fftw_malloc_cnt_max, fftw_malloc_max / 1024.0);
+#endif
 }

@@ -1,37 +1,27 @@
 /*
- * Copyright (c) 1997 Massachusetts Institute of Technology
+ * Copyright (c) 1997,1998 Massachusetts Institute of Technology
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to use, copy, modify, and distribute the Software without
- * restriction, provided the Software, including any modified copies made
- * under this license, is not distributed for a fee, subject to
- * the following conditions:
- * 
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- * IN NO EVENT SHALL THE MASSACHUSETTS INSTITUTE OF TECHNOLOGY BE LIABLE
- * FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * 
- * Except as contained in this notice, the name of the Massachusetts
- * Institute of Technology shall not be used in advertising or otherwise
- * to promote the sale, use or other dealings in this Software without
- * prior written authorization from the Massachusetts Institute of
- * Technology.
- *  
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
  */
 
 /*
  * wisdom.c -- manage the wisdom
  */
 
-#include <fftw.h>
+#include <fftw-int.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -40,6 +30,9 @@ struct wisdom {
      int n;
      int flags;
      fftw_direction dir;
+     enum fftw_wisdom_category category;
+     int istride;
+     int ostride;
      enum fftw_node_type type;	/* this is the wisdom */
      int signature;		/* this is the wisdom */
      struct wisdom *next;
@@ -49,18 +42,25 @@ struct wisdom {
 static struct wisdom *wisdom_list = (struct wisdom *) 0;
 
 int fftw_wisdom_lookup(int n, int flags, fftw_direction dir,
-		     enum fftw_node_type *type,
-		     int *signature, int replacep)
+		       enum fftw_wisdom_category category,
+		       int istride, int ostride,
+		       enum fftw_node_type *type,
+		       int *signature, int replacep)
 {
      struct wisdom *p;
 
      if (!(flags & FFTW_USE_WISDOM))
 	  return 0;		/* simply ignore if wisdom is disabled */
 
-     flags |= FFTW_MEASURE; /* always use (only) wisdom from measurements */
+     flags |= FFTW_MEASURE;	/* 
+				 * always use (only) wisdom from
+				 * measurements 
+				 */
 
      for (p = wisdom_list; p; p = p->next) {
-	  if (p->n == n && p->flags == flags && p->dir == dir) {
+	  if (p->n == n && p->flags == flags && p->dir == dir &&
+	      p->istride == istride && p->ostride == ostride &&
+	      p->category == category) {
 	       /* found wisdom */
 	       if (replacep) {
 		    /* replace old wisdom with new */
@@ -78,8 +78,10 @@ int fftw_wisdom_lookup(int n, int flags, fftw_direction dir,
 }
 
 void fftw_wisdom_add(int n, int flags, fftw_direction dir,
-		   enum fftw_node_type type,
-		   int signature)
+		     enum fftw_wisdom_category category,
+		     int istride, int ostride,
+		     enum fftw_node_type type,
+		     int signature)
 {
      struct wisdom *p;
 
@@ -87,9 +89,10 @@ void fftw_wisdom_add(int n, int flags, fftw_direction dir,
 	  return;		/* simply ignore if wisdom is disabled */
 
      if (!(flags & FFTW_MEASURE))
-	  return;  /* only measurements produce wisdom */
+	  return;		/* only measurements produce wisdom */
 
-     if (fftw_wisdom_lookup(n, flags, dir, &type, &signature, 1))
+     if (fftw_wisdom_lookup(n, flags, dir, category, istride, ostride,
+			    &type, &signature, 1))
 	  return;		/* wisdom overwrote old wisdom */
 
      p = (struct wisdom *) fftw_malloc(sizeof(struct wisdom));
@@ -97,6 +100,9 @@ void fftw_wisdom_add(int n, int flags, fftw_direction dir,
      p->n = n;
      p->flags = flags;
      p->dir = dir;
+     p->category = category;
+     p->istride = istride;
+     p->ostride = ostride;
      p->type = type;
      p->signature = signature;
 
@@ -119,13 +125,13 @@ void fftw_forget_wisdom(void)
 /*
  * user-visible routines, to convert wisdom into strings etc.
  */
-#define WISDOM_FORMAT_VERSION "FFTW-1.2"
+static const char *WISDOM_FORMAT_VERSION = "FFTW-" FFTW_VERSION;
 
-static void (*emit)(char c, void *data);
+static void (*emit) (char c, void *data);
 
-static void emit_string(char *s, void *data)
+static void emit_string(const char *s, void *data)
 {
-     while (*s) 
+     while (*s)
 	  emit(*s++, data);
 }
 
@@ -138,36 +144,42 @@ static void emit_int(int n, void *data)
 }
 
 /* dump wisdom in lisp-like format */
-void fftw_export_wisdom(void (*emitter)(char c, void *), void *data)
+void fftw_export_wisdom(void (*emitter) (char c, void *), void *data)
 {
      struct wisdom *p;
 
      /* install the output handler */
      emit = emitter;
 
-     emit('(',data);
-     emit_string(WISDOM_FORMAT_VERSION,data);
+     emit('(', data);
+     emit_string(WISDOM_FORMAT_VERSION, data);
 
      for (p = wisdom_list; p; p = p->next) {
-	  emit(' ',data);	/* separator to make the output nicer */
-	  emit('(',data);
+	  emit(' ', data);	/* separator to make the output nicer */
+	  emit('(', data);
 	  emit_int((int) p->n, data);
-	  emit(' ',data);
+	  emit(' ', data);
 	  emit_int((int) p->flags, data);
-	  emit(' ',data);
+	  emit(' ', data);
 	  emit_int((int) p->dir, data);
-	  emit(' ',data);
+	  emit(' ', data);
+	  emit_int((int) p->category, data);
+	  emit(' ', data);
+	  emit_int((int) p->istride, data);
+	  emit(' ', data);
+	  emit_int((int) p->ostride, data);
+	  emit(' ', data);
 	  emit_int((int) p->type, data);
-	  emit(' ',data);
+	  emit(' ', data);
 	  emit_int((int) p->signature, data);
-	  emit(')',data);
+	  emit(')', data);
      }
-     emit(')',data);
+     emit(')', data);
 }
 
 /* input part */
 static int next_char;
-static int (*get_input)(void *data);
+static int (*get_input) (void *data);
 static fftw_status input_error;
 
 static void read_char(void *data)
@@ -196,13 +208,11 @@ static int read_int(void *data)
 	  read_char(data);
 	  eat_blanks(data);
      }
-
      if (!isdigit(next_char)) {
 	  /* error, no digit */
 	  input_error = FFTW_FAILURE;
 	  return 0;
      }
-
      while (isdigit(next_char)) {
 	  n = n * 10 + (next_char - '0');
 	  read_char(data);
@@ -219,30 +229,35 @@ static int read_int(void *data)
 	  return FFTW_FAILURE;	      \
      read_char(data);		      \
 }
-				      
+
 #define EXPECT_INT(n)                                 \
 {				                      \
      n = read_int(data);	                      \
      if (input_error == FFTW_FAILURE)                 \
 	  return FFTW_FAILURE;		              \
-}				      
-				      
+}
+
 #define EXPECT_STRING(s)             \
 {                                    \
-     char *s1 = s;		     \
+     const char *s1 = s;		     \
      while (*s1) {		     \
 	  EXPECT(*s1);		     \
 	  ++s1;			     \
      }				     \
-}       			      
-                                      
-fftw_status fftw_import_wisdom(int (*g)(void *), void *data)
+}
+
+fftw_status fftw_import_wisdom(int (*g) (void *), void *data)
 {
      int n;
      int flags;
      fftw_direction dir;
+     int dir_int;
+     enum fftw_wisdom_category category;
+     int category_int;
      enum fftw_node_type type;
+     int type_int;
      int signature;
+     int istride, ostride;
 
      get_input = g;
      input_error = FFTW_SUCCESS;
@@ -259,14 +274,22 @@ fftw_status fftw_import_wisdom(int (*g)(void *), void *data)
 	  EXPECT('(');
 	  EXPECT_INT(n);
 	  EXPECT_INT(flags);
-	  EXPECT_INT(dir);
-	  EXPECT_INT(type);
+	  /* paranoid respect for enumerated types */
+	  EXPECT_INT(dir_int);
+	  dir = (fftw_direction) dir_int;
+	  EXPECT_INT(category_int);
+	  category = (enum fftw_wisdom_category) category_int;
+	  EXPECT_INT(istride);
+	  EXPECT_INT(ostride);
+	  EXPECT_INT(type_int);
+	  type = (enum fftw_node_type) type_int;
 	  EXPECT_INT(signature);
 	  eat_blanks(data);
 	  EXPECT(')');
 
 	  /* the wisdom has been read properly. Add it */
-	  fftw_wisdom_add(n, flags, dir, type, signature);
+	  fftw_wisdom_add(n, flags, dir, category,
+			  istride, ostride, type, signature);
 
 	  /* prepare for next morsel of wisdom */
 	  eat_blanks(data);

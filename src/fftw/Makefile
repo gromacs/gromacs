@@ -41,38 +41,33 @@ TWIDI_BLOCKS=$(TWIDI_PREFIX)2.o $(TWIDI_PREFIX)3.o                   \
 	$(TWIDI_PREFIX)10.o $(TWIDI_PREFIX)16.o $(TWIDI_PREFIX)32.o \
         $(TWIDI_PREFIX)64.o
 
-NOTW_SRC=$(NOTW_PREFIX)1.c $(NOTW_PREFIX)2.c $(NOTW_PREFIX)3.c        \
-	$(NOTW_PREFIX)4.c $(NOTW_PREFIX)5.c $(NOTW_PREFIX)6.c         \
-	$(NOTW_PREFIX)7.c $(NOTW_PREFIX)8.c $(NOTW_PREFIX)9.c         \
-	$(NOTW_PREFIX)10.c $(NOTW_PREFIX)11.c $(NOTW_PREFIX)12.c      \
-	$(NOTW_PREFIX)13.c $(NOTW_PREFIX)14.c $(NOTW_PREFIX)15.c      \
-	$(NOTW_PREFIX)16.c $(NOTW_PREFIX)32.c $(NOTW_PREFIX)64.c
+OTHEROBJ = 	timer.o 	config.o 	planner.o 	twiddle.o 	\
+		executor.o 	generic.o 	fftwnd.o 	malloc.o 	\
+		wisdom.o 	rader.o		putils.o	wisdomio.o
 
-TWID_SRC=$(TWID_PREFIX)2.c $(TWID_PREFIX)3.c $(TWID_PREFIX)4.c        \
-	$(TWID_PREFIX)5.c $(TWID_PREFIX)6.c $(TWID_PREFIX)7.c         \
-	$(TWID_PREFIX)8.c $(TWID_PREFIX)9.c $(TWID_PREFIX)10.c        \
-	$(TWID_PREFIX)16.c $(TWID_PREFIX)32.c $(TWID_PREFIX)64.c
-
-NOTWI_SRC=$(NOTWI_PREFIX)1.c $(NOTWI_PREFIX)2.c $(NOTWI_PREFIX)3.c    \
-	$(NOTWI_PREFIX)4.c $(NOTWI_PREFIX)5.c $(NOTWI_PREFIX)6.c      \
-	$(NOTWI_PREFIX)7.c $(NOTWI_PREFIX)8.c $(NOTWI_PREFIX)9.c      \
-	$(NOTWI_PREFIX)10.c $(NOTWI_PREFIX)11.c $(NOTWI_PREFIX)12.c   \
-	$(NOTWI_PREFIX)13.c $(NOTWI_PREFIX)14.c $(NOTWI_PREFIX)15.c   \
-	$(NOTWI_PREFIX)16.c $(NOTWI_PREFIX)32.c $(NOTWI_PREFIX)64.c
-
-TWIDI_SRC=$(TWIDI_PREFIX)2.c $(TWIDI_PREFIX)3.c $(TWIDI_PREFIX)4.c  \
-	$(TWIDI_PREFIX)5.c $(TWIDI_PREFIX)6.c $(TWIDI_PREFIX)7.c    \
-	$(TWIDI_PREFIX)8.c $(TWIDI_PREFIX)9.c $(TWIDI_PREFIX)10.c   \
-	$(TWIDI_PREFIX)16.c $(TWIDI_PREFIX)32.c $(TWIDI_PREFIX)64.c
-
-OTHEROBJ = timer.o config.o planner.o twiddle.o executor.o naive.o \
-	generic.o fftwnd.o malloc.o wisdom.o common_io.o
+MPIOBJ	=	fftwnd_mpi.o	transpose_mpi.o	TOMS_transpose.o
+# Apparently outdated files
+# common_io.o	naive.o 
 
 BLOCKS = $(NOTW_BLOCKS) $(NOTWI_BLOCKS) $(TWID_BLOCKS) $(TWIDI_BLOCKS) 
 
 OBJ = $(BLOCKS) $(OTHEROBJ)
-		  
+
+ifeq ($(USE_MPI),yes)
+OBJ		+= $(MPIOBJ)
+endif
+
 #
 include		$(STDTARGET)
 #
 
+ifeq ($(USE_MPI),yes)
+test_transpose_mpi:	test_transpose_mpi.o	$(OBJ)
+			$(LD) -o $@ $^ $(SYSLIBS)
+
+test_fftwnd_mpi:	test_fftwnd_mpi.o	$(OBJ)			
+			$(LD) -o $@ $^ $(SYSLIBS)
+
+time_fftwnd_mpi:	time_fftwnd_mpi.o	$(OBJ)
+			$(LD) -o $@ $^ $(SYSLIBS)
+endif

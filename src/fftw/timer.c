@@ -1,30 +1,21 @@
+
 /*
- * Copyright (c) 1997 Massachusetts Institute of Technology
+ * Copyright (c) 1997,1998 Massachusetts Institute of Technology
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to use, copy, modify, and distribute the Software without
- * restriction, provided the Software, including any modified copies made
- * under this license, is not distributed for a fee, subject to
- * the following conditions:
- * 
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- * IN NO EVENT SHALL THE MASSACHUSETTS INSTITUTE OF TECHNOLOGY BE LIABLE
- * FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * 
- * Except as contained in this notice, the name of the Massachusetts
- * Institute of Technology shall not be used in advertising or otherwise
- * to promote the sale, use or other dealings in this Software without
- * prior written authorization from the Massachusetts Institute of
- * Technology.
- *  
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
  */
 
 /*
@@ -35,68 +26,21 @@
 /* $Id$ */
 
 #include <time.h>
-#include <fftw.h>
+#include <fftw-int.h>
 #include <math.h>
 #include <stdlib.h>
 
-/*
- * The timer keeps doubling the number of iterations
- * until the program runs for more than FFTW_TIME_MIN
- */
-double fftw_measure_runtime(fftw_plan plan)
-{
-     FFTW_COMPLEX *in, *out;
-     fftw_time begin, end;
-     double t;
-     int i, iter;
-     int n;
+/********************* System-specific Timing Support *********************/
 
-     n = plan->n;
-
-     iter = 1;
-
-retry:
-     in = (FFTW_COMPLEX *) fftw_malloc(n * sizeof(FFTW_COMPLEX));
-     out = (FFTW_COMPLEX *) fftw_malloc(n * sizeof(FFTW_COMPLEX));
-
-     begin = fftw_get_time();
-     for (i = 0; i < iter; ++i) {
-	  int j;
-
-	  /* generate random inputs */
-	  for (j = 0; j < n; ++j) {
-	       c_re(in[j]) = 1.0;
-	       c_im(in[j]) = 32.432;
-	  }
-
-	  fftw(plan, 1, in, 1, 0, out, 1, 0);
-     }
-     end = fftw_get_time();
-
-     t = fftw_time_to_sec(fftw_time_diff(end,begin));
-
-     fftw_free(in);
-     fftw_free(out);
-
-     if (t < FFTW_TIME_MIN) {
-	  iter *= 2;
-	  /* 
-	   * See D. E. Knuth, Structured Programming with GOTO Statements,
-	   * Computing Surveys (6), December 1974, for a justification
-	   * of this `goto' in the `n + 1/2' loop.
-	   */
-	  goto retry;
-     }
-
-     return t / (double)iter;
-}
-
-#if defined(MAC) || defined(macintosh)
+#if defined(HAVE_MAC_TIMER) && !defined(HAVE_MAC_PCI_TIMER)
 
 /* Use Macintosh Time Manager to get the time: */
 
-#pragma only_std_keywords off  /* make sure compiler (CW) recognizes the pascal
-				  keywords that are in Timer.h */
+/*
+ * make sure compiler (CW) recognizes the pascal keywords that are in
+ * Timer.h
+ */
+#pragma only_std_keywords off	
 
 #include <Timer.h>
 
@@ -114,34 +58,35 @@ fftw_time get_Mac_microseconds(void)
      Microseconds(&microsec);	/* get time in microseconds */
 
      /* store lo and hi words into our structure: */
-     t.lo = microsec.lo; t.hi = microsec.hi;
+     t.lo = microsec.lo;
+     t.hi = microsec.hi;
 
      return t;
 }
 
 fftw_time fftw_time_diff(fftw_time t1, fftw_time t2)
-/* This function takes the difference t1 - t2 of two 64 bit
-   integers, represented by the 32 bit lo and hi words.
-   if t1 < t2, returns 0. */
+/*
+ * This function takes the difference t1 - t2 of two 64 bit
+ * integers, represented by the 32 bit lo and hi words.
+ * if t1 < t2, returns 0. 
+ */
 {
      fftw_time diff;
 
-     if (t1.hi < t2.hi) { /* something is wrong...t1 < t2! */
+     if (t1.hi < t2.hi) {	/* something is wrong...t1 < t2! */
 	  diff.hi = diff.lo = 0;
 	  return diff;
-     }
-     else
+     } else
 	  diff.hi = t1.hi - t2.hi;
 
      if (t1.lo < t2.lo) {
 	  if (diff.hi > 0)
-	       diff.hi -= 1; /* carry */
-	  else { /* something is wrong...t1 < t2! */
+	       diff.hi -= 1;	/* carry */
+	  else {		/* something is wrong...t1 < t2! */
 	       diff.hi = diff.lo = 0;
 	       return diff;
 	  }
      }
-     
      diff.lo = t1.lo - t2.lo;
 
      return diff;
@@ -149,7 +94,7 @@ fftw_time fftw_time_diff(fftw_time t1, fftw_time t2)
 
 #endif
 
-#ifdef __WIN32__
+#ifdef HAVE_WIN32_TIMER
 #include <windows.h>
 
 static LARGE_INTEGER gFreq;
@@ -185,4 +130,35 @@ double GetPerfSec(double pTime)
      }
 }
 
-#endif				/* __WIN32__ */
+#endif				/* HAVE_WIN32_TIMER */
+
+#if defined(FFTW_USE_GETTIMEOFDAY)
+
+/* timer support routines for systems having gettimeofday */
+
+#ifdef HAVE_BSDGETTIMEOFDAY
+#define gettimeofday BSDgettimeofday
+#endif
+
+fftw_time fftw_gettimeofday_get_time(void)
+{
+     struct timeval tv;
+     gettimeofday(&tv, 0);
+     return tv;
+}
+
+fftw_time fftw_gettimeofday_time_diff(fftw_time t1, fftw_time t2)
+{
+     fftw_time diff;
+
+     diff.tv_sec = t1.tv_sec - t2.tv_sec;
+     diff.tv_usec = t1.tv_usec - t2.tv_usec;
+     /* normalize */
+     while (diff.tv_usec < 0) {
+	  diff.tv_usec += 1000000L;
+	  diff.tv_sec -= 1;
+     }
+
+     return diff;
+}
+#endif

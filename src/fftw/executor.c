@@ -1,29 +1,19 @@
 /*
- * Copyright (c) 1997 Massachusetts Institute of Technology
+ * Copyright (c) 1997,1998 Massachusetts Institute of Technology
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to use, copy, modify, and distribute the Software without
- * restriction, provided the Software, including any modified copies made
- * under this license, is not distributed for a fee, subject to
- * the following conditions:
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- * IN NO EVENT SHALL THE MASSACHUSETTS INSTITUTE OF TECHNOLOGY BE LIABLE
- * FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- * Except as contained in this notice, the name of the Massachusetts
- * Institute of Technology shall not be used in advertising or otherwise
- * to promote the sale, use or other dealings in this Software without
- * prior written authorization from the Massachusetts Institute of
- * Technology.
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
 
@@ -32,29 +22,29 @@
  */
 
 /* $Id$ */
-#include <fftw.h>
+#include <fftw-int.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-char *fftw_version = "FFTW V1.1 ($Id$)";
+const char *fftw_version = "FFTW V" FFTW_VERSION " ($Id$)";
 
 /*
  * This function is called in other files, so we cannot declare
- * it as static. 
+ * it static. 
  */
-
-void fftw_strided_copy(int n, FFTW_COMPLEX *in, int ostride,
-		       FFTW_COMPLEX *out)
+void fftw_strided_copy(int n, fftw_complex *in, int ostride,
+		       fftw_complex *out)
 {
      int i;
-     FFTW_REAL r0, r1, i0, i1;
-     FFTW_REAL r2, r3, i2, i3;
+     fftw_real r0, r1, i0, i1;
+     fftw_real r2, r3, i2, i3;
 
      i = 0;
-     if (n & 3)
-	  for (; i < (n & 3); ++i) {
-	       out[i * ostride] = in[i];
-	  }
+
+     for (; i < (n & 3); ++i) {
+	  out[i * ostride] = in[i];
+     }
+
      for (; i < n; i += 4) {
 	  r0 = c_re(in[i]);
 	  i0 = c_im(in[i]);
@@ -75,20 +65,22 @@ void fftw_strided_copy(int n, FFTW_COMPLEX *in, int ostride,
      }
 }
 
+
 /*
- * Do *not* declare simple executor as static--we need to call it
+ * Do *not* declare simple executor static--we need to call it
  * from executor_cilk.cilk...also, preface its name with "fftw_"
  * to avoid any possible name collisions. 
  */
-void fftw_executor_simple(int n, const FFTW_COMPLEX *in,
-			  FFTW_COMPLEX *out,
+void fftw_executor_simple(int n, const fftw_complex *in,
+			  fftw_complex *out,
 			  fftw_plan_node *p,
 			  int istride,
 			  int ostride)
 {
      switch (p->type) {
 	 case FFTW_NOTW:
-	      (p->nodeu.notw.codelet) (in, out, istride, ostride);
+	      HACK_ALIGN_STACK_ODD();
+	      (p->nodeu.notw.codelet)(in, out, istride, ostride);
 	      break;
 
 	 case FFTW_TWIDDLE:
@@ -96,8 +88,8 @@ void fftw_executor_simple(int n, const FFTW_COMPLEX *in,
 		   int r = p->nodeu.twiddle.size;
 		   int m = n / r;
 		   int i;
-		   twiddle_codelet *codelet;
-		   FFTW_COMPLEX *W;
+		   fftw_twiddle_codelet *codelet;
+		   fftw_complex *W;
 
 		   for (i = 0; i < r; ++i) {
 			fftw_executor_simple(m, in + i * istride,
@@ -108,6 +100,8 @@ void fftw_executor_simple(int n, const FFTW_COMPLEX *in,
 
 		   codelet = p->nodeu.twiddle.codelet;
 		   W = p->nodeu.twiddle.tw->twarray;
+
+		   HACK_ALIGN_STACK_EVEN();
 		   codelet(out, W, m * ostride, m, ostride);
 
 		   break;
@@ -118,8 +112,8 @@ void fftw_executor_simple(int n, const FFTW_COMPLEX *in,
 		   int r = p->nodeu.generic.size;
 		   int m = n / r;
 		   int i;
-		   generic_codelet *codelet;
-		   FFTW_COMPLEX *W;
+		   fftw_generic_codelet *codelet;
+		   fftw_complex *W;
 
 		   for (i = 0; i < r; ++i) {
 			fftw_executor_simple(m, in + i * istride,
@@ -135,31 +129,55 @@ void fftw_executor_simple(int n, const FFTW_COMPLEX *in,
 		   break;
 	      }
 
+	 case FFTW_RADER:
+	      {
+		   int r = p->nodeu.rader.size;
+		   int m = n / r;
+		   int i;
+		   fftw_rader_codelet *codelet;
+		   fftw_complex *W;
+
+		   for (i = 0; i < r; ++i) {
+			fftw_executor_simple(m, in + i * istride,
+					     out + i * (m * ostride),
+					     p->nodeu.rader.recurse,
+					     istride * r, ostride);
+		   }
+
+		   codelet = p->nodeu.rader.codelet;
+		   W = p->nodeu.rader.tw->twarray;
+		   codelet(out, W, m, r, ostride,
+			   p->nodeu.rader.rader_data);
+
+		   break;
+	      }
+
 	 default:
-	      fftw_die("BUG in executor: illegal plan\n");
+	      fftw_die("BUG in executor: invalid plan\n");
 	      break;
      }
 }
 
-static void executor_simple_inplace(int n, FFTW_COMPLEX *in,
-				    FFTW_COMPLEX *out,
+static void executor_simple_inplace(int n, fftw_complex *in,
+				    fftw_complex *out,
 				    fftw_plan_node *p,
 				    int istride)
 {
      switch (p->type) {
 	 case FFTW_NOTW:
-	      (p->nodeu.notw.codelet) (in, in, istride, istride);
+	      HACK_ALIGN_STACK_ODD();
+	      (p->nodeu.notw.codelet)(in, in, istride, istride);
 	      break;
 
 	 default:
 	      {
-		   FFTW_COMPLEX *tmp;
+		   fftw_complex *tmp;
 
 		   if (out)
 			tmp = out;
 		   else
-			tmp = (FFTW_COMPLEX *)
-			    fftw_malloc(n * sizeof(FFTW_COMPLEX));
+			tmp = (fftw_complex *)
+			    fftw_malloc(n * sizeof(fftw_complex));
 
 		   fftw_executor_simple(n, in, tmp, p, istride, 1);
 		   fftw_strided_copy(n, tmp, istride, in);
@@ -170,8 +188,8 @@ static void executor_simple_inplace(int n, FFTW_COMPLEX *in,
      }
 }
 
-static void executor_many(int n, const FFTW_COMPLEX *in,
-			  FFTW_COMPLEX *out,
+static void executor_many(int n, const fftw_complex *in,
+			  fftw_complex *out,
 			  fftw_plan_node *p,
 			  int istride,
 			  int ostride,
@@ -180,8 +198,10 @@ static void executor_many(int n, const FFTW_COMPLEX *in,
      switch (p->type) {
 	 case FFTW_NOTW:
 	      {
+		   fftw_notw_codelet *codelet = p->nodeu.notw.codelet;
 		   int s;
-		   notw_codelet *codelet = p->nodeu.notw.codelet;
+
+		   HACK_ALIGN_STACK_ODD();
 		   for (s = 0; s < howmany; ++s)
 			codelet(in + s * idist,
 				out + s * odist,
@@ -201,8 +221,8 @@ static void executor_many(int n, const FFTW_COMPLEX *in,
      }
 }
 
-static void executor_many_inplace(int n, FFTW_COMPLEX *in,
-				  FFTW_COMPLEX *out,
+static void executor_many_inplace(int n, fftw_complex *in,
+				  fftw_complex *out,
 				  fftw_plan_node *p,
 				  int istride,
 				  int howmany, int idist)
@@ -210,8 +230,10 @@ static void executor_many_inplace(int n, FFTW_COMPLEX *in,
      switch (p->type) {
 	 case FFTW_NOTW:
 	      {
+		   fftw_notw_codelet *codelet = p->nodeu.notw.codelet;
 		   int s;
-		   notw_codelet *codelet = p->nodeu.notw.codelet;
+
+		   HACK_ALIGN_STACK_ODD();
 		   for (s = 0; s < howmany; ++s)
 			codelet(in + s * idist,
 				in + s * idist,
@@ -222,12 +244,12 @@ static void executor_many_inplace(int n, FFTW_COMPLEX *in,
 	 default:
 	      {
 		   int s;
-		   FFTW_COMPLEX *tmp;
+		   fftw_complex *tmp;
 		   if (out)
 			tmp = out;
 		   else
-			tmp = (FFTW_COMPLEX *)
-			    fftw_malloc(n * sizeof(FFTW_COMPLEX));
+			tmp = (fftw_complex *)
+			    fftw_malloc(n * sizeof(fftw_complex));
 
 		   for (s = 0; s < howmany; ++s) {
 			fftw_executor_simple(n,
@@ -244,8 +266,8 @@ static void executor_many_inplace(int n, FFTW_COMPLEX *in,
 }
 
 /* user interface */
-void fftw(fftw_plan plan, int howmany, FFTW_COMPLEX *in, int istride,
-	  int idist, FFTW_COMPLEX *out, int ostride, int odist)
+void fftw(fftw_plan plan, int howmany, fftw_complex *in, int istride,
+	  int idist, fftw_complex *out, int ostride, int odist)
 {
      int n = plan->n;
 
@@ -264,4 +286,14 @@ void fftw(fftw_plan plan, int howmany, FFTW_COMPLEX *in, int istride,
 			     howmany, idist, odist);
 	  }
      }
+}
+
+void fftw_one(fftw_plan plan, fftw_complex *in, fftw_complex *out)
+{
+     int n = plan->n;
+
+     if (plan->flags & FFTW_IN_PLACE)
+	  executor_simple_inplace(n, in, out, plan->root, 1);
+     else
+	  fftw_executor_simple(n, in, out, plan->root, 1, 1);
 }

@@ -1,52 +1,42 @@
 /*
- * Copyright (c) 1997 Massachusetts Institute of Technology
+ * Copyright (c) 1997,1998 Massachusetts Institute of Technology
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to use, copy, modify, and distribute the Software without
- * restriction, provided the Software, including any modified copies made
- * under this license, is not distributed for a fee, subject to
- * the following conditions:
- * 
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- * IN NO EVENT SHALL THE MASSACHUSETTS INSTITUTE OF TECHNOLOGY BE LIABLE
- * FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * 
- * Except as contained in this notice, the name of the Massachusetts
- * Institute of Technology shall not be used in advertising or otherwise
- * to promote the sale, use or other dealings in this Software without
- * prior written authorization from the Massachusetts Institute of
- * Technology.
- *  
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
  */
 
 /*
- * generic.c -- "generic" solvers.  They work for all
- * n (and are slow)
+ *
+ * generic.c -- "generic" codelets.  They work for all n (and they are
+ * slow)
  */
-#include <fftw.h>
-#include <math.h>
+#include <fftw-int.h>
 #include <stdlib.h>
 
-void fftw_twiddle_generic(FFTW_COMPLEX *A, const FFTW_COMPLEX *W,
+void fftw_twiddle_generic(fftw_complex *A, const fftw_complex *W,
 			  int m, int r, int n, int stride)
 {
      int i, j, k;
-     const FFTW_COMPLEX *jp;
-     FFTW_COMPLEX *kp;
-     FFTW_COMPLEX *tmp = (FFTW_COMPLEX *)
-     fftw_malloc(r * sizeof(FFTW_COMPLEX));
+     const fftw_complex *jp;
+     fftw_complex *kp;
+     fftw_complex *tmp = (fftw_complex *)
+     fftw_malloc(r * sizeof(fftw_complex));
 
      for (i = 0; i < m; ++i) {
 	  for (k = 0, kp = tmp; k < r; ++k, kp++) {
-	       FFTW_REAL r0, i0, rt, it, rw, iw;
+	       fftw_real r0, i0, rt, it, rw, iw;
 	       int l1 = i + m * k;
 	       int l0;
 
@@ -73,18 +63,18 @@ void fftw_twiddle_generic(FFTW_COMPLEX *A, const FFTW_COMPLEX *W,
      fftw_free(tmp);
 }
 
-void fftwi_twiddle_generic(FFTW_COMPLEX *A, const FFTW_COMPLEX *W,
+void fftwi_twiddle_generic(fftw_complex *A, const fftw_complex *W,
 			   int m, int r, int n, int stride)
 {
      int i, j, k;
-     const FFTW_COMPLEX *jp;
-     FFTW_COMPLEX *kp;
-     FFTW_COMPLEX *tmp = (FFTW_COMPLEX *)
-     fftw_malloc(r * sizeof(FFTW_COMPLEX));
+     const fftw_complex *jp;
+     fftw_complex *kp;
+     fftw_complex *tmp = (fftw_complex *)
+     fftw_malloc(r * sizeof(fftw_complex));
 
      for (i = 0; i < m; ++i) {
 	  for (k = 0, kp = tmp; k < r; ++k, kp++) {
-	       FFTW_REAL r0, i0, rt, it, rw, iw;
+	       fftw_real r0, i0, rt, it, rw, iw;
 	       int l1 = i + m * k;
 	       int l0;
 
