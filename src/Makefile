@@ -7,7 +7,7 @@ DIRS	=	gmxlib 	kernel	tools	ngmx	include
 LOCAL	=	local
 LDIRS	=	$(DIRS)	$(LOCAL)
 TELLDIRS=	$(LDIRS)
-DDDIRS	=	$(DIRS)	Makefile makef
+DDDIRS	=	$(DIRS)	Makefile makef mkhtml
 FILES   =	NOGMX
 SDIRS	=	$(foreach DIR,$(TELLDIRS),src/$(DIR))
 DIST	=	$(foreach DIR,$(DDDIRS),src/$(DIR))
@@ -46,6 +46,9 @@ dist:	cdist	bdist	tdist
 # rule to make dirs where binaries and libary go:
 dirs:
 	\mkdir -p $(BINDIR) $(LIBDIR); 
+
+html:
+	./mkhtml
 
 man:
 	./mknroff
