@@ -578,6 +578,8 @@ void fit_acf(int ncorr,int nfitparm,bool bVerbose,
   
   fprintf(stdout,"CORR:\n");    
   
+  if (tendfit == -1)
+    tendfit = ncorr*dt;
   nf_int = min(ncorr,(int)(tendfit/dt));
   sum    = print_and_integrate(debug,nf_int,dt,c1,1);
   
@@ -687,8 +689,10 @@ void low_do_autocorr(char *fn,char *title,
    * In this loop the actual correlation functions are computed, but without
    * normalizing them.
    */
-  for(i=0; (i<nitem); i++) {
-    fprintf(stderr,"\rThingie %d",i);
+  k = max(1,pow(10,(int)(log(nitem)/log(100))));
+  for(i=0; i<nitem; i++) {
+    if (i%k==0 || i==nitem-1)
+      fprintf(stderr,"\rThingie %d",i+1);
     
     if (bFour)
       do_four_core(mode,nfour,nframes,nframes,c1[i],csum,ctmp);
@@ -706,7 +710,7 @@ void low_do_autocorr(char *fn,char *title,
     if (bNormalize)
       normalize_acf(nout,c1[0]);
     
-    if (tbeginfit < tendfit) {
+    if ((tbeginfit < tendfit) || (tendfit == -1)) {
       fit_acf(nout,nfitparm,bVerbose,tbeginfit,tendfit,dt,c1[0]);
       (void)print_and_integrate(fp,nout,dt,c1[0],1);
     } else {
@@ -719,7 +723,7 @@ void low_do_autocorr(char *fn,char *title,
     for(i=0; (i<nitem); i++) {
       if (bNormalize)
 	normalize_acf(nout,c1[i]);
-      if (tbeginfit < tendfit) {
+      if ((tbeginfit < tendfit) || (tendfit == -1)) {
 	fit_acf(nout,nfitparm,bVerbose,tbeginfit,tendfit,dt,c1[i]);
 	(void)print_and_integrate(fp,nout,dt,c1[i],1);
       } else {
@@ -755,7 +759,7 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
     { "-beginfit", FALSE, etREAL, {&acf.tbeginfit},
       "Time where to begin the exponential fit of the correlation function" },
     { "-endfit",   FALSE, etREAL, {&acf.tendfit},
-      "Time where to end the exponential fit of the correlation function" },
+      "Time where to end the exponential fit of the correlation function, -1 is till the end" },
    };
 #define NPA asize(acfpa)
   t_pargs *ppa;
