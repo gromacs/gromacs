@@ -413,6 +413,18 @@ static void free_grid(ivec ngrid, t_gridcell ****grid)
   g=NULL;
 }
 
+static pbc_correct(rvec dx,matrix box,rvec hbox)
+{
+  int m;
+  
+  for(m=DIM-1; m>=0; m--) {
+    if ( dx[m] < -hbox[m] )
+      rvec_inc(dx,box[m]);
+    else if ( dx[m] >= hbox[m] )
+      rvec_dec(dx,box[m]);
+  }
+}
+
 static bool is_hbond(atom_id d, atom_id h, atom_id a, 
 		     real rcut, real ccut, 
 		     rvec x[], bool bBox, matrix box,rvec hbox,
@@ -422,32 +434,25 @@ static bool is_hbond(atom_id d, atom_id h, atom_id a,
   real d2,ca;
   int m;
 
-  if (bDA) 
+  if (d == a)
+    return FALSE;
+  if (bDA)
     rvec_sub(x[a],x[d],dist);
   else 
     rvec_sub(x[a],x[h],dist);
-    
-  for(m=DIM-1; m>=0; m--) {
-    if (bBox) {
-      if ( dist[m] < -hbox[m] )
-	rvec_inc(dist,box[m]);
-      else if ( dist[m] >= hbox[m] )
-	rvec_dec(dist,box[m]);
-    }
-    if ( (dist[m]>rcut) || (-dist[m]>rcut) )
-      return FALSE;
-  }
+
+  if (bBox) 
+    pbc_correct(dist,box,hbox);    
+
   d2 = iprod(dist,dist);
   if ( d2 <= rcut*rcut ) {
-    rvec_sub(x[h],x[d],r_dh);
+    rvec_sub(x[d],x[h],r_dh);
     rvec_sub(x[h],x[a],r_ha);
-    if (bBox)
-      for(m=DIM-1; m>=0; m--) {
-	if ( r_dh[m] < -hbox[m] )
-	  rvec_inc(r_dh,box[m]);
-	else if ( r_dh[m] >= hbox[m] )
-	  rvec_dec(r_dh,box[m]);
-      }
+    if (bBox) 
+      pbc_correct(r_dh,box,hbox);    
+    if (bBox) 
+      pbc_correct(r_ha,box,hbox);    
+
     ca = cos_angle(r_dh,r_ha);
     /* if angle is smaller, cos is larger */
     if (ca >= ccut) {
@@ -521,38 +526,54 @@ static void do_hbac(char *fn,unsigned int **hbexist,int nrhb,int nframes,
 		    real time[])
 {
   FILE *fp;
-  int  i,j;
+  int  i,j,j0;
   real *rhbex;
   real *ct,tail;
+  int  *nct;
   
   /* build hbexist matrix in reals for autocorr */
   fprintf(stderr,"Will allocate %.2f Mb of memory\n",
 	  nrhb*nframes*sizeof(real)/(1024.0*1024.0));
   snew(rhbex,nframes);
   snew(ct,nframes);
+  snew(nct,nframes);
   for(i=0; i<nrhb; i++) {
-    for(j=0; j<nframes; j++)
-      rhbex[j]=is_hb(hbexist[i],j);
+    j0=0;
+    /* while ((j0 < nframes) && (!is_hb(hbexist[i],j0)))
+       j0++; */
+    for(j=j0; (j<nframes); j++)
+      rhbex[j-j0]=is_hb(hbexist[i],j);
+      
     low_do_autocorr(NULL,NULL,
-		    nframes,1,-1,&rhbex,time[1]-time[0],eacNormal,1,
+		    nframes-j0,1,-1,&rhbex,time[1]-time[0],eacNormal,1,
 		    TRUE,TRUE,TRUE,FALSE,0,-1,0,1);
-    for(j=0; j<nframes; j++)
+    for(j=0; (j<(nframes-j0)/2); j++) {
       ct[j] += rhbex[j];
+      nct[j]++;
+    }
   }
   sfree(rhbex);
 
-  /* Determine final value */
+  /* Normalize */
+  for(j=0; ((j<nframes/2) && (nct[j] > 0)); j++)
+    ct[j] /= nct[j];
+  nframes = j;
+  
+  /* Determine final value for normalizing */
   tail = 0;
   for(j=nframes/4; (j<nframes/2); j++)
     tail += ct[j];
   tail /= (nframes/2 - nframes/4);
   
+  printf("Tail value is %g\n",tail);
   fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)");
-  for(j=0; (j<nframes/2); j++)
-    fprintf(fp,"%10g  %10g\n",time[j]-time[0],(ct[j]-tail)/(nrhb-tail));
+  for(j=0; (j<nframes); j++)
+    fprintf(fp,"%10g  %10g  %10d\n",time[j]-time[0],ct[j],nct[j]);
+  /*(ct[j]-tail)/(nrhb-tail));*/
   fclose(fp);
   do_view(fn,NULL);
   sfree(ct);
+  sfree(nct);
 }
 
 int gmx_hbond(int argc,char *argv[])
@@ -709,7 +730,7 @@ int gmx_hbond(int argc,char *argv[])
   bHBMap = opt2bSet("-hbm",NFILE,fnm) || opt2bSet("-ac",NFILE,fnm);
   bDAnr  = opt2bSet("-da",NFILE,fnm);
   bSelected = opt2bSet("-sel",NFILE,fnm);
-  ccut = cos(acut*DEG2RAD);
+  ccut   = cos(acut*DEG2RAD);
   
   /* get topology */
   read_tpx(ftp2fn(efTPX,NFILE,fnm),&i,&t,&t,
