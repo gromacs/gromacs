@@ -44,8 +44,8 @@ dvi:		gromacs.dvi
 # To get the booklet, rearrange the pages according to page numbering 
 # and fold in the middle
 #
-booklet:	gromacs.ps
-		pstops "4:-3L@.7(21cm,0)+0L@.7(21cm,14.85cm),1L@.7(21cm,0)+-2L@.7(21cm,14.85cm)" $^ booklet.ps
+booklet.ps:	gromacs.ps
+		psbook $^ | psnup -2 > ! $@
 
 gromacs.tex:	$(TEXFILES)
 
