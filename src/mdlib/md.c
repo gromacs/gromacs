@@ -185,11 +185,15 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   if (MASTER(cr)) {
     fprintf(log,"Initial temperature: %g K\n",ener[F_TEMP]);
-    if (bRerunMD) 
+    if (bRerunMD) {
       fprintf(stderr,"starting md rerun '%s', reading coordinates from"
 	      " input trajectory '%s'\n\n",
 	      *(top->name),opt2fn("-rerun",nfile,fnm));
-    else
+      if (bVerbose)
+	fprintf(stderr,"Calculated time to finish depends on nsteps from "
+		"run input file,\nwhich may not correspond to the time "
+		"needed to process input trajectory.\n\n");
+    } else
       fprintf(stderr,"starting mdrun '%s'\n%d steps, %8.1f ps.\n\n",
 	      *(top->name),parm->ir.nsteps,parm->ir.nsteps*parm->ir.delta_t);
   }
