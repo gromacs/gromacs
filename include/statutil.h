@@ -134,15 +134,23 @@ extern bool bDoView(void);
  *****************************************************/
 
 #define PCA_CAN_VIEW       (1<<5)
+/* add option -w to view output files (must be implemented in program) */
 #define PCA_CAN_BEGIN      (1<<6)
 #define PCA_CAN_END        (1<<7)
 #define PCA_CAN_TIME       (PCA_CAN_BEGIN | PCA_CAN_END)
+/* adds options -b and -e for begin and end time for reading trajectories */
 #define PCA_KEEP_ARGS      (1<<8)
+/* keep parsed args in argv (doesn't make sense without NOEXIT_ON_ARGS) */
 #define PCA_SILENT         (1<<9)
+/* don't print options by default */
 #define PCA_CAN_SET_DEFFNM (1<<10)
+/* does something for non-master mdrun processes */
 #define PCA_NOEXIT_ON_ARGS (1<<11)
+/* no fatal_error when invalid options are encountered */
 #define PCA_QUIET          (1<<12)
+/* does something for non-master mdrun processes */
 #define PCA_SET_NPRI       (1<<13)
+/* set weightless prioriy by default */
 
 extern int iscan(int argc,char *argv[],int *i);
 /* Scan an int from the argument at *i. If the argument length
@@ -169,9 +177,9 @@ extern void vscan(int argc,char *argv[],int *i,rvec *vec);
 extern void gmx_gui(int *argc,char *argv[],
 		    int nfile,t_filenm fnm[],int npargs,t_pargs pa[],
 		    int ndesc,char *desc[],int nbugs,char *bugs[]);
-  /* This function plops up a Motif dialog box in which the command-line options
-   * can be changed.
-   */
+/* This function plops up a Motif dialog box in which the command-line options
+ * can be changed.
+ */
 #endif
 
 extern void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
