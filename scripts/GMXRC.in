@@ -1,0 +1,141 @@
+# GMXRC is created automatically from GMXRC.in 
+# If you move your gromacs installation, you will have to change the paths at 
+# the six lines marked "#####". Both csh, bash and zsh are supported - just type 
+# "source GMXRC". Shell detection adapted from "shtype" by Heiner Steven.
+
+# Previous paths are removed below, but we don't need to uncomplete
+# anymore since the completions don't depend on the architecture now.
+
+# Tell bash/zsh from csh/tcsh
+unset shtst
+unset is_csh
+set is_csh = 1
+test "$is_csh" = 1 && goto CSH
+# Standard Bourne shell does not know how to remove parts of a variable with ${VAR%%pattern}.
+  shtst="A.B"
+  shtst=`(echo ${shtst%%.*}) 2>/dev/null`
+  if [ "$shtst" = A ]; then
+    # bash/zsh use $[...] for arithmetic evaluation, ksh doesn't
+    shtst=`(echo $[0+1]) 2>/dev/null`
+    if [ "$shtst" = 1 ]; then
+      # Both BASH and ZSH use the export VAR=value syntax
+      # remove old stuff 
+      PATH=${PATH/$GMX_BINDIR} 
+      PATH=${PATH%:} PATH=${PATH#:} PATH=${PATH/::/:}
+      MANPATH=${MANPATH/$GMX_MANDIR} 
+      MANPATH=${MANPATH%:} MANPATH=${MANPATH#:} MANPATH=${MANPATH/::/:}
+      LD_LIBRARY_PATH=${LD_LIBRARY_PATH/$GMX_LDLIBDIR} LD_LIBRARY_PATH=${LD_LIBRARY_PATH%:} 
+      LD_LIBRARY_PATH=${LD_LIBRARY_PATH#:} LD_LIBRARY_PATH=${LD_LIBRARY_PATH/::/:}
+      # then set the new vars:
+      GMX_BINDIR=@bindir@          #####
+      GMX_LDLIBDIR=@libdir@        #####
+      GMX_MANDIR=@mandir@          #####
+      export PATH="$PATH:$GMXBINDIR" 
+      if [ "$MANPATH" = "" ]; then
+        export MANPATH="/usr/man:$GMX_MANDIR"
+      else
+        export MANPATH="$MANPATH:$GMX_MANDIR" 
+      fi
+      if [ "$LD_LIBRARY_PATH" = "" ]; then
+        export LD_LIBRARY_PATH="$GMX_LDLIBDIR" 
+      else
+        export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$GMX_LDLIBDIR" 
+      fi
+      export GMXFONT="10x20"
+      # Completions are different for bash and zsh. zsh can test with ${+x} if variable x is set
+      shtst=0
+      shtst=`(echo ${+shtst}) 2>/dev/null`
+      if [ "$shtst" = 1 ]; then
+	if [ -f $GMX_BINDIR/complete.zsh ]; then 
+          source $GMX_BINDIR/complete.zsh; fi   
+      else
+	if [ -f $GMX_BINDIR/complete.bash ]; then 
+          source $GMX_BINDIR/complete.bash; fi  
+      fi
+    fi
+  fi
+
+# never execute the rest for bash/zsh 
+
+if [ 0 = 1 ]
+then
+CSH:
+  # Remove the ld_library_path
+  unsetenv TEMPPATH
+  unsetenv PATHSET
+  foreach i ( `echo $LD_LIBRARY_PATH | sed "s/:/ /g"` )
+    setenv PATHSET
+    if ( "$i" != "$GMX_LDLIBDIR" ) then
+      if ( ! $?TEMPPATH ) then
+	setenv TEMPPATH $i
+      else
+	setenv TEMPPATH "$TEMPPATH:$i"
+      endif
+    endif
+  end
+  unsetenv LD_LIBRARY_PATH
+  if ($?PATHSET) then
+    if (! $?TEMPPATH) setenv TEMPPATH
+    setenv LD_LIBRARY_PATH $TEMPPATH
+    unsetenv TEMPPATH
+    unsetenv PATHSET
+  endif  
+  # Remove the binary path
+  unsetenv TEMPPATH
+  unsetenv PATHSET
+  foreach i ( `echo $PATH | sed "s/:/ /g"` )
+    setenv PATHSET
+    if ( "$i" != "$GMX_BINDIR" ) then
+      if ( ! $?TEMPPATH ) then
+	setenv TEMPPATH $i
+      else
+	setenv TEMPPATH "$TEMPPATH:$i"
+      endif
+    endif
+  end
+  if ($?PATHSET) then
+    if (! $?TEMPPATH) setenv TEMPPATH
+    setenv PATH $TEMPPATH
+    unsetenv TEMPPATH
+    unsetenv PATHSET
+  endif  
+  # Remove manual path
+  unsetenv TEMPPATH
+  unsetenv PATHSET
+  foreach i ( `echo $MANPATH | sed "s/:/ /g"` )
+    setenv PATHSET
+    if ( "$i" != "$GMX_MANDIR" ) then
+      if ( ! $?TEMPPATH ) then
+	setenv TEMPPATH $i
+      else
+	setenv TEMPPATH "$TEMPPATH:$i"
+      endif
+    endif
+  end
+  unsetenv MANPATH
+  if ($?PATHSET) then
+    if (! $?TEMPPATH) setenv TEMPPATH
+    setenv MANPATH $TEMPPATH
+    unsetenv TEMPPATH
+    unsetenv PATHSET
+  endif  
+
+  setenv GMX_BINDIR @bindir@   #####
+  setenv GMX_LDLIBDIR @libdir@   ######
+  setenv GMX_MANDIR @mandir@   #####
+  setenv PATH "$PATH:$GMX_BINDIR"
+  if ( $?LD_LIBRARY_PATH ) then
+    setenv LD_LIBRARY_PATH "$LD_LIBRARY_PATH:$GMX_LIBDIR"
+  else
+    setenv LD_LIBRARY_PATH "$GMX_LIBDIR"
+  endif
+  if ( $?MANPATH ) then
+    setenv MANPATH "$MANPATH:$GMX_MANDIR"
+  else
+    setenv MANPATH "/usr/man:$GMX_MANDIR" 
+  endif  
+  setenv GMXFONT	10x20
+  if ( -f $GMX_BINDIR/complete.csh ) source $GMX_BINDIR/complete.csh  
+fi
+
+# end of script
