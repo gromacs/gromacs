@@ -280,7 +280,9 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
 	d2      = p0->im;
 	mz      = kz;
 
-	mhz = mx * rzx + my * rzy + mz * rzz;
+	mhx = mx * rxx + my * ryx + mz * rzx;
+	mhy =            my * ryy + mz * rzy;
+	mhz =                       mz * rzz;
 
 	m2      = mhx*mhx+mhy*mhy+mhz*mhz;
 	denom   = m2*bx*by*bsp_mod[ZZ][kz];
@@ -296,12 +298,12 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
 	energy  += ets2;
 	
 	ets2vf   = ets2*vfactor;
-	virxx   += ets2vf*mx*mx-ets2;
-	virxy   += ets2vf*mx*my;   
-	virxz   += ets2vf*mx*mz;  
-	viryy   += ets2vf*my*my-ets2;
-	viryz   += ets2vf*my*mz;
-	virzz   += ets2vf*mz*mz-ets2;
+	virxx   += ets2vf*mhx*mhx-ets2;
+	virxy   += ets2vf*mhx*mhy;   
+	virxz   += ets2vf*mhx*mhz;  
+	viryy   += ets2vf*mhy*mhy-ets2;
+	viryz   += ets2vf*mhy*mhz;
+	virzz   += ets2vf*mhz*mhz-ets2;
       }
     }
   }
@@ -402,9 +404,9 @@ void gather_f_bsplines(t_fftgrid *grid,matrix recipbox,
 	  }
 	}
       }
-      f[n][XX]+=qn*( fx*nx*rxx );
-      f[n][YY]+=qn*( fx*nx*ryx + fy*ny*ryy );
-      f[n][ZZ]+=qn*( fx*nx*rzx + fy*ny*rzy + fz*nz*rzz );
+      f[n][XX]+=qn*( fx*nx*rxx + fy*ny*ryx + fz*nz*rzx );
+      f[n][YY]+=qn*(             fy*ny*ryy + fz*nz*rzy );
+      f[n][ZZ]+=qn*(                         fz*nz*rzz );
     }
   }
   /* Since the energy and not forces are interpolated
@@ -598,7 +600,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
   
   calc_recipbox(box,recipbox); 
   
-  vol=det(box);
+  vol=box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
 
   /* Compute fftgrid index for all atoms, with help of some extra variables */
   if (!idx) {
