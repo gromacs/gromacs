@@ -32,7 +32,7 @@ static char *SRCID_rando_c = "$Id$";
 #include <unistd.h>
 #include "typedefs.h"
 
-int make_seed()
+int make_seed(void)
 {
   return (int)(((long)time(NULL)+(long)getpid()) % (long)65536);
 }
