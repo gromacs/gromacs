@@ -177,7 +177,7 @@ void chk_trj(char *fn)
   PRINTITEM ( "Forces",     f_size );
 }  
 
-void chk_tps(char *fn)
+void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
 {
   int       natom,i,j,k,nvdw;
   char      title[STRLEN];
@@ -187,7 +187,7 @@ void chk_tps(char *fn)
   rvec      dx;
   matrix    box;
   bool      bV,bX,bB,bFirst,bOut;
-  real      r2,ekin,temp1,temp2;
+  real      r2,ekin,temp1,temp2,dist2,vdwfac2,bonlo2,bonhi2;
   t_vdw     *vdw;
   real      *atom_vdw;
   
@@ -231,8 +231,14 @@ void chk_tps(char *fn)
   
   /* check coordinates */
   if (bX) {
-    fprintf(stderr,"Checking for atoms closer than 80%% of smallest "
-		    "VanderWaals distance:\n");
+    vdwfac2=sqr(vdw_fac);
+    bonlo2=sqr(bon_lo);
+    bonhi2=sqr(bon_hi);
+   
+    fprintf(stderr,
+	    "Checking for atoms closer than %g and not between %g and %g,\n"
+	    "relative to sum of Van der Waals distance:\n",
+	    vdw_fac,bon_lo,bon_hi);
     nvdw=read_vdw("radii.vdw",&vdw);
     snew(atom_vdw,natom);
     for (i=0; (i<natom); i++)
@@ -257,7 +263,9 @@ void chk_tps(char *fn)
 	else
 	  rvec_sub(x[i],x[j],dx);
 	r2=iprod(dx,dx);
-	if (r2<=sqr(0.8*min(atom_vdw[i],atom_vdw[j]))) {
+	dist2=sqr(atom_vdw[i]+atom_vdw[j]);
+	if ( (r2<=dist2*bonlo2) || 
+	     ( (r2>=dist2*bonhi2) && (r2<=dist2*vdwfac2) ) ) {
 	  if (bFirst) {
 	    fprintf(stderr,"\r%5s %4s %8s %5s  %5s %4s %8s %5s  %6s\n",
 		    "atom#","name","residue","r_vdw",
@@ -291,10 +299,12 @@ void chk_tps(char *fn)
 	if (bOut) {
 	  k++;
 	  if (bFirst) {
-	    fprintf(stderr,"Atoms outide box ( ");
+	    fprintf(stderr,"Atoms outside box ( ");
 	    for (j=0; (j<DIM); j++)
 	      fprintf(stderr,"%g ",box[j][j]);
-	    fprintf(stderr,"):\n%5s %4s %8s %5s  %s\n",
+	    fprintf(stderr,"):\n"
+		    "(These may occur often and are normally not a problem)\n"
+		    "%5s %4s %8s %5s  %s\n",
 		    "atom#","name","residue","r_vdw","coordinate");
 	    bFirst=FALSE;
 	  }
@@ -368,10 +378,12 @@ int main(int argc,char *argv[])
     "and prints out useful information about them.[PAR]",
     "For a coordinate file (generic structure file, e.g. [TT].gro[tt]) ",
     "gmxcheck will check for presence of coordinates, velocities and box",
-    "in the file, for close contacts (smaller than 80% of the sum",
-    "of both Vanderwaals radii) and atoms outside the box (these may occur",
-    "often and are no problem). If velocities are present, an estimated",
-    "temperature will be calculated from them.[PAR]",
+    "in the file, for close contacts (smaller than [TT]-vdwfac[tt] and not",
+    "bonded, i.e. not between [TT]-bonlo[tt] and [TT]-bonhi[tt],",
+    "all relative to the",
+    "sum of both Van der Waals radii) and atoms outside the box",
+    "(these may occur often and are no problem). If velocities are present,",
+    "an estimated temperature will be calculated from them.[PAR]",
     "The program will compare run input ([TT].tpr[tt], [TT].tpb[tt] or",
     "[TT].tpa[tt]) files",
     "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied."
@@ -385,9 +397,21 @@ int main(int argc,char *argv[])
   };
 #define NFILE asize(fnm)
   char *fn1=NULL,*fn2=NULL;
+  
+  static real vdw_fac=0.8;
+  static real bon_lo=0.4;
+  static real bon_hi=0.7;
+  static t_pargs pa[] = {
+    { "-vdwfac", FALSE, etREAL, &vdw_fac,
+      "Fraction of sum of VdW radii used as warning cutoff" },
+    { "-bonlo",  FALSE, etREAL, &bon_lo,
+      "Min. fract. of sum of VdW radii for bonded atoms" },
+    { "-bonhi",  FALSE, etREAL, &bon_hi,
+      "Max. fract. of sum of VdW radii for bonded atoms" }
+  };
 
   CopyRight(stdout,argv[0]);
-  parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,0,NULL,
+  parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
   
   if (ftp2bSet(efTRX,NFILE,fnm))
@@ -403,9 +427,9 @@ int main(int argc,char *argv[])
     fprintf(stderr,"Please give me TWO run input (.tpr/.tpa/.tpb) files!\n");
   
   if (ftp2bSet(efTPS,NFILE,fnm))
-    chk_tps(ftp2fn(efTPS,NFILE,fnm));
+    chk_tps(ftp2fn(efTPS,NFILE,fnm), vdw_fac, bon_lo, bon_hi);
   
-  if (ftp2bSet(efENX, NFILE,fnm))
+  if (ftp2bSet(efENX,NFILE,fnm))
     chk_enx(ftp2fn(efENX,NFILE,fnm));
   
   thanx(stderr);
