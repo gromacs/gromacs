@@ -177,7 +177,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Calculate total dipole moment if necessary */    
     calc_mu(nsb,x,mdatoms->chargeT,mu_tot);
     
-    /* Calc forces and virial */
+    /* Calc forces and virial
+     * The coordinates (x) are shifted (to get whole molecules) in do_force
+     */
     clear_mat(force_vir);
     do_force(log,cr,parm,nsb,force_vir,step,&mynrnb,
 	     top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
@@ -238,6 +240,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     &(parm->ir),FALSE,mdatoms,x,graph,
 	     fr->shift_vec,f,buf,vold,v,vt,parm->pres,parm->box,
 	     top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata);
+      /* The coordinates (x) were unshifted in update */
 #ifdef DEBUG
       pr_rvecs(log,0,"shake_vir",shake_vir,DIM);
 #endif
