@@ -471,6 +471,9 @@ The residue database is constructed in the following way:
      C     O
     -C     N
 
+ [ exclusions ]  ; optional
+;atom1 atom2
+
  [ angles ]  ; optional
 ;atom1 atom2 atom3    th0    cth
 
@@ -510,15 +513,26 @@ files. These strings are copied to the topology file and can be
 replaced by force field parameters by the C-preprocessor in {\tt
 grompp} using {\tt \#define} statements.
 
-{\tt pdb2gmx} automatically generates all angles, this means that the
-{\tt [~angles~]} field is only useful for overriding {\tt .itp}
-parameters.
+{\tt pdb2gmx} automatically generates all angles, this means that for the
+{\gromacs} force field
+the {\tt [~angles~]} field is only useful for overriding {\tt .itp}
+parameters. For the {\gromosv{96}} force field the interaction number
+off all angles need to be specified.
 
 {\tt pdb2gmx} automatically generates one proper dihedral for every rotatable
 bond, preferably on heavy atoms. When the {\tt [~dihedrals~]} field is used,
 no other dihedrals will be generated for the bonds corresponding to the
 specified  dihedrals. It is possible to put more than one dihedral on a
 rotatable bond. 
+
+{\tt pdb2gmx} sets the number exclusions to 3, which
+means that interactions between atoms connected by at most 3 bonds are
+excluded. Pair interactions are generated for all pairs of atoms which are
+seperated by 3 bonds (except pairs of hydrogens).
+When more interactions need to be excluded, or some pair interactions should
+not be generated, an {\tt [~exclusions~]} field can be added, followed by
+pairs of atom names on seperate lines. All non-bonded and pair interactions
+between these atoms will be excluded.
 
 \subsection{Hydrogen database}
 \label{subsec:hdb}
