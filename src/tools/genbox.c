@@ -540,7 +540,8 @@ int main(int argc,char *argv[])
   static char *desc[] = {
     "Genbox can do one of 3 things:[PAR]",
     
-    "1) Generate a box of solvent. Specify -cs and -box.[PAR]",
+    "1) Generate a box of solvent. Specify -cs and -box. Or specify -cs and",
+    "-cp with a structure file with a box, but without atoms.[PAR]",
     
     "2) Solvate a solute configuration, eg. a protein, in a bath of solvent ",
     "molecules. Specify [TT]-cp[tt] (solute) and [TT]-cs[tt] (solvent). ",
@@ -597,7 +598,8 @@ int main(int argc,char *argv[])
   };
 
   static char *bugs[] = {
-    "Molecules must be whole in the initial configurations."
+    "Molecules must be whole in the initial configurations.",
+    "At the moment -ci only works when inserting one molecule."
   };
   
   /* parameter data */
@@ -664,10 +666,12 @@ int main(int argc,char *argv[])
     /*generate a solute configuration */
     conf_prot = opt2fn("-cp",NFILE,fnm);
     title     = read_prot(conf_prot,&atoms,&x,&r,box,r_distance);
-    if (atoms.nr == 0)
-      fatal_error(0,"No protein in %s, check your input\n",conf_prot);
+    if (atoms.nr == 0) {
+      fprintf(stderr,"Note: no atoms in %s\n",conf_prot);
+      bProt = FALSE;
+    }
   } 
-  else {
+  if (!bProt) {
     atoms.nr=0;
     atoms.nres=0;
     atoms.resname=NULL;
