@@ -278,9 +278,10 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 	     t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
 	     int nfile,t_filenm fnm[],char **traj,char **xtc_traj,int *fp_ene,
 	     FILE **fp_dgdl,t_mdebin **mdebin,t_groups *grps,rvec vcm,
-	     tensor force_vir,tensor shake_vir,t_mdatoms *mdatoms)
+	     tensor force_vir,tensor shake_vir,t_mdatoms *mdatoms,bool *bNEMD)
 {
   bool bBHAM,b14,bLR,bLJLR;
+  int  i;
   
   /* Initial values */
   *t = *t0       = ir->init_t;
@@ -330,6 +331,10 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   
   /* Set initial values for invmass etc. */
   init_mdatoms(mdatoms,*lambda,TRUE);
+  
+  *bNEMD = FALSE;
+  for(i=0; (i<ir->opts.ngacc); i++)
+    (*bNEMD) = (*bNEMD) || (norm(ir->opts.acc[i]) > 0);
   
   where();
 }

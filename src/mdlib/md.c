@@ -65,7 +65,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   FILE       *fp_dgdl=NULL;
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
-  bool       bNS,bStopCM,bStopRot,bTYZ,bRerunMD,bNotLastFrame=FALSE,bLastStep;
+  bool       bNS,bStopCM,bStopRot,bTYZ,bRerunMD,bNotLastFrame=FALSE,bLastStep,bNEMD;
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
   char       *traj,*xtc_traj; /* normal and compressed trajectory filename */
@@ -82,13 +82,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   /* check if "-rerun" is used. */
   bRerunMD = optRerunMDset(nfile,fnm);
-  
+
   /* Initial values */
   init_md(cr,&parm->ir,&t,&t0,&lambda,&lam0,&SAfactor,&mynrnb,&bTYZ,top,
 	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&mdebin,grps,vcm,
-	  force_vir,shake_vir,mdatoms);
+	  force_vir,shake_vir,mdatoms,&bNEMD);
   debug_gmx();
-  
+
   /* Remove periodicity */  
   if (fr->eBox != ebtNONE)
     do_pbc_first(log,parm,box_size,fr,graph,x);
@@ -165,21 +165,25 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
     
     if (bDummies) {
-      /* Construct dummy particles */
+      /* Construct dummy particles. This is parallellized */
       shift_self(graph,fr->shift_vec,x);
       construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef);
       unshift_self(graph,fr->shift_vec,x);
     }
     debug_gmx();
     
-    /* Set values for invmass etc. */
+    /* Set values for invmass etc. This routine not parallellized, but hardly
+     * ever used, only when doing free energy calculations.
+     */
     init_mdatoms(mdatoms,lambda,(step==0));
 
-    /* Calculate total (local) dipole moment if necessary */    
+    /* Calculate total (local) dipole moment if necessary. This parallellized */
     calc_mu(nsb,x,mdatoms->chargeT,mu_tot);
     
     /* Calc forces and virial
      * The coordinates (x) are shifted (to get whole molecules) in do_force
+     * This is parallellized as well, and does communication too. Check comments
+     * in sim_util.c
      */
     clear_mat(force_vir);
     do_force(log,cr,parm,nsb,force_vir,step,&mynrnb,
@@ -206,7 +210,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
 
     if (bDummies)
-      /* Spread the force on dummy particle to the other particles... */
+      /* Spread the force on dummy particle to the other particles... 
+       * This is parallellized
+       */
       spread_dummy_f(log,x,f,&mynrnb,&top->idef);
     
     xx = (do_per_step(step,parm->ir.nstxout) || bLastStep) ? x : NULL;
@@ -238,6 +244,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	pull(&pulldata,x,f,parm->box,top,parm->ir.delta_t,step,
 	     natoms,mdatoms); 
 
+      /* This is also parallellized, but check code in update.c */
       update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
 	     &(parm->ir),mdatoms,x,graph,
 	     fr->shift_vec,f,buf,vold,v,vt,parm->pres,parm->box,
@@ -246,18 +253,22 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 #ifdef DEBUG
       pr_rvecs(log,0,"shake_vir",shake_vir,DIM);
 #endif
-      if (PAR(cr)) 
+      /* Non-equilibrium MD: this is parallellized, but only does communication
+       * when there really is NEMD.
+       */
+      if (PAR(cr) && bNEMD) 
 	accumulate_u(cr,&(parm->ir.opts),grps);
       
       debug_gmx();
       /* Calculate partial Kinetic Energy (for this processor) 
-       * per group!
+       * per group! Parallelized
        */
       calc_ke_part(FALSE,START(nsb),HOMENR(nsb),
 		   vold,v,vt,&(parm->ir.opts),
 		   mdatoms,grps,&mynrnb,
 		   lambda,&ener[F_DVDL]);
       debug_gmx();
+      /* Calculate center of mass velocity if necessary, also parallellized */
       if (bStopCM)
 	calc_vcm(log,HOMENR(nsb),START(nsb),mdatoms->massT,v,vcm);
     }
@@ -271,7 +282,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
 
     if (PAR(cr)) {
-      /* Globally (over all CPUs) sum energy, virial etc. */
+      /* Globally (over all CPUs) sum energy, virial etc. This is communication */
       global_stat(log,cr,ener,force_vir,shake_vir,
 		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot,&terminate);
       if (fr->bTwinRange && !bNS) 

@@ -182,7 +182,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   int        cur=0;
 #define      next (1-cur)
   real       t,lambda,t0,lam0,SAfactor,timestep;
-  bool       bNS,bStopCM,bStopRot,bTYZ,bLastStep,bDynamicStep;
+  bool       bNS,bStopCM,bStopRot,bTYZ,bLastStep,bDynamicStep,bNEMD;
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
   char       strbuf[256];
@@ -207,7 +207,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Initial values */
   init_md(cr,&parm->ir,&t,&t0,&lambda,&lam0,&SAfactor,&mynrnb,&bTYZ,top,
 	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&mdebin,grps,vcm,
-	  force_vir,shake_vir,mdatoms);
+	  force_vir,shake_vir,mdatoms,&bNEMD);
 
   bDynamicStep = FALSE;
   snew(fbuf[cur],mdatoms->nr);
@@ -391,7 +391,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     cur = next;
     
-    if (PAR(cr)) 
+    if (PAR(cr) && bNEMD) 
       accumulate_u(cr,&(parm->ir.opts),grps);
     debug_gmx();
     

@@ -137,12 +137,10 @@ real rms_ener(t_energy *e,int nsteps)
 
 void accumulate_u(t_commrec *cr,t_grpopts *opts,t_groups *grps)
 {
+  /* This routine will only be called when it's necessary */
   static t_bin *rb=NULL;
   int          g;
 
-  if (opts->ngacc < 1)
-    return;
-    
   if (rb == NULL) {
     rb=mk_bin();
   }
