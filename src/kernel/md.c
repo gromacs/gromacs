@@ -49,7 +49,6 @@ static char *SRCID_md_c = "$Id$";
 #include "mdrun.h"
 #include "confio.h"
 #include "network.h"
-#include "sim_util.h"
 #include "pull.h"
 #include "xvgr.h"
 #include "physics.h"
@@ -60,7 +59,6 @@ static char *SRCID_md_c = "$Id$";
 #include "pppm.h"
 #include "pme.h"
 #include "mdatoms.h"
-#include "sim_util.h"
 
 volatile bool bGotTermSignal = FALSE, bGotUsr1Signal = FALSE;
 
@@ -506,7 +504,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
        */
       do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,step,&mynrnb,
 	       top,grps,x,v,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
-	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
+	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,t);
     }
    
     if (bTCR)

@@ -261,7 +261,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
    */
   do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,0,&(nrnb[cr->nodeid]),
 	   top,grps,x,buf,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
-	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
+	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
   where();
 
   /* Spread the force on dummy particle to the other particles... */
@@ -361,7 +361,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,
 	       count,&(nrnb[cr->nodeid]),top,grps,xprime,buf,f,
 	       buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
-	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
+	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
       
       /* Spread the force on dummy particle to the other particles... */
       if (bDummies) 
@@ -440,7 +440,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,
 	       count,&(nrnb[cr->nodeid]),top,grps,xprime,buf,f,
 	       buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
-	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
+	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
       
       /* Spread the force on dummy particle to the other particles... */
       if(bDummies)
@@ -666,7 +666,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,
  	     count,&(nrnb[cr->nodeid]),top,grps,pos[TRY],buf,force[TRY],buf,
 	     mdatoms,ener,fcd,bVerbose && !(PAR(cr)), 
- 	     lambda,graph,parm->ir.nstlist>0 || count==0,FALSE,fr,mu_tot,FALSE); 
+ 	     lambda,graph,parm->ir.nstlist>0 || count==0,FALSE,fr,mu_tot,
+	     FALSE,0.0); 
 
     /* Spread the force on dummy particle to the other particles... */
     if (bDummies) 
@@ -902,7 +903,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   bNS=TRUE;
   do_force(log,cr,NULL,parm,nsb,force_vir,pme_vir,0,&mynrnb,
 	   top,grps,x,v,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
-	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
+	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
   bNS=FALSE;
   if (bBox)
     /* Shift back the coordinates, since we're not calling update */
@@ -944,7 +945,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       do_force(log,cr,NULL,parm,nsb,force_vir,pme_vir,2*(step*DIM+idum),
 	       &mynrnb,
 	       top,grps,x,v,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
-	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
+	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
       if (bBox)
 	/* Shift back the coordinates, since we're not calling update */
 	unshift_self(graph,parm->box,x);
@@ -962,7 +963,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       do_force(log,cr,NULL,parm,nsb,force_vir,pme_vir,2*(step*DIM+idum)+1,
 	       &mynrnb,
 	       top,grps,x,v,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
-	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
+	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
       if (bBox)
 	/* Shift back the coordinates, since we're not calling update */
 	unshift_self(graph,parm->box,x);

@@ -162,7 +162,9 @@ static void reset_energies(t_grpopts *opts,t_groups *grp,
  * (if any) but for now returns 0.
  */
 
-static real calc_f_el(int start,int homenr,real charge[],rvec f[],t_cosines Ex[])
+static real calc_f_el(int  start,int homenr,
+		      real charge[],rvec x[],rvec f[],
+		      t_cosines Ex[],real t)
 {
   real Emu,fmu,strength;
   int  i,m;
@@ -188,7 +190,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 	      t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,bool bVerbose,
 	      real lambda,t_graph *graph,
 	      bool bNS,bool bNBFonly,t_forcerec *fr, rvec mu_tot,
-	      bool bGatherOnly)
+	      bool bGatherOnly,real t)
 {
   static rvec box_size;
   static real dvdl_lr = 0;
@@ -301,7 +303,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
     pr_rvecs(debug,0,"vir_shifts",vir_part,DIM);
 
   /* Compute forces due to electric field */
-  calc_f_el(start,homenr,mdatoms->chargeT,f,parm->ir.ex);
+  calc_f_el(start,homenr,mdatoms->chargeT,x,f,parm->ir.ex,t);
 
   /* When using PME/Ewald we compute the long range virial (pme_vir) there.
    * otherwise we do it based on long range forces from twin range

@@ -361,7 +361,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   clear_mat(pme_vir[Min]);
   do_force(log,cr,mcr,parm,nsb,my_vir[Min],pme_vir[Min],mdstep,nrnb,
 	   top,grps,x,v,force[Min],buf,md,ener,fcd,bVerbose && !PAR(cr),
-	   lambda,graph,bDoNS,FALSE,fr,mu_tot,FALSE);
+	   lambda,graph,bDoNS,FALSE,fr,mu_tot,FALSE,t);
   sum_lrforces(force[Min],fr,start,homenr);
 
   sf_dir = 0;
@@ -449,7 +449,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     do_force(log,cr,mcr,parm,nsb,my_vir[Try],pme_vir[Try],1,nrnb,
 	     top,grps,pos[Try],v,force[Try],buf,md,ener,fcd,
 	     bVerbose && !PAR(cr),
-	     lambda,graph,FALSE,FALSE,fr,mu_tot,FALSE);
+	     lambda,graph,FALSE,FALSE,fr,mu_tot,FALSE,t);
     sum_lrforces(force[Try],fr,start,homenr);
     sf_dir = 0;
     if (ndir) {
