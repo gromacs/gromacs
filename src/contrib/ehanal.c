@@ -47,6 +47,7 @@ static char *SRCID_ehanal_c = "$Id$";
 #include "vec.h"
 #include "names.h"
 #include "ehdata.h"
+#include "pdbio.h"
 
 t_histo *init_histo(int np,real minx,real maxx)
 {
@@ -107,7 +108,8 @@ void dump_histo(t_histo *h,char *fn,char *title,char *xaxis,char *yaxis,
       break;
     case enormNP:
       if (h->nh[i] > 0)
-	fprintf(fp,"%12f  %12f  %d\n",h->minx+h->dx*i,h->y[i]*norm_fac/h->nh[i],h->nh[i]);
+	fprintf(fp,"%12f  %12f  %d\n",
+		h->minx+h->dx*i,h->y[i]*norm_fac/h->nh[i],h->nh[i]);
       break;
     default:
       fatal_error(0,"Wrong value for enorm (%d)",enorm);
@@ -174,12 +176,13 @@ void analyse_scatter(t_ana_scat *scatter,t_histo *hmfp)
  *
  *******************************************************************/	
 
-t_ana_struct *init_ana_struct(int nstep,int nsave,real timestep)
+t_ana_struct *init_ana_struct(int nstep,int nsave,real timestep,
+			      int maxparticle)
 {
   t_ana_struct *anal;
   
   snew(anal,1);
-  anal->nanal = (nstep / nsave)+1;
+  anal->nanal = 1.2*((nstep / nsave)+1);
   anal->index = 0;
   anal->dt    = nsave*timestep;
   snew(anal->t,anal->nanal);
@@ -187,17 +190,29 @@ t_ana_struct *init_ana_struct(int nstep,int nsave,real timestep)
   snew(anal->averdist,anal->nanal);
   snew(anal->ad2,anal->nanal);
   snew(anal->nion,anal->nanal);
+  anal->nstruct   = 1;
+  anal->nparticle = 1;
+  anal->maxparticle = maxparticle;
+  snew(anal->q,1);
+  snew(anal->x,1);
+  snew(anal->x[0],maxparticle);
   
   return anal;
 }
 
 void done_ana_struct(t_ana_struct *anal)
 {
+  int i;
+  
   sfree(anal->t);
   sfree(anal->maxdist);
   sfree(anal->averdist);
   sfree(anal->ad2);
   sfree(anal->nion);
+  sfree(anal->q);
+  for(i=0; (i<anal->nstruct); i++)
+    sfree(anal->x[i]);
+  sfree(anal->x);
 }
 
 void reset_ana_struct(t_ana_struct *anal)
@@ -221,7 +236,8 @@ void add_ana_struct(t_ana_struct *total,t_ana_struct *add)
   if (total->index == 0)
     total->index = add->index;
   else if (total->index != add->index)
-    fatal_error(0,"Analysis incompatible %s, %d",__FILE__,__LINE__);
+    fatal_error(0,"Analysis incompatible (total: %d, add: %d) %s, %d",
+		total->index,add->index,__FILE__,__LINE__);
   for(i=0; (i<total->index); i++) {
     if (total->t[i] == 0)
       total->t[i] = add->t[i];
@@ -235,6 +251,24 @@ void add_ana_struct(t_ana_struct *total,t_ana_struct *add)
   }
 }
 
+static void do_add_str(t_ana_struct *anal,int nparticle,rvec x[])
+{
+  int i,j;
+  
+  if (nparticle > anal->nparticle) {
+    for(i=0; (i<anal->nstruct); i++) {
+      for(j=anal->nparticle; (j<nparticle); j++)
+	copy_rvec(x[j],anal->x[i][j]);
+    }
+  }
+  anal->nparticle=nparticle;
+  srenew(anal->x,anal->nstruct+1);
+  snew(anal->x[anal->nstruct],anal->maxparticle);
+  for(j=0; (j<nparticle); j++)
+    copy_rvec(x[j],anal->x[anal->nstruct][j]);
+  anal->nstruct++;
+}
+
 void analyse_structure(t_ana_struct *anal,real t,rvec center,
 		       rvec x[],int nparticle,real charge[])
 {
@@ -243,6 +277,8 @@ void analyse_structure(t_ana_struct *anal,real t,rvec center,
   real dx2,dx1;
   
   j = anal->index;
+  if (j >= anal->nanal)
+    fatal_error(0,"Too many points in analyse_structure");
   anal->t[j]       = t;
   anal->maxdist[j] = 0;
   for(i=0; (i<nparticle); i++) {
@@ -257,6 +293,7 @@ void analyse_structure(t_ana_struct *anal,real t,rvec center,
       n++;
     }
   }
+  do_add_str(anal,nparticle,x);
   anal->nion[j] = n;
   anal->index++;
 }
@@ -265,7 +302,7 @@ void dump_ana_struct(char *rmax,char *nion,char *gyr,
 		     t_ana_struct *anal,int nsim)
 {
   FILE *fp,*gp,*hp;
-  int  i;
+  int  i,j;
   real t;
   
   fp = xvgropen(rmax,"rmax","Time (fs)","r (nm)");
@@ -275,12 +312,37 @@ void dump_ana_struct(char *rmax,char *nion,char *gyr,
     t = 1000*anal->t[i];
     fprintf(fp,"%12g  %12.3f\n",t,anal->maxdist[i]/nsim);
     fprintf(gp,"%12g  %12.3f\n",t,(1.0*anal->nion[i])/nsim-1);
-    if (anal->nion[i] > 0)
+    if (anal->nion[i] > 0) {
+      if (anal->ad2[i] < 0)
+	fatal_error(0,"ad2[%d] = %f",i,anal->ad2[i]);
       fprintf(hp,"%12g  %12.3f\n",t,sqrt(anal->ad2[i]/anal->nion[i]));
+    }
   }
   fclose(hp);
   fclose(gp);
   fclose(fp);
+  
+}
+
+void dump_as_pdb(char *pdb,t_ana_struct *anal)
+{
+  FILE *kp;
+  int  i,j;
+  real t;
+  
+  kp = ffopen(pdb,"w");
+  for(i=0; (i<anal->nstruct); i++) {
+    t = 1000*anal->t[i];
+    fprintf(kp,"MODEL  %d  time %g fs\n",i+1,t);
+    for(j=0; (j<anal->nparticle); j++) {
+      fprintf(kp,pdbformat,"ATOM",i+1,(i < anal->nion[i]) ? "O" : "N",
+	      "PLS",' ',1,
+	      anal->x[i][j][XX],anal->x[i][j][YY],anal->x[i][j][ZZ]);
+      fprintf(kp,"\n");
+    }
+    fprintf(kp,"ENDMDL\n");
+  }
+  fclose(kp);
 }
 
 char *enms[eNR] = {

@@ -179,7 +179,7 @@ static t_pq_inel *read_pq(char *fn)
   return pq;
 }
 
-static int my_bsearch(real val,int ndata,real data[])
+static int my_bsearch(real val,int ndata,real data[],bool bLower)
 {
   int ilo,ihi,imed;
 
@@ -196,31 +196,57 @@ static int my_bsearch(real val,int ndata,real data[])
   }
   /* Now val should be in between data[ilo] and data[ihi] */
   /* Decide which one is closest */
-  if ((val-data[ilo]) > (data[ihi]-val))
-    return ihi;
-  else
+  if (bLower || ((val-data[ilo]) <= (data[ihi]-val)))
     return ilo;
+  else
+    return ihi;
+}
+
+static real interpolate2D(int nx,int ny,real *dx,real **data,
+			  real x0,real fy,int nx0,int ny0)
+{
+  real fx;
+  
+  fx  = (x0-dx[nx0])/(dx[nx0+1]-dx[nx0]);
+  
+  return (fx*fy*data[nx0][ny0] + fx*(1-fy)*data[nx0][ny0+1] +
+	  (1-fx)*fy*data[nx0+1][ny0] + (1-fx)*(1-fy)*data[nx0+1][ny0+1]); 
 }
 
 real get_omega(real ekin,int *seed,FILE *fp,char *fn)
 {
   static t_p2Ddata *p2Ddata = NULL;
-  real r,ome;
+  real r,ome,fx,fy;
   int  eindex,oindex;
   
   if (p2Ddata == NULL) 
     p2Ddata = read_p2Ddata(fn);
   
   /* Get energy index by binary search */
-  if ((eindex = my_bsearch(ekin,p2Ddata->nener,p2Ddata->ener)) >= 0) {
-  
+  if ((eindex = my_bsearch(ekin,p2Ddata->nener,p2Ddata->ener,TRUE)) >= 0) {
+#ifdef DEBUG
+    if (eindex >= p2Ddata->nener)
+      fatal_error(0,"eindex (%d) out of range (max %d) in get_omega",
+		  eindex,p2Ddata->nener);
+#endif
+
     /* Start with random number */
     r = rando(seed);
     
     /* Do binary search in the energy table */
-    if ((oindex = my_bsearch(r,p2Ddata->n2Ddata,p2Ddata->prob[eindex])) >= 0) {
-    
-      ome = p2Ddata->data[eindex][oindex];
+    if ((oindex = my_bsearch(r,p2Ddata->n2Ddata,p2Ddata->prob[eindex],TRUE)) >= 0) {
+#ifdef DEBUG
+      if (oindex >= p2Ddata->n2Ddata)
+	fatal_error(0,"oindex (%d) out of range (max %d) in get_omega",
+		    oindex,p2Ddata->n2Ddata);
+#endif
+
+      fy = ((r-p2Ddata->prob[eindex][oindex])/
+	    (p2Ddata->prob[eindex][oindex+1]-p2Ddata->prob[eindex][oindex]));
+      ome = interpolate2D(p2Ddata->nener,p2Ddata->n2Ddata,p2Ddata->ener,
+			  p2Ddata->data,ekin,fy,
+			  eindex,oindex);
+      /* ome = p2Ddata->data[eindex][oindex];*/
       
       if (fp) 
 	fprintf(fp,"%8.3f  %8.3f\n",ome,r);
@@ -240,14 +266,14 @@ real get_theta_el(real ekin,int *seed,FILE *fp,char *fn)
   if (p2Ddata == NULL) 
     p2Ddata = read_p2Ddata(fn);
   
-  /* Start with random number */
-  r = rando(seed);
-    
   /* Get energy index by binary search */
-  if ((eindex = my_bsearch(ekin,p2Ddata->nener,p2Ddata->ener)) >= 0) {
+  if ((eindex = my_bsearch(ekin,p2Ddata->nener,p2Ddata->ener,TRUE)) >= 0) {
   
+    /* Start with random number */
+    r = rando(seed);
+    
     /* Do binary search in the energy table */
-    if ((tindex = my_bsearch(r,p2Ddata->n2Ddata,p2Ddata->prob[eindex])) >= 0) {
+    if ((tindex = my_bsearch(r,p2Ddata->n2Ddata,p2Ddata->prob[eindex],FALSE)) >= 0) {
   
       theta = p2Ddata->data[eindex][tindex];
       
@@ -264,34 +290,45 @@ real get_q_inel(real ekin,real omega,int *seed,FILE *fp,char *fn)
 {
   static t_pq_inel *pq = NULL;
   int    eindex,oindex,tindex;
-  real   r,the;
+  real   r,theta;
   
   if (pq == NULL)
     pq = read_pq(fn);
 
   /* Get energy index by binary search */
-  if ((eindex = my_bsearch(ekin,pq->nener,pq->ener)) >= 0) {
-  
+  if ((eindex = my_bsearch(ekin,pq->nener,pq->ener,TRUE)) >= 0) {
+#ifdef DEBUG
+    if (eindex >= pq->nener)
+      fatal_error(0,"eindex out of range (%d >= %d)",eindex,pq->nener);
+#endif
+      
     /* Do binary search in the energy table */
-    if ((oindex = my_bsearch(omega,pq->nomega,pq->omega[eindex])) >= 0) {
+    if ((oindex = my_bsearch(omega,pq->nomega,pq->omega[eindex],FALSE)) >= 0) {
+#ifdef DEBUG
+      if (oindex >= pq->nomega)
+	fatal_error(0,"oindex out of range (%d >= %d)",oindex,pq->nomega);
+#endif
       
       /* Start with random number */
       r = rando(seed);
       
-      if ((tindex = my_bsearch(r,pq->nq,pq->prob[eindex][oindex])) >= 0) {
+      if ((tindex = my_bsearch(r,pq->nq,pq->prob[eindex][oindex],FALSE)) >= 0) {
+#ifdef DEBUG
+	if (tindex >= pq->nq)
+	  fatal_error(0,"tindex out of range (%d >= %d)",tindex,pq->nq);
+#endif
 	
-	the = pq->q[eindex][oindex][tindex];
+	theta = pq->q[eindex][oindex][tindex];
   
 	if (fp)
-	  fprintf(fp,"%8.3f  %8.3f\n",the,r);
+	  fprintf(fp,"get_q_inel: %8.3f  %8.3f\n",theta,r);
 	
-	return the;
+	return theta;
       }
     }
   }
   return 0;
 }
-
 
 static int read_cross(char *fn,real **ener,real **cross,real factor)
 {
@@ -332,9 +369,15 @@ real cross_inel(real ekin,real rho,char *fn)
     ninel = read_cross(fn,&ener,&cross,rho*0.01);
   
   /* Compute index with binary search */
-  if ((eindex = my_bsearch(ekin,ninel,ener)) >= 0)
+  if ((eindex = my_bsearch(ekin,ninel,ener,FALSE)) >= 0) {
+#ifdef DEBUG
+    if (eindex >= ninel)
+      fatal_error(0,"ekin = %f, ener[0] = %f, ener[%d] = %f",ekin,
+		  ener[0],ener[ninel-1]);
+#endif
     return cross[eindex];
-    
+  }
+  
   return 0;
 }
 
@@ -350,9 +393,15 @@ real cross_el(real ekin,real rho,char *fn)
     nel = read_cross(fn,&ener,&cross,rho*0.01);
   
   /* Compute index with binary search */
-  if ((eindex = my_bsearch(ekin,nel,ener)) >= 0)
+  if ((eindex = my_bsearch(ekin,nel,ener,FALSE)) >= 0) {
+#ifdef DEBUG
+    if (eindex >= nel)
+      fatal_error(0,"ekin = %f, ener[0] = %f, ener[%d] = %f",ekin,
+		  ener[0],ener[nel-1]);
+#endif
+
     return cross[eindex];
-    
+  }
   return 0;
 }
 
@@ -370,8 +419,13 @@ real band_ener(int *seed,FILE *fp,char *fn)
   
   r = rando(seed);
   
-  if ((eindex = my_bsearch(r,nener,prob)) >= 0) {
-    
+  if ((eindex = my_bsearch(r,nener,prob,FALSE)) >= 0) {
+#ifdef DEBUG
+    if (eindex >= nener)
+      fatal_error(0,"r = %f, prob[0] = %f, prob[%d] = %f",r,
+		  prob[0],prob[nener-1]);
+#endif
+
     if (fp)
       fprintf(fp,"%8.3f  %8.3f\n",ener[eindex],r);
     
@@ -448,7 +502,7 @@ void init_tables(int nfile,t_filenm fnm[])
   
   (void) band_ener(&seed,NULL,opt2fn("-band",nfile,fnm));
   (void) cross_el(ekin,rho,opt2fn("-sigel",nfile,fnm));
-  (void) cross_inel(ekin,rho,opt2fn("-sigel",nfile,fnm));
+  (void) cross_inel(ekin,rho,opt2fn("-sigin",nfile,fnm));
   (void) get_theta_el(ekin,&seed,NULL,opt2fn("-thetael",nfile,fnm));
   (void) get_omega(ekin,&seed,NULL,opt2fn("-eloss",nfile,fnm));
   (void) get_q_inel(ekin,omega,&seed,NULL,opt2fn("-qtrans",nfile,fnm));
