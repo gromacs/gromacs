@@ -28,6 +28,8 @@
  */
 static char *SRCID_addconf_c = "$Id$";
 
+#include <stdlib.h>
+#include <string.h>
 #include "vec.h"
 #include "assert.h"
 #include "macros.h"
@@ -221,7 +223,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     snew(top->idef.iparams,1);
     top->idef.iparams[0].lj.c6  = 1;
     top->idef.iparams[0].lj.c12 = 1;
-    
+
     /* mdatoms structure */
     snew(nFreeze,2);
     md = atoms2md(debug,atoms,nFreeze,FALSE,FALSE,FALSE);
@@ -249,6 +251,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
       fr = mk_forcerec();
     snew(cr,1);
     cr->nprocs = 1;
+    
     ir->rlist       = ir->rcoulomb = ir->rvdw = rlong;
     init_forcerec(debug,fr,ir,&(top->blocks[ebMOLS]),cr,
 		  &(top->blocks[ebCGS]),&(top->idef),md,nsb,box,FALSE);
@@ -363,7 +366,6 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
     r_all[j]=r_prot[i];
   for(i=0; (i<natoms_solvt); i++,j++)
     r_all[j]=r_solvt[i];
-  
 
   /* Combine arrays */
   combine_atoms(atoms,atoms_solvt,*x,x_solvt,&atoms_all,&x_all);
