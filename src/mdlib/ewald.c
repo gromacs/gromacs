@@ -100,8 +100,7 @@ real do_ewald(FILE *log,       bool bVerbose,
 	      rvec x[],        rvec f[],
 		  real charge[],   rvec box,
 	      t_commrec *cr,	      t_nsborder *nsb,
-	      matrix lrvir, real ewaldcoeff,
-	      bool bCalcForces)
+	      matrix lrvir, real ewaldcoeff)
 {
   static    bool bFirst = TRUE;
   static    int       nx,ny,nz,kmax;
@@ -170,20 +169,18 @@ real do_ewald(FILE *log,       bool bVerbose,
 	  ss+=tab_qxyz[n].im;
 	}
 	energy+=ak*(cs*cs+ss*ss);
-	if (bCalcForces) {
-	  tmp=akv*(cs*cs+ss*ss);	       
-	  lrvir[XX][XX]-=tmp*mx*mx;
-	  lrvir[XX][YY]-=tmp*mx*my;
-	  lrvir[XX][ZZ]-=tmp*mx*mz;
-	  lrvir[YY][YY]-=tmp*my*my;
-	  lrvir[YY][ZZ]-=tmp*my*mz;
-	  lrvir[ZZ][ZZ]-=tmp*mz*mz;
-	  for(n=0;n<HOMENR(nsb);n++) {
-	    tmp=ak*(cs*tab_qxyz[n].im-ss*tab_qxyz[n].re);
-	    f[n][XX]+=tmp*mx;
-	    f[n][YY]+=tmp*my;
-	    f[n][ZZ]+=tmp*mz;
-	  }
+	tmp=akv*(cs*cs+ss*ss);	       
+	lrvir[XX][XX]-=tmp*mx*mx;
+	lrvir[XX][YY]-=tmp*mx*my;
+	lrvir[XX][ZZ]-=tmp*mx*mz;
+	lrvir[YY][YY]-=tmp*my*my;
+	lrvir[YY][ZZ]-=tmp*my*mz;
+	lrvir[ZZ][ZZ]-=tmp*mz*mz;
+	for(n=0;n<HOMENR(nsb);n++) {
+	  tmp=ak*(cs*tab_qxyz[n].im-ss*tab_qxyz[n].re);
+	  f[n][XX]+=tmp*mx;
+	  f[n][YY]+=tmp*my;
+	  f[n][ZZ]+=tmp*mz;
 	}
 	lowiz=1-nz;
       }
@@ -191,23 +188,22 @@ real do_ewald(FILE *log,       bool bVerbose,
     }
   }   
   tmp=4.0*M_PI/(box[XX]*box[YY]*box[ZZ])*ONE_4PI_EPS0;
-  if (bCalcForces) {
-    for(n=0;n<HOMENR(nsb);n++) {
-      f[n][XX]*=2*tmp;
-      f[n][YY]*=2*tmp;
-      f[n][ZZ]*=2*tmp;
-    }
-    lrvir[XX][XX]=-0.5*tmp*(lrvir[XX][XX]+energy);
-    lrvir[XX][YY]=-0.5*tmp*(lrvir[XX][YY]);
-    lrvir[XX][ZZ]=-0.5*tmp*(lrvir[XX][ZZ]);
-    lrvir[YY][YY]=-0.5*tmp*(lrvir[YY][YY]+energy);
-    lrvir[YY][ZZ]=-0.5*tmp*(lrvir[YY][ZZ]);
-    lrvir[ZZ][ZZ]=-0.5*tmp*(lrvir[ZZ][ZZ]+energy);
-    
-    lrvir[YY][XX]=lrvir[XX][YY];
-    lrvir[ZZ][XX]=lrvir[XX][ZZ];
-    lrvir[ZZ][YY]=lrvir[YY][ZZ];
+  for(n=0;n<HOMENR(nsb);n++) {
+    f[n][XX]*=2*tmp;
+    f[n][YY]*=2*tmp;
+    f[n][ZZ]*=2*tmp;
   }
+  lrvir[XX][XX]=-0.5*tmp*(lrvir[XX][XX]+energy);
+  lrvir[XX][YY]=-0.5*tmp*(lrvir[XX][YY]);
+  lrvir[XX][ZZ]=-0.5*tmp*(lrvir[XX][ZZ]);
+  lrvir[YY][YY]=-0.5*tmp*(lrvir[YY][YY]+energy);
+  lrvir[YY][ZZ]=-0.5*tmp*(lrvir[YY][ZZ]);
+  lrvir[ZZ][ZZ]=-0.5*tmp*(lrvir[ZZ][ZZ]+energy);
+  
+  lrvir[YY][XX]=lrvir[XX][YY];
+  lrvir[ZZ][XX]=lrvir[XX][ZZ];
+  lrvir[ZZ][YY]=lrvir[YY][ZZ];
+  
   energy*=tmp;
   
   return energy;

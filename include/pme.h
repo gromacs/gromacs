@@ -56,7 +56,7 @@ extern real do_pme(FILE *log,       bool bVerbose,
 		   t_commrec *cr,
 		   t_nsborder *nsb, t_nrnb *nrnb,
 		   matrix lrvir,real ewaldcoeff,
-		   bool bGatherOnly,bool bCalcForces);
+		   bool bGatherOnly);
     
 /* Do a PME calculation for the long range electrostatics. 
  * If bGatherOnly is set, the energy from the last computation will be used, and 

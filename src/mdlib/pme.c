@@ -754,7 +754,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
 	    matrix box,	     t_commrec *cr,
 	    t_nsborder *nsb, t_nrnb *nrnb,    
 	    matrix vir,      real ewaldcoeff,
-	    bool bGatherOnly,bool bCalcForces)
+	    bool bGatherOnly)
 { 
   static  real energy = 0;
   int     i,ntot,npme;
@@ -774,6 +774,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
     inc_nrnb(nrnb,eNR_SPREADQBSP,
 	     ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
     
+    
     /* sum contributions to local grid from other nodes */
     if (PAR(cr))
       sum_qgrid(cr,nsb,grid,TRUE);
@@ -783,30 +784,26 @@ real do_pme(FILE *logfile,   bool bVerbose,
    
     /* solve in k-space for our local cells */
     vol = det(box);
-    energy = solve_pme(grid,ewaldcoeff,vol,bsp_mod,recipbox,vir,cr);
-    inc_nrnb(nrnb,eNR_SOLVEPME,nx*ny*nz*0.5);
-    if (bCalcForces) {
-      /* do 3d-invfft */
-      gmxfft3D(grid,FFTW_BACKWARD,cr);
-      
-      /* distribute local grid to all nodes */
-      if (PAR(cr))
-	sum_qgrid(cr,nsb,grid,FALSE);
-      
-      ntot  = grid->nxyz;  
-      npme  = ntot*log((real)ntot)/(cr->nnodes*log(2.0));
-      inc_nrnb(nrnb,eNR_FFT,2*npme);
-    }
-  }
-  if (bCalcForces) {
-    /* interpolate forces for our local atoms */
-    gather_f_bsplines(grid,recipbox,idx,f+START(nsb),charge+START(nsb),
-		      theta,dtheta,HOMENR(nsb),ir->pme_order,
-		      nnx,nny,nnz);
+    energy=solve_pme(grid,ewaldcoeff,vol,bsp_mod,recipbox,vir,cr);
+     inc_nrnb(nrnb,eNR_SOLVEPME,nx*ny*nz*0.5);
+    /* do 3d-invfft */
+    gmxfft3D(grid,FFTW_BACKWARD,cr);
     
-    inc_nrnb(nrnb,eNR_GATHERFBSP,
-	     ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
+    /* distribute local grid to all nodes */
+    if (PAR(cr))
+      sum_qgrid(cr,nsb,grid,FALSE);
+      
+    ntot  = grid->nxyz;  
+    npme  = ntot*log((real)ntot)/(cr->nnodes*log(2.0));
+    inc_nrnb(nrnb,eNR_FFT,2*npme);
   }
+  /* interpolate forces for our local atoms */
+  gather_f_bsplines(grid,recipbox,idx,f+START(nsb),charge+START(nsb),
+		    theta,dtheta,HOMENR(nsb),ir->pme_order,
+		    nnx,nny,nnz);
+
+  inc_nrnb(nrnb,eNR_GATHERFBSP,
+	   ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
 
   return energy;  
 }

@@ -514,11 +514,6 @@ void init_forcerec(FILE *fp,
 
   /* Free energy */
   fr->efep       = ir->efep;
-  fr->nfeq       = 0;
-  if (ir->efep)
-    for(i=0; i<natoms; i++)
-      if (mdatoms->chargeA[i] != mdatoms->chargeB[i])
-	fr->nfeq++;
   fr->sc_alpha   = ir->sc_alpha;
   fr->sc_sigma6  = pow(ir->sc_sigma,6);
 
@@ -872,7 +867,7 @@ void force(FILE       *fp,     int        step,
   int     i,nit;
   bool    bDoEpot;
   rvec    box_size;
-  real    Vlr,VlrA=0,VlrB=0,Vcorr=0;
+  real    Vlr,Vcorr=0;
   
   /* Reset box */
   for(i=0; (i<DIM); i++)
@@ -932,34 +927,12 @@ void force(FILE       *fp,     int        step,
 		       box_size,fr->phi,cr,nrnb,&nit,TRUE);
       break;
     case eelPME:
-      if (fr->nfeq > 0) {
-	/* Calculate the free-energy contribution of the PME mesh part */
-	VlrA = do_pme(fp,FALSE,ir,x,fr->f_pme,md->chargeA,
-		      box,cr,nsb,nrnb,lr_vir,fr->ewaldcoeff,FALSE,FALSE);
-	VlrB = do_pme(fp,FALSE,ir,x,fr->f_pme,md->chargeB,
-		      box,cr,nsb,nrnb,lr_vir,fr->ewaldcoeff,FALSE,FALSE);
-	epot[F_DVDL] += VlrB - VlrA;
-      }
       Vlr = do_pme(fp,FALSE,ir,x,fr->f_pme,md->chargeT,
-                   box,cr,nsb,nrnb,lr_vir,fr->ewaldcoeff,
-                   bGatherOnly && fr->nfeq==0,TRUE);
-      if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
-	fprintf(fp,  "%-15s        V %12.5e  dVdl %12.5e\n",
-		"PME",Vlr,VlrB - VlrA);
+		   box,cr,nsb,nrnb,lr_vir,fr->ewaldcoeff,bGatherOnly);
       break;
     case eelEWALD:
-      if (fr->nfeq > 0) {
-        /* Calculate the free-energy contribution of the EWALD sum */
-	VlrA = do_ewald(fp,FALSE,ir,x,fr->f_pme,md->chargeA,
-			box_size,cr,nsb,lr_vir,fr->ewaldcoeff,FALSE);
-	VlrB = do_ewald(fp,FALSE,ir,x,fr->f_pme,md->chargeB,
-			box_size,cr,nsb,lr_vir,fr->ewaldcoeff,FALSE);
-      }
       Vlr = do_ewald(fp,FALSE,ir,x,fr->f_pme,md->chargeT,
-		     box_size,cr,nsb,lr_vir,fr->ewaldcoeff,TRUE);
-      if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
-        fprintf(fp,  "%-15s        V %12.5e  dVdl %12.5e\n",
-                "Ewald",Vlr,VlrB - VlrA);
+		     box_size,cr,nsb,lr_vir,fr->ewaldcoeff);
       break;
     default:
       Vlr = 0;
