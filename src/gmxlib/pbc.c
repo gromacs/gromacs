@@ -92,8 +92,8 @@ void init_pbc(matrix box,bool bTruncOct)
       /* When a 'shifted' distance is within this number, it is the shortest
        * possible distance of all shifts.
        */
-      sure_dist2 = 0.25*min(norm2(box[XX]),
-			    min(norm2(box[YY]),norm2(box[ZZ])));
+      sure_dist2 = 0.25*min(sqr(box[XX][XX]),
+			    min(sqr(box[YY][YY]),sqr(box[ZZ][ZZ])));
       /* Make shift vectors, assuming the box is not very skewed */
       diagonal2 = norm2(gl_fbox);
       ntric_vec = 0;
