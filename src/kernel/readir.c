@@ -751,8 +751,12 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
      */
     if (nstcomm > 0)
       n_sub = 3;
-    else
-      n_sub = 6;
+    else {
+      if (atoms->nr == 2)
+	n_sub = 5;
+      else
+	n_sub = 6;
+    }
 
     for(i=0; i<atoms->grps[egcTC].nr; i++) {
       /* Count the number of atoms of TC group i for every VCM group */
