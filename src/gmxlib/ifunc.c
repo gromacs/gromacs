@@ -32,58 +32,59 @@ static char *SRCID_ifunc_c = "$Id$";
 #include "bondf.h"
 #include "disre.h"
 
-#define def_bond(str,lstr,nra,nrpa,nrpb,ind,func) \
-   {str,lstr,(nra),(nrpa),(nrpb),IF_BOND,(ind),(func)}
+#define def_bonded(str,lstr,nra,nrpa,nrpb,ind,func)                          \
+   {str,lstr,(nra),(nrpa),(nrpb),IF_BOND,                        (ind),(func)}
    
-#define def_ang(str,lstr,nra,nrpa,nrpb,ind,func) \
+#define  def_angle(str,lstr,nra,nrpa,nrpb,ind,func)                          \
    {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_ATYPE,(ind),(func)}
    
-#define def_connect(str,lstr,nra,nrpa,nrpb,ind,func) \
+#define   def_bond(str,lstr,nra,nrpa,nrpb,ind,func)                          \
    {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_CONNECT | IF_BTYPE,(ind),(func)}
    
-#define def_dumm(str,lstr,nra,nrpa) \
-   {str,lstr,(nra),(nrpa),0,IF_DUMMY | IF_CONNECT, -1, unimplemented}
+#define  def_dummy(str,lstr,nra,nrpa)                                        \
+   {str,lstr,(nra),(nrpa),     0,IF_DUMMY | IF_CONNECT,     -1, unimplemented}
    
-#define def_shk(str,lstr,nra,nrpa,nrpb,ind,func)  \
-   {str,lstr,(nra),(nrpa),(nrpb),IF_SHAKE,(ind),(func)}
+#define    def_shk(str,lstr,nra,nrpa,nrpb,ind,func)                          \
+   {str,lstr,(nra),(nrpa),(nrpb),IF_SHAKE,                       (ind),(func)}
    
-#define def_shkcon(str,lstr,nra,nrpa,nrpb,ind,func)  \
-   {str,lstr,(nra),(nrpa),(nrpb),IF_SHAKE | IF_CONNECT,(ind),(func)}
+#define def_shkcon(str,lstr,nra,nrpa,nrpb,ind,func)                          \
+   {str,lstr,(nra),(nrpa),(nrpb),IF_SHAKE | IF_CONNECT,          (ind),(func)}
    
-#define def_nb(str,lstr,nra,nrp)                  \
-   {str,lstr,(nra),(nrp),0,IF_NULL,-1,unimplemented}
+#define     def_nb(str,lstr,nra, nrp)                                        \
+   {str,lstr,(nra), (nrp),     0,IF_NULL,                    -1,unimplemented}
    
-#define def_nofc(str,lstr)                        \
-   {str,lstr,0,0,0,IF_NULL,-1,unimplemented}
+#define   def_nofc(str,lstr)                                                 \
+   {str,lstr,    0,     0,     0,IF_NULL,                    -1,unimplemented}
 
 /* this MUST correspond to the enum in include/types/idef.h */
 t_interaction_function interaction_function[F_NRE]=
 {
-  def_ang    ("ANGLES",   "Angle",          3, 2, 2,  eNR_ANGLES, angles),
-  def_ang    ("G96ANGLES","G96Angle",       3, 2, 2,  eNR_ANGLES, g96angles),
-  def_nb     ("BHAM",     "BuckingHam",     2, 3),
-  def_connect("BONDS",    "Bonds",          2, 2, 2,  eNR_BONDS,  bonds),
-  def_connect("G96BONDS", "G96Bonds",       2, 2, 2,  eNR_BONDS,  g96bonds),
-  def_connect("MORSE",    "Morse",          2, 3, 0,  eNR_MORSE,  morsebonds),
-  def_bond   ("WATERPOL", "Water Pol.",     1, 6, 0,  eNR_WPOL,   water_pol),
-  def_bond   ("DISRES",   "Dis. Res",       2, 6, 0,  eNR_DISRES, ta_disres),
-  def_bond   ("IDIHS",    "Impropers",      4, 2, 2,  eNR_IMPROPER, idihs),
-  def_nb     ("LJ",       "LJ",             2, 2),
-  def_bond   ("LJ14",     "Coulomb+LJ-14",  2, 2, 2,  eNR_LJC, do_14),
+  def_angle  ("ANGLES",   "Angle",           3, 2, 2,  eNR_ANGLES, angles),
+  def_angle  ("G96ANGLES","G96Angle",        3, 2, 2,  eNR_ANGLES, g96angles),
+  def_nb     ("BHAM",     "BuckingHam",      2, 3),
+  def_bond   ("BONDS",    "Bond",            2, 2, 2,  eNR_BONDS,  bonds),
+  def_bond   ("G96BONDS", "G96Bond",         2, 2, 2,  eNR_BONDS,  g96bonds),
+  def_bond   ("MORSE",    "Morse",           2, 3, 0,  eNR_MORSE,  morsebonds),
+  def_bonded ("WATERPOL", "Water Pol.",      1, 6, 0,  eNR_WPOL,   water_pol),
+  def_bonded ("DISRES",   "Dis. Res",        2, 6, 0,  eNR_DISRES, ta_disres),
+  def_bonded ("IDIHS",    "Improper Dih.",   4, 2, 2,  eNR_IMPROPER, idihs),
+  def_nb     ("LJ",       "LJ",              2, 2),
+  def_bonded ("LJ14",     "Coulomb+LJ-14",   2, 2, 2,  eNR_LJC, do_14),
   def_nofc   ("LR",       "Coulomb (LR)"),
   def_nofc   ("LJLR",     "LJ (LR)"),
   def_nofc   ("DISPCORR", "Disper. corr."),
-  def_bond   ("PDIHS",    "Proper Dih.",    4, 3, 3,  eNR_PROPER, pdihs),
-  def_bond   ("POSRES",   "Position Rest.", 1, 3, 0,  eNR_POSRES, posres),
-  def_bond   ("RBDIHS",   "Ryckaert-Bell.", 4, 6, 0,  eNR_RB, rbdihs),
-  def_shkcon ("SHAKE",    "Shake",          2, 1, 1,  -1, unimplemented),
-  def_shk    ("SETTLE",   "Settle",         1, 2, 0,  -1, unimplemented),
-  def_dumm   ("DUMMY2",   "Dummy2",         3, 1),
-  def_dumm   ("DUMMY3",   "Dummy3",         4, 2),
-  def_dumm   ("DUMMY3FD", "Dummy3fd",       4, 2),
-  def_dumm   ("DUMMY3FAD","Dummy3fad",      4, 2),
-  def_dumm   ("DUMMY3OUT","Dummy3out",      4, 3),
-  def_dumm   ("DUMMY4FD", "Dummy4fd",       5, 3),
+  def_bonded ("PDIHS",    "Proper Dih.",     4, 3, 3,  eNR_PROPER, pdihs),
+  def_bonded ("POSRES",   "Position Rest.",  1, 3, 0,  eNR_POSRES, posres),
+  def_bonded ("RBDIHS",   "Ryckaert-Bell.",  4, 6, 0,  eNR_RB, rbdihs),
+  def_shkcon ("SHAKE",    "Shake",           2, 1, 1,  -1, unimplemented),
+  def_shk    ("SHAKENC",  "Shake (No Conn.)",2, 1, 1,  -1, unimplemented),
+  def_shk    ("SETTLE",   "Settle",          1, 2, 0,  -1, unimplemented),
+  def_dummy  ("DUMMY2",   "Dummy2",          3, 1),
+  def_dummy  ("DUMMY3",   "Dummy3",          4, 2),
+  def_dummy  ("DUMMY3FD", "Dummy3fd",        4, 2),
+  def_dummy  ("DUMMY3FAD","Dummy3fad",       4, 2),
+  def_dummy  ("DUMMY3OUT","Dummy3out",       4, 3),
+  def_dummy  ("DUMMY4FD", "Dummy4fd",        5, 3),
   def_nofc   ("SR",       "Coulomb (SR)"),
   def_nofc   ("EPOT",     "Potential"), 
   def_nofc   ("EKIN",     "Kinetic En."),
@@ -93,13 +94,6 @@ t_interaction_function interaction_function[F_NRE]=
   def_nofc   ("DV/DL",    "d Vpot/d mu"),
   def_nofc   ("DK/DL",    "d Ekin/d mu")
 };
-#undef def_bond
-#undef def_connect
-#undef def_nb
-#undef def_dumm
-#undef def_shk
-#undef def_shkcon
-#undef def_nofc
 
 bool have_interaction(t_idef *idef,int ftype)
 {
