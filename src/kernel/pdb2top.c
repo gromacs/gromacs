@@ -266,14 +266,10 @@ static void print_top_posre(FILE *out,char *pr)
   fprintf(out,"#endif\n\n");
 }
   
-static void print_top_water(FILE *out)
+static void print_top_water(FILE *out,char *water)
 {
   fprintf(out,"; Include water topology\n");
-  fprintf(out,"#ifdef FLEX_SPC\n");
-  fprintf(out,"#include \"flexspc.itp\"\n");
-  fprintf(out,"#else\n");
-  fprintf(out,"#include \"spc.itp\"\n");
-  fprintf(out,"#endif\n");
+  fprintf(out,"#include \"%s.itp\"\n",water);
   fprintf(out,"\n");
   fprintf(out,"#ifdef POSRES_WATER\n");
   fprintf(out,"; Position restraint for each water oxygen\n");
@@ -291,7 +287,7 @@ static void print_top_system(FILE *out, char *title)
   fprintf(out,"%s\n\n",title[0]?title:"Protein");
 }
 
-void print_top_mols(FILE *out, char *title, 
+void print_top_mols(FILE *out, char *title, char *water,
 		    int nincl, char **incls, int nmol, t_mols *mols)
 {
   int i;
@@ -303,7 +299,8 @@ void print_top_mols(FILE *out, char *title,
     fprintf(out,"\n");
   }
 
-  print_top_water(out);
+  if (water)
+    print_top_water(out,water);
   print_top_system(out, title);
   
   if (nmol) {
