@@ -278,48 +278,28 @@ int write_trxframe(int fnum,t_trxframe *fr)
 int write_trx(int fnum,int nind,atom_id *ind,t_atoms *atoms,
 	      int step,real time,matrix box,rvec x[],rvec *v)
 {
- t_trxframe fr;
-
- clear_trxframe(&fr,TRUE);
- fr.bStep = TRUE;
- fr.step = step;
- fr.bTime = TRUE;
- fr.time = time;
- fr.bAtoms = atoms!=NULL;
- fr.atoms = atoms;
- fr.bX = TRUE;
- fr.x = x;
- fr.bV = v!=NULL;
- fr.v = v;
- fr.bBox = TRUE;
- copy_mat(box,fr.box);
-
- return write_trxframe_indexed(fnum,&fr,nind,ind);
+  t_trxframe fr;
+  
+  clear_trxframe(&fr,TRUE);
+  fr.bStep = TRUE;
+  fr.step = step;
+  fr.bTime = TRUE;
+  fr.time = time;
+  fr.bAtoms = atoms!=NULL;
+  fr.atoms = atoms;
+  fr.bX = TRUE;
+  fr.x = x;
+  fr.bV = v!=NULL;
+  fr.v = v;
+  fr.bBox = TRUE;
+  copy_mat(box,fr.box);
+  
+  return write_trxframe_indexed(fnum,&fr,nind,ind);
 }
 
-int close_trx(int fnum)
+void close_trx(int status)
 {
-  switch (trx_out[fnum].ftp) {
-  case efXTC: 
-    close_xtc(trx_out[fnum].fnum);
-    break;
-  case efTRJ:
-  case efTRR:
-    close_trn(trx_out[fnum].fnum);
-    break;
-  case efPDB:
-  case efBRK:
-  case efENT:
-  case efGRO:
-  case efG87:  
-    fclose(trx_out[fnum].fp);
-    break;
-  default:
-    fatal_error(0,"Sorry, write_trx can not close file %d",fnum);
-    break;
-  }
-
-  return 0;
+  fio_close(status);
 }
 
 int open_trx(char *outfile,char *filemode)

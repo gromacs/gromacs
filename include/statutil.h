@@ -57,29 +57,31 @@ extern char *ShortProgram(void);
  ************************************************/
 
 extern void clear_trxframe(t_trxframe *fr,bool bFirst);
-  /* Set all content booleans to FALSE.
-   * When bFirst = TRUE, set natoms=-1, all pointers to NULL
-   *                     and all data to zero.
-   */
+/* Set all content booleans to FALSE.
+ * When bFirst = TRUE, set natoms=-1, all pointers to NULL
+ *                     and all data to zero.
+ */
 
 extern int nframes_read(void);
-  /* Returns the number of frames read from the trajectory */
+/* Returns the number of frames read from the trajectory */
 
-int write_trxframe_indexed(int fnum,t_trxframe *fr,int nind,atom_id *ind);
-  /* Write an indexed frame to a TRX file. */
+int write_trxframe_indexed(int status,t_trxframe *fr,int nind,atom_id *ind);
+/* Write an indexed frame to a TRX file. */
 
-int write_trxframe(int fnum,t_trxframe *fr);
-  /* Write a frame to a TRX file. */
+int write_trxframe(int status,t_trxframe *fr);
+/* Write a frame to a TRX file. */
 
-int write_trx(int fnum,int nind,atom_id *ind,t_atoms *atoms,
+int write_trx(int status,int nind,atom_id *ind,t_atoms *atoms,
 	      int step,real time,matrix box,rvec x[],rvec *v);
 /* Write an indexed frame to a TRX file.
  * v can be NULL. 
  * atoms can be NULL for file types which don't need atom names.
  */ 
 
-int close_trx(int fnum);
-/* Close a TRX file */
+void close_trx(int status);
+/* Close trj file as opened with read_first_x, read_frist_frame
+ * or open_trx. Identical to close_trj.
+ */
 
 int open_trx(char *outfile,char *filemode);
 /* Open a TRX file and return the file number */
@@ -138,7 +140,9 @@ extern bool read_next_x(int status,real *t,int natoms,rvec x[],matrix box);
  */
 
 extern void close_trj(int status);
-/* Close trj file as opened with read_first_x */
+/* Close trj file as opened with read_first_x, read_frist_frame
+ * or open_trx. Identical to close_trx.
+ */
 
 extern void rewind_trj(int status);
 /* Rewind trj file as opened with read_first_x */
