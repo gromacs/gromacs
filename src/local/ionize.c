@@ -331,6 +331,9 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     if (getenv("NOEKIN") != NULL)
       bExtraKinetic = FALSE;
     
+    if (getenv("NOIMPULSE") != NULL)
+      bImpulse = FALSE;
+    
     /* compute total charge of the system */
     ztot = 0;
     mtot = 0;
@@ -501,8 +504,9 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	}
       }
       /* Now actually add the impulse to the velocities */
-      for(m=0; (m<DIM); m++)
-	v[i][m] += dv[m];
+      if (bImpulse)
+	for(m=0; (m<DIM); m++)
+	  v[i][m] += dv[m];
       if (bKHole) {
 	ca[i].k ++;
 	fprintf(ion,"  K:%d",i+1);
