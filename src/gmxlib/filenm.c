@@ -106,9 +106,7 @@ typedef struct {
 /* this array should correspond to the enum in include/types/filenm.h */
 static t_deffile deffile[efNR] = {
   { eftASC, ".mdp", "grompp", "-f", "grompp input file with MD parameters"   },
-  { eftASC, ".gip", "genion", "-f", "genion input file with parameters etc." },
   { eftASC, ".gct", "gct",    "-f", "general coupling stuff"                 },
-  { eftASC, ".gpp", "group",  "-g", "group related input for grompp"         },
   { eftGEN, ".???", "traj",   "-f", "Generic trajectory: xtc trr trj gro pdb g87"},
   { eftGEN, ".???", "traj",   NULL, "Full precision trajectory: trr trj"     },
   { eftXDR, ".trr", "traj",   NULL, "Trajectory in portable xdr format"      },

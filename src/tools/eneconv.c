@@ -42,6 +42,8 @@ static char *SRCID_eneconv_c = "$Id$";
 
 typedef struct {
   real      t,tstart;
+  bool      bSave;
+  int       sim_nr;
   t_energy  *e;
   t_drblock *dr;
 } t_fixe;
@@ -60,10 +62,12 @@ bool bRmod(double a,double b)
 }
 
 static void set_fixe(t_fixe *fixe, real t, real tstart,
-		     int nre, t_energy ee[], t_drblock *dr)
+		     int nre, t_energy ee[], t_drblock *dr,int nr)
 {
   fixe->t      = t;
   fixe->tstart = tstart;
+  fixe->bSave  = TRUE;
+  fixe->sim_nr = nr;
   snew(fixe->e,nre);
   memcpy(fixe->e,ee,sizeof(ee[0])*nre);
   fixe->dr=dr;
@@ -107,14 +111,14 @@ bool bRgt(double a,double b)
 
 void analyse_energies(int nre,int nrf,t_fixe f[])
 {
-  real     tstart,t;
+  real     t;
   t_energy *e0,*elast;
-  int      i,j,nrkill;
+  int      sim_start,i,j,nrkill;
   
   if (!nrf)
     return;
     
-  tstart = f[0].tstart;
+  sim_start = f[0].sim_nr;
   
   /* First throw out redundant (double) energies */
   nrkill=0;
@@ -122,12 +126,13 @@ void analyse_energies(int nre,int nrf,t_fixe f[])
     t = f[i].t;
     if (t != -1) {
       /* Check whether this is data from the same simulation  */
-      if (f[i].tstart != tstart) {
-	tstart = f[i].tstart;
+      if (f[i].sim_nr != sim_start) {
+	sim_start = f[i].sim_nr;
 	/* Walk back until we have the same time */
 	while ((i > 0) && bRgt(f[i-1].t,t) ) {
 	  /* Set time to -1 to indicate that this should not be stored */
-	  f[i-1].t = -1;
+	  f[i-1].bSave = FALSE;
+	  f[i-1].t     = -1;
 	  nrkill ++;
 	  i--;
 	}
@@ -137,24 +142,24 @@ void analyse_energies(int nre,int nrf,t_fixe f[])
   }
   fprintf(stderr,"There are %d double energy entries out of %d\n",
 	  nrkill,nrf);
-  
-  /* Now set the averages etc. */
+  fprintf(stderr,"Not setting averages (not implemented)\n");
+  /* Now set the averages etc. 
   snew(e0,nre);
   snew(elast,nre);
-  tstart = -1;
+  sim_start = -1;
   for(i=0; (i<nrf); i++) {
     t = f[i].t;
     if (t != -1) {
       memcpy(elast,f[i].e,nre*sizeof(elast[0]));
-      if ((tstart == -1) || (f[i].tstart != tstart)) {
-	tstart = f[i].tstart;
+      if ((sim_start == -1) || (f[i].sim_nr != sim_start)) {
+	sim_start = f[i].sim_nr;
 	memcpy(e0,f[i].e,nre*sizeof(e0[0]));
       }
       
     }    
   }
   sfree(e0);
-  sfree(elast);
+  sfree(elast);*/
 }
 
 int main(int argc,char *argv[])
@@ -175,7 +180,7 @@ int main(int argc,char *argv[])
   };
   
   static char *bugs[] = {
-    "Will use rediculous amounts of memory for large files, which "
+    "Will use ridiculous amounts of memory for large files, which "
     "slows things down."
   };
 
@@ -183,7 +188,7 @@ int main(int argc,char *argv[])
   t_energy  *ee=NULL;
   int       step,nrt,nre,nresav;
   real      t,tsav,tstart;
-  bool      bSetTime;
+  bool      bSetTime,bWriteThis;
   char      **fnms,fn[STRLEN];
   int       nfile;
   t_fixe    *fixe=NULL;
@@ -225,67 +230,72 @@ int main(int argc,char *argv[])
       fprintf(stderr,"%s ",fnms[i]);
     fprintf(stderr,"\n");
   }
+  /* If dt or starting time is specified, we have to change it */
   bSetTime=((t0 != -1) || (timestep != -1));
   
   if (!opt2bSet("-f",NFILE,fnm)) {
   
+    if (nfile==0)
+      fatal_error(0,"No input files to fix!");
+      
     strcpy(fn,opt2fn("-o",NFILE,fnm));
     out=open_enx(fn,"w");
     
     nresav=0;
     nrt=0;
     
-    if (nfile==0)
-      fatal_error(0,"No input files to fix!");
-    
     for(i=0; (i<nfile); i++) {
+      /* Loop over input energy files */
       in = open_enx(fnms[i],"r");
       fprintf(stderr,"Opened %s\n",fnms[i]);
       do_enxnms(in,&nre,&enm);
       tstart=-1;
       if (i == 0) {
 	do_enxnms(out,&nre,&enm);
-	nresav=nre;
+	nresav = nre;
 	snew(ee,nre);
       }
       else if (nre != nresav)
 	fatal_error(0,"Energy files don't match, different number"
 		    " of energies (%s)",fnms[i]);
-      step=0;
+      step = 0;
       while (do_enx(in,&t,&step,&nre,ee,dr)) {
 	fprintf(stderr,"\rRead frame %d, time %g",nrt,t);
+	/* Set the starting time for this energy file */
 	if (tstart == -1)
 	  tstart = t;
 	srenew(fixe,++nrt);
-	set_fixe(&fixe[nrt-1],t,tstart,nre,ee,dr);
+	set_fixe(&fixe[nrt-1],t,tstart,nre,ee,dr,i);
       }
       close_enx(in);
       fprintf(stderr,"\n");
     }
+    /* Now the fixe array contains all energies from all files */
     fprintf(stderr,"Sorting energies...\n");
     qsort(fixe,nrt,sizeof(fixe[0]),cmpfix);
     fprintf(stderr,"Analysing energies...\n");
     analyse_energies(nre,nrt,fixe);
     
-    tsav=-1;
     j=0;
     if ((t0==-1) && (timestep>0))
       t0=tstart;
     fprintf(stderr,"Now writing %s...\n",fn);
     for(i=0; (i<nrt); i++) { 
-      if (bSetTime) {
-	if (timestep>0)
-	  fixe[i].t=t0+j*timestep;
-	else if (t0>=0) 
-	  fixe[i].t += (t0-tstart);
-      }
-      if ( (delta_t==0) || ( bRmod(fixe[i].t-toffset,delta_t)  ) && 
-	   ( bSetTime || ( fixe[i].t != tsav ) ) ) {
+      /* Check whether we have to write this step */
+      bWriteThis = (delta_t==0) || (bRmod(fixe[i].t-toffset,delta_t));
+
+      if (bWriteThis && fixe[i].bSave) {
+      
+	if (bSetTime) {
+	  if (timestep>0)
+	    fixe[i].t  = t0+j*timestep;
+	  else if (t0>=0) 
+	    fixe[i].t += (t0-tstart);
+	}
 	do_enx(out,&(fixe[i].t),&i,&nre,fixe[i].e,fixe[i].dr);
 	fprintf(stderr,"\rWrite frame %d, t %f",j,fixe[i].t);
 	j++;
       }
-      tsav=fixe[i].t;
     }
     close_enx(out);
     fprintf(stderr,"\n");
@@ -313,7 +323,7 @@ int main(int argc,char *argv[])
 	t=t0+j*timestep;
       else if (t0>=0) 
 	t += (t0-tstart);
-      if (  (delta_t==0) || bRmod(t-toffset,delta_t) ) {
+      if ((delta_t == 0) || (bRmod(t-toffset,delta_t))) {
 	if ((j%10) == 0)
 	  fprintf(stderr,"  ->  write %d, time %g",i,t);
 	do_enx(out,&t,&j,&nre,ee,dr);
