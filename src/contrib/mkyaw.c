@@ -53,6 +53,41 @@
 #include "physics.h"
 #include "atomprop.h"
 
+bool is_hb(rvec x[],int id,int ih,int ia,real ccut)
+{
+  rvec dh,ha;
+  
+  pbc_dx(x[id],x[ih],dh);
+  pbc_dx(x[ih],x[ia],ha);
+  return (cos_angle(dh,ha) > ccut);
+}
+
+int qnd_hbonds(int natom,rvec x[],matrix box)
+{
+  int  i,j,kd,ka,nhb=0;
+  rvec dx;
+  real dx2,cut2,ccut;
+  
+  cut2 = sqr(0.35);
+  ccut = cos(30*DEG2RAD);
+  if ((natom % 3) != 0) 
+    fatal_error(0,"Is this water?");
+  init_pbc(box);
+  
+  for(i=0; (i<natom); i+=3) {
+    for(j=i+3; (j<natom); j+= 3) {
+      pbc_dx(x[i],x[j],dx);
+      dx2 = iprod(dx,dx);
+      if (dx2 < cut2) {
+	if (is_hb(x,i,i+1,j,ccut) || is_hb(x,i,i+2,j,ccut) || 
+	    is_hb(x,j,j+1,i,ccut) || is_hb(x,j,j+2,i,ccut))
+	  nhb++;
+      }
+    }
+  }
+  return nhb;
+}
+
 void copy_atom(t_symtab *tab,t_atoms *a1,int i1,t_atoms *a2,int i2,
 	       rvec xin[],rvec xout[],rvec vin[],rvec vout[])
 {
@@ -72,12 +107,14 @@ int main(int argc, char *argv[])
     "mkyaw adds to an existing conf file for every OW atom an DW and SW",
     "after the hydrogens (or the inverse with the -back option)."
   };
-  static bool bBack=FALSE,bDW=TRUE;
+  static bool bBack=FALSE,bDW=TRUE,bHB=FALSE;
   t_pargs pa[] = {
     { "-back",   FALSE, etBOOL, {&bBack}, 
       "Remove SW and DW" },
     { "-dw",     FALSE, etBOOL, {&bDW},
-      "Use both dummy and shell" }
+      "Use both dummy and shell" },
+    { "-hb",     FALSE, etBOOL, {&bHB},
+      "Do a quick'n'dirty hbond count for three atom waters only" }
   };
 #define NPA asize(pa)
   t_filenm fnm[] = {
@@ -104,45 +141,48 @@ int main(int argc, char *argv[])
   snew(vin,natom);
   read_stx_conf(infile,title,&atoms,xin,vin,box);
   printf("Read %d atoms\n",atoms.nr); 
-  open_symtab(&tab);
-  if (!bBack) {
-    now = 0;
-    for(i=0; (i<natom-2); ) {
-      if ((strstr(*atoms.atomname[i],"OW")   != NULL) &&
-	  (strstr(*atoms.atomname[i+1],"HW") != NULL) &&
-	  (strstr(*atoms.atomname[i+2],"HW") != NULL)) {
-	now++;
-	i+=3;
+  if (bHB) 
+    printf("There are %d hbonds\n",qnd_hbonds(atoms.nr,xin,box));
+  else {
+    open_symtab(&tab);
+    if (!bBack) {
+      now = 0;
+      for(i=0; (i<natom-2); ) {
+	if ((strstr(*atoms.atomname[i],"OW")   != NULL) &&
+	    (strstr(*atoms.atomname[i+1],"HW") != NULL) &&
+	    (strstr(*atoms.atomname[i+2],"HW") != NULL)) {
+	  now++;
+	  i+=3;
+	}
+	else
+	  i++;
       }
-      else
-	i++;
-    }
-    fprintf(stderr,"There are %d water molecules\n",now);
-    init_t_atoms(&aout,natom+2*now,TRUE);
-    snew(xout,natom+2*now);
-    snew(vout,natom+2*now);
-    for(i=iout=0; (i<natom); i++) {
-      copy_atom(&tab,&atoms,i,&aout,iout,xin,xout,vin,vout);
-      iout++;
-      if (i >= 2) {
-	if (strstr(*(atoms.atomname[i-2]),"OW") != NULL) {
-	  if (bDW) {
+      fprintf(stderr,"There are %d water molecules\n",now);
+      init_t_atoms(&aout,natom+2*now,TRUE);
+      snew(xout,natom+2*now);
+      snew(vout,natom+2*now);
+      for(i=iout=0; (i<natom); i++) {
+	copy_atom(&tab,&atoms,i,&aout,iout,xin,xout,vin,vout);
+	iout++;
+	if (i >= 2) {
+	  if (strstr(*(atoms.atomname[i-2]),"OW") != NULL) {
+	    if (bDW) {
+	      copy_atom(&tab,&atoms,i-2,&aout,iout,xin,xout,vin,vout);
+	      aout.atomname[iout] = put_symtab(&tab,"DW");
+	      iout++;
+	    }
 	    copy_atom(&tab,&atoms,i-2,&aout,iout,xin,xout,vin,vout);
-	    aout.atomname[iout] = put_symtab(&tab,"DW");
+	    aout.atomname[iout] = put_symtab(&tab,bDW ? "SW" : "MW");
 	    iout++;
 	  }
-	  copy_atom(&tab,&atoms,i-2,&aout,iout,xin,xout,vin,vout);
-	  aout.atomname[iout] = put_symtab(&tab,bDW ? "SW" : "MW");
-	  iout++;
 	}
       }
+      aout.nr = iout;
+      close_symtab(&tab);
+      fprintf(stderr,"iout = %d\n",iout);
+      write_sto_conf(outfile,"Gravity Sucks",&aout,xout,vout,box); 
     }
-    aout.nr = iout;
-    close_symtab(&tab);
-    fprintf(stderr,"iout = %d\n",iout);
-    write_sto_conf(outfile,"Gravity Sucks",&aout,xout,vout,box); 
   }
-
   thanx(stderr);
   
   return 0;
