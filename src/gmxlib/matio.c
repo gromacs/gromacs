@@ -384,13 +384,13 @@ int read_xpm_matrix(char *fnm,t_matrix **matrix)
   return nmat;
 }
 
-bool matrix2real(t_matrix *matrix, real ***mat)
+real **matrix2real(t_matrix *matrix,real **mat)
 {
   t_mapping *map;
   double tmp;
   real *rmap;
   int i,j,nmap;
-  
+
   nmap=matrix->nmap;
   map=matrix->map;
   snew(rmap,nmap);
@@ -400,21 +400,26 @@ bool matrix2real(t_matrix *matrix, real ***mat)
       fprintf(stderr,"Could not convert matrix to reals,\n"
 	      "color map entry %d has a non-real description: \"%s\"\n",
 	      i,map[i].desc);
-      return FALSE;
+      sfree(rmap);
+      return NULL;
     } 
     rmap[i]=tmp;
   }
   
-  snew(*mat,matrix->nx);
-  for(i=0; i<matrix->nx; i++) {
-    snew((*mat)[i],matrix->ny);
-    for(j=0; j<matrix->ny; j++) 
-      (*mat)[i][j]=rmap[matrix->matrix[i][j]];
+  if (mat==NULL) {
+    snew(mat,matrix->nx);
+    for(i=0; i<matrix->nx; i++)
+      snew(mat[i],matrix->ny);
   }
-  
+  for(i=0; i<matrix->nx; i++)
+    for(j=0; j<matrix->ny; j++) 
+      mat[i][j]=rmap[matrix->matrix[i][j]];
+
+  sfree(rmap);
+
   fprintf(stderr,"Converted a matrix with %d levels to reals\n",nmap);
 
-  return TRUE;
+  return mat;
 }
 
 void write_xpm_header(FILE *out,
