@@ -60,8 +60,8 @@ static void upd_vir(rvec vir,real dvx,real dvy,real dvz)
 
 void calc_vir(FILE *log,int nxf,rvec x[],rvec f[],tensor vir)
 {
-  int    i;
-  real   dvxx=0,dvxy=0,dvxz=0,dvyx=0,dvyy=0,dvyz=0,dvzx=0,dvzy=0,dvzz=0;
+  int      i;
+  double   dvxx=0,dvxy=0,dvxz=0,dvyx=0,dvyy=0,dvyz=0,dvzx=0,dvzy=0,dvzz=0;
     
   for(i=0; (i<nxf); i++) {
     dvxx+=x[i][XX]*f[i][XX];
