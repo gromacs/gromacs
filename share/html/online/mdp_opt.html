@@ -4,7 +4,7 @@
 
 <!-- 
 
-PLEASE BE VERY CAREFULL WHEN EDITING THIS FILE: IT MUST BE
+PLEASE BE VERY CAREFUL WHEN EDITING THIS FILE: IT MUST BE
 AUTOMATICALLY PARSED BY A SIMPLE SCRIPT (doc/mkmdp) TO PRODUCE A
 CORRESPONDING LATEX FILE.
 
@@ -27,7 +27,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#ld"><b>langevin dynamics</b></A> (ld_temp, ld_fric, ld_seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
-<li><A HREF="#nl"><b>neighborsearching</b></A> (nstlist, ns_type, deltagrid, box, rlist)
+<li><A HREF="#nl"><b>neighbor searching</b></A> (nstlist, ns_type, deltagrid, box, rlist)
 <li><A HREF="#el"><b>electrostatics and VdW</b></A> (coulombtype, rcoulomb_switch, rcoulomb, vdwtype, rvdw_switch, rvdw, epsilon_r, bDispCorr, fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, optimize_fft)
 <li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, tc_grps, tau_t, ref_t)
 <li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, tau_p, compressibility, ref_p)
@@ -65,7 +65,7 @@ simulation. Edit it to suit your specific needs and desires. </P>
 
 <dl>
 <dt><h4>title:</h4>
-<dd>this is reduntant, so you can type anything you want
+<dd>this is redundant, so you can type anything you want
 <dt><h4>cpp: </b>(/lib/cpp)</h4>
 <dd>your preprocessor
 <dt><h4>include:</h4>
@@ -95,11 +95,11 @@ topology, this is necessary to make
 <dt><h4>integrator:</h4>
 <dd><dl compact>
 <dt><b>md</b> 
-<dd>A <!--Idx-->leap-frog<!--EIdx--> algorithm for integrating Newtons
+<dd>A <!--Idx-->leap-frog<!--EIdx--> algorithm for integrating Newton's
 equations.
 <dt><b>steep</b>
 <dd>A <!--Idx-->steepest descent<!--EIdx--> algorithm for energy
-minimization. The maximum stepsize is <b><A HREF="#em">emstep</A></b>
+minimization. The maximum step size is <b><A HREF="#em">emstep</A></b>
 [nm], the tolerance is <b><A HREF="#em">emtol</A></b> [kJ
 mol<sup>-1</sup> nm<sup>-1</sup>].
 <dt><b>cg</b>
@@ -156,7 +156,7 @@ this value
 <dd>initial step-size
 <dt><h4>nstcgsteep: </b>(1000) [steps]</h4>
 <dd>frequency of performing 1 steepest descent step while doing
-<!--Idx-->conjugate gradient<!--EIdx--> energy minimization.
+conjugate gradient energy minimization.
 </dl>
 
 <A NAME="out"><br>
@@ -185,7 +185,7 @@ the last energies are always written
 <dd>group(s) to write to xtc trajectory, default the whole system is written
 (if <b>nstxtcout</b> is larger than zero)  
 <dt><h4>energygrps:</h4>
-<dd>group(s) to write to <!--Idx-->energy file<!--EIdx-->
+<dd>group(s) to write to energy file
 </dl>
 
 <A NAME="nl"><br>
@@ -199,13 +199,13 @@ the last energies are always written
 <dd><dl compact>
 <dt><b>grid</b>
 <dd>Make a grid in the box and only check atoms in neighboring grid
-cells when constructing a new neighborlist every <b>nstlist</b> steps.
-The number of grid cells per Coulomb <!--Idx-->cut-off<!--EIdx-->
+cells when constructing a new neighbor list every <b>nstlist</b> steps.
+The number of grid cells per Coulomb cut-off
 length is set with <b>deltagrid</b>, this number should be 2 for
 optimal performance.  In large systems grid search is much faster than
 simple search.
 <dt><b>simple</b>
-<dd>Check every atom in the box when constructing a new neighborlist
+<dd>Check every atom in the box when constructing a new neighbor list
 every <b>nstlist</b> steps.
 </dl>
 <dt><h4>deltagrid: </b>(2)</h4>
@@ -226,21 +226,22 @@ every <b>nstlist</b> steps.
 
 <A NAME="el"><br>
 <hr>
-<h3><!--Idx-->Electrostatics<!--EIdx--> and <!--Idx-->VdW<!--EIdx--></h3>
+<h3><!--Idx-->Electrostatics<!--EIdx--> and VdW</h3>
 <dl>
-<dt><h4><!--Idx-->coulomb<!--EIdx-->type:</h4>
+<dt><h4>coulombtype:</h4>
 <dd><dl compact>
 
-<dt><b><!--Idx-->Cut-off<!--EIdx--></b>
+<dt><b>Cut-off</b>
 <dd>Twin range cut-off's with neighborlist cut-off <b>rlist</b> and 
 Coulomb cut-off <b>rcoulomb</b>,
 where <b>rlist</b> <tt>&lt=</tt> <b>rvdw</b> <tt>&lt=</tt> <b>rcoulomb</b>.
-The <!--Idx-->dielectric constant<!--EIdx--> is set with <b>epsilon_r</b>.
+The dielectric constant is set with <b>epsilon_r</b>.
 
-<dt><b><!--Idx-->Ewald<!--EIdx--></b>
-<dd>Classical Ewald sum electrostatics. Use e.g. <b>rlist</b>=0.9,
+<dt><b>Ewald</b>
+<dd>Classical <!--Idx-->Ewald sum<!--EIdx--> electrostatics.
+Use e.g. <b>rlist</b>=0.9,
 <b>rvdw</b>=0.9, <b>rcoulomb</b>=0.9. The highest magnitude of
-wavevectors used in reciprocal space is controlled by <b>fourierspacing</b>.
+wave vectors used in reciprocal space is controlled by <b>fourierspacing</b>.
 The relative accuracy of direct/reciprocal space
 is controlled by <b>ewald_rtol</b>. NOTE: Ewald scales as O(N<sup>3/2</sup>)) and
 is thus extremely slow for large systems. It is included mainly for
@@ -268,7 +269,7 @@ Reasonable grid spacing for PPPM is 0.05-0.1 nm.
 See <tt>Shift</tt> for the details of the particle-particle potential.
 NOTE: the pressure in incorrect when using PPPM.
 
-<dt><b>Reaction-Field</b>
+<dt><b><!--Idx-->Reaction-Field<!--EIdx--></b>
 <dd>Reaction field with Coulomb cut-off <b>rcoulomb</b>,
 where <b>rcoulomb</b> <tt>&gt=</tt> <b>rvdw</b> <tt>&gt=</tt> <b>rlist</b>.
 The dielectric constant beyond the cut-off is <b>epsilon_r</b>.
@@ -286,9 +287,9 @@ The temperature for the GRF potential is set with
 <dd>The Coulomb
 potential is decreased over the whole range and the forces decay smoothly
 to zero between <b>rcoulomb_switch</b> and <b>rcoulomb</b>.
-The neighborsearch cut-off <b>rlist</b> should be 0.1 to 0.3 nm larger than
+The neighbor search cut-off <b>rlist</b> should be 0.1 to 0.3 nm larger than
 <b>rcoulomb</b> to accommodate for the size of charge groups and diffusion
-between neighborlist updates.
+between neighbor list updates.
 
 <dt><b>User</b>
 <dd>Specify <b>rshort</b> and <b>rlong</b> to the same value, <tt>mdrun</tt>
@@ -307,7 +308,7 @@ important.
 <dd>where to start switching the Coulomb potential
 
 <dt><h4>rcoulomb: </b>(1) [nm]</h4>
-<dd>distance for the Coulomb cut-off
+<dd>distance for the Coulomb <!--Idx-->cut-off<!--EIdx-->
 
 <dt><h4>epsilon_r: </b>(1)</h4>
 <dd><!--Idx-->dielectric constant<!--EIdx-->
@@ -315,21 +316,21 @@ important.
 <dt><h4>vdwtype:</h4>
 <dd><dl compact>
 <dt><b>Cut-off</b>
-<dd>Twin range cut-off's with neighborlist cut-off <b>rlist</b> and 
+<dd>Twin range cut-off's with neighbor list cut-off <b>rlist</b> and 
 VdW cut-off <b>rvdw</b>,
 where <b>rvdw</b> <tt>&gt=</tt> <b>rlist</b>.
 <dt><b>Shift</b>
 <dd>The LJ (not Buckingham) potential is decreased over the whole
 range and the forces decay smoothly to zero between <b>rvdw_switch</b>
-and <b>rvdw</b>.  The neighborsearch cut-off <b>rlist</b> should be
+and <b>rvdw</b>.  The neighbor search cut-off <b>rlist</b> should be
 0.1 to 0.3 nm larger than <b>rvdw</b> to accommodate for the size of
-<!--Idx-->charge group<!--EIdx-->s and diffusion between neighborlist
+charge groups and diffusion between neighbor list
 updates.
 
 <dt><b>User</b>
 <dd><tt>mdrun</tt> will now expect to find two files with user-defined
 functions: <tt>rtab.xvg</tt> for Repulsion, <tt>dtab.xvg</tt> for 
-<!--Idx-->Dispersion<!--EIdx-->. These files should contain 5 columns:
+Dispersion. These files should contain 5 columns:
 the <tt>x</tt> value, and the function value with its 1<sup>st</sup>
 to 3<sup>rd</sup> derivative. The <tt>x</tt> should run from 0 [nm] to
 <b>rvdw</b><tt>+0.5</tt> [nm], with a spacing of <tt>0.002</tt>
@@ -343,25 +344,26 @@ corresponds to the cut-off in the user-defined function.
 <dd>where to start switching the LJ potential
 
 <dt><h4>rvdw: </b>(1) [nm]</h4>
-<dd>distance for the LJ or Buckingham cut-off
+<dd>distance for the LJ or Buckingham <!--Idx-->cut-off<!--EIdx-->
 
 <dt><h4>bDispCorr:</h4>
 <dd><dl compact>
 <dt><b>no</b>
 <dd>don't apply any correction
 <dt><b>yes</b>
-<dd>apply long range dispersion corrections for Energy and Pressure
+<dd>apply long range <!--Idx-->dispersion correction<!--EIdx-->s for Energy
+and Pressure
 </dl>
 
 <dt><h4>fourierspacing: </b>(0.12) [nm]</h4>
 <dd>The maximum grid spacing for the FFT grid when using PPPM or PME.
 For ordinary Ewald the spacing times the box dimensions determines the
 highest magnitude to use in each direction. In all cases
-each direction can be overriden by entering a non-zero value for
+each direction can be overridden by entering a non-zero value for
 <b>fourier_n*</b>. 
 
 <dt><h4>fourier_nx </b>(0)<b> ; fourier_ny </b>(0)<b> ; fourier_nz: </b>(0)</h4>
-<dd>Highest magnitude of wavevectors in reciprocal space when using Ewald.
+<dd>Highest magnitude of wave vectors in reciprocal space when using Ewald.
 <dd>Grid size when using PPPM or PME. These values override
 <b>fourierspacing</b> per direction. The best choice is powers of
 2, 3, 5 and 7. Avoid large primes.
@@ -373,7 +375,7 @@ each direction can be overriden by entering a non-zero value for
 <dt><h4>ewald_rtol </b>(1e-5)<b></h4>
 <dd>The relative strength of the Ewald-shifted direct potential at the cutoff
 is given by <b>ewald_rtol</b>. Decreasing this will give a more accurate
-direct sum, but then you need more wavevectors for the reciprocal sum.
+direct sum, but then you need more wave vectors for the reciprocal sum.
 
 <dt><h4>optimize_fft:</h4>
 <dd><dl compact>
@@ -399,8 +401,8 @@ at start.
 <dt><b>yes</b>
 <dd>Temperature coupling with a Berendsen-thermostat to a bath with
 temperature <b>ref_t</b> [K], with time constant <b>tau_t</b> [ps].
-Several groups can be coupled seperately, these are specified in the
-<b>tc_grps</b> field seperated by spaces.
+Several groups can be coupled separately, these are specified in the
+<b>tc_grps</b> field separated by spaces.
 </dl>
 
 <dt><h4>tc_grps:</h4>
@@ -435,7 +437,7 @@ This can be useful for membrane simulations.
 Beware that isotropic scaling can lead to extreme deformation
 of the simulation box.
 <dt><b>surface-tension</b>
-<dd>Surface tension couling for surfaces parallel to the xy-plane.
+<dd>Surface tension coupling for surfaces parallel to the xy-plane.
 Uses normal pressure coupling for the z-direction, while the surface tension
 is coupled to the x/y dimensions of the box.
 The first <b>ref_p</b> value is the reference surface tension times
@@ -476,7 +478,7 @@ Reference temperature for the Berendsen-thermostat is
 time constant is <b>tau_t</b> [ps]. Note that the reference temperature
 will not go below 0 [K], i.e. after <b>zero_temp_time</b> (if it is positive) 
 the reference temperature will be 0 [K]. Negative <b>zero_temp_time</b> 
-results in heating, which will go on indefenitely.
+results in heating, which will go on indefinitely.
 </dl>
 <dt><h4>zero_temp_time: </b>(0) [ps]</h4>
 <dd>time at which temperature will be zero (can be negative). Temperature
@@ -484,7 +486,7 @@ during the run can be seen as a straight line going through
 T=<b><A HREF="#tc">ref_t</A></b> [K] at t=0 [ps], and 
 T=0 [K] at t=<b>zero_temp_time</b> [ps]. Look in our 
 <A HREF="../gmxfaq.html#simann">FAQ</A> for a schematic 
-graph of temperature vs. time.
+graph of temperature versus time.
 </dl>
 
 <A NAME="vel"><br>
@@ -533,7 +535,7 @@ if it is faster.
 <dd><dl compact>
 <dt><b>none</b>
 <dd>No constraints, i.e. bonds are represented by a harmonic or a
-morse potential (depending on the setting of <b>morse</b>) and angles
+Morse potential (depending on the setting of <b>morse</b>) and angles
 by a harmonic potential.
 <dt><b>hbonds</b>
 <dd>Only constrain the bonds with H-atoms.
@@ -552,7 +554,7 @@ by adding bond-constraints.
 <dd>LINear Constraint Solver. The accuracy in set with
 <b>lincs_order</b>, which sets the number of matrices in the expansion
 for the matrix inversion, 4 is enough for a "normal" MD simulation, 8 is
-needed for LD with large timesteps. If a bond rotates more than
+needed for LD with large time-steps. If a bond rotates more than
 <b>lincs_warnangle</b> [degrees] in one step, 
 a warning will be printed both to the log file and to <TT>stderr</TT>. 
 Lincs should not be used with coupled angle constraints.
@@ -587,13 +589,13 @@ during energy minimization, only one iteration is used in MD.
 <dt><b>no</b>
 <dd>bonds are represented by a harmonic potential
 <dt><b>yes</b>
-<dd>bonds are represented by a morse potential
+<dd>bonds are represented by a Morse potential
 </dl>
 </dl>
 
 <A NAME="nmr"><br>
 <hr>
-<h3><!--Idx-->NMR<!--EIdx--> refinement</h3>
+<h3><!--Idx-->NMR refinement<!--EIdx--></h3>
 <dl>
 <dt><h4>disre:</h4>
 <dd><dl compact>
@@ -636,7 +638,7 @@ of all atom pairs involved in restraints to the energy file
 
 <A NAME="free"><br>
 <hr>
-<h3><!--Idx-->Free Energy Perturbatrion<!--EIdx--></h3>
+<h3><!--Idx-->Free Energy Perturbation<!--EIdx--></h3>
 
 <dl>
 <dt><h4>free_energy:</h4>
@@ -652,7 +654,7 @@ per time step is <b>delta_lambda</b>.
 <dt><h4>init_lambda: </b>(0)</h4>
 <dd>starting value for lambda
 <dt><h4>delta_lambda: </b>(0)</h4>
-<dd>increase per timestep for lambda
+<dd>increase per time step for lambda
 </dl>
 
 <A NAME="neq"><br>
