@@ -344,8 +344,8 @@ AC_CACHE_CHECK(whether $CC accepts $1, ac_$2,
 res=`$CC $1 -c conftest.c 2>&1`
 #
 # The stupid intel compiler echos the filename on stderr...
-# -o "$res" == "conftest.c:"
-if test -z "$res" -o "$res" == "conftest.c:"; then
+# 
+if test -z "$res" -o "$res" = "conftest.c:"; then
 	ac_$2=yes
 else
 	ac_$2=no
