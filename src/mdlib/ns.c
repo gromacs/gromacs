@@ -1158,7 +1158,7 @@ static void do_longrange(FILE *log,t_commrec *cr,t_topology *top,t_forcerec *fr,
     if ((fr->nlist_lr[i].nri > fr->nlist_lr[i].maxnri-32) || bDoForces) {
       close_neighbor_list(fr,TRUE,i);
       /* Evaluate the forces */
-      do_fnbf(log,cr,fr,x,fr->flr,md,
+      do_fnbf(log,cr,fr,x,fr->f_twin,md,
 	      grps->estat.ee[egLJLR],grps->estat.ee[egLR],box_size,
 	      nrnb,lambda,dvdlambda,TRUE,i);
       

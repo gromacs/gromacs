@@ -112,7 +112,7 @@ static real *buf2=NULL;
     i1 = eNL_NR;
   }
   if (bLR)
-    fshift = fr->fshift_lr[0];
+    fshift = fr->fshift_twin[0];
   else
     fshift = fr->fshift[0];
 

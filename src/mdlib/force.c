@@ -115,7 +115,7 @@ static real *mk_nbfp(t_idef *idef,bool bBHAM)
 }
 
 static void check_solvent(FILE *fp,t_topology *top,t_forcerec *fr,
-			  t_mdatoms *md)
+			  t_mdatoms *md,t_nsborder *nsb)
 {
   /* This routine finds out whether a charge group can be used as
    * solvent in the innerloops. The routine should be called once
@@ -123,7 +123,7 @@ static void check_solvent(FILE *fp,t_topology *top,t_forcerec *fr,
    */
   t_block *cgs,*excl,*mols;
   atom_id *cgid;
-  int     i,j,j0,j1,nj,k,aj,ak,tjA,tjB,nl_m,nl_n,nl_o;
+  int     i,j,m,j0,j1,nj,k,aj,ak,tjA,tjB,nl_m,nl_n,nl_o;
   bool    bOneCG;
   bool    *bAllExcl,bAE,bOrder;
   bool    *bHaveLJ,*bHaveCoul;
@@ -132,7 +132,8 @@ static void check_solvent(FILE *fp,t_topology *top,t_forcerec *fr,
   excl = &(top->atoms.excl);
   mols = &(top->blocks[ebMOLS]);
 
-  fprintf(fp,"Going to determine what solvent types we have.\n");
+  if (fp)
+    fprintf(fp,"Going to determine what solvent types we have.\n");
   snew(fr->solvent_type,cgs->nr+1);
   snew(fr->mno_index,(cgs->nr+1)*3);
   
@@ -140,8 +141,9 @@ static void check_solvent(FILE *fp,t_topology *top,t_forcerec *fr,
   cgid = make_invblock(cgs,cgs->nra);
   
   /* Loop over molecules */
-  fprintf(fp,"There are %d molecules, %d charge groups and %d atoms\n",
-	  mols->nr,cgs->nr,cgs->nra);
+  if (fp)
+    fprintf(fp,"There are %d molecules, %d charge groups and %d atoms\n",
+	    mols->nr,cgs->nr,cgs->nra);
   for(i=0; (i<mols->nr); i++) {
     /* Set boolean that determines whether the molecules consists of one CG */
     bOneCG = TRUE;
@@ -277,7 +279,39 @@ static void check_solvent(FILE *fp,t_topology *top,t_forcerec *fr,
       fprintf(debug,"MNO: cg = %5d, m = %2d, n = %2d, o = %2d\n",
 	      i,fr->mno_index[3*i],fr->mno_index[3*i+1],fr->mno_index[3*i+2]);
   }
+
+  /* Now compute the number of solvent molecules, could be merged with code above */
+  fr->nMNOMol = 0;
+  fr->nWatMol = 0;
+  for(m=0; m<3; m++)
+    fr->nMNOav[m] = 0;
+  for(i=0; i<mols->nr; i++) {
+    j = mols->a[mols->index[i]];
+    if (j>=START(nsb) && j<START(nsb)+HOMENR(nsb)) {
+	if (fr->solvent_type[cgid[j]] == esolMNO) {
+	  fr->nMNOMol++;
+	  for(m=0; m<3; m++)
+	    fr->nMNOav[m] += fr->mno_index[3*cgid[j]+m];
+	}
+	else if (fr->solvent_type[cgid[j]] == esolWATER)
+	  fr->nWatMol++;
+    }
+  }
+  if (fr->nMNOMol > 0)
+    for(m=0; (m<3); m++)
+      fr->nMNOav[m] /= fr->nMNOMol;
+  
   sfree(cgid);
+
+  if (fp) {
+    fprintf(fp,"There are %d optimized solvent molecules on node %d\n",
+	    fr->nMNOMol,nsb->nodeid);
+    if (fr->nMNOMol > 0)
+      fprintf(fp,"  aver. nr. of atoms per molecule: vdwc %.1f coul %.1f vdw %.1f\n",
+	      fr->nMNOav[1],fr->nMNOav[2]-fr->nMNOav[1],fr->nMNOav[0]-fr->nMNOav[2]);
+    fprintf(fp,"There are %d optimized water molecules on node %d\n",
+	    fr->nWatMol,nsb->nodeid);
+  }
 }
 
 static void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
@@ -285,7 +319,7 @@ static void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
 		       real *kappa,real *epsfac,real *krf,real *crf)
 {
   /* Compute constants for Generalized reaction field */
-  static bool bFirst=TRUE;
+ static bool bFirst=TRUE;
   real   k1,k2,I,vol,rmin;
   
   if ((eel == eelRF) || (eel == eelGRF)) {
@@ -470,11 +504,11 @@ void init_forcerec(FILE *fp,
   if (fp) {
     fprintf(fp,"Table routines are used for coulomb: %s\n",bool_names[fr->bcoultab]);
     fprintf(fp,"Table routines are used for vdw:     %s\n",bool_names[fr->bvdwtab ]);
-
-  }  
+  }
+  
+  /* Tables are used for direct ewald sum */
   if(fr->bEwald)
     fr->ewaldcoeff=calc_ewaldcoeff(ir->rcoulomb, ir->ewald_rtol);
-  /* Tables are used for direct ewald sum */
 
   /* Domain decomposition parallellism... */
   fr->bDomDecomp = ir->bDomDecomp;
@@ -544,10 +578,15 @@ void init_forcerec(FILE *fp,
   }
 
   /* Initiate arrays */
-  if (fr->bTwinRange || (EEL_LR(fr->eeltype))) {
-    snew(fr->flr,natoms);
-    snew(fr->fshift_lr,SHIFTS);
+  if (fr->bTwinRange) {
+    snew(fr->f_twin,natoms);
+    snew(fr->fshift_twin,SHIFTS);
   }
+  
+  if (EEL_LR(fr->eeltype)) {
+    snew(fr->f_pme,natoms);
+  }
+  
   /* Mask that says whether or not this NBF list should be computed */
   /*  if (fr->bMask == NULL) {
     ngrp = ir->opts.ngener*ir->opts.ngener;
@@ -679,44 +718,7 @@ void init_forcerec(FILE *fp,
       fr->vdwtab[(tabelemsize-4)*i+j]=fr->coulvdwtab[tabelemsize*i+4+j];
   }
   if (!fr->mno_index)
-    check_solvent(fp,top,fr,mdatoms);
-
-  fr->nMNOMol = 0;
-  fr->nWatMol = 0;
-  {
-    atom_id *cgid;
-    
-    cgid = make_invblock(&(top->blocks[ebCGS]),top->blocks[ebCGS].nra);
-
-    for(m=0; m<3; m++)
-      fr->nMNOav[m] = 0;
-    for(i=0; i<mols->nr; i++) {
-      j = mols->a[mols->index[i]];
-      if (j>=START(nsb) && j<START(nsb)+HOMENR(nsb)) {
-	if (fr->solvent_type[cgid[j]] == esolMNO) {
-	  fr->nMNOMol++;
-	  for(m=0; m<3; m++)
-	    fr->nMNOav[m] += fr->mno_index[3*cgid[j]+m];
-	}
-	else if (fr->solvent_type[cgid[j]] == esolWATER)
-	  fr->nWatMol++;
-      }
-    }
-    if (fr->nMNOMol > 0)
-      for(m=0; m<3; m++)
-	fr->nMNOav[m] /= fr->nMNOMol;
-
-    sfree(cgid);
-  }
-
-  if (fp) {
-    fprintf(fp,"There are %d optimized solvent molecules on node %d\n",
-	    fr->nMNOMol,nsb->nodeid);
-    if (fr->nMNOMol > 0)
-      fprintf(fp,"  av. nr. of atoms per molecule: vdwc %.1f coul %.1f vdw %.1f\n",fr->nMNOav[1],fr->nMNOav[2]-fr->nMNOav[1],fr->nMNOav[0]-fr->nMNOav[2]);
-    fprintf(fp,"There are %d optimized water molecules on node %d\n",
-	    fr->nWatMol,nsb->nodeid);
-  }
+    check_solvent(fp,top,fr,mdatoms,nsb);
 }
  
 #define pr_real(fp,r) fprintf(fp,"%s: %e\n",#r,r)
@@ -865,7 +867,7 @@ void force(FILE       *fp,     int        step,
       fprintf(debug,"%10.5f%10.5f%10.5f\n",
 	      box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
     }
-    if(TRICLINIC(box))
+    if (TRICLINIC(box))
 	inc_nrnb(nrnb,eNR_SHIFTX,2*graph->nnodes);
     else
 	inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
@@ -875,19 +877,19 @@ void force(FILE       *fp,     int        step,
   if (EEL_LR(fr->eeltype)) {
     switch (fr->eeltype) {
     case eelPPPM:
-      Vlr = do_pppm(fp,FALSE,x,fr->flr,md->chargeA,
+      Vlr = do_pppm(fp,FALSE,x,fr->f_pme,md->chargeA,
 		    box_size,fr->phi,cr,nsb,nrnb);
       break;
     case eelPOISSON:
-      Vlr = do_poisson(fp,FALSE,ir,md->nr,x,fr->flr,md->chargeA,
+      Vlr = do_poisson(fp,FALSE,ir,md->nr,x,fr->f_pme,md->chargeA,
 		       box_size,fr->phi,cr,nrnb,&nit,TRUE);
       break;
     case eelPME:
-      Vlr = do_pme(fp,FALSE,ir,x,fr->flr,md->chargeA,
+      Vlr = do_pme(fp,FALSE,ir,x,fr->f_pme,md->chargeA,
 		   box,cr,nsb,nrnb,lr_vir,fr->ewaldcoeff);
       break;
     case eelEWALD:
-      Vlr = do_ewald(fp,FALSE,ir,x,fr->flr,md->chargeA,
+      Vlr = do_ewald(fp,FALSE,ir,x,fr->f_pme,md->chargeA,
 		     box_size,cr,nsb,lr_vir,fr->ewaldcoeff);
       break;
     default:

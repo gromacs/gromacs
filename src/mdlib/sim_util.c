@@ -182,7 +182,7 @@ void do_force(FILE *log,t_commrec *cr,
   int    start,homenr;
   static real mu_and_q[DIM+1]; 
   real   qsum;
-  matrix lr_vir; /* used for PME long range virial */
+  matrix pme_vir; /* used for PME long range virial */
   
   nodeid    = cr->nodeid;
   start  = START(nsb);
@@ -240,8 +240,8 @@ void do_force(FILE *log,t_commrec *cr,
 	       
     /* Reset long range forces if necessary */
     if (fr->bTwinRange) {
-      clear_rvecs(nsb->natoms,fr->flr);
-      clear_rvecs(SHIFTS,fr->fshift_lr);
+      clear_rvecs(nsb->natoms,fr->f_twin);
+      clear_rvecs(SHIFTS,fr->fshift_twin);
     }
     /* Do the actual neighbour searching and if twin range electrostatics
      * also do the calculation of long range forces and energies.
@@ -251,25 +251,27 @@ void do_force(FILE *log,t_commrec *cr,
     ns(log,fr,x,f,parm->box,grps,&(parm->ir.opts),top,mdatoms,
        cr,nrnb,nsb,step,lambda,&dvdl_lr);
   }
-  /* Reset forces or copy them from long range forces */
+  /* Reset PME/Ewald forces if necessary */
+  if (EEL_LR(fr->eeltype)) 
+    clear_rvecs(homenr,fr->f_pme+start);
+    
+  /* Copy long range forces into normal buffers */
   if (fr->bTwinRange) {
     for(i=0; i<nsb->natoms; i++)
-      copy_rvec(fr->flr[i],f[i]);
+      copy_rvec(fr->f_twin[i],f[i]);
     for(i=0; i<SHIFTS; i++)
-      copy_rvec(fr->fshift_lr[i],fr->fshift[i]);
-  } else {
-    if (fr->eeltype == eelPPPM || 
-	fr->eeltype == eelPME || 
-	fr->eeltype == eelEWALD) 
-      clear_rvecs(homenr,fr->flr+start);
+      copy_rvec(fr->fshift_twin[i],fr->fshift[i]);
+  } 
+  else {
     clear_rvecs(nsb->natoms,f);
     clear_rvecs(SHIFTS,fr->fshift);
   }
+  
   /* Compute the forces */    
   force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(parm->ir.opts),
 	x,f,ener,bVerbose,parm->box,lambda,graph,&(top->atoms.excl),
-	bNBFonly,lr_vir,mu_tot,qsum);
+	bNBFonly,pme_vir,mu_tot,qsum);
 	
   /* Take long range contribution to free energy into account */
   ener[F_DVDL] += dvdl_lr;
@@ -294,7 +296,7 @@ void do_force(FILE *log,t_commrec *cr,
   }
 #endif
 
-  /* When using PME/Ewald we compute the long range virial (lr_vir) there.
+  /* When using PME/Ewald we compute the long range virial (pme_vir) there.
    * otherwise we do it based on long range forces from twin range
    * cut-off based calculation (or not at all).
    */
@@ -311,18 +313,16 @@ void do_force(FILE *log,t_commrec *cr,
   f_calc_vir(log,start,start+homenr,x,f,vir_part,cr,graph,parm->box);
   inc_nrnb(nrnb,eNR_VIRIAL,homenr);
   
-  if ((fr->eeltype == eelPPPM) ||
-      (fr->eeltype == eelPME)  ||
-      (fr->eeltype == eelEWALD)) {
+  if (EEL_LR(fr->eeltype)) {
     /* Now add the forces from the PME calculation. Since this only produces
      * forces on the local atoms, this can be safely done after the
      * communication step. The same goes for the virial.
      */
-    sum_forces(start,start+homenr,f,fr->flr);
+    sum_forces(start,start+homenr,f,fr->f_pme);
     if (fr->eeltype != eelPPPM) /* PPPM virial sucks */
       for(i=0; (i<DIM); i++) 
 	for(j=0; (j<DIM); j++) 
-	  vir_part[i][j]+=lr_vir[i][j];
+	  vir_part[i][j]+=pme_vir[i][j];
   }
   
   if (debug)

@@ -83,7 +83,7 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   double  q2sum; /* Necessary for precision */
   real    vc,qi,dr,ddd,dr2,rinv,fscal,Vexcl,Vcharge,Vdipole,rinv2,ewc=fr->ewaldcoeff;
   rvec    df,dx;
-  rvec    *flr=fr->flr;
+  rvec    *f_pme=fr->f_pme;
   real    vol = box_size[XX]*box_size[YY]*box_size[ZZ];
   real    dipole_coeff,qq;
   /*#define TABLES*/
@@ -194,8 +194,8 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 	  if (debug)
 	    fprintf(debug,"dr=%8.4f, fscal=%8.0f, df=%10.0f,%10.0f,%10.0f\n",
 		    dr,fscal,df[XX],df[YY],df[ZZ]);
-	  rvec_inc(flr[k],df);
-	  rvec_dec(flr[i],df);
+	  rvec_inc(f_pme[k],df);
+	  rvec_dec(f_pme[i],df);
 	  for(iv=0; (iv<DIM); iv++)
 	    for(jv=0; (jv<DIM); jv++)
 	      lr_vir[iv][jv]+=0.5*dx[iv]*df[jv];
@@ -205,7 +205,7 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
       /* Dipole correction on force  */
       if(epsilon_surface>0) 
 	for(j=0;j<DIM;j++)
-	  flr[i][j]-=2.0*dipole_coeff*DEBYE2ENM*mu_tot[j]*charge[i];
+	  f_pme[i][j]-=2.0*dipole_coeff*DEBYE2ENM*mu_tot[j]*charge[i];
   }
 
   /* Global corrections only on master process */

@@ -112,10 +112,11 @@ typedef struct {
   /* Twin Range stuff. */
   bool bTwinRange;
   int  nlr;
-  rvec *flr;
-  rvec *fshift_lr;
+  rvec *f_twin;
+  rvec *fshift_twin;
   
   /* PME/Ewald stuff */
+  rvec *f_pme;
   bool bEwald;
   real ewaldcoeff;
 

@@ -367,8 +367,8 @@ real shift_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 	   * distance vector 
 	   */
 	  svmul(fscal,dx,df);
-	  rvec_inc(fr->flr[k],df);
-	  rvec_dec(fr->flr[i],df);
+	  rvec_inc(fr->f_pme[k],df);
+	  rvec_dec(fr->f_pme[i],df);
 	  for(iv=0;iv<DIM;iv++)
 	      for(jv=0;jv<DIM;jv++)
 		  lr_vir[iv][jv]+=0.5*dx[iv]*df[jv];
