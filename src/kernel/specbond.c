@@ -174,9 +174,10 @@ int mk_specbonds(int natoms,t_pdbatom pdba[],bool bInteractive,
   int  *cysp,*sgp;
   int  *nBonded;
   bool bDoit,bSwap;
-  int  i,j,nres;
+  int  i,j,b,e,e2,nres;
   int  ai,aj,index_sb;
   real **d;
+  char buf[10];
   
   sb=get_specbonds(&nsb);
   
@@ -206,18 +207,37 @@ int mk_specbonds(int natoms,t_pdbatom pdba[],bool bInteractive,
       d[i][j]=distance(pdba[ai].x,pdba[aj].x);
     }
   if (ncys > 1) {
-    fprintf(stderr,"Special Atom Distance matrix\n%8s","");
-    for(i=1; (i<ncys); i++) 
-      fprintf(stderr," %3s%4d",pdba[sgp[i]].resnm,cysp[i]+1);
-    fprintf(stderr,"\n");
-    for(i=0; (i<ncys-1); i++) {
-      fprintf(stderr," %3s%4d",pdba[sgp[i]].resnm,cysp[i]+1);
-      for(j=1; (j<i+1); j++)
-	fprintf(stderr,"%8s","");
-      for( ; (j<ncys); j++)
-	fprintf(stderr,"%6.3f  ",d[i][j]);
+#define MAXCOL 8
+    fprintf(stderr,"Special Atom Distance matrix:\n");
+    for(b=0; (b<ncys); b+=MAXCOL) {
+      fprintf(stderr,"%8s","");
+      e=min(b+MAXCOL, ncys-1);
+      for(i=b; (i<e); i++) {
+	sprintf(buf,"%s%d",pdba[sgp[i]].resnm,cysp[i]+1);
+	fprintf(stderr,"%8s",buf);
+      }
       fprintf(stderr,"\n");
+      e=min(b+MAXCOL, ncys);
+      for(i=b+1; (i<ncys); i++) {
+	sprintf(buf,"%s%d",pdba[sgp[i]].resnm,cysp[i]+1);
+	fprintf(stderr,"%8s",buf);
+	e2=min(i,e);
+	for(j=b; (j<e2); j++)
+	  fprintf(stderr," %7.3f",d[i][j]);
+	fprintf(stderr,"\n");
+      }
     }
+/*     for(i=1; (i<ncys); i++)  */
+/*       fprintf(stderr," %3s%4d",pdba[sgp[i]].resnm,cysp[i]+1); */
+/*     fprintf(stderr,"\n"); */
+/*     for(i=0; (i<ncys-1); i++) { */
+/*       fprintf(stderr," %3s%4d",pdba[sgp[i]].resnm,cysp[i]+1); */
+/*       for(j=1; (j<i+1); j++) */
+/* 	fprintf(stderr,"%8s",""); */
+/*       for( ; (j<ncys); j++) */
+/* 	fprintf(stderr,"%6.3f  ",d[i][j]); */
+/*       fprintf(stderr,"\n"); */
+/*     } */
   }
   i=j=0;
   
