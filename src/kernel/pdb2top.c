@@ -370,7 +370,7 @@ static void at2bonds(t_params *ps,
   /* First generate bonds along the heavy atoms */
   fprintf(stderr,"Making bonds on the heavy atoms...\n");
   for(i=j=0; ((i<nres) && (j<natoms)); i++) {
-   if ((rb0=search_rb(*(resname[i]),nrb,rb)) != NULL) {
+    if ((rb0=search_rb(*(resname[i]),nrb,rb)) != NULL) {
       for(k=0; (k<rb0->nb); k++) {
 	if (((ai=search_atom(rb0->rbond[k].ai,j,natoms,atom,aname)) != -1) &&
 	    ((aj=search_atom(rb0->rbond[k].aj,j,natoms,atom,aname)) != -1)) {

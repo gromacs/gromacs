@@ -273,9 +273,9 @@ static void def_mnr(int nr,int mnr[])
 {
   int i;
 
-  mnr[0]=nr;
-  for (i=1; (i<MAXPROC); i++) 
+  for (i=0; (i<MAXPROC); i++) 
     mnr[i]=0;
+  mnr[0]=nr;
 }
 
 void split_top(bool bVerbose,int nprocs,t_topology *top)
@@ -285,7 +285,7 @@ void split_top(bool bVerbose,int nprocs,t_topology *top)
   
   if ((bVerbose) && (nprocs>1))
     fprintf(stderr,"splitting topology...\n");
-
+  
   for(j=0; (j<F_NRE); j++)  
     def_mnr(top->idef.il[j].nr,top->idef.il[j].multinr);
   def_mnr(top->atoms.excl.nr,top->atoms.excl.multinr);

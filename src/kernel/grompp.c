@@ -60,6 +60,7 @@ static char *SRCID_grompp_c = "$Id$";
 #include "trnio.h"
 #include "tpxio.h"
 #include "dum_parm.h"
+#include "txtdump.h"
 
 void check_solvent(bool bVerbose,int nmol,t_molinfo msys[],
 		   int Nsim,t_simsystem Sims[],t_inputrec *ir,char *SolventOpt)
@@ -118,7 +119,7 @@ static int *shuffle_xv(char *ndx,
   snew(nindex,nmol);
   snew(done,nmol);
   
-  /* COmpute the number of copies for each molecule type */
+  /* Compute the number of copies for each molecule type */
   for(i=0; (i<Nsim); i++) {
     mi=Sims[i].whichmol;
     nindex[mi]+=Sims[i].nrcopies;
@@ -566,7 +567,7 @@ int main (int argc, char *argv[])
     "molecules of a certain type is smaller than the number of processors."
   };
   t_gromppopts *opts;
-  t_topology   sys;
+  t_topology   *sys;
   t_molinfo    msys;
   t_atomtype   atype;
   t_inputrec   *ir;
@@ -657,15 +658,21 @@ int main (int argc, char *argv[])
 
   snew(plist,F_NRE);
   init_plist(plist);
-  open_symtab(&sys.symtab);
+  snew(sys,1);
+  if (debug)
+    pr_symtab(debug,0,"Just opened",&sys->symtab);
+    
   strcpy(fn,ftp2fn(efTOP,NFILE,fnm));
   if (!fexist(fn)) 
     fatal_error(0,"%s does not exist",fn);
   forward=new_status(fn,opt2fn_null("-pp",NFILE,fnm),opt2fn("-c",NFILE,fnm),
 		     opts,ir,bGenVel,bVerbose,&natoms,&x,&v,box,
-		     &atype,&sys,&msys,plist,bShuffle ? nprocs : 1,
+		     &atype,sys,&msys,plist,bShuffle ? nprocs : 1,
 		     (opts->eDisre==edrEnsemble),opts->bMorse,&nerror);
   
+  if (debug)
+    pr_symtab(debug,0,"After new_status",&sys->symtab);
+    
   if (opt2bSet("-r",NFILE,fnm))
     sprintf(fn,opt2fn("-r",NFILE,fnm));
   else
@@ -678,53 +685,62 @@ int main (int argc, char *argv[])
   }
   
   /* set parameters for Dummy construction */
-  set_dummies(bVerbose, &sys.atoms, atype, plist, msys.plist);
+  set_dummies(bVerbose, &sys->atoms, atype, plist, msys.plist);
   
   if (bRenum) 
-    atype.nr=renum_atype(plist, &sys, atype.nr, ir, bVerbose);
+    atype.nr=renum_atype(plist, sys, atype.nr, ir, bVerbose);
   
+  if (debug)
+    pr_symtab(debug,0,"After renum_atype",&sys->symtab);
+
   if (bVerbose) 
     fprintf(stderr,"converting bonded parameters...\n");
-  convert_params(atype.nr, plist, msys.plist, &sys.idef);
+  convert_params(atype.nr, plist, msys.plist, &sys->idef);
   
+  if (debug)
+    pr_symtab(debug,0,"After convert_params",&sys->symtab);
+
   /* set ptype to Dummy for dummy atoms */
-  set_dummies_ptype(bVerbose,&sys.idef,&sys.atoms);
+  set_dummies_ptype(bVerbose,&sys->idef,&sys->atoms);
+  if (debug)
+    pr_symtab(debug,0,"After dummy",&sys->symtab);
   
   /* check masses */
-  check_mol(&(sys.atoms));
+  check_mol(&(sys->atoms));
   
   /* Now build the shakeblocks from the shakes */
-  gen_sblocks(bVerbose,sys.atoms.nr,&(sys.idef),&(sys.blocks[ebSBLOCKS]));
+  gen_sblocks(bVerbose,sys->atoms.nr,&(sys->idef),&(sys->blocks[ebSBLOCKS]));
+  if (debug)
+    pr_symtab(debug,0,"After gen_sblocks",&sys->symtab);
    
   if (bVerbose) 
     fprintf(stderr,"initialising group options...\n");
   do_index(ftp2fn_null(efNDX,NFILE,fnm),
-	   &sys.symtab,&(sys.atoms),bVerbose,ir,&sys.idef,
+	   &sys->symtab,&(sys->atoms),bVerbose,ir,&sys->idef,
 	   forward);
-  triple_check(ir,&sys,&nerror);
-  close_symtab(&sys.symtab);
-  
+  if (debug)
+    pr_symtab(debug,0,"After index",&sys->symtab);
+  triple_check(ir,sys,&nerror);
+  close_symtab(&sys->symtab);
+  if (debug)
+    pr_symtab(debug,0,"After close",&sys->symtab);
+
   if (ftp2bSet(efTRN,NFILE,fnm)) {
     if (bVerbose)
       fprintf(stderr,"getting data from old trajectory ...\n");
     cont_status(ftp2fn(efTRN,NFILE,fnm),bNeedVel,bGenVel,time,ir,&natoms,
-		&x,&v,box,&nre,&e,&sys);
-  }
-  /* This is also necessary for setting the multinr arrays */
-  split_top(bVerbose,nprocs,&sys);
-
-  if (nerror) {
-    fprintf(stderr,"%d error%s, program terminated\n",
-	    nerror,nerror==1 ? "" : "s");
-    exit(1);
+		&x,&v,box,&nre,&e,sys);
   }
   
+  /* This is also necessary for setting the multinr arrays */
+  split_top(bVerbose,nprocs,sys);
+
   if (bVerbose) 
     fprintf(stderr,"writing run input file...\n");
-  
+
   write_tpx(ftp2fn(efTPX,NFILE,fnm),
 	    0,ir->init_t,ir->init_lambda,ir,box,
-	    natoms,x,v,NULL,&sys);
+	    natoms,x,v,NULL,sys);
   
   print_warn_num();
   

@@ -513,8 +513,8 @@ static bool do_xdr(void *item,int nitem,int eio,
       slen = 0;
     
     if (xdr_int(curfio->xdr,&slen) <= 0)
-      fatal_error(0,"wrong string length for string %s (source %s, line %d)",
-		  desc,srcfile,line);
+      fatal_error(0,"wrong string length %d for string %s"
+		  " (source %s, line %d)",slen,desc,srcfile,line);
     if (!item && curfio->bRead)
       snew(cptr,slen);
     else

@@ -29,7 +29,7 @@ OBJ		= \
 		fatal.o		ffscanf.o	filenm.o	\
 		futil.o		gbutil.o	genhydro.o	\
 		fnbf.o		gmxfio.o	h_db.o		\
-		ifunc.o		index.o		ghat.o		\
+				ifunc.o		index.o		\
 		invblock.o	javaio.o	lincsutl.o	\
 		lutab.o		macros.o	main.o		\
 		maths.o		matio.o		lrutil.o	\
@@ -117,6 +117,11 @@ $(LIB)(libxdrf.o):	libxdrf.m4 $(M4FILE)
 		$(CC) $(C-FLAGS) -c libxdrf.c
 		$(AR) $(ARFLAGS) $(LIB) libxdrf.o
 		$(RM) libxdrf.c libxdrf.o
+$(LIB)(callf77.o):	callf77.m4 $(M4FILE)
+		$(M4) $(M4FILE) callf77.m4  > callf77.c
+		$(CC) $(C-FLAGS) -c callf77.c
+		$(AR) $(ARFLAGS) $(LIB) callf77.o
+		$(RM) callf77.c callf77.o
 
 prfn:		prfn.o
 		$(LD) -o $@ $^ $(SYSLIBS)

@@ -484,6 +484,7 @@ static void do_symtab(t_symtab *symtab,bool bRead)
     }
   }
   else {
+    fprintf(stderr,"nr = %d\n",nr);
     symbuf = symtab->symbuf;
     while (symbuf!=NULL) {
       for (i=0; (i<symbuf->bufsize) && (i<nr); i++) 
@@ -491,7 +492,8 @@ static void do_symtab(t_symtab *symtab,bool bRead)
       nr-=i;
       symbuf=symbuf->next;
     }
-    assert(nr==0);
+    if (nr != 0)
+      fatal_error(0,"nr of symtab strings left: %d",nr);
   }
 }
 

@@ -23,7 +23,7 @@ OBJ		= \
 		clincs.o	clincsld.o	congrad.o	\
 		coupling.o	csettle.o	cshake.o	\
 		dummies.o	ebin.o		edsam.o		\
-		fftgrid.o	force.o				\
+		fftgrid.o	force.o		ghat.o		\
 		init.o		md.o		\
 		mdatom.o	mdebin.o	nm.o		\
 		ns.o		nsb.o		nsgrid.o	\

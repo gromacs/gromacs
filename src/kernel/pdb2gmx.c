@@ -676,7 +676,7 @@ int main(int argc, char *argv[])
       "Retain hydrogen atoms that are in the pdb file" },
     { "-alldih", FALSE, etBOOL, &bAlldih, 
       "Generate all proper dihedrals" },
-    { "-dummy",FALSE, etENUM, &dumstr, 
+    { "-dummy",  FALSE, etENUM, dumstr, 
       "Convert atoms to dummy atoms" },
     { "-heavyh", FALSE, etBOOL, &bHeavyH,
       "Make hydrogen atoms heavy" }

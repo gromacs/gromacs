@@ -41,6 +41,7 @@ void init_top (t_topology *top)
   int i;
   
   top->name = NULL;
+  open_symtab(&top->symtab);
   init_atom (&(top->atoms));
   for (i=0; (i<ebNR); i++)
     init_block(&(top->blocks[i]));
