@@ -11,11 +11,15 @@
 #include "copyrite.h"
 #include "random.h"
 
-real ener(matrix P,real e,real e0,int nmol,real kp,real ke)
+real ener(matrix P,real e,real e0,int nmol,real kp,real ke,bool bPScal)
 {
-  return (kp*(sqr(P[XX][XX]-1)+sqr(P[YY][YY]-1)+sqr(P[ZZ][ZZ]-1)+
-	      sqr(P[XX][YY])+sqr(P[XX][ZZ])+sqr(P[YY][ZZ])) +
-	  ke*(e/nmol-e0));
+  if (bPScal)
+    return (kp*(sqr(P[XX][XX]+P[YY][YY]+P[ZZ][ZZ]-3))+
+	    ke*sqr(e/nmol-e0));
+  else
+    return (kp*(sqr(P[XX][XX]-1)+sqr(P[YY][YY]-1)+sqr(P[ZZ][ZZ]-1)+
+		sqr(P[XX][YY])+sqr(P[XX][ZZ])+sqr(P[YY][ZZ])) +
+	    ke*sqr(e/nmol-e0));
 }
 
 void do_sim(char *enx,
@@ -87,7 +91,8 @@ void pr_progress(FILE *fp,int nit,tensor P,real epot,real eFF,
 {
   fprintf(fp,"Iter %3d, eFF = %g, Converged = %s,  Accepted = %s\n",
 	  nit,eFF,yesno_names[bConv],yesno_names[bAccept]);
-  fprintf(fp,"Epot = %g  mc_crit = %g\n",epot,mc_crit);
+  fprintf(fp,"Epot = %g  Pscal = %g,  mc_crit = %g\n",epot,
+	  trace(P)/3,mc_crit);
   pr_rvecs(fp,0,"Pres",P,DIM);
   fprintf(fp,"-----------------------------------------------------\n");
   fflush(fp);
@@ -112,7 +117,7 @@ int main(int argc,char *argv[])
   static real kp       = 1,   ke     = 100, frac   = 0.1;
   static int  maxnit   = 100, eindex = 5,   pindex = 19;
   static int  seed     = 1993;
-  
+  static bool bPScal   = FALSE;
   static t_pargs pa[] = {
     { "-epot0",  FALSE, etREAL, {&epot0},
       "Potential energy in kJ/mol" },
@@ -133,7 +138,9 @@ int main(int argc,char *argv[])
     { "-ke",     FALSE, etREAL, {&ke},
       "Force constant for energy component"},
     { "-kT",     FALSE, etREAL, {&kT},
-      "Boltzmann Energy for Monte Carlo" } 
+      "Boltzmann Energy for Monte Carlo" },
+    { "-pscal",  FALSE, etBOOL, {&bPScal},
+      "Optimize params for scalar pressure, instead of tensor" }
   };
 
   FILE        *fp;  
@@ -168,7 +175,7 @@ int main(int argc,char *argv[])
   fprintf(fp,"epot   = %8g  ke     = %8g  kp     = %8g\n",epot0,ke,kp);
   fprintf(fp,"maxnit = %8d  tol    = %8g  seed   = %8d\n",maxnit,tol,seed);
   fprintf(fp,"frac   = %8g  pindex = %8d  eindex = %8d\n",frac,pindex,eindex);
-  fprintf(fp,"kT     = %8g\n",kT);
+  fprintf(fp,"kT     = %8g  pscal  = %8s\n",kT,bool_names[bPScal]);
   
   /* Unpack some topology numbers */
   nmol  = top.blocks[ebMOLS].nr;
@@ -193,7 +200,7 @@ int main(int argc,char *argv[])
     get_results(ftp2fn(efENX,NFILE,fnm),P[0],&epot,pindex,eindex);
 
     /* Calculate penalty */
-    eFF[(nit > 0) ? next : cur]  = ener(P,epot,epot0,nmol,kp,ke);
+    eFF[(nit > 0) ? next : cur]  = ener(P,epot,epot0,nmol,kp,ke,bPScal);
     
     bConverged = (eFF[(nit > 0) ? next : cur] < tol);
     
