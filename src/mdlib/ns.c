@@ -429,10 +429,10 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
   atom_id   jj,jj0,jj1,i_atom;
   int       i0,nicg,len;
   
-  int       *type;
+  int       *type,*typeB;
   unsigned short    *cENER;
-  real      *charge;
-  real      qi,qq,rlj;
+  real      *charge,*chargeB;
+  real      qi,qiB,qq,rlj;
   bool      bWater,bMNO,bFree,bFreeJ,bNotEx,*bPert;
   
 #ifdef SORTNLIST
@@ -446,7 +446,9 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
 #endif
   /* Copy some pointers */
   charge  = md->chargeA;
+  chargeB = md->chargeB;
   type    = md->typeA;
+  typeB   = md->typeB;
   cENER   = md->cENER;
   bPert   = md->bPerturbed;
   
@@ -701,7 +703,8 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
       igid    = cENER[i_atom];
       gid     = GID(igid,jgid,ngid);
       qi      = charge[i_atom];
-      
+      qiB     = chargeB[i_atom];
+
       /* Create new i_atom for each energy group */
       if (!bCoulOnly && !bVDWOnly) 
 	new_i_nblist(vdwc,bLR ? F_LJLR : F_LJ,i_atom,shift,gid,
@@ -716,7 +719,8 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
       new_i_nblist(coul_free,F_DVDL,i_atom,shift,gid,NULL);
       new_i_nblist(vdwc_free,F_DVDL,i_atom,shift,gid,NULL);
 
-      if (!(bVDWOnly || qi==0) || !(bCoulOnly || !bHaveLJ[type[i_atom]])) {
+      if (!(bVDWOnly || (qi==0 && qiB==0)) || 
+	  !(bCoulOnly || !(bHaveLJ[type[i_atom]] && bHaveLJ[typeB[i_atom]]))) {
 	/* Loop over the j charge groups */
 	for(j=0; (j<nj); j++) {
 	  jcg=jjcg[j];
