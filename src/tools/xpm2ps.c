@@ -151,10 +151,11 @@ bool diff_maps(int nmap1,t_mapping *map1,int nmap2,t_mapping *map2)
   return bDiff;
 }
   
-void leg_discrete(FILE *ps,int x0,int y0,char *label,
+void leg_discrete(FILE *ps,real x0,real y0,char *label,
 		  real fontsize,char *font,int nmap,t_mapping map[])
 {
-  int   i,yhh;
+  int   i;
+  real  yhh;
   real  boxhh;
   
   boxhh=fontsize+DDD;
@@ -177,10 +178,11 @@ void leg_discrete(FILE *ps,int x0,int y0,char *label,
   }
 }
 
-void leg_continuous(FILE *ps,int x0,int x,int y0,char *label,
+void leg_continuous(FILE *ps,real x0,real x,real y0,char *label,
 		    real fontsize,char *font,int nmap,t_mapping map[])
 {
-  int   i,xx0;
+  int   i;
+  real  xx0;
   real  yhh,boxxh,boxyh;
   
   boxyh=fontsize;
@@ -208,11 +210,12 @@ void leg_continuous(FILE *ps,int x0,int x,int y0,char *label,
   ps_ctext(ps,xx0+(nmap*boxxh)-boxxh/2,yhh,map[nmap-1].desc,eXCenter);
 }
 
-void leg_bicontinuous(FILE *ps,int x0,int x,int y0,char *label1,char *label2,
+void leg_bicontinuous(FILE *ps,real x0,real x,real y0,char *label1,char *label2,
 		      real fontsize,char *font,
 		      int nmap1,t_mapping map1[],int nmap2,t_mapping map2[])
 {
-  int xx1,xx2,x1,x2;
+  real xx1,xx2,x1,x2;
+  
   x1=x/(nmap1+nmap2)*nmap1;/* width of legend 1 */
   x2=x/(nmap1+nmap2)*nmap2;/* width of legend 2 */
   xx1=x0-(x2/2.0)-fontsize;/* center of legend 1 */
@@ -223,19 +226,19 @@ void leg_bicontinuous(FILE *ps,int x0,int x,int y0,char *label1,char *label2,
   leg_continuous(ps,xx2,x2,y0,label2,fontsize,font,nmap2,map2);
 }
 
-static int box_height(t_matrix *mat,t_psrec *psr)
+static real box_height(t_matrix *mat,t_psrec *psr)
 {
   return mat->ny*psr->yboxsize; 
 }
 
-static int box_dh(t_psrec *psr)
+static real box_dh(t_psrec *psr)
 {
   return psr->boxspacing;
 }
 
-static int box_dh_top(t_psrec *psr)
+static real box_dh_top(t_psrec *psr)
 {
-  int dh;
+  real dh;
 
   if (psr->bTitle)
     dh=2*psr->titfontsize;
@@ -259,18 +262,18 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,real h,
 		       int nmat,t_matrix mat[],t_psrec *psr)
 {
   char   buf[12];
-  int    xxx;
+  real   xxx;
   char   **xtick,**ytick;
   real   xx,yy,dy,xx00,yy00;
-  int    i,j,x,itx,y,strlength=0;
+  int    i,j,x,y,strlength=0;
   
   /* Draw the box */
   ps_rgb(out,BLACK);
-  y=y0;
+  yy00=y0;
   for(i=0; (i<nmat); i++) {
     dy=box_height(&(mat[i]),psr);
-    ps_box(out,x0-1,y-1,x0+w+1,y+dy+1);
-    y+=dy+box_dh(psr)+box_dh_top(psr);
+    ps_box(out,x0-1,yy00-1,x0+w+1,yy00+dy+1);
+    yy00+=dy+box_dh(psr)+box_dh_top(psr);
   }
   
   /* Draw the ticks on the axes */
@@ -291,9 +294,6 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,real h,
     ps_strfont(out,psr->X.tickfont,psr->X.tickfontsize);
     for(x=0; (x<mat[i].nx); x++) {
       xx=xx00+(x+0.7)*psr->xboxsize;
-      /*
-	itx=mat[i].axis_x[0];
-	*/
       if ( ( (x % psr->X.major == psr->X.offset) || 
 	     (psr->X.first && (x==0))) &&
 	   ( (i == 0) || box_do_all_x_maj_ticks(psr) ) ) {
@@ -474,7 +474,8 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   FILE   *out;
   t_psrec  psrec,*psr;
   int    W,H;
-  int    i,x,y,x0,y0,xx,col;
+  int    i,x,y,col;
+  real   x0,y0,xx;
   real   w,h,dw,dh;
   int       nmap1,nmap2;
   t_mapping *map1,*map2;
