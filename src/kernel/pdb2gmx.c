@@ -157,10 +157,10 @@ void write_posres(char *fn,t_atoms *pdba)
 	  "; In this topology include file, you will find position restraint\n"
 	  "; entries for all the heavy atoms in your original pdb file.\n"
 	  "; This means that all the protons which were added by pdb2gmx are\n"
-	  "; not restrained. This is especially useful for crystal waters.\n"
+	  "; not restrained.\n"
 	  "\n"
 	  "[ position_restraints ]\n"
-	  "; %6s%6s%8s%8s%8s\n","atom","type","fx","fy","fz"
+	  "; %4s%6s%8s%8s%8s\n","atom","type","fx","fy","fz"
 	  );
   for(i=0; (i<pdba->nr); i++) {
     if (!is_hydrogen(*pdba->atomname[i])) 
@@ -955,7 +955,8 @@ int main(int argc, char *argv[])
     }
     nmol++;
 
-    write_posres(posre_fn,pdba);
+    if (!chains[chain].bAllWat)
+      write_posres(posre_fn,pdba);
 
     if (bITP)
       print_top_comment(itp_file,title,TRUE);

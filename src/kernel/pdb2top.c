@@ -192,6 +192,12 @@ static void print_top_water(FILE *out)
   fprintf(out,"#else\n");
   fprintf(out,"#include \"spc.itp\"\n");
   fprintf(out,"#endif\n\n");
+  fprintf(out,"#ifdef POSRES\n");
+  fprintf(out,"; Position restraint for each water Oxygen\n");
+  fprintf(out,"[ position_restraints ]\n"
+	  "; %4s%6s%8s%8s%8s\n","atom","type","fx","fy","fz");
+  fprintf(out,"%6d%6d%8.1f%8.1f%8.1f\n",1,1,1000.0,1000.0,1000.0);
+  fprintf(out,"#endif\n\n");
 }
 
 static void print_top_system(FILE *out)
