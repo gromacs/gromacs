@@ -178,17 +178,21 @@ $(LIB)(fnbf.o):		fnbf.m4 inner.m4 $(M4MAC) $(M4FILE) $(CPUMAKEF)
 mkinl.o:		mkinl.c $(CPUMAKEF)
 			$(CC) $(C-FLAGS) -g -c $(SYSDEFS) mkinl.c 
 
-mkinl:			mkinl.o 
+mkinl:			mkinl.o
 			$(LD) -o mkinl mkinl.o
 
-$(LIB)(innerf.o):	mkinl Makefile $(CPUMAKEF)
+$(LIB)(innerf.o):	mkinl.c $(CPUMAKEF)
+			$(CC) $(C-FLAGS) -g -c $(SYSDEFS) mkinl.c 
+			$(LD) -o mkinl mkinl.o
 			$(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) inner.m4 > inner.h
 			./mkinl 0 1
 			$(F77) $(FFLAGS) -c innerf.f
 			$(AR) $(ARFLAGS) $(LIB) innerf.o
 			$(RM) innerf.f innerf.o mkinl.o mkinl
 
-$(LIB)(innerc.o):	mkinl inner.m4 Makefile $(CPUMAKEF)
+$(LIB)(innerc.o):	mkinl.c inner.m4 $(CPUMAKEF)
+			$(CC) $(C-FLAGS) -g -c $(SYSDEFS) mkinl.c 
+			$(LD) -o mkinl mkinl.o
 			$(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) inner.m4 > inner.h
 			./mkinl 1 1
 			$(RM) mkinl
