@@ -64,7 +64,6 @@ void done_matrix(int n1,real ***m)
 t_mat *init_mat(int n1,bool b1D)
 {
   t_mat *m;
-  int   i;
   
   snew(m,1);
   m->n1   = n1;
@@ -126,8 +125,6 @@ void set_mat_entry(t_mat *m,int i,int j,real val)
   
 void done_mat(t_mat **m)
 {
-  int i;
-  
   done_matrix((*m)->n1,&((*m)->mat));  
   sfree((*m)->m_ind);
   sfree((*m)->erow);
