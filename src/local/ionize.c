@@ -430,9 +430,11 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
         
   /* Calculate probability */
   tmax        = t0;
-  while (t > (tmax+interval*0.5))
-    tmax += interval;
+  if (interval > 0)
+    while (t > (tmax+interval*0.5))
+      tmax += interval;
   /*  End when t <= t0 + (N+0.5) interval */
+  
   pt          = imax*ir->delta_t*exp(-0.5*sqr((t-tmax)/width));
   dq          = 0;
   nkdecay     = 0;
