@@ -296,10 +296,10 @@ static void analyse_ener(bool bCorr,char *corrfn,
   real x1m,x1mk,VarE=-1,Temp=-1,Pres=-1,VarV=-1,Vaver=-1,VarT=-1;
   int  i,j,m,k;
   char buf[256];
-  
+
   nsteps  = step - oldstep;
-  if (nsteps < 2) {
-    fprintf(stderr,"Not enough steps (%d) for statistics\n",nsteps);
+  if (nsteps <= 2) {
+    fprintf(stderr,"Not enough steps (%d) for statistics\n",nsteps-1);
   }
   else {
     /* Calculate the time difference */
@@ -330,21 +330,16 @@ static void analyse_ener(bool bCorr,char *corrfn,
     }
     for(i=0; (i<nset); i++) {
       iset = set[i];
-      if (oldstep == 0) {
-	aver   = ee[iset].esum/nsteps;
-	stddev = sqrt(ee[iset].eav/nsteps);
-      }
-      else {
-	m      = oldstep;
-	k      = nsteps-1;
-	aver   = (ee[iset].esum  - oldee[iset].esum)/k;
-	fstep  = ((real) m) * ((real) (m+k))/((real) k);
-	x1m    = oldee[iset].esum/m;
-	x1mk   = ee[iset].esum/(m+k); 
-	xxx    = sqr(x1m - x1mk);
-	sigma  = ee[iset].eav - oldee[iset].eav - xxx * fstep;
-	stddev = sqrt(sigma/k);
-      }
+      m      = oldstep;
+      k      = nsteps;
+      aver   = (ee[iset].esum  - oldee[iset].esum)/k;
+      fstep  = ((real) m) * ((real) (m+k))/((real) k);
+      x1m    = (m > 0) ? oldee[iset].esum/m : 0.0;
+      x1mk   = ee[iset].esum/(m+k); 
+      xxx    = sqr(x1m - x1mk);
+      sigma  = ee[iset].eav - oldee[iset].eav - xxx * fstep;
+      stddev = sqrt(sigma/k);
+      
       if (bDG) {
 	expE = 0;
 	for(j=0; (j<nenergy); j++) {
@@ -436,13 +431,13 @@ static void analyse_ener(bool bCorr,char *corrfn,
       /*do_autocorr(corrfn,buf,nenergy,3,eneset,Dt,eacNormal,TRUE,NULL,NULL);*/
       /* Do it for shear viscosity */
       strcpy(buf,"Shear Viscosity");
-      low_do_autocorr(corrfn,buf,nenergy,3,eneset,Dt,
+      low_do_autocorr(corrfn,buf,nenergy,3,nenergy,eneset,Dt,
 		      eacNormal,1,FALSE,TRUE,TRUE,FALSE,
 		      "shear-fit.xvg","fitting",FALSE,0.0,0.0,0);
 	
       /* Now for bulk viscosity */
       strcpy(buf,"Bulk Viscosity");
-      low_do_autocorr(corrfn,buf,nenergy,1,&(eneset[11]),Dt,
+      low_do_autocorr(corrfn,buf,nenergy,1,nenergy,&(eneset[11]),Dt,
 		      eacNormal,1,FALSE,TRUE,TRUE,FALSE,
 		      "bulk-fit.xvg","fitting",FALSE,0.0,0.0,0);
       
@@ -570,6 +565,7 @@ int main(int argc,char *argv[])
   fp = open_enx(ftp2fn(efENX,NFILE,fnm),"r");
   do_enxnms(fp,&nre,&enm);
   
+  /* Initiate energies and set them to zero */
   dr.ndr=0;  
   snew(ee,nre);
   snew(oldee,nre);
@@ -625,11 +621,16 @@ int main(int argc,char *argv[])
     if (!bDRAll)
       xvgr_legend(out,2,drleg);    
   }
+  
+  /* Initiate counters */
   step     = 0;
   oldstep  = -1;
   t        = 0;
   oldt     = 0;
   do {
+    /* This loop searches for the first frame (when -b option is given), 
+     * or when this has been found it reads just once energy frame
+     */
     do {
       bCont = do_enx(fp,&t,&step,&nre,ee,&dr);
       
@@ -645,11 +646,14 @@ int main(int argc,char *argv[])
     if (timecheck == 0) {
       if (oldstep == -1) {
 	/* Initiate the previous step data 
-	 * Since step ia incremented after reading, it is always >= 1,
+	 * Since step is incremented after reading, it is always >= 1,
 	 * therefore this will be executed only once.
 	 */
 	oldstep = step - 1;
 	oldt    = t;
+	/* If we did not start at the first step, oldstep will be > 0
+	 * and we must initiate the data in the array. Otherwise it remains 0
+	 */
 	if (oldstep > 0)
 	  for(i=0; (i<nre); i++) {
 	    oldee[i].esum = ee[i].esum - ee[i].e;
