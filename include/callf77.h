@@ -18,6 +18,12 @@ extern void f77ljc(real *ix,real *iy,real *iz,real *qi,
 		   real faction[],real fip[],
 		   real *egcoul,real *egnb);
 
+extern void f77bham(real *ix,real *iy,real *iz,real *qi,
+		    real pos[],int *nj,int type[],int jjnr[],
+		    real charge[],real nbfp[],
+		    real faction[],real fip[],
+		    real *egcoul,real *egnb);
+
 extern void f77water(int  *i0,real xw[],real *eps,
 		     real pos[],int *nj,int type[],int jjnr[],
 		     real charge[],real nbfp[],

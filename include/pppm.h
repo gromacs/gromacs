@@ -46,6 +46,18 @@ extern real do_pppm(FILE *log,       bool bVerbose,
 		    t_nrnb *nrnb);
 /* Do a PPPM calculation for the long range electrostatics.
  */
+ 
+extern real do_opt_pppm(FILE *log,       bool bVerbose,
+			t_inputrec *ir,  int natoms,
+			rvec x[],        rvec f[],
+			real charge[],   rvec box,
+			real phi[],      t_commrec *cr,
+			t_nrnb *nrnb,    rvec beta,
+			t_fftgrid *grid);
+/* Do a PPPM setup (generate grid etc.) and a calculation as well 
+ * the grid should be initiated beforehand.
+ */
+
 		    
 extern real do_ewald(FILE *log,       t_inputrec *ir,
 		     int natoms,      rvec x[],rvec f[],

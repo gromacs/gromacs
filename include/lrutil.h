@@ -48,8 +48,8 @@ extern real calc_dx2(rvec xi,rvec xj,rvec box);
 
 extern void calc_dx(rvec xi,rvec xj,rvec box,rvec dx);
 
-extern real phi_sr(int nj,rvec x[],real charge[],real rc,real r1,
-		   rvec box,real phi[],t_block *excl);
+extern real phi_sr(FILE *log,int nj,rvec x[],real charge[],real rc,real r1,
+		   rvec box,real phi[],t_block *excl,rvec f_sr[]);
 
 extern real shiftfunction(real r1,real rc,real R);
 
@@ -152,5 +152,14 @@ extern void wr_ghat(char *fn,int n1max,int n2max,int n3max,real h1,
 
 extern void pr_scalar_gk(char *fn,int nx,int ny,int nz,rvec box,real ***ghat);
 
+extern real analyse_diff(FILE *log,int natom,rvec ffour[],rvec fpppm[],
+			 real phi_f[],real phi_p[],real phi_sr[],
+			 char *fcorr,char *pcorr,
+			 char *ftotcorr,char *ptotcorr);
+/* Analyse difference between forces from fourier (_f) and other (_p)
+ * LR solvers (and potential also).
+ * If the filenames are given, xvgr files are written.
+ * returns the root mean square error in the force.
+ */
 
- #endif
+#endif

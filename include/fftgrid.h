@@ -26,6 +26,9 @@ typedef struct {
 extern t_fftgrid *mk_fftgrid(int nx,int ny,int nz);
 /* Create an FFT grid (1 Dimensional), to be indexed by the INDEX macro */
 
+extern void done_fftgrid(t_fftgrid *grid);
+/* And throw it away again */
+
 extern void gmxfft3D(FILE *fp,bool bVerbose,t_fftgrid *grid,int dir);
 /* Do the FFT, direction may be either 
  * FFTW_FORWARD (sign -1) for real -> complex transform 
