@@ -350,12 +350,10 @@ static int *new_status(char *topfile,char *confin,
 	    "does not match topology (%d)\n",*natoms,sys->atoms.nr);
     nerror++;
   } else {
-    /* get space for coordinates and velocities */
+    /* make space for coordinates and velocities */
+    init_t_atoms(&dumat,*natoms,FALSE);
     snew(*x,*natoms);
     snew(*v,*natoms);
-    snew(dumat.resname,*natoms);
-    snew(dumat.atom,*natoms);
-    snew(dumat.atomname,*natoms);
     read_stx_conf(confin,opts->title,&dumat,*x,*v,box);
     
     if (ntab > 0) {
