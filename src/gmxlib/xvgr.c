@@ -97,10 +97,12 @@ void xvgr_legend(FILE *out,int nsets,char *setname[])
   fprintf(out,"@ legend %g, %g\n",0.78,0.8);
   fprintf(out,"@ legend length %d\n",2);
   for(i=0; (i<nsets); i++)
-    if (bXmGrace())
-      fprintf(out,"@ s%d legend \"%s\"\n",i,setname[i]);
-    else
-      fprintf(out,"@ legend string %d \"%s\"\n",i,setname[i]);
+    if (setname[i]) {
+      if (bXmGrace())
+	fprintf(out,"@ s%d legend \"%s\"\n",i,setname[i]);
+      else
+	fprintf(out,"@ legend string %d \"%s\"\n",i,setname[i]);
+    }
 }
 
 void xvgr_line_props(FILE *out, int NrSet, int LineStyle, int LineColor)
