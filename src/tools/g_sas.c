@@ -45,6 +45,7 @@ static char *SRCID_g_sas_c = "$Id$";
 #include "nsc.h"
 #include "vdw.h"
 #include "pdbio.h"
+#include "confio.h"
 #include "rmpbc.h"
 
 void connelly_plot(char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
