@@ -533,11 +533,11 @@ void ns(FILE *log,
   
   if (bFirst) {
     ptr=getenv("DUMPNL");
-    if (ptr)
+    if (ptr) {
       nDNL=atoi(ptr);
-    else
+      fprintf(log,"nDNL = %d\n",nDNL);  
+    } else
       nDNL=0;
-    fprintf(log,"nDNL = %d\n",nDNL);  
     /* Allocate memory for the neighbor lists */
     init_neighbor_list(log,fr,HOMENR(nsb));
       
@@ -551,8 +551,11 @@ void ns(FILE *log,
    * workload contains the proper numbers of charge groups
    * to be searched.
    */
-  /*fr->cg0 = CG0(nsb);
-    fr->hcg = CG1(nsb);*/
+  if (cr->pid == 0)
+    fr->cg0=0;
+  else
+    fr->cg0=nsb->workload[cr->pid-1];
+  fr->hcg=nsb->workload[cr->pid];
 
   nsearch = search_neighbours(log,fr,x,box,top,grps,cr,nsb,nrnb,md,
 			      lambda,dvdlambda);
