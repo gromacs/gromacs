@@ -226,7 +226,7 @@ FILE *ffopen(char *file,char *mode)
   fprintf(stderr,"Going to open %s on CPU %d with mode %s\n",
 	  file,gmx_cpu_id(),mode);
 #endif
-  if ((strcmp(mode,"w") == 0) && fexist(file)) {
+  if ((mode[0]=='w') && fexist(file)) {
     bf=backup_fn(file);
     if (rename(file,bf) == 0) {
       fprintf(stderr,"\nBack Off! I just backed up %s to %s\n",file,bf);
@@ -236,7 +236,7 @@ FILE *ffopen(char *file,char *mode)
   }
   where();
   
-  bRead=strcmp(mode,"r") == 0;
+  bRead= mode[0]=='r';
   strcpy(buf,file);
   if (fexist(buf) || !bRead) {
     if ((ff=fopen(buf,mode))==NULL) {
