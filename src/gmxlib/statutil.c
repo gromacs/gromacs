@@ -536,11 +536,11 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
 
   if (!(FF(PCA_QUIET) || bQuiet )) {
     if (bHelp)
-      write_man(stdout,"help",program,ndesc,desc,nfile,fnm,npall,all_pa,
+      write_man(stderr,"help",program,ndesc,desc,nfile,fnm,npall,all_pa,
 		nbugs,bugs,bHidden);
     else if (bPrint) {
-      pr_fns(stdout,nfile,fnm);
-      print_pargs(stdout,npall,all_pa);
+      pr_fns(stderr,nfile,fnm);
+      print_pargs(stderr,npall,all_pa);
     }
   }
 

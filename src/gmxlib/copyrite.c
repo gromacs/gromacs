@@ -220,6 +220,9 @@ void CopyRight(FILE *out,char *szProgram)
 
 void thanx(FILE *fp)
 {
+  /* Ignore *fp, since the thanx should go to stderr,
+   * but all programs call thanx with stdout.
+   */
   char *cq,*c;
 
   /* protect the audience from suggestive discussions */
@@ -228,11 +231,11 @@ void thanx(FILE *fp)
   if (be_cool()) {
     snew(c,strlen(cq)+20);
     sprintf(c,"gcq#%d: %s\n",nran,cq);
-    fprintf(fp,"\n%s\n",c);
+    fprintf(stderr,"\n%s\n",c);
     sfree(c);
   }
   else
-    fprintf(fp,"\n%s\n",cq);
+    fprintf(stderr,"\n%s\n",cq);
 }
 
 void please_cite(FILE *fp,char *key)

@@ -65,14 +65,14 @@ static int *select_it(int nre,char *nm[],int *nset)
   if ((getenv("VERBOSE")) != NULL)
     bVerbose = FALSE;
   
-  printf("Select the terms you want from the following list\n");
-  printf("End your selection with 0\n");
+  fprintf(stderr,"Select the terms you want from the following list\n");
+  fprintf(stderr,"End your selection with 0\n");
 
   if ( bVerbose ) {
     for(k=0; (k<nre); ) {
       for(j=0; (j<4) && (k<nre); j++,k++) 
-	printf(" %3d=%14s",k+1,nm[k]);
-      printf("\n");
+	fprintf(stderr," %3d=%14s",k+1,nm[k]);
+      fprintf(stderr,"\n");
     }
   }
 
@@ -201,9 +201,9 @@ static void analyse_disre(char *voutfn,    int nframes,
 		  nbounds,pair,bounds,NULL,&sumt,&sumaver);
   
 #ifdef DEBUG
-  fprintf(stderr,"\nSum of violations averaged over simulation: %g nm\n",
+  fprintf(stdout,"\nSum of violations averaged over simulation: %g nm\n",
 	  sumaver);
-  fprintf(stderr,"Largest violation averaged over simulation: %g nm\n\n",
+  fprintf(stdout,"Largest violation averaged over simulation: %g nm\n\n",
 	  sumt);
 #endif		    
   vout=xvgropen(voutfn,"r\\S-3\\N average violations","DR Index","nm");
@@ -226,8 +226,8 @@ static void analyse_disre(char *voutfn,    int nframes,
 #endif
   ffclose(vout);
   
-  fprintf(stderr,"\nSum of violations averaged over simulation: %g nm\n",sumt);
-  fprintf(stderr,"Largest violation averaged over simulation: %g nm\n\n",sum);
+  fprintf(stdout,"\nSum of violations averaged over simulation: %g nm\n",sumt);
+  fprintf(stdout,"Largest violation averaged over simulation: %g nm\n\n",sum);
   
   xvgr_file(voutfn,"-graphtype bar");
 }
@@ -310,22 +310,22 @@ static void analyse_ener(bool bCorr,char *corrfn,
 	  oldstep,oldt,step,t,nenergy);
 #endif
   if (nsteps < 2) {
-    fprintf(stderr,"Not enough steps (%d) for statistics\n",nsteps);
+    fprintf(stdout,"Not enough steps (%d) for statistics\n",nsteps);
   }
   else {
     /* Calculate the time difference */
     delta_t = t - oldt;
     
-    fprintf(stderr,"\nStatistics over %d steps [ %.4f thru %.4f ps ], %d data sets\n\n",
+    fprintf(stdout,"\nStatistics over %d steps [ %.4f thru %.4f ps ], %d data sets\n\n",
 	    nsteps,oldt,t,nset);
     
-    fprintf(stderr,"%-24s %10s %10s %10s %10s %10s",
+    fprintf(stdout,"%-24s %10s %10s %10s %10s %10s",
 	    "Energy","Average","RMSD","Fluct.","Drift","Tot-Drift");
     if (bGibbs)
-      fprintf(stderr,"  %10s\n","-ln<e^(E/kT)>*kT");
+      fprintf(stdout,"  %10s\n","-ln<e^(E/kT)>*kT");
     else
-      fprintf(stderr,"\n");
-    fprintf(stderr,"-------------------------------------------------------------------------------\n");
+      fprintf(stdout,"\n");
+    fprintf(stdout,"-------------------------------------------------------------------------------\n");
     
     /* Initiate locals, only used with -sum */
     avertot=0;
@@ -339,7 +339,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
       m      = oldstep;
       k      = nsteps;
 #ifdef DEBUG
-      fprintf(stderr,"sum: %g, oldsum: %g, k: %d\n",
+      fprintf(stdout,"sum: %g, oldsum: %g, k: %d\n",
 	      ee[iset].esum,oldee[iset].esum,k);
 #endif
       aver   = (ee[iset].esum  - oldee[iset].esum)/k;
@@ -388,39 +388,39 @@ static void analyse_ener(bool bCorr,char *corrfn,
       fluct2 = sqr(pr_stddev) - sqr(totaldrift)/12;
       if (fluct2 < 0)
 	fluct2 = 0;
-      fprintf(stderr,"%-24s %10g %10g %10g %10g %10g",
+      fprintf(stdout,"%-24s %10g %10g %10g %10g %10g",
 	      leg[i],pr_aver,pr_stddev,sqrt(fluct2),a,totaldrift);
       if (bGibbs) 
-	fprintf(stderr,"  %10g\n",gibbs[i]);
+	fprintf(stdout,"  %10g\n",gibbs[i]);
       else
-	fprintf(stderr,"\n");
+	fprintf(stdout,"\n");
       if (bFluct) {
 	for(j=0; (j<nenergy); j++)
 	  eneset[i][j] -= aver;
       }
     }
     if (bSum) {
-      fprintf(stderr,"%-24s %10g %10s %10s %10s %10s",
+      fprintf(stdout,"%-24s %10g %10s %10s %10s %10s",
 	      "Total",avertot/nmol,"--","--","--","--");
       /* pr_aver,pr_stddev,a,totaldrift */
       if (bGibbs) 
-	fprintf(stderr,"  %10g  %10g\n",
+	fprintf(stdout,"  %10g  %10g\n",
 		log(expEtot)/beta + avertot/nmol,log(expEtot)/beta);
       else
-	fprintf(stderr,"\n");
+	fprintf(stdout,"\n");
     }
     if (Temp != -1) {
       real factor;
       
       factor = nmol*ndf*VarT/(3.0*sqr(Temp));
-      fprintf(stderr,"Heat Capacity Cv:   %10g J/mol K (factor = %g)\n",
+      fprintf(stdout,"Heat Capacity Cv:   %10g J/mol K (factor = %g)\n",
 	      1000*BOLTZ/(2.0/3.0 - factor),factor);
     }
     if ((VarV != -1) && (Temp != -1)) {
       real tmp = VarV/(Vaver*BOLTZ*Temp*PRESFAC);
       
-      fprintf(stderr,"Isothermal Compressibility: %10g /bar\n",tmp);
-      fprintf(stderr,"Adiabatic bulk modulus:     %10g  bar\n",1.0/tmp);
+      fprintf(stdout,"Isothermal Compressibility: %10g /bar\n",tmp);
+      fprintf(stdout,"Adiabatic bulk modulus:     %10g  bar\n",1.0/tmp);
     }
     /* Do correlation function */
     Dt = delta_t/nenergy;
@@ -853,7 +853,7 @@ int main(int argc,char *argv[])
   
   xvgr_file(opt2fn("-o",NFILE,fnm),"-nxy");
     
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }
