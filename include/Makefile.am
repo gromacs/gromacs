@@ -29,7 +29,7 @@ include_HEADERS = \
 	string2.h     	writeps.h	gmxcomplex.h   	\
 	futil.h         metacode.h  	random.h    	struc2.h      	\
 	x86_3dnow.h	comtest.h   	gbutil.h         	\
-	rbin.h      	superb.h      	x86_cpu.h	tgroup.h	\
+	rbin.h      	superb.h      	detectcpu.h	tgroup.h	\
 	general.h       mshift.h    	rdgroup.h   	symtab.h      	\
 	x86_sse.h	confio.h    	gmxfio.h        mvdata.h    	\
 	rdklib.h    	sync.h        	xdrf.h		constr.h    	\
@@ -39,4 +39,6 @@ include_HEADERS = \
 	index.h         nhash.h     	renum.h     	systest.h	\
 	disre.h     	init.h          nr.h        	reorder.h   	\
 	tags.h		do_fit.h    	nrama.h     	\
-	rmpbc.h     	tgroup.h
+	rmpbc.h     	tgroup.h        ppc_altivec.h
+
+

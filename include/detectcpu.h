@@ -34,10 +34,10 @@
  * Giving Russians Opium May Alter Current Situation
  */
 
-#ifndef _x86_cpu_h
-#define _x86_cpu_h
+#ifndef _detectcpu_h
+#define _detectcpu_h
 
-static char *SRCID_x86_cpu_h = "$Id$";
+static char *SRCID_detectcpu_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -45,27 +45,37 @@ static char *SRCID_x86_cpu_h = "$Id$";
 #include <stdio.h>
 
 extern int cpu_capabilities;
+
 #define UNKNOWN_CPU           0
-
-#ifdef USE_X86_ASM
-
-#define VENDOR_AMD   0x68747541
-#define VENDOR_INTEL 0x756e6547
-#define FLAGS_SUPPORT_SSE 0x02000000
-#define FLAGS_SUPPORT_EXT_3DNOW 0xc0000000
 /* Flags for x86 and future processor capabilities */
 #define X86_CPU               1
 #define X86_SSE_SUPPORT       (1 << 1)
 #define X86_3DNOW_SUPPORT     (1 << 2)
+#define X86_SSE2_SUPPORT      (1 << 3) /* not used yet */
+/* 3Dnow professional includes SSE support; treat it as 3DNOW 
+ * or SSE (dont know which is faster), i.e. no specal flag.
+ * Reserve bits 4,5,6 for future x86 stuff */
+#define IA64_CPU              (1 << 7)
+/* Reserve bits 8,9,10 for future ia64 stuff */
+#define PPC_CPU               (1 << 8)
+#define PPC_ALTIVEC_SUPPORT   (1 << 9)
+
+/* Values that are return by cpuid instructions on x86 */
+#define VENDOR_AMD   0x68747541
+#define VENDOR_INTEL 0x756e6547
+#define FLAGS_SUPPORT_SSE 0x02000000
+#define FLAGS_SUPPORT_EXT_3DNOW 0xc0000000
+
+#ifdef USE_X86_ASM
 
 #include <x86_sse.h>
 #include <x86_3dnow.h>
-
-int check_x86cpu(FILE *log);
-
-/* Assembly routines in gmxcpuid.s */
+/* x86 cpuid assembly routine in x86_cpuid.s */
 void x86_cpuid(int,unsigned long *,unsigned long *,unsigned long *,unsigned long *);
-
+#elif defined USE_PPC_ALTIVEC
+#include <ppc_altivec.h>
 #endif
+
+int detect_cpu(FILE *log);
 
 #endif
