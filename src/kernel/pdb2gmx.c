@@ -534,10 +534,6 @@ int main(int argc, char *argv[])
     "the [TT]-o[tt] option when you want to convert a multichain pdb file.",
     "[PAR]",
     
-    "[TT]-sort[tt] will sort all residues according to the order in the",
-    "database, sometimes this is necessary to get charge groups",
-    "together.[PAR]",
-    
     "[TT]-alldih[tt] will generate all proper dihedrals instead of only",
     "those with as few hydrogens as possible, this is useful for use with",
     "the Charmm forcefield.[PAR]",
@@ -630,7 +626,7 @@ int main(int argc, char *argv[])
   static bool bInter=FALSE, bCysMan=FALSE; 
   static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan=FALSE;
   static bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
-  static bool bH14=FALSE, bSort=TRUE, bRemoveH=FALSE;
+  static bool bH14=FALSE, bSort=TRUE, bMissing=FALSE, bRemoveH=FALSE;
   static bool bAlldih=FALSE;
   static bool bDeuterate=FALSE;
   static real angle=135.0, distance=0.3,posre_fc=1000;
@@ -663,19 +659,21 @@ int main(int argc, char *argv[])
       "Minimum hydrogen-donor-acceptor angle for a H-bond (degrees)" },
     { "-dist",   FALSE, etREAL, {&distance},
       "Maximum donor-acceptor distance for a H-bond (nm)" },
-    { "-posrefc",FALSE, etREAL, {&posre_fc},
-      "Force constant for position restraints" },
     { "-una",    FALSE, etBOOL, {&bUnA}, 
       "Select aromatic rings with united CH atoms on Phenylalanine, "
       "Tryptophane and Tyrosine" },
     { "-sort",   FALSE, etBOOL, {&bSort}, 
-      "Sort the residues according to database" },
+      "HIDDENSort the residues according to database, turning this off is dangerous as charge groups might be broken in parts" },
     { "-H14",    FALSE, etBOOL, {&bH14}, 
       "Use 1-4 interactions between hydrogen atoms" },
-    { "-ignh",   FALSE, etBOOL, {&bRemoveH}, 
-      "Ignore hydrogen atoms that are in the pdb file" },
     { "-alldih", FALSE, etBOOL, {&bAlldih}, 
       "Generate all proper dihedrals" },
+    { "-ignh",   FALSE, etBOOL, {&bRemoveH}, 
+      "Ignore hydrogen atoms that are in the pdb file" },
+    { "-missing",   FALSE, etBOOL, {&bMissing}, 
+      "Continue when atoms are missing, dangerous" },
+    { "-posrefc",FALSE, etREAL, {&posre_fc},
+      "Force constant for position restraints" },
     { "-dummy",  FALSE, etENUM, {dumstr}, 
       "Convert atoms to dummy atoms" },
     { "-heavyh", FALSE, etBOOL, {&bHeavyH},
@@ -1062,8 +1060,9 @@ int main(int argc, char *argv[])
 	top_file2=top_file;
     
     pdb2top(top_file2,posre_fn,molname,pdba,&x,atype,&symtab,bts,nrtp,restp,
-	    cc->nterpairs,cc->ntdb,cc->ctdb,cc->rN,cc->rC,bH14,bAlldih,
-	    bDummies,bDummyAromatics,mHmult,nssbonds,ssbonds,NREXCL, 
+	    cc->nterpairs,cc->ntdb,cc->ctdb,cc->rN,cc->rC,bMissing,
+	    bH14,bAlldih,bDummies,bDummyAromatics,
+	    mHmult,nssbonds,ssbonds,NREXCL, 
 	    long_bond_dist, short_bond_dist,bDeuterate);
     
     if (!cc->bAllWat)

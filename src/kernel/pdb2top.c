@@ -61,30 +61,35 @@ static char *SRCID_pdb2top_c = "$Id$";
 /* this must correspond to enum in pdb2top.h */
 char *hh[ehisNR]   = { "HISA", "HISB", "HISH", "HIS1" };
 
-static bool missing_atoms(t_restp *rp, int resnr,
-			  t_atoms *at, int i0, int i, bool bCTer)
+static int missing_atoms(t_restp *rp, int resnr,
+			 t_atoms *at, int i0, int i, bool bCTer)
 {
-  int  j,k;
+  int  j,k,nmiss;
   char *name;
   bool bFound, bRet;
 
-  bRet=FALSE;
+  nmiss = 0;
   for (j=0; j<rp->natom; j++) {
     name=*(rp->atomname[j]);
-    if ((name[0]!='H') && (name[0]!='h') && (!bCTer || (name[0]!='O'))) {
-      bFound=FALSE;
-      for (k=i0; k<i; k++) 
-	bFound=(bFound || !strcasecmp(*(at->atomname[k]),name));
-      if (!bFound) {
-	bRet=TRUE;
-	fprintf(stderr,"\nWARNING: "
-		"atom %s is missing in residue %s %d in the pdb file\n\n",
-		name,*(at->resname[resnr]),resnr+1);
+    /* if ((name[0]!='H') && (name[0]!='h') && (!bCTer || (name[0]!='O'))) { */
+    bFound=FALSE;
+    for (k=i0; k<i; k++) 
+      bFound=(bFound || !strcasecmp(*(at->atomname[k]),name));
+    if (!bFound) {
+      nmiss++;
+      fprintf(stderr,"\nWARNING: "
+	      "atom %s is missing in residue %s %d in the pdb file\n",
+	      name,*(at->resname[resnr]),resnr+1);
+      if (name[0]=='H' || name[0]=='h')
+	fprintf(stderr,"         You might need to add atom %s to the hydrogen database of residue %s\n"
+		       "         in the file ff???.hdb (see the manual)\n",
+		name,*(at->resname[resnr]));
+      fprintf(stderr,"\n");
       }
-    }
+      /* } */
   }
-
-  return bRet;
+  
+  return nmiss;
 }
 
 bool is_int(double x)
@@ -146,14 +151,17 @@ char *choose_ff(void)
   return fnsel;
 }
 
-static void name2type(t_atoms *at, int **cgnr, t_atomtype *atype, 
-		      t_restp restp[])
+static int name2type(t_atoms *at, int **cgnr, t_atomtype *atype, 
+		     t_restp restp[])
 {
   int     i,j,prevresnr,resnr,i0,prevcg,cg,curcg;
   char    *name;
   bool    bProt, bNterm;
   double  qt;
+  int     nmissat;
   
+  nmissat = 0;
+
   resnr=-1;
   bProt=FALSE;
   bNterm=FALSE;
@@ -171,8 +179,9 @@ static void name2type(t_atoms *at, int **cgnr, t_atomtype *atype,
       bProt=is_protein(*(at->resname[resnr]));
       bNterm=bProt && (resnr == 0);
       if (resnr>0)
-	missing_atoms(&restp[prevresnr],prevresnr,at,i0,i,
-		      (!bProt && is_protein(restp[prevresnr].resname)));
+	nmissat += 
+	  missing_atoms(&restp[prevresnr],prevresnr,at,i0,i,
+			(!bProt && is_protein(restp[prevresnr].resname)));
       i0=i;
     }
     if (at->atom[i].m == 0) {
@@ -206,8 +215,10 @@ static void name2type(t_atoms *at, int **cgnr, t_atomtype *atype,
     at->atom[i].qB    = at->atom[i].q;
     at->atom[i].mB    = at->atom[i].m;
   }
-  missing_atoms(&restp[resnr],resnr,at,i0,i,
-		(!bProt || is_protein(restp[resnr].resname)));
+  nmissat += missing_atoms(&restp[resnr],resnr,at,i0,i,
+			   (!bProt || is_protein(restp[resnr].resname)));
+
+  return nmissat;
 }
 
 static void print_top_heavy_H(FILE *out, real mHmult)
@@ -607,7 +618,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 	     t_atoms *atoms, rvec **x, t_atomtype *atype, t_symtab *tab,
 	     int bts[], int nrtp, t_restp   rtp[],
 	     int nterpairs,t_hackblock **ntdb, t_hackblock **ctdb,
-	     int *rn, int *rc, bool bH14, bool bAlldih,
+	     int *rn, int *rc, bool bMissing, bool bH14, bool bAlldih,
 	     bool bDummies, bool bDummyAromatics, real mHmult,
 	     int nssbonds, t_ssbond *ssbonds, int nrexcl, 
 	     real long_bond_dist, real short_bond_dist,
@@ -620,7 +631,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   t_nextnb nnb;
   int      *cgnr;
   int      *dummy_type;
-  int      i;
+  int      i,nmissat;
   
   init_plist(plist);
 
@@ -646,7 +657,15 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   do_ssbonds(&(plist[F_BONDS]),
 	     atoms->nr, atoms->atom, atoms->atomname, nssbonds, ssbonds);
   
-  name2type(atoms, &cgnr, atype, restp);
+  nmissat = name2type(atoms, &cgnr, atype, restp);
+  if (nmissat) {
+    if (bMissing)
+      fprintf(stderr,"There were %d missing atoms in molecule %s\n",
+	      nmissat,molname);
+    else
+      fatal_error(0,"There were %d missing atoms in molecule %s, if you want to use this incomplete topology anyhow, use the option -missing",
+		  nmissat,molname);
+  }
   
   /* Cleanup bonds (sort and rm doubles) */ 
   clean_bonds(&(plist[F_BONDS]));
