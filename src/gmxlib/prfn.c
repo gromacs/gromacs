@@ -61,8 +61,9 @@ void pr_htmldefs(FILE *fp)
   fprintf(fp,"The following %d filetypes are used by Gromacs:\n",efNR);
   fprintf(fp,"<dl>\n");
   for(i=0; (i<efNR); i++) {
-    fprintf(fp,"<dt><a href=\"%s.html\">%s</a> (%s)<dd>%s\n",
-	    ftp2ext(i),ftp2defnm(i),ftp2ftype(i),check_html(ftp2desc(i),NULL));
+    fprintf(fp,"<dt><a href=\"%s.html\">%s.%s</a> (%s)<dd>%s\n",
+	    ftp2ext(i),ftp2defnm(i),ftp2ext(i),ftp2ftype(i),
+	    check_html(ftp2desc(i),NULL));
   }
   fprintf(fp,"</dl>\n");
 }
