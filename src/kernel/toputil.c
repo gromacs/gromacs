@@ -85,7 +85,7 @@ void pr_alloc (int extra, t_params *pr)
       pr->param[i].a[j]=0;
     for(j=0; (j<MAXFORCEPARAM); j++)
       pr->param[i].c[j]=0;
-    pr->param[i].s = NULL;
+    pr->param[i].s = strdup("");
   }
   pr->nr += extra;
 }
@@ -275,7 +275,7 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
 	fprintf (out,"%5s ",*(at->atomname[bt->param[i].a[dihp[f][j]]]));
     fprintf (out,"%5d ", bSwapParity ? -f-1 : f+1);
 
-    if (bt->param[i].s)
+    if (bt->param[i].s[0])
       fprintf(out,"   %s",bt->param[i].s);
     else
       for (j=0; (j<nrfp && (bt->param[i].c[j] != NOTSET)); j++)

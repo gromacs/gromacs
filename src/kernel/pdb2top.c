@@ -242,15 +242,9 @@ void write_top(char *ff,FILE *out, char *pr,char *molname,
     fprintf(out,"%-15s %5d\n\n",molname?molname:"Protein",nrexcl);
     
     print_atoms(out,atype,at,cgnr);
-    if (bts[ebtsBONDS] == 1)
-      print_bondeds(out,at->nr,d_bonds,    F_BONDS,    bts[ebtsBONDS], plist);
-    else
-      print_bondeds(out,at->nr,d_bonds,    F_G96BONDS, bts[ebtsBONDS], plist);
+    print_bondeds(out,at->nr,d_bonds,    F_BONDS,    bts[ebtsBONDS], plist);
     print_bondeds(out,at->nr,d_pairs,    F_LJ14,     0,              plist);
-    if (bts[ebtsANGLES] == 1)
-      print_bondeds(out,at->nr,d_angles,   F_ANGLES,   bts[ebtsANGLES],plist);
-    else
-      print_bondeds(out,at->nr,d_angles,   F_G96ANGLES,bts[ebtsANGLES],plist);
+    print_bondeds(out,at->nr,d_angles,   F_ANGLES,   bts[ebtsANGLES],plist);
     print_bondeds(out,at->nr,d_dihedrals,F_PDIHS,    bts[ebtsPDIHS], plist);
     print_bondeds(out,at->nr,d_dihedrals,F_IDIHS,    bts[ebtsIDIHS], plist);
     print_bondeds(out,at->nr,d_dum3,     F_DUMMY3,   0,              plist);
@@ -479,47 +473,41 @@ void pdb2top(char *ff,FILE *top_file,char *posre_fn,char *molname,
   int      *cgnr;
   t_block  excl;
   int      *dummy_type;
-  int      i,fbonds,fangles;
+  int      i;
   
   init_plist(plist);
   newbonds.nr=0;
   newbonds.param=NULL;
   
-  bG96 = (strstr(ff,"96") != NULL);
-  fprintf(stderr,"Assuming %sGROMOS96 force field (%s)\n",
-	  bG96 ? "" : "NOT ",ff);
-  fbonds  = bG96 ? F_G96BONDS  : F_BONDS;
-  fangles = bG96 ? F_G96ANGLES : F_ANGLES;
-  
   /* Make bonds */
-  at2bonds(&(plist[fbonds]),
+  at2bonds(&(plist[F_BONDS]),
 	   nrb,rb,atoms->nr,atoms->atom,atoms->atomname,
 	   atoms->nres,atoms->resname,bAlldih,*x);
   
   /* Terminal bonds */
   if (rn>=0)
-    ter2bonds(&(plist[fbonds]),atoms->nr,atoms->atom,atoms->atomname,rn,ntdb);
+    ter2bonds(&(plist[F_BONDS]),atoms->nr,atoms->atom,atoms->atomname,rn,ntdb);
   if (rc>=0)
-    ter2bonds(&(plist[fbonds]),atoms->nr,atoms->atom,atoms->atomname,rc,ctdb);
+    ter2bonds(&(plist[F_BONDS]),atoms->nr,atoms->atom,atoms->atomname,rc,ctdb);
   
   /* Last the disulphide bonds & heme-his */
-  do_ssbonds(&(plist[fbonds]),atoms->nr,atoms->atom,
+  do_ssbonds(&(plist[F_BONDS]),atoms->nr,atoms->atom,
 	     atoms->atomname,nssbonds,ssbonds);
   
   name2type(atoms,&cgnr,atype,nrtp,rtp);
   
   /* Cleanup bonds (sort and rm doubles) */ 
-  clean_bonds(&(plist[fbonds]));
+  clean_bonds(&(plist[F_BONDS]));
 
   /* determine which atoms will be dummies and make space for dummy masses 
-     also renumber atom numbers in plist[fbonds]! */
+     also renumber atom numbers in plist[F_BONDS]! */
   snew(dummy_type,atoms->nr);
   for(i=0; i<atoms->nr; i++)
     dummy_type[i]=NOTSET;
   if (bDummies)
     do_dummies(nrtp, rtp, atype, mHmult, atoms, tab, x, 
 	       plist, &newbonds, &dummy_type, &cgnr,
-	       fbonds);
+	       F_BONDS);
   
   /* Make Angles and Dihedrals */
   fprintf(stderr,"Generating angles and dihedrals...\n");
@@ -561,32 +549,32 @@ void pdb2top(char *ff,FILE *top_file,char *posre_fn,char *molname,
     do_dum_excl(&excl,dummy_type);
     
     /* add newbonds to plist */
-    pr_alloc(newbonds.nr,&plist[fbonds]);
+    pr_alloc(newbonds.nr,&plist[F_BONDS]);
     for (i=0; i < newbonds.nr; i++)
-      plist[fbonds].param[plist[fbonds].nr+i] = newbonds.param[i];
-    plist[fbonds].nr += newbonds.nr;
+      plist[F_BONDS].param[plist[F_BONDS].nr+i] = newbonds.param[i];
+    plist[F_BONDS].nr += newbonds.nr;
     sfree(newbonds.param);
     
     /* remove things with dummy atoms */
-    clean_dum_bonds (&(plist[fbonds]),                            dummy_type);
-    clean_dum_angles(&(plist[fangles]),atoms->nr,            
-		     plist,dummy_type,fbonds);
+    clean_dum_bonds (&(plist[F_BONDS]),                            dummy_type);
+    clean_dum_angles(&(plist[F_ANGLES]),atoms->nr,            
+		     plist,dummy_type,F_BONDS);
     clean_dum_dihs  (&(plist[F_PDIHS ]),atoms->nr,"proper",  plist,dummy_type);
     clean_dum_dihs  (&(plist[F_IDIHS ]),atoms->nr,"improper",plist,dummy_type);
   }
   /* set mass of all remaining hydrogen atoms */
   if (mHmult != 1.0)
-    do_h_mass(&(plist[fbonds]),dummy_type,atoms,mHmult);
+    do_h_mass(&(plist[F_BONDS]),dummy_type,atoms,mHmult);
   sfree(dummy_type);
   
   /* Cleanup bonds (sort and rm doubles) */ 
-  clean_bonds(&(plist[fbonds]));
+  clean_bonds(&(plist[F_BONDS]));
   
   fprintf(stderr,
 	  "There are %4d dihedrals, %4d impropers, %4d angles\n"
 	  "          %4d pairs,     %4d bonds and  %4d dummies\n",
-	  plist[F_PDIHS].nr, plist[F_IDIHS].nr, plist[fangles].nr,
-	  plist[F_LJ14].nr, plist[fbonds].nr,
+	  plist[F_PDIHS].nr, plist[F_IDIHS].nr, plist[F_ANGLES].nr,
+	  plist[F_LJ14].nr, plist[F_BONDS].nr,
 	  plist[F_DUMMY2].nr +
 	  plist[F_DUMMY3].nr +
 	  plist[F_DUMMY3FD].nr +

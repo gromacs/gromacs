@@ -190,13 +190,10 @@ static void rm2par(t_param p[], int *np, peq eq)
 		"Something VERY strange is going on in rm2par (gen_ad.c)\n"
 		"a[0] %d a[1] %d a[2] %d a[3] %d\n",
 		p[i].a[0],p[i].a[1],p[i].a[2],p[i].a[3]);
-      p[i].s = NULL;
+      p[i].s = strdup(""); 
     } else {
-      if (p[i].s)
-	sfree(p[i].s);
-      p[i].s = NULL;
-      if (p[index[i]].s)
-	p[i].s = strdup(p[index[i]].s);
+      sfree(p[i].s);
+      p[i].s = strdup(p[index[i]].s);
     }
   }
   (*np)=nind;
@@ -225,8 +222,7 @@ static void cppar(t_param p[], int np, t_params plist[], int ftype)
       ps->param[k].a[j] = p[i].a[j];
     for(j=0; (j<nrfp); j++)
       ps->param[k].c[j] = p[i].c[j];
-    if (p[i].s)
-      ps->param[k].s = strdup(p[i].s);
+    ps->param[k].s=strdup(p[i].s);
   }
   ps->nr+=np;
 }
@@ -239,11 +235,7 @@ static void cpparam(t_param *dest,t_param *src)
     dest->a[j]=src->a[j];
   for(j=0; (j<MAXFORCEPARAM); j++)
     dest->c[j]=src->c[j];
-  if (dest->s)
-    sfree(dest->s);
-  dest->s=NULL;
-  if (src->s)
-    dest->s=strdup(src->s);
+  dest->s=strdup(src->s);
 }
 
 static void set_p(t_param *p,atom_id ai[4],real *c,char *s)
@@ -254,11 +246,8 @@ static void set_p(t_param *p,atom_id ai[4],real *c,char *s)
     p->a[j]=ai[j];
   for(j=0; (j<MAXFORCEPARAM); j++)
     p->c[j]=c[j];
-  if (p->s)
-    sfree(p->s);
-  p->s=NULL;
-  if (s)
-    p->s=strdup(s);
+  sfree(p->s);
+  p->s=strdup(s);
 }
 
 static int int_comp(const void *a,const void *b)
@@ -495,8 +484,7 @@ static void pdih2idih(t_param *alldih,int *nalldih,t_param idih[],int *nidih,
       for(j=0; (j<MAXFORCEPARAM); j++)
 	alldih[k].c[j] = dih[bestl].c[j];
       sfree(alldih[k].s);
-      if (dih[bestl].s)
-	alldih[k].s = strdup(dih[bestl].s);
+      alldih[k].s = strdup(dih[bestl].s);
       k++;
     }
   }
@@ -606,9 +594,9 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 	    ang[nang].AI=k1;
 	    ang[nang].AK=i;
 	  }
-	  ang[nang].C0 = NOTSET;
-	  ang[nang].C1 = NOTSET;
-	  ang[nang].s  = NULL;
+	  ang[nang].C0=NOTSET;
+	  ang[nang].C1=NOTSET;
+	  ang[nang].s=strdup("");
 	  minres = atoms->atom[ang[nang].a[0]].resnr;
 	  maxres = minres;
 	  for(m=1; m<3; m++) {
@@ -631,8 +619,7 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 		    for (m=0; m<MAXFORCEPARAM; m++)
 		      ang[nang].c[m] = i_ra->rang[l].c[m];
 		    sfree(ang[nang].s);
-		    if (i_ra->rang[l].s)
-		      ang[nang].s = strdup(i_ra->rang[l].s);
+		    ang[nang].s = strdup(i_ra->rang[l].s);
 		  }
 		}
 	      }
@@ -659,7 +646,7 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 	      }
 	      for (m=0; m<MAXFORCEPARAM; m++)
 		dih[ndih].c[m]=NOTSET;
-	      dih[ndih].s = NULL;
+	      dih[ndih].s=strdup("");
 	      minres = atoms->atom[dih[ndih].a[0]].resnr;
 	      maxres = minres;
 	      for(m=1; m<4; m++) {
@@ -683,8 +670,7 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 		      for (m=0; m<MAXFORCEPARAM-1; m++)
 			dih[ndih].c[m] = i_rd->rdih[n].c[m];
 		      sfree(dih[ndih].s);
-		      if (i_rd->rdih[n].s)
-			dih[ndih].s = strdup(i_rd->rdih[n].s);
+		      dih[ndih].s = strdup(i_rd->rdih[n].s);
 		      /* Set the last parameter to be able to see
 			 if the dihedral was in the rtp list */
 		      dih[ndih].c[MAXFORCEPARAM-1] = 0;
@@ -696,11 +682,11 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 	      if (debug)
 		fprintf(debug,"Distance (%d-%d) = %d\n",i+1,l1+1,nbd);
 	      if (nbd == 3) {
-		pai[npai].AI = min(i,l1);
-		pai[npai].AJ = max(i,l1);
-		pai[npai].C0 = NOTSET;
-		pai[npai].C1 = NOTSET;
-		pai[npai].s  = NULL;
+		pai[npai].AI=min(i,l1);
+		pai[npai].AJ=max(i,l1);
+		pai[npai].C0=NOTSET;
+		pai[npai].C1=NOTSET;
+		pai[npai].s =strdup("");
 		if (bH14 || !(is_hydro(atoms,pai[npai].AI) &&
 			      is_hydro(atoms,pai[npai].AJ)))
 		  npai++;
