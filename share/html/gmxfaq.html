@@ -7,7 +7,7 @@
 <!--I--><CENTER>
 <!--I--><A HREF="features.html"><IMG SRC="gif/features.gif" BORDER=0 ALT="Features"></A>
 <!--I--><A HREF="software.html"><IMG SRC="gif/software.gif" BORDER=0 ALT="Software"></A>
-<!--I--><A HREF="online1.6.html"><IMG SRC="gif/manual.gif" BORDER=0 ALT="Manual"></A>
+<!--I--><A HREF="online2.0.html"><IMG SRC="gif/manual.gif" BORDER=0 ALT="Manual"></A>
 <!--I--><A HREF="topologies.html"><IMG SRC="gif/topologies.gif" BORDER=0 ALT="Topologies"></A>
 <!--I--><A HREF="articles.html"><IMG SRC="gif/articles.gif" BORDER=0 ALT="Articles"></A>
 <!--I--><A HREF="gmxbench.html"><IMG SRC="gif/bench.gif" BORDER=0 ALT="GMXBench"></A>
@@ -21,41 +21,51 @@
 Since this FAQ is written for version 2.0, not all of the solutions
 may apply to previous GROMACS versions.
 
-<UL>
-<LI><A HREF="#want">I want GROMACS.</A>
-<LI><A HREF="#mightwant">I might want GROMACS, but I don't know if my system 
+<DL>
+
+<DT><B><FONT COLOR="#FF0000">Download & Installing</FONT></B>
+
+<DD><A HREF="#want">I want GROMACS.</A>
+<DD><A HREF="#mightwant">I might want GROMACS, but I don't know if my system 
 is supported.</A>
-<LI><A HREF="#install">I want to compile and install GROMACS.</A>
-<LI><A HREF="#MPI">I want to run GROMACS multi-processor.</A>
-<LI><A HREF="#speed">I want to run GROMACS faster.</A>
-<LI><A HREF="#size">I want to simulate a very large system using GROMACS.</A>
-<LI><A HREF="#PDB">I have a PDB file.</A>
-<LI><A HREF="#multi">I have a protein with multiple subunits.</A>
-<LI><A HREF="#scmis"><TT>pdb2gmx</TT> is complaining about long bonds and/or
+<DD><A HREF="#install">I want to compile and install GROMACS.</A>
+<DD><A HREF="#MPI">I want to run GROMACS multi-processor.</A>
+<DD><A HREF="#speed">I want to run GROMACS faster.</A>
+<DD><A HREF="#size">I want to simulate a very large system using GROMACS.</A>
+
+<P><DT><B><FONT COLOR="#FF0000">Simulation</FONT></B>
+
+<DD><A HREF="#PDB">I have a PDB file.</A>
+<DD><A HREF="#multi">I have a protein with multiple subunits.</A>
+<DD><A HREF="#scmis"><TT>pdb2gmx</TT> is complaining about long bonds and/or
 missing atoms.</A>
-<LI><A HREF="#2000"><TT>mdrun</TT> says my run will end somewhere in (or after)
+<DD><A HREF="#2000"><TT>mdrun</TT> says my run will end somewhere in (or after)
 the year 2000.</A>
-<LI><A HREF="#1-4cut"><TT>mdrun</TT> says: "1-4 (#,#) interaction not within cut-off".</A>
-<LI><A HREF="#output">My run seems to be running, but no output is produced.</A>
-<LI><A HREF="#temp">I get very strange temperatures.</A>
-<LI><A HREF="#simann">I get very strange temperatures during my simulated annealing run.</A>
-<LI><A HREF="#multPDB">I have a PDB file with multiple entries which I want 
+<DD><A HREF="#1-4cut"><TT>mdrun</TT> says: "1-4 (#,#) interaction not within cut-off".</A>
+<DD><A HREF="#output">My run seems to be running, but no output is produced.</A>
+<DD><A HREF="#temp">I get very strange temperatures.</A>
+<DD><A HREF="#simann">I get very strange temperatures during my simulated annealing run.</A>
+
+<P><DT><B><FONT COLOR="#FF0000">Analysis</FONT></B>
+
+<DD><A HREF="#multPDB">I have a PDB file with multiple entries which I want 
 to analyze.</A>
-<LI><A HREF="#twostruc">I want to fit two structures which do not have the 
+<DD><A HREF="#twostruc">I want to fit two structures which do not have the 
 same number/sequence of atoms.</A> 
-<LI><A HREF="#group">I get tired of having to select the same index group 
+<DD><A HREF="#group">I get tired of having to select the same index group 
 over and over again.</A>
-<LI><A HREF="#diys">I want to do an analysis GROMACS doesn't have a program
+<DD><A HREF="#diys">I want to do an analysis GROMACS doesn't have a program
 for.</A>
-<LI><A HREF="#none">My problem is none of the above or none of the solutions below seem to work.</A>
-</UL>
+
+<P><DT><B><FONT COLOR="#FF0000">Other</FONT></B>
+
+<DD><A HREF="#none">My problem is none of the above or none of the solutions below seem to work.</A>
+</DL>
 <P>
 
 <DL>
-<HR>
-
 <A NAME="want">
-<DT><B><FONT COLOR="#FF0000">I want GROMACS. Now what?</FONT></B>
+<DT><HR><B><FONT COLOR="#FF0000">I want GROMACS. Now what?</FONT></B>
 <P>
 <DD>Go to the <A HREF="software.html">software page</A> and read it.
 You should also fill in the <A HREF="docs/license_form.html">license
@@ -69,7 +79,7 @@ download GROMACS.
 <P>
 
 <A NAME="mightwant">
-<DT><B><FONT COLOR="#FF0000">I might want GROMACS, but I don't know if
+<DT><HR><B><FONT COLOR="#FF0000">I might want GROMACS, but I don't know if
 my system is supported. Now what?</FONT></B>
 
 <P>
@@ -126,7 +136,7 @@ present).
 <P>
 
 <A NAME="install">
-<DT><B><FONT COLOR="#FF0000">I want to compile and install GROMACS. Now what?</FONT></B>
+<DT><HR><B><FONT COLOR="#FF0000">I want to compile and install GROMACS. Now what?</FONT></B>
 <P>
 <DD>Check out the <A HREF="readme2.0.html">download page</A> for
 instructions on 
@@ -142,7 +152,7 @@ do the work you already did all over again.
 <P>
 
 <A NAME="MPI">
-<DT><B><FONT COLOR="#FF0000">I want to run GROMACS multi-processor. Now what?</FONT></B>
+<DT><HR><B><FONT COLOR="#FF0000">I want to run GROMACS multi-processor. Now what?</FONT></B>
 
 <P>
 <DD>
@@ -177,7 +187,7 @@ after <TT>mdrun</TT>.
 <P>
 
 <A NAME="speed">
-<DT><B><FONT COLOR="#FF0000">I want to run GROMACS faster. Now what?</FONT></B>
+<DT><HR><B><FONT COLOR="#FF0000">I want to run GROMACS faster. Now what?</FONT></B>
 
 <P>
 <DD>
@@ -209,26 +219,27 @@ Fortran inner loops speeds up simulations by a factor of 2! See our <A
 HREF="gmxbench.html">benchmark page</A>.
 
 <LI>If your system consists partly of water, use water specific
-non-bonded optimizations (set <tt>watertype = SOL</tt> in your <A
-HREF="online2.0/mdp_opt.html"><TT>.mdp</TT> file</A>.  This need
-not always be faster, check your runtime to see if it is indeed
-faster.
+non-bonded optimizations (set 
+<A HREF=online/mdp_opt.html#sol><tt>solvent_optimization =
+SOL</tt></A> in your <A HREF="online2.0/mdp_opt.html"><TT>.mdp</TT>
+file</A>.  This need not always be faster, check your runtime to see
+if it is indeed faster.
 
 <LI>If you have a SGI system, use the old Fortran compilers (version
 7.1 or earlier, which still supports the F77 options
 -GCM:aggressive_speculation and -GCM:array_speculation). This gives a
 preformance increase of about 7%.
 
-<LI>Run GROMACS parallel on multiple processors (<A HREF="#MPI">see
-above</A>). Although this increases overall performance, effiency may
-be lost due to sub-linear scaling of the parallel system, e.g. 2
-processors perform at 85% of twice the performance of one
-processor. This gets progressively worse for more processors, for more
-than 8 processors efficiency drops to about 60%. Because of this,
-it is often better to run multiple runs on one or a few
-processors. Check out or <A HREF="gmxbench.html">benchmark page</A>
-for some real-life examples on both single- and multi-processor
-systems.
+<LI>Run GROMACS parallel on multiple processors (see 
+``<A HREF="#MPI">I want to run GROMACS multi-processor</A>''). 
+Although this increases overall performance, effiency may be lost due
+to sub-linear scaling of the parallel system, e.g. 2 processors
+perform at 85% of twice the performance of one processor. This gets
+progressively worse for more processors, for more than 8 processors
+efficiency drops to about 60%. Because of this, it is often better to
+run multiple runs on one or a few processors. Check out or <A
+HREF="gmxbench.html">benchmark page</A> for some real-life examples on
+both single- and multi-processor systems.
 
 <LI>Preliminary tests show that PPPM (new in GROMACS 2.0) is also
 somewhat faster than simulating with a twin range cut-off of 1.0/1.7
@@ -236,13 +247,12 @@ nm. Although this still has to be verified, it seems that irrespective
 of improvement of the treatment of electrostatics in your simulation,
 PPPM should be the method of choice.
 
-<LI>We have a new option <TT>-dummies</TT> for
+<LI>We have a new option <TT>-dummies</TT> for 
 <A HREF="online2.0/pdb2gmx.html"><TT>pdb2gmx</TT></A> in GROMACS 2.0
 which controls the constraining of hydrogen atoms. This eliminates the
 highest freqency motions in your system, enabling you to increase the
-timestep without loss of accuracy to 4 or 5 fs, or with increased mass
-for the hydrogen atoms with remaining motional freedom, even up to 8
-or 9 fs!
+timestep without loss of accuracy to about 4 fs, or even up to 7 fs
+with negligible loss of accuracy!
 
 <LI>If your system has relatively slow disk-IO, and/or you write
 frames and energies out very often, and/or you have a very large
@@ -265,7 +275,7 @@ perform your simulations.</P>
 <P>
 
 <A NAME="size">
-<DT><B><FONT COLOR="#FF0000">I want to simulate a very large system using GROMACS. Now what?</FONT></B>
+<DT><HR><B><FONT COLOR="#FF0000">I want to simulate a very large system using GROMACS. Now what?</FONT></B>
 
 <P> 
 
@@ -284,7 +294,7 @@ a function of system size, have a look at the
 <P>
 
 <A NAME="PDB">
-<DT><B><FONT COLOR="#FF0000">I have a PDB file. Now what?</FONT></B>
+<DT><HR><B><FONT COLOR="#FF0000">I have a PDB file. Now what?</FONT></B>
 
 <P>
 <DD> Look at the <A
@@ -296,7 +306,7 @@ section, you probably can start where it says "Ribonuclease S-Peptide".
 <P>
 
 <A NAME="multi">
-<DT><B><FONT COLOR="#FF0000">I have a protein with multiple subunits. Now what?</FONT></B>
+<DT><HR><B><FONT COLOR="#FF0000">I have a protein with multiple subunits. Now what?</FONT></B>
 
 <P>
 <DD> You could wait for GROMACS 2.0 to come out, wich will feature a
@@ -352,7 +362,7 @@ above you should be able to start a simulation.
 <P>
 
 <A NAME="scmis">
-<DT><B><FONT COLOR="#FF0000"><TT>pdb2gmx</TT> is complaining about 
+<DT><HR><B><FONT COLOR="#FF0000"><TT>pdb2gmx</TT> is complaining about 
 long bonds and/or missing atoms. Now what?</FONT></B>
 
 <P>
@@ -367,7 +377,7 @@ or fix the side chain with e.g. the
 <P>
 
 <A NAME="2000">
-<DT><B><FONT COLOR="#FF0000"><TT>mdrun</TT> says my run will end somewhere 
+<DT><HR><B><FONT COLOR="#FF0000"><TT>mdrun</TT> says my run will end somewhere 
 in (or after) the year 2000. Now what?</FONT></B>
 
 <P>
@@ -381,7 +391,7 @@ is <FONT COLOR="#AA00CC"><B>fully 2000 compliant</B></FONT>.
 <P>
 
 <A NAME="temp">
-<DT><B><FONT COLOR="#FF0000">I get very strange temperatures. Now what?</FONT></B>
+<DT><HR><B><FONT COLOR="#FF0000">I get very strange temperatures. Now what?</FONT></B>
 
 <P> <DD> If you are using simulated annealing (see 
 <A HREF=online/mdp_opt.html#sa><TT>.mdp</TT> options</A>), check out
@@ -394,14 +404,15 @@ to get rid of the close contacts, or if that still doesn't help, try a
 short equilibration run with a smal(ler) time step.  <P>
 
 <A NAME="simann">
-<DT><B><FONT COLOR="#FF0000">I get very strange temperatures during my simulated annealing run. Now what?</FONT></B>
+<DT><HR><B><FONT COLOR="#FF0000">I get very strange temperatures during my simulated annealing run. Now what?</FONT></B>
 
 <P>
 
 <DD> This probably means that the initial time in your simulation is
 not zero ps. The temperature during simulated annealing is controlled
 by two points on a linear curve: temperature will be zero K at
-<TT>zero_temp_time</TT> ps and it will be <TT>ref_t</TT> K at zero
+<A HREF=online/mdp_opt.html#sa><TT>zero_temp_time</TT></A> ps and it
+will be <A HREF=online/mdp_opt.html#sa><TT>ref_t</TT></A> K at zero
 ps. This means that if you do not start your simulation at zero ps,
 the simulation will not start at <TT>ref_t</TT> K. So if your
 <TT>zero_temp_time</TT> is positive and the starting time for your
@@ -409,6 +420,7 @@ simulation is larger than that, the temperature in your simulation
 will be zero. If your <TT>zero_temp_time</TT> is negative, temperature
 will rise indefenitely with increasing time. Below two schematic
 graphs are included to clarify things a bit.
+
 <P>
 <TABLE>
 <TH ALIGN=CENTER COLSPAN=3>System temperature v.s. Time in simulated annealing:
@@ -428,39 +440,43 @@ graphs are included to clarify things a bit.
 <P>
 
 <A NAME="recover">
-<DT><B><FONT COLOR="#FF0000">My run crashed and I want to continue it. Now what?</FONT></B>
+<DT><HR><B><FONT COLOR="#FF0000">My run crashed and I want to continue it. Now what?</FONT></B>
 
 <P>
 <DD>
 
 To really continue a simulation as if nothing had happened, you will
-need coordinates and velocities in full precision (i.e. <TT><a href="online1.6/trj.html">.trj</a></TT>
-format). <TT><a href="online1.6/xtc.html">.xtc</a></TT> trajectories are in reduced precision (only 3 decimal
+need coordinates and velocities in full precision (i.e. <TT><a href="online2.0/trj.html">.trj</a></TT>
+format). <TT><a href="online2.0/xtc.html">.xtc</a></TT> trajectories are in reduced precision (only 3 decimal
 places after the decimal point) and do not contain velocity
 information at all. Feed this trajectory and your origional
-<TT><a href="online1.6/tpb.html">.tpb</a></TT> file to <TT><a href="online1.6/tpbconv.html">tpbconv</a></TT> to obtain a new <TT><a href="online1.6/tpb.html">.tpb</a></TT>
+<TT><a href="online2.0/tpb.html">.tpb</a></TT> file to <TT><a href="online2.0/tpbconv.html">tpbconv</a></TT> to obtain a new <TT><a href="online2.0/tpb.html">.tpb</a></TT>
 file, <EM>be sure</EM> to specify the one-but-last frame from your
-<TT><a href="online1.6/trj.html">.trj</a></TT> file, since the very last frame is likely to be
-corrupted due to the crash. With the <TT><a href="online1.6/tpb.html">.tpb</a></TT> file
-<TT><a href="online1.6/tpbconv.html">tpbconv</a></TT> produces you can restart your simulation.
+<TT><a href="online2.0/trj.html">.trj</a></TT> file, since the very last frame is likely to be
+corrupted due to the crash. With the <TT><a href="online2.0/tpb.html">.tpb</a></TT> file
+<TT><a href="online2.0/tpbconv.html">tpbconv</a></TT> produces you can restart your simulation.
 
 <P>
 
 It is ofcourse possible to start a simulation from the coordinates in
-your <a href="online1.6/xtc.html">xtc</a> file, but in that case new velocities will have to be
-generated resulting in a 'kink' in the simulation. To prevent this you
-should write coordinates and velocities to a <TT><a href="online1.6/trj.html">.trj</a></TT> file during
-your simulations.  Do this by setting <TT>nstxout</TT> and
-<TT>nstvout</TT> in your <TT><a href="online1.6/mdp.html">.mdp</a></TT> file. You don't need these
-frames very often (every 10 ps or so), but remember that when
-<TT><a href="online1.6/mdrun.html">mdrun</a></TT> crashes, everything calculated after the last frame in
-the <TT><a href="online1.6/trj.html">.trj</a></TT> file, will have to be recalculated for a proper
-continuation.
+your <a href="online2.0/xtc.html">xtc</a> file, but in that case new
+velocities will have to be generated resulting in a 'kink' in the
+simulation. To prevent this you should write coordinates and
+velocities to a <TT><a href="online2.0/trj.html">.trj</a></TT> file
+during your simulations.  Do this by setting 
+<A HREF=online/mdp_opt.html#out><TT>nstxout</TT></a> and 
+<A HREF=online/mdp_opt.html#out><TT>nstvout</TT></a> in your 
+<TT><a href="online2.0/mdp.html">.mdp</a></TT> file. You don't need
+these frames very often (every 10 ps or so), but remember that when
+<TT><a href="online2.0/mdrun.html">mdrun</a></TT> crashes, everything
+calculated after the last frame in the <TT><a
+href="online2.0/trj.html">.trj</a></TT> file, will have to be
+recalculated for a proper continuation.
 
 <P>
 
 <A NAME="1-4cut">
-<DT><B><FONT COLOR="#FF0000"><TT>mdrun</TT> says: "1-4 (#,#) interaction 
+<DT><HR><B><FONT COLOR="#FF0000"><TT>mdrun</TT> says: "1-4 (#,#) interaction 
 not within cut-off". Now what?</FONT></B>
 
 <P>
@@ -485,7 +501,7 @@ occurring.
 <P>
 
 <A NAME="output">
-<DT><B><FONT COLOR="#FF0000">My run seems to be running, but no output is produced. Now what?</FONT></B>
+<DT><HR><B><FONT COLOR="#FF0000">My run seems to be running, but no output is produced. Now what?</FONT></B>
 
 <P>
 
@@ -508,10 +524,10 @@ usually result in a large percentage of CPU time being devoted to
 'system' (check it with <TT>osview</TT>, or for a multi-processor
 machine with <TT>top</TT> and <TT>osview</TT>).
 
-<LI>You might have all <TT>nst*</TT> parameters (see 
-<A HREF="online2.0/mdp_opt.html#out">output control</A>) in your 
-<A HREF="online2.0/mdp_opt.html"><TT>.mdp</TT></A> file set to 0, this
-will suppress most output.
+<LI>You might have all 
+<A HREF="online2.0/mdp_opt.html#out"><TT>nst*</TT></A> parameters (see
+your <A HREF="online2.0/mdp_opt.html"><TT>.mdp</TT></A> file set to 0,
+this will suppress most output.
 
 <LI>Your disk might be full. Eventually this will lead to
 <TT>mdrun</TT> crashing, but since output is buffered, it might take a
@@ -521,7 +537,7 @@ while for <TT>mdrun</TT> to realize it can't write.
 <P>
 
 <A NAME="multPDB">
-<DT><B><FONT COLOR="#FF0000">I have a PDB file with multiple entries
+<DT><HR><B><FONT COLOR="#FF0000">I have a PDB file with multiple entries
 which I want to analyze. Now what?</FONT></B>
 
 <P> 
@@ -554,7 +570,7 @@ It also writes a coordinate file
 <P>
 The next step is:
 <PRE>
-trjconv -f eiwit.pdb -ox -n clean -timestep 1 -ter -box 10 -center
+trjconv -f eiwit.pdb -o eiwit.xtc -n clean -timestep 1 -box 10 -center
 </PRE>
 Yes, <TT>-f eiwit.pdb</TT> works because a <TT>.pdb</TT> is also a
 <A HREF="online2.0/files.html">trajectory format</A>
@@ -598,9 +614,9 @@ numerous options in the <TT>.mdp</TT> file.
 Now, suppose you want to calculate all cross-rmsd values for all
 structures. You will do:
 <PRE>
-g_rms -f ctrajout.xtc -s topol.tpb -m
+g_rms -f eiwit.xtc -s topol.tpb -m
 </PRE>
-<TT>-f ctrajout.xtc</TT> and <TT>-s topol.tpb</TT> are self-explanatory.
+<TT>-f eiwit.xtc</TT> and <TT>-s topol.tpb</TT> are self-explanatory.
 <TT>-m</TT> tells <A HREF="online2.0/g_rms.html"><TT>g_rms</TT></A>
 to output an RMSD matrix in 
 <A HREF="online2.0/xpm.html"><TT>.xpm</TT></A> format, which can be
@@ -615,7 +631,7 @@ manual</A>.
 <P>
 
 <A NAME="twostruc">
-<DT><B><FONT COLOR="#FF0000">I want to fit two structures which do not have
+<DT><HR><B><FONT COLOR="#FF0000">I want to fit two structures which do not have
 the same number/sequence of atoms. Now what?</FONT></B>
 <P>
 <DD>Just type:
@@ -638,7 +654,7 @@ on top of each other.
 </P>
 
 <A NAME="group">
-<DT><B><FONT COLOR="#FF0000">I get tired of having to select the same 
+<DT><HR><B><FONT COLOR="#FF0000">I get tired of having to select the same 
 index group over and over again. Now what?</FONT></B>
 <P>
 <DD>
@@ -653,7 +669,7 @@ automatically every time an index group is needed.
 <P>
 
 <A NAME="diys">
-<DT><B><FONT COLOR="#FF0000">I want to do an analysis GROMACS doesn't 
+<DT><HR><B><FONT COLOR="#FF0000">I want to do an analysis GROMACS doesn't 
 have a program for. Now what?</FONT></B>
 <P>
 <DD>
@@ -752,7 +768,7 @@ users, can also benefit from it.
 </P>
 
 <A NAME="none">
-<DT><B><FONT COLOR="#FF0000">My problem is none of the above or none of the solutions seem to work. Now what?</FONT></B>
+<DT><HR><B><FONT COLOR="#FF0000">My problem is none of the above or none of the solutions seem to work. Now what?</FONT></B>
 <P>
 <DD>
 <P>Look at the <A HREF="readme2.0.html">download page</A> to
@@ -777,12 +793,12 @@ don't hesitate to contact us</A>.
 <P>For summary, the pages to check:
 <UL>
 <LI>The <A HREF="readme1.6.html">download page</A> (esp. the <A HREF="readme1.6.html#problems">problems section</A>).
-<LI>The <A HREF="online1.6/getting_started.html">"Getting Started"</A>
+<LI>The <A HREF="online2.0/getting_started.html">"Getting Started"</A>
 guided tour
-<LI>The <A HREF="online1.6/flow.html">flowchart</A>
-<LI>Our <A HREF="online1.6/mdp.html">sample <TT>.mdp</TT> file</A>
-<LI>The <A HREF="online1.6/mdp_opt.html">mdp options list</A>
-<LI>And finally the <A HREF="online1.6.html">manual pages</A>
+<LI>The <A HREF="online2.0/flow.html">flowchart</A>
+<LI>Our <A HREF="online2.0/mdp.html">sample <TT>.mdp</TT> file</A>
+<LI>The <A HREF="online2.0/mdp_opt.html">mdp options list</A>
+<LI>And finally the <A HREF="online2.0.html">manual pages</A>
 <LI><A HREF="mailto:gromacs@chem.rug.nl">Us</A>
 </UL>
 </P>
