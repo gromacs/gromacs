@@ -34,9 +34,9 @@ static char *SRCID_dum_parm_h = "$Id$";
 #include "typedefs.h"
 #include "grompp.h"
 
-extern void set_dummies(bool bVerbose, t_atoms *atoms,  t_atomtype atype,
-			t_params plist[]);
-/* set parameters for dummy atoms */
+extern int set_dummies(bool bVerbose, t_atoms *atoms,  t_atomtype atype,
+		       t_params plist[]);
+/* set parameters for dummy atoms, return number of dummies */
 
 extern void set_dummies_ptype(bool bVerbose, t_idef *idef, t_atoms *atoms);
 /* set ptype to Dummy for dummy atoms */

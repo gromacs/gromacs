@@ -513,11 +513,11 @@ static bool calc_dum4fd_param(t_param *param, t_atoms *at,
   return bError;
 }
 
-void set_dummies(bool bVerbose, t_atoms *atoms, t_atomtype atype,
-		 t_params plist[])
+int set_dummies(bool bVerbose, t_atoms *atoms, t_atomtype atype,
+		t_params plist[])
 {
   int i,j,ftype;
-  int nrbond,nrang,nridih,nrset;
+  int ndum,nrbond,nrang,nridih,nrset;
   bool bFirst,bSet,bERROR;
   t_mybonded *bonds;
   t_mybonded *angles;
@@ -525,11 +525,13 @@ void set_dummies(bool bVerbose, t_atoms *atoms, t_atomtype atype,
   
   bFirst = TRUE;
   bERROR = TRUE;
+  ndum=0;
   if (debug)
     fprintf(debug, "\nCalculating parameters for dummy atoms\n");  
   for(ftype=0; (ftype<F_NRE); ftype++)
     if (interaction_function[ftype].flags & IF_DUMMY) {
       nrset=0;
+      ndum+=plist[ftype].nr;
       for(i=0; (i<plist[ftype].nr); i++) {
 	/* check if all parameters are set */
 	bSet=TRUE;
@@ -607,6 +609,8 @@ void set_dummies(bool bVerbose, t_atoms *atoms, t_atomtype atype,
 	fprintf(stderr,"Calculated parameters for %d out of %d %s atoms\n",
 		nrset,plist[ftype].nr,interaction_function[ftype].longname);
     } /* if IF_DUMMY */
+  
+  return ndum;
 }
 
 void set_dummies_ptype(bool bVerbose, t_idef *idef, t_atoms *atoms)

@@ -569,7 +569,7 @@ int main (int argc, char *argv[])
   t_atomtype   atype;
   t_inputrec   *ir;
   t_energy     *e=NULL;
-  int          nre=0,natoms;
+  int          nre=0,natoms,ndum;
   int          *forward=NULL;
   t_params     *plist;
   rvec         *x=NULL,*v=NULL;
@@ -689,10 +689,10 @@ int main (int argc, char *argv[])
   }
   
   /* set parameters for Dummy construction */
-  set_dummies(bVerbose, &sys->atoms, atype, msys.plist);
-  
+  ndum=set_dummies(bVerbose, &sys->atoms, atype, msys.plist);
   /* now throw away all obsolete bonds, angles and dihedrals: */
-  clean_dum_bad(msys.plist,sys->atoms.nr);
+  if (ndum)
+    clean_dum_bad(msys.plist,sys->atoms.nr);
   
   if (bRenum) 
     atype.nr=renum_atype(plist, sys, atype.nr, ir, bVerbose);
@@ -708,9 +708,11 @@ int main (int argc, char *argv[])
     pr_symtab(debug,0,"After convert_params",&sys->symtab);
 
   /* set ptype to Dummy for dummy atoms */
-  set_dummies_ptype(bVerbose,&sys->idef,&sys->atoms);
-  if (debug)
-    pr_symtab(debug,0,"After dummy",&sys->symtab);
+  if (ndum) {
+    set_dummies_ptype(bVerbose,&sys->idef,&sys->atoms);
+    if (debug)
+      pr_symtab(debug,0,"After dummy",&sys->symtab);
+  }
   
   /* check masses */
   check_mol(&(sys->atoms));
