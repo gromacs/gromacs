@@ -72,13 +72,13 @@ real run_aver(real old,real cur,int step,int nmem)
 void do_pcoupl(t_inputrec *ir,int step,tensor pres,
 	       matrix box,int start,int nr_atoms,
 	       rvec x[],ushort cFREEZE[],
-	       t_nrnb *nrnb,rvec freezefac[])
+	       t_nrnb *nrnb,ivec nFreeze[])
 {
   static bool bFirst=TRUE;
   static rvec PPP;
   int    n,d,m,g,ncoupl=0;
   real   scalar_pressure, xy_pressure, p_corr_z;
-  real   X,Y,Z,dx,dy,dz;
+  real   X,Y,Z;
   rvec   factor;
   tensor mu;
   real   muxx,muxy,muxz,muyx,muyy,muyz,muzx,muzy,muzz;
@@ -153,19 +153,17 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
     muzx=mu[ZZ][XX],muzy=mu[ZZ][YY],muzz=mu[ZZ][ZZ];
     for (n=start; n<nr_atoms; n++) {
       g=cFREEZE[n];
-      fgx=freezefac[g][XX];
-      fgy=freezefac[g][YY];
-      fgz=freezefac[g][ZZ];
       
       X=x[n][XX];
       Y=x[n][YY];
       Z=x[n][ZZ];
-      dx=muxx*X+muxy*Y+muxz*Z;
-      dy=muyx*X+muyy*Y+muyz*Z;
-      dz=muzx*X+muzy*Y+muzz*Z;
-      x[n][XX]=X+fgx*(dx-X);
-      x[n][YY]=Y+fgy*(dy-Y);
-      x[n][ZZ]=Z+fgz*(dz-Z);
+
+      if (!nFreeze[g][XX])
+	x[n][XX] = muxx*X+muxy*Y+muxz*Z;
+      if (!nFreeze[g][YY])
+	x[n][YY] = muyx*X+muyy*Y+muyz*Z;
+      if (!nFreeze[g][ZZ])
+	x[n][ZZ] = muzx*X+muzy*Y+muzz*Z;
       
       ncoupl++;
     }

@@ -90,7 +90,7 @@ static void do_both(rvec xold,rvec x_unc,rvec x,rvec g,
 
 static void do_update(int start,int homenr,double dt,
 		      rvec lamb[],t_grp_acc gstat[],
-		      rvec accel[],rvec freezefac[],
+		      rvec accel[],ivec nFreeze[],
 		      real invmass[],ushort ptype[],
 		      ushort cFREEZE[],ushort cACC[],ushort cTC[],
 		      rvec x[],rvec xprime[],rvec v[],rvec vold[],rvec f[])
@@ -101,18 +101,18 @@ static void do_update(int start,int homenr,double dt,
   real   uold,lg;
   int    n,d;
   
-  for (n=start; (n<start+homenr); n++) {  
+  for (n=start; n<start+homenr; n++) {  
     w_dt = invmass[n]*dt;
     gf   = cFREEZE[n];
     ga   = cACC[n];
     gt   = cTC[n];
     
-    for (d=0; (d<DIM); d++) {
+    for (d=0; d<DIM; d++) {
       vn             = v[n][d];
       lg             = lamb[gt][d];
       vold[n][d]     = vn;
       
-      if ((ptype[n] != eptDummy) && (ptype[n] != eptShell) && (freezefac[gf][d] != 0)) {
+      if ((ptype[n] != eptDummy) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
 	vv             = lg*(vn + f[n][d]*w_dt);
 	  
 	/* do not scale the mean velocities u */
@@ -121,15 +121,14 @@ static void do_update(int start,int homenr,double dt,
 	vb             = va + (1.0-lg)*uold;
 	v[n][d]        = vb;
 	xprime[n][d]   = x[n][d]+vb*dt;
-      }
-      else
+      } else
 	xprime[n][d]   = x[n][d];
     }
   }
 }
 
 static void do_update_lang(int start,int homenr,double dt,
-			   rvec freezefac[],ushort ptype[],ushort cFREEZE[],
+			   ivec nFreeze[],ushort ptype[],ushort cFREEZE[],
 			   rvec x[],rvec xprime[],rvec v[],rvec vold[],
 			   rvec f[],real temp, real fr, int *seed)
 {
@@ -157,7 +156,7 @@ static void do_update_lang(int start,int homenr,double dt,
     for (d=0; (d<DIM); d++) {
       vn             = v[n][d];
       vold[n][d]     = vn;
-      if ((ptype[n]!=eptDummy) && (ptype[n]!=eptShell) && freezefac[gf][d]) {
+      if ((ptype[n]!=eptDummy) && (ptype[n]!=eptShell) && !nFreeze[gf][d]) {
 	jran = (jran*ia+ic) & im;
 	jr = (real)jran;
 	jran = (jran*ia+ic) & im;
@@ -306,8 +305,8 @@ void update(int          natoms, 	/* number of atoms in simulation */
   static char      buf[256];
   static bool      bFirst=TRUE;
   static rvec      *xprime,*x_unc=NULL;
-  static int       ngtc,ngacc,ngfrz;
-  static rvec      *lamb,*freezefac;
+  static int       ngtc,ngacc;
+  static rvec      *lamb;
   static t_edpar   edpar;
   static bool      bConstraints;
 
@@ -331,23 +330,6 @@ void update(int          natoms, 	/* number of atoms in simulation */
     snew(xprime,natoms);
     snew(x_unc,homenr);
 
-    /* Freeze Factor: If a dimension of a group has to be frozen,
-     * the corresponding freeze fac will be 0.0 otherwise 1.0
-     * This is implemented by multiplying the CHANGE in position
-     * by freeze fac (also in do_pcoupl)
-     *
-     * Coordinates in shake can be frozen by setting the invmass
-     * of a particle to 0.0 (===> Infinite mass!)
-     */
-    ngfrz=ir->opts.ngfrz;
-    snew(freezefac,ngfrz);
-    for(n=0; (n<ngfrz); n++)
-      for(m=0; (m<DIM); m++) {
-	freezefac[n][m]=(ir->opts.nFreeze[n][m]==0) ? 1.0 : 0.0;
-/* 	printf("n %d m %d ff %g\n",n,m,freezefac[n][m]); */
-      }
-/*     for(i=0; (i<natoms); i++) */
-/*       printf("%d fg %d\n",i,md->cFREEZE[i]); */
     /* Copy the pointer to the external acceleration in the opts */
     ngacc=ir->opts.ngacc;
     
@@ -387,13 +369,13 @@ void update(int          natoms, 	/* number of atoms in simulation */
       /* use normal version of update */
       do_update(start,homenr,dt,
 		lamb,grps->grpstat,
-		ir->opts.acc,freezefac,
+		ir->opts.acc,ir->opts.nFreeze,
 		md->invmass,md->ptype,
 		md->cFREEZE,md->cACC,md->cTC,
 		x,xprime,v,vold,force);
     else if (ir->eI==eiLD) 
       do_update_lang(start,homenr,dt,
-		     freezefac,md->ptype,md->cFREEZE,
+		     ir->opts.nFreeze,md->ptype,md->cFREEZE,
 		     x,xprime,v,vold,force,
 		     ir->ld_temp,ir->ld_fric,&ir->ld_seed);
     else
@@ -487,7 +469,8 @@ void update(int          natoms, 	/* number of atoms in simulation */
   
   if (bDoUpdate) {  
     update_grps(start,homenr,grps,&(ir->opts),v,md);
-    do_pcoupl(ir,step,pressure,box,start,homenr,x,md->cFREEZE,nrnb,freezefac);
+    do_pcoupl(ir,step,pressure,box,start,homenr,x,md->cFREEZE,nrnb,
+	      ir->opts.nFreeze);
     where();
   }
 }

@@ -113,7 +113,7 @@ extern void calc_pres(int eBox,matrix box,
 extern void do_pcoupl(t_inputrec *ir,int step,tensor pres,
 		      matrix box,int start,int nr_atoms,
 		      rvec x[],ushort cFREEZE[],
-		      t_nrnb *nrnb,rvec freezefac[]);
+		      t_nrnb *nrnb,ivec nFreeze[]);
 		      
 #endif	/* _update_h */
 
