@@ -49,7 +49,7 @@ static int read_mass(char *massdata,t_mass **mass)
   FILE   *fp;
   char   line[STRLEN];
   t_mass *mdum;
-  real   mm;
+  double mm;
   int    i;
 
   fprintf(stderr,
@@ -61,7 +61,7 @@ static int read_mass(char *massdata,t_mass **mass)
   while(fgets(line,STRLEN,fp)) {
     srenew(*mass,i+1);
     mdum=*mass;
-    if (sscanf(line,"%s %s %f",mdum[i].resname,mdum[i].atomname,&mm)==3) {
+    if (sscanf(line,"%s %s %lf",mdum[i].resname,mdum[i].atomname,&mm)==3) {
       mdum[i].mass=mm;
       i++;
     } else
