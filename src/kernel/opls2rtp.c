@@ -61,7 +61,6 @@ static char *SRCID_opls2rtp_c = "$Id$";
 #include "string2.h"
 #include "topio.h"
 #include "smalloc.h" /* mem-allocation routines like snew */
-#include "protein.h"
 #include "resall.h"  /* routines for working with residue dbase files */
 #include "copyrite.h" /* copyright message and such */
 #include "futil.h"   /* Gromacs file utils, ffopen and such */
@@ -408,11 +407,3 @@ int main(int argc,char *argv[])
   return 0;
 }
  
-
-
-
-
-
-
-
-
