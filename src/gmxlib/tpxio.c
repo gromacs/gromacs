@@ -45,7 +45,7 @@
 #include "copyrite.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version = 8;
+static int tpx_version = 9;
 /* This number should be the most recent incompatible version */
 static int tpx_incompatible_version = 7;
 /* This is the version of the file we are reading */
@@ -216,11 +216,18 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
 	    file_version,tpx_version);
   }
   /* set things which are in tpx_version but not in a previos version */
-  /*
+
   if (file_version < tpx_version) {
+    if (ir->coulombtype > eelPME)
+      ir->coulombtype += 1;
+    ir->pme_order  = 4;
+    ir->ewald_rtol = 0.00001;
+    ir->bOptFFT    = 0;
   } else {
+    do_int(ir->pme_order);
+    do_real(ir->ewald_rtol);
+    do_int(ir->bOptFFT);
   }
-  */
 }
 
 static void do_harm(t_iparams *iparams,bool bRead)
