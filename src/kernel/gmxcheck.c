@@ -30,6 +30,7 @@ static char *SRCID_gmxcheck_c = "$Id$";
 
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include "main.h"
 #include "macros.h"
 #include "math.h"
@@ -43,6 +44,13 @@ static char *SRCID_gmxcheck_c = "$Id$";
 #include "trnio.h"
 #include "xtcio.h"
 #include "tpbcmp.h"
+#include "vdw.h"
+#include "mass.h"
+#include "vec.h"
+#include "pbc.h"
+#include "physics.h"
+#include "smalloc.h"
+#include "confio.h"
 
 void chk_trj(char *fn)
 {
@@ -234,13 +242,164 @@ void chk_ndx(char *fn)
   ffclose(in);
 }
 
+void chk_stx(char *fn)
+{
+  int       natom,i,j,k,nvdw,nmass;
+  char      title[STRLEN];
+  t_atoms   atoms;
+  rvec      *x,*v;
+  rvec      dx;
+  matrix    box;
+  bool      bV,bX,bB,bFirst,bOut;
+  real      r2,ekin,temp1,temp2;
+  t_vdw     *vdw;
+  real      *atom_vdw;
+  t_mass    *mass;
+  
+  fprintf(stderr,"Checking coordinate file %s\n",fn);
+  atoms.nr=0;
+  atoms.nres=0;
+  get_stx_coordnum(fn,&natom);
+  fprintf(stderr,"%d atoms in file\n",natom);
+  snew(atoms.atomname,natom);
+  snew(atoms.resname,natom);
+  snew(atoms.atom,natom);
+  snew(x,natom);
+  snew(v,natom);
+  read_stx_conf(fn,title,&atoms,x,v,box);
+  
+  /* check coordinates and box */
+  bV=FALSE;
+  bX=FALSE;
+  for (i=0; (i<natom) && !(bV && bX); i++)
+    for (j=0; (j<DIM) && !(bV && bX); j++) {
+      bV=bV || (v[i][j]!=0);
+      bX=bX || (x[i][j]!=0);
+    }
+  bB=FALSE;
+  for (i=0; (i<DIM) && !bB; i++)
+    for (j=0; (j<DIM) && !bB; j++)
+      bB=bB || (box[i][j]!=0);
+  
+  fprintf(stderr,"%scoordinates found\n",bX?"":"No ");
+  fprintf(stderr,"%sbox         found\n",bB?"":"No ");
+  fprintf(stderr,"%svelocities  found\n",bV?"":"No ");
+  fprintf(stderr,"\n");
+  
+  /* check velocities */
+  if (bV) {
+    nmass=read_mass("atommass.dat",&mass);
+    for (i=0; (i<natom); i++)
+      if ((atoms.atom[i].m=get_mass(nmass,mass,*(atoms.atomname[i])))==0.0)
+	if (*(atoms.atomname[i])[0]=='H')
+	  atoms.atom[i].m=1.008;
+	else
+	  atoms.atom[i].m=12.0110; /* carbon mass */
+    ekin=0.0;
+    for (i=0; (i<natom); i++)
+      for (j=0; (j<DIM); j++)
+	ekin+=0.5*atoms.atom[i].m*v[i][j]*v[i][j];
+    temp1=(2.0*ekin)/(natom*DIM*BOLTZ); 
+    temp2=(2.0*ekin)/(natom*(DIM-1)*BOLTZ); 
+    fprintf(stderr,"Assuming the number of degrees of freedom to be "
+	    "Natoms * 3 or Natoms * 2,\n"
+	    "the velocities correspond to a temperature of the system\n"
+	    "of %g K or %g K respectively.\n\n",temp1,temp2);
+  }
+  
+  /* check coordinates */
+  if (bX) {
+    fprintf(stderr,"Checking for atoms closer than 80%% of smallest "
+		    "VanderWaals distance:\n");
+    nvdw=read_vdw("radii.vdw",&vdw);
+    snew(atom_vdw,natom);
+    for (i=0; (i<natom); i++)
+      if ((atom_vdw[i]=get_vdw(nvdw,vdw,*(atoms.atomname[i])))==0.0)
+	if ( ((*(atoms.atomname[i]))[0]=='H') ||
+	     (isdigit((*(atoms.atomname[i]))[0]) && 
+	      ((*(atoms.atomname[i]))[1]=='H')) )
+	  atom_vdw[i]=0.1;
+	else
+	  atom_vdw[i]=0.2;
+      
+    if (bB) 
+      init_pbc(box,FALSE);
+      
+    bFirst=TRUE;
+    for (i=0; (i<natom); i++) {
+      if (((i+1)%10)==0)
+	fprintf(stderr,"\r%5d",i+1);
+      for (j=i+1; (j<natom); j++) {
+	if (bB)
+	  pbc_dx(box,x[i],x[j],dx);
+	else
+	  rvec_sub(x[i],x[j],dx);
+	r2=iprod(dx,dx);
+	if (r2<=sqr(0.8*min(atom_vdw[i],atom_vdw[j]))) {
+	  if (bFirst) {
+	    fprintf(stderr,"\r%5s %4s %8s %5s  %5s %4s %8s %5s  %6s\n",
+		    "atom#","name","residue","r_vdw",
+		    "atom#","name","residue","r_vdw","distance");
+	    bFirst=FALSE;
+	  }
+	  fprintf(stderr,
+		  "\r%5d %4s %4s%4d %-5.3g  %5d %4s %4s%4d %-5.3g  %-6.4g\n",
+		  i+1,*(atoms.atomname[i]),
+		  *(atoms.resname[atoms.atom[i].resnr]),atoms.atom[i].resnr+1,
+		  atom_vdw[i],
+		  j+1,*(atoms.atomname[j]),
+		  *(atoms.resname[atoms.atom[j].resnr]),atoms.atom[j].resnr+1,
+		  atom_vdw[j],
+		  sqrt(r2) );
+	}
+      }
+    }
+    if (bFirst) 
+      fprintf(stderr,"\rno close atoms found\n");
+    fprintf(stderr,"\r      \n");
+    
+    if (bB) {
+      /* check box */
+      bFirst=TRUE;
+      k=0;
+      for (i=0; (i<natom) && (k<10); i++) {
+	bOut=FALSE;
+	for(j=0; (j<DIM) && !bOut; j++)
+	  bOut = bOut || (x[i][j]<0) || (x[i][j]>box[j][j]);
+	if (bOut) {
+	  k++;
+	  if (bFirst) {
+	    fprintf(stderr,"Atoms outide box ( ");
+	    for (j=0; (j<DIM); j++)
+	      fprintf(stderr,"%g ",box[j][j]);
+	    fprintf(stderr,"):\n%5s %4s %8s %5s  %s\n",
+		    "atom#","name","residue","r_vdw","coordinate");
+	    bFirst=FALSE;
+	  }
+	  fprintf(stderr,
+		  "%5d %4s %4s%4d %-5.3g",
+		  i,*(atoms.atomname[i]),*(atoms.resname[atoms.atom[i].resnr]),
+		  atoms.atom[i].resnr,atom_vdw[i]);
+	  for (j=0; (j<DIM); j++)
+	    fprintf(stderr," %6.3g",x[i][j]);
+	  fprintf(stderr,"\n");
+	}
+      }
+      if (k==10)
+	fprintf(stderr,"(maybe more)\n");
+      if (bFirst) 
+	fprintf(stderr,"no atoms found outside box\n");
+      fprintf(stderr,"\n");
+    }
+  }
+}
+
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "gmxcheck reads a binary trajectory ([TT].trj[tt]),  ",
-    "a xtc ([TT].xtc[tt]) or an index ([TT].ndx[tt]) file and",
-    "prints out useful information about these files",
-    "and their contents of course.[PAR]",
+    "gmxcheck reads a binary trajectory ([TT].trj[tt]), ",
+    "a xtc ([TT].xtc[tt]), an index ([TT].ndx[tt]) or a coordinate ",
+    "([TT}.gro[tt]) file and prints out useful information about them.[PAR]",
     "The program will compare binary topology ([TT].tpx[tt]) files",
     "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied."
   };
@@ -248,7 +407,8 @@ int main(int argc,char *argv[])
     { efTRX, "-f", NULL, ffOPTRD },
     { efNDX, "-n", NULL, ffOPTRD },
     { efTPX, "-s1", "top1", ffOPTRD },
-    { efTPX, "-s2", "top2", ffOPTRD }
+    { efTPX, "-s2", "top2", ffOPTRD },
+    { efSTX, "-c", NULL, ffOPTRD }
 
   };
 #define NFILE asize(fnm)
@@ -258,12 +418,12 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,0,NULL,
 		    asize(desc),desc,0,NULL);
   
-  if (ftp2bSet(efTRX,NFILE,fnm)) {
+  if (ftp2bSet(efTRX,NFILE,fnm))
     chk_trj(ftp2fn(efTRX,NFILE,fnm));
-  }
-  if (ftp2bSet(efNDX,NFILE,fnm)) {
+  
+  if (ftp2bSet(efNDX,NFILE,fnm))
     chk_ndx(ftp2fn(efNDX,NFILE,fnm));
-  }
+  
   if (opt2bSet("-s1",NFILE,fnm))
     fn1=opt2fn("-s1",NFILE,fnm);
   if (opt2bSet("-s2",NFILE,fnm))
@@ -272,6 +432,9 @@ int main(int argc,char *argv[])
     comp_tpx(fn1,fn2);
   else if (fn1 || fn2)
     fprintf(stderr,"Please give me TWO .tpr/.tpa/.tpb files!\n");
+  
+  if (ftp2bSet(efSTX,NFILE,fnm))
+    chk_stx(ftp2fn(efSTX,NFILE,fnm));
   
   thanx(stderr);
   
