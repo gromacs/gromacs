@@ -86,7 +86,8 @@ that are already available by default are:
 <dt><b>-DFLEX_SPC</b>
 <dd>Will tell grompp to include FLEX_SPC in stead of SPC into your
 topology, this is necessary to make 
-<b><A HREF="#run">conjugate gradient</A></b> work and will allow 
+<b><A HREF="#run">conjugate gradients</A></b> or
+<b><A HREF="#run">l-bfgs</A></b> minimization work and will allow 
 <b><A HREF="#run">steepest descent</A></b> to minimize further.</dd>
 <dt><b>-DPOSRE</b></dt>
 <dd>Will tell grompp to include posre.itp into your topology, used for
@@ -140,6 +141,12 @@ is done every once in a while, this is determined by
 <b><A HREF="#em">nstcgsteep</A></b>.
 For a minimization prior to a normal mode analysis, which requires
 a very high accuracy, GROMACS should be compiled in double precision.</dd>
+<dt><b>l-bfgs</b></dt>
+<dd>A <!--Idx-->quasi-Newtonian<!--EIdx--> algorithm for energy minimization
+according to the low-memory Broyden-Fletcher-Goldfarb-Shanno approach.
+In practice this seems to converge faster than Conjugate Gradients, but due
+to the correction steps necessary it is not (yet) parallelized.
+</dd>
 <dt><b>nm</b></dt>
 <dd><!--Idx-->Normal mode analysis<!--EIdx--> is performed
 on the structure in the <tt>tpr</tt> file</dd>. GROMACS should be
@@ -212,6 +219,10 @@ this value</dd>
 <dt><h4>nstcgsteep: (1000) [steps]</h4></dt>
 <dd>frequency of performing 1 steepest descent step while doing
 conjugate gradient energy minimization.</dd>
+<dt><h4>nbfgscorr: (10)</h4></dt>
+<dd>Number of correction steps to use for L-BFGS minimization. A higher
+number is (at least theoretically) more accurate, but slower.</dd>
+
 </dl>
 
 <A NAME="xmdrun"><br>
@@ -360,6 +371,16 @@ The neighbor search cut-off <b>rlist</b> should be 0.1 to 0.3 nm larger than
 <b>rcoulomb</b> to accommodate for the size of charge groups and diffusion
 between neighbor list updates.</dd>
 
+<dt><b>Switch</b></dt>
+<dd>The Coulomb
+potential is normal out to <b>rcoulomb_switch</b>, after which it is switched
+off to reach zero at <b>rcoulomb</b>. Both the potential and force functions
+are continuously smooth, but be aware that all switch functions will give rise
+to a bulge (increase) in the force (since we are switching the potential).
+The neighbor search cut-off <b>rlist</b> should be 0.1 to 0.3 nm larger than
+<b>rcoulomb</b> to accommodate for the size of charge groups and diffusion
+between neighbor list updates.</dd>
+
 <dt><b>User</b></dt> 
 <dd><a name="user"></a><tt>mdrun</tt> will now expect to find a file
 <tt>table.xvg</tt> with user-defined potential functions for
@@ -405,6 +426,16 @@ and <b>rvdw</b>.  The neighbor search cut-off <b>rlist</b> should be
 0.1 to 0.3 nm larger than <b>rvdw</b> to accommodate for the size of
 charge groups and diffusion between neighbor list
 updates.</dd>
+
+<dt><b>Switch</b></dt>
+<dd>The LJ (not Buckingham)
+potential is normal out to <b>rvdw_switch</b>, after which it is switched
+off to reach zero at <b>rvdw</b>. Both the potential and force functions
+are continuously smooth, but be aware that all switch functions will give rise
+to a bulge (increase) in the force (since we are switching the potential).
+The neighbor search cut-off <b>rlist</b> should be 0.1 to 0.3 nm larger than
+<b>rvdw</b> to accommodate for the size of charge groups and diffusion
+between neighbor list updates.</dd>
 
 <dt><b>User</b></dt>
 <dd><a href="#user">See above</a>
@@ -955,6 +986,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#bond2">lincs_order</A><br>
 <A HREF="#bond2">lincs_warnangle</A><br>
 <A HREF="#bond2">morse</A><br>
+<A HREF="#em">nbfgscorr</A><br>
 <A HREF="#em">nstcgsteep</A><br>
 <A HREF="#run">nstcomm</A><br>
 <A HREF="#nmr">nstdisreout</A><br>
