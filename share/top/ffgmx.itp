@@ -1,5 +1,6 @@
 [ defaults ]
-1	1
+; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ
+1		1		no		1.0	1.0
 
 #include "ffgmxnb.itp"
 #include "ffgmxbon.itp"
