@@ -76,19 +76,23 @@ void rm_gropbc(t_atoms *atoms,rvec x[],matrix box)
     }
 }
 
-void calc_rm_cm(int isize, atom_id index[], int natoms, rvec x[], rvec xcm)
+void calc_rm_cm(int isize, atom_id index[], t_atoms *atoms, rvec x[], rvec xcm)
 {
-  int i,m;
-  
+  int i,d;
+  real tm,m;
+
   /* calculate and remove center of mass of reference structure */
-  for(m=0; m<DIM; m++) {
-    xcm[m]=0;
-    for(i=0; i<isize; i++)
-      xcm[m]+=x[index[i]][m];
-    xcm[m]/=isize;
-    for(i=0; i<natoms; i++)
-      x[i][m]-=xcm[m];
+  tm = 0;
+  clear_rvec(xcm);
+  for(i=0; i<isize; i++) {
+    m = atoms->atom[i].m;
+    for(d=0; d<DIM; d++)
+      xcm[d] += m*x[index[i]][d];
+    tm += m;
   }
+  svmul(1/tm,xcm,xcm);
+  for(i=0; i<atoms->nr; i++)
+    rvec_dec(x[i],xcm);
 }
 
 int build_res_index(int isize, atom_id index[], t_atom atom[], int rindex[])
@@ -374,10 +378,11 @@ int gmx_confrms(int argc,char *argv[])
     "(use [TT]rasmol -nmrpdb[tt]). Also in a [TT].pdb[tt] file, B-factors",
     "calculated from the atomic MSD values can be written with [TT]-bfac[tt].",
   };
-  static bool bOne=FALSE,bRmpbc=FALSE,bName=FALSE,bBfac=FALSE,bFit=TRUE;
+  static bool bOne=FALSE,bRmpbc=FALSE,bMW=TRUE,bName=FALSE,bBfac=FALSE,bFit=TRUE;
   
   t_pargs pa[] = {
     { "-one", FALSE, etBOOL, {&bOne},   "Only write the fitted structure to file" },
+    { "-mw",  FALSE, etBOOL, {&bMW},    "Mass-weighted fitting and RMSD" },
     { "-pbc", FALSE, etBOOL, {&bRmpbc}, "Try to make molecules whole again" },
     { "-fit", FALSE, etBOOL, {&bFit},   
       "Do least squares superposition of the target structure to the reference" },
@@ -398,10 +403,9 @@ int gmx_confrms(int argc,char *argv[])
   char    *conf1file, *conf2file, *matchndxfile;
   FILE    *fp;
   char    title1[STRLEN],title2[STRLEN],*name1,*name2;
-  t_topology top;
+  t_topology top1,top2;
   t_atoms atoms1,atoms2;
-  int     natoms1,natoms2,warn=0;
-  matrix  box;
+  int     warn=0;
   atom_id at;
   real    *w_rls,mass,totmass;
   rvec    *x1,*v1,*x2,*v2,*fit_x;
@@ -430,11 +434,10 @@ int gmx_confrms(int argc,char *argv[])
   
   /* reading reference structure from first structure file */
   fprintf(stderr,"\nReading first structure file\n");
-  read_tps_conf(conf1file,title1,&top,&x1,&v1,box,TRUE);
-  atoms1 = top.atoms;
+  read_tps_conf(conf1file,title1,&top1,&x1,&v1,box1,TRUE);
+  atoms1 = top1.atoms;
   fprintf(stderr,"%s\nContaining %d atoms in %d residues\n",
 	  title1,atoms1.nr,atoms1.nres);
-  srenew(atoms1.resname,atoms1.nres);
   
   if ( bRmpbc ) 
     rm_gropbc(&atoms1,x1,box1);
@@ -448,17 +451,11 @@ int gmx_confrms(int argc,char *argv[])
     fatal_error(0,"Need >= 3 points to fit!\n");
   
   /* reading second structure file */
-  get_stx_coordnum(conf2file,&(atoms2.nr));
-  snew(x2,atoms2.nr);
-  snew(v2,atoms2.nr);
-  snew(atoms2.resname,atoms2.nr);
-  snew(atoms2.atom,atoms2.nr);
-  snew(atoms2.atomname,atoms2.nr);
   fprintf(stderr,"\nReading second structure file\n");
-  read_stx_conf(conf2file,title2,&atoms2,x2,v2,box2);
+  read_tps_conf(conf2file,title2,&top2,&x2,&v2,box2,TRUE);
+  atoms2 = top2.atoms;
   fprintf(stderr,"%s\nContaining %d atoms in %d residues\n",
 	  title2,atoms2.nr,atoms2.nres);
-  srenew(atoms2.resname,atoms2.nres);
   
   if ( bRmpbc ) 
     rm_gropbc(&atoms2,x2,box2);
@@ -496,19 +493,23 @@ int gmx_confrms(int argc,char *argv[])
 		i+1,index1[i]+1,name1,index2[i]+1,name2);
       warn++;
     }
+    if (!bMW) {
+      atoms1.atom[index1[i]].m = 1;
+      atoms2.atom[index2[i]].m = 1;
+    }
   }
   if (warn)
     fprintf(stderr,"%d atomname%s did not match\n",warn,(warn==1) ? "":"s");
   
   if (bFit) {  
     /* calculate and remove center of mass of structures */
-    calc_rm_cm(isize1, index1, atoms1.nr, x1, xcm1);
-    calc_rm_cm(isize2, index2, atoms2.nr, x2, xcm2);
+    calc_rm_cm(isize1, index1, &atoms1, x1, xcm1);
+    calc_rm_cm(isize2, index2, &atoms2, x2, xcm2);
     
     snew(w_rls,atoms2.nr);
     snew(fit_x,atoms2.nr);
     for(at=0; (at<isize1); at++) {
-      w_rls[index2[at]] = 1.0;
+      w_rls[index2[at]] = atoms1.atom[index1[at]].m;
       copy_rvec(x1[index1[at]],fit_x[index2[at]]);
     }
     
@@ -532,7 +533,7 @@ int gmx_confrms(int argc,char *argv[])
   minmsd  =  1e18;
   snew(msds, isize1);
   for(at=0; at<isize1; at++) {
-    mass = 1;
+    mass = atoms1.atom[index1[at]].m;
     for(m=0; m<DIM; m++) {
       msd = sqr(x1[index1[at]][m] - x2[index2[at]][m]);
       rms += msd*mass;
