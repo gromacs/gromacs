@@ -1,58 +1,81 @@
 # remove all environment variables set by GMXRC
 
-if ( ! $?GMXHOME ) then
-  if ( "$1" != "-quiet" ) echo "no GROMACS environment"
-  exit
-endif
+setenv bVerb 1
+if ( "$1" == "-quiet" ) setenv bVerb 0
+
+if ($bVerb) echo "Being loud and noisy"
 
 if ( $shell == "/bin/tcsh" ) then
-  if ( "$1" != "-quiet" ) echo "uncomplete all GROMACS programs"
   if ( $?GMXBIN ) then
-    foreach f ( `\ls $GMXBIN` )
-      uncomplete $f
-    end
+    if ( -d $GMXBIN ) then
+      if ( $bVerb ) echo "uncomplete all GROMACS programs"
+      foreach f ( `\ls $GMXBIN` )
+        uncomplete $f
+      end
+    endif
   endif
 endif
 
-if ( ($?LD_LIBRARY_PATH) && ($?CPU) ) then
-  if ($LD_LIBRARY_PATH == $GMXHOME/lib/$CPU) then
-    if ( "$1" != "-quiet" ) echo "Removed $LD_LIBRARY_PATH from "\$"LD_LIBRARY_PATH"
-    unsetenv LD_LIBRARY_PATH
+if ( ($?LD_LIBRARY_PATH) && ($?GMXHOME) && (($?GMXCPU) || ($?CPU)) ) then
+  if ( ! $?GMXCPU ) setenv GMXCPU $CPU
+  unsetenv TEMPPATH
+  unsetenv PATHSET
+  foreach i ( `echo $LD_LIBRARY_PATH | sed "s/:/ /g"` )
+    setenv PATHSET
+    if ( ( "$i"  != "$GMXHOME/lib/$GMXCPU" ) && ( "$i/" != "$GMXHOME/lib/$GMXCPU" ) ) then
+      if ( ! $?TEMPPATH ) then
+	setenv TEMPPATH $i
+      else
+	setenv TEMPPATH "$TEMPPATH":"$i"
+      endif
+    else
+      if ( $bVerb ) echo "Removed $GMXHOME/lib/$GMXCPU from LD_LIBRARY_PATH"
+    endif
+  end
+  if ($?PATHSET) then
+    if (! $?TEMPPATH) setenv TEMPPATH
+    setenv LD_LIBRARY_PATH $TEMPPATH
+    unsetenv TEMPPATH
+    unsetenv PATHSET
+  else
+    echo "You might want to remove $GMXHOME/lib/$GMXCPU from LD_LIBRARY_PATH"
   endif
 endif
-if ( ($?LD_LIBRARY_PATH) && ($?GMXCPU) ) then 
-  if ($LD_LIBRARY_PATH == $GMXHOME/lib/$GMXCPU) then
-    if ( "$1" != "-quiet" ) echo "Removed $LD_LIBRARY_PATH from "\$"LD_LIBRARY_PATH"
-    unsetenv LD_LIBRARY_PATH
-  endif
+
+if ($?GMXCPU) then
+  if ( $bVerb ) echo "unsetenv GMXCPU ($GMXCPU)"
+  unsetenv GMXCPU
 endif
-if ( ($?LD_LIBRARY_PATH) && ( "$1" != "-quiet" ) ) echo "You might want to remove the gmx path from "\$"LD_LIBRARY_PATH"
 
 if ($?GMXLIB) then
-  if ( "$1" != "-quiet" ) echo "unsetenv GMXLIB ($GMXLIB)"
+  if ( $bVerb ) echo "unsetenv GMXLIB ($GMXLIB)"
   unsetenv GMXLIB 
 endif
 
-if ($?GMXMAN) then
+if ( ($?GMXMAN) && ($?MANPATH) ) then
   if ($MANPATH == $GMXMAN) then
     unsetenv MANPATH
+  else
+    if ( $bVerb ) echo "You might want to remove $GMXMAN ("\$"GMXMAN) from "\$"MANPATH"
   endif
-  if ($?MANPATH) then
-    if ( "$1" != "-quiet" ) echo "You might want to remove $GMXMAN ("\$"GMXMAN) from "\$"MANPATH"
-  endif
-  if ( "$1" != "-quiet" ) echo "unsetenv GMXMAN ($GMXMAN)"
+endif
+
+if ($?GMXMAN) then
+  if ( $bVerb ) echo "unsetenv GMXMAN ($GMXMAN)"
   unsetenv GMXMAN
 endif
 
 if ($?GMXHOME) then
-  if ( "$1" != "-quiet" ) echo "unsetenv GMXHOME ($GMXHOME)"
+  if ( $bVerb ) echo "unsetenv GMXHOME ($GMXHOME)"
   unsetenv GMXHOME
 endif
+
 if ($?GMXROOT) then
-  if ( "$1" != "-quiet" ) echo "unsetenv GMXROOT ($GMXROOT)"
+  if ( $bVerb ) echo "unsetenv GMXROOT ($GMXROOT)"
   unsetenv GMXROOT
 endif
-if ($?GMXBIN) then
+
+if ( ($?GMXBIN) && ($?PATH) ) then
   foreach i ( $path )
     if ( ( "$i" != "$GMXBIN" ) && ( "$i/" != "$GMXBIN" ) ) then
       if ( ! $?TEMPPATH ) then
@@ -60,40 +83,41 @@ if ($?GMXBIN) then
       else
 	setenv TEMPPATH "$TEMPPATH":"$i"
       endif
+    else
+      if ( $bVerb ) echo Removed $GMXBIN from path
     endif
   end
+  if (! $?TEMPPATH) setenv TEMPPATH
   setenv PATH $TEMPPATH
   unsetenv TEMPPATH
-  if ( "$1" != "-quiet" ) echo Removed $GMXBIN from path
-  if ( "$1" != "-quiet" ) echo "unsetenv GMXBIN ($GMXBIN)"
+endif
+
+if ($?GMXBIN) then
+  if ( $bVerb ) echo "unsetenv GMXBIN ($GMXBIN)"
   unsetenv GMXBIN
 endif
 if ($?VER) then
-  if ( "$1" != "-quiet" ) echo "unsetenv VER ($VER)"
+  if ( $bVerb ) echo "unsetenv VER ($VER)"
   unsetenv VER
 endif
 if ($?GMXVER) then
-  if ( "$1" != "-quiet" ) echo "unsetenv GMXVER ($GMXVER)"
+  if ( $bVerb ) echo "unsetenv GMXVER ($GMXVER)"
   unsetenv GMXVER
 endif
-if ($?GMXCPU) then
-  if ( "$1" != "-quiet" ) echo "unsetenv GMXCPU ($GMXCPU)"
-  unsetenv GMXCPU
-endif
 if ($?GMXNPRI) then
-  if ( "$1" != "-quiet" ) echo "unsetenv GMXNPRI ($GMXNPRI)"
+  if ( $bVerb ) echo "unsetenv GMXNPRI ($GMXNPRI)"
   unsetenv GMXNPRI
 endif
 if ($?GMXFONT) then
-  if ( "$1" != "-quiet" ) echo "unsetenv GMXFONT ($GMXFONT)"
+  if ( $bVerb ) echo "unsetenv GMXFONT ($GMXFONT)"
   unsetenv GMXFONT
 endif
 if ($?AMBBIN) then
-  if ( "$1" != "-quiet" ) echo "unsetenv AMBBIN ($AMBBIN)"
+  if ( $bVerb ) echo "unsetenv AMBBIN ($AMBBIN)"
   unsetenv AMBBIN
 endif
 if ($?IAMCOOL) then
-  if ( "$1" != "-quiet" ) echo "unsetenv IAMCOOL ($IAMCOOL)"
+  if ( $bVerb ) echo "unsetenv IAMCOOL ($IAMCOOL)"
   unsetenv IAMCOOL
 endif
 
