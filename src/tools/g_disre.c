@@ -264,7 +264,7 @@ int main (int argc,char *argv[])
 
   check_nprocs_top(ftp2fn(efTPX,NFILE,fnm),&top,1);
 
-  g   = mk_graph(&top.idef,top.atoms.nr,0);  
+  g   = mk_graph(&top.idef,top.atoms.nr,FALSE,FALSE);  
   cr  = init_par(&argc,&argv);
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
   

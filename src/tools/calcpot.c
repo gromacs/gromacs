@@ -235,7 +235,7 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   init_groups(stdlog,*mdatoms,&(parm->ir.opts),grps);  
 
   /* Calculate intramolecular shift vectors to make molecules whole again */
-  *graph = mk_graph(&(top->idef),top->atoms.nr,FALSE);
+  *graph = mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
   mk_mshift(stdlog,*graph,parm->box,*x);
   
   /* Turn off watertype optimizations, to ease coding above. */
