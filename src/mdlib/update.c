@@ -142,12 +142,10 @@ static void do_update_visc(int start,int homenr,double dt,
   int    gt;
   real   vn,vv,va,vc;
   real   lg;
-  real   fac,cosz,mvcos;
+  real   fac,cosz;
   int    n,d;
   
   fac = 2*M_PI/(box[ZZ][ZZ]);
-
-  mvcos = 0;
   
   for (n=start; n<start+homenr; n++) {  
     w_dt = invmass[n]*dt;
@@ -423,6 +421,7 @@ void calc_ke_part_visc(bool bFirstStep,int start,int homenr,
   t_cos_acc    *cosacc=&(grps->cosacc);
   real         dvdl;
   real         fac,cosz;
+  double       mvcos;
 
   for (g=0; g<opts->ngtc; g++)
     clear_mat(grps->tcstat[g].ekin); 
@@ -432,7 +431,7 @@ void calc_ke_part_visc(bool bFirstStep,int start,int homenr,
       copy_rvec(v[n],vold[n]);
 
   fac = 2*M_PI/box[ZZ][ZZ];
-  cosacc->mvcos = 0;
+  mvcos = 0;
   dvdl = 0;
   for(n=start; n<start+homenr; n++) {  
     ga   = md->cACC[n];
@@ -444,11 +443,11 @@ void calc_ke_part_visc(bool bFirstStep,int start,int homenr,
       vt[n][d]   = vvt;
       v_corrt[d] = vvt;
     }
-    cosz           = cos(fac*x[n][ZZ]);
+    cosz         = cos(fac*x[n][ZZ]);
     /* Subtract the profile for the kinetic energy */
-    v_corrt[XX]   -= cosz*cosacc->vcos;
+    v_corrt[XX] -= cosz*cosacc->vcos;
     /* Calculate the amplitude of the new velocity profile */
-    cosacc->mvcos += 2*cosz*md->massT[n]*v[n][XX];
+    mvcos       += 2*cosz*md->massT[n]*v[n][XX];
 
     for(d=0; d<DIM; d++) {
       tcstat[gt].ekin[XX][d]+=hm*v_corrt[XX]*v_corrt[d];
@@ -460,6 +459,7 @@ void calc_ke_part_visc(bool bFirstStep,int start,int homenr,
     }
   }
   *dvdlambda += dvdl;
+  cosacc->mvcos = mvcos;
 
   inc_nrnb(nrnb,eNR_EKIN,homenr);
 }
