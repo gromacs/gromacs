@@ -146,6 +146,8 @@ $(LIB)(fnbf.o):		fnbf.m4 inner.m4 $(M4MAC) $(M4FILE) $(CPUMAKEF)
 			$(AR) $(ARFLAGS) $(LIB) fnbf.o
 			$(RM) fnbf.c inner.h fnbf.o
 
+fnbf.c:			fnbf.m4 inner.m4 $(M4MAC) $(M4FILE) $(CPUMAKEF) 
+			 $(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) fnbf.m4 > fnbf.c 
 ifeq ($(CC_MKINL),)
 CC_MKINL	= $(CC) $(C-FLAGS)
 endif
