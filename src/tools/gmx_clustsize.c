@@ -66,9 +66,9 @@
 static void clust_size(char *ndx,char *trx,char *xpm,
 		       char *xpmw,char *ncl,char *acl, 
 		       char *mcl,char *histo,char *tempf,
-		       bool bMol,bool bPBC,char *tpr,
+		       char *mcn,bool bMol,bool bPBC,char *tpr,
 		       real cut,int nskip,int nlevels,
-		       t_rgb rmid,t_rgb rhi)
+		       t_rgb rmid,t_rgb rhi,int ndf)
 {
   FILE    *fp,*gp,*hp,*tp;
   atom_id *index=NULL;
@@ -84,7 +84,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   t_topology  top;
   t_block *mols=NULL;
   int     version,generation,sss,ii,jj,aii,ajj,nsame;
-  real    ttt,lll,temp;
+  real    ttt,lll,temp,tfac;
   /* Cluster size distribution (matrix) */
   real    **cs_dist=NULL;
   real    tf,dx2,cut2,*t_x=NULL,*t_y,cmid,cmax,cav,ekin;
@@ -104,13 +104,18 @@ static void clust_size(char *ndx,char *trx,char *xpm,
     
   natoms = fr.natoms;
   x      = fr.x;
+  read_tpxheader(tpr,&tpxh,TRUE,&version,&generation);
+  if (tpxh.natoms != natoms) 
+    gmx_fatal(FARGS,"tpr (%d atoms) and xtc (%d atoms) do not match!",
+	      tpxh.natoms,natoms);
+  read_tpx(tpr,&sss,&ttt,&lll,NULL,NULL,&natoms,NULL,NULL,NULL,&top);
+  
+  if (ndf <= -1)
+    tfac = 1;
+  else 
+    tfac = ndf/(3.0*natoms);
+  
   if (bMol) {
-    read_tpxheader(tpr,&tpxh,TRUE,&version,&generation);
-    if (tpxh.natoms != natoms) 
-      gmx_fatal(FARGS,"tpr (%d atoms) and xtc (%d atoms) do not match!",
-		tpxh.natoms,natoms);
-    
-    read_tpx(tpr,&sss,&ttt,&lll,NULL,NULL,&natoms,NULL,NULL,NULL,&top);
     mols = &(top.blocks[ebMOLS]);
 
     /* Make dummy index */
@@ -242,7 +247,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
 	    ai    = index[i];
 	    ekin += 0.5*top.atoms.atom[ai].m*iprod(v[ai],v[ai]);
 	  }
-	temp = (ekin*2.0)/(3.0*max_clust_size*BOLTZ);
+	temp = (ekin*2.0)/(3.0*tfac*max_clust_size*BOLTZ);
 	fprintf(tp,"%10.3f  %10.3f\n",fr.time,temp);
       }
     }
@@ -253,6 +258,16 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   fclose(gp);
   fclose(hp);
   fclose(tp);
+  if (max_clust_ind >= 0) {
+    fp = fopen(mcn,"w");
+    fprintf(fp,"[ max_clust ]\n");
+    for(i=0; (i<nindex); i++) 
+      if (clust_index[i] == max_clust_ind) {
+	for(j=mols->index[i]; (j<mols->index[i+1]); j++)
+	  fprintf(fp,"%d\n",mols->a[j]+1);
+      }
+    fclose(fp);
+  }
   
   /* Look for the smallest entry that is not zero 
    * This will make that zero is white, and not zero is coloured.
@@ -316,11 +331,20 @@ int gmx_clustsize(int argc,char *argv[])
     "In this case an index file would still contain atom numbers",
     "or your calculcation will die with a SEGV.[PAR]",
     "When velocities are present in your trajectory, the temperature of",
-    "the largest cluster will be printed in a separate xvg file."
+    "the largest cluster will be printed in a separate xvg file assuming",
+    "that the particles are free to move. If you are using constraints,",
+    "please correct the temperature. For instance water simulated with SHAKE",
+    "or SETTLE will yield a temperature that is 1.5 times too low. You can",
+    "compensate for this with the -ndf option. Remember to take the removal",
+    "of center of mass motion into account.[PAR]",
+    "The [TT]-mc[tt] option will produce an index file containing the",
+    "atom numbers of the largest cluster."
   };
+  
   static real cutoff   = 0.35;
   static int  nskip    = 0;
   static int  nlevels  = 20;
+  static int  ndf      = -1;
   static bool bMol     = FALSE;
   static bool bPBC     = TRUE;
   static rvec rlo      = { 1.0, 1.0, 0.0 };
@@ -336,6 +360,8 @@ int gmx_clustsize(int argc,char *argv[])
       "Number of frames to skip between writing" },
     { "-nlevels",  FALSE, etINT,  {&nlevels},
       "Number of levels of grey in xpm output" },
+    { "-ndf",      FALSE, etINT,  {&ndf},
+      "Number of degrees of freedom of the entire system for temperature calculation. If not set the number of atoms times three is used." },
     { "-rgblo",    FALSE, etRVEC, {rlo},
       "RGB values for the color of the lowest occupied cluster size" },
     { "-rgbhi",    FALSE, etRVEC, {rhi},
@@ -356,7 +382,8 @@ int gmx_clustsize(int argc,char *argv[])
     { efXVG, "-mc","maxclust",    ffWRITE },
     { efXVG, "-ac","avclust",     ffWRITE },
     { efXVG, "-hc","histo-clust", ffWRITE },
-    { efXVG, "-temp", "temp",     ffOPTWR }
+    { efXVG, "-temp","temp",     ffOPTWR },
+    { efNDX, "-mcn", "maxclust", ffOPTWR }
   };
 #define NFILE asize(fnm)
   
@@ -372,9 +399,9 @@ int gmx_clustsize(int argc,char *argv[])
 	     opt2fn("-ow",NFILE,fnm),
 	     opt2fn("-nc",NFILE,fnm),opt2fn("-ac",NFILE,fnm),
 	     opt2fn("-mc",NFILE,fnm),opt2fn("-hc",NFILE,fnm),
-	     opt2fn("-temp",NFILE,fnm),
+	     opt2fn("-temp",NFILE,fnm),opt2fn("-mcn",NFILE,fnm),
 	     bMol,bPBC,ftp2fn(efTPR,NFILE,fnm),
-	     cutoff,nskip,nlevels,rgblo,rgbhi);
+	     cutoff,nskip,nlevels,rgblo,rgbhi,ndf);
 
   thanx(stderr);
   
