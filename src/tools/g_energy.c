@@ -548,7 +548,7 @@ int main(int argc,char *argv[])
   t_inputrec ir;
   t_energy   *oldee,**ee;
   t_drblock  dr;
-  int        teller=0,nre,step[2],oldstep;
+  int        teller,teller_disre,nre,step[2],oldstep;
   real       t[2],oldt;
   int        cur=0;
 #define NEXT (1-cur)
@@ -646,10 +646,12 @@ int main(int argc,char *argv[])
   }
   
   /* Initiate counters */
-  step[cur]= 0;
-  t[cur]   = 0;
-  oldstep  = -1;
-  oldt     = 0;
+  teller       = 0;
+  teller_disre = 0;
+  step[cur]    = 0;
+  t[cur]       = 0;
+  oldstep      = -1;
+  oldt         = 0;
   do {
     /* This loop searches for the first frame (when -b option is given), 
      * or when this has been found it reads just one energy frame
@@ -748,19 +750,22 @@ int main(int argc,char *argv[])
 	 * D I S T A N C E   R E S T R A I N T S  
 	 *******************************************/
 	if (bDisRe) {
-	  if (violaver == NULL)
-	    snew(violaver,dr.ndr);
-	  
-	  /* Subtract bounds from distances, to calculate violations */
-	  calc_violations(dr.rt,dr.rav,
-			  nbounds,index,bounds,violaver,&sumt,&sumaver);
-	  
-	  if (bDRAll) {
-	    for(i=0; (i<nset); i++) {
-	      sss=set[i];
-	      fprintf(out,"  %8.4f",mypow(dr.rav[sss],minthird));
-	      fprintf(out,"  %8.4f",dr.rt[sss]);
+	  if (eh.ndisre>0) {
+	    if (violaver == NULL)
+	      snew(violaver,dr.ndr);
+	    
+	    /* Subtract bounds from distances, to calculate violations */
+	    calc_violations(dr.rt,dr.rav,
+			    nbounds,index,bounds,violaver,&sumt,&sumaver);
+	    
+	    if (bDRAll) {
+	      for(i=0; (i<nset); i++) {
+		sss=set[i];
+		fprintf(out,"  %8.4f",mypow(dr.rav[sss],minthird));
+		fprintf(out,"  %8.4f",dr.rt[sss]);
+	      }
 	    }
+	    teller_disre++;
 	  }
 	  else {
 	    fprintf(out,"  %8.4f  %8.4f",sumaver,sumt);
@@ -792,7 +797,8 @@ int main(int argc,char *argv[])
   ffclose(out);
 
   if (bDisRe) 
-    analyse_disre(opt2fn("-v",NFILE,fnm),teller,violaver,bounds,index,nbounds);
+    analyse_disre(opt2fn("-v",NFILE,fnm),
+		  teller_disre,violaver,bounds,index,nbounds);
   else 
     analyse_ener(opt2bSet("-corr",NFILE,fnm),opt2fn("-corr",NFILE,fnm),
 		 bDG,bSum,bFluct,bVisco,opt2fn("-vis",NFILE,fnm),
