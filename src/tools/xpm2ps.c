@@ -939,8 +939,8 @@ int main(int argc,char *argv[])
 	 opt2fn_null("-di",NFILE,fnm),opt2fn_null("-do",NFILE,fnm),
 	 skip);
   
-  if (bDoView())
-    do_view(ftp2fn(efEPS,NFILE,fnm),NULL);
+  do_view(ftp2fn_null(efEPS,NFILE,fnm),NULL);
+  do_view(opt2fn_null("-xpm",NFILE,fnm),NULL);
     
   thanx(stderr);
   
