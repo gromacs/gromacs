@@ -45,6 +45,7 @@ static char *SRCID_g_msd_c = "$Id$";
 #include "gstat.h"
 #include "tpxio.h"
 #include "pbc.h"
+#include "vec.h"
 
 #define FACTOR  1000.0	/* Convert nm^2/ps to 10e-5 cm^2/s */
 /* NORMAL = total diffusion coefficient (default). X,Y,Z is diffusion 
@@ -425,10 +426,12 @@ void printmol(t_corr *this,char *fn)
   FILE  *out;
   t_lsq lsq1;
   int   i,j;
-  real  a,b;
+  real  a,b,*D,Dav,D2av,VarD;
   
   out=xvgropen(fn,"Diffusion Coefficients / Molecule","Molecule","D");
   
+  snew(D,this->nnx);
+  Dav = D2av = 0;
   for(i=0; (i<this->nnx); i++) {
     init_lsq(&lsq1);
     for(j=0; (j<this->nrestart); j++) {
@@ -439,10 +442,22 @@ void printmol(t_corr *this,char *fn)
       lsq1.np+=this->lsq[j][i].np;
     }
     get_lsq_ab(&lsq1,&a,&b);
-    fprintf(out,"%10d  %10g\n",i,a*FACTOR/this->dim_factor);
+    D[i]  = a*FACTOR/this->dim_factor;
+    Dav  += D[i];
+    D2av += sqr(D[i]);
+    fprintf(out,"%10d  %10g\n",i,D[i]);
   }
   fclose(out);
   do_view(fn,"-graphtype bar");
+  
+  /* Compute variance, stddev and error */
+  Dav  /= this->nnx;
+  D2av /= this->nnx;
+  VarD  = D2av - sqr(Dav);
+  printf("<D> = %.3f Std. Dev. = %.3f Error = %.3f\n",
+	 Dav,sqrt(VarD),sqrt(VarD/this->nnx));
+  
+  sfree(D);
 }
 
 void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
@@ -528,12 +543,11 @@ int main(int argc,char *argv[])
     "of the diffusion coefficients obtained from fits over the two halfs",
     "of the fit interval.[PAR]",
     "Option [TT]-mol[tt] plots the MSD for molecules, this implies",
-    "[TT]-mw[tt].[PAR]",
-    "Mean Square Displacement calculations and Correlation functions",
-    "can be calculated more accurately, when using multiple starting",
-    "points (see also Gromacs Manual). You can select the number of",
-    "starting points, and the interval (in picoseconds) between starting",
-    "points. More starting points implies more CPU time."
+    "[TT]-mw[tt], i.e. for each inidividual molecule an diffusion constant",
+    "is computed. Using this option one also gets an accurate error estimate",
+    "based on the statistics between individual molecules. Since one usually",
+    "is interested in self-diffusion at infinite dilution this is probably",
+    "the most useful number.[PAR]",
   };
   static char *normtype[]= { NULL,"no","x","y","z",NULL };
   static char *axtitle[] = { NULL,"no","x","y","z",NULL };
@@ -553,7 +567,7 @@ int main(int argc,char *argv[])
     { "-mw",      FALSE, etBOOL, {&bMW},
       "Mass weighted MSD" },
     { "-nrestart",FALSE, etINT,  {&nrestart},
-      "Number of restarting points in trajectory" },
+      "[HIDDEN]Number of restarting points in trajectory" },
     { "-trestart",FALSE, etREAL, {&dt},
       "Time between restarting points in trajectory" },
     { "-beginfit",FALSE, etREAL, {&beginfit},
