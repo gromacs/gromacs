@@ -187,6 +187,12 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
       ir->nstcheckpoint=0;
     
     do_int(ir->nstcgsteep); 
+
+    if(file_version>=29)
+      do_int(ir->nbfgscorr); 
+    else if (bRead)
+      ir->nbfgscorr = 10;
+
     do_int(ir->nstlog); 
     do_int(ir->nstxout); 
     do_int(ir->nstvout); 

@@ -142,6 +142,7 @@ typedef struct {
                         /* in relax_shells                              */
   int  nstcgsteep;      /* number of steps after which a steepest       */
                         /* descents step is done while doing cg         */
+  int  nbfgscorr;       /* Number of corrections to the hessian to keep */
   int  eConstrAlg;      /* Type of constraint algorithm                 */
   int  nProjOrder;      /* Order of the LINCS Projection Algorithm      */
   real LincsWarnAngle;  /* If bond rotates more than %g degrees, warn   */

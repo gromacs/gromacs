@@ -428,6 +428,8 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PI("niter",ir->niter);
     PR("fc_stepsize",ir->fc_stepsize);
     PI("nstcgsteep",ir->nstcgsteep);
+    PI("nbfgscorr",ir->nbfgscorr);
+
     PS("ConstAlg",ESHAKETYPE(ir->eConstrAlg));
     PR("shake_tol",ir->shake_tol);
     PI("lincs_order",ir->nProjOrder);

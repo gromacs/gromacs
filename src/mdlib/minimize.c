@@ -62,35 +62,53 @@
 #include "mdebin.h"
 #include "dummies.h"
 #include "mdrun.h"
+#include "trnio.h"
 
 static void sp_header(FILE *out,const char *minimizer,real ftol,int nsteps)
 {
   fprintf(out,"%s:\n",minimizer);
-  fprintf(out,"   Tolerance         = %12.5e\n",ftol);
-  fprintf(out,"   Number of steps   = %12d\n",nsteps);
+  fprintf(out,"   Tolerance (Fmax)   = %12.5e\n",ftol);
+  fprintf(out,"   Number of steps    = %12d\n",nsteps);
 }
 
-static void warn_step(FILE *fp,real ustep,real ftol,bool bConstrain)
+static void warn_step(FILE *fp,real ftol,bool bConstrain)
 {
-  fprintf(fp,"\nStepsize too small (%g nm)"
+  fprintf(fp,"\nStepsize too small, or no change in energy.\n"
 	  "Converged to machine precision,\n"
-	  "but not to the requested precision (%g)\n",
-	  ustep,ftol);
+	  "but not to the requested precision Fmax < %g\n",
+	  ftol);
+  if (sizeof(real)<sizeof(double))
+      fprintf(fp,"\nDouble precision normally gives you higher accuracy.\n");
+	
   if (bConstrain)
     fprintf(fp,"You might need to increase your constraint accuracy, or turn\n"
 	    "off constraints alltogether (set constraints = none in mdp file)\n");
 }
 
+
+
 static void print_converged(FILE *fp,const char *alg,real ftol,int count,bool bDone,
-			    int nsteps,real epot,real fmax)
+			    int nsteps,real epot,real fmax, int nfmax, real fnorm)
 {
   if (bDone)
-    fprintf(fp,"\n%s converged to %g in %d steps\n",alg,ftol,count); 
+    fprintf(fp,"\n%s converged to Fmax < %g in %d steps\n",alg,ftol,count); 
+  else if(count<nsteps)
+    fprintf(fp,"\n%s converged to machine precision in %d steps,\n"
+               "but did not reach the requested Fmax < %g.\n",alg,count,ftol);
   else 
-    fprintf(fp,"\n%s did not converge in %d steps\n",alg,min(count,nsteps));
-  fprintf(fp,"  Potential Energy  = %12.5e\n",epot); 
-  fprintf(fp,"Maximum force: %12.5e\n",fmax); 
+    fprintf(fp,"\n%s did not converge to Fmax < %g in %d steps.\n",alg,ftol,count);
+
+#ifdef DOUBLE
+  fprintf(fp,"Potential Energy  = %21.14e\n",epot); 
+  fprintf(fp,"Maximum force     = %21.14e on atom %d\n",fmax,nfmax+1); 
+  fprintf(fp,"Norm of force     = %21.14e\n",fnorm); 
+#else
+  fprintf(fp,"Potential Energy  = %14.7e\n",epot); 
+  fprintf(fp,"Maximum force     = %14.7e on atom %d\n",fmax,nfmax+1); 
+  fprintf(fp,"Norm of force     = %14.7e\n",fnorm); 
+#endif
 }
+
 
 static real f_max(int left,int right,int nnodes,
 		  t_grpopts *opts,t_mdatoms *mdatoms,
@@ -186,6 +204,58 @@ void init_em(FILE *log,const char *title,t_parm *parm,
 		  *start,HOMENR(nsb),parm->ir.nstcomm);
 }
 
+
+
+
+static real 
+evaluate_energy(FILE *log, bool bVerbose, t_parm *parm, t_topology *top,
+		t_groups *grps, t_nsborder *nsb, t_nrnb nrnb[], t_nrnb *mynrnb,
+		bool bDummies,t_comm_dummies *dummycomm,t_fcdata *fcd,
+		t_commrec *cr, t_commrec *mcr,t_graph *graph,t_mdatoms *mdatoms,
+		t_forcerec *fr, real lambda, t_vcm *vcm, rvec mu_tot, matrix box,
+		rvec *x, rvec *f, rvec *buf, real ener[], int count)
+{
+	bool bNS;
+    tensor force_vir,shake_vir,pme_vir;
+	real terminate=0;
+
+    bNS = (parm->ir.nstlist > 0);
+
+    if (bDummies)
+	  construct_dummies(log,x,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
+						  graph,cr,box,dummycomm);
+      
+    /* Calc force & energy on new trial position  */
+    /* do_force always puts the charge groups in the box and shifts again
+     * We do not unshift, so molecules are always whole in congrad.c
+     */
+    do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,
+	     count,&(nrnb[cr->nodeid]),top,grps,box,x,f,
+	     buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
+	     lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
+     
+    /* Spread the force on dummy particle to the other particles... */
+    if(bDummies) 
+	spread_dummy_f(log,x,f,&(nrnb[cr->nodeid]),&top->idef,dummycomm,cr); 
+      
+    /* Sum the potential energy terms from group contributions */
+    sum_epot(&(parm->ir.opts),grps,ener);
+    where();
+
+    /* Clear stuff again */
+    clear_mat(force_vir);
+    clear_mat(shake_vir);
+      
+    /* Communicate stuff when parallel */
+    if (PAR(cr)) 
+	  global_stat(log,cr,ener,force_vir,shake_vir,
+		    &(parm->ir.opts),grps,mynrnb,nrnb,vcm,&terminate);
+    
+    ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
+    return ener[F_EPOT];
+}
+
+
 time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     t_parm *parm,t_topology *top,
 	     t_groups *grps,t_nsborder *nsb,
@@ -195,35 +265,45 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     t_commrec *cr,t_commrec *mcr,t_graph *graph,
 	     t_forcerec *fr,rvec box_size)
 {
-  const char *CG="Conjugate Gradients";
-  double gpa,gpb;
-  double EpotA=0.0,EpotB=0.0,a=0.0,b,beta=0.0,zet,w;
-  real   lambda,fmax,testf,smin;
-  rvec   *p,*f,*xprime,*xx,*ff;
-  real   fnorm,pnorm,fnorm_old;
+  const char *CG="Polak-Ribiere Conjugate Gradients";
+
+  double gpa,gpb,gpc,tmp,minstep,fnorm,fnorm2,fnorm2_old,realstep;
+  real   stepsize;	
+  real   lambda,fmax,testf,zet,w,smin;
+  rvec   *p,*xa,*xb,*xc,*f,*fa,*fb,*fc,*xtmp,*ftmp;
+  real   EpotA,EpotB,EpotC,Epot0,a,b,c,beta=0.0;
+  real   pnorm,tol,fbis;
   t_vcm      *vcm;
   t_mdebin   *mdebin;
   t_nrnb mynrnb;
-  bool   bNS=TRUE,bLR,bLJLR,bBHAM,b14,bRand,brerun,bBeta0=FALSE;
+  bool   bNS=TRUE,converged,foundlower,bLR,bLJLR,bBHAM,b14;
   rvec   mu_tot;
   time_t start_t;
+  bool   do_log,do_ene,do_x,do_f;
   tensor force_vir,shake_vir,pme_vir;
-  int    number_steps,nstcg=parm->ir.nstcgsteep;
-  int    fp_ene,count=0;
-  int    i,m,nfmax,start,end,niti,gf;
-  /* not used */
-  real   terminate=0;
+  int    number_steps,neval=0,naccept=0,nstcg=parm->ir.nstcgsteep;
+  int    fp_ene,fp_trn;
+  int    i,m,nfmax,start,end,niti,gf,step,nminstep;
+  real   terminate=0;  
+
+
+  step=0;
 
   init_em(log,CG,parm,&lambda,&mynrnb,mu_tot,state->box,box_size,
 	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end);
   
   /* Print to log file */
-  start_t=print_date_and_time(log,cr->nodeid,"Started Conjugate Gradients");
+  start_t=print_date_and_time(log,cr->nodeid,"Started Polak-Ribiere Conjugate Gradients");
   
-  /* p is the search direction, f the force, xprime the new positions */
+  /* p is the search direction */
   snew(p,nsb->natoms);
   snew(f,nsb->natoms);
-  snew(xprime,nsb->natoms);
+  snew(xa,nsb->natoms);
+  snew(xb,nsb->natoms);
+  snew(xc,nsb->natoms);
+  snew(fa,nsb->natoms);
+  snew(fb,nsb->natoms);
+  snew(fc,nsb->natoms);
 
   /* Set some booleans for the epot routines */
   set_pot_bools(&(parm->ir),top,&bLR,&bLJLR,&bBHAM,&b14);
@@ -240,6 +320,9 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		     parm->ir.eDispCorr,TRICLINIC(parm->ir.compress),
 		     (parm->ir.etc==etcNOSEHOOVER),cr); 
 
+
+  do_log = do_ene = do_x = do_f = TRUE;
+  
   /* Clear some matrix variables */
   clear_mat(force_vir);
   clear_mat(shake_vir);
@@ -287,256 +370,1113 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,&terminate);
   where();
   
+  ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
+
   if (MASTER(cr)) {
     /* Copy stuff to the energy bin for easy printing etc. */
-    upd_mdebin(mdebin,NULL,mdatoms->tmass,count,(real)count,
+    upd_mdebin(mdebin,NULL,mdatoms->tmass,step,(real)step,
 	       ener,state,shake_vir,
 	       force_vir,parm->vir,parm->pres,grps,mu_tot);
     
-    print_ebin_header(log,count,count,lambda);
-    print_ebin(fp_ene,TRUE,FALSE,FALSE,FALSE,log,count,count,eprNORMAL,
+    print_ebin_header(log,step,step,lambda);
+    print_ebin(fp_ene,TRUE,FALSE,FALSE,FALSE,log,step,step,eprNORMAL,
 	       TRUE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
   }
   where();
   
   /* This is the starting energy */
-  EpotA=ener[F_EPOT];
+  Epot0=ener[F_EPOT];
 
-  /* normalising step size, this saves a few hundred steps in the
-   * beginning of the run.
-   */
+  /* Calculate the norm of the force (take all CPUs into account) */
   fnorm = f_norm(cr,&(parm->ir.opts),mdatoms,start,end,f);
-  fnorm_old=fnorm;
+  fnorm2=fnorm*fnorm;
+  /* Calculate maximum force */
   fmax = f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,
 	       start,end,f,&nfmax);
 
-  /* Print stepsize */
+  /* Estimate/guess the initial stepsize */
+  stepsize = parm->ir.em_stepsize/fnorm;
+
+ 
   if (MASTER(cr)) {
+    fprintf(stderr,"   F-max             = %12.5e on atom %d\n",fmax,nfmax+1);
     fprintf(stderr,"   F-Norm            = %12.5e\n",fnorm);
     fprintf(stderr,"\n");
-  }
-  
-  /* Here starts the loop, count is the counter for the number of steps */
-  for(count=1; fmax >= parm->ir.em_tol && count < number_steps; count++) {
+    /* and copy to the log file too... */
+    fprintf(log,"   F-max             = %12.5e on atom %d\n",fmax,nfmax+1);
+    fprintf(log,"   F-Norm            = %12.5e\n",fnorm);
+    fprintf(log,"\n");
+  }   
+  /* Start the loop over CG steps.		
+   * Each successful step is counted, and we continue until
+   * we either converge or reach the max number of steps.
+   */
+  for(step=0,converged=FALSE;( step<=number_steps || number_steps==0) && !converged;step++) {
     
-    /* Write the previous frame */
-    if (do_per_step(count-1,parm->ir.nstxout)) 
-      xx=state->x;  
-    else 
-      xx=NULL;
-    if (do_per_step(count-1,parm->ir.nstfout)) 
-      ff=f;  
-    else 
-      ff=NULL;
-    if (xx || ff) {
-      write_traj(log,cr,ftp2fn(efTRN,nfile,fnm),
-		 nsb,count,(real)(count - 1),
-		 lambda,nrnb,nsb->natoms,xx,NULL,ff,state->box);
-    }
+    /* start taking steps in a new direction 
+     * First time we enter the routine, beta=0, and the direction is 
+     * simply the negative gradient.
+     */
 
-    /* start conjugate gradient, determine search interval a,b */
-    gpa = 0.0;
-    for(i=start; (i<end); i++) {
+    /* Calculate the new direction in p, and the gradient in this direction, gpa */
+    gpa = 0;	
+    for(i=start; i<end; i++) {
       gf = mdatoms->cFREEZE[i];
       for(m=0; m<DIM; m++) 
 	if (!parm->ir.opts.nFreeze[gf][m]) {
 	  p[i][m] = f[i][m] + beta*p[i][m];
-	  gpa     = gpa - p[i][m]*f[i][m];
-	}
+	  gpa -= p[i][m]*f[i][m];   /* f is negative gradient, thus the sign */
+	} else
+          p[i][m] = 0;
     }
+    
+    /* Sum the gradient along the line across CPUs */
     if (PAR(cr))
       gmx_sumd(1,&gpa,cr);
-    pnorm = f_norm(cr,&(parm->ir.opts),mdatoms,start,end,p);
 
-    /* Set variables for stepsize (in nm). This is the largest 
-     * step that we are going to make in any direction.
+    /* Calculate the norm of the search vector */
+    pnorm=f_norm(cr,&(parm->ir.opts),mdatoms,start,end,p);
+    
+    /* Just in case stepsize reaches zero due to numerical precision... */
+    if(stepsize<=0)	  
+      stepsize = parm->ir.em_stepsize/pnorm;
+    
+    /* Call it a day if the slope of the search gradient is negligible */
+    if(fabs(pnorm)<sqrt(GMX_REAL_EPS)) {
+      converged = TRUE;
+      break;
+    }
+    
+    
+    /* 
+     * Double check the value of the derivative in the search direction.
+     * If it is positive it must be due to the old information in the
+     * CG formula, so just remove that and start over with beta=0.
+     * This corresponds to a steepest descent step.
      */
-    a    = 0.0;
-    b    = parm->ir.em_stepsize/pnorm;
-    niti = 0;
+    if(gpa>0) {
+      beta = 0;
+      step--; /* Don't count this step since we are restarting */
+      continue; /* Go back to the beginning of the big for-loop */
+    }
 
-    /* search a,b iteratively, if necessary */
-    brerun=TRUE;
-    while (brerun) {
-      for (i=start; (i<end); i++) {
-	for(m=0; (m<DIM); m++) {
-	  xprime[i][m] = state->x[i][m] + b*p[i][m];
+    /* Calculate minimum allowed stepsize, before the average (norm)
+     * relative change in coordinate is smaller than precision
+     */
+    minstep=0;
+    for (i=start; i<end; i++) {
+      for(m=0; m<DIM; m++) {
+	tmp=fabs(state->x[i][m]);
+	if(tmp<1.0)
+	  tmp=1.0;
+	tmp = p[i][m]/tmp;
+	minstep += tmp*tmp;
+      }
+    }
+    /* Add up from all CPUs */
+    if(PAR(cr))
+      gmx_sumd(1,&minstep,cr);
+
+    minstep = GMX_REAL_EPS/sqrt(minstep/(3*nsb->natoms));
+
+    if(stepsize<minstep) {
+      converged=TRUE;
+      break;
+    }
+    
+    /* Write coordinates if necessary */
+    do_x = do_per_step(step,parm->ir.nstxout);
+    do_f = do_per_step(step,parm->ir.nstfout);
+    
+    fp_trn = write_traj(log,cr,ftp2fn(efTRN,nfile,fnm),nsb,step,(real) step,
+			lambda,nrnb,nsb->natoms,
+			do_x ? state->x  : NULL,NULL,  /* we never have velocities */
+			do_f ? f  : NULL,state->box);
+    
+    /* Take a step downhill.
+     * In theory, we should minimize the function along this direction.
+     * That is quite possible, but it turns out to take 5-10 function evaluations
+     * for each line. However, we dont really need to find the exact minimum -
+     * it is much better to start a new CG step in a modified direction as soon
+     * as we are close to it. This will save a lot of energy evaluations.
+     *
+     * In practice, we just try to take a single step.
+     * If it worked (i.e. lowered the energy), we increase the stepsize but
+     * the continue straight to the next CG step without trying to find any minimum.
+     * If it didn't work (higher energy), there must be a minimum somewhere between
+     * the old position and the new one.
+     * 
+     * Due to the finite numerical accuracy, it turns out that it is a good idea
+     * to even accept a SMALL increase in energy, if the derivative is still downhill.
+     * This leads to lower final energies in the tests I've done. / Erik 
+     */
+    EpotA = Epot0;
+    a = 0.0;
+    c = a + stepsize; /* reference position along line is zero */
+    
+    /* Take a trial step (new coords in xc) */
+    for (i=start; i<end; i++) {
+      for(m=0; m<DIM; m++) {
+	xc[i][m] = state->x[i][m] + c*p[i][m];
+      }
+    }
+    
+    neval++;
+    /* Calculate energy for the trial step */
+    EpotC = evaluate_energy(log,bVerbose,parm,top,grps,nsb,nrnb,&mynrnb,
+			    bDummies,dummycomm,fcd,cr,mcr,graph,mdatoms,fr,lambda,
+			    vcm,mu_tot,state->box,xc,fc,buf,ener,step);
+    
+    /* Calc derivative along line */
+    gpc=0;
+    for(i=start; i<end; i++) {
+      for(m=0; m<DIM; m++) 
+	  gpc -= p[i][m]*fc[i][m];   /* f is negative gradient, thus the sign */
+    }
+    /* Sum the gradient along the line across CPUs */
+    if (PAR(cr))
+      gmx_sumd(1,&gpc,cr);
+
+    /* This is the max amount of increase in energy we tolerate */
+    tmp=sqrt(GMX_REAL_EPS)*fabs(EpotA);
+
+    /* Accept the step if the energy is lower, or if it is not significantly higher
+     * and the line derivative is still negative.
+     */
+    if(EpotC<EpotA || (gpc<0 && EpotC<(EpotA+tmp))) {
+      foundlower = TRUE;
+      /* Great, we found a better energy. Increase step for next iteration
+       * if we are still going down, decrease it otherwise
+       */
+      if(gpc<0)
+	stepsize *= 1.618034;  /* The golden section */
+      else
+	stepsize *= 0.618034;  /* 1/golden section */
+    } else {
+      /* New energy is the same or higher. We will have to do some work
+       * to find a smaller value in the interval. Take smaller step next time!
+       */
+      foundlower = FALSE;
+      stepsize *= 0.618034;
+    }    
+
+
+
+    
+    /* OK, if we didn't find a lower value we will have to locate one now - there must
+     * be one in the interval [a=0,c].
+     * The same thing is valid here, though: Don't spend dozens of iterations to find
+     * the line minimum. We try to interpolate based on the derivative at the endpoints,
+     * and only continue until we find a lower value. In most cases this means 1-2 iterations.
+     *
+     * I also have a safeguard for potentially really patological functions so we never
+     * take more than 20 steps before we give up ...
+     *
+     * If we already found a lower value we just skip this step and continue to the update.
+     */
+    if(!foundlower) {
+      nminstep=0;
+
+      do {
+	/* Select a new trial point.
+	 * If the derivatives at points a & c have different sign we interpolate to zero,
+	 * otherwise just do a bisection.
+	 */
+	if(gpa<0 && gpc>0)
+	  b = a + gpa*(a-c)/(gpc-gpa);
+	else
+	  b = 0.5*(a+c);		
+	
+	/* safeguard if interpolation close to machine accuracy causes errors:
+	 * never go outside the interval
+	 */
+	if(b<=a || b>=c)
+	  b = 0.5*(a+c);
+	
+	/* Take a trial step to this new point - new coords in xb */
+	for (i=start; i<end; i++) {
+	  for(m=0; m<DIM; m++) {
+	    xb[i][m] = state->x[i][m] + b*p[i][m];
+	  }
+	}
+	
+	neval++;
+	/* Calculate energy for the trial step */
+	EpotB = evaluate_energy(log,bVerbose,parm,top,grps,nsb,nrnb,&mynrnb,
+				bDummies,dummycomm,fcd,cr,mcr,graph,mdatoms,fr,lambda,
+				vcm,mu_tot,state->box,xb,fb,buf,ener,step);
+	
+	gpb=0;
+	for(i=start; i<end; i++) {
+	  for(m=0; m<DIM; m++)
+	      gpb -= p[i][m]*fb[i][m];   /* f is negative gradient, thus the sign */
+	}
+	/* Sum the gradient along the line across CPUs */
+	if (PAR(cr))
+	  gmx_sumd(1,&gpb,cr);
+	
+
+	/* Keep one of the intervals based on the value of the derivative at the new point */
+	if(gpb>0) {
+	  /* Replace c endpoint with b */
+	  EpotC = EpotB;
+	  c = b;
+	  gpc = gpb;
+	  /* swap coord pointers b/c */
+	  xtmp = xb; 
+	  ftmp = fb;
+	  xb = xc; 
+	  fb = fc;
+	  xc = xtmp;
+	  fc = ftmp;
+	} else {
+	  /* Replace a endpoint with b */
+	  EpotA = EpotB;
+	  a = b;
+	  gpa = gpb;
+	  /* swap coord pointers a/b */
+	  xtmp = xb; 
+	  ftmp = fb;
+	  xb = xa; 
+	  fb = fa;
+	  xa = xtmp; 
+	  fa = ftmp;
+	}
+	
+	/* 
+	 * Stop search as soon as we find a value smaller than the endpoints.
+	 * Never run more than 20 steps, no matter what.
+	 */
+	nminstep++; 
+      } while((EpotB>EpotA || EpotB>EpotC) && (nminstep<20));     
+      
+      if(fabs(EpotB-Epot0)<fabs(Epot0)*GMX_REAL_EPS || nminstep>=20) {
+	/* OK. We couldn't find a significantly lower energy.
+	 * If beta==0 this was steepest descent, and then we give up.
+	 * If not, set beta=0 and restart with steepest descent before quitting.
+         */
+	if(beta==0.0) {
+	  /* Converged */
+	  converged=TRUE;
+	  break;
+	} else {
+	  /* Reset memory before giving up */
+	  beta=0.0;
+	  continue;
 	}
       }
-      bNS = (parm->ir.nstlist > 0);
-
-      if (bDummies)
-	construct_dummies(log,xprime,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
-			  graph,cr,state->box,dummycomm);
-
       
-      /* Calc force & energy on new trial position  */
-      /* do_force always puts the charge groups in the box and shifts again
-       * We do not unshift, so molecules are always whole in conjugate
-       * gradients
+      /* Select min energy state of A & C, put the best in B.
        */
-      do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,
-	       count,&(nrnb[cr->nodeid]),top,grps,state->box,xprime,f,
-	       buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
-	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
-      
-      /* Spread the force on dummy particle to the other particles... */
-      if (bDummies) 
-	spread_dummy_f(log,xprime,f,&(nrnb[cr->nodeid]),&top->idef,
-		       dummycomm,cr); 
-      
-      /* Sum the potential energy terms from group contributions */
-      sum_epot(&(parm->ir.opts),grps,ener);
-      where();
-
-      bNS = (parm->ir.nstlist > 0);
-
-      gpb=0.0;
-      for(i=start; (i<end); i++)
-	gpb -= iprod(p[i],f[i]);
-
-      if (PAR(cr))
-	gmx_sumd(1,&gpb,cr);
-
-      /* Sum the potential energy terms from group contributions */
-      sum_epot(&(parm->ir.opts),grps,ener);
-      
-      /* Clear stuff again */
-      clear_mat(force_vir);
-      clear_mat(shake_vir);
-      
-      /* Communicate stuff when parallel */
-      if (PAR(cr)) 
-	global_stat(log,cr,ener,force_vir,shake_vir,
-		    &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,&terminate);
-
-      EpotB = ener[F_EPOT];
-      
-      if ((gpb >= 0.0) || (EpotB >= EpotA))
-	brerun=FALSE;
-      else {
-	a     = b;
-	EpotA = EpotB;
-	gpa   = gpb;
-	b     = 2.0*b;
+      if(EpotC<EpotA) {
+	EpotB = EpotC;
+	gpb = gpc;
+	b = c;
+	/* Move state C to B */
+	xtmp = xb; 
+	ftmp = fb;
+	xb = xc; 
+	fb = fc;
+	xc = xtmp;
+	fc = ftmp;
+      } else {
+	EpotB = EpotA;
+	gpb = gpa;
+	b = a;
+	/* Move state A to B */
+	xtmp = xb; 
+	ftmp = fb;
+	xb = xa; 
+	fb = fa;
+	xa = xtmp;
+	fa = ftmp;
       }
-      niti++;
+      
+    } else {
+      /* found lower */
+      EpotB = EpotC;
+      gpb = gpc;
+      b = c;
+      /* Move state C to B */
+      xtmp = xb; 
+      ftmp = fb;
+      xb = xc; 
+      fb = fc;
+      xc = xtmp;
+      fc = ftmp; 
     }
-    /* End of while loop searching for a and b */
     
-    /* find stepsize smin in interval a-b */
-    zet = 3.0 * (EpotA-EpotB) / (b-a) + gpa + gpb;
-    w   = zet*zet - gpa*gpb;
-    if (w < 0.0) {
-      if (debug) {
-	fprintf(debug,"Negative w: %20.12e\n",w);
-	fprintf(debug,"z= %20.12e\n",zet);
-	fprintf(debug,"gpa= %20.12e, gpb= %20.12e\n",gpa,gpb);
-	fprintf(debug,"a= %20.12e, b= %20.12e\n",a,b);
-	fprintf(debug,"EpotA= %20.12e, EpotB= %20.12e\n",EpotA,EpotB);
-      }
-      bBeta0 = TRUE;      
-    } 
-    else {
-      w    = sqrt(w);
-      smin = b - ((gpb+w-zet)*(b-a))/((gpb-gpa)+2.0*w);
-      
-      /* new positions */
-      for (i=start; i<end; i++)
-	for(m=0; m<DIM; m++) 
-	  xprime[i][m] = state->x[i][m] + smin*p[i][m];
-      
-      if (bDummies) 
-	construct_dummies(log,xprime,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
-			  graph,cr,state->box,dummycomm);
-      
-      /* new energy, forces
-       * do_force always puts the charge groups in the box and shifts again
-       * We do not unshift, so molecules are always whole in congrad.c
-       */
-      do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,
-	       count,&(nrnb[cr->nodeid]),top,grps,state->box,xprime,f,
-	       buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
-	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
-      
-      /* Spread the force on dummy particle to the other particles... */
-      if(bDummies)
-	spread_dummy_f(log,xprime,f,&(nrnb[cr->nodeid]),&top->idef,dummycomm,cr); 
-      
-      /* Sum the potential energy terms from group contributions */
-      sum_epot(&(parm->ir.opts),grps,ener); 
-      fnorm = f_norm(cr,&(parm->ir.opts),mdatoms,start,end,f);
-      
-      /* Clear stuff again */
-      clear_mat(force_vir);
-      clear_mat(shake_vir);
-      
-      /* Communicate stuff when parallel */
-      if (PAR(cr)) 
-	global_stat(log,cr,ener,force_vir,shake_vir,
-		    &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,&terminate);
-      
-      EpotA  = ener[F_EPOT];
-      
-      bBeta0 = FALSE;
-    }   
     /* new search direction */
-    /* beta = 0 means steepest descents */
-    if (bBeta0 || (nstcg && ((count % nstcg)==0))) {
-      if (bVerbose)
-	fprintf(stderr,"\rNew search direction\n");
+    /* beta = 0 means forget all memory and restart with steepest descents. */
+    if (nstcg && ((step % nstcg)==0)) 
       beta = 0.0;
+    else {
+      fnorm2_old=fnorm2;
+      fnorm2=0;
+      
+      /* fnorm2_old cannot be zero, because then we would have converged
+       * and broken out.
+       */
+
+      /* This is just the classical Polak-Ribiere calculation of beta;
+       * it looks a bit complicated since we take freeze groups into account,
+       * and might have to sum it in parallel runs.
+       */
+      
+      tmp=0;	
+      for(i=start; i<end; i++) {
+	gf = mdatoms->cFREEZE[i];
+	for(m=0; m<DIM; m++)
+	  if (!parm->ir.opts.nFreeze[gf][m]) {
+	    fnorm2 += fb[i][m]*fb[i][m];
+	    tmp += (fb[i][m]-f[i][m])*fb[i][m];
+	  } 
+      }
+      if (PAR(cr)) {
+	gmx_sumd(1,&fnorm2,cr);
+	gmx_sumd(1,&tmp,cr);
+      }	
+      /* Polak-Ribiere update.
+       * Change to fnorm2/fnorm2_old for Fletcher-Reeves
+       */
+      beta= tmp/fnorm2_old;
     }
-    else
-      beta = sqr(fnorm/fnorm_old);
+    /* Limit beta to prevent oscillations */
+    if(fabs(beta)>5.0)
+      beta=0.0;
     
-    /* update x, fnorm_old */
+    
+    /* update positions */
     for (i=start; i<end; i++)
-      copy_rvec(xprime[i],state->x[i]);
-    fnorm_old=fnorm;
+      for(m=0; m<DIM; m++) 
+	state->x[i][m] = xb[i][m];
+    for (i=start; i<end; i++)
+      for(m=0; m<DIM; m++) 
+	f[i][m] = fb[i][m];
+    Epot0 = EpotB;
+    gpa = gpb;
     
     /* Test whether the convergence criterion is met */
     fmax=f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,
 	       start,end,f,&nfmax);
     
     /* Print it if necessary */
-    if (bVerbose && MASTER(cr)) {
-      fprintf(stderr,"\rStep %d, E-Pot = %16.10e, Fmax = %12.5e, atom = %d\n",
-	      count,EpotA,fmax,nfmax);
-	/* Store the new (lower) energies */
-      upd_mdebin(mdebin,NULL,mdatoms->tmass,count,(real)count,
+    if (MASTER(cr)) {
+      ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
+      if(bVerbose)
+	fprintf(stderr,"\rStep %d, Epot=%12.6e, Fnorm=%9.3e, Fmax=%9.3e (atom %d)\n",
+		step,Epot0,sqrt(fnorm2/(3*nsb->natoms)),fmax,nfmax+1);
+      /* Store the new (lower) energies */
+      upd_mdebin(mdebin,NULL,mdatoms->tmass,step,(real)step,
 		 ener,state,shake_vir,
 		 force_vir,parm->vir,parm->pres,grps,mu_tot);
-      /* Print the energies allways when we should be verbose */
-      print_ebin_header(log,count,count,lambda);
-      print_ebin(fp_ene,TRUE,FALSE,FALSE,FALSE,log,count,count,eprNORMAL,
+      do_log = do_per_step(step,parm->ir.nstlog);
+      do_ene = do_per_step(step,parm->ir.nstenergy);
+      if(do_log)
+	print_ebin_header(log,step,step,lambda);
+      print_ebin(fp_ene,do_ene,FALSE,FALSE,FALSE,
+		 do_log ? log : NULL,step,step,eprNORMAL,
 		 TRUE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
     }
+    
+    /* Stop when the maximum force lies below tolerance.
+     * If we have reached machine precision, converged is already set to true.
+     */	
+    converged= converged || (fmax < parm->ir.em_tol);
+    
   } /* End of the loop */
   
-  /* Print some shit... */
+  if(converged)	
+    step--; /* we never took that last step in this case */
+  
+  if(fmax>parm->ir.em_tol) {
+    warn_step(stderr,parm->ir.em_tol,FALSE);
+    warn_step(log,parm->ir.em_tol,FALSE);
+    converged = FALSE; 
+  }
+  
+  /* If we printed energy and/or logfile last step (which was the last step)
+   * we don't have to do it again, but otherwise print the final values.
+   */
+  if(!do_log) /* Write final value to log since we didn't do anythin last step */
+    print_ebin_header(log,step,step,lambda);
+  if(!do_ene || !do_log) /* Write final energy file entries */
+    print_ebin(fp_ene,!do_ene,FALSE,FALSE,FALSE,
+	       !do_log ? log : NULL,step,step,eprNORMAL,
+	       TRUE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
+  
+  /* Print some stuff... */
   if (MASTER(cr))
     fprintf(stderr,"\nwriting lowest energy coordinates.\n");
-  write_traj(log,cr,ftp2fn(efTRN,nfile,fnm),
-	     nsb,count,(real) count,
-	     lambda,nrnb,nsb->natoms,state->x,NULL,f,state->box);
+  
+  /* Only write the trajectory if we didn't do it last step */
+  fp_trn = write_traj(log,cr,ftp2fn(efTRN,nfile,fnm),
+		      nsb,step,(real)step,
+		      lambda,nrnb,nsb->natoms,!do_x ? state->x : NULL ,NULL,!do_f ? f : NULL,state->box);
   if (MASTER(cr))
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		   *top->name, &(top->atoms),state->x,NULL,state->box);
-
+  
+  fnorm=sqrt(fnorm2/(3*nsb->natoms));
+  
   if (MASTER(cr)) {
-    print_converged(stderr,CG,parm->ir.em_tol,count,fmax<parm->ir.em_tol,
-		    number_steps,EpotA,fmax);
-    print_converged(log,CG,parm->ir.em_tol,count,fmax<parm->ir.em_tol,
-		    number_steps,EpotA,fmax);
+    print_converged(stderr,CG,parm->ir.em_tol,step,converged,
+		    number_steps,Epot0,fmax,nfmax,fnorm);
+    print_converged(log,CG,parm->ir.em_tol,step,converged,
+		    number_steps,Epot0,fmax,nfmax,fnorm);
+    
+    fprintf(log,"\nPerformed %d energy evaluations in total.\n",neval);
+    
+    close_enx(fp_ene);
+    close_trn(fp_trn);
+  }
+  
+  /* To print the actual number of steps we needed somewhere */
+  parm->ir.nsteps=step;
+  
+  return start_t;
+} /* That's all folks */
+
+
+
+
+
+time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
+		t_parm *parm,t_topology *top,
+		t_groups *grps,t_nsborder *nsb, t_state *state,
+		rvec grad[],rvec buf[],t_mdatoms *mdatoms,
+		tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
+		bool bVerbose,bool bDummies,t_comm_dummies *dummycomm,
+		t_commrec *cr,t_commrec *mcr,t_graph *graph,
+		t_forcerec *fr,rvec box_size)
+{
+  static char *LBFGS="Low-Memory BFGS Minimizer";
+  int    ncorr,nmaxcorr,point,cp,neval,nminstep;
+  double stepsize,gpa,gpb,gpc,tmp,minstep;
+  rvec   *f;
+  real   *rho,*alpha,*ff,*xx,*p,*s,*lastx,*lastf,**dx,**dg;	
+  real   *xa,*xb,*xc,*fa,*fb,*fc,*xtmp,*ftmp;
+  real   gp,tmp2,a,b,c,maxdelta,delta;
+  real   ftol=1e-4;
+  real   pnorm,diag,Epot0,Epot,EpotA,EpotB,EpotC,lastEpot;
+  real   dgdx,dgdg,sq,yr,beta;
+  t_vcm      *vcm;
+  t_mdebin   *mdebin;
+  t_nrnb mynrnb;
+  bool   bNS=TRUE,converged,first,bLR,bLJLR,bBHAM,b14;
+  rvec   mu_tot;
+  real   lambda,fnorm,fmax;
+  time_t start_t;
+  bool   do_log,do_ene,do_x,do_f,foundlower,*frozen;
+  tensor force_vir,shake_vir,pme_vir;
+  int    fp_ene,start,end,number_steps;
+  int    i,j,k,m,n,nfmax,niti,gf,step;
+  /* not used */
+  real   terminate;
+  
+  if(PAR(cr))
+    fatal_error(0,"Cannot do parallel L-BFGS Minimization - yet.\n");
+  
+  n = 3*nsb->natoms;
+  nmaxcorr = parm->ir.nbfgscorr;
+  
+  /* Allocate memory */
+  snew(f,nsb->natoms);
+  /* Use pointers to real so we dont have to loop over both atoms and
+   * dimensions all the time...
+   * x/f are allocated as rvec *, so make new x0/f0 pointers-to-real
+   * that point to the same memory.
+   */
+  snew(xa,n);
+  snew(xb,n);
+  snew(xc,n);
+  snew(fa,n);
+  snew(fb,n);
+  snew(fc,n);
+  snew(frozen,n);
+  
+  xx = (real *)state->x;
+  ff = (real *)f;
+  
+  snew(p,n); 
+  snew(lastx,n); 
+  snew(lastf,n); 
+  snew(rho,nmaxcorr);
+  snew(alpha,nmaxcorr);
+  
+  snew(dx,nmaxcorr);
+  for(i=0;i<nmaxcorr;i++)
+    snew(dx[i],n);
+  
+  snew(dg,nmaxcorr);
+  for(i=0;i<nmaxcorr;i++)
+    snew(dg[i],n);
+
+  step = 0;
+  neval = 0; 
+
+  init_em(log,LBFGS,parm,&lambda,&mynrnb,mu_tot,state->box,box_size,
+	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end);
+    
+  /* Print to log file */
+  start_t=print_date_and_time(log,cr->nodeid,"Started Low-Memory BFGS Minimization");
+  
+  /* Set some booleans for the epot routines */
+  set_pot_bools(&(parm->ir),top,&bLR,&bLJLR,&bBHAM,&b14);
+  
+  /* Open the energy file */  
+  if (MASTER(cr))
+    fp_ene=open_enx(ftp2fn(efENX,nfile,fnm),"w");
+  else
+    fp_ene=-1;
+  
+  /* Init bin for energy stuff */
+  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),
+		     bLR,bLJLR,bBHAM,b14,parm->ir.efep!=efepNO,parm->ir.epc,
+		     parm->ir.eDispCorr,TRICLINIC(parm->ir.compress),
+		     (parm->ir.etc==etcNOSEHOOVER),cr); 
+  
+  do_log = do_ene = do_x = do_f = TRUE;
+  
+  /* Clear some matrix variables */
+  clear_mat(force_vir);
+  clear_mat(shake_vir);
+  
+  if (fr->ePBC != epbcNONE)
+    /* Remove periodicity */
+    do_pbc_first(log,state->box,box_size,fr,graph,state->x);
+  
+  /* Max number of steps */
+  number_steps=parm->ir.nsteps;
+
+  /* Create a 3*natoms index to tell whether each degree of freedom is frozen */
+  for(i=start; i<end; i++) {
+    gf = mdatoms->cFREEZE[i];
+     for(m=0; m<DIM; m++) 
+       frozen[3*i+m]=parm->ir.opts.nFreeze[gf][m];  
+  }
+  if (MASTER(cr))
+    sp_header(stderr,LBFGS,parm->ir.em_tol,number_steps);
+  sp_header(log,LBFGS,parm->ir.em_tol,number_steps);
+  
+  if (bDummies)
+    construct_dummies(log,state->x,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
+		      graph,cr,state->box,dummycomm);
+  
+  /* Call the force routine and some auxiliary (neighboursearching etc.) */
+  /* do_force always puts the charge groups in the box and shifts again
+   * We do not unshift, so molecules are always whole in congrad.c
+   */
+  neval++;
+  do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,0,&(nrnb[cr->nodeid]),
+	   top,grps,state->box,
+	   state->x,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
+	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
+  where();
+  
+  /* Spread the force on dummy particle to the other particles... */
+  if (bDummies)
+    spread_dummy_f(log,state->x,f,&(nrnb[cr->nodeid]),&top->idef,dummycomm,cr);
+  
+  /* Sum the potential energy terms from group contributions */
+  sum_epot(&(parm->ir.opts),grps,ener);
+  where();
+  
+  /* Clear var. */
+  clear_mat(force_vir);
+  where();
+  
+  /* Communicat energies etc. */
+  if (PAR(cr)) 
+    global_stat(log,cr,ener,force_vir,shake_vir,
+		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,&terminate);
+  where();
+  
+  ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
+  
+  if (MASTER(cr)) {
+    /* Copy stuff to the energy bin for easy printing etc. */
+    upd_mdebin(mdebin,NULL,mdatoms->tmass,step,(real)step,
+	       ener,state,shake_vir,
+	       force_vir,parm->vir,parm->pres,grps,mu_tot);
+    
+    print_ebin_header(log,step,step,lambda);
+    print_ebin(fp_ene,TRUE,FALSE,FALSE,FALSE,log,step,step,eprNORMAL,
+	       TRUE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
+  }
+  where();
+  
+  /* This is the starting energy */
+  Epot=ener[F_EPOT];
+  
+  fnorm = f_norm(cr,&(parm->ir.opts),mdatoms,start,end,f);
+  
+  fmax=f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,
+	     start,end,f,&nfmax);
+  
+  /* Set the initial step.
+   * since it will be multiplied by the non-normalized search direction 
+   * vector (force vector the first time), we scale it by the
+   * norm of the force.
+   */
+  
+  if (MASTER(cr)) {
+    fprintf(stderr,"Using %d BFGS correction steps.\n\n",nmaxcorr);
+    fprintf(stderr,"   F-max             = %12.5e on atom %d\n",fmax,nfmax+1);
+    fprintf(stderr,"   F-Norm            = %12.5e\n",fnorm);
+    fprintf(stderr,"\n");
+    /* and copy to the log file too... */
+    fprintf(log,"Using %d BFGS correction steps.\n\n",nmaxcorr);
+    fprintf(log,"   F-max             = %12.5e on atom %d\n",fmax,nfmax+1);
+    fprintf(log,"   F-Norm            = %12.5e\n",fnorm);
+    fprintf(log,"\n");
+  }   
+  
+  point=0;
+  for(i=0;i<n;i++)
+    if(!frozen[i])
+      dx[point][i] = ff[i];  /* Initial search direction */
+    else
+      dx[point][i] = 0;
+
+  stepsize = 1.0/fnorm;
+  converged = FALSE;
+  
+  /* Start the loop over BFGS steps.		
+   * Each successful step is counted, and we continue until
+   * we either converge or reach the max number of steps.
+   */
+  
+  ncorr=0;
+
+  /* Set the gradient from the force */
+  for(step=0,converged=FALSE;( step<=number_steps || number_steps==0) && !converged;step++) {
+    
+    /* Write coordinates if necessary */
+    do_x = do_per_step(step,parm->ir.nstxout);
+    do_f = do_per_step(step,parm->ir.nstfout);
+    
+    write_traj(log,cr,ftp2fn(efTRN,nfile,fnm),nsb,step,(real) step,
+	       lambda,nrnb,nsb->natoms,
+	       do_x ? state->x  : NULL,NULL,  /* we never have velocities */
+	       do_f ? f  : NULL,state->box);
+    
+    /* Do the linesearching in the direction dx[point][0..(n-1)] */
+    
+    /* pointer to current direction - point=0 first time here */
+    s=dx[point];
+    
+    /* calculate line gradient */
+    for(gpa=0,i=0;i<n;i++) 
+	gpa-=s[i]*ff[i];
+
+    /* Calculate minimum allowed stepsize, before the average (norm) 
+     * relative change in coordinate is smaller than precision 
+     */
+    for(minstep=0,i=0;i<n;i++) {
+      tmp=fabs(xx[i]);
+      if(tmp<1.0)
+	tmp=1.0;
+      tmp = s[i]/tmp;
+      minstep += tmp*tmp;
+    }
+    minstep = GMX_REAL_EPS/sqrt(minstep/n);
+    
+    if(stepsize<minstep) {
+      converged=TRUE;
+      break;
+    }
+    
+    /* Store old forces and coordinates */
+    for(i=0;i<n;i++) {
+      lastx[i]=xx[i];
+      lastf[i]=ff[i];
+    }
+    Epot0=Epot;
+    
+    first=TRUE;
+    
+    for(i=0;i<n;i++)
+      xa[i]=xx[i];
+    
+    /* Take a step downhill.
+     * In theory, we should minimize the function along this direction.
+     * That is quite possible, but it turns out to take 5-10 function evaluations
+     * for each line. However, we dont really need to find the exact minimum -
+     * it is much better to start a new BFGS step in a modified direction as soon
+     * as we are close to it. This will save a lot of energy evaluations.
+     *
+     * In practice, we just try to take a single step.
+     * If it worked (i.e. lowered the energy), we increase the stepsize but
+     * the continue straight to the next BFGS step without trying to find any minimum.
+     * If it didn't work (higher energy), there must be a minimum somewhere between
+     * the old position and the new one.
+     * 
+     * Due to the finite numerical accuracy, it turns out that it is a good idea
+     * to even accept a SMALL increase in energy, if the derivative is still downhill.
+     * This leads to lower final energies in the tests I've done. / Erik 
+     */
+    foundlower=FALSE;
+    EpotA = Epot0;
+    a = 0.0;
+    c = a + stepsize; /* reference position along line is zero */
+
+    /* Check stepsize first. We do not allow displacements 
+     * larger than emstep.
+     */
+    do {
+      c = a + stepsize;
+      maxdelta=0;
+      for(i=0;i<n;i++) {
+	delta=c*s[i];
+	if(delta>maxdelta)
+	  maxdelta=delta;
+      }
+      if(maxdelta>parm->ir.em_stepsize)
+	stepsize*=0.1;
+    } while(maxdelta>parm->ir.em_stepsize);
+
+    /* Take a trial step */
+    for (i=0; i<n; i++)
+      xc[i] = lastx[i] + c*s[i];
+    
+    neval++;
+    /* Calculate energy for the trial step */
+    EpotC = evaluate_energy(log,bVerbose,parm,top,grps,nsb,nrnb,&mynrnb,
+			    bDummies,dummycomm,fcd,cr,mcr,graph,mdatoms,fr,lambda,
+			    vcm,mu_tot,state->box,(rvec *)xc,(rvec *)fc,buf,ener,step);
+    
+    /* Calc derivative along line */
+    for(gpc=0,i=0; i<n; i++) {
+	gpc -= s[i]*fc[i];   /* f is negative gradient, thus the sign */
+    }
+    /* Sum the gradient along the line across CPUs */
+    if (PAR(cr))
+      gmx_sumd(1,&gpc,cr);
+    
+     /* This is the max amount of increase in energy we tolerate */
+   tmp=sqrt(GMX_REAL_EPS)*fabs(EpotA);
+    
+    /* Accept the step if the energy is lower, or if it is not significantly higher
+     * and the line derivative is still negative.
+     */
+    if(EpotC<EpotA || (gpc<0 && EpotC<(EpotA+tmp))) {
+      foundlower = TRUE;
+      /* Great, we found a better energy. Increase step for next iteration
+       * if we are still going down, decrease it otherwise
+       */
+      if(gpc<0)
+	stepsize *= 1.618034;  /* The golden section */
+      else
+	stepsize *= 0.618034;  /* 1/golden section */
+    } else {
+      /* New energy is the same or higher. We will have to do some work
+       * to find a smaller value in the interval. Take smaller step next time!
+       */
+      foundlower = FALSE;
+      stepsize *= 0.618034;
+    }    
+    
+    /* OK, if we didn't find a lower value we will have to locate one now - there must
+     * be one in the interval [a=0,c].
+     * The same thing is valid here, though: Don't spend dozens of iterations to find
+     * the line minimum. We try to interpolate based on the derivative at the endpoints,
+     * and only continue until we find a lower value. In most cases this means 1-2 iterations.
+     *
+     * I also have a safeguard for potentially really patological functions so we never
+     * take more than 20 steps before we give up ...
+     *
+     * If we already found a lower value we just skip this step and continue to the update.
+     */
+
+    if(!foundlower) {
+     
+      nminstep=0;
+      do {
+	/* Select a new trial point.
+	 * If the derivatives at points a & c have different sign we interpolate to zero,
+	 * otherwise just do a bisection.
+	 */
+	
+	if(gpa<0 && gpc>0)
+	  b = a + gpa*(a-c)/(gpc-gpa);
+	else
+	  b = 0.5*(a+c);		
+	
+	/* safeguard if interpolation close to machine accuracy causes errors:
+	 * never go outside the interval
+	 */
+	if(b<=a || b>=c)
+	  b = 0.5*(a+c);
+	
+	/* Take a trial step */
+	for (i=0; i<n; i++) 
+	  xb[i] = lastx[i] + b*s[i];
+	
+	neval++;
+	/* Calculate energy for the trial step */
+	EpotB = evaluate_energy(log,bVerbose,parm,top,grps,nsb,nrnb,&mynrnb,
+				bDummies,dummycomm,fcd,cr,mcr,graph,mdatoms,fr,lambda,
+				vcm,mu_tot,state->box,(rvec *)xb,(rvec *)fb,buf,ener,step);
+	
+	for(gpb=0,i=0; i<n; i++) 
+	  gpb -= s[i]*fb[i];   /* f is negative gradient, thus the sign */
+	
+	/* Sum the gradient along the line across CPUs */
+	if (PAR(cr))
+	  gmx_sumd(1,&gpb,cr);
+	
+	/* Keep one of the intervals based on the value of the derivative at the new point */
+	if(gpb>0) {
+	  /* Replace c endpoint with b */
+	  EpotC = EpotB;
+	  c = b;
+	  gpc = gpb;
+	  /* swap coord pointers b/c */
+	  xtmp = xb; 
+	  ftmp = fb;
+	  xb = xc; 
+	  fb = fc;
+	  xc = xtmp;
+	  fc = ftmp;
+	} else {
+	  /* Replace a endpoint with b */
+	  EpotA = EpotB;
+	  a = b;
+	  gpa = gpb;
+	  /* swap coord pointers a/b */
+	  xtmp = xb; 
+	  ftmp = fb;
+	  xb = xa; 
+	  fb = fa;
+	  xa = xtmp; 
+	  fa = ftmp;
+	}
+	
+	/* 
+	 * Stop search as soon as we find a value smaller than the endpoints,
+	 * or if the tolerance is below machine precision.
+	 * Never run more than 20 steps, no matter what.
+	 */
+	nminstep++; 
+      } while((EpotB>EpotA || EpotB>EpotC) && (nminstep<20));
+
+      if(fabs(EpotB-Epot0)<GMX_REAL_EPS || nminstep>=20) {
+	/* OK. We couldn't find a significantly lower energy.
+	 * If ncorr==0 this was steepest descent, and then we give up.
+	 * If not, reset memory to restart as steepest descent before quitting.
+         */
+	if(ncorr==0) {
+	/* Converged */
+	  converged=TRUE;
+	  break;
+	} else {
+	  /* Reset memory */
+	  ncorr=0;
+	  /* Search in gradient direction */
+	  for(i=0;i<n;i++)
+	    dx[point][i]=ff[i];
+	  /* Reset stepsize */
+	  fnorm = f_norm(cr,&(parm->ir.opts),mdatoms,start,end,f);
+	  stepsize = 1.0/fnorm;
+	  continue;
+	}
+      }
+      
+      /* Select min energy state of A & C, put the best in xx/ff/Epot
+       */
+      if(EpotC<EpotA) {
+	Epot = EpotC;
+	/* Use state C */
+	for(i=0;i<n;i++) {
+	  xx[i]=xc[i];
+	  ff[i]=fc[i];
+	}
+	stepsize=c;
+      } else {
+	Epot = EpotA;
+	/* Use state A */
+	for(i=0;i<n;i++) {
+	  xx[i]=xa[i];
+	  ff[i]=fa[i];
+	}
+	stepsize=a;
+      }
+      
+    } else {
+      /* found lower */
+      Epot = EpotC;
+      /* Use state C */
+      for(i=0;i<n;i++) {
+	xx[i]=xc[i];
+	ff[i]=fc[i];
+      }
+      stepsize=c;
+    }
+
+    /* Update the memory information, and calculate a new 
+     * approximation of the inverse hessian 
+     */
+    
+    /* Have new data in Epot, xx, ff */	
+    if(ncorr<nmaxcorr)
+      ncorr++;
+
+    for(i=0;i<n;i++) {
+      dg[point][i]=lastf[i]-ff[i];
+      dx[point][i]*=stepsize;
+    }
+    
+    dgdg=0;
+    dgdx=0;	
+    for(i=0;i<n;i++) {
+      dgdg+=dg[point][i]*dg[point][i];
+      dgdx+=dg[point][i]*dx[point][i];
+    }
+    
+    diag=dgdx/dgdg;
+    
+    rho[point]=1.0/dgdx;
+    point++;
+    
+    if(point>=nmaxcorr)
+      point=0;
+    
+    /* Update */
+    for(i=0;i<n;i++)
+      p[i]=ff[i];
+    
+    cp=point;
+    
+    /* Recursive update. First go back over the memory points */
+    for(k=0;k<ncorr;k++) {
+      cp--;
+      if(cp<0) 
+	cp=ncorr-1;
+      
+      sq=0;
+      for(i=0;i<n;i++)
+	sq+=dx[cp][i]*p[i];
+      
+      alpha[cp]=rho[cp]*sq;
+      
+      for(i=0;i<n;i++)
+	p[i] -= alpha[cp]*dg[cp][i];		
+    }
+    
+    for(i=0;i<n;i++)
+      p[i] *= diag;
+    
+    /* And then go forward again */
+    for(k=0;k<ncorr;k++) {
+      yr = 0;
+      for(i=0;i<n;i++)
+	yr += p[i]*dg[cp][i];
+      
+      beta = rho[cp]*yr;	    
+      beta = alpha[cp]-beta;
+      
+      for(i=0;i<n;i++)
+	p[i] += beta*dx[cp][i];
+      
+      cp++;	
+      if(cp>=ncorr)
+	cp=0;
+    }
+    
+    for(i=0;i<n;i++)
+      if(!frozen[i])
+	dx[point][i] = p[i];
+      else
+	dx[point][i] = 0;
+
+    stepsize=1.0;
+    
+    /* Test whether the convergence criterion is met */
+    fmax=f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,
+	       start,end,f,&nfmax);
+    
+    fnorm = f_norm(cr,&(parm->ir.opts),mdatoms,start,end,f);
+    
+    /* Print it if necessary */
+    if (MASTER(cr)) {
+      ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
+      if(bVerbose)
+	fprintf(stderr,"\rStep %d, Epot=%12.6e, Fnorm=%9.3e, Fmax=%9.3e (atom %d)\n",
+		step,Epot,fnorm/sqrt(3*nsb->natoms),fmax,nfmax+1);
+      /* Store the new (lower) energies */
+      upd_mdebin(mdebin,NULL,mdatoms->tmass,step,(real)step,
+		 ener,state,shake_vir,
+		 force_vir,parm->vir,parm->pres,grps,mu_tot);
+      do_log = do_per_step(step,parm->ir.nstlog);
+      do_ene = do_per_step(step,parm->ir.nstenergy);
+      if(do_log)
+	print_ebin_header(log,step,step,lambda);
+      print_ebin(fp_ene,do_ene,FALSE,FALSE,FALSE,
+		 do_log ? log : NULL,step,step,eprNORMAL,
+		 TRUE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
+    }
+    
+    /* Stop when the maximum force lies below tolerance.
+     * If we have reached machine precision, converged is already set to true.
+     */
+    
+    converged = converged || (fmax < parm->ir.em_tol);
+    
+  } /* End of the loop */
+  
+  if(converged)	
+    step--; /* we never took that last step in this case */
+  
+  if(fmax>parm->ir.em_tol) {
+    warn_step(stderr,parm->ir.em_tol,FALSE);
+    warn_step(log,parm->ir.em_tol,FALSE);
+    converged = FALSE; 
+  }
+  
+  /* If we printed energy and/or logfile last step (which was the last step)
+   * we don't have to do it again, but otherwise print the final values.
+   */
+  if(!do_log) /* Write final value to log since we didn't do anythin last step */
+    print_ebin_header(log,step,step,lambda);
+  if(!do_ene || !do_log) /* Write final energy file entries */
+    print_ebin(fp_ene,!do_ene,FALSE,FALSE,FALSE,
+	       !do_log ? log : NULL,step,step,eprNORMAL,
+	       TRUE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
+  
+  /* Print some stuff... */
+  if (MASTER(cr))
+    fprintf(stderr,"\nwriting lowest energy coordinates.\n");
+  
+  /* Only write the trajectory if we didn't do it last step */
+  write_traj(log,cr,ftp2fn(efTRN,nfile,fnm),
+	     nsb,step,(real)step,
+	     lambda,nrnb,nsb->natoms,!do_x ? state->x : NULL ,NULL,!do_f ? f : NULL,state->box);
+  if (MASTER(cr))
+    write_sto_conf(ftp2fn(efSTO,nfile,fnm),
+		   *top->name, &(top->atoms),state->x,NULL,state->box);
+  
+  fnorm=fnorm/sqrt(3*nsb->natoms);
+  
+  if (MASTER(cr)) {
+    print_converged(stderr,LBFGS,parm->ir.em_tol,step,converged,
+		    number_steps,Epot,fmax,nfmax,fnorm);
+    print_converged(log,LBFGS,parm->ir.em_tol,step,converged,
+		    number_steps,Epot,fmax,nfmax,fnorm);
+    
+    fprintf(log,"\nPerformed %d energy evaluations in total.\n",neval);
+    
     close_enx(fp_ene);
   }
   
   /* To print the actual number of steps we needed somewhere */
-  parm->ir.nsteps=count;
-
+  parm->ir.nsteps=step;
+  
   return start_t;
 } /* That's all folks */
+
+
+
 
 time_t do_steep(FILE *log,int nfile,t_filenm fnm[], 
 		    t_parm *parm,t_topology *top, 
@@ -552,7 +1492,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   rvec   *pos[2],*force[2],*xcf=NULL; 
   rvec   *xx,*ff; 
   real   Fmax[2],Epot[2]; 
-  real   ustep,k_1,k_ref,dvdlambda;
+  real   ustep,k_1,k_ref,dvdlambda,fnorm;
   t_vcm      *vcm;
   int        fp_ene; 
   t_mdebin   *mdebin; 
@@ -566,7 +1506,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 #else
   real   min_k = 1e-16;
 #endif
-  int    nfmax,nsteps;
+  int    nfmax[2],nsteps;
   int    count=0; 
   int    i,m,start,end,gf; 
   int    Min=0; 
@@ -698,7 +1638,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     if (bConstrain) {
       /* May be fucked up (but didn't work well anyway) */
       fmax = f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),
-		   mdatoms,start,end,force[TRY],&nfmax);
+		   mdatoms,start,end,force[TRY],&(nfmax[TRY]));
       constepsize=min(ustep,fmax*k_1);
       for(i=start; (i<end); i++)  
 	for(m=0;(m<DIM);m++) 
@@ -724,7 +1664,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     /* This is the new energy  */
     Fmax[TRY]=f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,
-		    start,end,force[TRY],&nfmax);
+		    start,end,force[TRY],&(nfmax[TRY]));
     Epot[TRY]=ener[F_EPOT];
     if (count == 0)
       Epot[Min] = Epot[TRY]+1;
@@ -733,7 +1673,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     if (MASTER(cr)) {
       if (bVerbose) {
 	fprintf(stderr,"Step=%5d, Dmax= %6.1e nm, Epot= %12.5e Fmax= %11.5e, atom= %d%c",
-		count,k_1,Epot[TRY],Fmax[TRY],nfmax+1,
+		count,k_1,Epot[TRY],Fmax[TRY],nfmax[TRY]+1,
 		(Epot[TRY]<Epot[Min])?'\n':'\r');
       }
       
@@ -785,8 +1725,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     /* Check if stepsize is too small, with 1 nm as a characteristic length */
     if (k_1 < min_k) {
-      warn_step(stderr,k_1,parm->ir.em_tol,bConstrain);
-      warn_step(log,k_1,parm->ir.em_tol,bConstrain);
+      warn_step(stderr,parm->ir.em_tol,bConstrain);
+      warn_step(log,parm->ir.em_tol,bConstrain);
       bAbort=TRUE;
     }
     
@@ -801,12 +1741,16 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   write_traj(log,cr,ftp2fn(efTRN,nfile,fnm), 
 	     nsb,count,(real) count, 
 	     lambda,nrnb,nsb->natoms,xx,NULL,ff,state->box); 
+
+
+  fnorm=f_norm(cr,&(parm->ir.opts),mdatoms,start,end,ff);
+
   if (MASTER(cr)) {
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		   *top->name, &(top->atoms),xx,NULL,state->box);
     
-    print_converged(stderr,SD,parm->ir.em_tol,count,bDone,nsteps,Epot[Min],Fmax[Min]);
-    print_converged(log,SD,parm->ir.em_tol,count,bDone,nsteps,Epot[Min],Fmax[Min]);
+    print_converged(stderr,SD,parm->ir.em_tol,count,bDone,nsteps,Epot[Min],Fmax[Min],nfmax[Min],fnorm);
+    print_converged(log,SD,parm->ir.em_tol,count,bDone,nsteps,Epot[Min],Fmax[Min],nfmax[Min],fnorm);
     close_enx(fp_ene);
   }
   

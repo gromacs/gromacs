@@ -99,6 +99,17 @@ extern time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		    t_graph *graph,t_forcerec *fr,rvec box_size);
 /* Do conjugate gradients EM! */
 
+extern time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
+		       t_parm *parm,t_topology *top,
+		       t_groups *grps,t_nsborder *nsb, t_state *state,
+		       rvec grad[],rvec buf[],t_mdatoms *mdatoms,
+		       tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
+		       bool bVerbose,bool bDummies,t_comm_dummies *dummycomm,
+		       t_commrec *cr,t_commrec *mcr,
+		       t_graph *graph,t_forcerec *fr,rvec box_size);
+/* Do conjugate gradients EM! */
+
+
 extern time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		    bool bVerbose,bool bCompact,int stepout,
 		    t_parm *parm,t_groups *grps,
