@@ -162,7 +162,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   grps->cosacc.cos_accel = parm->ir.cos_accel;
   
   /* Periodicity stuff */  
-  if (parm->ir.ePBC != epbcFULL) {
+  if (parm->ir.ePBC == epbcXYZ) {
     graph=mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
     if (debug)
       p_graph(debug,"Initial graph",graph);
@@ -530,13 +530,13 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     }
     
     if (bDummies) {
-      if (!FULLPBC(parm->ir))
+      if (graph)
 	shift_self(graph,state->box,state->x);
     
       construct_dummies(log,state->x,&mynrnb,parm->ir.delta_t,state->v,
 			&top->idef,graph,cr,state->box,dummycomm);
       
-      if (!FULLPBC(parm->ir))
+      if (graph)
 	unshift_self(graph,state->box,state->x);
     }
      

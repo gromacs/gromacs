@@ -103,7 +103,7 @@ void init_disres(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
 
 void calc_disres_R_6(t_commrec *mcr,
 		     int nfa,t_iatom forceatoms[],t_iparams ip[],
-		     rvec x[],t_fcdata *fcd)
+		     rvec x[],bool bFullPBC,t_fcdata *fcd)
 {
   atom_id     ai,aj;
   int         fa,res,i,pair,ki,kj,m;
@@ -149,8 +149,11 @@ void calc_disres_R_6(t_commrec *mcr,
       pair = fa/3;
       ai   = forceatoms[fa+1];
       aj   = forceatoms[fa+2];
-      
-      rvec_sub(x[ai],x[aj],dx);
+
+      if (bFullPBC)
+	pbc_dx(x[ai],x[aj],dx);
+      else
+	rvec_sub(x[ai],x[aj],dx);
       rt2  = iprod(dx,dx);
       rt_1 = invsqrt(rt2);
       rt_3 = rt_1*rt_1*rt_1;
@@ -186,7 +189,7 @@ real ta_disres(int nfa,t_iatom forceatoms[],t_iparams ip[],
   const real seven_three=7.0/3.0;
   
   atom_id     ai,aj;
-  int         fa,res,npairs,p,pair,ki,kj,m;
+  int         fa,res,npairs,p,pair,ki=CENTRAL,m;
   int         type,label;
   rvec        dx;
   real        weight_rt_1;
@@ -200,8 +203,10 @@ real ta_disres(int nfa,t_iatom forceatoms[],t_iparams ip[],
   ivec        it,jt,dt;
   t_disresdata *dd;
   int         dr_weighting;
-  bool        dr_bMixed;
+  bool        dr_bMixed,bFullPBC;
   real        dr_fc;
+
+  bFullPBC = (fr->ePBC == epbcFULL);
 
   dd = &(fcd->disres);
   dr_weighting = dd->dr_weighting;
@@ -315,8 +320,11 @@ real ta_disres(int nfa,t_iatom forceatoms[],t_iparams ip[],
 	pair = fa/3;
 	ai   = forceatoms[fa+1];
 	aj   = forceatoms[fa+2];
-	
-	rvec_sub(x[ai],x[aj],dx);
+
+	if (bFullPBC) 
+	  ki = pbc_dx(x[ai],x[aj],dx);
+	else
+	  rvec_sub(x[ai],x[aj],dx);
 	rt2 = iprod(dx,dx);
 	
 	weight_rt_1 = invsqrt(rt2);
@@ -331,8 +339,10 @@ real ta_disres(int nfa,t_iatom forceatoms[],t_iparams ip[],
 	
 	fk_scal  = f_scal*weight_rt_1;
 
-	ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
-	ki=IVEC2IS(dt);
+	if (g) {
+	  ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+	  ki=IVEC2IS(dt);
+	}
 
 	for(m=0; m<DIM; m++) {
 	  fij            = fk_scal*dx[m];

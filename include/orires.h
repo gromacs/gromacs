@@ -55,7 +55,8 @@ extern void init_orires(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
 
 extern real calc_orires_dev(t_commrec *mcr,
 			    int nfa,t_iatom forceatoms[],t_iparams ip[],
-			    t_mdatoms *md,rvec x[],t_fcdata *fcd);
+			    t_mdatoms *md,rvec x[],bool bFullPBC,
+			    t_fcdata *fcd);
 /* 
  * Calculates the time averaged D matrices, the S matrix for each experiment.
  * Returns the weighted RMS deviation of the orientation restraints.

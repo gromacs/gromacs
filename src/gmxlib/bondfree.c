@@ -103,11 +103,12 @@ void calc_bonds(FILE *log,t_commrec *cr,t_commrec *mcr,t_idef *idef,
   if (idef->il[F_ORIRES].nr)
     epot[F_ORIRESDEV] = calc_orires_dev(mcr,idef->il[F_ORIRES].nr,
 					idef->il[F_ORIRES].iatoms,
-					idef->iparams,md,x_s,fcd);
+					idef->iparams,md,x_s,
+					fr->ePBC==epbcFULL,fcd);
   if (idef->il[F_DISRES].nr)
     calc_disres_R_6(mcr,idef->il[F_DISRES].nr,
 		    idef->il[F_DISRES].iatoms,
-		    idef->iparams,x_s,fcd);
+		    idef->iparams,x_s,fr->ePBC==epbcFULL,fcd);
   
   /* Loop over all bonded force types to calculate the bonded forces */
   for(ftype=0; (ftype<F_NRE); ftype++) {
@@ -780,7 +781,7 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
     t3=IVEC2IS(dt_lj);
   }    
   else
-    t3 = pbc_dx(x[l],x[j],dx_jl);
+    t3 = pbc_rvec_sub(x[l],x[j],dx_jl);
     
   rvec_inc(fr->fshift[t1],f_i);
   rvec_dec(fr->fshift[CENTRAL],f_j);

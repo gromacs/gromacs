@@ -46,6 +46,7 @@
 #include "do_fit.h"
 #include "main.h"
 #include "copyrite.h"
+#include "pbc.h"
 
 void init_orires(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
 		 rvec *xref,t_mdatoms *md,t_inputrec *ir,
@@ -235,7 +236,8 @@ void print_orires_log(FILE *log,t_oriresdata *od)
 
 real calc_orires_dev(t_commrec *mcr,
 		     int nfa,t_iatom forceatoms[],t_iparams ip[],
-		     t_mdatoms *md,rvec x[],t_fcdata *fcd)
+		     t_mdatoms *md,rvec x[],bool bFullPBC,
+		     t_fcdata *fcd)
 {
   int          fa,d,i,j,type,ex,nref;
   real         edt,edt1,invn,pfac,r2,invr,corrfac,weight,wsv2,sw,dev;
@@ -289,7 +291,10 @@ real calc_orires_dev(t_commrec *mcr,
   d = 0;
   for(fa=0; fa<nfa; fa+=3) {
     type = forceatoms[fa];
-    rvec_sub(x[forceatoms[fa+1]],x[forceatoms[fa+2]],r_unrot);
+    if (bFullPBC)
+      pbc_dx(x[forceatoms[fa+1]],x[forceatoms[fa+2]],r_unrot);
+    else
+      rvec_sub(x[forceatoms[fa+1]],x[forceatoms[fa+2]],r_unrot);
     mvmul(R,r_unrot,r);
     r2   = norm2(r);
     invr = invsqrt(r2);
@@ -423,20 +428,21 @@ real orires(int nfa,t_iatom forceatoms[],t_iparams ip[],
 	    t_fcdata *fcd)
 {
   atom_id      ai,aj;
-  int          fa,d,i,type,ex,power,ki;
+  int          fa,d,i,type,ex,power,ki=CENTRAL;
   ivec         dt;
   real         r2,invr,invr2,fc,smooth_fc,dev,devins,pfac;
   rvec         r,Sr,fij;
   real         vtot;
   t_oriresdata *od;
-  bool         bTAV;
+  bool         bTAV,bFullPBC;
 
   vtot = 0;
   od = &(fcd->orires);
 
   if (od->fc != 0) {
     bTAV = (od->edt != 0);
-    
+    bFullPBC = (fr->ePBC == epbcFULL);
+
     /* Smoothly switch on the restraining when time averaging is used */
     smooth_fc = od->fc*(1.0 - od->exp_min_t_tau);
     
@@ -445,7 +451,10 @@ real orires(int nfa,t_iatom forceatoms[],t_iparams ip[],
       type  = forceatoms[fa];
       ai    = forceatoms[fa+1];
       aj    = forceatoms[fa+2];
-      rvec_sub(x[ai],x[aj],r);
+      if (bFullPBC)
+	ki = pbc_dx(x[ai],x[aj],r);
+      else
+	rvec_sub(x[ai],x[aj],r);
       r2    = norm2(r);
       invr  = invsqrt(r2);
       invr2 = invr*invr;
@@ -476,9 +485,11 @@ real orires(int nfa,t_iatom forceatoms[],t_iparams ip[],
       for(i=0; i<DIM; i++)
 	fij[i] = -pfac*dev*(4*Sr[i] - 2*(2+power)*invr2*iprod(Sr,r)*r[i]);
       
-      ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
-      ki=IVEC2IS(dt);
-      
+      if (g) {
+	ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+	ki=IVEC2IS(dt);
+      }
+
       for(i=0; i<DIM; i++) {
 	f[ai][i]               += fij[i];
 	f[aj][i]               -= fij[i];

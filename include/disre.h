@@ -56,7 +56,7 @@ void init_disres(FILE *log,int nbonds,t_iatom forceatoms[],t_iparams ip[],
 
 extern void calc_disres_R_6(t_commrec *mcr,
 			    int nfa,t_iatom forceatoms[],t_iparams ip[],
-			    rvec x[],t_fcdata *fcd);
+			    rvec x[],bool bFullPBC,t_fcdata *fcd);
 /* Calculates r and r^-3 (inst. and time averaged) for all pairs
  * and the ensemble averaged r^-6 (inst. and time averaged) for all restraints
  */
