@@ -63,7 +63,7 @@ static t_deffile deffile[efNR] = {
   { FALSE, ".wdp", "widom",  "-f", "g_widom input parameters."               },
   { FALSE, ".gct", "gct",    "-f", "general coupling stuff"                  },
   { FALSE, ".gpp", "group",  "-g", "group related input for grompp"          },
-  { TRUE,  ".???", "xtraj",  NULL, "Generic trajectory: xtc trr trj gro pdb g87"},
+  { TRUE,  ".???", "xtraj",  "-f", "Generic trajectory: xtc trr trj gro pdb g87"},
   { TRUE,  ".???", "traj",   NULL, "Full precision trajectory: trr trj"      },
   { TRUE,  ".trr", "traj",   NULL, "Trajectory in portable xdr format" },
   { TRUE,  ".trj", "btraj",  NULL, "Trajectory file (cpu specific)"    },
@@ -72,7 +72,7 @@ static t_deffile deffile[efNR] = {
   { TRUE,  ".???", "ener",   NULL, "Generic energy: edr ene" },
   { TRUE,  ".edr", "ener",   NULL, "Energy file in portable XDR format"      },
   { TRUE,  ".ene", "ener",   NULL, "Energy file"                             },
-  { FALSE, ".???", "xconf",  NULL, "Generic structure: gro pdb tpr tpb tpa"  },
+  { FALSE, ".???", "conf",   "-c", "Generic structure: gro pdb tpr tpb tpa"  },
   { FALSE, ".gro", "conf",   "-c", "Coordinate file in Gromos-87 format"     },
   { FALSE, ".pdb", "eiwit",  "-f", "Protein data bank file"                  },
   { FALSE, ".brk", "eiwit",  "-f", "Brookhaven data bank file"               },
@@ -198,7 +198,8 @@ static void check_opts(int nf,t_filenm fnm[])
     df=&(deffile[fnm[i].ftp]);
     if (fnm[i].opt == NULL) {
       if (df->defopt == NULL)
-	fatal_error(0,"No default cmd-line option for %s\n",fnm[i].fn);
+	fatal_error(0,"No default cmd-line option for %s (type %d)\n",
+		    deffile[fnm[i].ftp].ext,fnm[i].ftp);
       else
 	fnm[i].opt=df->defopt;
     }
