@@ -26,9 +26,11 @@
  * And Hey:
  * Grunge ROck MAChoS
  */
+
 typedef struct {
   real e;	/* The current energy.					*/
-  real eav;     /* The running average					*/
-  real esum;	/* The sum of energies until now.			*/
+  double eav;     /* The running average       				*/
+  double esum;	/* The sum of energies until now.			*/
   real e2sum;	/* The sum of the square of energies until now		*/
 } t_energy;
+
