@@ -295,9 +295,9 @@ int main(int argc,char *argv[])
   t_trxframe   fr,frout;
   int          flags;
   rvec         *xmem=NULL,*vmem=NULL;
-  rvec         *xp,x_shift,hbox,box_center,dx;
+  rvec         *xp=NULL,x_shift,hbox,box_center,dx;
   real         xtcpr, lambda,*w_rls=NULL;
-  int          m,i,d,frame,outframe,natoms=0,nout,ncent,nre,newstep=0;
+  int          m,i,d,frame,outframe,natoms,nout,ncent,nre,newstep=0;
 #define SKIP 10
   t_topology   top;
   t_atoms      *atoms=NULL,useatoms;
@@ -434,8 +434,7 @@ int main(int argc,char *argv[])
       printf("Select group for output\n");
       get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),
 		1,&nout,&index,&grpnm);
-    }
-    else {
+    } else {
       /* no index file, so read natoms from TRX */
       read_first_frame(&status,in_file,&fr,TRX_DONT_SKIP);
       natoms = fr.natoms;
@@ -451,10 +450,6 @@ int main(int argc,char *argv[])
       }
     }
     
-    /* if xp was not snew-ed before, do it now */
-    if (!xp)
-      snew(xp, natoms);
-    
     if (bFit) {
       snew(w_rls,atoms->nr);
       for(i=0; (i<ifit); i++)
@@ -464,7 +459,7 @@ int main(int argc,char *argv[])
          store original location (to put structure back) */
       rm_pbc(&(top.idef),atoms->nr,fr.box,xp,xp);
       copy_rvec(xp[index[0]],x_shift);
-      reset_x(ifit,ind_fit,natoms,NULL,xp,w_rls);
+      reset_x(ifit,ind_fit,atoms->nr,NULL,xp,w_rls);
       rvec_dec(x_shift,xp[index[0]]);
     } else
       clear_rvec(x_shift);
@@ -589,14 +584,15 @@ int main(int argc,char *argv[])
 	  for(d=0; d<DIM; d++)
 	    hbox[d] = 0.5*fr.box[d][d];
 	  for(i=0; i<natoms; i++)
-	    for(m=DIM-1; m>=0; m--) {
-	      while (fr.x[i][m]-xp[i][m] <= -hbox[m])
-		for(d=0; d<=m; d++)
-		  fr.x[i][d] += fr.box[m][d];
-	      while (fr.x[i][m]-xp[i][m] > hbox[m])
-		for(d=0; d<=m; d++)
-		  fr.x[i][d] -= fr.box[m][d];
-	    }
+	    for(m=DIM-1; m>=0; m--)
+	      if (hbox[m] > 0) {
+		while (fr.x[i][m]-xp[i][m] <= -hbox[m])
+		  for(d=0; d<=m; d++)
+		    fr.x[i][d] += fr.box[m][d];
+		while (fr.x[i][m]-xp[i][m] > hbox[m])
+		  for(d=0; d<=m; d++)
+		    fr.x[i][d] -= fr.box[m][d];
+	      }
 	}
       
 	if (bPFit) {
@@ -610,6 +606,8 @@ int main(int argc,char *argv[])
       
 	/* store this set of coordinates for future use */
 	if (bPFit || bNoJump) {
+	  if (xp == NULL)
+	    snew(xp,natoms);
 	  for(i=0; (i<natoms); i++) {
 	    copy_rvec(fr.x[i],xp[i]);
 	    rvec_inc(fr.x[i],x_shift);
