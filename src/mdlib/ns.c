@@ -719,7 +719,7 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
       new_i_nblist(vdwc_free,F_DVDL,i_atom,shift,gid,NULL);
 
       if (!(bVDWOnly || (qi==0 && qiB==0)) || 
-	  !(bCoulOnly || !(bHaveLJ[type[i_atom]] && bHaveLJ[typeB[i_atom]]))) {
+	  !(bCoulOnly || (!bHaveLJ[type[i_atom]] && !bHaveLJ[typeB[i_atom]]))) {
 	/* Loop over the j charge groups */
 	for(j=0; (j<nj); j++) {
 	  jcg=jjcg[j];
