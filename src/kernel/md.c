@@ -181,7 +181,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 
   /* Dihedral Restraints */
   init_dihres(stdlog,top->idef.il[F_DIHRES].nr,top->idef.il[F_DIHRES].iatoms,
-	      top->idef.iparams,&(parm->ir),mcr,fcd);
+	      top->idef.iparams,&(parm->ir),fcd);
 
   /* check if there are dummies */
   bDummies=FALSE;
@@ -366,8 +366,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   debug_gmx();
 
   /* Initialize pull code */
-  init_pull(log,nfile,fnm,&pulldata,state->x,mdatoms,state->box,
-	    START(nsb),HOMENR(nsb),cr);
+  init_pull(log,nfile,fnm,&pulldata,state->x,mdatoms,parm->ir.opts.nFreeze,
+	    state->box,START(nsb),HOMENR(nsb),cr);
     
   if (!parm->ir.bUncStart) 
     do_shakefirst(log,bTYZ,ener,parm,nsb,mdatoms,state,vold,buf,f,

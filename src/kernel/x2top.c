@@ -338,7 +338,7 @@ void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],bool bPBC,
     ai = ang->param[i].AI;
     aj = ang->param[i].AJ;
     ak = ang->param[i].AK;
-    th = RAD2DEG*bond_angle(box,x[ai],x[aj],x[ak],r_ij,r_kj,&costh,&t1,&t2);
+    th = RAD2DEG*bond_angle(x[ai],x[aj],x[ak],r_ij,r_kj,&costh,&t1,&t2);
     if (debug)
       fprintf(debug,"X2TOP: ai=%3d aj=%3d ak=%3d r_ij=%8.3f r_kj=%8.3f th=%8.3f\n",
 	      ai,aj,ak,norm(r_ij),norm(r_kj),th);
@@ -349,7 +349,7 @@ void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],bool bPBC,
     aj = dih->param[i].AJ;
     ak = dih->param[i].AK;
     al = dih->param[i].AL;
-    ph = RAD2DEG*dih_angle(box,x[ai],x[aj],x[ak],x[al],
+    ph = RAD2DEG*dih_angle(x[ai],x[aj],x[ak],x[al],
 			   r_ij,r_kj,r_kl,m,n,&cosph,&sign,&t1,&t2,&t3);
     if (debug)
       fprintf(debug,"X2TOP: ai=%3d aj=%3d ak=%3d al=%3d r_ij=%8.3f r_kj=%8.3f r_kl=%8.3f ph=%8.3f\n",

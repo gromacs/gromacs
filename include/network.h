@@ -161,13 +161,13 @@ extern void gmx_wait(int send,int receive);
 extern void gmx_sync_ring(int nodeid,int nnodes,int left,int right);
 /* Synchronise the ring... */
 
-extern void gmx_sumi(int nr,int r[],t_commrec *cr);
+extern void gmx_sumi(int nr,int r[],const t_commrec *cr);
 /* Calculate the global sum of an array of ints */
 
-extern void gmx_sumf(int nr,float r[],t_commrec *cr);
+extern void gmx_sumf(int nr,float r[],const t_commrec *cr);
 /* Calculate the global sum of an array of floats */
 
-extern void gmx_sumd(int nr,double r[],t_commrec *cr);
+extern void gmx_sumd(int nr,double r[],const t_commrec *cr);
 /* Calculate the global sum of an array of doubles */
 
 extern void gmx_abort(int nodeid,int nnodes,int errorno);

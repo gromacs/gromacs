@@ -552,7 +552,7 @@ static void calc_angles(FILE *log,matrix box,
   real costh;
   
   for(i=ix=0; (ix<n3); i++,ix+=3) 
-    ang[i]=bond_angle(box,x_s[index[ix]],x_s[index[ix+1]],x_s[index[ix+2]],
+    ang[i]=bond_angle(x_s[index[ix]],x_s[index[ix+1]],x_s[index[ix+2]],
 		      r_ij,r_kj,&costh,&t1,&t2);
   if (debug) {
     fprintf(debug,"Angle[0]=%g, costh=%g, index0 = %d, %d, %d\n",
@@ -594,8 +594,7 @@ static void calc_dihs(FILE *log,matrix box,
   real cos_phi,sign,aaa;
   
   for(i=ix=0; (ix<n4); i++,ix+=4) {
-    aaa=dih_angle(box,
-		  x_s[index[ix]],x_s[index[ix+1]],x_s[index[ix+2]],
+    aaa=dih_angle(x_s[index[ix]],x_s[index[ix+1]],x_s[index[ix+2]],
 		  x_s[index[ix+3]],
 		  r_ij,r_kj,r_kl,m,n,
 		  &cos_phi,&sign,&t1,&t2,&t3);

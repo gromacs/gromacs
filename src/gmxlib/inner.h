@@ -57,14 +57,14 @@
 #  define THREAD_ARGS
 #endif
 
-#define COMMON_ARGS int SCALARG(nri),int iinr[],int jindex[], \
-                    int jjnr[], int shift[],real shiftvec[], \
-                    real fshift[],int gid[] ,real x[],real f[] \
+#define COMMON_ARGS int SCALARG(nri),const int iinr[],const int jindex[], \
+                    const int jjnr[],const int shift[],const real shiftvec[], \
+                    real fshift[],const int gid[] ,const real x[],real f[] \
                     FBUF_ARG THREAD_ARGS
 
-#define COMMON_MC_ARGS int SCALARG(nri),int iinr[],int jindex[], \
-                    int jjnr[], int shift[],real shiftvec[], \
-                    int gid[] ,real x[] FBUF_ARG THREAD_ARGS
+#define COMMON_MC_ARGS int SCALARG(nri),const int iinr[],const int jindex[], \
+                    const int jjnr[],const int shift[],const real shiftvec[], \
+                    const int gid[] ,const real x[] FBUF_ARG THREAD_ARGS
 
 
 #ifdef VECTORIZE_RECIP
@@ -131,19 +131,19 @@
 #  define INVSQRT_WW_BUF2
 #endif
 
-#define LJ_ARGS         ,int typeA[],int SCALARG(ntype),real nbfp[],real egnb[]
-#define COUL_ARGS       ,real chargeA[],real SCALARG(epsfac),real egcoul[]
-#define SOFTCORE_LJARGS ,int typeA[],int SCALARG(ntype),real nbfp[]
+#define LJ_ARGS         ,const int typeA[],int SCALARG(ntype),const real nbfp[],real egnb[]
+#define COUL_ARGS       ,const real chargeA[],real SCALARG(epsfac),real egcoul[]
+#define SOFTCORE_LJARGS ,const int typeA[],int SCALARG(ntype),const real nbfp[]
 #define RF_ARGS         ,real SCALARG(krf),real SCALARG(crf)
-#define LJCTAB_ARGS     ,real SCALARG(tabscale),real VFtab[]
-#define LJTAB_ARGS      ,real SCALARG(tabscale),real VFtab[]
-#define COULTAB_ARGS    ,real SCALARG(tabscale),real VFtab[]
+#define LJCTAB_ARGS     ,real SCALARG(tabscale),const real VFtab[]
+#define LJTAB_ARGS      ,real SCALARG(tabscale),const real VFtab[]
+#define COULTAB_ARGS    ,real SCALARG(tabscale),const real VFtab[]
 #define BHTAB_ARGS      ,real SCALARG(tabscale_exp)
 #define FREE_ARGS       ,real SCALARG(lambda),real *dvdlambda
-#define FREE_CHARGEB    ,real chargeB[]
-#define FREE_TYPEB      ,int typeB[]
+#define FREE_CHARGEB    ,const real chargeB[]
+#define FREE_TYPEB      ,const int typeB[]
 #define SOFTCORE_ARGS   ,real SCALARG(sc_alpha),real SCALARG(defsigma6)
-#define SOLMN_ARGS      ,int nsatoms[]
+#define SOLMN_ARGS      ,const int nsatoms[]
 
 
 

@@ -57,6 +57,7 @@
 #include "fatal.h"
 #include "physics.h"
 #include "force.h"
+#include "bondf.h"
 #include "inner.h"
 #include "nrnb.h"
 #include "smalloc.h"
@@ -175,7 +176,7 @@ static real *fbuf=NULL;
 
 int cpu_capabilities = UNKNOWN_CPU;
 
-void do_fnbf(FILE *log,t_commrec *cr,t_forcerec *fr,
+void do_fnbf(FILE *fplog,t_commrec *cr,t_forcerec *fr,
 	     rvec x[],rvec f[],t_mdatoms *mdatoms,
 	     real egnb[],real egcoul[],rvec box_size,
 	     t_nrnb *nrnb,real lambda,real *dvdlambda,
@@ -210,13 +211,13 @@ static real *_buf2=NULL;
     /* use cache aligned buffer pointers */
     buf1=(real *) ( ( (unsigned long int)_buf1 + 31 ) & (~0x1f) );	 
     buf2=(real *) ( ( (unsigned long int)_buf2 + 31 ) & (~0x1f) );	 
-    fprintf(log,"Using buffers of length %d for innerloop vectorization.\n",buflen);
+    fprintf(fplog,"Using buffers of length %d for innerloop vectorization.\n",buflen);
   }
 #endif
 
 #if (defined USE_X86_SSE_AND_3DNOW || defined USE_X86_SSE2 || defined USE_PPC_ALTIVEC)
   if (cpu_capabilities == UNKNOWN_CPU) {
-    cpu_capabilities = detect_cpu(log);
+    cpu_capabilities = detect_cpu(fplog);
   }
 #endif
   
@@ -942,17 +943,17 @@ static real *_buf2=NULL;
   }
 }
 
-real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
-	   rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-	   matrix box,real lambda,real *dvdlambda,
-	   t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
+real do_14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
+	   const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+	   real lambda,real *dvdlambda,
+	   const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+	   t_fcdata *fcd)
 {
   static    bool bWarn=FALSE;
   bool      bFullPBC;
   real      eps,r2,rtab2;
   rvec      dx,x14[2],f14[2];
-  int       ai,aj,itype;
-  t_iatom   *ia0,*iatom;
+  int       i,ai,aj,itype;
   int       typeA[2]={0,0},typeB[2]={0,1};
   real      chargeA[2],chargeB[2];
   int       gid,shift_vir,shift_f;
@@ -980,12 +981,10 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
   
   rtab2 = sqr(fr->tab14.r);
     
-  ia0=iatoms;
-
-  for(iatom=ia0; (iatom<ia0+nbonds); iatom+=3) {
-    itype = iatom[0];
-    ai    = iatom[1];
-    aj    = iatom[2];
+  for(i=0; (i<nbonds); ) {
+    itype = iatoms[i++];
+    ai    = iatoms[i++];
+    aj    = iatoms[i++];
     
     if (!bFullPBC) {
       /* This is a bonded interaction, atoms are in the same box */
@@ -1090,8 +1089,8 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 #if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	if (cpu_capabilities & X86_3DNOW_SUPPORT) {
 	  inl3300_3dnow(i1,&i0,j_index,&i1,&shift_f,fr->shift_vec[0],fr->fshift[0],
-			&gid ,x[0],f[0] FBUF_ARG
-			,chargeA,eps,egcoul,typeA,i1,
+			&gid ,x14[0],f14[0] FBUF_ARG
+			,chargeA,eps,egcoul,typeA,SCAL(i1),
 			&(iparams[itype].lj14.c6A),egnb,
 			fr->tab14.scale,fr->tab14.tab);
 	}

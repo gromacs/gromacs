@@ -153,7 +153,7 @@ static void par_fn(char *base,int ftp,t_commrec *cr, char buf[], int bufsize)
   strcat(buf,(ftp == efTPX) ? "tpr" : (ftp == efENX) ? "edr" : ftp2ext(ftp));
 }
 
-void check_multi_int(FILE *log,t_commrec *mcr,int val,char *name)
+void check_multi_int(FILE *log,const t_commrec *mcr,int val,char *name)
 {
   int  *ibuf,p;
   bool bCompatible;
@@ -181,7 +181,7 @@ void check_multi_int(FILE *log,t_commrec *mcr,int val,char *name)
   sfree(ibuf);
 }
 
-void open_log(char *lognm,t_commrec *cr)
+void open_log(char *lognm,const t_commrec *cr)
 {
   int  len,testlen,pid;
   char buf[256],*host;

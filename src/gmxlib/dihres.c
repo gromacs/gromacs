@@ -51,8 +51,9 @@
 #include "disre.h"
 #include "main.h"
 
-void init_dihres(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
-		 t_inputrec *ir,t_commrec *mcr,t_fcdata *fcd)
+void init_dihres(FILE *fplog,int nfa,const t_iatom forceatoms[],
+		 const t_iparams ip[],
+		 const t_inputrec *ir,t_fcdata *fcd)
 {
   int fa;
   t_dihresdata *dd;
@@ -80,15 +81,16 @@ void init_dihres(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
   snew(dd->dihav,dd->ndih);
   
   if (dd->ndih > 0) {
-    fprintf(log,"There are %d dihedral restraints involving %d atom quartets\n",
+    fprintf(fplog,
+	    "There are %d dihedral restraints involving %d atom quartets\n",
 	    dd->nr,dd->ndih);
   }
 }
 
-real ta_dihres(int nfa,t_iatom forceatoms[],t_iparams ip[],
-	       rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-	       matrix box,real lambda,real *dvdlambda,
-	       t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+real ta_dihres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
+	       const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+	       real lambda,real *dvdlambda,
+	       const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 	       t_fcdata *fcd)
 {
   real vtot = 0;

@@ -51,12 +51,12 @@ extern int  gmx_parallel_env; /* 1 when running in a parallel environment,
 			       * with: mpirun -np 1 
 			       */
 
-extern void open_log(char *fn,t_commrec *cr);
+extern void open_log(char *fn,const t_commrec *cr);
 /* Open the log file, if necessary (nprocs > 1) the logfile name is
  * communicated around the ring.
  */
 
-extern void check_multi_int(FILE *log,t_commrec *mcr,int val,char *name);
+extern void check_multi_int(FILE *log,const t_commrec *mcr,int val,char *name);
 /* Check if val is the same on all processors for a mdrun -multi run
  * The string name is used to print to the log file and in a fatal error
  * if the val's don't match.

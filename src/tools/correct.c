@@ -223,8 +223,7 @@ void compute_dihs(FILE *log,int nq,t_quadruple q[],rvec x[],real phi[],
   real   cos_phi,sign;
   
   for(i=0; (i<nq); i++)
-    phi[i] = RAD2DEG*dih_angle(box,
-			       x[q[i].ai],x[q[i].aj],x[q[i].ak],x[q[i].al],
+    phi[i] = RAD2DEG*dih_angle(x[q[i].ai],x[q[i].aj],x[q[i].ak],x[q[i].al],
 			       r_ij,r_kj,r_kl,m,n,&cos_phi,&sign,
 			       &t1,&t2,&t3);
 }

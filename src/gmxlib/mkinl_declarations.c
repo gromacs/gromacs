@@ -266,20 +266,20 @@ void func_args()
    * with j particles
    */
   declare_int("nri");
-  declare_int_vector("iinr");
-  declare_int_vector("jindex");
-  declare_int_vector("jjnr");
+  declare_const_int_vector("iinr");
+  declare_const_int_vector("jindex");
+  declare_const_int_vector("jjnr");
   /* shift indices, vectors, force shifts and group indices */
-  declare_int_vector("shift");
-  declare_real_vector("shiftvec");
+  declare_const_int_vector("shift");
+  declare_const_real_vector("shiftvec");
   declare_real_vector("fshift");
-  declare_int_vector("gid");
+  declare_const_int_vector("gid");
 
 
   /* coordinates, forces, 
    * charges and VDW types (also for B state with free energy)
    */
-  declare_real_vector("pos");
+  declare_const_real_vector("pos");
   declare_real_vector("faction");
   /* buffer to remove dependencies on vector machines */
   declare_real_vector("fbuf");
@@ -304,7 +304,7 @@ void func_args()
   declare_real_vector("buf2");
 
   /* 2: COUL_ARGS */
-  declare_real_vector("charge");
+  declare_const_real_vector("charge");
   declare_real("facel");
   declare_real_vector("Vc");
   /* RF_ARGS - Reaction field constant */
@@ -312,29 +312,29 @@ void func_args()
   declare_real("crf");
 
   /* 3: LJ_ARGS */
-  declare_int_vector("type");
+  declare_const_int_vector("type");
   declare_int("ntype");
-  declare_real_vector("nbfp");
+  declare_const_real_vector("nbfp");
   declare_real_vector("Vnb");
 
   /* 4: TABLE ARGUMENTS */
   declare_real("tabscale");
-  declare_real_vector("VFtab");
+  declare_const_real_vector("VFtab");
   declare_real("exptabscale");
   
   /* 5: FREE ENERGY */
   declare_real("lambda");
   declare_real( bC ? "*dvdlambda" : "dvdlambda");
   /* Free energy charge stuff */
-  declare_real_vector("chargeB");
+  declare_const_real_vector("chargeB");
   /* Free energy lj stuff */
-  declare_int_vector("typeB");
+  declare_const_int_vector("typeB");
   /* softcore thingies */
   declare_real("Alpha");
   declare_real("defsigma6");
 
   /* Vector with molecule info for General M:N solvent stuff */
-  declare_int_vector("nsatoms");
+  declare_const_int_vector("nsatoms");
   
   nargs=ndecl;
   /* set the number of arguments to the current number of declarations.

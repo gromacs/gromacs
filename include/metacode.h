@@ -103,12 +103,14 @@ void comment(char *s);
 /* Define a new floating-point variable */
 void declare_real(char *name);
 void declare_real_vector(char *name);
+void declare_const_real_vector(char *name);
 
 void declare_const_real(char *name,double val);
 void declare_const_int(char *name,int val);
 
 void declare_int(char *name);
 void declare_int_vector(char *name);
+void declare_const_int_vector(char *name);
 void declare_real4(char *name);
 void declare_int4(char *name);
 void declare_int8(char *name);

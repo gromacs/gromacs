@@ -168,7 +168,8 @@ static void check_viol(FILE *log,t_commrec *mcr,
     } while (((i+n) < disres->nr) && 
 	     (forceparams[forceatoms[i+n]].disres.label == label));
     
-    calc_disres_R_6(mcr,n,&forceatoms[i],forceparams,x,fr->ePBC==epbcFULL,fcd);
+    calc_disres_R_6(mcr,n,&forceatoms[i],forceparams,
+		    (const rvec*)x,fr->ePBC==epbcFULL,fcd);
 
     rt = pow(fcd->disres.Rt_6[0],-1.0/6.0);
     aver1[ndr]  += rt;
@@ -176,9 +177,9 @@ static void check_viol(FILE *log,t_commrec *mcr,
     aver_3[ndr] += pow(rt,-3.0);
     
     ener=interaction_function[F_DISRES].ifunc(n,&forceatoms[i],
-					   forceparams,
-					   x,f,fr,g,box,lam,&dvdl,
-					   NULL,0,NULL,NULL,fcd);
+					      forceparams,
+					      (const rvec*)x,f,fr,g,lam,&dvdl,
+					      NULL,0,NULL,NULL,fcd);
     viol = fcd->disres.sumviol;
     
     
@@ -428,12 +429,13 @@ int gmx_disre(int argc,char *argv[])
 
   check_nnodes_top(ftp2fn(efTPX,NFILE,fnm),&top,1);
 
-  if (ir.ePBC == epbcFULL) {
-    set_gmx_full_pbc();
+  if (ir.ePBC == epbcXYZ) {
+    g = mk_graph(&top.idef,top.atoms.nr,FALSE,FALSE);
+  } else {
     g = NULL;
+    if (ir.ePBC == epbcFULL)
+      set_gmx_full_pbc();
   }
-  else
-    g = mk_graph(&top.idef,top.atoms.nr,FALSE,FALSE);  
   
   if (ftp2bSet(efNDX,NFILE,fnm)) {
     rd_index(ftp2fn(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
@@ -491,7 +493,7 @@ int gmx_disre(int argc,char *argv[])
   do {
     if (ir.ePBC == epbcXYZ)
       rm_pbc(&top.idef,natoms,box,x,x);
-    else
+    else if (ir.ePBC == epbcFULL)
       init_pbc(box);
     
     check_viol(stdlog,cr,

@@ -48,23 +48,24 @@ extern "C" {
 #include "sysstuff.h"
 #include "typedefs.h"
 
-void init_disres(FILE *log,int nbonds,t_iatom forceatoms[],t_iparams ip[],
-		 t_inputrec *ir,t_commrec *mcr,t_fcdata *fcd);
+void init_disres(FILE *fplog,int nbonds,const t_iatom *forceatoms,
+		 const t_iparams *ip,const t_inputrec *ir,
+		 const t_commrec *mcr,t_fcdata *fcd);
 /* Initiate *fcd data, must be called once, nbonds is the number 
  * of iatoms in the ilist of the idef struct
  */
 
-extern void calc_disres_R_6(t_commrec *mcr,
-			    int nfa,t_iatom forceatoms[],t_iparams ip[],
-			    rvec x[],bool bFullPBC,t_fcdata *fcd);
+extern void calc_disres_R_6(const t_commrec *mcr,
+			    int nfa,const t_iatom *fa,const t_iparams ip[],
+			    const rvec *x,bool bFullPBC,t_fcdata *fcd);
 /* Calculates r and r^-3 (inst. and time averaged) for all pairs
  * and the ensemble averaged r^-6 (inst. and time averaged) for all restraints
  */
 
-extern real ta_disres(int nbonds,t_iatom fa[],t_iparams *fp,
-		      rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-		      matrix box,real lambda,real *dvdlambda,
-		      t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+extern real ta_disres(int nbonds,const t_iatom fa[],const t_iparams fp[],
+		      const rvec *x,rvec f[],t_forcerec *fr,const t_graph *g,
+		      real lambda,real *dvdlambda,
+		      const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 		      t_fcdata *fcd);
 /* Calculate the distance restraint forces, return the potential */
 

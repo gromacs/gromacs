@@ -41,10 +41,11 @@
 #define _ifunc_h
 
 
-typedef real t_ifunc(int nbonds,t_iatom iatoms[],t_iparams *iparams,
-                     rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-		     matrix box,real lambd,real *dvdlambda,
-		     t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+typedef real t_ifunc(int nbonds,const t_iatom iatoms[],
+		     const t_iparams iparams[],
+                     const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+		     real lambda,real *dvdlambda,
+		     const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 		     t_fcdata *fcd);
 /*
  * The function type t_ifunc() calculates one interaction, using iatoms[] 
@@ -52,7 +53,7 @@ typedef real t_ifunc(int nbonds,t_iatom iatoms[],t_iparams *iparams,
  * known. Within the function only the atomid part of the iatoms[] array 
  * is supplied, not the type field (see also t_ilist). The function 
  * returns the potential energy. The coordinates in x are such that
- * no calculation of PBC is necessary.
+ * no calculation of PBC is necessary, unless pbc=full is used.
  */
 
 #define IF_NULL       0

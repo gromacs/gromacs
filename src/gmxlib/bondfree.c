@@ -58,7 +58,7 @@
 
 static bool bFullPBC=FALSE;
 
-static int pbc_rvec_sub(rvec xi,rvec xj,rvec dx)
+static int pbc_rvec_sub(const rvec xi,const rvec xj,rvec dx)
 {
   if (bFullPBC) {
     return pbc_dx(xi,xj,dx);
@@ -74,12 +74,13 @@ void set_gmx_full_pbc()
   bFullPBC = TRUE;
 }
 
-void calc_bonds(FILE *log,t_commrec *cr,t_commrec *mcr,t_idef *idef,
-		rvec x_s[],rvec f[],
-		t_forcerec *fr,t_graph *g,
+void calc_bonds(FILE *fplog,const t_commrec *cr,const t_commrec *mcr,
+		const t_idef *idef,
+		rvec x[],rvec f[],
+		t_forcerec *fr,const t_graph *g,
 		real epot[],t_nrnb *nrnb,
-		matrix box,real lambda,
-		t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+		real lambda,
+		const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 		t_fcdata *fcd,
 		int step,bool bSepDVDL)
 {
@@ -88,7 +89,7 @@ void calc_bonds(FILE *log,t_commrec *cr,t_commrec *mcr,t_idef *idef,
   real   v,dvdl;
 
   if (bSepDVDL)
-    fprintf(log,"Step %d: bonded V and dVdl for node %d:\n",step,cr->nodeid);
+    fprintf(fplog,"Step %d: bonded V and dVdl for node %d:\n",step,cr->nodeid);
 
   if (bFirst) {
     bFullPBC   = (fr->ePBC == epbcFULL);
@@ -103,12 +104,12 @@ void calc_bonds(FILE *log,t_commrec *cr,t_commrec *mcr,t_idef *idef,
   if (idef->il[F_ORIRES].nr)
     epot[F_ORIRESDEV] = calc_orires_dev(mcr,idef->il[F_ORIRES].nr,
 					idef->il[F_ORIRES].iatoms,
-					idef->iparams,md,x_s,
+					idef->iparams,md,(const rvec*)x,
 					fr->ePBC==epbcFULL,fcd);
   if (idef->il[F_DISRES].nr)
     calc_disres_R_6(mcr,idef->il[F_DISRES].nr,
 		    idef->il[F_DISRES].iatoms,
-		    idef->iparams,x_s,fr->ePBC==epbcFULL,fcd);
+		    idef->iparams,(const rvec*)x,fr->ePBC==epbcFULL,fcd);
   
   /* Loop over all bonded force types to calculate the bonded forces */
   for(ftype=0; (ftype<F_NRE); ftype++) {
@@ -117,7 +118,8 @@ void calc_bonds(FILE *log,t_commrec *cr,t_commrec *mcr,t_idef *idef,
       if (nbonds > 0) {
 	dvdl = 0;
 	v = interaction_function[ftype].ifunc(nbonds,idef->il[ftype].iatoms,
-					      idef->iparams,x_s,f,fr,g,box,
+					      idef->iparams,
+					      (const rvec*)x,f,fr,g,
 					      lambda,&dvdl,
 					      md,ngrp,egnb,egcoul,fcd);
 	ind = interaction_function[ftype].nrnb_ind;
@@ -128,10 +130,10 @@ void calc_bonds(FILE *log,t_commrec *cr,t_commrec *mcr,t_idef *idef,
 	epot[F_DVDL] += dvdl;
 	if (bSepDVDL) {
 	  if (ftype != F_LJ14) {
-	    fprintf(log,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
+	    fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
 		    interaction_function[ftype].longname,nbonds/nat,v,dvdl);
 	  } else {
-	    fprintf(log,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
+	    fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
 		    interaction_function[ftype].longname,
 		    interaction_function[F_COUL14].longname,nbonds/nat,dvdl);
 	  }
@@ -157,10 +159,10 @@ void calc_bonds(FILE *log,t_commrec *cr,t_commrec *mcr,t_idef *idef,
  */
 
 real morsebonds(int nbonds,
-                t_iatom forceatoms[],t_iparams forceparams[],
-                rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-                matrix box,real lambda,real *dvdl,
-                t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+                const t_iatom forceatoms[],const t_iparams forceparams[],
+                const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+                real lambda,real *dvdl,
+                const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 		t_fcdata *fcd)
 {
   const real one=1.0;
@@ -211,10 +213,10 @@ real morsebonds(int nbonds,
 }
 
 real cubicbonds(int nbonds,
-                t_iatom forceatoms[],t_iparams forceparams[],
-                rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-                matrix box,real lambda,real *dvdl,
-                t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+                const t_iatom forceatoms[],const t_iparams forceparams[],
+                const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+                real lambda,real *dvdl,
+                const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 		t_fcdata *fcd)
 {
   const real three = 3.0;
@@ -294,10 +296,10 @@ real harmonic(real kA,real kB,real xA,real xB,real x,real lambda,
 
 
 real bonds(int nbonds,
-	   t_iatom forceatoms[],t_iparams forceparams[],
-	   rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-	   matrix box,real lambda,real *dvdlambda,
-	   t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+	   const t_iatom forceatoms[],const t_iparams forceparams[],
+	   const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+	   real lambda,real *dvdlambda,
+	   const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 	   t_fcdata *fcd)
 {
   int  i,m,ki,ai,aj,type;
@@ -348,10 +350,10 @@ real bonds(int nbonds,
 }
 
 real polarize(int nbonds,
-	      t_iatom forceatoms[],t_iparams forceparams[],
-	      rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-	      matrix box,real lambda,real *dvdlambda,
-	      t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+	      const t_iatom forceatoms[],const t_iparams forceparams[],
+	      const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+	      real lambda,real *dvdlambda,
+	      const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 	      t_fcdata *fcd)
 {
   int  i,m,ki,ai,aj,type;
@@ -394,10 +396,10 @@ real polarize(int nbonds,
 }
 
 real water_pol(int nbonds,
-	       t_iatom forceatoms[],t_iparams forceparams[],
-	       rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-	       matrix box,real lambda,real *dvdlambda,
-	       t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+	       const t_iatom forceatoms[],const t_iparams forceparams[],
+	       const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+	       real lambda,real *dvdlambda,
+	       const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 	       t_fcdata *fcd)
 {
   /* This routine implements anisotropic polarizibility for water, through
@@ -519,10 +521,9 @@ real water_pol(int nbonds,
   return 0.5*vtot;
 }
 
-real bond_angle(matrix box,
-		rvec xi,rvec xj,rvec xk,	/* in  */
+real bond_angle(const rvec xi,const rvec xj,const rvec xk,
 		rvec r_ij,rvec r_kj,real *costh,
-		int *t1,int *t2)		/* out */
+		int *t1,int *t2)
 /* Return value is the angle between the bonds i-j and j-k */
 {
   /* 41 FLOPS */
@@ -538,10 +539,10 @@ real bond_angle(matrix box,
 }
 
 real angles(int nbonds,
-	    t_iatom forceatoms[],t_iparams forceparams[],
-	    rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-	    matrix box,real lambda,real *dvdlambda,
-	    t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+	    const t_iatom forceatoms[],const t_iparams forceparams[],
+	    const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+	    real lambda,real *dvdlambda,
+	    const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 	    t_fcdata *fcd)
 {
   int  i,ai,aj,ak,t1,t2,type;
@@ -556,7 +557,7 @@ real angles(int nbonds,
     aj   = forceatoms[i++];
     ak   = forceatoms[i++];
     
-    theta  = bond_angle(box,x[ai],x[aj],x[ak],
+    theta  = bond_angle(x[ai],x[aj],x[ak],
 			r_ij,r_kj,&cos_theta,&t1,&t2);	/*  41		*/
   
     *dvdlambda += harmonic(forceparams[type].harmonic.krA,
@@ -615,10 +616,10 @@ real angles(int nbonds,
 }
 
 real urey_bradley(int nbonds,
-		  t_iatom forceatoms[],t_iparams forceparams[],
-		  rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-		  matrix box,real lambda,real *dvdlambda,
-		  t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+		  const t_iatom forceatoms[],const t_iparams forceparams[],
+		  const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+		  real lambda,real *dvdlambda,
+		  const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 		  t_fcdata *fcd)
 {
   int  i,m,ai,aj,ak,t1,t2,type,ki;
@@ -638,7 +639,7 @@ real urey_bradley(int nbonds,
     r13  = forceparams[type].u_b.r13;
     kUB  = forceparams[type].u_b.kUB;
     
-    theta  = bond_angle(box,x[ai],x[aj],x[ak],
+    theta  = bond_angle(x[ai],x[aj],x[ak],
 			r_ij,r_kj,&cos_theta,&t1,&t2);	/*  41		*/
   
     *dvdlambda += harmonic(kth,kth,th0,th0,theta,lambda,&va,&dVdt);  /*  21  */
@@ -715,8 +716,7 @@ real urey_bradley(int nbonds,
   return vtot;
 }
 
-real dih_angle(matrix box,
-	       rvec xi,rvec xj,rvec xk,rvec xl,
+real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
 	       rvec r_ij,rvec r_kj,rvec r_kl,rvec m,rvec n,
 	       real *cos_phi,real *sign,int *t1,int *t2,int *t3)
 {
@@ -739,8 +739,8 @@ real dih_angle(matrix box,
 
 void do_dih_fup(int i,int j,int k,int l,real ddphi,
 		rvec r_ij,rvec r_kj,rvec r_kl,
-		rvec m,rvec n,rvec f[],t_forcerec *fr,t_graph *g,
-		rvec x[],int t1,int t2,int t3)
+		rvec m,rvec n,rvec f[],t_forcerec *fr,const t_graph *g,
+		const rvec x[],int t1,int t2,int t3)
 {
   /* 143 FLOPS */
   rvec f_i,f_j,f_k,f_l;
@@ -843,10 +843,10 @@ static real dopdihs_min(real cpA,real cpB,real phiA,real phiB,int mult,
 }
 
 real pdihs(int nbonds,
-	   t_iatom forceatoms[],t_iparams forceparams[],
-	   rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-	   matrix box,real lambda,real *dvdlambda,
-	   t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+	   const t_iatom forceatoms[],const t_iparams forceparams[],
+	   const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+	   real lambda,real *dvdlambda,
+	   const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 	   t_fcdata *fcd)
 {
   int  i,type,ai,aj,ak,al;
@@ -862,7 +862,7 @@ real pdihs(int nbonds,
     ak   = forceatoms[i++];
     al   = forceatoms[i++];
     
-    phi=dih_angle(box,x[ai],x[aj],x[ak],x[al],r_ij,r_kj,r_kl,m,n,
+    phi=dih_angle(x[ai],x[aj],x[ak],x[al],r_ij,r_kj,r_kl,m,n,
 		  &cos_phi,&sign,&t1,&t2,&t3);			/*  84 		*/
 		
     *dvdlambda += dopdihs(forceparams[type].pdihs.cpA,
@@ -888,10 +888,10 @@ real pdihs(int nbonds,
 
 
 real idihs(int nbonds,
-	   t_iatom forceatoms[],t_iparams forceparams[],
-	   rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-	   matrix box,real lambda,real *dvdlambda,
-	   t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+	   const t_iatom forceatoms[],const t_iparams forceparams[],
+	   const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+	   real lambda,real *dvdlambda,
+	   const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 	   t_fcdata *fcd)
 {
   int  i,type,ai,aj,ak,al;
@@ -911,7 +911,7 @@ real idihs(int nbonds,
     ak   = forceatoms[i++];
     al   = forceatoms[i++];
     
-    phi=dih_angle(box,x[ai],x[aj],x[ak],x[al],r_ij,r_kj,r_kl,m,n,
+    phi=dih_angle(x[ai],x[aj],x[ak],x[al],r_ij,r_kj,r_kl,m,n,
 		  &cos_phi,&sign,&t1,&t2,&t3);			/*  84		*/
     
     /* phi can jump if phi0 is close to Pi/-Pi, which will cause huge
@@ -959,14 +959,14 @@ real idihs(int nbonds,
 
 
 real posres(int nbonds,
-	    t_iatom forceatoms[],t_iparams forceparams[],
-	    rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-	    matrix box,real lambda,real *dvdlambda,
-	    t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+	    const t_iatom forceatoms[],const t_iparams forceparams[],
+	    const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+	    real lambda,real *dvdlambda,
+	    const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 	    t_fcdata *fcd)
 {
   int  i,ai,m,type;
-  t_iparams *pr;
+  const t_iparams *pr;
   real v,vtot,fm,*fc;
   rvec dx;
 
@@ -994,9 +994,9 @@ real posres(int nbonds,
 }
 
 static real low_angres(int nbonds,
-		       t_iatom forceatoms[],t_iparams forceparams[],
-		       rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-		       matrix box,real lambda,real *dvdlambda,
+		       const t_iatom forceatoms[],const t_iparams forceparams[],
+		       const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+		       real lambda,real *dvdlambda,
 		       bool bZAxis)
 {
   int  i,m,type,ai,aj,ak,al;
@@ -1080,33 +1080,33 @@ static real low_angres(int nbonds,
 }
 
 real angres(int nbonds,
-	    t_iatom forceatoms[],t_iparams forceparams[],
-	    rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-	    matrix box,real lambda,real *dvdlambda,
-	    t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+	    const t_iatom forceatoms[],const t_iparams forceparams[],
+	    const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+	    real lambda,real *dvdlambda,
+	    const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 	    t_fcdata *fcd)
 {
-  return low_angres(nbonds,forceatoms,forceparams,x,f,fr,g,box,
+  return low_angres(nbonds,forceatoms,forceparams,x,f,fr,g,
 		    lambda,dvdlambda,FALSE);
 }
 
 real angresz(int nbonds,
-	     t_iatom forceatoms[],t_iparams forceparams[],
-	     rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-	     matrix box,real lambda,real *dvdlambda,
-	     t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+	     const t_iatom forceatoms[],const t_iparams forceparams[],
+	     const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+	     real lambda,real *dvdlambda,
+	     const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 	     t_fcdata *fcd)
 {
-  return low_angres(nbonds,forceatoms,forceparams,x,f,fr,g,box,
+  return low_angres(nbonds,forceatoms,forceparams,x,f,fr,g,
 		    lambda,dvdlambda,TRUE);
 }
 
 
 real unimplemented(int nbonds,
-		   t_iatom forceatoms[],t_iparams forceparams[],
-		   rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-		   matrix box,real lambda,real *dvdlambda,
-		   t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+		   const t_iatom forceatoms[],const t_iparams forceparams[],
+		   const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+		   real lambda,real *dvdlambda,
+		   const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 		   t_fcdata *fcd)
 {
   fatal_error(0,"*** you are using a not implemented function");
@@ -1122,10 +1122,10 @@ static void my_fatal(char *s,int ai,int aj,int ak,int al)
 #define CHECK(s) if ((s != s) || (s < -1e10) || (s > 1e10)) my_fatal(#s,ai,aj,ak,al)
 
 real rbdihs(int nbonds,
-	    t_iatom forceatoms[],t_iparams forceparams[],
-	    rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-	    matrix box,real lambda,real *dvdlambda,
-	    t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+	    const t_iatom forceatoms[],const t_iparams forceparams[],
+	    const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+	    real lambda,real *dvdlambda,
+	    const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 	    t_fcdata *fcd)
 {
   const real c0=0.0,c1=1.0,c2=2.0,c3=3.0,c4=4.0,c5=5.0;
@@ -1149,7 +1149,7 @@ real rbdihs(int nbonds,
     ak   = forceatoms[i++];
     al   = forceatoms[i++];
 
-    phi=dih_angle(box,x[ai],x[aj],x[ak],x[al],r_ij,r_kj,r_kl,m,n,
+    phi=dih_angle(x[ai],x[aj],x[ak],x[al],r_ij,r_kj,r_kl,m,n,
 		  &cos_phi,&sign,&t1,&t2,&t3);			/*  84		*/
 
     /* Change to polymer convention */
@@ -1249,10 +1249,10 @@ real g96harmonic(real kA,real kB,real xA,real xB,real x,real lambda,
 }
 
 real g96bonds(int nbonds,
-	      t_iatom forceatoms[],t_iparams forceparams[],
-	      rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-	      matrix box,real lambda,real *dvdlambda,
-	      t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+	      const t_iatom forceatoms[],const t_iparams forceparams[],
+	      const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+	      real lambda,real *dvdlambda,
+	      const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 	      t_fcdata *fcd)
 {
   int  i,m,ki,ai,aj,type;
@@ -1297,10 +1297,9 @@ real g96bonds(int nbonds,
   return vtot;
 }
 
-real g96bond_angle(matrix box,
-		   rvec xi,rvec xj,rvec xk,	/* in  */
+real g96bond_angle(const rvec xi,const rvec xj,const rvec xk,
 		   rvec r_ij,rvec r_kj,
-		   int *t1,int *t2)		/* out */
+		   int *t1,int *t2)
 /* Return value is the angle between the bonds i-j and j-k */
 {
   real costh;
@@ -1314,10 +1313,10 @@ real g96bond_angle(matrix box,
 }
 
 real g96angles(int nbonds,
-	       t_iatom forceatoms[],t_iparams forceparams[],
-	       rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-	       matrix box,real lambda,real *dvdlambda,
-	       t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+	       const t_iatom forceatoms[],const t_iparams forceparams[],
+	       const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+	       real lambda,real *dvdlambda,
+	       const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 	       t_fcdata *fcd)
 {
   int  i,ai,aj,ak,type,m,t1,t2;
@@ -1334,7 +1333,7 @@ real g96angles(int nbonds,
     aj   = forceatoms[i++];
     ak   = forceatoms[i++];
     
-    cos_theta  = g96bond_angle(box,x[ai],x[aj],x[ak],r_ij,r_kj,&t1,&t2);	
+    cos_theta  = g96bond_angle(x[ai],x[aj],x[ak],r_ij,r_kj,&t1,&t2);	
     
     *dvdlambda += g96harmonic(forceparams[type].harmonic.krA,
 			      forceparams[type].harmonic.krB,
@@ -1380,10 +1379,10 @@ real g96angles(int nbonds,
 }
 
 real cross_bond_bond(int nbonds,
-		     t_iatom forceatoms[],t_iparams forceparams[],
-		     rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-		     matrix box,real lambda,real *dvdlambda,
-		     t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+		     const t_iatom forceatoms[],const t_iparams forceparams[],
+		     const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+		     real lambda,real *dvdlambda,
+		     const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 		     t_fcdata *fcd)
 {
   /* Potential from Lawrence and Skimmer, Chem. Phys. Lett. 372 (2003)
@@ -1450,10 +1449,10 @@ real cross_bond_bond(int nbonds,
 }
 
 real cross_bond_angle(int nbonds,
-		      t_iatom forceatoms[],t_iparams forceparams[],
-		      rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-		      matrix box,real lambda,real *dvdlambda,
-		      t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+		      const t_iatom forceatoms[],const t_iparams forceparams[],
+		      const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+		      real lambda,real *dvdlambda,
+		      const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 		      t_fcdata *fcd)
 {
   /* Potential from Lawrence and Skimmer, Chem. Phys. Lett. 372 (2003)

@@ -48,9 +48,10 @@
 #include "copyrite.h"
 #include "pbc.h"
 
-void init_orires(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
-		 rvec *xref,t_mdatoms *md,t_inputrec *ir,
-		 t_commrec *mcr,t_oriresdata *od)
+void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
+		 const t_iparams ip[],
+		 rvec xref[],const t_mdatoms *md,const t_inputrec *ir,
+		 const t_commrec *mcr,t_oriresdata *od)
 {
   int  i,j,d,ex,nr,*nr_ex;
   real mtot;
@@ -148,27 +149,27 @@ void init_orires(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
     for(j=0; j<od->nref; j++)
       rvec_dec(od->xref[j],com);
   
-  fprintf(log,"Found %d orientation experiments\n",od->nex);
+  fprintf(fplog,"Found %d orientation experiments\n",od->nex);
   for(i=0; i<od->nex; i++)
-    fprintf(log,"  experiment %d has %d restraints\n",i+1,nr_ex[i]);
+    fprintf(fplog,"  experiment %d has %d restraints\n",i+1,nr_ex[i]);
 
   sfree(nr_ex);
 
-  fprintf(log,"  the fit group consists of %d atoms and has total mass %g\n",
+  fprintf(fplog,"  the fit group consists of %d atoms and has total mass %g\n",
 	  od->nref,mtot);
   
   if (mcr) {
-    fprintf(log,"  the orientation restraints are ensemble averaged over %d systems\n",mcr->nnodes);
+    fprintf(fplog,"  the orientation restraints are ensemble averaged over %d systems\n",mcr->nnodes);
 
-    check_multi_int(log,mcr,od->nr,
+    check_multi_int(fplog,mcr,od->nr,
 		    "the number of orientation restraints");
-    check_multi_int(log,mcr,od->nref,
+    check_multi_int(fplog,mcr,od->nref,
 		    "the number of fit atoms for orientation restraining");
     /* Copy the reference coordinates from the master to the other nodes */
     gmx_sum(DIM*od->nref,od->xref[0],mcr);
   }
 
-  please_cite(log,"Hess2003");
+  please_cite(fplog,"Hess2003");
 }
 
 void diagonalize_orires_tensors(t_oriresdata *od)
@@ -234,9 +235,9 @@ void print_orires_log(FILE *log,t_oriresdata *od)
   }
 }
 
-real calc_orires_dev(t_commrec *mcr,
-		     int nfa,t_iatom forceatoms[],t_iparams ip[],
-		     t_mdatoms *md,rvec x[],bool bFullPBC,
+real calc_orires_dev(const t_commrec *mcr,
+		     int nfa,const t_iatom forceatoms[],const t_iparams ip[],
+		     const t_mdatoms *md,const rvec x[],bool bFullPBC,
 		     t_fcdata *fcd)
 {
   int          fa,d,i,j,type,ex,nref;
@@ -421,10 +422,10 @@ real calc_orires_dev(t_commrec *mcr,
   /* Approx. 120*nfa/3 flops */
 }
 
-real orires(int nfa,t_iatom forceatoms[],t_iparams ip[],
-	    rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-	    matrix box,real lambda,real *dvdlambda,
-	    t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+real orires(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
+	    const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+	    real lambda,real *dvdlambda,
+	    const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 	    t_fcdata *fcd)
 {
   atom_id      ai,aj;
@@ -433,7 +434,7 @@ real orires(int nfa,t_iatom forceatoms[],t_iparams ip[],
   real         r2,invr,invr2,fc,smooth_fc,dev,devins,pfac;
   rvec         r,Sr,fij;
   real         vtot;
-  t_oriresdata *od;
+  const t_oriresdata *od;
   bool         bTAV,bFullPBC;
 
   vtot = 0;

@@ -401,6 +401,21 @@ void declare_real_vector(char *name)
   ndecl++;
 }
 
+void declare_const_real_vector(char *name)
+{
+
+  if (bC)
+    strcpy(decl_list[ndecl].typename,"const real");
+  else
+    sprintf(decl_list[ndecl].typename,"real*%d",prec);
+
+  strcpy(decl_list[ndecl].name,name);
+  
+  decl_list[ndecl].breferenced=TRUE;
+  decl_list[ndecl].bvector=TRUE;
+  decl_list[ndecl].bconst=TRUE;
+  ndecl++;
+}
 
 void declare_intreal(char *name)
 {
@@ -475,6 +490,20 @@ void declare_int_vector(char *name)
   ndecl++;
 }
 
+void declare_const_int_vector(char *name)
+{
+  if (bC)
+    strcpy(decl_list[ndecl].typename,"const int");
+  else
+    sprintf(decl_list[ndecl].typename,"integer*%d",(int)sizeof(int));
+
+  strcpy(decl_list[ndecl].name,name);
+  
+  decl_list[ndecl].breferenced=TRUE;
+  decl_list[ndecl].bvector=TRUE;
+  decl_list[ndecl].bconst=TRUE;
+  ndecl++;
+}
 
 void declare_int4(char *name)
 {

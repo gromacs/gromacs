@@ -48,14 +48,15 @@ extern "C" {
 #include "sysstuff.h"
 #include "typedefs.h"
 
-void init_dihres(FILE *log,int nbonds,t_iatom forceatoms[],t_iparams ip[],
-		 t_inputrec *ir,t_commrec *mcr,t_fcdata *fcd);
+void init_dihres(FILE *fplog,int nbonds,const t_iatom forceatoms[],
+		 const t_iparams ip[],
+		 const t_inputrec *ir,t_fcdata *fcd);
 
 
-extern real ta_dihres(int nbonds,t_iatom fa[],t_iparams *fp,
-		      rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-		      matrix box,real lambda,real *dvdlambda,
-		      t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+extern real ta_dihres(int nbonds,const t_iatom fa[],const t_iparams fp[],
+		      const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+		      real lambda,real *dvdlambda,
+		      const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 		      t_fcdata *fcd);
 /* Calculate the distance restraint forces, return the potential */
 

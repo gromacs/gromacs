@@ -332,7 +332,7 @@ void gmx_abort(int nodeid,int nnodes,int errorno)
 #endif
 }
 
-void gmx_sumd(int nr,double r[],t_commrec *cr)
+void gmx_sumd(int nr,double r[],const t_commrec *cr)
 {
 #ifndef USE_MPI
   MYFATAL("gmx_sumd");
@@ -379,7 +379,7 @@ void gmx_sumd(int nr,double r[],t_commrec *cr)
 #endif
 }
 
-void gmx_sumf(int nr,float r[],t_commrec *cr)
+void gmx_sumf(int nr,float r[],const t_commrec *cr)
 {
 #ifndef USE_MPI
   MYFATAL("gmx_sumf");
@@ -410,7 +410,7 @@ void gmx_sumf(int nr,float r[],t_commrec *cr)
 #endif
 }
 
-void gmx_sumi(int nr,int r[],t_commrec *cr)
+void gmx_sumi(int nr,int r[],const t_commrec *cr)
 {
 #ifndef USE_MPI
   MYFATAL("gmx_sumi");
