@@ -47,8 +47,7 @@
 int
 main(int argc, char *argv[])
 {
-  gmx_disre(argc,argv);
-  return 0;
+  return gmx_disre(argc,argv);
 }
 
 
