@@ -51,6 +51,8 @@ else
   GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} innerc.lo"
   MDLIB_LIBOBJS="${MDLIB_LIBOBJS} clincs.lo csettle.lo cshake.lo"
 fi
+# always use CC for linking:
+AC_SUBST(F77LINK,"\$(LINK)")
 
 
 ### MPI or not
