@@ -250,10 +250,14 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
 	  shake_vir,*mdatoms,mutot,&bNEMD,&bSA,&vcm,nsb);
   init_groups(stdlog,*mdatoms,&(parm->ir.opts),grps);  
 
-  /* Calculate intramolecular shift vectors to make molecules whole again */
-  *graph = mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
-  mk_mshift(stdlog,*graph,state->box,state->x);
-  
+  if (parm->ir.ePBC == epbcXYZ) {
+    /* Calculate intramolecular shift vectors to make molecules whole again */
+    *graph = mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
+    mk_mshift(stdlog,*graph,state->box,state->x);
+  } else {
+    *graph = NULL;
+  }
+
   /* Turn off twin range if appropriate */
   parm->ir.rvdw  = parm->ir.rcoulomb;
   parm->ir.rlist = parm->ir.rcoulomb;
