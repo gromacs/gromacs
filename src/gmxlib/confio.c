@@ -182,7 +182,7 @@ int read_g96_conf(FILE *fp,char *infile,int nwanted,t_g96info *info,
   static char line[STRLEN+1]; /* VERY DIRTY, you can not read two       *
 		               * Gromos96 trajectories at the same time */  
   bool   bAtStart,bTime,bAtoms,bPos,bVel,bBox,bEnd,bFinished;
-  int    natoms,ntime,npos;
+  int    natoms;
   double db1,db2,db3;
 
   bAtStart = (ftell(fp) == 0);
@@ -211,8 +211,6 @@ int read_g96_conf(FILE *fp,char *infile,int nwanted,t_g96info *info,
    * because without a parameter file we don't know what is in *
    * the trajectory and we have already read the line in the   *
    * previous call (VERY DIRTY).                               */
-  ntime = 0;
-  npos  = 0;
   bFinished = FALSE;
   do {
     bTime  = (strcmp(line,"TIMESTEP") == 0);
@@ -221,9 +219,8 @@ int read_g96_conf(FILE *fp,char *infile,int nwanted,t_g96info *info,
     bVel   = (strncmp(line,"VELOCITY",8) == 0);
     bBox   = (strcmp(line,"BOX") == 0);
     if (bTime) {
-      ntime++;
-      info->bTime = bTime;
-      if (ntime == 1) {
+      if (!info->bTime && !info->bPos) {
+	info->bTime = bTime;
 	do 
 	  bFinished = (fgets2(line,STRLEN,fp) == NULL);
 	while (!bFinished && (line[0] == '#'));
@@ -233,8 +230,7 @@ int read_g96_conf(FILE *fp,char *infile,int nwanted,t_g96info *info,
 	bFinished = TRUE;
     }
     if (bPos) {
-      npos++;
-      if (npos == 1) {
+      if (!info->bPos) {
 	info->bAtoms = bAtoms;
 	info->bPos   = bPos;
 	natoms = read_g96_pos(line,symtab,fp,infile,nwanted,info,atoms,x);
