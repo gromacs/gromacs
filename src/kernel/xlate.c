@@ -121,5 +121,12 @@ void rename_atoms(t_atoms *atoms)
     }
   }
   close_symtab(&symtab);
+  free_symtab(&symtab);
+  for(i=0; i<nxlate; i++) {
+    sfree(xlatom[i].res);
+    sfree(xlatom[i].atom);
+    sfree(xlatom[i].replace);
+  }
+  sfree(xlatom);
 }
 
