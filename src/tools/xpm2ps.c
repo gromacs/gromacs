@@ -120,7 +120,7 @@ enum { ecSel, ecHalves, ecAdd, ecSub, ecMult, ecDiv, ecNR };
   STYPE("legendlabel",    psr->leglabel,       "");
   STYPE("legend2label",   psr->leg2label,      psr->leglabel);
   RTYPE("legendfontsize", psr->legfontsize,    14.0);
-  RTYPE("xbox",           psr->xboxsize,       2.0);
+  RTYPE("xbox",           psr->xboxsize,       1.0);
   RTYPE("ybox",           psr->yboxsize,       psr->xboxsize);
   RTYPE("matrixspacing",  psr->boxspacing,     20.0);
   RTYPE("xoffset",        psr->xoffs,          0.0);
