@@ -67,19 +67,36 @@ static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],atom_id index[],
   bool  bChanged;
   int   m,j,ai,iter;
   real  mass,mtot;
-  rvec  dx,xtest;
+  rvec  dx,xtest,xrm;
   
-  /* First simple calculation */
+  /* First calculation is incremental */
   clear_rvec(xref);
   mtot = 0;
   for(m=0; (m<nrefat); m++) {
-    ai = index[m];
+    ai   = index[m];
     mass = top->atoms.atom[ai].m;
-    for(j=0; (j<DIM); j++)
-      xref[j] += mass*x[ai][j];
+    if ((m > 0) && (mtot > 0)) {
+      svmul(1.0/mtot,xref,xrm);
+      pbc_dx(x[ai],xrm,dx);
+      rvec_add(xrm,dx,xtest);
+      /* xtest is now the image of x[ai] that is closest to xref */
+      for(j=0; (j<DIM); j++)
+	xref[j] += mass*xtest[j];
+      copy_rvec(xtest,x[ai]);
+    }
+    else {
+      for(j=0; (j<DIM); j++)
+	xref[j] += mass*x[ai][j];
+    }
     mtot += mass;
   }
   svmul(1/mtot,xref,xref);
+  for(j=0; (j<DIM); j++) {
+    while(xref[j] < 0)
+      xref[j] += box[j][j];
+    while(xref[j] >= box[j][j])
+      xref[j] -= box[j][j];
+  }
   /* Now check if any atom is more than half the box from the COM */
   if (box) {
     iter = 0;
@@ -97,6 +114,12 @@ static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],atom_id index[],
 	    x[ai][j] = xtest[j];
 	    bChanged = TRUE;
 	  }
+      }
+      for(j=0; (j<DIM); j++) {
+	while(xref[j] < 0)
+	  xref[j] += box[j][j];
+	while(xref[j] >= box[j][j])
+	  xref[j] -= box[j][j];
       }
       if (bChanged && (iter > 0))
 	printf("COM: %8.3f  %8.3f  %8.3f  iter = %d\n",
