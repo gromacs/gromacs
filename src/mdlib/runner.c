@@ -316,7 +316,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 		   "dG/d\\8l\\4 (kJ mol\\S-1\\N nm\\S-2\\N \\8l\\4\\S-1\\N)");
       *mdebin = init_mdebin(*fp_ene,grps,&(top->atoms),&(top->idef),
 			    bLR,bLJLR,bBHAM,b14,ir->bPert,ir->epc,
-			    ir->bDispCorr);
+			    ir->bDispCorr,cr);
     }
     else {
       *fp_ene = -1;
