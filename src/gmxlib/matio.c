@@ -348,7 +348,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
     snew(mm->matrix[i],mm->ny);
   m=mm->ny-1;
   do {
-    if(m%(mm->ny/10)==0) 
+    if(m%(1+mm->ny/100)==0) 
       fprintf(stderr,"%3d%%\b\b\b\b",(100*(mm->ny-m))/mm->ny);
     while ((line[0] != '\"') && (line[0] != '\0'))
       line++;
@@ -569,7 +569,7 @@ void write_xpm_data(FILE *out, int n_x, int n_y, real **matrix,
 
   invlevel=(nlevels-1)/(hi-lo);
   for(j=n_y-1; (j>=0); j--) {
-    if(j%(n_y/10)==0) 
+    if(j%(1+n_y/100)==0) 
       fprintf(stderr,"%3d%%\b\b\b\b",(100*(n_y-j))/n_y);
     fprintf(out,"\"");
     for(i=0; (i<n_x); i++) {
@@ -611,7 +611,7 @@ void write_xpm_m(FILE *out, t_matrix m)
   write_xpm_axis(out,"x",m.nx,m.axis_x);
   write_xpm_axis(out,"y",m.ny,m.axis_y);
   for(j=m.ny-1; (j>=0); j--) {
-    if(j%(m.ny/10)==0) 
+    if(j%(1+m.ny/100)==0) 
       fprintf(stderr,"%3d%%\b\b\b\b",(100*(m.ny-j))/m.ny);
     fprintf(out,"\"");
     if (bOneChar)
