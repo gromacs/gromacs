@@ -399,8 +399,14 @@ int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "gmxcheck reads a binary trajectory ([TT].trj[tt]), ",
-    "a xtc ([TT].xtc[tt]), an index ([TT].ndx[tt]) or a coordinate ",
-    "([TT}.gro[tt]) file and prints out useful information about them.[PAR]",
+    "a xtc ([TT].xtc[tt]) or an index ([TT].ndx[tt]) ",
+    "and prints out useful information about them.[PAR]",
+    "For a coordinate file (generic structure file, e.g. [TT].gro[tt]) ",
+    "gmxcheck will check for presence of coordinates, velocities and box",
+    "in the file, for close contacts (smaller than 80% of the sum",
+    "of both Vanderwaals radii) and atoms outside the box (these may occur",
+    "often and are no problem). If velocities are present, an estimated",
+    "temperature will be calculated from them.[PAR]",
     "The program will compare binary topology ([TT].tpx[tt]) files",
     "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied."
   };
