@@ -54,12 +54,10 @@ int main(int argc,char *argv[])
   static char *desc[] = {
     "[TT]g_covar[tt] calculates and diagonalizes the (mass weighted)",
     "covariance matrix.",
-    "All structures are fitted to the structure in the generic structure",
-    "file. When this is not a run input file, both the fit and the",
-    "covariance analysis will be non mass weighted and periodicity will not",
-    "be taken into account. When the fit and analysis groups are identical",
-    "and the analysis is non mass weighted, the fit will also be non mass",
-    "weighted, unless [TT]-nomwa[tt] is used.[PAR]",
+    "All structures are fitted to the structure in the structure file.",
+    "When this is not a run input file periodicity will not be taken into",
+    "account. When the fit and analysis groups are identical and the analysis",
+    "is non mass weighted, the fit will also be non mass weighted.[PAR]",
     "The eigenvectors are written to a trajectory file ([TT]-v[tt]).",
     "When the same atoms are used for the fit and the covariance analysis,",
     "the reference structure is written first with t=-1.",
@@ -79,22 +77,21 @@ int main(int argc,char *argv[])
   };
   FILE       *out;
   int        status,trjout;
-  t_tpxheader  header;
-  t_inputrec   ir;
-  t_topology   top;
+  t_topology top;
+  t_atoms    *atoms=NULL;  
   rvec       *x,*xread,*xref,*xav;
   matrix     box,zerobox;
   real       t,*mat,dev,trace,sum,*eigval,*rdum2,rdum,inv_nframes;
   real       xj,*sqrtm,normfac,*w_rls,lambda;
   int        ntopatoms,step;
   int        natoms,nat,ndim,count,nframes;
-  char       *grpname,*stxfile,*infile,str[STRLEN];
+  char       *grpname,*infile,str[STRLEN];
   int        i,j,k,l,d,dj,nfit;
   atom_id    *index,*all_at,*ifit;
   bool       bTop,bDiffMass1,bDiffMass2;
   t_filenm fnm[] = { 
     { efTRX, "-f", NULL, ffREAD }, 
-    { efSTX, "-s", "topol.tpr", ffREAD },
+    { efTPS, NULL, NULL, ffREAD },
     { efNDX, NULL, NULL, ffOPTRD },
     { efXVG, NULL, "eigenval", ffWRITE },
     { efTRN, "-v", "eigenvec", ffWRITE },
@@ -108,81 +105,59 @@ int main(int argc,char *argv[])
 
   clear_mat(zerobox);
 
-  stxfile=ftp2fn(efSTX,NFILE,fnm);
+  bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),
+		     str,&top,&atoms,&xref,NULL,box,TRUE);
 
-  bTop = (fn2ftp(stxfile)==efTPR) || (fn2ftp(stxfile)==efTPB) || 
-    (fn2ftp(stxfile)==efTPA);
-  if (bTop) {
-    read_tpxheader(stxfile,&header);
-    
-    ntopatoms=header.natoms;
-    snew(xref,ntopatoms);
-    
-    read_tpx(stxfile,&step,&t,&lambda,&ir,box,
-	     &ntopatoms,xref,NULL,NULL,&top);
-  }
-  else {
-    bM = FALSE;
-    get_stx_coordnum(stxfile,&ntopatoms);
-    init_t_atoms(&top.atoms,ntopatoms,FALSE);
-    snew(xref,ntopatoms);
-    read_stx_conf(stxfile,str,&top.atoms,xref,NULL,box);
-    fprintf(stderr,"Note: will do a non mass weighted fit\n");
-  }
   printf("\nChoose a group for the least squares fit\n"); 
-  get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
+  get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
 	    &nfit,&ifit,&grpname);
   printf("\nChoose a group for the covariance analysis\n"); 
-  get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
+  get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
 	    &natoms,&index,&grpname);
 
   if (nfit < 3) 
     fatal_error(0,"Need >= 3 points to fit!\n");
 
   bDiffMass1=FALSE;
-  snew(w_rls,ntopatoms);
-  for(i=0; (i<nfit); i++)
-    if (bTop) {
-      w_rls[ifit[i]]=top.atoms.atom[ifit[i]].m;
+  snew(w_rls,atoms->nr);
+  for(i=0; (i<nfit); i++) {
+      w_rls[ifit[i]]=atoms->atom[ifit[i]].m;
       if (i)
         bDiffMass1 = bDiffMass1 || (w_rls[ifit[i]]!=w_rls[ifit[i-1]]);
-    }
-    else
-      w_rls[ifit[i]]=1.0;
+  }
   
   bDiffMass2=FALSE;
   snew(sqrtm,natoms);
   for(i=0; (i<natoms); i++)
     if (bM) {
-      sqrtm[i]=sqrt(top.atoms.atom[index[i]].m);
+      sqrtm[i]=sqrt(atoms->atom[index[i]].m);
       if (i)
 	bDiffMass2 = bDiffMass2 || (sqrtm[i]!=sqrtm[i-1]);
     }
     else
       sqrtm[i]=1.0;
   
-  if (bDiffMass1 && !bDiffMass2 && !opt2parg_bSet("-mwa",asize(pa),pa)) {
+  if (bDiffMass1 && !bDiffMass2) {
     bDiffMass1 = natoms != nfit;
     i=0;
     for (i=0; (i<natoms) && !bDiffMass1; i++)
       bDiffMass1 = index[i] != ifit[i];
     if (!bDiffMass1) {
       fprintf(stderr,"\nNote: the fit and analysis group are identical, while the fit is mass weighted\n"
-	               "      and the analysis is not. Making the fit non mass weighted.\n"
-	               "      If you don't want this, run again with -nomwa.\n\n");
+	               "      and the analysis is not. Making the fit non mass weighted.\n\n");
       for(i=0; (i<nfit); i++)
 	w_rls[ifit[i]]=1.0;
     }
   }
 
-  snew(all_at,top.atoms.nr);
-  for(i=0; (i<top.atoms.nr); i++)
+  snew(all_at,atoms->nr);
+  for(i=0; (i<atoms->nr); i++)
     all_at[i]=i;
 
   /* Prepare reference frame */
   if (bTop)
-    rm_pbc(&(top.idef),top.atoms.nr,box,xref,xref);
-  reset_x(nfit,ifit,top.atoms.nr,all_at,xref,w_rls);
+    rm_pbc(&(top.idef),atoms->nr,box,xref,xref);
+  reset_x(nfit,ifit,atoms->nr,all_at,xref,w_rls);
 
   infile=opt2fn("-f",NFILE,fnm);
 
@@ -233,7 +208,7 @@ int main(int argc,char *argv[])
   normfac=sqr(natoms/normfac);
 
   write_sto_conf_indexed(opt2fn("-av",NFILE,fnm),"Average structure",
-			   &(top.atoms),xread,NULL,NULL,natoms,index);
+			 atoms,xread,NULL,NULL,natoms,index);
   
   for (j=0; j<natoms; j++) 
     for (dj=0; dj<DIM; dj++) 

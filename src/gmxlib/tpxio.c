@@ -688,7 +688,7 @@ void fread_tpx(int fp,int *step,real *t,real *lambda,
   do_tpx(fp,TRUE,step,t,lambda,ir,box,natoms,x,v,f,top);
 }
 
-bool fn_bTPX(char *file)
+bool fn2bTPX(char *file)
 {
   switch (fn2ftp(file)) {
   case efTPR:
@@ -700,18 +700,21 @@ bool fn_bTPX(char *file)
   }
 }
 
-int read_tps_conf(char *infile,char *title,t_topology *top,t_atoms **atoms, 
-		  rvec **x,rvec **v,matrix box,bool bMass)
+bool read_tps_conf(char *infile,char *title,t_topology *top,t_atoms **atoms, 
+		   rvec **x,rvec **v,matrix box,bool bMass)
 {
   t_tpxheader  header;
-  int          natoms,i;
-  
-  if (fn_bTPX(infile)) {
+  real         t,lambda;
+  int          natoms,step,i;
+  bool         bTop;
+
+  bTop=fn2bTPX(infile);
+  if (bTop) {
     read_tpxheader(infile,&header);
     snew(*x,header.natoms);
     if (v)
       snew(*v,header.natoms);
-    read_tpx(infile,NULL,NULL,NULL,NULL,box,&natoms,
+    read_tpx(infile,&step,&t,&lambda,NULL,box,&natoms,
 	     *x,(v==NULL) ? NULL : *v,NULL,top);
     strcpy(title,*top->name);
     *atoms = &top->atoms;
@@ -729,8 +732,7 @@ int read_tps_conf(char *infile,char *title,t_topology *top,t_atoms **atoms,
 	(*atoms)->atom[i].m = 
 	  get_mass(*(*atoms)->resname[(*atoms)->atom[i].resnr],
 		   *(*atoms)->atomname[i]);
-    top = NULL;
   }
 
-  return natoms;
+  return bTop;
 }

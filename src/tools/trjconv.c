@@ -194,9 +194,9 @@ int main(int argc,char *argv[])
     "There are two options for fitting the trajectory to a reference",
     "either for essential dynamics analysis or for whatever.",
     "The first option is just plain fitting to a reference structure",
-    "in the run input file, the second option is a progressive fit",
+    "in the structure file, the second option is a progressive fit",
     "in which the first timeframe is fitted to the reference structure ",
-    "in the run input file to obtain and each subsequent timeframe is ",
+    "in the structure file to obtain and each subsequent timeframe is ",
     "fitted to the previously fitted structure. This way a continuous",
     "trajectory is generated, which might not be the case when using the",
     "regular fit method, e.g. when your protein undergoes large",
@@ -298,7 +298,7 @@ int main(int argc,char *argv[])
   matrix       box;
   int          m,i,d,frame,outframe,natoms,nout,nre,step;
 #define SKIP 10
-  t_topology   *top=NULL;
+  t_topology   top;
   t_atoms      *atoms=NULL,useatoms;
   int          isize;
   atom_id      *index;
@@ -347,7 +347,7 @@ int main(int argc,char *argv[])
     bTimeStep = opt2parg_bSet("-timestep", asize(pa), pa);
     bTDump    = opt2parg_bSet("-dump", asize(pa), pa);
     bPBC = bPBC || bFit;
-    if (bPBC && !fn_bTPX(top_file)) {
+    if (bPBC && !fn2bTPX(top_file)) {
       fprintf(stderr,
 	      "WARNING: can not remove periodicity without a run input file\n");
       bPBC=FALSE;
@@ -414,8 +414,7 @@ int main(int argc,char *argv[])
     /* Determine if when can read index groups */
     bIndex = (bIndex || bTop);
      
-    if (bTop)
-      read_tps_conf(top_file,title,top,&atoms,&xp,NULL,box,bFit);
+    bTop=read_tps_conf(top_file,title,&top,&atoms,&xp,NULL,box,bFit);
 
     if (bFit) {
       fprintf(stderr,"Select group for root least squares fit\n");
@@ -453,7 +452,7 @@ int main(int argc,char *argv[])
       /* Restore reference structure and set to origin, 
          store original location (to put structure back) */
       if (bPBC)
-	rm_pbc(&(top->idef),atoms->nr,box,xp,xp);
+	rm_pbc(&(top.idef),atoms->nr,box,xp,xp);
       copy_rvec(xp[index[0]],shift);
       reset_x(ifit,ind_fit,isize,index,xp,w_rls);
       rvec_dec(shift,xp[index[0]]);
@@ -549,7 +548,7 @@ int main(int argc,char *argv[])
 	/* Now modify the coords according to the flags,
 	   for normal fit, this is only done for output frames */
 	if (bPBC)
-	  rm_pbc(&(top->idef),natoms,box,x,x);
+	  rm_pbc(&(top.idef),natoms,box,x,x);
 	
 	reset_x(ifit,ind_fit,isize,index,x,w_rls);
 	do_fit(natoms,w_rls,xp,x);
@@ -604,7 +603,7 @@ int main(int argc,char *argv[])
 	    /* Now modify the coords according to the flags,
 	       for IFit we did this already! */
 	    if (bPBC) 
-	      rm_pbc(&(top->idef),natoms,box,x,x);
+	      rm_pbc(&(top.idef),natoms,box,x,x);
 	  
 	    if (bFit) {
 	      reset_x(ifit,ind_fit,isize,index,x,w_rls);

@@ -131,7 +131,7 @@ static t_deffile deffile[efNR] = {
   { eftASC, ".top", "topol",  "-p", "Topology file"                          },
   { eftASC, ".itp", "topinc", NULL, "Include file for topology"              },
   { eftGEN, ".???", "topol",  "-s", "Generic run input: tpr tpb tpa"         },
-  { eftGEN, ".???", "topol",  "-s", "Generic run input: tpr tpb tpa gro pdb" },
+  { eftGEN, ".???", "topol",  "-s", "Structure+mass(db): tpr tpb tpa gro pdb" },
   { eftXDR, ".tpr", "topol",  "-s", "portable xdr run input file"            },
   { eftASC, ".tpa", "topol",  "-s", "Ascii run input file"                   },
   { eftBIN, ".tpb", "topol",  "-s", "Binary run input file"                  },
