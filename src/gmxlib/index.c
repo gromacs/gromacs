@@ -45,9 +45,6 @@ static char *SRCID_index_c = "$Id$";
 typedef enum { etOther, etProt, etDNA, erestNR } eRestp;
 static  char *ResTP[erestNR] = { "OTHER", "PROTEIN", "DNA" };
 
-static char **AminoAcids;   
-static int NAA;
-
 static char   *Sugars[]     = { "A", "T", "G", "C", "U" };
 #define  NDNA asize(Sugars)
 
@@ -386,6 +383,25 @@ static void analyse_dna(int nres,eRestp restp[],int natres[],t_atoms *atoms,
     printf("Analysing DNA... (not really)\n");
 }
 
+bool is_protein(char *resnm)
+{
+  static bool bRead=FALSE;
+  static int  naa;
+  static char **aas;
+  int i;
+  
+  if (!bRead) {
+    naa = get_strings("aminoacids.dat",&aas);
+    bRead=TRUE;
+  }
+  
+  for(i=0; (i<naa); i++)
+    if (strcasecmp(aas[i],resnm) == 0)
+      return TRUE;
+  
+  return FALSE;
+}
+
 void analyse(t_atoms *atoms,t_block *gb,char ***gn,bool bASK,bool bVerb)
 {
   eRestp  *restp;
@@ -394,8 +410,6 @@ void analyse(t_atoms *atoms,t_block *gb,char ***gn,bool bASK,bool bVerb)
   atom_id *aid;
   int     nra;
   int     i,j;
-
-  NAA = get_strings("aminoacids.dat",&AminoAcids);
 
   if (bVerb)
     printf("Analysing residue names:\n");
@@ -406,11 +420,8 @@ void analyse(t_atoms *atoms,t_block *gb,char ***gn,bool bASK,bool bVerb)
 
   for(i=0; (i<atoms->nres); i++) {
     resnm=*atoms->resname[i];
-    if (restp[i] == etOther)
-      for(j=0; (j<NAA); j++) {
-	if (strcasecmp(AminoAcids[j],resnm) == 0)
-	  restp[i] = etProt;
-      }
+    if ((restp[i] == etOther) && is_protein(resnm))
+      restp[i] = etProt;
     if (restp[i] == etOther)
       for(j=0; (j<NDNA);  j++) {
 	if (strcasecmp(Sugars[j],resnm) == 0)

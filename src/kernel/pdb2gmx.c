@@ -415,21 +415,6 @@ static char *choose_ff(bool bFFMan)
   return fnsel;
 }
 
-bool is_prot(char *key)
-{
-  static char **prot=NULL;
-  static int  nprot;
-  int    i;
-  
-  if (prot == NULL) {
-    nprot=get_strings("aminoacids.dat",&prot);
-  }
-  for(i=0; (i<nprot); i++) 
-    if (strcasecmp(prot[i],key) == 0)
-      return TRUE;
-  return FALSE;
-}
-
 void find_nc_ter(int natom,t_pdbatom pdba[],int *rn,int *rc/*,int ter_type[]*/)
 {
   int i,rnr;
@@ -440,13 +425,13 @@ void find_nc_ter(int natom,t_pdbatom pdba[],int *rn,int *rc/*,int ter_type[]*/)
     rnr=pdba[i].resnr;
     /*ter_type[i]=eterNormal;*/
     if (*rn == -1) {
-      if (is_prot(pdba[i].resnm)) {
+      if (is_protein(pdba[i].resnm)) {
 	*rn=rnr;
 	/*ter_type[i]=eterNterm;*/
       }
     }
     if (*rc != rnr) {
-      if (is_prot(pdba[i].resnm))
+      if (is_protein(pdba[i].resnm))
 	*rc=rnr;
     }
   }

@@ -43,3 +43,5 @@ extern void analyse(t_atoms *atoms,t_block *gb,char ***gn,
  * bASK=FALSE gives default groups.
  */
 
+extern bool is_protein(char *resnm);
+/* gives true if resnm occurs in aminoacids.dat */

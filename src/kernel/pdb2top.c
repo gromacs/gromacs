@@ -50,6 +50,7 @@ static char *SRCID_pdb2top_c = "$Id$";
 #include "pdbio.h"
 #include "gen_ad.h"
 #include "filenm.h"
+#include "index.h"
 
 real distance(rvec a,rvec b) 
 {
@@ -171,9 +172,9 @@ static void name2type(t_atoms *at,t_atomtype *atype,int nrtp,t_restp rtp[])
       }
       else {
 	rp=search_rtp(*(at->resname[resnr]),nrtp,rtp);
-	is_prot(rp->resname);
-	missing_atoms(rp,resnr,at,i0,i,(!bProt || is_prot(rp->resname)));
-	bProt=is_prot(*(at->resname[resnr]));
+	is_protein(rp->resname);
+	missing_atoms(rp,resnr,at,i0,i,(!bProt || is_protein(rp->resname)));
+	bProt=is_protein(*(at->resname[resnr]));
 	i0=i;
       }
       resnr=at->atom[i].resnr;
@@ -195,7 +196,7 @@ static void name2type(t_atoms *at,t_atomtype *atype,int nrtp,t_restp rtp[])
     at->atom[i].qB    = at->atom[i].q;
     at->atom[i].mB    = at->atom[i].m;
   }
-  missing_atoms(rp,resnr,at,i0,i,(!bProt || is_prot(rp->resname)));
+  missing_atoms(rp,resnr,at,i0,i,(!bProt || is_protein(rp->resname)));
 }
 
 bool is_int(double x)
