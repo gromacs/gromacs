@@ -26,10 +26,10 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_sched_h = "$Id$";
+static char *SRCID_gmxsched_h = "$Id$";
 
-#ifndef SCHED_H
-#define SCHED_H
+#ifndef GMXSCHED_H
+#define GMXSCHED_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,4 +48,4 @@ extern void print_comm_schedule(int **sched, int npes);
 } /* extern "C" */
 #endif /* __cplusplus */
 
-#endif /* SCHED_H */
+#endif /* GMXSCHED_H */
