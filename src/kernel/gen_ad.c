@@ -132,21 +132,25 @@ static bool remove_dih(t_param *p, int i, int np)
 {
   bool bMidEq,bRem;
   int j;
-  
-  bMidEq = deq(&p[i],&p[i-1]);
+
+  if (i>0)
+    bMidEq = deq(&p[i],&p[i-1]);
+  else
+    bMidEq = FALSE;
+
   if (p[i].c[MAXFORCEPARAM-1]==NOTSET) {
     /* also remove p[i] if there is a dihedral on the same bond
        which has parameters set */
     bRem = bMidEq;
     j=i+1;
     while (!bRem && (j<np) && deq(&p[i],&p[j])) {
-      if (p[j].c[MAXFORCEPARAM-1] != NOTSET)
-	bRem = TRUE; 
+      bRem = (p[j].c[MAXFORCEPARAM-1] != NOTSET);
       j++;
     }
   } else
     bRem = bMidEq && (((p[i].AI==p[i-1].AI) && (p[i].AL==p[i-1].AL)) ||
 		      ((p[i].AI==p[i-1].AL) && (p[i].AL==p[i-1].AI)));
+
   return bRem;
 }
 
@@ -342,16 +346,19 @@ static int n_hydro(atom_id a[],char ***atomname)
   return nh;
 }
 
-static void pdih2idih(t_param dih[],int *ndih,t_param idih[],int *nidih,
+static void pdih2idih(t_param *alldih,int *nalldih,t_param idih[],int *nidih,
 		      t_atoms *atoms,int nrtp,t_restp rtp[],
 		      int nrdh,t_idihres idh[],bool bAlldih)
 {
+  t_param   *dih,tmp_param;
+  int       ndih;
   char      *rname,*a0;
   t_idihres *i0;
   int       i,j,k,l,start,aa0;
   int       *index,nind;
   atom_id   ai[MAXATOMLIST];
-  bool      *bRM,brm;
+  bool      bIsSet,bKeep;
+  int bestl,nh,minh;
   
   /* First add all the impropers from the residue database
    * to the list.
@@ -386,65 +393,63 @@ static void pdih2idih(t_param dih[],int *ndih,t_param idih[],int *nidih,
       start++;
   }
 
-  if (*ndih == 0)
+  if (*nalldih == 0)
     return;
 
-  /* Check whether a generated dihedral really is an improper
-   * and if so mark it to be removed. */
-  snew(bRM,*ndih);
-  for(i=0; (i<(*ndih)); i++) 
-    if (is_imp(&(dih[i]),atoms,nrdh,idh)) {
-      cpparam(&(idih[*nidih]),&(dih[i]));
+  /* Copy the impropers and dihedrals to seperate arrays. */
+  snew(dih,*nalldih);
+  ndih = 0;
+  for(i=0; (i<(*nalldih)); i++) 
+    if (is_imp(&(alldih[i]),atoms,nrdh,idh)) {
+      cpparam(&(idih[*nidih]),&(alldih[i]));
       (*nidih)++;
-      bRM[i]=TRUE;
+    } else {
+      cpparam(&(dih[ndih]),&(alldih[i]));
+      ndih++;
     }
+  
   /* Now, because this list still contains the double entries,
-   * we do the removing of doubles here together with a check on
-   * the bRM array, filled just above.
+   * keep the dihedral with parameters or the first one.
    */
     
-  snew(index,*ndih);
+  snew(index,ndih);
   nind=0;
-  index[nind++]=0;
   if (bAlldih) {
     fprintf(stderr,"bAlldih = true\n");
-    for(i=1; (i<(*ndih)); i++) 
-      if (!deq2(&dih[i],&dih[i-1]))
+    for(i=0; i<ndih; i++) 
+      if ((i==0) || !deq2(&dih[i],&dih[i-1]))
 	index[nind++]=i;
   } else {
-    for(i=1; (i<(*ndih)); i++) 
-      if (!remove_dih(dih,i,*ndih))
+    for(i=0; i<ndih; i++) 
+      if (!remove_dih(dih,i,ndih)) 
 	index[nind++]=i;
   }
-  /* Index now holds pointers to all the non-equal params,
-   * this only works when dih is sorted of course
-   */
-  for(i=0; (i<nind); i++) {
-    brm=FALSE;
-    /* Now check if one of the (equal) dihedrals must go */
-    for(j=index[i]; (j<index[i+1]); j++)
-      brm=brm||bRM[j];
-    /* Then all must go */
-    for(j=index[i]; (j<index[i+1]); j++)
-      bRM[j]=brm;
-  }
-  
+  index[nind]=ndih;
+
   /* if we don't want all dihedrals, we need to select the ones with the 
    *  fewest hydrogens
    */
-  for(i=k=0; (i<nind); i++)
-    if (!bRM[index[i]]) {
+  
+  k=0;
+  for(i=0; i<nind; i++) {
+    bIsSet = (dih[index[i]].c[MAXFORCEPARAM-1] != NOTSET);
+    bKeep = TRUE;
+    if (!bIsSet)
+      /* remove the dihedral if there is an improper on the same bond */
+      for(j=0; (j<*nidih) && bKeep; j++)
+	bKeep = !deq(&dih[index[i]],&idih[j]);
+
+    if (bKeep) {
       /* Now select the "fittest" dihedral:
        * the one with as few hydrogens as possible 
        */
-      int bestl,nh,minh;
-
+      
       /* Best choice to get dihedral from */
       bestl=index[i];
-      /* Minimum number of hydrogens for i and l atoms */
-      if (!bAlldih) {
+      if (!bAlldih && !bIsSet) {
+	/* Minimum number of hydrogens for i and l atoms */
 	minh=2;
-	for(l=index[i]; (l<index[i+1]); l++) {
+	for(l=index[i]; (l<index[i+1]) && deq(&dih[index[i]],&dih[l]); l++) {
 	  if ((nh=n_hydro(dih[l].a,atoms->atomname)) < minh) {
 	    minh=nh;
 	    bestl=l;
@@ -454,15 +459,16 @@ static void pdih2idih(t_param dih[],int *ndih,t_param idih[],int *nidih,
 	}
       }
       for(j=0; (j<MAXATOMLIST); j++)
-	dih[k].a[j]=dih[bestl].a[j];
+	alldih[k].a[j]=dih[bestl].a[j];
       for(j=0; (j<MAXFORCEPARAM); j++)
-	dih[k].c[j]=dih[bestl].c[j];
+	alldih[k].c[j]=dih[bestl].c[j];
       k++;
     }
-  (*ndih)=k;
+  }
+  *nalldih = k;
   
+  sfree(dih);
   sfree(index);
-  sfree(bRM);
 }
 
 static int nb_dist(t_nextnb *nnb,int ai,int aj)
