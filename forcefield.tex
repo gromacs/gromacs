@@ -1376,6 +1376,15 @@ of the dummy constructions is given in fig.~\ref{fig:dummies}.
 
 \input{lr_elstat}
 
+
+\section{\normindex{All-hydrogen forcefield}}
+The {\gromacs} all-hydrogen forcefield is almost identical to the normal
+{\gromacs} forcefield, since the extra hydrogens have no Lennard-Jones
+interaction and zero charge. The only differences are in the bond angle
+and improper dihedral angle terms. This forcefield is only useful when
+you need the exact hydrogen positions, for instance for distance
+restraints derived from NMR measurements.
+
 \section{\gromosv{96} notes}
 
 \subsection{The \gromosv{96} force field\index{gromos-96 force field}}
