@@ -55,7 +55,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   int        fp_ene,step,nre;
   time_t     start_t;
   real       t,lambda,t0,lam0;
-  bool       bNS,bStopCM,bTYZ,bLR,bLJLR,bBHAM,b14;
+  bool       bNS,bStopCM,bTYZ,bLR,bLJLR,bBHAM,b14,bBox;
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
   char       *mtx,*enerfile,wfile[80];
@@ -85,13 +85,15 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   bTYZ=getenv("TYZ") != NULL;
   
   init_nrnb(&mynrnb);
-    
-  calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
-  
-  fprintf(log,"Removing pbc first time\n");
-  mk_mshift(log,graph,parm->box,x);
-  shift_self(graph,fr->shift_vec,x);
-  
+
+  bBox = (fr->eBox != ebtNONE);
+  if (bBox) {
+    calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
+    fprintf(log,"Removing pbc first time\n");
+    mk_mshift(log,graph,parm->box,x);
+    shift_self(graph,fr->shift_vec,x);
+  }
+
   mtx=ftp2fn(efMTX,nfile,fnm);
  
   /* Open the enrgy file */   
@@ -134,8 +136,9 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	   top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
 	   lambda,graph,bNS,FALSE,fr);
   bNS=FALSE;
-  /* Shift back the coordinates, since we're not calling update */
-  unshift_self(graph,fr->shift_vec,x);
+  if (bBox)
+    /* Shift back the coordinates, since we're not calling update */
+    unshift_self(graph,fr->shift_vec,x);
 
   
   /* if forces not small, warn user */
@@ -172,8 +175,9 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       do_force(log,cr,parm,nsb,force_vir,2*(step*DIM+idum),&mynrnb,
 	       top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
 	       lambda,graph,bNS,FALSE,fr);
-      /* Shift back the coordinates, since we're not calling update */
-      unshift_self(graph,fr->shift_vec,x);
+      if (bBox)
+	/* Shift back the coordinates, since we're not calling update */
+	unshift_self(graph,fr->shift_vec,x);
 
       for (jdum=0; (jdum<top->atoms.nr); jdum++) {
 	for (kdum=0; (kdum<DIM); kdum++) {
@@ -188,8 +192,9 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       do_force(log,cr,parm,nsb,force_vir,2*(step*DIM+idum)+1,&mynrnb,
 	       top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
 	       lambda,graph,bNS,FALSE,fr);
-      /* Shift back the coordinates, since we're not calling update */
-      unshift_self(graph,fr->shift_vec,x);
+      if (bBox)
+	/* Shift back the coordinates, since we're not calling update */
+	unshift_self(graph,fr->shift_vec,x);
 
       for (jdum=0; (jdum<top->atoms.nr); jdum++) {
 	for (kdum=0; (kdum<DIM); kdum++) {
