@@ -158,16 +158,15 @@ int main(int argc, char *argv[])
   vol=nx*ny*nz;     /* calculate volume in grid points (= nr. molecules) */
 
   get_stx_coordnum(opt2fn("-f",NFILE,fnm),&natoms); 
-  snew(atoms,1); 
-  snew(atoms->resname,natoms*vol); /* get space for _all_ atoms */
-  snew(atoms->atomname,natoms*vol);
-  snew(atoms->atom,natoms*vol);
+  snew(atoms,1);
+  init_t_atoms(atoms,natoms*vol,FALSE);
   snew(x,natoms*vol);              /* get space for coordinates of all atoms */
   snew(xrot,natoms);               /* get space for rotation matrix? */
   snew(v,natoms*vol);              /* velocities. not really needed? */ 
   snew(vrot,natoms); 
   read_stx_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,v,box);
- 
+
+  atoms->nr/=vol;
   nres=atoms->nres;                /* nr of residues in one element? */
 
   for(i=0; (i<nx); i++) {          /* loop over all gridpositions    */
