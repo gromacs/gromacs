@@ -398,12 +398,17 @@ should always be below each other. It is not possible to have a
 list of codes of $0, 1, 0, 2, 1$ as this will be translated into
 $0, 1, 2, 3, 4$.} 
 
-\subsection{Hydrogen database}
-The hydrogen database is stored in {\tt ffgmx.hdb}. It contains information
-for the {\tt pdb2gmx} program on how to connect hydrogen atoms to
-heavy atoms.
-A sample piece of this file is enclosed below (the table headers are 
-included for explanation purposes).
+\subsection{Hydrogen and termini database}
+The hydrogen database is stored in {\tt ffgmx.hdb}. The termini
+database is stored in {\tt ffgmx-n.tdb} and {\tt ffgmx-c.tdb} for the
+N- and C-terminus resp. They contain information for the {\tt pdb2gmx}
+program on how to connect new atoms to existing ones. The termini
+database files also contain information on which atoms should be
+removed or changed and which (improper) dihedral angles should be
+added.
+
+A sample piece of the {\tt ffgmx.hdb} file is enclosed below (the
+table headers are included for explanation purposes).
 \begin{table}[ht]
 \begin{tabular}{lllllll}
 residue        & \#additions        &        &                &                &     
@@ -422,44 +427,73 @@ ALA 	& 2	& 	&	&	&	&	\\
 \end{tabular}
 \caption{Hydrogen database.}
 \end{table}
+
 On the first line we see the residue name (ARG) and the number of additions.
 On each subsequent line we then see 
 \begin{itemize}
-\item[A]        The number of H atoms added
-\item[B]        The way of adding H atoms, can be any of
-        \begin{enumerate}
-        \item[1]        one hydrogen atom (n) is generated, lying in the plane 
-                        of atoms (i,j,k) on the line bisecting angle (j-i-k)
-                        at a distance d from atom i, such that the angles   
-                        (n-i-j) and (n-i-k) are $>$ 90 degrees                
-        \item[2]        one hydrogen atom (n) is generated at a distance d  
-                        from atom i, such that angle (n-i-j)=$\alpha$ and 
-                        dihedral (n-i-j-k)=trans
-        \item[3]        two hydrogens (n1,n2) are generated at a distance d 
-                        from atom i, such that angle (n1-i-j)=(n2-i-j)=alfa 
-                        and dihedral (n1-i-j-k)=cis and (n2-i-j-k)=trans,
-			such that names are according to IUPAC 
-			standards~\cite{iupac70}.
-        \item[4]        three (n1,n2,n3) or two (n1,n2) hydrogens are generated
-                        at a distance d from atom i, such that angle (n1-i-j)= 
-                        (n2-i-j)=(n3-i-j)=alfa, dihedral (n1-i-j-k)=trans,  
-                        (n2-i-j-k)=trans+120 and (n3-i-j-k)=trans+240 degrees  
-	\item[5]	one hydrogen atom (n1) is added 
-			in tetrahedral conformation
-			such that angle n1-i-j = n1-i-k = n1-i-l = 109.5.
-	\item[6]	two hydrogen atoms (n1,n2) are added in tetrahedral
-			conformation on the plane bissecting angle i-j-k
-			with angle n1-i-n2 = n1-i-j = n1-i-k - 109.5.
-        \end{enumerate}
-\item[C]        Three or four control atoms (i,j,k,l), 
-		where the first always is the atom
-                to which the H atoms are connected. The other two or three 
-		depend on the code selected.
+\item[A] The number of H atoms added
+\item[B] The way of adding H atoms, can be any of
+\begin{enumerate}
+\item[1]
+{\em one planar hydrogen, e.g. rings or peptide bond}
+one hydrogen atom (n) is generated, lying in the plane of atoms
+(i,j,k) on the line bisecting angle (j-i-k) at a distance of 0.1 nm
+from atom i, such that the angles (n-i-j) and (n-i-k) are $>$ 90
+degrees
+\item[2]
+{\em one single hydrogen, e.g. hydroxyl}
+one hydrogen atom (n) is generated at a distance of 0.1 nm from atom
+i, such that angle (n-i-j)=109.5 degrees and dihedral (n-i-j-k)=trans
+\item[3]
+{\em two planar hydrogens, e.g. -NH{$_2$}}
+two hydrogens (n1,n2) are generated at a distance of 0.1 nm from atom
+i, such that angle (n1-i-j)=(n2-i-j)=120 degrees and dihedral
+(n1-i-j-k)=cis and (n2-i-j-k)=trans, such that names are according to
+IUPAC standards~\cite{iupac70}
+\item[4]
+{\em three tetrahedral hydrogens, e.g. -CH{$_3$}}
+three (n1,n2,n3) or two (n1,n2) hydrogens are generated at a distance
+of 0.1 nm from atom i, such that angle
+(n1-i-j)=(n2-i-j)=(n3-i-j)=109.5, dihedral (n1-i-j-k)=trans,
+(n2-i-j-k)=trans+120 and (n3-i-j-k)=trans+240 degrees
+\item[5]
+{\em one tetrahedral hydrogen, e.g. C{$_3$}CH}
+one hydrogen atom (n1) is added in tetrahedral conformation such that
+angle (n1-i-j)=(n1-i-k)=(n1-i-l)=109.5 degrees
+\item[6]
+{\em two tetrahedral hydrogens, e.g. C-CH{$_2$}-C}
+two hydrogen atoms (n1,n2) are added in tetrahedral conformation on
+the plane bissecting angle i-j-k with angle
+(n1-i-n2)=(n1-i-j)=(n1-i-k)=109.5
+\item[7]
+{\em two water hydrogens}
+two hydrogens are added according to GROMOS water geometry. The
+symmetry axis will alternate between three coordinate axes in both
+directions
+\item[8]
+{\em two carboxyl oxygens, -COO{$^-$}}
+two oxygens (n1,n2) are added according to rule 3, with a distance of
+0.136 nm and an angle of 117 degrees
+\item[9]
+{\em carboxyl oxygens and hydrogen, -COOH}
+two oxygens (n1,n2) are added according to rule 3, with distances of
+0.123 nm and 0.125 nm and angles of 121 and 115 degrees for n1 and n2
+resp. One hydrogen (n') is added to n2 according to rule 2, where
+n-i-j and n-i-j-k should be read as n'-n2-i and n'-n2-i-j resp.
+\end{enumerate}
+\item[C]
+Three or four control atoms (i,j,k,l), where the first always is the
+atom to which the H atoms are connected. The other two or three depend
+on the code selected.
 \end{itemize}
-The program code to \normindex{generate hydrogen} 
-positions, as well as the text 
-describing the connection were taken from the Gromos Package~\cite{biomos} 
-and extended for option 5 and 6.
+
+The program code to \normindex{generate hydrogen} positions, as well
+as the text describing the connection were taken from the Gromos
+Package~\cite{biomos} and extended for options 5 through 8. Note that
+option 8 is used exclusively to add a COOH terminus. The others are in
+principle generic, i.e. they can be used to add any type of atom. Note
+however that only termini database support type specification for the 
+atoms, the hydrogen database will always add hydrogens.
 
 \section{File formats}
 \subsection{Topology file}
