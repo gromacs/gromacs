@@ -37,6 +37,7 @@ static char *SRCID_hizzie_c = "$Id$";
 #include "physics.h"
 #include "toputil.h"
 #include "pdb2top.h"
+#include "string2.h"
 
 static int in_strings(char *key,int nstr,char **str)
 {

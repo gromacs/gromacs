@@ -31,6 +31,7 @@ static char *SRCID_mkinl_c = "$Id$";
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "string2.h"
 
 /* This program generates inner-loop source code for the GROMACS
  * Molecular Dynamics package. The innerloops are nearly optimal, i.e.

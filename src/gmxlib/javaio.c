@@ -32,6 +32,7 @@ static char *SRCID_javaio_c = "$Id$";
 #include "typedefs.h"
 #include "smalloc.h"
 #include "string.h"
+#include "string2.h"
 #include "readinp.h"
 #include "filenm.h"
 #include "copyrite.h"

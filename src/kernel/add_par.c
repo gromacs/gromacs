@@ -34,6 +34,7 @@ static char *SRCID_add_par_c = "$Id$";
 #include "grompp.h"
 #include "toputil.h"
 #include "hackblock.h"
+#include "string2.h"
 
 static void clear_atom_list(int i0, atom_id a[])
 {
