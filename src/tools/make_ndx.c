@@ -177,6 +177,37 @@ static bool parse_int(char **string,int *nr)
   return bRet;
 }
 
+static bool isquote(char c)
+{
+  char quotes[] = "'\"";
+  
+  return strchr(quotes, c)!=NULL;
+}
+
+static bool parse_string(char **string,int *nr, int ngrps, char **grpname)
+{
+  char *s, *sp;
+  char c;
+  
+  while ((*string)[0]==' ')
+    (*string)++;
+
+  (*nr) = NOTSET;
+  if (isquote((*string)[0])) {
+    c=(*string)[0];
+    (*string)++;
+    s = strdup((*string));
+    sp = strchr(s, c);
+    if (sp!=NULL) {
+      (*string) += sp-s + 1;
+      sp[0]='\0';
+      (*nr) = find_group(s, ngrps, grpname);
+    }
+  }
+  
+  return (*nr) != NOTSET;
+}
+
 static int select_atomnumbers(char **string,t_atoms *atoms,atom_id n1,
 			      atom_id *nr,atom_id *index,char *gname)
 {
@@ -269,6 +300,34 @@ static int select_residuenumbers(char **string,t_atoms *atoms,atom_id n1,
     } while (parse_int(string,&j));
   }
   
+  return *nr;
+}
+
+static bool atoms_from_residuenumbers(t_atoms *atoms,int group,t_block *block,
+				      atom_id *nr,atom_id *index,char *gname)
+{
+  int i,j,j0,j1,resnr,nres;
+  
+  j0=block->index[group];
+  j1=block->index[group+1];
+  nres = atoms->atom[atoms->nr-1].resnr;
+  for(j=j0; j<j1; j++)
+    if (block->a[j]>=nres) {
+      printf("Index %s contains number>nres (%d>%d)\n",
+	     gname,block->a[j]+1,nres);
+      return FALSE;
+    }
+  for(i=0; i<atoms->nr; i++) {
+    resnr=atoms->atom[i].resnr;
+    for (j=j0; j<j1; j++)
+      if (block->a[j]==resnr) {
+	index[*nr]=i;
+	(*nr)++;
+	break;
+      }
+  }
+  printf("Found %u atom%s in %d residues from group %s\n",
+	 *nr,(*nr==1)?"":"s",j1-j0,gname);
   return *nr;
 }
 
@@ -406,6 +465,7 @@ static void copy_group(int g,t_block *block,atom_id *nr,atom_id *index)
 static void remove_group(int nr,int nr2,t_block *block,char ***gn)
 {
   int i,j,shift;
+  char *name;
   
   if (nr2==NOTSET)
     nr2=nr;
@@ -420,13 +480,15 @@ static void remove_group(int nr,int nr2,t_block *block,char ***gn)
       
       for(i=nr; i<block->nr; i++)
 	block->index[i]=block->index[i+1]-shift;
+      name = strdup((*gn)[nr]);
       sfree((*gn)[nr]);
       for(i=nr; i<block->nr-1; i++) {  
 	(*gn)[i]=(*gn)[i+1];
       }
       block->nr--;
       block->nra=block->index[block->nr];
-      printf("Removed group %d\n",nr+j);
+      printf("Removed group %d '%s'\n",nr+j,name);
+      sfree(name);
     }
   }
 }
@@ -439,9 +501,9 @@ static void split_group(t_atoms *atoms,int sel_nr,t_block *block,char ***gn,
   atom_id a,n0,n1,max;
 
   if (bAtom)
-    printf("Splitting group %d into residues\n",sel_nr);
+    printf("Splitting group %d '%s' into residues\n",sel_nr,(*gn)[sel_nr]);
   else
-    printf("Splitting group %d into atoms\n",sel_nr);
+    printf("Splitting group %d '%s' into atoms\n",sel_nr,(*gn)[sel_nr]);
   
   max=block->nra;
   n0=block->index[sel_nr];
@@ -554,7 +616,7 @@ static int split_chain(t_atoms *atoms,rvec *x,
 static bool check_have_atoms(t_atoms *atoms, char *string)
 {
   if ( atoms==NULL ) {
-    printf("Can not execute '%s' without atoms info\n", string);
+    printf("Can not process '%s' without atoms info\n", string);
     return FALSE;
   } else
     return TRUE;
@@ -594,11 +656,12 @@ static bool parse_entry(char **string,int natoms,t_atoms *atoms,
 
   ostring = *string;
   
-  if (parse_int(string,&sel_nr1)) {
+  if (parse_int(string,&sel_nr1) || 
+      parse_string(string,&sel_nr1,block->nr,*gn)) {
     if ((sel_nr1>=0) && (sel_nr1<block->nr)) {
       copy_group(sel_nr1,block,nr,index);
       strcpy(gname,(*gn)[sel_nr1]);
-      printf("Copied index group %d\n",sel_nr1);
+      printf("Copied index group %d '%s'\n",sel_nr1,(*gn)[sel_nr1]);
       bRet=TRUE;
     } else
       printf("Group %d does not exist\n",sel_nr1); 
@@ -625,6 +688,16 @@ static bool parse_entry(char **string,int natoms,t_atoms *atoms,
 	bRet=select_atomnames(atoms,n_names,names,nr,index,TRUE);
 	make_gname(n_names,names,gname);
       }
+    }
+  }
+  else if (strncmp(*string,"res",3)==0) {
+    (*string)+=3;
+    if ( check_have_atoms(atoms, ostring) &&
+	 parse_int(string,&sel_nr1) &&
+	 (sel_nr1>=0) && (sel_nr1<block->nr) ) {
+      bRet=atoms_from_residuenumbers(atoms,
+				     sel_nr1,block,nr,index,(*gn)[sel_nr1]);
+      sprintf(gname,"atom_%s",(*gn)[sel_nr1]);
     }
   }
   else if ((*string)[0]=='r') {
@@ -714,7 +787,7 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_block *block, char *
   static char **atnames, *ostring;
   static bool bFirst=TRUE;
   static int  namelen=5;
-  char inp_string[STRLEN],*string,*atom_name;
+  char inp_string[STRLEN],*string;
   char gname[STRLEN],gname1[STRLEN],gname2[STRLEN];
   int  i,i0,i1,sel_nr,sel_nr2,newgroup;
   atom_id nr,nr1,nr2,*index,*index1,*index2;
@@ -756,8 +829,8 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_block *block, char *
     printf(" nr : group       !   'name' nr name   'splitch' nr    'l': list residues\n");
       printf(" 'a': atom        &   'del' nr         'splitres' nr   'h': help\n");
       printf(" 't': atom type   |   'keep' nr        'splitat' nr    \n");
-      printf(" 'r': residue         'chain' char       ");
-      printf("'case': case %s  'v': %s output   'q': save and quit\n",
+      printf(" 'r': residue         'res': group res 'chain' char    'q': save and quit\n");
+      printf(" \"name\": group        'case': case %s         'v': %s output   \n",
 	     bCase ? "insensitive" : "sensitive  ",
 	     bVerbose ? "terse  " : "verbose"); 
       bPrintOnce = FALSE;
@@ -774,14 +847,16 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_block *block, char *
     ostring = string;
     nr=0;
     if (string[0] == 'h') {
-      printf(" nr                : selects an index group.\n");
+      printf(" nr                : selects an index group by number or quoted string.\n");
+      printf("                     The string is first matched against the whole group name,\n");
+      printf("                     then against the beginning and finally against an\n");
+      printf("                     arbitrary substring. A multiple match is an error.\n");
+      
       printf(" 'a' nr1 [nr2 ...] : selects atoms, atom numbering starts at 1.\n");
       printf(" 'a' nr1 - nr2     : selects atoms in the range from nr1 to nr2.\n"); 
       printf(" 'a' name1[*] [name2[*] ...] : selects atoms by name(s), wildcard allowed\n"); 
       printf("                               at the end of a name.\n");
-      printf(" 't' type1[*] [type2[*] ...] : selects atoms by type(s), wildcard allowed\n"); 
-      printf("                               at the end of a type,\n");
-      printf("                               this requires a run input file.\n");
+      printf(" 't' type1[*] [type2[*] ...] : as 'a' but for type, run input file required.\n");
       printf(" 'r'               : analogous to 'a', but for residues.\n");
       printf(" 'chain' ch1 [ch2 ...] : selects atoms by chain identifier(s),\n");
       printf("                         not available with a .gro file as input.\n");
@@ -796,6 +871,7 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_block *block, char *
       printf(" 'splitch' nr      : split group into chains using CA distances.\n");
       printf(" 'splitres' nr     : split group into residues.\n");
       printf(" 'splitat' nr      : split group into atoms.\n");
+      printf(" 'res' nr          : interpret atom numbers in group as residue numbers\n");
       printf(" 'l'               : list the residues.\n");
       printf(" 'h'               : show this help.\n");
       printf(" 'q'               : save and quit.\n");
@@ -805,6 +881,8 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_block *block, char *
       printf(" will select all atoms from group 2 and 4 which have residue numbers\n 3, 4 or 5\n");
       printf(" > a C* & !a C CA\n");
       printf(" will select all atoms starting with 'C' but not the atoms 'C' and 'CA'\n");  
+      printf(" > 'protein' & ! 'backb'\n");
+      printf(" from the default groups, this selects all protein atoms but not the backbone\n");
       printf("\npress Enter");
       getchar();
     }
@@ -926,10 +1004,9 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_block *block, char *
     }
   } while (string[0]!='q');
 
-  /* Comment out the sfree-ing. May generate SEGV */
-  /*sfree(index);
+  sfree(index);
   sfree(index1);
-  sfree(index2);*/
+  sfree(index2);
 }
 
 static int block2natoms(t_block *block)
@@ -938,9 +1015,32 @@ static int block2natoms(t_block *block)
   
   natoms = 0;
   for(i=0; i<block->nra; i++)
-    natoms = max(natoms, block->a[i]+1);
+    natoms = max(natoms, block->a[i]);
+  natoms++;
   
   return natoms;
+}
+
+void merge_blocks(t_block *dest, t_block *source)
+{
+  int     i,nra0,i0;
+  
+  /* count groups, srenew and fill */
+  i0 = dest->nr;
+  nra0 = dest->nra;
+  dest->nr+=source->nr;
+  srenew(dest->index, dest->nr+1);
+  for(i=0; i<source->nr; i++)
+    dest->index[i0+i] = nra0 + source->index[i];
+  /* count atoms, srenew and fill */
+  dest->nra+=source->nra;
+  srenew(dest->a, dest->nra);
+  for(i=0; i<source->nra; i++)
+    dest->a[nra0+i] = source->a[i];
+  
+  /* terminate list */
+  dest->index[dest->nr]=dest->nra;
+  
 }
 
 int main(int argc,char *argv[])
@@ -973,17 +1073,18 @@ int main(int argc,char *argv[])
 #define NPA asize(pa)
 
   char     title[STRLEN];
-  char     *stxfile, *ndxinfile, *ndxoutfile;
+  int      nndxin;   
+  char     *stxfile, **ndxinfiles, *ndxoutfile;
   bool     bNatoms;
-  int      i;
+  int      i,j;
   t_atoms  *atoms;
   rvec     *x,*v;
   matrix   box;
-  t_block  *block;
-  char     **gnames;
+  t_block  *block,*block2;
+  char     **gnames,**gnames2;
   t_filenm fnm[] = {
     { efSTX, "-f", NULL,     ffOPTRD  },
-    { efNDX, "-n", NULL,     ffOPTRD },
+    { efNDX, "-n", NULL,     ffOPTRDMULT },
     { efNDX, "-o", NULL,     ffWRITE }
   };
 #define NFILE asize(fnm)
@@ -994,11 +1095,11 @@ int main(int argc,char *argv[])
 		    0,NULL);
   
   stxfile = ftp2fn_null(efSTX,NFILE,fnm);
-  ndxinfile = opt2fn_null("-n",NFILE,fnm);
+  nndxin = opt2fns(&ndxinfiles,"-n",NFILE,fnm);
   ndxoutfile = opt2fn("-o",NFILE,fnm);
   bNatoms = opt2parg_bSet("-natoms",NPA,pa);
   
-  if (stxfile==NULL && ndxinfile==NULL)
+  if (!stxfile && !nndxin)
     fatal_error(0,"No input files (structure or index)");
   
   if (stxfile) {
@@ -1014,10 +1115,23 @@ int main(int argc,char *argv[])
     x = NULL;
   }
 
-  if (ndxinfile)
-    block = init_index(ndxinfile,&gnames);
-  else {
+  /* read input file(s) */
     block = new_block();
+  gnames = NULL;
+  if (nndxin) {
+    for(i=0; i<nndxin; i++) {
+      block2 = init_index(ndxinfiles[i],&gnames2);
+      srenew(gnames, block->nr+block2->nr);
+      for(j=0; j<block2->nr; j++)
+	gnames[block->nr+j]=gnames2[j];
+      sfree(gnames2);
+      merge_blocks(block, block2);
+      sfree(block2->a);
+      sfree(block2->index);
+/*       done_block(block2); */
+      sfree(block2);
+    }
+  } else {
     snew(gnames,1);
     analyse(atoms,block,&gnames,FALSE,TRUE);
   }
