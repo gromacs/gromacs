@@ -66,7 +66,7 @@ extern void csettle(FILE *log,
 		    int *xerror);
 
 extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
-		   real dist2[],real xp[],real rij[],real m2[],
+		   real dist2[],real xp[],real rij[],real m2[],real omega,
 		   real invmass[],real tt[],real lagr[],int *nerror);
 /* Regular iterative shake */
 
@@ -120,7 +120,7 @@ extern void F77_FUNC(fsettle,FSETTLE)(int *nshake,int owptr[],
 extern void F77_FUNC(fshake,FSHAKE)(atom_id iatom[],int *ncon,
 				    int *nit, int *maxnit,
 				    real dist2[],real xp[],
-				    real rij[],real m2[],
+				    real rij[],real m2[],real *omega,
 				    real invmass[],real tt[],
 				    real lambda[],int *error);
 extern void F77_FUNC(flincsp,FLINCSP)(real *x,real *f,real *fp,

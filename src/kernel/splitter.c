@@ -539,7 +539,10 @@ static int mk_sblocks(bool bVerbose,t_graph *g,t_sid sid[])
     }
   }
   sfree(egc);
-  
+
+  if (debug)
+    fprintf(debug,"Found %d shake blocks\n",nblock);
+    
   return nblock;
 }
 
@@ -560,10 +563,18 @@ void gen_sblocks(bool bVerbose,int natoms,t_idef *idef,t_block *sblock,
     sid[i].sid  = -1;
   }
   nsid=mk_sblocks(bVerbose,g,sid);
-  
+
+  if (!nsid)
+    return;
+    
   /* Now sort the shake blocks... */
   qsort(sid,natoms,(size_t)sizeof(sid[0]),sid_comp);
   
+  if (debug) {
+    fprintf(debug,"Sorted shake block\n");
+    for(i=0; (i<natoms); i++) 
+      fprintf(debug,"sid[%5d] = atom:%5d sid:%5d\n",i,sid[i].atom,sid[i].sid);
+  }
   /* Now check how many are NOT -1, i.e. how many have to be shaken */
   for(i=0; (i<natoms); i++)
     if (sid[i].sid > -1)
@@ -596,8 +607,11 @@ void gen_sblocks(bool bVerbose,int natoms,t_idef *idef,t_block *sblock,
     }
   }
   sfree(sid);
-  done_graph(g);
-  sfree(g);
+  /* Due to unknown reason this free generates a problem sometimes */
+  /* done_graph(g);
+     sfree(g); */
+  if (debug)
+    fprintf(debug,"Done gen_sblocks\n");
 }
 
 void split_top(bool bVerbose,int nnodes,t_topology *top,real

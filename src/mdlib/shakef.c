@@ -246,7 +246,7 @@ int shakef(FILE *log,
 int vec_shakef(FILE *log,
 	       int natoms,real invmass[],int ncon,
 	       t_iparams ip[],t_iatom *iatom,
-	       real tol,rvec x[],rvec xp[],
+	       real tol,rvec x[],rvec xp[],real omega,
 	       bool bFEP,real lambda,real lagr[])
 {
   static  rvec *rij=NULL;
@@ -294,10 +294,10 @@ int vec_shakef(FILE *log,
   /* We have a FORTRAN shake now! */  
 #ifdef USE_FORTRAN
   F77_FUNC(fshake,FSHAKE)(iatom,&ncon,&nit,&maxnit,dist2,xp[0],
-			  rij[0],M2,invmass,tt,lagr,&error);
+			  rij[0],M2,&omega,invmass,tt,lagr,&error);
 #else
   /* And a c shake also ! */
-  cshake(iatom,ncon,&nit,maxnit,dist2,xp[0],rij[0],M2,invmass,tt,lagr,&error);
+  cshake(iatom,ncon,&nit,maxnit,dist2,xp[0],rij[0],M2,omega,invmass,tt,lagr,&error);
 #endif
   if (nit >= maxnit) {
     fprintf(log,"Shake did not converge in %d steps\n",maxnit);
@@ -385,11 +385,11 @@ int bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
 		ir->efep!=efepNO,lambda,lam);
     else
       n0=vec_shakef(log,natoms,invmass,blen,idef->iparams,
-		    iatoms,ir->shake_tol,x_s,xp,
+		    iatoms,ir->shake_tol,x_s,xp,omega,
 		    ir->efep!=efepNO,lambda,lam);
     
 #ifdef DEBUGSHAKE
-	check_cons(log,blen,x_s,xp,idef->iparams,iatoms,invmass);
+    check_cons(log,blen,x_s,xp,idef->iparams,iatoms,invmass);
 #endif
     
     if (n0==0) {
