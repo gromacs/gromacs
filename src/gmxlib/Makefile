@@ -134,6 +134,9 @@ libxtcf.a:	xtciof.o	libxdrf.o	ftocstr.o
 		-chmod $(LIBMODE) $@
 		mv $@ $(LIBDIR)
 
+prfn:		prfn.o
+		$(LD) -o $@ $^ $(SYSLIBS)
+
 repfirst:	repfirst.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
