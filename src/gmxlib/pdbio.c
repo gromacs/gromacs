@@ -74,32 +74,6 @@ static void gromacs_name(char *name)
     strcpy(name,"O2");
 }
 
-/*
-static void pdb_name(char *name)
-{
-  int i,length;
-  char temp;
-  bool bH;
-  length=strlen(name);
-  if (isdigit(name[length-1])&&isdigit(name[length-2])) {
-    bH=FALSE;
-    for (i=0;(i<length);i++)
-      if (name[i] == 'H') 
-        bH=TRUE;
-    if (bH) {
-      temp=name[length-1]; 
-      for(i=length-1;(i>0);i--)
-	name[i]=name[i-1];
-      name[0]=temp;
-    }
-  }
-  else {
-    if(strcmp(name,"O2")==0)
-    strcpy(name,"OXT");
-  }
-}
-*/
-
 void write_pdbfile_indexed(FILE *out,char *title,
 			   t_atoms *atoms,rvec x[],matrix box,char chain,
 			   bool bEndmodel,
