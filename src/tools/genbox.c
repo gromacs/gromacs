@@ -438,7 +438,7 @@ int main(int argc,char *argv[])
     "2) Solvate a solute configuration, eg. a protein, in a bath of solvent ",
     "molecules. Specify [TT]-cp[tt] (solute) and [TT]-cs[tt] (solvent). ",
     "The box specified in the solute coordinate file ([TT]-cp[tt]) is used.",
-    "The box can be modified with the program [TT]editconv[tt].",
+    "The box can be modified with the program [TT]editconf[tt].",
     "Solvent molecules are removed from the box where the ",
     "distance between any atom of the solute molecule(s) and any atom of ",
     "the solvent molecule is less than the sum of the VanderWaals radii of ",
