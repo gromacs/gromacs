@@ -282,9 +282,6 @@ void do_force(FILE *log,t_commrec *cr,
   /* Take long range contribution to free energy into account */
   ener[F_DVDL] += dvdl_lr;
   
-  /* Compute forces due to electric field */
-  calc_f_el(start,homenr,mdatoms->chargeT,f,parm->ir.ex);
-  
 #ifdef DEBUG
   if (bNS)
     print_nrnb(log,nrnb);
@@ -297,6 +294,9 @@ void do_force(FILE *log,t_commrec *cr,
 
   if (debug) 
     pr_rvecs(debug,0,"vir_shifts",vir_part,DIM);
+
+  /* Compute forces due to electric field */
+  calc_f_el(start,homenr,mdatoms->chargeT,f,parm->ir.ex);
 
   /* When using PME/Ewald we compute the long range virial (pme_vir) there.
    * otherwise we do it based on long range forces from twin range
