@@ -67,7 +67,31 @@ static char *SRCID_trjcat_c = "$Id$";
 #define FLT_MAX 1e36
 #endif
 
-static void scan_trj_files(char **fnms,int nfiles,real *readtime, real *timestep,atom_id imax)
+static real get_timestep(char *fnm)
+{
+  /* read first two frames in trajectory 'fnm' to determine timestep */
+  
+  int        status;
+  real       t0, dt;
+  t_trxframe fr;
+  bool ok;
+  
+  ok=read_first_frame(&status,fnm,&fr,TRX_NEED_X);
+  if(!ok || !fr.bTime)
+    fatal_error(0,"\nCouldn't read time from first frame.");
+  t0=fr.time;
+    
+  ok=read_next_frame(status,&fr);
+  if(!ok || !fr.bTime) 
+    fatal_error(0,"\nCouldn't read time from second frame.");
+  dt=fr.time-t0;
+
+  close_trj(status);
+  
+  return dt;
+}
+
+static void scan_trj_files(char **fnms,int nfiles,real *readtime,atom_id imax)
 {
   /* Check start time of all files */
   int i,flags,status,natoms=0;
@@ -88,13 +112,6 @@ static void scan_trj_files(char **fnms,int nfiles,real *readtime, real *timestep
     
     if(i==0) {
       natoms=fr.natoms;
-      t=fr.time;
-      
-      ok=read_next_frame(status,&fr);
-      if(!ok || !fr.bTime) 
-	fatal_error(0,"\nCouldn't read time from second frame.");
-      
-      *timestep=fr.time-t;
     }
     else {
       if (imax==NO_ATID) {
@@ -147,7 +164,7 @@ static void edit_files(char **fnms,int nfiles,real *readtime, real
     char inputstring[STRLEN],*chptr;
     
     if(bSetTime) {
-	fprintf(stderr,"\n\nEnter the new start time for each file.\n"
+	fprintf(stderr,"\n\nEnter the new start time (%s) for each file.\n"
 		"There are two special options, both disable sorting:\n\n"
 		"c (continue) - The start time is taken from the end\n"
 		"of the previous file. Use it when your continuation run\n"
@@ -155,13 +172,17 @@ static void edit_files(char **fnms,int nfiles,real *readtime, real
 		"l (last) - The time in this file will be changed the\n"
 		"same amount as in the previous. Use it when the time in the\n"
 		"new run continues from the end of the previous one,\n"
-		"since this takes possible overlap into account.\n\n");
+		"since this takes possible overlap into account.\n\n",
+		time_unit() );
 	
-	  fprintf(stderr,"          File             Current start       New start\n"
-		  "---------------------------------------------------------\n");
+	  fprintf(stderr,
+	  "          File             Current start (%s)  New start (%s)\n"
+		  "---------------------------------------------------------\n",
+		  time_unit(), time_unit() );
 	  
 	  for(i=0;i<nfiles;i++) {
-	      fprintf(stderr,"%25s   %10.3f             ",fnms[i],readtime[i]);
+	      fprintf(stderr,"%25s   %10.3f %s          ",
+		      fnms[i],convert_time(readtime[i]), time_unit());
 	      ok=FALSE;
 	      do {
 		  fgets(inputstring,STRLEN-1,stdin);
@@ -181,7 +202,7 @@ static void edit_files(char **fnms,int nfiles,real *readtime, real
 		    settime[i]=FLT_MAX;			  
 		  }
 		  else {
-		    settime[i]=strtod(inputstring,&chptr);
+		    settime[i]=strtod(inputstring,&chptr)/time_factor();
 		    if(chptr==inputstring) {
 		      fprintf(stderr,"'%s' not recognized as a floating point number, 'c' or 'l'. "
 			      "Try again: ",inputstring);
@@ -215,19 +236,20 @@ static void edit_files(char **fnms,int nfiles,real *readtime, real
     for(i=0;i<nfiles;i++)
 	switch(cont_type[i]) {
 	case TIME_EXPLICIT:
-	    fprintf(stderr,"%25s   %10.3f",fnms[i],settime[i]);
-	    if ( i>0 && 
-		 cont_type[i-1]==TIME_EXPLICIT && settime[i]==settime[i-1] )
-	      fprintf(stderr," WARNING: same Start time as previous");
-	    fprintf(stderr,"\n");
-	    break;
+	  fprintf(stderr,"%25s   %10.3f %s",
+		  fnms[i],convert_time(settime[i]),time_unit());
+	  if ( i>0 && 
+	       cont_type[i-1]==TIME_EXPLICIT && settime[i]==settime[i-1] )
+	    fprintf(stderr," WARNING: same Start time as previous");
+	  fprintf(stderr,"\n");
+	  break;
 	case TIME_CONTINUE:
-	    fprintf(stderr,"%25s        Continue from last file\n",fnms[i]);
-	    break;	      
+	  fprintf(stderr,"%25s        Continue from last file\n",fnms[i]);
+	  break;	      
 	case TIME_LAST:
-	    fprintf(stderr,"%25s        Change by same amount as last file\n",
-		    fnms[i]);
-	    break;
+	  fprintf(stderr,"%25s        Change by same amount as last file\n",
+		  fnms[i]);
+	  break;
 	}
     fprintf(stderr,"\n");
 
@@ -244,10 +266,12 @@ int main(int argc,char *argv[])
       "By specifying [TT]-settime[tt] you will be asked for the start time ",
       "of each file. The input files are taken from the command line, ",
       "such that a command like [TT]trjcat -o fixed.trr *.trr[tt] should do ",
-      "the trick."
+      "the trick. Using [TT]-cat[tt] you can simply paste several files ",
+      "together without removal of frames with identical time stamps."
   };
   static bool  bVels=TRUE;
   static int   prec=3;
+  static bool  bCat=FALSE;
   static bool  bSort=TRUE;
   static bool  bSetTime=FALSE;
   static real  begin=-1;
@@ -255,20 +279,22 @@ int main(int argc,char *argv[])
   static real  dt=0;
   
   t_pargs pa[] = {
-    { "-b",        FALSE, etREAL, {&begin},
-      "First time to use"},
-    { "-e",        FALSE, etREAL, {&end},
-      "Last time to use"},
-    { "-dt",     FALSE, etREAL, {&dt},
-      "Only write frame when t MOD dt = first time" },
-    { "-prec", FALSE,  etINT,  {&prec},
+    { "-b",       FALSE, etTIME, {&begin},
+      "First time to use (%t)"},
+    { "-e",       FALSE, etTIME, {&end},
+      "Last time to use (%t)"},
+    { "-dt",      FALSE, etTIME, {&dt},
+      "Only write frame when t MOD dt = first time (%t)" },
+    { "-prec",    FALSE, etINT,  {&prec},
       "Precision for .xtc and .gro writing in number of decimal places" },
-    { "-vel", FALSE, etBOOL, {&bVels},
+    { "-vel",     FALSE, etBOOL, {&bVels},
       "Read and write velocities if possible" },
-    { "-settime",  FALSE, etBOOL, {&bSetTime}, 
+    { "-settime", FALSE, etBOOL, {&bSetTime}, 
       "Change starting time interactively" },
-    { "-sort",     FALSE, etBOOL, {&bSort},
-	"Sort trajectory files (not frames)" }
+    { "-sort",    FALSE, etBOOL, {&bSort},
+      "Sort trajectory files (not frames)" },
+    { "-cat",     FALSE, etBOOL, {&bCat},
+      "do not discard double time frames" }
   };
       
   int         status,ftp,ftpin,i,frame,frame_out,step,trjout=0;
@@ -293,7 +319,7 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS | PCA_BE_NICE,
+  parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS|PCA_BE_NICE|PCA_TIME_UNIT,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    0,NULL);
 
@@ -323,11 +349,12 @@ int main(int argc,char *argv[])
   if(!nfile)
       fatal_error(0,"No input files!");
   
-  snew(settime,nfile+1);
+  timestep = get_timestep(fnms[0]);
   snew(readtime,nfile+1);
-  snew(cont_type,nfile+1);
+  scan_trj_files(fnms,nfile,readtime,imax);
   
-  scan_trj_files(fnms,nfile,readtime,&timestep,imax);
+  snew(settime,nfile+1);
+  snew(cont_type,nfile+1);
   edit_files(fnms,nfile,readtime,settime,cont_type,bSetTime,bSort);
   
   earliersteps=0;    
@@ -390,7 +417,9 @@ int main(int argc,char *argv[])
 	  break;
 	}
 	/* determine if we should write this frame */
-	if(frout.time < settime[i+1]-0.5*timestep && frout.time >= begin) {
+	if( ( bCat || 
+	      ( !bCat && frout.time < settime[i+1]-0.5*timestep ) ) && 
+	    frout.time >= begin) {
 	  frame++;
 	  if (frame_out == -1)
 	    first_time = frout.time;
@@ -398,7 +427,9 @@ int main(int argc,char *argv[])
 	    frame_out++;
 	    last_ok_t=frout.time;
 	    if(bNewFile) {
-	      fprintf(stderr,"\nContinue writing frames from %s t=%g, frame=%d      \n",fnms[i],frout.time,frame);
+	      fprintf(stderr,"\nContinue writing frames from %s t=%g %s, "
+		      "frame=%d      \n",
+		      fnms[i],convert_time(frout.time),time_unit(),frame);
 	      bNewFile=FALSE;
 	    }
 	    
@@ -415,11 +446,12 @@ int main(int argc,char *argv[])
 	      fatal_error(0,"This fileformat doesn't work here yet.");
 	    }
 	    if ( ((frame % 10) == 0) || (frame < 10) )
-	      fprintf(stderr," ->  frame %6d time %8.3f      \r",
-		      frame_out,frout.time);
+	      fprintf(stderr," ->  frame %6d time %8.3f %s     \r",
+		      frame_out,convert_time(frout.time),time_unit());
 	  }
 	}
-      } while((frout.time<settime[i+1]) && read_next_frame(status,&fr));
+      } while( ( bCat || ( !bCat && frout.time<settime[i+1]) ) && 
+	       read_next_frame(status,&fr));
       
       close_trj(status);
       
@@ -427,29 +459,31 @@ int main(int argc,char *argv[])
       
       /* set the next time from the last frame in previous file */
       if(cont_type[i+1]==TIME_CONTINUE) {
-	  begin=frout.time+0.5*timestep;
-	  settime[i+1]=frout.time;
-	  cont_type[i+1]=TIME_EXPLICIT;	  
+	begin=frout.time+0.5*timestep;
+	settime[i+1]=frout.time;
+	cont_type[i+1]=TIME_EXPLICIT;	  
       }
       else if(cont_type[i+1]==TIME_LAST)
-	  begin=frout.time+0.5*timestep;
+	begin=frout.time+0.5*timestep;
       /* Or, if the time in the next part should be changed by the
        * same amount, start at half a timestep from the last time
        * so we dont repeat frames.
        */
-
+      
       /* Or, if time is set explicitly, we check for overlap/gap */
       if(cont_type[i+1]==TIME_EXPLICIT) 
 	if((i<(nfile-1)) &&
 	   (frout.time<(settime[i+1]-1.5*timestep))) 
-	  fprintf(stderr,
-		  "WARNING: Frames around t=%f have a different spacing than the rest,\n"
-		  "might be a gap or overlap that couldn't be corrected automatically.\n",frout.time);   
+	  fprintf(stderr, "WARNING: Frames around t=%f %s have a different "
+		  "spacing than the rest,\n"
+		  "might be a gap or overlap that couldn't be corrected "
+		  "automatically.\n",convert_time(frout.time),time_unit());
   }
   if (trxout >= 0)
     close_trx(trxout);
      
-  fprintf(stderr,"\nLast frame written was %d, time %f\n",frame,last_ok_t); 
+  fprintf(stderr,"\nLast frame written was %d, time %f %s\n",
+	  frame,convert_time(last_ok_t),time_unit()); 
 
   thanx(stderr);
   
