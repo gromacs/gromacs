@@ -56,7 +56,7 @@
 #include "princ.h"
 #include "rmpbc.h"
 #include "confio.h"
-#include "ql77.h"
+#include "eigensolver.h"
 
 static real find_pdb_bfac(t_atoms *atoms,char *resnm,int resnr,char *atomnm)
 {
@@ -121,32 +121,36 @@ void average_residues(real f[],int isize,atom_id index[],real w_rls[],
 
 void print_dir(FILE *fp,real *Uaver)
 {
-  real eigvec[DIM*DIM];
-  rvec eigval;
-  int d,m;
+    real eigvec[DIM*DIM];
+    real tmp[DIM*DIM];  
+    rvec eigval;
+    int d,m;
 
-  fprintf(fp,"MSF     X         Y         Z\n");
-  for(d=0; d<DIM; d++) {
-    fprintf(fp," %c ",'X'+d-XX);
-    for(m=0; m<DIM; m++)
-      fprintf(fp," %9.2e",Uaver[3*m+d]);
-    fprintf(fp,"%s\n",m==DIM ? " (nm^2)" : "");
-  }
+    fprintf(fp,"MSF     X         Y         Z\n");
+    for(d=0; d<DIM; d++)
+    {
+        fprintf(fp," %c ",'X'+d-XX);
+        for(m=0; m<DIM; m++)
+            fprintf(fp," %9.2e",Uaver[3*m+d]);
+        fprintf(fp,"%s\n",m==DIM ? " (nm^2)" : "");
+    }
   
-  for(m=0; m<DIM*DIM; m++)
-    eigvec[m] = Uaver[m];
+    for(m=0; m<DIM*DIM; m++)
+        tmp[m] = Uaver[m];
 
-  ql77(DIM,eigvec,eigval);
   
-  fprintf(fp,"\n             Eigenvectors\n\n");
-  fprintf(fp,"Eigv  %-8.2e %-8.2e %-8.2e (nm^2)\n\n",
-	  eigval[2],eigval[1],eigval[0]);
-  for(d=0; d<DIM; d++) {
-    fprintf(fp,"  %c   ",'X'+d-XX);
-      for(m=DIM-1; m>=0; m--)
-	fprintf(fp,"%7.4f  ",eigvec[3*m+d]);
-    fprintf(fp,"\n");
-  }
+    eigensolver(tmp,DIM,0,DIM,eigval,eigvec);
+    
+    fprintf(fp,"\n             Eigenvectors\n\n");
+    fprintf(fp,"Eigv  %-8.2e %-8.2e %-8.2e (nm^2)\n\n",
+            eigval[2],eigval[1],eigval[0]);
+    for(d=0; d<DIM; d++)
+    {
+        fprintf(fp,"  %c   ",'X'+d-XX);
+        for(m=DIM-1; m>=0; m--)
+            fprintf(fp,"%7.4f  ",eigvec[3*m+d]);
+        fprintf(fp,"\n");
+    }
 }
 
 int gmx_rmsf(int argc,char *argv[])

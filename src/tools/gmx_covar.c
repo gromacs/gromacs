@@ -60,7 +60,7 @@
 #include "txtdump.h"
 #include "matio.h"
 #include "eigio.h"
-#include "ql77.h"
+#include "eigensolver.h"
 
 int gmx_covar(int argc,char *argv[])
 {
@@ -124,6 +124,7 @@ int gmx_covar(int argc,char *argv[])
   bool       bDiffMass1,bDiffMass2;
   time_t     now;
   t_rgb      rlo,rmi,rhi;
+  real       *tmp;
 
   t_filenm fnm[] = { 
     { efTRX, "-f",  NULL, ffREAD }, 
@@ -389,7 +390,10 @@ int gmx_covar(int argc,char *argv[])
   fflush(stderr);
 
   snew(eigval,ndim);
-  ql77 (ndim,mat,eigval);
+  snew(tmp,ndim*ndim);
+  memcpy(tmp,mat,ndim*ndim*sizeof(real));
+  eigensolver(tmp,ndim,0,ndim,eigval,mat);
+  sfree(tmp);
   
   /* now write the output */
 
@@ -431,7 +435,7 @@ int gmx_covar(int argc,char *argv[])
   }
 
   write_eigenvectors(eigvecfile,natoms,mat,TRUE,1,end,
-		     WriteXref,x,bDiffMass1,xproj,bM);
+		     WriteXref,x,bDiffMass1,xproj,bM,eigval);
 
   out = ffopen(logfile,"w");
 

@@ -55,7 +55,7 @@
 #include "xvgr.h"
 #include "main.h"
 #include "network.h"
-#ifdef USE_MPI
+#ifdef GMX_MPI
 #include "mpi.h"
 #endif
 
@@ -410,7 +410,7 @@ int main(int argc,char *argv[])
   }
 
   /* Now do my thing */
-#ifdef USE_MPI
+#ifdef GMX_MPI
   if (PAR(cr)) {
     if (MASTER(cr))
       disco_master(cr,stdlog,opt2fn("-o",NFILE,fnm),
@@ -429,11 +429,11 @@ int main(int argc,char *argv[])
 	     xref,xcenter,nstruct,&seed,bFit,nfit,fit_ind,
 	     opt2bSet("-viol",NFILE,fnm),opt2fn("-viol",NFILE,fnm),
 	     boxsize);
-#ifdef USE_MPI
+#ifdef GMX_MPI
   }
 #endif
   ffclose(stdlog);
-#ifdef USE_MPI
+#ifdef GMX_MPI
   if (PAR(cr))
     MPI_Finalize();
 #endif

@@ -503,6 +503,8 @@ int main(int argc,char *argv[])
   char       *grpname,*indexfile;
   int        i;
   atom_id    *index,*ifit;
+  real       *eigval;
+  
   int        nfit;
   int ev_class; /* parameter _class i.e. evMON, evRADFIX etc. */
   int nvecs;
@@ -579,7 +581,7 @@ int main(int argc,char *argv[])
  
   /*read eigenvectors from eigvec.trr*/
   read_eigenvectors(opt2fn("-v",NFILE,fnm),&natoms,&bFit1,
-          &xref1,&edi_params.selmas,&xav1,&bDMA1,&nvec1,&eignr1,&eigvec1);
+          &xref1,&edi_params.selmas,&xav1,&bDMA1,&nvec1,&eignr1,&eigvec1,&eigval);
 
   bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),
                title,&top,&xtop,NULL,topbox,0);

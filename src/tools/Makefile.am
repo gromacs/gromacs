@@ -15,7 +15,7 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	autocorr.c 	expfit.c 	polynomials.c 	levenmar.c	\
 	anadih.c 	pp2shift.c 	pp2shift.h 	dlist.c		\
 	eigio.c		lsq.c		cmat.c 		cmat.h		\
-	ql77.c 		ql77.h		nsc.c 		nsc.h		\
+	eigensolver.c   eigensolver.h	nsc.c 		nsc.h		\
 	hxprops.c 	hxprops.h 	fitahx.c 	fitahx.h	\
 	gmx_analyze.c	gmx_anaeig.c	gmx_angle.c	gmx_bond.c	\
 	gmx_bundle.c	gmx_chi.c	gmx_cluster.c	gmx_confrms.c	\
@@ -28,13 +28,13 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	gmx_rdf.c	gmx_rms.c	gmx_rmsdist.c	gmx_rmsf.c	\
 	gmx_rotacf.c	gmx_saltbr.c	gmx_sas.c	gmx_sgangle.c	\
 	gmx_sorient.c 	gmx_tcaf.c	gmx_traj.c	gmx_velacc.c	\
-	gmx_clustsize.c	gmx_mdmat.c	gmx_wham.c	eigio.h		\
-	correl.h
+	gmx_clustsize.c	gmx_mdmat.c	gmx_wham.c	gmx_nmtraj.c	\
+	eigio.h		correl.h
 
 
 bin_PROGRAMS = \
 	average		do_dssp		editconf	eneconv		\
-	genbox		genconf		genpr		\
+	genbox		genconf		genpr		g_nmtraj	\
 	make_ndx	mk_angndx	trjcat		trjconv        	\
 	trjorder	wheel		xpm2ps		genion		\
 	anadock		cdist		disco           make_edi	\
@@ -57,7 +57,7 @@ genbox_SOURCES       = 	genbox.c addconf.c addconf.h
 genion_SOURCES       = 	genion.c calcpot.c calcpot.h edittop.c
 cdist_SOURCES        =  cdist.c smooth.c bondlist.c residues.c cdist.h
 disco_SOURCES        =  disco.c correct.c discopar.c dtools.c disco.h
-anadock_SOURCES	     =  anadock.c  
+
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 	../gmxlib/libgmx@LIBSUFFIX@.la

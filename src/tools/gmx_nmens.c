@@ -58,33 +58,6 @@
 #include "random.h"
 #include "eigio.h"
 
-int read_eigval(char *fn,int nmax,real eigval[])
-{
-  FILE *fp;
-  char line[STRLEN];
-  int  n,num;
-  double dbl;
-  bool bEndOfSet;
-
-  n=0;
-  fp = ffopen(fn,"r");
-  bEndOfSet = FALSE;
-  while (fgets(line,STRLEN-1,fp) && !bEndOfSet) {
-    bEndOfSet = (line[0] == '&');
-    if ((line[0] != '#') && (line[0] != '@') && !bEndOfSet) {
-      if ((sscanf(line,"%d %lf",&num,&dbl) != 2) || ((num < 1) || (num > nmax)))
-fprintf(stderr,"Invalid line in %s: '%s'\n",fn,line);
-      else {
-	eigval[num-1] = dbl;
-	n++;
-      }
-    }
-  }
-  fclose(fp);
-  
-  return n;
-}
-
 int gmx_nmens(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -128,6 +101,8 @@ int gmx_nmens(int argc,char *argv[])
   int        nout,*iout,noutvec,*outvec;
   atom_id    *index;
   real       rfac,invfr,rhalf,jr;
+  int *      eigvalnr;
+  
   unsigned long      jran;
   const unsigned long im = 0xffff;
   const unsigned long ia = 1093;
@@ -149,7 +124,7 @@ int gmx_nmens(int argc,char *argv[])
   indexfile=ftp2fn_null(efNDX,NFILE,fnm);
 
   read_eigenvectors(opt2fn("-v",NFILE,fnm),&natoms,&bFit,
-		    &xref,&bDMR,&xav,&bDMA,&nvec,&eignr,&eigvec);
+		    &xref,&bDMR,&xav,&bDMA,&nvec,&eignr,&eigvec,&eigval);
 
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,box,bDMA);
   atoms=&top.atoms;
@@ -161,10 +136,6 @@ int gmx_nmens(int argc,char *argv[])
 		i,natoms);
   printf("\n");
   
-  snew(eigval,DIM*natoms);
-  neigval=read_eigval(ftp2fn(efXVG,NFILE,fnm),DIM*natoms,eigval);
-  fprintf(stderr,"Read %d eigenvalues\n",neigval);
-
   snew(invsqrtm,natoms);
   if (bDMA) {
     for(i=0; (i<natoms); i++)
@@ -175,38 +146,45 @@ int gmx_nmens(int argc,char *argv[])
   }
   
   if (last==-1)
-    last=natoms*DIM;
-  if (first>-1) {
-    /* make an index from first to last */
-    nout=last-first+1;
-    snew(iout,nout);
-    for(i=0; i<nout; i++)
-      iout[i]=first-1+i;
-  } else {
-    printf("Select eigenvectors for output, end your selection with 0\n");
-    nout=-1;
-    iout=NULL;
-    do {
-      nout++;
-      srenew(iout,nout+1);
-      scanf("%d",&iout[nout]);
-      iout[nout]--;
-    } while (iout[nout]>=0);
-    printf("\n");
+      last=natoms*DIM;
+  if (first>-1) 
+  {
+      /* make an index from first to last */
+      nout=last-first+1;
+      snew(iout,nout);
+      for(i=0; i<nout; i++)
+          iout[i]=first-1+i;
   }
+  else 
+  {
+      printf("Select eigenvectors for output, end your selection with 0\n");
+      nout=-1;
+      iout=NULL;
+      do {
+          nout++;
+          srenew(iout,nout+1);
+          scanf("%d",&iout[nout]);
+          iout[nout]--;
+      } while (iout[nout]>=0);
+      printf("\n");
+  }
+  
   /* make an index of the eigenvectors which are present */
   snew(outvec,nout);
   noutvec=0;
-  for(i=0; i<nout; i++) {
-    j=0;
-    while ((j<nvec) && (eignr[j]!=iout[i]))
-      j++;
-    if ((j<nvec) && (eignr[j]==iout[i])) {
-      outvec[noutvec] = j;
-      iout[noutvec] = iout[i];
-      noutvec++;
-    }
+  for(i=0; i<nout; i++)
+  {
+      j=0;
+      while ((j<nvec) && (eignr[j]!=iout[i]))
+          j++;
+      if ((j<nvec) && (eignr[j]==iout[i]))
+      {
+          outvec[noutvec] = j;
+          iout[noutvec] = iout[i];
+          noutvec++;
+      }
   }
+  
   fprintf(stderr,"%d eigenvectors selected for output\n",noutvec);
 
   if (seed == -1)
@@ -240,11 +218,11 @@ int gmx_nmens(int argc,char *argv[])
       disp = rfac * jr - rhalf;
       
       for(i=0; i<natoms; i++)
-	for(d=0; d<DIM; d++)
-	  xout1[i][d] += disp*eigvec[v][i][d]*invsqrtm[i];
+          for(d=0; d<DIM; d++)
+              xout1[i][d] += disp*eigvec[v][i][d]*invsqrtm[i];
     }
     for(i=0; i<natoms; i++)
-      copy_rvec(xout1[i],xout2[index[i]]);
+        copy_rvec(xout1[i],xout2[index[i]]);
     t = s+1;
     write_trx(out,natoms,index,atoms,0,t,box,xout2,NULL);
     fprintf(stderr,"\rGenerated %d structures",s+1);

@@ -54,7 +54,7 @@
 #include "xvgr.h"
 #include "futil.h"
 #include "matio.h"
-#include "ql77.h"
+#include "eigensolver.h"
 #include "cmat.h"
 #include "do_fit.h"
 #include "trnio.h"
@@ -1017,7 +1017,8 @@ int gmx_cluster(int argc,char *argv[])
   t_topology   top;
   t_atoms      useatoms;
   t_matrix     *readmat;
-
+  real         *tmp;
+  
   int      isize=0,ifsize=0,iosize=0;
   atom_id  *index=NULL, *fitidx, *outidx;
   char     *grpname;
@@ -1326,14 +1327,18 @@ int gmx_cluster(int argc,char *argv[])
     break;
   case m_diagonalize:
     /* Do a diagonalization */
-    snew(eigval,nf);
-    ql77(nf,rms->mat[0],eigval); 
-    fp = xvgropen(opt2fn("-ev",NFILE,fnm),"RMSD matrix Eigenvalues",
-		  "Eigenvector index","Eigenvalues (nm\\S2\\N)");
-    for(i=0; (i<nf); i++)
-      fprintf(fp,"%10d  %10g\n",i,eigval[i]);
-    ffclose(fp);
-    break;
+      snew(eigval,nf);
+      snew(tmp,nf*nf);
+      memcpy(tmp,rms->mat[0],nf*nf*sizeof(real));
+      eigensolver(tmp,nf,0,nf,eigval,rms->mat[0]);
+      sfree(tmp);
+      
+      fp = xvgropen(opt2fn("-ev",NFILE,fnm),"RMSD matrix Eigenvalues",
+                    "Eigenvector index","Eigenvalues (nm\\S2\\N)");
+      for(i=0; (i<nf); i++)
+          fprintf(fp,"%10d  %10g\n",i,eigval[i]);
+          ffclose(fp);
+      break;
   case m_monte_carlo:
     mc_optimize(log,rms,niter,&seed,kT);
     swap_mat(rms);

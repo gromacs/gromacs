@@ -154,43 +154,41 @@ static void write_xvgr_graphs(char *file, int ngraphs, int nsetspergraph,
   fclose(out);
 }
 
-static void compare(int natoms,int n1,rvec **eigvec1,int n2,rvec **eigvec2,
-		    char *Eig1File,char *Eig2File)
+static void 
+compare(int natoms,int n1,rvec **eigvec1,int n2,rvec **eigvec2,
+        real *eigval1, int neig1, real *eigval2, int neig2)
 {
-  int    n,neig1,neig2,nrow;
-  real   **eig1,**eig2;
+  int    n,nrow;
   int    i,j,k;
   double sum1,sum2,trace1,trace2,sab,samsb2,tmp,ip;  
 
   n = min(n1,n2);
 
-  neig1 = read_xvg(Eig1File,&eig1,&nrow);
-  neig2 = read_xvg(Eig2File,&eig2,&nrow);
-  fprintf(stdout,"\nRead %d and %d eigenvalues\n",neig1,neig2);
   n = min(n,min(neig1,neig2));
-  fprintf(stdout,"Will compare the covariance matrices using %d dimensions\n",
-	  n);
+  fprintf(stdout,"Will compare the covariance matrices using %d dimensions\n",n);
 
   sum1 = 0;
-  for(i=0; i<n; i++) {
-    if (eig1[1][i] < 0)
-      eig1[1][i] = 0;
-    sum1 += eig1[1][i];
-    eig1[1][i] = sqrt(eig1[1][i]);
+  for(i=0; i<n; i++) 
+  {
+      if (eigval1[i] < 0)
+          eigval1[i] = 0;
+      sum1 += eigval1[i];
+      eigval1[i] = sqrt(eigval1[i]);
   }
   trace1 = sum1;
   for(i=n; i<neig1; i++)
-    trace1 += eig1[1][i];
+      trace1 += eigval1[i];
   sum2 = 0;
-  for(i=0; i<n; i++) {
-    if (eig2[1][i] < 0)
-      eig2[1][i] = 0;
-    sum2 += eig2[1][i];
-    eig2[1][i] = sqrt(eig2[1][i]);
+  for(i=0; i<n; i++) 
+  {
+    if (eigval2[i] < 0)
+        eigval2[i] = 0;
+    sum2 += eigval2[i];
+    eigval2[i] = sqrt(eigval2[i]);
   }
   trace2 = sum2;
   for(i=n; i<neig2; i++)
-    trace2 += eig1[1][i];
+    trace2 += eigval2[i];
 
   fprintf(stdout,"Trace of the two matrices: %g and %g\n",sum1,sum2);
   if (neig1!=n || neig2!=n)
@@ -200,28 +198,31 @@ static void compare(int natoms,int n1,rvec **eigvec1,int n2,rvec **eigvec2,
 	  sqrt(sum1),sqrt(sum2));
 
   sab = 0;
-  for(i=0; i<n; i++) {
+  for(i=0; i<n; i++) 
+  {
     tmp = 0;
-    for(j=0; j<n; j++) {
+    for(j=0; j<n; j++)
+    {
       ip = 0;
       for(k=0; k<natoms; k++)
-	ip += iprod(eigvec1[i][k],eigvec2[j][k]);
-      tmp += eig2[1][j]*ip*ip;
+          ip += iprod(eigvec1[i][k],eigvec2[j][k]);
+      tmp += eigval2[j]*ip*ip;
     }
-    sab += eig1[1][i]*tmp;
+    sab += eigval1[i]*tmp;
   }
-
+  
   samsb2 = sum1+sum2-2*sab;
   if (samsb2 < 0)
-    samsb2 = 0;
+      samsb2 = 0;
 
   fprintf(stdout,"The overlap of the covariance matrices:\n");
   fprintf(stdout,"  normalized:  %.3f\n",1-sqrt(samsb2/(sum1+sum2)));
   tmp = 1-sab/sqrt(sum1*sum2);
   if (tmp < 0)
-    tmp = 0;
+      tmp = 0;
   fprintf(stdout,"       shape:  %.3f\n",1-sqrt(tmp));
 }
+
 
 static void inprod_matrix(char *matfile,int natoms,
 			  int nvec1,int *eignr1,rvec **eigvec1,
@@ -623,20 +624,19 @@ static void components(char *outfile,int natoms,
   fprintf(stderr,"\n");
 }
 
-static void rmsf(char *outfile,int natoms,real *sqrtm,
-		 int *eignr,rvec **eigvec,
-		 int noutvec,int *outvec,
-		 char *EigFile)
+static void 
+rmsf(char *outfile,int natoms,real *sqrtm,
+     int *eignr,rvec **eigvec,
+     int noutvec,int *outvec,
+     real *eigval, int neig)
 {
-  int  neig,nrow,g,v,i;
-  real **eigval,*x,**y;
-  char str[STRLEN],**ylabel;
+  int   nrow,g,v,i;
+  real  *x,**y;
+  char  str[STRLEN],**ylabel;
   
-  neig = read_xvg(EigFile,&eigval,&nrow);
-  fprintf(stderr,"Read %d eigenvalues\n",neig);
   for(i=0; i<neig; i++)
-    if (eigval[1][i] < 0)
-      eigval[1][i] = 0;
+      if (eigval[i] < 0)
+          eigval[i] = 0;
 
   fprintf(stderr,"Writing rmsf to %s\n",outfile);
 
@@ -644,20 +644,20 @@ static void rmsf(char *outfile,int natoms,real *sqrtm,
   snew(y,noutvec);
   snew(x,natoms);
   for(i=0; i<natoms; i++)
-    x[i]=i+1;
+      x[i]=i+1;
   for(g=0; g<noutvec; g++) {
-    v=outvec[g];
-    if (eignr[v] >= neig)
-      gmx_fatal(FARGS,"Selected vector %d is larger than the number of eigenvalues (%d)",eignr[v]+1,neig);
-    sprintf(str,"vec %d",eignr[v]+1);
-    ylabel[g]=strdup(str);
-    snew(y[g],natoms);
-    for(i=0; i<natoms; i++)
-      y[g][i] = sqrt(eigval[1][eignr[v]]*norm2(eigvec[v][i]))/sqrtm[i];
+      v=outvec[g];
+      if (eignr[v] >= neig)
+          gmx_fatal(FARGS,"Selected vector %d is larger than the number of eigenvalues (%d)",eignr[v]+1,neig);
+      sprintf(str,"vec %d",eignr[v]+1);
+      ylabel[g]=strdup(str);
+      snew(y[g],natoms);
+      for(i=0; i<natoms; i++)
+          y[g][i] = sqrt(eigval[eignr[v]]*norm2(eigvec[v][i]))/sqrtm[i];
   }
   write_xvgr_graphs(outfile,noutvec,1,"RMS fluctuation (nm) ",NULL,
-		    "Atom number",ylabel,
-		    natoms,x,y,NULL,1,TRUE,FALSE);
+                    "Atom number",ylabel,
+                    natoms,x,y,NULL,1,TRUE,FALSE);
   fprintf(stderr,"\n");
 }
 
@@ -776,7 +776,10 @@ int gmx_anaeig(int argc,char *argv[])
   char       *OverlapFile,*InpMatFile;
   bool       bFit1,bFit2,bM,bIndex,bTPS,bTop,bVec2,bProj;
   bool       bFirstToLast,bFirstLastSet,bTraj,bCompare,bPDB3D;
-
+  real       *eigval1,*eigval2;
+  int        neig1,neig2;
+  real       **xvgdata;
+  
   t_filenm fnm[] = { 
     { efTRN, "-v",    "eigenvec",    ffREAD  },
     { efTRN, "-v2",   "eigenvec2",   ffOPTRD },
@@ -805,7 +808,7 @@ int gmx_anaeig(int argc,char *argv[])
 
   Vec2File        = opt2fn_null("-v2",NFILE,fnm);
   topfile         = ftp2fn(efTPS,NFILE,fnm); 
-  EigFile         = opt2fn("-eig",NFILE,fnm);
+  EigFile         = opt2fn_null("-eig",NFILE,fnm);
   Eig2File        = opt2fn_null("-eig2",NFILE,fnm);
   CompFile        = opt2fn_null("-comp",NFILE,fnm);
   RmsfFile        = opt2fn_null("-rmsf",NFILE,fnm);
@@ -816,6 +819,7 @@ int gmx_anaeig(int argc,char *argv[])
   ExtremeFile     = opt2fn_null("-extr",NFILE,fnm);
   OverlapFile     = opt2fn_null("-over",NFILE,fnm);
   InpMatFile      = ftp2fn_null(efXPM,NFILE,fnm);
+  
   bTop   = fn2bTPX(topfile);
   bProj  = ProjOnVecFile || TwoDPlotFile || ThreeDPlotFile 
     || FilterFile || ExtremeFile;
@@ -830,18 +834,48 @@ int gmx_anaeig(int argc,char *argv[])
   bIndex = bM || bProj;
   bTPS   = ftp2bSet(efTPS,NFILE,fnm) || bM || bTraj ||
     FilterFile  || (bIndex && indexfile);
-  bCompare = Vec2File && Eig2File;
+  bCompare = Vec2File || Eig2File;
   bPDB3D = fn2ftp(ThreeDPlotFile)==efPDB;
 
   read_eigenvectors(opt2fn("-v",NFILE,fnm),&natoms,&bFit1,
-		    &xref1,&bDMR1,&xav1,&bDMA1,&nvec1,&eignr1,&eigvec1);
-  if (bVec2) {
-    read_eigenvectors(Vec2File,&i,&bFit2,
-		      &xref2,&bDMR2,&xav2,&bDMA2,&nvec2,&eignr2,&eigvec2);
-    if (i!=natoms)
-      gmx_fatal(FARGS,"Dimensions in the eigenvector files don't match");
-  }
+                    &xref1,&bDMR1,&xav1,&bDMA1,&nvec1,&eignr1,&eigvec1,&eigval1);
+  neig1=natoms;
+  
+  if (bVec2)
+  {
+    read_eigenvectors(Vec2File,&neig2,&bFit2,
+		      &xref2,&bDMR2,&xav2,&bDMA2,&nvec2,&eignr2,&eigvec2,&eigval2);
 
+      if (neig2!=natoms)
+          gmx_fatal(FARGS,"Dimensions in the eigenvector files don't match");
+  }
+  
+  /* Overwrite eigenvalues from separate files if the user provides them */
+  if(EigFile != NULL)
+  {
+      neig1 = read_xvg(EigFile,&xvgdata,&i);
+      srenew(eigval1,neig1);
+      for(j=0;j<neig1;j++)
+          eigval1[j]=xvgdata[1][j];
+      for(j=0;j<i;j++)
+          sfree(xvgdata[j]);
+      sfree(xvgdata);
+      fprintf(stderr,"Read %d eigenvalues from %s\n",neig1,EigFile);
+  }
+  
+  if(Eig2File != NULL)
+  {
+      neig2 = read_xvg(Eig2File,&xvgdata,&i);
+      srenew(eigval2,neig2);
+      for(j=0;j<neig2;j++)
+          eigval2[j]=xvgdata[1][j];
+      for(j=0;j<i;j++)
+          sfree(xvgdata[j]);
+      sfree(xvgdata);
+      fprintf(stderr,"Read %d eigenvalues from %s\n",neig2,Eig2File);      
+  }
+  
+  
   if ((!bFit1 || xref1) && !bDMR1 && !bDMA1) 
     bM=FALSE;
   if ((xref1==NULL) && (bM || bTraj))
@@ -859,167 +893,195 @@ int gmx_anaeig(int argc,char *argv[])
     atoms=&top.atoms;
     rm_pbc(&(top.idef),atoms->nr,topbox,xtop,xtop);
     /* Fitting is only needed when we need to read a trajectory */ 
-    if (bTraj) {
-      if ((xref1==NULL) || (bM && bDMR1)) {
-	if (bFit1) {
-	  printf("\nNote: the structure in %s should be the same\n"
-		 "      as the one used for the fit in g_covar\n",topfile);
-	  printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
-	  get_index(atoms,indexfile,1,&nfit,&ifit,&grpname);
-	  snew(w_rls,atoms->nr);
-	  for(i=0; (i<nfit); i++)
-	    if (bM && bDMR1)
-	      w_rls[ifit[i]]=atoms->atom[ifit[i]].m;
-	    else
-	      w_rls[ifit[i]]=1.0;
-	}
-	else {
-	  /* make the fit index in xref instead of xtop */
-	  nfit=natoms;
-	  snew(ifit,natoms);
-	  snew(w_rls,nfit);
-	  for(i=0; (i<nfit); i++) {
-	    ifit[i]=i;
-	    w_rls[i]=atoms->atom[ifit[i]].m;
-	  }
-	}
+    if (bTraj) 
+    {
+      if ((xref1==NULL) || (bM && bDMR1)) 
+      {
+          if (bFit1)
+          {
+              printf("\nNote: the structure in %s should be the same\n"
+                     "      as the one used for the fit in g_covar\n",topfile);
+              printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
+              get_index(atoms,indexfile,1,&nfit,&ifit,&grpname);
+              snew(w_rls,atoms->nr);
+              for(i=0; (i<nfit); i++)
+              {
+                  if (bM && bDMR1)
+                      w_rls[ifit[i]]=atoms->atom[ifit[i]].m;
+                  else
+                      w_rls[ifit[i]]=1.0;
+              }
+          }
+          else 
+          {
+              /* make the fit index in xref instead of xtop */
+              nfit=natoms;
+              snew(ifit,natoms);
+              snew(w_rls,nfit);
+              for(i=0; (i<nfit); i++) 
+              {
+                  ifit[i]=i;
+                  w_rls[i]=atoms->atom[ifit[i]].m;
+              }
+          }
       }
-      else {
-	/* make the fit non mass weighted on xref */
-	nfit=natoms;
-	snew(ifit,nfit);
-	snew(w_rls,nfit);
-	for(i=0; i<nfit; i++) {
-	  ifit[i]=i;
-	  w_rls[i]=1.0;
-	}
+      else 
+      {
+          /* make the fit non mass weighted on xref */
+          nfit=natoms;
+          snew(ifit,nfit);
+          snew(w_rls,nfit);
+          for(i=0; i<nfit; i++) 
+          {
+              ifit[i]=i;
+              w_rls[i]=1.0;
+          }
       }
     }
   }
 
-  if (bIndex) {
-    printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n",natoms);
-    get_index(atoms,indexfile,1,&i,&index,&grpname);
-    if (i!=natoms)
-      gmx_fatal(FARGS,"you selected a group with %d elements instead of %d",
-		  i,natoms);
-    printf("\n");
-  }
-
-  snew(sqrtm,natoms);
-  if (bM && bDMA1) {
-    proj_unit="u\\S1/2\\Nnm";
-    for(i=0; (i<natoms); i++)
-      sqrtm[i]=sqrt(atoms->atom[index[i]].m);
-  } else {
-    proj_unit="nm";
-    for(i=0; (i<natoms); i++)
-      sqrtm[i]=1.0;
+  if (bIndex) 
+  {
+      printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n",natoms);
+      get_index(atoms,indexfile,1,&i,&index,&grpname);
+      if (i!=natoms)
+          gmx_fatal(FARGS,"you selected a group with %d elements instead of %d",i,natoms);
+      printf("\n");
   }
   
-  if (bVec2) {
-    t=0;
-    totmass=0;
-    for(i=0; (i<natoms); i++)
-      for(d=0;(d<DIM);d++) {
-	t+=sqr((xav1[i][d]-xav2[i][d])*sqrtm[i]);
-	totmass+=sqr(sqrtm[i]);
-      }
-    fprintf(stdout,"RMSD (without fit) between the two average structures:"
-	    " %.3f (nm)\n\n",sqrt(t/totmass));
+  snew(sqrtm,natoms);
+  if (bM && bDMA1) 
+  {
+      proj_unit="u\\S1/2\\Nnm";
+      for(i=0; (i<natoms); i++)
+          sqrtm[i]=sqrt(atoms->atom[index[i]].m);
+  }
+  else 
+  {
+      proj_unit="nm";
+      for(i=0; (i<natoms); i++)
+          sqrtm[i]=1.0;
+  }
+  
+  if (bVec2) 
+  {
+      t=0;
+      totmass=0;
+      for(i=0; (i<natoms); i++)
+          for(d=0;(d<DIM);d++) 
+          {
+              t+=sqr((xav1[i][d]-xav2[i][d])*sqrtm[i]);
+              totmass+=sqr(sqrtm[i]);
+          }
+              fprintf(stdout,"RMSD (without fit) between the two average structures:"
+                      " %.3f (nm)\n\n",sqrt(t/totmass));
   }
   
   if (last==-1)
-    last=natoms*DIM;
-  if (first>-1) {
-    if (bFirstToLast) {
-      /* make an index from first to last */
-      nout=last-first+1;
-      snew(iout,nout);
-      for(i=0; i<nout; i++)
-	iout[i]=first-1+i;
-    } else if (ThreeDPlotFile) {
-      /* make an index of first+(0,1,2) and last */
-      nout = bPDB3D ? 4 : 3;
-      nout = min(last-first+1, nout);
-      snew(iout,nout);
-      iout[0]=first-1;
-      iout[1]=first;
-      if (nout>3)
-	iout[2]=first+1;
-      iout[nout-1]=last-1;
-    } else {
-      /* make an index of first and last */
-      nout=2;
-      snew(iout,nout);
-      iout[0]=first-1;
-      iout[1]=last-1;
-    }
+      last=natoms*DIM;
+  if (first>-1) 
+  {
+      if (bFirstToLast) 
+      {
+          /* make an index from first to last */
+          nout=last-first+1;
+          snew(iout,nout);
+          for(i=0; i<nout; i++)
+              iout[i]=first-1+i;
+      } 
+      else if (ThreeDPlotFile) 
+      {
+          /* make an index of first+(0,1,2) and last */
+          nout = bPDB3D ? 4 : 3;
+          nout = min(last-first+1, nout);
+          snew(iout,nout);
+          iout[0]=first-1;
+          iout[1]=first;
+          if (nout>3)
+              iout[2]=first+1;
+          iout[nout-1]=last-1;
+      }
+      else 
+      {
+          /* make an index of first and last */
+          nout=2;
+          snew(iout,nout);
+          iout[0]=first-1;
+          iout[1]=last-1;
+      }
   }
-  else {
-    printf("Select eigenvectors for output, end your selection with 0\n");
-    nout=-1;
-    iout=NULL;
-    do {
-      nout++;
-      srenew(iout,nout+1);
-      scanf("%d",&iout[nout]);
-      iout[nout]--;
-    } while (iout[nout]>=0);
-    printf("\n");
+  else
+  {
+      printf("Select eigenvectors for output, end your selection with 0\n");
+      nout=-1;
+      iout=NULL;
+
+      do 
+      {
+          nout++;
+          srenew(iout,nout+1);
+          scanf("%d",&iout[nout]);
+          iout[nout]--;
+      }
+      while (iout[nout]>=0);
+      
+      printf("\n");
   }
   /* make an index of the eigenvectors which are present */
   snew(outvec,nout);
   noutvec=0;
-  for(i=0; i<nout; i++) {
-    j=0;
-    while ((j<nvec1) && (eignr1[j]!=iout[i]))
-      j++;
-    if ((j<nvec1) && (eignr1[j]==iout[i])) {
-      outvec[noutvec]=j;
-      noutvec++;
-    }
+  for(i=0; i<nout; i++) 
+  {
+      j=0;
+      while ((j<nvec1) && (eignr1[j]!=iout[i]))
+          j++;
+      if ((j<nvec1) && (eignr1[j]==iout[i])) 
+      {
+          outvec[noutvec]=j;
+          noutvec++;
+      }
   }
   fprintf(stderr,"%d eigenvectors selected for output",noutvec);
-  if (noutvec <= 100) {
-    fprintf(stderr,":");
-    for(j=0; j<noutvec; j++)
-      fprintf(stderr," %d",eignr1[outvec[j]]+1);
+  if (noutvec <= 100) 
+  {
+      fprintf(stderr,":");
+      for(j=0; j<noutvec; j++)
+          fprintf(stderr," %d",eignr1[outvec[j]]+1);
   }
   fprintf(stderr,"\n");
   
   if (CompFile)
-    components(CompFile,natoms,eignr1,eigvec1,noutvec,outvec);
-
+      components(CompFile,natoms,eignr1,eigvec1,noutvec,outvec);
+  
   if (RmsfFile)
-    rmsf(RmsfFile,natoms,sqrtm,eignr1,eigvec1,noutvec,outvec,EigFile);
-
+      rmsf(RmsfFile,natoms,sqrtm,eignr1,eigvec1,noutvec,outvec,eigval1,neig1);
+  
   if (bProj)
-    project(bTraj ? opt2fn("-f",NFILE,fnm) : NULL,
-	    bTop ? &top : NULL,topbox,xtop,
-	    ProjOnVecFile,TwoDPlotFile,ThreeDPlotFile,FilterFile,skip,
-	    ExtremeFile,bFirstLastSet,max,nextr,atoms,natoms,index,
-	    bFit1,xref1,nfit,ifit,w_rls,
-	    sqrtm,xav1,eignr1,eigvec1,noutvec,outvec,bSplit);
+      project(bTraj ? opt2fn("-f",NFILE,fnm) : NULL,
+              bTop ? &top : NULL,topbox,xtop,
+              ProjOnVecFile,TwoDPlotFile,ThreeDPlotFile,FilterFile,skip,
+              ExtremeFile,bFirstLastSet,max,nextr,atoms,natoms,index,
+              bFit1,xref1,nfit,ifit,w_rls,
+              sqrtm,xav1,eignr1,eigvec1,noutvec,outvec,bSplit);
   
   if (OverlapFile)
-    overlap(OverlapFile,natoms,
-	    eigvec1,nvec2,eignr2,eigvec2,noutvec,outvec);
+      overlap(OverlapFile,natoms,
+              eigvec1,nvec2,eignr2,eigvec2,noutvec,outvec);
   
   if (InpMatFile)
-    inprod_matrix(InpMatFile,natoms,
-		  nvec1,eignr1,eigvec1,nvec2,eignr2,eigvec2,
-		  bFirstLastSet,noutvec,outvec);
-
+      inprod_matrix(InpMatFile,natoms,
+                    nvec1,eignr1,eigvec1,nvec2,eignr2,eigvec2,
+                    bFirstLastSet,noutvec,outvec);
+  
   if (bCompare)
-    compare(natoms,nvec1,eigvec1,nvec2,eigvec2,EigFile,Eig2File);
-
+      compare(natoms,nvec1,eigvec1,nvec2,eigvec2,eigval1,neig1,eigval2,neig2);
+  
   if (!CompFile && !bProj && !OverlapFile && !InpMatFile && !bCompare)
-    fprintf(stderr,"\nIf you want some output,"
-	    " set one (or two or ...) of the output file options\n");
-
+      fprintf(stderr,"\nIf you want some output,"
+              " set one (or two or ...) of the output file options\n");
+  
   view_all(NFILE, fnm);
-
+  
   return 0;
 }
   
