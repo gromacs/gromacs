@@ -9,7 +9,7 @@
 #
 # 	See README file for info
 #
-SYSDEFS		= -DHAVE_ULONG -DNO_NICE -DPARALLEL -DC_INVSQRT -DFINVSQRT -DDOUBLE
+SYSDEFS		= -DHAVE_ULONG -DNO_NICE -DPARALLEL -DCINVSQRT -DFINVSQRT -DDOUBLE
 
 # IBM C compilers
 CC              = xlc
@@ -18,7 +18,7 @@ F77             = xlf
 CFLAGS          = -O3 -qarch=pwr2 -qtune=pwr2 -langlvl=ansi -qmaxmem=16384 
 -qfloat=hsflt
 CCFLAGS         = -O3 -qarch=pwr2 -qtune=pwr2 -qmaxmem=16384 
-FFLAGS          = -O4 -qarch=pwr2 -qtune=pwr2 -qmaxmem=16384 -qfloat=hsflt -qhot -qrealsize=8
+FFLAGS          = -O4 -Q -qarch=pwr2 -qtune=pwr2 -qmaxmem=16384 -qhot -qrealsize=8 -qextname
 
 # Generic linking stuff
 LDFLAGS		= -L$(LIBDIR)
@@ -45,7 +45,7 @@ USEF77		= yes
 # set both to no. If you select both, something will break!!!
 #
 USE_PVM3	= no
-USE_MPI		= yes
+USE_MPI		= no
 #
 # If you want to use compressed data files set this to yes
 # This uses the xdr libraries of your UNIX system, which is virtually
