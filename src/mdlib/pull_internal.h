@@ -64,8 +64,7 @@ extern void put_dvec_in_box(matrix box,dvec v);
 /* print to output file for the various types of runs */
 extern void print_umbrella(t_pull *pull, int step, real t);
 extern void print_afm(t_pull *pull, int step, real t);
-extern void print_constraint(t_pull *pull,rvec *force,int step,matrix box,
-                             int niter);
+extern void print_constraint(t_pull *pull, int step, real t);
 
 
 /* calculate center of mass of index group, making sure it's inside the box,

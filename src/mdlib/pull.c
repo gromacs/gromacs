@@ -182,8 +182,8 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
   bool bConverged = FALSE;
   int n=0,i,ii,j,m,max_iter=1000;
   int ref;
-  double x1,x2,q,a,b,c;  /* for solving the quadratic equation, 
-                            see Num. Recipes in C ed 2 p. 184 */
+  double q,a,b,c;  /* for solving the quadratic equation, 
+		      see Num. Recipes in C ed 2 p. 184 */
   dvec *dr;              /* correction for group i */
   dvec *ref_dr;          /* correction for group j */
   dvec tmp,tmp2,tmp3,sum;
@@ -219,7 +219,7 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
     for(i=0; i<pull->ngrp; i++) {
 
       if(pull->bVerbose)
-        fprintf(stderr,"group %d, iteration %d\n",i,n);
+        fprintf(stderr,"\ngroup %d, iteration %d",i,n);
 
       if(pull->bCyl) {
         d_pbc_dx(box,pull->grp[i].x_con,pull->dyna[i].x_con,r_ij);
@@ -256,17 +256,17 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
 	b = diprod(unc_ij,r_ij)*2;
 	c = diprod(unc_ij,unc_ij) - sqr(dnorm(ref_ij) + refinc);
 	
-	if (b < 0)
-	  q = 0.5*(b - sqrt(b*b - 4*a*c));
-	else
-	  q = 0.5*(b + sqrt(b*b - 4*a*c));
-	x1 = q/a; x2 = c/q;
-	lambda = x1 > 0 ? x1 : x2;
-	
+	if (b < 0) {
+	  q = -0.5*(b - sqrt(b*b - 4*a*c));
+	  lambda = -q/a;
+	} else {
+	  q = -0.5*(b + sqrt(b*b - 4*a*c));
+	  lambda = -c/q;
+	}
+
 	if(pull->bVerbose)
-	  fprintf(stderr,"\nax^2+bx+c=0: a=%e b=%e c=%e\n"
-		  "x1=%e x2=%e sum:%e,%e, lambda:%e\n",a,b,c,x1,x2,
-		  a*x1*x1+b*x1+c,a*x2*x2+b*x2+c,lambda);
+	  fprintf(stderr,"ax^2+bx+c=0: a=%e b=%e c=%e lambda=%e\n",
+		  a,b,c,lambda);
       }
       
       /* the position corrections dr due to the constraint are: */
@@ -565,7 +565,7 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top,
   case eConstraint:
     /* do the actual constraint calculation */
     do_constraint(pull,x,box,md,dt,step,&niter);
-    print_constraint(pull,f,step,box,niter); 
+    print_constraint(pull,step,step*dt); 
     break;
 
   case eUmbrella:

@@ -74,12 +74,12 @@ void print_afm(t_pull *pull, int step, real t)
   if (step % pull->nSkip) return;
   
   /* Print time */
-  fprintf(pull->out, "%f\t", t);
+  fprintf(pull->out, "%f", t);
   
   /* Print COM of reference group */
   for(j=0; j<DIM; ++j) {
     if(pull->dims[j] != 0.0) {
-      fprintf(pull->out, "%f\t", pull->ref.x_unc[j]);
+      fprintf(pull->out, "\t%f", pull->ref.x_unc[j]);
     }
   }
   
@@ -87,7 +87,7 @@ void print_afm(t_pull *pull, int step, real t)
   for (i=0;i<pull->ngrp;i++) {
     for (j=0;j<3;++j) {
       if (pull->dims[j] != 0.0) {
-	fprintf(pull->out,"%f\t%f\t",
+	fprintf(pull->out,"\t%f\t%f",
 		pull->grp[i].x_unc[j],pull->grp[i].spring[j]);
       }
     }
@@ -95,53 +95,19 @@ void print_afm(t_pull *pull, int step, real t)
   fprintf(pull->out,"\n");
 }
 
-void print_constraint(t_pull *pull, rvec *f, int step, matrix box, int niter) 
+void print_constraint(t_pull *pull, int step, real t) 
 {
-  int i,ii,m; 
-  dvec tmp,tmp2,tmp3;
+  int i;
 
   if (step % pull->nSkip) return;
+
+  fprintf(pull->out, "%f\t", t);
+
   for(i=0;i<pull->ngrp;i++) {
-    if (pull->bCyl)
-      d_pbc_dx(box,pull->grp[i].x_con,pull->dyna[i].x_con,tmp);
-    else
-      d_pbc_dx(box,pull->grp[i].x_con,pull->ref.x_con,tmp);
-    for(m=0; m<DIM; m++) {
-      tmp[m] *= pull->dims[m];
-    }
-    if (pull->bVerbose)
-      fprintf(pull->out,"%d:%d ds:%e f:%e n:%d\n", step,i,dnorm(tmp),
-              pull->grp[i].f[ZZ],niter);
-    else
-      fprintf(pull->out,"%e ",pull->grp[i].f[ZZ]);
+    /* Print the constraint force */
+    fprintf(pull->out,"\t%f",pull->grp[i].f[ZZ]);
   }
-
-  if (!pull->bVerbose)
-    fprintf(pull->out,"\n");
-
-  /* DEBUG */ /* this code doesn't correct for pbc, needs improvement */
-  if (pull->bVerbose) {
-    for(i=0;i<pull->ngrp;i++) {
-      if (pull->bCyl)
-        fprintf(pull->out,"eConstraint: step %d. Refgroup = dynamic (%f,%f\n"
-                "Group %d (%s): ref. dist = %8.3f, unconstr. dist = %8.3f"
-                " con. dist = %8.3f f_i = %8.3f\n", step, pull->r,pull->rc,
-                i,pull->grp[i].name,
-                pull->dyna[i].x_ref[ZZ]-pull->grp[i].x_ref[ZZ],
-                pull->dyna[i].x_unc[ZZ]-pull->grp[i].x_unc[ZZ],
-                pull->dyna[i].x_con[ZZ]-pull->grp[i].x_con[ZZ],
-                pull->grp[i].f[ZZ]);
-      else {
-        dvec_sub(pull->ref.x_ref,pull->grp[i].x_ref,tmp);
-        dvec_sub(pull->ref.x_unc,pull->grp[i].x_unc,tmp2);
-        dvec_sub(pull->ref.x_con,pull->grp[i].x_con,tmp3);
-        fprintf(stderr,"grp %d:ref (%8.3f,%8.3f,%8.3f) unc(%8.3f%8.3f%8.3f\n"
-                "con (%8.3f%8.3f%8.3f)\n",i, tmp[0],tmp[1],tmp[2],
-                tmp2[0],tmp2[1],tmp2[2],tmp3[0],tmp3[1],tmp3[2]);
-      }
-    }
-  } /* END DEBUG */
-
+  fprintf(pull->out,"\n");
 }
 
 void print_umbrella(t_pull *pull, int step, real t)
@@ -151,13 +117,13 @@ void print_umbrella(t_pull *pull, int step, real t)
   /* Do we need to do any pulling ? */
   if (step % pull->nSkip) return;
 
-  fprintf(pull->out, "%f\t", t);
+  fprintf(pull->out, "%f", t);
   
   /* Print deviation of pulled group from desired position */
   for (i=0; i<pull->ngrp; ++i) {    /* Loop over pulled groups */
     for (m=0; m<DIM; ++m) {             /* Loop over dimensions */
       if (pull->dims[m] != 0.0) {
-	fprintf(pull->out,"%f\t",-pull->grp[i].spring[m]);
+	fprintf(pull->out,"\t%f",-pull->grp[i].spring[m]);
       }
     }
   }
