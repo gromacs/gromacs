@@ -55,7 +55,7 @@ int shakef(FILE *log,
 	   int natoms,real invmass[],int ncon,
 	   t_iparams ip[],t_iatom *iatom,
 	   real tol,rvec x[],rvec xp[],
-	   real omega,real lambda[])
+	   real omega,bool bFEP,real lambda,real lagr[])
 {
   /*
    *
@@ -103,7 +103,7 @@ int shakef(FILE *log,
   t_iatom *ia;
   rvec    xpij;
   real    *xpi,*xpj,*xij;
-  real    tol2,toler,diff,rpij2,rrpr,acor,xh;
+  real    L1,tol2,toler,diff,rpij2,rrpr,acor,xh;
   bool    ready;
   
   if (!skip) {
@@ -118,8 +118,9 @@ int shakef(FILE *log,
 #endif
   }
 
+  L1    = 1.0-lambda;
   tol2  = 2.0*tol;
-  nit = 0;
+  nit   = 0;
   ready = FALSE;
 
   nindex=0;
@@ -190,7 +191,10 @@ int shakef(FILE *log,
       type  = ia[0];
       xpi   = xp[i];
       xpj   = xp[j];
-      toler = sqr(ip[type].shake.dA);
+      if (bFEP) 
+	toler = sqr(L1*ip[type].shake.dA + lambda*ip[type].shake.dB);
+      else
+	toler = sqr(ip[type].shake.dA);
       diff  = toler;
       rpij2 = 0.0;
       
@@ -216,7 +220,7 @@ int shakef(FILE *log,
       }
       
       acor=(omega*diff)/(rrpr*(invmass[i]+invmass[j])*2.0);
-      lambda[ll] += acor;
+      lagr[ll] += acor;
       for(m=0; (m<DIM); m++) {
 	xh      = xij[m]*acor;
 	xpi[m] += xh*invmass[i];
@@ -242,7 +246,8 @@ int shakef(FILE *log,
 int vec_shakef(FILE *log,
 	       int natoms,real invmass[],int ncon,
 	       t_iparams ip[],t_iatom *iatom,
-	       real tol,rvec x[],rvec xp[],real lambda[])
+	       real tol,rvec x[],rvec xp[],
+	       bool bFEP,real lambda,real lagr[])
 {
   static  rvec *rij=NULL;
   static  real *M2=NULL,*tt=NULL,*dist2=NULL;
@@ -250,7 +255,7 @@ int vec_shakef(FILE *log,
   int     maxnit=1000;
   int     nit,ll,i,j,type;
   t_iatom *ia;
-  real    tol2,toler;
+  real    L1,tol2,toler;
   real    mm;
   int     error;
     
@@ -265,6 +270,7 @@ int vec_shakef(FILE *log,
 #endif
   }
 
+  L1=1.0-lambda;
   tol2=2.0*tol;
   ia=iatom;
   for(ll=0; (ll<ncon); ll++,ia+=3) {
@@ -277,14 +283,17 @@ int vec_shakef(FILE *log,
     rij[ll][YY]=x[i][YY]-x[j][YY];
     rij[ll][ZZ]=x[i][ZZ]-x[j][ZZ];
     M2[ll]=1.0/mm;
-    toler = sqr(ip[type].shake.dA);
+    if (bFEP) 
+      toler = sqr(L1*ip[type].shake.dA + lambda*ip[type].shake.dB);
+    else
+      toler = sqr(ip[type].shake.dA);
     dist2[ll] = toler;
     tt[ll] = 1.0/(toler*tol2);
   }
 
   /* We have a FORTRAN shake now! */  
 #ifdef USEF77
-  fshake(iatom,&ncon,&nit,&maxnit,dist2,xp[0],rij[0],M2,invmass,tt,lambda,
+  fshake(iatom,&ncon,&nit,&maxnit,dist2,xp[0],rij[0],M2,invmass,tt,lagr,
 	 &error);
 #else
   /* And a c shake also ! */
@@ -332,7 +341,7 @@ static void check_cons(FILE *log,int nc,rvec x[],rvec xp[],
 
 int bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
 	    t_idef *idef,t_inputrec *ir,matrix box,rvec x_s[],rvec xp[],
-	    t_nrnb *nrnb,real *dvdlambda)
+	    t_nrnb *nrnb,real lambda,real *dvdlambda)
 {
   static  bool bFirst=TRUE;
   static  bool bSafe;
@@ -342,7 +351,7 @@ int bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
   static  real delta=0.1;
   static  real omega=1.0;
   static  int  gamma=1000000;
-  static  real *lambda;
+  static  real *lagr;
   
   t_iatom *iatoms;
   real    *lam,dt_2,dvdl;
@@ -358,24 +367,26 @@ int bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
     bSOR=(getenv("NOSOR") == NULL);
     if (bSOR) 
       please_cite(log,"Barth95a");
-    snew(lambda,ncons);
+    snew(lagr,ncons);
     bFirst=FALSE;
   }
   for(i=0; i<ncons; i++)
-    lambda[i] =0;
+    lagr[i] =0;
   
   iatoms = &(idef->il[F_SHAKE].iatoms[sblock[0]]);
-  lam    = lambda;
+  lam    = lagr;
   for(i=0; (i<nblocks); ) {
     blen=(sblock[i+1]-sblock[i]);
     blen/=3;
     
     if (bSafe)
       n0=shakef(log,natoms,invmass,blen,idef->iparams,
-		iatoms,ir->shake_tol,x_s,xp,omega,lam);
+		iatoms,ir->shake_tol,x_s,xp,omega,
+		ir->efep!=efepNO,lambda,lam);
     else
       n0=vec_shakef(log,natoms,invmass,blen,idef->iparams,
-		    iatoms,ir->shake_tol,x_s,xp,lam);
+		    iatoms,ir->shake_tol,x_s,xp,
+		    ir->efep!=efepNO,lambda,lam);
     
 #ifdef DEBUGSHAKE
 	check_cons(log,blen,x_s,xp,idef->iparams,iatoms,invmass);
@@ -396,7 +407,7 @@ int bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
     dvdl = 0;
     for(i=0; i<ncons; i++) {
       type = idef->il[F_SHAKE].iatoms[3*i];
-      dvdl += lambda[i]*dt_2*
+      dvdl += lagr[i]*dt_2*
 	(idef->iparams[type].shake.dB-idef->iparams[type].shake.dA);
     }
     *dvdlambda += dvdl;
