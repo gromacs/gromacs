@@ -36,6 +36,7 @@ static char *SRCID_readinp_c = "$Id$";
 #include "smalloc.h"
 #include "readinp.h"
 #include "macros.h"
+#include "statutil.h"
 
 static int inp_count = 1;
 
@@ -47,6 +48,8 @@ t_inpfile *read_inpfile(char *fn,int *ninp)
   t_inpfile *inp=NULL;
   int       nin,lc,i,j,k;
 
+  if (debug)
+    fprintf(debug,"Reading MDP file %s\n",fn);
   inp_count = 1;
   in        = ffopen(fn,"r");
   nin = lc  = 0;
@@ -63,23 +66,29 @@ t_inpfile *read_inpfile(char *fn,int *ninp)
       for(j=0; (buf[j] != '=') && (buf[j] != '\0'); j++)
 	;
       if (buf[j] == '\0') {
-	if (j > 0)
-	  fprintf(stderr,"No = on line %d in file %s, ignored\n",lc,fn);
+	if (j > 0) {
+	  if (debug)
+	    fprintf(debug,"No = on line %d in file %s, ignored\n",lc,fn);
+	}
       }
       else {
 	for(i=0; (i<j); i++)
 	  lbuf[i]=buf[i];
 	lbuf[i]='\0';
 	trim(lbuf);
-	if (lbuf[0] == '\0')
-	  fprintf(stderr,"Empty left hand side on line %d in file %s, ignored\n",lc,fn);
+	if (lbuf[0] == '\0') {
+	  if (debug) 
+	    fprintf(debug,"Empty left hand side on line %d in file %s, ignored\n",lc,fn);
+	}
 	else {
 	  for(i=j+1,k=0; (buf[i] != '\0'); i++,k++)
 	    rbuf[k]=buf[i];
 	  rbuf[k]='\0';
 	  trim(rbuf);
-	  if (rbuf[0] == '\0')
-	    fprintf(stderr,"Empty right hand side on line %d in file %s, ignored\n",lc,fn);
+	  if (rbuf[0] == '\0') {
+	    if (debug)
+	      fprintf(debug,"Empty right hand side on line %d in file %s, ignored\n",lc,fn);
+	  }
 	  else {
 	    /* Now finally something sensible */
 	    srenew(inp,++nin);
@@ -93,7 +102,10 @@ t_inpfile *read_inpfile(char *fn,int *ninp)
     }
   } while (ptr);
   fclose(in);
-  
+
+  if (debug)
+    fprintf(debug,"Done reading MDP file, there were %d entries in there\n",
+	    nin);
   *ninp=nin;
   return inp;
 }
@@ -120,6 +132,7 @@ static void sort_inp(int ninp,t_inpfile inp[])
 void write_inpfile(char *fn,int ninp,t_inpfile inp[])
 {
   FILE *out;
+  char buf[256];
   int  i;
 
   sort_inp(ninp,inp);  
@@ -127,9 +140,11 @@ void write_inpfile(char *fn,int ninp,t_inpfile inp[])
   for(i=0; (i<ninp); i++) {
     if (inp[i].bSet)
       fprintf(out,"%-24s = %s\n",inp[i].name,inp[i].value ? inp[i].value : "");
-    else
-      fprintf(stderr,"Warning: unknown left-hand %s in parameter file\n",
+    else {
+      sprintf(buf,"Warning: unknown left-hand %s in parameter file\n",
 	      inp[i].name);
+      warning(buf);
+    }
   }
   fclose(out);
 }
