@@ -221,14 +221,13 @@ void print_top_mols(FILE *out, char *title,
 
   print_top_water(out);
   print_top_system(out, title);
-
-  fprintf(out,"[ %s ]\n",dir2str(d_molecules));
-  fprintf(out,"; %-15s %5s\n","Compound","#mols");
-  if (nmol==0)
-    fprintf(out,"Protein\t\t1\n");
-  else
+  
+  if (nmol) {
+    fprintf(out,"[ %s ]\n",dir2str(d_molecules));
+    fprintf(out,"; %-15s %5s\n","Compound","#mols");
     for (i=0; (i<nmol); i++)
       fprintf(out,"%-15s %5d\n",mols[i].name,mols[i].nr);
+  }
 }
 
 void write_top(char *ff,FILE *out, char *pr,char *molname,
