@@ -138,7 +138,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   }
   
   if ((ir->eBox != ebtNONE) && (ir->nstcomm < 0))
-    warning("Removing the rotation around the center of mass in a periodic system.");
+    warning("Removing the rotation around the center of mass in a periodic system (this is not a problem when you have only one molecule).");
   
   if ((EEL_LR(ir->coulombtype)) && (ir->efep!=efepNO)) {
     warning("You are using long-range electrostatics with free energy integration. "
