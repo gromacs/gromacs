@@ -329,24 +329,29 @@ void fdo_flr(FILE *log,int nri,atom_id i_atoms[],int shift,
       /* Add shift vector to x[ip] to get proper image */
       for(m=0; (m<3); m++)
 	rvec_add(x[i_atoms[m]],sv[shift],xw[m]);
-      
-      if (bOnlyCoulomb)
+
+      if (bOnlyCoulomb) {
 #ifdef USEF77
-	f77wcoul((int *)i_atoms,xw[0],&eps,x[0],&nj[gid],nlj[gid],
+	int iaa;
+	iaa = i_atoms[0];
+	f77wcoul(&iaa,xw[0],&eps,x[0],&nj[gid],nlj[gid],
 		 charge,flr[0],fw[0],&Vc);
 #else
-        c_wcoul(i_atoms,xw[0],eps,x[0],nj[gid],nlj[gid],
+        c_wcoul(i_atoms[0],xw[0],eps,x[0],nj[gid],nlj[gid],
 		charge,flr[0],fw[0],&Vc);
 #endif
-      else
+      } else {
 #ifdef USEF77
-	f77water((int *)i_atoms,xw[0],&eps,x[0],&nj[gid],type,nlj[gid],
+	int iaa;
+        iaa = i_atoms[0];
+	f77water(&iaa,xw[0],&eps,x[0],&nj[gid],type,nlj[gid],
 		 charge,fr->nbfp[i_atoms[0]],flr[0],fw[0],&Vc,&Vlj);
 #else
-        c_water(i_atoms,xw[0],eps,x[0],nj[gid],type,nlj[gid],
-		chargeA,fr->nbfp[i_atoms[0]],flr[0],fw[0],&Vc,&Vlj);
+        c_water(i_atoms[0],xw[0],eps,x[0],nj[gid],type,nlj[gid],
+		charge,fr->nbfp[i_atoms[0]],flr[0],fw[0],&Vc,&Vlj);
 #endif
-      
+      }
+
       /* Update force for ip particle and corresponding shift */
       for(j=0; (j<3); j++) {
 	ip=i_atoms[j];
