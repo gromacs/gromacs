@@ -60,7 +60,7 @@ int main(int argc,char *argv[])
     "atom-triples for angles or atom-quadruplets for dihedrals.",
     "If this is not the case, the program will crash."
   };
-  static char *opt;
+  static char *opt="A";
   static bool bALL=FALSE,bChandler=FALSE;
   static real binwidth=1;
   static int  nframes = 10;
