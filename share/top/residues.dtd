@@ -98,7 +98,7 @@
 <!-- using a certain geometry (see GROMACS manual)           -->
 <!ELEMENT raddh EMPTY>
 <!ATTLIST raddh
-          hclass   ( polar | aliphatic ) "polar"
+          hclass   ( polar | aromatic | aliphatic ) 
 	  addgeom  CDATA #REQUIRED
 	  addnum   CDATA #REQUIRED
 	  addto    CDATA #REQUIRED>

@@ -158,7 +158,8 @@
 <!ELEMENT atom EMPTY>	  
 <!ATTLIST atom
           aname    ID    #REQUIRED
-	  atype    IDREF #REQUIRED
+	  nbtype   IDREF #REQUIRED
+	  bondtype IDREF #REQUIRED
 	  charge   CDATA #REQUIRED>
 
 <!ELEMENT topology (bonds*,angles*,dihedrals*)>
