@@ -62,10 +62,10 @@ static char *ShortProgram(void)
   char *pr;
   
   if (program) {
-    if ((pr=strrchr(program,'/')) == NULL)
-      pr=program;
-      
-    return pr+1;
+    if ((pr=strrchr(program,'/')) != NULL)
+      return pr+1;
+    else
+      return program;
   }
   else
     return "GROMACS";
