@@ -524,6 +524,11 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)
   precision = sizeof(real);
   if (bRead) {
     do_string(buf);
+    if (strncmp(buf,"VERSION",7))
+      fatal_error(0,"Can not read file %s,\n"
+		  "             this file is from a Gromacs version which is older than 2.0\n"
+		  "             Make a new one with grompp or use a gro or pdb file, if possible",
+		  fio_getname(fp));
     do_int(precision);
     bDouble = (precision == sizeof(double));
     if ((precision != sizeof(float)) && !bDouble)
