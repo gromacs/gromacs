@@ -6618,12 +6618,12 @@ _inl1130_3dnow:
 	pfadd mm3,mm2
 	pfadd mm3,mm4		;# mm3=rsqH 
 
-    pfrsqrt mm1,mm0
+        pfrsqrt mm1,mm0
 
-    movq mm2,mm1
-    pfmul mm1,mm1
-    pfrsqit1 mm1,mm0				
-    pfrcpit2 mm1,mm2	;# mm1=invsqrt  
+        movq mm2,mm1
+        pfmul mm1,mm1
+        pfrsqit1 mm1,mm0				
+        pfrcpit2 mm1,mm2	;# mm1=invsqrt  
 	movq  mm4, mm1
 	pfmul mm4, mm4		;# mm4=invsq  
 
@@ -6648,8 +6648,8 @@ _inl1130_3dnow:
 	pfmul mm4, mm0		;# mm4=fscalar  
 
 	;# update nb potential 
-	pfadd mm6, [esp + i1130_vnbtot]
-	movq [esp + i1130_vnbtot], mm6
+	pfadd mm5, [esp + i1130_vnbtot]
+	movq [esp + i1130_vnbtot], mm5
 
 	pfrsqrt mm5, mm3
 	pswapd mm3,mm3
@@ -18009,11 +18009,11 @@ _mcinl1000_3dnow:
 	pfacc mm0, mm1
 	pfacc mm0, mm1		;# mm0=rsq 
 	
-    pfrsqrt mm1,mm0
-    movq mm2,mm1
-    pfmul mm1,mm1
-    pfrsqit1 mm1,mm0				
-    pfrcpit2 mm1,mm2	;# mm1=invsqrt 
+        pfrsqrt mm1,mm0
+        movq mm2,mm1
+	pfmul mm1,mm1
+        pfrsqit1 mm1,mm0				
+        pfrcpit2 mm1,mm2	;# mm1=invsqrt 
 	;# calculate potential and scalar force 
 	pfmul mm6, mm1		;# mm6=vcoul 
 	pfadd mm6, [esp + mci1000_vctot]
