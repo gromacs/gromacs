@@ -38,17 +38,9 @@ static char *SRCID_levenmar_c = "$Id$";
 #include <malloc.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "types/simple.h"
 
-#ifdef DOUBLE
-typedef double real;
-#else
-typedef float real;
-#endif
-typedef int bool;
-#define TRUE 1
-#define FALSE 0
-
-void nrerror(char error_text[], bool bExit)
+static void nrerror(char error_text[], bool bExit)
 {
   fprintf(stderr,"Numerical Recipes run-time error...\n");
   fprintf(stderr,"%s\n",error_text);
@@ -60,7 +52,7 @@ void nrerror(char error_text[], bool bExit)
 
 
 
-real *vector(int nl,int nh)
+static real *vector(int nl,int nh)
 {
   real *v;
   
@@ -69,7 +61,7 @@ real *vector(int nl,int nh)
   return v-nl;
 }
 
-int *ivector(int nl, int nh)
+static int *ivector(int nl, int nh)
 {
   int *v;
   
@@ -78,7 +70,7 @@ int *ivector(int nl, int nh)
   return v-nl;
 }
 
-double *dvector(int nl, int nh)
+static double *dvector(int nl, int nh)
 {
   double *v;
 	
@@ -89,24 +81,24 @@ double *dvector(int nl, int nh)
 
 
 
-real **matrix(int nrl, int nrh, int ncl, int nch)
+static real **matrix1(int nrl, int nrh, int ncl, int nch)
 {
 	int i;
 	real **m;
 
 	m=(real **) malloc((unsigned) (nrh-nrl+1)*sizeof(real*));
-	if (!m) nrerror("allocation failure 1 in matrix()", TRUE);
+	if (!m) nrerror("allocation failure 1 in matrix1()", TRUE);
 	m -= nrl;
 
 	for(i=nrl;i<=nrh;i++) {
 		m[i]=(real *) malloc((unsigned) (nch-ncl+1)*sizeof(real));
-		if (!m[i]) nrerror("allocation failure 2 in matrix()", TRUE);
+		if (!m[i]) nrerror("allocation failure 2 in matrix1()", TRUE);
 		m[i] -= ncl;
 	}
 	return m;
 }
 
-double **dmatrix(int nrl, int nrh, int ncl, int nch)
+static double **dmatrix(int nrl, int nrh, int ncl, int nch)
 {
 	int i;
 	double **m;
@@ -123,17 +115,17 @@ double **dmatrix(int nrl, int nrh, int ncl, int nch)
 	return m;
 }
 
-int **imatrix(int nrl, int nrh, int ncl, int nch)
+static int **imatrix1(int nrl, int nrh, int ncl, int nch)
 {
 	int i,**m;
 
 	m=(int **)malloc((unsigned) (nrh-nrl+1)*sizeof(int*));
-	if (!m) nrerror("allocation failure 1 in imatrix()", TRUE);
+	if (!m) nrerror("allocation failure 1 in imatrix1()", TRUE);
 	m -= nrl;
 
 	for(i=nrl;i<=nrh;i++) {
 		m[i]=(int *)malloc((unsigned) (nch-ncl+1)*sizeof(int));
-		if (!m[i]) nrerror("allocation failure 2 in imatrix()", TRUE);
+		if (!m[i]) nrerror("allocation failure 2 in imatrix1()", TRUE);
 		m[i] -= ncl;
 	}
 	return m;
@@ -141,7 +133,7 @@ int **imatrix(int nrl, int nrh, int ncl, int nch)
 
 
 
-real **submatrix(real **a, int oldrl, int oldrh, int oldcl, 
+static real **submatrix(real **a, int oldrl, int oldrh, int oldcl, 
 		 int newrl, int newcl)
 {
 	int i,j;
@@ -158,24 +150,24 @@ real **submatrix(real **a, int oldrl, int oldrh, int oldcl,
 
 
 
-void free_vector(real *v, int nl)
+static void free_vector(real *v, int nl)
 {
 	free((char*) (v+nl));
 }
 
-void free_ivector(int *v, int nl)
+static void free_ivector(int *v, int nl)
 {
 	free((char*) (v+nl));
 }
 
-void free_dvector(int *v, int nl)
+static void free_dvector(int *v, int nl)
 {
 	free((char*) (v+nl));
 }
 
 
 
-void free_matrix(real **m, int nrl, int nrh, int ncl)
+static void free_matrix(real **m, int nrl, int nrh, int ncl)
 {
 	int i;
 
@@ -183,7 +175,7 @@ void free_matrix(real **m, int nrl, int nrh, int ncl)
 	free((char*) (m+nrl));
 }
 
-void free_dmatrix(double **m, int nrl, int nrh, int ncl)
+static void free_dmatrix(double **m, int nrl, int nrh, int ncl)
 {
 	int i;
 
@@ -191,7 +183,7 @@ void free_dmatrix(double **m, int nrl, int nrh, int ncl)
 	free((char*) (m+nrl));
 }
 
-void free_imatrix(int **m, int nrl, int nrh, int ncl)
+static void free_imatrix(int **m, int nrl, int nrh, int ncl)
 {
 	int i;
 
@@ -201,14 +193,14 @@ void free_imatrix(int **m, int nrl, int nrh, int ncl)
 
 
 
-void free_submatrix(real **b, int nrl)
+static void free_submatrix(real **b, int nrl)
 {
 	free((char*) (b+nrl));
 }
 
 
 
-real **convert_matrix(real *a, int nrl, int nrh, int ncl, int nch)
+static real **convert_matrix(real *a, int nrl, int nrh, int ncl, int nch)
 {
 	int i,j,nrow,ncol;
 	real **m;
@@ -224,7 +216,7 @@ real **convert_matrix(real *a, int nrl, int nrh, int ncl, int nch)
 
 
 
-void free_convert_matrix(real **b, int nrl)
+static void free_convert_matrix(real **b, int nrl)
 {
 	free((char*) (b+nrl));
 }
@@ -295,7 +287,7 @@ bool gaussj(real **a, int n, real **b, int m)
 #undef SWAP
 
 
-void covsrt(real **covar, int ma, int lista[], int mfit)
+static void covsrt(real **covar, int ma, int lista[], int mfit)
 {
   int i,j;
   real swap;
@@ -322,7 +314,7 @@ void covsrt(real **covar, int ma, int lista[], int mfit)
 
 #define SWAP(a,b) {swap=(a);(a)=(b);(b)=swap;}
 
-void covsrt_new(real **covar,int ma, int ia[], int mfit)
+static void covsrt_new(real **covar,int ma, int ia[], int mfit)
      /* Expand in storage the covariance matrix covar, so as to take 
       * into account parameters that are being held fixed. (For the
       * latter, return zero covariances.)
@@ -343,10 +335,10 @@ void covsrt_new(real **covar,int ma, int ia[], int mfit)
 }
 #undef SWAP
 	
-void mrqcof(real x[], real y[], real sig[], int ndata, real a[], 
-	    int ma, int lista[], int mfit, 
-	    real **alpha, real beta[], real *chisq,
-	    void (*funcs)(real,real *,real *,real *)) 
+static void mrqcof(real x[], real y[], real sig[], int ndata, real a[], 
+		   int ma, int lista[], int mfit, 
+		   real **alpha, real beta[], real *chisq,
+		   void (*funcs)(real,real *,real *,real *)) 
 {
   int k,j,i;
   real ymod,wt,sig2i,dy,*dyda;
@@ -385,7 +377,7 @@ bool mrqmin(real x[], real y[], real sig[], int ndata, real a[],
   static real *da,*atry,**oneda,*beta,ochisq;
   
   if (*alamda < 0.0) {
-    oneda=matrix(1,mfit,1,1);
+    oneda=matrix1(1,mfit,1,1);
     atry=vector(1,ma);
     da=vector(1,ma);
     beta=vector(1,ma);
@@ -488,7 +480,7 @@ bool mrqmin_new(real x[],real y[],real sig[],int ndata,real a[],
     da=vector(1,ma);
     for (mfit=0,j=1;j<=ma;j++)
       if (ia[j]) mfit++;
-    oneda=matrix(1,mfit,1,1);
+    oneda=matrix1(1,mfit,1,1);
     *alamda=0.001;
     mrqcof_new(x,y,sig,ndata,a,ia,ma,alpha,beta,chisq,funcs);
     ochisq=(*chisq);
