@@ -559,7 +559,7 @@ int main(int argc,char *argv[])
     { "-beginfit",FALSE, etREAL, {&beginfit},
       "Start time for fitting the MSD" },
     { "-endfit",FALSE, etREAL, {&endfit},
-      "End time for fitting the MSD (-1 is to the end)" }
+      "End time for fitting the MSD, -1 is till the end" }
   };
 
   t_filenm fnm[] = { 
