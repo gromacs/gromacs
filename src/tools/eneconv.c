@@ -378,13 +378,13 @@ int main(int argc,char *argv[])
       { "-e",        FALSE, etREAL, {&end},
 	"Last time to use"},
       { "-dt",       FALSE, etREAL, {&delta_t},
-	"only write out frame when t MOD dt = offset" },
+	"Only write out frame when t MOD dt = offset" },
       { "-offset",   FALSE, etREAL, {&toffset},
-	"time offset for -dt option" }, 
+	"Time offset for -dt option" }, 
       { "-settime",  FALSE, etBOOL, {&bSetTime}, 
-	"change starting time interactively" },
+	"Change starting time interactively" },
       { "-sort",     FALSE, etBOOL, {&bSort},
-	"sort energy files (not frames)"}
+	"Sort energy files (not frames)"}
   };
   
   CopyRight(stderr,argv[0]);
@@ -501,7 +501,7 @@ int main(int argc,char *argv[])
 	 * with the start of the next file
 	 */
 	begin=outt+0.5*timestep;
-	cont_type[i+1]==TIME_EXPLICIT;
+	/* cont_type[i+1]==TIME_EXPLICIT; */
     }
     
     if((outt<end) && (i<(nfile-1)) &&
