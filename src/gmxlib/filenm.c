@@ -73,6 +73,7 @@ static t_deffile deffile[efNR] = {
   { TRUE,  ".edr", "ener",   NULL, "Energy file in portable XDR format"      },
   { TRUE,  ".ene", "ener",   NULL, "Energy file"                             },
   { FALSE, ".???", "conf",   "-c", "Generic structure: gro pdb tpr tpb tpa"  },
+  { FALSE, ".???", "out",    "-o", "Generic structure: gro pdb"              },
   { FALSE, ".gro", "conf",   "-c", "Coordinate file in Gromos-87 format"     },
   { FALSE, ".pdb", "eiwit",  "-f", "Protein data bank file"                  },
   { FALSE, ".brk", "eiwit",  "-f", "Brookhaven data bank file"               },
@@ -141,7 +142,7 @@ char *ftp2defnm(int ftp)
   static char buf[256];
   
   if ((0 <= ftp) && (ftp < efNR)) {
-    sprintf(buf,"%s%s",deffile[ftp].defnm,deffile[ftp].ext);
+    sprintf(buf,"%s",deffile[ftp].defnm);
     return buf;
   }
   else
@@ -274,20 +275,21 @@ void set_grpfnm(t_filenm *fnm,char *name,int nopts,int ftps[])
 	strcpy(buf,name);
 	set_extension(buf,ti);
       }
-      else
+      else {
 	strcpy(buf,ftp2defnm(ti));
+	set_extension(buf,ti);
+      }
       if (fexist(buf))
 	bSet=TRUE;
     }
   }
   if (!bSet) {
     ti=ftps[0];
-    if (name) {
+    if (name)
       strcpy(buf,name);
-      set_extension(buf,ti);
-    }
     else
-      strcpy(buf,ftp2defnm(ti));
+      strcpy(buf,ftp2defnm(fnm->ftp));
+    set_extension(buf,ti);
   }
   fnm->fn=strdup(buf);
 }
@@ -306,6 +308,14 @@ static void set_trnnm(t_filenm *fnm,char *name)
 #define NTRNS asize(trns)
 
   set_grpfnm(fnm,name,NTRNS,trns);
+}
+
+static void set_stonm(t_filenm *fnm,char *name)
+{
+  static    int stos[]={ efGRO, efPDB, efBRK, efENT};
+#define NSTOS asize(stos)
+  
+  set_grpfnm(fnm,name,NSTOS,stos);
 }
 
 static void set_stxnm(t_filenm *fnm,char *name)
@@ -352,6 +362,9 @@ static void set_filenm(t_filenm *fnm,char *name)
   } 
   else if (fnm->ftp == efSTX) {
     set_stxnm(fnm,name);
+  }
+  else if (fnm->ftp == efSTO) {
+    set_stonm(fnm,name);
   }
   else if (fnm->ftp == efTPX) {
     set_tpxnm(fnm,name);
