@@ -234,12 +234,13 @@ int main(int argc,char *argv[])
   static bool  bSetTime=FALSE;
   static real  begin=-1;
   static real  end=-1;
+  static int   skip=1;
   
   t_pargs pa[] = {
-      { "-b",        FALSE, etREAL, {&begin},
-	"First time to use"},
-      { "-e",        FALSE, etREAL, {&end},
-	"Last time to use"},
+    { "-b",        FALSE, etREAL, {&begin},
+      "First time to use"},
+    { "-e",        FALSE, etREAL, {&end},
+      "Last time to use"},
     { "-prec", FALSE,  etINT,  {&prec},
       "Precision for .xtc and .gro writing in number of decimal places" },
     { "-vel", FALSE, etBOOL, {&bVels},
@@ -247,10 +248,12 @@ int main(int argc,char *argv[])
     { "-settime",  FALSE, etBOOL, {&bSetTime}, 
       "Change starting time interactively" },
     { "-sort",     FALSE, etBOOL, {&bSort},
-      "Sort trajectory files (not frames)"}
+	"Sort trajectory files (not frames)" },
+    { "-skip",     FALSE, etINT, {&skip},
+      "Only write every nr-th frame"}
   };
       
-  int          status,ftp,ftpin,i,frame,step,trjout=0;
+  int          status,ftp,ftpin,i,frame,frame_out,step,trjout=0;
   rvec         *x,*v;
   real         xtcpr,t_corr;
   t_trxframe   fr,frout;
@@ -302,6 +305,7 @@ int main(int argc,char *argv[])
   flags = TRX_READ_X | TRX_READ_V | TRX_READ_F;
  
   frame=-1;
+  frame_out=-1;
   /* the default is not to change the time at all,
    * but this is overridden by the edit_files routine
    */
@@ -354,24 +358,27 @@ int main(int argc,char *argv[])
 	/* determine if we should write this frame */
 	  if(frout.time < settime[i+1]-0.5*timestep && frout.time >= begin) {
 	    frame++;
-	    last_ok_t=frout.time;
-	    if(bNewFile) {
-	      fprintf(stderr,"\nContinue writing frames from t=%g, frame=%d      \n",frout.time,frame);
-	      bNewFile=FALSE;
-	    }
-	    
-	    switch(ftp) {
-	    case efTRJ:
+	    if (frame % skip == 0) {
+	      frame_out++;
+	      last_ok_t=frout.time;
+	      if(bNewFile) {
+		fprintf(stderr,"\nContinue writing frames from t=%g, frame=%d      \n",frout.time,frame);
+		bNewFile=FALSE;
+	      }
+	      
+	      switch(ftp) {
+	      case efTRJ:
 	    case efTRR:
 	      case efXTC:
 		write_trxframe(trxout,&frout);
 		break;
-	    default:
-	      fatal_error(0,"This fileformat doesn't work here yet.");
+	      default:
+		fatal_error(0,"This fileformat doesn't work here yet.");
 	      }
-	    if ( ((frame % 10) == 0) || (frame < 10) )
-	      fprintf(stderr," ->  frame %6d time %8.3f      \r",
-		      frame,frout.time);
+	      if ( ((frame % 10) == 0) || (frame < 10) )
+		fprintf(stderr," ->  frame %6d time %8.3f      \r",
+			frame_out,frout.time);
+	    }
 	  }
       } while((frout.time<settime[i+1]) && read_next_frame(status,&fr));
       
