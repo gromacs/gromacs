@@ -111,7 +111,6 @@ typedef enum {
   d_angletypes,
   d_dihedraltypes,
   d_nonbond_params,
-  d_blocktype,
   d_moleculetype,
   d_atoms,
   d_dum2,
@@ -148,7 +147,6 @@ static char *ds[d_maxdir+1] = {
   "angletypes",
   "dihedraltypes",
   "nonbond_params",
-  "blocktype",
   /* All the directives above can not appear after moleculetype */
   "moleculetype",
   "atoms",

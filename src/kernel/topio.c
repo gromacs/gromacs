@@ -277,13 +277,11 @@ static char **read_topol(char        *infile,
   char       curfile[STRLEN],line[STRLEN],errbuf[256],comb_str[256],nb_str[256];
   char       genpairs[32];
   char       *dirstr,*dummy2;
-  int        nrcopies,nmol,nblock=0,Nsim=0,nscan,ncombs,ncopy;
+  int        nrcopies,nmol,Nsim=0,nscan,ncombs,ncopy;
   double     fLJ,fQQ,fPOW;
   t_simsystem *Sims=NULL;
   t_topology *block=NULL;
-  t_molinfo  *blockinfo=NULL;
-  t_topology *blk0;
-  t_molinfo  *mi0=NULL,*bi0;
+  t_molinfo  *mi0=NULL;
   DirStack   *DS;
   directive  d,newd;
   t_nbparam  **nbparam,**pair;
@@ -443,6 +441,7 @@ static char **read_topol(char        *infile,
 	case d_nonbond_params:
 	  push_nbt(d,nbparam,atype,pline,nb_funct);
 	  break;
+	  /*
 	case d_blocktype:
 	  nblock++;
 	  srenew(block,nblock);
@@ -453,6 +452,7 @@ static char **read_topol(char        *infile,
 	  init_molinfo(bi0);
 	  push_molt(symtab,bi0,pline);
 	  break;
+	  */
 	case d_moleculetype: {
 	  if (!bReadMolType) {
 	    ncombs = atype->nr*(atype->nr+1)/2;
@@ -472,15 +472,11 @@ static char **read_topol(char        *infile,
 	    
 	    bReadMolType = TRUE;
 	  }
-	  
-	  nmol++;
-	  srenew((*molinfo),nmol);
+
+	  push_molt(symtab,&nmol,molinfo,pline);
 	  srenew(block2,nmol);
-	  mi0=*molinfo;
-	  mi0=&(mi0[nmol-1]);
-	  init_molinfo(mi0);
 	  block2[nmol-1].nr=0;
-	  push_molt(symtab,mi0,pline);
+	  mi0=&((*molinfo)[nmol-1]);
 	  break;
 	}
 	case d_atoms: 
@@ -522,8 +518,7 @@ static char **read_topol(char        *infile,
 	  int whichmol;
 
 	  push_mol(nmol,*molinfo,pline,&whichmol,&nrcopies);
-	  mi0=*molinfo;
-	  mi0=&(mi0[whichmol]);
+	  mi0=&((*molinfo)[whichmol]);
 	  srenew(Sims,Nsim+1);
 	  Sims[Nsim].whichmol=whichmol;
 	  Sims[Nsim].nrcopies=nrcopies;

@@ -37,6 +37,7 @@
 #include <config.h>
 #endif
 
+#include <ctype.h>
 #include <math.h>
 
 #include "sysstuff.h"
@@ -722,15 +723,29 @@ void push_atom(t_symtab *symtab,t_block *cgs,
 		typeB==type ? ctype : ctypeB,mB,qB);
 }
 
-void push_molt(t_symtab *symtab,t_molinfo *newmol,char *line)
+void push_molt(t_symtab *symtab,int *nmol,t_molinfo **mol,char *line)
 {
   char type[STRLEN];
-  int nrexcl;
+  int nrexcl,i;
+  t_molinfo *newmol;
 
   if ((sscanf(line,"%s%d",type,&nrexcl)) != 2) {
     too_few();
     return;
   }
+  
+  /* Test if this atomtype overwrites another */
+  i = 0;
+  while (i < *nmol) {
+    if (strcasecmp(*((*mol)[i].name),type) == 0)
+      gmx_fatal(FARGS,"moleculetype %s is redefined",type);
+    i++;
+  }
+  
+  (*nmol)++;
+  srenew(*mol,*nmol);
+  newmol = &((*mol)[*nmol-1]);
+  init_molinfo(newmol);
   
   /* Fill in the values */
   newmol->name     = put_symtab(symtab,type);

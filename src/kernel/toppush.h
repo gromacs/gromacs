@@ -78,7 +78,7 @@ extern void push_bond(directive d,t_params bondtype[],t_params bond[],
 extern void push_mol(int nrmols,t_molinfo mols[],char *pline,
 		     int *whichmol,int *nrcopies);
 
-extern void push_molt(t_symtab *symtab,t_molinfo *newmol,char *line);
+extern void push_molt(t_symtab *symtab,int *nmol,t_molinfo **mol,char *line);
 
 extern void init_block2(t_block2 *b2, int natom);
 	
