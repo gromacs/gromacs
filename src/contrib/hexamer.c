@@ -1,0 +1,210 @@
+/*
+ * $Id$
+ * 
+ *       This source code is part of
+ * 
+ *        G   R   O   M   A   C   S
+ * 
+ * GROningen MAchine for Chemical Simulations
+ * 
+ *               VERSION 2.0
+ * 
+ * Copyright (c) 1991-1999
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry
+ * University of Groningen, The Netherlands
+ * 
+ * Please refer to:
+ * GROMACS: A message-passing parallel molecular dynamics implementation
+ * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
+ * Comp. Phys. Comm. 91, 43-56 (1995)
+ * 
+ * Also check out our WWW page:
+ * http://md.chem.rug.nl/~gmx
+ * or e-mail to:
+ * gromacs@chem.rug.nl
+ * 
+ * And Hey:
+ * Great Red Oystrich Makes All Chemists Sane
+ */
+static char *SRCID_mkyaw_c = "$Id$";
+
+#include <math.h>
+#include <string.h>
+#include <ctype.h>
+#include "assert.h"
+#include "pdbio.h"
+#include "confio.h"
+#include "symtab.h"
+#include "smalloc.h"
+#include "symtab.h"
+#include "macros.h"
+#include "smalloc.h"
+#include "copyrite.h"
+#include "statutil.h"
+#include "string2.h"
+#include "strdb.h"
+#include "rdgroup.h"
+#include "vec.h"
+#include "typedefs.h"
+#include "gbutil.h"
+#include "strdb.h"
+#include "rdgroup.h"
+#include "physics.h"
+#include "atomprop.h"
+
+void copy_atom(t_symtab *tab,t_atoms *a1,int i1,t_atoms *a2,int i2,
+	       rvec xin[],rvec xout[],rvec vin[],rvec vout[])
+{
+  a2->atom[i2]     = a1->atom[i1];
+  a2->atomname[i2] = put_symtab(tab,*a1->atomname[i1]);
+  a2->resname[a2->atom[i2].resnr] =
+    put_symtab(tab,*a1->resname[a1->atom[i1].resnr]);
+  copy_rvec(xin[i1],xout[i2]);
+  copy_rvec(vin[i1],vout[i2]);
+}
+
+static void rotate_x(int natom,rvec xin[],real angle,rvec xout[],
+		     bool bZ,bool bUpsideDown,real dz)
+{
+  int i;
+  matrix mat;
+  
+  angle *= DEG2RAD;
+  clear_mat(mat);
+  if (bZ) {
+    mat[XX][XX] = cos(angle);
+    mat[XX][YY] = sin(angle);
+    mat[YY][XX] = -sin(angle);
+    mat[YY][YY] = cos(angle);
+    mat[ZZ][ZZ] = 1;
+  }
+  else {
+    mat[XX][XX] = 1;
+    mat[YY][YY] = cos(angle);
+    mat[YY][ZZ] = sin(angle);
+    mat[ZZ][YY] = -sin(angle);
+    mat[ZZ][ZZ] = cos(angle);
+  }
+    
+  for(i=0; (i<natom); i++) {
+    mvmul(mat,xin[i],xout[i]);
+    if (bUpsideDown)
+      xout[i][ZZ] *= -1;
+    xout[i][ZZ] += dz;
+  }
+}
+
+static void prep_x(int natom,rvec x[],real rDist,real rAngleZ,real rAngleX)
+{
+  int  i;
+  rvec xcm;
+  rvec *xx;
+  
+  /* Center on Z-axis */
+  clear_rvec(xcm);
+  for(i=0; (i<natom); i++) {
+    xcm[XX] += x[i][XX];
+    xcm[YY] += x[i][YY];
+    xcm[ZZ] += x[i][ZZ];
+  }
+  xcm[XX] /= natom;
+  xcm[YY] /= natom;
+  xcm[ZZ] /= natom;
+  for(i=0; (i<natom); i++) {
+    x[i][XX] -= xcm[XX];
+    x[i][YY] -= xcm[YY];
+    x[i][ZZ] -= xcm[ZZ];
+  }
+  if (rAngleZ != 0) {
+    snew(xx,natom);
+    rotate_x(natom,x,rAngleZ,xx,TRUE,FALSE,0);
+    for(i=0; (i<natom); i++) 
+      copy_rvec(xx[i],x[i]);
+    sfree(xx);
+  }
+  if (rAngleX != 0) {
+    snew(xx,natom);
+    rotate_x(natom,x,rAngleX,xx,FALSE,FALSE,0);
+    for(i=0; (i<natom); i++) 
+      copy_rvec(xx[i],x[i]);
+    sfree(xx);
+  }
+  if (rDist > 0) {
+    for(i=0; (i<natom); i++) 
+      x[i][XX] += rDist;
+  }
+}
+
+int main(int argc, char *argv[])
+{
+  t_symtab tab;
+  static char *desc[] = {
+    "hexamer takes a single input coordinate file and makes five symmetry",
+    "related copies."
+  };
+#define NPA asize(pa)
+  t_filenm fnm[] = {
+    { efSTX, "-f", NULL, ffREAD },
+    { efPDB, "-o", NULL, ffWRITE }
+  };
+#define NFILE asize(fnm)
+  bool bCenter    = FALSE;
+  bool bTrimer    = FALSE;
+  bool bAlternate = FALSE;
+  real rDist = 0,rAngleZ = 0,rAngleX = 0, alterz = 0;
+  t_pargs pa[] = {
+    { "-center",   FALSE, etBOOL,  {&bCenter}, 
+      "Center molecule on Z-axis first" },
+    { "-trimer",   FALSE, etBOOL,  {&bTrimer},
+      "Make trimer rather than hexamer" },
+    { "-alternate",FALSE, etBOOL,  {&bAlternate},
+      "Turn every other molecule upside down" },
+    { "-alterz",   FALSE, etREAL,  {&alterz},
+      "Add this amount to Z-coordinate in every other molecule" },
+    { "-radius",   FALSE, etREAL,  {&rDist},
+      "Distance of protein axis from Z-axis (implies -center)" },
+    { "-anglez",   FALSE, etREAL,  {&rAngleZ},
+      "Initial angle of rotation around Z-axis of protein" },
+    { "-anglex",   FALSE, etREAL,  {&rAngleX},
+      "Initial angle of rotation around X-axis of protein" }
+  };
+#define NPA asize(pa)
+  FILE    *fp;
+  int     i,iout,now,natom;
+  rvec    *xin,*vin,*xout;
+  matrix  box;
+  t_atoms atoms,aout;
+  char    *infile,*outfile,title[256],buf[32];
+  
+  CopyRight(stderr,argv[0]);
+  parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,NPA,pa,
+		    asize(desc),desc,0,NULL);
+  bCenter = bCenter || (rDist > 0) || bAlternate;
+  
+  infile  = ftp2fn(efSTX,NFILE,fnm);
+  outfile = ftp2fn(efPDB,NFILE,fnm);
+  
+  get_stx_coordnum(infile,&natom);
+  init_t_atoms(&atoms,natom,TRUE);
+  snew(xin,natom);
+  snew(xout,natom);
+  snew(vin,natom);
+  read_stx_conf(infile,title,&atoms,xin,vin,box);
+  printf("Read %d atoms\n",atoms.nr); 
+  
+  if (bCenter) 
+    prep_x(atoms.nr,xin,rDist,rAngleZ,rAngleX);
+  
+  fp = ffopen(outfile,"w");
+  for(i=0; (i<(bTrimer ? 3 : 6)); i++) {
+    rotate_x(atoms.nr,xin,i*(bTrimer ? 120.0 : 60.0),xout,TRUE,
+	     bAlternate && ((i % 2) != 0),alterz*(((i % 2) == 0) ? 0 : 1));
+    sprintf(buf,"Rotated %d degrees",i*(bTrimer ? 120 : 60));
+    write_pdbfile(fp,buf,&atoms,xout,box,'A'+i,1+i);
+  }
+  fclose(fp);
+  
+  thanx(stderr);
+  
+  return 0;
+}

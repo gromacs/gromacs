@@ -163,15 +163,15 @@ void invsqrt_vars()
     for(i=1;i<=loop.ni;i++) {
       ij=10*i+j;
       sprintf(buf,"lu%d",ij);
-      declare_real(buf);
+      declare_real4(buf);
       sprintf(buf,"tmp%d",ij);
       declare_real(buf);
       sprintf(buf,"rsqlu%d",ij);
       declare_real(buf);
       sprintf(buf,"iexp%d",ij);
-      declare_intreal(buf);
+      declare_int4(buf);
       sprintf(buf,"addr%d",ij);
-      declare_intreal(buf);
+      declare_int4(buf);
 
       if(bC) {
 	sprintf(buf,"bitpattern%d",ij);
@@ -268,7 +268,7 @@ void fortran_invsqrt()
   nargs=ndecl;
   
   declare_int("i");  
-#ifdef SOFTWARE_INVSQRT
+#ifdef SOFTWARE_SQRT
   declare_int4("finvsqrtexptab"); 
   declare_int4("finvsqrtfracttab"); 
 
@@ -316,7 +316,7 @@ void fortran_invsqrt()
 #endif
   end_loop();
 
-#else /* no SOFTWARE_INVSQRT */
+#else /* no SOFTWARE_SQRT */
   start_loop("i","1","n");
   assign("utdata(i)","1.0/sqrt(indata(i))");
   end_loop();

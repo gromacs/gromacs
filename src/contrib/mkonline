@@ -1,0 +1,120 @@
+#!/bin/csh -f
+
+if ( $#argv >= 1 ) set GMXHOME = $1
+if ( $#argv >= 2 ) set GMXCPU = $2
+
+set VER		= 2.0
+set MANDIR	= online
+set HTML	= $GMXHOME/html
+set HTMLOL	= $HTML/$MANDIR
+set HTMLIDX	= $HTML/$MANDIR.html
+set TEXDIR	= $GMXHOME/doc
+if ( ! -d $TEXDIR ) set TEXDIR = .
+set TEXIDX	= $TEXDIR/proglist.tex
+set PROGFILE	= programs.txt
+
+set GENERAL 	= "getting_started:Getting_Started flow:Flow_Chart files:File_Formats mdp_opt:mdp_options"
+
+set olddir = `pwd`
+cd $GMXHOME/bin/$GMXCPU
+set PROGRAMS    = 
+foreach program ( `\ls -1 | grep -v "#"` )
+  if ( ( $program != average ) && ( $program != luck ) && ( $program != my_dssp ) ) then
+    set PROGRAMS = "$PROGRAMS $program"
+  endif
+end
+cd $olddir
+
+echo "generating html page $HTMLIDX"
+
+if ( -f $HTMLIDX ) \rm $HTMLIDX
+touch $HTMLIDX
+
+echo "<HTML>" >> $HTMLIDX
+echo "<TITLE>GROMACS $VER Manual </TITLE>" >> $HTMLIDX
+echo "<BODY>" >> $HTMLIDX
+echo "<H1>GROMACS $VER manual</H1>" >> $HTMLIDX
+echo "<IMG SRC="\""gif/rainbow.gif"\"" WIDTH=100% HEIGHT=7>" >> $HTMLIDX
+echo "<P>" >> $HTMLIDX
+echo "<TABLE BORDER=0 CELLSPACING=0 CELLPADDING=10>" >> $HTMLIDX
+echo "<TR>" >> $HTMLIDX
+echo "<TD VALIGN=top WIDTH=25%>" >> $HTMLIDX
+echo "<h3>General</h3>" >> $HTMLIDX
+foreach i ( $GENERAL )
+  set file = `echo $i | cut -d: -f1`
+  set desc = `echo $i | cut -d: -f2 | sed 's/_/ /g'`
+  echo "<A HREF="\""$MANDIR/"$file".html"\"">"$desc"</a>" >> $HTMLIDX
+  echo "<br><br>" >> $HTMLIDX
+end
+echo "<A HREF="\""gmxfaq.html"\"">FAQ</a>" >> $HTMLIDX
+echo "</TD>" >> $HTMLIDX
+echo "<TD VALIGN=top WIDTH=75%>" >> $HTMLIDX
+echo "<h3>Programs</h3>" >> $HTMLIDX
+echo "<multicol cols=5> " >> $HTMLIDX
+echo "<A HREF="\""$MANDIR/options.html"\"">Options</a>" >> $HTMLIDX
+echo "<br>" >> $HTMLIDX
+foreach program ( $PROGRAMS )
+  echo "<br><a href="\""$MANDIR/$program.html"\"">$program</a>" >> $HTMLIDX
+end
+echo "</multicol>" >> $HTMLIDX
+echo "</TD>" >> $HTMLIDX
+echo "</TR>" >> $HTMLIDX
+echo "</TABLE>" >> $HTMLIDX
+echo "<IMG SRC="\""gif/rainbow.gif"\"" WIDTH=100% HEIGHT=7>" >> $HTMLIDX
+echo "<h3>Programs by Topic</h3>" >> $HTMLIDX
+echo "<multicol cols=3> " >> $HTMLIDX
+awk -F '|' -v mandir=$MANDIR '{\
+  if (NF) {\
+    if ( $1 == "HEAD" ) {\
+      hnr++;\
+      printf("<A HREF=\"#HNR%d\">%s</A><br>\n",hnr,$2);\
+    }\
+  }\
+}' $PROGFILE >> $HTMLIDX
+echo "</multicol> " >> $HTMLIDX
+awk -F '|' -v mandir=$MANDIR '{\
+  if (NF) {\
+    if ( $1 == "HEAD" ) {\
+      hnr++;\
+      printf("\n<A NAME=\"HNR%d\">\n",hnr);\
+      printf("<TABLE CELLSPACING=1>\n<TR><TD>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");\
+      printf("<TR><TD COLSPAN=2><b>%s</b>\n",$2);\
+    } else if ( $1 == "END" ) {\
+      printf("</TABLE>\n");\
+    } else {\
+      printf("<TR><TD><A HREF=\"%s/%s.html\">%s</A><TD>%s\n",mandir,$1,$1,$2);\
+    }\
+  }\
+}' $PROGFILE >> $HTMLIDX
+echo "<p>" >> $HTMLIDX
+echo "<IMG SRC="\""gif/rainbow.gif"\"" WIDTH=100% HEIGHT=7>" >> $HTMLIDX
+echo "<p>" >> $HTMLIDX
+echo "</BODY>" >> $HTMLIDX
+echo "</HTML>" >> $HTMLIDX
+
+echo "generating latex page $TEXIDX"
+
+if ( -f $TEXIDX ) \rm $TEXIDX
+touch $TEXIDX
+
+echo "\\begin{description}" >> $TEXIDX
+awk -F '|' -v mandir=$MANDIR -v longest="mk\\_angndx" '{\
+  gsub("_","\\_",$0);\
+  gsub("%","\\%",$0);\
+  if (NF) {\
+    if ( $1 == "LONGEST" ) {\
+      longest = $2;\
+    } else if ( $1 == "HEAD" ) {\
+      printf("\\item {\\large\\bf %s}\n",$2);\
+      printf("\\vspace{-2ex}\\begin{tabbing}\n");\
+      printf("{\\bf %s} \\= \\kill\n",longest);\
+    } else if ( $1 == "END" ) {\
+      printf("\\end{tabbing}\\vspace{-2ex}\n\n");\
+    } else {\
+      printf("{\\bf %s} \\> %s \\\\\n",$1,$2);\
+    }\
+  }\
+}' $PROGFILE | sed -e 's/e\.g\./{\\eg}/g' >> $TEXIDX
+echo "\end{description}" >> $TEXIDX
+
+#last line
