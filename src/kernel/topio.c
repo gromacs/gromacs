@@ -51,6 +51,7 @@ static char *SRCID_topio_c = "$Id$";
 #include "string2.h"
 #include "symtab.h"
 #include "fatal.h"
+#include "dum_parm.h"
 
 #include "toputil.h"
 #include "toppush.h"
@@ -321,6 +322,8 @@ static char **read_topol(char        *infile,
 	    d = newd;
 	  }
 	  else {
+	    /* we should print here which directives should have
+	       been present, and which actually are */
 	    sprintf(errbuf,"Invalid order in directives %s",dirstr);
 	    warning(errbuf);
 	    d = d_invalid;
@@ -371,6 +374,9 @@ static char **read_topol(char        *infile,
 
 #define PUSHBT(nral) push_bt(d,plist,nral,atype,pline)
 	case d_bondtypes:
+	  PUSHBT(2);
+	  break;
+	case d_constrainttypes:
 	  PUSHBT(2);
 	  break;
 	case d_pairtypes:
@@ -476,7 +482,7 @@ static char **read_topol(char        *infile,
 			  mi0->plist,
 			  &(mi0->atoms.excl));
 	    merge_excl(&(mi0->atoms.excl),&(block2[whichmol]));
-	    done_block2(&(block2[whichmol]));  
+	    done_block2(&(block2[whichmol]));
 	    make_shake(mi0->plist,&mi0->atoms,atype,nshake); 
 	    stupid_fill(&mi0->mols,mi0->atoms.nr);
 	    mi0->bProcessed=TRUE;
