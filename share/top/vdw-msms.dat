@@ -1,0 +1,34 @@
+; Very approximate VanderWaals radii
+; only used for drawing atoms as balls or for calculating atomic overlap.
+; longest matches are used
+; '???' or '*' matches any residue name
+; 'AAA' matches any protein residue name
+;
+; Used new values from the MSMS program Revision: 1.13
+; 
+???  C     0.174
+???  F     0.14
+???  H     0.12
+???  N     0.154
+???  O     0.14
+???  S     0.18
+GLY  MN1   0
+GLY  MN2   0
+ALA  MCB1  0
+ALA  MCB2  0
+VAL  MCG1  0
+VAL  MCG2  0
+ILE  MCG1  0
+ILE  MCG2  0
+ILE  MCD1  0
+ILE  MCD2  0
+LEU  MCD1  0
+LEU  MCD2  0
+MET  MCE1  0
+MET  MCE2  0
+TRP  MTRP1 0
+TRP  MTRP2 0
+THR  MCG1  0
+THR  MCG2  0
+LYSH MNZ1  0
+LYSH MNZ2  0
