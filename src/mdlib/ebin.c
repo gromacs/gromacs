@@ -46,16 +46,7 @@
 
 static real rms_ener(t_energy *e,int nsteps)
 {
-  double eav,rms;
-  
-  eav=e->esum/nsteps;
-  rms=sqrt(e->eav/nsteps);
-
-  if (eav != 0.0)  
-    if (fabs(rms/eav) < 1e-6)
-      rms=0.0;
-    
-  return rms;
+  return sqrt(e->eav/nsteps);
 }
 
 t_ebin *mk_ebin(void)
@@ -89,7 +80,7 @@ int get_ebin_space(t_ebin *eb,int nener,char *enm[])
 void add_ebin(t_ebin *eb,int index,int nener,real ener[],int step)
 {
   int      i,m;
-  double   e,sum,sigma,invmm;
+  double   e,sum,sigma,invmm,diff;
   t_energy *eg;
   
   if ((index+nener > eb->nener) || (index < 0))
@@ -110,7 +101,8 @@ void add_ebin(t_ebin *eb,int index,int nener,real ener[],int step)
     
     /* first update sigma, then sum */
     eg[i].e    = e;
-    eg[i].eav  += sqr(eg[i].esum - m*e)*invmm;;
+    diff       = eg[i].esum - m*e;
+    eg[i].eav  += diff*diff*invmm;;
     eg[i].esum += e;
   }
 }
