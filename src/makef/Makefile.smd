@@ -7,7 +7,12 @@
 #
 #	Makefile for gromacs on IBM SP2
 #
-# 	See README file for info
+# This file is for Symmetric-Multiprocessor nodes with
+# powerpc 604 processors. You might want to change the processor
+# type.
+# The default setup is for nonparallell code, which is what
+# you want for all utility programs, etc.
+# To get the parallel mdrun, set use_mpi and recompile.
 #
 SYSDEFS		= -DHAVE_ULONG -DNO_NICE  -DDOUBLE 
 # at double prec. ibm and gromacs sqrt are about the same performance on smp.
@@ -46,7 +51,7 @@ USEF77		= yes
 #
 USE_PVM3	= no
 USE_MPI		= no
-USE_THREADS     = yes /* not used yet */
+USE_THREADS     = yes # not used - yet
 #
 # If you want to use compressed data files set this to yes
 # This uses the xdr libraries of your UNIX system, which is virtually
@@ -68,6 +73,9 @@ ifeq ($(USE_MPI),yes)
 CC		= mpcc
 CCC             = mpCC
 F77		= mpxlf
+CC_MKINL	= xlc # no mpi for the program we run during compile
+LD_MKINL	= xlc
+PARALLEL_ONLY   = yes
 endif
 ifeq ($(USE_THREADS),yes)
 SYSLIBS        += -lpthread

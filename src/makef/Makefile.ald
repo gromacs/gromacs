@@ -1,0 +1,18 @@
+# Alpha/Linux Double Prec.
+#	@(#) Makefile.s18 1.1 15 Sep 1996
+#
+#
+#	GROMACS - Groningen Machine for Chemical Simulation
+#	Copyright (c) 1990, 1991, 1992, Groningen University
+#
+#	Makefile for gromacs on alpha processors running linux
+#
+# Uncomment the next line here too if you are running with compaq compilers,
+# or you will have problems with the real size if fortran!
+#COMPAQ_COMPILERS = yes
+#
+include		$(GMXHOME)/src/makef/Makefile.alx
+SYSDEFS		+= -DDOUBLE -D_ald_
+ifeq ($(COMPAQ_COMPILERS),yes)
+FFLAGS		+= -r8
+endif

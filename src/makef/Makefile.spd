@@ -9,16 +9,23 @@
 #
 # 	See README file for info
 #
-SYSDEFS		= -DHAVE_ULONG -DNO_NICE 
-# IBM hardware sqrt is faster than gmx.
+# The default setup is for nonparallell code, which is what
+# you want for all utility programs, etc.
+# To get the parallel mdrun, set use_mpi and recompile.
+#
+# Depending on your machine you might have to change the machine
+# type from pwr2 to something else. 
+#
+SYSDEFS		= -DHAVE_ULONG -DNO_NICE -DDOUBLE 
+# The power2 chip have hardware sqrt faster than the gromacs one
 
 # IBM C compilers
 CC              = xlc
 CCC             = xlC
 F77             = xlf
-CFLAGS          = -O3 -qarch=p2sc -qtune=p2sc -qmaxmem=16384 
-CCFLAGS         = -O3 -qarch=p2sc -qtune=p2sc -qmaxmem=16384
-FFLAGS          = -O3 -Q -qarch=p2sc -qtune=p2sc -qmaxmem=16384 -qhot -qrealsize=8 -qextname 
+CFLAGS          = -O3 -qarch=pwr2 -qtune=pwr2 -langlvl=ansi -qmaxmem=16384 
+CCFLAGS         = -O3 -qarch=pwr2 -qtune=pwr2 -qmaxmem=16384 
+FFLAGS          = -O3 -Q -qarch=pwr2 -qtune=pwr2 -qmaxmem=16384 -qhot -qrealsize=8 -qextname
 
 # Generic linking stuff
 LDFLAGS		= -L$(LIBDIR)
@@ -67,4 +74,7 @@ ifeq ($(USE_MPI),yes)
 CC		= mpcc
 CCC             = mpCC
 F77		= mpxlf
+CC_MKINL	= xlc # no mpi for the program we run during compile
+LD_MKINL	= xlc
+PARALLEL_ONLY   = yes
 endif

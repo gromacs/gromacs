@@ -9,8 +9,16 @@
 #
 # 	See README file for info
 #
-SYSDEFS		= -DHAVE_ULONG -DNO_NICE -DFINVSQRT -DCINVSQRT
-# in single precision the gmx sqrt might be slightly faster - check it!
+# This file is for Symmetric-Multiprocessor nodes with
+# powerpc 604 processors. You might want to change the processor
+# type.
+# The default setup is for nonparallell code, which is what
+# you want for all utility programs, etc.
+# To get the parallel mdrun, set use_mpi and recompile.
+#
+SYSDEFS		= -DHAVE_ULONG -DNO_NICE -DCINVSQRT -DFINVSQRT
+# at single prec. the gromacs sqrt might be slightly faster than ibm,
+# on ppc604 processors.
 
 # IBM C compilers
 CC              = xlc
@@ -18,7 +26,7 @@ CCC             = xlC
 F77             = xlf
 CFLAGS          = -O3 -qarch=604 -qtune=604  -qmaxmem=16384 
 CCFLAGS         = -O3 -qarch=604 -qtune=604 -qmaxmem=16384 
-FFLAGS          = -O3 -Q -qarch=604 -qtune=604 -qmaxmem=16384 -qhot -qextname 
+FFLAGS          = -O3 -Q -qarch=604 -qtune=604 -qmaxmem=16384 -qhot -qextname -qrealsize=8
 
 # Generic linking stuff
 LDFLAGS		= -L$(LIBDIR)
@@ -45,7 +53,7 @@ USEF77		= yes
 # set both to no. If you select both, something will break!!!
 #
 USE_PVM3	= no
-USE_MPI		= no
+USE_MPI		= yes
 #
 # If you want to use compressed data files set this to yes
 # This uses the xdr libraries of your UNIX system, which is virtually
@@ -67,4 +75,7 @@ ifeq ($(USE_MPI),yes)
 CC		= mpcc
 CCC             = mpCC
 F77		= mpxlf
+CC_MKINL	= xlc # no mpi for the program we run during compile
+LD_MKINL	= xlc
+PARALLEL_ONLY   = yes
 endif

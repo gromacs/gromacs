@@ -6,9 +6,9 @@
 #	Makefile for gromacs on ultrsparc processor
 #
 # 	You may have to change the paths in LDFLAGS below!
-#       If you dont have the performace library from sun, change -lmopt to -lm in SYSLIBS
+#       If you have the performace library from sun, try changing -lm to -lmopt in SYSLIBS
 #
-SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG -DHAVE_STRDUP -DHAVE_STRCASECMP -DFINVSQRT -DCINVSQRT
+SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG -DHAVE_STRDUP -DHAVE_STRCASECMP
 
 # Sun C compilers
 CC		= cc

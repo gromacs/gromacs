@@ -1,25 +1,31 @@
-# Alpha/Dec (Tru64 unix)
+# Alpha/Linux 
 #	@(#) Makefile.dec 1.2 5/15/97
 #
 #
 #	GROMACS - Groningen Machine for Chemical Simulation
 #	Copyright (c) 1990, 1991, 1992, Groningen University
 #
-#	Makefile for gromacs on DEC alpha machines with DEC C and Fortran
+#	Makefile for gromacs on DEC alpha machines with gnu or DEC C and Fortran
 #       compilers.
 #
 # 	See README file for info
 #
-# Use architecture alx/ald if you are running linux!
+# The default is to use gnu compilers. Uncomment the next line if you have
+# the faster dec/compaq compilers.
+#COMPAQ_COMPILERS = yes
 
 SYSDEFS		= -DHAVE_ULONG -DCINVSQRT -DFINVSQRT -DHAVE_STRCASECMP -DHAVE_STRDUP
 
-# 
+#
 #	USER MODIFIABLE SECTION
 #
 # If you want to use fortran innerloops set this to yes
 # For most machines this will improve the performance quite a bit
 # because C-compilers are not as good as Fortran compilers
+# Note that eartly versions of gnu f77 for alpha/linux were very slow -
+# if you are running gcc prior to egcs or gcc<2.95 you are better
+# of not using f77. 
+# (We definitely recommend you to upgrade, or better, use compaq/dec compilers)
 USEF77		= yes
 #
 # If you want to run in *** P A R A L L E L ***
@@ -45,39 +51,50 @@ HAVE_MOTIF	= no
 # in that file (e.g. for PVM)
 #
 
-# Dec C compilers
+
+ifeq ($(COMPAQ_COMPILERS),yes)
+#
+# THIS PART IS FOR DEC/COMPAQ COMPILERS
+#
+CC 		= ccc
+F77 		= fort
+# options
 ALLOPT		= -O5 -tune host -fast -math_library fast  -unroll 2 -arch host -pipeline -fp_reorder #-inline all 
 #ALLOPT		= -g
-
-
-# If you have cc.alt installed you should try to use it, it gives faster code
-# but is not guaranteed by DEC (let alone by the GROMACS crew)
-#CC		= cc.alt
-CC		= cc
-F77		= f77
-
 CFLAGS		= -std1 $(ALLOPT) -w0 -warnprotos #-trapuv
 FFLAGS		= $(ALLOPT) -assume noaccuracy_sensitive
-
+#
 LDFLAGS		= -L$(LIBDIR) 
 LD		= $(CC)  $(LDFLAGS) 
 RUNLDOPT	= -O4 -non_shared
 FLD		= $(F77) $(LDFLAGS)
-
-# Generic linking stuff
-
-ifeq ($(HAVE_MOTIF),yes)
-SYSDEFS		+= -DHAVE_MOTIF
-SYSLIBS		= -lm -lXm -lXt -lSM -lICE -lX11 -ldnet_stub #-lefence
-XLIBS		= $(SYSLIBS)
-else
-SYSLIBS		= -ldnet_stub -lm
+# The Compaq math lib instead of -lm 
+SYSLIBS		= -lcpml
 XLIBS		= $(SYSLIBS) -lX11 
-endif
-
 ARFLAGS		= ruv
 RANLIB		= ranlib
-
-ifeq ($(USE_MPI),yes)
-SYSLIBS         += -lrt -limc -pthread
+else
+#
+# THIS PART IS FOR GNU COMPILERS:
+#
+CC		= gcc
+F77		= g77
+MKDEP		= $(CC) -MM
+CFLAGS		= -O3 -ffast-math -finline-functions -Winline -fPIC -funroll-all-loops  -Wall -Wno-unused
+#
+LDFLAGS		= -L$(LIBDIR) 
+LD		= $(CC)  $(LDFLAGS) 
+RUNLDOPT	= -O4 -non_shared
+FLD		= $(F77) $(LDFLAGS)
+ifeq ($(HAVE_MOTIF),yes)
+SYSDEFS		+= -DHAVE_MOTIF
+XLIBS		= -L/usr/X11R6/lib -lXm -lXt -lX11
+SYSLIBS		= $(XLIBS)  -lm 
+else
+XLIBS		= -L/usr/X11R6/lib -lX11 
+SYSLIBS		= -lm
+endif
+SHAREIT		= (cd $(LIBDIR); ar x $(LIB); $(CC) $(LDFLAGS) -shared -Wl,-soname,$(SONAME) -o $(LIBDIR)/$(SONAME) *.o; $(RM) *.o)
+RANLIB		= ranlib
+X11INC		= -I/usr/X11R6/include
 endif

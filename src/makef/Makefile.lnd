@@ -9,3 +9,6 @@
 #
 include		$(GMXHOME)/src/makef/Makefile.lnx
 SYSDEFS		+= -DDOUBLE -D_lnx_
+# Note: If you are running with f77 inner loops, you must
+# add a flag to make the default real size 8 bytes in fortran.
+# (Which is ??? for g77)
