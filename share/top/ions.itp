@@ -114,13 +114,13 @@ CL-		1
 ;
 ; See literature references in ffoplsaa.itp
 ;
-[ moleculetype ]
+;[ moleculetype ]
 ; molname	nrexcl
-CU1+		1
+;CU1+		1
 
-[ atoms ]
+;[ atoms ]
 ; id	at type	res nr 	residu name	at name  cg nr	charge   mass
-1	CU1+	1	CU1+		CU1+	 1	1	 63.54600
+;1	CU1+	1	CU1+		CU1+	 1	1	 63.54600
 
 [ moleculetype ]
 ; molname	nrexcl
