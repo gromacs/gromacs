@@ -461,7 +461,7 @@ void gmx_finalize(t_commrec *cr)
     fprintf(debug,"Will call MPI_Finalize now\n");
   ret = MPI_Finalize();
   if (debug)
-    fprintfdebug,"Return code from MPI_Finalize = %d\n",ret);
+    fprintf(debug,"Return code from MPI_Finalize = %d\n",ret);
 #endif
 #endif
 }
