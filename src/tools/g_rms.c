@@ -62,8 +62,7 @@ int main (int argc,char *argv[])
     "each structure in the trajectory with respect to each other structure.",
     "This file can be visualized with for instance [TT]xv[tt] and can be",
     "converted to postscript with [TT]xpm2ps[tt].",
-    "All the structures are fitted on the structure in the structure file.",
-    "With [TT]-fitall[tt] all the structures are fitted pairwise.",
+    "All the structures are fitted pairwise.",
     "With [TT]-f2[tt],",
     "the 'other structures' are taken from a second trajectory.",
     "Option [TT]-bin[tt] does a binary dump of the RMSD matrix.[PAR]",
@@ -71,7 +70,7 @@ int main (int argc,char *argv[])
     "analogously to the [TT]-m[tt] option. Only bonds between atoms in the",
     "RMSD group are considered."
   };
-  static bool bPBC=TRUE,bFit=TRUE,bFitAll=FALSE;
+  static bool bPBC=TRUE,bFit=TRUE,bFitAll=TRUE;
   static bool bNano=FALSE,bDeltaLog=FALSE;
   static int  prev=0,freq=1,freq2=1,nlevels=80,avl=0;
   static real rmsd_user_max=-1,rmsd_user_min=-1, 
@@ -87,7 +86,7 @@ int main (int argc,char *argv[])
     { "-prev", FALSE, etINT, {&prev},
       "Calculate rmsd with previous frame" },
     { "-fitall",FALSE,etBOOL,{&bFitAll},
-      "Fit all pairs of structures in matrix" },
+      "HIDDENFit all pairs of structures in matrix" },
     { "-skip", FALSE, etINT, {&freq},
       "Only write every nr-th frame to matrix" },
     { "-skip2", FALSE, etINT, {&freq2},
@@ -113,7 +112,7 @@ int main (int argc,char *argv[])
   int          i,j,k,m,teller,teller2,tel_mat,tel_mat2;
 #define NFRAME 5000
   int          maxframe=NFRAME,maxframe2=NFRAME;
-  real         t,lambda,*w_rls,*w_rms,tmas;
+  real         t,lambda,*w_rls,*w_rms,tmas,*w_rls_m,*w_rms_m;
   bool         bTruncOct,bNorm,bAv,bFreq2,bFile2,bMat,bBond,bDelta;
   
   t_topology   top;
@@ -134,9 +133,9 @@ int main (int argc,char *argv[])
   real         **rmsdav_mat=NULL,av_tot,weight,weight_tot;
   real         **delta=NULL,delta_max,delta_scalex=0,delta_scaley=0,*delta_tot;
   int          delta_xsize=0,del_lev=100,mx,my,abs_my;
-  bool         bA1,bA2,bPrev,bTop;
-  int          ifit,*irms,ibond=0,*ind_bond=NULL;
-  atom_id      *ind_fit,**ind_rms;
+  bool         bA1,bA2,bPrev,bTop,*bInMat;
+  int          ifit,*irms,ibond=0,*ind_bond=NULL,n_ind_m;
+  atom_id      *ind_fit,**ind_rms,*ind_m,*rev_ind_m,*ind_rms_m;
   char         *gn_fit,**gn_rms;
   t_rgb        rlo,rhi;
   t_filenm fnm[] = {
@@ -254,7 +253,49 @@ int main (int argc,char *argv[])
   
   /* read first frame */
   natoms=read_first_x(&status,opt2fn("-f",NFILE,fnm),&t,&x,box);
-  if (bMat || bPrev) snew(mat_x,NFRAME);
+  if (bMat || bPrev) {
+    snew(mat_x,NFRAME);
+
+    if (bPrev)
+      /* With -prev we use all atoms for simplicity */
+      n_ind_m = natoms;
+    else {
+      /* Check which atoms we need (fit/rms) */
+      snew(bInMat,natoms);
+      for(i=0; i<ifit; i++) {
+	bInMat[ind_fit[i]] = TRUE;
+	n_ind_m++;
+      }
+      for(i=0; i<irms[0]; i++)
+	if (!bInMat[ind_rms[0][i]]) {
+	  bInMat[ind_rms[0][i]] = TRUE;
+	  n_ind_m++;
+	}
+    }
+    /* Make an index of needed atoms */
+    snew(ind_m,n_ind_m);
+    snew(rev_ind_m,natoms);
+    j = 0;
+    for(i=0; i<natoms; i++)
+      if (bPrev || bInMat[i]) {
+	ind_m[j] = i;
+	rev_ind_m[i] = j;
+	j++;
+      }
+    snew(w_rls_m,n_ind_m);
+    snew(ind_rms_m,irms[0]);
+    snew(w_rms_m,n_ind_m);
+    for(i=0; i<ifit; i++)
+      w_rls_m[rev_ind_m[ind_fit[i]]] = w_rls[ind_fit[i]];
+    snew(w_rms_m,n_ind_m);
+    for(i=0; i<irms[0]; i++) {
+      ind_rms_m[i] = rev_ind_m[ind_rms[0][i]];
+      w_rms_m[ind_rms_m[i]] = w_rms[ind_rms[0][i]];
+    }
+    sfree(rev_ind_m);
+    sfree(bInMat);
+  }
+
   if (bBond) {
     iatom=top.idef.il[F_SHAKE].iatoms;
     ncons=top.idef.il[F_SHAKE].nr/3;
@@ -294,9 +335,9 @@ int main (int argc,char *argv[])
       if (bMat || bPrev) {
 	if (tel_mat >= NFRAME) 
 	  srenew(mat_x,tel_mat+1);
-	snew(mat_x[tel_mat],natoms);
-	for (i=0;i<natoms;i++)
-	  copy_rvec(x[i],mat_x[tel_mat][i]);
+	snew(mat_x[tel_mat],n_ind_m);
+	for (i=0; i<n_ind_m; i++)
+	  copy_rvec(x[ind_m[i]],mat_x[tel_mat][i]);
       }
       if (bBond) {
 	if (tel_mat >= NFRAME) srenew(mat_b,tel_mat+1);
@@ -316,8 +357,8 @@ int main (int argc,char *argv[])
       j=tel_mat-prev-1;
       if (j<0)
 	j=0;
-      for (i=0;i<natoms;i++)
-	copy_rvec(mat_x[j][i],xp[i]);
+      for (i=0; i<n_ind_m; i++)
+	copy_rvec(mat_x[j][i],xp[ind_m[i]]);
       reset_x(ifit,ind_fit,natoms,NULL,xp,w_rls);
       if (bFit)
 	do_fit(natoms,w_rls,x,xp);
@@ -365,9 +406,9 @@ int main (int argc,char *argv[])
 	if (bMat) {
 	  if (tel_mat2 >= NFRAME) 
 	    srenew(mat_x2,tel_mat2+1);
-	  snew(mat_x2[tel_mat2],natoms);
-	  for (i=0;i<natoms;i++)
-	    copy_rvec(x[i],mat_x2[tel_mat2][i]);
+	  snew(mat_x2[tel_mat2],n_ind_m);
+	  for (i=0; i<n_ind_m; i++)
+	    copy_rvec(x[ind_m[i]],mat_x2[tel_mat2][i]);
 	}
 	if (bBond) {
 	  if (tel_mat2 >= NFRAME) srenew(mat_b2,tel_mat2+1);
@@ -448,15 +489,15 @@ int main (int argc,char *argv[])
       if (bBond) snew(bond_mat[i],tel_mat2); 
       for(j=0; j<tel_mat2; j++) {
 	if (bFitAll) {
-	  for (k=0;k<natoms;k++)
+	  for (k=0; k<n_ind_m; k++)
 	    copy_rvec(mat_x2[j][k],mat_x2_j[k]);
-	  do_fit(natoms,w_rls,mat_x[i],mat_x2_j);
+	  do_fit(n_ind_m,w_rls_m,mat_x[i],mat_x2_j);
 	} else
 	  mat_x2_j=mat_x2[j];
 	if (bMat) {
 	  if (bFile2 || (i<=j)) {
 	    rmsd_mat[i][j] =
-	      rmsdev_ind(irms[0],ind_rms[0],w_rms,mat_x[i],mat_x2_j);
+	      rmsdev_ind(irms[0],ind_rms_m,w_rms_m,mat_x[i],mat_x2_j);
 	    if (rmsd_mat[i][j] > rmsd_max) rmsd_max=rmsd_mat[i][j];
 	    if (rmsd_mat[i][j] < rmsd_min) rmsd_min=rmsd_mat[i][j];
 	  }
