@@ -138,6 +138,14 @@ static void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
     if (getenv("NOCRF"))
       *crf=0;
     *epsfac = ONE_4PI_EPS0;
+    if (bFirst) {
+      fprintf(log,"%s:\n"
+	      "epsRF = %10g, I   = %10g, volume = %10g, kappa = %10g\n"
+	      "rc    = %10g, krf = %10g, krf0   = %10g, crf   = %10g\n"
+	      "epsfac= %10g\n",
+	      eel_names[eel],eps,I,vol,*kappa,Rc,*krf,krf0,*crf,*epsfac);
+      bFirst=FALSE;
+    }
   }
   else {
     /* If we're not using a reaction field, set the factor to 0
@@ -149,14 +157,6 @@ static void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
     *crf    = 0.0;
     *epsfac = ONE_4PI_EPS0/eps;
   } 
-  if (bFirst) {
-    fprintf(log,"%s:\n"
-	    "epsRF = %10g, I   = %10g, volume = %10g, kappa = %10g\n"
-	    "rc    = %10g, krf = %10g, krf0   = %10g, crf   = %10g\n"
-	    "epsfac= %10g\n",
-	    eel_names[eel],eps,I,vol,*kappa,Rc,*krf,krf0,*crf,*epsfac);
-    bFirst=FALSE;
-  }
 }
 
 void update_forcerec(FILE *log,t_forcerec *fr,matrix box)
@@ -287,7 +287,7 @@ void init_forcerec(FILE *log,
      */
     dr = ir->userreal4;
     if (dr == 0.0)
-      dr = 0.15;
+      dr = 0.2;
     fr->rshort = fr->rlong = fr->rc+dr;
     
     for(m=0; (m<DIM); m++)

@@ -49,6 +49,7 @@ static real A,A_3,B,B_4,C,c1,c2,c3,c4,c5,c6,One_4pi,FourPi_V,Vol,N0;
 
 void set_LRconsts(FILE *log,real r1,real rc,rvec box,t_forcerec *fr)
 {
+  /* A, B and C are recalculated in tables.c */
   if (r1 < rc) {
     A   = (2*r1-5*rc)/(p3(rc)*p2(rc-r1));
     B   = (4*rc-2*r1)/(p3(rc)*p3(rc-r1));
@@ -63,20 +64,13 @@ void set_LRconsts(FILE *log,real r1,real rc,rvec box,t_forcerec *fr)
   C   = 1/rc-A_3*p3(rc-r1)-B_4*p4(rc-r1);
   N0  = 2.0*M_PI*p3(rc)*p3(rc-r1);
 
-  if (fr) {
-    fr->A   = A;
-    fr->B   = B;
-    fr->A_3 = A_3;
-    fr->B_4 = B_4;
-    fr->C   = C;
-  }
   Vol     =(box[XX]*box[YY]*box[ZZ]);
   FourPi_V=4.0*M_PI/Vol;
 
   fprintf(log,"Constants for short-range and fourier stuff:\n"
-	  "r1 = %10.3f,  rc = %10.3f\n"
+	  "r1 = %10.3f,  rc = %10.3f,  rsearch = % 10.3f\n"
 	  "A  = %10.3e,  B  = %10.3e,  C  = %10.3e, FourPi_V = %10.3e\n",
-	  r1,rc,A,B,C,FourPi_V);
+	  r1,rc,fr->rc,A,B,C,FourPi_V);
 
   /* Constants derived by Mathematica */
   c1 = -40*rc*rc    + 50*rc*r1    - 16*r1*r1;

@@ -44,7 +44,6 @@ typedef struct {
   real fudgeQQ;
     
   /* PPPM & Shifting stuff */
-  real A,B,C,A_3,B_4;
   real r1,rc;
   int  ntab;
   real tabscale;

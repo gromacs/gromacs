@@ -126,8 +126,8 @@ void copy2table(int n,int n0,int stride,
   }
 }
 
-enum { etabLJ6, etabLJ12, etabDavid, etabRF, etabCOUL, 
-       etabLJ6sw, etabLJ12sw, etabCOULsw, etabNR };
+enum { etabLJ6, etabLJ12, etabLJ6David, etabLJ12David, etabDavid,
+       etabRF, etabCOUL, etabLJ6sw, etabLJ12sw, etabCOULsw, etabNR };
 
 void read_table(int n0,int n,real x[],
 		real Vtab[],real Vtab2[],
@@ -164,20 +164,23 @@ void fill_table(int n0,int n,real x[],
 #ifdef DEBSW
   FILE *fp;
 #endif
-  int  i;
+  int  i,p;
   real r1,rc,r12,r13;
   real r,r2,r6;
   real k_rf,c_rf,rffac2;
+  /* Parameters for David's function */
+  real A,B,C,A_3,B_4;
   /* Parameters for the switching function */
   real ksw,swi,swi1,swi2,swi3;
   /* Temporary parameters */
-  bool bSwitch;
+  bool bSwitch,bDavid;
   real VtabT;  
   real VtabT1;  
   real VtabT2; 
   real VtabT3;
    
   bSwitch= ((tp == etabLJ6sw) || (tp == etabLJ12sw) || (tp == etabCOULsw));
+  bDavid= ((tp == etabLJ6David) || (tp == etabLJ12David) || (tp == etabDavid));
   r1     = fr->r1;
   rc     = fr->rc;
   k_rf   = fr->k_rf;
@@ -187,6 +190,25 @@ void fill_table(int n0,int n,real x[],
     ksw  = 1.0/pow((rc-r1),3.0);
   else
     ksw  = 0.0;
+  if (bDavid) {
+    if (tp==etabDavid) 
+      p=1;
+    else
+      if (tp==etabLJ6David) 
+	p=6; 
+      else 
+	p=12;
+    A = p * ((p+1)*r1-(p+4)*rc)/(pow(rc,p+2)*pow(rc-r1,2));
+    B = -p * ((p+1)*r1-(p+3)*rc)/(pow(rc,p+2)*pow(rc-r1,3));
+    C = pow(rc,-p)-A/3.0*pow(rc-r1,3)-B/4.0*pow(rc-r1,4);
+    if (tp==etabLJ6David) {
+      A=-A;
+      B=-B;
+      C=-C;
+    }
+    A_3=A/3.0;
+    B_4=B/4.0;
+  }
     
 #ifdef DEBSW
   fp=xvgropen("switch.xvg","switch","r","s");
@@ -221,6 +243,7 @@ void fill_table(int n0,int n,real x[],
       Ftab2[i] = 8.0*Vtab2[i]/r;
       break;
     case etabLJ6sw:
+    case etabLJ6David:
       /* Dispersion */
       if (r < rc) {      
 	Vtab[i]  = -r6;
@@ -237,6 +260,7 @@ void fill_table(int n0,int n,real x[],
       Ftab2[i] = 14.0*Vtab2[i]/r;
       break;
     case etabLJ12sw:
+    case etabLJ12David:
       /* Repulsion */
       if (r < rc) {      
 	Vtab[i]  = r12;
@@ -252,30 +276,12 @@ void fill_table(int n0,int n,real x[],
       Ftab2[i] = 6.0/(r2*r2);
       break;
     case etabCOULsw:
+    case etabDavid:
       if (r < rc) { 
 	Vtab[i]  = 1.0/r;
 	Ftab[i]  = 1.0/r2;
 	Vtab2[i] = 2.0/(r*r2);
 	Ftab2[i] = 6.0/(r2*r2);
-      }
-      break;
-    case etabDavid:
-      if (r < rc) {
-	/* Normal coulomb with cut-off correction for potential */
-	Vtab[i]  = 1.0/r - fr->C;
-	Ftab[i]  = 1.0/r2;
-	Vtab2[i] = 2.0/(r*r2);
-	Ftab2[i] = 6.0/(r2*r2);
-      
-	/* If in shifting range add something to it */
-	if (r > r1) {
-	  r12 = (r-r1)*(r-r1);
-	  r13 = (r-r1)*r12;
-	  Vtab[i]  += - fr->A_3*r13 - fr->B_4*r12*r12;
-	  Ftab[i]  +=   fr->A*r12 + fr->B*r13;
-	  Vtab2[i] += - 2.0*fr->A*(r-r1) - 3.0*fr->B*r12;
-	  Ftab2[i] +=   2.0*fr->A + 6.0*fr->B*(r-r1);
-	}
       }
       break;
     case etabRF:
@@ -287,6 +293,21 @@ void fill_table(int n0,int n,real x[],
     default:
       fatal_error(0,"Table type %d not implemented yet. (%s,%d)",
 		  tp,__FILE__,__LINE__);
+    }
+    if (bDavid) {
+      /* Normal coulomb with cut-off correction for potential */
+      if (r < rc) {
+	Vtab[i] -= C;
+	/* If in shifting range add something to it */
+	if (r > r1) {
+	  r12 = (r-r1)*(r-r1);
+	  r13 = (r-r1)*r12;
+	  Vtab[i]  += - A_3*r13 - B_4*r12*r12;
+	  Ftab[i]  +=   A*r12 + B*r13;
+	  Vtab2[i] += - 2.0*A*(r-r1) - 3.0*B*r12;
+	  Ftab2[i] +=   2.0*A + 6.0*B*(r-r1);
+	}
+      }
     }
     
     if ((r > r1) && bSwitch) {
@@ -312,7 +333,7 @@ void fill_table(int n0,int n,real x[],
 void make_tables(t_forcerec *fr,bool bVerbose)
 {
   char *fns[3]    = { "ctab.xvg", "dtab.xvg", "rtab.xvg"  };
-  int  pppmtab[3] = { etabDavid,  etabLJ6,   etabLJ12 };
+  int  pppmtab[3] = { etabDavid,  etabLJ6David,   etabLJ12David };
   int  rftab[3]   = { etabRF,     etabLJ6,   etabLJ12 };
   int  normtab[3] = { etabCOUL,   etabLJ6,   etabLJ12 };
   int  swtab[3]   = { etabCOULsw, etabLJ6sw, etabLJ12sw  };
