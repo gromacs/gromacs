@@ -85,6 +85,7 @@ t_corr *init_corr(int nrgrp,int type,int axis,real dim_factor,
   int     i;
 
   snew(this,1);
+  this->type      = type;
   this->ngrp      = nrgrp;
   this->nframes   = 0;
   this->nlast     = 0;
@@ -212,7 +213,7 @@ static void corr_print(t_corr *this,char *fn,char *title,char *yaxis,bool bXvgr)
     
   lsq_y_ax_b2(this->nframes,this->time,this->data[0],&aa,&bb,&da,&db);
   for(i=0; (i<this->nframes); i++) {
-    fprintf(out,"%10g",this->time[i]);
+    fprintf(out,"%10g",this->time[i]-this->time[0]);
     for(j=0; (j<this->ngrp); j++)
       fprintf(out,"  %10g",this->data[j][i]);
     fprintf(out,"\n");
@@ -342,7 +343,7 @@ void corr_loop(t_corr *this,char *fn,int gnx[],atom_id *index[],
     for(i=0; (i<this->ngrp); i++) {
       /* nice for putting things in boxes and such */
       prep1(this,gnx[i],index[i],x[cur],x[prev],box);
-      /* calculate something usefull, like mean square displacements */
+      /* calculate something useful, like mean square displacements */
       calc_corr(this,i,gnx[i],index[i],x[cur],calc1);
     }
     cur=prev;
