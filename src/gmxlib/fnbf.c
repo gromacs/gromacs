@@ -151,8 +151,8 @@ static real *fbuf=NULL;
 #define SOFTCORE_LJARGS ,mdatoms->typeA,SCAL(fr->ntype),fr->nbfp
 #define RF_ARGS         ,SCAL(fr->k_rf),SCAL(fr->c_rf)
 #define LJCTAB_ARGS     ,SCAL(fr->tabscale),fr->coulvdwtab
-#define LJTAB_ARGS      ,SCAL(fr->tabscale),fr->coultab
-#define COULTAB_ARGS    ,SCAL(fr->tabscale),fr->vdwtab
+#define LJTAB_ARGS      ,SCAL(fr->tabscale),fr->vdwtab
+#define COULTAB_ARGS    ,SCAL(fr->tabscale),fr->coultab
 #define BHTAB_ARGS      ,SCAL(fr->tabscale_exp)
 #define FREE_ARGS       ,SCAL(lambda),dvdlambda
 #define FREE_CHARGEB    ,mdatoms->chargeB
@@ -164,8 +164,8 @@ static real *fbuf=NULL;
 #define ASM_COUL_ARGS    ,mdatoms->chargeA,fr->epsfac,egcoul
 #define ASM_RF_ARGS      ,fr->k_rf,fr->c_rf
 #define ASM_LJCTAB_ARGS  ,fr->tabscale,fr->coulvdwtab
-#define ASM_LJTAB_ARGS   ,fr->tabscale,fr->coultab
-#define ASM_COULTAB_ARGS ,fr->tabscale,fr->vdwtab
+#define ASM_LJTAB_ARGS   ,fr->tabscale,fr->vdwtab
+#define ASM_COULTAB_ARGS ,fr->tabscale,fr->coultab
 
 
 int cpu_capabilities = UNKNOWN_CPU;
