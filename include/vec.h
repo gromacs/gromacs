@@ -148,6 +148,11 @@ static void svmul(real a,rvec v1,rvec v2)
   v2[ZZ]=a*v1[ZZ];
 }
 
+static real distance2(rvec v1, rvec v2)
+{
+  return sqr(v2[XX]-v1[XX]) + sqr(v2[YY]-v1[YY]) + sqr(v2[ZZ]-v1[ZZ]);
+}
+
 static void clear_rvec(rvec a)
 {
   const real nul=0.0;
