@@ -62,15 +62,15 @@ int main(int argc,char *argv[])
   };
   static char *opt;
   static bool bALL=FALSE,bChandler=FALSE;
-  static int  resolution=5;
+  static real binwidth=1;
   static int  nframes = 10;
   t_pargs pa[] = {
     { "-type", FALSE, etSTR, &opt,
       "Select either A (angles), D (dihedrals), I (impropers), R (Ryckaert-Bellemans)" },
     { "-all",    FALSE,  etBOOL, &bALL,
       "Plot all angles separately in the averages file, in the order of appearance in the index file. This way the first graph is the average, the rest are the individual angles." },
-    { "-resolution", FALSE, etINT, &resolution,
-      "The number of points per degree in the distribution" },
+    { "-binwidth", FALSE, etREAL, &binwidth,
+      "binwidth (degrees) for calculating the distribution" },
     { "-nframes",   FALSE, etINT,  &nframes,
       "Number of frames in your trajectory" },
     { "-chandler", FALSE,  etBOOL, &bChandler,
@@ -142,7 +142,7 @@ int main(int argc,char *argv[])
   }
 
   /* Calculate bin size */
-  maxangstat=resolution*maxang;
+  maxangstat=(int)(maxang/binwidth+0.5);
     
   rd_index(ftp2fn(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
   nangles=isize/mult;
@@ -193,7 +193,8 @@ int main(int argc,char *argv[])
   read_ang_dih(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),(mult == 3),
 	       bALL || bCorr || bTrans,bRb,maxangstat,angstat,
 	       &nframes,time,isize,index,trans_frac,aver_angle,dih);
-	       
+  fprintf(stderr,"Read %d frames\n",nframes);
+  
   dt=(time[nframes-1]-time[0])/(nframes-1);
   
   if (bAver) {
