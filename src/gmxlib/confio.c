@@ -559,6 +559,7 @@ bool gro_next_x_or_v(FILE *status,t_trxframe *fr)
   fr->bV = get_w_conf(status,title,title,&atoms,&ndec,fr->x,fr->v,fr->box);
   fr->bPrec = TRUE;
   fr->prec = 1;
+  /* prec = 10^ndec: */
   for(i=0; i<ndec; i++)
     fr->prec *= 10;
   fr->title = title;
