@@ -44,10 +44,6 @@ static char *SRCID_sim_util_h = "$Id$";
 #include "tgroup.h"
 #include "time.h"
 
-extern void print_time(FILE *out,time_t start,int step,t_inputrec *ir);
-
-extern time_t print_date_and_time(FILE *log,int pid,char *title);
-
 extern void finish_run(FILE *log,t_commrec *cr,
 		       char *confout,char *traj,
 		       char *xtc_traj,
@@ -60,10 +56,7 @@ extern void finish_run(FILE *log,t_commrec *cr,
 		       double dt,int step,
 		       bool bWriteStat);
 
-extern void nstop_cm(FILE *log,t_commrec *cr,
-		     int start,int nr_atoms,real mass[],rvec x[],rvec v[]);
-
-extern void calc_dispcorr(FILE *log,bool bDispCorr,t_forcerec *fr,int natoms,
+extern void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
 			  matrix box,tensor pres,tensor virial,real ener[]);
      
 #endif	/* _sim_util_h */
