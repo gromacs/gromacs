@@ -100,9 +100,21 @@ extern char warn_buf[1024];
 
 extern void warning(char *s);
 /* Issue a warning, with the string s. If s == NULL, then warn_buf
- * will be printed instead.
+ * will be printed instead. The file and line set by set_warning_line
+ * are printed, nwarn (local) is incremented.
+ */
+
+extern void warning_error(char *s);
+/* Issue an error, with the string s. If s == NULL, then warn_buf
+ * will be printed instead. The file and line set by set_warning_line
+ * are printed, nwarn and nwarn_error (local) are incremented.
  */
  
+extern void check_warning_error(int f_errno,char *file,int line);
+/* When warning_error has been called at least once gmx_fatal is called,
+ * otherwise does nothing.
+ */
+
 extern void print_warn_num(void);
 /* Print the total number of warnings, if larger than 0 */
   

@@ -154,14 +154,14 @@ real check_mol(t_atoms *atoms)
       rn=atoms->atom[i].resnr;
       sprintf(buf,"atom %s (Res %s-%d) has mass %g\n",
 	      *(atoms->atomname[i]),*(atoms->resname[rn]),rn+1,m);
-      warning(buf);
+      warning_error(buf);
     } else 
       if ((m!=0) && (pt == eptDummy)) {
 	rn=atoms->atom[i].resnr;
 	sprintf(buf,"dummy atom %s (Res %s-%d) has non-zero mass %g\n"
 		"     Check your topology.\n",
 		*(atoms->atomname[i]),*(atoms->resname[rn]),rn+1,m);
-	warning(buf);
+	warning_error(buf);
 	/* The following statements make LINCS break! */
 	/* atoms->atom[i].m=0; */
       }
@@ -240,7 +240,7 @@ static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb)
   if ((*nb < 1) || (*nb >= eNBF_NR)) {
     sprintf(warn_buf,"Invalid nonbond function selector '%s' using %s",
 	    nb_str,enbf_names[1]);
-    warning(NULL);
+    warning_error(NULL);
     *nb = 1;
   }
   *comb = -1;
@@ -252,7 +252,7 @@ static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb)
   if ((*comb < 1) || (*comb >= eCOMB_NR)) {
     sprintf(warn_buf,"Invalid combination rule selector '%s' using %s",
 	    comb_str,ecomb_names[1]);
-    warning(NULL);
+    warning_error(NULL);
     *comb = 1;
   }
 }
@@ -354,7 +354,7 @@ static char **read_topol(char        *infile,
 
 	if ((newd = str2dir(dirstr)) == d_invalid) {
 	  sprintf(errbuf,"Invalid directive %s",dirstr);
-	  warning(errbuf);
+	  warning_error(errbuf);
 	}
 	else {
 	  /* Directive found */
@@ -567,6 +567,8 @@ static char **read_topol(char        *infile,
   *nsim=Nsim;
   *sims=Sims;
   
+  check_warning_error(FARGS);
+
   return title;
 }
 

@@ -131,7 +131,7 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype,
   default:
     sprintf(errbuf,"Invalid nonbonded type %s",
 	    interaction_function[ftype].longname);
-    warning(errbuf);
+    warning_error(errbuf);
   }
 }
 
@@ -403,7 +403,7 @@ void push_bt(directive d,t_params bt[],int nral,char ***typenames, int ntypes,ch
   if ((nn=sscanf(line,formal[nral],
 		 alc[0],alc[1],alc[2],alc[3],alc[4],alc[5])) != nral+1) {
     sprintf(errbuf,"Not enough atomtypes (%d instead of %d)",nn-1,nral);
-    warning(errbuf);
+    warning_error(errbuf);
     return;
   }
   
@@ -496,7 +496,7 @@ void push_dihedraltype(directive d,t_params bt[],char ***typenames,int ntypes,ch
     ft    = atoi(alc[nral]);
   } else {
     sprintf(errbuf,"Incorrect number of atomtypes for dihedral (%d instead of 2 or 4)",nn-1);
-    warning(errbuf);
+    warning_error(errbuf);
     return;
   }
   
@@ -551,7 +551,7 @@ void push_nbt(directive d,t_nbparam **nbt,t_atomtype *atype,
     sprintf(errbuf,"Trying to add %s while the default nonbond type is %s",
 	    interaction_function[ftype].longname,
 	    interaction_function[nb_funct].longname);
-    warning(errbuf);
+    warning_error(errbuf);
     return;
   }
   
@@ -1030,7 +1030,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     nread = sscanf(line,format,&cc[0],&cc[1],&cc[2],&cc[3],&cc[4],&cc[5],
 		   &cc[6],&cc[7],&cc[8],&cc[9],&cc[10],&cc[11]);
     if (nread > nrfp) {
-      warning("Too many parameters");
+      warning_error("Too many parameters");
       nread = nrfp;
     }
     
@@ -1047,8 +1047,12 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   if (bDef) {
     /* Use defaults */
     nrfpA=interaction_function[ftype].nrfpA;
-  
-    if (nread < nrfpA) {
+    
+    if (nread > 0 && nread < nrfpA) {
+      /* Issue an error, do not use defaults */
+      sprintf(errbuf,"Not enough parameters, there should be at least %d (or 0 for defaults)",nrfpA);
+      warning_error(errbuf);
+    } else if (nread == 0) {
       if (!bFoundA) {
 	if (interaction_function[ftype].flags & IF_DUMMY) {
 	  /* set them to NOTSET, will be calculated later */

@@ -358,6 +358,7 @@ void gmx_fatal(int f_errno,char *file,int line,char *fmt,...)
 }
 
 static int  nwarn       = 0;
+static int  nwarn_error = 0;
 static int  maxwarn     = 10;
 static int  lineno      = 1;
 static char filenm[256] = "";
@@ -365,8 +366,9 @@ char   warn_buf[1024]   = "";
 
 void init_warning(int maxwarning)
 {
-  maxwarn = maxwarning;
-  nwarn   = 0;
+  maxwarn     = maxwarning;
+  nwarn       = 0;
+  nwarn_error = 0;
 }
 
 void set_warning_line(const char *s,int line)
@@ -385,7 +387,7 @@ char *get_warning_file()
   return filenm;
 }
 
-void warning(char *s)
+static void low_warning(char *warn_err,char *s)
 {
 #define indent 2 
   char linenobuf[32], *temp, *temp2;
@@ -404,12 +406,31 @@ void warning(char *s)
   temp[indent] = '\0';
   strcat(temp,s);
   temp2 = wrap_lines(temp,78-indent,indent,FALSE);
-  fprintf(stderr,"WARNING %d [file %s, line %s]:\n%s\n",
-	  nwarn,filenm,linenobuf,temp2);
+  fprintf(stderr,"%s %d [file %s, line %s]:\n%s\n",
+	  warn_err,nwarn,filenm,linenobuf,temp2);
   sfree(temp);
   sfree(temp2);
   if (nwarn >= maxwarn)
     gmx_fatal(FARGS,"Too many warnings, %s terminated",Program());
+}
+
+void warning(char *s)
+{
+  low_warning("WARNING",s);
+}
+
+void warning_error(char *s)
+{
+  nwarn_error++;
+  low_warning("ERROR",s);
+}
+
+void check_warning_error(int f_errno,char *file,int line)
+{
+  if (nwarn_error > 0) {
+    gmx_fatal(f_errno,file,line,"There were %d errors in input file(s)",
+	      nwarn_error);
+  }
 }
 
 void print_warn_num(void)
