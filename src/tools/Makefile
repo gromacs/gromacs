@@ -217,9 +217,11 @@ g_enemat:	g_enemat.o
 g_sas:		g_sas.o	nsc.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
+g_cluster:	g_cluster.o ql77.o cmat.o
+		$(LD) -o $@ $^ $(SYSLIBS)
+
 g_multipoles:	g_multipoles.o
 		$(LD) -o $@ $^ $(SYSLIBS)
-g_cluster:	g_cluster.o
-		$(LD) -o $@ $^ $(SYSLIBS)
+
 include	Make.dep
 endif

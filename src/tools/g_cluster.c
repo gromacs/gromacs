@@ -47,158 +47,64 @@ static char *SRCID_g_rmsdist_c = "$Id$";
 #include "futil.h"
 #include "matio.h"
 #include "callf77.h"
-
-typedef struct {
-  int  i,j;
-  real dist;
-} t_dist;
-
-typedef struct {
-  int  conf,clust;
-} t_clustid;
-
-t_clustid *new_clustid(int n1)
-{
-  t_clustid *c;
-  int       i;
-  
-  snew(c,n1);
-  for(i=0; (i<n1); i++) {
-    c[i].conf = i;
-    c[i].clust = i;
-  }
-  return c;  
-}
-
-static real **mk_matrix(int nf,bool b1D)
-{
-  real **rms;
-  real *rms0=NULL;
-  int  i;
-  
-  snew(rms,nf);
-  if (b1D)
-    snew(rms0,nf*nf); 
-  
-  for(i=0; (i<nf); i++) {
-    if (b1D)
-      rms[i] = &(rms0[i*nf]);
-    else
-      snew(rms[i],nf);
-  }
-  return rms;
-}
-
-static real low_row_energy(int n1,int row,real *mat)
-{
-  real re = 0;
-  real n2_1;
-  int  i;
-  
-  n2_1 = 1.0/n1;
-  for(i=0; (i<n1); i++) 
-    re += (abs(i-row)*n2_1)*mat[i];
-  
-  return re;
-}
-
-static real row_energy(int n1,int row,real **mat)
-{
-  return low_row_energy(n1,row,mat[row]);
-}
-
-static real rows_energy(int n1,real **mat,real *row_e)
-{
-  real re,retot;
-  real n2_1;
-  int  i,j;
-  
-  retot = 0;
-  n2_1 = 1.0/n1;
-  for(j=0; (j<n1); j++) {
-    re = 0;
-    for(i=0; (i<n1); i++) 
-      re += (abs(i-j)*n2_1)*mat[j][i];
-    row_e[j] = re;
-    retot += re;
-  }
-  return retot/n1;
-}
-
-static real energy(int n1,real **mat)
-{
-  real ee=0;
-  int  i;
-  
-  for(i=0; (i<n1); i++)
-    ee += row_energy(n1,i,mat);
-    
-  return ee/n1;
-}
+#include "cmat.h"
 
 void pr_energy(FILE *fp,real e)
 {
   fprintf(fp,"Energy: %8.4f\n",e);  
 }
 
-void swap_mat(int n1,real **mat,int isw,int jsw)
+void mc_optimize(FILE *log,t_mat *m,int maxiter,int *seed)
 {
-  real *tmp,ttt;
-  int  i;
-  
-  /* Swap rows */
-  tmp      = mat[isw];
-  mat[isw] = mat[jsw];
-  mat[jsw] = tmp;
-  /* Swap columns, take into account that rows have been swapped already */
-  for(i=0; (i<n1); i++) {
-    ttt         = mat[i][isw];
-    mat[i][isw] = mat[i][jsw];
-    mat[i][jsw] = ttt;
-  }
-}
-
-void mc_optimize(FILE *log,int n1,real **mat,int maxiter,int *seed)
-{
-  real e[2],ei,ej,*erow;
+  real e[2],ei,ej;
   real kT = 2.5;
   int  cur=0;
 #define next 1-cur
-  int  i,isw,jsw;
+  int  i,isw,jsw,iisw,jjsw,nn;
   
-  snew(erow,n1);
   fprintf(stderr,"Doing Monte Carlo clustering\n");
+  nn = m->nn;
   if (getenv("TESTMC")) {
-    e[cur] = rows_energy(n1,mat,erow);
+    e[cur] = mat_energy(m);
     pr_energy(log,e[cur]);
     fprintf(log,"Doing 1000 random swaps\n");
     for(i=0; (i<1000); i++) {
-      isw = n1*rando(seed);
-      jsw = n1*rando(seed);
-      swap_mat(n1,mat,isw,jsw);
+      do {
+	isw = nn*rando(seed);
+	jsw = nn*rando(seed);
+      } while ((isw == jsw) || (isw >= nn) || (jsw >= nn));
+      iisw = m->m_ind[isw];
+      jjsw = m->m_ind[jsw];
+      m->m_ind[isw] = jjsw;
+      m->m_ind[jsw] = iisw;
     }
   }
-  e[cur] = rows_energy(n1,mat,erow);
+  e[cur] = mat_energy(m);
   pr_energy(log,e[cur]);
   for(i=0; (i<maxiter); i++) {
     do {
-      isw = n1*rando(seed);
-      jsw = n1*rando(seed);
-    } while ((isw == jsw) || (isw >= n1) || (jsw >= n1));
-    ei = low_row_energy(n1,isw,mat[jsw]);
-    ej = low_row_energy(n1,jsw,mat[isw]);
+      isw = nn*rando(seed);
+      jsw = nn*rando(seed);
+    } while ((isw == jsw) || (isw >= nn) || (jsw >= nn));
     
-    e[next] = e[cur] + (ei+ej-erow[isw]-erow[jsw])/n1;
+    iisw = m->m_ind[isw];
+    jjsw = m->m_ind[jsw];
+    ei   = row_energy(nn,isw,m->mat[jjsw],m->m_ind);
+    ej   = row_energy(nn,jsw,m->mat[iisw],m->m_ind);
     
-    if ((e[next] > e[cur])) 
+    e[next] = e[cur] + (ei+ej-EROW(m,isw)-EROW(m,jsw))/nn;
+    
+    if ((e[next] > e[cur])) {
       /* || (exp(-(e[next]-e[cur])/kT) > rando(seed))) */
-       {
+      
       /* Now swapping rows */
-      swap_mat(n1,mat,isw,jsw);
-      erow[isw] = ei;
-      erow[jsw] = ej;
-      cur = next;
-      fprintf(log,"Iter: %d Swapped %4d and %4d ",i,isw,jsw);
+      m->m_ind[isw] = jjsw;
+      m->m_ind[jsw] = iisw;
+      EROW(m,isw)   = ei;
+      EROW(m,jsw)   = ej;
+      cur           = next;
+      fprintf(log,"Iter: %d Swapped %4d and %4d (now %g) ",
+	      i,isw,jsw,mat_energy(m));
       pr_energy(log,e[cur]);
     }
   }
@@ -302,9 +208,8 @@ void sort_matrix(int n1,real **mat)
   for(i=0; (i<n1); i++)
     for(j=0; (j<n1); j++)
       mat[i][j] = mcpy[index[i]][index[j]];
-  for(i=0; (i<n1); i++)
-    sfree(mcpy[i]);
-  sfree(mcpy);
+  /* done_mat(n1,mcpy); 
+     sfree(mcpy);*/
   sfree(index);
 }
 
@@ -332,20 +237,21 @@ static int ccomp(const void *a,const void *b)
   return da->clust - db->clust;
 }
 
-void gather(int n1,real **mat,real cutoff)
+void gather(t_mat *m,real cutoff)
 {
   t_clustid *c;
   t_dist    *d;
-  int    i,j,k,m,nn,cid;
+  int    i,j,k,nn,cid,n1;
   
   /* First we sort the entries in the RMS matrix */
+  n1 = m->nn;
   nn = ((n1-1)*n1)/2;
   snew(d,nn);
   for(i=k=0; (i<n1); i++)
     for(j=i+1; (j<n1); j++,k++) {
       d[k].i    = i;
       d[k].j    = j;
-      d[k].dist = mat[i][j];
+      d[k].dist = m->mat[i][j];
     }
   assert(k == nn);
   qsort(d,nn,sizeof(d[0]),dcomp);
@@ -381,13 +287,14 @@ void gather(int n1,real **mat,real cutoff)
   mcpy = mk_matrix(n1,FALSE);
   for(i=0; (i<n1); i++) {
     for(j=0; (j<n1); j++)
-      mcpy[c[i].conf][c[j].conf] = mat[i][j];
+      mcpy[c[i].conf][c[j].conf] = m->mat[i][j];
   }
   for(i=0; (i<n1); i++) {
     for(j=0; (j<n1); j++)
-      mat[i][j] = mcpy[i][j];
+      m->mat[i][j] = mcpy[i][j];
   }
-    
+  done_matrix(n1,&mcpy);
+  
   sfree(c);
   sfree(d);
 }
@@ -530,26 +437,6 @@ rvec **read_whole_trj(char *fn,int isize,atom_id index[],int skip,int *nframe)
   return xx;
 }
 
-void rms_dist(char *fn,int nf,real **mat,real maxrms)
-{
-  FILE   *fp;
-  int    i,j,*histo;
-  real   fac;
-  
-  fac = 100/maxrms;
-  snew(histo,101);
-  for(i=0; (i<nf); i++) 
-    for(j=i+1; (j<nf); j++)
-      histo[(int)(fac*mat[i][j])]++;
-      
-  fp = xvgropen(fn,"RMS Distribution","RMS (nm)","a.u.");
-  for(i=0; (i<101); i++)
-    fprintf(fp,"%10g  %10d\n",i/fac,histo[i]);
-  fclose(fp);
-  sfree(histo);
-  xvgr_file(fn,NULL);
-}
-
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -572,9 +459,8 @@ int main(int argc,char *argv[])
   matrix       box;
   rvec         *x1,*x2,**xx;
   char         *fn;
-  double       sum;
-  real         **rms,maxrms,*resnr;
-  real         *rms0,*eigval;
+  t_mat        *rms;
+  real         *resnr,*eigval;
   t_topology   top;
   bool         bSameF;
   t_rgb        rlo,rhi;
@@ -588,7 +474,7 @@ int main(int argc,char *argv[])
   static int  nlevels=40,nframes=100,skip=0;
   static real scalemax=-1.0,rmscut=0.1;
   static bool bEigen=FALSE,bMem=TRUE,bLink=FALSE,bMC=TRUE;
-  static int  niter=1000,seed=1993;
+  static int  niter=10000,seed=1993;
   static int  M=10,P=3;
   t_pargs pa[] = {
     { "-nlevels",   FALSE, etINT,  &nlevels,
@@ -659,13 +545,9 @@ int main(int argc,char *argv[])
     snew(d1[i],isize);
     snew(d2[i],isize);
   }
-  nf = nframes/skip+1;
+  nf  = nframes/skip+1;
   
-  rms = mk_matrix(nf,bEigen);
-  if (bEigen)
-    rms0 = rms[0];
-  else
-    rms0 = NULL;
+  rms = init_mat(nf,bEigen);
     
   snew(resnr,nf);
   for(i=0; (i<nf); i++) 
@@ -680,8 +562,6 @@ int main(int argc,char *argv[])
   /* Loop over first coordinate file */
   fn = opt2fn("-f",NFILE,fnm);
   
-  maxrms = 0;
-  sum    = 0;
   if (bMem) {
     xx = read_whole_trj(fn,isize,index,skip,&nf);
     fprintf(stderr,"Computing %dX%d RMS matrix\n",nf,nf);
@@ -690,11 +570,7 @@ int main(int argc,char *argv[])
       calc_dist(isize,xx[i1],box,d1);
       for(i2=i1+1; (i2<nf); i2++) {
 	calc_dist(isize,xx[i2],box,d2);
-	rms[i1][i2] = rms[i2][i1] = rms_diff(isize,d1,d2);
-	
-	/* Store maximum value for plotting */
-	maxrms = max(maxrms,rms[i1][i2]);
-	sum += rms[i1][i2];
+	set_mat_entry(rms,i1,i2,rms_diff(isize,d1,d2));
       }
       nrms -= (nf-i1-1);
       fprintf(stderr,"\r# RMS calculations left: %d   ",nrms);
@@ -740,11 +616,7 @@ int main(int argc,char *argv[])
 	    calc_dist_ind(isize,index,x2,box,d2);
 	    
 	    /* Compute RMS between two distance matrices */
-	    rms[i1s][i2s] = rms[i2s][i1s] = rms_diff(isize,d1,d2);
-	    
-	    /* Store maximum value for plotting */
-	    maxrms = max(maxrms,rms[i1s][i2s]);
-	    sum += rms[i1s][i2s];
+	    set_mat_entry(rms,i1s,i2s,rms_diff(isize,d1,d2));
 	    i2s++;
 	  }
 	  i2++;
@@ -756,14 +628,15 @@ int main(int argc,char *argv[])
     fprintf(stderr,"\n");
     nf = i1;
   }
+
   fprintf(stderr,"The maximum RMS was %g nm\n"
 	  "Average RMS was %g\n"
 	  "number of frames for matrix %d\n"
 	  "Energy of the matrix is %g nm\n",
-	  maxrms,2*sum/(nf*(nf-1)),nf,energy(nf,rms));
+	  rms->maxrms,2*rms->sumrms/(nf*(nf-1)),nf,mat_energy(rms));
   
   /* Plot the rms distribution */
-  rms_dist(opt2fn("-dist",NFILE,fnm),nf,rms,maxrms);
+  rms_dist(opt2fn("-dist",NFILE,fnm),rms);
   
   /* Set colors for plotting: white = zero RMS, black = maximum */
   rlo.r=1.0, rlo.g=1.0, rlo.b=0.0;
@@ -772,20 +645,20 @@ int main(int argc,char *argv[])
   /* Write out plot file with RMS matrix */
   fp = opt2FILE("-o",NFILE,fnm,"w");
   write_xpm(fp,"RMS","RMS (n)","Confs 1","Confs 2",
-	    nf,nf,resnr,resnr,rms,0.0,maxrms,rlo,rhi,&nlevels);
+	    nf,nf,resnr,resnr,rms->mat,0.0,rms->maxrms,rlo,rhi,&nlevels);
   ffclose(fp);
   xv_file(opt2fn("-o",NFILE,fnm),NULL);
   
   if (bLink) 
     /* Now sort the matrix and write it out again */
-    gather(nf,rms,rmscut);
+    gather(rms,rmscut);
   else if (bEigen) {
     /* Do a diagonalization */
     snew(eigval,nf);
     /*for(i1=0; (i1<nf); i1++)
       for(i2=0; (i2<nf); i2++)
       rms[i1][i2] = maxrms - rms[i1][i2];*/
-    ql77(nf,rms0,eigval); 
+    ql77(nf,rms->mat[0],eigval); 
     fp = xvgropen(opt2fn("-ev",NFILE,fnm),"Eigenvalues","index","value");
     for(i=0; (i<nf); i++)
       fprintf(fp,"%10d  %10g\n",i,eigval[i]);
@@ -793,20 +666,24 @@ int main(int argc,char *argv[])
     xvgr_file(opt2fn("-ev",NFILE,fnm),NULL);
   }
   else if (bMC) {
-    mc_optimize(log,nf,rms,niter,&seed);
+    mc_optimize(log,rms,niter,&seed);
   }
   else {
-    jarvis_patrick(log,nf,rms,M,P);
+    jarvis_patrick(log,rms->nn,rms->mat,M,P);
   }
   ffclose(log);
+  
   fprintf(stderr,"Energy of the matrix after clustering is %g nm\n",
-	  energy(nf,rms));
+	  mat_energy(rms));
+  swap_mat(rms);
+  reset_index(rms);
+  
   fp = opt2FILE("-os",NFILE,fnm,"w");
   write_xpm(fp,"RMS Sorted","RMS (n)","Confs 1","Confs 2",
-	    nf,nf,resnr,resnr,rms,0.0,maxrms,rlo,rhi,&nlevels);
+	    nf,nf,resnr,resnr,rms->mat,0.0,rms->maxrms,rlo,rhi,&nlevels);
   ffclose(fp);
   xv_file(opt2fn("-os",NFILE,fnm),NULL);	
-    
+
   /* Thank the user for her patience */  
   thanx(stdout);
   
