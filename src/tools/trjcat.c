@@ -91,7 +91,7 @@ static void scan_trj_files(char **fnms,int nfiles,real *readtime, real *timestep
       *timestep=fr.time-t;
     }
     else {
-      if (imax==NOTSET) {
+      if (imax==NO_ATID) {
 	if(natoms!=fr.natoms) 
 	  fatal_error(0,"\nDifferent number of atoms (%d/%d)in files",
 		      natoms,fr.natoms);
@@ -288,7 +288,7 @@ int main(int argc,char *argv[])
 
   bIndex=ftp2bSet(efNDX,NFILE,fnm);
   
-  imax=NOTSET;
+  imax=NO_ATID;
   if (bIndex) {
     printf("Select group for output\n");
     rd_index(ftp2fn(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
