@@ -106,17 +106,14 @@ void mpiio_rxs(int pid,void *buf,int bufsize)
     fatal_error(0,"MPI_Recv Failed !");
 }
 
-int mpiio_setup(char **argv,int *nprocs)
+int mpiio_setup(int *argc,char **argv,int *nprocs)
 {
   char   buf[256];
   int    resultlen;               /* actual length of processor name      */
-  int    i,argc,flag;
+  int    i,flag;
   
-  /* Count the arguments */
-  for(argc=0; (argv[argc] != NULL); argc++)
-    ;
   /* Call the MPI routines */
-  (void) MPI_Init(&argc,&argv);
+  (void) MPI_Init(argc,&argv);
   (void) MPI_Comm_size( MPI_COMM_WORLD, &mpi_num_procs );
   (void) MPI_Comm_rank( MPI_COMM_WORLD, &mpi_my_rank );
   (void) MPI_Get_processor_name( mpi_hostname, &resultlen );

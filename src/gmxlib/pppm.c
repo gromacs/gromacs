@@ -30,6 +30,7 @@ static char *SRCID_pppm_c = "$Id$";
 
 #include <stdio.h>
 #include <math.h>
+#include "assert.h"
 #include "physics.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -125,7 +126,7 @@ void calc_weights(int nx,int ny,int nz,
   WXYZ[13] = 1.0;
 #endif
 }
-	
+
 static void calc_nxyz(int nx,int ny,int nz,
 		      int **nnx,int **nny,int **nnz)
 {
@@ -143,7 +144,8 @@ static void calc_nxyz(int nx,int ny,int nz,
 }
 	
 static void spread_q(FILE *log,bool bVerbose,
-		     int natoms,rvec x[],real charge[],rvec box,
+		     int start,int end,
+		     rvec x[],real charge[],rvec box,
 		     t_fftgrid *grid,t_nrnb *nrnb)
 {
   static bool bFirst = TRUE;
@@ -175,7 +177,7 @@ static void spread_q(FILE *log,bool bVerbose,
     bFirst = FALSE;
   }
 
-  for(i=0; (i<natoms); i++) {
+  for(i=start; (i<end); i++) {
     qi=charge[i];
 
     /* Each charge is spread over the nearest 27 grid cells,
@@ -217,8 +219,8 @@ static void spread_q(FILE *log,bool bVerbose,
 #endif
     }
   }
-  inc_nrnb(nrnb,eNR_SPREADQ,9*natoms);
-  inc_nrnb(nrnb,eNR_WEIGHTS,3*natoms);
+  inc_nrnb(nrnb,eNR_SPREADQ,9*(end-start));
+  inc_nrnb(nrnb,eNR_WEIGHTS,3*(end-start));
 }
 
 real gather_inner(int JCXYZ[],real WXYZ[],int ixw[],int iyw[],int izw[],
@@ -270,9 +272,9 @@ real gather_inner(int JCXYZ[],real WXYZ[],int ixw[],int iyw[],int izw[],
   return pi;
 }
 
-real gather_f(FILE *log,bool bVerbose,
-	      int natoms,rvec x[],rvec f[],real charge[],rvec box,
-	      real pot[],t_fftgrid *grid,rvec beta,t_nrnb *nrnb)
+static real gather_f(FILE *log,bool bVerbose,
+		     int start,int end,rvec x[],rvec f[],real charge[],rvec box,
+		     real pot[],t_fftgrid *grid,rvec beta,t_nrnb *nrnb)
 {
   static bool bFirst=TRUE;
   static int  *nnx,*nny,*nnz;
@@ -324,7 +326,7 @@ real gather_f(FILE *log,bool bVerbose,
   }
 
   energy=0.0;  	  
-  for(i=0; (i<natoms); i++) {
+  for(i=start; (i<end); i++) {
     /* Each charge is spread over the nearest 27 grid cells,
      * thus we loop over -1..1 in X,Y and Z direction
      * We apply the TSC (triangle shaped charge)
@@ -348,8 +350,8 @@ real gather_f(FILE *log,bool bVerbose,
     pot[i]  = pi;
   }
   
-  inc_nrnb(nrnb,eNR_GATHERF,27*natoms);
-  inc_nrnb(nrnb,eNR_WEIGHTS,3*natoms);
+  inc_nrnb(nrnb,eNR_GATHERF,27*(end-start));
+  inc_nrnb(nrnb,eNR_WEIGHTS,3*(end-start));
   
   return energy*0.5;
 }
@@ -397,7 +399,7 @@ void solve_pppm(FILE *fp,t_commrec *cr,
   if (bVerbose) 
     print_fftgrid(fp,"Q-Real",grid,grid->nxyz,"qreal.pdb",box,TRUE);
   
-  gmxfft3D(fp,bVerbose,grid,FFTW_FORWARD);
+  gmxfft3D(fp,bVerbose,grid,FFTW_FORWARD,cr);
   
   if (bVerbose) {
     print_fftgrid(fp,"Q-k",grid,1.0,"qk-re.pdb",box,TRUE);
@@ -411,7 +413,7 @@ void solve_pppm(FILE *fp,t_commrec *cr,
     print_fftgrid(fp,"Convolution",grid,1.0,
 		  "convolute.pdb",box,TRUE);
   
-  gmxfft3D(fp,bVerbose,grid,FFTW_BACKWARD);
+  gmxfft3D(fp,bVerbose,grid,FFTW_BACKWARD,cr);
   
   if (bVerbose) 
     print_fftgrid(fp,"Potential",grid,1.0,"pot.pdb",box,TRUE);
@@ -422,19 +424,26 @@ void solve_pppm(FILE *fp,t_commrec *cr,
   inc_nrnb(nrnb,eNR_CONV,ntot);
 }
 
-static rvec      beta;
+static void sum_qgrid(FILE *log,bool bVerbose,t_commrec *cr,
+		      t_nsborder *nsb,t_fftgrid *grid)
+{
+  ;
+}
+
+static rvec      beta,*xinbox;
 static real      ***ghat=NULL;
 static t_fftgrid *grid=NULL;
 
-void init_pppm(FILE *log,t_commrec *cr,bool bVerbose,bool bOld,
-	       rvec box,char *ghatfn,t_inputrec *ir)
+void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
+	       bool bVerbose,bool bOld,rvec box,char *ghatfn,t_inputrec *ir)
 {
   int   nx,ny,nz,m,porder;
   ivec  grids;
   real  r1,rc;
   const real tol = 1e-5;
   rvec  spacing;
-    
+
+  snew(xinbox,HOMENR(nsb));
   if (cr != NULL) {
     if (cr->nprocs > 1)
       fatal_error(0,"No parallel PPPM yet...");
@@ -493,22 +502,31 @@ void init_pppm(FILE *log,t_commrec *cr,bool bVerbose,bool bOld,
     if (bVerbose)
       pr_scalar_gk("optimghat.xvg",nx,ny,nz,box,ghat);
   }
-  grid = mk_fftgrid(nx,ny,nz);
+  /* Now setup the FFT things */
+  grid = mk_fftgrid(log,PAR(cr),nx,ny,nz);
 }
 
 real do_pppm(FILE *log,       bool bVerbose,
-	     int natoms,      rvec x[],
-	     rvec f[],        real charge[],
-	     rvec box,        real phi[],
-	     t_commrec *cr,   t_nrnb *nrnb)
+	     rvec x[],        rvec f[],
+	     real charge[],   rvec box,
+	     real phi[],      t_commrec *cr,
+	     t_nsborder *nsb, t_nrnb *nrnb)
 {
   real    ener;
+  int     start,end;
+  
+  start = START(nsb);
+  end   = start+HOMENR(nsb);
   
   /* Make the grid empty */
   clear_fftgrid(grid);
   
   /* First step: spreading the charges over the grid. */
-  spread_q(log,bVerbose,natoms,x,charge,box,grid,nrnb);
+  spread_q(log,bVerbose,start,end,x,charge,box,grid,nrnb);
+  
+  /* In the parallel code we have to sum the grids from neighbouring processors */
+  if (PAR(cr))
+    sum_qgrid(log,bVerbose,cr,nsb,grid);
   
   /* Second step: solving the poisson equation in Fourier space */
   solve_pppm(log,NULL,grid,ghat,box,bVerbose,nrnb);
@@ -516,7 +534,7 @@ real do_pppm(FILE *log,       bool bVerbose,
   /* Third and last step: gather the forces, energies and potential
    * from the grid.
    */
-  ener=gather_f(log,bVerbose,natoms,x,f,charge,box,phi,grid,beta,nrnb);
+  ener=gather_f(log,bVerbose,start,end,x,f,charge,box,phi,grid,beta,nrnb);
   
   return ener;
 }
@@ -552,7 +570,7 @@ real do_opt_pppm(FILE *log,       bool bVerbose,
   /* Make the grid empty */
   clear_fftgrid(grid);
   
-  spread_q(log,bVerbose,natoms,x,charge,box,grid,nrnb);
+  spread_q(log,bVerbose,0,natoms,x,charge,box,grid,nrnb);
   
   /* Second step: solving the poisson equation in Fourier space */
   solve_pppm(log,NULL,grid,ghat,box,bVerbose,nrnb);
@@ -560,7 +578,7 @@ real do_opt_pppm(FILE *log,       bool bVerbose,
   /* Third and last step: gather the forces, energies and potential
    * from the grid.
    */
-  ener=gather_f(log,bVerbose,natoms,x,f,charge,box,phi,grid,beta,nrnb);
+  ener=gather_f(log,bVerbose,0,natoms,x,f,charge,box,phi,grid,beta,nrnb);
 
   free_rgrid(ghat,nx,ny);
     

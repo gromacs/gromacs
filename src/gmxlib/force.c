@@ -516,7 +516,7 @@ void force(FILE       *log,
   
   if ((fr->eeltype == eelPPPM) || (fr->eeltype == eelPOISSON)) {
     if (fr->eeltype == eelPPPM)
-      Vlr = do_pppm(log,FALSE,md->nr,x,fr->flr,md->chargeA,box_size,fr->phi,cr,nrnb);
+      Vlr = do_pppm(log,FALSE,x,fr->flr,md->chargeA,box_size,fr->phi,cr,nsb,nrnb);
     else
       Vlr = do_poisson(log,FALSE,ir,md->nr,x,fr->flr,md->chargeA,box_size,fr->phi,
 		       cr,nrnb,&nit,TRUE);

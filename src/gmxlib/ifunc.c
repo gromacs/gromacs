@@ -87,3 +87,12 @@ t_interaction_function interaction_function[F_NRE]=
 #undef def_shkcon
 #undef def_nofc
 
+bool have_interaction(t_idef *idef,int ftype)
+{
+  int i;
+  
+  for(i=0; (i<idef->ntypes); i++)
+    if (idef->functype[i] == ftype)
+      return TRUE;
+  return FALSE;
+}

@@ -93,7 +93,7 @@ ifeq ($(USE_PVM3),yes)
 OBJ		+= libsys.o 	pvmio.o 
 else
 ifeq ($(USE_MPI),yes)
-OBJ		+= libsys.o 	mpiio.o 
+OBJ		+= libsys.o 	mpiio.o
 else
 OBJ		+= libsys.o	libnet.o
 endif

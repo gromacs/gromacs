@@ -1,13 +1,25 @@
 #include <stdio.h>
+#include "assert.h"
 #include "typedefs.h"
 #include "futil.h"
-#include "fftgrid.h"
 #include "smalloc.h"
 #include "futil.h"
+#include "network.h"
+#include "fftgrid.h"
 
-
-t_fftgrid *mk_fftgrid(int nx,int ny,int nz)
+static void print_parfft(FILE *fp,char *title,t_parfft *pfft)
 {
+  fprintf(fp,"PARALLEL FFT DATA (%s):\n"
+	  "   local_nx:                 %3d  local_x_start:                 %3d\n"
+	  "   local_ny_after_transpose: %3d  local_y_start_after_transpose  %3d\n"
+	  "   total_local_size:         %3d\n",
+	  pfft->local_nx,pfft->local_x_start,pfft->local_ny_after_transpose,
+	  pfft->local_y_start_after_transpose,pfft->total_local_size);
+}
+
+t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,int nz)
+{
+  int       flags;
   t_fftgrid *grid;
   
   snew(grid,1);
@@ -20,9 +32,46 @@ t_fftgrid *mk_fftgrid(int nx,int ny,int nz)
   grid->la2  = nz;
   grid->nptr = nx*ny*nz;
   grid->la12 = grid->la1*grid->la2;
-
+  
+  if (fp)
+    fprintf(fp,"Using the FFTW library (Fastest Fourier Transform in the West)\n");
+  if (bParallel) {
+#ifdef USE_MPI
+    flags        = 0;
+    grid->plan_mpi_fw = 
+      fftw3d_mpi_create_plan(MPI_COMM_WORLD,nx,ny,nz,FFTW_FORWARD,flags);
+    grid->plan_mpi_bw =
+      fftw3d_mpi_create_plan(MPI_COMM_WORLD,ny,nx,nz,FFTW_BACKWARD,flags);
+    fftwnd_mpi_local_sizes(grid->plan_mpi_fw,
+			   &(grid->pfft_fw.local_nx),
+			   &(grid->pfft_fw.local_x_start),
+			   &(grid->pfft_fw.local_ny_after_transpose),
+			   &(grid->pfft_fw.local_y_start_after_transpose),
+			   &(grid->pfft_fw.total_local_size));
+    fftwnd_mpi_local_sizes(grid->plan_mpi_bw,
+			   &(grid->pfft_bw.local_nx),
+			   &(grid->pfft_bw.local_x_start),
+			   &(grid->pfft_bw.local_ny_after_transpose),
+			   &(grid->pfft_bw.local_y_start_after_transpose),
+			   &(grid->pfft_bw.total_local_size));
+#else
+    fatal_error(0,"Parallel FFT supported with MPI only!");
+#endif
+  }
+  else {
+    flags = FFTW_IN_PLACE;
+    grid->plan_fw = fftw3d_create_plan(grid->nx,grid->ny,grid->nz,
+				       FFTW_FORWARD,flags);
+    grid->plan_bw = fftw3d_create_plan(grid->nx,grid->ny,grid->nz,
+				       FFTW_BACKWARD,flags);
+  }
   snew(grid->ptr,grid->nptr);
   
+  if (bParallel && fp) {
+    print_parfft(fp,"Forward", &grid->pfft_fw);
+    print_parfft(fp,"Backward",&grid->pfft_bw);
+    assert(grid->pfft_fw.total_local_size == grid->pfft_bw.total_local_size);
+  }
   return grid;
 }
 
@@ -34,31 +83,29 @@ void done_fftgrid(t_fftgrid *grid)
   }
 }
 
-void gmxfft3D(FILE *fp,bool bVerbose,t_fftgrid *grid,int dir)
+
+void gmxfft3D(FILE *fp,bool bVerbose,t_fftgrid *grid,int dir,t_commrec *cr)
 {
-  static bool bFirst=TRUE;
-  static fftwnd_plan forward_plan,backward_plan;
-  
-  if (bFirst) {
-    fprintf(fp,"Using the FFTW library (Fastest Fourier Transform in the West)\n");
-    forward_plan  = fftw3d_create_plan(grid->nx,grid->ny,grid->nz,
-				       FFTW_FORWARD,
-				       /*FFTW_MEASURE | 
-				       FFTW_USE_WISDOM |*/
-				       FFTW_IN_PLACE);
-    backward_plan = fftw3d_create_plan(grid->nx,grid->ny,grid->nz,
-				       FFTW_BACKWARD,
-				       /*FFTW_MEASURE | 
-				       FFTW_USE_WISDOM |*/
-				       FFTW_IN_PLACE);
-    bFirst        = FALSE;
+  if (cr && PAR(cr)) {
+#ifdef USE_MPI
+    if (dir == FFTW_FORWARD)
+      fftwnd_mpi(grid->plan_mpi_fw,1,(FFTW_COMPLEX *)grid->ptr,
+		 FFTW_TRANSPOSED_ORDER);
+    else if (dir == FFTW_BACKWARD)
+      fftwnd_mpi(grid->plan_mpi_bw,1,(FFTW_COMPLEX *)grid->ptr,
+		 FFTW_TRANSPOSED_ORDER);
+    else
+      fatal_error(0,"Invalid direction for FFT: %d",dir);
+#endif
   }
-  if (dir == FFTW_FORWARD)
-    fftwnd(forward_plan, 1,(FFTW_COMPLEX *)grid->ptr,1,0,NULL,0,0);
-  else if (dir == FFTW_BACKWARD)
-    fftwnd(backward_plan,1,(FFTW_COMPLEX *)grid->ptr,1,0,NULL,0,0);
-  else
-    fatal_error(0,"Invalid direction for FFT: %d",dir);
+  else {
+    if (dir == FFTW_FORWARD)
+      fftwnd(grid->plan_fw,1,(FFTW_COMPLEX *)grid->ptr,1,0,NULL,0,0);
+    else if (dir == FFTW_BACKWARD)
+      fftwnd(grid->plan_bw,1,(FFTW_COMPLEX *)grid->ptr,1,0,NULL,0,0);
+    else
+      fatal_error(0,"Invalid direction for FFT: %d",dir);
+  }
 }
 
 void clear_fftgrid(t_fftgrid *grid)

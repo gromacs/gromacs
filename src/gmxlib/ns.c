@@ -766,7 +766,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     for (icg=0; (icg < cgs->nr); icg++)
       nr_in_cg=max(nr_in_cg,(int)(cgs->index[icg+1]-cgs->index[icg]));
 
-    /* Verify wheteher largest charge group is <= max cg.
+    /* Verify whether largest charge group is <= max cg.
      * This is determined by the type of the local exclusion type 
      * Exclusions are stored in bits. (If the type is not large
      * enough, enlarge it, unsigned char -> unsigned short -> unsigned long)
