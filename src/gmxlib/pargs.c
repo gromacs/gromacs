@@ -294,7 +294,7 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
 	} else
 	  sprintf(buf2,"%12s %6s %6s  %s\n",
 		buf,argtp[pa[i].type],pa_val(&(pa[i]),tmp,255),check_tty(pa[i].desc));
-	wdesc=wrap_lines(buf2,80,28);
+	wdesc=wrap_lines(buf2,78,28,FALSE);
 	fprintf(fp,wdesc);
 	sfree(wdesc);
       }

@@ -253,7 +253,7 @@ char *gmx_strdup(const char *src)
   return dest;
 }
 
-char *wrap_lines(const char *buf,int line_width, int indent)
+char *wrap_lines(const char *buf,int line_width, int indent,bool bIndentFirst)
 {
   char *b2;
   int i,i0,i2,j,b2len,lspace=0,l2space=0;
@@ -274,9 +274,10 @@ char *wrap_lines(const char *buf,int line_width, int indent)
   b2=NULL;
   b2len=strlen(buf)+1+indent;
   snew(b2,b2len);
-  i0=0;
-  for(i2=0; (i2<indent); i2++)
-    b2[i2] = ' ';
+  i0=i2=0;
+  if (bIndentFirst)
+    for(i2=0; (i2<indent); i2++)
+      b2[i2] = ' ';
   bFirst=TRUE;
   do {
     l2space = -1;

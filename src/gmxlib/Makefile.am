@@ -31,7 +31,7 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	viewit.c	wgms.c		wman.c		writeps.c	\
 	xdrd.c		xtcio.c		xvgr.c   	replace.h	\
 	detectcpu.c	libxdrf.c	vec.c		xmlio.c		\
-	dihres.c
+	dihres.c	#xtcio_wrap.c
 
 EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = \
 	x86_sse.s	x86_sse2.s	x86_3dnow.s  	inner_altivec.c \

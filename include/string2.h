@@ -95,10 +95,13 @@ extern char *gmx_strdup(const char *src);
 #define strdup gmx_strdup
 #endif
 
-extern char *wrap_lines(const char *buf,int line_width, int indent);
+extern char *wrap_lines(const char *buf,int line_width, int indent,
+			bool bIndentFirst);
 /* wraps lines at 'linewidth', indenting all following
  * lines by 'indent' spaces. A temp buffer is allocated and returned,
  * which can be disposed of if no longer needed.
+ * If !bIndentFirst, then the first line will not be indented, only 
+ * the lines that are created due to wapping.
  */
 
 #ifdef CPLUSPLUS

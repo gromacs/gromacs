@@ -347,7 +347,7 @@ void pr_fns(FILE *fp,int nf,t_filenm tfn[])
 	    j<strlen(buf)-(strlen(tfn[i].opt)-OPTLEN)+1; j++)
 	  buf[j]=buf[j+strlen(tfn[i].opt)-OPTLEN];
       }
-      wbuf=wrap_lines(buf,80,35);
+      wbuf=wrap_lines(buf,78,35,FALSE);
       fprintf(fp,"%s\n",wbuf);
       sfree(wbuf);
     }

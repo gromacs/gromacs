@@ -114,6 +114,20 @@ const t_sandr sandrHTML[] = {
 };
 #define NSRHTML asize(sandrHTML)
 
+t_sandr sandrXML[] = {
+  { "<",    "&lt;" },
+  { ">",    "&gt;" },
+  { "[TT]", "<arg>" },
+  { "[tt]", "</arg>" },
+  { "[BB]", "<emp>" },
+  { "[bb]", "</emp>" },
+  { "[IT]", "<it>" },
+  { "[it]", "</it>" },
+  { "[PAR]","</par>\n<par>" },
+  { "[BR]", "<br />" }
+};
+#define NSRXML asize(sandrXML)
+
 static char *mydate(char buf[], int maxsize)
 {
   const char *mon[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
@@ -417,7 +431,7 @@ void print_tty_formatted(FILE *out, int nldesc, char **desc,int indent)
     sfree(temp);
   }
   /* Make lines of at most 79 characters */
-  temp = wrap_lines(buf,78-indent,indent);
+  temp = wrap_lines(buf,78,indent,FALSE);
   fprintf(out,"%s\n",temp);
   sfree(temp);
   sfree(buf);
@@ -448,7 +462,7 @@ static void write_ttyman(FILE *out,
       snew(tmp,strlen(bugs[i])+3);
       strcpy(tmp,"* ");
       strcpy(tmp+2,check_tty(bugs[i]));
-      fprintf(out,"%s\n",wrap_lines(tmp,76,2));
+      fprintf(out,"%s\n",wrap_lines(tmp,78,2,FALSE));
       sfree(tmp);
     }
   }
@@ -526,6 +540,8 @@ static void write_htmlman(FILE *out,
 	      "<TD ALIGN=RIGHT> <tt><a href=\"%s.html\">%12s</a></tt> </TD>"
 	      "<TD> %s </TD>"
 	      "<TD> %s </TD>"
+
+
 	      "</TR>\n",
 	      fnm[i].opt,link,fnm[i].fns[0],fileopt(fnm[i].flag,tmp,255),
 	      NSR(ftp2desc(fnm[i].ftp)));
@@ -572,6 +588,93 @@ static void write_htmlman(FILE *out,
   fprintf(out,"</BODY>\n");
 
   finish_linkdata(links);
+}
+
+char *check_xml(char *s,char *program,t_linkdata *links)
+{
+  char *buf;
+  
+  buf=repall(s,NSRXML,sandrXML);
+  buf=html_xref(buf,program,links);	/* the same in html and xml */
+  
+  return buf;
+}
+
+static void write_xmlman(FILE *out,
+			 char *program,
+			 int nldesc,char **desc,
+			 int nfile,t_filenm *fnm,
+			 int npargs,t_pargs *pa,
+			 int nbug,char **bugs)
+{
+  int i;
+  char link[10],buf[256],opt[10];
+  t_linkdata *links;
+  
+  links=init_linkdata();
+
+
+#define NSR2(s) check_xml(s,program,links)
+#define FLAG(w,f) (((w) & (f))==(f)) 
+
+  fprintf(out,"<gromacs-manual version=\"%s\" date=\"%s\" www=\"http://www.gromacs.org\">\n",GromacsVersion(),mydate(buf,255));
+  //fprintf(out,"<LINK rel=stylesheet href=\"style.css\" type=\"text/css\">\n");
+
+  fprintf(out,"<program name=\"%s\">",program);  
+  if (nldesc > 0) {
+    fprintf(out,"\n<description>\n<par>\n");
+    for(i=0; (i<nldesc); i++) 
+      fprintf(out,"%s\n",NSR2(desc[i]));
+  }
+  fprintf(out,"</par>\n</description>\n");
+
+  if (nfile > 0) {
+    fprintf(out,"\n<files>\n");
+    for(i=0; (i<nfile); i++) {
+      strcpy(link,ftp2ext(fnm[i].ftp));
+      if (strcmp(link,"???")==0)
+	strcpy(link,"files");
+        if (fnm[i].opt[0]=='-') strcpy(opt,fnm[i].opt+1);
+	else strcpy(opt,fnm[i].opt);
+      fprintf(out,
+	      "<file type=\"%s\" typeid=\"%d\">\n"
+              "\t<flags read=\"%d\" write=\"%d\" optional=\"%d\"/>\n"
+	      "\t<option>%s</option>\n"
+	      "\t<default-name link=\"%s.html\">%s</default-name>\n"
+	      "\t<description>%s</description>\n"
+	      "</file>\n",
+	      ftp2defnm(fnm[i].ftp),	// from gmxlib/filenm.c
+	      fnm[i].ftp,
+	      FLAG(fnm[i].flag,ffREAD), FLAG(fnm[i].flag,ffWRITE), FLAG(fnm[i].flag,ffOPT), 
+	      opt,link,fnm[i].fn,/*fileopt(fnm[i].flag),*/
+	      NSR(ftp2desc(fnm[i].ftp)));
+    }
+    fprintf(out,"</files>\n");
+  }
+
+  if (npargs > 0) {
+    fprintf(out,"\n<options>\n");
+    for(i=0; (i<npargs); i++)
+      fprintf(out,
+	      "<option type=\"%s\" hidden=\"%d\">\n"
+	      "\t<name >%s</name>\n"
+	      "\t<default-value>%s</default-value>\n"
+	      "\t<description>%s</description>\n"
+	      "</option>\n",
+	      argtp[pa[i].type], is_hidden(&pa[i]),
+	      pa[i].option+1,	               /* +1 - with no trailing '-' */
+	      pa_val(&(pa[i]),buf,255),pa[i].desc); /*argtp[pa[i].type],*/
+    fprintf(out,"</options>\n");
+  }
+
+  if (nbug > 0) {
+    fprintf(out,"\n<bugs>\n");
+    for(i=0; (i<nbug); i++)
+      fprintf(out,"\t<bug>%s</bug>\n",NSR(bugs[i]));
+    fprintf(out,"</bugs>\n");
+  }
+  fprintf(out,"\n</program>\n</gromacs-manual>\n");
+#undef FLAG  
 }
 
 static void pr_opts(FILE *fp, 
@@ -653,6 +756,7 @@ static void write_bashcompl(FILE *out,
   fprintf(out,"COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}\n");
   pr_opts(out,nfile,fnm,npargs,pa,eshellBASH);
   fprintf(out,"case \"$p\" in\n");
+  
   pr_enums(out,npargs,pa,eshellBASH);
   pr_fopts(out,nfile,fnm,eshellBASH);
   fprintf(out,"esac }\ncomplete -F _%s_compl %s\n",ShortProgram(),ShortProgram());
@@ -686,7 +790,7 @@ static void write_py(FILE *out,char *program,
       snew(tmp,strlen(bugs[i])+3);
       strcpy(tmp,"* ");
       strcpy(tmp+2,check_tty(bugs[i]));
-      fprintf(out,"%s\n",wrap_lines(tmp,68,10));
+      fprintf(out,"%s\n",wrap_lines(tmp,78,10,TRUE));
       sfree(tmp);
     }
   }
@@ -787,6 +891,8 @@ void write_man(FILE *out,char *mantp,
     write_htmlman(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs);
   if (strcmp(mantp,"py")==0)
     write_py(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs);
+  if (strcmp(mantp,"xml")==0)
+    write_xmlman(out,pr,nldesc,desc,nfile,fnm,npargs,pa,nbug,bugs);	
   if (strcmp(mantp,"completion-zsh")==0)
     write_zshcompl(out,nfile,fnm,npar,par);
   if (strcmp(mantp,"completion-bash")==0)

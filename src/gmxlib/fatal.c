@@ -313,7 +313,7 @@ void warning(char *s)
     temp[i] = ' ';
   temp[indent] = '\0';
   strcat(temp,s);
-  temp2 = wrap_lines(temp,81-indent,indent);
+  temp2 = wrap_lines(temp,78-indent,indent,FALSE);
   fprintf(stderr,"WARNING %d [file %s, line %s]:\n%s\n",
 	  nwarn,filenm,linenobuf,temp2);
   sfree(temp);

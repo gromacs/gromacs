@@ -408,8 +408,8 @@ void please_cite(FILE *fp,char *key)
   fprintf(fp,"\n++++++++ PLEASE CITE THE FOLLOWING REFERENCE ++++++++\n");
   if (index < NSTR) {
     /* Insert newlines */
-    author = wrap_lines(citedb[index].author,LINE_WIDTH,0);
-    title  = wrap_lines(citedb[index].title,LINE_WIDTH,0);
+    author = wrap_lines(citedb[index].author,LINE_WIDTH,0,FALSE);
+    title  = wrap_lines(citedb[index].title,LINE_WIDTH,0,FALSE);
     fprintf(fp,"%s\n%s\n%s %d (%d) pp. %d-%d\n",
 	    author,title,citedb[index].journal,
 	    citedb[index].volume,citedb[index].year,

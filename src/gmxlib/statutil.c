@@ -459,7 +459,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 		       int ndesc,char **desc,int nbugs,char **bugs)
 {
   static bool bHelp=FALSE,bHidden=FALSE,bQuiet=FALSE;
-  static char *manstr[]      = { NULL, "no", "html", "tex", "nroff", "ascii", "completion", "py", NULL };
+  static char *manstr[]      = { NULL, "no", "html", "tex", "nroff", "ascii", "completion", "py", "xml", NULL };
   static char *not_nicestr[] = { NULL, "0", "4", "10", "19", NULL };
   static char *nicestr[]     = { NULL, "19", "10", "4", "0", NULL };
   static char *not_npristr[] = { NULL, "0", "128", "100", "200", "250", NULL };

@@ -465,7 +465,7 @@ static XmString xs_str_array_to_xmstr(char *header,int ndesc,char *desc[])
     for(i=0; (i<ndesc); i++) {
       xmstr = XmStringConcat(xmstr,XmStringSeparatorCreate());
       ptr   = check_tty(desc[i]);
-      cptr  = wrap_lines(ptr,70,0);
+      cptr  = wrap_lines(ptr,70,0,FALSE);
       ptr   = cptr;
       while ((nlptr = strchr(ptr,'\n')) != NULL) {
 	*nlptr='\0';
@@ -751,10 +751,10 @@ static void append_str(char **buf,int *blen,int *maxlen,char *str,
     slen=strlen(ptr);
     snew(nptr,slen+8);
     sprintf(nptr,"* %s",ptr);
-    str = wrap_lines(nptr,width,indent);
+    str = wrap_lines(nptr,width,indent,FALSE);
   }
   else
-    str = wrap_lines(ptr,width,indent);
+    str = wrap_lines(ptr,width,indent,FALSE);
   
   /*while ((ptr = strstr(str,"\n\n")) != 0)
     *ptr = ' ';
