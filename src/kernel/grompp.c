@@ -47,6 +47,7 @@ static char *SRCID_grompp_c = "$Id$";
 #include "readir.h"
 #include "symtab.h"
 #include "names.h"
+#include "grompp.h"
 #include "random.h"
 #include "vec.h"
 #include "futil.h"
