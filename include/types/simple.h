@@ -43,6 +43,16 @@ extern "C" {
 #define	YY	1			/* vectors			*/
 #define ZZ	2
 #define DIM   	3			/* Dimension of vectors		*/
+#define XXXX    0                       /* defines to index matrices */
+#define XXYY    1
+#define XXZZ    2
+#define YYXX    3
+#define YYYY    4
+#define YYZZ    5
+#define ZZXX    6
+#define ZZYY    7
+#define ZZZZ    8
+    
 #define MAXPROC 	256		/* Max number of processors 	*/
 
 #ifndef HAVE_BOOL
