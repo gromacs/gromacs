@@ -297,7 +297,7 @@ int gmx_h2order(int argc,char *argv[])
   h2order_plot(slDipole, slOrder, opt2fn("-o",NFILE,fnm), nslices, 
 	       slWidth);
 
-  do_view(opt2fn("-o",NFILE,fnm), NULL);      /* view xvgr file */
+  do_view(opt2fn("-o",NFILE,fnm),"-nxy");      /* view xvgr file */
   thanx(stderr);
   
   return 0;

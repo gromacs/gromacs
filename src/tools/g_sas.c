@@ -518,9 +518,9 @@ int gmx_sas(int argc,char *argv[])
     
   sas_plot(NFILE,fnm,solsize,ndots,qcut,bSave,minarea,bPBC,dgs_default,bFindex);
   
-  do_view(opt2fn("-o",NFILE,fnm),NULL);
-  do_view(opt2fn_null("-or",NFILE,fnm),NULL);
-  do_view(opt2fn_null("-oa",NFILE,fnm),NULL);
+  do_view(opt2fn("-o",NFILE,fnm),"-nxy");
+  do_view(opt2fn_null("-or",NFILE,fnm),"-nxy");
+  do_view(opt2fn_null("-oa",NFILE,fnm),"-nxy");
 
   thanx(stderr);
   

@@ -1154,14 +1154,17 @@ int gmx_energy(int argc,char *argv[])
     fec(opt2fn("-f2",NFILE,fnm), opt2fn("-ravg",NFILE,fnm), 
 	reftemp, nset, set, leg, nenergy, eneset, time );
   
-  do_view(opt2fn("-o",NFILE,fnm),NULL);
-  do_view(opt2fn_null("-ravg",NFILE,fnm),NULL);
-  do_view(opt2fn_null("-ora",NFILE,fnm),NULL);
-  do_view(opt2fn_null("-ort",NFILE,fnm),NULL);
-  do_view(opt2fn_null("-oda",NFILE,fnm),NULL);
-  do_view(opt2fn_null("-odr",NFILE,fnm),NULL);
-  do_view(opt2fn_null("-odt",NFILE,fnm),NULL);
-
+  {
+    char *nxy = "-nxy";
+    
+    do_view(opt2fn("-o",NFILE,fnm),nxy);
+    do_view(opt2fn_null("-ravg",NFILE,fnm),nxy);
+    do_view(opt2fn_null("-ora",NFILE,fnm),nxy);
+    do_view(opt2fn_null("-ort",NFILE,fnm),nxy);
+    do_view(opt2fn_null("-oda",NFILE,fnm),nxy);
+    do_view(opt2fn_null("-odr",NFILE,fnm),nxy);
+    do_view(opt2fn_null("-odt",NFILE,fnm),nxy);
+  }
   thanx(stderr);
   
   return 0;

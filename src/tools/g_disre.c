@@ -529,10 +529,10 @@ int gmx_disre(int argc,char *argv[])
     fclose(xvg);
     do_view(opt2fn("-dr",NFILE,fnm),"-nxy");
   }
-  do_view(opt2fn("-dn",NFILE,fnm),NULL);
-  do_view(opt2fn("-da",NFILE,fnm),NULL);
-  do_view(opt2fn("-ds",NFILE,fnm),NULL);
-  do_view(opt2fn("-dm",NFILE,fnm),NULL);
+  do_view(opt2fn("-dn",NFILE,fnm),"-nxy");
+  do_view(opt2fn("-da",NFILE,fnm),"-nxy");
+  do_view(opt2fn("-ds",NFILE,fnm),"-nxy");
+  do_view(opt2fn("-dm",NFILE,fnm),"-nxy");
   
   thanx(stderr);
 

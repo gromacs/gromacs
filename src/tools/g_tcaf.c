@@ -90,7 +90,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
       fprintf(fp,"\n");
     }
     fclose(fp);
-    do_view(fn_trans,NULL);
+    do_view(fn_trans,"-nxy");
   }
   
   ncorr = (nframes+1)/2;
@@ -111,7 +111,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
   low_do_autocorr(fn_tca,"Transverse Current Autocorrelation Functions",
 		  nframes,ntc,ncorr,tc,dt,eacNormal,
 		  1,FALSE,TRUE,FALSE,FALSE,0,0,0,0);
-  do_view(fn_tca,NULL);
+  do_view(fn_tca,"-nxy");
   
   fp = xvgropen(fn_tc,"Transverse Current Autocorrelation Functions",
 		"Time (ps)","TCAF");
@@ -136,7 +136,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
     fprintf(fp,"\n");
   }
   fclose(fp);
-  do_view(fn_tc,NULL);
+  do_view(fn_tc,"-nxy");
   
   if (fn_cub) {
     fp_cub = xvgropen(fn_cub,"TCAF's and fits",
@@ -178,7 +178,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
     fprintf(fp,"&\n");
   }
   fclose(fp);
-  do_view(fn_tcf,NULL);
+  do_view(fn_tcf,"-nxy");
 
   if (fn_cub) {
     fprintf(stdout,"Averaged over k-vectors:\n");
@@ -200,10 +200,10 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
     }
     fprintf(fp_vk,"&\n");
     fclose(fp_cub);
-    do_view(fn_cub,NULL);
+    do_view(fn_cub,"-nxy");
   }
   fclose(fp_vk);
-  do_view(fn_vk,NULL);
+  do_view(fn_vk,"-nxy");
 }
 
 

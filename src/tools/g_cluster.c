@@ -1411,16 +1411,16 @@ int gmx_cluster(int argc,char *argv[])
   ffclose(fp);
   
   /* now show what we've done */
-  do_view(opt2fn("-o",NFILE,fnm),NULL);
-  do_view(opt2fn_null("-sz",NFILE,fnm),NULL);
+  do_view(opt2fn("-o",NFILE,fnm),"-nxy");
+  do_view(opt2fn_null("-sz",NFILE,fnm),"-nxy");
   if (method == m_diagonalize)
-    do_view(opt2fn_null("-ev",NFILE,fnm),NULL);
+    do_view(opt2fn_null("-ev",NFILE,fnm),"-nxy");
   if (bWriteDist)
-    do_view(opt2fn("-dist",NFILE,fnm),NULL);
+    do_view(opt2fn("-dist",NFILE,fnm),"-nxy");
   if (bAnalyze) {
-    do_view(opt2fn_null("-tr",NFILE,fnm),NULL);
-    do_view(opt2fn_null("-ntr",NFILE,fnm),NULL);
-    do_view(opt2fn_null("-clid",NFILE,fnm),NULL);
+    do_view(opt2fn_null("-tr",NFILE,fnm),"-nxy");
+    do_view(opt2fn_null("-ntr",NFILE,fnm),"-nxy");
+    do_view(opt2fn_null("-clid",NFILE,fnm),"-nxy");
   }
   
   /* Thank the user for her patience */  

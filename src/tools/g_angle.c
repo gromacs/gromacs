@@ -311,7 +311,7 @@ int gmx_angle(int argc,char *argv[])
   
   fclose(out);
 
-  do_view(opt2fn("-od",NFILE,fnm),NULL);
+  do_view(opt2fn("-od",NFILE,fnm),"-nxy");
   if (bAver)
     do_view(opt2fn("-ov",NFILE,fnm),"-nxy");
     

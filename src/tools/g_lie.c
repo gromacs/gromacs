@@ -184,7 +184,7 @@ int gmx_lie(int argc,char *argv[])
     printf("DGbind = %.3f (%.3f)\n",lieaver/nframes,
 	   sqrt(lieav2/nframes-sqr(lieaver/nframes)));
   
-  do_view(ftp2fn(efXVG,NFILE,fnm),NULL);
+  do_view(ftp2fn(efXVG,NFILE,fnm),"-nxy");
     
   thanx(stderr);
 

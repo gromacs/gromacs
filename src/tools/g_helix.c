@@ -376,7 +376,7 @@ int gmx_helix(int argc,char *argv[])
     fclose(xf[i].fp);
     if (xf[i].bfp2)
       fclose(xf[i].fp2);
-    do_view(xf[i].filenm,NULL);
+    do_view(xf[i].filenm,"-nxy");
   }
   
   thanx(stderr);

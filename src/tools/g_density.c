@@ -439,7 +439,7 @@ int gmx_density(int argc,char *argv[])
   plot_density(density, opt2fn("-o",NFILE,fnm),
 	       nslices, ngrps, grpname, slWidth, bElectron, bNumber, bCount);
   
-  do_view(opt2fn("-o",NFILE,fnm), NULL);       /* view xvgr file */
+  do_view(opt2fn("-o",NFILE,fnm), "-nxy");       /* view xvgr file */
   thanx(stderr);
   return 0;
 }

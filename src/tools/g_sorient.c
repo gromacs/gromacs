@@ -313,10 +313,10 @@ int gmx_sorient(int argc,char *argv[])
   }
   fclose(fp);
 
-  do_view(opt2fn("-o",NFILE,fnm),NULL);
-  do_view(opt2fn("-no",NFILE,fnm),NULL);
-  do_view(opt2fn("-ro",NFILE,fnm),NULL);
-  do_view(opt2fn("-co",NFILE,fnm),NULL);
+  do_view(opt2fn("-o",NFILE,fnm),"-nxy");
+  do_view(opt2fn("-no",NFILE,fnm),"-nxy");
+  do_view(opt2fn("-ro",NFILE,fnm),"-nxy");
+  do_view(opt2fn("-co",NFILE,fnm),"-nxy");
 
   thanx(stderr);
   

@@ -284,8 +284,8 @@ int gmx_bond(int argc,char *argv[])
   do_bonds(fp,ftp2fn(efTRX,NFILE,fnm),opt2fn("-o",NFILE,fnm),fdist,gnx,index,
 	   blen,tol,bAver,&top,bAverDist);
   
-  do_view(opt2fn("-o",NFILE,fnm),NULL);
-  do_view(opt2fn_null("-d",NFILE,fnm),NULL);
+  do_view(opt2fn("-o",NFILE,fnm),"-nxy");
+  do_view(opt2fn_null("-d",NFILE,fnm),"-nxy");
   
   thanx(stderr);
   

@@ -278,10 +278,10 @@ int gmx_sgangle(int argc,char *argv[])
 	       index[1],gnx[1],grpname[1],
 	       top);
 
-  do_view(opt2fn("-oa",NFILE,fnm),NULL);     /* view xvgr file */
-  do_view(opt2fn("-od",NFILE,fnm),NULL);     /* view xvgr file */
-  do_view(opt2fn("-od1",NFILE,fnm),NULL);
-  do_view(opt2fn("-od2",NFILE,fnm),NULL);
+  do_view(opt2fn("-oa",NFILE,fnm),"-nxy");     /* view xvgr file */
+  do_view(opt2fn("-od",NFILE,fnm),"-nxy");     /* view xvgr file */
+  do_view(opt2fn("-od1",NFILE,fnm),"-nxy");
+  do_view(opt2fn("-od2",NFILE,fnm),"-nxy");
 
   thanx(stderr);
   return 0;
