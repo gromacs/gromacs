@@ -392,7 +392,7 @@ int gmx_sgangle(int argc,char *argv[])
   int       gnx[2];               		/* size of the two groups */
   t_topology *top;                		/* topology 		*/ 
   atom_id   *index[2];            		
-  bool bOne = TRUE;
+  static bool bOne = TRUE;
   t_pargs pa[] = {
     { "-one", FALSE, etBOOL, {&bOne},
       "only one group compute angle between vector at time zero and t" }
