@@ -104,12 +104,12 @@ void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 	    xp[jy] -= yh*jm;
 	    xp[jz] -= zh*jm;
 	  }
-	  else if (im == 0) {
+	  else if ((im == 0) && (jm != 0)) {
 	    xp[ix] += xh*jm;
 	    xp[iy] += yh*jm;
 	    xp[iz] += zh*jm;
 	  }
-	  else if (jm == 0) {
+	  else if ((jm == 0) && (im != 0)) {
 	    xp[jx] -= xh*im;
 	    xp[jy] -= yh*im;
 	    xp[jz] -= zh*im;

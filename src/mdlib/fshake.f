@@ -68,11 +68,11 @@
                      xp(jy) = xp(jy) - yh*jm
                      xp(jz) = xp(jz) - zh*jm
                   else
-                     if (im .eq. 0) then
+                     if ((im .eq. 0) .and. (jm .ne. 0)) then
                         xp(ix) = xp(ix) + xh*jm
                         xp(iy) = xp(iy) + yh*jm
                         xp(iz) = xp(iz) + zh*jm
-                     else if (jm .eq. 0) then
+                     else if ((jm .eq. 0) .and. (im .ne. 0)) then
                         xp(jx) = xp(jx) - xh*im
                         xp(jy) = xp(jy) - yh*im
                         xp(jz) = xp(jz) - zh*im
