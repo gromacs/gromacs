@@ -252,7 +252,7 @@ int main(int argc,char *argv[])
       
   int          status,ftp,ftpin,i,frame,step,trjout=0;
   rvec         *x,*v;
-  real         xtcpr,t0=-1;
+  real         xtcpr,t_corr;
   t_trxframe   fr,frout;
   char         **fnms;
   int          trxout=-1;
@@ -302,6 +302,11 @@ int main(int argc,char *argv[])
   flags = TRX_READ_X | TRX_READ_V | TRX_READ_F;
  
   frame=-1;
+  /* the default is not to change the time at all,
+   * but this is overridden by the edit_files routine
+   */
+  t_corr=0;
+     
   /* Lets stitch up some files */
   for(i=0;i<nfile;i++) {
       /* Open next file */
@@ -311,8 +316,16 @@ int main(int argc,char *argv[])
 	fatal_error(0,"Couldn't find a time in the frame.");
       
       if(cont_type[i]==TIME_EXPLICIT)
-	t0=settime[i]-fr.time;
-   
+	t_corr=settime[i]-fr.time;
+      /* t_corr is the amount we want to change the time.
+       * If the user has chosen not to change the time for
+       * this part of the trajectory t_corr remains at 
+       * the value it had in the last part, changing this
+       * by the same amount.
+       * If no value was given for the first trajectory part
+       * we let the time start at zero, see the edit_files routine.
+       */
+      
       bNewFile=TRUE;
       if(i==0) {
 	switch(ftp) {
@@ -331,13 +344,14 @@ int main(int argc,char *argv[])
       do {
 	/* copy the input frame to the output frame */
 	frout=fr;
-	/* set the new time */
-	frout.time += t0;
+	/* set the new time by adding the correct calculated above */
+	frout.time += t_corr; 
+	/* quit if we have reached the end of what should be written */
 	if((end > 0) && (frout.time > end+GMX_REAL_EPS)) {
 	  i=nfile;
 	  break;
 	}
-	/* determine if we should write it */
+	/* determine if we should write this frame */
 	  if(frout.time < settime[i+1]-0.5*timestep && frout.time >= begin) {
 	    frame++;
 	    last_ok_t=frout.time;
@@ -365,7 +379,7 @@ int main(int argc,char *argv[])
       
       earliersteps+=step;	  
       
-      /* set the next time from the last in previous file */
+      /* set the next time from the last frame in previous file */
       if(cont_type[i+1]==TIME_CONTINUE) {
 	  begin=frout.time+0.5*timestep;
 	  settime[i+1]=frout.time;
@@ -373,7 +387,12 @@ int main(int argc,char *argv[])
       }
       else if(cont_type[i+1]==TIME_LAST)
 	  begin=frout.time+0.5*timestep;
-      
+      /* Or, if the time in the next part should be changed by the
+       * same amount, start at half a timestep from the last time
+       * so we dont repeat frames.
+       */
+
+      /* Or, if time is set explicitly, we check for overlap/gap */
       if(cont_type[i+1]==TIME_EXPLICIT) 
 	if((i<(nfile-1)) &&
 	   (frout.time<(settime[i+1]-1.5*timestep))) 
