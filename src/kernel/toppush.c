@@ -52,7 +52,7 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype)
 {
   int   i,j,k,nf;
   int   nr,nrfp;
-  real  c,tmp6,tmp12,eps4,sig6;
+  real  c,eps4,sig6;
   real  *c6,*c12;
 
   /* Lean mean shortcuts */
@@ -250,7 +250,7 @@ void push_bt(directive d,t_params bt[],int nral,t_atomtype *at,char *line)
     "%lf%lf%lf%lf%lf",
     "%lf%lf%lf%lf%lf%lf",
   };
-  int      i,j,ft,ftype,nn,nrfp;
+  int      i,ft,ftype,nn,nrfp;
   char     f1[STRLEN];
   char     alc[5][20];
   double   c[MAXFORCEPARAM];
@@ -389,12 +389,11 @@ void push_atom(t_symtab *symtab,t_block *cgs,
 {
   int 		nr,ptype;
   static int    lastcg;
-  int 		resnumber,cgnumber,atomnr,type,typeB,typeb,nscan;
+  int 		resnumber,cgnumber,atomnr,type,typeB,nscan;
   char 		id[STRLEN],ctype[STRLEN],
        		resname[STRLEN],name[STRLEN];
   double        m,q,mb,qb;
   real          m0,q0,mB,qB;
-  char 		f1[STRLEN];
 
   /* Make a shortcut for writing in this molecule  */
   nr = at->nr;

@@ -208,8 +208,8 @@ static void split_blocks(bool bVerbose,int nprocs,
 			 t_block *cgs,t_block *shakes)
 {
   int     maxatom[MAXPROC];
-  int     i,j,k,sbl;
-  int     sum,pid;
+  int     i,sbl;
+  int     pid;
   real    load,tload;
   
   bool    bCG,bSHK;
@@ -227,7 +227,7 @@ static void split_blocks(bool bVerbose,int nprocs,
   shknum=make_invblock(shakes,cgs->nra+1);
   if (debug)
     for(i=0; (i<cgs->nra); i++)
-      fprintf(debug,"i: %5d, cgnum: %5d, shknum: %5d\n",i,cgnum[i],shknum[i]);
+      fprintf(debug,"i: %5d, cgnum: %5u, shknum: %5u\n",i,cgnum[i],shknum[i]);
   
   pid = 0;
   sbl = 0;
@@ -326,7 +326,7 @@ typedef enum { egcolWhite, egcolGrey, egcolBlack, egcolNR } egCol;
 static int mk_grey(int nnodes,egCol egc[],t_graph *g,int *AtomI,
 		   t_sid sid[])
 {
-  int  m,j,ng,ai,aj,g0;
+  int  j,ng,ai,aj,g0;
 
   ng=0;
   ai=*AtomI;
@@ -371,7 +371,7 @@ static int first_colour(int fC,egCol Col,t_graph *g,egCol egc[])
 
 static int mk_sblocks(bool bVerbose,t_graph *g,t_sid sid[])
 {
-  int    ng,nnodes,i;
+  int    ng,nnodes;
   int    nW,nG,nB;		/* Number of Grey, Black, White	*/
   int    fW,fG;			/* First of each category	*/
   static egCol *egc=NULL;	/* The colour of each node	*/
@@ -446,9 +446,9 @@ static int mk_sblocks(bool bVerbose,t_graph *g,t_sid sid[])
 void gen_sblocks(bool bVerbose,int natoms,t_idef *idef,t_block *sblock)
 {
   t_graph *g;
-  int     i,j,k,ai,aj;
+  int     i,j,k;
   t_sid   *sid;
-  int     isid,jsid,nsid;
+  int     isid,nsid;
   
   g=mk_graph(idef,natoms,TRUE);
   if (bVerbose && debug)

@@ -228,7 +228,7 @@ static void do_gen(int nrbonds,	       /* total number of bonds in s	*/
 
 static void add_b(t_params *bonds, int *nrf, sortable s[])
 {
-  int i,nf;
+  int i;
   int ai,aj;
   
   for (i=0; (i < bonds->nr); i++) {
@@ -248,7 +248,7 @@ static void add_b(t_params *bonds, int *nrf, sortable s[])
 void gen_nnb(t_nextnb *nnb,t_params plist[])
 {
   sortable *s;
-  int      i,nrbonds,nf,nrf;
+  int      i,nrbonds,nrf;
 
   /* we need every bond twice (bidirectional) */
   nrbonds=0;

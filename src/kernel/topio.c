@@ -69,8 +69,7 @@
 
 void gen_pairs(t_params *nbs,t_params *pairs,real fudge)
 {
-  int     i,j,k,l,ntp,nrfp,nrfpA,nrfpB,nnn;
-  t_param *p;
+  int     i,j,ntp,nrfp,nrfpA,nrfpB,nnn;
 
   ntp       = nbs->nr;
   nnn       = sqrt(ntp);
@@ -87,7 +86,6 @@ void gen_pairs(t_params *nbs,t_params *pairs,real fudge)
     fprintf(debug,"Holy Cow! there are %d types\n",ntp);
   }
   snew(pairs->param,pairs->nr);
-  p=pairs->param;
   for(i=0; (i<ntp); i++) {
     /* Copy param.a */
     pairs->param[i].a[0] = i / nnn;
@@ -446,7 +444,6 @@ char **do_top(bool         bVerbose,
 {
   char tmpfile[L_tmpnam];
   char **title;
-  int  i;
   
   init_atomtype(atype);
 

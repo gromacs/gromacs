@@ -87,7 +87,7 @@ static void triple_check(t_inputrec *ir,t_topology *sys)
 static void double_check(t_inputrec *ir, matrix box, t_molinfo *mol)
 {
   bool bStop=FALSE;
-  int  i,ncons;
+  int  ncons;
   real bmin;
 
 #define BS(b,s,val) if (b) { fprintf(stderr,s,val); bStop=TRUE; }
@@ -447,9 +447,8 @@ static int search_array(int *n,int map[],int key)
 static int renum_atype(t_params plist[],t_topology *top,
 		       int atnr,t_inputrec *ir,bool bVerbose)
 {
-  int      i,j,k,l,b,mi,mj,tp,tpB,nat,nrfp,ftype;
+  int      i,j,k,l,mi,mj,nat,nrfp,ftype;
   t_param  *nbsnew;
-  real     **c,***cnb;
   int      *map;
 
   snew(map,atnr);

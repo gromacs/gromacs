@@ -28,6 +28,7 @@
  */
 #include <math.h>
 #include <stdio.h>
+#include "macros.h"
 #include "smalloc.h"
 #include "typedefs.h"
 #include "futil.h"
