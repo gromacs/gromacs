@@ -82,7 +82,7 @@ static void printincomp(t_trxframe *fr)
   if (fr->not_ok & HEADER_NOT_OK)
     fprintf(stderr,"WARNING: Incomplete header: nr %d time %g\n",
 	    frame+1,fr->time);
-  else if (fr->not_ok & FRAME_NOT_OK)
+  else if (fr->not_ok)
     fprintf(stderr,"WARNING: Incomplete frame: nr %d time %g\n",
 	    frame+1,fr->time);
 }
@@ -340,7 +340,7 @@ static bool gmx_next_frame(int status,t_trxframe *fr)
     if (fread_htrn(status,&sh,fr->box,fr->x,fr->v,fr->f))
       bRet = TRUE;
     else
-      fr->not_ok = FRAME_NOT_OK;
+      fr->not_ok = DATA_NOT_OK;
   } else
     if (!bOK)
       fr->not_ok = HEADER_NOT_OK;

@@ -66,10 +66,14 @@ extern int nframes_read(void);
 /* Returns the number of frames read from the trajectory */
 
 int write_trxframe_indexed(int status,t_trxframe *fr,int nind,atom_id *ind);
-/* Write an indexed frame to a TRX file. */
+/* Write an indexed frame to a TRX file, see write_trxframe */
 
 int write_trxframe(int status,t_trxframe *fr);
-/* Write a frame to a TRX file. */
+/* Write a frame to a TRX file. 
+ * Only entries for which the boolean is TRUE will be written,
+ * except for step, time, lambda and/or box, which may not be
+ * omitted for certain trajectory formats.
+ */
 
 int write_trx(int status,int nind,atom_id *ind,t_atoms *atoms,
 	      int step,real time,matrix box,rvec x[],rvec *v);
@@ -101,7 +105,7 @@ extern int check_times(real t,real t0);
 /* For trxframe.flags, used in trxframe read routines.
  * When a READ flag is set, the field will be read when present,
  * but a frame might be returned which does not contain the field.
- * When a NEED flag is set, frame not containing the field will be skipped.
+ * When a NEED flag is set, frames not containing the field will be skipped.
  */
 #define TRX_READ_X    (1<<0)
 #define TRX_NEED_X    (1<<1)
@@ -113,8 +117,9 @@ extern int check_times(real t,real t0);
 #define TRX_DONT_SKIP (1<<6)
 
 /* For trxframe.not_ok */
-#define FRAME_NOT_OK  (1<<0)
-#define HEADER_NOT_OK (1<<1 | FRAME_NOT_OK)
+#define HEADER_NOT_OK (1<<0)
+#define DATA_NOT_OK   (1<<1)
+#define FRAME_NOT_OK  (HEADER_NOT_OK | DATA_NOT_OK)
 
 extern bool read_first_frame(int *status,char *fn,t_trxframe *fr,int flags);
   /* Read the first frame which is in accordance with flags, which are
