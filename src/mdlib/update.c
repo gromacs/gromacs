@@ -73,6 +73,7 @@ typedef struct {
   real b;
   real c;
   real d;
+  real vvcorr;
 } t_sdconst;
 
 
@@ -251,7 +252,7 @@ void init_sd_consts(int ngtc,real tau_t[],real dt)
     sdc[n].eph = exp(sdc[n].gdt/2);
     sdc[n].emh = exp(-sdc[n].gdt/2);
     sdc[n].em  = exp(-sdc[n].gdt);
-    if(sdc[n].gdt >= 0.1) {
+    if(sdc[n].gdt >= 0.25) {
       sdc[n].b = sdc[n].gdt*(sqr(sdc[n].eph)-1) - 4*sqr(sdc[n].eph-1);
       sdc[n].c = sdc[n].gdt - 3 + 4*sdc[n].emh - sdc[n].em;
       sdc[n].d = 2 - sdc[n].eph - sdc[n].emh;
@@ -262,9 +263,11 @@ void init_sd_consts(int ngtc,real tau_t[],real dt)
       sdc[n].c = y*y*y*(2/3.0+y*(-1/2.0+y*(7/30.0+y*(-1/12.0+y*31/1260.0))));
       sdc[n].d = y*y*(-1+y*y*(-1/12.0-y*y/360.0));
     }
+    /* The missing velocity correlation over one MD step */
+    sdc[n].vvcorr = 0.5*(1 - sdc[n].em);
     if(debug)
-      fprintf(debug,"SD const tc-grp %d: b %g  c %g  d %g\n",
-              n,sdc[n].b,sdc[n].c,sdc[n].d);
+      fprintf(debug,"SD const tc-grp %d: b %g  c %g  d %g  vvcorr %g\n",
+              n,sdc[n].b,sdc[n].c,sdc[n].d,sdc[n].vvcorr);
   }
 }
 
@@ -433,7 +436,7 @@ void calc_ke_part(bool bFirstStep,bool bSD,int start,int homenr,
 {
   int          g,d,n,ga,gt;
   rvec         v_corrt;
-  real         hsqrt2,fac,hm,vvt,vct;
+  real         hsqrt2,hm,vvt,vct,ekincorr;
   t_grp_tcstat *tcstat=grps->tcstat;
   t_grp_acc    *grpstat=grps->grpstat;
   real         dvdl;
@@ -468,14 +471,8 @@ void calc_ke_part(bool bFirstStep,bool bSD,int start,int homenr,
     gt   = md->cTC[n];
     hm   = 0.5*md->massT[n];
 
-    if(bSD)
-      /* Scale up the average to compensate for the friction */
-      fac = (0.5 - hsqrt2)*sdc[gt].em + hsqrt2;
-    else
-      fac = 0.5;
-
     for(d=0; (d<DIM); d++) {
-      vvt        = fac*(v[n][d]+vold[n][d]);
+      vvt        = 0.5*(v[n][d] + vold[n][d]);
       vt[n][d]   = vvt;
       vct        = vvt - grpstat[ga].ut[d];
       v_corrt[d] = vct;
@@ -485,8 +482,18 @@ void calc_ke_part(bool bFirstStep,bool bSD,int start,int homenr,
       tcstat[gt].ekin[YY][d]+=hm*v_corrt[YY]*v_corrt[d];
       tcstat[gt].ekin[ZZ][d]+=hm*v_corrt[ZZ]*v_corrt[d];
     }
-    if(dvdlambda!=NULL && md->bPerturbed[n]) {
-      dvdl-=0.5*(md->massB[n]-md->massA[n])*iprod(v_corrt,v_corrt);
+    if (bSD) {
+      ekincorr = 0.5*BOLTZ*opts->ref_t[gt]*sdc[gt].vvcorr;
+
+      for(d=0; d<DIM; d++)
+	tcstat[gt].ekin[d][d] += ekincorr;
+
+      if (dvdlambda!=NULL && md->bPerturbed[n])
+	dvdl -= 0.5*(md->massB[n] - md->massA[n])
+	  *(iprod(v_corrt,v_corrt) + 6*md->invmass[n]*ekincorr);
+    } else {
+      if (dvdlambda!=NULL && md->bPerturbed[n])
+	dvdl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt,v_corrt);
     }
   }
   if(dvdlambda!=NULL)
