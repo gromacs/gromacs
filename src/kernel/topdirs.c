@@ -61,7 +61,6 @@ int ifunc_index(directive d,int type)
   case d_pairs:
   case d_pairtypes:
     return F_LJ14;
-    return F_ANGLES;
   case d_dihedrals:
   case d_dihedraltypes:
     switch (type) {
