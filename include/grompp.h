@@ -98,4 +98,6 @@ typedef enum {
   d_none
 } directive;
 
+extern void convert_harmonics(int nrmols,t_molinfo mols[],t_atomtype *atype);
+
 #endif	/* _grompp_h */
