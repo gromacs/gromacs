@@ -54,6 +54,7 @@ extern "C" {
 #define AJ 	a[1]
 #define AK 	a[2]
 #define AL 	a[3]
+#define AM      a[4]
 #define C0 	c[0]
 #define C1 	c[1]
 #define C2 	c[2]
