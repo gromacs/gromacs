@@ -566,7 +566,7 @@ int main (int argc,char *argv[])
 	for (i=0; i<del_lev+1; i++)
 	  del_yaxis[i]=delta_maxy*i/del_lev;
 	sprintf(buf,"%s RMSD vs. delta t",gn_rms[0]);
-	write_xpm(opt2FILE("-dmat",NFILE,fnm,"w"),buf,"density",
+	write_xpm(opt2FILE("-dm",NFILE,fnm,"w"),buf,"density",
 		  tstr,"RMSD (nm)",
 		  delta_xsize,del_lev+1,del_xaxis,del_yaxis,
 		  delta,0.0,delta_max,rlo,rhi,&nlevels);
