@@ -470,7 +470,7 @@ int main(int argc,char *argv[])
     do_view(opt2fn("-ox",NFILE,fnm), NULL);
   }
   if (bOV) {
-    fclose(outx);
+    fclose(outv);
     do_view(opt2fn("-ov",NFILE,fnm), NULL);
   }
   if (bOF) {
