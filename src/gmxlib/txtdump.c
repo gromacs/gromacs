@@ -736,3 +736,13 @@ void pr_header(FILE *fp,int indent,char *title,t_tpxheader *sh)
       fprintf(fp,"lambda = %e\n",sh->lambda);
     }
 }
+
+char *atomname(t_atoms *a,int i)
+{
+  char buf[32];
+  int resnr=a->atom[i].resnr;
+  
+  sprintf(buf,"%s%d-%s",*a->resname[resnr],resnr+1,*a->atomname[i]);
+  
+  return strdup(buf);
+}

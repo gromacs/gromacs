@@ -45,6 +45,10 @@ static char *SRCID_txtdump_h = "$Id$";
 #define	USE_WIDTH	((LINE_WIDTH)-(RMARGIN))
 #define INDENT		3
 
+extern char *atomname(t_atoms *a,int i);
+/* Return pointer to a buffer which holds the atomname in the
+ * form resname resnr atomname. Pointer can be freed afterwards.
+ */
 extern void pr_shownumbers(bool bShow);
 extern int available(FILE *fp,void *p,char *title);
 extern int pr_indent(FILE *fp,int n);
