@@ -575,8 +575,8 @@ int main(int argc,char *argv[])
     "their initial positions. This provides an easy way to compute",
     "the diffusion constant using the Einstein relation."
   };
-  static char *normtype[]= { "no","x","y","z",NULL };
-  static char *axtitle[] = { "no","x","y","z",NULL };
+  static char *normtype[]= { NULL,"no","x","y","z",NULL };
+  static char *axtitle[] = { NULL,"no","x","y","z",NULL };
   static int  ngroup     = 1;
   static bool bMW        = TRUE;
   t_pargs pa[] = {
