@@ -57,7 +57,8 @@ void do_view(char *fn, char *opts)
 	cmd="rasmol";
       break;
     default:
-      fatal_error(0,"unsupported file type %s(%d) in ftp_view",fn,fn2ftp(fn));
+      fprintf(stderr,"Cannot view file %s",fn);
+      return;
     }
     if ( strlen(cmd) ) {
       sprintf(buf,"%s %s %s &",cmd,fn,opts ? opts : "");
