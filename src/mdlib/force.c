@@ -114,7 +114,7 @@ static real *mk_nbfp(t_idef *idef,bool bBHAM)
   return nbfp;
 }
 
-static void check_solvent(FILE *log,t_topology *top,t_forcerec *fr,
+static void check_solvent(FILE *fp,t_topology *top,t_forcerec *fr,
 			  t_mdatoms *md)
 {
   /* This routine finds out whether a charge group can be used as
@@ -132,7 +132,7 @@ static void check_solvent(FILE *log,t_topology *top,t_forcerec *fr,
   excl = &(top->atoms.excl);
   mols = &(top->blocks[ebMOLS]);
 
-  fprintf(log,"Going to determine what solvent types we have.\n");
+  fprintf(fp,"Going to determine what solvent types we have.\n");
   snew(fr->solvent_type,cgs->nr+1);
   snew(fr->mno_index,(cgs->nr+1)*3);
   
@@ -140,7 +140,7 @@ static void check_solvent(FILE *log,t_topology *top,t_forcerec *fr,
   cgid = make_invblock(cgs,cgs->nra);
   
   /* Loop over molecules */
-  fprintf(log,"There are %d molecules, %d charge groups and %d atoms\n",
+  fprintf(fp,"There are %d molecules, %d charge groups and %d atoms\n",
 	  mols->nr,cgs->nr,cgs->nra);
   for(i=0; (i<mols->nr); i++) {
     /* Set boolean that determines whether the molecules consists of one CG */
@@ -182,7 +182,7 @@ static void check_solvent(FILE *log,t_topology *top,t_forcerec *fr,
 	  /* Check for coulomb */
 	  aj = mols->a[j];
 	  bHaveCoul[j-j0] = ((top->atoms.atom[aj].q != 0.0) ||
-			  (top->atoms.atom[aj].qB != 0.0));
+			     (top->atoms.atom[aj].qB != 0.0));
 	  /* Check for LJ. */
 	  tjA = top->atoms.atom[aj].type;
 	  tjB = top->atoms.atom[aj].typeB;
@@ -198,9 +198,9 @@ static void check_solvent(FILE *log,t_topology *top,t_forcerec *fr,
 			       (BHAMC(fr->nbfp,fr->ntype,tjB,k) != 0.0));
 	    else
 	      bHaveLJ[j-j0] = (bHaveLJ[j-j0] || 
-			       (C6(fr->nbfp,fr->ntype,tjA,k) != 0.0) ||
+			       (C6(fr->nbfp,fr->ntype,tjA,k)  != 0.0) ||
 			       (C12(fr->nbfp,fr->ntype,tjA,k) != 0.0) ||
-			       (C6(fr->nbfp,fr->ntype,tjB,k) != 0.0) ||
+			       (C6(fr->nbfp,fr->ntype,tjB,k)  != 0.0) ||
 			       (C12(fr->nbfp,fr->ntype,tjB,k) != 0.0));
 	  }
 	}
@@ -219,7 +219,6 @@ static void check_solvent(FILE *log,t_topology *top,t_forcerec *fr,
 	   (top->atoms.atom[aj+1].q == top->atoms.atom[aj+2].q))
 	  fr->solvent_type[cgid[aj]] = esolWATER;
 	else {
-	  fr->solvent_type[cgid[aj]] = esolMNO;
 	  /* Time to compute M & N & O */
 	  for(k=0; (k<nj) && (bHaveLJ[k] && bHaveCoul[k]); k++)
 	    ;
@@ -235,15 +234,15 @@ static void check_solvent(FILE *log,t_topology *top,t_forcerec *fr,
 	  for(; (k<nj); k++)
 	    bOrder = bOrder || (bHaveLJ[k] || bHaveCoul[k]);
 	  if (bOrder) {
-	    fprintf(stderr,"The order in your molecule %d should be optimized"
+	    fprintf(fp,"The order in molecule %d should be optimized"
 		    " for better performance\n",i);
-	    nl_m = nj;
-	    nl_n = nj;
-	    nl_o = 0; 
+	    fr->solvent_type[cgid[aj]] = esolNO;
 	  }
-	  fr->mno_index[cgid[aj]*3]   = nl_m;
-	  fr->mno_index[cgid[aj]*3+1] = nl_n;
-	  fr->mno_index[cgid[aj]*3+2] = nl_o;
+	  else {
+	    fr->mno_index[cgid[aj]*3]   = nl_m;
+	    fr->mno_index[cgid[aj]*3+1] = nl_n;
+	    fr->mno_index[cgid[aj]*3+2] = nl_o;
+	  }
 	}
 
 	/* Last check for perturbed atoms */
