@@ -9,6 +9,9 @@
  opls_115    0.00000  ; M TIP4P Water
  opls_116   15.99940  ; O SPC Water
  opls_117    1.00800  ; H SPC Water
+ opls_118   15.99940  ; O TIP5P Water
+ opls_119    1.00800  ; H TIP5P Water
+ opls_120    0.00000  ; L TIP5P Water
  opls_122   12.01100  ; C CCl4
  opls_123   35.45300  ; Cl CCl4
  opls_127   14.00670  ; Updated ammonia parameters - JPC B 2001, 105, 6474
