@@ -344,26 +344,26 @@ static real calc_one_mw(t_corr *this,int ix,int nx0,rvec xc[],real *tm)
   mm=this->mass[ix];
   if (mm < 1)
     return 0;
-  (*tm)+=this->mass[ix];
-  r2=0.0;
+  (*tm) += mm;
+  r2     = 0.0;
   switch (this->type) {
   case NORMAL:
     for(m=0; (m<DIM); m++) {
       r   = this->x0[nx0][ix][m]-xc[ix][m];
-      r2 += this->mass[ix]*r*r;
+      r2 += mm*r*r;
     }
     break;
   case X:
   case Y:
   case Z:
     r  = this->x0[nx0][ix][this->type-X]-xc[ix][this->type-X];
-    r2 = this->mass[ix]*r*r;
+    r2 = mm*r*r;
       break;
   case LATERAL:
     for(m=0; (m<DIM); m++) {
       if (m != this->axis) {
 	r   = this->x0[nx0][ix][m]-xc[ix][m];
-	r2 += this->mass[ix]*r*r;
+	r2 += mm*r*r;
       }
     }
     break;
