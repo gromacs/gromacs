@@ -81,9 +81,11 @@ void gen_pairs(t_params *nbs,t_params *pairs,real fudge)
   
   assert(nrfp  == nrfpA);
   assert(nrfpA == nrfpB);
-  
+
+  if (bVerbose()) 
+    fprintf(stderr,"Generating 1-4 interactions: fudge = %g\n",fudge);
   if (debug) {
-    fprintf(debug,"OPLS fudge factor for 1-4 interactions: %g\n",fudge);
+    fprintf(debug,"Fudge factor for 1-4 interactions: %g\n",fudge);
     fprintf(debug,"Holy Cow! there are %d types\n",ntp);
   }
   snew(pairs->param,pairs->nr);
@@ -97,8 +99,6 @@ void gen_pairs(t_params *nbs,t_params *pairs,real fudge)
       pairs->param[i].c[nrfp+j]=fudge*nbs->param[i].c[j];
     }
   }
-  if (debug)
-    fprintf(debug,"OPLS hacking done.\n");
 }
 
 void stupid_fill(t_block *grp, int maxf)
@@ -178,8 +178,7 @@ static char **read_topol(char        *infile,
 			 t_molinfo   **molinfo,
 			 t_params    plist[],
 			 int         nshake,
-			 real        fudgeLJ,
-			 bool        bGenPairs,
+			 real        *fudgeQQ,
 			 int         *nsim,
 			 t_simsystem **sims)
 {
@@ -189,8 +188,10 @@ static char **read_topol(char        *infile,
   char       *pline,**title=NULL;
   int        curline;
   char       curfile[STRLEN],line[STRLEN],errbuf[256];
+  char       genpairs[32];
   char       *dirstr,*dummy2;
-  int        nrcopies,nmol,nblock=0,Nsim=0;
+  int        nrcopies,nmol,nblock=0,Nsim=0,nscan;
+  double     fLJ,fQQ;
   t_simsystem *Sims=NULL;
   t_topology *block=NULL;
   t_molinfo  *blockinfo=NULL;
@@ -199,6 +200,8 @@ static char **read_topol(char        *infile,
   DirStack   *DS;
   directive  d,newd;
   t_block2   *block2;
+  real       fudgeLJ;    /* Multiplication factor to generate 1-4 from LJ */
+  bool       bGenPairs;
   real       qt=0; /* total charge */
 
   /* open input and output file */
@@ -286,8 +289,20 @@ static char **read_topol(char        *infile,
 	
 	switch (d) {
 	case d_defaults:
-	  if (sscanf(pline,"%d%d",&nb_funct,&comb) != 2) 
+	  nscan = sscanf(pline,"%d%d%s%lf%lf",
+			 &nb_funct,&comb,genpairs,&fLJ,&fQQ);
+	  if (nscan < 2)
 	    too_few();
+	  else if (nscan < 5) {
+	    bGenPairs = FALSE;
+	    fudgeLJ   = 1.0;
+	    *fudgeQQ  = 1.0;
+	    warning("No 1-4 interaction information");
+	  }
+	  else {
+	    fudgeLJ  = fLJ;
+	    *fudgeQQ = fQQ;
+	  }
 	  nb_funct = ifunc_index(d_nonbond_params,nb_funct);
 	  
 	  break;
@@ -454,8 +469,7 @@ char **do_top(bool         bVerbose,
 
   if (bVerbose) printf("processing topology...\n");
   title=read_topol(tmpfile,symtab,atype,nrmols,molinfo,
-		   plist,opts->nshake,
-		   ir->fudgeLJ,opts->bGenPairs,nsim,sims);
+		   plist,opts->nshake,&ir->fudgeQQ,nsim,sims);
 
   if (unlink(tmpfile) != 0)
     perror ("Unable to remove temporary file");

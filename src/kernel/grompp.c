@@ -130,7 +130,8 @@ void check_water(bool bVerbose,int nmol,t_molinfo msys[],
   else {
     for(i=0; (i<Nsim); i++) {
       wmol = Sims[i].whichmol;
-      if ((strcmp(watertype,*(msys[wmol].name)) == 0) && (Sims[i].nrcopies > 0)) {
+      if ((strcmp(watertype,*(msys[wmol].name)) == 0) && 
+	  (Sims[i].nrcopies > 0)) {
 	if (ir->watertype != -1)
 	  fatal_error(0,"Twice the same moleculetype %s",watertype);
 	ir->watertype=msys[wmol].atoms.atom[0].type;

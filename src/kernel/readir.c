@@ -250,14 +250,14 @@ void get_ir(char *mdparin,char *mdparout,
   ITYPE ("fourier_nz",  ir->nkz,        10);
 
   /* 1-4 Stuff */  
-  CCTYPE ("LENNARD JONES 1-4 INTERACTION THINGIES");
+  /*  CCTYPE ("LENNARD JONES 1-4 INTERACTION THINGIES");
   CTYPE ("Compute LJ 1-4 parameters by scaling normal LJ parameters by this");
   RTYPE ("fudgeLJ",     ir->fudgeLJ,    1.0);
   CTYPE ("Scale charge in 1-4 interaction by this");
   RTYPE ("fudgeQQ",     ir->fudgeQQ,    1.0);
   CTYPE ("Generate 1-4 parameters (sometimes for non GROMOS force fields)");
   ETYPE ("gen_pairs",   opts->bGenPairs,yesno_names);
-
+  */
   /* Coupling stuff */
   CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
   CTYPE ("Temperature coupling");
