@@ -123,7 +123,7 @@ static int calc_pot(char *infile,
 		    t_topology *top,rvec **x0,rvec **v0,
 		    real **coulomb,matrix box,real *rl2)
 {
-  t_inputrec     ir;
+  t_inputrec  ir;
   t_tpxheader sh;
   
   rvec        *x;
@@ -144,6 +144,15 @@ static int calc_pot(char *infile,
   /* Calc the force */
   fprintf(stderr,"Doing single force calculation...\n");
 
+  /*  do_force(stdout,t_commrec *cr,
+	   t_parm *parm,t_nsborder *nsb,tensor vir_part,
+	   int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
+	   rvec x[],rvec v[],rvec f[],rvec buf[],
+	   t_mdatoms *mdatoms,real ener[],bool bVerbose,
+	   real lambda,t_graph *graph,
+	   bool bNS,bool bNBFonly,t_forcerec *fr);
+  */
+  
   snew(coul,sh.natoms);
   snew(q,natoms);
   init_pbc(box,FALSE);
@@ -362,10 +371,18 @@ int main(int argc, char *argv[])
   static char *bugs[] = {
     "Only monatomic ions can be used. For larger ions, e.g. sulfate we recommended to use genbox."
   };
-  
-  int         p_num,n_num;
-  char        p_name[STRLEN],n_name[STRLEN];
-  real        p_q,n_q,rcut;
+  static int  p_num=0,n_num=0;
+  static char *p_name="Na",*n_name="Cl";
+  static real p_q,n_q,rcut;
+  static t_pargs pa[] = {
+    { "-p",    FALSE, etINT,  &p_num, "Number of positive ions"       },
+    { "-pn",   FALSE, etSTR,  &p_name,"Name of the positive ion"      },
+    { "-pq",   FALSE, etREAL, &p_q,   "Charge of the positive ion"    },
+    { "-n",    FALSE, etINT,  &n_num, "Number of negative ions"       },
+    { "-nn",   FALSE, etSTR,  &n_name,"Name of the negative ion"      },
+    { "-nq",   FALSE, etREAL, &n_q,   "Charge of the negative ion"    },
+    { "-rmin", FALSE, etREAL, &rcut,  "Minimum distance between ions" }
+  };
   t_topology  top;
   t_atoms     new_at;
   rvec        *x,*v,*xn,*vn;
@@ -379,24 +396,19 @@ int main(int argc, char *argv[])
   t_nl        *nl;
   int         i,nion,natoms;
   t_filenm fnm[] = {
-    { efGIP, "-f",  NULL,     ffREAD },
-    { efGIP, "-po", "gi-out", ffWRITE },
     { efTPX, NULL,  NULL,     ffREAD },
     { efSTO, "-o",  NULL,     ffWRITE }
   };
 #define NFILE asize(fnm)
   
   CopyRight(stdout,argv[0]);
-  parse_common_args(&argc,argv,0,TRUE,NFILE,fnm,0,NULL,asize(desc),desc,
+  parse_common_args(&argc,argv,0,TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    asize(bugs),bugs);
 
-  get_params(opt2fn("-f",NFILE,fnm),opt2fn("-po",NFILE,fnm),
-	     &p_num,p_name,&p_q,&n_num,n_name,&n_q,&w1,&nw,&rcut);
-  
-  nion=p_num+n_num;
+  nion   = p_num+n_num;
 
-  natoms=calc_pot(ftp2fn(efTPX,NFILE,fnm),&top,&x,&v,&coulomb,box,&rlong2);
-  index=mk_windex(w1,nw);
+  natoms = calc_pot(ftp2fn(efTPX,NFILE,fnm),&top,&x,&v,&coulomb,box,&rlong2);
+  index  = mk_windex(w1,nw);
   snew(nSubs,natoms);
   snew(bSet,nw);
   snew(nl,nw);
