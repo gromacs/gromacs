@@ -33,7 +33,7 @@ static char *SRCID_addconf_h = "$Id$";
 extern void add_conf(t_atoms *atoms, rvec **x, real **r, bool bSrenew,
 		     matrix box,
 		     t_atoms *atoms_solvt, rvec *x_solvt, real *r_solvt, 
-		     bool bVerbose);
+		     bool bVerbose,bool bForceInside);
 /* Add two conformations together, without generating overlap */
 
 extern void orient_mol(t_atoms *atoms,char *indexnm,rvec x[],rvec *v);

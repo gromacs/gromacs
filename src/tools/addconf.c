@@ -163,111 +163,120 @@ void combine_atoms(t_atoms *ap,t_atoms *as,rvec xp[],rvec xs[],
   *x_comb = xc;
 }
 
-void do_nsgrid(FILE *fp,t_forcerec *fr,
+void do_nsgrid(FILE *fp,bool bVerbose,t_forcerec *fr,
 	       matrix box,rvec x[],t_atoms *atoms,real rlong)
 {
+  static bool bFirst = TRUE;
+  static t_topology *top;
+  static t_nsborder *nsb;
+  static t_mdatoms  *md;
+  static t_block    *cgs;
+  static t_inputrec *ir;
+  static t_nrnb     nrnb;
+  static t_commrec  *cr;
+  static t_groups   *grps;
+  static bool       bHaveLJ;
+  static int        *cg_index;
+
+  t_atom     *atom;
   int        i,j,m,natoms,nx,ny,nz,ngid,res0;
-  int        *cg_index;
   ivec       *nFreeze;
   rvec       box_size;
   real       lambda=0,dvdlambda=0;
-  t_mdatoms  *md;
-  t_atom     *atom;
-  t_topology *top;
-  t_block    *cgs;
-  t_inputrec *ir;
-  t_nrnb     nrnb;
-  t_commrec  *cr;
-  t_nsborder *nsb;
-  t_groups   *grps;
-  bool       bHaveLJ;
 
   natoms = atoms->nr;
+  atom   = atoms->atom;
     
-  /* Charge group index */  
-  snew(cg_index,natoms);
-  for(i=0; (i<natoms); i++)
-    cg_index[i]=i;
+  if (bFirst) {
+    /* Charge group index */  
+    snew(cg_index,natoms);
+    for(i=0; (i<natoms); i++)
+      cg_index[i]=i;
     
-  /* Topology needs charge groups and exclusions */
-  snew(top,1);
-  init_top(top);
-  stupid_fill(&(top->blocks[ebCGS]),natoms,FALSE);
-  memcpy(&(top->atoms),atoms,sizeof(*atoms));
-  top->atoms.grps[egcENER].nr = 1;
-  
-  /* Some nasty shortcuts */
-  cgs  = &(top->blocks[ebCGS]);
-  atom = atoms->atom;
-  
-  top->idef.ntypes = 1;
-  top->idef.pid    = 0;
-  top->idef.atnr   = 1;
-  snew(top->idef.functype,1);
-  snew(top->idef.iparams,1);
-  top->idef.iparams[0].lj.c6  = 1;
-  top->idef.iparams[0].lj.c12 = 1;
-  
-  /* mdatoms structure */
-  snew(nFreeze,2);
-  md = atoms2md(debug,atoms,nFreeze,FALSE,FALSE,FALSE);
-  sfree(nFreeze);
+    /* Topology needs charge groups and exclusions */
+    snew(top,1);
+    init_top(top);
+    stupid_fill(&(top->blocks[ebCGS]),natoms,FALSE);
+    memcpy(&(top->atoms),atoms,sizeof(*atoms));
+    top->atoms.grps[egcENER].nr = 1;
+    
+    /* Some nasty shortcuts */
+    cgs  = &(top->blocks[ebCGS]);
+    
+    top->idef.ntypes = 1;
+    top->idef.pid    = 0;
+    top->idef.atnr   = 1;
+    snew(top->idef.functype,1);
+    snew(top->idef.iparams,1);
+    top->idef.iparams[0].lj.c6  = 1;
+    top->idef.iparams[0].lj.c12 = 1;
+    
+    /* mdatoms structure */
+    snew(nFreeze,2);
+    md = atoms2md(debug,atoms,nFreeze,FALSE,FALSE,FALSE);
+    sfree(nFreeze);
 
-  /* nsborder struct */
-  snew(nsb,1);
-  nsb->pid    = 0;
-  nsb->nprocs = 1;
-  calc_nsb(debug,&(top->blocks[ebCGS]),1,nsb,0);
-  if (debug)
-    print_nsb(debug,"nsborder",nsb);
+    /* nsborder struct */
+    snew(nsb,1);
+    nsb->pid    = 0;
+    nsb->nprocs = 1;
+    calc_nsb(debug,&(top->blocks[ebCGS]),1,nsb,0);
+    if (debug)
+      print_nsb(debug,"nsborder",nsb);
   
-  /* inputrec structure */
-  snew(ir,1);
+    /* inputrec structure */
+    snew(ir,1);
+    ir->coulombtype = eelCUT;
+    ir->vdwtype     = evdwCUT;
+    ir->ndelta      = 2;
+    ir->ns_type     = ensGRID;
+    ir->solvent_opt = -1;
+    snew(ir->opts.eg_excl,1);
+    
+    /* forcerec structure */
+    snew(cr,1);
+    cr->nprocs = 1;
+    ir->rlist       = ir->rcoulomb = ir->rvdw = rlong;
+    init_forcerec(debug,fr,ir,&(top->blocks[ebMOLS]),cr,
+		  &(top->blocks[ebCGS]),&(top->idef),md,nsb,box,FALSE);
+    fr->cg0 = 0;
+    fr->hcg = top->blocks[ebCGS].nr;
+    fr->nWatMol = 0;
+    if (debug)
+      pr_forcerec(debug,fr,cr);
+    
+    /* Prepare for neighboursearching */
+    ngid    = 1;
+    bHaveLJ = TRUE;
+    init_nrnb(&nrnb);
+
+    /* Group stuff */
+    snew(grps,1);
+    
+    bFirst = FALSE;
+  }
+
+  /* Init things dependent on parameters */  
   ir->rlist       = ir->rcoulomb = ir->rvdw = rlong;
-  ir->coulombtype = eelCUT;
-  ir->vdwtype     = evdwCUT;
-  ir->ndelta      = 2;
-  ir->ns_type     = ensGRID;
-  ir->solvent_opt = -1;
-  snew(ir->opts.eg_excl,1);
-  
-  /* forcerec structure */
-  snew(cr,1);
-  cr->nprocs = 1;
   init_forcerec(debug,fr,ir,&(top->blocks[ebMOLS]),cr,
 		&(top->blocks[ebCGS]),&(top->idef),md,nsb,box,FALSE);
-  fr->cg0 = 0;
-  fr->hcg = top->blocks[ebCGS].nr;
-  fr->nWatMol = 0;
-  if (debug)
-    pr_forcerec(debug,fr,cr);
-
+		
+  /* Calculate new stuff dependent on coords and box */
   for(m=0; (m<DIM); m++)
     box_size[m] = box[m][m];
   calc_shifts(box,box_size,fr->shift_vec,FALSE);
   put_charge_groups_in_box(fp,0,cgs->nr,FALSE,box,box_size,cgs,
 			   x,fr->shift_vec,fr->cg_cm);
   
-  /* Prepare for neighboursearching */
-  init_nrnb(&nrnb);
-  ngid    = 1;
-  bHaveLJ = TRUE;
-  
-  /* Group stuff */
-  snew(grps,1);
+  /* Do the actual neighboursearching */
   init_neighbor_list(fp,fr,HOMENR(nsb));
   search_neighbours(fp,fr,x,box,top,grps,cr,nsb,&nrnb,md,lambda,&dvdlambda);
-  sfree(grps);
 
   if (debug)
     dump_nblist(debug,fr,0);
-    
-  /* release nsborder */
-  sfree(nsb);
 
-  sfree(ir->opts.eg_excl);
-  
-  fprintf(stderr,"Succesfully made neighbourlist\n");
+  if (bVerbose)    
+    fprintf(stderr,"Succesfully made neighbourlist\n");
 }
 
 real calc_n2max(matrix box,real rlong)
@@ -287,15 +296,15 @@ real calc_n2max(matrix box,real rlong)
 
 void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
 	      t_atoms *atoms_solvt, rvec *x_solvt, real *r_solvt, 
-	      bool bVerbose)
+	      bool bVerbose,bool bForceInside)
 {
   t_grid     *grid;
   t_nblist   *nlist;
   t_forcerec *fr;
   t_atoms    *atoms_all;
-  real       max_vdw,*r_prot,n2,n2max,r2;
+  real       max_vdw,*r_prot,*r_all,n2,n2max,r2;
   int        natoms_prot,natoms_solvt;
-  int        i,j,jj,m,j0,j1,jnr,inr,iprot,isolvt;
+  int        i,j,jj,m,j0,j1,jnr,inr,iprot,is1,is2;
   int        prev,resnr,nresadd,d,k,ncells,maxincell;
   int        dx0,dx1,dy0,dy1,dz0,dz1;
   int        *atom_flag,*cg_index;
@@ -320,13 +329,18 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
   init_pbc(box,FALSE);
   
   /* remove atoms that are far outside the box */
-  for(i=0; (i<atoms_solvt->nr); i++)
-    if ( outside_box_minus_margin(x_solvt[i],box) )
-      i=mark_remove_res(i,remove,atoms_solvt->nr,atoms_solvt->atom);
+  if (bForceInside)
+    for(i=0; (i<atoms_solvt->nr); i++)
+      if ( outside_box_minus_margin(x_solvt[i],box) )
+	i=mark_remove_res(i,remove,atoms_solvt->nr,atoms_solvt->atom);
 
   /* Define grid stuff for genbox */
   /* Largest VDW radius */
   r_prot  = *r;
+  snew(r_all,natoms_prot+natoms_solvt);
+  memcpy(r_all,            r_prot, natoms_prot*sizeof(r_prot[0]));
+  memcpy(r_all+natoms_prot,r_solvt,natoms_solvt*sizeof(r_solvt[0]));
+  
   max_vdw = (find_max_real(natoms_prot,r_prot) + 
 	     find_max_real(natoms_solvt,r_solvt));
 
@@ -335,7 +349,7 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
 	     
   /* Do neighboursearching step */
   fr   = mk_forcerec();
-  do_nsgrid(stdout,fr,box,x_all,atoms_all,max_vdw);
+  do_nsgrid(stdout,bVerbose,fr,box,x_all,atoms_all,max_vdw);
   n2max = calc_n2max(box,max_vdw);
   
   /* check solvent with solute */
@@ -351,70 +365,40 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
       jnr = nlist->jjnr[j];
       copy_rvec(x_all[jnr],xj);
       
-      /* Check which of the atoms is the protein */
-      if ((inr < natoms_prot) && (jnr >= natoms_prot)) {
-	iprot  = inr;
-	isolvt = jnr - natoms_prot;
-      }
-      else if ((inr >= natoms_prot) && (jnr < natoms_prot)) {
-	iprot  = jnr;
-	isolvt = inr - natoms_prot;
-      }
-      else 
-	/* Protein-protein or solvent-solvent interaction */
-	continue;
+      /* Check solvent-protein and solvent-solvent */
+      is1 = inr-natoms_prot;
+      is2 = jnr-natoms_prot;
       
-      if (!remove[isolvt]) {
+      /* Check if at least one of the atoms is a solvent that is not yet
+       * listed for removal, and if both are solvent, that they are not in the
+       * same residue.
+       */
+      if ((((is1 >= 0) && !remove[is1]) ||
+	   ((is2 >= 0) && !remove[is2])) &&
+	  (!((is1 >= 0) && (is2 >= 0) && 
+	     (atoms_solvt->atom[is1].resnr == 
+	      atoms_solvt->atom[is2].resnr)))) {
 	ntest++;
-	if (debug)
-	  fprintf(debug,"iprot = %d, isolvt = %d\n",iprot,isolvt);
 	rvec_sub(xi,xj,dx);
 	n2 = norm2(dx);
-	r2 = sqr(r_prot[iprot]+r_solvt[isolvt]);
+	r2 = sqr(r_all[inr]+r_all[jnr]);
 	if (n2 < r2) {
-	  (void) mark_remove_res(isolvt,remove,natoms_solvt,atoms_solvt->atom);
+	  if (is1 >= 0)
+	    (void) mark_remove_res(is1,remove,natoms_solvt,atoms_solvt->atom);
+	  if (is2 >= 0)
+	    (void) mark_remove_res(is2,remove,natoms_solvt,atoms_solvt->atom);
 	  nremove++;
-	}
-	else if (n2 >= n2max) {
-	  fprintf(stderr,
-		  "Some thing strange in distances n2 = %g, n2max = %g"
-		  " iprot = %d, isolvt = %d\n",
-		  n2,n2max,iprot,isolvt);
 	}
       }
     }
   }
-  if (debug)
+  if (debug) {
     fprintf(debug,
 	    "ntest=%d, nremove=%d, natoms_prot=%d, neighbours per atom=%g\n",
 	    ntest,nremove,natoms_prot,(real)ntest/(real)natoms_prot);
-	 
-  /* check solvent with itself. Do we need to have this in grid code too? 
-   */
-  for(i=0; i<atoms_solvt->nr ;i++) {
-    if ( bVerbose && ( (i<10) || ((i+1)%10==0) || (i>atoms_solvt->nr-10) ) )
-      fprintf(stderr,"\rchecking atom %d out of %d",i+1,atoms_solvt->nr);
-    
-    /* check only atoms that haven't been marked for removal already and
-       are close to the box edges */
-    if ( !remove[i] && outside_box_minus_margin(x_solvt[i],box) )
-      /* check with other border atoms, 
-	 only if not already removed and two different molecules (resnr) */
-      for(j=i+1; (j<atoms_solvt->nr) && !remove[i]; j++)
-	if ( !remove[j] && 
-	     atoms_solvt->atom[i].resnr != atoms_solvt->atom[j].resnr &&
-	     outside_box_minus_margin(x_solvt[j],box) ) {
-	  pbc_dx(x_solvt[i],x_solvt[j],dx);
-	  if ( norm2(dx) < sqr(r_solvt[i] + r_solvt[j]) )
-	    j=mark_remove_res(j,remove,atoms_solvt->nr,atoms_solvt->atom);
-	}
-  }
-  if (bVerbose)
-    fprintf(stderr,"\n");
-
-  if (debug)
     for(i=0; (i<natoms_solvt); i++)
       fprintf(debug,"remove[%5d] = %s\n",i,bool_names[remove[i]]);
+  }
   
   /* count how many atoms will be added and make space */
   j=0;
