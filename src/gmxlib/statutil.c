@@ -298,15 +298,15 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   int      nall_pa;
   t_pargs pca_pa[] = {
     { "-b",    FALSE, etREAL, &tbegin,        
-      "Time (ps) of the first frame read from the trajectory file" },
+      "first frame (ps) to read from trajectory" },
     { "-e",    FALSE, etREAL, &tend,        
-      "Time (ps) of the last frame read from the trajectory file" },
+      "last frame (ps) to read from trajectory" },
     { "-w",    FALSE, etBOOL, &bView,     
-      "View output using xvgr or ghostview depending on output file type" },
+      "View output using xvgr or ghostview" },
     { "-nice", FALSE, etINT,  &nicelevel, 
       "Set the nicelevel" },
     { "-debug",FALSE, etBOOL, &bDebug,
-      "HIDDENDetermines whether a file with debug information is written" },
+      "HIDDENwrite file with debug information" },
     { "-h",    FALSE, etBOOL, &bHelp,     
       "Print help info and quit" },
     { "-hidden", FALSE, etBOOL, &bHidden,
@@ -317,7 +317,7 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 #ifdef USE_SGI_FPE
     ,
     { "-exception", FALSE, etBOOL, &bExcept,
-      "HIDDENTurn on exception handling for debugging purposes" }
+      "HIDDENTurn on exception handling" }
 #endif
     ,
     { "-npri", FALSE, etINT,  &npri,
