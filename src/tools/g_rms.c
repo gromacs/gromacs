@@ -75,6 +75,7 @@ int main (int argc,char *argv[])
     "The reference structure is taken from the binary topology file.[PAR]",
     "Option [TT]-a[tt] produces time averaged RMSD per group (e.g. residues",
     "in a protein).[PAR]",
+    "Option [TT]-prev[tt] produces the RMSD with a previous frame.[PAR]",
     "Option [TT]-m[tt] produces a matrix of RMSD's of each structure in the", 
     "trajectory with respect to each other structure. All the structures",
     "are fitted on the structure in the .tpb file. With [TT]-fitall[tt], all",
@@ -90,7 +91,7 @@ int main (int argc,char *argv[])
   };
   static bool bPBC=TRUE,bFit=TRUE,bFitAll=FALSE;
   static bool bNano=FALSE,bDeltaLog=FALSE;
-  static int  freq=1,freq2=1,nlevels=40,avl=0;
+  static int  prev=0,freq=1,freq2=1,nlevels=40,avl=0;
   static real rmsd_user_max=-1,rmsd_user_min=-1, 
               bond_user_max=-1,bond_user_min=-1,
               delta_maxy=0.25;
@@ -99,10 +100,12 @@ int main (int argc,char *argv[])
       "PBC check" },
     { "-fit",FALSE, etBOOL, &bFit,
       "fit to reference structure" },
-    { "-fitall",FALSE,etBOOL,&bFitAll,
-      "fit all pairs of structures in rmsd matrix" },
     { "-ns", FALSE, etBOOL, &bNano  ,
       "ns on axis instead of ps"},
+    { "-prev", FALSE, etINT, &prev,
+      "calculate rmsd with previous frame" },
+    { "-fitall",FALSE,etBOOL,&bFitAll,
+      "fit all pairs of structures in rmsd matrix" },
     { "-skip", FALSE, etINT, &freq,
       "only write every nr-th frame to RMSD matrix" },
     { "-skip2", FALSE, etINT, &freq2,
@@ -139,7 +142,7 @@ int main (int argc,char *argv[])
   matrix       box;
   rvec         *x,*xp,*v,**mat_x,**mat_x2,*mat_x2_j,**mat_b,**mat_b2,vec;
   int          status;
-  char         buf[256],tstr[12];
+  char         buf[256],buf2[256],tstr[12];
   
   int          nrms,ncons;
   FILE         *fp,*fpav;
@@ -149,7 +152,7 @@ int main (int argc,char *argv[])
   real         **rmsdav_mat,av_tot,weight,weight_tot;
   real         **delta,delta_max,delta_scalex,delta_scaley,*delta_tot;
   int          delta_xsize,del_lev=100,mx,my,abs_my;
-  bool         bA1,bA2;
+  bool         bA1,bA2,bPrev;
   int          ifit,*irms,ibond,*ind_bond;
   atom_id      *ind_fit,**ind_rms,*all_at;
   char         *gn_fit,**gn_rms,*bigbuf;
@@ -176,6 +179,12 @@ int main (int argc,char *argv[])
   bMat  =opt2bSet("-m" ,NFILE,fnm);
   bBond =opt2bSet("-bm",NFILE,fnm);
   bDelta=opt2bSet("-dm",NFILE,fnm);
+  bPrev = (prev > 0);
+  if (bPrev) {
+    prev=abs(prev);
+    if (freq!=1)
+      fprintf(stderr,"WARNING: option -skip also applies to -prev\n");
+  }
   
   if (bFile2 && !bMat && !bBond) {
     fprintf(stderr,"WARNING: Option -f2 used without -m or -bm, will not "
@@ -273,7 +282,7 @@ int main (int argc,char *argv[])
     fatal_error(0,"Topology (%d atoms) does not match trajectory (%d atoms)",
 		top.atoms.nr,natoms);
   
-  if (bMat) snew(mat_x,NFRAME);
+  if (bMat || bPrev) snew(mat_x,NFRAME);
   if (bBond) {
     idef=&top.idef;
     iatom=idef->il[F_SHAKE].iatoms;
@@ -312,7 +321,7 @@ int main (int argc,char *argv[])
     }
 
     if (teller % freq == 0) {
-      if (bMat) {
+      if (bMat || bPrev) {
 	if (tel_mat >= NFRAME) 
 	  srenew(mat_x,tel_mat+1);
 	snew(mat_x[tel_mat],natoms);
@@ -333,6 +342,14 @@ int main (int argc,char *argv[])
 
 
     /*calculate energy of root_least_squares*/
+    if (bPrev) {
+      j=tel_mat-prev-1;
+      if (j<0)
+	j=0;
+      for (i=0;i<natoms;i++)
+	copy_rvec(mat_x[j][i],xp[i]);
+    }    
+
     for(j=0; (j<nrms); j++) 
       rls[j][teller]=do_rms(irms[j],ind_rms[j],w_rms,x,xp);
     if (bNorm) {
@@ -607,16 +624,34 @@ int main (int argc,char *argv[])
     ptr=strstr(buf,".xvg");
     sprintf(ptr,"%s.xvg",gn_rms[j]);
 
-    fp=xvgropen(buf,"RMS Deviation",tstr,"nm");
-     fprintf(fp,"@ subtitle \"RMS of %s lsq fitted to %s\"\n",
-	    gn_rms[j],gn_fit);
-    rlstot=0.0;
-    for(i=0; (i<teller); i++) {
-      fprintf(fp,"%8.4f %8.4f\n",time[i],rls[j][i]);
-      if (bAv)
-	rlstot+=rls[j][i];
+    if (!bPrev) {
+      fp=xvgropen(buf,"RMS Deviation",tstr,"nm");
+      fprintf(fp,"@ subtitle \"of %s lsq fitted to %s\"\n",
+	      gn_rms[j],gn_fit);
+      rlstot=0.0;
+      for(i=0; (i<teller); i++) {
+	fprintf(fp,"%8.4f %8.4f\n",time[i],rls[j][i]);
+	if (bAv)
+	  rlstot+=rls[j][i];
+      }
+      fclose(fp);
     }
-    fclose(fp);
+    else {
+      if (bNano)
+	sprintf(buf2,"RMSD with frame %g ns ago",time[prev*freq]-time[0]);
+      else
+	sprintf(buf2,"RMSD with frame %g ps ago",time[prev*freq]-time[0]);
+      fp=xvgropen(buf,buf2,tstr,"nm");
+      fprintf(fp,"@ subtitle \"of %s lsq fitted to %s\"\n",
+	      gn_rms[j],gn_fit);
+      rlstot=0.0;
+      for(i=prev; (i<tel_mat); i++) {
+	fprintf(fp,"%8.4f %8.4f\n",time[freq*i],rls[j][i]);
+	if (bAv)
+	  rlstot+=rls[j][i];
+      }
+      fclose(fp);
+    }
     if (bAv)
       fprintf(fpav,"%10d  %10g\n",j,rlstot/teller);
   }
