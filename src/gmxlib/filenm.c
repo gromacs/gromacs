@@ -281,8 +281,8 @@ void pr_fopts(FILE *fp,int nf,t_filenm tfn[])
     } else
       fprintf(fp,"%s",deffile[tfn[i].ftp].ext+1);
     fprintf(fp,"{");
-    for(i=0; i<NZEXT; i++)
-      fprintf(fp,",%s",z_ext[i]);
+    for(j=0; j<NZEXT; j++)
+      fprintf(fp,",%s",z_ext[j]);
     fprintf(fp,"}/\"");
   }
 }
