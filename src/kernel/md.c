@@ -140,6 +140,10 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),top,state,&mdatoms,nsb);
     bParDummies=FALSE;
   }
+  if (parm->ir.eI == eiSD) {
+    /* Is not read from TPR yet, so we allocate space here */
+    snew(state->sd_X,nsb->natoms);
+  }
   snew(buf,nsb->natoms);
   snew(f,nsb->natoms);
   snew(vt,nsb->natoms);

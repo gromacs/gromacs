@@ -277,6 +277,7 @@ static void do_update_sd(int start,int homenr,
                          unsigned short cFREEZE[],unsigned short cACC[],
                          unsigned short cTC[],
                          rvec x[],rvec xprime[],rvec v[],rvec vold[],rvec f[],
+			 rvec sd_X[],
                          int ngtc,real tau_t[],real ref_t[],
                          gmx_rng_t gaussrand, bool bFirstHalf)
 {
@@ -289,7 +290,10 @@ static void do_update_sd(int start,int homenr,
 
   static bool bFirst = TRUE;
   static t_sd_sigmas *sig=NULL;
-  static rvec *X,*V;
+  /* The random part of the velocity update, generated in the first
+   * half of the update, needs to be remembered for the second half.
+   */
+  static rvec *sd_V;
   real   kT;
   int    gf,ga,gt;
   real   vn=0,Vmh,Xmh;
@@ -299,8 +303,7 @@ static void do_update_sd(int start,int homenr,
 
   if(sig == NULL) {
     snew(sig,ngtc);
-    snew(X,homenr);
-    snew(V,homenr);
+    snew(sd_V,homenr);
   }
 
   if(bFirstHalf) {
@@ -329,15 +332,15 @@ static void do_update_sd(int start,int homenr,
         if(bFirstHalf) {
 
           if(bFirst)
-            X[n-start][d] = ism*sig[gt].X*gmx_rng_gaussian_table(gaussrand);
+            sd_X[n][d] = ism*sig[gt].X*gmx_rng_gaussian_table(gaussrand);
 
-          Vmh = X[n-start][d]*sdc[gt].d/(tau_t[gt]*sdc[gt].c) 
+          Vmh = sd_X[n][d]*sdc[gt].d/(tau_t[gt]*sdc[gt].c) 
                 + ism*sig[gt].Yv*gmx_rng_gaussian_table(gaussrand);
-          V[n-start][d] = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand);
+          sd_V[n-start][d] = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand);
 
           v[n][d] = vn*sdc[gt].em 
                     + (invmass[n]*f[n][d] + accel[ga][d])*tau_t[gt]*(1 - sdc[gt].em)
-                    + V[n-start][d] - sdc[gt].em*Vmh;
+                    + sd_V[n-start][d] - sdc[gt].em*Vmh;
 
           xprime[n][d] = x[n][d] + v[n][d]*tau_t[gt]*(sdc[gt].eph - sdc[gt].emh); 
 
@@ -347,11 +350,11 @@ static void do_update_sd(int start,int homenr,
           v[n][d] = 
           (xprime[n][d] - x[n][d])/(tau_t[gt]*(sdc[gt].eph - sdc[gt].emh));  
 
-          Xmh = V[n-start][d]*tau_t[gt]*sdc[gt].d/(sdc[gt].em-1) 
+          Xmh = sd_V[n-start][d]*tau_t[gt]*sdc[gt].d/(sdc[gt].em-1) 
                 + ism*sig[gt].Yx*gmx_rng_gaussian_table(gaussrand);
-          X[n-start][d] = ism*sig[gt].X*gmx_rng_gaussian_table(gaussrand);
+          sd_X[n][d] = ism*sig[gt].X*gmx_rng_gaussian_table(gaussrand);
 
-          xprime[n][d] += X[n-start][d] - Xmh;
+          xprime[n][d] += sd_X[n][d] - Xmh;
 
         }
       } else {
@@ -693,7 +696,7 @@ void update(int          natoms,  /* number of atoms in simulation */
                    ir->opts.acc,ir->opts.nFreeze,
                    md->invmass,md->ptype,
                    md->cFREEZE,md->cACC,md->cTC,
-                   state->x,xprime,state->v,vold,force,
+                   state->x,xprime,state->v,vold,force,state->sd_X,
                    ir->opts.ngtc,ir->opts.tau_t,ir->opts.ref_t,
                    sd_gaussrand,TRUE);
       if(bHaveConstr) {
@@ -714,7 +717,7 @@ void update(int          natoms,  /* number of atoms in simulation */
                    ir->opts.acc,ir->opts.nFreeze,
                    md->invmass,md->ptype,
                    md->cFREEZE,md->cACC,md->cTC,
-                   state->x,xprime,state->v,vold,force,
+                   state->x,xprime,state->v,vold,force,state->sd_X,
                    ir->opts.ngtc,ir->opts.tau_t,ir->opts.ref_t,
                    sd_gaussrand,FALSE);
     } else if(ir->eI==eiBD)
@@ -801,6 +804,8 @@ void update(int          natoms,  /* number of atoms in simulation */
       calc_vir(stdlog,homenr,&(state->x[start]),&(delta_f[start]),vir_part);
       inc_nrnb(nrnb,eNR_SHAKE_VIR,homenr);
       where();
+      if (debug)
+	pr_rvecs(debug,0,"constraint virial",vir_part,DIM);
     }
   }
 

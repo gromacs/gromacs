@@ -55,4 +55,5 @@ typedef struct
   real          *tcoupl_lambda; /* for Berendsen tcoupl (ngtc)          */
   rvec          *x;     /* the coordinates (natoms)                     */
   rvec          *v;     /* the velocities (natoms)                      */
+  rvec          *sd_X;  /* random part of the x update for stoch. dyn.  */
 } t_state;
