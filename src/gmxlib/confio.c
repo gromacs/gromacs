@@ -320,7 +320,7 @@ void write_g96_conf(FILE *out,t_trxframe *fr,
     fprintf(out,"END\n");
   }
   if (fr->bV) {
-    if (atoms) {
+    if (fr->bAtoms) {
       fprintf(out,"VELOCITY\n");
       for(i=0; i<nout; i++) {
 	if (index) a = index[i]; else a = i;
