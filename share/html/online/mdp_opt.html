@@ -193,8 +193,9 @@ the last energies are always written
 <h3><!--Idx-->Neighbor searching<!--EIdx--></h3>
 <dl>
 <dt><h4>nstlist: </b>(10) [steps]</h4>
-<dd>frequency to update the <!--Idx-->neighbor list<!--EIdx--> (and
-the long-range forces, when using twin-range cut-off's)
+<dd>Frequency to update the <!--Idx-->neighbor list<!--EIdx--> (and
+the long-range forces, when using twin-range cut-off's). When this is 0,
+the neighbor list is made only once.
 
 <dt><h4>ns_type:</h4>
 <dd><dl compact>
@@ -210,9 +211,10 @@ every <b>nstlist</b> steps.
 <dt><h4>pbc:</h4>
 <dd><dl compact>
 <dt><b>xyz</b>
-<dd>use periodic boundary conditions in all directions
+<dd>Use periodic boundary conditions in all directions.
 <dt><b>no</b>
-<dd>use no periodic boundary conditions, ignore the box
+<dd>Use no periodic boundary conditions, ignore the box.
+To simulate without cut-offs, set all cut-offs to 0 and <b>nstlist</b>=0.
 </dl>
 
 <dt><h4>rlist: </b>(1) [nm]</h4>
