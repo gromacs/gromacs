@@ -113,9 +113,14 @@ enum {
   efepNO, efepYES, efepNR
 };
 
-/* Solvent optimization */
+/* Solvent model */
 enum {
-  esolNO, esolMNO, esolWATER, esolWATERWATER, esolNR
+  esolNO, esolSPC, esolTIP4P, esolNR
+};
+
+/* Neighborlist type */
+enum {
+  enlistATOM, enlistWATER, enlistWATERWATER, enlistNR
 };
 
 /* Dispersion correction */

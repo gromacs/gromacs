@@ -39,7 +39,6 @@
 
 enum { eNL_VDWQQ, eNL_VDW, eNL_QQ, 
        eNL_VDWQQ_FREE, eNL_VDW_FREE, eNL_QQ_FREE, 
-       eNL_VDWQQ_SOLMNO, eNL_VDW_SOLMNO, eNL_QQ_SOLMNO, 
        eNL_VDWQQ_WATER, eNL_QQ_WATER, 
        eNL_VDWQQ_WATERWATER, eNL_QQ_WATERWATER, 
        eNL_NR };
@@ -115,14 +114,14 @@ typedef struct {
   int  vdwtype;
   int  cg0,hcg;
   int  ndelta;
-  bool bSolvOpt;
-  int  nMNOMol;
-  real nMNOav[3];
+  /* solvent_opt contains the enum for the most common solvent
+   * in the system, which will be optimized.
+   * It can be set to esolNO to disable all water optimization */
+  int  solvent_opt;
   int  nWatMol;
   int  Dimension;
   bool bGrid,bDomDecomp;
   int  *solvent_type;
-  int  *mno_index;
   rvec *cg_cm;
   rvec *shift_vec;
   
