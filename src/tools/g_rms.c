@@ -83,28 +83,42 @@ int main (int argc,char *argv[])
     "g_rms compares two structures by computing the root mean square",
     "deviation (RMSD), the size-independent 'rho' similarity parameter",
     "(rho) or the scaled rho (rhosc), ",
-    "reference Maiorov & Crippen, PROTEINS 22, 273 (1995).",
+    "see Maiorov & Crippen, PROTEINS [BB]22[bb], 273 (1995).",
     "This is selected by [TT]-what[tt].[PAR]"
+    
     "Each structure from a trajectory ([TT]-f[tt]) is compared to a",
-    "reference structure from a run input file by least-squares fitting",
-    "the structures on top of each other. The reference structure is taken",
-    "from the structure file ([TT]-s[tt]).[PAR]",
+    "reference structure. The reference structure", 
+    "is taken from the structure file ([TT]-s[tt]).[PAR]",
+    
     "With option [TT]-mir[tt] also a comparison with the mirror image of",
-    "the reference structure is calculated.[PAR]",
-    "Option [TT]-prev[tt] produces the comparison with a previous frame.[PAR]",
+    "the reference structure is calculated.",
+    "This is useful as a reference for 'significant' values, see",
+    "Maiorov & Crippen, PROTEINS [BB]22[bb], 273 (1995).[PAR]",
+    
+    "Option [TT]-prev[tt] produces the comparison with a previous frame",
+    "the specified number of frames ago.[PAR]",
+    
     "Option [TT]-m[tt] produces a matrix in [TT].xpm[tt] format of",
     "comparison values of each structure in the trajectory with respect to",
     "each other structure. This file can be visualized with for instance",
     "[TT]xv[tt] and can be converted to postscript with [TT]xpm2ps[tt].[PAR]",
-    "All the structures are fitted pairwise.[PAR]",
+    
+    "Option [TT]-fit[tt] controls the least-squares fitting of",
+    "the structures on top of each other: complete fit (rotation and",
+    "translation), translation only, all structures in the matrix fitted",
+    "pairwise, or no fitting at all.[PAR]",
+    
     "With [TT]-f2[tt], the 'other structures' are taken from a second",
-    "trajectory.[PAR]",
+    "trajectory, this generates a comparison matrix of one trajectory",
+    "versus the other.[PAR]",
+    
     "Option [TT]-bin[tt] does a binary dump of the comparison matrix.[PAR]",
+    
     "Option [TT]-bm[tt] produces a matrix of average bond angle deviations",
     "analogously to the [TT]-m[tt] option. Only bonds between atoms in the",
     "comparison group are considered."
   };
-  static bool bPBC=TRUE,bFit=TRUE,bFitAll=TRUE,bSplit=FALSE;
+  static bool bPBC=TRUE,bSplit=FALSE;
   static bool bDeltaLog=FALSE;
   static int  prev=0,freq=1,freq2=1,nlevels=80,avl=0;
   static real rmsd_user_max=-1,rmsd_user_min=-1, 
@@ -118,14 +132,23 @@ int main (int argc,char *argv[])
   char *whatlabel[ewNR]    ={NULL, "RMSD (nm)", "Rho",     "Rho sc"};
   char *whatxvgname[ewNR]  ={NULL, "RMSD",      "\\8r\\4", "\\8r\\4\\ssc\\N"};
   char *whatxvglabel[ewNR] ={NULL, "RMSD (nm)", "\\8r\\4", "\\8r\\4\\ssc\\N"};
+  /* strings and things for fitting methods */
+  enum 
+    { efSel, efFit,      efReset,       efFitAll,      efNone , efNR };
+  int efit;
+  static char *fit[efNR] = 
+    { NULL, "rot+trans", "translation", "allpairs", "none" };
+  static char *fitgraphlabel[efNR] = 
+    { NULL, "lsq fit", "translational fit", "lsq fit", "no fit" };
+  static char *fitmatrixlabel[efNR] = 
+    { NULL, "lsq fit", "translational fit", "pairwise lsq fit", "no fit" };
+
   t_pargs pa[] = {
     { "-what",  FALSE, etENUM, {what},  "Structural difference measure" },
     { "-pbc",   FALSE, etBOOL, {&bPBC}, "PBC check" },
-    { "-fit",   FALSE, etBOOL, {&bFit}, "Fit to reference structure" },
+    { "-fit",   FALSE, etENUM, {fit}, "Fit to reference structure" },
     { "-prev",  FALSE, etINT,  {&prev}, "Compare with previous frame" },
     { "-split", FALSE, etBOOL, {&bSplit},"Split graph where time is zero" },
-    { "-fitall",FALSE, etBOOL, {&bFitAll},
-      "HIDDENFit all pairs of structures in matrix" },
     { "-skip",  FALSE, etINT,  {&freq}, 
       "Only write every nr-th frame to matrix" },
     { "-skip2", FALSE, etINT,  {&freq2},
@@ -153,7 +176,7 @@ int main (int argc,char *argv[])
   int        maxframe=NFRAME,maxframe2=NFRAME;
   real       t,lambda,*w_rls,*w_rms,tmas,*w_rls_m=NULL,*w_rms_m=NULL;
   bool       bTruncOct,bNorm,bAv,bFreq2,bFile2,bMat,bBond,bDelta,bMirror,bMass;
-  
+  bool       bFit,bReset,bFitAll;
   t_topology top;
   t_iatom    *iatom=NULL;
 
@@ -194,9 +217,20 @@ int main (int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+  /* parse enumerated options: */
   ewhat=nenum(what);
   if (ewhat==ewRho || ewhat==ewRhoSc)
     please_cite(stdout,"Maiorov95");
+  efit=nenum(fit);
+  switch(efit) {
+  case efFit:    bFit=TRUE;  bReset=TRUE;  bFitAll=FALSE; break;
+  case efReset:  bFit=FALSE; bReset=TRUE;  bFitAll=FALSE; break;
+  case efFitAll: bFit=TRUE;  bReset=TRUE;  bFitAll=TRUE;  break;
+  case efNone:   bFit=FALSE; bReset=FALSE; bFitAll=FALSE; break;
+  default:
+    fatal_error(0,"Death horror: no such enum efit (%d)", efit);
+    break;
+  }
   
   bMirror= opt2bSet("-mir",NFILE,fnm); /* calc RMSD vs mirror of ref. */
   bFile2 = opt2bSet("-f2",NFILE,fnm);
@@ -248,25 +282,30 @@ int main (int argc,char *argv[])
 
   if (bFit)
     fprintf(stderr,"Select group for least squares fit\n");
-  else
+  else if (bReset)
     fprintf(stderr,"Select group for determining center of mass\n");
-  get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
-	    1,&ifit,&ind_fit,&gn_fit);
+  if (bFit || bReset)
+    get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
+	      1,&ifit,&ind_fit,&gn_fit);
+  else
+    ifit=0;
   
-  if (ifit < 3) 
-    fatal_error(0,"Need >= 3 points to fit!\n");
-  
-  bMass = FALSE;
-  for(i=0; i<ifit; i++) {
-    w_rls[ind_fit[i]] = top.atoms.atom[ind_fit[i]].m;
-    bMass = bMass || (top.atoms.atom[ind_fit[i]].m != 0);
+  if (bFit) {
+    if (ifit < 3) 
+      fatal_error(0,"Need >= 3 points to fit!\n");
+    
+    bMass = FALSE;
+    for(i=0; i<ifit; i++) {
+      w_rls[ind_fit[i]]=top.atoms.atom[ind_fit[i]].m;
+      bMass = bMass || (top.atoms.atom[ind_fit[i]].m != 0);
+    }
+    if (!bMass) {
+      fprintf(stderr,"All masses in the fit group are 0, using masses of 1\n");
+      for(i=0; i<ifit; i++)
+	w_rls[ind_fit[i]] = 1;
+    }
   }
-  if (!bMass) {
-    fprintf(stderr,"All masses in the fit group are 0, using masses of 1\n");
-    for(i=0; i<ifit; i++)
-      w_rls[ind_fit[i]] = 1;
-  }
-  
+
   if (!bMat && !bBond) {
     fprintf(stderr,"How many groups do you want to compare ? ");
     scanf("%d",&nrms);
@@ -312,7 +351,8 @@ int main (int argc,char *argv[])
   /* Prepare reference frame */
   if (bPBC)
     rm_pbc(&(top.idef),top.atoms.nr,box,xp,xp);
-  reset_x(ifit,ind_fit,top.atoms.nr,NULL,xp,w_rls);
+  if (bFit || bReset)
+    reset_x(ifit,ind_fit,top.atoms.nr,NULL,xp,w_rls);
   if (bMirror) {
     /* generate reference structure mirror image: */
     snew(xm, top.atoms.nr);
@@ -407,7 +447,8 @@ int main (int argc,char *argv[])
     if (bPBC) 
       rm_pbc(&(top.idef),natoms,box,x,x);
     
-    reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
+    if (bFit || bReset)
+      reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
     if (ewhat==ewRhoSc)
       norm_princ(&top.atoms, ifit, ind_fit, natoms, x);
     
@@ -434,7 +475,8 @@ int main (int argc,char *argv[])
 	j=0;
       for (i=0;i<n_ind_m;i++)
 	copy_rvec(mat_x[j][i],xp[ind_m[i]]);
-      reset_x(ifit,ind_fit,natoms,NULL,xp,w_rls);
+      if (bFit || bReset)
+	reset_x(ifit,ind_fit,natoms,NULL,xp,w_rls);
       if (bFit)
 	do_fit(natoms,w_rls,x,xp);
     }    
@@ -487,7 +529,8 @@ int main (int argc,char *argv[])
       if (bPBC) 
 	rm_pbc(&(top.idef),natoms,box,x,x);
 
-      reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
+      if (bFit || bReset)
+	reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
       if (ewhat==ewRhoSc)
 	norm_princ(&top.atoms, ifit, ind_fit, natoms, x);
       
@@ -729,12 +772,11 @@ int main (int argc,char *argv[])
     sprintf(buf,"%s with frame %g %s ago",whatxvgname[ewhat],
 	    time[prev*freq]-time[0], time_label());
   fp=xvgropen(opt2fn("-o",NFILE,fnm),buf,xvgr_tlabel(),whatxvglabel[ewhat]);
-  if (nrms == 1)
-    fprintf(fp,"@ subtitle \"of %s after lsq fit to %s\"\n",gn_rms[0],gn_fit);
-  else {
-    fprintf(fp,"@ subtitle \"after lsq fit to %s\"\n",gn_fit);
+  fprintf(fp,"@ subtitle \"%s%s after %s%s%s\"\n",
+	  (nrms==1)?"":"of "    , gn_rms[0], fitgraphlabel[efit],
+	  bFit     ?" to ":""   , bFit?gn_fit:"");
+  if (nrms != 1)
     xvgr_legend(fp,nrms,gn_rms);
-  }
   for(i=0; (i<teller); i++) {
     if ( bSplit && i>0 && abs(time[bPrev ? freq*i : i]/time_factor())<1e-5 ) 
       fprintf(fp,"&\n");
