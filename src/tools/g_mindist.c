@@ -190,7 +190,8 @@ void mindist_plot(char *fn,FILE *atm,real mind,
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "g_mindist computes the distance between two groups of atoms.",
+    "g_mindist computes the distance between one group and a number of",
+    "other groups.",
     "Both the smallest distance and the number of contacts within a given",
     "distance are plotted to two separate output files"
   };
@@ -199,9 +200,9 @@ int main(int argc,char *argv[])
   static real mindist=0.6;
   t_pargs pa[] = {
     { "-matrix", FALSE, etBOOL, &bMat,
-      "calculate half a matrix of group-group distances" },
+      "Calculate half a matrix of group-group distances" },
     { "-d",      FALSE, etREAL, &mindist,
-      "Distance for contacts. Default distance is 0.6 nm" }
+      "Distance for contacts" }
   };
   FILE      *status, *atm;
   int       i,ng;
