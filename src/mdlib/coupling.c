@@ -87,7 +87,10 @@ void calc_pres(int ePBC,matrix box,tensor ekin,tensor vir,tensor pres,real Elr)
 
 real calc_temp(real ekin,real nrdf)
 {
-  return (2.0*ekin)/(nrdf*BOLTZ);
+  if (nrdf > 0)
+    return (2.0*ekin)/(nrdf*BOLTZ);
+  else
+    return 0;
 }
 
 void do_pcoupl(t_inputrec *ir,int step,tensor pres,
