@@ -548,6 +548,7 @@ int read_first_v(int *status,char *fn,real *t,rvec **v,matrix box)
   case efTRR:
     fread_trnheader(fp,&sh);
     snew(*v,sh.natoms);
+    *t = sh.t;
     fread_htrn(fp,&sh,NULL,NULL,*v,NULL);
     return sh.natoms;
   case efGRO:
@@ -569,15 +570,20 @@ bool read_next_v(int status,real *t,int natoms,rvec v[],matrix box)
   case efTRJ:
   case efTRR:
     while (fread_trnheader(status,&sh)) {
+      pt=*t;
       bV=sh.v_size;
       fread_htrn(status,&sh,NULL,NULL,bV ? v : NULL,NULL);
       *t = sh.t;
-      if ((check_times(*t)==0) && (bV))
+      if ((check_times(*t)==0) && (bV)) {
+	PRINTREAD(*t)
 	return TRUE;
-      if (check_times(*t) > 0)
+      }
+      if (check_times(*t) > 0) {
+	PRINTLAST(pt)
 	return FALSE;
+      }
     }
-    PRINTREAD(*t)
+    PRINTLAST(pt)
     break;
   case efGRO: 
     pt=*t;
