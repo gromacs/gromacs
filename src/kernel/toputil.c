@@ -227,6 +227,9 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
     f=1;
     bDih=TRUE;
     break;
+  case F_SHAKENC:
+    f=1;
+    break;
   case F_DUMMY3FD:
     f = 1;
     break;
@@ -243,7 +246,7 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
     bDih=FALSE;
   if (fsubtype)
     f = fsubtype-1;
-    
+  
   nral = NRAL(ftype);
   nrfp = NRFP(ftype);
   
@@ -383,7 +386,7 @@ void print_bondeds(FILE *out,int natoms,directive d,
   t_symtab   stab;
   t_atomtype atype;
   int i;
-
+  
   snew(atype.atom,natoms);
   snew(atype.atomname,natoms);
   open_symtab(&stab);
