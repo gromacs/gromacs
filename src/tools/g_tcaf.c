@@ -207,6 +207,7 @@ int main(int argc,char *argv[])
   static char *desc[] = {
     "g_tcaf computes tranverse current autocorrelations.",
     "These are used to estimate the shear viscosity eta.",
+    "For details see: Palmer, JCP 49 (1994) pp 359-366.[PAR]",
     "Transverse currents are calculated using the",
     "k-vectors (1,0,0) and (2,0,0) each also in the y- and z-direction,",
     "(1,1,0) and (1,-1,0) each also in the 2 other plains (these vectors",
@@ -225,7 +226,7 @@ int main(int argc,char *argv[])
     "averages the tcaf's over all k-vectors with the same length.",
     "This results in more accurate tcaf's.",
     "Both the cubic tcaf's and fits are written to [TT]-oc[tt]",
-    "The cubic eta estimates are also written to [TT]-vk[tt].[PAR]",
+    "The cubic eta estimates are also written to [TT]-ov[tt].[PAR]",
     "With option [TT]-mol[tt] the transverse current is determined of",
     "molecules instead of atoms. In this case the index group should",
     "consist of molecule numbers instead of atom numbers.[PAR]",
