@@ -353,7 +353,7 @@ int main(int argc,char *argv[])
     "gmxcheck reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",
     "[TT].xtc[tt]) or an energy file ([TT].ene[tt] or [TT].edr[tt])",
     "and prints out useful information about them.[PAR]",
-    "For [TT]-c[tt] gmxcheck will check for presence of coordinates,",
+    "Option [TT]-c[tt] checks for presence of coordinates,",
     "velocities and box in the file, for close contacts (smaller than",
     "[TT]-vdwfac[tt] and not bonded, i.e. not between [TT]-bonlo[tt]",
     "and [TT]-bonhi[tt], all relative to the sum of both Van der Waals",
