@@ -9,12 +9,12 @@
 
 
 
-real FUNCTION(cerfc)(real x)
+real FUNCTION(cerfc)(real *x)
 {
-	return erfc(x);
+	return erfc(*x);
 }
 
-real FUNCTION(cpow)(real x,real y)
+real FUNCTION(cpow)(real *x,real *y)
 {
-	return pow(x,y);
+	return pow(*x,*y);
 }
