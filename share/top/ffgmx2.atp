@@ -48,4 +48,4 @@
    HC   1.00800 ;     H attached to aliphatic carbon
  MNH3   0       ;     Dummy mass in rigid tetraedrical NH3 group
  MCH3   0       ;     Dummy mass in rigid tetraedrical CH3 group
- MTYR   0       ;     Dummy mass in rigid tyrosine rings
+ MTRP   0       ;     Dummy mass in rigid tyrosine rings
