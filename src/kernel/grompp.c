@@ -522,7 +522,7 @@ static void cont_status(char *slog,bool bNeedVel,bool bGenVel, real fr_time,
   fprintf(stderr,"Starting time for run is %g ps\n",ir->init_t); 
 }
 
-static void gen_posres(t_params *pr,char *fn)
+static void read_posres(t_params *pr, char *fn, int offset)
 {
   rvec   *x,*v;
   t_atoms dumat;
@@ -543,13 +543,27 @@ static void gen_posres(t_params *pr,char *fn)
       fatal_error(0,"Position restraint atom index (%d) is larger than natoms (%d)\n",
 		  ai+1,natoms);
     for(j=0; (j<DIM); j++)
-      pr->param[i].c[j+DIM]=x[ai][j];
+      pr->param[i].c[offset + j] = x[ai][j];
   }
   /*pr->nrfp+=DIM;*/
   
   free_t_atoms(&dumat);
   sfree(x);
   sfree(v);
+}
+
+static void gen_posres(t_params *pr, char *fnA,char *fnB)
+{
+  int i,j;
+
+  read_posres(pr,fnA,2*DIM);
+  if (strcmp(fnA,fnB) == 0) {
+    for(i=0; (i<pr->nr); i++)
+      for(j=0; (j<DIM); j++)
+	pr->param[i].c[3*DIM + j] = pr->param[i].c[2*DIM + j];
+  } else {
+    read_posres(pr,fnB,3*DIM);
+  }
 }
 
 static int search_atomtypes(t_atomtype *at,int *n,int typelist[],int thistype,
@@ -771,7 +785,10 @@ int main (int argc, char *argv[])
     
     "When using position restraints a file with restraint coordinates",
     "can be supplied with [TT]-r[tt], otherwise constraining will be done",
-    "relative to the conformation from the [TT]-c[tt] option.[PAR]",
+    "relative to the conformation from the [TT]-c[tt] option.",
+    "For free energy calculation the the coordinates for the B topology",
+    "can be supplied with [TT]-rb[tt], otherwise they will be equal to",
+    "those of the A topology.[PAR]",
     
     "Starting coordinates can be read from trajectory with [TT]-t[tt].",
     "The last frame with coordinates and velocities will be read,",
@@ -831,7 +848,7 @@ int main (int argc, char *argv[])
   rvec         *x=NULL,*v=NULL;
   matrix       box;
   real         max_spacing,*capacity;
-  char         fn[STRLEN],*mdparin;
+  char         fn[STRLEN],fnB[STRLEN],*mdparin;
   int          nerror;
   bool         bNeedVel,bGenVel;
   bool         have_radius,have_vol,have_surftens;
@@ -841,6 +858,7 @@ int main (int argc, char *argv[])
     { efMDP, "-po", "mdout",     ffWRITE },
     { efSTX, "-c",  NULL,        ffREAD  },
     { efSTX, "-r",  NULL,        ffOPTRD },
+    { efSTX, "-rb", NULL,        ffOPTRD },
     { efNDX, NULL,  NULL,        ffOPTRD },
     { efNDX, "-deshuf", "deshuf",ffOPTWR },
     { efTOP, NULL,  NULL,        ffREAD  },
@@ -896,8 +914,8 @@ int main (int argc, char *argv[])
 	   nnodes,nnodes==1?"":"s");
   else 
     fatal_error(0,"invalid number of nodes %d\n",nnodes);
-    
-  if (bShuffle && opt2bSet("-r",NFILE,fnm)) {
+  
+  if (bShuffle && (opt2bSet("-r",NFILE,fnm) || opt2bSet("-rb",NFILE,fnm))) {
     fprintf(stderr,"Can not shuffle and do position restraints, "
 	    "turning off shuffle\n");
     bShuffle=FALSE;
@@ -993,11 +1011,21 @@ int main (int argc, char *argv[])
     sprintf(fn,opt2fn("-r",NFILE,fnm));
   else
     sprintf(fn,opt2fn("-c",NFILE,fnm));
-  
+  if (opt2bSet("-rb",NFILE,fnm))
+    sprintf(fnB,opt2fn("-rb",NFILE,fnm));
+  else
+    strcpy(fnB,fn);
+
   if (msys.plist[F_POSRES].nr > 0) {
-    if (bVerbose)
-      fprintf(stderr,"Reading position restraint coords from %s\n",fn);
-    gen_posres(&(msys.plist[F_POSRES]),fn);
+    if (bVerbose) {
+      fprintf(stderr,"Reading position restraint coords from %s",fn);
+      if (strcmp(fn,fnB) ==0) {
+	fprintf(stderr,"\n");
+      } else {
+	fprintf(stderr," and %s\n",fnB);
+      }
+    }
+    gen_posres(&(msys.plist[F_POSRES]),fn,fnB);
   }
   
   /* set parameters for Dummy construction */

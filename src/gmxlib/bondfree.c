@@ -784,27 +784,30 @@ real posres(int nbonds,
 	    t_fcdata *fcd)
 {
   int  i,ai,m,type;
-  real v,vtot,fi,*fc;
+  t_iparams *pr;
+  real v,vtot,fm,*fc;
   rvec dx;
 
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
     type = forceatoms[i++];
     ai   = forceatoms[i++];
-    fc   = forceparams[type].posres.fc;
+    pr   = &forceparams[type];
 
     if (fr->ePBC == epbcNONE)
-      rvec_sub(x[ai],forceparams[type].posres.pos0,dx);
+      rvec_sub(x[ai],forceparams[type].posres.pos0A,dx);
     else
-      pbc_dx(x[ai],forceparams[type].posres.pos0,dx);
+      pbc_dx(x[ai],forceparams[type].posres.pos0A,dx);
     v=0;
     for (m=0; (m<DIM); m++) {
-      fi        = f[ai][m] - fc[m]*dx[m];
-      v        += 0.5*fc[m]*dx[m]*dx[m];
-      f[ai][m]  = fi;
+      *dvdlambda += harmonic(pr->posres.fcA[m],pr->posres.fcB[m],
+			     0,pr->posres.pos0B[m]-pr->posres.pos0A[m],
+			     dx[m],lambda,&v,&fm);
+      vtot += v;
+      f[ai][m] += fm;
     }
-    vtot += v;
   }
+
   return vtot;
 }
 

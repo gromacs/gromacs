@@ -126,14 +126,14 @@ typedef union
    */
   struct {real doh,dhh;                                   } settle;
   /* No free energy supported for morse bonds */ 
-  struct {real b0,cb,beta;                        	   } morse;
-  struct {real pos0[DIM],fc[DIM];              	           } posres;
+  struct {real b0,cb,beta;                        	  } morse;
+  struct {real pos0A[DIM],fcA[DIM],pos0B[DIM],fcB[DIM];   } posres;
   struct {real rbcA[NR_RBDIHS], rbcB[NR_RBDIHS];          } rbdihs;
   struct {real a,b,c,d,e,f;                               } dummy;   
   struct {real low,up1,up2,kfac;int type,label;           } disres; 
   struct {real phi,dphi,kfac;int label,power;             } dihres;  
   struct {int  ex,power,label; real c,obs,kfac;           } orires;
-  struct {real buf[MAXFORCEPARAM];	  	           } generic; /* Conversion */
+  struct {real buf[MAXFORCEPARAM];	  	          } generic; /* Conversion */
 } t_iparams;
 
 typedef int t_functype;

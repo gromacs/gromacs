@@ -519,10 +519,13 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 	    iparams->dihres.phi,iparams->dihres.dphi,iparams->dihres.kfac);
     break;
   case F_POSRES:
-    fprintf(fp,"pos0=(%15.8e,%15.8e,%15.8e), fc=(%15.8e,%15.8e,%15.8e)\n",
-	    iparams->posres.pos0[XX],iparams->posres.pos0[YY],
-	    iparams->posres.pos0[ZZ],iparams->posres.fc[XX],
-	    iparams->posres.fc[YY],iparams->posres.fc[ZZ]);
+    fprintf(fp,"pos0A=(%15.8e,%15.8e,%15.8e), fcA=(%15.8e,%15.8e,%15.8e), pos0B=(%15.8e,%15.8e,%15.8e), fcB=(%15.8e,%15.8e,%15.8e)\n",
+	    iparams->posres.pos0A[XX],iparams->posres.pos0A[YY],
+	    iparams->posres.pos0A[ZZ],iparams->posres.fcA[XX],
+	    iparams->posres.fcA[YY],iparams->posres.fcA[ZZ],
+	    iparams->posres.pos0B[XX],iparams->posres.pos0B[YY],
+	    iparams->posres.pos0B[ZZ],iparams->posres.fcB[XX],
+	    iparams->posres.fcB[YY],iparams->posres.fcB[ZZ]);
     break;
   case F_RBDIHS:
     for (i=0; i<NR_RBDIHS; i++) 

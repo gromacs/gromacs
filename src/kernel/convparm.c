@@ -123,12 +123,18 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->pdihs.cpB =old[4];
     break;
   case F_POSRES:
-    new->posres.fc[XX]   = old[0];
-    new->posres.fc[YY]   = old[1];
-    new->posres.fc[ZZ]   = old[2];
-    new->posres.pos0[XX] = old[3];
-    new->posres.pos0[YY] = old[4];
-    new->posres.pos0[ZZ] = old[5];
+    new->posres.fcA[XX]   = old[0];
+    new->posres.fcA[YY]   = old[1];
+    new->posres.fcA[ZZ]   = old[2];
+    new->posres.fcB[XX]   = old[3];
+    new->posres.fcB[YY]   = old[4];
+    new->posres.fcB[ZZ]   = old[5];
+    new->posres.pos0A[XX] = old[6];
+    new->posres.pos0A[YY] = old[7];
+    new->posres.pos0A[ZZ] = old[8];
+    new->posres.pos0B[XX] = old[9];
+    new->posres.pos0B[YY] = old[10];
+    new->posres.pos0B[ZZ] = old[11];
     break;
   case F_DISRES:
     new->disres.label = old[0];

@@ -61,7 +61,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 26;
+static const int tpx_version = 27;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -72,7 +72,7 @@ static const int tpx_version = 26;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 1;
+static const int tpx_generation = 2;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -580,8 +580,15 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_real(iparams->dihres.kfac);
     break;
   case F_POSRES:
-    do_rvec(iparams->posres.pos0);
-    do_rvec(iparams->posres.fc);
+    do_rvec(iparams->posres.pos0A);
+    do_rvec(iparams->posres.fcA);
+    if (bRead && file_version < 27) {
+      copy_rvec(iparams->posres.pos0A,iparams->posres.pos0B);
+      copy_rvec(iparams->posres.fcA,iparams->posres.fcB);
+    } else {
+      do_rvec(iparams->posres.pos0B);
+      do_rvec(iparams->posres.fcB);
+    }
     break;
   case F_RBDIHS:
     ndo_real(iparams->rbdihs.rbcA,NR_RBDIHS,bDum);
