@@ -184,7 +184,7 @@ int main(int argc,char *argv[])
   };
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS,FALSE,
+  parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
   
   snew(fnms,argc-1);
