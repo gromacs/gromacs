@@ -17,6 +17,7 @@
 #include "index.h"
 #include "confio.h"
 #include "pull.h"
+#include "string.h"
 
 static void get_pullmemory(t_pullgrps *pull, int ngrps) 
 {
