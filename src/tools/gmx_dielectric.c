@@ -224,7 +224,8 @@ int gmx_dielectric(int argc,char *argv[])
 #define NFILE asize(fnm)
   int  i,j,nx,ny,nxtail,eFitFn,nfitparm;
   real dt,integral,fitintegral,*fitparms,fac,rffac;
-  double **y;
+  double **yd;
+  real   **y;
   char *legend[] = { "Correlation", "Std. Dev.", "Fit", "Combined", "Derivative" };
   static int fix=0,bFour = 0,bX = 1,nsmooth=3;
   static real tendInt=5.0,tbegin=5.0,tend=500.0;
@@ -266,16 +267,22 @@ int gmx_dielectric(int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   please_cite(stdout,"Spoel98a");
   
-  nx     = read_xvg(opt2fn("-f",NFILE,fnm),&y,&ny);
-  dt     = y[0][1]-y[0][0];
+  nx     = read_xvg(opt2fn("-f",NFILE,fnm),&yd,&ny);
+  dt     = yd[0][1] - yd[0][0];
   nxtail = min(tail/dt,nx);
   
   printf("Read data set containing %d colums and %d rows\n",ny,nx);
   printf("Assuming (from data) that timestep is %g, nxtail = %d\n",
 	  dt,nxtail);
+  snew(y,6);
+  for(i=0; (i<ny); i++)
+    snew(y[i],max(nx,nxtail));
+  for(i=0; (i<nx); i++) {
+    y[0][i] = yd[0][i];
+    for(j=1; (j<ny); j++)
+      y[j][i] = yd[j][i];
+  }
   if (nxtail > nx) {
-    for(i=0; (i<ny); i++)
-      srenew(y[i],nxtail);
     for(i=nx; (i<nxtail); i++) {
       y[0][i] = dt*i+y[0][0];
       for(j=1; (j<ny); j++)
@@ -283,6 +290,7 @@ int gmx_dielectric(int argc,char *argv[])
     }
     nx=nxtail;
   }
+
   
   /* We have read a file WITHOUT standard deviations, so we make our own... */
   if (ny==2) {
@@ -304,12 +312,11 @@ int gmx_dielectric(int argc,char *argv[])
   if (nfitparm > 2)
     fitparms[2]=tau2;  
   
-  if (ny < 6) {
-    srenew(y,6);
-    snew(y[3],nx);
-    snew(y[4],nx);
-    snew(y[5],nx);
-  } 
+  
+  snew(y[3],nx);
+  snew(y[4],nx);
+  snew(y[5],nx);
+
   integral = print_and_integrate(NULL,calc_nbegin(nx,y[0],tbegin),
 				 dt,y[1],NULL,1);
   integral += do_lmfit(nx,y[1],y[2],dt,y[0],tbegin,tend,
