@@ -222,7 +222,7 @@ static void analyse_disre(char *voutfn,    int nframes,
     
     sumt   += sumaver;
     sum     = max(sum,sumaver);
-    fprintf(vout,"%10d  %10.5e\n",i,sumaver);
+    fprintf(vout,"%10d  %10.5e\n",i+1,sumaver);
   }
 #ifdef DEBUG
   for(j=0; (j<dr.ndr); j++)
@@ -700,22 +700,27 @@ int main(int argc,char *argv[])
 	t_iatom *fa;
 	
 	fa = top.idef.il[F_DISRES].iatoms; 
-
+	
+	if (ndr != top.idef.il[F_DISRES].nr/3)
+	  fatal_error(0,"Number of disre pairs in the energy file (%d) does not match the number in the run input file (%d)\n",
+		      ndr,top.idef.il[F_DISRES].nr/3);
+	
 	snew(pairleg,dr.ndr);
 	for(i=0; (i<dr.ndr); i++) {
-	  snew(pairleg[i],20);
+	  snew(pairleg[i],30);
 	  j=fa[3*i+1];
 	  k=fa[3*i+2];
-	  sprintf(pairleg[i],"%d %s %d %s",
-		  top.atoms.atom[j].resnr,*top.atoms.atomname[j],
-		  top.atoms.atom[k].resnr,*top.atoms.atomname[k]);
+	  sprintf(pairleg[i],"%d %s %d %s (%d)",
+		  top.atoms.atom[j].resnr+1,*top.atoms.atomname[j],
+		  top.atoms.atom[k].resnr+1,*top.atoms.atomname[k],
+		  index[i]+1);
 	}
 	set=select_it(dr.ndr,pairleg,&nset);
 	snew(leg,2*nset);
 	for(i=0; (i<nset); i++) {
-	  snew(leg[2*i],22);
+	  snew(leg[2*i],32);
 	  sprintf(leg[2*i],  "a %s",pairleg[set[i]]);
-	  snew(leg[2*i+1],22);
+	  snew(leg[2*i+1],32);
 	  sprintf(leg[2*i+1],"i %s",pairleg[set[i]]);
 	}
 	xvgr_legend(out,2*nset,leg);    
@@ -749,24 +754,26 @@ int main(int argc,char *argv[])
 	/*******************************************
 	 * D I S T A N C E   R E S T R A I N T S  
 	 *******************************************/
-	if (bDisRe && (ndr >0)) {
-	  if (violaver == NULL)
-	    snew(violaver,dr.ndr);
-	  
-	  /* Subtract bounds from distances, to calculate violations */
-	  calc_violations(dr.rt,dr.rav,
-			  nbounds,index,bounds,violaver,&sumt,&sumaver);
-	  
-	  if (bDRAll) {
-	    for(i=0; (i<nset); i++) {
-	      sss=set[i];
-	      fprintf(out,"  %8.4f",mypow(dr.rav[sss],minthird));
-	      fprintf(out,"  %8.4f",dr.rt[sss]);
+	if (bDisRe) {
+	  if (ndr >0) {
+	    if (violaver == NULL)
+	      snew(violaver,dr.ndr);
+	    
+	    /* Subtract bounds from distances, to calculate violations */
+	    calc_violations(dr.rt,dr.rav,
+			    nbounds,index,bounds,violaver,&sumt,&sumaver);
+	    
+	    if (bDRAll) {
+	      for(i=0; (i<nset); i++) {
+		sss=set[i];
+		fprintf(out,"  %8.4f",mypow(dr.rav[sss],minthird));
+		fprintf(out,"  %8.4f",dr.rt[sss]);
+	      }
+	      teller_disre++;
 	    }
-	    teller_disre++;
-	  }
-	  else {
-	    fprintf(out,"  %8.4f  %8.4f",sumaver,sumt);
+	    else {
+	      fprintf(out,"  %8.4f  %8.4f",sumaver,sumt);
+	    }
 	  }
 	}
 	/*******************************************
