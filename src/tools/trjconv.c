@@ -262,6 +262,12 @@ int main(int argc,char *argv[])
     "trajectory is generated, which might not be the case using the",
     "regular fit method, e.g. when your protein undergoes large",
     "conformational transitions.[PAR]",
+    "The option [TT]-removejump[tt] checks if atoms jump across"
+    "the box and then puts them back. This has the effect that all molecules"
+    "will remain whole (providing they were whole in the initial",
+    "conformation), note that this ensures a continuous trajectory but",
+    "molecules may (probably will) diffuse out of the box. Use"
+    "[TT]-center[tt] to put the system in the center of the box.[PAR]"
     "With the option [TT]-dt[tt] it is possible to reduce the number of ",
     "frames in the output. This option relies on the accuracy of the times ",
     "in your input trajectory, so if these are inaccurate use the -timestep ",
