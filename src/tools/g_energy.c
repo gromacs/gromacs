@@ -293,7 +293,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
   real sfrac,oldfrac,diffsum,diffav,fstep,pr_aver,pr_stddev,fluct2;
   double beta,expE,expEtot,*deltag;
   int  nsteps,iset;
-  real x1m,x1mk,VarE=-1,Temp=-1,Pres=-1,VarV=-1,Vaver=-1,VarT=-1;
+  real x1m,x1mk,Temp=-1,Pres=-1,VarV=-1,Vaver=-1,VarT=-1;
   int  i,j,m,k;
   char buf[256];
 
@@ -355,17 +355,13 @@ static void analyse_ener(bool bCorr,char *corrfn,
 	
 	deltag[i] = log(expE/nenergy)/beta + aver/nmol;
       }
-      if (strstr(leg[i],"Kin") != NULL) 
-	VarE = sqr(stddev);
-      else if (strstr(leg[i],"empera") != NULL) {
+      if (strstr(leg[i],"empera") != NULL) {
 	VarT = sqr(stddev);
 	Temp = aver;
-      }
-      else if (strstr(leg[i],"olum") != NULL) {
+      } else if (strstr(leg[i],"olum") != NULL) {
 	VarV = sqr(stddev);
 	Vaver= aver;
-      }
-      else if (strstr(leg[i],"essure") != NULL) {
+      } else if (strstr(leg[i],"essure") != NULL) {
 	Pres = aver;
       }
       if (iset < F_TEMP) {

@@ -50,7 +50,6 @@ static void calc_mindist(real MinDist,
 			 real *md, int *nd,
 			 int *ixmin, int *jxmin)
 {
-  real    hb2;
   int     i,j,j0=0,j1;
   int     ix,jx;
   atom_id *index3;
@@ -60,8 +59,10 @@ static void calc_mindist(real MinDist,
 
   *ixmin = -1;
   *jxmin = -1;
-
-  hb2=(sqr(box[XX][XX])+sqr(box[YY][YY])+sqr(box[ZZ][ZZ]))*0.5;
+  
+/*   real    hb2; */
+/*   hb2=(sqr(box[XX][XX])+sqr(box[YY][YY])+sqr(box[ZZ][ZZ]))*0.5; */
+  
   r_2=sqr(MinDist);
 
   /* Must init pbc every step because of pressure coupling */

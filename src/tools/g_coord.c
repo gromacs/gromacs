@@ -65,7 +65,7 @@ int main(int argc,char *argv[])
   rvec       *x,*x_s;        /* coord, with and without pbc*/
   rvec       xcm;            /* center of mass of molecule */
   matrix     box;            /* box matrix (3x3)           */
-  real       t,tm;           /* time, total mass molecule  */
+  real       t;              /* time, total mass molecule  */
   int        natoms;         /* number of atoms in system  */
   int        status;
   int        i,j,k=0;        /* loopcounters               */
@@ -120,8 +120,8 @@ int main(int argc,char *argv[])
 	 */
       for (i = 0; i < gnx; i++) {
 	moleculesize = atndx[index[i]+1] - atndx[index[i]];
-	tm=calc_xcm(x_s, moleculesize, &a[atndx[index[i]]], 
-		  top->atoms.atom, xcm, FALSE);
+	calc_xcm(x_s, moleculesize, &a[atndx[index[i]]], 
+		 top->atoms.atom, xcm, FALSE);
 	
 	/* We used non-pbc coordinates. Now put cm back in the box */
 	for (j = 0; j < DIM; j++) {

@@ -162,7 +162,7 @@ int main(int argc,char *argv[])
   FILE     **outX,*outek;
   int      status,ftpout;
   int      i,j,idum,step,natoms;
-  real     t,t0,dt,rdum;
+  real     t,rdum;
   rvec     *x,*v;
   real     *mass;
   rvec     xcm,acm;
@@ -231,8 +231,6 @@ int main(int argc,char *argv[])
   snew(sysindex,natoms);
   for(i=0; (i<natoms); i++)
     sysindex[i]=i;
-  t0=t;
-  dt=-1;
   do {
     if (bReadV) {
       bHaveV=FALSE;
@@ -273,5 +271,7 @@ int main(int argc,char *argv[])
   for(g=0;(g<=ngrps);g++) {
     fclose(outX[g]);
   }
+  
+  return 0;
 }
 

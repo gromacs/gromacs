@@ -71,7 +71,7 @@ int main(int argc,char *argv[])
   int        natoms,ndim,count;
   char       *grpname,*vecnm;
   int        i,j,k,l,gnx;
-  bool       bSuck,bEnd;
+  bool       bSuck;
   atom_id    *index;
   t_filenm fnm[] = { 
     { efMTX, "-f", "hessian", ffREAD }, 
@@ -84,7 +84,6 @@ int main(int argc,char *argv[])
   CopyRight(stderr,argv[0]); 
   parse_common_args(&argc,argv,0,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL); 
-  bEnd=opt2parg_bSet("-last",asize(pa),pa);
 
   out=xvgropen(ftp2fn(efXVG,NFILE,fnm), 
                  "Eigenvalues","Eigenvector index","Eigenvalue"); 

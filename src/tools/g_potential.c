@@ -100,7 +100,7 @@ void calc_potential(char *fn, atom_id **index, int gnx[],
       nr_frames = 0,     /* number of frames */
       slice;             /* current slice */
   real slVolume;         /* volume of slice for spherical averaging */
-  real t, z, tm;
+  real t, z;
   rvec xcm;
 
   switch(axis)
@@ -150,12 +150,9 @@ void calc_potential(char *fn, atom_id **index, int gnx[],
     rm_pbc(&(top->idef),top->atoms.nr,box,x0,x0);
 
     /* calculate position of center of mass based on group 1 */
-    tm=calc_xcm(x0, gnx[0], index[0], top->atoms.atom, xcm, FALSE);
+    calc_xcm(x0, gnx[0], index[0], top->atoms.atom, xcm, FALSE);
     svmul(-1,xcm,xcm);
 	  
-    /*    fprintf(stderr,"total mass: %f\n",tm);
-    fprintf(stderr,"xcm: %f %f %f\n",xcm[0],xcm[1],xcm[2]);
-    */
     for (n = 0; n < nr_grps; n++)
     {      
       for (i = 0; i < gnx[n]; i++)   /* loop over all atoms in index file */

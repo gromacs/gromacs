@@ -163,9 +163,11 @@ void c_corr::print(char *fn,char *title,char *yaxis,bool bXvgr)
 {
   FILE *out;
   int  i,j;
-  real aa,bb,da,db,err_fac;
+  real aa,bb,da,db;
   
-  err_fac=sqrt(2.0/3.0*sqrt(M_PI));
+  /*  real err_fac; */
+  
+  /*  err_fac=sqrt(2.0/3.0*sqrt(M_PI)); */
   normalise();
   out=xvgropen(fn,title,"Time (ps)",yaxis);
   if (bXvgr)

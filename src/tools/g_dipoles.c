@@ -117,14 +117,14 @@ void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec quad)
   real rcom_m,rcom_n;
   tensor quadrupole;
   real **inten;
-  real dd[NDIM],e[NDIM],**ev,tmp;
+  real dd[NDIM],**ev,tmp;
 
   snew(inten,NDIM);
   snew(ev,NDIM);
   for(i=0; (i<NDIM); i++) {
     snew(inten[i],NDIM);
     snew(ev[i],NDIM);
-    dd[i]=e[i]=0.0;
+    dd[i]=0.0;
   }
 
   for(i=0; (i<NDIM); i++)

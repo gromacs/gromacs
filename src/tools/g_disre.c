@@ -170,9 +170,7 @@ void patch_viol(t_ilist *bonds,t_iparams forceparams[],
 {
   t_iatom *forceatoms;
   int     i,j,type,ftype,nat;
-  real    viol2;
   
-  viol2=0;
   forceatoms=bonds->iatoms;
   for(i=j=0; (i<bonds->nr); ) {
     type=forceatoms[i++];

@@ -126,7 +126,7 @@ static int calc_pot(char *infile,
   t_inputrec     ir;
   t_tpxheader sh;
   
-  rvec        *x,*x_s;
+  rvec        *x;
   real        *q,qi,rij,rij2,rlong2;
   real        *coul;
   int         i,j;
@@ -138,7 +138,6 @@ static int calc_pot(char *infile,
   read_tpxheader(infile,&sh);
   snew(x,sh.natoms);
   snew(*v0,sh.natoms);
-  snew(x_s,sh.natoms);
   read_tpx(infile,&step,&t,&t,&ir,box,
 	   &natoms,x,*v0,NULL,top);
 

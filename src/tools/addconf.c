@@ -39,7 +39,7 @@ void add_conf(t_atoms *atoms_1,rvec *x_1,rvec *v_1,real *r_1,
 	      t_atoms *atoms_2,rvec *x_2,rvec *v_2,real *r_2,
 	      bool bVerbose,int maxmol)
 {
-  int  i,j,m,resnr,oldres,nresadd;
+  int  i,j,m,resnr,nresadd;
   int  *add;
   real d2,vdw2;
 
@@ -137,7 +137,6 @@ void add_conf(t_atoms *atoms_1,rvec *x_1,rvec *v_1,real *r_1,
   fprintf(stderr,"There are %d molecules to add\n",maxmol);
   
   /*add the selected atoms_2 to atoms_1*/  
-  oldres = atoms_1->nres;
   for (i=0; (i<atoms_2->nr); i++)
     if (add[i] != 0) {
       if (add[i] == 2) {

@@ -52,14 +52,14 @@ static int calc_xav(bool bAverX,
 {
   rvec *x,*xav;
   rvec xcm;
-  real tmas,t,rmsd,xxx,tfac;
+  real t,rmsd,xxx,tfac;
   int  i,m,natoms,status,teller;
   
   /* remove pbc */
   rm_pbc(&(top->idef),top->atoms.nr,box,xref,xref);
 
   /* set center of mass to zero */
-  tmas = sub_xcm(xref,isize,index,top->atoms.atom,xcm,FALSE);
+  sub_xcm(xref,isize,index,top->atoms.atom,xcm,FALSE);
 
   /* read first frame  */
   natoms = read_first_x(&status,fn,&t,&x,box);
@@ -75,7 +75,7 @@ static int calc_xav(bool bAverX,
       rm_pbc(&(top->idef),top->atoms.nr,box,x,x);
       
       /* set center of mass to zero */
-      tmas = sub_xcm(x,isize,index,top->atoms.atom,xcm,FALSE);
+      sub_xcm(x,isize,index,top->atoms.atom,xcm,FALSE);
       
       /* fit to reference structure */
       do_fit(top->atoms.nr,w_rls,xref,x);
@@ -171,7 +171,7 @@ int main (int argc,char *argv[])
       "Compute anisotropic termperature factors" }
   };
   int          step,nre,natom,natoms,i,g,m,teller=0;
-  real         t,lambda,*w_rls,*w_rms,tmas;
+  real         t,lambda,*w_rls,*w_rms;
   
   t_tpxheader  header;
   t_inputrec   ir;
@@ -180,7 +180,7 @@ int main (int argc,char *argv[])
   bool         bCont;
 
   matrix       box,pdbbox;
-  rvec         *x,*pdbx,*v,*xref;
+  rvec         *x,*pdbx,*xref;
   int          status,npdbatoms;
   char         buf[256];
   char         title[STRLEN];
@@ -230,7 +230,6 @@ int main (int argc,char *argv[])
   
   read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header);
   snew(x,header.natoms);
-  snew(v,header.natoms);
   snew(xref,header.natoms);
   snew(w_rls,header.natoms);
   read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
@@ -292,7 +291,7 @@ int main (int argc,char *argv[])
     rm_pbc(&(top.idef),top.atoms.nr,box,x,x);
 
     /* Set center of mass to zero */
-    tmas = sub_xcm(x,isize,index,top.atoms.atom,xcm,FALSE);
+    sub_xcm(x,isize,index,top.atoms.atom,xcm,FALSE);
     
     /* Fit to reference structure */
     do_fit(top.atoms.nr,w_rls,xref,x);

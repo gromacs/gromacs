@@ -191,7 +191,7 @@ int main(int argc,char *argv[])
   int        *rndx,*natm;
   
   int        i,j,status,nres,natoms,nframes,it,teller,dumnat;
-  int        rr0,nr0;
+  int        nr0;
   bool       bCalcN,bFrames;
   real       t,t0,ratio;
   char       label[234];
@@ -237,7 +237,6 @@ int main(int argc,char *argv[])
   natm=res_natm(&(useatoms));
   nres=useatoms.nres;
   fprintf(stderr,"There are %d residues with %d atoms\n",nres,natoms);
-  rr0=0;
     
   snew(resnr,nres);
   snew(mdmat,nres);

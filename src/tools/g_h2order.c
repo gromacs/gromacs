@@ -71,7 +71,6 @@ void calc_order(char *fn, atom_id index[], int ngx, rvec **slDipole,
       i,j,teller = 0,
       slice=0,           /* current slice number */
       *count;            /* nr. of atoms in one slice */
-  real mass;             /* mass of micel, if needed */
 
   if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0) {
     fprintf(stderr,"Could not read coordinates from statusfile\n");
@@ -119,7 +118,7 @@ void calc_order(char *fn, atom_id index[], int ngx, rvec **slDipole,
     rm_pbc(&(top->idef),top->atoms.nr,box,x0,x0);
 
     if (bMicel)
-      mass = calc_xcm(x0, nmic, micel, top->atoms.atom, com, FALSE);
+      calc_xcm(x0, nmic, micel, top->atoms.atom, com, FALSE);
     
     for (i = 0; i < ngx/3; i++)
     {

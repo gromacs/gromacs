@@ -57,9 +57,8 @@ void rdf_add(int bin[], real mbin[],real width,real hb2,rvec x[],rvec xcm,
   int     i,j,ind,nout;
   int     ix,jx;
   rvec    dx;
-  real    r2,w_2;
+  real    r2;
 
-  w_2=1.0/sqr(width);
   for(j=0; (j < nx2); j++) {
     jx=index2[j];
     rvec_sub(x[jx],xcm,dx);
