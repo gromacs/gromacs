@@ -1,0 +1,56 @@
+    O  15.99940 ;     carbonyl oxygen (C=O)
+   OM  15.99940 ;     carboxyl oxygen (CO-)
+   OA  15.99940 ;     hydroxyl, sugar or ester oxygen
+   OE  15.99940 ;     ether or ester oxygen
+   OW  15.99940 ;     water oxygen
+    N  14.00670 ;     peptide nitrogen (N or NH)
+   NT  14.00670 ;     terminal nitrogen (NH2)
+   NL  14.00670 ;     terminal nitrogen (NH3)
+   NR  14.00670 ;     aromatic nitrogen
+   NZ  14.00670 ;     Arg NH (NH2)
+   NE  14.00670 ;     Arg NE (NH)
+    C  12.01100 ;     bare carbon
+  CH0  12.0110  ;     bare sp3 carbon, 4 bound heavy atoms
+  CH1  13.01900 ;     aliphatic or sugar CH-group
+  CH2  14.02700 ;     aliphatic or sugar CH2-group
+  CH3  15.03500 ;     aliphatic CH3-group
+  CH4  16.04300 ;     methane
+ CH2R  14.02700 ;     CH2-group in a ring
+  CR1  13.01900 ;     aromatic CH-group 
+   HC   1.00800 ;     hydrogen bound to carbon
+    H   1.00800 ;     hydrogen not bound to carbon
+  DUM   0.00000 ;     dummy atom, no idea what the mass should be. PT3-99
+    S  32.06000 ;     sulfur
+ CU1+  63.54600 ;     copper (charge 1+)
+ CU2+  63.54600 ;     copper (charge 2+)
+   FE  55.84700 ;     iron (heme)
+ ZN2+  65.37000 ;     zinc (charge 2+)
+ MG2+  24.30500 ;     magnesium (charge 2+)
+ CA2+  40.08000 ;     calcium (charge 2+)
+    P  30.97380 ;     phosphor
+   AR  39.94800 ;     argon
+    F  18.99840 ;     fluor (non-ionic)
+   CL  35.45300 ;     chlorine (non-ionic)
+   BR  79.90400 ;     bromine (non-ionic)
+ CMET  15.035   ;     CH3-group in methanol (solvent)
+ OMET  15.9994  ;     oxygen in methanol (solvent)
+  NA+  22.9898  ;     sodium (charge 1+)
+  CL-  35.45300 ;     chlorine (charge 1-)
+ CCHL  12.011   ;     carbon in chloroform (solvent)
+CLCHL  35.453   ;     chloride in chloroform (solvent)
+ HCHL  1.008    ;     hydrogen in chloroform (solvent)
+SDMSO  32.06000 ;     DMSO Sulphur (solvent)
+CDMSO  15.03500 ;     DMSO Carbon (solvent)
+ODMSO  15.99940 ;     DMSO Oxygen (solvent)
+ CCL4  12.011   ;     carbon in carbontetrachloride (solvent)
+CLCL4  35.453   ;     chloride in carbontetrachloride (solvent)
+ FTFE  18.99840 ;     fluor in trifluoroethanol
+ CTFE  12.01100 ;     carbon in trifluoroethanol
+CHTFE  14.0270  ;     CH2-group in trifluoroethanol
+ OTFE  15.99940 ;     oxygen in trifluoroethanol
+CUREA  12.01100 ;     carbon in urea
+OUREA  15.99940 ;     oxygen in urea
+NUREA  14.00670 ;     nitrogen in urea
+   SI  28.08	;     silicon
+ MNH3   0       ;     Dummy mass in rigid tetraedrical NH3 group
+   MW   0       ;     Dummy mass in rigid tyrosine rings
