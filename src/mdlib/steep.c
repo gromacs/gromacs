@@ -346,7 +346,6 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     sum_epot(&(ir->opts),grps,ener); 
 
     if (bConstrain) {
-#define MIN_BL 0.1
       fnorm=f_norm(log,cr->left,cr->right,nsb->nprocs,start,end,force[TRY]);
       constepsize=ustep/fnorm;
       for(i=start; (i<end); i++)  
@@ -446,10 +445,12 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     /* Check if stepsize is too small
      * NOTE: this involves machine precision and some compilers might not 
      * recognize that the expression could return TRUE for small stepsize */
-    if ( 1.0+stepsize == 1.0 ) {
-      fprintf(stderr,"Stepsize too small: "
-	      "ustep=%g (nm) fnorm=%g (kJ mol-1 nm-1) stepsize=%g (mol kJ-1)\n",
-	      ustep,fnorm,stepsize);
+    if (ustep/ir->em_stepsize < 1e-6) {
+      fprintf(stderr,
+	      "The stepsize is now so small that we may assume a local"
+	      " minimum is reached.\n"
+	      "Stepsize: %g (mol kJ^-1), ustep: %g (nm), fnorm: %g"
+	      " (kJ mol-1 nm-1)\n",ustep,fnorm,stepsize);
       bAbort=TRUE;
     }
     
