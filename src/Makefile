@@ -1,5 +1,5 @@
 #
-# Gromacs Makefile
+# Gromacs Makefile $Id$
 #
 DIRS	=	gmxlib 	kernel	tools	ngmx	include
 LOCAL	=	local
