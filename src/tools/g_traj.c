@@ -223,18 +223,34 @@ static real ekrot(rvec x[],rvec v[],real mass[],int isize,atom_id index[])
   return ekrot;
 }
 
+static real ektrans(rvec v[],real mass[],int isize,atom_id index[])
+{
+  rvec   mvcom;
+  real   mtot=0;
+  int    i,j,d;
+  
+  clear_rvec(mvcom);
+  for(i=0; i<isize; i++) {
+    j = index[i];
+    for(d=0; d<DIM; d++)
+      mvcom[d] += mass[j]*v[j][d];
+    mtot += mass[j];
+  }
+
+  return norm2(mvcom)/(mtot*2);
+}
+
 static real temp(rvec v[],real mass[],int isize,atom_id index[])
 {
-  matrix TCM,L;
-  real   m,ekin=0;
-  int    i,j;
+  real ekin2=0;
+  int  i,j;
 
   for(i=0; i<isize; i++) {
     j = index[i];
-    ekin += mass[j]*norm2(v[j]);
+    ekin2 += mass[j]*norm2(v[j]);
   }
 
-  return ekin/(2*isize*BOLTZ);
+  return ekin2/(3*isize*BOLTZ);
 }
 
 static void remove_jump(matrix box,int natoms,rvec xp[],rvec x[])
@@ -265,9 +281,11 @@ int main(int argc,char *argv[])
     "interpreted as molecule numbers and the same procedure as with",
     "[TT]-com[tt] is used for each molecule.[PAR]",
     "Option [TT]-ot[tt] plots the temperature of each group,",
-    "provided velocities are present in the trajectory file."
+    "provided velocities are present in the trajectory file.",
+    "No corrections are made for constrained degrees of freedom!",
     "This implies [TT]-com[tt].[PAR]",
-    "Option [TT]-ekr[tt] plots the rotational kinetic energy of each group,", 
+    "Options [TT]-ekt[tt] and [TT]-ekr[tt] plot the translational and",
+    "rotational kinetic energy of each group,", 
     "provided velocities are present in the trajectory file.",
     "This implies [TT]-com[tt]."
   };
@@ -290,7 +308,8 @@ int main(int argc,char *argv[])
       "Plot vector length" }
     
   };
-  FILE       *outx=NULL,*outv=NULL,*outf=NULL,*outb=NULL,*outt=NULL,*outekr=NULL;
+  FILE       *outx=NULL,*outv=NULL,*outf=NULL,*outb=NULL,*outt=NULL;
+  FILE       *outekt=NULL,*outekr=NULL;
   t_topology top;
   real       *mass,time;
   char       title[STRLEN],*indexfn;
@@ -306,7 +325,7 @@ int main(int argc,char *argv[])
   atom_id    **index0,**index;
   atom_id    *a,*atndx;
   t_block    *mols;
-  bool       bTop,bOX,bOV,bOF,bOB,bOT,bEKR,bDim[4],bDum[4];
+  bool       bTop,bOX,bOV,bOF,bOB,bOT,bEKT,bEKR,bDim[4],bDum[4];
   char       *box_leg[6] = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
 
   t_filenm fnm[] = {
@@ -318,6 +337,7 @@ int main(int argc,char *argv[])
     { efXVG, "-of", "force.xvg", ffOPTWR },
     { efXVG, "-ob", "box.xvg",   ffOPTWR },
     { efXVG, "-ot", "temp.xvg",  ffOPTWR },
+    { efXVG, "-ekt","ektrans.xvg", ffOPTWR },
     { efXVG, "-ekr","ekrot.xvg", ffOPTWR }
   };
 #define NFILE asize(fnm)
@@ -336,8 +356,9 @@ int main(int argc,char *argv[])
   bOF  = opt2bSet("-of",NFILE,fnm);
   bOB  = opt2bSet("-ob",NFILE,fnm);
   bOT  = opt2bSet("-ot",NFILE,fnm);
+  bEKT = opt2bSet("-ekt",NFILE,fnm);
   bEKR = opt2bSet("-ekr",NFILE,fnm);
-  if (bMol || bOT || bEKR)
+  if (bMol || bOT || bEKT || bEKR)
     bCom = TRUE;
 
   bDim[XX] = bX;
@@ -346,7 +367,7 @@ int main(int argc,char *argv[])
   bDim[DIM] = bNorm;
 
   bTop = read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,topbox,
-		       bCom && (bOX || bOV || bOT || bEKR));
+		       bCom && (bOX || bOV || bOT || bEKT || bEKR));
   sfree(xtop);
   if (bMol && !bTop)
     fatal_error(0,"Need a run input file for option -mol");
@@ -426,6 +447,16 @@ int main(int argc,char *argv[])
     outt = xvgropen(opt2fn("-ot",NFILE,fnm),"Temperature",xvgr_tlabel(),"(K)");
     make_legend(outt,ngrps,isize[0],index[0],grpname,bCom,bMol,bDum);
   }
+  if (bEKT) {
+    bDum[XX] = FALSE;
+    bDum[YY] = FALSE;
+    bDum[ZZ] = FALSE;
+    bDum[DIM] = TRUE;
+    flags = flags | TRX_READ_V;
+    outekt = xvgropen(opt2fn("-ekt",NFILE,fnm),"Center of mass translation",
+		      xvgr_tlabel(),"Energy (kJ mol\\S-1\\N)");
+    make_legend(outekt,ngrps,isize[0],index[0],grpname,bCom,bMol,bDum);
+  }
   if (bEKR) {
     bDum[XX] = FALSE;
     bDum[YY] = FALSE;
@@ -474,6 +505,12 @@ int main(int argc,char *argv[])
 	fprintf(outt,"\t%g",temp(fr.v,mass,isize[i],index[i]));
       fprintf(outt,"\n");
     }
+    if (bEKT && fr.bV) {
+      fprintf(outekt," %g",time);
+      for(i=0; i<ngrps; i++)
+	fprintf(outekt,"\t%g",ektrans(fr.v,mass,isize[i],index[i]));
+      fprintf(outekt,"\n");
+    }
     if (bEKR && fr.bX && fr.bV) {
       fprintf(outekr," %g",time);
       for(i=0; i<ngrps; i++)
@@ -491,6 +528,7 @@ int main(int argc,char *argv[])
   if (bOF) fclose(outf);
   if (bOB) fclose(outb);
   if (bOT) fclose(outt);
+  if (bEKT) fclose(outekt);
   if (bEKR) fclose(outekr);
 
   /* view it */

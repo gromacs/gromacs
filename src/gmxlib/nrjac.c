@@ -166,7 +166,7 @@ int m_inv_gen(real **m,int n,real **minv)
     for(j=0; j<n; j++) {
       s = 0;
       for(k=0; k<n; k++)
-	s += eig[k]*v[k][i]*v[k][j];
+	s += eig[k]*v[i][k]*v[j][k];
       minv[i][j] = s;
     }
 
