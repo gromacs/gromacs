@@ -105,7 +105,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   double      tcount=0;
   bool        bDynamicStep,bIonize,bMultiSim,bGlas;
   bool        bTCR,bConverged;
-  real        mu_aver,fmax;
+  real        mu_aver=0,fmax;
   int         gnx;
   atom_id     *grpindex;
   char        *grpname;

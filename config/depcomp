@@ -51,8 +51,15 @@ case "$depmode" in
 gcc3)
 ## gcc 3 implements dependency tracking that does exactly what
 ## we want.  Yay!
-   exec "$@" -MT "$object" -MF "$depfile" -MD -MP
-   ;;
+  "$@" -MT "$object" -MF "$tmpdepfile" -MD -MP
+  stat=$?
+  if test $stat -eq 0; then :
+  else
+    rm -f "$tmpdepfile"
+    exit $stat
+  fi
+  mv "$tmpdepfile" "$depfile"
+  ;;
 
 gcc)
 ## There are various ways to get dependency output from gcc.  Here's
@@ -67,9 +74,10 @@ gcc)
   if test -z "$gccflag"; then
     gccflag=-MD,
   fi
-  if "$@" -Wp,"$gccflag$tmpdepfile"; then :
+  "$@" -Wp,"$gccflag$tmpdepfile"
+  stat=$?
+  if test $stat -eq 0; then :
   else
-    stat=$?
     rm -f "$tmpdepfile"
     exit $stat
   fi
@@ -120,19 +128,24 @@ sgi)
   if test -f "$tmpdepfile"; then  # yes, the sourcefile depend on other files
     echo "$object : \\" > "$depfile"
 
-    # Clip off the initial element (the dependent). Don't try to be
+    # Clip off the initial element (the dependent).  Don't try to be
     # clever and replace this with sed code, as IRIX sed won't handle
     # lines with more than a fixed number of characters (4096 in
-    # IRIX 6.2 sed, 8192 in IRIX 6.5).
+    # IRIX 6.2 sed, 8192 in IRIX 6.5).  We also remove comment lines;
+    # the IRIX cc adds comments like `#:fec' to the end of the
+    # dependency line.
     tr ' ' '
-' < "$tmpdepfile" | sed 's/^[^\.]*\.o://' | tr '
+' < "$tmpdepfile" \
+    | sed -e 's/^.*\.o://' -e 's/#.*$//' -e '/^$/ d' | \
+    tr '
 ' ' ' >> $depfile
+    echo >> $depfile
 
+    # The second pass generates a dummy entry for each header file.
     tr ' ' '
-' < "$tmpdepfile" | \
-## Some versions of the HPUX 10.20 sed can't process this invocation
-## correctly.  Breaking it into two sed invocations is a workaround.
-      sed -e 's/^\\$//' -e '/^$/d' -e '/:$/d' | sed -e 's/$/ :/' >> "$depfile"
+' < "$tmpdepfile" \
+   | sed -e 's/^.*\.o://' -e 's/#.*$//' -e '/^$/ d' -e 's/$/:/' \
+   >> $depfile
   else
     # The sourcefile does not contain any dependencies, so just
     # store a dummy comment line, to avoid errors with the Makefile
@@ -144,8 +157,12 @@ sgi)
 
 aix)
   # The C for AIX Compiler uses -M and outputs the dependencies
-  # in a .u file.
-  tmpdepfile=`echo "$object" | sed 's/\(.*\)\..*$/\1.u/'`
+  # in a .u file.  This file always lives in the current directory.
+  # Also, the AIX compiler puts `$object:' at the start of each line;
+  # $object doesn't have directory information.
+  stripped=`echo "$object" | sed -e 's,^.*/,,' -e 's/\(.*\)\..*$/\1/'`
+  tmpdepfile="$stripped.u"
+  outname="$stripped.o"
   if test "$libtool" = yes; then
     "$@" -Wc,-M
   else
@@ -160,21 +177,11 @@ aix)
   fi
 
   if test -f "$tmpdepfile"; then
-    echo "$object : \\" > "$depfile"
-
-    # Clip off the initial element (the dependent). Don't try to be
-    # clever and replace this with sed code, as IRIX sed won't handle
-    # lines with more than a fixed number of characters (4096 in
-    # IRIX 6.2 sed, 8192 in IRIX 6.5).
-    tr ' ' '
-' < "$tmpdepfile" | sed 's/^[^\.]*\.o://' | tr '
-' ' ' >> $depfile
-
-    tr ' ' '
-' < "$tmpdepfile" | \
-## Some versions of the HPUX 10.20 sed can't process this invocation
-## correctly.  Breaking it into two sed invocations is a workaround.
-      sed -e 's/^\\$//' -e '/^$/d' -e '/:$/d' | sed -e 's/$/ :/' >> "$depfile"
+    # Each line is of the form `foo.o: dependent.h'.
+    # Do two passes, one to just change these to
+    # `$object: dependent.h' and one to simply `dependent.h:'.
+    sed -e "s,^$outname:,$object :," < "$tmpdepfile" > "$depfile"
+    sed -e "s,^$outname: \(.*\)$,\1:," < "$tmpdepfile" >> "$depfile"
   else
     # The sourcefile does not contain any dependencies, so just
     # store a dummy comment line, to avoid errors with the Makefile
@@ -183,6 +190,35 @@ aix)
   fi
   rm -f "$tmpdepfile"
   ;;
+
+tru64)
+   # The Tru64 AIX compiler uses -MD to generate dependencies as a side
+   # effect.  `cc -MD -o foo.o ...' puts the dependencies into `foo.o.d'.
+   # Subdirectories are respected.
+
+   tmpdepfile="$object.d"
+   if test "$libtool" = yes; then
+      "$@" -Wc,-MD
+   else
+      "$@" -MD
+   fi
+
+   stat=$?
+   if test $stat -eq 0; then :
+   else
+      rm -f "$tmpdepfile"
+      exit $stat
+   fi
+
+   if test -f "$tmpdepfile"; then
+      sed -e "s,^.*\.[a-z]*:,$object:," < "$tmpdepfile" > "$depfile"
+      # That's a space and a tab in the [].
+      sed -e 's,^.*\.[a-z]*:[ 	]*,,' -e 's,$,:,' < "$tmpdepfile" >> "$depfile"
+   else
+      echo "#dummy" > "$depfile"
+   fi
+   rm -f "$tmpdepfile"
+   ;;
 
 #nosideeffect)
   # This comment above is used by automake to tell side-effect
