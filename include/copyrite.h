@@ -53,7 +53,7 @@ extern "C" {
 #include <stdio.h>
   
 /* Has to be a function, so we can get version number from autoconf */   
-char *GromacsVersion();
+char *GromacsVersion(void);
   
   
 static char *CopyrightText[] = {

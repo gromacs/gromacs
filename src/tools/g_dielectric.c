@@ -46,7 +46,7 @@ static char *SRCID_g_dielectric_c = "$Id$";
 #include "futil.h"
 #include "macros.h"
 #include "xvgr.h"
-#include "complex.h"
+#include "gmxcomplex.h"
 #include "nr.h"
 
 /* Determines at which point in the array the fit should start */

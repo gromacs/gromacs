@@ -343,7 +343,7 @@ bool get_libdir(char *libdir)
   /* Only do the smart search part if we got a real name */
   if(bin_name && strcmp(bin_name,"GROMACS")) {
   
-    if (!index(bin_name,'/')) {
+    if (!strchr(bin_name,'/')) {
       /* No "/" in name means it must be in the path - search it! */
       system_path=getenv("PATH");
       s=system_path;

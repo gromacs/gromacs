@@ -44,7 +44,7 @@ static char *SRCID_pme_h = "$Id$";
 
 #include <stdio.h>
 #include "typedefs.h"
-#include "complex.h"
+#include "gmxcomplex.h"
 #include "fftgrid.h"
 
 typedef real *splinevec[DIM];

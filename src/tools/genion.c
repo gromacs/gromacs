@@ -34,6 +34,7 @@
  * Gromacs Runs On Most of All Computer Systems
  */
 static char *SRCID_genion_c = "$Id$";
+#include <ctype.h>
 #include "copyrite.h"
 #include "string2.h"
 #include "smalloc.h"

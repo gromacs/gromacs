@@ -45,7 +45,7 @@ static char *SRCID_fftgrid_h = "$Id$";
 #include <stdio.h>
 #include "typedefs.h"
 #include "fftw_wrapper.h"
-#include "complex.h"
+#include "gmxcomplex.h"
 #include "network.h"
 
 /* Use FFTW */

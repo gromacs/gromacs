@@ -697,19 +697,15 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
     type   = tip->type;
     ftype  = idef->functype[type];
     factor = dt*deviation[tip->eObs];
-    
-    /* Time for a killer macro */
-#define DOIP(ip) if (tip->xi.##ip) idef->iparams[type].##ip *= (1+factor/tip->xi.##ip)
       
     switch(ftype) {
     case F_BONDS:
-      DOIP(harmonic.krA);
-      DOIP(harmonic.rA);
+      if (tip->xi.harmonic.krA) idef->iparams[type].harmonic.krA *= (1+factor/tip->xi.harmonic.krA);
+      if (tip->xi.harmonic.rA) idef->iparams[type].harmonic.rA *= (1+factor/tip->xi.harmonic.rA);
 	break;
     default:
       break;
     }
-#undef DOIP
     tip->iprint=idef->iparams[type];
   }
 }

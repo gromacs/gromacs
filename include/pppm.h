@@ -44,7 +44,7 @@ static char *SRCID_pppm_h = "$Id$";
 
 #include <stdio.h>
 #include "typedefs.h"
-#include "complex.h"
+#include "gmxcomplex.h"
 #include "fftgrid.h"
 
 extern void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,

@@ -63,7 +63,7 @@ static char *SRCID_pme_c = "$Id$";
 #include "typedefs.h"
 #include "txtdump.h"
 #include "vec.h"
-#include "complex.h"
+#include "gmxcomplex.h"
 #include "smalloc.h"
 #include "futil.h"
 #include "shift_util.h"
@@ -549,12 +549,6 @@ void make_bsplines(splinevec theta,splinevec dtheta,int order,int nx,int ny,
   real *data,*ddata,*xptr;
   int  *idxptr;
 
-  rvec nk;
-  
-  nk[XX] = nx;
-  nk[YY] = ny;
-  nk[ZZ] = nz;
-  
   for(i=0; (i<nr); i++) {
     if (charge[i] != 0.0) {
       xptr = fractx[i];

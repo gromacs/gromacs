@@ -35,6 +35,7 @@
  */
 static char *SRCID_resall_c = "$Id$";
 #include "sysstuff.h"
+#include <ctype.h>
 #include "assert.h"
 #include "string2.h"
 #include "strdb.h"

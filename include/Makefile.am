@@ -26,7 +26,7 @@ include_HEADERS = \
 	princ.h     	steep.h       	wgms.h		     	\
 	filenm.h        memtab.h    	pull.h      	strdb.h 	\
 	wman.h		comlib.h    	force.h         memtest.h   	\
-	string2.h     	writeps.h	complex.h   	\
+	string2.h     	writeps.h	gmxcomplex.h   	\
 	futil.h         metacode.h  	random.h    	struc2.h      	\
 	x86_3dnow.h	comtest.h   	gbutil.h        mpiio.h     	\
 	rbin.h      	superb.h      	x86_cpu.h	tgroup.h	\

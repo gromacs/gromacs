@@ -326,7 +326,7 @@ static void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
 		       real *kappa,real *epsfac,real *krf,real *crf)
 {
   /* Compute constants for Generalized reaction field */
- static bool bFirst=TRUE;
+  static bool bFirst=TRUE;
   real   k1,k2,I,vol,rmin;
   
   if ((eel == eelRF) || (eel == eelGRF)) {

@@ -20,37 +20,37 @@ if [ "$shtst" = A ]; then
   if [ "$shtst" = 1 ]; then
     # Both BASH and ZSH use the export VAR=value syntax
     # remove old stuff 
-    export PATH=${PATH/$GMX_BINDIR} 
+    export PATH=${PATH/$GMXBIN} 
     export PATH=${PATH%:} PATH=${PATH#:} PATH=${PATH/::/:}
-    export MANPATH=${MANPATH/$GMX_MANDIR} 
+    export MANPATH=${MANPATH/$GMXMAN} 
     export MANPATH=${MANPATH%:} MANPATH=${MANPATH#:} MANPATH=${MANPATH/::/:}
-    export LD_LIBRARY_PATH=${LD_LIBRARY_PATH/$GMX_LDLIBIR} LD_LIBRARY_PATH=${LD_LIBRARY_PATH%:} 
+    export LD_LIBRARY_PATH=${LD_LIBRARY_PATH/$GMXLDLIB} LD_LIBRARY_PATH=${LD_LIBRARY_PATH%:} 
     export LD_LIBRARY_PATH=${LD_LIBRARY_PATH#:} LD_LIBRARY_PATH=${LD_LIBRARY_PATH/::/:}
     # then set the new vars:
-    export GMX_BINDIR=@bindir@          #####
-    export GMX_LDLIBDIR=@libdir@        #####
-    export GMX_MANDIR=@mandir@          #####
-    export export PATH=${PATH}:${GMX_BINDIR} 
+    export GMXBIN=@bindir@          #####
+    export GMXLDLIB=@libdir@        #####
+    export GMXMAN=@mandir@          #####
+    export export PATH=${PATH}:${GMXBIN} 
     if [ "$MANPATH" = "" ]; then
-      export MANPATH=/usr/man:${GMX_MANDIR}
+      export MANPATH=/usr/man:${GMXMAN}
     else
-      export MANPATH=$MANPATH:$GMX_MANDIR}
+      export MANPATH=$MANPATH:$GMXMAN}
     fi
     if [ "$LD_LIBRARY_PATH" = "" ]; then
-      export LD_LIBRARY_PATH={$GMX_LDLIBDIR}
+      export LD_LIBRARY_PATH={$GMXLDLIB}
     else
-      export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${GMX_LDLIBDIR} 
+      export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${GMXLDLIB} 
     fi
     export GMXFONT="10x20"
     # Completions are different for bash and zsh. zsh can test with ${+x} if variable x is set
     shtst=0
     shtst=`(echo ${+shtst}) 2>/dev/null`
     if [ "$shtst" = 1 ]; then
-      if [ -f $GMX_BINDIR/completion.zsh ]; then 
-        source $GMX_BINDIR/completion.zsh; fi   
+      if [ -f $GMXBIN/completion.zsh ]; then 
+        source $GMXBIN/completion.zsh; fi   
     else
-      if [ -f $GMX_BINDIR/completion.bash ]; then 
-        source $GMX_BINDIR/completion.bash; fi  
+      if [ -f $GMXBIN/completion.bash ]; then 
+        source $GMXBIN/completion.bash; fi  
     fi
   fi
 fi
@@ -62,10 +62,10 @@ CSH:
 # Remove the ld_library_path
 unsetenv TEMPPATH
 unsetenv PATHSET
-if ($?GMX_LDLIBDIR) then
+if ($?GMXLDLIB) then
   foreach i ( `echo $LD_LIBRARY_PATH | sed "s/:/ /g"` )
     setenv PATHSET
-    if ( "$i" != "$GMX_LDLIBDIR" ) then
+    if ( "$i" != "$GMXLDLIB" ) then
       if ( ! $?TEMPPATH ) then
         setenv TEMPPATH $i
       else
@@ -84,10 +84,10 @@ endif
 # Remove the binary path
 unsetenv TEMPPATH
 unsetenv PATHSET
-if ($?GMX_BINDIR) then
+if ($?GMXBIN) then
   foreach i ( `echo $PATH | sed "s/:/ /g"` )
     setenv PATHSET
-    if ( "$i" != "$GMX_BINDIR" ) then
+    if ( "$i" != "$GMXBIN" ) then
       if ( ! $?TEMPPATH ) then
 	setenv TEMPPATH $i
       else
@@ -106,10 +106,10 @@ endif
 # Remove manual path
 unsetenv TEMPPATH
 unsetenv PATHSET
-if ($?GMX_MANDIR) then
+if ($?GMXMAN) then
   foreach i ( `echo $MANPATH | sed "s/:/ /g"` )
     setenv PATHSET
-    if ( "$i" != "$GMX_MANDIR" ) then
+    if ( "$i" != "$GMXMAN" ) then
       if ( ! $?TEMPPATH ) then
 	setenv TEMPPATH $i
       else
@@ -126,21 +126,21 @@ if ($?PATHSET) then
   unsetenv PATHSET
 endif  
 
-setenv GMX_BINDIR @bindir@   #####
-setenv GMX_LDLIBDIR @libdir@   ######
-setenv GMX_MANDIR @mandir@   #####
-setenv PATH ${PATH}:${GMX_BINDIR}
+setenv GMXBIN @bindir@   #####
+setenv GMXLDLIB @libdir@   ######
+setenv GMXMAN @mandir@   #####
+setenv PATH ${PATH}:${GMXBIN}
 if ( $?LD_LIBRARY_PATH ) then
-  setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${GMX_LDLIBDIR}
+  setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${GMXLDLIB}
 else
-  setenv LD_LIBRARY_PATH ${GMX_LDLIBDIR}
+  setenv LD_LIBRARY_PATH ${GMXLDLIB}
 endif
 if ( $?MANPATH ) then
-  setenv MANPATH ${MANPATH}:${GMX_MANDIR}
+  setenv MANPATH ${MANPATH}:${GMXMAN}
 else
-  setenv MANPATH /usr/man:${GMX_MANDIR}
+  setenv MANPATH /usr/man:${GMXMAN}
 endif  
 setenv GMXFONT	10x20
-if ( -f $GMX_BINDIR/completion.csh ) source $GMX_BINDIR/completion.csh  
+if ( -f $GMXBIN/completion.csh ) source $GMXBIN/completion.csh  
 
 # end of script

@@ -36,6 +36,7 @@
 static char *SRCID_pdb2top_c = "$Id$";
 #include <stdio.h>
 #include <math.h>
+#include <ctype.h>
 #include "vec.h"
 #include "copyrite.h"
 #include "assert.h"

@@ -44,7 +44,7 @@ static char *SRCID_ewald_util_h = "$Id$";
 
 #include <math.h>
 #include "typedefs.h"
-#include "complex.h"
+#include "gmxcomplex.h"
 
 
 extern real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,

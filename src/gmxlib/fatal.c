@@ -34,6 +34,7 @@
  * S  C  A  M  O  R  G
  */
 static char *SRCID_fatal_c = "$Id$";
+
 #include <sysstuff.h>
 #include <ctype.h>
 #include <errno.h>
@@ -371,7 +372,7 @@ void init_debug (char *dbgfile)
   bDebug = TRUE;
 }
 
-#ifdef _SGI_
+#if (defined __sgi && defined USE_SGI_FPE)
 static void user_routine(unsigned us[5], int ii[2])
 {
   fprintf(stderr,"User routine us=(%u,%u,%u,%u,%u) ii=(%d,%d)\n",
@@ -393,7 +394,6 @@ static void handle_signals(int n)
   abort();
 }
 
-#ifdef __sgi
 void doexceptions(void)
 {
 #include <sigfpe.h>
@@ -411,6 +411,8 @@ void doexceptions(void)
   for(i=0; (i<asize(hs)); i++)
     signal(hs[i],handle_signals);
 }
-#endif
+#endif /* __sgi and FPE */
 
-#endif
+
+
+

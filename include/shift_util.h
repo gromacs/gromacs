@@ -44,7 +44,7 @@ static char *SRCID_shift_util_h = "$Id$";
 
 #include <math.h>
 #include "typedefs.h"
-#include "complex.h"
+#include "gmxcomplex.h"
 #include "physics.h"
 
 /* Routines to set global constants for speeding up the calculation

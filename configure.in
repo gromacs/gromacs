@@ -36,7 +36,7 @@ AC_SUBST(SHARED_VERSION_INFO)
 ### Single/Double
 AC_ARG_ENABLE(float,
  [  --disable-float               use double instead of single precision],, enable_float=yes)
-if test "enable_float" = "no"; then
+if test "enable_float" != "yes"; then
   AC_DEFINE(DOUBLE,,[Compile in double precision])
 fi
 

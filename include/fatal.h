@@ -134,7 +134,7 @@ void init_debug (char *dbgfile);
 extern bool bDebugMode(void);
 /* Return TRUE when the program was started in debug mode */
   
-#ifdef USE_SGI_FPE
+#if (defined __sgi && defined USE_SGI_FPE)
 extern void doexceptions(void);
 /* Set exception handlers for debugging */
 #endif

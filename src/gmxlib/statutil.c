@@ -417,7 +417,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   static char *not_npristr[] = { NULL, "0", "128", "100", "200", "250", NULL };
   static char *npristr[]     = { NULL, "128", "250", "200", "100", "0", NULL };
   static int  nicelevel=0,mantp=0,npri=0;
-  static bool bExcept=FALSE,bGUI=FALSE,bDebug=FALSE;
+  static bool bGUI=FALSE,bDebug=FALSE;
   static char *deffnm=NULL;
      
   FILE *fp;  
@@ -527,8 +527,6 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   npall = add_parg(npall,&(all_pa),&motif_pa);
 
 #ifdef __sgi
-  bExcept = (getenv("GMXSGIFPE") != NULL);
-
   envstr = getenv("GMXNPRIALL");
   if (envstr)
     npri=atoi(envstr);
@@ -629,10 +627,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 
   bExit = bHelp || (strcmp(manstr[0],"no") != 0);
 
-#ifdef __sgi
-  /* Install exception handler if necessary */
-  if (bExcept)
-    doexceptions();
+#if (defined __sgi && USE_SGI_FPE)
+  doexceptions();
 #endif
 
   /* Set the nice level */

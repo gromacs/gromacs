@@ -38,7 +38,7 @@ static char *SRCID_ewald_c = "$Id$";
 #include <math.h>
 #include "typedefs.h"
 #include "vec.h"
-#include "complex.h"
+#include "gmxcomplex.h"
 #include "smalloc.h"
 #include "futil.h"
 #include "ewald_util.h"
