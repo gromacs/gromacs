@@ -59,7 +59,7 @@ AC_ARG_ENABLE(mpi,
 
 
 ### MPI environment
-AC_ARG_WITH(mpi-environment,
+AC_ARG_ENABLE(mpi-environment,
  [  --enable-mpi-environment=VAR  only start parallel runs when VAR is set],,
 [case "${host_cpu}" in
   mips*-irix*) enable_mpi_environment="MPI_ENVIRONMENT" ;;
