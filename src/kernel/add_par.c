@@ -96,29 +96,31 @@ void add_dum3_param(t_params *ps,int ai,int aj,int ak,int al,
   ps->param[ps->nr-1].C2=c;
 }
 
-int search_jtype(t_restp *rp,char *name,bool bFirstRes)
+int search_jtype(t_restp *rtp,char *name,bool bNterm)
 {
   int  j,k,mn,kmax,jmax;
-  char *an,buf[12];
+  char *rtpname,searchname[12];
   
-  strcpy(buf,name);
+  strcpy(searchname,name);
   
   /* Do a best match comparison */
-  if ( bFirstRes && (buf[0] == 'H') && 
-       ( (buf[1] == '1') || (buf[1] == '2') || (buf[1] == '3') ) )
-    buf[1]='\0';
+  /* for protein N-terminus, rename H1, H2 and H3 to H */
+  if ( bNterm && (searchname[0] == 'H') && (searchname[2] == '\0') &&
+       ( (searchname[1] == '1') || (searchname[1] == '2') || 
+	 (searchname[1] == '3') ) )
+    searchname[1]='\0';
   kmax=0;
   jmax=-1;
-  for(j=0; (j<rp->natom); j++) {
-    an=*(rp->atomname[j]);
-    if (strcasecmp(buf,an) == 0) {
+  for(j=0; (j<rtp->natom); j++) {
+    rtpname=*(rtp->atomname[j]);
+    if (strcasecmp(searchname,rtpname) == 0) {
       jmax=j;
-      kmax=strlen(buf);
+      kmax=strlen(searchname);
       break;
     }
-    mn=min((int)strlen(buf),(int)strlen(an));
+    mn=min((int)strlen(searchname),(int)strlen(rtpname));
     for(k=0; (k<mn); k++) 
-      if (buf[k] != an[k])
+      if (searchname[k] != rtpname[k])
 	break;
     if (k > kmax) {
       kmax=k;
@@ -127,11 +129,11 @@ int search_jtype(t_restp *rp,char *name,bool bFirstRes)
   }
   if (jmax == -1)
     fatal_error(0,"Atom %s not found in database in residue %s",
-		buf,rp->resname);
-  if (kmax != strlen(buf))
+		searchname,rtp->resname);
+  if (kmax != strlen(searchname))
     fatal_error(0,"Atom %s not found in database in residue %s, "
 		"it looks a bit like %s",
-		buf,rp->resname,*(rp->atomname[jmax]));
+		searchname,rtp->resname,*(rtp->atomname[jmax]));
   return jmax;
 }
 
