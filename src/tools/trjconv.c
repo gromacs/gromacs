@@ -449,11 +449,9 @@ int main(int argc,char *argv[])
       /* Restore reference structure and set to origin, 
          store original location (to put structure back) */
       rm_pbc(&(top.idef),top.atoms.nr,box,xp,xp);
-      clear_rvec(shift);
-      for (i=0; (i<header.natoms); i++)
-	rvec_inc(shift,xp[i]);
-      svmul(1./header.natoms,shift,shift);
+      copy_rvec(xp[index[0]],shift);
       reset_x(ifit,ind_fit,isize,index,xp,w_rls);
+      rvec_dec(shift,xp[index[0]]);
     }
     
     /* Make atoms struct for output in GRO or PDB files */
