@@ -314,7 +314,6 @@ int main (int argc,char *argv[])
     snew(w_rms_m,n_ind_m);
     for(i=0; i<ifit; i++)
       w_rls_m[rev_ind_m[ind_fit[i]]] = w_rls[ind_fit[i]];
-    snew(w_rms_m,n_ind_m);
     for(i=0; i<irms[0]; i++) {
       ind_rms_m[i] = rev_ind_m[ind_rms[0][i]];
       w_rms_m[ind_rms_m[i]] = w_rms[ind_rms[0][i]];
