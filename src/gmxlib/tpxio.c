@@ -48,6 +48,9 @@ static char *SRCID_tpxio_c = "$Id$";
 #include "atomprop.h"
 #include "copyrite.h"
 #include "vec.h"
+#ifdef HAVE_XML
+#include "xmlio.h"
+#endif
 
 /* This number should be increased whenever the file format changes! */
 static int tpx_version = 24;
@@ -784,7 +787,7 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,real *lambda,
   t_tpxheader tpx;
   t_inputrec  dum_ir;
   t_topology  dum_top;
-   
+
   if (!bRead) {
     tpx.natoms = *natoms;
     tpx.step   = *step;
@@ -797,18 +800,18 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,real *lambda,
     tpx.bF   = (f   != NULL);
     tpx.bBox = (box != NULL);
   }
-
+  
   do_tpxheader(fp,bRead,&tpx);
-
+  
   if (bRead) {
     *natoms = tpx.natoms;
     *step   = tpx.step;
     *t      = tpx.t;
     *lambda = tpx.lambda;
   }
-    
+  
 #define do_test(b,p) if (bRead && (p!=NULL) && !b) fatal_error(0,"No %s in %s",#p,fio_getname(fp)) 
-
+  
   do_test(tpx.bBox,box);
   do_section(eitemBOX,bRead);
   if (tpx.bBox) ndo_rvec(box,DIM);
@@ -867,9 +870,18 @@ void read_tpxheader(char *fn,t_tpxheader *tpx)
 {
   int fp;
 
-  fp = open_tpx(fn,"r");
-  do_tpxheader(fp,TRUE,tpx);
-  close_tpx(fp);
+#ifdef HAVE_XML
+  if (fn2ftp(fn) == efXML) {
+    fatal_error(0,"read_tpxheader called with filename %s",fn);
+  }
+  else {
+#endif
+    fp = open_tpx(fn,"r");
+    do_tpxheader(fp,TRUE,tpx);
+    close_tpx(fp);
+#ifdef HAVE_XML
+  }
+#endif
 }
 
 void write_tpx(char *fn,int step,real t,real lambda,
@@ -878,9 +890,17 @@ void write_tpx(char *fn,int step,real t,real lambda,
 {
   int fp;
 
-  fp = open_tpx(fn,"w");
-  do_tpx(fp,FALSE,&step,&t,&lambda,ir,box,&natoms,x,v,f,top);
-  close_tpx(fp);
+#ifdef HAVE_XML
+  if (fn2ftp(fn) == efXML)
+    write_xml(fn,*top->name,ir,box,natoms,x,v,f,1,&top->atoms,&top->idef);
+  else {
+#endif
+    fp = open_tpx(fn,"w");
+    do_tpx(fp,FALSE,&step,&t,&lambda,ir,box,&natoms,x,v,f,top);
+    close_tpx(fp);
+#ifdef HAVE_XML
+  }
+#endif
 }
 
 void read_tpx(char *fn,int *step,real *t,real *lambda,
@@ -888,25 +908,30 @@ void read_tpx(char *fn,int *step,real *t,real *lambda,
 	      rvec *x,rvec *v,rvec *f,t_topology *top)
 {
   int fp;
-  
-  fp = open_tpx(fn,"r");
-  do_tpx(fp,TRUE,step,t,lambda,ir,box,natoms,x,v,f,top);
-  close_tpx(fp);
-}
 
-void fwrite_tpx(int fp,int step,real t,real lambda,
-		t_inputrec *ir,rvec *box,int natoms,
-		rvec *x,rvec *v,rvec *f,t_topology *top)
-{
-  do_tpx(fp,FALSE,&step,&t,&lambda,ir,box,&natoms,x,v,f,top);
-}
-
-
-void fread_tpx(int fp,int *step,real *t,real *lambda,
-	       t_inputrec *ir,rvec *box,int *natoms,
-	       rvec *x,rvec *v,rvec *f,t_topology *top)
-{
-  do_tpx(fp,TRUE,step,t,lambda,ir,box,natoms,x,v,f,top);
+#ifdef HAVE_XML
+  if (fn2ftp(fn) == efXML) {
+    int  i;
+    rvec *xx=NULL,*vv=NULL,*ff=NULL;
+    
+    read_xml(fn,step,t,lambda,ir,box,natoms,&xx,&vv,&ff,top);
+    for(i=0; (i<*natoms); i++) {
+      if (xx) copy_rvec(xx[i],x[i]);
+      if (vv) copy_rvec(vv[i],v[i]);
+      if (ff) copy_rvec(ff[i],f[i]);
+    }
+    if (xx) sfree(xx);
+    if (vv) sfree(vv);
+    if (ff) sfree(ff);
+  }
+  else {
+#endif
+    fp = open_tpx(fn,"r");
+    do_tpx(fp,TRUE,step,t,lambda,ir,box,natoms,x,v,f,top);
+    close_tpx(fp);
+#ifdef HAVE_XML
+  }
+#endif
 }
 
 bool fn2bTPX(char *file)

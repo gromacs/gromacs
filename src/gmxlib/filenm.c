@@ -77,14 +77,22 @@ static    int trns[]={
   efTRJ };
 #define NTRNS asize(trns)
 
-static    int stos[]={ efGRO, efG96, efPDB, efBRK, efENT};
+static    int stos[]={ efGRO, efG96, efPDB, efBRK, 
+#ifdef HAVE_XML
+  efXML, 
+#endif
+  efENT};
 #define NSTOS asize(stos)
 
 static    int stxs[]={ efGRO, efG96, efPDB, efBRK, efENT,
 #ifdef USE_XDR 
 		       efTPR, 
 #endif 
-		       efTPB, efTPA };
+		       efTPB, efTPA
+#ifdef HAVE_XML
+		       , efXML
+#endif
+		        };
 #define NSTXS asize(stxs)
 
 static    int enxs[]={ 
@@ -98,14 +106,22 @@ static    int tpxs[]={
 #ifdef USE_XDR
   efTPR, 
 #endif
-  efTPB, efTPA };
+  efTPB, efTPA
+#ifdef HAVE_XML
+  , efXML 
+#endif
+  };
 #define NTPXS asize(tpxs)
 
 static    int tpss[]={ 
 #ifdef USE_XDR
   efTPR, 
 #endif
-  efTPB, efTPA, efGRO, efG96, efPDB, efBRK, efENT };
+  efTPB, efTPA, 
+#ifdef HAVE_XML
+  efXML, 
+#endif
+  efGRO, efG96, efPDB, efBRK, efENT };
 #define NTPSS asize(tpss)
 
 typedef struct {
@@ -131,8 +147,8 @@ static t_deffile deffile[efNR] = {
   { eftGEN, ".???", "ener",   NULL, "Generic energy: edr ene",                     NENXS, enxs },
   { eftXDR, ".edr", "ener",   NULL, "Energy file in portable xdr format"     },
   { eftBIN, ".ene", "ener",   NULL, "Energy file"                            },
-  { eftGEN, ".???", "conf",   "-c", "Generic structure: gro g96 pdb tpr tpb tpa",  NSTXS, stxs },
-  { eftGEN, ".???", "out",    "-o", "Generic structure: gro g96 pdb",              NSTOS, stos },
+  { eftGEN, ".???", "conf",   "-c", "Generic structure: gro g96 pdb tpr tpb tpa xml",  NSTXS, stxs },
+  { eftGEN, ".???", "out",    "-o", "Generic structure: gro g96 pdb xml",              NSTOS, stos },
   { eftASC, ".gro", "conf",   "-c", "Coordinate file in Gromos-87 format"    },
   { eftASC, ".g96", "conf",   "-c", "Coordinate file in Gromos-96 format"    },
   { eftASC, ".pdb", "eiwit",  "-f", "Protein data bank file"                 },
@@ -144,11 +160,14 @@ static t_deffile deffile[efNR] = {
   { eftASC, ".ndx", "index",  "-n", "Index file",                            },
   { eftASC, ".top", "topol",  "-p", "Topology file"                          },
   { eftASC, ".itp", "topinc", NULL, "Include file for topology"              },
-  { eftGEN, ".???", "topol",  "-s", "Generic run input: tpr tpb tpa",              NTPXS, tpxs },
-  { eftGEN, ".???", "topol",  "-s", "Structure+mass(db): tpr tpb tpa gro g96 pdb", NTPSS, tpss },
+  { eftGEN, ".???", "topol",  "-s", "Generic run input: tpr tpb tpa xml",              NTPXS, tpxs },
+  { eftGEN, ".???", "topol",  "-s", "Structure+mass(db): tpr tpb tpa gro g96 pdb xml", NTPSS, tpss },
   { eftXDR, ".tpr", "topol",  "-s", "Portable xdr run input file"            },
   { eftASC, ".tpa", "topol",  "-s", "Ascii run input file"                   },
   { eftBIN, ".tpb", "topol",  "-s", "Binary run input file"                  },
+#ifdef HAVE_XML
+  { eftASC, ".xml", "gmx",    "-x", "Portable status file"                   },
+#endif
   { eftASC, ".tex", "doc",    "-o", "LaTeX file"                             },
   { eftASC, ".rtp", "residue",NULL, "Residue Type file used by pdb2gmx"      },
   { eftASC, ".atp", "atomtp", NULL, "Atomtype file used by pdb2gmx"          },

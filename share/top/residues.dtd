@@ -42,12 +42,14 @@
  installation.                                                
  
  Please use the following formal public identifier to identify it:
-     "-//GROMACS//DTD Gromacs XML V1.0//EN"
+     "-//RESIDUES//DTD Residues XML V1.0//EN"
 
- <!DOCTYPE gromacs PUBLIC "-//GROMACS//DTD Gromacs XML V3.1.0//EN"
-                   "http://www.gromacs.org/gromacs3.1.dtd"
+ <!DOCTYPE residues PUBLIC "-//RESIDUES//DTD Gromacs XML V3.1.0//EN"
+                    "http://www.gromacs.org/residues.dtd"
                    [...]>
 -->
+
+<!ELEMENT macromolecules (residues,macromolecule*)>
 
 <!ELEMENT residues (residue*,linkdef*,moddef*)>
 
@@ -103,3 +105,22 @@
           addname CDATA #REQUIRED
           addbond CDATA #REQUIRED>
 
+<!-- Generic stuff to define proteins etc. as built up from blocks -->
+<!-- such as amino acids and HEME etc.                             -->
+<!ELEMENT macromolecule (mblock+,mlink*,mmod*)>
+<!ATTLIST macromolecule
+          mname ID #REQUIRED>
+<!ELEMENT mblock EMPTY>
+<!ATTLIST mblock
+          resname   ID    #REQUIRED
+          restype   IDREF #REQUIRED
+          protonated ( no | polar | all ) "polar">
+<!ELEMENT mlink EMPTY>
+<!ATTLIST mlink
+          mlinktype  ( peptide | disulphide | special ) "peptide"
+          resname   IDREFS #REQUIRED>
+<!ELEMENT mmod EMPTY>
+<!ATTLIST mmod
+          resname IDREF #REQUIRED
+          modtype IDREF #REQUIRED>
+	  

@@ -105,16 +105,6 @@ extern void read_tpx(char *fn,int *step,real *t,real *lambda,
  * will not be closed afterwards)
  */
 
-extern void fwrite_tpx(int fp,int step,real t,real lambda,
-		       t_inputrec *ir,rvec *box,int natoms,
-		       rvec *x,rvec *v,rvec *f,t_topology *top);
-/* Write a file, and do not close it */
-
-extern void fread_tpx(int fp,int *step,real *t,real *lambda,
-		      t_inputrec *ir,rvec *box,int *natoms,
-		      rvec *x,rvec *v,rvec *f,t_topology *top);
-/* Read a file, and do not close it */
-
 extern bool fn2bTPX(char *file);
 /* return if *file is one of the TPX file types */ 
 

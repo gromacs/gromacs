@@ -62,6 +62,9 @@ typedef struct {
 static int ftpXDR[] = { efTPR, efTRR, efEDR, efXTC };
 static int ftpASC[] = { efTPA, efGRO, efPDB };
 static int ftpBIN[] = { efTPB, efTRJ, efMTX, efENE };
+#ifdef HAVE_XML
+static int ftpXML[] = { efXML };
+#endif
 
 bool in_ftpset(int ftp,int nset,int set[])
 {
@@ -774,6 +777,12 @@ void fio_select(int fio)
     do_read  = do_binread;
     do_write = do_binwrite;
   }
+#ifdef HAVE_XMl
+  else if (in_ftpset(FIO[fio].iFTP,asize(ftpXML),ftpXML)) {
+    do_read  = do_dummy;
+    do_write = do_dummy;
+  }
+#endif
   else 
     fatal_error(0,"Can not read/write topologies to file type %s",
 		ftp2ext(curfio->iFTP));
