@@ -361,7 +361,7 @@ static void add_dh(t_donors *ddd,int id,int ih)
 static t_donors *search_donors(t_topology *top, int isize, atom_id *index,
 			       bool bContact,bool bDoIt)
 {
-  int        i,j;
+  int        i,j,nra;
   t_functype func_type;
   t_ilist    *interaction;
   atom_id    nr1,nr2;
@@ -380,8 +380,11 @@ static t_donors *search_donors(t_topology *top, int isize, atom_id *index,
       interaction=&(top->idef.il[func_type]);
       for(i=0; i < interaction->nr; 
 	  i+=interaction_function[top->idef.functype[interaction->iatoms[i]]].nratoms+1) {
-	/* next function */ 
-	assert(func_type == top->idef.functype[interaction->iatoms[i]]);
+	/* next function */
+	if (func_type != top->idef.functype[interaction->iatoms[i]]) {
+	  fatal_error(0,"Error in %s,%d func_type %s",__FILE__,__LINE__,
+		      interaction_function[func_type].longname);
+	}
 	
 	/* check out this functype */
 	if (func_type == F_SETTLE) {

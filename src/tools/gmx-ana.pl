@@ -34,7 +34,7 @@ typedef struct {
 
 int main(int argc,char *argv[]) 
 {
-  int i,j,k; 
+  int i,j,k,ret; 
 
   t_ana_func af[] = {
 EOF
@@ -102,7 +102,9 @@ printf ANA <<EOK;
 	      if (strcmp(af[j].name,argv[i+1]) == 0) {
 		  for(k=i+2; (k<argc); k++)
 		      argv[k-2] = argv[k];
-		  return af[j].f(argc-2,argv);
+		  argc -= 2;
+		  ret = af[j].f(argc,argv);
+		  return ret;
 	      }
 	  }
 	  if (j == NAF) {

@@ -44,6 +44,7 @@
 #include "vec.h"
 #include "copyrite.h"
 #include "futil.h"
+#include "readinp.h"
 #include "statutil.h"
 #include "txtdump.h"
 #include "gstat.h"
@@ -794,8 +795,11 @@ int gmx_analyze(int argc,char *argv[])
   distfile = opt2fn_null("-dist",NFILE,fnm);
   avfile   = opt2fn_null("-av",NFILE,fnm);
   eefile   = opt2fn_null("-ee",NFILE,fnm);
-  fitfile  = opt2fn_null("-g",NFILE,fnm);
-  
+  if (opt2parg_bSet("-fitfn",npargs,ppa)) 
+    fitfile  = opt2fn("-g",NFILE,fnm);
+  else
+    fitfile  = opt2fn_null("-g",NFILE,fnm);
+    
   val=read_val(opt2fn("-f",NFILE,fnm),bHaveT,
 	       opt2parg_bSet("-b",npargs,ppa),tb,
 	       opt2parg_bSet("-e",npargs,ppa),te,
@@ -811,9 +815,8 @@ int gmx_analyze(int argc,char *argv[])
 	val[s][i] = (val[s][i+d]-val[s][i])/(d*dt);
   }
 
-  if (fitfile || opt2parg_bSet("-fitfn",npargs,pa)) {
+  if (fitfile)
     do_fit(fitfile,nset,n,t,val);
-  }
 
   printf("                                      std. dev.    relative deviation of\n");
   printf("                       standard       ---------   cumulants from those of\n");
