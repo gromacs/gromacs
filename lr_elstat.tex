@@ -2,14 +2,15 @@
 \subsection{Ewald summation}
 \label{sec:ewald}
 The total electrostatic energy of $N$ particles and the periodic
-images is given by
+images are given by
 \begin{equation}
-V=\frac{f}{2}\sum_{{\bf n}*} \sum_{i}^{N} \sum_{j}^{N} \frac{q_i
-  q_j}{{\bf r}_{ij,{\bf n}}}.
+V=\frac{f}{2}\sum_{n_x}\sum_{n_y}
+\sum_{n_{z}*} \sum_{i}^{N} \sum_{j}^{N} 
+\frac{q_i q_j}{{\bf r}_{ij,{\bf n}}}.
 \label{totalcoulomb}
 \end{equation}
-${\bf n}$ is the box index vector, and the star indicates that
-terms with $i=j$ should be omitted when ${\bf n}=(0,0,0)$. The
+$(n_x,n_y,n_z)={\bf n}$ is the box index vector, and the star indicates that
+terms with $i=j$ should be omitted when $(n_x,n_y,n_z)=(0,0,0)$. The
 distance ${\bf r}_{ij,{\bf n}}$ is the real distance between the charges and
 not the minimum-image. This sum is conditionally convergent, but 
 very slow.
@@ -22,19 +23,21 @@ term:
 \begin{eqnarray}
 V &=& V_{dir} + V_{rec} + V_{0} \\[0.5ex]
 V_{dir} &=& \frac{f}{2} \sum_{i,j}^{N} 
-\sum_{{\bf n}*} q_i q_j \frac{{\mbox erfc}{\beta {r}_{ij,{\bf n}} }}{{r}_{ij,{\bf n}}} \\[0.5ex]
+\sum_{n_x}\sum_{n_y}
+\sum_{n_{z}*} q_i q_j \frac{{\mathrm erfc}(\beta {r}_{ij,{\bf n}} )}{{r}_{ij,{\bf n}}} \\[0.5ex]
 V_{rec} &=& \frac{f}{2 \pi V} \sum_{i,j}^{N} q_i q_j 
-\sum_{\bf m\neq0} \frac{\exp{\left( -(\pi {\bf m}/\beta)^2 + 2 \pi i
+\sum_{m_x}\sum_{m_y}
+\sum_{m_{z}*} \frac{\exp{\left( -(\pi {\bf m}/\beta)^2 + 2 \pi i
       {\bf m} \cdot ({\bf r}_i - {\bf r}_j)\right)}}{{\bf m}^2} \\[0.5ex]
 V_{0} &=& -\frac{f \beta}{\sqrt{\pi}}\sum_{i}^{N} q_i^2,
 \end{eqnarray}
 where $\beta$ is a parameter that determines the relative weight of the
-direct and reciprocal sums.
-In this way we can use a short cut-off (the order of $1$~nm) in the direct space sum and a
-short cut-off in the reciprocal space sum (e.g. $(\pm 5,\pm 5,\pm 5)$
-wavevectors). Unfortunately, the computational cost of the reciprocal
+direct and reciprocal sums and ${\bf m}=(m_x,m_y,m_z)$.
+In this way we can use a short cut-off (of the order of $1$~nm) in the direct space sum and a
+short cut-off in the reciprocal space sum (e.g. 10 wavevectors in each 
+direction). Unfortunately, the computational cost of the reciprocal
 part of the sum increases as $N^2$
-(or $N^{3/2}$ with a slightly better algorithm) and it is therefor not 
+(or $N^{3/2}$ with a slightly better algorithm) and it is therefore not 
 realistic to use for any large systems.
 
 \subsubsection{Using Ewald}
@@ -52,18 +55,20 @@ fourier_ny      = 5
 fourier_nz      = 5
 ewald_rtol      = 1e-5
 \end{verbatim}
-The values of fourier\_n* above is the highest magnitude of wavevectors
-to use in each dimension. The ewald\_rtol parameter is the relative
+The values of fourier\_n* are the highest magnitude of wavevectors
+$m_x,m_y,m_z$ to use in each direction (meaning 5 negative, the zero,
+and 5 positive wavevectors in this case.)
+The ewald\_rtol parameter is the relative
 strength of the electrostatic interaction at the cut-off. Decreasing
 this gives you a more accurate direct sum, but a less accurate
-reciprocal sum. In most cases you the default value will be fine.
+reciprocal sum. 
  
 \subsection{PME}
 \label{sec:pme}
 Particle-mesh Ewald is a method proposed by Tom
 Darden~\cite{Darden93,Essmann95} to improve the performance of the
 reciprocal sum. Instead of directly summing wavevectors, the charges
-are assigned to a grid by using cardinal B-spline interpolation. This
+are assigned to a grid using cardinal B-spline interpolation. This
 grid is then fourier transformed with a 3D FFT algorithm and 
 the reciprocal energy term obtained by a single sum over the grid in k-space.
 
@@ -91,8 +96,8 @@ fourier_nz      = 32
 pme_order       = 4
 ewald_rtol      = 1e-5
 \end{verbatim}
-In this case the fourier\_n* values now determine the grid dimensions, 
-and we have a new parameter pme\_order that controls the interpolation
+In this case the fourier\_n* values determine the grid dimensions, 
+and we have a new parameter pme\_order controlling the interpolation
 order. Using 4th order (cubic) interpolation and about $0.1$~nm per
 gridpoint 
 will give electrostatic energies accurate to about $2-3\cdot10^{-4}$. Since
@@ -158,7 +163,9 @@ fourier_ny      = 40
 fourier_nz      = 40
 \end{verbatim}
 For details on the switch parameters see the section on modified
-long-range interactions in this manual. The fourier\_n* are the number of grid points in each direction.
+long-range interactions in this manual. The fourier\_n* are the number
+of grid points in each 
+dimension.
 We recommend to take at most 0.075 nm per gridpoint (e.g. 20 gridpoints for 1.5 nm).
 PPPM does not provide the same accuracy as PME but is faster in most
 cases.
