@@ -393,18 +393,18 @@ op the topology file (see~\ssecref{topfile}):
 Some or all combinations for different atom-types can be given in
 the {\tt [~nonbond\_params~]} section. Any combination that is
 not given will be 
-computed according to the \normindex{combination rule}s:
+computed according to the \normindex{combination rule}:
 \begin{eqnarray}
 \mbox{for combination rules 1 and 3}: & &
 \begin{array}{lll}
-  C^{(6)}_{ij}  & = & \left(C^{(6)}_{ii}\,C^{(6)}_{jj}\right)^{\frac{1}{2}} \\
-  C^{(12)}_{ij} & = & \left(C^{(12)}_{ii}\,C^{(12)}_{jj}\right)^{\frac{1}{2}}
+  C^{(6)}_{ij}  & = & \left(C^{(6)}_i\,C^{(6)}_j\right)^{\frac{1}{2}} \\
+  C^{(12)}_{ij} & = & \left(C^{(12)}_i\,C^{(12)}_j\right)^{\frac{1}{2}}
 \end{array}
 \\
 \mbox{for combination rule 2}: & &
 \begin{array}{lll}
-  \sigma_{ij}   & = & \frac{1}{2}(\sigma_{ii}+\sigma_{jj}) \\
-  \epsilon_{ij} & = & \sqrt{\epsilon_{ii}\,\epsilon_{jj}}
+  \sigma_{ij}   & = & \frac{1}{2}(\sigma_i+\sigma_j) \\
+  \epsilon_{ij} & = & \sqrt{\epsilon_i\,\epsilon_j}
 \end{array}
 \end{eqnarray}
 
