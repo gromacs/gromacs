@@ -44,8 +44,71 @@ static char *SRCID_g_rmsf_c = "$Id$";
 #include "fatal.h"
 #include "futil.h"
 #include "gstat.h"
+#include "confio.h"
 
-int find_pdb(int npdb,t_pdbatom pdba[],char *resnm,int resnr,char *atomnm)
+static int calc_xav(bool bAverX,
+		    char *fn,rvec xref[],t_topology *top,matrix box,
+		    real w_rls[],int isize,atom_id index[])
+{
+  rvec *x,*xav;
+  rvec xcm;
+  real tmas,t,rmsd,xxx,tfac;
+  int  i,m,natoms,status,teller;
+  
+  /* remove pbc */
+  rm_pbc(&(top->idef),top->atoms.nr,box,xref,xref);
+
+  /* set center of mass to zero */
+  tmas = sub_xcm(xref,isize,index,top->atoms.atom,xcm,FALSE);
+
+  /* read first frame  */
+  natoms = read_first_x(&status,fn,&t,&x,box);
+  if (natoms != top->atoms.nr) 
+    fatal_error(0,"Topology (%d atoms) does not match trajectory (%d atoms)",
+		top->atoms.nr,natoms);
+		
+  if (bAverX) {
+    snew(xav,natoms);
+    teller = 0;
+    do {
+      /* remove periodic boundary */
+      rm_pbc(&(top->idef),top->atoms.nr,box,x,x);
+      
+      /* set center of mass to zero */
+      tmas = sub_xcm(x,isize,index,top->atoms.atom,xcm,FALSE);
+      
+      /* fit to reference structure */
+      do_fit(top->atoms.nr,w_rls,xref,x);
+      
+      for(i=0; (i<natoms); i++)
+	rvec_inc(xav[i],x[i]);
+      
+      teller++;
+    } while (read_next_x(status,&t,natoms,x,box));
+
+    tfac = 1.0/teller;    
+    rmsd = 0;
+    for(i=0; (i<natoms); i++) {
+      for(m=0; (m<DIM); m++) {
+	xxx        = xav[i][m] * tfac;
+	rmsd      += sqr(xref[i][m] - xxx);
+	xref[i][m] = xxx;
+      }
+    }
+    rmsd = sqrt(rmsd/natoms);    
+    sfree(xav);
+    fprintf(stderr,"Computed average structure. RMSD with reference is %g nm\n",
+	    rmsd);
+  }
+  sfree(x);
+
+  rewind_trj(status);
+  
+  return status;
+}
+
+static int find_pdb(int npdb,t_pdbatom pdba[],char *resnm,
+		    int resnr,char *atomnm)
 {
   int i;
   
@@ -71,9 +134,15 @@ int main (int argc,char *argv[])
     "deviation) of atomic positions ",
     "after first fitting to a reference frame.[PAR]",
     "When the (optional) pdb file is given, the RMSF values are converted",
-    "to B-factor values and plotted with the experimental data."
+    "to B-factor values and plotted with the experimental data.",
+    "With option -aver the average coordinates will be calculated and used",
+    "as reference for fitting. They are also saved to a gro file."
   };
-  static int r0=1;
+  static bool bAverX=FALSE;
+  t_pargs pargs[] = { 
+    { "-aver", FALSE, etBOOL, &bAverX,
+      "Calculate average coordinates first. Requires reading the coordinates twice" }
+  };
   int          step,nre,natom,natoms,i,g,m,teller=0;
   real         t,lambda,*w_rls,*w_rms,tmas;
   
@@ -98,7 +167,6 @@ int main (int argc,char *argv[])
   char         *grpnames;
 
   real         bfac;
-  real         *time;
   atom_id      aid;
   rvec         *rmsf_xx,*rmsf_x;
   real         *rmsf;
@@ -107,17 +175,18 @@ int main (int argc,char *argv[])
   rvec         xcm;
 
   t_filenm fnm[] = {
-    { efTPX, NULL, NULL, ffREAD },
-    { efTRX, "-f", NULL, ffREAD },
+    { efTPX, NULL, NULL, ffREAD  },
+    { efTRX, "-f", NULL, ffREAD  },
     { efPDB, "-q", NULL, ffOPTRD },
     { efNDX, NULL, NULL, ffOPTRD },
-    { efXVG, NULL, NULL, ffWRITE }
+    { efXVG, NULL, NULL, ffWRITE },
+    { efGRO, "-ox","xaver", ffOPTWR }
   };
 #define NFILE asize(fnm)
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
-		    NFILE,fnm,0,NULL,asize(desc),desc,0,NULL);
+		    NFILE,fnm,asize(pargs),pargs,asize(desc),desc,0,NULL);
 
   read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header);
   snew(x,header.natoms);
@@ -127,81 +196,52 @@ int main (int argc,char *argv[])
   read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
 	   box,&natom,xref,NULL,NULL,&top);
 
-  /*set box type*/
+  /* Set box type*/
   init_pbc(box,FALSE);
-  
-  /* allocate memory for time */
-  snew(time,10000);
   
   fprintf(stderr,"Select group(s) for root mean square calculation\n");
   get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpnames);
 
-  /* set the weight */
+  /* Set the weight */
   for(i=0;(i<isize);i++) 
     w_rls[index[i]]=top.atoms.atom[index[i]].m;
 
-  /* malloc the rmsf arrays */
+  /* Malloc the rmsf arrays */
   snew(rmsf_xx,isize);
   snew(rmsf_x, isize);
   snew(rmsf,isize);
 
-  /* remove pbc */
-  rm_pbc(&(top.idef),top.atoms.nr,box,xref,xref);
-
-  /* set center of mass to zero */
-  tmas=0;
-  for(m=0;(m<3);m++)
-    xcm[m]=0;
-  for(i=0;(i<top.atoms.nr);i++) {
-    tmas+=w_rls[i];
-    for(m=0;(m<3);m++) {
-      xcm[m]+=xref[i][m]*w_rls[i];
-    }
+  /* This routine computes average coordinates. Input in xref is the
+   * reference structure, output the average.
+   * Also input is the file name, returns the file number.
+   */
+  status = calc_xav(bAverX,
+		    ftp2fn(efTRX,NFILE,fnm),xref,&top,box,w_rls,isize,index);
+    
+  if (bAverX) {
+    FILE *fp=ftp2FILE(efGRO,NFILE,fnm,"w");
+    write_hconf_indexed(fp,"Average coords generated by g_rmsf",
+			&top.atoms,isize,index,xref,NULL,box); 
+    fclose(fp);
   }
-  for(m=0;(m<3);m++)
-    xcm[m]/=tmas;
-  for(i=0;(i<top.atoms.nr);i++) {
-    for(m=0;(m<3);m++)
-      xref[i][m]-=xcm[m];
-  }
-
-
-  /* read first frame  */
-  if ((natoms=read_first_x(&status,
-			   ftp2fn(efTRX,NFILE,fnm),&t,&x,box)) != top.atoms.nr) 
-    fatal_error(0,"Topology (%d atoms) does not match trajectory (%d atoms)",
-		top.atoms.nr,natoms);
-
   
-  do {
-    /* remove periodic boundary */
+  /* Now read the trj again to compute fluctuations */
+  teller = 0;
+  while (read_next_x(status,&t,natom,x,box)) {
+    /* Remove periodic boundary */
     rm_pbc(&(top.idef),top.atoms.nr,box,x,x);
 
-    /* set center of mass to zero */
-    tmas=0;
-    for(m=0;(m<3);m++)
-      xcm[m]=0;
-    for(i=0;(i<top.atoms.nr);i++) {
-      tmas+=w_rls[i];
-      for(m=0;(m<3);m++) {
-	xcm[m]+=x[i][m]*w_rls[i];
-      }
-    }
-    for(m=0;(m<3);m++)
-      xcm[m]/=tmas;
-    for(i=0;(i<top.atoms.nr);i++) {
-      for(m=0;(m<3);m++)
-	x[i][m]-=xcm[m];
-    }
+    /* Set center of mass to zero */
+    tmas = sub_xcm(x,isize,index,top.atoms.atom,xcm,FALSE);
     
-    /* fit to reference structure */
+    /* Fit to reference structure */
     do_fit(top.atoms.nr,w_rls,xref,x);
  
-    /*print time of frame*/
+    /* Print time of frame*/
     if ((teller % 10) == 0)
       fprintf(stderr,"\r %5.2f",t);
       
-    /*calculate root_least_squares*/
+    /* Calculate root_least_squares*/
     for(i=0;(i<isize);i++) {
       aid = index[i];
       for(d=0;(d<DIM);d++) {
@@ -209,18 +249,16 @@ int main (int argc,char *argv[])
 	rmsf_x[i][d] +=x[aid][d];
       }
     }
-    time[teller]=t;
-    bCont=read_next_x(status,&t,natom,x,box);
     count += 1.0;
     teller++;
-  } while (bCont);
+  } 
   close_trj(status);
 
   for(i=0;(i<isize);i++) {
     rmsf[i] = (rmsf_xx[i][XX]/count - sqr(rmsf_x[i][XX]/count)+ 
 	       rmsf_xx[i][YY]/count - sqr(rmsf_x[i][YY]/count)+ 
 	       rmsf_xx[i][ZZ]/count - sqr(rmsf_x[i][ZZ]/count)); 
-  } 
+  }
   
   if (ftp2bSet(efPDB,NFILE,fnm)) {
     fp    = ftp2FILE(efPDB,NFILE,fnm,"r");
@@ -231,7 +269,6 @@ int main (int argc,char *argv[])
   }
   else
     npdba=0;
-  
 
   /* write output */
   if (npdba == 0) {
