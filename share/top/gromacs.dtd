@@ -1,0 +1,220 @@
+<!-- GROMACS Data type description (DTD).                         -->
+<!-- David van der Spoel 07/2001                                  -->
+<!-- The authorative version of this document can be found at     -->
+<!-- http://www.gromacs.org/gromacs3.1.dtd                        -->
+<!-- and also in the library directory of your local GROMACS      -->
+<!-- installation.                                                -->
+
+<!ELEMENT gromacs (inputrec,system,forcefield,masstype*,
+                   coordinates,velocities?,forces?)>
+<!ATTLIST gromacs
+          title     CDATA #REQUIRED>
+
+<!-- Input parameters -->		   
+<!ELEMENT inputrec (output,coupling,cutoff)>
+<!ATTLIST inputrec
+          algorithm ( md | steep | cg | bd | sd ) "md"
+	  nsteps    CDATA "1"
+	  init-t    CDATA "0"
+	  delta-t   CDATA "0.002">
+
+<!-- Output frequency in number of steps -->	  
+<!ELEMENT output EMPTY>
+<!ATTLIST output
+          nstlog    CDATA "1"
+	  nstxout   CDATA "1"
+	  nstvout   CDATA "1"
+	  nstfout   CDATA "0"
+	  nstenergy CDATA "1"
+	  nstxtcout CDATA "1"
+	  xtcprec   CDATA "1000">
+	    	 
+<!-- Coupling algorithm parameters -->		 
+<!ELEMENT coupling (tcoupling,pcoupling)>
+
+<!-- Temperature coupling -->
+<!ELEMENT tcoupling (tcparm*)>
+<!ATTLIST tcoupling
+          algorithm  ( None | Berendsen | NoseHoover ) "None"
+	  annealing  ( No | Yes ) "No"
+          annealtime CDATA "0">
+<!ELEMENT tcparm EMPTY>
+<!ATTLIST tcparm
+          groupname CDATA ""
+	  reftemp   CDATA "300"
+	  tautemp   CDATA "0.1">
+
+<!-- Pressure coupling -->	  
+<!ELEMENT pcoupling (refpres,compress)>
+<!ATTLIST pcoupling
+          algorithm ( None | Berendsen | ParinelloRahman ) "None"
+	  pctype    ( Isotropic | SemiIsotropic | Anisotropic | SurfaceTension ) "Isotropic"
+          taupres   CDATA "1.0">
+<!ELEMENT refpres   (rvec*)>
+<!ELEMENT compress  (rvec*)>
+<!-- End of coupling stuff -->
+
+<!ELEMENT cutoff (pmeparm?)>
+<!ATTLIST cutoff
+          rlist       CDATA "1.0"
+	  rvdw        CDATA "1.0"
+	  rcoulomb    CDATA "1.0"
+	  rcoulswitch CDATA "0.0"
+	  rvdwswitch  CDATA "0.0"
+	  nstlist     CDATA "1"
+	  nstype      ( Grid | Simple ) "Grid"
+	  domdecomp   ( No | Yes ) "No"
+	  decompdir   ( X | Y | Z ) "Z"
+	  coulombtype ( CutQQ | RF | GRF | PME | Ewald | SwitchQQ | ShiftQQ | UserQQ ) "CutQQ"
+	  vdwtype     ( CutLJ | SwitchLJ | ShiftLJ | UserLJ ) "CutLJ">
+
+<!ELEMENT pmeparm EMPTY>
+<!ATTLIST pmeparm
+          nkx         CDATA "8"
+	  nky         CDATA "8"
+	  nkz         CDATA "8"
+	  pmeorder    CDATA "4"
+	  ewaldrtol   CDATA "1e-4"
+	  epssurface  ( NoSurface | Surface ) "NoSurface"
+	  optfft      ( NoOpt | Opt ) "NoOpt">
+	  
+<!-- Description of the simulation system -->	  
+<!ELEMENT system    (composition+,molecule+)>
+<!ELEMENT composition EMPTY>
+<!ATTLIST composition
+          name      CDATA #REQUIRED
+	  number    CDATA #REQUIRED>
+	  
+<!-- Description of a molecule holds the list of atoms, the topology  -->
+<!-- which means the connectivity. One attribute, the name            -->
+<!-- At least one atom is necessary, topology is optional (ions etc.) -->
+<!ELEMENT molecule (atom+,topology?)>
+<!ATTLIST molecule 
+          name   CDATA #REQUIRED>
+
+<!ELEMENT atom  EMPTY>
+<!ATTLIST atom
+          name     CDATA #REQUIRED
+	  type     CDATA #REQUIRED
+	  ptype    ( atom | dummy | shell ) "atom"
+	  charge   CDATA "0"
+	  masstype CDATA #REQUIRED>
+
+<!ELEMENT topology (bonds*,angles*,dihedrals*)>
+
+<!ELEMENT bonds EMPTY>
+<!ATTLIST bonds
+          ai    CDATA #REQUIRED
+	  aj    CDATA #REQUIRED
+	  typeA CDATA #REQUIRED
+	  typeB CDATA #IMPLIED>
+		    
+<!ELEMENT angles EMPTY>
+<!ATTLIST angles
+          ai    CDATA #REQUIRED
+	  aj    CDATA #REQUIRED
+	  ak    CDATA #REQUIRED
+	  typeA CDATA #REQUIRED
+	  typeB CDATA #IMPLIED>		    
+		    
+<!ELEMENT dihedrals EMPTY>
+<!ATTLIST dihedrals
+          ai    CDATA #REQUIRED
+	  aj    CDATA #REQUIRED
+	  ak    CDATA #REQUIRED
+	  al    CDATA #REQUIRED
+	  typeA CDATA #REQUIRED
+	  typeB CDATA #IMPLIED>		    
+
+<!ELEMENT forcefield (nonbonded*,bonded*,special*)>
+<!ELEMENT nonbonded (lennardjones | buckingham)>
+<!ELEMENT lennardjones EMPTY>
+<!ATTLIST lennardjones
+          ati   CDATA #REQUIRED
+	  atj   CDATA #REQUIRED
+	  cn    CDATA #REQUIRED
+	  c6    CDATA #REQUIRED>
+	  
+<!ELEMENT buckingham EMPTY>
+<!ATTLIST buckingham
+          ati   CDATA #REQUIRED
+	  atj   CDATA #REQUIRED
+	  A     CDATA #REQUIRED
+	  B     CDATA #REQUIRED
+	  C     CDATA #REQUIRED>
+
+<!-- Definitions for bondeds: this is the most complex bit   -->
+<!-- and the one that will most likely be extended first     -->	  
+<!ELEMENT bonded (bondtype | angletype | dihedraltype)>
+
+<!-- A few different bond types, and I may have forgotten some.  -->
+<!-- The harmonic element is reused by angles and dihedrals      -->
+<!-- in the hope to be able to save some coding (and checking!)  -->
+<!ELEMENT bondtype (harmonic | g96bond | morse)>
+<!ELEMENT harmonic EMPTY>	  
+<!ATTLIST harmonic
+          a0 CDATA #REQUIRED
+	  ka CDATA #REQUIRED>
+<!ELEMENT g96bond EMPTY>
+<!ATTLIST g96bond
+          b0 CDATA #REQUIRED
+	  kb CDATA #REQUIRED>
+<!ELEMENT morse EMPTY>
+<!ATTLIST morse
+          b0 CDATA #REQUIRED
+	  cb CDATA #REQUIRED
+	  D  CDATA #REQUIRED>
+<!-- End of bondtypes -->
+
+<!-- A few different angle types, and I may have forgotten some -->
+<!ELEMENT angletype (harmonic | g96angle)>
+<!ELEMENT g96angle EMPTY>
+<!ATTLIST g96angle
+          ct0 CDATA #REQUIRED
+	  kct CDATA #REQUIRED>
+<!-- End of angletypes -->
+
+<!-- A number of different types are available for dihedrals -->	 
+<!ELEMENT dihedraltype (proper | harmonic | ryckaertbellemans | cosineseries)>
+<!ELEMENT proper EMPTY>
+<!ATTLIST proper
+          ph0   CDATA #REQUIRED
+	  kph   CDATA #REQUIRED
+	  nmult CDATA #REQUIRED>
+<!ELEMENT ryckaertbellemans EMPTY>
+<!ATTLIST ryckaertbellemans
+          c0 CDATA #REQUIRED
+	  c1 CDATA #REQUIRED
+	  c2 CDATA #REQUIRED
+	  c3 CDATA #REQUIRED
+	  c4 CDATA #REQUIRED
+	  c5 CDATA #REQUIRED>
+<!ELEMENT cosineseries EMPTY>
+<!ATTLIST cosineseries
+          c0 CDATA #REQUIRED
+	  c1 CDATA #REQUIRED
+	  c2 CDATA #REQUIRED
+	  c3 CDATA #REQUIRED>
+<!-- End of dihedraltypes -->
+
+<!-- The specials -->
+<!ELEMENT special EMPTY>
+<!--ELEMENT special (positionrestraint | distancerestraint | dihedralrestraint)-->
+
+<!-- Mass types for the atoms, to avoid repeating data -->
+<!ELEMENT masstype EMPTY>
+<!ATTLIST masstype
+          name  CDATA #REQUIRED
+	  value CDATA #REQUIRED>
+	  
+<!-- Coordinates and such: this is clear hopefully -->	  
+<!ELEMENT coordinates (rvec*)>
+<!ELEMENT velocities  (rvec*)>
+<!ELEMENT forces      (rvec*)>
+<!ELEMENT rvec EMPTY>
+<!ATTLIST rvec 
+          x CDATA #REQUIRED
+          y CDATA #REQUIRED
+          z CDATA #REQUIRED>
+
+<!-- End of GROMACS DTD -->
