@@ -77,7 +77,7 @@ static void insert_ion(int nsa,int *nwater,
     for(i=0; (i<nw); i++) {
       if (!bSet[i]) {
 	ii=index[nsa*i];
-	poti=pot[nsa*ii];
+	poti=pot[ii];
 	if (q > 0) {
 	  if ((poti <= extr_e) || !bSub) {
 	    extr_e = poti;
