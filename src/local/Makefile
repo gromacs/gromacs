@@ -12,12 +12,14 @@ include		$(GMXHOME)/src/makef/Makefile.def
 # Empty library
 LIB		= 
 XOBJ		= do_gct.o init_sh.o gctio.o glaasje.o ionize.o relax_sh.o
-PROGRAMS	= my_dssp	  xmdrun#	total		do_shift
+PROGRAMS	= my_dssp
 #
 include		$(STDTARGET)
 #
 
 all:		bin
+
+david:		all	xmdrun	total	do_shift
 
 xmdrun:		xmdrun.o $(XOBJ) calcfdev.o
 		$(LD) -o $@ $^ $(RUNSYSLIBS)
