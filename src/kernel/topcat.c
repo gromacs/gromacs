@@ -280,7 +280,7 @@ static int emptiest_bucket(int nbucket,int **bucket,int nmol,t_molinfo mol[])
     }
   }
   if (debug)
-    fprintf(debug,"  eb=%d\n",min_i);
+    fprintf(debug,"  emptiest=%d\n",min_i);
 
   return min_i;
 }
@@ -331,12 +331,14 @@ int *mk_shuffle_tab(int nmol,t_molinfo mol[],int nprocs,int *ntab,
       fprintf(stderr,"  %8d\n",count_atoms(bucket[j],nmol,mol));
     }
   }
-  snew(tab,nmol*nprocs);
+  snew(tab,nm);
   *ntab = 0;
   for(j=0; (j<nprocs); j++)
     for(k=0; (k<nmol); k++)
-      for(i=0; (i<bucket[j][k]); i++)
+      for(i=0; (i<bucket[j][k]); i++) {
+	assert(*ntab < nm);
 	tab[(*ntab)++] = k;
+      }
 
   return tab;
 }
