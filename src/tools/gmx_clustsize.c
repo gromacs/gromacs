@@ -74,12 +74,13 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   FILE    *fp,*gp,*hp;
   atom_id *index=NULL;
   int     nindex,natoms,status;
-  rvec    *x=NULL,dx;
+  rvec    *x=NULL,*v=NULL,dx;
   matrix  box;
   char    *gname;
   char    timebuf[32];
   bool    bSame;
   /* Topology stuff */
+  t_trxframe  fr;
   t_tpxheader tpxh;
   t_topology  top;
   t_block *mols=NULL;
@@ -92,12 +93,14 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   int     *clust_index,*clust_size,max_clust_size,nav,nhisto;
   t_rgb   rlo = { 1.0, 1.0, 1.0 };
   
+  clear_trxframe(&fr,TRUE);
   sprintf(timebuf,"Time (%s)",time_unit());
-  tf = time_factor();
-  fp = xvgropen(ncl,"Number of clusters",timebuf,"N");
-  gp = xvgropen(acl,"Average cluster size",timebuf,"#molecules");
-  hp = xvgropen(mcl,"Max cluster size",timebuf,"#molecules");
-  natoms = read_first_x(&status,trx,&t,&x,box);
+  tf     = time_factor();
+  fp     = xvgropen(ncl,"Number of clusters",timebuf,"N");
+  gp     = xvgropen(acl,"Average cluster size",timebuf,"#molecules");
+  hp     = xvgropen(mcl,"Max cluster size",timebuf,"#molecules");
+  natoms = read_first_frame(&status,trx,&fr,TRX_NEED_X | TRX_READ_V);
+  x      = fr.x;
   if (bMol) {
     read_tpxheader(tpr,&tpxh,TRUE,&version,&generation);
     if (tpxh.natoms != natoms) 
@@ -213,8 +216,13 @@ static void clust_size(char *ndx,char *trx,char *xpm,
 	fprintf(gp,"%10.3e  %10.3f\n",t,cav/nav);
       fprintf(hp, "%10.3e  %10d\n", t, max_clust_size);
     }
+    /* Analyse velocities, if present */
+    if (fr.bV) {
+      v = fr.v;
+      /* Loop over clusters and for each cluster compute 1/2 m v^2 */
+    }
     nframe++;
-  } while (read_next_x(status,&t,natoms,x,box));
+  } while (read_next_frame(status,&fr));
   close_trx(status);
   fclose(fp);
   fclose(gp);
