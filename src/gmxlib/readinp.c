@@ -114,7 +114,7 @@ static void sort_inp(int ninp,t_inpfile inp[])
     if (inp[i].count == 0)
       inp[i].count = mm++;
   }
-  qsort(inp,ninp,(size_t)sizeof(inp[0]),(size_t)inp_comp);
+  qsort(inp,ninp,(size_t)sizeof(inp[0]),inp_comp);
 }
 
 void write_inpfile(char *fn,int ninp,t_inpfile inp[])
