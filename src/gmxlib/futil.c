@@ -173,7 +173,7 @@ static int pclose(FILE *fp)
 #endif
 
 
-FILE *uncompress(char *fn,char *mode)
+static FILE *uncompress(char *fn,char *mode)
 {
   FILE *fp;
   char buf[256];
@@ -187,7 +187,7 @@ FILE *uncompress(char *fn,char *mode)
   return fp;
 }
 
-FILE *gunzip(char *fn,char *mode)
+static FILE *gunzip(char *fn,char *mode)
 {
   FILE *fp;
   char buf[256];
