@@ -408,7 +408,7 @@ static void write_ttyman(FILE *out,
     for(i=0; i<nbug; i++) {
       snew(tmp,strlen(bugs[i])+3);
       strcpy(tmp,"* ");
-      strcpy(tmp+2,bugs[i]);
+      strcpy(tmp+2,check_tty(bugs[i]));
       fprintf(out,"%s\n",wrap_lines(tmp,80,2));
       sfree(tmp);
     }
