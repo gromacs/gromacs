@@ -220,8 +220,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     else 
       realtime=0;
     
-    if (((parm->ir.eI==eiMD) || (parm->ir.eI==eiLD)) &&
-	(!optRerunMDset(nfile,fnm))) {
+    if (MASTER(cr) && ((parm->ir.eI==eiMD) || (parm->ir.eI==eiLD)) &&
+	!optRerunMDset(nfile,fnm)) {
       real t      = parm->ir.init_t+parm->ir.nsteps*parm->ir.delta_t;
       real lambda = parm->ir.init_lambda+parm->ir.nsteps*parm->ir.delta_lambda;
       int  step   = parm->ir.nsteps;
@@ -230,15 +230,13 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 		 nsb,step,t,lambda,nrnb,top->atoms.nr,
 		 x,v,f,parm->box);
       if (parm->ir.nstxtcout != 0) { 
-	write_xtc_traj(stdlog,cr,opt2fn("-x",nfile,fnm),nsb,mdatoms,
-		       step,t,x,parm->box,parm->ir.xtcprec);
+	if (do_per_step(step,parm->ir.nstxtcout))
+	  write_xtc_traj(stdlog,cr,opt2fn("-x",nfile,fnm),nsb,mdatoms,
+			 step,t,x,parm->box,parm->ir.xtcprec);
+	close_xtc_traj();
       }
     }
     
-    if ((parm->ir.nstxtcout != 0) && MASTER(cr)) { 
-      close_xtc_traj();
-    }
-
     md2atoms(mdatoms,&(top->atoms),TRUE);
     
     /* Finish up, write some stuff */
