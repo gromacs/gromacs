@@ -225,7 +225,7 @@ real calc_selfenergy(FILE *fp,int natoms,real charge[],t_block *excl)
   static bool bFirst=TRUE;
   static real Vself;
   int  i,i1,i2,j,k;
-  real qq,qi,Vex,Vc;
+  real qq,qi,qjsum,Vex,Vc;
   
   if (bFirst) {
     qq   = 0;
@@ -238,12 +238,13 @@ real calc_selfenergy(FILE *fp,int natoms,real charge[],t_block *excl)
     for(i=0; (i<excl->nr); i++) {
       i1 = excl->index[i];
       i2 = excl->index[i+1];
-      qi = charge[i];
+      qjsum = 0;
       for(j=i1; (j<i2); j++) {
 	k = excl->a[j];
 	if (k != i)
-	  qq+=qi*charge[k];
+	  qjsum+=charge[k];
       }
+      qq += charge[i]*qjsum;
     }
     Vex   = qq*0.5*C*ONE_4PI_EPS0;
     Vself = Vc + Vex;

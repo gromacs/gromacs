@@ -148,7 +148,7 @@ void analyse_diff(FILE *log,int natom,rvec ffour[],rvec fpppm[],
   }
   
   fprintf(log,"\n********************************\nERROR ANALYSIS\n");
-  fprintf(log,"%-10s%12s%12s%12s\n","Error:","Max Abs","RMS");
+  fprintf(log,"%-10s%12s%12s\n","Error:","Max Abs","RMS");
   fprintf(log,"%-10s  %10.3f  %10.3f\n",
 	  "Force",fmax,sqrt(f2sum/(3.0*natom)));
   fprintf(log,"%-10s  %10.3f  %10.3f\n",

@@ -39,6 +39,7 @@ static char *SRCID_pppm_c = "$Id$";
 #include "txtdump.h"
 #include "network.h"
 #include "nr.h"
+#include "assert.h"
 #include "nrnb.h"
 #include "ghat.h"
 #include "pppm.h"
@@ -58,7 +59,8 @@ static void calc_invh(rvec box,int nx,int ny,int nz,rvec invh)
   invh[ZZ] = nz/box[ZZ];
 }
 
-static void calc_weights(rvec x,rvec box,rvec invh,ivec ixyz,real WXYZ[])
+static void calc_weights(int nx,int ny,int nz,
+			 rvec x,rvec box,rvec invh,ivec ixyz,real WXYZ[])
 {
   const  real half=0.5;
   tensor wxyz;
@@ -66,22 +68,33 @@ static void calc_weights(rvec x,rvec box,rvec invh,ivec ixyz,real WXYZ[])
 #ifdef DEBUG
   real   wtot;
 #endif
-  int    j,k,m;
+  ivec   nxyz;
+  int    it,j,k,m,nm;
   real   Wx,Wy,Wzx,Wzy,Wzz;
   
   fact = 0.125;
   
+  nxyz[XX] = nx;
+  nxyz[YY] = ny;
+  nxyz[ZZ] = nz;
   for(m=0; (m<DIM); m++) {
     /* Put particle in the box... */  
     ttt = x[m]*invh[m];
-    bhh = box[m]*invh[m];
-    if (ttt < 0)
-      ttt += bhh;
-    else if (ttt >= bhh)
-      ttt -= bhh;
     
-    /* Calculate nearest grid point, Round */
-    ixyz[m]    = ttt+half;
+    /* Round to nearest grid point. Do the math in integer! */
+    it  = (ttt+0.5);
+    nm  = nxyz[m];
+    if (it < 0) {
+      ttt+=nm;
+      it +=nm;
+    }
+    else if (it >= nm) {
+      ttt-=nm;
+      it -=nm;
+    }
+    if ((it < 0) && (it >= nxyz[m]))
+      fatal_error(0,"it = %d, x=%f, ttt=%f",it,x[m],ttt);
+    ixyz[m]    = it;
     
     /* Fraction (offset) from grid point */
     abc        = ttt - (real)ixyz[m];
@@ -174,7 +187,7 @@ static void spread_q(FILE *log,bool bVerbose,
      */
     
     if (qi != 0.0) {
-      calc_weights(x[i],box,invh,ixyz,WXYZ);
+      calc_weights(nx,ny,nz,x[i],box,invh,ixyz,WXYZ);
       iX  = ixyz[XX] + nx;
       iY  = ixyz[YY] + ny;
       iZ  = ixyz[ZZ] + nz;
@@ -320,7 +333,7 @@ static real gather_f(FILE *log,bool bVerbose,
      * see Luty et. al, JCP 103 (1995) 3014
      */
      
-    calc_weights(x[i],box,invh,ixyz,WXYZ);
+    calc_weights(nx,ny,nz,x[i],box,invh,ixyz,WXYZ);
 
     for(ll=llim2; (ll<=ulim2); ll++) {
       ixw[ll-llim2] = nnx[ixyz[XX]+ll+nx];
