@@ -631,11 +631,10 @@ For water at 1 atm and 300 K the compressibility is 4.5e-5 [bar<sup>-1</sup>].</
 <h3><!--Idx-->Simulated annealing<!--EIdx--></h3>
 
 Simulated annealing is controlled separately for each temperature group in Gromacs. The reference temperature is a piecewise linear function, but you can use an arbitrary number of points for each group, and choose either a single sequence or a periodic behaviour for each group. The actual annealing is performed by dynamically changing the reference temperature used in the thermostat algorithm selected, so remember that the system will usually not instantaneously reach the reference temperature!
-
 <dl>
 <dt><h4>annealing:</h4></dt>
 <dd>Type of annealing for each temperature group</dd>
-<dd><dl compact>
+<dd><dl compact></dd>
 <dt><b>no</b></dt>
 <dd>No simulated annealing - just couple to reference temperature value.</dd>
 <dt><b>single</b></dt>
@@ -643,33 +642,21 @@ Simulated annealing is controlled separately for each temperature group in Groma
 <dt><b>periodic</b></dt>
 <dd>The annealing will start over at the first reference point once the last reference time is reached. This is repeated until the simulation ends. 
 </dd>
-</dl></dd>
+</dl>
 
 <dt><h4>annealing_npoints:</h4></dt>
 <dd>A list with the number of annealing reference/control points used for 
-each temperature group. Use 0 for groups that are not annealed. The number of entries should equal the number of temperature groups.
-</dd>
-</dl>
+each temperature group. Use 0 for groups that are not annealed. The number of entries should equal the number of temperature groups.</dd>
+
 <dt><h4>annealing_time:</h4></dt>
-<dd>List of times at the annealing reference/control points for each group. If you are using periodic annealing, the times will be used modulo the last value, i.e. if the values are 0, 5, 10, and 15, the coupling will restart at the 0ps value after 15ps, 30ps, 45ps, etc. The number of entries should equal the sum of the numbers given in annealing_npoints.
-</dd>
-</dl>
+<dd>List of times at the annealing reference/control points for each group. If you are using periodic annealing, the times will be used modulo the last value, i.e. if the values are 0, 5, 10, and 15, the coupling will restart at the 0ps value after 15ps, 30ps, 45ps, etc. The number of entries should equal the sum of the numbers given in annealing_npoints.</dd>
+
 <dt><h4>annealing_temp:</h4></dt>
-<dd>List of temperatures at the annealing reference/control points for each group. The number of entries should equal the sum of the numbers given in annealing_npoints.
-</dd>
-</dl>
+<dd>List of temperatures at the annealing reference/control points for each group. The number of entries should equal the sum of the numbers given in annealing_npoints.</dd>
 <br>
-Confused? OK, let's use an example. Assume you have two temperature groups, and give the following values:
-<br><br>
-<tt>
-annealing                = single periodic<br>
-annealing_npoints        = 3 4<br>
-annealing_time           = 0 3 6 0 2 4 6<br>
-annealing_temp           = 298 280 270 298 320 320 298<br>
-</tt>
-<br>
+Confused? OK, let's use an example. Assume you have two temperature groups, set the group selections to <tt>annealing = single periodic</tt>, the number of points of each group to <tt>annealing_npoints = 3 4</tt>, the times to <tt>annealing_time = 0 3 6 0 2 4 6</tt> and finally temperatures to <tt>annealing_temp = 298 280 270 298 320 320 298</tt>.
 The first group will be coupled to 298K at 0ps, but the reference temperature will drop linearly to reach 280K at 3ps, and then linearly between 280K and 270K from 3ps to 6ps. After this is stays constant, at 270K. The second group is coupled to 298K at 0ps, it increases linearly to 320K at 2ps, where it stays constant until 4ps. Between 4ps and 6ps it decreases to 298K, and then it starts over with the same pattern again, i.e. rising linearly from 298K to 320K between 6ps and 8ps. Check the summary printed by grompp if you are unsure!
-</tt>
+</dl>
 
 <A NAME="vel"><br>
 <hr>
