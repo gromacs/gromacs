@@ -587,11 +587,13 @@ A good way to check the relevance of the first few principal
 components is to calculate the eigenvector subspace overlap between
 the first and second half of the simulation. 
 The overlap between two sets of $n$ orthonormal vectors
-$v$ and $w$ can be quantified as follows:
+${\bf v}_1,\ldots,{\bf v}_n$ and ${\bf w}_1,\ldots,{\bf w}_n$
+can be quantified as follows:
 \beq
-\mbox{overlap}(v,w) = \frac{1}{n} \sum_{i=1}^n \sum_{j=1}^n (v_i \cdot w_j)^2
+\mbox{overlap}({\bf v},{\bf w}) =
+\frac{1}{n} \sum_{i=1}^n \sum_{j=1}^n ({\bf v}_i \cdot {\bf w}_j)^2
 \eeq
-The overlap is 1 when sets $v$ and $w$ span the same subspace.
+The overlap is 1 when sets ${\bf v}$ and ${\bf w}$ span the same subspace.
 Note that this can only be done when the same reference structure is
 used for the two halves.
 
