@@ -182,9 +182,12 @@ morse                    = no
 ; NMR refinement stuff  = 
 ; Distance restraints type: None, Simple or Ensemble = 
 disre                    = No
-dihre_fc                 = 1000
+; Force weighting of pairs in one distance restraint: Equal or Conservative = 
+disre_weighting          = Equal
+; Use sqrt of the time averaged times the instantaneous violation = 
+disre_mixed              = no
 disre_fc                 = 1000
-disre_tau                = 1.25
+disre_tau                = 10
 
 ; Free energy control stuff = 
 free_energy              = no
