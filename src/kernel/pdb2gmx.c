@@ -581,7 +581,7 @@ int main(int argc, char *argv[])
   t_atoms    pdba_all,*pdba;
   t_atoms    *atoms;
   t_block    *block;
-  int        chain,nch,nwaterchain;
+  int        chain,nch,maxch,nwaterchain;
   t_pdbchain *pdb_ch;
   t_chain    *chains,*cc;
   char       pchain,select[STRLEN];
@@ -725,6 +725,7 @@ int main(int argc, char *argv[])
 
   printf("Analyzing pdb file\n");
   nch=0;
+  maxch=0;
   nwaterchain=0;
   /* keep the compiler happy */
   pchain='?';
@@ -760,7 +761,10 @@ int main(int argc, char *argv[])
 	    fatal_error(0,"Chain identifier '%c' was used "
 			"in two non-sequential blocks (residue %d, atom %d)",
 			pdba_all.atom[i].chain,pdba_all.atom[i].resnr+1,i+1);
-	srenew(pdb_ch,nch+1);
+	if (nch == maxch) {
+	  maxch += 16;
+	  srenew(pdb_ch,maxch);
+	}
 	pdb_ch[nch].chain=pdba_all.atom[i].chain;
 	pdb_ch[nch].start=i;
 	pdb_ch[nch].bAllWat=bWat;
