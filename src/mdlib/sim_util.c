@@ -111,23 +111,13 @@ static void sum_forces(int start,int end,rvec f[],rvec flr[])
     rvec_inc(f[i],flr[i]);
 }
 
-static void reset_forces(bool bNS,rvec f[],t_forcerec *fr,int natoms)
+static void reset_forces(rvec f[],t_forcerec *fr,int natoms)
 {
-  int i;
-  
-  if (fr->bTwinRange) {
-    for(i=0; (i<natoms); i++)
-      copy_rvec(fr->flr[i],f[i]);
-    for(i=0; (i<SHIFTS); i++)
-      copy_rvec(fr->fshift_lr[i],fr->fshift[i]);
-  }
-  else {
-      if (fr->eeltype == eelPPPM || fr->eeltype == eelPME
-	  || fr->eeltype==eelEWALD) 
-      clear_rvecs(natoms,fr->flr);
-    clear_rvecs(natoms,f);
-    clear_rvecs(SHIFTS,fr->fshift);
-  }
+  if (fr->eeltype == eelPPPM || fr->eeltype == eelPME
+      || fr->eeltype==eelEWALD) 
+    clear_rvecs(natoms,fr->flr);
+  clear_rvecs(natoms,f);
+  clear_rvecs(SHIFTS,fr->fshift);
 }
 
 static void reset_energies(t_grpopts *opts,t_groups *grp,
@@ -197,7 +187,7 @@ void do_force(FILE *log,t_commrec *cr,
   static real dvdl_lr = 0;
   int    pid,cg0,cg1,i,j;
   int    start,homenr;
-  matrix lr_vir; /* used for PME long range virial */
+  static matrix lr_vir; /* used for Twin-Range and PME long range virial */
   
   pid    = cr->pid;
   start  = START(nsb);
@@ -254,7 +244,7 @@ void do_force(FILE *log,t_commrec *cr,
   }
   
   /* Reset forces or copy them from long range forces */
-  reset_forces(bNS,f,fr,nsb->natoms);
+  reset_forces(f,fr,nsb->natoms);
   
   /* Compute the forces */    
   force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,nrnb,grps,mdatoms,
@@ -272,11 +262,16 @@ void do_force(FILE *log,t_commrec *cr,
     print_nrnb(log,nrnb);
 #endif
 
-  /* The virial from surrounding boxes */
+  /* The short-range virial from surrounding boxes */
   clear_mat(vir_part);
   calc_vir(log,SHIFTS,fr->shift_vec,fr->fshift,vir_part,cr);
-	  
   inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
+  if (bNS && fr->bTwinRange) {
+    /* The long-range virial from surrounding boxes */
+    clear_mat(lr_vir);
+    calc_vir(log,SHIFTS,fr->shift_vec,fr->fshift_lr,lr_vir,cr);
+    inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
+  }
 #ifdef DEBUG
   if (debug) {
     pr_rvecs(debug,0,"fr->fshift",fr->fshift,SHIFTS);
@@ -284,45 +279,40 @@ void do_force(FILE *log,t_commrec *cr,
   }
 #endif
 
-  /* Accumulate forces and compute virial */
-  if ((fr->eeltype != eelPPPM) && 
-      (fr->eeltype != eelPME) && 
-      (fr->eeltype != eelEWALD)) {
-    if (PAR(cr)) 
-      move_f(log,cr->left,cr->right,f,buf,nsb,nrnb);
-    
-    /* Calculate virial */
-    f_calc_vir(log,start,start+homenr,x,f,vir_part,cr,graph,fr->shift_vec);
+  /* If we do PPPM the long range forces should not be taken into account
+   * for computation of the virial. Rather a special formula
+   * due to Neumann is used (implemented in calc_pres, coupling.c)
+   */
+  /* This also applies to PME/Ewald, but in this case the virial is 
+   * calculated directly in the routine and added to the total vir 
+   */
+  
+  /* PARALLELLISE THIS BITCH */
+  if (debug) {
+    pr_rvecs(debug,0,"vir_part",vir_part,DIM);
+    pr_rvecs(debug,0,"lr_vir  ",lr_vir,DIM);
+  }
+  /* Calculate short-range virial */
+  f_calc_vir(log,0,nsb->natoms,x,f,vir_part,cr,graph,fr->shift_vec);
+  inc_nrnb(nrnb,eNR_VIRIAL,homenr);
+  if (bNS && fr->bTwinRange) {
+    /* Calculate long-range virial */
+    f_calc_vir(log,0,nsb->natoms,x,fr->flr,lr_vir,cr,graph,fr->shift_vec);
     inc_nrnb(nrnb,eNR_VIRIAL,homenr);
   }
-  else {
-    /* If we do PPPM the long range forces should not be taken into account
-     * for computation of the virial. Rather a special formula
-     * due to Neumann is used (implemented in calc_pres, coupling.c)
-     */
-    /* This also applies to PME/Ewald, but in this case the virial is 
-     * calculated directly in the routine and added to the total vir 
-     */
-     
-    /* PARALLELLISE THIS BITCH */
-    if (debug) {
-      pr_rvecs(debug,0,"vir_part",vir_part,DIM);
-      pr_rvecs(debug,0,"lr_vir  ",lr_vir,DIM);
-    }
-    f_calc_vir(log,0,nsb->natoms,x,f,vir_part,cr,graph,fr->shift_vec);
-    inc_nrnb(nrnb,eNR_VIRIAL,homenr);
+  if ((fr->bTwinRange) || (fr->eeltype == eelPPPM) ||
+      (fr->eeltype == eelPME) || (fr->eeltype == eelEWALD)) {
     sum_forces(start,start+homenr,f,fr->flr);
-    if ((fr->eeltype == eelPME) || (fr->eeltype == eelEWALD)) {
+    if (fr->eeltype != eelPPPM) /* PPPM virial sucks */
       for(i=0; (i<DIM); i++) 
 	for(j=0; (j<DIM); j++) 
 	  vir_part[i][j]+=lr_vir[i][j];
-    }
-    if (debug)
-      pr_rvecs(debug,0,"vir_part",vir_part,DIM);
-    if (PAR(cr)) 
-      move_f(log,cr->left,cr->right,f,buf,nsb,nrnb);
   }
-  
+  if (debug)
+    pr_rvecs(debug,0,"vir_part",vir_part,DIM);
+  if (PAR(cr))
+    /* Communicate the forces */
+    move_f(log,cr->left,cr->right,f,buf,nsb,nrnb);
 }
 
 #ifdef NO_CLOCK 
