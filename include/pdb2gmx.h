@@ -123,7 +123,7 @@ typedef struct {
 extern real distance(rvec a,rvec b);
 /* calcluate distance between atoms without taking PBC into account */
 
-extern void set_histp(int natom,t_pdbatom pdba[],real angle,real distance);
+extern void set_histp(t_atoms *pdba,rvec *x,real angle,real distance);
 /* calculate HIStidine protonation state */
 
 #endif	/* _pdb2gmx_h */

@@ -35,7 +35,7 @@ static char *SRCID_genhydro_h = "$Id$";
 #include "pdbio.h"
 #include "pdb2gmx.h"
 
-extern int add_h(int natom,t_pdbatom **pdbaptr,int nah,t_addh ah[],rvec **xptr,
+extern int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
 		 t_terblock *ntdb,t_terblock *ctdb,
 		 int rN,int rC);
 /* Generate hydrogen atoms and N and C terminal patches.

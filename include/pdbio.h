@@ -48,22 +48,6 @@ enum { epdbATOM, epdbHETATM, epdbANISOU, epdbCRYST1, epdbCOMPND,
 /* Enumerated value for indexing an uij entry (anisotropic temperature factors) */
 enum { U11, U22, U33, U12, U13, U23 };
        
-typedef struct {
-  int  pdbtp;
-  int  atomnr;
-  int  resnr;
-  char atomnm[12];
-  char resnm[12];
-  char pdbresnr[12];
-  char chain;
-  rvec x;
-  real bfac,dummy;
-  real m,q;
-  bool bAnisotropic;
-  int  uij[6];
-  int  type;
-} t_pdbatom;
-
 extern void pdb_use_ter(bool bSet);
 /* set read_pdbatoms to read upto 'TER' of 'ENDMDL' (default, bSet=FALSE) */
 
@@ -108,30 +92,5 @@ extern void get_pdb_coordnum(FILE *in,int *natoms);
 
 extern bool is_hydrogen(char *nm);
 /* Return whether atom nm is a hydrogen */
-
-extern void pdba_trimnames(int natom,t_pdbatom pdba[]);
-/* Remove leading and trailing spaces from all names */
-
-extern void print_pdbatoms(FILE *out,char *title,
-			   int natom,t_pdbatom pdba[],matrix box);
-/* Print the pdbatoms in proper format */
-
-extern void renumber_pdb(int natom,t_pdbatom pdba[]);
-/* Renumber residues starting from 0, and atoms starting from 0 */
-
-extern int pdbasearch_atom(char *name,int resnr,int natom,t_pdbatom pdba[]);
-/* Return the atom number of atom name in residue resnr, or -1 when not 
- * found.
- */
-
-extern void pdb2atoms(int natom,t_pdbatom pdba[],t_atoms *atoms,rvec **x,
-		      t_symtab *symtab);
-/* Convert pdbatoms to atoms, allocates memory for x and components of
- * atoms. Assumes symtab is open and does not close symtab
- * Call renumber_pdb at start.
- */
-
-extern t_pdbatom *atoms2pdba(t_atoms *atoms,rvec x[]);
-/* Convert atoms to pdbatom */
 
 #endif	/* _pdbio_h */

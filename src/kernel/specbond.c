@@ -128,10 +128,16 @@ static bool is_special(int nsb,t_specbond sb[],char *res,char *atom)
   return FALSE;
 }
 
-static bool is_bond(int nsb,t_specbond sb[],char *res1,char *at1,
-		    char *res2,char *at2,real d,int *nb,bool *bSwap)
+static bool is_bond(int nsb,t_specbond sb[],t_atoms *pdba,int a1,int a2,
+		    real d,int *nb,bool *bSwap)
 {
   int i;
+  char *at1,*at2,*res1,*res2;
+  
+  at1=*pdba->atomname[a1];
+  at2=*pdba->atomname[a2];
+  res1=*pdba->resname[pdba->atom[a1].resnr];
+  res2=*pdba->resname[pdba->atom[a2].resnr];
   
   for(i=0; (i<nsb); i++) {
     *nb = i;
@@ -155,23 +161,18 @@ static bool is_bond(int nsb,t_specbond sb[],char *res1,char *at1,
   return FALSE;
 }
 
-static void rename_1res(int natom,t_pdbatom pdba[],int resnr,char *nres)
+static void rename_1res(t_atoms *pdba,int resnr,char *nres)
 {
-  int i;
-  
-  for(i=0; (i<natom); i++)
-    if (pdba[i].resnr == resnr)
-      break;
-  for( ; (i<natom) && (pdba[i].resnr == resnr); i++)
-    strcpy(pdba[i].resnm,nres);
+  sfree(*pdba->resname[resnr]);
+  *pdba->resname[resnr]=strdup(nres);
 }
 
-int mk_specbonds(int natoms,t_pdbatom pdba[],bool bInteractive,
+int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
 		 t_ssbond **specbonds)
 {
   t_specbond *sb=NULL;
   t_ssbond   *bonds=NULL;
-  int  nsb;
+  int  nsb,natoms;
   int  ncys,nbonds;
   int  *cysp,*sgp;
   int  *nBonded;
@@ -181,20 +182,22 @@ int mk_specbonds(int natoms,t_pdbatom pdba[],bool bInteractive,
   real **d;
   char buf[10];
 
+  natoms=pdba->nr;
   /* Initiate variables that will be exported */  
   nbonds = 0;
   sb=get_specbonds(&nsb);
   
   if (nsb > 0) {
-    nres=pdba[natoms-1].resnr+1;
+    nres=pdba->nres;
     snew(cysp,nres);
     snew(sgp,nres);
     snew(nBonded,nres);
     
     ncys = 0;
     for(i=0;(i<natoms);i++) {
-      if (is_special(nsb,sb,pdba[i].resnm,pdba[i].atomnm)) {
-	cysp[ncys]=pdba[i].resnr;
+      if (is_special(nsb,sb,*pdba->resname[pdba->atom[i].resnr],
+		     *pdba->atomname[i])) {
+	cysp[ncys]=pdba->atom[i].resnr;
 	sgp[ncys] =i;
 	ncys++;
       }
@@ -209,7 +212,7 @@ int mk_specbonds(int natoms,t_pdbatom pdba[],bool bInteractive,
       for(j=0; (j<ncys); j++) {
 	ai=sgp[i];
 	aj=sgp[j];
-	d[i][j]=distance(pdba[ai].x,pdba[aj].x);
+	d[i][j]=distance(x[ai],x[aj]);
       }
     if (ncys > 1) {
 #define MAXCOL 8
@@ -218,13 +221,15 @@ int mk_specbonds(int natoms,t_pdbatom pdba[],bool bInteractive,
 	fprintf(stderr,"%8s","");
 	e=min(b+MAXCOL, ncys-1);
 	for(i=b; (i<e); i++) {
-	  sprintf(buf,"%s%d",pdba[sgp[i]].resnm,cysp[i]+1);
+	  sprintf(buf,"%s%d",*pdba->resname[pdba->atom[sgp[i]].resnr],
+		  cysp[i]+1);
 	  fprintf(stderr,"%8s",buf);
 	}
 	fprintf(stderr,"\n");
 	e=min(b+MAXCOL, ncys);
 	for(i=b+1; (i<ncys); i++) {
-	  sprintf(buf,"%s%d",pdba[sgp[i]].resnm,cysp[i]+1);
+	  sprintf(buf,"%s%d",*pdba->resname[pdba->atom[sgp[i]].resnr],
+		  cysp[i]+1);
 	  fprintf(stderr,"%8s",buf);
 	  e2=min(i,e);
 	  for(j=b; (j<e2); j++)
@@ -253,8 +258,7 @@ int mk_specbonds(int natoms,t_pdbatom pdba[],bool bInteractive,
       for(j=i+1; (j<ncys); j++) {
 	aj = sgp[j];
 	
-	if (is_bond(nsb,sb,pdba[ai].resnm,pdba[ai].atomnm,
-		    pdba[aj].resnm,pdba[aj].atomnm,d[i][j],
+	if (is_bond(nsb,sb,pdba,ai,aj,d[i][j],
 		    &index_sb,&bSwap)) {
 	  if (bInteractive) {
 	    fprintf(stderr,"Link Res%4d and Res%4d (y/n) ?",cysp[i]+1,cysp[j]+1);
@@ -268,15 +272,15 @@ int mk_specbonds(int natoms,t_pdbatom pdba[],bool bInteractive,
 	    /* Store the residue numbers in the bonds array */
 	    bonds[nbonds].res1 = cysp[i];
 	    bonds[nbonds].res2 = cysp[j];
-	    bonds[nbonds].a1   = strdup(pdba[ai].atomnm);
-	    bonds[nbonds].a2   = strdup(pdba[aj].atomnm);
+	    bonds[nbonds].a1   = strdup(*pdba->atomname[ai]);
+	    bonds[nbonds].a2   = strdup(*pdba->atomname[aj]);
 	    if (bSwap) {
-	      rename_1res(natoms,pdba,cysp[i],sb[index_sb].nres2);
-	      rename_1res(natoms,pdba,cysp[j],sb[index_sb].nres1);
+	      rename_1res(pdba,cysp[i],sb[index_sb].nres2);
+	      rename_1res(pdba,cysp[j],sb[index_sb].nres1);
 	    }
 	    else {
-	      rename_1res(natoms,pdba,cysp[i],sb[index_sb].nres1);
-	      rename_1res(natoms,pdba,cysp[j],sb[index_sb].nres2);
+	      rename_1res(pdba,cysp[i],sb[index_sb].nres1);
+	      rename_1res(pdba,cysp[j],sb[index_sb].nres2);
 	    }
 	    nBonded[i]++;
 	    nBonded[j]++;

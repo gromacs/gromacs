@@ -88,22 +88,7 @@ static t_xlate_atom *get_xlatoms(int *nxlatom)
   return xl;
 }
 
-static void rename_h(int natom, t_pdbatom pdba[])
-{
-  int  i,j;
-  char c;
-  
-  for (i=0; (i<natom); i++) {
-    if (isdigit(pdba[i].atomnm[0])) {
-      c=pdba[i].atomnm[0];
-      for (j=0; (j<strlen(pdba[i].atomnm)-1); j++)
-	pdba[i].atomnm[j]=pdba[i].atomnm[j+1];
-      pdba[i].atomnm[j]=c;
-    }
-  }
-}
-
-void xlate_atom(char *res,char atom[])
+void xlate_atom(char *res,char **atom)
 {
   static int          nxlate=0;
   static t_xlate_atom *xlatom;
@@ -113,27 +98,29 @@ void xlate_atom(char *res,char atom[])
   if (nxlate == 0) {
     xlatom = get_xlatoms(&nxlate);
   }
-  if (isdigit(atom[0])) {
-    c=atom[0];
-    for (i=0; (i<strlen(atom)-1); i++)
-      atom[i]=atom[i+1];
-    atom[i]=c;
+  if (isdigit(*atom[0])) {
+    c=*atom[0];
+    for (i=0; (i<strlen(*atom)-1); i++)
+      *atom[i]=*atom[i+1];
+    srenew(*atom,strlen(*atom)+2);
+    *atom[i]=c;
   }
   for(i=0; (i<nxlate); i++) {
     if ((xlatom[i].res == NULL) || (strcasecmp(res,xlatom[i].res) == 0) ||
 	((strcasecmp("protein",xlatom[i].res) == 0) && is_protein(res)))
-      if (strcasecmp(atom,xlatom[i].atom) == 0) {
-	strcpy(atom,xlatom[i].replace);
+      if (strcasecmp(*atom,xlatom[i].atom) == 0) {
+	sfree(*atom);
+	*atom=strdup(xlatom[i].replace);
 	return;
       }
   }
 }
 
-void rename_atoms(int natom,t_pdbatom pdba[])
+void rename_atoms(t_atoms *atoms)
 {
   int i;
   
-  for(i=0; (i<natom); i++) 
-    xlate_atom(pdba[i].resnm,pdba[i].atomnm);
+  for(i=0; (i<atoms->nr); i++) 
+    xlate_atom(*atoms->resname[atoms->atom[i].resnr],atoms->atomname[i]);
 }
 

@@ -113,40 +113,40 @@ static char *get_histp(int resnr)
   return select_res(ehisNR,resnr,hh,expl,"HISTIDINE");
 }
 
-static void rename_pdbres(int natom,t_pdbatom pdba[],char *oldnm,char *newnm,
+static void rename_pdbres(t_atoms *pdba,char *oldnm,char *newnm,
 			  bool bFullCompare)
 {
+  char *resnm;
   int i;
   
-  for(i=0; (i<natom); i++) {
-    if ((bFullCompare && (strcasecmp(pdba[i].resnm,oldnm) == 0)) ||
-	(!bFullCompare && strstr(pdba[i].resnm,oldnm) != NULL)) 
-      strcpy(pdba[i].resnm,newnm);
+  for(i=0; (i<pdba->nres); i++) {
+    resnm=*pdba->resname[i];
+    if ((bFullCompare && (strcasecmp(resnm,oldnm) == 0)) ||
+	(!bFullCompare && strstr(resnm,oldnm) != NULL)) {
+      sfree(*pdba->resname[i]);
+      *pdba->resname[i]=strdup(newnm);
+    }
   }
 }
 
-static void rename_pdbresint(int natom,t_pdbatom pdba[],char *oldnm,
+static void rename_pdbresint(t_atoms *pdba,char *oldnm,
 			     char *gettp(int),bool bFullCompare)
 {
-  int  i,rnr;
-  char *ptr;
+  int  i;
+  char *ptr,*resnm;
   
-  for(i=0; (i<natom); ) {
-    if ((bFullCompare && (strcmp(pdba[i].resnm,oldnm) == 0)) ||
-	(!bFullCompare && strstr(pdba[i].resnm,oldnm) != NULL)) {
-      rnr=pdba[i].resnr;
-      ptr=gettp(rnr);
-      while((pdba[i].resnr == rnr) && (i < natom)) {
-	strcpy(pdba[i].resnm,ptr);
-	i++;
-      }
+  for(i=0; i<pdba->nres; i++) {
+    resnm=*pdba->resname[i];
+    if ((bFullCompare && (strcmp(resnm,oldnm) == 0)) ||
+	(!bFullCompare && strstr(resnm,oldnm) != NULL)) {
+      ptr=gettp(i);
+      sfree(*pdba->resname[i]);
+      *pdba->resname[i]=strdup(ptr);
     }
-    else
-      i++;
   }
 }
 
-void write_posres(char *fn,int natom,t_pdbatom pdba[])
+void write_posres(char *fn,t_atoms *pdba)
 {
   FILE *fp;
   int  i;
@@ -160,112 +160,79 @@ void write_posres(char *fn,int natom,t_pdbatom pdba[])
 	  "[ position_restraints ]\n"
 	  "; %6s%6s%8s%8s%8s\n","atom","type","fx","fy","fz"
 	  );
-  for(i=0; (i<natom); i++) {
-    if (pdba[i].atomnm[0] != 'H') 
+  for(i=0; (i<pdba->nr); i++) {
+    if ((*pdba->atomname[i])[0] != 'H') 
       fprintf(fp,"%6d%6d%8.1f%8.1f%8.1f\n",i+1,1,1000.0,1000.0,1000.0);
   }
   ffclose(fp);
 }
 
-void pr_seqres(FILE *fp,int natom,t_pdbatom pdba[])
-{
-  int i,resnr,nres;
-  int line;
-  
-  resnr = -1;
-  nres  = pdba[natom-1].resnr+1;
-  line  = 0;
-  for(i=0; (i<natom); i++) {
-    if (resnr != pdba[i].resnr) {
-      if ((line % 13) == 0) 
-	fprintf(fp,"\nSEQRES%4d%7d ",1+line/13,nres);
-      resnr=pdba[i].resnr;
-      fprintf(fp,"%4s",pdba[i].resnm);
-      line++;
-    }
-  }
-  fprintf(fp,"\n");
-}
-
 int read_pdball(char *inf, char *outf,char *title,
-		t_pdbatom **pdbaptr, matrix box, bool bRetainH)
+		t_atoms *atoms, rvec **x,matrix box, bool bRetainH)
 /* Read a pdb file. (containing proteins) */
 {
-  FILE      *in,*out;
-  t_pdbatom *pdba;
-  int       natom;
+  FILE      *in;
+  int       natom,new_natom,i;
   
   /* READ IT */
   printf("Reading pdb file...\n");
+  get_stx_coordnum(inf,&natom);
+  init_t_atoms(atoms,natom,FALSE);
+  snew(*x,natom);
   in=ffopen(inf,"r");
-  natom=read_pdbatoms(in,title,&pdba,box,!bRetainH);
+  read_pdbfile(in,title,atoms,*x,box,TRUE);
+  if (!bRetainH) {
+    new_natom=0;
+    for(i=0; i<atoms->nr; i++)
+      if ((*atoms->atomname[i])[0]!='H') {
+	atoms->atom[new_natom]=atoms->atom[i];
+	atoms->atomname[new_natom]=atoms->atomname[i];
+	copy_rvec((*x)[i],(*x)[new_natom]);
+	new_natom++;
+      }
+    atoms->nr=new_natom;
+    natom=new_natom;
+  }
+    
   ffclose(in);
-  *pdbaptr=pdba;
   printf("'%s': %d atoms\n",title,natom);
   
-  /* renumber and sort atoms */
-  renumber_pdb(natom,pdba);
-  pdba_trimnames(natom,pdba);
-
   /* Rename residues */
-  rename_pdbres(natom,pdba,"SOL","HOH",FALSE);
-  rename_pdbres(natom,pdba,"WAT","HOH",FALSE);
-  rename_pdbres(natom,pdba,"HEM","HEME",FALSE);
+  rename_pdbres(atoms,"SOL","HOH",FALSE);
+  rename_pdbres(atoms,"WAT","HOH",FALSE);
+  rename_pdbres(atoms,"HEM","HEME",FALSE);
 
-  rename_atoms(natom,pdba);
+  rename_atoms(atoms);
   
   if (natom == 0)
     return 0;
 
-  /* Dump a 'clean' PDB file */
-  out=ffopen(outf,"w");
-  /* pr_seqres(out,natom,pdba); */
-  print_pdbatoms(out,title,natom,pdba,box);
-  ffclose(out);
-  
+  write_sto_conf(outf,title,atoms,*x,NULL,box);
+ 
   return natom;
 }
 
-void process_chain(int natom, t_pdbatom *pdba, 
+void process_chain(t_atoms *pdba, rvec *x, 
 		   bool bTrpU,bool bPheU,bool bTyrU,
 		   bool bLysH,bool bHisMan,bool bCysMan,
 		   int *nssbonds,t_ssbond **ssbonds,
 		   real angle,real distance)
 {
-  /* did this for the whole pdb file already, repeat for every chain */
-  renumber_pdb(natom,pdba);
-  
   /* Rename aromatics, lys and histidine */
-  if (bTyrU) rename_pdbres(natom,pdba,"TYR","TYRU",FALSE);
-  if (bTrpU) rename_pdbres(natom,pdba,"TRP","TRPU",FALSE);
-  if (bPheU) rename_pdbres(natom,pdba,"PHE","PHEU",FALSE);
+  if (bTyrU) rename_pdbres(pdba,"TYR","TYRU",FALSE);
+  if (bTrpU) rename_pdbres(pdba,"TRP","TRPU",FALSE);
+  if (bPheU) rename_pdbres(pdba,"PHE","PHEU",FALSE);
   if (bLysH) 
-    rename_pdbres(natom,pdba,"LYS","LYSH",FALSE);
+    rename_pdbres(pdba,"LYS","LYSH",FALSE);
   else
-    rename_pdbresint(natom,pdba,"LYS",get_lystp,FALSE);
+    rename_pdbresint(pdba,"LYS",get_lystp,FALSE);
   
-  *nssbonds=mk_specbonds(natom,pdba,bCysMan,ssbonds);
+  *nssbonds=mk_specbonds(pdba,x,bCysMan,ssbonds);
   
   if (!bHisMan)
-    set_histp(natom,pdba,angle,distance);
+    set_histp(pdba,x,angle,distance);
   else
-    rename_pdbresint(natom,pdba,"HIS",get_histp,TRUE);
-}
-
-int pdbcompare(const void *a,const void *b)
-{
-  t_pdbatom *pa,*pb;
-  
-  pa=(t_pdbatom *)a;
-  pb=(t_pdbatom *)b;
-  
-  if (pa->resnr == pb->resnr)
-    if (pa->atomnr == pb->atomnr)
-      return (pa->atomnm[1] - pb->atomnm[1]);
-    else
-      return (pa->atomnr - pb->atomnr);
-  else
-    return (pa->resnr - pb->resnr);
+    rename_pdbresint(pdba,"HIS",get_histp,TRUE);
 }
 
 typedef struct {
@@ -292,79 +259,103 @@ int pdbicomp(const void *a,const void *b)
 }
 
 static void sort_pdbatoms(int nrtp,t_restp restp[],
-			  int natoms,t_pdbatom *pdba,
+			  int natoms,t_atoms **pdbaptr,rvec **x,
 			  t_block *block,char ***gnames)
 {
+  t_atoms *pdba,*pdbnew;
+  rvec **xnew;
   int     i,j;
   t_restp *rptr;
   t_pdbindex *pdbi;
   atom_id *a;
+  char *atomnm,*resnm;
   
+  pdba=*pdbaptr;
+  natoms=pdba->nr;
+  pdbnew=NULL;
+  snew(xnew,1);
   snew(pdbi, natoms);
   
   for(i=0; (i<natoms); i++) {
-    if ((rptr=search_rtp(pdba[i].resnm,nrtp,restp)) == NULL)
-      fatal_error(0,"Residue type %s not found",pdba[i].resnm);
+    atomnm=*pdba->atomname[i];
+    resnm=*pdba->resname[pdba->atom[i].resnr];
+    if ((rptr=search_rtp(resnm,nrtp,restp)) == NULL)
+      fatal_error(0,"Residue type %s not found",resnm);
     for(j=0; (j<rptr->natom); j++)
-      if (strcasecmp(pdba[i].atomnm,*(rptr->atomname[j])) == 0)
+      if (strcasecmp(atomnm,*(rptr->atomname[j])) == 0)
 	break;
     if (j==rptr->natom)
-      if ( ( ( pdba[i].resnr == 0) && (pdba[i].atomnm[0] == 'H') &&
-	     ( (pdba[i].atomnm[1] == '1') || (pdba[i].atomnm[1] == '2') || 
-	       (pdba[i].atomnm[1] == '3') ) ) ||
-	   (strcasecmp(pdba[i].atomnm,"OXT")==0) )
+      if ( ( ( pdba->atom[i].resnr == 0) && (atomnm[0] == 'H') &&
+	     ( (atomnm[1] == '1') || (atomnm[1] == '2') || 
+	       (atomnm[1] == '3') ) ) ||
+	   (strcasecmp(atomnm,"OXT")==0) )
 	j=1;
       else 
 	fatal_error(0,"Atom %s not found in residue %s (looking for '%s %d')"
-		    " while sorting atoms",pdba[i].atomnm,
-		    rptr->resname,pdba[i].resnm,pdba[i].resnr+1);
+		    " while sorting atoms",atomnm,
+		    rptr->resname,resnm,pdba->atom[i].resnr+1);
     /* make shadow array to be sorted into indexgroup */
-    pdbi[i].resnr=pdba[i].resnr;
+    pdbi[i].resnr=pdba->atom[i].resnr;
     pdbi[i].j    =j;
     pdbi[i].index=i;
-    pdbi[i].NtH  =pdba[i].atomnm[1];
-    
-    pdba[i].atomnr=j;
+    pdbi[i].NtH  =atomnm[1];
   }
-  qsort(pdba,natoms,(size_t)sizeof(pdba[0]),pdbcompare);
   qsort(pdbi,natoms,(size_t)sizeof(pdbi[0]),pdbicomp);
   
-  /* make indexgroup in block */
+  /* pdba is sorted in pdbnew using the pdbi index */ 
   snew(a,natoms);
-  for (i=0; (i<natoms); i++)
+  snew(pdbnew,1);
+  init_t_atoms(pdbnew,natoms,FALSE);
+  snew(*xnew,natoms);
+  pdbnew->nr=pdba->nr;
+  pdbnew->nres=pdba->nres;
+  pdbnew->resname=pdba->resname;
+  for (i=0; (i<natoms); i++) {
+    pdbnew->atom[i]=pdba->atom[pdbi[i].index];
+    pdbnew->atomname[i]=pdba->atomname[pdbi[i].index];
+    copy_rvec((*x)[pdbi[i].index],(*xnew)[i]);
+     /* make indexgroup in block */
     a[i]=pdbi[i].index;
+  }
+  sfree(pdba);
+  sfree(*x);
+  /* copy the sorted pdbnew back to pdba */
+  *pdbaptr=pdbnew;
+  *x=*xnew;
   add_grp(block, gnames, natoms, a, "prot_sort");
   sfree(a);
   sfree(pdbi);
 }
 
-static int remove_double_atoms(int natoms,t_pdbatom **pdbaptr)
+static int remove_double_atoms(t_atoms *pdba,rvec x[])
 {
-  int     i,j,nres,oldnatoms;
-  t_pdbatom *pdba;
+  int     i,j,nres,natoms,oldnatoms;
   
   printf("Checking for double atoms....\n");
-  pdba      = *pdbaptr;
+  natoms    = pdba->nr;
   oldnatoms = natoms;
-  nres      = pdba[natoms-1].resnr;
+  nres      = pdba->nres;
   
   /* NOTE: natoms is modified inside the loop */
   for(i=1; (i<natoms); i++) {
-    if ( (pdba[i-1].resnr     == pdba[i].resnr) &&
-	 (pdba[i-1].atomnr    == pdba[i].atomnr) &&
-	 (strcmp(pdba[i-1].atomnm,pdba[i].atomnm)==0) && 
-	 !( (pdba[i].resnr==nres) && (strcasecmp(pdba[i-1].atomnm,"O")==0) ) ) {
+    if ( (pdba->atom[i-1].resnr     == pdba->atom[i].resnr) &&
+	 (strcmp(*pdba->atomname[i-1],*pdba->atomname[i])==0) && 
+	 !( (pdba->atom[i].resnr==nres-1) && 
+	    (strcasecmp(*pdba->atomname[i-1],"O")==0) ) ) {
       printf("deleting double atom (%d %s %s %c %d)\n",
-	     i+1, pdba[i].atomnm, pdba[i].resnm, 
-	     pdba[i].chain, pdba[i].resnr+1);
+	     i+1, *pdba->atomname[i], *pdba->resname[pdba->atom[i].resnr], 
+	     pdba->atom[i].chain, pdba->atom[i].resnr+1);
       natoms--;
-      for (j=i; (j<natoms); j++)
-	pdba[j]=pdba[j+1];
+      for (j=i; (j<natoms); j++) {
+	pdba->atom[j]=pdba->atom[j+1];
+	pdba->atomname[j]=pdba->atomname[j+1];
+	copy_rvec(x[j+1],x[j]);
+      }
     }
   }
+  pdba->nr=natoms;
   if (natoms != oldnatoms)
     printf("Now there are %d atoms\n",natoms);
-  *pdbaptr=pdba;
   
   return natoms;
 }
@@ -415,28 +406,20 @@ static char *choose_ff(bool bFFMan)
   return fnsel;
 }
 
-void find_nc_ter(int natom,t_pdbatom pdba[],int *rn,int *rc/*,int ter_type[]*/)
+void find_nc_ter(int natom,t_atoms *pdba,int *rn,int *rc/*,int ter_type[]*/)
 {
-  int i,rnr;
+  int rnr;
   
   *rn=-1;
   *rc=-1;
-  for(i=0; (i<natom); i++) {
-    rnr=pdba[i].resnr;
-    /*ter_type[i]=eterNormal;*/
-    if (*rn == -1) {
-      if (is_protein(pdba[i].resnm)) {
+  for(rnr=0; (rnr<pdba->nres); rnr++) {
+    if ((*rn == -1) && (is_protein(*pdba->resname[rnr])))
 	*rn=rnr;
-	/*ter_type[i]=eterNterm;*/
-      }
-    }
-    if (*rc != rnr) {
-      if (is_protein(pdba[i].resnm))
-	*rc=rnr;
-    }
+    if ((*rc != rnr) && (is_protein(*pdba->resname[rnr])))
+      *rc=rnr;
   }
   if (debug)
-    fprintf(debug,"nres: %d, rN: %d, rC: %d\n",pdba[natom-1].resnr,*rn,*rc);
+    fprintf(debug,"nres: %d, rN: %d, rC: %d\n",pdba->nres,*rn,*rc);
 }
 
 int main(int argc, char *argv[])
@@ -483,14 +466,13 @@ int main(int argc, char *argv[])
     int  natom;
     int  nres;
     bool bAllWat;
-    t_pdbatom *pdba;
+    t_atoms *pdba;
     rvec *x;
-    t_atoms *atoms;
   } t_chain;
   
   FILE       *fp;
   int        natom,nres;
-  t_pdbatom  *pdba_all,*pdba;
+  t_atoms    pdba_all,*pdba;
   t_atoms    *atoms;
   t_block    *block;
   int        chain,nchain;
@@ -517,7 +499,7 @@ int main(int argc, char *argv[])
   t_terblock *ntdb,*ctdb,*sel_ntdb,*sel_ctdb;
   int        nssbonds;
   t_ssbond   *ssbonds;
-  rvec       *x,*dummy;
+  rvec       *pdbx,*x,*dummy;
   bool       bTopWritten;
   t_filenm   fnm[] = { 
     { efPDB, "-f", NULL,    ffREAD  },
@@ -590,7 +572,7 @@ int main(int argc, char *argv[])
   
   clear_mat(box);
   natom=read_pdball(opt2fn("-f",NFILE,fnm),opt2fn("-q",NFILE,fnm),title,
-		    &pdba_all,box,bRetainH);
+		    &pdba_all,&pdbx,box,bRetainH);
   
   if (natom==0)
     fatal_error(0,"No atoms found in pdb file %s\n",opt2fn("-f",NFILE,fnm));
@@ -600,20 +582,20 @@ int main(int argc, char *argv[])
   nchain=0;
   chains=NULL;
   for (i=0; (i<natom); i++)
-    if (pdba_all[i].chain!=pchain) {
-      pchain=pdba_all[i].chain;
+    if (pdba_all.atom[i].chain!=pchain) {
+      pchain=pdba_all.atom[i].chain;
       /* set natom for previous chain */
       if (nchain > 0)
 	chains[nchain-1].natom=i-chains[nchain-1].start;
       /* check if chain identifier was used before */
       for (j=0; (j<nchain); j++)
-	if (chains[j].chain == pdba_all[i].chain)
+	if (chains[j].chain == pdba_all.atom[i].chain)
 	  fatal_error(0,"Chain identifier '%c' was used "
 		      "in two non-sequential blocks (residue %d, atom %d)",
-		      pdba_all[i].chain,pdba_all[i].resnr+1,i+1);
+		      pdba_all.atom[i].chain,pdba_all.atom[i].resnr+1,i+1);
       nchain++;
       srenew(chains,nchain);
-      chains[nchain-1].chain=pdba_all[i].chain;
+      chains[nchain-1].chain=pdba_all.atom[i].chain;
       chains[nchain-1].start=i;
       chains[nchain-1].bAllWat=TRUE;
     }
@@ -623,7 +605,8 @@ int main(int argc, char *argv[])
   for (i=0; (i<nchain); i++) {
     for (j=0; (j<chains[i].natom) && chains[i].bAllWat; j++)
       chains[i].bAllWat = chains[i].bAllWat && 
-	(strcasecmp(pdba_all[chains[i].start+j].resnm,"HOH") == 0);
+	(strcasecmp(*pdba_all.resname[pdba_all.atom[chains[i].start+j].resnr],
+	 "HOH") == 0);
     if (chains[i].bAllWat && (i>0) && chains[i-1].bAllWat) {
       /* this chain and previous chain contain only water: merge them */
       printf("Merging chains %c and %c\n",chains[i-1].chain,chains[i].chain);
@@ -640,11 +623,29 @@ int main(int argc, char *argv[])
       i--;
     }
   }
-  /* copy pdb data for all chains */
+  /* copy pdb data and x for all chains */
   for (i=0; (i<nchain); i++) {
-    snew(chains[i].pdba, chains[i].natom);
-    for (j=0; (j<chains[i].natom); j++)
-      chains[i].pdba[j]=pdba_all[chains[i].start+j];
+    snew(chains[i].pdba,1);
+    init_t_atoms(chains[i].pdba,chains[i].natom,FALSE);
+    snew(chains[i].x,chains[i].natom);
+    for (j=0; j<chains[i].natom; j++) {
+      chains[i].pdba->atom[j]=pdba_all.atom[chains[i].start+j];
+      snew(chains[i].pdba->atomname[j],1);
+      *chains[i].pdba->atomname[j] = 
+	strdup(*pdba_all.atomname[chains[i].start+j]);
+      copy_rvec(pdbx[chains[i].start+j],chains[i].x[j]);
+    }
+    /* Renumber the residues assuming that the numbers are continuous */
+    k=chains[i].pdba->atom[0].resnr;
+    nres=chains[i].pdba->atom[chains[i].natom-1].resnr - k + 1;
+    chains[i].pdba->nres=nres;
+    for(j=0; j<chains[i].natom; j++)
+      chains[i].pdba->atom[j].resnr-=k;
+    snew(chains[i].pdba->resname,nres);
+    for(j=0; j<nres; j++) {
+      snew(chains[i].pdba->resname[j],1);
+      *chains[i].pdba->resname[j] = strdup(*pdba_all.resname[k+j]);
+    }
   }
   
   if ((nchain==2) && ( (chains[0].chain==' ') || (chains[1].chain==' ') ) ){
@@ -661,15 +662,15 @@ int main(int argc, char *argv[])
   
   j=nchain;
   for (i=0; (i<nchain); i++) {
-    chains[i].nres = (pdba_all[chains[i+1].start-1].resnr+1 -
-		      pdba_all[chains[i  ].start  ].resnr);
+    chains[i].nres = (pdba_all.atom[chains[i+1].start-1].resnr+1 -
+		      pdba_all.atom[chains[i  ].start  ].resnr);
     if (chains[i].chain==' ') 
       j--;
   }
   if (j==0) j=1;
   
   printf("There are %d chains and %d residues with %d atoms\n",
-	  j,pdba_all[natom-1].resnr+1,natom);
+	  j,pdba_all.atom[natom-1].resnr+1,natom);
 	  
   printf("%5s %5s %4s %6s\n","chain","start","#res","#atoms");
   for (i=0; (i<nchain); i++)
@@ -728,6 +729,7 @@ int main(int argc, char *argv[])
   for(chain=0; (chain<nchain); chain++) {
     /* set pdba, natom and nres to the current chain */
     pdba =chains[chain].pdba;
+    x    =chains[chain].x;
     natom=chains[chain].natom;
     nres =chains[chain].nres;
     
@@ -738,14 +740,14 @@ int main(int argc, char *argv[])
       printf("Processing chain %d (%d atoms, %d residues)\n",
 	      chain+1,natom,nres);
 
-    process_chain(natom,pdba,bUnA,bUnA,bUnA,bLysH,bHisMan,bCysMan,
+    process_chain(pdba,x,bUnA,bUnA,bUnA,bLysH,bHisMan,bCysMan,
 		  &nssbonds,&ssbonds,angle,distance);
 		  
     if (bSort) {
       block = new_block();
       snew(gnames,1);
-      sort_pdbatoms(nrtp,restp,natom,pdba,block,&gnames);
-      natom = remove_double_atoms(natom, &pdba);
+      sort_pdbatoms(nrtp,restp,natom,&pdba,&x,block,&gnames);
+      natom = remove_double_atoms(pdba,x);
       if (ftp2bSet(efNDX,NFILE,fnm)) {
 	if (!bRetainH)
 	  fprintf(stderr,"WARNING: without the -reth option the generated "
@@ -763,9 +765,7 @@ int main(int argc, char *argv[])
     
     if (debug) {
       sprintf(fn,"%c.pdb",chains[chain].chain);
-      fp=ffopen(fn,"w");
-      print_pdbatoms(fp,title,natom,pdba,box);
-      fclose(fp);
+      write_sto_conf(fn,title,pdba,x,NULL,box);
     }
 
     find_nc_ter(natom,pdba,&rN,&rC);
@@ -778,7 +778,7 @@ int main(int argc, char *argv[])
       if ( (rN>=0) && (bTerMan || (nNtdb<4)) )
 	sel_ntdb=choose_ter(nNtdb,ntdb,"Select N-terminus type (start)");
       else {
-	if (strncmp(pdba[rN].resnm,"PRO",3))
+	if (strncmp(*pdba->resname[pdba->atom[rN].resnr],"PRO",3))
 	  sel_ntdb=&(ntdb[1]);
 	else
 	  sel_ntdb=&(ntdb[3]);
@@ -793,21 +793,16 @@ int main(int argc, char *argv[])
       }
     }
     /* Generate Hydrogen atoms (and termini) in the sequence */
-    natom=add_h(natom,&pdba,nah,ah,&x,sel_ntdb,sel_ctdb,rN,rC);
+    natom=add_h(&pdba,&x,nah,ah,sel_ntdb,sel_ctdb,rN,rC);
     printf("Now there are %d residues with %d atoms\n",
-	    pdba[natom-1].resnr+1,natom);
+	   pdba->nres,pdba->nr);
     if (debug)
-      print_pdbatoms(debug,title,natom,pdba,box);
-
-    printf("Converting pdba2atoms\n");
-    snew(atoms,1);
-    pdb2atoms(natom,pdba,atoms,&dummy,&tab);
-    sfree(dummy);
+      write_pdbfile(debug,title,pdba,x,box,0,TRUE);
     
     if (debug)
       for(i=0; (i<natom); i++)
 	fprintf(debug,"Res %d atom %d %s\n",
-		atoms->atom[i].resnr,i,*atoms->atomname[i]);
+		pdba->atom[i].resnr,i,*pdba->atomname[i]);
     
     strcpy(top_fn,ftp2fn(efTOP,NFILE,fnm));
     strcpy(itp_fn,ftp2fn(efITP,NFILE,fnm));
@@ -845,24 +840,21 @@ int main(int argc, char *argv[])
     srenew(mols,nmol);
     mols[nmol-1]=strdup(molname);
 
-    write_posres(itp_fn,natom,pdba);
+    write_posres(itp_fn,pdba);
     
     pdb2top(ff,top_fn,itp_fn,title,molname,
-	    nincl,incls,nmol,mols,atoms,nah,ah,x,
+	    nincl,incls,nmol,mols,pdba,nah,ah,x,
 	    atype,&tab,nrtp,rb,nrtp,restp,nrtp,ra,nrtp,idih,
 	    sel_ntdb,sel_ctdb,bH14,rN,rC,bAlldih,nssbonds,ssbonds);
     
     /* pdba and natom have been reassigned somewhere so: */
     chains[chain].pdba = pdba;
-    chains[chain].natom=natom;
-    
-    /* also save x and atoms */
+    chains[chain].natom= pdba->nr;
     chains[chain].x = x;
-    chains[chain].atoms=atoms;
     
     if (debug) {
       sprintf(fn,"%c.gro",chains[chain].chain);
-      write_conf(fn,cool_quote(),atoms,x,NULL,box);
+      write_conf(fn,cool_quote(),pdba,x,NULL,box);
     }
   }
   /* check if .top file was already written */
@@ -875,13 +867,10 @@ int main(int argc, char *argv[])
   nres=0;
   for (i=0; (i<nchain); i++) {
     natom+=chains[i].natom;
-    nres+=chains[i].atoms->nres;
+    nres+=chains[i].pdba->nres;
   }
   snew(atoms,1);
-  atoms->nr=natom;
-  snew(atoms->atom,natom);
-  snew(atoms->atomname,natom);
-  snew(atoms->chain,natom);
+  init_t_atoms(atoms,natom,FALSE);
   atoms->nres=nres;
   snew(atoms->resname,nres);
   snew(x,natom);
@@ -889,17 +878,17 @@ int main(int argc, char *argv[])
   l=0;
   for (i=0; (i<nchain); i++) {
     printf("Including chain %d in system: %d atoms %d residues\n",
-	   i+1,chains[i].natom,chains[i].atoms->nres);
+	   i+1,chains[i].natom,chains[i].pdba->nres);
     for (j=0; (j<chains[i].natom); j++) {
-      atoms->atom[k]=chains[i].atoms->atom[j];
+      atoms->atom[k]=chains[i].pdba->atom[j];
       atoms->atom[k].resnr+=l; /* l is processed nr of residues */
-      atoms->atomname[k]=chains[i].atoms->atomname[j];
-      atoms->chain[k]=chains[i].chain;
+      atoms->atomname[k]=chains[i].pdba->atomname[j];
+      atoms->atom[k].chain=chains[i].chain;
       copy_rvec(chains[i].x[j],x[k]);
       k++;
     }
-    for (j=0; (j<chains[i].atoms->nres); j++) {
-      atoms->resname[l]=chains[i].atoms->resname[j];
+    for (j=0; (j<chains[i].pdba->nres); j++) {
+      atoms->resname[l]=chains[i].pdba->resname[j];
       l++;
     }
   }
@@ -910,9 +899,12 @@ int main(int argc, char *argv[])
   if (box[0][0] == 0) 
     gen_box(0,atoms->nr,x,box,box_space,FALSE);
   write_conf(ftp2fn(efGRO,NFILE,fnm),title,atoms,x,NULL,box);
-  write_pdb_conf(opt2fn("-op",NFILE,fnm),title,atoms,x,box,FALSE);
+  write_sto_conf(opt2fn("-op",NFILE,fnm),title,atoms,x,NULL,box);
 
   thanx(stdout);
   
   return 0;
 }
+
+
+

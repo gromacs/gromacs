@@ -34,7 +34,7 @@ static char *SRCID_specbond_h = "$Id$";
 
 #include "pdb2top.h"
 
-extern int mk_specbonds(int natom,t_pdbatom pdba[],bool bInteractive,
+extern int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
 			t_ssbond **specbonds);
 
 extern bool yesno(void);
