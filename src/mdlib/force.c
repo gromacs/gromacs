@@ -172,6 +172,8 @@ static void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
     *kappa  = 0.0;
     *krf    = 0.0;
     *crf    = 0.0;
+    if (eps == 0)
+      eps = 1;
     *epsfac = ONE_4PI_EPS0/eps;
   } 
 }
@@ -272,7 +274,7 @@ void init_forcerec(FILE *fp,
   real   q,zsq,nrdf,T;
   rvec   box_size;
   double rtab;
-  
+
   natoms         = mdatoms->nr;
 
   /* Free energy */
