@@ -755,6 +755,12 @@ static void clean_dum_bonds(t_params *plist, t_pindex pindex[],
     if (bRemove) 
       bKeep=FALSE;
     else {
+      /* if we have no dummies in this bond, keep it */
+      if (ndum==0) {
+	if (debug)fprintf(debug," no dum");
+	bKeep=TRUE;
+      }
+    
       /* check if all non-dummy atoms are used in construction: */
       bFirstTwo=TRUE;
       for(k=0; (k<2) && !bKeep; k++) { /* for all atoms in the bond */
