@@ -416,7 +416,13 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
    */
   if (step == 0) {
     tcr->pres = tcr->pres0;
-    tcr->epot = tcr->epot0*nmols;
+    if ((tcr->dipole) != 0.0) {
+      mu_ind = mu_aver - d2e(tcr->dipole); /* in e nm */
+      Epol = mu_ind*mu_ind/(enm2kjmol(tcr->polarizability));
+      tcr->epot = (tcr->epot0-Epol)*nmols;
+    }
+    else
+      tcr->epot = tcr->epot0*nmols;
   }
 
   /* We want to optimize the LJ params, usually to the Vaporization energy 
@@ -442,7 +448,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   /* if dipole != 0.0 assume we want to use polarization corrected coupling */
   if ((tcr->dipole) != 0.0) {
     mu_ind = mu_aver - d2e(tcr->dipole); /* in e nm */
-    /* Epol = mu_ind*mu_ind/(2.0*(tcr->polarizability)*4.0*M_PI*EPSILON0); */
+  
     Epol = mu_ind*mu_ind/(enm2kjmol(tcr->polarizability));
 
     deviation[eoEpot] = (tcr->epot0 - Epol)*nmols - tcr->epot;
