@@ -2,30 +2,56 @@
 
 setenv HTML	$GMXHOME/html
 if ( ! -d $HTML ) mkdir $HTML
-setenv	INDEX	$HTML/index.html
+setenv GIFDIR   $HTML/gif
+if ( ! -d $GIFDIR ) ln -s ~gmx/public_html/gif $GIFDIR
+setenv HTMLOL   $HTML/online$VER
+if ( ! -d $HTMLOL ) mkdir $HTMLOL
+setenv	INDEX	$HTML/online_index$VER.html
+if ( -f $INDEX ) \rm $INDEX
+
 cat > $INDEX << EOD
-<title>Gromacs Programs</title>
-<h3>Gromacs Programs</h3>
+<html>
+<h1>Index</h1>
+<IMG SRC="gif/rainbowsmall.gif">
+<h3>General</h3>
 <ul>
+<li><A HREF="changes1.6.html" TARGET="bottom" >New features</a>
+<p>
+<li><A HREF="online1.6/flow.html" TARGET="right" >Flow chart</a>
+<p>
+<li><A HREF="online1.6/files.html" TARGET="right" >File formats</a>
+<p>
+<li><A HREF="online1.6/mdp_opt.html" TARGET="right" >mdp options</a>
+<p>
+<li><A HREF="online1.6/count.html" TARGET="right" >Top of the pops</a>
+</ul>
+<IMG SRC="gif/rainbowsmall.gif">
+<h3>Programs</h3>
+<ul>
+<li><A HREF="online1.6/general.html" TARGET="right" >General</a>
+<p>
 EOD
 
 cd 	$GMXHOME/bin/$CPU
 foreach i ( * )
-if ( -x $i ) then
-$i -man 2
-if ( -f $i.html ) then 
-mv $i.html $GMXHOME/html
-cat >> $INDEX << EOK
-<li><a href="$i.html">$i</a>
+  if ( ( -x $i ) && ( $i != "g_potential" ) && ( $i != "my_dssp" ) ) then
+    $i -man 2
+    if ( -f $i.html ) then 
+      if ( -f $HTMLOL/$i.html ) \rm $HTMLOL/$i.html
+      mv $i.html $HTMLOL
+      cat >> $INDEX << EOK
+<li><a href="online$VER/$i.html" TARGET="right">$i</a>
 EOK
-endif
-endif
+    endif
+  endif
 end
 
 cat >> $INDEX << EOM
 </ul>
-<a href="http://rugmd0.chem.rug.nl/~gmx">Gromacs Homepage</a>
+<IMG SRC="gif/rainbowsmall.gif">
+</HTML>
 EOM
 
-echo Point your browser to file://$INDEX
-echo And set a bookmark for further reference
+echo "New html pages in $HTML (file:/$INDEX)"
+
+#last line
