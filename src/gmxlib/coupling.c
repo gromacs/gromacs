@@ -99,7 +99,7 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
    */
   if ((ir->epc != epcNO) && (scalar_pressure != 0.0)) {
     for(m=0; (m<DIM); m++)
-      factor[m] = ir->compress[m]*ir->delta_t/(PRESFAC*ir->tau_p);
+      factor[m] = ir->compress[m]*ir->delta_t/ir->tau_p;
     clear_mat(mu);
     switch (ir->epc) {
     case epcISOTROPIC:
