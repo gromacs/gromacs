@@ -104,7 +104,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
     sig[i]=exp(0.5*i*dt/wt);
   
   low_do_autocorr(fn_tca,"Transverse Current Autocorrelation Functions",
-		  nframes,ntc,-1,tc,dt,eacNormal,
+		  nframes,ntc,ncorr,tc,dt,eacNormal,
 		  1,FALSE,TRUE,FALSE,FALSE,0,0,0,0);
   do_view(fn_tca,NULL);
   
