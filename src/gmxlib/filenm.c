@@ -160,18 +160,23 @@ void pr_def(FILE *fp,int ftp)
 
 void pr_fn(FILE *fp,t_filenm *tfn)
 {
-  fprintf(fp,"%4s  %16s  [%s] %s\n",tfn->opt,tfn->fn,
-	  fileopt(tfn->flag),deffile[tfn->ftp].descr);
 }
 
 void pr_fns(FILE *fp,int nf,t_filenm tfn[])
 {
-  int i;
+  int  i;
+  char buf[256],*wbuf;
 
-  fprintf(fp,"%4s  %16s  %s\n","Opt","Filename","Description");
+  fprintf(fp,"%4s %14s  %-12s  %s\n",
+	  "Opt","Filename","Type","Description");
   fprintf(fp,"------------------------------------------------------------\n");
-  for(i=0; (i<nf); i++)
-    pr_fn(fp,&(tfn[i]));
+  for(i=0; (i<nf); i++) {
+    sprintf(buf, "%4s %14s  %-12s  %s\n", tfn[i].opt,tfn[i].fn,
+	    fileopt(tfn[i].flag),deffile[tfn[i].ftp].descr);
+    wbuf=wrap_lines(buf,80,35);
+    fprintf(fp,wbuf);
+    sfree(wbuf);
+  }
   fprintf(fp,"\n");
   fflush(fp);
 }
