@@ -74,7 +74,7 @@ static int comp_xptr(const void *a,const void *b)
     return 0;
 }
 
-static void do_my_pme(FILE *fp,bool bVerbose,t_inputrec *ir,
+static void do_my_pme(FILE *fp,real tm,bool bVerbose,t_inputrec *ir,
 		      rvec x[],rvec xbuf[],rvec f[],
 		      real charge[],real qbuf[],matrix box,
 		      t_commrec *cr,t_nsborder *nsb,t_nrnb *nrnb,
@@ -96,7 +96,7 @@ static void do_my_pme(FILE *fp,bool bVerbose,t_inputrec *ir,
   
   /* Assume x is in the box */
   clear_rvec(mu_tot);
-  for(i=0; (i<nsb->natoms); i++) {
+  for(i=START(nsb); (i<HOMENR(nsb)); i++) {
     q = charge[i];
     for(m=0; (m<DIM); m++) 
       mu_tot[m] += q*x[i][m];
@@ -127,8 +127,8 @@ static void do_my_pme(FILE *fp,bool bVerbose,t_inputrec *ir,
 			     vir_corr);
   gmx_sum(1,&ener,cr);
   gmx_sum(1,&vcorr,cr);
-  fprintf(fp,"Energy: %12.5e  Correction: %12.5e  Total: %12.5e\n",
-	  ener,vcorr,ener+vcorr);
+  fprintf(fp,"Time: %10.3f Energy: %12.5e  Correction: %12.5e  Total: %12.5e\n",
+	  tm,ener,vcorr,ener+vcorr);
   if (bVerbose) {
     m_add(vir,vir_corr,vir_tot);
     gmx_sum(9,vir_tot[0],cr);
@@ -327,7 +327,7 @@ int main(int argc,char *argv[])
     MPI_Bcast(box,DIM*DIM,GMX_MPI_REAL,root,MPI_COMM_WORLD);
     MPI_Bcast(&t,1,GMX_MPI_REAL,root,MPI_COMM_WORLD);
   }
-  do_my_pme(stdlog,bVerbose,ir,x,xbuf,f,charge,qbuf,box,
+  do_my_pme(stdlog,0,bVerbose,ir,x,xbuf,f,charge,qbuf,box,
 	    cr,nsb,&nrnb,ewaldcoeff,&(top.atoms.excl),qtot,index);
   
   if (ftp2bSet(efTRX,NFILE,fnm)) {
@@ -345,8 +345,7 @@ int main(int argc,char *argv[])
       MPI_Bcast(&t,1,GMX_MPI_REAL,root,MPI_COMM_WORLD);
     }
     do {
-      fprintf(stdlog,"-----\nTime: %.3f\n",t);
-      do_my_pme(stdlog,bVerbose,ir,x,xbuf,f,charge,qbuf,box,cr,
+      do_my_pme(stdlog,t,bVerbose,ir,x,xbuf,f,charge,qbuf,box,cr,
 		nsb,&nrnb,ewaldcoeff,&(top.atoms.excl),qtot,index);
       bCont = read_next_x(status,&t,natoms,x,box);
       if (PAR(cr))
