@@ -44,6 +44,8 @@ man:
 	./mknroff
 html:
 	./mkhtml
+compl:
+	./mkcompl
 
 clean:
 	$(foreach dir,$(DIRS),cd $(dir); $(MAKE) clean; cd ..;)
