@@ -10,7 +10,7 @@ clear
 cat << _EOF_
 -----------------------------------------------------------------
 -----------------------------------------------------------------
-Welcome to the GROMACS demo!
+Welcome to the GROMACS demo.
 
 This is a script that takes about 10 min to run.
 
@@ -111,7 +111,7 @@ _EOF_
 
 if ( $?DISPLAY ) then
 	echo "The output of the genbox program should appear"
-        echo "in a separate xterm window!"  
+        echo "in a separate xterm window"  
 endif
 
 echo -n "Press <enter>"
@@ -160,7 +160,7 @@ _EOF_
 
 if ( $?DISPLAY ) then
 	echo "The output of the grompp program should appear"  
-        echo "in a separate xterm window!"
+        echo "in a separate xterm window"
 endif
 
 echo -n "Press <enter>"
@@ -221,7 +221,7 @@ _EOF_
 
 if ( $?DISPLAY ) then
 	echo "The output of the mdrun program should appear"
-        echo "in a separate xterm window!"
+        echo "in a separate xterm window"
 endif
 
 echo -n "Press <enter>"
@@ -271,7 +271,7 @@ _EOF_
 
 if ( $?DISPLAY ) then
 	echo "The output of the grompp program should appear"  
-        echo "in a separate xterm window!"
+        echo "in a separate xterm window"
 endif
 
 echo -n "Press <enter>"
@@ -377,7 +377,7 @@ _EOF_
 
 if ( $?DISPLAY ) then
 	echo "The output of the grompp program should appear"  
-        echo "in a separate xterm window!"
+        echo "in a separate xterm window"
 endif
 
 echo -n "Press <enter>"
@@ -442,7 +442,7 @@ _EOF_
 
 if ( $?DISPLAY ) then
 	echo "The output of the mdrun program should appear"  
-        echo "in a separate xterm window!"
+        echo "in a separate xterm window"
 endif
 
 echo -n "Press <enter>"
