@@ -215,7 +215,9 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     ir->nstdisreout = ir->nstenergy;
     fprintf(stderr,"Set nstdisreout to nstenergy (%d)\n",ir->nstdisreout);
     ir->bDomDecomp = FALSE;
+    fprintf(stderr,"Set bDomDecomp to %s\n",bool_names[ir->bDomDecomp]);
     ir->decomp_dir = XX;
+    fprintf(stderr,"Set decomp_dir to %d\n",ir->decomp_dir);
   } 
   else {
     do_real(ir->ns_dr);
