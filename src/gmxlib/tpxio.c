@@ -40,6 +40,8 @@
 #include "filenm.h"
 #include "gmxfio.h"
 #include "tpxio.h"
+#include "confio.h"
+#include "mass.h"
 #include "copyrite.h"
 
 /* This number should be increased whenever the file format changes! */
@@ -684,4 +686,51 @@ void fread_tpx(int fp,int *step,real *t,real *lambda,
 	       rvec *x,rvec *v,rvec *f,t_topology *top)
 {
   do_tpx(fp,TRUE,step,t,lambda,ir,box,natoms,x,v,f,top);
+}
+
+bool fn_bTPX(char *file)
+{
+  switch (fn2ftp(file)) {
+  case efTPR:
+  case efTPB:
+  case efTPA:
+    return TRUE;
+  default:
+    return FALSE;
+  }
+}
+
+int read_tps_conf(char *infile,char *title,t_topology *top,t_atoms **atoms, 
+		  rvec **x,rvec **v,matrix box,bool bMass)
+{
+  t_tpxheader  header;
+  int          natoms,i;
+  
+  if (fn_bTPX(infile)) {
+    read_tpxheader(infile,&header);
+    snew(*x,header.natoms);
+    if (v)
+      snew(*v,header.natoms);
+    read_tpx(infile,NULL,NULL,NULL,NULL,box,&natoms,
+	     *x,(v==NULL) ? NULL : *v,NULL,top);
+    strcpy(title,*top->name);
+    *atoms = &top->atoms;
+  }
+  else {
+    get_stx_coordnum(infile,&natoms);
+    snew(*atoms,1);
+    init_t_atoms(*atoms,natoms,FALSE);
+    snew(*x,natoms);
+    if (v)
+      snew(*v,natoms);
+    read_stx_conf(infile,title,*atoms,*x,(v==NULL) ? NULL : *v,box);
+    if (bMass)
+      for(i=0; i<natoms; i++)
+	(*atoms)->atom[i].m = 
+	  get_mass(*(*atoms)->resname[(*atoms)->atom[i].resnr],
+		   *(*atoms)->atomname[i]);
+    top = NULL;
+  }
+
+  return natoms;
 }

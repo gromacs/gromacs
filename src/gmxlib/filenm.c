@@ -88,6 +88,13 @@ static    int tpxs[]={
   efTPB, efTPA };
 #define NTPXS asize(tpxs)
 
+static    int tpss[]={ 
+#ifdef USE_XDR
+  efTPR, 
+#endif
+  efTPB, efTPA, efGRO, efPDB, efBRK, efENT };
+#define NTPSS asize(tpss)
+
 typedef struct {
   int  ftype;
   char *ext;
@@ -124,6 +131,7 @@ static t_deffile deffile[efNR] = {
   { eftASC, ".top", "topol",  "-p", "Topology file"                          },
   { eftASC, ".itp", "topinc", NULL, "Include file for topology"              },
   { eftGEN, ".???", "topol",  "-s", "Generic run input: tpr tpb tpa"         },
+  { eftGEN, ".???", "topol",  "-s", "Generic run input: tpr tpb tpa gro pdb" },
   { eftXDR, ".tpr", "topol",  "-s", "portable xdr run input file"            },
   { eftASC, ".tpa", "topol",  "-s", "Ascii run input file"                   },
   { eftBIN, ".tpb", "topol",  "-s", "Binary run input file"                  },
@@ -376,6 +384,10 @@ static void set_tpxnm(t_filenm *fnm,char *name)
   set_grpfnm(fnm,name,NTPXS,tpxs);
 }
 
+static void set_tpsnm(t_filenm *fnm,char *name)
+{
+  set_grpfnm(fnm,name,NTPSS,tpss);
+}
 
 static void set_filenm(t_filenm *fnm,char *name)
 {
@@ -402,6 +414,9 @@ static void set_filenm(t_filenm *fnm,char *name)
   }
   else if (fnm->ftp == efTPX) {
     set_tpxnm(fnm,name);
+  }
+  else if (fnm->ftp == efTPS) {
+    set_tpsnm(fnm,name);
   }
   else if (fnm->ftp == efENX) {
     set_enxnm(fnm,name);

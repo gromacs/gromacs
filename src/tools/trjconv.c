@@ -298,9 +298,8 @@ int main(int argc,char *argv[])
   matrix       box;
   int          m,i,d,frame,outframe,natoms,nout,nre,step;
 #define SKIP 10
-  t_tpxheader  header;
-  t_topology   top;
-  t_atoms      useatoms;
+  t_topology   *top=NULL;
+  t_atoms      *atoms=NULL,useatoms;
   int          isize;
   atom_id      *index;
   char         *grpname;
@@ -312,14 +311,14 @@ int main(int argc,char *argv[])
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bToldYouOnce=FALSE;
   bool         bHaveNextFrame,bHaveX,bHaveV,bSetBox;
   char         *grpnm;
-  char         title[256],in_file[256],out_file[256],out_file2[256];
-  char         command[256],filemode[5];
+  char         *top_file,*in_file,*out_file,out_file2[256];
+  char         top_title[256],title[256],command[256],filemode[5];
   int          xdr;
 
   t_filenm fnm[] = {
     { efTRX, "-f",  NULL, ffREAD },
     { efTRX, "-o", "trajout", ffWRITE },
-    { efTPX, NULL,  NULL, ffOPTRD },
+    { efTPS, NULL,  NULL, ffOPTRD },
     { efNDX, NULL,  NULL, ffOPTRD }
   };  
 #define NFILE asize(fnm)
@@ -329,8 +328,10 @@ int main(int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    0,NULL);
 
+  top_file=ftp2fn(efTPS,NFILE,fnm);
+
   /* Check command line */
-  strcpy(in_file,opt2fn("-f",NFILE,fnm));
+  in_file=opt2fn("-f",NFILE,fnm);
   if (ttrunc != -1) {
 #ifndef _win_
     do_trunc(in_file,ttrunc);
@@ -345,6 +346,12 @@ int main(int argc,char *argv[])
     bExec     = opt2parg_bSet("-exec", asize(pa), pa);
     bTimeStep = opt2parg_bSet("-timestep", asize(pa), pa);
     bTDump    = opt2parg_bSet("-dump", asize(pa), pa);
+    bPBC = bPBC || bFit;
+    if (bPBC && !fn_bTPX(top_file)) {
+      fprintf(stderr,
+	      "WARNING: can not remove periodicity without a run input file\n");
+      bPBC=FALSE;
+    }
     if (bNoJump && bPBC) {
       fprintf(stderr,
 	      "WARNING: both -pbc and -removejump specified: ignoring -pbc\n");
@@ -358,7 +365,7 @@ int main(int argc,char *argv[])
     bIndex=ftp2bSet(efNDX,NFILE,fnm);
     
     /* Determine output type */ 
-    strcpy(out_file,opt2fn("-o",NFILE,fnm));
+    out_file=opt2fn("-o",NFILE,fnm);
     ftp=fn2ftp(out_file);
     fprintf(stderr,"Will write %s: %s\n",ftp2ext(ftp),ftp2desc(ftp));
     if (bVels) {
@@ -401,21 +408,18 @@ int main(int argc,char *argv[])
     bCompress = bCompress && ((ftp == efGRO) || (ftp == efPDB));
     
     /* Determine whether to read a topology */
-    bTop = (ftp2bSet(efTPX,NFILE,fnm) || 
+    bTop = (ftp2bSet(efTPS,NFILE,fnm) || 
 	    bPBC || bFit || (ftp == efGRO) || (ftp == efPDB));
 
     /* Determine if when can read index groups */
     bIndex = (bIndex || bTop);
      
-    if (bTop) {  
-      read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header);
-      snew(xp,header.natoms);
-      read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,NULL,box,
-	       &natoms,xp,NULL,NULL,&top);
-    }
+    if (bTop)
+      read_tps_conf(top_file,title,top,&atoms,&xp,NULL,box,bFit);
+
     if (bFit) {
       fprintf(stderr,"Select group for root least squares fit\n");
-      get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
+      get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),
 		1,&ifit,&ind_fit,&gn_fit);
 
       if (ifit < 3) 
@@ -424,7 +428,7 @@ int main(int argc,char *argv[])
     
     if (bIndex) {
       fprintf(stderr,"Select group for output\n");
-      get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
+      get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),
 		1,&isize,&index,&grpnm);
     }
     else {
@@ -442,13 +446,14 @@ int main(int argc,char *argv[])
       snew(xp, natoms);
     
     if (bFit) {
-      snew(w_rls,header.natoms);
+      snew(w_rls,atoms->nr);
       for(i=0; (i<ifit); i++)
-	w_rls[ind_fit[i]]=top.atoms.atom[ind_fit[i]].m;
+	w_rls[ind_fit[i]]=atoms->atom[ind_fit[i]].m;
       
       /* Restore reference structure and set to origin, 
          store original location (to put structure back) */
-      rm_pbc(&(top.idef),top.atoms.nr,box,xp,xp);
+      if (bPBC)
+	rm_pbc(&(top->idef),atoms->nr,box,xp,xp);
       copy_rvec(xp[index[0]],shift);
       reset_x(ifit,ind_fit,isize,index,xp,w_rls);
       rvec_dec(shift,xp[index[0]]);
@@ -457,12 +462,12 @@ int main(int argc,char *argv[])
     /* Make atoms struct for output in GRO or PDB files */
     if ((ftp == efGRO) || (ftp == efPDB)) {
       /* get memory for stuff to go in pdb file */
-      init_t_atoms(&useatoms,top.atoms.nr,FALSE);
+      init_t_atoms(&useatoms,atoms->nr,FALSE);
       sfree(useatoms.resname);
-      useatoms.resname=top.atoms.resname;
+      useatoms.resname=atoms->resname;
       for(i=0;(i<isize);i++) {
-	useatoms.atomname[i]=top.atoms.atomname[index[i]];
-	useatoms.atom[i].resnr=top.atoms.atom[index[i]].resnr;
+	useatoms.atomname[i]=atoms->atomname[index[i]];
+	useatoms.atom[i].resnr=atoms->atom[index[i]].resnr;
 	useatoms.nres=max(useatoms.nres,useatoms.atom[i].resnr+1);
       }
       useatoms.nr=isize;
@@ -543,7 +548,8 @@ int main(int argc,char *argv[])
       if (bIFit) {
 	/* Now modify the coords according to the flags,
 	   for normal fit, this is only done for output frames */
-	rm_pbc(&(top.idef),natoms,box,x,x);
+	if (bPBC)
+	  rm_pbc(&(top->idef),natoms,box,x,x);
 	
 	reset_x(ifit,ind_fit,isize,index,x,w_rls);
 	do_fit(natoms,w_rls,xp,x);
@@ -597,8 +603,8 @@ int main(int argc,char *argv[])
 	  if (!bIFit) {
 	    /* Now modify the coords according to the flags,
 	       for IFit we did this already! */
-	    if (bPBC || bFit) 
-	      rm_pbc(&(top.idef),natoms,box,x,x);
+	    if (bPBC) 
+	      rm_pbc(&(top->idef),natoms,box,x,x);
 	  
 	    if (bFit) {
 	      reset_x(ifit,ind_fit,isize,index,x,w_rls);
@@ -661,7 +667,7 @@ int main(int argc,char *argv[])
 	  case efGRO: {
 	    FILE *fp;
 	    
-	    sprintf(title,"Generated by trjconv : %s t= %9.3f",*(top.name),t);
+	    sprintf(title,"Generated by trjconv : %s t= %9.3f",top_title,t);
 	    if (bAppend) {
 	      sprintf(out_file2,"%s\0",out_file);
 	      fp=ffopen(out_file2,"a");
@@ -693,8 +699,7 @@ int main(int argc,char *argv[])
 	      fp=ffopen(out_file2,"w");
 	    }
 	    fprintf(fp,"REMARK    GENERATED BY TRJCONV\n");
-	    sprintf(title,"%s t= %9.3f",
-		    *(top.name),t);
+	    sprintf(title,"%s t= %9.3f",top_title,t);
 	    write_pdbfile(fp,title,&useatoms,x,box,0,TRUE);
 	    ffclose(fp);
 	    

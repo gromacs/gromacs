@@ -79,6 +79,19 @@ extern void fread_tpx(int fp,int *step,real *t,real *lambda,
 		      rvec *x,rvec *v,rvec *f,t_topology *top);
 /* Read a file, and do not close it */
 
+extern bool fn_bTPX(char *file);
+/* return if *file is one of the TPX file types */ 
+
+extern int read_tps_conf(char *infile,char *title,t_topology *top,
+			 t_atoms **atoms,rvec **x,rvec **v,matrix box,
+			 bool bMass);
+/* Read title, atoms, x, v (if not NULL) and box from an STX file,
+ * memory for atoms, x and v will be allocated.  
+ * Return the number of atoms. 
+ * If infile is a TPX file, also read top and *atoms=&(top->atoms),
+ * else top=NULL and if bMass=TRUE, read the masses into *atoms from 
+ * the mass database (top=NULL). */
+
 #ifdef CPLUSPLUS
 }
 #endif

@@ -36,7 +36,7 @@ enum {
   efLOG, efXVG, efOUT,
   efNDX, 
   efTOP, efITP,
-  efTPX, efTPR, efTPA, efTPB,
+  efTPX, efTPS, efTPR, efTPA, efTPB,
   efTEX, efRTP, efATP, efHDB,
   efDAT, efDLG, 
   efMAP, efEPS, efMAT, efM2P,
