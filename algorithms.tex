@@ -471,7 +471,7 @@ like  frogs over each others back.}
 \label{fig:leapfrog}
 \end {figure}
 
-\subsubsection{Temperature coupling}
+\subsubsection{\normindex{Temperature coupling}}
 For several reasons (drift during equilibration, drift as a result of
 force truncation and integration errors, heating due to external or
 frictional forces), it is necessary to control the temperature of the
@@ -504,7 +504,7 @@ $\lambda$, given by
 \label{eq:lambda}
 \eeq
 The parameter $\tau_T$ is close to, but not exactly equal to the time constant
-$\tau$ of the \myindex{temperature coupling} (eq.~\ref{eq:Tcoupling}):
+$\tau$ of the temperature coupling (eq.~\ref{eq:Tcoupling}):
 \beq
 \tau = 2 C_V \tau_T / N_{df} k
 \eeq
@@ -529,9 +529,9 @@ indicated in eq.~\ref{eq:lambda}), which is
 perfectly allright since the coupling time constant is much longer
 than one time step. The algorithm is stable up to $\tau_T \approx \Dt$.
 
-\subsubsection*{Pressure coupling}
+\subsubsection*{\normindex{Pressure coupling}}
 In the same spirit as the temperature coupling, the system can also be
-coupled to a '\myindex{pressure bath}'. 
+coupled to a 'pressure bath'. 
 This is accomplished~\cite{Berendsen84} by scaling
 coordinates and box size every step with a parameter $\mu$, which has
 the effect of a first-order kinetic relaxation of the pressure towards
@@ -549,9 +549,10 @@ Here $\beta$ is the isothermal compressibility of the system. In general
 this is not known. It suffices to take a rough estimate because the
 value of $\beta$ only influences the non-critical time constant of the
 pressure relaxation without affecting the average pressure itself. For
-water at 300 K $\beta = 4.6 \times 10^{-10}$ Pa$^{-1}$, which is $7.6
-\times 10^{-4}$ MD units (see chapter~\ref{ch:defunits}). Most other
-liquids have similar values.
+water at 300 K 
+$\beta = 4.6 \times 10^{-10}$ Pa$^{-1} = 4.6 \times 10^{-5}$ Bar$^{-1}$,
+which is $7.6 \times 10^{-4}$ MD units (see chapter~\ref{ch:defunits}).
+Most other liquids have similar values.
 
 In the present version of \gromacs the pressure coupling can be done
 anisotropically: the $x,y,z$ dimensions are scaled separately, based
@@ -564,6 +565,47 @@ also  dynamic changes in box angles, but this is not implemented yet).
 Since the pressure fluctuates heavily, it is recommended to take
 $\tau_p$ not too small; a value between 0.4 and 1 ps will often be
 satisfactory.
+
+\subsubsection*{\normindex{Surface tension coupling}}
+When a periodic system consists of more than one phase, separated by
+surfaces which are parallel to the xy-plane,
+the surface tension and the z-component of the pressure can be coupled
+to a pressure bath.
+The average surface tension $\gamma(t)$ can be calculated from
+the difference between the normal and the lateral pressure:
+\begin{eqnarray}
+\gamma(t) & = & 
+\frac{1}{n} \int_0^{L_z}
+\left\{ P_z(z,t) - \frac{P_x(z,t) + P_y(z,t)}{2} \right\} \mbox{d}z \\
+& = &
+\frac{L_z}{n} \left\{ P_z(t) - \frac{P_x(t) + P_y(t)}{2} \right\}
+\end{eqnarray}
+where $L_z$ is the height of the box and $n$ is the number of surfaces.
+The pressure in the z-direction is corrected by scaling the height of
+the box with $\mu_z$:
+\beq
+\Delta P_z = \frac{\Delta t}{\tau_p} \{ P_{z0} - P_z(t) \}
+\eeq
+\beq
+\mu_z = 1 + \beta_z \Delta P_z
+\eeq
+This is similar to normal pressure coupling, except that the power
+of one third is missing. 
+The pressure correction in the z-direction is then used to get the
+correct convergence for the surface tension to the reference value $\gamma_0$.
+The correction factor for the box-length in the x/y-direction is:
+\beq
+\mu_{xy} = \left[ 1 + \frac{\Delta t}{\tau_p} \beta_{xy}
+	\left( \frac{n \gamma_0}{\mu_z L_z} 
+	- \left\{ P_z(t)+\Delta P_z - \frac{P_x(t) + P_y(t)}{2} \right\} 
+	\right) \right]^\frac{1}{2}
+\eeq
+The value of $\beta_z$ is more critical than with normal pressure
+coupling. Normally an incorrect compressibility will just scale $\tau_p$,
+but with surface tension coupling it affects the convergence of the surface
+tension. 
+When $\beta_z$ is set to zero (constant box height), $\Delta P_z$ is also set
+to zero, which is necessary for obtaining the correct surface tension. 
 
 \subsubsection*{The complete update algorithm}
 The complete algorithm for the update of velocities and coordinates is
