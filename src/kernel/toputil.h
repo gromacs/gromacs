@@ -81,8 +81,8 @@ extern void print_block(FILE *out,char *szName,char *szIndex,
 
 extern void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,int *cgnr);
 
-extern void print_bonds(FILE *out,int natoms,directive d,
-			int ftype,t_params plist[],bool bConsts);
+extern void print_bondeds(FILE *out,int natoms,directive d,
+			  int ftype,t_params plist[],bool bConsts);
 
 extern void print_excl(FILE *out, t_block *excl);
 
