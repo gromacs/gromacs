@@ -1,6 +1,7 @@
-4
+5
 ffgmx	Gromacs Forcefield (see manual)
 ffgmx2	Gromacs Forcefield with all hydrogens (proteins only)
 ffG96A  GROMOS 96 Forcefield
 ffG96B  GROMOS 96 vacuum Forcefield
+ffG43a2 GROMOS96 43a2 forcefield
 ffopls	OPLS forcefield version (version 8/94, will be added later) 
