@@ -51,6 +51,13 @@ extern real get_ereal(int *ninp,t_inpfile **inp,char *name,real def);
 
 extern char *get_estr(int *ninp,t_inpfile **inp,char *name,char *def);
 
+extern int get_eeenum(int *ninp,t_inpfile **inp,char *name,char **defs,
+		      int *nerror,bool bPrintError);
+/* defs must be NULL terminated, 
+ * Add errors to nerror 
+ * When bPrintError=TRUE and invalid enum: print "ERROR: ..."
+ */
+
 extern int get_eenum(int *ninp,t_inpfile **inp,char *name,char **defs);
 /* defs must be NULL terminated */
 
@@ -61,6 +68,7 @@ extern int get_eenum(int *ninp,t_inpfile **inp,char *name,char **defs);
 #define ITYPE(name,var,def)  var=get_eint(&ninp,&inp,name,def)
 #define RTYPE(name,var,def)  var=get_ereal(&ninp,&inp,name,def)
 #define ETYPE(name,var,defs) var=get_eenum(&ninp,&inp,name,defs)
+#define EETYPE(name,var,defs,nerr,bErr) var=get_eeenum(&ninp,&inp,name,defs,nerr,bErr)
 #define CCTYPE(s) STYPE("\n; "s,dummy,NULL)
 #define CTYPE(s)  STYPE("; "s,dummy,NULL)
 /* This last one prints a comment line where you can add some explanation */

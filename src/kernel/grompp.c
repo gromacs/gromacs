@@ -90,25 +90,26 @@ static void triple_check(t_inputrec *ir,t_topology *sys)
   sfree(mgrp);
 }
 
-static void double_check(t_inputrec *ir, matrix box, t_molinfo *mol)
+static void double_check(t_inputrec *ir, matrix box, t_molinfo *mol,
+			 int *nerror)
 {
-  bool bStop=FALSE;
   real bmin;
 
   if( (ir->eConstrAlg==estSHAKE) && 
       (mol->plist[F_SHAKE].nr > 0) && 
       (ir->shake_tol <= 0.0) ) {
-    fprintf(stderr,"shake_tol must be > 0 instead of %g\n",ir->shake_tol);
-    bStop=TRUE;
+    fprintf(stderr,"ERROR: shake_tol must be > 0 instead of %g\n",
+	    ir->shake_tol);
+    (*nerror)++;
   }
   bmin=(min(min(box[XX][XX],box[YY][YY]),box[ZZ][ZZ]));
   if (ir->eBox != ebtNONE) {
     /* rlong must be less than half the box */
     if (ir->rlong > 0.5*bmin) {
       fprintf(stderr,
-	      "rlong (%g) must be < half a box (%g,%g,%g)\n",
+	      "ERROR: rlong (%g) must be < half a box (%g,%g,%g)\n",
 	      ir->rlong,box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
-      bStop = TRUE;
+      (*nerror)++;
     }
     /* box must be large enough for gridsearch */
     if (ir->ns_type==ensGRID) {
@@ -120,15 +121,11 @@ static void double_check(t_inputrec *ir, matrix box, t_molinfo *mol)
       if ( !( (cx[XX] >= 2*ir->ndelta+1) && 
 	      (cx[YY] >= 2*ir->ndelta+1) && 
 	      (cx[ZZ] >= 2*ir->ndelta+1) ) ) {
-	fprintf(stderr,"box too small for grid-search, "
+	fprintf(stderr,"ERROR: box too small for grid-search, "
 		"use simple neighboursearch.\n");
-	bStop=TRUE;
+	(*nerror)++;
       }
     }
-  }
-  if (bStop) {
-    fprintf(stderr,"program terminated\n");
-    exit(1);
   }
 }
 
@@ -302,7 +299,7 @@ static int *new_status(char *topfile,char *confin,
 		       rvec **x,rvec **v,matrix box,
 		       t_atomtype *atype,t_topology *sys,
 		       t_molinfo *msys,t_params plist[],
-		       int nprocs,bool bEnsemble,bool bMorse)
+		       int nprocs,bool bEnsemble,bool bMorse,int nerror)
 {
   t_molinfo   *molinfo=NULL;
   t_simsystem *Sims=NULL;
@@ -349,29 +346,34 @@ static int *new_status(char *topfile,char *confin,
   get_stx_coordnum(confin,natoms);
   if (*natoms != sys->atoms.nr) {
     fprintf(stderr,
-	    "Number of coordinates in confin (%d) "
+	    "ERROR: number of coordinates in confin (%d) "
 	    "does not match topology (%d)\n",*natoms,sys->atoms.nr);
+    nerror++;
+  } else {
+    /* get space for coordinates and velocities */
+    snew(*x,*natoms);
+    snew(*v,*natoms);
+    snew(dumat.resname,*natoms);
+    snew(dumat.atom,*natoms);
+    snew(dumat.atomname,*natoms);
+    read_stx_conf(confin,opts->title,&dumat,*x,*v,box);
+    
+    if (ntab > 0) {
+      if (bVerbose)
+	fprintf(stderr,"Shuffling coordinates...\n");
+      forward=shuffle_xv("deshuf.ndx",ntab,tab,nrmols,molinfo,
+			 *natoms,*x,*v,Nsim,Sims);
+    }
+    
+    if (bVerbose) 
+      fprintf(stderr,"double-checking input for internal consistency...\n");
+    double_check(ir,box,msys,&nerror);
+  }
+  if (nerror) {
+    fprintf(stderr,"%d error%s, program terminated\n",
+	    nerror,nerror==1 ? "" : "s");
     exit(1);
   }
-
-  /* get space for coordinates and velocities */
-  snew(*x,*natoms);
-  snew(*v,*natoms);
-  snew(dumat.resname,*natoms);
-  snew(dumat.atom,*natoms);
-  snew(dumat.atomname,*natoms);
-  read_stx_conf(confin,opts->title,&dumat,*x,*v,box);
-
-  if (ntab > 0) {
-    if (bVerbose)
-      fprintf(stderr,"Shuffling coordinates...\n");
-    forward=shuffle_xv("deshuf.ndx",ntab,tab,nrmols,molinfo,
-		       *natoms,*x,*v,Nsim,Sims);
-  }
-  
-  if (bVerbose) 
-    fprintf(stderr,"double-checking input for internal consistency...\n");
-  double_check(ir,box,msys);
 
   if ((opts->bGenVel) && ir->eI == eiMD) {
     real *mass;
@@ -611,6 +613,8 @@ int main (int argc, char *argv[])
   rvec         *x=NULL,*v=NULL;
   matrix       box;
   char         fn[STRLEN];
+  int          nerror;
+
   t_filenm fnm[] = {
     { efMDP, NULL,  NULL,    ffREAD  },
     { efMDP, "-po", "mdout", ffWRITE },
@@ -645,6 +649,7 @@ int main (int argc, char *argv[])
   CopyRight(stdout,argv[0]);
   
   /* Initiate some variables */
+  nerror=0;
   snew(ir,1);
   snew(opts,1);
   init_ir(ir,opts);
@@ -669,11 +674,11 @@ int main (int argc, char *argv[])
   
   /* PARAMETER file processing */
   set_warning_line(ftp2fn(efMDP,NFILE,fnm),-1);    
-  get_ir(ftp2fn(efMDP,NFILE,fnm),opt2fn("-po",NFILE,fnm),ir,opts);
+  get_ir(ftp2fn(efMDP,NFILE,fnm),opt2fn("-po",NFILE,fnm),ir,opts,&nerror);
 
   if (bVerbose) 
     fprintf(stderr,"checking input for internal consistency...\n");
-  check_ir(ir,opts);
+  check_ir(ir,opts,&nerror);
 
   if (bShuffle && (opts->eDisre==edrEnsemble)) {
     fprintf(stderr,"Can not shuffle and do ensemble averaging, "
@@ -691,7 +696,7 @@ int main (int argc, char *argv[])
 		     opts,ir,bVerbose,&natoms,
 		     &x,&v,box,&atype,&sys,&msys,plist,
 		     bShuffle ? nprocs : 1,
-		     (opts->eDisre==edrEnsemble),opts->bMorse);
+		     (opts->eDisre==edrEnsemble),opts->bMorse,nerror);
   if (opt2bSet("-r",NFILE,fnm))
     sprintf(fn,opt2fn("-r",NFILE,fnm));
   else

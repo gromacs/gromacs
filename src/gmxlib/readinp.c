@@ -227,7 +227,8 @@ char *get_estr(int *ninp,t_inpfile **inp,char *name,char *def)
     return (*inp)[ii].value;
 }
 
-int get_eenum(int *ninp,t_inpfile **inp,char *name,char **defs)
+int get_eeenum(int *ninp,t_inpfile **inp,char *name,char **defs,
+	       int *nerror,bool bPrintError)
 {
   int  ii,i,j;
   
@@ -235,18 +236,19 @@ int get_eenum(int *ninp,t_inpfile **inp,char *name,char **defs)
   
   if (ii == -1) {
     (*inp)[(*ninp)-1].value=strdup(defs[0]);
-  
+    
     return 0;
   }
-
+  
   for(i=0; (defs[i] != NULL); i++)
     if (gmx_strcasecmp(defs[i],(*inp)[ii].value) == 0)
       break;
-      
+  
   if (defs[i] == NULL) {
-    fprintf(stderr,"Invalid enum %s for variable %s, using %s\n",
-	    (*inp)[ii].value,name,defs[0]);
+    fprintf(stderr,"%snvalid enum '%s' for variable %s, using '%s'\n",
+	    bPrintError ? "ERROR: i" : "I",(*inp)[ii].value,name,defs[0]);
     fprintf(stderr,"Next time use one of:");
+    (*nerror)++;
     j=0;
     while (defs[j]) {
       fprintf(stderr," '%s'",defs[j]);
@@ -254,9 +256,17 @@ int get_eenum(int *ninp,t_inpfile **inp,char *name,char **defs)
     }
     fprintf(stderr,"\n");
     (*inp)[ii].value=strdup(defs[0]);
-
+    
     return 0;
   }
-
+  
   return i;
 }
+
+int get_eenum(int *ninp,t_inpfile **inp,char *name,char **defs)
+{
+  int dum;
+
+  return get_eeenum(ninp,inp,name,defs,&dum,FALSE);
+}
+

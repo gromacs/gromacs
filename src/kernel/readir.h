@@ -67,14 +67,18 @@ typedef struct {
 extern void init_ir(t_inputrec *ir, t_gromppopts *opts);
 /* Initiate stuff */
 
-extern void check_ir(t_inputrec *ir, t_gromppopts *opts);
-/* Validate inputrec data */
+extern void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror);
+/* Validate inputrec data.
+ * Fatal errors will be added to nerror.
+ */
+ 
 
 extern void get_ir(char *mdparin,char *mdparout,
-		   t_inputrec *ir,t_gromppopts *opts);
+		   t_inputrec *ir,t_gromppopts *opts,int *nerror);
 /* Read the input file, and retrieve data for inputrec.
  * More data are read, but the are only evaluated when the next
- * function is called. Also prints the input file back to mdparout
+ * function is called. Also prints the input file back to mdparout.
+ * Add errors no nerror.
  */
  
 extern void do_index(char *ndx,

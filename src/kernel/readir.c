@@ -71,12 +71,10 @@ void init_ir(t_inputrec *ir, t_gromppopts *opts)
   snew(opts->SolventOpt,STRLEN);
 }
 
-void check_ir(t_inputrec *ir, t_gromppopts *opts)
+void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 /* Check internal consistency */
 {
-  bool bStop=FALSE;
-
-#define BS(b,s,val) if (b) fprintf(stderr,s,val), bStop=TRUE
+#define BS(b,s,val) if (b) fprintf(stderr,"ERROR: "), fprintf(stderr,s,val), (*nerror)++
   if ( (opts->nshake > 0) && (ir->eI != eiMD) && (ir->eI != eiLD) ) {
     fprintf(stderr,"Turning off constraints for %s simulation\n",EI(ir->eI));
     opts->nshake=0;
@@ -100,10 +98,10 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts)
      "tau_p must be > 0 instead of %g\n",ir->tau_p);
   if ((ir->rshort == 0.0) && (ir->rlong == 0.0)) {
     if (ir->eBox != ebtNONE) {
-      fprintf(stderr,"Can not have cut-off to zero (=infinite) with periodic\n"
+      fprintf(stderr,"ERROR: can not have cut-off to zero (=infinite) with periodic\n"
 	      "boundary conditions. Either set the box type to %s, or "
 	      "increase the cut-off radii\n",eboxtype_names[ebtNONE]);
-      bStop = TRUE;
+      (*nerror)++;
     }
   }
   if ((ir->epc == epcTRICLINIC) && (ir->eBox != ebtTRICLINIC)) {
@@ -116,20 +114,20 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts)
     ir->epc = epcISOTROPIC;
   }
   if ((ir->eeltype == eelPPPM) && (ir->epc != epcNO)) {
-    fprintf(stderr,"pressure coupling with PPPM not implemented\n");
-    bStop=TRUE;
+    fprintf(stderr,"ERROR: pressure coupling with PPPM not implemented\n");
+    (*nerror)++;
   }
   if ((ir->eeltype == eelTWIN) && (ir->rlong != ir->rshort) && 
       (ir->ns_type == ensSIMPLE)) {
-    fprintf(stderr,"Twin-range cut-off with simple neighbour searching "
+    fprintf(stderr,"ERROR: Twin-range cut-off with simple neighbour searching "
 	    "not implemented\n");
-    bStop=TRUE;
+    (*nerror)++;
   }
   if ((ir->eeltype == eelSHIFT) || (ir->eeltype == eelSWITCH)) {
     if (ir->rshort >= ir->rlong) {
-      fprintf(stderr,"rlong (%g) must be longer than rshort (%g) "
+      fprintf(stderr,"ERROR: rlong (%g) must be longer than rshort (%g) "
 	      "when using %s\n",ir->rlong,ir->rshort,eel_names[ir->eeltype]);
-      bStop=TRUE;
+      (*nerror)++;
     }
   } else if ((ir->eeltype == eelRF) || (ir->eeltype == eelGRF)) {
     if (ir->rlong != ir->rshort) {
@@ -148,15 +146,10 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts)
     }
   } else
     BS((ir->rshort > ir->rlong),"rshort (%g) must be <= rlong\n",ir->rshort);
-       
-  if (bStop) {
-    fprintf(stderr,"program terminated\n");
-    exit(1);
-  }
 }
 
 void get_ir(char *mdparin,char *mdparout,
-	    t_inputrec *ir,t_gromppopts *opts)
+	    t_inputrec *ir,t_gromppopts *opts,int *nerror)
 {
   char      *dumstr[2];
   double    dumdub[2][DIM];
@@ -176,7 +169,7 @@ void get_ir(char *mdparin,char *mdparout,
   STYPE ("define",	opts->define,	NULL);
     
   CCTYPE ("RUN CONTROL PARAMETERS");
-  ETYPE ("integrator",  ir->eI,         ei_names);
+  EETYPE("integrator",  ir->eI,         ei_names, nerror, TRUE);
   CTYPE ("start time and timestep in ps");
   RTYPE ("tinit",	ir->init_t,	0.0);
   RTYPE ("dt",		ir->delta_t,	0.001);
@@ -219,22 +212,22 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("nblist update frequency");
   ITYPE ("nstlist",	ir->nstlist,	10);
   CTYPE ("ns algorithm (simple or grid)");
-  ETYPE ("ns_type",     ir->ns_type,    ens_names);
+  EETYPE("ns_type",     ir->ns_type,    ens_names, nerror, TRUE);
   ITYPE ("deltagrid",	ir->ndelta,	2);
   CTYPE ("Box type, rectangular, triclinic, none");
-  ETYPE ("box",         ir->eBox,       eboxtype_names);
+  EETYPE("box",         ir->eBox,       eboxtype_names, nerror, TRUE);
   
   /* Electrostatics */
   CCTYPE ("OPTIONS FOR ELECTROSTATICS");
   CTYPE ("Method for doing electrostatics");
-  ETYPE ("eel_type",	ir->eeltype,    eel_names);
+  EETYPE("eel_type",	ir->eeltype,    eel_names, nerror, TRUE);
   CTYPE ("cut-off lengths");
   RTYPE ("rshort",	ir->rshort,	1.0);
   RTYPE ("rlong",	ir->rlong,	1.0);
   CTYPE ("Dielectric constant (DC) for twin-range or DC of reaction field");
   RTYPE ("epsilon_r",   ir->epsilon_r,  1.0);
   CTYPE ("Apply long range dispersion corrections for Energy and Pressure");
-  ETYPE ("bLJcorr",     ir->bLJcorr,    yesno_names);
+  EETYPE("bLJcorr",     ir->bLJcorr,    yesno_names, nerror, TRUE);
   CTYPE ("Some thingies for future use");
   ITYPE ("niter",       ir->niter,      100);
   RTYPE ("gauss_width", ir->gausswidth, 0.1);
@@ -254,7 +247,7 @@ void get_ir(char *mdparin,char *mdparout,
   /* Coupling stuff */
   CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
   CTYPE ("Temperature coupling");
-  ETYPE ("tcoupl",	ir->btc,        yesno_names);
+  EETYPE("tcoupl",	ir->btc,        yesno_names, nerror, TRUE);
   CTYPE ("Memory for running average (steps)");
   ITYPE ("ntcmemory",   ir->ntcmemory,  1);
   CTYPE ("Groups to couple separately");
@@ -263,7 +256,7 @@ void get_ir(char *mdparin,char *mdparout,
   STYPE ("tau_t",	tau_t,		NULL);
   STYPE ("ref_t",	ref_t,		NULL);
   CTYPE ("Pressure coupling");
-  ETYPE ("Pcoupl",	ir->epc,        epcoupl_names);
+  EETYPE("Pcoupl",	ir->epc,        epcoupl_names, nerror, TRUE);
   CTYPE ("Memory for running average (steps)");
   ITYPE ("npcmemory",   ir->npcmemory,  1);
   CTYPE ("Time constant (ps), compressibility (1/bar) and reference P (bar)");
@@ -273,13 +266,13 @@ void get_ir(char *mdparin,char *mdparout,
   
   /* Simulated annealing */
   CCTYPE ("SIMULATED ANNEALING CONTROL");
-  ETYPE ("annealing",	ir->bSimAnn,    yesno_names);
+  EETYPE("annealing",	ir->bSimAnn,    yesno_names, nerror, TRUE);
   CTYPE ("Time at which temperature should be zero (ps)");
   RTYPE ("zero_temp_time",ir->zero_temp_time,0.0);
   
   /* Startup run */
   CCTYPE ("GENERATE VELOCITIES FOR STARTUP RUN");
-  ETYPE ("gen_vel",     opts->bGenVel,  yesno_names);
+  EETYPE("gen_vel",     opts->bGenVel,  yesno_names, nerror, TRUE);
   RTYPE ("gen_temp",    opts->tempi,    300.0);
   ITYPE ("gen_seed",    opts->seed,     173529);
   
@@ -293,11 +286,11 @@ void get_ir(char *mdparin,char *mdparout,
 
   /* Shake stuff */
   CCTYPE ("OPTIONS FOR BONDS");
-  ETYPE ("constraints",	opts->nshake,	constraints);
+  EETYPE("constraints",	opts->nshake,	constraints, nerror, TRUE);
   CTYPE ("Type of constraint algorithm");
-  ETYPE ("constraint_algorithm",  ir->eConstrAlg, eshake_names);
+  EETYPE("constraint_algorithm",  ir->eConstrAlg, eshake_names, nerror, TRUE);
   CTYPE ("Do not constrain the start configuration");
-  ETYPE ("unconstrained_start", ir->bUncStart, yesno_names);
+  EETYPE("unconstrained_start", ir->bUncStart, yesno_names, nerror, TRUE);
   CTYPE ("Relative tolerance of shake");
   RTYPE ("shake_tol", ir->shake_tol, 0.0001);
   CTYPE ("Highest order in the expansion of the constraint coupling matrix");
@@ -308,19 +301,19 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("Output frequency of the Lincs accuracy");
   ITYPE ("nstLincsout",	ir->nstLincsout,100);
   CTYPE ("Convert harmonic bonds to morse potentials");
-  ETYPE ("morse",       opts->bMorse,yesno_names);
+  EETYPE("morse",       opts->bMorse,yesno_names, nerror, TRUE);
   
   /* Refinement */
   CCTYPE ("NMR refinement stuff");
   CTYPE ("Distance restraints type: None, Simple or Ensemble");
-  ETYPE ("disre",       opts->eDisre,   edisre_names);
+  EETYPE("disre",       opts->eDisre,   edisre_names, nerror, TRUE);
   RTYPE ("dihre_fc",	ir->dihr_fc,	1000.0);
   RTYPE ("disre_fc",	ir->dr_fc,	1000.0);
   RTYPE ("disre_tau",	ir->dr_tau,	1.25);
   
   /* Free energy stuff */
   CCTYPE ("Free energy control stuff");
-  ETYPE ("free_energy", ir->bPert,      yesno_names);
+  EETYPE("free_energy", ir->bPert,      yesno_names, nerror, TRUE);
   RTYPE ("init_lambda",	ir->init_lambda,0.0);
   RTYPE ("delta_lambda",ir->delta_lambda,0.0);
 
@@ -353,7 +346,7 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("userreal2",   ir->userreal2,  0);
   RTYPE ("userreal3",   ir->userreal3,  0);
   RTYPE ("userreal4",   ir->userreal4,  0);
-  
+
   write_inpfile(mdparout,ninp,inp);
   for (i=0; (i<ninp); i++) {
     sfree(inp[i].name);
@@ -371,19 +364,19 @@ void get_ir(char *mdparin,char *mdparout,
       if (sscanf(dumstr[m],"%lf",&(dumdub[m][XX]))==1)
 	dumdub[m][YY]=dumdub[m][ZZ]=dumdub[m][XX];
       else
-	fprintf(stderr,"Warning: pressure coupling not enough vals\n");
+	fprintf(stderr,"pressure coupling not enough values\n");
       break;
     case epcSEMIISOTROPIC:
       if (sscanf(dumstr[m],"%lf%lf",
 		 &(dumdub[m][XX]),&(dumdub[m][ZZ]))==2) 
 	dumdub[m][YY]=dumdub[m][XX];
       else
-	fprintf(stderr,"Warning: pressure coupling not enough vals\n");
+	fprintf(stderr,"pressure coupling not enough values\n");
       break;
     case epcANISOTROPIC:
       if (sscanf(dumstr[m],"%lf%lf%lf",
 		 &(dumdub[m][XX]),&(dumdub[m][YY]),&(dumdub[m][ZZ]))!=3) 
-	fprintf(stderr,"Warning: pressure coupling not enough vals\n");
+	fprintf(stderr,"pressure coupling not enough values\n");
       break;
     default:
       fprintf(stderr,"Pressure coupling type %s not implemented yet\n",
