@@ -18,14 +18,11 @@ set GENERAL 	= "getting_started:Getting_Started flow:Flow_Chart files:File_Forma
 set olddir = `pwd`
 cd $GMXHOME/bin/$GMXCPU
 set PROGRAMS    = 
-foreach program ( * )
+foreach program ( `\ls -1 | grep -v "#"` )
   if ( ( $program != average ) && ( $program != luck ) && ( $program != my_dssp ) ) then
-    if ( `echo $program | grep -v "#" | wc -l` > 0 ) then
-      set PROGRAMS = "$PROGRAMS $program"
-    endif
+    set PROGRAMS = "$PROGRAMS $program"
   endif
 end
-echo PROGRAMS: $PROGRAMS
 cd $olddir
 
 echo "generating html page $HTMLIDX"
@@ -66,10 +63,20 @@ echo "</TR>" >> $HTMLIDX
 echo "</TABLE>" >> $HTMLIDX
 echo "<IMG SRC=gif/rainbow.gif WIDTH=100% HEIGHT=7>" >> $HTMLIDX
 echo "<h3>Programs by topic</h3>" >> $HTMLIDX
+awk -F '|' -v mandir=$MANDIR '{\
+  if (NF) {\
+    if ( $1 == "HEAD" ) {\
+      hnr++;\
+      printf("<A HREF=\"#HNR%d\">%s</A><br>\n",hnr,$2);\
+    }\
+  }\
+}' $PROGFILE >> $HTMLIDX
 echo "<table>" >> $HTMLIDX
 awk -F '|' -v mandir=$MANDIR '{\
   if (NF) {\
     if ( $1 == "HEAD" ) {\
+      hnr++;\
+      printf("<A NAME=\"HNR%d\">\n",hnr);\
       printf("<TR><TD COLSPAN=2><b>%s</b>\n",$2);\
     } else if ( $1 == "END" ) {\
       printf("<TR><TD>&nbsp;<TD>\n");\
