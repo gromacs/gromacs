@@ -102,7 +102,7 @@ static real row_energy(int n1,int row,real **mat)
   return re;
 }
 
-static real rows_energy(int n1,int row,real **mat,real *row_e)
+static real rows_energy(int n1,real **mat,real *row_e)
 {
   real re,retot;
   real n2_1;
