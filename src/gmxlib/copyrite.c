@@ -407,7 +407,12 @@ void please_cite(FILE *fp,char *key)
       "B. Hess and R.M. Scheek",
       "Orientation restraints in molecular dynamics simulations using time and ensemble averaging",
       "J. Magn. Res.",
-      164, 2003, 19, 27 }
+      164, 2003, 19, 27 },
+    { "Mu2005a",
+      "Y. Mu, P. H. Nguyen and G. Stock",
+      "Energy landscape of a small peptide revelaed by dihedral angle principal component analysis",
+      "Prot. Struct. Funct. Bioinf.",
+      58, 2005, 45, 52 }
   };
 #define NSTR (int)asize(citedb)
   

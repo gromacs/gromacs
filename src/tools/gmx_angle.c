@@ -101,7 +101,10 @@ int gmx_angle(int argc,char *argv[])
     "With option -oc a dihedral correlation function is calculated.[PAR]",
     "It should be noted that the indexfile should contain",
     "atom-triples for angles or atom-quadruplets for dihedrals.",
-    "If this is not the case, the program will crash."
+    "If this is not the case, the program will crash.[PAR]",
+    "With option [TT]-or[tt] a trajectory file is dumped containing cos and"
+    "sin of selected dihedral angles which subsequently can be used as",
+    "input for a PCA analysis using [TT]g_covar[tt]."
   };
   static char *opt[] = { NULL, "angle", "dihedral", "improper", "ryckaert-bellemans", NULL };
   static bool bALL=FALSE,bChandler=FALSE,bAverCorr=FALSE;
@@ -180,6 +183,13 @@ int gmx_angle(int argc,char *argv[])
     break;
   }
 
+  if (opt2bSet("-or",NFILE,fnm)) {
+    if (mult != 4)
+      gmx_fatal(FARGS,"Can not combine angles with trn dump");
+    else
+      please_cite(stdout,"Mu2005a");
+  }
+    
   /* Calculate bin size */
   maxangstat=(int)(maxang/binwidth+0.5);
   binwidth=maxang/maxangstat;
@@ -241,11 +251,8 @@ int gmx_angle(int argc,char *argv[])
     }	
     fclose(out);
   }
-  if (opt2bSet("-or",NFILE,fnm)) {
-    if (mult != 4)
-      gmx_fatal(FARGS,"Can not combine angles with trn dump");
+  if (opt2bSet("-or",NFILE,fnm)) 
     dump_dih_trn(nframes,nangles,dih,opt2fn("-or",NFILE,fnm));
-  }
   
   if (bFrac) {
     sprintf(title,"Trans fraction: %s",grpname);
