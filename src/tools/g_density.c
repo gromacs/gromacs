@@ -251,8 +251,7 @@ void calc_density(char *fn, atom_id **index, int gnx[],
     rm_pbc(&(top->idef),top->atoms.nr,box,x0,x0);
 
     *slWidth = box[axis][axis]/(*nslices);
-    if ((teller++ % 10) == 0)
-      fprintf(stderr,"\rFrame: %d",teller-1); 
+    teller++;
     
     for (n = 0; n < nr_grps; n++) {      
       for (i = 0; i < gnx[n]; i++) {   /* loop over all atoms in index file */

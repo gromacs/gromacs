@@ -372,14 +372,14 @@ int main(int argc,char *argv[])
 		  fatal_error(0,"DHE, ftp=%d\n",ftp);
 	      }
 	      
-	      fprintf(stderr,"\rWriting frame %d, time %f         ",frame,t);
+	      if ( ((frame % 10) == 0) || (frame < 10) )
+		fprintf(stderr," ->  frame %6d time %8.3f      \r",frame,t);
 	  }
       } while((t<settime[i+1]) &&
 	      ((bVels && read_next_x_or_v(status,&t1,natoms,x,v,box)) ||
 	       (read_next_x(status,&t1,natoms,x,  box))));
       
       close_trj(status);
-      fprintf(stderr,"\n");
       
       earliersteps+=step;	  
       

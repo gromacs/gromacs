@@ -95,8 +95,6 @@ int main(int argc,char *argv[])
   
   j=0;
   do {
-    if ((j%10) == 0)
-      fprintf(stderr,"\rFrame: %d",j);
     plot_rama(out,xr);
     j++;
   } while (new_data(xr));

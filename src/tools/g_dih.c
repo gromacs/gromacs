@@ -306,6 +306,9 @@ int main(int argc,char *argv[])
     "appropriate bin. The output is then given as a number of dihedral",
     "conformations sorted according to occupancy."
   };
+  static char *bugs[] = {
+    "should not ask for number of frames"
+  };
   static int  mult = -1;
   static bool bSA  = FALSE;
   t_pargs pa[] = {
@@ -329,7 +332,7 @@ int main(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
   
   if (mult != -1)
     fprintf(stderr,"Using %d for dihedral multiplicity rather than topology values\n",mult);
@@ -350,8 +353,6 @@ int main(int argc,char *argv[])
   for(step=0; (step<nframes); step++) {
     if (!new_data(xr))
       break;
-    if ((step % 10) == 0)
-      fprintf(stderr,"\rFrame %5d",step);
     for(i=0; (i<xr->ndih); i++) {
       dd=xr->dih[i].ang*RAD2DEG;
       while (dd < 0)

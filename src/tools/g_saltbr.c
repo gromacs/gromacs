@@ -193,8 +193,6 @@ int main(int argc,char *argv[])
   teller=0;
   time=NULL;
   do {
-    if ((teller % 10) == 0)
-      fprintf(stderr,"\rFrame %d",teller);
     srenew(time,teller+1);
     time[teller]=t;
       

@@ -110,8 +110,7 @@ void calc_order(char *fn, atom_id index[], int ngx, rvec **slDipole,
   do 
   {
     *slWidth = box[axis][axis]/(*nslices);
-    if ((teller++ % 10) == 0)
-      fprintf(stderr,"\rFrame: %d",teller-1); 
+    teller++;
     
     rm_pbc(&(top->idef),top->atoms.nr,box,x0,x0);
 

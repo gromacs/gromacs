@@ -159,8 +159,7 @@ int main (int argc,char *argv[])
  
   read_next_x(status,&t,natom,x[run_time],box);  
   do {
-    if ((teller++ % 10) == 0)
-      fprintf(stderr,"\rFrame: %d",teller);
+    teller++;
     rm_pbc(&(top.idef),top.atoms.nr,box,x[run_time],x[run_time]);
     for(m=0;(m<3);m++)
       xcm[m]=0;

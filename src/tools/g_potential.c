@@ -141,8 +141,7 @@ void calc_potential(char *fn, atom_id **index, int gnx[],
   do 
   {
     *slWidth = box[axis][axis]/(*nslices);
-    if ((teller++ % 10) == 0)
-      fprintf(stderr,"\rFrame: %d",teller-1); 
+    teller++;
     
     rm_pbc(&(top->idef),top->atoms.nr,box,x0,x0);
 
