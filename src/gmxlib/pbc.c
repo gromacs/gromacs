@@ -46,31 +46,76 @@ static char *SRCID_pbc_c = "$Id$";
 /* Global variables */
 static bool bInit=FALSE;
 static bool bTriclinic,bSupported;
-static rvec gl_fbox,gl_hbox,gl_mhbox;
+static rvec gl_fbox,gl_hbox,gl_mhbox,*tric_vec=NULL;
 static matrix gl_box;
+static int ntric_vec;
+
+char *check_box(matrix box)
+{
+  char *ptr;
+
+  if ((box[XX][YY]!=0) || (box[XX][ZZ]!=0) || (box[YY][ZZ]!=0))
+    ptr = "Only triclinic boxes with the first vector parallel to the x-axis and the second vector in the xy-plane are supported.";
+  else if ((fabs(box[YY][XX])+fabs(box[ZZ][XX]) > 1.001*box[XX][XX]) ||
+	   (fabs(box[ZZ][YY]) > 1.001*box[YY][YY]))
+    ptr = "Triclinic box is too skewed.";
+  else
+    ptr = NULL;
+  
+  return ptr;
+}
 
 void init_pbc(matrix box,bool bTruncOct)
 {
-  int i;
+  static int nalloc=0;
+  int  i,j,k,d;
+  real diagonal2;
+  rvec try;
+  char *ptr;
 
-  bInit   = TRUE;
+  ptr = check_box(box);
+  if (ptr) {
+    fprintf(stderr,"Warning: %s Can not fix pbc.\n",ptr);
+    bSupported = FALSE;
+  } else {
+    bSupported = TRUE;
 
-  for(i=0; (i<DIM); i++) {
-    gl_fbox[i]  =  box[i][i];
-    gl_hbox[i]  =  gl_fbox[i]*0.5;
-    gl_mhbox[i] = -gl_hbox[i];
+    for(i=0; (i<DIM); i++) {
+      gl_fbox[i]  =  box[i][i];
+      gl_hbox[i]  =  gl_fbox[i]*0.5;
+      gl_mhbox[i] = -gl_hbox[i];
+    }
+    bTriclinic = TRICLINIC(box);
+    if (bTriclinic) {
+      copy_mat(box,gl_box);
+      /* Make shift vectors, assuming the box is not very skewed */
+      diagonal2 = norm2(gl_fbox);
+      ntric_vec = 0;
+      for(i=-2; i<=2; i++)
+	for(j=-2; j<=2; j++)
+	  for(k=-2; k<=2; k++)
+	    if ((i!=0) || (j!=0) || (k!=0)) {
+	      for(d=0; d<DIM; d++)
+		try[d] = i*box[XX][d]+j*box[YY][d]+k*box[ZZ][d];
+	      if (norm2(try) < diagonal2) {
+		if (ntric_vec >= nalloc) {
+		  nalloc+=20;
+		  srenew(tric_vec,nalloc);
+		}
+	      copy_rvec(try,tric_vec[ntric_vec]);
+	      ntric_vec++;
+	      }
+	    }
+    }
   }
-  bSupported = !TRIC_NOT_SUP(box);
-  if (!bSupported)
-    fprintf(stderr,"Warning: %s Can not fix pbc.\n",tric_not_sup_str);
-  bTriclinic = TRICLINIC(box);
-  if (bTriclinic)
-    copy_mat(box,gl_box);
+  bInit   = TRUE;
 }
 
 void pbc_dx(rvec x1, rvec x2, rvec dx)
 {
   int i,j;
+  rvec dx_start,try;
+  real d2min,d2try;
 
   if (!bInit)
     fatal_error(0,"pbc_dx called before init_pbc");
@@ -83,13 +128,25 @@ void pbc_dx(rvec x1, rvec x2, rvec dx)
 	    dx[j] -= gl_box[i][j];
 	else if (dx[i] <= gl_mhbox[i])
 	  for (j=i; j>=0; j--)
-	  dx[j] += gl_box[i][j];
+	    dx[j] += gl_box[i][j];
+      /* dx is the distance in a rectangular box */
+      copy_rvec(dx,dx_start);
+      d2min = norm2(dx);
+      /* now try all possible shifts */
+      for(i=0; i<ntric_vec; i++) {
+	rvec_add(dx_start,tric_vec[i],try);
+	d2try = norm2(try);
+	if (d2try < d2min) {
+	  copy_rvec(try,dx);
+	  d2min = d2try;
+	}
+      }
     } else {
       for(i=0; i<DIM; i++)
 	if (dx[i] > gl_hbox[i])
 	  dx[i] -= gl_fbox[i];
-      else if (dx[i] <= gl_mhbox[i])
-	dx[i] += gl_fbox[i];
+	else if (dx[i] <= gl_mhbox[i])
+	  dx[i] += gl_fbox[i];
     }
   }
 }

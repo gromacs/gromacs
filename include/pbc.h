@@ -43,9 +43,11 @@ extern "C" {
 #endif
 
 #define TRICLINIC(box) (box[YY][XX]!=0) || (box[ZZ][XX]!=0) || (box[ZZ][YY]!=0)
-#define TRIC_NOT_SUP(box) (box[XX][YY]!=0) || (box[XX][ZZ]!=0) || (box[YY][ZZ]!=0)
 
-static char *tric_not_sup_str = "Only triclinic boxes with the first vector parallel to the x-axis and the second vector in the xy-plane are supported.";
+extern char *check_box(matrix box);
+/* Returns NULL if the box is supported by Gromacs.
+ * Otherwise is returns a string with the problem.
+ */
 
 extern void init_pbc(matrix box,bool bTruncOct);
 /* Initiate the periodic boundary conditions. Set bTruncOct to

@@ -945,19 +945,14 @@ void triple_check(char *mdparin,t_inputrec *ir,t_topology *sys,int *nerror)
 void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
 {
   real bmin;
+  char *ptr;
 
-  if (TRIC_NOT_SUP(box)) {
-    fprintf(stderr,"ERROR: %s\n",tric_not_sup_str);
-    (*nerror)++;
-  }
-  if ((ir->ns_type==ensGRID) && 
-      ((fabs(box[YY][XX])+fabs(box[ZZ][XX]) > 1.001*box[XX][XX]) ||
-       (fabs(box[ZZ][YY]) > 1.001*box[YY][YY]))) {
+  ptr = check_box(box);
+  if (ptr) {
     fprintf(stderr,
-	    "ERROR: box to skewed for grid search, use simple search\n");
+	    "ERROR: %s\n",ptr);
     (*nerror)++;
   }  
-      
   if( (ir->eConstrAlg==estSHAKE) && 
       (mol->plist[F_SHAKE].nr > 0) && 
       (ir->shake_tol <= 0.0) ) {
