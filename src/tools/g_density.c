@@ -262,7 +262,7 @@ void calc_density(char *fn, atom_id **index, int gnx[],
 	  z -= box[axis][axis];
       
 	/* determine which slice atom is in */
-	slice = (int)(0.5 + z / (*slWidth)); 
+	slice = (int)(z / (*slWidth)); 
 	if (bNumber || bCount) {
 	  buf = strdup(*(top->atoms.atomname[index[n][i]]));
 	  trim(buf);

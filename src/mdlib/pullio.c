@@ -98,7 +98,7 @@ void print_afm(t_pull *pull, int step)
       fprintf(pull->out,"%8.3f\n",pull->pull.f[i][ZZ]);
 }
 
-void print_constraint(t_pull *pull, rvec *f, int step, matrix box) 
+void print_constraint(t_pull *pull, rvec *f, int step, matrix box, int niter) 
 {
   int i,ii,m; 
   rvec tmp,tmp2,tmp3;
@@ -114,13 +114,14 @@ void print_constraint(t_pull *pull, rvec *f, int step, matrix box)
       if (tmp[m] > 0.5*box[m][m])  tmp[m] -= box[m][m];
     }
     if (pull->bVerbose) 
-      fprintf(pull->out,"%d:%d ds:%8.3f f: %8.3f\n", step,i,norm(tmp),
-	      pull->pull.f[i][ZZ]);
+      fprintf(pull->out,"%d:%d ds:%e f:%e n:%d\n", step,i,norm(tmp),
+	      pull->pull.f[i][ZZ],niter);
     else
-      fprintf(pull->out,"%8.3f ",pull->pull.f[i][ZZ]);
+      fprintf(pull->out,"%e ",pull->pull.f[i][ZZ]);
   }
-  
-  fprintf(pull->out,"\n");
+
+  if (!pull->bVerbose)
+    fprintf(pull->out,"\n");
 
   /* DEBUG */ /* this code doesn't correct for pbc, needs improvement */
   if (pull->bVerbose) {
@@ -220,6 +221,11 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   RTYPE("rc",   pull->rc,   0.0);
   CTYPE("Update frequency for dynamic reference groups (steps)");
   ITYPE("update",           pull->update, 1);
+
+  /* constraint run options */
+  CCTYPE("CONSTRAINT RUN OPTIONS");
+  CTYPE("Tolerance of constraints, in nm");
+  RTYPE("constraint_tolerance",            pull->constr_tol, 1E-6);
 
   /* options for AFM type pulling simulations */
   CCTYPE("AFM OPTIONS");

@@ -43,7 +43,8 @@ static char *SRCID_pull_h = "$Id$";
 /* print to output file for the various types of runs */
 extern void print_umbrella(t_pull *pull, int step);
 extern void print_afm(t_pull *pull, int step);
-extern void print_constraint(t_pull *pull,rvec *force,int step,matrix box);
+extern void print_constraint(t_pull *pull,rvec *force,int step,matrix box,
+			     int niter);
 extern void print_start(t_pull *pull, int step);
 
 
@@ -131,6 +132,6 @@ extern void init_pull(FILE *log,
 		      t_pull *pull,   /* all pull data */
 		      rvec *x,        /* all coordinates */
 		      t_mdatoms *md,  /* masses and charges of all atoms */
-		      rvec boxsize);
+		      matrix box);
 
 #endif

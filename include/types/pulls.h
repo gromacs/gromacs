@@ -67,6 +67,7 @@ typedef struct {
   int        rot_incr;  /* write out structure every rot_incr degrees */
   real       xlt_incr;  /* write out structure every xlt_incr nm */
   real       tolerance; /* tolerance for reaching desired coordinates (nm) */
+  real       constr_tol;/* absolute tolerance for constraints in (nm) */
   bool       bPull;     /* true if we're doing any pulling */
   bool       bCyl;      /* true if we're using dynamic ref. groups */
   bool       bReverse;  /* reverse reference direction */

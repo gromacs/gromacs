@@ -175,7 +175,7 @@ static void do_umbrella(t_pull *pull, rvec *x,rvec *f,matrix box,
 
 /* this implements a constraint run like SHAKE does. */
 static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md, 
-			  real dt) 
+			  real dt, int *niter) 
 {
   
   rvec r_ij, /* x_con[i] com of i in prev. step. Obeys constr. -> r_ij   */
@@ -185,7 +185,7 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
   rvec *rinew;           /* current 'new' position of group i */
   rvec *rjnew;           /* current 'new' position of group j */
   real *direction;       /* direction of dr relative to r_ij */
-  double lambda, rm, mass, tol = 0.00001;
+  double lambda, rm, mass;
   bool bConverged = FALSE;
   int n=0,i,ii,j,m,max_iter=1000;
   int ref;
@@ -386,7 +386,8 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
 	if (ref_ij[m] >  0.5*box[m][m]) ref_ij[m] -= box[m][m];
       }
 
-      bConverged = bConverged && (fabs(norm(unc_ij)-norm(ref_ij)) < tol);
+      bConverged = bConverged && (fabs(norm(unc_ij)-norm(ref_ij)) < 
+				  pull->constr_tol);
     }
     
 
@@ -397,7 +398,6 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
 		"d_ref = %f, current d = %f\n",
 		i,pull->pull.grps[i], norm(ref_ij),norm(unc_ij));
     } /* END DEBUG */
-    
 
     n++;
     /* if after all constraints are dealt with and bConverged is still TRUE
@@ -484,6 +484,7 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
   sfree(rjnew);
   sfree(dr);
   sfree(direction);
+  *niter = n;
 }
 
 /* mimicks an AFM experiment, groups are pulled via a spring */
@@ -526,7 +527,7 @@ static void do_afm(t_pull *pull,rvec *f,matrix box,t_mdatoms *md)
 void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top, 
 	  real dt, int step, int natoms, t_mdatoms *md) 
 {
-  int i;
+  int i,niter;
   static rvec *x_s = NULL;
   bool bShakeFirst;
 
@@ -634,8 +635,8 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top,
     }
     
     /* do the actual constraint calculation */
-    do_constraint(pull,x,box,md,dt);
-    print_constraint(pull,f,step,box); 
+    do_constraint(pull,x,box,md,dt,&niter);
+    print_constraint(pull,f,step,box,niter); 
     break;
     
   case eUmbrella:

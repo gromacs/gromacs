@@ -47,6 +47,7 @@ static char *SRCID_pullinit_c = "$Id$";
 #include "confio.h"
 #include "pull.h"
 #include "string.h"
+#include "pbc.h"
 
 static void get_pullmemory(t_pullgrps *pull, int ngrps) 
 {
@@ -198,25 +199,27 @@ static void print_whole_index(char **grpnames, atom_id **index, int *ngx,
 }
 
 void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
-	       t_mdatoms *md,rvec boxsize) 
+	       t_mdatoms *md,matrix box) 
 {
   int i,j,m,ii;
   int ngrps;
   real tm;
   rvec tmp;
-  matrix box;
   char **grpnames;
   atom_id **index;
   int *ngx;
   int totalgrps;    /* total number of groups in the index file */
-
-  clear_mat(box);
-  for (m=0;m<DIM;m++) 
-    box[m][m]=boxsize[m];
+  rvec boxsize;
   
   /* do we have to do any pulling at all? If not return */
   pull->bPull = opt2bSet("-pi",nfile,fnm);
   if (!pull->bPull) return;
+
+  if (TRICLINIC(box)) 
+    fatal_error(0,"Triclinic box not supported with pull code");
+  
+  for (m=0;m<DIM;m++) 
+    boxsize[m] = box[m][m];
 
   pull->out = ffopen(opt2fn("-pd",nfile,fnm),"w");
   read_pullparams(pull, opt2fn("-pi",nfile,fnm), opt2fn("-po",nfile,fnm));
@@ -353,6 +356,12 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
 	  "                      END   PULL INFO                    \n"
 	  "**************************************************\n\n");
 }
+
+
+
+
+
+
 
 
 
