@@ -15,7 +15,7 @@ LIB		=
 PGOBJ		= toputil.o 	topdirs.o 	topexcl.o	
 # Objects for grompp
 GOBJ		= grompp.o	topio.o 	toppush.o 	\
-		  topcat.o 	topshake.o 	convparm.o 	\
+		  topcat.o 	topshake.o 	convparm.o 	tomorse.o\
 		  sorting.o 	splitter.o	$(PGOBJ)	readir.o
 # Objects for pdb2gmx
 POBJ		= pdb2gmx.o	pdb2top.o 	gen_ad.o 	\
@@ -45,13 +45,13 @@ tpbconv:	$(PGOBJ)	tpbconv.o	readir.o
 pdb2gmx:	$(POBJ) 
 		$(LD) -o $@ $^ $(SYSLIBS) 
 
-mdrun:		mdrun.o runner.o
+mdrun:		mdrun.o
 		$(LD) -o $@ $^ $(SYSLIBS) 
 
 mk_ghat:	mk_ghat.o
 		$(LD) -o $@ $^ $(SYSLIBS) 
 
-nmrun:		nmrun.o runner.o
+nmrun:		nmrun.o
 		$(LD) -o $@ $^ $(SYSLIBS) 
 
 luck:		luck.o
