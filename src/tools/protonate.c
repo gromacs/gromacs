@@ -50,8 +50,8 @@ int main (int argc,char *argv[])
   int         natoms;
   
   t_filenm fnm[] = {
-    { efGRO, "-f", NULL,      ffREAD  },
-    { efGRO, "-o", "confout", ffWRITE }
+    { efSTX, "-f", NULL,      ffREAD  },
+    { efSTO, "-o", "confout", ffWRITE }
   };
 #define NFILE asize(fnm)
 
@@ -62,13 +62,13 @@ int main (int argc,char *argv[])
   snew(atoms,1);
   atoms->nr=0;
   atoms->nres=0;
-  get_coordnum(opt2fn("-f",NFILE,fnm),&natoms);
+  get_stx_coordnum(opt2fn("-f",NFILE,fnm),&natoms);
   snew(atoms->atomname,natoms);
   snew(atoms->resname,natoms);
   snew(atoms->atom,natoms);
   snew(x,natoms);
   snew(v,natoms);
-  read_whole_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,v,box);
+  read_stx_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,v,box);
   sfree(v);
   
   fprintf(stderr,"Read title: %s\n",title);
@@ -76,7 +76,7 @@ int main (int argc,char *argv[])
   protonate(&atoms,&x);
   snew(v,atoms->nr);
   
-  write_conf(opt2fn("-o",NFILE,fnm),title,atoms,x,v,box);
+  write_sto_conf(opt2fn("-o",NFILE,fnm),title,atoms,x,v,box);
   
   thanx(stdout);
   
