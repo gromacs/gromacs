@@ -142,6 +142,7 @@ not} as a number (as e.g. in GROMOS).
 {\em Necessary for polarisability, not implemented yet.}
 
 \subsection{Dummy atoms}
+\label{sec:dummytop}
 Some \normindex{force field}s use \normindex{dummy atom}s 
 (\normindex{virtual site}s that are constructed
 from real atoms) on which certain interaction functions are located
@@ -150,35 +151,50 @@ from real atoms) on which certain interaction functions are located
 
 To make dummy atoms in your system, you should include a section 
 \verb'[ dummy? ]' in your topology file, where the \verb'?' stands for
-the number of atoms the dummy is based on. This will be \verb'2' for
-types 1 and 2 or \verb'3' for type 3 (the different types are
-explained in~\secref{dummy}).
+the number of parameters the dummy requires. This will be \verb'1' for
+type 1 or \verb'2' for types 2, 2$'$ and 2$''$ or \verb'3' for type 3
+(the different types are explained in~\secref{dummy}).
 
 Parameters for type 1 should look like this:
 {\small\begin{verbatim}
-[ dummies2 ]
-; Dummy from                 funct   a          b
-4       1      2             0       0.7439756  0.256024
+[ dummies1 ]
+; Dummy from                 funct   a
+4       1      2             1       0.7439756
 \end{verbatim}}
 
 for type 2 like this:
 {\small\begin{verbatim}
-[ dummies3 ]
-; Dummy from                 funct   a          b          c
-4       1      2      3      1       0.7439756  0.128012   0.128012
+[ dummies2 ]
+; Dummy from                 funct   a          b
+4       1      2      3      1       0.7439756  0.128012
+\end{verbatim}}
+
+for type 2$'$ like this:
+{\small\begin{verbatim}
+[ dummies2 ]
+; Dummy from                 funct   a          b
+4       1      2      3      2       0.5        0.105
+\end{verbatim}}
+
+for type 2$''$ like this:
+{\small\begin{verbatim}
+[ dummies2 ]
+; Dummy from                 funct   a          b
+4       1      2      3      3       0.5        120
 \end{verbatim}}
 
 for type 3 like this:
 {\small\begin{verbatim}
 [ dummies3 ]
 ; Dummy from                 funct   a          b          c
-4       1      2      3      2       -0.4       -0.4       6.9281
+4       1      2      3      1       -0.4       -0.4       6.9281
 \end{verbatim}}
 
-This will result in the construction of a dummy 'atom', number 4
-(first column), based on the positions of 1 and 2 or 1, 2 and 3 (next
-2 or 3 columns) following the rules determined by the function number
-(next column) with the parameters specified (last 2 or three columns).
+This will result in the construction of a dummy `atom', number 4
+(first column `\verb'Dummy''), based on the positions of 1 and 2 or 1,
+2 and 3 (next 2 or 3 columns `\verb'from'') following the rules
+determined by the function number (next column `\verb'funct'') with
+the parameters specified (last 2 or three columns `\verb'a b' . .').
 
 Note that dummy atoms generally do not have any bonds to other atoms,
 because that would make no sense, but that also means that no
@@ -479,7 +495,7 @@ two hydrogens (n1,n2) are generated at a distance of 0.1 nm from atom
 i, such that angle (n1-i-j)=(n2-i-j)=120 degrees and dihedral
 (n1-i-j-k)=cis and (n2-i-j-k)=trans, such that names are according to
 IUPAC standards~\cite{iupac70}
-\item[4]{\em three tetrahedral hydrogens, e.g. -CH{$_3$}}\\
+\item[4]{\em two or three tetrahedral hydrogens, e.g. -CH{$_3$}}\\
 three (n1,n2,n3) or two (n1,n2) hydrogens are generated at a distance
 of 0.1 nm from atom i, such that angle
 (n1-i-j)=(n2-i-j)=(n3-i-j)=109.5, dihedral (n1-i-j-k)=trans,
@@ -542,7 +558,7 @@ Description of the file layout:
       \verb'[ angles ]', \verb'[ dihedrals ]', 
       \verb'[ position_restraints ]', 
       \verb'[ distance_restraints ]', 
-      \verb'[ dummies2 ]', \verb'[ dummies3 ]'
+      \verb'[ dummies1 ]', \verb'[ dummies2 ]', \verb'[ dummies3 ]'
 \item for system level: \verb'[ system ]', \verb'[ molecules ]'
 \item items should be seperated by spaces or tabs, not commas
 \item numbering of atoms in molecules is relative to the molecule start
