@@ -45,9 +45,9 @@
 #include "copyrite.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version = 7;
+static int tpx_version = 8;
 /* This number should be the most recent incompatible version */
-static int tpx_incompatible_version = 6; 
+static int tpx_incompatible_version = 7;
 /* This is the version of the file we are reading */
 static int file_version = 0;
 
@@ -297,6 +297,7 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
     ndo_real(iparams->rbdihs.rbc,NR_RBDIHS,bDum);
     break;
   case F_SHAKE:
+  case F_SHAKENC:
     do_real(iparams->shake.dA);
     do_real(iparams->shake.dB);
     break;
