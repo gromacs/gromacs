@@ -616,7 +616,7 @@ static void tick_spacing(int n, real axis[], real offset, char axisnm,
 	if ( bRmod(axis[j], offset, space) )
 	  i++;
       /* do we have a reasonable number of ticks ? */
-      bTryAgain = i > min(10, n-1) || i < 5;
+      bTryAgain = (i > min(10, n-1)) || (i < 5);
     }
   }
   if (bTryAgain) {
