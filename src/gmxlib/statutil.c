@@ -115,7 +115,7 @@ bool bRmod(double a,double b)
 
   iq = ((1.0+tol)*a)/b;
   
-  if (fabs(a-b*iq) <= tol*a)
+  if (fabs(a-b*iq) <= tol*fabs(a))
     return TRUE;
   else
     return FALSE;
