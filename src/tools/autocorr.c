@@ -416,6 +416,7 @@ real print_and_integrate(FILE *fp,int n,real dt,real c[])
     if (j > 0)
       sum+=dt*(c0+c[j-1]);
   }
+  fprintf(fp,"&\n");
   return sum*0.5;
 }
 
