@@ -280,7 +280,7 @@ static void einstein_visco(char *fn,int nsets,int nframes,real **set,
 static void analyse_ener(bool bCorr,char *corrfn,
 			 bool bDG,bool bSum,bool bFluct,
 			 bool bVisco,char *visfn,int  nmol,int ndf,
-			 int  oldstep,int step,real oldt,real t,
+			 int  oldstep,real oldt,int step,real t,
 			 real time[], real reftemp,
 			 t_energy oldee[],t_energy ee[],
 			 int nset,int set[],int nenergy,real **eneset,
@@ -298,20 +298,20 @@ static void analyse_ener(bool bCorr,char *corrfn,
   char buf[256];
 
   nsteps  = step - oldstep;
-  if (nsteps <= 2) {
-    fprintf(stderr,"Not enough steps (%d) for statistics\n",nsteps-1);
+#ifdef DEBUG
+  fprintf(stderr,"oldstep: %d, oldt: %g, step: %d, t: %g, nenergy: %d\n",
+	  oldstep,oldt,step,t,nenergy);
+#endif
+  if (nsteps < 2) {
+    fprintf(stderr,"Not enough steps (%d) for statistics\n",nsteps);
   }
   else {
     /* Calculate the time difference */
-    delta_t = ((t - oldt)*nsteps)/(nsteps-1);
+    delta_t = t - oldt;
     
-    fprintf(stderr,"\nStatistics over %d steps [ %g ps ], %d sets, %d energy frames\n\n",
-	    nsteps,delta_t,nset,nenergy);
+    fprintf(stderr,"\nStatistics over %d steps [ %.4f thru %.4f ps ], %d data sets\n\n",
+	    nsteps,oldt,t,nset);
     
-#ifdef DEBUG
-    fprintf(stderr,"oldstep = %d, step = %d, oldt = %g, t = %g\n",
-	    oldstep,step,oldt,t);
-#endif
     fprintf(stderr,"%-35s  %10s  %10s  %10s  %10s",
 	    "Energy","Average","RMS","Drift","Tot-Drift");
     if (bDG)
@@ -332,6 +332,10 @@ static void analyse_ener(bool bCorr,char *corrfn,
       iset = set[i];
       m      = oldstep;
       k      = nsteps;
+#ifdef DEBUG
+      fprintf(stderr,"sum: %g, oldsum: %g, k: %d\n",
+	      ee[iset].esum,oldee[iset].esum,k);
+#endif
       aver   = (ee[iset].esum  - oldee[iset].esum)/k;
       fstep  = ((real) m) * ((real) (m+k))/((real) k);
       x1m    = (m > 0) ? oldee[iset].esum/m : 0.0;
@@ -518,10 +522,14 @@ int main(int argc,char *argv[])
     { "-fluc", FALSE, etBOOL, &bFluct,
       "Calculate autocorrelation of energy fluctuations rather than energy itself" }
   };
-
   static char *drleg[] = {
     "Running average",
     "Instantaneous"
+  };
+  static char *setnm[] = {
+    "Pres-XX", "Pres-XY", "Pres-XZ", "Pres-YX", "Pres-YY",
+    "Pres-YZ", "Pres-ZX", "Pres-ZY", "Pres-ZZ", "Temperature",
+    "Volume",  "Pressure"
   };
   
   FILE       *out;
@@ -529,10 +537,12 @@ int main(int argc,char *argv[])
   int        fp;
   int        ndrout;
   int        timecheck;
-  t_energy   *ee,*oldee;
+  t_energy   *oldee,**ee;
   t_drblock  dr;
-  int        teller=0,nre,step,oldstep;
-  real       t,oldt;
+  int        teller=0,nre,step[2],oldstep;
+  real       t[2],oldt;
+  int        cur=0;
+#define next (1-cur)
   real       *bounds,*violaver=NULL;
   int        *index;
   int        nbounds;
@@ -567,7 +577,9 @@ int main(int argc,char *argv[])
   
   /* Initiate energies and set them to zero */
   dr.ndr=0;  
-  snew(ee,nre);
+  snew(ee,2);
+  snew(ee[cur],nre);
+  snew(ee[next],nre);
   snew(oldee,nre);
   nenergy = 0;
 
@@ -575,11 +587,6 @@ int main(int argc,char *argv[])
 
   if (!bDisRe) {
     if (bVisco) {
-      static char *setnm[] = {
-	"Pres-XX", "Pres-XY", "Pres-XZ", "Pres-YX", "Pres-YY",
-	"Pres-YZ", "Pres-ZX", "Pres-ZY", "Pres-ZZ", "Temperature",
-	"Volume",  "Pressure"
-      };
       nset=asize(setnm);
       snew(set,nset);
       /* This is nasty code... To extract Pres tensor, Volume and Temperature */
@@ -623,45 +630,54 @@ int main(int argc,char *argv[])
   }
   
   /* Initiate counters */
-  step     = 0;
+  step[cur]= 0;
+  t[cur]   = 0;
   oldstep  = -1;
-  t        = 0;
   oldt     = 0;
   do {
     /* This loop searches for the first frame (when -b option is given), 
-     * or when this has been found it reads just once energy frame
+     * or when this has been found it reads just one energy frame
      */
     do {
-      bCont = do_enx(fp,&t,&step,&nre,ee,&dr);
+      bCont = do_enx(fp,&(t[next]),&(step[next]),&nre,ee[next],&dr);
       
-      if (bCont) {
-	timecheck=check_times(t);
-      
-	/* It is necessary for statistics to start counting from 1 */
-	step += 1; 
-      }
+      if (bCont)
+	timecheck = check_times(t[next]);
       
     } while (bCont && (timecheck < 0));
     
-    if (timecheck == 0) {
+    if ((timecheck == 0) && bCont) {
+      /* 
+       * Only copy the values we just read, if we are within the time bounds
+       * It is necessary for statistics to start counting from 1 
+       */
+      cur  = next;
+      step[cur]++;
+      
       if (oldstep == -1) {
-	/* Initiate the previous step data 
+	/* 
+	 * Initiate the previous step data 
 	 * Since step is incremented after reading, it is always >= 1,
 	 * therefore this will be executed only once.
 	 */
-	oldstep = step - 1;
-	oldt    = t;
-	/* If we did not start at the first step, oldstep will be > 0
+	oldstep = step[cur] - 1;
+	oldt    = t[cur];
+	/* 
+	 * If we did not start at the first step, oldstep will be > 0
 	 * and we must initiate the data in the array. Otherwise it remains 0
 	 */
 	if (oldstep > 0)
 	  for(i=0; (i<nre); i++) {
-	    oldee[i].esum = ee[i].esum - ee[i].e;
-	    oldee[i].eav  = ee[i].eav  - (sqr(oldee[i].esum - oldstep*ee[i].e)/
-					  (oldstep*step));
+	    oldee[i].esum = ee[cur][i].esum - ee[cur][i].e;
+	    oldee[i].eav  = ee[cur][i].eav  - 
+	      (sqr(oldee[i].esum - oldstep*ee[cur][i].e)/(oldstep*step[cur]));
 	  }
       }
       
+      /*
+       * Define distance restraint legends. Can only be done after
+       * the first frame has been read... (Then we know how many there are)
+       */
       if (bDisRe && bDRAll && !leg) {
 	snew(leg,dr.ndr*2);
 	for(i=0,k=dr.ndr; (i<dr.ndr); i++,k++) {
@@ -676,68 +692,70 @@ int main(int argc,char *argv[])
 	xvgr_legend(out,nset,leg);    
       }
       
-#define DONTSKIP(cnt) (skip) ? ((cnt % skip) == 0) : TRUE
-      
-      if (bCont) {
+      /* 
+       * Store energies for analysis afterwards... 
+       */
+      if (!bDisRe) {
+	if ((nenergy % 1000) == 0) {
+	  srenew(time,nenergy+1000);
+	  for(i=0; (i<=nset); i++)
+	    srenew(eneset[i],nenergy+1000);
+	}
+	time[nenergy] = t[cur];
+	sum=0;
+	  for(i=0; (i<nset); i++) {
+	    eneset[i][nenergy] = ee[cur][set[i]].e;
+	    sum += ee[cur][set[i]].e;
+	  }
+	if (bSum) 
+	  eneset[nset][nenergy] = sum;
+	nenergy++;
+      }
+      /* 
+       * Printing time, only when we do not want to skip frames
+       */
+      if ((!skip) || ((teller % skip) == 0)) {
+	print_one(out,bDp,t[cur]);
+	
 	/*******************************************
 	 * D I S T A N C E   R E S T R A I N T S  
 	 *******************************************/
-	if (!bDisRe) {
-	  if ((nenergy % 1000) == 0) {
-	    srenew(time,nenergy+1000);
-	    for(i=0; (i<=nset); i++)
-	      srenew(eneset[i],nenergy+1000);
-	  }
-	  time[nenergy] = t;
-	  sum=0;
-	  for(i=0; (i<nset); i++) {
-	    eneset[i][nenergy] = ee[set[i]].e;
-	    sum+=ee[set[i]].e;
-	  }
-	  if (bSum) 
-	    eneset[nset][nenergy] = sum;
-	  nenergy++;
-	}
-	if (DONTSKIP(teller)) {
-	  print_one(out,bDp,t);
-
-	  if (bDisRe) {
-	    if (violaver == NULL)
-	      snew(violaver,dr.ndr);
-	    
-	    /* Subtract bounds from distances, to calculate violations */
-	    calc_violations(dr.rt,dr.rav,
-			    nbounds,index,bounds,violaver,&sumt,&sumaver);
-	    
-	    if (bDRAll) {
-	      for(i=0; (i<nset); i++) {
-		sss=set[i];
+	if (bDisRe) {
+	  if (violaver == NULL)
+	    snew(violaver,dr.ndr);
+	  
+	  /* Subtract bounds from distances, to calculate violations */
+	  calc_violations(dr.rt,dr.rav,
+			  nbounds,index,bounds,violaver,&sumt,&sumaver);
+	  
+	  if (bDRAll) {
+	    for(i=0; (i<nset); i++) {
+	      sss=set[i];
 		if (sss < dr.ndr)
 		  fprintf(out,"  %8.4f",dr.rav[sss]);
 		else
 		  fprintf(out,"  %8.4f",dr.rt[sss-dr.ndr]);
-	      }
-	    }
-	    else {
-	      fprintf(out,"  %8.4f  %8.4f",sumaver,sumt);
 	    }
 	  }
-	  /*******************************************
-	   * E N E R G I E S
-	   *******************************************/
 	  else {
-	    if (bSum) 
-	      print_one(out,bDp,eneset[nset][nenergy-1]/nmol);
-	    else if ((nset == 1) && bAll) {
-	      print_one(out,bDp,ee[set[0]].e);
-	      print_one(out,bDp,ee[set[0]].esum);
-	      print_one(out,bDp,ee[set[0]].eav);
-	    }
-	    else for(i=0; (i<nset); i++)
-	      print_one(out,bDp,ee[set[i]].e);
+	    fprintf(out,"  %8.4f  %8.4f",sumaver,sumt);
 	  }
-	  fprintf(out,"\n");
 	}
+	/*******************************************
+	 * E N E R G I E S
+	   *******************************************/
+	else {
+	  if (bSum) 
+	    print_one(out,bDp,eneset[nset][nenergy-1]/nmol);
+	  else if ((nset == 1) && bAll) {
+	    print_one(out,bDp,ee[cur][set[0]].e);
+	    print_one(out,bDp,ee[cur][set[0]].esum);
+	    print_one(out,bDp,ee[cur][set[0]].eav);
+	  }
+	  else for(i=0; (i<nset); i++)
+	    print_one(out,bDp,ee[cur][set[i]].e);
+	}
+	  fprintf(out,"\n");
       }
       teller++;
     }
@@ -753,8 +771,8 @@ int main(int argc,char *argv[])
   else 
     analyse_ener(opt2bSet("-corr",NFILE,fnm),opt2fn("-corr",NFILE,fnm),
 		 bDG,bSum,bFluct,bVisco,opt2fn("-vis",NFILE,fnm),
-		 nmol,ndf,oldstep,step,oldt,t,time,reftemp,
-		 oldee,ee,nset,set,nenergy,eneset,leg);
+		 nmol,ndf,oldstep,oldt,step[cur],t[cur],time,reftemp,
+		 oldee,ee[cur],nset,set,nenergy,eneset,leg);
   
   xvgr_file(opt2fn("-o",NFILE,fnm),"-nxy");
     
