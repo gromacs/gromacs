@@ -59,13 +59,13 @@ static const t_nrnb_data nbdata[eNRNB] = {
   { "Buckingham",                      36 }, /* inl0200 */
   { "Buckingham(S)",                   36 }, /* inl0210 */  
   { "LJ(T)",                           52 }, /* inl0300 */
-  { "LJ(T)(S)",                        52 }, /* inl0310 */  
   { "FreeEner LJ(T)",                  65 }, /* inl0301 */
   { "Softcore LJ(T)",                 118 }, /* inl0302 */
+  { "LJ(T)(S)",                        52 }, /* inl0310 */  
   { "Buckingham(T)",                   57 }, /* inl0400 */
-  { "Buckingham(T)(S)",                57 }, /* inl0410 */  
   { "FreeEner Bham(T)",                89 }, /* inl0401 */
   { "Softcore Bham(T)",               128 }, /* inl0402 */
+  { "Buckingham(T)(S)",                57 }, /* inl0410 */  
   { "Coulomb",                         27 }, /* inl1000 */
   { "Coulomb(S)",                      27 }, /* inl1010 */
   { "Coulomb(W)",                      81 }, /* inl1020 */
