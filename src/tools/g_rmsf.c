@@ -201,9 +201,9 @@ int gmx_rmsf(int argc,char *argv[])
   char         *grpnames;
 
   real         bfac,pdb_bfac,*Uaver;
-  matrix       *U=NULL;
+  double       **U,*xav;
   atom_id      aid;
-  rvec         *xav,*rmsd_x=NULL;
+  rvec         *rmsd_x=NULL;
   real         *rmsf,invcount,totmass;
   int          d;
   real         count=0;
@@ -247,8 +247,10 @@ int gmx_rmsf(int argc,char *argv[])
     w_rls[index[i]]=top.atoms.atom[index[i]].m;
 
   /* Malloc the rmsf arrays */
-  snew(xav,isize);
+  snew(xav,isize*DIM);
   snew(U,isize);
+  for(i=0; i<isize; i++)
+    snew(U[i],DIM*DIM);
   snew(rmsf,isize);
   if (devfn)
     snew(rmsd_x, isize);
@@ -292,9 +294,9 @@ int gmx_rmsf(int argc,char *argv[])
     for(i=0; i<isize; i++) {
       aid = index[i];
       for(d=0; d<DIM; d++) {
-	xav[i][d] += x[aid][d];
+	xav[i*DIM + d] += x[aid][d];
 	for(m=0; m<DIM; m++)
-	  U[i][d][m] += x[aid][d]*x[aid][m];
+	  U[i][d*DIM + m] += x[aid][d]*x[aid][m];
       }
     }
     
@@ -316,11 +318,13 @@ int gmx_rmsf(int argc,char *argv[])
   snew(Uaver,DIM*DIM);
   totmass = 0;
   for(i=0; i<isize; i++) {
-    svmul(invcount,xav[i],xav[i]);
+    for(d=0; d<DIM; d++)
+      xav[i*DIM + d] *= invcount;
     for(d=0; d<DIM; d++)
       for(m=0; m<DIM; m++) {
-	U[i][d][m] = U[i][d][m]*invcount-xav[i][d]*xav[i][m];
-	Uaver[3*d+m] += top.atoms.atom[index[i]].m*U[i][d][m];
+	U[i][d*DIM + m] = U[i][d*DIM + m]*invcount 
+	  - xav[i*DIM + d]*xav[i*DIM + m];
+	Uaver[3*d+m] += top.atoms.atom[index[i]].m*U[i][d*DIM + m];
       }
     totmass += top.atoms.atom[index[i]].m;
   }
@@ -331,12 +335,12 @@ int gmx_rmsf(int argc,char *argv[])
     for(i=0; i<isize; i++) {
       aid = index[i];
       pdbatoms->pdbinfo[aid].bAnisotropic = TRUE;
-      pdbatoms->pdbinfo[aid].uij[U11] = 1e6*U[i][XX][XX];
-      pdbatoms->pdbinfo[aid].uij[U22] = 1e6*U[i][YY][YY];
-      pdbatoms->pdbinfo[aid].uij[U33] = 1e6*U[i][ZZ][ZZ];
-      pdbatoms->pdbinfo[aid].uij[U12] = 1e6*U[i][XX][YY];
-      pdbatoms->pdbinfo[aid].uij[U13] = 1e6*U[i][XX][ZZ];
-      pdbatoms->pdbinfo[aid].uij[U23] = 1e6*U[i][YY][ZZ];
+      pdbatoms->pdbinfo[aid].uij[U11] = 1e6*U[i][XX*DIM + XX];
+      pdbatoms->pdbinfo[aid].uij[U22] = 1e6*U[i][YY*DIM + YY];
+      pdbatoms->pdbinfo[aid].uij[U33] = 1e6*U[i][ZZ*DIM + ZZ];
+      pdbatoms->pdbinfo[aid].uij[U12] = 1e6*U[i][XX*DIM + YY];
+      pdbatoms->pdbinfo[aid].uij[U13] = 1e6*U[i][XX*DIM + ZZ];
+      pdbatoms->pdbinfo[aid].uij[U23] = 1e6*U[i][YY*DIM + ZZ];
     }
     sfree(U);
   }
@@ -347,7 +351,7 @@ int gmx_rmsf(int argc,char *argv[])
     label = "Atom";
 
   for(i=0; i<isize; i++)
-    rmsf[i] = U[i][XX][XX] + U[i][YY][YY] + U[i][ZZ][ZZ];
+    rmsf[i] = U[i][XX*DIM + XX] + U[i][YY*DIM + YY] + U[i][ZZ*DIM + ZZ];
   
   if (dirfn) {
     fprintf(stdout,"\n");
@@ -385,6 +389,9 @@ int gmx_rmsf(int argc,char *argv[])
 		bRes ? top.atoms.atom[index[i]].resnr+1 : i+1,sqrt(rmsf[i]));
     fclose(fp);
   }
+  
+  for(i=0; i<isize; i++)
+    pdbatoms->pdbinfo[index[i]].bfac = 800*M_PI*M_PI/3.0*rmsf[i];
 
   if (devfn) {
     for(i=0; i<isize; i++)
@@ -401,9 +408,6 @@ int gmx_rmsf(int argc,char *argv[])
     fclose(fp);
   }
 
-  for(i=0; i<isize; i++)
-    pdbatoms->pdbinfo[index[i]].bfac = 800*M_PI*M_PI/3.0*rmsf[i];
-
   if (opt2bSet("-oq",NFILE,fnm)) {
     /* Write a pdb file with B-factors and optionally anisou records */
     for(i=0; i<isize; i++)
@@ -414,7 +418,8 @@ int gmx_rmsf(int argc,char *argv[])
   if (opt2bSet("-ox",NFILE,fnm)) {
     /* Misuse xref as a temporary array */
     for(i=0; i<isize; i++)
-      rvec_add(xav[i],xcm,xref[index[i]]);
+      for(d=0; d<DIM; d++)
+	xref[index[i]][d] = xcm[d] + xav[i*DIM + d];
     /* Write a pdb file with B-factors and optionally anisou records */
     write_sto_conf_indexed(opt2fn("-ox",NFILE,fnm),title,pdbatoms,xref,NULL,
 			   pdbbox,isize,index);
