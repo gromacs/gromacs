@@ -170,7 +170,9 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
     pr_rvecs(debug,0,"x",x,mdatoms->nr);
     pr_rvecs(debug,0,"cgcm",fr->cg_cm,top->blocks[ebCGS].nr);
   }
-  low_calc_pot(logf,F_SR,fr,x,mdatoms,box_size,pot); 
+  /* Oxygens only */
+  low_calc_pot(logf,F_SR,fr,x,mdatoms,box_size,pot);
+  /* The rest */
   low_calc_pot(logf,F_LJ,fr,x,mdatoms,box_size,pot); 
 }
 
