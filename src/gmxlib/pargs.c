@@ -208,7 +208,7 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
   if (npargs > 0) {
 #define OPTLEN 12
 #define TYPELEN 6
-    fprintf(fp,"%12s %6s %6s  %s\n","Opt","Type","Value","Description");
+    fprintf(fp,"%12s %6s %6s  %s\n","Option","Type","Value","Description");
     fprintf(fp,"------------------------------------------------------\n");
     for(i=0; (i<npargs); i++) {
       ptr   = strstr(pa[i].desc,"HIDDEN");
@@ -226,18 +226,17 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
 	  strcpy(buf,pa[i].option);
 	sprintf(buf2,"%12s %6s %6s  %s\n",buf,argtp[pa[i].type],
 		pa_val(&(pa[i])),desc);
-	wdesc=wrap_lines(buf2,80,28);
 	if (strlen(buf)>((OPTLEN+TYPELEN)-strlen(argtp[pa[i].type]))) {
-	  wdesc[strlen(buf)]='\n';
-	  srenew(wdesc,strlen(wdesc)+1+OPTLEN);
-	  for(j=strlen(wdesc); j>strlen(buf); j--)
-	    wdesc[j+OPTLEN+1]=wdesc[j];
+	  buf2[strlen(buf)]='\n';  
+	  for(j=strlen(buf2); j>strlen(buf); j--)
+	    buf2[j+OPTLEN+1]=buf2[j];
 	  for(j=0; j<OPTLEN+1; j++)
-	    wdesc[strlen(buf)+1+j]=' ';
+	    buf2[strlen(buf)+1+j]=' ';
 	} else if (strlen(buf)>OPTLEN) {
-	  for(j=strlen(buf); j<strlen(wdesc)-(strlen(buf)-OPTLEN)+1; j++)
-	    wdesc[j]=wdesc[j+strlen(buf)-OPTLEN];
+	  for(j=strlen(buf); j<strlen(buf2)-(strlen(buf)-OPTLEN)+1; j++)
+	    buf2[j]=buf2[j+strlen(buf)-OPTLEN];
 	}
+	wdesc=wrap_lines(buf2,80,28);
 	fprintf(fp,wdesc);
 	sfree(wdesc);
       }

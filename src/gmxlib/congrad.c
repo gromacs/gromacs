@@ -352,7 +352,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     fprintf(stderr,"\nwriting lowest energy coords to traj...\n");
     xx=x;
     ff=f;
-    write_traj(log,cr,ftp2fn(efTRJ,nfile,fnm),
+    write_traj(log,cr,ftp2fn(efTRN,nfile,fnm),
 	       nsb,count,(real) count,
 	       lambda,nrnb,nsb->natoms,xx,xx,ff,parm->box);
     fmax=f_max(log,cr->left,cr->right,nsb->nprocs,start,end,f);

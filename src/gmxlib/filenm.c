@@ -63,15 +63,16 @@ static t_deffile deffile[efNR] = {
   { FALSE, ".wdp", "widom",  "-f", "g_widom input parameters."               },
   { FALSE, ".gct", "gct",    "-f", "general coupling stuff"                  },
   { FALSE, ".gpp", "group",  "-g", "group related input for grompp"          },
-  { TRUE,  ".???", "xtraj",  NULL, "Generic trajectory file format"          },
+  { TRUE,  ".???", "xtraj",  NULL, "Generic trajectory: xtc trr trj gro pdb g87"},
+  { TRUE,  ".???", "traj",   NULL, "Full precision trajectory: trr trj"      },
   { TRUE,  ".trr", "traj",   NULL, "Trajectory in portable xdr format" },
   { TRUE,  ".trj", "btraj",  NULL, "Trajectory file (cpu specific)"    },
   { TRUE , ".xtc", "ctraj",  NULL, "Compressed trajectory (portable xdr format)"},
   { FALSE, ".g87", "gtraj",  NULL, "Gromos-87 ASCII trajectory format" },
-  { TRUE,  ".???", "ener",   NULL, "Generic energy format" },
+  { TRUE,  ".???", "ener",   NULL, "Generic energy: edr ene" },
   { TRUE,  ".edr", "ener",   NULL, "Energy file in portable XDR format"      },
   { TRUE,  ".ene", "ener",   NULL, "Energy file"                             },
-  { FALSE, ".???", "xconf",  NULL, "Generic structure format"                },
+  { FALSE, ".???", "xconf",  NULL, "Generic structure: gro pdb tpr tpb tpa"  },
   { FALSE, ".gro", "conf",   "-c", "Coordinate file in Gromos-87 format"     },
   { FALSE, ".pdb", "eiwit",  "-f", "Protein data bank file"                  },
   { FALSE, ".brk", "eiwit",  "-f", "Brookhaven data bank file"               },
@@ -79,14 +80,14 @@ static t_deffile deffile[efNR] = {
   { TRUE , ".xdr", "cconf",  NULL, "Compressed coordinate file (portable xdr format)"},
   { FALSE, ".log", "run",    "-l", "Log file from MD/LD/EM/NM run"           },
   { FALSE, ".xvg", "graph",  "-o", "xvgr input file as produced by analysis tools"  },
-  { FALSE, ".out", "hello",  "-o", "generic output file"                     },
-  { FALSE, ".ndx", "index",  "-n", "GROMACS indexfile",                      },
-  { FALSE, ".top", "topol",  "-p", "GROMACS topology file"                   },
-  { FALSE, ".itp", "topinc", NULL, "Include file for GROMACS topology"       },
-  { TRUE,  ".???", "topol",  "-s", "Generic GROMACS run input file"          },
-  { TRUE,  ".tpr", "topol",  "-s", "XDR GROMACS run input file"              },
-  { FALSE, ".tpa", "topol",  "-s", "Ascii GROMACS run input file"            },
-  { TRUE,  ".tpb", "topol",  "-s", "Binary GROMACS run input file"           },
+  { FALSE, ".out", "hello",  "-o", "Generic output file"                     },
+  { FALSE, ".ndx", "index",  "-n", "Index file",                             },
+  { FALSE, ".top", "topol",  "-p", "Topology file"                           },
+  { FALSE, ".itp", "topinc", NULL, "Include file for topology"               },
+  { TRUE,  ".???", "topol",  "-s", "Generic run input: tpr tpb tpa"          },
+  { TRUE,  ".tpr", "topol",  "-s", "XDR run input file"                      },
+  { FALSE, ".tpa", "topol",  "-s", "Ascii run input file"                    },
+  { TRUE,  ".tpb", "topol",  "-s", "Binary run input file"                   },
   { FALSE, ".tex", "doc",    "-o", "LaTeX file, suitable for inclusion in article" },
   { FALSE, ".rtp", "residue",NULL, "Residue Type file used by pdb2gmx"       },
   { FALSE, ".atp", "atomtp", NULL, "Atomtype file used by pdb2gmx"           },
@@ -168,19 +169,19 @@ void pr_fns(FILE *fp,int nf,t_filenm tfn[])
   char buf[256],*wbuf;
 #define OPTLEN 4
 #define NAMELEN 14
-  fprintf(fp,"%4s %14s  %-12s  %s\n",
-	  "Opt","Filename","Type","Description");
+  fprintf(fp,"%6s %12s  %-12s  %s\n",
+	  "Option","Filename","Type","Description");
   fprintf(fp,"------------------------------------------------------------\n");
   for(i=0; (i<nf); i++) {
     sprintf(buf, "%4s %14s  %-12s  %s\n", tfn[i].opt,tfn[i].fn,
 	    fileopt(tfn[i].flag),deffile[tfn[i].ftp].descr);
-    wbuf=wrap_lines(buf,80,35);
     if ( (strlen(tfn[i].opt)>OPTLEN) && 
 	 (strlen(tfn[i].opt)<=((OPTLEN+NAMELEN)-strlen(tfn[i].fn))) ) {
       for(j=strlen(tfn[i].opt); 
-	  j<strlen(wbuf)-(strlen(tfn[i].opt)-OPTLEN)+1; j++)
-	wbuf[j]=wbuf[j+strlen(tfn[i].opt)-OPTLEN];
+	  j<strlen(buf)-(strlen(tfn[i].opt)-OPTLEN)+1; j++)
+	buf[j]=buf[j+strlen(tfn[i].opt)-OPTLEN];
     }
+    wbuf=wrap_lines(buf,80,35);
     fprintf(fp,wbuf);
     sfree(wbuf);
   }
@@ -288,10 +289,18 @@ void set_grpfnm(t_filenm *fnm,char *name,int nopts,int ftps[])
 
 static void set_trxnm(t_filenm *fnm,char *name)
 {
-  static    int trjs[]={ efTRR, efTRJ, efXTC, efG87, efPDB, efGRO };
-#define NTRJS asize(trjs)
+  static    int trxs[]={ efXTC, efTRR, efTRJ, efGRO, efPDB, efG87 };
+#define NTRXS asize(trxs)
 
-  set_grpfnm(fnm,name,NTRJS,trjs);
+  set_grpfnm(fnm,name,NTRXS,trxs);
+}
+
+static void set_trnnm(t_filenm *fnm,char *name)
+{
+  static    int trns[]={ efTRR, efTRJ };
+#define NTRNS asize(trns)
+
+  set_grpfnm(fnm,name,NTRNS,trns);
 }
 
 static void set_stxnm(t_filenm *fnm,char *name)
@@ -333,6 +342,9 @@ static void set_filenm(t_filenm *fnm,char *name)
   if (fnm->ftp == efTRX) {
     set_trxnm(fnm,name);
   }
+  else if (fnm->ftp == efTRN) {
+    set_trnnm(fnm,name);
+  } 
   else if (fnm->ftp == efSTX) {
     set_stxnm(fnm,name);
   }

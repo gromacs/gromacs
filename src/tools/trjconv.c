@@ -107,7 +107,7 @@ void do_patch(char *fn)
 
 void check_trn(char *fn)
 {
-  if ((fn2ftp(fn) != efTRJ)  || (fn2ftp(fn) != efTRR))
+  if ((fn2ftp(fn) != efTRJ)  && (fn2ftp(fn) != efTRR))
     fatal_error(0,"%s is not a trj file, exiting\n",fn);
 }
 
@@ -174,47 +174,6 @@ bool bRmod(double a,double b)
     return FALSE;
 }
 
-char *ftpname(int ftp)
-{
-  static char name[10];
-  
-  switch (ftp) {
-  case efTRJ: 
-    strcpy(name,"trj");
-    break;
-  case efG87: 
-    strcpy(name,"gromos 87");
-    break;
-  case efXTC: 
-    strcpy(name,"xtc");
-    break;
-  case efGRO: 
-    strcpy(name,"gro");
-    break;
-  case efPDB: 
-    strcpy(name,"pdb");
-    break;
-  default:
-    strcpy(name,"unknown");
-  }
-  
-  return name;
-}
-
-bool check_ftp(int ftp, int nftp)
-{
-  char name[10], nname[10];
-  
-  if (ftp!=efTRJ) {
-    strcpy( name,ftpname( ftp));
-    strcpy(nname,ftpname(nftp));
-    fprintf(stderr,"WARNING: multiple output filetypes set (%s and %s), "
-	    "will use %s\n",name,nname,name);
-    return FALSE;
-  }
-  return TRUE;
-}
-
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -227,18 +186,17 @@ int main(int argc,char *argv[])
     "[BB]6.[bb] remove duplicate frames[BR]",
     "[BB]7.[bb] reduce the number of frames[BR]",
     "[BB]8.[bb] change the timestamps of the frames (e.g. t0 and delta-t)[BR]",
-    "Currently five formats are supported for input and output:",
-    "[TT].trj[tt], [TT].xtc[tt], [TT].g87[tt], [TT].pdb[tt], [TT].gro[tt].",
-    "On input the file format is detected from the file extension,",
-    "on output a [TT].trj[tt] file is generated unless one of the other file",
-    "types is explicitly requested by a command line option.",
+    "Currently six formats are supported for input and output:",
+    "[TT].xtc[tt], [TT].trr[tt], [TT].trj[tt], [TT].gro[tt], [TT].pdb[tt] and",
+    "[TT].g87[tt].",
+    "The file formats are detected from the file extension.",
     "For the [TT].pdb[tt] and [TT].gro[tt] files compression may be used",
     "using the regular UNIX compress command (this assumes the program ",
     "[TT]compress[tt] to be in your path which might not always be the ",
     "case). For [TT].gro[tt] and [TT].xtc[tt] files the output precision ",
     "can be given as a number of ",
     "decimal places. Note that velocities are only supported in ",
-    "[TT].trj[tt] and [TT].gro[tt] files.[PAR]",
+    "[TT].trr[tt], [TT].trj[tt] and [TT].gro[tt] files.[PAR]",
     "In the case of [TT].pdb[tt] or [TT].gro[tt] for output each frame is",
     "written to a separate file. The option [TT]-app[tt] can be used to",
     "write one pdb file with all frames concatenated, or to append output",
@@ -371,16 +329,13 @@ int main(int argc,char *argv[])
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bToldYouOnce=FALSE;
   bool         bHaveNextFrame,bHaveX,bHaveV;
   char         *grpnm;
-  char         title[256],out_file[256],command[256],filemode[5];
+  char         title[256],in_file[256],out_file[256],out_file2[256];
+  char         command[256],filemode[5];
   int          xdr;
 
   t_filenm fnm[] = {
     { efTRX, "-f",  NULL, ffREAD },
-    { efTRJ, "-ot", "trajout", ffOPTWR },
-    { efXTC, "-ox", "ctrajout", ffOPTWR },
-    { efG87, "-og", "gtrajout", ffOPTWR },
-    { efGRO, "-or", "confout", ffOPTWR },
-    { efPDB, "-op", NULL, ffOPTWR },
+    { efTRX, "-o", "trajout", ffWRITE },
     { efTPX, NULL,  NULL, ffOPTRD },
     { efNDX, NULL,  NULL, ffOPTRD }
   };  
@@ -392,12 +347,10 @@ int main(int argc,char *argv[])
 		    0,NULL);
 
   /* Check command line */
+  strcpy(in_file,opt2fn("-f",NFILE,fnm));
   if (ttrunc != -1) {
-    do_trunc(ftp2fn(efTRX,NFILE,fnm),ttrunc);
+    do_trunc(in_file,ttrunc);
   }
-  /*else if (bPatch) {
-    do_patch(ftp2fn(efTRX,NFILE,fnm));
-  }*/
   else {
     if (bIFit) {
       bFit=TRUE;
@@ -419,49 +372,35 @@ int main(int argc,char *argv[])
 
     bIndex=ftp2bSet(efNDX,NFILE,fnm);
     
-    /* Determine output type */  
-    ftp=efTRJ;
-    if (ftp2bSet(efXTC,NFILE,fnm))
-      if (check_ftp(ftp,efXTC))
-	ftp=efXTC;
-    if (ftp2bSet(efPDB,NFILE,fnm))
-      if (check_ftp(ftp,efPDB))
-	ftp=efPDB;
-    if (ftp2bSet(efGRO,NFILE,fnm))
-      if (check_ftp(ftp,efGRO))
-	ftp=efGRO;
-    if (ftp2bSet(efG87,NFILE,fnm))
-      if (check_ftp(ftp,efG87))
-	ftp=efG87;
+    /* Determine output type */ 
+    strcpy(out_file,opt2fn("-o",NFILE,fnm));
+    ftp=fn2ftp(out_file);
+    fprintf(stderr,"Will write %s: %s\n",ftp2ext(ftp),ftp2desc(ftp));
     if (bVels) {
       /* check if velocities are possible in input and output files */
-      ftpout=fn2ftp(ftp2fn(efTRX,NFILE,fnm));
-      bVels=((ftp==efTRJ) || (ftp==efGRO)) 
-	&& ((ftpout==efTRJ) || (ftpout==efGRO));
+      ftpout=fn2ftp(in_file);
+      bVels=((ftp==efTRR) ||(ftp==efTRJ) || (ftp==efGRO)) 
+	&& ((ftpout==efTRR) ||(ftpout==efTRJ) || (ftpout==efGRO));
     } else {
       bHaveX=TRUE;
       bHaveV=FALSE;
     }
-    
-    if (bAppend) {
+    if ((bAppend) && (fexist(out_file))) {
       strcpy(filemode,"a");
-      if (fexist(ftp2fn_null(ftp,NFILE,fnm))) {
-	fprintf(stderr,"APPENDING to existing file %s\n",
-		ftp2fn(ftp,NFILE,fnm));
-      }
-    } else {
+      fprintf(stderr,"APPENDING to existing file %s\n",out_file);
+    } else
       strcpy(filemode,"w");
-    }
     switch (ftp) {
     case efXTC:
-      xdr = open_xtc(ftp2fn(ftp,NFILE,fnm),filemode);
+      xdr = open_xtc(out_file,filemode);
       break;
     case efG87:
-      out=ftp2FILE(ftp,NFILE,fnm,filemode);
+      out=ffopen(out_file,filemode);
       break;
+    case efTRR:
     case efTRJ:
       out=NULL;
-      trjout = open_tpx(ftp2fn(ftp,NFILE,fnm),filemode);
+      trjout = open_tpx(out_file,filemode);
       break;
     }
     
@@ -504,7 +443,7 @@ int main(int argc,char *argv[])
     }
     else {
       /* no index file, so read natoms from TRX */
-      natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
+      natoms=read_first_x(&status,in_file,&t,&x,box);
       close_trj(status);
       snew(index,natoms);
       for(i=0;i<natoms;i++)
@@ -548,9 +487,9 @@ int main(int argc,char *argv[])
     }
     /* open trj file for reading */
     if (bVels)
-      natoms=read_first_x_v(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,&v,box);
+      natoms=read_first_x_v(&status,in_file,&t,&x,&v,box);
     else
-      natoms=read_first_x  (&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,   box);
+      natoms=read_first_x  (&status,in_file,&t,&x,   box);
     if (bSetTime)
       tshift=tzero-t;
     else
@@ -743,14 +682,14 @@ int main(int argc,char *argv[])
 	    
 	    sprintf(title,"Generated by trjconv : %s t= %9.3f",*(top.name),t);
 	    if (bAppend) {
-	      sprintf(out_file,"%s\0",ftp2fn(efGRO,NFILE,fnm));
-	      fp=ffopen(out_file,"a");
+	      sprintf(out_file2,"%s\0",out_file);
+	      fp=ffopen(out_file2,"a");
 	    } else {
 	      if (bTDump)
-		sprintf(out_file,"%s\0",ftp2fn(efGRO,NFILE,fnm));
+		sprintf(out_file2,"%s\0",out_file);
 	      else
-		sprintf(out_file,"%d_%s\0",file_nr,ftp2fn(efGRO,NFILE,fnm));
-	      fp=ffopen(out_file,"w");
+		sprintf(out_file2,"%d_%s\0",file_nr,out_file);
+	      fp=ffopen(out_file2,"w");
 	    }
 	    write_hconf_p(fp,title,&useatoms,prec,xout,bHaveV ? v : NULL,box);
 	    ffclose(fp);
@@ -770,15 +709,15 @@ int main(int argc,char *argv[])
 	      for(nn=0; (nn<useatoms.nr); nn++)
 		pdba[nn].chain=cc;
 	      
-	      sprintf(out_file,"%s\0",ftp2fn(efPDB,NFILE,fnm));
-	      fp=ffopen(out_file,"a");
+	      sprintf(out_file2,"%s\0",out_file);
+	      fp=ffopen(out_file2,"a");
 	    }
 	    else {
 	      if (bTDump)
-		sprintf(out_file,"%s\0",ftp2fn(efPDB,NFILE,fnm));
+		sprintf(out_file2,"%s\0",out_file);
 	      else
-		sprintf(out_file,"%d_%s\0",file_nr,ftp2fn(efPDB,NFILE,fnm));
-	      fp=ffopen(out_file,"w");
+		sprintf(out_file2,"%d_%s\0",file_nr,out_file);
+	      fp=ffopen(out_file2,"w");
 	    }
 	    fprintf(fp,"REMARK    GENERATED BY TRJCONV : %s t= %9.3f\n",
 		    *(top.name),t);

@@ -66,10 +66,10 @@ static void init_table(t_lutab *lookup_table)
       index++;
     }
 }
-
+/*
 void init_lookup_table(FILE *log)
 {
   fprintf(log,"Generating lookup table for invsqrt calculation in C\n");
   init_table(&lookup_table);
 }
-
+*/

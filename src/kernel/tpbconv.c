@@ -258,7 +258,7 @@ int main (int argc, char *argv[])
   t_filenm fnm[] = {
     { efMDP, "-pi",  NULL,   ffOPTRD },
     { efMDP, "-po", "mdout", ffOPTWR },
-    { efTRX, "-f",  NULL,    ffOPTRD },
+    { efTRN, "-f",  NULL,    ffOPTRD },
     { efTPX, NULL,  NULL,    ffREAD  },
     { efTPX, "-o",  "tpxout",ffWRITE },
     { efNDX, NULL,  NULL,    ffOPTRD },
@@ -303,13 +303,13 @@ int main (int argc, char *argv[])
     get_ir(ftp2fn(efMDP,NFILE,fnm),opt2fn("-po",NFILE,fnm),irnew,gopts);
   }
   
-  if (ftp2bSet(efTRX,NFILE,fnm)) {
-    fn = ftp2fn(efTRX,NFILE,fnm);
+  if (ftp2bSet(efTRN,NFILE,fnm)) {
+    fn = ftp2fn(efTRN,NFILE,fnm);
     printf("\nREADING COORDS, VELS AND BOX FROM TRAJECTORY %s...\n\n",fn);
     
     sfree(x);
     sfree(v);
-    natoms = read_first_x_v(&fp,ftp2fn(efTRX,NFILE,fnm),&t,&x,&v,box);
+    natoms = read_first_x_v(&fp,ftp2fn(efTRN,NFILE,fnm),&t,&x,&v,box);
 
     if (top.atoms.nr != natoms) 
       fatal_error(0,"Number of atoms in Topology (%d) "
@@ -345,7 +345,7 @@ int main (int argc, char *argv[])
     ir->init_lambda = lambda;
   }
   
-  if (!ftp2bSet(efTRX,NFILE,fnm)) {
+  if (!ftp2bSet(efTRN,NFILE,fnm)) {
     get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
 	      &gnx,&index,&grpname);
     bSel=(gnx!=natoms);

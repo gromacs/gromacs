@@ -236,8 +236,10 @@ static void write_texman(FILE *out,char *program,
 	      fileopt(fnm[i].flag),check_tex(ftp2desc(fnm[i].ftp)));
     fprintf(out,"\\end{tabularx}\n");
     fprintf(out,"\\end{table}\n");
+    /*
     fprintf(out,"Remember that filenames are not fixed, but \n");
     fprintf(out,"file extensions are.\n");
+    */
   }
   if (npargs > 0) {
     fprintf(out,"\\subsubsection*{Other options.}\n");
@@ -300,8 +302,10 @@ static void write_nroffman(FILE *out,
       fprintf(out,".BI \"%s\" \" %s\" \n.B %s\n %s \n\n",
 	      fnm[i].opt,fnm[i].fn,fileopt(fnm[i].flag),
 	      check_nroff(ftp2desc(fnm[i].ftp)));
+    /*
     fprintf(out,"Remember that filenames are not fixed, but \n");
     fprintf(out,"file extensions are.\n");
+    */
   }
   
   /* other options */
@@ -383,10 +387,14 @@ static void write_ttyman(FILE *out,
   if (nfile > 0) {
     fprintf(out,"\n");
     pr_fns(out,nfile,fnm);
+    /*
     fprintf(out,"Remember that filenames are not fixed, but file extensions are.\n");
+    */
   }
   if (npargs > 0) {
+    /*
     fprintf(out,"\n");
+    */
     print_pargs(out,npargs,pa);
   }
 }
@@ -443,11 +451,13 @@ static void write_htmlman(FILE *out,
 	      fnm[i].opt,ftp2ext(fnm[i].ftp),fnm[i].fn,fileopt(fnm[i].flag),
 	      NSR(ftp2desc(fnm[i].ftp)));
     fprintf(out,"</TABLE>\n");
+    /*
     fprintf(out,"Remember that filenames are not fixed, but \n");
     fprintf(out,"file extensions are.\n");
+    */
   }
   if (npargs > 0) {
-    fprintf(out,"<p><br>\n");
+    fprintf(out,"<p>\n");
     fprintf(out,"<h3>Other options</h3>\n");
     fprintf(out,
 	    "<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>\n"

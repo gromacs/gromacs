@@ -447,7 +447,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	ff=NULL;    
       if (do_per_step(steps_accepted,parm->ir.nstxout)) {
 	xx=pos[Try];   
-	write_traj(log,cr,ftp2fn(efTRJ,nfile,fnm), 
+	write_traj(log,cr,ftp2fn(efTRN,nfile,fnm), 
 		   nsb,count,(real) count, 
 		   lambda,nrnb,nsb->natoms,xx,vv,ff,parm->box); 
       } else 
@@ -501,7 +501,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     fprintf(stderr,"\nwriting lowest energy coords to traj...\n"); 
     xx=pos[Min]; 
     ff=force[Min]; 
-    write_traj(log,cr,ftp2fn(efTRJ,nfile,fnm), 
+    write_traj(log,cr,ftp2fn(efTRN,nfile,fnm), 
  	       nsb,count,(real) count, 
  	       lambda,nrnb,nsb->natoms,xx,vv,ff,parm->box); 
     fmax=f_max(log,cr->left,cr->right,nsb->nprocs,start,end,force[Min]); 

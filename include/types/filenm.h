@@ -30,7 +30,7 @@
 /* this enum should correspond to the array deffile in gmxlib/filenm.c */
 enum {
   efMDP, efGBP, efGCP, efGIP, efGDP, efWDP, efGCT, efGPP,
-  efTRX, efTRR, efTRJ, efXTC, efG87, 
+  efTRX, efTRN, efTRR, efTRJ, efXTC, efG87, 
   efENX, efEDR, efENE,
   efSTX, efGRO, efPDB, efBRK, efENT, efXDR,
   efLOG, efXVG, efOUT,

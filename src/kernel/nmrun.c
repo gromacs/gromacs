@@ -273,12 +273,12 @@ int main(int argc,char *argv[])
   static int  nprocs=1,nDLB=0,nstepout=10;
   static t_pargs pa[] = {
     { "-np",      FALSE, etINT, &nprocs,
-      "Number of processors, must be the same as used for grompp." },
+      "Number of processors, must be the same as used for grompp" },
     { "-v",       FALSE, etBOOL,&bVerbose, "Verbose mode" },
     { "-compact", FALSE, etBOOL,&bCompact,
-      "Write a compact log file, i.e. do not write full virial and energy group matrix (these are also in the energy file, so this is redundant) " },
+      "Write a compact log file, i.e. do not write a lot of things which are already in the energy file" },
     { "-dlb",     FALSE, etINT, &nDLB,
-      "Use dynamic load balancing every ... step. BUGGY do not use" },
+      "HIDDENUse dynamic load balancing every ... step. BUGGY do not use" },
     { "-stepout", FALSE, etINT, &nstepout,
       "Frequency of writing the remaining runtime" }
   };

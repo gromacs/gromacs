@@ -560,7 +560,7 @@ int main (int argc, char *argv[])
     { efNDX, NULL,  NULL,    ffOPTRD },
     { efTOP, NULL,  NULL,    ffREAD  },
     { efTPX, "-o",  NULL,    ffWRITE },
-    { efTRX, "-t",  NULL,    ffOPTRD }
+    { efTRN, "-t",  NULL,    ffOPTRD }
   };
 #define NFILE asize(fnm)
 
@@ -661,10 +661,10 @@ int main (int argc, char *argv[])
   triple_check(ir,&sys);
   close_symtab(&sys.symtab);
 
-  if (ftp2bSet(efTRX,NFILE,fnm)) {
+  if (ftp2bSet(efTRN,NFILE,fnm)) {
     if (bVerbose)
       fprintf(stderr,"getting data from old trajectory ...\n");
-    cont_status(ftp2fn(efTRX,NFILE,fnm),opts->bGenVel,time,ir,&natoms,
+    cont_status(ftp2fn(efTRN,NFILE,fnm),opts->bGenVel,time,ir,&natoms,
 		&x,&v,box,&nre,&e,&sys);
   }
   /* This is also necessary for setting the multinr arrays */

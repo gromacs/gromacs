@@ -126,7 +126,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   shift_self(graph,fr->shift_vec,x);
   fprintf(log,"Done rmpbc\n");
 
-  traj     = ftp2fn(efTRJ,nfile,fnm);
+  traj     = ftp2fn(efTRN,nfile,fnm);
   xtc_traj = ftp2fn(efXTC,nfile,fnm);
   where();
   
@@ -444,7 +444,7 @@ int main(int argc,char *argv[])
   t_commrec    *cr;
   static t_filenm fnm[] = {
     { efTPX, NULL, NULL,      ffREAD },
-    { efTRR, "-o", NULL,      ffWRITE },
+    { efTRN, "-o", NULL,      ffWRITE },
     { efXTC, "-x", NULL,      ffOPTWR },
     { efGRO, "-c", "confout", ffWRITE },
     { efENX, "-e", "ener",    ffWRITE },
@@ -462,10 +462,10 @@ int main(int argc,char *argv[])
   static int  nprocs=1,nDLB=0,nstepout=10;
   static t_pargs pa[] = {
     { "-np",      FALSE, etINT, &nprocs,
-      "Number of processors, must be the same as used for grompp." },
+      "Number of processors, must be the same as used for grompp" },
     { "-v",       FALSE, etBOOL,&bVerbose, "Verbose mode" },
     { "-compact", FALSE, etBOOL,&bCompact,
-      "Write a compact log file, i.e. do not write full virial and energy group matrix (these are also in the energy file, so this is redundant) " },
+      "Write a compact log file, i.e. do not write a lot of things which are already in the energy file" },
     { "-dlb",     FALSE, etINT, &nDLB,
       "HIDDENUse dynamic load balancing every ... step. BUGGY do not use" },
     { "-stepout", FALSE, etINT, &nstepout,
