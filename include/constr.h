@@ -39,26 +39,27 @@ static char *SRCID_constr_h = "$Id$";
 #endif
 #include<callf77.h>
 
-extern int bshakef(FILE *log,		/* Log file			*/
-		   int natoms,		/* Total number of atoms	*/
-		   real invmass[],	/* Atomic masses		*/
-		   int nblocks,		/* The number of shake blocks	*/
-		   int sblock[],        /* The shake blocks             */
-		   t_idef *idef,	/* The interaction def		*/
-		   t_inputrec *ir,	/* Input record		        */
-		   matrix box,		/* The box			*/
-		   rvec x_s[],		/* Coords before update		*/
-		   rvec xp[],		/* Output coords		*/
-		   t_nrnb *nrnb,        /* Performance measure          */
-		   real lambda,         /* FEP lambda                   */
-		   real *dvdlambda);    /* FEP force                    */
+extern bool bshakef(FILE *log,		/* Log file			*/
+		    int natoms,		/* Total number of atoms	*/
+		    real invmass[],	/* Atomic masses		*/
+		    int nblocks,	/* The number of shake blocks	*/
+		    int sblock[],       /* The shake blocks             */
+		    t_idef *idef,	/* The interaction def		*/
+		    t_inputrec *ir,	/* Input record		        */
+		    matrix box,		/* The box			*/
+		    rvec x_s[],		/* Coords before update		*/
+		    rvec xp[],		/* Output coords		*/
+		    t_nrnb *nrnb,       /* Performance measure          */
+		    real lambda,        /* FEP lambda                   */
+		    real *dvdlambda,    /* FEP force                    */
+		    bool bDumpOnError); /* Dump debugging stuff on error*/
 /* Shake all the atoms blockwise. It is assumed that all the constraints
  * in the idef->shakes field are sorted, to ascending block nr. The
  * sblock array points into the idef->shakes.iatoms field, with block 0 
  * starting
  * at sblock[0] and running to ( < ) sblock[1], block n running from 
  * sblock[n] to sblock[n+1]. Array sblock should be large enough.
- * Return 0 when OK, -1 when shake-error
+ * Return TRUE when OK, FALSE when shake-error
  */
 extern void csettle(FILE *log,
 		    int nshake,		/* Number of water molecules 	*/
@@ -76,7 +77,7 @@ extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 		   real invmass[],real tt[],real lagr[],int *nerror);
 /* Regular iterative shake */
 
-extern void constrain(FILE *log,t_topology *top,t_inputrec *ir,int step,
+extern bool constrain(FILE *log,t_topology *top,t_inputrec *ir,int step,
 		      t_mdatoms *md,int start,int homenr,
 		      rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 		      real lambda,real *dvdlambda,t_nrnb *nrnb,
@@ -90,6 +91,9 @@ extern void constrain(FILE *log,t_topology *top,t_inputrec *ir,int step,
  * So when min_proj=xprime, the constraint components are projected out.
  *
  * Init_constraints must have be called once, before calling constrain.
+ *
+ * Return TRUE if OK, FALSE in case of shake error
+ *
  */
 
 extern int count_constraints(t_topology *top,t_commrec *cr);

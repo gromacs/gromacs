@@ -46,6 +46,7 @@ static char *SRCID_constr_c = "$Id$";
 #include "smalloc.h"
 #include "vec.h"
 #include "physics.h"
+#include "names.h"
 #include "txtdump.h"
 
 typedef struct {
@@ -256,12 +257,12 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
   }
 }
 
-static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
+static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 			    int step,t_mdatoms *md,int start,int homenr,
 			    int *nbl,int **sbl,
 			    rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 			    real lambda,real *dvdlambda,bool bCoordinates,
-			    bool bInit,t_nrnb *nrnb)
+			    bool bInit,t_nrnb *nrnb,bool bDumpOnError)
 {
   static int       *bla1,*bla2,*blnr,*blbnb,nrtot=0;
   static rvec      *r;
@@ -274,7 +275,9 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
   int              b,i,j,nit,warn,p_imax,error;
   real             wang,p_max,p_rms;
   real             dt,dt_2;
-
+  bool             bOK;
+  
+  bOK = TRUE;
   if (bInit) {
     nc = top->idef.il[F_SHAKE].nr/3;
     init_lincs(stdlog,top,ir,md,start,homenr,
@@ -283,7 +286,8 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 	       &bllen,&blc,&blcc,&blm,&tmp1,&tmp2,&tmp3,&lincslam,
 	       &bllen0,&ddist);
     bItEqOrder = (getenv("GMX_ACCURATE_LINCS") != NULL);
-  } else {
+  } 
+  else {
     if (nc == 0)
       return;
 
@@ -335,7 +339,7 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 	*dvdlambda+=dvdl;
       }
       
-      if (do_per_step(step,ir->nstlog) || step<0) {
+      if (do_per_step(step,ir->nstlog) || (step<0)) {
 	fprintf(stdlog,"   Rel. Constraint Deviation:  Max    between atoms     RMS\n");
 	fprintf(stdlog,"       Before LINCS         %.6f %6d %6d   %.6f\n",
 		p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
@@ -345,24 +349,24 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
       }
       
       if (warn > 0) {
-	cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
-	sprintf(buf,"\nStep %d, time %g (ps)  LINCS WARNING\n"
-		"relative constraint deviation after LINCS:\n"
-		"max %.6f (between atoms %d and %d) rms %.6f\n",
-		step,ir->init_t+step*ir->delta_t,
-		p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
-	fprintf(stdlog,"%s",buf);
-	fprintf(stderr,"%s",buf);
-	lincs_warning(x,xprime,nc,bla1,bla2,bllen,wang);
-	if (p_max > 0.5) {
-	  dump_confs(step,&(top->atoms),x,xprime,box);
-	  fatal_error(0,"Bond deviates more than half its own length");
+	if (bDumpOnError) {
+	  cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
+	  sprintf(buf,"\nStep %d, time %g (ps)  LINCS WARNING\n"
+		  "relative constraint deviation after LINCS:\n"
+		  "max %.6f (between atoms %d and %d) rms %.6f\n",
+		  step,ir->init_t+step*ir->delta_t,
+		  p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
+	  fprintf(stdlog,"%s",buf);
+	  fprintf(stderr,"%s",buf);
+	  lincs_warning(x,xprime,nc,bla1,bla2,bllen,wang);
 	}
+	bOK = (p_max < 0.5);
       }
-      for(b=0; b<nc; b++)
+      for(b=0; (b<nc); b++)
 	if (bllen0[b] == 0)
 	  bllen[b] = 0;
-    } else {
+    } 
+    else {
 #ifdef USE_FORTRAN
       F77_FUNC(flincsp,FLINCSP)(x[0],xprime[0],min_proj[0],&nc,bla1,bla2,blnr,blbnb,
 				blc,blcc,blm,&ir->nProjOrder,
@@ -378,6 +382,7 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
     inc_nrnb(nrnb,eNR_LINCS,nc);
     inc_nrnb(nrnb,eNR_LINCSMAT,(2+ir->nProjOrder)*nrtot);
   }
+  return bOK;
 }
      
 static void pr_sortblock(FILE *fp,char *title,int nsb,t_sortblock sb[])
@@ -391,7 +396,7 @@ static void pr_sortblock(FILE *fp,char *title,int nsb,t_sortblock sb[])
 	    sb[i].blocknr);
 }
 
-static void low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
+static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
 			  int step,t_mdatoms *md,int start,int homenr,
 			  rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 			  real lambda,real *dvdlambda,t_nrnb *nrnb,
@@ -401,8 +406,10 @@ static void low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
   static int       *sblock=NULL;
   static int       nsettle,settle_type;
   static int       *owptr;
-
+  static bool      bDumpOnError = TRUE;
+  
   char        buf[STRLEN];
+  bool        bOK;
   t_sortblock *sb;
   t_block     *blocks=&(top->blocks[ebSBLOCKS]);
   t_idef      *idef=&(top->idef);
@@ -411,11 +418,14 @@ static void low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
   int         i,j,m,bnr;
   int         ncons,bstart,error;
   
+  bOK = TRUE;
   if (bInit) {
     /* Output variables, initiate them right away */
     
     if ((ir->etc==etcBERENDSEN) || (ir->epc==epcBERENDSEN))
       please_cite(log,"Berendsen84a");
+    
+    bDumpOnError = (getenv("NO_SHAKE_ERROR") == NULL);
     
     /* Put the oxygen atoms in the owptr array */
     nsettle=idef->il[F_SETTLE].nr/2;
@@ -515,33 +525,30 @@ static void low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
     if (idef->il[F_SHAKE].nr) {
       if (ir->eConstrAlg == estLINCS || !bCoordinates) {
 	please_cite(stdlog,"Hess97a");
-	constrain_lincs(stdlog,top,ir,0,md,
-			start,homenr,
-			&nblocks,&sblock,
-			NULL,NULL,NULL,NULL,0,NULL,bCoordinates,TRUE,nrnb);
-      } else
+	bOK = constrain_lincs(stdlog,top,ir,0,md,start,homenr,&nblocks,&sblock,
+			      NULL,NULL,NULL,NULL,0,NULL,bCoordinates,TRUE,nrnb,
+			      bDumpOnError);
+      } 
+      else
 	please_cite(stdlog,"Ryckaert77a");
     }
-  } else {
+  } 
+  else {
+    /* !bInit */
     if (nblocks > 0) {
       where();
       
-      if (ir->eConstrAlg == estSHAKE) {
-	error=bshakef(stdlog,homenr,md->invmass,nblocks,sblock,idef,
-		      ir,box,x,xprime,nrnb,lambda,dvdlambda);
-	if (error == -1) {
-	  dump_confs(step,&(top->atoms),x,xprime,box);
-	  fprintf(stdlog,"SHAKE ERROR at step %d\n",step);
-	  fatal_error(0,"SHAKE ERROR at step %d\n",step);
-	}
-      }
-      
-      if (ir->eConstrAlg == estLINCS)
-	constrain_lincs(stdlog,top,ir,step,md,
-			start,homenr,
-			&nblocks,&sblock,
-			x,xprime,min_proj,box,lambda,dvdlambda,
-			bCoordinates,FALSE,nrnb);
+      if (ir->eConstrAlg == estSHAKE)
+	bOK = bshakef(stdlog,homenr,md->invmass,nblocks,sblock,idef,
+		      ir,box,x,xprime,nrnb,lambda,dvdlambda,bDumpOnError);
+      else if (ir->eConstrAlg == estLINCS)
+	bOK = constrain_lincs(stdlog,top,ir,step,md,
+			      start,homenr,&nblocks,&sblock,
+			      x,xprime,min_proj,box,lambda,dvdlambda,
+			      bCoordinates,FALSE,nrnb,bDumpOnError);
+      if (!bOK && bDumpOnError)
+	fprintf(stdlog,"Constraint error in algorithm %s at step %d\n",
+		eshake_names[ir->eConstrAlg],step);
     }
     if (nsettle > 0) {
       int  ow1;
@@ -559,26 +566,25 @@ static void low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
       csettle(stdlog,nsettle,owptr,x[0],xprime[0],dOH,dHH,mO,mH,&error);
 #endif
       inc_nrnb(nrnb,eNR_SETTLE,nsettle);
-      if (error>=0) {
-	dump_confs(step,&(top->atoms),x,xprime,box);
-	sprintf(buf,
-		"\nt = %.3f ps: Water molecule starting at atom %d can not be "
+      bOK = (error < 0);
+      if (!bOK && bDumpOnError)
+	fprintf(stdlog,"\nt = %.3f ps: Water molecule starting at atom %d can not be "
 		"settled.\nCheck for bad contacts and/or reduce the timestep.",
 		ir->init_t+step*ir->delta_t,owptr[error]+1);
-	fprintf(stdlog,buf);
-	fatal_error(0,buf);
-      }
     }
+    if (!bOK && bDumpOnError) 
+      dump_confs(step,&(top->atoms),x,xprime,box);
   }
+  return bOK;
 }
 
-void constrain(FILE *log,t_topology *top,t_inputrec *ir,int step,
+bool constrain(FILE *log,t_topology *top,t_inputrec *ir,int step,
 	       t_mdatoms *md,int start,int homenr,
 	       rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 	       real lambda,real *dvdlambda,t_nrnb *nrnb,bool bCoordinates)
 {
-  low_constrain(log,top,ir,step,md,start,homenr,x,xprime,min_proj,box,
-		lambda,dvdlambda,nrnb,bCoordinates,FALSE);
+  return low_constrain(log,top,ir,step,md,start,homenr,x,xprime,min_proj,box,
+		       lambda,dvdlambda,nrnb,bCoordinates,FALSE);
 }
 
 int count_constraints(t_topology *top,t_commrec *cr)

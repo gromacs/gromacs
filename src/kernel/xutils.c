@@ -424,6 +424,7 @@ void print_forcefield(FILE *fp,real energy,int natoms,rvec f[],rvec fshake[],
     if (print_ga(fp,ga,rmsf,energy,range,tol)) {
       if (gmx_parallel)
 	gmx_finalize();
+      fprintf(stderr,"\n");
       exit(0);
     }
   }

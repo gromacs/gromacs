@@ -345,9 +345,9 @@ static void check_cons(FILE *log,int nc,rvec x[],rvec xp[],
   }
 }
 
-int bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
-	    t_idef *idef,t_inputrec *ir,matrix box,rvec x_s[],rvec xp[],
-	    t_nrnb *nrnb,real lambda,real *dvdlambda)
+bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
+	     t_idef *idef,t_inputrec *ir,matrix box,rvec x_s[],rvec xp[],
+	     t_nrnb *nrnb,real lambda,real *dvdlambda,bool bDumpOnError)
 {
   static  bool bFirst=TRUE;
   static  bool bSafe;
@@ -398,9 +398,10 @@ int bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
     check_cons(log,blen,x_s,xp,idef->iparams,iatoms,invmass);
 #endif
     
-    if (n0==0) {
-      check_cons(log,blen,x_s,xp,idef->iparams,iatoms,invmass);
-      return -1;
+    if (n0 == 0) {
+      if (bDumpOnError)
+	check_cons(log,blen,x_s,xp,idef->iparams,iatoms,invmass);
+      return FALSE;
     }
     tnit   += n0*blen;
     trij   += blen;
@@ -431,6 +432,6 @@ int bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
   inc_nrnb(nrnb,eNR_SHAKE,tnit);
   inc_nrnb(nrnb,eNR_SHAKE_RIJ,trij);
   
-  return 0;
+  return TRUE;
 }
 

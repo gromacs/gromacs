@@ -198,7 +198,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   real        timestep=0;
   double      tcount=0;
   bool        bIonize=FALSE,bMultiSim=FALSE,bGlas=FALSE;
-  bool        bTCR=FALSE,bConverged=FALSE;
+  bool        bTCR=FALSE,bConverged=FALSE,bOK;
   real        mu_aver=0,fmax;
   int         gnx,ii;
   atom_id     *grpindex;
@@ -346,9 +346,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   while ((!bRerunMD && (step<=parm->ir.nsteps)) ||  
 	 (bRerunMD && bNotLastFrame)) {
     
-    /*dynamic_load_balancing(bVerbose,cr,&(top->blocks[ebCGS]),
-			   &(top->blocks[ebSBLOCKS]),NULL,x,parm->box,XX);
-    */
     if (bRerunMD) {
       if (rerun_fr.bStep)
 	step = rerun_fr.step;
@@ -568,10 +565,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       clear_rvecs(nsb->natoms,buf);
       
     /* This is also parallellized, but check code in update.c */
-    update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
-	   parm,SAfactor,mdatoms,x,graph,f,buf,vold,vt,v,
-	   top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata,bNEMD);
-	   
+    bOK = update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
+		 parm,SAfactor,mdatoms,x,graph,f,buf,vold,vt,v,
+		 top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata,bNEMD);
+    if (!bOK && !bFFscan)
+      fatal_error(0,"Constraint error: Shake, Lincs or Settle could not solve the constrains");
+    
     /* The coordinates (x) were unshifted in update */
     if (bFFscan && ((nshell == 0) || bConverged))
       print_forcefield(log,ener[F_EPOT],HOMENR(nsb),f,buf,xcopy,
@@ -725,7 +724,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     if (bXmdrun && bTCR) {
       /* Only do GCT when the relaxation of shells (minimization) has converged,
-       * otherwise we might be coupling agains bogus energies. 
+       * otherwise we might be coupling to bogus energies. 
        * In parallel we must always do this, because the other sims might
        * update the FF.
        */

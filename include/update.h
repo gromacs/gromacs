@@ -53,7 +53,7 @@ static char *SRCID_update_h = "$Id$";
 #include "force.h"
 #include "pull.h"
 
-extern void update(int          natoms,	/* number of atoms in simulation */
+extern bool update(int          natoms,	/* number of atoms in simulation */
 		   int      	start,
 		   int          homenr,	/* number of home particles 	*/
 		   int          step,
@@ -79,6 +79,7 @@ extern void update(int          natoms,	/* number of atoms in simulation */
 		   t_edsamyn    *edyn,
 		   t_pull       *pulldata,
 		   bool         bNEMD);
+/* Return TRUE if OK, FALSE in case of Shake Error */
      
 extern void calc_ke_part(bool bFirstStep,bool bSD,int start,int homenr,
 			 rvec vold[],rvec v[],rvec vt[],
