@@ -255,7 +255,6 @@ void pr_fns(FILE *fp,int nf,t_filenm tfn[])
 void pr_fopts(FILE *fp,int nf,t_filenm tfn[])
 {
   int i,j;
-  char *fext;
   
   for(i=0; (i<nf); i++) {
     fprintf(fp," \"n/%s/f:*.",tfn[i].opt);
