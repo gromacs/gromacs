@@ -44,7 +44,7 @@ static float Temperature=298.0;
 #include "copyrite.h"
 #include "statutil.h"
 #include "tpxio.h"
-
+#include <string.h>
 
 bool FlipProf;
 static real Tolerance;

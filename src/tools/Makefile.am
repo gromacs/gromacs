@@ -23,7 +23,7 @@ bin_PROGRAMS = \
 	g_clustsize	genbox		genconf		genpr		\
 	make_ndx	mk_angndx	trjcat		trjconv        	\
 	trjorder	wheel		xpm2ps		genion		\
-	anadock		cdist		disco
+	anadock		cdist		disco           g_wham
 
 
 AUTOCORR_SRC         = 	autocorr.c expfit.c polynomials.c levenmar.c
