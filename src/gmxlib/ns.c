@@ -104,6 +104,22 @@ static void reset_neighbor_list(FILE *log,t_forcerec *fr)
   }
 }
 
+static int count_neighbours(t_forcerec *fr,int *n_c,int *n_ljc,int *n_free)
+{
+  int i,nrj_c=0,nrj_ljc=0,nrj_free=0;
+  
+  for(i=0; (i < fr->nn); i++) {
+    nrj_c    += fr->vdw[i].nrj;
+    nrj_ljc  += fr->coul[i].nrj;
+    nrj_free += fr->free[i].nrj;
+  }
+  *n_c    = nrj_c;
+  *n_ljc  = nrj_ljc;
+  *n_free = nrj_free;
+  
+  return nrj_c+nrj_ljc+nrj_free;
+}
+
 static void new_i_nblist(FILE *log,t_nblist *nlist,int ftype,int i_atom,
 			 bool bWater,int shift)
 {
@@ -405,8 +421,7 @@ static int ns_simple_core(FILE *log,t_forcerec *fr,
 			  t_topology *top,t_groups *grps,
 			  t_mdatoms *md,
 			  rvec box_size,t_excl bexcl[],
-			  t_ns_buf ns_buf[],
-			  bool bBHAM)
+			  t_ns_buf ns_buf[])
 {
   static   atom_id  *aaj=NULL;
   int      naaj,k;
@@ -506,12 +521,11 @@ static bool get_dx(int cx,int Nx,int tx,int delta,int *dx0,int *dx1)
  *
  ****************************************************/
 
-int ns5_core(FILE *log,t_forcerec *fr,
+int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 	     matrix box,rvec box_size,int ngener,
 	     t_topology *top,t_groups *grps,
 	     t_grid *grid,rvec x[],t_excl bexcl[],
-	     int nbtype,t_nrnb *nrnb,
-	     t_mdatoms *md)
+	     t_nrnb *nrnb,t_mdatoms *md)
 {
   static atom_id *nl_lr,*nl_sr=NULL;
   t_block *cgs=&(top->blocks[ebCGS]);
@@ -522,7 +536,7 @@ int ns5_core(FILE *log,t_forcerec *fr,
   real r2;
   int  nlr2,nsr2,nns;
   int  j,nrj;
-  int  icg,total_cg,i0,nri,naaj,min_icg,icg_naaj,jjcg,cgj0;
+  int  icg,iicg,total_cg,i0,nri,naaj,min_icg,icg_naaj,jjcg,cgj0;
   atom_id *i_atoms;
   int  *grida,*gridnra,*gridind;
   rvec xi,*cgcm,*svec;
@@ -556,7 +570,8 @@ int ns5_core(FILE *log,t_forcerec *fr,
 		" Cylindrical cut-off should be done in "
 		" file %s",__FILE__);
   }
-  for(icg=fr->cg0; (icg < fr->hcg); icg++) {
+  for(iicg=fr->cg0; (iicg < fr->hcg); iicg++) {
+    icg      = cg_index[iicg];
     i0       = cgs->index[icg];
     nri      = cgs->index[icg+1]-i0;
     i_atoms  = &(cgs->a[i0]);
@@ -566,7 +581,7 @@ int ns5_core(FILE *log,t_forcerec *fr,
     icg_naaj = icg+naaj;
     min_icg  = icg_naaj-total_cg;
     
-    ci2xyz(grid,icg,&cx,&cy,&cz);
+    ci2xyz(grid,iicg,&cx,&cy,&cz);
 #ifdef NS5DB
     fprintf(log,"icg=%5d, naaj=%5d, cx=%2d, cy=%2d, cz=%2d\n",
 	    icg,naaj,cx,cy,cz);
@@ -603,11 +618,11 @@ int ns5_core(FILE *log,t_forcerec *fr,
 	  for (dx=dx0; (dx<=dx1); dx++) {
 	    for (dy=dy0; (dy<=dy1); dy++) {
 	      for (dz=dz0; (dz<=dz1); dz++) {
-		cj=xyz2ci(Ny,Nz,dx,dy,dz);
-		nrj=gridnra[cj];
-		cgj0=gridind[cj];
+		cj   = xyz2ci(Ny,Nz,dx,dy,dz);
+		nrj  = gridnra[cj];
+		cgj0 = gridind[cj];
 		for (j=0; (j<nrj); j++) {
-		  jjcg=grida[cgj0+j];
+		  jjcg = grida[cgj0+j];
 		  
 		  /* check whether this guy is in range! */
 		  if (((jjcg >= icg) && (jjcg < icg_naaj)) ||
@@ -661,28 +676,46 @@ int ns5_core(FILE *log,t_forcerec *fr,
   return nns;
 }
 
-static void mv_grid(t_commrec *cr,t_grid *grid,int cgload[])
-{
-  int i,start,nr;
-  int cur=cr->pid;
-  int *ci;
-#define next ((cur+1) % cr->nprocs)
+static rvec *sptr;
+static int  sdim;
 
-  ci=grid->cell_index;
-  for(i=0; (i<cr->nprocs-1); i++) {
-    start=(cur == 0) ? 0 : cgload[cur-1];
-    nr=cgload[cur]-start;
-    gmx_tx(cr->left,&(ci[start]),nr*sizeof(*ci));
-    
-    start=(next == 0) ? 0 : cgload[next-1];
-    nr=cgload[next]-start;
-    gmx_rx(cr->right,&(ci[start]),nr*sizeof(*ci));
-    
-    gmx_tx_wait(cr->left);
-    gmx_rx_wait(cr->right);
-    
-    cur=next;
+static int  rv_comp(const void *a,const void *b)
+{
+  int  ia = *(int *)a;
+  int  ib = *(int *)b;
+  real diff;
+  
+  diff = sptr[ia][sdim] - sptr[ib][sdim];
+  if (diff < 0)
+    return -1;
+  else if (diff == 0)
+    return 0;
+  else
+    return 1;
+}
+
+static void sort_charge_groups(FILE *log,
+			       t_commrec *cr,int cg_index[],int slab_index[],
+			       rvec cg_cm[],int Dimension)
+{
+  int i,nrcg,cgind;
+  
+  nrcg = slab_index[cr->nprocs];
+  sptr = cg_cm;
+  sdim = Dimension;
+  qsort(cg_index,nrcg,sizeof(cg_index[0]),rv_comp);
+  
+  if (debug) {
+    fprintf(debug,"Just sorted the cg_cm array on dimension %d\n",Dimension);
+    fprintf(debug,"Index:  Coordinates of cg_cm\n");
+    for(i=0; (i<nrcg); i++) {
+      cgind = cg_index[i];
+      fprintf(debug,"%8d%10.3f%10.3f%10.3f\n",cgind,
+	      cg_cm[cgind][XX],cg_cm[cgind][YY],cg_cm[cgind][ZZ]);
+    }
   }
+  sptr = NULL;
+  sdim = -1;
 }
 
 int search_neighbours(FILE *log,t_forcerec *fr,
@@ -695,12 +728,12 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   static   t_grid      *grid=NULL;
   static   t_excl      *bexcl;
   static   t_ns_buf    *ns_buf=NULL;
-  static   bool        bBHAM;
-
+  static   int         *cg_index=NULL,*slab_index=NULL;
+  
   t_block  *cgs=&(top->blocks[ebCGS]);
   rvec     box_size;
-  int      m,ngener;
-/*   int      ncg_2; */
+  int      i,m,ngener;
+
   int      nsearch;
   bool     bGrid;
   char     *ptr;
@@ -708,18 +741,13 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   /* Set some local variables */
   bGrid=fr->bGrid;
   ngener=top->atoms.grps[egcENER].nr;
-  /*
-  ncg_2=min(cgs->nr,2+cgs->nr/2);
-  */
+  
   for(m=0; (m<DIM); m++)
     box_size[m]=box[m][m];
 
   /* First time initiation of arrays etc. */  
   if (bFirst) {
     int icg,nr_in_cg,maxcg;
-    
-    /* Test whether we have Buckingham or Lennard-Jones... */
-    bBHAM=(top->idef.functype[0] == F_BHAM);
     
     /* Compute largest charge groups size (# atoms) */
     nr_in_cg=1;
@@ -746,7 +774,24 @@ int search_neighbours(FILE *log,t_forcerec *fr,
       fprintf(log,"%s: I will increment I-lists by %d and J-lists by %d\n",
 	      __FILE__,NLI_INC,NLJ_INC);
     }
-        
+
+    /* Check whether we have to do domain decomposition,
+     * if so set local variables for the charge group index and the
+     * slab index.
+     */
+    if (fr->bDomDecomp) {
+      snew(slab_index,cr->nprocs+1);
+      for(i=0; (i<=cr->nprocs); i++)
+	slab_index[i] = i*((real) cgs->nr/((real) cr->nprocs));
+      fr->cg0 = slab_index[cr->pid];
+      fr->hcg = slab_index[cr->pid+1] - fr->cg0;
+      if (debug)
+	fprintf(debug,"Will use DOMAIN DECOMPOSITION, from charge group index %d to %d on cpu %d\n",fr->cg0,fr->cg0+fr->hcg,cr->pid);
+    }
+    snew(cg_index,cgs->nr+1);
+    for(i=0; (i<=cgs->nr);  i++)
+      cg_index[i] = i;
+    
     if (bGrid) {
       snew(grid,1);
       init_grid(log,grid,fr->ndelta,box,fr->rlong,cgs->nr);
@@ -768,21 +813,25 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   if (bGrid) {
     int start = 0;       /* fr->cg0       */
     int end   = cgs->nr; /* fr->cg0+ncg_2 */
+
+    if (fr->bDomDecomp) {
+      sort_charge_groups(log,cr,cg_index,slab_index,fr->cg_cm,fr->Dimension);
+    }
+        
+    fill_grid(log,fr->bDomDecomp,cg_index,
+	      grid,box,cgs->nr,fr->cg0,fr->hcg,fr->cg_cm);
     
-    fill_grid(log,grid,box,cgs->nr,fr->cg0,fr->hcg,fr->cg_cm);
-    if (cr->nprocs > 1) 
-      mv_grid(cr,grid,nsb->workload);
-#ifdef DEBUG      
-    check_grid(log,grid);
-    print_grid(log,grid);
-#endif
-    calc_elemnr(log,grid,start,end,cgs->nr);
+    if (PAR(cr))
+      mv_grid(cr,fr->bDomDecomp,cg_index,grid,nsb->workload);
+      
+    calc_elemnr(log,fr->bDomDecomp,cg_index,grid,start,end,cgs->nr);
     calc_ptrs(grid);
-    grid_last(log,grid,start,end,cgs->nr);
-#ifdef DEBUG
-    check_grid(log,grid);
-    print_grid(log,grid);
-#endif
+    grid_last(log,fr->bDomDecomp,cg_index,grid,start,end,cgs->nr);
+
+    if (debug) {
+      check_grid(debug,grid);
+      print_grid(debug,grid,fr->bDomDecomp,cg_index);
+    }
   }
   else {
     if (fr->bLongRange)
@@ -794,14 +843,14 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   
   /* Do the core! */
   if (bGrid)
-    nsearch = ns5_core(log,fr,box,box_size,ngener,top,grps,
-		       grid,x,bexcl,bBHAM ? F_BHAM : F_LJ,nrnb,md);
+    nsearch = ns5_core(log,fr,cg_index,box,box_size,ngener,top,grps,
+		       grid,x,bexcl,nrnb,md);
   else {
     /* Only allocate this when necessary, saves 100 kb */
     if (ns_buf == NULL)
       snew(ns_buf,SHIFTS);
     nsearch = ns_simple_core(log,fr,x,box,ngener,top,grps,md,box_size,
-			     bexcl,ns_buf,bBHAM);
+			     bexcl,ns_buf);
   }
   where();
   
@@ -811,6 +860,12 @@ int search_neighbours(FILE *log,t_forcerec *fr,
 
   inc_nrnb(nrnb,eNR_NS,nsearch);
   inc_nrnb(nrnb,eNR_LR,fr->nlr);
-  
+
+  if (debug) {
+    int n_c,n_ljc,n_free,ntot;
+    
+    ntot = count_neighbours(fr,&n_c,&n_ljc,&n_free);
+    fprintf(debug,"%d neighbours\n",ntot);
+  }
   return nsearch;
 }

@@ -6,6 +6,8 @@
 #include "macros.h"
 #include "physics.h"
 #include "names.h"
+#include "fatal.h"
+#include "txtdump.h"
 #include "nrnb.h"
 
 /* 
@@ -106,8 +108,8 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
       exit(1);
     }
     if (debug) {
-      pr_rvecs(debug,0,"PC: PPP ",PPP,1);
-      pr_rvecs(debug,0,"PC: fac ",factor,1);
+      pr_rvecs(debug,0,"PC: PPP ",&PPP,1);
+      pr_rvecs(debug,0,"PC: fac ",&factor,1);
       pr_rvecs(debug,0,"PC: mu  ",mu,DIM);
     }
     /* Scale the positions using matrix operation */

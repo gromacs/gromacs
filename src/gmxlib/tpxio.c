@@ -498,6 +498,7 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)
   fio_setdebug(fp,bDebugMode());
   
   /* NEW! XDR tpb file */
+  precision = sizeof(real);
   if (bRead) {
     do_string(buf);
     if (strncmp(buf,"VERSION",7) != 0)
@@ -516,7 +517,6 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)
   }
   else {
     do_string(GromacsVersion());
-    precision = sizeof(real);
     bDouble = (precision == sizeof(double));
     fio_setprecision(fp,bDouble);
     do_int(precision);

@@ -37,9 +37,6 @@ static char *SRCID_testfft_c = "$Id$";
 #include "complex.h"
 #include "fftgrid.h"
 #include "mdrun.h"
-#ifdef USE_SGI_FFT
-#include <fft.h>
-#endif
 
 void testfft(FILE *fp,t_complex ***grid,int nx,int ny,int nz,bool bFirst)
 {

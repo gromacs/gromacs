@@ -66,16 +66,9 @@ void csettle(FILE *log,int nshake, int owptr[],real b4[], real after[],
   
   /* Initialized data */
   static bool bFirst=TRUE;
+  static real wo,wh,wohh;
+  static real ra,rb,rc,rc2,rone;
   
-  static real wo = (float)16.;
-  static real wh = (float)1.008;
-  static real wohh = (float)18.016;
-  static real ra = (float).00655822665508295;
-  static real rb = (float).0520494178974837;
-  static real rc = (float).07568;
-  static real rc2 = (float).15136;
-  static real rone;
-    
   /* Local variables */
   real gama, beta, alpa, xcom, ycom, zcom, al2be2;
   real axlng, aylng, azlng, trns11, trns21, trns31, trns12, trns22, 
@@ -92,23 +85,21 @@ void csettle(FILE *log,int nshake, int owptr[],real b4[], real after[],
   int i, ow1, hw2, hw3;
 
   if (bFirst) {
-    wo = mO;
-    wh = mH;
-    wohh = mO+2.0*mH;
-    rc=dHH/2.0;
-    ra=2.0*wh*sqrt(dOH*dOH-rc*rc)/wohh;
-    rb=sqrt(dOH*dOH-rc*rc)-ra;
-    rc2=dHH;
-    rone=1.0;
+    fprintf(log,"Going to use C-settle (%d waters)\n",nshake);
+    wo     = mO;
+    wh     = mH;
+    wohh   = mO+2.0*mH;
+    rc     = dHH/2.0;
+    ra     = 2.0*wh*sqrt(dOH*dOH-rc*rc)/wohh;
+    rb     = sqrt(dOH*dOH-rc*rc)-ra;
+    rc2    = dHH;
+    rone   = 1.0;
 
-    wo/=wohh;
-    wh/=wohh;
+    wo    /= wohh;
+    wh    /= wohh;
         
-    bFirst=FALSE;
+    bFirst = FALSE;
   }
-#ifdef DEBUG    
-  fprintf(log,"Going to settle again (%d waters)\n",nshake);
-#endif
 #ifdef PRAGMAS
 #pragma ivdep
 #endif

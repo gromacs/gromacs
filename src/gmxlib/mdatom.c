@@ -33,7 +33,7 @@ static char *SRCID_mdatom_c = "$Id$";
 #include "smalloc.h"
 #include "main.h"
 
-t_mdatoms *atoms2md(t_atoms *atoms,bool bPert)
+t_mdatoms *atoms2md(t_atoms *atoms,bool bPert,bool bFree)
 {
   int       i,np;
   double    tm;
@@ -95,16 +95,18 @@ t_mdatoms *atoms2md(t_atoms *atoms,bool bPert)
     md->cU3[i]      	= atoms->atom[i].grpnr[egcUser3];
   }
   md->tmass  = tm;
-  
-  /*sfree(atoms->atom);
-  atoms->atom=NULL;*/
+
+  if (bFree) {  
+    sfree(atoms->atom);
+    atoms->atom=NULL;
+  }
   
   fprintf(stdlog,"There are %d atoms for free energy perturbation\n",np);
   
   return md;
 }    
 
-void md2atoms(t_mdatoms *md,t_atoms *atoms)
+void md2atoms(t_mdatoms *md,t_atoms *atoms,bool bFree)
 {
   int i;
   
@@ -126,26 +128,28 @@ void md2atoms(t_mdatoms *md,t_atoms *atoms)
     atoms->atom[i].grpnr[egcXTC]  =md->cXTC[i];
 
   }
-  sfree(md->massA);
-  sfree(md->massB);
-  sfree(md->massT);
-  sfree(md->invmass);
-  sfree(md->chargeA);
-  sfree(md->chargeB);
-  sfree(md->chargeT);
-  sfree(md->resnr);
-  sfree(md->typeA);
-  sfree(md->typeB);
-  sfree(md->ptype);
-  sfree(md->cTC);
-  sfree(md->cENER);
-  sfree(md->cACC);
-  sfree(md->cFREEZE);
-
-  sfree(md->cU1);
-  sfree(md->cU2);
-  sfree(md->cU3);
-  sfree(md->cXTC);
+  if (bFree) {
+    sfree(md->massA);
+    sfree(md->massB);
+    sfree(md->massT);
+    sfree(md->invmass);
+    sfree(md->chargeA);
+    sfree(md->chargeB);
+    sfree(md->chargeT);
+    sfree(md->resnr);
+    sfree(md->typeA);
+    sfree(md->typeB);
+    sfree(md->ptype);
+    sfree(md->cTC);
+    sfree(md->cENER);
+    sfree(md->cACC);
+    sfree(md->cFREEZE);
+    
+    sfree(md->cU1);
+    sfree(md->cU2);
+    sfree(md->cU3);
+    sfree(md->cXTC);
+  }
 }
 
 void init_mdatoms(t_mdatoms *md,real lambda,bool bFirst)

@@ -35,7 +35,7 @@ static char *SRCID_ghat_c = "$Id$";
 #include "physics.h"
 #include "lrutil.h"
 #include "fftgrid.h"
-#include "ghat.h"
+#include "xvgr.h"
 
 void symmetrize_ghat(int nx,int ny,int nz,real ***ghat)
 {
@@ -105,6 +105,87 @@ void mk_ghat(FILE *fp,int nx,int ny,int nz,real ***ghat,
     symmetrize_ghat(nx,ny,nz,ghat);
 }
 
+void wr_ghat(char *fn,int n1max,int n2max,int n3max,real h1,real h2,real h3,
+	     real ***ghat,int nalias,int porder,int niter,bool bSym,rvec beta,
+	     real r1,real rc,real pval,real zval,real eref,real qopt)
+{
+  FILE *fp;
+  int  N1MAX,N2MAX,N3MAX;
+  bool bNL;
+  real rx,ry,rz;
+  int  ii,jj,kk,nn;
+  
+  fp = ffopen(fn,"w");
+  fprintf(fp,"%8d  %8d  %8d  %15.10e  %15.10e %15.10e\n",
+	  n1max,n2max,n3max,h1,h2,h3);
+  fprintf(fp,"%8d  %8d  %8d  %8d  %15.10e  %15.10e  %15.10e\n",
+	  nalias,porder,niter,bSym,beta[XX],beta[YY],beta[ZZ]);
+  fprintf(fp,"%10g  %10g  %10g  %10g  %10g  %10g\n",
+	  rc,r1,pval,zval,eref,qopt);
+  
+  if (bSym) {
+    N1MAX = n1max/2+1;
+    N2MAX = n2max/2+1;
+    N3MAX = n3max/2+1;
+  }
+  else {
+    N1MAX = n1max;
+    N2MAX = n2max;
+    N3MAX = n3max;
+  }
+  for(ii=0; (ii<N1MAX); ii++) {
+    for(jj=0; (jj<N2MAX); jj++) {
+      for(kk=0,nn=1; (kk<N3MAX); kk++,nn++) { 
+	bNL=FALSE;
+	fprintf(fp,"  %12.5e",ghat[ii][jj][kk]);
+	if ((nn % 6) == 0) {
+	  fprintf(fp,"\n");
+	  bNL=TRUE;
+	}
+      }
+      if (!bNL)
+	fprintf(fp,"\n");
+    }
+  }
+  fclose(fp);
+  
+  fp=xvgropen("ghat.xvg","G-Hat","k","gk");
+  for(ii=0; (ii<N1MAX); ii++) {
+    rx=sqr((real)(ii*h1));
+    for(jj=0; (jj<N2MAX); jj++) {
+      ry=rx+sqr((real)(jj*h2));
+      for(kk=0; (kk<N3MAX); kk++) {
+	rz=ry+sqr((real)(kk*h3));
+	fprintf(fp,"%10g  %10g\n",sqrt(rz),ghat[ii][jj][kk]);
+      }
+    }
+  }
+  fclose(fp);
+}
+
+void pr_scalar_gk(char *fn,int nx,int ny,int nz,rvec box,real ***ghat)
+{
+  FILE *fp;
+  int  ii,jj,kk;
+  real rx,ry,rz;
+  real k1;
+  rvec k,lll;
+  
+  calc_lll(box,lll);
+  
+  fp=xvgropen(fn,"G-Hat","k","gk");
+  for(ii=0; (ii<nx); ii++) {
+    for(jj=0; (jj<ny); jj++) {
+      for(kk=0; (kk<nz); kk++) {
+	calc_k(lll,ii,jj,kk,nx,ny,nz,k);
+	k1 = norm(k);
+	fprintf(fp,"%10g  %10g\n",k1,ghat[ii][jj][kk]);
+      }
+    }
+  }
+  fclose(fp);
+}
+
 real ***rd_ghat(FILE *log,char *fn,ivec igrid,rvec gridspace,
 		rvec beta,int *porder,real *rshort,real *rlong)
 {
@@ -122,7 +203,7 @@ real ***rd_ghat(FILE *log,char *fn,ivec igrid,rvec gridspace,
   fscanf(in,"%d%d%d%d%lf%lf%lf",&nalias,porder,&niter,&bSym,&alX,&alY,&alZ);
   fscanf(in,"%lf%lf%lf%lf%lf%lf",&acut,&r1,&pval,&zval,&eref,&qopt);
   
-  fprintf(log,"\nOpening %s for reading ghat function\n",fn);
+  fprintf(log,"\nOpened %s for reading ghat function\n",fn);
   fprintf(log,"gridsize: %10d %10d %10d\n",ix,iy,iz);
   fprintf(log,"spacing:  %10g %10g %10g\n",gx,gy,gz);
   fprintf(log,"    nalias    porder     niter      bSym      beta[X-Z]\n"
@@ -157,7 +238,11 @@ real ***rd_ghat(FILE *log,char *fn,ivec igrid,rvec gridspace,
 	gh[ix][iy][iz] = ddd;
       }
   ffclose(in);
-  
+
+  wr_ghat("output.hat",igrid[XX],igrid[YY],igrid[ZZ],gx,gy,gz,gh,
+	  nalias,*porder,niter,bSym,beta,
+	  *rshort,*rlong,pval,zval,eref,qopt);
+    
   if (bSym) 
     symmetrize_ghat(igrid[XX],igrid[YY],igrid[ZZ],gh);
   

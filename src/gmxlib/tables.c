@@ -129,6 +129,30 @@ void copy2table(int n,int n0,int stride,
 enum { etabLJ6, etabLJ12, etabDavid, etabRF, etabCOUL, 
        etabLJ6sw, etabLJ12sw, etabCOULsw, etabNR };
 
+void read_table(int n0,int n,real x[],
+		real Vtab[],real Vtab2[],
+		real Ftab[],real Ftab2[],
+		char *fn,t_forcerec *fr)
+{
+  real **y=NULL;
+  int  i,nx,ny;
+  
+  nx = read_xvg(fn,&y,&ny);
+  if (ny != 5)
+    fatal_error(0,"Trying to read file %s, but no colums = %d, should be 5",
+		fn,ny);
+  for(i=0; (i<nx); i++) {
+    x[i]     = y[0][i];
+    Vtab[i]  = y[1][i];
+    Ftab[i]  = y[2][i];
+    Vtab2[i] = y[3][i];
+    Ftab2[i] = y[4][i];
+  }
+  for(i=0; (i<ny); i++)
+    sfree(y[i]);
+  sfree(y);
+}
+
 void fill_table(int n0,int n,real x[],
 		real Vtab[],real Vtab2[],
 		real Ftab[],real Ftab2[],
@@ -339,15 +363,22 @@ void make_tables(t_forcerec *fr,bool bVerbose)
     case eelSWITCH:
       tabsel = swtab[k];
       break;
+    case eelUSER:
     default:
       tabsel = normtab[k];
     }      
-    fill_table(n0,n,x,Vtab,Vtab2,Ftab,Ftab2,tabsel,fr);
+    if (fr->eeltype == eelUSER) {
+      /* Read tables from file */
+      read_table(n0,n,x,Vtab,Vtab2,Ftab,Ftab2,fns[k],fr);
+    }
+    else {
+      fill_table(n0,n,x,Vtab,Vtab2,Ftab,Ftab2,tabsel,fr);
+    }
     /*
-    if (tabsel == etabRF)
-      copy2table(n,k*4,12,x,Vtab,Vtab2,fr->VFtab,fr->rc);
-    else
-    */
+       if (tabsel == etabRF)
+       copy2table(n,k*4,12,x,Vtab,Vtab2,fr->VFtab,fr->rc);
+       else
+       */
     copy2table(n,k*4,12,x,Vtab,Vtab2,fr->VFtab,-1);
     
     if (bDebugMode()) {
@@ -361,7 +392,6 @@ void make_tables(t_forcerec *fr,bool bVerbose)
       }
       ffclose(fp);
     }
-    
   }
   sfree(Vtab);
   sfree(Vtab2);

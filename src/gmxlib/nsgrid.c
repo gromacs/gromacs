@@ -36,6 +36,7 @@ static char *SRCID_nsgrid_c = "$Id$";
 #include "nsgrid.h"
 #include "fatal.h"
 #include "vec.h"
+#include "network.h"
 
 #define NO_CELL -1
 
@@ -135,32 +136,41 @@ void grid_first(FILE *log,t_grid *grid,matrix box,real rlong)
     nra[i]=0;
 }
 
-static void calc_bor(FILE *log,int cg0,int cg1,int ncg,int CG0[2],int CG1[2])
+static void calc_bor(FILE *log,bool bDD,
+		     int cg0,int cg1,int ncg,int CG0[2],int CG1[2])
 {
-  if (cg1 > ncg) {
-    CG0[0]=cg0;
-    CG1[0]=ncg;
-    CG0[1]=0;
-    CG1[1]=cg1-ncg;
+  if (bDD) {
+    CG0[0] = cg0;
+    CG0[1] = 0;
+    CG1[0] = cg1;
+    CG1[1] = 0;
   }
   else {
-    CG0[0]=cg0;
-    CG1[0]=cg1;
-    CG0[1]=0;
-    CG1[1]=0;
+    if (cg1 > ncg) {
+      CG0[0]=cg0;
+      CG1[0]=ncg;
+      CG0[1]=0;
+      CG1[1]=cg1-ncg;
+    }
+    else {
+      CG0[0]=cg0;
+      CG1[0]=cg1;
+      CG0[1]=0;
+      CG1[1]=0;
+    }
   }
-#ifdef DEBUG 
-  {
+  if (debug) {
     int m;
     
     fprintf(log,"calc_bor: cg0=%d, cg1=%d, ncg=%d\n",cg0,cg1,ncg);
     for(m=0; (m<2); m++)
       fprintf(log,"CG0[%d]=%d, CG1[%d]=%d\n",m,CG0[m],m,CG1[m]);
   }
-#endif
+
 }
 
-void calc_elemnr(FILE *log,t_grid *grid,int cg0,int cg1,int ncg)
+void calc_elemnr(FILE *log,bool bDD,int cg_index[],
+		 t_grid *grid,int cg0,int cg1,int ncg)
 {
   int    CG0[2],CG1[2];
   int    *cell_index=grid->cell_index;
@@ -169,10 +179,10 @@ void calc_elemnr(FILE *log,t_grid *grid,int cg0,int cg1,int ncg)
   int    ci;
 
   ncells=grid->ncells;
-  calc_bor(log,cg0,cg1,ncg,CG0,CG1);
+  calc_bor(log,bDD,cg0,cg1,ncg,CG0,CG1);
   for(m=0; (m<2); m++)
     for(i=CG0[m]; (i<CG1[m]); i++) {
-      ci=cell_index[i];
+      ci = cell_index[i];
       range_check(ci,ncells);
       nra[ci]++;
     }
@@ -192,16 +202,17 @@ void calc_ptrs(t_grid *grid)
     for(iy=0; (iy < grid->nry); iy++) 
       for(iz=0; (iz < grid->nrz); iz++,ci++) {
 	range_check(ci,ncells);
-	index[ci]=nr;
-	nnra=nra[ci];
-	nr+=nnra;
-	gmax=max(gmax,nnra);
-	nra[ci]=0;
+	index[ci] = nr;
+	nnra      = nra[ci];
+	nr       += nnra;
+	gmax      = max(gmax,nnra);
+	nra[ci]   = 0;
       }
   grid->gmax=gmax;
 }
 
-void grid_last(FILE *log,t_grid *grid,int cg0,int cg1,int ncg)
+void grid_last(FILE *log,bool bDD,int cg_index[],
+	       t_grid *grid,int cg0,int cg1,int ncg)
 {
   int    CG0[2],CG1[2];
   int    i,m;
@@ -212,52 +223,55 @@ void grid_last(FILE *log,t_grid *grid,int cg0,int cg1,int ncg)
   int    *a          = grid->a;
 
   ncells=grid->ncells;
-  calc_bor(log,cg0,cg1,ncg,CG0,CG1);
+  calc_bor(log,bDD,cg0,cg1,ncg,CG0,CG1);
   for(m=0; (m<2); m++)
     for(i=CG0[m]; (i<CG1[m]); i++) {
-      ci=cell_index[i];
+      ci     = cell_index[i];
       range_check(ci,ncells);
-      ind=index[ci]+nra[ci]++;
-      if ((ind < 0) || (ind >= grid->nr)) 
-	fatal_error(0,"ind=%d -> not in 0..%d",ind,grid->nr);
-      a[ind] = i;
+      ind    = index[ci]+nra[ci]++;
+      range_check(ind,grid->nr);
+      a[ind] = cg_index[i];
     }
 }
 
-void fill_grid(FILE *log,t_grid *grid,matrix box,
+void fill_grid(FILE *log,bool bDD,int cg_index[],
+	       t_grid *grid,matrix box,
 	       int ncg,int cg0,int cg1,rvec cg_cm[])
 {
   int    *cell_index=grid->cell_index;
   int    nrx,nry,nrz;
   real   dx,dy,dz;
-  int  	 index,ix,iy,iz;
+  int  	 i,index,ix,iy,iz;
   int    ci;
   
   /* Initiate cell borders */
-  nrx=grid->nrx;
-  nry=grid->nry;
-  nrz=grid->nrz;
-  dx=divide(nrx,box[XX][XX]);
-  dy=divide(nry,box[YY][YY]);
-  dz=divide(nrz,box[ZZ][ZZ]);
+  nrx = grid->nrx;
+  nry = grid->nry;
+  nrz = grid->nrz;
+  dx  = divide(nrx,box[XX][XX]);
+  dy  = divide(nry,box[YY][YY]);
+  dz  = divide(nrz,box[ZZ][ZZ]);
 
   /* Assign cell indices to charge groups */
-  for (index=0; (index<cg0); index++)
-    cell_index[index]=NO_CELL;
-#ifdef DEBUG
-  fprintf(log,"Filling grid from %d to %d (total %d)\n",cg0,cg1,ncg);
-  where();
-#endif
-  for (; (index<cg1); index++) {
-    ix = mod(dx*cg_cm[index][XX],nrx);
-    iy = mod(dy*cg_cm[index][YY],nry);
-    iz = mod(dz*cg_cm[index][ZZ],nrz);
-    
-    ci = xyz2ci(nry,nrz,ix,iy,iz);
-    cell_index[index] = ci;
+  for (i=0; (i<cg0); i++) {
+    cell_index[i]=NO_CELL;
   }
-  for(; (index<ncg); index++)
-    cell_index[index]=NO_CELL;
+  
+  if (debug)
+    fprintf(debug,"Filling grid from %d to %d (total %d)\n",cg0,cg1,ncg);
+
+  for (i=cg0; (i<cg0+cg1); i++) {
+    index = cg_index[i];
+    ix    = mod(dx*cg_cm[index][XX],nrx);
+    iy    = mod(dy*cg_cm[index][YY],nry);
+    iz    = mod(dz*cg_cm[index][ZZ],nrz);
+    
+    ci    = xyz2ci(nry,nrz,ix,iy,iz);
+    cell_index[i] = ci;
+  }
+  for (; (i<ncg); i++) {
+    cell_index[i]=NO_CELL;
+  }
 }
 
 void check_grid(FILE *log,t_grid *grid)
@@ -272,7 +286,8 @@ void check_grid(FILE *log,t_grid *grid)
 	if (ci > 0) {
 	  nra=grid->index[ci]-grid->index[cci];
 	  if (nra != grid->nra[cci]) 
-	    fatal_error(0,"nra=%d, grid->nra=%d",nra,grid->nra[cci]);
+	    fatal_error(0,"nra=%d, grid->nra=%d, cci=%d",
+			nra,grid->nra[cci],cci);
 	}
 	cci=xyz2ci(grid->nry,grid->nrz,ix,iy,iz);
 	range_check(cci,grid->ncells);
@@ -282,7 +297,7 @@ void check_grid(FILE *log,t_grid *grid)
       }
 }
 
-void print_grid(FILE *log,t_grid *grid)
+void print_grid(FILE *log,t_grid *grid,bool bDD,int cg_index[])
 {
   int i,nra,index;
   int ix,iy,iz,ci;
@@ -311,3 +326,29 @@ void print_grid(FILE *log,t_grid *grid)
       }
   fflush(log);
 }
+
+void mv_grid(t_commrec *cr,bool bDD,int cg_index[],
+	     t_grid *grid,int cgload[])
+{
+  int i,start,nr;
+  int cur=cr->pid;
+  int *ci;
+#define next ((cur+1) % cr->nprocs)
+
+  ci=grid->cell_index;
+  for(i=0; (i<cr->nprocs-1); i++) {
+    start=(cur == 0) ? 0 : cgload[cur-1];
+    nr=cgload[cur]-start;
+    gmx_tx(cr->left,&(ci[start]),nr*sizeof(*ci));
+    
+    start=(next == 0) ? 0 : cgload[next-1];
+    nr=cgload[next]-start;
+    gmx_rx(cr->right,&(ci[start]),nr*sizeof(*ci));
+    
+    gmx_tx_wait(cr->left);
+    gmx_rx_wait(cr->right);
+    
+    cur=next;
+  }
+}
+

@@ -56,6 +56,7 @@ static char *SRCID_runner_c = "$Id$";
 #include "lutab.h"
 #include "mdrun.h"
 #include "congrad.h"
+#include "callf77.h"
 
 bool optRerunMDset (int nfile, t_filenm fnm[])
 {
@@ -242,7 +243,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
       close_xtc_traj();
     }
 
-    md2atoms(mdatoms,&(top->atoms));
+    md2atoms(mdatoms,&(top->atoms),TRUE);
     
     /* Finish up, write some stuff */
     { 

@@ -148,6 +148,8 @@ gentab:		gentab.o
 
 lfft:		lfft.o
 		$(LD) -o $@ $^ $(SYSLIBS)
+fitter:		fitter.o
+		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS)
 
 include	Make.dep
 

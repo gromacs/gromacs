@@ -248,7 +248,10 @@ void print_pdbatoms(FILE *out,char *title,
   int i,resnr;
   char buf[12];
 
-  fprintf(out,"HEADER    %s\n",title[0]?title:bromacs());
+  if (title && (title[0] != '\0'))
+    fprintf(out,"HEADER    %s\n",title);
+  else
+    fprintf(out,"HEADER    %s\n",bromacs());
   if (box != NULL) {
     fprintf(out,REMARK_SIM_BOX"\n");
     fprintf(out,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",

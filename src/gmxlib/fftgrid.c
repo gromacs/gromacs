@@ -5,7 +5,6 @@
 #include "smalloc.h"
 #include "futil.h"
 
-#define TOL -1
 
 t_fftgrid *mk_fftgrid(int nx,int ny,int nz)
 {
@@ -36,10 +35,14 @@ void gmxfft3D(FILE *fp,bool bVerbose,t_fftgrid *grid,int dir)
     fprintf(fp,"Using the FFTW library (Fastest Fourier Transform in the West)\n");
     forward_plan  = fftw3d_create_plan(grid->nx,grid->ny,grid->nz,
 				       FFTW_FORWARD,
-				       FFTW_ESTIMATE | FFTW_IN_PLACE);
+				       /*FFTW_MEASURE | 
+				       FFTW_USE_WISDOM |*/
+				       FFTW_IN_PLACE);
     backward_plan = fftw3d_create_plan(grid->nx,grid->ny,grid->nz,
 				       FFTW_BACKWARD,
-				       FFTW_ESTIMATE | FFTW_IN_PLACE);
+				       /*FFTW_MEASURE | 
+				       FFTW_USE_WISDOM |*/
+				       FFTW_IN_PLACE);
     bFirst        = FALSE;
   }
   if (dir == FFTW_FORWARD)
@@ -78,6 +81,7 @@ void unpack_fftgrid(t_fftgrid *grid,int *nx,int *ny,int *nz,
 void print_fftgrid(FILE *out,char *title,t_fftgrid *grid,real factor,char *pdb,
 		   rvec box,bool bReal)
 {
+#define PDBTOL -1
   static char *pdbformat="%-6s%5d  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n";
   FILE     *fp;
   int      i,ix,iy,iz;
@@ -110,19 +114,20 @@ void print_fftgrid(FILE *out,char *title,t_fftgrid *grid,real factor,char *pdb,
 	g = ptr[INDEX(ix,iy,iz)];
 	if (pdb) {
 	  value = bReal ? g.re : g.im;
-	  if (fabs(value) > TOL)
+	  if (fabs(value) > PDBTOL)
 	    fprintf(fp,pdbformat,"ATOM",i,"H","H",' ',
 		    i,ix*boxfac[XX],iy*boxfac[YY],iz*boxfac[ZZ],
 		    1.0,factor*value);
 	} 
 	else {
-	  if ((fabs(g.re) > TOL) || (fabs(g.im) > TOL))
+	  if ((fabs(g.re) > PDBTOL) || (fabs(g.im) > PDBTOL))
 	    fprintf(fp,"%s[%2d][%2d][%2d] = %12.5e + i %12.5e%s\n",
 		    title,ix,iy,iz,g.re*factor,g.im*factor,
 		    (g.im != 0) ? " XXX" : "");
 	}
       }
   fflush(fp);
+#undef PDBTOL
 }
 
 /*****************************************************************
