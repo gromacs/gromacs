@@ -124,7 +124,7 @@ typedef int t_functype;
 typedef struct
 {
   int nr;
-  int multinr[MAXPROC];
+  int multinr[MAXNODES];
   t_iatom *iatoms;
 } t_ilist;
 
@@ -133,13 +133,13 @@ typedef struct
  * General field description:
  *   int nr
  *	the size (nr elements) of the interactions array (iatoms[]). This 
- *      equals multinr[MAXPROC-1].
- *   int multinr[MAXPROC]
+ *      equals multinr[MAXNODES-1].
+ *   int multinr[MAXNODES]
  * 	specifies the number of type and atom id sequences in the iatoms[] 
  *	array. Every element specifies the index of the first interaction
- *      for the next processor. The first processor starts at zero. So for 
+ *      for the next node. The first node starts at zero. So for 
  *      n=0, the interactions run from 0 upto multinr[0]. The interactions
- *      for processor n (n>0) run from multinr[n-1] to index[n] (not including 
+ *      for node n (n>0) run from multinr[n-1] to index[n] (not including 
  *      multinr[n]).
  *   t_iatom *iatoms
  * 	specifies which atoms are involved in an interaction of a certain 
@@ -153,22 +153,22 @@ typedef struct
  *      type3 only 2. The type identifier is used to select the function to 
  *	calculate the interaction and its actual parameters. This type 
  *	identifier is an index in a params[] and functype[] array.
- * The multinr[] array will be initialised for MAXPROC in such a way that up 
- * to the actual number of processors (during creation time), the array is
- * filled with the indices, the remaining processors get empty parts by 
+ * The multinr[] array will be initialised for MAXNODES in such a way that up 
+ * to the actual number of nodes (during creation time), the array is
+ * filled with the indices, the remaining nodes get empty parts by 
  * setting the indices to the largest value. In that way it is always possible
- * to run this system on a larger multiprocessor ring however only the
- * configured number of processors will we used. Running on less processors
+ * to run this system on a larger multinode ring however only the
+ * configured number of nodes will we used. Running on less nodes
  * than configured is also possible by taking together adjacent
- * processors. Note that in this case the load balance might get worse.
- * The single processor version is implemented by simply using the complete
+ * nodes. Note that in this case the load balance might get worse.
+ * The single node version is implemented by simply using the complete
  * configuration as one piece.
  */
 
 typedef struct
 {
   int ntypes;
-  int pid;
+  int nodeid;
   int atnr;
   t_functype *functype;
   t_iparams  *iparams;
@@ -178,13 +178,13 @@ typedef struct
 
 /*
  * The struct t_idef defines all the interactions for the complete
- * simulation. The structure is setup in such a way that the multiprocessor
- * version of the program  can use it as easy as the single processor version.
+ * simulation. The structure is setup in such a way that the multinode
+ * version of the program  can use it as easy as the single node version.
  * General field description:
  *   int ntypes
  *	defines the number of elements in functype[] and param[].
- *   int pid
- *      the processor id (if parallel machines)
+ *   int nodeid
+ *      the node id (if parallel machines)
  *   int atnr
  *      the number of atomtypes
  *   t_functype *functype

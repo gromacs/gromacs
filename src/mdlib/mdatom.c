@@ -183,7 +183,7 @@ void init_mdatoms(t_mdatoms *md,real lambda,bool bFirst)
    * One could also check whether there is any perturbed atom at all,
    * but if you don't have perturbed atoms, it does not make sense to modify lambda.
    * In principle this has to be parallellized, although it would mean extra 
-   * communication. Basically only the charges are used on other processors...
+   * communication. Basically only the charges are used on other nodes...
    */
   if (bFirst || (lambda0 != lambda)) {
     for(i=0; (i<end); i++) {

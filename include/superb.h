@@ -49,7 +49,7 @@ typedef struct {
   atom_id *invgrp;      /* Group number for each atom           */
 } t_superblock;
 
-extern t_superblock *init_grps(FILE *log,int left,int right,int pid,int nprocs,
+extern t_superblock *init_grps(FILE *log,int left,int right,int nodeid,int nnodes,
 			       char *gfile,bool bMaster);
 /* Read a superblock structure from gfile. Do communication if
  * necessary.

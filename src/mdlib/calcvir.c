@@ -200,7 +200,7 @@ void f_calc_vir(FILE *log,int i0,int i1,rvec x[],rvec f[],tensor vir,
   
   if (g->nnodes > 0) {
     /* Calculate virial for bonded forces only when they belong to
-     * this processor.
+     * this node.
      */
     start = max(i0,g->start);
     end   = min(i1,g->end+1);

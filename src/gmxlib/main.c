@@ -62,66 +62,66 @@ static void mem_init(void)
 #endif
 }
 
-static int get_pid(FILE *log,int left,int right,int *pid,int *nprocs)
+static int get_nodeid(FILE *log,int left,int right,int *nodeid,int *nnodes)
      /*
-      * The ring of processors is only defined by the interconnection
+      * The ring of nodes is only defined by the interconnection
       * via the supplied communication channels (left and right). Thus
-      * it is not defined what the (hardware) processor id's are in the
-      * ring. To be independent of the processor id assignment (to allow
-      * procesor switching without modifying a processor id) this routine
-      * determines the processor id and the number of processors. On entry
-      * pid needs to be set to an unique value in the system and nprocs
-      * needs to be set to the maximum number of processors in the system.
-      * The lowest pid in the ring will then get the value 0 assigned. The
-      * rest is then assigned by incrementing processor id's to the right
+      * it is not defined what the (hardware) node id's are in the
+      * ring. To be independent of the node id assignment (to allow
+      * node switching without modifying a node id) this routine
+      * determines the node id and the number of nodes. On entry
+      * nodeid needs to be set to an unique value in the system and nnodes
+      * needs to be set to the maximum number of nodes in the system.
+      * The lowest nodeid in the ring will then get the value 0 assigned. The
+      * rest is then assigned by incrementing node id's to the right
       * until the ring is closed. The function returns 1 in case it succeeded
-      * in determining the values for pid and nprocs, else it returns 0. If
+      * in determining the values for nodeid and nnodes, else it returns 0. If
       * the hardware does not implement a ring structure this will hang the
       * system!
       */
 {
-  int i,pids[MAXPROC],min_index,min_pid,send_pid,receive_pid;
+  int i,nodeids[MAXNODES],min_index,min_nodeid,send_nodeid,receive_nodeid;
 
-  *nprocs=0;
-  send_pid=*pid;
-  min_pid=send_pid;
-  min_index=*nprocs;
+  *nnodes=0;
+  send_nodeid=*nodeid;
+  min_nodeid=send_nodeid;
+  min_index=*nnodes;
   do {
 #ifdef DEBUGPAR
-    fprintf(log,"Sending: %d\n",send_pid);
+    fprintf(log,"Sending: %d\n",send_nodeid);
 #endif
-    gmx_tx(left,record(send_pid));
-    gmx_rx(right,record(receive_pid));
+    gmx_tx(left,record(send_nodeid));
+    gmx_rx(right,record(receive_nodeid));
     gmx_tx_wait(left);
     gmx_rx_wait(right);
 #ifdef DEBUGPAR
-    fprintf(log,"Received: %d\n",receive_pid);
+    fprintf(log,"Received: %d\n",receive_nodeid);
 #endif
-    if (send_pid<min_pid) {
-      min_pid=send_pid;
-      min_index=*nprocs;
+    if (send_nodeid<min_nodeid) {
+      min_nodeid=send_nodeid;
+      min_index=*nnodes;
     }
-    pids[(*nprocs)++]=send_pid;
-    send_pid=receive_pid;
-  } while (receive_pid!=*pid);
+    nodeids[(*nnodes)++]=send_nodeid;
+    send_nodeid=receive_nodeid;
+  } while (receive_nodeid!=*nodeid);
   
 #ifdef DEBUGPAR  
   fprintf(log,"min_index=%d\n",min_index);
-  fprintf(log,"nprocs   =%d\n",*nprocs);
-  fprintf(log,"pid      =%d\n",*pid);
+  fprintf(log,"nnodes   =%d\n",*nnodes);
+  fprintf(log,"nodeid      =%d\n",*nodeid);
 #endif
 
-  for (i=min_index; (*pid)!=pids[i%(*nprocs)]; i++)
+  for (i=min_index; (*nodeid)!=nodeids[i%(*nnodes)]; i++)
     ;
-  (*pid)=(i-min_index+(*nprocs))%(*nprocs);
+  (*nodeid)=(i-min_index+(*nnodes))%(*nnodes);
 #ifdef DEBUGPAR
   fprintf(log,"min_index=%d\n",min_index);
-  fprintf(log,"nprocs   =%d\n",*nprocs);
-  fprintf(log,"pid      =%d\n",*pid);
-  for (i=0; i<(*nprocs); i++) {
+  fprintf(log,"nnodes   =%d\n",*nnodes);
+  fprintf(log,"nodeid      =%d\n",*nodeid);
+  for (i=0; i<(*nnodes); i++) {
     fprintf(log,"%d translated %d --> %d",
-	    i,pids[i],(i-min_index+(*nprocs))%(*nprocs));
-    if (pids[i]==(*pid)) 
+	    i,nodeids[i],(i-min_index+(*nnodes))%(*nnodes));
+    if (nodeids[i]==(*nodeid)) 
       fprintf(log," *");
     fprintf(log,"\n");
   }
@@ -137,9 +137,9 @@ char *par_fn(char *base,int ftp,t_commrec *cr)
   strcpy(buf,base);
   buf[strlen(base)-4] = '\0';
   
-  /* Add processor info */
+  /* Add node info */
   if (PAR(cr)) 
-    sprintf(buf+strlen(buf),"%d",cr->pid);
+    sprintf(buf+strlen(buf),"%d",cr->nodeid);
   strcat(buf,".");
   
   /* Add extension again */
@@ -156,7 +156,7 @@ void open_log(char *lognm,t_commrec *cr)
   debug_gmx();
   
   /* Communicate the filename for logfile */
-  if (cr->nprocs > 1) {
+  if (cr->nnodes > 1) {
     if (MASTER(cr)) {
       len = strlen(lognm)+1;
       gmx_txs(cr->right,record(len));
@@ -167,7 +167,7 @@ void open_log(char *lognm,t_commrec *cr)
       gmx_txs(cr->right,lognm,len);
       gmx_rxs(cr->left,lognm,len);
       if (len != testlen)
-	fatal_error(0,"Communication error on PROC 0!");
+	fatal_error(0,"Communication error on NODE 0!");
       
     }
     else {
@@ -194,8 +194,8 @@ void open_log(char *lognm,t_commrec *cr)
 #else
   pid = 0;
 #endif
-  fprintf(stdlog,"Log file opened: pid %d, nprocs = %d, host = %s, process = %d\n",
-	  cr->pid,cr->nprocs,host ? host : "unknown",pid);
+  fprintf(stdlog,"Log file opened: nodeid %d, nnodes = %d, host = %s, process = %d\n",
+	  cr->nodeid,cr->nnodes,host ? host : "unknown",pid);
   fflush(stdlog);
   debug_gmx();
 }
@@ -211,7 +211,7 @@ static void comm_args(t_commrec *cr,int *argc,char ***argv)
   
   if (!MASTER(cr))
     snew(argv_tmp,*argc+1);
-  fprintf(stderr,"PID=%d argc=%d\n",cr->pid,*argc);
+  fprintf(stderr,"NODEID=%d argc=%d\n",cr->nodeid,*argc);
   for(i=0; (i<*argc); i++) {
     if (MASTER(cr)) {
       len = strlen((*argv)[i])+1;
@@ -248,14 +248,14 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
   argv = *argv_ptr;
   snew(cr,1);
   
-  cr->nprocs=1;
-  /* Get the number of processors.
+  cr->nnodes=1;
+  /* Get the number of nodes.
    * This is useless for newer MPI versions.
    */
   for(i=0; (argv[i] != NULL); i++) {
     if (strcmp(argv[i],"-np")==0)
       if (argv[i+1]!=NULL)
-	cr->nprocs=atoi(argv[i+1]);
+	cr->nnodes=atoi(argv[i+1]);
   }
   
 #ifdef USE_MPI
@@ -269,17 +269,17 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
     gmx_parallel = 0;
 #endif
   if (gmx_parallel)
-    cr->pid=mpiio_setup(argc,argv,&cr->nprocs);
+    cr->nodeid=mpiio_setup(argc,argv,&cr->nnodes);
   else
-    cr->pid=0;
+    cr->nodeid=0;
 #else
-  cr->pid=0;
-  if (cr->nprocs > 1) {
+  cr->nodeid=0;
+  if (cr->nnodes > 1) {
     gmx_parallel = 1; 
 #ifdef USE_PVM3
-    cr->pid=pvmio_setup(argv,cr->nprocs);
+    cr->nodeid=pvmio_setup(argv,cr->nnodes);
 #else
-    cr->pid=gmx_cpu_id();
+    cr->nodeid=gmx_node_id();
 #endif
   }
 #endif
@@ -289,11 +289,11 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
 #endif
   mem_init();
 
-  if (!PAR(cr) && (cr->pid != 0))
-    fatal_error(0,"(!PAR(cr) && (cr->pid != 0))");
+  if (!PAR(cr) && (cr->nodeid != 0))
+    fatal_error(0,"(!PAR(cr) && (cr->nodeid != 0))");
   
   if (PAR(cr)) {
-    gmx_left_right(cr->nprocs,cr->pid,&cr->left,&cr->right);
+    gmx_left_right(cr->nnodes,cr->nodeid,&cr->left,&cr->right);
 #ifdef DEBUGPAR
     fprintf(stderr,"Going to initialise network\n");
 #endif
@@ -301,13 +301,13 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
 #ifndef USE_PVM3
 #ifdef DEBUGPAR
     fprintf(stderr,"Initialised network\n");
-    fprintf(stderr,"Getting new processor id's\n");
+    fprintf(stderr,"Getting new node id's\n");
 #endif
-    if (get_pid(stderr,cr->left,cr->right,&cr->pid,&cr->nprocs)==0)
-      fatal_error(0,"could not get pid & nprocs from ring topology");
+    if (get_nodeid(stderr,cr->left,cr->right,&cr->nodeid,&cr->nnodes)==0)
+      fatal_error(0,"could not get nodeid & nnodes from ring topology");
 #ifdef DEBUGPAR
-    fprintf(stderr,"Got new processor id's\n");
-    fprintf(stderr,"nprocs=%d, pid=%d\n",cr->nprocs,cr->pid);
+    fprintf(stderr,"Got new node id's\n");
+    fprintf(stderr,"nnodes=%d, nodeid=%d\n",cr->nnodes,cr->nodeid);
 #endif
 
 #endif

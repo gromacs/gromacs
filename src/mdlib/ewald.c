@@ -111,7 +111,7 @@ real do_ewald(FILE *log,       bool bVerbose,
     fprintf(log,"Will do ordinary reciprocal space Ewald sum.\n");
 
     if (cr != NULL) {
-      if (cr->nprocs > 1)
+      if (cr->nnodes > 1 || cr->nthreads>1)
 	fatal_error(0,"No parallel Ewald. Use PME instead.\n");
     }
     

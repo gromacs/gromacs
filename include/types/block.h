@@ -28,10 +28,10 @@
  */
 
 typedef struct {
-  int multinr[MAXPROC];		/* The indices for the multiprocessor 
+  int multinr[MAXNODES];       	/* The indices for the multinode
                                  * version. For n=0, the blocks run from 0
                                  * upto multinr[index[0]]. The blocks for 
-                                 * processor n (n>0) run from 
+                                 * node n (n>0) run from 
                                  * index[multinr[n-1]] to index[multinr[n]].
                                  */
   int nr;			/* The number of blocks			*/

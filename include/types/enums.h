@@ -95,3 +95,9 @@ enum {
 enum {
   efepNO, efepYES, efepNR
 };
+
+/* Solvent optimization */
+enum {
+  esolNO, esolMNO, esolWATER, esolWATERWATER, esolNR
+};
+

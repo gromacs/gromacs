@@ -38,42 +38,42 @@ static char *SRCID_libnet_c = "$Id$";
 
 #define MYFATAL(str) fatal_error(0,"Routine %s called in %s, %d",str,__FILE__,__LINE__)
 
-void gmx_tx(int pid,void *bufptr,int bufsize)	
+void gmx_tx(int nodeid,void *bufptr,int bufsize)	
 { 
   MYFATAL("gmx_tx"); 
 }
 
-void gmx_tx_wait(int pid)				
+void gmx_tx_wait(int nodeid)				
 {
   MYFATAL("gmx_tx_wait");
 }
 
-void gmx_txs(int pid,void *bufptr,int bufsize)	
+void gmx_txs(int nodeid,void *bufptr,int bufsize)	
 {
   MYFATAL("gmx_txs");
 }
 
-void gmx_rx(int pid,void *bufptr,int bufsize)	
+void gmx_rx(int nodeid,void *bufptr,int bufsize)	
 {
   MYFATAL("gmx_rx");
 }
 
-void gmx_rx_wait(int pid)				
+void gmx_rx_wait(int nodeid)				
 {
   MYFATAL("gmx_rx_wait");
 }
 
-void gmx_rxs(int pid,void *bufptr,int bufsize)	
+void gmx_rxs(int nodeid,void *bufptr,int bufsize)	
 {
   MYFATAL("gmx_rxs");
 }
 
-int gmx_cpu_num(void)
+int gmx_node_num(void)
 {
   return 1;
 }
 
-int gmx_cpu_id(void)
+int gmx_node_id(void)
 {
   return 0;
 }
@@ -88,7 +88,7 @@ int  get_idle_send(void)
   return 0; 
 }
 
-void gmx_left_right(int nprocs,int pid,int *left,int *right)
+void gmx_left_right(int nnodes,int nodeid,int *left,int *right)
 {
   *left=0;
   *right=0;

@@ -42,7 +42,7 @@ void init_block(t_block *block)
   snew(block->index,1);
   block->index[0] = 0;
   block->a     = NULL;
-  for(i=0; (i<MAXPROC); i++)
+  for(i=0; (i<MAXNODES); i++)
     block->multinr[i]=0;
 }
 

@@ -505,7 +505,7 @@ static void pr_ilist(FILE *fp,int indent,char *title,
       if (ilist->nr > 0) {
 	(void) pr_indent(fp,indent);
 	fprintf(fp,"multinr[division over processors]:");
-	for (i=0; (i<MAXPROC) && (ilist->multinr[i] > 0); i++) 
+	for (i=0; (i<MAXNODES) && (ilist->multinr[i] > 0); i++) 
 	  (void) fprintf(fp," %d",ilist->multinr[i]);
 	fprintf(fp,"\n");
 	(void) pr_indent(fp,indent);
@@ -542,7 +542,7 @@ void pr_idef(FILE *fp,int indent,char *title,t_idef *idef)
     (void) pr_indent(fp,indent);
     (void) fprintf(fp,"atnr=%d\n",idef->atnr);
     (void) pr_indent(fp,indent);
-    (void) fprintf(fp,"pid=%d\n",idef->pid);
+    (void) fprintf(fp,"nodeid=%d\n",idef->nodeid);
     (void) pr_indent(fp,indent);
     (void) fprintf(fp,"ntypes=%d\n",idef->ntypes);
     for (i=0; i<idef->ntypes; i++) {
@@ -567,7 +567,7 @@ static int pr_block_title(FILE *fp,int indent,char *title,t_block *block)
       indent=pr_title(fp,indent,title);
       (void) pr_indent(fp,indent);
       fprintf(fp,"multinr[division over processors]:");
-      for (i=0; (i<MAXPROC); i++) 
+      for (i=0; (i<MAXNODES); i++) 
 	(void) fprintf(fp," %d",block->multinr[i]);
       fprintf(fp,"\n");
       (void) pr_indent(fp,indent);

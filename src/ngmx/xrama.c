@@ -41,7 +41,6 @@ static char *SRCID_xrama_c = "$Id$";
 #include "statutil.h"
 #include "rama.bm"
 #include "nrama.h"
-#include "lutab.h"
 
 #define MAXDEG 360
 
@@ -319,7 +318,6 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME,FALSE,NFILE,fnm,0,NULL,
 		    asize(desc),desc,0,NULL);
 
-  init_lookup_table(stdout);
 		      
   if ((x11=GetX11(&argc,argv)) == NULL) {
     fprintf(stderr,"Can't open display, set your DISPLAY environment variable\n");

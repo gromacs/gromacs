@@ -166,7 +166,7 @@ extern t_topology *read_top(char *fn);
 /* Extract a topology data structure from a topology file */
 
 extern void mk_single_top(t_topology *top);
-/* Make the topology file single processor ready */
+/* Make the topology file single node ready */
 
 extern bool bDoView(void);
 /* Return TRUE when user requested viewing of the file */
@@ -187,11 +187,11 @@ extern bool bDoView(void);
 #define PCA_SILENT         (1<<9)
 /* don't print options by default */
 #define PCA_CAN_SET_DEFFNM (1<<10)
-/* does something for non-master mdrun processes */
+/* does something for non-master mdrun nodes */
 #define PCA_NOEXIT_ON_ARGS (1<<11)
 /* no fatal_error when invalid options are encountered */
 #define PCA_QUIET          (1<<12)
-/* does something for non-master mdrun processes */
+/* does something for non-master mdrun nodes */
 #define PCA_SET_NPRI       (1<<13)
 /* set weightless prioriy by default */
 

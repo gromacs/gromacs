@@ -40,18 +40,18 @@ static void split_ilist(FILE *log,t_ilist *il,t_commrec *cr)
   t_iatom *ia;
   int     i,start,end,nr;
   
-  if (cr->pid == 0)
+  if (cr->nodeid == 0)
     start=0;
   else
-    start=il->multinr[cr->pid-1];
-  end=il->multinr[cr->pid];
+    start=il->multinr[cr->nodeid-1];
+  end=il->multinr[cr->nodeid];
   
   nr=end-start;
   if (nr < 0)
-    fatal_error(0,"Negative number of atoms (%d) on processor %d\n"
+    fatal_error(0,"Negative number of atoms (%d) on node %d\n"
 		"You have probably not used the same value for -np with grompp"
 		" and mdrun",
-		nr,cr->pid);
+		nr,cr->nodeid);
   snew(ia,nr);
 
   for(i=0; (i<nr); i++)
@@ -60,7 +60,7 @@ static void split_ilist(FILE *log,t_ilist *il,t_commrec *cr)
   sfree(il->iatoms);
   il->iatoms=ia;
   
-  for(i=0; (i<MAXPROC); i++)
+  for(i=0; (i<MAXNODES); i++)
     il->multinr[i]=nr;
   il->nr=nr;
 }
@@ -75,7 +75,7 @@ static void split_idef(FILE *log,t_idef *idef,t_commrec *cr)
 	
 void mdsplit_top(FILE *log,t_topology *top,t_commrec *cr)
 {
-  if (cr->nprocs < 2)
+  if (cr->nnodes < 2)
     return;
     
   split_idef(log,&top->idef,cr);

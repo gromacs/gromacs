@@ -727,7 +727,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
 	dump_it_all(stdlog,"After Shake-V",natoms,x,xprime,v,vold,force);
 	where();
 
-	/* Calculate virial due to shake (for this proc) */
+	/* Calculate virial due to shake (for this node) */
 	calc_vir(stdlog,homenr,&(x[start]),&(delta_f[start]),vir_part,cr);
 	inc_nrnb(nrnb,eNR_SHAKE_VIR,homenr);
 	where();

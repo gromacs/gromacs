@@ -57,7 +57,7 @@ static char *SRCID_steep_c = "$Id$";
 #include "dummies.h"
 #include "constr.h"
 
-real f_max(int left,int right,int nprocs,
+real f_max(int left,int right,int nnodes,
 	   int start,int end,rvec grad[])
 {
   real fmax,fmax_0,fam;
@@ -73,10 +73,10 @@ real f_max(int left,int right,int nprocs,
       fam=fabs(grad[i][m]);
       fmax=max(fmax,fam);
     }
-  if (nprocs == 1)
+  if (nnodes == 1)
     return fmax;
 
-  for(i=0; (i<nprocs-1); i++) {
+  for(i=0; (i<nnodes-1); i++) {
     gmx_tx(left,(void *)&fmax,sizeof(fmax));
     gmx_rx(right,(void *)&fmax_0,sizeof(fmax_0));
     gmx_wait(left,right);
@@ -87,7 +87,7 @@ real f_max(int left,int right,int nprocs,
   return fmax;
 }
 
-real f_norm(int left,int right,int nprocs,
+real f_norm(int left,int right,int nnodes,
 	    int start,int end,rvec grad[])
 {
   real fnorm;
@@ -104,7 +104,7 @@ real f_norm(int left,int right,int nprocs,
     } 
   fnorm=sqrt(fnorm); 
   
-  if (nprocs == 1) 
+  if (nnodes == 1) 
     return fnorm; 
   
   fatal_error(0,"This version of Steepest Descents cannot be run in parallel"); 
@@ -181,7 +181,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   vcm[0]=vcm[1]=vcm[2]=vcm[3]=0.0; 
   
   /* Print to log file  */
-  start_t=print_date_and_time(log,cr->pid,"Started Steepest Descents"); 
+  start_t=print_date_and_time(log,cr->nodeid,"Started Steepest Descents"); 
   
   /* We need two coordinate arrays and two force arrays  */
   for(i=0; (i<2); i++) { 
@@ -189,8 +189,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     snew(force[i],nsb->natoms); 
   } 
 
-  start=nsb->index[cr->pid]; 
-  end=nsb->homenr[cr->pid]+start; 
+  start=nsb->index[cr->nodeid]; 
+  end=nsb->homenr[cr->nodeid]+start; 
   
   /* Open the enrgy file */   
   if (MASTER(cr)) 
@@ -241,7 +241,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   
   if (MASTER(cr)) { 
     /* Print to the screen  */
-    start_t=print_date_and_time(log,cr->pid,"Started EM"); 
+    start_t=print_date_and_time(log,cr->nodeid,"Started EM"); 
     sprintf(sbuf,"%s\n   Tolerance         = %12.5g\n",SD,ftol); 
     fprintf(stderr,sbuf);
     fprintf(log,sbuf);
@@ -277,19 +277,19 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     }
 
     if (bDummies)
-      construct_dummies(log,pos[TRY],&(nrnb[cr->pid]),1,NULL,&top->idef);
+      construct_dummies(log,pos[TRY],&(nrnb[cr->nodeid]),1,NULL,&top->idef);
 
     /* Calc force & energy on new positions  */
     /* do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in steep.c
      */
     do_force(log,cr,parm,nsb,force_vir, 
- 	     count,&(nrnb[cr->pid]),top,grps,pos[TRY],buf,force[TRY],buf,
+ 	     count,&(nrnb[cr->nodeid]),top,grps,pos[TRY],buf,force[TRY],buf,
 	     mdatoms,ener,bVerbose && !(PAR(cr)), 
  	     lambda,graph,parm->ir.nstlist>0 || count==0,FALSE,fr,mu_tot); 
 
     /* Spread the force on dummy particle to the other particles... */
-    spread_dummy_f(log,pos[TRY],force[TRY],&(nrnb[cr->pid]),&top->idef);
+    spread_dummy_f(log,pos[TRY],force[TRY],&(nrnb[cr->nodeid]),&top->idef);
     
     /* Sum the potential energy terms from group contributions  */
     sum_epot(&(ir->opts),grps,ener); 
@@ -298,7 +298,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       print_ebin_header(log,count,count,lambda,0.0);
 
     if (bConstrain) {
-      fmax=f_max(cr->left,cr->right,nsb->nprocs,start,end,force[TRY]);
+      fmax=f_max(cr->left,cr->right,nsb->nnodes,start,end,force[TRY]);
       constepsize=ustep/fmax;
       for(i=start; (i<end); i++)  
 	for(m=0;(m<DIM);m++) 
@@ -323,7 +323,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
  		  &(ir->opts),grps,&mynrnb,nrnb,vcm,&terminate); 
     
     /* This is the new energy  */
-    Fmax[TRY]=f_max(cr->left,cr->right,nsb->nprocs,start,end,force[TRY]);
+    Fmax[TRY]=f_max(cr->left,cr->right,nsb->nnodes,start,end,force[TRY]);
     Epot[TRY]=ener[F_EPOT];
     if (count == 0)
       Epot[Min] = Epot[TRY]+1;
@@ -382,7 +382,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       ustep *= 0.5;
     
     /* Determine new step  */
-    fmax = f_max(cr->left,cr->right,nsb->nprocs,start,end,force[Min]);
+    fmax = f_max(cr->left,cr->right,nsb->nnodes,start,end,force[Min]);
     stepsize=ustep/fmax;
     
     /* Check if stepsize is too small, with 1 nm as a characteristic length */

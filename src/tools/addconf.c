@@ -219,7 +219,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     cgs  = &(top->blocks[ebCGS]);
     
     top->idef.ntypes = 1;
-    top->idef.pid    = 0;
+    top->idef.nodeid = 0;
     top->idef.atnr   = 1;
     snew(top->idef.functype,1);
     snew(top->idef.iparams,1);
@@ -233,8 +233,8 @@ void do_nsgrid(FILE *fp,bool bVerbose,
 
     /* nsborder struct */
     snew(nsb,1);
-    nsb->pid    = 0;
-    nsb->nprocs = 1;
+    nsb->nodeid  = 0;
+    nsb->nnodes  = 1;
     calc_nsb(debug,&(top->blocks[ebCGS]),1,nsb,0);
     if (debug)
       print_nsb(debug,"nsborder",nsb);
@@ -252,7 +252,8 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     if (fr == NULL)
       fr = mk_forcerec();
     snew(cr,1);
-    cr->nprocs = 1;
+    cr->nnodes   = 1;
+    cr->nthreads = 1;
     
     ir->rlist       = ir->rcoulomb = ir->rvdw = rlong;
     init_forcerec(debug,fr,ir,&(top->blocks[ebMOLS]),cr,

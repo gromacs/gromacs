@@ -298,7 +298,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
 		       rvec **x,rvec **v,matrix box,
 		       t_atomtype *atype,t_topology *sys,
 		       t_molinfo *msys,t_params plist[],
-		       int nprocs,bool bEnsemble,bool bMorse,int *nerror)
+		       int nnodes,bool bEnsemble,bool bMorse,int *nerror)
 {
   t_molinfo   *molinfo=NULL;
   t_simsystem *Sims=NULL;
@@ -319,8 +319,8 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
   
   ntab = 0;
   tab  = NULL;
-  if (nprocs > 1) {
-    tab=mk_shuffle_tab(nrmols,molinfo,nprocs,&ntab,Nsim,Sims,bVerbose);
+  if (nnodes > 1) {
+    tab=mk_shuffle_tab(nrmols,molinfo,nnodes,&ntab,Nsim,Sims,bVerbose);
     if (debug) {
       for(i=0; (i<ntab); i++)
 	fprintf(debug,"Mol[%5d] = %s\n",i,*molinfo[tab[i]].name);
@@ -579,22 +579,22 @@ int count_constraints(t_params plist[])
   return count;
 }
 
-static real *mk_capacity(char *str,int nprocs)
+static real *mk_capacity(char *str,int nnodes)
 {
   char   f0[256],f1[256];
   double d,tcap=0;
   int    i;
   real   *capacity;
   
-  snew(capacity,nprocs);
+  snew(capacity,nnodes);
   if (str) {
     f0[0] = '\0';
-    for(i=0; (i<nprocs); i++) {
+    for(i=0; (i<nnodes); i++) {
       strcpy(f1,f0);
       strcat(f1,"%lf");
       if (sscanf(str,f1,&d) != 1)
 	fatal_error(0,"Not enough elements for -load parameter (I need %d)",
-		    nprocs);
+		    nnodes);
       capacity[i] = d;
       tcap += d;
       strcat(f0,"%*s");
@@ -602,20 +602,20 @@ static real *mk_capacity(char *str,int nprocs)
   }
   /* Normalize input */
   if (tcap == 0) {
-    for(i=0; (i<nprocs); i++) {
-      capacity[i] = 1.0/nprocs;
+    for(i=0; (i<nnodes); i++) {
+      capacity[i] = 1.0/nnodes;
       tcap += capacity[i];
     }
   }
   else {
-    for(i=0; (i<nprocs); i++) 
+    for(i=0; (i<nnodes); i++) 
       capacity[i] /= tcap;
     tcap = 0;
-    for(i=0; (i<nprocs); i++) 
+    for(i=0; (i<nnodes); i++) 
       tcap += capacity[i];
   }
   /* Take care that the sum of capacities is 1.0 */
-  capacity[nprocs-1] = 1.0 - (tcap - capacity[nprocs-1]);
+  capacity[nnodes-1] = 1.0 - (tcap - capacity[nnodes-1]);
   
   return capacity;
 }
@@ -666,7 +666,7 @@ int main (int argc, char *argv[])
 
     "When preparing an input file for parallel [TT]mdrun[tt] it may",
     "be advantageous to partition the simulation system over the",
-    "processors in a way in which each processor ahs a similar amount of",
+    "nodes in a way in which each node has a similar amount of",
     "work. The -shuffle option does just that. For a single protein",
     "in water this does not make a difference, however for a system where",
     "you have many copies of different molecules  (e.g. liquid mixture",
@@ -733,7 +733,7 @@ int main (int argc, char *argv[])
   /* Command line options */
   static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=TRUE;
   static bool bRmDumBds=TRUE,bSort=FALSE;
-  static int  nprocs=1,maxwarn=10;
+  static int  nnodes=1,maxwarn=10;
   static real fr_time=-1;
   static char *cap=NULL;
   t_pargs pa[] = {
@@ -741,16 +741,16 @@ int main (int argc, char *argv[])
       "Be loud and noisy" },
     { "-time",    FALSE, etREAL, {&fr_time},
       "Take frame at or first after this time." },
-    { "-np",      FALSE, etINT,  {&nprocs},
-      "Generate statusfile for # processors" },
+    { "-np",      FALSE, etINT,  {&nnodes},
+      "Generate statusfile for # nodes" },
     { "-shuffle", FALSE, etBOOL, {&bShuffle},
-      "Shuffle molecules over processors" },
+      "Shuffle molecules over nodes" },
     { "-sort",    FALSE, etBOOL, {&bSort},
       "Sort molecules according to X coordinate" },
     { "-rmdumbds",FALSE, etBOOL, {&bRmDumBds},
       "Remove constant bonded interactions with dummies" },
     { "-load",    FALSE, etSTR,  {&cap},
-      "Releative load capacity of each node on a parallel machine. Be sure to use quotes around the string, which should contain a number for each processor" },
+      "Releative load capacity of each node on a parallel machine. Be sure to use quotes around the string, which should contain a number for each node" },
     { "-maxwarn", FALSE, etINT,  {&maxwarn},
       "Number of warnings after which input processing stops" },
     { "-renum",   FALSE, etBOOL, {&bRenum},
@@ -769,11 +769,11 @@ int main (int argc, char *argv[])
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
   
-  if ((nprocs > 0) && (nprocs <= MAXPROC))
-    printf("creating statusfile for %d processor%s...\n",
-	   nprocs,nprocs==1?"":"s");
+  if ((nnodes > 0) && (nnodes <= MAXNODES))
+    printf("creating statusfile for %d node%s...\n",
+	   nnodes,nnodes==1?"":"s");
   else 
-    fatal_error(0,"invalid number of processors %d\n",nprocs);
+    fatal_error(0,"invalid number of nodes %d\n",nnodes);
     
   if (bShuffle && opt2bSet("-r",NFILE,fnm)) {
     fprintf(stderr,"Can not shuffle and do position restraints, "
@@ -805,12 +805,12 @@ int main (int argc, char *argv[])
   if (bSort && !bShuffle) 
     warning("Can not do sorting without shuffling. Sorting turned off.");
     
-  if ( (nprocs > 1) && (ir->nstcomm < 0) ) {
+  if ( (nnodes > 1) && (ir->nstcomm < 0) ) {
     /* this check is also in md.c, if it becomes obsolete here,
        also remove it there */
     fprintf(stderr,
 	    "ERROR: removing rotation around center of mass (nstcomm=%d)"
-	    "in a parallel run (np=%d) not implemented\n",ir->nstcomm,nprocs);
+	    "in a parallel run (np=%d) not implemented\n",ir->nstcomm,nnodes);
     nerror++;
   }
     
@@ -829,7 +829,7 @@ int main (int argc, char *argv[])
   forward=new_status(fn,opt2fn_null("-pp",NFILE,fnm),opt2fn("-c",NFILE,fnm),
 		     opt2fn("-deshuf",NFILE,fnm),
 		     opts,ir,bGenVel,bVerbose,bSort,&natoms,&x,&v,box,
-		     &atype,sys,&msys,plist,bShuffle ? nprocs : 1,
+		     &atype,sys,&msys,plist,bShuffle ? nnodes : 1,
 		     (opts->eDisre==edrEnsemble),opts->bMorse,&nerror);
   
   if (debug)
@@ -922,7 +922,7 @@ int main (int argc, char *argv[])
   if ((ir->coulombtype == eelPPPM) || (ir->coulombtype == eelPME)) {
     /* Calculate the optimal grid dimensions */
     max_spacing = calc_grid(box,opts->fourierspacing,
-			    &(ir->nkx),&(ir->nky),&(ir->nkz),nprocs);
+			    &(ir->nkx),&(ir->nky),&(ir->nkz),nnodes);
     if ((ir->coulombtype == eelPPPM) && (max_spacing > 0.1)) {
       set_warning_line(mdparin,-1);
       sprintf(warn_buf,"Grid spacing larger then 0.1 while using PPPM.");
@@ -931,8 +931,8 @@ int main (int argc, char *argv[])
   }
   
   /* This is also necessary for setting the multinr arrays */
-  capacity = mk_capacity(cap,nprocs);
-  split_top(bVerbose,nprocs,sys,capacity);
+  capacity = mk_capacity(cap,nnodes);
+  split_top(bVerbose,nnodes,sys,capacity);
   sfree(capacity);
   
   if (bVerbose) 

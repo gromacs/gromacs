@@ -95,45 +95,45 @@ void count_nb(t_commrec *cr,t_nsborder *nsb,t_block *cgs,int nns,int nlr,
   static real    *bfload;
   real           *nb;
   
-  real   ntp,ntot,load[MAXPROC+1],load_av,unb,tld,ratio,defcost;
-  int    nload[MAXPROC+1];
-  int    ncg,pid,i,j,k;
+  real   ntp,ntot,load[MAXNODES+1],load_av,unb,tld,ratio,defcost;
+  int    nload[MAXNODES+1];
+  int    ncg,nodeid,i,j,k;
   
-  if (nsb->nprocs < 2)
+  if (nsb->nnodes < 2)
     return;
   
   ncg=nsb->cgtotal;
   snew(nb,ncg+1);
    
   nload[0]=0;
-  for(i=1; (i<=cr->nprocs); i++)
+  for(i=1; (i<=cr->nnodes); i++)
     nload[i]=nsb->workload[i-1];
     
   /* Initiate the cost per charge group,
-   * there are nns particles for this proc, 
+   * there are nns particles for this node, 
    */
   defcost=0.1*(nns*cost_nrnb(eNR_NS)+nlr*cost_nrnb(eNR_LR))/
-    (nload[cr->pid+1]-nload[cr->pid]);
-  for(i=0; (i<nload[cr->pid]); i++)
+    (nload[cr->nodeid+1]-nload[cr->nodeid]);
+  for(i=0; (i<nload[cr->nodeid]); i++)
     nb[i]=0;
-  for(; (i<nload[cr->pid+1]); i++)
+  for(; (i<nload[cr->nodeid+1]); i++)
     nb[i]=defcost;
   for(; (i<ncg+1); i++)
     nb[i]=0;
-  ntot=(nload[cr->pid+1]-nload[cr->pid])*defcost;
+  ntot=(nload[cr->nodeid+1]-nload[cr->nodeid])*defcost;
       
   if (cgnr==NULL) {
     cgnr=make_invblock(cgs,nsb->natoms);
     
     /* Load from bonded forces is constant... */
-    snew(bfload,cr->nprocs+1);
-    bfload[cr->pid]=calc_bfload(idef->il[eilBONDEDS].nr,
+    snew(bfload,cr->nnodes+1);
+    bfload[cr->nodeid]=calc_bfload(idef->il[eilBONDEDS].nr,
 				idef->il[eilBONDEDS].iatoms,
 				idef->functype,idef->iparams);
-    fprintf(stdlog,"My    Bonded Force Load: %.0f\n",bfload[cr->pid]);
-    bfload[cr->nprocs]=bfload[cr->pid];
-    gmx_sum(cr->nprocs+1,bfload,cr);
-    fprintf(stdlog,"Total Bonded Force Load: %.0f\n",bfload[cr->nprocs]);
+    fprintf(stdlog,"My    Bonded Force Load: %.0f\n",bfload[cr->nodeid]);
+    bfload[cr->nnodes]=bfload[cr->nodeid];
+    gmx_sum(cr->nnodes+1,bfload,cr);
+    fprintf(stdlog,"Total Bonded Force Load: %.0f\n",bfload[cr->nnodes]);
   }
   
   for(i=0; (i<ngener); i++) {
@@ -150,52 +150,52 @@ void count_nb(t_commrec *cr,t_nsborder *nsb,t_block *cgs,int nns,int nlr,
   gmx_sum(ncg+1,nb,cr);
   ntot=nb[ncg];
   fprintf(stdlog,"Total Nonbonded Force Load =%.0f\n",ntot);
-  ntot+=bfload[cr->nprocs];
+  ntot+=bfload[cr->nnodes];
   fprintf(stdlog,"Total           Force Load =%.0f\n",ntot);
   
-  load_av=ntot/nsb->nprocs;
+  load_av=ntot/nsb->nnodes;
   unb=1;
-  for(pid=0; (pid<nsb->nprocs); pid++) {
-    load[pid]=bfload[pid];
-    for(j=nload[pid]; (j<nload[pid+1]); j++) 
-      load[pid]+=nb[j];
+  for(nodeid=0; (nodeid<nsb->nnodes); nodeid++) {
+    load[nodeid]=bfload[nodeid];
+    for(j=nload[nodeid]; (j<nload[nodeid+1]); j++) 
+      load[nodeid]+=nb[j];
 #ifdef DEBUG
-    fprintf(stdlog,"pid: %2d, cg0: %5d, hcgHi: %3d, load: %10g\n",
-	    pid,nsb->cg0[pid],nsb->hcgHi[pid],load[pid]);
+    fprintf(stdlog,"nodeid: %2d, cg0: %5d, hcgHi: %3d, load: %10g\n",
+	    nodeid,nsb->cg0[nodeid],nsb->hcgHi[nodeid],load[nodeid]);
 #endif
-    ratio=load[pid]/load_av;
+    ratio=load[nodeid]/load_av;
     unb=max(unb,ratio);
   }
   tld=0;
-  pid=1;
+  nodeid=1;
   nload[0]=0;
-  for(i=0; ((i<ncg) && (pid < nsb->nprocs)); i++) {
+  for(i=0; ((i<ncg) && (nodeid < nsb->nnodes)); i++) {
     tld+=nb[i];
-    if (tld >= (pid*load_av)) {
-      nload[pid]=i;
-      pid++;
+    if (tld >= (nodeid*load_av)) {
+      nload[nodeid]=i;
+      nodeid++;
     }
   }
-  if (pid == nsb->nprocs)
-    nload[pid]=ncg;
+  if (nodeid == nsb->nnodes)
+    nload[nodeid]=ncg;
   else {
-    fprintf(stdlog,"pid(%d) != nprocs (%d)\n",pid,nsb->nprocs);
+    fprintf(stdlog,"nodeid(%d) != nnodes (%d)\n",nodeid,nsb->nnodes);
   }
-  if (nsb->pid == 0) {
+  if (nsb->nodeid == 0) {
     if (out==NULL) {
       out=xvgropen("load.xvg","Maximum Load","Step","% of average");
       o_ld=ffopen("perfect.ld","w");
     }
     fprintf(out, "%10d  %10g\n",step++,unb*100.0);
-    for(i=0; (i<nsb->nprocs); i++)
+    for(i=0; (i<nsb->nnodes); i++)
       fprintf(o_ld,"%3d  ",nload[i+1]-nload[i]);
     fprintf(o_ld,"\n");
   }
-  for(i=0; (i<nsb->nprocs); i++)
+  for(i=0; (i<nsb->nnodes); i++)
     nsb->workload[i]=nload[i+1];
   
   /*calc_nsbshift(nsb);*/
-  nsb->shift=nsb->nprocs-1;
+  nsb->shift=nsb->nnodes-1;
   nsb->bshift=0;
   
   sfree(nb);

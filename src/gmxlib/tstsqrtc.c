@@ -29,14 +29,12 @@
 static char *SRCID_tstsqrtc_c = "$Id$";
 
 #include "vec.h"
-#include "lutab.h"
 
 int main(int argc,char *argv[])
 {
   real x,y,z,diff,av;
   int  i;
 
-  init_lookup_table(stdout);
   printf("%12s  %12s  %12s  %12s  %12s\n","X","Y","Z","Dy","Dy/Z");
   for(i=1; (i<1000); i++) {
     x = i*1.0;

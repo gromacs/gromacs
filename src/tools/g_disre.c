@@ -258,7 +258,7 @@ int main (int argc,char *argv[])
   read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
 	   box,&ntopatoms,xtop,NULL,NULL,&top);
 
-  check_nprocs_top(ftp2fn(efTPX,NFILE,fnm),&top,1);
+  check_nnodes_top(ftp2fn(efTPX,NFILE,fnm),&top,1);
 
   g   = mk_graph(&top.idef,top.atoms.nr,FALSE,FALSE);  
   cr  = init_par(&argc,&argv);

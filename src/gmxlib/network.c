@@ -32,13 +32,13 @@ static char *SRCID_network_c = "$Id$";
 #include "smalloc.h"
 #include "network.h"
 
-void def_sync_ring(int pid,int nprocs,int left,int right)
+void def_sync_ring(int nodeid,int nnodes,int left,int right)
 {
   int i;
   int tag=0;
 
-  for (i=0; (i<nprocs); i++) {
-    if (pid == 0) {
+  for (i=0; (i<nnodes); i++) {
+    if (nodeid == 0) {
       gmx_txs(right,record(tag));
       gmx_rxs(left,record(tag));
     }
@@ -49,13 +49,13 @@ void def_sync_ring(int pid,int nprocs,int left,int right)
   }
 }
 
-void def_tx_rx(int send_pid,void *send_buf,int send_bufsize,
-	       int rec_pid,void *rec_buf,int rec_bufsize)
+void def_tx_rx(int send_nodeid,void *send_buf,int send_bufsize,
+	       int rec_nodeid,void *rec_buf,int rec_bufsize)
 {
-  gmx_tx(send_pid,send_buf,send_bufsize);
-  gmx_rx(rec_pid,rec_buf,rec_bufsize);
-  gmx_tx_wait(send_pid);
-  gmx_rx_wait(rec_pid);
+  gmx_tx(send_nodeid,send_buf,send_bufsize);
+  gmx_rx(rec_nodeid,rec_buf,rec_bufsize);
+  gmx_tx_wait(send_nodeid);
+  gmx_rx_wait(rec_nodeid);
 }
 
 void def_wait(int send,int receive)
@@ -100,7 +100,7 @@ void def_sumd(int nr,double r[],t_commrec *cr)
 
   for(i=0; (i<nr); i++)
     buf[cur][i]=r[i];
-  for(j=0; (j<cr->nprocs-1); j++) {
+  for(j=0; (j<cr->nnodes-1); j++) {
     gmx_tx(cr->left,buf[cur],bufs);
     gmx_rx(cr->right,buf[next],bufs);
     gmx_tx_wait(cr->left);
@@ -135,7 +135,7 @@ void def_sumf(int nr,float r[],t_commrec *cr)
 
   for(i=0; (i<nr); i++)
     buf[cur][i]=r[i];
-  for(j=0; (j<cr->nprocs-1); j++) {
+  for(j=0; (j<cr->nnodes-1); j++) {
     gmx_tx(cr->left,buf[cur],bufs);
     gmx_rx(cr->right,buf[next],bufs);
     gmx_wait(cr->left,cr->right);
@@ -168,7 +168,7 @@ void def_sumi(int nr,int r[],t_commrec *cr)
 
   for(i=0; (i<nr); i++)
     buf[cur][i]=r[i];
-  for(j=0; (j<cr->nprocs-1); j++) {
+  for(j=0; (j<cr->nnodes-1); j++) {
     gmx_tx(cr->left,buf[cur],bufs);
     gmx_rx(cr->right,buf[next],bufs);
     gmx_wait(cr->left,cr->right);
@@ -185,7 +185,7 @@ void def_sumi(int nr,int r[],t_commrec *cr)
 #include "main.h"
 
 int i860main(int argc,char *argv[],FILE *log,
-	     int nprocs,int pid,int left,int right)
+	     int nnodes,int nodeid,int left,int right)
 {
 #define MAXBUF 2737
   real      buf[MAXBUF];
@@ -194,8 +194,8 @@ int i860main(int argc,char *argv[],FILE *log,
 
   for(i=0; (i<MAXBUF); i++)
     buf[i]=i;
-  cr.nprocs=nprocs;
-  cr.pid=pid;
+  cr.nnodes=nnodes;
+  cr.nodeid=nodeid;
   cr.left=left;
   cr.right=right;
 

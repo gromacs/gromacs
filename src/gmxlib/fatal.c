@@ -152,15 +152,15 @@ void quit_gmx(int fatal_errno,char *msg)
   
 #ifdef PARALLEL
   if (gmx_parallel) {
-    int  nprocs;
-    int  pid;
+    int  nnodes;
+    int  nodeid;
     
-    nprocs = gmx_cpu_num();
-    pid    = gmx_cpu_id();
+    nnodes = gmx_node_num();
+    nodeid    = gmx_node_id();
     
-    if (nprocs > 1) 
-      fprintf(stderr,"Error on processor %d, will try to stop all the processors\n",pid);
-    gmx_abort(pid,nprocs,-1);
+    if (nnodes > 1) 
+      fprintf(stderr,"Error on node %d, will try to stop all the nodes\n",nodeid);
+    gmx_abort(nodeid,nnodes,-1);
   }
 #else
   if (debug)
@@ -250,7 +250,7 @@ void fatal_error(int fatal_errno,char *fmt,...)
 	  bputc(msg,&len,ibuf[index]);
 	break;
       case 'c':
-	cval=va_arg(ap,char);
+	cval=va_arg(ap,int); /* char is promoted to int */
 	bputc(msg,&len,cval);
 	break;
       case 's':

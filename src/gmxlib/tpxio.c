@@ -434,7 +434,7 @@ static void do_ilist(t_ilist *ilist,bool bRead,char *name)
   
   if (!bRead)
     set_comment(name);
-  ndo_int(ilist->multinr,MAXPROC,bDum);
+  ndo_int(ilist->multinr,MAXNODES,bDum);
   do_int (ilist->nr);
   if (bRead)
     snew(ilist->iatoms,ilist->nr);
@@ -449,7 +449,7 @@ static void do_idef(t_idef *idef,bool bRead)
   bool bDum=TRUE;
   
   do_int(idef->atnr);
-  do_int(idef->pid);
+  do_int(idef->nodeid);
   do_int(idef->ntypes);
   if (bRead) {
     snew(idef->functype,idef->ntypes);
@@ -479,7 +479,7 @@ static void do_block(t_block *block,bool bRead)
   int i;
   bool bDum=TRUE;
 
-  ndo_int(block->multinr,MAXPROC,bDum);
+  ndo_int(block->multinr,MAXNODES,bDum);
   do_int (block->nr);
   do_int (block->nra);
   if (bRead) {

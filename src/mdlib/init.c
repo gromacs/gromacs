@@ -49,25 +49,25 @@ static char *SRCID_init_c = "$Id$";
 #define NOT_FINISHED(l1,l2) \
   printf("not finished yet: lines %d .. %d in %s\n",l1,l2,__FILE__)
 
-void check_nprocs_top(char *fn,t_topology *top,int nprocs)
+void check_nnodes_top(char *fn,t_topology *top,int nnodes)
 {
   int i,np=0;
   
-  for(i=0; (i<MAXPROC); i++)
+  for(i=0; (i<MAXNODES); i++)
     if (top->blocks[ebCGS].multinr[i] != 0)
       np++;
       
-  if (np != nprocs)
-    fatal_error(0,"run input file %s was made for %d processors,\n"
-		"             while %s expected it to be for %d processors.",
-		fn,np,ShortProgram(),nprocs);
+  if (np != nnodes)
+    fatal_error(0,"run input file %s was made for %d nodes,\n"
+		"             while %s expected it to be for %d nodes.",
+		fn,np,ShortProgram(),nnodes);
 }
 
-static char *int_title(char *title,int pid)
+static char *int_title(char *title,int nodeid)
 {
   static char buf[BUFSIZE];
 
-  sprintf(buf,"%s (%d)",title,pid);
+  sprintf(buf,"%s (%d)",title,nodeid);
   return buf;
 }
 
@@ -115,7 +115,7 @@ void init_single(FILE *log,t_parm *parm,
   
   read_tpx(tpxfile,&step,&t,&lambda,&parm->ir,
 	   parm->box,&natoms,*x,*v,NULL,top);
-  check_nprocs_top(tpxfile,top,1);
+  check_nnodes_top(tpxfile,top,1);
 
   *mdatoms=atoms2md(log,&top->atoms,parm->ir.opts.nFreeze,
 		    parm->ir.eI==eiLD,parm->ir.efep!=efepNO,FALSE);
@@ -125,7 +125,7 @@ void init_single(FILE *log,t_parm *parm,
   print_nsb(log,"Neighbor Search Blocks",nsb);
 }
 
-void distribute_parts(int left,int right,int pid,int nprocs,t_parm *parm,
+void distribute_parts(int left,int right,int nodeid,int nnodes,t_parm *parm,
 		      char *tpxfile,int nstDlb)
 {
   int         natoms,step;
@@ -140,9 +140,9 @@ void distribute_parts(int left,int right,int pid,int nprocs,t_parm *parm,
   snew(v,tpx.natoms);
   read_tpx(tpxfile,&step,&t,&lambda,&parm->ir,parm->box,
 	   &natoms,x,v,NULL,&top);
-  check_nprocs_top(tpxfile,&top,nprocs);
+  check_nnodes_top(tpxfile,&top,nnodes);
   
-  calc_nsb(stdlog,&(top.blocks[ebCGS]),nprocs,&nsb,nstDlb);
+  calc_nsb(stdlog,&(top.blocks[ebCGS]),nnodes,&nsb,nstDlb);
   mv_data(left,right,parm,&nsb,&top,x,v);
   done_top(&top);
   sfree(x);
@@ -161,9 +161,9 @@ static void count_ones(FILE *log,t_commrec *cr)
     n[i]=i;
   gmx_sumi(6,n,cr);
   for(i=0; (i<NMAX); i++) {
-    if (n[i] != (i*cr->nprocs)) {
+    if (n[i] != (i*cr->nnodes)) {
       fprintf(log,"Error in count_ones: n[%d] = %d, should be %d\n",
-	      i,n[i],i*cr->nprocs);
+	      i,n[i],i*cr->nnodes);
       fflush(log);
     }
   }
@@ -178,7 +178,7 @@ void init_parts(FILE *log,t_commrec *cr,
 		t_nsborder *nsb,int list)
 {
   ld_data(cr->left,cr->right,parm,nsb,top,x,v);
-  if (cr->pid != 0)
+  if (cr->nodeid != 0)
     mv_data(cr->left,cr->right,parm,nsb,top,*x,*v);
 #ifdef _amb_
   count_ones(log,cr);
@@ -190,22 +190,22 @@ void init_parts(FILE *log,t_commrec *cr,
     if (list&LIST_SCALARS) 
       print_nsb(log,"Listing Scalars",nsb);
     if (list&LIST_PARM)
-      write_parm(log,"parameters of the run",cr->pid,parm);
+      write_parm(log,"parameters of the run",cr->nodeid,parm);
     if (list&LIST_X)
       pr_rvecs(log,0,int_title("x",0),*x,nsb->natoms);
     if (list&LIST_V)
       pr_rvecs(log,0,int_title("v",0),*v,nsb->natoms);
     if (list&LIST_TOP)
-      pr_top(log,0,int_title("topology",cr->pid),top);
+      pr_top(log,0,int_title("topology",cr->nodeid),top);
     fflush(log);
   }
   *mdatoms=atoms2md(log,&(top->atoms),parm->ir.opts.nFreeze,
 		    parm->ir.eI==eiLD,parm->ir.efep!=efepNO,FALSE);
 }
 
-void write_parm(FILE *log,char *title,int pid,t_parm *parm)
+void write_parm(FILE *log,char *title,int nodeid,t_parm *parm)
 {
-  fprintf(log,"%s (pid=%d):\n",title,pid);
+  fprintf(log,"%s (nodeid=%d):\n",title,nodeid);
   pr_inputrec(log,0,"input record",&parm->ir);
   pr_rvecs(log,0,"box",parm->box,DIM);
   pr_rvecs(log,0,"ekin",parm->ekin,DIM);

@@ -85,7 +85,7 @@ void _blockrx(int src,int nelem,int size,void *data)
 
 void mv_block(int dest,t_block *block)
 {
-  nblocktx(dest,MAXPROC,block->multinr);
+  nblocktx(dest,MAXNODES,block->multinr);
 #ifdef DEBUG
   fprintf(stdlog,"mv multinr\n");
 #endif
@@ -109,7 +109,7 @@ void mv_block(int dest,t_block *block)
 
 void ld_block(int src,t_block *block)
 {
-  nblockrx(src,MAXPROC,block->multinr);
+  nblockrx(src,MAXNODES,block->multinr);
 #ifdef DEBUG
   fprintf(stdlog,"ld multinr\n");
 #endif

@@ -141,9 +141,9 @@ void mk_single_top(t_topology *top)
   int i;
 
   for(i=0; (i<ebNR); i++)
-    top->blocks[i].multinr[0]=top->blocks[i].multinr[MAXPROC-1];
+    top->blocks[i].multinr[0]=top->blocks[i].multinr[MAXNODES-1];
   for(i=0; (i<F_NRE); i++)
-    top->idef.il[i].multinr[0]=top->idef.il[i].multinr[MAXPROC-1];
+    top->idef.il[i].multinr[0]=top->idef.il[i].multinr[MAXNODES-1];
 }
 
 /*************************************************************
@@ -349,9 +349,9 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
 
   debug_gmx();
   if (debug) {
-    fprintf(debug,"PID=%d, argc = %d\n",gmx_cpu_id(),*argc);
+    fprintf(debug,"PID=%d, argc = %d\n",gmx_node_id(),*argc);
     for(i=0; (i<*argc); i++)
-      fprintf(debug,"PID=%d, argv[%d] = %s\n",gmx_cpu_id(),i,argv[i]);
+      fprintf(debug,"PID=%d, argv[%d] = %s\n",gmx_node_id(),i,argv[i]);
   }
 
   /* Check for double arguments */
@@ -475,8 +475,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
   if (bDebug) {
     char buf[256];
 
-    if (gmx_cpu_num() > 1)
-      sprintf(buf,"%s%d.log",ShortProgram(),gmx_cpu_id());
+    if (gmx_node_num() > 1)
+      sprintf(buf,"%s%d.log",ShortProgram(),gmx_node_id());
     else
       sprintf(buf,"%s.log",ShortProgram());
       
@@ -564,7 +564,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
   if (bHelp || (strcmp(manstr[0],"no") != 0)) {
 #ifdef PARALLEL
     if (gmx_parallel)
-      gmx_abort(gmx_cpu_id(),gmx_cpu_num(),0);
+      gmx_abort(gmx_node_id(),gmx_node_num(),0);
 #endif
     exit(0);
   }

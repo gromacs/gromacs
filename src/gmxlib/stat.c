@@ -62,7 +62,7 @@ void global_stat(FILE *log,
 {
   static t_bin *rb=NULL; 
   static int   *itc;
-  int    iterminate,imu,ie,ifv,isv,icm,ica,in[MAXPROC],inn[egNR];
+  int    iterminate,imu,ie,ifv,isv,icm,ica,in[MAXNODES],inn[egNR];
   int    j;
   
   if (rb==NULL) {
@@ -73,9 +73,9 @@ void global_stat(FILE *log,
     reset_bin(rb);
   
   /* Reset nrnb stuff */
-  for(j=0; (j<cr->nprocs); j++)
+  for(j=0; (j<cr->nnodes); j++)
     init_nrnb(&(nrnb[j]));
-  cp_nrnb(&(nrnb[cr->pid]),mynrnb);
+  cp_nrnb(&(nrnb[cr->nodeid]),mynrnb);
   
   /* This routine copies all the data to be summed to one big buffer
    * using the t_bin struct. 
@@ -87,7 +87,7 @@ void global_stat(FILE *log,
   where();
   isv = add_binr(log,rb,DIM*DIM,svir[0]);
   where();
-  for(j=0; (j<cr->nprocs); j++)
+  for(j=0; (j<cr->nnodes); j++)
     in[j] = add_bind(log,rb,eNRNB,nrnb[j].n);
   where();
   for(j=0; (j<opts->ngtc); j++) 
@@ -110,7 +110,7 @@ void global_stat(FILE *log,
   extract_binr(rb,ie  ,F_NRE,ener);
   extract_binr(rb,ifv ,DIM*DIM,fvir[0]);
   extract_binr(rb,isv ,DIM*DIM,svir[0]);
-  for(j=0; (j<cr->nprocs); j++)
+  for(j=0; (j<cr->nnodes); j++)
     extract_bind(rb,in[j],eNRNB,nrnb[j].n);
   for(j=0; (j<opts->ngtc); j++) 
     extract_binr(rb,itc[j],DIM*DIM,grps->tcstat[j].ekin[0]);
@@ -124,7 +124,7 @@ void global_stat(FILE *log,
   where();
 
   /* Small hack for temp only */
-  ener[F_TEMP]/=cr->nprocs;
+  ener[F_TEMP]/=cr->nnodes;
 }
 
 int do_per_step(int step,int nstep)
@@ -144,8 +144,8 @@ static void moveit(FILE *log,
   if (!xx) 
     return;
 
-  start=nsb->index[nsb->pid];
-  homenr=nsb->homenr[nsb->pid];
+  start=nsb->index[nsb->nodeid];
+  homenr=nsb->homenr[nsb->nodeid];
 #ifdef DEBUG
   fprintf(log,"Moving %s for trajectory file, start=%d, homenr=%d\n",
 	  s,start,homenr);
@@ -154,7 +154,7 @@ static void moveit(FILE *log,
   for(i=0; (i<homenr); i++)
     copy_rvec(xx[start+i],temp[i]);
 
-  move_rvecs(log,FALSE,FALSE,left,right,xx,NULL,nsb->nprocs-1,nsb,NULL);
+  move_rvecs(log,FALSE,FALSE,left,right,xx,NULL,nsb->nnodes-1,nsb,NULL);
   
   for(i=0; (i<homenr); i++) {
     bP=0;
@@ -185,7 +185,7 @@ int write_traj(FILE *log,t_commrec *cr,
   }
   
 #define MX(xvf) moveit(log,cr->left,cr->right,#xvf,xvf,nsb)
-  if (cr->nprocs > 1) {
+  if (cr->nnodes > 1) {
     MX(xx);
     MX(vv);
     MX(ff);
@@ -227,7 +227,7 @@ void write_xtc_traj(FILE *log,t_commrec *cr,
     bFirst=FALSE;
   }
   
-  if (cr->nprocs > 1) {
+  if (cr->nnodes > 1) {
     MX(xx);
   }
   

@@ -76,7 +76,7 @@ static char *SRCID_idtio_c = "$Id$";
  * primitives.
  *
  * Due to the fact that DMA is not available, all data copying is done by
- * the processor. Because interrupts aren't used for efficiency reasons,
+ * the node. Because interrupts aren't used for efficiency reasons,
  * real asynchronous communication is not possible, messages are copied
  * from and to the io buffers while within the communication routines. So
  * an asynchronous communication is implemented by doing the nonblocking
@@ -133,7 +133,7 @@ static char *SRCID_idtio_c = "$Id$";
 
 #define	IDTNR		2	/* Number of available idt's.                */
 #define	IDTLEFT		0x0	/* Offset of my idt.                         */
-#define	IDTRIGHT	0x400	/* Offset of neighbour processors idt.       */
+#define	IDTRIGHT	0x400	/* Offset of neighbour nodes idt.       */
 #define	IDTSIZE		0x400	/* Total size of idt.                        */
 #define	IRQBASE		0x3fe	/* Interrupt locations at the top of an idt  */
 #define	BSIZE		510	/* Usable buffer size, see comment above     */
@@ -277,10 +277,10 @@ static void clear_cnt(t_stat stat[IDTNR][TXRXNR])
 }
 
 
-static void print_status(FILE *fp,int pid,char *s,
+static void print_status(FILE *fp,int nodeid,char *s,
                          t_stat stat[IDTNR][TXRXNR],t_stat *mark)
 {
-  (void) fprintf(fp,"idt pid: %d, %s\n",pid,s);
+  (void) fprintf(fp,"idt nodeid: %d, %s\n",nodeid,s);
   line(fprintf(fp,"%s%s:",stat[i][j].name,(mark==&stat[i][j])?" (*)":""));
   line(fprintf(fp,"cmd   = 0x%x",stat[i][j].cmd));
   line(fprintf(fp,"(cmd) = 0x%x",peek_io_buf(IDT7130,stat[i][j].cmd)));
@@ -412,13 +412,13 @@ static int com_test(FILE *fp,char *title,int src,int dest)
 #endif
 
 int i860main_test(int argc,char *argv[],FILE *stdlog,
-                  int nprocs,int pid,int left,int right)
+                  int nnodes,int nodeid,int left,int right)
 {
   int err;
 
-  (void) fprintf(stdlog,"in i860main nprocs=%d, pid=%d, left=%d, right=%d, "
-                 "bufsize=%d\n",nprocs,pid,left,right,BUFSIZE*sizeof(int));
-  if (nprocs==1) test_connectivity(stdlog,sys_stat);
+  (void) fprintf(stdlog,"in i860main nnodes=%d, nodeid=%d, left=%d, right=%d, "
+                 "bufsize=%d\n",nnodes,nodeid,left,right,BUFSIZE*sizeof(int));
+  if (nnodes==1) test_connectivity(stdlog,sys_stat);
   err=com_test(stdlog,"left to right",left,right);
   err+=com_test(stdlog,"right to left",right,left);
   (void) fprintf(stdlog,"%d error(s)\n",err);
@@ -501,7 +501,7 @@ static int repair(FILE *fp,char *where,t_stat *stat,int tag)
         (void) fprintf(fp,"could not repair tag 0x%.2x in %s (%s)\n",tag,where,
                       stat->name);
         idtio_errstat(fp,where,stat,1);
-        fatal_error(0,"received 0x%x as a tag on processor %d",tag,idt_id);
+        fatal_error(0,"received 0x%x as a tag on node %d",tag,idt_id);
       }
   (void) fprintf(fp,"repaired 0x%.2x in %s(%s) -> 0x%.2x\n",
                  tag,where,stat->name,out_tag);
@@ -686,10 +686,10 @@ static void init_stat(t_stat *stat,char *name,int bsize,int buf,int cmd)
   LEAVE(init_stat,stat);
 }
 
-static void ring_wait(int pid,int nprocs)
+static void ring_wait(int nodeid,int nnodes)
      /*
-      * Wait for every processor to execute this function, assume that pid
-      * runs from 0 to nprocs - 1.
+      * Wait for every node to execute this function, assume that nodeid
+      * runs from 0 to nnodes - 1.
       */
 {
   int i,newserver;
@@ -704,24 +704,24 @@ static void ring_wait(int pid,int nprocs)
   else
     {
       ch=0;
-      if (pid==0) 
+      if (nodeid==0) 
         {
-          for (i=1; i<nprocs; i++) rdlinda1in(i,-1,&ch);
-          for (i=1; i<nprocs; i++) rdlinda1out(i+nprocs,1,&ch);
+          for (i=1; i<nnodes; i++) rdlinda1in(i,-1,&ch);
+          for (i=1; i<nnodes; i++) rdlinda1out(i+nnodes,1,&ch);
         }
       else
         {
-          rdlinda1out(pid,1,&ch);
-          rdlinda1in(pid+nprocs,-1,&ch);
+          rdlinda1out(nodeid,1,&ch);
+          rdlinda1in(nodeid+nnodes,-1,&ch);
         }
     }
 }
 
-void idtio_init(int pid,int nprocs)
+void idtio_init(int nodeid,int nnodes)
 {
   int i;
 
-  idt_id=pid;
+  idt_id=nodeid;
   init_stat(&sys_stat[LEFT] [TX],stat_names[LEFT][TX],
             BSIZE&~0x3,IDTLEFT,       IDTLEFT+2*BSIZE);
   init_stat(&sys_stat[LEFT] [RX],stat_names[LEFT][RX],
@@ -733,27 +733,27 @@ void idtio_init(int pid,int nprocs)
   for (i=0; i<IRQBASE; i++) poke_io_buf(IDT7130,IDTLEFT+i,0xff);
 
 #ifdef DEBUG
-  print_status(stdlog,pid,"idtio_init (1)",sys_stat,NULL);
-  ring_wait(pid,nprocs);
-  print_status(stdlog,pid,"idtio_init (2)",sys_stat,NULL);
+  print_status(stdlog,nodeid,"idtio_init (1)",sys_stat,NULL);
+  ring_wait(nodeid,nnodes);
+  print_status(stdlog,nodeid,"idtio_init (2)",sys_stat,NULL);
 #endif
-  ring_wait(pid,nprocs);
+  ring_wait(nodeid,nnodes);
 
   for (i=0; i<IDTNR; i++) poke_io_buf(IDT7130,sys_stat[i][TX].cmd,BUF_DONE);
-  ring_wait(pid,nprocs);
+  ring_wait(nodeid,nnodes);
   for (i=0; i<IDTNR; i++) 
     {
       if (peek_io_buf(IDT7130,sys_stat[i][RX].cmd)!=BUF_DONE)
         {
           idtio_errstat(stdlog,"idtio_init",&sys_stat[i][RX],1);
-          fatal_error(0,"idt %s not initialised on processor %d",
+          fatal_error(0,"idt %s not initialised on node %d",
                       sys_stat[i][RX].name,idt_id);
         }  
     }
 #ifdef DEBUG
-  print_status(stdlog,pid,"idtio_init(3)",sys_stat,NULL);
+  print_status(stdlog,nodeid,"idtio_init(3)",sys_stat,NULL);
 #endif
-  ring_wait(pid,nprocs);
+  ring_wait(nodeid,nnodes);
 }
 
 void idtio_stat(FILE *fp,char *msg)
@@ -768,7 +768,7 @@ void idtio_stat(FILE *fp,char *msg)
 #endif
 }
 
-void idt_left_right(int nprocs,int pid,int *left,int *right)
+void idt_left_right(int nnodes,int nodeid,int *left,int *right)
 {
   *left=LEFT;
   *right=RIGHT;

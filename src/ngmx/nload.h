@@ -40,7 +40,7 @@ static char *SRCID_nload_h = "$Id$";
 
 typedef struct {
   t_windata wd;
-  int       nprocs;
+  int       nnodes;
   int       *load;
 } t_loadwin;
 
@@ -50,7 +50,7 @@ extern t_loadwin *init_lw(t_x11 *x11,Window Parent,
 
 extern void map_lw(t_x11 *x11,t_loadwin *lw);
 
-extern void set_load(t_x11 *x11,t_loadwin *lw,int nprocs,int load[]);
+extern void set_load(t_x11 *x11,t_loadwin *lw,int nnodes,int load[]);
 
 extern void done_lw(t_x11 *x11,t_loadwin *lw);
 

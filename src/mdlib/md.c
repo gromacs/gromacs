@@ -102,14 +102,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   char        *grpname;
   t_coupl_rec *tcr=NULL;
 #endif
-  
+
   /* Turn on signal handling */
   signal(SIGTERM,signal_handler);
   signal(SIGUSR1,signal_handler);
 
   /* check if "-rerun" is used. */
   bRerunMD = (Flags & MD_RERUN) == MD_RERUN;
-
   /* Initial values */
   init_md(cr,&parm->ir,parm->box,&t,&t0,&lambda,&lam0,&SAfactor,&mynrnb,&bTYZ,top,
 	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&mdebin,grps,vcm,
@@ -180,7 +179,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 #endif
   
   /* Write start time and temperature */
-  start_t=print_date_and_time(log,cr->pid,
+  start_t=print_date_and_time(log,cr->nodeid,
 #ifdef XMDRUN
 			      "Started Xmdrun"
 #else
@@ -202,10 +201,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       fprintf(stderr,"starting mdrun '%s'\n%d steps, %8.1f ps.\n\n",
 	      *(top->name),parm->ir.nsteps,parm->ir.nsteps*parm->ir.delta_t);
   }
-  /* Set the cpu time counter to 0 after initialisation */
+  /* Set the node time counter to 0 after initialisation */
   start_time();
   debug_gmx();
-  
+ 
   /***********************************************************
    *
    *             Loop over MD steps 
@@ -250,7 +249,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	}
       }
       copy_mat(rerun_fr.box,parm->box);
-
+      
       /* for rerun MD always do Neighbour Searching */
       bNS = ((parm->ir.nstlist!=0) || bFirstStep);
     } else
@@ -305,6 +304,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     do_force(log,cr,parm,nsb,force_vir,step,&mynrnb,
 	     top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
 	     lambda,graph,bNS,FALSE,fr,mu_tot);
+    
     debug_gmx();
 #ifdef DEBUG
     pr_rvecs(log,0,"force_vir",force_vir,DIM);
@@ -389,7 +389,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
 #ifdef XMDRUN
       /* Check magnitude of the forces */
-    fmax = f_max(cr->left,cr->right,cr->nprocs,START(nsb),
+    fmax = f_max(cr->left,cr->right,cr->nnodes,START(nsb),
 		 START(nsb)+HOMENR(nsb),f);
     debug_gmx();
     parm->ir.delta_t = timestep;
@@ -445,7 +445,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
 
     if (PAR(cr)) {
-      /* Globally (over all CPUs) sum energy, virial etc. 
+      /* Globally (over all NODEs) sum energy, virial etc. 
        * This includes communication 
        */
       global_stat(log,cr,ener,force_vir,shake_vir,
@@ -455,8 +455,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
        */
       if (fr->bTwinRange && !bNS) 
 	for(i=0; (i<grps->estat.nn); i++) {
-	  grps->estat.ee[egLR][i]   /= cr->nprocs;
-	  grps->estat.ee[egLJLR][i] /= cr->nprocs;
+	  grps->estat.ee[egLR][i]   /= cr->nnodes;
+	  grps->estat.ee[egLJLR][i] /= cr->nnodes;
 	}
     }
     else
@@ -606,22 +606,22 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   /* End of main MD loop */
   debug_gmx();
 
-  /* Dump the CPU time to the log file on each processor */
+  /* Dump the NODE time to the log file on each node */
   if (PAR(cr)) {
     double *ct,ctmax,ctsum;
     
-    snew(ct,cr->nprocs);
-    ct[cr->pid] = cpu_time();
-    gmx_sumd(cr->nprocs,ct,cr);
+    snew(ct,cr->nnodes);
+    ct[cr->nodeid] = node_time();
+    gmx_sumd(cr->nnodes,ct,cr);
     ctmax = ct[0];
     ctsum = ct[0];
-    for(i=1; (i<cr->pid); i++) {
+    for(i=1; (i<cr->nodeid); i++) {
       ctmax = max(ctmax,ct[i]);
       ctsum += ct[i];
     }
-    ctsum /= cr->nprocs;
-    fprintf(log,"\nTotal CPU time on processor %d: %g\n",cr->pid,ct[cr->pid]);
-    fprintf(log,"Average CPU time: %g\n",ctsum);
+    ctsum /= cr->nnodes;
+    fprintf(log,"\nTotal NODE time on node %d: %g\n",cr->nodeid,ct[cr->nodeid]);
+    fprintf(log,"Average NODE time: %g\n",ctsum);
     fprintf(log,"Load imbalance reduced performance to %3d%% of max\n",
 	    (int) (100.0*ctmax/ctsum));
     sfree(ct);

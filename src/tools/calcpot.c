@@ -143,7 +143,7 @@ static void low_calc_pot(FILE *log,int nl_type,t_forcerec *fr,
   
   nlist = &fr->nlist_sr[nl_type];
   
-  c_tabpot(fr->tabscale,fr->VFtab,nlist->nri,nlist->iinr,
+  c_tabpot(fr->tabscale,fr->coulvdwtab,nlist->nri,nlist->iinr,
 	   nlist->shift,nlist->jindex,nlist->jjnr,
 	   x[0],fr->epsfac,mdatoms->chargeA,pot,fr->shift_vec[0]);
 
@@ -220,11 +220,9 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   tensor   force_vir,shake_vir;
   
   /* Initiate */
-  cr->nprocs = 1; cr->pid    = 0; cr->left   = 0; cr->right  = 1;
+  cr->nnodes = 1; cr->nodeid    = 0; cr->left   = 0; cr->right  = 1;
+  cr->nthreads = 1 ; cr->threadid = 0;
   open_log(ftp2fn(efLOG,nfile,fnm),cr);
-#ifdef CINVSQRT
-  init_lookup_table(stdlog);
-#endif
 
   init_nrnb(&nrnb);
   init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),top,x,&v,mdatoms,nsb);

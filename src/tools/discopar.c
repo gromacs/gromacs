@@ -16,7 +16,7 @@
 #endif
 
 #define debug_gmx() do { FILE *fp=debug ? debug : (stdlog ? stdlog : stderr);\
-fprintf(fp,"PID=%d, %s  %d\n",gmx_cpu_id(),__FILE__,__LINE__); fflush(fp); } while (0)
+fprintf(fp,"NODEID=%d, %s  %d\n",gmx_cpu_id(),__FILE__,__LINE__); fflush(fp); } while (0)
 	
 static t_correct *recv_init(FILE *fp,
 			    t_commrec *cr,int *seed,int *natom,int *nres,
@@ -81,17 +81,17 @@ static void send_init(FILE *fp,
 		      t_commrec *cr,t_correct *c,int *seed,int natom,int nres,
 		      rvec *xref,rvec *xcenter,bool bKeep)
 {
-  int pid;
+  int nodeid;
   
-  for(pid=1; (pid < cr->nprocs); pid++) {
-    gmx_txs(pid,seed,sizeof(*seed));
+  for(nodeid=1; (nodeid < cr->nnodes); nodeid++) {
+    gmx_txs(nodeid,seed,sizeof(*seed));
     /* Update random seed */
     (void) rando(seed);
-    gmx_txs(pid,record(natom));
-    gmx_txs(pid,record(nres));
-    gmx_txs(pid,record(bKeep));
+    gmx_txs(nodeid,record(natom));
+    gmx_txs(nodeid,record(nres));
+    gmx_txs(nodeid,record(bKeep));
     
-#define cput(nn) gmx_txs(pid,record(c->nn))
+#define cput(nn) gmx_txs(nodeid,record(c->nn))
     cput(maxnit);
     cput(nbcheck);
     cput(nstprint);
@@ -111,22 +111,22 @@ static void send_init(FILE *fp,
     cput(npep);
     cput(nimp);
 #undef cput
-    gmx_txs(pid,array(xref,natom));
+    gmx_txs(nodeid,array(xref,natom));
     
     if (c->bCenter)
-      gmx_txs(pid,array(xcenter,natom));
+      gmx_txs(nodeid,array(xcenter,natom));
     
     /* Send the important input data */
-    gmx_txs(pid,array(c->d,c->ndist));
+    gmx_txs(nodeid,array(c->d,c->ndist));
   
-    gmx_txs(pid,array(c->pepbond,c->npep));
+    gmx_txs(nodeid,array(c->pepbond,c->npep));
   
-    gmx_txs(pid,array(c->imp,c->nimp+1));
+    gmx_txs(nodeid,array(c->imp,c->nimp+1));
 
-    gmx_txs(pid,array(c->weight,natom));
+    gmx_txs(nodeid,array(c->weight,natom));
     
     /* Other arrays can be deduced from these */
-    fprintf(fp,"Succesfully sent input data to pid %d\n",pid);
+    fprintf(fp,"Succesfully sent input data to nodeid %d\n",nodeid);
     fflush(fp);
   }
 }
@@ -137,7 +137,7 @@ static bool send_coords(t_commrec *cr,int nviol,int nit,int k,
   bool bDone;
 
   debug_gmx();
-  gmx_tx(0,record(cr->pid));
+  gmx_tx(0,record(cr->nodeid));
   gmx_tx_wait(0);
   
   gmx_rxs(0,record(bDone));
@@ -160,32 +160,32 @@ static bool send_coords(t_commrec *cr,int nviol,int nit,int k,
 static int recv_coords(t_commrec *cr,int *nviol,int *nit,int *k,
 		       rvec x[],matrix box,bool bKeep,bool bDone)
 {
-  int        pid,natom;
+  int        nodeid,natom;
   
   /* Check whether there is something from anyone */
   debug_gmx();
-  gmx_rx(MPI_ANY_SOURCE,record(pid));
+  gmx_rx(MPI_ANY_SOURCE,record(nodeid));
   do {
     usleep(1000);
   } while (!mpiio_rx_probe(MPI_ANY_SOURCE));
   
   debug_gmx();
-  if ((pid >= cr->nprocs) || (pid <= 0))
-    fatal_error(0,"Reading data from pid %d",pid);
+  if ((nodeid >= cr->nnodes) || (nodeid <= 0))
+    fatal_error(0,"Reading data from nodeid %d",nodeid);
       
-  gmx_txs(pid,record(bDone));
+  gmx_txs(nodeid,record(bDone));
       
   if (!bDone) {
-    gmx_rxs(pid,record(*nviol));
-    gmx_rxs(pid,record(*nit));
-    gmx_rxs(pid,record(*k));
+    gmx_rxs(nodeid,record(*nviol));
+    gmx_rxs(nodeid,record(*nit));
+    gmx_rxs(nodeid,record(*k));
     if (bKeep || (*nviol == 0)) {
-      gmx_rxs(pid,record(natom));
-      gmx_rxs(pid,array(x,natom));
-      gmx_rxs(pid,array(box,DIM));
+      gmx_rxs(nodeid,record(natom));
+      gmx_rxs(nodeid,array(x,natom));
+      gmx_rxs(nodeid,array(box,DIM));
     }
   }
-  return pid;
+  return nodeid;
 }
 
 void disco_slave(t_commrec *cr,FILE *fp)
@@ -239,7 +239,7 @@ void disco_master(t_commrec *cr,FILE *fp,char *outfn,char *keepfn,t_correct *c,
   FILE    *gp;
   int     *nconvdist;
   int     i,k,kk,nconv,ntry,status,kstatus,natom,nres,nit;
-  int     nvtest,pid,kpid,nviol;
+  int     nvtest,nodeid,knodeid,nviol;
   double  tnit;
   rvec    *x,xcm;
   matrix  box,wrbox;
@@ -279,7 +279,7 @@ void disco_master(t_commrec *cr,FILE *fp,char *outfn,char *keepfn,t_correct *c,
   tnit  = 0;
   debug_gmx();
   for(k=0; (k<nstruct); ) {
-    pid        = recv_coords(cr,&nviol,&nit,&kpid,x,box,keepfn,FALSE);
+    nodeid        = recv_coords(cr,&nviol,&nit,&knodeid,x,box,keepfn,FALSE);
     bConverged = (nviol == 0);
     tnit      += nit;
     ntry++;
@@ -291,7 +291,7 @@ void disco_master(t_commrec *cr,FILE *fp,char *outfn,char *keepfn,t_correct *c,
     if ((k % 20) == 0)
       fprintf(stderr,"%8s%6s%6s%8s%6s\n",
 	      "Struct","CPU","Str","nviol","niter");
-    fprintf(stderr,"%8d%6d%6d%8d%6d\n",k,pid,kpid,nviol,nit);
+    fprintf(stderr,"%8d%6d%6d%8d%6d\n",k,nodeid,knodeid,nviol,nit);
     
     if (bConverged || keepfn) {
       center_in_box(natom,x,wrbox,x);
@@ -316,8 +316,8 @@ void disco_master(t_commrec *cr,FILE *fp,char *outfn,char *keepfn,t_correct *c,
       ffclose(gp);
     }
   }
-  for(k=1; (k<cr->nprocs); k++)
-    pid = recv_coords(cr,&nviol,&nit,&kpid,x,box,keepfn,TRUE);
+  for(k=1; (k<cr->nnodes); k++)
+    nodeid = recv_coords(cr,&nviol,&nit,&knodeid,x,box,keepfn,TRUE);
 
   close_trx(status);
   if (keepfn)

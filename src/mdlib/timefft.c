@@ -56,13 +56,13 @@ int main(int argc,char *argv[])
   t_fftgrid *g;
   t_commrec *cr;
   static bool bOptFFT = FALSE;
-  static int  ncpu    = 1;
+  static int  nnode    = 1;
   static int  nitfac  = 1;
   t_pargs pa[] = {
     { "-opt",   FALSE, etBOOL, {&bOptFFT}, 
       "Optimize FFT" },
-    { "-np",    FALSE, etINT, {&ncpu},
-      "Number of CPUs" },
+    { "-np",    FALSE, etINT, {&nnode},
+      "Number of NODEs" },
     { "-itfac", FALSE, etINT, {&nitfac},
       "Multiply number of iterations by this" }
   };
@@ -101,7 +101,7 @@ int main(int argc,char *argv[])
       fprintf(stderr,"\r3D FFT (%s precision) %3d^3, niter %3d     ",
 	      (rsize == 8) ? "Double" : "Single",n,nit);
     
-    g  = mk_fftgrid(stdlog,(ncpu > 1),n,n,n,bOptFFT);
+    g  = mk_fftgrid(stdlog,(nnode > 1),n,n,n,bOptFFT);
 
     if (PAR(cr))
       start = time(NULL);
@@ -115,7 +115,7 @@ int main(int argc,char *argv[])
       rt[i] = time(NULL)-start;
     else {
       update_time();
-      rt[i] = cpu_time();
+      rt[i] = node_time();
     }
     done_fftgrid(g);
     sfree(g);

@@ -76,7 +76,15 @@ static void calc_idx(int natoms,matrix recipbox,
   int  *idxptr,tix,tiy,tiz;
   real *xptr,tx,ty,tz;
   real rxx,ryx,ryy,rzx,rzy,rzz;
+#if (defined __GNUC__ && defined _lnx_ && defined FAST_X86TRUNC)
+  int x86_cw,x86_cwsave;
 
+  asm("fnstcw %0" : "=m" (*&x86_cwsave));
+  x86_cw = x86_cwsave | 3072;
+  asm("fldcw %0" : : "m" (*&x86_cw));
+  #define x86trunc(a,b) asm("fld %1\nfistpl %0\n" : "=m" (*&b) : "f" (a));
+#endif
+  
   rxx = recipbox[XX][XX];
   ryx = recipbox[YY][XX];
   ryy = recipbox[YY][YY];
@@ -93,11 +101,17 @@ static void calc_idx(int natoms,matrix recipbox,
     tx = nx + nx * ( xptr[XX] * rxx + xptr[YY] * ryx + xptr[ZZ] * rzx );
     ty = ny + ny * (                  xptr[YY] * ryy + xptr[ZZ] * rzy );
     tz = nz + nz * (                                   xptr[ZZ] * rzz );
-    
+
+#if (defined __GNUC__ && defined _lnx_ && defined FAST_X86TRUNC)
+    x86trunc(tx,tix);
+    x86trunc(ty,tiy);
+    x86trunc(tz,tiz);
+#else
     tix = (int)(tx);
     tiy = (int)(ty);
     tiz = (int)(tz);
-
+#endif
+    
     fractx[i][XX] = tx - tix;
     fractx[i][YY] = ty - tiy;
     fractx[i][ZZ] = tz - tiz;   
@@ -106,6 +120,9 @@ static void calc_idx(int natoms,matrix recipbox,
     idxptr[YY] = nny[tiy];
     idxptr[ZZ] = nnz[tiz];
   }
+#if (defined __GNUC__ && defined _lnx_ && defined FAST_X86TRUNC)  
+  asm("fldcw %0" : : "m" (*&x86_cwsave));
+#endif
 }
 
 void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForward)
@@ -114,16 +131,16 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForward)
   static t_fft_r *tmp;
   int i;
   static int localsize;
-  static int maxproc;
+  static int maxnode;
 
 #ifdef USE_MPI
   if(bFirst) {
     localsize=grid->la12r*grid->pfft.local_nx;
     if(!grid->workspace)
       snew(tmp,localsize);
-    maxproc=grid->nx/grid->pfft.local_nx;
+    maxnode=grid->nx/grid->pfft.local_nx;
   }
-  /* NOTE: FFTW doesnt necessarily use all processors for the fft;
+  /* NOTE: FFTW doesnt necessarily use all nodes for the fft;
      * above I assume that the ones that do have equal amounts of data.
      * this is bad since its not guaranteed by fftw, but works for now...
      * This will be fixed in the next release.
@@ -132,16 +149,16 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForward)
   if(grid->workspace)
     tmp=grid->workspace;
   if(bForward) { /* sum contributions to local grid */
-    for(i=0;i<maxproc;i++) {
+    for(i=0;i<maxnode;i++) {
       MPI_Reduce(grid->ptr+i*localsize, /*ptr arithm.     */
 		 tmp,localsize,      
 		 GMX_MPI_REAL,MPI_SUM,i,MPI_COMM_WORLD);
     }
-    if(cr->pid<maxproc)
-      memcpy(grid->ptr+cr->pid*localsize,tmp,localsize*sizeof(t_fft_r));
+    if(cr->nodeid<maxnode)
+      memcpy(grid->ptr+cr->nodeid*localsize,tmp,localsize*sizeof(t_fft_r));
   }
-  else { /* distribute local grid to all processors */
-    for(i=0;i<maxproc;i++)
+  else { /* distribute local grid to all nodes */
+    for(i=0;i<maxnode;i++)
       MPI_Bcast(grid->ptr+i*localsize, /* ptr arithm     */
 		localsize,       
 		GMX_MPI_REAL,i,MPI_COMM_WORLD);
@@ -562,11 +579,11 @@ void init_pme(FILE *log,t_commrec *cr,t_nsborder *nsb,t_inputrec *ir)
   ny = ir->nky;
   nz = ir->nkz;
     
-  if (PAR(cr) && cr->nprocs>1) {
+  if (PAR(cr) && cr->nnodes>1) {
     fprintf(log,"Parallelized PME sum used.\n");
-    if(nx%(cr->nprocs)!=0)
+    if(nx%(cr->nnodes)!=0)
       fprintf(log,"Warning: For load balance, "
-	      "fourier_nx should be divisible by NPROCS\n");
+	      "fourier_nx should be divisible by the number of nodes\n");
   } 
  
   /* allocate space for things */
@@ -628,7 +645,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
   inc_nrnb(nrnb,eNR_SPREADQBSP,
 	   ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
   
-  /* sum contributions to local grid from other processors */
+  /* sum contributions to local grid from other nodes */
   if (PAR(cr))
     sum_qgrid(cr,nsb,grid,TRUE);
   
@@ -642,7 +659,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
   /* do 3d-invfft */
   gmxfft3D(grid,FFTW_BACKWARD,cr);
    
-  /* distribute local grid to all processors */
+  /* distribute local grid to all nodes */
   if (PAR(cr))
     sum_qgrid(cr,nsb,grid,FALSE);
   
@@ -655,7 +672,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
 	   ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
 
   ntot  = grid->nxyz;  
-  npme  = ntot*log((real)ntot)/(cr->nprocs*log(2.0));
+  npme  = ntot*log((real)ntot)/(cr->nnodes*log(2.0));
   inc_nrnb(nrnb,eNR_FFT,2*npme);
 
   return energy;  

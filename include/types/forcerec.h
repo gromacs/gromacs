@@ -27,8 +27,12 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
-enum { eNL_VDWQQ, eNL_VDW, eNL_QQ, eNL_FREE, 
-       eNL_VDWQQ_WAT, eNL_QQ_WAT, eNL_NR };
+enum { eNL_VDWQQ, eNL_VDW, eNL_QQ, 
+       eNL_VDWQQ_FREE, eNL_VDW_FREE, eNL_QQ_FREE, 
+       eNL_VDWQQ_SOLMNO, eNL_VDW_SOLMNO, eNL_QQ_SOLMNO, 
+       eNL_VDWQQ_WATER, eNL_QQ_WATER, 
+       eNL_VDWQQ_WATERWATER, eNL_QQ_WATERWATER, 
+       eNL_NR };
  
 typedef struct {
   /* Cut-Off stuff */
@@ -50,16 +54,16 @@ typedef struct {
   real fudgeQQ;
 
   /* Table stuff */
-  bool bTab;
+  bool bcoultab;
+  bool bvdwtab;
   real rtab;
   int  ntab;
   real tabscale;
-  real *VFtab;
-  real *VFtab14; /* special 1-4 tables to use when the ordinary
-		  * tabulated coulomb interactions are LR shifted.
-		  * not a pretty solution to double LJ, but it works.
-		  * Erik 990903
-		  */
+  /* We duplicate tables for cache optimization purposes */
+  real *coultab;      /* Coul only */
+  real *vdwtab;       /* Vdw only   */
+  real *coulvdwtab;   /* Both      */
+  real *coulvdw14tab; /* 1,4 table with both */
 
   /* PPPM & Shifting stuff */
   real rcoulomb_switch,rcoulomb;
@@ -84,6 +88,8 @@ typedef struct {
   int  nWater,nWatMol;
   int  Dimension;
   bool bGrid,bDomDecomp;
+  int  *solvent_type;
+  int  *mno_index;
   rvec *cg_cm;
   rvec *shift_vec;
   

@@ -100,7 +100,7 @@ extern void calc_ke_part_visc(bool bFirstStep,int start,int homenr,
 /* The same as calc_ke_part, but for viscosity calculations.
  * The cosine velocity profile is excluded from the kinetic energy.
  * The new amplitude of the velocity profile is calculated for this
- * processor and stored in grps->cosacc.mvcos.
+ * node and stored in grps->cosacc.mvcos.
  */
 
 /* Routines from coupling.c to do with Temperature, Pressure and coupling

@@ -268,12 +268,8 @@ int main(int argc,char *argv[])
   else {
     cr     = init_par(&argc,argv);
     log    = ftp2FILE(efLOG,NFILE,fnm,"w");
-    stdlog = log;
-  }
+    stdlog = log;  }
   
-#ifdef CINVSQRT
-  init_lookup_table(log);
-#endif
 
   /* Read topology and coordinates */
   read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&stath);

@@ -369,12 +369,12 @@ void mv_grid(t_commrec *cr,bool bDD,int cg_index[],
 	     t_grid *grid,int cgload[])
 {
   int i,start,nr;
-  int cur=cr->pid;
+  int cur=cr->nodeid;
   int *ci;
-#define next ((cur+1) % cr->nprocs)
+#define next ((cur+1) % cr->nnodes)
 
   ci=grid->cell_index;
-  for(i=0; (i<cr->nprocs-1); i++) {
+  for(i=0; (i<cr->nnodes-1); i++) {
     start=(cur == 0) ? 0 : cgload[cur-1];
     nr=cgload[cur]-start;
     gmx_tx(cr->left,&(ci[start]),nr*sizeof(*ci));

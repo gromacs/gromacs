@@ -85,7 +85,7 @@ void print_time(FILE *out,time_t start,int step,t_inputrec *ir)
   fflush(out);
 }
 
-time_t print_date_and_time(FILE *log,int pid,char *title)
+time_t print_date_and_time(FILE *log,int nodeid,char *title)
 {
   int i;
   char *ts,time_string[STRLEN];
@@ -95,14 +95,14 @@ time_t print_date_and_time(FILE *log,int pid,char *title)
   ts=ctime(&now);
   for (i=0; ts[i]>=' '; i++) time_string[i]=ts[i];
   time_string[i]='\0';
-  fprintf(log,"%s on processor %d %s\n",title,pid,time_string);
+  fprintf(log,"%s on node %d %s\n",title,nodeid,time_string);
   return now;
 }
 
 static void pr_commrec(FILE *log,t_commrec *cr)
 {
-  fprintf(log,"commrec: pid=%d, nprocs=%d, left=%d, right=%d\n",
-	  cr->pid,cr->nprocs,cr->left,cr->right);
+  fprintf(log,"commrec: nodeid=%d, nnodes=%d, left=%d, right=%d, threadid=%d, nthreads=%d\n",
+	  cr->nodeid,cr->nnodes,cr->left,cr->right,cr->threadid,cr->nthreads);
 }
 
 static void sum_forces(int start,int end,rvec f[],rvec flr[])
@@ -178,13 +178,13 @@ void do_force(FILE *log,t_commrec *cr,
 {
   static rvec box_size;
   static real dvdl_lr = 0;
-  int    pid,cg0,cg1,i,j;
+  int    nodeid,cg0,cg1,i,j;
   int    start,homenr;
   static real mu_and_q[DIM+1]; 
   real   qsum;
   matrix lr_vir; /* used for PME long range virial */
   
-  pid    = cr->pid;
+  nodeid    = cr->nodeid;
   start  = START(nsb);
   homenr = HOMENR(nsb);
   cg0    = CG0(nsb);
@@ -193,10 +193,10 @@ void do_force(FILE *log,t_commrec *cr,
   update_forcerec(log,fr,parm->box);
 
   /* Calculate total (local) dipole moment in a temporary common array. 
-   * This makes it possible to sum them over processors faster.
+   * This makes it possible to sum them over nodes faster.
    */
   calc_mu_and_q(nsb,x,mdatoms->chargeT,mu_and_q,mu_and_q+DIM);
-  
+
   if (fr->ePBC != epbcNONE) { 
     /* Compute shift vectors every step, because of pressure coupling! */
     if (parm->ir.epc != epcNO)
@@ -213,7 +213,7 @@ void do_force(FILE *log,t_commrec *cr,
   }
   else if (bNS)
     calc_cgcm(log,cg0,cg1,&(top->blocks[ebCGS]),x,fr->cg_cm);
-  
+ 
   if (bNS) {
     inc_nrnb(nrnb,eNR_CGCM,cg1-cg0);
     if (PAR(cr))
@@ -221,7 +221,7 @@ void do_force(FILE *log,t_commrec *cr,
     if (debug)
       pr_rvecs(debug,0,"cgcm",fr->cg_cm,nsb->cgtotal);
   }
-    
+  
   /* Communicate coordinates and sum dipole and net charge if necessary */
   if (PAR(cr)) {
     move_x(log,cr->left,cr->right,x,nsb,nrnb);
@@ -233,7 +233,6 @@ void do_force(FILE *log,t_commrec *cr,
   
   /* Reset energies */
   reset_energies(&(parm->ir.opts),grps,fr,bNS,ener);    
-  
   if (bNS) {
     if (fr->ePBC != epbcNONE)
       /* Calculate intramolecular shift vectors to make molecules whole */
@@ -252,7 +251,6 @@ void do_force(FILE *log,t_commrec *cr,
     ns(log,fr,x,f,parm->box,grps,&(parm->ir.opts),top,mdatoms,
        cr,nrnb,nsb,step,lambda,&dvdl_lr);
   }
-  
   /* Reset forces or copy them from long range forces */
   if (fr->bTwinRange) {
     for(i=0; i<nsb->natoms; i++)
@@ -267,7 +265,6 @@ void do_force(FILE *log,t_commrec *cr,
     clear_rvecs(nsb->natoms,f);
     clear_rvecs(SHIFTS,fr->fshift);
   }
-
   /* Compute the forces */    
   force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(parm->ir.opts),
@@ -353,7 +350,7 @@ void update_time(void)
   cprev    = c;
 }
 
-double cpu_time(void)
+double node_time(void)
 {
   return runtime;
 }

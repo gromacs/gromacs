@@ -257,8 +257,8 @@ extern void update_time(void);
  * or 2400 s, in order to give reliable answers.
  */
  
-extern double cpu_time(void);
-/* Return the cpu time so far in seconds. */
+extern double node_time(void);
+/* Return the node time so far in seconds. */
 
 extern void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
 			  t_parm *parm,t_nsborder *nsb,t_mdatoms *md,

@@ -43,7 +43,6 @@ static char *SRCID_g_rama_c = "$Id$";
 #include "statutil.h"
 #include "rdgroup.h"
 #include "nrama.h"
-#include "lutab.h"
 
 static void plot_rama(FILE *out,t_xrama *xr)
 {
@@ -80,7 +79,6 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,0,NULL,asize(desc),desc,0,NULL);
 
-  init_lookup_table(stdout);
 		      
   snew(xr,1);
   init_rama(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),xr);

@@ -474,7 +474,7 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
   rvec  spacing;
 
   if (cr != NULL) {
-    if (cr->nprocs > 1)
+    if (cr->nnodes > 1)
 	fprintf(log,"Initializing parallel PPPM.\n");
   }
   fprintf(log,"Will use the PPPM algorithm for long-range electrostatics\n");
@@ -554,7 +554,7 @@ real do_pppm(FILE *log,       bool bVerbose,
   /* First step: spreading the charges over the grid. */
   spread_q(log,bVerbose,start,nr,x,charge,box,grid,nrnb);
   
-  /* In the parallel code we have to sum the grids from neighbouring processors */
+  /* In the parallel code we have to sum the grids from neighbouring nodes */
   if (PAR(cr))
     sum_qgrid(cr,nsb,grid,TRUE);
   

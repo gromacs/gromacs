@@ -44,25 +44,25 @@ void calc_nsbshift(FILE *fp,t_nsborder *nsb)
   int lastcg,targetcg,nshift,naaj;
   
   nsb->bshift=0;
-  for(i=1; (i<nsb->nprocs); i++) {
+  for(i=1; (i<nsb->nnodes); i++) {
     targetcg = nsb->workload[i-1];
     for(nshift=i; (nshift > 0) && (nsb->cgload[nshift-1] > targetcg); nshift--)
       ;
     nsb->bshift=max(nsb->bshift,i-nshift);
   }
 
-  nsb->shift=(nsb->nprocs+1)/2;
-  for(i=0; (i<nsb->nprocs); i++) {
+  nsb->shift=(nsb->nnodes+1)/2;
+  for(i=0; (i<nsb->nnodes); i++) {
     lastcg=nsb->cgload[i]-1;
     naaj=calc_naaj(lastcg,nsb->cgtotal);
     targetcg=(lastcg+naaj) % nsb->cgtotal;
     
     /* Search until we find the target charge group */
-    for(nshift=0; (nshift < nsb->nprocs) && (targetcg > nsb->cgload[nshift]);
+    for(nshift=0; (nshift < nsb->nnodes) && (targetcg > nsb->cgload[nshift]);
 	nshift++)
       ;
-    /* Now compute the shift, that is the difference in processor index */
-    nshift=((nshift-i+nsb->nprocs) % nsb->nprocs);
+    /* Now compute the shift, that is the difference in node index */
+    nshift=((nshift-i+nsb->nnodes) % nsb->nnodes);
     
     if (fp)
       fprintf(fp,"CPU=%3d, lastcg=%5d, targetcg=%5d, myshift=%5d\n",
@@ -76,19 +76,19 @@ void calc_nsbshift(FILE *fp,t_nsborder *nsb)
 	    nsb->shift,nsb->bshift);
 }
 
-void calc_nsb(FILE *fp,t_block *cgs,int nprocs,t_nsborder *nsb,int nstDlb)
+void calc_nsb(FILE *fp,t_block *cgs,int nnodes,t_nsborder *nsb,int nstDlb)
 {
   int  i,cg0;
   
   /* Clean! */
-  for(i=0; (i<MAXPROC); i++) 
+  for(i=0; (i<MAXNODES); i++) 
     nsb->homenr[i]=nsb->index[i]=nsb->cgload[i]=nsb->workload[i]=0;
   
-  nsb->nprocs=nprocs;
+  nsb->nnodes=nnodes;
   nsb->nstDlb=nstDlb;
   nsb->cgtotal=cgs->nr;
   nsb->natoms=cgs->nra;
-  for(i=0; (i<nprocs); i++) {
+  for(i=0; (i<nnodes); i++) {
     cg0              = (i > 0) ? cgs->multinr[i-1] : 0;
     nsb->cgload[i]   = cgs->multinr[i];
     nsb->workload[i] = cgs->multinr[i];
@@ -103,16 +103,16 @@ void print_nsb(FILE *fp,char *title,t_nsborder *nsb)
   int i;
 
   fprintf(fp,"%s\n",title);
-  fprintf(fp,"nsb->pid:     %5d\n",nsb->pid);
-  fprintf(fp,"nsb->nprocs:  %5d\n",nsb->nprocs);
+  fprintf(fp,"nsb->nodeid:     %5d\n",nsb->nodeid);
+  fprintf(fp,"nsb->nnodes:  %5d\n",nsb->nnodes);
   fprintf(fp,"nsb->cgtotal: %5d\n",nsb->cgtotal);
   fprintf(fp,"nsb->natoms:  %5d\n",nsb->natoms);
   fprintf(fp,"nsb->shift:   %5d\n",nsb->shift);
   fprintf(fp,"nsb->bshift:  %5d\n",nsb->bshift);
   
-  fprintf(fp,"pid   index  homenr  cgload  workload\n");
-  for(i=0; (i<nsb->nprocs); i++)
-    fprintf(fp,"%3d%8d%8d%8d%10d\n",i,
+  fprintf(fp,"Nodeid   index  homenr  cgload  workload\n");
+  for(i=0; (i<nsb->nnodes); i++)
+    fprintf(fp,"%6d%8d%8d%8d%10d\n",i,
 	    nsb->index[i],nsb->homenr[i],nsb->cgload[i],nsb->workload[i]);
   fprintf(fp,"\n");
 }

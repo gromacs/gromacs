@@ -55,13 +55,13 @@ int main(int argc,char *argv[])
   /* Command line options ! */
   static bool bVerbose=FALSE,bCompact=TRUE;
 #ifdef PARALLEL
-  static int  nprocs=1;
+  static int  nnodes=1;
 #endif
   static int  nDLB=0,nstepout=10;
   static t_pargs pa[] = {
 #ifdef PARALLEL
-    { "-np",      FALSE, etINT, {&nprocs},
-      "Number of processors, must be the same as used for grompp" },
+    { "-np",      FALSE, etINT, {&nnodes},
+      "Number of nodes, must be the same as used for grompp" },
 #endif
     { "-v",       FALSE, etBOOL,{&bVerbose}, "Verbose mode" },
     { "-compact", FALSE, etBOOL,{&bCompact},

@@ -27,33 +27,57 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
-enum { eNR_LJC,      eNR_QQ,           eNR_LJCRF,       eNR_QQRF, 
-       eNR_BHAM,     eNR_BHAMRF,       eNR_COULTAB,     eNR_TAB, 
-       eNR_BHAMTAB,  eNR_BHAMTAB_WAT,
-       eNR_LJC_WAT,  eNR_QQ_WAT,       eNR_LJCRF_WAT,   eNR_QQRF_WAT, 
-       eNR_BHAM_WAT, eNR_BHAMRF_WAT,   eNR_COULTAB_WAT, eNR_TAB_WAT, 
-       eNR_LJC_FREE, eNR_BHAM_FREE,    eNR_LJC_EW,      eNR_QQ_EW,        
-       eNR_BHAM_EW,  eNR_LJC_WAT_EW,   eNR_QQ_WAT_EW,
-       eNR_BHAM_WAT_EW,
-       eNR_INLOOP,       
-       eNR_INL_IATOM=eNR_INLOOP,
-       eNR_WEIGHTS,  eNR_SPREADQ,      eNR_SPREADQBSP,  eNR_GATHERF,
-       eNR_GATHERFBSP,                 eNR_FFT, 
-       eNR_CONV,     eNR_SOLVEPME,
-       eNR_NS,       eNR_RESETX,       eNR_SHIFTX,
-       eNR_CGCM,     eNR_FSUM,
-       eNR_BONDS,    eNR_G96BONDS,     eNR_ANGLES,      eNR_G96ANGLES,       
-       eNR_PROPER,      
-       eNR_IMPROPER, eNR_RB,
-       eNR_DISRES,   eNR_POSRES,       eNR_ANGRES,      eNR_ANGRESZ,
-       eNR_MORSE,    eNR_CUBICBONDS,   eNR_WPOL,
-       eNR_VIRIAL,   eNR_UPDATE,       eNR_EXTUPDATE,   eNR_STOPCM,
-       eNR_PCOUPL, eNR_EKIN,           eNR_LINCS,    eNR_LINCSMAT,
-       eNR_SHAKE,    eNR_SHAKE_V,      eNR_SHAKE_RIJ,   eNR_SHAKE_VIR, 
-       eNR_SETTLE,   eNR_PSHAKEINITLD, eNR_PSHAKEINITMD, eNR_PSHAKE,
-       eNR_DUM2,     eNR_DUM3,         eNR_DUM3FD,      eNR_DUM3FAD, 
-       eNR_DUM3OUT,  eNR_DUM4FD, 
-       eNRNB };
+/* Oh my god, it's full of loops!
+ * There are quite a few innerloops, so they have been given numbers
+ * instead of names. The first figure is the coulomb alternative, the
+ * second vdw, the third the solvent opt and finally the fourth free
+ * energy. 0 implies no, none or turned off. The other figugures mean:
+ *                                     value
+ * pos              1                   2           3             4
+ * 1st Coul      Normal           Reaction-field  Table
+ * 2nd Vdw       Lennard-Jones    Buckingham      Table        Bham-table
+ * 3rd Sol       General solvent  Water           Water-Water
+ * 4th FreeEner  Lambda           Softcore
+ */
+
+#define eNR_INLNONE -1
+
+enum {
+  eNR_INL0100, eNR_INL0200, eNR_INL0300, eNR_INL0301, eNR_INL0302,
+  eNR_INL0400, eNR_INL0401, eNR_INL0402, eNR_INL1000, eNR_INL1010,
+  eNR_INL1020, eNR_INL1030, eNR_INL1100, eNR_INL1110, eNR_INL1120,
+  eNR_INL1130, eNR_INL1200, eNR_INL1210, eNR_INL1220, eNR_INL1230,
+  eNR_INL1300, eNR_INL1310, eNR_INL1320, eNR_INL1330, eNR_INL1400,
+  eNR_INL1410, eNR_INL1420, eNR_INL1430, eNR_INL2000, eNR_INL2010,
+  eNR_INL2020, eNR_INL2030, eNR_INL2100, eNR_INL2110, eNR_INL2120,
+  eNR_INL2130, eNR_INL2200, eNR_INL2210, eNR_INL2220, eNR_INL2230,
+  eNR_INL2300, eNR_INL2310, eNR_INL2320, eNR_INL2330, eNR_INL2400,
+  eNR_INL2410, eNR_INL2420, eNR_INL2430, eNR_INL3000, eNR_INL3001,
+  eNR_INL3002, eNR_INL3010, eNR_INL3020, eNR_INL3030, eNR_INL3100,
+  eNR_INL3110, eNR_INL3120, eNR_INL3130, eNR_INL3200, eNR_INL3210,
+  eNR_INL3220, eNR_INL3230, eNR_INL3300, eNR_INL3301, eNR_INL3302,
+  eNR_INL3310, eNR_INL3320, eNR_INL3330, eNR_INL3400, eNR_INL3401,
+  eNR_INL3402, eNR_INL3410, eNR_INL3420, eNR_INL3430, eNR_INLOOP,       
+  eNR_INL_IATOM=eNR_INLOOP,
+  eNR_WEIGHTS,              eNR_SPREADQ,              eNR_SPREADQBSP,
+  eNR_GATHERF,              eNR_GATHERFBSP,           eNR_FFT,
+  eNR_CONV,                 eNR_SOLVEPME,eNR_NS,      eNR_RESETX,
+  eNR_SHIFTX,               eNR_CGCM,                 eNR_FSUM,
+  eNR_BONDS,                eNR_G96BONDS,             eNR_ANGLES,
+  eNR_G96ANGLES,            eNR_PROPER,               eNR_IMPROPER,
+  eNR_RB,                   eNR_DISRES,               eNR_POSRES,
+  eNR_ANGRES,               eNR_ANGRESZ,              eNR_MORSE,
+  eNR_CUBICBONDS,           eNR_WPOL,                 eNR_VIRIAL,
+  eNR_UPDATE,               eNR_EXTUPDATE,            eNR_STOPCM,
+  eNR_PCOUPL,               eNR_EKIN,                 eNR_LINCS,
+  eNR_LINCSMAT,             eNR_SHAKE,                eNR_SHAKE_V,
+  eNR_SHAKE_RIJ,            eNR_SHAKE_VIR,            eNR_SETTLE,
+  eNR_PSHAKEINITLD,         eNR_PSHAKEINITMD,         eNR_PSHAKE,
+  eNR_DUM2,                 eNR_DUM3,                 eNR_DUM3FD,
+  eNR_DUM3FAD,              eNR_DUM3OUT,              eNR_DUM4FD, 
+  eNRNB
+};
+
 
 typedef struct {
   double n[eNRNB];

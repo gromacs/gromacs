@@ -112,7 +112,7 @@ static t_deffile deffile[efNR] = {
   { eftGEN, ".???", "traj",   "-f", "Generic trajectory: xtc trr trj gro g96 pdb", NTRXS, trxs },
   { eftGEN, ".???", "traj",   NULL, "Full precision trajectory: trr trj",          NTRNS, trns },
   { eftXDR, ".trr", "traj",   NULL, "Trajectory in portable xdr format"      },
-  { eftBIN, ".trj", "traj",   NULL, "Trajectory file (cpu specific)"         },
+  { eftBIN, ".trj", "traj",   NULL, "Trajectory file (architecture specific)"         },
   { eftXDR, ".xtc", "traj",   NULL, "Compressed trajectory (portable xdr format)"},
   { eftASC, ".g87", "gtraj",  NULL, "Gromos-87 ASCII trajectory format"      },
   { eftGEN, ".???", "ener",   NULL, "Generic energy: edr ene",                     NENXS, enxs },

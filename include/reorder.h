@@ -37,16 +37,16 @@ static char *SRCID_reorder_h = "$Id$";
 #endif /* HAVE_IDENT */
 
 extern void reorder(t_topology *topin,t_topology topout[],
-                    int nprocs,int load[],int tload[]);
+                    int nnodes,int load[],int tload[]);
      /*
-      * All atoms used in topin are distributed over nprocs topologies in 
+      * All atoms used in topin are distributed over nnodes topologies in 
       * topout, where all atom id's are reset, start counting at zero. The 
       * bonded force parameters of topin are distributed using the highest 
-      * atom id of a bond. The bonds is then placed on the processor where 
-      * this atom is a home particle. Due to the algorithm, a processor 
-      * receives the rest of its subsystem from the processors with a lower 
-      * number (modulo nprocs). The array load specifies the number of atom 
-      * to be allocated to every processor.
+      * atom id of a bond. The bonds is then placed on the node where 
+      * this atom is a home particle. Due to the algorithm, a node 
+      * receives the rest of its subsystem from the nodes with a lower 
+      * number (modulo nnodes). The array load specifies the number of atom 
+      * to be allocated to every node.
       */
 
 #endif	/* _reorder_h */

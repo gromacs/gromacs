@@ -36,12 +36,12 @@ static char *SRCID_steep_h = "$Id$";
 #ident	"@(#) steep.h 1.6 03 Mar 1996"
 #endif /* HAVE_IDENT */
 extern real f_max(FILE *log,
-		  int left,int right,int nprocs,
+		  int left,int right,int nnodes,
 		  int start,int end,rvec grad[]);
 /* Globally calculate max force */
 
 extern real f_norm(FILE *log,
-		  int left,int right,int nprocs,
+		  int left,int right,int nnodes,
 		  int start,int end,rvec grad[]);
 /* Calculates norm of forcee */
 

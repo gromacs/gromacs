@@ -34,7 +34,7 @@ static char *SRCID_mpiio_c = "$Id$";
 #include "main.h"
 #include "smalloc.h"
 
-static int  mpi_num_procs=0;
+static int  mpi_num_nodes=0;
 static int  mpi_my_rank=-1;
 static char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
 
@@ -46,31 +46,31 @@ static MPI_Request mpi_req_tx=MPI_REQUEST_NULL,mpi_req_rx;
  * up til now these crashes have only occured with IRIX 6.5        */
 /* #define MPI_TEST */
 
-void mpiio_tx(int pid,void *buf,int bufsize)
+void mpiio_tx(int nodeid,void *buf,int bufsize)
 {
   int        tag,flag;
   MPI_Status status;
   
 #ifdef DEBUG
-  fprintf(stderr,"mpiio_tx: pid=%d, buf=%x, bufsize=%d\n",pid,buf,bufsize);
+  fprintf(stderr,"mpiio_tx: nodeid=%d, buf=%x, bufsize=%d\n",nodeid,buf,bufsize);
 #endif
 #ifdef MPI_TEST
   /* workaround for crashes encountered with MPI on IRIX 6.5 */
   if (mpi_req_tx != MPI_REQUEST_NULL) {
     MPI_Test(&mpi_req_tx,&flag,&status);
     if (flag==FALSE) {
-      fprintf(stdlog,"mpiio_tx called before previous send was complete: pid=%d, buf=%x, bufsize=%d\n",
-	      pid,buf,bufsize);
-      mpiio_tx_wait(pid);
+      fprintf(stdlog,"mpiio_tx called before previous send was complete: nodeid=%d, buf=%x, bufsize=%d\n",
+	      nodeid,buf,bufsize);
+      mpiio_tx_wait(nodeid);
     }
   }
 #endif
   tag = 0;
-  if (MPI_Isend(buf,bufsize,MPI_BYTE,pid,tag,MPI_COMM_WORLD,&mpi_req_tx) != 0)
+  if (MPI_Isend(buf,bufsize,MPI_BYTE,nodeid,tag,MPI_COMM_WORLD,&mpi_req_tx) != 0)
     fatal_error(0,"MPI_Isend Failed !");
 }
 
-void mpiio_tx_wait(int pid)
+void mpiio_tx_wait(int nodeid)
 {
   MPI_Status  status;
   int mpi_result;
@@ -79,33 +79,33 @@ void mpiio_tx_wait(int pid)
     fatal_error(0,"MPI_Wait: result=%d",mpi_result);
 }
 
-void mpiio_txs(int pid,void *buf,int bufsize)
+void mpiio_txs(int nodeid,void *buf,int bufsize)
 {
   int tag;
 
 #ifdef DEBUG
-  fprintf(stderr,"mpiio_txs: pid=%d, buf=%x, bufsize=%d\n",pid,buf,bufsize);
+  fprintf(stderr,"mpiio_txs: nodeid=%d, buf=%x, bufsize=%d\n",nodeid,buf,bufsize);
 #endif
   tag = 0;
-  if (MPI_Send(buf,bufsize,MPI_BYTE,pid,tag,MPI_COMM_WORLD) != 0)
+  if (MPI_Send(buf,bufsize,MPI_BYTE,nodeid,tag,MPI_COMM_WORLD) != 0)
     fatal_error(0,"MPI_Send Failed !");
-  /* mpiio_tx(pid,buf,bufsize);
-     mpiio_tx_wait(pid);*/
+  /* mpiio_tx(nodeid,buf,bufsize);
+     mpiio_tx_wait(nodeid);*/
 }
 
-void mpiio_rx(int pid,void *buf,int bufsize)
+void mpiio_rx(int nodeid,void *buf,int bufsize)
 {
   int        tag;
 
 #ifdef DEBUG
-  fprintf(stderr,"mpiio_rx: pid=%d, buf=%x, bufsize=%d\n",pid,buf,bufsize);
+  fprintf(stderr,"mpiio_rx: nodeid=%d, buf=%x, bufsize=%d\n",nodeid,buf,bufsize);
 #endif
   tag = 0;
-  if (MPI_Irecv( buf, bufsize, MPI_BYTE, pid, tag, MPI_COMM_WORLD, &mpi_req_rx) != 0 )
+  if (MPI_Irecv( buf, bufsize, MPI_BYTE, nodeid, tag, MPI_COMM_WORLD, &mpi_req_rx) != 0 )
     fatal_error(0,"MPI_Recv Failed !");
 }
 
-void mpiio_rx_wait(int pid)
+void mpiio_rx_wait(int nodeid)
 {
   MPI_Status  status;
   int mpi_result;
@@ -114,7 +114,7 @@ void mpiio_rx_wait(int pid)
     fatal_error(0,"MPI_Wait: result=%d",mpi_result);
 }
 
-int mpiio_rx_probe(int pid)
+int mpiio_rx_probe(int nodeid)
 {
   MPI_Status  status;
   int mpi_result,flag=0;
@@ -125,42 +125,42 @@ int mpiio_rx_probe(int pid)
   return flag;
 }
 
-void mpiio_rxs(int pid,void *buf,int bufsize)
+void mpiio_rxs(int nodeid,void *buf,int bufsize)
 {
   MPI_Status stat;
   int        tag;
 
 #ifdef DEBUG
-  fprintf(stderr,"mpiio_rxs: pid=%d, buf=%x, bufsize=%d\n",pid,buf,bufsize);
+  fprintf(stderr,"mpiio_rxs: nodeid=%d, buf=%x, bufsize=%d\n",nodeid,buf,bufsize);
 #endif
   tag = 0;
-  if (MPI_Recv( buf, bufsize, MPI_BYTE, pid, tag, MPI_COMM_WORLD, &stat) != 0 )
+  if (MPI_Recv( buf, bufsize, MPI_BYTE, nodeid, tag, MPI_COMM_WORLD, &stat) != 0 )
     fatal_error(0,"MPI_Recv Failed !");
-  /* mpiio_rx(pid,buf,bufsize);
-     mpiio_rx_wait(pid);*/
+  /* mpiio_rx(nodeid,buf,bufsize);
+     mpiio_rx_wait(nodeid);*/
 }
 
-int mpiio_setup(int *argc,char **argv,int *nprocs)
+int mpiio_setup(int *argc,char **argv,int *nnodes)
 {
   char   buf[256];
-  int    resultlen;               /* actual length of processor name      */
+  int    resultlen;               /* actual length of node name      */
   int    i,flag;
 
   /* Call the MPI routines */
   (void) MPI_Init(argc,&argv);
-  (void) MPI_Comm_size( MPI_COMM_WORLD, &mpi_num_procs );
+  (void) MPI_Comm_size( MPI_COMM_WORLD, &mpi_num_nodes );
   (void) MPI_Comm_rank( MPI_COMM_WORLD, &mpi_my_rank );
   (void) MPI_Get_processor_name( mpi_hostname, &resultlen );
 
-  fprintf(stderr,"NPROCS=%d, MYRANK=%d, HOSTNAME=%s\n",
-	  mpi_num_procs,mpi_my_rank,mpi_hostname);
+  fprintf(stderr,"NNODES=%d, MYRANK=%d, HOSTNAME=%s\n",
+	  mpi_num_nodes,mpi_my_rank,mpi_hostname);
   
-  *nprocs=mpi_num_procs;
+  *nnodes=mpi_num_nodes;
   
   return mpi_my_rank;
 }
 
-/* If this is the master, spawn some kids. Return pid */
+/* If this is the master, spawn some kids. Return nodeid */
 
 void mpiio_stat(FILE *fp,char *msg)
 {
@@ -169,7 +169,7 @@ void mpiio_stat(FILE *fp,char *msg)
 
 int  mpinodecount(void)
 {
-  return mpi_num_procs;
+  return mpi_num_nodes;
 }
 
 int mpinodenumber(void)
@@ -187,14 +187,14 @@ int mpi_idle_rec(void)
   return 0;
 }
 
-void mpi_left_right(int nprocs,int pid,int *left,int *right)
+void mpi_left_right(int nnodes,int nodeid,int *left,int *right)
 {
-  *left  = (nprocs+pid-1) % nprocs;
-  *right = (pid+1) % nprocs;
+  *left  = (nnodes+nodeid-1) % nnodes;
+  *right = (nodeid+1) % nnodes;
 }
 
-void mpiio_tx_rx(int send_pid,void *send_buf,int send_bufsize,
-		 int rec_pid,void *rec_buf,int rec_bufsize)
+void mpiio_tx_rx(int send_nodeid,void *send_buf,int send_bufsize,
+		 int rec_nodeid,void *rec_buf,int rec_bufsize)
 {
   fatal_error(0,"mpiio_tx_rx not implemented!");
 }
@@ -205,7 +205,7 @@ void mpiio_wait(int left,int right)
   mpiio_rx_wait(right);
 }
 
-void mpiio_sync_ring(int pid,int nprocs,int left,int right)
+void mpiio_sync_ring(int nodeid,int nnodes,int left,int right)
 {
   fatal_error(0,"mpiio_sync_ring called");;
 }
@@ -215,7 +215,7 @@ void mpi_reset_idle(void)
   ;
 }
 
-void mpi_abort(int pid,int nprocs,int errorno)
+void mpi_abort(int nodeid,int nnodes,int errorno)
 {
   MPI_Abort(MPI_COMM_WORLD,errorno);
 }

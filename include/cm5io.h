@@ -60,8 +60,8 @@ extern void cm5_left_right(int nprocs,int pid,int *left,int *right);
 #define gmx_tx_rx   	cm5io_tx_rx
 #define gmx_wait    	cm5io_wait
 #define gmx_sync_ring   cm5_sync_ring
-#define gmx_cpu_num     cm5_cpu_num
-#define gmx_cpu_id      cm5_cpu_id
+#define gmx_node_num    cm5_node_num
+#define gmx_node_id     cm5_node_id
 #define gmx_idle_send   cm5_idle_send
 #define gmx_idle_rec    cm5_idle_rec
 #define gmx_left_right  cm5_left_right

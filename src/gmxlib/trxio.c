@@ -580,7 +580,7 @@ bool read_next_frame(int status,t_trxframe *fr)
 {
   real pt;
   int  ct;
-  bool bOK,bRet,bMissingData,bSkip;
+  bool bOK,bRet,bMissingData=FALSE,bSkip=FALSE;
 
   bRet = FALSE;
   pt=fr->time; 

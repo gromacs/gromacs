@@ -38,7 +38,7 @@ static char *SRCID_nload_c = "$Id$";
 
 void DrawLoad(t_x11 *x11,t_windata *Win,int nloads,int *loadinfo)
 {
-  static char *Strings[] = { "Unbalance","Single Processor","Your Ad Here ?"};
+  static char *Strings[] = { "Unbalance","Single Node","Your Ad Here ?"};
   int  i,y0,bwidth,boff,bar,bmax,bmin,ym,yh;
   int  *lb;
   real bav,bscale;
@@ -113,7 +113,7 @@ static bool LWCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
   lw=(t_loadwin *)data;
   switch(event->type) {
   case Expose:
-    DrawLoad(x11,&lw->wd,lw->nprocs,lw->load);
+    DrawLoad(x11,&lw->wd,lw->nnodes,lw->load);
     break;
   default:
     break;
@@ -128,8 +128,8 @@ t_loadwin *init_lw(t_x11 *x11,Window Parent,
   t_loadwin *lw;
   
   snew(lw,1);
-  snew(lw->load,MAXPROC);
-  lw->nprocs=1;
+  snew(lw->load,MAXNODES);
+  lw->nnodes=1;
   InitWin(&lw->wd,x,y,width,height,1,"Load Window");
   lw->wd.self=XCreateSimpleWindow(x11->disp,Parent,x,y,1,1,1,fg,bg);
   x11->RegisterCallback(x11,lw->wd.self,Parent,LWCallBack,lw);
@@ -143,13 +143,13 @@ void map_lw(t_x11 *x11,t_loadwin *lw)
   XMapWindow(x11->disp,lw->wd.self);
 }
 
-void set_load(t_x11 *x11,t_loadwin *lw,int nprocs,int load[])
+void set_load(t_x11 *x11,t_loadwin *lw,int nnodes,int load[])
 {
   int  i;
   bool bChange=FALSE;
 
-  lw->nprocs=nprocs;
-  for(i=0; (i<nprocs); i++)
+  lw->nnodes=nnodes;
+  for(i=0; (i<nnodes); i++)
     if (lw->load[i] != load[i]) {
       bChange=TRUE;
       lw->load[i]=load[i];

@@ -114,6 +114,168 @@ static real *mk_nbfp(t_idef *idef,bool bBHAM)
   return nbfp;
 }
 
+static void check_solvent(FILE *log,t_topology *top,t_forcerec *fr,
+			  t_mdatoms *md)
+{
+  /* This routine finds out whether a charge group can be used as
+   * solvent in the innerloops. The routine should be called once
+   * at the beginning of the MD program.
+   */
+  t_block *cgs,*excl,*mols;
+  atom_id *cgid;
+  int     i,j,j0,j1,nj,k,aj,ak,tjA,tjB,nl_m,nl_n,nl_o;
+  bool    bOneCG;
+  bool    *bAllExcl,bAE,bOrder;
+  bool    *bHaveLJ,*bHaveCoul;
+  
+  cgs  = &(top->blocks[ebCGS]);
+  excl = &(top->atoms.excl);
+  mols = &(top->blocks[ebMOLS]);
+
+  fprintf(log,"Going to determine what solvent types we have.\n");
+  snew(fr->solvent_type,cgs->nr+1);
+  snew(fr->mno_index,(cgs->nr+1)*3);
+  
+  /* Generate charge group number for all atoms */
+  cgid = make_invblock(cgs,cgs->nra);
+  
+  /* Loop over molecules */
+  fprintf(log,"There are %d molecules, %d charge groups and %d atom\n",
+	  mols->nr,cgs->nr,cgs->nra);
+  for(i=0; (i<mols->nr); i++) {
+    /* Set boolean that determines whether the molecules consists of one CG */
+    bOneCG = TRUE;
+    /* Set some counters */
+    j0     = mols->index[i];
+    j1     = mols->index[i+1];
+    nj     = j1-j0;
+    for(j=j0+1; (j<j1); j++) {
+      bOneCG = bOneCG && (cgid[mols->a[j]] == cgid[mols->a[j-1]]);
+    }
+    if (bOneCG) {
+      /* Check whether everything is excluded */
+      snew(bAllExcl,nj);
+      bAE = TRUE;
+      /* Loop over all atoms in molecule */
+      for(j=j0; (j<j1) && bAE; j++) {
+	/* Set a flag for each atom in the molecule that determines whether
+	 * it is excluded or not 
+	 */
+	for(k=0; (k<nj); k++)
+	  bAllExcl[k] = FALSE;
+	/* Now check all the exclusions of this atom */
+	for(k=excl->index[j]; (k<excl->index[j+1]); k++) {
+	  ak = excl->a[k];
+	  /* Consistency and range check */
+	  if ((ak < j0) || (ak >= j1)) 
+	    fatal_error(0,"Exclusion outside molecule? ak = %d, j0 = %d, j1 = 5d, mol is %d",ak,j0,j1,i);
+	  bAllExcl[ak-j0] = TRUE;
+	}
+	/* Now sum up the booleans */
+	for(k=0; (k<nj); k++)
+	  bAE = bAE && bAllExcl[k];
+      }
+      if (bAE) {
+	snew(bHaveCoul,nj);
+	snew(bHaveLJ,nj);
+	for(j=j0; (j<j1); j++) {
+	  /* Check for coulomb */
+	  aj = mols->a[j];
+	  bHaveCoul[j-j0] = ((top->atoms.atom[aj].q != 0.0) ||
+			  (top->atoms.atom[aj].qB != 0.0));
+	  /* Check for LJ. */
+	  tjA = top->atoms.atom[aj].type;
+	  tjB = top->atoms.atom[aj].typeB;
+	  bHaveLJ[j-j0] = FALSE;
+	  for(k=0; (k<fr->ntype); k++) {
+	    if (fr->bBHAM) 
+	      bHaveLJ[j-j0] = (bHaveLJ[j-j0] || 
+			       (BHAMA(fr->nbfp,fr->ntype,tjA,k) != 0.0) ||
+			       (BHAMB(fr->nbfp,fr->ntype,tjA,k) != 0.0) ||
+			       (BHAMC(fr->nbfp,fr->ntype,tjA,k) != 0.0) ||
+			       (BHAMA(fr->nbfp,fr->ntype,tjB,k) != 0.0) ||
+			       (BHAMB(fr->nbfp,fr->ntype,tjB,k) != 0.0) ||
+			       (BHAMC(fr->nbfp,fr->ntype,tjB,k) != 0.0));
+	    else
+	      bHaveLJ[j-j0] = (bHaveLJ[j-j0] || 
+			       (C6(fr->nbfp,fr->ntype,tjA,k) != 0.0) ||
+			       (C12(fr->nbfp,fr->ntype,tjA,k) != 0.0) ||
+			       (C6(fr->nbfp,fr->ntype,tjB,k) != 0.0) ||
+			       (C12(fr->nbfp,fr->ntype,tjB,k) != 0.0));
+	  }
+	}
+	/* Now we have determined what particles have which interactions 
+	 * In the case of water-like molecules we only check for the number
+	 * of particles and the LJ, not for the Coulomb. Let's just assume
+	 * that the water loops are faster than the MNO loops anyway. DvdS
+	 */
+	/* No - there's another problem: To optimize the water
+	 * innerloop assumes the charge of the first i atom is constant
+	 * qO, and charge on atoms 2/3 is constant qH. /EL
+	 */
+	aj=mols->a[j0];
+	if((top->atoms.atom[aj].type==fr->nWater) &&
+	   (nj==3) && !bHaveLJ[1] && !bHaveLJ[2] &&
+	   (top->atoms.atom[aj+1].q == top->atoms.atom[aj+2].q))
+	  fr->solvent_type[cgid[aj]] = esolWATER;
+	else {
+	  fr->solvent_type[cgid[aj]] = esolMNO;
+	  /* Time to compute M & N & O */
+	  for(k=0; (k<nj) && (bHaveLJ[k] && bHaveCoul[k]); k++)
+	    ;
+	  nl_n = k;
+	  for(; (k<nj) && (!bHaveLJ[k] && bHaveCoul[k]); k++)
+	    ;
+	  nl_o = k;
+	  for(; (k<nj) && (bHaveLJ[k] && !bHaveCoul[k]); k++)
+	    ;
+	  nl_m = k;
+	  /* Now check whether we're at the end of the pack */
+	  bOrder = FALSE;
+	  for(; (k<nj); k++)
+	    bOrder = bOrder || (bHaveLJ[k] || bHaveCoul[k]);
+	  if (bOrder) {
+	    fprintf(stderr,"The order in your molecule %d should be optimized"
+		    " for better performance\n",i);
+	    nl_m = nj;
+	    nl_n = nj;
+	    nl_o = 0; 
+	  }
+	  fr->mno_index[i*3]   = nl_m;
+	  fr->mno_index[i*3+1] = nl_n;
+	  fr->mno_index[i*3+2] = nl_o;
+	}
+
+	/* Last check for perturbed atoms */
+	for(j=j0; (j<j1); j++)
+	  if (md->bPerturbed[mols->a[j]])
+	    fr->solvent_type[cgid[mols->a[j0]]] = esolNO;
+	
+	sfree(bHaveLJ);
+	sfree(bHaveCoul);
+      }
+      else {
+	/* Turn off solvent optimization for all cg's in the molecule,
+	 * here there is only one.
+	 */
+	fr->solvent_type[cgid[mols->a[j0]]] = esolNO;
+      }
+      sfree(bAllExcl);
+    }
+    else {
+      /* Turn off solvent optimization for all cg's in the molecule */
+      for(j=mols->index[i]; (j<mols->index[i+1]); j++) {
+	fr->solvent_type[cgid[mols->a[j]]] = esolNO;
+      }
+    }
+  }
+  if (debug) {
+    for(i=0; (i<cgs->nr); i++) 
+      fprintf(debug,"MNO: cg = %5d, m = %2d, n = %2d, o = %2d\n",
+	      i,fr->mno_index[3*i],fr->mno_index[3*i+1],fr->mno_index[3*i+2]);
+  }
+}
+
 static void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
 		       real zsq,matrix box,
 		       real *kappa,real *epsfac,real *krf,real *crf)
@@ -261,20 +423,24 @@ static void set_bham_b_max(FILE *log,t_forcerec *fr,t_mdatoms *mdatoms)
 void init_forcerec(FILE *fp,
 		   t_forcerec *fr,
 		   t_inputrec *ir,
-		   t_block    *mols,
+		   t_topology *top,
 		   t_commrec  *cr,
-		   t_block    *cgs,
-		   t_idef     *idef,
 		   t_mdatoms  *mdatoms,
 		   t_nsborder *nsb,
 		   matrix     box,
 		   bool bMolEpot)
 {
-  int    i,j,m,natoms,ngrp;
-  real   q,zsq,nrdf,T;
-  rvec   box_size;
-  double rtab;
+  int     i,j,m,natoms,ngrp,tabelemsize;
+  real    q,zsq,nrdf,T;
+  rvec    box_size;
+  double  rtab;
+  t_block *mols,*cgs;
+  t_idef  *idef;
 
+  cgs            = &(top->blocks[ebCGS]);
+  mols           = &(top->blocks[ebMOLS]);
+  idef           = &(top->idef);
+  
   natoms         = mdatoms->nr;
 
   /* Free energy */
@@ -292,14 +458,16 @@ void init_forcerec(FILE *fp,
   fr->vdwtype    = ir->vdwtype;
   fr->bTwinRange = (fr->rlistlong > fr->rlist);
   fr->bEwald     = ((fr->eeltype == eelPME) || (fr->eeltype == eelEWALD));
-  fr->bTab       = ((fr->eeltype != eelCUT) || (fr->vdwtype != evdwCUT));
+  fr->bvdwtab    = (fr->vdwtype != evdwCUT);
   fr->bRF        = (((fr->eeltype == eelRF) || (fr->eeltype == eelGRF)) &&
 		    (fr->vdwtype == evdwCUT));
-  if ((fr->bRF) && (fr->vdwtype == evdwCUT))
-    fr->bTab = FALSE;
-  if (fp)
-    fprintf(fp,"Table routines are used: %s\n",bool_names[fr->bTab]);
-  
+  fr->bcoultab   = (((fr->eeltype != eelCUT) && !fr->bRF) || (fr->bEwald));
+
+  if (fp) {
+    fprintf(fp,"Table routines are used for coulomb: %s\n",bool_names[fr->bcoultab]);
+    fprintf(fp,"Table routines are used for vdw:     %s\n",bool_names[fr->bvdwtab ]);
+
+  }  
   if(fr->bEwald)
     fr->ewaldcoeff=calc_ewaldcoeff(ir->rcoulomb, ir->ewald_rtol);
   /* Tables are used for direct ewald sum */
@@ -324,8 +492,8 @@ void init_forcerec(FILE *fp,
       if (fr->nWater == mdatoms->typeA[i])
 	fr->nWatMol++;
     if (fp)
-      fprintf(fp,"There are %d water molecules on cpu %d\n",
-	      fr->nWatMol,nsb->pid);
+      fprintf(fp,"There are %d water molecules on node %d\n",
+	      fr->nWatMol,nsb->nodeid);
   }
   
   /* Parameters for generalized RF */
@@ -454,21 +622,30 @@ void init_forcerec(FILE *fp,
    * and diffusion during nstlist steps (0.2 nm)                    */
 #define TAB_EXT 0.6
 
-  if (fr->bTab) {
+  /* Construct tables.
+   * A little unnecessary to make both vdw and coul tables sometimes,
+   * but what the heck... */
+
+  if (fr->bcoultab || fr->bvdwtab) {
     if (EEL_LR(fr->eeltype)) {
+      bool bcoulsave,bvdwsave;
       /* generate extra tables for 1-4 interactions only
        * fake the forcerec so make_tables thinks it should
        * just create the non shifted version 
        */
-      fr->bTab=FALSE;
+      bcoulsave=fr->bcoultab;
+      bvdwsave=fr->bvdwtab;
+      fr->bcoultab=FALSE;
+      fr->bvdwtab=FALSE;
       fr->rtab=MAX_14_DIST;
       make_tables(fp,fr,MASTER(cr));
-      fr->bTab=TRUE;
-      fr->VFtab14=fr->VFtab;
-      fr->VFtab=NULL;
+      fr->bcoultab=bcoulsave;
+      fr->bvdwtab=bvdwsave;
+      fr->coulvdw14tab=fr->coulvdwtab;
+      fr->coulvdwtab=NULL;
     }
     fr->rtab = max(fr->rlistlong+TAB_EXT,MAX_14_DIST);
-  } 
+  }
   else if (fr->efep != efepNO) {
     if (fr->rlistlong == 0) {
       char *ptr,*envvar="FEP_TABLE_LENGTH";
@@ -491,10 +668,25 @@ void init_forcerec(FILE *fp,
   
   /* make tables for ordinary interactions */
   make_tables(fp,fr,MASTER(cr));
-  if(!(EEL_LR(fr->eeltype) && fr->bTab))
-    fr->VFtab14=fr->VFtab;
-}
+  if(!(EEL_LR(fr->eeltype) && (fr->bcoultab || fr->bvdwtab)))
+    fr->coulvdw14tab=fr->coulvdwtab;
 
+  /* Copy the contents of the table to separate coulomb and LJ
+   * tables too, to improve cache performance.
+   */
+  tabelemsize=fr->bBHAM ? 16 : 12;
+  snew(fr->coultab,4*fr->ntab*sizeof(real));
+  snew(fr->vdwtab,(tabelemsize-4)*fr->ntab*sizeof(real));  
+  for(i=0;i<fr->tabscale;i++) {
+    for(j=0;j<4;j++) 
+      fr->coultab[4*i+j]=fr->coulvdwtab[tabelemsize*i+j];
+    for(j=0;j<(tabelemsize-4);j++) 
+      fr->vdwtab[(tabelemsize-4)*i+j]=fr->coulvdwtab[tabelemsize*i+4+j];
+  }
+  if (!fr->mno_index)
+    check_solvent(fp,top,fr,mdatoms);
+}
+ 
 #define pr_real(fp,r) fprintf(fp,"%s: %e\n",#r,r)
 #define pr_int(fp,i)  fprintf((fp),"%s: %d\n",#i,i)
 #define pr_bool(fp,b) fprintf((fp),"%s: %s\n",#b,bool_names[b])
@@ -562,11 +754,11 @@ void ns(FILE *fp,
    * workload contains the proper numbers of charge groups
    * to be searched.
    */
-  if (cr->pid == 0)
+  if (cr->nodeid == 0)
     fr->cg0=0;
   else
-    fr->cg0=nsb->workload[cr->pid-1];
-  fr->hcg=nsb->workload[cr->pid];
+    fr->cg0=nsb->workload[cr->nodeid-1];
+  fr->hcg=nsb->workload[cr->nodeid];
 
   nsearch = search_neighbours(fp,fr,x,box,top,grps,cr,nsb,nrnb,md,
 			      lambda,dvdlambda);
@@ -606,7 +798,6 @@ void force(FILE       *fp,     int        step,
     box_size[i]=box[i][i];
     
   bDoEpot=((fr->nmol > 0) && (fr->nstcalc > 0) && (mod(step,fr->nstcalc)==0));
-  
   /* Reset epot... */
   if (bDoEpot) 
     for(i=0; (i<fr->nmol); i++)
@@ -614,7 +805,7 @@ void force(FILE       *fp,     int        step,
   debug_gmx();
   
   /* Call the short range functions all in one go. */
-  do_fnbf(fp,fr,x,f,md,
+  do_fnbf(fp,cr,fr,x,f,md,
 	  fr->bBHAM ? grps->estat.ee[egBHAM] : grps->estat.ee[egLJ],
 	  grps->estat.ee[egCOUL],box_size,nrnb,
 	  lambda,&epot[F_DVDL],FALSE,-1);
@@ -694,7 +885,7 @@ void force(FILE       *fp,     int        step,
   debug_gmx();
   
   if (!bNBFonly) {
-    calc_bonds(fp,idef,x,f,fr,graph,epot,nrnb,box,lambda,md,
+    calc_bonds(fp,cr,idef,x,f,fr,graph,epot,nrnb,box,lambda,md,
 	       opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14]);    
     debug_gmx();
   }

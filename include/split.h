@@ -37,14 +37,14 @@ static char *SRCID_split_h = "$Id$";
 #endif /* HAVE_IDENT */
 
 /*
- * Determine on which processor a particle should reside and on which
- * processor is also should be available. The distribution algorithm
- * should account for the actual ring architecture and how processors
+ * Determine on which node a particle should reside and on which
+ * node is also should be available. The distribution algorithm
+ * should account for the actual ring architecture and how nodes
  * are numbered. The typedef t_splitd has two separate structures that
  * describe the distribution:
  *
- * The procinfo part describes which processor containst which particles, 
- * while the pids part describes on which processor(s) a particle can be 
+ * The nodeinfo part describes which node containst which particles, 
+ * while the nodeids part describes on which node(s) a particle can be 
  * found and what local particle number is assigned to it.
  *
  */
@@ -57,8 +57,8 @@ typedef enum {SPLIT_NONE,SPLIT_SORTX,SPLIT_REDUCE,SPLIT_NR} t_splitalg;
 typedef struct
 {
   int hid;
-  atom_id *pid;
-} t_pids;
+  atom_id *nodeid;
+} t_nodeids;
 
 typedef struct
 {
@@ -69,43 +69,43 @@ typedef struct
 typedef struct
 {
   t_nlist home;		/* List of home particles.                          */
-} t_procinfo;
+} t_nodeinfo;
 
 typedef struct
 {
-  int nprocs;		/* Number of processors this splitinfo is for.      */
-  t_procinfo *procinfo;	/* Home and available particles for each processor. */
-  int npids;		/* Number of particles this splitinfo is for.       */
-  t_pids *pids;		/* List of processor id's for every particle,       */
-  			/* entry[pid] gives the local atom id (NO_ATID if   */
-			/* not available). Entry[MAXPROC] contains home     */
-                        /* processor's id.                                  */
+  int nnodes;		/* Number of nodes this splitinfo is for.      */
+  t_nodeinfo *nodeinfo;	/* Home and available particles for each node. */
+  int nnodeids;		/* Number of particles this splitinfo is for.       */
+  t_nodeids *nodeids;	/* List of node id's for every particle,       */
+  			/* entry[nodeid] gives the local atom id (NO_ATID if*/
+			/* not available). Entry[MAXNODES] contains home    */
+                        /* node's id.                                  */
 } t_splitd;
 
-extern void init_splitd(t_splitd *splitd,int nprocs,int npids);
+extern void init_splitd(t_splitd *splitd,int nnodes,int nnodeids);
      /*
       * Initialises the splitd data structure for the specified number of
-      * processors (nprocs) and number of atoms (npids).
+      * nodes (nnodes) and number of atoms (nnodeids).
       */
  
-extern void make_splitd(t_splitalg algorithm,int nprocs,t_topology *top,
+extern void make_splitd(t_splitalg algorithm,int nnodes,t_topology *top,
                         rvec *x,t_splitd *splitd,char *loadfile);
      /*
       * Initialises the splitd data structure for the specified number of
-      * processors (nprocs) and number of atoms (top) and fills it using
+      * nodes (nnodes) and number of atoms (top) and fills it using
       * the specified algorithm (algorithm):
       *
-      *    SPLIT_NONE   : Generate partial systems by dividing it into nprocs
+      *    SPLIT_NONE   : Generate partial systems by dividing it into nnodes
       *                   consecutive, equal, parts without any intelligence.
       *    SPLIT_SORTX  : Like SPLIT_NONE but sort the coordinates before 
-      *                   dividing the system into nprocs consecutive, equal, 
+      *                   dividing the system into nnodes consecutive, equal, 
       *                   parts.
       *    SPLIT_REDUCE : Like SPLIT_NONE but minimise the bond lengths, i.e
       *                   invoke the reduce algorithm before dividing the 
-      *                   system into nprocs consecutive, equal, parts.
+      *                   system into nnodes consecutive, equal, parts.
       *
       * The topology (top) and the coordinates (x) are not modified. The 
-      * calculations of bonded forces are assigned to the processor with
+      * calculations of bonded forces are assigned to the node with
       * the highest id that has one of the needed particles as home particle.
       */
                   
@@ -132,13 +132,13 @@ extern void pr_splitd(FILE *fp,int indent,char *title,t_splitd *splitd);
       * to print a header text.
       */
 
-extern void split_topology(t_splitalg algorithm,int nprocs,t_topology *top,
+extern void split_topology(t_splitalg algorithm,int nnodes,t_topology *top,
                            rvec x[],char *loadfile);
      /*
-      * Distributes the non-bonded forces defined in top over nprocs processors
+      * Distributes the non-bonded forces defined in top over nnodes nodes
       * using the algoritm specified by algorithm. The distribution is made
       * by creating a split descriptor and then putting a bonded force on the 
-      * highest home processor number of the paricles involved.
+      * highest home node number of the paricles involved.
       */
       
 

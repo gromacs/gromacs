@@ -116,7 +116,7 @@ static void cmp_ilist(FILE *fp,int ftype,t_ilist *il1,t_ilist *il2)
   sprintf(buf,"%s->nr",interaction_function[ftype].name);
   cmp_int(fp,buf,0,il1->nr,il2->nr);
   sprintf(buf,"%s->multinr",interaction_function[ftype].name);
-  for(i=0; (i<MAXPROC); i++)
+  for(i=0; (i<MAXNODES); i++)
     cmp_int(fp,buf,i,il1->multinr[i],il2->multinr[i]);
   sprintf(buf,"%s->iatoms",interaction_function[ftype].name);
   for(i=0; (i<il1->nr); i++) 
@@ -140,7 +140,7 @@ static void cmp_idef(FILE *fp,t_idef *id1,t_idef *id2)
  
   fprintf(fp,"comparing idef\n");
   cmp_int(fp,"idef->ntypes",-1,id1->ntypes,id2->ntypes);
-  cmp_int(fp,"idef->pid",   -1,id1->pid,id2->pid);
+  cmp_int(fp,"idef->nodeid",   -1,id1->nodeid,id2->nodeid);
   cmp_int(fp,"idef->atnr",  -1,id1->atnr,id2->atnr);
   for(i=0; (i<id1->ntypes); i++) {
     cmp_int(fp,"idef->functype",i,(int)id1->functype[i],(int)id2->functype[i]);
@@ -162,7 +162,7 @@ static void cmp_block(FILE *fp,t_block *b1,t_block *b2,char *s)
   sprintf(buf,"%s.nra",s);
   cmp_int(fp,buf,-1,b1->nra,b2->nra);
   sprintf(buf,"%s.multinr",s);
-  for(i=0; (i<MAXPROC); i++)
+  for(i=0; (i<MAXNODES); i++)
     cmp_int(fp,buf,i,b1->multinr[i],b2->multinr[i]);
 } 
 

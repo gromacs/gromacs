@@ -246,7 +246,7 @@ static void new_interaction_list(t_ilist *ilist)
   int i;
   
   ilist->nr=0;
-  for(i=0; (i<MAXPROC); i++) 
+  for(i=0; (i<MAXNODES); i++) 
     ilist->multinr[i]=0;
   ilist->iatoms=NULL;
 }
@@ -261,7 +261,7 @@ void convert_params(int atnr,t_params nbtypes[],
   
   idef->ntypes   = 0;
   idef->atnr     = atnr;
-  idef->pid      = 0;  
+  idef->nodeid   = 0;  
   idef->functype = NULL;
   idef->iparams  = NULL;
   for(i=0; (i<F_NRE); i++) {
@@ -285,7 +285,7 @@ void convert_params(int atnr,t_params nbtypes[],
     fprintf(debug,"%s, line %d: There are %d functypes in idef\n",
 	    __FILE__,__LINE__,idef->ntypes);
   for(j=0; (j<F_NRE); j++) {
-    for (i=0; (i<MAXPROC); i++) 
+    for (i=0; (i<MAXNODES); i++) 
       idef->il[j].multinr[i]=idef->il[j].nr;
     
     if (idef->il[j].nr > 0)

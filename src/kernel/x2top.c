@@ -388,9 +388,6 @@ int main(int argc, char *argv[])
   mymol.name = strdup(molnm);
   mymol.nr   = 1;
 	
-  /* Init lookup table for invsqrt */	    
-  init_lookup_table(stdout);
-
   /* Init parameter lists */
   init_plist(plist);
   

@@ -290,7 +290,7 @@ static int emptiest_bucket(int nbucket,int **bucket,int nmol,t_molinfo mol[])
   return min_i;
 }
 
-int *mk_shuffle_tab(int nmol,t_molinfo mol[],int nprocs,int *ntab,
+int *mk_shuffle_tab(int nmol,t_molinfo mol[],int nnodes,int *ntab,
 		    int Nsim,t_simsystem Sims[],bool bVerbose)
 {
   t_simsystem *sss;
@@ -301,8 +301,8 @@ int *mk_shuffle_tab(int nmol,t_molinfo mol[],int nprocs,int *ntab,
   for(i=0; (i<Nsim); i++) 
     nm+=Sims[i].nrcopies;
   
-  snew(bucket,nprocs);
-  for(i=0; (i<nprocs); i++)
+  snew(bucket,nnodes);
+  for(i=0; (i<nnodes); i++)
     snew(bucket[i],nmol);
     
   /* Sort the simsystems to increasing size of molecules */
@@ -316,7 +316,7 @@ int *mk_shuffle_tab(int nmol,t_molinfo mol[],int nprocs,int *ntab,
   for(i=0; (i<Nsim); i++) {
     sss = &(Sims[sim_index[i]]);
     for(j=0; (j<sss->nrcopies); j++) {
-      eb = emptiest_bucket(nprocs,bucket,nmol,mol);
+      eb = emptiest_bucket(nnodes,bucket,nmol,mol);
       bucket[eb][sss->whichmol]++;
     }
   }
@@ -329,7 +329,7 @@ int *mk_shuffle_tab(int nmol,t_molinfo mol[],int nprocs,int *ntab,
     fprintf(stderr,"  %8s\n","#atoms");
 
     /* Print the table itself */
-    for(j=0; (j<nprocs); j++) {
+    for(j=0; (j<nnodes); j++) {
       fprintf(stderr,"CPU%4d",j);
       for(i=0; (i<nmol); i++)
 	fprintf(stderr,"  %8d",bucket[j][i]);
@@ -338,7 +338,7 @@ int *mk_shuffle_tab(int nmol,t_molinfo mol[],int nprocs,int *ntab,
   }
   snew(tab,nm);
   *ntab = 0;
-  for(j=0; (j<nprocs); j++)
+  for(j=0; (j<nnodes); j++)
     for(k=0; (k<nmol); k++)
       for(i=0; (i<bucket[j][k]); i++) {
 	assert(*ntab < nm);
@@ -347,12 +347,12 @@ int *mk_shuffle_tab(int nmol,t_molinfo mol[],int nprocs,int *ntab,
   return tab;
 }
 
-int *mk_shuffle_tab_old(int nmol,t_molinfo mol[],int nprocs,int *ntab,
+int *mk_shuffle_tab_old(int nmol,t_molinfo mol[],int nnodes,int *ntab,
 			int Nsim,t_simsystem Sims[],bool bVerbose)
 {
   int  *tab,*tmol;
   int  i,j,k,nm,ttt,ifrac,nmolnz,idum,natom;
-  real frac,rnprocs;
+  real frac,rnnodes;
   
   nm     = 0;
   nmolnz = 0;
@@ -374,14 +374,14 @@ int *mk_shuffle_tab_old(int nmol,t_molinfo mol[],int nprocs,int *ntab,
   }
   snew(tab,nm);
   snew(tmol,Nsim);
-  rnprocs=nprocs;
-  for(i=k=0; (i<nprocs); i++) {
+  rnnodes=nnodes;
+  for(i=k=0; (i<nnodes); i++) {
     if (bVerbose) 
       fprintf(stderr,"%-6s%4d","CPU",i);
     natom = 0;
     
     for(j=0; (j<Nsim); j++) {
-      frac=((i+1)*Sims[j].nrcopies)/rnprocs;
+      frac=((i+1)*Sims[j].nrcopies)/rnnodes;
       if (debug)
 	fprintf(debug,"CPU=%3d, MOL=%3d, frac = %g\n",i,j,frac);
       ifrac = frac;

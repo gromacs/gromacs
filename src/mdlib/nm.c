@@ -114,7 +114,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   where();
   
   /* Write start time and temperature */
-  start_t=print_date_and_time(log,cr->pid,"Started nmrun");
+  start_t=print_date_and_time(log,cr->nodeid,"Started nmrun");
   if (MASTER(cr)) {
     fprintf(stderr,"starting nmrun '%s'\n%d steps.\n\n",*(top->name),
             top->atoms.nr);
@@ -137,7 +137,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   
   /* if forces not small, warn user */
-  fmax=f_max(cr->left,cr->right,nsb->nprocs,0,top->atoms.nr,f);
+  fmax=f_max(cr->left,cr->right,nsb->nnodes,0,top->atoms.nr,f);
   fprintf(stderr,"Maximum force:%12.5e\n",fmax);
   if (fmax > 1.0e-3) {
     fprintf(stderr,"Maximum force probably not small enough to");

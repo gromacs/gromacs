@@ -30,8 +30,8 @@ OBJ		= \
 	copyrite.o	disre.o		do_fit.o	enxio.o		\
 	ewald_util.o	fatal.o		ffscanf.o	filenm.o	\
 	futil.o		gbutil.o	fnbf.o		gmxfio.o	\
-	ifunc.o		index.o		\
-	invblock.o	javaio.o	lutab.o		macros.o	\
+	ifunc.o		index.o		cinvsqrtdata.o	\
+	invblock.o	javaio.o	macros.o	\
 	main.o		maths.o		matio.o		memdump.o	\
 	mshift.o	mvdata.o	mvxvf.o		names.o		\
 	network.o	nrama.o		nrjac.o		nrnb.o		\
@@ -44,11 +44,20 @@ OBJ		= \
 	viewit.o	wgms.o		wman.o		writeps.o	\
 	xdrd.o		xtcio.o		xvgr.o
 
+MKINL_OBJ = \
+	mkinl.o	        	mkinl_declarations.o	mkinl_outerloop.o \
+	mkinl_innerloop.o   	mkinl_calcdist.o	mkinl_invsqrt.o \
+	mkinl_interactions.o	metacode.o 
+
 ifeq ($(USEF77),yes)
 OBJ		+= innerf.o
-else
+ifeq ($(USE_THREADS),yes)
+OBJ             += threadsync.o # f77 calls a C syncing routine
+endif # no threads
+else # not f77
 OBJ		+= innerc.o
 endif
+
 ifeq ($(HAVE_MOTIF),yes)
 OBJ		+= mgmx.o widget.o
 endif
@@ -57,6 +66,21 @@ ifeq ($(USE_XDR),yes)
 OBJ 		+= libxdrf.o ftocstr.o
 else
 OBJ		+= dumxdrf.o
+endif
+
+ifneq (,$(findstring USE_SSE_AND_3DNOW,$(SYSDEFS)))
+ifeq ($(GMXCPU),lnx)
+OBJ 		+= x86cpu.o x86cpu_asm.o
+endif
+endif
+
+ifneq (,$(findstring USE_AXP_ASM,$(SYSDEFS)))
+ifeq ($(GMXCPU),dec)
+OBJ 		+= axp_asm.o
+endif
+ifeq ($(GMXCPU),ded)
+OBJ 		+= axp_asm.o
+endif
 endif
 
 # Some CPU dependencies...
@@ -73,6 +97,7 @@ OBJ		+= libnet.o
 endif
 endif
 endif
+
 
 #
 include		$(STDTARGET)
@@ -98,6 +123,7 @@ $(LIB)(libxdrf.o):	libxdrf.m4 $(M4FILE)
 		$(CC) $(C-FLAGS) -c libxdrf.c
 		$(AR) $(ARFLAGS) $(LIB) libxdrf.o
 		$(RM) libxdrf.c libxdrf.o
+
 $(LIB)(callf77.o):	callf77.m4 $(M4FILE)
 		$(M4) $(M4FILE) callf77.m4  > callf77.c
 		$(CC) $(C-FLAGS) -c callf77.c
@@ -120,17 +146,18 @@ lfft:		lfft.o
 fitter:		fitter.o
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS)
 mgmxtest:	mgmxtest.o
-		$(LD) -o $@ $^  $(SYSLIBS) 
+		$(LD) -o $@ $^  $(SYSLIBS)
 compnl:		compnl.o
-		$(LD) -o $@ $^  $(SYSLIBS) 
+		$(LD) -o $@ $^  $(SYSLIBS)
 calcrf:		calcrf.o
-		$(LD) -o $@ $^  $(SYSLIBS) 
+		$(LD) -o $@ $^  $(SYSLIBS)
 
 $(LIB)(callf77A.o):	callf77A.m4 $(M4FILE)
 		$(M4) $(M4FILE) callf77A.m4  > callf77A.c
 		$(CC) $(C-FLAGS) -c callf77A.c
 		$(AR) $(ARFLAGS) $(LIB) callf77A.o
 		$(RM) callf77A.c callf77A.o
+
 # Innerloop related stuff
 $(LIB)(lutab.o):	$(CPUMAKEF)
 $(LIB)(shakef.o):	$(CPUMAKEF)
@@ -143,6 +170,19 @@ $(LIB)(fnbf.o):		fnbf.m4 inner.m4 $(M4MAC) $(M4FILE) $(CPUMAKEF)
 
 fnbf.c:			fnbf.m4 inner.m4 $(M4MAC) $(M4FILE) $(CPUMAKEF) 
 			 $(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) fnbf.m4 > fnbf.c 
+
+x86cpu_asm.o:		x86cpu_asm.s
+ifeq ($(GMXCPU),win)
+			nasm -f win32 -o x86cpu_asm.o x86cpu_asm.s
+else
+			nasm -f elf -o x86cpu_asm.o x86cpu_asm.s
+endif
+
+axp_asm.o:		axp_asm.S
+			$(CC) -E axp_asm.S > axp_asm.s
+			$(CC) -c axp_asm.s -o axp_asm.o
+			$(RM) axp_asm.s
+
 ifeq ($(CC_MKINL),)
 CC_MKINL	= $(CC) $(C-FLAGS)
 endif
@@ -150,37 +190,56 @@ ifeq ($(LD_MKINL),)
 LD_MKINL	= $(LD)
 endif
 
+ctabdata.o:		ctabdata.c $(CPUMAKEF)
+
 mkinl.o:		mkinl.c $(CPUMAKEF)
-			$(CC_MKINL) -g -c $(SYSDEFS) mkinl.c 
+			$(CC_MKINL) -c mkinl.c
 
-mkinl:			mkinl.o
-			$(LD_MKINL) -o mkinl mkinl.o
+mkinl_declarations.o:	mkinl_declarations.c  $(CPUMAKEF)
+			$(CC_MKINL) -c mkinl_declarations.c
 
-$(LIB)(innerf.o):	mkinl.c $(CPUMAKEF)
-			$(CC_MKINL) -g -c $(SYSDEFS) mkinl.c 
-			$(LD_MKINL) -o mkinl mkinl.o
+mkinl_outerloop.o:	mkinl_outerloop.c  $(CPUMAKEF)
+			$(CC_MKINL) -c mkinl_outerloop.c
+
+mkinl_innerloop.o:	mkinl_innerloop.c  $(CPUMAKEF)
+			$(CC_MKINL) -c mkinl_innerloop.c
+
+mkinl_calcdist.o:	mkinl_calcdist.c  $(CPUMAKEF)
+			$(CC_MKINL) -c mkinl_calcdist.c
+
+mkinl_invsqrt.o:	mkinl_invsqrt.c $(CPUMAKEF)
+			$(CC_MKINL) -c mkinl_invsqrt.c
+
+mkinl_interactions.o:	mkinl_interactions.c  $(CPUMAKEF)
+			$(CC_MKINL) -c mkinl_interactions.c
+
+
+metacode.o:		metacode.c $(CPUMAKEF)
+			$(CC_MKINL) -c metacode.c
+
+mkinl:			$(MKINL_OBJ) $(CPUMAKEF)
+			$(LD_MKINL) -o $@ $(MKINL_OBJ)
+
+$(LIB)(innerf.o):	mkinl inner.m4 $(CPUMAKEF)
 			$(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) inner.m4 > inner.h
-			./mkinl 0 1
+			./mkinl fortran
 			$(F77) $(FFLAGS) -c innerf.f
 			$(AR) $(ARFLAGS) $(LIB) innerf.o
-			$(RM) innerf.f innerf.o mkinl.o mkinl
+			$(RM) innerf.f innerf.o mkinl
 
-$(LIB)(innerc.o):	mkinl.c inner.m4 $(CPUMAKEF)
-			$(CC_MKINL) -g -c $(SYSDEFS) mkinl.c 
-			$(LD_MKINL) -o mkinl mkinl.o
+$(LIB)(innerc.o):	mkinl inner.m4 $(CPUMAKEF)
 			$(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) inner.m4 > inner.h
-			./mkinl 1 1
+			./mkinl c
 			$(RM) mkinl
-			$(CC) $(C-FLAGS) -c innerc.c
+			$(CC) $(SYSDEFS) $(C-FLAGS) -c innerc.c
 			$(AR) $(ARFLAGS) $(LIB) innerc.o
-			$(RM) innerc.c inner.h innerc.o mkinl.o mkinl
+			$(RM) innerc.c inner.h innerc.o  mkinl
 
 innerf.f:		mkinl Makefile $(CPUMAKEF)
-			./mkinl 0 1
+			./mkinl fortran
 			$(RM) mkinl.o mkinl
-
 innerc.c:		mkinl inner.m4 Makefile $(CPUMAKEF)
-			./mkinl 1 1
+			./mkinl c
 			$(RM) mkinl mkinl.o
 
 tst:			tst.o

@@ -100,15 +100,15 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   vcm[0]=vcm[1]=vcm[2]=vcm[3]=0.0;
   
   /* Print to log file */
-  start_t=print_date_and_time(log,cr->pid,"Started Conjugate Gradients");
+  start_t=print_date_and_time(log,cr->nodeid,"Started Conjugate Gradients");
   
   /* p is the search direction, f the force, xprime the new positions */
   snew(p,nsb->natoms);
   snew(f,nsb->natoms);
   snew(xprime,nsb->natoms);
 
-  start = nsb->index[cr->pid];
-  end   = nsb->homenr[cr->pid]-start;
+  start = nsb->index[cr->nodeid];
+  end   = nsb->homenr[cr->nodeid]-start;
 
   /* Set some booleans for the epot routines */
   set_pot_bools(&(parm->ir),top,&bLR,&bLJLR,&bBHAM,&b14);
@@ -144,19 +144,19 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     do_pbc_first(log,parm,box_size,fr,graph,x);
   
   if (bDummies)
-    construct_dummies(log,x,&(nrnb[cr->pid]),1,NULL,&top->idef);
+    construct_dummies(log,x,&(nrnb[cr->nodeid]),1,NULL,&top->idef);
 
   /* Call the force routine and some auxiliary (neighboursearching etc.) */
   /* do_force always puts the charge groups in the box and shifts again
    * We do not unshift, so molecules are always whole in congrad.c
    */
-  do_force(log,cr,parm,nsb,force_vir,0,&(nrnb[cr->pid]),top,grps,
+  do_force(log,cr,parm,nsb,force_vir,0,&(nrnb[cr->nodeid]),top,grps,
 	   x,buf,f,buf,mdatoms,ener,bVerbose && !(PAR(cr)),
 	   lambda,graph,bNS,FALSE,fr,mu_tot);
   where();
 
   /* Spread the force on dummy particle to the other particles... */
-  spread_dummy_f(log,x,f,&(nrnb[cr->pid]),&top->idef);
+  spread_dummy_f(log,x,f,&(nrnb[cr->nodeid]),&top->idef);
   
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(parm->ir.opts),grps,ener);
@@ -178,7 +178,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     force_vir,parm->vir,parm->pres,grps,mu_tot,(parm->ir.etc==etcNOSEHOOVER));
   where();
   	
-  /* Print only if we are the master processor */
+  /* Print only if we are the master node and thread */
   if (MASTER(cr)) {
     print_ebin_header(log,count,count,lambda,0.0);
     print_ebin(fp_ene,TRUE,FALSE,log,count,count,eprNORMAL,
@@ -191,7 +191,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 
   if (MASTER(cr)) {
     /* Print to the screen */
-    start_t=print_date_and_time(log,cr->pid,"Started EM");
+    start_t=print_date_and_time(log,cr->nodeid,"Started EM");
     sp_header(stderr,EpotA,ftol);
     sp_header(log,EpotA,ftol);
   }
@@ -199,7 +199,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   /* normalising step size, this saves a few hundred steps in the
    * beginning of the run.
    */
-  fnorm=f_norm(cr->left,cr->right,nsb->nprocs,start,end,f);
+  fnorm=f_norm(cr->left,cr->right,nsb->nnodes,start,end,f);
   fnorm_old=fnorm;
   
   /* Print stepsize */
@@ -223,7 +223,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	gpa     = gpa - p[i][m]*f[i][m];
       }
     }
-    pnorm=f_norm(cr->left,cr->right,nsb->nprocs,start,end,p);
+    pnorm=f_norm(cr->left,cr->right,nsb->nnodes,start,end,p);
 
     a    = 0.0;
     b    = step0/pnorm;
@@ -240,19 +240,19 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       bNS = ((parm->ir.nstlist > 0) || (count==0));
       /*((parm->ir.nstlist && ((count % parm->ir.nstlist)==0)) || (count==0));*/
       if (bDummies)
-	construct_dummies(log,xprime,&(nrnb[cr->pid]),1,NULL,&top->idef);
+	construct_dummies(log,xprime,&(nrnb[cr->nodeid]),1,NULL,&top->idef);
       
       /* Calc force & energy on new trial position  */
       /* do_force always puts the charge groups in the box and shifts again
        * We do not unshift, so molecules are always whole in congrad.c
        */
       do_force(log,cr,parm,nsb,force_vir,
-	       count,&(nrnb[cr->pid]),top,grps,xprime,buf,f,
+	       count,&(nrnb[cr->nodeid]),top,grps,xprime,buf,f,
 	       buf,mdatoms,ener,bVerbose && !(PAR(cr)),
 	       lambda,graph,bNS,FALSE,fr,mu_tot);
       
       /* Spread the force on dummy particle to the other particles... */
-      spread_dummy_f(log,xprime,f,&(nrnb[cr->pid]),&top->idef); 
+      spread_dummy_f(log,xprime,f,&(nrnb[cr->nodeid]),&top->idef); 
 
       bNS = (parm->ir.nstlist > 0);
       /*bNS=FALSE;*/
@@ -313,23 +313,23 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     }
 
     if (bDummies)
-      construct_dummies(log,xprime,&(nrnb[cr->pid]),1,NULL,&top->idef);
+      construct_dummies(log,xprime,&(nrnb[cr->nodeid]),1,NULL,&top->idef);
     
     /* new energy, forces */
     /* do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in congrad.c
      */
     do_force(log,cr,parm,nsb,force_vir,
-	     count,&(nrnb[cr->pid]),top,grps,xprime,buf,f,
+	     count,&(nrnb[cr->nodeid]),top,grps,xprime,buf,f,
 	     buf,mdatoms,ener,bVerbose && !(PAR(cr)),
 	     lambda,graph,bNS,FALSE,fr,mu_tot);
     
     /* Spread the force on dummy particle to the other particles... */
-    spread_dummy_f(log,xprime,f,&(nrnb[cr->pid]),&top->idef); 
+    spread_dummy_f(log,xprime,f,&(nrnb[cr->nodeid]),&top->idef); 
 
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(parm->ir.opts),grps,ener); 
-    fnorm = f_norm(cr->left,cr->right,nsb->nprocs,start,end,f);
+    fnorm = f_norm(cr->left,cr->right,nsb->nnodes,start,end,f);
     
     /* Clear stuff again */
     clear_mat(force_vir);
@@ -355,7 +355,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     fnorm_old=fnorm;
 
     /* Test whether the convergence criterion is met */
-    fmax=f_max(cr->left,cr->right,nsb->nprocs,start,end,f);     
+    fmax=f_max(cr->left,cr->right,nsb->nnodes,start,end,f);     
 
     /* Print it if necessary */
     if (bVerbose && MASTER(cr)) {
@@ -389,7 +389,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	       lambda,nrnb,nsb->natoms,xx,NULL,ff,parm->box);
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		   *top->name, &(top->atoms),xx,NULL,parm->box);
-    fmax=f_max(cr->left,cr->right,nsb->nprocs,start,end,f);
+    fmax=f_max(cr->left,cr->right,nsb->nnodes,start,end,f);
     fprintf(stderr,"Maximum force: %12.5e\n",fmax);
     if (bDone) {
       fprintf(stderr,"\n%s converged to %8.6f in %d steps\n",CG,ftol,count-1);

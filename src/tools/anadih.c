@@ -39,7 +39,6 @@ static char *SRCID_anadih_c = "$Id$";
 #include "typedefs.h"
 #include "gstat.h"
 #include "confio.h"
-#include "lutab.h"
 
 static int calc_RBbin(real phi)
 {
@@ -344,8 +343,6 @@ void read_ang_dih(char *trj_fn,char *stx_fn,
   int        cur=0;
 #define prev (1-cur)
 
-  /* Initiate lookup table for sqrt calculations */
-  init_lookup_table(stdout);
 
   /* Read topology */    
   ftp     = fn2ftp(stx_fn);

@@ -35,13 +35,14 @@ static char *SRCID_vec_h = "$Id$";
 #ifdef HAVE_IDENT
 #ident	"@(#) vec.h 1.8 12/16/92"
 #endif /* HAVE_IDENT */
-
+#ifdef USE_AXP_ASM
+#include "axp_asm.h"
+#endif
 #include "maths.h"
 #include "typedefs.h"
 #include "sysstuff.h"
 #include "macros.h"
 #include "fatal.h"
-#include "lutab.h"
 
 #ifdef _lnx_
 #define gmx_inline inline
@@ -49,40 +50,255 @@ static char *SRCID_vec_h = "$Id$";
 #define gmx_inline
 #endif
 
-#ifdef CINVSQRT
-static gmx_inline real invsqrt(float x)
-{
-  const real  half=0.5;
-  const real  three=3.0;
-  t_convert   result,bit_pattern;
-  word        exp,fract;
-  float       lu;
-  real        y;
+/* The tables - use separate singe/double names to avoid mistakes. */
+#ifdef GMX_REC
 #ifdef DOUBLE
-  real        y2;
+extern const unsigned int crecdoubletab[];
+#else
+extern const unsigned int crecsingletab[];
+#endif
 #endif
 
-  bit_pattern.fval=x;
-  exp   = EXP_ADDR(bit_pattern.bval);
-  fract = FRACT_ADDR(bit_pattern.bval);
-  result.bval=lookup_table.exp_seed[exp] | lookup_table.fract_seed[fract];
-  lu    = result.fval;
-  
-  y=(half*lu*(three-((x*lu)*lu)));
+#ifdef GMX_INVSQRT
 #ifdef DOUBLE
-  y2=(half*y*(three-((x*y)*y)));
-  
-  return y2;                    /* 10 Flops */
+extern const unsigned int cinvsqrtdoubletab[];
 #else
-  return y;			/* 5  Flops */
+extern const unsigned int cinvsqrtsingletab[];
+#endif
+#endif
+
+typedef union 
+{
+#ifdef DOUBLE
+    unsigned long long bval;
+#else
+    unsigned int bval;
+#endif
+  real fval;
+} t_convert;
+
+
+#ifdef GMX_REC
+static gmx_inline real rec(real x)
+{
+  const real  two = 2.0;
+  real y;
+#ifdef DOUBLE
+  real y2;
+  const unsigned long long tt = 0x7fe0000000000000L;
+  unsigned long long t0,t1,t2,t3;
+#else
+  const unsigned int tt = 0x3f800000;
+  unsigned int t0,t1,t2,t3;
+#endif
+  t_convert conv;
+
+  conv.fval = x;
+  t0 = conv.bval;
+  t1 = tt - t0;
+#ifdef DOUBLE
+  t2 = (t1 >> 40);
+#else
+  t2 = (t1 >> 11);
+#endif
+  t2 &= ((1<<12)-1);
+#ifdef DOUBLE
+  t3 = crecdoubletab[t2];
+#else
+  t3 = crecsingletab[t2];
+#endif
+#ifdef DOUBLE
+  t3= t3 << 26;
+#endif
+  conv.bval = t1 - t3;
+  y=conv.fval;
+  y   = y * (two - x * y);
+#ifdef DOUBLE
+  y2   = y * (two - x * y);
+  return y2;   /* 6 flops */
+#else
+  return y;    /* 3 flops */
+#endif
+}
+#define REC_DONE
+#endif
+
+
+#ifdef GMX_INVSQRT
+static gmx_inline real invsqrt(real x)
+{
+  const real  half = 0.5;
+  const real  onehalf = 1.5;
+  real f1,y;
+#ifdef DOUBLE
+  real y2;
+  const unsigned long long tt = 0x5fe8000000000000L;
+  unsigned long long t0,t1,t2,t3;
+#else
+  const unsigned int tt = 0x1fc00000;
+  unsigned int t0,t1,t2,t3;
+#endif
+
+  t_convert conv;
+
+  conv.fval = x;
+  t0 = (conv.bval >> 1 );
+  t1 = tt - t0;
+#ifdef DOUBLE
+  t2 = (t1 >> 40);
+#else
+  t2 = (t1 >> 11);
+#endif
+  t2 &= ((1<<12)-1);
+#ifdef DOUBLE
+  t3 = cinvsqrtdoubletab[t2];
+#else
+  t3 = cinvsqrtsingletab[t2];
+#endif
+  f1 = x*half;
+#ifdef DOUBLE
+  t3= t3 << 26;
+#endif
+  conv.bval = t1 - t3;
+  y=conv.fval;
+  y   = y * (onehalf - f1 * y * y);  
+#ifdef DOUBLE
+  y2   = y * (onehalf - f1 * y * y);
+  return y2;   /* 9 flops */
+#else
+  return y;    /* 5 flops */
 #endif
 }
 #define INVSQRT_DONE
 #endif
 
+
+
+
 #ifndef INVSQRT_DONE
 #define invsqrt(x) (1.0f/sqrt(x))
 #endif
+
+#ifndef REC_DONE
+#define rec(x) (1.0f/(x))
+#endif
+
+
+static gmx_inline void vecinvsqrt(real *in,real *out,int n)
+{
+#ifdef USE_AXP_ASM
+#ifdef DOUBLE
+  sqrtiv_(in,out,&n);
+#else
+  ssqrtiv_(in,out,&n);
+#endif  
+#else /* no axp asm, normal function instead */
+#ifdef GMX_INVSQRT
+  t_convert conv;
+    
+  real y;
+  int i,*iin=(int *)in;
+  real f1;
+  const real half=0.5;
+  const real onehalf=1.5;
+#ifdef DOUBLE
+  real y2;
+  const unsigned long long tt = 0x5fe8000000000000L;
+  unsigned long long t0,t1,t2,t3;
+#else
+  const unsigned int tt = 0x1fc00000;
+  unsigned int t0,t1,t2,t3; 
+#endif
+
+  for(i=0;i<n;i++) {
+    t0 = (iin[i] >> 1);
+    t1 = tt - t0;
+#ifdef DOUBLE
+    t2 = (t1 >> 40);
+#else
+    t2 = (t1 >> 11);
+#endif
+    f1 = in[i]*half;
+    t2 &= ((1<<12)-1);
+#ifdef DOUBLE
+    t3 = cinvsqrtdoubletab[t2];
+#else
+    t3 = cinvsqrtsingletab[t2];
+#endif
+#ifdef DOUBLE
+    t3= t3 << 26;
+#endif
+    conv.bval = t1 - t3;
+    y=conv.fval;
+#ifdef DOUBLE
+    y2   = y * (onehalf - f1 * y * y);
+    out[i]   = y2 * (onehalf - f1 * y2 * y2);
+#else
+    out[i]   = y * (onehalf - f1 * y * y);
+#endif
+  }
+#else
+  int i;
+  for(i=0;i<n;i++)
+    out[i]=invsqrt(in[i]); /* will be replaced by define above */
+#endif
+#endif  
+}
+
+
+static gmx_inline void vecrec(real *in,real *out,int n)
+{
+#ifdef REC_DONE  
+  t_convert conv;
+    
+  real y,x;
+  int i,*iin=(int *)in;
+  const real two=2.0;
+#ifdef DOUBLE
+  real y2;
+  const unsigned long long tt = 0x7fe0000000000000L;
+  unsigned long long t0,t1,t2,t3;
+#else
+  const unsigned int tt = 0x3f800000;
+  unsigned int t0,t1,t2,t3;  
+#endif
+
+  for(i=0;i<n;i++) {
+    t0 = iin[i];
+    t1 = tt - t0;
+#ifdef DOUBLE
+    t2 = (t1 >> 40);
+#else
+    t2 = (t1 >> 11);    
+#endif
+    x = in[i];
+    t2 &= ((1<<12)-1);
+#ifdef DOUBLE
+    t3 = crecdoubletab[t2];
+#else
+    t3 = crecsingletab[t2];
+#endif
+#ifdef DOUBLE
+  t3= t3 << 26;
+#endif
+    conv.bval = t1 - t3;
+    y=conv.fval;
+#ifdef DOUBLE
+    y2   = y * (two - x * y);
+    out[i]   = y2 * (two - x * y2);
+#else
+    out[i]   = y * (two - x * y);
+#endif
+  }
+#else
+  int i;
+
+  for(i=0;i<n;i++)
+    out[i]=rec(in[i]); /* will be replaced by define above */
+#endif
+}
+
+
 
 static gmx_inline real sqr(real x)
 {

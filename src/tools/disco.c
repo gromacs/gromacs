@@ -326,7 +326,6 @@ int main(int argc,char *argv[])
     please_cite(stdlog,"Ryckaert77a");
     please_cite(stdlog,"DeGroot97a");
   }
-  init_lookup_table(stdlog);
 
   if (MASTER(cr)) {  
     /* Get number of atoms etc. */

@@ -90,7 +90,7 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 #ifdef TABLES
   real    tabscale=fr->tabscale;
   real    eps,eps2,VV,FF,F,Y,Geps,Heps2,Fp,fijC,r1t;
-  real    *VFtab=fr->VFtab;
+  real    *VFtab=fr->coulvdwtab;
   int     n0,n1,nnn;
 #else
   double  isp=0.564189583547756;

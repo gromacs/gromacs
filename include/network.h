@@ -123,13 +123,13 @@ extern void gmx_rxs(int chan,void *buf,int bufsize);
       * available after gmx_rxs() returns.
       */
 
-extern int gmx_cpu_num(void);
-/* return the number of cpus in the ring */
+extern int gmx_node_num(void);
+/* return the number of nodes in the ring */
 
-extern int gmx_cpu_id(void);
-/* return the identification ID of the cpu */
+extern int gmx_node_id(void);
+/* return the identification ID of the node */
       
-extern void gmx_left_right(int nprocs,int pid,int *left,int *right);
+extern void gmx_left_right(int nnodes,int nodeid,int *left,int *right);
 /* Get left and right proc id. */
 
 /****************************************************** 
@@ -145,12 +145,12 @@ extern void gmx_stat(FILE *fp,char *msg);
 extern void gmx_reset_idle(void);
 /* Reset the idle count */
 
-extern void gmx_tx_rx(int send_pid,void *send_buf,int send_bufsize,
-		      int rec_pid,void *rec_buf,int rec_bufsize);
+extern void gmx_tx_rx(int send_nodeid,void *send_buf,int send_bufsize,
+		      int rec_nodeid,void *rec_buf,int rec_bufsize);
 
 extern void gmx_wait(int send,int receive);
 
-extern void gmx_sync_ring(int pid,int nprocs,int left,int right);
+extern void gmx_sync_ring(int nodeid,int nnodes,int left,int right);
 /* Synchronise the ring... */
 
 extern void gmx_sumi(int nr,int r[],t_commrec *cr);
@@ -194,13 +194,13 @@ extern  void def_wait(int send,int receive);
 #endif
 
 #ifndef gmx_tx_rx
-extern  void def_tx_rx(int send_pid,void *send_buf,int send_bufsize,
-		       int rec_pid,void *rec_buf,int rec_bufsize);
+extern  void def_tx_rx(int send_nodeid,void *send_buf,int send_bufsize,
+		       int rec_nodeid,void *rec_buf,int rec_bufsize);
 #define gmx_tx_rx def_tx_rx
 #endif 
 
 #ifndef gmx_sync_ring
-extern  void def_sync_ring(int pid,int nprocs,int left,int right);
+extern  void def_sync_ring(int nodeid,int nprocs,int left,int right);
 #define gmx_sync_ring def_sync_ring
 #endif
 
@@ -237,7 +237,7 @@ extern  void def_sumi(int nr,int r[],t_commrec *cr);
 
 #ifdef DEBUG_GMX
 #define debug_gmx() do { FILE *fp=debug ? debug : (stdlog ? stdlog : stderr);\
-if (bDebugMode()) fprintf(fp,"PID=%d, %s  %d\n",gmx_cpu_id(),__FILE__,__LINE__); fflush(fp); } while (0)
+if (bDebugMode()) fprintf(fp,"NODEID=%d, %s  %d\n",gmx_node_id(),__FILE__,__LINE__); fflush(fp); } while (0)
 #else
 #define debug_gmx()
 #endif

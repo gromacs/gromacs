@@ -47,7 +47,6 @@ static char *SRCID_g_hbond_c = "$Id$";
 #include "xvgr.h"
 #include "gstat.h"
 #include "matio.h"
-#include "lutab.h"
 #include "string2.h"
 #include "pbc.h"
 #include <math.h>
@@ -616,8 +615,6 @@ int main(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME,TRUE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
-  /* Initiate lookup table for sqrt calculations */
-  init_lookup_table(stdout);
 
   /* process input */
   bHBMap = opt2bSet("-hbm",NFILE,fnm) || opt2bSet("-ac",NFILE,fnm);

@@ -368,8 +368,8 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
     
     ncons=idef->il[F_SHAKE].nr/3;
     if (ncons > 0) {
-      bstart=(idef->pid > 0) ? blocks->multinr[idef->pid-1] : 0;
-      nblocks=blocks->multinr[idef->pid] - bstart;
+      bstart=(idef->nodeid > 0) ? blocks->multinr[idef->nodeid-1] : 0;
+      nblocks=blocks->multinr[idef->nodeid] - bstart;
       if (debug) 
 	fprintf(debug,"ncons: %d, bstart: %d, nblocks: %d\n",
 		ncons,bstart,nblocks);

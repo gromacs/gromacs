@@ -28,6 +28,7 @@
  */
 static char *SRCID_viewit_c = "$Id$";
 
+#include <string.h>
 #include "statutil.h"
 #include "viewit.h"
 

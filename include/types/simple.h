@@ -26,6 +26,8 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
+#ifndef _simple_h
+#define _simple_h
 
 #ifdef CPLUSPLUS
 extern "C" {
@@ -52,9 +54,8 @@ extern "C" {
 #define ZZXX    6
 #define ZZYY    7
 #define ZZZZ    8
-    
-#define MAXPROC 	256		/* Max number of processors 	*/
-
+/* Max number of nodes 	*/  
+#define MAXNODES	256	
 #ifndef HAVE_BOOL
 #define bool int
   /* typedef int         	bool; */
@@ -77,6 +78,12 @@ typedef float           real;
 #define GMX_REAL_EPS    1.2e-07
 #endif
 
+#ifndef VECTORIZATION_BUFLENGTH
+#define VECTORIZATION_BUFLENGTH 1000
+  /* The total memory size of the vectorization buffers will
+   * be 5*sizeof(real)*VECTORIZATION_BUFLENGTH
+   */
+#endif  
 typedef real        	rvec[DIM];
 
 typedef real	    	matrix[DIM][DIM];
@@ -91,4 +98,5 @@ typedef int             imatrix[DIM][DIM];
 }
 #endif
 
+#endif
 

@@ -230,21 +230,21 @@ static int w_comp(const void *a,const void *b)
     return 1;
 }
 
-static void buildbox(int ncpu,ivec nbox,matrix box)
+static void buildbox(int nnode,ivec nbox,matrix box)
 {
   ivec *BB,bxyz;
   int  i,j,m,n,n3,ny,*fx,*fy,nbb;
   
-  n3 = ipow(ncpu,3)*6;
+  n3 = ipow(nnode,3)*6;
   snew(BB,n3);
   nbb=0;
-  snew(fx,ncpu+1);
-  snew(fy,ncpu+1);
-  factorize(ncpu,fx);
-  for(i=0; (i<=ncpu); i++) {
+  snew(fx,nnode+1);
+  snew(fy,nnode+1);
+  factorize(nnode,fx);
+  for(i=0; (i<=nnode); i++) {
     for(m=1; (m<=fx[i]); m++) {
       bxyz[XX] = ipow(i,m);
-      ny = ncpu/bxyz[XX];
+      ny = nnode/bxyz[XX];
       factorize(ny,fy);
       for(j=0; (j<=ny); j++) {
 	for(n=1; (n<=fy[j]); n++) {
@@ -285,7 +285,7 @@ static void buildbox(int ncpu,ivec nbox,matrix box)
 }
 
 void mkcompact(int astart,int nwater,int nwatom,rvec x[],rvec v[],
-	       int ncpu,matrix box)
+	       int nnode,matrix box)
 {
   /* Make a compact configuration for each processor.
    * Divide the computational box in near cubic boxes and spread them
@@ -294,10 +294,10 @@ void mkcompact(int astart,int nwater,int nwatom,rvec x[],rvec v[],
 /*   ivec nbox; */
   int  m;
   
-  if (ncpu <= 1)
+  if (nnode <= 1)
     return;
   
-  buildbox(ncpu,NBOX,box);
+  buildbox(nnode,NBOX,box);
   /* copy_ivec(nbox,NBOX); */
   for(m=0; (m<DIM); m++)
     box_1[m] = 1.0/box[m][m];

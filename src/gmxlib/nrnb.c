@@ -45,82 +45,130 @@ typedef struct {
 } t_nrnb_data;
 
 static t_nrnb_data nbdata[eNRNB] = {
-  { "LJ+Coulomb",      38 },
-  { "Coulomb",         27 },
-  { "LJC-RF",          43 },
-  { "Coul-RF",         32 },
-  { "Buckingham",      44 },
-  { "Buck.+RF",        49 },
-  { "Table-Coul",      47 },
-  { "Table-LJC",       73 },
-  { "Table-BHAM",      78 },
-  { "Table-BHAM-H2O", 171 },
-  { "LJ+Coulomb-H2O",  91 },
-  { "Coulomb-H2O",     80 },
-  { "LJC-RF-H2O",     106 },
-  { "Coul-RF-H2O",     95 },
-  { "Buckingham-H2O",  97 },
-  { "Buck.+RF-H2O",   112 },
-  { "Table-Coul-H2O", 140 },
-  { "Table-LJC-H2O",  166 },
-  { "LJC-FreeEner",   101 },
-  { "BHAM-FreeEner",  106 },
-  { "LJC-Ewald",      150 },
-  { "Coul-Ewald",     150 }, 
-  { "BHAM-Ewald",     150 }, 
-  { "LJC-Ewald-H2O",  150 }, 
-  { "Coul-Ewald-H2O", 150 },
-  { "BHAM-Ewald-H2O", 150 },
-  { "Innerloop-Iatom", 10 },
-  { "Calc Weights",    36 },
-  { "Spread Q",         6 },
-  { "Spread Q Bspline", 2 }, /* a first guess */
-  { "Gather F",        23 },
-  { "Gather F Bspline",12 }, /* a first guess */
-  { "3D-FFT",           8 },
-  { "Convolution",      4 },
-  { "Solve PME",       64 }, /* a first guess */
-  { "NS-Pairs",        21 },
-  { "Reset In Box",     9 },
-  { "Shift-X",          6 },
-  { "CG-CoM",          29 },
-  { "Sum Forces",       1 },
-  { "Bonds",           43 },
-  { "G96Bonds",        40 },
-  { "Angles",         163 },
-  { "G96Angles",      150 },
-  { "Propers",        229 },
-  { "Impropers",      208 },
-  { "RB-Dihedrals",   247 },
-  { "Dist. Restr.",   200 },
-  { "Pos. Restr.",     50 },
-  { "Angle Restr.",   191 },
-  { "Angle Restr. Z", 164 },
-  { "Morse Potent.",   58 },
-  { "Cubic Bonds",     54 },
-  { "Water Pol.",      62 },
-  { "Virial",          18 },
-  { "Update",          31 },
-  { "Ext.ens. Update", 54 },
-  { "Stop-CM",         10 },
-  { "P-Coupling",       6 },
-  { "Calc-Ekin",       27 },
-  { "Lincs",           60 },
-  { "Lincs-Mat",        4 },
-  { "Shake",           30 },
-  { "Shake-V",         15 },
-  { "Shake-Init",      10 },
-  { "Shake-Vir",       18 },
-  { "Settle",         323 },
-  { "PShake-InitLD",   59 },    
-  { "PShake-InitMD",   65 },   
-  { "PShake",           7 },
-  { "Dummy2",          17 },
-  { "Dummy3",          28 },
-  { "Dummy3fd",        95 },
-  { "Dummy3fad",      176 },
-  { "Dummy3out",       87 },
-  { "Dummy4fd",       110 }
+  { "LJ",                              31 }, /* inl0100 */
+  { "Buckingham",                      36 }, /* inl0200 */
+  { "LJ(T)",                           52 }, /* inl0300 */
+  { "FreeEner LJ(T)",                  65 }, /* inl0301 */
+  { "Softcore LJ(T)",                 118 }, /* inl0302 */
+  { "Buckingham(T)",                   57 }, /* inl0400 */
+  { "FreeEner Bham(T)",                89 }, /* inl0401 */
+  { "Softcore Bham(T)",               128 }, /* inl0402 */
+  { "Coulomb",                         27 }, /* inl1000 */
+  { "Coulomb(S)",                      37 }, /* inl1010 */
+  { "Coulomb(W)",                      81 }, /* inl1020 */
+  { "Coulomb(WW)",                    234 }, /* inl1030 */
+  { "LJ + Coulomb",                    38 }, /* inl1100 */
+  { "LJ + Coul(S)",                    41 }, /* inl1110 */
+  { "LJ + Coul(W)",                    92 }, /* inl1120 */
+  { "LJ + Coul(WW)",                  245 }, /* inl1130 */
+  { "Buckingham + Coul",               40 }, /* inl1200 */
+  { "Bham + Coul(S)",                  42 }, /* inl1210 */
+  { "Bham + Coul(W)",                  94 }, /* inl1220 */
+  { "Bham + Coul(WW)",                247 }, /* inl1230 */
+  { "LJ(T) + Coul ",                   58 }, /* inl1300 */
+  { "LJ(T) + Coul(S)",                 48 }, /* inl1310 */
+  { "LJ(T) + Coul(W)",                112 }, /* inl1320 */
+  { "LJ(T) + Coul(WW)",               265 }, /* inl1330 */
+  { "Bham(T) + Coul ",                 63 }, /* inl1400 */
+  { "Bham(T) + Coul(S)",               49 }, /* inl1410 */
+  { "Bham(T) + Coul(W)",              117 }, /* inl1420 */
+  { "Bham(T) + Coul(WW)",             270 }, /* inl1430 */
+  { "RF Coul",                         32 }, /* inl2000 */
+  { "RF Coul(S)",                      42 }, /* inl2010 */
+  { "RF Coul(W)",                      96 }, /* inl2020 */
+  { "RF Coul(WW)",                    279 }, /* inl2030 */
+  { "LJ + RF Coul",                    43 }, /* inl2100 */
+  { "LJ + RF Coul(S)",                 46 }, /* inl2110 */
+  { "LJ + RF Coul(W)",                107 }, /* inl2120 */
+  { "LJ + RF Coul(WW)",               290 }, /* inl2130 */
+  { "Bham + RF Coul",                  45 }, /* inl2200 */
+  { "Bham + RF Coul(S)",               47 }, /* inl2210 */
+  { "Bham + RF Coul(W)",              109 }, /* inl2220 */
+  { "Bham + RF Coul(WW)",             292 }, /* inl2230 */
+  { "LJ(T) + RF Coul",                 63 }, /* inl2300 */
+  { "LJ(T) + RF Coul(S)",              53 }, /* inl2310 */
+  { "LJ(T) + RF Coul(W)",             127 }, /* inl2320 */
+  { "LJ(T) + RF Coul(WW)",            310 }, /* inl2330 */
+  { "Bham(T) + RF",                    68 }, /* inl2400 */
+  { "Bham(T) + RF(S)",                 54 }, /* inl2410 */
+  { "Bham(T) + RF(W)",                132 }, /* inl2420 */
+  { "Bham(T) + RF(WW)",               310 }, /* inl2430 */
+  { "Coulomb(T)",                      41 }, /* inl3000 */
+  { "FreeEner Coul(T)",                54 }, /* inl3001 */
+  { "Softcore Coul(T)",                99 }, /* inl3002 */
+  { "Coulomb(T)(S)",                   51 }, /* inl3010 */
+  { "Coulomb(T)(W)",                  123 }, /* inl3020 */
+  { "Coulomb(T)(WW)",                 360 }, /* inl3030 */
+  { "LJ + Coulomb(T)",                 54 }, /* inl3100 */
+  { "LJ + Coulomb(T)(S)",              56 }, /* inl3110 */
+  { "LJ + Coulomb(T)(W)",             136 }, /* inl3120 */
+  { "LJ + Coulomb(T)(WW)",            373 }, /* inl3130 */
+  { "Bham + Coul(T)",                  55 }, /* inl3200 */
+  { "Bham + Coul(T)(S)",               56 }, /* inl3210 */
+  { "Bham + Coul(T)(W)",              137 }, /* inl3220 */
+  { "Bham + Coul(T)(WW)",             374 }, /* inl3230 */
+  { "LJ(T) + Coul(T)",                 67 }, /* inl3300 */
+  { "Free LJ(T)+Coul(T)",              92 }, /* inl3301 */
+  { "SC LJ(T)+Coul(T)",               151 }, /* inl3302 */
+  { "LJ(T) + Coul(T)(S)",              60 }, /* inl3310 */
+  { "LJ(T) + Coul(T)(W)",             149 }, /* inl3320 */
+  { "LJ(T) + Coul(T)(WW)",            386 }, /* inl3330 */
+  { "LJ(T) + Coul(T)",                 71 }, /* inl3400 */
+  { "Free Bham(T)+Coul(T)",           116 }, /* inl3401 */
+  { "SC Bham(T)+Coul(T)",             161 }, /* inl3402 */
+  { "Bham(T) + Coul(T)(S)",            61 }, /* inl3410 */
+  { "Bham(T) + Coul(T,W)",            153 }, /* inl3420 */
+  { "Bham(T) + Coul(T,WW)",           390 }, /* inl3430 */
+  { "Innerloop-Iatom",                 10 },
+  { "Calc Weights",                    36 },
+  { "Spread Q",                         6 },
+  { "Spread Q Bspline",                 2 }, 
+  { "Gather F",                        23 },
+  { "Gather F Bspline",                12 }, 
+  { "3D-FFT",                           8 },
+  { "Convolution",                      4 },
+  { "Solve PME",                       64 },
+  { "NS-Pairs",                        21 },
+  { "Reset In Box",                     9 },
+  { "Shift-X",                          6 },
+  { "CG-CoM",                          29 },
+  { "Sum Forces",                       1 },
+  { "Bonds",                           43 },
+  { "G96Bonds",                        40 },
+  { "Angles",                         163 },
+  { "G96Angles",                      150 },
+  { "Propers",                        229 },
+  { "Impropers",                      208 },
+  { "RB-Dihedrals",                   247 },
+  { "Dist. Restr.",                   200 },
+  { "Pos. Restr.",                     50 },
+  { "Angle Restr.",                   191 },
+  { "Angle Restr. Z",                 164 },
+  { "Morse Potent.",                   58 },
+  { "Cubic Bonds",                     54 },
+  { "Water Pol.",                      62 },
+  { "Virial",                          18 },
+  { "Update",                          31 },
+  { "Ext.ens. Update",                 54 },
+  { "Stop-CM",                         10 },
+  { "P-Coupling",                       6 },
+  { "Calc-Ekin",                       27 },
+  { "Lincs",                           60 },
+  { "Lincs-Mat",                        4 },
+  { "Shake",                           30 },
+  { "Shake-V",                         15 },
+  { "Shake-Init",                      10 },
+  { "Shake-Vir",                       18 },
+  { "Settle",                         323 },
+  { "PShake-InitLD",                   59 },    
+  { "PShake-InitMD",                   65 },   
+  { "PShake",                           7 },
+  { "Dummy2",                          17 },
+  { "Dummy3",                          28 },
+  { "Dummy3fd",                        95 },
+  { "Dummy3fad",                      176 },
+  { "Dummy3out",                       87 },
+  { "Dummy4fd",                       110 } 
 };
 
 void init_nrnb(t_nrnb *nrnb)
@@ -164,14 +212,14 @@ void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line)
 #endif
 }
 
-void print_perf(FILE *out,double cputime,double realtime,real runtime,
+void print_perf(FILE *out,double nodetime,double realtime,real runtime,
 		t_nrnb *nrnb,int nprocs)
 {
   int    i;
   double nbfs,mni,frac,tfrac,mflop,tflop;
   
-  if (cputime == 0.0) {
-    fprintf(out,"cputime = 0! Infinite Giga flopses!\n");
+  if (nodetime == 0.0) {
+    fprintf(out,"nodetime = 0! Infinite Giga flopses!\n");
   }
   
   nbfs=0.0;
@@ -191,10 +239,13 @@ void print_perf(FILE *out,double cputime,double realtime,real runtime,
   }
   fprintf(out,"\n\tM E G A - F L O P S   A C C O U N T I N G\n\n");
   if (nprocs > 1) {
-    cputime = realtime;
+    nodetime = realtime;
     fprintf(out,"\tBased on real time for parallel computer.\n");
   }
-  fprintf(out,"%15s  %12s  %12s  %8s\n",
+
+  fprintf(out,"   RF=Reaction-field  Free=Free Energy  SC=Softcore\n");
+  fprintf(out,"   T=Tabulated        S=Solvent         W=Water     WW=Water-Water\n\n");
+  fprintf(out,"%21s  %12s  %12s  %8s\n",
 	  "Computing:","M-Number","M-Flop's","% Flop's");
   mflop=0.0;
   tfrac=0.0;
@@ -204,25 +255,25 @@ void print_perf(FILE *out,double cputime,double realtime,real runtime,
     frac   = 100.0*mni*nbdata[i].flop/tflop;
     tfrac += frac;
     if (mni != 0)
-      fprintf(out,"%15s  %12.6f  %12.6f  %6.1f\n",
+      fprintf(out,"%21s  %12.6f  %12.6f  %6.1f\n",
 	      nbdata[i].name,mni,mni*nbdata[i].flop,frac);
   }
   fprintf(out,"%15s  %12s  %12.5f  %6.1f\n\n",
 	  "Total","",mflop,tfrac);
-  if (cputime > 0 && realtime > 0) {
-    fprintf(out,"%12s %10s %10s %8s\n","","CPU (s)","Real (s)","(%)");
+  if (nodetime > 0 && realtime > 0) {
+    fprintf(out,"%12s %10s %10s %8s\n","","NODE (s)","Real (s)","(%)");
     fprintf(out,"%12s %10.3f %10.3f %8.1f\n","Time:",
-	    cputime, realtime, 100.0*cputime/realtime);
-    if (cputime > 60) {
+	    nodetime, realtime, 100.0*nodetime/realtime);
+    if (nodetime > 60) {
       fprintf(out,"%12s %10s","","");
-      pr_difftime(out,cputime);
+      pr_difftime(out,nodetime);
     }
     if (runtime>0) { /* runtime=0 means calc energies only */
       fprintf(out,"%12s %10s %10s %10s %10s\n",
-	      "","(Mnbf/s)","(MFlops)","(ps/CPU hour)","(CPU hour/ns)");
+	      "","(Mnbf/s)","(MFlops)","(ps/NODE hour)","(NODE hour/ns)");
       fprintf(out,"%12s %10.3f %10.3f %10.3f %10.3f\n","Performance:",
-	      nbfs/cputime,mflop/cputime,
-	      runtime*3600/cputime,1000*cputime/(3600*runtime));
+	      nbfs/nodetime,mflop/nodetime,
+	      runtime*3600/nodetime,1000*nodetime/(3600*runtime));
     }
   }
 }
@@ -304,7 +355,7 @@ void pr_load(FILE *log,int nprocs,t_nrnb nrnb[])
   
   fprintf(log,"\nDetailed load balancing info in percentage of average\n");
   
-  fprintf(log,"Type        CPU:");
+  fprintf(log,"Type        NODE:");
   for(i=0; (i<nprocs); i++)
     fprintf(log,"%3d ",i);
   fprintf(log,"Scaling\n");

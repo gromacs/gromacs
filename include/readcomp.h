@@ -47,17 +47,17 @@ typedef struct
 {
   int natom;
   int *atomid;
-} t_procd;
+} t_noded;
 
 typedef struct
 {
-  int nproc;
-  t_procd *procs;
-} t_procdl;
+  int nnode;
+  t_noded *nodes;
+} t_nodedl;
 
-/* structs are going to be used to determine the load of a processor */
+/* structs are going to be used to determine the load of a node */
 
-extern void read_compiled(char *compiled,t_procdl **dpl,t_atoms *atoms,
+extern void read_compiled(char *compiled,t_nodedl **dpl,t_atoms *atoms,
                           t_nbs *nb,t_exclrec *excl);
 
 #endif	/* _readcomp_h */

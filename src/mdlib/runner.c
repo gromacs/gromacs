@@ -52,7 +52,6 @@ static char *SRCID_runner_c = "$Id$";
 #include "nrnb.h"
 #include "disre.h"
 #include "mdatoms.h"
-#include "lutab.h"
 #include "mdrun.h"
 #include "callf77.h"
 #include "pppm.h"
@@ -88,7 +87,7 @@ void finish_run(FILE *log,t_commrec *cr,
 		t_topology *top,
 		t_parm *parm,
 		t_nrnb nrnb[],
-		double cputime,double realtime,int step,
+		double nodetime,double realtime,int step,
 		bool bWriteStat)
 {
   int    i,j;
@@ -96,7 +95,7 @@ void finish_run(FILE *log,t_commrec *cr,
   real   runtime;
   for(i=0; (i<eNRNB); i++)
     ntot.n[i]=0;
-  for(i=0; (i<nsb->nprocs); i++)
+  for(i=0; (i<nsb->nnodes); i++)
     for(j=0; (j<eNRNB); j++)
       ntot.n[j]+=nrnb[i].n[j];
   runtime=0;
@@ -104,16 +103,16 @@ void finish_run(FILE *log,t_commrec *cr,
     runtime=parm->ir.nsteps*parm->ir.delta_t;
     if (MASTER(cr)) {
       fprintf(stderr,"\n\n");
-      print_perf(stderr,cputime,realtime,runtime,&ntot,nsb->nprocs);
+      print_perf(stderr,nodetime,realtime,runtime,&ntot,nsb->nnodes);
     }
     else
-      print_nrnb(log,&(nrnb[nsb->pid]));
+      print_nrnb(log,&(nrnb[nsb->nodeid]));
   }
 
   if (MASTER(cr)) {
-    print_perf(log,cputime,realtime,runtime,&ntot,nsb->nprocs);
-    if (nsb->nprocs > 1)
-      pr_load(log,nsb->nprocs,nrnb);
+    print_perf(log,nodetime,realtime,runtime,&ntot,nsb->nnodes);
+    if (nsb->nnodes > 1)
+      pr_load(log,nsb->nnodes,nrnb);
   }
 }
 
@@ -121,7 +120,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 	      bool bCompact,int nDlb,bool bNM,int nstepout,t_edsamyn *edyn,
 	      unsigned long Flags)
 {
-  double     cputime=0,realtime;
+  double     nodetime=0,realtime;
   t_parm     *parm;
   rvec       *buf,*f,*vold,*v,*vt,*x,box_size;
   real       tmpr1,tmpr2;
@@ -143,25 +142,22 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   snew(top,1);
   snew(grps,1);
   snew(parm,1);
-  snew(nrnb,cr->nprocs);
+  snew(nrnb,cr->nnodes);
 
   /* Initiate invsqrt routines */
-#ifdef CINVSQRT
-  init_lookup_table(stdlog);
-#endif
   
   if (bVerbose && MASTER(cr)) 
     fprintf(stderr,"Getting Loaded...\n");
 
   if (PAR(cr)) {
-    /* The master processor reads from disk, then passes everything
+    /* The master thread on the master node reads from disk, then passes everything
      * around the ring, and finally frees the stuff
      */
     if (MASTER(cr)) 
-      distribute_parts(cr->left,cr->right,cr->pid,cr->nprocs,parm,
+      distribute_parts(cr->left,cr->right,cr->nodeid,cr->nnodes,parm,
 		       ftp2fn(efTPX,nfile,fnm),nDlb);
     
-    /* Every processor (including the master) reads the data from the ring */
+    /* Every node (including the master) reads the data from the ring */
     init_parts(stdlog,cr,
 	       parm,top,&x,&v,&mdatoms,nsb,
 	       MASTER(cr) ? LIST_SCALARS | LIST_PARM : 0);
@@ -177,9 +173,11 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   if (bVerbose && MASTER(cr))
     fprintf(stderr,"Loaded with Money\n\n");
 
+  fprintf(stderr,"WARNING: new innerloops 2000-09-01. Problems to erik@theophys.kth.se.\n\n");
+  
   /* Index numbers for parallellism... */
-  nsb->pid      = cr->pid;
-  top->idef.pid = cr->pid;
+  nsb->nodeid      = cr->nodeid;
+  top->idef.nodeid = cr->nodeid;
 
   /* Group stuff (energies etc) */
   init_groups(stdlog,mdatoms,&(parm->ir.opts),grps);
@@ -202,9 +200,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 
   /* Initiate forcerecord */
   fr = mk_forcerec();
-  init_forcerec(stdlog,fr,&(parm->ir),&(top->blocks[ebMOLS]),cr,
-		&(top->blocks[ebCGS]),&(top->idef),mdatoms,nsb,
-		parm->box,FALSE);
+  init_forcerec(stdlog,fr,&(parm->ir),top,cr,mdatoms,nsb,parm->box,FALSE);
   /* Initiate box */
   for(m=0; (m<DIM); m++)
     box_size[m]=parm->box[m][m];
@@ -249,8 +245,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     /* Some timing stats */  
     if (MASTER(cr)) {
       realtime=difftime(time(NULL),start_t);
-      if ((cputime=cpu_time()) == 0)
-	cputime=realtime;
+      if ((nodetime=node_time()) == 0)
+	nodetime=realtime;
     }
     else 
       realtime=0;
@@ -260,12 +256,12 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
       char *gro=ftp2fn(efSTO,nfile,fnm);
       /* if rerunMD, don't write last frame again */
       finish_run(stdlog,cr,gro,nsb,top,parm,
-		 nrnb,cputime,realtime,parm->ir.nsteps,
+		 nrnb,nodetime,realtime,parm->ir.nsteps,
 		 parm->ir.eI==eiMD || parm->ir.eI==eiSD || parm->ir.eI==eiLD);
     }
   }
   /* Does what it says */  
-  print_date_and_time(stdlog,cr->pid,"Finished mdrun");
+  print_date_and_time(stdlog,cr->nodeid,"Finished mdrun");
 
   if (MASTER(cr)) {
     thanx(stderr);

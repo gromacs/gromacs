@@ -43,6 +43,7 @@ static char *SRCID_wnblist_c = "$Id$";
 static void write_nblist(FILE *out,t_nblist *nblist)
 {
   int i,j,j0,k,i_atom,jid;
+  fprintf(out,"il_code=%d solvent=%d\n",nblist->il_code,nblist->solvent);
   
   fprintf(out,"nri=%d  nrj=%d\n",nblist->nri,nblist->nrj);
   for(i=0; i<nblist->nri; i++) {

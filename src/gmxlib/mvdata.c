@@ -44,16 +44,16 @@ static char *SRCID_mvdata_c = "$Id$";
 
 static void ld_nsb(int src,t_nsborder *nsb)
 {
-  blockrx(src,nsb->nprocs);
+  blockrx(src,nsb->nnodes);
   blockrx(src,nsb->shift);
   blockrx(src,nsb->bshift);
   blockrx(src,nsb->nstDlb);
   blockrx(src,nsb->cgtotal);
   blockrx(src,nsb->natoms);
-  nblockrx(src,MAXPROC,nsb->homenr);
-  nblockrx(src,MAXPROC,nsb->index);
-  nblockrx(src,MAXPROC,nsb->cgload);
-  nblockrx(src,MAXPROC,nsb->workload);
+  nblockrx(src,MAXNODES,nsb->homenr);
+  nblockrx(src,MAXNODES,nsb->index);
+  nblockrx(src,MAXNODES,nsb->cgload);
+  nblockrx(src,MAXNODES,nsb->workload);
 }
 
 static char **ld_string(int src,t_symtab *symtab)
@@ -142,7 +142,7 @@ static void ld_vectors(int src,rvec x[],rvec v[])
 static void ld_ilist(int src,t_ilist *ilist)
 {
   blockrx(src,ilist->nr);
-  nblockrx(src,MAXPROC,ilist->multinr);
+  nblockrx(src,MAXNODES,ilist->multinr);
   snew(ilist->iatoms,ilist->nr);
   nblockrx(src,ilist->nr,ilist->iatoms);
 }
@@ -267,16 +267,16 @@ static void mv_parm(int dest,t_parm *parm)
 
 static void mv_nsb(int dest,t_nsborder *nsb)
 {
-  blocktx(dest,nsb->nprocs);
+  blocktx(dest,nsb->nnodes);
   blocktx(dest,nsb->shift);
   blocktx(dest,nsb->bshift);
   blocktx(dest,nsb->nstDlb);
   blocktx(dest,nsb->cgtotal);
   blocktx(dest,nsb->natoms);
-  nblocktx(dest,MAXPROC,nsb->homenr);
-  nblocktx(dest,MAXPROC,nsb->index);
-  nblocktx(dest,MAXPROC,nsb->cgload);
-  nblocktx(dest,MAXPROC,nsb->workload);
+  nblocktx(dest,MAXNODES,nsb->homenr);
+  nblocktx(dest,MAXNODES,nsb->index);
+  nblocktx(dest,MAXNODES,nsb->cgload);
+  nblocktx(dest,MAXNODES,nsb->workload);
 }
 
 static void mv_string(int dest,t_symtab *symtab,char **s)
@@ -358,7 +358,7 @@ static void mv_vectors(int dest,int natoms,rvec x[],rvec v[])
 static void mv_ilist(int dest,t_ilist *ilist)
 {
   blocktx(dest,ilist->nr);
-  nblocktx(dest,MAXPROC,ilist->multinr);
+  nblocktx(dest,MAXNODES,ilist->multinr);
   nblocktx(dest,ilist->nr,ilist->iatoms);
 }
 

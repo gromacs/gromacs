@@ -89,7 +89,7 @@ static void delete_from_interactions(t_idef *idef,int inr)
     sfree(niatoms);
     
     /* Reduce multinr if necessary */
-    for(j=0; (j<MAXPROC); j++)
+    for(j=0; (j<MAXNODES); j++)
       if (idef->il[i].multinr[j] >= nnr)
 	idef->il[i].multinr[j] = nnr;
   }

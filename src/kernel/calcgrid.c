@@ -68,7 +68,7 @@ static int list_comp(const void *a,const void *b)
   return (*((int *)a) - *((int *)b));
 }
 
-real calc_grid(matrix box,real gr_sp,int *nx,int *ny,int *nz,int nprocs)
+real calc_grid(matrix box,real gr_sp,int *nx,int *ny,int *nz,int nnodes)
 {
   int  d,n[DIM];
   int  i,nmin[DIM];
@@ -108,17 +108,17 @@ real calc_grid(matrix box,real gr_sp,int *nx,int *ny,int *nz,int nprocs)
     for(i=0; i<n_list; i++)
       fprintf(debug,"grid: %d\n",list[i]);
   
-  if (((*nx>0) && (*nx != nprocs*(*nx/nprocs))) ||
-      ((*ny>0) && (*ny != nprocs*(*ny/nprocs))))
-    fatal_error(0,"the x or y grid spacing (nx %d, ny %d) is not divisible by the number of processors (%d)",*nx,*ny,nprocs);
+  if (((*nx>0) && (*nx != nnodes*(*nx/nnodes))) ||
+      ((*ny>0) && (*ny != nnodes*(*ny/nnodes))))
+    fatal_error(0,"the x or y grid spacing (nx %d, ny %d) is not divisible by the number of nodes (%d)",*nx,*ny,nnodes);
   
   for(d=0; d<DIM; d++) {
     for(i=0; (i<n_list) && (n[d]<=0); i++)
       if ((list[i] >= nmin[d]) && 
-	  ((d == ZZ) || (list[i] == nprocs*(list[i]/nprocs))))
+	  ((d == ZZ) || (list[i] == nnodes*(list[i]/nnodes))))
 	n[d] = list[i];
     if (n[d] <= 0)
-      fatal_error(0 ,"could not find a grid spacing with nx and ny divisible by the number of processors (%d)",nprocs);
+      fatal_error(0 ,"could not find a grid spacing with nx and ny divisible by the number of nodes (%d)",nnodes);
   }
   
   max_spacing = 0;

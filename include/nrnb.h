@@ -53,7 +53,7 @@ extern void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line);
 #define inc_nrnb(nrnb,enr,inc) (nrnb)->n[enr] += inc
 #endif
 
-extern void print_perf(FILE *out,double cputime,double realtime,real runtime,
+extern void print_perf(FILE *out,double nodetime,double realtime,real runtime,
 		       t_nrnb *nrnb,int nprocs);
 
 extern void pr_load(FILE *log,int nprocs,t_nrnb nrnb[]);

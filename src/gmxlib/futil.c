@@ -227,8 +227,8 @@ FILE *ffopen(char *file,char *mode)
   int  bs;
   
 #ifdef _amb_
-  fprintf(stderr,"Going to open %s on CPU %d with mode %s\n",
-	  file,gmx_cpu_id(),mode);
+  fprintf(stderr,"Going to open %s on NODE %d with mode %s\n",
+	  file,gmx_node_id(),mode);
 #endif
   if ((mode[0]=='w') && fexist(file)) {
     bf=backup_fn(file);
@@ -280,8 +280,8 @@ FILE *ffopen(char *file,char *mode)
     }
   }
 #ifdef _amb_
-  fprintf(stderr,"Opened %s on CPU %d with mode %s\n",
-	  file,gmx_cpu_id(),mode);
+  fprintf(stderr,"Opened %s on NODE %d with mode %s\n",
+	  file,gmx_node_id(),mode);
 #endif
   return ff;
 }

@@ -52,7 +52,7 @@ int main(int argc,char *argv[])
     "The mdrun program performs Molecular Dynamics simulations.",
 #endif
     "It reads the run input file ([TT]-s[tt]) and distributes the",
-    "topology over processors if needed. The coordinates are passed",
+    "topology over nodes if needed. The coordinates are passed",
     "around, so that computations can begin.",
     "First a neighborlist is made, then the forces are computed.",
     "The forces are globally summed, and the velocities and",
@@ -61,19 +61,19 @@ int main(int argc,char *argv[])
     "Temperature and Pressure can be controlled using weak coupling to a",
     "bath.[PAR]",
     "mdrun produces at least three output file, plus one log file",
-    "([TT]-g[tt]) per processor.",
+    "([TT]-g[tt]) per node.",
     "The trajectory file ([TT]-o[tt]), contains coordinates, velocities and",
     "optionally forces.",
     "The structure file ([TT]-c[tt]) contains the coordinates and",
     "velocities of the last step.",
     "The energy file ([TT]-e[tt]) contains energies, the temperature,",
     "pressure, etc, a lot of these things are also printed in the log file",
-    "of processor 0.",
+    "of node 0.",
     "Optionally coordinates can be written to a compressed trajectory file",
     "([TT]-x[tt]).[PAR]",
     "When running in parallel with PVM or an old version of MPI the",
     "[TT]-np[tt] option must be given to indicate the number of",
-    "processors.[PAR]",
+    "nodes.[PAR]",
     "The option [TT]-dgdl[tt] is only used when free energy perturbation is",
     "turned on.[PAR]",
     "With [TT]-rerun[tt] an input trajectory can be given for which ",
@@ -132,13 +132,13 @@ int main(int argc,char *argv[])
   static bool bIonize      = FALSE;
 #endif
 #ifdef PARALLEL
-  static int  nprocs=1;
+  static int  nnodess=1;
 #endif
   static int  nDLB=0,nstepout=10;
   static t_pargs pa[] = {
 #ifdef PARALLEL
-    { "-np",      FALSE, etINT, {&nprocs},
-      "Number of processors, must be the same as used for grompp" },
+    { "-np",      FALSE, etINT, {&nnodes},
+      "Number of nodes, must be the same as used for grompp" },
 #endif
     { "-v",       FALSE, etBOOL,{&bVerbose}, "Be loud and noisy" },
     { "-compact", FALSE, etBOOL,{&bCompact}, "Write a compact log file" },

@@ -51,13 +51,13 @@ void move_rvecs(FILE *log,bool bForward,bool bSum,
 {
   int    i,j,j0=137,j1=391;
   int    cur,nsum;
-#define next ((cur+1) % nsb->nprocs)
-#define prev ((cur-1+nsb->nprocs) % nsb->nprocs)
+#define next ((cur+1) % nsb->nnodes)
+#define prev ((cur-1+nsb->nnodes) % nsb->nnodes)
 
   if (bSum)
-    cur=(nsb->pid+nsb->shift) % nsb->nprocs;
+    cur=(nsb->nodeid+nsb->shift) % nsb->nnodes;
   else
-    cur=nsb->pid;
+    cur=nsb->nodeid;
 
   nsum=0;
   for(i=0; (i<shift); i++) {
@@ -74,7 +74,7 @@ void move_rvecs(FILE *log,bool bForward,bool bSum,
 	clear_rvec(buf[j]);
       }
     }
-    /* Forward pulse around the ring, to increasing CPU number */
+    /* Forward pulse around the ring, to increasing NODE number */
     if (bForward) {
       gmx_tx(right,  arrayp(vecs[nsb->index[cur]], nsb->homenr[cur]));
       /* If we want to sum these arrays, we have to store the rvecs
@@ -86,7 +86,7 @@ void move_rvecs(FILE *log,bool bForward,bool bSum,
 	gmx_rx(left, arrayp(vecs[nsb->index[prev]],nsb->homenr[prev]));
     }
     
-    /* Backward pulse around the ring, to decreasing CPU number */
+    /* Backward pulse around the ring, to decreasing NODE number */
     else {
       gmx_tx(left,    arrayp(vecs[nsb->index[cur]], nsb->homenr[cur]));
       /* See above */
@@ -132,14 +132,14 @@ void move_x(FILE *log,
   int i;
 
   if (recvcounts == NULL) {
-    snew(recvcounts,nsb->nprocs);
-    snew(displs,nsb->nprocs);
-    for(i=0; i<nsb->nprocs; i++) {
+    snew(recvcounts,nsb->nnodes);
+    snew(displs,nsb->nnodes);
+    for(i=0; i<nsb->nnodes; i++) {
       recvcounts[i] = nsb->homenr[i]*sizeof(x[0]);
       displs[i]     = nsb->index[i]*sizeof(x[0]);
     }
   }
-  MPI_Allgatherv(arrayp(x[nsb->index[nsb->pid]],nsb->homenr[nsb->pid]),
+  MPI_Allgatherv(arrayp(x[nsb->index[nsb->nodeid]],nsb->homenr[nsb->nodeid]),
 		 MPI_BYTE,x,recvcounts,displs,MPI_BYTE,MPI_COMM_WORLD);
 #else
   move_rvecs(log,FALSE,FALSE,left,right,x,NULL,nsb->shift,nsb,nrnb);
@@ -171,10 +171,10 @@ void move_f(FILE *log,
 void move_cgcm(FILE *log,t_commrec *cr,rvec cg_cm[],int nload[])
 {
   int i,start,nr;
-  int cur=cr->pid;
-#define next ((cur+1) % cr->nprocs)
+  int cur=cr->nodeid;
+#define next ((cur+1) % cr->nnodes)
   
-  for(i=0; (i<cr->nprocs-1); i++) {
+  for(i=0; (i<cr->nnodes-1); i++) {
     start = (cur == 0) ? 0 : nload[cur-1];
     nr    = nload[cur] - start;
     gmx_tx(cr->left, cg_cm[start], nr*sizeof(cg_cm[0]));

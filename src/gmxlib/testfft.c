@@ -189,7 +189,7 @@ int main(int argc,char *argv[])
       testrft(stdout,h,n,n,n,(j==0));
     }
     update_time();
-    rt[i] = cpu_time();
+    rt[i] = node_time();
     free_rgrid(h,n,n);
     
     fprintf(stderr,"\rComplex %d     ",n);
@@ -199,7 +199,7 @@ int main(int argc,char *argv[])
       testfft(stdout,g,n,n,n,(j==0));
     }
     update_time();
-    ct[i] = cpu_time();
+    ct[i] = node_time();
     free_cgrid(g,n,n);
   }
   fprintf(stderr,"\n");

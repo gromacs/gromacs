@@ -393,12 +393,12 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose)
   n = fr->ntab = fr->rtab*fr->tabscale;
   
   if (out)
-    fprintf(out,"Making 3 tables%s of %g(nm)*%g = %d points (%u bytes)\n",
-	    fr->bTab ? "" : 
+    fprintf(out,"Making tables%s of %g(nm)*%g = %d points\n",
+	    (fr->bcoultab || fr->bvdwtab) ? "" : 
 	    fr->efep!=efepNO ? " for 1-4 and FEP int.":" for 1-4 int.",
-	    fr->rtab,fr->tabscale,fr->ntab,12*sizeof(real)*fr->ntab);
+	    fr->rtab,fr->tabscale,(int)(fr->rtab*fr->tabscale));
   
-  snew(fr->VFtab,12*n+1);
+  snew(fr->coulvdwtab,12*n+1);
   snew(xnormal,n+1);
   
   n0 = 10;
@@ -433,7 +433,7 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose)
     break;
   case eelPPPM:
   case eelPOISSON:
-    if ((fr->rcoulomb > fr->rcoulomb_switch) && fr->bTab)
+    if ((fr->rcoulomb > fr->rcoulomb_switch) && fr->bcoultab)
 	tabsel[etiCOUL] = etabShift;
     else
 	tabsel[etiCOUL] = etabCOUL;  /* 1-4 */
@@ -446,7 +446,7 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose)
     break;
   case eelEWALD:
   case eelPME:
-      if(fr->bTab)
+      if(fr->bcoultab)
 	  tabsel[etiCOUL] = etabEwald;
       else
 	  tabsel[etiCOUL] = etabCOUL; /* 1-4 */
@@ -504,7 +504,7 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose)
       read_table(n0,n,x,Vtab,Vtab2,Ftab,Ftab2,fns[k],fr);
     else
       fill_table(n0,n,x,Vtab,Vtab2,Ftab,Ftab2,tabsel[k],fr);
-    copy2table(n,k*4,12,x,Vtab,Vtab2,fr->VFtab,-1);
+    copy2table(n,k*4,12,x,Vtab,Vtab2,fr->coulvdwtab,-1);
     
     if (bDebugMode() && bVerbose) {
       fp=xvgropen(fns[k],fns[k],"r","V"); 

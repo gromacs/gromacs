@@ -46,8 +46,8 @@ typedef struct {
   char *msgk;
 } t_pvmerr;
 
-static int   tids[MAXPROC];
-static int   mypid=0,mynprocs=1;
+static int   tids[MAXNODES];
+static int   mynodeid=0,mynnodes=1;
 static unsigned long idle_send=0,idle_rec=0;
 
 void pvmio_tx(int dest,void *buf,int bufsize)
@@ -119,37 +119,37 @@ void pvmio_rxs(int src,void *buf,int bufsize)
 }
 
 
-int pvmio_setup(char *argv[],int nprocs)
+int pvmio_setup(char *argv[],int nnodes)
 {
   int i,bufid,info;
-  int pid,numt;
+  int nodeid,numt;
 
   if (pvm_parent() == PvmNoParent) {
     /* I am the MASTER! Obey me... */
-    pid=0;
+    nodeid=0;
     tids[0]=pvm_mytid();
-    fprintf(stderr,"PVM_MD: Spawning %d tasks\n",nprocs-1);
+    fprintf(stderr,"PVM_MD: Spawning %d tasks\n",nnodes-1);
     numt=pvm_spawn(argv[0],&(argv[1]),PvmTaskDefault,
-		   "",nprocs-1,tids+1);
-    if (numt != nprocs-1) {
+		   "",nnodes-1,tids+1);
+    if (numt != nnodes-1) {
       fprintf(stderr,"Could only spawn %d tasks!\n",numt);
-      for(i=0; (i<nprocs); i++) {
+      for(i=0; (i<nnodes); i++) {
 	if (tids[i] < 0)
 	  fprintf(stderr,"PVM_MD: tids[%d] = %d --> %s\n",
 		  i,tids[i],pvm_error(tids[i]));
 	else
 	  fprintf(stderr,"PVM_MD: tids[%d] = %d\n",i,tids[i]);
       }
-      fatal_error(0,"Could not spawn %d processes, numt=%d",nprocs-1,numt);
+      fatal_error(0,"Could not spawn %d nodes, numt=%d",nnodes-1,numt);
     }
-    for(i=0; (i<nprocs); i++)
+    for(i=0; (i<nnodes); i++)
       fprintf(stderr,"tids[%d]=%x\n",i,tids[i]);
     
-    for (i=1; (i<nprocs); i++) {
-      fprintf(stderr,"pid %d: sending tids to pid %d = tid %x \n",
-	      pid,i,tids[i]); 
+    for (i=1; (i<nnodes); i++) {
+      fprintf(stderr,"nodeid %d: sending tids to nodeid %d = tid %x \n",
+	      nodeid,i,tids[i]); 
       /* Send target id's to everyone */
-      pvmio_tx(tids[i],tids,nprocs*sizeof(tids[0]));
+      pvmio_tx(tids[i],tids,nnodes*sizeof(tids[0]));
       
       /* Send index to other CPUS */
       pvmio_tx(tids[i],&i,sizeof(i));
@@ -158,18 +158,18 @@ int pvmio_setup(char *argv[],int nprocs)
   else {
     /* I am a slave, get some tids */
     bufid = pvm_recv(ANY_TID,PVM_BYTE);
-    info  = pvm_upkbyte((char *)tids,nprocs*sizeof(tids[0]),DEFAULT_STRIDE);
+    info  = pvm_upkbyte((char *)tids,nnodes*sizeof(tids[0]),DEFAULT_STRIDE);
     fprintf(stderr,"Got tids...\n");
     
     /* Get my own number */
-    pvmio_rx(tids[0],&pid,sizeof(pid));
+    pvmio_rx(tids[0],&nodeid,sizeof(nodeid));
   }
-  mypid    = pid;
-  mynprocs = nprocs;
+  mynodeid    = nodeid;
+  mynnodes = nnodes;
   
-  fprintf(stderr,"my pid is: %d\n",pid);
+  fprintf(stderr,"my nodeid is: %d\n",nodeid);
   
-  return pid;
+  return nodeid;
 }
 
 void pvmio_stat(FILE *fp,char *msg)
@@ -181,12 +181,12 @@ void pvmio_stat(FILE *fp,char *msg)
 
 int pvmnodenumber(void)
 { 
-  return mypid;
+  return mynodeid;
 }
 
 int pvmnodecount(void)
 { 
-  return mynprocs;
+  return mynnodes;
 }
 
 int pvm_idle_send(void)
@@ -199,10 +199,10 @@ int pvm_idle_rec(void)
   return idle_rec;
 }
 
-void pvm_left_right(int nprocs,int pid,int *left,int *right)
+void pvm_left_right(int nnodes,int nodeid,int *left,int *right)
 {
-  *left=tids[(pid-1+nprocs) % nprocs];
-  *right=tids[(pid+1) % nprocs];
+  *left=tids[(nodeid-1+nnodes) % nnodes];
+  *right=tids[(nodeid+1) % nnodes];
   fprintf(stderr,"PVM: left=%d, right=%d\n",*left,*right); fflush(stderr);
 }
 
@@ -211,8 +211,8 @@ void pvm_reset_idle()
   idle_send=0,idle_rec=0;
 }
 
-void pvmio_tx_rx(int send_pid,void *send_buf,int send_bufsize,
-		 int rec_pid,void *rec_buf,int rec_bufsize)
+void pvmio_tx_rx(int send_nodeid,void *send_buf,int send_bufsize,
+		 int rec_nodeid,void *rec_buf,int rec_bufsize)
 {
   fatal_error(0,"pvmio_tx_rx called");
 }
@@ -223,17 +223,17 @@ void pvmio_wait(int send,int receive)
   pvmio_rx_wait(receive);
 }
 
-void pvmio_sync_ring(int pid,int nprocs,int left,int right)
+void pvmio_sync_ring(int nodeid,int nnodes,int left,int right)
 {
   fatal_error(0,"pvmio_sync_ring called");
 }
 
-void pvm_abort(int pid,int nprocs,int errno)
+void pvm_abort(int nodeid,int nnodes,int errno)
 {
   int i;
 
-  for(i=0; i<nprocs; i++)
-    if (i != pid)
+  for(i=0; i<nnodes; i++)
+    if (i != nodeid)
       pvm_sendsig(tids[i],SIGKILL);
   
   exit(errno);

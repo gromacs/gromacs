@@ -56,7 +56,7 @@ void pbc_rvec_sub(rvec xi,rvec xj,rvec dx)
     rvec_sub(xi,xj,dx);
 }
 
-void calc_bonds(FILE *log,t_idef *idef,
+void calc_bonds(FILE *log,t_commrec *cr,t_idef *idef,
 		rvec x_s[],rvec f[],
 		t_forcerec *fr,t_graph *g,
 		real epot[],t_nrnb *nrnb,

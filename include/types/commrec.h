@@ -28,9 +28,14 @@
  */
 
 typedef struct {
-  int pid,nprocs;
+  int nodeid,nnodes;
   int left,right;
+  int threadid,nthreads;
 } t_commrec;
 
-#define MASTER(cr)   ((cr)->pid == 0)
-#define PAR(cr)      ((cr)->nprocs > 1)
+#define MASTERNODE(cr)     ((cr)->nodeid == 0)
+#define MASTERTHREAD(cr)   ((cr)->threadid == 0)
+#define MASTER(cr)         (MASTERNODE(cr) && MASTERTHREAD(cr))
+#define NODEPAR(cr)        ((cr)->nnodes > 1)
+#define THREADPAR(cr)      ((cr)->nthreads > 1)
+#define PAR(cr)            (NODEPAR(cr) || THREADPAR(cr))

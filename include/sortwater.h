@@ -17,7 +17,7 @@ extern void sortwater(int astart,int nwater,int nwatom,rvec x[],rvec v[]);
  */
 
 extern void mkcompact(int astart,int nwater,int nwatom,rvec x[],rvec v[],
-		      int ncpu,matrix box);
+		      int nnode,matrix box);
 /* Make compact subboxes */
 
 #endif

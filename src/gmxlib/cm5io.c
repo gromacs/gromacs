@@ -39,12 +39,12 @@ static CMMD_mcb mcb_send;
 static CMMD_mcb mcb_rec;
 static unsigned long idle_send=0,idle_rec=0;
 
-void cm5io_tx(int pid,void *buf,int bufsize)
+void cm5io_tx(int nodeid,void *buf,int bufsize)
 {
-  mcb_send=CMMD_send_async(pid,TAG,buf,bufsize,NULL,NULL);
+  mcb_send=CMMD_send_async(nodeid,TAG,buf,bufsize,NULL,NULL);
 }
 
-void cm5io_tx_wait(int pid)
+void cm5io_tx_wait(int nodeid)
 {
   while (!CMMD_msg_done(mcb_send))
 #ifdef PROFILING
@@ -54,18 +54,18 @@ void cm5io_tx_wait(int pid)
   CMMD_free_mcb(mcb_send);
 }
 
-void cm5io_txs(int pid,void *buf,int bufsize)
+void cm5io_txs(int nodeid,void *buf,int bufsize)
 {
-  cm5io_tx(pid,buf,bufsize);
-  cm5io_tx_wait(pid);
+  cm5io_tx(nodeid,buf,bufsize);
+  cm5io_tx_wait(nodeid);
 }
 
-void cm5io_rx(int pid,void *buf,int bufsize)
+void cm5io_rx(int nodeid,void *buf,int bufsize)
 {
-  mcb_rec=CMMD_receive_async(pid,TAG,buf,bufsize,NULL,NULL);
+  mcb_rec=CMMD_receive_async(nodeid,TAG,buf,bufsize,NULL,NULL);
 }
 
-void cm5io_rx_wait(int pid)
+void cm5io_rx_wait(int nodeid)
 {
   while (!CMMD_msg_done(mcb_rec))
 #ifdef PROFILING
@@ -89,24 +89,24 @@ void cm5io_wait(int send,int receive)
   CMMD_free_mcb(mcb_send);
 }
 
-void cm5io_rxs(int pid,void *buf,int bufsize)
+void cm5io_rxs(int nodeid,void *buf,int bufsize)
 {
-  cm5io_rx(pid,buf,bufsize);
-  cm5io_rx_wait(pid);
+  cm5io_rx(nodeid,buf,bufsize);
+  cm5io_rx_wait(nodeid);
 }
 
-void cm5io_tx_rx(int send_pid,void *send_buf,int send_bufsize,
-		 int rec_pid,void *rec_buf,int rec_bufsize)
+void cm5io_tx_rx(int send_nodeid,void *send_buf,int send_bufsize,
+		 int rec_nodeid,void *rec_buf,int rec_bufsize)
 {
   int ret;
 
-  ret=CMMD_send_and_receive(rec_pid,TAG,rec_buf,rec_bufsize,
-			    send_pid,TAG,send_buf,send_bufsize);
+  ret=CMMD_send_and_receive(rec_nodeid,TAG,rec_buf,rec_bufsize,
+			    send_nodeid,TAG,send_buf,send_bufsize);
   if (ret != TRUE)
     fatal_error(0,"Only %d bytes sent and received...",ret);
 }
 
-void cm5io_init(int pid,int nprocs)
+void cm5io_init(int nodeid,int nnodes)
 {
   CMMD_fset_io_mode(stdin,CMMD_independent);
   CMMD_fset_io_mode(stdout,CMMD_independent);
@@ -122,12 +122,12 @@ void cm5io_stat(FILE *fp,char *msg)
   fprintf(fp,"Idle Receive: %d\n",idle_rec);
 }
 
-int cm5_cpu_id()
+int cm5_node_id()
 { 
   return(CMMD_self_address());
 }
 
-int cm5_cpu_num()
+int cm5_node_num()
 {
   return (CMMD_partition_size());
 }
@@ -142,10 +142,10 @@ int cm5_idle_rec()
   return idle_rec;
 }
 
-void cm5_left_right(int nprocs,int pid,int *left,int *right)
+void cm5_left_right(int nnodes,int nodeid,int *left,int *right)
 {
-  *left=(pid-1+nprocs) % nprocs;
-  *right=(pid+1) % nprocs;
+  *left=(nodeid-1+nnodes) % nnodes;
+  *right=(nodeid+1) % nnodes;
 }
 
 void reset_idle()
@@ -153,7 +153,7 @@ void reset_idle()
   idle_send=0,idle_rec=0;
 }
 
-void cm5_sync_ring(int pid,int nprocs,int left,int right)
+void cm5_sync_ring(int nodeid,int nnodes,int left,int right)
 {
   CMMD_sync_with_nodes();
 }

@@ -34,7 +34,6 @@ static char *SRCID_g_sgangle_c = "$Id$";
 #include "typedefs.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "lutab.h"
 #include "rmpbc.h"
 #include "vec.h"
 #include "xvgr.h"
@@ -255,7 +254,6 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,0,NULL,asize(desc),desc,0,NULL);
   
-  init_lookup_table(stdout);
 
   top = read_top(ftp2fn(efTPX,NFILE,fnm));     /* read topology file */
 

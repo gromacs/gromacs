@@ -75,29 +75,29 @@ static void push_sf(t_sf *sf,int nr,t_iatom ia[])
   sf->nr+=nr;
 }
 
-static int min_pid(int nr,atom_id list[],int hid[])
+static int min_nodeid(int nr,atom_id list[],int hid[])
 {
-  int i,pid,minpid;
+  int i,nodeid,minnodeid;
 
   assert(nr > 0);
-  minpid=hid[list[0]];
+  minnodeid=hid[list[0]];
   for (i=1; (i<nr); i++) 
-    if ((pid=hid[list[i]]) < minpid) 
-      minpid=pid;
+    if ((nodeid=hid[list[i]]) < minnodeid) 
+      minnodeid=nodeid;
 
-  return minpid;
+  return minnodeid;
 }
 
-static void split_force2(int nprocs,int hid[],t_idef *idef,t_ilist *ilist)
+static void split_force2(int nnodes,int hid[],t_idef *idef,t_ilist *ilist)
 {
-  int     i,type,ftype,pid,nratoms,tnr;
+  int     i,type,ftype,nodeid,nratoms,tnr;
   t_iatom ai;
-  t_sf    sf[MAXPROC];
+  t_sf    sf[MAXNODES];
   
-  init_sf(MAXPROC,sf);
+  init_sf(MAXNODES,sf);
 
-  /* Walk along all the bonded forces, find the appropriate processor
-   * to calc it on, and add it to that processors list.
+  /* Walk along all the bonded forces, find the appropriate node
+   * to calc it on, and add it to that nodes list.
    */
   for (i=0; i<ilist->nr; i+=(1+nratoms)) {
     type    = ilist->iatoms[i];
@@ -105,45 +105,45 @@ static void split_force2(int nprocs,int hid[],t_idef *idef,t_ilist *ilist)
     nratoms = interaction_function[ftype].nratoms;
 
     if (ftype == F_SHAKE) {
-      /* SPECIAL CASE: All Atoms must have the same home processor! */
-      pid=hid[ilist->iatoms[i+1]];
-      if (hid[ilist->iatoms[i+2]] != pid) 
-	fatal_error(0,"Shake block crossing processor boundaries\n"
+      /* SPECIAL CASE: All Atoms must have the same home node! */
+      nodeid=hid[ilist->iatoms[i+1]];
+      if (hid[ilist->iatoms[i+2]] != nodeid) 
+	fatal_error(0,"Shake block crossing node boundaries\n"
 		    "constraint between atoms (%d,%d)",
 		    ilist->iatoms[i+1],ilist->iatoms[i+2]);
     }
     else if (ftype == F_SETTLE) {
       /* Only the first particle is stored for settles ... */
       ai=ilist->iatoms[i+1];
-      pid=hid[ai];
-      if ((pid != hid[ai+1]) ||
-	  (pid != hid[ai+2]))
-	fatal_error(0,"Settle block crossing processor boundaries\n"
+      nodeid=hid[ai];
+      if ((nodeid != hid[ai+1]) ||
+	  (nodeid != hid[ai+2]))
+	fatal_error(0,"Settle block crossing node boundaries\n"
 		    "constraint between atoms (%d-%d)",ai,ai+2);
     }
     else 
-      pid=min_pid(nratoms,&ilist->iatoms[i+1],hid);
+      nodeid=min_nodeid(nratoms,&ilist->iatoms[i+1],hid);
 
     /* Add it to the list */
-    push_sf(&(sf[pid]),nratoms+1,&(ilist->iatoms[i]));
+    push_sf(&(sf[nodeid]),nratoms+1,&(ilist->iatoms[i]));
   }
   tnr=0;
-  for(pid=0; (pid<MAXPROC); pid++) {
-    for (i=0; (i<sf[pid].nr); i++) 
-      ilist->iatoms[tnr++]=sf[pid].ia[i];
+  for(nodeid=0; (nodeid<MAXNODES); nodeid++) {
+    for (i=0; (i<sf[nodeid].nr); i++) 
+      ilist->iatoms[tnr++]=sf[nodeid].ia[i];
 
-    ilist->multinr[pid]=(pid==0) ? 0 : ilist->multinr[pid-1];
-    ilist->multinr[pid]+=sf[pid].nr;
+    ilist->multinr[nodeid]=(nodeid==0) ? 0 : ilist->multinr[nodeid-1];
+    ilist->multinr[nodeid]+=sf[nodeid].nr;
   }
   assert(tnr==ilist->nr);
-  done_sf(MAXPROC,sf);
+  done_sf(MAXNODES,sf);
 }
 
-static int *home_index(int nprocs,t_block *cgs)
+static int *home_index(int nnodes,t_block *cgs)
 {
-  /* This routine determines the processor id for each particle */
+  /* This routine determines the node id for each particle */
   int *hid;
-  int pid,j0,j1,j,k,ak;
+  int nodeid,j0,j1,j,k,ak;
   
   snew(hid,cgs->nra);
   /* Initiate to -1 to make it possible to check afterwards,
@@ -152,16 +152,16 @@ static int *home_index(int nprocs,t_block *cgs)
   for(k=0; (k<cgs->nra); k++)
     hid[k]=-1;
     
-  /* loop over processors */
-  for(pid=0; (pid<nprocs); pid++) {
-    j0 = (pid==0) ? 0 : cgs->multinr[pid-1];
-    j1 = cgs->multinr[pid];
+  /* loop over nodes */
+  for(nodeid=0; (nodeid<nnodes); nodeid++) {
+    j0 = (nodeid==0) ? 0 : cgs->multinr[nodeid-1];
+    j1 = cgs->multinr[nodeid];
     
     /* j0 and j1 are the boundariesin the index array */
     for(j=j0; (j<j1); j++) {
       for(k=cgs->index[j]; (k<cgs->index[j+1]); k++) {
 	ak=cgs->a[k];
-	hid[ak]=pid;
+	hid[ak]=nodeid;
       }
     }
   }
@@ -291,12 +291,12 @@ t_border *mk_border(bool bVerbose,int natom,atom_id *invcgs,
   return bor;
 }
 
-static void split_blocks(bool bVerbose,int nprocs,
+static void split_blocks(bool bVerbose,int nnodes,
 			 t_block *cgs,t_block *sblock,real capacity[])
 {
-  int      maxatom[MAXPROC];
+  int      maxatom[MAXNODES];
   int      i,ai,b0,b1;
-  int      pid,last_shk,nbor;
+  int      nodeid,last_shk,nbor;
   t_border *border;
   double   *load,tload;
   
@@ -312,17 +312,17 @@ static void split_blocks(bool bVerbose,int nprocs,
   cgsnum = make_invblock(cgs,cgs->nra+1);
   border = mk_border(bVerbose,cgs->nra,cgsnum,shknum,&nbor);
 
-  snew(load,nprocs);
-  for(i=0; (i<nprocs); i++)
+  snew(load,nnodes);
+  for(i=0; (i<nnodes); i++)
     load[i] = capacity[i]*cgs->nra;
   
-  /* Now the load array holds the load per processor in number of atoms */
+  /* Now the load array holds the load per node in number of atoms */
   if (debug)
-    for(i=0; (i<nprocs); i++)
+    for(i=0; (i<nnodes); i++)
       fprintf(debug,"load[%3d] = %g\n",i,load[i]);
       
   tload  = load[0];
-  pid    = 0;
+  nodeid    = 0;
   for(i=0; (i<nbor) && (tload < cgs->nra); i++) {
     if(i<(nbor-1)) 
       b1=border[i+1].atom;
@@ -332,33 +332,33 @@ static void split_blocks(bool bVerbose,int nprocs,
     b0 = border[i].atom;
     
     if (fabs(b0-tload)<fabs(b1-tload)) {
-      /* New pid time */
-      cgs->multinr[pid]    = border[i].ic;
+      /* New nodeid time */
+      cgs->multinr[nodeid]    = border[i].ic;
       /* Store the atom number here, has to be processed later */
-      sblock->multinr[pid] = border[i].atom;
-      maxatom[pid]         = b0;
-      pid++;
-      tload += load[pid];
+      sblock->multinr[nodeid] = border[i].atom;
+      maxatom[nodeid]         = b0;
+      nodeid++;
+      tload += load[nodeid];
     } 
   }
   /* Now the last one... */
-  while (pid < nprocs) {
-    cgs->multinr[pid]    = cgs->nr;
+  while (nodeid < nnodes) {
+    cgs->multinr[nodeid]    = cgs->nr;
     /* Store atom number, see above */
-    sblock->multinr[pid] = cgs->nra;
-    maxatom[pid]         = cgs->nra;
-    pid++;
+    sblock->multinr[nodeid] = cgs->nra;
+    maxatom[nodeid]         = cgs->nra;
+    nodeid++;
   }
-  if (pid != nprocs) {
-    fatal_error(0,"pid = %d, nprocs = %d, file %s, line %d",
-		pid,nprocs,__FILE__,__LINE__);
+  if (nodeid != nnodes) {
+    fatal_error(0,"nodeid = %d, nnodes = %d, file %s, line %d",
+		nodeid,nnodes,__FILE__,__LINE__);
   }
 
   if (bVerbose) {
-    for(i=nprocs-1; (i>0); i--)
+    for(i=nnodes-1; (i>0); i--)
       maxatom[i]-=maxatom[i-1];
-    fprintf(stderr,"Division over processors in atoms:\n");
-    for(i=0; (i<nprocs); i++)
+    fprintf(stderr,"Division over nodes in atoms:\n");
+    for(i=0; (i<nnodes); i++)
       fprintf(stderr,"%6d",maxatom[i]);
     fprintf(stderr,"\n");
   }
@@ -372,7 +372,7 @@ static void def_mnr(int nr,int mnr[])
 {
   int i;
 
-  for (i=0; (i<MAXPROC); i++) 
+  for (i=0; (i<MAXNODES); i++) 
     mnr[i]=0;
   mnr[0]=nr;
 }
@@ -575,14 +575,14 @@ void gen_sblocks(bool bVerbose,int natoms,t_idef *idef,t_block *sblock,
   sfree(g);
 }
 
-void split_top(bool bVerbose,int nprocs,t_topology *top,real *capacity)
+void split_top(bool bVerbose,int nnodes,t_topology *top,real *capacity)
 {
   int     j,k,mj,atom,maxatom;
   t_block sblock;
   int     *homeind;
   atom_id *sblinv;
   
-  if ((bVerbose) && (nprocs>1))
+  if ((bVerbose) && (nnodes>1))
     fprintf(stderr,"splitting topology...\n");
   
   for(j=0; (j<F_NRE); j++)  
@@ -592,16 +592,16 @@ void split_top(bool bVerbose,int nprocs,t_topology *top,real *capacity)
   for (j=0; j<ebNR; j++) 
     def_mnr(top->blocks[j].nr,top->blocks[j].multinr);
 
-  if (nprocs > 1) {
+  if (nnodes > 1) {
     /* Make a special shake block that includes settles */
     init_block(&sblock);
     gen_sblocks(bVerbose,top->atoms.nr,&top->idef,&sblock,TRUE);
 
-    split_blocks(bVerbose,nprocs,&(top->blocks[ebCGS]),&sblock,capacity);
+    split_blocks(bVerbose,nnodes,&(top->blocks[ebCGS]),&sblock,capacity);
     
     /* Now transform atom numbers to real inverted shake blocks */
     sblinv = make_invblock(&(top->blocks[ebSBLOCKS]),top->atoms.nr+1);
-    for(j=0; (j<MAXPROC); j++) {
+    for(j=0; (j<MAXNODES); j++) {
       atom = sblock.multinr[j];
       mj   = NO_ATID;
       for(k=(j == 0) ? 0 : sblock.multinr[j-1]; (k<atom); k++)
@@ -614,9 +614,9 @@ void split_top(bool bVerbose,int nprocs,t_topology *top,real *capacity)
     }
     sfree(sblinv);
     
-    homeind=home_index(nprocs,&(top->blocks[ebCGS]));
+    homeind=home_index(nnodes,&(top->blocks[ebCGS]));
     for(j=0; (j<F_NRE); j++)
-      split_force2(nprocs,homeind,&top->idef,&top->idef.il[j]);
+      split_force2(nnodes,homeind,&top->idef,&top->idef.il[j]);
     sfree(homeind);
     done_block(&sblock);
   }

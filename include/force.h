@@ -61,10 +61,8 @@ extern void pr_forcerec(FILE *log,t_forcerec *fr,t_commrec *cr);
 extern void init_forcerec(FILE       *log,     
 			  t_forcerec *fr,   
 			  t_inputrec *ir,   
-			  t_block    *mols,
+			  t_topology *top,
 			  t_commrec  *cr,
-			  t_block    *cgs,
-			  t_idef     *idef,
 			  t_mdatoms  *mdatoms,
 			  t_nsborder *nsb,
 			  matrix     box,
@@ -124,7 +122,7 @@ extern void force(FILE *log,
 /* Call all the force routines */
 
 /* Routine from fnbf.m4 */
-extern void do_fnbf(FILE *log,t_forcerec *fr,
+extern void do_fnbf(FILE *log,t_commrec *cr,t_forcerec *fr,
 		    rvec x[],rvec f[],t_mdatoms *md,
 		    real egnb[],real egcoul[],rvec box_size,
 		    t_nrnb *nrnb,real lambda,real *dvdlambda,

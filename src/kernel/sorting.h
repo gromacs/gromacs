@@ -54,9 +54,9 @@ extern void sort_bonds(t_topology *top);
  *    bond3: 21
  * so order in which the bonds will be sorted is bond2, bond1, bond3
  *
- * This routine is used to determine to which processor a bonds should be
+ * This routine is used to determine to which node a bonds should be
  * allocated. For the distribution of bonds it is necessary to keep all
- * the needed atoms when calculating a bonded force on one processor. In
+ * the needed atoms when calculating a bonded force on one node. In
  * this way we prevent communication overhead in bonded force calculations.
  *
  */

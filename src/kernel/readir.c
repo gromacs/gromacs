@@ -211,9 +211,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     sprintf(err_buf,"With coulombtype = %s rcoulomb must be >= rlist",
 	    eel_names[ir->coulombtype]);
     CHECK(ir->rlist > ir->rcoulomb);
-    sprintf(err_buf,"With coulombtype = %s rcoulomb must be >= rvdw",
-	    eel_names[ir->coulombtype]);
-    CHECK(ir->rvdw > ir->rcoulomb);
+
     if ((ir->coulombtype == eelRF) || (ir->coulombtype == eelGRF)) {
       /* reaction field (at the cut-off) */
       if (ir->epsilon_r == 1.0) {

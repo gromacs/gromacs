@@ -28,16 +28,29 @@
  */
 
 typedef struct {
-  int     il_code;              /* Code that determines the innerloop   */
-                                /* corresponding to codes in nrnb.h     */
-				/* Currently there are 19 different ones*/
-  int     nri,maxnri;           /* Current/max number of i particles	*/
-  int     nrj,maxnrj;		/* Current/max number of j particles	*/
-  int     *iinr;		/* The i-elements			*/
-  int     *gid;                 /* Index in energy arrays               */
-  int     *shift;               /* Shift vector index                   */
-  int     *jindex;              /* Index in jjnr                        */
-  int     *jjnr;		/* The j-atom list      	        */
+  int     il_code;             /* Code that determines the innerloop    */
+                               /* corresponding to codes in nrnb.h      */
+  int     nri,maxnri;          /* Current/max number of i particles	*/
+  int     nrj,maxnrj;	       /* Current/max number of j particles	*/
+  int     maxlen;              /* maxnr of j atoms for a single i atom 	*/
+  int     solvent;             /* type of solvent optimization          */
+  int     *iinr;	       /* The i-elements			*/
+  int     *gid;                /* Index in energy arrays                */
+  int     *shift;              /* Shift vector index                    */
+  int     *jindex;             /* Index in jjnr                         */
+  int     *jjnr;	       /* The j-atom list                       */
+  int     *nsatoms;            /* list with number of atoms for general */
+                               /* solvents. There are two entries for 	*/
+                               /* each molecule - first is total natoms */
+                               /* and second how many at the beginning 	*/
+                               /* have LJ interactions.                 */
+                               /* This is NOT used for water!           */
+#ifdef USE_THREADS
+  int      count;              /* counter to multithread the innerloops */
+  pthread_mutex_t *mtx;        /* mutex to lock the counter             */
+#else
+  int      pad1,*pad2;         /* padding to make size constant         */
+#endif
 } t_nblist;
 
 /* For atom I =  nblist->iinr[N] (0 <= N < nblist->nri) we define
