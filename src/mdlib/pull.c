@@ -146,39 +146,51 @@ static void do_start(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
 static void do_umbrella(t_pull *pull, rvec *x,rvec *f,matrix box, 
 			t_mdatoms *md) 
 {
-  int i,j,m,g;
+  int i,ii=0,j,m,g;
   real mi;
   rvec cm;    /* center of mass displacement of reference */
   rvec dr;    /* distance from com to potential center */
 
   /* loop over the groups that are being umbrella sampled */
   for (i=0;i<pull->pull.n;i++) {
-    
-    /* pull->dims selects which components (x,y,z) we want */
+
+    /* get distance between center of umbrella and current center of mass */
     rvec_sub(pull->pull.x_ref[i],pull->pull.x_unc[i],dr); 
+
     for(m=DIM-1; m>=0; m--) {
       if (dr[m] >  0.5*box[m][m]) rvec_dec(dr,box[m]);
       if (dr[m] < -0.5*box[m][m]) rvec_inc(dr,box[m]);
+      /* pull->dims selects which components (x,y,z) we want */
       dr[m] *= pull->dims[m];
     }
-    
 
-    /* f = um_width*x */
+    /* f = um_width*dx */
     svmul(pull->um_width,dr,pull->pull.f[i]);
+
+    if (pull->bVerbose) {   
+      fprintf(stderr,"Group %d - DR: %f %f %f\n",i,dr[0],dr[1],dr[2]); 
+      fprintf(stderr,"force: %f %f %f\n",pull->pull.f[i][0],pull->pull.f[i][1],
+	      pull->pull.f[i][2]);
+      fprintf(stderr,"curr pos: %f %f %f\n",pull->pull.x_unc[i][0],
+	      pull->pull.x_unc[i][1],pull->pull.x_unc[i][2]);
+      fprintf(stderr,"ref pos: %f %f %f\n",pull->pull.x_ref[i][0],
+	      pull->pull.x_ref[i][1],pull->pull.x_ref[i][2]);
+    }
 
     /* distribute the force over all atoms in the group */
     for (j=0;j<pull->pull.ngx[i];j++) 
+      ii=pull->pull.idx[i][j];
       for (m=0;m<DIM;m++) {
-	mi = md->massT[pull->pull.idx[i][j]];
-	f[pull->pull.idx[i][j]][m] += 
-	  mi*(pull->pull.f[i][m])/(pull->pull.tmass[i]);
+	mi = md->massT[ii];
+	f[ii][m] +=  mi*(pull->pull.f[i][m])/(pull->pull.tmass[i]);
       }
   }
   
   /* reset center of mass of the reference group to its starting value */
-  rvec_sub(pull->ref.x_unc[0],pull->ref.x_con[0],cm);
+  /*  rvec_sub(pull->ref.x_unc[0],pull->ref.x_con[0],cm);
   for (i=0;i<pull->ref.ngx[0];i++)
     rvec_sub(x[pull->ref.idx[0][i]],cm,x[pull->ref.idx[0][i]]);
+  */
 }
 
 /* this implements a constraint run like SHAKE does. */
@@ -650,6 +662,12 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top,
     
   case eUmbrella:
     if (!bShakeFirst) {
+      
+      /* get centers of mass for the pull groups, and put them in x_unc. Does 
+	 this work correctly with pbc? */
+      for (i=0;i<pull->pull.n;i++) 
+	(void)calc_com(x_s,pull->pull.ngx[i],pull->pull.idx[i],md,
+		       pull->pull.x_unc[i],box);
       do_umbrella(pull,x,f,box,md);
       print_umbrella(pull,step);
     }

@@ -56,7 +56,7 @@ static char *SRCID_pullio_c = "$Id$";
 void dump_conf(t_pull *pull,rvec x[],matrix box,t_topology *top, 
 	       int nout, real time) 
 {
-  char buf[128];
+  char buf[128],buf2[128];
   rvec tmp,tmp1,tmp2;
 
   sprintf(buf,"out_%d.gro",nout);
@@ -69,14 +69,14 @@ void dump_conf(t_pull *pull,rvec x[],matrix box,t_topology *top,
   if (pull->pull.n == 2) {
     rvec_sub(pull->pull.x_unc[0],pull->ref.x_unc[0],tmp1);
     rvec_sub(pull->pull.x_unc[1],pull->ref.x_unc[0],tmp2);
-    sprintf(buf,"grp1:%8.3f%8.3f%8.3f grp2:%8.3f%8.3f%8.3f t:%8.3f",
+    sprintf(buf2,"grp1:%8.3f%8.3f%8.3f grp2:%8.3f%8.3f%8.3f t:%8.3f",
 	    tmp1[0],tmp1[1],tmp1[2],tmp2[0],tmp2[1],tmp2[2],time);
   } else {
     rvec_sub(pull->pull.x_unc[0],pull->ref.x_unc[0],tmp1);
-    sprintf(buf,"grp1:%8.3f%8.3f%8.3f t:%8.3f",
+    sprintf(buf2,"grp1:%8.3f%8.3f%8.3f t:%8.3f",
 	    tmp1[XX],tmp1[YY],tmp1[ZZ],time);
   }
-  write_sto_conf(buf,buf,&top->atoms,x,NULL,box);  
+  write_sto_conf(buf,buf2,&top->atoms,x,NULL,box);  
 }
 
 void print_start(t_pull *pull, int step) 
@@ -154,14 +154,28 @@ void print_constraint(t_pull *pull, rvec *f, int step, matrix box, int niter)
 
 void print_umbrella(t_pull *pull, int step) 
 {
-  int i;
-  for (i=0;i<pull->pull.n;i++)
-    fprintf(pull->out,"=%d= %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f ", step,
-	    pull->pull.x_con[i][XX],pull->pull.x_con[i][YY],
-	    pull->pull.x_con[i][ZZ],
-	    pull->pull.f[i][XX],pull->pull.f[i][YY],
-	    pull->pull.f[i][ZZ]);
-  fprintf(pull->out,"\n");
+  int i,m;
+  if (pull->bVerbose) {
+    fprintf(pull->out,"%d ",step); 
+    for (i=0;i<pull->pull.n;i++) {
+      for (m=0;m<3;m++) {
+	if (pull->dims[m]) 
+	  fprintf(pull->out,"%e %e %e ",pull->pull.x_ref[i][m],
+		  pull->pull.x_unc[i][m], pull->pull.f[i][m]);
+      }
+    }
+    fprintf(pull->out,"\n"); 
+  } else {
+    /*  fprintf(pull->out,"%d ",step); */
+    for (i=0;i<pull->pull.n;i++) {
+      for (m=0;m<3;m++) {
+	if (pull->dims[m]) 
+	  fprintf(pull->out,"%e %e ",
+		  pull->pull.x_unc[i][m], pull->pull.f[i][m]);
+      }
+    }
+    fprintf(pull->out,"\n"); 
+  }
 }
 
 void read_pullparams(t_pull *pull, char *infile, char *outfile) 
@@ -170,7 +184,8 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   int ninp,i;
   char *tmp;           /* for the input parsing macros */
   char dummy[STRLEN];  /* idem */
-  char grp1buf[STRLEN], grp2buf[STRLEN], grp3buf[STRLEN], 
+  char grp1buf[STRLEN], grp2buf[STRLEN], grp3buf[STRLEN], grp4buf[STRLEN],
+       grp5buf[STRLEN],
        bf1[STRLEN], bf2[STRLEN], dir[STRLEN], 
        refdir1[STRLEN],refdir2[STRLEN];
 
@@ -206,8 +221,10 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   CTYPE("Groups to be pulled");
   STYPE("group_1",          grp1buf, "");
   STYPE("group_2",          grp2buf, "");
+  STYPE("group_3",          grp3buf, "");
+  STYPE("group_4",          grp4buf, "");
   CTYPE("The group for the reaction force.");
-  STYPE("reference_group",  grp3buf, "");
+  STYPE("reference_group",  grp5buf, "");
   CTYPE("Ref. type: com, com_t0, dynamic, dynamic_t0");
   EETYPE("reftype",         tmpref, reftypes, &nerror, TRUE);
   CTYPE("Use running average for reflag steps for com calculation");
@@ -273,18 +290,29 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   pull->reftype = (t_reftype)tmpref;
 
   /* sort out the groups */
-  fprintf(stderr,"Groups: %s %s %s\n",grp1buf,grp2buf,grp3buf);
-  if (!strcmp(grp1buf,"") || !strcmp(grp3buf,"")) 
-    fatal_error(0,"Need to specify at least group_1 and reference_group");
-  pull->pull.n = !strcmp(grp2buf,"") ? 1 : 2;
+  fprintf(stderr,"Groups: %s %s %s %s %s\n",
+	  grp1buf,grp2buf,grp3buf,grp4buf,grp4buf);
 
+  if (!strcmp(grp1buf,"") || !strcmp(grp5buf,"")) 
+    fatal_error(0,"Need to specify at least group_1 and reference_group");
+  pull->pull.n = 1;
+  if (strcmp(grp2buf,"")) 
+    pull->pull.n += 1;
+  if (strcmp(grp3buf,"")) 
+    pull->pull.n += 1;
+  if (strcmp(grp4buf,""))
+    pull->pull.n += 1;
+     
+  fprintf(stderr,"Using %d pull groups\n",pull->pull.n);
+     
   /* initialize the names of the groups */
   snew(pull->pull.grps,pull->pull.n);
   snew(pull->ref.grps,1);
   pull->pull.grps[0] = (char *)strdup(grp1buf);
-  if (pull->pull.n == 2)
-    pull->pull.grps[1] = (char *)strdup(grp2buf);
-  pull->ref.grps[0]  = (char *)strdup(grp3buf);
+  pull->pull.grps[1] = (char *)strdup(grp2buf);
+  pull->pull.grps[2] = (char *)strdup(grp3buf);
+  pull->pull.grps[3] = (char *)strdup(grp4buf);
+  pull->ref.grps[0]  = (char *)strdup(grp5buf);
 
   if (pull->runtype == eStart) {
     snew(pull->pull.xtarget,pull->pull.n);
