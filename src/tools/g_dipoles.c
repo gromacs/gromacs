@@ -823,7 +823,7 @@ int main(int argc,char *argv[])
     { efTPX, NULL, NULL,      ffREAD },
     { efNDX, NULL, NULL,      ffOPTRD },
     { efXVG, "-o", "Mtot",    ffWRITE },
-    { efXVG, "-e", "epsilon", ffWRITE },
+    { efXVG, "-eps","epsilon",ffWRITE },
     { efXVG, "-a", "aver",    ffWRITE },
     { efXVG, "-d", "dipdist", ffWRITE },
     { efXVG, "-c", "dipcorr", ffOPTWR },
@@ -871,7 +871,7 @@ int main(int argc,char *argv[])
   }
   bCorr   = (bAverCorr || opt2bSet("-c",NFILE,fnm));
   do_dip(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
-	 opt2fn("-o",NFILE,fnm),opt2fn("-e",NFILE,fnm),
+	 opt2fn("-o",NFILE,fnm),opt2fn("-eps",NFILE,fnm),
 	 opt2fn("-a",NFILE,fnm),opt2fn("-d",NFILE,fnm),
 	 bAverCorr,bCorr,
 	 opt2fn("-c",NFILE,fnm),
@@ -881,7 +881,7 @@ int main(int argc,char *argv[])
 	 gnx,grpindex,mu_max,mu_aver,epsilonRF,temp,nFA,skip);
   
   do_view(opt2fn("-o",NFILE,fnm),"-autoscale xy -nxy");
-  do_view(opt2fn("-e",NFILE,fnm),"-autoscale xy -nxy");
+  do_view(opt2fn("-eps",NFILE,fnm),"-autoscale xy -nxy");
   do_view(opt2fn("-a",NFILE,fnm),"-autoscale xy -nxy");
   do_view(opt2fn("-d",NFILE,fnm),"-autoscale xy");
   do_view(opt2fn("-c",NFILE,fnm),"-autoscale xy");
