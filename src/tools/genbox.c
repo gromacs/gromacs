@@ -296,8 +296,7 @@ char *insert_mols(char *mol_insrt,int nmol_insrt,int ntry,int seed,
     offset_x[YY]=box[YY][YY]*rando(&seed);
     offset_x[ZZ]=box[ZZ][ZZ]*rando(&seed);
     gen_box(0,atoms_insrt.nr,x_n,box_insrt,offset_x,TRUE);
-    if ((in_box(box,x_n[0]) != 0) || 
-	(in_box(box,x_n[atoms_insrt.nr-1])!=0))
+    if (!in_box(box,x_n[0]) || !in_box(box,x_n[atoms_insrt.nr-1]))
       continue;
     onr=atoms->nr;
     
