@@ -274,8 +274,8 @@ t_border *mk_border(bool bVerbose,int natom,atom_id *invcgs,
     else if (ic < nc)
       ic++;
     else
-      fatal_error(0,"Can't happen is=%d, ic=%d (%s, %d)",
-		  is,ic,__FILE__,__LINE__);
+      is++;/*fatal_error(0,"Can't happen is=%d, ic=%d (%s, %d)",
+	     is,ic,__FILE__,__LINE__);*/
   }
   fprintf(stderr,"There are %d total borders\n",nbor);
 
@@ -570,7 +570,8 @@ void split_top(bool bVerbose,int nprocs,t_topology *top)
 {
   int     j,k,mj,atom,maxatom;
   t_block sblock;
-  int     *homeind,*sblinv;
+  int     *homeind;
+  atom_id *sblinv;
   
   if ((bVerbose) && (nprocs>1))
     fprintf(stderr,"splitting topology...\n");
