@@ -36,6 +36,8 @@ typedef struct
   int  flags;     /* flags for read_first/next_frame  */
   int  not_ok;    /* integrity flags (see statutil.h  */
   int  natoms;    /* number of atoms (atoms, x, v, f) */
+  real t0;        /* time of the first frame, needed  *
+		   * for skipping frames with -dt     */
   bool bTitle;
   char *title;    /* title of the frame               */
   bool bStep;

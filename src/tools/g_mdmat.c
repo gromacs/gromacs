@@ -146,16 +146,14 @@ int main(int argc,char *argv[])
     "residues over the whole trajectory can be made.",
     "The output can be processed with xpm2ps to make a PostScript (tm) plot."
   };
-  static real truncate=1.5,dt=0.0;
+  static real truncate=1.5;
   static bool bAtom=FALSE;
   static int  nlevels=40;
   t_pargs pa[] = { 
     { "-t",   FALSE, etREAL, {&truncate},
       "trunc distance" },
     { "-nlevels",   FALSE, etINT,  {&nlevels},
-      "Discretize distance in # levels" },
-    { "-dt",  FALSE, etREAL, {&dt},
-      "Only analyze a frame each dt picoseconds" }
+      "Discretize distance in # levels" }
   };
   t_filenm   fnm[] = {
     { efTRX, "-f",  NULL, ffREAD },
@@ -175,10 +173,10 @@ int main(int argc,char *argv[])
   char       *grpname;
   int        *rndx,*natm;
   
-  int        i,j,status,nres,natoms,nframes,it,teller,trxnat;
+  int        i,j,status,nres,natoms,nframes,it,trxnat;
   int        nr0;
   bool       bCalcN,bFrames;
-  real       t,t0,ratio;
+  real       t,ratio;
   char       title[256],label[234];
   t_rgb      rlo,rhi;
   rvec       *x;
@@ -198,7 +196,6 @@ int main(int argc,char *argv[])
   bFrames= opt2bSet("-frames",NFILE,fnm);
   if ( bCalcN ) 
     fprintf(stderr,"Will calculate number of different contacts\n");
-  fprintf(stderr,"Time interval between frames is %g ps\n",dt);
     
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,FALSE);
   
@@ -241,33 +238,27 @@ int main(int argc,char *argv[])
   
   trxnat=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   
-  teller=0;
   nframes=0;
   
   rlo.r=1.0, rlo.g=1.0, rlo.b=1.0;
   rhi.r=0.0, rhi.g=0.0, rhi.b=0.0;
   if (bFrames)
     out=opt2FILE("-frames",NFILE,fnm,"w");
-  t0=t;
   do {
-    teller++;
     rm_pbc(&top.idef,trxnat,box,x,x);
-    if (t >= t0) {
-      nframes++;
-      calc_mat(nres,natoms,rndx,x,index,truncate,mdmat,nmat);
-      for (i=0; (i<nres); i++)
-	for (j=0; (j<natoms); j++)
-	  if (nmat[i][j]) 
-	    totnmat[i][j]++;
-      for (i=0; (i<nres); i++)
-	for (j=0; (j<nres); j++)
-	  totmdmat[i][j] += mdmat[i][j];
-      if (bFrames) {
-	sprintf(label,"t=%.0f ps",t);
-	write_xpm(out,label,"Distance (nm)","Residue Index","Residue Index",
-		  nres,nres,resnr,resnr,mdmat,0,truncate,rlo,rhi,&nlevels);
-      }
-      t0+=dt;
+    nframes++;
+    calc_mat(nres,natoms,rndx,x,index,truncate,mdmat,nmat);
+    for (i=0; (i<nres); i++)
+      for (j=0; (j<natoms); j++)
+	if (nmat[i][j]) 
+	  totnmat[i][j]++;
+    for (i=0; (i<nres); i++)
+      for (j=0; (j<nres); j++)
+	totmdmat[i][j] += mdmat[i][j];
+    if (bFrames) {
+      sprintf(label,"t=%.0f ps",t);
+      write_xpm(out,label,"Distance (nm)","Residue Index","Residue Index",
+		nres,nres,resnr,resnr,mdmat,0,truncate,rlo,rhi,&nlevels);
     }
   } while (read_next_x(status,&t,trxnat,x,box));
   fprintf(stderr,"\n");
@@ -275,7 +266,7 @@ int main(int argc,char *argv[])
   if (bFrames)
     fclose(out);
   
-  fprintf(stderr,"Processed %d frames out of %d\n",nframes,teller);
+  fprintf(stderr,"Processed %d frames\n",nframes);
     
   for (i=0; (i<nres); i++)
     for (j=0; (j<nres); j++)

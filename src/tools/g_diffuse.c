@@ -257,7 +257,7 @@ int main(int argc,char *argv[])
       "Number of frames in your trajectory" },
     { "-nstart",  FALSE, etINT, &nstart,
       "Number of starting points" },
-    { "-dt",      FALSE, etREAL, &dt,
+    { "-tstart",  FALSE, etREAL, &dt,
       "Time between starting points" },
     { "-beginfit",FALSE, etREAL, &bfit,
       "Begin fitting to a straight line at this time (ps)" },

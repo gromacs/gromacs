@@ -57,7 +57,7 @@ static char *SRCID_statutil_c = "$Id$";
  ******************************************************************/
 
 /* Globals for trajectory input */
-real         tbegin=-1.0,tend=-1.0;
+real         tbegin=-1.0,tend=-1.0,tdelta=-1.0;
 static bool  bView=FALSE;
 static unsigned long uFlags=0;
 static char  *program=NULL;
@@ -92,11 +92,31 @@ char *Program(void)
  *
  ****************************************************************/
 
-int check_times(real t) 
+bool bRmod(double a,double b)
+{
+  int iq;
+#ifdef DOUBLE
+  double tol = 1e-12;
+#else
+  double tol = 1e-6;
+#endif
+
+  iq = ((1.0+tol)*a)/b;
+  
+  if (fabs(a-b*iq) <= tol*a)
+    return TRUE;
+  else
+    return FALSE;
+}
+
+int check_times(real t,real t0) 
 {
   if ((((tbegin >= 0.0) && (t >= tbegin)) || (tbegin == -1.0)) &&
       (((tend   >= 0.0) && (t <= tend))   || (tend   == -1.0))) {
-    return 0;
+    if (tdelta > 0 && !bRmod(t-t0,tdelta))
+      return -1;
+    else
+      return 0;
   }
   else if ((tend != -1.0) && (t>=tend))
     return 1;
@@ -309,6 +329,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
 		       "First frame (ps) to read from trajectory" };
   t_pargs end_pa    = { "-e",    FALSE, etREAL, {&tend},        
 		       "Last frame (ps) to read from trajectory" };
+  t_pargs dt_pa     = { "-dt",    FALSE, etREAL, {&tdelta},        
+		       "Only use frame when t MOD dt = first time" };
   t_pargs view_pa   = { "-w",    FALSE, etBOOL, {&bView},     
 		       "View output using xvgr or ghostview" };
   
@@ -425,6 +447,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
     npall = add_parg(npall,&(all_pa),&begin_pa);
   if (FF(PCA_CAN_END))
     npall = add_parg(npall,&(all_pa),&end_pa);
+  if (FF(PCA_CAN_DT))
+    npall = add_parg(npall,&(all_pa),&dt_pa);
   if (FF(PCA_CAN_VIEW))
     npall = add_parg(npall,&(all_pa),&view_pa);
 

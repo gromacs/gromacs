@@ -437,7 +437,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
     do {
       bCont = read_mu_from_enx(fmu,Vol,iMu,mu_t,&volume,&t,teller,nre); 
       if (bCont) {  
-	timecheck=check_times(t);
+	timecheck=check_times(t,t);
 	if (timecheck < 0)
 	  teller++;
 	if ((teller % 10) == 0)

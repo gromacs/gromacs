@@ -86,9 +86,14 @@ void close_trx(int status);
 int open_trx(char *outfile,char *filemode);
 /* Open a TRX file and return the file number */
 
-extern int check_times(real t);
+extern bool bRmod(double a,double b);
+/* Returns TRUE when a MOD b = 0, using a margin which is slightly
+ * larger than the float/double precision.
+ */
+
+extern int check_times(real t,real t0);
 /* This routine checkes if the read-in time is correct or not;
- * returns -1 if t<tbegin,
+ * returns -1 if t<tbegin or t MOD dt = t0,
  *         0  if tbegin <= t <=tend,
  *         1  if t>tend
  */
@@ -164,7 +169,8 @@ extern bool bDoView(void);
 /* add option -w to view output files (must be implemented in program) */
 #define PCA_CAN_BEGIN      (1<<6)
 #define PCA_CAN_END        (1<<7)
-#define PCA_CAN_TIME       (PCA_CAN_BEGIN | PCA_CAN_END)
+#define PCA_CAN_DT         (1<<14)
+#define PCA_CAN_TIME       (PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_DT)
 /* adds options -b and -e for begin and end time for reading trajectories */
 #define PCA_KEEP_ARGS      (1<<8)
 /* keep parsed args in argv (doesn't make sense without NOEXIT_ON_ARGS) */

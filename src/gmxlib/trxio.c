@@ -50,6 +50,12 @@ static int frame=-666;
 #define SKIP 10
 #define INITCOUNT frame=-1
 
+/* a frame for read_first/next_x, can only read ONE trajectory
+ * at a time using these routines.
+ * read_first/next_frame does not have this restriction.
+ */
+static t_trxframe xframe;
+
 int nframes_read(void)
 {
   return frame;
@@ -60,11 +66,11 @@ static void printcount_(char *l,real t)
   fprintf(stderr,"\r%-14s %6d time %8.3f   ",l,frame,t);
 }
 
-static void printcount(real t)
+static void printcount(real t,real t0)
 {
   frame++;
   if (frame % SKIP == 0 || frame < SKIP)
-    printcount_(check_times(t) < 0 ? "Skipping frame": "Reading frame",t);
+    printcount_(check_times(t,t0) < 0 ? "Skipping frame": "Reading frame",t);
 }
 
 static void printlast(real t)
@@ -105,6 +111,7 @@ void clear_trxframe(t_trxframe *fr,bool bFirst)
   if (bFirst) {
     fr->flags  = 0;
     fr->natoms = -1;
+    fr->t0     = 0;
     fr->title  = NULL;
     fr->step   = 0;
     fr->time   = 0;
@@ -440,7 +447,7 @@ static bool xyz_next_x(FILE *status, real *t, int natoms, rvec x[], matrix box)
   while ((tbegin >= 0) && (*t < tbegin)) {
     if (!do_read_xyz(status,natoms,x,box))
       return FALSE;
-    printcount(*t);
+    printcount(*t,*t);
     *t+=DT;
     pt=*t;
   }
@@ -449,7 +456,7 @@ static bool xyz_next_x(FILE *status, real *t, int natoms, rvec x[], matrix box)
       printlast(*t);
       return FALSE;
     }
-    printcount(*t);
+    printcount(*t,*t);
     pt=*t;
     *t+=DT;
     return TRUE;
@@ -590,14 +597,14 @@ bool read_next_frame(int status,t_trxframe *fr)
 		      (fr->flags & TRX_NEED_F && !fr->bF));
       bSkip = FALSE;
       if (!bMissingData) {
-	ct=check_times(fr->time);
+	ct=check_times(fr->time,fr->t0);
 	if (ct == 0 || (fr->flags & TRX_DONT_SKIP && ct<0)) {
-	  printcount(fr->time);
+	  printcount(fr->time,fr->t0);
 	  init_pbc(fr->box,FALSE);  
 	} else if (ct > 0)
 	  bRet = FALSE;
 	else {
-	  printcount(fr->time);
+	  printcount(fr->time,fr->t0);
 	  bSkip = TRUE;
 	}
       }
@@ -649,7 +656,7 @@ int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
       fr->bTime = TRUE;
       fr->bX    = TRUE;
       fr->bBox  = TRUE;
-      printcount(fr->time);
+      printcount(fr->time,fr->time);
     }
     bFirst = FALSE;
     break;
@@ -661,18 +668,18 @@ int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
     fr->bTime = TRUE;
     fr->bX    = TRUE;
     fr->bBox  = TRUE;
-    printcount(fr->time);
+    printcount(fr->time,fr->time);
     bFirst = FALSE;
     break;
   case efPDB:
     pdb_first_x(fio_getfp(fp),fr);
     if (fr->natoms)
-      printcount(fr->time);
+      printcount(fr->time,fr->time);
     bFirst = FALSE;
     break;
   case efGRO:
     if (gro_first_x_or_v(fio_getfp(fp),fr))
-      printcount(fr->time);
+      printcount(fr->time,fr->time);
     bFirst = FALSE;
     break;
   default:
@@ -680,11 +687,13 @@ int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
     break;
   }
   
-  if (bFirst || (!(fr->flags & TRX_DONT_SKIP) && (check_times(fr->time) < 0)))
+  if (bFirst || 
+      (!(fr->flags & TRX_DONT_SKIP) && (check_times(fr->time,fr->time) < 0)))
     /* Read a frame when no frame was read or the first was skipped */
     if (!read_next_frame(*status,fr))
       return FALSE;
-
+  fr->t0 = fr->time;
+  
   return (fr->natoms > 0);
 }
 
@@ -693,31 +702,24 @@ int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
 int read_first_x(int *status,char *fn,
 		 real *t,rvec **x,matrix box)
 {
-  t_trxframe fr;
-
-  read_first_frame(status,fn,&fr,TRX_NEED_X);
-  *t = fr.time;
-  *x = fr.x;
-  copy_mat(fr.box,box);
+  read_first_frame(status,fn,&xframe,TRX_NEED_X);
+  *t = xframe.time;
+  *x = xframe.x;
+  copy_mat(xframe.box,box);
   
-  return fr.natoms;
+  return xframe.natoms;
 }
 
 bool read_next_x(int status,real *t, int natoms, rvec x[], matrix box)
 {
-  static t_trxframe fr;
   int step,ct;
   real prec,pt;
   bool bOK,bRet;
 
-  clear_trxframe(&fr,TRUE);
-  fr.flags = TRX_NEED_X;
-  fr.natoms = natoms;
-  fr.time = *t;
-  fr.x = x;
-  bRet = read_next_frame(status,&fr);
-  *t = fr.time;
-  copy_mat(fr.box,box);
+  xframe.x = x;
+  bRet = read_next_frame(status,&xframe);
+  *t = xframe.time;
+  copy_mat(xframe.box,box);
 
   return bRet;
 }

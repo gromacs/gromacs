@@ -148,19 +148,6 @@ void do_trunc(char *fn, real t0)
 }
 #endif
 
-bool bRmod(double a,double b)
-{
-  int iq;
-  double tol = 1e-6;
-  
-  iq = ((1.0+tol)*a)/b;
-  
-  if (fabs(a-b*iq) <= tol*a)
-    return TRUE;
-  else
-    return FALSE;
-}
-
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -343,7 +330,7 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_TIME,TRUE,
+  parse_common_args(&argc,argv,PCA_CAN_BEGIN | PCA_CAN_END,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    0,NULL);
 

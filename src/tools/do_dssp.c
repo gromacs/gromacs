@@ -51,7 +51,7 @@ extern FILE *tapein, *tapeout;
 #endif
 		       
 static void strip_dssp(char *dsspfile,int nres,
-		       bool bPhobres[],real t,real dt,
+		       bool bPhobres[],real t,
 		       real *acc,FILE *fTArea,
 		       t_matrix *mat,int average_area[])
 {
@@ -303,7 +303,7 @@ int main(int argc,char *argv[])
     "do_dssp ", 
 #endif
     "reads a trajectory file and computes the secondary structure for",
-    "each time frame (or every [TT]-dt[tt] ps) by",
+    "each time frame ",
 #ifdef MY_DSSP
     "using the dssp program.[PAR]",
 #else
@@ -331,14 +331,11 @@ int main(int argc,char *argv[])
     "these two programs can be used to analyze dihedral properties as a",
     "function of secondary structure type."
   };
-  static real dt=0.0;
   static bool bVerbose;
   static char *ss_string="HEBT"; 
   t_pargs pa[] = {
     { "-v",  FALSE, etBOOL, {&bVerbose},
       "HIDDENGenerate miles of useless information" },
-    { "-dt", FALSE, etREAL, {&dt},
-      "Only analyze a frame each dt picoseconds" },
     { "-sss", FALSE, etSTR, {&ss_string},
       "Secondary structures for structure count"}
   };
@@ -361,7 +358,7 @@ int main(int argc,char *argv[])
   t_matrix   mat;
   int        nres,nr0,naccr;
   bool       *bPhbres,bDoAccSurf;
-  real       t,nt;
+  real       t;
   int        i,j,natoms,nframe=0;
   matrix     box;
   int        gnx;
@@ -465,40 +462,36 @@ int main(int argc,char *argv[])
   snew(norm_av_area,atoms->nres+10);
   accr=NULL;
   naccr=0;
-  nt=t;
   do {
-    if (t >= nt) {
-      if (nframe>=naccr) {
-	naccr+=10;
-	srenew(accr,naccr);
-	for(i=naccr-10; i<naccr; i++)
-	  snew(accr[i],atoms->nres);
-      }
-      rm_pbc(&(top.idef),natoms,box,x,x);
-#ifndef MY_DSSP
-      tapein=ffopen(pdbfile,"w");
-#endif
-      hwrite_pdb_conf_indexed(tapein,NULL,atoms,x,box,gnx,index);
-#ifdef MY_DSSP
-      rewind(tapein);
-      dssp_main(bDoAccSurf,bVerbose);
-      rewind(tapein);
-      rewind(tapeout);
-#else
-      fclose(tapein);
-      system(dssp);
-#endif
-      strip_dssp(tmpfile,nres,bPhbres,t,dt,
-		 accr[nframe],fTArea,&mat,average_area);
-#ifdef MY_DSSP
-      rewind(tapeout);
-#else
-      remove(tmpfile);
-      remove(pdbfile);
-#endif
-      nt+=dt;
-      nframe++;
+    if (nframe>=naccr) {
+      naccr+=10;
+      srenew(accr,naccr);
+      for(i=naccr-10; i<naccr; i++)
+	snew(accr[i],atoms->nres);
     }
+    rm_pbc(&(top.idef),natoms,box,x,x);
+#ifndef MY_DSSP
+    tapein=ffopen(pdbfile,"w");
+#endif
+    hwrite_pdb_conf_indexed(tapein,NULL,atoms,x,box,gnx,index);
+#ifdef MY_DSSP
+    rewind(tapein);
+    dssp_main(bDoAccSurf,bVerbose);
+    rewind(tapein);
+    rewind(tapeout);
+#else
+    fclose(tapein);
+    system(dssp);
+#endif
+    strip_dssp(tmpfile,nres,bPhbres,t,
+	       accr[nframe],fTArea,&mat,average_area);
+#ifdef MY_DSSP
+    rewind(tapeout);
+#else
+    remove(tmpfile);
+    remove(pdbfile);
+#endif
+    nframe++;
   } while(read_next_x(status,&t,natoms,x,box));
   fprintf(stderr,"\n");
   close_trj(status);

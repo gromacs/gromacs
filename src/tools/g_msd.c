@@ -591,7 +591,7 @@ int main(int argc,char *argv[])
       "Mass weighted MSD" },
     { "-nrestart",FALSE, etINT,  {&nrestart},
       "Number of restarting points in trajectory" },
-    { "-dt",      FALSE, etREAL, {&dt},
+    { "-trestart",      FALSE, etREAL, {&dt},
       "Time between restarting points in trajectory (only with -nrestart > 1)" }
   };
   static char *bugs[] = {
