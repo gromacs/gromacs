@@ -223,7 +223,7 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
   static int dihp[2][2] = { { 1,2 }, { 0,3 } };
   t_params *bt;
   int      i,j,f,nral,nrfp;
-  bool     bDih;
+  bool     bDih,bSwapParity;
   
   bt=&(plist[ftype]);
   
@@ -280,13 +280,14 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
   
   /* print bondtypes */
   for (i=0; (i<bt->nr); i++) {
+    bSwapParity = (bt->param[i].C0==NOTSET) && (bt->param[i].C1==-1);
     if (!bDih)
       for (j=0; (j<nral); j++)
 	fprintf (out,"%5s ",*(at->atomname[bt->param[i].a[j]]));
     else 
       for(j=0; (j<2); j++)
 	fprintf (out,"%5s ",*(at->atomname[bt->param[i].a[dihp[f][j]]]));
-    fprintf (out,"%5d ",f+1);
+    fprintf (out,"%5d ", bSwapParity ? -f-1 : f+1);
     for (j=0; (j<nrfp && (bConsts || (bt->param[i].c[j] != NOTSET))); j++)
       fprintf (out,"%13.6e ",bt->param[i].c[j]);
     
@@ -345,31 +346,29 @@ void print_excl(FILE *out, t_block *excl)
 void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,int *cgnr)
 {
   int  i;
-  int  itype,nrdum;
+  int  itype;
   char *as;
   real qtot;
   
   as=dir2str(d_atoms);
   fprintf(out,"[ %s ]\n",as);
-  fprintf(out,"; %4s  %6s  %6s  %6s  %6s  %6s  %12s  %12s  %6s  %12s  %12s\n",
-	  "nr","type","resnr","residu","atom","cgnr","charge","mass","typeB","chargeB","massB");
+  fprintf(out,"; %4s %6s %6s %7s%6s %6s %12s %12s %6s %12s %12s\n",
+	  "nr","type","resnr","residue","atom","cgnr","charge","mass","typeB","chargeB","massB");
     
-  /* A little shortcut (at, nrdum) */
-  nrdum = at->nr;
   qtot  = 0;
   
   if (debug)
     fprintf(debug,"This molecule has %d atoms and %d residues\n",
-	    nrdum,at->nres);
+	    at->nr,at->nres);
   
   if (at->nres) {
     /* if the information is present... */
-    for (i=0; (i < nrdum); i++) {
+    for (i=0; (i < at->nr); i++) {
       itype=at->atom[i].type;
       if ((itype < 0) || (itype > atype->nr))
 	fatal_error(0,"itype = %d, i= %d in print_atoms",itype,i);
 	
-      fprintf(out,"%6d  %6s  %6d  %6s  %6s  %6d  %12g  %12g",
+      fprintf(out,"%6d %6s %6d %6s %6s %6d %12g %12g",
 	      i+1,*(atype->atomname[itype]),
 	      at->atom[i].resnr+1,  
 	      *(at->resname[at->atom[i].resnr]),
@@ -388,8 +387,8 @@ void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,int *cgnr)
   fflush(out);
 }
 
-void print_bonds(FILE *out,int natoms,directive d,
-		 int ftype,t_params plist[],bool bConsts)
+void print_bondeds(FILE *out,int natoms,directive d,
+		   int ftype,t_params plist[],bool bConsts)
 {
   t_symtab   stab;
   t_atomtype atype;
