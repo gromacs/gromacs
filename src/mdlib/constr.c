@@ -252,6 +252,7 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
   static real      *bllen,*blc,*blcc,*blm,*tmp1,*tmp2,*tmp3,*lincslam,
                    *bllen0,*ddist;
   static int       nc;
+  static bool      bItEqOrder;
 
   char             buf[STRLEN];
   int              i,nit,warn,p_imax,error;
@@ -265,6 +266,7 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 	       &r,&bla1,&bla2,&blnr,&blbnb,
 	       &bllen,&blc,&blcc,&blm,&tmp1,&tmp2,&tmp3,&lincslam,
 	       &bllen0,&ddist);
+    bItEqOrder = (getenv("GMX_ACCURATE_LINCS") != NULL);
   } else {
     if (nc == 0)
       return;
@@ -280,7 +282,7 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
     if (do_per_step(step,ir->nstlog))
       cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
 
-    if ((ir->eI == eiSteep) || (ir->eI == eiCG))
+    if ((ir->eI == eiSteep) || (ir->eI == eiCG) || bItEqOrder)
       /* Use more iterations when doing energy minimization, *
        * because we need very accurate positions and forces. */
       nit = ir->nProjOrder;
