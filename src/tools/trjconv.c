@@ -290,7 +290,7 @@ int main(int argc,char *argv[])
       "make sure all atoms are inside box." },
     { "-pbc", FALSE,  etBOOL, &bPBC,
       "make sure molecules are not broken into parts in output." },
-    { "-c", FALSE,  etBOOL, &bCenter,
+    { "-center", FALSE,  etBOOL, &bCenter,
       "center atoms in box." },
     { "-xshift", FALSE, etREAL, &xshift,
       "all coordinates will be shifted by framenr*xshift" },
