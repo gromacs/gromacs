@@ -376,7 +376,7 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("Max number of iterations in relax_shells");
   ITYPE ("niter",       ir->niter,      20);
   CTYPE ("Step size (1/ps^2) for minimization of flexible constraints");
-  ITYPE ("fcstep",      ir->fc_stepsize, 0);
+  RTYPE ("fcstep",      ir->fc_stepsize, 0);
   CTYPE ("Frequency of steepest descents steps when doing CG");
   ITYPE ("nstcgsteep",	ir->nstcgsteep,	1000);
   ITYPE ("nbfgscorr",   ir->nbfgscorr,  10); 
