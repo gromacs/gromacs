@@ -610,11 +610,7 @@ char *opt2fn(char *opt,int nfile,t_filenm fnm[])
   
   for(i=0; (i<nfile); i++)
     if (strcmp(opt,fnm[i].opt)==0) {
-      if (!IS_OPT(fnm[i]) || IS_SET(fnm[i])) {
-	return fnm[i].fns[0];
-      }
-      else
-	return NULL;
+      return fnm[i].fns[0];
     }
 
   fprintf(stderr,"No option %s\n",opt);
@@ -628,12 +624,8 @@ int opt2fns(char **fns[], char *opt,int nfile,t_filenm fnm[])
   
   for(i=0; (i<nfile); i++)
     if (strcmp(opt,fnm[i].opt)==0) {
-      if (!IS_OPT(fnm[i]) || IS_SET(fnm[i])) {
-	*fns = fnm[i].fns;
-	return fnm[i].nfiles;
-      }
-      else
-	return 0;
+      *fns = fnm[i].fns;
+      return fnm[i].nfiles;
     }
   
   fprintf(stderr,"No option %s\n",opt);
