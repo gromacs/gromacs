@@ -300,7 +300,7 @@ int main(int argc, char *argv[])
     "[TT]truncoct[tt] is a truncated octahedron, which is a special case of",
     "a triclinic box.",
     "The size of the truncated octahedron is the shortest distance between",
-    "two opposite hexagons. The volume of a truncated octahedron is 3/4 of",
+    "two opposite hexagons. The volume of a truncated octahedron is 0.77 of",
     "that of a cubic box of the same size. Option [TT]-box[tt] requires only",
     "one value for a cubic box or a truncated octahedron.",
     "With [TT]-d[tt] and [TT]rect[tt] the size of the system in the x, y",
@@ -518,10 +518,10 @@ int main(int argc, char *argv[])
       else {
 	box[XX][XX] = d;
 	box[YY][XX] = d/3;
-	box[YY][YY] = d*sqrt(2)*3/4;
-	box[ZZ][XX] = -d*sqrt(6)/6;
-	box[ZZ][YY] = d*sqrt(2)*3/8;
-	box[ZZ][ZZ] = d*sqrt(2)/2;
+	box[YY][YY] = d*sqrt(2)*2/3;
+	box[ZZ][XX] = -d/3;
+	box[ZZ][YY] = d*sqrt(2)/3;
+	box[ZZ][ZZ] = d*sqrt(6)/3;
       }
      break;
     } 
