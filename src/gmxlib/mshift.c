@@ -94,7 +94,8 @@ static void add_gbond(t_graph *g,t_iatom ia[],int np)
   }
 }
 
-static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,bool bAll)
+static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,
+		      int natoms,bool bAll)
 {
   t_iatom *ia;
   t_iatom tp;
@@ -107,7 +108,8 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,bool bAll)
     tp=ftype[ia[0]];
     np=interaction_function[tp].nratoms;
 
-    if (interaction_function[tp].flags & (IF_BOND | IF_SHAKE | IF_DUMMY)) {
+    if ((ia[1] < natoms) &&
+	(interaction_function[tp].flags & (IF_BOND | IF_SHAKE | IF_DUMMY))) {
       if (interaction_function[tp].flags & IF_DUMMY)
 	/* Bond a dummy only to the first constructing atom */
 	nbonded = 2;
@@ -115,8 +117,7 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,bool bAll)
 	nbonded = np;
       if (bAll) {
 	add_gbond(g,&(ia[1]),nbonded);
-      }
-      else {
+      } else {
 	/* Check whether all atoms are bonded now! */
 	for(j=0; (j<np); j++)
 	  if (g->nedge[ia[1+j]-g->start] == 0)
@@ -173,8 +174,7 @@ static void calc_1se(t_graph *g,t_ilist *il,t_functype ftype[],
 	g->start     = min(g->start,iaa);
 	g->end       = max(g->end,iaa+2);
       }
-    }
-    else {
+    } else {
       if (interaction_function[tp].flags & IF_DUMMY)
 	/* Bond a dummy only to the first constructing atom */
 	nbonded = 2;
@@ -185,12 +185,11 @@ static void calc_1se(t_graph *g,t_ilist *il,t_functype ftype[],
 	if (iaa<natoms) {
 	  g->start=min(g->start,iaa);
 	  g->end  =max(g->end,  iaa);
-	}
-	if ((tp == F_BONDS) || (tp == F_G96BONDS) || 
-	    (tp == F_MORSE) || (tp == F_SHAKE) ||
-	    (interaction_function[tp].flags & IF_DUMMY))
-	  if (iaa<natoms)
+	  if ((tp == F_BONDS) || (tp == F_G96BONDS) || 
+	      (tp == F_MORSE) || (tp == F_SHAKE) ||
+	      (interaction_function[tp].flags & IF_DUMMY))
 	    nbond[iaa]++;
+	}
       }
     }
   }
@@ -257,17 +256,17 @@ t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly)
        */
       for(i=0; (i<F_NRE); i++)
 	if (interaction_function[i].flags & IF_CONNECT)
-	  mk_igraph(g,idef->functype,&(idef->il[i]),TRUE);
+	  mk_igraph(g,idef->functype,&(idef->il[i]),natoms,TRUE);
       /* Then add all the other interactions in fixed lists, but first
        * check to see what's there already.
        */
       for(i=0; (i<F_NRE); i++)
 	if (interaction_function[i].flags & ~IF_CONNECT)
-	  mk_igraph(g,idef->functype,&(idef->il[i]),FALSE);
+	  mk_igraph(g,idef->functype,&(idef->il[i]),natoms,FALSE);
     }
     else {
       /* This is a special thing used in grompp to generate shake-blocks */
-      mk_igraph(g,idef->functype,&(idef->il[F_SHAKE]),TRUE);
+      mk_igraph(g,idef->functype,&(idef->il[F_SHAKE]),natoms,TRUE);
     }
     g->nbound=0;
     for(i=0; (i<g->nnodes); i++)
@@ -339,7 +338,7 @@ static int mk_grey(FILE *log,int nnodes,egCol egc[],t_graph *g,int *AtomI,
     /* If there is a white one, make it gray and set pbc */
     is_aj=mk_1shift(hbox,x[g0+ai],g->ishift[ai],x[g0+aj]);
     if ((is_aj >= N_IVEC) || (is_aj < 0))
-      fatal_error(0,"is_aj out of range (%d)",is_aj);
+      fatal_error(0,"a molecule has exploded (is_aj out of range (%d))",is_aj);
     
     if (egc[aj] == egcolWhite) {
       if (aj < *AtomI)
@@ -377,6 +376,7 @@ void mk_mshift(FILE *log,t_graph *g,matrix box,rvec x[])
   int    nW,nG,nB;		/* Number of Grey, Black, White	*/
   int    fW,fG;			/* First of each category	*/
   int    nerror=0;
+  static int   negc=0;
   static egCol *egc=NULL;	/* The colour of each node	*/
 
   /* This puts everything in the central box, that is does not move it 
@@ -391,11 +391,12 @@ void mk_mshift(FILE *log,t_graph *g,matrix box,rvec x[])
     return;
 
   nnodes=g->nnodes;
-  if (egc == NULL)
-    snew(egc,nnodes);
-  else
-    memset(egc,0,(size_t)(nnodes*sizeof(egc[0])));
-  
+  if (nnodes > negc) {
+    negc = nnodes;
+    srenew(egc,negc);
+  }
+  memset(egc,0,(size_t)(nnodes*sizeof(egc[0])));
+
   nW=g->nbound;
   nG=0;
   nB=0;
@@ -558,7 +559,7 @@ void unshift_self(t_graph *g,rvec sv[],rvec x[])
     isd=is[i];
 #ifdef DEBUG
     fprintf(stdlog,"x_s[%d]=(%e,%e,%e), sv[is[%d]]=(%e,%e,%e)\n",
-	    j,x_s[j][XX],x_s[j][YY],x_s[j][ZZ],
+	    j,x[j][XX],x[j][YY],x[j][ZZ],
 	    i,sv[isd][XX],sv[isd][YY],sv[isd][ZZ]);
 #endif
     rvec_dec(x[j],sv[isd]);
