@@ -375,7 +375,7 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("emstep",      ir->em_stepsize,0.01);
   CTYPE ("Max number of iterations in relax_shells");
   ITYPE ("niter",       ir->niter,      20);
-  CTYPE ("Step size (1/ps^2) for minimization of flexible constraints");
+  CTYPE ("Step size (ps^2) for minimization of flexible constraints");
   RTYPE ("fcstep",      ir->fc_stepsize, 0);
   CTYPE ("Frequency of steepest descents steps when doing CG");
   ITYPE ("nstcgsteep",	ir->nstcgsteep,	1000);
@@ -1033,6 +1033,8 @@ void do_index(char *ndx,
   }
   /* Simulated annealing for each group. There are nr groups */
   nSA = str_nelem(anneal,MAXPTR,ptr1);
+  if (nSA == 1 && (ptr1[0][0]=='n' || ptr1[0][0]=='N'))
+     nSA = 0;
   if(nSA>0 && nSA != nr) 
     fatal_error(0,"Not enough annealing values: %d (for %d groups)\n",nSA,nr);
   else {
@@ -1040,15 +1042,13 @@ void do_index(char *ndx,
     snew(ir->opts.anneal_npoints,nr);
     snew(ir->opts.anneal_time,nr);
     snew(ir->opts.anneal_temp,nr);
-    if(nSA==0) {
-      fprintf(stderr,"Not using any simulated annealing\n"); 
-      for(i=0;i<nr;i++) {
-	ir->opts.annealing[i]=eannNO;
-	ir->opts.anneal_npoints[i]=0;
-	ir->opts.anneal_time[i]=NULL;
-	ir->opts.anneal_temp[i]=NULL;
-      }
-    } else {
+    for(i=0;i<nr;i++) {
+      ir->opts.annealing[i]=eannNO;
+      ir->opts.anneal_npoints[i]=0;
+      ir->opts.anneal_time[i]=NULL;
+      ir->opts.anneal_temp[i]=NULL;
+    }
+    if (nSA > 0) {
       bAnneal=FALSE;
       for(i=0;i<nr;i++) { 
 	if(ptr1[i][0]=='n' || ptr1[i][0]=='N') {

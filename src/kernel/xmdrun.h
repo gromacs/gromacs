@@ -72,6 +72,8 @@ typedef struct {
 extern t_shell *init_shells(FILE *log,int start,int homenr,
 			    t_idef *idef,t_mdatoms *md,int *nshell);
 
+extern int count_flexible_constraints(FILE* log,t_forcerec *fr,t_idef *idef);
+
 /* Optimize shell positions */
 extern int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 			int mdstep,t_parm *parm,bool bDoNS,bool bStopCM,
@@ -79,8 +81,9 @@ extern int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 			t_state *state,rvec vold[],rvec vt[],rvec f[],
 			rvec buf[],t_mdatoms *md,t_nsborder *nsb,t_nrnb *nrnb,
 			t_graph *graph,t_groups *grps,tensor vir_part,
-			tensor pme_vir_part,bool bShell,
-			int nshell,t_shell shells[],t_forcerec *fr,
+			tensor pme_vir_part,
+			int nshell,t_shell shells[],int nflexcon,
+			t_forcerec *fr,
 			char *traj,real t,rvec mu_tot,
 			int natoms,bool *bConverged,
 			bool bDummies,t_comm_dummies *dummycomm,

@@ -56,7 +56,6 @@
 #include "txtdump.h"
 
 /*#define DEBUGGCT*/
-
 t_coupl_rec *init_coupling(FILE *log,int nfile,t_filenm fnm[],
 			   t_commrec *cr,t_forcerec *fr,
 			   t_mdatoms *md,t_idef *idef)

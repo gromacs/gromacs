@@ -62,11 +62,11 @@ static void do_1pos(rvec xnew,rvec xold,rvec f,real k_1,real step)
   xo=xold[XX];
   yo=xold[YY];
   zo=xold[ZZ];
-  
+
   dx=f[XX]*k_1;
   dy=f[YY]*k_1;
   dz=f[ZZ]*k_1;
-  
+
   xnew[XX]=xo+dx*step;
   xnew[YY]=yo+dy*step;
   xnew[ZZ]=zo+dz*step;
@@ -75,13 +75,10 @@ static void do_1pos(rvec xnew,rvec xold,rvec f,real k_1,real step)
 static void directional_sd(FILE *log,real step,rvec xold[],rvec xnew[],
 			   rvec acc_dir[],int start,int homenr,real k)
 {
-  real invk;
   int  i;
-  
-  invk = 1.0/k;
 
   for(i=start; i<homenr; i++)
-    do_1pos(xnew[i],xold[i],acc_dir[i],invk,step);
+    do_1pos(xnew[i],xold[i],acc_dir[i],k,step);
 }
 
 static void shell_pos_sd(FILE *log,real step,rvec xold[],rvec xnew[],rvec f[],
@@ -227,19 +224,6 @@ static void dump_shells(FILE *fp,rvec x[],rvec f[],real ftol,int ns,t_shell s[])
   }
 }
 
-static int count_zero_length_constraints(t_idef *idef)
-{
-  int nZeroLen,i;
-
-  nZeroLen = 0;
-
-  for(i=0; i<idef->il[F_SHAKE].nr; i+=3)
-    if (idef->iparams[idef->il[F_SHAKE].iatoms[i]].shake.dA == 0)
-      nZeroLen++;
-  
-  return nZeroLen;
-}
-
 static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,int step,
 		      t_mdatoms *md,int start,int end,
 		      rvec *x_old,rvec *x_init,rvec *x,
@@ -304,8 +288,9 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 		 t_state *state,rvec vold[],rvec vt[],rvec f[],
 		 rvec buf[],t_mdatoms *md,t_nsborder *nsb,t_nrnb *nrnb,
 		 t_graph *graph,t_groups *grps,tensor vir_part,
-		 tensor pme_vir_part,bool bShell,
-		 int nshell,t_shell shells[],t_forcerec *fr,
+		 tensor pme_vir_part,
+		 int nshell,t_shell shells[],int nflexcon,
+		 t_forcerec *fr,
 		 char *traj,real t,rvec mu_tot,
 		 int natoms,bool *bConverged,
 		 bool bDummies,t_comm_dummies *dummycomm,
@@ -314,7 +299,6 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   static bool bFirst=TRUE,bForceInit=FALSE,bNoPredict=FALSE;
   static rvec *pos[2],*force[2];
   static rvec *acc_dir=NULL,*x_old=NULL;
-  static int  ndir;
   real   Epot[2],df[2],Estore[F_NRE];
   tensor my_vir[2],vir_last,pme_vir[2];
   rvec   dx;
@@ -329,13 +313,8 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 
   if (bFirst) {
     bDebug = getenv("DEBUGSHELLS") != NULL;
-    /* Check for directional minimization */
-    if (fr->fc_stepsize != 0)
-      ndir = count_zero_length_constraints(&(top->idef));
-    else
-      ndir = 0;
     /* Allocate local arrays */
-    if (bShell) {
+    if (nshell+nflexcon > 0) {
       for(i=0; (i<2); i++) {
 	snew(pos[i],nsb->natoms);
 	snew(force[i],nsb->natoms);
@@ -348,11 +327,11 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     }
     bNoPredict = getenv("NOPREDICT") != NULL;
     if (bNoPredict)
-      fprintf(log,"Will never predict shell positions");
+      fprintf(log,"Will never predict shell positions\n");
     else {
       bForceInit = getenv("FORCEINIT") != NULL;
       if (bForceInit)
-	fprintf(log,"Will always initiate shell positions");
+	fprintf(log,"Will always initiate shell positions\n");
     }
     bFirst = FALSE;
   }
@@ -362,7 +341,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   number_steps = parm->ir.niter;
   step0        = 1.0;
 
-  if (ndir) {
+  if (nflexcon) {
     if (acc_dir == NULL) {
       snew(acc_dir,homenr);
       snew(x_old,homenr);
@@ -392,7 +371,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   sum_lrforces(force[Min],fr,start,homenr);
 
   sf_dir = 0;
-  if (ndir) {
+  if (nflexcon) {
     init_adir(log,top,&(parm->ir),mdstep,md,start,end,
 	      x_old-start,state->x,state->x,force[Min],acc_dir-start,
 	      state->box,state->lambda,&dum,nrnb);
@@ -401,10 +380,10 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
       sf_dir += md->massT[i]*norm2(acc_dir[i-start]);
 
     if (bVerbose)
-      fprintf(stderr,"RMS dir. force: %g\n",sqrt(sf_dir/ndir));
+      fprintf(stderr,"RMS dir. force: %g\n",sqrt(sf_dir/nflexcon));
   }
   
-  df[Min]=rms_force(cr,force[Min],nshell,shells,ndir,sf_dir);
+  df[Min]=rms_force(cr,force[Min],nshell,shells,nflexcon,sf_dir);
   df[Try]=0;
   if (debug) {
     fprintf(debug,"df = %g  %g\n",df[Min],df[Try]);
@@ -416,7 +395,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     pr_rvecs(debug,0,"force0",force[Min],md->nr);
   }
 
-  if (nshell+ndir > 0) {
+  if (nshell+nflexcon > 0) {
     /* Copy x to pos[Min] & pos[Try]: during minimization only the
      * shell positions are updated, therefore the other particles must
      * be set here.
@@ -433,7 +412,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   
   step=step0;
   
-  if (bVerbose && MASTER(cr) && (nshell+ndir > 0))
+  if (bVerbose && MASTER(cr) && (nshell+nflexcon > 0))
     print_epot(stdout,mdstep,0,step,Epot[Min],df[Min],FALSE);
 
   if (debug) {
@@ -449,7 +428,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   /* First check whether we should do shells, or whether the force is 
    * low enough even without minimization.
    */
-  *bConverged = bDone = (df[Min] < ftol) || (nshell+ndir == 0);
+  *bConverged = bDone = (df[Min] < ftol) || (nshell+nflexcon == 0);
   
   for(count=1; (!bDone && (count < number_steps)); count++) {
 
@@ -463,7 +442,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
       unshift_self(graph,state->box,pos[Min]);
     }
      
-    if (ndir) {
+    if (nflexcon) {
       init_adir(log,top,&(parm->ir),mdstep,md,start,end,
 		x_old-start,state->x,pos[Min],force[Min],acc_dir-start,
 		state->box,state->lambda,&dum,nrnb);
@@ -508,7 +487,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
       pr_rvecs(debug,0,"RELAX: force[Try]",force[Try] + start,homenr);
     }
     sf_dir = 0;
-    if (ndir) {
+    if (nflexcon) {
       init_adir(log,top,&(parm->ir),mdstep,md,start,end,
 		x_old-start,state->x,pos[Try],force[Try],acc_dir-start,
 		state->box,state->lambda,&dum,nrnb);
@@ -517,9 +496,9 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 	sf_dir += md->massT[i]*norm2(acc_dir[i-start]);
 
       if (bVerbose)
-	fprintf(stderr,"dir. rmsf %g\n",sqrt(sf_dir/ndir));
+	fprintf(stderr,"dir. rmsf %g\n",sqrt(sf_dir/nflexcon));
     }
-    df[Try]=rms_force(cr,force[Try],nshell,shells,ndir,sf_dir);
+    df[Try]=rms_force(cr,force[Try],nshell,shells,nflexcon,sf_dir);
 
     if (debug)
       fprintf(debug,"df = %g  %g\n",df[Min],df[Try]);
@@ -576,9 +555,9 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     pr_rvecs(debug,0,cbuf,vir_part,DIM);
   }
 
-  if (nshell+ndir > 0)
+  if (nshell+nflexcon > 0)
     memcpy(state->x,pos[Min],nsb->natoms*sizeof(state->x[0]));
-  if (ndir > 0) {
+  if (nflexcon > 0) {
     constrain(log,top,&(parm->ir),mdstep,md,start,end,
 	      state->x-start,x_old-start,NULL,state->box,
 	      state->lambda,&dum,nrnb,TRUE);
