@@ -46,7 +46,7 @@ static char *SRCID_ns_c = "$Id$";
 #include "ns.h"
 #include "fnbf.h"
 
-#define MAX_CG 1024
+#define MAX_CG 4096
 
 typedef struct {
   int     ncg;
@@ -195,12 +195,13 @@ static void add_j_to_nblist(t_nblist nlist[],int gid,int j_atom)
   nlist[gid].nrj ++;
 }
 
-static void put_in_list(FILE *log,t_iparams ip[],int atnr,int nWater,
-			int ngener,t_mdatoms *md,
-			int icg,int nj,atom_id jjcg[],
-			atom_id index[],atom_id a[],
-			t_excl bExcl[],int shift,
-			t_forcerec *fr,bool bLR,bool bCoulOnly)
+static  void put_in_list(FILE *log,t_iparams ip[],int atnr,
+				   int nWater,
+				   int ngener,t_mdatoms *md,
+				   int icg,int nj,atom_id jjcg[],
+				   atom_id index[],atom_id a[],
+				   t_excl bExcl[],int shift,
+				   t_forcerec *fr,bool bLR,bool bCoulOnly)
 {
   t_nblist  *vdw,*coul,*free;
   
@@ -269,32 +270,56 @@ static void put_in_list(FILE *log,t_iparams ip[],int atnr,int nWater,
        */
       if (icg == jcg)
 	jj0 += i+1;
-	
+
+      if (bWater && !bPert) {
+	if (bCoulOnly) {
+	  for(jj=jj0; (jj<jj1); jj++) {
+	    j_atom = a[jj];
+
+	    if (charge[j_atom] != 0) {
+	      jgid   = cENER[j_atom];
+	      gid    = GID(igid,jgid,ngener);
+	      add_j_to_nblist(coul,gid,j_atom);
+	    }
+	  }
+	}
+	else {
+	  for(jj=jj0; (jj<jj1); jj++) {
+	    j_atom = a[jj];
+	    jgid   = cENER[j_atom];
+	    gid    = GID(igid,jgid,ngener);
+	    ind_ij = nit+type[j_atom];
+	    rlj    = ip[ind_ij].lj.c6+ip[ind_ij].lj.c12;
+	    
+	    if (rlj != 0)
+	      add_j_to_nblist(vdw,gid,j_atom);
+	    else if (charge[j_atom] != 0)
+	      add_j_to_nblist(coul,gid,j_atom);
+	  }
+	}
+      }
+		
       /* Finally loop over the atoms in the j-charge group */	
       for(jj=jj0; (jj<jj1); jj++) {
 	j_atom = a[jj];
 	jgid   = cENER[j_atom];
 	gid    = GID(igid,jgid,ngener);
+	ind_ij = nit+type[j_atom];
+	rlj    = ip[ind_ij].lj.c6+ip[ind_ij].lj.c12;
+	
 	bFreeJ = bFree || bPert[j_atom];
 	bNotEx = NOTEXCL(bExcl,i,j_atom);
 	
 	if (bNotEx) {
 	  if (bFreeJ) 
 	    add_j_to_nblist(free,gid,j_atom);
-	  else if (bCoulOnly) 
+	  else if (bCoulOnly || (rlj == 0)) {
 	    /* This is done whether or  not bWater is set */
-	    add_j_to_nblist(coul,gid,j_atom);
-	  else if (bWater)
-	    add_j_to_nblist(vdw,gid,j_atom);
-	  else {
-	    ind_ij = nit+type[j_atom];
-	    rlj    = ip[ind_ij].lj.c6+ip[ind_ij].lj.c12;
-	    
-	    if (rlj) 
-	      add_j_to_nblist(vdw,gid,j_atom);
-	    else if (qi*charge[j_atom] != 0)
+	    if (charge[j_atom] != 0)
 	      add_j_to_nblist(coul,gid,j_atom);
 	  }
+	  else 
+	    add_j_to_nblist(vdw,gid,j_atom);
 	}
       }
     }
@@ -563,12 +588,12 @@ static bool get_dx(int cx,int Nx,int tx,int delta,int *dx0,int *dx1)
  *
  ****************************************************/
 
-static void do_longrange(FILE *log,t_topology *top,t_forcerec *fr,
-			 int ngener,t_mdatoms *md,int icg,int nlr,
-			 atom_id lr[],t_excl bexcl[],int shift,
-			 rvec x[],rvec box_size,t_nrnb *nrnb,
-			 real lambda,real *dvdlambda,
-			 t_groups *grps,bool bCoulOnly)
+static gmx_inline void do_longrange(FILE *log,t_topology *top,t_forcerec *fr,
+				    int ngener,t_mdatoms *md,int icg,int nlr,
+				    atom_id lr[],t_excl bexcl[],int shift,
+				    rvec x[],rvec box_size,t_nrnb *nrnb,
+				    real lambda,real *dvdlambda,
+				    t_groups *grps,bool bCoulOnly)
 {
   int ftypes[] = { F_SR, F_DVDL, F_LJ };
 #define NFTYPES asize(ftypes)
@@ -595,7 +620,7 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 		    t_nrnb *nrnb,t_mdatoms *md,
 		    real lambda,real *dvdlambda)
 {
-  static atom_id *nl_lr_ljc, *nl_lr_coul, *nl_sr=NULL;
+  static atom_id *nl_lr_ljc,*nl_lr_coul,*nl_sr=NULL;
   t_block *cgs=&(top->blocks[ebCGS]);
   int  tx,ty,tz,cx,cy,cz,dx,dy,dz;
   int  cj;
