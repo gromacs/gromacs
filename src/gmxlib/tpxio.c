@@ -39,6 +39,7 @@
 #include "futil.h"
 #include "gmxfio.h"
 #include "tpxio.h"
+#include "copyrite.h"
 
 /* This number should be increased whenever the file format changes! */
 static int tpx_version  = 1;
@@ -481,10 +482,10 @@ static void do_top(t_topology *top,bool bRead)
 
 static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)
 {
-  char  *version="GMX1.6";
   char  buf[STRLEN];
   bool  bDouble;
-  int   precision;
+  int   i,precision;
+  bool  bTerm;
  
   fio_select(fp);
   fio_setdebug(fp,bDebugMode());
@@ -492,18 +493,25 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)
   /* NEW! XDR tpb file */
   if (bRead) {
     do_string(buf);
+    bTerm=FALSE;
+    for (i=0; (i<STRLEN); i++)
+      bTerm=(bTerm || (buf[i]=='\0'));
+    if (!bTerm)
+      fatal_error(0,"Unsupported Version: expected %s, "
+		  "found VERSION before 2.0\n",GromacsVersion());
     do_int(precision);
     bDouble = (precision == sizeof(double));
     fio_setprecision(fp,bDouble);
     
-    if (strcmp(buf,version) != 0)
-      fprintf(stderr,"Version mismatch: expected %s, found %s\n",version,buf);
+    if (strcmp(buf,GromacsVersion()) != 0)
+      fprintf(stderr,"Version mismatch: expected %s, found %s\n",
+	      GromacsVersion(),buf);
     else 
       fprintf(stderr,"Reading file %s, %s (%s precision)\n",
 	      fio_getname(fp),buf,bDouble ? "double" : "single");
   }
   else {
-    do_string(version);
+    do_string(GromacsVersion());
     precision = sizeof(real);
     bDouble = (precision == sizeof(double));
     fio_setprecision(fp,bDouble);
