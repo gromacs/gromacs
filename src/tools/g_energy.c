@@ -472,9 +472,9 @@ static void analyse_ener(bool bCorr,char *corrfn,
 void print_one(FILE *fp,bool bDp,real e)
 {
   if (bDp)
-    fprintf(fp,"  %16.10e",e);
+    fprintf(fp,"  %16g",e);
   else
-    fprintf(fp,"  %10.4e",e);
+    fprintf(fp,"  %10g",e);
 
 }
 
