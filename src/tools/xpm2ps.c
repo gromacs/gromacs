@@ -1163,13 +1163,12 @@ int main(int argc,char *argv[])
   }
   bTitle     = etitle==etTop;
   bTitleOnce = etitle==etOnce;
-  if ( etitle==etYlabel ) {
+  if ( etitle==etYlabel )
     for (i=0; (i<nmat); i++) {
       strcpy(mat[i].label_y, mat[i].title);
       if (mat2)
 	strcpy(mat2[i].label_y, mat2[i].title);
     }
-  }
   if (bGrad) {
     gradient_mat(grad,nmat,mat);
     if (mat2)
@@ -1184,7 +1183,7 @@ int main(int argc,char *argv[])
   if ((mat2 == NULL) && (elegend!=elNone))
     elegend = elFirst;
   
-  if (ecombine!=ecHalves)
+  if (ecombine && ecombine!=ecHalves)
     write_combined_matrix(ecombine, xpmfile, nmat, mat, mat2);
   else
     do_mat(nmat,mat,mat2,bFrame,bZeroLine,bDiag,bFirstDiag,
