@@ -106,15 +106,7 @@ static void cmp_str(FILE *fp, char *s, int index, char *s1, char *s2)
 
 static bool equal_real(real i1,real i2,real ftol)
 {
-  double nom,denom,error;
-  
-  nom   = fabs(i1-i2);
-  denom = fabs(i1)+fabs(i2);
-  if (denom != 0) {
-    error = 2*nom/denom;
-    return (error <= ftol);
-  }
-  return TRUE;
+  return 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol;
 }
 
 static void cmp_real(FILE *fp,char *s,int index,real i1,real i2,real ftol)
@@ -129,9 +121,9 @@ static void cmp_real(FILE *fp,char *s,int index,real i1,real i2,real ftol)
 
 static void cmp_rvec(FILE *fp,char *s,int index,rvec i1,rvec i2,real ftol)
 {
-  if ( fabs(i1[XX] - i2[XX]) > ftol || 
-       fabs(i1[YY] - i2[YY]) > ftol || 
-       fabs(i1[ZZ] - i2[ZZ]) > ftol ) {
+  if (2*fabs(i1[XX] - i2[XX]) > (fabs(i1[XX]) + fabs(i2[XX]))*ftol ||
+      2*fabs(i1[YY] - i2[YY]) > (fabs(i1[YY]) + fabs(i2[YY]))*ftol ||
+      2*fabs(i1[ZZ] - i2[ZZ]) > (fabs(i1[ZZ]) + fabs(i2[ZZ]))*ftol) {
     if (index != -1)
       fprintf(fp,"%s[%d] (%e,%e,%e - %e,%e,%e)\n",s,index,
 	      i1[XX],i1[YY],i1[ZZ],i2[XX],i2[YY],i2[ZZ]);
