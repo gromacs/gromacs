@@ -430,6 +430,7 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     fprintf(fp,"\n");
     break;
   case F_SHAKE:
+  case F_SHAKENC:
     fprintf(fp,"dA=%15.8e, dB=%15.8e\n",iparams->shake.dA,iparams->shake.dB);
     break;
   case F_SETTLE:

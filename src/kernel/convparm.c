@@ -130,6 +130,7 @@ static void assign_param(t_functype ftype,t_iparams *new,
       new->rbdihs.rbc[i]=old[i]; 
     break;
   case F_SHAKE:
+  case F_SHAKENC:
     new->shake.dA = old[0];
     new->shake.dB = old[1];
     break;

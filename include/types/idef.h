@@ -57,6 +57,7 @@ enum {
   F_POSRES,
   F_RBDIHS,
   F_SHAKE,
+  F_SHAKENC,
   F_SETTLE,
   F_DUMMY2,
   F_DUMMY3,
