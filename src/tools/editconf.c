@@ -294,7 +294,7 @@ int main(int argc, char *argv[])
     "to a pdb file, which can be useful for analysis with e.g. rasmol."
   };
   static char *bugs[] = {
-    "For complex molecules, the periodicity removal routine may break down,",
+    "For complex molecules, the periodicity removal routine may break down, "
     "in that case you can use trjconv"
   };
   static real dist   = 0.0,rbox=0.0;
