@@ -73,14 +73,16 @@ nsteps                   = 500000
 nstcomm                  = 1
 
 ; LANGEVIN DYNAMICS OPTIONS = 
-; Temparature, friction coefficient (amu/ps) and random seed = 
+; Temperature, friction coefficient (amu/ps) and random seed = 
 ld_temp                  = 300
 ld_fric                  = 0
 ld_seed                  = 1993
 
 ; ENERGY MINIMIZATION OPTIONS = 
-emtol                    = 0.001
+; Force tolerance and initial step-size = 
+emtol                    = 1
 emstep                   = 0.1
+; Frequency of steepest descents steps when doing CG = 
 nstcgsteep               = 1000
 
 ; OUTPUT CONTROL OPTIONS = 

@@ -124,10 +124,12 @@ motion removal (should only be used for vacuum simulations)
 
 <A NAME="em"><br><h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#ld"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#out"><IMG SRC="../gif/charts_down.gif"></A> Energy minimization</h3>
 <dl>
-<dt><h4>emtol: </b>(0.001) [<sup>kJ</sup>/<sub>mol nm</sub>]</h4>
-<dd>tolerance
-<dt><h4>emstep: </b>(0.1) [nm]</h4>
-<dd>maximum stepsize
+<dt><h4>emtol: </b>(1.0) [<sup>kJ</sup>/<sub>mol nm</sub>]</h4>
+<dd>the minimization is converged when the RMS (<b>steep</b>) or maximum
+(<b>cg</b>) force is smaller than this value
+<dt><h4>emstep: </b>(0.1) [?]</h4>
+<dd>initial step-size, the dimension is nm^2 mol/kJ for <b>steep</b> and
+nm for <b>cg</b>
 <dt><h4>nstcgsteep: </b>(1000) [steps]</h4>
 <dd>frequency of performing 1 steepest descents step while doing
 conjugate gradients energy minimization.
