@@ -88,8 +88,10 @@ static void edr_nms(XDR *xdr,int *nre,char ***nms)
     snew(NM,*nre);
   }
   for(i=0; i<*nre; i++) {
-    if (NM[i])
+    if (NM[i]) {
       sfree(NM[i]);
+      NM[i] = NULL;
+    }
     xdr_string(xdr,&(NM[i]),STRLEN);
   }
   *nms=NM;
