@@ -140,7 +140,9 @@ void set_bond_type(t_x11 *x11,t_molwin *mw,int bt)
 
 void set_box_type (t_x11 *x11,t_molwin *mw,int bt)
 { 
+#ifdef DEBUG
   fprintf(stderr,"mw->boxtype = %d, bt = %d\n",mw->boxtype,bt);
+#endif
   if (bt != mw->boxtype) {
     if ((((bt == esbTrunc) || (bt == esbTri)) &&
 	 (mw->realbox == esbTri)) || (bt == esbNone)) {
