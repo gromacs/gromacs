@@ -45,6 +45,7 @@ static char *SRCID_fnbf_c = "$Id$";
 #include "fnbf.h"
 #include "inloop.h"
 #include "nrnb.h"
+#include "callf77.h"
 
 void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
 	     rvec x[],rvec f[],t_mdatoms *mdatoms,
