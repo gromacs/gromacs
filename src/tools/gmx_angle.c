@@ -52,6 +52,40 @@
 #include "fatal.h"
 #include "xvgr.h"
 #include "gstat.h"
+#include "trnio.h"
+
+static void dump_dih_trn(int nframes,int nangles,real **dih,char *fn)
+{
+  int    i,j,k,l,m,na,trn;
+  rvec   *x;
+  matrix box = {{2,0,0},{0,2,0},{0,0,2}};  
+  
+  na = (nangles*2);
+  if ((na % 3) != 0)
+    na = 1+na/3;
+  else
+    na = na/3;
+  printf("There are %d dihedrals. Will fill %d atom positions with cos/sin\n",
+	 nangles,na);
+  snew(x,na);
+  trn = open_trn(fn,"w");
+  for(i=0; (i<nframes); i++) {
+    k = l = 0;
+    for(j=0; (j<nangles); j++) {
+      for(m=0; (m<2); m++) {
+	x[k][l] = (m == 0) ? cos(dih[j][i]) : sin(dih[j][i]);
+	l++;
+	if (l == DIM) {
+	  l = 0;
+	  k++;
+	}
+      }
+    }
+    fwrite_trn(trn,i,(real)i,0,box,na,x,NULL,NULL);
+  }
+  close_trn(trn);
+  sfree(x);
+}
 
 int gmx_angle(int argc,char *argv[])
 {
@@ -116,7 +150,8 @@ int gmx_angle(int argc,char *argv[])
     { efXVG, "-of", "dihfrac",  ffOPTWR },
     { efXVG, "-ot", "dihtrans", ffOPTWR },
     { efXVG, "-oh", "trhisto",  ffOPTWR },
-    { efXVG, "-oc", "dihcorr",  ffOPTWR }
+    { efXVG, "-oc", "dihcorr",  ffOPTWR },
+    { efTRR, "-or", NULL,       ffOPTWR }
   };
 #define NFILE asize(fnm)
   int     npargs;
@@ -181,13 +216,14 @@ int gmx_angle(int argc,char *argv[])
    * We need to know the nr of frames so we can allocate memory for an array 
    * with all dihedral angles at all timesteps. Works for me.
    */
-  if (bTrans || bCorr  || bALL)
+  if (bTrans || bCorr  || bALL || opt2bSet("-or",NFILE,fnm))
     snew(dih,nangles);
   
   snew(angstat,maxangstat);
 
   read_ang_dih(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),(mult == 3),
-	       bALL || bCorr || bTrans,bRb,maxangstat,angstat,
+	       bALL || bCorr || bTrans || opt2bSet("-or",NFILE,fnm),
+	       bRb,maxangstat,angstat,
 	       &nframes,&time,isize,index,&trans_frac,&aver_angle,dih);
   
   dt=(time[nframes-1]-time[0])/(nframes-1);
@@ -204,6 +240,11 @@ int gmx_angle(int argc,char *argv[])
       fprintf(out,"\n");
     }	
     fclose(out);
+  }
+  if (opt2bSet("-or",NFILE,fnm)) {
+    if (mult != 4)
+      gmx_fatal(FARGS,"Can not combine angles with trn dump");
+    dump_dih_trn(nframes,nangles,dih,opt2fn("-or",NFILE,fnm));
   }
   
   if (bFrac) {
