@@ -5,6 +5,15 @@ if ( ! $?GMXHOME ) then
   exit
 endif
 
+if ( $shell == "/bin/tcsh" ) then
+  if ( "$1" != "-quiet" ) echo "uncomplete all GROMACS programs"
+  if ( $?GMXBIN ) then
+    foreach f ( `\ls $GMXBIN` )
+      uncomplete $f
+    end
+  endif
+endif
+
 if ($?GMXLIB) then
   if ($?LD_LIBRARY_PATH) then
     if ( ($LD_LIBRARY_PATH == $GMXHOME/lib/\$CPU) || ($LD_LIBRARY_PATH == $GMXHOME/lib/\$GMXCPU) ) then
