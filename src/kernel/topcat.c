@@ -62,9 +62,9 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
   l=dest->nr;
  
   if (src->nr)
-    max_index = src->param[0].c[1];
+    max_index = src->param[0].c[0];
   for(i=0; i<src->nr; i++)
-    max_index = max(src->param[i].c[1],max_index);
+    max_index = max(src->param[i].c[0],max_index);
       
   /* If we have to do ensemble averaging we interchange the loops! */
   if (bEnsemble) {
@@ -73,14 +73,14 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
       fprintf(stderr,"multiplying every type 1 distance bound by %.3f for %d copies of %s\n",fac,copies,name);
       for (i=0; (i<src->nr); i++) {
 	for (j=0; (j<copies); j++) {
-	  type  = src->param[i].c[0];
-	  index = src->param[i].c[1];
+	  index = src->param[i].c[0];
+	  type  = src->param[i].c[1];
 	  if ((type == 2) && (j>0)) {
 	    max_index++;
 	    index = max_index;
 	  }
-	  dest->param[l].c[0] = type;
-	  dest->param[l].c[1] = index;
+	  dest->param[l].c[0] = index;
+	  dest->param[l].c[1] = type;
 	  for(m=0; (m<2); m++)
 	    dest->param[l].c[m] = src->param[i].c[m];
 	  for(m=2; (m<nrfp-1); m++)
@@ -104,7 +104,7 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
 	  dest->param[l].a[m] += n0;
 	if (j>0) {
 	  max_index++;
-	  dest->param[l].c[1] = max_index;
+	  dest->param[l].c[0] = max_index;
 	}
 	l++;
       }
