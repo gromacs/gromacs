@@ -601,7 +601,9 @@ static bool pdb_next_x(FILE *status,real *t,int natoms,rvec x[],matrix box)
     sscanf(time+4,"%lf",&dbl);
     *t=(real)dbl;
   } else
-    *t=0.0;
+    /* this is a bit dirty, but it will work: if no time is read from 
+       comment line in pdb file, set time to current frame number */
+    *t=(real)frame;
   /* free_t_atoms(&atoms); */
   if (na==0) {
     return FALSE;
