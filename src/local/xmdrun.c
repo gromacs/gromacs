@@ -220,7 +220,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     fprintf(stderr,"Will do General Coupling Theory!\n");
   
   /* Remove periodicity */  
-  do_pbc_first(log,parm,box_size,fr,graph,x);
+  if (parm->ir.eBox != ebtNONE)
+    do_pbc_first(log,parm,box_size,fr,graph,x);
   
   if (!parm->ir.bUncStart) 
     do_shakefirst(log,bTYZ,lambda,ener,parm,nsb,mdatoms,x,vold,buf,f,v,

@@ -44,6 +44,7 @@ static char *SRCID_do_gct_c = "$Id$";
 #include "update.h"
 #include "vec.h"
 #include "main.h"
+#include "txtdump.h"
 
 t_coupl_rec *init_coupling(FILE *log,int nfile,t_filenm fnm[],
 			   t_commrec *cr,t_forcerec *fr,
@@ -334,12 +335,14 @@ static real calc_dist(FILE *log,rvec x[])
   
   if (bFirst) {
     if ((buf = getenv("DISTGCT")) == NULL)
-      fprintf(stderr,"environment variable DISTGCT not set!!!\n");
-    bDist  = (sscanf(buf,"%d%d",&i1,&i2) == 2);
-    if (bDist)
-      fprintf(log,"Will couple to distance between %d and %d\n",i1,i2);
-    else
-      fprintf(log,"Will not couple to distances\n");
+      bDist = FALSE;
+    else {
+      bDist  = (sscanf(buf,"%d%d",&i1,&i2) == 2);
+      if (bDist)
+	fprintf(log,"Will couple to distance between %d and %d\n",i1,i2);
+      else
+	fprintf(log,"Will not couple to distances\n");
+    }
     bFirst = FALSE;
   }
   if (bDist) {
@@ -350,25 +353,31 @@ static real calc_dist(FILE *log,rvec x[])
     return 0.0;
 }
 
-static real calc_force(int natom,rvec f[],rvec x[])
+void calc_force(int natom,rvec f[])
 {
   int  i,j,m;
+  int  jindex[] = { 0, 4, 8};
   rvec fff[2],xxx[2],dx,df;
+  real msf1,msf2;
   
   for(j=0; (j<2); j++) {
     clear_rvec(fff[j]);
-    clear_rvec(xxx[j]);
-    for(i=j*(natom/2); (i<(j+1)*(natom/2)); i++) {
+    for(i=jindex[j]; (i<jindex[j+1]); i++) {
       for(m=0; (m<DIM); m++) {
 	fff[j][m] += f[i][m];
-	xxx[j][m] += x[i][m];
       }
     }
   }
-  rvec_sub(xxx[0],xxx[1],dx);
-  rvec_sub(fff[0],fff[1],df);
   
-  return iprod(fff[0],fff[0])+iprod(fff[1],fff[1]);
+  msf1 = iprod(fff[0],fff[0]);
+  msf2 = iprod(fff[1],fff[1]);
+
+  pr_rvecs(stdlog,0,"force",f,natom);
+    
+  fprintf(stdlog,"FMOL:  %10.3f  %10.3f  %10.3f  %10.3f  %10.3f  %10.3f\n",
+	  fff[0][XX],fff[0][YY],fff[0][ZZ],fff[1][XX],fff[1][YY],fff[1][ZZ]);
+  fprintf(stdlog,"RMSF:  %10.3e  %10.3e\n",msf1,msf2);
+  
 }
 
 void do_coupling(FILE *log,int nfile,t_filenm fnm[],
@@ -460,8 +469,9 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   Eintern   = Ecouple(tcr,ener);
   Virial    = virial[XX][XX]+virial[YY][YY]+virial[ZZ][ZZ];
 
-  fprintf(log,"MSF: %g\n",calc_force(md->nr,x,f));
-    
+  if (bPrint)
+    calc_force(md->nr,f);
+  
   /* Use a memory of tcr->nmemory steps, so we actually couple to the
    * average observable over the last tcr->nmemory steps. This may help
    * in avoiding local minima in parameter space.

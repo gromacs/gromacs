@@ -9,6 +9,7 @@
 #include "init_sh.h"
 #include "mdatoms.h"
 #include "network.h"
+#include "do_gct.h"
 
 static void do_1pos(rvec xnew,rvec xold,rvec f,real k_1,real step)
 {
@@ -173,8 +174,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   real   Epot[2],df[2];
   tensor my_vir[2];
 #define NEPOT asize(Epot)
-  real   ftol,step;
-  real   step0;
+  real   ftol,step,step0,xiH,xiS;
   bool   bDone,bMinSet;
   int    g;
   int    number_steps;
@@ -205,7 +205,13 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 	   top,grps,x,v,force[Min],buf,md,ener,bVerbose && !PAR(cr),
 	   lambda,graph,bDoNS,FALSE,fr);
   df[Min]=rms_force(force[Min],nshell,shells);
+
   
+  pr_rvecs(log,0,"force0",force[Min],md->nr);
+  calc_f_dev(md->nr,md->chargeA,x,&top->idef,&xiH,&xiS);
+  fprintf(log,"xiH = %e, xiS = %e\n",xiH,xiS);
+  calc_force(md->nr,force[Min]);
+    
   /* Copy x to pos[Min] & pos[Try]: during minimization only the
    * shell positions are updated, therefore the other particles must
    * be set here.
