@@ -109,12 +109,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   end   = nsb->homenr[cr->pid]-start;
 
   /* Set some booleans for the epot routines */
-  bLR = ((parm->ir.eeltype==eelCUT  && parm->ir.rcoulomb > parm->ir.rlist) ||
-	 (parm->ir.eeltype==eelPPPM) || (parm->ir.eeltype==eelPOISSON)); 
-                                               /* Long Range Coulomb   ?  */
-  bLJLR = (parm->ir.rvdw > parm->ir.rlist);    /* Long Range LJ        ?  */
-  bBHAM = (top->idef.functype[0]==F_BHAM);     /* Use buckingham       ?  */
-  b14   = (top->idef.il[F_LJ14].nr > 0);       /* Use 1-4 interactions ?  */
+  set_pot_bools(&(parm->ir),top,&bLR,&bLJLR,&bBHAM,&b14);
 
   /* Open the energy file */  
   if (MASTER(cr))

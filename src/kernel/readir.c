@@ -117,11 +117,11 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   
   if (ir->rlist == 0.0) {
     sprintf(err_buf,"can only have neighborlist cut-off zero (=infinite)\n"
-	    "with eel_type = %s and simple neighborsearch\n"
+	    "with coulombtype = %s and simple neighborsearch\n"
 	    "without periodic boundary conditions (box = %s) and\n"
 	    "rcoulomb and rvdw set to zero",
 	    eel_names[eelCUT],eboxtype_names[ebtNONE]);
-    CHECK((ir->eeltype  != eelCUT)  || (ir->ns_type != ensSIMPLE) || 
+    CHECK((ir->coulombtype  != eelCUT)  || (ir->ns_type != ensSIMPLE) || 
 	  (ir->eBox     != ebtNONE) || 
 	  (ir->rcoulomb != 0.0)     || (ir->rvdw != 0.0));
   }
@@ -155,7 +155,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     CHECK(ir->epc && (ir->compress[XX]+ir->compress[YY]+ir->compress[ZZ]<=0));
     
     sprintf(err_buf,"pressure coupling with PPPM not implemented");
-    CHECK(ir->eeltype == eelPPPM);
+    CHECK(ir->coulombtype == eelPPPM);
   }
   
   /* ELECTROSTATICS */
@@ -165,50 +165,50 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   if (ir->epsilon_r == 0) {
     sprintf(err_buf,"epsilon_r can only be %f (=infinity) with (generalized)"
 	    " reaction field",ir->epsilon_r);
-    CHECK((ir->eeltype != eelRF) && (ir->eeltype != eelGRF));
+    CHECK((ir->coulombtype != eelRF) && (ir->coulombtype != eelGRF));
   }
   
-  if ((ir->eeltype == eelCUT) || 
-      (ir->eeltype == eelRF) || (ir->eeltype == eelGRF)) {
+  if ((ir->coulombtype == eelCUT) || 
+      (ir->coulombtype == eelRF) || (ir->coulombtype == eelGRF)) {
     /* Cut-off electrostatics (may be tabulated) */
-    sprintf(err_buf,"With eel_type = %s rcoulomb must be >= rlist",
-	    eel_names[ir->eeltype]);
+    sprintf(err_buf,"With coulombtype = %s rcoulomb must be >= rlist",
+	    eel_names[ir->coulombtype]);
     CHECK(ir->rlist > ir->rcoulomb);
-    sprintf(err_buf,"With eel_type = %s rcoulomb must be >= rvdw",
-	    eel_names[ir->eeltype]);
+    sprintf(err_buf,"With coulombtype = %s rcoulomb must be >= rvdw",
+	    eel_names[ir->coulombtype]);
     CHECK(ir->rvdw > ir->rcoulomb);
-    if ((ir->eeltype == eelRF) || (ir->eeltype == eelGRF)) {
+    if ((ir->coulombtype == eelRF) || (ir->coulombtype == eelGRF)) {
       /* reaction field (at the cut-off) */
       if (ir->epsilon_r == 1.0) {
 	sprintf(warn_buf,"Using epsilon_r = 1.0 with %s does not make sense",
-		eel_names[ir->eeltype]);
+		eel_names[ir->coulombtype]);
 	warning(NULL);
       }
     }
-  } else {
+  } else if (ir->coulombtype != eelUSER) {
     /* Tabulated electrostatics (no cut-off) */
-    sprintf(err_buf,"With eel_type = %s rcoulomb must be <= rlist",
-	    eel_names[ir->eeltype]);
+    sprintf(err_buf,"With coulombtype = %s rcoulomb must be <= rlist",
+	    eel_names[ir->coulombtype]);
     CHECK(ir->rcoulomb > ir->rlist);
-    sprintf(err_buf,"With eel_type = %s rcoulomb_switch must be < rcoulomb",
-	    eel_names[ir->eeltype]);
-    CHECK(ir->rcoulomb_switch > ir->rcoulomb);
+    sprintf(err_buf,"With coulombtype = %s rcoulomb_switch must be < rcoulomb",
+	    eel_names[ir->coulombtype]);
+    CHECK(ir->rcoulomb_switch >= ir->rcoulomb);
     if (ir->rcoulomb_switch > ir->rcoulomb-0.0999) { 
       sprintf(warn_buf,"rcoulomb should be 0.1 to 0.3 nm larger than rcoulomb_switch to account for diffusion and the size of charge groups"); 
       warning(NULL);
     }
   }
   
-  sprintf(err_buf,"When using eel_type = %s"
+  sprintf(err_buf,"When using coulombtype = %s"
 	  " ref_t for temperature coupling should be > 0",
 	  eel_names[eelGRF]);
-  CHECK((ir->eeltype == eelGRF) && (ir->opts.ref_t[0] <= 0));
+  CHECK((ir->coulombtype == eelGRF) && (ir->opts.ref_t[0] <= 0));
   
   if (ir->vdwtype == evdwCUT) {
     sprintf(err_buf,"With vdwtype = %s rvdw must be >= rlist",
 	    eel_names[ir->vdwtype]);
     CHECK(ir->rlist > ir->rvdw);
-  } else {
+  } else if (ir->vdwtype != evdwUSER) {
     sprintf(err_buf,"With vdwtype = %s rvdw_switch must be < rvdw",
 	    evdw_names[ir->vdwtype]);
     CHECK(ir->rvdw_switch >= ir->rvdw);
@@ -298,7 +298,7 @@ void get_ir(char *mdparin,char *mdparout,
   /* Electrostatics */
   CCTYPE ("OPTIONS FOR ELECTROSTATICS AND VDW");
   CTYPE ("Method for doing electrostatics");
-  EETYPE("eel_type",	ir->eeltype,    eel_names, nerror, TRUE);
+  EETYPE("coulombtype",	ir->coulombtype,    eel_names, nerror, TRUE);
   CTYPE ("cut-off lengths");
   RTYPE ("rcoulomb_switch",	ir->rcoulomb_switch,	0.0);
   RTYPE ("rcoulomb",	ir->rcoulomb,	1.0);
@@ -380,7 +380,7 @@ void get_ir(char *mdparin,char *mdparout,
   
   /* Refinement */
   CCTYPE("NMR refinement stuff");
-  CTYPE ("Distance restraints type: None, Simple or Ensemble");
+  CTYPE ("Distance restraints type: No, Simple or Ensemble");
   EETYPE("disre",       opts->eDisre,   edisre_names, nerror, TRUE);
   CTYPE ("Force weighting of pairs in one distance restraint: Equal or Conservative");
   EETYPE("disre_weighting", ir->eDisreWeighting, edisreweighting_names, nerror, TRUE);

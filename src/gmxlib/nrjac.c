@@ -48,15 +48,15 @@ static void nrerror(char *error_text)
 
 static void free_vector(double *v,int nl,int nh)
 {
-  free((char*)(v+nl));
+  free((char*)(v+nl-1));
 }
 
 static double *vector(int nl,int nh)
 {
   double *v;
-  v=(double*)malloc((size_t)((nh-nl+1)*sizeof(double)));
+  v=(double*)malloc((size_t)((nh-nl+2)*sizeof(double)));
   if (!v) nrerror("allocation failure in vector()");
-  return v-nl;
+  return v-nl+1;
 }
 
 void jacobi(double a[7][7],int n,double d[7],double v[7][7],int *nrot)

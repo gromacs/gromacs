@@ -301,7 +301,7 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PS("bSimAnn",BOOL(ir->bSimAnn)); 
     PR("zero_temp_time",ir->zero_temp_time); 
     PR("rlist",ir->rlist);
-    PS("eeltype",EELTYPE(ir->eeltype));
+    PS("coulombtype",EELTYPE(ir->coulombtype));
     PR("rcoulomb_switch",ir->rcoulomb_switch);
     PR("rcoulomb",ir->rcoulomb);
     PS("vdwtype",EVDWTYPE(ir->vdwtype));

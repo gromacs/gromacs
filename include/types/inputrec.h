@@ -81,7 +81,7 @@ typedef struct {
   bool bSimAnn;         /* simulated annealing (SA)                     */
   real zero_temp_time;  /* time at which temp becomes zero in sim. ann. */
   real rlist;		/* short range pairlist cut-off (nm)		*/
-  int  eeltype;		/* Type of electrostatics treatment             */
+  int  coulombtype;	/* Type of electrostatics treatment             */
   real rcoulomb_switch; /* Coulomb switch range start (nm)		*/
   real rcoulomb;        /* Coulomb cutoff (nm)		                */
   int  vdwtype;         /* Type of Van der Waals treatment              */

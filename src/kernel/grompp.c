@@ -150,7 +150,7 @@ static void double_check(t_inputrec *ir, matrix box, t_molinfo *mol,
       real rlong;
       bool bTWIN;
 
-      rlong = max(ir->rlist,ir->rcoulomb);
+      rlong = max(ir->rlist,max(ir->rcoulomb,ir->rvdw));
       bTWIN = (rlong > ir->rlist);
       for(k=0; (k<DIM); k++)
 	cx[k]=ir->ndelta*box[k][k]/rlong;

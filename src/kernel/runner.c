@@ -77,6 +77,16 @@ void get_cmparm(t_inputrec *ir,int step,bool *bStopCM,bool *bStopRot)
   }
 }
 
+void set_pot_bools(t_inputrec *ir,t_topology *top,
+		   bool *bLR,bool *bLJLR,bool *bBHAM,bool *b14)
+{
+  *bLR   = ((ir->coulombtype==eelCUT && ir->rcoulomb > ir->rlist) ||
+	      (ir->coulombtype==eelPPPM) || (ir->coulombtype==eelPOISSON)); 
+  *bLJLR = (ir->rvdw > ir->rlist);
+  *bBHAM = (top->idef.functype[0]==F_BHAM);
+  *b14   = (top->idef.il[F_LJ14].nr > 0);
+}
+
 void finish_run(FILE *log,t_commrec *cr,
 		char *confout,
                 t_nsborder *nsb,
@@ -297,11 +307,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   
   /* Check Environment variables & other booleans */
   *bTYZ=getenv("TYZ") != NULL;
-  bLR      = ((ir->eeltype==eelCUT && ir->rcoulomb > ir->rlist) ||
-	      (ir->eeltype==eelPPPM) || (ir->eeltype==eelPOISSON)); 
-  bLJLR    = (ir->rvdw > ir->rlist);
-  bBHAM    = (top->idef.functype[0]==F_BHAM);
-  b14      = (top->idef.il[F_LJ14].nr > 0);
+  set_pot_bools(ir,top,&bLR,&bLJLR,&bBHAM,&b14);
   
   /* Filenames */
   *traj     = ftp2fn(efTRN,nfile,fnm);

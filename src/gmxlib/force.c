@@ -274,7 +274,7 @@ void init_forcerec(FILE *log,
   fr->bGrid      = (ir->ns_type == ensGRID);
   fr->ndelta     = ir->ndelta;
   fr->rlist      = ir->rlist;
-  fr->rlistlong  = max(ir->rlist,ir->rcoulomb);
+  fr->rlistlong  = max(ir->rlist,max(ir->rcoulomb,ir->rvdw));
   fr->bTwinRange = (fr->rlistlong > fr->rlist);
   
   /* Domain decomposition parallellism... */
@@ -282,7 +282,7 @@ void init_forcerec(FILE *log,
   fr->Dimension  = ir->decomp_dir;
   
   /* Electrostatics */
-  fr->eeltype    = ir->eeltype;
+  fr->eeltype    = ir->coulombtype;
   fr->epsilon_r  = ir->epsilon_r;
   fr->fudgeQQ    = ir->fudgeQQ;
   fr->rcoulomb_switch = ir->rcoulomb_switch;

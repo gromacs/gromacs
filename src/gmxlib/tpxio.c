@@ -133,7 +133,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_int(ir->bSimAnn); 
     do_real(ir->zero_temp_time); 
     do_real(ir->rlist); 
-    do_int(ir->eeltype); 
+    do_int(ir->coulombtype); 
     do_real(ir->rcoulomb_switch); 
     do_real(ir->rcoulomb); 
     do_int(ir->vdwtype);

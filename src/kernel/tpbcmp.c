@@ -264,7 +264,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   cmp_rvec(fp,"inputrec->compress",0,ir1->compress,ir2->compress);
   CIB(bSimAnn);
   CIR(zero_temp_time);
-  CII(eeltype);
+  CII(coulombtype);
   CII(vdwtype);
   CIR(rlist);
   CIR(rcoulomb_switch);
