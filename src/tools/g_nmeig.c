@@ -203,7 +203,7 @@ int main(int argc,char *argv[])
   if (begin<1)
     begin=1;
   if (end>ndim)
-    ndim=end;
+    end=ndim;
   fprintf (stderr,
 	   "\nWriting structure and eigenvectors %d to %d to %s\n",
 	   begin,end,opt2fn("-v",NFILE,fnm));
