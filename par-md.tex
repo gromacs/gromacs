@@ -1,5 +1,5 @@
 \section{Parallel Molecular Dynamics}
-In this chapter we describe some details of the \myindex{parallel MD}  
+In this chapter we describe some details of the \normindex{parallel MD}  
 algorithm used 
 in {\gromacs}. This also includes some other information on neighboursearching and
 a side excursion to parallel sorting.
@@ -12,12 +12,12 @@ these two grids are mapped onto a grid of processors when {\gromacs} runs on a
 parallel computer.
 
 \subsection{Domain decomposition}
-Modern day parallel computers, such as an \myindex{IBM SP/2} or a
-\myindex{Cray T3E} consist of relatively
+Modern day parallel computers, such as an \normindex{IBM SP/2} or a
+\normindex{Cray T3E} consist of relatively
 small numbers of relatively fast scalar processors (typically 8 to 256).
 The communication channels that are available in hardware on these machine are
-not directly visible for the programmer, a software layer (like \myindex{MPI} or 
-\myindex{PVM}) hides this, and makes communication from all processors to all
+not directly visible for the programmer, a software layer (like \normindex{MPI} or 
+\normindex{PVM}) hides this, and makes communication from all processors to all
 others possible. In contrast, in the {\gromacs} hardware~\cite{Berendsen95a}
 only communication in a ring was available, i.e. each processor could communicate
 with its direct neighbours only.
@@ -88,7 +88,7 @@ For homogeneous system, this is close to an optimal load balancing, without
 actually doing load balancing. For inhomogeneous system, such as membranes, or 
 interfaces, the dimension for slabbing must be chosen such that it is perpendicular
 to the interface; in this fashion each processor has ``a little bit of everything''.
-The {\gromacs} utility program \myindex{editconf} has an option to rotate a whole
+The {\gromacs} utility program \normindex{editconf} has an option to rotate a whole
 computational box.
 
 The following observations are important here:
@@ -103,7 +103,7 @@ The following observations are important here:
 	Since all processors have all coordinates, it does not matter where
 	interactions are calculated.
 	The division is actually done by the {\gromacs} preprocessor 
-	(\myindex{grompp}) and care is taken that, as far as possible,
+	(\normindex{grompp}) and care is taken that, as far as possible,
 	every processor gets the same number of bonded interactions.
 \end{itemize}
 
@@ -158,7 +158,7 @@ each of which have to be parallelized:
 	in parallel to obtain $\hat{\rho}(\ve{k})$. This is done using the
 	FFTW library ({\tt http://lcs.theory.mit.edu/\~{ }fftw}) 
 	which employs the MPI library for message passing 
-	programs (note that there are also \myindex{shared memory} versions of the
+	programs (note that there are also \normindex{shared memory} versions of the
 	FFTW code).\\
 	This FFT algorithm actually use slabs as well (good thinking!).
 	Each processor does 2D FFTS on its slab, and then the whole {\fftgrid}
@@ -197,8 +197,8 @@ using two communication channels. The FFTW routines actually use other forms
 of communication as well, and these routines are coded with MPI routines for
 message passing. This implies that {\gromacs} can only perform the PPPM algorithm
 on parallel computers computers that support MPI. However, 
-most \myindex{shared memory}
-computers, such as the \myindex{SGI Origin} 
+most \normindex{shared memory}
+computers, such as the \normindex{SGI Origin} 
 also support MPI using the shared memory for communication.
 
 \subsection{Parallel sorting}

@@ -4,7 +4,7 @@
 \newcommand{\amine}{\sf -NH$_2$}
 \newcommand{\amines}{\sf -NH-}
 \newcommand{\aminep}{\sf -NH$_3^+$}
-\section{Removing fastest \myindex{degrees of freedom}}
+\section{Removing fastest \normindex{degrees of freedom}}
 The maximum time step in MD simulations is limited by the smallest
 oscillation period that can be found in the simulated
 system. Bond-stretching vibrations are in their quantum-mechanical
@@ -22,7 +22,7 @@ period 13~fs the next shortest periods are around 20~fs, which will
 allow a maximum time step of about 4~fs
 
 Removing the bond-angle degrees of freedom from hydrogen atoms can
-best be done by defining them as \myindex{dummy atoms} in stead of
+best be done by defining them as \normindex{dummy atoms} in stead of
 normal atoms. Where a normal atoms is connected to the molecule with
 bonds, angles and dihedrals, a dummy atom's position is calculated
 from the position of three nearby heavy atoms in a predefined manner
@@ -38,7 +38,7 @@ affecting the dynamical properties too much. These constructions will
 shortly be described in~sub\secref{dummyhydro} and have previously
 been described in full detail~\cite{feenstra99}.
 
-Using both dummy atoms and \myindex{modified masses}, the next
+Using both dummy atoms and \normindex{modified masses}, the next
 bottleneck is likely to be formed by the improper dihedrals (which are
 used to preserve planarity or chirality of molecular groups) and the
 peptide dihedrals. The peptide dihedral cannot be changed without
@@ -49,7 +49,7 @@ somewhat elaborate dummy atom constructions, as will be described in
 sub~\secref{dummyaro}.
 
 All modifications described in this section can be performed using the
-{\gromacs} topology building tool {\tt \myindex{pdb2gmx}}. Separate
+{\gromacs} topology building tool {\tt \normindex{pdb2gmx}}. Separate
 options exist to increase hydrogen masses, dummify all hydrogen atoms
 or also dummify all aromatic residues. Note that when all hydrogen
 atoms are dummified, also those inside the aromatic residues will be
@@ -58,11 +58,11 @@ differently depending on the treatment of the aromatic residues.
 
 Parameters for the dummy constructions for the hydrogen atoms are
 inferred from the forcefield parameters ({\em vis}. bondlengths and
-angles) directly by {\tt \myindex{grompp}} while processing the
+angles) directly by {\tt \normindex{grompp}} while processing the
 topology file.  The constructions for the aromatic residues are based
 on the bondlengths and angles for the geometry as described in the
 forcefiels, but these parameters are hard-coded into {\tt
-\myindex{pdb2gmx}} due to the complex nature of the construction
+\normindex{pdb2gmx}} due to the complex nature of the construction
 needed for a whole aromatic group.
 
 \subsection{Hydrogen bond-angle vibrations}
@@ -246,7 +246,8 @@ pvmd still running.
 Now you can use {\gromacs} with pvm. You just have to add the option
 {\tt -N 3} to your {\tt grompp} and {\tt mdrun} command lines. Since the
 remotely running mdruns will start from your home directory, give a full 
-path for the log file, eg.: {\tt -g /data/pulp/wallace/speptide/md}.
+path for the log file, eg.:\\
+{\tt -g /data/pulp/wallace/speptide/md}.
 
 PVM jobs can be stopped within the pvm command line utility with
 {\tt kill process}. All pvms can be terminated with the {\tt halt} command.

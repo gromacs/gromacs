@@ -17,9 +17,9 @@ LOCAL	=	$(GMXHOME)/src/local
 HTML	=	$(GMXHOME)/html
 
 FILES = intro		defunits	algorithms	par-md		\
-	forcefield	topology	special		\
-	programs	analyse		install		implement	\
-	tables		lr-corr		averages	progman
+	forcefield	topology	special		programs	\
+	analyse		install		implement	tables		\
+	lr-corr		averages	progman
 
 AUXFILES = $(foreach FILE,$(FILES), $(FILE).aux)
 TEXFILES = $(foreach FILE,$(FILES), $(FILE).tex)
@@ -43,13 +43,12 @@ gromacs.tex:	$(TEXFILES)
 gromacs.aux:	gromacs.tex $(AUXFILES)
 		$(TEX) gromacs
 
-gromacs.bbl:	gromacs.aux
+bib+idx:	gromacs.tex
+		$(TEX) gromacs
 		$(BIB) gromacs
-
-gromacs.ind:	gromacs.aux
 		$(IDX) gromacs
 
-gromacs.dvi:	gromacs.aux	gromacs.bbl	gromacs.ind
+gromacs.dvi:	bib+idx		gromacs.aux
 
 gromacs.ps:	gromacs.dvi
 		dvips -M -o $@ $^
@@ -70,4 +69,7 @@ man:
 		mkman
 
 clean:
-		$(RM) *.log *.lof *.lot *.bbl *.blg *.toc *.dvi *.aux *.ps *~ #*# *.idx *.ilg *.ind progman.tex ; $(RMDIR) progman ; $(TOUCH) progman.tex
+		$(RM) *.log *.lof *.lot *.bbl *.blg *.toc *.dvi *.aux *.ps *~ #*# *.idx *.ilg *.ind 
+		$(RM) progman.tex
+		$(RMDIR) progman
+		$(TOUCH) progman.tex

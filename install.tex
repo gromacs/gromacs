@@ -4,15 +4,15 @@
 The {\gromacs} code is distributed in SOURCE form by our WWW server at\\
 {\wwwpage}\\
 On this server you will find all the information you need to 
-\myindex{install}
-the software, as well as the \myindex{license form} that you have to submit
+\normindex{install}
+the software, as well as the \normindex{license form} that you have to submit
 before you are allowed to download the code. When you have filled in this
 license form, a username and password will be sent to you by e-mail
 with which you can download the files. The e-mail address you specify
 on your license sheet will also be used to send you information on
 updates, bug-fixes etc.
 
-For \myindex{commercial use} of the software, please contact us directly:
+For \normindex{commercial use} of the software, please contact us directly:
 {\tt gromacs@chem.rug.nl}
 
 \section{Porting {\gromacs}.}
@@ -101,33 +101,33 @@ With this routine we can diagnose the ongoing communication. In the current impl
 
 
 \section{Environment Variables}
-{\gromacs} programs may be influenced by the use of \myindex{environment} 
-variables. First of all, the variables set in the \myindex{GMXRC} file
+{\gromacs} programs may be influenced by the use of \normindex{environment} 
+variables. First of all, the variables set in the \normindex{GMXRC} file
 are essential for running and compiling {\gromacs}. Other variables are:
 \begin{enumerate}
-\item	\myindex{DUMP\_NL}, dump \myindex{neighborlist}. 
+\item	\normindex{DUMP\_NL}, dump \normindex{neighborlist}. 
 	If set to a positive number the {\em entire}
 	neighborlist is printed in the log file (may be many megabytes).
 	Mainly for debugging purposes, but may allso be handy for
-	\myindex{porting} to other platforms.
-\item	\myindex{IAMCOOL}, when set prints \myindex{cool quotes}, otherwise
+	\normindex{porting} to other platforms.
+\item	\normindex{IAMCOOL}, when set prints \normindex{cool quotes}, otherwise
 	your {\gromacs} life will be dull and boring.
-\item	\myindex{WHERE}, when set print debugging info on line numbers.
-\item	\myindex{LOG\_BUFS}. The size of the buffer for file I/O. When set
+\item	\normindex{WHERE}, when set print debugging info on line numbers.
+\item	\normindex{LOG\_BUFS}. The size of the buffer for file I/O. When set
 	to 0, all file I/O will be unbuffered and therefore very slow.
 	This can be handy for debugging purposes, because it ensures
 	that all files are always totally up-to-date.
-\item   \myindex{GMXNPRI}, for SGI systems only. When set, gives the
+\item   \normindex{GMXNPRI}, for SGI systems only. When set, gives the
 	default non-degrading priority (npri) for {\tt
-	\myindex{mdrun}}, {\tt \myindex{nmrun}}, {\tt
-	\myindex{g\_covar}} and {\tt \myindex{g\_nmeig}},
+	\normindex{mdrun}}, {\tt \normindex{nmrun}}, {\tt
+	\normindex{g\_covar}} and {\tt \normindex{g\_nmeig}},
 	e.g.\@ setting \verb'setenv GMXNPRI 250' causes all
 	runs to be performed at near-lowest priority by default.
 \end{enumerate}
 
 Some other environment variables are specific to one program, such as
-\myindex{TOTAL} for the {\tt \myindex{do\_shift}} program, and
-\myindex{DSPP} for the {\tt \myindex{do\_dssp}} program.
+\normindex{TOTAL} for the {\tt \normindex{do\_shift}} program, and
+\normindex{DSPP} for the {\tt \normindex{do\_dssp}} program.
 
 \section{File types.}
 \label{sec:fileformats}
@@ -158,21 +158,21 @@ the type declaration for the block structure.
  * molecules and shake-blocks.
  */
 typedef struct {
-  int multinr[MAXPROC];         /* The indices for the multiprocessor 
-                                 * version. For n=0, the blocks run from 0
-                                 * upto multinr[index[0]]. The blocks for 
-                                 * processor n (n>0) run from 
-                                 * index[multinr[n-1]] to index[multinr[n]].
-                                 */
-  int nr;                       /* The number of blocks                     */
-  atom_id *index;               /* Array of indices in a (dim: nr+1)        */
-  int nra;                      /* The number of atoms                      */
-  atom_id *a;                   /* Array of atom numbers in each group      */
-                                /* (dim: nra)                               */
-                                /* Block i (0<=i<nr) runs from              */
-                                /* index[i] to index[i+1]-1. There will     */
-                                /* allways be an extra entry in index       */
-                                /* to terminate the table                   */
+  int multinr[MAXPROC]; /* The indices for the multiprocessor 
+                         * version. For n=0, the blocks run from 0
+                         * upto multinr[index[0]]. The blocks for 
+                         * processor n (n>0) run from 
+                         * index[multinr[n-1]] to index[multinr[n]].
+                         */
+  int nr;               /* The number of blocks                     */
+  atom_id *index;       /* Array of indices in a (dim: nr+1)        */
+  int nra;              /* The number of atoms                      */
+  atom_id *a;           /* Array of atom numbers in each group      */
+                        /* (dim: nra)                               */
+                        /* Block i (0<=i<nr) runs from              */
+                        /* index[i] to index[i+1]-1. There will     */
+                        /* allways be an extra entry in index       */
+                        /* to terminate the table                   */
 } t_block;
 \end{verbatim}
 

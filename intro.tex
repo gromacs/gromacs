@@ -97,7 +97,7 @@ potential energies,  so that they can be compared better.
 
 \section{Molecular Dynamics Simulations}
 \label{sec:MDsimulations}
-MD simulations solve Newton's \myindex{equations of motion} 
+MD simulations solve Newton's \normindex{equations of motion} 
 for a system of $N$ interacting atoms:
 \beq
   m_i \frac{\partial^2 \ve{r}_i}{\partial t^2}  = \ve{F}_i, \;i=1 \ldots N.
@@ -180,7 +180,7 @@ are:~\cite{McQuarrie76}
 where $x=h\nu /kT$. The classical oscillator absorbs too much energy
 ($kT$), while the high-frequency quantum oscillator is in its ground
 state at the zero-point energy level of $\frac{1}{2} h\nu$. \\ 
-(b) We can treat the bonds (and bond angles) as {\em \myindex{constraints}} in
+(b) We can treat the bonds (and bond angles) as {\em \normindex{constraints}} in
 the equation of motion. The rational behind this is that a quantum
 oscillator in its ground state resembles a constrained bond more
 closely than a classical oscillator. A good practical reason for this
@@ -197,7 +197,7 @@ In MD we use a {\em \underline {conservative}} force field that is a
 function of the positions of atoms only.  This means that the
 electronic motions are not considered: the electrons are supposed to
 adjust their dynamics infinitely fast when the atomic positions change
-(the {\em \myindex{Born-Oppenheimer}} approximation), and remain in
+(the {\em \normindex{Born-Oppenheimer}} approximation), and remain in
 their ground state. This is really allright, almost always. But of
 course, electron transfer processes and electronically excited states
 can not be treated. Neither can chemical reactions be treated
@@ -205,7 +205,7 @@ properly, but there are other reasons to shy away from reactions for
 the time being.
 
 {\bf Force fields are approximate}
-\myindex{Force field}s provide the forces. They are not really a part of the
+\normindex{Force field}s provide the forces. They are not really a part of the
 simulation method and their parameters can be user-modified as the
 need arises or knowledge improves. But the form of the forces that can
 be used in a particular program is subject to limitations. The force

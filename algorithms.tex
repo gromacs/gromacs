@@ -113,7 +113,7 @@ but every atom can only belong to four different groups, one of each
 of the following kinds:
 \begin{description}
 \item[T-coupling group]
-The \myindex{temperature coupling} parameters (reference temperature, time
+The \normindex{temperature coupling} parameters (reference temperature, time
 constant, number of degrees of freedom, see
 subsection~\ref{subsec:update}) can be defined for each T-coupling
 group separately. For example, in a solvated macromolecule the
@@ -121,7 +121,7 @@ solvent (that  tends to produce more heating by force and integration
 errors)  can be coupled with a shorter time constant to a bath than a
 macromolecule, or a surface can be kept cooler than an adsorbing
 molecule. Many different T-coupling groups may be defined.
-\item[\myindex{Freeze group}]
+\item[\normindex{Freeze group}]
 Atoms that belong to a freeze group are kept stationary in the
 dynamics. This is useful during equilibration, e.g. to avoid that badly
 placed solvent molecules will give unreasonable kicks to  protein atoms,
@@ -130,12 +130,12 @@ potential on the atoms that must be protected. The freeze option can be
 used on one or two coordinates of an atom, thereby freezing the atoms
 in a plane or on a line. Many freeze groups can be defined.
 \item[Accelerate group]
-On each atom in an '\myindex{accelerate group}' an acceleration $\ve{a}^g$ will
+On each atom in an '\normindex{accelerate group}' an acceleration $\ve{a}^g$ will
 be imposed. This is equivalent to an external force. This feature
 makes it possible to drive the system into a non-equilibrium state and
 enables to perform NEMD (non-equilibrium MD) to obtain transport
 properties. 
-\item[\myindex{Energy monitor group}]
+\item[\normindex{Energy monitor group}]
 Mutual interactions between all energy monitor
 groups are compiled during
 the simulation. This is done for Lennard Jones and Coulomb terms separately.
@@ -214,7 +214,7 @@ at $t=t_0$ must be known. The {\em leap-frog algorithm,} used to
 update the time step with $\Dt$ (see subsection~\ref{subsec:update}), requires
 that the velocities must be known at $t=t_0 - \hDt$. If
 velocities are not available, the program can generate initial atomic
-velocities $v_i, i=1\ldots 3N$ from a \myindex{Maxwellian distribution}
+velocities $v_i, i=1\ldots 3N$ from a \normindex{Maxwellian distribution}
 (Figure~\ref{fig:maxwell}) at a
 given absolute temperature $T$:
 \beq 
@@ -237,7 +237,7 @@ such that the total energy corresponds exactly to $T$ (see
 eq.~\ref{eq:E-T}). 
 
 \subsubsection*{Centre-of-mass motion}
-The \myindex{centre-of-mass velocity} (c.o.m.)is normally set to zero at every step. 
+The \normindex{centre-of-mass velocity} (c.o.m.)is normally set to zero at every step. 
 Normally there is no net external force acting on the system and the c.o.m.
 velocity should remain constant. In practice, however, the update
 algorithm develops a very slow change in the c.o.m. velocity, and thus
@@ -259,7 +259,7 @@ The latter concern non-bonded interactions between any pair of particles.
 \subsubsection{Pair lists generation}
 The non-bonded pair forces need to be calculated only for those pairs
 $i,j$  for which the distance $r_{ij}$ between $i$ and the 
-\myindex{nearest image} 
+\normindex{nearest image} 
 of  $j$ is less than a given cut-off radius $r_c$. Some of the
 particle pairs that fulfil this criterium are excluded, when their
 interaction is already fully accounted for by bonded interactions. {\gromacs}
@@ -301,8 +301,8 @@ z_i & = & z_i - c*\verb'round'([z_i-z_0-c/2]/c)
 
 \subsubsection{Image calculation on a grid.}
 \label{sec:nsgrid}
-{\gromacs} uses an \myindex{interaction list} for nonbonded interactions,
-usually called the {\em \myindex{neighbourlist}}.
+{\gromacs} uses an \normindex{interaction list} for nonbonded interactions,
+usually called the {\em \normindex{neighbourlist}}.
 This list is made every {\tt nstlist} MD steps, where {\tt nstlist} is
 typically 10 MD steps. 
 To make the neighbourlist all particles that are close 
@@ -349,8 +349,8 @@ $i$ will find $j$ as a neighbour, while image $t_x$ = 1 of particle $i$
 will find $k$ as a neighbour.
 
 \subsubsection{Charge groups}
-Where applicable, \myindex{neighbour searching} is carried out on the basis of
-{\em  charge groups}. A \myindex{charge group} is a small set of nearby atoms
+Where applicable, \normindex{neighbour searching} is carried out on the basis of
+{\em  charge groups}. A \normindex{charge group} is a small set of nearby atoms
 that  have net charge zero. Charge groups are defined in the molecular
 topology. If the nearest image  distance between the {\em geometrical
 centers} of the atoms of two charge groups is less than the cutoff
@@ -364,8 +364,8 @@ groups  do not avoid adverse cut-off effects, and you shold consider
 using one of the lattice sum methods supplied by {\gromacs}~\cite{Berendsen93a}. 
 
 If appropriately
-constructed \myindex{shift function}s are used for the 
-\myindex{electrostatic force}s, no
+constructed \normindex{shift function}s are used for the 
+\normindex{electrostatic force}s, no
 charge groups are needed. Such shift functions are implemented
 in {\gromacs} (see chapter~\ref{ch:ff}) but must be used with
 care: in principle they should be combined with a lattice sum for
@@ -375,14 +375,14 @@ The actual neighbour search is performed on a grid. The details of the
 algorithm are not relevant for the user and are not given here.
 
 \subsubsection{Potential energy}
-When forces are computed, the \myindex{potential energy} of each interaction
+When forces are computed, the \normindex{potential energy} of each interaction
 term is computed as well. The total potential energy is summed for
 various contributions, such as Lennard Jones, Coulomb, and bonded
 terms. It is also possible to compute these contributions for {\em
 groups} of atoms that are separately defined (see section~\ref{sec:group}).
 
 \subsubsection{Kinetic energy and temperature}
-The \myindex{temperature} is given by the total \myindex{kinetic energy} of the
+The \normindex{temperature} is given by the total \normindex{kinetic energy} of the
 $N$-particle system:
 \beq
 E_{kin} = \half \sum_{i=1}^N m_i v_i^2
@@ -411,9 +411,9 @@ forces  are imposed:
 \eeq
 
 \subsubsection{Pressure and virial}
-The \myindex{pressure} 
+The \normindex{pressure} 
 tensor {\bf P} is calculated from the difference between 
-kinetic energy $E_{kin}$ and the \myindex{virial} ${\bf \Xi}$
+kinetic energy $E_{kin}$ and the \normindex{virial} ${\bf \Xi}$
 \beq
 {\bf P} = \frac{2}{3 V} ({\bf E}_{kin}-{\bf \Xi})
 \label{eq:P}
@@ -438,7 +438,7 @@ implementation  in {\gromacs} of the virial computation is described.
 
 The {\gromacs} MD program utilises the so-called {\em leap-frog} 
 algorithm~\cite{Hockney74} for the integration of the equations of
-motion.  The \myindex{leap-frog} 
+motion.  The \normindex{leap-frog} 
 algorithm uses positions $\ve{r}$ at time $t$ and
 velocities $\ve{v}$ at time $t-\hDt$; it updates positions and
 velocities using the forces
@@ -456,7 +456,7 @@ The algorithm is of third order in $\ve{r}$ and is time-reversible.
 See ref.~\cite{Berendsen86b} for the merits of this algorithm and comparison
 with other time integration algorithms.
  
-The \myindex{equations of motion} are modified for temperature coupling
+The \normindex{equations of motion} are modified for temperature coupling
  and pressure coupling, and extended to include the conservation of
 constraints, all of which are described below.
 \begin {figure}
@@ -660,8 +660,8 @@ where $g$ and $h$ are group indices which differ per atom.
 \subsection{Constraint algorithms}
 
 \subsubsection*{SHAKE}
-\myindex{Constraints} can be imposed in {\gromacs} using the traditional 
-\myindex{SHAKE}
+\normindex{Constraints} can be imposed in {\gromacs} using the traditional 
+\normindex{SHAKE}
 method~\cite{Ryckaert77}. The SHAKE routine changes a set of unconstrained
 coordinates $\ve{r}^{'}$ to a set of coordinates $\ve{r}''$ that
 fulfil a  list of distance constraints, using a set $\ve{r}$ as
@@ -699,7 +699,7 @@ solution of a set of coupled equations of the second degree. These are
 solved iteratively by SHAKE.
 For the special case of rigid water molecules, that often make up more
 than 80\% of the simulation system we have implemented the 
-\myindex{SETTLE}
+\normindex{SETTLE}
 algorithm~\cite{Miyamoto92} (Sec~\ref{sec:settle}).
 
 
@@ -716,12 +716,12 @@ algorithm~\cite{Miyamoto92} (Sec~\ref{sec:settle}).
 \newcommand{\lenc}{\ve{d}}
 
 \subsubsection*{The LINCS algorithm}
-\myindex{LINCS} is an algorithm that resets bonds to their correct lengths
+\normindex{LINCS} is an algorithm that resets bonds to their correct lengths
 after an unconstrained update~\cite{Hess97}. 
 The method is non-iterative, as it always uses two steps.
 Altough LINCS is based on matrices, no matrix-matrix multiplications are 
 needed. The method is more stable and faster than SHAKE, 
-but it can only be used with bond \myindex{constraints} and 
+but it can only be used with bond \normindex{constraints} and 
 isolated angle constraints, such as the proton angle in OH. 
 Because of its stability LINCS is especially useful for Langevin Dynamics. 
 LINCS has two parameters, which are explained in the subsection parameters.
@@ -860,12 +860,12 @@ This angle is set by the user in the input file for \verb'mdrun'.
 
 \subsection{Output step}
 The important output of the MD run is the {\em
-\myindex{trajectory file}} \verb'name.trj' which contains particle coordinates
+\normindex{trajectory file}} \verb'name.trj' which contains particle coordinates
 and -optionally- velocities at regular intervals. Since the trajectory
 files are lengthy, one should not save every step! To retain all
 information it suffices to write a frame every 15 steps, since at
 least 30 steps are made per period of the highest frequency in the
-system, and Shannon's \myindex{sampling} theorem states that two samples per
+system, and Shannon's \normindex{sampling} theorem states that two samples per
 period of the highest frequency in a band-limited signal contain all
 available information. But that still gives very long files! So, if
 the highest frequencies are not of interest, 10 or 20 samples per ps
@@ -913,7 +913,7 @@ update configuration \\
 
 \section{Simulated Annealing}
 \label{sec:SA}
-The well known \myindex{simulated annealing}
+The well known \normindex{simulated annealing}
 (SA) protocol is implemented
 in a simple way into {\gromacs}. A modification of the temperature coupling
 scheme is used as a very basic implementation of the SA algorithm. The
@@ -967,8 +967,8 @@ LD is an option of the \verb'mdrun' program.
 \section{Energy Minimisation}
 \label{sec:EM}
 Energy minimisation in {\gromacs} can be done using a  simple 
-\myindex{steepest descent} method. 
-\myindex{Conjugate gradient} minimization is planned for the
+\normindex{steepest descent} method. 
+\normindex{Conjugate gradient} minimization is planned for the
 next release. EM is just an option of the \verb'mdrun' program.
 
 \subsection{Steepest Descents.}
@@ -1015,9 +1015,9 @@ $f=7.7$ kJ~mol$^{-1}$~nm$^{-1}$. A value for $\epsilon$ between 1 and
 %\NI
 
 \section{Normal Mode Analysis}
-\myindex{Normal mode analysis}~\cite{Levitt83,Go83,BBrooks83b} 
+\normindex{Normal mode analysis}~\cite{Levitt83,Go83,BBrooks83b} 
 can be performed using {\gromacs}, by diagonalization of the mass-weighted
-\myindex{Hessian}:
+\normindex{Hessian}:
 \beq
 M^{-1/2} H M^{-1/2} Q   ~=~     \omega^2 Q
 \eeq
@@ -1039,12 +1039,12 @@ from which the Hessian is computed numerically. It should be noted that
 for a usual Normal Mode calculation, it is necessary to completely minimize 
 the energy prior to computation
 of the Hessian. A number of {\gromacs} programs are involved in these
-calculations. First \myindex{nmrun}, which computes the Hessian,
-and secondly \myindex{g\_nmeig} which does the diagonalization and
+calculations. First \normindex{nmrun}, which computes the Hessian,
+and secondly \normindex{g\_nmeig} which does the diagonalization and
 sorting of normal modes according to frequencies. Both these programs
 should be run in double precision. An overview of normal mode analysis
-and the related \myindex{essential dynamics} or
-\myindex{principal component analysis} can be found in ~\cite{Hayward95b}.
+and the related \normindex{essential dynamics} or
+\normindex{principal component analysis} can be found in ~\cite{Hayward95b}.
 
 \section{Free energy perturbation}
 \label{sec:fepalg}
@@ -1103,7 +1103,7 @@ of the WHAT IF \cite{Whatif} manual.
 \newcommand{\abs}[1]{\mid \! {#1} \! \mid}
 
 The purpose of this section is to discuss the 
-\myindex{parallelization} of the 
+\normindex{parallelization} of the 
 principle MD algorithm and not to describe the algorithms that are in 
 practical use for molecular systems with their complex variety of atoms 
 and terms in the force field descriptions. We shall therefore consider 
@@ -1127,7 +1127,7 @@ them with their own advantages and disadvantages. The method to
 choose depends on the hardware and compilers available.
 We list them here:
 \begin{enumerate}
-\item[1]        {\em \myindex{Message Passing}.}\\
+\item[1]        {\em \normindex{Message Passing}.}\\
                 In this method, which is more or less the traditional
                 way of parallel programming, all the parallelism is
                 explicitly programmed by the user. The disadvantage
@@ -1142,7 +1142,7 @@ We list them here:
                 this way of
                 parallellism in their C and Fortran compilers.
                 
-\item[2]        {\em \myindex{Data Parallel}.}\\
+\item[2]        {\em \normindex{Data Parallel}.}\\
                 This method lets the user define arrays on which to
                 operate in parallel. Programming this way is much
                 like vectorising: recurrence is not parallelised
@@ -1177,11 +1177,11 @@ the poor performance of the code produced by the compilers
 and because this way of programming
 has the same drawback as vectorisation: the part of the program that is
 not vectorised or parallellised determines the runtime of the program
-(\myindex{Amdahl's law}).
+(\normindex{Amdahl's law}).
 
 The approach we took to parallellism was a minimalist one: use as little
 non-standard elements in the software as possible, and use the
-simplest \myindex{processor topology} that does the job. We therefore 
+simplest \normindex{processor topology} that does the job. We therefore 
 decided to use a standard language (Ansi-C) with as little non-standard
 routines as possible. We only use 5 communication routines that are
 non-standard. It is therefore very easy to port our code to other machines.
@@ -1189,9 +1189,9 @@ non-standard. It is therefore very easy to port our code to other machines.
 For an $O(N^2)$ problem like MD, one of the best schemes for the 
 interprocessor connections is a ring, so our software demands that
 a ring is present in the interprocessor connections. A ring can 
-almost always be mapped onto another network like a \myindex{hypercube}, a bus
+almost always be mapped onto another network like a \normindex{hypercube}, a bus
 interface (ethernet eg. using Parallel Virtual Machines PVM~\cite{pvm3})
-or a \myindex{tree} (CM-5). Some hardware vendors
+or a \normindex{tree} (CM-5). Some hardware vendors
 have very luxurious connection schemes that connect every processor
 to every other processor, but we do not really need it and so do not use
 it even though it might come in handy at times.
@@ -1199,7 +1199,7 @@ it even though it might come in handy at times.
 When using a message passing scheme one has to divide the particles 
 over processors, which can be done in two ways:
 \begin{itemize}
-\item   {\em \myindex{Space Decomposition}.}\\
+\item   {\em \normindex{Space Decomposition}.}\\
         An element of space is allocated to each processor, when dividing
         a cubic box with edge $b$ over $P$ processors this can be done 
         by giving
@@ -1213,7 +1213,7 @@ over processors, which can be done in two ways:
         are also 3- and 4-atom interactions that would 
         complicate the bookkeeping so much that this method is not used
         in our program.
-\item   {\em \myindex{Particle Decomposition}.}\\
+\item   {\em \normindex{Particle Decomposition}.}\\
         Every processor is allocated a number of particles. When
         dividing $N$ particles over $P$ processors each processor will
         get $N/P$ particles. The implementation of this method

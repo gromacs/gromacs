@@ -30,16 +30,16 @@ operations in a single loop, which implies that some compilers
 can schedule the code better. It turns out however, that even
 some of the most advanced compilers have problems with scheduling, 
 implying that manual tweaking is necessary to get optimum 
-\myindex{performance}.
+\normindex{performance}.
 This may include common-subexpression elimination, or moving
 code around. 
-The loop is used when a \myindex{watertype} is selected in the 
+The loop is used when a \normindex{watertype} is selected in the 
 {\tt .mdp} file.
 
 \subsection{Shake for Water - SETTLE}
 \label{sec:settle}
-We have implemented the \myindex{SETTLE} algorithm~\cite{Miyamoto92} which is
-an analytical solution of \myindex{shake} specifically for water. 
+We have implemented the \normindex{SETTLE} algorithm~\cite{Miyamoto92} which is
+an analytical solution of \normindex{shake} specifically for water. 
 SETTLE can be selected in the topology file. Check for instance the
 topology {\tt \$GMXLIB/spc.itp}:
 \begin{verbatim}
@@ -70,7 +70,7 @@ TIP3P just has another geometry. TIP4P has a dummy atom, but since
 that is generated it does not need to shaken (nor stirred).
 
 \subsection{Fortran Code}
-Unfortunately, \myindex{Fortran} compilers are still better than C-compilers;
+Unfortunately, \normindex{Fortran} compilers are still better than C-compilers;
 for most machines anyway. For some machines (e.g. SGI Power Challenge)
 the difference may be up to a factor of 3, in the case of vector
 computers this may be even worse. Therefore, some of the routines

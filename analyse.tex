@@ -170,8 +170,8 @@ up to $r_{max}$, so angle dependent, see fig.~\ref{fig:rdfex}D.
 \subsection{Theory of correlation functions}
 The theory of correlation functions is well established~\cite{Allen87}.
 However we want to describe here the implementation of the various 
-\myindex{correlation function} flavors in the {\gromacs} code.
-The definition of the \myindex{autocorrelation function} (ACF)
+\normindex{correlation function} flavors in the {\gromacs} code.
+The definition of the \normindex{autocorrelation function} (ACF)
 $C_f(t)$ for a property $f(t)$ is
 \beq
 C_f(t)	~=~	\left<f(\xi) f(\xi+t)\right>_{\xi}
@@ -187,7 +187,7 @@ C_{fg}(t) ~=~ 	\left<f(\xi) g(\xi+t)\right>_{\xi}
 however, in {\gromacs} there is no standard mechanism to do this
 ({\bf note:} you can use the {\tt xmgr} program to compute cross correlations).
 The integral of the correlation function over time is the 
-\myindex{correlation time} $\tau_f$:
+\normindex{correlation time} $\tau_f$:
 \beq
 \tau_f	~=~	\int_0^{\infty} C_f(t) {\rm d} t
 \label{eqn:corrtime}
@@ -214,7 +214,7 @@ all points with the same statistical accuracy:
 C_f(j\Delta t)	~=~ \frac{1}{M}\sum_{i=0}^{N-1-M} f(i\Delta t)f((i+j)\Delta t)
 \eeq
 here of course $j < M$.
-$M$ is sometimes referred to as the \myindex{time lag} of the correlation function. 
+$M$ is sometimes referred to as the \normindex{time lag} of the correlation function. 
 When we decide to do this, we intentionally do not use all the available points
 for very short time intervals ($j << M$), but it makes it easier to interpret
 the results.
@@ -293,14 +293,14 @@ with ${\bf \mu}_i = \sum_{j \in i} {\bf r}_j q_j$. The dipole correlation time
 can be computed using \eqnref{corrtime}.
 For some applications see~\cite{Spoel98a}.
 
-The \myindex{viscosity} of a liquid can be related to the correlation 
+The \normindex{viscosity} of a liquid can be related to the correlation 
 time of the Pressure tensor $\ve{P}$~\cite{PSmith93c,Balasubramanian96}.
 {\tt g\_energy} can compute the viscosity, but in our experience this is not very
 accurate (actually the values do not converge...).
 
 \subsection{Mean Square Displacement}
 \label{sec:msd}
-To determine the self \myindex{diffusion coefficient} $D_A$ of particles $A$ one
+To determine the self \normindex{diffusion coefficient} $D_A$ of particles $A$ one
 can use the Einstein relation~\cite{Allen87} \beq \lim_{t \rightarrow
 \infty} <|{\bf r}_i(t) - {\bf r}_i(0)|^2>_{i \in A} ~=~ 6 D_A t \eeq
 This {\em Mean Square Displacement} and $D_A$ are calculated by the
