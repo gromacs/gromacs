@@ -340,14 +340,11 @@ int main(int argc,char *argv[])
     "Reads one energy file and writes another, applying the [TT]-dt[tt],",
     "[TT]-offset[tt], [TT]-t0[tt] and [TT]-settime[tt] options and",
     "converting to a different format if necessary (indicated by file",
-    "extentions)."
+    "extentions).[PAR]",
+    "[TT]-settime[tt] is applied first, then [TT]-dt[tt]/[TT]-offset[tt]",
+    "followed by [TT]-b[tt] and [TT]-e[tt] to select which frames to write."
   };
   
-  static char *bugs[] = {
-      "The settime arguments are applied first, then dt/offset",
-      "followed by b & e to select which frames to write."
-  };
-
   int       in,out=0;
   t_energy  *ee,*lastee,*outee,*startee;
   int       step,laststep,outstep,startstep;
@@ -392,7 +389,7 @@ int main(int argc,char *argv[])
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS,TRUE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   tadjust=0;
   snew(fnms,argc);
   nfile=0;
