@@ -235,6 +235,31 @@ static gmx_inline real cos_angle(rvec a,rvec b)
   return cos;
 }
 
+static gmx_inline real cos_angle_no_table(rvec a,rvec b)
+{
+  /* This version does not need the invsqrt lookup table */
+  real   cos;
+  int    m;
+  double aa,bb,ip,ipa,ipb; /* For accuracy these must be double! */
+  
+  ip=ipa=ipb=0;
+  for(m=0; (m<DIM); m++) {		/* 18		*/
+    aa   = a[m];
+    bb   = b[m];
+    ip  += aa*bb;
+    ipa += aa*aa;
+    ipb += bb*bb;
+  }
+  cos=ip/sqrt(ipa*ipb); 		/* 12		*/
+					/* 30 TOTAL	*/
+  if (cos > 1.0) 
+    return  1.0; 
+  if (cos <-1.0) 
+    return -1.0;
+  
+  return cos;
+}
+
 static gmx_inline void oprod(rvec a,rvec b,rvec c)
 {
   c[XX]=a[YY]*b[ZZ]-a[ZZ]*b[YY];
@@ -337,6 +362,16 @@ static gmx_inline void unitv(rvec src,rvec dest)
   real linv;
   
   linv=invsqrt(iprod(src,src));
+  dest[XX]=linv*src[XX];
+  dest[YY]=linv*src[YY];
+  dest[ZZ]=linv*src[ZZ];
+}
+
+static gmx_inline void unitv_no_table(rvec src,rvec dest)
+{
+  real linv;
+  
+  linv=1.0/sqrt(iprod(src,src));
   dest[XX]=linv*src[XX];
   dest[YY]=linv*src[YY];
   dest[ZZ]=linv*src[ZZ];
