@@ -282,7 +282,8 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
 	fprintf(debug,"Mol[%5d] = %s\n",i,*molinfo[tab[i]].name);
       fflush(debug);
     }
-    fprintf(stderr,"Made a shuffling table with %d entries\n",ntab);
+    fprintf(stderr,"Made a shuffling table with %d entries [molecules]\n",
+	    ntab);
   }
   if (bMorse)
     convert_harmonics(nrmols,molinfo,atype);
@@ -618,7 +619,7 @@ int main (int argc, char *argv[])
     { "-renum",   FALSE, etBOOL, &bRenum,
       "HIDDENRenumber atomtypes and minimize number of atomtypes" },
     { "-shuffle", FALSE, etBOOL, &bShuffle,
-      "Shuffle molecules over processors (only with N > 1)" },
+      "Shuffle molecules over processors (only with np > 1)" },
     { "-cleandum",FALSE, etBOOL, &bCleanDum,
       "Remove bonds to dummies" },
     { "-maxwarn", FALSE, etINT,  &maxwarn,

@@ -241,7 +241,7 @@ static void split_blocks(bool bVerbose,int nprocs,
       if (shknum[ai] != shknum[ai-1])
 	sbl++;
 
-    if (bSHK && (cgs->a[cgs->index[i+1]] >= tload)) {
+    if (bSHK && (cgs->a[cgs->index[i+1]] > tload)) {
       if (debug) 
 	fprintf(debug,"%s %d: tload = %g, ai = %d, i = %d, sbl = %d\n",
 		__FILE__,__LINE__,tload,ai,i,sbl);
