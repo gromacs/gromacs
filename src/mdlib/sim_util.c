@@ -170,10 +170,11 @@ static void reset_energies(t_grpopts *opts,t_groups *grp,
  */
 static void calc_f_el(FILE *fp,int  start,int homenr,
 		      real charge[],rvec x[],rvec f[],
-		      t_cosines Ex[],t_cosines Et[],real t)
+		      t_cosines Ex[],t_cosines Et[],real t,
+		      tensor vir_part)
 {
   rvec Ext;
-  real t0;
+  real t0,f_el;
   int  i,m;
   
   for(m=0; (m<DIM); m++) {
@@ -190,8 +191,16 @@ static void calc_f_el(FILE *fp,int  start,int homenr,
     if (Ex[m].n) {
       /* Convert the field strength from V/nm to MD-units */
       Ext[m] *= Ex[m].a[0]*FIELDFAC;
-      for(i=start; (i<start+homenr); i++) 
-	f[i][m] += charge[i]*Ext[m];
+      for(i=start; (i<start+homenr); i++) {
+	f_el = charge[i]*Ext[m];
+	f[i][m] += f_el;
+	/* Because the virial is calculated later from the forces
+	 * we need to subtract the contribution of the electric field.
+	 */
+	vir_part[XX][m] += 0.5*x[i][XX]*f_el;
+	vir_part[YY][m] += 0.5*x[i][YY]*f_el;
+	vir_part[ZZ][m] += 0.5*x[i][ZZ]*f_el;
+      }
     }
     else
       Ext[m] = 0;
@@ -332,7 +341,8 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 
   /* Compute forces due to electric field */
   calc_f_el(MASTER(cr) ? field : NULL,
-	    start,homenr,mdatoms->chargeA,x,f,parm->ir.ex,parm->ir.et,t);
+	    start,homenr,mdatoms->chargeA,x,f,parm->ir.ex,parm->ir.et,t,
+	    vir_part);
 
   /* When using PME/Ewald we compute the long range virial (pme_vir) there.
    * otherwise we do it based on long range forces from twin range
