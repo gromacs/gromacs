@@ -235,17 +235,18 @@ t_dlist *mk_dlist(FILE *log,
 	atm.Cn[1]=i;
       else if (strcmp(*(atoms->atomname[i]),"CB") == 0)
 	atm.Cn[2]=i;
-      else if ((strcmp(*(atoms->atomname[i]),"CG") == 0) ||
+      else if ((strcmp(*(atoms->atomname[i]),"CG") == 0)  ||
 	       (strcmp(*(atoms->atomname[i]),"CG1") == 0) ||
-	       (strcmp(*(atoms->atomname[i]),"OG") == 0) ||
+	       (strcmp(*(atoms->atomname[i]),"OG") == 0)  ||
 	       (strcmp(*(atoms->atomname[i]),"OG1") == 0) ||
 	       (strcmp(*(atoms->atomname[i]),"SG") == 0))
 	atm.Cn[3]=i;
-      else if ((strcmp(*(atoms->atomname[i]),"CD") == 0) ||
+      else if ((strcmp(*(atoms->atomname[i]),"CD") == 0)  ||
 	       (strcmp(*(atoms->atomname[i]),"CD1") == 0) ||
-	       (strcmp(*(atoms->atomname[i]),"SD") == 0) ||
+	       (strcmp(*(atoms->atomname[i]),"SD") == 0)  ||
 	       (strcmp(*(atoms->atomname[i]),"OD1") == 0) ||
-	       (strcmp(*(atoms->atomname[i]),"ND1") == 0))
+	       (strcmp(*(atoms->atomname[i]),"ND1") == 0) ||
+	       (strcmp(*(atoms->atomname[i]),"HG")  == 0))
 	atm.Cn[4]=i;
       else if ((strcmp(*(atoms->atomname[i]),"CE") == 0) ||
 	       (strcmp(*(atoms->atomname[i]),"CE1") == 0) ||
@@ -447,7 +448,7 @@ static void print_one(char *base,char *name,char *title,
 
 static void do_dihcorr(char *fn,int nf,int ndih,real **dih,real dt,
 		       int nlist,t_dlist dlist[],real time[],int maxchi,
-		       bool bPhi,bool bPsi,bool bChi)
+		       bool bPhi,bool bPsi,bool bChi,bool bOmega)
 {
   char name1[256],name2[256];
   int  i,j,Xi;
@@ -465,6 +466,13 @@ static void do_dihcorr(char *fn,int nf,int ndih,real **dih,real dt,
     if (bPsi)
       print_one("corrpsi",dlist[i].name,"Psi ACF for",nf/2,time,dih[j]);
     j++;
+  }
+  for(i=0; (i<nlist); i++) {
+    if (has_dihedral(edOmega,&dlist[i])) {
+      if (bOmega)
+	print_one("corromega",dlist[i].name,"Omega ACF for",nf/2,time,dih[j]);
+      j++;
+    }
   }
   for(Xi=0; (Xi<maxchi); Xi++) {
     sprintf(name1, "corrchi%d", Xi+1);
@@ -488,17 +496,24 @@ static void dump_em_all(int nlist,t_dlist dlist[],int nf,real time[],
   int  i,j,Xi;
   
   /* Dump em all */
-  for(i=0; (i<nlist); i++)
+  j = 0;
+  for(i=0; (i<nlist); i++) {
     if (bPhi)
-      print_one("phi",dlist[i].name,name,nf,time,dih[edPhi]);
-  for(i=0; (i<nlist); i++)
+      print_one("phi",dlist[i].name,name,nf,time,dih[j]);
+      j++;
+  }
+  for(i=0; (i<nlist); i++) {
     if (bPsi)
-      print_one("psi",dlist[i].name,name,nf,time,dih[edPsi]);
+      print_one("psi",dlist[i].name,name,nf,time,dih[j]);
+    j++;
+  }  
   for(i=0; (i<nlist); i++)
-    if (bOmega && has_dihedral(edOmega,&(dlist[i])))
-      print_one("omega",dlist[i].name,name,nf,time,dih[edOmega]);
-    
-  j = edChi1;
+    if (has_dihedral(edOmega,&(dlist[i]))) {
+      if (bOmega)
+	print_one("omega",dlist[i].name,name,nf,time,dih[j]);
+      j++;
+    }
+  
   for(Xi=0; (Xi<maxchi); Xi++)
     for(i=0; (i<nlist); i++)
       if (dlist[i].atm.Cn[Xi+3] != -1) {
@@ -1069,8 +1084,8 @@ int main(int argc,char *argv[])
   /* Correlation comes last because it fucks up the angles */
   if (bCorr)
     do_dihcorr(opt2fn("-c",NFILE,fnm),nf,ndih,dih,dt,nlist,dlist,time,
-	       maxchi,bPhi,bPsi,bChi);
-
+	       maxchi,bPhi,bPsi,bChi,bOmega);
+  
   
   xvgr_file(opt2fn("-o",NFILE,fnm),"-nxy");
   xvgr_file(opt2fn("-jc",NFILE,fnm),"-nxy");
