@@ -120,11 +120,26 @@ t_block *init_index(char *gfile, char ***grpname)
   return b;
 }
 
-static int qgroup(int *a)
+static int qgroup(int *a, int ngrps, char **grpname)
 {
+  char s[STRLEN];
+  int  i, aa;
+  
   fprintf(stderr,"Select a group: ");
-  scanf("%d",a);
-  return *a;
+  fgets2(s,STRLEN,stdin);
+  trim(s); /* remove spaces */
+  aa = atoi(s);
+  if (aa==0 && strcmp(s,"0")!=0 ) { /* string entered */
+    for(i=0, aa=NOTSET; i<ngrps && aa==NOTSET; i++) {
+      if (strcasecmp_min(s,grpname[i])==0)
+	aa=i;
+    }
+    if (aa==NOTSET)
+      fatal_error(0,"No such group '%s'\n", s);
+  }
+  printf("Selected %d: '%s'\n", aa, grpname[aa]);
+  *a = aa;
+  return aa;
 }
 
 static int rd_pascal_set(int **set)
@@ -178,7 +193,7 @@ static void rd_groups(t_block *grps,char **grpname,char *gnames[],
   for(i=0; (i<ngrps); i++) {
     if (grps->nr > 1)
       do {
-	gnr1=qgroup(&grpnr[i]);
+	gnr1=qgroup(&grpnr[i], grps->nr, grpname);
 	if ((gnr1<0) || (gnr1>=grps->nr))
 	  fprintf(stderr,"Select between %d and %d.\n",0,grps->nr-1);
       }	while ((gnr1<0) || (gnr1>=grps->nr));
