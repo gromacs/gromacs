@@ -47,7 +47,7 @@ typedef struct {
   int  n1,nn;
   int  *m_ind;
   bool b1D;
-  real emat,maxrms,sumrms;
+  real emat,minrms,maxrms,sumrms;
   real *erow;
   real **mat;
 } t_mat;

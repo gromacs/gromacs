@@ -72,6 +72,7 @@ t_mat *init_mat(int n1,bool b1D)
   m->b1D  = b1D;
   m->emat = 0;
   m->maxrms = 0;
+  m->minrms = 1e20;
   m->sumrms = 0;
   m->nn   = 0;
   m->mat  = mk_matrix(n1,b1D);
@@ -117,6 +118,8 @@ void set_mat_entry(t_mat *m,int i,int j,real val)
 {
   m->mat[i][j] = m->mat[j][i] = val;
   m->maxrms    = max(m->maxrms,val);
+  if (j!=i) 
+    m->minrms  = min(m->minrms,val);
   m->sumrms   += val;
   m->nn        = max(m->nn,max(j+1,i+1));
 }
