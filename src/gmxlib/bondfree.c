@@ -651,7 +651,10 @@ real posres(int nbonds,
     ai   = forceatoms[i++];
     fc   = forceparams[type].posres.fc;
 
-    pbc_dx(x[ai],forceparams[type].posres.pos0,dx);
+    if (fr->eBox == ebtNONE)
+      rvec_sub(x[ai],forceparams[type].posres.pos0,dx);
+    else
+      pbc_dx(x[ai],forceparams[type].posres.pos0,dx);
     v=0;
     for (m=0; (m<DIM); m++) {
       fi        = f[ai][m] - fc[m]*dx[m];
