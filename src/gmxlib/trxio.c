@@ -608,9 +608,8 @@ bool read_next_frame(int status,t_trxframe *fr)
     switch (fio_getftp(status)) {
     case efTRJ:
     case efTRR:
-    case efMTX:
-      bRet = gmx_next_frame(status,fr);
-      break;
+        bRet = gmx_next_frame(status,fr);
+        break;
     case efG96:
       read_g96_conf(fio_getfp(status),NULL,fr);
       bRet = (fr->natoms > 0);
@@ -687,10 +686,10 @@ int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
   INITCOUNT;
   
   fp = *status =fio_open(fn,"r");
-  switch (fio_getftp(fp)) {
+  switch (fio_getftp(fp)) 
+  {
   case efTRJ:
   case efTRR:
-  case efMTX:
     break;
   case efG96:
     /* Can not rewind a compressed file, so open it twice */
