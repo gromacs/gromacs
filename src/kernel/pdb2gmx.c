@@ -994,9 +994,6 @@ int main(int argc, char *argv[])
     }
     nmol++;
 
-    if (!chains[chain].bAllWat)
-      write_posres(posre_fn,pdba);
-
     if (bITP)
       print_top_comment(itp_file,title,TRUE);
 
@@ -1013,6 +1010,9 @@ int main(int argc, char *argv[])
 	    sel_ntdb,sel_ctdb,bH14,rN,rC,bAlldih,
 	    bDummies,bDummyAromatics,mHmult,nssbonds,ssbonds,NREXCL);
     
+    if (!chains[chain].bAllWat)
+      write_posres(posre_fn,pdba);
+
     if (bITP)
       fclose(itp_file);
 
