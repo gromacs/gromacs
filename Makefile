@@ -140,7 +140,7 @@ progman.tex:
 		$(TOUCH) progman.tex
 
 mdp_opt.tex:	mkmdp
-ifeq ($(GMXBIN),)
+ifeq ($(GMXDATA),)
 		  @echo "Error: To create the LaTeX mdp options file, the" 
 		  @echo "GMXDATA variable must point to your GROMACS data directory" 
 		  @echo "in which we can find the GROMACS html directory."
