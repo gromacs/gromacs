@@ -584,7 +584,14 @@ int main(int argc,char *argv[])
     "[TT]-first[tt] to [TT]-last[tt].[PAR]",
     
     "[TT]-proj[tt]: calculate projections of a trajectory on eigenvectors",
-    "[TT]-first[tt] to [TT]-last[tt].[PAR]",
+    "[TT]-first[tt] to [TT]-last[tt].",
+    "The projections of a trajectory on the eigenvectors of its",
+    "covariance matrix are called principal components (pc's).",
+    "It is often useful to check the cosine content the pc's,",
+    "since the pc's of random diffusion are cosines with the number",
+    "of periods equal to half the pc index.",
+    "The cosine content of the pc's can be calculated with the program",
+    "[TT]g_analyze[tt].[PAR]",
     
     "[TT]-2d[tt]: calculate a 2d projection of a trajectory on eigenvectors",
     "[TT]-first[tt] and [TT]-last[tt].[PAR]",
