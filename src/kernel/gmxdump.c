@@ -319,7 +319,7 @@ int main(int argc,char *argv[])
   t_pargs pa[] = {
     { "-a", FALSE, etBOOL, {&bAltLayout}, "HIDDENAlternative layout for run startup files" },
     { "-xvg", FALSE, etBOOL, {&bXVG}, "HIDDENXVG layout for xtc" },
-    { "-nr",FALSE, etBOOL, {&bShowNumbers},"Show index numbers in output (leaving them out makes comparsion easier, but creates a useless topology)" }
+    { "-nr",FALSE, etBOOL, {&bShowNumbers},"Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology)" }
   };
   
   CopyRight(stderr,argv[0]);
