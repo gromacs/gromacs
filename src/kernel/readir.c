@@ -216,43 +216,40 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     CHECK((ir->coulombtype != eelRF) && (ir->coulombtype != eelGRF));
   }
   
-  if ((ir->coulombtype == eelCUT) || 
-      (ir->coulombtype == eelRF) || (ir->coulombtype == eelGRF)) {
-    /* Cut-off electrostatics (may be tabulated) */
-    sprintf(err_buf,"With coulombtype = %s rcoulomb must be >= rlist",
+  /* First strict check, then easier */
+  if (EEL_LR(ir->coulombtype)) {
+    sprintf(err_buf,"With coulombtype = %s rcoulomb must be == rlist",
 	    eel_names[ir->coulombtype]);
+    CHECK(ir->rcoulomb != ir->rlist);
+  }
+  else {
+    sprintf(err_buf,"rcoulomb must be >= rlist");
     CHECK(ir->rlist > ir->rcoulomb);
-
-    if ((ir->coulombtype == eelRF) || (ir->coulombtype == eelGRF)) {
-      /* reaction field (at the cut-off) */
-      if (ir->epsilon_r == 1.0) {
-	sprintf(warn_buf,"Using epsilon_r = 1.0 with %s does not make sense",
-		eel_names[ir->coulombtype]);
-	warning(NULL);
-      }
+  }
+  
+  if ((ir->coulombtype == eelRF) || (ir->coulombtype == eelGRF)) {
+    /* reaction field (at the cut-off) */
+    if (ir->epsilon_r == 1.0) {
+      sprintf(warn_buf,"Using epsilon_r = 1.0 with %s does not make sense",
+	      eel_names[ir->coulombtype]);
+      warning(NULL);
     }
-  } else if (ir->coulombtype != eelUSER) {
-    /* Tabulated electrostatics (no cut-off) */
-    sprintf(err_buf,"With coulombtype = %s rcoulomb must be <= rlist",
+  }
+  
+  
+  if ((ir->coulombtype == eelSHIFT) || (ir->coulombtype == eelSWITCH)) {
+    sprintf(err_buf,"With coulombtype = %s rcoulomb_switch must be < rcoulomb",
 	    eel_names[ir->coulombtype]);
-    CHECK(ir->rcoulomb > ir->rlist);
-    if(ir->coulombtype != eelEWALD && ir->coulombtype != eelPME) {
-      sprintf(err_buf,"With coulombtype = %s rcoulomb_switch must be < rcoulomb",
-		eel_names[ir->coulombtype]);
-	CHECK(ir->rcoulomb_switch >= ir->rcoulomb);
-	if (ir->rcoulomb_switch > ir->rcoulomb-0.0999) { 
+    CHECK(ir->rcoulomb_switch >= ir->rcoulomb);
+    if (ir->rcoulomb_switch > ir->rcoulomb-0.0999) { 
       sprintf(warn_buf,"rcoulomb should be 0.1 to 0.3 nm larger than rcoulomb_switch to account for diffusion and the size of charge groups"); 
       warning(NULL);
     }
-    }
   }
-
   
-  if (ir->vdwtype == evdwCUT) {
-    sprintf(err_buf,"With vdwtype = %s rvdw must be >= rlist",
-	    eel_names[ir->vdwtype]);
-    CHECK(ir->rlist > ir->rvdw);
-  } else if (ir->vdwtype != evdwUSER) {
+  sprintf(err_buf,"rvdw must be >= rlist");
+  CHECK(ir->rlist > ir->rvdw);
+  if ((ir->vdwtype == evdwSWITCH) || (ir->vdwtype == evdwSHIFT)) {
     sprintf(err_buf,"With vdwtype = %s rvdw_switch must be < rvdw",
 	    evdw_names[ir->vdwtype]);
     CHECK(ir->rvdw_switch >= ir->rvdw);
