@@ -151,7 +151,8 @@ void c_rdf::add(real cutoff,t_block *excl,matrix box,rvec x[],
 	    insert(dx,r2);
 	}
       }
-      free(bExcl);
+      if (excl)
+	free(bExcl);
     }
   }
 }
