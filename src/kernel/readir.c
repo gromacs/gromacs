@@ -220,17 +220,6 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     CHECK((ir->coulombtype != eelRF) && (ir->coulombtype != eelGRF));
   }
   
-  /* First strict check, then easier */
-  if (EEL_LR(ir->coulombtype)) {
-    sprintf(err_buf,"With coulombtype = %s rcoulomb must be <= rlist",
-	    eel_names[ir->coulombtype]);
-    CHECK(ir->rcoulomb > ir->rlist);
-  }
-  else if ((ir->coulombtype != eelSHIFT) && (ir->coulombtype != eelSWITCH)) {
-    sprintf(err_buf,"rcoulomb must be >= rlist for coulombtype = %s ",eel_names[ir->coulombtype]);
-    CHECK(ir->rlist > ir->rcoulomb);
-  }
-  
   if ((ir->coulombtype == eelRF) || (ir->coulombtype == eelGRF)) {
     /* reaction field (at the cut-off) */
     if (ir->epsilon_r == 1.0) {
@@ -239,9 +228,11 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
       warning(NULL);
     }
   }
-  
-  
-  if ((ir->coulombtype == eelSHIFT) || (ir->coulombtype == eelSWITCH)) {
+  if (EEL_LR(ir->coulombtype)) {
+    sprintf(err_buf,"With coulombtype = %s rcoulomb must be == rlist",
+	    eel_names[ir->coulombtype]);
+    CHECK(ir->rcoulomb != ir->rlist);
+  } else if ((ir->coulombtype == eelSHIFT) || (ir->coulombtype == eelSWITCH)) {
     sprintf(err_buf,"With coulombtype = %s rcoulomb_switch must be < rcoulomb",
 	    eel_names[ir->coulombtype]);
     CHECK(ir->rcoulomb_switch >= ir->rcoulomb);
@@ -249,6 +240,9 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
       sprintf(warn_buf,"rcoulomb should be 0.1 to 0.3 nm larger than rcoulomb_switch to account for diffusion and the size of charge groups"); 
       warning(NULL);
     }
+  } else {
+    sprintf(err_buf,"rcoulomb must be >= rlist");
+    CHECK(ir->rlist > ir->rcoulomb);
   }
 
   if (ir->coulombtype == eelPME) {
@@ -262,7 +256,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
       warning(NULL);
     }
   }
-  
+
   if ((ir->vdwtype == evdwSWITCH) || (ir->vdwtype == evdwSHIFT)) {
     sprintf(err_buf,"With vdwtype = %s rvdw_switch must be < rvdw",
 	    evdw_names[ir->vdwtype]);
@@ -721,7 +715,7 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
   unsigned short *cbuf;
   t_grps *groups=&(atoms->grps[gtype]);
   int    i,j,gid,aj,ognr,ntot=0;
-  const char  *title;
+  const char *title;
 
   if (debug)
     fprintf(debug,"Starting numbering %d groups of type %d\n",ng,gtype);
