@@ -317,7 +317,7 @@ int main(int argc,char *argv[])
     { "-offset", FALSE, etREAL, &toffset,
       "time offset for -dt option" },
     { "-t0", FALSE,  etREAL, &tzero,
-      "change times in trajectory by specified amount "
+      "starting time for trajectory"
       "(default: don't change)"},
     { "-trunc", FALSE, etREAL, &ttrunc,
       "truncate input trj file after this amount of ps" },
@@ -355,7 +355,7 @@ int main(int argc,char *argv[])
   int          ifit,irms;
   atom_id      *ind_fit,*ind_rms;
   char         *gn_fit,*gn_rms;
-  real         t,pt,t0=-1,dt=0.001;
+  real         t,pt,tshift,t0=-1,dt=0.001;
   bool         bSelect,bDoIt,bIndex,bTDump,bSetTime,bTop=FALSE,bDTset=FALSE;
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bToldYouOnce=FALSE;
   bool         bHaveNextFrame,bHaveX,bHaveV;
@@ -530,7 +530,9 @@ int main(int argc,char *argv[])
       natoms=read_first_x_v(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,&v,box);
     else
       natoms=read_first_x  (&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,   box);
-    if (!bSetTime)
+    if (bSetTime)
+      tshift=tzero-t;
+    else
       tzero=t;
     
     /* check if index is meaningful */
@@ -612,7 +614,7 @@ int main(int argc,char *argv[])
 	  t=tzero+frame*timestep;
 	else
 	  if (bSetTime)
-	    t=t+tzero;
+	    t=t+tshift;
 
 	if (bTDump)
 	  fprintf(stderr,"\nDumping frame at t= %g\n",t);
