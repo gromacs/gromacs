@@ -16,7 +16,7 @@ bool newres(int i,t_atom atom[])
 }
 
 t_correct *init_corr(int maxnit,int nstprint,int nbcheck,int nstranlist,
-		     bool bExplicit,bool bChiral,bool bPep,
+		     int ngrow,bool bExplicit,bool bChiral,bool bPep,
 		     bool bDump,real lowdev)
 {
   t_correct *c;
@@ -33,7 +33,8 @@ t_correct *init_corr(int maxnit,int nstprint,int nbcheck,int nstranlist,
   c->lodev      = lowdev;
   c->maxdist    = 0;
   c->ndist      = 0;
- 
+  c->ngrow      = ngrow;
+  
   return c;
 }
 
@@ -377,8 +378,10 @@ void pr_corr(FILE *log,t_correct *c)
   fprintf(log,"nbcheck    = %d\n",c->nbcheck);
   fprintf(log,"nstprint   = %d\n",c->nstprint);
   fprintf(log,"nstranlist = %d\n",c->nstranlist);
+  fprintf(log,"ngrow      = %d\n",c->ngrow);
   fprintf(log,"bExplicit  = %s\n",BOOL(c->bExplicit));
   fprintf(log,"bChiral    = %s\n",BOOL(c->bChiral));
+  fprintf(log,"bPep       = %s\n",BOOL(c->bPep));
   fprintf(log,"bDump      = %s\n",BOOL(c->bDump));
   fprintf(log,"ndist      = %d\n",c->ndist);
   fprintf(log,"npep       = %d\n",c->npep);

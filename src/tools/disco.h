@@ -19,7 +19,7 @@ typedef struct {
 
 /* Garbage bin with flags and data for the correct routine */
 typedef struct {
-  int         maxnit,nbcheck,nstprint,nstranlist;
+  int         maxnit,nbcheck,nstprint,nstranlist,ngrow;
   bool        bExplicit,bChiral,bPep,bDump;
   real        lodev;
   int         maxdist,ndist;
@@ -32,7 +32,7 @@ typedef struct {
 } t_correct;
 
 extern t_correct *init_corr(int maxnit,int nstprint,int nbcheck,int nstranlist,
-			    bool bExplicit,bool bChiral,bool bPep,
+			    int ngrow,bool bExplicit,bool bChiral,bool bPep,
 			    bool bDump,real lowdev);
 /* Initiate the data structure and set some of the parameters */
 

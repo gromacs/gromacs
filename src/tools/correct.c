@@ -192,7 +192,8 @@ void compute_dihs(FILE *log,int nq,t_quadruple q[],rvec x[],real phi[],
 int check_impropers(FILE *log,t_correct *c,int natom,rvec x[],matrix box)
 		    
 {
-  int i,nmirror,nwrong;
+  int  i,nmirror,nwrong;
+  bool bFlip = FALSE;
   
   nmirror = 0;
   if (c->bChiral) {
@@ -214,6 +215,9 @@ int check_impropers(FILE *log,t_correct *c,int natom,rvec x[],matrix box)
     if (debug && (nmirror > 0))
       fprintf(debug,"mirrored %d improper dihedrals\n",nmirror);
   }
+  if (bFlip)
+    nmirror = c->nimp - nmirror;
+    
   return nmirror;
 }
 
@@ -347,7 +351,7 @@ bool shake_coords(FILE *log,bool bVerbose,
   bool   bShort,bConverged,bNB,bPrint,bLowDev,bExplicit,bMyNB;
   bool   bVNow;
   bool   *bViol;
-  real   lb,ub,wi,len,dev,maxdev,len2;
+  real   lb,ub,lbfac,wi,len,dev,maxdev,len2;
   real   step,maxforce=0,rstep,step0;
   real   ener[2];
   int    cur=0;
@@ -408,7 +412,10 @@ bool shake_coords(FILE *log,bool bVerbose,
     dev        = 0.0;
     maxdev     = 0.0;
     ener[next] = 0.0;
-    
+
+    /* Nonbonded growing factor */
+    lbfac      = (c->ngrow == 0) ? 1.0 : (min(1.0,(real)nit/(real)c->ngrow));
+        
     /* Set step dependent flags */
     bNB        = (c->nbcheck != 0) && (nit % c->nbcheck)  == 0;
     bPrint     = (c->nstprint!= 0) && (nit % c->nstprint) == 0;
@@ -429,16 +436,20 @@ bool shake_coords(FILE *log,bool bVerbose,
     /* Loop over distance list */
     for(l=0; (l<nchk); l++) {
       /* Unpack lists */
-      k     = ip[l];
-      ai    = d[k].ai;
-      aj    = d[k].aj;
-      lb    = d[k].lb;
-      ub    = d[k].ub;
-      wi    = d[k].wi;
-
+      k         = ip[l];
+      ai        = d[k].ai;
+      aj        = d[k].aj;
+      lb        = d[k].lb;
+      ub        = d[k].ub;
+      wi        = d[k].wi;
       cons_type = d[k].cons_type;
-	
-      bMyNB = (cons_type == edcNONBOND) && bNB;
+      
+      if (cons_type == edcNONBOND) {
+      	lb *= lbfac;
+	bMyNB = bNB;
+      }
+      else
+	bMyNB = FALSE;
       
       if (bMyNB || (cons_type != edcNONBOND)) {
 	/* Compute distance */

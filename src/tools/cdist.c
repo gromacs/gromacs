@@ -1,13 +1,49 @@
 #include <math.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include "assert.h"
+#include "macros.h"
 #include "vec.h"
+#include "txtdump.h"
 #include "cdist.h"
 #include "futil.h"
 #include "tpxio.h"
+#include "rdgroup.h"
 
 #define NINDEX(ai,aj,natom) (natom*(ai)-((ai)*(ai+1))/2+(aj)-(ai))
 #define INDEX(ai,aj,natom) ((ai) < (aj))?NINDEX((ai),(aj),natom):NINDEX(aj,ai,natom) 
 #define CHECK(ai,natom)    if (((ai)<0) || ((ai)>=natom)) fatal_error(0,"Invalid atom number %d",ai+1)
 
+static real vdwlen(t_atoms *atoms,int i,int j)
+{
+#define NAT 5
+  char anm[NAT] = "HCNOS";
+  /* For time being I give S the same vdw-parameters as O */
+  real dist[NAT][NAT] = { 
+    {  2.0,  2.4,  2.4,  2.3,  2.3 },
+    {  2.4,  3.0,  2.9, 2.75, 2.75 },
+    {  2.4,  2.9,  2.7,  2.7,  2.7 },
+    {  2.3, 2.75,  2.7,  2.8,  2.8 },
+    {  2.3, 2.75,  2.7,  2.8,  2.8 }
+  };
+  char ati,atj;
+  int  ai,aj;
+  
+  ati=toupper((*atoms->atomname[i])[0]);
+  atj=toupper((*atoms->atomname[j])[0]);
+  
+  for(ai=0; (ai<NAT) && (ati != anm[ai]); ai++)
+    ;
+  for(aj=0; (aj<NAT) && (atj != anm[aj]); aj++)
+    ;
+  if ((ai < NAT) && (aj < NAT))
+    return dist[ai][aj];
+  else {
+    fprintf(stderr,"No combination for nbs (%c %c) using 2.0 A\n",ati,atj);
+    return 2.0;
+  }
+}
+  
 void set_dist(t_dist *d,int natoms,int ai,int aj,real lb,
 	      real ub,real len)
 {
@@ -124,7 +160,7 @@ static t_dist *read_dist(FILE *log,char *fn,int natom,real weight[])
 }
 
 static void measure_report(FILE *fp,int nm,int natom,int nover,int nnotideal,
-			   real cutoff,real rmsd)
+			   int nhb_rep,int nhb,real cutoff,real rmsd)
 {
   double ndtot=(natom*(natom-1.0))/2.0;
   
@@ -136,41 +172,54 @@ static void measure_report(FILE *fp,int nm,int natom,int nover,int nnotideal,
   fprintf(fp,"Of these, %d were not within the bounds of the database.\n"
 	  "RMS deviation from bound limits for these was %e A.\n",
 	  nnotideal,rmsd);
+  fprintf(fp,"For %d hydrogen bonds out of %d in the index file the margins " 
+	  "were reduced\n",nhb_rep/2,nhb/3);
 }
 
-static void measure_dist(FILE *log,
-			 t_dist *d,int natom,rvec x[],real cutoff,real margin)
+static void measure_dist(FILE *log,t_dist *d,t_atoms *atoms,rvec x[],
+			 real cutoff,real margin,real hbmargin,
+			 int nhb,atom_id hb[])
 {
-  int    ai,aj,nm,nover,nnotideal;
+  int    i,j,natom,dd,aa,ai,aj,nm,nover,nnotideal,nhb_rep;
   real   msd,rmsd;
   rvec   dx;
-  real   ideal,lbfac,ubfac,lb,ub,nmargin;
+  real   ideal,lbfac,ubfac,vdw,lb,ub,nmargin;
   
   nm        = 0;
   nover     = 0;
   nnotideal = 0;
   msd       = 0;
+  natom     = atoms->nr;
   
-  lbfac = 1-margin;
-  ubfac = 1+margin;
+  lbfac     = 1-margin;
+  ubfac     = 1+margin;
+
   for(ai=0; (ai<natom); ai++)
     for(aj=ai+1; (aj<natom); aj++) {
       rvec_sub(x[ai],x[aj],dx);
       ideal = 10*norm(dx);
       if (!dist_set(d,natom,ai,aj)) {
+	/* This distance is not determined by the database. */
+	vdw = 0; /*vdwlen(atoms,ai,aj);*/
 	if ((ideal < cutoff)  || (cutoff == 0)) {
-	  set_dist(d,natom,ai,aj,ideal*lbfac,ideal*ubfac,ideal);
+	  set_dist(d,natom,ai,aj,max(vdw,ideal*lbfac),ideal*ubfac,ideal);
 	  nm++;
 	}
       }
       else {
+	/* These distances are already set by the database routines.
+	 * However, we override the distances with the measured ones
+	 * while keeping the original margins.
+	 */
 	lb = d_lb(d,natom,ai,aj);
 	ub = d_ub(d,natom,ai,aj);
 	if ((ideal < lb) || (ideal > ub)) {
 	  if (debug)
-	    fprintf(debug,"Warning: d(%4d,%4d) = %8.4f. According to E&H"
+	    fprintf(debug,"Warning: d(%s,%s) = %8.4f. According to E&H"
 		    " it should be %8.4f (dev. %.1f%%)\n",
-		    ai+1,aj+1,ideal,(lb+ub)*0.5,50*fabs(ideal*2-lb-ub));
+		    atomname(atoms,ai),
+		    atomname(atoms,aj),
+		    ideal,(lb+ub)*0.5,50*fabs(ideal*2-lb-ub));
 	  msd += (ideal < lb) ? sqr(ideal-lb) : sqr(ideal-ub);
 	  nnotideal++;
 	}
@@ -180,12 +229,41 @@ static void measure_dist(FILE *log,
 	nover++;
       }
     }
+  /* Now we have set all the distances. We have to verify though
+   * that h bonds are maintained, we therefore reduce their margins.
+   */
+  nhb_rep = 0;
+  for(i=0; (i<nhb); i+= 3) {
+    /* Acceptor atom */
+    aa = hb[i+2];
+    assert(aa < natom);
+    for(j=0; (j<2); j++) {
+      /* Donor atom */
+      dd      = hb[i+j];
+      assert(dd < natom);
+      if (dist_set(d,natom,dd,aa)) {
+	lb      = d_lb(d,natom,dd,aa);
+	ub      = d_ub(d,natom,dd,aa);
+	ideal   = d_len(d,natom,dd,aa);
+	nmargin = (ub-lb)/(ub+lb);
+	if (hbmargin < nmargin) {
+	  set_dist(d,natom,dd,aa,ideal*(1-hbmargin),ideal*(1+hbmargin),ideal);
+	  nhb_rep++;
+	}
+      }
+      else
+	fatal_error(0,"Distance between %s and %s not set, while they do make"
+		    " a hbond:\nincrease radius for measuring (now %f A)\n",
+		    atomname(atoms,aa),atomname(atoms,dd),cutoff);
+    }
+  }
+	
   if (nnotideal > 0)
     rmsd = sqrt(msd/nnotideal);
   else
     rmsd = 0;
-  measure_report(log,nm,natom,nover,nnotideal,cutoff,rmsd);
-  measure_report(stderr,nm,natom,nover,nnotideal,cutoff,rmsd);
+  measure_report(log,nm,natom,nover,nnotideal,nhb_rep,nhb,cutoff,rmsd);
+  measure_report(stderr,nm,natom,nover,nnotideal,nhb_rep,nhb,cutoff,rmsd);
 }
 
 static void dump_dist(char *fn,t_dist *d,int natom,bool bAddR)
@@ -500,53 +578,6 @@ static void dump_bonds(t_atoms *atoms,t_dist *d,
   fprintf(stderr,"There are %d new bonded distances + %d old\n",ndist,odist);
 }
 
-static real vdwlen(t_idef *idef,int i,int j,real hblen)
-{
-  int  index;
-  real c6,c12;
-  
-  index = idef->atnr*i+j;
-  c6    = idef->iparams[index].lj.c6;
-  c12   = idef->iparams[index].lj.c12;
-  
-  if (c6 != 0)
-    return 10.0*pow(c12/c6,1.0/6.0);
-  else if (c12 != 0)
-    return hblen;
-  else
-    return 0.0;
-}
-
-static real vdwlen2(t_atoms *atoms,int i,int j)
-{
-#define NAT 5
-  char anm[NAT] = "HCNOS";
-  /* For time being I give S the same vdw-parameters as O */
-  real dist[NAT][NAT] = { 
-    {  2.0,  2.4,  2.4,  2.3,  2.3 },
-    {  2.4,  3.0,  2.9, 2.75, 2.75 },
-    {  2.4,  2.9,  2.7,  2.7,  2.7 },
-    {  2.3, 2.75,  2.7,  2.8,  2.8 },
-    {  2.3, 2.75,  2.7,  2.8,  2.8 }
-  };
-  char ati,atj;
-  int  ai,aj;
-  
-  ati=toupper((*atoms->atomname[i])[0]);
-  atj=toupper((*atoms->atomname[j])[0]);
-  
-  for(ai=0; (ai<NAT) && (ati != anm[ai]); ai++)
-    ;
-  for(aj=0; (aj<NAT) && (atj != anm[aj]); aj++)
-    ;
-  if ((ai < NAT) && (aj < NAT))
-    return dist[ai][aj];
-  else {
-    fprintf(stderr,"No combination for nbs!{%c %c}",ati,atj);
-    return 0;
-  }
-}
-  
 static bool notexcl(t_block *excl,int ai,int aj)
 {
   int  i;
@@ -610,7 +641,7 @@ static void dump_nonbonds(t_dist *d,t_idef *idef,t_atoms *atoms,
 	  if ( !(ati == 'V' || atj == 'V') ) {
 	    /* *** */
 	    tpj  = atoms->atom[j].type;
-	    len  = vdwlen2(atoms,i,j);
+	    len  = vdwlen(atoms,i,j);
 	    lb   = (1-nb_margin)*len; 
 	    if (len > 0) {
 	      set_dist(d,natoms,i,j,lb,maxdist,0.0);
@@ -654,14 +685,21 @@ int main(int argc,char *argv[])
     "The program can read a file with distances from NMR distance restraints",
     "(-d option). Note that these distance are treated slightly different",
     "in the disco program, and therefore these distance should be NMR",
-    "derived distance restraints only." 
+    "derived distance restraints only.[PAR]",
+    "Furthermore, the program can read an index file with hydrogen bond",
+    "information as generated by [TT]g_hbond[tt]. This is then used to set",
+    "tighter restraints on the hydrogen bonded atoms than on the other",
+    "non bonded atom pairs, in order to maintain secondary structure.",
+    "This option is useful only in combination with the [TT]-measure[tt]",
+    "option, when a sensible structure is known." 
   };
   t_filenm fnm[] = {
     { efTPS, "-s", NULL,    ffREAD  },
     { efLOG, "-g", "cdist", ffWRITE },
     { efPDB, "-q", NULL,    ffOPTRD },
     { efDAT, "-d", NULL,    ffOPTRD },
-    { efDAT, "-o", "cdist", ffWRITE }
+    { efDAT, "-o", "cdist", ffWRITE },
+    { efNDX, "-n", "hbond", ffOPTRD }
   };
 #define NFILE asize(fnm)
 
@@ -672,7 +710,9 @@ int main(int argc,char *argv[])
   rvec        *x;
   matrix      box;
   char        *topfn,title[256];
-  int         i;
+  int         i,nhb;
+  atom_id     *hb;
+  char        *grpname;
   
   /* Tolerance used in smoothing functions (real precision)*/
 
@@ -696,7 +736,8 @@ int main(int argc,char *argv[])
   static real ile_margin   = 0.03;
   static real dih_margin   = 0.01;
   static real idih_margin  = 0.01;
-  static real nb_margin    = 0.0;
+  static real nb_margin    = 0.05;
+  static real hb_margin    = 0.02;
   static real hblen        = 2.3;
   static real rcut         = 0.0;
   static bool bNB=TRUE,bBON=TRUE,bAddR=FALSE;
@@ -731,6 +772,8 @@ int main(int argc,char *argv[])
       "Relative margin for improper dihedral lengths" },
     { "-nm", FALSE, etREAL, &nb_margin, 
       "Relative margin for nonbonded lower bounds" },
+    { "-hm", FALSE, etREAL, &hb_margin,
+      "Relative margin for hydrogen bonded atoms, which must be specified in an index file, as generated by g_hbond" },
     { "-hb", FALSE, etREAL, &hblen,
       "Shortest possible distance for a hydrogen bond (in Angstrom!)" },
     { "-bon", FALSE, etBOOL, &bBON,
@@ -821,12 +864,20 @@ int main(int argc,char *argv[])
     }
     fprintf(stderr,"Done bondeds\n");
     
-    if (rcut > 0)
-      measure_dist(fp,dist,top->atoms.nr,x,rcut,nb_margin);
+    if (rcut > 0) {
+      nhb = 0;
+      hb  = NULL;
+      grpname = NULL;
+      if (ftp2bSet(efNDX,NFILE,fnm)) {
+	rd_index(ftp2fn(efNDX,NFILE,fnm),1,&nhb,&hb,&grpname);
+	fprintf(stderr,"There are %d hydrogen bonds\n",nhb/3);
+      }
+      measure_dist(fp,dist,&top->atoms,x,rcut,nb_margin,hb_margin,nhb,hb);
+    }
     if (bNB)
       dump_nonbonds(dist,&top->idef,&top->atoms,hblen,weight,
 		    nb_margin,bAddR);
-
+    
     if (strcmp(smth_str[0],smth_str[1]) == 0)
       fprintf(stderr,"No smoothing\n");
     else if (strcmp(smth_str[0],smth_str[2]) == 0) {

@@ -79,8 +79,8 @@ static void pr_conv_stat(FILE *fp,int ntry,int nconv,double tnit)
 }
 
 
-void do_disco(FILE *log,char *outfn,t_correct *c,
-	      bool bVerbose,bool bKeepAll,t_atoms *atoms,
+void do_disco(FILE *log,char *outfn,char *keepfn,t_correct *c,
+	      bool bVerbose,t_atoms *atoms,
 	      rvec xref[],bool bCenter,rvec xcenter[],real weight[],
 	      int nstruct,bool bCubic,int *seed,
 	      bool bFit,int nfit,atom_id fit_ind[],
@@ -89,7 +89,7 @@ void do_disco(FILE *log,char *outfn,t_correct *c,
 {
   FILE    *fp,*gp;
   int     *nconvdist;
-  int     i,k,kk,nconv,ntry,status,natom,nres,nit,nvtest;
+  int     i,k,kk,nconv,ntry,status,kstatus,natom,nres,nit,nvtest;
   double  tnit;
   rvec    *x,xcm;
   matrix  box,wrbox;
@@ -101,6 +101,10 @@ void do_disco(FILE *log,char *outfn,t_correct *c,
   nres   = atoms->nres;
   wrbox[XX][XX] = wrbox[YY][YY] = wrbox[ZZ][ZZ] = nres;  
   status = open_trx(outfn,"w");
+  if (keepfn)
+    kstatus = open_trx(keepfn,"w");
+  else
+    kstatus = -1;
   snew(x,natom);
   snew(wr_ind,natom);
   for(k=0; (k<natom); k++)
@@ -132,11 +136,13 @@ void do_disco(FILE *log,char *outfn,t_correct *c,
     nvtest = quick_check(bVerbose ? log : NULL,natom,x,box,c);
     fprintf(stderr,"Double checking: %d violations\n",nvtest);
 
-    if (bConverged || bKeepAll) {
+    if (bConverged || keepfn) {
       center_in_box(natom,x,wrbox,x);
       if (bFit)
 	do_fit(natom,w_rls,xref,x);
-      write_trx(status,natom,wr_ind,atoms,k,(real) k,wrbox,x,NULL);
+      write_trx(bConverged ? status : kstatus,
+		natom,wr_ind,atoms,k,(real) k,wrbox,x,NULL);
+	
       if (bConverged) {
 	check_final(log,c,x);
 	nconv++;
@@ -156,6 +162,8 @@ void do_disco(FILE *log,char *outfn,t_correct *c,
     }
   }
   close_trx(status);
+  if (keepfn)
+    close_trx(kstatus);
   gp = xvgropen("conv_stat.xvg","Iterations per converged structure",
 		"nit","N");
   for(i=0; (i<c->maxnit); i++)
@@ -193,8 +201,8 @@ int main(int argc,char *argv[])
   char        *grpname;
   
   static int  nstruct=10,maxnit=1000,seed=1997,nbcheck=1;
-  static int  nstprint=1,nstranlist=1;
-  static bool bVerbose=TRUE,bKeepAll=FALSE,bCubic=FALSE,bWeight=FALSE;
+  static int  nstprint=1,nstranlist=1,ngrow=0;
+  static bool bVerbose=TRUE,bCubic=FALSE,bWeight=FALSE;
   static real lowdev=0.05,cutoff=0;
   static bool bExplicit=FALSE,bChiral=TRUE,bFit=FALSE,bDump=FALSE,bPep=TRUE;
   static rvec boxsize={ 2, 2, 2 };
@@ -213,8 +221,6 @@ int main(int argc,char *argv[])
       "Use weighted disco. The STX file must be a pdb file in this case and weights are read from the occupancy field" },
     { "-cutoff",   FALSE, etREAL, &cutoff,
       "Cut-off for taking pairs into account when measuring distance" },
-    { "-keep",     FALSE, etBOOL, &bKeepAll,
-      "Keep all structures generated, not only the converged ones" },
     { "-dump",     FALSE, etBOOL, &bDump,
       "Dump the trajectory of the shaking to testX.xtc file where X is the structure number." },
     { "-cubic",    FALSE, etBOOL, &bCubic,
@@ -234,7 +240,10 @@ int main(int argc,char *argv[])
     { "-seed",     FALSE, etINT,  &seed,
       "Seed for the random number generator" },
     { "-box",      FALSE, etRVEC, boxsize,
-      "Boxsize (nm) for generating random coordinates" }
+      "Boxsize (nm) for generating random coordinates" },
+    { "-grow",     FALSE, etINT,  &ngrow,
+      "Number of steps after which Van der Waals lower bounds grow from 0 to the real lower bounds. If this is 0 (default), the Van der Waals lower bounds are in effect from the beginning" }
+    
   };
 #define NPA asize(pa)
     
@@ -247,6 +256,7 @@ int main(int argc,char *argv[])
     { efSTO, "-center", NULL,   ffOPTRD },
     { efNDX, "-n",      NULL,   ffOPTRD },
     { efTRX, "-o",   "structs", ffWRITE },
+    { efTRX, "-keep", "unconverged", ffOPTWR },
     { efPDB, "-viol",  "vvv",   ffOPTWR }
   };
 #define NFILE asize(fnm)
@@ -256,7 +266,7 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,0,TRUE,
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
   /* Copy arguments to correct structure */
-  corr = init_corr(maxnit,nstprint,nbcheck,nstranlist,bExplicit,
+  corr = init_corr(maxnit,nstprint,nbcheck,nstranlist,ngrow,bExplicit,
 		   bChiral,bPep,bDump,lowdev);
   
   /* Open the log file */
@@ -337,9 +347,11 @@ int main(int argc,char *argv[])
 
   /* Print parameters */
   pr_corr(fp,corr);
-    
+  
   /* Now do my thing */
-  do_disco(fp,opt2fn("-o",NFILE,fnm),corr,bVerbose,bKeepAll,&atoms,
+  do_disco(fp,opt2fn("-o",NFILE,fnm),
+	   opt2bSet("-keep",NFILE,fnm) ? opt2fn("-keep",NFILE,fnm) : NULL,
+	   corr,bVerbose,&atoms,
 	   xref,bCenter,xcenter,weight,nstruct,bCubic,&seed,bFit,nfit,fit_ind,
 	   opt2bSet("-viol",NFILE,fnm),opt2fn("-viol",NFILE,fnm),
 	   opt2parg_bSet("-box",asize(pa),pa),boxsize);
