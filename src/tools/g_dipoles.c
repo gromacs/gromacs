@@ -765,10 +765,9 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
 		    
-  if ((mu_max == -1) || (mu == -1)) {
-    fprintf(stderr,"I need both a mu and a mu_max!");
-    usage(argv[0],argv[0]);
-  }
+  if ((mu_max == -1) || (mu == -1))
+    fatal_error(0,"I need both a mu and a mu_max!");
+
   fprintf(stderr,"Using %g as mu_max and %g as the dipole moment.\n", 
 	  mu_max, mu);
   if (epsilonRF == 0.0)
