@@ -169,7 +169,7 @@ void cmp_iparm(FILE *fp,char *s,t_functype ft,
   
   bDiff=FALSE;
   for(i=0; i<MAXFORCEPARAM && !bDiff; i++)
-    bDiff = fabs(ip1.generic.buf[i] - ip2.generic.buf[i]) > ftol;
+    bDiff = !equal_real(ip1.generic.buf[i],ip2.generic.buf[i],ftol);
   if (bDiff) {
     fprintf(fp,"%s1: ",s);
     pr_iparams(fp,ft,&ip1);
