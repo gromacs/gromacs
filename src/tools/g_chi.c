@@ -805,7 +805,10 @@ static void order_params(FILE *log,
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "g_chi computes phi, psi and chi dihedrals for all your sidechains.",
+    "g_chi computes phi, psi, omega and chi dihedrals for all your ",
+    "amino acid backbone and sidechains.",
+    "It can compute dihedral angle as a function of time, and as",
+    "histogram distributions.",
     "Output is in form of xvgr files, as well as a LaTeX table of the",
     "number of transitions per nanosecond.[PAR]",
     "Order parameters S2 for each of the dihedrals are calculated and",
@@ -814,7 +817,8 @@ int main(int argc,char *argv[])
     "If option [TT]-c[tt] is given, the program will",
     "calculate dihedral autocorrelation functions. The function used",
     "is C(t) = < cos(chi(tau)) cos(chi(tau+t)) >. The use of cosines",
-    "rather than angles themselves, resolves the problem of periodicity."
+    "rather than angles themselves, resolves the problem of periodicity.",
+    "(Van der Spoel & Berendsen (1997), [BB]Biophys. J. 72[bb], 2032-2041)."
   };
   static char *bugs[] = {
     "Produces MANY output files (up to about 4 times the number of residues in the protein, twice that if autocorrelation functions are calculated). Typically several hundred files are output."
