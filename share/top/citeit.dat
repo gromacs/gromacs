@@ -1,4 +1,4 @@
-40
+50
 Berendsen95a
 H. J. C. Berendsen, D. van der Spoel and R. van Drunen
 GROMACS: A message-passing parallel molecular dynamics implementation
@@ -17,12 +17,12 @@ J. Comp. Phys.
 Miyamoto92a
 S. Miyamoto and P. A. Kollman
 SETTLE: An Analytical Version of the SHAKE and RATTLE Algorithms\nfor Rigid Water Models
-J. Comp. Chem.
+J. Comput. Chem.
 13 1992 952 962
 Barth96a
 E. Barth and K. Kuczera and B. Leimkuhler and R. D. Skeel
 Algorithms for Constrained Molecular Dynamics
-J. Comp. Chem.
+J. Comput. Chem.
 16 1996 1192 1209
 Torda89a
 A. E. Torda and R. M. Scheek and W. F. van Gunsteren
@@ -37,8 +37,15 @@ J. Chem. Phys
 Hess97a
 B. Hess and H. Bekker and H. J. C. Berendsen and J. G. E. M. Fraaije
 LINCS: A Linear Constraint Solver for molecular simulations
-J. Comp. Chem.
+J. Comput. Chem.
 18 1997 1463 1472
-
-
-
+Maiorov95
+V. N. Maiorov and G. M. Crippen
+Size-Independent Comparison of Protein Three-Dimensional Structures
+PROTEINS: Struct. Funct. Gen.
+22 1995 273 283
+Feenstra99
+K. A. Feenstra and B. Hess and H. J. C. Berendsen
+Improving Efficiency of Large Time-scale Molecular Dynamics Simulations of Hydrogen-rich Systems
+J. Comput. Chem.
+20 1999 786 798
