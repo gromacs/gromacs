@@ -330,7 +330,7 @@ int main(int argc,char *argv[])
   static char *ss_string="HEBT"; 
   t_pargs pa[] = {
     { "-v",  FALSE, etBOOL, &bVerbose,
-      "Generate miles of useless information" },
+      "HIDDENGenerate miles of useless information" },
     { "-dt", FALSE, etREAL, &dt,
       "Only analyze a frame each dt picoseconds" },
     { "-sss", FALSE, etSTR, &ss_string,
