@@ -651,7 +651,7 @@ void write_xpm(FILE *out,
    * hi         output higher than hi is set to hi
    * rlo        rgb value for level lo
    * rhi        rgb value for level hi
-   * nlevels    number of levels for the output minus one
+   * nlevels    number of color levels for the output
    */
 
   if (hi <= lo) 
