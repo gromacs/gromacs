@@ -71,16 +71,213 @@ Some paramerts for NMR refinement using can be specified in the
 	distance restraints are written to the energy file.
 \end{description}
 
+\newcommand{\amine}{\sf -NH$_2$}
+\newcommand{\amines}{\sf -NH-}
+\newcommand{\aminep}{\sf -NH$_3^+$}
+\section{Removing fastest \myindex{degrees of freedom}}
+The maximum time step in MD simulations is limited by the smallest
+oscillation period that can be found in the simulated
+system. Bond-stretching vibrations are in their quantum-mechanical
+ground state and are therefore better represented by a constraint than
+by a harmonic potential.
 
+For the remaining degrees of freedom, the shortest oscillation period
+as measured from a simulation is 13~fs for bond-angle vibrations
+involving hydrogen atoms. Taking as a guideline that with a Verlet
+(leap-frog) integration scheme a minimum of 5 numerical integration
+steps should be performed per period of a harmonic oscillation in
+order to integrate it with reasonable accuracy, the maximum time step
+will be about 3~fs. Disregarding these very fast oscillations of
+period 13~fs the next shortest periods are around 20~fs, which will
+allow a maximum time step of about 4~fs
+
+Removing the bond-angle degrees of freedom from hydrogen atoms can
+best be done by defining them as \myindex{dummy atoms} in stead of
+normal atoms. Where a normal atoms is connected to the molecule with
+bonds, angles and dihedrals, a dummy atom's position is calculated
+from the position of three nearby heavy atoms in a predefined manner
+(see also ~\secref{dummy}). For the hydrogens in water and in
+hydroxyl, sulfhydryl or amine groups, no degrees of freedom can be
+removed, because rotational freedom should be preserved. The only
+other option available to slow down these motions, is to increase the
+mass of the hydrogen atoms at the expense of the mass of the connected
+heavy atom. This will increase the moment of inertia of the water
+molecules and the hydroxyl, sulfhydryl or amine groups, without
+affecting the equilibrium properties of the system and without
+affecting the dynamical properties too much. These constructions will
+shortly be described in~sub\secref{dummyhydro} and have previously
+been described in full detail~\cite{feenstra99}.
+
+Using both dummy atoms and \myindex{modified masses}, the next
+bottleneck is likely to be formed by the improper dihedrals (which are
+used to preserve planarity or chirality of molecular groups) and the
+peptide dihedrals. The peptide dihedral cannot be changed without
+affecting the physical behavior of the protein. The improper dihedrals
+that preserve planarity, mostly deal with aromatic residues. Bonds,
+angles and dihedrals in these residues can also be replaced with
+somewhat elaborate dummy atom constructions, as will be described in
+sub~\secref{dummyaro}.
+
+All modifications described in this section can be performed using the
+{\gromacs} topology building tool {\tt \myindex{pdb2gmx}}. Separate
+options exist to increase hydrogen masses, dummify all hydrogen atoms
+or also dummify all aromatic residues. Note that when all hydrogen
+atoms are dummified, also those inside the aromatic residues will be
+dummified, i.e. hydrogens in the aromatic residues are treated
+differently depending on the treatment of the aromatic residues.
+
+Parameters for the dummy constructions for the hydrogen atoms are
+inferred from the forcefield parameters ({\em vis}. bondlengths and
+angles) directly by {\tt \myindex{grompp}} while processing the
+topology file.  The constructions for the aromatic residues are based
+on the bondlengths and angles for the geometry as described in the
+forcefiels, but these parameters are hard-coded into {\tt
+\myindex{pdb2gmx}} due to the complex nature of the construction
+needed for a whole aromatic group.
+
+\subsection{Hydrogen bond-angle vibrations}
+\label{sec:dummyhydro}
+\subsubsection{Construction of Dummy Atoms} %%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}
+\centerline{\psfig{figure=plots/dumtypes.eps,width=11cm}}
+\caption[Schematic view of the different types of dummy atom
+constructions used for hydrogen atoms.]{Schematic view of the
+different types of dummy atom constructions used for hydrogen
+atoms. The atoms used in the construction of the dummy atom(s) are
+depicted as black circles, dummy atoms as grey ones. Hydrogens are
+smaller than heavy atoms. {\sf A}: fixed bond angle, note that here
+the hydrogen is not a dummy atom; {\sf B}: in the plane of three
+atoms, with fixed distance; {\sf C}: in the plane of three atoms, with
+fixed angle and distance; {\sf D}: construction for amine groups
+({\amine} or {\aminep}), see text for details.}
+\label{fig:dumhydro}
+\end{figure}
+
+The goal of defining hydrogen atoms as dummy atoms is to remove all
+high-frequency degrees of freedom from them. In some cases not all
+degrees of freedom of a hydrogen atom should be removed, e.g. in the
+case of hydroxyl or amine groups the rotational freedom of the
+hydrogen atom(s) should be preserved. Care should be taken that no
+unwanted correlations are introduced by the construction of dummy
+atoms, e.g. bond-angle vibration between the constructing atoms could
+translate into hydrogen bond-length vibration. Additionally, since
+dummy atoms are by definition mass-less, in order to preserve total
+system mass, the mass of each hydrogen atom that is treated as dummy
+atom should be added to the bonded heavy atom.
+
+Taking into account these considerations, the hydrogen atoms in a
+protein naturally fall into several categories, each requiring a
+different approach, see also \figref{dumhydro}:
+
+\begin{itemize}
+
+\item{\em hydroxyl ({\sf -OH}) or sulfhydryl ({\sf -SH})
+hydrogen:\/} The only internal degree of freedom in a hydroxyl group
+that can be constrained is the bending of the {\sf C-O-H} angle. This
+angle is fixed by defining an additional bond of appropriate length,
+see \figref{dumhydro}A. This removes the high frequency angle bending,
+but leaves the dihedral rotational freedom. The same goes for a
+sulfhydryl group. Note that in these cases the hydrogen is not treated
+as a dummy atom.
+
+\item{\em single amine or amide ({\amines}) and aromatic hydrogens
+({\sf -CH-}):\/} The position of these hydrogens cannot be constructed
+from a linear combination of bond vectors, because of the flexibility
+of the angle between the heavy atoms. In stead, the hydrogen atom is
+positioned at a fixed distance from the bonded heavy atom on a line
+going through the bonded heavy atom and a point on the line through
+both second bonded atoms, see \figref{dumhydro}B.
+
+\item{\em planar amine ({\amine}) hydrogens:\/} The method used for
+the single amide hydrogen is not well suited for planar amine groups,
+because no suitable two heavy atoms can be found to define the
+direction of the hydrogen atoms. In stead, the hydrogen is constructed
+at a fixed distance from the nitrogen atom, with a fixed angle to the
+carbon atom, in the plane defined by one of the other heavy atoms, see
+\figref{dumhydro}C.
+
+\item{\em amine group (umbrella {\amine} or {\aminep}) hydrogens:\/}
+Amine hydrogens with rotational freedom cannot be constructed as dummy
+atoms from the heavy atoms they are connected to, since this would
+result in loss of the rotational freedom of the amine group. To
+preserve the rotational freedom while removing the hydrogen bond-angle
+degrees of freedom, two ``dummy masses'' are constructed with the same
+total mass, moment of inertia (for rotation around the {\sf C-N} bond)
+and center of mass as the amine group. These dummy masses have no
+interaction with any other atom, except for the fact that they are
+connected to the carbon and to each other, resulting in a rigid
+triangle. From these three particles the positions of the nitrogen and
+hydrogen atoms are constructed as linear combinations of the two
+carbon-mass vectors and their outer product, resulting in an amine
+group with rotational freedom intact, but without other internal
+degrees of freedom. See \figref{dumhydro}D.
+
+\end{itemize}
+
+\begin{figure}
+\centerline{\psfig{figure=plots/dumaro.eps,width=15cm}}
+\caption[Schematic view of the different types of dummy atom
+constructions used for aromatic residues.]{Schematic view of the
+different types of dummy atom constructions used for aromatic
+residues. The atoms used in the construction of the dummy atom(s) are
+depicted as black circles, dummy atoms as grey ones. Hydrogens are
+smaller than heavy atoms. {\sf A}: phenylalanine; {\sf B}: tyrosine;
+{\sf C}: tryptophane; {\sf D}: histidine.}
+\label{fig:dumaro}
+\end{figure}
+
+\subsection{Out-of-plane vibrations in aromatic groups}
+\label{sec:dummyaro}
+The planar arrangements in the sidechains of the aromatic residues,
+lends itself perfectly for a dummy-atom construction, giving a
+perfectly planar group without the inherently instable constraints
+that are necessary to keep normal atoms in a plane. The basic approach
+is to define three atoms or dummy masses with constraints between them
+to fix the geometry and create the rest of the atoms as simple dummy
+type 3 atoms (see section~\secref{dummy}) from these three. Each of
+the aromatic residues require a different approach:
+
+\begin{itemize}
+
+\item{\em Phenylalanine:\/} {\sf C}$_\gamma$, {\sf C}$_{{\epsilon}1}$
+and {\sf C}$_{{\epsilon}2}$ are kept as normal atoms, but with each a
+mass of one third the total mass of the phenyl group. See
+\figref{dumhydro}A.
+
+\item{\em Tyrosine:\/} The ring is treated identical to the
+phenylalanine ring. Additionally, constraints are defined between {\sf
+C}$_{{\epsilon}1}$ and {\sf C}$_{{\epsilon}2}$ and {\sf O}$_{\eta}$.
+The original improper dihedral angles will keep both triangles (one
+for the ring and one with {\sf O}$_{\eta}$) in a plane, but due to the
+larger moments of inertia this construction will be much more
+stable. The bond angle in the hydroxyl group will be constrained by a
+constraint between {\sf C}$_\gamma$ and {\sf H}$_{\eta}$, note that
+the hydrogen is not treated as a dummy atom. See
+\figref{dumhydro}B.
+
+\item{\em Tryptophane:\/} {\sf C}$_\beta$ is kept as a normal atom
+and two dummy masses are created at the center of mass of each of the
+rings, each with a mass equal to the total mass of the respective ring
+({\sf C}$_{{\delta}2}$ and {\sf C}$_{{\epsilon}2}$ are each
+counted half for each ring). This keeps the overall center of mass and
+the moment of inertia almost (but not quite) equal to what it was. See
+\figref{dumhydro}C.
+
+\item{\em Histidine:\/} {\sf C}$_\gamma$, {\sf C}$_{{\epsilon}1}$
+and {\sf N}$_{{\epsilon}2}$ are kept as normal atoms, but with masses
+redistributed such that the center of mass of the ring is
+preserved. See \figref{dumhydro}D.
+
+\end{itemize}
 
 \section{Running with PVM.}
-If you have a parallel computer, it may be equipped
-with PVM (Parallel Virtual Machines, see also chapter~\ref{ch:algorithms}),
-otherwise, have your system administrator install it. The package
-is public domain software and supports virtually every commercially
-available computer, such as an SGI Power Challenge, Paragon {\intel} box,
-Thinking machines CM-5, CRAY-J9036287, Convex MPP, etc., or on a cluster
-of workstations.
+If you have a parallel computer, it may be equipped with PVM (Parallel
+Virtual Machines, see also chapter~\ref{ch:algorithms}), otherwise,
+have your system administrator install it. The package is public
+domain software and supports virtually every commercially available
+computer, such as an SGI Power Challenge, Paragon {\intel} box,
+Thinking machines CM-5, CRAY-J9036287, Convex MPP, etc., or on a
+cluster of workstations.
 
 The {\gromacs} software can work with the PVM library, but only
 on computers with the same processor, it is not possible to mix
