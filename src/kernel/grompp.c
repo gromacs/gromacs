@@ -618,6 +618,7 @@ int main (int argc, char *argv[])
   init_warning(maxwarn);
   
   /* PARAMETER file processing */
+  set_warning_line(ftp2fn(efMDP,NFILE,fnm),-1);    
   get_ir(ftp2fn(efMDP,NFILE,fnm),opt2fn("-po",NFILE,fnm),ir,opts);
 
   if (bVerbose) 

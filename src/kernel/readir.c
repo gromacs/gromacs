@@ -96,12 +96,21 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts)
     }
   }
   if ((ir->epc == epcTRICLINIC) && (ir->eBox != ebtTRICLINIC)) {
-    fprintf(stderr,"%s pressure coupling does not make sense without %s box\n"
+    sprintf(warn_buf,
+	    "%s pressure coupling does not make sense without %s box\n"
 	    "resetting presure coupling to %s\n",
 	    epcoupl_names[epcTRICLINIC],eboxtype_names[ebtTRICLINIC],
 	    epcoupl_names[epcISOTROPIC]);
+    warning(NULL);
     ir->epc = epcISOTROPIC;
   }
+  if ((ir->eeltype == eelPPPM) && (ir->epc != epcNO)) {
+    sprintf(warn_buf,"Can not (yet) use pressure coupling with PPPM: pressure"
+	    " coupling turned off");
+    warning(NULL);
+    ir->epc = epcNO;
+  }
+
   if ((ir->eeltype == eelSHIFT) || (ir->eeltype == eelSWITCH)) {
     if (ir->rshort >= ir->rlong) {
       fprintf(stderr,"rlong (%g) must be longer than rshort (%g) "
@@ -111,10 +120,11 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts)
   } 
   else if ((ir->eeltype == eelRF) || (ir->eeltype == eelGRF)) {
     if (ir->rlong != ir->rshort) {
-      fprintf(stderr,
-	      "WARNING: specifying different rlong (%g) and rshort (%g) "
+      sprintf(warn_buf,
+	      "specifying different rlong (%g) and rshort (%g) "
 	      "when using %s is useless, since only rshort is used.\n",
 	      ir->rlong,ir->rshort,eel_names[ir->eeltype]);
+      warning(NULL);
       ir->rlong=ir->rshort;
     }
     if (ir->epsilon_r == 1.0) {
@@ -208,7 +218,7 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("ns algorithm (simple or grid)");
   ETYPE ("ns_type",     ir->ns_type,    ens_names);
   ITYPE ("deltagrid",	ir->ndelta,	2);
-  CTYPE ("Box type, cubic or rect, this affects pressure coupling");
+  CTYPE ("Box type, rectangular, triclinic, none");
   ETYPE ("box",         ir->eBox,       eboxtype_names);
   
   /* Electrostatics */

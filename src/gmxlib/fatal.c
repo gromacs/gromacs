@@ -252,11 +252,17 @@ void set_warning_line(char *s,int line)
 
 void warning(char *s)
 {
+  char linenobuf[32];
+  
   nwarn++;
   if (s == NULL)
     s = warn_buf;
-  fprintf(stderr,"Warning %d [file %s, line %d]: %s\n",
-	  nwarn,filenm,lineno,s);
+  if (lineno != -1)
+    sprintf(linenobuf,"%d",lineno);
+  else
+    strcpy(linenobuf,"unknown");
+  fprintf(stderr,"Warning %d [file %s, line %s]: %s\n",
+	  nwarn,filenm,linenobuf,s);
   if (nwarn >= maxwarn) {
     fprintf(stderr,"Too many warnings, %s terminated\n",Program());
     exit(1);
