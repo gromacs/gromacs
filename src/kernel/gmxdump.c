@@ -73,19 +73,6 @@ static void list_tpx(char *fn, bool bAltLayout)
 	   tpx.bTop ? &top: NULL);
   
   if (bAltLayout) {
-    if (available(stdout,&tpx,fn))
-      {
-	indent=0;
-	indent=pr_title(stdout,indent,fn);
-	pr_header(stdout,indent,"header",&(tpx));
-	pr_inputrec(stdout,indent,"ir",&(ir));
-	pr_rvecs(stdout,indent,"box",box,DIM);
-	pr_rvecs(stdout,indent,"x",x,natoms);
-	pr_rvecs(stdout,indent,"v",v,natoms);
-	pr_rvecs(stdout,indent,"f",f,natoms);
-	pr_top(stdout,indent,"topology",&(top));
-      }
-  } else {
     printf("----------- begin of %s ------------\n",fn);
     fp = open_tpx(NULL,"w");
     fio_setdebug(fp,TRUE);
@@ -99,6 +86,19 @@ static void list_tpx(char *fn, bool bAltLayout)
 	       tpx.bTop ? &top : NULL);
     close_tpx(fp);
     printf("----------- end of %s ------------\n",fn);
+  } else {
+    if (available(stdout,&tpx,fn))
+      {
+	indent=0;
+	indent=pr_title(stdout,indent,fn);
+	pr_header(stdout,indent,"header",&(tpx));
+	pr_inputrec(stdout,indent,"ir",&(ir));
+	pr_rvecs(stdout,indent,"box",box,DIM);
+	pr_rvecs(stdout,indent,"x",x,natoms);
+	pr_rvecs(stdout,indent,"v",v,natoms);
+	pr_rvecs(stdout,indent,"f",f,natoms);
+	pr_top(stdout,indent,"topology",&(top));
+      }
   }
   
   sfree(x);
@@ -254,7 +254,7 @@ int main(int argc,char *argv[])
   /* Command line options */
   static bool bAltLayout=FALSE;
   t_pargs pa[] = {
-    { "-a", FALSE, etBOOL, &bAltLayout, "Alternative layout for run startup files" }
+    { "-a", FALSE, etBOOL, &bAltLayout, "HIDDENAlternative layout for run startup files" }
   };
   
   CopyRight(stdout,argv[0]);
