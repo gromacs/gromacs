@@ -1,5 +1,5 @@
 #define _FF_GROMOS96
-#define _FF_GROMOS96B
+#define _FF_GROMOS43B1
 
 [ defaults ]
 ; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ
