@@ -1,10 +1,17 @@
 #!/bin/csh -f
 
-if ( $#argv >= 1 ) set GMXHOME = $1
+if ( $#argv < 1 ) then
+  echo "Error: provide the GROMACS html directory as first argument."
+  exit
+endif
+
+set GMXHTMLDIR = $1
+
+set 	dir = $cwd
 
 set TEXDIR	= .
 set MANDIR	= online
-set HTML	= $GMXHOME/html
+set HTML	= $GMXHTMLDIR
 set HTMLOL	= $HTML/$MANDIR
 set HTMLMDPOPT	= $HTMLOL/mdp_opt.html
 set TEXMDPOPT	= $TEXDIR/mdp_opt.tex
