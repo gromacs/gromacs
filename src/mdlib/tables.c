@@ -131,7 +131,7 @@ static void splint(real xa[],real ya[],real y2a[],
   }
 }
 
-static void copy2table(int n,int n0,int stride,
+static void copy2table(int n,int offset,int stride,
 		       real x[],real Vtab[],real Vtab2[],
 		       real dest[],real r_zeros)
 {
@@ -143,7 +143,7 @@ static void copy2table(int n,int n0,int stride,
     F   = (Vtab[i+1]-Vtab[i]-(h*h/6.0)*(2*Vtab2[i]+Vtab2[i+1]));
     G   = (h*h/2.0)*Vtab2[i];
     H   = (h*h/6.0)*(Vtab2[i+1]-Vtab2[i]);
-    nn0 = n0+i*stride;
+    nn0 = offset+i*stride;
     dest[nn0]   = Vtab[i];
     dest[nn0+1] = F;
     dest[nn0+2] = G;
@@ -152,7 +152,7 @@ static void copy2table(int n,int n0,int stride,
   if (r_zeros > 0.0) {
     for(i=1; (i<n); i++) {
       if (0.5*(x[i]+x[i+1]) >= r_zeros) {
-	nn0 = n0+i*stride;
+	nn0 = offset+i*stride;
 	dest[nn0]   = 0.0;
 	dest[nn0+1] = 0.0;
 	dest[nn0+2] = 0.0;
@@ -181,23 +181,25 @@ static void init_table(FILE *fp,int n,int nx0,int tabsel,
 
 static void read_tables(FILE *fp,char *fn,t_tabledata td[])
 {
+  char *libfn;
   real **yy=NULL;
   int  k,i,nx,nx0,ny,nny;
   bool bCont;
   real tabscale;
 
   nny = 2*etiNR+1;  
-  nx  = read_xvg(fn,&yy,&ny);
+  libfn = low_libfn(fn,TRUE);
+  nx  = read_xvg(libfn,&yy,&ny);
   if (ny != nny)
     fatal_error(0,"Trying to read file %s, but no colums = %d, should be %d",
-		fn,ny,nny);
+		libfn,ny,nny);
   bCont = TRUE;
   for(nx0=0; bCont && (nx0 < nx); nx0++)
     for(k=1; (k<ny); k++)
       if (yy[k][nx0] != 0)
 	bCont = FALSE;
   if (nx0 == nx)
-    fatal_error(0,"All elements in table %s are zero!\n",fn);
+    fatal_error(0,"All elements in table %s are zero!\n",libfn);
     
   tabscale = (nx-1)/(yy[0][nx-1] - yy[0][0]);
   for(k=0; (k<etiNR); k++) {
@@ -213,8 +215,8 @@ static void read_tables(FILE *fp,char *fn,t_tabledata td[])
   sfree(yy);
   
   if (fp) 
-    fprintf(fp,"Read user tables from %s with %d data points."
-	    " tabscale = %g points/nm\n",fn,nx,tabscale);
+    fprintf(fp,"Read user tables from %s with %d data points.\n"
+	    "Tabscale = %g points/nm\n",libfn,nx,tabscale);
 }
 
 static void done_tabledata(t_tabledata *td)
@@ -515,13 +517,13 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose,char *fn)
   FILE        *fp;
   t_tabledata *td;
   bool        bReadTab,bGenTab;
-  real        x0,y0,yp;
+  real        x0,y0,yp,rtab;
   int         i,j,k,nx,nx0,tabsel[etiNR];
  
   set_table_type(tabsel,fr);
   snew(td,etiNR);
   fr->tabscale = 0;
-  fr->rtab     = 0;
+  rtab         = fr->rtab;
   nx0          = 10;
   nx           = 0;
   
@@ -540,6 +542,9 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose,char *fn)
     fr->rtab     = td[0].x[td[0].nx-1];
     nx0          = td[0].nx0;
     nx           = fr->ntab = fr->rtab*fr->tabscale;
+    if (fr->rtab < rtab) 
+      fatal_error(0,"Tables in file %s not long enough for cut-off:\n"
+		  "\tshould be at least %f nm\n",fn,rtab);
   }
   if (bGenTab) {
     if (!bReadTab) {
@@ -550,11 +555,6 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose,char *fn)
 #endif
       nx = fr->ntab = fr->rtab*fr->tabscale;
     }
-    if (out)
-      fprintf(out,"Making tables%s of %g(nm)*%g = %d points\n",
-	      (fr->bcoultab || fr->bvdwtab) ? "" : 
-	      (fr->efep != efepNO) ? " for 1-4 and FEP int.":" for 1-4 int.",
-	      fr->rtab,fr->tabscale,fr->ntab);
   }
   snew(fr->coulvdwtab,12*(nx+1)+1);
   for(k=0; (k<etiNR); k++) {
@@ -564,7 +564,8 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose,char *fn)
 		 &(td[k]),!bReadTab);
       fill_table(&(td[k]),tabsel[k],fr);
       if (out) 
-	fprintf(out,"Generated table with %d data points for %s. tabscale = %g points/nm\n",
+	fprintf(out,"Generated table with %d data points for %s.\n"
+		"Tabscale = %g points/nm\n",
 		td[k].nx,tabnm[tabsel[k]],td[k].tabscale);
 
     }
