@@ -63,9 +63,7 @@ int main (int argc,char *argv[])
   atoms->nr=0;
   atoms->nres=0;
   get_stx_coordnum(opt2fn("-f",NFILE,fnm),&natoms);
-  snew(atoms->atomname,natoms);
-  snew(atoms->resname,natoms);
-  snew(atoms->atom,natoms);
+  init_t_atoms(atoms,natoms,FALSE);
   snew(x,natoms);
   snew(v,natoms);
   read_stx_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,v,box);
