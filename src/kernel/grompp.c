@@ -743,7 +743,7 @@ int main (int argc, char *argv[])
   bool         bNeedVel,bGenVel;
 
   t_filenm fnm[] = {
-    { efMDP, NULL,  NULL,        ffREAD  },
+    { efMDP, NULL,  NULL,        ffOPTRD },
     { efMDP, "-po", "mdout",     ffWRITE },
     { efSTX, "-c",  NULL,        ffREAD  },
     { efSTX, "-r",  NULL,        ffOPTRD },
