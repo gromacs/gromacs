@@ -70,7 +70,7 @@ extern void update(int          natoms,	/* number of atoms in simulation */
 		   bool         bTYZ,
 		   bool         bDoUpdate,
 		   t_edsamyn    *edyn,
-		   t_pull      *pull);
+		   t_pull       *pulldata);
      
 extern void calc_ke_part(bool bFirstStep,int start,int homenr,
 			 rvec vold[],rvec v[],rvec vt[],
