@@ -743,7 +743,7 @@ int main(int argc,char *argv[])
     { "-binary",FALSE, etBOOL, {&bBinary},
       "Treat the RMSD matrix as consisting of 0 and 1, where the cut-off is given by -cutoff" },
     { "-M",     FALSE, etINT,  {&M},
-      "Number of nearest neighbours considered for Jarvis-Patrick algorithm, 0 is use cutoff" },
+      "Number of nearest neighbors considered for Jarvis-Patrick algorithm, 0 is use cutoff" },
     { "-P",     FALSE, etINT,  {&P},
       "Number of identical nearest neighbors required to form a cluster" },
     { "-seed",  FALSE, etINT,  {&seed},

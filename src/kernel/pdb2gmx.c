@@ -619,7 +619,7 @@ int main(int argc, char *argv[])
     { "-sort",   FALSE, etBOOL, {&bSort}, 
       "Sort the residues according to database" },
     { "-H14",    FALSE, etBOOL, {&bH14}, 
-      "Use 3rd neighbour interactions for hydrogen atoms" },
+      "Use 3rd neighbor interactions for hydrogen atoms" },
     { "-reth",   FALSE, etBOOL, {&bRetainH}, 
       "Retain hydrogen atoms that are in the pdb file" },
     { "-alldih", FALSE, etBOOL, {&bAlldih}, 
