@@ -340,9 +340,10 @@ int read_pdbfile(FILE *in,char *title,
 {
   static t_symtab symtab;
   static bool bFirst=TRUE;
-  bool bCOMPND,bSimBox;
+  bool bCOMPND;
   char line[STRLEN+1];
   char xc[12],yc[12],zc[12];
+  double xa,ya,za;
   int  line_type;
   char *c,*d;
   int  natom;
@@ -357,7 +358,6 @@ int read_pdbfile(FILE *in,char *title,
   }
 
   bCOMPND=FALSE;
-  bSimBox=FALSE;
   title[0]='\0';
   natom=0;
   while (!bStop && (fgets2(line,STRLEN,in) != NULL)) {
@@ -375,17 +375,15 @@ int read_pdbfile(FILE *in,char *title,
       break;
 
     case epdbCRYST1:      
-      if (bSimBox) {
-	if (box) {
-	  sscanf(line,"%*s%s%s%s",xc,yc,zc);
+      if (box) {
+	sscanf(line,"%*s%s%s%s%f%f%f",xc,yc,zc,xa,ya,za);
+	if (xa==90 || ya==90 || za==90) {
 	  box[XX][XX] = atof(xc)*0.1;
 	  box[YY][YY] = atof(yc)*0.1;
 	  box[ZZ][ZZ] = atof(zc)*0.1;
-	}	
-	bSimBox = FALSE;
-      } else 
-	fprintf(stderr,"WARNING: ignoring data in CRYST1 entry "
-		"(probably not a simulation box)\n");
+	} else
+	  clear_mat(box);
+      }
       break;
 
     case epdbTITLE:
@@ -424,11 +422,6 @@ int read_pdbfile(FILE *in,char *title,
 	    strcpy(title,c);
 	bCOMPND=TRUE;
       } 
-      break;
-      
-    case epdbREMARK:
-      if (strcmp(line,REMARK_SIM_BOX)==0)
-	bSimBox=TRUE;
       break;
       
     case epdbTER:
