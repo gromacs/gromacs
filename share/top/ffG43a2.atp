@@ -43,4 +43,4 @@ ODMSO  15.99940 ;     DMSO Oxygen (solvent)
 CLCL4  35.453   ;     chloride in carbontetrachloride (solvent)
    SI  28.08	;     silicon
  MNH3   0       ;     Dummy mass in rigid tetraedrical NH3 group
- MTRP   0       ;     Dummy mass in rigid tyrosine rings
+   MW   0       ;     Dummy mass in rigid tyrosine rings

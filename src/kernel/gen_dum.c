@@ -368,7 +368,7 @@ static int gen_dums_trp(t_atomtype *atype, rvec *newx[],
   assert(atNR == nrfound);
   
   /* get dummy mass type */
-  tpM=nm2type("MTRP",atype);
+  tpM=nm2type("MW",atype);
   /* make space for 2 masses: shift all atoms starting with CB */
   i0=ats[atCB];
   for(j=0; j<NMASS; j++)
@@ -453,7 +453,7 @@ static int gen_dums_trp(t_atomtype *atype, rvec *newx[],
   
   /* set parameters for the masses */
   for(j=0; j<NMASS; j++) {
-    sprintf(name,"MTRP%d",j+1);
+    sprintf(name,"MW%d",j+1);
     (*newatomname)  [atM[j]]       = put_symtab(symtab,name);
     (*newatom)      [atM[j]].m     = (*newatom)[atM[j]].mB    = mM[j];
     (*newatom)      [atM[j]].q     = (*newatom)[atM[j]].qB    = 0.0;

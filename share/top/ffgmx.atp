@@ -48,4 +48,4 @@
    CD  15.03500 ;     DMSO Carbon
   CHE  12.01100 ;     HEME RING CARBON
  MNH3   0       ;     Dummy mass in rigid tetraedrical NH3 group
- MTRP   0       ;     Dummy mass in rigid tyrosine rings
+   MW   0       ;     Dummy mass in rigid tyrosine rings
