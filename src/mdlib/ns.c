@@ -347,7 +347,7 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
   t_nblist  *vdw,*coul,*free=NULL;
   
   int 	    i,j,jcg,igid,gid,ind_ij;
-  atom_id   jj,jj0,jj1,i_atom,j_atom;
+  atom_id   jj,jj0,jj1,i_atom;
   int       i0,nicg;
   
   int       *type;
@@ -373,8 +373,8 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
   /* Check whether this molecule is a water molecule */
   i0     = index[icg];
   nicg   = index[icg+1]-i0;
-  bWater = (((type[a[i0]] == fr->nWater) && (nicg == 3)) && 
-	    (!bPert[a[i0]]) && (!bPert[a[i0+1]]) && (!bPert[a[i0+2]]));
+  bWater = (((type[i0] == fr->nWater) && (nicg == 3)) && 
+	    (!bPert[i0]) && (!bPert[i0+1]) && (!bPert[i0+2]));
   if (bWater && fr->efep==efepNO)
     nicg = 1;
     
@@ -406,94 +406,117 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
       free = &fr->nlist_sr[eNL_FREE];
   }
 
-  /* Loop over the atoms in the i charge group */    
-  for(i=0; (i<nicg); i++) {
-    /* Get group id for the charge group. Note that the group id should be
-     * the same for the whole charge group.
-     */
-    i_atom  = a[i0+i];
-    igid    = cENER[i_atom];
-    gid     = GID(igid,jgid,ngid);
-    
-    /* Create new i_atom for each energy group */
-    if (!bCoulOnly)
-      new_i_nblist(vdw,bLR ? F_LJLR : F_LJ,i_atom,shift,gid);
-    new_i_nblist(coul,bLR ? F_LR : F_SR,i_atom,shift,gid);
-    if (fr->efep != efepNO)
-      new_i_nblist(free,F_DVDL,i_atom,shift,gid);
-    
-    /* Loop over the j charge groups */
-    for(j=0; (j<nj); j++) {
-      jcg=jjcg[j];
+  if (bWater && fr->efep==efepNO) {
+    /* Loop over the atoms in the i charge group */    
+    for(i=0; (i<nicg); i++) {
+      i_atom  = i0;
+      igid    = cENER[i_atom];
+      gid     = GID(igid,jgid,ngid);
       
-      /* Check for interaction with the same molecule */      
-      if (bWater && (jcg==icg))
-	continue;
-
-      /* Check for large charge groups */
-      if (jcg == icg) 
-	jj0 = i0 + i + 1;
-      else 
-	jj0 = index[jcg];
+      /* Create new i_atom for each energy group */
+      if (!bCoulOnly)
+	new_i_nblist(vdw,bLR ? F_LJLR : F_LJ,i_atom,shift,gid);
+      new_i_nblist(coul,bLR ? F_LR : F_SR,i_atom,shift,gid);
       
-      jj1=index[jcg+1];
-
-      if (bWater && fr->efep==efepNO) {
-	if (bCoulOnly) {
-	  for(jj=jj0; (jj<jj1); jj++) {
-	    j_atom = a[jj];
+      /* Loop over the j charge groups */
+      for(j=0; (j<nj); j++) {
+	jcg=jjcg[j];
 	
-	    add_j_to_nblist(coul,j_atom);
-	  }
-	}
-	else {
-	  for(jj=jj0; (jj<jj1); jj++) {
-	    j_atom = a[jj];
-	    
-	    if (bHaveLJ[type[j_atom]])
-	      add_j_to_nblist(vdw,j_atom);
-	    else if (charge[j_atom] != 0)
-	      add_j_to_nblist(coul,j_atom);
+	if (jcg==icg)
+	  continue;
+	
+	jj0 = index[jcg];
+	if (type[jj0] == fr->nWater) {
+	  if (bCoulOnly)
+	    add_j_to_nblist(coul,jj0);
+	  else
+	    add_j_to_nblist(vdw,jj0);
+	  add_j_to_nblist(coul,jj0+1);
+	  add_j_to_nblist(coul,jj0+2);
+	} else {
+	  jj1 = index[jcg+1];
+	  
+	  if (bCoulOnly) {
+	    for(jj=jj0; (jj<jj1); jj++) {
+	      if (charge[jj] != 0)
+		add_j_to_nblist(coul,jj);
+	    }
+	  } else {
+	    for(jj=jj0; (jj<jj1); jj++) {
+	      if (bHaveLJ[type[jj]])
+		add_j_to_nblist(vdw,jj);
+	    else if (charge[jj] != 0)
+	      add_j_to_nblist(coul,jj);
+	    }
 	  }
 	}
       }
-      else {
-	/* !bWater || fr->bPert */
-	/* Finally loop over the atoms in the j-charge group */	
-	bFree = bPert[i_atom];
-	qi    = charge[i_atom];
-	for(jj=jj0; (jj<jj1); jj++) {
-	  j_atom = a[jj];
-	  bFreeJ = bFree || bPert[j_atom];
-	  /* Complicated if, because the water H's should also
-           * see perturbed j-particles
-	   */
-	  if (!bWater || i==0 || bFreeJ) {
-	    bNotEx = NOTEXCL(bExcl,i,j_atom);
-	    
-	    if (bNotEx) {
-	      if (bFreeJ) 
-		add_j_to_nblist(free,j_atom);
-	      else if (bCoulOnly) 
-		/* This is done whether or  not bWater is set */
-	      add_j_to_nblist(coul,j_atom);
-	      else {
-		if (bHaveLJ[type[j_atom]])
-		add_j_to_nblist(vdw,j_atom);
-		else if (qi*charge[j_atom] != 0)
-		  add_j_to_nblist(coul,j_atom);
+      close_i_nblist(coul);
+      close_i_nblist(vdw);
+    }
+  } else {
+    /* Loop over the atoms in the i charge group */    
+    for(i=0; (i<nicg); i++) {
+      i_atom  = i0+i;
+      igid    = cENER[i_atom];
+      gid     = GID(igid,jgid,ngid);
+      qi      = charge[i_atom];
+      
+      /* Create new i_atom for each energy group */
+      if (!bCoulOnly)
+	new_i_nblist(vdw,bLR ? F_LJLR : F_LJ,i_atom,shift,gid);
+      new_i_nblist(coul,bLR ? F_LR : F_SR,i_atom,shift,gid);
+      if (fr->efep != efepNO)
+	new_i_nblist(free,F_DVDL,i_atom,shift,gid);
+      
+      if (!bCoulOnly || qi!=0) {
+	/* Loop over the j charge groups */
+	for(j=0; (j<nj); j++) {
+	  jcg=jjcg[j];
+	  
+	  /* Check for large charge groups */
+	  if (jcg == icg) 
+	    jj0 = i0 + i + 1;
+	  else 
+	    jj0 = index[jcg];
+	  
+	  jj1=index[jcg+1];
+	  
+	  /* Finally loop over the atoms in the j-charge group */	
+	  bFree = bPert[i_atom];
+	  for(jj=jj0; (jj<jj1); jj++) {
+	    bFreeJ = bFree || bPert[jj];
+	    /* Complicated if, because the water H's should also
+	     * see perturbed j-particles
+	     */
+	    if (!bWater || i==0 || bFreeJ) {
+	      bNotEx = NOTEXCL(bExcl,i,jj);
+	      
+	      if (bNotEx) {
+		if (bFreeJ) 
+		    add_j_to_nblist(free,jj);
+		else if (bCoulOnly) { 
+		  /* This is done whether or  not bWater is set */
+		  if (charge[jj] != 0)
+		    add_j_to_nblist(coul,jj);
+		} else {
+		  if (bHaveLJ[type[jj]])
+		    add_j_to_nblist(vdw,jj);
+		  else if (qi*charge[jj] != 0)
+		    add_j_to_nblist(coul,jj);
+		}
 	      }
 	    }
 	  }
 	}
       }
+      close_i_nblist(coul);
+      close_i_nblist(vdw);
+      if (fr->efep != efepNO)
+	close_i_nblist(free);
     }
-    close_i_nblist(coul);
-    close_i_nblist(vdw);
-    if (fr->efep != efepNO)
-      close_i_nblist(free);
   }
-}  
+}
 
 void setexcl(int nri,atom_id ia[],t_block *excl,bool b,
 	     t_excl bexcl[])
