@@ -57,7 +57,7 @@ void do_glas(FILE *log,int start,int homenr,rvec x[],rvec f[],
     bGlas = (pi6 != 0) && (pi12 != 0) && (d[0] != 0) && (d[1] != 0);
     
     if (bGlas) {
-      if (ir->bDispCorr) {
+      if (ir->eDispCorr != edispcNO) {
 	fatal_error(0,"Can not have Long Range C6 corrections and GLASMD");
       }
       rc   = max(fr->rvdw,fr->rlist);
