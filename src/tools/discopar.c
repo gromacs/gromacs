@@ -51,6 +51,10 @@
 #include "xvgr.h"
 #include "pdbio.h"
 #include "disco.h"
+#ifdef GMX_MPI
+#include <mpi.h>
+#endif
+
 
 static t_correct *recv_init(FILE *fp,
 			    t_commrec *cr,int *seed,int *natom,int *nres,
