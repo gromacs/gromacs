@@ -329,6 +329,8 @@ static void renumber_res(int nrtp,t_restp restp[],
   for (i=0; (i<natoms); i++)
     a[i]=pdbi[i].index;
   add_grp(block, gnames, natoms, a, "prot_sort");
+  sfree(a);
+  sfree(pdbi);
 }
 
 static char *choose_ff(bool bFFMan)

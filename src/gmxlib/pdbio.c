@@ -297,6 +297,7 @@ void pdb2atoms(int natom,t_pdbatom pdba[],t_atoms *atoms,rvec **x,
     atoms->atom[i].m=pdba[i].m;
     atoms->atom[i].q=pdba[i].q;
     atoms->atom[i].type=pdba[i].type;
+    sfree(atoms->atomname[i]);
     atoms->atomname[i]=put_symtab(symtab,pdba[i].atomnm);
     for(m=0; (m<DIM); m++)
       (*x)[i][m]=pdba[i].x[m];

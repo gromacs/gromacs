@@ -239,6 +239,7 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
 	    wdesc[j]=wdesc[j+strlen(buf)-OPTLEN];
 	}
 	fprintf(fp,wdesc);
+	sfree(wdesc);
       }
       sfree(desc);
     }

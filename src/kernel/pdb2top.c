@@ -620,6 +620,7 @@ void pdb2top(char *ff,char *fn,char *pr,
   t_params plist[F_NRE];
   t_nextnb nnb;
   t_block  *cgs;
+  int i;
   
   init_plist(plist);
 
@@ -668,7 +669,9 @@ void pdb2top(char *ff,char *fn,char *pr,
 
   fprintf(stderr,"Writing topology file\n");
   write_top(ff,fn,pr,atoms,plist,nrtp,rtp,atype,cgs);
-  
+
+  for (i=0; (i<F_NRE); i++)
+    sfree(plist[i].param);
   done_nnb(&nnb);
   done_block(cgs);
   sfree(cgs);
