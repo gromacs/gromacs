@@ -49,7 +49,7 @@ static char *SRCID_bondfree_c = "$Id$";
 
 static bool bPBC=FALSE;
 
-void pbc_rvec_sub(matrix box,rvec xi,rvec xj,rvec dx)
+void pbc_rvec_sub(rvec xi,rvec xj,rvec dx)
 {
   if (bPBC)
     pbc_dx(xi,xj,dx);
@@ -128,7 +128,7 @@ real morsebonds(FILE *log,int nbonds,
     be   = forceparams[type].morse.beta;
     cb   = forceparams[type].morse.cb;
 
-    pbc_rvec_sub(box,x[ai],x[aj],dx);               /*   3          */
+    pbc_rvec_sub(x[ai],x[aj],dx);                   /*   3          */
     dr2  = iprod(dx,dx);                            /*   5          */
     dr   = sqrt(dr2);                               /*  10          */
     temp = exp(-be*(dr-b0));                        /*  12          */
@@ -198,7 +198,7 @@ real bonds(FILE *log,int nbonds,
     ai   = forceatoms[i++];
     aj   = forceatoms[i++];
   
-    pbc_rvec_sub(box,x[ai],x[aj],dx);			/*   3 		*/
+    pbc_rvec_sub(x[ai],x[aj],dx);			/*   3 		*/
     dr2=iprod(dx,dx);				/*   5		*/
     dr=sqrt(dr2);					/*  10		*/
 
@@ -358,8 +358,8 @@ real bond_angle(FILE *log,matrix box,
   /* 41 FLOPS */
   real th;
   
-  pbc_rvec_sub(box,xi,xj,r_ij);			/*  3		*/
-  pbc_rvec_sub(box,xk,xj,r_kj);			/*  3		*/
+  pbc_rvec_sub(xi,xj,r_ij);			/*  3		*/
+  pbc_rvec_sub(xk,xj,r_kj);			/*  3		*/
 
   *costh=cos_angle(r_ij,r_kj);		/* 25		*/
   th=acos(*costh);			/* 10		*/
@@ -404,8 +404,8 @@ real angles(FILE *log,int nbonds,
       snt=sin(theta);				/*  10		*/
       if (fabs(snt) < 1e-12)
 	snt=1e-12;
-      st  = dVdt/snt;				/*  11		*/
-      sth = st*cos_theta;				/*   1		*/
+      st  = dVdt/snt;				/*  10		*/
+      sth = st*cos_theta;			/*   1		*/
 #ifdef DEBUG
       if (debug)
 	fprintf(debug,"ANGLES: theta = %10g  vth = %10g  dV/dtheta = %10g\n",
@@ -414,7 +414,7 @@ real angles(FILE *log,int nbonds,
       nrkj2=iprod(r_kj,r_kj);			/*   5		*/
       nrij2=iprod(r_ij,r_ij);
       
-      cik=st/sqrt(nrkj2*nrij2);			/*  21		*/ 
+      cik=st*invsqrt(nrkj2*nrij2);		/*  12		*/ 
       cii=sth/nrij2;				/*  10		*/
       ckk=sth/nrkj2;				/*  10		*/
       
@@ -432,8 +432,7 @@ real angles(FILE *log,int nbonds,
       rvec_inc(fr->fshift[t],f_j);
       t=SHIFT_INDEX(g,ak);
       rvec_inc(fr->fshift[t],f_k);
-      /* 163 TOTAL	*/
-    }
+    }                                           /* 153 TOTAL	*/
   }
   return vtot;
 }
@@ -445,9 +444,9 @@ real dih_angle(FILE *log,matrix box,
 {
   real ipr,phi;
 
-  pbc_rvec_sub(box,xi,xj,r_ij); 		/*  3 		*/
-  pbc_rvec_sub(box,xk,xj,r_kj);			/*  3		*/
-  pbc_rvec_sub(box,xk,xl,r_kl);			/*  3		*/
+  pbc_rvec_sub(xi,xj,r_ij);       		/*  3 		*/
+  pbc_rvec_sub(xk,xj,r_kj);			/*  3		*/
+  pbc_rvec_sub(xk,xl,r_kl);			/*  3		*/
 
   oprod(r_ij,r_kj,m); 			/*  9 		*/
   oprod(r_kj,r_kl,n);			/*  9		*/
@@ -472,38 +471,37 @@ void do_dih_fup(FILE *log,int i,int j,int k,int l,real ddphi,
   real a,p,q;
   int  t;
   
-  ipr=iprod(m,m);		/*  5 	*/
-  nrkj2=iprod(r_kj,r_kj);	/*  5	*/
-  nrkj=sqrt(nrkj2);		/* 10	*/
-  a=-(ddphi*nrkj)/ipr;		/* 12	*/
+  ipr   = iprod(m,m);		/*  5 	*/
+  nrkj2 = iprod(r_kj,r_kj);	/*  5	*/
+  nrkj  = sqrt(nrkj2);		/* 10	*/
+  a     = -ddphi*nrkj/ipr;	/* 11	*/
   svmul(a,m,f_i);		/*  3	*/
-  ipr=iprod(n,n);		/*  5	*/
-  a=(ddphi*nrkj)/ipr;		/* 12	*/
+  ipr   = iprod(n,n);		/*  5	*/
+  a     = ddphi*nrkj/ipr;	/* 11	*/
   svmul(a,n,f_l);		/*  3 	*/
-  p=iprod(r_ij,r_kj);		/*  5	*/
-  p/=nrkj2;			/* 10	*/
-  q=-iprod(r_kl,r_kj);		/*  6	*/
-  q/=nrkj2;			/* 10	*/
+  p     = iprod(r_ij,r_kj);	/*  5	*/
+  p    /= nrkj2;		/* 10	*/
+  q     = iprod(r_kl,r_kj);	/*  5	*/
+  q    /= nrkj2;		/* 10	*/
   svmul(p,f_i,uvec);		/*  3	*/
   svmul(q,f_l,vvec);		/*  3	*/
-  rvec_add(uvec,vvec,svec);	/*  3	*/
-  rvec_sub(svec,f_i,f_j);	/*  3	*/
-  rvec_add(svec,f_l,f_k);	/*  3	*/
-  svmul(-1.0,f_k,f_k);		/*  3	*/
-  rvec_add(f[i],f_i,f[i]);	/*  3	*/
-  rvec_add(f[j],f_j,f[j]);	/*  3	*/
-  rvec_add(f[k],f_k,f[k]);	/*  3	*/
-  rvec_add(f[l],f_l,f[l]);	/*  3	*/
+  rvec_sub(uvec,vvec,svec);	/*  3	*/
+  rvec_sub(f_i,svec,f_j);	/*  3	*/
+  rvec_add(f_l,svec,f_k);	/*  3	*/
+  rvec_inc(f[i],f_i);   	/*  3	*/
+  rvec_dec(f[j],f_j);   	/*  3	*/
+  rvec_dec(f[k],f_k);   	/*  3	*/
+  rvec_inc(f[l],f_l);   	/*  3	*/
 
   t=SHIFT_INDEX(g,i);
-  rvec_add(f_i,fr->fshift[t],fr->fshift[t]);
+  rvec_inc(fr->fshift[t],f_i);
   t=SHIFT_INDEX(g,j);
-  rvec_add(f_j,fr->fshift[t],fr->fshift[t]);
+  rvec_dec(fr->fshift[t],f_j);
   t=SHIFT_INDEX(g,k);
-  rvec_add(f_k,fr->fshift[t],fr->fshift[t]);
+  rvec_dec(fr->fshift[t],f_k);
   t=SHIFT_INDEX(g,l);
-  rvec_add(f_l,fr->fshift[t],fr->fshift[t]);
-  /* 118 TOTAL 	*/
+  rvec_inc(fr->fshift[t],f_l);
+  /* 112 TOTAL 	*/
 }
 
 
@@ -561,13 +559,13 @@ real pdihs(FILE *log,int nbonds,
 		       
     vtot += vpd;
     do_dih_fup(log,ai,aj,ak,al,ddphi,r_ij,r_kj,r_kl,m,n,
-	       f,fr,g,x); 				/* 118 		*/
+	       f,fr,g,x); 				/* 112		*/
 
 #ifdef DEBUG
     fprintf(log,"pdih: (%d,%d,%d,%d) cp=%g, phi=%g\n",
 	    ai,aj,ak,al,cos_phi,phi);
 #endif
-  } /* 229 TOTAL 	*/
+  } /* 223 TOTAL 	*/
 
   return vtot;
 }
@@ -601,8 +599,8 @@ real idihs(FILE *log,int nbonds,
 
     vtot += vid;
     do_dih_fup(log,ai,aj,ak,al,(real)(-ddphi),r_ij,r_kj,r_kl,m,n,
-	       f,fr,g,x);				/* 118		*/
-    /* 208 TOTAL	*/
+	       f,fr,g,x);				/* 112		*/
+    /* 202 TOTAL	*/
 #ifdef DEBUG
     fprintf(log,"idih: (%d,%d,%d,%d) cp=%g, phi=%g\n",
 	    ai,aj,ak,al,cos_phi,phi);
@@ -728,7 +726,7 @@ real rbdihs(FILE *log,int nbonds,
     ddphi = -ddphi*sin_phi;				/*  11		*/
     
     do_dih_fup(log,ai,aj,ak,al,ddphi,r_ij,r_kj,r_kl,m,n,
-	       f,fr,g,x);				/* 118		*/
+	       f,fr,g,x);				/* 112		*/
     vtot += v;
   }  
   return vtot;
@@ -890,7 +888,7 @@ real g96bonds(FILE *log,int nbonds,
     ai   = forceatoms[i++];
     aj   = forceatoms[i++];
   
-    pbc_rvec_sub(box,x[ai],x[aj],dx);		/*   3 		*/
+    pbc_rvec_sub(x[ai],x[aj],dx);		/*   3 		*/
     dr2=iprod(dx,dx);				/*   5		*/
       
     *dvdlambda += g96harmonic(forceparams[type].harmonic.krA,
@@ -925,8 +923,8 @@ real g96bond_angle(FILE *log,matrix box,
 {
   real costh;
   
-  pbc_rvec_sub(box,xi,xj,r_ij);			/*  3		*/
-  pbc_rvec_sub(box,xk,xj,r_kj);			/*  3		*/
+  pbc_rvec_sub(xi,xj,r_ij);			/*  3		*/
+  pbc_rvec_sub(xk,xj,r_kj);			/*  3		*/
 
   costh=cos_angle(r_ij,r_kj);		/* 25		*/
 					/* 41 TOTAL	*/
