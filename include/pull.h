@@ -12,23 +12,25 @@ extern void print_constraint(t_pull *pull,rvec *force,int step,matrix box);
 extern void print_start(t_pull *pull, int step);
 
 
-/* calculate center of mass of index group, making sure it's inside the box */
-extern real calc_com(rvec x[], 
-		     int gnx, 
-		     atom_id *index, 
-		     t_mdatoms *md, 
-		     rvec com, 
-		     matrix box);
+/* calculate center of mass of index group, making sure it's inside the box.
+   function returns total mass.  
+*/
+extern real calc_com(rvec x[],       /* coordinates of all atoms in system */ 
+		     int gnx,        /* size of index group */
+		     atom_id *index, /* indices of atoms to be used for com */
+		     t_mdatoms *md,  /* all atoms */
+		     rvec com,       /* calculated center of mass */
+		     matrix box);    
 
 
 /* calculate center of mass of all atoms x[], index needed to get the right
-   masses from the atom array */
-extern real calc_com2(rvec x[], 
-		      int gnx, 
-		      atom_id *index, 
-		      t_mdatoms *md, 
-		      rvec com, 
-		      matrix box);
+   masses from the atom array. function returns total mass.*/
+extern real calc_com2(rvec x[],       /* coordinates to calc. com from */
+		      int gnx,        /* nr. of atom in group  */
+		      atom_id *index, /* indices of x[] in all atoms */
+		      t_mdatoms *md,  /* all atoms */
+		      rvec com,       /* calculated center of mass */
+		      matrix box); 
 
 
 /* calculate a running average for center of mass */
@@ -44,13 +46,13 @@ extern void correct_t0_pbc(t_pull *pull,
 
 
 /* parse a string for 3 numbers and put them in rvec */
-extern void string2rvec(char *buf, 
+extern void string2rvec(char *buf,
 			rvec x);
 
-
+/* read the parameter file .ppa and write out what was read in */
 extern void read_pullparams(t_pull *pull,
-			    char *infile); 
-
+			    char *infile,
+			    char *outfile); 
 
 /* find all atoms in group pull->idx[pull->n] that are inside a cylinder
    with as origin com[i][x],com[i][y] with radius pull->r and possibly
@@ -67,33 +69,33 @@ extern void make_refgrps(t_pull *pull,
 
 /* write a numbered .gro file in procedure to make starting structures */
 extern void dump_conf(t_pull *pull,
-		      rvec x[],
-		      matrix box,
-		      t_topology *top,
-		      int nout, 
-		      real time);
+		      rvec x[],        /* all coordinates */
+		      matrix box,      /* box */
+		      t_topology *top, /* names and residue info */
+		      int nout,        /* sequence number of this file */
+		      real time);      /* time in simulation */
 
 
 /* main pull routine that controls all the action */
-extern void pull(t_pull *pull,            /* all pull data */
-		 rvec *x,                 
-		 rvec *f,                 
-		 matrix box,              
-		 t_topology *top,         
-		 real dt, 
-		 int step, 
-		 int natoms, 
-		 t_mdatoms *md);
+extern void pull(t_pull *pull,    /* all pull data */
+		 rvec *x,         /* coordinates, changed by constraint run */ 
+		 rvec *f,         /* forces, changed by Afm run */
+		 matrix box,               
+		 t_topology *top, /* needed to write out coordinate files */   
+		 real dt,         /* time step */
+		 int step,        /* step number in simulation */
+		 int natoms,      /* total number of atoms on this processor */
+		 t_mdatoms *md);  /* masses and charges of all atoms */
 
 
 /* get memory and initialize the fields of pull that still need it, and
    do runtype specific initialization */
-extern void init_pull(FILE *log, 
-		      int nfile,
-		      t_filenm fnm[], 
-		      t_pull *pull,
-		      rvec *x, 
-		      t_mdatoms *md, 
+extern void init_pull(FILE *log,  
+		      int nfile,       
+		      t_filenm fnm[], /* standard filename struct */
+		      t_pull *pull,   /* all pull data */
+		      rvec *x,        /* all coordinates */
+		      t_mdatoms *md,  /* masses and charges of all atoms */
 		      rvec boxsize);
 
 
