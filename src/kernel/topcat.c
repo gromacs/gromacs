@@ -55,7 +55,7 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
   dest_natoms = nrstart;
   
   n0     = nrstart;
-  
+
   /* Add this many entries to array ... */
   pr_alloc(src->nr*copies,dest);
   

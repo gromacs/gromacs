@@ -56,7 +56,7 @@ int bond_sort (const void *a, const void *b)
     return (sa->ai-sb->ai);
 }
 
-static void prints(char *str, int n, sortable s[])
+static void prints(char *str, int n, sortable *s)
 {
   int i;
 
@@ -188,7 +188,7 @@ void nnb2excl (t_nextnb *nnb, t_block *excl)
 }
 
 static void do_gen(int nrbonds,	       /* total number of bonds in s	*/
-		   sortable s[],       /* bidirectional list of bonds 	*/
+		   sortable *s,        /* bidirectional list of bonds 	*/
 		   t_nextnb *nnb)      /* the tmp storage for excl     */
 /* Assume excl is initalised and s[] contains all bonds bidirectional */
 {
@@ -224,7 +224,7 @@ static void do_gen(int nrbonds,	       /* total number of bonds in s	*/
   print_nnb(nnb,"After exclude rest");
 }
 
-static void add_b(t_params *bonds, int *nrf, sortable s[])
+static void add_b(t_params *bonds, int *nrf, sortable *s)
 {
   int i;
   int ai,aj;

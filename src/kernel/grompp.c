@@ -414,10 +414,7 @@ static void gen_posres(t_params *pr,char *fn)
   get_stx_coordnum(fn,&natoms);
   snew(x,natoms);
   snew(v,natoms);
-  dumat.nr=natoms;
-  snew(dumat.resname,natoms);
-  snew(dumat.atom,natoms);
-  snew(dumat.atomname,natoms);
+  init_t_atoms(&dumat,natoms,FALSE);
   read_stx_conf(fn,title,&dumat,x,v,box);
   
   for(i=0; (i<pr->nr); i++) {
@@ -428,6 +425,7 @@ static void gen_posres(t_params *pr,char *fn)
   }
   /*pr->nrfp+=DIM;*/
   
+  free_t_atoms(&dumat);
   sfree(x);
   sfree(v);
 }

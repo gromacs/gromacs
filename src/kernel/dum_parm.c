@@ -772,9 +772,6 @@ static void clean_dum_angles(t_params *plist, t_pindex pindex[],
     fprintf(stderr,"Removed %4d %15ss with dummy atoms, %5d left\n",
 	    ps->nr-kept_i, interaction_function[cftype].longname, kept_i);
   ps->nr=kept_i;
-  
-  /* clean up */
-  sfree(pindex);
 }
 
 static void clean_dum_dihs(t_params *plist, t_pindex pindex[], 
@@ -858,9 +855,6 @@ static void clean_dum_dihs(t_params *plist, t_pindex pindex[],
     fprintf(stderr,"Removed %4d %15ss with dummy atoms, %5d left\n", 
 	    ps->nr-kept_i, interaction_function[cftype].longname, kept_i);
   ps->nr=kept_i;
-  
-  /* clean up */
-  sfree(pindex);
 }
 
 void clean_dum_bad(t_params *plist, int natoms)
@@ -912,5 +906,6 @@ void clean_dum_bad(t_params *plist, int natoms)
       else if ( (ftype==F_PDIHS) || (ftype==F_IDIHS) )
 	clean_dum_dihs(plist, pindex, ftype, dummy_type);
   }
+  sfree(pindex);
   sfree(dummy_type);
 }

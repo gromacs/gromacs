@@ -86,7 +86,7 @@ void pr_alloc (int extra, t_params *pr)
       pr->param[i].a[j]=0;
     for(j=0; (j<MAXFORCEPARAM); j++)
       pr->param[i].c[j]=0;
-    pr->param[i].s = strdup("");
+    pr->param[i].s = NULL;
   }
 }
 

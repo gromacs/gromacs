@@ -199,4 +199,5 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype *at,int nshake)
     push_bondnow(shake, &(plist[F_SHAKENC].param[i]));
   plist[F_SHAKENC].nr=0;
   sfree(plist[F_SHAKENC].param);
+  plist[F_SHAKENC].param=NULL;
 }
