@@ -1,148 +1,63 @@
-# GMXRC is created automatically from GMXRC.in 
-# If you move your gromacs installation, you will have to change the paths at 
-# the six lines marked "#####". Both csh, bash and zsh are supported - just type 
-# "source GMXRC". Shell detection adapted from "shtype" by Heiner Steven.
+# This is a convenience script to determine which
+# type of shell you have, and then run GMXRC.[csh|bash|zsh]
+# from the Gromacs binary directory.
+#
+# If you only use one shell you can copy that GMXRC.* instead.
 
-# Previous paths are removed below, but we don't need to uncomplete
-# anymore since the completions don't depend on the architecture now.
 
-# Tell bash/zsh from csh/tcsh
-unset shtst
-unset is_csh
-set is_csh = 1
-test "$is_csh" = 1 && goto CSH
-# Standard Bourne shell does not know how to remove parts of a variable with ${VAR%%pattern}.
+# only csh/tcsh understand 'set'
+set is_csh = 123
+test "$is_csh" = 123 && goto CSH
+
+# if we got here, shell is bsh/bash/zsh/ksh
+# bsh cannot remove part of a variable with %%
 shtst="A.B"
-shtst=`(echo ${shtst%%.*}) 2>/dev/null`
-if [ "$shtst" = A ]; then
+if [ "`(echo ${shtst%%.*}) 2>/dev/null`" = A ]; then
+
+  # shell is bash/zsh/ksh
   # bash/zsh use $[...] for arithmetic evaluation, ksh doesn't
-  shtst=`(echo $[0+1]) 2>/dev/null`
-  if [ "$shtst" = 1 ]; then
-    # Both BASH and ZSH use the export VAR=value syntax
-    # remove old stuff 
-    export PATH=${PATH/$GMXBIN} 
-    export PATH=${PATH%:} PATH=${PATH#:} PATH=${PATH/::/:}
-    export MANPATH=${MANPATH/$GMXMAN} 
-    export MANPATH=${MANPATH%:} MANPATH=${MANPATH#:} MANPATH=${MANPATH/::/:}
-    export LD_LIBRARY_PATH=${LD_LIBRARY_PATH/$GMXLDLIB} LD_LIBRARY_PATH=${LD_LIBRARY_PATH%:} 
-    export LD_LIBRARY_PATH=${LD_LIBRARY_PATH#:} LD_LIBRARY_PATH=${LD_LIBRARY_PATH/::/:}
-    # then set the new vars:
-    export GMXBIN=@bindir@          #####
-    export GMXLDLIB=@libdir@        #####
-    export GMXMAN=@mandir@          #####
-    export GMXDATA=@datadir@        #####
-    export export PATH=${PATH}:${GMXBIN} 
-    if [ "$MANPATH" = "" ]; then
-      export MANPATH=/usr/man:${GMXMAN}
-    else
-      export MANPATH=$MANPATH:$GMXMAN}
+  if [ "`echo $[0+1]`" = 1 ]; then
+    
+    # shell is zsh/bash
+    # zsh can test if the variable shtst is set with ${+shtst}
+    if [ "`(echo ${+shtst}) 2>/dev/null`" = 1 ]; then
+      # shell is zsh
+      source @bindir@/GMXRC.zsh
+    else  
+      # shell is bash
+      source @bindir@/GMXRC.bash      
     fi
-    if [ "$LD_LIBRARY_PATH" = "" ]; then
-      export LD_LIBRARY_PATH={$GMXLDLIB}
-    else
-      export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${GMXLDLIB} 
-    fi
-    export GMXFONT="10x20"
-    # Completions are different for bash and zsh. zsh can test with ${+x} if variable x is set
-    shtst=0
-    shtst=`(echo ${+shtst}) 2>/dev/null`
-    if [ "$shtst" = 1 ]; then
-      if [ -f $GMXBIN/completion.zsh ]; then 
-        source $GMXBIN/completion.zsh; fi   
-    else
-      if [ -f $GMXBIN/completion.bash ]; then 
-        source $GMXBIN/completion.bash; fi  
-    fi
+
+  else    
+    # shell is ksh - use bash setup, completions won't be read.
+     . @bindir@/GMXRC.bash
   fi
+  return
+else
+  # shell is bsh - use bash setup, completions won't be read.
+  . @bindir@/GMXRC.bash
+  exit
 fi
 
-# never execute the rest for bash/zsh 
-return
+# csh/tcsh jump here
 
 CSH:
-# Remove the ld_library_path
-unsetenv TEMPPATH
-unsetenv PATHSET
-if ($?GMXLDLIB) then
-  foreach i ( `echo $LD_LIBRARY_PATH | sed "s/:/ /g"` )
-    setenv PATHSET
-    if ( "$i" != "$GMXLDLIB" ) then
-      if ( ! $?TEMPPATH ) then
-        setenv TEMPPATH $i
-      else
-        setenv TEMPPATH ${TEMPPATH}:$i
-      endif
-    endif
-    unsetenv LD_LIBRARY_PATH
-  end
-endif
-if ($?PATHSET) then
-  if (! $?TEMPPATH) setenv TEMPPATH
-  setenv LD_LIBRARY_PATH $TEMPPATH
-  unsetenv TEMPPATH
-  unsetenv PATHSET
-endif  
-# Remove the binary path
-unsetenv TEMPPATH
-unsetenv PATHSET
-if ($?GMXBIN) then
-  foreach i ( `echo $PATH | sed "s/:/ /g"` )
-    setenv PATHSET
-    if ( "$i" != "$GMXBIN" ) then
-      if ( ! $?TEMPPATH ) then
-	setenv TEMPPATH $i
-      else
-	setenv TEMPPATH ${TEMPPATH}:$i
-      endif
-    endif
-  end
-unsetenv PATH
-endif
-if ($?PATHSET) then
-  if (! $?TEMPPATH) setenv TEMPPATH
-  setenv PATH $TEMPPATH
-  unsetenv TEMPPATH
-  unsetenv PATHSET
-endif  
-# Remove manual path
-unsetenv TEMPPATH
-unsetenv PATHSET
-if ($?GMXMAN) then
-  foreach i ( `echo $MANPATH | sed "s/:/ /g"` )
-    setenv PATHSET
-    if ( "$i" != "$GMXMAN" ) then
-      if ( ! $?TEMPPATH ) then
-	setenv TEMPPATH $i
-      else
-	setenv TEMPPATH ${TEMPPATH}:$i
-      endif
-    endif
-  end
-  unsetenv MANPATH
-endif 
-if ($?PATHSET) then
-  if (! $?TEMPPATH) setenv TEMPPATH
-  setenv MANPATH $TEMPPATH
-  unsetenv TEMPPATH
-  unsetenv PATHSET
-endif  
+source @bindir@/GMXRC.csh
 
-setenv GMXBIN @bindir@     #####
-setenv GMXLDLIB @libdir@   #####
-setenv GMXMAN @mandir@     #####
-setenv GMXDATA @datadir@   #####
-setenv PATH ${PATH}:${GMXBIN}
-if ( $?LD_LIBRARY_PATH ) then
-  setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${GMXLDLIB}
-else
-  setenv LD_LIBRARY_PATH ${GMXLDLIB}
-endif
-if ( $?MANPATH ) then
-  setenv MANPATH ${MANPATH}:${GMXMAN}
-else
-  setenv MANPATH /usr/man:${GMXMAN}
-endif  
-setenv GMXFONT	10x20
-if ( -f $GMXBIN/completion.csh ) source $GMXBIN/completion.csh  
 
-# end of script
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
