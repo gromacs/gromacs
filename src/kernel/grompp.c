@@ -101,12 +101,14 @@ static void double_check(t_inputrec *ir, matrix box, t_molinfo *mol)
      "tol must be > 0 instead of %10.5e when using shake\n",ir->tol)
   BS((ir->eI != eiMD) && (ir->eI != eiLD) && (ncons > 0),
      "can only use SHAKE or SETTLE in MD (not %s) simulation\n",EI(ir->eI))
+     
   /* rlong must be less than half the box */
   bmin=min(box[XX][XX],box[YY][YY]);
   bmin=0.5*(min(bmin,box[ZZ][ZZ]));
   if (ir->rlong > bmin) {
-     fprintf(stderr,"rlong (%10.5e) must be < half a box (%10.5e)\n",
-	     ir->rlong,bmin);
+     fprintf(stderr,
+	     "rlong (%10.5e) must be < half a box (%10.5e,%10.5e,%10.5e)\n",
+	     ir->rlong,box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
      bStop = TRUE;
   }
   if (bStop) {
@@ -565,7 +567,7 @@ int main (int argc, char *argv[])
   /* Command line options */
   static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=FALSE,bEnsemble=FALSE;
   static bool bMorse=FALSE;
-  static int  nprocs=1;
+  static int  nprocs=1,maxwarn=10;
   static real time=-1;
   t_pargs pa[] = {
     { "-np",      FALSE, etINT,  &nprocs,
@@ -581,7 +583,9 @@ int main (int argc, char *argv[])
     { "-ensemble",FALSE, etBOOL, &bEnsemble, 
 	"Perform ensemble averaging over distance restraints" },
     { "-morse",   FALSE, etBOOL, &bMorse,
-	"Convert the harmonic bonds in your topology to morse potentials." }
+	"Convert the harmonic bonds in your topology to morse potentials." },
+    { "-maxwarn", FALSE, etINT,  &maxwarn,
+	"Number of warnings after which input processing stops" }
   };
 #define NPA asize(pa)
   CopyRight(stdout,argv[0]);
@@ -611,6 +615,8 @@ int main (int argc, char *argv[])
     bShuffle=FALSE;
   }
 	       
+  init_warning(maxwarn);
+  
   /* PARAMETER file processing */
   get_ir(ftp2fn(efMDP,NFILE,fnm),opt2fn("-po",NFILE,fnm),ir,opts);
 
@@ -618,7 +624,6 @@ int main (int argc, char *argv[])
     fprintf(stderr,"checking input for internal consistency...\n");
   check_ir(ir,opts);
 
-  init_warning(opts->warnings);
   
   snew(plist,F_NRE);
   init_plist(plist);
