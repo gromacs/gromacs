@@ -32,6 +32,6 @@
 
 static char *SRCID_xlate_h = "$Id$";
 
-extern void rename_atoms(t_atoms *atoms);
+extern void rename_atoms(t_atoms *atoms,t_symtab *symtab);
 
 #endif

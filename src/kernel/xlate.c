@@ -87,46 +87,54 @@ static t_xlate_atom *get_xlatoms(int *nxlatom)
   return xl;
 }
 
-void rename_atoms(t_atoms *atoms)
+static void done_xlatom(int nxlate,t_xlate_atom **xlatom)
 {
-  t_symtab symtab;
+  int i;
+  
+  for(i=0; (i<nxlate); i++) {
+    if ((*xlatom)[i].res)
+      sfree((*xlatom)[i].res);
+    if ((*xlatom)[i].atom)
+      sfree((*xlatom)[i].atom);
+    if ((*xlatom)[i].replace)
+      sfree((*xlatom)[i].replace);
+  }
+  sfree(*xlatom);
+  *xlatom = NULL;
+}
+
+void rename_atoms(t_atoms *atoms,t_symtab *symtab)
+{
   int nxlate,a,i;
   t_xlate_atom *xlatom;
-  char c,*res,**atom;
+  char c,*res,atombuf[32];
   bool bRenamed;
 
   xlatom = get_xlatoms(&nxlate);
-  
-  open_symtab(&symtab);
 
   for(a=0; (a<atoms->nr); a++) {
-    res=*atoms->resname[atoms->atom[a].resnr];
-    atom=atoms->atomname[a];
-    if (isdigit(*atom[0])) {
-      c=*atom[0];
-      for (i=0; (i<strlen(*atom)-1); i++)
-	*atom[i]=*atom[i+1];
-      srenew(*atom,strlen(*atom)+2);
-      *atom[i]=c;
+    res  = *(atoms->resname[atoms->atom[a].resnr]);
+    strcpy(atombuf,*(atoms->atomname[a]));
+    if (isdigit(atombuf[0])) {
+      c = atombuf[0];
+      for (i=0; (i<strlen(atombuf)-1); i++)
+	atombuf[i]=atombuf[i+1];
+      atombuf[i]=c;
     }
     bRenamed=FALSE;
     for(i=0; (i<nxlate) && !bRenamed; i++) {
       if ((xlatom[i].res == NULL) || (strcasecmp(res,xlatom[i].res) == 0) ||
 	  ((strcasecmp("protein",xlatom[i].res) == 0) && is_protein(res)))
-	if (strcasecmp(*atom,xlatom[i].atom) == 0) {
+	if (strcasecmp(atombuf,xlatom[i].atom) == 0) {
 	  /* don't free the old atomname, since it might be in the symtab */
-	  atoms->atomname[a]=put_symtab(&symtab,xlatom[i].replace);
+	  strcpy(atombuf,xlatom[i].replace);
 	  bRenamed=TRUE;
 	}
     }
+    if (strcmp(atombuf,*atoms->atomname[a]) != 0)
+      atoms->atomname[a] = put_symtab(symtab,atombuf);
   }
-  close_symtab(&symtab);
-  free_symtab(&symtab);
-  for(i=0; i<nxlate; i++) {
-    sfree(xlatom[i].res);
-    sfree(xlatom[i].atom);
-    sfree(xlatom[i].replace);
-  }
-  sfree(xlatom);
+
+  done_xlatom(nxlate,&xlatom);
 }
 

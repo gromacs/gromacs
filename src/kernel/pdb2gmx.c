@@ -222,7 +222,8 @@ void write_posres(char *fn,t_atoms *pdba)
 }
 
 int read_pdball(char *inf, char *outf,char *title,
-		t_atoms *atoms, rvec **x,matrix box, bool bRemoveH)
+		t_atoms *atoms, rvec **x,matrix box, bool bRemoveH,
+		t_symtab *symtab)
 /* Read a pdb file. (containing proteins) */
 {
   int       natom,new_natom,i;
@@ -257,7 +258,7 @@ int read_pdball(char *inf, char *outf,char *title,
   rename_pdbres(atoms,"WAT","HOH",FALSE);
   rename_pdbres(atoms,"HEM","HEME",FALSE);
 
-  rename_atoms(atoms);
+  rename_atoms(atoms,symtab);
   
   if (natom == 0)
     return 0;
@@ -597,7 +598,7 @@ int main(int argc, char *argv[])
   int        bts[ebtsNR];
   t_restp    *restp;
   t_hackblock *ah;
-  t_symtab   tab;
+  t_symtab   symtab;
   t_atomtype *atype;
   char       fn[256],*top_fn,itp_fn[STRLEN],posre_fn[STRLEN];
   char       molname[STRLEN],title[STRLEN];
@@ -715,10 +716,13 @@ int main(int argc, char *argv[])
     fatal_error(0,"DEATH HORROR in $s (%d): dumstr[0]='%s'",
 		__FILE__,__LINE__,dumstr[0]);
   }/* end switch */
+
+  /* Open the symbol table */
+  open_symtab(&symtab);
   
   clear_mat(box);
   natom=read_pdball(opt2fn("-f",NFILE,fnm),opt2fn_null("-q",NFILE,fnm),title,
-		    &pdba_all,&pdbx,box,bRemoveH);
+		    &pdba_all,&pdbx,box,bRemoveH,&symtab);
   
   if (natom==0)
     fatal_error(0,"No atoms found in pdb file %s\n",opt2fn("-f",NFILE,fnm));
@@ -871,12 +875,11 @@ int main(int argc, char *argv[])
   printf("Using %s force field\n",ff);
   
   /* Read atomtypes... */
-  open_symtab(&tab);
-  atype=read_atype(ff,&tab);
+  atype=read_atype(ff,&symtab);
     
   /* read residue database */
   printf("Reading residue database... (%s)\n",ff);
-  nrtp=read_resall(ff,bts,&restp,atype,&tab);
+  nrtp=read_resall(ff,bts,&restp,atype,&symtab);
   if (bNewRTP) {
     fp=ffopen("new.rtp","w");
     print_resall(fp,bts,nrtp,restp,atype);
@@ -1041,7 +1044,7 @@ int main(int argc, char *argv[])
       else
 	top_file2=top_file;
     
-    pdb2top(top_file2,posre_fn,molname,pdba,&x,atype,&tab,bts,nrtp,restp,
+    pdb2top(top_file2,posre_fn,molname,pdba,&x,atype,&symtab,bts,nrtp,restp,
 	    sel_ntdb,sel_ctdb,bH14,cc->nterpairs,cc->rN,cc->rC,bAlldih,
 	    bDummies,bDummyAromatics,mHmult,nssbonds,ssbonds,NREXCL, 
 	    long_bond_dist, short_bond_dist,bDeuterate);
