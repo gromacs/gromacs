@@ -59,3 +59,48 @@ is much faster than the shifted coulomb function used in
 conjunction with the PPPM method. Finally it is much easier to modify
 a table for the potential (and get a graphical representation of it)
 than to modify the inner loops of the MD program.
+
+\subsection{Your own potential function}
+You can also use your own \myindex{potential function}s 
+without editing the {\gromacs}
+code. When you add the following lines in your {\tt .mdp} file:
+\begin{verbatim}
+electrostatics	= User
+rshort          = 1.0
+rlong           = 1.0
+\end{verbatim}
+the MD program will expect to find three files with five columns of table 
+lookup data according to \tabref{usertab}. 
+\begin{table}[H]
+\caption{User specified potential function data. f$^{(n)}$(x) denotes the n$^{th}$ 
+derivative of f(x) with respect to x}
+\label{tab:usertab}
+\centerline{
+\begin{tabular}{|l|l|lllll|}
+\dline
+File name	& Function	&\multicolumn{5}{c|}{Columns}	\\
+\hline
+rtab.xvg	& Repulsion	&&&&&\\
+dtab.xvg	& Dispersion	& x	& f(x)	& -f$^{(1)}$(x) & f$^{(2)}$(x) & -f$^{(3)}$(x)\\
+ctab.xvg	& Coulomb	&&&&&\\
+\dline
+\end{tabular}
+}
+\end{table}
+As an example for the normal dispersion interaction the file would contain:\\
+\centerline{\begin{tabular}{lllll}
+x &-x$^{-6}$  &-6x$^{-7}$ & -42x$^{-8}$ &-336x$^{-9}$\\
+\end{tabular}}\\
+The x should run from 0 to r$_c$+0.5, with a spacing of 0.002 nm when you 
+run in single precision, or 0.0005 when you run in double precision.
+This and other functions contain a singularity at x=0, but since atoms are 
+normally not closer to each other than 0.1 nm, the function value at x=0 is
+not important.
+In this context r$_c$ denotes the single cut-off denoted by the variables
+rshort and rlong (see above). These variables should be the same (but need not be
+1.0) and consistent with the table data.
+The neighboursearching algorithm will search all atom-pairs  within a distance
+rlong and compute the interactions using your potential functions.
+
+This mechanism allows the user to use their own preferred programming language,
+spreadsheet or whatever to generate the lookup tables.
