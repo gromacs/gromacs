@@ -106,7 +106,7 @@ void calc_com(t_pullgrp *pg, rvec x[], t_mdatoms *md, matrix box)
       com[m] += wm*x[ii][m];
   }
   for(m=0; m<DIM; m++)
-    com[m] *= pg->wscale/pg->tmass;
+    com[m] *= pg->wscale*pg->invtm;
   put_dvec_in_box(box,com);
   copy_dvec(com,pg->x_unc);
 }
@@ -129,7 +129,7 @@ void calc_com2(t_pullgrp *pg, rvec x[], t_mdatoms *md, matrix box)
       com[m] += wm*x[i][m];
   }
   for(m=0; m<DIM; m++)
-    com[m] *= pg->wscale/pg->tmass;
+    com[m] *= pg->wscale*pg->invtm;
   put_dvec_in_box(box,com);
   copy_dvec(com,pg->x_unc);
 }
@@ -304,14 +304,14 @@ void make_refgrps(t_pull *pull,matrix box,t_mdatoms *md)
     }
 
     pdyna->wscale = wmass/wwmass;
-    pdyna->tmass = pdyna->wscale*wmass;
+    pdyna->invtm = 1.0/(pdyna->wscale*wmass);
 
     /* normalize the new 'x_unc' */
     dsvmul(1/wmass,pdyna->x_unc,pdyna->x_unc);
     if(pull->bVerbose)
       fprintf(stderr,"Made group %d:%8.3f%8.3f%8.3f m:%8.3f\n",
               i,pdyna->x_unc[0],pdyna->x_unc[1],
-              pdyna->x_unc[2],pdyna->tmass);
+              pdyna->x_unc[2],1.0/pdyna->invtm);
   }
 }
 

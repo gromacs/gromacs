@@ -158,15 +158,26 @@ static void print_whole_index(char **grpnames, atom_id **index, int *ngx,
   }
 }
 
-static void set_mass(t_pullgrp *pg,t_mdatoms *md)
+static void set_mass(FILE *log,t_pullgrp *pg,ivec pulldims,
+		     t_mdatoms *md,ivec nFreeze[])
 {
-  int i;
+  int i,d;
   real m,w;
   double wmass,wwmass;
-  
+  bool bFrozen,bPartial;
+
+  bFrozen = FALSE;
+  bPartial = FALSE;
   wmass = 0;
   wwmass = 0;
   for(i=0; i<pg->ngx; i++) {
+    for(d=0; d<DIM; d++)
+      if (pulldims[d]) {
+	if (nFreeze[md->cFREEZE[pg->idx[i]]][d])
+	  bFrozen = TRUE;
+	else if (bFrozen)
+	  bPartial = TRUE;
+      }
     m = md->massT[pg->idx[i]];
     if (pg->nweight > 0)
       w = pg->weight[i];
@@ -175,8 +186,19 @@ static void set_mass(t_pullgrp *pg,t_mdatoms *md)
     wmass += w*m;
     wwmass += w*w*m;
   }
-  pg->wscale = wmass/wwmass;
-  pg->tmass  = pg->wscale*wmass;
+  if (bPartial)
+    fprintf(log,
+	    "\nWARNING: In pull group '%s' some, but not all of the degrees of freedom\n"
+	    "         that are subject to pulling are frozen.\n"
+	    "         For pulling the whole group will be frozen.\n\n",
+	    pg->name);
+  if (bFrozen) {
+    pg->wscale = 1.0;
+    pg->invtm  = 0.0;
+  } else {
+    pg->wscale = wmass/wwmass;
+    pg->invtm  = 1.0/(pg->wscale*wmass);
+  }
 }
 
 static void get_pull_index(FILE *log,t_pullgrp *pgrp,
@@ -209,9 +231,9 @@ static void get_pull_index(FILE *log,t_pullgrp *pgrp,
   if (pgrp->nweight > 0 && pgrp->nweight != pgrp->ngx)
     fatal_error(0,"Number of weights (%d) for pull group '%s' does not match the number of atoms (%d)",pgrp->nweight,pgrp->name,pgrp->ngx);
 }
-
 void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
-               t_mdatoms *md, matrix box, int start, int homenr, t_commrec * cr) 
+               t_mdatoms *md,ivec nFreeze[],matrix box,
+	       int start,int homenr,t_commrec *cr) 
 {
   int  i,j,m,ii;
   dvec tmp;
@@ -282,15 +304,15 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
   }
 
   for(i=0;i<pull->ngrp;i++) {
-    set_mass(&pull->grp[i],md);
+    set_mass(log,&pull->grp[i],pull->dims,md,nFreeze);
     calc_com(&pull->grp[i],x,md,box);
     copy_dvec(pull->grp[i].x_unc,pull->grp[i].x_con);
     copy_dvec(pull->grp[i].x_unc,pull->grp[i].x_ref);
     copy_dvec(pull->grp[i].x_unc,pull->grp[i].spring);
     if(MASTER(cr)) {
-      fprintf(log,"Initializing pull groups. Mass of group %d: %8.3f\n"
+      fprintf(log,"Initializing pull groups. Inv. mass of group %d: %8.3f\n"
               "Initial coordinates center of mass: %8.3f %8.3f %8.3f\n",
-              i,pull->grp[i].tmass,
+              i,pull->grp[i].invtm,
 	      pull->grp[i].x_ref[XX],
 	      pull->grp[i].x_ref[YY],
 	      pull->grp[i].x_ref[ZZ]);
@@ -299,7 +321,7 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
 
   /* initialize the reference group, in all cases */
   if (!pull->AbsoluteRef) {
-    set_mass(&pull->ref,md);
+    set_mass(log,&pull->ref,pull->dims,md,nFreeze);
     calc_com(&pull->ref,x,md,box);
   } else {
     for(i=0; i<DIM; i++) 
@@ -312,9 +334,9 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
     copy_dvec(pull->ref.x_unc,pull->ref.comhist[j]);
 
   if(MASTER(cr))
-    fprintf(log,"Initializing reference group. Mass: %8.3f\n"
+    fprintf(log,"Initializing reference group. Inv. mass: %8.3f\n"
             "Initial coordinates center of mass: %8.3f %8.3f %8.3f\n",
-            pull->ref.tmass,
+            pull->ref.invtm,
 	    pull->ref.x_ref[XX],
 	    pull->ref.x_ref[YY],
 	    pull->ref.x_ref[ZZ]);
@@ -349,8 +371,10 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
         fprintf(log,"Initializing dynamic groups. %d atoms. Weighted mass"
                 "for %d:%8.3f\n"
                 "Initial coordinates center of mass: %8.3f %8.3f %8.3f\n",
-                pull->dyna[i].ngx,i,pull->dyna[i].tmass,pull->dyna[i].x_ref[XX],
-                pull->dyna[i].x_ref[YY],pull->dyna[i].x_ref[ZZ]);
+                pull->dyna[i].ngx,i,1.0/pull->dyna[i].invtm,
+		pull->dyna[i].x_ref[XX],
+                pull->dyna[i].x_ref[YY],
+		pull->dyna[i].x_ref[ZZ]);
       }
     }
   }

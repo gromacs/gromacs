@@ -110,7 +110,7 @@ void apply_forces(t_pull * pull, t_mdatoms * md, rvec * f, int start,
   
   for(i=0; i<pull->ngrp; i++) {
     pgrp = &pull->grp[i];
-    inv_wm = pgrp->wscale/pgrp->tmass;
+    inv_wm = pgrp->wscale*pgrp->invtm;
 
     for(j=0; j<pgrp->ngx; j++) {
       ii=pgrp->idx[j];
@@ -269,13 +269,13 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
       
       /* the position corrections dr due to the constraint are: */
       if(pull->bCyl) {
-	rm = 1/pull->grp[i].tmass + 1/pull->dyna[i].tmass;
-        dsvmul(-lambda/(rm*pull->grp[i].tmass), r_ij,dr[i]);
-        dsvmul( lambda/(rm*pull->dyna[i].tmass),r_ij,ref_dr[i]);
+	rm = 1.0/(pull->grp[i].invtm + pull->dyna[i].invtm);
+        dsvmul(-lambda*rm*pull->grp[i].invtm, r_ij,dr[i]);
+        dsvmul( lambda*rm*pull->dyna[i].invtm,r_ij,ref_dr[i]);
       } else {
-	rm = 1/pull->grp[i].tmass + 1/pull->ref.tmass;
-        dsvmul(-lambda/(rm*pull->grp[i].tmass),r_ij,dr[i]);
-        dsvmul( lambda/(rm*pull->ref.tmass),   r_ij,ref_dr[0]);
+	rm = 1.0/(pull->grp[i].invtm + pull->ref.invtm);
+        dsvmul(-lambda*rm*pull->grp[i].invtm,r_ij,dr[i]);
+        dsvmul( lambda*rm*pull->ref.invtm,   r_ij,ref_dr[0]);
       }
 
       /* and the direction of the constraint force: */
@@ -409,7 +409,7 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
     /* select components of dr */
     for(m=0; m<DIM; m++)
       dr[i][m] *= pull->dims[m];
-    dsvmul(pgrp->tmass/(dt*dt),dr[i],tmp);
+    dsvmul(1.0/(pgrp->invtm*dt*dt),dr[i],tmp);
     /* get the direction of dr */
     pgrp->f[ZZ] = -dnorm(tmp)*direction[i];
 
@@ -502,8 +502,7 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
 static void do_afm(t_pull *pull, rvec *f, matrix box, t_mdatoms *md,
 		   int start, int homenr, real dt, int step)
 {
-  int i,ii,j,m,g;
-  dvec cm;     /* center of mass displacement of reference */
+  int i,m;
   dvec dr;     /* extension of the springs */
 
   /* loop over the groups that are being pulled */

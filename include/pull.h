@@ -61,7 +61,7 @@ typedef struct {
   int        ngx;      /* pull group size */
   char       *name;    /* pull group name */
   real       wscale;   /* scaling factor for the weights: sum w m/sum w w m */
-  real       tmass;    /* total mass of the group: wscale sum w m */
+  real       invtm;    /* inverse total mass of the group: 1/wscale sum w m */
   rvec       *x0;      /* pull group coordinates at t=0 */
   rvec       *xp;      /* pull group coordinates at previous step */
   dvec       x_ref;    /* reference position */
@@ -129,6 +129,7 @@ extern void init_pull(FILE *log,
                       t_pull *pull,   /* all pull data */
                       rvec *x,        /* all coordinates */
                       t_mdatoms *md,  /* masses and charges of all atoms */
+		      ivec nFreeze[], /* the freeze dimensions */
                       matrix box,     
                       int start,      /* startinig index of this node */
                       int homenr,     /* number of atoms on this node */
