@@ -114,7 +114,7 @@ real calc_radius(char *atom)
 }
 
 void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
-	      real qcut)
+	      real qcut,int nskip)
 {
   FILE         *fp;
   real         t;
@@ -125,7 +125,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   t_topology   *top;
   bool         *bPhobic;
   bool         bConnelly;
-  real         *radius,*area,*surfacedots;
+  real         *radius,*area=NULL,*surfacedots=NULL;
   real         totarea,totvolume,harea;
     
   if ((natoms=read_first_x(&status,ftp2fn(efTRX,nfile,fnm),
@@ -148,33 +148,36 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     if ((j++ % 10) == 0)
       fprintf(stderr,"\rframe: %5d",j-1);
       
-    rm_pbc(&top->idef,natoms,box,x,x);
-
-    bConnelly = ((j == 1) && (opt2bSet("-q",nfile,fnm)));
-    if (bConnelly)
-      flag = FLAG_ATOM_AREA | FLAG_DOTS;
-    else
-      flag = FLAG_ATOM_AREA;
+    if ((nskip > 0) && (((j-1) % nskip) == 0)) {
+      rm_pbc(&top->idef,natoms,box,x,x);
+      
+      bConnelly = ((j == 1) && (opt2bSet("-q",nfile,fnm)));
+      if (bConnelly)
+	flag = FLAG_ATOM_AREA | FLAG_DOTS;
+      else
+	flag = FLAG_ATOM_AREA;
+      
+      if (NSC(x[0],radius,natoms,ndots,flag,&totarea,
+	      &area,&totvolume,&surfacedots,&nsurfacedots))
+	fatal_error(0,"Something wrong in NSC");
+      
+      if (bConnelly)
+	connelly_plot(ftp2fn(efPDB,nfile,fnm),
+		      nsurfacedots,surfacedots,x,&(top->atoms),
+		      &(top->symtab),box);
+      
+      harea = 0;
+      for(i=0; (i<natoms); i++) {
+	if (bPhobic[i])
+	  harea += area[i];
+      }
+      fprintf(fp,"%10g  %10g  %10g\n",t,harea,totarea);
     
-    if (NSC(x[0],radius,natoms,ndots,flag,&totarea,
-	    &area,&totvolume,&surfacedots,&nsurfacedots))
-      fatal_error(0,"Something wrong in NSC");
-      
-    if (bConnelly)
-      connelly_plot(ftp2fn(efPDB,nfile,fnm),
-		    nsurfacedots,surfacedots,x,&(top->atoms),
-		    &(top->symtab),box);
-      
-    harea = 0;
-    for(i=0; (i<natoms); i++) {
-      if (bPhobic[i])
-	harea += area[i];
+      if (area) 
+	sfree(area);
+      if (surfacedots)
+	sfree(surfacedots);
     }
-    fprintf(fp,"%10g  %10g  %10g\n",t,harea,totarea);
-    
-    sfree(area);
-    sfree(surfacedots);
-      
   } while (read_next_x(status,&t,natoms,x,box));
   
   fprintf(stderr,"\n");
@@ -190,7 +193,7 @@ int main(int argc,char *argv[])
   };
 
   static real solsize = 0.14;
-  static int  ndots   = 24;
+  static int  ndots   = 24,nskip=1;
   static real qcut    = 0.2;
   t_pargs pa[] = {
     { "-solsize", FALSE, etREAL, &solsize,
@@ -198,7 +201,9 @@ int main(int argc,char *argv[])
     { "-ndots",   FALSE, etINT,  &ndots,
 	"Number of dots per sphere, more dots means more accuracy" },
     { "-qmax",    FALSE, etREAL, &qcut,
-	"The maximum charge (e, absolute value) of a hydrophobic atom" }
+	"The maximum charge (e, absolute value) of a hydrophobic atom" },
+    { "-skip",    FALSE, etINT,  &nskip,
+      "Do only every nth frame" }
   };
   t_filenm  fnm[] = {
     { efTRX, "-f",   NULL,       ffREAD },
@@ -220,7 +225,7 @@ int main(int argc,char *argv[])
     fprintf(stderr,"Ndots too small, setting it to %d\n",ndots);
   }
   
-  sas_plot(NFILE,fnm,solsize,ndots,qcut);
+  sas_plot(NFILE,fnm,solsize,ndots,qcut,nskip);
   
   xvgr_file(opt2fn("-o",NFILE,fnm),"-nxy");
   
