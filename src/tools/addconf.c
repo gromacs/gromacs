@@ -324,11 +324,11 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
   
   /* Set margin around box edges to largest solvent dimension.
    * The maximum distance between atoms in a solvent molecule should
-   * be calculated. At the moment a fudge factor of 2 is used.
+   * be calculated. At the moment a fudge factor of 3 is used.
    */
   r_prot     = *r;
   box_margin = 3*find_max_real(natoms_solvt,r_solvt);
-  max_vdw    = (find_max_real(natoms_prot,r_prot) + box_margin/3);
+  max_vdw    = max(3*find_max_real(natoms_prot,r_prot),box_margin);
   fprintf(stderr,"box_margin = %g\n",box_margin);
   
   snew(remove,natoms_solvt);
