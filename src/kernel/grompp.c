@@ -404,12 +404,17 @@ static void cont_status(char *slog,bool bGenVel, real time,
 
   tt      = ir->init_t;
   fprintf(stderr,
-	  "Reading Coordinates,Velocities and Box size from old trajectory\n");
+	  "Reading Coordinates, Velocities and Box size from old trajectory\n");
   if (time == -1)
     fprintf(stderr,"Will read whole trajectory\n");
   else
     fprintf(stderr,"Will read till time %g\n",time);
-  *natoms = read_first_x_v(&fp,slog,&tt,x ,v,box);
+  if (bGenVel) {
+    fprintf(stderr,"Velocities generated: "
+	    "ignoring velocities in input trajectory\n");
+    *natoms = read_first_x(&fp,slog,&tt,x,box);
+  } else
+    *natoms = read_first_x_v(&fp,slog,&tt,x,v,box);
   
   if(sys->atoms.nr != *natoms) {
     fprintf(stderr,
@@ -421,16 +426,18 @@ static void cont_status(char *slog,bool bGenVel, real time,
    * or the ones at step step.
    * Or only until box and x if gen_vel is set.
    */
-  while (read_next_x_v(fp,&tt,*natoms,*x,*v,box)) {
+  while (bGenVel?
+	 read_next_x(fp,&tt,*natoms,*x,box):
+	 read_next_x_v(fp,&tt,*natoms,*x,*v,box)) {
     if ( (time != -1) && (tt >= time) )
       break;
   }
   close_trj(fp);
-
+  
   /*change the input record to the actual data*/
   ir->init_t = tt;
   
-  fprintf(stderr,"Read frames from t = %g\n",tt);
+  fprintf(stderr,"Read frame from t = %g\n",tt);
 }
 
 static void gen_posres(t_params *pr,char *fn)
@@ -589,7 +596,7 @@ int main (int argc, char *argv[])
     "program."
   };
   static char *bugs[] = {
-    "shuffling is sometimes buggy when used on systems when the number of"
+    "shuffling is sometimes buggy when used on systems when the number of "
     "molecules of a certain type is smaller than the number of processors."
   };
   t_gromppopts *opts;
