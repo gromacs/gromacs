@@ -145,7 +145,7 @@ static void rm2par(t_param p[], int *np, peq eq)
 
   snew(index,*np);
   nind=0;
-  index[nind++]=0;
+    index[nind++]=0;
   for(i=1; (i<(*np)); i++) 
     if (!eq(&p[i],&p[i-1]))
       index[nind++]=i;
@@ -251,20 +251,7 @@ static int idcomp(const void *a,const void *b)
 
 static void sort_id(int nr,t_param ps[])
 {
-  /* int i,j;
-     atom_id a[4];
-     
-     
-  for(i=0; (i<nr); i++) {
-    if (ps[i].AL < ps[i].AI) {
-      for(j=0; (j<4); j++)
-	a[j]=ps[i].a[j];
-      for(j=0; (j<4); j++)
-	ps[i].a[j]=a[3-j];
-    }
-  }*/
   qsort(ps,nr,(size_t)sizeof(ps[0]),idcomp);
-  
 }
 
 static bool is_imp(t_param *p,t_atoms *atoms,int nrdh,t_idihres idih[])
@@ -397,8 +384,7 @@ static void pdih2idih(t_param dih[],int *ndih,t_param idih[],int *nidih,
   nind=0;
   index[nind++]=0;
   for(i=1; (i<(*ndih)); i++) 
-    if (bAlldih)
-    {
+    if (bAlldih) {
       fprintf(stderr,"bAlldih = true\n");
       if (!deq2(&dih[i],&dih[i-1]))
 	index[nind++]=i;
@@ -432,13 +418,12 @@ static void pdih2idih(t_param dih[],int *ndih,t_param idih[],int *nidih,
       /* Best choice to get dihedral from */
       bestl=index[i];
       /* Minimum number of hydrogens for i and l atoms */
-      if (!bAlldih)
-      {
+      if (!bAlldih) {
 	minh=2;
 	for(l=index[i]; (l<index[i+1]); l++) {
 	  if ((nh=n_hydro(dih[l].a,atoms->atomname)) < minh) {
 	    minh=nh;
-	  bestl=l;
+	    bestl=l;
 	  }
 	  if (minh == 0)
 	    break;
