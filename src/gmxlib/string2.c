@@ -131,24 +131,37 @@ void trim (char *str)
 
 void nice_header (FILE *out,char *fn)
 {
+  char   *unk = "onbekend";
   time_t clock;
+  char   *user=NULL;
+  int    gh;
+  uid_t  uid;
+  char   buf[256];
 #ifndef NO_PWUID
   struct passwd *pw;
-  uid_t uid;
 #endif
 
   /* Print a nice header above the file */
   clock = time (0);
   fprintf (out,"%c\n",COMMENTSIGN);
+  fprintf (out,"%c\tFile '%s' was generated\n",COMMENTSIGN,fn ? fn : unk);
+  
 #ifndef NO_PWUID
   uid = getuid();
-  if ((pw = getpwuid(uid)) != NULL)
-    fprintf (out,"%c\tUser %s (%d)\n",COMMENTSIGN,pw->pw_name,(int) uid);
-  else
-    fprintf (out,"%c\tUser %d not in password file\n",COMMENTSIGN,(int) uid);
+  pw  = getpwuid(uid);
+  gh  = gethostname(buf,255);
+  user= pw->pw_name;
+#else
+  uid = 0;
+  gh  = -1;
+  pw  = NULL;
 #endif
-  fprintf (out,"%c\t%s",COMMENTSIGN,ctime(&clock));
-  fprintf (out,"%c\t%s\n",COMMENTSIGN,fn);
+  
+  fprintf (out,"%c\tBy user: %s (%d)\n",COMMENTSIGN,
+	   user ? user : unk,(int) uid);
+  fprintf(out,"%c\tOn host: %s\n",COMMENTSIGN,(gh == 0) ? buf : unk);
+
+  fprintf (out,"%c\tAt date: %s",COMMENTSIGN,ctime(&clock));
   fprintf (out,"%c\n",COMMENTSIGN);
 }
 

@@ -136,6 +136,7 @@ void write_inpfile(char *fn,int ninp,t_inpfile inp[])
 
   sort_inp(ninp,inp);  
   out=ffopen(fn,"w");
+  nice_header(out,fn);
   for(i=0; (i<ninp); i++) {
     if (inp[i].bSet)
       fprintf(out,"%-24s = %s\n",inp[i].name,inp[i].value ? inp[i].value : "");
