@@ -286,7 +286,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 		 t_topology *top,real ener[],t_fcdata *fcd,
 		 t_state *state,rvec vold[],rvec vt[],rvec f[],
 		 rvec buf[],t_mdatoms *md,t_nsborder *nsb,t_nrnb *nrnb,
-		 t_graph *graph,t_groups *grps,tensor vir_part,
+		 t_graph *graph,t_groups *grps,
 		 int nshell,t_shell shells[],int nflexcon,
 		 t_forcerec *fr,
 		 char *traj,real t,rvec mu_tot,
@@ -298,7 +298,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   static rvec *pos[2],*force[2];
   static rvec *acc_dir=NULL,*x_old=NULL;
   real   Epot[2],df[2],Estore[F_NRE];
-  tensor my_vir[2],vir_last,vir_el_recip[2];
+  tensor vir_el_recip[2];
   rvec   dx;
   real   sf_dir;
 #define NEPOT asize(Epot)
@@ -358,11 +358,10 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 		   md->massT,bInit);
    
   /* Calculate the forces first time around */
-  clear_mat(my_vir[Min]);
   if (debug) {
     pr_rvecs(debug,0,"x b4 do_force",state->x + start,homenr);
   }
-  do_force(log,cr,mcr,parm,nsb,my_vir[Min],mdstep,nrnb,top,grps,
+  do_force(log,cr,mcr,parm,nsb,mdstep,nrnb,top,grps,
 	   state->box,state->x,force[Min],buf,md,ener,fcd,bVerbose && !PAR(cr),
 	   state->lambda,graph,bDoNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field);
   sum_lrforces(force[Min],fr,start,homenr);
@@ -385,8 +384,6 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   df[Try]=0;
   if (debug) {
     fprintf(debug,"df = %g  %g\n",df[Min],df[Try]);
-    sprintf(cbuf,"myvir step %d",0);
-    pr_rvecs(debug,0,cbuf,my_vir[Min],DIM);
   }
     
   if (debug && bDebug) {
@@ -435,7 +432,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
       shift_self(graph,state->box,pos[Min]);
       
       construct_vsites(log,pos[Min],nrnb,parm->ir.delta_t,state->v,&top->idef,
-			graph,cr,state->box,vsitecomm);
+			graph,cr,fr->ePBC,state->box,vsitecomm);
       
       unshift_self(graph,state->box,pos[Min]);
     }
@@ -457,13 +454,13 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
       pr_rvecs(debug,0,"RELAX: pos[Try]  ",pos[Try] + start,homenr);
     }
     /* Try the new positions */
-    clear_mat(my_vir[Try]);
-    do_force(log,cr,mcr,parm,nsb,my_vir[Try],1,nrnb,
+    do_force(log,cr,mcr,parm,nsb,1,nrnb,
 	     top,grps,state->box,pos[Try],force[Try],buf,md,ener,fcd,
 	     bVerbose && !PAR(cr),
 	     state->lambda,graph,FALSE,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field);
     if (bVsites) 
-      spread_vsite_f(log,pos[Try],force[Try],nrnb,&top->idef,vsitecomm,cr);
+      spread_vsite_f(log,pos[Try],force[Try],nrnb,&top->idef,
+		     fr,graph,state->box,vsitecomm,cr);
       
     /* Calculation of the virial must be done after vsites!    */
     /* Question: Is it correct to do the PME forces after this? */
@@ -475,7 +472,8 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
      * if the constructing atoms aren't local.
      */
     if (bVsites && fr->bEwald) 
-      spread_vsite_f(log,pos[Try],fr->f_el_recip,nrnb,&top->idef,vsitecomm,cr);
+      spread_vsite_f(log,pos[Try],fr->f_el_recip,nrnb,&top->idef,
+		     fr,graph,state->box,vsitecomm,cr);
     
     sum_lrforces(force[Try],fr,start,homenr);
     copy_mat(fr->vir_el_recip,vir_el_recip[Try]);
@@ -504,8 +502,6 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     if (debug) {
       if (bDebug)
 	pr_rvecs(debug,0,"F na do_force",force[Try] + start,homenr);
-      sprintf(cbuf,"myvir step %d",count);
-      pr_rvecs(debug,0,cbuf,my_vir[Try],DIM);
       if (bDebug) {
 	fprintf(debug,"SHELL ITER %d\n",count);
 	dump_shells(debug,pos[Try],force[Try],ftol,nshell,shells);
@@ -545,14 +541,8 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   memcpy(f,force[Min],nsb->natoms*sizeof(f[0]));
 
   /* CHECK VIRIAL */
-  copy_mat(my_vir[Min],vir_part);
   copy_mat(vir_el_recip[Min],fr->vir_el_recip);
   
-  if (debug) {
-    sprintf(cbuf,"myvir step %d",count);
-    pr_rvecs(debug,0,cbuf,vir_part,DIM);
-  }
-
   if (nshell+nflexcon > 0)
     memcpy(state->x,pos[Min],nsb->natoms*sizeof(state->x[0]));
   if (nflexcon > 0) {

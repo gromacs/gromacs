@@ -211,7 +211,7 @@ static void calc_f_el(FILE *fp,int  start,int homenr,
 }
 
 void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
-	      t_parm *parm,t_nsborder *nsb,tensor vir_part,
+	      t_parm *parm,t_nsborder *nsb,
 	      int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
 	      matrix box,rvec x[],rvec f[],rvec buf[],
 	      t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,bool bVerbose,
@@ -346,14 +346,6 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 #endif
 
   if (bDoForces) {
-    /* The short-range virial from surrounding boxes */
-    clear_mat(vir_part);
-    calc_vir(log,SHIFTS,fr->shift_vec,fr->fshift,vir_part);
-    inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
-
-    if (debug) 
-      pr_rvecs(debug,0,"vir_shifts",vir_part,DIM);
-    
     /* Compute forces due to electric field */
     calc_f_el(MASTER(cr) ? field : NULL,
 	      start,homenr,mdatoms->chargeA,x,f,parm->ir.ex,parm->ir.et,t);
@@ -386,10 +378,13 @@ void calc_virial(FILE *log,int start,int homenr,rvec x[],rvec f[],
 {
   int i,j;
   tensor virtest;
+
+  /* The short-range virial from surrounding boxes */
+  clear_mat(vir_part);
+  calc_vir(log,SHIFTS,fr->shift_vec,fr->fshift,vir_part);
+  inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
   
-  /* Now it is time for the short range virial. At this timepoint vir_part
-   * already contains the virial from surrounding boxes.
-   * Calculate partial virial, for local atoms only, based on short range. 
+  /* Calculate partial virial, for local atoms only, based on short range. 
    * Total virial is computed in global_stat, called from do_md 
    */
   f_calc_vir(log,start,start+homenr,x,f,vir_part,graph,box);

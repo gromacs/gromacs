@@ -184,7 +184,6 @@ extern time_t print_date_and_time(FILE *log,int pid,char *title);
 
 extern void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 		     t_parm *parm,t_nsborder *nsb,
-		     tensor vir_part,
 		     int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
 		     matrix box,rvec x[],rvec f[],rvec buf[],
 		     t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,

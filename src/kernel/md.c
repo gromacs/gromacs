@@ -552,7 +552,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	shift_self(graph,state->box,state->x);
       }
       construct_vsites(log,state->x,&mynrnb,parm->ir.delta_t,state->v,
-			&top->idef,graph,cr,state->box,vsitecomm);
+			&top->idef,graph,cr,fr->ePBC,state->box,vsitecomm);
       
       if (graph)
 	unshift_self(graph,state->box,state->x);
@@ -587,7 +587,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       count=relax_shells(log,cr,mcr,bVerbose,bFFscan ? step+1 : step,
 			 parm,bNS,bStopCM,top,ener,fcd,
 			 state,vold,vt,f,buf,mdatoms,nsb,&mynrnb,graph,
-			 grps,force_vir,
+			 grps,
 			 nshell,shells,nflexcon,fr,traj,t,mu_tot,
 			 nsb->natoms,&bConverged,bVsites,vsitecomm,
 			 fp_field);
@@ -601,7 +601,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
        * This is parallellized as well, and does communication too. 
        * Check comments in sim_util.c
        */
-      do_force(log,cr,mcr,parm,nsb,force_vir,step,&mynrnb,top,grps,
+      do_force(log,cr,mcr,parm,nsb,step,&mynrnb,top,grps,
 	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       state->lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field);
     }
@@ -626,7 +626,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
      * for RerunMD t is read from input trajectory
      */
     if (bVsites) 
-      spread_vsite_f(log,state->x,f,&mynrnb,&top->idef,vsitecomm,cr);
+      spread_vsite_f(log,state->x,f,&mynrnb,&top->idef,
+		     fr,graph,state->box,vsitecomm,cr);
       
     /* Calculation of the virial must be done after vsites!    */
     /* Question: Is it correct to do the PME forces after this? */
@@ -638,7 +639,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
      */
     if (bVsites && fr->bEwald) 
       spread_vsite_f(log,state->x,fr->f_el_recip,&mynrnb,&top->idef,
-		     vsitecomm,cr);
+		     fr,graph,state->box,vsitecomm,cr);
     
     sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
 

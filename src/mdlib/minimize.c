@@ -234,20 +234,21 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_parm *parm,
 
   if (bVsites)
     construct_vsites(log,x,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
-		      graph,cr,box,vsitecomm);
+		      graph,cr,fr->ePBC,box,vsitecomm);
       
   /* Calc force & energy on new trial position  */
   /* do_force always puts the charge groups in the box and shifts again
    * We do not unshift, so molecules are always whole in congrad.c
    */
-  do_force(log,cr,mcr,parm,nsb,force_vir,
+  do_force(log,cr,mcr,parm,nsb,
 	   count,&(nrnb[cr->nodeid]),top,grps,box,x,f,
 	   buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	   lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
      
   /* Spread the force on vsite particle to the other particles... */
   if(bVsites) 
-    spread_vsite_f(log,x,f,&(nrnb[cr->nodeid]),&top->idef,vsitecomm,cr); 
+    spread_vsite_f(log,x,f,&(nrnb[cr->nodeid]),&top->idef,
+		   fr,graph,box,vsitecomm,cr); 
       
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(parm->ir.opts),grps,ener);
@@ -344,13 +345,13 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 
   if (bVsites)
     construct_vsites(log,state->x,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
-		      graph,cr,state->box,vsitecomm);
+		      graph,cr,fr->ePBC,state->box,vsitecomm);
   
   /* Call the force routine and some auxiliary (neighboursearching etc.) */
   /* do_force always puts the charge groups in the box and shifts again
    * We do not unshift, so molecules are always whole in congrad.c
    */
-  do_force(log,cr,mcr,parm,nsb,force_vir,0,&(nrnb[cr->nodeid]),
+  do_force(log,cr,mcr,parm,nsb,0,&(nrnb[cr->nodeid]),
 	   top,grps,state->box,
 	   state->x,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	   lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
@@ -358,7 +359,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 
   /* Spread the force on vsite particle to the other particles... */
   if (bVsites)
-    spread_vsite_f(log,state->x,f,&(nrnb[cr->nodeid]),&top->idef,vsitecomm,cr);
+    spread_vsite_f(log,state->x,f,&(nrnb[cr->nodeid]),&top->idef,
+		   fr,graph,state->box,vsitecomm,cr);
 
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(parm->ir.opts),grps,ener);
@@ -952,14 +954,14 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   
   if (bVsites)
     construct_vsites(log,state->x,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
-		      graph,cr,state->box,vsitecomm);
+		      graph,cr,fr->ePBC,state->box,vsitecomm);
   
   /* Call the force routine and some auxiliary (neighboursearching etc.) */
   /* do_force always puts the charge groups in the box and shifts again
    * We do not unshift, so molecules are always whole in congrad.c
    */
   neval++;
-  do_force(log,cr,mcr,parm,nsb,force_vir,0,&(nrnb[cr->nodeid]),
+  do_force(log,cr,mcr,parm,nsb,0,&(nrnb[cr->nodeid]),
 	   top,grps,state->box,
 	   state->x,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	   lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
@@ -967,7 +969,8 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   
   /* Spread the force on vsite particle to the other particles... */
   if (bVsites)
-    spread_vsite_f(log,state->x,f,&(nrnb[cr->nodeid]),&top->idef,vsitecomm,cr);
+    spread_vsite_f(log,state->x,f,&(nrnb[cr->nodeid]),&top->idef,
+		   fr,graph,state->box,vsitecomm,cr);
   
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(parm->ir.opts),grps,ener);
@@ -1595,13 +1598,13 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     if (bVsites)
       construct_vsites(log,pos[TRY],&(nrnb[cr->nodeid]),1,NULL,&top->idef,
-			graph,cr,state->box,vsitecomm);
+			graph,cr,fr->ePBC,state->box,vsitecomm);
     
     /* Calc force & energy on new positions
      * do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in steep.c
      */
-    do_force(log,cr,mcr,parm,nsb,force_vir,
+    do_force(log,cr,mcr,parm,nsb,
  	     count,&(nrnb[cr->nodeid]),top,grps,state->box,pos[TRY],
 	     force[TRY],buf,
 	     mdatoms,ener,fcd,bVerbose && !(PAR(cr)), 
@@ -1611,7 +1614,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     /* Spread the force on vsite particle to the other particles... */
     if (bVsites) 
       spread_vsite_f(log,pos[TRY],force[TRY],&(nrnb[cr->nodeid]),
-		     &top->idef,vsitecomm,cr);
+		     &top->idef,fr,graph,state->box,vsitecomm,cr);
     
     /* Sum the potential energy terms from group contributions  */
     sum_epot(&(parm->ir.opts),grps,ener); 
@@ -1876,7 +1879,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     clear_mat(force_vir);
     
     bNS=TRUE;
-    do_force(log,cr,NULL,parm,nsb,force_vir,0,&mynrnb,top,grps,
+    do_force(log,cr,NULL,parm,nsb,0,&mynrnb,top,grps,
              state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
              lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
     bNS=FALSE;
@@ -1922,7 +1925,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
             
             clear_mat(force_vir);
             
-            do_force(log,cr,NULL,parm,nsb,force_vir,2*(step*DIM+idum),
+            do_force(log,cr,NULL,parm,nsb,2*(step*DIM+idum),
                      &mynrnb,top,grps,
                      state->box,state->x,fneg,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
                      lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
@@ -1936,7 +1939,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
             
             clear_mat(force_vir);
             
-            do_force(log,cr,NULL,parm,nsb,force_vir,2*(step*DIM+idum)+1,
+            do_force(log,cr,NULL,parm,nsb,2*(step*DIM+idum)+1,
                      &mynrnb,top,grps,
                      state->box,state->x,fpos,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
                      lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
@@ -1996,7 +1999,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
      * e.g. md.c or steep.c if you make nm parallel!
      */
     construct_vsites(log,state->x,&mynrnb,parm->ir.delta_t,state->v,&top->idef,
-                     graph,cr,state->box,NULL);
+                     graph,cr,fr->ePBC,state->box,NULL);
     
     fprintf(stderr,"\n\nWriting Hessian...\n");
     gmx_mtxio_write(ftp2fn(efMTX,nfile,fnm),sz,sz,full_matrix,sparse_matrix);
@@ -2166,7 +2169,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
        * do_force always puts the charge groups in the box and shifts again
        * We do not unshift, so molecules are always whole in tpi.c
        */
-      do_force(fplog,cr,mcr,parm,nsb,force_vir,
+      do_force(fplog,cr,mcr,parm,nsb,
 	       step,&(nrnb[cr->nodeid]),top,grps,rerun_fr.box,state->x,f,
 	       buf,mdatoms,ener,fcd,bVerbose, 
 	       lambda,graph,bNS,TRUE,FALSE,fr,mu_tot,
