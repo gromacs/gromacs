@@ -80,6 +80,9 @@ case "${host_cpu}" in
    *) enable_x86_asm=no ;;
 esac
 
+AC_ARG_ENABLE(axp_asm,
+ [  --enable-axp-asm              include vectorized sqrt routines for alpha],,enable_axp_asm=no)
+
 
 ### Optimize for host cpu version
 AC_ARG_ENABLE(cpu-optimization,     
@@ -301,25 +304,29 @@ EOF
   fi
 fi
 
-case "${host_cpu}" in
-  alpha*) 
-    AC_DEFINE([USE_AXP_ASM],,[Use Alpha assembly for vectorized 1/sqrt])
-    cat > conftest.s << EOF
+if test "$enable_axp_asm" = "yes"; then
+  case "${host_cpu}" in
+    alpha*) 
+      AC_DEFINE([USE_AXP_ASM],,[Use Alpha assembly for vectorized 1/sqrt])
+      cat > conftest.s << EOF
 #ifdef __ELF__
 .section .rodata
 #else			
 	 .rdata
 #endif	
 EOF
-    if AC_TRY_COMMAND($CC -c conftest.s); then
-      AM_CONDITIONAL(AXP_ASM_CAPITAL_S,false)
-    else
-      AM_CONDITIONAL(AXP_ASM_CAPITAL_S,true)
-    fi
-    GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} axp_asm.lo"
-     ;;
-  *) ;;
-esac
+      if AC_TRY_COMMAND($CC -c conftest.s); then
+        AM_CONDITIONAL(AXP_ASM_CAPITAL_S,false)
+      else
+        AM_CONDITIONAL(AXP_ASM_CAPITAL_S,true)
+      fi
+      GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} axp_asm.lo"
+       ;;
+    *) ;;
+  esac
+else
+  AM_CONDITIONAL(AXP_ASM_CAPITAL_S,false)
+fi
 
 AC_PATH_PROG(IDENT,ident,no)
 if test "$IDENT" != "no"; then
