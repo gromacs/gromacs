@@ -328,7 +328,7 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PS("bUncStart",BOOL(ir->bUncStart));
     PS("etc",ETCOUPLTYPE(ir->etc));
     PS("epc",EPCOUPLTYPE(ir->epc));
-    PS("epc",EPCOUPLTYPETYPE(ir->epct));
+    PS("epctype",EPCOUPLTYPETYPE(ir->epct));
     PR("tau_p",ir->tau_p);
     pr_rvecs(fp,indent,"ref_p",ir->ref_p,DIM);
     pr_rvecs(fp,indent,"compress",ir->compress,DIM);
