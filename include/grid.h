@@ -1,0 +1,65 @@
+/*
+ *       @(#) copyrgt.c 1.12 9/30/97
+ *
+ *       This source code is part of
+ *
+ *        G   R   O   M   A   C   S
+ *
+ * GROningen MAchine for Chemical Simulations
+ *
+ *            VERSION 2.0b
+ * 
+ * Copyright (c) 1990-1997,
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry,
+ * University of Groningen, The Netherlands
+ *
+ * Please refer to:
+ * GROMACS: A message-passing parallel molecular dynamics implementation
+ * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
+ * Comp. Phys. Comm. 91, 43-56 (1995)
+ *
+ * Also check out our WWW page:
+ * http://rugmd0.chem.rug.nl/~gmx
+ * or e-mail to:
+ * gromacs@chem.rug.nl
+ *
+ * And Hey:
+ * Grunge ROck MAChoS
+ */
+
+#ifndef	_grid_h
+#define	_grid_h
+
+#ifdef HAVE_IDENT
+#ident	"@(#) grid.h 1.7 11/23/92"
+#endif /* HAVE_IDENT */
+
+#include "typedefs.h"
+
+extern void init_grid(FILE *log,t_grid *grid,
+		      int delta,matrix box,real rlong,int ncg);
+
+extern void grid_first(FILE *log,t_grid *grid,matrix box,real rlong);
+
+extern void fill_grid(FILE *log, t_grid *grid, matrix box,
+		      int ncg,int cg0,int cg1,rvec cg_cm[]);
+
+extern void calc_elemnr(FILE *log,t_grid *grid,int cg0,int cg1,int ncg);
+
+extern void calc_ptrs(t_grid *grid);
+
+extern void grid_last(FILE *log,t_grid *grid,int cg0,int cg1,int ncg);
+
+extern int xyz2ci_(int nry,int nrz,int x,int y,int z);
+#define xyz2ci(nry,nrz,x,y,z) (nry*nrz*x+nrz*y+z)
+/* Return the cell index */
+
+extern void ci2xyz(t_grid *grid,int i,int *x,int *y,int *z);
+
+extern void check_grid(FILE *log,t_grid *grid);
+
+extern void print_grid(FILE *log,t_grid *grid);
+
+#endif	/* _grid_h */
+
+

@@ -1,0 +1,40 @@
+#
+#	@(#) Makefile.def 1.33 8/16/96
+#
+#
+#	GROMACS - Groningen Machine for Chemical Simulation
+#	Copyright (c) 1990-1994, Groningen University
+#
+#	Global definitions for gromacs
+#
+ROOT		:=$(GMXHOME)
+ifneq ($(CPU),dos)
+CUR		:=$(shell basename `pwd`)
+endif
+SRCDIR		:=$(ROOT)/src
+MKDIR		:=$(SRCDIR)/makef
+OBJDIR		:=$(ROOT)/obj/$(CPU)
+LIBDIR		:=$(ROOT)/lib/$(CPU)
+BINDIR		:=$(ROOT)/bin/$(CPU)
+INCDIR		:=include
+LIB		:=$(LIBDIR)/libgmx.$(CPU).a
+SONAME		:=libgmx.$(CPU).so
+SOLIB		:=$(LIBDIR)/$(SONAME)
+LINKLIB		:=-lgmx.$(CPU)
+STDTARGET	:=$(MKDIR)/Makefile.std
+SHAREIT		:=echo
+#
+# Machine dependent stuff
+#
+include		$(MKDIR)/Makefile.$(CPU)
+#
+# System independent definitions
+#
+RM		= /bin/rm -f
+BINMODE		= 775
+LIBMODE		= 664
+INCS		= -I. -I$(SRCDIR)/$(INCDIR) $(X11INC) 
+ADDFLAGS	= -D_$(CPU)_ $(DEFS) $(SYSDEFS) $(INCS)
+C-FLAGS		= $(CFLAGS)  $(ADDFLAGS)
+CC-FLAGS	= $(CCFLAGS) $(ADDFLAGS) -DCPLUSPLUS 
+

@@ -1,0 +1,329 @@
+/*
+ *       @(#) copyrgt.c 1.12 9/30/97
+ *
+ *       This source code is part of
+ *
+ *        G   R   O   M   A   C   S
+ *
+ * GROningen MAchine for Chemical Simulations
+ *
+ *            VERSION 2.0b
+ * 
+ * Copyright (c) 1990-1997,
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry,
+ * University of Groningen, The Netherlands
+ *
+ * Please refer to:
+ * GROMACS: A message-passing parallel molecular dynamics implementation
+ * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
+ * Comp. Phys. Comm. 91, 43-56 (1995)
+ *
+ * Also check out our WWW page:
+ * http://rugmd0.chem.rug.nl/~gmx
+ * or e-mail to:
+ * gromacs@chem.rug.nl
+ *
+ * And Hey:
+ * GROwing Monsters And Cloning Shrimps
+ */
+#include <stdio.h>
+#include <stdlib.h>
+#include "sysstuff.h"
+#include "string2.h"
+#include "futil.h"
+#include "network.h"
+#include "fatal.h"
+#include "smalloc.h"
+
+typedef struct t_pstack {
+  FILE   *fp;
+  struct t_pstack *prev;
+} t_pstack;
+
+static t_pstack *pstack=NULL;
+
+void push_ps(FILE *fp)
+{
+  t_pstack *ps;
+ 
+  snew(ps,1);
+  ps->fp   = fp;
+  ps->prev = pstack;
+}
+
+#ifdef fclose
+#undef fclose
+#endif
+
+void ffclose(FILE *fp)
+{
+  t_pstack *ps,*tmp;
+  
+  ps=pstack;
+  if (ps == NULL) {
+    fclose(fp);
+    return;
+  }
+  if (ps->fp == fp) {
+    pclose(fp);
+    pstack=pstack->prev;
+    sfree(ps);
+  }
+  else {
+    while ((ps->prev != NULL) && (ps->prev->fp != fp))
+      ps=ps->prev;
+    if (ps->prev->fp == fp) {
+      pclose(ps->prev->fp);
+      tmp=ps->prev;
+      ps->prev=ps->prev->prev;
+      sfree(tmp);
+    }
+    else {
+      fclose(fp);
+      return;
+    }
+  }
+}
+
+#ifdef rewind
+#undef rewind
+#endif
+
+void frewind(FILE *fp)
+{
+  t_pstack *ps;
+  
+  ps=pstack;
+  while (ps != NULL) {
+    if (ps->fp == fp) {
+      fprintf(stderr,"Cannot rewind compressed file!\n");
+      return;
+    }
+    ps=ps->prev;
+  }
+  rewind(fp);
+}
+
+bool is_pipe(FILE *fp)
+{
+  t_pstack *ps;
+  
+  ps=pstack;
+  while (ps != NULL) {
+    if (ps->fp == fp) {
+      return TRUE;
+    }
+    ps=ps->prev;
+  }
+  return FALSE;
+}
+
+#ifdef NO_PIPE
+static FILE *popen(char *nm,char *mode)
+{
+  fatal_error(0,"Sorry no pipes...");
+  
+  return NULL;
+}
+
+static int pclose(FILE *fp)
+{
+  fatal_error(0,"Sorry no pipes...");
+  
+  return 0;
+}
+#endif
+
+
+FILE *uncompress(char *fn)
+{
+  FILE *fp;
+  char buf[256];
+  
+  sprintf(buf,"uncompress -c < %s",fn);
+  fprintf(stderr,"Going to execute '%s'\n",buf);
+  if ((fp=popen(buf,"r")) == NULL) {
+    perror(fn);
+    exit(1);
+  }
+  push_ps(fp);
+  
+  return fp;
+}
+
+FILE *gunzip(char *fn)
+{
+  FILE *fp;
+  char buf[256];
+  
+  sprintf(buf,"gunzip -c < %s",fn);
+  fprintf(stderr,"Going to execute '%s'\n",buf);
+  if ((fp=popen(buf,"r")) == NULL) {
+    perror(fn);
+    exit(1);
+  }
+  push_ps(fp);
+  
+  return fp;
+}
+
+bool fexist(char *fname)
+{
+  FILE *test;
+  
+  test=fopen(fname,"r");
+  if (test == NULL) 
+    return FALSE;
+  else {
+    fclose(test);
+    return TRUE;
+  }
+}
+
+bool eof(FILE *fp)
+{
+  char data[4];
+  bool beof;
+
+  if (is_pipe(fp))
+    return feof(fp);
+  else {
+    if ((beof=fread(data,1,1,fp))==1)
+      fseek(fp,-1,SEEK_CUR);
+    return !beof;
+  }
+}
+
+char *backup_fn(char *file)
+{
+  int         i;
+  char        *ptr;
+  static char buf[256];
+  
+  for(i=strlen(file)-1; ((i > 0) && (file[i] != '/')); i--);
+  if (i > 0) {
+    ptr=strdup(file);
+    ptr[i]='\0';
+    sprintf(buf,"%s/#%s#",ptr,ptr+i+1);
+    sfree(ptr);
+  }
+  else
+    sprintf(buf,"#%s#",file);
+  
+  return buf;
+}
+
+FILE *ffopen(char *file,char *mode)
+{
+  FILE *ff;
+  char buf[256],*bf,*bufsize,*ptr;
+  bool bRead;
+  int  bs;
+  
+#ifdef _amb_
+  fprintf(stderr,"Going to open %s on CPU %d with mode %s\n",
+	  file,gmx_cpu_id(),mode);
+#endif
+  if ((strcmp(mode,"w") == 0) && fexist(file)) {
+    bf=backup_fn(file);
+    if (rename(file,bf) == 0) {
+      fprintf(stderr,"\nBack Off! I just backed up %s to %s\n",file,bf);
+    }
+    else
+      fprintf(stderr,"Sorry, I couldn't backup %s to %s\n",file,bf);
+  }
+  where();
+  
+  bRead=strcmp(mode,"r") == 0;
+  strcpy(buf,file);
+  if (fexist(buf) || !bRead) {
+    if ((ff=fopen(buf,mode))==NULL) {
+      perror(buf);
+      exit(1);
+    }
+    where();
+    if ((bufsize=getenv("LOG_BUFS")) != NULL) {
+      bs=atoi(bufsize);
+      if (bs <= 0)
+	setbuf(ff,NULL); 
+      else {
+	snew(ptr,bs+8);
+	if (setvbuf(ff,ptr,_IOFBF,bs) != 0) {
+	  perror("Buffering File");
+	  exit(1);
+	}
+      }
+    }
+    where();
+  }
+  else {
+    sprintf(buf,"%s.Z",file);
+    if (fexist(buf)) {
+      ff=uncompress(buf);
+    }
+    else {
+      sprintf(buf,"%s.gz",file);
+      if (fexist(buf)) {
+	ff=gunzip(buf);
+      }
+      else 
+	fatal_error(0,"%s does not exist",file);
+    }
+  }
+#ifdef _amb_
+  fprintf(stderr,"Opened %s on CPU %d with mode %s\n",
+	  file,gmx_cpu_id(),mode);
+#endif
+  return ff;
+}
+
+char *low_libfn(char *file,bool bFatal)
+{
+  static char *libdir="GMXLIB";
+  char *ret,*lib;
+  static char buf[1024];
+  
+  if (fexist(file))
+    ret=file;
+  else {
+    if ((lib=getenv(libdir)) == NULL) {
+      if (bFatal)
+	fatal_error(0,"%s environment variable not set and file %s not found",
+		    libdir,file);
+      else 
+	return NULL;
+    }
+    else {
+      sprintf(buf,"%s/%s",lib,file);
+      ret=buf;
+    }
+  }
+  return ret;
+}
+
+FILE *low_libopen(char *file,bool bFatal)
+{
+  FILE *ff;
+  char *fn;
+
+  fn=low_libfn(file,bFatal);
+
+  if (fn==NULL)
+    ff=NULL;
+  else
+    ff=fopen(fn,"r");
+
+  return ff;
+}
+
+char *libfn(char *file)
+{
+  return low_libfn(file,TRUE);
+}
+
+FILE *libopen(char *file)
+{
+  return low_libopen(file,TRUE);
+}
+
+

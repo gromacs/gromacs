@@ -1,0 +1,85 @@
+/*
+ *       @(#) copyrgt.c 1.12 9/30/97
+ *
+ *       This source code is part of
+ *
+ *        G   R   O   M   A   C   S
+ *
+ * GROningen MAchine for Chemical Simulations
+ *
+ *            VERSION 2.0b
+ * 
+ * Copyright (c) 1990-1997,
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry,
+ * University of Groningen, The Netherlands
+ *
+ * Please refer to:
+ * GROMACS: A message-passing parallel molecular dynamics implementation
+ * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
+ * Comp. Phys. Comm. 91, 43-56 (1995)
+ *
+ * Also check out our WWW page:
+ * http://rugmd0.chem.rug.nl/~gmx
+ * or e-mail to:
+ * gromacs@chem.rug.nl
+ *
+ * And Hey:
+ * GROtesk MACabre and Sinister
+ */
+
+#ifndef	_toputil_h
+#define	_toputil_h
+
+#ifdef HAVE_IDENT
+#ident	"@(#) toputil.h 1.25 19 Nov 1995"
+#endif /* HAVE_IDENT */
+
+#include "grompp.h"
+
+/* UTILITIES */
+
+extern int at2type(char *str, t_atomtype *at);
+
+extern char *type2nm(int nt, t_atomtype *at);
+
+extern void pr_alloc (int extra, t_params *pr);
+
+/* INITIATE */
+
+extern void init_plist(t_params plist[]);
+
+extern void init_atomtype (t_atomtype *at);
+
+extern void init_molinfo(t_molinfo *mol);
+
+extern void init_top  (t_topology *top);
+
+extern void done_top(t_topology *top);
+
+/* FREE */
+extern void done_block(t_block *block);
+
+extern void done_top(t_topology *top);
+
+extern void done_atom (t_atoms *at);
+
+extern void done_mi(t_molinfo *mi);
+
+/* PRINTING */
+
+extern void print_bt(FILE *out, directive d, t_atomtype *at,
+		     int ftype,t_params plist[],bool bConsts,
+		     bool bFullDih);
+/* If bFullDih all the atoms are printed not just the two
+ * that determine the type for dihedrals.
+ */
+ 
+extern void print_block(FILE *out,char *szName,char *szIndex, 
+			char *szA,t_block *block);
+
+extern void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,t_block *cgs);
+
+extern void print_bonds(FILE *out,int natoms,directive d,
+			int ftype,t_params plist[],bool bConsts);
+
+#endif	/* _toputil_h */

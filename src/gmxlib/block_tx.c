@@ -1,0 +1,139 @@
+/*
+ *       @(#) copyrgt.c 1.12 9/30/97
+ *
+ *       This source code is part of
+ *
+ *        G   R   O   M   A   C   S
+ *
+ * GROningen MAchine for Chemical Simulations
+ *
+ *            VERSION 2.0b
+ * 
+ * Copyright (c) 1990-1997,
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry,
+ * University of Groningen, The Netherlands
+ *
+ * Please refer to:
+ * GROMACS: A message-passing parallel molecular dynamics implementation
+ * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
+ * Comp. Phys. Comm. 91, 43-56 (1995)
+ *
+ * Also check out our WWW page:
+ * http://rugmd0.chem.rug.nl/~gmx
+ * or e-mail to:
+ * gromacs@chem.rug.nl
+ *
+ * And Hey:
+ * Gyas ROwers Mature At Cryogenic Speed
+ */
+#include "network.h"
+#include "block_tx.h"
+#include "fatal.h"
+#include "smalloc.h"
+#include "main.h"
+#include "assert.h"
+        
+void _blocktx(int dest,int nelem,int size,void *data)
+{
+  int i;
+  char *buf=data;
+  
+  if ((data==NULL) && (size > 0))
+    fatal_error(0,"TX: Null pointer (size=%d)!\n",size);
+#ifdef DEBUG
+#ifdef _amb_
+  if (size > 256000) 
+    fprintf(stdlog,"Trying to send %d bytes!\n",size);
+#endif
+#endif
+
+  for (i=0; i<nelem; i++)
+    {
+      gmx_txs(dest,record(size));
+      if (size > 0)
+	gmx_txs(dest,buf,size);
+      buf+=size;      
+    }
+}
+
+void _blockrx(int src,int nelem,int size,void *data)
+{
+  int i,len;
+  char *buf=data;
+  
+  if ((data==NULL) && (size > 0))
+    fatal_error(0,"RX: Null pointer (size=%d)!\n",size);
+#ifdef DEBUG
+#ifdef _amb_
+  if (size > 256000) 
+    fprintf(stdlog,"Trying to receive %d bytes!\n",size);
+#endif
+#endif
+  for (i=0; i<nelem; i++)
+    {
+      gmx_rxs(src,record(len));
+      if (size!=len)
+        fatal_error(0,"%d: size=%d, len=%d, rx_count=%d\n",
+                    0,size,len,0);
+      if (len > 0)
+	gmx_rxs(src,buf,len);
+      buf+=len;      
+    }
+}
+
+void mv_block(int dest,t_block *block)
+{
+  nblocktx(dest,MAXPROC,block->multinr);
+#ifdef DEBUG
+  fprintf(stdlog,"mv multinr\n");
+#endif
+  blocktx(dest,block->nr);
+#ifdef DEBUG
+  fprintf(stdlog,"mv block->nr (%d)\n",block->nr);
+#endif
+  nblocktx(dest,block->nr+1,block->index);
+#ifdef DEBUG
+  fprintf(stdlog,"mv block->index\n");
+#endif
+  blocktx(dest,block->nra);
+#ifdef DEBUG
+  fprintf(stdlog,"mv block->nra (%d)\n",block->nra);
+#endif
+  nblocktx(dest,block->nra,block->a);
+#ifdef DEBUG
+  fprintf(stdlog,"mv block->a\n");
+#endif
+}
+
+void ld_block(int src,t_block *block)
+{
+  nblockrx(src,MAXPROC,block->multinr);
+#ifdef DEBUG
+  fprintf(stdlog,"ld multinr\n");
+#endif
+  blockrx(src,block->nr);
+#ifdef DEBUG
+  fprintf(stdlog,"ld block->nr (%d)\n",block->nr);
+#endif
+  snew(block->index,block->nr+1);
+#ifdef DEBUG
+  fprintf(stdlog,"block->index=%x\n",block->index);
+#endif
+  nblockrx(src,block->nr+1,block->index);
+#ifdef DEBUG
+  fprintf(stdlog,"ld block->index\n");
+#endif
+  blockrx(src,block->nra);
+#ifdef DEBUG
+  fprintf(stdlog,"ld block->nra (%d)\n",block->nra);
+#endif
+  snew(block->a,block->nra);
+#ifdef DEBUG
+  fprintf(stdlog,"block->a=%x\n",block->a);
+#endif
+  nblockrx(src,block->nra,block->a);
+#ifdef DEBUG
+  fprintf(stdlog,"ld block->a\n");
+#endif
+}
+

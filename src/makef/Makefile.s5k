@@ -1,0 +1,15 @@
+#
+#	@(#) Makefile.s5k 1.3 4/16/97
+#
+#	GROMACS - Groningen Machine for Chemical Simulation
+#	Copyright (c) 1990-1997, Groningen University
+#
+#	Makefile for gromacs on Mips R10K
+#
+#	See README file for info
+#
+ABI		= -n32 -r5000 -mips4
+
+# Include generic SGI stuff
+include	$(GMXHOME)/src/makef/Makefile.SGI
+

@@ -1,0 +1,47 @@
+[ defaults ]
+1	2
+	
+[ atomtypes ]
+;type	mass	 charge		ptype	sigma(nm)	epsilon(kj/mol)	comment
+OP113	15.9994	 0.000000	A	0.3154		0.6487 ;O TIP4P Water      
+OP114	1.00800	 0.520000	A	0.000000	0.000000 ;H TIP4P Water      	
+OP115	0.0000	-1.040000	D	0.000000	0.000000 ;M TIP4P Water      
+
+[ moleculetype ]
+; molname	nrexcl
+SOL		1
+
+[ atoms ]
+; id	at type	res nr 	residu name	at name		cg nr	charge
+1	OP113	1	SOL		OW1		1	0
+2	OP114	1	SOL		HW2		1	0.52
+3	OP114	1	SOL		HW3		1	0.52
+4	OP115	1	SOL		MW4		1	-1.04
+ 
+[ settles ]
+; i	funct	doh	dhh
+1	1	0.09572	0.15139
+
+[ dummies3 ]
+; The position of the dummy is computed as follows:
+;
+;		O
+;  	      
+;	    	D
+;	  
+;	H		H
+;
+; const = distance (OD) / [ cos (angle(DOH)) 	* distance (OH) ]
+;	  0.015 nm	/ [ cos (52.26 deg)	* 0.09572 nm	]
+
+; Dummy pos x4 = a*x1 + b*x2 + c*x3
+
+; Dummy from			funct	a		b		c
+4	1	2	3	1	0.7439756	0.128012	0.128012
+
+[ exclusions ]
+1	2	3	4
+2	1	3	4
+3	1	2	4
+4	1	2	3
+

@@ -1,0 +1,114 @@
+#
+#	@(#) Makefile.std 1.44 6/25/97
+#
+#
+#	GROMACS - Groningen Machine for Chemical Simulation
+#	Copyright (c) 1990, 1991, 1992, Groningen University
+#
+#	Definitions dependent on CPU but general enough to put here...
+#
+
+ifeq ($(USEF77),yes)
+SYSDEFS		+= -DUSEF77
+endif
+
+ifeq ($(USE_MPI),yes)
+SYSDEFS         += -DUSE_MPI -DPARALLEL
+SYSLIBS         += -lmpi
+endif
+
+ifeq ($(USE_PVM3),yes)
+SYSDEFS		+= -DUSE_PVM3 -DPARALLEL
+SYSLIBS		+= -lpvm3
+LDFLAGS		+= -L$(PVM_ROOT)/lib/$(PVM_ARCH)
+X11INC		+= -I$(PVM_ROOT)/include
+CCFLAGS		+= -I$(PVM_ROOT)/include
+endif
+
+ifeq ($(USE_XDR),yes)
+SYSDEFS		+= -DUSE_XDR
+endif
+#
+#	Standard target definitions for gromacs
+#
+all:		lib 	bin
+
+lib:		$(OBJ)
+ifeq ($(LIB),)
+	echo "No library in $(CUR)"
+else
+	$(AR) $(LIB) $(OBJ)
+	chmod 664 $(LIB)
+	$(RM) $(SOLIB)
+	$(SHAREIT)
+endif
+
+bin:		$(PROGRAMS)
+ifeq ($(PROGRAMS),)
+	echo "No programs in $(CUR)"
+else
+	cd $(BINDIR) ; $(RM) $(PROGRAMS)
+	-chmod $(BINMODE) $(PROGRAMS)
+	mv $(PROGRAMS) $(BINDIR)
+endif
+
+dep:
+	sccs edit Make.dep
+	$(CC) -M -I. -I$(GMXHOME)/src/include *.c *.cc  |  grep -v include  |  sed sx./xx > Make.dep
+	sccs delget -y Make.dep
+	
+#	$(CC) -M -I. -I$(GMXHOME)/src/include *.c *.cc  |  grep -v usr  |  sed sx./xx | sed sx$(GMXHOME)/src/includex\\\$$\(GMXHOME\)/src/includex > Make.dep
+
+clean:
+		$(RM) $(PROGRAMS) *.s *.o *.l *~ *.bak \#*\# 
+
+ifneq ($(CPU),cvx)
+%.f:		$(ROOT)/src/$(CUR)/SCCS/s.%.f
+		$(GET) $<
+
+%.c:		$(ROOT)/src/$(CUR)/SCCS/s.%.c
+		$(GET) $<
+
+%.cc:		$(ROOT)/src/$(CUR)/SCCS/s.%.cc
+		$(GET) $<
+
+%.c++:		$(ROOT)/src/$(CUR)/SCCS/s.%.c++
+		$(GET) $<
+
+%.cxx:		$(ROOT)/src/$(CUR)/SCCS/s.%.cxx
+		$(GET) $<
+
+%.s:		$(ROOT)/src/$(CUR)/SCCS/s.%.s
+		$(GET) $<
+
+%.h:		$(ROOT)/src/$(CUR)/SCCS/s.%.h
+		$(GET) $<
+
+%.bm:		$(ROOT)/src/$(CUR)/SCCS/s.%.bm
+		$(GET) $<
+		
+%.m4:		$(ROOT)/src/$(CUR)/SCCS/s.%.m4
+		$(GET) $<
+endif
+
+.c.o:
+		$(CC) $(C-FLAGS) -c $<
+
+.s.o:
+		$(AS) $(ASFLAGS) $<
+
+.cc.o:
+		$(CCC) $(CC-FLAGS) -c $<
+
+.c++.o:
+		$(CCC) $(CC-FLAGS) -c $<
+
+.cxx.o:
+		$(CCC) $(CC-FLAGS) -c $<
+
+.f.s:
+		$(F77) $(FFLAGS) -s $<
+
+.c.s:
+		$(CC) $(C-FLAGS) -s $<
+

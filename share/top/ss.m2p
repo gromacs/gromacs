@@ -1,0 +1,32 @@
+;
+;	User jonna (1111)
+;	Thu Nov 24 10:57:40 1994
+;	Input file
+;
+black&white         =  no
+legend              =  Discrete
+legendfont          =  Times-Roman
+legendlabel         =  
+legendfontsize      =  14.000000
+xbox                =  2.000000
+ybox                =  2.000000
+xoffset             =  0.000000
+yoffset             =  0.000000
+x-major             =  20
+x-minor             =  5
+x-majorticklen      =  8.000000
+x-minorticklen      =  4.000000
+x-label             =  Time (ps)
+x-fontsize          =  16.000000
+x-font              =  Times-Roman
+x-tickfontsize      =  10.000000
+x-tickfont          =  Helvetica
+y-major             =  10
+y-minor             =  5
+y-majorticklen      =  8.000000
+y-minorticklen      =  4.000000
+y-label             =  Residue Number
+y-fontsize          =  16.000000
+y-font              =  Helvetica
+y-tickfontsize      =  10.000000
+y-tickfont          =  Helvetica

@@ -1,0 +1,12 @@
+#
+#	@(#) Makefile.hpd 1.4 4/15/97
+#
+#
+#	GROMACS - Groningen Machine for Chemical Simulation
+#	Copyright (c) 1990, 1991, 1992, Groningen University
+#
+#	Makefile for gromacs on sparc processor
+#
+include		$(GMXHOME)/src/makef/Makefile.hp
+SYSDEFS		+= -DDOUBLE -D_hp_
+FFLAGS		+= -R8

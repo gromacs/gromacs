@@ -1,0 +1,52 @@
+#
+#	@(#) Makefile.a23 1.5 8/27/96
+#
+#
+#	GROMACS - Groningen Machine for Chemical Simulation
+#	Copyright (c) 1990, 1991, 1992, Groningen University
+#
+#	Makefile for gromacs on the i860 multiprocessor
+#
+SYSDEFS		=-DHAVE_IDENT -DPARALLEL -DHAVE_ULONG -DNEED_STRDUP -DNO_PWUID -DNO_NICE -D_SYS_ISA_DEFS_H -DC_INVSQRT -DPRAGMAS
+# That last define is to fool Solaris 2.4
+
+PGI		= /usr/local/pgi
+PGI		= /usr/local/pgi2.3a
+PGCDIR		= $(PGI)/i860/bin/
+CC		= $(PGCDIR)pgcc
+AS		= $(PGCDIR)as860
+LOAD		= $(PGCDIR)ld860
+NM		= $(PGCDIR)nm860
+
+# Chess stuff
+STARTUP		= $(LIBDIR)/crt6.o
+#STARTUP	= $(LIBDIR)/crt5.o
+#STARTUP	= $(LIBDIR)/crt1.o
+
+# If a new version of Chess software arrives, the crt0.o must be copied !
+# This also goes for "ambadma.h" which is copied to the include dir
+
+BELIB		= $(PGI)/i860/lib-coff-be
+TEXT		= 0xff800000
+ALLFLAGS	= -Mbe -c 
+OPTFLAGS	= $(ALLFLAGS) -O4 -Minfo=loop -Knoieee -Mfcon -Mnodepchk -Mnostreamall -Mvect -Minline=30 -Munroll -Msafeptr=arg,auto
+# -Munroll crashes on the force routine!
+DBGFLAGS	= $(ALLFLAGS) -g 
+#-DDEBUG
+CFLAGS		= $(DBGFLAGS)
+CFLAGS		= $(OPTFLAGS)
+CCCCC		= $(CC) $(DBGFLAGS) $(ADDFLAGS) $(INCS) $(SYSDEFS) 
+LDFLAGS		= -swapc -be -YP$(BELIB) -contig -T$(TEXT) -L$(LIBDIR) $(STARTUP) 
+LD2FLAGS	+= -be -YP$(BELIB) -contig -T$(TEXT) $(STARTUP)
+ASFLAGS		+= -be
+
+LD		= $(LOAD) $(LDFLAGS)
+SYSLIBS		= -lc -lpgc 
+AR		= ar860 $(ARFLAGS)
+RANLIB		= echo
+
+
+
+
+
+

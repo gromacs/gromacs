@@ -1,0 +1,69 @@
+#
+#	@(#) Makefile.dec 1.2 5/15/97
+#
+#
+#	GROMACS - Groningen Machine for Chemical Simulation
+#	Copyright (c) 1990, 1991, 1992, Groningen University
+#
+#	Makefile for gromacs on DEC alpha machines (running OSF1)
+#
+# 	See README file for info
+#
+SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG# -DDOUBLE
+
+# Sun C compilers
+ALLOPT		= -fast -O5 -inline speed -tune host -math_library fast -non_shared -unroll 2 -arch host -pipeline 
+CC		= cc.alt
+CCC		= cxx
+F77		= f77
+CFLAGS		= -std1 $(ALLOPT)
+CCFLAGS		= -O
+FFLAGS		= $(ALLOPT) -speculate all -assume noaccuracy_sensitive
+
+# Generic linking stuff
+LDFLAGS		= -L$(LIBDIR) -om -O3 -non_shared
+LD		= $(CC)  $(LDFLAGS) 
+CCLD		= $(CCC) $(LDFLAGS)
+
+SYSLIBS		= -lgmx.$(CPU) -ldnet_stub -lm_4sqrt -lm
+XLIBS		= $(SYSLIBS) -lX11
+AR		= $(RM) $(LIB); ar q
+RANLIB		= ranlib
+X11INC		= -I/usr/local/include
+
+#
+#	USER MODIFIABLE SECTION
+#
+# If you want to use fortran innerloops set this to yes
+# For most machines this will improve the performance quite a bit
+# because C-compilers are not as good as Fortran compilers
+USEF77		= yes
+SYSDEFS		+= -DF77UNDERSCORE
+#
+# If you want to run in *** P A R A L L E L ***
+# please select either PVM or MPI, check with your local hacker
+# to see what's installed at your site. If you have neither,
+# set both to no. If you select both, something will break!!!
+#
+USE_PVM3	= no
+USE_MPI		= no
+#
+# If you want to use compressed data files set this to yes
+# This uses the xdr libraries of your UNIX system, which is virtually
+# Allways present, because it is necessary for NFS (network file system)
+#
+USE_XDR		= yes
+#
+# Graphics Library
+# Set this on if you have Open GL and the Viewkit library
+# (standard with SGI, available for money elsewhere)
+# This is used in the Open GL trajectory viewer.
+HAVE_GL		= no
+#
+# Note that these variables are also used in Makefile.std
+# If something does not work, please check out the link command line
+# in that file (e.g. for PVM)
+#
+ifeq ($(USE_MPI),yes)
+SYSLIBS         += -lrt -limc -pthread
+endif

@@ -1,0 +1,16 @@
+[ moleculetype ]
+; molname	nrexcl
+SOL		1
+
+[ atoms ]
+; id	at type	res nr 	residu name	at name		cg nr	charge
+1	OWT3	1	SOL		OW1		1	-0.834
+2	HW	1	SOL		HW2		1	 0.417
+3	HW	1	SOL		HW3		1	 0.417
+ 
+[ settles ]
+; i	j	funct	length
+1	1	0.09572	0.15139
+
+
+

@@ -1,0 +1,43 @@
+In the Makefile.$CPU you set compiler, linker & archiver to use
+on your machine.
+
+In the table below you'll find some info about the variables
+these are just example values that may be usefull on your machine
+
+Variable=	Value			Meaning
+SYSDEFS	=	-DHAVE_ULONG		System dependent defines, which
+					usually must not be changed
+CC	= 	cc			This is the Ansi-C compiler
+CCC	= 	CC			This is the C++ Compiler
+CFLAGS	=	-O2			C Compiler Flags (optimize)
+CCFLAGS	= 	-O2			C++ Compiler Flags (optimize)
+LDFLAGS	= 	-g -L$(LIBDIR)		Linker options
+LD	= 	$(CC) $(LDFLAGS)	The link command
+CCLD	=	$(CCC) $(LDFLAGS)	The link command for c++
+SYSLIBS = 	-lm -lsocket		System dependent default
+					libraries
+XLIBS	= 	$(SYSLIBS) -lX11	System libraries for X-Windows
+AR	= 	ar q			The archiver (to make GROMACS
+					library files from objects)
+RANLIB	= 	echo			Some systems use ranlib to postprocess
+					library files (esp. BSD systems)
+X11INC	= 	-I/usr1/local/include	Include directory for X Windows 
+					header files
+
+
+#
+#	USER MODIFIABLE SECTION
+#
+#WARNING
+#WARNING The fortran innerloop is tested only on SUN and SGI machines
+#WARNING				
+# 	If you want to use fortran innerloops set this to yes
+USEF77		= yes
+#	If you don't have PVM (parallel virtual machines) set this to no
+#	else set the path and CPU variable accordingly, below
+USE_PVM3	= no
+#	If you want to use compressed data files set this to yes
+USE_XDR		= yes
+
+# Note that these variables are also used in Makefile.std
+# If you experience any problems using PVM also check that file.

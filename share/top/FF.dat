@@ -1,0 +1,4 @@
+2
+ffgmx	Gromacs Forcefield (see manual)
+ffgmx2	Gromacs Forcefield with all hydrogens (proteins only)
+ffopls	OPLS forcefield version (version 8/94, will be added later) 

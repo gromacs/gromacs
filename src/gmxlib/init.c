@@ -1,0 +1,175 @@
+/*
+ *       @(#) copyrgt.c 1.12 9/30/97
+ *
+ *       This source code is part of
+ *
+ *        G   R   O   M   A   C   S
+ *
+ * GROningen MAchine for Chemical Simulations
+ *
+ *            VERSION 2.0b
+ * 
+ * Copyright (c) 1990-1997,
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry,
+ * University of Groningen, The Netherlands
+ *
+ * Please refer to:
+ * GROMACS: A message-passing parallel molecular dynamics implementation
+ * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
+ * Comp. Phys. Comm. 91, 43-56 (1995)
+ *
+ * Also check out our WWW page:
+ * http://rugmd0.chem.rug.nl/~gmx
+ * or e-mail to:
+ * gromacs@chem.rug.nl
+ *
+ * And Hey:
+ * Giant Rising Ordinary Mutants for A Clerical Setup
+ */
+
+#include <stdio.h>
+#include "typedefs.h"
+#include "statusio.h"
+#include "smalloc.h"
+#include "vec.h"
+#include "vveclib.h"
+#include "main.h"
+#include "mvdata.h"
+#include "fatal.h"
+#include "rwtop.h"
+#include "binio.h"
+#include "statutil.h"
+#include "txtdump.h"
+#include "splittop.h"
+#include "mdatoms.h"
+#include "mdrun.h"
+
+#define BUFSIZE	256
+
+#define NOT_FINISHED(l1,l2) \
+  printf("not finished yet: lines %d .. %d in %s\n",l1,l2,__FILE__)
+
+static char *int_title(char *title,int pid)
+{
+  static char buf[BUFSIZE];
+
+  sprintf(buf,"%s (%d)",title,pid);
+  return buf;
+}
+
+void init_single(FILE *log,t_parm *parm,
+		 char *tpbfile,t_topology *top, 
+                 rvec **x,rvec **v,t_mdatoms **mdatoms,
+		 t_nsborder *nsb)
+{
+  int        step,natoms,nre;
+  real       t,lambda;
+  char       *szVer;
+  t_statheader stath;
+
+  read_status_header(tpbfile,&stath);
+
+  snew(*x,stath.natoms);
+  snew(*v,stath.natoms);
+  szVer=read_status(tpbfile,&step,&t,&lambda,&parm->ir,
+                    parm->box,NULL,NULL,
+		    &natoms,*x,*v,NULL,&nre,NULL,top);
+  fprintf(log,"status file version=%s\n",szVer);
+  
+  *mdatoms=atoms2md(&top->atoms,parm->ir.bPert);
+  
+  pr_inputrec(log,0,"Input Parameters",&parm->ir);
+  calc_nsb(&(top->blocks[ebCGS]),1,nsb,0);
+  print_nsb(log,"Neighbor Search Blocks",nsb);
+}
+
+void distribute_parts(int left,int right,int pid,int nprocs,t_parm *parm,
+		      char *tpbfile,int nstDlb)
+{
+  char *szVer;
+  int natoms,nre,step;
+  real t,lambda;
+  FILE *fp;
+  t_statheader sh;
+  t_topology top;
+  t_nsborder nsb;
+  rvec *x,*v;
+  
+  fp=ffopen(tpbfile,"r");
+  szVer=rd_header(fp,&sh);
+  snew(x,sh.natoms);
+  snew(v,sh.natoms);
+  szVer=rd_hstatus(fp,&sh,&step,&t,&lambda,&parm->ir,parm->box,
+                   NULL,NULL,&natoms,x,v,NULL,&nre,NULL,&top);
+  printf("status version:\"%s\" done\n",szVer); fflush(stdout);
+  calc_nsb(&(top.blocks[ebCGS]),nprocs,&nsb,nstDlb);
+  mv_data(left,right,parm,&nsb,&top,x,v);
+  rm_top(&top);
+  sfree(x);
+  sfree(v);
+  fclose(fp);
+}
+
+static void count_ones(FILE *log,t_commrec *cr)
+{
+#define NMAX 6
+  int i;
+  int n[NMAX];
+  
+  where();  
+  fprintf(log,"Topology loaded succesfully\n"); fflush(log);
+  for(i=0; (i<NMAX); i++)
+    n[i]=i;
+  gmx_sumi(6,n,cr);
+  for(i=0; (i<NMAX); i++) {
+    if (n[i] != (i*cr->nprocs)) {
+      fprintf(log,"Error in count_ones: n[%d] = %d, should be %d\n",
+	      i,n[i],i*cr->nprocs);
+      fflush(log);
+    }
+  }
+  fprintf(log,"Completed confidence test\n"); fflush(log);
+  where();
+#undef NMAX
+}
+
+void init_parts(FILE *log,t_commrec *cr,
+		t_parm *parm,t_topology *top,
+		rvec **x,rvec **v,t_mdatoms **mdatoms,
+		t_nsborder *nsb,int list)
+{
+  ld_data(cr->left,cr->right,parm,nsb,top,x,v);
+  if (cr->pid != 0)
+    mv_data(cr->left,cr->right,parm,nsb,top,*x,*v);
+#ifdef _amb_
+  count_ones(log,cr);
+#endif
+
+  mdsplit_top(log,top,cr);
+
+  if (list) {
+    if (list&LIST_SCALARS) 
+      print_nsb(log,"Listing Scalars",nsb);
+    if (list&LIST_PARM)
+      write_parm(log,"parameters of the run",cr->pid,parm);
+    if (list&LIST_X)
+      pr_rvecs(log,0,int_title("x",0),*x,nsb->natoms);
+    if (list&LIST_V)
+      pr_rvecs(log,0,int_title("v",0),*v,nsb->natoms);
+    if (list&LIST_TOP)
+      pr_top(log,0,int_title("topology",cr->pid),top);
+    fflush(log);
+  }
+  *mdatoms=atoms2md(&(top->atoms),parm->ir.bPert);
+}
+
+void write_parm(FILE *log,char *title,int pid,t_parm *parm)
+{
+  fprintf(log,"%s (pid=%d):\n",title,pid);
+  pr_inputrec(log,0,"input record",&parm->ir);
+  pr_rvecs(log,0,"box",parm->box,DIM);
+  pr_rvecs(log,0,"ekin",parm->ekin,DIM);
+  pr_rvecs(log,0,"pres",parm->pres,DIM);
+  pr_rvecs(log,0,"vir",parm->vir,DIM);
+}
+

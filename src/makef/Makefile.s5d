@@ -1,0 +1,12 @@
+#
+#	@(#) Makefile.s5d 1.1 4/16/97
+#
+#
+#	GROMACS - Groningen Machine for Chemical Simulation
+#	Copyright (c) 1990, 1991, 1992, Groningen University
+#
+#	Makefile for gromacs on mips processor (sgi)
+#
+include		$(GMXHOME)/src/makef/Makefile.s5k
+SYSDEFS		+= -DDOUBLE -D_s5k_
+FFLAGS		+= -r8

@@ -1,0 +1,45 @@
+#
+#	@(#) Makefile.ins 1.3 5/15/97
+#
+#
+#	GROMACS - Groningen Machine for Chemical Simulation
+#	Copyright (c) 1990, 1991, 1992, Groningen University
+#
+#	Makefile for gromacs on mips processor (sgi)
+#
+#	See README file for info
+#
+SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG
+
+CC		= insure	# def c-compiler
+CCC		= insure	# c++ compiler
+F77		= f77		# fortran
+CFLAGS		= -g
+CCFLAGS		= -g
+FFLAGS		= -g
+
+# Linking shit
+LDFLAGS		= -L$(LIBDIR) -g
+LD		= $(CC) $(LDFLAGS)
+CCLD		= $(CCC) $(LDFLAGS)
+
+XLIBS		= -lX11 
+SYSLIBS		= $(LINKLIB) -lm #-lefence
+AR		= ar ruv
+RANLIB		= echo
+X11INC		= -I/usr/include/X11
+
+#
+#	USER MODIFIABLE SECTION
+#
+# 	If you want to use fortran innerloops set this to yes
+USEF77		= no
+#	If you don't have PVM (parallel virtual machines) set this to no
+USE_PVM3	= no
+#	If you want to use compressed data files set this to yes
+USE_XDR		= yes
+#
+HAVE_GL		= yes
+#
+# Note that these variables are also used in Makefile.std
+# If you experience any problems using PVM also check that file.

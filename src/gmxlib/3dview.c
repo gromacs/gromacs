@@ -1,0 +1,311 @@
+/*
+ *       @(#) copyrgt.c 1.12 9/30/97
+ *
+ *       This source code is part of
+ *
+ *        G   R   O   M   A   C   S
+ *
+ * GROningen MAchine for Chemical Simulations
+ *
+ *            VERSION 2.0b
+ * 
+ * Copyright (c) 1990-1997,
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry,
+ * University of Groningen, The Netherlands
+ *
+ * Please refer to:
+ * GROMACS: A message-passing parallel molecular dynamics implementation
+ * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
+ * Comp. Phys. Comm. 91, 43-56 (1995)
+ *
+ * Also check out our WWW page:
+ * http://rugmd0.chem.rug.nl/~gmx
+ * or e-mail to:
+ * gromacs@chem.rug.nl
+ *
+ * And Hey:
+ * Grunge ROck MAChoS
+ */
+#include <sysstuff.h>
+#include <math.h>
+#include <smalloc.h>
+#include <macros.h>
+#include <physics.h>
+#include "3dview.h"
+
+#define N 4
+
+void m4_op(mat4 m,rvec x,vec4 v)
+{
+  int i;
+
+  for(i=0; (i<N); i++)
+    v[i]=m[XX][i]*x[XX]+m[YY][i]*x[YY]+m[ZZ][i]*x[ZZ]+m[WW][i];
+}
+
+void unity_m4(mat4 m)
+{
+  int i,j;
+
+  for(i=0; (i<N); i++)
+    for(j=0; (j<N); j++)
+      if (i==j)
+	m[i][j]=1.0;
+      else
+	m[i][j]=0.0;
+}
+
+#ifdef DEBUG
+static void print_matrix(char *s,mat4 A)
+{
+  int i,j;
+  
+  printf("%s: ",s);
+  for (i=0; i<N; i++) {
+    printf("\t");
+    for (j=0; j<N; j++) 
+      printf("%10.5f",A[i][j]);
+    printf("\n");
+  }
+}
+
+static void print_v(char *s,int dim,real *a)
+{
+  int j;
+  
+  printf("%s: ",s);
+  for (j=0; j<dim; j++) 
+    printf("%10.5f",a[j]);
+  printf("\n");
+}
+#endif
+
+void mult_matrix(mat4 A, mat4 B, mat4 C)
+{
+  int i,j,k;
+  
+  for (i=0; i<N; i++)
+    for (j=0; j<N; j++) {
+      A[i][j]=0;
+      for(k=0; (k<N); k++)
+	A[i][j]+=B[i][k]*C[k][j];
+    }
+}
+
+void rotate(int axis, real angle, mat4 A)
+{   
+  unity_m4(A);
+  
+  switch (axis) {
+  case XX:
+    A[YY][YY] =  cos(angle);
+    A[YY][ZZ] = -sin(angle);
+    A[ZZ][YY] =  sin(angle);
+    A[ZZ][ZZ] =  cos(angle);
+    break;
+  case YY:
+    A[XX][XX] =  cos(angle);
+    A[XX][ZZ] =  sin(angle);
+    A[ZZ][XX] = -sin(angle);
+    A[ZZ][ZZ] =  cos(angle);
+    break;
+  case ZZ:
+    A[XX][XX] =  cos(angle);
+    A[XX][YY] = -sin(angle);
+    A[YY][XX] =  sin(angle);
+    A[YY][YY] =  cos(angle);
+    break;
+  default:
+    fprintf(stderr,"Error: invalid axis: %d\n",axis);
+    exit(1);
+  }
+}
+
+void translate(real tx, real ty, real tz, mat4 A)
+{
+  unity_m4(A);
+  A[3][XX] = tx;
+  A[3][YY] = ty;
+  A[3][ZZ] = tz;
+}
+
+static void set_scale(t_3dview *view,real sx, real sy)
+{
+  view->sc_x=sx;
+  view->sc_y=sy;
+}
+
+static void get_view(t_3dview *view)
+{
+#define SMALL 1e-6
+  mat4 To,Te,T1,T2,T3,T4,T5,N1,D1,D2,D3,D4,D5;
+  real dx,dy,dz,l,r;
+  
+  /* eye center */
+  dx=view->eye[XX];
+  dy=view->eye[YY];
+  dz=view->eye[ZZ];
+  l = sqrt(dx*dx+dy*dy+dz*dz);
+  r = sqrt(dx*dx+dy*dy);
+#ifdef DEBUG
+  print_v("eye",N,view->eye);
+  printf("del: %10.5f%10.5f%10.5f l: %10.5f, r: %10.5f\n",dx,dy,dz,l,r);
+#endif
+  if (l < SMALL) {
+    fprintf(stderr,"Error: Zero Length Vector - No View Specified\n");
+    exit(1);
+  }
+  translate(-view->origin[XX],-view->origin[YY],-view->origin[ZZ],To);
+  translate(-view->eye[XX],-view->eye[YY],-view->eye[ZZ],Te);
+
+  unity_m4(T2);
+  T2[YY][YY]=0, T2[YY][ZZ]=-1, T2[ZZ][YY]=1, T2[ZZ][ZZ]=0;
+
+  unity_m4(T3);
+  if (r > 0)
+    T3[XX][XX]=-dy/r, T3[XX][ZZ]=dx/r, T3[ZZ][XX]=-dx/r, T3[ZZ][ZZ]=-dy/r;
+
+  unity_m4(T4);
+  T4[YY][YY]=r/l, T4[YY][ZZ]=dz/l, T4[ZZ][YY]=-dz/l, T4[ZZ][ZZ]=r/l;
+
+  unity_m4(T5);
+  T5[ZZ][ZZ]=-1;
+
+  unity_m4(N1);
+  /* N1[XX][XX]=4,N1[YY][YY]=4; */
+
+  mult_matrix(T1,To,view->Rot);
+  mult_matrix(D1,Te,T2);
+  mult_matrix(D2,T3,T4);
+  mult_matrix(D3,T5,N1);
+  mult_matrix(D4,T1,D1);
+  mult_matrix(D5,D2,D3);
+
+  mult_matrix(view->proj,D4,D5);
+
+#ifdef DEBUG
+  print_matrix("T1",T1);
+  print_matrix("T2",T2);
+  print_matrix("T3",T3);
+  print_matrix("T4",T4);
+  print_matrix("T5",T5);
+  print_matrix("N1",N1);
+  print_matrix("Rot",view->Rot);
+  print_matrix("Proj",view->proj);
+#endif
+}
+
+bool zoom_3d(t_3dview *view,real fac)
+{
+  real dr;
+  real bm,dr1,dr2;
+  int  i;
+
+  dr2=0;
+  for(i=0; (i<DIM); i++) {
+    dr=view->eye[i];
+    dr2+=dr*dr;
+  }
+  dr1=sqrt(dr2);
+  if (fac < 1) {
+    bm=max(view->box[XX][XX],max(view->box[YY][YY],view->box[ZZ][ZZ]));
+    if (dr1*fac < 1.1*bm) /* Don't come to close */
+      return FALSE;
+  }
+
+  for(i=0; (i<DIM); i++)
+    view->eye[i]*=fac;
+  get_view(view);
+  return TRUE;
+}
+
+void rotate_3d(t_3dview *view,int axis,bool bPositive)
+{
+  static bool bFirst=TRUE;
+  static mat4 RotP[DIM];
+  static mat4 RotM[DIM];
+  int  i,j;
+  mat4 m4;
+
+  if (bFirst) {
+    real rot=DEG2RAD*15;
+
+    for(i=0; (i<DIM); i++) {
+      rotate(i, rot,RotP[i]);
+      rotate(i,-rot,RotM[i]);
+#ifdef DEBUG
+      print_matrix("RotP",RotP[i]);
+      print_matrix("RotM",RotM[i]);
+#endif
+    }
+  }
+
+  /*
+    if (bPositive)
+    m4_op(RotP[axis],view->eye,v4);
+    else
+    m4_op(RotM[axis],view->eye,v4);
+    for(i=0; (i<DIM); i++)
+    view->eye[i]=v4[i];
+    */
+  if (bPositive)
+    mult_matrix(m4,view->Rot,RotP[axis]);
+  else
+    mult_matrix(m4,view->Rot,RotM[axis]);
+  for(i=0; (i<N); i++)
+    for(j=0; (j<N); j++)
+    view->Rot[i][j]=m4[i][j];
+
+  get_view(view);
+}
+
+void translate_view(t_3dview *view,int axis,bool bPositive)
+{
+#ifdef DEBUG
+  printf("Translate called\n");
+#endif
+  if (bPositive)
+    view->origin[axis]+=view->box[axis][axis]/8;
+  else
+    view->origin[axis]-=view->box[axis][axis]/8;
+  get_view(view);
+}
+
+void reset_view(t_3dview *view)
+{
+  int  i;
+
+#ifdef DEBUG
+  printf("Reset view called\n");
+#endif
+  set_scale(view,4.0,4.0);
+  for(i=0; (i<DIM); i++) {
+    view->eye[i]=0.0;
+    view->origin[i]=0.5*view->box[i][i];
+  }
+  view->eye[ZZ]=4.0*view->box[ZZ][ZZ];
+  zoom_3d(view,1.0);
+  view->eye[WW]=view->origin[WW]=0.0;
+
+  /* Initiate the matrix */
+  unity_m4(view->Rot);
+  get_view(view);
+}
+
+t_3dview *init_view(matrix box)
+{
+  t_3dview *view;
+  int      i,j;
+
+  snew(view,1);
+  
+  /* Copy parameters into variables */
+  for(i=0; (i<DIM); i++)
+    for(j=0; (j<DIM); j++)
+      view->box[i][j]=box[i][j];
+
+  reset_view(view);
+
+  return view;
+}
+

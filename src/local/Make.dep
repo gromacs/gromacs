@@ -1,0 +1,16 @@
+do_gct.o:	do_gct.c
+do_gct.o:	do_gct.h
+gctio.o:	gctio.c
+gctio.o:	do_gct.h
+glaasje.o:	glaasje.c
+glaasje.o:	glaasje.h
+glasmd.o:	glasmd.c
+glasmd.o:	glaasje.h
+hrefify.o:	hrefify.c
+init_sh.o:	init_sh.c
+init_sh.o:	init_sh.h
+runner.o:	runner.c
+xmdrun.o:	xmdrun.c
+xmdrun.o:	init_sh.h
+xmdrun.o:	do_gct.h
+xmdrun.o:	glaasje.h

@@ -1,0 +1,6 @@
+[ defaults ]
+1	1
+
+#include "ffgmxnb.itp"
+#include "ffgmxbon.itp"
+

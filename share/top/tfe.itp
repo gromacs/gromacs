@@ -1,0 +1,65 @@
+[ moleculetype ]
+; name  nrexcl
+TFE	1
+
+[ atoms ]
+;   nr    type   resnr  residu    atom    cgnr        charge          mass
+#ifdef DeLoof
+; Use Charges from De Loof
+; De Loof et al., JACS 114, 1992, 4028-4035
+     1       C       1     TFE       C       1		 0.74
+     2       F       1     TFE       F       1		-0.25
+     3       F       1     TFE       F       1		-0.25
+     4       F       1     TFE       F       1		-0.25
+     5     CH2       1     TFE     CH2       1		 0.25
+     6      OA       1     TFE      OA       1		-0.65
+     7      HO       1     TFE      HO       1		 0.41
+#else
+; Use Charges from VanB
+; Van Buuren & Berendsen, Biopolymers 33, 1993, 1159-1166
+     1       C       1     TFE       C       1		 0.59
+     2       F       1     TFE       F       1		-0.2
+     3       F       1     TFE       F       1		-0.2
+     4       F       1     TFE       F       1		-0.2
+     5     CH2       1     TFE     CH2       1		 0.26
+     6      OA       1     TFE      OA       1		-0.55
+     7      HO       1     TFE      HO       1		 0.3
+#endif
+
+[ bonds ]
+;  ai    aj funct           c0           c1
+    6     7     1 1.000000e-01 3.138000e+05 
+    1     2     1 1.360000e-01 4.184000e+05 
+    1     3     1 1.360000e-01 4.184000e+05 
+    1     4     1 1.360000e-01 4.184000e+05 
+    1     5     1 1.530000e-01 3.347000e+05 
+    5     6     1 1.430000e-01 3.347000e+05 
+
+[ angles ]
+;  ai    aj    ak funct           c0           c1
+    5     6     7     1 1.095000e+02 3.975000e+02 
+    2     1     3     1 1.076000e+02 4.602000e+02 
+    2     1     4     1 1.076000e+02 4.602000e+02 
+    3     1     4     1 1.076000e+02 4.602000e+02 
+    2     1     5     1 1.114000e+02 4.602000e+02 
+    3     1     5     1 1.114000e+02 4.602000e+02 
+    4     1     5     1 1.114000e+02 4.602000e+02 
+    1     5     6     1 1.109000e+02 4.602000e+02 
+
+[ dihedrals ]
+;  ai    aj    ak    al funct           c0           c1           c2
+    1     5     6     7     1 0.000000e+00 1.255200e+00 3.000000e+00 
+    2     1     5     6     1 0.000000e+00 4.184000e-01 6.000000e+00 
+    3     1     5     6     1 0.000000e+00 4.184000e-01 6.000000e+00 
+    4     1     5     6     1 0.000000e+00 4.184000e-01 6.000000e+00 
+
+[ exclusions ]
+;    i    excluded from i
+     1    2    3    4    5    6
+     2    1    3    4    5
+     3    1    2    4    5
+     4    1    2    3    5
+     5    1    2    3    4    6    7
+     6    1    5    7
+     7    5    6
+

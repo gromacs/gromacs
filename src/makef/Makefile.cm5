@@ -1,0 +1,29 @@
+#
+#	@(#) Makefile.cm5 1.8 7/17/96
+#
+#
+#	GROMACS - Groningen Machine for Chemical Simulation
+#	Copyright (c) 1990, 1991, 1992, Groningen University
+#
+#	Makefile for gromacs on sparc processor
+#
+# compiler, linker & archiver
+#
+SYS_CM5		= -DPARALLEL -D_sparc_ -DPROFILING -DUSE_CM5
+SYS_GCC		= $(SYS_CM5) 
+SYS_CS		= $(SYS_CM5)
+SYSDEFS		= $(SYS_CS)
+GROMLIB		:= force io main sys util grompp
+GCFLAGS		= '-Wall -DSEEK_CUR=1 -DSEEK_SET=0 -D_sun_ -D_gcc_'
+GCC		= /usr/local/bin/gcc
+CC		= cs
+CFLAGS		= -node -g -cc $(GCC) -Zcc $(GCFLAGS) -vu -v -c
+LDFLAGS		= -L$(LIBDIR) -g -v -vu -node
+LD		= cs $(LDFLAGS)
+SYSLIBS		= -lm  -lgnu
+XLIBS		= $(SYSLIBS) -lX11
+AR		= ar q
+RANLIB		= ranlib
+X11INC		= -I/usr/local/include
+
+
