@@ -44,8 +44,7 @@ static char *SRCID_g_rmsdist_c = "$Id$";
 #include "futil.h"
 #include "matio.h"
 
-static void calc_dist(int nind,atom_id index[],
-		      rvec x[],matrix box,real **d)
+static void calc_dist(int nind,atom_id index[],rvec x[],real **d)
 {
   int     i,j;
   real    *xi;
@@ -61,7 +60,7 @@ static void calc_dist(int nind,atom_id index[],
 }
 
 static void calc_dist_tot(int nind,atom_id index[], rvec x[],
-			  matrix box,real **d, real **dtot, real **dtot2,
+			  real **d, real **dtot, real **dtot2,
 			  bool bNMR, real **dtot1_3, real **dtot1_6)
 {
   int     i,j;
@@ -258,7 +257,7 @@ int main (int argc,char *argv[])
 
   /*set box type*/
   init_pbc(box,FALSE);
-  calc_dist(isize,index,x,box,d_r);
+  calc_dist(isize,index,x,d_r);
   sfree(x);
 
   /*open output files*/
@@ -269,8 +268,7 @@ int main (int argc,char *argv[])
   natom=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   
   do {
-    calc_dist_tot(isize,index,x,box,d,dtot,dtot2,
-		  (bNMR3 || bNMR6),dtot1_3,dtot1_6);
+    calc_dist_tot(isize,index,x,d,dtot,dtot2,(bNMR3 || bNMR6),dtot1_3,dtot1_6);
     
     rmsnow=rms_diff(isize,d,d_r);
     fprintf(fp,"%g  %g\n",t,rmsnow);
@@ -284,16 +282,18 @@ int main (int argc,char *argv[])
   calc_rms(isize,teller,dtot,dtot2,mean,&meanmax,rms,&rmsmax,rmsc,&rmscmax);
   fprintf(stderr,"rmsmax = %g, rmscmax = %g\n",rmsmax,rmscmax);
   
-  if (scalemax > -1.0) {
-    rmsmax=scalemax;
-    rmscmax=scalemax;
-    meanmax=scalemax;
-  }
-  
   if (bNMR3 || bNMR6) {
     max1_3=0;
     max1_6=0;
     calc_nmr(isize,teller,dtot1_3,dtot1_6,&max1_3,&max1_6);
+  }
+  
+  if (scalemax > -1.0) {
+    rmsmax=scalemax;
+    rmscmax=scalemax;
+    meanmax=scalemax;
+    max1_3=scalemax;
+    max1_6=scalemax;
   }
   
   rlo.r=1.0, rlo.g=1.0, rlo.b=1.0;
@@ -301,26 +301,26 @@ int main (int argc,char *argv[])
 
   if ( bRMS )
     write_xpm(opt2FILE("-rms",NFILE,fnm,"w"),
-	      "RMS of distance","RMS (nm)","Residue Index","Residue Index",
+	      "RMS of distance","RMS (nm)","Atom Index","Atom Index",
 	      isize,isize,resnr,resnr,rms,0.0,rmsmax,rlo,rhi,&nlevels);
   
   if ( bScale )
     write_xpm(opt2FILE("-scl",NFILE,fnm,"w"),
-	      "Relative RMS","RMS","Residue Index","Residue Index",
+	      "Relative RMS","RMS","Atom Index","Atom Index",
 	      isize,isize,resnr,resnr,rmsc,0.0,rmscmax,rlo,rhi,&nlevels);
   
   if ( bMean )
     write_xpm(opt2FILE("-mean",NFILE,fnm,"w"),
-	      "Mean Distance","Distance (nm)","Residue Index","Residue Index",
+	      "Mean Distance","Distance (nm)","Atom Index","Atom Index",
 	      isize,isize,resnr,resnr,mean,0.0,meanmax,rlo,rhi,&nlevels);
   
   if (bNMR3)
       write_xpm(opt2FILE("-nmr3",NFILE,fnm,"w"),"1/r^3 averaged distances",
-		"Distance (nm)","Residue Index","Residue Index",
+		"Distance (nm)","Atom Index","Atom Index",
 		isize,isize,resnr,resnr,dtot1_3,0.0,max1_3,rlo,rhi,&nlevels);
   if (bNMR6)
       write_xpm(opt2FILE("-nmr6",NFILE,fnm,"w"),"1/r^6 averaged distances",
-		"Distance (nm)","Residue Index","Residue Index",
+		"Distance (nm)","Atom Index","Atom Index",
 		isize,isize,resnr,resnr,dtot1_6,0.0,max1_6,rlo,rhi,&nlevels);
   
   xvgr_file(ftp2fn(efXVG,NFILE,fnm),NULL);
