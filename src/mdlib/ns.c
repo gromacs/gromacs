@@ -508,7 +508,7 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
       if (fr->efep != efepNO)
 	new_i_nblist(free,F_DVDL,i_atom,shift,gid);
       
-      if (!bCoulOnly || qi!=0) {
+      if (!(bVDWOnly || qi==0) || !(bCoulOnly || !bHaveLJ[type[i_atom]])) {
 	/* Loop over the j charge groups */
 	for(j=0; (j<nj); j++) {
 	  jcg=jjcg[j];
