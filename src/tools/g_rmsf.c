@@ -193,7 +193,7 @@ int main (int argc,char *argv[])
   char         *devfn,*dirfn;
   int          resnr;
 
-  bool         bReadPDB,bTop;  
+  bool         bReadPDB;  
   atom_id      *index;
   int          isize;
   char         *grpnames;
@@ -229,10 +229,7 @@ int main (int argc,char *argv[])
   devfn    = opt2fn_null("-od",NFILE,fnm);
   dirfn    = opt2fn_null("-dir",NFILE,fnm);
 
-  bTop     = read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xref,
-			   NULL,box,TRUE);
-  if (!bTop)
-    fprintf(stderr,"Warning: not a topology file, can not remove periodicity\n");
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xref,NULL,box,TRUE);
   snew(w_rls,top.atoms.nr);
 
   /* Set box type*/
@@ -278,9 +275,8 @@ int main (int argc,char *argv[])
   /* Now read the trj again to compute fluctuations */
   teller = 0;
   do {
-    if (bTop)
-      /* Remove periodic boundary */
-      rm_pbc(&(top.idef),natom,box,x,x);
+    /* Remove periodic boundary */
+    rm_pbc(&(top.idef),natom,box,x,x);
     
     /* Set center of mass to zero */
     sub_xcm(x,isize,index,top.atoms.atom,xcm,FALSE);
@@ -409,10 +405,12 @@ int main (int argc,char *argv[])
     write_sto_conf(opt2fn("-oq",NFILE,fnm),title,pdbatoms,pdbx,NULL,pdbbox);
   }
   if (opt2bSet("-ox",NFILE,fnm)) {
-    /* Write a pdb file with B-factors and optionally anisou records */
+    /* Misuse xref as a temporary array */
     for(i=0; i<isize; i++)
-      rvec_inc(xav[index[i]],xcm);
-    write_sto_conf(opt2fn("-ox",NFILE,fnm),title,pdbatoms,xav,NULL,pdbbox);
+      rvec_add(xav[i],xcm,xref[index[i]]);
+    /* Write a pdb file with B-factors and optionally anisou records */
+    write_sto_conf_indexed(opt2fn("-ox",NFILE,fnm),title,pdbatoms,xref,NULL,
+			   pdbbox,isize,index);
   }
   if (bAniso) { 
     correlate_aniso(opt2fn("-oc",NFILE,fnm),refatoms,pdbatoms);
