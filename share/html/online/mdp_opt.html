@@ -38,9 +38,9 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#el"><b>electrostatics and VdW</b></A> (coulombtype, rcoulomb_switch, rcoulomb, vdwtype, rvdw_switch, rvdw, epsilon_r, DispCorr, fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, ewald_geometry, surface_epsilon, optimize_fft)
 <li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, tc_grps, tau_t, ref_t)
 <li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, pcoupltype, tau_p, compressibility, ref_p)
-<li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, zero_temp_time)
+<li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, annealing_npoints, annealing_time, annealing_temp)
 <li><A HREF="#vel"><b>velocity generation</b></A> (gen_vel, gen_temp, gen_seed)
-<li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_warnangle, morse)
+<li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_iter, lincs_warnangle, morse)
 <li><A HREF="#egexcl"><b>Energy group exclusions</b></A> (energygrp_excl)
 <li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre_weighting, disre_mixed, disre_fc, disre_tau, nstdisreout, orire, orire_fc, orire_tau, orire_fitgrp, nstorireout)
 <li><A HREF="#free"><b>Free Energy Perturbation</b></A> (free_energy, init_lambda, delta_lambda, sc_alpha, sc_sigma)
@@ -630,28 +630,46 @@ For water at 1 atm and 300 K the compressibility is 4.5e-5 [bar<sup>-1</sup>].</
 <hr>
 <h3><!--Idx-->Simulated annealing<!--EIdx--></h3>
 
+Simulated annealing is controlled separately for each temperature group in Gromacs. The reference temperature is a piecewise linear function, but you can use an arbitrary number of points for each group, and choose either a single sequence or a periodic behaviour for each group. The actual annealing is performed by dynamically changing the reference temperature used in the thermostat algorithm selected, so remember that the system will usually not instantaneously reach the reference temperature!
+
 <dl>
 <dt><h4>annealing:</h4></dt>
+<dd>Type of annealing for each temperature group</dd>
 <dd><dl compact>
 <dt><b>no</b></dt>
-<dd>No simulated annealing. </dd>
-<dt><b>yes</b></dt>
-<dd>Simulated annealing to 0 [K] at time <b>zero_temp_time</b> (ps).
-Reference temperature for the Berendsen-thermostat is
-<b><A HREF="#tc">ref_t</A></b> x (1 - time / <b>zero_temp_time</b>),
-time constant is <b>tau_t</b> [ps]. Note that the reference temperature
-will not go below 0 [K], i.e. after <b>zero_temp_time</b> (if it is positive) 
-the reference temperature will be 0 [K]. Negative <b>zero_temp_time</b> 
-results in heating, which will go on indefinitely.</dd>
+<dd>No simulated annealing - just couple to reference temperature value.</dd>
+<dt><b>single</b></dt>
+<dd>A single sequence of annealing points. If your simulation is longer than the time of the last point, the temperature will be coupled to this constant value after the annealing sequence has reached the last time point.</dd>
+<dt><b>periodic</b></dt>
+<dd>The annealing will start over at the first reference point once the last reference time is reached. This is repeated until the simulation ends. 
+</dd>
 </dl></dd>
-<dt><h4>zero_temp_time: (0) [ps]</h4></dt>
-<dd>time at which temperature will be zero (can be negative). Temperature
-during the run can be seen as a straight line going through 
-T=<b><A HREF="#tc">ref_t</A></b> [K] at t=0 [ps], and 
-T=0 [K] at t=<b>zero_temp_time</b> [ps]. Look in our 
-<A HREF="../gmxfaq.html#simann">FAQ</A> for a schematic 
-graph of temperature versus time.</dd>
+
+<dt><h4>annealing_npoints:</h4></dt>
+<dd>A list with the number of annealing reference/control points used for 
+each temperature group. Use 0 for groups that are not annealed. The number of entries should equal the number of temperature groups.
+</dd>
 </dl>
+<dt><h4>annealing_time:</h4></dt>
+<dd>List of times at the annealing reference/control points for each group. If you are using periodic annealing, the times will be used modulo the last value, i.e. if the values are 0, 5, 10, and 15, the coupling will restart at the 0ps value after 15ps, 30ps, 45ps, etc. The number of entries should equal the sum of the numbers given in annealing_npoints.
+</dd>
+</dl>
+<dt><h4>annealing_temp:</h4></dt>
+<dd>List of temperatures at the annealing reference/control points for each group. The number of entries should equal the sum of the numbers given in annealing_npoints.
+</dd>
+</dl>
+<br>
+Confused? OK, let's use an example. Assume you have two temperature groups, and give the following values:
+<br><br>
+<tt>
+annealing                = single periodic<br>
+annealing_npoints        = 3 4<br>
+annealing_time           = 0 3 6 0 2 4 6<br>
+annealing_temp           = 298 280 270 298 320 320 298<br>
+</tt>
+<br>
+The first group will be coupled to 298K at 0ps, but the reference temperature will drop linearly to reach 280K at 3ps, and then linearly between 280K and 270K from 3ps to 6ps. After this is stays constant, at 270K. The second group is coupled to 298K at 0ps, it increases linearly to 320K at 2ps, where it stays constant until 4ps. Between 4ps and 6ps it decreases to 298K, and then it starts over with the same pattern again, i.e. rising linearly from 298K to 320K between 6ps and 8ps. Check the summary printed by grompp if you are unsure!
+</tt>
 
 <A NAME="vel"><br>
 <hr>
@@ -704,8 +722,11 @@ by adding bond-constraints.</dd>
 <dd>LINear Constraint Solver. The accuracy in set with
 <b>lincs_order</b>, which sets the number of matrices in the expansion
 for the matrix inversion, 4 is enough for a "normal" MD simulation, 8 is
-needed for BD with large time-steps. The accuracy of the constraints is
-printed to the log file every <b>nstlog</b> steps.
+needed for BD with large time-steps. After the matrix inversion correction
+the algorithm does an iterative correction to compensate for lengthening
+due to rotation. The number of such iterations can be controlled with
+<b>lincs_iter</b>. The accuracy of the 
+constraints is printed to the log file every <b>nstlog</b> steps.
 If a bond rotates more than <b>lincs_warnangle</b> [degrees] in one step, 
 a warning will be printed both to the log file and to <TT>stderr</TT>. 
 Lincs should not be used with coupled angle constraints.</dd>
@@ -727,9 +748,13 @@ for "normal" MD. </dd>
 <dt><h4>shake_tol: (0.0001)</h4></dt>
 <dd>relative tolerance for shake</dd>
 <dt><h4>lincs_order: (4)</h4></dt>
-<dd>Highest order in the expansion of the constraint coupling matrix.
-<b>lincs_order</b> is also used for the number of Lincs iterations
-during energy minimization, only one iteration is used in MD.</dd>
+<dd>Highest order in the expansion of the constraint coupling matrix.</dd>
+<dt><h4>lincs_iter: (1)</h4></dt>
+<dd>Number of iterations to correct for rotational lengthening in Lincs.
+For normal runs a single step is sufficient, but for NVE
+runs where you want to conserve energy accurately you might want to increase
+it to 2, and for energy minimization with constraints it is sometimes necessary
+to use 4 or even 8 (double precision) iteration steps.
 <dt><h4>lincs_warnangle: </b>(30) [degrees]</h4></dt>
 <dd>maximum angle that a bond can rotate before Lincs will complain</dd>
 
@@ -935,6 +960,9 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#neq">acc_grps</A><br>
 <A HREF="#neq">accelerate</A><br>
 <A HREF="#sa">annealing</A><br>
+<A HREF="#sa">annealing_npoints</A><br>
+<A HREF="#sa">annealing_time</A><br>
+<A HREF="#sa">annealing_temp</A><br>
 <A HREF="#ld">bd_fric</A><br>
 <A HREF="#ld">bd_temp</A><br>
 <A HREF="#vdw">bDispCorr</A><br>
@@ -984,6 +1012,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#run">integrator</A><br>
 <A HREF="#ld">ld_seed</A><br>
 <A HREF="#bond2">lincs_order</A><br>
+<A HREF="#bond2">lincs_iter</A><br>
 <A HREF="#bond2">lincs_warnangle</A><br>
 <A HREF="#bond2">morse</A><br>
 <A HREF="#em">nbfgscorr</A><br>

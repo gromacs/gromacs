@@ -72,7 +72,6 @@ missing atoms. What should I do?</A>
 <li><A HREF="#libnet">What does "Fatal error: Routine gmx_tx called in libnet.c" mean?</A>
 <li><A HREF="#output">My simulation seems to be running, but shouldn't there be any output?</A>
 <li><A HREF="#temp">Why do I get very strange temperatures in my simulation?</A>
-<li><A HREF="#simann">Why do I get very strange temperatures in simulated annealing?</A>
 <li><A HREF="#recover">Is there any smart way to continue a run that crashed?</A>
 <li><A HREF="#largefiles">When my trajectory files reach 2GB I get strange error messages,
 or they just disappear. Why?</A>
@@ -491,8 +490,7 @@ your system. If it happens at the
 beginning of the simulation, your system might be not equilibrated
 well enough (e.g. it contains some bad contacts). Try a(nother) round
 of energy minimization to fix this. Otherwise you might have a very
-high temperature (which might be caused by incorrect use of 
-<A HREF="#simann">simulated annealing</A>), and/or a too large
+high temperature, and/or a too large
 timestep. Experiment with these parameters till the error stops
 occurring. If this doesn't help, check your topology!<br><br>
 
@@ -539,46 +537,11 @@ while for <TT>mdrun</TT> to realize it can't write.
 
 <li><A NAME="temp">
 <b>Why do I get very strange temperatures in my simulation?</b><br><br>
-If you are using simulated annealing 
-(see <A HREF=/documentation/reference_3.1/online/mdp_opt.html#sa><TT>.mdp</TT> options</A>), 
-check out <A HREF="#simann">the next item</A>. 
-If you are not using simulated annealing, you might have very close contacts or a too large time
+You probably have very close contacts or a too large time
 step. This causes inaccurate integration which will usually result in
 a large positive temperature drift. Try some more energy minimization
 to get rid of the close contacts, or if that still doesn't help, try a
 short equilibration run with a small(er) time step.  <br><br>
-
-<li><A NAME="simann">
-<b>Why do I get very strange temperatures in simulated annealing?</b><br><br>
-This probably means that the initial time in your simulation is
-not zero ps. The temperature during simulated annealing is controlled
-by two points on a linear curve: temperature will be zero K at
-<A HREF=/documentation/reference_3.1/online/mdp_opt.html#sa><TT>zero_temp_time</TT></A> ps and it
-will be <A HREF=/documentation/reference_3.1/online/mdp_opt.html#sa><TT>ref_t</TT></A> K at zero
-ps. This means that if you do not start your simulation at zero ps,
-the simulation will not start at <TT>ref_t</TT> K. So if your
-<TT>zero_temp_time</TT> is positive and the starting time for your
-simulation is larger than that, the temperature in your simulation
-will be zero. If your <TT>zero_temp_time</TT> is negative, temperature
-will rise indefenitely with increasing time. Below two schematic
-graphs are included to clarify things a bit.<br><br>
-
-<TABLE>
-<TH ALIGN=CENTER COLSPAN=3>System temperature v.s. Time in simulated annealing:
-<TR>
-<TH ALIGN=CENTER><TT>zero_temp_time < 0</TT> :
-<TD>
-<TH ALIGN=CENTER><TT>zero_temp_time > 0</TT> :
-<TR>
-<TH ALIGN=CENTER>Heating to inf.
-<TD>
-<TH ALIGN=CENTER>Cooling to zero
-<TR>
-<TD ALIGN=CENTER><IMG SRC="images/annealup.gif">
-<TD>&nbsp;&nbsp;&nbsp;
-<TD ALIGN=CENTER><IMG SRC="images/annealdn.gif">
-</TABLE>
-<P>
 
 <li><A NAME="recover">
 <b>Is there any smart way to continue a run that crashed?</b><br><br>
