@@ -328,6 +328,7 @@ static bool xyz_next_x(FILE *status, real *t, int natoms, rvec x[], matrix box)
       return FALSE;
     PRINTSKIP(*t)
     *t+=DT;
+    pt=*t;
   }
   if (((tend >= 0) && (*t < tend)) || (tend < 0.0)) {
     if (!do_read_xyz(status,natoms,x,box)) {
