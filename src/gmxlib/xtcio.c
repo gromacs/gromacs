@@ -71,7 +71,7 @@ int xtc_check(char *str,bool bResult,char *file,int line)
 void xtc_check_fat_err(char *str,bool bResult,char *file,int line)
 {
   if (!bResult) {
-    fatal_error(0,"XTC error: read/write of %s failed, "
+    fatal_error(0,"XTC read/write of %s failed, "
 		"source file %s, line %d\n",str,file,line);
   }
 }

@@ -54,7 +54,8 @@ static int count_hydrogens (char ***atomname, int nra, atom_id a[])
   int  i,nh;
   
   if (!atomname) 
-    fatal_error(0,"Error in any_hydrogen");
+    fatal_error(0,"Cannot call count_hydrogens with no atomname (%s %d)",
+		__FILE__,__LINE__);
     
   nh=0;
   for (i=0; (i<nra); i++) 

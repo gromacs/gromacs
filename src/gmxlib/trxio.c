@@ -708,7 +708,7 @@ bool read_next_x(int status,real *t, int natoms, rvec x[], matrix box)
       return FALSE;
     }
   default:
-    fatal_error(0,"\nDEATH HORROR ERROR in read_next_x ftp=%s,status=%d",
+    fatal_error(0,"DEATH HORROR in read_next_x ftp=%s,status=%d",
 		ftp2ext(fio_getftp(status)),status);
   }
   return FALSE;
@@ -854,7 +854,7 @@ bool read_next_x_v(int status,real *t, int natoms,
       return FALSE;
     }
   default:
-    fatal_error(0,"\nDEATH HORROR ERROR in read_next_x_v ftp=%s,status=%d",
+    fatal_error(0,"DEATH HORROR in read_next_x_v ftp=%s,status=%d",
 		ftp2ext(fio_getftp(status)),status);
   }
   return FALSE;
@@ -903,7 +903,7 @@ bool read_next_x_or_v(int status,real *t, int natoms,
       return FALSE;
     }
   default:
-    fatal_error(0,"\nDEATH HORROR ERROR in read_next_x_or_v ftp=%s,status=%d",
+    fatal_error(0,"DEATH HORROR in read_next_x_or_v ftp=%s,status=%d",
 		ftp2ext(fio_getftp(status)),status);
   }
   return FALSE;

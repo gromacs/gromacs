@@ -268,8 +268,8 @@ int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
 	    hack_atoms(ctdb,nTH[i]-1,j0,ab[i]->nh,newpdba);
 	    break;
 	  default:
-	    fatal_error(0,"Death horror error in genhydro (nTH=%d, HT=%d)\n",
-			nTH[i],HT[i]);
+	    fatal_error(0,"Death horror in %s %d (nTH=%d, HT=%d)\n",
+			__FILE__,__LINE__,nTH[i],HT[i]);
 	    break;
 	  }
 	  /* check if atoms should be added to added atoms */

@@ -78,7 +78,7 @@ void read_ab(FILE *in,char *fn,t_add_block *ab)
   char buf[80];
 
   if (fscanf(in,"%d%d",&nh,&tp) != 2)
-    fatal_error(0,"error in input file %s\n",fn);
+    fatal_error(0,"wrong format in input file %s\n",fn);
   ab->nh=nh;
   ab->tp=tp;
   ncntl=ncontrol[tp];

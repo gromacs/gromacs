@@ -175,7 +175,8 @@ char *ftp2ftype(int ftp)
     case eftBIN: return "Binary";
     case eftXDR: return "XDR portable";
     case eftGEN: return "";
-    default: fatal_error(0,"Some error");
+    default: fatal_error(0,"DEATH HORROR: Unknown filetype in ftp2ftype (%d)",
+			 deffile[ftp].ftype);
       break;
     }
   }
