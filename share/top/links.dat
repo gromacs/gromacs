@@ -3,11 +3,9 @@ dlg
 do_dssp
 editconf
 edr
-edr2ene
 ene
-ene2edr
+eneconv
 eps
-fix_ene
 g87
 g_angle
 g_bond
@@ -73,12 +71,14 @@ pdb2gmx
 protonate
 rtp
 sas2mat
+stx
 tex
 top
 tpb
 tpbconv
 trj
 trjconv
+trx
 waterins
 wheel
 xpm
