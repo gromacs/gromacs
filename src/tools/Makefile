@@ -31,7 +31,7 @@ PROGRAMS	= g_rdf		g_msd		\
 		  g_velacc	g_rotacf	g_enemat	\
 		  g_nmeig	g_chi		g_dielectric	\
 		  g_helix	waterins	wheel	        \
-                  g_confrms     xpm2ps          p_aroma         \
+                  g_confrms     xpm2ps
 
 ACOBJ	=	autocorr.o	expfit.o	polynomials.o	\
 		levenmar.o
@@ -365,9 +365,5 @@ g_sas:		g_sas.o	nsc.o
 
 html_luck:	html_luck.o
 		$(LD) -Bstatic -o $@ $^ $(SYSLIBS)
-
-# new programs for Porins 
-p_aroma:	p_aroma.o
-		$(LD) -o  $@ $^ $(SYSLIBS)
 
 include	Make.dep
