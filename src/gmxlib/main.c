@@ -40,6 +40,7 @@ static char *SRCID_main_c = "$Id$";
 #include "macros.h"
 #include "futil.h"
 
+#define DEBUG  
 #define BUFSIZE	1024
 
 FILE *stdlog=NULL;
@@ -96,34 +97,34 @@ static int get_pid(FILE *log,int left,int right,int *pid,int *nprocs)
 #ifdef DEBUG
     fprintf(log,"Received: %d\n",receive_pid);
 #endif
-    if (send_pid<min_pid)
-      {
-	min_pid=send_pid;
-	min_index=*nprocs;
-      }
+    if (send_pid<min_pid) {
+      min_pid=send_pid;
+      min_index=*nprocs;
+    }
     pids[(*nprocs)++]=send_pid;
     send_pid=receive_pid;
   } while (receive_pid!=*pid);
-
+  
 #ifdef DEBUG  
   fprintf(log,"min_index=%d\n",min_index);
   fprintf(log,"nprocs   =%d\n",*nprocs);
   fprintf(log,"pid      =%d\n",*pid);
 #endif
 
-  for (i=min_index; (*pid)!=pids[i%(*nprocs)]; i++);
+  for (i=min_index; (*pid)!=pids[i%(*nprocs)]; i++)
+    ;
   (*pid)=(i-min_index+(*nprocs))%(*nprocs);
 #ifdef DEBUG
   fprintf(log,"min_index=%d\n",min_index);
   fprintf(log,"nprocs   =%d\n",*nprocs);
   fprintf(log,"pid      =%d\n",*pid);
-  for (i=0; i<(*nprocs); i++)
-    {
-      fprintf(log,"%d translated %d --> %d",
-                     i,pids[i],(i-min_index+(*nprocs))%(*nprocs));
-      if (pids[i]==(*pid)) fprintf(log," *");
-      fprintf(log,"\n");
-    }
+  for (i=0; i<(*nprocs); i++) {
+    fprintf(log,"%d translated %d --> %d",
+	    i,pids[i],(i-min_index+(*nprocs))%(*nprocs));
+    if (pids[i]==(*pid)) 
+      fprintf(log," *");
+    fprintf(log,"\n");
+  }
 #endif
   return 1;
 }
@@ -174,7 +175,7 @@ void open_log(char *lognm,t_commrec *cr)
   fflush(stdlog);
 }
 
-t_commrec *init_par(char *argv[])
+t_commrec *init_par(int *argc,char *argv[])
 {
   t_commrec *cr;
   int       i;
@@ -192,7 +193,7 @@ t_commrec *init_par(char *argv[])
   }
 
 #ifdef USE_MPI
-  cr->pid=mpiio_setup(argv,&cr->nprocs);
+  cr->pid=mpiio_setup(argc,argv,&cr->nprocs);
 #else
   cr->pid=0;
   if (cr->nprocs > 1) {
@@ -215,7 +216,6 @@ t_commrec *init_par(char *argv[])
   
   if (PAR(cr)) {
     gmx_left_right(cr->nprocs,cr->pid,&cr->left,&cr->right);
-    
 #ifdef DEBUG
     fprintf(stderr,"Going to initialise network\n");
 #endif
