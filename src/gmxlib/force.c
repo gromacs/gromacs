@@ -375,6 +375,8 @@ void init_forcerec(FILE *log,
   if ((fr->eeltype==eelTWIN) || fr->bBHAM) {
     fr->bLJshift    = FALSE;
     fr->rvdw_switch = fr->rvdw;
+    if (fr->bBHAM && (fr->rvdw > fr->rshort))
+      fatal_error(0,"Sorry, long-range Buckingham is not implemented");
   } else if (fr->eeltype==eelSWITCH) {
     fr->bLJshift    = FALSE;
     fr->rvdw_switch = ir->rvdw_switch;

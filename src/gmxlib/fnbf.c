@@ -258,8 +258,8 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
 
 void fdo_flr(FILE *log,int nri,atom_id i_atoms[],int shift,
 	     int njcg,atom_id jcg[],atom_id index[],atom_id acg[],
-	     rvec x[],real egcoul[],t_mdatoms *md,int ngener,
-	     t_forcerec *fr)
+	     rvec x[],real egcoul[],real eglj[],t_mdatoms *md,int ngener,
+	     t_forcerec *fr, bool bOnlyCoulomb)
 {
 #define LR_INC 1024
   static   t_nl_j   **nlj=NULL;
@@ -268,11 +268,11 @@ void fdo_flr(FILE *log,int nri,atom_id i_atoms[],int shift,
   int      i,j,k,k0,k1,m;
   rvec     f_ip,r_i,fw[3],xw[3];
   real     qi,eps;
-  int      igid,jgid,gid,usegid,iaa;
+  int      igid,jgid,gid,usegid;
   rvec     *fshift,*flr,*sv;
   ushort   *cENER;
   int      *type;
-  real     Vc,tx,ty,tz;
+  real     Vc,Vlj,tx,ty,tz;
   real     *charge;
   
   /* Copy some pointers... */
@@ -322,6 +322,7 @@ void fdo_flr(FILE *log,int nri,atom_id i_atoms[],int shift,
 
   for (gid=0; (gid<fr->nn); gid++) {
     Vc     = 0;
+    Vlj    = 0;
     usegid = gid;
     
     if ((type[ip] == fr->nWater) && (nri == 3)) {
@@ -329,13 +330,21 @@ void fdo_flr(FILE *log,int nri,atom_id i_atoms[],int shift,
       for(m=0; (m<3); m++)
 	rvec_add(x[i_atoms[m]],sv[shift],xw[m]);
       
+      if (bOnlyCoulomb)
 #ifdef USEF77
-      iaa=i_atoms[0];
-      f77wcoul(&(iaa),xw[0],&eps,x[0],&nj[gid],nlj[gid],
-	       charge,flr[0],fw[0],&Vc);
+	f77wcoul((int *)i_atoms,xw[0],&eps,x[0],&nj[gid],nlj[gid],
+		 charge,flr[0],fw[0],&Vc);
 #else
-      c_wcoul(i_atoms[0],xw[0],eps,x[0],nj[gid],nlj[gid],
-	      charge,flr[0],fw[0],&Vc);
+        c_wcoul(i_atoms,xw[0],eps,x[0],nj[gid],nlj[gid],
+		charge,flr[0],fw[0],&Vc);
+#endif
+      else
+#ifdef USEF77
+	f77water((int *)i_atoms,xw[0],&eps,x[0],&nj[gid],type,nlj[gid],
+		 charge,fr->nbfp[i_atoms[0]],flr[0],fw[0],&Vc,&Vlj);
+#else
+        c_water(i_atoms,xw[0],eps,x[0],nj[gid],type,nlj[gid],
+		chargeA,fr->nbfp[i_atoms[0]],flr[0],fw[0],&Vc,&Vlj);
 #endif
       
       /* Update force for ip particle and corresponding shift */
@@ -373,14 +382,26 @@ void fdo_flr(FILE *log,int nri,atom_id i_atoms[],int shift,
 	}
 	/* Reset force vector for particle ip */
 	clear_rvec(f_ip);
+
+	if (bOnlyCoulomb)
 #ifdef USEF77
-	f77coul(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
-		x[0],&nj[gid],nlj[gid],
-		charge,flr[0],f_ip,&Vc);
+	  f77coul(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
+		  x[0],&nj[gid],nlj[gid],
+		  charge,flr[0],f_ip,&Vc);
 #else
-	c_coul(r_i[XX],r_i[YY],r_i[ZZ],qi,
-	       x[0],nj[gid],nlj[gid],
-	       charge,flr[0],f_ip,&Vc);
+	  c_coul(r_i[XX],r_i[YY],r_i[ZZ],qi,
+		 x[0],nj[gid],nlj[gid],
+		 charge,flr[0],f_ip,&Vc);
+#endif
+	else
+#ifdef USEF77
+	  f77ljc(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
+		 x[0],&nj[gid],type,nlj[gid],
+		 charge,fr->nbfp[type[ip]],flr[0],f_ip,&Vc,&Vlj);
+#else
+	  c_ljc(r_i[XX],r_i[YY],r_i[ZZ],qi,
+		x[0],nj[gid],type,nlj[gid],
+		charge,fr->nbfp[type[ip]],flr[0],f_ip,&Vc,&Vlj);
 #endif
 	/* Update force for ip particle and corresponding shift */
 	for(m=0; (m<DIM); m++) {
@@ -391,6 +412,7 @@ void fdo_flr(FILE *log,int nri,atom_id i_atoms[],int shift,
       }
     }
     egcoul[usegid] += Vc;
+    eglj[usegid]   += Vlj;
   }
   for(j=0; (j<fr->nn); j++)
     fr->nlr+=nri*nj[j];

@@ -537,30 +537,33 @@ int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 	     t_grid *grid,rvec x[],t_excl bexcl[],
 	     t_nrnb *nrnb,t_mdatoms *md)
 {
-  static atom_id *nl_lr,*nl_sr=NULL;
+  static atom_id *nl_lr1, *nl_lr2, *nl_sr=NULL;
   t_block *cgs=&(top->blocks[ebCGS]);
   int  tx,ty,tz,cx,cy,cz,dx,dy,dz;
   int  cj;
   int  dx0,dx1,dy0,dy1,dz0,dz1;
   int  Nx,Ny,Nz,delta,shift;
   real r2;
-  int  nlr2,nsr2,nns;
+  int  nlr1,nlr2,nsr,nns;
   int  j,nrj;
   int  icg,iicg,total_cg,i0,nri,naaj,min_icg,icg_naaj,jjcg,cgj0;
   atom_id *i_atoms;
   int  *grida,*gridnra,*gridind;
   rvec xi,*cgcm,*svec;
-  real rs2,rl2,XI,YI,ZI;
+  real rs2,rvdw2,rl2,XI,YI,ZI;
   bool bCyl;
   
   total_cg=cgs->nr;
-  rs2=fr->rshort*fr->rshort;
-  rl2=fr->rlong*fr->rlong;
+  rs2   = fr->rshort*fr->rshort;
+  rvdw2 = fr->rvdw*fr->rvdw;
+  rl2   = fr->rlong*fr->rlong;
   
   if (nl_sr == NULL) {
     snew(nl_sr,MAX_CG);
-    if (rl2 > rs2)
-      snew(nl_lr,MAX_CG);
+    if (rvdw2 > rs2)
+      snew(nl_lr1,MAX_CG);
+    if (rl2 > rvdw2)
+      snew(nl_lr2,MAX_CG);
   }
   
   cgcm    = fr->cg_cm;
@@ -623,7 +626,9 @@ int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 #endif
 	  rvec_add(cgcm[icg],svec[shift],xi);
 	  XI=xi[XX],YI=xi[YY],ZI=xi[ZZ];
-	  nsr2=nlr2=0;
+	  nsr=0;
+	  nlr1=0;
+	  nlr2=0;
 #ifdef NS5DB
 	  fprintf(log,"shift: %2d, dx0,1: %2d,%2d, dy0,1: %2d,%2d, dz0,1: %2d,%2d\n",
 		  shift,dx0,dx1,dy0,dy1,dz0,dz1);
@@ -645,26 +650,35 @@ int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 		      ((jjcg < min_icg))) {
 		    r2=calc_dx2(XI,YI,ZI,cgcm[jjcg]);
 		    if (r2 < rs2) {
-		      if (nsr2 >= MAX_CG) {
+		      if (nsr >= MAX_CG) {
 			put_in_list(log,top->idef.iparams,
 				    top->idef.atnr,fr->nWater,
-				    ngener,md,icg,nsr2,nl_sr,
+				    ngener,md,icg,nsr,nl_sr,
 				    cgs->index,cgs->a,bexcl,
 				    shift,fr);
-			nsr2=0;
+			nsr=0;
 		      }
-		      nl_sr[nsr2++]=jjcg;
-		    }
-		    else if (r2 < rl2) {
+		      nl_sr[nsr++]=jjcg;
+		    } else if (r2 < rvdw2) {
+		      if (nlr1 >= MAX_CG) {
+			fdo_flr(log,nri,i_atoms,shift,
+				nlr1,nl_lr1,cgs->index,cgs->a,
+				x,grps->estat.ee[egLR],grps->estat.ee[egLJLR],
+				md,ngener,fr,FALSE);
+			inc_nrnb(nrnb,eNR_FSUM,nri);
+			nlr1=0;
+		      }
+		      nl_lr1[nlr1++]=jjcg;
+		    } else if (r2 < rl2) {
 		      if (nlr2 >= MAX_CG) {
 			fdo_flr(log,nri,i_atoms,shift,
-				nlr2,nl_lr,cgs->index,cgs->a,
-				x,grps->estat.ee[egLR],md,
-				ngener,fr);
+				nlr2,nl_lr2,cgs->index,cgs->a,
+				x,grps->estat.ee[egLR],grps->estat.ee[egLJLR],
+				md,ngener,fr,TRUE);
 			inc_nrnb(nrnb,eNR_FSUM,nri);
 			nlr2=0;
 		      }
-		      nl_lr[nlr2++]=jjcg;
+		      nl_lr2[nlr2++]=jjcg;
 		    }
 		    nns++;
 		  }
@@ -672,16 +686,24 @@ int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 	      }
 	    }
 	  }
-	  if (nsr2 > 0)
+	  if (nsr > 0)
 	    put_in_list(log,top->idef.iparams,
 			top->idef.atnr,fr->nWater,
-			ngener,md,icg,nsr2,nl_sr,
+			ngener,md,icg,nsr,nl_sr,
 			cgs->index,cgs->a,bexcl,
 			shift,fr);
+	  if (nlr1 > 0) {
+	    fdo_flr(log,nri,i_atoms,shift,
+		    nlr1,nl_lr1,cgs->index,cgs->a,
+		    x,grps->estat.ee[egLR],grps->estat.ee[egLJLR],
+		    md,ngener,fr,FALSE);
+	    inc_nrnb(nrnb,eNR_FSUM,nri);
+	  }
 	  if (nlr2 > 0) {
 	    fdo_flr(log,nri,i_atoms,shift,
-		    nlr2,nl_lr,cgs->index,cgs->a,
-		    x,grps->estat.ee[egLR],md,ngener,fr);
+		    nlr2,nl_lr2,cgs->index,cgs->a,
+		    x,grps->estat.ee[egLR],grps->estat.ee[egLJLR],
+		    md,ngener,fr,TRUE);
 	    inc_nrnb(nrnb,eNR_FSUM,nri);
 	  }
 	}

@@ -41,6 +41,7 @@ static char *SRCID_md_c = "$Id$";
 #include "mdrun.h"
 #include "confio.h"
 #include "network.h"
+#include "sim_util.h"
 
 time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,bool bDummies,int stepout,
@@ -234,8 +235,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       global_stat(log,cr,ener,force_vir,shake_vir,
 		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
       if (fr->bTwinRange && !bNS) 
-	for(i=0; (i<grps->estat.nn); i++)
-	  grps->estat.ee[egLR][i] /= cr->nprocs;
+	for(i=0; (i<grps->estat.nn); i++) {
+	  grps->estat.ee[egLR][i]   /= cr->nprocs;
+	  grps->estat.ee[egLJLR][i] /= cr->nprocs;
+	}
     }
     else
       cp_nrnb(&(nrnb[0]),&mynrnb);
@@ -276,8 +279,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
     
     /* Calculate long range corrections to pressure and energy */
-    calc_ljcorr(log,parm->ir.bLJcorr,
-		fr,mdatoms->nr,parm->box,parm->pres,parm->vir,ener);
+    calc_dispcorr(log,parm->ir.bDispCorr,
+		  fr,mdatoms->nr,parm->box,parm->pres,parm->vir,ener);
     
     if (MASTER(cr))
       upd_mdebin(mdebin,mdatoms->tmass,step,ener,parm->box,shake_vir,

@@ -255,9 +255,6 @@ extern void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
 			  t_groups *grps,t_forcerec *fr,t_topology *top,
 			  t_edsamyn *edyn);
 			  
-extern void calc_ljcorr(FILE *log,bool bLJcorr,t_forcerec *fr,int natoms,
-			matrix box,tensor pres,tensor virial,real ener[]);
-
 extern void get_cmparm(t_inputrec *ir,int step,bool *bStopCM,bool *bStopRot);
 /* Determine from the input whether or not to stop center of mass motion */
 

@@ -123,9 +123,9 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     warning(NULL);
     ir->epc = epcISOTROPIC;
   }
-  if ((ir->eBox == ebtNONE) && (ir->bLJcorr)) {
+  if ((ir->eBox == ebtNONE) && (ir->bDispCorr)) {
     warning("Can not have long-range dispersion correction without PBC, turned off.");
-    ir->bLJcorr = FALSE;
+    ir->bDispCorr = FALSE;
   }
   if ((ir->eeltype == eelPPPM) && (ir->epc != epcNO)) {
     fprintf(stderr,"ERROR: pressure coupling with PPPM not implemented\n");
@@ -139,6 +139,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   }
 
   if (ir->eeltype == eelTWIN) {
+    /* Single/Twin-Range, untabulated, unshifted potentials */
     if (ir->rvdw > ir->rcoulomb) {
       fprintf(stderr,"ERROR: With eel_type=Twin-Range rvdw (%g) "
 	      "can not be larger than rcoulomb (%g)\n",
@@ -157,13 +158,8 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	      ir->rlist, ir->rvdw);
       (*nerror)++;
     }
-    if (ir->rvdw > ir->rlist) {
-      fprintf(stderr,"ERROR: rvdw (%g) larger than rlist (%g), "
-	      "sorry, long range VdW is not implemented (yet).\n",
-	      ir->rvdw, ir->rlist);
-      (*nerror)++;
-    }
   } else {
+    /* Single-Range, possibly shifted potentials */
     bLR =  ((ir->eeltype==eelPPPM) || (ir->eeltype==eelPOISSON));
     if ((ir->rcoulomb_switch >= ir->rcoulomb) && ((ir->rcoulomb < ir->rlist) ||
 						  bLR)) {
@@ -193,12 +189,22 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     }
     if (ir->rcoulomb > ir->rlist-0.1) {
       sprintf(warn_buf,
-	      "To eliminate cut-off effects rlist (%g) should be 0.1 to 0.3 "
+	      "To prevent cut-off effects rlist (%g) should be 0.1 to 0.3 "
 	      "nm larger than rcoulomb (%g)",ir->rlist,ir->rcoulomb);
       warning(NULL);
     }
+    if ((ir->rvdw_switch < ir->rvdw) && (ir->rvdw == ir->rlist)) {
+      sprintf(warn_buf,
+	      "rvdw = rlist = %g, rvdw_switch = %g, will switch the VdW "
+	      "forces to zero exactly at the cut-off, to prevent cut-off "
+	      "effects rlist should be 0.1 to 0.3 nm larger than rvdw\n"
+	      "The shift and switch can be turned off by making rvdw_switch "
+	      "equal to rvdw\n",
+	      ir->rlist,ir->rvdw_switch);
+      warning(NULL);
+    }
   }
-
+  
   if ((ir->eeltype == eelRF) || (ir->eeltype == eelGRF)) {
     if (ir->epsilon_r == 1.0) {
       sprintf(warn_buf,"Using epsilon_r = 1.0 with %s does not make sense",
@@ -291,7 +297,7 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("Dielectric constant (DC) for twin-range or DC of reaction field");
   RTYPE ("epsilon_r",   ir->epsilon_r,  1.0);
   CTYPE ("Apply long range dispersion corrections for Energy and Pressure");
-  EETYPE("bLJcorr",     ir->bLJcorr,    yesno_names, nerror, TRUE);
+  EETYPE("bDispCorr",   ir->bDispCorr,  yesno_names, nerror, TRUE);
   CTYPE ("Some thingies for future use");
   ITYPE ("niter",       ir->niter,      100);
   RTYPE ("gauss_width", ir->gausswidth, 0.1);

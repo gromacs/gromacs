@@ -52,6 +52,7 @@ enum {
   F_LJ14,
   F_LR,
   F_LJLR,
+  F_DISPCORR,
   F_PDIHS, 
   F_POSRES,
   F_RBDIHS,

@@ -53,8 +53,8 @@ static char *boxs_nm[] = {
 static bool bShake,bPC;
 static int  f_nre=0;
 
-t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,
-		      t_idef *idef,bool bLR,bool bBHAM,bool b14,bool bFEP,
+t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
+		      bool bLR,bool bLJLR,bool bBHAM,bool b14,bool bFEP,
 		      bool bPcoupl)
 {
   char *ener_nm[F_NRE];
@@ -94,6 +94,8 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,
       bEner[i] = bBHAM;
     else if (i == F_LR)
       bEner[i] = bLR;
+    else if (i == F_LJLR)
+      bEner[i] = bLJLR;
     else if (i == F_LJ14)
       bEner[i] = b14;
     else if ((i == F_DVDL) || (i == F_DVDLKIN))
@@ -132,6 +134,8 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,
   md->imu   = get_ebin_space(md->ebin,asize(mu_nm),mu_nm);
   if (bLR) 
     bEInd[egLR]   = TRUE;
+  if (bLJLR)
+    bEInd[egLJLR] = TRUE;
   if (bBHAM) {
     bEInd[egLJ]   = FALSE;
     bEInd[egBHAM] = TRUE;
@@ -256,7 +260,7 @@ void upd_mdebin(t_mdebin *md,real tmass,int step,
     /* This is the density */
     bs[4] = (tmass*AMU)/(bs[3]*NANO*NANO*NANO*KILO);
     
-    /* This is pV (in kJ/mole) */  
+    /* This is pV (in kJ/mol) */  
     bs[5] = bs[3]*ener[F_PRES]/PRESFAC;
     add_ebin(md->ebin,md->ib,NBOXS,bs,step);
   }
@@ -326,7 +330,7 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,
 		t_mdebin *md,t_groups *grps,t_atoms *atoms)
 {
   static char **grpnms=NULL;
-  static char *kjm="(kJ/mole)";
+  static char *kjm="(kJ/mol)";
   t_drblock *drblock;
   char buf[246];
   int i,j,n,ni,nj;

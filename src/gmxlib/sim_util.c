@@ -138,7 +138,8 @@ static void reset_energies(t_grpopts *opts,t_groups *grp,
    * some special cases.
    */
   for(i=0; (i<egNR); i++)
-    if ((i != egLR) || (fr->bTwinRange && bNS) || (!fr->bTwinRange))
+    if (((i != egLR) && (i != egLJLR)) ||
+	(fr->bTwinRange && bNS) || (!fr->bTwinRange))
       for(j=0; (j<grp->estat.nn); j++)
 	grp->estat.ee[i][j]=0.0;
   
@@ -197,15 +198,12 @@ void do_force(FILE *log,t_commrec *cr,
   homenr = HOMENR(nsb);
   cg0    = (pid == 0) ? 0 : nsb->cgload[pid-1];
   cg1    = nsb->cgload[pid];
-  debug_gmx();
   
   update_forcerec(log,fr,parm->box);
-  debug_gmx();
   
   /* Compute shift vectors every step, because of pressure coupling! */
   if (parm->ir.epc != epcNO)
     calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
-  debug_gmx();
   
   if (bNS) {
     put_charge_groups_in_box(log,cg0,cg1,FALSE,
@@ -214,7 +212,6 @@ void do_force(FILE *log,t_commrec *cr,
     inc_nrnb(nrnb,eNR_RESETX,homenr);
     inc_nrnb(nrnb,eNR_CGCM,cg1-cg0);
 
-    debug_gmx();    
     if (PAR(cr))
       move_cgcm(log,cr,fr->cg_cm,nsb->cgload);
     /*#define DEBUG*/
@@ -223,12 +220,10 @@ void do_force(FILE *log,t_commrec *cr,
       pr_rvecs(debug,0,"cgcm",fr->cg_cm,nsb->cgtotal);
 #endif
   }
-  debug_gmx();
   
   /* Communicate coordinates if necessary */
   if (PAR(cr)) 
     move_x(log,cr->left,cr->right,x,nsb,nrnb);
-  debug_gmx();
   
   /* Reset energies */
   reset_energies(&(parm->ir.opts),grps,fr,bNS,ener);    
@@ -251,14 +246,12 @@ void do_force(FILE *log,t_commrec *cr,
   
   /* Reset forces or copy them from long range forces */
   reset_forces(bNS,f,fr,nsb->natoms);
-  debug_gmx();
   
   /* Compute the forces */    
   force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(parm->ir.opts),
 	x,f,ener,bVerbose,parm->box,lambda,graph,&(top->atoms.excl),
 	bNBFonly);
-  debug_gmx();
   
   /* Compute forces due to electric field */
   calc_f_el(START(nsb),HOMENR(nsb),mdatoms->chargeT,f,parm->ir.ex);
@@ -272,7 +265,6 @@ void do_force(FILE *log,t_commrec *cr,
   clear_mat(vir_part);
   calc_vir(log,SHIFTS,fr->shift_vec,fr->fshift,vir_part,cr);
   inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
-  debug_gmx();
 #ifdef DEBUG
   if (debug) {
     pr_rvecs(debug,0,"fr->fshift",fr->fshift,SHIFTS);
@@ -300,7 +292,6 @@ void do_force(FILE *log,t_commrec *cr,
     if (PAR(cr)) 
       move_f(log,cr->left,cr->right,f,buf,nsb,nrnb);
   }
-  debug_gmx(); 
 }
 
 #ifdef NO_CLOCK 
@@ -398,37 +389,37 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
   }
 }
 
-void calc_ljcorr(FILE *log,bool bLJcorr,t_forcerec *fr,int natoms,
-		 matrix box,tensor pres,tensor virial,real ener[])
+void calc_dispcorr(FILE *log,bool bDispCorr,t_forcerec *fr,int natoms,
+		   matrix box,tensor pres,tensor virial,real ener[])
 {
   static bool bFirst=TRUE;
   real vol,rc3,spres,svir;
   int  m;
   
-  if (bLJcorr) {
+  if (bDispCorr) {
     vol           = det(box);
     /* Forget the (small) effect of the shift on the LJ energy *
      * when fr->bLJShift = TRUE                                */  
-    rc3           = fr->rvdw*fr->rvdw*fr->rvdw;
-    ener[F_LJLR]  = -2.0*natoms*natoms*M_PI*fr->avcsix/(3.0*vol*rc3);
-    spres         = 2.0*ener[F_LJLR]*PRESFAC/vol;
-    svir          = -6.0*ener[F_LJLR];
-    ener[F_PRES]  = trace(pres)/3.0+spres;
+    rc3              = fr->rvdw*fr->rvdw*fr->rvdw;
+    ener[F_DISPCORR] = -2.0*natoms*natoms*M_PI*fr->avcsix/(3.0*vol*rc3);
+    spres            = 2.0*ener[F_DISPCORR]*PRESFAC/vol;
+    svir             = -6.0*ener[F_DISPCORR];
+    ener[F_PRES]     = trace(pres)/3.0+spres;
     for(m=0; (m<DIM); m++) {
       pres[m][m]    += spres;
       virial[m][m]  += svir;
     }
     if (bFirst) {
       fprintf(log,"Long Range LJ corrections: Epot=%10g, Pres=%10g, Vir=%10g\n",
-	      ener[F_LJLR],spres,svir);
+	      ener[F_DISPCORR],spres,svir);
       bFirst = FALSE;
     }
   }
   else {
-    ener[F_LJLR]  = 0.0;
-    ener[F_PRES]  = trace(pres)/3.0;
+    ener[F_DISPCORR] = 0.0;
+    ener[F_PRES]     = trace(pres)/3.0;
   }
-  ener[F_EPOT] += ener[F_LJLR];
-  ener[F_ETOT] += ener[F_LJLR];
+  ener[F_EPOT] += ener[F_DISPCORR];
+  ener[F_ETOT] += ener[F_DISPCORR];
 }
 

@@ -270,7 +270,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CIR(rcoulomb);
   CIR(rvdw_switch);
   CIR(rvdw);
-  CII(bLJcorr);
+  CII(bDispCorr);
   CIR(epsilon_r);
   CIR(shake_tol);
   CIR(fudgeLJ);

@@ -276,7 +276,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 	     t_mdebin **mdebin,t_groups *grps,rvec vcm,
 	     tensor force_vir,tensor shake_vir,t_mdatoms *mdatoms)
 {
-  bool bBHAM,b14,bLR;
+  bool bBHAM,b14,bLR,bLJLR;
   
   /* Initial values */
   *t = *t0       = ir->init_t;
@@ -299,6 +299,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   *bTYZ=getenv("TYZ") != NULL;
   bLR      = ((ir->eeltype==eelTWIN && ir->rcoulomb > ir->rlist) ||
 	      (ir->eeltype==eelPPPM) || (ir->eeltype==eelPOISSON)); 
+  bLJLR    = (ir->rvdw > ir->rlist);
   bBHAM    = (top->idef.functype[0]==F_BHAM);
   b14      = (top->idef.il[F_LJ14].nr > 0);
   
@@ -309,7 +310,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   if (MASTER(cr)) {
     *fp_ene = open_enx(ftp2fn(efENX,nfile,fnm),"w");
     *mdebin = init_mdebin(*fp_ene,grps,&(top->atoms),&(top->idef),
-			  bLR,bBHAM,b14,ir->bPert,ir->epc);
+			  bLR,bLJLR,bBHAM,b14,ir->bPert,ir->epc);
   }
   else {
     *fp_ene = -1;

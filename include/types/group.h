@@ -26,7 +26,7 @@
  * And Hey:
  * Grunge ROck MAChoS
  */
-enum { egCOUL, egLJ, egBHAM, egLR, egCOUL14, egLJ14, egNR };
+enum { egCOUL, egLJ, egBHAM, egLR, egLJLR, egCOUL14, egLJ14, egNR };
 	
 typedef struct {
   real    T;		/* Temperature	    */

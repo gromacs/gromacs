@@ -48,14 +48,6 @@ extern void print_time(FILE *out,time_t start,int step,t_inputrec *ir);
 
 extern time_t print_date_and_time(FILE *log,int pid,char *title);
 
-extern void do_force(FILE *log,t_commrec *cr,
-		     t_parm *parm,t_nsborder *nsb,tensor vir_part,
-		     int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
-		     rvec x[],rvec v[],rvec f[],rvec buf[],
-		     t_mdatoms *mdatoms,real ener[],bool bVerbose,
-		     t_graph *graph,
-		     bool bNS,bool bMolEpot,t_forcerec *fr);
-		     
 extern void finish_run(FILE *log,t_commrec *cr,
 		       char *confout,char *traj,
 		       char *xtc_traj,
@@ -70,6 +62,9 @@ extern void finish_run(FILE *log,t_commrec *cr,
 
 extern void nstop_cm(FILE *log,t_commrec *cr,
 		     int start,int nr_atoms,real mass[],rvec x[],rvec v[]);
+
+extern void calc_dispcorr(FILE *log,bool bDispCorr,t_forcerec *fr,int natoms,
+			  matrix box,tensor pres,tensor virial,real ener[]);
      
 #endif	/* _sim_util_h */
 

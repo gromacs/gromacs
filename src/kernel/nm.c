@@ -55,7 +55,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   int        fp_ene,step,nre;
   time_t     start_t;
   real       t,lambda,t0,lam0;
-  bool       bNS,bStopCM,bTYZ,bLR,bBHAM,b14;
+  bool       bNS,bStopCM,bTYZ,bLR,bLJLR,bBHAM,b14;
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
   char       *mtx,*enerfile,wfile[80];
@@ -101,11 +101,12 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     fp_ene=-1;
 
   bLR = ((parm->ir.eeltype==eelTWIN && parm->ir.rcoulomb > parm->ir.rlist) ||
-	 (parm->ir.eeltype==eelPPPM) || (parm->ir.eeltype==eelPOISSON)); 
+	 (parm->ir.eeltype==eelPPPM) || (parm->ir.eeltype==eelPOISSON));
+  bLJLR = (parm->ir.rvdw > parm->ir.rlist);
   bBHAM=(top->idef.functype[0]==F_BHAM);
   b14=(top->idef.il[F_LJ14].nr > 0);
-  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),bLR,bBHAM,b14,
-		     parm->ir.bPert,parm->ir.epc); 
+  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),bLR,bLJLR,
+		     bBHAM,b14,parm->ir.bPert,parm->ir.epc); 
 
   /* Compute initial EKin for all.. */
   calc_ke_part(TRUE,0,top->atoms.nr,

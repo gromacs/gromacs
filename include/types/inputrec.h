@@ -87,7 +87,7 @@ typedef struct {
   real rvdw_switch;     /* Van der Waals switch range start (nm)        */
   real rvdw;		/* Van der Waals cutoff (nm)		        */
   real epsilon_r;       /* relative dielectric constant                 */
-  bool bLJcorr;         /* Perform Long range corrections for LJ        */
+  bool bDispCorr;       /* Perform Long range dispersion corrections    */
   real shake_tol;	/* tolerance for shake				*/
   real fudgeLJ;		/* Fudge factor for 1-4 interactions		*/
   real fudgeQQ;		/* Id. for 1-4 coulomb interactions		*/

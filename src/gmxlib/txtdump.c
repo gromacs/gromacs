@@ -285,7 +285,7 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PR("rvdw_switch",ir->rvdw_switch);
     PR("rvdw",ir->rvdw);
     PR("epsilon_r",ir->epsilon_r);
-    PS("bLJcorr",BOOL(ir->bLJcorr));
+    PS("bDispCorr",BOOL(ir->bDispCorr));
     PR("fudgeLJ",ir->fudgeLJ);
     PR("fudgeQQ",ir->fudgeQQ);
     PS("free_energy",BOOL(ir->bPert));

@@ -41,7 +41,8 @@ extern void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
 
 extern void fdo_flr(FILE *log,int nri,atom_id i_atoms[],int shift,
 		    int njcg,atom_id jcg[],atom_id index[],atom_id acg[],
-		    rvec x[],real egcoul[],
-		    t_mdatoms *md,int ngener,t_forcerec *fr);
+		    rvec x[],real egcoul[],real eglj[],
+		    t_mdatoms *md,int ngener,t_forcerec *fr,
+		    bool bOnlyCoulomb);
 
 #endif

@@ -207,7 +207,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   int        fp_ene; 
   t_mdebin   *mdebin; 
   t_nrnb mynrnb; 
-  bool   bNS=TRUE,bDone,bLR,bBHAM,b14; 
+  bool   bNS=TRUE,bDone,bLR,bLJLR,bBHAM,b14; 
   time_t start_t; 
   tensor force_vir,shake_vir; 
   rvec   mu_tot;
@@ -250,13 +250,14 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   /* Set some booleans for the epot routines  */
   bLR = ((parm->ir.eeltype==eelTWIN && parm->ir.rcoulomb > parm->ir.rlist) ||
 	 (parm->ir.eeltype==eelPPPM) || (parm->ir.eeltype==eelPOISSON)); 
-                                            /* Long Range Coulomb   ?  */
-  bBHAM=(top->idef.functype[0]==F_BHAM);    /* Use buckingham       ?  */
-  b14=(top->idef.il[F_LJ14].nr > 0);        /* Use 1-4 interactions ?  */
+                                               /* Long Range Coulomb   ?  */
+  bLJLR    = (parm->ir.rvdw > parm->ir.rlist); /* Long Range LJ        ?  */
+  bBHAM=(top->idef.functype[0]==F_BHAM);       /* Use buckingham       ?  */
+  b14=(top->idef.il[F_LJ14].nr > 0);           /* Use 1-4 interactions ?  */
   
   /* Init bin for energy stuff  */
-  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),bLR,bBHAM,b14,
-		     parm->ir.bPert,parm->ir.epc); 
+  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),bLR,bLJLR,
+		     bBHAM,b14,parm->ir.bPert,parm->ir.epc); 
   
   /* Clear some matrix variables  */
   clear_mat(force_vir); 

@@ -138,7 +138,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_real(ir->rcoulomb); 
     do_real(ir->rvdw_switch); 
     do_real(ir->rvdw); 
-    do_int(ir->bLJcorr); 
+    do_int(ir->bDispCorr); 
     do_real(ir->epsilon_r); 
     do_real(ir->shake_tol); 
     do_real(ir->fudgeLJ); 
