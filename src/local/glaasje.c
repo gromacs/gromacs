@@ -79,8 +79,8 @@ void do_glas(FILE *log,int start,int homenr,rvec x[],rvec f[],
       snew(c12,atnr);
     
       for(i=0; (i<atnr); i++) {
-	c6[i]  = C6 (fr->nbfp,i,i);
-	c12[i] = C12(fr->nbfp,i,i);
+	c6[i]  = C6 (fr->nbfp,fr->ntype,i,i);
+	c12[i] = C12(fr->nbfp,fr->ntype,i,i);
       }
     }
     else

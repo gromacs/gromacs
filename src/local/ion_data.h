@@ -236,10 +236,10 @@ static t_element element[] = {
  * where this now gives the fraction of photoelectric events 
  * which correspond to K-shell events, I called f_j in my 
  * notes:
- * The final column (a new column) now gives the values for the lifetimes, 
+ * The final column (a new column) now gives the values for the lifetimes (in ps), 
  */
 typedef struct {
-  real E_K,E_L,Prob_L,tau;
+  real E_K,E_L,Prob_K,tau;
 } t_recoil;
 
 t_recoil recoil[NELEM] = {

@@ -172,7 +172,10 @@ void set_nbfmask(t_forcerec *fr,t_mdatoms *md,int ngrp,bool bMask)
 {
   static bool *bShell=NULL;
   int    i,j,gid;
-  
+
+  /* THIS CODE IS OUT OF ORDER */
+  return;
+    
   if (!bShell) {
     snew(bShell,ngrp);
     /* Loop over atoms */
@@ -191,10 +194,12 @@ void set_nbfmask(t_forcerec *fr,t_mdatoms *md,int ngrp,bool bMask)
     for(j=i; (j<ngrp); j++) {
       gid = GID(i,j,ngrp);
       /* If either of the groups denote a group with shells, then */
-      if (bShell[i] || bShell[j])
+      /*
+          if (bShell[i] || bShell[j])
 	fr->bMask[gid] = bMask;
       else
 	fr->bMask[gid] = !bMask;
+      */
     }
 }
 

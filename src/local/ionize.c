@@ -59,7 +59,7 @@ t_cross_atom *mk_cross_atom(FILE *log,t_mdatoms *md,
 
     ca[i].sigPh = element[elem_index[ca[i].z]].cross[Eindex].photo;
     ca[i].sigIn = element[elem_index[ca[i].z]].cross[Eindex].incoh;
-    ca[i].fj    = 0.95;
+    ca[i].fj    = recoil[ca[i].z].Prob_K;
     switch (ca[i].z) {
     case 6:
       ca[i].vAuger  = 0.904;
@@ -127,7 +127,7 @@ real cross(int eColl,t_cross_atom *ca)
   return c;
 }
 
-real prob_L(int eColl,t_cross_atom *ca)
+real prob_K(int eColl,t_cross_atom *ca)
 {
   real Pl,Pk,P;
   
@@ -270,11 +270,11 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	    rvec v[])
 {
   static FILE  *xvg,*ion;
-  static char  *leg[] = { "Probability", "Number/Atom", "Total" };
+  static char  *leg[] = { "Probability", "Primary Ionization", "Integral over PI", "KHole-Decay", "Integral over KD" };
   static bool  bFirst = TRUE;
   static bool  bImpulse = TRUE;
   static real  t0,imax,width,inv_nratoms,rho,nphot,nkdecay,nkd_tot;
-  static int   seed,total,ephot;
+  static int   seed,dq_tot,ephot;
   static t_cross_atom *ca;
   static int   Eindex=-1;
   real r,factor,ndv,E_lost,cross_atom,dvz,rrc;
@@ -299,7 +299,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
       fatal_error(0,"Your parameters for ionization are not set properly\n"
 		  "width = %f,  nphot = %f",width,nphot);
     
-    imax  = (nphot/(M_PI*rho*rho))*1e-10*sqrt(1.0/M_PI)*(2.0/width);
+    imax  = (nphot/(M_PI*sqr(rho/2)))*1e-10*1.0/(width*sqrt(2.0*M_PI));
 
     if (seed == 0)
       seed = 1993;
@@ -312,7 +312,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     /* Initiate cross section data etc. */
     ca    = mk_cross_atom(log,md,atomname,Eindex);
     
-    total   = 0;
+    dq_tot   = 0;
     nkd_tot = 0;
     inv_nratoms = 1.0/md->nr;
 
@@ -338,7 +338,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
    ******************************************************/
         
   /* Calculate probability */
-  pt          = imax*ir->delta_t*exp(-sqr(2.0*(t-t0)/width));
+  pt          = imax*ir->delta_t*exp(-0.5*sqr((t-t0)/width));
   dq          = 0;
   nkdecay     = 0;
   
@@ -358,7 +358,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     
     /* Total probability of ionisation */
     ptot = 1 - (1-pcoll[ecollPHOTO])*(1-pcoll[ecollINELASTIC]);
-    if (debug) 
+    if (debug && (i==0)) 
       fprintf(debug,PREFIX"Ptot = %g, t = %g\n",ptot,t);
     
     /* Check whether to ionize this guy */
@@ -379,8 +379,8 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
        */
       nK = number_K(&ca[i]);
       nL = number_L(&ca[i]);
-      bL = ((rando(&seed) < prob_L(k,&(ca[i]))) && (nL > 0)) || (nK == 0);
-      
+      bL = (nK == 0) || ( (nL > 0) && (rando(&seed) > prob_K(k,&(ca[i]))));
+
       switch (k) {
       case ecollPHOTO: {
 	/* Select which one to take by yet another random numer */
@@ -392,9 +392,9 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	phi   = 2*M_PI*rando(&seed);
 	
 	if (bL)
-	  E_lost = ephot-recoil[ca[i].z-ca[i].n].E_L;
+	  E_lost = ephot-recoil[ca[i].z].E_L*(ca[i].n+1);
 	else {
-	  E_lost = ephot-recoil[ca[i].z-ca[i].n].E_K;
+	  E_lost = ephot-recoil[ca[i].z].E_K;
 	  if ((ca[i].z > 2) && (nL > 0))
 	    bKHole = TRUE;
 	}
@@ -427,7 +427,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	real theta,phi,Ebind,Eelec;
 	
 	if (bL)
-	  Ebind = ca[i].n*recoil[ca[i].z].E_L;
+	  Ebind = (ca[i].n+1)*recoil[ca[i].z].E_L;
 	else {
 	  Ebind  = recoil[ca[i].z].E_K;
 	  if ((ca[i].z > 2) && (nL > 0))
@@ -463,7 +463,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	  md->chargeB[i] += 1.0;
 	  ca[i].n++;
 	  dq ++;
-	  total ++;
+	  dq_tot ++;
 	}
 	if (debug) {
 	  fprintf(debug,"Random-dv[%3d] = %10.3e,%10.3e,%10.3e,"
@@ -498,7 +498,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   
   fprintf(ion,"\n");
   fprintf(xvg,"%10.5f  %10.3e  %6d  %6d  %6d  %6d\n",
-	  t,pt,(int)dq,(int)total,(int)nkdecay,(int)nkd_tot);
+	  t,pt,(int)dq,(int)dq_tot,(int)nkdecay,(int)nkd_tot);
   fflush(ion);
   fflush(xvg);
 }

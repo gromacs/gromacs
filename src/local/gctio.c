@@ -158,8 +158,8 @@ void copy_ff(t_coupl_rec *tcr,t_forcerec *fr,t_mdatoms *md,t_idef *idef)
     atj  = tclj->at_j;
     if (atj == -1)
       atj = ati;
-    tclj->c6  = C6(fr->nbfp,ati,atj);
-    tclj->c12 = C12(fr->nbfp,ati,atj);
+    tclj->c6  = C6(fr->nbfp,fr->ntype,ati,atj);
+    tclj->c12 = C12(fr->nbfp,fr->ntype,ati,atj);
   }
   
   for(i=0; (i<tcr->nBU); i++) {
@@ -169,9 +169,9 @@ void copy_ff(t_coupl_rec *tcr,t_forcerec *fr,t_mdatoms *md,t_idef *idef)
     atj  = tcbu->at_j;
     if (atj == -1)
       atj = ati;
-    tcbu->a = (fr->nbfp)[(ati)][3*(atj)];
-    tcbu->b = (fr->nbfp)[(ati)][3*(atj)+1];
-    tcbu->c = (fr->nbfp)[(ati)][3*(atj)+2];
+    tcbu->a = BHAMA(fr->nbfp,fr->ntype,ati,atj);
+    tcbu->b = BHAMB(fr->nbfp,fr->ntype,ati,atj);
+    tcbu->c = BHAMC(fr->nbfp,fr->ntype,ati,atj);
   }
   
   for(i=0; (i<tcr->nQ); i++) {

@@ -250,20 +250,20 @@ static void pr_dev(t_coupl_rec *tcr,
   fflush(fp);
 }
 
-static void upd_nbfplj(FILE *log,real **nbfp,int atnr,real f6[],real f12[])
+static void upd_nbfplj(FILE *log,real *nbfp,int atnr,real f6[],real f12[])
 {
   int n,m,k;
   
   /* Update the nonbonded force parameters */
   for(k=n=0; (n<atnr); n++) {
     for(m=0; (m<atnr); m++,k++) {
-      C6 (nbfp,n,m) *= f6[k];
-      C12(nbfp,n,m) *= f12[k];
+      C6 (nbfp,atnr,n,m) *= f6[k];
+      C12(nbfp,atnr,n,m) *= f12[k];
     }
   }
 }
 
-static void upd_nbfpbu(FILE *log,real **nbfp,int atnr,
+static void upd_nbfpbu(FILE *log,real *nbfp,int atnr,
 		       real fa[],real fb[],real fc[])
 {
   int n,m,k;
@@ -271,9 +271,9 @@ static void upd_nbfpbu(FILE *log,real **nbfp,int atnr,
   /* Update the nonbonded force parameters */
   for(k=n=0; (n<atnr); n++) {
     for(m=0; (m<atnr); m++,k++) {
-      (nbfp)[n][3*m]   *= fa[k];
-      (nbfp)[n][3*m+1] *= fb[k];
-      (nbfp)[n][3*m+2] *= fc[k];
+      BHAMA(nbfp,atnr,n,m) *= fa[k];
+      BHAMB(nbfp,atnr,n,m) *= fb[k];
+      BHAMC(nbfp,atnr,n,m) *= fc[k];
     }
   }
 }
@@ -609,8 +609,8 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
       atj = tclj->at_j;
       if (atj == -1) 
 	atj = ati;
-      tclj->c6  =  C6(fr->nbfp,ati,atj);
-      tclj->c12 = C12(fr->nbfp,ati,atj);
+      tclj->c6  =  C6(fr->nbfp,fr->ntype,ati,atj);
+      tclj->c12 = C12(fr->nbfp,fr->ntype,ati,atj);
     }
   }
   else {
@@ -633,18 +633,15 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
     }
     upd_nbfpbu(log,fr->nbfp,idef->atnr,fa,fb,fc);
     /* Copy for printing */
-#define BUCK_A(nbfp,ai,aj) (nbfp[ai][3*aj])
-#define BUCK_B(nbfp,ai,aj) (nbfp[ai][3*aj+1])
-#define BUCK_C(nbfp,ai,aj) (nbfp[ai][3*aj+2])
     for(i=0; (i<tcr->nBU); i++) {
       tcbu=&(tcr->tcBU[i]);
       ati = tcbu->at_i;
       atj = tcbu->at_j;
       if (atj == -1) 
 	atj = ati;
-      tcbu->a = BUCK_A(fr->nbfp,ati,atj);
-      tcbu->b = BUCK_B(fr->nbfp,ati,atj);
-      tcbu->c = BUCK_C(fr->nbfp,ati,atj);
+      tcbu->a = BHAMA(fr->nbfp,fr->ntype,ati,atj);
+      tcbu->b = BHAMB(fr->nbfp,fr->ntype,ati,atj);
+      tcbu->c = BHAMC(fr->nbfp,fr->ntype,ati,atj);
       if (debug)
 	fprintf(debug,"buck (type=%d) = %e, %e, %e\n",
 		tcbu->at_i,tcbu->a,tcbu->b,tcbu->c);
