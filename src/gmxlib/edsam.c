@@ -842,6 +842,8 @@ void do_linacc(rvec *x,t_edpar *edi)
       for (k=0;(k<DIM);k++)
 	x[edi->sav.anrs[j]][k]+=add*edi->vecs.linacc.vec[i][j][k];
     }
+    /* new positions will act as reference */
+    edi->vecs.linacc.refproj[i]=proj+add;
   }
 }
 
