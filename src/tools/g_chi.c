@@ -297,7 +297,7 @@ static void reset_one(real dih[],int nf,real phase)
 }
 
 static void reset_em_all(int nlist,t_dlist dlist[],int nf,
-			 real **dih,int maxchi,bool bPhi,bool bPsi,bool bChi)
+			 real **dih,int maxchi)
 {
   int  i,j,Xi;
   
@@ -791,8 +791,8 @@ static void order_params(FILE *log,
     y0*=10.0;/* nm -> angstrom */
     z0*=10.0;/* nm -> angstrom */
     for (i=0; (i<10); i++)
-      fprintf(fp,pdbformat,"ATOM  ", atoms->nr+1+i, "CA", "LEG",' ', nres+1,
-	      x0, y0, z0+(1.2*i), 0.0, -0.1*i);
+      fprintf(fp,pdbformat,"ATOM  ", atoms->nr+1+i, "CA", "LEG",' ', 
+	      atoms->nres+1, x0, y0, z0+(1.2*i), 0.0, -0.1*i);
     ffclose(fp);
   }
   
@@ -972,7 +972,7 @@ int main(int argc,char *argv[])
   }
 
   /* put angles in -M_PI to M_PI ! and correct phase factor for phi and psi */
-  reset_em_all(nlist,dlist,nf,dih,maxchi,bPhi,bPsi,bChi);
+  reset_em_all(nlist,dlist,nf,dih,maxchi);
   
   if (bAll)
     dump_em_all(nlist,dlist,nf,time,dih,maxchi,bPhi,bPsi,bChi,bOmega);
