@@ -173,6 +173,8 @@ static void atomcat (t_atoms *dest, t_atoms *src, int copies)
     size=destnr+copies*srcnr;
     srenew(dest->atom,size);
     srenew(dest->atomname,size);
+    srenew(dest->atomtype,size);
+    srenew(dest->atomtypeB,size);
   }
   if (src->nres) {
     size=dest->nres+copies*src->nres;
@@ -187,6 +189,10 @@ static void atomcat (t_atoms *dest, t_atoms *src, int copies)
   for (l=destnr,j=0; (j<copies); j++,l+=srcnr) {
     memcpy((char *) &(dest->atomname[l]),(char *) &(src->atomname[0]),
            (size_t)(srcnr*sizeof(src->atomname[0])));
+    memcpy((char *) &(dest->atomtype[l]),(char *) &(src->atomtype[0]),
+           (size_t)(srcnr*sizeof(src->atomtype[0])));
+    memcpy((char *) &(dest->atomtypeB[l]),(char *) &(src->atomtypeB[0]),
+           (size_t)(srcnr*sizeof(src->atomtypeB[0])));
     memcpy((char *) &(dest->atom[l]),(char *) &(src->atom[0]),
            (size_t)(srcnr*sizeof(src->atom[0])));
   }

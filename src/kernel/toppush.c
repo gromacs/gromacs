@@ -366,9 +366,10 @@ void push_nbt(directive d,t_params nbt[],t_atomtype *atype,
 }
 
 static void push_atom_now(t_symtab *symtab,t_atoms *at,int atomnr,
-			  int type,int ptype,int resnumber,int cgnumber,
+			  int type,char *ctype,int ptype,
+			  int resnumber,int cgnumber,
 			  char *resname,char *name,real m0,real q0,
-			  int typeB,real mB,real qB)
+			  int typeB,char *ctypeB,real mB,real qB)
 {
   int j,resnr_diff=-1;
   int nr = at->nr;
@@ -386,6 +387,8 @@ static void push_atom_now(t_symtab *symtab,t_atoms *at,int atomnr,
    */
   srenew(at->atom,nr+1);
   srenew(at->atomname,nr+1);
+  srenew(at->atomtype,nr+1);
+  srenew(at->atomtypeB,nr+1);
 
   if (resnumber > at->nres) {
     at->nres=resnumber;
@@ -405,6 +408,8 @@ static void push_atom_now(t_symtab *symtab,t_atoms *at,int atomnr,
     at->atom[nr].grpnr[j] = -1;
   at->atom[nr].resnr = resnumber-1;
   at->atomname[nr] = put_symtab(symtab,name);
+  at->atomtype[nr] = put_symtab(symtab,ctype);
+  at->atomtypeB[nr] = put_symtab(symtab,ctypeB);
   at->nr++;
 }
 
@@ -430,7 +435,7 @@ void push_atom(t_symtab *symtab,t_block *cgs,
   int 		nr,ptype;
   static int    lastcg;
   int 		resnumber,cgnumber,atomnr,type,typeB,nscan;
-  char 		id[STRLEN],ctype[STRLEN],
+  char 		id[STRLEN],ctype[STRLEN],ctypeB[STRLEN],
        		resname[STRLEN],name[STRLEN];
   double        m,q,mb,qb;
   real          m0,q0,mB,qB;
@@ -457,7 +462,7 @@ void push_atom(t_symtab *symtab,t_block *cgs,
   
   /* Optional parameters */
   nscan=sscanf(line,"%*s%*s%*s%*s%*s%*s%lf%lf%s%lf%lf",
-	       &q,&m,ctype,&qb,&mb);
+	       &q,&m,ctypeB,&qb,&mb);
   
   /* Nasty switch that falls thru all the way down! */
   if (nscan > 0) {
@@ -465,7 +470,7 @@ void push_atom(t_symtab *symtab,t_block *cgs,
     if (nscan > 1) {
       m0 = mB = m;
       if (nscan > 2) {
-	typeB=at2type(ctype,atype);
+	typeB=at2type(ctypeB,atype);
 	qB = atype->atom[typeB].q;
 	mB = atype->atom[typeB].m;
 	if (nscan > 3) {
@@ -481,8 +486,9 @@ void push_atom(t_symtab *symtab,t_block *cgs,
   
   push_cg(cgs,&lastcg,cgnumber,nr);
 
-  push_atom_now(symtab,at,atomnr,type,ptype,resnumber,cgnumber,
-		resname,name,m0,q0,typeB,mB,qB);
+  push_atom_now(symtab,at,atomnr,type,ctype,ptype,resnumber,cgnumber,
+		resname,name,m0,q0,typeB,
+		typeB==type ? ctype : ctypeB,mB,qB);
 }
 
 void push_molt(t_symtab *symtab,t_molinfo *newmol,char *line)

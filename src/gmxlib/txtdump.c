@@ -367,6 +367,8 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PR("nstdisreout",ir->nstdisreout);
     PR("em_stepsize",ir->em_stepsize);
     PR("em_tol",ir->em_tol);
+    PI("niter",ir->niter);
+    PR("fc_stepsize",ir->fc_stepsize);
     PI("nstcgsteep",ir->nstcgsteep);
     PS("ConstAlg",ESHAKETYPE(ir->eConstrAlg));
     PR("shake_tol",ir->shake_tol);
@@ -722,6 +724,23 @@ static void pr_strings(FILE *fp,int indent,char *title,char ***nm,int n)
     }
 }
 
+static void pr_strings2(FILE *fp,int indent,char *title,
+			char ***nm,char ***nmB,int n)
+{
+  int i;
+
+  if (available(fp,nm,title))
+    {  
+      indent=pr_title_n(fp,indent,title,n);
+      for (i=0; i<n; i++)
+        {
+          (void) pr_indent(fp,indent);
+          (void) fprintf(fp,"%s[%d]={name=\"%s\",nameB=\"%s\"}\n",
+			 title,bShowNumbers?i:-1,*(nm[i]),*(nmB[i]));
+        }
+    }
+}
+
 static void pr_atoms(FILE *fp,int indent,char *title,t_atoms *atoms)
 {
   if (available(fp,atoms,title))
@@ -730,6 +749,7 @@ static void pr_atoms(FILE *fp,int indent,char *title,t_atoms *atoms)
       pr_atom(fp,indent,"atom",atoms->atom,atoms->nr);
       pr_grps(fp,indent,"grp",atoms->grps,egcNR,atoms->grpname);
       pr_strings(fp,indent,"atom",atoms->atomname,atoms->nr);
+      pr_strings2(fp,indent,"type",atoms->atomtype,atoms->atomtypeB,atoms->nr);
       pr_strings(fp,indent,"residue",atoms->resname,atoms->nres);
       pr_strings(fp,indent,"grpname",atoms->grpname,atoms->ngrpname);
       pr_block(fp,indent,"excl",&atoms->excl);

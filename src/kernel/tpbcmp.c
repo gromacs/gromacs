@@ -369,6 +369,8 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_real(fp,"inputrec->dr_tau",0,ir1->dr_tau,ir2->dr_tau,ftol);
   cmp_real(fp,"inputrec->em_stepsize",0,ir1->em_stepsize,ir2->em_stepsize,ftol);
   cmp_real(fp,"inputrec->em_tol",0,ir1->em_tol,ir2->em_tol,ftol);
+  cmp_int(fp,"inputrec->niter",0,ir1->niter,ir2->niter);
+  cmp_real(fp,"inputrec->fc_stepsize",0,ir1->fc_stepsize,ir2->fc_stepsize,ftol);
   cmp_int(fp,"inputrec->nstcgsteep",0,ir1->nstcgsteep,ir2->nstcgsteep);
   cmp_int(fp,"inputrec->eConstrAlg",0,ir1->eConstrAlg,ir2->eConstrAlg);
   cmp_int(fp,"inputrec->nProjOrder",0,ir1->nProjOrder,ir2->nProjOrder);

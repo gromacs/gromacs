@@ -63,6 +63,8 @@ void init_atom(t_atoms *at)
   at->atom     = NULL;
   at->resname  = NULL;
   at->atomname = NULL;
+  at->atomtype = NULL;
+  at->atomtypeB= NULL;
   at->grpname  = NULL;
   at->pdbinfo  = NULL;
   for(i=0; (i<egcNR); i++) {
@@ -162,6 +164,8 @@ void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)
   atoms->nres=0;
   atoms->ngrpname=0;
   snew(atoms->atomname,natoms);
+  atoms->atomtype=NULL;
+  atoms->atomtypeB=NULL;
   snew(atoms->resname,natoms);
   snew(atoms->atom,natoms);
   snew(atoms->grpname,natoms);
@@ -181,6 +185,7 @@ void free_t_atoms(t_atoms *atoms)
     *atoms->atomname[i]=NULL;
   }
   sfree(atoms->atomname);
+  /* Do we need to free atomtype and atomtypeB as well ? */
   sfree(atoms->resname);
   sfree(atoms->atom);
   if (atoms->pdbinfo)

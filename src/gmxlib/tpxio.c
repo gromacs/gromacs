@@ -54,7 +54,7 @@ static char *SRCID_tpxio_c = "$Id$";
 #include "vec.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version = 20;
+static int tpx_version = 21;
 /* This number should be the most recent incompatible version */
 static int tpx_incompatible_version = 9;
 /* This is the version of the file we are reading */
@@ -242,6 +242,10 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
       fprintf(stderr,"Note: niter not in run input file, setting it to %d\n",
 	      ir->niter);
     }
+    if (file_version >= 21)
+      do_real(ir->fc_stepsize);
+    else
+      ir->fc_stepsize = 0;
     do_int(ir->eConstrAlg);
     do_int(ir->nProjOrder);
     do_real(ir->LincsWarnAngle);
@@ -565,6 +569,8 @@ static void do_atoms(t_atoms *atoms,bool bRead,t_symtab *symtab)
   if (bRead) {
     snew(atoms->atom,atoms->nr);
     snew(atoms->atomname,atoms->nr);
+    snew(atoms->atomtype,atoms->nr);
+    snew(atoms->atomtypeB,atoms->nr);
     snew(atoms->resname,atoms->nres);
     snew(atoms->grpname,atoms->ngrpname);
     atoms->pdbinfo = NULL;
@@ -572,6 +578,15 @@ static void do_atoms(t_atoms *atoms,bool bRead,t_symtab *symtab)
   for(i=0; (i<atoms->nr); i++)
     do_atom(&atoms->atom[i],bRead);
   do_strstr(atoms->nr,atoms->atomname,bRead,symtab);
+  if (bRead && file_version<=20) {
+    for(i=0; i<atoms->nr; i++) {
+      atoms->atomtype[i]  = put_symtab(symtab,"?");
+      atoms->atomtypeB[i] = put_symtab(symtab,"?");
+    }
+  } else {
+    do_strstr(atoms->nr,atoms->atomtype,bRead,symtab);
+    do_strstr(atoms->nr,atoms->atomtypeB,bRead,symtab);
+  }
   do_strstr(atoms->nres,atoms->resname,bRead,symtab);
   do_strstr(atoms->ngrpname,atoms->grpname,bRead,symtab);
   

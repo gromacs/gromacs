@@ -82,6 +82,10 @@ typedef struct {
 				/* allways be used (nres==0)	 	*/
   char		***atomname;	/* Array of pointers to atom name	*/
 				/* use: (*(atomname[i]))		*/
+  char		***atomtype;	/* Array of pointers to atom types	*/
+				/* use: (*(atomtype[i]))		*/
+  char		***atomtypeB;	/* Array of pointers to B atom types	*/
+				/* use: (*(atomtypeB[i]))		*/
   int		nres;		/* Nr of residue names			*/
   char		***resname; 	/* Array of pointers to residue names 	*/
 				/* use: (*(resname[i]))			*/

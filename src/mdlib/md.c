@@ -152,7 +152,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   if (MASTER(cr) && bTCR)
     fprintf(stderr,"Will do General Coupling Theory!\n");
 
-  fr->k_dirmin = parm->ir.userreal4;
+  fr->fc_stepsize = parm->ir.fc_stepsize;
 #endif
 
   /* Remove periodicity */  

@@ -117,6 +117,8 @@ typedef struct {
   real em_tol;		/* The tolerance				*/
   int  niter;           /* Number of iterations for convergence of      */
                         /* steepest descent in relax_shells             */
+  int  fc_stepsize;     /* Stepsize for directional minimization        */
+                        /* in relax_shells                              */
   int  nstcgsteep;      /* number of steps after which a steepest       */
                         /* descents step is done while doing cg         */
   int  eConstrAlg;      /* Type of constraint algorithm                 */

@@ -309,7 +309,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   tensor my_vir[2],vir_last,pme_vir[2];
   static rvec *acc_dir=NULL,*x_old=NULL;
   rvec   dx;
-  real   sf_dir,msfd0;
+  real   sf_dir;
 #define NEPOT asize(Epot)
   real   ftol,step,step0,xiH,xiS,dum=0;
   char   cbuf[56];
@@ -322,7 +322,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   int    Min=0;
 #define  Try (1-Min)             /* At start Try = 1 */
 
-  if (fr->k_dirmin != 0)
+  if (fr->fc_stepsize != 0)
     ndir = count_zero_length_constraints(&(top->idef));
   else
     ndir = 0;
@@ -376,7 +376,6 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     for(i=start; i<end; i++)
       sf_dir += md->massT[i]*norm2(acc_dir[i-start]);
 
-    msfd0 = sqrt(sf_dir/ndir);
     if (bVerbose)
       fprintf(stderr,"RMS dir. force: %g\n",sqrt(sf_dir/ndir));
   }
@@ -437,7 +436,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		parm->box,lambda,&dum,nrnb);
       
       directional_sd(log,step,pos[Min],pos[Try],acc_dir-start,start,end,
-		     fr->k_dirmin);
+		     fr->fc_stepsize);
     }
     
     /* New positions, Steepest descent */
