@@ -38,6 +38,7 @@ static char *SRCID_mkice_c = "$Id$";
 #include "macros.h"
 #include "smalloc.h"
 #include "vec.h"
+#include "pbc.h"
 #include "physics.h"
 #include "txtdump.h"
 #include "trnio.h"
@@ -48,7 +49,7 @@ static char *SRCID_mkice_c = "$Id$";
 #define HDIST 0.1
 #define TET   109.47
 
-void unitcell(rvec x[],rvec box)
+void unitcell(rvec x[],rvec box,bool bYaw)
 {
 #define cx  0.81649658
 #define cy  0.47140452
@@ -81,21 +82,30 @@ void unitcell(rvec x[],rvec box)
     { 0,   0,         1 }, /* H relative to Oxygen */
     { cx,   -cy,    -cz }
   };
-  int  i,i3,j;
+  int  i,iin,iout,j,m;
   rvec tmp,t2,dip;
+  real a = 0.8;
   
   clear_rvec(dip);
   for(i=0; (i<8); i++) {
-    i3 = 3*i;
-    svmul(ODIST,xx[i3],x[i3]);
-    svmul(-0.82,x[i3],t2);
+    iin = 3*i;
+    if (bYaw)
+      iout = 5*i;
+    else
+      iout = iin;
+    svmul(ODIST,xx[iin],x[iout]);
+    svmul(-0.82,x[iout],t2);
     rvec_inc(dip,t2);
     for(j=1; (j<=2); j++) {
-      svmul(HDIST,xx[i3+j],tmp);
-      rvec_add(x[i3],tmp,x[i3+j]);
-      svmul(0.41,x[i3+j],t2);
+      svmul(HDIST,xx[iin+j],tmp);
+      rvec_add(x[iout],tmp,x[iout+j]);
+      svmul(0.41,x[iout+j],t2);
       rvec_inc(dip,t2);
     }
+    if (bYaw)
+      for(m=0; (m<DIM); m++) 
+	x[iout+3][m] = x[iout+4][m] = 
+	  a*x[iout][m]+0.5*(1-a)*(x[iout+1][m]+x[iout+2][m]);
   }
   printf("Dipole: %10.5f%10.5f%10.5f (e nm)\n",dip[XX],dip[YY],dip[ZZ]);
   
@@ -106,13 +116,83 @@ void unitcell(rvec x[],rvec box)
     box[i] *= ODIST;
 }
 
+static real calc_ener(real c6,real c12,rvec dx,tensor vir)
+{
+  real r,e,f;
+  int  m,n;
+  
+  r  = norm(dx);
+  e  = c12*pow(r,-12.0) - c6*pow(r,-6.0);
+  f  = 12*c12*pow(r,-14.0) - 6*c6*pow(r,-8.0);
+  for(m=0; (m<DIM); m++) 
+    for(n=0; (n<DIM); n++)
+      vir[m][n] -= 0.5*f*dx[m]*dx[n];
+      
+  return e;
+}
+
+void interactions(FILE *fp,rvec x[],matrix box,real rcut,bool bYaw)
+{
+  /* List of h bonds in the crystal unitcell */
+  typedef struct {
+    int d,h,a;
+  } t_hb;
+  t_hb hb[16] = {
+    {  0,  1, 12 },
+    {  0,  2,  3 },
+    {  3,  4, 15 },
+    {  3,  5,  0 },
+    {  6,  7,  9 },
+    {  6,  8,  3 },
+    {  9, 10,  6 },
+    {  9, 11,  0 },
+    { 12, 13, 15 },
+    { 12, 14, 21 },
+    { 15, 16, 12 },
+    { 15, 17, 18 },
+    { 18, 19,  6 },
+    { 18, 20, 21 },
+    { 21, 22,  9 },
+    { 21, 23, 18 }
+  };
+  int    i,ad,ah,aa;
+  rvec   dx[16];
+  real   elj;
+  tensor vir;
+  
+  init_pbc(box,FALSE);
+  /* Initiate the periodic boundary conditions. Set bTruncOct to
+   * TRUE when using a truncated octahedron box.
+   */
+
+  clear_mat(vir);
+  elj = 0;
+  for(i=0; (i<asize(hb)); i++) {
+    ad = hb[i].d;
+    ah = hb[i].h;
+    aa = hb[i].a;
+    pbc_dx(x[ah],x[aa],dx[i]);
+    elj += calc_ener(0.0,1.0e-8,dx[i],vir);
+  }
+  pr_rvecs(fp,0,"H-A dist",dx,16);
+  pr_rvecs(fp,0,"Virial",vir,3);
+  fprintf(fp,"LJ energy is %g\n",elj);
+}
+
 int main(int argc,char *argv[])
 {
+  static char *desc[] = {
+    "mkice generates an ice crystal in the Ih crystal form which is the",
+    "most stable form. The rectangular unitcell contains eight molecules",
+    "and all oxygens are tetrahedrally coordinated."
+  };
   static int nx=1,ny=1,nz=1;
+  static bool bYaw=FALSE;
   t_pargs pa[] = {
     { "-nx", FALSE, etINT, &nx, "nx" },
     { "-ny", FALSE, etINT, &ny, "ny" },
     { "-nz", FALSE, etINT, &nz, "nz" },
+    { "-yaw",FALSE, etBOOL,&bYaw,"Generate dummies and shell positions" }
   };
   t_filenm fnm[] = {
     { efPDB, "-p", "ice", FALSE },
@@ -120,8 +200,10 @@ int main(int argc,char *argv[])
   };
 #define NFILE asize(fnm)
 
+  char *atomname[] = { "OW1", "HW2", "HW3", "SW", "DW" };
+
   FILE      *fp;
-  int       i,j,k,n,nmax,m;
+  int       i,j,k,n,nmax,m,natom,natmol;
   t_atoms   *pdba;
   t_atoms   atoms;
   t_symtab  symtab;
@@ -129,9 +211,12 @@ int main(int argc,char *argv[])
   matrix    boxje;
   
   CopyRight(stdout,argv[0]);
-  parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,0,NULL,0,NULL);
+  parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,asize(desc),
+		    desc,0,NULL);
 
-  nmax = 24*nx*ny*nz;
+  natmol = bYaw ? 5 : 3;
+  natom = natmol*8;
+  nmax = natom*nx*ny*nz;
   snew(xx,nmax);
   snew(pdba,1);
   init_t_atoms(pdba,nmax,TRUE);
@@ -140,18 +225,8 @@ int main(int argc,char *argv[])
   for(n=0; (n<nmax); n++) {
     pdba->pdbinfo[n].type   = epdbATOM;
     pdba->pdbinfo[n].atomnr = n;
-    pdba->atom[n].resnr     = n/3;
-    switch (n % 3) {
-    case 0:
-      pdba->atomname[n] = put_symtab(&symtab,"OW");
-      break;
-    case 1:
-      pdba->atomname[n] = put_symtab(&symtab,"HW1");
-      break;
-    case 2:
-      pdba->atomname[n] = put_symtab(&symtab,"HW2");
-      break;
-    }
+    pdba->atom[n].resnr     = n/natmol;
+    pdba->atomname[n] = put_symtab(&symtab,atomname[(n % natmol)]);
     pdba->resname[n] = put_symtab(&symtab,"SOL");
 
     sprintf(pdba->pdbinfo[n].pdbresnr,"%d",n);
@@ -159,7 +234,14 @@ int main(int argc,char *argv[])
   }
   
   /* Generate the unit cell */
-  unitcell(xx,box);
+  unitcell(xx,box,bYaw);
+  if (debug) {
+    clear_mat(boxje);
+    boxje[XX][XX] = box[XX];
+    boxje[YY][YY] = box[YY];
+    boxje[ZZ][ZZ] = box[ZZ];
+    interactions(debug,xx,boxje,0.9,bYaw);
+  }
   n=0;
   for(i=0; (i<nx); i++) {
     tmp[XX] = i*box[XX];
@@ -167,8 +249,8 @@ int main(int argc,char *argv[])
       tmp[YY] = j*box[YY];
       for(k=0; (k<nz); k++) {
 	tmp[ZZ] = k*box[ZZ];
-	for(m=0; (m<24); m++,n++) {
-	  rvec_add(xx[n % 24],tmp,xx[n]);
+	for(m=0; (m<natom); m++,n++) {
+	  rvec_add(xx[n % natom],tmp,xx[n]);
 	}
       }
     }
@@ -183,7 +265,7 @@ int main(int argc,char *argv[])
   boxje[ZZ][ZZ] = box[ZZ]*nz;
   
   write_sto_conf(ftp2fn(efPDB,NFILE,fnm),
-		 "Ice crystal generated by mkice",pdba,xx,NULL,boxje);
+		 "Ice Ih crystal generated by mkice",pdba,xx,NULL,boxje);
 
   write_trn(ftp2fn(efTRN,NFILE,fnm),0,0,0,boxje,nmax,xx,NULL,NULL);
 	       
