@@ -12,7 +12,7 @@ include		$(GMXHOME)/src/makef/Makefile.def
 # Empty library
 LIB		= 
 XOBJ		= do_gct.o init_sh.o gctio.o glaasje.o ionize.o
-PROGRAMS	= my_dssp	copyrgt		hrefify
+PROGRAMS	= my_dssp
 # 		  xmdrun	total		do_shift	shell_md
 #
 include		$(STDTARGET)
