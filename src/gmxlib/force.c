@@ -551,7 +551,7 @@ void force(FILE *log,
   if (fr->eeltype == eelPPPM) {
     real Vpppm,Vself;
     Vpppm = do_pppm(log,FALSE,FALSE,NULL,NULL,md->nr,x,f,md->chargeT,
-		    box_size,fr->phi,cr,nrnb);
+		    box_size,fr->phi,cr,nrnb,FALSE);
     Vself = calc_LRcorrections(log,0,md->nr,fr->r1,fr->rc,
 			       md->chargeT,excl,x,f);
     epot[F_LR] = Vpppm - Vself;
