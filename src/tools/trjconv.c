@@ -319,24 +319,27 @@ int main(int argc,char *argv[])
     "regular fit method, e.g. when your protein undergoes large",
     "conformational transitions.[PAR]",
     "Option [TT]-pbc[tt] sets the type of periodic boundary condition",
-    "treatment. [TT]whole[tt] puts the atoms in the box and then makes",
+    "treatment:[BR]",
+    "* [TT]whole[tt] puts the atoms in the box and then makes",
     "broken molecules whole (a run input file is required).",
-    "[TT]com[tt] does the same as [TT]whole[tt], but keeps the center of",
-    "mass of all [IT]residues[tt] in the box, in stead of atom # 1 of each",
-    "molecule. [TT]inbox[tt] puts all the atoms in the box.",
-    "[TT]nojump[tt] checks if atoms jump across the box and then puts",
+    "Atom number 1 of each molecule will be inside the box.[BR]",
+    "* [TT]com[tt] puts the center of mass of all [IT]residues[tt] ",
+    "in the box. Not that this can break molecules that consist of",
+    "more than one residue (e.g. proteins).[BR]",
+    "* [TT]inbox[tt] puts all the atoms in the box.[BR]",
+    "* [TT]nojump[tt] checks if atoms jump across the box and then puts",
     "them back. This has the effect that all molecules",
     "will remain whole (provided they were whole in the initial",
     "conformation), note that this ensures a continuous trajectory but",
     "molecules may diffuse out of the box. The starting configuration",
     "for this procedure is taken from the structure file, if one is",
-    "supplied, otherwise it is the first frame.",
-    "[TT]cluster[tt] clusters all the atoms in the selected index",
+    "supplied, otherwise it is the first frame.[BR]",
+    "* [TT]cluster[tt] clusters all the atoms in the selected index",
     "such that they are all closest to the center of mass of the cluster",
     "which is iteratively updated. Note that this will only give meaningful",
     "results if you in fact have a cluster. Luckily that can be checked",
-    "afterwards using a trajectory viewer.",
-    "[TT]-pbc[tt] is ignored when [TT]-fit[tt] of [TT]-pfit[tt] is set,",
+    "afterwards using a trajectory viewer.[BR]",
+    "[TT]-pbc[tt] is ignored when [TT]-fit[tt] or [TT]-pfit[tt] is set,",
     "in that case molecules will be made whole.[PAR]",
     "Option [TT]-ur[tt] sets the unit cell representation for options",
     "[TT]whole[tt] and [TT]inbox[tt] of [TT]-pbc[tt].",
@@ -497,7 +500,7 @@ int main(int argc,char *argv[])
     bRect     = (strcmp(unitcell_opt[0],"rect") == 0);
     bTric     = (strcmp(unitcell_opt[0],"tric") == 0);
     bComp     = (strcmp(unitcell_opt[0],"compact") == 0);
-    if (bPBCcom || (bFit && (strcmp(pbc_opt[0],"none") == 0)) )
+    if (bFit && (strcmp(pbc_opt[0],"none") == 0) )
       bPBC = TRUE;
     if (bPBC && !bFit)
       bInBox = TRUE;
