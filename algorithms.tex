@@ -928,16 +928,13 @@ LD is an option of the \verb'mdrun' program.
 
 \section{Energy Minimization}
 \label{sec:EM}
-Energy minimization in {\gromacs} can be done using a  simple 
-\normindex{steepest descent} method. 
-\normindex{Conjugate gradient} minimization is planned for the
-next release. EM is just an option of the \verb'mdrun' program.
+Energy minimization in {\gromacs} can be done using 
+a steepest descent or conjugate gradient method.
+EM is just an option of the {\tt mdrun} program.
 
-\subsection{Steepest Descents.}
-Although Steepest Descents is certainly not the most efficient
+\subsection{\normindex{Steepest Descent}}
+Although steepest descent is certainly not the most efficient
 algorithm for searching, it is robust and easy to implement.
-It can not be used with SHAKE, so explicit bond interactions must be
-specified in the topology.
 
 We define the vector $\ve{r}$ as the vector of all $3N$ coordinates.
 Initially a maximum displacement $h_0$ ({\eg} 0.01 nm) must be given. 
@@ -973,6 +970,12 @@ $k$ Boltzmann's constant. For a weak oscillator with a wave number of
 $f=7.7$ kJ~mol$^{-1}$~nm$^{-1}$. A value for $\epsilon$ between 1 and
 10 is acceptable.   
 
+\subsection{\normindex{Conjugate Gradient}}
+Cojugate gradient is slower than steepest descent in the early stages of
+the minimization, but becomes more efficient closer to the energy minimum.
+The parameters and stop criterion are the same as for steepest descent.
+Cojugate gradient can not be used with constraints or freeze groups.
+
 \section{Normal Mode Analysis}
 \normindex{Normal mode analysis}~\cite{Levitt83,Go83,BBrooks83b} 
 can be performed using {\gromacs}, by diagonalization of the mass-weighted
@@ -996,8 +999,9 @@ F_i     ~=~     \frac{\partial V}{\partial x_i}
 \eeq
 from which the Hessian is computed numerically. It should be noted that
 for a usual Normal Mode calculation, it is necessary to completely minimize 
-the energy prior to computation
-of the Hessian. A number of {\gromacs} programs are involved in these
+the energy prior to computation of the Hessian. This should be done
+with conjugate gradient in double precision.
+A number of {\gromacs} programs are involved in these
 calculations. First \normindex{nmrun}, which computes the Hessian,
 and secondly \normindex{g\_nmeig} which does the diagonalization and
 sorting of normal modes according to frequencies. Both these programs
