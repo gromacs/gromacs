@@ -85,7 +85,7 @@ extern void fatal_error(int fatal_errno,char *fmt,...);
 extern void init_warning(int maxwarning);
 /* Set the max number of warnings */
 
-extern void set_warning_line(char *fn,int line);
+extern void set_warning_line(const char *fn,int line);
 /* Set filename and linenumber for the warning */
   
 extern int get_warning_line(void);

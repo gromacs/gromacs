@@ -281,7 +281,7 @@ void init_warning(int maxwarning)
   nwarn   = 0;
 }
 
-void set_warning_line(char *s,int line)
+void set_warning_line(const char *s,int line)
 {
   strcpy(filenm,s);
   lineno = line;

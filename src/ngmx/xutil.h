@@ -61,7 +61,7 @@ extern int CheckWin(Window win,char *file, int line);
 extern void LightBorder(Display *disp, Window win, unsigned long color);
 
 extern void SpecialTextInRect(t_x11 *x11,XFontStruct *font,Drawable win,
-			      char *s,int x,int y,int width,int height,
+			      const char *s,int x,int y,int width,int height,
 			      eXPos eX,eYPos eY);
 
 extern void TextInRect(t_x11 *x11, Drawable win,

@@ -85,7 +85,7 @@ char *replace(const char *string,const char *search,const char *replace)
   return buf;
 }
 
-char *replaceww(char *string,const char *search,const char *replace)
+char *replaceww(const char *string,const char *search,const char *replace)
 {
   char *buf=NULL,*ptr=NULL,*bufptr=NULL;
   int  buflen,stringlen,searchlen,replacelen;

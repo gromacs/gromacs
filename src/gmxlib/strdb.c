@@ -162,7 +162,7 @@ int fget_lines(FILE *in,char ***strings)
   return nstr;
 }
 
-int get_lines(char *db,char ***strings)
+int get_lines(const char *db,char ***strings)
 {
   FILE *in;
   int  nstr;

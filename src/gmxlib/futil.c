@@ -489,9 +489,9 @@ bool get_libdir(char *libdir)
 }
 
 
-char *low_libfn(char *file, bool bFatal)
+const char *low_libfn(const char *file, bool bFatal)
 {
-  char *ret=NULL;
+  const char *ret=NULL;
   char *lib,*dir;
   static char buf[1024];
   static char libpath[4096];
@@ -540,10 +540,10 @@ char *low_libfn(char *file, bool bFatal)
 
 
 
-FILE *low_libopen(char *file,bool bFatal)
+FILE *low_libopen(const char *file,bool bFatal)
 {
   FILE *ff;
-  char *fn;
+  const char *fn;
 
   fn=low_libfn(file,bFatal);
 
@@ -558,12 +558,12 @@ FILE *low_libopen(char *file,bool bFatal)
   return ff;
 }
 
-char *libfn(char *file)
+const char *libfn(const char *file)
 {
   return low_libfn(file,TRUE);
 }
 
-FILE *libopen(char *file)
+FILE *libopen(const char *file)
 {
   return low_libopen(file,TRUE);
 }

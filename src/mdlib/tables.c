@@ -196,7 +196,7 @@ static void init_table(FILE *fp,int n,int nx0,int tabsel,
 
 static void read_tables(FILE *fp,char *fn,t_tabledata td[])
 {
-  char *libfn;
+  const char *libfn;
   real **yy=NULL;
   int  k,i,nx,nx0,ny,nny;
   bool bCont;

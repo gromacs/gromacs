@@ -47,7 +47,7 @@ typedef struct {
 } t_circle;
 
 typedef struct {
-  char        *text;
+  const char  *text;
   int         y,h;
   XFontStruct *fnt;
 } t_mess;
@@ -99,9 +99,9 @@ static bool LogoCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
   static t_mess Mess[] = {
     { "GROMACS",                         0,       20, NULL },
     { NULL,                             16,        9, NULL },
-    { "Copyright (c) 1991-1998",        COFFS+ 2,  9, NULL },
-    { "Dept. of Biophysical Chemistry", COFFS+11,  9, NULL },
-    { "University of Groningen",        COFFS+20,  9, NULL },
+    { "Copyright (c) 1991-2004",        COFFS+ 2,  9, NULL },
+    { "D.v.d.Spoel, E.Lindahl, B.Hess", COFFS+11,  9, NULL },
+    { "& Groningen University ",        COFFS+20,  9, NULL },
     { "click to dismiss",               COFFS+31,  8, NULL }
     };
 #define NMESS asize(Mess)

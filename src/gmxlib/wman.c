@@ -149,45 +149,56 @@ static char *mydate(char buf[], int maxsize)
   return buf;
 }
 
-static const char *repall(const char *s,int nsr,const t_sandr sa[])
+
+static char *repall(const char *s,int nsr,const t_sandr sa[])
 {
   int  i;
-  const char *buf;
-  char *buf2;
+  char *buf1,*buf2;
   
-  buf=s; 
+  /* Copy input to a non-constant char buffer.
+   * buf1 is allocated here 
+   */
+  buf1=strdup(s); 
+  
   for(i=0; (i<nsr); i++) {
-    buf2=replace(buf,sa[i].search,sa[i].replace);
-    if (i && buf)
-      sfree(buf);
-    buf=buf2;
+    /* Replace in buffer1, put result in buffer2.
+     * buf2 is allocated here.
+     */
+    buf2=replace(buf1,sa[i].search,sa[i].replace);
+    sfree(buf1);
+    buf1=buf2;
   }
   
-  return buf;
+  return buf1;
 } 
 
-static char *repallww(char *s,int nsr,const t_sandr sa[])
+static char *repallww(const char *s,int nsr,const t_sandr sa[])
 {
   int  i;
-  char *buf,*buf2;
+  char *buf1,*buf2;
+
+  /* Copy input to a non-constant char buffer.
+   * buf1 is allocated here 
+   */
+  buf1=strdup(s); 
   
-  buf=s; 
   for(i=0; (i<nsr); i++) {
-    buf2=replaceww(buf,sa[i].search,sa[i].replace);
-    if (i && buf)
-      sfree(buf);
-    buf=buf2;
+    /* Replace in buffer1, put result in buffer2.
+     * buf2 is allocated here.
+     */
+    buf2=replaceww(buf1,sa[i].search,sa[i].replace);
+    sfree(buf1);
+    buf1=buf2;
   }
-  
-  return buf;
+  return buf1;
 }
 
-const char *check_tex(const char *s)
+char *check_tex(const char *s)
 {
   return repall(s,NSRTEX,sandrTeX);
 }
 
-static const char *check_nroff(const char *s)
+static char *check_nroff(const char *s)
 {
   return repall(s,NSRNROFF,sandrNROFF);
 }
@@ -410,7 +421,7 @@ static void write_nroffman(FILE *out,
 
 }
 
-const char *check_tty(const char *s)
+char *check_tty(const char *s)
 {
   return repall(s,NSRTTY,sandrTty);
 }
@@ -418,7 +429,7 @@ const char *check_tty(const char *s)
 void print_tty_formatted(FILE *out, int nldesc, char **desc,int indent)
 {
   char *buf;
-  const char *temp;
+  char *temp;
   int i,j;
 
   /* Just to be sure */
@@ -479,7 +490,7 @@ static void write_ttyman(FILE *out,
   }
 }
 
-static const char *check_html(const char *s,char *program, t_linkdata *links)
+static char *check_html(const char *s,char *program, t_linkdata *links)
 {
   char *buf;
   

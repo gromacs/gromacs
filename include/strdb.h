@@ -59,7 +59,7 @@ extern int fget_lines(FILE *in,char ***strings);
  * the address of an array of strings (to be malloced by this routine)
  * return the number of strings.
  */
-extern int get_lines(char *db,char ***strings);
+extern int get_lines(const char *db,char ***strings);
 /* Open file db, or if non-existant file $GMXLIB/db and read strings 
  * return the number of strings.
  */

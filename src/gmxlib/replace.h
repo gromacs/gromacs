@@ -40,10 +40,12 @@
 extern char *replace(const char *string,const char *search,const char *replace);
 /* Replace all occurences of 
  * string 'search' in string 'string' by 'replace' 
+ * Return a newly allocated piece of memory!
  */
 
-extern char *replaceww(char *string,const char *search,const char *replace);
+extern char *replaceww(const char *string,const char *search,const char *replace);
 /* Replace all occurences of string 'search' delimited by non-alphanum
  * characters (i.e. whole words) in string 'string' by 'replace' 
+ * Return a newly allocated piece of memory!
  */
 #endif	/* _replace_h */

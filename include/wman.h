@@ -64,9 +64,9 @@ extern char *fileopt(unsigned long flag,char buf[],int maxsize);
  * a pointer to this buffer.
  */
 
-extern const char *check_tex(const char *s);
+extern char *check_tex(const char *s);
 
-extern const char *check_tty(const char *s);
+extern char *check_tty(const char *s);
 
 #endif	/* _wman_h */
 

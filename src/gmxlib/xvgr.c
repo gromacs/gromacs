@@ -221,7 +221,7 @@ static int wordcount(char *ptr)
   return n;
 }
 
-int read_xvg(char *fn,real ***y,int *ny)
+int read_xvg(const char *fn,real ***y,int *ny)
 {
   FILE   *fp;
   char   *ptr;

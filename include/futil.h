@@ -90,9 +90,9 @@ extern FILE *uncompress(char *fn,char *mode);
 extern FILE *gunzip(char *fn,char *mode);
 /* Open a pipe to uncompress or unzip files. Must be closed with pclose */
 
-extern char *libfn(char *file);
+extern const char *libfn(const char *file);
 
-  extern FILE *libopen(char *file);
+extern FILE *libopen(const char *file);
 /* Open a library file for reading. This looks in the current directory
  * first, and then in the library directory. If the file is not found,
  * it terminates with a fatal_error
@@ -100,9 +100,9 @@ extern char *libfn(char *file);
   
 extern bool get_libdir(char *libdir);
 
-extern char *low_libfn(char *file,bool bFatal);
+extern const char *low_libfn(const char *file,bool bFatal);
 
-extern FILE *low_libopen(char *file,bool bFatal);
+extern FILE *low_libopen(const char *file,bool bFatal);
 /* The same as the above, but does not terminate if (!bFatal) */
 
 /* Create unique name for temp file (wrapper around mkstemp). 

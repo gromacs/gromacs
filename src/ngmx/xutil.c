@@ -81,7 +81,7 @@ void LightBorder(Display *disp, Window win, unsigned long color)
 }
 
 void SpecialTextInRect(t_x11 *x11,XFontStruct *font,Drawable win,
-		       char *s,int x,int y,int width,int height,
+		       const char *s,int x,int y,int width,int height,
 		       eXPos eX,eYPos eY)
 {
   int         fw,fh,x0,y0;

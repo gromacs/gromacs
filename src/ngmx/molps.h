@@ -40,7 +40,7 @@
 #include "sysstuff.h"
 #include "manager.h"
 	
-extern void ps_draw_mol(FILE *ps,t_manager *man);
+extern void ps_draw_mol(t_psdata ps,t_manager *man);
 /* Draw molecules to a postscript file */
 
 #endif	/* _molps_h */
