@@ -49,9 +49,12 @@
 #include "futil.h"
 #include "fatal.h"
 #include "vec.h"
+#include "mdatoms.h"
 #include "ewald_util.h"
 #include "nsb.h"
+#include "rmpbc.h"
 #include "pme.h"
+#include "force.h"
 #include "xvgr.h"
 #include "pbc.h"
 #include "mpi.h"
@@ -79,24 +82,21 @@ static void do_my_pme(FILE *fp,real tm,bool bVerbose,t_inputrec *ir,
 		      rvec x[],rvec xbuf[],rvec f[],
 		      real charge[],real qbuf[],matrix box,bool bSort,
 		      t_commrec *cr,t_nsborder *nsb,t_nrnb *nrnb,
-		      real ewaldcoeff,t_block *excl,real qtot,
-		      int index[],FILE *fp_xvg)
+		      t_block *excl,real qtot,
+		      t_forcerec *fr,int index[],FILE *fp_xvg)
 {
   real   ener,vcorr,q,xx,dvdl=0;
   tensor vir,vir_corr,vir_tot;
   rvec   mu_tot[2];
   int    i,m,ii;
-  t_forcerec *fr;
 
   /* Initiate local variables */  
-  snew(fr,1);
-  fr->ewaldcoeff = ewaldcoeff;
   fr->f_el_recip = f;
   clear_mat(vir);
   clear_mat(vir_corr);
   
   /* Put x is in the box, this part needs to be parallellized properly */
-  put_atoms_in_box(box,nsb->natoms,x);
+  /*put_atoms_in_box(box,nsb->natoms,x);*/
   /* Here sorting of X (and q) is done.
    * Alternatively, one could just put the atoms in one of the
    * cr->nnodes slabs. That is much cheaper than sorting.
@@ -105,9 +105,10 @@ static void do_my_pme(FILE *fp,real tm,bool bVerbose,t_inputrec *ir,
     index[i] = i;
   if (bSort) {
     xptr = x;
-    qsort(index,sizeof(index[0]),nsb->natoms,comp_xptr);
+    qsort(index,nsb->natoms,sizeof(index[0]),comp_xptr);
+    xptr = NULL; /* To trap unintentional use of the ptr */
   }
-  /* After sortimg we only need the part that is to be computed on 
+  /* After sorting we only need the part that is to be computed on 
    * this processor. We also compute the mu_tot here (system dipole)
    */
   clear_rvec(mu_tot[0]);
@@ -129,7 +130,7 @@ static void do_my_pme(FILE *fp,real tm,bool bVerbose,t_inputrec *ir,
     pr_rvecs(debug,0,"box",box,DIM);
   }  
   ener  = do_pme(fp,bVerbose,ir,xbuf,f,qbuf,qbuf,box,cr,
-		 nsb,nrnb,vir,ewaldcoeff,0,&dvdl,FALSE);
+		 nsb,nrnb,vir,fr->ewaldcoeff,0,&dvdl,FALSE);
   vcorr = ewald_LRcorrection(fp,nsb,cr,fr,qbuf,qbuf,excl,xbuf,box,mu_tot,
 			     ir->ewald_geometry,ir->epsilon_surface,
 			     0,&dvdl);
@@ -200,6 +201,8 @@ int main(int argc,char *argv[])
   t_tpxheader tpx;
   t_nrnb      nrnb;
   t_nsborder  *nsb;
+  t_forcerec  *fr;
+  t_mdatoms   *mdatoms;
   char        title[STRLEN];
   int         natoms,step,status,i,ncg,root;
   real        t,lambda,ewaldcoeff,qtot;
@@ -311,6 +314,8 @@ int main(int argc,char *argv[])
     MPI_Bcast(charge,natoms,GMX_MPI_REAL,root,MPI_COMM_WORLD);
   }
   ewaldcoeff = calc_ewaldcoeff(ir->rcoulomb,ir->ewald_rtol);
+  
+  
   if (bVerbose)
     pr_inputrec(stdlog,0,"Inputrec",ir);
 
@@ -331,6 +336,12 @@ int main(int argc,char *argv[])
   calc_nsb(stdlog,&(top.blocks[ebCGS]),cr->nnodes,nsb,0);
   nsb->nodeid = cr->nodeid;
   print_nsb(stdlog,"pmetest",nsb);  
+
+  /* Initiate forcerec */
+  mdatoms = atoms2md(stdlog,&top.atoms,ir->opts.nFreeze,FALSE,
+		     ir->delta_t,0,ir->opts.tau_t,FALSE,FALSE);
+  snew(fr,1);
+  init_forcerec(stdlog,fr,ir,&top,cr,mdatoms,nsb,box,FALSE,NULL,FALSE);
   
   /* First do PME based on coordinates in tpr file, send them to
    * other processors if needed.
@@ -344,7 +355,7 @@ int main(int argc,char *argv[])
     MPI_Bcast(&t,1,GMX_MPI_REAL,root,MPI_COMM_WORLD);
   }
   do_my_pme(stdlog,0,bVerbose,ir,x,xbuf,f,charge,qbuf,box,bSort,
-	    cr,nsb,&nrnb,ewaldcoeff,&(top.atoms.excl),qtot,index,NULL);
+	    cr,nsb,&nrnb,&(top.atoms.excl),qtot,fr,index,NULL);
 
   /* If we have a trajectry file, we will read the frames in it and compute
    * the PME energy.
@@ -368,9 +379,10 @@ int main(int argc,char *argv[])
 	MPI_Bcast(box[0],DIM*DIM,GMX_MPI_REAL,root,MPI_COMM_WORLD);
 	MPI_Bcast(&t,1,GMX_MPI_REAL,root,MPI_COMM_WORLD);
       }
+      rm_pbc(&top.idef,nsb->natoms,box,x,x);
       /* Call the PME wrapper function */
       do_my_pme(stdlog,t,bVerbose,ir,x,xbuf,f,charge,qbuf,box,bSort,cr,
-		nsb,&nrnb,ewaldcoeff,&(top.atoms.excl),qtot,index,fp);
+		nsb,&nrnb,&(top.atoms.excl),qtot,fr,index,fp);
       /* Only the master processor reads more data */
       if (MASTER(cr))
 	bCont = read_next_x(status,&t,natoms,x,box);
