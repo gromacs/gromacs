@@ -777,35 +777,48 @@ static int ns_simple_core(t_forcerec *fr,
  *    N S 5     G R I D     S T U F F
  *
  ************************************************/
-static bool get_dx(int cx0,int cx1,int Nx,int tx,int delta,
-		   int *dx0,int *dx1)
+
+static gmx_inline void get_dx(int Nx,real gridx,real grid_x,real rc2,real x,
+			      int *dx0,int *dx1,real *dcx2)
 {
-  if (tx == 1) {
-    if (cx0 >= delta)
-      return TRUE;
-    else {
-      *dx0=Nx+cx0-delta;
-      *dx1=Nx-1;
-    }
-  } else if (tx == 0) {
-    if (cx0 < delta)
-      *dx0=0;
-    else
-      *dx0=cx0-delta;
-    if (cx1 < Nx-delta)
-      *dx1=cx1+delta;
-    else
-      *dx1=Nx-1;
+  real dcx,tmp;
+  int  xgi,xgi0,xgi1,i;
+
+  xgi = (int)(Nx+x*grid_x)-Nx;
+  if (xgi < 0) {
+    *dx0 = 0;
+    xgi0 = -1;
+    *dx1 = -1;
+    xgi1 = 0;
+  } else if (xgi >= Nx) {
+    *dx0 = Nx;
+    xgi0 = Nx-1;
+    *dx1 = Nx-1;
+    xgi1 = Nx;
   } else {
-    if (cx1 < Nx-delta)
-      return TRUE;
-    else {
-      *dx0=0;
-      *dx1=cx1+delta-Nx;
-    }
+    dcx2[xgi] = 0;
+    *dx0 = xgi;
+    xgi0 = xgi-1;
+    *dx1 = xgi;
+    xgi1 = xgi+1;
   }
 
-  return FALSE; 
+  for(i=xgi0; i>=0; i--) {
+     dcx = (i+1)*gridx-x;
+     tmp = dcx*dcx;
+     if (tmp >= rc2)
+       break;
+     *dx0 = i;
+     dcx2[i] = tmp;
+  }
+  for(i=xgi1; i<Nx; i++) {
+     dcx = i*gridx-x;
+     tmp = dcx*dcx;
+     if (tmp >= rc2)
+       break;
+     *dx1 = i;
+     dcx2[i] = tmp;
+  }
 }
 
 #define sqr(x) ((x)*(x))
@@ -816,7 +829,7 @@ static bool get_dx(int cx0,int cx1,int Nx,int tx,int delta,
  *    F A S T   N E I G H B O R  S E A R C H I N G
  *
  *    Optimized neighboursearching routine using grid 
- *    of at least 5x5x5, see GROMACS manual
+ *    at least 1x1x1, see GROMACS manual
  *
  ****************************************************/
 
@@ -866,15 +879,17 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
   t_block *cgs=&(top->blocks[ebCGS]);
   unsigned short  *gid=md->cENER;
   atom_id *i_atoms,*cgsatoms=cgs->a,*cgsindex=cgs->index;
-  int     tx,ty,tz,cx,cy,cz,dx,dy,dz,cj,cx0,cx1,cy0,cy1;
+  int     tx,ty,tz,dx,dy,dz,cj;
   int     dx0,dx1,dy0,dy1,dz0,dz1;
-  int     Nx,Ny,Nz,delta,shift=-1,j,nrj,nns,nn=-1;
-  real    grid_x,grid_y,margin_x,margin_y,sh_zx,sh_zy,sh_x;
+  int     Nx,Ny,Nz,shift=-1,j,nrj,nns,nn=-1;
+  real    gridx,gridy,gridz,grid_x,grid_y,grid_z;
+  real    margin_x,margin_y,sh_zx,sh_zy,sh_x;
   int     icg=-1,iicg,cgsnr,i0,nri,naaj,min_icg,icg_naaj,jjcg,cgj0,jgid;
   int     *grida,*gridnra,*gridind;
-  rvec    xi,*cgcm,*svec;
-  real    r2,rs2,rvdw2,rcoul2,XI,YI,ZI;
-  bool    bTriclinic,*i_eg_excl;
+  rvec    xi,*cgcm;
+  real    r2,rs2,rvdw2,rcoul2,XI,YI,ZI,dcx,dcy,dcz,tmp1,tmp2;
+  static real *dcx2=NULL,*dcy2=NULL,*dcz2=NULL;
+  bool    *i_eg_excl;
   
   cgsnr    = cgs->nr;
   rs2      = sqr(fr->rlist);
@@ -907,26 +922,32 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
     if (debug)
       fprintf(debug,"ns5_core: rs2 = %g, rvdw2 = %g, rcoul2 = %g (nm^2)\n",
 	      rs2,rvdw2,rcoul2);
+    
   }
-  
+
   /* Unpack arrays */
   cgcm    = fr->cg_cm;
-  svec    = fr->shift_vec;
   Nx      = grid->nrx;
   Ny      = grid->nry;
   Nz      = grid->nrz;
   grida   = grid->a;
   gridind = grid->index;
   gridnra = grid->nra;
-  delta   = grid->delta;
   nns     = 0;
 
-  /* Triclinic stuff */
-  bTriclinic = TRICLINIC(box);
-  grid_x     = grid->nrx/box[XX][XX];
-  grid_y     = grid->nry/box[YY][YY];
-  margin_x   = delta - fr->rlistlong*grid_x;
-  margin_y   = delta - fr->rlistlong*grid_y;
+  if (dcx2 == NULL) {
+    /* Allocate tmp arrays */
+    snew(dcx2,Nx*2);
+    snew(dcy2,Ny*2);
+    snew(dcz2,Nz*2);
+  }
+
+  gridx      = box[XX][XX]/grid->nrx;
+  gridy      = box[YY][YY]/grid->nry;
+  gridz      = box[ZZ][ZZ]/grid->nrz;
+  grid_x     = 1/gridx;
+  grid_y     = 1/gridy;
+  grid_z     = 1/gridz;
 
   /* Loop over charge groups */
   for(iicg=fr->cg0; (iicg < fr->hcg); iicg++) {
@@ -955,40 +976,27 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
     /* Changed iicg to icg, DvdS 990115 
      * (but see consistency check above, DvdS 990330) 
      */
-    ci2xyz(grid,icg,&cx,&cy,&cz);
 #ifdef NS5DB
-    fprintf(log,"icg=%5d, naaj=%5d, cx=%2d, cy=%2d, cz=%2d\n",
-	    icg,naaj,cx,cy,cz);
+    fprintf(log,"icg=%5d, naaj=%5d\n",icg,naaj);
 #endif
     /* Loop over shift vectors in three dimensions */
-    for (tz=-1; (tz<=1); tz++) {
+    for (tz=-1; tz<=1; tz++) {
+      ZI = cgcm[icg][ZZ]+tz*box[ZZ][ZZ];
       /* Calculate range of cells in Z direction that have the shift tz */
-      if (get_dx(cz,cz,Nz,tz,delta,&dz0,&dz1))
+      get_dx(Nz,gridz,grid_z,rcoul2,ZI,&dz0,&dz1,dcz2);
+      if (dz0 > dz1)
 	continue;
-      if (bTriclinic) {
-	sh_zx = tz*box[ZZ][XX]*grid_x;
-	sh_zy = tz*box[ZZ][YY]*grid_y;
-	cy0 = cy+(int)(floor(sh_zy+margin_y));
-	cy1 = cy+(int)(ceil(sh_zy-margin_y));
-      } else {
-	cy0 = cy;
-	cy1 = cy;
-      }
-      for (ty=-1; (ty<=1); ty++) {
+      for (ty=-1; ty<=1; ty++) {
+	YI = cgcm[icg][YY]+ty*box[YY][YY]+tz*box[ZZ][YY];
 	/* Calculate range of cells in Y direction that have the shift ty */
-	if (get_dx(cy0,cy1,Ny,ty,delta,&dy0,&dy1))
+	get_dx(Ny,gridy,grid_y,rcoul2,YI,&dy0,&dy1,dcy2);
+	if (dy0 > dy1)
 	  continue;
-	if (bTriclinic) {
-	  sh_x = sh_zx + ty*box[YY][XX]*grid_x;
-	  cx0 = cx+(int)(floor(sh_x+margin_x));
-	  cx1 = cx+(int)(ceil(sh_x-margin_x));
-	} else {
-	  cx0 = cx;
-	  cx1 = cx;
-	}
-	for (tx=-1; (tx<=1); tx++) {
+	for (tx=-1; tx<=1; tx++) {
+	  XI = cgcm[icg][XX]+tx*box[XX][XX]+ty*box[YY][XX]+tz*box[ZZ][XX];
 	  /* Calculate range of cells in X direction that have the shift tx */
-	  if (get_dx(cx0,cx1,Nx,tx,delta,&dx0,&dx1))
+	  get_dx(Nx,gridx,grid_x,rcoul2,XI,&dx0,&dx1,dcx2);
+	  if (dx0 > dx1)
 	    continue;
 	  /* Get shift vector */	  
 	  shift=XYZ2IS(tx,ty,tz);
@@ -996,9 +1004,6 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 	  assert(shift >= 0);
 	  assert(shift < SHIFTS);
 #endif
-	  XI       = cgcm[icg][XX]+svec[shift][XX];
-	  YI       = cgcm[icg][YY]+svec[shift][YY];
-	  ZI       = cgcm[icg][ZZ]+svec[shift][ZZ];
 	  for(nn=0; (nn<ngid); nn++) {
 	    nsr[nn]      = 0;
 	    nlr_ljc[nn]  = 0;
@@ -1012,68 +1017,75 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 	  fprintf(log,"xi:   %8.3f  %8.3f  %8.3f\n",XI,YI,ZI);
 #endif
 	  for (dx=dx0; (dx<=dx1); dx++) {
+	    tmp1 = rcoul2 - dcx2[dx];
 	    for (dy=dy0; (dy<=dy1); dy++) {
-	      for (dz=dz0; (dz<=dz1); dz++) {
-		/* Find the grid-cell cj in which possible neighbours are */
-		cj   = xyz2ci(Ny,Nz,dx,dy,dz);
-		
-		/* Check out how many cgs (nrj) there in this cell */
-		nrj  = gridnra[cj];
-		
-		/* Find the offset in the cg list */
-		cgj0 = gridind[cj];
-		
-		/* Loop over cgs */
-		for (j=0; (j<nrj); j++) {
-		  jjcg = grida[cgj0+j];
-
-		  /* check whether this guy is in range! */
-		  if (((jjcg >= icg) && (jjcg < icg_naaj)) ||
-		      ((jjcg < min_icg))) {
-		    r2=calc_dx2(XI,YI,ZI,cgcm[jjcg]);
-		    if (r2 < rcoul2) {
-		      jgid = gid[cgsatoms[cgsindex[jjcg]]];
-		      if (!i_eg_excl[jgid]) {
-			if (r2 < rs2) {
-			  if (nsr[jgid] >= MAX_CG) {
-			    put_in_list(bHaveLJ,fr->nWater,
-					ngid,md,icg,jgid,nsr[jgid],nl_sr[jgid],
-					cgsindex,cgsatoms,bexcl,
-					shift,fr,FALSE,FALSE);
-			    nsr[jgid]=0;
+	      tmp2 = tmp1 - dcy2[dy];
+	      if (tmp2 > 0)
+		for (dz=dz0; (dz<=dz1); dz++) {
+		  if (tmp2 > dcz2[dz]) {
+		    /* Find grid-cell cj in which possible neighbours are */
+		    cj   = xyz2ci(Ny,Nz,dx,dy,dz);
+		    
+		    /* Check out how many cgs (nrj) there in this cell */
+		    nrj  = gridnra[cj];
+		    
+		    /* Find the offset in the cg list */
+		    cgj0 = gridind[cj];
+		    
+		    /* Loop over cgs */
+		    for (j=0; (j<nrj); j++) {
+		      jjcg = grida[cgj0+j];
+		      
+		      /* check whether this guy is in range! */
+		      if (((jjcg >= icg) && (jjcg < icg_naaj)) ||
+			  ((jjcg < min_icg))) {
+			r2=calc_dx2(XI,YI,ZI,cgcm[jjcg]);
+			if (r2 < rcoul2) {
+			  jgid = gid[cgsatoms[cgsindex[jjcg]]];
+			  /* check energy group exclusions */
+			  if (!i_eg_excl[jgid]) {
+			    if (r2 < rs2) {
+			      if (nsr[jgid] >= MAX_CG) {
+				put_in_list(bHaveLJ,fr->nWater,
+					    ngid,md,icg,jgid,
+					    nsr[jgid],nl_sr[jgid],
+					    cgsindex,cgsatoms,bexcl,
+					    shift,fr,FALSE,FALSE);
+				nsr[jgid]=0;
+			      }
+			      nl_sr[jgid][nsr[jgid]++]=jjcg;
+			    } 
+			    else if (r2 < rvdw2) {
+			      if (nlr_ljc[jgid] >= MAX_CG) {
+				do_longrange(log,top,fr,ngid,md,icg,jgid,
+					     nlr_ljc[jgid],
+					     nl_lr_ljc[jgid],bexcl,shift,x,
+					     box_size,nrnb,
+					     lambda,dvdlambda,grps,FALSE,FALSE,
+					     bHaveLJ);
+				nlr_ljc[jgid]=0;
+			      }
+			      nl_lr_ljc[jgid][nlr_ljc[jgid]++]=jjcg;
+			    } 
+			    else {
+			      if (nlr_coul[jgid] >= MAX_CG) {
+				do_longrange(log,top,fr,ngid,md,icg,jgid,
+					     nlr_coul[jgid],
+					     nl_lr_coul[jgid],bexcl,shift,x,
+					     box_size,nrnb,
+					     lambda,dvdlambda,grps,TRUE,FALSE,
+					     bHaveLJ);
+				nlr_coul[jgid]=0;
+			      }
+			      nl_lr_coul[jgid][nlr_coul[jgid]++]=jjcg;
+			    }
 			  }
-			  nl_sr[jgid][nsr[jgid]++]=jjcg;
-			} 
-			else if (r2 < rvdw2) {
-			  if (nlr_ljc[jgid] >= MAX_CG) {
-			    do_longrange(log,top,fr,ngid,md,icg,jgid,
-					 nlr_ljc[jgid],
-					 nl_lr_ljc[jgid],bexcl,shift,x,
-					 box_size,nrnb,
-					 lambda,dvdlambda,grps,FALSE,FALSE,
-					 bHaveLJ);
-			    nlr_ljc[jgid]=0;
-			  }
-			  nl_lr_ljc[jgid][nlr_ljc[jgid]++]=jjcg;
-			} 
-			else {
-			  if (nlr_coul[jgid] >= MAX_CG) {
-			    do_longrange(log,top,fr,ngid,md,icg,jgid,
-					 nlr_coul[jgid],
-					 nl_lr_coul[jgid],bexcl,shift,x,
-					 box_size,nrnb,
-					 lambda,dvdlambda,grps,TRUE,FALSE,
-					 bHaveLJ);
-			    nlr_coul[jgid]=0;
-			  }
-			  nl_lr_coul[jgid][nlr_coul[jgid]++]=jjcg;
 			}
+			nns++;
 		      }
 		    }
-		    nns++;
 		  }
 		}
-	      }
 	    }
 	  }
 	  /* CHECK whether there is anything left in the buffers */
