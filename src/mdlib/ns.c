@@ -344,6 +344,9 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
 				   t_excl bExcl[],int shift,
 				   t_forcerec *fr,bool bLR,bool bCoulOnly)
 {
+  /* The a[] index has been removed,
+     to put it back in i_atom should be a[i0] and jj should be a[jj].
+     */
   t_nblist  *vdw,*coul,*free=NULL;
   
   int 	    i,j,jcg,igid,gid,ind_ij;
@@ -687,17 +690,18 @@ static void ns_inner_tric(rvec x[],int icg,bool *i_eg_excl,
 {
   int      shift;
   int      j,nrj,jgid;
-  atom_id  cg_j,*cgindex,*cga;
+  atom_id  cg_j,*cgindex /* ,*cga */;
   t_ns_buf *nsbuf;
   
   cgindex = cgs->index;
-  cga     = cgs->a;
+  /* cga     = cgs->a; */
   shift   = CENTRAL;
   for(j=0; (j<njcg); j++) {
     cg_j   = jcg[j];
     nrj    = cgindex[cg_j+1]-cgindex[cg_j];
     if (calc_image_tric(x[icg],x[cg_j],box,b_inv,&shift) < rcut2) {
-      jgid  = gid[cga[cgindex[cg_j]]];
+      /* jgid  = gid[cga[cgindex[cg_j]]]; */
+      jgid  = gid[cgindex[cg_j]];
       if (!i_eg_excl[jgid]) {
 	add_simple(&ns_buf[jgid][shift],nrj,cg_j,
 		   bHaveLJ,ngid,md,icg,jgid,cgs,bexcl,shift,fr);
@@ -715,18 +719,19 @@ static void ns_inner_rect(rvec x[],int icg,bool *i_eg_excl,
 {
   int      shift;
   int      j,nrj,jgid;
-  atom_id  cg_j,*cgindex,*cga;
+  atom_id  cg_j,*cgindex /* ,*cga */;
   t_ns_buf *nsbuf;
 
   cgindex = cgs->index;
-  cga     = cgs->a;
+  /* cga     = cgs->a; */
   if (bBox) {
     shift = CENTRAL;
     for(j=0; (j<njcg); j++) {
       cg_j   = jcg[j];
       nrj    = cgindex[cg_j+1]-cgindex[cg_j];
       if (calc_image_rect(x[icg],x[cg_j],box_size,b_inv,&shift) < rcut2) {
-	jgid  = gid[cga[cgindex[cg_j]]];
+	/* jgid  = gid[cga[cgindex[cg_j]]]; */
+	jgid  = gid[cgindex[cg_j]];
 	if (!i_eg_excl[jgid]) {
 	  add_simple(&ns_buf[jgid][shift],nrj,cg_j,
 		     bHaveLJ,ngid,md,icg,jgid,cgs,bexcl,shift,fr);
@@ -739,7 +744,8 @@ static void ns_inner_rect(rvec x[],int icg,bool *i_eg_excl,
       cg_j   = jcg[j];
       nrj    = cgindex[cg_j+1]-cgindex[cg_j];
       if ((rcut2 == 0) || (distance2(x[icg],x[cg_j]) < rcut2)) {
-	jgid  = gid[cga[cgindex[cg_j]]];
+	/* jgid  = gid[cga[cgindex[cg_j]]]; */
+	jgid  = gid[cgindex[cg_j]];
 	if (!i_eg_excl[jgid]) {
 	  add_simple(&ns_buf[jgid][CENTRAL],nrj,cg_j,
 		     bHaveLJ,ngid,md,icg,jgid,cgs,bexcl,CENTRAL,fr);
@@ -1096,7 +1102,8 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 			  ((jjcg < min_icg))) {
 			r2=calc_dx2(XI,YI,ZI,cgcm[jjcg]);
 			if (r2 < rcoul2) {
-			  jgid = gid[cgsatoms[cgsindex[jjcg]]];
+			  /* jgid = gid[cgsatoms[cgsindex[jjcg]]]; */
+			  jgid = gid[cgsindex[jjcg]];
 			  /* check energy group exclusions */
 			  if (!i_eg_excl[jgid]) {
 			    if (r2 < rs2) {
