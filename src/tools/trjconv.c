@@ -553,6 +553,8 @@ int main(int argc,char *argv[])
   char         *gn_fit,*gn_rms;
   t_cluster_ndx *clust;
   int          *clust_status;
+  int          ntrxopen=0;
+  int          *nfwritten;
   real         tshift=0,t0=-1,dt=0.001,prec;
   bool         bPBC,bPBCcom,bInBox,bNoJump,bRect,bTric,bComp,bCluster;
   bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
@@ -688,11 +690,9 @@ int main(int argc,char *argv[])
 		  clust->clust->nr,1+clust->clust->nr/FOPEN_MAX,FOPEN_MAX);
       
       snew(clust_status,clust->clust->nr);
-      for(i=0; (i<clust->clust->nr); i++) {
-	char buf[STRLEN];
-	sprintf(buf,"%s.%s",clust->grpname[i],ftp2ext(ftp));
-	clust_status[i] = open_trx(buf,"w");
-      }
+      snew(nfwritten,clust->clust->nr);
+      for(i=0; (i<clust->clust->nr); i++)
+	clust_status[i] = -1;
       bSeparate = bSplit = FALSE;
     }
     /* skipping */  
@@ -881,10 +881,15 @@ int main(int argc,char *argv[])
 	  newstep++;
 	}
 	if (bSubTraj) {
-	  if (frame >= clust->clust->nra)
-	    gmx_fatal(FARGS,"There are more frames in the trajectory than in the cluster index file\n");
-	  my_clust = clust->inv_clust[frame];
-	  range_check(my_clust,0,clust->clust->nr);
+	  /*if (frame >= clust->clust->nra)
+	    gmx_fatal(FARGS,"There are more frames in the trajectory than in the cluster index file\n");*/
+	  if (frame >= clust->maxframe)
+	    my_clust = -1;
+	  else
+	    my_clust = clust->inv_clust[frame];
+	  if ((my_clust < 0) || (my_clust >= clust->clust->nr) || 
+	      (my_clust == NO_ATID))
+	    my_clust = -1;
 	}
 	
 	if (bSetBox) {
@@ -1055,8 +1060,31 @@ int main(int argc,char *argv[])
 		  close_trx(trxout);
 		trxout = open_trx(out_file2,filemode);
 	      }
-	      if (bSubTraj)
-		write_trxframe(clust_status[my_clust],&frout);
+	      if (bSubTraj) {
+		if (my_clust != -1) {
+		  char buf[STRLEN];
+		  if (clust_status[my_clust] == -1) {
+		    sprintf(buf,"%s.%s",clust->grpname[my_clust],ftp2ext(ftp));
+		    clust_status[my_clust] = open_trx(buf,"w");
+		    ntrxopen++;
+		  }
+		  else if (clust_status[my_clust] == -2)
+		    gmx_fatal(FARGS,"File %s.xtc should still be open (%d open xtc files)\n""in order to write frame %d. my_clust = %d",
+			      clust->grpname[my_clust],ntrxopen,frame,
+			      my_clust);
+		  write_trxframe(clust_status[my_clust],&frout);
+		  nfwritten[my_clust]++;
+		  if (nfwritten[my_clust] == 
+		      (clust->clust->index[my_clust+1]-
+		       clust->clust->index[my_clust])) {
+		    close_trx(clust_status[my_clust]);
+		    clust_status[my_clust] = -2;
+		    ntrxopen--;
+		    if (ntrxopen < 0)
+		      gmx_fatal(FARGS,"Less than zero open xtc files!");
+		  }
+		}
+	      }
 	      else
 		write_trxframe(trxout,&frout);
 	      break;
@@ -1139,6 +1167,9 @@ int main(int argc,char *argv[])
       close_trx(trxout);
     else if (out != NULL)
       fclose(out);
+    for(i=0; (i<clust->clust->nr); i++)
+      if (clust_status[i] >= 0)
+	close_trx(clust_status[i]);
   }
   
   do_view(out_file,NULL);

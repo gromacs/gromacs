@@ -84,6 +84,7 @@ void get_index(t_atoms *atoms, char *fnm, int ngrps,
  */ 
 
 typedef struct {
+  int     maxframe;
   char    **grpname;
   t_block *clust;
   atom_id *inv_clust;

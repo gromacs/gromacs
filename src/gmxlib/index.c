@@ -52,6 +52,7 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "invblock.h"
+#include "macros.h"
 #include "index.h"
 
 typedef enum { etOther, etProt, etDNA, erestNR } eRestp;
@@ -750,12 +751,20 @@ t_cluster_ndx *cluster_index(char *ndx)
   
   snew(c,1);
   c->clust     = init_index(ndx,&c->grpname);
-  for(i=0; (i<c->clust->nra); i++)
-    range_check(c->clust->a[i],0,c->clust->nra);
-  c->inv_clust=make_invblock(c->clust,c->clust->nra);
+  if (debug) {
+    for(i=0; (i<c->clust->nra); i++)
+      range_check(c->clust->a[i],0,c->clust->nra);
+    c->maxframe = c->clust->nra;
+  }
+  else {
+    c->maxframe = -1;
+    for(i=0; (i<c->clust->nra); i++)
+      c->maxframe = max(c->maxframe,c->clust->a[i]);
+  }
+  c->inv_clust=make_invblock(c->clust,c->maxframe);
   fprintf(stdlog ? stdlog : stdout,
-	  "There are %d clusters containing %d structures\n",
-	  c->clust->nr,c->clust->nra);
+	  "There are %d clusters containing %d structures, highest framenr is %d\n",
+	  c->clust->nr,c->clust->nra,c->maxframe);
 	  
   return c;
 }
