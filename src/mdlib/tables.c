@@ -132,28 +132,31 @@ static void splint(real xa[],real ya[],real y2a[],
 }
 
 static void copy2table(int n,int n0,int stride,
-		real x[],real Vtab[],real Vtab2[],real dest[],real r_zeros)
+		       real x[],real Vtab[],real Vtab2[],
+		       real dest[],real r_zeros)
 {
-  int  i;
+  int  i,nn0;
   real F,G,H,h;
     
   for(i=1; (i<n); i++) {
-    h = x[i+1]-x[i];
-    F = (Vtab[i+1]-Vtab[i]-(h*h/6.0)*(2*Vtab2[i]+Vtab2[i+1]));
-    G = (h*h/2.0)*Vtab2[i];
-    H = (h*h/6.0)*(Vtab2[i+1]-Vtab2[i]);
-    dest[n0+i*stride]   = Vtab[i];
-    dest[n0+i*stride+1] = F;
-    dest[n0+i*stride+2] = G;
-    dest[n0+i*stride+3] = H;
+    h   = x[i+1]-x[i];
+    F   = (Vtab[i+1]-Vtab[i]-(h*h/6.0)*(2*Vtab2[i]+Vtab2[i+1]));
+    G   = (h*h/2.0)*Vtab2[i];
+    H   = (h*h/6.0)*(Vtab2[i+1]-Vtab2[i]);
+    nn0 = n0+i*stride;
+    dest[nn0]   = Vtab[i];
+    dest[nn0+1] = F;
+    dest[nn0+2] = G;
+    dest[nn0+3] = H;
   }
   if (r_zeros > 0.0) {
     for(i=1; (i<n); i++) {
       if (0.5*(x[i]+x[i+1]) >= r_zeros) {
-	dest[n0+i*stride]   = 0.0;
-	dest[n0+i*stride+1] = 0.0;
-	dest[n0+i*stride+2] = 0.0;
-	dest[n0+i*stride+3] = 0.0;
+	nn0 = n0+i*stride;
+	dest[nn0]   = 0.0;
+	dest[nn0+1] = 0.0;
+	dest[nn0+2] = 0.0;
+	dest[nn0+3] = 0.0;
       }
     }
   }
@@ -510,13 +513,13 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose,char *fn)
 {
   static char *fns[3] = { "ctab.xvg", "dtab.xvg", "rtab.xvg" };
   FILE        *fp;
-  t_tabledata td[etiNR];
+  t_tabledata *td;
   bool        bReadTab,bGenTab;
   real        x0,y0,yp;
   int         i,j,k,nx,nx0,tabsel[etiNR];
  
   set_table_type(tabsel,fr);
-  
+  snew(td,etiNR);
   fr->tabscale = 0;
   fr->rtab     = 0;
   nx0          = 10;
@@ -553,7 +556,7 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose,char *fn)
 	      (fr->efep != efepNO) ? " for 1-4 and FEP int.":" for 1-4 int.",
 	      fr->rtab,fr->tabscale,fr->ntab);
   }
-  snew(fr->coulvdwtab,12*nx+1);
+  snew(fr->coulvdwtab,12*(nx+1)+1);
   for(k=0; (k<etiNR); k++) {
     if (tabsel[k] != etabUSER) {
       init_table(out,nx,nx0,tabsel[k],
@@ -580,5 +583,6 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose,char *fn)
     }
     done_tabledata(&(td[k]));
   }
+  sfree(td);
 }
 
