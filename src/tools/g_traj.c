@@ -292,8 +292,8 @@ int main(int argc,char *argv[])
   };
   FILE       *outx=NULL,*outv=NULL,*outf=NULL,*outb=NULL,*outt=NULL,*outekr=NULL;
   t_topology top;
-  real       *mass;
-  char       title[STRLEN],*indexfn;
+  real       *mass,time;
+  char       title[STRLEN],*indexfn,timelabel[256];
   t_trxframe fr;
   int        flags;
   rvec       *xtop,*xp=NULL;
@@ -323,7 +323,8 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+  parse_common_args(&argc,argv,
+		    PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
 
   if (bMol)
@@ -389,30 +390,32 @@ int main(int argc,char *argv[])
   } else
     mass = NULL;
 
+  sprintf(timelabel, "Time (%s)", time_label());
+
   flags = 0;
   if (bOX) {
     flags = flags | TRX_READ_X;
     outx = xvgropen(opt2fn("-ox",NFILE,fnm),
 		    bCom ? "Center of mass" : "Coordinate",
-		    "Time (ps)","Coordinate (nm)");
+		    timelabel,"Coordinate (nm)");
     make_legend(outx,ngrps,isize0[0],index0[0],grpname,bCom,bMol,bDim);
   }
   if (bOV) {
     flags = flags | TRX_READ_V;
     outv = xvgropen(opt2fn("-ov",NFILE,fnm),
 		    bCom ? "Center of mass velocity" : "Velocity",
-		    "Time (ps)","Velocity (nm/ps)");
+		    timelabel,"Velocity (nm/ps)");
    make_legend(outv,ngrps,isize0[0],index0[0],grpname,bCom,bMol,bDim); 
   }
   if (bOF) {
     flags = flags | TRX_READ_F;
     outf = xvgropen(opt2fn("-of",NFILE,fnm),"Force",
-		    "Time (ps)","Force (kJ mol\\S-1\\N nm\\S-1\\N)");
+		    timelabel,"Force (kJ mol\\S-1\\N nm\\S-1\\N)");
     make_legend(outf,ngrps,isize0[0],index0[0],grpname,bCom,bMol,bDim);
   }
   if (bOB) {
     outb = xvgropen(opt2fn("-ob",NFILE,fnm),"Box vector elements",
-		    "Time (ps)","(nm)");
+		    timelabel,"(nm)");
    
     xvgr_legend(outb,6,box_leg);
   }
@@ -422,7 +425,7 @@ int main(int argc,char *argv[])
     bDum[ZZ] = FALSE;
     bDum[DIM] = TRUE;
     flags = flags | TRX_READ_V;
-    outt = xvgropen(opt2fn("-ot",NFILE,fnm),"Temperature","Time (ps)","(K)");
+    outt = xvgropen(opt2fn("-ot",NFILE,fnm),"Temperature",timelabel,"(K)");
     make_legend(outt,ngrps,isize[0],index[0],grpname,bCom,bMol,bDum);
   }
   if (bEKR) {
@@ -432,7 +435,7 @@ int main(int argc,char *argv[])
     bDum[DIM] = TRUE;
     flags = flags | TRX_READ_X | TRX_READ_V;
     outekr = xvgropen(opt2fn("-ekr",NFILE,fnm),"Center of mass rotation",
-		      "Time (ps)","Energy (kJ mol\\S-1\\N)");
+		      timelabel,"Energy (kJ mol\\S-1\\N)");
     make_legend(outekr,ngrps,isize[0],index[0],grpname,bCom,bMol,bDum);
   }
   if (flags == 0 && !bOB) {
@@ -443,6 +446,8 @@ int main(int argc,char *argv[])
   read_first_frame(&status,ftp2fn(efTRX,NFILE,fnm),&fr,flags);
 
   do {
+    time = convert_time(fr.time);
+
     if (fr.bX && bNoJump && fr.bBox) {
       if (xp)
 	remove_jump(fr.box,fr.natoms,xp,fr.x);
@@ -456,23 +461,23 @@ int main(int argc,char *argv[])
       rm_pbc(&(top.idef),fr.natoms,fr.box,fr.x,fr.x);
 
     if (bOX && fr.bX)
-      print_data(outx,fr.time,fr.x,mass,bCom,ngrps,isize,index,bDim);
+      print_data(outx,time,fr.x,mass,bCom,ngrps,isize,index,bDim);
     if (bOV && fr.bV)
-      print_data(outv,fr.time,fr.v,mass,bCom,ngrps,isize,index,bDim);
+      print_data(outv,time,fr.v,mass,bCom,ngrps,isize,index,bDim);
     if (bOF && fr.bF)
-      print_data(outf,fr.time,fr.f,NULL,bCom,ngrps,isize,index,bDim);
+      print_data(outf,time,fr.f,NULL,bCom,ngrps,isize,index,bDim);
     if (bOB && fr.bBox)
       fprintf(outb,"\t%g\t%g\t%g\t%g\t%g\t%g\t%g\n",fr.time,
 	      fr.box[XX][XX],fr.box[YY][YY],fr.box[ZZ][ZZ],
 	      fr.box[YY][XX],fr.box[ZZ][XX],fr.box[ZZ][YY]);
     if (bOT && fr.bV) {
-      fprintf(outt," %g",fr.time);
+      fprintf(outt," %g",time);
       for(i=0; i<ngrps; i++)
 	fprintf(outt,"\t%g",temp(fr.v,mass,isize[i],index[i]));
       fprintf(outt,"\n");
     }
     if (bEKR && fr.bX && fr.bV) {
-      fprintf(outekr," %g",fr.time);
+      fprintf(outekr," %g",time);
       for(i=0; i<ngrps; i++)
 	fprintf(outekr,"\t%g",ekrot(fr.x,fr.v,mass,isize[i],index[i]));
       fprintf(outekr,"\n");
