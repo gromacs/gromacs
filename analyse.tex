@@ -566,9 +566,10 @@ ${\bf p}_i(t)$:
 {\bf p}(t) = T^T M^{\frac{1}{2}} ({\bf x}(t) - \langle {\bf x} \rangle)
 \eeq
 The eigenvalue $\lambda_i$ is the mean square fluctuation of principal
-component $i$. The first few principal components often describe global
-motions of the system. The trajectory can be filtered along one (or more)
-principal modes. For one principal mode $i$ this goes as follows:
+component $i$. The first few principal modes often describe 
+collective, global motions in the system.
+The trajectory can be filtered along one (or more) principal modes.
+For one principal mode $i$ this goes as follows:
 \beq
 {\bf x}_{filtered}(t) =
 \langle {\bf x} \rangle + M^{-\frac{1}{2}} T {\bf p}_i(t)
@@ -580,11 +581,11 @@ only. This can be achieved by least square fitting to a reference structure.
 Care has to be taken that the reference structure is representative for the
 ensemble, since the choice of reference structure influences the covariance
 matrix.
-One should always check if the principal components are well defined.
+One should always check if the principal modes are well defined.
 If the first principal component resembles a half cosine and
 the second resembles a full cosine, you might be filtering noise.
 A good way to check the relevance of the first few principal
-components is to calculate the eigenvector subspace overlap between
+modes is to calculate the eigenvector subspace overlap between
 the first and second half of the simulation. 
 The overlap between two sets of $n$ orthonormal vectors
 ${\bf v}_1,\ldots,{\bf v}_n$ and ${\bf w}_1,\ldots,{\bf w}_n$
