@@ -1110,6 +1110,8 @@ int main(int argc,char *argv[])
     snew(v,atoms->nr);
   fprintf(stderr,"\nReading structure file\n");
     read_stx_conf(stxfile,title,atoms,x,v,box);
+    natoms = atoms->nr;
+    bNatoms=TRUE;
   } else {
     atoms = NULL;
     x = NULL;
