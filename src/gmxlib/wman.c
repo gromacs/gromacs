@@ -222,29 +222,28 @@ static void write_texman(FILE *out,char *program,
   
   fprintf(out,"\\section{\\normindex{%s}}\n\n",check_tex(program));
   
-  if (nldesc > 0) {
-    fprintf(out,"\n\\subsubsection*{Description}\n\n");
+  if (nldesc > 0)
     for(i=0; (i<nldesc); i++) 
       fprintf(out,"%s\n",check_tex(desc[i]));
-  }
+
   if (nfile > 0) {
-    fprintf(out,"\n\\subsubsection*{Files}\n\n");
-    fprintf(out,"\\begin{tabbing}\n");
+    fprintf(out,"\n{\\normalsize \\bf Files}\n");
+    fprintf(out,"\\vspace{-2ex}\\begin{tabbing}\n");
     fprintf(out,"~~~~~~~~~~ \\= ~~~~~~~~~~~~~~~~~~~~~ \\= "
-	    "~~~~~~~~~~~~~~~~~~~~~ \\= \\\\\n");
+	    "~~~~~~~~~~~~~~~~~~~~~ \\= \\kill\n");
     for(i=0; (i<nfile); i++)
       fprintf(out,"%s \\> %s \\> %s \\> "
 	      "\\parbox[t]{0.55\\linewidth}{%s} \\\\\n",
 	      check_tex(fnm[i].opt),check_tex(fnm[i].fn),
 	      check_tex(fileopt(fnm[i].flag)),
 	      check_tex(ftp2desc(fnm[i].ftp)));
-    fprintf(out,"\\end{tabbing}\n");
+    fprintf(out,"\\end{tabbing}\\vspace{-4ex}\n");
   }
   if (npargs > 0) {
-    fprintf(out,"\n\\subsubsection*{Other options}\n\n");
-    fprintf(out,"\\begin{tabbing}\n");
+    fprintf(out,"\n{\\normalsize \\bf Other options}\n");
+    fprintf(out,"\\vspace{-2ex}\\begin{tabbing}\n");
     fprintf(out,"~~~~~~~~~~~~~~~~~ \\= ~~~~~~~~~ \\= "
-	    "~~~~~~~~~~~~ \\= \\\\\n");
+	    "~~~~~~~~~~ \\= \\kill\n");
     for(i=0; (i<npargs); i++) {
       fprintf(out,"%s \\> %s \\> %s \\> "
 	      "\\parbox[t]{0.65\\linewidth}{%s}\\\\\n",
@@ -252,10 +251,10 @@ static void write_texman(FILE *out,char *program,
 	      check_tex(pa_val(&(pa[i]))),
 	      check_tex(pa[i].desc));
     }
-    fprintf(out,"\\end{tabbing}\n");
+    fprintf(out,"\\end{tabbing}\\vspace{-4ex}\n");
   }
   if (nbug > 0) {
-    fprintf(out,"\n\\subsubsection*{Diagnostics}\n\n");
+    fprintf(out,"\n{\\normalsize \\bf Diagnostics}\n");
     fprintf(out,"\\begin{itemize}\n");
     for(i=0; (i<nbug); i++)
       fprintf(out,"\\item\t%s\n",check_tex(bugs[i]));
