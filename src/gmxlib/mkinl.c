@@ -92,27 +92,34 @@ static char *SRCID_mkinl_c = "$Id$";
  *                     have special hardware invsqrt instructions.
  *                     (but the PPC604 available in some ibm smp nodes doesnt)
  *
+ * -DGMX_RECIP         Same as invsqrt, but this is for 1/x. This
+ *                     should NOT be used without checking - most 
+ *                     computers have a more efficient hardware
+ *                     routine, but it may help on SOME x86 boxes.
+ *
  * INNERLOOP OPTIMIZATION OPTIONS:  
  * 
- * -DINLINE_INVSQRT    This inlines the gromacs inverse square root 
- *                     on architecture which use it, saving some
- *                     calling time in the inner loops.  
+ * -DINLINE_GMXCODE    This inlines the gromacs inverse square root 
+ *                     and/or reciprocal on architectures which use
+ *                     it, saving some calling time in the inner loops.  
  *
  * -DPREFETCH_F        Prefetching of forces. The two extra options 
- * -DPREFETCH_F_MORE   additionally does it for single water and 
- * -DPREFETCH_F_MOST   water-water loops.
+ * -DPREFETCH_F_W      additionally does it for single water and 
+ * -DPREFETCH_F_WW     water-water loops.
  * 
  * -DPREFETCH_X        Prefetches coordinates.
- * -DPREFETCH_X_MORE   In general, more prefetching is better, but on
- * -DPREFETCH_X_MOST   processors with few registers (x86) it can decrease
+ * -DPREFETCH_X_W      In general, more prefetching is better, but on
+ * -DPREFETCH_X_WW     processors with few registers (x86) it can decrease
  *                     performance when we run out of them.
  *                     This is even more probable for the water-water loops,
  *                     so they have special options.
  *
- * -DVECTORIZE_INVSQRT Vectorize the corresponding part of the force
- * -DVECTORIZE_RECIP   calculation. This can avoid cache trashing, and
- *                     in some cases it makes it possible to use vector
- *                     intrinsic functions. (also on scalar machines)
+ * -DVECTORIZE_INVSQRT    Vectorize the corresponding part of the force
+ * -DVECTORIZE_INVSQRT_W  calculation. This can avoid cache trashing, and
+ * -DVECTORIZE_INVSQRT_WW in some cases it makes it possible to use vector
+ * -DVECTORIZE_RECIP      intrinsic functions. (also on scalar machines)
+ *                        The two extra invsqrt options control water
+ *                        loops in the same way as the prefetching.           
  *
  * -DDECREASE_SQUARE_LATENCY  Try to hide latencies by doing some operations
  * -DDECREASE_LOOKUP_LATENCY  in parallel rather than serial in the innermost loop.
@@ -178,7 +185,13 @@ void set_loop_options(void)
   loop.coul_needs_r=DO_COULTAB;
   /* tabulated coulomb needs r */ 
 
-  loop.vdw_needs_rinv=DO_VDWTAB;
+  /* If we are vectorizing the invsqrt it is probably faster to
+   * include the vdw-only atoms in that loop and square the
+   * result to get rinvsq. Just tell the generator we want rinv for
+   * those atoms too:
+   */
+  loop.vdw_needs_rinv=DO_VDWTAB || (loop.coul && loop.vectorize_invsqrt);
+  
   /* table nb needs 1/r */
   loop.vdw_needs_rinvsq=(loop.vdw && !DO_VDWTAB);
   /* all other need r^-2 */
@@ -194,7 +207,11 @@ void set_loop_options(void)
   
   loop.recip=!loop.invsqrt;
 
-  loop.vectorize_invsqrt=loop.invsqrt && opt.vectorize_invsqrt;
+  loop.vectorize_invsqrt=loop.invsqrt && 
+    (opt.vectorize_invsqrt==YES_WW || 
+     (opt.vectorize_invsqrt==YES_W && loop.sol!=SOL_WATERWATER) ||
+     (opt.vectorize_invsqrt==YES && !DO_WATER));
+
   loop.vectorize_recip=loop.recip && opt.vectorize_recip;
      
   table_element_size=0;
@@ -226,7 +243,7 @@ void make_func(char *appendname)
   /* The innerloop creation is called from the outerloop creation */
 #if (defined __GNUC__ && defined _lnx_ && defined FAST_X86TRUNC)
   if(bC && DO_TAB)
-    strcat(codebuffer,"asm(\"fldcw %0\" : : \"m\" (*&x86_cwsave));\n");
+    strcat(codebuffer,"asm(\"fldcw %%0\" : : \"m\" (*&x86_cwsave));\n");
 #endif
   close_func();
 }
@@ -267,16 +284,24 @@ int main(int argc,char *argv[])
 #ifdef GMX_INVSQRT
   arch.gmx_invsqrt = TRUE;
   fprintf(stderr,">>> Using gromacs invsqrt code\n");
-#ifdef INLINE_INVSQRT
-  opt.inline_invsqrt = TRUE;
-  fprintf(stderr,">>> The software 1.0/sqrt routine will be inlined\n");
-#else
-  opt.inline_invsqrt = FALSE;
-#endif /* inline */
 #else
   arch.gmx_invsqrt = FALSE;
 #endif
     
+#ifdef GMX_RECIP
+  arch.gmx_recip = TRUE;
+  fprintf(stderr,">>> Using gromacs reciprocal code\n");
+#else
+  arch.gmx_recip = FALSE;
+#endif
+    
+#if ((defined GMX_INVSQRT || defined GMX_RECIP) && defined INLINE_GMXCODE)
+  opt.inline_gmxcode = TRUE;
+  fprintf(stderr,">>> Inlining gromacs invsqrt and/or reciprocal code\n");
+#else
+  opt.inline_gmxcode = FALSE;  
+#endif
+
 #ifdef SIMPLEWATER
   arch.simplewater = TRUE;
   fprintf(stderr,">>> Will expand the solvent optimized loops to have 3 inner loops\n");
@@ -286,29 +311,29 @@ int main(int argc,char *argv[])
 #endif
 
 #ifdef PREFETCH_X 
-  opt.prefetch_x = PRE_YES;
+  opt.prefetch_x = YES;
   fprintf(stderr,">>> Prefetching coordinates\n");
-#elif defined PREFETCH_X_MORE
-  opt.prefetch_x = PRE_MORE;
-  fprintf(stderr,">>> Prefetching coordinates (also single solvent loops)\n");
-#elif defined PREFETCH_X_MOST
-  opt.prefetch_x = PRE_MOST;
+#elif defined PREFETCH_X_W
+  opt.prefetch_x = YES_W;
+  fprintf(stderr,">>> Prefetching coordinates (also single water loops)\n");
+#elif defined PREFETCH_X_WW
+  opt.prefetch_x = YES_WW;
   fprintf(stderr,">>> Prefetching coordinates (all loops)\n");
 #else
-  opt.prefetch_x = PRE_NO;
+  opt.prefetch_x = NO;
 #endif
 
 #ifdef PREFETCH_F
-  opt.prefetch_f = PRE_YES;
+  opt.prefetch_f = YES;
   fprintf(stderr,">>> Prefetching forces\n");
-#elif defined PREFETCH_F_MORE
-  opt.prefetch_f = PRE_MORE;
-  fprintf(stderr,">>> Prefetching forces (also single solvent loops)\n");
-#elif defined PREFETCH_F_MOST
-  opt.prefetch_f = PRE_MOST;
+#elif defined PREFETCH_F_W
+  opt.prefetch_f = YES_W;
+  fprintf(stderr,">>> Prefetching forces (also single water loops)\n");
+#elif defined PREFETCH_F_WW
+  opt.prefetch_f = YES_WW;
   fprintf(stderr,">>> Prefetching forces (all loops)\n");
 #else
-  opt.prefetch_f = PRE_NO;
+  opt.prefetch_f = NO;
 #endif
 
 #ifdef DECREASE_SQUARE_LATENCY
@@ -346,10 +371,16 @@ int main(int argc,char *argv[])
 #endif 
 
 #ifdef VECTORIZE_INVSQRT
-  opt.vectorize_invsqrt = TRUE;
+  opt.vectorize_invsqrt = YES;
   fprintf(stderr,">>> Vectorizing the invsqrt calculation\n");
+#elif defined VECTORIZE_INVSQRT_W
+  opt.vectorize_invsqrt = YES_W;
+  fprintf(stderr,">>> Vectorizing the invsqrt calculation (also single water loops)\n");
+#elif defined VECTORIZE_INVSQRT_WW
+  opt.vectorize_invsqrt = YES_WW;
+  fprintf(stderr,">>> Vectorizing the invsqrt calculation (all loops)\n");
 #else
-  opt.vectorize_invsqrt = FALSE;
+  opt.vectorize_invsqrt = NO;
 #endif
 
 #ifdef VECTORIZE_RECIP
