@@ -166,6 +166,7 @@ void calc_idx(int natoms,matrix recipbox,
 #if (defined __GNUC__ && (defined i386 || defined __386__) && !defined DISABLE_X86TRUNC)  
   asm("fldcw %0" : : "m" (*&x86_cwsave));
 #endif
+
 }
 
 void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForward)
@@ -740,7 +741,6 @@ t_fftgrid *spread_on_grid(FILE *logfile,   int homenr,
   return grid;
 }
 
-
 real do_pme(FILE *logfile,   bool bVerbose,
 	    t_inputrec *ir,  rvec x[],
 	    rvec f[],        real charge[],
@@ -754,6 +754,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
   int     nx,ny,nz,la12,la2;
   t_fft_r *ptr;
   real    vol;
+  static  int *orderlist = NULL;
 
   /* Unpack structure */
   unpack_fftgrid(grid,&nx,&ny,&nz,&la2,&la12,TRUE,&ptr);
@@ -761,23 +762,23 @@ real do_pme(FILE *logfile,   bool bVerbose,
   /* Spread the charges on a grid */
   (void) spread_on_grid(logfile,HOMENR(nsb),ir->pme_order,
 			x+START(nsb),charge+START(nsb),box,bGatherOnly);
-   
+
   if (!bGatherOnly) {
     inc_nrnb(nrnb,eNR_SPREADQBSP,
 	     ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
     
+    
     /* sum contributions to local grid from other nodes */
     if (PAR(cr))
       sum_qgrid(cr,nsb,grid,TRUE);
-    
-    /* do 3d-fft */ 
+ 
+       /* do 3d-fft */ 
     gmxfft3D(grid,FFTW_FORWARD,cr);
-    
+   
     /* solve in k-space for our local cells */
     vol = det(box);
     energy=solve_pme(grid,ewaldcoeff,vol,bsp_mod,recipbox,vir,cr);
-    inc_nrnb(nrnb,eNR_SOLVEPME,nx*ny*nz*0.5);
-    
+     inc_nrnb(nrnb,eNR_SOLVEPME,nx*ny*nz*0.5);
     /* do 3d-invfft */
     gmxfft3D(grid,FFTW_BACKWARD,cr);
     
@@ -789,7 +790,6 @@ real do_pme(FILE *logfile,   bool bVerbose,
     npme  = ntot*log((real)ntot)/(cr->nnodes*log(2.0));
     inc_nrnb(nrnb,eNR_FFT,2*npme);
   }
-  
   /* interpolate forces for our local atoms */
   gather_f_bsplines(grid,recipbox,idx,f+START(nsb),charge+START(nsb),
 		    theta,dtheta,HOMENR(nsb),ir->pme_order,
@@ -800,3 +800,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
 
   return energy;  
 }
+
+
+
+

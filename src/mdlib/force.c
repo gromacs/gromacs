@@ -225,12 +225,19 @@ static void check_solvent(FILE *fp,t_topology *top,t_forcerec *fr,
 	 * innerloop assumes the charge of the first i atom is constant
 	 * qO, and charge on atoms 2/3 is constant qH. /EL
 	 */
+	/* I won't write any altivec versions of the general solvent inner 
+         * loops. Thus, when USE_PPC_ALTIVEC is defined it is faster 
+	 * to use the normal loops instead of the MNO solvent version. /EL
+	 */
 	aj=mols->a[j0];
 	if((nj==3) && bHaveCoul[0] && bHaveLJ[0] &&
 	   !bHaveLJ[1] && !bHaveLJ[2] &&
 	   (top->atoms.atom[aj+1].q == top->atoms.atom[aj+2].q))
 	  fr->solvent_type[cgid[aj]] = esolWATER;
 	else {
+#ifdef USE_PPC_ALTIVEC
+          fr->solvent_type[cgid[aj]] = esolNO;
+#else
 	  /* Time to compute M & N & O */
 	  for(k=0; (k<nj) && (bHaveLJ[k] && bHaveCoul[k]); k++)
 	    ;
@@ -264,6 +271,7 @@ static void check_solvent(FILE *fp,t_topology *top,t_forcerec *fr,
 	  fr->mno_index[cgid[aj]*3+1] = nl_n;
 	  fr->mno_index[cgid[aj]*3+2] = nl_o;
 	  fr->solvent_type[cgid[aj]]  = esolMNO;
+#endif /* MNO solvent if not using altivec */
 	}
 
 	/* Last check for perturbed atoms */
