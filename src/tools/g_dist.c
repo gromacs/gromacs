@@ -48,7 +48,8 @@ int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_dist can calculate the distance between the centers of mass of two",
-    "groups of atoms as a function of time.[PAR]",
+    "groups of atoms as a function of time. The total distance and its",
+    "x, y and z components are plotted.[PAR]",
     "Or when [TT]-dist[tt] is set, print all the atoms in group 2 that are",
     "closer than a certain distance to the center of mass of group 1."
   };
@@ -71,6 +72,8 @@ int main(int argc,char *argv[])
   real    *mass;
   FILE    *fp=NULL;
   bool    bCutoff;
+
+  char    *leg[4] = { "|d|","d\\sx\\N","d\\sy\\N","d\\sz\\N" };
 
   static real cut=0;
 
@@ -126,11 +129,12 @@ int main(int argc,char *argv[])
   if (max>=natoms)
     fatal_error(0,"Atom number %d in an index group is larger than number of atoms in the trajectory (%d)\n",(int)max+1,natoms);
 
-  if (!bCutoff)
+  if (!bCutoff) {
     /* open output file */
     fp = xvgropen(ftp2fn(efXVG,NFILE,fnm),
 		  "Distance","Time (ps)","Distance (nm)");
-  else
+    xvgr_legend(fp,4,leg);
+  } else
     ngrps=1;
   
   do {
