@@ -102,7 +102,9 @@ void chk_trj(char *fn)
       fprintf(stderr,"\rframe: %6d, t: %10.3f bytes: %10u",j,sh.t,fpos);
       if (j == 0)
 	fprintf(stderr,"\n");
-      fread_htrn(status,&sh,NULL,NULL,NULL,NULL);
+      if (!fread_htrn(status,&sh,NULL,NULL,NULL,NULL))
+	fprintf(stderr,"\nIncomplete frame at t=%g\n",sh.t);
+      
       j++;
 #define INC(s,n,item) if (s.item  != 0) n.item++
       INC(sh,count,box_size);
