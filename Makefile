@@ -24,13 +24,13 @@ TEXFS = algorithms	analyse		averages	\
 	implement	install		intro		\
 	lr-corr		macros		mdp_opt		\
 	proglist	progman		programs	\
-	special		tables		topology	
+	special		topology	
 
 AUXFS = algorithms	analyse		averages	\
 	defunits	forcefield	implement	\
 	install		intro		lr-corr		\
 	progman		programs	special		\
-	tables		topology	
+	topology	
 
 AUXFILES = $(foreach FILE,$(AUXFS), $(FILE).aux)
 TEXFILES = $(foreach FILE,$(TEXFS), $(FILE).tex)
