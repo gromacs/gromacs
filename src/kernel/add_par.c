@@ -97,6 +97,7 @@ void add_dum2_param(t_params *ps,int ai,int aj,int ak)
   ps->param[ps->nr-1].AK=ak;
   clear_atom_list  (3, ps->param[ps->nr-1].a);
   clear_force_param(0, ps->param[ps->nr-1].c);
+  ps->param[ps->nr-1].s = strdup("");
 }
 
 void add_dum3_param(t_params *ps,int ai,int aj,int ak,int al, bool bSwapParity)
@@ -110,6 +111,7 @@ void add_dum3_param(t_params *ps,int ai,int aj,int ak,int al, bool bSwapParity)
   clear_force_param(0, ps->param[ps->nr-1].c);
   if (bSwapParity)
     ps->param[ps->nr-1].C1=-1;
+  ps->param[ps->nr-1].s = strdup("");
 }
 
 void add_dum4_param(t_params *ps,int ai,int aj,int ak,int al,int am)
@@ -122,6 +124,7 @@ void add_dum4_param(t_params *ps,int ai,int aj,int ak,int al,int am)
   ps->param[ps->nr-1].AM=am;
   clear_atom_list  (5, ps->param[ps->nr-1].a);
   clear_force_param(0, ps->param[ps->nr-1].c);
+  ps->param[ps->nr-1].s = strdup("");
 }
 
 int search_jtype(t_restp *rtp,char *name,bool bNterm)
