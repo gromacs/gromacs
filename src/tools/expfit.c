@@ -46,7 +46,7 @@
 #include "statutil.h"
 #include "index.h"
 
-int  nfp_ffn[effnNR] = { 0, 1, 2, 3, 2, 5, 7, 9, 2 };
+int  nfp_ffn[effnNR] = { 0, 1, 2, 3, 2, 5, 7, 9, 3 };
 
 char *s_ffn[effnNR+2] = { NULL, "none", "exp", "aexp", "exp_exp", "vac", 
 			  "exp5", "exp7", "exp9", NULL, NULL };
@@ -280,7 +280,7 @@ static void errest_3_parm(real x,real a[],real *y,real dyda[])
 typedef void (*myfitfn)(real x,real a[],real *y,real dyda[]);
 myfitfn mfitfn[effnNR] = { 
   exp_one_parm, exp_one_parm, exp_two_parm, exp_3_parm, vac_2_parm,
-  exp_5_parm,   exp_7_parm,   errest_3_parm 
+  exp_5_parm,   exp_7_parm,   exp_9_parm,   errest_3_parm
 };
 
 real fit_function(int eFitFn,real *parm,real x)
@@ -409,8 +409,8 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
   nparm = nfp_ffn[eFitFn];
   if (debug) {
     fprintf(debug,"There are %d points to fit %d vars!\n",ndata,nparm);
-    fprintf(debug,"Fit from %g thru %g, dt=%g\n",
-	    begintimefit,endtimefit,dt);
+    fprintf(debug,"Fit to function %d from %g thru %g, dt=%g\n",
+	    eFitFn,begintimefit,endtimefit,dt);
   }
 
   snew(x,ndata);
