@@ -1015,8 +1015,8 @@ M^{-1/2} H M^{-1/2} Q   ~=~     \omega^2 Q
 where $M$ contains the atomic masses, $Q$ contains eigenvectors, and $\omega$
 contains the corresponding eigenvalues (frequencies).
 
-First, the Hessian matrix, which is a 3N x 3N matrix where N is the number
-of atoms, has to be calculated:
+First, the Hessian matrix, which is a $3N \times 3N$ matrix where $N$
+is the number of atoms, has to be calculated:
 \beq
 H_{ij}  ~=~     \frac{\partial^2 V}{\partial x_i \partial x_j}
 \eeq
@@ -1031,12 +1031,12 @@ for a usual Normal Mode calculation, it is necessary to completely minimize
 the energy prior to computation of the Hessian. This should be done
 with conjugate gradient in double precision.
 A number of {\gromacs} programs are involved in these
-calculations. First \normindex{nmrun}, which computes the Hessian,
-and secondly \normindex{g\_nmeig} which does the diagonalization and
+calculations. First {\tt \normindex{nmrun}}, which computes the Hessian,
+and secondly {\tt \normindex{g\_nmeig}} which does the diagonalization and
 sorting of normal modes according to frequencies. Both these programs
 should be run in double precision. An overview of normal mode analysis
-and the related \normindex{essential dynamics} or
-\normindex{principal component analysis} can be found in ~\cite{Hayward95b}.
+and the related principal component analysis (see \secref{covanal})
+can be found in~\cite{Hayward95b}.
 
 \section{Free energy perturbation}
 \label{sec:fepalg}
