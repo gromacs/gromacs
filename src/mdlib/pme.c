@@ -172,7 +172,7 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForward)
   static int localsize;
   static int maxproc;
 
-#if (defined USE_MPI && ! defined GMX_WITHOUT_FFTW)
+#if (defined GMX_MPI && ! defined GMX_WITHOUT_FFTW)
   if(bFirst) {
     localsize=grid->la12r*grid->pfft.local_nx;
     if(!grid->workspace)
@@ -306,7 +306,7 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,real epsilon_r,
   maxkz = nz/2+1;
     
   if (bPar) { /* transpose X & Y and only sum local cells */
-#if (defined USE_MPI && !defined GMX_WITHOUT_FFTW)
+#if (defined GMX_MPI && !defined GMX_WITHOUT_FFTW)
     kystart = grid->pfft.local_y_start_after_transpose;
     kyend   = kystart+grid->pfft.local_ny_after_transpose;
     if (debug)

@@ -379,7 +379,7 @@ void convolution(FILE *fp,bool bVerbose,t_fftgrid *grid,real ***ghat,
   snew(nTest,grid->nptr);
   
   if(PAR(cr)) {
-#if (defined USE_MPI && !defined GMX_WITHOUT_FFTW)
+#if (defined GMX_MPI && !defined GMX_WITHOUT_FFTW)
     jstart=grid->pfft.local_y_start_after_transpose;
     jend=jstart+grid->pfft.local_ny_after_transpose;
 
@@ -405,7 +405,7 @@ void convolution(FILE *fp,bool bVerbose,t_fftgrid *grid,real ***ghat,
 	}
     }
 #endif /* DEBUG */
-#endif /* USE_MPI */
+#endif /* GMX_MPI */
   } else { /* if not running in parallel */
       for(i=0; (i<nx); i++) {
 	  for(j=0; (j<ny); j++) {

@@ -48,7 +48,7 @@
 
 #define FFT_WORKSPACE
 
-#ifdef USE_MPI
+#ifdef GMX_MPI
 static void print_parfft(FILE *fp,char *title,t_parfft *pfft)
 {
   fprintf(fp,"PARALLEL FFT DATA:\n"
@@ -99,7 +99,7 @@ t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,int nz,
       flags=FFTW_ESTIMATE;
 
   if (bParallel) {
-#ifdef USE_MPI
+#ifdef GMX_MPI
     grid->plan_mpi_fw = 
 	rfftw3d_mpi_create_plan(MPI_COMM_WORLD,nx,ny,nz,FFTW_REAL_TO_COMPLEX,flags);
     grid->plan_mpi_bw =
@@ -128,7 +128,7 @@ t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,int nz,
   }
   snew(grid->ptr,grid->nptr);
   grid->localptr=NULL;
-#ifdef USE_MPI
+#ifdef GMX_MPI
   if (bParallel && fp) {
     print_parfft(fp,"Plan", &grid->pfft);
   }
@@ -193,7 +193,7 @@ void gmxfft3D(t_fftgrid *grid,int dir,t_commrec *cr)
   gmx_fatal(FARGS,"gmxfft3D called, but GROMACS was compiled without FFTW!\n");
 #else /* have fftw */
   if (cr && PAR(cr) && grid->localptr) {
-#ifdef USE_MPI
+#ifdef GMX_MPI
     if (dir == FFTW_FORWARD)
       rfftwnd_mpi(grid->plan_mpi_fw,1,grid->localptr,
 		  grid->workspace,FFTW_TRANSPOSED_ORDER);
