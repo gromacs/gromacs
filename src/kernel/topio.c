@@ -335,20 +335,17 @@ static char **read_topol(char        *infile,
 	  if (nscan < 2)
 	    too_few();
 	  else {
+	    bGenPairs = FALSE;
+	    fudgeLJ   = 1.0;
+	    *fudgeQQ  = 1.0;
+	    
 	    get_nbparm(nb_str,comb_str,&nb_funct,&comb);
 	    if (nscan >= 3) 
 	      bGenPairs = (strncasecmp(genpairs,"Y",1) == 0);
-	    else
-	      bGenPairs = FALSE;
-	    fudgeLJ   = 1.0;
-	    *fudgeQQ  = 1.0;
-	    if (bGenPairs) {
-	      if (nscan==5) {
-		fudgeLJ   = fLJ;
-		*fudgeQQ  = fQQ;
-	      } else
-		warning("No 1-4 interaction information");
-	    }
+	    if (nscan >= 4)
+	      fudgeLJ   = fLJ;
+	    if (nscan >= 5)
+	      *fudgeQQ  = fQQ;
 	  }
 	  nb_funct = ifunc_index(d_nonbond_params,nb_funct);
 	  
