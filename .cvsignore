@@ -25,3 +25,5 @@ pppm.aux
 topology.aux
 .cvsignore
 gromacs.ps
+gromacs.idxs
+booklet.ps
