@@ -208,7 +208,7 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
   get_pullmemory(&pull->ref,1);
   
   /* read the whole index file */
-  read_whole_index(opt2fn("-n",nfile,fnm),&grpnames,&index,&ngx,&totalgrps);
+  read_whole_index(opt2fn("-pn",nfile,fnm),&grpnames,&index,&ngx,&totalgrps);
   
   if (pull->bVerbose) {
     fprintf(stderr,"read_whole_index: %d groups total\n",totalgrps);
