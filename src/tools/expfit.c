@@ -166,10 +166,19 @@ typedef void (*myfitfn)(real x,real a[],real *y,real dyda[]);
 myfitfn mfitfn[effnNR] = 
 { exp_one_parm, exp_two_parm, exp_3_parm, vac_2_parm };
 
+real fit_function(int eFitFn,real *parm,real x)
+{
+  static real y,dum[4];
+
+  mfitfn[eFitFn](x,parm-1,&y,dum);
+
+  return y;
+}
+
 /* lmfit_exp supports up to 3 parameter fitting of exponential functions */
-static void lmfit_exp(int nframes,real x[],real y[],real dy[],real ftol,
+static void lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
 		      real parm[],real dparm[],bool bVerbose,
-		      real *fit,int eFitFn,char *fix)
+		      int eFitFn,char *fix)
 {
   real chisq,ochisq,alamda;
   real *a,**covar,**alpha,*dum;
@@ -220,10 +229,10 @@ static void lmfit_exp(int nframes,real x[],real y[],real dy[],real ftol,
 	    "Step","chi^2","Lambda","A1","A2","A3");
   do {
     ochisq = chisq;
-    /* mrqmin(x-1,y-1,dy-1,nframes,a,ma,lista,mfit,covar,alpha,
+    /* mrqmin(x-1,y-1,dy-1,nfit,a,ma,lista,mfit,covar,alpha,
      *   &chisq,expfn[mfit-1],&alamda);
      */
-    mrqmin_new(x-1,y-1,dy-1,nframes,a,ia,ma,covar,alpha,&chisq,
+    mrqmin_new(x-1,y-1,dy-1,nfit,a,ia,ma,covar,alpha,&chisq,
 	       mfitfn[eFitFn],&alamda);
      
     if (bVerbose) {
@@ -245,20 +254,16 @@ static void lmfit_exp(int nframes,real x[],real y[],real dy[],real ftol,
   /* Now get the covariance matrix out */
   alamda = 0;
 
-  /*  mrqmin(x-1,y-1,dy-1,nframes,a,ma,lista,mfit,covar,alpha,
+  /*  mrqmin(x-1,y-1,dy-1,nfit,a,ma,lista,mfit,covar,alpha,
    * &chisq,expfn[mfit-1],&alamda);
    */
-  mrqmin_new(x-1,y-1,dy-1,nframes,a,ia,ma,covar,alpha,&chisq,
+  mrqmin_new(x-1,y-1,dy-1,nfit,a,ia,ma,covar,alpha,&chisq,
 	     mfitfn[eFitFn],&alamda);
 
   for(j=0; (j<mfit); j++) {
     parm[j]  = a[j+1];
     dparm[j] = covar[j+1][j+1];
   }
-
-  if (fit)
-    for(i=0; i<nframes; i++)
-      mfitfn[eFitFn](x[i],a,&(fit[i]),dum);
 
   for(i=0; (i<ma+1); i++) {
     sfree(covar[i]);
@@ -273,8 +278,7 @@ static void lmfit_exp(int nframes,real x[],real y[],real dy[],real ftol,
 
 real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
 	      real begintimefit,real endtimefit,bool bVerbose,
-	      int eFitFn,real fitparms[],
-	      real *fit,char *fix)
+	      int eFitFn,real fitparms[],char *fix)
 {
   FILE *fp;
   char buf[32];
@@ -285,7 +289,6 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
   real AA=0,tau1=0,tau2=0,srAA=0,srtau1,srtau2=0;  
   real *x,*y,*dy;
   real ftol = 1e-4;
-  bool bAllocFit;
 
   if (debug) {
     fprintf(debug,"There are %d points to fit %d vars!\n",
@@ -299,9 +302,9 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
   snew(dy,ndata);
 
   j=0;
-  for(i=0; (i<ndata); i++) {
+  for(i=0; i<ndata; i++) {
     ttt = x0 ? x0[i] : dt*i;
-    if ( (ttt >= begintimefit) && (ttt <= endtimefit) ) {
+    if (ttt>=begintimefit && ttt<=endtimefit) {
       x[j] = ttt;
       y[j] = c1[i];
 
@@ -322,10 +325,6 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
     integral = 0;
   }
   else {
-    bAllocFit = (fit==NULL && bVerbose);
-    if (bAllocFit)
-      snew(fit,nfitpnts);
-
     snew(parm,4);
     snew(dparm,4);
 
@@ -334,8 +333,7 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
       for(i=0; i<nfp_ffn[eFitFn]; i++)
 	parm[i]=fitparms[i];
     
-    lmfit_exp(nfitpnts,x,y,dy,ftol,parm,dparm,bVerbose,
-	      fit,eFitFn,fix);
+    lmfit_exp(nfitpnts,x,y,dy,ftol,parm,dparm,bVerbose,eFitFn,fix);
     
     tau1 = parm[0];
     srtau1 = dparm[0];
@@ -352,7 +350,7 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
     else
       tau2 = 0.0;
     
-    /* Compute the integral from begintimefit to endtimefit
+    /* Compute the integral from begintimefit
      */
     integral=(tau1*myexp(begintimefit,AA,  tau1) +
 	      tau2*myexp(begintimefit,1-AA,tau2));
@@ -373,17 +371,13 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
       fprintf(fp,"# AA = %g, tau1 = %g, tau2 = %g\n",AA,tau1,tau2);
       for(j=0; j<nfitpnts; j++) {
 	ttt = x0 ? x0[j] : dt*j;
-	fprintf(fp,"%10.5e  %10.5e  %10.5e\n",ttt,c1[j],fit[j]);
+	fprintf(fp,"%10.5e  %10.5e  %10.5e\n",
+		ttt,c1[j],fit_function(eFitFn,parm,ttt));
       }
       fclose(fp);
     }
 
     sfree(dparm);
-    
-    if (bAllocFit) {
-      sfree(fit);
-      fit = NULL;
-    }
   }
   
   fitparms[0]=tau1;

@@ -277,7 +277,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 	integrand[j]  = (Q == 0) ? 1.0 : sin(Q*r)/(Q*r);
 	integrand[j] *= 4.0*M_PI*rho*r*r*(rdf[j]-1.0);
       }
-      hq[i] = print_and_integrate(debug,nrdf,binwidth,integrand,0);
+      hq[i] = print_and_integrate(debug,nrdf,binwidth,integrand,NULL,0);
     }
     fp=xvgropen(fnHQ,"h(Q)","Q(/nm)","h(Q)");
     for(i=0; (i<nhq); i++) 

@@ -273,22 +273,26 @@ extern void normalize_histo(int npoints,int histo[],real dx,real normhisto[]);
  * normhisto  normalized output histogram
  */
 
+extern real fit_function(int eFitFn,real *parm,real x);
+/* Returns the value of fit function eFitFn at x */
+
 /* Use Levenberg-Marquardt method to fit to a nfitparm parameter exponential */
 /* or to a transverse current autocorrelation function */
 /* Or: "There is no KILL like OVERKILL", Dr. Ir. D. van der Spoel */
 extern real do_lmfit(int ndata,real c1[],real sig[],real dt,real *x,
 		     real begintimefit,real endtimefit,bool bVerbose,
-		     int eFitFn,real fitparms[],real *fit,char *fix);
-/* Returns integral. if fit != NULL, than the fitted function is copied
- * into the original data array.
+		     int eFitFn,real fitparms[],char *fix);
+/* Returns integral.
  * If x == NULL, the timestep dt will be used to create a time axis.
  */
 
-extern real print_and_integrate(FILE *fp,int n,real dt,real c[],int nskip);
+extern real print_and_integrate(FILE *fp,int n,real dt,
+				real c[],real *fit,int nskip);
 /* Integrate the data in c[] from 0 to n using trapezium rule.
  * If fp != NULL output is written to it
  * nskip determines whether all elements are written to the output file
  * (written when i % nskip == 0)
+ * If fit != NULL the fit is also written.
  */
  
 extern int get_acfnout(void);

@@ -406,7 +406,7 @@ void dump_tmp(char *s,int n,real c[])
   ffclose(fp);
 }
 
-real print_and_integrate(FILE *fp,int n,real dt,real c[],int nskip)
+real print_and_integrate(FILE *fp,int n,real dt,real c[],real *fit,int nskip)
 {
   real c0,sum;
   int  j;
@@ -420,8 +420,15 @@ real print_and_integrate(FILE *fp,int n,real dt,real c[],int nskip)
     if (j > 0)
       sum+=dt*(c0+c[j-1]);
   }
-  if (fp)
+  if (fp) {
     fprintf(fp,"&\n");
+    if (fit) {
+      for(j=0; (j<n); j++)
+	if (nskip == 0 || j % nskip == 0)
+	  fprintf(fp,"%10.3f  %10.5f\n",j*dt,fit[j]);
+      fprintf(fp,"&\n");
+    }
+  }
   return sum*0.5;
 }
 
@@ -581,30 +588,34 @@ void do_four_core(unsigned long mode,int nfour,int nf2,int nframes,
     c1[j] = csum[j]/(real)(nframes-j);
 }
 
-real fit_acf(int ncorr,int fitfn,bool bVerbose,
-	     real tbeginfit,real tendfit,real dt,real c1[])
+static real fit_acf(int ncorr,int fitfn,bool bVerbose,
+		    real tbeginfit,real tendfit,real dt,real c1[],real *fit)
 {
   real    fitparm[3];
   real    tStart,tail_corr,sum,sumtot=0,*sig;
-  int     j,jmax,nf_int;
-  
-  if (bVerbose) printf("CORR:\n");    
+  int     i,j,jmax,nf_int;
+  bool    bPrint;
+
+  bPrint = bVerbose || bDebugMode();
+
+  if (bPrint) printf("COR:\n");    
   
   if (tendfit == -1)
     tendfit = ncorr*dt;
   nf_int = min(ncorr,(int)(tendfit/dt));
-  sum    = print_and_integrate(debug,nf_int,dt,c1,1);
+  sum    = print_and_integrate(debug,nf_int,dt,c1,NULL,1);
   
-  if (bVerbose) printf("CORR: Correlation time (plain integral from %6.3f to %6.3f ps) = %8.5f ps\n", 
+  if (bPrint) printf("COR: Correlation time (plain integral from %6.3f to %6.3f ps) = %8.5f ps\n", 
 		       0.0,dt*nf_int,sum);
-  if (bVerbose) printf("CORR: Relaxation times are computed as fit to an exponential:\n");
-  if (bVerbose) printf("CORR:   %s\n",longs_ffn[fitfn]);
-  if (bVerbose) printf("CORR: Fit to correlation function from %6.3f ps to %6.3f ps, results in a\n",tbeginfit,min(ncorr*dt,tendfit));
+  if (bPrint) printf("COR: Relaxation times are computed as fit to an exponential:\n");
+  if (bPrint) printf("COR:   %s\n",longs_ffn[fitfn]);
+  if (bPrint) printf("COR: Fit to correlation function from %6.3f ps to %6.3f ps, results in a\n",tbeginfit,min(ncorr*dt,tendfit));
   
   tStart = 0;
-  if (bVerbose) printf("CORR:%12s%12s%12s%12s%12s%12s\n",
-		       "Integral to","Value","Tail Value","Sum (ps)","a1 (ps)",
-		       (fitfn==effnEXP1) ? "" : "a2");
+  if (bPrint) printf("COR:%11s%11s%11s%11s%11s%11s%11s\n",
+		       "Fit from","Integral","Tail Value","Sum (ps)","a1 (ps)",
+		     (nfp_ffn[fitfn]>=2) ? "a2 ()" : "",
+		     (nfp_ffn[fitfn]>=3) ? "a3 (ps)" : "");
   if (tbeginfit > 0)
     jmax = 3;
   else
@@ -614,23 +625,27 @@ real fit_acf(int ncorr,int fitfn,bool bVerbose,
     fitparm[0] = sum;
   else
     fitparm[0] = 1.0;
-  fitparm[1] = 1.0;
-  fitparm[2] = 1.0;
+  if (fitfn == effnEXP3)
+    fitparm[1] = 0.9;
+  else
+    fitparm[1] = 1.0;
+  fitparm[2] = 10*fitparm[0];
   for(j=0; ((j<jmax) && (tStart < tendfit)); j++) {
     /* Use the previous fitparm as starting values for the next fit */
     snew(sig,ncorr);
     nf_int = min(ncorr,(int)((tStart+1e-4)/dt));
-    sum    = print_and_integrate(debug,nf_int,dt,c1,1);
+    sum    = print_and_integrate(debug,nf_int,dt,c1,NULL,1);
     tail_corr = do_lmfit(ncorr,c1,sig,dt,NULL,tStart,tendfit,
-			 bVerbose,fitfn,fitparm,NULL,NULL);
+			 bDebugMode(),fitfn,fitparm,NULL);
     sumtot = sum+tail_corr;
-    if (bVerbose) {
-      if (nfp_ffn[fitfn] == 1) 
-	printf("CORR:%12.5e%12.5e%12.5e%12.5e%12.5e\n",
-	       tStart,sum,tail_corr,sumtot,fitparm[0]);
-      else
-	printf("CORR:%12.5e%12.5e%12.5e%12.5e%12.5e%12.5e\n",
-	       tStart,sum,tail_corr,sumtot,fitparm[0],fitparm[1]);
+    if (fit && (jmax==1 || j==1))
+      for(i=0; i<ncorr; i++)
+	fit[i] = fit_function(fitfn,fitparm,i*dt);
+    if (bPrint) {
+      printf("COR:%11.4e%11.4e%11.4e%11.4e",tStart,sum,tail_corr,sumtot);
+      for(i=0; i<nfp_ffn[fitfn]; i++)
+	printf("%11.4e",fitparm[i]);
+      printf("\n");
     }
     tStart += tbeginfit;
     sfree(sig);
@@ -648,7 +663,7 @@ void low_do_autocorr(char *fn,char *title,
   FILE    *fp,*gp=NULL;
   int     i,k,nfour;
   fftreal *csum;
-  real    *ctmp;
+  real    *ctmp,*fit;
   real    c0,sum,Ct2av,Ctav;
  
   /* Check flags and parameters */ 
@@ -689,8 +704,7 @@ void low_do_autocorr(char *fn,char *title,
     /* Allocate temp arrays */
     snew(csum,nfour);
     snew(ctmp,nfour);
-  }
-  else {
+  } else {
     nfour = 0; /* To keep the compiler happy */
     snew(csum,nframes);
     snew(ctmp,nframes);
@@ -714,7 +728,13 @@ void low_do_autocorr(char *fn,char *title,
   sfree(ctmp);
   sfree(csum);
   
-  fp=xvgropen(fn,title,"Time (ps)","C(t)");
+  if (fn) {
+    snew(fit,nout);
+    fp=xvgropen(fn,title,"Time (ps)","C(t)");
+  } else {
+    fit = NULL;
+    fp  = NULL;
+  }
   if (bAver) {
     average_acf(nframes,nitem,c1);
     
@@ -722,10 +742,10 @@ void low_do_autocorr(char *fn,char *title,
       normalize_acf(nout,c1[0]);
     
     if ((tbeginfit < tendfit) || (tendfit == -1)) {
-      sum = fit_acf(nout,fitfn,bVerbose,tbeginfit,tendfit,dt,c1[0]);
-      /* sum = print_and_integrate(fp,nout,dt,c1[0],1);*/
+      fit_acf(nout,fitfn,fn!=NULL,tbeginfit,tendfit,dt,c1[0],fit);
+      sum = print_and_integrate(fp,nout,dt,c1[0],fit,1);
     } else {
-      sum = print_and_integrate(fp,nout,dt,c1[0],1);
+      sum = print_and_integrate(fp,nout,dt,c1[0],NULL,1);
       printf("Correlation time (integral over corrfn): %g (ps)\n",sum);
     }
   }
@@ -738,10 +758,10 @@ void low_do_autocorr(char *fn,char *title,
       if (bNormalize)
 	normalize_acf(nout,c1[i]);
       if ((tbeginfit < tendfit) || (tendfit == -1)) {
-	sum = fit_acf(nout,fitfn,bVerbose,tbeginfit,tendfit,dt,c1[i]);
-	/* sum = print_and_integrate(fp,nout,dt,c1[i],1);*/
+	fit_acf(nout,fitfn,fn!=NULL,tbeginfit,tendfit,dt,c1[i],fit);
+	sum = print_and_integrate(fp,nout,dt,c1[i],fit,1);
       } else {
-	sum = print_and_integrate(fp,nout,dt,c1[i],1);
+	sum = print_and_integrate(fp,nout,dt,c1[i],NULL,1);
 	if (debug)
 	  fprintf(debug,
 		  "CORRelation time (integral over corrfn %d): %g (ps)\n",
@@ -759,7 +779,9 @@ void low_do_autocorr(char *fn,char *title,
     printf("Average correlation time %.3f Std. Dev. %.3f Error %.3f (ps)\n",
 	   Ctav,sqrt((Ct2av - sqr(Ctav))),sqrt((Ct2av - sqr(Ctav))/nitem));
   }
-  ffclose(fp);
+  if (fp)
+    ffclose(fp);
+  sfree(fit);
 }
 
 static char *Leg[]   = { NULL, "0", "1", "2", "3", NULL };

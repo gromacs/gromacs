@@ -50,33 +50,37 @@ static char *SRCID_g_velacc_c = "$Id$";
 #include "xvgr.h"
 #include "pbc.h"
 
-#define NK  16
+#define NK  24
 #define NPK 4
-#define NTC (NK*NPK)
 
-#define NKC 4
-int kset_c[NKC+1] = { 0, 3, 9, 13, NK };
+#define NKC  6
+#define NKC0 4
+int kset_c[NKC+1] = { 0, 3, 9, 13, 16, 19, NK };
 
-rvec v0[NK]={{1,0,0},{0,1,0},{0,0,1}, {1, 1,0},{1,-1,0},{1,0,1}, {1,0,-1},{0,1, 1},{0,1,-1}, {1, 1, 1},{1, 1,-1},{1,-1, 1},{-1,1, 1}, {2,0,0},{0,2,0},{0,0,2}};
-rvec v1[NK]={{0,1,0},{0,0,1},{1,0,0}, {0, 0,1},{0, 0,1},{0,1,0}, {0,1, 0},{1,0, 0},{1,0, 0}, {1,-1, 0},{1,-1, 0},{1, 0,-1},{ 0,1,-1}, {0,1,0},{0,0,1},{1,0,0}};
-rvec v2[NK]={{0,0,1},{1,0,0},{0,1,0}, {1,-1,0},{1, 1,0},{1,0,-1},{1,0, 1},{0,1,-1},{0,1, 1}, {1, 1,-2},{1, 1, 2},{1, 2, 1},{ 2,1, 1}, {0,0,1},{1,0,0},{0,1,0}};
+rvec v0[NK]={{1,0,0},{0,1,0},{0,0,1}, {1, 1,0},{1,-1,0},{1,0,1}, {1,0,-1},{0,1, 1},{0,1,-1}, {1, 1, 1},{1, 1,-1},{1,-1, 1},{-1,1, 1}, {2,0,0},{0,2,0},{0,0,2}, {3,0,0},{0,3,0},{0,0,3}, {4,0,0},{0,4,0},{0,0,4}};
+rvec v1[NK]={{0,1,0},{0,0,1},{1,0,0}, {0, 0,1},{0, 0,1},{0,1,0}, {0,1, 0},{1,0, 0},{1,0, 0}, {1,-1, 0},{1,-1, 0},{1, 0,-1},{ 0,1,-1}, {0,1,0},{0,0,1},{1,0,0}, {0,1,0},{0,0,1},{1,0,0}, {0,1,0},{0,0,1},{1,0,0}};
+rvec v2[NK]={{0,0,1},{1,0,0},{0,1,0}, {1,-1,0},{1, 1,0},{1,0,-1},{1,0, 1},{0,1,-1},{0,1, 1}, {1, 1,-2},{1, 1, 2},{1, 2, 1},{ 2,1, 1}, {0,0,1},{1,0,0},{0,1,0}, {0,0,1},{1,0,0},{0,1,0}, {0,0,1},{1,0,0},{0,1,0}};
 
-static void process_tcaf(int nframes,real dt,real **tc,rvec *kfac,
+static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
 			 real rho,real wt,char *fn_trans,
 			 char *fn_tca,char *fn_tc,char *fn_tcf,char *fn_cub,
 			 char *fn_vk)
 {
   FILE *fp,*fp_vk,*fp_cub;
+  int  nk,ntc;
   real **tcaf,**tcafc,eta;
   int  i,j,k,kc;
   int  ncorr;
   real fitparms[2],*sig,*fit;
+  
+  nk  = kset_c[nkc];
+  ntc = nk*NPK;
 
   if (fn_trans) {
     fp = xvgropen(fn_trans,"Transverse Current","Time (ps)","TC (nm/ps)"); 
     for(i=0; i<nframes; i++) {
       fprintf(fp,"%g",i*dt);
-      for(j=0; j<NTC; j++)
+      for(j=0; j<ntc; j++)
 	fprintf(fp," %g",tc[j][i]);
       fprintf(fp,"\n");
     }
@@ -87,12 +91,12 @@ static void process_tcaf(int nframes,real dt,real **tc,rvec *kfac,
   ncorr = (nframes+1)/2;
   if (ncorr > (int)(4*wt/dt+0.5))
     ncorr = (int)(4*wt/dt+0.5)+1;
-  snew(tcaf,NK);
-  for(k=0; k<NK; k++)
+  snew(tcaf,nk);
+  for(k=0; k<nk; k++)
     snew(tcaf[k],ncorr);
   if (fn_cub) {
-     snew(tcafc,NKC);
-     for(k=0; k<NKC; k++)
+     snew(tcafc,nkc);
+     for(k=0; k<nkc; k++)
        snew(tcafc[k],ncorr);
   }
   snew(sig,ncorr);
@@ -101,7 +105,7 @@ static void process_tcaf(int nframes,real dt,real **tc,rvec *kfac,
     sig[i]=exp(i*dt/wt);
   
   low_do_autocorr(fn_tca,"Transverse Current Autocorrelation Functions",
-		  nframes,NTC,-1,tc,dt,eacNormal,
+		  nframes,ntc,-1,tc,dt,eacNormal,
 		  1,FALSE,TRUE,FALSE,FALSE,0,0,0,0);
   do_view(fn_tca,NULL);
   
@@ -110,7 +114,7 @@ static void process_tcaf(int nframes,real dt,real **tc,rvec *kfac,
   for(i=0; i<ncorr; i++) {
     kc = 0;
     fprintf(fp,"%g",i*dt);
-    for(k=0; k<NK; k++) {
+    for(k=0; k<nk; k++) {
       for(j=0; j<NPK; j++)
 	tcaf[k][i] += tc[NPK*k+j][i];
       if (fn_cub) 
@@ -133,7 +137,7 @@ static void process_tcaf(int nframes,real dt,real **tc,rvec *kfac,
   if (fn_cub) {
     fp_cub = xvgropen(fn_cub,"TCAF's and fits",
 		      "Time (ps)","TCAF");
-    for(kc=0; kc<NKC; kc++) {
+    for(kc=0; kc<nkc; kc++) {
       fprintf(fp_cub,"%g %g\n",0.0,1.0);
       for(i=1; i<ncorr; i++) {
 	tcafc[kc][i] /= tcafc[kc][0];
@@ -145,7 +149,7 @@ static void process_tcaf(int nframes,real dt,real **tc,rvec *kfac,
   }
   
   fp_vk = xvgropen(fn_vk,"Fits","k (nm\\S-1\\N)",
-		   "eta (kg m\\S-1\\N s\\S-1\\N)");
+		   "eta (10\\S-3\\N kg m\\S-1\\N s\\S-1\\N)");
   fprintf(fp_vk,"@    s0 symbol 2\n");
   fprintf(fp_vk,"@    s0 symbol color 1\n");
   fprintf(fp_vk,"@    s0 linestyle 0\n");
@@ -154,19 +158,19 @@ static void process_tcaf(int nframes,real dt,real **tc,rvec *kfac,
     fprintf(fp_vk,"@    s1 symbol color 2\n");
   }
   fp = xvgropen(fn_tcf,"TCAF Fits","Time (ps)","");
-  for(k=0; k<NK; k++) {
+  for(k=0; k<nk; k++) {
     tcaf[k][0] = 1.0;
     fitparms[0]  = 1;
     fitparms[1]  = 1;
     do_lmfit(ncorr,tcaf[k],sig,dt,0,0,ncorr*dt,
-	     bDebugMode(),effnVAC,fitparms,fit,NULL);
+	     bDebugMode(),effnVAC,fitparms,NULL);
     eta = 1000*fitparms[1]*rho/
       (4*fitparms[0]*PICO*norm2(kfac[k])/(NANO*NANO));
     fprintf(stdout,"k %6.3f  tau %6.3f  eta %8.5f 10^-3 kg/(m s)\n",
 	    norm(kfac[k]),fitparms[0],eta);
     fprintf(fp_vk,"%6.3f %g\n",norm(kfac[k]),eta);
     for(i=0; i<ncorr; i++)
-      fprintf(fp,"%g %g\n",i*dt,fit[i]);
+      fprintf(fp,"%g %g\n",i*dt,fit_function(effnVAC,fitparms,i*dt));
     fprintf(fp,"&\n");
   }
   fclose(fp);
@@ -175,19 +179,19 @@ static void process_tcaf(int nframes,real dt,real **tc,rvec *kfac,
   if (fn_cub) {
     fprintf(stdout,"Averaged over k-vectors:\n");
     fprintf(fp_vk,"&\n");
-    for(k=0; k<NKC; k++) {
+    for(k=0; k<nkc; k++) {
       tcafc[k][0] = 1.0;
       fitparms[0]  = 1;
       fitparms[1]  = 1;
       do_lmfit(ncorr,tcafc[k],sig,dt,0,0,ncorr*dt,
-	       bDebugMode(),effnVAC,fitparms,fit,NULL);
+	       bDebugMode(),effnVAC,fitparms,NULL);
       eta = 1000*fitparms[1]*rho/
 	(4*fitparms[0]*PICO*norm2(kfac[kset_c[k]])/(NANO*NANO));
       fprintf(stdout,"k %6.3f  tau %6.3f  eta %8.5f 10^-3 kg/(m s)\n",
 	      norm(kfac[kset_c[k]]),fitparms[0],eta);
       fprintf(fp_vk,"%6.3f %g\n",norm(kfac[kset_c[k]]),eta);
       for(i=0; i<ncorr; i++)
-	fprintf(fp_cub,"%g %g\n",i*dt,fit[i]);
+	fprintf(fp_cub,"%g %g\n",i*dt,fit_function(effnVAC,fitparms,i*dt));
       fprintf(fp_cub,"&\n");
     }
     fprintf(fp_vk,"&\n");
@@ -230,11 +234,13 @@ int main(int argc,char *argv[])
     "consist of molecule numbers instead of atom numbers.",
   };
   
-  static bool bMol=FALSE;
+  static bool bMol=FALSE,bK34=FALSE;
   static real wt=5;
   t_pargs pa[] = {
     { "-mol", FALSE, etBOOL, {&bMol},
-      "Calculate vac of molecules" },
+      "Calculate tcaf of molecules" },
+    { "-k34", FALSE, etBOOL, {&bK34},
+      "Also use k=(3,0,0) and k=(4,0,0)" },
     { "-wt", FALSE, etREAL, {&wt},
       "Exponential decay time for the TCAF fit weights" }
   };
@@ -250,6 +256,7 @@ int main(int argc,char *argv[])
   real       t0,t1,dt,m,mtot,sysmass,rho,sx,cx;
   int        status,nframes,n_alloc,i,j,k,d,tel3;
   rvec       mv_mol,cm_mol,kfac[NK];
+  int        nkc,nk,ntc;
   real       **c1,**tc;
   
 #define NHISTO 360
@@ -282,11 +289,18 @@ int main(int argc,char *argv[])
     a     = top.blocks[ebMOLS].a;
     atndx = top.blocks[ebMOLS].index;
   }
-  
+
+  if (bK34)
+    nkc = NKC;
+  else
+    nkc = NKC0;
+  nk  = kset_c[nkc];
+  ntc = nk*NPK; 
+
   sprintf(title,"Velocity Autocorrelation Function for %s",grpname);
   
   sysmass = 0;
-  for(i=0; i<NK; i++) {
+  for(i=0; i<nk; i++) {
     if (iprod(v0[i],v1[i]) != 0)
       fatal_error(0,"DEATH HORROR: vectors not orthogonal");
     if (iprod(v0[i],v2[i]) != 0)
@@ -296,7 +310,7 @@ int main(int argc,char *argv[])
     unitv(v1[i],v1[i]);
     unitv(v2[i],v2[i]);
   }
-  snew(tc,NTC);
+  snew(tc,ntc);
     for(i=0; i<top.atoms.nr; i++)
       sysmass += top.atoms.atom[i].m;
 
@@ -317,16 +331,16 @@ int main(int argc,char *argv[])
 
     if (nframes >= n_alloc) {
       n_alloc+=100;
-      for (i=0; i<NTC; i++)
+      for (i=0; i<ntc; i++)
 	srenew(tc[i],n_alloc);
     }
     tel3=3*nframes;
 
     rho += 1/det(fr.box);
-    for(k=0; k<NK; k++)
+    for(k=0; k<nk; k++)
       for(d=0; d<DIM; d++)
 	kfac[k][d] = 2*M_PI*v0[k][d]/fr.box[d][d];
-    for (i=0; i<NTC; i++)
+    for (i=0; i<ntc; i++)
       tc[i][nframes] = 0;
 
     for(i=0; i<gnx; i++) {
@@ -352,7 +366,7 @@ int main(int argc,char *argv[])
       if (!bMol)
 	copy_rvec(fr.x[index[i]],cm_mol);
       j=0;
-      for(k=0; k<NK; k++) {
+      for(k=0; k<nk; k++) {
 	sx = sin(iprod(kfac[k],cm_mol));
 	cx = cos(iprod(kfac[k],cm_mol));
 	tc[j][nframes] += sx*iprod(v1[k],mv_mol);
@@ -375,7 +389,8 @@ int main(int argc,char *argv[])
 
   rho *= sysmass/nframes*AMU/(NANO*NANO*NANO);
   fprintf(stdout,"Density = %g (kg/m^3)\n",rho);
-  process_tcaf(nframes,dt,tc,kfac,rho,wt,opt2fn_null("-ot",NFILE,fnm),
+  process_tcaf(nframes,dt,nkc,tc,kfac,rho,wt,
+	       opt2fn_null("-ot",NFILE,fnm),
 	       opt2fn("-oa",NFILE,fnm),opt2fn("-o",NFILE,fnm),
 	       opt2fn("-of",NFILE,fnm),opt2fn_null("-oc",NFILE,fnm),
 	       opt2fn("-ov",NFILE,fnm));

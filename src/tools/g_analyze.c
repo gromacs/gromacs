@@ -252,28 +252,67 @@ static void average(char *avfile,char **avbar_opt,
 }
 
 static void estimate_error(char *eefile,int resol,int n,int nset,
-			   double *av,real **val,real dt)
+			   double *av,double *sig,real **val,real dt)
 {
-  FILE *fp;
-  int log2max,rlog2,bs,prev_bs,nb;
-  int s,i,j;
+  FILE   *fp;
+  int    log2max,rlog2,bs,prev_bs,nb;
+  int    nleg,s,i,j;
   double blav,var;
-  char **leg;
+  char   **leg;
+  real   *ac,*fitsig,*ac_tau,t_tau;
+  bool   bAnalEE=TRUE;
+
+  snew(ac_tau,nset);
 
   log2max = (int)(log(n)/log(2));
 
-  snew(leg,nset);
+  if (bAnalEE) {
+    snew(ac,n);
+    snew(fitsig,n);
+    for(i=0; i<n; i++)
+      fitsig[i]=0;
+    for(s=0; s<nset; s++) {
+      for(i=0; i<n; i++)
+	ac[i] = val[s][i] - av[s];
+      low_do_autocorr(NULL,NULL,n,1,-1,&ac,
+		      dt,eacNormal,1,FALSE,TRUE,TRUE,
+		      FALSE,0,dt*(n+1)*0.5,
+		      effnEXP1,0);
+      
+      ac_tau[s] = 1;
+      do_lmfit((n+1)/2,ac,fitsig,dt,0,0,dt*(n+1)*0.5,
+	       bDebugMode(),effnEXP1,&(ac_tau[s]),NULL);
+      
+      fprintf(stdout,"Set %3d: ac. tau %g  err. est. %g\n",
+	      s+1,ac_tau[0],sig[s]*sqrt(2*ac_tau[0]/(n*dt)));
+    }
+    sfree(fitsig);
+    sfree(ac);
+  }
+  
+  if (bAnalEE)
+    nleg = 2*nset;
+  else
+    nleg = nset;
+  snew(leg,nleg);
   for(s=0; s<nset; s++) {
-    snew(leg[s],STRLEN);
-    sprintf(leg[s],"av %f",av[s]);
+    if (TRUE) {
+      snew(leg[2*s],STRLEN);
+      sprintf(leg[2*s],"av %f",av[s]);
+      snew(leg[2*s+1],STRLEN);
+      sprintf(leg[2*s+1],"ee %6g",sig[s]*sqrt(2*ac_tau[0]/(n*dt)));
+    } else {
+      snew(leg[s],STRLEN);
+      sprintf(leg[s],"av %f",av[s]);
+    }
   }
 
   fp = xvgropen(eefile,"Error estimates","Block size (time)","Error estimate");
   fprintf(fp,
 	  "@ subtitle \"using block averaging, total time %g (%d points)\"\n",
 	  n*dt,n);
-  xvgr_legend(fp,nset,leg);
-  for(s=0; s<nset; s++)
+  xvgr_legend(fp,nleg,leg);
+  for(s=0; s<nleg; s++)
     sfree(leg[s]);
   sfree(leg);
 
@@ -298,11 +337,25 @@ static void estimate_error(char *eefile,int resol,int n,int nset,
       }
       prev_bs = bs;
     }
-    if (s < nset)
+    if (bAnalEE) {
       fprintf(fp,"&\n");
+      prev_bs = 0;
+      for(rlog2=resol*log2max; rlog2>=2*resol; rlog2--) {
+	bs = n*pow(0.5,(real)rlog2/(real)resol);
+	if (bs != prev_bs) {
+	  t_tau = bs*dt/ac_tau[0];
+	  fprintf(fp," %g %g\n",bs*dt,
+		  sig[s]*sqrt(2*ac_tau[0]/(n*dt)*((exp(-t_tau)-1)/t_tau+1)));
+	}
+      }
+      fprintf(fp,"&\n");
+    } else
+      if (s < nset)
+	fprintf(fp,"&\n");
   }
-
+    
   fclose(fp);
+  sfree(ac_tau);
 }
 
 int main(int argc,char *argv[])
@@ -337,7 +390,15 @@ int main(int argc,char *argv[])
     "error^2 = Sum (B_i - <B>)^2 / (m*(m-1)).",
     "These errors are plotted as a function of the block size.",
     "For a good error estimate the block size should be at least as large",
-    "as the correlation time, but possibly much larger.[PAR]"
+    "as the correlation time, but possibly much larger.",
+    "Also an analytical block average curve is plotted, assuming",
+    "that the autocorrelation is a pure exponential.",
+    "The expontential decay time tau is obtained by fitting the",
+    "autocorrelation. The analytical curve is:[BR]",
+    "sigma*sqrt(2 tau/T ((exp(-t/tau) - 1) tau/t + 1)),[BR]",
+    "where T is the total time."
+    "When the actual block average is very close to the analytical curve,"
+    "the error is sigma*sqrt(2 tau/T)."
   };
   static real tb=-1,te=-1,frac=0.5,binwidth=0.1;
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=FALSE,bAverCorr=FALSE;
@@ -485,7 +546,7 @@ int main(int argc,char *argv[])
     do_view(avfile, NULL);
   }
   if (eefile) {
-    estimate_error(eefile,resol,n,nset,av,val,dt);
+    estimate_error(eefile,resol,n,nset,av,sig,val,dt);
     do_view(eefile, NULL);
   }
   if (acfile) {
