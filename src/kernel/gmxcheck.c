@@ -193,7 +193,7 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
   real      *atom_vdw;
   
   fprintf(stderr,"Checking coordinate file %s\n",fn);
-  read_tps_conf(fn,title,&top,&x,&v,box,TRUE);
+  read_tps_conf(fn,title,&top,&atoms,&x,&v,box,TRUE);
   atoms=&top.atoms;
   natom=atoms->nr;
   fprintf(stderr,"%d atoms in file\n",atoms->nr);

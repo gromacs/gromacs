@@ -317,7 +317,8 @@ void init_md(t_commrec *cr,
 
   if (MASTER(cr)) {
     *fp_ene = open_enx(ftp2fn(efENX,nfile,fnm),"w");
-    *mdebin = init_mdebin(*fp_ene,grps,&(top->atoms),bLR,bBHAM,b14);
+    *mdebin = init_mdebin(*fp_ene,grps,&(top->atoms),&(top->idef),
+			  bLR,bBHAM,b14,ir->bPert,ir->epc);
   }
   else {
     *fp_ene = -1;

@@ -256,7 +256,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   b14=(top->idef.il[F_LJ14].nr > 0);        /* Use 1-4 interactions ?  */
   
   /* Init bin for energy stuff  */
-  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),bLR,bBHAM,b14); 
+  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),bLR,bBHAM,b14,
+		     parm->ir.bPert,parm->ir.epc); 
   
   /* Clear some matrix variables  */
   clear_mat(force_vir); 

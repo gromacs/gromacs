@@ -333,6 +333,8 @@ void get_ir(char *mdparin,char *mdparout,
   
   /* Electric fields */
   CCTYPE ("Electric fields");
+  CTYPE ("Format is number of terms (int) and for all terms an amplitude (real)");
+  CTYPE ("and a phase angle (real)");
   STYPE ("E_x",   	efield_x,	NULL);
   STYPE ("E_xt",	efield_xt,	NULL);
   STYPE ("E_y",   	efield_y,	NULL);

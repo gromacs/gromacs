@@ -132,6 +132,13 @@ $(LIB)(inloopf.o):	inloopf.m4
 		$(AR) $(ARFLAGS) $(LIB) inloopf.o
 		$(RM) inloopf.f inloopf.o
 
+libxtcf.a:	xtciof.o	libxdrf.o	ftocstr.o	#xdrf.o
+		$(AR) $@ $^
+		$(RANLIB) $@
+		$(RM) $(LIBDIR)/$@
+		-chmod $(LIBMODE) $@
+		mv $@ $(LIBDIR)
+
 prfn:		prfn.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
@@ -139,7 +146,7 @@ repfirst:	repfirst.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 testlr:		testlr.o	ewald.o
-		$(LD) -p -o $@ $^  $(SYSLIBS) $(FFTLIBS)
+		$(LD) -p -o $@ $^  $(SYSLIBS) $(FFTLIBS) $(SYSLIBS)
 
 optghat:	optghat.o	ewald.o	\
 		nrutil.o	powell.o	linmin.o	\

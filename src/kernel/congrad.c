@@ -120,8 +120,9 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     fp_ene=-1;
     
   /* Init bin for energy stuff */
-  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),bLR,bBHAM,b14);
-  
+  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),bLR,bBHAM,b14,
+		     parm->ir.bPert,parm->ir.epc); 
+
   /* Clear some matrix variables */
   clear_mat(force_vir);
   clear_mat(shake_vir);

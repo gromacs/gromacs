@@ -26,6 +26,9 @@ PROGRAMS=	(cd bin/s10; ls; cd ../..)
 all:	dirs
 	$(foreach DIR,$(DIRS),cd $(DIR); $(MAKE); cd ..;)
 
+etags:
+	find . -name "*.[chCHm4]" -print | etags -
+
 it:	
 	$(foreach DIR,$(LDIRS),cd $(DIR); $(MAKE); cd ..;)
 

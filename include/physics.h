@@ -78,7 +78,7 @@ static char *SRCID_physics_h = "$Id$";
 #define FACEL		332.0636*CAL2JOULE	        /* (sqrt(ONE_4PI_EPS0)) */
 #define ONE_4PI_EPS0	FACEL*0.1
 #define PRESFAC         (16.6054)                       /* bar / pressure unity */
-#define ENM2DEBYE       48.0321                         /* Convert electron nm^2 to debye */
+#define ENM2DEBYE       48.0321                         /* Convert electron nm to debye */
 
 /* to convert from a acceleration in (e V)/(amu nm) */
 /* FIELDFAC is also Faraday's constant and E_CHARGE/(1e6 AMU) */

@@ -42,6 +42,7 @@ enum {
   F_BHAM,
   F_BONDS,
   F_MORSE,
+  F_WPOL,
   F_DISRES, 
   F_IDIHS, 
   F_LJ,
@@ -79,6 +80,8 @@ typedef union
    */
   struct {real a,b,c;				} bham;
   struct {real rA,krA,rB,krB;           	} harmonic; 
+  /* No free energy supported for WPOL */ 
+  struct {real kx,ky,kz,rOH,rHH,rOD;            } wpol; 
   struct {real c6,c12;				} lj;
   struct {real c6A,c12A,c6B,c12B;		} lj14;
   /* Proper dihedrals can not have different multiplicity when

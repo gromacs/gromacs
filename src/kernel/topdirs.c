@@ -72,8 +72,12 @@ int ifunc_index(directive d,int type)
   case d_bonds:
     if (type == 1)
       return F_BONDS;
-    else
+    else if (type == 2)
       return F_MORSE;
+    else if (type == 3)
+      return F_WPOL;
+    else
+      fatal_error(0,"Invalid bond type %d",type);
   case d_pairs:
   case d_pairtypes:
     return F_LJ14;
@@ -119,7 +123,12 @@ int ifunc_index(directive d,int type)
   case d_settles:
     return F_SETTLE;
   case d_position_restraints:
-    return F_POSRES;
+    if (type == 1)
+      return F_POSRES;
+    else if (type == 2)
+      return F_WPOL;
+    else
+      fatal_error(0,"Invalid position restraint type %d",type);
   case d_distance_restraints:
     return F_DISRES;
   case d_maxdir:

@@ -97,7 +97,8 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   bLR=(parm->ir.rlong > parm->ir.rshort);
   bBHAM=(top->idef.functype[0]==F_BHAM);
   b14=(top->idef.il[F_LJ14].nr > 0);
-  mdebin=init_mdebin(-1,grps,&(top->atoms),bLR,bBHAM,b14);
+  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),bLR,bBHAM,b14,
+		     parm->ir.bPert,parm->ir.epc); 
 
   /* Compute initial EKin for all.. */
   calc_ke_part(TRUE,0,top->atoms.nr,

@@ -45,7 +45,7 @@
 #include "copyrite.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version  = 2;
+static int tpx_version  = 3;
 /* This is the version of the file we are reading */
 static int file_version = 0;
 
@@ -242,6 +242,14 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
     do_real(iparams->morse.b0);
     do_real(iparams->morse.cb);
     do_real(iparams->morse.beta);
+    break;
+  case F_WPOL:
+    do_real(iparams->wpol.kx);
+    do_real(iparams->wpol.ky);
+    do_real(iparams->wpol.kz);
+    do_real(iparams->wpol.rOH);
+    do_real(iparams->wpol.rHH);
+    do_real(iparams->wpol.rOD);
     break;
   case F_LJ:
     do_real(iparams->lj.c6);
@@ -534,13 +542,9 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)
   
   /* Check versions! */
   do_int(file_version);
-  if (file_version == 1) 
-    fatal_error(0,"Reading tpx file (%s) version %d with version %d program.\n",
+  if (file_version != tpx_version) 
+    fatal_error(0,"ERROR: reading tpx file (%s) version %d with version %d program",
 		fio_getname(fp),file_version,tpx_version);
-  else if (file_version != tpx_version) 
-    fprintf(stderr,"WARNING: reading tpx file (%s) version %d with version %d"
-	    " program. Some options may not work.\n",
-	    fio_getname(fp),file_version,tpx_version);
     
   do_section(eitemHEADER,bRead);
   do_int (tpx->natoms);
@@ -701,7 +705,7 @@ bool fn2bTPX(char *file)
 }
 
 bool read_tps_conf(char *infile,char *title,t_topology *top, 
-		   rvec **x,rvec **v,matrix box,bool bMass)
+		   t_atoms **atoms,rvec **x,rvec **v,matrix box,bool bMass)
 {
   t_tpxheader  header;
   real         t,lambda;

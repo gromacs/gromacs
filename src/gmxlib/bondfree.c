@@ -232,6 +232,84 @@ real bonds(FILE *log,int nbonds,
   return vtot;
 }
 
+real water_pol(FILE *log,int nbonds,
+	       t_iatom forceatoms[],t_iparams forceparams[],
+	       rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
+	       matrix box,real lambda,real *dvdlambda,
+	       t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
+{
+  int  i,m,ki,kj,aO,aH1,aH2,aD,aS,type;
+  rvec dOH1,dOH2,dHH,dOD,dDS,nW,kk,dx,kdx;
+  real vtot,fij,r_HH,r_OH,r_OD,r_nW;
+  
+  vtot = 0.0;
+  if (nbonds > 0) {
+    type   = forceatoms[0];
+    kk[XX] = forceparams[type].wpol.kx;
+    kk[YY] = forceparams[type].wpol.ky;
+    kk[ZZ] = forceparams[type].wpol.kz;
+    r_OH   = 1.0/forceparams[type].wpol.rOH;
+    r_HH   = 1.0/forceparams[type].wpol.rHH;
+    r_OD   = 1.0/forceparams[type].wpol.rOD;
+
+    for(i=0; (i<nbonds); ) {
+      type = forceatoms[i++];
+      aO   = forceatoms[i++];
+      aH1  = aO+1;
+      aH2  = aO+2;
+      aD   = aO+3;
+      aS   = aO+4;
+      
+      /* Compute vectors describing the water frame */
+      rvec_sub(x[aH1],x[aO], dOH1);
+      rvec_sub(x[aH2],x[aO], dOH2);
+      rvec_sub(x[aH2],x[aH1],dHH);
+      rvec_sub(x[aD], x[aO], dOD);
+      rvec_sub(x[aS], x[aD], dDS);
+      oprod(dOH1,dOH2,nW);
+      
+      /* Compute inverse length of normal vector 
+       * (this one could be precomputed, but I'm too lazy now)
+       */
+      r_nW = invsqrt(iprod(nW,nW));
+      
+      /* Normalize the vectors in the water frame */
+      svmul(r_nW,nW,nW);
+      svmul(r_HH,dHH,dHH);
+      svmul(r_OD,dOD,dOD);
+      
+      /* Compute displacement of shell along components of the vector */
+      dx[XX] = iprod(dDS,nW);
+      dx[YY] = iprod(dDS,dHH);
+      dx[ZZ] = iprod(dDS,dOD);
+      
+      if (debug) {
+	fprintf(debug,"WPOL: dx2=%10g  dy2=%10g  dz2=%10g  sum=%10g  dDS^2=%10g\n",
+		sqr(dx[XX]),sqr(dx[YY]),sqr(dx[ZZ]),sqr(dx[XX])+sqr(dx[YY])+sqr(dx[ZZ]),iprod(dDS,dDS));
+	fprintf(debug,"WPOL: nW=(%10g,%10g,%10g), 1/r_nW = %10g\n",
+		nW[XX],nW[YY],nW[ZZ],1/r_nW);
+	fprintf(debug,"WPOL: dx  =%10g, dy  =%10g, dz  =%10g\n",
+		dx[XX],dx[YY],dx[ZZ]);
+	fprintf(debug,"WPOL: dDSx=%10g, dDSy=%10g, dDSz=%10g\n",
+		dDS[XX],dDS[YY],dDS[ZZ]);
+      }
+      
+      /* Now compute the forces and energy */
+      kdx[XX] = -kk[XX]*dx[XX];
+      kdx[YY] = -kk[YY]*dx[YY];
+      kdx[ZZ] = -kk[ZZ]*dx[ZZ];
+      for(m=0; (m<DIM); m++) {
+	fij       = nW[m]*kdx[XX]+dHH[m]*kdx[YY]+dOD[m]*kdx[ZZ];
+	vtot     += kk[m]*sqr(dx[m]);
+	f[aS][m] += fij;
+	f[aD][m] -= fij;
+      }
+    }	
+  }
+  return 0.5*vtot;
+}
+
+
 real bond_angle(FILE *log,matrix box,
 		rvec xi,rvec xj,rvec xk,	/* in  */
 		rvec r_ij,rvec r_kj,real *costh)		/* out */

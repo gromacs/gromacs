@@ -73,6 +73,7 @@ static t_nrnb_data nbdata[eNRNB] = {
   { "Dist. Restr.", 200, 500 },
   { "Pos. Restr.",   50, 100 },
   { "Morse Potent.",  0,   0 },
+  { "Water Pol.",    62, 200 },
   { "Virial",        18,  43 },
   { "Update",        31, 273 },
   { "Stop-CM",       10,  62 },

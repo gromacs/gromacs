@@ -103,6 +103,12 @@ extern real morsebonds(FILE *log,int nbonds,
 		       matrix box,real lambda,real *dvdlambda,
 		       t_mdatoms *md,int ngrp,real egnb[],real egcoul[]);
 
+extern real water_pol(FILE *log,int nbonds,
+		      t_iatom forceatoms[],t_iparams *forceparams,
+		      rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
+		      matrix box,real lambda,real *dvdlambda,
+		      t_mdatoms *md,int ngrp,real egnb[],real egcoul[]);
+  
 extern real angles(FILE *log,int nbonds,
 		   t_iatom forceatoms[],t_iparams *forceparams,
 		   rvec x[],rvec f[],t_forcerec *fr,t_graph *g,

@@ -52,8 +52,9 @@ t_interaction_function interaction_function[F_NRE]=
 {
   def_bond   ("ANGLES",   "Angle",          3, 2, 2,  eNR_ANGLES, angles),
   def_nb     ("BHAM",     "BuckingHam",     2, 3),
-  def_connect("BONDS",    "Bonds",          2, 2, 2,  eNR_BONDS, bonds),
+  def_connect("BONDS",    "Bonds",          2, 2, 2,  eNR_BONDS,  bonds),
   def_connect("MORSE",    "Morse",          2, 3, 0,  eNR_MORSE,  morsebonds),
+  def_bond   ("WATERPOL", "Water Pol.",     1, 6, 0,  eNR_WPOL,   water_pol),
   def_bond   ("DISRES",   "Dis. Res",       2, 6, 0,  eNR_DISRES, ta_disres),
   def_bond   ("IDIHS",    "Impropers",      4, 2, 2,  eNR_IMPROPER, idihs),
   def_nb     ("LJ",       "LJ",             2, 2),

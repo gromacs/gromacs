@@ -208,7 +208,7 @@ void sgangle_plot(char *fn,char *afile,char *bfile,
       calc_angle(box,x0,index1,index2,gnx1,gnx2,&angle,
 		 &distance,&distance1,&distance2);
       
-      fprintf(sg_angle,"%12g  %12g\n",t,angle);
+      fprintf(sg_angle,"%12g  %12g  %12g\n",t,angle,acos(angle)*180.0/M_PI);
       fprintf(sg_distance,"%12g  %12g\n",t,distance);
       fprintf(sg_distance1,"%12g  %12g\n",t,distance1);
       fprintf(sg_distance2,"%12g  %12g\n",t,distance1);
@@ -267,6 +267,8 @@ void main(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,0,NULL,asize(desc),desc,0,NULL);
+  
+  init_lookup_table(stdout);
 
   top = read_top(ftp2fn(efTPX,NFILE,fnm));     /* read topology file */
 

@@ -115,72 +115,6 @@ static void do_both(rvec xold,rvec x_unc,rvec x,rvec g,
   v[ZZ]=(zz-xold [ZZ])*dt_1;
 }
 
-/* do_elupdate is a function that takes into account electric field
-   parameters. Et[] contains the parameters for the time dependent
-   part of the field (not yet used). Ex[] contains the parameters for
-   the spatial dependent part of the field. You can have cool periodic
-   fields in principle, but only a constant field is supported
-   now. Only difference with do_update is the electric field, the two
-   should probably be merged when its working. Peter Tieleman, 30
-   Nov. 1995 
-*/
-
-static void do_elupdate(int start,int homenr,double dt,
-			rvec lamb[],t_grp_acc gstat[],
-			rvec accel[],rvec freezefac[],
-			real invmass[],ushort ptype[],real charge[],
-			ushort cFREEZE[],ushort cACC[],
-			ushort cTC[],
-			rvec x[],rvec xprime[],rvec v[],rvec vold[],
-			rvec f[], t_cosines Ex[], t_cosines Et[])
-{
-  double w_dt;
-  int    gf,ga,gt;
-  real   vn,vv,va,vb;
-  real   qm;             /* qm = charge of atom over mass of atom. */
-  real   e_tmp;         /* holds sum of all terms cos expansion for field */
-  real   uold,l1,lg;
-  real   real1=1.0;
-  rvec   adds;          /* contributions from accel and field */
-  int    n,d,i;
-  
-  for (n=start; (n<start+homenr); n++) {  
-    w_dt = invmass[n]*dt;
-    gf   = cFREEZE[n];
-    ga   = cACC[n];
-    gt   = cTC[n];
-    qm   = invmass[n]  * charge[n] * FIELDFAC;
-
-    for (d=0; d<DIM; d++)
-    {
-      e_tmp = 0;
-      /* this is is silly, since Ex[d].n is either 1 or 0, currently */
-      for (i = 0; i < Ex[d].n; i++)
-	e_tmp += Ex[d].a[i] * qm;
-
-      adds[d] = dt * (accel[ga][d] + e_tmp);
-    }
-
-    for (d=0; (d<DIM); d++) {
-      vn             = v[n][d];
-      lg             = lamb[gt][d];
-      vold[n][d]     = vn;
-      if ((ptype[n]!=eptDummy) && freezefac[gf][d]) {
-	vv             = lg*(vn + f[n][d]*w_dt);
-	
-	/* do not scale the mean velocities u */
-	uold           = gstat[ga].uold[d];
-	va             = vv + adds[d];
-	l1             = (real1-lg);
-	vb             = va + l1*uold ;
-	v[n][d]        = vb;
-	xprime[n][d]   = x[n][d]+vb*dt*freezefac[gf][d];
-      } else 
-	xprime[n][d]   = x[n][d];
-    }
-  }
-}
-
 static void do_update(int start,int homenr,double dt,
 		      rvec lamb[],t_grp_acc gstat[],
 		      rvec accel[],rvec freezefac[],
@@ -200,22 +134,21 @@ static void do_update(int start,int homenr,double dt,
     ga   = cACC[n];
     gt   = cTC[n];
     
-    if (ptype[n] != eptDummy)
-      for (d=0; (d<DIM); d++) {
-	vn             = v[n][d];
-	lg             = lamb[gt][d];
-	vold[n][d]     = vn;
+    for (d=0; (d<DIM); d++) {
+      vn             = v[n][d];
+      lg             = lamb[gt][d];
+      vold[n][d]     = vn;
       
-      if ((ptype[n] != eptDummy) && (freezefac[gf][d] != 0)) {
+      if ((ptype[n] != eptDummy) && (ptype[n] != eptShell) && (freezefac[gf][d] != 0)) {
 	vv             = lg*(vn + f[n][d]*w_dt);
-	
+	  
 	/* do not scale the mean velocities u */
 	uold           = gstat[ga].uold[d];
 	va             = vv + accel[ga][d]*dt;
 	vb             = va + (1.0-lg)*uold;
 	v[n][d]        = vb;
 	xprime[n][d]   = x[n][d]+vb*dt;
-      } 
+      }
       else
 	xprime[n][d]   = x[n][d];
     }
@@ -251,7 +184,7 @@ static void do_update_lang(int start,int homenr,double dt,
     for (d=0; (d<DIM); d++) {
       vn             = v[n][d];
       vold[n][d]     = vn;
-      if ((ptype[n]!=eptDummy) && freezefac[gf][d]) {
+      if ((ptype[n]!=eptDummy) && (ptype[n]!=eptShell) && freezefac[gf][d]) {
 	jran = (jran*ia+ic) & im;
 	jr = (real)jran;
 	jran = (jran*ia+ic) & im;
@@ -758,7 +691,6 @@ void update(int          natoms, 	/* number of atoms in simulation */
   static int       *sblock=NULL;
   static int       nsettle,settle_type;
   static int       *owptr;
-  static bool      bField=FALSE;  /* true if field is used */
   static rvec      *xprime,*x_unc=NULL;
   static int       ngtc,ngacc,ngfrz;
   static rvec      *lamb,*freezefac;
@@ -828,11 +760,6 @@ void update(int          natoms, 	/* number of atoms in simulation */
     ngtc=ir->opts.ngtc;
     snew(lamb,ir->opts.ngtc);
     
-    /* find out if we have to take into account electric fields */
-    if (ir->ex[0].n || ir->ex[1].n || ir->ex[2].n) {
-      bField = TRUE;
-      fprintf(stdlog,"Using field version of update\n");
-    }
     /* done with initializing */
     bFirst=FALSE;
   }
@@ -862,15 +789,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
     /* Now do the actual update of velocities and positions */
     where();
     dump_it_all(stdlog,"Before update",natoms,x,xprime,v,vold,force);
-    if (bField)  
-      /* use field version of update */
-      do_elupdate(start,homenr,dt, 
-		  lamb, grps->grpstat,
-		  ir->opts.acc,freezefac,
-		  md->invmass,md->ptype,md->chargeA,
-		  md->cFREEZE,md->cACC,md->cTC,
-		  x,xprime,v,vold,force,ir->ex,ir->et);
-    else if (ir->eI==eiMD)
+    if (ir->eI==eiMD)
       /* use normal version of update */
       do_update(start,homenr,dt,
 		lamb,grps->grpstat,

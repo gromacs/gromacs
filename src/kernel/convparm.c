@@ -63,6 +63,14 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->morse.cb    =old[1];
     new->morse.beta  =old[2];
     break;
+  case F_WPOL:
+    new->wpol.kx     =old[0];
+    new->wpol.ky     =old[1];
+    new->wpol.kz     =old[2];
+    new->wpol.rOH    =old[3];
+    new->wpol.rHH    =old[4];
+    new->wpol.rOD    =old[5];
+    break;
   case F_BHAM:
     new->bham.a = old[0];
     new->bham.b = old[1];

@@ -36,6 +36,7 @@ static char *SRCID_calcmu_c = "$Id$";
 #include "fatal.h"
 #include "physics.h"
 #include "nsb.h"
+#include "main.h"
 
 void calc_mu(t_nsborder *nsb,rvec x[],real q[],rvec mu)
 {
@@ -45,9 +46,11 @@ void calc_mu(t_nsborder *nsb,rvec x[],real q[],rvec mu)
   end   = start + HOMENR(nsb);  
   
   clear_rvec(mu);
-  for(i=start; (i<end); i++)
-    for(m=0; (m<DIM); m++)
+  for(i=start; (i<end); i++) {
+    for(m=0; (m<DIM); m++) {
       mu[m] += q[i]*x[i][m];
+    }
+  }
   for(m=0; (m<DIM); m++)
     mu[m] *= ENM2DEBYE;
 }

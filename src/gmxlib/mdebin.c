@@ -43,8 +43,13 @@ static char *SRCID_mdebin_c = "$Id$";
 
 static bool bEInd[egNR] = { TRUE, TRUE, FALSE, FALSE, FALSE, FALSE };
 
+static bool bEner[F_NRE];
+static bool bShake,bPC;
+static int  f_nre=0;
+
 t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,
-		      bool bLR,bool bBHAM,bool b14)
+		      t_idef *idef,bool bLR,bool bBHAM,bool b14,bool bFEP,
+		      bool bPcoupl)
 {
   char *ener_nm[F_NRE];
   static char *boxs_nm[] = {
@@ -79,16 +84,46 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,
   t_mdebin *md;
   int      i,j,ni,nj,n,k,kk;
 
-  for(i=0; (i<F_NRE); i++)
-    ener_nm[i]=interaction_function[i].longname;
+  for(i=0; (i<F_NRE); i++) {
+    if (i == F_LJ)
+      bEner[i] = !bBHAM;
+    else if (i == F_BHAM)
+      bEner[i] = bBHAM;
+    else if (i == F_LR)
+      bEner[i] = bLR;
+    else if (i == F_LJ14)
+      bEner[i] = b14;
+    else if ((i == F_DVDL) || (i == F_DVDLKIN))
+      bEner[i] = bFEP;
+    else if ((strstr(interaction_function[i].name,"DUM") != NULL) ||
+	     (i == F_SHAKE) || (i == F_SETTLE))
+      bEner[i] = FALSE;
+    else if ((i == F_SR) || (i == F_EPOT) || (i == F_ETOT) || (i == F_EKIN) ||
+	     (i == F_TEMP) || (i == F_PRES))
+      bEner[i] = TRUE;
+    else 
+      bEner[i] = (idef->il[i].nr > 0);
     
+    if (bEner[i]) {
+      ener_nm[f_nre]=interaction_function[i].longname;
+      f_nre++;
+    }
+  }
+  bShake = (idef->il[F_SHAKE].nr > 0) || (idef->il[F_SETTLE].nr > 0);
+  if (bShake) 
+    bShake = (getenv("SHAKEVIR") != NULL);
+  bPC    = bPcoupl;
+  
   /* Energy monitoring */
   snew(md,1);
   md->ebin  = mk_ebin();
-  md->ie    = get_ebin_space(md->ebin,F_NRE,ener_nm);
-  md->ib    = get_ebin_space(md->ebin,asize(boxs_nm),boxs_nm);
-  md->isvir = get_ebin_space(md->ebin,asize(sv_nm),sv_nm);
-  md->ifvir = get_ebin_space(md->ebin,asize(fv_nm),fv_nm);
+  md->ie    = get_ebin_space(md->ebin,f_nre,ener_nm);
+  if (bPC)
+    md->ib    = get_ebin_space(md->ebin,asize(boxs_nm),boxs_nm);
+  if (bShake) {
+    md->isvir = get_ebin_space(md->ebin,asize(sv_nm),sv_nm);
+    md->ifvir = get_ebin_space(md->ebin,asize(fv_nm),fv_nm);
+  }
   md->ivir  = get_ebin_space(md->ebin,asize(vir_nm),vir_nm);
   md->ipres = get_ebin_space(md->ebin,asize(pres_nm),pres_nm);
   md->imu   = get_ebin_space(md->ebin,asize(mu_nm),mu_nm);
@@ -180,6 +215,16 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,
   return md;
 }
 
+static void copy_energy(real e[],real ecpy[])
+{
+  int i,j;
+  
+  for(i=j=0; (i<F_NRE); i++)
+    if (bEner[i])
+      ecpy[j++] = e[i];
+  assert(j == f_nre);
+}
+
 void upd_mdebin(t_mdebin *md,real tmass,int step,
 		real ener[],
 		matrix box,
@@ -195,15 +240,20 @@ void upd_mdebin(t_mdebin *md,real tmass,int step,
   int    i,j,k,kk,m,n,gid;
   real   bs[5];
   real   eee[egNR];
+  real   ecopy[F_NRE];
   
-  add_ebin(md->ebin,md->ie,F_NRE,ener,step);
+  copy_energy(ener,ecopy);
+  add_ebin(md->ebin,md->ie,f_nre,ecopy,step);
   for(m=0; (m<DIM); m++) 
     bs[m]=box[m][m];
   bs[3] = bs[XX]*bs[YY]*bs[ZZ];
   bs[4] = (tmass*AMU)/(bs[3]*NANO*NANO*NANO*KILO);
-  add_ebin(md->ebin,md->ib,5,bs,step);
-  add_ebin(md->ebin,md->isvir,9,svir[0],step);
-  add_ebin(md->ebin,md->ifvir,9,fvir[0],step);
+  if (bPC)
+    add_ebin(md->ebin,md->ib,5,bs,step);
+  if (bShake) {
+    add_ebin(md->ebin,md->isvir,9,svir[0],step);
+    add_ebin(md->ebin,md->ifvir,9,fvir[0],step);
+  }
   add_ebin(md->ebin,md->ivir,9,vir[0],step);
   add_ebin(md->ebin,md->ipres,9,pres[0],step);
   add_ebin(md->ebin,md->imu,3,mu_tot,step);
@@ -295,16 +345,20 @@ void print_ebin(int fp_ene,FILE *log,int steps,real time,real lamb,
 #define newline() fprintf(log,"\n")
 
   fprintf(log,"   Energies %s\n",kjm);
-  pr_ebin(log,md->ebin,md->ie,F_NRE,5,mode,steps,TRUE);  newline();
+  pr_ebin(log,md->ebin,md->ie,f_nre,5,mode,steps,TRUE);  newline();
   
   if (bCompact)
     return;
     
-  pr_ebin(log,md->ebin,md->ib,5,5,mode,steps,TRUE);      newline();
-  fprintf(log,"   Shake Virial %s\n",kjm);
-  pr_ebin(log,md->ebin,md->isvir,9,3,mode,steps,FALSE);  newline();
-  fprintf(log,"   Force Virial %s\n",kjm);
-  pr_ebin(log,md->ebin,md->ifvir,9,3,mode,steps,FALSE);  newline();
+  if (bPC) {
+    pr_ebin(log,md->ebin,md->ib,5,5,mode,steps,TRUE);      newline();
+  }
+  if (bShake) {
+    fprintf(log,"   Shake Virial %s\n",kjm);
+    pr_ebin(log,md->ebin,md->isvir,9,3,mode,steps,FALSE);  newline();
+    fprintf(log,"   Force Virial %s\n",kjm);
+    pr_ebin(log,md->ebin,md->ifvir,9,3,mode,steps,FALSE);  newline();
+  }
   fprintf(log,"   Total Virial %s\n",kjm);
   pr_ebin(log,md->ebin,md->ivir,9,3,mode,steps,FALSE);   newline();
   fprintf(log,"   Pressure (Bar)\n");

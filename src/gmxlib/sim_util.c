@@ -45,6 +45,7 @@ static char *SRCID_sim_util_c = "$Id$";
 #include "mdrun.h"
 #include "update.h"
 #include "physics.h"
+#include "main.h"
 
 #define difftime(end,start) ((double)(end)-(double)(start))
 
@@ -145,6 +146,45 @@ static void reset_energies(t_grpopts *opts,t_groups *grp,
   epot[F_DVDLKIN] = zero;
 }
 
+/* force is kJ mol^-1 nm^-1 = e * kJ mol^-1 nm^-1 / e 
+ *
+ *                          = 
+ */
+/* do_elupdate is a function that takes into account electric field
+   parameters. Et[] contains the parameters for the time dependent
+   part of the field (not yet used). Ex[] contains the parameters for
+   the spatial dependent part of the field. You can have cool periodic
+   fields in principle, but only a constant field is supported
+   now. Only difference with do_update is the electric field, the two
+   should probably be merged when its working. Peter Tieleman, 30
+   Nov. 1995.
+   
+   Adapted to this routine Nov. 1998 DvdS
+*/
+
+static real calc_f_el(int start,int homenr,real charge[],rvec f[],t_cosines Ex[])
+{
+  real Emu,fmu;
+  int  i,m;
+  
+  Emu = 0;
+  if (Ex[XX].n || Ex[YY].n || Ex[ZZ].n) {
+    for(i=start; (i<start+homenr); i++) {
+      if (debug)
+	fprintf(debug,"FMU:");
+      for(m=0; (m<DIM); m++) {
+	fmu      = charge[i]*Ex[m].a[0];
+	f[i][m] += fmu;
+	if (debug)
+	  fprintf(debug,"  %10f",fmu);
+      }
+      if (debug)
+	fprintf(debug,"\n");
+    }
+  }
+  return Emu;
+}
+
 void do_force(FILE *log,t_commrec *cr,
 	      t_parm *parm,t_nsborder *nsb,tensor vir_part,
 	      int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
@@ -219,6 +259,9 @@ void do_force(FILE *log,t_commrec *cr,
 	top->atoms.grps[egcENER].nr,&(parm->ir.opts),
 	x,f,vir_part,ener,bVerbose,parm->box,lambda,graph,&(top->atoms.excl));
   where();
+  
+  calc_f_el(START(nsb),HOMENR(nsb),mdatoms->chargeT,f,parm->ir.ex);
+  
 #ifdef DEBUG
   if (bNS)
     print_nrnb(log,nrnb);
