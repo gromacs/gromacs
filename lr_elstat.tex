@@ -146,32 +146,21 @@ of the pressure components is correct (and therefore the isotropic
 pressure) but not necessarily the individual pressure components! 
 
 \subsubsection{Using PPPM}
-Applying the PPPM algorithm in {\gromacs} is rather straightforward using the
-following steps.
-\begin{enumerate}
-\item   Specify the following lines in your {\tt .mdp} file
+To use the PPPM algorithm in {\gromacs}, specify the
+following lines in your {\tt .mdp} file:
 \begin{verbatim}
 eeltype         = PPPM
 rlist           = 1.0
 rcoulomb        = 0.85
 rcoulomb_switch = 0.0
 rvdw            = 1.0
-rvdw_switch     = 1.0
 fourierspacing  = 0.075
 \end{verbatim}
 For details on the switch parameters see the section on modified
 long-range interactions in this manual. When using pppm we 
 recommend to take at most 0.075 nm per gridpoint (e.g. 20 gridpoints for 1.5 nm).
 PPPM does not provide the same accuracy as PME but is faster in most
-cases.
-% th
-\item   make a binary topology using {\tt\myindex{grompp}} as usual. 
-\item   Before you can perform MD simulations you have to create a 
-        $\hat{G}(k)$ function optimized for your grid spacing using the
-        {\tt\myindex{mk\_ghat}} program
-\item   start {\tt\myindex{mdrun}} passing the {\tt .hat} file created in the
-        previous step
-\end{enumerate}
+cases. PPPM can not be used with pressure coupling.
 
 \subsection{Optimizing fourier transforms}
 To get the best possible performance you should try to avoid large
