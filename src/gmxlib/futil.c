@@ -320,7 +320,7 @@ bool get_libdir(char *libdir)
   char buf[512];
   char full_path[512];
   char test_file[512];
-  char *system_path;
+  char system_path[512];
   char *dir,*ptr,*s;
   bool found=FALSE;
   int i;
@@ -333,7 +333,11 @@ bool get_libdir(char *libdir)
   
     if (!strchr(bin_name,'/')) {
       /* No "/" in name means it must be in the path - search it! */
-      system_path=getenv("PATH");
+      s=getenv("PATH");
+      if (s != NULL)
+	strcpy(system_path,s);
+      else
+	system_path[0]='\0';
       s=system_path;
       found=FALSE;
       while (!found && (dir=strtok(s,":"))!=NULL) {
