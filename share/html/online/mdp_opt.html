@@ -16,8 +16,8 @@
 <li><A HREF="#ld"><b>langevin dynamics</b></A> (ld_temp, ld_fric, ld_seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
-<li><A HREF="#nl"><b>neighborsearching</b></A> (nstlist, ns_type, deltagrid, box, ns_dr)
-<li><A HREF="#el"><b>electrostatics</b></A> (eel_type, rshort, rlong, epsilon_r, bLJshift, bLJcorr, niter, gauss_width, fourier_nx, fourier_ny, fourier_nz)
+<li><A HREF="#nl"><b>neighborsearching</b></A> (nstlist, ns_type, deltagrid, box)
+<li><A HREF="#el"><b>electrostatics</b></A> (eel_type, rlist, rcoulomb_switch, rcoulomb, rvdw_switch, rvdw, epsilon_r, bLJcorr, niter, gauss_width, fourier_nx, fourier_ny, fourier_nz)
 <li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, ntcmemory, tc_grps, tau_t, ref_t)
 <li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, npcmemory, tau_p, compressibility, ref_p)
 <li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, zero_temp_time)
@@ -186,84 +186,81 @@ every <b>nstlist</b> steps.
 <dd>Selects no box, for use in vacuum simulations.
 </dl>
 
-<dt><h4>ns_dr: </b>(0.2) [nm]</h4>
-<dd>Extra shell for neighborsearching to accommodate for diffusion between
-nblist updates and for the size of charge groups.
-Used when <b>eel_type</b> is <tt>PPPM</tt>, <tt>Shift</tt> or <tt>User</tt>.
-</dl>
-
 <A NAME="el"><br><h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#nl"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#tc"><IMG SRC="../gif/charts_down.gif"></A> Electrostatics</h3>
 <dl>
 <dt><h4>eel_type:</h4>
 <dd><dl compact>
 <dt><b>Twin-Range</b>
-<dd>Twin range electrostatics with LJ cut-off <b>rshort</b> [nm] and 
-Coulomb cut-off <b>rlong</b> [nm]. 
+<dd>Twin range cut-off's with neighborlist cut-off <b>rlist</b> and 
+Coulomb cut-off <b>rcoulomb</b> and VdW cut-off <b>rvdw</b>,
+where <b>rlist</b> <tt>&lt=</tt> <b>rlj</b> <tt>&lt=</tt> <b>rcoulomb</b>.
 The dielectric constant is set with <b>epsilon_r</b>.
 <dt><b>PPPM</b>
 <dd>Particle-Particle Particle-Mesh algorithm for long range
 electrostatic interactions.
-Use for example <b>rshort</b><tt>=0.0</TT> and <b>rlong</b><tt>=0.85</TT>.
-The LJ can be shifted with <b>bLJshift</b>.
+Use for example <b>rlist</b><tt>=1.0</tt>, <b>rcoulomb_switch</b><tt>=0.0</TT>,
+<b>rcoulomb</b><tt>=0.85</TT>, <b>rvdw_switch</b><tt>=1.0</TT>
+and <b>rvdw</b><tt>=1.0</TT>, 
 See <tt>Shift</tt> for the details of the particle-particle potentials.
 <dt><b>Reaction-Field</b>
-<dd>Reaction field with LJ and Coulomb cut-off <b>rlong</b> [nm].
+<dd>Reaction field with Coulomb cut-off <b>rcoulomb</b>.
 The dielectric constant beyond the cut-off is <b>epsilon_r</b>.
-The LJ can be shifted with <b>bLJshift</b>.
+See <tt>Shift</tt> for the VdW details.
 <dt><b>Generalized-Reaction-Field</b>
-<dd>Generalized reaction field with LJ and Coulomb cut-off <b>rlong</b> [nm].
+<dd>Generalized reaction field with Coulomb cut-off <b>rcoulomb</b>.
 The dielectric constant beyond the cut-off is <b>epsilon_r</b>.
 The ionic strength is computed from the number of charged 
 (i.e. with non zero charge) charge groups.
 The temperature for the GRF potential is set with 
 <b><A HREF="#tc">ref_t</A></b> [K].
-The LJ can be shifted with <b>bLJshift</b>.
+See <tt>Shift</tt> for the VdW details.
 <dt><b>Shift</b>
-<dd>The Coulomb potential is decreased over the whole range.
-The potential and the forces decay smoothly to zero between 
-<b>rshort</b> [nm] and <b>rlong</b> [nm].
-The neighborsearch cut-off is <b><A HREF="#nl">ns_dr</A></b> larger than
-<b>rlong</b> to accommodate for the size of charge groups and diffusion
-between neighborlist updates. When <b>bLJshift</b><tt>=yes</tt>, the LJ
-potential is shifted analogously. 
-The dielectric constant is set with <b>epsilon_r</b>.
-<dt><b>User</b>
+<dd>When <b>rcoulomb_switch</b> <tt>&lt</tt> <b>rcoulomb</b>, the Coulomb
+potential is decreased over the whole range and the forces decay smoothly
+to zero between <b>rcoulomb_switch</b> and <b>rcoulomb</b>.
+The neighborsearch cut-off <b>rlist</b> should be 0.1 to 0.3 nm larger than
+<b>rcoulomb</b> to accommodate for the size of charge groups and diffusion
+between neighborlist updates.
+<dd>When <b>rvdw_switch</b> <tt>&lt</tt> <b>rvdw</b>, the LJ (not Buckingham)
+potential is decreased over the whole range and the forces decay smoothly
+to zero between <b>rvdw_switch</b> [nm] and <b>rvdw</b> [nm].
 
+<dt><b>User</b>
 <dd>Specify <b>rshort</b> and <b>rlong</b> to the same value, mdrun
 will now expect to find three files with user-defined functions:
 <tt>rtab.xvg</tt> for Repulsion, <tt>dtab.xvg</tt> for Dispersion and
 <tt>ctab.xvg</tt> for Coulomb. These files should contain 5 colums:
 the <tt>x</tt> value, and the function value with its 1<sup>st</sup>
 to 3<sup>rd</sup> derivative. The <tt>x</tt> should run from 0 [nm] to
-<b>rlong</b><tt>+0.5</tt> [nm], with a spacing of <tt>0.002</tt>
+<b>rlist</b><tt>+0.5</tt> [nm], with a spacing of <tt>0.002</tt>
 [nm] when you run in single precision, or <tt>0.0005</tt> [nm] when
 you run in double precision. The function value at <tt>x=0</tt> is not
-important. The Coulomb cut-off is assumed to be <b>rlong</b>,
-the neighborsearch cut-off is <b>rlong</b>+<b><A HREF="#nl">ns_dr</A></b>.
-The LJ cut-off is assumed to be <b>rlong</b> when <b>bLJshift</b><tt>=no</tt> 
-or <b>rlong</b>+<b><A HREF="#nl">ns_dr</A></b>
-when <b>bLJshift</b><tt>=yes</tt>.
+important. When you want to use LJ correction, make sure that <b>rvdw</b>
+corresponds to the cut-off in the user-defined function.
 
 </dl>
 <A NAME="el2">
-<dt><h4>rshort: </b>(1) [nm]</h4>
-<dd>distance for LJ cut-off
+<dt><h4>rlist: </b>(1) [nm]</h4>
+<dd>cut-off distance for making the neighbor list.
 
-<dt><h4>rlong: </b>(1) [nm]</h4>
-<dd>distance for Coulomb cut-off
+<dt><h4>rcoulomb_switch: </b>(0) [nm]</h4>
+<dd>where to start switching the Coulomb potential.
+No shift and switch occur when <b>rcoulomb_switch</b><tt>=</tt><b>rcoulomb</b>,
+or when <b>eel_type</b><tt>=Twin-Range</tt>.
+
+<dt><h4>rcoulomb: </b>(1) [nm]</h4>
+distance for the Coulomb cut-off
+
+<dt><h4>rvdw_switch: </b>(0) [nm]</h4>
+<dd>where to start switching the LJ potential.
+No shift and switch occur when <b>rvdw_switch</b><tt>=</tt><b>rvdw</b>,
+or when <b>eel_type</b><tt>=Twin-Range</tt>.
+
+<dt><h4>rvdw: </b>(1) [nm]</h4>
+distance for the LJ or Buckingham cut-off
+
 <dt><h4>epsilon_r: </b>(1)</h4>
 <dd>dielectric constant
-
-<dt><h4>bLJshift:</h4>
-<dd><dl compact>
-<dt><b>no</b>
-<dd>Use normal LJ potential.
-<dt><b>yes</b>
-<dd>Shift the LJ potential over the whole range.
-The potential and the forces decay smoothly to zero between 
-<b>rshort</b> [nm] and <b>rlong</b>.
-Not used when <b>eel_type</b><tt>=Twin-Range</tt>.
-</dl>
 
 <dt><h4>bLJcorr:</h4>
 <dd><dl compact>
@@ -638,7 +635,6 @@ desired parameter.
 <A HREF="#bond2">morse</A><br>
 <A HREF="#el2">niter</A><br>
 <A HREF="#pc">npcmemory</A><br>
-<A HREF="#nl">ns_dr</A><br>
 <A HREF="#em">nstcgsteep</A><br>
 <A HREF="#run">nstcomm</A><br>
 <A HREF="#nmr">nstdisreout</A><br>
@@ -657,8 +653,11 @@ desired parameter.
 <A HREF="#pc">pcoupl</A><br>
 <A HREF="#pc">ref_p</A><br>
 <A HREF="#tc">ref_t</A><br>
-<A HREF="#el2">rlong</A><br>
-<A HREF="#el2">rshort</A><br>
+<A HREF="#el2">rlist</A><br>
+<A HREF="#el2">rcoulomb_switch</A><br>
+<A HREF="#el2">rcoulomb</A><br>
+<A HREF="#el2">rvdw_switch</A><br>
+<A HREF="#el2">rvdw</A><br>
 <A HREF="#bond2">shake_tol</A><br>
 <A HREF="#sol">solvent_optimization</A><br>
 <A HREF="#pc">tau_p</A><br>

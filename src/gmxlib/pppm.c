@@ -430,7 +430,7 @@ static void sum_qgrid(FILE *log,bool bVerbose,t_commrec *cr,
   ;
 }
 
-static rvec      beta,*xinbox;
+static rvec      beta;
 static real      ***ghat=NULL;
 static t_fftgrid *grid=NULL;
 
@@ -443,7 +443,6 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
   const real tol = 1e-5;
   rvec  spacing;
 
-  snew(xinbox,HOMENR(nsb));
   if (cr != NULL) {
     if (cr->nprocs > 1)
       fatal_error(0,"No parallel PPPM yet...");
@@ -463,7 +462,7 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
       fatal_error(0,"Grid must be at least 4 points in all directions");
       
     ghat   = mk_rgrid(nx,ny,nz);
-    mk_ghat(NULL,nx,ny,nz,ghat,box,ir->rshort,ir->rlong,TRUE,bOld);
+    mk_ghat(NULL,nx,ny,nz,ghat,box,ir->rcoulomb_switch,ir->rcoulomb,TRUE,bOld);
     
     if (bVerbose)
       pr_scalar_gk("generghat.xvg",nx,ny,nz,box,ghat);
@@ -473,9 +472,10 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
     ghat = rd_ghat(log,ghatfn,grids,spacing,beta,&porder,&r1,&rc);
     
     /* Check whether cut-offs correspond */
-    if ((fabs(r1-ir->rshort) > tol) || (fabs(rc-ir->rlong) > tol)) {
-      fprintf(log,"rshort = %10.3e  rlong = %10.3e"
-	      "  r1 = %10.3e  rc = %10.3e\n",ir->rshort,ir->rlong,r1,rc);
+    if ((fabs(r1-ir->rcoulomb_switch)>tol) || (fabs(rc-ir->rcoulomb)>tol)) {
+      fprintf(log,"rcoulomb_switch = %10.3e  rcoulomb = %10.3e"
+	          "  r1 = %10.3e  rc = %10.3e\n",
+	      ir->rcoulomb_switch,ir->rcoulomb,r1,rc);
       fflush(log);
       fatal_error(0,"Cut-off lengths in tpb file and Ghat file %s "
 		  "do not match\nCheck your log file!",ghatfn);
@@ -558,7 +558,7 @@ real do_opt_pppm(FILE *log,       bool bVerbose,
   ny     = ir->nky;
   nz     = ir->nkz;
   ghat   = mk_rgrid(nx,ny,nz);
-  mk_ghat(NULL,nx,ny,nz,ghat,box,ir->rshort,ir->rlong,TRUE,bOld);
+  mk_ghat(NULL,nx,ny,nz,ghat,box,ir->rcoulomb_switch,ir->rcoulomb,TRUE,bOld);
   
   /* pr_scalar_gk("generghat.xvg",nx,ny,nz,box,ghat); */
   

@@ -279,8 +279,11 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PS("bSimAnn",BOOL(ir->bSimAnn)); 
     PR("zero_temp_time",ir->zero_temp_time); 
     PS("eeltype",EELTYPE(ir->eeltype));
-    PR("rshort",ir->rshort);
-    PR("rlong",ir->rlong);
+    PR("rlist",ir->rlist);
+    PR("rcoulomb_switch",ir->rcoulomb_switch);
+    PR("rcoulomb",ir->rcoulomb);
+    PR("rvdw_switch",ir->rvdw_switch);
+    PR("rvdw",ir->rvdw);
     PR("epsilon_r",ir->epsilon_r);
     PS("bLJcorr",BOOL(ir->bLJcorr));
     PR("fudgeLJ",ir->fudgeLJ);

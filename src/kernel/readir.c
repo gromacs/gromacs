@@ -75,6 +75,9 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 /* Check internal consistency */
 {
 #define BS(b,s,val) if (b) fprintf(stderr,"ERROR: "), fprintf(stderr,s,val), (*nerror)++
+
+  bool bLR;
+
   if ( (opts->nshake > 0) && (ir->eI != eiMD) && (ir->eI != eiLD) ) {
     fprintf(stderr,"Turning off constraints for %s simulation\n",EI(ir->eI));
     opts->nshake=0;
@@ -85,8 +88,6 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     warning(NULL);
   }
 
-  BS(((ir->eBox == ebtNONE) && (ir->ns_type == ensGRID)),
-     "Can only use box type None with simple neighboursearching%s\n","");
   BS(((ir->shake_tol<=0.0) && (opts->nshake>0) && (ir->eConstrAlg==estSHAKE)),
      "shake_tol must be > 0 instead of %g while using shake\n",
      ir->shake_tol);
@@ -100,19 +101,19 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     BS((ir->epc && (ir->tau_p <= 0)),
        "tau_p must be > 0 instead of %g\n",ir->tau_p);
     BS((ir->epc && (ir->compress[XX]+ir->compress[YY]+ir->compress[ZZ] <= 0)),
-      "compressibility must be > 0 when using pressure coupling%s\n","");
+       "compressibility must be > 0 when using pressure coupling%s\n","");
   }
-  if (ir->rshort > ir->rlong) {
-    fprintf(stderr,
-	    "ERROR: rlong (%g) must be equal to or larger than rshort (%g)\n",
-	    ir->rlong,ir->rshort);
+  if (ir->rlist == 0.0) {
+    if ((ir->eeltype != eelTWIN) || (ir->ns_type != ensGRID) || 
+	(ir->eBox != ebtNONE) ||
+	(ir->rcoulomb != 0.0) || (ir->rvdw != 0.0))
+      fprintf(stderr,
+	      "ERROR: can only have neighborlist cut-off zero (=infinite)\n"
+	      "with eel_type = Twin-Range and simple neighborsearch\n"
+	      "without periodic boundary conditions (box = %s) and\n"
+	      "rcoulomb and rvdw set to zero\n",eboxtype_names[ebtNONE]);
     (*nerror)++;
   }
-  if ((ir->rshort == 0.0) && (ir->rlong == 0.0))
-    BS((ir->eBox != ebtNONE),
-       "ERROR: can not have cut-off to zero (=infinite) with periodic\n"
-       "boundary conditions. Either set the box type to %s, or "
-       "increase the cut-off radii\n",eboxtype_names[ebtNONE]);
   if ((ir->epc == epcTRICLINIC) && (ir->eBox != ebtTRICLINIC)) {
     sprintf(warn_buf,
 	    "%s pressure coupling does not make sense without %s box\n"
@@ -130,28 +131,81 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     fprintf(stderr,"ERROR: pressure coupling with PPPM not implemented\n");
     (*nerror)++;
   }
-  if ((ir->eeltype == eelTWIN) && (ir->rlong != ir->rshort) && 
+  if ((ir->eeltype == eelTWIN) && (ir->rcoulomb > ir->rlist) && 
       (ir->ns_type == ensSIMPLE)) {
     fprintf(stderr,"ERROR: Twin-range cut-off with simple neighbour searching "
 	    "not implemented\n");
     (*nerror)++;
   }
-  if ((ir->eeltype == eelPPPM) || (ir->eeltype == eelSHIFT) || 
-      (ir->eeltype == eelSWITCH)) {
-    if (ir->rshort >= ir->rlong) {
-      fprintf(stderr,"ERROR: rlong (%g) must be larger than rshort (%g) "
-	      "when using %s\n",ir->rlong,ir->rshort,eel_names[ir->eeltype]);
+
+  if (ir->eeltype == eelTWIN) {
+    if (ir->rvdw > ir->rcoulomb) {
+      fprintf(stderr,"ERROR: With eel_type=Twin-Range rvdw (%g) "
+	      "can not be larger than rcoulomb (%g)\n",
+	      ir->rvdw, ir->rcoulomb);
       (*nerror)++;
     }
-  } else if ((ir->eeltype == eelRF) || (ir->eeltype == eelGRF)) {
+    if (ir->rlist > ir->rcoulomb) {
+      fprintf(stderr,"ERROR: With eel_type=Twin-Range rlist (%g) "
+	      "can not be larger than rcoulomb (%g)\n",
+	      ir->rlist, ir->rcoulomb);
+      (*nerror)++;
+    }
+    if (ir->rlist > ir->rvdw) {
+      fprintf(stderr,"ERROR: With eel_type=Twin-Range rlist (%g) "
+	      "can not be larger than rvdw (%g)\n",
+	      ir->rlist, ir->rvdw);
+      (*nerror)++;
+    }
+    if (ir->rvdw > ir->rlist) {
+      fprintf(stderr,"ERROR: rvdw (%g) larger than rlist (%g), "
+	      "sorry, long range VdW is not implemented (yet).\n",
+	      ir->rvdw, ir->rlist);
+      (*nerror)++;
+    }
+  } else {
+    bLR =  ((ir->eeltype==eelPPPM) || (ir->eeltype==eelPOISSON));
+    if ((ir->rcoulomb_switch >= ir->rcoulomb) && ((ir->rcoulomb < ir->rlist) ||
+						  bLR)) {
+      fprintf(stderr,
+	      "ERROR: rcoulomb (%g) must be larger than rcoulomb_switch (%g) "
+	      "when using %s",
+	      ir->rcoulomb,ir->rcoulomb_switch,eel_names[ir->eeltype]);
+      if (bLR)
+	fprintf(stderr,"\n");
+      else
+	fprintf(stderr," or both can be equal to rlist (%g)\n",ir->rlist);
+      (*nerror)++;
+    }
+    if ((ir->rvdw_switch >= ir->rvdw) && (ir->rvdw < ir->rlist)) {
+      fprintf(stderr,
+	      "ERROR: rvdw (%g) must be larger than rvdw_switch (%g) "
+	      "when using %s or both can be equal to rlist (%g)\n",
+	      ir->rvdw,ir->rvdw_switch,eel_names[ir->eeltype],ir->rlist);
+      (*nerror)++;
+    }
+    if ((ir->rcoulomb > ir->rlist) ||  (ir->rvdw > ir->rlist)) {
+      fprintf(stderr,
+	      "ERROR: rcoulomb (%g) and rvdw (%g) can not be larger than "
+	      "rlist (%g) when eel_type is not %s\n",
+	      ir->rcoulomb,ir->rvdw,ir->rlist,eel_names[eelTWIN]);
+      (*nerror)++;
+    }
+    if (ir->rcoulomb > ir->rlist-0.1) {
+      sprintf(warn_buf,
+	      "To eliminate cut-off effects rlist (%g) should be 0.1 to 0.3 "
+	      "nm larger than rcoulomb (%g)",ir->rlist,ir->rcoulomb);
+      warning(NULL);
+    }
+  }
+
+  if ((ir->eeltype == eelRF) || (ir->eeltype == eelGRF)) {
     if (ir->epsilon_r == 1.0) {
       sprintf(warn_buf,"Using epsilon_r = 1.0 with %s does not make sense",
 	      eel_names[ir->eeltype]);
       warning(NULL);
-      ir->eeltype = eelTWIN; 
     }
-  } else
-    BS((ir->rshort > ir->rlong),"rshort (%g) must be <= rlong\n",ir->rshort);
+  }
 }
 
 void get_ir(char *mdparin,char *mdparout,
@@ -223,21 +277,19 @@ void get_ir(char *mdparin,char *mdparout,
   ITYPE ("deltagrid",	ir->ndelta,	2);
   CTYPE ("Box type, rectangular, triclinic, none");
   EETYPE("box",         ir->eBox,       eboxtype_names, nerror, TRUE);
-  CTYPE ("Extra shell for neighborsearching to accommodate for diffusion between");
-  CTYPE ("nblist updates and for the size of charge groups, for PPPM, Shift and User");
-  RTYPE("ns_dr",        ir->ns_dr,      0.2);
 
   /* Electrostatics */
-  CCTYPE ("OPTIONS FOR ELECTROSTATICS");
+  CCTYPE ("OPTIONS FOR ELECTROSTATICS AND VDW");
   CTYPE ("Method for doing electrostatics");
   EETYPE("eel_type",	ir->eeltype,    eel_names, nerror, TRUE);
   CTYPE ("cut-off lengths");
-  RTYPE ("rshort",	ir->rshort,	1.0);
-  RTYPE ("rlong",	ir->rlong,	1.0);
+  RTYPE ("rlist",	ir->rlist,	1.0);
+  RTYPE ("rcoulomb_switch",	ir->rcoulomb_switch,	0.0);
+  RTYPE ("rcoulomb",	ir->rcoulomb,	1.0);
+  RTYPE ("rvdw_switch",	ir->rvdw_switch,	0.0);
+  RTYPE ("rvdw",	ir->rvdw,	1.0);
   CTYPE ("Dielectric constant (DC) for twin-range or DC of reaction field");
   RTYPE ("epsilon_r",   ir->epsilon_r,  1.0);
-  CTYPE ("Shift the LJ potential (not used with Twin-Range)");
-  EETYPE("bLJshift",    ir->bLJshift,    yesno_names, nerror, TRUE);
   CTYPE ("Apply long range dispersion corrections for Energy and Pressure");
   EETYPE("bLJcorr",     ir->bLJcorr,    yesno_names, nerror, TRUE);
   CTYPE ("Some thingies for future use");

@@ -81,11 +81,12 @@ typedef struct {
   bool bSimAnn;         /* simulated annealing (SA)                     */
   real zero_temp_time;  /* time at which temp becomes zero in sim. ann. */
   int  eeltype;		/* Type of electrostatics treatment             */
-  real rshort;		/* short range pairlist cutoff (nm)		*/
-  real rlong;		/* long range pairlist cutoff (nm)		*/
-  real ns_dr;           /* shell size for diffusion and charge groups   */  
+  real rlist;		/* short range pairlist cutoff (nm)		*/
+  real rcoulomb_switch; /* Coulomb switch range start (nm)		*/
+  real rcoulomb;        /* Coulomb cutoff (nm)		                */
+  real rvdw_switch;     /* Van der Waals switch range start (nm)        */
+  real rvdw;		/* Van der Waals cutoff (nm)		        */
   real epsilon_r;       /* relative dielectric constant                 */
-  bool bLJshift;        /* use shifted LJ                               */ 
   bool bLJcorr;         /* Perform Long range corrections for LJ        */
   real shake_tol;	/* tolerance for shake				*/
   real fudgeLJ;		/* Fudge factor for 1-4 interactions		*/

@@ -43,19 +43,19 @@ typedef struct {
   /* Fudge factors */
   real fudgeQQ;
 
-  /* Lennard-Jones stuff */
-  bool bLJshift;
-  real rlj;
-    
   /* PPPM & Shifting stuff */
-  real r1,rc;
+  real rc_switch,rc;
   int  ntab;
   real tabscale;
   real *VFtab;
+  real *phi;
+
+  /* VdW stuff */
+  real rvdw_switch,rvdw;
+  bool bLJshift;
   real bham_b_max;
   real tabscale_exp;
-  real *phi;
-  
+
   /* NS Stuff */
   int  eeltype;
   int  cg0,hcg;

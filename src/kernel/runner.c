@@ -297,7 +297,8 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   
   /* Check Environment variables & other booleans */
   *bTYZ=getenv("TYZ") != NULL;
-  bLR      = (ir->rlong > ir->rshort);
+  bLR      = ((ir->eeltype==eelTWIN && ir->rcoulomb > ir->rlist) ||
+	      (ir->eeltype==eelPPPM) || (ir->eeltype==eelPOISSON)); 
   bBHAM    = (top->idef.functype[0]==F_BHAM);
   b14      = (top->idef.il[F_LJ14].nr > 0);
   

@@ -137,24 +137,32 @@ static void double_check(t_inputrec *ir, matrix box, t_molinfo *mol,
   bmin=(min(min(box[XX][XX],box[YY][YY]),box[ZZ][ZZ]));
   if (ir->eBox != ebtNONE) {
     /* rlong must be less than half the box */
-    if (ir->rlong > 0.5*bmin) {
+    if (ir->rlist > 0.5*bmin) {
       fprintf(stderr,
-	      "ERROR: rlong (%g) must be < half a box (%g,%g,%g)\n",
-	      ir->rlong,box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
+	      "ERROR: rlist (%g) must be < half a box (%g,%g,%g)\n",
+	      ir->rlist,box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
       (*nerror)++;
     }
     /* box must be large enough for gridsearch */
     if (ir->ns_type==ensGRID) {
       int  k;
       ivec cx;
-      
+      real rlong;
+      bool bTWIN;
+
+      bTWIN = (ir->eeltype == eelTWIN);
+      if (bTWIN)
+	rlong = ir->rcoulomb;
+      else
+	rlong = ir->rlist;
       for(k=0; (k<DIM); k++)
-	cx[k]=ir->ndelta*box[k][k]/ir->rlong;
+	cx[k]=ir->ndelta*box[k][k]/rlong;
       if ( !( (cx[XX] >= 2*ir->ndelta+1) && 
 	      (cx[YY] >= 2*ir->ndelta+1) && 
 	      (cx[ZZ] >= 2*ir->ndelta+1) ) ) {
 	fprintf(stderr,"ERROR: box too small for grid-search,\n"
-		"  increase boxsize or decrease rlong or use simple neighboursearch.\n");
+		"  increase the boxsize or decrease %s or use simple "
+		"neighboursearch.\n",bTWIN ? "rcoulomb":"rlist");
 	(*nerror)++;
       }
     }

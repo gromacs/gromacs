@@ -248,7 +248,9 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     fp_ene=-1; 
   
   /* Set some booleans for the epot routines  */
-  bLR=(parm->ir.rlong > parm->ir.rshort);   /* Long Range Coulomb   ?  */
+  bLR = ((parm->ir.eeltype==eelTWIN && parm->ir.rcoulomb > parm->ir.rlist) ||
+	 (parm->ir.eeltype==eelPPPM) || (parm->ir.eeltype==eelPOISSON)); 
+                                            /* Long Range Coulomb   ?  */
   bBHAM=(top->idef.functype[0]==F_BHAM);    /* Use buckingham       ?  */
   b14=(top->idef.il[F_LJ14].nr > 0);        /* Use 1-4 interactions ?  */
   

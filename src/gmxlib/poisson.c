@@ -156,8 +156,8 @@ real do_poisson(FILE *log,       bool bVerbose,
     pot = mk_PSgrid(ir->nkx,ir->nky,ir->nkz);
     rho = mk_PSgrid(ir->nkx,ir->nky,ir->nkz);
     
-    r1 = ir->rshort;
-    rc = ir->rlong;
+    r1 = ir->rcoulomb_switch;
+    rc = ir->rcoulomb;
     for(m=0; (m<DIM); m++)
       beta[m] = 1.85;
       
@@ -235,8 +235,8 @@ real do_optimize_poisson(FILE *log,       bool bVerbose,
     pot = mk_PSgrid(ir->nkx,ir->nky,ir->nkz);
     rho = mk_PSgrid(ir->nkx,ir->nky,ir->nkz);
     
-    r1 = ir->rshort;
-    rc = ir->rlong;
+    r1 = ir->rcoulomb_switch;
+    rc = ir->rcoulomb;
     for(m=0; (m<DIM); m++)
       beta[m] = 4.0/3.0;
       

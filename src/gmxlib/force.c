@@ -260,12 +260,11 @@ void init_forcerec(FILE *log,
   fr->ndelta     = ir->ndelta;
   fr->eeltype    = ir->eeltype;
   if (fr->eeltype == eelTWIN) {
-    fr->rshort     = ir->rshort;
-    fr->rlong      = ir->rlong;
-    fr->nWater   = ir->solvent_opt;
+    fr->rshort     = ir->rlist;
+    fr->rlong      = ir->rcoulomb;
+    fr->nWater     = ir->solvent_opt;
     fr->bTwinRange = (fr->rlong > fr->rshort);
-  }
-  else {
+  } else {
     fr->nWater   = -1;
     fr->bTwinRange = FALSE;
   }
@@ -278,8 +277,8 @@ void init_forcerec(FILE *log,
   fr->temp    = 0.0;
   
   /* Electrostatics stuff */
-  fr->r1      = ir->rshort;
-  fr->rc      = ir->rlong;
+  fr->rc_switch = ir->rcoulomb_switch;
+  fr->rc        = ir->rcoulomb;
   if (fr->eeltype == eelGRF) {
     zsq = 0.0;
     for (i=0; (i<cgs->nr); i++) {
@@ -300,12 +299,12 @@ void init_forcerec(FILE *log,
     if (nrdf == 0) 
       fatal_error(0,"No degrees of freedom!");
     fr->temp   = T/nrdf;
-    fr->rshort = ir->rlong;
-    fr->rlong  = fr->rshort;
+    fr->rshort = ir->rlist;
+    fr->rlong  = ir->rlist;
   }
   else if (fr->eeltype == eelRF) {
-    fr->rshort = ir->rlong;
-    fr->rlong  = fr->rshort;
+    fr->rshort = ir->rlist;
+    fr->rlong  = ir->rlist;
   }
   else if (EEL_LR(fr->eeltype) || (fr->eeltype == eelSHIFT) || 
 	   (fr->eeltype == eelUSER) || (fr->eeltype == eelSWITCH)) {
@@ -319,20 +318,21 @@ void init_forcerec(FILE *log,
      * (therefore we have to add half the size of a charge group, plus
      * something to account for diffusion if we have nstlist > 1)
      */
-    fr->rshort = ir->rlong+ir->ns_dr;
-    fr->rlong  = fr->rshort;
+    fr->rshort = ir->rlist;
+    fr->rlong  = ir->rlist;
     
     for(m=0; (m<DIM); m++) {
       box_size[m]=box[m][m];
       if (fr->rshort >= box_size[m]*0.5)
-	fatal_error(0,"Cut-off too large for box. Should be less then %g\n",
-		    box_size[m]*0.5-ir->ns_dr);
+	fatal_error(0,"Cut-off 'rlist' too large for box. Should be less then %g\n",
+		    box_size[m]*0.5);
     }
     if (fr->phi == NULL)
       snew(fr->phi,mdatoms->nr);
     
-    if (EEL_LR(fr->eeltype) || (fr->eeltype == eelSHIFT))
-      set_LRconsts(log,fr->r1,fr->rc,box_size,fr);
+    if (EEL_LR(fr->eeltype) || 
+	(fr->eeltype == eelSHIFT && fr->rc > fr->rc_switch))
+      set_LRconsts(log,fr->rc_switch,fr->rc,box_size,fr);
   }
 
   /* Initiate arrays */
@@ -370,23 +370,25 @@ void init_forcerec(FILE *log,
     fr->nbfp  = mk_nbfp(idef,fr->bBHAM);
   }
 
-  /* Lennard-Jones stuff */
-  if ((fr->eeltype==eelTWIN) || (fr->eeltype==eelSWITCH) || fr->bBHAM) {
-    fr->bLJshift = FALSE;
-    fr->rlj      = fr->rshort;
+  /* Van der Waals stuff */
+  fr->rvdw = ir->rvdw;
+  if ((fr->eeltype==eelTWIN) || fr->bBHAM) {
+    fr->bLJshift    = FALSE;
+    fr->rvdw_switch = fr->rvdw;
+  } else if (fr->eeltype==eelSWITCH) {
+    fr->bLJshift    = FALSE;
+    fr->rvdw_switch = ir->rvdw_switch;
   } else {
-    fr->bLJshift = ir->bLJshift;
-    if (fr->bLJshift)
-      fr->rlj    = fr->rc;
-    else
-      fr->rlj    = fr->rshort;
-  }
-  if (fr->bLJshift)
-    fprintf(log,"Using shifted Lennard-Jones, switch between %g and %g\n",
-	    fr->r1,fr->rlj);
-  fprintf(log,"Cut-off's:   NS: %g   Coulomb: %g   LJ: %g\n",
-	  fr->rshort,fr->rc,fr->rlj);
-
+    fr->rvdw_switch = ir->rvdw_switch;
+    fr->bLJshift = (fr->rvdw_switch < fr->rvdw);
+  }  
+  if (fr->rvdw_switch < fr->rvdw)
+    fprintf(log,"Using %s Lennard-Jones, switch between %g and %g nm\n",
+	    (fr->eeltype==eelSWITCH) ? "switched":"shifted",
+	    fr->rvdw_switch,fr->rvdw);
+  fprintf(log,"Cut-off's:   NS: %g   Coulomb: %g   %s: %g\n",
+	  fr->rshort,fr->rc,fr->bBHAM ? "BHAM":"LJ",fr->rvdw);
+  
   set_avcsix(log,fr,idef,mdatoms);
   set_bham_b_max(log,fr,idef,mdatoms);
 
@@ -411,7 +413,7 @@ void pr_forcerec(FILE *log,t_forcerec *fr,t_commrec *cr)
   pr_int(log,fr->hcg);
   pr_int(log,fr->ntab);
   if (fr->ntab > 0) {
-    pr_real(log,fr->r1);
+    pr_real(log,fr->rc_switch);
     pr_real(log,fr->rc);
   }
   
@@ -578,7 +580,7 @@ void force(FILE       *log,     int        step,
 		  eel_names[fr->eeltype]);
     }
     
-    Vself = calc_LRcorrections(log,0,md->nr,fr->r1,fr->rc,
+    Vself = calc_LRcorrections(log,0,md->nr,fr->rc_switch,fr->rc,
 			       md->chargeA,excl,x,f,TRUE);
     epot[F_LR] = Vlr - Vself;
     if (debug)

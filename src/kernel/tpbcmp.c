@@ -265,10 +265,11 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CIB(bSimAnn);
   CIR(zero_temp_time);
   CII(eeltype);
-  CIR(rshort);
-  CIR(rlong);
-  CIR(ns_dr);
-  CII(bLJshift);
+  CIR(rlist);
+  CIR(rcoulomb_switch);
+  CIR(rcoulomb);
+  CIR(rvdw_switch);
+  CIR(rvdw);
   CII(bLJcorr);
   CIR(epsilon_r);
   CIR(shake_tol);

@@ -99,8 +99,9 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     fp_ene=open_enx(ftp2fn(efENX,nfile,fnm),"w"); 
   else 
     fp_ene=-1;
- 
-  bLR=(parm->ir.rlong > parm->ir.rshort);
+
+  bLR = ((parm->ir.eeltype==eelTWIN && parm->ir.rcoulomb > parm->ir.rlist) ||
+	 (parm->ir.eeltype==eelPPPM) || (parm->ir.eeltype==eelPOISSON)); 
   bBHAM=(top->idef.functype[0]==F_BHAM);
   b14=(top->idef.il[F_LJ14].nr > 0);
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),bLR,bBHAM,b14,

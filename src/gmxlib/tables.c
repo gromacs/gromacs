@@ -129,6 +129,9 @@ void copy2table(int n,int n0,int stride,
 enum { etabLJ6, etabLJ12, etabLJ6David, etabLJ12David, etabDavid,
        etabRF, etabCOUL, etabLJ6sw, etabLJ12sw, etabCOULsw, etabEXPMIN,
        etabNR };
+bool bCoulomb[etabNR] = { FALSE, FALSE, FALSE, FALSE, TRUE,
+			  TRUE,  TRUE,  FALSE, FALSE, TRUE, FALSE }; 
+
 
 void read_table(int n0,int n,real x[],
 		real Vtab[],real Vtab2[],
@@ -182,8 +185,13 @@ void fill_table(int n0,int n,real x[],
    
   bSwitch= ((tp == etabLJ6sw) || (tp == etabLJ12sw) || (tp == etabCOULsw));
   bDavid= ((tp == etabLJ6David) || (tp == etabLJ12David) || (tp == etabDavid));
-  r1     = fr->r1;
-  rc     = fr->rc;
+  if (bCoulomb[tp]) {
+    r1 = fr->rc_switch;
+    rc = fr->rc;
+  } else {
+    r1 = fr->rvdw_switch;
+    rc = fr->rvdw;
+  }
   k_rf   = fr->k_rf;
   c_rf   = fr->c_rf;
   rffac2 = k_rf*2.0;
@@ -394,7 +402,10 @@ void make_tables(t_forcerec *fr,bool bVerbose)
       case eelPPPM:
       case eelPOISSON:
       case eelSHIFT:
-	tabsel = etabDavid;
+	if (fr->rc > fr->rc_switch)
+	  tabsel = etabDavid;
+	else
+	  tabsel = etabCOUL;
 	break;
       case eelRF:
       case eelGRF:

@@ -45,9 +45,9 @@
 #include "copyrite.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version  = 5;
+static int tpx_version = 6;
 /* This number should be the most recent incompatible version */
-static int tpx_incompatible_version = 3; 
+static int tpx_incompatible_version = 5; 
 /* This is the version of the file we are reading */
 static int file_version = 0;
 
@@ -101,6 +101,8 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_int(ir->ns_type); 
     do_int(ir->nstlist); 
     do_int(ir->ndelta); 
+    do_int(ir->bDomDecomp);
+    do_int(ir->decomp_dir);
     do_int(ir->nstcomm); 
     do_int(ir->nstcgsteep); 
     do_int(ir->nstlog); 
@@ -131,8 +133,11 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_int(ir->bSimAnn); 
     do_real(ir->zero_temp_time); 
     do_int(ir->eeltype); 
-    do_real(ir->rshort); 
-    do_real(ir->rlong); 
+    do_real(ir->rlist); 
+    do_real(ir->rcoulomb_switch); 
+    do_real(ir->rcoulomb); 
+    do_real(ir->rvdw_switch); 
+    do_real(ir->rvdw); 
     do_int(ir->bLJcorr); 
     do_real(ir->epsilon_r); 
     do_real(ir->shake_tol); 
@@ -145,6 +150,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_int(ir->bDisreMixed); 
     do_real(ir->dr_fc); 
     do_real(ir->dr_tau); 
+    do_int(ir->nstdisreout);
     do_real(ir->em_stepsize); 
     do_real(ir->em_tol); 
     do_int(ir->eConstrAlg); 
@@ -206,26 +212,12 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     fprintf(stderr,"Warning: tpx file_version %d, software version %d\n",
 	    file_version,tpx_version);
   }
-  /* set things which are in 5 but not in 4 */
-  if (file_version < 5) {
-    ir->ns_dr    = 0.2;
-    fprintf(stderr,"Set ns_dr to %g\n",ir->ns_dr);
-    ir->bLJshift = FALSE;
-    fprintf(stderr,"Set bLJshift to %s\n",bool_names[ir->bLJshift]);
-    ir->nstdisreout = ir->nstenergy;
-    fprintf(stderr,"Set nstdisreout to nstenergy (%d)\n",ir->nstdisreout);
-    ir->bDomDecomp = FALSE;
-    fprintf(stderr,"Set bDomDecomp to %s\n",bool_names[ir->bDomDecomp]);
-    ir->decomp_dir = XX;
-    fprintf(stderr,"Set decomp_dir to %d\n",ir->decomp_dir);
-  } 
-  else {
-    do_real(ir->ns_dr);
-    do_int(ir->bLJshift);
-    do_int(ir->nstdisreout);
-    do_int(ir->bDomDecomp);
-    do_int(ir->decomp_dir);
+  /* set things which are in tpx_version but not in a previos version */
+  /*
+  if (file_version < tpx_version) {
+  } else {
   }
+  */
 }
 
 static void do_harm(t_iparams *iparams,bool bRead)

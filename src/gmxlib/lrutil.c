@@ -55,10 +55,10 @@ void set_LRconsts(FILE *log,real r1,real rc,rvec box,t_forcerec *fr)
     B   = (4*rc-2*r1)/(p3(rc)*p3(rc-r1));
     /*C   = (10*rc*rc-5*rc*r1+r1*r1)/(6*rc*rc); Hermans Eq. not correct */
   }
-  else {
+  else
     fatal_error(0,"r1 (%f) >= rc (%f) in %s, line %d",
 		r1,rc,__FILE__,__LINE__);
-  }
+
   A_3 = A/3.0;
   B_4 = B/4.0;
   C   = 1/rc-A_3*p3(rc-r1)-B_4*p4(rc-r1);
