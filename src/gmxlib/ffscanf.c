@@ -79,10 +79,8 @@ void ffscanf(FILE *in,char *fmt, ...)
 	break;
       }
     }
-    else {
-      fprintf(stderr,"ffscanf format error\n");
-      exit(1);
-    }
+    else
+      fatal_error(0,"unknown ffscanf format '%c'",*p+1);
   }
   va_end(ap);
 }

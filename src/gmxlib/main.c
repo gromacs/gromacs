@@ -277,7 +277,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
   mem_init();
 
   if (!PAR(cr) && (cr->pid != 0))
-    exit(0);
+    fatal_error(0,"(!PAR(cr) && (cr->pid != 0))");
   
   if (PAR(cr)) {
     gmx_left_right(cr->nprocs,cr->pid,&cr->left,&cr->right);

@@ -648,17 +648,14 @@ real unimplemented(FILE *log,int nbonds,
   static char *err="*** you are using a not implemented function";
 
   fprintf(log,"%s\n",err);
-  fprintf(stderr,"%s\n",err);
-  exit(1);
+  fatal_error(0,err);
 
   return 0.0; /* To make the compiler happy */
 }
 
 static void my_fatal(char *s,int ai,int aj,int ak,int al)
 {
-  fprintf(stderr,"%s is NaN in rbdih, ai-ak=%d,%d,%d,%d",s,ai,aj,ak,al);
-  fflush(stderr);
-  exit(1);
+  fatal_error(0,"%s is NaN in rbdih, ai-ak=%d,%d,%d,%d",s,ai,aj,ak,al);
 }
 
 #define CHECK(s) if ((s != s) || (s < -1e10) || (s > 1e10)) my_fatal(#s,ai,aj,ak,al)
@@ -826,7 +823,6 @@ real do_14(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	      x[aj][XX],x[aj][YY],x[aj][ZZ]);
       fprintf(log,"1-4 (%d,%d) interaction not within cut-off! r=%g\n",
 	      (int)ai+1,(int)aj+1,sqrt(r2));
-      /* exit(1); */
     }
     
     gid  = GID(md->cENER[ai],md->cENER[aj],ngrp);

@@ -132,11 +132,9 @@ int shakef(FILE *log,
 	  break;
       if (k==nindex) {
 #ifdef DEBUG
-	if (nindex >= natoms) {
-	  fprintf(log,"Range check error in shake\n");
-	  fprintf(log,"nindex=%d, natoms=%d\n",nindex,natoms);
-	  exit(1);
-	}
+	if (nindex >= natoms)
+	  fatal_error(0,"Range check error in shake\n"
+		      "nindex=%d, natoms=%d\n",nindex,natoms);
 #endif
 	index[nindex]=i;
 	nindex++;
@@ -150,11 +148,9 @@ int shakef(FILE *log,
   for(k=0; (k<nindex); k++) {
     k0=index[k];
 #ifdef DEBUG
-    if ((k0 < 0) || (k0 >= natoms)) {
-      fprintf(log,"Range check error in shake\n");
-      fprintf(log,"k0=%d, natoms=%d\n",k0,natoms);
-      exit(1);
-    }
+    if ((k0 < 0) || (k0 >= natoms))
+      fatal_error(0,"Range check error in shake\n"
+		  "k0=%d, natoms=%d\n",k0,natoms);
 #endif
     skip[k0]        = TRUE;
     skip[natoms+k0] = FALSE;

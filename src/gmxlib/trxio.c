@@ -375,10 +375,8 @@ static int gmx_first_x(int status, real *t, rvec **x, matrix box)
   if (fread_trnheader(status,&sh,&bOK)) {
     snew(*x,sh.natoms);
     rewind_trj(status);
-    if (!gmx_next_x(status,t,sh.natoms,*x,box)) {
-      fprintf(stderr,"No coordinates in trajectory\n");
-      exit(1);
-    }
+    if (!gmx_next_x(status,t,sh.natoms,*x,box))
+      fatal_error(0,"No coordinates in trajectory");
   }
   if (!bOK) printincomph(sh.t);
 
@@ -396,10 +394,8 @@ static int gmx_first_x_v(int status, real *t, rvec **x,rvec **v,matrix box)
     snew(*x,sh.natoms);
     snew(*v,sh.natoms);
     rewind_trj(status);
-    if (!gmx_next_x_v(status,t,sh.natoms,*x,*v,box)) {
-      fprintf(stderr,"No coordinates and velocities in trajectory\n");
-      exit(1);
-    }
+    if (!gmx_next_x_v(status,t,sh.natoms,*x,*v,box))
+      fatal_error(0,"No coordinates and velocities in trajectory");
   }
   if (!bOK) printincomph(sh.t);
 
@@ -417,10 +413,8 @@ static int gmx_first_x_or_v(int status, real *t,rvec **x,rvec **v,matrix box)
     snew(*x,sh.natoms);
     snew(*v,sh.natoms);
     rewind_trj(status);
-    if (!gmx_next_x_or_v(status,t,sh.natoms,*x,*v,box)) {
-      fprintf(stderr,"No coordinates and velocities in trajectory\n");
-      exit(1);
-    }
+    if (!gmx_next_x_or_v(status,t,sh.natoms,*x,*v,box))
+      fatal_error(0,"No coordinates and velocities in trajectory");
   }
   if (!bOK) printincomph(sh.t);
   

@@ -89,10 +89,8 @@ void pbc_dx(rvec x1, rvec x2, rvec dx)
 {
   int i;
   
-  if (!bInit) { 
-    fprintf(stderr,"init-pbc has not been called!\n");
-    exit(1);
-  }
+  if (!bInit)
+    fatal_error(0,"pbc_dx called before init_pbc");
   rvec_sub(x1,x2,dx);
   for(i=0; (i<DIM); i++) {
     if (dx[i] > gl_hbox[i])
@@ -174,9 +172,8 @@ bool image_cylindric(ivec xi,ivec xj,ivec box_size,real rlong2,
 
 bool image_tri(ivec xi,ivec xj,imatrix box,real rlong2,int *shift,real *r2)
 {
-  fprintf(stderr,"image_tri still empty! (not implemented)\n");
-  exit(1);
-
+  fatal_error(0,"image_tri not implemented");
+  
   return FALSE; /* To make the compiler happy */
 }
 

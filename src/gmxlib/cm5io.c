@@ -102,10 +102,8 @@ void cm5io_tx_rx(int send_pid,void *send_buf,int send_bufsize,
 
   ret=CMMD_send_and_receive(rec_pid,TAG,rec_buf,rec_bufsize,
 			    send_pid,TAG,send_buf,send_bufsize);
-  if (ret != TRUE) {
-    fprintf(stderr,"Only %d bytes sent and received...\n",ret);
-    exit(1);
-  }
+  if (ret != TRUE)
+    fatal_error(0,"Only %d bytes sent and received...",ret);
 }
 
 void cm5io_init(int pid,int nprocs)

@@ -103,50 +103,6 @@ int check_times(real t)
   return -1;
 }
 
-#ifdef NOTOBSOLETE
-
-/**** C O O R D I N A T E S   A N D   V  E L O C  I T I E S ****/
-int read_first_x_v(FILE *status,real *t,rvec **x,rvec **v,matrix box)
-{
-  t_statheader sh;
-  real lambda;
-  int  step,nre;
-
-  fprintf(stderr,"\nReading statusfile, version: %s\n",rd_header(status,&sh));
-  snew(*v,sh.natoms);
-  snew(*x,sh.natoms);
-  rd_hstatus(status,&sh,&step,t,&lambda,NULL,NULL,NULL,NULL,
-	     &sh.natoms,*x,*v,NULL,
-	     &nre,NULL,NULL);
-
-  return sh.natoms;
-}
-
-bool read_next_x_v(FILE *status,real *t,int natoms,rvec x[],rvec v[],matrix box)
-{
-  t_statheader sh;
-  real lambda;
-  int  step,nre;
-  bool bV;
-  bool bX;
-
-  while (!eof(status)) {
-    rd_header(status,&sh);
-    bX=sh.x_size;
-    bV=sh.v_size;
-    rd_hstatus(status,&sh,&step,t,&lambda,NULL,NULL,NULL,NULL,
-	       &sh.natoms,bX ? x : NULL,bV ? v : NULL,NULL,
-	       &nre,NULL,NULL);
-    if ((check_times(*t)==0) && (bV) && (bX))
-      return TRUE;
-    if (check_times(*t) > 0)
-      return FALSE;
-  }
-  return FALSE;
-}
-
-#endif
-
 /***** T O P O L O G Y   S T U F F ******/
 
 t_topology *read_top(char *fn)
@@ -245,8 +201,7 @@ static void pdesc(char *desc)
 void usage(char *prog,char *arg)
 {
   if (arg != NULL)
-    fprintf(stderr,"Conflicting argument for program %s: %s\n",prog,arg);
-  exit(1);
+    fatal_error(0,"Conflicting argument for program %s: %s\n",prog,arg);
 }
 
 bool bDoView(void)
@@ -570,8 +525,7 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
     if (*argc > 1) {
       for(i=1; (i<*argc); i++) 
 	fprintf(stderr,"Unknown argument: %s\n",argv[i]);
-      fprintf(stderr,"\nProgram %s halted\n",Program());
-      exit(1);
+      fatal_error(0,"Program %s halted",Program());
     }
   } 
   if (bHelp)

@@ -479,12 +479,9 @@ void ns(FILE *log,
   }
     
   /* Check box-lengths */
-  if (min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ])) < 2.0*fr->rcoulomb) {
-    fprintf(stderr,"Fatal: box too small for cut-off!\n");
-    fprintf(stderr,"Box is (%g,%g,%g),cut-off = %g\n",
-	    box[XX][XX],box[YY][YY],box[ZZ][ZZ],fr->rcoulomb);
-    exit(1);
-  }
+  if (min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ])) < 2.0*fr->rcoulomb)
+    fatal_error(0,"Fatal: box (%gx%gx%g) too small for cut-off (%g)!\n",
+		box[XX][XX],box[YY][YY],box[ZZ][ZZ],fr->rcoulomb);
     
   set_led(NS_LED);
   if (fr->bTwinRange) 

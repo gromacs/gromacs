@@ -150,10 +150,8 @@ FILE *uncompress(char *fn,char *mode)
   
   sprintf(buf,"uncompress -c < %s",fn);
   fprintf(stderr,"Going to execute '%s'\n",buf);
-  if ((fp=popen(buf,mode)) == NULL) {
-    perror(fn);
-    exit(1);
-  }
+  if ((fp=popen(buf,mode)) == NULL)
+    fatal_error(0,"Could not open %s",fn);
   push_ps(fp);
   
   return fp;
@@ -166,10 +164,8 @@ FILE *gunzip(char *fn,char *mode)
   
   sprintf(buf,"gunzip -c < %s",fn);
   fprintf(stderr,"Going to execute '%s'\n",buf);
-  if ((fp=popen(buf,mode)) == NULL) {
-    perror(fn);
-    exit(1);
-  }
+  if ((fp=popen(buf,mode)) == NULL)
+    fatal_error(0,"Could not open %s",fn);
   push_ps(fp);
   
   return fp;
@@ -247,10 +243,8 @@ FILE *ffopen(char *file,char *mode)
   bRead= mode[0]=='r';
   strcpy(buf,file);
   if (fexist(buf) || !bRead) {
-    if ((ff=fopen(buf,mode))==NULL) {
-      perror(buf);
-      exit(1);
-    }
+    if ((ff=fopen(buf,mode))==NULL)
+      fatal_error(0,"Could not open %s",buf);
     where();
     /* Check whether we should be using buffering (default) or not
      * (for debugging)
@@ -265,10 +259,8 @@ FILE *ffopen(char *file,char *mode)
 	setbuf(ff,NULL); 
       else {
 	snew(ptr,bs+8);
-	if (setvbuf(ff,ptr,_IOFBF,bs) != 0) {
-	  perror("Buffering File");
-	  exit(1);
-	}
+	if (setvbuf(ff,ptr,_IOFBF,bs) != 0)
+	  fatal_error(0,"Buffering File");
       }
     }
     where();

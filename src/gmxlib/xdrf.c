@@ -343,10 +343,8 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
       type = "rb";
       lmode = XDR_DECODE;
     }
-    if ((xdrfiles[xdrid] = fopen(filename, type))==NULL) {
-      fprintf(stderr,"Sorry, I couldn't open %s\n",filename);
-      exit(0);
-    }
+    if ((xdrfiles[xdrid] = fopen(filename, type))==NULL)
+      fatal_error(0,"Sorry, I couldn't open %s",filename);
     if (xdrfiles[xdrid] == NULL) {
 	xdrs = NULL;
 	return 0;
@@ -504,11 +502,9 @@ static void sendints(int buf[], const int num_of_ints, const int num_of_bits,
     bytes[0] = 0;
     num_of_bytes = 0;
     for (i = 0; i < num_of_ints; i++) {
-	if (nums[i] < 0 || nums[i]>= sizes[i]) {
-	    fprintf(stderr,"major breakdown in sendints num %d doesn't "
-		    "match size %d\n", nums[i], sizes[i]);
-	    exit(1);
-	}
+	if (nums[i] < 0 || nums[i]>= sizes[i])
+	  fatal_error(0,"major breakdown in sendints: num %d doesn't "
+		      "match size %d\n", nums[i], sizes[i]);
 	bytecnt = 0;
 	tmp = nums[i];
 	for (bytecnt = 0; bytecnt < num_of_bytes; bytecnt++) {
@@ -664,10 +660,8 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
     xdrid = 0;
     while (xdridptr[xdrid] != xdrs) {
 	xdrid++;
-	if (xdrid >= MAXID) {
-	    fprintf(stderr, "xdr error. no open xdr stream\n");
-	    exit (1);
-	}
+	if (xdrid >= MAXID)
+	    fatal_error(0, "no open xdr stream");
     }
     if (xdrmodes[xdrid] == 'w') {
 

@@ -164,14 +164,14 @@ void quit_gmx(int fatal_errno,char *msg)
     gmx_abort(pid,nprocs,-1);
   }
 #else
+  if (debug)
+    fflush(debug);
   if (bDebug) {
-    (void) fprintf(stderr,"dump core (y/n):"); 
+    fprintf(stderr,"dump core (y/n):"); 
     fflush(stderr);
     if (toupper(getc(stdin))!='N') 
       (void) abort(); 
   }
-  if (debug)
-    fflush(debug);
 #endif 
   exit(-1);
 }
@@ -283,10 +283,8 @@ void warning(char *s)
 	  nwarn,filenm,linenobuf,temp2);
   sfree(temp);
   sfree(temp2);
-  if (nwarn >= maxwarn) {
-    fprintf(stderr,"Too many warnings, %s terminated\n",Program());
-    exit(1);
-  }
+  if (nwarn >= maxwarn)
+    fatal_error(0,"Too many warnings, %s terminated",Program());
 }
 
 void print_warn_num(void)

@@ -155,10 +155,8 @@ static void rd_groups(t_block *grps,char **grpname,char *gnames[],
 {
   int i,j,gnr1;
 
-  if (grps->nr==0) {
-    fprintf(stderr,"Error: no groups in indexfile\n");
-    exit(1);
-  }
+  if (grps->nr==0)
+    fatal_error(0,"Error: no groups in indexfile");
   for(i=0; (i<grps->nr); i++)
     printf("Group %5d (%12s) has %5u elements\n",i,grpname[i],
 	   grps->index[i+1]-grps->index[i]);
@@ -189,25 +187,22 @@ void rd_index(char *statfile,int ngrps,int isize[],
   int     *grpnr;
   
   snew(grpnr,ngrps);
-  if (!statfile) {
-    fprintf(stderr,"No index file specified\n");
-    exit(1);
-  }
+  if (!statfile)
+    fatal_error(0,"No index file specified");
   grps=init_index(statfile,&gnames);
   rd_groups(grps,gnames,grpnames,ngrps,isize,index,grpnr);
 }
 
 void rd_index_nrs(char *statfile,int ngrps,int isize[],
-	        atom_id *index[],char *grpnames[],int grpnr[])
+		  atom_id *index[],char *grpnames[],int grpnr[])
 {
   char    **gnames;
   t_block *grps;
   
-  if (!statfile) {
-    fprintf(stderr,"No index file specified\n");
-    exit(1);
-  }
+  if (!statfile)
+    fatal_error(0,"No index file specified");
   grps=init_index(statfile,&gnames);
+  
   rd_groups(grps,gnames,grpnames,ngrps,isize,index,grpnr);
 }
 
