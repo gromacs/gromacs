@@ -50,51 +50,15 @@ static char *SRCID_sysstuff_h = "$Id$";
 extern "C" { 
 #endif
 
-
-#ifndef NO_STDINCLUDE
-
 #ifndef _386_
 #include <stdlib.h>
 #endif
 #include <stdio.h>
 #include <errno.h>
 #include <signal.h>
-#ifndef _860_
 #include <unistd.h>
-#endif
 #include <limits.h>
 #include <time.h>
-
-#else
-
-extern	int	kill(int pid,int sig);
-extern	int	fork();
-extern	int	setpgrp();
-extern	int	execv (char *path,char *argv[]);
-extern	int	execvp(char *path,char *argv[]);
-extern  int     execlp(char *path,...);
-extern  int     getpid();
-extern  int     getgid();
-extern  int     _filbuf(FILE *stream);
-extern void	perror(char *s);
-extern int	printf(char *format,...);
-extern int	fprintf(FILE *stream,char *format,...);
-extern void	fflush(FILE *stream);
-extern int	fread (char *ptr,int size,int nitems,FILE *stream);
-extern int	fwrite(char *ptr,int size,int nitems,FILE *stream);
-extern void	ungetc(char c,FILE *stream);
-extern int	sscanf(char *s,char *format,...);
-extern int	fscanf(FILE *,char *format,...);
-extern int	scanf(char *format,...);
-extern int	close(int fd);
-extern int	fclose(FILE *stream);
-extern int	fseek(FILE *stream,long offset,int ptrname);
-extern int	read(int fd,char *buf,int nbyte);
-extern int	write(int fd,char *buf,int nbyte);
-extern int      ioctl(int fildes, int request, void *buf);
-extern int	unlink(char *path);
-
-#endif
 
 #ifdef CPLUSPLUS
 }

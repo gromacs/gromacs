@@ -34,6 +34,10 @@
  * Glycine aRginine prOline Methionine Alanine Cystine Serine
  */
 static char *SRCID_trjconv_c = "$Id$";
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <string.h>
 #include <math.h>
 #include <unistd.h>
@@ -101,7 +105,7 @@ void do_trunc(char *fn, real t0)
   FILE         *fp;
   bool         bStop,bOK;
   t_trnheader  sh;
-  long         fpos;
+  off_t        fpos;
   char         yesno[256];
   int          j;
   real         t=0;
@@ -126,7 +130,11 @@ void do_trunc(char *fn, real t0)
       fpos=ftell(fp);
       t=sh.t;
       if (t>=t0) {
+#ifdef HAVE_FSEEKO	
+	fseeko(fp,fpos,SEEK_SET);
+#else
 	fseek(fp,fpos,SEEK_SET);
+#endif	
 	bStop=TRUE;
       }
     }

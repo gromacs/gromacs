@@ -39,6 +39,7 @@ static char *SRCID_detectcpu_c = "$Id$";
 #include <config.h>
 #endif
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <detectcpu.h>
 
@@ -340,6 +341,7 @@ int detect_cpu(FILE *log)
 	      "Found environment variable NOASSEMBLYLOOPS.\n"
 	      "Disabling all SSE/SSE2/3DNow/Altivec support.\n");
   }
+  return cpuflags;
 }
 #endif /* detectcpu */
 

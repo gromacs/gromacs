@@ -34,8 +34,13 @@
  * Glycine aRginine prOline Methionine Alanine Cystine Serine
  */
 static char *SRCID_memtab_c = "$Id$";
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "sysstuff.h"
 #include "fatal.h"
 #include "smalloc.h"
@@ -104,11 +109,19 @@ void *get_memtab(t_memtab *mtab,void *handle)
 
 long wr_memtab(FILE *fp,t_memtab *mtab)
 {
-  long fpos;
+  off_t fpos;
 
+#ifdef HAVE_FSEEKO  
+  fpos=ftello(fp);
+#else
   fpos=ftell(fp);
+#else  
   nblockwrite(fp,mtab->msize,mtab->mtab);
+#ifdef HAVE_FSEEKO  
+  return (ftello(fp)-fpos);
+#else
   return (ftell(fp)-fpos);
+#endif  
 }
 
 void *rd_memtab(FILE *fp,int size,t_memtab *mtab)

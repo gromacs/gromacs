@@ -640,7 +640,7 @@ void write_xpm_data(FILE *out, int n_x, int n_y, real **matrix,
 void write_xpm_data3(FILE *out,int n_x,int n_y,real **matrix, 
 		    real lo,real mid,real hi,int nlevels)
 {
-  int  i,j,c,nmid;
+  int  i,j,c=0,nmid;
   real invlev_lo,invlev_hi;
 
   nmid = calc_nmid(nlevels,lo,mid,hi);

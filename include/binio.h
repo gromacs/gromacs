@@ -84,21 +84,6 @@ static char *SRCID_binio_h = "$Id$";
 #define cblockread(fp,ptr,nchars) \
   _blockread(fp,1,(nchars),(ptr),#ptr,__FILE__,__LINE__)
 
-#define patch(fp,fpos,write) \
-  do \
-    { \
-      int result,fhere; \
-      \
-      fhere=ftell(fp); \
-      if ((result=fseek(fp,fpos,SEEK_SET))!=0) \
-        fatal_error(errno,"could not seek to position %d from file %s, " \
-                    "line %d, result=%d",(fpos),__FILE__,__LINE__,result); \
-      write; \
-      if ((result=fseek(fp,fhere,SEEK_SET))!=0) \
-        fatal_error(errno,"could not seek back to %d from file %s, line %d," \
-                    " result=%d",fhere,__FILE__,__LINE__,result); \
-    } \
-  while (0)
 
 extern void _blockwrite(FILE *fp,int nelem,int size,void *data,
                         char *what,char *file,int line);

@@ -35,7 +35,13 @@
  */
 static char *SRCID_gmxfio_c = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <ctype.h>
+#include <stdio.h>
+#include <unistd.h>
 #include "fatal.h"
 #include "macros.h"
 #include "smalloc.h"
@@ -478,7 +484,11 @@ static bool do_binread(void *item,int nitem,int eio,
     rsize = fread(item,size,nitem,curfio->fp);
   else {
     /* Skip over it if we have a NULL pointer here */
-    fseek(curfio->fp,(long) (size*nitem),SEEK_CUR);
+#ifdef HAVE_FSEEKO
+    fseeko(curfio->fp,(off_t)(size*nitem),SEEK_CUR);
+#else
+    fseek(curfio->fp,(off_t)(size*nitem),SEEK_CUR);
+#endif    
     rsize = nitem;
   }
   if ((rsize != nitem) && (curfio->bDebug))
@@ -816,7 +826,7 @@ void fio_flush(int fio)
     fflush(FIO[fio].fp);
 }
   
-long fio_ftell(int fio)
+off_t fio_ftell(int fio)
 {
   fio_check(fio);
   if (FIO[fio].fp)
@@ -825,11 +835,15 @@ long fio_ftell(int fio)
     return 0;
 }
 
-void fio_seek(int fio,long fpos)
+void fio_seek(int fio,off_t fpos)
 {
   fio_check(fio);
-  if (FIO[fio].fp) 
+  if (FIO[fio].fp)
+#ifdef HAVE_FSEEKO
+    fseeko(FIO[fio].fp,fpos,SEEK_SET);
+#else
     fseek(FIO[fio].fp,fpos,SEEK_SET);
+#endif
   else
     fatal_error(0,"Can not seek on file %s",FIO[fio].fn);
 }

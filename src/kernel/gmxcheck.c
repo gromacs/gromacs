@@ -37,6 +37,7 @@ static char *SRCID_gmxcheck_c = "$Id$";
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <unistd.h>
 #include "main.h"
 #include "macros.h"
 #include "math.h"
@@ -72,7 +73,8 @@ void chk_trj(char *fn)
 {
   t_trxframe   fr;
   t_count      count;
-  int          j=-1,new_natoms,natoms,fpos;
+  int          j=-1,new_natoms,natoms;
+  off_t        fpos;
   real         rdum,t,tt,t0,old_t1,old_t2,prec;
   bool         bShowTimestep=TRUE,bOK,newline=FALSE;
   int          status;

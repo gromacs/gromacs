@@ -34,6 +34,11 @@
  * Gromacs Runs On Most of All Computer Systems
  */
 static char *SRCID_dsspcore_c = "$Id$";
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 /* Output from p2c, the Pascal-to-C translator */
 /* From input file "dssp.p" */
 
@@ -339,7 +344,7 @@ I hereby certify that
 
 
 #include <stdio.h>
-
+#include <unistd.h>
 
 
 /* If the following heuristic fails, compile -DBSD=0 for non-BSD systems,
@@ -700,7 +705,12 @@ extern Void	P_sun_argv  PP( (char *, int, int) );
 #define CPUT(f)            (PUT(f,char))
 
 #define BUFEOF(f)	   (__CAT__(f,_BFLAGS) != 2 && P_eof(f))
+#ifdef HAVE_FSEEKO
+#define BUFFPOS(f)	   (ftello(f) - (__CAT__(f,_BFLAGS) == 2))
+#else
 #define BUFFPOS(f)	   (ftell(f) - (__CAT__(f,_BFLAGS) == 2))
+#endif
+
 
 typedef struct {
     FILE *f;
@@ -1328,14 +1338,23 @@ int len;
 long P_maxpos(f)
 FILE *f;
 {
-    long savepos = ftell(f);
-    long val;
+#ifdef HAVE_FSEEKO
+  off_t savepos = ftello(f);
+#else
+  off_t savepos = ftell(f);
+#endif
+  off_t val;
 
     if (fseek(f, 0L, SEEK_END))
         return -1;
+#ifdef HAVE_FSEEKO
+    val = ftello(f);
+    if (fseeko(f, savepos, SEEK_SET))
+#else
     val = ftell(f);
     if (fseek(f, savepos, SEEK_SET))
-        return -1;
+#endif      
+      return -1;
     return val;
 }
 

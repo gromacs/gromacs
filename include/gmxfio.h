@@ -43,6 +43,8 @@
 
 static char *SRCID_gmxfio_h = "$Id$";
 
+#include <stdio.h>
+#include <unistd.h>
 #include "typedefs.h"
 #include "xdrf.h"
 
@@ -120,10 +122,10 @@ extern void fio_rewind(int fio);
 extern void fio_flush(int fio);
 /* Flush the fio */
 
-extern long fio_ftell(int fio);
+extern off_t fio_ftell(int fio);
 /* Return file position if possible */
 
-extern void fio_seek(int fio,long fpos);
+extern void fio_seek(int fio,off_t fpos);
 /* Set file position if possible, quit otherwise */
 
 extern FILE *fio_getfp(int fio);
