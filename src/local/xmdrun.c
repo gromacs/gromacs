@@ -283,14 +283,18 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     if (bDummies) {
       /* Construct dummy particles */
-      pr_rvecs(log,0,"x b4 gen dummy",x,mdatoms->nr);
-      pr_rvecs(log,0,"v b4 gen dummy",v,mdatoms->nr);
+      if (debug) {
+	pr_rvecs(debug,0,"x b4 gen dummy",x,mdatoms->nr);
+	pr_rvecs(debug,0,"v b4 gen dummy",v,mdatoms->nr);
+      }
       shift_self(graph,fr->shift_vec,x);
       construct_dummies(log,x,&mynrnb,parm->ir.delta_t,(step == 0) ? NULL : v,
 			&top->idef);
       unshift_self(graph,fr->shift_vec,x);
-      pr_rvecs(log,0,"x after gen dummy",x,mdatoms->nr);
-      pr_rvecs(log,0,"v after gen dummy",v,mdatoms->nr);
+      if (debug) {
+	pr_rvecs(debug,0,"x after gen dummy",x,mdatoms->nr);
+	pr_rvecs(debug,0,"v after gen dummy",v,mdatoms->nr);
+      }
     }
 
     /* Set values for invmass etc. */
@@ -301,15 +305,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		       x,vold,v,vt,f,buf,mdatoms,nsb,&mynrnb,graph,grps,force_vir,
 		       nshell,shells,fr,traj,t,lambda,nsb->natoms,parm->box,mdebin);
     tcount+=count;
-    pr_rvecs(log,0,"x after relax",x,mdatoms->nr);
 
     /* Calculate total dipole moment if necessary */
     calc_mu(nsb,x,mdatoms->chargeT,mu_tot);
 
-    pr_rvec(log,0,"mu_tot 1",mu_tot,DIM);
-    mu_aver=calc_mu_aver(cr,nsb,x,mdatoms->chargeA,mu_tot,top,mdatoms,gnx,
-			 grpindex);
-    pr_rvec(log,0,"mu_tot 2",mu_tot,DIM);
+    mu_aver=calc_mu_aver(cr,nsb,x,mdatoms->chargeA,mu_tot,top,mdatoms,gnx,grpindex);
     
     if (bGlas)
       do_glas(log,START(nsb),HOMENR(nsb),x,f,fr,mdatoms,top->idef.atnr,
@@ -334,7 +334,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Spread the force on dummy particle to the other particles... */
     if (bDummies)
       spread_dummy_f(log,x,f,&mynrnb,&top->idef);
-    pr_rvecs(log,0,"x after spread",x,mdatoms->nr);
     
     if (do_per_step(step,parm->ir.nstxout)) xx=x; else xx=NULL;
     if (do_per_step(step,parm->ir.nstvout)) vv=v; else vv=NULL;
@@ -342,7 +341,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     write_traj(log,cr,traj,
                nsb,step,t,lambda,&mynrnb,nsb->natoms,xx,vv,ff,parm->box);
     where();
-    pr_rvecs(log,0,"x after write traj",x,mdatoms->nr);
 
     if (do_per_step(step,parm->ir.nstxtcout)) {
       write_xtc_traj(log,cr,xtc_traj,nsb,mdatoms,
@@ -358,7 +356,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
            mdatoms,x,graph,
            fr->shift_vec,f,buf,vold,v,vt,parm->pres,parm->box,
            top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn);
-    pr_rvecs(log,0,"x after update",x,mdatoms->nr);
     if (PAR(cr)) 
       accumulate_u(cr,&(parm->ir.opts),grps);
  
@@ -388,7 +385,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       do_stopcm(log,HOMENR(nsb),START(nsb),v,vcm,mdatoms->tmass);
       inc_nrnb(&mynrnb,eNR_STOPCM,HOMENR(nsb));
     }
-    pr_rvecs(log,0,"x after stopcm",x,mdatoms->nr);
     
     /* Do fit to remove overall rotation */
     if (bStopRot)

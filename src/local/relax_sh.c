@@ -38,9 +38,11 @@ static void shell_pos_sd(FILE *log,real step,rvec xold[],rvec xnew[],rvec f[],
     shell = s[i].shell;
     k_1   = s[i].k_1;
     do_1pos(xnew[shell],xold[shell],f[shell],k_1,step);
-    pr_rvec(log,0,"fshell",f[shell],DIM);
-    pr_rvec(log,0,"xold",xold[shell],DIM);
-    pr_rvec(log,0,"xnew",xnew[shell],DIM);
+    if (debug) {
+      pr_rvec(debug,0,"fshell",f[shell],DIM);
+      pr_rvec(debug,0,"xold",xold[shell],DIM);
+      pr_rvec(debug,0,"xnew",xnew[shell],DIM);
+    }
   }
 }
 

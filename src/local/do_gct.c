@@ -330,7 +330,8 @@ static real calc_dist(FILE *log,rvec x[])
   rvec   dx;
   
   if (bFirst) {
-    buf    = getenv("DISTGCT");
+    if ((buf = getenv("DISTGCT")) == NULL)
+      fprintf(stderr,"environment variable DISTGCT not set!!!\n");
     bDist  = (sscanf(buf,"%d%d",&i1,&i2) == 2);
     if (bDist)
       fprintf(log,"Will couple to distance between %d and %d\n",i1,i2);
