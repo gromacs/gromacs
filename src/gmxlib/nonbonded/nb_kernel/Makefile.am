@@ -86,7 +86,7 @@ libnb_kernel_la_SOURCES = \
 # to be compiled with a non-MPI compiler whose files can be executed by make:
 
 EXTRA_DIST       =         \
-	mknb.c	
+	mknb.c						\
 	mknb_metacode.c		mknb_metacode.h		\
 	mknb_common.c		mknb_common.h		\
 	mknb_declarations.c	mknb_outerloop.c	\
