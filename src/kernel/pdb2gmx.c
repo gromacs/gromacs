@@ -321,8 +321,8 @@ static void renumber_res(int nrtp,t_restp restp[],
     pdbi[i].NtH  =pdba[i].atomnm[1];
     pdba[i].atomnr=j;
   }
-  qsort(pdba,natoms,sizeof(pdba[0]),pdbcompare);
-  qsort(pdbi,natoms,sizeof(pdbi[0]),pdbicomp);
+  qsort(pdba,natoms,(size_t)sizeof(pdba[0]),pdbcompare);
+  qsort(pdbi,natoms,(size_t)sizeof(pdbi[0]),pdbicomp);
   
   /* make indexgroup in block */
   snew(a,natoms);

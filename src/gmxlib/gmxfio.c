@@ -444,7 +444,7 @@ static bool do_xdr(void *item,int nitem,int eio,
     break;
   case eioUSHORT:
     if (item) us = *(unsigned short *)item;
-    res = xdr_u_short(curfio->xdr,&(u_short)us);
+    res = xdr_u_short(curfio->xdr,(u_short *)&us);
     if (item) *(unsigned short *)item = us;
     break;
   case eioRVEC:

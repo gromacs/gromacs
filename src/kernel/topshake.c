@@ -44,9 +44,8 @@ static void copy_bond (t_params *pr, int to, int from)
  * does no allocing or freeing of memory
  */
 {
-  memcpy((char*) &(pr->param[to]),
-	 (char*) &(pr->param[from]),
-	 sizeof(pr->param[from]));
+  memcpy((char*) &(pr->param[to]),(char*) &(pr->param[from]),
+	 (size_t)sizeof(pr->param[from]));
 }
 
 static int count_hydrogens (char ***atomname, int nra, atom_id a[])

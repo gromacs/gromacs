@@ -90,8 +90,7 @@ static void list_tpx(char *fn)
 
 static void list_trn(char *fn)
 {
-  int         step,natoms,fpread,fpwrite,nframe;
-  real        t,lambda;
+  int         fpread,fpwrite,nframe;
   rvec        *x,*v,*f;
   matrix      box;
   t_trnheader trn;

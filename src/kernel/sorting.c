@@ -79,7 +79,7 @@ void sort_xblock(t_block *block,rvec x[],int renum[])
   snew(invnum,nr);
   xblock=make_xblock(block,x);
   for (i=0; i<nr; i++) invnum[i]=i;
-  qsort((void *)invnum,nr,sizeof(invnum[0]),bomp1);
+  qsort((void *)invnum,nr,(size_t)sizeof(invnum[0]),bomp1);
   for (i=0; i<nr; i++) renum[invnum[i]]=i;
   sfree(xblock);
   sfree(invnum);
@@ -109,5 +109,5 @@ static int bcomp2(const void *p1,const void *p2)
 
 void sort_bond_list(t_bond bonds[],int nr)
 {
-  qsort((void *)bonds,nr,sizeof(bonds[0]),bcomp2);
+  qsort((void *)bonds,nr,(size_t)sizeof(bonds[0]),bcomp2);
 }

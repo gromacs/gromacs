@@ -462,7 +462,7 @@ void gen_sblocks(bool bVerbose,int natoms,t_idef *idef,t_block *sblock)
   nsid=mk_sblocks(bVerbose,g,sid);
   
   /* Now sort the shake blocks... */
-  qsort(sid,natoms,sizeof(sid[0]),sid_comp);
+  qsort(sid,natoms,(size_t)sizeof(sid[0]),sid_comp);
   
   /* Now check how many are NOT -1, i.e. how many have to be shaken */
   for(i=0; (i<natoms); i++)

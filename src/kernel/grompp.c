@@ -98,14 +98,14 @@ static void double_check(t_inputrec *ir, matrix box, t_molinfo *mol)
 #define BS(b,s,val) if (b) { fprintf(stderr,s,val); bStop=TRUE; }
   ncons=mol->plist[F_SHAKE].nr+mol->plist[F_SETTLE].nr;
   BS((ir->tol <= 0.0) && (ncons > 0),
-     "tol must be > 0 instead of %10.5e when using shake\n",ir->tol);
+     "tol must be > 0 instead of %10.5e when using shake\n",ir->tol)
   BS((ir->eI != eiMD) && (ir->eI != eiLD) && (ncons > 0),
-     "can only use SHAKE or SETTLE in MD (not %s) simulation\n",EI(ir->eI));
+     "can only use SHAKE or SETTLE in MD (not %s) simulation\n",EI(ir->eI))
   /* rlong must be less than half the box */
   bmin=min(box[XX][XX],box[YY][YY]);
   bmin=0.5*(min(bmin,box[ZZ][ZZ]));
   BS((ir->rlong > bmin),
-     "rlong (%10.5e) must be < half a box\n",ir->rlong);
+     "rlong (%10.5e) must be < half a box\n",ir->rlong)
   
   if (bStop) {
     fprintf(stderr,"program terminated\n");
@@ -349,9 +349,7 @@ static void cont_status(char *slog,bool bGenVel, real time,
      /* If time == -1 read the last frame available which is complete */
 {
   int         fp;
-  int         nstep;
   real        tt;
-  bool        bRead;
 
   tt      = ir->init_t;
   fprintf(stderr,

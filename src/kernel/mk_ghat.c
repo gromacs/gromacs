@@ -193,7 +193,8 @@ real usqsq(int porder,real k1,real k2,real k3,real h1,real h2,real h3)
 real  ursum(int term,int porder,real acut,real r1,
 	    real k1,real k2,real k3,real h1,real h2,real h3,int nalias)
 {
-  real kt,ksq,kmag,kcutsq;
+  real kt,ksq,kmag;
+/*   real kcutsq; */
   real kn1,kn2,kn3,urs,tmp;
   real h_1,h_2,h_3;
   int  n1,n2,n3;
@@ -372,7 +373,7 @@ void calc(bool bSym,bool bVerbose,
 void read_params(char *fn,t_inputrec *ir,rvec boxs)
 {
   real   t,lambda;
-  int    step,natoms,nre,m;
+  int    step,natoms,m;
   matrix box;
   
   /* Read topology and coordinates */
@@ -560,11 +561,11 @@ int main(int argc,char *argv[])
         
       fp=xvgropen("ghat.xvg","G-Hat","k","gk");
       for(ii=0; (ii<N1MAX); ii++) {
-	rx=sqr(ii*h1);
+	rx=sqr((real)(ii*h1));
 	for(jj=0; (jj<N2MAX); jj++) {
-	  ry=rx+sqr(jj*h2);
+	  ry=rx+sqr((real)(jj*h2));
 	  for(kk=0; (kk<N3MAX); kk++) {
-	    rz=ry+sqr(kk*h3);
+	    rz=ry+sqr((real)(kk*h3));
 	    fprintf(fp,"%10g  %10g\n",sqrt(rz),ghat[ii][jj][kk]);
 	  }
 	}

@@ -39,7 +39,8 @@ static char *SRCID_convparm_c = "$Id$";
 #include "convparm.h"
 #include "names.h"
 
-static void assign_param(int ftype,t_iparams *new,real old[MAXFORCEPARAM])
+static void assign_param(t_functype ftype,t_iparams *new,
+			 real old[MAXFORCEPARAM])
 {
   int i,j;
   
@@ -127,8 +128,8 @@ static void assign_param(int ftype,t_iparams *new,real old[MAXFORCEPARAM])
   }
 }
 
-static int enter_params(t_idef *idef,
-                        int ftype,int nrfp,real forceparams[MAXFORCEPARAM],
+static int enter_params(t_idef *idef, t_functype ftype,
+			int nrfp,real forceparams[MAXFORCEPARAM],
 			int maxtypes,int start,bool bNB)
 {
   t_iparams new;
@@ -138,7 +139,7 @@ static int enter_params(t_idef *idef,
   if (!bNB) {
     for (type=start; (type<idef->ntypes); type++) {
       if (idef->functype[type]==ftype) {
-	if (memcmp(&new,&idef->iparams[type],sizeof(new)) == 0)
+	if (memcmp(&new,&idef->iparams[type],(size_t)sizeof(new)) == 0)
 	  return type;
       }
     }
@@ -147,7 +148,7 @@ static int enter_params(t_idef *idef,
     type=idef->ntypes;
   fprintf(stderr,"\rcopying new to idef->iparams[%d] (ntypes=%d)",
 	  type,idef->ntypes);
-  memcpy(&idef->iparams[type],&new,sizeof(new));
+  memcpy(&idef->iparams[type],&new,(size_t)sizeof(new));
   
   idef->ntypes++;
   idef->functype[type]=ftype;
@@ -222,13 +223,13 @@ void convert_params(int atnr,t_params nbtypes[],
     idef->il[i].nr=0;
     idef->il[i].iatoms=NULL;
   }
-  enter_function(&(nbtypes[F_LJ]),  F_LJ,  idef,&maxtypes,TRUE);
-  enter_function(&(nbtypes[F_BHAM]),F_BHAM,idef,&maxtypes,TRUE);
+  enter_function(&(nbtypes[F_LJ]),  (t_functype)F_LJ,  idef,&maxtypes,TRUE);
+  enter_function(&(nbtypes[F_BHAM]),(t_functype)F_BHAM,idef,&maxtypes,TRUE);
   for(i=0; (i<F_NRE); i++) {
     flags = interaction_function[i].flags;
     if ((i != F_LJ) && (i != F_BHAM) &&
 	((flags & IF_BOND) || (flags & IF_DUMMY) || (flags & IF_SHAKE)))
-      enter_function(&(plist[i]),i,idef,&maxtypes,FALSE);
+      enter_function(&(plist[i]),(t_functype)i,idef,&maxtypes,FALSE);
   }
   fprintf(stderr,"There are %d functypes in idef\n",idef->ntypes);
   for(j=0; (j<F_NRE); j++) {

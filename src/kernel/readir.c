@@ -79,15 +79,15 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts)
 
 #define BS(b,s,val) if (b) { fprintf(stderr,s,val); bStop=TRUE; }
   BS(((ir->tol <= 0.0) && (opts->nshake > 0)),
-     "tol must be > 0 instead of %10.5e while using shake\n",ir->tol);
+     "tol must be > 0 instead of %10.5e while using shake\n",ir->tol)
   BS(((ir->ndelta < 1) && (ir->ns_type==ensGRID)),
      "when you use ndelta=%d the neighbour search will be done\n"
      "on one grid cell, and take much longer than the simple method\n",
-     ir->ndelta);
+     ir->ndelta)
   BS((ir->epsilon_r <= 0),"Epsilon-R must be > 0 instead of %e\n",
-     ir->epsilon_r);
+     ir->epsilon_r)
   BS((ir->bpc && (ir->tau_p <= 0)),
-     "tau_p must be > 0 instead of %10.5e\n",ir->tau_p);
+     "tau_p must be > 0 instead of %10.5e\n",ir->tau_p)
   if ((ir->eeltype == eelSHIFT) || (ir->eeltype == eelSWITCH)) {
     if (ir->rshort >= ir->rlong) {
       fprintf(stderr,"rlong (%g) must be longer than rshort (%g) "
@@ -110,7 +110,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts)
     }
   } else
     BS((ir->rshort > ir->rlong),
-       "rshort (%g) must be <= rlong\n",ir->rshort);
+       "rshort (%g) must be <= rlong\n",ir->rshort)
   if (ir->delta_t > 0.005)
     fprintf(stderr,"time step > 0.005! (%10.5e)\n",ir->delta_t);
   if (bStop) {

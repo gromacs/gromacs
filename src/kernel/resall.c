@@ -143,7 +143,7 @@ static void print_resatoms(FILE *out,t_atomtype *atype,t_restp *rtp)
 static bool read_atoms(FILE *in,char *line,
 		       t_restp *r0,t_symtab *tab,t_atomtype *atype)
 {
-  int    i,j,n,cg;
+  int    i,j,cg;
   char   buf[256],buf1[256];
   double q;
 
@@ -181,7 +181,7 @@ static bool read_atoms(FILE *in,char *line,
 static bool read_atoms_old(FILE *in,char *line,
 			   t_restp *r0,t_symtab *tab,t_atomtype *atype)
 {
-  int    i,j,n,cg,nat;
+  int    i,j,cg,nat;
   char   buf[256],buf1[256];
   double q;
 
@@ -528,10 +528,10 @@ int read_resall(char       *resdb,
   fclose(in);
 
   fprintf(stderr,"\nSorting it all out...\n");
-  qsort(rrtp,nrtp,sizeof(rrtp[0]),comprtp);
-  qsort(rrbd,nrtp,sizeof(rrbd[0]),comprb);
-  qsort(rran,nrtp,sizeof(rran[0]),comprang);
-  qsort(rrid,nrtp,sizeof(rrid[0]),icomp);
+  qsort(rrtp,nrtp,(size_t)sizeof(rrtp[0]),comprtp);
+  qsort(rrbd,nrtp,(size_t)sizeof(rrbd[0]),comprb);
+  qsort(rran,nrtp,(size_t)sizeof(rran[0]),comprang);
+  qsort(rrid,nrtp,(size_t)sizeof(rrid[0]),icomp);
   
   /* Check for consistency and doubles */
   check_rtp(nrtp,rrtp,rrdb);
@@ -588,7 +588,8 @@ t_resbond *search_rb(char *key,int nrb,t_resbond rb[])
   t_resbond rbkey;
   
   rbkey.resname=key;
-  return (t_resbond *)bsearch((void *)&rbkey,rb,nrb,sizeof(rbkey),comprb);
+  return (t_resbond *)bsearch((void *)&rbkey,rb,nrb,
+			      (size_t)sizeof(rbkey),comprb);
 }
 
 int comprang(const void *a,const void *b)
@@ -607,7 +608,7 @@ t_resang *search_rang(char *key,int nrang,t_resang rang[])
   
   rangkey.resname=key;
   return (t_resang *)bsearch((void *)&rangkey,rang,nrang,
-			      sizeof(rangkey),comprang);
+			      (size_t)sizeof(rangkey),comprang);
 }
 
 int comprtp(const void *a,const void *b)
@@ -669,7 +670,8 @@ t_idihres *search_idih(char *key,int nrdh,t_idihres ires[])
 
   rkey.resname=key;
 
-  return (t_idihres *)bsearch((void *)&rkey,ires,nrdh,sizeof(rkey),icomp);
+  return (t_idihres *)bsearch((void *)&rkey,ires,nrdh,
+			      (size_t)sizeof(rkey),icomp);
 }
 
 #ifdef DEBUG

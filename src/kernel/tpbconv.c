@@ -80,7 +80,7 @@ static void reduce_block(atom_id invindex[],bool bKeep[],t_block *block,
 			 char *name,bool bExcl)
 {
   atom_id *index,*a;
-  int i,j,k,newi,newj,nra;
+  int i,j,k,newi,newj;
   
   snew(index,block->nr);
   snew(a,block->nra);
@@ -244,9 +244,9 @@ int main (int argc, char *argv[])
   char         *fn;
   int          fp;
   t_tpxheader  tpx;
-  int          i,nstep,step0,natoms,nre;
-  real         t,lambda,t0,l0;
-  bool         bRead,bOnce,bCont;
+  int          i,nstep,natoms;
+  real         t,lambda;
+  bool         bCont;
   t_topology   top;
   t_inputrec   *ir,*irnew;
   t_gromppopts *gopts;

@@ -81,7 +81,7 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
     for (j=0; (j<copies); j++) {
       for (i=0; (i<src->nr); i++) {
 	memcpy((char *)&(dest->param[l]),
-	       (char *)&(src->param[i]),sizeof(src->param[i]));
+	       (char *)&(src->param[i]),(size_t)sizeof(src->param[i]));
 	for (m=0; (m<nral); m++)
 	  dest->param[l].a[m] += n0;
 	l++;
@@ -140,14 +140,14 @@ static void atomcat (t_atoms *dest, t_atoms *src, int copies)
 
   /* residue information */
   for (l=dest->nres,j=0; (j<copies); j++,l+=src->nres)
-    memcpy((char *) &(dest->resname[l]),
-	   (char *) &(src->resname[0]),src->nres*sizeof(src->resname[0]));
+    memcpy((char *) &(dest->resname[l]),(char *) &(src->resname[0]),
+           (size_t)(src->nres*sizeof(src->resname[0])));
 
   for (l=destnr,j=0; (j<copies); j++,l+=srcnr) {
-    memcpy((char *) &(dest->atomname[l]),
-	   (char *) &(src->atomname[0]),srcnr*sizeof(src->atomname[0]));
-    memcpy((char *) &(dest->atom[l]),
-	   (char *) &(src->atom[0]),srcnr*sizeof(src->atom[0]));
+    memcpy((char *) &(dest->atomname[l]),(char *) &(src->atomname[0]),
+           (size_t)(srcnr*sizeof(src->atomname[0])));
+    memcpy((char *) &(dest->atom[l]),(char *) &(src->atom[0]),
+           (size_t)(srcnr*sizeof(src->atom[0])));
   }
 
   /* Increment residue numbers */

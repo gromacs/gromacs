@@ -300,7 +300,7 @@ void print_block (FILE *out, char *szName,
     for (i=0; (i < block->nr); i++) {
       fprintf (out,"%6d",i+1);
       for (j=block->index[i]; (j < ((int)block->index[i+1])); j++)
-	fprintf (out,"%5d",block->a[j]+1);
+	fprintf (out,"%5u",block->a[j]+1);
       fprintf (out,"\n");
     }
     fprintf (out,"\n");
@@ -317,7 +317,7 @@ void print_excl(FILE *out, t_block *excl)
   for (i=0; (i < excl->nr); i++) {
     fprintf (out,"%6d",i+1);
     for (j=excl->index[i]; (j < excl->index[i+1]); j++)
-      fprintf (out,"%5d",excl->a[j]+1);
+      fprintf (out,"%5u",excl->a[j]+1);
     fprintf (out,"\n");
   }
   fprintf (out,"\n");

@@ -92,7 +92,7 @@ void chk_trj(char *fn)
       old_t2=old_t1;
       old_t1=sh.t;
       if (t0 == BOGUSTIME) t0=sh.t;
-      fprintf(stderr,"\rframe: %6d, t: %10.3f bytes: %10d",j,sh.t,fpos);
+      fprintf(stderr,"\rframe: %6d, t: %10.3f bytes: %10u",j,sh.t,fpos);
       if (j == 0)
 	fprintf(stderr,"\n");
       fread_htrn(status,&sh,NULL,NULL,NULL,NULL);
@@ -183,7 +183,7 @@ void chk_ndx(char *fn)
 {
   FILE *in;
   char buf[256];
-  int i,j,ngrp,nelem,nitem,nat,ng_cnt,na_cnt;
+  int ngrp,nelem,nitem,nat,ng_cnt,na_cnt;
   int nLab;
 
   fprintf(stderr,"Checking index file %s\n",fn);

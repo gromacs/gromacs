@@ -123,7 +123,7 @@ static void cmp_ilist(FILE *fp,int ftype,t_ilist *il1,t_ilist *il2)
 void cmp_iparm(FILE *fp,char *s,int index,t_functype ft,
 	       t_iparams ip1,t_iparams ip2) 
 {
-  if (memcmp(&ip1,&ip2,sizeof(ip1)) != 0) {
+  if (memcmp(&ip1,&ip2,(size_t)sizeof(ip1)) != 0) {
     fprintf(fp,"%s1: ",s);
     pr_iparams(fp,ft,&ip1);
     fprintf(fp,"%s2: ",s);
@@ -140,7 +140,7 @@ static void cmp_idef(FILE *fp,t_idef *id1,t_idef *id2)
   cmp_int(fp,"idef->pid",   -1,id1->pid,id2->pid);
   cmp_int(fp,"idef->atnr",  -1,id1->atnr,id2->atnr);
   for(i=0; (i<id1->ntypes); i++) {
-    cmp_int(fp,"idef->functype",i,id1->functype[i],id2->functype[i]);
+    cmp_int(fp,"idef->functype",i,(int)id1->functype[i],(int)id2->functype[i]);
     cmp_iparm(fp,"idef->iparam",i,id1->functype[i],
 	      id1->iparams[i],id2->iparams[i]);
   }
@@ -306,7 +306,7 @@ void comp_tpx(char *fn1,char *fn2)
   rvec        *xx[2],*vv[2];
   t_topology  top[2];
   matrix      box[2];
-  int         i,step,natoms,nre;
+  int         i,step,natoms;
   real        t,lambda;
 
   ff[0]=fn1;

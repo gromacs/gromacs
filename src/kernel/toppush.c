@@ -217,9 +217,9 @@ static void push_bondtype(t_params *bt,t_param *b,int nral,int ftype)
     pr_alloc (2,bt);
     
     /* fill the arrays up and down */
-    memcpy((char *) bt->param[nr].c,	 (char *) b->c,sizeof(b->c));
-    memcpy((char *) bt->param[nr].a,	 (char *) b->a,sizeof(b->a));
-    memcpy((char *) bt->param[nr+1].c,	 (char *) b->c,sizeof(b->c));
+    memcpy((char *) bt->param[nr].c,	 (char *) b->c,(size_t)sizeof(b->c));
+    memcpy((char *) bt->param[nr].a,	 (char *) b->a,(size_t)sizeof(b->a));
+    memcpy((char *) bt->param[nr+1].c,	 (char *) b->c,(size_t)sizeof(b->c));
     for (j=0; (j < nral); j++) 
       bt->param[nr+1].a[j] = b->a[nral-1-j];
     
@@ -537,7 +537,7 @@ void push_bondnow(t_params *bond, t_param *b)
   pr_alloc (1,bond);
 
   /* fill the arrays */
-  memcpy ((char *)&(bond->param[nr]),(char *)b,sizeof(t_param));
+  memcpy ((char *)&(bond->param[nr]),(char *)b,(size_t)sizeof(t_param));
 
   bond->nr++;
 }
@@ -795,7 +795,7 @@ void merge_excl(t_block *excl, t_block2 *b2)
   for(i=0; (i<b2->nr); i++) {
     if (b2->nra[i] > 0) {
       /* remove double entries */
-      qsort(b2->a[i],b2->nra[i],sizeof(b2->a[i][0]),icomp);
+      qsort(b2->a[i],(size_t)b2->nra[i],(size_t)sizeof(b2->a[i][0]),icomp);
       k=1;
       for(j=1; (j<b2->nra[i]); j++)
 	if (b2->a[i][j]!=b2->a[i][k-1]) {

@@ -197,7 +197,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
   t_mapping *map;
   char *line=NULL,*str,buf[256];
   int i,m,col_len,nch;
-  unsigned long r,g,b;
+  unsigned int r,g,b;
   double u;
   char *fg;
   bool bGetOnWithIt;

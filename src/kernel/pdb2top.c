@@ -52,7 +52,8 @@ static char *SRCID_pdb2top_c = "$Id$";
 
 real distance(rvec a,rvec b) 
 {
-  return sqrt(sqr(a[XX]-b[XX]) + sqr(a[YY]-b[YY]) + sqr(a[ZZ]-b[ZZ]));
+  return sqrt((real)(sqr((real)(a[XX]-b[XX])) + 
+		     sqr((real)(a[YY]-b[YY])) + sqr((real)(a[ZZ]-b[ZZ]))));
 }
 
 static void add_param(t_params *ps,int ai,int aj, real *c)
@@ -579,12 +580,12 @@ static void clean_bonds(t_params *ps)
   }
   
   /* Sort bonds */
-  qsort(ps->param,ps->nr,sizeof(ps->param[0]),pcompar);
+  qsort(ps->param,ps->nr,(size_t)sizeof(ps->param[0]),pcompar);
 
   /* remove doubles */
   for(i=j=1; (i<ps->nr); i++) {
     if (pcompar(&(ps->param[i]),&(ps->param[j-1])) != 0) {
-      memcpy(&(ps->param[j]),&(ps->param[i]),sizeof(ps->param[0]));
+      memcpy(&(ps->param[j]),&(ps->param[i]),(size_t)sizeof(ps->param[0]));
       j++;
     }
   }
