@@ -37,7 +37,7 @@ XLIBS		= -lX11
 SYSLIBS		= $(LINKLIB) -lm
 ifeq ($(USE_SGI_FFT),yes)
 	SYSDEFS += -DUSE_SGI_FFT
-	SYSLIBS += -lftn -lcomplib.sgimath 
+	FFTLIBS = -lftn -lcomplib.sgimath 
 endif
 ifeq ($(USE_SGI_FPE),yes)
 	SYSDEFS += -DUSE_SGI_FPE

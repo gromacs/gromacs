@@ -46,13 +46,13 @@ pdb2gmx:	$(POBJ)
 		$(LD) -o $@ $^ $(SYSLIBS) 
 
 mdrun:		mdrun.o
-		$(LD) -o $@ $^ $(SYSLIBS) 
+		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS)
 
 mk_ghat:	mk_ghat.o
 		$(LD) -o $@ $^ $(SYSLIBS) 
 
 nmrun:		nmrun.o
-		$(LD) -o $@ $^ $(SYSLIBS) 
+		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS)
 
 luck:		luck.o
 		$(LD) $^ -o $@ $(SYSLIBS)  
