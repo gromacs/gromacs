@@ -484,6 +484,7 @@ static void build_grid(t_hbdata *hb,rvec x[], rvec xshell,
   t_ncell *newgrid;
   bool    bDoRshell,bInShell,bAcc;
   real    rshell2=0;
+  int     ggg;
   
   bDoRshell = (rshell > 0);
   rshell2   = sqr(rshell);
@@ -550,7 +551,8 @@ static void build_grid(t_hbdata *hb,rvec x[], rvec xshell,
 	      while( x[ad[i]][m] >= box[m][m] ) 
 		rvec_dec(x[ad[i]],box[m]);
 	      /* determine grid index of atom */
-	      grididx[m]=x[ad[i]][m]*invdelta[m];
+	      ggg        = x[ad[i]][m]*invdelta[m];
+	      grididx[m] = (ggg+ngrid[m]) % ngrid[m];
 	    }
 	  /* add atom to grid cell */
 	  if (bAcc)
