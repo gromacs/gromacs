@@ -15,11 +15,7 @@ MAGIC_H_CR	= magic.h.bak
 
 all:		$(MAGIC_H)
 
-delta:		$(MAGIC_H)
-		sccs deltaall
-
 $(MAGIC_H):	typedefs.h Makefile
-		sccs edit $(MAGIC_H)
 		echo "/* Generated from" `what typedefs.h | awk '{ if (FNR==2) print }'` "*/" > $(MAGIC_H)
 		echo "" >> $(MAGIC_H)
 		echo '#ifndef GROMACS_MAGIC' >> $(MAGIC_H)
@@ -29,8 +25,6 @@ $(MAGIC_H):	typedefs.h Makefile
 		echo '#endif' >> $(MAGIC_H)
 		copyrgt $(MAGIC_H)
 		echo "y" | $(RM) $(MAGIC_H_CR)
-		sccs delta $(MAGIC_H) < /dev/null
-		sccs get $(MAGIC_H)
 
 clean:		
 		$(RM) *~ #*# 

@@ -53,43 +53,12 @@ else
 endif
 
 dep:
-	sccs edit Make.dep
 	$(CC) -M -I. -I$(GMXHOME)/src/include *.c *.cc  |  grep -v include  |  sed sx./xx > Make.dep
-	sccs delget -y Make.dep
 	
 #	$(CC) -M -I. -I$(GMXHOME)/src/include *.c *.cc  |  grep -v usr  |  sed sx./xx | sed sx$(GMXHOME)/src/includex\\\$$\(GMXHOME\)/src/includex > Make.dep
 
 clean:
 		$(RM) $(PROGRAMS) *.o *.l *~ *.bak \#*\# 
-
-ifneq ($(CPU),cvx)
-%.f:		$(ROOT)/src/$(CUR)/SCCS/s.%.f
-		$(GET) $<
-
-%.c:		$(ROOT)/src/$(CUR)/SCCS/s.%.c
-		$(GET) $<
-
-%.cc:		$(ROOT)/src/$(CUR)/SCCS/s.%.cc
-		$(GET) $<
-
-%.c++:		$(ROOT)/src/$(CUR)/SCCS/s.%.c++
-		$(GET) $<
-
-%.cxx:		$(ROOT)/src/$(CUR)/SCCS/s.%.cxx
-		$(GET) $<
-
-%.s:		$(ROOT)/src/$(CUR)/SCCS/s.%.s
-		$(GET) $<
-
-%.h:		$(ROOT)/src/$(CUR)/SCCS/s.%.h
-		$(GET) $<
-
-%.bm:		$(ROOT)/src/$(CUR)/SCCS/s.%.bm
-		$(GET) $<
-		
-%.m4:		$(ROOT)/src/$(CUR)/SCCS/s.%.m4
-		$(GET) $<
-endif
 
 .c.o:
 		$(CC) $(C-FLAGS) -c $<

@@ -15,26 +15,15 @@ OBJMAKEF	=Makefile.obj
 GROMTAZ		=gromacs.taz
 SRCDIRS		= $(GROMLIB) $(notdir $(INCDIR))
 EXCLUDE		=core ',*' '*log*' '*~' '\#*\#' '*.o'
-IGNORE		=\( $(foreach EXCL,$(EXCLUDE),\( \! -name $(EXCL) \) ) \
-		 \( \! \( -name '*SCCS*' -prune \) -type f \) \)
+IGNORE		=\( $(foreach EXCL,$(EXCLUDE),\( \! -name $(EXCL) \) )
 TAZFILES	=Makefile Makefile.def Makefile.std Makefile.obj \
 		 $(foreach CPU,$(CPUS),Makefile.$(CPU)) \
                  $(foreach DIR,$(SRCDIRS),`find $(DIR) $(IGNORE) -print `)
 
 obj:	$(ROOT)/obj/Makefile
-	
-tell:
-	$(foreach DIR,$(GROMLIB),cd $(SRCDIR)/$(DIR);echo `pwd`:;sccs tell;)
 
 taz:	source
 	tar -cf - $(TAZFILES) | compress -c > $(GROMTAZ)
-
-.PHONY source:
-	-sccs get SCCS
-	-$(foreach DIR,$(SRCDIRS),cd $(SRCDIR)/$(DIR);sccs get SCCS;)
-
-$(ROOT)/obj/Makefile:	$(SRCDIR)/SCCS/s.$(OBJMAKEF)
-	cd $(ROOT)/obj ; $(GET) $< ; mv $(OBJMAKEF) $@
 
 template:
 	echo "#" > $(CPUMAKEF)

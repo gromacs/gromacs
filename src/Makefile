@@ -28,10 +28,6 @@ all:	dirs
 it:	
 	$(foreach DIR,$(LDIRS),cd $(DIR); $(MAKE); cd ..;)
 
-get:	clean
-	cd $(GMXHOME); $(foreach dir,$(GETIT),cd $(dir); sccs get SCCS; cd $(GMXHOME);)
-
-
 cdist:	clean
 	cd $(GMXHOME); $(TARCMD) $(TDIR)/gmxcore.tar $(TARFLG) $(DIST)
 	cd $(GMXHOME); $(TARCMD) $(TDIR)/local.tar $(TARFLG) src/$(LOCAL)
@@ -54,15 +50,11 @@ dirs:
 man:
 	./mknroff
 
-tell:	info
-info:
-	$(foreach DIR,$(TELLDIRS),echo $(DIR); cd $(DIR); sccs info; cd ..;)
-
 clean:
 	$(foreach dir,$(DIRS),cd $(dir); $(MAKE) clean; cd ..;)
 
 copyrgt:
-	$(foreach DIR,$(TELLDIRS),echo $(DIR); cd $(DIR); sccs edit SCCS; $(COPYRGT) *.c; $(COPYRGT) *.h; $(COPYRGT) *.cc; sccs delget -y'Edited by copyrgt' SCCS ; cd $(GMXHOME)/src;)
+	$(foreach DIR,$(TELLDIRS),echo $(DIR); cd $(DIR); $(COPYRGT) *.c; $(COPYRGT) *.h; $(COPYRGT) *.cc; cd $(GMXHOME)/src;)
 
 oclean: 
 	$(foreach dir,$(DIRS),cd $(dir); mkdir $(CPU).o ; mv *.o $(CPU).o ; cd ..;)

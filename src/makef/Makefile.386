@@ -16,7 +16,6 @@ CFLAGS		= -g -ansi
 LD		= $(CC) $(LDFLAGS)
 LDFLAGS		= -L$(LIBDIR)
 SYSLIBS		= $(LINKLIB) -lrpc -lsocket -lm
-GET		:=get
 XLIBS		= $(SYSLIBS) -lX11 -lsocket
 AR		= ar ruvls
 RANLIB		= echo
