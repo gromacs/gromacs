@@ -152,14 +152,16 @@ int main (int argc,char *argv[])
     "g_rmsf computes the root mean square fluctuation (RMSF, i.e. standard ",
     "deviation) of atomic positions ",
     "after first fitting to a reference frame.[PAR]",
-    "When the (optional) pdb file is given, the RMSF values are converted",
-    "to B-factor values and plotted with the experimental data.[PAR]",
+    "With option [TT]-oq[tt] the RMSF values are converted to B-factor",
+    "values, which are written to a pdb file with the coordinates of the",
+    "run input file.[PAR]",
     "With option -aver the average coordinates will be calculated and used",
     "as reference for fitting (which is useless usually). ",
     "They are also saved to a gro file (which may be usefull).[PAR]",
-    "With the option -aniso g_rmsf will compute anisotropic temperature factors",
-    "and then it will also output average coordinates and a pdb file with ANISOU",
-    "records (corresonding to the -oq option). Please note that the U values",
+    "With the option -aniso g_rmsf will compute anisotropic temperature",
+    "factors and then it will also output average coordinates and a pdb file",
+    "with ANISOU records (corresonding to the -oq option).",
+    "Please note that the U values",
     "are orientation dependent, so before comparison with experimental data",
     "you should verify that you fit to the experimental coordinates.[PAR]",
     "When a pdb input file is passed to the program and the [TT]-aniso[tt]",
@@ -210,7 +212,7 @@ int main (int argc,char *argv[])
     { efTPX, NULL,  NULL,     ffREAD  },
     { efTRX, "-f",  NULL,     ffREAD  },
     { efPDB, "-q",  NULL,     ffOPTRD },
-    { efPDB, "-oq", "anisou", ffOPTWR },
+    { efPDB, "-oq", "bfac",   ffOPTWR },
     { efNDX, NULL,  NULL,     ffOPTRD },
     { efXVG, "-o",  "rmsf",   ffWRITE },
     { efXVG, "-oc", "correl", ffOPTWR },
@@ -273,6 +275,7 @@ int main (int argc,char *argv[])
     refatoms  = &top.atoms;
     pdbx      = xref;
     npdbatoms = pdbatoms->nr;
+    snew(pdbatoms->pdbinfo,npdbatoms);
     copy_mat(box,pdbbox);
   }
   
@@ -347,8 +350,7 @@ int main (int argc,char *argv[])
     rmsf[i] = (rmsf_xx[i][XX]/count - sqr(rmsf_x[i][XX]/count)+ 
 	       rmsf_xx[i][YY]/count - sqr(rmsf_x[i][YY]/count)+ 
 	       rmsf_xx[i][ZZ]/count - sqr(rmsf_x[i][ZZ]/count)); 
-    if (bAniso)
-      pdbatoms->pdbinfo[index[i]].bfac = 800*M_PI/3.0*rmsf[i];
+    pdbatoms->pdbinfo[index[i]].bfac = 800*M_PI/3.0*rmsf[i];
   }
   
   /* Write RMSF output */
