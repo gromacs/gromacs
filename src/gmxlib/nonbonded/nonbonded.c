@@ -336,7 +336,9 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
                 
                 nlist->count = 0;
 
+#ifdef DEBUG
                 printf("call loop\n");
+#endif
                 /* Call the appropriate nonbonded kernel function */
                 (*kernelptr)( &(nlist->nri),
                               nlist->iinr,
@@ -369,7 +371,9 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
                               &outeriter,
                               &inneriter,
                               NULL);
+#ifdef DEBUG
 		printf("ret loop.\n");
+#endif
             }
         
             /* Update flop accounting */
