@@ -279,6 +279,7 @@ void init_forcerec(FILE *log,
   /* Neighbour searching stuff */
   fr->bGrid      = (ir->ns_type == ensGRID);
   fr->ndelta     = ir->ndelta;
+  fr->eBox       = ir->eBox;
   fr->rlist      = ir->rlist;
   fr->rlistlong  = max(ir->rlist,max(ir->rcoulomb,ir->rvdw));
   fr->eeltype    = ir->coulombtype;

@@ -208,7 +208,7 @@ void do_force(FILE *log,t_commrec *cr,
   if (parm->ir.epc != epcNO)
     calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
   
-  if (bNS) {
+  if (bNS && (parm->ir.eBox != ebtNONE)) {
     put_charge_groups_in_box(log,cg0,cg1,FALSE,
 			     parm->box,box_size,&(top->blocks[ebCGS]),x,
 			     fr->shift_vec,fr->cg_cm);
@@ -232,8 +232,9 @@ void do_force(FILE *log,t_commrec *cr,
   reset_energies(&(parm->ir.opts),grps,fr,bNS,ener);    
   
   if (bNS) {
-    /* Calculate intramolecular shift vectors to make molecules whole again */
-    mk_mshift(log,graph,parm->box,x);
+    if (parm->ir.eBox != ebtNONE)
+      /* Calculate intramolecular shift vectors to make molecules whole */
+      mk_mshift(log,graph,parm->box,x);
 
     /* Reset long range forces if necessary */
     if (fr->bTwinRange) {

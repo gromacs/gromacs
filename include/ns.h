@@ -57,11 +57,7 @@ extern void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr);
  * homenr is the number of atoms on this processor
  */
  
-extern real calc_image_rect(rvec xi,rvec xj,rvec box_size,
-			    rvec b_inv,int *shift);
-/* Calculate the image for a rectangular box, return the distance squared */
-
-extern int calc_naaj(FILE *log,int icg,int cgtot);
+extern int calc_naaj(int icg,int cgtot);
 /* Calculate the number of charge groups to interact with for icg */
 
 /****************************************************

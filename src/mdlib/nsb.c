@@ -54,7 +54,7 @@ void calc_nsbshift(t_nsborder *nsb)
   nsb->shift=(nsb->nprocs+1)/2;
   for(i=0; (i<nsb->nprocs); i++) {
     lastcg=nsb->cgload[i]-1;
-    naaj=calc_naaj(stdlog,lastcg,nsb->cgtotal);
+    naaj=calc_naaj(lastcg,nsb->cgtotal);
     targetcg=(lastcg+naaj) % nsb->cgtotal;
     
     /* Search until we find the target charge group */

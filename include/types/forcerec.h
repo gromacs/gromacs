@@ -31,6 +31,7 @@ enum { eNL_VDW, eNL_QQ, eNL_FREE, eNL_VDW_WAT, eNL_QQ_WAT, eNL_NR };
  
 typedef struct {
   /* Cut-Off stuff */
+  int  eBox;
   real rlist,rlistlong;
   
   /* Dielectric constant resp. multiplication factor for charges */
