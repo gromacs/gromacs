@@ -26,14 +26,19 @@ void calc_pres(int eBox,matrix box,tensor ekin,tensor vir,tensor pres,real Elr)
   if (eBox == ebtNONE)
     clear_mat(pres);
   else {
-    /* Uitzoeken welke ekin hier van toepassing is, zie Evans & Morris - E. */ 
-    /* Wrs. moet de druktensor gecorrigeerd worden voor de netto stroom in  */
-    /* het systeem...       */
+    /* Uitzoeken welke ekin hier van toepassing is, zie Evans & Morris - E. 
+     * Wrs. moet de druktensor gecorrigeerd worden voor de netto stroom in  
+     * het systeem...       
+     */
     
     /* Long range correction for periodic systems, see
      * Neumann et al. JCP
      * divide by 6 because it is multiplied by fac later on.
      * If Elr = 0, no correction is made.
+     */
+
+    /* This formula should not be used with Ewald or PME, 
+     * where the full long-range virial is calculated. EL 990823
      */
     Plr = Elr/6.0;
     
