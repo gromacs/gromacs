@@ -72,19 +72,19 @@ int main (int argc,char *argv[])
     "run input file by LSQ fitting the structures on top of each other.",
     "The reference structure is taken from the structure file",
     "([TT]-s[tt]).[PAR]",
-    "Option [TT]-a[tt] produces time averaged RMSD per group (e.g. residues",
-    "in a protein).[PAR]",
     "Option [TT]-prev[tt] produces the RMSD with a previous frame.[PAR]",
-    "Option [TT]-m[tt] produces a matrix of RMSD's of each structure in the", 
-    "trajectory with respect to each other structure. All the structures",
-    "are fitted on the structure in the .tpx file. With [TT]-fitall[tt], all",
-    "pairs of structures are fitted on each other for calculating the",
-    "rmsd matrix. With [TT]-f2[tt],",
+    "Option [TT]-m[tt] produces a matrix in [TT].xpm[tt] format of RMSD's of",
+    "each structure in the trajectory with respect to each other structure.",
+    "This file can be visualized with for instance [TT]xv[tt] and can be",
+    "converted to postscript with [TT]xpm2ps[tt].",
+    "All the structures are fitted on the structure in the structure file.",
+    "With [TT]-fitall[tt] all the structures are fitted pairwise.",
+    "With [TT]-f2[tt],",
     "the 'other structures' are taken from a second trajectory.",
     "Option [TT]-bin[tt] does a binary dump of the RMSD matrix.[PAR]",
     "Option [TT]-bm[tt] produces a matrix of average bond angle deviations",
-    "analogously to the [TT]-m[tt] option. Only bonds between atoms of RMSD",
-    "group are considered."
+    "analogously to the [TT]-m[tt] option. Only bonds between atoms in the",
+    "RMSD group are considered."
   };
   static bool bPBC=TRUE,bFit=TRUE,bFitAll=FALSE;
   static bool bNano=FALSE,bDeltaLog=FALSE;

@@ -315,7 +315,7 @@ int main(int argc,char *argv[])
     "[TT]setenv DSSP /usr/local/bin/dssp[tt][PAR]",
 #endif
     "The structure assignment for each residue and time is written to an",
-    "[TT].xpm[tt] matrix file. This file can be visualized with i.e.",
+    "[TT].xpm[tt] matrix file. This file can be visualized with for instance",
     "[TT]xv[tt] and can be converted to postscript with [TT]xpm2ps[tt].",
     "The number of residues with each secondary structure type and the",
     "total secondary structure ([TT]-sss[tt]) count as a function of",
