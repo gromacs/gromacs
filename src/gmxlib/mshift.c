@@ -167,7 +167,7 @@ void p_graph(FILE *log,char *title,t_graph *g)
 }
 
 static void calc_1se(t_graph *g,t_ilist *il,t_functype ftype[],
-		     short nbond[])
+		     short nbond[],int natoms)
 {
   int     k,nratoms,tp,end,j;
   t_iatom *ia,iaa;
@@ -181,23 +181,27 @@ static void calc_1se(t_graph *g,t_ilist *il,t_functype ftype[],
     
     if (tp == F_SETTLE) {
       iaa          = ia[1];
-      nbond[iaa]   = 2;
-      nbond[iaa+1] = 2;
-      nbond[iaa+2] = 2;
-      g->start     = min(g->start,iaa);
-      g->end       = max(g->end,iaa+2);
+      if (iaa<natoms) {
+	nbond[iaa]   = 2;
+	nbond[iaa+1] = 2;
+	nbond[iaa+2] = 2;
+	g->start     = min(g->start,iaa);
+	g->end       = max(g->end,iaa+2);
+      }
     }
     else {
       for(k=0; (k<nratoms); k++) {
 	iaa=ia[k+1];
-	g->start=min(g->start,iaa);
-	g->end  =max(g->end,  iaa);
-	
+	if (iaa<natoms) {
+	  g->start=min(g->start,iaa);
+	  g->end  =max(g->end,  iaa);
+	}
 	switch (tp) {
 	case F_BONDS:
 	case F_MORSE:
 	case F_SHAKE:
-	  nbond[iaa]++;
+	  if (iaa<natoms)
+	    nbond[iaa]++;
 	  break;
 	default:
 	  break;
@@ -218,7 +222,7 @@ static void calc_start_end(t_graph *g,t_idef *idef,int natoms)
   snew(nbond,natoms);
   for(i=0; (i<F_NRE); i++) {
     if (interaction_function[i].flags & (IF_BOND | IF_SHAKE))
-      calc_1se(g,&idef->il[i],idef->functype,nbond);
+      calc_1se(g,&idef->il[i],idef->functype,nbond,natoms);
   }
   
   nnb=0;
