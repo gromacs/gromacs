@@ -517,6 +517,7 @@ int main(int argc,char *argv[])
     { "-ter",  FALSE, etBOOL, {&bTer},
       "Use 'TER' in pdb file as end of frame in stead of default 'ENDMDL'" }
   };
+#define NPA asize(pa)
       
   FILE         *out=NULL;
   int          trxout=NOTSET;
@@ -559,7 +560,7 @@ int main(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,
 		    PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,
+		    NFILE,fnm,NPA,pa,asize(desc),desc,
 		    0,NULL);
 
   top_file=ftp2fn_null(efTPS,NFILE,fnm);
@@ -574,13 +575,13 @@ int main(int argc,char *argv[])
   }
   else {
     /* mark active cmdline options */
-    bSetBox   = opt2parg_bSet("-box", asize(pa), pa);
-    bSetTime  = opt2parg_bSet("-t0", asize(pa), pa);
-    bSetPrec  = opt2parg_bSet("-ndec", asize(pa), pa);
-    bSetUR    = opt2parg_bSet("-ur", asize(pa), pa);
-    bExec     = opt2parg_bSet("-exec", asize(pa), pa);
-    bTimeStep = opt2parg_bSet("-timestep", asize(pa), pa);
-    bTDump    = opt2parg_bSet("-dump", asize(pa), pa);
+    bSetBox   = opt2parg_bSet("-box", NPA, pa);
+    bSetTime  = opt2parg_bSet("-t0", NPA, pa);
+    bSetPrec  = opt2parg_bSet("-ndec", NPA, pa);
+    bSetUR    = opt2parg_bSet("-ur", NPA, pa);
+    bExec     = opt2parg_bSet("-exec", NPA, pa);
+    bTimeStep = opt2parg_bSet("-timestep", NPA, pa);
+    bTDump    = opt2parg_bSet("-dump", NPA, pa);
 
     /* parse enum options */    
     fit_enum  = nenum(fit);
@@ -986,7 +987,7 @@ int main(int argc,char *argv[])
 	      }
 	    }
 	  
-	    if (opt2parg_bSet("-shift",asize(pa),pa))
+	    if (opt2parg_bSet("-shift",NPA,pa))
 	      for(i=0; i<nout; i++)
 		for (d=0; d<DIM; d++)
 		  frout.x[i][d] += outframe*shift[d];
