@@ -55,8 +55,8 @@ static char *SRCID_runner_c = "$Id$";
 #include "mdatoms.h"
 #include "lutab.h"
 #include "mdrun.h"
-#include "congrad.h"
 #include "callf77.h"
+#include "pppm.h"
 
 bool optRerunMDset (int nfile, t_filenm fnm[])
 {
@@ -106,7 +106,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 {
   double     cputime,realtime;
   t_parm     *parm;
-  rvec       *buf,*f,*vold,*v,*vt,*x;
+  rvec       *buf,*f,*vold,*v,*vt,*x,box_size;
   real       *ener;
   t_nrnb     *nrnb;
   t_nsborder *nsb;
@@ -114,9 +114,10 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   t_groups   *grps;
   t_graph    *graph;
   t_mdatoms  *mdatoms;
+  t_forcerec *fr;
   time_t     start_t=0;
   bool       bDummies;
-  int        i;
+  int        i,m;
     
   /* Initiate everything (snew sets to zero!) */
   snew(ener,F_NRE);
@@ -155,8 +156,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   }
   else {
     /* Read it up... */
-    init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),
-		top,&x,&v,&mdatoms,nsb);
+    init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),top,&x,&v,&mdatoms,nsb);
   }
   snew(buf,nsb->natoms);
   snew(f,nsb->natoms);
@@ -188,12 +188,24 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     bDummies = ((interaction_function[i].flags & IF_DUMMY) && 
 		(top->idef.il[i].nr > 0));
 
+  /* Initiate forcerecord */
+  fr=mk_forcerec();
+  init_forcerec(stdlog,fr,&(parm->ir),&(top->blocks[ebMOLS]),cr,
+		&(top->blocks[ebCGS]),&(top->idef),mdatoms,parm->box,FALSE);
+  /* Initiate box */
+  for(m=0; (m<DIM); m++)
+    box_size[m]=parm->box[m][m];
+    
+  /* Initiate PPPM if necessary */
+  if (fr->eeltype == eelPPPM)
+    init_pppm(stdlog,cr,nsb,FALSE,TRUE,box_size,ftp2fn(efHAT,nfile,fnm),&parm->ir);
+		
   /* Now do whatever the user wants us to do (how flexible...) */
   if (bNM) {
     start_t=do_nm(stdlog,cr,nfile,fnm,
 		  bVerbose,bCompact,nstepout,parm,grps,
 		  top,ener,x,vold,v,vt,f,buf,
-		  mdatoms,nsb,nrnb,graph,edyn);
+		  mdatoms,nsb,nrnb,graph,edyn,fr,box_size);
   }
   else {
     switch (parm->ir.eI) {
@@ -202,17 +214,17 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
       start_t=do_md(stdlog,cr,nfile,fnm,
 		    bVerbose,bCompact,bDummies,nstepout,parm,grps,
 		    top,ener,x,vold,v,vt,f,buf,
-		    mdatoms,nsb,nrnb,graph,edyn);
+		    mdatoms,nsb,nrnb,graph,edyn,fr,box_size);
       break;
     case eiCG:
       start_t=do_cg(stdlog,nfile,fnm,parm,top,grps,nsb,
 		    x,f,buf,mdatoms,parm->ekin,ener,
-		    nrnb,bVerbose,cr,graph);
+		    nrnb,bVerbose,cr,graph,fr,box_size);
       break;
     case eiSteep:
       start_t=do_steep(stdlog,nfile,fnm,parm,top,grps,nsb,
 		       x,f,buf,mdatoms,parm->ekin,ener,
-		       nrnb,bVerbose,bDummies,cr,graph);
+		       nrnb,bVerbose,bDummies,cr,graph,fr,box_size);
       break;
     default:
       fatal_error(0,"Invalid integrator (%d)...\n",parm->ir.eI);

@@ -191,15 +191,14 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
  		t_parm *parm,t_topology *top, 
  		t_groups *grps,t_nsborder *nsb, 
  		rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms, 
- 		tensor ekin,real ener[], 
- 		t_nrnb nrnb[], 
- 		bool bVerbose,bool bDummies,t_commrec *cr,t_graph *graph) 
+ 		tensor ekin,real ener[],t_nrnb nrnb[], 
+ 		bool bVerbose,bool bDummies,t_commrec *cr,t_graph *graph,
+		t_forcerec *fr,rvec box_size) 
 { 
-  t_forcerec *fr; 
   static char *SD="STEEPEST DESCENTS"; 
   real   step,lambda,ftol,fmax,testf; 
   rvec   *pos[2],*force[2]; 
-  rvec   *xx,*ff,*vv,box_size; 
+  rvec   *xx,*ff,*vv; 
 #ifdef FORCE_CRIT 
   real   Fsqrt[2]; 
 #endif 
@@ -224,11 +223,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     lambda       = parm->ir.init_lambda;
   else 
     lambda = 0.0;
-  fr=mk_forcerec(); 
-  init_forcerec(log,fr,&(parm->ir),&(top->blocks[ebMOLS]),cr, 
- 		&(top->blocks[ebCGS]),&(top->idef),mdatoms,parm->box,FALSE); 
-  for(m=0; (m<DIM); m++) 
-    box_size[m]=parm->box[m][m]; 
+
   clear_rvec(mu_tot);
   calc_shifts(parm->box,box_size,fr->shift_vec,FALSE); 
   
@@ -272,9 +267,6 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     copy_rvec(x[i],pos[Min][i]); 
     copy_rvec(x[i],pos[TRY][i]); 
   } 
-  /* Initiate PPPM if necessary */
-  if (fr->eeltype == eelPPPM) 
-    init_pppm(log,cr,FALSE,TRUE,box_size,ftp2fn(efHAT,nfile,fnm),&parm->ir);
     
   /* Set variables for stepsize (in nm). This is the largest  
    * step that we are going to make in any direction. 

@@ -105,7 +105,7 @@ int main(int argc,char *argv[])
   };
   t_edsamyn edyn;
   
-  cr = init_par(argv);
+  cr = init_par(&argc,argv);
   bVerbose = bVerbose && MASTER(cr);
   edyn.bEdsam=FALSE;
   

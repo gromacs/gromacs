@@ -55,7 +55,6 @@ static char *SRCID_congrad_c = "$Id$";
 #include "tgroup.h"
 #include "mdebin.h"
 #include "mdrun.h"
-#include "congrad.h"
 
 static void sp_header(FILE *out,real epot,real ftol)
 {
@@ -69,13 +68,12 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     t_groups *grps,t_nsborder *nsb,
 	     rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 	     tensor ekin,real ener[],t_nrnb nrnb[],
-	     bool bVerbose,t_commrec *cr,t_graph *graph)
+	     bool bVerbose,t_commrec *cr,t_graph *graph,
+	     t_forcerec *fr,rvec box_size)
 {
-  t_forcerec *fr;
   static char *CG="Conjugate Gradients";
   real   step0,lambda,ftol,fmax,testf,zet,w,smin;
-  rvec   *p,*f,*xprime;
-  rvec   *xx,*ff,box_size;
+  rvec   *p,*f,*xprime,*xx,*ff;
   real   EpotA=0.0,EpotB=0.0,a=0.0,b,beta=0.0,gpa,gpb;
   real   vcm[4],fnorm,pnorm,fnorm_old;
   t_mdebin   *mdebin;
@@ -93,11 +91,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     lambda       = parm->ir.init_lambda;
   else 
     lambda = 0.0;
-  fr=mk_forcerec();
-  init_forcerec(log,fr,&(parm->ir),&(top->blocks[ebMOLS]),cr,
-		&(top->blocks[ebCGS]),&(top->idef),mdatoms,parm->box,FALSE);
-  for(m=0; (m<DIM); m++)
-    box_size[m]=parm->box[m][m];
+    
   clear_rvec(mu_tot);
   calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
   
@@ -279,7 +273,9 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       fprintf(stderr,"gpa= %20.12e, gpb= %20.12e\n",gpa,gpb);
       fprintf(stderr,"a= %20.12e, b= %20.12e\n",a,b);
       fprintf(stderr,"EpotA= %20.12e, EpotB= %20.12e\n",EpotA,EpotB);
-      fatal_error(0,"Negative number for sqrt encountered (%f)",w);
+      fprintf(stderr,"Negative number for sqrt encountered (%f)\n",w);
+      fprintf(stderr,"Terminating minimization\n");
+      break;
     }      
     w    = sqrt(w);
     smin = b - ((gpb+w-zet)*(b-a))/((gpb-gpa)+2.0*w);

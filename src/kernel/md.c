@@ -85,9 +85,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
 	     rvec buf[],t_mdatoms *mdatoms,
 	     t_nsborder *nsb,t_nrnb nrnb[],
-	     t_graph *graph,t_edsamyn *edyn)
+	     t_graph *graph,t_edsamyn *edyn,
+	     t_forcerec *fr,rvec box_size)
 {
-  t_forcerec *fr;
   t_mdebin   *mdebin;
   int        fp_ene,step;
   time_t     start_t;
@@ -98,7 +98,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   char       *traj,*enerfile;
   char       *xtc_traj; /* compressed trajectory filename */
   int        i,m;
-  rvec       vcm,box_size,mu_tot;
+  rvec       vcm,mu_tot;
   rvec       *xx,*vv,*ff;
   int        natoms,status;
   
@@ -127,11 +127,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   init_nrnb(&mynrnb);
   
-  fr=mk_forcerec();
-  init_forcerec(log,fr,&(parm->ir),&(top->blocks[ebMOLS]),cr,
-		&(top->blocks[ebCGS]),&(top->idef),mdatoms,parm->box,FALSE);
-  for(m=0; (m<DIM); m++)
-    box_size[m]=parm->box[m][m];
   calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
   
   fprintf(log,"Removing pbc first time\n");
@@ -193,10 +188,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       fprintf(stderr,"starting mdrun '%s'\n%d steps, %8.1f ps.\n\n",
 	      *(top->name),parm->ir.nsteps,parm->ir.nsteps*parm->ir.delta_t);
   }
-  
-  /* Initiate PPPM if necessary */
-  if (fr->eeltype == eelPPPM)
-    init_pppm(log,cr,FALSE,TRUE,box_size,ftp2fn(efHAT,nfile,fnm),&parm->ir);
   
   /***********************************************************
    *
