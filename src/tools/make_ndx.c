@@ -645,6 +645,36 @@ static bool parse_entry(char **string,t_atoms *atoms,
   return bRet;
 }
 
+static void list_residues(t_atoms *atoms)
+{
+  int i,j,start,end,prev_resnr,resnr;
+  bool bDiff;
+
+  /* Print all the residues, assuming continuous resnr count */ 
+  start = atoms->atom[0].resnr;
+  prev_resnr = start;
+  for(i=0; i<atoms->nr; i++) {
+    resnr = atoms->atom[i].resnr;
+    if ((resnr != prev_resnr) || (i==atoms->nr-1)) {
+      if (bDiff=strcmp(*atoms->resname[resnr],*atoms->resname[start]) || 
+	  (i==atoms->nr-1)) {
+	if (bDiff)
+	  end = prev_resnr;
+	else
+	  end = resnr;
+	if (end < start+3)
+	  for(j=start; j<=end; j++)
+	    printf("%4d %-5s",j+1,*(atoms->resname[j]));
+	else
+	  printf(" %4d - %4d %-5s  ",start+1,end+1,*(atoms->resname[start]));
+	start = resnr;
+      }
+    }
+    prev_resnr = resnr;
+  }   
+  printf("\n");
+}
+
 static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
 {
   static char **atnames;
@@ -756,15 +786,9 @@ static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
       }
     } else if (!strncmp(string,"case",4)) {
       bCase=!bCase;
-    } else if (string[0] == 'l') {
-      for(i=0; i<atoms->nr; i++)
-	if ((i==0) || ((atoms->atom[i-1].resnr!=atoms->atom[i].resnr)
-		  && (strcmp(*atoms->resname[atoms->atom[i-1].resnr],"SOL")
-		      || strcmp(*atoms->resname[atoms->atom[i].resnr],"SOL"))))
-	  printf("%4d %-5s",atoms->atom[i].resnr+1,
-		 *(atoms->resname[atoms->atom[i].resnr]));
-      printf("\n");
-    } else if (!strncmp(string,"splitch",7)) {
+    } else if (string[0] == 'l')
+      list_residues(atoms);
+    else if (!strncmp(string,"splitch",7)) {
       string+=7;
       if (parse_int(&string,&sel_nr))
 	if ((sel_nr>=0) && (sel_nr<block->nr)) 
@@ -800,7 +824,6 @@ static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
 	    for(i=0; i<nr; i++)
 	      index1[i]=index[i];
 	    strcpy(gname1,gname);
-	    string++;
 	    if (parse_entry(&string,atoms,block,gn,&nr2,index2,gname2)) {
 	      if (bOr) {
 		or_groups(nr1,index1,nr2,index2,&nr,index);
