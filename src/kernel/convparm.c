@@ -51,9 +51,9 @@
 #include "names.h"
 
 static void assign_param(t_functype ftype,t_iparams *new,
-			 real old[MAXFORCEPARAM])
+			 real old[MAXFORCEPARAM],int comb,real reppow)
 {
-  int i,j;
+  int  i,j;
 
   /* Set to zero */
   for(j=0; (j<MAXFORCEPARAM); j++)
@@ -138,14 +138,26 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->bham.c = old[2];
     break;
   case F_LJ14:
-    new->lj14.c6A  = old[0]; 
-    new->lj14.c12A = old[1];
-    new->lj14.c6B  = old[2]; 
-    new->lj14.c12B = old[3];
+    if (comb == eCOMB_ARITHMETIC || comb == eCOMB_GEOM_SIG_EPS) {
+      new->lj14.c6A  = 4*old[1]*pow(old[0],6.0);
+      new->lj14.c12A = 4*old[1]*pow(old[0],reppow);
+      new->lj14.c6B  = 4*old[3]*pow(old[2],6.0);
+      new->lj14.c12B = 4*old[3]*pow(old[2],reppow);
+    } else {
+      new->lj14.c6A  = old[0]; 
+      new->lj14.c12A = old[1];
+      new->lj14.c6B  = old[2]; 
+      new->lj14.c12B = old[3];
+    }
     break;
   case F_LJ:
-    new->lj.c6  = old[0]; 
-    new->lj.c12 = old[1];
+    if (comb == eCOMB_ARITHMETIC || comb == eCOMB_GEOM_SIG_EPS) {
+      new->lj.c6  = 4*old[1]*pow(old[0],6);
+      new->lj.c12 = 4*old[1]*pow(old[0],reppow);
+    } else {
+      new->lj.c6  = old[0]; 
+      new->lj.c12 = old[1];
+    }
     break;
   case F_PDIHS:
   case F_ANGRES:
@@ -257,12 +269,13 @@ static void assign_param(t_functype ftype,t_iparams *new,
 }
 
 static int enter_params(t_idef *idef, t_functype ftype,
-			real forceparams[MAXFORCEPARAM],int start,bool bAppend)
+			real forceparams[MAXFORCEPARAM],int comb,real reppow,
+			int start,bool bAppend)
 {
   t_iparams new;
   int       type;
   
-  assign_param(ftype,&new,forceparams);
+  assign_param(ftype,&new,forceparams,comb,reppow);
   if (!bAppend) {
     for (type=start; (type<idef->ntypes); type++) {
       if (idef->functype[type]==ftype) {
@@ -297,7 +310,7 @@ static void append_interaction(t_ilist *ilist,
     ilist->iatoms[where1++]=a[i];
 }
 
-static void enter_function(t_params *p,t_functype ftype,
+static void enter_function(t_params *p,t_functype ftype,int comb,real reppow,
                            t_idef *idef,int *maxtypes,bool bNB,bool bAppend)
 {
   int     k,type,nr,nral,delta,start;
@@ -319,7 +332,7 @@ static void enter_function(t_params *p,t_functype ftype,
 	fprintf(debug,"%s, line %d: srenewed idef->functype and idef->iparams to %d\n",
 		__FILE__,__LINE__,*maxtypes);
     }
-    type = enter_params(idef,ftype,p->param[k].c,start,bAppend);
+    type = enter_params(idef,ftype,p->param[k].c,comb,reppow,start,bAppend);
     if (!bNB)
       append_interaction(il,type,nral,p->param[k].a);
   }
@@ -336,7 +349,7 @@ static void new_interaction_list(t_ilist *ilist)
 }
 
 void convert_params(int atnr,t_params nbtypes[],
-		    t_params plist[],t_idef *idef)
+		    t_params plist[],int comb,real reppow,t_idef *idef)
 {
   int    i,j,maxtypes;
   unsigned long  flags;
@@ -352,18 +365,19 @@ void convert_params(int atnr,t_params nbtypes[],
     idef->il[i].nr=0;
     idef->il[i].iatoms=NULL;
   }
-  enter_function(&(nbtypes[F_LJ]),  (t_functype)F_LJ,  idef,
+  enter_function(&(nbtypes[F_LJ]),  (t_functype)F_LJ,    comb,reppow,idef,
 		 &maxtypes,TRUE,TRUE);
-  enter_function(&(nbtypes[F_BHAM]),(t_functype)F_BHAM,idef,
+  enter_function(&(nbtypes[F_BHAM]),(t_functype)F_BHAM,  comb,reppow,idef,
 		 &maxtypes,TRUE,TRUE);
-  enter_function(&(plist[F_POSRES]),(t_functype)F_POSRES,idef,
+  enter_function(&(plist[F_POSRES]),(t_functype)F_POSRES,comb,reppow,idef,
 		 &maxtypes,FALSE,TRUE);
 
   for(i=0; (i<F_NRE); i++) {
     flags = interaction_function[i].flags;
     if ((i != F_LJ) && (i != F_BHAM) && (i != F_POSRES) &&
 	((flags & IF_BOND) || (flags & IF_VSITE) || (flags & IF_CONSTRAINT)))
-      enter_function(&(plist[i]),(t_functype)i,idef,&maxtypes,FALSE,FALSE);
+      enter_function(&(plist[i]),(t_functype)i,comb,reppow,idef,
+		     &maxtypes,FALSE,FALSE);
   }
   if (debug)
     fprintf(debug,"%s, line %d: There are %d functypes in idef\n",

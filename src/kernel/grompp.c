@@ -360,7 +360,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
 		       bool bGenVel,bool bVerbose,
 		       bool bSort,t_state *state,
 		       t_atomtype *atype,t_topology *sys,
-		       t_molinfo *msys,t_params plist[],
+		       t_molinfo *msys,t_params plist[],int *comb,real *reppow,
 		       int nnodes,bool bEnsemble,bool bMorse,
 		       bool bCheckPairs,int *nerror)
 {
@@ -377,7 +377,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
   
   /* TOPOLOGY processing */
   msys->name=do_top(bVerbose,topfile,topppfile,opts,&(sys->symtab),
-		    plist,atype,&nrmols,&molinfo,ir,&Nsim,&Sims);
+		    plist,comb,reppow,atype,&nrmols,&molinfo,ir,&Nsim,&Sims);
   
   if (bCheckPairs)
     check_pairs(nrmols,molinfo,atype->nr,atype->nb);
@@ -867,11 +867,11 @@ int main (int argc, char *argv[])
   t_molinfo    msys;
   t_atomtype   atype;
   t_inputrec   *ir;
-  int          natoms,nvsite,nc;
+  int          natoms,nvsite,nc,comb;
   int          *forward=NULL;
   t_params     *plist;
   t_state      state;
-  real         max_spacing,*capacity;
+  real         max_spacing,*capacity,reppow;
   char         fn[STRLEN],fnB[STRLEN],*mdparin;
   int          nerror;
   bool         bNeedVel,bGenVel;
@@ -984,7 +984,8 @@ int main (int argc, char *argv[])
     gmx_fatal(FARGS,"%s does not exist",fn);
   forward=new_status(fn,opt2fn_null("-pp",NFILE,fnm),opt2fn("-c",NFILE,fnm),
 		     opts,ir,bGenVel,bVerbose,bSort,&state,
-		     &atype,sys,&msys,plist,bShuffle ? nnodes : 1,
+		     &atype,sys,&msys,plist,&comb,&reppow,
+		     bShuffle ? nnodes : 1,
 		     (opts->eDisre==edrEnsemble),opts->bMorse,
 		     bCheckPairs,&nerror);
   
@@ -1078,7 +1079,7 @@ int main (int argc, char *argv[])
 
   if (bVerbose) 
     fprintf(stderr,"converting bonded parameters...\n");
-  convert_params(atype.nr, plist, msys.plist, &sys->idef);
+  convert_params(atype.nr, plist, msys.plist, comb, reppow, &sys->idef);
   
   if (debug)
     pr_symtab(debug,0,"After convert_params",&sys->symtab);

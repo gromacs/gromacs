@@ -263,12 +263,13 @@ static char **read_topol(char        *infile,
 			 int         *nrmols,
 			 t_molinfo   **molinfo,
 			 t_params    plist[],
+			 int         *combination_rule,
+			 real        *reppow,
 			 int         nshake,
 			 real        *fudgeQQ,
 			 int         *nsim,
 			 t_simsystem **sims,
-			 bool        bVerbose,
-			 int         *combination_rule)
+			 bool        bVerbose)
 {
   FILE       *in;
   int        i,nb_funct,comb;
@@ -287,7 +288,6 @@ static char **read_topol(char        *infile,
   t_nbparam  **nbparam,**pair;
   t_block2   *block2;
   real       fudgeLJ=-1;    /* Multiplication factor to generate 1-4 from LJ */
-  real       npow=12.0;     /* Default value for repulsion power */
   bool       bReadDefaults,bReadMolType,bGenPairs;
   double     qt=0,qBt=0; /* total charge */
   t_bond_atomtype *batype;
@@ -307,6 +307,7 @@ static char **read_topol(char        *infile,
   pair     = NULL;              /* The temporary pair interaction matrix */
   block2   = NULL;		/* the extra exclusions			 */
   nb_funct = F_LJ;
+  *reppow  = 12.0;              /* Default value for repulsion power     */
   
   snew(batype,1);
   init_bond_atomtype(batype);
@@ -407,7 +408,7 @@ static char **read_topol(char        *infile,
 	    if (nscan >= 5)
 	      *fudgeQQ  = fQQ;
 	    if (nscan >= 6)
-	      npow      = fPOW;
+	      *reppow   = fPOW;
 	  }
 	  nb_funct = ifunc_index(d_nonbond_params,nb_funct);
 	  
@@ -456,7 +457,7 @@ static char **read_topol(char        *infile,
 	case d_moleculetype: {
 	  if (!bReadMolType) {
 	    ncombs = atype->nr*(atype->nr+1)/2;
-	    generate_nbparams(comb,nb_funct,&(plist[nb_funct]),atype,npow);
+	    generate_nbparams(comb,nb_funct,&(plist[nb_funct]),atype);
 	    ncopy = copy_nbparams(nbparam,nb_funct,&(plist[nb_funct]),
 				  atype->nr);
 	    fprintf(stderr,"Generated %d of the %d non-bonded parameter combinations\n",ncombs-ncopy,ncombs);
@@ -576,6 +577,8 @@ char **do_top(bool         bVerbose,
 	      t_gromppopts *opts,
 	      t_symtab     *symtab,
 	      t_params     plist[],
+	      int          *combination_rule,
+	      real         *repulsion_power,
 	      t_atomtype   *atype,
 	      int          *nrmols,
 	      t_molinfo    **molinfo,
@@ -586,7 +589,6 @@ char **do_top(bool         bVerbose,
   /* Tmpfile might contain a long path */
   char tmpfile[32];
   char **title;
-  int  combination_rule;
   
   init_atomtype(atype);
 
@@ -602,9 +604,9 @@ char **do_top(bool         bVerbose,
 
   if (bVerbose) printf("processing topology...\n");
   title=read_topol(tmpfile,symtab,atype,nrmols,molinfo,
-		   plist,opts->nshake,&ir->fudgeQQ,nsim,sims,bVerbose,
-		   &combination_rule);
-  if ((combination_rule != eCOMB_ARITHMETIC) && 
+		   plist,combination_rule,repulsion_power,
+		   opts->nshake,&ir->fudgeQQ,nsim,sims,bVerbose);
+  if ((*combination_rule != eCOMB_GEOMETRIC) && 
       (ir->vdwtype == evdwUSER)) {
     warning("Using sigma/epsilon based combination rules with"
 	    " user supplied potential function may produce unwanted"

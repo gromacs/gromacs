@@ -52,12 +52,11 @@
 #include "fatal.h"
 
 
-void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype,
-		       real npow)
+void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype)
 {
   int   i,j,k=-1,nf;
   int   nr,nrfp;
-  real  c,sig6,sigma_ij,eps_ij,bi,bj;
+  real  c,bi,bj;
   char  errbuf[256];
 
   /* Lean mean shortcuts */
@@ -70,7 +69,7 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype,
   switch(ftype) {
   case F_LJ:
     switch (comb) {
-    case eCOMB_ARITHMETIC:
+    case eCOMB_GEOMETRIC:
       /* Gromos rules */
       for(i=k=0; (i<nr); i++)
 	for(j=0; (j<nr); j++,k++)
@@ -80,29 +79,21 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype,
 	  }
       break;
     
-    case eCOMB_GEOMETRIC:
+    case eCOMB_ARITHMETIC:
       /* c0 and c1 are epsilon and sigma */
       for (i=k=0; (i < nr); i++)
 	for (j=0; (j < nr); j++,k++) {
-	  sigma_ij = (atype->nb[i].C0+atype->nb[j].C0)*0.5;
-	  eps_ij   = sqrt(atype->nb[i].C1*atype->nb[j].C1);
-	  sig6     = pow(sigma_ij,6.0);
-	  
-	  plist->param[k].c[0] = 4*eps_ij*sig6;
-	  plist->param[k].c[1] = 4*eps_ij*sig6*sig6;
+	  plist->param[k].c[0] = (atype->nb[i].C0+atype->nb[j].C0)*0.5;
+	  plist->param[k].c[1] = sqrt(atype->nb[i].C1*atype->nb[j].C1);
 	}
       
       break;
-    case eCOMB_ARITH_SIG_EPS:
+    case eCOMB_GEOM_SIG_EPS:
       /* c0 and c1 are epsilon and sigma */
       for (i=k=0; (i < nr); i++)
 	for (j=0; (j < nr); j++,k++) {
-	  sigma_ij = sqrt(atype->nb[i].C0*atype->nb[j].C0);
-	  eps_ij   = sqrt(atype->nb[i].C1*atype->nb[j].C1);
-	  sig6     = pow(sigma_ij,6.0);
-	  
-	  plist->param[k].c[0] = 4*eps_ij*sig6;
-	  plist->param[k].c[1] = 4*eps_ij*pow(sigma_ij,npow);
+	  plist->param[k].c[0] = sqrt(atype->nb[i].C0*atype->nb[j].C0);
+	  plist->param[k].c[1] = sqrt(atype->nb[i].C1*atype->nb[j].C1);
 	}
       
       break;
@@ -529,9 +520,9 @@ void push_nbt(directive d,t_nbparam **nbt,t_atomtype *atype,
   const char *form3="%*s%*s%*s%lf%lf%lf";
   const char *form4="%*s%*s%*s%lf%lf%lf%lf";
   char    a0[80],a1[80];
-  int     i,f,k,n,ftype,atnr,nrfp;
+  int     i,f,n,ftype,atnr,nrfp;
   double  c[4];
-  real    cr[4];
+  real    cr[4],sig6;
   atom_id ai,aj;
   t_nbparam *nbp;
   bool    bId;

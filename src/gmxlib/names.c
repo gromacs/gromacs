@@ -124,7 +124,7 @@ const char *enbf_names[eNBF_NR+1] = {
 };
 
 const char *ecomb_names[eCOMB_NR+1] = {
-  "", "Arithmetic", "Geometric", "ArithSigEps", NULL
+  "", "Geometric", "Arithmetic", "GeomSigEps", NULL
 };
 
 const char *gtypes[egcNR+1] = {

@@ -40,6 +40,7 @@
 #include "typedefs.h"
 
 extern void convert_params(int atnr,t_params plist[],
-			   t_params nbtypes[],t_idef *idef);
+			   t_params nbtypes[],int comb,real reppow,
+			   t_idef *idef);
 
 #endif	/* _convparm_h */

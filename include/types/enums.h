@@ -100,7 +100,7 @@ enum {
 
 /* Combination rule things */
 enum { 
-  eCOMB_NONE, eCOMB_ARITHMETIC, eCOMB_GEOMETRIC, eCOMB_ARITH_SIG_EPS, eCOMB_NR 
+  eCOMB_NONE, eCOMB_GEOMETRIC, eCOMB_ARITHMETIC, eCOMB_GEOM_SIG_EPS, eCOMB_NR 
 };
 
 /* NBF selection */
