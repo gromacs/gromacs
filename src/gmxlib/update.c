@@ -984,8 +984,14 @@ void update(int          natoms, 	/* number of atoms in simulation */
 		  p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
 	  fprintf(stdlog,"%s",buf);
 	  fprintf(stderr,"%s",buf);
-	  if (p_max > 0.5)
-	    fatal_error(0,"Bond deviates more than half its own length");
+	  if (p_max > 0.5) {
+	    sprintf(buf,"step%d.pdb",step-1);
+	    write_sto_conf(buf,"one step before crash",&(top->atoms),x,NULL,box);
+	    sprintf(buf,"step%d.pdb",step);
+	    write_sto_conf(buf,"crashed",&(top->atoms),xprime,NULL,box);  
+	    fatal_error(0,"Bond deviates more than half its own length,\n"
+			"             wrote pdb files with previous and current coordinates");
+	  }
 	}
       }
 
