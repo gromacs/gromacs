@@ -142,7 +142,7 @@ motion removal (should only be used for vacuum simulations)
 <dt><h4>ld_seed: </b>(1993) [integer]</h4>
 <dd>used to initialize random generator for thermal noise,
 when <b>ld_seed</b> is set to -1, the seed is calculated as
-<tt>(time() + getpid()) % 65536</tt>
+<tt>(time() + getpid()) % 1000000</tt>
 </dl>
 
 <A NAME="em"><br>
@@ -510,7 +510,7 @@ This is only meaningful with integrator <b><A HREF="#run">md</A></b>.
 <dt><h4>gen_seed: </b>(173529) [integer]</h4>
 <dd>used to initialize random generator for random velocities,
 when <b>gen_seed</b> is set to -1, the seed is calculated as
-<tt>(time() + getpid()) % 65536</tt>
+<tt>(time() + getpid()) % 1000000</tt>
 </dl>
 
 <A NAME="sol"><br>

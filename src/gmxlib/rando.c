@@ -34,7 +34,7 @@ static char *SRCID_rando_c = "$Id$";
 
 int make_seed(void)
 {
-  return (int)(((long)time(NULL)+(long)getpid()) % (long)65536);
+  return (int)(((long)time(NULL)+(long)getpid()) % (long)1000000);
 }
 	
 real rando(int *ig)

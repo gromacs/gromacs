@@ -46,7 +46,7 @@ extern real gauss(real am, real sd, int *ig);
  */
 
 extern int make_seed(void);
-/* Make a random seed: (time+getpid) % 65536 */
+/* Make a random seed: (time+getpid) % 1000000 */
 
 extern real rando(int *ig);
 /* Generate a random number 0 <= r < 1. ig is the (address of) the
