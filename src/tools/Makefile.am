@@ -37,19 +37,6 @@ bin_PROGRAMS = \
 	trjorder	wheel		xpm2ps		genion		\
 	anadock		cdist		disco           
 
-dist_bin_SCRIPTS = \
-	g_energy	g_wham		g_velacc	g_traj		\
-	g_tcaf		g_sorient	g_sgangle	g_sas		\
-	g_saltbr	g_rotacf	g_rmsf		g_rmsdist	\
-	g_rms		g_rdf		g_rama		g_potential	\
-	g_order		g_nmens		g_nmeig		g_msd		\
-	g_morph		g_mindist	g_mdmat		g_lie		\
-	g_helix		g_hbond		g_h2order	g_gyrate	\
-	g_filter	g_enemat	g_dyndom	g_dist		\
-	g_disre		g_dipoles	g_dih		g_dielectric	\
-	g_density	g_covar		g_confrms	g_clustsize	\
-	g_cluster	g_chi		g_bundle	g_bond		\
-	g_angle		g_analyze	g_anaeig	
 
 genbox_SOURCES       = 	genbox.c addconf.c addconf.h
 genion_SOURCES       = 	genion.c calcpot.c calcpot.h edittop.c

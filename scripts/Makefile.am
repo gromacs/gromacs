@@ -10,7 +10,7 @@ transform=
 EXTRA_SCRIPTS = grompplog2top       make_gromos_nb.pl   make_gromos_rtp.py \
 		make_gromos_bon.pl make_gromos_rtp.pl  
 
-dist_bin_SCRIPTS =   
+dist_bin_SCRIPTS =   \
 	GMXRC GMXRC.csh GMXRC.bash 	GMXRC.zsh 			\
 	completion.csh 	completion.bash completion.zsh			\
 	g_energy        g_wham          g_velacc        g_traj          \
@@ -27,9 +27,10 @@ dist_bin_SCRIPTS =
 	g_angle         g_analyze       g_anaeig        
 
 
-EXTRA_DIST = GMXRC.in GMXRC.csh.in GMXRC.bash.in GMXRC.zsh.in \
-	     grompplog2top       make_gromos_nb.pl   make_gromos_rtp.py \
-	     make_gromos_bon.pl make_gromos_rtp.pl  
+EXTRA_DIST = \
+	GMXRC.in GMXRC.csh.in GMXRC.bash.in GMXRC.zsh.in \
+	grompplog2top       make_gromos_nb.pl   make_gromos_rtp.py \
+	make_gromos_bon.pl make_gromos_rtp.pl  
 
 GMXRC:  GMXRC.in
 	cat $(srcdir)/GMXRC.in | sed 's,@bindir\@,$(bindir),' > GMXRC
