@@ -443,29 +443,25 @@ void gmx_sumi(int nr,int r[],const t_commrec *cr)
 
 void gmx_finalize(t_commrec *cr)
 {
+  int ret;
 #ifndef USE_MPI
   MYFATAL("gmx_finalize");
 #else
 #ifdef MPICH_NAME
-#ifdef DEBUG
-  fprintf(stdlog,"In gmx_finalize. Will try to synchronize the ring\n");
-#endif
+  if (debug)
+    fprintf(debug,"In gmx_finalize. Will try to synchronize the ring\n");
   gmx_sync_ring(cr->nodeid,cr->nnodes,cr->left,cr->right);
-#ifdef DEBUG
-  fprintf(stdlog,"Succesfully did so! Exiting now.\n");
-#endif
+  if (debug)
+    fprintf(debug,"Succesfully did so! Exiting now.\n");
   thanx(stdlog);
   exit(0);
 #else
-#ifdef DEBUG
-  fprintf(stdlog,"Will call MPI_Finalize now\n");
-  fflush(stdlog);
-#endif
+  if (debug)
+    fprintf(debug,"Will call MPI_Finalize now\n");
   ret = MPI_Finalize();
-#ifdef DEBUG
-  fprintf(stdlog,"Return code from MPI_Finalize = %d\n",ret);
-  fflush(stdlog);
-#endif
+  if (debug)
+    fprintfdebug,"Return code from MPI_Finalize = %d\n",ret);
 #endif
 #endif
 }
+
