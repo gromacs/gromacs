@@ -373,12 +373,14 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   };
 #define NPCA_PA asize(pca_pa)
 
+#ifdef DEBUGPAR
   debug_par();
   fprintf(stderr,"PID=%d, argc = %d\n",gmx_cpu_id(),*argc);
   for(i=0; (i<*argc); i++)
     fprintf(stderr,"PID=%d, argv[%d] = %s\n",gmx_cpu_id(),i,argv[i]);
+#endif
   /* Check for double arguments */
-  /*for (i=1; (i<*argc); i++) {
+  for (i=1; (i<*argc); i++) {
     if (argv[i] && (strlen(argv[i]) > 1) && (!isdigit(argv[i][1]))) {
       for (j=i+1; (j<*argc); j++) {
 	if ( (argv[i][0]=='-') && (argv[j][0]=='-') && 
@@ -390,8 +392,10 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 	}
       }
     }
-    }*/
+  }
+#ifdef DEBUGPAR
   debug_par();
+#endif
   /* Handle the flags argument, which is a bit field 
    * The FF macro returns whether or not the bit is set
    */
