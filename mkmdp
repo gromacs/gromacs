@@ -43,6 +43,7 @@ sed \
 -e 's/<sub>\([^<]*\)<\/sub>/$_{\1}$/g' \
 -e 's/<[tT][tT]>\([^<]*\)<\/[tT][tT]>/{\\tt \1}/g' \
 -e 's/<[pP][rR][eE]>\([^<]*\)<\/[pP][rR][eE]>/\\\\{\\tt\1}\\\\/g' \
+-e 's/<\!--Idx-->\([^>]*\)<\!--EIdx-->/\\normindex{\1}/g' \
 -e 's/<[hH]1>\([^<]*\)<\/[hH]1>/\\section{\1}/g' \
 -e 's/<[hH]3>\([^<]*\)<\/[hH]3>/\\subsection{\1}/g' \
 -e 's/<[hH]4>\([^<]*\)<\/[hH]4>/{\\bf \1}/g' \
@@ -76,15 +77,9 @@ awk '{\
       output=0;\
   }\
   if (output) print;\
-}' temp4 >! temp5
+}' temp4 >! $TEXMDPOPT
 
-echo ""
-echo "adding index links"
-foreach i ( "charge group" "conjugate gradient" "constraints" "coulomb" "cut-off" "dielectric constant" "dispersion" "distance restraints" "electrostatic force" "energy file" "grompp" "leap-frog" "lincs" "log file" "mdrun" "neighborlist" "particles" "performance" "PPPM" "PME" "Ewald" "position restraints" "pressure" "pressure coupling" "shake" "simulated annealing" "steepest descent" "temperature" "temperature coupling" "topology" "topology file" )
-  sed -e "s/$i/\\normindex{$i}/g" temp5 >! temp6
-  mv temp6 temp5
-end
-mv temp5 $TEXMDPOPT
+echo "."
 
 \rm temp1 temp2 temp3 temp4
 
