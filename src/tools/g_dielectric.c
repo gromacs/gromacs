@@ -50,7 +50,7 @@ int calc_nbegin(int nx,real x[],real tbegin)
   real dt,dtt;
   
   /* Assume input x is sorted */  
-  for(nbegin=0; (nbegin < nx) && (x[nbegin] < tbegin); nbegin++)
+  for(nbegin=0; (nbegin < nx) && (x[nbegin] <= tbegin); nbegin++)
     ;
   if ((nbegin == nx) || (nbegin == 0))
     fatal_error(0,"Begin time %f not in x-domain [%f through %f]\n",
@@ -66,55 +66,52 @@ int calc_nbegin(int nx,real x[],real tbegin)
   return nbegin;
 }
 
-real numerical_deriv(int nx,real x[],real y[],real fity[],real dy[],
+real numerical_deriv(int nx,real x[],real y[],real fity[],real combined[],real dy[],
 		     real tendInt,int nsmooth)
 {
   FILE *tmpfp;
   int  i,nbegin,i0,i1;
   real fac,fx,fy,integralSmth;
-  real *tmp;
   
   nbegin = calc_nbegin(nx,x,tendInt);
-  snew(tmp,nx);
   if (nsmooth == 0) {
     for(i=0; (i<nbegin); i++)
-      tmp[i]=y[i];
+      combined[i]=y[i];
     fac = y[nbegin]/fity[nbegin];
     fprintf(stderr,"scaling fitted curve by %g\n",fac);
     for(i=nbegin; (i<nx); i++)
-      tmp[i]=fity[i]*fac;
+      combined[i]=fity[i]*fac;
   }
   else {
     i0 = max(0,nbegin);
     i1 = min(nx-1,nbegin+nsmooth);
     fprintf(stderr,"Making smooth transition from %d thru %d\n",i0,i1);
     for(i=0; (i<i0); i++)
-      tmp[i]=y[i];
+      combined[i]=y[i];
     for(i=i0; (i<=i1); i++) {
       fx = (i1-i)/(real)(i1-i0);
       fy = (i-i0)/(real)(i1-i0);
-      /* fprintf(stderr,"factors for smoothing: %10g %10g\n",fx,fy);*/
-      tmp[i] = fx*y[i] + fy*fity[i];
+      if (debug)
+	fprintf(debug,"x: %g factors for smoothing: %10g %10g\n",x[i],fx,fy);
+      combined[i] = fx*y[i] + fy*fity[i];
     } 
     for(i=i1+1; (i<nx); i++)
-      tmp[i]=fity[i];
+      combined[i]=fity[i];
   }
   
   tmpfp = ffopen("integral_smth.xvg","w");
-  integralSmth=print_and_integrate(tmpfp,nx,x[1]-x[0],tmp,1);
+  integralSmth=print_and_integrate(tmpfp,nx,x[1]-x[0],combined,1);
   fprintf(stderr,"SMOOTH integral = %10.5e\n",integralSmth);
 
-  dy[0] = (tmp[1]-tmp[0])/(x[1]-x[0]);
+  dy[0] = (combined[1]-combined[0])/(x[1]-x[0]);
   for(i=1; (i<nx-1); i++) {
-    dy[i] = (tmp[i+1]-tmp[i-1])/(x[i+1]-x[i-1]);
+    dy[i] = (combined[i+1]-combined[i-1])/(x[i+1]-x[i-1]);
   }
-  dy[nx-1] = (tmp[nx-1]-tmp[nx-2])/(x[nx-1]-x[nx-2]);
+  dy[nx-1] = (combined[nx-1]-combined[nx-2])/(x[nx-1]-x[nx-2]);
   
   for(i=0; (i<nx); i++)
     dy[i] *= -1;
     
-  sfree(tmp);
-  
   return integralSmth;
 }
 
@@ -145,7 +142,7 @@ void do_four(char *fn,char *cn,int nx,real x[],real dy[],real eps0,real epsRF)
   
   dt=x[1]-x[0];
   if (epsRF == 0)
-    fac = 0;
+    fac = (eps0-1)/tmp[0].re;
   else
     fac=((eps0-1)/(2*epsRF+eps0))/tmp[0].re;  
   fp=xvgropen(fn,"Epsilon(\\8w\\4)","Freq. (GHz)","eps");
@@ -153,12 +150,18 @@ void do_four(char *fn,char *cn,int nx,real x[],real dy[],real eps0,real epsRF)
   maxeps = 0;
   numax  = 0;
   for(i=0; (i<nxsav); i++) {
-    gw     = rcmul(fac,tmp[i]);
-    hw     = rcmul(2*epsRF,gw);
-    hw.re += 1.0;
-    gw.re  = 1.0 - gw.re;
-    gw.im  = -gw.im;
-    kw     = cdiv(hw,gw);
+    if (epsRF == 0) {
+      kw.re = 1+fac*tmp[i].re;
+      kw.im = 1+fac*tmp[i].im;
+    } 
+    else {
+      gw     = rcmul(fac,tmp[i]);
+      hw     = rcmul(2*epsRF,gw);
+      hw.re += 1.0;
+      gw.re  = 1.0 - gw.re;
+      gw.im  = -gw.im;
+      kw     = cdiv(hw,gw);
+    }
     kw.im *= -1;
     
     nu     = (i+1)*1000.0/(nnx*dt);
@@ -212,7 +215,7 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
   int  i,j,nx,ny,nxtail;
   real **y,dt,integral,fitintegral,*fitparms,fac,rffac;
-
+  char *legend[] = { "Correlation", "Std. Dev.", "Fit", "Combined", "Derivative" };
   static char *fix=NULL;
   static int bFour = 0,bX = 1,nfitparm=2,nsmooth=3;
   static real tendInt=5.0,tbegin=5.0,tend=500.0;
@@ -289,10 +292,11 @@ int main(int argc,char *argv[])
   if (nfitparm > 2)
     fitparms[2]=tau2;  
   
-  if (ny < 5) {
-    srenew(y,5);
+  if (ny < 6) {
+    srenew(y,6);
     snew(y[3],nx);
     snew(y[4],nx);
+    snew(y[5],nx);
   } 
   integral = print_and_integrate(NULL,calc_nbegin(nx,y[0],tbegin),
 				 y[0][1]-y[0][0],y[1],1);
@@ -315,16 +319,16 @@ int main(int argc,char *argv[])
 	  fitparms[0]*(1 + fitparms[1]*lambda),
 	  1 + ((1 - fitparms[1])*(eps0 - 1))/(1 + fitparms[1]*lambda));
 
-  fitintegral=numerical_deriv(nx,y[0],y[1],y[3],y[4],tendInt,nsmooth);
+  fitintegral=numerical_deriv(nx,y[0],y[1],y[3],y[4],y[5],tendInt,nsmooth);
   fprintf(stderr,"FIT INTEGRAL (tau_M): %5.1f, tau_D = %5.1f\n",
 	  fitintegral,fitintegral*rffac);
+	  
   /* Now we have the negative gradient of <Phi(0) Phi(t)> */
-
-  dump_xvg(opt2fn("-d",NFILE,fnm),"Corr, Std Dev, Fit & Deriv",nx-1,5,y);
+  write_xvg(opt2fn("-d",NFILE,fnm),"Data",nx-1,6,y,legend);
   
   /* Do FFT and analysis */  
   do_four(opt2fn("-o",NFILE,fnm),opt2fn("-c",NFILE,fnm),
-	  nx-1,y[0],y[4],eps0,epsRF);
+	  nx-1,y[0],y[5],eps0,epsRF);
 
   do_view(opt2fn("-o",NFILE,fnm),"-nxy");
   do_view(opt2fn("-c",NFILE,fnm),NULL);
@@ -334,12 +338,3 @@ int main(int argc,char *argv[])
 
   return 0;
 }
-
-
-
-
-
-
-
-
-

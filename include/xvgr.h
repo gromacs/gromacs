@@ -112,9 +112,9 @@ extern int read_xvg(char *fn,real ***y,int *ny);
  * the routine) ny is the number of columns (including X if appropriate)
  */
  
-extern void dump_xvg(char *fn,char *title,int nx,int ny,real **y);
-/* Quicly dump a two D array (y) of dimensions nx rows times
- * ny columns to a file.
+extern void write_xvg(char *fn,char *title,int nx,int ny,real **y,char **leg);
+/* Write a two D array (y) of dimensions nx rows times
+ * ny columns to a file. If leg != NULL it will be written too.
  */
 
 /****************************************************

@@ -273,12 +273,14 @@ int read_xvg(char *fn,real ***y,int *ny)
   return nx;
 }
 
-void dump_xvg(char *fn,char *title,int nx,int ny,real **y)
+void write_xvg(char *fn,char *title,int nx,int ny,real **y,char **leg)
 {
   FILE *fp;
   int  i,j;
   
   fp=xvgropen(fn,title,"X","Y");
+  if (leg)
+    xvgr_legend(fp,ny-1,leg);
   for(i=0; (i<nx); i++) {
     for(j=0; (j<ny); j++) {
       fprintf(fp,"  %12.5e",y[j][i]);
