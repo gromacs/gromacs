@@ -46,8 +46,6 @@ CCC		= CC
 F77		= f77
 
 OPT		= -O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -LNO:opt=1 -LNO:ou_further=3 -OPT:Olimit=0:roundoff=3:alias=typed -fullwarn
-# Some options for the 7.30 compilers
-#OPT		+= -SWP:heur=fdms,nhms,fdnms
 # All warnings except unused vars: -fullwarn -woff 1174
 CFLAGS		= $(ABI) $(OPT) -woff 1174 -woff 1233
 CCFLAGS		= $(ABI) $(OPT) -woff 1174 -DHAVE_BOOL 
@@ -57,6 +55,8 @@ FFLAGS		= $(ABI) $(OPT) -OPT:cray_ivdep=TRUE
 #       as we know the 7.1 compiler does support these options and
 #       the 7.2 does not.
 #FFLAGS		+= -GCM:aggressive_speculation -GCM:array_speculation
+# Some nasty options for the 7.30 compilers
+FFLAGS		+= -SWP:heur=fdms,nhms,fdnms
 
 LDFLAGS		= -L$(LIBDIR) $(ABI) 
 LD		= $(CC) $(LDFLAGS)
