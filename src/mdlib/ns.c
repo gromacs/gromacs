@@ -532,7 +532,7 @@ static inline void put_in_list(bool bHaveLJ[],
   bMNO   = (fr->solvent_type[icg] == esolMNO);
 
   bFreeEnergy = FALSE;
-  if (fr->efep != efepNO) {
+  if (md->nPerturbed) {
     /* Check if any of the particles involved are perturbed. 
      * If not we can do the cheaper normal put_in_list
      * and use more solvent optimization.

@@ -48,7 +48,7 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
 		    bool bBD,real delta_t,real fric,real tau_t[],
 		    bool bPert,bool bFree)
 {
-  int       i,np,g;
+  int       i,g;
   real      fac;
   double    tm;
   t_mdatoms *md;
@@ -77,7 +77,7 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
   snew(md->cU1,md->nr);
   snew(md->cU2,md->nr);
   
-  np=0;
+  md->nPerturbed=0;
   tm=0.0;
   for(i=0; (i<md->nr); i++) {
     if (bBD) {
@@ -124,9 +124,9 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
 	md->invmass[i]	= 1.0/md->massT[i];
     }
     if (bPert) {
-      md->bPerturbed[i]   = PERTURBED(atoms->atom[i]);
+      md->bPerturbed[i] = PERTURBED(atoms->atom[i]);
       if (md->bPerturbed[i])
-	np++;
+	md->nPerturbed++;
     }
 
     md->cU1[i]      	= atoms->atom[i].grpnr[egcUser1];
@@ -139,8 +139,9 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
     atoms->atom=NULL;
   }
   
-  if (fp)
-    fprintf(fp,"There are %d atoms for free energy perturbation\n",np);
+  if (bPert && fp)
+    fprintf(fp,"There are %d atoms for free energy perturbation\n",
+	    md->nPerturbed);
   
   return md;
 }    
