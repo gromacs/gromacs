@@ -148,6 +148,13 @@ static gmx_inline void copy_rvec(rvec a,rvec b)
   b[ZZ]=a[ZZ];
 }
 
+static gmx_inline void copy_ivec(ivec a,ivec b)
+{
+  b[XX]=a[XX];
+  b[YY]=a[YY];
+  b[ZZ]=a[ZZ];
+}
+
 static gmx_inline void copy_mat(matrix a,matrix b)
 {
   copy_rvec(a[XX],b[XX]);
@@ -192,6 +199,11 @@ static gmx_inline void clear_mat(matrix a)
 }
 
 static gmx_inline real iprod(rvec a,rvec b)
+{
+  return (a[XX]*b[XX]+a[YY]*b[YY]+a[ZZ]*b[ZZ]);
+}
+
+static gmx_inline real iiprod(ivec a,ivec b)
 {
   return (a[XX]*b[XX]+a[YY]*b[YY]+a[ZZ]*b[ZZ]);
 }
