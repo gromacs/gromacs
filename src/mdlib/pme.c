@@ -795,8 +795,10 @@ real do_pme(FILE *logfile,   bool bVerbose,
       /* sum contributions to local grid from other nodes */
       if (PAR(cr))
 	sum_qgrid(cr,nsb,grid,TRUE);
+#ifdef DEBUG
       if (debug)
 	pr_fftgrid(debug,"qgrid",grid);
+#endif
 
       /* do 3d-fft */ 
       gmxfft3D(grid,FFTW_FORWARD,cr);
@@ -813,8 +815,10 @@ real do_pme(FILE *logfile,   bool bVerbose,
       /* distribute local grid to all nodes */
       if (PAR(cr))
 	sum_qgrid(cr,nsb,grid,FALSE);
+#ifdef DEBUG
       if (debug)
 	pr_fftgrid(debug,"potential",grid);
+#endif
 
       ntot  = grid->nxyz;  
       npme  = ntot*log((real)ntot)/(cr->nnodes*log(2.0));
