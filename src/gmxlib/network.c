@@ -152,7 +152,7 @@ void def_sumi(int nr,int r[],t_commrec *cr)
   bufs=bufs-(bufs % 24);
   NR=bufs/sizeof(int);
 #else
-  NR=min(4,nr);
+  NR=nr;
 #endif
 
   snew(buf[0],NR);
