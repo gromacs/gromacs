@@ -215,6 +215,8 @@ void init_grid(bool bBox, matrix box, real rcut,
   }
 }
 
+char *grpnames[grNR] = {"0D","0H","0A","1D","1H","1A","iD","iH","iA"};
+
 void build_grid(int *nr, atom_id **a, rvec x[], 
 		bool bBox, matrix box, rvec hbox, real rcut,
 		ivec ngrid, t_gridcell ****grid)
@@ -284,7 +286,6 @@ void build_grid(int *nr, atom_id **a, rvec x[],
 
 void dump_grid(FILE *fp, ivec ngrid, t_gridcell ****grid)
 {
-  char *grpnames[grNR] = {"0D","0H","0A","1D","1H","1A","iD","iH","iA"};
   int gr,x,y,z,sum[grNR];
   
   fprintf(fp,"grid %dx%dx%d\n",ngrid[XX],ngrid[YY],ngrid[ZZ]);
