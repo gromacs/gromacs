@@ -39,7 +39,8 @@ static char *SRCID_nrama_c = "$Id$";
 #include "bondf.h"
 #include "futil.h"
 #include "fatal.h"
-#include "gstat.h"
+#include "nrama.h"
+#include "rmpbc.h"
 
 static char *pp_pat[] = { "C", "N", "CA", "C", "N" };
 #define NPP (sizeof(pp_pat)/sizeof(pp_pat[0]))

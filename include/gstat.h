@@ -37,152 +37,9 @@ static char *SRCID_gstat_h = "$Id$";
 #include "mshift.h"
 #include "rmpbc.h"
 
-/***********************************************
- *
- *          X R A M A    S T U F F
- *
- ***********************************************/
-typedef struct {
-  bool bShow;
-  char *label;
-  int  iphi,ipsi; /* point in the dih array of xr... */
-} t_phipsi;
-
-typedef struct {
-  atom_id ai[4];
-  int     mult;
-  real    phi0;
-  real    ang;
-} t_dih;
-
-typedef struct {
-  int       ndih;
-  t_dih     *dih;
-  int       npp;
-  t_phipsi  *pp;
-  int       traj;
-  int       natoms;
-  int       amin,amax;
-  real      t;
-  rvec      *x;
-  matrix    box;
-  t_idef    *idef;
-} t_xrama;
-
 #ifdef CPLUSPLUS
 extern "C" {
 #endif
-
-extern void init_rama(char *infile,char *topfile,t_xrama *xr);
-
-extern bool new_data(t_xrama *xr);
-
-/***********************************************
- *
- *    P R I N C I P A L   C O M P O N E N T S
- *
- ***********************************************/
-extern void rotate_atoms(int gnx,atom_id index[],rvec x[],matrix trans);
-/* Rotate all atoms in index using matrix trans */
-
-extern void principal_comp(int n,atom_id index[],t_atom atom[],rvec x[],
-			   matrix trans,rvec d);
-/* Calculate the principal components of atoms in index. Atoms are
- * mass weighted. It is assumed that the center of mass is in the origin!
- */
-			   
-extern real calc_xcm(rvec x[],int gnx,atom_id index[],t_atom atom[],rvec xcm,
-		     bool bQ);
-/* Calculate the center of mass of the atoms in index. if bQ then the atoms
- * will be charge weighted rather than mass weighted.
- * Returns the total mass/charge.
- */
- 
-extern real sub_xcm(rvec x[],int gnx,atom_id index[],t_atom atom[],rvec xcm,
-		    bool bQ);
-/* Calc. the center of mass and subtract it from all coordinates.
- * Returns the original center of mass in xcm
- * Returns the total mass
- */
- 
-extern void add_xcm(rvec x[],int gnx,atom_id index[],rvec xcm);
-/* Increment all atoms in index with xcm */
-
-
-/***********************************************
- *
- *     R M S   F I T T I N G
- *
- ***********************************************/
-extern void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x);
-/* Do a least squares fit of x to xp. Atoms which have zero mass
- * (w_rls[i]) are not take into account in fitting.
- * This makes is possible to fit eg. on Calpha atoms and orient
- * all atoms. The routine only fits the rotational part,
- * therefore both xp and x should be centered round the origin.
- */
-
-extern void reset_x(int ncm,atom_id ind_cm[],
-		    int nrms,atom_id ind_rms[],rvec x[],real mass[]);
-/* Put the center of mass of atoms in the origin 
- * The center of mass is computed from the index ind_cm, while
- * the atoms in ind_rms are reset.
- */
- 
-/***********************************************
- *
- *     G E N B O X   S T U F F 
- *
- ***********************************************/
-extern int in_box(int NTB,matrix box,rvec x);
-/*in_box() returns zero if atom x is inside the box*/
-
-extern void rotate_conf(int natom,rvec *x,rvec *v,real alfa, real beta,real gamma);
-/* rotate() rotates a configuration alfa degrees around the x_axis and beta degrees around the y_axis */
-
-extern void orient(int natom,rvec *x,rvec *v, rvec angle,matrix box);
-/*orient() rotates a configuration until the largest atom-atom distance is 
- *placed along the z-axis and the second largest distance is placed along
- *the y-axis. Finally the third longest distance is placed along the x-axis
- */
-
-extern void genconf(t_atoms *atoms,rvec *x,rvec *v,real *r,matrix box,
-		    ivec n_box);
-/* Multiply conformation by the components in n_box, space should
- * be allocated beforehand.
- */
-
-extern void gen_box(int NTB,int natoms,rvec *x, matrix box,rvec box_space,
-		    bool bCenter);
-/* gen_box() generates a box around a configuration, box_space is optional extra
- * space around it. If NTB = 1 then a truncated octahedon will be generated (don't!)
- * if bCenter then coordinates will be centered in the genereated box
- */
-		    
-/***********************************************
- *
- *     J A C O B I
- *
- ***********************************************/
-extern void jacobi(double a[7][7],int n,double d[7],double v[7][7],int *nrot);
-/* Routine from numerical recipes... */
-
-/***********************************************
- *
- *     G R O M O S 8 7      O U T P U T
- *
- ***********************************************/
-extern void write_gms(FILE *fp,int natoms,rvec x[],matrix box);
-/* Write a gromos-87 trajectory frame (10f8.3) + box size 
- * If box == NULL it is not written
- */
-
-extern void write_gms_ndx(FILE *fp,int isize,atom_id index[],
-			  rvec x[],matrix box);
-/* Write a gromos-87 trajectory frame (10f8.3) + box size for
- * a subset of the atoms.
- * If box == NULL it is not written
- */
 
 /***********************************************
  *
@@ -228,22 +85,22 @@ extern void low_do_autocorr(char *fn,char *title,
  * A number of "modes" exist for computation of the ACF
  *
  * if (mode == eacNormal) {
- *   C(t) = < X (tau) X (tau+t) >
+ *   C(t) = < X (tau) * X (tau+t) >
  * }
  * else if (mode == eacCos) {
  *   C(t) = < cos (X(tau) - X(tau+t)) >
  * }
  * else if (mode == eacVector) {
- *   C(t) = < X(tau) \cdot X(tau+t)
+ *   C(t) = < X(tau) * X(tau+t)
  * }
  * else if (mode == eacP1) {
- *   C(t) = < cos (X(tau) \cdot X(tau+t) >
+ *   C(t) = < cos (X(tau) * X(tau+t) >
  * }
  * else if (mode == eacP2) {
- *   C(t) = 1/2 * < 3 cos (X(tau) \cdot X(tau+t) - 1 >
+ *   C(t) = 1/2 * < 3 cos (X(tau) * X(tau+t) - 1 >
  * }
  * else if (mode == eacRcross) {
- *   C(t) = < ( X(tau) x X(tau+t) )^2 >
+ *   C(t) = < ( X(tau) * X(tau+t) )^2 >
  * }
  *
  * For modes eacVector, eacP1, eacP2 and eacRcross the input should be 

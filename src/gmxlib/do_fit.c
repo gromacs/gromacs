@@ -31,7 +31,7 @@ static char *SRCID_do_fit_c = "$Id$";
 #include "maths.h"
 #include "sysstuff.h"
 #include "typedefs.h"
-#include "gstat.h"
+#include "nrjac.h"
 #include "vec.h"
 #include "txtdump.h"
 
