@@ -46,7 +46,7 @@ static void nrerror(char *error_text)
   exit(1);
 }
 
-static void free_vector(double *v,int nl,int nh)
+static void free_vector(double *v,int nl)
 {
   free((char*)(v+nl-1));
 }
@@ -83,8 +83,8 @@ void jacobi(double a[7][7],int n,double d[7],double v[7][7],int *nrot)
         sm += fabs(a[ip_1][iq_1]);
     }
     if (sm == 0.0) {
-      free_vector(z,1,n);
-      free_vector(b,1,n);
+      free_vector(z,1);
+      free_vector(b,1);
       return;
     }
     if (i < 4)

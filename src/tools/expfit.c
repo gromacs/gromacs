@@ -43,12 +43,12 @@ static char *SRCID_expfit_c = "$Id$";
 extern void mrqmin(real x[],real y[],real sig[],int ndata,real a[],
 		   int ma,int lista[],int mfit,real **covar,real **alpha,
 		   real *chisq,
-		   void (*funcs)(real x,real a[],real *y,real dyda[],int na),
+		   void (*funcs)(real x,real a[],real *y,real dyda[]),
 		   real *alamda);
 
 extern void mrqmin_new(real x[],real y[],real sig[],int ndata,real a[], 
 		       int ia[],int ma,real **covar,real **alpha,real *chisq, 
-		       void (*funcs)(real, real [], real *, real [], int), 
+		       void (*funcs)(real, real [], real *, real []), 
 		       real *alamda);
 		       
 static real myexp(real x,real A,real tau)
@@ -58,7 +58,7 @@ static real myexp(real x,real A,real tau)
   return A*exp(-x/tau);
 }
 		   
-static void exp_one_parm(real x,real a[],real *y,real dyda[],int na)
+static void exp_one_parm(real x,real a[],real *y,real dyda[])
 {
   /* Fit to function 
    *
@@ -73,7 +73,7 @@ static void exp_one_parm(real x,real a[],real *y,real dyda[],int na)
   dyda[1] = x*e1/(a[1]*a[1]);
 }
 
-static void exp_two_parm(real x,real a[],real *y,real dyda[],int na)
+static void exp_two_parm(real x,real a[],real *y,real dyda[])
 {
   /* Fit to function 
    *
@@ -89,7 +89,7 @@ static void exp_two_parm(real x,real a[],real *y,real dyda[],int na)
   dyda[2] = e1;
 }
 
-static void exp_3_parm(real x,real a[],real *y,real dyda[],int na)
+static void exp_3_parm(real x,real a[],real *y,real dyda[])
 {
   /* Fit to function 
    *
@@ -114,7 +114,7 @@ static void lmfit_exp(int nframes,real x[],real y[],real dy[],real ftol,
 		      real parm[],real dparm[],bool bVerbose,int nfitparm,
 		      char *fix)
 {
-  typedef void (*myfitfn)(real x,real a[],real *y,real dyda[],int na);
+  typedef void (*myfitfn)(real x,real a[],real *y,real dyda[]);
   myfitfn fitfn[3] = { exp_one_parm, exp_two_parm, exp_3_parm };
   real chisq,ochisq,alamda;
   real *a,**covar,**alpha;
@@ -210,8 +210,7 @@ static void lmfit_exp(int nframes,real x[],real y[],real dy[],real ftol,
 }
 
 real do_lmfit(int ndata,real c1[],real sig[],real dt,
-	      real begintimefit,real endtimefit,
-	      char *fitfn,char *fittitle,bool bVerbose,int nfitparm,
+	      real begintimefit,real endtimefit,bool bVerbose,int nfitparm,
 	      real fit[],real fitparms[],char *fix)
 {
   FILE *fp;
@@ -329,52 +328,6 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,
   sfree(dy);
   
   return integral;
-}
-
-void do_logfit(int ndata,real c1[],real dt,real begintimefit,real endtimefit,
-	       char *fitfn,char *fittitle)
-{
-  FILE *fitfp;
-  int i,n;
-  real *time,*y,*acf;
-  real aa,bb,A,tau;
-
-  fprintf(stderr,"Will fit data from %g (ps) to %g (ps).\n\n",
-	  begintimefit,endtimefit);
-
-  snew(time,ndata);   /* allocate the maximal necessary space */
-  snew(y,ndata);
-  snew(acf,ndata);
-  n=0;
-
-  for(i=0; (i<ndata); i++) {
-    if ( (dt*i >= begintimefit) && (dt*i <= endtimefit) ) {
-    time[n]=dt*i;
-    y[n]=log(c1[i]);
-    acf[n]=c1[i];
-    n++;
-    }
-  }
-  lsq_y_ax_b(n,time,y,&aa,&bb);
-  A=exp(bb);
-  tau=-1.0/aa;
-  fprintf(stderr,"# of data points used in the fit is : %d\n",n);
-  fprintf(stderr,"Fitted to y=exp(ax+b):\n");
-  fprintf(stderr,"a = %10.5f\t b = %10.5f\n",aa,bb);
-  fprintf(stderr,"Fitted to y= A exp(-x/tau):\n");
-  fprintf(stderr,"A  = %10.5f\t tau  = %10.5f\n", A, tau);
-
-  fitfp=xvgropen(fitfn,fittitle,"Time (ps)","C(t)");
-  fprintf(fitfp,"#\n#Fitted to y= A exp(-x/tau):\n");
-  fprintf(fitfp,"#A  = %10.5f\t tau  = %10.5f\n#\n", A, tau);
-  fprintf(fitfp,"#\n#time\t acf\t fit\n");
-  for(i=0; (i<n); i++) {
-    fprintf(fitfp,"%g\t %g\t %g\n",time[i],acf[i], A*exp(-(time[i]/tau)));
-  }
-  ffclose(fitfp);
-  sfree(time);
-  sfree(y);
-  sfree(acf);
 }
 
 void do_expfit(int ndata,real c1[],real dt,real begintimefit,real endtimefit)

@@ -58,7 +58,7 @@ int calc_nbegin(int nx,real x[],real tbegin)
 }
 
 real numerical_deriv(int nx,real x[],real y[],real fity[],real dy[],
-		     real tbegin,real tend,real tendInt,int nsmooth)
+		     real tendInt,int nsmooth)
 {
   FILE *tmpfp;
   int  i,nbegin,i0,i1;
@@ -285,7 +285,7 @@ int main(int argc,char *argv[])
   integral = print_and_integrate(NULL,calc_nbegin(nx,y[0],tbegin),
 				 y[0][1]-y[0][0],y[1]);
   integral += do_lmfit(nx,y[1],y[2],y[0][1]-y[0][0],tbegin,tend,
-			"Dipje1","DipTitle",TRUE,nfitparm,y[3],fitparms,fix);
+			TRUE,nfitparm,y[3],fitparms,fix);
   lambda = (eps0 - 1.0)/(2*epsRF - 1.0);
   fprintf(stderr,"DATA INTEGRAL: %5.1f, tauD(old) = %5.1f ps, tau_slope = %5.1f, tau_slope,D = %5.1f ps\n",
 	  integral,integral*(2*epsRF+eps0)/(2*epsRF+1),fitparms[0],
@@ -295,8 +295,7 @@ int main(int argc,char *argv[])
 	  fitparms[0]*(1 + fitparms[1]*lambda),
 	  1 + ((1 - fitparms[1])*(eps0 - 1))/(1 + fitparms[1]*lambda));
 
-  fitintegral=numerical_deriv(nx,y[0],y[1],y[3],y[4],
-			      tbegin,tend,tendInt,nsmooth);
+  fitintegral=numerical_deriv(nx,y[0],y[1],y[3],y[4],tendInt,nsmooth);
   fprintf(stderr,"FIT INTEGRAL (tau_M): %5.1f, tau_D = %5.1f\n",
 	  fitintegral,fitintegral*(2*epsRF+eps0)/(2*epsRF+1));
   /* Now we have the negative gradient of <Phi(0) Phi(t)> */

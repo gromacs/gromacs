@@ -66,16 +66,14 @@ extern t_pargs *add_acf_pargs(int *npargs,t_pargs *pa);
  */
 
 extern void do_autocorr(char *fn,char *title,int nframes,int nitem,real **c1,
-			real dt,unsigned long mode,bool bAver,
-			char *fitfn,char *fittitle);
+			real dt,unsigned long mode,bool bAver);
 /* Calls low_do_autocorr (see below). After calling add_acf_pargs */
 
 extern void low_do_autocorr(char *fn,char *title,
 			    int  nframes,int nitem,int nout,real **c1,
 			    real dt,unsigned long mode,int nrestart,
 			    bool bAver,bool bFour,bool bNormalize,
-			    char *fitfn,char *fittitle,bool bVerbose,
-			    real tbeginfit,real tendfit,
+			    bool bVerbose,real tbeginfit,real tendfit,
 			    int nfitparm);
 /* 
  * do_autocorr calculates autocorrelation functions for many things.
@@ -263,14 +261,9 @@ extern void normalize_histo(int npoints,int histo[],real dx,real normhisto[]);
 
 /* Use Levenberg-Marquardt method to fit to a one parameter exponential */
 /* Or: "There is no KILL like OVERKILL", Dr. Ir. D. van der Spoel */
-extern real do_lmfit_exp_one_parm(int ndata,real c1[],real dt,
-				  real begintimefit,real endtimefit,
-				  char *fitfn,char *fittitle,bool bVerbose);
-/* Returns integral */
-
 extern real do_lmfit(int ndata,real c1[],real sig[],real dt,
 		     real begintimefit,real endtimefit,
-		     char *fitfn,char *fittitle,bool bVerbose,int nfitparm,
+		     bool bVerbose,int nfitparm,
 		     real fit[],real fitparms[],char *fix);
 /* Returns integral. if fit != NULL, than the fitted function is copied
  * into the original data array 

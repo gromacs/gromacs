@@ -110,7 +110,7 @@ int main(int argc,char *argv[])
   fclose(fp);
   
   do_autocorr(opt2fn("-c",NFILE,fnm),str[datatp],
-	      nframes,1,&data,a,eacNormal,FALSE,NULL,NULL);
+	      nframes,1,&data,a,eacNormal,FALSE);
 	      
   nlag = get_acfnout();
   fp = xvgropen(opt2fn("-comb",NFILE,fnm),"testac","x","y");

@@ -210,7 +210,7 @@ static void do_dihcorr(char *fn,int nf,int ndih,real **dih,real dt,
   int  i,j,Xi;
   
   do_autocorr(fn,"Dihedral Autocorrelation Function",
-	      nf,ndih,dih,dt,eacCos,FALSE,NULL,NULL);
+	      nf,ndih,dih,dt,eacCos,FALSE);
   /* Dump em all */
   j=0;
   for(i=0; (i<nlist); i++) {

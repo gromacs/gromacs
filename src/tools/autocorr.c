@@ -568,8 +568,7 @@ void do_four_core(unsigned long mode,int nfour,int nf2,int nframes,
     c1[j] = csum[j]/(real)(nframes-j);
 }
 
-void fit_acf(int ncorr,int nfitparm,
-	     char *fitfn,char *fittitle,bool bVerbose,
+void fit_acf(int ncorr,int nfitparm,bool bVerbose,
 	     real tbeginfit,real tendfit,real dt,real c1[])
 {
   real    fitparm[3];
@@ -601,8 +600,7 @@ void fit_acf(int ncorr,int nfitparm,
     nf_int = min(ncorr,(int)((tStart+1e-4)/dt));
     sum    = print_and_integrate(debug,nf_int,dt,c1);
     tail_corr = do_lmfit(ncorr,c1,sig,dt,tStart,tendfit,
-			 fitfn,fittitle,bVerbose,nfitparm,
-			 NULL,fitparm,NULL);
+			 bVerbose,nfitparm,NULL,fitparm,NULL);
     sumtot = sum+tail_corr;
     fprintf(stderr,"CORR:%12.5e%12.5e%12.5e%12.5e%12.5e\n",
 	    tStart,sum,tail_corr,sumtot,fitparm[0]);
@@ -616,8 +614,7 @@ void low_do_autocorr(char *fn,char *title,
 		     int nframes,int nitem,int nout,real **c1,
 		     real dt,unsigned long mode,int nrestart,
 		     bool bAver,bool bFour,bool bNormalize,
-		     char *fitfn,char *fittitle,bool bVerbose,
-		     real tbeginfit,real tendfit,
+		     bool bVerbose,real tbeginfit,real tendfit,
 		     int nfitparm)
 {
   FILE    *fp;
@@ -695,8 +692,7 @@ void low_do_autocorr(char *fn,char *title,
       normalize_acf(nout,c1[0]);
     
     if (tbeginfit < tendfit) {
-      fit_acf(nout,nfitparm,fitfn,fittitle,bVerbose,
-	      tbeginfit,tendfit,dt,c1[0]);
+      fit_acf(nout,nfitparm,bVerbose,tbeginfit,tendfit,dt,c1[0]);
       (void)print_and_integrate(fp,nout,dt,c1[0]);
     } else {
       sum = print_and_integrate(fp,nout,dt,c1[0]);
@@ -709,8 +705,7 @@ void low_do_autocorr(char *fn,char *title,
       if (bNormalize)
 	normalize_acf(nout,c1[i]);
       if (tbeginfit < tendfit) {
-	fit_acf(nout,nfitparm,fitfn,fittitle,bVerbose,
-		tbeginfit,tendfit,dt,c1[i]);
+	fit_acf(nout,nfitparm,bVerbose,tbeginfit,tendfit,dt,c1[i]);
 	(void)print_and_integrate(fp,nout,dt,c1[0]);
       } else {
 	sum = print_and_integrate(fp,nout,dt,c1[i]);
@@ -772,8 +767,7 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
 }
 
 void do_autocorr(char *fn,char *title,int nframes,int nitem,real **c1,
-		 real dt,unsigned long mode,bool bAver,
-		 char *fitfn,char *fittitle)
+		 real dt,unsigned long mode,bool bAver)
 {
   if (!bACFinit) {
     fprintf(stderr,"ACF data structures have not been initialised. Call add_acf_pargs\n");
@@ -799,7 +793,7 @@ void do_autocorr(char *fn,char *title,int nframes,int nitem,real **c1,
   
   low_do_autocorr(fn,title,nframes,nitem,acf.nout,c1,dt,mode,
 		  acf.nrestart,bAver,acf.bFour,acf.bNormalize,
-		  fitfn,fittitle,bDebugMode(),acf.tbeginfit,acf.tendfit,
+		  bDebugMode(),acf.tbeginfit,acf.tendfit,
 		  acf.nfitparm);
 }
 

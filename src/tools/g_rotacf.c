@@ -90,8 +90,7 @@ int main(int argc,char *argv[])
     { efTRX, "-f", NULL,  ffREAD  },
     { efTPX, NULL, NULL,  ffREAD },
     { efNDX, NULL, NULL,  ffREAD  },
-    { efXVG, "-o", "rotacf",  ffWRITE },
-    { efXVG, "-a", "fitacf",  ffOPTWR }
+    { efXVG, "-o", "rotacf",  ffWRITE }
   };
 #define NFILE asize(fnm)
   int     npargs;
@@ -181,12 +180,10 @@ int main(int argc,char *argv[])
     mode = eacVector;
     
     do_autocorr(ftp2fn(efXVG,NFILE,fnm),"Rotational Correlation Function",
-		teller,nvec,c1,dt,mode,TRUE,
-		opt2fn("-a",NFILE,fnm),"Exponential fit to rotational ACF");
+		teller,nvec,c1,dt,mode,TRUE);
   }
 
   xvgr_file(ftp2fn(efXVG,NFILE,fnm),NULL);
-  xvgr_file(opt2fn("-a",NFILE,fnm),NULL);
     
   thanx(stdout);
     

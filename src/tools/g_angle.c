@@ -244,7 +244,7 @@ int main(int argc,char *argv[])
       else
 	mode = eacCos;
       do_autocorr(opt2fn("-oc",NFILE,fnm),"Dihedral Autocorrelation Function",
-		  nframes,nangles,dih,dt,mode,bAverCorr,NULL,NULL);
+		  nframes,nangles,dih,dt,mode,bAverCorr);
     }
   }
 

@@ -400,7 +400,7 @@ int main(int argc,char *argv[])
 	for(i=0; i<n; i++)
 	  val[s][i] -= av[s];
     do_autocorr(acfile,"Autocorrelation",n,nset,val,dt,
-		eacNormal,bAverCorr,NULL,NULL);
+		eacNormal,bAverCorr);
   }
 
   return 0;

@@ -445,8 +445,7 @@ void spectrum(bool bVerbose,
   else
     dt = 1;
   do_autocorr(corrfn,"Correlation Function for Interproton Vectors",
-	      nframes,j,Corr,dt,eacP2,nrestart,FALSE,FALSE,bFour,TRUE,
-	      NULL,NULL,0.0,0.0);
+	      nframes,j,Corr,dt,eacP2,nrestart,FALSE,FALSE,bFour,TRUE);
   
   calc_tauc(bVerbose,npair,pair,dt,nframes/2,spec,(real **)corr);
   

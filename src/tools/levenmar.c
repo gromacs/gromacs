@@ -131,7 +131,7 @@ int **imatrix(int nrl, int nrh, int ncl, int nch)
 
 
 
-real **submatrix(real **a, int oldrl, int oldrh, int oldcl, int oldch,
+real **submatrix(real **a, int oldrl, int oldrh, int oldcl, 
 		 int newrl, int newcl)
 {
 	int i,j;
@@ -148,24 +148,24 @@ real **submatrix(real **a, int oldrl, int oldrh, int oldcl, int oldch,
 
 
 
-void free_vector(real *v, int nl, int nh)
+void free_vector(real *v, int nl)
 {
 	free((char*) (v+nl));
 }
 
-void free_ivector(int *v, int nl, int nh)
+void free_ivector(int *v, int nl)
 {
 	free((char*) (v+nl));
 }
 
-void free_dvector(int *v, int nl, int nh)
+void free_dvector(int *v, int nl)
 {
 	free((char*) (v+nl));
 }
 
 
 
-void free_matrix(real **m, int nrl, int nrh, int ncl, int nch)
+void free_matrix(real **m, int nrl, int nrh, int ncl)
 {
 	int i;
 
@@ -173,7 +173,7 @@ void free_matrix(real **m, int nrl, int nrh, int ncl, int nch)
 	free((char*) (m+nrl));
 }
 
-void free_dmatrix(double **m, int nrl, int nrh, int ncl, int nch)
+void free_dmatrix(double **m, int nrl, int nrh, int ncl)
 {
 	int i;
 
@@ -181,7 +181,7 @@ void free_dmatrix(double **m, int nrl, int nrh, int ncl, int nch)
 	free((char*) (m+nrl));
 }
 
-void free_imatrix(int **m, int nrl, int nrh, int ncl, int nch)
+void free_imatrix(int **m, int nrl, int nrh, int ncl)
 {
 	int i;
 
@@ -191,7 +191,7 @@ void free_imatrix(int **m, int nrl, int nrh, int ncl, int nch)
 
 
 
-void free_submatrix(real **b, int nrl, int nrh, int ncl, int nch)
+void free_submatrix(real **b, int nrl)
 {
 	free((char*) (b+nrl));
 }
@@ -214,7 +214,7 @@ real **convert_matrix(real *a, int nrl, int nrh, int ncl, int nch)
 
 
 
-void free_convert_matrix(real **b, int nrl, int nrh, int ncl, int nch)
+void free_convert_matrix(real **b, int nrl)
 {
 	free((char*) (b+nrl));
 }
@@ -269,9 +269,9 @@ void gaussj(real **a, int n, real **b, int m)
       for (k=1;k<=n;k++)
 	SWAP(a[k][indxr[l]],a[k][indxc[l]]);
   }
-  free_ivector(ipiv,1,n);
-  free_ivector(indxr,1,n);
-  free_ivector(indxc,1,n);
+  free_ivector(ipiv,1);
+  free_ivector(indxr,1);
+  free_ivector(indxc,1);
 }
 
 #undef SWAP
@@ -328,7 +328,7 @@ void covsrt_new(real **covar,int ma, int ia[], int mfit)
 void mrqcof(real x[], real y[], real sig[], int ndata, real a[], 
 	    int ma, int lista[], int mfit, 
 	    real **alpha, real beta[], real *chisq,
-	    void (*funcs)(real,real *,real *,real *,int)) 
+	    void (*funcs)(real,real *,real *,real *)) 
 {
   int k,j,i;
   real ymod,wt,sig2i,dy,*dyda;
@@ -340,7 +340,7 @@ void mrqcof(real x[], real y[], real sig[], int ndata, real a[],
   }
   *chisq=0.0;
   for (i=1;i<=ndata;i++) {
-    (*funcs)(x[i],a,&ymod,dyda,ma);
+    (*funcs)(x[i],a,&ymod,dyda);
     sig2i=1.0/(sig[i]*sig[i]);
     dy=y[i]-ymod;
     for (j=1;j<=mfit;j++) {
@@ -353,14 +353,14 @@ void mrqcof(real x[], real y[], real sig[], int ndata, real a[],
   }
   for (j=2;j<=mfit;j++)
     for (k=1;k<=j-1;k++) alpha[k][j]=alpha[j][k];
-  free_vector(dyda,1,ma);
+  free_vector(dyda,1);
 }
 
 	
 void mrqmin(real x[], real y[], real sig[], int ndata, real a[], 
 	    int ma, int lista[], int mfit, 
 	    real **covar, real **alpha, real *chisq,
-	    void (*funcs)(real,real *,real *,real *,int),
+	    void (*funcs)(real,real *,real *,real *),
 	    real *alamda) 
 {
   int k,kk,j,ihit;
@@ -395,10 +395,10 @@ void mrqmin(real x[], real y[], real sig[], int ndata, real a[],
     da[j]=oneda[j][1];
   if (*alamda == 0.0) {
     covsrt(covar,ma,lista,mfit);
-    free_vector(beta,1,ma);
-    free_vector(da,1,ma);
-    free_vector(atry,1,ma);
-    free_matrix(oneda,1,mfit,1,1);
+    free_vector(beta,1);
+    free_vector(da,1);
+    free_vector(atry,1);
+    free_matrix(oneda,1,mfit,1);
     return;
   }
   for (j=1;j<=ma;j++) atry[j]=a[j];
@@ -423,7 +423,7 @@ void mrqmin(real x[], real y[], real sig[], int ndata, real a[],
 
 void mrqmin_new(real x[],real y[],real sig[],int ndata,real a[], 
 		int ia[],int ma,real **covar,real **alpha,real *chisq, 
-		void (*funcs)(real, real [], real *, real [], int), 
+		void (*funcs)(real, real [], real *, real []), 
 		real *alamda)
      /* Levenberg-Marquardt method, attempting to reduce the value Chi^2 
       * of a fit between a set of data points x[1..ndata], y[1..ndata]
@@ -452,7 +452,7 @@ void mrqmin_new(real x[],real y[],real sig[],int ndata,real a[],
   void gaussj(real **a, int n, real **b,int m);
   void mrqcof_new(real x[], real y[], real sig[], int ndata, real a[],
 	      int ia[], int ma, real **alpha, real beta[], real *chisq,
-	      void (*funcs)(real, real [], real *, real [], int));
+	      void (*funcs)(real, real [], real *, real []));
   int j,k,l;
   static int mfit;
   static real ochisq,*atry,*beta,*da,**oneda;
@@ -480,10 +480,10 @@ void mrqmin_new(real x[],real y[],real sig[],int ndata,real a[],
     da[j]=oneda[j][1];
   if (*alamda == 0.0) { /* Once converged, evaluate covariance matrix. */
     covsrt_new(covar,ma,ia,mfit);
-    free_matrix(oneda,1,mfit,1,1);
-    free_vector(da,1,ma);
-    free_vector(beta,1,ma);
-    free_vector(atry,1,ma);
+    free_matrix(oneda,1,mfit,1);
+    free_vector(da,1);
+    free_vector(beta,1);
+    free_vector(atry,1);
     return;
   }
   for (j=0,l=1;l<=ma;l++) /* Did the trial succeed? */
@@ -506,7 +506,7 @@ void mrqmin_new(real x[],real y[],real sig[],int ndata,real a[],
 
 void mrqcof_new(real x[], real y[], real sig[], int ndata, real a[], 
 	    int ia[], int ma, real **alpha, real beta[], real *chisq,
-	    void (*funcs)(real, real [], real *, real[], int))
+	    void (*funcs)(real, real [], real *, real[]))
      /* Used by mrqmin to evaluate the linearized fitting matrix alpha, and 
       * vector beta as in (15.5.8), and calculate Chi^2.
       */
@@ -523,7 +523,7 @@ void mrqcof_new(real x[], real y[], real sig[], int ndata, real a[],
   }
   *chisq=0.0;
   for (i=1;i<=ndata;i++) { /* Summation loop over all data. */
-    (*funcs)(x[i],a,&ymod,dyda,ma);
+    (*funcs)(x[i],a,&ymod,dyda);
     sig2i=1.0/(sig[i]*sig[i]);
     dy=y[i]-ymod;
     for (j=0,l=1;l<=ma;l++) {
@@ -538,5 +538,5 @@ void mrqcof_new(real x[], real y[], real sig[], int ndata, real a[],
   }
   for (j=2;j<=mfit;j++)     /* Fill in the symmetric side. */
     for (k=1;k<j;k++) alpha[k][j]=alpha[j][k];
-  free_vector(dyda,1,ma);
+  free_vector(dyda,1);
 }
