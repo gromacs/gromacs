@@ -183,12 +183,13 @@ void overlap(char *outfile,int natoms,
   fclose(out);
 }
 
-void project(char *trajfile,int ntopatoms,t_topology *top,matrix topbox,
+void project(char *trajfile,
+	     int ntopatoms,t_topology *top,matrix topbox,rvec *xtop,
 	     char *projfile,char *twodplotfile,char *filterfile,int skip,
 	     char *extremefile,real extreme,int nextr,
 	     t_atoms *atoms,int natoms,atom_id *index,
-	     int nref,rvec *xref,int nfit,atom_id *ifit,real *w_rls,
-	     real *mass,real *sqrtm,rvec *xav,
+	     rvec *xref,int nfit,atom_id *ifit,real *w_rls,
+	     real *sqrtm,rvec *xav,
 	     int nvec,int *eignr,rvec **eigvec,
 	     int noutvec,int *outvec)
 {
@@ -231,17 +232,15 @@ void project(char *trajfile,int ntopatoms,t_topology *top,matrix topbox,
       }
       inprod[noutvec][nframes]=t;
       /* calculate x: a fitted struture of the selected atoms */
-      if (nref==-1) {
-	for (i=0; i<natoms; i++)
-	  copy_rvec(xread[index[i]],x[i]);
-	reset_x(natoms,all_at,natoms,all_at,x,mass);
-	do_fit(natoms,mass,xref,x);
-      } 
-      else {
+      if (xref==NULL) {
 	reset_x(nfit,ifit,nat,all_at,xread,w_rls);
-	do_fit(nat,w_rls,xref,xread);
-	for (i=0; i<natoms; i++)
-	  copy_rvec(xread[index[i]],x[i]);
+	do_fit(ntopatoms,w_rls,xtop,xread);
+      }
+      for (i=0; i<natoms; i++)
+	copy_rvec(xread[index[i]],x[i]);
+      if (xref) {
+	reset_x(natoms,all_at,natoms,all_at,x,w_rls);
+	do_fit(natoms,w_rls,xref,x);
       }
 
       for(v=0; v<noutvec; v++) {
@@ -473,13 +472,12 @@ int main(int argc,char *argv[])
   t_inputrec   ir;
   t_topology   top;
   t_idef       *idef;
-  int        nref1,nref2;
   rvec       *xtop,*xref1,*xref2;
   bool       bDMR1,bDMA1,bDMR2,bDMA2;
   int        nvec1,nvec2,*eignr1=NULL,*eignr2=NULL;
   rvec       *x,*xread,*xav1,*xav2,**eigvec1=NULL,**eigvec2=NULL;
   matrix     topbox;
-  real       xid,*mass,*sqrtm,avsqrtm,*w_rls,t,lambda;
+  real       xid,totmass,*sqrtm,avsqrtm,*w_rls,t,lambda;
   int        natoms,ntopatoms,step;
   char       *grpname,*indexfile,title[STRLEN];
   int        i,j,d;
@@ -488,7 +486,7 @@ int main(int argc,char *argv[])
   char       *Vec2File,*stxfile,*CompFile,*ProjOnVecFile,*TwoDPlotFile;
   char       *FilterFile,*ExtremeFile;
   char       *OverlapFile,*InpMatFile;
-  bool       bM,bIndex,bSTX,bTop,bVec2,bProj,bFit,bFirstToLast,bTraj;
+  bool       bM,bIndex,bSTX,bTop,bVec2,bProj,bFirstToLast,bTraj;
   t_filenm fnm[] = { 
     { efTRN, "-v", "eigenvec", ffREAD },
     { efTRN, "-v2", "eigenvec2", ffOPTRD },
@@ -528,9 +526,8 @@ int main(int argc,char *argv[])
   bM     = CompFile || bProj;
   bTraj  = ProjOnVecFile || FilterFile || (ExtremeFile && (max==0))
     || TwoDPlotFile;
-  bFit   = bProj;
   bIndex = bM || bProj;
-  bSTX   = ftp2bSet(efSTX,NFILE,fnm) || bM || bFit ||
+  bSTX   = ftp2bSet(efSTX,NFILE,fnm) || bM || bTraj ||
     FilterFile  || (bIndex && indexfile);
 
   read_eigenvectors(opt2fn("-v",NFILE,fnm),&natoms,&xref1,&bDMR1,&xav1,&bDMA1,
@@ -541,13 +538,13 @@ int main(int argc,char *argv[])
     if (i!=natoms)
       fatal_error(0,"Dimensions in the eigenvector files don't match");
   }
-  if ((xref1==NULL) && bFit) { 
-    bTop=TRUE;
-    nref1=0;
-  }
-  else
-    nref1=-1;
+
+  if (xref1 && !bDMR1 && !bDMA1) 
+    bM=FALSE;
+  if ((xref1==NULL) && (bM || bTraj))
+    bSTX=TRUE;
     
+  xtop=NULL;
   nfit=0;
   ifit=NULL;
   w_rls=NULL;
@@ -562,7 +559,7 @@ int main(int argc,char *argv[])
     } else {
       if (bM && bDMA1)
 	fatal_error(0,"need a run input file for mass weighted analysis");
-      if (bFit && bDMR1)
+      if (bTraj && bDMR1)
         fatal_error(0,"need a run input file for mass weighted fit");
       bTop = FALSE;
       bM = FALSE;
@@ -572,27 +569,41 @@ int main(int argc,char *argv[])
       read_stx_conf(stxfile,title,&top.atoms,xtop,NULL,topbox);
       fprintf(stderr,"\nNote: will do a non mass weighted fit\n");
     }
-    if (xref1==NULL) {
-      snew(xref1,ntopatoms);
-      for(i=0; i<ntopatoms; i++)
-	copy_rvec(xtop[i],xref1[i]);
-    }
-    if (nref1==0) {
-      nref1=ntopatoms;
+    if (xref1==NULL || (bM && bDMR1)) {
       printf("\nNote: the structure in %s should be the same\n"
                "      as the one used for the fit in g_covar\n",stxfile);
       printf("\nSelect the index group that was used for the least squares fit in g_covar\n",natoms);
       get_index(&top.atoms,indexfile,1,&nfit,&ifit,&grpname);
-      snew(w_rls,ntopatoms);
+      if (xref1==NULL) {
+	snew(w_rls,ntopatoms);
+	for(i=0; (i<nfit); i++)
+	  if (bM)
+	    w_rls[ifit[i]]=top.atoms.atom[ifit[i]].m;
+	  else
+	    w_rls[ifit[i]]=1.0;
+      }
+      else {
+	/* make the fit index in xref instead of xtop */
+	snew(w_rls,nfit);
+	for(i=0; (i<nfit); i++) {
+	  w_rls[i]=top.atoms.atom[ifit[i]].m;
+	  ifit[i]=i;
+	}
+      }
     }
-    for(i=0; (i<nfit); i++)
-      if (bTop && ((nref1==0) || bDMR1))
-	w_rls[ifit[i]]=top.atoms.atom[ifit[i]].m;
-      else
-	w_rls[ifit[i]]=1.0;
+    else {
+      /* make the fit non mass weighted on xref */
+      nfit=natoms;
+      snew(ifit,nfit);
+      snew(w_rls,nfit);
+      for(i=0; i<nfit; i++) {
+	ifit[i]=i;
+	w_rls[i]=1.0;
+      }
+    }
   }
-    else
-      bTop=FALSE;
+  else
+    bTop=FALSE;
 
   if (bIndex) {
     printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n",natoms);
@@ -603,31 +614,30 @@ int main(int argc,char *argv[])
     printf("\n");
   }
 
-  snew(mass,natoms);
   snew(sqrtm,natoms);
   if (bM && bDMA1) {
     avsqrtm=0;
     for(i=0; (i<natoms); i++) {
-      mass[i]=top.atoms.atom[index[i]].m;
-      sqrtm[i]=sqrt(mass[i]);
+      sqrtm[i]=sqrt(top.atoms.atom[index[i]].m);
       avsqrtm+=sqrtm[i];
     }
     avsqrtm=natoms/avsqrtm;
     for(i=0; (i<natoms); i++) 
       sqrtm[i]=sqrtm[i]*avsqrtm;
   } else
-    for(i=0; (i<natoms); i++) {
-      mass[i]=1.0;
+    for(i=0; (i<natoms); i++)
       sqrtm[i]=1.0;
-    }
   
   if (bVec2) {
     t=0;
+    totmass=0;
     for(i=0; (i<natoms); i++)
-      for(d=0;(d<DIM);d++)
-	t+=sqr(xav1[i][d]-xav2[i][d])*mass[i];
+      for(d=0;(d<DIM);d++) {
+	t+=sqr((xav1[i][d]-xav2[i][d])*sqrtm[i]);
+	totmass+=sqr(sqrtm[i]);
+      }
     fprintf(stderr,"RMSD (without fit) between the two average structures:"
-	    " %.3f (nm)\n\n",sqrt(t/natoms));
+	    " %.3f (nm)\n\n",sqrt(t/totmass));
   }
   
   if (last==-1)
@@ -677,11 +687,11 @@ int main(int argc,char *argv[])
 
   if (bProj)
     project(bTraj ? opt2fn("-f",NFILE,fnm) : NULL,
-	    ntopatoms,bTop ? &top : NULL,topbox,
+	    ntopatoms,bTop ? &top : NULL,topbox,xtop,
 	    ProjOnVecFile,TwoDPlotFile,FilterFile,skip,
 	    ExtremeFile,max,nextr,&(top.atoms),natoms,index,
-	    nref1,xref1,nfit,ifit,w_rls,
-	    mass,sqrtm,xav1,nvec1,eignr1,eigvec1,noutvec,outvec);
+	    xref1,nfit,ifit,w_rls,
+	    sqrtm,xav1,nvec1,eignr1,eigvec1,noutvec,outvec);
 
   if (OverlapFile)
     overlap(OverlapFile,natoms,
