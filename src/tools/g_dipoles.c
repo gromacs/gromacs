@@ -515,7 +515,7 @@ static void do_dip(char *fn,char *topf,
     do {
       bCont = read_mu_from_enx(fmu,iVol,iMu,mu_t,&volume,&t,teller,nre); 
       if (bCont) {  
-	timecheck=check_times(t,t);
+	timecheck=check_times(t);
 	if (timecheck < 0)
 	  teller++;
 	if ((teller % 10) == 0)
@@ -682,7 +682,7 @@ static void do_dip(char *fn,char *topf,
       bCont = read_mu_from_enx(fmu,iVol,iMu,mu_t,&volume,&t,teller,nre); 
     else
       bCont = read_next_x(status,&t,natom,x,box);
-    /*bCont = bCont && (check_times(t,t) == 0);*/
+    /*bCont = bCont && (check_times(t) == 0);*/
   } while(bCont);
   
   if (!bMU)
