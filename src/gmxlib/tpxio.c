@@ -47,7 +47,7 @@ static char *SRCID_tpxio_c = "$Id$";
 #include "copyrite.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version = 12;
+static int tpx_version = 13;
 /* This number should be the most recent incompatible version */
 static int tpx_incompatible_version = 9;
 /* This is the version of the file we are reading */
@@ -93,7 +93,7 @@ void _do_section(int fp,int key,bool bRead,char *src,int line)
  **************************************************************/
 static void do_inputrec(t_inputrec *ir,bool bRead)
 {
-  int  i,j; 
+  int  i,j,*tmp; 
   bool bDum=TRUE;
 
   if (file_version != tpx_version) {
@@ -154,9 +154,13 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_real(ir->epsilon_r); 
     do_real(ir->shake_tol);
     do_real(ir->fudgeQQ); 
-    do_int(ir->bPert); 
+    do_int(ir->efep); 
     do_real(ir->init_lambda); 
     do_real(ir->delta_lambda);
+    if (file_version >= 13)
+      do_real(ir->sc_alpha);
+    else
+      ir->sc_alpha = 0;
     do_int(ir->eDisreWeighting); 
     do_int(ir->bDisreMixed); 
     do_real(ir->dr_fc); 
@@ -201,7 +205,14 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
       snew(ir->opts.eg_excl,ir->opts.ngener*ir->opts.ngener);
     } 
     if (ir->opts.ngtc > 0) {
-      ndo_int (ir->opts.nrdf, ir->opts.ngtc,bDum); 
+      if (bRead && file_version<13) {
+	snew(tmp,ir->opts.ngtc);
+	ndo_int (tmp, ir->opts.ngtc,bDum);
+	for(i=0; i<ir->opts.ngtc; i++)
+	  ir->opts.nrdf[i] = tmp[i];
+	sfree(tmp);
+     } else
+	ndo_real(ir->opts.nrdf, ir->opts.ngtc,bDum);
       ndo_real(ir->opts.ref_t,ir->opts.ngtc,bDum); 
       ndo_real(ir->opts.tau_t,ir->opts.ngtc,bDum); 
     }

@@ -174,7 +174,7 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
 	      nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
   init_nblist(&fr->nlist_sr[eNL_QQ],maxsr,
 	      nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
-  if (fr->bPert)
+  if (fr->efep != efepNO)
     init_nblist(&fr->nlist_sr[eNL_FREE],maxsr,
 		fr->bBHAM ? eNR_BHAM_FREE : eNR_LJC_FREE);
   if (fr->bWaterOpt) {
@@ -190,7 +190,7 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
 		nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
     init_nblist(&fr->nlist_lr[eNL_QQ],maxlr,
 		nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
-    if (fr->bPert)
+    if (fr->efep != efepNO)
       init_nblist(&fr->nlist_lr[eNL_FREE],maxlr,
 		  fr->bBHAM ? eNR_BHAM_FREE : eNR_LJC_FREE);
     if (fr->bWaterOpt) {
@@ -375,7 +375,7 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
   nicg   = index[icg+1]-i0;
   bWater = (((type[a[i0]] == nWater) && (nicg == 3)) && 
 	    (!bPert[a[i0]]) && (!bPert[a[i0+1]]) && (!bPert[a[i0+2]]));
-  if (bWater && !fr->bPert)
+  if (bWater && fr->efep==efepNO)
     nicg = 1;
     
   if (bLR) {
@@ -387,7 +387,7 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
       vdw  = &fr->nlist_lr[eNL_VDW];
       coul = &fr->nlist_lr[eNL_QQ];
     }
-    if (fr->bPert)
+    if (fr->efep != efepNO)
       free = &fr->nlist_lr[eNL_FREE];
   }
   else {
@@ -399,7 +399,7 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
       vdw  = &fr->nlist_sr[eNL_VDW];
       coul = &fr->nlist_sr[eNL_QQ];
     }
-    if (fr->bPert)
+    if (fr->efep != efepNO)
       free = &fr->nlist_sr[eNL_FREE];
   }
 
@@ -413,7 +413,7 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
     if (!bCoulOnly)
       new_i_nblist(vdw,bLR ? F_LJLR : F_LJ,i_atom,shift,gid);
     new_i_nblist(coul,bLR ? F_LR : F_SR,i_atom,shift,gid);
-    if (fr->bPert)
+    if (fr->efep != efepNO)
       new_i_nblist(free,F_DVDL,i_atom,shift,gid);
     
     /* Loop over the j charge groups */
@@ -431,7 +431,7 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
       
       jj1=index[jcg+1];
 
-      if (bWater && !fr->bPert) {
+      if (bWater && fr->efep==efepNO) {
 	if (bCoulOnly) {
 	  for(jj=jj0; (jj<jj1); jj++) {
 	    j_atom = a[jj];
@@ -482,7 +482,7 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
     }
     close_i_nblist(coul);
     close_i_nblist(vdw);
-    if (fr->bPert)
+    if (fr->efep != efepNO)
       close_i_nblist(free);
   }
 }  

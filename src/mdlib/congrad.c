@@ -89,7 +89,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   real   terminate=0;
 
   /* Initiate some variables */
-  if (parm->ir.bPert)
+  if (parm->ir.efep != efepNO)
     lambda       = parm->ir.init_lambda;
   else 
     lambda = 0.0;
@@ -121,7 +121,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     
   /* Init bin for energy stuff */
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),
-		     bLR,bLJLR,bBHAM,b14,parm->ir.bPert,parm->ir.epc,
+		     bLR,bLJLR,bBHAM,b14,parm->ir.efep!=efepNO,parm->ir.epc,
 		     parm->ir.bDispCorr,cr); 
 
   /* Clear some matrix variables */

@@ -6,6 +6,7 @@ add_par.o: $(GMXHOME)/src/include/types/block.h
 add_par.o: $(GMXHOME)/src/include/types/symtab.h
 add_par.o: $(GMXHOME)/src/include/types/idef.h
 add_par.o: $(GMXHOME)/src/include/types/atoms.h
+add_par.o: $(GMXHOME)/src/include/types/trx.h
 add_par.o: $(GMXHOME)/src/include/types/topology.h
 add_par.o: $(GMXHOME)/src/include/types/energy.h
 add_par.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -33,6 +34,7 @@ add_par.o: $(GMXHOME)/src/include/macros.h
 add_par.o: $(GMXHOME)/src/include/hackblock.h
 add_par.o: $(GMXHOME)/src/include/pdbio.h
 add_par.o: $(GMXHOME)/src/include/symtab.h
+add_par.o: $(GMXHOME)/src/include/string2.h
 calcgrid.o: $(GMXHOME)/src/include/typedefs.h
 calcgrid.o: $(GMXHOME)/src/include/sysstuff.h
 calcgrid.o: $(GMXHOME)/src/include/types/simple.h
@@ -41,6 +43,7 @@ calcgrid.o: $(GMXHOME)/src/include/types/block.h
 calcgrid.o: $(GMXHOME)/src/include/types/symtab.h
 calcgrid.o: $(GMXHOME)/src/include/types/idef.h
 calcgrid.o: $(GMXHOME)/src/include/types/atoms.h
+calcgrid.o: $(GMXHOME)/src/include/types/trx.h
 calcgrid.o: $(GMXHOME)/src/include/types/topology.h
 calcgrid.o: $(GMXHOME)/src/include/types/energy.h
 calcgrid.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -74,6 +77,7 @@ convparm.o: $(GMXHOME)/src/include/types/block.h
 convparm.o: $(GMXHOME)/src/include/types/symtab.h
 convparm.o: $(GMXHOME)/src/include/types/idef.h
 convparm.o: $(GMXHOME)/src/include/types/atoms.h
+convparm.o: $(GMXHOME)/src/include/types/trx.h
 convparm.o: $(GMXHOME)/src/include/types/topology.h
 convparm.o: $(GMXHOME)/src/include/types/energy.h
 convparm.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -111,6 +115,7 @@ dum_parm.o: $(GMXHOME)/src/include/types/block.h
 dum_parm.o: $(GMXHOME)/src/include/types/symtab.h
 dum_parm.o: $(GMXHOME)/src/include/types/idef.h
 dum_parm.o: $(GMXHOME)/src/include/types/atoms.h
+dum_parm.o: $(GMXHOME)/src/include/types/trx.h
 dum_parm.o: $(GMXHOME)/src/include/types/topology.h
 dum_parm.o: $(GMXHOME)/src/include/types/energy.h
 dum_parm.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -153,6 +158,7 @@ gen_ad.o: $(GMXHOME)/src/include/types/block.h
 gen_ad.o: $(GMXHOME)/src/include/types/symtab.h
 gen_ad.o: $(GMXHOME)/src/include/types/idef.h
 gen_ad.o: $(GMXHOME)/src/include/types/atoms.h
+gen_ad.o: $(GMXHOME)/src/include/types/trx.h
 gen_ad.o: $(GMXHOME)/src/include/types/topology.h
 gen_ad.o: $(GMXHOME)/src/include/types/energy.h
 gen_ad.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -194,6 +200,7 @@ gen_dum.o: $(GMXHOME)/src/include/types/block.h
 gen_dum.o: $(GMXHOME)/src/include/types/symtab.h
 gen_dum.o: $(GMXHOME)/src/include/types/idef.h
 gen_dum.o: $(GMXHOME)/src/include/types/atoms.h
+gen_dum.o: $(GMXHOME)/src/include/types/trx.h
 gen_dum.o: $(GMXHOME)/src/include/types/topology.h
 gen_dum.o: $(GMXHOME)/src/include/types/energy.h
 gen_dum.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -237,6 +244,7 @@ gmxcheck.o: $(GMXHOME)/src/include/types/block.h
 gmxcheck.o: $(GMXHOME)/src/include/types/symtab.h
 gmxcheck.o: $(GMXHOME)/src/include/types/idef.h
 gmxcheck.o: $(GMXHOME)/src/include/types/atoms.h
+gmxcheck.o: $(GMXHOME)/src/include/types/trx.h
 gmxcheck.o: $(GMXHOME)/src/include/types/topology.h
 gmxcheck.o: $(GMXHOME)/src/include/types/energy.h
 gmxcheck.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -290,6 +298,7 @@ gmxdump.o: $(GMXHOME)/src/include/types/block.h
 gmxdump.o: $(GMXHOME)/src/include/types/symtab.h
 gmxdump.o: $(GMXHOME)/src/include/types/idef.h
 gmxdump.o: $(GMXHOME)/src/include/types/atoms.h
+gmxdump.o: $(GMXHOME)/src/include/types/trx.h
 gmxdump.o: $(GMXHOME)/src/include/types/topology.h
 gmxdump.o: $(GMXHOME)/src/include/types/energy.h
 gmxdump.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -339,6 +348,7 @@ grompp.o: $(GMXHOME)/src/include/types/block.h
 grompp.o: $(GMXHOME)/src/include/types/symtab.h
 grompp.o: $(GMXHOME)/src/include/types/idef.h
 grompp.o: $(GMXHOME)/src/include/types/atoms.h
+grompp.o: $(GMXHOME)/src/include/types/trx.h
 grompp.o: $(GMXHOME)/src/include/types/topology.h
 grompp.o: $(GMXHOME)/src/include/types/energy.h
 grompp.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -389,6 +399,7 @@ hizzie.o: $(GMXHOME)/src/include/types/block.h
 hizzie.o: $(GMXHOME)/src/include/types/symtab.h
 hizzie.o: $(GMXHOME)/src/include/types/idef.h
 hizzie.o: $(GMXHOME)/src/include/types/atoms.h
+hizzie.o: $(GMXHOME)/src/include/types/trx.h
 hizzie.o: $(GMXHOME)/src/include/types/topology.h
 hizzie.o: $(GMXHOME)/src/include/types/energy.h
 hizzie.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -420,6 +431,7 @@ hizzie.o: $(GMXHOME)/src/include/lutab.h
 hizzie.o: $(GMXHOME)/src/include/physics.h
 hizzie.o: $(GMXHOME)/src/include/grompp.h
 hizzie.o: $(GMXHOME)/src/include/hackblock.h
+hizzie.o: $(GMXHOME)/src/include/string2.h
 luck.o: $(GMXHOME)/src/include/copyrite.h
 mdrun.o: $(GMXHOME)/src/include/typedefs.h
 mdrun.o: $(GMXHOME)/src/include/sysstuff.h
@@ -429,6 +441,7 @@ mdrun.o: $(GMXHOME)/src/include/types/block.h
 mdrun.o: $(GMXHOME)/src/include/types/symtab.h
 mdrun.o: $(GMXHOME)/src/include/types/idef.h
 mdrun.o: $(GMXHOME)/src/include/types/atoms.h
+mdrun.o: $(GMXHOME)/src/include/types/trx.h
 mdrun.o: $(GMXHOME)/src/include/types/topology.h
 mdrun.o: $(GMXHOME)/src/include/types/energy.h
 mdrun.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -484,6 +497,7 @@ mk_ghat.o: $(GMXHOME)/src/include/types/block.h
 mk_ghat.o: $(GMXHOME)/src/include/types/symtab.h
 mk_ghat.o: $(GMXHOME)/src/include/types/idef.h
 mk_ghat.o: $(GMXHOME)/src/include/types/atoms.h
+mk_ghat.o: $(GMXHOME)/src/include/types/trx.h
 mk_ghat.o: $(GMXHOME)/src/include/types/topology.h
 mk_ghat.o: $(GMXHOME)/src/include/types/energy.h
 mk_ghat.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -534,6 +548,7 @@ nm2type.o: $(GMXHOME)/src/include/types/block.h
 nm2type.o: $(GMXHOME)/src/include/types/symtab.h
 nm2type.o: $(GMXHOME)/src/include/types/idef.h
 nm2type.o: $(GMXHOME)/src/include/types/atoms.h
+nm2type.o: $(GMXHOME)/src/include/types/trx.h
 nm2type.o: $(GMXHOME)/src/include/types/topology.h
 nm2type.o: $(GMXHOME)/src/include/types/energy.h
 nm2type.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -589,6 +604,7 @@ nmrun.o: $(GMXHOME)/src/include/types/block.h
 nmrun.o: $(GMXHOME)/src/include/types/symtab.h
 nmrun.o: $(GMXHOME)/src/include/types/idef.h
 nmrun.o: $(GMXHOME)/src/include/types/atoms.h
+nmrun.o: $(GMXHOME)/src/include/types/trx.h
 nmrun.o: $(GMXHOME)/src/include/types/topology.h
 nmrun.o: $(GMXHOME)/src/include/types/energy.h
 nmrun.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -639,6 +655,7 @@ opls2rtp.o: $(GMXHOME)/src/include/types/block.h
 opls2rtp.o: $(GMXHOME)/src/include/types/symtab.h
 opls2rtp.o: $(GMXHOME)/src/include/types/idef.h
 opls2rtp.o: $(GMXHOME)/src/include/types/atoms.h
+opls2rtp.o: $(GMXHOME)/src/include/types/trx.h
 opls2rtp.o: $(GMXHOME)/src/include/types/topology.h
 opls2rtp.o: $(GMXHOME)/src/include/types/energy.h
 opls2rtp.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -677,6 +694,7 @@ pdb2gmx.o: $(GMXHOME)/src/include/types/block.h
 pdb2gmx.o: $(GMXHOME)/src/include/types/symtab.h
 pdb2gmx.o: $(GMXHOME)/src/include/types/idef.h
 pdb2gmx.o: $(GMXHOME)/src/include/types/atoms.h
+pdb2gmx.o: $(GMXHOME)/src/include/types/trx.h
 pdb2gmx.o: $(GMXHOME)/src/include/types/topology.h
 pdb2gmx.o: $(GMXHOME)/src/include/types/energy.h
 pdb2gmx.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -732,6 +750,7 @@ pdb2top.o: $(GMXHOME)/src/include/types/block.h
 pdb2top.o: $(GMXHOME)/src/include/types/symtab.h
 pdb2top.o: $(GMXHOME)/src/include/types/idef.h
 pdb2top.o: $(GMXHOME)/src/include/types/atoms.h
+pdb2top.o: $(GMXHOME)/src/include/types/trx.h
 pdb2top.o: $(GMXHOME)/src/include/types/topology.h
 pdb2top.o: $(GMXHOME)/src/include/types/energy.h
 pdb2top.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -776,6 +795,7 @@ pgutil.o: $(GMXHOME)/src/include/types/block.h
 pgutil.o: $(GMXHOME)/src/include/types/symtab.h
 pgutil.o: $(GMXHOME)/src/include/types/idef.h
 pgutil.o: $(GMXHOME)/src/include/types/atoms.h
+pgutil.o: $(GMXHOME)/src/include/types/trx.h
 pgutil.o: $(GMXHOME)/src/include/types/topology.h
 pgutil.o: $(GMXHOME)/src/include/types/energy.h
 pgutil.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -806,6 +826,7 @@ readir.o: $(GMXHOME)/src/include/types/block.h
 readir.o: $(GMXHOME)/src/include/types/symtab.h
 readir.o: $(GMXHOME)/src/include/types/idef.h
 readir.o: $(GMXHOME)/src/include/types/atoms.h
+readir.o: $(GMXHOME)/src/include/types/trx.h
 readir.o: $(GMXHOME)/src/include/types/topology.h
 readir.o: $(GMXHOME)/src/include/types/energy.h
 readir.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -841,6 +862,7 @@ readir.o: $(GMXHOME)/src/include/main.h
 readir.o: $(GMXHOME)/src/include/vec.h
 readir.o: $(GMXHOME)/src/include/maths.h
 readir.o: $(GMXHOME)/src/include/lutab.h
+readir.o: $(GMXHOME)/src/include/pbc.h
 resall.o: $(GMXHOME)/src/include/sysstuff.h
 resall.o: $(GMXHOME)/src/include/assert.h
 resall.o: $(GMXHOME)/src/include/string2.h
@@ -851,6 +873,7 @@ resall.o: $(GMXHOME)/src/include/types/block.h
 resall.o: $(GMXHOME)/src/include/types/symtab.h
 resall.o: $(GMXHOME)/src/include/types/idef.h
 resall.o: $(GMXHOME)/src/include/types/atoms.h
+resall.o: $(GMXHOME)/src/include/types/trx.h
 resall.o: $(GMXHOME)/src/include/types/topology.h
 resall.o: $(GMXHOME)/src/include/types/energy.h
 resall.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -889,6 +912,7 @@ sorting.o: $(GMXHOME)/src/include/types/block.h
 sorting.o: $(GMXHOME)/src/include/types/symtab.h
 sorting.o: $(GMXHOME)/src/include/types/idef.h
 sorting.o: $(GMXHOME)/src/include/types/atoms.h
+sorting.o: $(GMXHOME)/src/include/types/trx.h
 sorting.o: $(GMXHOME)/src/include/types/topology.h
 sorting.o: $(GMXHOME)/src/include/types/energy.h
 sorting.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -918,6 +942,7 @@ specbond.o: $(GMXHOME)/src/include/types/block.h
 specbond.o: $(GMXHOME)/src/include/types/symtab.h
 specbond.o: $(GMXHOME)/src/include/types/idef.h
 specbond.o: $(GMXHOME)/src/include/types/atoms.h
+specbond.o: $(GMXHOME)/src/include/types/trx.h
 specbond.o: $(GMXHOME)/src/include/types/topology.h
 specbond.o: $(GMXHOME)/src/include/types/energy.h
 specbond.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -960,6 +985,7 @@ splitter.o: $(GMXHOME)/src/include/types/block.h
 splitter.o: $(GMXHOME)/src/include/types/symtab.h
 splitter.o: $(GMXHOME)/src/include/types/idef.h
 splitter.o: $(GMXHOME)/src/include/types/atoms.h
+splitter.o: $(GMXHOME)/src/include/types/trx.h
 splitter.o: $(GMXHOME)/src/include/types/topology.h
 splitter.o: $(GMXHOME)/src/include/types/energy.h
 splitter.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -996,6 +1022,7 @@ ter_db.o: $(GMXHOME)/src/include/types/block.h
 ter_db.o: $(GMXHOME)/src/include/types/symtab.h
 ter_db.o: $(GMXHOME)/src/include/types/idef.h
 ter_db.o: $(GMXHOME)/src/include/types/atoms.h
+ter_db.o: $(GMXHOME)/src/include/types/trx.h
 ter_db.o: $(GMXHOME)/src/include/types/topology.h
 ter_db.o: $(GMXHOME)/src/include/types/energy.h
 ter_db.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1034,6 +1061,7 @@ tomorse.o: $(GMXHOME)/src/include/types/block.h
 tomorse.o: $(GMXHOME)/src/include/types/symtab.h
 tomorse.o: $(GMXHOME)/src/include/types/idef.h
 tomorse.o: $(GMXHOME)/src/include/types/atoms.h
+tomorse.o: $(GMXHOME)/src/include/types/trx.h
 tomorse.o: $(GMXHOME)/src/include/types/topology.h
 tomorse.o: $(GMXHOME)/src/include/types/energy.h
 tomorse.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1070,6 +1098,7 @@ topcat.o: $(GMXHOME)/src/include/types/block.h
 topcat.o: $(GMXHOME)/src/include/types/symtab.h
 topcat.o: $(GMXHOME)/src/include/types/idef.h
 topcat.o: $(GMXHOME)/src/include/types/atoms.h
+topcat.o: $(GMXHOME)/src/include/types/trx.h
 topcat.o: $(GMXHOME)/src/include/types/topology.h
 topcat.o: $(GMXHOME)/src/include/types/energy.h
 topcat.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1104,6 +1133,7 @@ topdirs.o: $(GMXHOME)/src/include/types/block.h
 topdirs.o: $(GMXHOME)/src/include/types/symtab.h
 topdirs.o: $(GMXHOME)/src/include/types/idef.h
 topdirs.o: $(GMXHOME)/src/include/types/atoms.h
+topdirs.o: $(GMXHOME)/src/include/types/trx.h
 topdirs.o: $(GMXHOME)/src/include/types/topology.h
 topdirs.o: $(GMXHOME)/src/include/types/energy.h
 topdirs.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1138,6 +1168,7 @@ topexcl.o: $(GMXHOME)/src/include/types/block.h
 topexcl.o: $(GMXHOME)/src/include/types/symtab.h
 topexcl.o: $(GMXHOME)/src/include/types/idef.h
 topexcl.o: $(GMXHOME)/src/include/types/atoms.h
+topexcl.o: $(GMXHOME)/src/include/types/trx.h
 topexcl.o: $(GMXHOME)/src/include/types/topology.h
 topexcl.o: $(GMXHOME)/src/include/types/energy.h
 topexcl.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1170,6 +1201,7 @@ topio.o: $(GMXHOME)/src/include/types/block.h
 topio.o: $(GMXHOME)/src/include/types/symtab.h
 topio.o: $(GMXHOME)/src/include/types/idef.h
 topio.o: $(GMXHOME)/src/include/types/atoms.h
+topio.o: $(GMXHOME)/src/include/types/trx.h
 topio.o: $(GMXHOME)/src/include/types/topology.h
 topio.o: $(GMXHOME)/src/include/types/energy.h
 topio.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1211,6 +1243,7 @@ toppush.o: $(GMXHOME)/src/include/types/block.h
 toppush.o: $(GMXHOME)/src/include/types/symtab.h
 toppush.o: $(GMXHOME)/src/include/types/idef.h
 toppush.o: $(GMXHOME)/src/include/types/atoms.h
+toppush.o: $(GMXHOME)/src/include/types/trx.h
 toppush.o: $(GMXHOME)/src/include/types/topology.h
 toppush.o: $(GMXHOME)/src/include/types/energy.h
 toppush.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1247,6 +1280,7 @@ topshake.o: $(GMXHOME)/src/include/types/block.h
 topshake.o: $(GMXHOME)/src/include/types/symtab.h
 topshake.o: $(GMXHOME)/src/include/types/idef.h
 topshake.o: $(GMXHOME)/src/include/types/atoms.h
+topshake.o: $(GMXHOME)/src/include/types/trx.h
 topshake.o: $(GMXHOME)/src/include/types/topology.h
 topshake.o: $(GMXHOME)/src/include/types/energy.h
 topshake.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1282,6 +1316,7 @@ toputil.o: $(GMXHOME)/src/include/types/block.h
 toputil.o: $(GMXHOME)/src/include/types/symtab.h
 toputil.o: $(GMXHOME)/src/include/types/idef.h
 toputil.o: $(GMXHOME)/src/include/types/atoms.h
+toputil.o: $(GMXHOME)/src/include/types/trx.h
 toputil.o: $(GMXHOME)/src/include/types/topology.h
 toputil.o: $(GMXHOME)/src/include/types/energy.h
 toputil.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1316,6 +1351,7 @@ tpbcmp.o: $(GMXHOME)/src/include/types/block.h
 tpbcmp.o: $(GMXHOME)/src/include/types/symtab.h
 tpbcmp.o: $(GMXHOME)/src/include/types/idef.h
 tpbcmp.o: $(GMXHOME)/src/include/types/atoms.h
+tpbcmp.o: $(GMXHOME)/src/include/types/trx.h
 tpbcmp.o: $(GMXHOME)/src/include/types/topology.h
 tpbcmp.o: $(GMXHOME)/src/include/types/energy.h
 tpbcmp.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1358,6 +1394,7 @@ tpbconv.o: $(GMXHOME)/src/include/types/block.h
 tpbconv.o: $(GMXHOME)/src/include/types/symtab.h
 tpbconv.o: $(GMXHOME)/src/include/types/idef.h
 tpbconv.o: $(GMXHOME)/src/include/types/atoms.h
+tpbconv.o: $(GMXHOME)/src/include/types/trx.h
 tpbconv.o: $(GMXHOME)/src/include/types/topology.h
 tpbconv.o: $(GMXHOME)/src/include/types/energy.h
 tpbconv.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1406,6 +1443,7 @@ x2top.o: $(GMXHOME)/src/include/types/block.h
 x2top.o: $(GMXHOME)/src/include/types/symtab.h
 x2top.o: $(GMXHOME)/src/include/types/idef.h
 x2top.o: $(GMXHOME)/src/include/types/atoms.h
+x2top.o: $(GMXHOME)/src/include/types/trx.h
 x2top.o: $(GMXHOME)/src/include/types/topology.h
 x2top.o: $(GMXHOME)/src/include/types/energy.h
 x2top.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1462,6 +1500,7 @@ xlate.o: $(GMXHOME)/src/include/types/block.h
 xlate.o: $(GMXHOME)/src/include/types/symtab.h
 xlate.o: $(GMXHOME)/src/include/types/idef.h
 xlate.o: $(GMXHOME)/src/include/types/atoms.h
+xlate.o: $(GMXHOME)/src/include/types/trx.h
 xlate.o: $(GMXHOME)/src/include/types/topology.h
 xlate.o: $(GMXHOME)/src/include/types/energy.h
 xlate.o: $(GMXHOME)/src/include/types/inputrec.h

@@ -243,7 +243,7 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
     dt   = ir->delta_t;
     dt_2 = 1.0/(dt*dt);
     
-    if (ir->bPert)
+    if (ir->efep != efepNO)
       for(i=0;i<nc;i++)
 	bllen[i]=bllen0[i]+lambda*ddist[i];
     
@@ -272,7 +272,7 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
     /* count assuming nit=1 */
     inc_nrnb(nrnb,eNR_LINCS,nc);
     inc_nrnb(nrnb,eNR_LINCSMAT,(2+ir->nProjOrder)*nrtot);
-    if (ir->bPert) {
+    if (ir->efep != efepNO) {
       real dvdl=0;
       
       for(i=0; (i<nc); i++)

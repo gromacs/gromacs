@@ -103,7 +103,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     fp_ene=-1;
   set_pot_bools(&(parm->ir),top,&bLR,&bLJLR,&bBHAM,&b14);
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),bLR,bLJLR,
-		     bBHAM,b14,parm->ir.bPert,parm->ir.epc,
+		     bBHAM,b14,parm->ir.efep!=efepNO,parm->ir.epc,
 		     parm->ir.bDispCorr,cr);
 
   /* Compute initial EKin for all.. */

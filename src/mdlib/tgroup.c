@@ -194,11 +194,11 @@ void update_grps(int start,int homenr,t_groups *grps,
 
 real sum_ekin(t_grpopts *opts,t_groups *grps,tensor ekin,bool bTYZ)
 {
-  int          i,m,ngtc,nrdf,nd;
+  int          i,m,ngtc;
   real         T,ndfac,ek;
   rvec         tfac;
   t_grp_tcstat *tcstat;
-  int          *ndf;
+  real         nrdf,nd,*ndf;
   
   ngtc=opts->ngtc;
   tcstat=grps->tcstat;

@@ -38,7 +38,7 @@ typedef struct {
   int     ngacc;        /* # Accelerate groups                          */
   int     ngfrz;        /* # Freeze groups                              */
   int     ngener;	/* # Ener groups				*/
-  int     *nrdf;	/* Nr of degrees of freedom in a group		*/
+  real    *nrdf;	/* Nr of degrees of freedom in a group		*/
   real    *ref_t;	/* Coupling temperature	per group		*/
   real    *tau_t;	/* Tau coupling time 				*/
   rvec    *acc;		/* Acceleration per group			*/
@@ -95,9 +95,10 @@ typedef struct {
   bool bDispCorr;       /* Perform Long range dispersion corrections    */
   real shake_tol;	/* tolerance for shake				*/
   real fudgeQQ;		/* Id. for 1-4 coulomb interactions		*/
-  bool bPert;		/* is perturbation turned on			*/
+  int  efep;   		/* type of free energy perturbation		*/
   real init_lambda;	/* initial value for perturbation variable	*/
   real delta_lambda;	/* change of lambda per time step (1/dt)	*/
+  real sc_alpha;        /* fep soft core parameter                      */
   real dr_fc;		/* force constant for ta_disre			*/
   int  eDisreWeighting; /* type of weighting of pairs in one restraints	*/
   bool bDisreMixed;     /* Use comb of time averaged and instan. viol's	*/

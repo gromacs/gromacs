@@ -222,7 +222,7 @@ static void cmp_grpopts(FILE *fp,t_grpopts *opt1,t_grpopts *opt2)
   cmp_int(fp,"inputrec->grpopts.ngfrz",0, opt1->ngfrz,opt2->ngfrz);
   cmp_int(fp,"inputrec->grpopts.ngener",0,opt1->ngener,opt2->ngener);
   for(i=0; (i<min(opt1->ngtc,opt2->ngtc)); i++) {
-    cmp_int(fp,"inputrec->grpopts.nrdf",i,opt1->nrdf[i],opt2->nrdf[i]);
+    cmp_real(fp,"inputrec->grpopts.nrdf",i,opt1->nrdf[i],opt2->nrdf[i]);
     cmp_real(fp,"inputrec->grpopts.ref_t",i,opt1->ref_t[i],opt2->ref_t[i]);
     cmp_real(fp,"inputrec->grpopts.tau_t",i,opt1->tau_t[i],opt2->tau_t[i]);
   }
@@ -300,9 +300,10 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CII(bDispCorr);
   CIR(shake_tol);
   CIR(fudgeQQ);
-  CIB(bPert);
+  CII(efep);
   CIR(init_lambda);
   CIR(delta_lambda);
+  CIR(sc_alpha);
   CIR(dr_fc);
   CII(eDisreWeighting);
   CIB(bDisreMixed);

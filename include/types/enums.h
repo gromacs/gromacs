@@ -80,6 +80,10 @@ enum {
 
 /* NBF selection */
 enum { 
-  eNBF_NONE,  eNBF_LJ, eNBF_BHAM, eNBF_NR 
+  eNBF_NONE, eNBF_LJ, eNBF_BHAM, eNBF_NR 
 };
 
+/* FEP selection */
+enum {
+  efepNO, efepLAMBDA234, efepSOFTCORE, efepNR
+};

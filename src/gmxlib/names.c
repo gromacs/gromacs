@@ -109,3 +109,7 @@ char *gtypes[egcNR+1] = {
   "T-Coupling", "Energy Mon.", "Acceleration", "Freeze",
   "User1", "User2", "User3", "XTC", NULL
 };
+
+char *efep_names[efepNR+1] = {
+  "No", "Lambda234", "Softcore", NULL
+};

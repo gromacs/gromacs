@@ -169,7 +169,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 #define  TRY (1-Min)
   
   /* Initiate some variables  */
-  if (parm->ir.bPert)
+  if (parm->ir.efep != efepNO)
     lambda       = parm->ir.init_lambda;
   else 
     lambda = 0.0;
@@ -203,7 +203,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   
   /* Init bin for energy stuff  */
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),bLR,bLJLR,
-		     bBHAM,b14,ir->bPert,ir->epc,
+		     bBHAM,b14,ir->efep!=efepNO,ir->epc,
 		     ir->bDispCorr,cr); 
   
   /* Clear some matrix variables  */

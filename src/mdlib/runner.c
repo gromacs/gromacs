@@ -286,7 +286,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   
   /* Initial values */
   *t = *t0       = ir->init_t;
-  if (ir->bPert) {
+  if (ir->efep != efepNO) {
     *lambda = *lam0 = ir->init_lambda;
   }
   else {
@@ -312,7 +312,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
     
     if (MASTER(cr)) {
       *fp_ene = open_enx(ftp2fn(efENX,nfile,fnm),"w");
-      if ((fp_dgdl != NULL) && ir->bPert)
+      if ((fp_dgdl != NULL) && ir->efep!=efepNO)
 	*fp_dgdl =
 	  xvgropen(opt2fn("-dgdl",nfile,fnm),
 		   "dG/d\\8l\\4","Time (ps)",
@@ -321,7 +321,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
       *fp_ene = -1;
 
     *mdebin = init_mdebin(*fp_ene,grps,&(top->atoms),&(top->idef),
-			  bLR,bLJLR,bBHAM,b14,ir->bPert,ir->epc,
+			  bLR,bLJLR,bBHAM,b14,ir->efep!=efepNO,ir->epc,
 			  ir->bDispCorr,cr);
   }
   

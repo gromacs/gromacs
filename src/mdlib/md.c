@@ -206,7 +206,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (!bRerunMD)
       t        = t0   + step*parm->ir.delta_t;
     
-    if (parm->ir.bPert)
+    if (parm->ir.efep != efepNO)
       lambda   = lam0 + step*parm->ir.delta_lambda;
     if (parm->ir.bSimAnn) {
       SAfactor = 1.0  - t/parm->ir.zero_temp_time;

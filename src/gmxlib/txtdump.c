@@ -194,7 +194,7 @@ void pr_grp_opts(FILE *out,int indent,char *title,t_grpopts *opts)
   pr_indent(out,indent);
   fprintf(out,"nrdf:\t");
   for(i=0; (i<opts->ngtc); i++)
-    fprintf(out,"  %10d",opts->nrdf[i]);
+    fprintf(out,"  %10g",opts->nrdf[i]);
   fprintf(out,"\n");
   
   pr_indent(out,indent);
@@ -331,8 +331,9 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
       PS("epsilon_r",infbuf);
     PS("bDispCorr",BOOL(ir->bDispCorr));
     PR("fudgeQQ",ir->fudgeQQ);
-    PS("free_energy",BOOL(ir->bPert));
+    PS("free_energy",EFEPTYPE(ir->efep));
     PR("init_lambda",ir->init_lambda);
+    PR("sc_alpha",ir->sc_alpha);
     PR("delta_lambda",ir->delta_lambda);
     PS("disre_weighting",EDISREWEIGHTING(ir->eDisreWeighting));
     PS("disre_mixed",BOOL(ir->bDisreMixed));

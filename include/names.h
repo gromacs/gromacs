@@ -59,6 +59,7 @@ extern char *edisreweighting_names[edrwNR+1];
 extern char *enbf_names[eNBF_NR+1];
 extern char *ecomb_names[eCOMB_NR+1];
 extern char *gtypes[egcNR+1];
+extern char *efep_names[efepNR+1];
 
 #define	UNDEFINED		"UNDEFINED"
 #define ENUM_NAME(e,max,names)	((((e)<0)||((e)>=(max)))?UNDEFINED:(names)[e])
@@ -77,5 +78,6 @@ extern char *gtypes[egcNR+1];
 #define EDISREWEIGHTING(e)  ENUM_NAME(e,edrwNR,edisreweighting_names)
 #define ENBFNAME(e)    ENUM_NAME(e,eNBF_NR,enbf_names)
 #define ECOMBNAME(e)   ENUM_NAME(e,eCOMB_NR,ecomb_names)
+#define EFEPTYPE(e)    ENUM_NAME(e,efepNR,efep_names)
 
 #endif	/* _names_h */

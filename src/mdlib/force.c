@@ -268,16 +268,17 @@ void init_forcerec(FILE *log,
 		   matrix     box,
 		   bool bMolEpot)
 {
-  int    i,j,m,natoms,nrdf,ngrp;
-  real   q,zsq,T;
+  int    i,j,m,natoms,ngrp;
+  real   q,zsq,nrdf,T;
   rvec   box_size;
   double rtab;
   
   natoms         = mdatoms->nr;
 
   /* Free energy */
-  fr->bPert      = ir->bPert;
-    
+  fr->efep       = ir->efep;
+  fr->sc_alpha   = ir->sc_alpha;
+
   /* Neighbour searching stuff */
   fr->bGrid      = (ir->ns_type == ensGRID);
   fr->ndelta     = ir->ndelta;
@@ -461,7 +462,7 @@ void init_forcerec(FILE *log,
     }
     fr->rtab = max(fr->rlistlong+TAB_EXT,MAX_14_DIST);
   } 
-  else if (fr->bPert) {
+  else if (fr->efep != efepNO) {
     if (fr->rlistlong == 0) {
       char *ptr,*envvar="FEP_TABLE_LENGTH";
       fr->rtab = 5;

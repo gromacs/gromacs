@@ -102,7 +102,7 @@ extern void tcoupl(bool bTC,t_grpopts *opts,t_groups *grps,
 		   real dt,real SAfactor,int step,int nmem);
 /* Compute temperature scaling factors */
 
-extern real calc_temp(real ekin,int nrdf);
+extern real calc_temp(real ekin,real nrdf);
 /* Calculate the temperature */
 
 extern void calc_pres(int eBox,matrix box,

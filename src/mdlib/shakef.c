@@ -391,7 +391,7 @@ int bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
     lam    += blen;
     i++;
   }
-  if (ir->bPert) {
+  if (ir->efep != efepNO) {
     dt_2 = 1/sqr(ir->delta_t);
     dvdl = 0;
     for(i=0; i<ncons; i++) {

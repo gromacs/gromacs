@@ -70,8 +70,9 @@ typedef struct {
   real tabscale_exp;
 
   /* Free energy ? */
-  bool bPert;
-  
+  int  efep;
+  real sc_alpha;
+
   /* NS Stuff */
   int  eeltype;
   int  vdwtype;

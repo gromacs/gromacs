@@ -110,12 +110,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
      
      
   /* NEIGHBOURSEARCHING */
-  sprintf(err_buf,"when you use ndelta=%d the neighbour search will be done\n"
-	  "on one grid cell, and take much longer than the simple method",
-	  ir->ndelta);
-  CHECK((ir->ndelta < 1) && (ir->ns_type==ensGRID));
-     
-  
+
   if (ir->rlist == 0.0) {
     sprintf(err_buf,"can only have neighborlist cut-off zero (=infinite)\n"
 	    "with coulombtype = %s and simple neighborsearch\n"
@@ -145,7 +140,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   if ((ir->eBox != ebtNONE) && (ir->nstcomm < 0))
     warning("Removing the rotation around the center of mass in a periodic system.");
   
-  if ((EEL_LR(ir->coulombtype)) && (ir->bPert)) {
+  if ((EEL_LR(ir->coulombtype)) && (ir->efep!=efepNO)) {
     warning("You are using long-range electrostatics with free energy integration. "
 	    "This might give wrong results, since the long-range contributions "
 	    "to the free energy is not calculated.");
@@ -305,7 +300,8 @@ void get_ir(char *mdparin,char *mdparout,
   ITYPE ("nstlist",	ir->nstlist,	10);
   CTYPE ("ns algorithm (simple or grid)");
   EETYPE("ns-type",     ir->ns_type,    ens_names, nerror, TRUE);
-  ITYPE ("deltagrid",	ir->ndelta,	2);
+  /* set ndelta to the optimal value of 2 */
+  ir->ndelta = 2;
   CTYPE ("Box type, rectangular, triclinic, none");
   EETYPE("box",         ir->eBox,       eboxtype_names, nerror, TRUE);
   CTYPE ("nblist cut-off");
@@ -415,9 +411,10 @@ void get_ir(char *mdparin,char *mdparout,
   
   /* Free energy stuff */
   CCTYPE ("Free energy control stuff");
-  EETYPE("free-energy", ir->bPert,      yesno_names, nerror, TRUE);
+  EETYPE("free-energy",	ir->efep, efep_names, nerror, TRUE);
   RTYPE ("init-lambda",	ir->init_lambda,0.0);
   RTYPE ("delta-lambda",ir->delta_lambda,0.0);
+  RTYPE ("sc-alpha",ir->sc_alpha,0.0);
 
   /* Non-equilibrium MD stuff */  
   CCTYPE("Non-equilibrium MD stuff");

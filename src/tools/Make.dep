@@ -8,6 +8,7 @@ addconf.o: $(GMXHOME)/src/include/types/block.h
 addconf.o: $(GMXHOME)/src/include/types/symtab.h
 addconf.o: $(GMXHOME)/src/include/types/idef.h
 addconf.o: $(GMXHOME)/src/include/types/atoms.h
+addconf.o: $(GMXHOME)/src/include/types/trx.h
 addconf.o: $(GMXHOME)/src/include/types/topology.h
 addconf.o: $(GMXHOME)/src/include/types/energy.h
 addconf.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -57,6 +58,7 @@ anadih.o: $(GMXHOME)/src/include/types/block.h
 anadih.o: $(GMXHOME)/src/include/types/symtab.h
 anadih.o: $(GMXHOME)/src/include/types/idef.h
 anadih.o: $(GMXHOME)/src/include/types/atoms.h
+anadih.o: $(GMXHOME)/src/include/types/trx.h
 anadih.o: $(GMXHOME)/src/include/types/topology.h
 anadih.o: $(GMXHOME)/src/include/types/energy.h
 anadih.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -103,6 +105,7 @@ autocorr.o: $(GMXHOME)/src/include/types/block.h
 autocorr.o: $(GMXHOME)/src/include/types/symtab.h
 autocorr.o: $(GMXHOME)/src/include/types/idef.h
 autocorr.o: $(GMXHOME)/src/include/types/atoms.h
+autocorr.o: $(GMXHOME)/src/include/types/trx.h
 autocorr.o: $(GMXHOME)/src/include/types/topology.h
 autocorr.o: $(GMXHOME)/src/include/types/energy.h
 autocorr.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -149,6 +152,7 @@ average.o: $(GMXHOME)/src/include/types/block.h
 average.o: $(GMXHOME)/src/include/types/symtab.h
 average.o: $(GMXHOME)/src/include/types/idef.h
 average.o: $(GMXHOME)/src/include/types/atoms.h
+average.o: $(GMXHOME)/src/include/types/trx.h
 average.o: $(GMXHOME)/src/include/types/topology.h
 average.o: $(GMXHOME)/src/include/types/energy.h
 average.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -190,6 +194,7 @@ calcpot.o: $(GMXHOME)/src/include/types/block.h
 calcpot.o: $(GMXHOME)/src/include/types/symtab.h
 calcpot.o: $(GMXHOME)/src/include/types/idef.h
 calcpot.o: $(GMXHOME)/src/include/types/atoms.h
+calcpot.o: $(GMXHOME)/src/include/types/trx.h
 calcpot.o: $(GMXHOME)/src/include/types/topology.h
 calcpot.o: $(GMXHOME)/src/include/types/energy.h
 calcpot.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -243,6 +248,7 @@ cdist.o: $(GMXHOME)/src/include/types/block.h
 cdist.o: $(GMXHOME)/src/include/types/symtab.h
 cdist.o: $(GMXHOME)/src/include/types/idef.h
 cdist.o: $(GMXHOME)/src/include/types/atoms.h
+cdist.o: $(GMXHOME)/src/include/types/trx.h
 cdist.o: $(GMXHOME)/src/include/types/topology.h
 cdist.o: $(GMXHOME)/src/include/types/energy.h
 cdist.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -290,6 +296,7 @@ cmat.o: $(GMXHOME)/src/include/types/block.h
 cmat.o: $(GMXHOME)/src/include/types/symtab.h
 cmat.o: $(GMXHOME)/src/include/types/idef.h
 cmat.o: $(GMXHOME)/src/include/types/atoms.h
+cmat.o: $(GMXHOME)/src/include/types/trx.h
 cmat.o: $(GMXHOME)/src/include/types/topology.h
 cmat.o: $(GMXHOME)/src/include/types/energy.h
 cmat.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -325,6 +332,7 @@ correct.o: $(GMXHOME)/src/include/types/block.h
 correct.o: $(GMXHOME)/src/include/types/symtab.h
 correct.o: $(GMXHOME)/src/include/types/idef.h
 correct.o: $(GMXHOME)/src/include/types/atoms.h
+correct.o: $(GMXHOME)/src/include/types/trx.h
 correct.o: $(GMXHOME)/src/include/types/topology.h
 correct.o: $(GMXHOME)/src/include/types/energy.h
 correct.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -366,6 +374,7 @@ disco.o: $(GMXHOME)/src/include/types/block.h
 disco.o: $(GMXHOME)/src/include/types/symtab.h
 disco.o: $(GMXHOME)/src/include/types/idef.h
 disco.o: $(GMXHOME)/src/include/types/atoms.h
+disco.o: $(GMXHOME)/src/include/types/trx.h
 disco.o: $(GMXHOME)/src/include/types/topology.h
 disco.o: $(GMXHOME)/src/include/types/energy.h
 disco.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -416,6 +425,7 @@ dlist.o: $(GMXHOME)/src/include/types/block.h
 dlist.o: $(GMXHOME)/src/include/types/symtab.h
 dlist.o: $(GMXHOME)/src/include/types/idef.h
 dlist.o: $(GMXHOME)/src/include/types/atoms.h
+dlist.o: $(GMXHOME)/src/include/types/trx.h
 dlist.o: $(GMXHOME)/src/include/types/topology.h
 dlist.o: $(GMXHOME)/src/include/types/energy.h
 dlist.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -446,6 +456,7 @@ do_dssp.o: $(GMXHOME)/src/include/types/block.h
 do_dssp.o: $(GMXHOME)/src/include/types/symtab.h
 do_dssp.o: $(GMXHOME)/src/include/types/idef.h
 do_dssp.o: $(GMXHOME)/src/include/types/atoms.h
+do_dssp.o: $(GMXHOME)/src/include/types/trx.h
 do_dssp.o: $(GMXHOME)/src/include/types/topology.h
 do_dssp.o: $(GMXHOME)/src/include/types/energy.h
 do_dssp.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -497,6 +508,7 @@ dtools.o: $(GMXHOME)/src/include/types/block.h
 dtools.o: $(GMXHOME)/src/include/types/symtab.h
 dtools.o: $(GMXHOME)/src/include/types/idef.h
 dtools.o: $(GMXHOME)/src/include/types/atoms.h
+dtools.o: $(GMXHOME)/src/include/types/trx.h
 dtools.o: $(GMXHOME)/src/include/types/topology.h
 dtools.o: $(GMXHOME)/src/include/types/energy.h
 dtools.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -535,6 +547,7 @@ editconf.o: $(GMXHOME)/src/include/types/block.h
 editconf.o: $(GMXHOME)/src/include/types/symtab.h
 editconf.o: $(GMXHOME)/src/include/types/idef.h
 editconf.o: $(GMXHOME)/src/include/types/atoms.h
+editconf.o: $(GMXHOME)/src/include/types/trx.h
 editconf.o: $(GMXHOME)/src/include/types/topology.h
 editconf.o: $(GMXHOME)/src/include/types/energy.h
 editconf.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -577,6 +590,7 @@ editconf.o: $(GMXHOME)/src/include/physics.h
 editconf.o: $(GMXHOME)/src/include/atomprop.h
 editconf.o: $(GMXHOME)/src/include/tpxio.h
 editconf.o: $(GMXHOME)/src/include/xdrf.h
+editconf.o: $(GMXHOME)/src/include/pbc.h
 edittop.o: $(GMXHOME)/src/include/smalloc.h
 edittop.o: $(GMXHOME)/src/include/string2.h
 edittop.o: $(GMXHOME)/src/include/typedefs.h
@@ -587,6 +601,7 @@ edittop.o: $(GMXHOME)/src/include/types/block.h
 edittop.o: $(GMXHOME)/src/include/types/symtab.h
 edittop.o: $(GMXHOME)/src/include/types/idef.h
 edittop.o: $(GMXHOME)/src/include/types/atoms.h
+edittop.o: $(GMXHOME)/src/include/types/trx.h
 edittop.o: $(GMXHOME)/src/include/types/topology.h
 edittop.o: $(GMXHOME)/src/include/types/energy.h
 edittop.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -621,6 +636,7 @@ eigio.o: $(GMXHOME)/src/include/types/block.h
 eigio.o: $(GMXHOME)/src/include/types/symtab.h
 eigio.o: $(GMXHOME)/src/include/types/idef.h
 eigio.o: $(GMXHOME)/src/include/types/atoms.h
+eigio.o: $(GMXHOME)/src/include/types/trx.h
 eigio.o: $(GMXHOME)/src/include/types/topology.h
 eigio.o: $(GMXHOME)/src/include/types/energy.h
 eigio.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -656,6 +672,7 @@ eneconv.o: $(GMXHOME)/src/include/types/block.h
 eneconv.o: $(GMXHOME)/src/include/types/symtab.h
 eneconv.o: $(GMXHOME)/src/include/types/idef.h
 eneconv.o: $(GMXHOME)/src/include/types/atoms.h
+eneconv.o: $(GMXHOME)/src/include/types/trx.h
 eneconv.o: $(GMXHOME)/src/include/types/topology.h
 eneconv.o: $(GMXHOME)/src/include/types/energy.h
 eneconv.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -697,6 +714,7 @@ expfit.o: $(GMXHOME)/src/include/types/block.h
 expfit.o: $(GMXHOME)/src/include/types/symtab.h
 expfit.o: $(GMXHOME)/src/include/types/idef.h
 expfit.o: $(GMXHOME)/src/include/types/atoms.h
+expfit.o: $(GMXHOME)/src/include/types/trx.h
 expfit.o: $(GMXHOME)/src/include/types/topology.h
 expfit.o: $(GMXHOME)/src/include/types/energy.h
 expfit.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -741,6 +759,7 @@ fitahx.o: $(GMXHOME)/src/include/types/block.h
 fitahx.o: $(GMXHOME)/src/include/types/symtab.h
 fitahx.o: $(GMXHOME)/src/include/types/idef.h
 fitahx.o: $(GMXHOME)/src/include/types/atoms.h
+fitahx.o: $(GMXHOME)/src/include/types/trx.h
 fitahx.o: $(GMXHOME)/src/include/types/topology.h
 fitahx.o: $(GMXHOME)/src/include/types/energy.h
 fitahx.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -777,6 +796,7 @@ g_anaeig.o: $(GMXHOME)/src/include/types/block.h
 g_anaeig.o: $(GMXHOME)/src/include/types/symtab.h
 g_anaeig.o: $(GMXHOME)/src/include/types/idef.h
 g_anaeig.o: $(GMXHOME)/src/include/types/atoms.h
+g_anaeig.o: $(GMXHOME)/src/include/types/trx.h
 g_anaeig.o: $(GMXHOME)/src/include/types/topology.h
 g_anaeig.o: $(GMXHOME)/src/include/types/energy.h
 g_anaeig.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -830,6 +850,7 @@ g_analyze.o: $(GMXHOME)/src/include/types/block.h
 g_analyze.o: $(GMXHOME)/src/include/types/symtab.h
 g_analyze.o: $(GMXHOME)/src/include/types/idef.h
 g_analyze.o: $(GMXHOME)/src/include/types/atoms.h
+g_analyze.o: $(GMXHOME)/src/include/types/trx.h
 g_analyze.o: $(GMXHOME)/src/include/types/topology.h
 g_analyze.o: $(GMXHOME)/src/include/types/energy.h
 g_analyze.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -877,6 +898,7 @@ g_angle.o: $(GMXHOME)/src/include/types/block.h
 g_angle.o: $(GMXHOME)/src/include/types/symtab.h
 g_angle.o: $(GMXHOME)/src/include/types/idef.h
 g_angle.o: $(GMXHOME)/src/include/types/atoms.h
+g_angle.o: $(GMXHOME)/src/include/types/trx.h
 g_angle.o: $(GMXHOME)/src/include/types/topology.h
 g_angle.o: $(GMXHOME)/src/include/types/energy.h
 g_angle.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -919,6 +941,7 @@ g_bond.o: $(GMXHOME)/src/include/types/block.h
 g_bond.o: $(GMXHOME)/src/include/types/symtab.h
 g_bond.o: $(GMXHOME)/src/include/types/idef.h
 g_bond.o: $(GMXHOME)/src/include/types/atoms.h
+g_bond.o: $(GMXHOME)/src/include/types/trx.h
 g_bond.o: $(GMXHOME)/src/include/types/topology.h
 g_bond.o: $(GMXHOME)/src/include/types/energy.h
 g_bond.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -966,6 +989,7 @@ g_chi.o: $(GMXHOME)/src/include/types/block.h
 g_chi.o: $(GMXHOME)/src/include/types/symtab.h
 g_chi.o: $(GMXHOME)/src/include/types/idef.h
 g_chi.o: $(GMXHOME)/src/include/types/atoms.h
+g_chi.o: $(GMXHOME)/src/include/types/trx.h
 g_chi.o: $(GMXHOME)/src/include/types/topology.h
 g_chi.o: $(GMXHOME)/src/include/types/energy.h
 g_chi.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1020,6 +1044,7 @@ g_cluster.o: $(GMXHOME)/src/include/types/block.h
 g_cluster.o: $(GMXHOME)/src/include/types/symtab.h
 g_cluster.o: $(GMXHOME)/src/include/types/idef.h
 g_cluster.o: $(GMXHOME)/src/include/types/atoms.h
+g_cluster.o: $(GMXHOME)/src/include/types/trx.h
 g_cluster.o: $(GMXHOME)/src/include/types/topology.h
 g_cluster.o: $(GMXHOME)/src/include/types/energy.h
 g_cluster.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1072,6 +1097,7 @@ g_com.o: $(GMXHOME)/src/include/types/block.h
 g_com.o: $(GMXHOME)/src/include/types/symtab.h
 g_com.o: $(GMXHOME)/src/include/types/idef.h
 g_com.o: $(GMXHOME)/src/include/types/atoms.h
+g_com.o: $(GMXHOME)/src/include/types/trx.h
 g_com.o: $(GMXHOME)/src/include/types/topology.h
 g_com.o: $(GMXHOME)/src/include/types/energy.h
 g_com.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1119,6 +1145,7 @@ g_confrms.o: $(GMXHOME)/src/include/types/block.h
 g_confrms.o: $(GMXHOME)/src/include/types/symtab.h
 g_confrms.o: $(GMXHOME)/src/include/types/idef.h
 g_confrms.o: $(GMXHOME)/src/include/types/atoms.h
+g_confrms.o: $(GMXHOME)/src/include/types/trx.h
 g_confrms.o: $(GMXHOME)/src/include/types/topology.h
 g_confrms.o: $(GMXHOME)/src/include/types/energy.h
 g_confrms.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1169,6 +1196,7 @@ g_covar.o: $(GMXHOME)/src/include/types/block.h
 g_covar.o: $(GMXHOME)/src/include/types/symtab.h
 g_covar.o: $(GMXHOME)/src/include/types/idef.h
 g_covar.o: $(GMXHOME)/src/include/types/atoms.h
+g_covar.o: $(GMXHOME)/src/include/types/trx.h
 g_covar.o: $(GMXHOME)/src/include/types/topology.h
 g_covar.o: $(GMXHOME)/src/include/types/energy.h
 g_covar.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1220,6 +1248,7 @@ g_density.o: $(GMXHOME)/src/include/types/block.h
 g_density.o: $(GMXHOME)/src/include/types/symtab.h
 g_density.o: $(GMXHOME)/src/include/types/idef.h
 g_density.o: $(GMXHOME)/src/include/types/atoms.h
+g_density.o: $(GMXHOME)/src/include/types/trx.h
 g_density.o: $(GMXHOME)/src/include/types/topology.h
 g_density.o: $(GMXHOME)/src/include/types/energy.h
 g_density.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1269,6 +1298,7 @@ g_dielectric.o: $(GMXHOME)/src/include/types/block.h
 g_dielectric.o: $(GMXHOME)/src/include/types/symtab.h
 g_dielectric.o: $(GMXHOME)/src/include/types/idef.h
 g_dielectric.o: $(GMXHOME)/src/include/types/atoms.h
+g_dielectric.o: $(GMXHOME)/src/include/types/trx.h
 g_dielectric.o: $(GMXHOME)/src/include/types/topology.h
 g_dielectric.o: $(GMXHOME)/src/include/types/energy.h
 g_dielectric.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1314,6 +1344,7 @@ g_diffuse.o: $(GMXHOME)/src/include/types/block.h
 g_diffuse.o: $(GMXHOME)/src/include/types/symtab.h
 g_diffuse.o: $(GMXHOME)/src/include/types/idef.h
 g_diffuse.o: $(GMXHOME)/src/include/types/atoms.h
+g_diffuse.o: $(GMXHOME)/src/include/types/trx.h
 g_diffuse.o: $(GMXHOME)/src/include/types/topology.h
 g_diffuse.o: $(GMXHOME)/src/include/types/energy.h
 g_diffuse.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1358,6 +1389,7 @@ g_dih.o: $(GMXHOME)/src/include/types/block.h
 g_dih.o: $(GMXHOME)/src/include/types/symtab.h
 g_dih.o: $(GMXHOME)/src/include/types/idef.h
 g_dih.o: $(GMXHOME)/src/include/types/atoms.h
+g_dih.o: $(GMXHOME)/src/include/types/trx.h
 g_dih.o: $(GMXHOME)/src/include/types/topology.h
 g_dih.o: $(GMXHOME)/src/include/types/energy.h
 g_dih.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1403,6 +1435,7 @@ g_dipoles.o: $(GMXHOME)/src/include/types/block.h
 g_dipoles.o: $(GMXHOME)/src/include/types/symtab.h
 g_dipoles.o: $(GMXHOME)/src/include/types/idef.h
 g_dipoles.o: $(GMXHOME)/src/include/types/atoms.h
+g_dipoles.o: $(GMXHOME)/src/include/types/trx.h
 g_dipoles.o: $(GMXHOME)/src/include/types/topology.h
 g_dipoles.o: $(GMXHOME)/src/include/types/energy.h
 g_dipoles.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1458,6 +1491,7 @@ g_disre.o: $(GMXHOME)/src/include/types/block.h
 g_disre.o: $(GMXHOME)/src/include/types/symtab.h
 g_disre.o: $(GMXHOME)/src/include/types/idef.h
 g_disre.o: $(GMXHOME)/src/include/types/atoms.h
+g_disre.o: $(GMXHOME)/src/include/types/trx.h
 g_disre.o: $(GMXHOME)/src/include/types/topology.h
 g_disre.o: $(GMXHOME)/src/include/types/energy.h
 g_disre.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1517,6 +1551,7 @@ g_dist.o: $(GMXHOME)/src/include/types/block.h
 g_dist.o: $(GMXHOME)/src/include/types/symtab.h
 g_dist.o: $(GMXHOME)/src/include/types/idef.h
 g_dist.o: $(GMXHOME)/src/include/types/atoms.h
+g_dist.o: $(GMXHOME)/src/include/types/trx.h
 g_dist.o: $(GMXHOME)/src/include/types/topology.h
 g_dist.o: $(GMXHOME)/src/include/types/energy.h
 g_dist.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1564,6 +1599,7 @@ g_enemat.o: $(GMXHOME)/src/include/types/block.h
 g_enemat.o: $(GMXHOME)/src/include/types/symtab.h
 g_enemat.o: $(GMXHOME)/src/include/types/idef.h
 g_enemat.o: $(GMXHOME)/src/include/types/atoms.h
+g_enemat.o: $(GMXHOME)/src/include/types/trx.h
 g_enemat.o: $(GMXHOME)/src/include/types/topology.h
 g_enemat.o: $(GMXHOME)/src/include/types/energy.h
 g_enemat.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1615,6 +1651,7 @@ g_energy.o: $(GMXHOME)/src/include/types/block.h
 g_energy.o: $(GMXHOME)/src/include/types/symtab.h
 g_energy.o: $(GMXHOME)/src/include/types/idef.h
 g_energy.o: $(GMXHOME)/src/include/types/atoms.h
+g_energy.o: $(GMXHOME)/src/include/types/trx.h
 g_energy.o: $(GMXHOME)/src/include/types/topology.h
 g_energy.o: $(GMXHOME)/src/include/types/energy.h
 g_energy.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1666,6 +1703,7 @@ g_gyrate.o: $(GMXHOME)/src/include/types/block.h
 g_gyrate.o: $(GMXHOME)/src/include/types/symtab.h
 g_gyrate.o: $(GMXHOME)/src/include/types/idef.h
 g_gyrate.o: $(GMXHOME)/src/include/types/atoms.h
+g_gyrate.o: $(GMXHOME)/src/include/types/trx.h
 g_gyrate.o: $(GMXHOME)/src/include/types/topology.h
 g_gyrate.o: $(GMXHOME)/src/include/types/energy.h
 g_gyrate.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1714,6 +1752,7 @@ g_h2order.o: $(GMXHOME)/src/include/types/block.h
 g_h2order.o: $(GMXHOME)/src/include/types/symtab.h
 g_h2order.o: $(GMXHOME)/src/include/types/idef.h
 g_h2order.o: $(GMXHOME)/src/include/types/atoms.h
+g_h2order.o: $(GMXHOME)/src/include/types/trx.h
 g_h2order.o: $(GMXHOME)/src/include/types/topology.h
 g_h2order.o: $(GMXHOME)/src/include/types/energy.h
 g_h2order.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1760,6 +1799,7 @@ g_hbond.o: $(GMXHOME)/src/include/types/block.h
 g_hbond.o: $(GMXHOME)/src/include/types/symtab.h
 g_hbond.o: $(GMXHOME)/src/include/types/idef.h
 g_hbond.o: $(GMXHOME)/src/include/types/atoms.h
+g_hbond.o: $(GMXHOME)/src/include/types/trx.h
 g_hbond.o: $(GMXHOME)/src/include/types/topology.h
 g_hbond.o: $(GMXHOME)/src/include/types/energy.h
 g_hbond.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1811,6 +1851,7 @@ g_helix.o: $(GMXHOME)/src/include/types/block.h
 g_helix.o: $(GMXHOME)/src/include/types/symtab.h
 g_helix.o: $(GMXHOME)/src/include/types/idef.h
 g_helix.o: $(GMXHOME)/src/include/types/atoms.h
+g_helix.o: $(GMXHOME)/src/include/types/trx.h
 g_helix.o: $(GMXHOME)/src/include/types/topology.h
 g_helix.o: $(GMXHOME)/src/include/types/energy.h
 g_helix.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1863,6 +1904,7 @@ g_mdmat.o: $(GMXHOME)/src/include/types/block.h
 g_mdmat.o: $(GMXHOME)/src/include/types/symtab.h
 g_mdmat.o: $(GMXHOME)/src/include/types/idef.h
 g_mdmat.o: $(GMXHOME)/src/include/types/atoms.h
+g_mdmat.o: $(GMXHOME)/src/include/types/trx.h
 g_mdmat.o: $(GMXHOME)/src/include/types/topology.h
 g_mdmat.o: $(GMXHOME)/src/include/types/energy.h
 g_mdmat.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1908,6 +1950,7 @@ g_mindist.o: $(GMXHOME)/src/include/types/block.h
 g_mindist.o: $(GMXHOME)/src/include/types/symtab.h
 g_mindist.o: $(GMXHOME)/src/include/types/idef.h
 g_mindist.o: $(GMXHOME)/src/include/types/atoms.h
+g_mindist.o: $(GMXHOME)/src/include/types/trx.h
 g_mindist.o: $(GMXHOME)/src/include/types/topology.h
 g_mindist.o: $(GMXHOME)/src/include/types/energy.h
 g_mindist.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1953,6 +1996,7 @@ g_msd.o: $(GMXHOME)/src/include/types/block.h
 g_msd.o: $(GMXHOME)/src/include/types/symtab.h
 g_msd.o: $(GMXHOME)/src/include/types/idef.h
 g_msd.o: $(GMXHOME)/src/include/types/atoms.h
+g_msd.o: $(GMXHOME)/src/include/types/trx.h
 g_msd.o: $(GMXHOME)/src/include/types/topology.h
 g_msd.o: $(GMXHOME)/src/include/types/energy.h
 g_msd.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -1988,6 +2032,7 @@ g_msd.o: $(GMXHOME)/src/include/mshift.h
 g_msd.o: $(GMXHOME)/src/include/rmpbc.h
 g_msd.o: $(GMXHOME)/src/include/tpxio.h
 g_msd.o: $(GMXHOME)/src/include/xdrf.h
+g_msd.o: $(GMXHOME)/src/include/pbc.h
 g_multipoles.o: $(GMXHOME)/src/include/statutil.h
 g_multipoles.o: $(GMXHOME)/src/include/typedefs.h
 g_multipoles.o: $(GMXHOME)/src/include/sysstuff.h
@@ -1997,6 +2042,7 @@ g_multipoles.o: $(GMXHOME)/src/include/types/block.h
 g_multipoles.o: $(GMXHOME)/src/include/types/symtab.h
 g_multipoles.o: $(GMXHOME)/src/include/types/idef.h
 g_multipoles.o: $(GMXHOME)/src/include/types/atoms.h
+g_multipoles.o: $(GMXHOME)/src/include/types/trx.h
 g_multipoles.o: $(GMXHOME)/src/include/types/topology.h
 g_multipoles.o: $(GMXHOME)/src/include/types/energy.h
 g_multipoles.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2042,6 +2088,7 @@ g_nmeig.o: $(GMXHOME)/src/include/types/block.h
 g_nmeig.o: $(GMXHOME)/src/include/types/symtab.h
 g_nmeig.o: $(GMXHOME)/src/include/types/idef.h
 g_nmeig.o: $(GMXHOME)/src/include/types/atoms.h
+g_nmeig.o: $(GMXHOME)/src/include/types/trx.h
 g_nmeig.o: $(GMXHOME)/src/include/types/topology.h
 g_nmeig.o: $(GMXHOME)/src/include/types/energy.h
 g_nmeig.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2091,6 +2138,7 @@ g_nmens.o: $(GMXHOME)/src/include/types/block.h
 g_nmens.o: $(GMXHOME)/src/include/types/symtab.h
 g_nmens.o: $(GMXHOME)/src/include/types/idef.h
 g_nmens.o: $(GMXHOME)/src/include/types/atoms.h
+g_nmens.o: $(GMXHOME)/src/include/types/trx.h
 g_nmens.o: $(GMXHOME)/src/include/types/topology.h
 g_nmens.o: $(GMXHOME)/src/include/types/energy.h
 g_nmens.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2138,6 +2186,7 @@ g_order.o: $(GMXHOME)/src/include/types/block.h
 g_order.o: $(GMXHOME)/src/include/types/symtab.h
 g_order.o: $(GMXHOME)/src/include/types/idef.h
 g_order.o: $(GMXHOME)/src/include/types/atoms.h
+g_order.o: $(GMXHOME)/src/include/types/trx.h
 g_order.o: $(GMXHOME)/src/include/types/topology.h
 g_order.o: $(GMXHOME)/src/include/types/energy.h
 g_order.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2184,6 +2233,7 @@ g_potential.o: $(GMXHOME)/src/include/types/block.h
 g_potential.o: $(GMXHOME)/src/include/types/symtab.h
 g_potential.o: $(GMXHOME)/src/include/types/idef.h
 g_potential.o: $(GMXHOME)/src/include/types/atoms.h
+g_potential.o: $(GMXHOME)/src/include/types/trx.h
 g_potential.o: $(GMXHOME)/src/include/types/topology.h
 g_potential.o: $(GMXHOME)/src/include/types/energy.h
 g_potential.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2229,6 +2279,7 @@ g_rama.o: $(GMXHOME)/src/include/types/block.h
 g_rama.o: $(GMXHOME)/src/include/types/symtab.h
 g_rama.o: $(GMXHOME)/src/include/types/idef.h
 g_rama.o: $(GMXHOME)/src/include/types/atoms.h
+g_rama.o: $(GMXHOME)/src/include/types/trx.h
 g_rama.o: $(GMXHOME)/src/include/types/topology.h
 g_rama.o: $(GMXHOME)/src/include/types/energy.h
 g_rama.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2276,6 +2327,7 @@ g_rdens.o: $(GMXHOME)/src/include/types/block.h
 g_rdens.o: $(GMXHOME)/src/include/types/symtab.h
 g_rdens.o: $(GMXHOME)/src/include/types/idef.h
 g_rdens.o: $(GMXHOME)/src/include/types/atoms.h
+g_rdens.o: $(GMXHOME)/src/include/types/trx.h
 g_rdens.o: $(GMXHOME)/src/include/types/topology.h
 g_rdens.o: $(GMXHOME)/src/include/types/energy.h
 g_rdens.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2321,6 +2373,7 @@ g_rdf.o: $(GMXHOME)/src/include/types/block.h
 g_rdf.o: $(GMXHOME)/src/include/types/symtab.h
 g_rdf.o: $(GMXHOME)/src/include/types/idef.h
 g_rdf.o: $(GMXHOME)/src/include/types/atoms.h
+g_rdf.o: $(GMXHOME)/src/include/types/trx.h
 g_rdf.o: $(GMXHOME)/src/include/types/topology.h
 g_rdf.o: $(GMXHOME)/src/include/types/energy.h
 g_rdf.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2367,6 +2420,7 @@ g_relax.o: $(GMXHOME)/src/include/types/block.h
 g_relax.o: $(GMXHOME)/src/include/types/symtab.h
 g_relax.o: $(GMXHOME)/src/include/types/idef.h
 g_relax.o: $(GMXHOME)/src/include/types/atoms.h
+g_relax.o: $(GMXHOME)/src/include/types/trx.h
 g_relax.o: $(GMXHOME)/src/include/types/topology.h
 g_relax.o: $(GMXHOME)/src/include/types/energy.h
 g_relax.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2417,6 +2471,7 @@ g_rms.o: $(GMXHOME)/src/include/types/block.h
 g_rms.o: $(GMXHOME)/src/include/types/symtab.h
 g_rms.o: $(GMXHOME)/src/include/types/idef.h
 g_rms.o: $(GMXHOME)/src/include/types/atoms.h
+g_rms.o: $(GMXHOME)/src/include/types/trx.h
 g_rms.o: $(GMXHOME)/src/include/types/topology.h
 g_rms.o: $(GMXHOME)/src/include/types/energy.h
 g_rms.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2466,6 +2521,7 @@ g_rmsdist.o: $(GMXHOME)/src/include/types/block.h
 g_rmsdist.o: $(GMXHOME)/src/include/types/symtab.h
 g_rmsdist.o: $(GMXHOME)/src/include/types/idef.h
 g_rmsdist.o: $(GMXHOME)/src/include/types/atoms.h
+g_rmsdist.o: $(GMXHOME)/src/include/types/trx.h
 g_rmsdist.o: $(GMXHOME)/src/include/types/topology.h
 g_rmsdist.o: $(GMXHOME)/src/include/types/energy.h
 g_rmsdist.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2514,6 +2570,7 @@ g_rmsf.o: $(GMXHOME)/src/include/types/block.h
 g_rmsf.o: $(GMXHOME)/src/include/types/symtab.h
 g_rmsf.o: $(GMXHOME)/src/include/types/idef.h
 g_rmsf.o: $(GMXHOME)/src/include/types/atoms.h
+g_rmsf.o: $(GMXHOME)/src/include/types/trx.h
 g_rmsf.o: $(GMXHOME)/src/include/types/topology.h
 g_rmsf.o: $(GMXHOME)/src/include/types/energy.h
 g_rmsf.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2565,6 +2622,7 @@ g_rotacf.o: $(GMXHOME)/src/include/types/block.h
 g_rotacf.o: $(GMXHOME)/src/include/types/symtab.h
 g_rotacf.o: $(GMXHOME)/src/include/types/idef.h
 g_rotacf.o: $(GMXHOME)/src/include/types/atoms.h
+g_rotacf.o: $(GMXHOME)/src/include/types/trx.h
 g_rotacf.o: $(GMXHOME)/src/include/types/topology.h
 g_rotacf.o: $(GMXHOME)/src/include/types/energy.h
 g_rotacf.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2611,6 +2669,7 @@ g_run_rms.o: $(GMXHOME)/src/include/types/block.h
 g_run_rms.o: $(GMXHOME)/src/include/types/symtab.h
 g_run_rms.o: $(GMXHOME)/src/include/types/idef.h
 g_run_rms.o: $(GMXHOME)/src/include/types/atoms.h
+g_run_rms.o: $(GMXHOME)/src/include/types/trx.h
 g_run_rms.o: $(GMXHOME)/src/include/types/topology.h
 g_run_rms.o: $(GMXHOME)/src/include/types/energy.h
 g_run_rms.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2660,6 +2719,7 @@ g_saltbr.o: $(GMXHOME)/src/include/types/block.h
 g_saltbr.o: $(GMXHOME)/src/include/types/symtab.h
 g_saltbr.o: $(GMXHOME)/src/include/types/idef.h
 g_saltbr.o: $(GMXHOME)/src/include/types/atoms.h
+g_saltbr.o: $(GMXHOME)/src/include/types/trx.h
 g_saltbr.o: $(GMXHOME)/src/include/types/topology.h
 g_saltbr.o: $(GMXHOME)/src/include/types/energy.h
 g_saltbr.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2701,6 +2761,7 @@ g_sas.o: $(GMXHOME)/src/include/types/block.h
 g_sas.o: $(GMXHOME)/src/include/types/symtab.h
 g_sas.o: $(GMXHOME)/src/include/types/idef.h
 g_sas.o: $(GMXHOME)/src/include/types/atoms.h
+g_sas.o: $(GMXHOME)/src/include/types/trx.h
 g_sas.o: $(GMXHOME)/src/include/types/topology.h
 g_sas.o: $(GMXHOME)/src/include/types/energy.h
 g_sas.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2748,6 +2809,7 @@ g_sgangle.o: $(GMXHOME)/src/include/types/block.h
 g_sgangle.o: $(GMXHOME)/src/include/types/symtab.h
 g_sgangle.o: $(GMXHOME)/src/include/types/idef.h
 g_sgangle.o: $(GMXHOME)/src/include/types/atoms.h
+g_sgangle.o: $(GMXHOME)/src/include/types/trx.h
 g_sgangle.o: $(GMXHOME)/src/include/types/topology.h
 g_sgangle.o: $(GMXHOME)/src/include/types/energy.h
 g_sgangle.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2784,6 +2846,54 @@ g_sgangle.o: $(GMXHOME)/src/include/filenm.h
 g_sgangle.o: $(GMXHOME)/src/include/readinp.h
 g_sgangle.o: $(GMXHOME)/src/include/wman.h
 g_sgangle.o: $(GMXHOME)/src/include/rdgroup.h
+g_traj.o: $(GMXHOME)/src/include/statutil.h
+g_traj.o: $(GMXHOME)/src/include/typedefs.h
+g_traj.o: $(GMXHOME)/src/include/sysstuff.h
+g_traj.o: $(GMXHOME)/src/include/types/simple.h
+g_traj.o: $(GMXHOME)/src/include/types/enums.h
+g_traj.o: $(GMXHOME)/src/include/types/block.h
+g_traj.o: $(GMXHOME)/src/include/types/symtab.h
+g_traj.o: $(GMXHOME)/src/include/types/idef.h
+g_traj.o: $(GMXHOME)/src/include/types/atoms.h
+g_traj.o: $(GMXHOME)/src/include/types/trx.h
+g_traj.o: $(GMXHOME)/src/include/types/topology.h
+g_traj.o: $(GMXHOME)/src/include/types/energy.h
+g_traj.o: $(GMXHOME)/src/include/types/inputrec.h
+g_traj.o: $(GMXHOME)/src/include/types/nsborder.h
+g_traj.o: $(GMXHOME)/src/include/types/ishift.h
+g_traj.o: $(GMXHOME)/src/include/types/graph.h
+g_traj.o: $(GMXHOME)/src/include/fatal.h
+g_traj.o: $(GMXHOME)/src/include/types/nrnb.h
+g_traj.o: $(GMXHOME)/src/include/types/nblist.h
+g_traj.o: $(GMXHOME)/src/include/types/nsgrid.h
+g_traj.o: $(GMXHOME)/src/include/types/commrec.h
+g_traj.o: $(GMXHOME)/src/include/types/forcerec.h
+g_traj.o: $(GMXHOME)/src/include/types/mdatom.h
+g_traj.o: $(GMXHOME)/src/include/types/ifunc.h
+g_traj.o: $(GMXHOME)/src/include/types/filenm.h
+g_traj.o: $(GMXHOME)/src/include/types/group.h
+g_traj.o: $(GMXHOME)/src/include/types/drblock.h
+g_traj.o: $(GMXHOME)/src/include/types/parm.h
+g_traj.o: $(GMXHOME)/src/include/types/matrix.h
+g_traj.o: $(GMXHOME)/src/include/types/edsams.h
+g_traj.o: $(GMXHOME)/src/include/types/pulls.h
+g_traj.o: $(GMXHOME)/src/include/filenm.h
+g_traj.o: $(GMXHOME)/src/include/futil.h
+g_traj.o: $(GMXHOME)/src/include/readinp.h
+g_traj.o: $(GMXHOME)/src/include/wman.h
+g_traj.o: $(GMXHOME)/src/include/smalloc.h
+g_traj.o: $(GMXHOME)/src/include/macros.h
+g_traj.o: $(GMXHOME)/src/include/vec.h
+g_traj.o: $(GMXHOME)/src/include/maths.h
+g_traj.o: $(GMXHOME)/src/include/lutab.h
+g_traj.o: $(GMXHOME)/src/include/pbc.h
+g_traj.o: $(GMXHOME)/src/include/copyrite.h
+g_traj.o: $(GMXHOME)/src/include/rdgroup.h
+g_traj.o: $(GMXHOME)/src/include/mshift.h
+g_traj.o: $(GMXHOME)/src/include/xvgr.h
+g_traj.o: $(GMXHOME)/src/include/tpxio.h
+g_traj.o: $(GMXHOME)/src/include/xdrf.h
+g_traj.o: $(GMXHOME)/src/include/rmpbc.h
 g_velacc.o: $(GMXHOME)/src/include/confio.h
 g_velacc.o: $(GMXHOME)/src/include/typedefs.h
 g_velacc.o: $(GMXHOME)/src/include/sysstuff.h
@@ -2793,6 +2903,7 @@ g_velacc.o: $(GMXHOME)/src/include/types/block.h
 g_velacc.o: $(GMXHOME)/src/include/types/symtab.h
 g_velacc.o: $(GMXHOME)/src/include/types/idef.h
 g_velacc.o: $(GMXHOME)/src/include/types/atoms.h
+g_velacc.o: $(GMXHOME)/src/include/types/trx.h
 g_velacc.o: $(GMXHOME)/src/include/types/topology.h
 g_velacc.o: $(GMXHOME)/src/include/types/energy.h
 g_velacc.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2843,6 +2954,7 @@ genbox.o: $(GMXHOME)/src/include/types/block.h
 genbox.o: $(GMXHOME)/src/include/types/symtab.h
 genbox.o: $(GMXHOME)/src/include/types/idef.h
 genbox.o: $(GMXHOME)/src/include/types/atoms.h
+genbox.o: $(GMXHOME)/src/include/types/trx.h
 genbox.o: $(GMXHOME)/src/include/types/topology.h
 genbox.o: $(GMXHOME)/src/include/types/energy.h
 genbox.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2898,6 +3010,7 @@ genconf.o: $(GMXHOME)/src/include/types/block.h
 genconf.o: $(GMXHOME)/src/include/types/symtab.h
 genconf.o: $(GMXHOME)/src/include/types/idef.h
 genconf.o: $(GMXHOME)/src/include/types/atoms.h
+genconf.o: $(GMXHOME)/src/include/types/trx.h
 genconf.o: $(GMXHOME)/src/include/types/topology.h
 genconf.o: $(GMXHOME)/src/include/types/energy.h
 genconf.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2946,6 +3059,7 @@ gendr.o: $(GMXHOME)/src/include/types/block.h
 gendr.o: $(GMXHOME)/src/include/types/symtab.h
 gendr.o: $(GMXHOME)/src/include/types/idef.h
 gendr.o: $(GMXHOME)/src/include/types/atoms.h
+gendr.o: $(GMXHOME)/src/include/types/trx.h
 gendr.o: $(GMXHOME)/src/include/types/topology.h
 gendr.o: $(GMXHOME)/src/include/types/energy.h
 gendr.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -2991,6 +3105,7 @@ genion.o: $(GMXHOME)/src/include/types/block.h
 genion.o: $(GMXHOME)/src/include/types/symtab.h
 genion.o: $(GMXHOME)/src/include/types/idef.h
 genion.o: $(GMXHOME)/src/include/types/atoms.h
+genion.o: $(GMXHOME)/src/include/types/trx.h
 genion.o: $(GMXHOME)/src/include/types/topology.h
 genion.o: $(GMXHOME)/src/include/types/energy.h
 genion.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3050,6 +3165,7 @@ genpr.o: $(GMXHOME)/src/include/types/block.h
 genpr.o: $(GMXHOME)/src/include/types/symtab.h
 genpr.o: $(GMXHOME)/src/include/types/idef.h
 genpr.o: $(GMXHOME)/src/include/types/atoms.h
+genpr.o: $(GMXHOME)/src/include/types/trx.h
 genpr.o: $(GMXHOME)/src/include/types/topology.h
 genpr.o: $(GMXHOME)/src/include/types/energy.h
 genpr.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3089,6 +3205,7 @@ hxprops.o: $(GMXHOME)/src/include/types/block.h
 hxprops.o: $(GMXHOME)/src/include/types/symtab.h
 hxprops.o: $(GMXHOME)/src/include/types/idef.h
 hxprops.o: $(GMXHOME)/src/include/types/atoms.h
+hxprops.o: $(GMXHOME)/src/include/types/trx.h
 hxprops.o: $(GMXHOME)/src/include/types/topology.h
 hxprops.o: $(GMXHOME)/src/include/types/energy.h
 hxprops.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3127,6 +3244,7 @@ lsq.o: $(GMXHOME)/src/include/types/block.h
 lsq.o: $(GMXHOME)/src/include/types/symtab.h
 lsq.o: $(GMXHOME)/src/include/types/idef.h
 lsq.o: $(GMXHOME)/src/include/types/atoms.h
+lsq.o: $(GMXHOME)/src/include/types/trx.h
 lsq.o: $(GMXHOME)/src/include/types/topology.h
 lsq.o: $(GMXHOME)/src/include/types/energy.h
 lsq.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3170,6 +3288,7 @@ make_ndx.o: $(GMXHOME)/src/include/types/block.h
 make_ndx.o: $(GMXHOME)/src/include/types/symtab.h
 make_ndx.o: $(GMXHOME)/src/include/types/idef.h
 make_ndx.o: $(GMXHOME)/src/include/types/atoms.h
+make_ndx.o: $(GMXHOME)/src/include/types/trx.h
 make_ndx.o: $(GMXHOME)/src/include/types/topology.h
 make_ndx.o: $(GMXHOME)/src/include/types/energy.h
 make_ndx.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3215,6 +3334,7 @@ mcprop.o: $(GMXHOME)/src/include/types/block.h
 mcprop.o: $(GMXHOME)/src/include/types/symtab.h
 mcprop.o: $(GMXHOME)/src/include/types/idef.h
 mcprop.o: $(GMXHOME)/src/include/types/atoms.h
+mcprop.o: $(GMXHOME)/src/include/types/trx.h
 mcprop.o: $(GMXHOME)/src/include/types/topology.h
 mcprop.o: $(GMXHOME)/src/include/types/energy.h
 mcprop.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3251,6 +3371,7 @@ mk_angndx.o: $(GMXHOME)/src/include/types/block.h
 mk_angndx.o: $(GMXHOME)/src/include/types/symtab.h
 mk_angndx.o: $(GMXHOME)/src/include/types/idef.h
 mk_angndx.o: $(GMXHOME)/src/include/types/atoms.h
+mk_angndx.o: $(GMXHOME)/src/include/types/trx.h
 mk_angndx.o: $(GMXHOME)/src/include/types/topology.h
 mk_angndx.o: $(GMXHOME)/src/include/types/energy.h
 mk_angndx.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3290,6 +3411,7 @@ my_rdf.o: $(GMXHOME)/src/include/types/block.h
 my_rdf.o: $(GMXHOME)/src/include/types/symtab.h
 my_rdf.o: $(GMXHOME)/src/include/types/idef.h
 my_rdf.o: $(GMXHOME)/src/include/types/atoms.h
+my_rdf.o: $(GMXHOME)/src/include/types/trx.h
 my_rdf.o: $(GMXHOME)/src/include/types/topology.h
 my_rdf.o: $(GMXHOME)/src/include/types/energy.h
 my_rdf.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3333,6 +3455,7 @@ nsc.o: $(GMXHOME)/src/include/types/block.h
 nsc.o: $(GMXHOME)/src/include/types/symtab.h
 nsc.o: $(GMXHOME)/src/include/types/idef.h
 nsc.o: $(GMXHOME)/src/include/types/atoms.h
+nsc.o: $(GMXHOME)/src/include/types/trx.h
 nsc.o: $(GMXHOME)/src/include/types/topology.h
 nsc.o: $(GMXHOME)/src/include/types/energy.h
 nsc.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3362,6 +3485,7 @@ orise.o: $(GMXHOME)/src/include/types/block.h
 orise.o: $(GMXHOME)/src/include/types/symtab.h
 orise.o: $(GMXHOME)/src/include/types/idef.h
 orise.o: $(GMXHOME)/src/include/types/atoms.h
+orise.o: $(GMXHOME)/src/include/types/trx.h
 orise.o: $(GMXHOME)/src/include/types/topology.h
 orise.o: $(GMXHOME)/src/include/types/energy.h
 orise.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3402,6 +3526,7 @@ polynomials.o: $(GMXHOME)/src/include/types/block.h
 polynomials.o: $(GMXHOME)/src/include/types/symtab.h
 polynomials.o: $(GMXHOME)/src/include/types/idef.h
 polynomials.o: $(GMXHOME)/src/include/types/atoms.h
+polynomials.o: $(GMXHOME)/src/include/types/trx.h
 polynomials.o: $(GMXHOME)/src/include/types/topology.h
 polynomials.o: $(GMXHOME)/src/include/types/energy.h
 polynomials.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3439,6 +3564,7 @@ pp2shift.o: $(GMXHOME)/src/include/types/block.h
 pp2shift.o: $(GMXHOME)/src/include/types/symtab.h
 pp2shift.o: $(GMXHOME)/src/include/types/idef.h
 pp2shift.o: $(GMXHOME)/src/include/types/atoms.h
+pp2shift.o: $(GMXHOME)/src/include/types/trx.h
 pp2shift.o: $(GMXHOME)/src/include/types/topology.h
 pp2shift.o: $(GMXHOME)/src/include/types/energy.h
 pp2shift.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3478,6 +3604,7 @@ proptim.o: $(GMXHOME)/src/include/types/block.h
 proptim.o: $(GMXHOME)/src/include/types/symtab.h
 proptim.o: $(GMXHOME)/src/include/types/idef.h
 proptim.o: $(GMXHOME)/src/include/types/atoms.h
+proptim.o: $(GMXHOME)/src/include/types/trx.h
 proptim.o: $(GMXHOME)/src/include/types/topology.h
 proptim.o: $(GMXHOME)/src/include/types/energy.h
 proptim.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3518,6 +3645,7 @@ protonate.o: $(GMXHOME)/src/include/types/block.h
 protonate.o: $(GMXHOME)/src/include/types/symtab.h
 protonate.o: $(GMXHOME)/src/include/types/idef.h
 protonate.o: $(GMXHOME)/src/include/types/atoms.h
+protonate.o: $(GMXHOME)/src/include/types/trx.h
 protonate.o: $(GMXHOME)/src/include/types/topology.h
 protonate.o: $(GMXHOME)/src/include/types/energy.h
 protonate.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3560,6 +3688,7 @@ ql77.o: $(GMXHOME)/src/include/types/block.h
 ql77.o: $(GMXHOME)/src/include/types/symtab.h
 ql77.o: $(GMXHOME)/src/include/types/idef.h
 ql77.o: $(GMXHOME)/src/include/types/atoms.h
+ql77.o: $(GMXHOME)/src/include/types/trx.h
 ql77.o: $(GMXHOME)/src/include/types/topology.h
 ql77.o: $(GMXHOME)/src/include/types/energy.h
 ql77.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3594,6 +3723,7 @@ readev.o: $(GMXHOME)/src/include/types/block.h
 readev.o: $(GMXHOME)/src/include/types/symtab.h
 readev.o: $(GMXHOME)/src/include/types/idef.h
 readev.o: $(GMXHOME)/src/include/types/atoms.h
+readev.o: $(GMXHOME)/src/include/types/trx.h
 readev.o: $(GMXHOME)/src/include/types/topology.h
 readev.o: $(GMXHOME)/src/include/types/energy.h
 readev.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3625,6 +3755,7 @@ recomb.o: $(GMXHOME)/src/include/types/block.h
 recomb.o: $(GMXHOME)/src/include/types/symtab.h
 recomb.o: $(GMXHOME)/src/include/types/idef.h
 recomb.o: $(GMXHOME)/src/include/types/atoms.h
+recomb.o: $(GMXHOME)/src/include/types/trx.h
 recomb.o: $(GMXHOME)/src/include/types/topology.h
 recomb.o: $(GMXHOME)/src/include/types/energy.h
 recomb.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3658,6 +3789,7 @@ sas2mat.o: $(GMXHOME)/src/include/types/block.h
 sas2mat.o: $(GMXHOME)/src/include/types/symtab.h
 sas2mat.o: $(GMXHOME)/src/include/types/idef.h
 sas2mat.o: $(GMXHOME)/src/include/types/atoms.h
+sas2mat.o: $(GMXHOME)/src/include/types/trx.h
 sas2mat.o: $(GMXHOME)/src/include/types/topology.h
 sas2mat.o: $(GMXHOME)/src/include/types/energy.h
 sas2mat.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3687,6 +3819,42 @@ sas2mat.o: $(GMXHOME)/src/include/futil.h
 sas2mat.o: $(GMXHOME)/src/include/readinp.h
 sas2mat.o: $(GMXHOME)/src/include/wman.h
 sas2mat.o: $(GMXHOME)/src/include/smalloc.h
+sortwater.o: $(GMXHOME)/src/include/typedefs.h
+sortwater.o: $(GMXHOME)/src/include/sysstuff.h
+sortwater.o: $(GMXHOME)/src/include/types/simple.h
+sortwater.o: $(GMXHOME)/src/include/types/enums.h
+sortwater.o: $(GMXHOME)/src/include/types/block.h
+sortwater.o: $(GMXHOME)/src/include/types/symtab.h
+sortwater.o: $(GMXHOME)/src/include/types/idef.h
+sortwater.o: $(GMXHOME)/src/include/types/atoms.h
+sortwater.o: $(GMXHOME)/src/include/types/trx.h
+sortwater.o: $(GMXHOME)/src/include/types/topology.h
+sortwater.o: $(GMXHOME)/src/include/types/energy.h
+sortwater.o: $(GMXHOME)/src/include/types/inputrec.h
+sortwater.o: $(GMXHOME)/src/include/types/nsborder.h
+sortwater.o: $(GMXHOME)/src/include/types/ishift.h
+sortwater.o: $(GMXHOME)/src/include/types/graph.h
+sortwater.o: $(GMXHOME)/src/include/fatal.h
+sortwater.o: $(GMXHOME)/src/include/types/nrnb.h
+sortwater.o: $(GMXHOME)/src/include/types/nblist.h
+sortwater.o: $(GMXHOME)/src/include/types/nsgrid.h
+sortwater.o: $(GMXHOME)/src/include/types/commrec.h
+sortwater.o: $(GMXHOME)/src/include/types/forcerec.h
+sortwater.o: $(GMXHOME)/src/include/types/mdatom.h
+sortwater.o: $(GMXHOME)/src/include/types/ifunc.h
+sortwater.o: $(GMXHOME)/src/include/types/filenm.h
+sortwater.o: $(GMXHOME)/src/include/types/group.h
+sortwater.o: $(GMXHOME)/src/include/types/drblock.h
+sortwater.o: $(GMXHOME)/src/include/types/parm.h
+sortwater.o: $(GMXHOME)/src/include/types/matrix.h
+sortwater.o: $(GMXHOME)/src/include/types/edsams.h
+sortwater.o: $(GMXHOME)/src/include/types/pulls.h
+sortwater.o: $(GMXHOME)/src/include/random.h
+sortwater.o: $(GMXHOME)/src/include/smalloc.h
+sortwater.o: $(GMXHOME)/src/include/vec.h
+sortwater.o: $(GMXHOME)/src/include/maths.h
+sortwater.o: $(GMXHOME)/src/include/macros.h
+sortwater.o: $(GMXHOME)/src/include/lutab.h
 testacf.o: $(GMXHOME)/src/include/typedefs.h
 testacf.o: $(GMXHOME)/src/include/sysstuff.h
 testacf.o: $(GMXHOME)/src/include/types/simple.h
@@ -3695,6 +3863,7 @@ testacf.o: $(GMXHOME)/src/include/types/block.h
 testacf.o: $(GMXHOME)/src/include/types/symtab.h
 testacf.o: $(GMXHOME)/src/include/types/idef.h
 testacf.o: $(GMXHOME)/src/include/types/atoms.h
+testacf.o: $(GMXHOME)/src/include/types/trx.h
 testacf.o: $(GMXHOME)/src/include/types/topology.h
 testacf.o: $(GMXHOME)/src/include/types/energy.h
 testacf.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3738,6 +3907,7 @@ trjcat.o: $(GMXHOME)/src/include/types/block.h
 trjcat.o: $(GMXHOME)/src/include/types/symtab.h
 trjcat.o: $(GMXHOME)/src/include/types/idef.h
 trjcat.o: $(GMXHOME)/src/include/types/atoms.h
+trjcat.o: $(GMXHOME)/src/include/types/trx.h
 trjcat.o: $(GMXHOME)/src/include/types/topology.h
 trjcat.o: $(GMXHOME)/src/include/types/energy.h
 trjcat.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3794,6 +3964,7 @@ trjconv.o: $(GMXHOME)/src/include/types/block.h
 trjconv.o: $(GMXHOME)/src/include/types/symtab.h
 trjconv.o: $(GMXHOME)/src/include/types/idef.h
 trjconv.o: $(GMXHOME)/src/include/types/atoms.h
+trjconv.o: $(GMXHOME)/src/include/types/trx.h
 trjconv.o: $(GMXHOME)/src/include/types/topology.h
 trjconv.o: $(GMXHOME)/src/include/types/energy.h
 trjconv.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3850,6 +4021,7 @@ trjorder.o: $(GMXHOME)/src/include/types/block.h
 trjorder.o: $(GMXHOME)/src/include/types/symtab.h
 trjorder.o: $(GMXHOME)/src/include/types/idef.h
 trjorder.o: $(GMXHOME)/src/include/types/atoms.h
+trjorder.o: $(GMXHOME)/src/include/types/trx.h
 trjorder.o: $(GMXHOME)/src/include/types/topology.h
 trjorder.o: $(GMXHOME)/src/include/types/energy.h
 trjorder.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3900,6 +4072,7 @@ wheel.o: $(GMXHOME)/src/include/types/block.h
 wheel.o: $(GMXHOME)/src/include/types/symtab.h
 wheel.o: $(GMXHOME)/src/include/types/idef.h
 wheel.o: $(GMXHOME)/src/include/types/atoms.h
+wheel.o: $(GMXHOME)/src/include/types/trx.h
 wheel.o: $(GMXHOME)/src/include/types/topology.h
 wheel.o: $(GMXHOME)/src/include/types/energy.h
 wheel.o: $(GMXHOME)/src/include/types/inputrec.h
@@ -3949,6 +4122,7 @@ xpm2ps.o: $(GMXHOME)/src/include/types/block.h
 xpm2ps.o: $(GMXHOME)/src/include/types/symtab.h
 xpm2ps.o: $(GMXHOME)/src/include/types/idef.h
 xpm2ps.o: $(GMXHOME)/src/include/types/atoms.h
+xpm2ps.o: $(GMXHOME)/src/include/types/trx.h
 xpm2ps.o: $(GMXHOME)/src/include/types/topology.h
 xpm2ps.o: $(GMXHOME)/src/include/types/energy.h
 xpm2ps.o: $(GMXHOME)/src/include/types/inputrec.h

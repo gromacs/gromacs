@@ -85,7 +85,7 @@ void calc_pres(int eBox,matrix box,tensor ekin,tensor vir,tensor pres,real Elr)
   }
 }
 
-real calc_temp(real ekin,int nrdf)
+real calc_temp(real ekin,real nrdf)
 {
   return (2.0*ekin)/(nrdf*BOLTZ);
 }
