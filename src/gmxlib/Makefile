@@ -159,8 +159,6 @@ fitter:		fitter.o
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS)
 mgmxtest:	mgmxtest.o
 		$(LD) -o $@ $^  $(SYSLIBS)
-compnl:		compnl.o
-		$(LD) -o $@ $^  $(SYSLIBS)
 calcrf:		calcrf.o
 		$(LD) -o $@ $^  $(SYSLIBS)
 

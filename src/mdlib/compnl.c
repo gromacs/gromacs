@@ -30,7 +30,7 @@ static char *SRCID_compnl_c = "$Id$";
 
 #include "ns.h"
 #include "smalloc.h"
-#include "wnblist.h"
+#include "../mdlib/wnblist.h"
 #include "futil.h"
 #include "macros.h"
 #include "statutil.h"

@@ -28,7 +28,7 @@ OBJ		= \
 		ns.o		nsb.o		nsgrid.o	\
 		pme.o		poisson.o	pppm.o		\
 		psgather.o	pull.o 		pullinit.o	\
-		pullio.o	pullutil.o	\
+		pullio.o	pullutil.o			\
 		pssolve.o	psspread.o	runner.o	\
 		shakef.o	sim_util.o	splittop.o	\
 		steep.o		tables.o	tgroup.o	\
@@ -55,6 +55,8 @@ $(LIB)(callf77.o):	callf77.m4 $(M4FILE)
 		$(RM) callf77.c callf77.o
 timefft:	timefft.o
 		$(LD) $(RUNLDOPT) -o $@ $^ $(RUNSYSLIBS)
+compnl:		compnl.o
+		$(LD) -o $@ $^  $(RUNSYSLIBS)
 
 $(GMXHOME)/src/makef/Makefile.def:
 	echo "Wrong GROMACS environment, Please source GMXRC in this source tree"
