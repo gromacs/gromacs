@@ -226,7 +226,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	  xprime[i][m]=x[i][m] + b*p[i][m];
 	}
       }
-      bNS=TRUE;
+      bNS = ((parm->ir.nstlist > 0) || (count==0));
       /*((parm->ir.nstlist && ((count % parm->ir.nstlist)==0)) || (count==0));*/
       
       /* Calc force & energy on new trial position  */
@@ -235,6 +235,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	       buf,mdatoms,ener,bVerbose && !(PAR(cr)),
 	       lambda,graph,bNS,FALSE,fr);
       unshift_self(graph,fr->shift_vec,xprime);
+      bNS = (parm->ir.nstlist > 0);
       /*bNS=FALSE;*/
       gpb=0.0;
       for(i=start;i<end;i++) {
