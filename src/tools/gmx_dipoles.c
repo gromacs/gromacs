@@ -382,8 +382,8 @@ real compute_avercos(int n,rvec dip[])
   d=0;
   for(i=k=0; (i<n); i++)
     for(j=i+1; (j<n); j++,k++) 
-      d += fabs(cos_angle(dip[i],dip[j]));
-  return d/k;
+      d += fabs(dcos_angle(dip[i],dip[j]));
+  return (d+n*0.5)/(k+n*0.5);
 }
 
 static void do_dip(char *fn,char *topf,
@@ -510,7 +510,7 @@ static void do_dip(char *fn,char *topf,
   outaver = xvgropen(out_aver,"Total dipole moment",
 		     "Time (ps)","D");
   if (cosaver)
-    caver = xvgropen(cosaver,"Average pair orientation","Time (ps)","\f{4}<|cos\f{12}q\f{4}|>");
+    caver = xvgropen(cosaver,"Average pair orientation","Time (ps)","\\f{4}<|cos\\f{12}q\\f{4}|>");
     
   /* Write legends to all the files */
   xvgr_legend(outmtot,NLEGMTOT,leg_mtot);
