@@ -28,6 +28,7 @@
  */
 static char *SRCID_hackblock_c = "$Id$";
 
+#include <string.h>
 #include "hackblock.h"
 #include "smalloc.h"
 #include "vec.h"
