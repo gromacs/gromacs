@@ -86,7 +86,7 @@ void init_single(FILE *log,t_parm *parm,
                  rvec **x,rvec **v,t_mdatoms **mdatoms,
 		 t_nsborder *nsb)
 {
-  int         step,natoms,nre;
+  int         step,natoms;
   real        t,lambda;
   t_tpxheader tpx;
 
@@ -107,7 +107,7 @@ void init_single(FILE *log,t_parm *parm,
 void distribute_parts(int left,int right,int pid,int nprocs,t_parm *parm,
 		      char *tpxfile,int nstDlb)
 {
-  int         natoms,nre,step;
+  int         natoms,step;
   real        t,lambda;
   t_tpxheader tpx;
   t_topology  top;

@@ -684,10 +684,9 @@ real do_14(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
   real      r2,rlong2;
   atom_id   ai,aj,itype;
   t_iatom   *ia0,*iatom;
-  int       m,gid;
+  int       gid;
   t_ishift  shift;
   real      c6A,c12A,c6B,c12B;
-  real      k_rf;
 
   shift = CENTRAL;
   

@@ -179,7 +179,6 @@ void write_traj(FILE *log,t_commrec *cr,
 		int natoms,rvec *xx,rvec *vv,rvec *ff,matrix box)
 {
   static int fp=-1;
-  int    i;
   
   if ((fp == -1) && MASTER(cr)) {
 #ifdef DEBUG

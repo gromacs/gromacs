@@ -40,7 +40,7 @@ static char *SRCID_wnblist_c = "$Id$";
 static void write_nblist(FILE *out,t_nblist *nblist,rvec sv[SHIFTS],
 			 bool bFull)
 {
-  int i,j,j0,k,i_atom,jid,grp;
+  int j,j0,k,i_atom,jid;
   
 
   fprintf(out,"nri=%8d\n",nblist->nri);
@@ -99,8 +99,9 @@ static void write_nblist(FILE *out,t_nblist *nblist,rvec sv[SHIFTS],
 void read_nblist(FILE *in,bool **matje)
 {
   char     buf[256];
-  int      i,ia,ja,nnbl,ii,jj,full;
-  t_nblist nbl[3];
+  int      i,nnbl,full;
+/*   int      ia,ja,ii,jj; */
+/*   t_nblist nbl[3]; */
 
   for(i=0; (i<2); i++)  
     do {
@@ -128,13 +129,12 @@ void read_nblist(FILE *in,bool **matje)
 
 void read_nblistshift(FILE *in,int **matje,int maxatom)
 {
-  static   int count=0;
-  FILE     *out;
   char     buf[256];
-  int      t,li,ia,ja,nnbl,tempi,ii,jj,swap,gid,full,nrI,nrJ;
-  t_nblist nbl[3],*list;
-  t_nl_i   *nli;
-  int  ntw=0;
+  int      nnbl,full,
+/*   int      t,li,ia,ja,tempi,ii,jj,swap,gid,nrI,nrJ; */
+/*   t_nblist nbl[3],*list; */
+/*   t_nl_i   *nli; */
+/*   int  ntw=0; */
   
   do {
     fscanf(in,"%s",buf);

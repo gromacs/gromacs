@@ -110,7 +110,7 @@ void do_force(FILE *log,t_commrec *cr,
 {
   static rvec box_size;
   int    pid,cg0,cg1;
-  int    i,start,homenr;
+  int    start,homenr;
   
   pid    = cr->pid;
   start  = START(nsb);

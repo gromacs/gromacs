@@ -50,10 +50,10 @@ static char *SRCID_statutil_c = "$Id$";
  ******************************************************************/
 
 /* Globals for trajectory input */
-real        tbegin=-1.0,tend=-1.0;
-static bool        bView=FALSE;
-static ulong       uFlags=0;
-static char        *program=NULL;
+real         tbegin=-1.0,tend=-1.0;
+static bool  bView=FALSE;
+static ulong uFlags=0;
+static char  *program=NULL;
 
 #define FF(arg) ((uFlags & arg)==arg)
 

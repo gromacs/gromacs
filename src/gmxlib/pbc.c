@@ -46,14 +46,17 @@ static char *SRCID_pbc_c = "$Id$";
 
 /* Global variables */
 static bool bInit=FALSE;
-static bool bTrunc,bTriclinic;
-static real side,side_2,side3_4,diag;
+static bool bTrunc;
+/* static bool bTriclinic; */
+static real side,side_2,side3_4;
+/* static real diag; */
 static rvec gl_fbox,gl_hbox,gl_mhbox;
 static matrix box_inv;
 
 void init_pbc(matrix box,bool bTruncOct)
 {
-  int i,j;
+  int i;
+/*   int j; */
 
   bInit   = TRUE;
   bTrunc  = bTruncOct;
@@ -213,8 +216,8 @@ void put_atoms_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
 		      matrix box,rvec box_size,t_block *cgs,
 		      rvec pos[],rvec shift_vec[],rvec cg_cm[])
 {
-  int  icg,ai,m,k,k0,k1;
-  real dx,dy,dz,cgx,cgy,cgz,nrcg,bm,inv_ncg;
+  int  icg,ai,k,k0,k1;
+  real dx,dy,dz,cgx,cgy,cgz,nrcg,inv_ncg;
   real bx,by,bz,hbx,hby,hbz,tx,ty,tz;
   real binv_x,binv_y,binv_z;
   atom_id *cga,*cgindex;

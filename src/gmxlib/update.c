@@ -257,7 +257,6 @@ static void do_elupdate(int start,int homenr,double dt,
   real   qm;             /* qm = charge of atom over mass of atom. */
   real   e_tmp;         /* holds sum of all terms cos expansion for field */
   real   uold,l1,lg;
-  real   field=0;
   real   real1=1.0;
   rvec   adds;          /* contributions from accel and field */
   int    n,d,i;
@@ -418,7 +417,7 @@ void calc_ke_part(bool bFirstStep,int start,int homenr,
   real         hm,vvt,vct;
   t_grp_tcstat *tcstat=grps->tcstat;
   t_grp_acc    *grpstat=grps->grpstat;
-  real         dvdl,L1=1.0-lambda;
+  real         dvdl;
 
   /* group velocities are calculated in update_grps and
    * accumulated in acumulate_groups.
@@ -497,7 +496,7 @@ static int pcount=0;
 
 int pcomp(const void *p1, const void *p2)
 {
-  int     i,db;
+  int     db;
   atom_id min1,min2,max1,max2;
   t_sortblock *a1=(t_sortblock *)p1;
   t_sortblock *a2=(t_sortblock *)p2;
@@ -540,8 +539,8 @@ void init_update(FILE *log,t_topology *top,t_inputrec *ir,
   t_idef      *idef=&(top->idef);
   t_iatom     *iatom;
   atom_id     *inv_sblock;
-  int         i,j,k,m,bnr,b0,b1;
-  int         ncons,bstart,blen;
+  int         i,j,m,bnr;
+  int         ncons,bstart;
   int         settle_type;
   
   /* Output variables, initiate them right away */
@@ -672,7 +671,7 @@ void init_project(FILE *log,t_topology *top,t_inputrec *ir,
 {
   t_idef      *idef=&(top->idef);
   t_iatom     *iatom;
-  int         i,j,k,m,n,bnr,b0,b1,b,cen;
+  int         i,j,k,n,b1,b,cen;
   int         ncons;
   int         type,a1,a2,b2,nr,n1,n2,nc4;
   real        len,len1,sign;
@@ -851,7 +850,6 @@ void update(int          natoms, 	/* number of atoms in simulation */
   static bool      bFirst=TRUE;
   static int       nblocks=0;
   static int       *sblock=NULL;
-  static atom_id   *inv_sblock;
   static int       nsettle,settle_type;
   static int       *owptr;
   static bool      bField=FALSE;  /* true if field is used */
@@ -868,10 +866,8 @@ void update(int          natoms, 	/* number of atoms in simulation */
   t_idef           *idef=&(top->idef);
   double           dt;
   real             dt_1,dt_2;
-  real             L1=1.0-lambda;
-  int              i,d,n,m,g;
+  int              i,n,m,g;
   int              ncons=0,nc;
-  int              ret;
   int              warn,p_imax;
   real             wang,p_max,p_rms;
 

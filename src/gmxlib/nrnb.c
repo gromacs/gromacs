@@ -214,7 +214,7 @@ static int    shake_index[]={
 
 static double pr_av(FILE *log,int nprocs,double fav,double ftot[],char *title)
 {
-  int    i,j,perc;
+  int    i,perc;
   double dperc,unb;
   
   unb=0;
@@ -240,7 +240,7 @@ static double pr_av(FILE *log,int nprocs,double fav,double ftot[],char *title)
 void pr_load(FILE *log,int nprocs,t_nrnb nrnb[])
 {
   int    i,j,perc;
-  double dperc,unb,uf,us,tcyc;
+  double dperc,unb,uf,us;
   double *ftot,fav;
   double *stot,sav;
   t_nrnb *av;

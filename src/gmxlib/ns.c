@@ -109,7 +109,9 @@ static void new_i_nblist(FILE *log,t_nblist *nlist,int ftype,int i_atom,
 			 bool bWater,int shift)
 {
   t_nl_i *nli;
+#ifdef _amb_
   int    ma;
+#endif
     
   if (nlist->maxnri <= nlist->nri) {
 #ifdef _amb_
@@ -169,7 +171,7 @@ void put_in_list(FILE *log,t_iparams ip[],int atnr,int nWater,
 {
   t_nblist  *vdw,*coul,*free;
   
-  int 	    i,j,jcg,nit,igid,jgid,gid,ind_ij,jt;
+  int 	    i,j,jcg,nit,igid,jgid,gid,ind_ij;
   atom_id   jj,jj0,jj1,i_atom,j_atom;
   int       i0,nicg;
   
@@ -381,9 +383,8 @@ static void ns_inner_rect(FILE *log,rvec x[],int icg,int njcg,atom_id jcg[],
 {
   real     rij2;
   t_ishift shift;
-  int      j,nri,nrj;
+  int      j,nrj;
   atom_id  cg_j;
-  atom_id  *aaj;
 
   for(j=0; (j<njcg); j++) {
     cg_j   = jcg[j];
@@ -516,7 +517,7 @@ int ns5_core(FILE *log,t_forcerec *fr,
   static atom_id *nl_lr,*nl_sr=NULL;
   t_block *cgs=&(top->blocks[ebCGS]);
   int  tx,ty,tz,cx,cy,cz,dx,dy,dz;
-  int  ci,cj;
+  int  cj;
   int  dx0,dx1,dy0,dy1,dz0,dz1;
   int  Nx,Ny,Nz,delta,shift;
   real r2;
@@ -699,7 +700,8 @@ int search_neighbours(FILE *log,t_forcerec *fr,
 
   t_block  *cgs=&(top->blocks[ebCGS]);
   rvec     box_size;
-  int      m,ncg_2,ngener;
+  int      m,ngener;
+/*   int      ncg_2; */
   int      nsearch;
   bool     bGrid;
   char     *ptr;

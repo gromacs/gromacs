@@ -141,8 +141,7 @@ static void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
 		       real *kappa,real *epsfac,real *krf,real *crf)
 {
   static bool bFirst=TRUE;
-  real   k1,k2,I,q,vol,krf0;
-  int    i,j,k;
+  real   k1,k2,I,vol,krf0;
   
   I   = 0.0;
   *kappa = 0.0;
@@ -232,7 +231,7 @@ void init_forcerec(FILE *log,
 		   matrix     box,
 		   bool bMolEpot)
 {
-  int  i,j,m,natoms,nrdf,itfac;
+  int  i,j,m,natoms,nrdf;
   real q,zsq,dr,T;
   rvec box_size;
   
@@ -345,8 +344,6 @@ void init_forcerec(FILE *log,
 
 void pr_forcerec(FILE *log,t_forcerec *fr,t_commrec *cr)
 {
-  int  pid;
-  
   pr_real(log,fr->rshort);
   pr_real(log,fr->rlong);
   pr_real(log,fr->fudgeQQ);
@@ -384,7 +381,8 @@ void ns(FILE *log,
   static bool bFirst=TRUE;
   static int  nDNL;
   char   *ptr;
-  int    i,nns;
+  int    i;
+  /*  int    nns; */
   
   if (bFirst) {
     ptr=getenv("DUMP_NL");
@@ -444,23 +442,25 @@ void ns(FILE *log,
 }
 
 void force(FILE *log,  
-	   int          step,
-	   t_forcerec   *fr,
-	   t_idef       *idef,
-	   t_nsborder   *nsb,
-	   t_commrec    *cr,
-	   t_nrnb       *nrnb,
-	   t_groups     *grps,
-	   t_mdatoms    *md,
-	   int          ngener,
-	   t_grpopts    *opts,
-	   rvec x[],
-	   rvec f[],    tensor virial,
-	   real epot[], bool bVerbose,
-	   matrix       box,
-	   real         lambda,
-	   t_graph      *graph,
-	   t_block      *excl)
+	   int        step,
+	   t_forcerec *fr,
+	   t_idef     *idef,
+	   t_nsborder *nsb,
+	   t_commrec  *cr,
+	   t_nrnb     *nrnb,
+	   t_groups   *grps,
+	   t_mdatoms  *md,
+	   int        ngener,
+	   t_grpopts  *opts,
+	   rvec       x[],
+	   rvec       f[],    
+	   tensor     virial,
+	   real       epot[], 
+	   bool       bVerbose,
+	   matrix     ox,
+	   real       ambda,
+	   t_graph    graph,
+	   t_block    excl)
 {
   bool    bBHAM;
   const   real zero=0.0;

@@ -42,15 +42,19 @@ real gauss (real am, real sd, int *ig)
      /* which is stored in glgset until the next call to gauss.    */
      /* see: numerical recipes p.716                               */
 {
-  static bool gliset=FALSE;
-  static real glgset;
-  real a;
-  int  i;
-  real fac,r,v1,v2;
-  real gval;
-
   /* use our own gaussian, or modified boxmuller's ? */
 #define STRAND
+
+#ifdef STRAND
+  real a;
+  int  i;
+#else
+  static bool gliset=FALSE;
+  static real glgset;
+  real fac,r,v1,v2;
+#endif
+  real gval;
+
 #ifdef STRAND
   a = 0;
   for (i=0; (i<12); i++)

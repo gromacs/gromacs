@@ -99,7 +99,7 @@ void calc_nsb(t_block *cgs,int nprocs,t_nsborder *nsb,int nstDlb)
 
 void print_nsb(FILE *fp,char *title,t_nsborder *nsb)
 {
-  int i,tcg,mycg,h;
+  int i,tcg,mycg;
 
   fprintf(fp,"%s\n",title);
   fprintf(fp,"nsb->pid:     %5d\n",nsb->pid);

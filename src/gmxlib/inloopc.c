@@ -100,14 +100,13 @@ void c_ljc(real ix,real iy,real iz,real qi,
 {      
   const  real twelve=12.0;
   const  real six=6.0;
-  int    k,jnr,j3,tj,m;
+  int    k,jnr,j3,tj;
   real   fX,fY,fZ;
   real   rijX,rijY,rijZ;
-  real   fijscal,rsq,vijcoul,vctot,vnbtot;
-  real   rinv1,rinv2,rinv6,rinv12;
+  real   fijscal,vijcoul,vctot,vnbtot;
+  real   rinv1,rinv2,rinv6;
   real   fjx,fjy,fjz;
   real   tx,ty,tz,vnb6,vnb12;
-  real   tt,ffj;
   
   fX     = 0;
   fY     = 0;
@@ -163,16 +162,14 @@ void c_bham(real ix,real iy,real iz,real qi,
 	    real faction[],real fip[],
 	    real *Vc,real *Vnb)
 {      
-  const  real twelve=12.0;
   const  real six=6.0;
-  int    k,jnr,j3,tj,m;
+  int    k,jnr,j3,tj;
   real   fX,fY,fZ;
   real   rijX,rijY,rijZ;
-  real   fijscal,rsq,vijcoul,vctot,vnbtot;
+  real   fijscal,vijcoul,vctot,vnbtot;
   real   r1,r_sq,rinv1,rinv2,rinv6;
   real   fjx,fjy,fjz;
   real   tx,ty,tz,vnb6,vnbexp,br;
-  real   tt,ffj;
   
   fX=0;
   fY=0;
@@ -238,8 +235,8 @@ void c_water(int i0,real xw[],real fudge,
 {      
   const  real twelve=12.0;
   const  real six=6.0;
-  int    k,jnr,i3,j3,tj,m;
-  real   rinv6,rinv12;
+  int    k,jnr,j3,tj;
+  real   rinv6;
   real   fxJ,fyJ,fzJ;
   real   vnb6,vnb12,vctot,vnbtot;
   real   fxO,fyO,fzO,fxH1,fyH1,fzH1,fxH2,fyH2,fzH2;
@@ -248,7 +245,7 @@ void c_water(int i0,real xw[],real fudge,
   real   txO,tyO,tzO,txH1,tyH1,tzH1,txH2,tyH2,tzH2;
   real   rinv1O,rinv1H1,rinv1H2,rinv2O,rinv2H1,rinv2H2;
   real   vcO,vcH1,vcH2,fsO,fsH1,fsH2;
-  real   qO,qH,qj,egc;
+  real   qO,qH,qj;
   real   jx,jy,jz;
   
   /* initiate local force variables */
@@ -382,7 +379,7 @@ void c_wcoul(int i0,real xw[],real fudge,
 	     real charge[],real faction[],real fw[],
 	     real *Vc)
 {      
-  int    k,jnr,i3,j3,tj,m;
+  int    k,jnr,j3;
   real   fxJ,fyJ,fzJ;
   real   fxO,fyO,fzO,fxH1,fyH1,fzH1,fxH2,fyH2,fzH2;
   real   ixO,iyO,izO,ixH1,iyH1,izH1,ixH2,iyH2,izH2;
@@ -390,7 +387,7 @@ void c_wcoul(int i0,real xw[],real fudge,
   real   txO,tyO,tzO,txH1,tyH1,tzH1,txH2,tyH2,tzH2;
   real   rinv1O,rinv1H1,rinv1H2,rinv2O,rinv2H1,rinv2H2;
   real   vcO,vcH1,vcH2,fsO,fsH1,fsH2,vctot;
-  real   qO,qH,qj,egc;
+  real   qO,qH,qj;
   real   jx,jy,jz;
   
   /* initiate local force variables */
@@ -522,14 +519,13 @@ void c_ljcfree(real ix,real iy,real iz,int inr,
   static bool bFirst=TRUE;
   const  real twelve=12.0;
   const  real six=6.0;
-  int    k,jnr,j3,tjA,tjB,m,ir2;
+  int    k,jnr,j3,tjA,tjB,ir2;
   real   fX,fY,fZ;
   real   rijX,rijY,rijZ;
   real   fijscal,rsq,vijcoul,vctot,vnbtot;
   real   rinv1,rinv2,rinv6,rinv12;
   real   fjx,fjy,fjz;
   real   tx,ty,tz,vnb6,vnb12;
-  real   ffj;
   real   L1,dvdl;
   real   lam2,lam3,lam4,lam1_2,lam1_3,lam1_4;
   real   qiA,qiB,qqA,qqB,c6,c12,c6a,c6b,c12a,c12b;
@@ -637,7 +633,9 @@ void c_tab(real ix,real iy,real iz,real qi,
 	   real nbfp[],real faction[],real fip[],
 	   real *Vc,real *Vnb,int ntab,real tabscale,real VFtab[])
 {
+#ifdef DEBUG
   static FILE   *fp=NULL,*gp;
+#endif
   int       k,jnr,j3,tj;
   real      fX,fY,fZ;
   real      rijX,rijY,rijZ;
@@ -646,7 +644,7 @@ void c_tab(real ix,real iy,real iz,real qi,
   real      tx,ty,tz,vnb6,vnb12;
   real      vctot,vnbtot;
   real      qq,c6,c12,rsq;
-  real      r1,r1t,h_1,h,h2,sixth,eta,eta3;
+  real      r1,r1t,h_1;
   real      eps,eps2,Y,F,Fp,Geps,Heps2,two=2.0,VV,FF;
   int       n0,n1,nnn;
   
@@ -771,15 +769,15 @@ void c_coultab(real ix,real iy,real iz,real qi,
 	       real nbfp[],real faction[],real fip[],
 	       real *Vc,real *Vnb,int ntab,real tabscale,real VFtab[])
 {
-  int       k,jnr,j3,tj;
+  int       k,jnr,j3;
   real      fX,fY,fZ;
   real      rijX,rijY,rijZ;
-  real      vijcoul,fijD,fijR,fijC,fijscal;
+  real      vijcoul,fijC,fijscal;
   real      fjx,fjy,fjz;
-  real      tx,ty,tz,vnb6,vnb12;
+  real      tx,ty,tz;
   real      vctot,vnbtot;
-  real      qq,c6,c12,rsq;
-  real      r1,r1t,h_1,h,h2,sixth,eta,eta3;
+  real      qq,rsq;
+  real      r1,r1t,h_1;
   real      eps,eps2,Y,F,Fp,Geps,Heps2,two=2.0,VV,FF;
   int       n0,n1,nnn;
   
@@ -883,16 +881,12 @@ void c_free(real ix,real iy,real iz,int inr,
 	    real VFtab[])
 {      
   static bool bFirst=TRUE;
-  const  real twelve=12.0;
-  const  real six=6.0;
-  int    k,jnr,j3,tjA,tjB,m,ir2;
+  int    k,jnr,j3,tjA,tjB;
   real   fX,fY,fZ;
   real   rijX,rijY,rijZ;
   real   fijscal,rsq,vijcoul,vctot,vnbtot;
-  real   rinv1,rinv2,rinv6,rinv12;
   real   fjx,fjy,fjz;
   real   tx,ty,tz,vnb6,vnb12;
-  real   ffj;
   real   L1,dvdl;
   real   lam2,lam3,lam4,lam1_2,lam1_3,lam1_4;
   real   qiA,qiB,qqA,qqB,c6,c12,c6a,c6b,c12a,c12b;

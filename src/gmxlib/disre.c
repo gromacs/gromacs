@@ -50,8 +50,6 @@ static t_drblock   drblock;
 
 void init_disres(FILE *log,int nbonds,t_inputrec *ir)
 {
-  int i,type,ftype,ftind;
-
   dr_fc  = ir->dr_fc;
   dr_tau = ir->dr_tau;
   if (dr_tau == 0.0)
@@ -82,16 +80,15 @@ real ta_disres(FILE *log,int nbonds,t_iatom forceatoms[],t_iparams ip[],
 	       t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
 {
 #define MAX_DRPAIRS 100
-  static real third=1.0/3.0;
   static real sixth=1.0/6.0;
   
   atom_id     ai,aj;
-  int         i,j,k,kmax,ki,kj,m,type,index,rindex,i0;
+  int         i,k,kmax,ki,kj,m,type,index,rindex,i0;
   rvec        dx[MAX_DRPAIRS];
   real        rt_1[MAX_DRPAIRS];
   rvec        *fshift;
-  real        rt,rN,rav,rav_3,rt_11,rt_3,rav_6,rt_6,rt222,k_1;
-  real        k0,f_scal,fmax_scal,fk_scal,fij,viol,viol2,violtot;
+  real        rt,rav,rav_3,rt_11,rt_3,rav_6,rt_6,rt222,k_1;
+  real        k0,f_scal,fmax_scal,fk_scal,fij,viol,violtot;
   real        rx0,rx1;
   
   fshift  = fr->fshift; 

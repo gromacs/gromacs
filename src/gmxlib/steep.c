@@ -114,7 +114,7 @@ real f_norm(FILE *log,
 	   int left,int right,int nprocs,
 	   int start,int end,rvec grad[])
 {
-  real fnorm,fnorm_0,fam;
+  real fnorm;
   int  i,m;
 
   /* This routine finds the norm of the force
@@ -210,10 +210,10 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   int        fp_ene; 
   t_mdebin   *mdebin; 
   t_nrnb mynrnb; 
-  bool   bNS=TRUE,bDone,bLR,bBHAM,b14,bRand; 
+  bool   bNS=TRUE,bDone,bLR,bBHAM,b14; 
   time_t start_t; 
   tensor force_vir,shake_vir; 
-  int    number_steps,naccept=0; 
+  int    number_steps;
   int    count=0; 
   int    i,m,start,end; 
   int    Min=0; 

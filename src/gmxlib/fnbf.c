@@ -52,7 +52,7 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
 	     t_nrnb *nrnb,real lambda,real *dvdlambda)
 {
   static   bool bFirst=TRUE;
-  int      i,j,itpA,itpB,gid,m,nj,inr,iinr,nri,k;
+  int      i,itpA,itpB,gid,m,nj,inr,iinr,nri,k;
   rvec     r_i,f_ip,fw[3],xw[3];
   real     qi,Vnb,Vc,eps;
   t_nblist *nlist;
@@ -262,9 +262,9 @@ void fdo_flr(FILE *log,int nri,atom_id i_atoms[],int shift,
   static   t_nl_j   **nlj=NULL;
   static   int      *nj,*maxnj;
   atom_id  ip,jp;
-  int      i,j,k,k0,k1,jj,m;
+  int      i,j,k,k0,k1,m;
   rvec     f_ip,r_i,fw[3],xw[3];
-  real     qi,epsje,eps;
+  real     qi,eps;
   int      igid,jgid,gid,usegid,iaa;
   rvec     *fshift,*flr,*sv;
   ushort   *cENER;
