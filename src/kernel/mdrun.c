@@ -72,7 +72,6 @@ int main(int argc,char *argv[])
     "With [TT]-rerun[tt] an input trajectory can be given for which ",
     "forces and energies will be (re)calculated.[PAR]",
   };
-  char         *lognm=NULL;
   t_commrec    *cr;
   static t_filenm fnm[] = {
     { efTPX, NULL, NULL,      ffREAD },
@@ -91,7 +90,10 @@ int main(int argc,char *argv[])
 
   /* Command line options ! */
   static bool bVerbose=FALSE,bCompact=TRUE;
-  static int  nprocs=1,nDLB=0,nstepout=10;
+#ifdef PARALLEL
+  static int  nprocs=1;
+#endif
+  static int  nDLB=0,nstepout=10;
   static t_pargs pa[] = {
 #ifdef PARALLEL
     { "-np",      FALSE, etINT, &nprocs,

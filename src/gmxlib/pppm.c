@@ -63,7 +63,7 @@ void calc_weights(int nx,int ny,int nz,
 {
   const  real half=0.5;
   tensor wxyz;
-  real   abc,ttt,bhh,fact;
+  real   abc,ttt,fact;
 #ifdef DEBUG
   real   wtot;
 #endif
@@ -548,10 +548,8 @@ real do_opt_pppm(FILE *log,       bool bVerbose,
 		 t_fftgrid *grid, bool bOld)
 {
   real      ***ghat;
-  int       m,nx,ny,nz;
-  real      ener,r1,rc;
-  ivec      grids;
-  rvec      spacing;
+  int       nx,ny,nz;
+  real      ener;
   
   ener = 0.0;
     

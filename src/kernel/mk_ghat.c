@@ -547,7 +547,7 @@ void read_params(char *fn,t_inputrec *ir,rvec boxs)
       
 int main(int argc,char *argv[]) 
 {
-  FILE   *fp;
+  /* FILE   *fp; */
   const  real gold=0.38197;
   const  int  mxiter=12;
   int    n1max,n2max,n3max;
@@ -556,14 +556,14 @@ int main(int argc,char *argv[])
   int    nalias,porder;
   real   acut,alpha,r1;
   rvec   beta;
-  bool   bSearch,bConv,bNL=FALSE;
+  bool   bSearch,bConv;
+  /* bool   bNL=FALSE; */
   real   ***ghat;
   real   pval,zval,eref,qopt,norm;
   real   alpha0,alpha1,alpha2,alpha3,alptol;
   real   q0,q1,q2,q3;
-  real   rx,ry,rz;
   int    niter;
-  int    ii,jj,kk,nn;
+  /* int    ii,jj,kk,nn; */
   t_inputrec ir;
   t_filenm fnm[] = {
     { efTPX, NULL, NULL,   ffREAD },

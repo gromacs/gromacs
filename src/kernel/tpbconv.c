@@ -247,7 +247,7 @@ int main (int argc, char *argv[])
   t_trnheader head;
   int          i,natoms,frame,step,run_step;
   real         run_t,run_lambda;
-  bool         bMDP,bTRN,bOK,bFrame;
+  bool         bMDP,bOK,bFrame;
   t_topology   top;
   t_inputrec   *ir,*irnew;
   t_gromppopts *gopts;

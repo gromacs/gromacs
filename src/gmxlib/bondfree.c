@@ -242,9 +242,12 @@ real water_pol(FILE *log,int nbonds,
    * a shell connected to a dummy with spring constant that differ in the
    * three spatial dimensions in the molecular frame.
    */
-  int  i,m,ki,kj,aO,aH1,aH2,aD,aS,type;
-  rvec dOH1,dOH2,dHH,dOD,dDS,nW,kk,dx,kdx,proj,df;
-  real vtot,fij,r_HH,r_OH,r_OD,r_nW,tx,ty,tz;
+  int  i,m,aO,aH1,aH2,aD,aS,type;
+  rvec dOH1,dOH2,dHH,dOD,dDS,nW,kk,dx,kdx,proj;
+#ifdef DEBUG
+  rvec df;
+#endif
+  real vtot,fij,r_HH,r_OD,r_nW,tx,ty,tz;
   
   vtot = 0.0;
   if (nbonds > 0) {
@@ -252,7 +255,6 @@ real water_pol(FILE *log,int nbonds,
     kk[XX] = forceparams[type].wpol.kx;
     kk[YY] = forceparams[type].wpol.ky;
     kk[ZZ] = forceparams[type].wpol.kz;
-    r_OH   = 1.0/forceparams[type].wpol.rOH;
     r_HH   = 1.0/forceparams[type].wpol.rHH;
     r_OD   = 1.0/forceparams[type].wpol.rOD;
     if (debug) {

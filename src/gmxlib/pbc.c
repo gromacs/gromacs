@@ -212,7 +212,7 @@ void put_charge_groups_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
 			      rvec pos[],rvec shift_vec[],rvec cg_cm[])
 {
   int  icg,ai,k,k0,k1,d;
-  rvec b,cg;
+  rvec cg;
   real nrcg,inv_ncg;
   atom_id *cga,*cgindex;
   

@@ -267,7 +267,7 @@ void lincs_warning(rvec *x,rvec *xprime,
 {
   int b,i,j;
   rvec v0,v1;
-  real wfac,d0,d1,ipr,cosine;
+  real wfac,d0,d1,cosine;
   char buf[STRLEN];
   
   wfac=cos(DEG2RAD*wangle);

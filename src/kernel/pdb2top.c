@@ -100,7 +100,7 @@ static void name2type(t_atoms *at,int **cgnr,
   char    *name;
   t_restp *rp=NULL,*prevrp=NULL;
   bool    bProt, bNterm;
-  double  qt,qq;
+  double  qt;
 
   resnr=-1;
   bProt=FALSE;

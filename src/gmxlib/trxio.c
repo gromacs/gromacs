@@ -566,7 +566,7 @@ static int xyz_first_x(FILE *status, real *t, rvec **x, matrix box)
 static bool pdb_next_x(FILE *status,real *t,int natoms,rvec x[],matrix box)
 {
   t_atoms   atoms;
-  int       i,na;
+  int       na;
   char      title[STRLEN],*time;
   double    dbl;
 
@@ -593,8 +593,7 @@ static bool pdb_next_x(FILE *status,real *t,int natoms,rvec x[],matrix box)
 
 static int pdb_first_x(FILE *status, real *t, rvec **x, matrix box)
 {
-  int   i, natoms;
-  char  title[STRLEN];
+  int   natoms;
   
   INITCOUNT;
   

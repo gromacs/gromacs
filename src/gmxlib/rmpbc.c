@@ -47,7 +47,6 @@ void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
   
   static int ngraph;
   static multi_graph *mgraph=NULL;
-  static t_graph *graph;
   static bool bFirst=TRUE;
   rvec   sv[SHIFTS],box_size;
   int    n,i;

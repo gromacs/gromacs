@@ -341,10 +341,9 @@ void print_excl(FILE *out, t_block *excl)
 
 void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,int *cgnr)
 {
-  int  i,j,k;
+  int  i;
   int  itype,nrdum;
   char *as;
-  bool bFound;
   real qtot;
   
   as=dir2str(d_atoms);

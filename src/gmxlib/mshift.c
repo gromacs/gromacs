@@ -97,7 +97,6 @@ static void add_gbond(t_graph *g,t_iatom ia[],int np)
 static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,bool bAll)
 {
   t_iatom *ia;
-  t_iatom settle[3];
   t_iatom tp;
   int     i,j,np;
   int     end;

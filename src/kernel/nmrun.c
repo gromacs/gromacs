@@ -54,7 +54,10 @@ int main(int argc,char *argv[])
 
   /* Command line options ! */
   static bool bVerbose=FALSE,bCompact=TRUE;
-  static int  nprocs=1,nDLB=0,nstepout=10;
+#ifdef PARALLEL
+  static int  nprocs=1;
+#endif
+  static int  nDLB=0,nstepout=10;
   static t_pargs pa[] = {
 #ifdef PARALLEL
     { "-np",      FALSE, etINT, &nprocs,

@@ -733,7 +733,7 @@ t_idihres *search_idih(char *key,int nrdh,t_idihres ires[])
  ***********************************************************/
 static bool read_mass(FILE *in,char *line,t_dumblock *db)
 {
-  char name[12],type[12],ai[12];
+  char name[12],type[12];
   real c[MAXFORCEPARAM];
   int  i,j,n,maxentries,tp,nm;
   
@@ -858,8 +858,8 @@ static bool read_angcon(FILE *in,char *line,t_dumblock *db)
 int read_dum_db(char *ff,t_dumblock **dbptr)
 {
   FILE       *in;
-  char       fn[STRLEN],line[STRLEN],*dum,header[STRLEN];
-  int        nddb,maxddb,i,j;
+  char       fn[STRLEN],line[STRLEN],header[STRLEN];
+  int        nddb,maxddb;
   t_dumblock *ddb;
   bool       bNextBlock,bError;
   
@@ -932,7 +932,7 @@ t_dumblock *search_dum_db(int nddb, t_dumblock *ddb, char resnm[])
 
 void print_dum_db(FILE *out,int nddb,t_dumblock *ddb)
 {
-  int i,j,k,l;
+  int i,j,k;
   
   fprintf(out,"; Dummies Database\n");
   for (i=0; (i<nddb); i++) {

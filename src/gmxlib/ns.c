@@ -406,7 +406,6 @@ static void ns_inner_rect(FILE *log,rvec x[],int icg,int njcg,atom_id jcg[],
 			  rvec box_size,rvec b_inv,real rcut2,
 			  t_block *cgs,t_ns_buf ns_buf[])
 {
-  real     rij2;
   t_ishift shift;
   int      j,nrj;
   atom_id  cg_j;

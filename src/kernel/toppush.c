@@ -52,7 +52,7 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype)
 {
   int   i,j,k,nf;
   int   nr,nrfp;
-  real  c,eps4,sig6,sigma_ij,eps_ij,bi,bj;
+  real  c,sig6,sigma_ij,eps_ij,bi,bj;
 
   /* Lean mean shortcuts */
   nr   = atype->nr;
@@ -142,11 +142,10 @@ void push_at (t_symtab *symtab, t_atomtype *at, char *line,int nb_funct)
     { "D",   eptDummy }, 
   };
   
-  int    nr,i,b,j,pt,nfp0;
+  int    nr,i,j,pt,nfp0;
   char   type[STRLEN],ptype[STRLEN];
   double m,q;
   double c[MAXFORCEPARAM];
-  char   f1[STRLEN],f2[STRLEN];
   
   nr = at->nr;
 

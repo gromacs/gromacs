@@ -513,7 +513,7 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)
 {
   char  buf[STRLEN];
   bool  bDouble;
-  int   i,precision;
+  int   precision;
  
   fio_select(fp);
   fio_setdebug(fp,bDebugMode());
@@ -566,7 +566,6 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,real *lambda,
   t_tpxheader tpx;
   t_inputrec  dum_ir;
   t_topology  dum_top;
-  rvec        dum_x;
    
   if (!bRead) {
     tpx.natoms = *natoms;

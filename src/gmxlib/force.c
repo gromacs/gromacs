@@ -388,7 +388,6 @@ void ns(FILE *log,
   static bool bFirst=TRUE;
   static int  nDNL;
   char   *ptr;
-  int    i;
   
   if (bFirst) {
     ptr=getenv("DUMP_NL");
