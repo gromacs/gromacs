@@ -238,7 +238,7 @@ int main(int argc,char *argv[])
   static char *unitcell_opt[] = { NULL, "rect", "tric", "compact",
 				  NULL };
 
-  static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE;
+  static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE;
   static bool  bCenter=FALSE,bFit=FALSE,bPFit=FALSE,bBox=TRUE;
   static bool  bCheckDouble=FALSE;
   static int   skip_nr=1,prec=3;
@@ -265,6 +265,8 @@ int main(int argc,char *argv[])
       "Precision for .xtc and .gro writing in number of decimal places" },
     { "-vel", FALSE, etBOOL, {&bVels},
       "Read and write velocities if possible" },
+    { "-force", FALSE, etBOOL, {&bForce},
+      "Read and write forces if possible" },
     { "-skip", FALSE,  etINT, {&skip_nr},
       "Only write every nr-th frame" },
     { "-dt", FALSE,  etREAL, {&delta_t},
@@ -471,15 +473,17 @@ int main(int argc,char *argv[])
       }
       useatoms.nr=nout;
     }
-    /* open trj file for reading */
-    if (bVels) {
-      if (ftp==efTRR || ftp==efTRJ)
-	flags = TRX_READ_X | TRX_READ_V; 
-      else
-	flags = TRX_NEED_X | TRX_READ_V;
-    } else
+    /* select what to read */
+    if (ftp==efTRR || ftp==efTRJ)
+      flags = TRX_READ_X; 
+    else
       flags = TRX_NEED_X;
+    if (bVels)
+      flags = flags | TRX_READ_V;
+    if (bForce)
+      flags = flags | TRX_READ_F;
 
+    /* open trx file for reading */
     bHaveFirstFrame = read_first_frame(&status,in_file,&fr,flags);
 
     if (bHaveFirstFrame) {
