@@ -21,6 +21,8 @@ M4FILE		= $(M4DIR)/$(GMXCPU).m4
 M4MAC		= $(M4DIR)/gmxmac.m4
 LIB		= $(LIBDIR)/libgmx.$(GMXCPU).a
 XTCLIB		= $(LIBDIR)/libxtcf.a
+MKDEP_PRE	= $(MAKE) fnbf.c
+MKDEP_POST	= $(RM) fnbf.c
 SONAME		= libgmx.$(GMXCPU).so
 OBJ		= \
 	3dview.o	atomprop.o	block_tx.o	bondfree.o	\

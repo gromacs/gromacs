@@ -76,8 +76,10 @@ ifeq ($(OBJ),)
 else
 	( $(foreach OB,$(OBJ),echo s~^$(OB):~\$$\(LIB\)\($(OB)\):~ ; ) ) > sedscr 
 endif
+	$(MKDEP_PRE)
 	$(MKDEP) -I. -I$(GMXHOME)/src/include  *.c  |  sed  s~$(GMXHOME)~$(GMXINS)~ | grep GMXHOME | sed -f sedscr > Make.dep
 	$(RM) sedscr
+	$(MKDEP_POST)
 
 Make.dep:
 	touch Make.dep
