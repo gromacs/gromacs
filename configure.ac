@@ -3,12 +3,12 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(GROMACS, 3.2.90_beta_20040423, gmx-users@gromacs.org)
+AC_INIT(GROMACS, 3.2.90_beta_20040828, gmx-users@gromacs.org)
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(gromacs, 3.2.90_beta_20040423)
+AM_INIT_AUTOMAKE(gromacs, 3.2.90_beta_20040828)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 AM_CONFIG_HEADER(src/config.h)
 dnl This is the version info according to the libtool versioning system.
@@ -536,9 +536,9 @@ fi
 #########
 # Check for libxml2, but it is optional, so dont stop
 # if it isnt there.
-AC_CHECK_LIB(xml2,main)
+#AC_CHECK_LIB(xml2,main)
 # This should really only be done when the library is found. Doesn't hurt though.
-INCLUDES="$INCLUDES -I/usr/include/libxml2"
+#INCLUDES="$INCLUDES -I/usr/include/libxml2"
 
 
 #### 
