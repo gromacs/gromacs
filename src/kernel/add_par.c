@@ -134,22 +134,6 @@ void add_dum3_param(t_params *ps,int ai,int aj,int ak,int al,
   ps->nr++;
 }
 
-
-void add_dum2_param(t_params *ps,int ai,int aj,int ak, 
-		    real c0)
-{
-  pr_alloc(1,ps);
-  ps->param[ps->nr].AI=ai;
-  ps->param[ps->nr].AJ=aj;
-  ps->param[ps->nr].AK=ak;
-  clear_atom_list  (3, ps->param[ps->nr].a);
-  ps->param[ps->nr].C0=c0;
-  clear_force_param(1, ps->param[ps->nr].c);
-  set_p_string(&(ps->param[ps->nr]),"");
-  ps->nr++;
-}
-
-
 void add_dum3_atoms(t_params *ps,int ai,int aj,int ak,int al, bool bSwapParity)
 {
   pr_alloc(1,ps);
