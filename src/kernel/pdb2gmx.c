@@ -171,6 +171,31 @@ static void rename_pdbresint(t_atoms *pdba,char *oldnm,
   }
 }
 
+static void check_occupancy(t_atoms *atoms)
+{
+  int i;
+  int nzero=0;
+  int nnotone=0;
+  
+  if (!atoms->pdbinfo)
+    fprintf(stderr,"WARNING: no pdb information fields in atoms\n");
+  else {
+    for(i=0; (i<atoms->nr); i++) {
+      if (atoms->pdbinfo[i].occup == 0)
+	nzero++;
+      else if (atoms->pdbinfo[i].occup != 1)
+	nnotone++;
+    }
+    if (nzero == atoms->nr)
+      fprintf(stderr,"WARNING: all occupancy fields zero. This is probably not an X-Ray structure\n");
+    else if ((nzero > 0) || (nnotone > 0))
+      fprintf(stderr,
+	      "WARNING: there were %d atoms with zero occupancy and %d atoms"
+	      " with\n         occupancy less than one (out of %d atoms)."
+	      " Check your pdb file.\n",nzero,nnotone,atoms->nr);
+  }
+}
+
 void write_posres(char *fn,t_atoms *pdba)
 {
   FILE *fp;
@@ -772,7 +797,7 @@ int main(int argc, char *argv[])
 
   printf("There are %d chains and %d blocks of water and "
 	 "%d residues with %d atoms\n",
-	  nchain-nwaterchain,nwaterchain,
+	 nchain-nwaterchain,nwaterchain,
 	 pdba_all.atom[natom-1].resnr+1,natom);
 	  
   printf("\n  %5s  %4s %6s\n","chain","#res","#atoms");
@@ -782,6 +807,8 @@ int main(int argc, char *argv[])
 	   chains[i].pdba->nres, chains[i].pdba->nr,
 	   chains[i].bAllWat ? "(only water)":"");
   printf("\n");
+  
+  check_occupancy(&pdba_all);
   
   ff=choose_ff();
   printf("Using %s force field\n",ff);
