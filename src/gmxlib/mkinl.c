@@ -793,13 +793,16 @@ void flocal(void)
     comment("Reaction field");
     p_creal("two",2.0);
     p_real("krsqO");
+#ifndef SIMPLEWATER
     if (bWater)
       p_real("krsqH1,krsqH2");
+#endif
   }
   if (bEwald) {
       comment("Ewald correction");
       p_creal("isp",0.564189583547756);
-      p_real("ewtmp"); /* needed to break long lines into two */
+      if (bLJC || bBHAM)
+	p_real("ewtmp"); /* needed to break long lines into two */
   }
   if (bTab) {
     comment("Table stuff");
@@ -939,6 +942,7 @@ void flocal(void)
 #else
   if (bWater) {
     comment("Water stuff");
+#ifndef SIMPLEWATER
     p_real("fxH1,fyH1,fzH1,fxH2,fyH2,fzH2");
     p_real("ixH1,iyH1,izH1,ixH2,iyH2,izH2");
     p_real("dxH1,dyH1,dzH1,dxH2,dyH2,dzH2");
@@ -947,6 +951,9 @@ void flocal(void)
     if (!bTab)
       p_real("rinv2H1,rinv2H2");
     p_real("vcH1,vcH2,fsH1,fsH2,qH,qqH");
+#else
+    p_real("qH");
+#endif
   }
 #endif /* DECREASE_LATENCY */
   if(!bC && bEwald && !bTab)
@@ -1158,10 +1165,9 @@ void finnerloop(char *loopname)
   nflop += 3;
 #endif
 
-#ifdef DECREASE_LATENCY
-#else
+#ifndef DECREASE_LATENCY
   comment("O block");
-#endif /* DECREASE_LATENCY */
+#endif
   if (!bFREE) {
     p_state("qqO","qO*qj");
     nflop ++;
@@ -1454,7 +1460,7 @@ void finnerloop(char *loopname)
 #ifndef DECREASE_LATENCY
     p_state("qqH","qH*qj");
     nflop += 1;
-#endif /* DECREASE_LATENCY */
+#endif
     comment("H1 block");
     if (bDelayInvsqrt) {
       nflop += p_sqr("H1");
@@ -1483,7 +1489,7 @@ void finnerloop(char *loopname)
 #ifndef DECREASE_LATENCY
       p_state("rinv2H1","rinv1H1*rinv1H1");
       nflop += 1;
-#endif DECREASE_LATENCY
+#endif
       if (bRF) {
 	comment("Reaction field");
 	p_state("krsqH1","krf*rsqH1");
@@ -1547,7 +1553,7 @@ void finnerloop(char *loopname)
 #ifndef DECREASE_LATENCY
       p_state("rinv2H2","rinv1H2*rinv1H2");
       nflop += 1;
-#endif /* DECREASE_LATENCY */
+#endif
       if (bRF) {
 	comment("Reaction field");
 	p_state("krsqH2","krf*rsqH2");
