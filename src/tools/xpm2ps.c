@@ -39,7 +39,6 @@ static char *SRCID_xpm2ps_c = "$Id$";
 #include "fatal.h"
 #include "smalloc.h"
 #include "string2.h"
-#include "readcmap.h"
 #include "matio.h"
 
 #define FUDGE 1.2
@@ -137,8 +136,7 @@ bool diff_maps(int nmap1,t_mapping *map1,int nmap2,t_mapping *map2)
     else {
       bDiff=FALSE;
       for(i=0; i<nmap1; i++) {
-	if (map1[i].code.c1 != map2[i].code.c1) bDiff=TRUE;
-	if (map1[i].code.c2 != map2[i].code.c2) bDiff=TRUE;
+	if (!matelmt_cmp(map1[i].code, map2[i].code)) bDiff=TRUE;
 	if (strcmp(map1[i].desc,map2[i].desc) != 0) bDiff=TRUE;
 	if ((map1[i].rgb.r!=map2[i].rgb.r) ||
 	    (map1[i].rgb.g!=map2[i].rgb.g) ||
@@ -180,7 +178,8 @@ void leg_discrete(FILE *ps,real x0,real y0,char *label,
 }
 
 void leg_continuous(FILE *ps,real x0,real x,real y0,char *label,
-		    real fontsize,char *font,int nmap,t_mapping map[])
+		    real fontsize,char *font,
+		    int nmap,t_mapping map[])
 {
   int   i;
   real  xx0;
@@ -488,7 +487,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   FILE   *out;
   t_psrec  psrec,*psr;
   int    W,H;
-  int    i,x,y,col;
+  int    i,x,y,col,leg;
   real   x0,y0,xx;
   real   w,h,dw,dh;
   int       nmap1,nmap2;
@@ -505,15 +504,25 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   if (boxy>0)
     psr->yboxsize=boxy;  
 
-  nmap1=mat[0].nmap;
-  map1=mat[0].map;
-  if (mat2==NULL) {
-    nmap2=nmap1;
-    map2=map1;
+  nmap1=0;
+  for (i=0; (i<nmat); i++)
+    if (mat[i].nmap>nmap1) {
+      nmap1=mat[i].nmap;
+      map1=mat[i].map;
+      leg=i+1;
+    }
+  if (leg!=1)
+    printf("Selected legend of matrix # %d for display\n",leg);
+  if (mat2) {
+    nmap2=0;
+    for (i=0; (i<nmat); i++)
+      if (mat2[i].nmap>nmap2) {
+	nmap2=mat2[i].nmap;
+	map2=mat2[i].map;
+	leg=i+1;
   }
-  else {
-    nmap2=mat2[0].nmap;
-    map2=mat2[0].map;
+    if (leg!=1)
+      printf("Selected legend of matrix # %d for second display\n",leg);
   }
   if ( (mat[0].legend[0]==0) && (psr->legtype!=elOff) )
     strcpy(mat[0].legend, psr->leglabel);
@@ -538,13 +547,10 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   else
   */
   out=ps_open(outf,0,0,W+psr->xoffs+5*DDD,H+psr->yoffs+4*DDD);
-  fprintf(out,"/b {currentpoint %g %g r %g %g r %g %g r %g %g r f %g add moveto} bind def\n",
-	  0,psr->yboxsize,psr->xboxsize,0,0,-psr->yboxsize,-psr->xboxsize,0,
-	  psr->yboxsize);
-	  
+  ps_init_rgb_box(out,psr->yboxsize,psr->xboxsize);
+  ps_init_rgb_nbox(out,psr->yboxsize,psr->xboxsize);
   ps_translate(out,psr->xoffs,psr->yoffs);
     
-
   ps_comment(out,"Here starts the BOX drawing");  
   draw_boxes(out,x0,y0,w,h,nmat,mat,psr);
   /*
@@ -575,16 +581,31 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
     sprintf(buf,"Here starts the filling of box #%d",i);
     ps_comment(out,buf);
     for(x=0; (x<mat[i].nx); x++) {
+      int nexty;
+      int nextcol;
+      
       xx=x0+x*psr->xboxsize;
       ps_moveto(out,xx,y0);
-      for(y=0; (y<mat[i].ny); y++)
-	if ((bDiag) || (x!=y)) {
-	  if (x<=y) { /* upper left  -> map1 */
-	    col=searchcmap(nmap1,map1,mat[i].matrix[x][y]);
-	    ps_rgb_box(out,&(map1[col].rgb));
-	  } else  {   /* lower right -> map2 */
-	    col=searchcmap(nmap2,map2,mat[i].matrix[x][y]);
-	    ps_rgb_box(out,&(map2[col].rgb));
+      y=0;
+      if ((bDiag) || (x!=y))
+	col = searchcmap(mat[i].nmap,mat[i].map,mat[i].matrix[x][y]);
+      else
+	col = -1;
+      for(nexty=1; (nexty<=mat[i].ny); nexty++) {
+	if ((bDiag) || (x!=nexty))
+	  if (!mat2 || (x<=nexty)) /* upper left  -> map1 */
+	    nextcol=searchcmap(mat[i].nmap,mat[i].map,mat[i].matrix[x][nexty]);
+	  else /* lower right -> map2 */
+	    nextcol=searchcmap(mat2[i].nmap,mat2[i].map,mat[i].matrix[x][nexty]);
+	else
+	  nextcol = -1;
+	if ( (nexty==mat[i].ny) || (col!=nextcol) ) {
+	  if (col >= 0)
+	    ps_rgb_nbox(out,&(mat[i].map[col].rgb),nexty-y);
+	  else
+	    ps_moverel(out,0,psr->yboxsize);
+	  y=nexty;
+	  col=nextcol;
 	  }
 	}
     }
@@ -617,7 +638,7 @@ void do_mat(int nmat,t_matrix *mat,int nmat2,t_matrix *mat2,
 {
   int      i,j,k;
 
-  if (mat2!=NULL) {
+  if (mat2) {
     for (k=0; (k<nmat); k++)
       for (j=0; (j<mat[k].ny); j++)
 	for (i=j+1; (i<mat[k].nx); i++) {
