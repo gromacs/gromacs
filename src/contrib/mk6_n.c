@@ -34,6 +34,7 @@
  * Gromacs Runs On Most of All Computer Systems
  */
 static char *SRCID_mk6_n_c = "$Id$";
+#include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
