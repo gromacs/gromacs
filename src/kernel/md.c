@@ -320,15 +320,10 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     gmx_sumi(1,&nshell_tot,cr);
   bShell = nshell_tot > 0;
   
-  /* Check whether we have to do dipole stuff */
-  if (opt2bSet("-dn",nfile,fnm))
-    rd_index(opt2fn("-dn",nfile,fnm),1,&gnx,&grpindex,&grpname);
-  else {
-    gnx = top->blocks[ebMOLS].nr;
-    snew(grpindex,gnx);
-    for(i=0; (i<gnx); i++)
-      grpindex[i] = i;
-  }
+  gnx = top->blocks[ebMOLS].nr;
+  snew(grpindex,gnx);
+  for(i=0; (i<gnx); i++)
+    grpindex[i] = i;
 
   /* Check whether we have to GCT stuff */
   bTCR = ftp2bSet(efGCT,nfile,fnm);
