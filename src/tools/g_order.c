@@ -374,7 +374,7 @@ void main(int argc,char *argv[])
   t_filenm  fnm[] = {             	    /* files for g_order 	  */
     { efTRX, "-f", NULL,  ffREAD },    	    /* trajectory file 	          */
     { efNDX, NULL, NULL,  ffREAD },    	    /* index file 		  */
-    { efTPB, NULL, NULL,  ffREAD },    	    /* topology file           	  */
+    { efTPX, NULL, NULL,  ffREAD },    	    /* topology file           	  */
     { efXVG,"-o","order", ffWRITE }, 	    /* xvgr output file 	  */
     { efXVG,"-od","deuter", ffWRITE },      /* xvgr output file           */
     { efXVG,"-os","sliced", ffWRITE },      /* xvgr output file           */
@@ -421,7 +421,7 @@ void main(int argc,char *argv[])
     }
   }
   
-  top = read_top(ftp2fn(efTPB,NFILE,fnm));     /* read topology file */
+  top = read_top(ftp2fn(efTPX,NFILE,fnm));     /* read topology file */
   
   block = init_index(ftp2fn(efNDX,NFILE,fnm),&grpname);
   index = block->index;                       /* get indices from t_block block */

@@ -35,8 +35,9 @@ static char *SRCID_trjconv_c = "$Id$";
 #include "smalloc.h"
 #include "typedefs.h"
 #include "copyrite.h"
-#include "sheader.h"
-#include "statusio.h"
+#include "gmxfio.h"
+#include "tpxio.h"
+#include "trnio.h"
 #include "statutil.h"
 #include "futil.h"
 #include "pdbio.h"
@@ -46,8 +47,6 @@ static char *SRCID_trjconv_c = "$Id$";
 #include "vec.h"
 #include "xtcio.h"
 #include "gstat.h"
-#include "magic.h"
-#include "binio.h"
 
 static void center_x(rvec x[],matrix box,int n,atom_id index[])
 {
@@ -75,11 +74,8 @@ static void center_x(rvec x[],matrix box,int n,atom_id index[])
   }
 }
 
-void is_trj(char *fn)
-{
-  if (fn2ftp(fn) != efTRJ)
-    fatal_error(0,"%s is not a .trj file, sorry",fn);
-}
+
+/*
 
 void do_patch(char *fn)
 {
@@ -90,8 +86,7 @@ void do_patch(char *fn)
   int          n,teller;
   real         r;
 
-  /* Check whether this is a .trj file */
-  is_trj(fn);
+  is_trn(fn);
   stat=ffopen(fn,"r+");
   teller=0;
   while (!eof(stat)) {
@@ -106,12 +101,20 @@ void do_patch(char *fn)
   fclose(stat);
   fprintf(stderr,"\n");
 }
+*/
+
+void check_trn(char *fn)
+{
+  if ((fn2ftp(fn) != efTRJ)  || (fn2ftp(fn) != efTRR))
+    fatal_error(0,"%s is not a trj file, exiting\n",fn);
+}
 
 void do_trunc(char *fn, real t0)
 {
-  FILE         *in;
+  int          in;
+  FILE         *fp;
   bool         bStop;
-  t_statheader sh;
+  t_trnheader  sh;
   long         fpos;
   char         yesno[256];
   int          j,natoms,nre,step;
@@ -121,33 +124,29 @@ void do_trunc(char *fn, real t0)
     fatal_error(0,"You forgot to set the truncation time");
   
   /* Check whether this is a .trj file */
-  is_trj(fn);
+  check_trn(fn);
   
-  in=ffopen(fn,"r");
-  j=0;
-  do {
-    bStop=eof(in);
-    if (!bStop) {
-      fpos=ftell(in);
-      rd_header(in,&sh);
-      rd_hstatus(in,&sh,&step,&t,&lambda,NULL,NULL,NULL,NULL,
-		 &natoms,NULL,NULL,NULL,&nre,NULL,NULL);
-
-      if (t>=t0) {
-	fseek(in,fpos,SEEK_SET);
-	bStop=TRUE;
-      }
+  in   = open_trn(fn,"r");
+  fp   = fio_getfp(in);
+  j    = 0;
+  fpos = fio_ftell(in);
+  bStop= FALSE;
+  while (!bStop && fread_trnheader(in,&sh)) {
+    fread_htrn(in,&sh,NULL,NULL,NULL,NULL);
+    
+    if (t>=t0) {
+      fseek(fp,fpos,SEEK_SET);
+      bStop=TRUE;
     }
-  } while (!bStop);
-  fprintf(stderr,"\n");
-  if (!eof(in)) {
+  }
+  if (bStop) {
     fprintf(stderr,"Do you REALLY want to truncate this trajectory (%s) at:\n"
 	    "frame %d, time %g, bytes %d ??? (type YES if so)\n",
 	    fn,j,t,fpos);
     scanf("%s",yesno);
     if (strcmp(yesno,"YES") == 0) {
       fprintf(stderr,"Once again, I'm gonna DO this...\n");
-      fclose(in);
+      close_trn(in);
       truncate(fn,fpos);
     }
     else {
@@ -156,7 +155,7 @@ void do_trunc(char *fn, real t0)
   }
   else {
     fprintf(stderr,"Already at end of file (t=%g)...\n",t);
-    fclose(in);
+    close_trn(in);
   }
 }
 
@@ -254,9 +253,9 @@ int main(int argc,char *argv[])
     "There are two options for fitting the trajectory to a reference",
     "either for essential dynamics analysis or for whatever.",
     "The first option is just plain fitting to a reference structure",
-    "in the [TT].tpb[tt] file, the second option is a progressive fit",
+    "in the [TT].tpx[tt] file, the second option is a progressive fit",
     "in which the first timeframe is fitted to the reference structure ",
-    "in the [TT].tpb[tt] file to obtain and each subsequent timeframe is ",
+    "in the [TT].tpx[tt] file to obtain and each subsequent timeframe is ",
     "fitted to the previously fitted structure. This way a continuous",
     "trajectory is generated, which might not be the case using the",
     "regular fit method, e.g. when your protein undergoes large",
@@ -282,7 +281,7 @@ int main(int argc,char *argv[])
   static bool  bPBC=FALSE,bInBox=FALSE,bAppend=FALSE,bVels=TRUE;
   static bool  bCenter=FALSE,bCompress=FALSE;
   static bool  bFit=FALSE,bIFit=FALSE,bBox=TRUE;
-  static bool  bTer=FALSE,bPatch=FALSE,bCheckDouble=FALSE;
+  static bool  bTer=FALSE,/*bPatch=FALSE,*/bCheckDouble=FALSE;
   static int   skip_nr=1,prec=3;
   static real  tzero=0.0,delta_t=0.0,timestep=0.0,ttrunc=-1,tdump=-1,toffset=0;
   static real  newbox = -1, xshift=0.0;
@@ -302,15 +301,15 @@ int main(int argc,char *argv[])
     { "-z", FALSE,  etBOOL, &bCompress,
       "compress output (for .pdb and .gro files)" },
     { "-fit", FALSE,  etBOOL, &bFit,
-      "fit molecule to ref structure in .tpb file" },
+      "fit molecule to ref structure in .tpx file" },
     { "-pfit", FALSE,  etBOOL, &bIFit,
       "progressive fit, to the previous fitted structure" },
     { "-prec", FALSE,  etINT, &prec,
       "precision for .gro and .xtc writing" },
     { "-vel", FALSE, etBOOL, &bVels,
       "read and write velocities if possible" },
-    { "-patch", FALSE, etBOOL, &bPatch,
-      "Set the new magic number in a trj file" },
+    /*{ "-patch", FALSE, etBOOL, &bPatch,
+      "Set the new magic number in a trj file" },*/
     { "-skip", FALSE,  etINT, &skip_nr,
       "only write out every nr-th frame" },
     { "-dt", FALSE,  etREAL, &delta_t,
@@ -340,13 +339,14 @@ int main(int argc,char *argv[])
   };
       
   FILE         *out=NULL;
+  int          trjout;
   int          status,ftp,ftpout,file_nr;
   rvec         *x,*xn,*xout,*v;
   rvec         *xp,shift;
   real         xtcpr, lambda,*w_rls;
   matrix       box;
   int          m,i,d,frame,outframe,natoms,nout,nre,step;
-  t_statheader header;
+  t_tpxheader  header;
   t_topology   top;
   t_atoms      useatoms;
   int          isize;
@@ -361,7 +361,7 @@ int main(int argc,char *argv[])
   bool         bHaveNextFrame,bHaveX,bHaveV;
   char         *grpnm;
   char         title[256],out_file[256],command[256],filemode[5];
-  XDR          xdr;
+  int          xdr;
 
   t_filenm fnm[] = {
     { efTRX, "-f",  NULL, ffREAD },
@@ -370,7 +370,7 @@ int main(int argc,char *argv[])
     { efG87, "-og", "gtrajout", ffOPTWR },
     { efGRO, "-or", "confout", ffOPTWR },
     { efPDB, "-op", NULL, ffOPTWR },
-    { efTPB, NULL,  NULL, ffOPTRD },
+    { efTPX, NULL,  NULL, ffOPTRD },
     { efNDX, NULL,  NULL, ffOPTRD }
   };  
 #define NFILE asize(fnm)
@@ -384,9 +384,9 @@ int main(int argc,char *argv[])
   if (ttrunc != -1) {
     do_trunc(ftp2fn(efTRX,NFILE,fnm),ttrunc);
   }
-  else if (bPatch) {
+  /*else if (bPatch) {
     do_patch(ftp2fn(efTRX,NFILE,fnm));
-  }
+  }*/
   else {
     if (bIFit) {
       bFit=TRUE;
@@ -437,13 +437,14 @@ int main(int argc,char *argv[])
     }
     switch (ftp) {
     case efXTC:
-      open_xtc(&xdr,ftp2fn(ftp,NFILE,fnm),filemode);
+      xdr = open_xtc(ftp2fn(ftp,NFILE,fnm),filemode);
       break;
     case efG87:
       out=ftp2FILE(ftp,NFILE,fnm,filemode);
       break;
     case efTRJ:
-      out=ftp2FILE(ftp,NFILE,fnm,filemode);
+      out=NULL;
+      trjout = open_tpx(ftp2fn(ftp,NFILE,fnm),filemode);
       break;
     }
     
@@ -458,17 +459,17 @@ int main(int argc,char *argv[])
     bCompress = bCompress && ((ftp == efGRO) || (ftp == efPDB));
     
     /* Determine whether to read a topology */
-    bTop = (ftp2bSet(efTPB,NFILE,fnm) || 
+    bTop = (ftp2bSet(efTPX,NFILE,fnm) || 
 	    bPBC || bFit || (ftp == efGRO) || (ftp == efPDB));
 
     /* Determine if when can read index groups */
     bIndex = (bIndex || bTop);
      
     if (bTop) {  
-      read_status_header(ftp2fn(efTPB,NFILE,fnm),&header);
+      read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header);
       snew(xp,header.natoms);
-      read_status(ftp2fn(efTPB,NFILE,fnm),&step,&t,&lambda,NULL,box,NULL,NULL,
-		  &natoms,xp,NULL,NULL,&nre,NULL,&top);
+      read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,NULL,box,
+	       &natoms,xp,NULL,NULL,&top);
     }
     if (bFit) {
       fprintf(stderr,"Select group for root least squares fit\n");
@@ -686,17 +687,19 @@ int main(int argc,char *argv[])
 	  
 	  switch(ftp) {
 	  case efTRJ:
-	    wr_status(out,frame,t,0,NULL,box,NULL,NULL,
-		      nout,
-		      bHaveX ? xout : NULL,
-		      bHaveV ? v    : NULL,
-		      NULL,0,NULL,NULL);
+	  case efTRR:
+	    fwrite_trn(trjout,frame,t,0,box,
+		       nout,
+		       bHaveX ? xout : NULL,
+		       bHaveV ? v    : NULL,
+		       NULL);
+	    
 	    break;
 	  case efG87:
 	    write_gms(out,nout,xout,bBox ? box : NULL );
 	    break;
 	  case efXTC:
-	    write_xtc(&xdr,nout,frame,t,box,xout,xtcpr);
+	    write_xtc(xdr,nout,frame,t,box,xout,xtcpr);
 	    break;
 	  case efGRO: {
 	    FILE *fp;
@@ -787,7 +790,7 @@ int main(int argc,char *argv[])
     close_trj(status);
     
     if (ftp == efXTC)
-      close_xtc(&xdr);
+      close_xtc(xdr);
     else if (out != NULL)
       fclose(out);
   }

@@ -31,7 +31,6 @@ static char *SRCID_g_com_c = "$Id$";
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "statusio.h"
 #include "statutil.h"
 #include "random.h"
 #include "names.h"
@@ -142,7 +141,7 @@ int main(int argc,char *argv[])
   };
   t_filenm fnm[] = {
     { efTRX,  "-f",  NULL, ffREAD },
-    { efTPB,  NULL,  NULL, ffREAD },
+    { efTPX,  NULL,  NULL, ffREAD },
     { efNDX,  NULL,  NULL, ffOPTRD },
     { efXVG, "-ox", "xcm", ffWRITE },
     { efXVG, "-oe", "ekrot",ffWRITE }
@@ -183,7 +182,7 @@ int main(int argc,char *argv[])
     fprintf(stderr,"WARNING: no velocities in input file:\nwill not calculate rotational energy (-oe)\n");
 
   /* open input files, read topology and index */
-  top=read_top(ftp2fn(efTPB,NFILE,fnm));
+  top=read_top(ftp2fn(efTPX,NFILE,fnm));
   
   fprintf(stderr,"How many groups do you want to calc com of ? ");
   scanf("%d",&ngrps);
@@ -274,8 +273,5 @@ int main(int argc,char *argv[])
   for(g=0;(g<=ngrps);g++) {
     fclose(outX[g]);
   }
-
-  thanx(stdout);
-  
-  return 0;
 }
+

@@ -43,6 +43,7 @@ static char *SRCID_g_relax_c = "$Id$";
 #include "statutil.h"
 #include "rdgroup.h"
 #include "gstat.h"
+#include "tpxio.h"
 
 typedef struct {
   real re,im;
@@ -473,7 +474,7 @@ int main(int argc,char *argv[])
   real       *shifts=NULL;
   t_filenm   fnm[] = {
     { efTRX, "-f", NULL,     ffREAD },
-    { efTPB, "-s", NULL,     ffREAD },
+    { efTPX, "-s", NULL,     ffREAD },
     { efNDX, NULL, NULL,     ffREAD },
     { efDAT, "-d", "shifts", ffREAD },
     { efOUT, "-o","spec",    ffWRITE },
@@ -500,7 +501,7 @@ int main(int argc,char *argv[])
     { "-nrestart", FALSE, etINT,  &nrestart,
       "Number of frames between starting point for computation of ACF without FFT" },
     { "-fit",      FALSE, etBOOL, &bFit,
-      "Do an optimal superposition on reference structure in tpb file" },
+      "Do an optimal superposition on reference structure in tpx file" },
     { "-v",        FALSE, etBOOL, &bVerbose,
       "Tell you what I am about to do" }
   };
@@ -517,11 +518,11 @@ int main(int argc,char *argv[])
     fprintf(stderr,"Warning: too many levels, setting to %d\n",nlevels);
   }
   		    
-  top    = read_top(ftp2fn(efTPB,NFILE,fnm));
+  top    = read_top(ftp2fn(efTPX,NFILE,fnm));
   natoms = top->atoms.nr;
   snew(xp,natoms);
-  read_status(ftp2fn(efTPB,NFILE,fnm),&step,&t,&lambda,NULL,box,NULL,NULL,
-              &natoms,xp,NULL,NULL,&nre,NULL,NULL);
+  read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,NULL,box,
+	   &natoms,xp,NULL,NULL,NULL);
 
   /* Determine the number of protons, and their index numbers 
    * by checking the mass 

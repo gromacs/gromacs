@@ -35,11 +35,11 @@ static char *SRCID_g_rmsf_c = "$Id$";
 #include "xvgr.h"
 #include "copyrite.h"
 #include "statutil.h"
-#include "statusio.h"
 #include "string2.h"
 #include "vec.h"
 #include "rdgroup.h"
 #include "pdbio.h"
+#include "tpxio.h"
 #include "pbc.h"
 #include "fatal.h"
 #include "futil.h"
@@ -77,7 +77,7 @@ int main (int argc,char *argv[])
   int          step,nre,natom,natoms,i,g,m,teller=0;
   real         t,lambda,*w_rls,*w_rms,tmas;
   
-  t_statheader header;
+  t_tpxheader header;
   t_inputrec   ir;
   t_topology   top;
   t_pdbatom    *pdba;
@@ -106,7 +106,7 @@ int main (int argc,char *argv[])
   rvec         xcm;
 
   t_filenm fnm[] = {
-    { efTPB, NULL, NULL, ffREAD },
+    { efTPX, NULL, NULL, ffREAD },
     { efTRX, "-f", NULL, ffREAD },
     { efPDB, "-q", NULL, ffOPTRD },
     { efNDX, NULL, NULL, ffOPTRD },
@@ -118,17 +118,13 @@ int main (int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
 		    NFILE,fnm,0,NULL,asize(desc),desc,0,NULL);
 
-  read_status_header(ftp2fn(efTPB,NFILE,fnm),&header);
+  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header);
   snew(x,header.natoms);
   snew(v,header.natoms);
   snew(xref,header.natoms);
   snew(w_rls,header.natoms);
-  read_status(ftp2fn(efTPB,NFILE,fnm),
-              &step,&t,&lambda,&ir,
-              box,NULL,NULL,
-              &natom,
-              xref,NULL,NULL,&nre,NULL,
-              &top);
+  read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
+	   box,&natom,xref,NULL,NULL,&top);
 
   /*set box type*/
   init_pbc(box,FALSE);

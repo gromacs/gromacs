@@ -43,6 +43,7 @@ static char *SRCID_genion_c = "$Id$";
 #include "macros.h"
 #include "physics.h"
 #include "vec.h"
+#include "tpxio.h"
 
 void get_params(char *giin,char *giout,
 		int *p_num,char p_name[],real *p_q,
@@ -122,9 +123,8 @@ static int calc_pot(char *infile,
 		    t_topology *top,rvec **x0,rvec **v0,
 		    real **coulomb,matrix box,real *rl2)
 {
-  FILE           *status;
   t_inputrec     ir;
-  t_statheader   sh;
+  t_tpxheader sh;
   
   rvec        *x,*x_s;
   real        *q,qi,rij,rij2,rlong2;
@@ -135,16 +135,12 @@ static int calc_pot(char *infile,
   int         step,natoms;
   real        t;
 
-  status=ffopen(infile,"r");
-  rd_header(status,&sh);
+  read_tpxheader(infile,&sh);
   snew(x,sh.natoms);
   snew(*v0,sh.natoms);
   snew(x_s,sh.natoms);
-  fprintf(stderr,"Read statusfile version %s\n",
-	  rd_hstatus(status,&sh,&step,&t,&t,
-		     &ir,box,NULL,NULL,
-		     &natoms,x,*v0,NULL,&step,NULL,top));
-  fclose(status);
+  read_tpx(infile,&step,&t,&t,&ir,box,
+	   &natoms,x,*v0,NULL,top);
 
   /* Calc the force */
   fprintf(stderr,"Doing single force calculation...\n");
@@ -379,7 +375,7 @@ int main(int argc, char *argv[])
   t_filenm fnm[] = {
     { efGIP, "-f",  NULL,     ffREAD },
     { efGIP, "-po", "gi-out", ffWRITE },
-    { efTPB, NULL,  NULL,     ffREAD },
+    { efTPX, NULL,  NULL,     ffREAD },
     { efGRO, "-o",  NULL,     ffWRITE }
   };
 #define NFILE asize(fnm)
@@ -393,7 +389,7 @@ int main(int argc, char *argv[])
   
   nion=p_num+n_num;
 
-  natoms=calc_pot(fnm[2].fn,&top,&x,&v,&coulomb,box,&rlong2);
+  natoms=calc_pot(ftp2fn(efTPX,NFILE,fnm),&top,&x,&v,&coulomb,box,&rlong2);
   index=mk_windex(w1,nw);
   snew(nSubs,natoms);
   snew(bSet,nw);
@@ -416,7 +412,8 @@ int main(int argc, char *argv[])
   } while (p_num+n_num > 0);
   fprintf(stderr,"\n");
 
-  print_nsub(fnm[3].fn,nion,w1,nw,index,nSubs,p_name,n_name,&top,x,v,box);
+  print_nsub(ftp2fn(efGRO,NFILE,fnm),
+	     nion,w1,nw,index,nSubs,p_name,n_name,&top,x,v,box);
 
   thanx(stdout);
   

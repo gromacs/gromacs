@@ -40,6 +40,7 @@ static char *SRCID_g_helix_c = "$Id$";
 #include "macros.h"
 #include "maths.h"
 #include "pbc.h"
+#include "tpxio.h"
 #include "physics.h"
 #include "rdgroup.h"
 #include "smalloc.h"
@@ -232,7 +233,7 @@ int main(int argc,char *argv[])
   matrix     box;
   bool       bRange;
   t_filenm  fnm[] = {
-    { efTPB, NULL,  NULL,   ffREAD  },
+    { efTPX, NULL,  NULL,   ffREAD  },
     { efNDX, NULL,  NULL,   ffREAD  },
     { efTRX, "-f",  NULL,   ffREAD  },
     { efG87, "-to", NULL,   ffOPTWR },
@@ -247,7 +248,7 @@ int main(int argc,char *argv[])
   bRange=(opt2parg_bSet("-ahxstart",asize(pa),pa) &&
 	  opt2parg_bSet("-ahxend",asize(pa),pa));
 		        
-  top=read_top(ftp2fn(efTPB,NFILE,fnm));
+  top=read_top(ftp2fn(efTPX,NFILE,fnm));
   
   natoms=read_first_x(&status,opt2fn("-f",NFILE,fnm),&t,&x,box);
 
@@ -260,7 +261,7 @@ int main(int argc,char *argv[])
     otrj=NULL;
     
   if (natoms != top->atoms.nr)
-    fprintf(stderr,"Warning! in tpb are %d atoms, in trj %d\n",
+    fprintf(stderr,"Warning! in tpx are %d atoms, in trj %d\n",
 	    top->atoms.nr,natoms);
 	    
   bb=mkbbind(ftp2fn(efNDX,NFILE,fnm),&nres,&nbb,r0,&nall,&allindex,
@@ -283,12 +284,11 @@ int main(int argc,char *argv[])
     }
   }
 
-  /* Read reference frame from tpb file to compute helix length */
+  /* Read reference frame from tpx file to compute helix length */
   snew(xref,natoms);
-  fprintf(stderr,"Read xref from %s\n",
-	  read_status(ftp2fn(efTPB,NFILE,fnm),
-		      &step,&t,&lambda,NULL,NULL,NULL,NULL,
-		      &natoms,xref,NULL,NULL,&nre,NULL,NULL));
+  read_tpx(ftp2fn(efTPX,NFILE,fnm),
+	   &step,&t,&lambda,NULL,NULL,
+	   &natoms,xref,NULL,NULL,NULL);
   calc_hxprops(nres,bb,xref,box);
   do_start_end(nres,bb,xref,&nbb,bbindex,&nca,caindex,bRange,rStart,rEnd);
   sfree(xref);

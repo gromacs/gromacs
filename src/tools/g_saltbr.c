@@ -144,7 +144,7 @@ int main(int argc,char *argv[])
   };
   t_filenm   fnm[] = {
     { efTRX, "-f",  NULL, ffREAD },
-    { efTPB, NULL,  NULL, ffREAD },
+    { efTPX, NULL,  NULL, ffREAD },
   };
 #define NFILE asize(fnm)
 
@@ -179,7 +179,7 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   
-  top=read_top(ftp2fn(efTPB,NFILE,fnm));
+  top=read_top(ftp2fn(efTPX,NFILE,fnm));
   cg=mk_charge(&top->atoms,&(top->blocks[ebCGS]),&ncg);
   snew(cgdist,ncg);
   snew(nWithin,ncg);

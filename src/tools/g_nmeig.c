@@ -74,7 +74,7 @@ int main(int argc,char *argv[])
   atom_id    *index;
   t_filenm fnm[] = { 
     { efMTX, "-f", "hessian", ffREAD }, 
-    { efTPB, NULL, NULL, ffREAD },
+    { efTPX, NULL, NULL, ffREAD },
     { efXVG, NULL, "eigval", ffWRITE },
     { efVEC, "-k", "eigvec", ffWRITE }
   }; 
@@ -93,7 +93,7 @@ int main(int argc,char *argv[])
   else 
     fprintf(out,"@ subtitle \"of Hessian matrix\"\n");
 
-  top=read_top(ftp2fn(efTPB,NFILE,fnm)); 
+  top=read_top(ftp2fn(efTPX,NFILE,fnm)); 
 
   vecnm=ftp2fn(efVEC,NFILE,fnm);
   vec=(FILE *)ffopen(vecnm,"w");

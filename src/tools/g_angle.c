@@ -105,7 +105,7 @@ int main(int argc,char *argv[])
   real       *time,*trans_frac,*aver_angle;
   t_filenm   fnm[] = {
     { efTRX, "-f", NULL,  ffREAD  },
-    { efTPB, NULL, NULL,  ffREAD  },
+    { efTPX, NULL, NULL,  ffREAD  },
     { efNDX, NULL, NULL,  ffREAD  },
     { efXVG, "-od", "angdist",  ffWRITE },
     { efXVG, "-ov", "angaver",  ffOPTWR },
@@ -194,7 +194,7 @@ int main(int argc,char *argv[])
   snew(aver_angle,nframes);
   snew(angstat,maxangstat+1);
 
-  read_ang_dih(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPB,NFILE,fnm),(mult == 3),
+  read_ang_dih(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),(mult == 3),
 	       bALL || bCorr || bTrans,bRb,maxangstat,angstat,
 	       &nframes,time,isize,index,trans_frac,aver_angle,dih);
 	       

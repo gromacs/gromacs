@@ -92,7 +92,7 @@ int main(int argc,char *argv[])
   t_topology *top;
   t_filenm   fnm[] = {
     { efTRX, "-f", NULL,  ffREAD  },
-    { efTPB, NULL, NULL,  ffREAD },
+    { efTPX, NULL, NULL,  ffREAD },
     { efNDX, NULL, NULL,  ffREAD  },
     { efXVG, "-o", "rotacf",  ffWRITE },
     { efXVG, "-a", "fitacf",  ffOPTWR }
@@ -122,7 +122,7 @@ int main(int argc,char *argv[])
     fatal_error(0,"number of index elements not multiple of 2, "
 		"these can not be atom doublets\n");
   
-  top=read_top(ftp2fn(efTPB,NFILE,fnm));
+  top=read_top(ftp2fn(efTPX,NFILE,fnm));
   
   fprintf(stderr,"Allocating %d bytes for data\n",nvec*DIM*nframes);
   
@@ -137,9 +137,6 @@ int main(int argc,char *argv[])
   t1 = t0 = t;
   teller  = 0;
   do {
-    if ((teller % 10) == 0)
-      fprintf(stderr,"\rt: %.1f",t);
-    
     if (teller == nframes) {
       fprintf(stderr,"Read %d frames. That's more than the %d you told me.\n"
 	      "Stopping analysis here.\n",teller+1,nframes);

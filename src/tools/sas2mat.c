@@ -113,7 +113,7 @@ int main(int argc,char *argv[])
       fscanf(in,"%lf",&s);
       ss[j][k]=s;
     }
-    if ((i % nskip) == 0)
+    if (!nskip || ((i % nskip) == 0))
       k++;
   }
   fclose(in);

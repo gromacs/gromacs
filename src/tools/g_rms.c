@@ -35,7 +35,6 @@ static char *SRCID_g_rms_c = "$Id$";
 #include "xvgr.h"
 #include "copyrite.h"
 #include "statutil.h"
-#include "statusio.h"
 #include "string2.h"
 #include "vec.h"
 #include "rdgroup.h"
@@ -44,6 +43,7 @@ static char *SRCID_g_rms_c = "$Id$";
 #include "futil.h"
 #include "gstat.h"
 #include "matio.h"
+#include "tpxio.h"
 
 static real do_rms(int nind,atom_id index[],real w_rms[],rvec x[],rvec xp[])
 {
@@ -81,7 +81,7 @@ int main (int argc,char *argv[])
     "Option [TT]-prev[tt] produces the RMSD with a previous frame.[PAR]",
     "Option [TT]-m[tt] produces a matrix of RMSD's of each structure in the", 
     "trajectory with respect to each other structure. All the structures",
-    "are fitted on the structure in the .tpb file. With [TT]-fitall[tt], all",
+    "are fitted on the structure in the .tpx file. With [TT]-fitall[tt], all",
     "pairs of structures are fitted on each other for calculating the",
     "rmsd matrix. With [TT]-f2[tt],",
     "the 'other structures' are taken from a second trajectory.",
@@ -136,7 +136,7 @@ int main (int argc,char *argv[])
   real         t,lambda,*w_rls,*w_rms,tmas;
   bool         bTruncOct,bNorm,bAv,bFreq2,bFile2,bMat,bBond,bDelta;
   
-  t_statheader header;
+  t_tpxheader  header;
   t_inputrec   ir;
   t_topology   top;
   t_idef       *idef;
@@ -161,7 +161,7 @@ int main (int argc,char *argv[])
   char         *gn_fit,**gn_rms,*bigbuf;
   t_rgb        rlo,rhi;
   t_filenm fnm[] = {
-    { efTPB, NULL,  NULL,    ffREAD  },
+    { efTPX, NULL,  NULL,    ffREAD  },
     { efTRX, "-f",  NULL,    ffREAD  },
     { efTRX, "-f2", NULL,    ffOPTRD },
     { efNDX, NULL,  NULL,    ffOPTRD },
@@ -209,15 +209,15 @@ int main (int argc,char *argv[])
 
   bFreq2=opt2parg_bSet("-skip2", asize(pa), pa);
 
-  read_status_header(ftp2fn(efTPB,NFILE,fnm),&header);
+  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header);
 
   snew(xp,header.natoms);
   snew(w_rls,header.natoms);
   snew(w_rms,header.natoms);
   snew(v,header.natoms);
 
-  read_status(ftp2fn(efTPB,NFILE,fnm),&step,&t,&lambda,&ir,box,NULL,NULL,
-              &natom,xp,NULL,NULL,&nre,NULL,&top);
+  read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,box,
+	   &natom,xp,NULL,NULL,&top);
 
   /*set box type*/
   init_pbc(box,FALSE);

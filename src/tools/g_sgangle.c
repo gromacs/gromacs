@@ -255,7 +255,7 @@ void main(int argc,char *argv[])
   t_filenm  fnm[] = {             		/* files for g_sgangle 	*/
     { efTRX, "-f", NULL,  ffREAD },    		/* trajectory file 	*/
     { efNDX, NULL, NULL,  ffREAD },    		/* index file 		*/
-    { efTPB, NULL, NULL,  ffREAD },    		/* topology file 	*/
+    { efTPX, NULL, NULL,  ffREAD },    		/* topology file 	*/
     { efXVG,"-oa","sg_angle",ffWRITE },		/* xvgr output file 	*/
     { efXVG, "-od","sg_distance",ffWRITE }, 	/* xvgr output file 	*/
     { efXVG, "-od1", "sg_distance1",ffWRITE }, 	/* xvgr output file 	*/
@@ -268,7 +268,7 @@ void main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,0,NULL,asize(desc),desc,0,NULL);
 
-  top = read_top(ftp2fn(efTPB,NFILE,fnm));     /* read topology file */
+  top = read_top(ftp2fn(efTPX,NFILE,fnm));     /* read topology file */
 
   /* read index file. */
   rd_index(ftp2fn(efNDX,NFILE,fnm),2,gnx,index,grpname); 

@@ -45,6 +45,7 @@ static char *SRCID_g_sas_c = "$Id$";
 #include "nsc.h"
 #include "vdw.h"
 #include "pdbio.h"
+#include "rmpbc.h"
 
 void connelly_plot(char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
 		   matrix box)
@@ -126,7 +127,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,real defvdw,int ndots,
     fprintf(stderr,"Could not read coordinates from statusfile\n");
     exit(1);
   }
-  top=read_top(ftp2fn(efTPB,nfile,fnm));
+  top=read_top(ftp2fn(efTPX,nfile,fnm));
   
   nvdw = read_vdw(ftp2fn(efVDW,nfile,fnm),&vdw);
   fprintf(stderr,"There are %d VanderWaals radii\n",nvdw);
@@ -204,7 +205,7 @@ int main(int argc,char *argv[])
   };
   t_filenm  fnm[] = {
     { efTRX, "-f",   NULL,       ffREAD },
-    { efTPB, "-s",   NULL,       ffREAD },
+    { efTPX, "-s",   NULL,       ffREAD },
     { efVDW, "-vdw", NULL,       ffREAD },
     { efXVG, "-o",   "area",     ffWRITE },
     { efPDB, "-q",   "connelly", ffOPTWR }

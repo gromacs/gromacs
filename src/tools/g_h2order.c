@@ -274,7 +274,7 @@ int main(int argc,char *argv[])
     { efTRX, "-f", NULL,  ffREAD },    	    /* trajectory file 	          */
     { efNDX, NULL, NULL,  ffREAD },    	    /* index file 		  */
     { efNDX, "-nm", NULL, ffOPTRD },        /* index with micelle atoms   */
-    { efTPB, NULL, NULL,  ffREAD },    	    /* topology file           	  */
+    { efTPX, NULL, NULL,  ffREAD },    	    /* topology file           	  */
     { efXVG,"-o",  NULL,  ffWRITE }, 	    /* xvgr output file 	  */
   };
 
@@ -285,7 +285,7 @@ int main(int argc,char *argv[])
 		    fnm, asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
   bMicel = opt2bSet("-nm",NFILE,fnm);
 
-  top = read_top(ftp2fn(efTPB,NFILE,fnm));     /* read topology file */
+  top = read_top(ftp2fn(efTPX,NFILE,fnm));     /* read topology file */
 
   rd_index(ftp2fn(efNDX,NFILE,fnm),1,&ngx,&index,&grpname); 
   

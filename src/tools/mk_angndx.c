@@ -32,7 +32,6 @@ static char *SRCID_mk_angndx_c = "$Id$";
 #include "smalloc.h"
 #include "copyrite.h"
 #include "statutil.h"
-#include "statusio.h"
 #include "macros.h"
 #include "string2.h"
 #include "futil.h"
@@ -126,12 +125,13 @@ int main(int argc,char *argv[])
   int        *nr;
   char       **grpnames;
   t_filenm fnm[] = {
-    { efTPB, NULL, NULL, ffREAD  },
+    { efTPX, NULL, NULL, ffREAD  },
     { efNDX, NULL, NULL, ffWRITE }
   };
-  
+#define NFILE asize(fnm)
+
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,0,FALSE,asize(fnm),fnm,asize(pa),pa,
+  parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
 
   if (!opt)
@@ -160,7 +160,7 @@ int main(int argc,char *argv[])
     usage(argv[0],opt);
   }
 
-  top=read_top(fnm[0].fn);
+  top=read_top(ftp2fn(efTPX,NFILE,fnm));
 
   if (!bPP) {
     nftype=calc_nftype(FTYPE,&(top->idef));
@@ -176,7 +176,7 @@ int main(int argc,char *argv[])
     
     fill_ang(FTYPE,mult,nr,index,ft_ind,&(top->idef));
 
-    out=ffopen(fnm[1].fn,"w");
+    out=ftp2FILE(efNDX,NFILE,fnm,"w");
     fprintf(out,"%10d%10d\n",nftype,nang*mult);
     for(i=0; (i<nftype); i++) {
       fprintf(out,"%12s  %d  ",grpnames[i],mult*nr[i]);

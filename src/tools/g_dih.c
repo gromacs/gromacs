@@ -322,7 +322,7 @@ int main(int argc,char *argv[])
   int        i,step,nframes;
   t_filenm   fnm[] = {
     { efTRX, "-f", NULL, ffREAD },
-    { efTPB, NULL, NULL, ffREAD },
+    { efTPX, NULL, NULL, ffREAD },
     { efOUT, NULL, NULL, ffWRITE }
   };
 #define NFILE asize(fnm)
@@ -336,8 +336,8 @@ int main(int argc,char *argv[])
     
   snew(xr,1);
   init_rama(ftp2fn(efTRX,NFILE,fnm),
-	    ftp2fn(efTPB,NFILE,fnm),xr);
-  top=read_top(ftp2fn(efTPB,NFILE,fnm));
+	    ftp2fn(efTPX,NFILE,fnm),xr);
+  top=read_top(ftp2fn(efTPX,NFILE,fnm));
 	       
   /* Brute force malloc, may be too big... */
   nframes=get_nf();

@@ -198,7 +198,7 @@ int main(int argc,char *argv[])
   char       dssp[256],*dptr;
   t_filenm   fnm[] = {
     { efTRX, "-f",   NULL,      ffREAD },
-    { efTPB, NULL,   NULL,      ffREAD },
+    { efTPX, NULL,   NULL,      ffREAD },
     { efNDX, NULL,   NULL,      ffOPTRD },
     { efMAP, "-map", "ss",      ffLIBRD },
     { efTEX, "-os",  "ss",      ffWRITE },
@@ -212,7 +212,7 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
 	 	    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
 		    
-  top=read_top(ftp2fn(efTPB,NFILE,fnm));
+  top=read_top(ftp2fn(efTPX,NFILE,fnm));
   atoms=&(top->atoms);
   check_oo(atoms);
   nres=atoms->nres;

@@ -38,6 +38,8 @@ static char *SRCID_editconf_c = "$Id$";
 #include "copyrite.h"
 #include "statutil.h"
 #include "string2.h"
+#include "strdb.h"
+#include "rdgroup.h"
 #include "vec.h"
 #include "typedefs.h"
 #include "gstat.h"

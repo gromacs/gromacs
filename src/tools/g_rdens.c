@@ -172,7 +172,7 @@ int main(int argc,char *argv[])
   t_filenm  fnm[] = {             	    /* files for g_order 	  */
     { efTRX, "-f", NULL,  ffREAD },    	    /* trajectory file 	          */
     { efNDX, NULL, NULL,  ffREAD },    	    /* index file 		  */
-    { efTPB, NULL, NULL,  ffREAD },    	    /* topology file           	  */
+    { efTPX, NULL, NULL,  ffREAD },    	    /* topology file           	  */
     { efXVG,"-op","p_rdens", ffWRITE },     /* xvgr output: prob. dens.   */
     { efXVG,"-on","n_rdens", ffWRITE },     /* xvgr output: number. dens. */
     { efXVG,"-or","r_rdens", ffWRITE },     /* xvgr output: real dens. 	  */
@@ -184,7 +184,7 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME,TRUE,NFILE,fnm,
 		    asize(pa),pa,asize(desc),desc,0,NULL);
 		      
-  top = read_top(ftp2fn(efTPB,NFILE,fnm));     /* read topology file */
+  top = read_top(ftp2fn(efTPX,NFILE,fnm));     /* read topology file */
   fprintf(stderr,"Choose first group for Center of Mass computation!\n");
   
   fprintf(stderr,"Select group for Center of Mass calculation:\n");

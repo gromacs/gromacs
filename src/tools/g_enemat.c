@@ -34,7 +34,7 @@ static char *SRCID_g_enemat_c = "$Id$";
 #include "fatal.h"
 #include "vec.h"
 #include "smalloc.h"
-#include "enerio.h"
+#include "enxio.h"
 #include "statutil.h"
 #include "assert.h"
 #include "names.h"
@@ -44,6 +44,7 @@ static char *SRCID_g_enemat_c = "$Id$";
 #include "gstat.h"
 #include "physics.h"
 #include "matio.h"
+#include "strdb.h"
 
 static int search_str2(int nstr,char **str,char *key)
 {
@@ -110,14 +111,14 @@ int main(int argc,char *argv[])
 #define egTotal egNR
 #define egSP 1
   bool       egrp_use[egNR+egSP];
-  FILE       *in,*out;
+  int        in;
+  FILE       *out;
   int        timecheck;
-  XDR        xdr;
   t_energy   *ee;
   t_drblock  dr;
   int        teller=0,nre,step;
   real       t,sum;
-  bool       bCont,bEDR,bRef;
+  bool       bCont,bRef;
   bool       bCutmax,bCutmin;
   real       **eneset,*time=NULL;
   int        *set,i,j,k,prevk,m,n,nset,nenergy;
@@ -134,8 +135,7 @@ int main(int argc,char *argv[])
   int        neref;
   
   t_filenm   fnm[] = {
-    { efENE, "-f", NULL, ffOPTRD },
-    { efEDR, "-d", NULL, ffOPTRD },
+    { efENX, "-f", NULL, ffOPTRD },
     { efDAT, "-groups", "groups.dat", ffREAD },
     { efDAT, "-eref",   "eref.dat", ffOPTRD },
     { efXPM, "-emat",   "emat", ffWRITE },
@@ -156,16 +156,8 @@ int main(int argc,char *argv[])
   egrp_use[egTotal]=TRUE;
   
   bRef=opt2bSet("-eref",NFILE,fnm);
-  bEDR=ftp2bSet(efEDR,NFILE,fnm);
-  if (bEDR) {
-    xdropen(&xdr,ftp2fn(efEDR,NFILE,fnm),"r");
-    enm=NULL;
-    edr_nms(&xdr,&nre,&enm);
-  }
-  else {
-    in=ftp2FILE(efENE,NFILE,fnm,"r");
-    rd_ener_nms(in,&nre,&enm);
-  }
+  in=open_enx(ftp2fn(efENE,NFILE,fnm),"r");
+  do_enxnms(in,&nre,&enm);
   
   if (nre == 0) {
     fprintf(stderr,"No energies!\n");
@@ -218,10 +210,7 @@ int main(int argc,char *argv[])
   t        = 0;
   do {
     do {
-      if (bEDR)
-	bCont=edr_io(&xdr,&t,&step,&nre,ee,&dr);
-      else
-	bCont=rd_ener(in,&t,&step,ee,&dr);
+      bCont=do_enx(in,&t,&step,&nre,ee,&dr);
       if (bCont) {
 	timecheck=check_times(t);
 	
@@ -446,10 +435,7 @@ int main(int argc,char *argv[])
     fclose(out);
 */
   }
-  if (bEDR)
-    xdrclose(&xdr);
-  else
-    ffclose(in);
+  close_enx(in);
   
   thanx(stdout);
   

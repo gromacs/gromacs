@@ -1,5 +1,5 @@
 /*
- *       $Id$
+ *       @(#) copyrgt.c 1.12 9/30/97
  *
  *       This source code is part of
  *
@@ -7,12 +7,12 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 2.0
+ *            VERSION 2.0b
  * 
- * Copyright (c) 1991-1997
- * BIOSON Research Institute, Dept. of Biophysical Chemistry
+ * Copyright (c) 1990-1997,
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry,
  * University of Groningen, The Netherlands
- * 
+ *
  * Please refer to:
  * GROMACS: A message-passing parallel molecular dynamics implementation
  * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
@@ -24,14 +24,13 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * Good ROcking Metal Altar for Chronical Sinners
+ * Great Red Oystrich Makes All Chemists Sane
  */
-static char *SRCID_g_potential_c = "$Id$";
-
 #include <math.h>
 #include <ctype.h>
+#include <stdlib.h>
 #include "sysstuff.h"
-#include "string.h"
+#include "string2.h"
 #include "typedefs.h"
 #include "smalloc.h"
 #include "macros.h"
@@ -47,21 +46,16 @@ static char *SRCID_g_potential_c = "$Id$";
 #define EPS0 8.85419E-12
 #define ELC 1.60219E-19
 
-/****************************************************************************/
-/* This program calculates the electrostatic potential across the box by    */
-/* determining the charge density in slices of the box and integrating these*/
-/* twice.                                                                   */
-/* Peter Tieleman, April 1995                                               */
-/* It now also calculates electrostatic potential in spherical micelles,    */
-/* using \frac{1}{r}\frac{d^2r\Psi}{r^2} = - \frac{\rho}{\epsilon_0}        */
-/* This probably sucks but it seems to work.                                */
-/****************************************************************************/
+
+/* ************************************************* */
+/* */
+/* */ 
 
 static int ce=0, cb=0;
 
 /* this routine integrates the array data and returns the resulting array */
 /* routine uses simple trapezoid rule                                     */
-void p_integrate(real *result, real data[], int ndata, real slWidth)
+void integrate(real *result, real data[], int ndata, real slWidth)
 {
   int i,j,  
       slice;
@@ -83,17 +77,20 @@ void p_integrate(real *result, real data[], int ndata, real slWidth)
   return;
 }
 
-void calc_potential(char *fn, atom_id **index, int gnx[], 
+void calc_netforce(char *fn1,char *fn2, atom_id **index, int gnx[], 
 		    real ***slPotential, real ***slCharge, 
 		    real ***slField, int *nslices, 
 		    t_topology *top, int axis, int nr_grps, real *slWidth,
 		    real fudge_z, bool bSpherical)
 {
-  rvec *x0;              /* coordinates without pbc */
+  /*  rvec *x0; */             /* coordinates without pbc */
+  rvec *f1,*f2;          /* forces in traj 1 and 2 */
+  rvec df,*dftot;
+  rvec *dfftot;
   matrix box;            /* box (3x3) */
-  int natoms,            /* nr. atoms in trj */
-      status,
-      **slCount,         /* nr. of atoms in one slice for a group */
+  int natoms1,natoms2,   /* nr. atoms in trj */
+      status1,status2,
+        **slCount,       /* nr. of atoms in one slice for a group */
       i,j,n,             /* loop indices */
       teller = 0,      
       ax1, ax2,
@@ -102,164 +99,107 @@ void calc_potential(char *fn, atom_id **index, int gnx[],
   real slVolume;         /* volume of slice for spherical averaging */
   real t, z, tm;
   rvec xcm;
+  t_filenm  fnm[] = {
+    { efTRJ, "-f1", NULL,  FALSE },
+    { efTRJ, "-f2", NULL, FALSE },
+  };
+ 
+  FILE *fp1,*fp2;
+  t_statheader sh1,sh2;
 
-  switch(axis)
-  {
-  case 0:
-    ax1 = 1; ax2 = 2;
-    break;
-  case 1:
-    ax1 = 0; ax2 = 2;
-    break;
-  case 2:
-    ax1 = 0; ax2 = 1;
-    break;
-  default:
-    fprintf(stderr,"Invalid axes. Terminating\n");
-    exit(1);
-  }
-
-  if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0) {
+  
+  fp1=opt2FILE("-f1",FILE,fnm,"r");
+  fp2=opt2FILE("-f2",FILE,fnm,"r");
+  rd_header(fp1,&sh1);
+  rd_header(fp2,&sh2);
+  
+  /*
+  if ((natoms1 = read_first_f(&status1,fn1,&t,&f1,box)) == 0) {
     fprintf(stderr,"Could not read coordinates from statusfile\n");
     exit(1);
   }
-
-  if (! *nslices)
-    *nslices = (int)(box[axis][axis] * 10); /* default value */
-
-  fprintf(stderr,"\nDividing the box in %d slices\n",*nslices);
-
-  snew(*slField, nr_grps);
-  snew(*slCharge, nr_grps);
-  snew(*slPotential, nr_grps);
-
-  for (i = 0; i < nr_grps; i++)
-  {
-    snew((*slField)[i], *nslices);
-    snew((*slCharge)[i], *nslices);
-    snew((*slPotential)[i], *nslices);
+  if ((natoms2 = read_first_f(&status2,fn2,&t,&f2,box)) == 0) {
+    fprintf(stderr,"Could not read coordinates from statusfile\n");
+    exit(1);
   }
-
+  */
+  natoms1 = sh1.natoms;
+  natoms2 = sh2.natoms;
+  
+  
+  /* allocate memory */
+  snew(df,1);
+  snew(dftot,nr_grps);
+  snew(dfftot,nr_grps);
+  
+  snew(f1,natoms1);
+  snew(f2,natoms2);
+  
+  rewind(fp1);
+  rewind(fp2);
+  
   /*********** Start processing trajectory ***********/
-  do 
-  {
-    *slWidth = box[axis][axis]/(*nslices);
-    if ((teller++ % 10) == 0)
-      fprintf(stderr,"\rFrame: %d",teller-1); 
+  /* Berk code */
+  do {
+    rd_header(fp1,&sh1);
+    rd_header(fp2,&sh2);
     
-    rm_pbc(&(top->idef),top->atoms.nr,box,x0,x0);
-
-    /* calculate position of center of mass based on group 1 */
-    tm=calc_xcm(x0, gnx[0], index[0], top->atoms.atom, xcm, FALSE);
-    svmul(-1,xcm,xcm);
-	  
-    /*    fprintf(stderr,"total mass: %f\n",tm);
-    fprintf(stderr,"xcm: %f %f %f\n",xcm[0],xcm[1],xcm[2]);
-    */
-    for (n = 0; n < nr_grps; n++)
-    {      
-      for (i = 0; i < gnx[n]; i++)   /* loop over all atoms in index file */
-      {
-	if (bSpherical)
-	{
-	  rvec_add(x0[index[n][i]], xcm, x0[index[n][i]]);
-	  /* only distance from origin counts, not sign */
-	  slice = norm(x0[index[n][i]])/(*slWidth);
-	  
-	  /* this is a nice check for spherical groups but not for
-	     all water in a cubic box since a lot will fall outside
-	     the sphere
- 	    if (slice > (*nslices)) 
-	    {
-	     fprintf(stderr,"Warning: slice = %d\n",slice);
-	    }
-	  */
-	  (*slCharge)[n][slice] += top->atoms.atom[index[n][i]].q;
-	}
-	else
-	{
-	  z = x0[index[n][i]][axis];
-	  z = z + fudge_z;
-	  if (z < 0) 
-	    z += box[axis][axis];
-	  if (z > box[axis][axis])
-	    z -= box[axis][axis];
-	  /* determine which slice atom is in */
-	  slice = (z / (*slWidth)); 
-	  (*slCharge)[n][slice] += top->atoms.atom[index[n][i]].q;
-	}
-      }
+    /* Check whether there are forces in this frame... */
+    if (sh.f_size != 0) {
+      rd_hstatus(fp,&sh,&step,&t,&lambda,NULL,NULL,NULL,NULL,&natoms,
+		 NULL,NULL,force,&nre,NULL,NULL);
+      /* Analyse them */
+      
+      
+      
+      
+      for (n = 0; n < nr_grps; n++)
+        {      
+          dftot[n]=0.0;
+          for (i = 0; i < gnx[n]; i++)  /* loop over all atoms in index file */
+            {
+              rvec_sub(f1[index[n][i]],f2[index[n][i]],df);
+              rvec_inc(dftot,df);
+            }
+        }
+      nr_frames++;
+      
     }
-    nr_frames++;
-  } while (read_next_x(status,&t,natoms,x0,box));
+    else {
+      /* Else skip the frame */
+      rd_hstatus(fp,&sh,&step,&t,&lambda,NULL,NULL,NULL,NULL,&natoms,
+		 NULL,NULL,NULL,&nre,NULL,NULL);
+    }
+  } while ((!eof(fp1)) && (!eof(fp2)));
   
   /*********** done with status file **********/
-  close_trj(status);
+  
+  fclose(fp1);
+  fclose(fp2);
   
   /* slCharge now contains the total charge per slice, summed over all
      frames. Now divide by nr_frames and integrate twice 
-   */
+     */
   
-  if (bSpherical)
-    fprintf(stderr,"\n\nRead %d frames from trajectory. Calculating potential"
-	    "in spherical coordinates\n", nr_frames-1);
-  else
-    fprintf(stderr,"\n\nRead %d frames from trajectory. Calculating potential\n",
-	    nr_frames-1);
-
+  fprintf(stderr,"\n\nRead %d frames from trajectory. Calculating force\n",
+          nr_frames-1);
+  
   for (n =0; n < nr_grps; n++)
-  {
-    for (i = 0; i < *nslices; i++)
     {
-      if (bSpherical)
-      {
-	/* charge per volume is now the summed charge, divided by the nr
-	   of frames and by the volume of the slice it's in, 4pi r^2 dr
-	   */
-	slVolume = 4*M_PI * sqr(i) * sqr(*slWidth) * *slWidth;
-	if (slVolume == 0)
-	{
-	  (*slCharge)[n][i] = 0;
-	}
-	else
-	{
-	  (*slCharge)[n][i] = (*slCharge)[n][i] / ((nr_frames-1) * slVolume);
-	}
-      }
-      else
-      {
-	/* get charge per volume */
-	(*slCharge)[n][i] = (*slCharge)[n][i] * (*nslices) /
-	  ((nr_frames-1) * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);
-      }
-    }
-    /* Now we have charge densities */
-   
-    /* integrate twice to get field and potential */
-    p_integrate((*slField)[n], (*slCharge)[n], *nslices, *slWidth);
-    p_integrate((*slPotential)[n],(*slField)[n], *nslices, *slWidth);
-  }
-  
-  /* Now correct for eps0 and in spherical case for r*/
-  for (n = 0; n < nr_grps; n++)
-    for (i = 0; i < *nslices; i++)
-    {
-      if (bSpherical)
-      {
-	(*slPotential)[n][i] = ELC * (*slPotential)[n][i] * -1.0E9 / 
-	  (EPS0 * i * (*slWidth));
-	(*slField)[n][i] = ELC * (*slField)[n][i] * 1E18 / 
-	  (EPS0 * i * (*slWidth));
-      }
-      else 
-      {
-	(*slPotential)[n][i] = ELC * (*slPotential)[n][i] * -1.0E9 / EPS0  ;
-	(*slField)[n][i] = ELC * (*slField)[n][i] * 1E18 / EPS0;
-      }
+      dfftot[n]/=(nr_frames-1);
+      
     }
   
-  sfree(x0);  /* free memory used by coordinate array */
+  sfree(f1);  /* free memory used by coordinate array */
+  sfree(f2);
+  
+  fprintf(stderr,"\n\nTotal forces are:\n");
+  for (n =0; n < nr_grps; n++)
+    {
+     fprintf(stderr,"Group %d: %12.5f",n,dfftot[n]);
+    } 
 }
+
 
 void plot_potential(real *potential[], real *charge[], real *field[], 
 		    char *afile, char *bfile, char *cfile, int nslices,
@@ -333,7 +273,7 @@ void main(int argc,char *argv[])
       "Discard last #nr slices of box for integration" },
     { "-tz",  FALSE, etREAL, &fudge_z,
       "Translate all coordinates <distance> in the direction of the box" },
-    { "-spherical", FALSE, etBOOL, &bSpherical,
+    { "-spherical", FALSE, etBOOL,
       "Calculate spherical thingie" },
   };
   static char *bugs[] = {
@@ -351,12 +291,11 @@ void main(int argc,char *argv[])
   t_topology *top;                	    /* topology 		  */ 
   atom_id   **index;             	    /* indices for all groups     */
   t_filenm  fnm[] = {             	    /* files for g_order 	  */
-    { efTRX, "-f", NULL,  ffREAD },    	    /* trajectory file 	          */
+    { efTRX, "-f1", NULL,  ffREAD },        /* trajectory file 1          */
+    { efTRX, "-f2", NULL,  ffREAD },        /* trajectory file 2          */
     { efNDX, NULL, NULL,  ffREAD },    	    /* index file 		  */
     { efTPX, NULL, NULL,  ffREAD },    	    /* topology file           	  */
-    { efXVG,"-o","potential", ffWRITE },    /* xvgr output file 	  */
-    { efXVG,"-oc","charge", ffWRITE }, 	    /* xvgr output file 	  */
-    { efXVG,"-of","field", ffWRITE }, 	    /* xvgr output file 	  */
+    { efXVG,"-o","force", ffWRITE },        /* xvgr output file 	  */
   };
 
 #define NFILE asize(fnm)
@@ -366,8 +305,8 @@ void main(int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
 
   /* Calculate axis */
-  axis = toupper(axtitle[0]) - 'X';
-  
+  /*  axis = toupper(axtitle[0]) - 'X';
+   */
   top = read_top(ftp2fn(efTPX,NFILE,fnm));     /* read topology file */
 
   printf("How many groups? ");
@@ -380,7 +319,7 @@ void main(int argc,char *argv[])
   rd_index(ftp2fn(efNDX,NFILE,fnm),ngrps,ngx,index,grpname); 
 
   
-  calc_potential(ftp2fn(efTRX,NFILE,fnm), index, ngx, 
+  calc_netforce(opt2fn("-f1",NFILE,fnm),opt2fn("-f2",NFILE,fnm), index, ngx, 
 		 &potential, &charge, &field,
 		 &nslices, top, axis, ngrps, &slWidth, fudge_z,
 		 bSpherical); 

@@ -188,7 +188,7 @@ int main(int argc,char *argv[])
   atom_id    *index[2],aN,aH,aO;
   t_filenm   fnm[] = {
     { efTRJ, "-f", NULL,  ffREAD },
-    { efTPB, NULL, NULL,  ffREAD },
+    { efTPX, NULL, NULL,  ffREAD },
     { efNDX, NULL, NULL,  ffREAD },
     { efXVG, NULL, "dist",ffWRITE }
   };
@@ -198,7 +198,7 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
 		        
-  top=read_top(ftp2fn(efTPB,NFILE,fnm));
+  top=read_top(ftp2fn(efTPX,NFILE,fnm));
   rd_index(ftp2fn(efNDX,NFILE,fnm),2,gnx,index,grpname);
   wsize=3;
   nhb=gnx[0]/3;

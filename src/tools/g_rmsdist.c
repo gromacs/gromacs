@@ -34,7 +34,7 @@ static char *SRCID_g_rmsdist_c = "$Id$";
 #include "typedefs.h"
 #include "copyrite.h"
 #include "statutil.h"
-#include "statusio.h"
+#include "tpxio.h"
 #include "string2.h"
 #include "vec.h"
 #include "rdgroup.h"
@@ -174,7 +174,7 @@ void main (int argc,char *argv[])
   int          step,nre,natom,i,j,teller=0;
   real         t,lambda;
 
-  t_statheader header;
+  t_tpxheader header;
   t_inputrec   ir;
   t_topology   top;
   matrix       box;
@@ -207,7 +207,7 @@ void main (int argc,char *argv[])
     { efTRX, "-f", NULL, ffREAD },
     { efNDX, NULL, NULL, ffOPTRD },
     { efXVG, NULL, NULL, ffWRITE },
-    { efTPB, NULL, NULL, ffREAD },
+    { efTPX, NULL, NULL, ffREAD },
     { efXPM, "-rms", "rmsdist",  ffOPTWR },
     { efXPM, "-scl", "rmsscale", ffOPTWR },
     { efXPM, "-mean","rmsmean",  ffOPTWR },
@@ -230,15 +230,12 @@ void main (int argc,char *argv[])
     bNMR6 =opt2bSet("-nmr6",NFILE,fnm);
   }
   
-  read_status_header(ftp2fn(efTPB,NFILE,fnm),&header);
+  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header);
   snew(x,header.natoms);
   
-  read_status(ftp2fn(efTPB,NFILE,fnm),
-	      &step,&t,&lambda,&ir,
-	      box,NULL,NULL,
-	      &natom,
-	      x,NULL,NULL,&nre,NULL,
-	      &top);
+  read_tpx(ftp2fn(efTPX,NFILE,fnm),
+	   &step,&t,&lambda,&ir,
+	   box,&natom,x,NULL,NULL,&top);
   
   get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
 	    1,&isize,&index,&grpnames);

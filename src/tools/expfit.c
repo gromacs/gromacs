@@ -39,7 +39,6 @@ static char *SRCID_expfit_c = "$Id$";
 #include "vec.h"
 #include "statutil.h"
 #include "rdgroup.h"
-#include "statusio.h"
 
 extern void mrqmin(real x[],real y[],real sig[],int ndata,real a[],
 		   int ma,int lista[],int mfit,real **covar,real **alpha,

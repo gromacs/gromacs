@@ -41,7 +41,7 @@ static char *SRCID_g_confrms_c = "$Id$";
 #include "xvgr.h"
 #include "copyrite.h"
 #include "statutil.h"
-#include "statusio.h"
+#include "tpxio.h"
 #include "string2.h"
 #include "vec.h"
 #include "rdgroup.h"

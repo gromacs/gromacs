@@ -44,6 +44,7 @@ static char *SRCID_g_density_c = "$Id$";
 #include "futil.h"
 #include "statutil.h"
 #include "rdgroup.h"
+#include "tpxio.h"
 
 typedef struct {
   char *atomname;
@@ -416,7 +417,7 @@ void main(int argc,char *argv[])
   t_filenm  fnm[] = {             	    /* files for g_order 	  */
     { efTRX, "-f", NULL,  ffREAD },    	    /* trajectory file 	          */
     { efNDX, NULL, NULL,  ffREAD },    	    /* index file 		  */
-    { efTPB, NULL, NULL,  ffREAD },    	    /* topology file           	  */
+    { efTPX, NULL, NULL,  ffREAD },    	    /* topology file           	  */
     { efDAT, "-ei", "electrons", ffWRITE },   /* file with nr. of electrons */
     { efXVG,"-o","density",ffWRITE }, 	    /* xvgr output file 	  */
   };
@@ -432,7 +433,7 @@ void main(int argc,char *argv[])
   /* Calculate axis */
   axis = toupper(axtitle[0]) - 'X';
   
-  top = read_top(ftp2fn(efTPB,NFILE,fnm));     /* read topology file */
+  top = read_top(ftp2fn(efTPX,NFILE,fnm));     /* read topology file */
   if ( bNumber  || bCount) {
     int n;
     for(n=0;(n<top->atoms.nr);n++)

@@ -43,6 +43,7 @@ static char *SRCID_g_chi_c = "$Id$";
 #include "rdgroup.h"
 #include "smalloc.h"
 #include "statutil.h"
+#include "tpxio.h"
 #include "string.h"
 #include "sysstuff.h"
 #include "txtdump.h"
@@ -50,27 +51,7 @@ static char *SRCID_g_chi_c = "$Id$";
 #include "vec.h"
 #include "strdb.h"
 #include "xvgr.h"
-
-enum { edPhi=0, edPsi, edChi1, edChi2, edChi3, edChi4, edChi5, edChi6, edMax };
-
-#define NHISTO 360
-#define NONCHI 2
-#define MAXCHI edMax-NONCHI
-
-typedef struct {
-  int H,N,C,O,Cn[MAXCHI+3];
-} t_dihatms; /* Cn[0]=N, Cn[1]=Ca, Cn[2]=Cb etc. */
-
-typedef struct {
-  char name[12];
-  int  resnr;
-  int  index;       /* Index for amino acids (histograms) */
-  int  j0[edMax];   /* Index in dih array (phi angle is first...) */
-  t_dihatms  atm;
-  int  b[edMax];
-  int  ntr[edMax];
-  real S2[edMax];
-} t_dlist;
+#include "pp2shift.h"
 
 void pr_dlist(FILE *fp,int nl,t_dlist dl[])
 {
@@ -795,12 +776,13 @@ int main(int argc,char *argv[])
   real       **dih,*trans_frac,*aver_angle,*time;
   
   t_filenm  fnm[] = {
-    { efTPB, NULL,  NULL,     ffREAD  },
+    { efTPX, NULL,  NULL,     ffREAD  },
     { efTRX, "-f",  NULL,     ffREAD  },
     { efXVG, "-o",  "order",  ffWRITE },
     { efPDB, "-p",  "order",  ffOPTWR },
     { efXVG, "-jc", "Jcoupling", ffWRITE },
     { efXVG, "-c",  "dihcorr",ffOPTWR },
+    { efDAT, "-d",  "shifts", ffOPTWR },
     { efTEX, "-t",  "trans",  ffWRITE },
     { efLOG, "-g",  "chi",    ffWRITE }
   };
@@ -829,16 +811,17 @@ int main(int argc,char *argv[])
 
   /* Find the chi angles using topology and a list of amino acids */
   {
-    t_statheader sh;
+    t_tpxheader sh;
     int dint;/* dummy */
     real dreal;/* dummy */
+    char *fn;
     
-    fp=ftp2FILE(efTPB,NFILE,fnm,"r");
-    rd_header(fp, &sh);
+    fn=ftp2fn(efTPX,NFILE,fnm);
+    read_tpxheader(fn, &sh);
     natoms = sh.natoms;
     snew(x,natoms);
-    rd_hstatus(fp,&sh,&dint,&dreal,&dreal,NULL,NULL,NULL,NULL,
-	       &natoms,x,NULL,NULL,&dint,NULL,&top);
+    read_tpx(fn,&dint,&dreal,&dreal,NULL,NULL,
+	     &natoms,x,NULL,NULL,&top);
     fprintf(log,"topology name = %s\n",*top.name);
   }
   
@@ -864,7 +847,7 @@ int main(int argc,char *argv[])
     snew(dih[i],nf);
     
   /* COMPUTE ALL DIHEDRALS! */
-  read_ang_dih(opt2fn("-f",NFILE,fnm),ftp2fn(efTPB,NFILE,fnm),
+  read_ang_dih(opt2fn("-f",NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
 	       FALSE,TRUE,FALSE,1,&idum,
 	       &nf,time,isize,index,trans_frac,aver_angle,dih);
   
@@ -902,6 +885,8 @@ int main(int argc,char *argv[])
   if (bRama)
     do_rama(nf,nlist,dlist,dih);
   
+  if (opt2bSet("-d",NFILE,fnm))
+    do_pp2shifts(opt2fn("-d",NFILE,fnm),nf,nlist,dlist,dih);
   
   pr_dlist(log,nlist,dlist);  
   ffclose(log);

@@ -70,7 +70,7 @@ int main(int argc,char *argv[])
   int       j;
   t_filenm  fnm[] = {
     { efTRX, "-f", NULL,  ffREAD },
-    { efTPB, NULL, NULL,  ffREAD },
+    { efTPX, NULL, NULL,  ffREAD },
     { efXVG, NULL, NULL,  ffWRITE }
   };
 #define NFILE asize(fnm)
@@ -80,7 +80,7 @@ int main(int argc,char *argv[])
 		    NFILE,fnm,0,NULL,asize(desc),desc,0,NULL);
   
   snew(xr,1);
-  init_rama(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPB,NFILE,fnm),xr);
+  init_rama(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),xr);
   
   out=xvgropen(ftp2fn(efXVG,NFILE,fnm),"Ramachandran Plot","Phi","Psi");
   xvgr_line_props(out,0,elNone,ecFrank);

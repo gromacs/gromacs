@@ -35,7 +35,6 @@ static char *SRCID_g_dist_c = "$Id$";
 #include "xvgr.h"
 #include "copyrite.h"
 #include "statutil.h"
-#include "statusio.h"
 #include "string2.h"
 #include "vec.h"
 #include "rdgroup.h"
@@ -71,7 +70,7 @@ void main(int argc,char *argv[])
 
   
   t_filenm fnm[] = {
-    { efTPB, NULL, NULL, ffREAD },
+    { efTPX, NULL, NULL, ffREAD },
     { efTRX, "-f", NULL, ffREAD },
     { efNDX, NULL, NULL, ffREAD },
     { efOUT, NULL, NULL, ffOPT  },
@@ -85,7 +84,7 @@ void main(int argc,char *argv[])
 		    NFILE,fnm,0,NULL,asize(desc),desc,0,NULL);
   
 
-  top=read_top(ftp2fn(efTPB,NFILE,fnm));
+  top=read_top(ftp2fn(efTPX,NFILE,fnm));
   
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   

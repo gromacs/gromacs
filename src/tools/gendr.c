@@ -169,13 +169,13 @@ void conv_dr(FILE *in,FILE *out,char *map,t_atoms *atoms,int r0)
      * use your text editor...
      */
     if (strcmp(*atoms->resname[resi],ri) != 0) {
-      fprintf(stderr,"Warning resname in disres file %s%d, in tpb file %s%d\n",
+      fprintf(stderr,"Warning resname in disres file %s%d, in tpx file %s%d\n",
 	      ri,resi+r0,*atoms->resname[resi],resi+r0);
       nunres++;
     }
     /* Residue j */
     else if (strcmp(*atoms->resname[resj],rj) != 0) {
-      fprintf(stderr,"Warning resname in disres file %s%d, in tpb file %s%d\n",
+      fprintf(stderr,"Warning resname in disres file %s%d, in tpx file %s%d\n",
 	      rj,resj+r0,*atoms->resname[resj],resj+r0);
       nunres++;
     }
@@ -234,7 +234,7 @@ int main (int argc,char *argv[])
   int         i;
   
   t_filenm fnm[] = {
-    { efTPB, "-s", NULL, ffREAD  },
+    { efTPX, "-s", NULL, ffREAD  },
     { efDAT, "-d", NULL, ffREAD  },
     { efITP, "-o", NULL, ffWRITE },
     { efDAT, "-m", "expmap", ffREAD }
@@ -248,7 +248,7 @@ int main (int argc,char *argv[])
   fprintf(stderr,"Will subtract %d from res numbers in %s\n",
 	  r0,ftp2fn(efDAT,NFILE,fnm));
     
-  top=read_top(ftp2fn(efTPB,NFILE,fnm));
+  top=read_top(ftp2fn(efTPX,NFILE,fnm));
 
   in=opt2FILE("-d",NFILE,fnm,"r");
   out=ftp2FILE(efITP,NFILE,fnm,"w");

@@ -34,7 +34,7 @@ static char *SRCID_g_energy_c = "$Id$";
 #include "fatal.h"
 #include "vec.h"
 #include "smalloc.h"
-#include "enerio.h"
+#include "enxio.h"
 #include "statutil.h"
 #include "assert.h"
 #include "names.h"
@@ -529,11 +529,11 @@ int main(int argc,char *argv[])
     "Instantaneous"
   };
   
-  FILE       *in,*out;
+  FILE       *out;
   FILE       **drout;
+  int        fp;
   int        ndrout;
   int        timecheck;
-  XDR        xdr;
   t_energy   *ee,*oldee;
   t_drblock  dr;
   int        teller=0,nre,step,oldstep;
@@ -545,12 +545,11 @@ int main(int argc,char *argv[])
   double     sum,sumaver,sumt;
   real       **eneset,*time;
   int        *set,i,j,k,nset,sss,nenergy;
-  char       **enm,**leg=NULL;
+  char       **enm=NULL,**leg=NULL;
   char       **nms;
   t_filenm   fnm[] = {
-    { efENE, "-f", NULL, ffOPTRD },
-    { efEDR, "-d", NULL, ffOPTRD },
-    { efTPB, "-s", NULL, ffOPTRD },
+    { efENX, "-f", NULL, ffOPTRD },
+    { efTPX, "-s", NULL, ffOPTRD },
     { efXVG, "-o", NULL, ffWRITE },
     { efXVG, "-v",   "violaver", ffOPTWR },
     { efXVG, "-corr", "enecorr", ffOPTWR },
@@ -568,21 +567,8 @@ int main(int argc,char *argv[])
   if (bDRAll)
     bDisRe=TRUE;
 
-  bEDR=ftp2bSet(efEDR,NFILE,fnm);
-  if (bEDR) {
-    xdropen(&xdr,ftp2fn(efEDR,NFILE,fnm),"r");
-    enm=NULL;
-    edr_nms(&xdr,&nre,&enm);
-  }
-  else {
-    in=ftp2FILE(efENE,NFILE,fnm,"r");
-    rd_ener_nms(in,&nre,&enm);
-  }
-  
-  if (nre == 0) {
-    fprintf(stderr,"No energies!\n");
-    exit(1);
-  }
+  fp = open_enx(ftp2fn(efENX,NFILE,fnm),"r");
+  do_enxnms(fp,&nre,&enm);
   
   dr.ndr=0;  
   snew(ee,nre);
@@ -633,7 +619,7 @@ int main(int argc,char *argv[])
     time = NULL;
   }
   else {
-    nbounds=get_bounds(ftp2fn(efTPB,NFILE,fnm),&bounds,&index);
+    nbounds=get_bounds(ftp2fn(efTPX,NFILE,fnm),&bounds,&index);
     snew(violaver,nbounds);
     out=xvgropen(opt2fn("-o",NFILE,fnm),"Sum of Violations","Time (ps)","nm");
     if (!bDRAll)
@@ -645,11 +631,8 @@ int main(int argc,char *argv[])
   oldt     = 0;
   do {
     do {
-      if (bEDR)
-	bCont=edr_io(&xdr,&t,&step,&nre,ee,&dr);
-      else
-	bCont=rd_ener(in,&t,&step,ee,&dr);
-	
+      bCont = do_enx(fp,&t,&step,&nre,ee,&dr);
+      
       if (bCont) {
 	timecheck=check_times(t);
       
@@ -757,11 +740,8 @@ int main(int argc,char *argv[])
   } while (bCont && (timecheck == 0));
   
   fprintf(stderr,"\n");
-  if (bEDR)
-    xdrclose(&xdr);
-  else
-    ffclose(in);
-    
+  close_enx(fp);
+  
   ffclose(out);
 
   if (bDisRe) 

@@ -33,7 +33,6 @@ static char *SRCID_g_run_rms_c = "$Id$";
 #include "typedefs.h"
 #include "copyrite.h"
 #include "statutil.h"
-#include "statusio.h"
 #include "string2.h"
 #include "vec.h"
 #include "rdgroup.h"
@@ -41,6 +40,7 @@ static char *SRCID_g_run_rms_c = "$Id$";
 #include "macros.h"
 #include "gstat.h"
 #include "xvgr.h"
+#include "tpxio.h"
 
 real calc_ener(int natoms,real w_rms[],rvec x[],rvec xp[])
 {
@@ -77,7 +77,7 @@ int main (int argc,char *argv[])
   int          step,nre,natom,i,j,m,teller=0;
   real         t,lambda,*w_rls,*w_rms,tmas;
   int          status;
-  t_statheader header;
+  t_tpxheader  header;
   t_inputrec   ir;
   t_topology   top;
   matrix       box;
@@ -91,7 +91,7 @@ int main (int argc,char *argv[])
   char         *grpnames[2];
   t_filenm     fnm[] = {
     { efTRX, "-f", NULL, ffREAD },
-    { efTPB, NULL, NULL, ffREAD },
+    { efTPX, NULL, NULL, ffREAD },
     { efNDX, NULL, NULL, ffREAD },
     { efXVG, NULL, NULL, ffWRITE }
   };
@@ -102,7 +102,7 @@ int main (int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   snew(x,run_time+1);
 
-  read_status_header(ftp2fn(efTPB,NFILE,fnm),&header);
+  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header);
   snew(xp,header.natoms);
   for(i=0;(i<run_time+1);i++)
     snew(x[i],header.natoms);
@@ -110,12 +110,9 @@ int main (int argc,char *argv[])
   snew(w_rms,header.natoms);
   snew(v,header.natoms);
   
-  read_status(ftp2fn(efTPB,NFILE,fnm),
-	      &step,&t,&lambda,&ir,
-	      box,NULL,NULL,
-	      &natom,
-	      xp,NULL,NULL,&nre,NULL,
-	      &top);
+  read_tpx(ftp2fn(efTPX,NFILE,fnm),
+	   &step,&t,&lambda,&ir,
+	   box,&natom,xp,NULL,NULL,&top);
 
   /*set box type*/
   init_pbc(box,FALSE);

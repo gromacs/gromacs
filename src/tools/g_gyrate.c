@@ -113,7 +113,7 @@ int main(int argc,char *argv[])
 #define NLEG asize(leg) 
   t_filenm fnm[] = { 
     { efTRX, "-f", NULL, ffREAD }, 
-    { efTPB, NULL, NULL, ffREAD }, 
+    { efTPX, NULL, NULL, ffREAD }, 
     { efXVG, NULL, NULL, ffWRITE }, 
     { efNDX, NULL, NULL, ffOPTRD } 
   }; 
@@ -134,7 +134,7 @@ int main(int argc,char *argv[])
       fprintf(stderr,"Will rotate system along principal axes\n"); 
     }
   } 
-  top=read_top(ftp2fn(efTPB,NFILE,fnm)); 
+  top=read_top(ftp2fn(efTPX,NFILE,fnm)); 
   get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
 
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 

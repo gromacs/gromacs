@@ -174,7 +174,7 @@ int main(int argc,char *argv[])
   };
   t_filenm   fnm[] = {
     { efTRX, "-f",  NULL, ffREAD },
-    { efTPB, NULL,  NULL, ffREAD },
+    { efTPX, NULL,  NULL, ffREAD },
     { efNDX, NULL,  NULL, ffOPTRD },
     { efXPM, "-mean", "dm", ffWRITE },
     { efXPM, "-frames", "dmf", ffOPTWR },
@@ -215,7 +215,7 @@ int main(int argc,char *argv[])
     fprintf(stderr,"Will calculate number of different contacts\n");
   fprintf(stderr,"Time interval between frames is %g ps\n",dt);
     
-  top=read_top(ftp2fn(efTPB,NFILE,fnm));
+  top=read_top(ftp2fn(efTPX,NFILE,fnm));
   
   fprintf(stderr,"Select group for analysis\n");
   get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpname);

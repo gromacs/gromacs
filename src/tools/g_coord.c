@@ -77,7 +77,7 @@ int main(int argc,char *argv[])
   t_block *mols;             /* all molecules in system    */
   t_filenm fnm[] = {
     { efTRX, "-f", NULL, ffREAD },
-    { efTPB, NULL, NULL, ffREAD },
+    { efTPX, NULL, NULL, ffREAD },
     { efXVG, "-o", "coord.xvg", ffWRITE },
     { efNDX, NULL, NULL, ffREAD }
   };
@@ -91,7 +91,7 @@ int main(int argc,char *argv[])
     fprintf(stderr,"Interpreting indexfile entries as molecules."
 	    "Using center of mass.\n");
   
-  top=read_top(ftp2fn(efTPB,NFILE,fnm));
+  top=read_top(ftp2fn(efTPX,NFILE,fnm));
   get_index(&(top->atoms),ftp2fn_null(efNDX,NFILE,fnm),
 	    1,&gnx,&index,&grpname);
   

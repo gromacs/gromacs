@@ -197,7 +197,7 @@ int main(int argc,char *argv[])
   t_filenm  fnm[] = {
     { efGRO, "-c", "aver",FALSE },
     { efDAT, "-d", "eigenvec", FALSE },
-    { efTPB, NULL, NULL, FALSE },
+    { efTPX, NULL, NULL, FALSE },
     { efDAT, "-pi","pinp", FALSE },
     { efDAT, "-po","poutp", FALSE }
   };
@@ -209,7 +209,7 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,
 		    NFILE,fnm,TRUE,&man);
 		      
-  top=read_top(ftp2fn(efTPB,NFILE,fnm));
+  top=read_top(ftp2fn(efTPX,NFILE,fnm));
   init_debug("proptim.dbg",0);
   snew(p,1);
   read_inp(opt2fn("-pi",NFILE,fnm),opt2fn("-po",NFILE,fnm),p);

@@ -42,7 +42,6 @@ static char *SRCID_g_dipoles_c = "$Id$";
 #include "txtdump.h"
 #include "gstat.h"
 #include "rdgroup.h"
-#include "statusio.h"
 #include "random.h"
 #include "names.h"
 #include "physics.h"
@@ -703,7 +702,7 @@ int main(int argc,char *argv[])
   int          i,status;
   t_filenm fnm[] = {
     { efTRX, "-f", NULL,      ffREAD },
-    { efTPB, NULL, NULL,      ffREAD },
+    { efTPX, NULL, NULL,      ffREAD },
     { efNDX, NULL, NULL,      ffREAD },
     { efXVG, "-o", "Mtot",    ffWRITE },
     { efXVG, "-a", "aver",    ffWRITE },
@@ -747,7 +746,7 @@ int main(int argc,char *argv[])
   }
   bCorr   = (bAverCorr || opt2bSet("-c",NFILE,fnm));
   bFitACF = opt2bSet("-fa",NFILE,fnm);
-  do_dip(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPB,NFILE,fnm),
+  do_dip(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
 	 ftp2fn(efXVG,NFILE,fnm),
 	 opt2fn("-a",NFILE,fnm),opt2fn("-d",NFILE,fnm),
 	 bAverCorr,bCorr,
