@@ -858,9 +858,9 @@ int main(int argc,char *argv[])
 			
 			/* print insertion info to file */
 			fprintf(fpins,
-				"%4g: %4d:%3.3s%4d%3.3s -> "
-				"%4d:%3.3s%4d%3.3s (%4.2f,%2.0f) - "
-				"%4d:%3.3s%4d%3.3s (%4.2f,%2.0f)\n",t,
+				"%4g: %4u:%3.3s%4d%3.3s -> "
+				"%4u:%3.3s%4d%3.3s (%4.2f,%2.0f) - "
+				"%4u:%3.3s%4d%3.3s (%4.2f,%2.0f)\n",t,
 				a[grIA][ins_d_k]+1,
 				*top.atoms.resname[top.atoms.atom[a[grIA][ins_d_k]].resnr],
 				top.atoms.atom[a[grIA][ins_d_k]].resnr+1,
@@ -1014,7 +1014,7 @@ int main(int argc,char *argv[])
       fprintf(fp,"[ %s ]",grpnames[grp/grINC]);
       for (i=0; i<isize[grp/grINC]; i++) {
 	fprintf(fp,(i%15)?" ":"\n");
-	fprintf(fp,"%4d",index[grp/grINC][i]+1);
+	fprintf(fp,"%4u",index[grp/grINC][i]+1);
       }
       fprintf(fp,"\n");
       fprintf(fp,"[ donors_hydrogens_%s ]",grpnames[grp/grINC]);
@@ -1037,7 +1037,7 @@ int main(int argc,char *argv[])
     for (grp=gr0; grp<=(bTwo?gr1:gr0); grp+=grINC)
       for(i=0; i<nr_a[grp+grD]; i++)
 	for(j=0; j<donors[grp][i].nrhb; j++)
-	  fprintf(fp,"%6d %6d %6d\n",
+	  fprintf(fp,"%6u %6u %6u\n",
 		  a[ grp+grD][i]+1,
 		  a[ grp+grH][i]+1,
 		  a[ogrp+grA][donors[grp][i].hb[j].a]+1);
@@ -1051,7 +1051,7 @@ int main(int argc,char *argv[])
       for(i=0; i<natoms; i++) 
 	if (insert[i]) {
 	  fprintf(fp,(j%15)?" ":"\n");
-	  fprintf(fp,"%4u",i+1);
+	  fprintf(fp,"%4d",i+1);
 	  j++;
 	}
       fprintf(fp,"\n");
