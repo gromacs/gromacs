@@ -97,6 +97,7 @@ typedef struct {
   int  natoms;
   int  nmol;
   int  i,i0;
+  int  res0;
 } t_moltypes;
 
 void sort_molecule(t_atoms **atoms_solvt,rvec *x,real *r)
@@ -109,7 +110,7 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,real *r)
   real *newr;
   
   fprintf(stderr,"Sorting configuration\n");
-  
+
   atoms = *atoms_solvt;
 
   /* copy each residue from *atoms to a molecule in *molecule */
@@ -144,9 +145,14 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,real *r)
   
   fprintf(stderr,"Found %d%s molecule type%s:\n",
 	  nrmoltypes,nrmoltypes==1?"":" different",nrmoltypes==1?"":"s");
-  for(j=0; j<nrmoltypes; j++)
+  for(j=0; j<nrmoltypes; j++) {
+    if (j==0)
+      moltypes[j].res0 = 0;
+    else
+      moltypes[j].res0 = moltypes[j-1].res0+moltypes[j-1].nmol;
     fprintf(stderr,"%7s (%4d atoms): %5d residues\n",
 	    moltypes[j].name,moltypes[j].natoms,moltypes[j].nmol);
+  }
   
   /* if we have only 1 moleculetype, we don't have to sort */
   if (nrmoltypes>1) {
@@ -167,8 +173,8 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,real *r)
     snew(newr,atoms->nr);
     
     for (i=0; i<atoms->nr; i++) {
-      resnr = ( (moltypes[tps[i]].i-moltypes[tps[i]].i0) / 
-		moltypes[tps[i]].natoms );
+      resnr = moltypes[tps[i]].res0 +
+	(moltypes[tps[i]].i-moltypes[tps[i]].i0) / moltypes[tps[i]].natoms;
       newatoms->resname[resnr] = atoms->resname[atoms->atom[i].resnr];
       newatoms->atomname[moltypes[tps[i]].i] = atoms->atomname[i];
       newatoms->atom[moltypes[tps[i]].i] = atoms->atom[i];
@@ -334,7 +340,6 @@ void add_solv(char *fn,t_atoms *atoms,rvec **x,real **r,matrix box,
   real    *r_solvt;
   matrix  box_solvt;
   int     onr,onres;
-  rvec    xmin;
 
   strncpy(filename,libfn(fn),STRLEN);
   snew(atoms_solvt,1);
@@ -398,6 +403,9 @@ void add_solv(char *fn,t_atoms *atoms,rvec **x,real **r,matrix box,
   *atoms_added=atoms->nr-onr;
   *residues_added=atoms->nres-onres;
   
+  sfree(x_solvt);
+  sfree(r_solvt);
+
   fprintf(stderr,"Generated solvent containing %d atoms in %d residues\n",
 	  *atoms_added,*residues_added);
 }

@@ -161,7 +161,19 @@ static void combine_atoms(t_atoms *ap,t_atoms *as,rvec xp[],rvec xs[],
   }
   ac->nr   = j;
   ac->nres = ac->atom[j-1].resnr+1;
-    
+  /* Fill all elements to prevent uninitialized memory */
+  for(i=0; i<ac->nr; i++) {
+    ac->atom[i].m     = 1;
+    ac->atom[i].q     = 0;
+    ac->atom[i].mB    = 1;
+    ac->atom[i].qB    = 0;
+    ac->atom[i].type  = 0;
+    ac->atom[i].typeB = 0;
+    ac->atom[i].ptype = eptAtom;
+    for(j=0; j<egcNR; j++)
+      ac->atom[i].grpnr[j] = 0;
+  }
+
   /* Return values */
   *a_comb = ac;
   *x_comb = xc;
@@ -183,7 +195,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   static t_groups   *grps;
   static int        *cg_index;
 
-  int        i,j,m,natoms,nx,ny,nz,res0;
+  int        i,m,natoms;
   ivec       *nFreeze;
   rvec       box_size;
   real       lambda=0,dvdlambda=0;
@@ -327,7 +339,7 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
   init_pbc(box,FALSE);
 
   nremove = 0;
-  for(i=0; (i<atoms_solvt->nr); i++)
+  for(i=0; i<atoms_solvt->nr; i++)
     if ( outside_box_plus_margin(x_solvt[i],box) )
       i=mark_res(i,remove,atoms_solvt->nr,atoms_solvt->atom,&nremove);
   fprintf(stderr,"Removed %d atoms that were outside the box\n",nremove);
@@ -335,9 +347,9 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
   /* Define grid stuff for genbox */
   /* Largest VDW radius */
   snew(r_all,natoms_prot+natoms_solvt);
-  for(i=j=0; (i<natoms_prot); i++,j++)
+  for(i=j=0; i<natoms_prot; i++,j++)
     r_all[j]=r_prot[i];
-  for(i=0; (i<natoms_solvt); i++,j++)
+  for(i=0; i<natoms_solvt; i++,j++)
     r_all[j]=r_solvt[i];
 
   /* Combine arrays */
@@ -407,7 +419,7 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
     fprintf(stderr," tested %d pairs, removed %d atoms.\n",ntest,nremove);
   }
   if (debug) 
-    for(i=0; (i<natoms_solvt); i++)
+    for(i=0; i<natoms_solvt; i++)
       fprintf(debug,"remove[%5d] = %s\n",i,bool_names[remove[i]]);
       
   /* Search again, now with another cut-off */
@@ -415,12 +427,12 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
     do_nsgrid(stdout,bVerbose,box,x_all,atoms_all,rshell);
     nkeep = 0;
     snew(keep,natoms_solvt);
-    for(i=0; (i<nlist->nri); i++) {
+    for(i=0; i<nlist->nri; i++) {
       inr = nlist->iinr[i];
       j0  = nlist->jindex[i];
       j1  = nlist->jindex[i+1];
       
-      for(j=j0; (j<j1); j++) {
+      for(j=j0; j<j1; j++) {
 	jnr = nlist->jjnr[j];
 	
 	/* Check solvent-protein and solvent-solvent */
@@ -431,21 +443,21 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
 	 * listed for removal, and if both are solvent, that they are not in the
 	 * same residue.
 	 */
-	if ((is1 >= 0) && (is2 < 0)) 
-	  (void) mark_res(is1,keep,natoms_solvt,atoms_solvt->atom,&nkeep);
-	else if ((is1 < 0) && (is2 >= 0)) 
-	  (void) mark_res(is2,keep,natoms_solvt,atoms_solvt->atom,&nkeep);
+	if (is1>=0 && is2<0) 
+	  mark_res(is1,keep,natoms_solvt,atoms_solvt->atom,&nkeep);
+	else if (is1<0 && is2>=0) 
+	  mark_res(is2,keep,natoms_solvt,atoms_solvt->atom,&nkeep);
       }
     }
     fprintf(stderr,"Keeping %d solvent atoms after proximity check\n",
 	    nkeep);
-    for (i=0; (i<natoms_solvt); i++)
+    for (i=0; i<natoms_solvt; i++)
       remove[i] = remove[i] || !keep[i];
     sfree(keep);
   }
   /* count how many atoms will be added and make space */
   j=0;
-  for (i=0; (i<atoms_solvt->nr); i++)
+  for (i=0; i<atoms_solvt->nr; i++)
     if (!remove[i])
       j++;
   if (bSrenew) {
@@ -459,10 +471,10 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
   /* add the selected atoms_solvt to atoms */
   prev=NOTSET;
   nresadd=0;
-  for (i=0; (i<atoms_solvt->nr); i++)
+  for (i=0; i<atoms_solvt->nr; i++)
     if (!remove[i]) {
-      if ( (prev==NOTSET) || 
-	   (atoms_solvt->atom[i].resnr != atoms_solvt->atom[prev].resnr) ) {
+      if (prev==NOTSET || 
+	  atoms_solvt->atom[i].resnr != atoms_solvt->atom[prev].resnr) {
 	nresadd ++;
 	atoms->nres++;
 	/* calculate shift of the solvent molecule using the first atom */
@@ -470,13 +482,14 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
 	put_atoms_in_box(box,1,&dx);
 	rvec_dec(dx,x_solvt[i]);
       }
-      atoms->nr++;
-      atoms->atomname[atoms->nr-1] = atoms_solvt->atomname[i];
-      rvec_add(x_solvt[i],dx,(*x)[atoms->nr-1]);
-      (*r)[atoms->nr-1]   = r_solvt[i];
-      atoms->atom[atoms->nr-1].resnr = atoms->nres-1;
+      atoms->atom[atoms->nr] = atoms_solvt->atom[i];
+      atoms->atomname[atoms->nr] = atoms_solvt->atomname[i];
+      rvec_add(x_solvt[i],dx,(*x)[atoms->nr]);
+      (*r)[atoms->nr]   = r_solvt[i];
+      atoms->atom[atoms->nr].resnr = atoms->nres-1;
       atoms->resname[atoms->nres-1] =
 	atoms_solvt->resname[atoms_solvt->atom[i].resnr];
+      atoms->nr++;
       prev=i;
     }
   if (bSrenew)
@@ -486,11 +499,7 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
     fprintf(stderr,"Added %d molecules\n",nresadd);
 
   sfree(remove);
-  sfree(keep);
-  sfree(atoms_all->atomname);
-  sfree(atoms_all->resname);
-  sfree(atoms_all->atom);
-  sfree(&atoms_all->excl);
+  done_atom(atoms_all);
   sfree(x_all);
 }
 
