@@ -602,7 +602,6 @@ int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
     
     /* Changed iicg to icg, DvdS 990115 */
     ci2xyz(grid,icg,&cx,&cy,&cz);
-#define NS5DB
 #ifdef NS5DB
     fprintf(log,"icg=%5d, naaj=%5d, cx=%2d, cy=%2d, cz=%2d\n",
 	    icg,naaj,cx,cy,cz);
