@@ -256,7 +256,6 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   
   if (MASTER(cr)) { 
     /* Print to the screen  */
-    start_t=print_date_and_time(log,cr->nodeid,"Started EM"); 
     sprintf(sbuf,"%s\n   Tolerance         = %12.5g\n",SD,ftol); 
     fprintf(stderr,sbuf);
     fprintf(log,sbuf);
