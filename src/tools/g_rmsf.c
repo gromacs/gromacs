@@ -330,7 +330,7 @@ int main (int argc,char *argv[])
     sub_xcm(x,isize,index,top.atoms.atom,xcm,FALSE);
     
     /* Fit to reference structure */
-    do_fit(top.atoms.nr,w_rls,xref,x);
+    do_fit(natom,w_rls,xref,x);
  
     /* Calculate Anisotropic U Tensor */  
     if (bAniso) {

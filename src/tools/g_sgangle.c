@@ -193,7 +193,7 @@ void sgangle_plot(char *fn,char *afile,char *bfile,
     {
       teller++;
 
-      rm_pbc(&(top->idef),top->atoms.nr,box,x0,x0);
+      rm_pbc(&(top->idef),natoms,box,x0,x0);
       
       calc_angle(box,x0,index1,index2,gnx1,gnx2,&angle,
 		 &distance,&distance1,&distance2);
