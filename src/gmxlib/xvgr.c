@@ -314,3 +314,136 @@ void write_xvg(char *fn,char *title,int nx,int ny,real **y,char **leg)
   fclose(fp);
 }
 
+real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
+		int nsets_in,int *nset,int *nval,real *dt,real **t,
+		int linelen)
+{
+  FILE   *fp;
+  static int  llmax=0;
+  static char *line0=NULL;
+  char   *line;
+  int    a,narg,n,sin,set,nchar;
+  double dbl,tend=0;
+  bool   bEndOfSet,bTimeInRange,bFirstLine=TRUE;
+  real   **val;
+  
+  if (linelen > llmax) {
+    llmax = linelen;
+    srenew(line0,llmax);
+  }
+  
+  val = NULL;
+  *t  = NULL;
+  *dt = 0;
+  fp  = ffopen(fn,"r");
+  for(sin=0; sin<nsets_in; sin++) {
+    if (nsets_in == 1)
+      narg = 0;
+    else 
+      narg = bHaveT ? 2 : 1;
+    n = 0;
+    bEndOfSet = FALSE;
+    while (!bEndOfSet && fgets(line0,linelen,fp)) {
+      line = line0;
+      bEndOfSet = (line[0] == '&');
+      if (line[0]!='#' && line[0]!='@' && line[0]!='\n' && !bEndOfSet) {
+	if (bFirstLine && bHaveT) {
+	  /* Check the first line that should contain data */
+	  a = sscanf(line,"%lf%lf",&dbl,&dbl);
+	  if (a == 0) 
+	    gmx_fatal(FARGS,"Expected a number in %s on line:\n%s",fn,line0);
+	  else if (a == 1) {
+	    fprintf(stderr,"Found only 1 number on line, "
+		    "assuming no time is present.\n");
+	    bHaveT = FALSE;
+	    if (nsets_in > 1)
+	      narg = 1;
+	  }
+	}
+
+	a = 0;
+	bTimeInRange = TRUE;
+	while ((a<narg || (nsets_in==1 && n==0)) && 
+	       sscanf(line,"%lf%n",&dbl,&nchar)==1 && bTimeInRange) {
+	  /* Use set=-1 as the time "set" */
+	  if (sin) {
+	    if (!bHaveT || (a>0))
+	      set = sin;
+	    else
+	      set = -1;
+	  } else {
+	    if (!bHaveT)
+	      set = a;
+	    else
+	      set = a-1;
+	  }
+	  if (set==-1 && ((bTB && dbl<tb) || (bTE && dbl>te)))
+	    bTimeInRange = FALSE;
+	    
+	  if (bTimeInRange) {
+	    if (n==0) {
+	      if (nsets_in == 1)
+		narg++;
+	      if (set >= 0) {
+		*nset = set+1;
+		srenew(val,*nset);
+		val[set] = NULL;
+	      }
+	    }
+	    if (set == -1) {
+	      if (sin == 0) {
+		if (n % 100 == 0) 
+		  srenew(*t,n+100);
+		(*t)[n] = dbl;
+	      }
+	      /* else we should check the time of the next sets with set 0 */
+	    } else {
+	      if (n % 100 == 0) 
+		srenew(val[set],n+100);
+	      val[set][n] = (real)dbl;
+	    }
+	  }
+	  a++;
+	  line += nchar;
+	}
+	if (bTimeInRange) {
+	  if (a == 0) {
+	    fprintf(stderr,"Ignoring invalid line in %s:\n%s",fn,line0);
+	  } else {
+	    n++;
+	    if (a != narg)
+	      fprintf(stderr,"Invalid line in %s:\n%s"
+		      "Using zeros for the last %d sets\n",
+		      fn,line0,narg-a);
+	  }
+	}
+	if (a > 0)
+	  bFirstLine = FALSE;
+      }
+    }
+    if (sin==0) {
+      *nval = n;
+      if (!bHaveT) {
+	snew(*t,n);
+	for(a=0; a<n; a++)
+	  (*t)[a] = a;
+      }
+      if (n > 1)
+	*dt = (real)((*t)[n-1]-(*t)[0])/(n-1.0);
+      else
+	*dt = 1;
+    } else {
+      if (n < *nval) {
+	fprintf(stderr,"Set %d is shorter (%d) than the previous set (%d)\n",
+		sin+1,n,*nval);
+	*nval = n;
+	fprintf(stderr,"Will use only the first %d points of every set\n",
+		*nval);
+      }
+    }
+  }
+  fclose(fp);
+  
+  return val;
+}
+
