@@ -306,7 +306,8 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
     /* Filenames */
     *traj     = ftp2fn(efTRN,nfile,fnm);
     *xtc_traj = ftp2fn(efXTC,nfile,fnm);
-
+    *fp_dgdl  = NULL;
+    
     if (MASTER(cr)) {
       *fp_ene = open_enx(ftp2fn(efENX,nfile,fnm),"w");
       if ((fp_dgdl != NULL) && ir->bPert)

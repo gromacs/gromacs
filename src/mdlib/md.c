@@ -373,6 +373,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (parm->ir.nstxtcout)
       close_xtc_traj();
     close_trn(fp_trn);
+    if (fp_dgdl)
+      fclose(fp_dgdl);
   }
   debug_gmx();
 
