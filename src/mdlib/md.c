@@ -213,6 +213,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     int i;
 
     natoms=read_first_x(&status,opt2fn("-rerun",nfile,fnm),&t,&x,parm->box);
+    if (natoms != mdatoms->nr)
+      fatal_error(0,"Number of atoms in trajectory (%d) does not match the "
+		  "run input file (%d)\n",natoms,mdatoms->nr);
     for(i=0;(i<natoms);i++) 
       clear_rvec(v[i]);
 
