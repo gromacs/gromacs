@@ -1,6 +1,7 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "assert.h"
+#include "symtab.h"
 
 void init_block(t_block *block)
 {
