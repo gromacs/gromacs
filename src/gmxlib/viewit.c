@@ -82,7 +82,7 @@ void do_view(char *fn, char *opts)
 	}
 	break;
       default:
-	if ( n=can_view(ftp) ) {
+	if ( (n=can_view(ftp)) ) {
 	  if ( ! (cmd=getenv(env)) )
 	    cmd=view_program[n];
 	} else {
