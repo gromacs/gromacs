@@ -36,7 +36,8 @@ topol_DATA = \
 	vdwradii.dat	xlateat.dat					\
 	export.dlg	bonds.dlg	ss.map		ps.m2p		\
 	table6-10.xvg  	table6-11.xvg  	table6-12.xvg  	table6-8.xvg  	\
-	table6-9.xvg 	atom_nom.tbl	gromacs.dtd
+	table6-9.xvg 	atom_nom.tbl	gromacs.dtd	tip5p.gro	\
+	tip5p.itp
 
 EXTRA_DIST = ${topol_DATA}
 
