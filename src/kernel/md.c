@@ -184,11 +184,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (do_per_step(step,parm->ir.nstfout) || bLastStep) ff=f; else ff=NULL;
     write_traj(log,cr,traj,
 	       nsb,step,t,lambda,nrnb,nsb->natoms,xx,vv,ff,parm->box);
-    if (bLastStep) {
-      fprintf(stderr,"Writing final coordinates.\n");
-      write_sto_conf(ftp2fn(efSTO,nfile,fnm),
-		     *top->name, &(top->atoms),x,v,parm->box);
-    }
     where();
     
     /* for rerunMD, certain things don't have to be done */
@@ -196,6 +191,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       if (do_per_step(step,parm->ir.nstxtcout)) {
 	write_xtc_traj(log,cr,xtc_traj,nsb,mdatoms,
 		       step,t,x,parm->box,parm->ir.xtcprec);
+	if (bLastStep) {
+	  fprintf(stderr,"Writing final coordinates.\n");
+	  write_sto_conf(ftp2fn(efSTO,nfile,fnm),
+			 *top->name, &(top->atoms),x,v,parm->box);
+	}
 	where();
       }
       
