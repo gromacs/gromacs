@@ -17,7 +17,7 @@ include		$(GMXHOME)/src/makef/Makefile.def
 # Empty library
 LIB		= 
 XOBJ		= do_gct.o init_sh.o gctio.o glaasje.o ionize.o relax_sh.o
-PROGRAMS	= my_dssp	xmdrun
+PROGRAMS	= my_dssp
 #
 include		$(STDTARGET)
 #
