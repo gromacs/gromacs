@@ -58,10 +58,12 @@ typedef unsigned int 	atom_nr;	/* To indicate a number of atoms   */
 
 #ifdef DOUBLE
 typedef double   	real;
-#define GMX_MPI_REAL    MPI_DOUBLE    
+#define GMX_MPI_REAL    MPI_DOUBLE
+#define GMX_REAL_EPS    2.2e-16
 #else
 typedef float           real;
-#define GMX_MPI_REAL    MPI_FLOAT    
+#define GMX_MPI_REAL    MPI_FLOAT
+#define GMX_REAL_EPS    1.2e-07
 #endif
 
 typedef real        	rvec[DIM];
