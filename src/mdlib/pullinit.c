@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <string.h>
 #include "princ.h"
 #include <stdlib.h>
 #include "readinp.h"
@@ -95,7 +96,7 @@ static void get_named_indexgroup(FILE *log,atom_id **target,int *isize,
 {
   int i,j;
   bool bFound = FALSE;
-  atom_id *tmp;
+  atom_id *tmp = NULL;
 
   fprintf(log,"Looking for group %s: ",name);
   for (i=0;i<ngrps;i++) {
@@ -187,8 +188,8 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
   pull->bPull = opt2bSet("-pi",nfile,fnm);
   if (!pull->bPull) return;
 
-  pull->out = ffopen(opt2fn("-po",nfile,fnm),"w");
-  read_pullparams(pull, opt2fn("-pi",nfile,fnm));
+  pull->out = ffopen(opt2fn("-pd",nfile,fnm),"w");
+  read_pullparams(pull, opt2fn("-pi",nfile,fnm), opt2fn("-po",nfile,fnm));
   ngrps = pull->pull.n;
 
   if (pull->reftype == eDyn || pull->reftype == eDynT0) 

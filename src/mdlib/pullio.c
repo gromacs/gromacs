@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <string.h>
 #include <stdlib.h>
 #include "sysstuff.h"
 #include "princ.h"
@@ -134,7 +135,7 @@ void print_umbrella(t_pull *pull, int step)
   fprintf(pull->out,"\n");
 }
 
-void read_pullparams(t_pull *pull, char *infile) 
+void read_pullparams(t_pull *pull, char *infile, char *outfile) 
 {
   t_inpfile *inp;
   int ninp,i;
@@ -158,6 +159,10 @@ void read_pullparams(t_pull *pull, char *infile)
   static char *reversetypes[ereverseNR+1] = {
     "to_reference", "from_reference", NULL
   };
+  enum {everboseYES, everboseNO, everboseNR};
+  static char *verbosetypes[erefNR+1] = {
+    "no", "yes", NULL
+  };
   int nerror = 0;
 
   /* read input parameter file */
@@ -166,7 +171,7 @@ void read_pullparams(t_pull *pull, char *infile)
 
   /* general options */
   CTYPE("GENERAL");
-  ITYPE("verbose",          pull->bVerbose, 0);
+  EETYPE("verbose",         pull->bVerbose, verbosetypes, &nerror, TRUE);
   CTYPE("Runtype: start, afm, constraint, umbrella, test");
   EETYPE("runtype",         tmprun, runtypes, &nerror, TRUE);
   CTYPE("Groups to be pulled");
@@ -223,7 +228,7 @@ void read_pullparams(t_pull *pull, char *infile)
   ITYPE("ndegr",            pull->rot_incr, 0);
   RTYPE("transstep",        pull->xlt_incr, 0.001);
 
-  write_inpfile("params.out",ninp,inp);
+  write_inpfile(outfile,ninp,inp);
   for (i=0; (i<ninp); i++) {
     sfree(inp[i].name);
     sfree(inp[i].value);

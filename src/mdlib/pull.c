@@ -474,11 +474,11 @@ static void do_afm(t_pull *pull,rvec *f,matrix box,t_mdatoms *md)
       while (dr[m] < -box[m][m]/2) dr[m]+=box[m][m];
     }
 
-    /* f = -k*x */
+    /* calculate force from the spring on the pull group: f = k*dr */
     for (m=0;m<DIM;m++)
       pull->pull.f[i][m] = pull->k*dr[m];
     
-    /* distribute force on com over atoms in the group */
+    /* distribute force on com over individual atoms in the group */
     for (j=0;j<pull->pull.ngx[i];j++) {
       ii = pull->pull.idx[i][j];
       for (m=0;m<DIM;m++) {

@@ -60,8 +60,9 @@ real calc_com2(rvec x[],int gnx,atom_id *index,t_mdatoms *md,rvec com,
   }
   for(m=0; (m<DIM); m++) {
     com[m]/=tm;
-    /*   if (com[m] < 0) com[m] += box[m][m];
-	 if (com[m] > box[m][m]) com[m] -= box[m][m]; */
+    /* next two lines used to be commented out */
+    if (com[m] < 0) com[m] += box[m][m];
+    if (com[m] > box[m][m]) com[m] -= box[m][m]; 
   }
   return tm;
 }
