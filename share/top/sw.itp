@@ -33,7 +33,7 @@
 ;
 
 [ defaults ]
-LJ	Arithmetic
+LJ	Geometric
 
 [ atomtypes ]
 ;name        mass      charge   ptype   c6	c12
