@@ -106,7 +106,10 @@ extern void pull(t_pull *pull,    /* all pull data */
 		 real dt,         /* time step */
 		 int step,        /* step number in simulation */
 		 int natoms,      /* total number of atoms on this processor */
-		 t_mdatoms *md);  /* masses and charges of all atoms */
+		 t_mdatoms *md,   /* masses and charges of all atoms */
+		 int start,       /* number of first atom belonging to this node */
+		 int homenr       /* number of atoms that belong to this node */
+		 );
 
 
 /* get memory and initialize the fields of pull that still need it, and

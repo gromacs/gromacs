@@ -333,7 +333,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 
   /* Initialize pull code */
   init_pull(log,nfile,fnm,&pulldata,x,mdatoms,parm->box);
-  if (pulldata.bPull && cr->nnodes>1)
+  if (pulldata.bPull && cr->nnodes>1 && !pulldata.runtype==eUmbrella)
     fatal_error(0,"Can not pull in parallel");
     
   if (!parm->ir.bUncStart) 
@@ -591,7 +591,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	(pulldata.runtype == eAfm || pulldata.runtype == eUmbrella ||
 	 pulldata.runtype == eTest))
       pull(&pulldata,x,f,parm->box,top,parm->ir.delta_t,step,
-	   mdatoms->nr,mdatoms); 
+	   mdatoms->nr,mdatoms,START(nsb),HOMENR(nsb)); 
     
     if (bFFscan)
       clear_rvecs(nsb->natoms,buf);

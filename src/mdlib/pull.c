@@ -145,7 +145,7 @@ static void do_start(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
 }
 
 static void do_umbrella(t_pull *pull, rvec *x,rvec *f,matrix box, 
-			t_mdatoms *md) 
+			t_mdatoms *md, int start, int homenr) 
 {
   int i,ii=0,j,m,g;
   real mi;
@@ -181,10 +181,15 @@ static void do_umbrella(t_pull *pull, rvec *x,rvec *f,matrix box,
     /* distribute the force over all atoms in the group */
     for (j=0;j<pull->pull.ngx[i];j++) {
       ii=pull->pull.idx[i][j];
-      for (m=0;m<DIM;m++) {
-	mi = md->massT[ii];
-	f[ii][m] +=  mi*(pull->pull.f[i][m])/(pull->pull.tmass[i]);
-      }
+      
+      /* For parallel pulling, we only want to update the forces
+	 for atoms that belong to this node */
+      if(ii>=start && ii<start+homenr) {
+	for (m=0;m<DIM;m++) {
+	  mi = md->massT[ii];
+	  f[ii][m] +=  mi*(pull->pull.f[i][m])/(pull->pull.tmass[i]);
+	}
+      }  
     }
   }
 }
@@ -542,7 +547,7 @@ static void do_afm(t_pull *pull,rvec *f,matrix box,t_mdatoms *md)
 }
 
 void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top, 
-	  real dt, int step, int natoms, t_mdatoms *md) 
+	  real dt, int step, int natoms, t_mdatoms *md, int start, int homenr) 
 {
   int i,niter;
   static rvec *x_s = NULL;
@@ -678,13 +683,14 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top,
 	}
 	*/
 	/* If we're using comT0 we need to fix PBC and then get COM */
+	
 	if(pull->reftype==eComT0) correct_t0_pbc(pull,x_s,md,box);
 
 	(void)calc_com2(pull->ref.x0[0],pull->ref.ngx[0],pull->ref.idx[0],
 		  md,pull->ref.x_unc[0],box);
       }
 
-      do_umbrella(pull,x,f,box,md);
+      do_umbrella(pull,x,f,box,md,start,homenr);
       print_umbrella(pull,step);
     }
     break;

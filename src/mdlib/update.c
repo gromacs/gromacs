@@ -768,7 +768,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
     if (pulldata->bPull && pulldata->runtype != eAfm && 
 	pulldata->runtype != eUmbrella &&
 	pulldata->runtype != eTest) 
-      pull(pulldata,xprime,force,parm->box,top,dt,step,homenr,md); 
+      pull(pulldata,xprime,force,parm->box,top,dt,step,natoms,md, start, homenr); 
     
     where();      
     
