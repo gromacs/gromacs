@@ -15,7 +15,7 @@ c*****************************************************************
       real  b4(*),after(*),mO,mH,dOH,dHH
       
       integer i,ow1,hw2,hw3
-      real  wo,wh,wohh,ra,rb,rc,rc2,tmp
+      real  wo,wh,wohh,ra,rb,rc,rc2,tmp,tmp2
 
       real gama, beta, alpa, xcom, ycom, zcom, al2be2
       real axlng, aylng, azlng, trns11, trns21, trns31, trns12, 
@@ -116,10 +116,20 @@ c
 c
          sinphi = za1d / ra
          tmp    = 1.0 - sinphi*sinphi
-         if ( tmp .le. 0.0) error = i-1
-         cosphi = sqrt (tmp)
+         if ( tmp .le. 0.0) then
+            error = i-1
+            cosphi = 0
+         else
+            cosphi = sqrt (tmp)
+         endif
          sinpsi = ( zb1d - zc1d ) / (rc2 * cosphi)
-         cospsi = sqrt (1.0 - sinpsi*sinpsi)
+         tmp2   = 1.0 - sinpsi*sinpsi
+         if ( tmp2 .le. 0.0 ) then
+            error = i-1
+            cospsi = 0
+         else
+            cospsi = sqrt (tmp2)
+         endif
 c 
          ya2d =   ra * cosphi
          xb2d = - rc * cospsi

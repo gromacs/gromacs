@@ -39,6 +39,7 @@ static char *SRCID_constr_c = "$Id$";
 #include "smalloc.h"
 #include "vec.h"
 #include "physics.h"
+#include "txtdump.h"
 
 typedef struct {
   atom_id iatom[3];
@@ -487,9 +488,10 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
       inc_nrnb(nrnb,eNR_SETTLE,nsettle);
       if (error>=0) {
 	dump_confs(step,&(top->atoms),x,xprime,box);
-	sprintf(buf,"\nMolecule starting at atomnr. %d can not be settled, "
-		"step %d, time %g (ps)",
-		owptr[error]+1,step,ir->init_t+step*ir->delta_t);
+	sprintf(buf,
+		"\nt = %.3f ps: Water molecule starting at atom %d can not be "
+		"settled.\nCheck for bad contacts and/or reduce the timestep.",
+		ir->init_t+step*ir->delta_t,owptr[error]+1);
 	fprintf(stdlog,buf);
 	fatal_error(0,buf);
       }

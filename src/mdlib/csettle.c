@@ -35,7 +35,7 @@ static char *SRCID_csettle_c = "$Id$";
 #include "fatal.h"
 
 #ifdef DEBUG
-static void check_cons(FILE *log,char *title,real x[],int OW1,int HW2,int HW3)
+static void check_cons(FILE *fp,char *title,real x[],int OW1,int HW2,int HW3)
 {
   rvec dOH1,dOH2,dHH;
   int  m;
@@ -45,12 +45,12 @@ static void check_cons(FILE *log,char *title,real x[],int OW1,int HW2,int HW3)
     dOH2[m]=x[OW1+m]-x[HW3+m];
     dHH[m]=x[HW2+m]-x[HW3+m];
   }
-  fprintf(log,"%10s, OW1=%3d, HW2=%3d, HW3=%3d,  dOH1: %8.3f, dOH2: %8.3f, dHH: %8.3f\n",
+  fprintf(fp,"%10s, OW1=%3d, HW2=%3d, HW3=%3d,  dOH1: %8.3f, dOH2: %8.3f, dHH: %8.3f\n",
 	  title,OW1/DIM,HW2/DIM,HW3/DIM,norm(dOH1),norm(dOH2),norm(dHH));
 }
 #endif
 
-void csettle(FILE *log,int nshake, int owptr[],real b4[], real after[],
+void csettle(FILE *fp,int nshake, int owptr[],real b4[], real after[],
 	     real dOH,real dHH,real mO,real mH,int *error)
 {
   /* ***************************************************************** */
@@ -68,9 +68,13 @@ void csettle(FILE *log,int nshake, int owptr[],real b4[], real after[],
   static bool bFirst=TRUE;
   static real wo,wh,wohh;
   static real ra,rb,rc,rc2,rone;
+#ifdef DEBUG_PRES
+  static int step = 0;
+#endif
   
+    
   /* Local variables */
-  real gama, beta, alpa, xcom, ycom, zcom, al2be2, tmp;
+  real gama, beta, alpa, xcom, ycom, zcom, al2be2, tmp, tmp2;
   real axlng, aylng, azlng, trns11, trns21, trns31, trns12, trns22, 
     trns32, trns13, trns23, trns33, cosphi, costhe, sinphi, sinthe, 
     cospsi, xaksxd, yaksxd, xakszd, yakszd, zakszd, zaksxd, xaksyd, 
@@ -86,7 +90,7 @@ void csettle(FILE *log,int nshake, int owptr[],real b4[], real after[],
 
   *error=-1;
   if (bFirst) {
-    fprintf(log,"Going to use C-settle (%d waters)\n",nshake);
+    fprintf(fp,"Going to use C-settle (%d waters)\n",nshake);
     wo     = mO;
     wh     = mH;
     wohh   = mO+2.0*mH;
@@ -99,6 +103,11 @@ void csettle(FILE *log,int nshake, int owptr[],real b4[], real after[],
     wo    /= wohh;
     wh    /= wohh;
         
+    fprintf(fp,"wo = %g, wh =%g, wohh = %g, rc = %g, ra = %g\n",
+	    wo,wh,wohh,rc,ra);
+    fprintf(fp,"rb = %g, rc2 = %g, rone = %g, dHH = %g, dOH = %g\n",
+	    rb,rc2,rone,dHH,dOH);
+	
     bFirst = FALSE;
   }
 #ifdef PRAGMAS
@@ -147,6 +156,7 @@ void csettle(FILE *log,int nshake, int owptr[],real b4[], real after[],
     axlng = invsqrt(xaksxd * xaksxd + yaksxd * yaksxd + zaksxd * zaksxd);
     aylng = invsqrt(xaksyd * xaksyd + yaksyd * yaksyd + zaksyd * zaksyd);
     azlng = invsqrt(xakszd * xakszd + yakszd * yakszd + zakszd * zakszd);
+      
     trns11 = xaksxd * axlng;
     trns21 = yaksxd * axlng;
     trns31 = zaksxd * axlng;
@@ -177,11 +187,20 @@ void csettle(FILE *log,int nshake, int owptr[],real b4[], real after[],
         
     sinphi = za1d / ra;
     tmp    = rone - sinphi * sinphi;
-    if (tmp <= 0)
-      *error=i;
-    cosphi = sqrt(tmp);
+    if (tmp <= 0) {
+      *error = i;
+      cosphi = 0;
+    }
+    else
+      cosphi = sqrt(tmp);
     sinpsi = (zb1d - zc1d) / (rc2 * cosphi);
-    cospsi = sqrt(rone - sinpsi * sinpsi);
+    tmp2   = rone - sinpsi * sinpsi;
+    if (tmp2 <= 0) {
+      *error = i;
+      cospsi = 0;
+    }
+    else
+      cospsi = sqrt(tmp2);
     /* 46 flops */
     
     ya2d =  ra * cosphi;
@@ -236,7 +255,7 @@ void csettle(FILE *log,int nshake, int owptr[],real b4[], real after[],
     after[hw3 + 2] = zcom + zc3;
     /* 9 flops */
 #ifdef DEBUG
-    check_cons(log,"settle",after,ow1,hw2,hw3);
+    check_cons(fp,"settle",after,ow1,hw2,hw3);
 #endif
   }
 }
