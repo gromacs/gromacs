@@ -94,9 +94,10 @@ int main(int argc,char *argv[])
     /* { efHAT, "-hat","ghat",   ffOPTRD }, currently useless */
     { efEDI, "-ei", "sam",    ffOPTRD },
     { efEDO, "-eo", "sam",    ffOPTWR },
-    { efDAT, "-pi","pull",    ffOPTRD },
-    { efOUT, "-po","pull",    ffOPTWR },
-    { efNDX, "-n", "pull",    ffOPTRD },
+    { efPPA, "-pi", "pull",    ffOPTRD },
+    { efPPA, "-po", "pullout", ffOPTWR },
+    { efPDO, "-pd", "pull",    ffOPTWR },
+    { efNDX, "-n",  "pull",    ffOPTRD },
   };
 #define NFILE asize(fnm)
 
