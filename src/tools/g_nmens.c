@@ -24,7 +24,7 @@ int read_eigval(char *fn,int nmax,real eigval[])
   FILE *fp;
   char line[STRLEN];
   int  n,num;
-  real val;
+  double dbl;
   bool bEndOfSet;
 
   n=0;
@@ -33,10 +33,10 @@ int read_eigval(char *fn,int nmax,real eigval[])
   while (fgets(line,STRLEN-1,fp) && !bEndOfSet) {
     bEndOfSet = (line[0] == '&');
     if ((line[0] != '#') && (line[0] != '@') && !bEndOfSet) {
-      if ((sscanf(line,"%d %f",&num,&val) != 2) || ((num < 1) || (num > nmax)))
+      if ((sscanf(line,"%d %lf",&num,&dbl) != 2) || ((num < 1) || (num > nmax)))
 fprintf(stderr,"Invalid line in %s: '%s'\n",fn,line);
       else {
-	eigval[num-1] = val;
+	eigval[num-1] = dbl;
 	n++;
       }
     }
