@@ -274,7 +274,7 @@ void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
 		xread[index[i]][d] = xav[i][d]+
 		  inprod[v][nframes]*eigvec[outvec[v]][i][d]/sqrtm[i];
 	}
-	if (filterfile && (nframes % skip == 0)) 
+	if (filterfile) 
 	  write_trx(out,natoms,index,atoms,0,t,box,xread,NULL);
 	nframes++;
       }
@@ -597,7 +597,7 @@ int main(int argc,char *argv[])
     if (xref1==NULL || (bM && bDMR1)) {
       printf("\nNote: the structure in %s should be the same\n"
 	       "      as the one used for the fit in g_covar\n",topfile);
-      printf("\nSelect the index group that was used for the least squares fit in g_covar\n",natoms);
+      printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
       get_index(atoms,indexfile,1,&nfit,&ifit,&grpname);
       if (xref1==NULL) {
 	snew(w_rls,atoms->nr);
