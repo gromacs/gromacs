@@ -95,30 +95,6 @@ static int dcomp(const void *d1, const void *d2)
     return (p1->AL-p2->AL);
 }
 
-static bool aeq(t_param *p1, t_param *p2)
-{
-  if (p1->AJ!=p2->AJ) 
-    return FALSE;
-  else if (((p1->AI==p2->AI) && (p1->AK==p2->AK)) ||
-	   ((p1->AI==p2->AK) && (p1->AK==p2->AI)))
-    return TRUE;
-  else 
-    return FALSE;
-}
-
-static bool deq2(t_param *p1, t_param *p2)
-{
-  /* if bAlldih is true, dihedrals are only equal when 
-     ijkl = ijkl or ijkl =lkji*/
-  if (((p1->AI==p2->AI) && (p1->AJ==p2->AJ) && 
-       (p1->AK==p2->AK) && (p1->AL==p2->AL)) ||
-      ((p1->AI==p2->AL) && (p1->AJ==p2->AK) &&
-       (p1->AK==p2->AJ) && (p1->AL==p2->AI)))
-    return TRUE;
-  else 
-    return FALSE;
-}
-
 static bool deq(t_param *p1, t_param *p2)
 {
   if (((p1->AJ==p2->AJ) && (p1->AK==p2->AK)) ||
@@ -218,7 +194,8 @@ static void cppar(t_param p[], int np, t_params plist[], int ftype)
       ps->param[ps->nr].a[j] = p[i].a[j];
     for(j=0; (j<nrfp); j++)
       ps->param[ps->nr].c[j] = p[i].c[j];
-    set_p_string(&(ps->param[ps->nr]),p[i].s);
+    for(j=0; (j<MAXSLEN); j++)
+      ps->param[ps->nr].s[j] = p[i].s[j];
     ps->nr++;
   }
 }
@@ -228,10 +205,11 @@ static void cpparam(t_param *dest, t_param *src)
   int j;
 
   for(j=0; (j<MAXATOMLIST); j++)
-    dest->a[j]=src->a[j];
+    dest->a[j] = src->a[j];
   for(j=0; (j<MAXFORCEPARAM); j++)
-    dest->c[j]=src->c[j];
-  strcpy(dest->s,src->s);
+    dest->c[j] = src->c[j];
+  for(j=0; (j<MAXSLEN); j++)
+    dest->s[j] = src->s[j];
 }
 
 static void set_p(t_param *p, atom_id ai[4], real *c, char *s)
@@ -332,46 +310,6 @@ static void dump_param(FILE *fp,char *title,int n,t_param ps[])
   }
 }
 
-static t_rbonded *is_imp(t_param *p,t_atoms *atoms,t_hackblock hb[])
-{
-  int        j,n,maxresnr,start;
-  atom_id    aa0,a0[MAXATOMLIST];
-  char      *atom;
-  t_rbondeds *idihs;
-
-  if (!hb)
-    return NULL;
-  /* Find the max residue number in this dihedral */
-  maxresnr=0;
-  for(j=0; j<4; j++)
-    maxresnr=max(maxresnr,atoms->atom[p->a[j]].resnr);
-  
-  /* Now find the start of this residue */
-  for(start=0; start < atoms->nr; start++)
-    if (atoms->atom[start].resnr == maxresnr)
-      break;
-
-  /* See if there are any impropers defined for this residue */
-  idihs = &hb[atoms->atom[start].resnr].rb[ebtsIDIHS];
-  for(n=0; n < idihs->nb; n++) {
-    for(j=0; (j<4); j++) {
-      atom=idihs->b[n].a[j];
-      aa0=search_atom(atom,start,atoms->nr,atoms->atom,atoms->atomname);
-      if (aa0 == NO_ATID) {
-	if (debug) 
-	  fprintf(debug,"Atom %s not found in res %d (maxresnr=%d) "
-		  "in is_imp\n",atom,atoms->atom[start].resnr,maxresnr);
-	break;
-      } else 
-	a0[j] = aa0;
-    }
-    if (j==4) /* Not broken out */
-      if (eq_imp(p->a,a0))
-	return &idihs->b[n];
-  }
-  return NULL;
-}
-
 static int n_hydro(atom_id a[],char ***atomname)
 {
   int i,nh=0;
@@ -434,16 +372,6 @@ static void pdih2idih(t_param *dih, int *ndih,t_param idih[],int *nidih,
   }
   if (*ndih == 0)
     return;
-  /* Remove the dihedrals which are also impropers. */
-  k = 0;
-  for(i=0; i<*ndih; i++) {
-    if (!is_imp(&dih[i],atoms,hb)) {
-      if (k != i) 
-	cpparam(&dih[k],&dih[i]);
-      k++;
-    }
-  }
-  *ndih = k;
 
   snew(index,*ndih+1);
   if (bAlldih) {
@@ -452,9 +380,7 @@ static void pdih2idih(t_param *dih, int *ndih,t_param idih[],int *nidih,
     for(i=0; i<nind; i++) 
       index[i] = i;
   } else {
-    /* Now, because this list still multiple dihedrals over one bond,
-     * keep the dihedral with parameters or the first one.
-     */
+    /* Make an index of all dihedrals over each bond */
     nind = 0;
     for(i=0; i<*ndih; i++) 
       if (!remove_dih(dih,i,*ndih)) 
@@ -494,13 +420,8 @@ static void pdih2idih(t_param *dih, int *ndih,t_param idih[],int *nidih,
 	    break;
 	}
       }
-      if (k != bestl) {
-	for(j=0; (j<MAXATOMLIST); j++)
-	  dih[k].a[j] = dih[bestl].a[j];
-	for(j=0; (j<MAXFORCEPARAM); j++)
-	  dih[k].c[j] = dih[bestl].c[j];
-	set_p_string(&(dih[k]),dih[bestl].s);
-      }
+      if (k != bestl)
+	cpparam(&(dih[k]),&dih[bestl]);
       k++;
     }
   }
