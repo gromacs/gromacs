@@ -47,7 +47,7 @@
 #include "nrnb.h"
 #include "constr.h"
 #include "copyrite.h"
-#include "callf77.h"
+
 
 static void pv(FILE *log,char *s,rvec x)
 {
@@ -201,14 +201,8 @@ int vec_shakef(FILE *log,
     tt[ll] = 1.0/(toler*tol2);
   }
 
-  /* We have a FORTRAN shake now! */  
-#ifdef USE_FORTRAN
-  F77_FUNC(fshake,FSHAKE)(iatom,&ncon,&nit,&maxnit,dist2,xp[0],
-			  rij[0],M2,&omega,invmass,tt,lagr,&error);
-#else
-  /* And a c shake also ! */
   cshake(iatom,ncon,&nit,maxnit,dist2,xp[0],rij[0],M2,omega,invmass,tt,lagr,&error);
-#endif
+
   if (nit >= maxnit) {
     fprintf(log,"Shake did not converge in %d steps\n",maxnit);
     nit=0;

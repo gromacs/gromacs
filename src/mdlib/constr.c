@@ -39,7 +39,6 @@
 
 #include "confio.h"
 #include "constr.h"
-#include "callf77.h"
 #include "copyrite.h"
 #include "invblock.h"
 #include "main.h"
@@ -315,16 +314,10 @@ static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 
       nit = ir->nLincsIter;
       
-#ifdef USE_FORTRAN
-      F77_FUNC(flincs,FLINCS)(x[0],xprime[0],&nc,bla1,bla2,blnr,blbnb,
-			      bllen,blc,blcc,blm,&nit,&ir->nProjOrder,
-			      md->invmass,r[0],tmp1,tmp2,tmp3,&wang,&warn,
-			      lincslam);
-#else
       clincs(x,xprime,nc,bla1,bla2,blnr,blbnb,
 	     bllen,blc,blcc,blm,nit,ir->nProjOrder,
 	     md->invmass,r,tmp1,tmp2,tmp3,wang,&warn,lincslam);
-#endif
+
       if (ir->efep != efepNO) {
 	real dvdl=0;
 	
@@ -361,15 +354,9 @@ static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 	  bllen[b] = 0;
     } 
     else {
-#ifdef USE_FORTRAN
-      F77_FUNC(flincsp,FLINCSP)(x[0],xprime[0],min_proj[0],&nc,bla1,bla2,blnr,blbnb,
-				blc,blcc,blm,&ir->nProjOrder,
-				md->invmass,r[0],tmp1,tmp2,tmp3);
-#else
       clincsp(x,xprime,min_proj,nc,bla1,bla2,blnr,blbnb,
 	      blc,blcc,blm,ir->nProjOrder,
 	      md->invmass,r,tmp1,tmp2,tmp3);
-#endif
     }
 
     /* count assuming nit=1 */
@@ -553,12 +540,7 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
       mH   = md->massT[ow1+1];
       dOH  = top->idef.iparams[settle_type].settle.doh;
       dHH  = top->idef.iparams[settle_type].settle.dhh;
-#ifdef USE_FORTRAN
-      F77_FUNC(fsettle,FSETTLE)(&nsettle,owptr,x[0],xprime[0],
-				&dOH,&dHH,&mO,&mH,&error);
-#else
       csettle(stdlog,nsettle,owptr,x[0],xprime[0],dOH,dHH,mO,mH,&error);
-#endif
       inc_nrnb(nrnb,eNR_SETTLE,nsettle);
       bOK = (error < 0);
       if (!bOK && bDumpOnError)
