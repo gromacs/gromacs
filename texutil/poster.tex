@@ -1,0 +1,79 @@
+%\voffset -1cm
+%\hoffset -2mm
+%
+%	I M P O R T A N T   S I Z E    M A C R O S
+%	F O R   U S E   W I T H   A 4   S T Y L E
+%
+%\setlength{\textheight}{22.0cm}
+%\setlength{\textwidth}{15.0cm}
+%\setlength{\topmargin}{0.0cm}
+\setlength{\parindent}{0mm}
+\setlength{\parskip}{2mm}
+\newcommand{\setnopi}{}
+\newcommand{\setpi}{}
+
+%
+% Settings for A4 poster in landscape format
+%
+%\setlength{\textheight}{25.0cm}
+%\setlength{\textwidth}{19.0cm}
+%\hoffset -15mm
+%\voffset -25mm
+%\setlength{\oddsidemargin}{-5mm}
+
+%
+% Settings for thesis
+%
+\setlength{\textheight}{180mm}
+\setlength{\textwidth}{136mm}
+\setlength{\parindent}{4mm}
+\setlength{\parskip}{0mm}
+\renewcommand{\setnopi}{\setlength{\parindent}{0mm}}
+\renewcommand{\setpi}{\setlength{\parindent}{4mm}}
+%\setlength{\topmargin}{10mm}
+\setlength{\headsep}{4mm}
+
+%\setlength{\oddsidemargin}{4mm}
+%\setlength{\evensidemargin}{4mm}
+
+% For normal text
+%\setlength{\parindent}{4mm}
+%\newcommand{\setnopi}{\setlength{\parindent}{0mm}}
+%\newcommand{\setpi}{\setlength{\parindent}{4mm}}
+
+
+% For manuscripts
+%\setlength{\parindent}{1.0cm}
+%\setlength{\parskip}{0.0cm}
+%\setlength{\oddsidemargin}{0.4cm}
+%\setlength{\evensidemargin}{0.4cm}
+%\setlength{\unitlength}{10mm}
+\setlength{\footskip}{1.0cm}
+
+\input{../texutil/simplemac}
+\input{../texutil/chem-mac}
+\input{../texutil/caption}
+%\input{../texutil/tabnotes}
+
+\newcommand{\summary}[1]{ %\heartpar{#1}\newpage
+\centerline{\small
+\begin{tabularx}{\linewidth}{X} 
+\hline
+\T#1\B \\
+\hline 
+\end{tabularx}
+}
+\newpage
+}
+
+% Call with: \myref{Authors}{Journal}{Vol}{Pages}{Year}
+\newcommand{\myref}[5]{
+\centerline{
+\begin{tabularx}{\linewidth}{X} 
+{\em #1} \\
+{\bf #2} {#3}:{#4} {(#5)}
+\end{tabularx}
+}
+\vspace{20pt}
+}
+\newcommand{\gromacs}{{\sl GRO}\raisebox{0.5ex}{\underline{\sl macs}}~}

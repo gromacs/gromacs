@@ -1,0 +1,22 @@
+\section{Longe Range Electrostatics using PPPM}
+The Particle-Particle Particle-Mesh methods of Hockney \& Eastwood
+can be applied in {\gromacs} for the treatment of longe range 
+electrostatic interactions~\cite{Hockney88,Darden93,Luty95}. 
+The charges of all particles are spread over a grid of dimension
+($n_x$,$n_y$,$n_z$) using a weighting function called the
+triangle-shaped charged distribution:
+\bea
+W(\ve{r})	&=	W(x)~W(y)~W(z)	& \\
+		&	\frac{3}{4} - \left(\frac{\xi}{h}\right)^2 & |\xi| < \frac{h}{2}	\\
+W(\xi)		=&	\frac{1}{2}\left(\frac{3}{2} - \frac{|\xi|}{h}\right)^2 & \frac{h}{2} < |\xi| < \frac{3h}{2}	\\
+		&	0	& {\rm otherwise}	\\
+\eea
+
+Then, this charge distribution is fourier transformed using a 3D-FFT routine.
+In fourier space a convolution with function $\hat{G}$ is performed:
+\beq
+\hat{G}(k)	~=~	\frac{\hat{g}(k)}{\epsilon_0 k^2}
+\eeq
+where $\hat{g}$ is the fourier transform of the charge spread function
+g(r).
+

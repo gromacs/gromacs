@@ -1,0 +1,29 @@
+\section{Benchmarks}
+A few selected benchmarks have been run on the computers in our lab.
+The benchmarks all represent ``real-life'' examples, i.e. they
+were taken from ongoing research projects in the lab. To appreciate
+the numbers one should consider the following points:
+\begin{enumerate}
+\item	Hardware: is the processor scalar or vector. The {\gromacs}
+	software is optimized for scalar and short vector machines,
+	i.e. for processors that can process multiple instructions
+	simultaneously, like the {\intel} or the R8000. The software
+	does not perform very well on old-fashioned vector computers
+	like Cray etc. Another important point is the amount
+	of cache memory your processor has, usually these are on the
+	order of 1 Mb. If you have a small system that fits in the cache
+	memory, the performance will be much higher than for larger
+	systems.
+\item	Compilers. Most compilers are lousy in optimizing code (although
+	vendors never admit it). What makes it even worse: most compilers
+	do not give good instructions for optimizing your code.
+	In the {\gromacs} software we have implemented part of the code
+	in FORTRAN as well as C, because on one of our local machines
+	(SGI PowerChallenge) the innerloop for nonbonded interactions
+	is three times as fast in FORTRAN than in C.
+\item	Software. {\gromacs} has optimizations for water, because that is
+	an abundant molecule in biological systems. If your system has more
+	water, you will have higher performance/
+\end{enumerate}
+
+\input{benchresults}

@@ -1,0 +1,246 @@
+\documentclass[11pt,dvips]{article}
+\usepackage{here,picins,fancy,epsfig,array,tabularx,makeidx,vmargin,floatflt}
+\setpapersize{A4}
+\input{macros}
+\renewcommand{\type}[1]{\\ {\tt \% #1 $\hookleftarrow$}}
+
+\begin{document}
+\title{\bf Structure Refinement Based on NOE Data from NMR Experiment using GROMACS Software}
+\author{David van der Spoel}
+\maketitle
+
+\section{Introduction}
+This document is part of the GBB introduction course. It describes some details
+of NMR structure refinement using computer simulations techniques.
+Furthermore, it has some practical exercises, that demonstrate the most
+important parameters for refinement.
+
+\section{Theory}
+\label{sec:disre}
+\normindex{Distance restraints} 
+add a penalty to the potential when the distance
+between specified pairs of atoms exceeds a threshold value. They are
+normally used to impose experimental restraints, as from \normindex{NOE}
+experiments in nuclear magnetic resonance (NMR), on the motion of the
+system. Thus MD can be used for \normindex{structure refinement}  using 
+\normindex{NMR} data. The
+potential form is quadratic between two specified distances and linear
+beyond the largest distance (see figure~\ref{fig:dist}).
+\bea
+V_{dr}(r_{ij})~=~&~0 \hspace{4cm}                  & r_{ij} < r_0         \\
+	       =~&~\half k_{dr}(r_{ij}-r_0)^2	           & r_0 \le r_{ij} < r_1 \\
+	       =~&~\half k_{dr}(r_1-r_0)(2r_{ij}-r_1-r_0) & r_{ij} \ge r_1
+\label{eqn:disre}
+\eea
+\begin {figure}[H]
+\centerline{\psfig {figure=f_dr.eps,angle=270,width=8cm}}
+\caption {Distance Restraint potential}
+\label{fig:dist}
+\end {figure}
+The forces are
+\bea
+\ve{F}_i~=~&~0 \hspace{4cm}  & r_{ij} < r_0         \\
+  = ~&-~k_{dr}(r_{ij}-r_0)\frac{\ve{r}_{ij}}{r_{ij}} & r_0 \le r_{ij} < r_1 \\
+  = ~&-~k_{dr}(r_1-r_0)\frac{\ve{r}_{ij}}{r_{ij}}    & r_{ij} \ge r_1	
+\eea
+The above formulae have been improved by introducing the
+{\em time averaged} distance restraint~\cite{Torda89} where the distance
+$r_{ij}$ is replaced by a time average:
+\beq
+\bar{r}_{ij} = < r_{ij}^{-3} >^{-1/3}
+\label{eqn:rav}
+\eeq
+This way an atom can satisfy two incompatible distance restraints 
+{\em on average} by moving between two protons. 
+An example would be an amino-acid sidechain which is rotating around
+its $\chi$ dihedral angle, thereby coming close to various other groups.
+Such a mobile side chain may give rise to multiple NOEs. The use of
+time averaged restraints allows the sidechain to fulfill all
+experimental restraints.
+
+The computation of the time
+averaged distance in the {\tt mdrun} program is done in the following fashion:
+\bea
+\bar{r}_{ij}(0)^{-3} 	&=& r_{ij}(0)^{-3}	\\
+\bar{r}_{ij}(t)^{-3}	&=& \bar{r}_{ij}(t-\Delta t)^{-3}~\exp{\left(-\frac{\Delta t}{\tau}\right)} + r_{ij}(t)^{-3}\left[1-\exp{\left(-\frac{\Delta t}{\tau}\right)}\right]
+\label{eqn:ravdisre}
+\eea
+Sometimes it is unclear from experimental data which atom pair
+gives rise to a single NOE, in other occasions it can be assumed that
+more than one pair contributes due to the symmetry of the system, e.g. a
+methyl group with three protons. For such a group it is not possible 
+to distinguish between the protons, therefore they should all be taken into
+account when calculating the distance between this methyl group and another
+proton (or group of protons).
+Due to the physical nature of magnetic resonance, the intensity of the
+NOE signal is proportional to the distance between atoms to the power of -6.
+Thus, when combining atom pairs, 
+a fixed list of $N$ restraints may be taken together, 
+where the net ``distance'' is given by:
+\beq
+r_{N}(t) = \left [\sum_{n=1}^{N} \bar{r}_{n}(t)^{-6} \right]^{-1/6}
+\label{eqn:rsix}
+\eeq
+where we use eqn.\ref{eqn:rav} for the $\bar{r}_{n}$.
+
+As more pairs of protons contribute to the same NOE signal, the intensity
+will increase, and the summed ``distance'' will be shorter than any of
+its components due to the reciprocal summation. 
+It is also possible to use {\em ensemble averaging} using multiple
+(protein)  molecules. In this case the bounds should be lowered as in:
+\bea
+r_0	&~=~&	r_0 * M^{-1/6}	\\
+r_1	&~=~&	r_1 * M^{-1/6}
+\eea
+where $M$ is the number of molecules. The {\gromacs} preprocessor {\tt grompp}
+can do this automatically when the appropriate option is given.
+The resulting ``distance'' is 
+then used to calculate the scalar force according to:
+\bea
+\ve{F}_i~=~&~0 \hspace{4cm}  & r_{N} < r_0         \\
+  = ~&-~ k_{dr}(r_{N}-r_0)\frac{\ve{r}_{ij}}{r_{ij}} & r_0 \le r_{N} < r_1 \\
+  = ~&-~ k_{dr}(r_1-r_0)\frac{\ve{r}_{ij}}{r_{ij}}    & r_{N} \ge r_1	
+\eea
+where $i$ and $j$ denote the atoms  of all the 
+pairs that contribute to the NOE signal.
+
+\section{Methods}
+The {\gromacs} software~\cite{Berendsen95a,gmx2} 
+can be used to do NMR structure refinements.
+A list of distance restrains based on NOE data can be added in your
+topology file, like in the following example:
+\begin{verbatim}
+[ distance_restraints ]
+; ai    aj      type    index   rt-aver rx0      rx1     rx2     rx3
+10      16      1       0       1       0.3      0.4     0.0     0.0 
+10      28      1       1       1       0.3      0.4     0.0     0.0 
+10      46      1       1       1       0.3      0.4     0.0     0.0 
+16      22      1       2       1       0.3      0.4     0.0     0.0 
+16      34      1       3       1       0.5      0.6     0.0     0.0 
+\end{verbatim}
+In this example a number of features can be found.
+In columns {\tt ai} and {\tt aj} you find the atom numbers of the
+particles to be restrained. The {\tt type} column should always be 1.
+As explained in section~\ref{sec:disre}, multiple distances can add
+to a single NOE signal. In the topology this can be set using the
+{\tt index} column. In our example, the restraints 10-28 and 10-46
+both have index 1, therefore they are treated simultaneously.
+An extra requirement for treating restraints together, is that 
+the restraints should be on successive lines, without any
+other intervening restraint. The columns {\tt rx0} and {\tt rx1} hold
+the values of $r_0$ and $r_1$ from eq.~\ref{eqn:disre}.
+The columns {\tt rx2} and {\tt rx3} hold variables, which are as of yet 
+not used. They must be specified in the topology file however.
+
+Some more parameters are important for NMR refinement using
+distance restraints in {\gromacs}.
+\begin{description}
+\item[Force constant $k_{dr}$ for distance restraints.] 
+	$k_{dr}$  (eqn~\ref{eqn:disre}) can be set in the {\tt grompp.mdp} file
+	as variable {\tt disre\_fc = 1000} for a force constant of
+	1000 {kJ mole$^{-1}$ nm$^{-2}$}.
+\item[Time constant $\tau$ for restraints.] 
+	$\tau$ (eqn~\ref{eqn:ravdisre}) can be set in the {\tt grompp.mdp} file
+	as variable {\tt disre\_tau = 10} for a time constant of
+	10 ps.
+\item[Ensemble averaging.] When multiple proteins or peptides are used
+	in the simulation ensemble averaging 
+	can be turned on by passing the option
+	{\tt -ensemble} to {\tt grompp}, the {\gromacs}
+	preprocessor.
+\end{description}
+
+\section{Exercises}
+Using a simple peptide we will try to demonstrate the features
+of the {\gromacs} software for NMR refinement.
+The peptide we will use is Tyr-Ala-Ser-Thr.
+In this peptide we will consider restraints 
+due to NOES between the Tyr-HD and Thr-HG protons (6 restraints)
+and between the Tyr-HD and the Ser-HB protons (4 restraints).
+Since the all these protons are 
+usually indistinguishable in a NMR experiment, we will sum the 6 and the
+4 restraints
+corresponding to these NOES (eqn~\ref{eqn:rsix}) in our refinements.
+
+Now execute the following commands.
+\type{cp -r ~gbbcursus/gmx/nmr nmr}
+\type{cd nmr/test1}
+\type{source ~gbbcursus/gmx/GMXRC}
+
+You can view the peptide on screen with rasmol
+\type{rasmol pep.pdb}
+
+Before doing a simulation we must process the input data using
+the {\gromacs} preprocessor program {\tt grompp}. This program needs
+the following input files:
+\begin{enumerate}
+\item	a coordinate file ({\tt conf.gro})
+\item	a {\em topology} file ({\tt topol.top}) that holds information on the
+	covalent bonds, atomic charges and masses etc., and also the 
+	distance restraint information (we'll come back to that later).
+\item	a parameter file ({\tt grompp.mdp})
+\item	an index file ({\tt index.ndx})
+\end{enumerate}
+It produces a single output file {\tt topol.tpb}.
+For the purpose of this exercise we will modify two of these input files
+using a text editor (e.g. {\tt jot}).
+
+\subsection{Som 1}
+The input files are prepared for the first exercise, so type:
+\type{grompp}
+\type{mdrun -v}
+
+This will take a few seconds. The mdrun is 10 ps in vacuum and it contains
+distance restraints without time averaging ($\tau$ = 0).
+You can view the trajectory on screen with the {\tt ngmx} program:
+\type{ngmx -f ctraj}
+
+Select {\tt System} from the initial dialog box, and click {\tt OK}.
+You can scale and rotate the molecule using the left and right mouse
+buttons. Then, select {\tt Animate} from the {\tt Display} menu.
+You wil see a VCR like control panel at the bottom of the window, press
+the $>>$ button to replay the trajectory.
+A somewhat more quantitative analysis can be done by calculating and
+plotting the sum of violations:
+\type{g\_energy -f ener -rsum -w}
+
+Please note the values plotted on your screen:
+\begin{verbatim}
+Sum of violations averaged over simulation: 0.062522 nm
+Largest violation averaged over simulation: 0.0500902 nm
+\end{verbatim}
+we will compare these numbers to the ones found in the next few sections.
+
+\subsection{Som 2}
+Edit the {\tt grompp.mdp} file to set the time averaging constant $\tau$ to
+5.0 (ps). You can edit the file using
+\type{jot grompp.mdp}
+
+Redo the mdrun (first run {\tt grompp}!) and redo the analysis.
+Compare the sum of violations to the ones from the previous run.
+When you look at the graph you can see that the running average is not the
+same as the instantaneous violations, like in the previous run.
+
+\subsection{Som 3}
+Go to the other test dir:
+\type{cd ../test2}
+
+Look at the molecule again using rasmol:
+\type{rasmol pep.pdb}
+
+As you see, there are two identical peptides. We will use 
+time averaging {\em and} ensemble averaging
+to see if we can satisfy the restraints by using two different
+conformations.
+\type{grompp -ensemble}
+
+And redo the mdrun and the analysis again as you did before.
+
+Now try to tune the parameters, ($\tau$, $k_{dr}$) to get better compliance
+with the NOE data. You can also increase the number of MD steps
+({\tt nsteps}) to see if this will help. Discuss the results...
+
+\bibliographystyle{proteins}
+\bibliography{bibtex/monster}
+
+\end{document}

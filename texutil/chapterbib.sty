@@ -1,0 +1,193 @@
+%
+% chapterbib.sty        Version 1.3 (04-JUL-1994) Donald Arseneau
+% ~~~~~~~~~~~~~~                1.2 (21-MAY-1993) Donald Arseneau (bug fix)
+%                               1.1 (24-MAR-1993) Donald Arseneau
+%                               1.0 (23-NOV-1988) Niel Kempson
+%
+% Allow multiple bibliographies in a LaTeX document, including items
+% \cite'd in more than one bibliography.  Despite the name "chapterbib",
+% the bibliographies are for each included file, not necessarily for each
+% chapter.  The main point is to allow you to use BibTeX: Each included 
+% file should have its own \bibliography command, and you should run
+% BibTeX on each included file separately rather than on the root file.
+%
+% There are also the commands \begin{cbunit}, \end{cbunit}, and \cbinput
+% to allow multiple bibliographies without using \include; you must write
+% the bibliography by hand, or use \include for a first run before running 
+% bibTeX.  There are two added hooks, \citeform and \citepunct, to customise 
+% the formatting of each entry in a citation list.
+%
+% Usage & Restrictions
+% ~~~~~~~~~~~~~~~~~~~~
+%
+% 1. Put a \bibliography command in each \include'd file; run LaTeX; run bibTeX 
+%    on each included file; run LaTeX.
+% 
+% 2. The \bibliography and \bibliographystyle commands may not be used in
+%    the root file, only in files that have been \include'd. If you try to use
+%    them, a LaTeX warning is issued and the offending command(s) ignored. This
+%    restriction occurs because the root .aux file includes the subsidiary .aux
+%    files and when BibTeX processes the root .aux file, it complains about
+%    multiple \bibdata commands. 
+% 
+% 3. If you want to \cite in the root file, you must provide your own
+%    bibliography within the root file using the thebibliography environment. 
+%    I don't suppose that this will appeal to BibTeX users! 
+% 
+% 4. If you can't use \include because a new section must start right after
+%    the preceding bibliography--on the same page [odd format!], then you can
+%    use \begin{cbunit}...\end{cbunit} or \cbinput. Type a thebibliography
+%    environment in each unit or input file. To use bibTeX, start out using
+%    \include, run LaTeX on the document, then bibTeX on each section, then
+%    change the \include commands to \cbinput and LaTeX again. 
+% 
+% 5. Your preferred citation style (xxx.sty) may not work with chapterbib at
+%    first, but it is easy to make it compatible.  In `xxx.sty' change every
+%    "b@\@citeb" to "b@\@citeb\@extra@b@citeb", and insert the line: 
+%        \@ifundefined{@extra@b@citeb}{\def\@extra@b@citeb{}}{}
+%    (But not as a comment or as part of another definition!) If a style file
+%    redefines \bibcite then that definition should have "b@#1\@extra@binfo" 
+%    in place of "b@#1".  It should also include the line \def\@extra@binfo{} 
+%    somewhere in the file. 
+%
+% \citeform and \citepunct:
+% ~~~~~~~~~~~~~~~~~~~~~~~~~
+% Normally, the citations are formatted as given, but you can define \citeform
+% (with one parameter) to reformat every citation.  Some possibilities:
+%  \renewcommand\citeform[1]{\romannumeral 0#1}% roman numerals:  [iv,x]
+%  \renewcommand\citeform[1]{(#1)}             % parentheses:  [(3),(4),(7)]
+%  \renewcommand\citeform[1]{\thechapter.#1}   % number by chapter:  [3.9,3.10]
+% If you change \citeform, you should change \@biblabel to match.
+% \citepunct gives the punctuation (comma-penalty-space) between items.
+%
+% Tags indicating the citations and/or the input files:
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% command name      when doing \include file     when doing root file
+%
+% \the@ipfilectr    @-\the\c@inputfile           nil
+% \@extra@b@citeb   ditto
+% \@extra@binfo     same as \@extra@b@citeb but used when loading .aux files
+%
+% \b@FOO:
+% ~~~~~~~
+% In the root file, the citation number (or name) is given by \b@FOO
+% just like regular LaTeX, but in an \include'd file it is given by
+% \b@FOO@-number.  Any definition of \cite (\@citex) should refer
+% to this using \csname b@\@citeb\@extra@b@citeb \endcsname.
+%---------------------------------------------------------------
+% 
+% Original Author
+% ~~~~~~~~~~~~~~~
+% Niel Kempson                       | Telephone:      Swindon (0793) 785687
+% School of Elec Eng & Science,      |  International: +44-793-785687
+% Royal Military College of Science, |
+% Shrivenham, SWINDON,               | E-mail (not anymore[?]):
+% SN6 8LA,                           |  JANET: rmcs-tex@uk.ac.cranfield.cdvc
+% United Kingdom                     |
+%
+% Modified by
+% ~~~~~~~~~~~
+% Donald Arseneau  <asnd@reg.triumf.ca>   March 1993 - Jul 1994
+%
+% Changes with ver 1.3: rewrite: 
+% The filename tag is defined in each .aux file by \include, not as as an
+% extra parameter to \bibcite.  \@bibitem & \@lbibitem are left alone.  Add 
+% \citeform and \citepunct. Add \cbunit and \cbinput for use without \include.
+
+%======================BEGIN==MACROS===========================
+% Redefine the \include macro so that when a file is \include'd...
+% Increment the file number, (globally) update \the@ipfilectr to be 
+% @-number, and write \def\@extra@binfo{@-number} at the top of the 
+% new .aux file.  When the \include'd file is finished, write 
+% \def\@extra@binfo{} at the end of the subsidiary .aux file. Global 
+% reset \the@ipfilectr to {}.  Provide similar \cbunit and \cbinput.
+
+\newenvironment{cbunit}%
+{\global\advance\c@inputfile\@ne \xdef\the@ipfilectr{@-\the\c@inputfile}%
+   \immediate\write\@auxout{\string\def\string\@extra@binfo{\@extra@b@citeb}}}%
+{\gdef\the@ipfilectr{}%
+   \immediate\write\@auxout{\string\def\string\@extra@binfo{\@extra@b@citeb}}}
+
+\let\cb@include\include
+\def\include#1{\clearpage \cbunit \xdef\@currentipfile{#1}%
+  \cb@include{#1}\global\let\@currentipfile\@savedjobname\endcbunit}
+
+\newcommand\cbinput[1]{\cbunit \xdef\@currentipfile{#1}%
+  \input{#1}\global\let\@currentipfile\@savedjobname\endcbunit}
+
+%-------------------------------------------------------------
+% Redefine \cite (\@citex actually) and \bibcite to use the file number
+% tag along with the specified tag.  \@citex also uses \citeform as a hook 
+% to reformat each individual citation.
+% Only replace definitions if no citation style that supports chapterbib 
+% has been loaded--as indicated by existence of filename tags.
+%
+\@ifundefined{@extra@binfo}{
+  \def\bibcite#1#2{\global\@namedef{b@#1\@extra@binfo}{#2}}
+}{}
+
+\@ifundefined{@extra@b@citeb}{%
+ \def\@citex[#1]#2{%
+   \let\@citea\@empty
+   \@cite{\@for\@citeb:=#2\do
+     {\@citea\let\@citea\citepunct
+      \edef\@citeb{\expandafter\@iden\@citeb}%
+      \if@filesw\immediate\write\@auxout{\string\citation{\@citeb}}\fi
+      \@ifundefined{b@\@citeb \@extra@b@citeb}{{\reset@font\bf ?}\@warning
+         {Citation `\@citeb' in file `\@currentipfile'
+             on page \thepage \space undefined}}%
+      {\hbox{\citeform{\csname b@\@citeb \@extra@b@citeb\endcsname}}}}}{#1}}
+}{}% 2nd arg of \@ifundefined{@extra@b@citeb}
+
+\def\@iden#1{#1}
+
+% These customization hooks are present in cite.sty:
+\@ifundefined{citeform}{\let\citeform=\relax}{}
+\@ifundefined{citepunct}{\def\citepunct{,\penalty\@m\ }}{}
+% others (\citemid, \citeleft, \citeright) are not defined here because 
+% \@cite is not redefined.
+
+%-------------------------------------------------------------
+%  Initialize file-name tags
+%
+\xdef\@savedjobname{\jobname}           % save root file name as a macro
+\let\@currentipfile\@savedjobname
+\gdef\the@ipfilectr{}
+\def\@extra@b@citeb{\the@ipfilectr}
+\newcount\c@inputfile \global\c@inputfile=0
+
+\def\@extra@binfo{}  % in case .aux files are left from old run.
+
+%-------------------------------------------------------------
+% OFSS:  Yes, I know the \let is superfluous.  \relax allows \@ifundefined
+% to be used again by other packages.
+
+\@ifundefined{reset@font}{\let\reset@font\relax}{}
+
+%---------------------------------------------------------------
+% We don't allow \bibliography and \bibliographystyle commands in the root
+% file, so warn and ignore if appropriate.
+
+\let\cb@bibliographystyle\bibliographystyle
+
+\def\bibliographystyle#1{\ifx\the@ipfilectr\@empty 
+ \cb@rootwarn\bibliographystyle \else
+ \cb@bibliographystyle{#1}\fi}
+
+\def\bibliography#1{\ifx\the@ipfilectr\@empty \cb@rootwarn\bibliography 
+  \else  \if@filesw\immediate\write\@auxout{\string\bibdata{#1}}\fi
+    \@input{\@currentipfile.bbl}\fi}
+
+\def\cb@rootwarn#1{\@warning{\string#1\space 
+ commands in the root file are ignored ^^Jby the `chapterbib' package:}}
+
+%---------------------------------------------------------------
+% Last, we redefine \@testdef so that it properly checks whether the 
+% \cite labels have changed.
+
+\let\@test@defiii\@testdef
+
+\def\@testdef#1#2#3{%
+  \if#1b\relax\@test@defiii b{#2\@extra@binfo}{#3}%
+  \else \@test@defiii #1{#2}{#3}\fi
+}

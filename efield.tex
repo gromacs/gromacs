@@ -1,0 +1,23 @@
+\documentstyle[11pt,psfig,rotate]{article}
+\include{macros/macros}
+\begin{document}
+\input{bibtex/bibdef}
+\bibliographystyle{unsrt}
+
+\subsection{Electric Fields.}
+Electric fields can be applied to systems in {\gromacs}. The fields should
+be continuous and
+periodic in space and time, therefore a cosine series is convenient:
+\beq
+E(x,t)	~=~	\left[ \sum_{m=0}^{Mx}~\cos\left( 2\pi m \nu_x t - \phi_x\right)\right] * \left[ \sum_{n=0}^{Nx}~a_n \cos\left( 2\pi \frac{n x}{L_x}\right) \right]
+\eeq
+and similar in the $y$ and $z$ direction.
+
+\subsubsection{Special Cases.}
+A constant electric field can be implemented by setting $\nu_x = 0$,
+a rotating electric field with a period of 500 ps
+can be implemented by setting  $\nu_x$=100
+
+\bibliography{../bibtex/monster}
+\end{document}
+

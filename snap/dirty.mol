@@ -1,0 +1,56 @@
+! File: dirty.mol
+! Creator: RasMol Version 2.6
+! Version: MolScript v1.3
+
+@sscol.in
+
+plot area 50.0 200.0 550.0 600.0; 
+!  background black;
+  window 58.6641;
+
+  read mol "dirty.pdb";
+  transform atom *
+    by centre position atom *
+    by rotation x 180.0
+    by rotation z -85.7928
+    by rotation y -39.1799
+    by rotation x -153.047;
+
+  $coil_on
+  coil from 1 to 2;
+  $helix_on
+  helix from 2 to 12;
+  $coil_on
+  coil from 12 to 40;
+  $helix_on
+  helix from 40 to 57;
+  $coil_on
+  coil from 57 to 64;
+  $helix_on
+  helix from 64 to 66;
+  $coil_on
+  coil from 66 to 68;
+  $helix_on
+  helix from 68 to 70;
+  $coil_on
+  coil from 70 to 75;
+  $strand_on
+  strand from 75 to 78;
+  $coil_on
+  coil from 78 to 81;
+  $strand_on
+  strand from 81 to 84;
+  $coil_on
+  coil from 84 to 90;
+  $helix_on
+  helix from 90 to 107;
+  $coil_on
+  coil from 107 to 113;
+  $helix_on
+  helix from 113 to 115;
+  $coil_on
+  coil from 115 to 123;
+
+  $cpk_col  
+  cpk require not in amino-acids and atom *;
+end_plot

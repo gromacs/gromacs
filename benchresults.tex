@@ -1,0 +1,55 @@
+In Table~\ref{tab:benchdef} the definition of the benchmarks is given, in
+Table~\ref{tab:benchtime} the results are printed. It can be seen that
+scaling on the parallel machine (Samba) is very much dependent on system size.
+The Micel simulation which takes 50\% more time than the HIV simulation
+on our PowerChallenge, are equally fast on the Samba.
+
+\begin{table}[ht]
+\begin{tabularx}{\linewidth}{lXrrrrr}
+\dline
+Test	& Description			& \# Atoms & \# steps & cut-off	& nstlist & SHAKE	\\
+\hline
+SOL1 	& 848 SPC in rectang. box	& 2544	& 100	& 0.9/0.9	& 10	& All Bonds	\\
+SOL2 	& 1728 SPC in cubic box		& 5184	& 100	& 1.0/1.0	& 10	& All Bonds	\\
+PEP	& 32 residue pept. from LDH	& 8652	& 100	& 1.0/1.7	& 10	& All Bonds	\\
+MICEL 	& 54 DPC lipids			& 16956 & 100	& 1.0/1.7	& 10	& Water		\\
+HIV	& HIV-Protease dimer 		& 19290 & 100	& 1.0/1.0	& 10	& H-Bonds	\\
+\dline
+\end{tabularx}
+\caption{Definition of the benchmarks. All test were performed in explicit solvent. nstlist is the update-frequency of the neighbourlist in steps, cut-off is the short/long range part of the cut-off, where long range means Coulomb interactions only.}
+\label{tab:benchdef}
+\end{table}
+	
+\begin{table}[ht]
+\centerline{
+\begin{tabular}{|ll|rrrrr|}
+\dline
+Machine	& CPU			&SOL1	&SOL2	& PEP	& MICEL	& HIV	\\
+\hline	
+rugmd2	& MIPS-R4400/250 MHz	& 52.2	& 	& 227.6	& 709.5	& 535.3	\\
+rugmd17	& Sparc-5		& 111	& 	& 463	& 1600	& 1039	\\
+bioson01& MIPS-R8000/75 MHz	& 16.1	& 41.3	& 123	& 269	& 181	\\
+%bioson01& 4x id. (MPI)		& 10	& 16	& 41	& 86	& 68	\\
+%bioson01& 4x id. + shuffle	&	&	&	& 79	& 63(x)	\\
+msc-hpc	& MIPS-R10k/190 Mhz	& 14.6	& 40.3 	& 93.7	& 190	& 155	\\
+rugch5	& HP-735		& 19.2	& 52.3	& 162	& 350	& 244	\\
+Cray	& C-90 (1 CPU)		&	&	&	&	& 235	\\
+Samba	& 4 x Intel i860 40 Mhz	& 43	& 99	& 277	& 485	& (*)	\\
+Samba	& 28 x id.		& 	& 	& 	& 135	& 135 	\\
+Samba	& 28 x id. + shuffle	& 	& 	& 	& 133	& 	\\
+\hline
+Convex	& 1 HP-735 CPU		&	& 57	& 175	& 368	& 263	\\
+	& 2 HP-735 CPU		& 12	& 29.5	& 95.3	& 190	& 136	\\
+	& 3 HP-735 CPU		& 9.9	& 23.3	& 76.3	& 145	& 100	\\
+	& 4 HP-735 CPU		& 8.5	& 18.4	& 55.6	& 115	& 78.7	\\
+	& 5 HP-735 CPU		& 7.8	& 16.2	& 45.7	& 99.0	& 68.7	\\
+	& 6 HP-735 CPU		& 7.3	& 14.6	& 41.4	& 88.0	& 61.3	\\
+\dline
+\end{tabular}
+}
+\caption{Time in seconds for each test. (*) indicates not enough memory. 
+(x) indicates manual shuffling.
+Please note that the Samba is our local parallel computer.}
+\label{tab:benchtime}
+\end{table}
+

@@ -1,0 +1,231 @@
+\newcommand{\abs}[1]{\mid \! {#1} \! \mid}
+
+The purpose of this section is to discuss the parallelisation of the 
+principle MD algorithm and not to describe the algorithms that are in 
+practical use for molecular systems with their complex variety of atoms 
+and terms in the force field descriptions. We shall therefore consider 
+as an example a simple system consisting only of a single type of atoms 
+with a simple form of the interaction potential. The emphasis will be 
+on the special problems that arise when the algorithm is implemented on 
+a parallel computer. 
+
+The simple model problem already contains the bottleneck of all MD 
+simulations: the computationally intensive evaluation of the 
+{\em nonbonded} forces between pairs of atoms, based on the distance 
+between particles. Complex molecular systems will in addition 
+involve many different kinds of {\em bonded} forces between designated 
+atoms. Such interactions add to the complexity of the algorithm but do 
+not modify the basic considerations concerning parallelization.
+
+
+\subsection{Methods of parallelisation}
+There are a number of methods to parallelise the MD algorithm, each of
+them with their own advantages and disadvantages. The method to 
+choose depends on the hardware and compilers available.
+We list them here:
+\begin{enumerate}
+\item[1]	{\em Message Passing.}\\
+		In this method, which is more or less the traditional
+		way of parallel programming, all the parallelism is
+		explicitly programmed by the user. The disadvantage
+		is that it takes extra code and effort, the advantage
+		is that the programmer keeps full control over the data
+		flow and can do optimisations a compiler could not come 
+		up with. 
+
+		The implementation is typically done by calling a set of 
+		library routines to send and receive data to and from 
+		other processors. Almost all hardware vendors support 
+		this way of
+		parallellism in their C and Fortran compilers.
+		
+\item[2]	{\em Data Parallel.}\\
+		This method lets the user define arrays on which to
+		operate in parallel. Programming this way is much
+		like vectorising: recurrence is not parallelised
+		(eg. {\tt for(i=1; (i<MAX); i++) a[i] = a[i-1] + 1;}
+		does not vectorise and not parallelise, because for
+		every i the result from the previous step is needed).
+
+		The advantage of data parallellism is that it is
+		easier for the user; the compiler takes care of the
+		parallellism. The disadvantage is that it is supported
+		by a small (though growing) number of hardware vendors,
+		and that it is much harder to maintain a program that has to
+		run on both parallel and sequential machines, because
+		the only standard language that supports it is Fortran-90
+		which is not available on many platforms.
+\end{enumerate}
+Both methods allow for the MD algorithm to be implemented without much
+trouble. Message passing MD algorithms have been published
+since the mid 80's (\cite{Fincham87}, \cite{Raine89}) 
+and development is still continuing. 
+Data parallel programming is newer,
+but starting from a well vectorised program it is not hard to do.
+
+Our implementation of MD is a message passing one, the reason for which
+is partly historical: the project to develop a parallel MD progam started
+when Fortran-90 was still in the making, and no compilers were
+expected to be available. 
+At current, we still believe that message passing is the way
+to go, after having done some experiments with data parallel programming on a
+Connection Machine (CM-5), because of portability to other hardware,
+the poor performance of the code produced by the compilers 
+and because this way of programming
+has the same drawback as vectorisation: the part of the program that is
+not vectorised or parallellised determines the runtime of the program
+(Amdahl's law).
+
+The approach we took to parallellism was a minimalist one: use as little
+non-standard elements in the software as possible, and use the
+simplest processor topology that does the job. We therefore 
+decided to use a standard language (Ansi-C) with as little non-standard
+routines as possible. We only use 5 communication routines that are
+non-standard. It is therefore very easy to port our code to other machines.
+
+For an $O(N^2)$ problem like MD, one of the best schemes for the 
+interprocessor connections is a ring, so our software demands that
+a ring is present in the interprocessor connections. A ring can 
+almost always be mapped onto another network like a hypercube, a bus
+interface (ethernet) or a tree (CM-5). Some hardware vendors
+have very luxurious connection schemes that connect every processor
+to every other processor, but we do not really need it and so do not use
+it even though it might come in handy at times.
+
+When using a message passing scheme one has to divide the particles 
+over processors, which can be done in two ways:
+\begin{itemize}
+\item	{\em Space Decomposition.}\\
+	An element of space is allocated to each processor, when dividing
+	a cubic box with edge $b$ over $P$ processors this can be done 
+	by giving
+	each processor a slab of length $b/P$. This method 
+	has the advantage
+	that each processor has about the same number of interactions
+	to calculate (at least when the simulated system has a homogeneous
+	density, like a liquid or a gas). The disadvantage is that a lot of
+	bookkeeping is necessary for particles that move over processor
+	boundaries. When using more complex systems like macromolecules there
+	are also 3- and 4-atom interactions that would 
+	complicate the bookkeeping so much that this method is not used
+	in our program.
+\item	{\em Particle Decomposition.}\\
+	Every processor is allocated a number of particles. When
+	dividing $N$ particles over $P$ processors each processor will
+	get $N/P$ particles. The implementation of this method
+	is described in the next section.
+\end{itemize}
+
+\subsection{MD on a ring of processors}
+When a neighbourlist is not used the MD problem is in principle an $O(N^2)$ 
+problem as each particle can interact
+with every other. This can be simplified using Newtons third law
+\beq
+F_{ij}	~=~	-F_{ji}
+\label{Eq:Newt3}
+\eeq
+This implies that there is half a matrix of interactions (without diagonal, 
+a particle does not interact with itself) to consider 
+(Figure~\ref{Fig:int_mat}).
+\begin {figure}[ht]
+\centerline{\psfig {figure=int_mat.eps,width=10cm}}
+\caption {The interaction matrix (left) and the same using action=-reaction (right).}
+\label{Fig:int_mat}
+\end {figure}
+When we reflect the upper right triangle of interactions to the lower left
+triangle of the matrix, we still cover all possible interactions, but now
+every row in the matrix has almost
+the same number of points or possible interactions.
+We can now assign a (preferrably equal) number of rows to each processor
+to compute the forces and at the same time a number of particles to
+do the update on, the {\em home} particles. The number of interactions
+per particle is dependent on the {\em total number} $N$ of particles
+(see Figure~\ref{Fig:decomp}) and on the {\em particle number} $i$.
+The exact formulae are given in Table~\ref{Tab:decomp}
+\begin{table}[H]
+\caption{The number of $j$ particles per $i$ particle is a function of the total number of particles $N$ and particle number $i$. Note that the / operator implies integer division, ie. with truncation.}
+\label{Tab:decomp}
+\centerline{
+\begin{tabular}{l|c|c|c|c}
+\dline
+	   & i mod 2 = 0 & i mod 2 = 0 	& i mod 2 = 1	& i mod 2 = 1	\\
+	   & i $<$ N/2& i $\ge$ N/2 	& i $<$ N/2	& i $\ge$ N/2 	\\
+\hline
+N mod 2 = 1 & N/2	& N/2		& N/2		& N/2		\\
+N mod 4 = 2 & N/2	& N/2 		& N/2 - 1	& N/2 - 1	\\
+N mod 4 = 0 & N/2	& N/2 - 1	& N/2 - 1	& N/2 		\\
+\dline
+\end{tabular}
+}
+\end{table}
+
+\begin {figure}[ht]
+\centerline{\psfig {figure=decomp.eps,width=\linewidth,angle=270}}
+\caption {The number of $j$-particles an $i$-particle interacts with depends on the {\em total} number of particles and on the {\em particle number}.}
+\label{Fig:decomp}
+\end {figure}
+
+A flow chart of the algorithm is given in Figure~\ref{Fig:mdpar}.
+\begin {figure}[ht]
+\centerline{\psfig {figure=mdpar.eps,width=6cm}}
+\caption {The (Parallel) MD algorithm. If the steps marked * are left out we have the sequential algorithm again.}
+\label{Fig:mdpar}
+\end {figure}
+It is the same as the sequential algorithm, except for two communication
+steps. After the particles have been reset in the box, each processor
+sends its coordinates left and then starts computation of the forces.
+After this step each processor holds the {\em partial forces} for the 
+available particles, eg. processor 0 holds forces acting on home particles
+from processor 0, 1, 2 and 3. These forces must be accumulated and sent back
+(right) to the home processor. Finally the update of the velocity and 
+coordinates is done on the home processor. 
+
+The {\tt communicate\_r} routine is given below in the full C-code:
+\begin{footnotesize}
+\begin{verbatim}
+void communicate_r(int nprocs,int pid,rvec vecs[],int start[],int homenr[])
+/* 
+ * nprocs = number of processors
+ * pid    = processor id (0..nprocs-1)
+ * vecs   = vectors
+ * start  = starting index in vecs for each processor
+ * homenr = number of home particles for each processor
+ */
+{
+  int i;        /* processor counter */
+  int shift;    /* the amount of processors to communicate with */
+  int cur;      /* current processor to send data from */
+  int next;     /* next processor on a ring (using modulo) */
+
+  cur   = pid;
+  shift = nprocs/2;
+
+  for (i=0; (i<shift); i++) {
+    next=(cur+1) % nprocs;	
+    send   (left,  vecs[start[cur]],  homenr[cur]);
+    receive(right, vecs[start[next]], homenr[next]);
+    cur=next;
+  }
+}
+\end{verbatim}
+
+\end{footnotesize}
+
+The data flow around the ring is visualised in Figure~\ref{Fig:ring}. 
+Note that because of the ring topology each processor automatically 
+gets the proper particles to interact with.
+\begin {figure}[ht]
+\centerline{\psfig {figure=ring.eps,width=6cm}}
+\caption {Data flow in a ring of processors.}
+\label{Fig:ring}
+\end {figure}
+
+%\section {Shake}
+
+%\begin {figure}[H]
+%\centerline{\psfig {figure=shake.eps,height=15cm,width=8cm}}
+%\caption {The Parallel Shake algorithm.}
+%\label{fig:pshake}
+%\end {figure}
+
+

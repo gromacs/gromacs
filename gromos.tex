@@ -1,0 +1,44 @@
+\chapter{Interfacing with other software.}
+\section{GROMOS}
+Some of the files that are used by the GROMOS87~\cite{biomos} software
+package can be read by {\gromacs} software. Actually, we have adapted
+to GROMOS programs, \myindex{PROGMT} and \myindex{PRORMT} so that they
+read GROMOS files, and write out {\gromacs} files. The programs were
+renamed to avoid confusion, and they will be described below.
+It should be stressed here, that these programs are supplied to
+facilitate conversion, but no guarantee is given that the
+programs are 100\% correct.
+
+\subsection{stripifp}
+Reads an interaction-function-parameter file usually named
+\myindex{IFP37C4.DAT} from tape11
+and writes out {\gromacs} forcefield files:\\
+\myindex{nonbond.itp}: contains atomtypes and lennard-jones parameters\\
+\myindex{bonded.itp}: contains bonded force parameters.
+
+These files have the same format and function as the standard {\gromacs}
+force field files: \myindex{ffgmxnb.itp} and \myindex{ffgmxbon.itp}.
+
+\subsection{striprt}
+Reads an residue topology building block file usually named
+\myindex{RT37C4.DAT} from tape12
+and writes two {\gromacs} database files:\\
+\myindex{residue.rtp}: contains residue building blocks that can be used to build proteins etc.\\
+\myindex{atomtype.atp}: contains the names of the different atomtypes used in the force field.
+
+A consistent force field can be created by renaming all the four files
+nonbond.itp, bonded.itp, residue.rtp and atomtype.atp, to have the same
+prefix, e.g.:
+myffnb.itp, myffbon.itp, myff.rtp and myff.atp.
+
+For a (somewhat more) complete description of the force field files please
+refer to chapter~\ref{ch:ff}.
+
+\subsection{rmt2top}
+Reads a GROMOS87 formatted topology file from stdin and writes out
+the solute part of the topology to {\tt rmt2top.top}. Typical use
+would be: 
+\type{rmt2top < topol.fmt > log}
+This would print a lot of info to the {\tt log} file and create your
+new {\gromacs} topology {\tt rmt2top.top}.
+

@@ -1,0 +1,177 @@
+\chapter{Technical Details.}
+\label{ch:install}
+\section{Installation.}
+The {\gromacs} code is distributed in SOURCE form by our WWW server at\\
+{\bf http://rugmd0.chem.rug.nl/{\TILDE}gmx}\\
+On this server you will find all the information you need to 
+\myindex{install}
+the software, as well as the \myindex{license form} that you have to submit
+before you are allowed to download the code. When you have filled in this
+license form, a username and password will be sent to you by e-mail
+with which you can download the files. The e-mail address you specify
+on your license sheet will also be used to send you information on
+updates, bug-fixes etc.
+
+For \myindex{commercial use} of the software, please contact us directly:
+{\tt gromacs@chem.rug.nl}
+
+\section{Porting gromacs.}
+The {\gromacs} system is designed with portability as one major design
+goal. However there are a number of things we assume to be present on
+the system {\gromacs} is being ported on. We assume the following
+features:
+
+\begin{enumerate}
+\item 	the UNIX operating system (BSD 4.x or SYSTEM V rev.3 or higher) 
+	or UNIX-like libraries
+\item 	an ANSI C compiler for the MD stuff, tools and most of the analysis
+\item	a C++ compiler for some of the analysis programs
+\item	a Fortran-77 compiler or Fortran-90 compiler
+	for optimized innerloop routines on some computers
+\item 	If you want to use the graphics, the X-window system version 
+	11 Release 4 or higher and the X-lib graphics libraries
+\item	SGI GL libraries if you want the GL version of the trajectory
+	viewer
+\end{enumerate}
+
+These are the requirements of a single processor system. If you want
+to compile Gromacs on a multi processor environment there is another
+requirement:
+
+\begin{enumerate}
+\item Message-passing architecture
+\item Ring structure.
+\end{enumerate}
+
+One can understand that a message passing architecture also can be
+mapped onto a shared memory machine. This implementation is left to
+the reader as an exercise in parallel programming. Also the ring
+structure can be mapped onto eg. a hypercube.
+
+\subsection{Multi-processor Porting}
+
+In the case you want to run the {\gromacs} software on a
+multi-processor machine, you have two options.
+\begin{enumerate}
+\item	Install MPI or PVM. The {\gromacs} WWW page has some pointers
+	to relevant documents.
+\item	Write communication routines yourself. 
+\end{enumerate}
+
+It may be clear that you will hardly ever need to write the routines
+yourself, but if you can't avoid it, here are some clues.
+The interface between these routines and the
+rest of the gromacs system is described in the file {\tt
+\$GMXHOME/src/include/network.h} We will give a short description of the
+different routines below.
+
+{\bf extern void gmx\_tx(int pid,void *buf,int bufsize);}\\ 
+
+This routine, when called with the destination processor number, a
+pointer to a (byte oriented) transfer buffer, and the size of the
+buffer will send the buffer to the indicated processor (in our case
+always the neigbouring processor). The routine does {\bf not} wait
+until the transfer is finished.
+
+\smallskip
+
+{\bf extern void gmx\_tx\_wait(int pid);}\\
+This routine waits until the previous, or the ongoing transmission is finished.
+
+\smallskip
+
+
+{\bf extern void gmx\_txs(int pid,void *buf,int bufsize);}\\
+This routine implements a synchonous send by claaing the async routine and then
+the wait. It might come in handy to code this differently.
+
+\smallskip
+
+{\bf extern void gmx\_rx(int pid,void *buf,int bufsize);}\\
+{\bf extern void gmx\_rx\_wait(int pid);}\\
+{\bf extern void gmx\_rxs(int pid,void *buf,int bufsize);}\\
+The very same routines for receiving a buffer and waiting untill the reception is finished.
+
+\smallskip
+
+{\bf extern void gmx\_init(int pid,int nprocs);}\\
+This routine initializes the different devices needed to do the communication. In general it sets up the communication hardware (if it is accessible) or does an initalize call to the lower level communication subsystem.
+
+\smallskip
+
+{\bf extern void gmx\_stat(FILE *fp,char *msg);}\\
+With this routine we can diagnose the ongoing communication. In the current implementation it prints the various contents of the hardware communication  registers of the (\intel) multiprocessor boards to a file.
+
+
+\section{Environment Variables}
+{\gromacs} programs may be influenced by the use of \myindex{environment} 
+variables. First of all, the variables set in the \myindex{GMXRC} file
+are essential for running and compiling {\gromacs}. Other variables are:
+\begin{enumerate}
+\item	\myindex{DUMP\_NL}, dump \myindex{neighborlist}. 
+	If set to -1 the {\em number of j-particles} per i-particle are printed
+	in the log file, if set to a positive number the {\em entire}
+	neighborlist is printed in the log file (may be many megabytes).
+	Mainly for debugging purposes, but may allso be handy for
+	\myindex{porting} to other platforms.
+\item	\myindex{IAMCOOL}, when set prints \myindex{cool quotes}, otherwise
+	your {\gromacs} life will be dull and boring.
+\item	\myindex{WHERE}, when set print debugging info on line numbers.
+\item	\myindex{LOG\_BUFS}. The size of the buffer for file I/O. When set
+	to 0, all file I/O will be unbuffered and therefore very slow.
+	Mainly for debugging purposes.
+\end{enumerate}
+
+Some other environment variables are specific to one program, such as
+\myindex{TOTAL} for the \myindex{do\_shift} program, and
+\myindex{DSPP} for the \myindex{do\_dssp} program.
+
+\section{File types.}
+\label{sec:fileformats}
+This section lists the filetypes used by {\gromacs} along with a 
+short description.
+\input{files}
+
+\section{Data types}
+Here some of the data types will be described that are necessary for writing
+your own analysis programs.
+
+\subsection{Block structure}
+The block structure is a datatype that define {\em blocks} of items,
+for example molecules can be described as blocks of atom numbers.
+In Figure~\ref{fig:block} we have depicted the data structure graphically.
+\begin{figure}[ht]
+\centerline{\psfig{figure=plots/block.eps,width=10cm}}
+\caption{Block data structure. Block 4 points to items 7 through 12.}
+\label{fig:block}
+\end{figure}
+
+Here is, for completeness sake,
+the type declaration for the block structure.
+\begin{verbatim}
+/*
+ * Block data structure.
+ * This structure is used for charge groups, exclusions
+ * molecules and shake-blocks.
+ */
+typedef struct {
+  int multinr[MAXPROC];         /* The indices for the multiprocessor 
+                                 * version. For n=0, the blocks run from 0
+                                 * upto multinr[index[0]]. The blocks for 
+                                 * processor n (n>0) run from 
+                                 * index[multinr[n-1]] to index[multinr[n]].
+                                 */
+  int nr;                       /* The number of blocks                     */
+  atom_id *index;               /* Array of indices in a (dim: nr+1)        */
+  int nra;                      /* The number of atoms                      */
+  atom_id *a;                   /* Array of atom numbers in each group      */
+                                /* (dim: nra)                               */
+                                /* Block i (0<=i<nr) runs from              */
+                                /* index[i] to index[i+1]-1. There will     */
+                                /* allways be an extra entry in index       */
+                                /* to terminate the table                   */
+} t_block;
+\end{verbatim}
+
+
+

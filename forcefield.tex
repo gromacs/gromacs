@@ -1,0 +1,883 @@
+\chapter{The Gromacs force field}
+\label{ch:ff}
+A \normindex{force field} is built up from two distinct components:
+\begin{itemize}
+\item The set of equations (called the {\em \normindex{potential function}s}
+ used
+to generate the potential energies and their derivatives, the forces. 
+\item The parameters used in this set of equations
+\end{itemize}
+Within one set of equations various sets of parameters can be
+used. Care must be taken that the combination of equations and
+parameters form a consistent set. It is in general dangerous to make
+{\em ad hoc} changes in a subset of parameters, because the various
+contributions to the total force are usually interdependent.
+
+In {\gromacs} {\gmxver} the force field is based on 
+\normindex{GROMOS}-87~\cite{biomos},
+with a small modification concerning the interaction between water-oxygens
+and carbon atoms~\cite{Buuren93b,Mark94}, as well as 10 extra
+atomtypes~\cite{Jorgensen83,Buuren93a,Buuren93b,Mark94,Liu95}. 
+However, the user is free
+to make her own modifications (beware!).  This will be explained
+in details in chapter~\ref{ch:top}, which deals with the {\bf
+Topology}.\\ To accomodate the potential functions used in some
+popular force fields, {\gromacs} offers a choice of functions, both
+for non-bonded interaction and for dihedral interactions. They are
+described in the appropriate subsections.
+
+\section{Potentials}
+The potential functions can be subdivided into three parts
+\begin{enumerate}
+\item	{\em Non-bonded}: Lennard-Jones or Buckingham, and Coulomb or
+modified Coulomb. The non-bonded interactions are computed on the
+basis of a neighbour list (a list of non-bonded atoms within a certain
+radius), in which exclusions are already removed.  
+\item	{\em Bonded}: covalent bond-stretching, angle-bending,
+improper dihedrals, and proper dihedrals. These are computed on the
+basis of fixed lists. 
+\item	{\em Special}: position restraints and distance restraints,
+based on fixed lists. 
+\end{enumerate}
+
+\subsection{Non-bonded interactions}
+Non-bonded interactions in {\gromacs} are pair-additive and centro-symmetric:
+\beq
+V(\ve{r}_1,\ldots \ve{r}_N) = \sum_{i<j}V_{ij}(\ve{r}_{ij});
+\eeq
+\beq
+\ve{F}_i = -\sum_j \frac{dV_{ij}(r_{ij})}{dr_{ij}} \frac{\ve{r}_{ij}}{r_{ij}} = -\ve{F}_j
+\eeq
+The non-bonded interactions contain a \normindex{repulsion} term, 
+a \normindex{dispersion}
+term, and a Coulomb term. The repulsion and dispersion term are
+combined in either the Lennard-Jones (or 6-12 interaction), or the
+Buckinghgam (or exp-6 potential). In addition, (partially) charged atoms
+act through the Coulomb term. 
+
+\subsection{The Lennard-Jones interaction}
+\label{sec:lj}
+The \normindex{Lennard Jones} potential $V_{LJ}$ between two atoms equals
+\beq
+V_{LJ}(\rij) =	\frac{C_{ij}^{(12)}}{\rij^{12}} -
+			\frac{C_{ij}^{(6)}}{\rij^6}	
+\eeq
+The parameters $C^{(12)}_{ij}$ and $C^{(6)}_{ij}$  depend on pairs of
+{\em atomtypes}; consequently they are taken from a matric of
+LJ-parameters.
+\begin {figure}[ht]
+\centerline{\psfig {figure=plots/f_lj.eps,angle=270,width=8cm}}
+\caption {The Lennard-Jones interaction}
+\label{fig:lj}
+\end {figure}
+ 
+The force derived from this potential is:
+\beq
+\ve{F}_i(\rvij) = \left( 12~\frac{C_{ij}^{(12)}}{\rij^{12}} -
+				 6~\frac{C_{ij}^{(6)}}{\rij^6} \right) \rnorm 
+\eeq
+
+The LJ potential may also be written in the following form :
+\beq
+V_{LJ}(\rvij) = 4\epsilon_{ij}\left(\left(\frac{\sigma_{ij}} {\rij}\right)^{12}
+		- \left(\frac{\sigma_{ij}}{\rij}\right)^{6} \right)
+\label{eqn:sigeps}	
+\eeq
+
+In constructing the parameter matrix for the non-bonded LJ-parameters,
+two types of combination rules can be used within {\gromacs}: 
+\bea
+C_{ij}^{(6)}	&=& \left({C_{ii}^{(6)} * C_{jj}^{(6)}}\right)^{1/2}	\\
+C_{ij}^{(12)}	&=& \left({C_{ii}^{(12)} * C_{jj}^{(12)}}\right)^{1/2}
+\label{eqn:comb}
+\eea
+or, alternatively,
+
+\bea
+ \sigma_{ij}   &=& \frac{1}{ 2}(\sigma_{ii}+\sigma_{jj})	\\
+ \epsilon_{ij} &=& \left({\epsilon_{ii} \epsilon_{jj}}\right)^{1/2}
+\eea
+
+\subsection{Buckingham potential}
+The \normindex{Buckingham} 
+potential has a more flexible and realistic repulsion term
+than the Lennard Jones interaction, but is also more expensive to
+compute. The potential form is:
+\beq
+V_{bh}(\rij) = A_{ij} \exp(-B_{ij} \rij) -
+			\frac{C_{ij}}{\rij^6}
+\eeq
+\begin {figure}[ht]
+\centerline{\psfig {figure=plots/f_bham.eps,angle=270,width=8cm}}
+\caption {The Buckingham interaction}
+\label{fig:bham}
+\end {figure}
+
+the force derived from this is:
+\beq
+ \ve{F}_i(\rij) = \left[ -A_{ij}B_{ij}\rij exp(-B_{ij} \rij) -
+				 6\frac{C_{ij}}{\rij^6} \right] \rnorm
+\eeq
+
+\subsection{Coulomb interaction}
+\label{sec:coul}
+\newcommand{\epsr}{\varepsilon_r}
+\newcommand{\epsrf}{\varepsilon_{rf}}
+The \normindex{Coulomb} interaction between two charge particles is given by:
+\beq
+V_c(\rij) = f \frac{q_i q_j}{\epsr \rij}
+\eeq
+where $f = \frac{1}{4\pi \varepsilon_0} = 138.935\,485$ (see Chapter~\ref{ch:defunits})
+\begin {figure}[ht]
+\centerline{\psfig {figure=plots/vcrf.eps,width=8cm}}
+\caption{The Coulomb interaction (for particles with equal signed charge) with
+and without reaction field. In the latter case $\epsrf$ was 78, and $r_c$ was 0.9 nm. The dot-dashed line is the same as the dashed line, except for
+a constant.}
+\label{fig:coul}
+\end {figure}
+
+The force derived from this potential is:
+\beq
+\ve{F}_i(\rvij) = f \frac{q_i q_j}{\epsr\rij^2}\rnorm
+\eeq
+
+In {\gromacs} the  relative \normindex{dielectric constant} 
+\normindex{$\epsr$}
+may be set in the in the input for {\tt grompp}. 
+
+\subsection{Coulomb interaction with reaction field}
+\label{sec:coulrf}
+The coulomb interaction can be modified for homogeneous systems,
+by assuming a constant dielectric environment beyond the cut-off $r_c$ with a
+dielectric constant of {$\epsrf$}.
+The interaction then reads:
+\beq
+V_{crf}	~=~	f \frac{q_i q_j}{\rij}\left[1+\frac{\epsrf-1}{2\epsrf+1}\frac{\rij^3}{r_c^3}\right] - f\frac{q_i q_j}{r_c}\frac{3\epsrf}{2\epsrf+1}
+\eeq
+in which the constant expression on the right makes the potential
+zero at the cut-off $r_c$. We can rewrite this for simplicity as
+\beq
+V_{crf}	~=~	f q_i q_j\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]
+\eeq
+with
+\bea
+k_{rf}	&=&	\frac{1}{r_c^3}\,\frac{\epsrf-1}{(2\epsrf+1)}	\\
+\label{eqn:krf}
+c_{rf}	&=&	\frac{1}{r_c}+k_{rf}\,r_c^2 ~=~ \frac{1}{r_c}\,\frac{3\epsrf}{(2\epsrf+1)}
+\label{eqn:crf}
+\eea
+for large $\epsrf$ the $k_{rf}$ goes to 0.5~$r_c^{-3}$,
+while for $\epsrf$ = 1 the correction vanishes.
+This makes it possible to use
+the same expression with and without reaction field, albeit at some
+computational cost. 
+In figure~\ref{fig:coul}
+the modified interaction is plotted, and it is clear that the derivative 
+with respect to $\rij$ (= -force) goes to zero at the cut-off distance.
+The force derived from this potential reads:
+\beq
+\ve{F}_i(\rvij) = f q_i q_j\left[\frac{1}{\rij^2} - 2 k_{rf}\rij\right]\rnorm
+\eeq
+Tironi {\etal} have introduced a \myindex{generalized reaction field} in which
+the dielectric continuum beyond the cut-off $r_c$ also has an ionic strength
+$I$~\cite{Tironi95}. In this case we can rewrite the constants $k_{rf}$ and 
+$c_{rf}$ using the inverse Debye screening length $\kappa$:
+\bea
+\kappa	&=&	\frac{2 I \,F^2}{\varepsilon_0 \epsrf RT}=\frac{F^2}{\varepsilon_0 \epsrf RT}\sum_{i=1}^{K} c_i z_i	\\
+k_{rf}	&=&	\frac{1}{r_c^3}\,\frac{(\epsrf-1)(1+\kappa r_c) + \epsrf(\kappa r_c)^2}{(2\epsrf+1)(1+\kappa r_c) + \epsrf(\kappa r_c)^2}	\\
+\label{eqn:kgrf}
+c_{rf}	&=&	\frac{1}{r_c}\,\frac{3\epsrf(1+\kappa r_c)+2\epsrf(\kappa r_c)^2}{(2\epsrf+1)(1+\kappa r_c) + \epsrf(\kappa r_c)^2}
+\label{eqn:cgrf}
+\eea
+where $F$ is Faraday's constant, $R$ is the ideal gas constant, $T$ the
+absolute temperature, $c_i$ the molar concentration for
+species $i$ and $z_i$ the charge number of species $i$ where we have $K$
+different species. In the limit of zero ionic strength ($\kappa$ = 0)
+eqns.~\ref{eqn:kgrf} and ~\ref{eqn:cgrf} reduce to the simple forms
+of eqns.~\ref{eqn:krf} and ~\ref{eqn:crf} respectively.
+
+\subsection{Modified Coulomb interaction}
+{\em Although it appears to be running, the \normindex{shift function} is
+{\tt not} supported in {\gromacs} {\gmxver}}
+
+In the {\gromacs} force field the coulomb force can be modified by
+a shift function. The purpose of this is to replace the truncated
+forces by forces that are continuous and have continuous derivatives
+at the \normindex{cut-off} radius. With such forces the time-step integration
+produces much smaller errors and there are no such complications as
+creating charges from dipoles by the truncation procedure. In fact, by
+using shifted forces there is no need for charge groups in the
+construction of neighbour lists. However, the shift function produces
+a considerable modification of the Coulomb potential. Unless the
+'missing' long-range potential is properly calculated and added (later
+version of {\gromacs}!), the effect of such modifications must be
+carefully evaluated. 
+ 
+There is {\em no} fundamental difference between a switch function
+(that multiplies the potential with a function) and a shift function
+(the latter adds a function to the force or potential). The switch
+function is a special case of the shift function, which we apply to
+the {\em force function} $F(r)$, related to the electrostatic force
+acting on particle $i$ by particle $j$ as
+\beq
+\ve{F}_i = f F(r_{ij}) q_i q_j \frac{\ve{r}_{ij}}{r_{ij}}
+\eeq
+For pure Coulombic interaction $F(r)=F_c(r)=\frac{1}{r^2}$. The shifted force $F_s(r)$ can generally be written as:
+\bea
+F_s(r)~=&~F_c(r)		& r < r_1	\\
+F_s(r)~=&~F_c(r)+S(r)	& r_1 \le r < r_c	\\
+F_s(r)~=&~0		& r_c \le r	
+\eea
+When $r_1=0$ this is a traditional shift function, otherwise it acts as a 
+switch function. The corresponding shifted coulomb potential then reads:
+\beq
+V_s(r_{ij}) = f \Phi_s (r_{ij}) q_i q_j
+\eeq
+where $\Phi(r)$ is the potential function 
+\beq
+\Phi_s(r) =  \int^{\infty}_r~F_s(x)\, dx
+\eeq
+
+The {\gromacs} shift function should be smooth at the boundaries, therefore
+the following boundary conditions are imposed on the shift function:
+\bea
+S(r_1)		&=&0		\\
+S'(r_1)		&=&0		\\
+S(r_c)		&=&-F_c(r_c)	\\
+S'(r_c)		&=&-F_c'(r_c)
+\eea
+A 3$^{rd}$ degree polynomial of the form
+\beq
+S(r) = A(r-r_1)^2 + B(r-r_1)^3
+\eeq
+fulfils these requirements. The constants A and B are given by the
+boundary condition at $r_c$: 
+\bea
+A	&~=~&	-\frac{5r_c~-~2r_1} {r_c^3~(r_c-r_1)^2} \\
+B	&~=~&	\frac{4r_c~-~2r_1}{r_c^3~(r_c-r_1)^3}
+\eea
+Thus the total force function is
+\beq
+F_s(r) = \frac{1}{r^2} + A(r-r_1)^2 + B(r-r_1)^3
+\eeq
+and the potential function reads
+\beq
+\Phi(r) = \frac{1}{r} - \frac{A}{3} (r-r_1)^3 - \frac{B}{4} (r-r_1)^4 - C
+\eeq
+where 
+\beq
+C =  \frac{1}{r_c} - \frac{A}{3} (r_c-r_1)^3 - \frac{B}{4} (r_c-r_1)^4
+\eeq
+
+When $r_1$ = 0, the force function is
+\beq
+ F_s(r) = \frac{1}{r^2} - \frac{5 r^2}{r_c^4} + \frac{4 r^3}{r_c^5}
+\eeq
+identical to the {\em \normindex{parabolic force}} 
+function recommended to be used as a short-range function in 
+conjunction with a \normindex{Poisson solver} 
+for the long-range part~\cite{Berendsen93a}. The potential function is
+\beq
+\Phi(r) = \frac{1}{r} - \frac{5}{3r_c} + \frac{5r^3}{3r_c^4} - \frac{r^4}{r_c^5}
+\eeq
+\begin {figure}[ht]
+\centerline{\psfig {figure=plots/shiftf.eps,angle=270,width=10cm}}
+\caption {The Force, Shifted Force and Shift Function $S(r)$, using r$_1$ = 2 and r$_c$ = 4.}
+\label{fig:shift}
+\end {figure}
+
+
+\subsection{Bonded interactions}
+Bonded interactions are based on a fixed list of atoms. They are not
+exclusively pair interactions, but include 3- and 4-body interactions
+as well. There are {\em bond stretching} (2-body), {\em bond angle}
+(3-body), and {\em dihedral angle} (4-body) interactions. A special
+type of dihedral interaction (called {\em improper dihedral} is used
+to force atoms to remain in a plane or to prevent transition to a
+configuration of opposite chirality (a mirror image).  
+
+\subsection{Bond stretching}
+The \normindex{bond stretching} between two covalently bonded atoms $i$ and $j$ is represented by a harmonic potential
+\begin {figure}[ht]
+\centerline{\raisebox{-1.8cm}{\psfig{figure=plots/bstretch.eps,angle=270,width=5cm}}\psfig{figure=plots/f_bond.eps,angle=270,width=7cm}}
+\caption{Principle of the Bond stretch potential (left), and Bond Stretching Potential (right)}
+\label{fig:bstretch1}
+\end {figure}
+
+\beq
+V_b~(\rij) = \half k^b_{ij}(\rij-b_{ij})^2
+\eeq
+with the force
+\beq
+\ve{F}_i(\rvij)	= k^b_{ij}(\rij-b_{ij}) \rnorm
+\eeq
+
+\subsection{Bond angle vibration}
+The bond \normindex{angle vibration} between a triplet of atoms $i$ - $j$ - $k$
+is also represented by a harmonic potential on the angle $\theta_{ijk}$
+\begin {figure}[ht]
+\centerline{\raisebox{-1.5cm}{\psfig {figure=plots/angle.eps,angle=270,width=5cm}}\psfig {figure=plots/f_angle.eps,angle=270,width=7cm}}
+\caption {Principle of the angle vibration (left) and bond angle potential (right).}
+\label{fig:angle}
+\end {figure}
+
+\beq
+V_a(\theta_{ijk}) = \half k^{\theta}_{ijk}(\theta_{ijk}-\theta^0_{ijk})^2
+\eeq
+As the bond-angle vibration is represented by a harmonic potential the
+form is the same as the bond stretching (Figure~\ref{fig:bstretch1}).
+
+The force equations are given by the chain rule:
+\bea
+\Fvi	&~=~& -\frac{d V_a(\theta_{ijk})}{d \rvi}	\\
+\Fvk	&~=~& -\frac{d V_a(\theta_{ijk})}{d \rvk}	\\
+\Fvj	&~=~& -\Fvi-\Fvk
+\eea
+where 
+\beq
+ \theta_{ijk} = \arccos \frac{(\ve{r}_{ij} \cdot \ve{r}_{kj})}{r_{ij}r_{kj}}
+\eeq
+The numbering $i,j,k$ is in sequence of covalently bonded atoms, with $j$ denoting the middle atom (see figure~\ref{fig:angle}).
+
+%% new commands %%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\rvkj}{{\bf r}_{kj}}
+\newcommand{\rkj}{r_{kj}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Improper dihedrals}
+Improper Dihedrals are meant to keep \normindex{planar groups} planar (eg. 
+aromatic rings) or to prevent molecules from flipping over to their
+\normindex{mirror image}s, see Figure~\ref{Fig:imp}.
+\begin {figure}[ht]
+\centerline{\psfig{figure=plots/ring-imp.eps,angle=270,width=4cm}\hspace{1cm}
+\psfig{figure=plots/subst-im.eps,angle=270,width=3cm}\hspace{1cm}\psfig{figure=plots/tetra-im.eps,angle=270,width=3cm}}
+\caption[Improper dihedral types.]{Out of plane bending for rings (left), substituents of rings (middle), out of tetrahedral (right). The improper dihedral angle $\xi$ is defined as the angle between planes (i,j,k) and (j,k,l) in all cases.}
+\label{Fig:imp}
+\end {figure}
+\beq
+V_{id}(\xi_{ijkl}) = k_{\xi}(\xi_{ijkl}-\xi_0)^2
+\eeq
+This is also a harmonic potential, it is plotted in figure~\ref{fig:imps}.
+\begin {figure}[ht]
+\centerline{\psfig{figure=plots/f_imps.eps,angle=270,width=8cm}}
+\caption {Improper dihedral potential.}
+\label{fig:imps}
+\end {figure}
+
+\subsection{Proper dihedrals}
+For the normal \normindex{dihedral} interaction there is a choice of either the
+GROMOS periodic function or a function based on expansion in powers of
+$\cos \phi$ (the so-called Ryckaert-Bellemans potential). This choice
+has consequences for the inclusion of special interactions between the
+first and the fourth atom of the dihedral quadruple. With the periodic
+GROMOS potential a special 1-4 LJ-interaction must be included; with
+the Ryckaert-Bellemans potential the \normindex{1-4 interactions} 
+must be excluded from the non-bonded list.  
+
+\subsubsection{Proper dihedrals: periodic type}
+\normindex{Proper dihedral} angles are defined according to the IUPAC/IUB
+convention, where $\phi$ is the angle between the $ijk$ and the $jkl$
+planes, with {\bf zero} corresponding to the {\em cis} configuration
+($i$ and $l$ on the same side).
+\begin {figure}[H]
+\centerline{\raisebox{-1cm}{\psfig {figure=plots/dih.eps,angle=270,width=5cm}}\psfig {figure=plots/f_dih.eps,angle=270,width=7cm}}
+\caption {Principle of the proper dihedral (left, in {\em trans} form)
+and dihedral potential (right).} 
+\label{fig:pdihf}
+\end {figure}
+\beq
+V_d(\phi_{ijkl}) = k_{\phi}(1 + cos(n \phi - \phi_0))
+\eeq
+
+\subsubsection{Proper dihedrals: Ryckaert-Bellemans function}
+For alkanes, the following proper dihedral potential is often used
+(see fig~\ref{fig:rbdih})
+\beq
+V_{rb}(\phi_{ijkl}) = \sum_{n=0}^5 C_n( \cos(\psi ))^n,
+\eeq 
+where $\psi = \phi - 180^0$.  \\
+{\bf Note:} A conversion from one convention to another can be achieved by 
+multiplying every coefficient \( \displaystyle C_n \) 
+by \( \displaystyle (-1)^n \).
+
+The following constants for $C$ are given below:
+\begin{table}[H]
+\caption{Constants for Ryckaert-Bellemans potential (kJ mole$^{-1}$)}
+\vspace{2mm}
+\centerline{
+\begin{tabular}{|lr|lr|lr|}
+\hline
+$C_0$ 	&	9.28	&	$C_1$	&12.16	&	$C_2$	&-13.12	\\
+$C_3$	&	-3.06	&	$C_4$	&26.24	&	$C_5$	&-31.5	\\
+\hline
+\end{tabular}
+}
+\end{table}
+
+\begin {figure}[H]
+\centerline{\psfig {figure=plots/f_rbs.eps,angle=270,width=8cm}}
+\caption {Ryckaert-Bellemans dihedral potential}
+\label{fig:rbdih}
+\end {figure}
+({\bf Note:} The use of this potential implies exclusions of LJ-interactions
+between the first and the last atom of the dihedral, and $\psi$ is defined
+according to the 'polymer convention' ($\psi_{trans}=0$).)
+
+The RB dihedral function can also be used to include the \normindex{OPLS} 
+dihedral potential~\cite{Jorgensen88}. 
+The OPLS potential function is given as the first 
+four terms of a fourier series:
+\beq
+V_{rb} (\phi_{ijkl}) ~=~ V_0 + \frac{1}{2} (V_1(1+\cos(\psi)) + V_2(
+1-\cos(2\psi)) + V_3(1+\cos(3\psi))),
+\eeq
+with \( \displaystyle \psi=\phi \) (protein convention).
+Because of the equalities \( \cos(2\phi) = 2(\cos(\phi))^2 - 1 \) 
+and \( \cos(3\phi) = 4(\cos(\phi))^3 - 3\cos(\phi) \), 
+one can translate the OPLS parameters to 
+Ryckaert-Bellemans parameters as follows:
+\beq
+\displaystyle
+\begin{array}{rcl}
+\displaystyle C_0&=&V_0 + V_2 + \frac{1}{2} (V_1 + V_3)\\
+\displaystyle C_1&=&\frac{1}{2} (3V_3 - V_1)\\
+\displaystyle C_2&=&-V_2\\
+\displaystyle C_3&=&-2V_3\\
+\displaystyle C_4&=&0\\
+\displaystyle C_5&=&0
+\end{array}
+\eeq
+with OPLS parameters in protein convention and RB parameters in 
+polymer convention.\\
+\noindent{\bf Note:} Mind the conversion from {\em kcal mole$^{-1}$} for 
+OPLS and RB parameters in literature to {\em kJ mole$^{-1}$} in GROMACS.
+
+\subsection{Special interactions}
+Special potentials are used for imposing restraints on the motion of
+the system, either to avoid disastrous deviations, or to include
+knowledge from experimental data. In either case they are not really
+part of the force field and the reliability of the parameters is not
+important. The potential forms, as implemented in {\gromacs}, are
+mentioned just for the sake of completeness.
+
+\subsection{Position restraints}
+\label{sec:posre}
+These are used to restrain particles to fixed reference positions
+$\ve{R}_i$. They can be used during equilibration in order to avoid
+too drastic rearrangemenst of critical parts (e.g. to restrain motion
+in a protein that is subjected to large solvent forces when the
+solvent is not yet equilibrated). Another application is the
+restraining of particles in a shell around a region that is simulated
+in detail, while the shell is only approximated because it lacks
+proper interaction from missing particles outside the
+shell. Restraining will then maintain the integrity of the inner
+part. For spherical shells it is a wise procedure to make the force
+constant depend on the radius, increasing from zero at the inner
+boundary to a large value at the outer boundary. This application has
+not been implemented in {\gromacs} however.
+\newcommand{\unitv}[1]{\hat{\bf #1}}
+\newcommand{\halfje}[1]{\frac{#1}{2}}
+
+The following form is used: 
+\beq
+V_{pr}(\ve{r}_i) = \halfje{1}k_{pr}|\rvi-\ve{R}_i|^2
+\eeq
+The potential is plotted in Figure \ref{fig:posres}.
+\begin {figure}[H]
+\centerline{\psfig {figure=plots/f_pr.eps,angle=270,width=8cm}}
+\caption {Position restraint potential}
+\label{fig:posres}
+\end {figure}
+The potential form can be rewritten without loss of generality as:
+\beq
+V_{pr}(\ve{r}_i) = \halfje{1} \left[ k_{pr}^x (x_i-X_i)^2 ~\unitv{x} + k_{pr}^y (y_i-Y_i)^2 ~\unitv{y} + k_{pr}^z (z_i-Z_i)^2 ~\unitv{z}\right]
+\eeq
+
+Now the forces are:
+\bea
+F_i^x &=& -k_{pr}^x~(x_i - X_i)	\\
+F_i^y &=& -k_{pr}^y~(y_i - Y_i)	\\
+F_i^z &=& -k_{pr}^z~(z_i - Z_i)
+\eea
+Using three different force constants the position 
+restraints can be turned on or off
+in each spatial dimension; this means that atoms can be harmonically
+restrained to a plane or a line.
+\normindex{Position restraints} 
+are applied to a special fixed list of atoms. Such a
+list can be generated using the {\tt genpr} utility.
+
+\subsection{Distance restraints}
+\label{sec:disre}
+\normindex{Distance restraints} 
+add a penalty to the potential when the distance
+between specified pairs of atoms exceeds a threshold value. They are
+normally used to impose experimental restraints, as from \normindex{NOE}
+experiments in nuclear magnetic resonance (NMR), on the motion of the
+system. Thus MD can be used for \normindex{structure refinement}  using 
+\normindex{NMR} data. The
+potential form is quadratic between two specified distances and linear
+beyond the largest distance (see figure~\ref{fig:dist}).
+\bea
+V_{dr}(r_{ij})~=~&~0 \hspace{4cm}                  & r_{ij} < r_0         \\
+	       =~&~\half k_{dr}(r_{ij}-r_0)^2	           & r_0 \le r_{ij} < r_1 \\
+	       =~&~\half k_{dr}(r_1-r_0)(2r_{ij}-r_1-r_0) & r_{ij} \ge r_1
+\label{eqn:disre}
+\eea
+\begin {figure}[H]
+\centerline{\psfig {figure=plots/f_dr.eps,angle=270,width=8cm}}
+\caption {Distance Restraint potential}
+\label{fig:dist}
+\end {figure}
+The forces are
+\bea
+\ve{F}_i~=~&~0 \hspace{4cm}  & r_{ij} < r_0         \\
+  = ~&-~k_{dr}(r_{ij}-r_0)\frac{\ve{r}_{ij}}{r_{ij}} & r_0 \le r_{ij} < r_1 \\
+  = ~&-~k_{dr}(r_1-r_0)\frac{\ve{r}_{ij}}{r_{ij}}    & r_{ij} \ge r_1	
+\eea
+The above formulae have been improved by introducing the
+{\em time averaged} distance restraint~\cite{Torda89} where the distance
+$r_{ij}$ is replaced by a time average:
+\beq
+\bar{r}_{ij} = < r_{ij}^{-3} >^{-1/3}
+\label{eqn:rav}
+\eeq
+This way an atom can satisfy two incompatible distance restraints 
+{\em on average} by moving between two protons. 
+An example would be an amino-acid sidechain which is rotating around
+its $\chi$ dihedral angle, thereby coming close to various other groups.
+Such a mobile side chain may give rise to multiple NOEs. The use of
+time averaged restraints allows the sidechain to fulfill all
+experimental restraints.
+
+The computation of the time
+averaged distance in the {\tt mdrun} program is done in the following fashion:
+\bea
+\bar{r}_{ij}(0)^{-3} 	&=& r_{ij}(0)^{-3}	\\
+\bar{r}_{ij}(t)^{-3}	&=& \bar{r}_{ij}(t-\Delta t)^{-3}~\exp{\left(-\frac{\Delta t}{\tau}\right)} + r_{ij}(t)^{-3}\left[1-\exp{\left(-\frac{\Delta t}{\tau}\right)}\right]
+\label{eqn:ravdisre}
+\eea
+Sometimes it is unclear from experimental data which atom pair
+gives rise to a single NOE, in other occasions it can be assumed that
+more than one pair contributes due to the symmetry of the system, e.g. a
+methyl group with three protons. For such a group it is not possible 
+to distinguish between the protons, therefore they should all be taken into
+account when calculating the distance between this methyl group and another
+proton (or group of protons).
+Due to the physical nature of magnetic resonance, the intensity of the
+NOE signal is proportional to the distance between atoms to the power of -6.
+Thus, when combining atom pairs, 
+a fixed list of $N$ restraints may be taken together, 
+where the net ``distance'' is given by:
+\beq
+r_{N}(t) = \left [\sum_{n=1}^{N} \bar{r}_{n}(t)^{-6} \right]^{-1/6}
+\label{eqn:rsix}
+\eeq
+where we use eqn.\ref{eqn:rav} for the $\bar{r}_{n}$.
+
+As more pairs of protons contribute to the same NOE signal, the intensity
+will increase, and the summed ``distance'' will be shorter than any of
+its components due to the reciprocal summation. 
+It is also possible to use {\em ensemble averaging} using multiple
+(protein)  molecules. In this case the bounds should be lowered as in:
+\bea
+r_0	&~=~&	r_0 * M^{-1/6}	\\
+r_1	&~=~&	r_1 * M^{-1/6}
+\eea
+where $M$ is the number of molecules. The {\gromacs} preprocessor {\tt grompp}
+can do this automatically when the appropriate option is given.
+The resulting ``distance'' is 
+then used to calculate the scalar force according to:
+\bea
+\ve{F}_i~=~&~0 \hspace{4cm}  & r_{N} < r_0         \\
+  = ~&-~ k_{dr}(r_{N}-r_0)\frac{\ve{r}_{ij}}{r_{ij}} & r_0 \le r_{N} < r_1 \\
+  = ~&-~ k_{dr}(r_1-r_0)\frac{\ve{r}_{ij}}{r_{ij}}    & r_{N} \ge r_1	
+\eea
+where $i$ and $j$ denote the atoms  of all the 
+pairs that contribute to the NOE signal.
+
+\section{Free energy calculations}
+\label{sec:fep}
+\newcommand{\LAM}{\mu}
+\newcommand{\LL}{(1-\mu)}
+\newcommand{\dvdl}[1]{\frac{\partial #1}{\partial \LAM}}
+Free energy perturbation calculations can be performed in {\gromacs} using
+either the ``slow-growth'' method, or using umbrella sampling.
+This requires modification of the hamiltonian $H$, which can be derived
+using the partition function $Z$.
+If we write the Gibbs free energy $G$ using $Z$:
+\bea
+Z	&=&	\int \int \exp\left(-\beta H(p,q))\right) {\rm d}p {\rm d}q \\
+G	&=&	-k_B T \ln Z
+\eea
+where $\beta$=$1/(k_B T)$ with $k_B$ Boltzmann's constant 
+and $T$ the temperature.
+$p$ are the generalized momenta and $q$ are the generalized coordinates.
+We can split the Hamiltonian in the potential $V$ and kinetic $K$ parts:
+\bea
+H	&=&	V(q)	+ 	K(p)		\\
+K(p)	&=&	\sum_i^N \frac{p_i^2}{2 m_i}	
+\eea
+where $N$ is the number of particles in the system and $m_i$ are the masses
+of the particles.
+\beq
+G	~=~	-1/\beta \ln \left[\int \exp(-\beta V(q)) dq \int \exp(-\beta K(p)) dp  \right]
+\eeq
+or
+\beq
+G	~=~	\left< K(p) \right>	-1/\beta \ln 
+\eeq
+
+Here are the modified equations used to calculate the free energy
+
+
+\subsubsection{Harmonic potentials}
+The example given here is for the bond potential which is harmonic
+in {\gromacs}. However,  these equations apply to the angle potential
+and the improper dihedral potential as well.
+\bea
+V_b		&=&\half(\LL k_b^A + \LAM k_b^B) (b - \LL b_0^A - \LAM b_0^B)^2	\\
+\dvdl{V_b}	&=&\half(k_b^B-k_b^A)\cdot\nonumber \\
+		&&\left[b - \LL b_0^A + \LAM b_0^B)^2 + (b_0^A-b_0^B) (b - \LL b_0^A -\LAM b_0^B)\right]
+\eea
+
+\subsubsection{Proper dihedrals}
+For the proper dihedrals, the equations are somewhat more complicated:
+\bea
+V_d	&=&(\LL k_d^A + \LAM k_d^B) ( 1+ \cos(n_{\phi} \phi - (\LL \phi_0^A + \LAM \phi_0^B))	\\
+\dvdl{V_d}&=&(k_d^B-k_d^A) \nonumber\\
+	&& \biggl[ 1+ \cos(n_{\phi} \phi- [\LL \phi_0^A + \LAM \phi_0^B])-\nonumber\\
+	&&(\LL k_d^A + \LAM k_d^B) (\phi_0^A - \phi_0^B) 
+	\sin(n_{\phi}\phi - [\LL \phi_0^A + \LAM \phi_0^B]\biggr]
+\eea
+{\bf Note:} that the multiplicity $n_{\phi}$ can not be parametrized
+because the function should remain periodic on the interval $0..2\pi$.
+
+\subsubsection{Coulomb interaction}
+The \normindex{Coulomb} interaction between two particles 
+of which the charge varies with $\LAM$ is:
+\bea
+V_c &=& \frac{f}{\epsrf \rij}\left[(\LL q_i^A+\LAM q_i^B)\cdot(\LL q_j^A+\LAM q_i^B)\right]	\\
+\dvdl{V_c}&=& \frac{f}{\epsrf \rij}\left[(q_j^B-q_j^A)(\LL q_i^A+\LAM q_i^B)\,+\,
+			(q_i^B-q_i^A)(\LL q_j^A+\LAM q_j^B)\right]
+\eea
+where $f = \frac{1}{4\pi \varepsilon_0} = 138.935\,485$ (see Chapter~\ref{ch:defunits})
+
+\subsubsection{Coulomb interaction with Reaction Field}
+The coulomb interaction including a reaction field, between two particles 
+of which the charge varies with $\LAM$ is:
+\bea
+V_c 	&=& f\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]\nonumber\\
+	&~& \left[(\LL q_i^A+\LAM q_i^B)\cdot(\LL q_j^A+\LAM q_i^B)\right]	\\
+\dvdl{V_c}&=& f\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]\nonumber\\
+	&~&\left[(q_j^B-q_j^A)(\LL q_i^A+\LAM q_i^B)\,+\,
+			(q_i^B-q_i^A)(\LL q_j^A+\LAM q_j^B)\right]
+\eea
+{\bf Note} that the constants $k_{rf}$ and $c_{rf}$ are 
+defined using the dielectric 
+constant $\epsrf$ of the medium (see section~\ref{sec:coulrf}).
+
+\subsubsection{Lennard-Jones interaction}
+For the \normindex{Lennard Jones} interaction between two particles 
+of which the {\em atomtype} varies with $\LAM$ we can write:
+\bea
+V_{LJ} 	&=&	\frac{(\LL C_{12}^A + \LAM C_{12}^B)}{\rij^{12}} -
+		\frac{\LL C_6^A + \LAM C_6^B}{\rij^6}	\\
+\dvdl{V_{LJ}}&=&\frac{C_{12}^B - C_{12}^A}{\rij^{12}} -
+		\frac{C_6^B - C_6^A}{\rij^6}
+\eea
+It should be noted that it is also possible to express a pathway from
+state $A$ to state $B$ using $\sigma$ and $\epsilon$ (see \eqnref{sigeps}).
+It may seem to make sense  physically, to vary the forcefield parameters
+$\sigma$ and $\epsilon$ rather 
+than the derived parameters $C_{12}$ and $C_{6}$.
+However, the difference between the pathways in parameter space
+is not large, and the free energy itself
+does not depend on the pathway, therefore we use the simple formulation
+presented above.
+
+\subsubsection{Kinetic Energy}
+When the mass of a particle changes there is also a contribution of
+the kinetic energy to the free energy:
+\bea
+Ek	&=&	\half(\LL m^A + \LAM m^B)v^2	\\
+\dvdl{Ek}&=&	\half(m^B-m^A)v^2
+\eea
+
+\subsubsection{Contraints}
+\newcommand{\clam}{C_{\lambda}}
+The constraints are formally part of the hamiltonian, and therefore
+they give a contribution to the free energy. In {\gromacs} this can be
+calculated using the \normindex{LINCS} algorithm only.
+If we have a number of contraint equations $g_k$:
+\beq
+g_k	=	r_{k} - d_{k}
+\eeq
+where $\ve{r}_k$ is the distance vector between two particles and 
+$d_k$ is the contraint distance between the two particles we can write
+this using a $\LAM$ dependent distance as
+\beq
+g_k 	=	r_{k} - \left(\LL d_{k}^A + \LAM d_k^B\right)
+\eeq
+the contribution $\clam$ 
+to the hamiltonian using Lagrange multipliers $\lambda$:
+\bea
+\clam		&=&	\sum_k \lambda_k g_k	\\
+\dvdl{\clam}	&=&	\sum_k \lambda_k \left(d_k^B-d_k^A\right)
+\eea
+
+
+\section{Methods}
+\subsection{Exclusions and 1-4 Interactions.}
+Atoms within a molecule that are close by in the chain, 
+i.e. atoms that are covalently bonded, or linked by one respectively two
+atoms are so-called {\em first neighbours, second neighbours} and 
+{\em \normindex{third neighbours}}, (see Figure~\ref{fig:chain}). Since the
+interactions of atom {\bf i} with {\bf i+1} 
+\begin {figure}[ht]
+\centerline{\psfig {figure=plots/chain.eps,angle=270,width=8cm}}
+\caption{Atoms along an alkane chain}
+\label{fig:chain}
+\end {figure}
+and the interaction of atom {\bf i} with atom {\bf i+2} are mainly
+quantum mechanical, they can not be modeled by a Lennard-Jones potential.
+Instead it is assumed that these interactions are adequately modeled
+by a harmonic bond term or constraint ({\bf i,i+1}) and a harmonic angle term
+({\bf i,i+2}). The first and second neighbours (atoms {\bf i+1}and {\bf i+2}) 
+are therefore
+{\em excluded} from the Lennard-Jones \normindex{interaction list} 
+of atom {\bf i};
+atoms {\bf i+1} and {\bf i+2} are called {\em \normindex{exclusions}} of atom {\bf i}.
+
+For third neighbours the normal Lennard-Jones repulsion is sometimes
+still too strong, which means that when applied to a molecule the
+molecule would deform or break due to the internal strain. This is
+especially the case for Carbon-Carbon interactions in a {\em
+cis}-conformation (eg. {\em cis}-butane).  Therefore for some of these
+interactions the Lennard-Jones repulsion has been reduced in the
+Gromos force field, which is implemented by keeping a separate list of
+1-4 and normal Lennard-Jones parameters. In other force fields, such
+as OPLS~\cite{Jorgensen88}, the standard Lennard-Jones parameters are reduced
+by a factor of two, but in that case also the dispersion (r$^{-6}$)
+and the coulomb interaction are scaled.
+{\gromacs} can use either of these methods.
+
+\subsection{Cut-Offs and Charge Groups.}
+In principle the force calculation in MD is an $O(N^2)$ problem. 
+Therefore we apply a \normindex{cut-off} 
+for nonbonded force (NBF) calculations:
+only the particles within a certain distance of each other
+are interacting. This reduces the cost to $O(N)$ (typically
+$100N$ to $200N$) of the NBF. It also introduces an error,
+which is, in most cases, acceptable, except when applying the cut-off
+implies the creation of charges.
+
+Consider a water molecule interacting with another atom. When we would apply
+the cut-off on an atom-atom basis we might include the atom-Oxygen
+interaction (with a charge of -0.82) without the compensating charge
+of the Hydrogens and so induce a large dipole moment over the system.
+Therefore we have to keep groups of atoms with total charge
+0 together, the so-called {\em charge groups}.
+
+\section{Dummy atoms.}
+\label{sec:dummy}
+Dummy atoms can be used in {\gromacs} in a number of ways. 
+We write the position of the dummy particle \ve{r} as a function of
+the positions of other particles \ve{r}$_i$:
+$\ve{r}	=	f(\ve{r}_1..\ve{r}_n)$. The dummy, which may carry
+charge, or can be involved in other interactions can now be used
+in the force calculation. 
+The force acting on the dummy particle must be redistributed over the atoms
+in a consistent way. A good way to do this 
+can be found in ref.~\cite{Berendsen84b}.
+We can write the potential energy as
+\beq
+V = V(\ve{r},\ve{r}_1..\ve{r}_n) = V^*(\ve{r}_1..\ve{r}_n)
+\eeq
+The force on the particle $i$ is then
+\beq
+\ve{F}_i = -\frac{\partial V^*}{\partial \ve{r}_i} = -\frac{\partial V}{\partial \ve{r}_i} - \frac{\partial V}{\partial \ve{r}}\frac{\partial \ve{r}}{\partial \ve{r}_i} = \ve{F}_i^{direct} + \ve{F}_i^{distr}
+\eeq
+the first term of which is the normal force. 
+The second term is the force on particle $i$ due to the dummy particle, which
+can be conveniently rewritten in tensor notation:
+\newcommand{\mymac}[2]{\displaystyle\frac{\partial #1}{\partial #2_i}}
+\beq
+\ve{F}_i^{distr} = \left[\begin{array}{ccc}
+\mymac{x}{x} & \mymac{y}{x} & \mymac{z}{x}	\\[4mm]
+\mymac{x}{y} & \mymac{y}{y} & \mymac{z}{y}	\\[4mm]
+\mymac{x}{z} & \mymac{y}{z} & \mymac{z}{z}
+\end{array}\right]\ve{F}
+\eeq
+where \ve{F} is the force on the dummy particle. In this way the total
+force and the total torque are conserved~\cite{Berendsen84b}.
+
+There are three ways to construct dummies from surrounding atoms in {\gromacs}:
+\begin{enumerate}
+\item	As a linear combination of two atoms:
+\beq
+	\ve{r} ~=~ a \ve{r}_i + (1-a)\ve{r}_j
+\eeq
+	in this case the dummy is on the line connecting atoms $i$ and $j$.
+	The force on particles $i$ and $j$ due to the force on the dummy
+	can be computed as:
+\bea
+	\ve{F}_i &=&	a\ve{F}	\\
+	\ve{F}_j &=&	(1-a)\ve{F} 
+\eea
+
+\item	As a linear combination of three atoms:
+\beq
+	\ve{r} ~=~ a \ve{r}_i + b \ve{r}_j + (1-a-b) \ve{r}_k
+\eeq
+	in this case the dummy is always in the plain of the other three
+	particles.
+	The force on particles $i,j$ and $k$ due to the force on the dummy
+	can be computed as:
+\bea
+	\ve{F}_i &=&	a\ve{F}	\\
+	\ve{F}_j &=&	b\ve{F} \\
+	\ve{F}_k &=&	(1-a-b)\ve{F} 
+\eea
+
+\item	As a non-linear combination of three atoms:
+\beq
+	\ve{r} ~=~ \ve{r}_i + a (\ve{r}_{ij} ~+~ \ve{r}_{ik}) +
+		b (\ve{r}_{ij} ~\times~ \ve{r}_{ik})
+\eeq
+	this enables the construction of dummies out of the plain of the
+	other atoms.
+	The force on particles $i,j$ and $k$ due to the force on the dummy
+	can be computed as:
+
+\beq
+\ve{F}_j^{distr} = \left[\begin{array}{ccc}
+ a 		&  -b\,z_{ik}	& b\,y_{ik}	\\[4mm]
+ b\,z_{ik} 	&   a 		& -b\,x_{ik}	\\[4mm]
+-b\,y_{ik} 	&   b\,x_{ik} 	& a
+\end{array}\right]\ve{F}
+\eeq
+
+\beq
+\ve{F}_k^{distr} = \left[\begin{array}{ccc}
+ a 		&   b\,z_{ij}	& -b\,y_{ij}	\\[4mm]
+-b\,z_{ij} 	&   a 		& b\,x_{ij}	\\[4mm]
+ b\,y_{ij} 	&  -b\,x_{ij} 	& a
+\end{array}\right]\ve{F}
+\eeq
+
+\beq
+\ve{F}_i^{distr} = \ve{F} - \ve{F}_j^{distr} - \ve{F}_k^{distr}
+\eeq
+\end{enumerate}
+
+
+\section{Future Improvements.}
+In future versions of the force field there will be
+\begin{itemize}
+\item  	Inclusion of long-range electrostatic interactions.
+\item	A choice of force fields, including either Gromos, OPLS or
+        MM2/MM3 parameters. 
+\item	The ultimate force field including polarisability. If done
+        well, this may simplify many other terms in the force field. 
+\end{itemize}

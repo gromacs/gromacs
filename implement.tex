@@ -1,0 +1,89 @@
+\chapter{Some implementation details.}
+In this chapter we will present some implementation details. This is
+far from complete, but we deemed it necessary to clarify some things
+that would otherwise be hard to understand.
+\input{virial}
+\input{ns}
+
+\section{Optimizations}
+Here we describe some of the optimizations used in {\gromacs}, apart
+from parallellism. One of these, the implementation of the 
+1.0/sqrt(x) function is treated separately in section~\ref{sec:sqrt}.
+The most important other optimizations are described below.
+
+\subsection{Inner Loop for Water}
+In {\gromacs} a special inner loop that calculates nonbonded
+interactions for a water molecule with something else is 
+implemented. This loop assumes that the water model is like
+SPC~\cite{Berendsen81}, i.e.:
+\begin{enumerate}
+\item	The first atom is oxygen, the other two are hydrogens
+\item	The first atom has lennard-jones (Section~\ref{sec:lj}) and 
+	coulomb (Section~\ref{sec:coul}) interactions, the other
+	two only have coulomb.
+\end{enumerate}
+
+The loop also works for the SPC/E~\cite{Berendsen87} and 
+TIP3P~\cite{Jorgensen83} water models. No assumption is made about
+force field parameters, or charges.
+The gain of this implementation is that there are more floating point
+operations in a single loop, which implies that some compilers
+can schedule the code better. It turns out however, that even
+some of the most advanced compilers have problems with scheduling, 
+implying that manual tweaking is necessary to get optimum 
+\myindex{performance}.
+This may include common-subexpression elimination, or moving
+code around. 
+The loop is used when a \myindex{watertype} is selected in the 
+{\tt .mdp} file.
+
+\subsection{Shake for Water - SETTLE}
+\label{sec:settle}
+We have implemented the \myindex{SETTLE} algorithm~\cite{Miyamoto92} which is
+an analytical solution of \myindex{shake} specifically for water. 
+SETTLE is used when a watertype is selected in the {\tt .mdp} file.
+
+\subsection{Fortran Code}
+Unfortunately, \myindex{Fortran} compilers are still better than C-compilers;
+for most machines anyway. For some machines (e.g. SGI Power Challenge)
+the difference may be up to a factor of 3, in the case of vector
+computers this may be even worse. Therefore, some of the routines
+that take up a lot of computer time have been translated into Fortran.
+On most machine, calling a Fortran routine from C is not hard to do,
+but we did not rigorously test this. The defaults when compiling
+{\gromacs} is to not use Fortran loops, except for machines where we
+have tested it, but it may be turned on
+in your local {\tt Makefile.CPU}. When you have problems with linking,
+check your Fortran object files (using the UNIX {\tt nm} utility)
+to see what the name of the function is, and modify the code where the
+function is called. Please note, that C-compilers usually add an underscore
+before or after each function name. Also do not forget that C code,
+unlike Fortran, is case sensitive. When the Fortran function name in the
+object file is in uppercase, you probably need to put the
+call in uppercase as well. 
+
+Here is a list of the functions that have a Fortran equivalent:
+\begin{table}[h]
+\caption{List of C functions and their Fortran equivalent, plus the source files. The 8 refers to double precision version of the same routine. In C it is not necessary to use a special version of the code due to the ue of {\tt typedef}.}
+\centerline{
+\begin{tabularx}{\linewidth}{|ll|ll|X|}
+\dline
+C	&	Source		&	Fortran	& Source	& Purpose \\
+\hline
+c\_coul	&	inloopc.c	&	fcoul	& inloopf.f	& Coulomb interaction \\
+c\_ljc	&	inloopc.c	&	fljc	& inloopf.f	& Lennard-Jones and Coulomb interaction\\
+c\_coul	&	inloopc.c	&	fcoul8& inloopf.f	& Coulomb\\
+c\_ljc	&	inloopc.c	&	fljc8	& inloopf.f	& LJ+Coulomb\\
+c\_water&	inloopc.c	&	fwater& inloopf.f	& Water Loop\\
+\hline
+cshake	&	shakef.c	&	fshake	& fshake.f	& Shake\\
+cshake	&	shakef.c	&	fshake8	& fshake.f	& Shake\\
+csettle	&	csettle.c	&	fsettle	& fsettle.f	& Settle\\
+csettle	&	csettle.c	&	fsettle8& fsettle.f	& Settle\\
+\dline
+\end{tabularx}
+}
+\end{table}
+
+\input{sqrt}
+

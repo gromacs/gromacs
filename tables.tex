@@ -1,0 +1,61 @@
+\section{Tabulated functions}
+In some of the inner loops of {\gromacs} lookup tables are used 
+for computation of potential and forces. 
+The tables are interpolated using a cubic
+spline algorithm~\cite{numrec}. 
+There are separate tables for electrostatic, dispersion and repulsion
+interactions,
+but for the sake of caching performance these have been combined
+into a single array. 
+The cubic spline interpolation looks like this:
+\beq
+y(x)~=~\eta y_i + \epsilon y_{i+1} + \frac{h^2}{6}\left[(\eta^3-\eta)y_i^{''} + (\epsilon^3-\epsilon)y_{i+1}^{''}\right]
+\label{eqn:spline}
+\eeq
+where $\epsilon$ = 1-$\eta$, and $y_i$ and $y_i^{''}$ 
+are the tabulated values of a function $y(x)$ 
+and its second derivative respectively. Furthermore,
+\bea
+h	&=&	x_{i+1} - x_i	\\
+\epsilon&=&	(x - x_i)/h
+\eea
+so that $0 \le\epsilon < 1$. \eqnref{spline} can be rewritten as
+\beq
+y(x)~=~ y_i + \epsilon\left(y_{i+1}-y_i-\frac{h^2}{6}\left(2 y_i^{''}+y_{i+1}^{''}\right)\right) + \epsilon^2\left(\frac{h^2}{2}y_i^{''}\right) + \epsilon^3\frac{h^2}{6}\left(y_{i+1}^{''}-y_i^{''}\right)
+\eeq
+Note that the x-dependence is completely in $\epsilon$. This can abbreviated
+to
+\beq
+y(x)~=~ y_i + \epsilon F_i + \epsilon^2 G_i + \epsilon^3 H_i
+\eeq
+From this we can calculate the derivative in order to determine the forces:
+\beq
+\frac{{\rm d}y(x)}{{\rm d}x}~=~\frac{{\rm d}y(x)}{{\rm d}\epsilon}\frac{{\rm d}\epsilon}{{\rm d}x}~=~(F_i + 2\epsilon G_i + 3\epsilon^2 H_i)/h
+\eeq
+If we store in the table $y_i$, $F_i$, $G_i$ and $H_i$ we need 
+a table of length 4n. The number of points per nanometer should be on the
+order of 500 to 1000, for accurate representation (relative 
+error $<$ 10$^{-4}$ when n = 500 points/nm). The force routines get a 
+scaling factor $s$ as a parameter that is equal to the number of points per
+nm. (Note that $h$ is $s^{-1}$).
+
+The algorithm goes a little something like this:
+\begin{enumerate}
+\item	Calc distance vector (\ve{r}$_{ij}$) and distance r$_{ij}$
+\item	Multiply r$_{ij}$ by $s$ and truncate to an integer value $n_0$
+	to get a table index
+\item	Calculate fractional component ($\epsilon$ = $s$r$_{ij} - n_0$) 
+	and $\epsilon^2$ 
+\item	Do the interpolation to calc the potential $V$ and the the scalar force $f$
+\item	Calc the vector force \ve{F} by multiplying $f$ with \ve{r}$_{ij}$
+\end{enumerate}
+
+The tables are stored as y$_i$, F$_i$, G$_i$, H$_i$ in the order
+coulomb, dispersion, repulsion.
+In total there are 12 values in each table entry.
+Note that table lookup is significantly {\em slower} than computation
+of the most simple Lennard-Jones and Coulomb interaction. However, it
+is much faster than the shifted coulomb function used in
+conjunction with the PPPM method. Finally it is much easier to modify
+a table for the potential (and get a graphical representation of it)
+than to modify the inner loops of the MD program.

@@ -1,0 +1,44 @@
+#!/bin/csh
+setenv	MANTYPE	tex
+setenv	DOC	`pwd`
+setenv	TMP	/tmp/kutje
+setenv 	ONLINE	$DOC/online.tex
+
+cp ${DOC}/index.gmx ${DOC}/online/index.gmx
+
+sccs edit $ONLINE
+/bin/rm -f $ONLINE
+
+source allman.csh
+
+foreach i ( $ALLMAN )
+    
+cd online
+$i -h 
+
+if ( -f $i.tex ) then
+../bin/repfirst < $i.tex > $TMP
+mv $TMP $i.tex
+
+cat >> $ONLINE << Yoghurt
+\input{online/$i}
+Yoghurt
+
+endif
+
+cd ..
+
+end
+
+sort < $ONLINE > TMP
+mv TMP $ONLINE
+
+sccs delget $ONLINE << EOD
+No comment
+EOD
+
+cd $DOC
+
+sccs delta mktex << EOD
+No comment
+EOD

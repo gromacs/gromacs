@@ -1,0 +1,42 @@
+\begin{table}[p]
+\begin{tabularx}{\linewidth}{rlccX}
+\hline
+    Name &  Ext. & B/A &  Opt. & Description \\
+\hline
+  grompp &  .mdp &   A &    -f & grompp input file with MD parameters \\
+  genbox &  .gbp &   A &    -f & genbox input file with parameters etc. \\
+ genconf &  .gcp &   A &    -f & genconf input file with parameters etc. \\
+  genion &  .gip &   A &    -f & genion input file with parameters etc. \\
+ gendock &  .gdp &   A &    -f & gendock input file with parameters etc. \\
+   widom &  .wdp &   A &    -f & g\_widom input parameters. \\
+     gct &  .gct &   A &    -f & general coupling stuff \\
+    traj &  .trj &   B &       & Trajectory file \\
+    traj &  .asc &   A &       & Trajectory file in ascii converted by stat2asc \\
+  energy &  .ene &   B &       & Energy file \\
+    conf &  .gro &   A &    -c & Coordinate file in Gromos-87 format \\
+   eiwit &  .pdb &   A &    -f & Protein data bank file \\
+     run &  .log &   A &    -l & Log file from MD run \\
+   graph &  .xvg &   A &    -o & xvgr input file as produced by analysis tools \\
+   hello &  .out &   A &    -o & generic output file \\
+   index &  .ndx &   A &    -n & GROMACS indexfile \\
+   topol &  .top &   A &    -p & GROMACS topology file \\
+  topinc &  .itp &   A &       & Include file for GROMACS topology \\
+   topol &  .tpb &   B &    -s & Binary GROMACS topology \\
+   topol &  .rmt &   A &    -f & Gromos-87 formatted topology file \\
+     doc &  .tex &   A &    -o & LaTeX file, suitable for inclusion in article \\
+ residue &  .rtp &   A &       & Residue Type file used by pdb2gmx \\
+  atomtp &  .atp &   A &       & Atomtype file used by pdb2gmx \\
+   polar &  .hdb &   A &       & Hydrogen data base \\
+  nnnice &  .dat &   A &       & Generic data file \\
+    user &  .dlg &   A &       & Dialog Box data for ngmx \\
+   atoms &  .gld &   A &    -l & Grompp Load Description \\
+      ss &  .map &   A &       & File that maps matrix data to colors \\
+    plot &  .eps &   A &       & Encapsulated PostScript (tm) file \\
+      ss &  .mat &   A &       & Matrix Data file \\
+      ps &  .m2p &   A &       & Input file for mat2ps \\
+   radii &  .vdw &   A &       & Database containing Van der Waals radii \\
+\hline
+\end{tabularx}
+\caption{File formats. B=binary, A=ascii.}
+\label{Tab:form}
+\end{table}

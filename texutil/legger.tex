@@ -1,0 +1,69 @@
+%\voffset -1cm
+%\hoffset -2mm
+%
+% Settings for thesis
+%
+\setlength{\textheight}{170mm}
+\setlength{\textwidth}{50mm}
+\setlength{\parindent}{4mm}
+\setlength{\parskip}{0mm}
+\newcommand{\setnopi}{\setlength{\parindent}{0mm}}
+\newcommand{\setpi}{\setlength{\parindent}{4mm}}
+%\setlength{\topmargin}{10mm}
+\setlength{\headsep}{4mm}
+
+%\addtolength{\oddsidemargin}{-5mm}
+\addtolength{\evensidemargin}{-9mm}
+
+\setlength{\footskip}{10mm}
+
+\input{../texutil/simplemac}
+\input{../texutil/chem-mac}
+\input{../texutil/caption}
+%\input{../texutil/tabnotes}
+
+\newcommand{\thesis}{Structure and Dynamics of Peptides}
+\newcommand{\subthesis}{Theoretical Aspects of Protein Folding}
+
+\newcommand{\summary}[1]{ %\heartpar{#1}\newpage
+\centerline{\small
+\begin{tabularx}{\linewidth}{X} 
+\hline
+\T#1\B \\
+\hline 
+\end{tabularx}
+}
+\newpage
+}
+
+% Call with: \myref{Authors}{Journal}{Vol}{Pages}{Year}
+\newcommand{\myref}[5]{
+\centerline{
+\begin{tabularx}{\linewidth}{X} 
+{\em #1} \\
+{\bf #2} {#3}:{#4} {(#5)}
+\end{tabularx}
+}
+\vspace{20pt}
+}
+% Call with: \inpress{Authors}{Journal}
+\newcommand{\inpress}[2]{
+\centerline{
+\begin{tabularx}{\linewidth}{X} 
+{\em #1} \\
+{\bf #2} (in press)
+\end{tabularx}
+}
+\vspace{20pt}
+}
+\newcommand{\submitted}[2]{
+\centerline{
+\begin{tabularx}{\linewidth}{X} 
+{\em #1} \\
+{\bf #2} (submitted)
+\end{tabularx}
+}
+\vspace{20pt}
+}
+\newcommand{\gromacs}{{\sl GRO}\raisebox{0.5ex}{\underline{\sl macs}}~}
+\newcommand{\this}[1]{chapter~\ref{#1} of this thesis}

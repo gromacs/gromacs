@@ -1,0 +1,20 @@
+#!/bin/csh
+
+setenv YEARS "93 94 95"
+
+parsebib "Selected articles before 1993" mdgroup92
+foreach i ( $YEARS )
+   parsebib 19$i mdgroup$i
+end
+
+latex bibje
+foreach i ( 92 $YEARS )
+bibtex mdgroup$i
+end
+latex bibje 
+latex bibje
+dvips -o bibje.ps bibje
+
+foreach i ( 92 $YEARS )
+/bin/rm -f mdgroup$i.blg mdgroup$i.bbl mdgroup$i.aux mdgroup$i.tex
+end
