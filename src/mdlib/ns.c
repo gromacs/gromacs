@@ -83,21 +83,41 @@ static bool NOTEXCL_(t_excl e[],atom_id i,atom_id j)
  *
  ************************************************/
 
+static int NLI_INC = 1000;
 static int NLJ_INC = 16384;
+
+static void reallocate_nblist(t_nblist *nl)
+{
+  if (debug)
+    fprintf(debug,"reallocating neigborlist il_code=%d, maxnri=%d\n",
+	    nl->il_code,nl->maxnri); 
+  srenew(nl->iinr,   nl->maxnri+2);
+  srenew(nl->gid,    nl->maxnri+2);
+  srenew(nl->shift,  nl->maxnri+2);
+  srenew(nl->jindex, nl->maxnri+2);
+}
 
 static void init_nblist(t_nblist *nl,int homenr,int il_code)
 {
   nl->il_code = il_code;
-  nl->maxnri  = homenr*MAXSHIFT;
+  /* maxnri is influenced by the number of shifts (maximum is 8)
+   * and the number of energy groups.
+   * If it is not enough, nl memory will be reallocated during the run.
+   * 4 seems to be a reasonable factor, which only causes reallocation
+   * during runs with tiny and many energygroups.
+   */
+  nl->maxnri  = homenr*4;
   nl->maxnrj  = 0;
   nl->nri     = 0;
   nl->nrj     = 0;
-  snew(nl->iinr,   nl->maxnri+2);
-  snew(nl->gid,    nl->maxnri+2);
-  snew(nl->shift,  nl->maxnri+2);
-  snew(nl->jindex, nl->maxnri+2);
-  if (nl->maxnri > 0)
+  nl->iinr    = NULL;
+  nl->gid     = NULL;
+  nl->shift   = NULL;
+  nl->jindex  = NULL;
+  if (nl->maxnri > 0) {
+    reallocate_nblist(nl);
     nl->iinr[0] = -1;
+  }
 }
 
 static unsigned int nbf_index(bool bCoul,bool bRF,bool bBham,
@@ -233,12 +253,12 @@ static gmx_inline void new_i_nblist(t_nblist *nlist,
 	(nlist->iinr[nri] != -1)) {
       
       /* If so increase the counter */
-      if (nlist->nri < nlist->maxnri) {
-	nlist->nri++;
-	nri++;
-      } else
-	fatal_error(0,"Too many i-atoms for %s (i_atom = %d, maxnri = %d)",
-		    interaction_function[ftype].longname,i_atom,nlist->maxnri);
+      if (nlist->nri >= nlist->maxnri) {
+	nlist->maxnri += NLI_INC;
+	reallocate_nblist(nlist);
+      }
+      nlist->nri++;
+      nri++;
     }
     /* Set the number of neighbours and the atom number */
     nlist->jindex[nri+1] = nlist->jindex[nri];

@@ -27,8 +27,6 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
-#define MAXSHIFT 7
- 
 typedef struct {
   int     il_code;              /* Code that determines the innerloop   */
                                 /* corresponding to codes in nrnb.h     */
@@ -37,8 +35,8 @@ typedef struct {
   int     nrj,maxnrj;		/* Current/max number of j particles	*/
   int     *iinr;		/* The i-elements			*/
   int     *gid;                 /* Index in energy arrays               */
-  int     *shift;               /* Shift vector index (maxnri*MAXSHIFT) */
-  int     *jindex;              /* Index in jjnr (maxnri*MAXSHIFT)+1    */
+  int     *shift;               /* Shift vector index                   */
+  int     *jindex;              /* Index in jjnr                        */
   int     *jjnr;		/* The j-atom list      	        */
 } t_nblist;
 
