@@ -51,7 +51,8 @@ typedef struct {
 typedef struct {
   int  type;                    /* PDB record name                      */
   int  atomnr;                  /* PDB atom number                      */
-  char pdbresnr[12];            /* PDB res number                       */
+  char altloc;                  /* Alternate location indicator         */
+  char pdbresnr[6];             /* PDB res number                       */
   real occup;                   /* Occupancy                            */
   real bfac;                    /* B-factor                             */
   bool bAnisotropic;            /* (an)isotropic switch                 */
