@@ -461,7 +461,7 @@ void p_invsqrt2(char *left,char *tmp,char *right)
   sprintf(buf,"(half*%s*(three-((%s*lu)*lu)))",tmp,right);
 #ifdef DOUBLE
   p_state("y1",buf);
-  sprintf(buf,"y2=(half*y1*(three-((%s*y1)*y1)))",right);
+  sprintf(buf,"(half*y1*(three-((%s*y1)*y1)))",right);
   p_state(left,buf);
 #else
   p_state(left,buf);
