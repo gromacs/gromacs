@@ -588,7 +588,7 @@ C     Total force
       real        vijcoul,fijC,fijscal
       real        fjx,fjy,fjz
       real        tx,ty,tz
-      real        vctot,vnbtot
+      real        vctot
       real        qq,rsq
       real        r1,r1t,h_1,eps,VV,FF
       real        Y,F,G,epsH,eGeH,FeGeH
