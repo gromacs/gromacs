@@ -50,8 +50,7 @@ static char *SRCID_g_dipoles_c = "$Id$";
 #include "nrjac.h"
 
 #define MAXBIN 200 
-#define enm2Debye 48.0321
-#define e2d(x) enm2Debye*(x)
+#define e2d(x) ENM2DEBYE*(x)
 #define SPEED_OF_LIGHT  2.9979245800e+10
 #define EANG2CM  E_CHARGE*1.0e-10       /* e Angstrom to Coulomb meter */
 #define CM2D  SPEED_OF_LIGHT*1.0e+19    /* Coulomb meter to Debye */
@@ -206,7 +205,7 @@ void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec quad)
 void do_gkr(int ngrp,atom_id grpindex[],
 	    atom_id mindex[],atom_id ma[],rvec x[],rvec mu[],
 	    matrix box,int ngraph,real *graph,int *count,real rcut,
-	    bool bFirstAtom)
+	    int nAtom)
 {
   static rvec *xcm=NULL;
   int  gi,aj,j0,j1,i,j,k,index;
@@ -223,8 +222,8 @@ void do_gkr(int ngrp,atom_id grpindex[],
     gi = grpindex ? grpindex[i] : i;
     j0 = mindex[gi];
     
-    if (bFirstAtom)
-      copy_rvec(x[ma[j0]],xcm[i]);
+    if (nAtom >= 0)
+      copy_rvec(x[ma[j0+nAtom]],xcm[i]);
     else {
       j1 = mindex[gi+1];
       clear_rvec(xcm[i]);
@@ -310,7 +309,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 		   bool bMU,     char *mufn,
 		   int gnx,atom_id grpindex[],
 		   real mu_max,real mu,real epsilonRF,real temp,
-		   bool bFA)
+		   bool bFA,int skip)
 {
   FILE       *out,*outaver;
   static char *legoutf[] = { 
@@ -335,7 +334,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   matrix     box;
   bool       bCont;
   real       t,t0,t1,dt;
-  double     M_sqr_ave,M_ave_sqr,M_diff=0,epsilon;
+  double     M_diff=0,epsilon;
   double     mu_ave,mu_mol,M2_ave=0,M_ave2=0;
   rvec       quad_ave,quad_mol;
   ivec       iMu;
@@ -447,8 +446,6 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   
   snew(bin, MAXBIN);
   epsilon    = 0.0;
-  M_sqr_ave  = 0.0;
-  M_ave_sqr  = 0.0;
   M_XX=M_XX2 = 0.0;
   M_YY=M_YY2 = 0.0;
   M_ZZ=M_ZZ2 = 0.0;
@@ -497,7 +494,8 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 	  M_av2[m] += mu_t[m]*mu_t[m];  /* M^2 per frame */
 	}
       }
-    } else {
+    } 
+    else {
       /* Begin loop of all molecules in frame */
       for(i=0; (i<gnx); i++) {
 	int gi = grpindex ? grpindex[i] : i;
@@ -563,28 +561,25 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
     /* Write to file the total dipole moment of the box, and its components 
      * for this frame.
      */
-    fprintf(out,"%10g  %12.8e %12.8e %12.8e %12.8e\n",
-	    t, M_av[XX], M_av[YY], M_av[ZZ], norm(M_av));
-
-    /* Calculate the following for the running averages */
-    M_sqr_ave += iprod(M_av,M_av);
-    M_ave_sqr += M_av[XX]*M_av[XX]+M_av[YY]*M_av[YY]+M_av[ZZ]*M_av[ZZ];
+    if ((skip == 0) || ((teller % skip) == 0))
+      fprintf(out,"%10g  %12.8e %12.8e %12.8e %12.8e\n",
+	      t, M_av[XX], M_av[YY], M_av[ZZ], norm(M_av));
 
     M_XX      += M_av[XX];
-    M_XX2     += M_av[XX]*M_av[XX];
+    M_XX2     += M_av2[XX];
     M_YY      += M_av[YY];
-    M_YY2     += M_av[YY]*M_av[YY];
+    M_YY2     += M_av2[YY];
     M_ZZ      += M_av[ZZ];
-    M_ZZ2     += M_av[ZZ]*M_av[ZZ];
+    M_ZZ2     += M_av2[ZZ];
 
     /* Increment loop counter */
     teller++;
     
     /* Calculate for output the running averages */
-    M2_ave  = M_sqr_ave/teller;
+    M2_ave  = (M_XX2+M_YY2+M_ZZ2)/teller;
     
     /* Strange construction because teller*teller may go beyond INT_MAX */
-    M_ave2  = (M_ave_sqr/teller)/teller;
+    M_ave2  = (sqr(M_XX/teller)+sqr(M_YY/teller)+sqr(M_ZZ/teller));
     M_diff  = M2_ave - M_ave2;
 
     /* Compute volume from box in traj, else we use the one from above */
@@ -607,8 +602,9 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
      * the two. Here M is sum mu_i. Further write the finite system
      * Kirkwood G factor and epsilon.
      */
-    fprintf(outaver,"%10g  %12.8e %12.8e %12.8e %12.8e %12.8e\n",
-	    t, M2_ave, M_ave2, M_diff, Gk, epsilon);
+    if ((skip == 0) || ((teller % skip) == 0))
+      fprintf(outaver,"%10g  %12.8e %12.8e %12.8e %12.8e %12.8e\n",
+	      t, M2_ave, M_ave2, M_diff, Gk, epsilon);
 
     if (bMU)
       bCont = read_mu_from_enx(fmu,Vol,iMu,mu_t,&volume,&t,teller,nre); 
@@ -721,7 +717,8 @@ int main(int argc,char *argv[])
   };
   static real mu_max=5, mu=2.5;
   static real epsilonRF=0.0, temp=300;
-  static bool bAverCorr=FALSE,bFA=FALSE;
+  static bool bAverCorr=FALSE;
+  static int  skip=0,nFA=0;
   t_pargs pa[] = {
     { "-mu",       FALSE, etREAL, {&mu},
       "dipole of a single molecule (in Debye)" },
@@ -729,12 +726,14 @@ int main(int argc,char *argv[])
       "max dipole in Debye (for histrogram)" },
     { "-epsilonRF",    FALSE, etREAL, {&epsilonRF},
       "epsilon of the reaction field used during the simulation, needed for dieclectric constant calculation. WARNING: 0.0 means infinity (default)" },
+    { "-skip",    FALSE, etINT, {&skip},
+      "Skip steps in the output (but not in the computations)" },
     { "-temp",    FALSE, etREAL, {&temp},
       "average temperature of the simulation (needed for dielectric constant calculation)" },
     { "-avercorr", FALSE, etBOOL, {&bAverCorr},
       "calculate AC function of average dipole moment of the simulation box rather than average of AC function per molecule" },
-    { "-firstatom", FALSE, etBOOL, {&bFA},
-      "Use the first atom of a molecule (water ?) to calculate the distance between molecules rather than the center of geometry in the calculation of distance dependent Kirkwood factors" }
+    { "-gkratom", FALSE, etINT, {&nFA},
+      "Use the n-th atom of a molecule (water ?) to calculate the distance between molecules rather than the center of geometry (when -1) in the calculation of distance dependent Kirkwood factors" }
   };
   int          gnx;
   atom_id      *grpindex;
@@ -792,7 +791,7 @@ int main(int argc,char *argv[])
 	 bGkr,    opt2fn("-g",NFILE,fnm),
 	 bQuad,   opt2fn("-q",NFILE,fnm),
 	 bMU,     opt2fn("-enx",NFILE,fnm),
-	 gnx,grpindex,mu_max,mu,epsilonRF,temp,bFA);
+	 gnx,grpindex,mu_max,mu,epsilonRF,temp,nFA,skip);
   
   xvgr_file(opt2fn("-o",NFILE,fnm),"-autoscale xy -nxy");
   xvgr_file(opt2fn("-a",NFILE,fnm),"-autoscale xy -nxy");
