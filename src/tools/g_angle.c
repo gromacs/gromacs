@@ -250,9 +250,9 @@ int main(int argc,char *argv[])
 
   
   /* Determine the non-zero part of the distribution */
-  for(first=0; (first < maxangstat) && (angstat[first] == 0); first++)
+  for(first=0; (first < maxangstat-1) && (angstat[first+1] == 0); first++)
     ;
-  for(last=maxangstat-1; (last >= 0) && (angstat[last] == 0) ; last--)
+  for(last=maxangstat-1; (last > 0) && (angstat[last-1] == 0) ; last--)
     ;
 
   aver=0;
