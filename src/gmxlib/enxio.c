@@ -282,7 +282,11 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
     bOK = bOK && do_real(tmp1);
     ener[i].eav=tmp1;
     
-    bOK = bOK && do_real(ener[i].esum);
+    /* This is to save only in single precision (unless compiled in DP) */
+    tmp2 = ener[i].esum;
+    bOK = bOK && do_real(tmp2);
+    ener[i].esum = tmp2;
+    
     bOK = bOK && do_real(ener[i].e2sum);
   }
   if (ndisre) {
