@@ -29,6 +29,8 @@ endif
 
 FFTLIBS		= -lfftw.$(CPU)
 
+EXECUTABLES = $(foreach FILE, $(PROGRAMS), $(FILE)$(EXTENSION))
+
 ifeq ($(USE_XDR),yes)
 SYSDEFS		+= -DUSE_XDR
 endif
@@ -51,9 +53,9 @@ bin:		$(PROGRAMS)
 ifeq ($(PROGRAMS),)
 	echo "No programs in $(CUR)"
 else
-	cd $(BINDIR) ; $(RM) $(PROGRAMS)
-	-chmod $(BINMODE) $(PROGRAMS)
-	mv $(PROGRAMS) $(BINDIR)
+	cd $(BINDIR) ; $(RM) $(EXECUTABLES)
+	chmod $(BINMODE) $(EXECUTABLES)
+	mv $(EXECUTABLES) $(BINDIR)
 endif
 
 dep:

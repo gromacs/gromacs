@@ -11,6 +11,8 @@
 #
 SYSDEFS		= -DHAVE_IDENT -DCINVSQRT -DNO_NICE
 
+EXTENSION = .exe
+
 # GNU C compiler
 CC		= gcc
 CCC		= gcc
