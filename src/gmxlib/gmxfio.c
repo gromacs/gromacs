@@ -413,6 +413,7 @@ static bool do_binread(void *item,int nitem,int eio,
   return (rsize == nitem);
 }
 
+#ifdef USE_XDR
 static bool do_xdr(void *item,int nitem,int eio,
 		   char *desc,char *srcfile,int line)
 {
@@ -534,6 +535,7 @@ static bool do_xdr(void *item,int nitem,int eio,
 	    eioNames[eio],desc,curfio->fn,srcfile,line);
   return (res != 0);
 }
+#endif
 
 static void _fio_check(int fio,char *file,int line)
 {
@@ -648,8 +650,12 @@ void fio_select(int fio)
 #endif
 
   if (in_ftpset(FIO[fio].iFTP,asize(ftpXDR),ftpXDR)) {
+#ifdef USE_XDR    
     do_read  = do_xdr;
     do_write = do_xdr;
+#else
+    fatal_error(0,"Sorry, no XDR");
+#endif
   }
   else if (in_ftpset(FIO[fio].iFTP,asize(ftpASC),ftpASC)) {
     do_read  = do_ascread;
