@@ -604,7 +604,7 @@ void fit_acf(int ncorr,int nfitparm,bool bVerbose,
     /* Good initial guess, this increases the change of convergence */
     fitparm[0] = sum;
   else
-    sum = 1.0;
+    fitparm[0] = 1.0;
   fitparm[1] = fitparm[2] = 1.0;
   for(j=0; ((j<jmax) && (tStart < tendfit)); j++) {
     /* Use the previous fitparm as starting values for the next fit */
