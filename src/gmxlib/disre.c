@@ -118,7 +118,7 @@ real ta_disres(int nfa,t_iatom forceatoms[],t_iparams ip[],
   pair_nr = 0;
   
   /* 'loop' over all atom pairs (pair_nr=fa/3) involved in restraints, *
-   * the total number of atoms pairs is nfa/3                          */  
+   * the total number of atoms pairs is nfa/3                          */
   fa=0;
   while (fa < nfa) {
     restraint = forceatoms[fa];
@@ -131,7 +131,7 @@ real ta_disres(int nfa,t_iatom forceatoms[],t_iparams ip[],
     Rt_6   = 0.0;
   
     /* Loop over the atom pairs of 'this' restraint */
-    for(pair=0; (ip[forceatoms[fa]].disres.index == rindex) && (fa<nfa); 
+    for(pair=0; (fa<nfa) && (ip[forceatoms[fa]].disres.index == rindex); 
 	pair++,pair_nr++,fa+=3) {
       if (pair >= MAX_DRPAIRS)
 	fatal_error(0,"Too many distance restraint pairs");
