@@ -281,7 +281,7 @@ real FENE_bonds(int nbonds,
   const real half=0.5;
   const real one=1.0;
   real  bm,kb;
-  real  dr,dr2,omdr2ob2,fbond,vbond,fij,vtot;
+  real  dr,dr2,bm2,omdr2obm2,fbond,vbond,fij,vtot;
   rvec  dx;
   int   i,m,ki,type,ai,aj;
   ivec  dt;
@@ -300,11 +300,18 @@ real FENE_bonds(int nbonds,
     
     if (dr2 == 0.0)
       continue;
+
+    bm2 = bm*bm;
+
+    if (dr2 >= bm2)
+      gmx_fatal(FARGS,
+		"r^2 (%f) >= bm^2 (%f) in FENE bond between atoms %d and %d",
+		dr2,bm2,ai+1,aj+1);
       
-    omdr2ob2   = one - dr2/bm*bm;
+    omdr2obm2  = one - dr2/bm2;
     
-    vbond      = -half*bm*bm*log(omdr2ob2);
-    fbond      = -bm/omdr2ob2;
+    vbond      = -half*bm2*log(omdr2obm2);
+    fbond      = -bm/omdr2obm2;
 
     vtot      += vbond;       /* 35 */
     
