@@ -156,7 +156,7 @@ int main(int argc,char *argv[])
   egrp_use[egTotal]=TRUE;
   
   bRef=opt2bSet("-eref",NFILE,fnm);
-  in=open_enx(ftp2fn(efENE,NFILE,fnm),"r");
+  in=open_enx(ftp2fn(efENX,NFILE,fnm),"r");
   do_enxnms(in,&nre,&enm);
   
   if (nre == 0)
