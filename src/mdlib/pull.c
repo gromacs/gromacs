@@ -69,7 +69,7 @@ void update_COM(t_pull * pull, rvec * x, t_mdatoms * md, matrix box, int step)
     calc_com(x, pull->pull.ngx[i], pull->pull.idx[i], md, pull->pull.x_unc[i],box);
   }
 
-  /* Get ceneteros of mass of reference groups.  Don't do this for AFM*/
+  /* Get ceneters of mass of reference groups.  Don't do this for AFM*/
   if(!pull->runtype == eAfm) {
     /* Dynamic case */
     if(pull->bCyl) {
@@ -115,7 +115,7 @@ void pull_do_forces(t_pull * pull, t_mdatoms * md, rvec * f, int start,
     }
   }
 }
-     
+
 
 
 
@@ -574,20 +574,24 @@ static void do_afm(t_pull *pull,rvec *f,matrix box,t_mdatoms *md, int start, int
 
   /* loop over the groups that are being pulled */
   for(i=0;i<pull->pull.n;i++) {
+
+    /* move pulling spring along dir, over pull->rate  */
+    for(m=0;m<DIM;m++)
+      pull->pull.spring[i][m] = pull->pull.dir[i][m]*pull->rate * step;
+
+    rvec_sub(pull->pull.spring[i], pull->pull.x_unc[i], dr);
+    
     /* compute how far the springs are stretched */
     for(m=DIM-1; m>=0; m--) {
       while(dr[m] >  0.5*box[m][m]) rvec_dec(dr,box[m]);
       while(dr[m] < -0.5*box[m][m]) rvec_inc(dr,box[m]);
-      dr[m]=pull->dims[m]*(pull->pull.spring[i][m]-pull->pull.x_unc[i][m]);
+      /* dr[m]=pull->dims[m]*(pull->pull.spring[i][m]-pull->pull.x_unc[i][m]);*/
+      dr[m]*=pull->dims[m];
     }
 
     /* calculate force from the spring on the pull group: f = - k*dr */
     for(m=0;m<DIM;m++)
       pull->pull.f[i][m] = pull->k*dr[m];
-
-    /* move pulling spring along dir, over pull->rate  */
-    for(m=0;m<DIM;m++)
-      pull->pull.spring[i][m] = pull->pull.dir[i][m]*pull->rate * step;
   }
   /* Distribute forces over pulled groups */
   pull_do_forces(pull, md, f, start, homenr);
@@ -615,9 +619,9 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top,
     if(!bShakeFirst) {
       /* Update COM's */
       update_COM(pull, x_s, md, box, step);
-      
+
       do_afm(pull,f,box,md,start,homenr, step);
-      
+
       if(MASTER(cr))
         print_afm(pull,step);
     }
@@ -634,7 +638,7 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top,
 
   case eConstraint:
     if(PAR(cr)) fatal_error(1, "Pull: Cannont run constraint force calculations in parallel.");
-    
+
     update_COM(pull,x_s,md,box,step);
 
     /* print some debug info if necessary */

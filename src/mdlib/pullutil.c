@@ -213,6 +213,7 @@ void string2rvec(char buf[], rvec nums) {
   nums[0]=a; nums[1]=b; nums[2]=c;
 }
 
+/* TODO: FIX STATIC STUFF */
 /* switch function, x between r and w */
 real get_weight(real x, real r, real w) {
   static bool bFirst = TRUE;
@@ -259,6 +260,7 @@ static real get_cylinder_distance(rvec x, rvec com, matrix box) {
   return dr;
 }
 
+/* TODO Fix Static Stuff */
 void make_refgrps(t_pull *pull,matrix box,t_mdatoms *md) 
 {
   int ngrps,i,ii,j,k,m;
