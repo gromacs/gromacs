@@ -43,17 +43,6 @@ extern "C" {
 #include "sysstuff.h"
 #include "typedefs.h"
 /***************************************************
- *            XGraph routines
- ***************************************************/
-extern FILE *xgopen(char *fn,char *header,char *title,char *xaxis,char *yaxis);
-/* Open a file, and write a title, and axis-labels in XGraph format */
-
-extern void xgraph_file(char *fn,char *opts);
-/* Starts xgraph with a file fn in the background,
- * opts (options to xgraph) may be NULL
- */
-
-/***************************************************
  *            XVGR   DEFINITIONS
  ***************************************************/
 enum {

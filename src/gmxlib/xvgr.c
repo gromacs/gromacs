@@ -44,18 +44,6 @@ bool bXmGrace(void)
   return (getenv("XMGRACE") != NULL);
 }
 
-FILE *xgopen(char *fn,char *header,char *title,char *xaxis,char *yaxis)
-{
-  FILE *xg;
-
-  xg=ffopen(fn,"w");
-  fprintf(xg,"TitleText: %s: %s\n",header,title);
-  fprintf(xg,"XUnitText: %s\n",xaxis);
-  fprintf(xg,"YUnitText: %s\n",yaxis);
-
-  return xg;
-}
-
 FILE *xvgropen(char *fn,char *title,char *xaxis,char *yaxis)
 {
   FILE *xvgr;
