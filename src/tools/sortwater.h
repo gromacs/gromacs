@@ -16,4 +16,8 @@ extern void sortwater(int astart,int nwater,int nwatom,rvec x[],rvec v[]);
  * If v is not NULL it will be shuffled along
  */
 
+extern void mkcompact(int astart,int nwater,int nwatom,rvec x[],rvec v[],
+		      int ncpu,matrix box);
+/* Make compact subboxes */
+
 #endif

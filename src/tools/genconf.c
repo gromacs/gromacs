@@ -136,6 +136,7 @@ int main(int argc, char *argv[])
   static rvec nrbox    = {1,1,1};
   static int  seed     = 0;          /* seed for random number generator */
   static int  nmolat   = 3;
+  static int  nblock   = 1;
   static bool bShuffle = FALSE;
   static bool bSort    = FALSE;
   static bool bRandom  = FALSE;      /* False: no random rotations */
@@ -154,6 +155,8 @@ int main(int argc, char *argv[])
       "Random shuffling of molecules" },
     { "-sort",   FALSE, etBOOL, {&bSort},
       "Sort molecules on X coord" },
+    { "-block",  FALSE, etINT,  {&nblock},
+      "Divide the box in blocks on this number of cpus" },
     { "-nmolat", FALSE, etINT,  {&nmolat}, 
       "Number of atoms per molecule, assumed to start from 0. If you set this wrong, it will screw up your system!" },
     { "-maxrot", FALSE, etRVEC, {&max_rot},
@@ -172,7 +175,7 @@ int main(int argc, char *argv[])
   if ((nx <= 0) || (ny <= 0) || (nz <= 0))
     fatal_error(0,"Number of boxes (-nbox) should be positive");
   if ((nmolat <= 0) && bShuffle)
-    fatal_error(0,"Can not shuffle if tha molecules have only %d atoms",
+    fatal_error(0,"Can not shuffle if the molecules only have %d atoms",
 		nmolat);
     
   vol=nx*ny*nz;     /* calculate volume in grid points (= nr. molecules) */
@@ -186,7 +189,8 @@ int main(int argc, char *argv[])
   snew(v,natoms*vol);              /* velocities. not really needed? */ 
   snew(vrot,natoms); 
   /* set atoms->nr to the number in one box *
-   * to avoid complaints in read_stx_conf   */
+   * to avoid complaints in read_stx_conf   *
+   */
   atoms->nr = natoms;
   read_stx_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,v,box);
 
@@ -257,7 +261,9 @@ int main(int argc, char *argv[])
     randwater(0,atoms->nr/nmolat,nmolat,x,v,&seed);
   else if (bSort)
     sortwater(0,atoms->nr/nmolat,nmolat,x,v);
-    
+  else if (opt2parg_bSet("-block",asize(pa),pa))
+    mkcompact(0,atoms->nr/nmolat,nmolat,x,v,nblock,box);
+  
   write_sto_conf(opt2fn("-o",NFILE,fnm),title,atoms,x,v,box);
   
   thanx(stdout);
