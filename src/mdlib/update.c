@@ -600,10 +600,10 @@ static void deform(int start,int homenr,rvec x[],matrix box,
 	  rvec_inc(new[i],new[j]);
       }
     }
-    m_inv(box,invbox);
+    m_inv_lowerleft0(box,invbox);
     copy_mat(new,box);
-    mmul(box,invbox,mu);
-    
+    mmul_lowerleft0(box,invbox,mu);
+
     for(i=start; i<start+homenr; i++) {
       x[i][XX] = mu[XX][XX]*x[i][XX]+mu[YY][XX]*x[i][YY]+mu[ZZ][XX]*x[i][ZZ];
       x[i][YY] = mu[YY][YY]*x[i][YY]+mu[ZZ][YY]*x[i][ZZ];

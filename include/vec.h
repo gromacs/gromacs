@@ -90,18 +90,25 @@
   void unitv_no_table(rvec src,rvec dest)          dest = src / |src|
   
   matrix (3x3) operations:
+    ! indicates that dest should not be the same as a, b or src
+    the _lowerleft0 varieties work on matrices that have only zeros
+    in the lowerleft part, such as box matrices, these varieties
+    could produce less rounding errors, not due to the operations themselves,
+    but because the compiler can easier recombine the operations
   void copy_mat(matrix a,matrix b)                 b = a
   void clear_mat(matrix a)			   a = 0
-  void mmul(matrix a,matrix b,matrix dest)	   dest = a . b
-  void transpose(matrix src,matrix dest)	   dest = src*
-  void tmmul(matrix a,matrix b,matrix dest)	   dest = a* . b
-  void mtmul(matrix a,matrix b,matrix dest)	   dest = a . b*
+  void mmul(matrix a,matrix b,matrix dest)	!  dest = a . b
+  void mmul_lowerleft0(matrix a,matrix b,matrix dest) dest = a . b
+  void transpose(matrix src,matrix dest)	!  dest = src*
+  void tmmul(matrix a,matrix b,matrix dest)	!  dest = a* . b
+  void mtmul(matrix a,matrix b,matrix dest)	!  dest = a . b*
   real det(matrix a)				   = det(a)
   void m_add(matrix a,matrix b,matrix dest)	   dest = a + b
   void m_sub(matrix a,matrix b,matrix dest)	   dest = a - b
   void msmul(matrix m1,real r1,matrix dest)	   dest = r1 * m1
-  void m_inv(matrix src,matrix dest)		   dest = src^-1
-  void mvmul(matrix a,rvec src,rvec dest)	   dest = a . src
+  void m_inv_lowerleft0(matrix src,matrix dest)    dest = src^-1
+  void m_inv(matrix src,matrix dest)		!  dest = src^-1
+  void mvmul(matrix a,rvec src,rvec dest)	!  dest = a . src
   real trace(matrix m)                             = trace(m)
 */
 
@@ -498,6 +505,19 @@ static inline void oprod(const rvec a,const rvec b,rvec c)
   c[ZZ]=a[XX]*b[YY]-a[YY]*b[XX];
 }
 
+static inline void mmul_lowerleft0(matrix a,matrix b,matrix dest)
+{
+  dest[XX][XX]=a[XX][XX]*b[XX][XX];
+  dest[XX][YY]=0;
+  dest[XX][ZZ]=0;
+  dest[YY][XX]=a[YY][XX]*b[XX][XX]+a[YY][YY]*b[YY][XX];
+  dest[YY][YY]=                    a[YY][YY]*b[YY][YY];
+  dest[YY][ZZ]=0;
+  dest[ZZ][XX]=a[ZZ][XX]*b[XX][XX]+a[ZZ][YY]*b[YY][XX]+a[ZZ][ZZ]*b[ZZ][XX];
+  dest[ZZ][YY]=                    a[ZZ][YY]*b[YY][YY]+a[ZZ][ZZ]*b[ZZ][YY];
+  dest[ZZ][ZZ]=                                        a[ZZ][ZZ]*b[ZZ][ZZ];
+}
+
 static inline void mmul(matrix a,matrix b,matrix dest)
 {
   dest[XX][XX]=a[XX][XX]*b[XX][XX]+a[XX][YY]*b[YY][XX]+a[XX][ZZ]*b[ZZ][XX];
@@ -598,19 +618,36 @@ static inline void msmul(matrix m1,real r1,matrix dest)
   dest[ZZ][ZZ]=r1*m1[ZZ][ZZ];
 }
 
+static inline void m_inv_lowerleft0(matrix src,matrix dest)
+{
+  if (src[XX][XX]==0 || src[YY][YY]==0 || src[ZZ][ZZ]==0)
+    gmx_fatal(FARGS,"Can not invert matrix, determinant is zero");
+
+  dest[XX][XX] = 1/src[XX][XX];
+  dest[YY][YY] = 1/src[YY][YY];
+  dest[ZZ][ZZ] = 1/src[ZZ][ZZ];
+  dest[ZZ][XX] = (src[YY][XX]*src[ZZ][YY]*dest[YY][YY]
+		  - src[ZZ][XX])*dest[XX][XX]*dest[ZZ][ZZ];
+  dest[YY][XX] = -src[YY][XX]*dest[XX][XX]*dest[YY][YY];
+  dest[ZZ][YY] = -src[ZZ][YY]*dest[YY][YY]*dest[YY][YY];
+  dest[XX][YY] = 0;
+  dest[XX][ZZ] = 0;
+  dest[YY][ZZ] = 0;
+}
+
 static inline void m_inv(matrix src,matrix dest)
 {
   const real smallreal = 1.0e-24;
   const real largereal = 1.0e24;
   real  deter,c,fc;
-  
+
   deter = det(src);
   c     = 1.0/deter;
   fc    = fabs(c);
   
   if ((fc <= smallreal) || (fc >= largereal)) 
-    gmx_fatal(FARGS,"Determinant = %e",deter);               
-  
+    gmx_fatal(FARGS,"Can not invert matrix, determinant = %e",deter);
+
   dest[XX][XX]= c*(src[YY][YY]*src[ZZ][ZZ]-src[ZZ][YY]*src[YY][ZZ]);
   dest[XX][YY]=-c*(src[XX][YY]*src[ZZ][ZZ]-src[ZZ][YY]*src[XX][ZZ]);
   dest[XX][ZZ]= c*(src[XX][YY]*src[YY][ZZ]-src[YY][YY]*src[XX][ZZ]);
