@@ -122,33 +122,12 @@ static void done_corr(t_corr *this)
   sfree(this->x0);
 }
 
-static void init_restart(t_corr *this)
+static void init_restart(t_corr *this,int nrestart,real dt)
 {
-  char *intro[] = {
-    "\n",
-    "Mean Square Displacement calculations and Correlation functions",
-    "can be calculated more accurately, when using multiple starting",
-    "points (see also Gromacs Manual). You can select the number of",
-    "starting points, and the interval (in picoseconds) between starting",
-    "points. More starting points implies more CPU time."
-    };
-  int    i;
-  double dt;
+  int i;
   
-  for(i=0; (i<asize(intro)); i++)
-    printf("%s\n",intro[i]);
-  do {
-    printf("\nNumber of starting points ( >= 1) ? "); fflush(stdout);
-    scanf("%d",&this->nrestart);
-  } while (this->nrestart <= 0);
-  if (this->nrestart > 1)
-    do {
-      printf("\nTime interval (> 0) ? "); fflush(stdout);
-      scanf("%lf",&dt);
-      this->delta_t=dt;
-    } while (this->delta_t <= 0.0);
-  else
-    this->delta_t = 0.0;
+  this->nrestart = max(1,nrestart);
+  this->delta_t  = (nrestart > 1) ? dt : 0;
   
   printf("\nThe number of starting points you requested takes %u"
 	 " bytes memory\n\n",this->natoms*this->nrestart*sizeof(rvec));
@@ -304,6 +283,7 @@ static real calc1_norm(t_corr *this,int nx,atom_id index[],int nx0,rvec xc[])
  */
 void corr_loop(t_corr *this,char *fn,int gnx[],atom_id *index[],
 	       t_calc_func *calc1,t_prep_data_func *prep1,
+	       int nrestart,real dt,
 	       t_first_x *fx,t_next_x *nx)
 {
   rvec         *x[2];
@@ -319,7 +299,7 @@ void corr_loop(t_corr *this,char *fn,int gnx[],atom_id *index[],
 
   snew(x[cur],this->natoms);
 
-  init_restart(this);
+  init_restart(this,nrestart,dt);
   memcpy(x[cur],x[prev],this->natoms*sizeof(x[prev][0]));
   t=this->t0;
   do {
@@ -538,7 +518,8 @@ void printdist(t_corr *this,char *fn,char *difn)
 
 void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
 	     t_topology *top,bool bMol,bool bMW,
-	     int type,real dim_factor,int axis)
+	     int type,real dim_factor,int axis,
+	     int nrestart,real dt)
 {
   t_corr       *msd;
   t_first_x    *fx;
@@ -560,7 +541,7 @@ void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
   
   corr_loop(msd,ftp2fn(efTRX,NFILE,fnm),gnx,index,
 	    bMW ? calc1_mw : (bMol ? calc1_mol : calc1_norm), 
-	    bMol ? prep_data_mol : prep_data_norm,
+	    bMol ? prep_data_mol : prep_data_norm,nrestart,dt,
 	    fx,nx);
   
   if (opt2bSet("-d",NFILE,fnm))
@@ -582,11 +563,18 @@ int main(int argc,char *argv[])
     "their initial positions. This provides an easy way to compute",
     "the diffusion constant using the Einstein relation.[PAR]",
     "If the -d option is given, the diffusion constant will be printed in",
-    "addition to the MSD"
+    "addition to the MSD[PAR]",
+    "Mean Square Displacement calculations and Correlation functions",
+    "can be calculated more accurately, when using multiple starting",
+    "points (see also Gromacs Manual). You can select the number of",
+    "starting points, and the interval (in picoseconds) between starting",
+    "points. More starting points implies more CPU time."
   };
   static char *normtype[]= { NULL,"no","x","y","z",NULL };
   static char *axtitle[] = { NULL,"no","x","y","z",NULL };
   static int  ngroup     = 1;
+  static int  nrestart   = 1;
+  static real dt         = 0; 
   static bool bMW        = TRUE;
   t_pargs pa[] = {
     { "-type",    FALSE, etENUM, normtype,
@@ -596,7 +584,11 @@ int main(int argc,char *argv[])
     { "-ngroup",  FALSE, etINT,  &ngroup,
       "Number of groups to calculate MSD for" },
     { "-mw",      FALSE, etBOOL, &bMW,
-      "Mass weighted MSD" }
+      "Mass weighted MSD" },
+    { "-nrestart",FALSE, etINT,  &nrestart,
+      "Number of restarting points in trajectory" },
+    { "-dt",      FALSE, etREAL, &dt,
+      "Time between restarting points in trajectory (only with -nrestart > 1)" }
   };
   static char *bugs[] = {
     "The diffusion constant given in the title of the graph for lateral"
@@ -653,7 +645,7 @@ int main(int argc,char *argv[])
     fatal_error(0,"Could not read a topology form %s. Try a tpr file instead.",
 		ftp2fn(efTPS,NFILE,fnm));
     
-  do_corr(NFILE,fnm,ngroup,&top,bMol,bMW,type,dim_factor,axis);
+  do_corr(NFILE,fnm,ngroup,&top,bMol,bMW,type,dim_factor,axis,nrestart,dt);
 
   thanx(stdout);
   
