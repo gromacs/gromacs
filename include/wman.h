@@ -59,6 +59,10 @@ extern char *fileopt(ulong flag);
  * flag should the flag field of a filenm struct.
  */
 
+extern void wrap_line(char *buf,int LINE_WIDTH);
+/* Insert newline characters at spaces such that a number of lines
+ * each at most LINE_WIDTH characters is found.
+ */
 extern char *check_tty(char *s);
 extern char *check_tex(char *s);
 extern char *check_html(char *s,char *program);
