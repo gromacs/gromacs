@@ -168,7 +168,7 @@ static gmx_inline void ivec_sub(const ivec a,const ivec b,ivec c)
   c[ZZ]=z;
 }
 
-static gmx_inline void copy_mat(const matrix a,matrix b)
+static gmx_inline void copy_mat(matrix a,matrix b)
 {
   copy_rvec(a[XX],b[XX]);
   copy_rvec(a[YY],b[YY]);
@@ -292,7 +292,7 @@ static gmx_inline void oprod(const rvec a,const rvec b,rvec c)
   c[ZZ]=a[XX]*b[YY]-a[YY]*b[XX];
 }
 
-static gmx_inline void mmul(const matrix a,const matrix b,matrix dest)
+static gmx_inline void mmul(matrix a,matrix b,matrix dest)
 {
   dest[XX][XX]=a[XX][XX]*b[XX][XX]+a[XX][YY]*b[YY][XX]+a[XX][ZZ]*b[ZZ][XX];
   dest[YY][XX]=a[YY][XX]*b[XX][XX]+a[YY][YY]*b[YY][XX]+a[YY][ZZ]*b[ZZ][XX];
@@ -305,14 +305,14 @@ static gmx_inline void mmul(const matrix a,const matrix b,matrix dest)
   dest[ZZ][ZZ]=a[ZZ][XX]*b[XX][ZZ]+a[ZZ][YY]*b[YY][ZZ]+a[ZZ][ZZ]*b[ZZ][ZZ];
 }
 
-static gmx_inline real det(const matrix a)
+static gmx_inline real det(matrix a)
 {
   return ( a[XX][XX]*(a[YY][YY]*a[ZZ][ZZ]-a[ZZ][YY]*a[YY][ZZ])
 	  -a[YY][XX]*(a[XX][YY]*a[ZZ][ZZ]-a[ZZ][YY]*a[XX][ZZ])
 	  +a[ZZ][XX]*(a[XX][YY]*a[YY][ZZ]-a[YY][YY]*a[XX][ZZ]));
 }
 
-static gmx_inline void m_add(const matrix a,const matrix b,matrix dest)
+static gmx_inline void m_add(matrix a,matrix b,matrix dest)
 {
   dest[XX][XX]=a[XX][XX]+b[XX][XX];
   dest[XX][YY]=a[XX][YY]+b[XX][YY];
@@ -325,7 +325,7 @@ static gmx_inline void m_add(const matrix a,const matrix b,matrix dest)
   dest[ZZ][ZZ]=a[ZZ][ZZ]+b[ZZ][ZZ];
 }
 
-static gmx_inline void m_sub(const matrix a,const matrix b,matrix dest)
+static gmx_inline void m_sub(matrix a,matrix b,matrix dest)
 {
   dest[XX][XX]=a[XX][XX]-b[XX][XX];
   dest[XX][YY]=a[XX][YY]-b[XX][YY];
@@ -338,7 +338,7 @@ static gmx_inline void m_sub(const matrix a,const matrix b,matrix dest)
   dest[ZZ][ZZ]=a[ZZ][ZZ]-b[ZZ][ZZ];
 }
 
-static gmx_inline void msmul(const matrix m1,const real r1,matrix dest)
+static gmx_inline void msmul(matrix m1,const real r1,matrix dest)
 {
   dest[XX][XX]=r1*m1[XX][XX];
   dest[XX][YY]=r1*m1[XX][YY];
@@ -351,7 +351,7 @@ static gmx_inline void msmul(const matrix m1,const real r1,matrix dest)
   dest[ZZ][ZZ]=r1*m1[ZZ][ZZ];
 }
 
-static gmx_inline void m_inv(const matrix src,matrix dest)
+static gmx_inline void m_inv(matrix src,matrix dest)
 {
   const real smallreal = 1.0e-18;
   const real largereal = 1.0e18;
@@ -375,7 +375,7 @@ static gmx_inline void m_inv(const matrix src,matrix dest)
   dest[ZZ][ZZ]= c*(src[XX][XX]*src[YY][YY]-src[YY][XX]*src[XX][YY]);
 }
 
-static gmx_inline void mvmul(const matrix a,const rvec src,rvec dest)
+static gmx_inline void mvmul(matrix a,const rvec src,rvec dest)
 {
   dest[XX]=a[XX][XX]*src[XX]+a[XX][YY]*src[YY]+a[XX][ZZ]*src[ZZ];
   dest[YY]=a[YY][XX]*src[XX]+a[YY][YY]*src[YY]+a[YY][ZZ]*src[ZZ];
@@ -402,7 +402,7 @@ static gmx_inline void unitv_no_table(const rvec src,rvec dest)
   dest[ZZ]=linv*src[ZZ];
 }
 
-static gmx_inline real trace(const matrix m)
+static gmx_inline real trace(matrix m)
 {
   return (m[XX][XX]+m[YY][YY]+m[ZZ][ZZ]);
 }
