@@ -218,7 +218,7 @@ static void Extract(t_dlg *dlg,int ID,char *buf)
     strcpy(buf,et);
 }
 
-enum bond_set { ebShowH=11, ebDPlus, ebRMPBC, ebCue, ebSkip };
+enum bond_set { ebShowH=11, ebDPlus, ebRMPBC, ebCue, ebSkip, ebWait };
 
 static void BondsCB(t_x11 *x11,int dlg_mess,int item_id,
 		    char *set,void *data)
@@ -226,7 +226,7 @@ static void BondsCB(t_x11 *x11,int dlg_mess,int item_id,
   static int ebond=-1;
   static int ebox=-1;
   bool   bOk,bBond=FALSE;
-  int    nskip;
+  int    nskip,nwait;
   t_gmx  *gmx;
 
   gmx=(t_gmx *)data;
@@ -278,6 +278,13 @@ static void BondsCB(t_x11 *x11,int dlg_mess,int item_id,
 	if (nskip >= 0)
 	  gmx->man->nSkip=nskip;
 	break;
+      case ebWait:
+	sscanf(set,"%d",&nwait);
+#ifdef DEBUG
+	fprintf(stderr,"wait: %d ms\n",nwait);
+#endif
+	if (nwait >= 0)
+	  gmx->man->nWait=nwait;
       default:
 #ifdef DEBUG
 	fprintf(stderr,"item_id: %d, set: %s\n",item_id,set);

@@ -391,7 +391,7 @@ static void HandleClient(t_x11 *x11,t_manager *man,long data[])
     else {
       if (nat > 0) {
 	draw_mol(x11,man);
-	usleep(200000);
+	usleep(man->nWait*1000);
       }
     }
     break;

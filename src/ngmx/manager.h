@@ -102,7 +102,7 @@ typedef struct {
   bool      *bHydro;		/* TRUE for hydrogen atoms		*/
   bool      *bLabel;            /* Show a label on atom i?              */
   char      **szLab;            /* Array of pointers to labels          */
-  unsigned long     *col;		/* The colour of the atoms		*/
+  unsigned long *col;		/* The colour of the atoms		*/
   int       *size;		/* The size of the atoms		*/
   real      *vdw;		/* The VDWaals radius of the atoms	*/
   bool      *bVis;              /* visibility of atoms                  */
@@ -113,6 +113,7 @@ typedef struct {
   bool      bSort;		/* Sort the coordinates			*/
   bool      bPlus;		/* Draw plus for single atom		*/
   int       nSkip;		/* Skip n steps after each frame	*/
+  int       nWait;		/* Wait n ms after each frame           */
 
   t_windata   wd;               /* The manager subwindow                */
   t_windata   title;		/* Title window				*/
