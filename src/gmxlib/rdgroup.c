@@ -120,7 +120,7 @@ t_block *init_index(char *gfile, char ***grpname)
 
 static int qgroup(int *a)
 {
-  printf("Select a group: ");
+  fprintf(stderr,"Select a group: ");
   scanf("%d",a);
   return *a;
 }
@@ -131,7 +131,7 @@ static int rd_pascal_set(int **set)
   char *bb[STRLEN],*ptr;
   int   i,j,nb,ns,ne;
   
-  printf("Give a set of numbers (eg.: 1..8,13,17..21)\n");
+  fprintf(stderr,"Give a set of numbers (eg.: 1..8,13,17..21)\n");
   fgets(buf,STRLEN,stdin);
   
   nb=0;
@@ -155,10 +155,10 @@ static int rd_pascal_set(int **set)
       (*set)[ns++]=nb;
     }
   }
-  printf("\nI found the following set:\n");
+  fprintf(stderr,"\nI found the following set:\n");
   for(i=0; (i<ns); i++)
-    printf("%4d ",(*set)[i]);
-  printf("\n\n");
+    fprintf(stderr,"%4d ",(*set)[i]);
+  fprintf(stderr,"\n\n");
   
   return ns;
 }
@@ -171,17 +171,17 @@ static void rd_groups(t_block *grps,char **grpname,char *gnames[],
   if (grps->nr==0)
     fatal_error(0,"Error: no groups in indexfile");
   for(i=0; (i<grps->nr); i++)
-    printf("Group %5d (%12s) has %5u elements\n",i,grpname[i],
+    fprintf(stderr,"Group %5d (%12s) has %5u elements\n",i,grpname[i],
 	   grps->index[i+1]-grps->index[i]);
   for(i=0; (i<ngrps); i++) {
     if (grps->nr > 1)
       do {
 	gnr1=qgroup(&grpnr[i]);
 	if ((gnr1<0) || (gnr1>=grps->nr))
-	  printf("Select between %d and %d.\n",0,grps->nr-1);
+	  fprintf(stderr,"Select between %d and %d.\n",0,grps->nr-1);
       }	while ((gnr1<0) || (gnr1>=grps->nr));
     else {
-      printf("There is one group in the index\n");
+      fprintf(stderr,"There is one group in the index\n");
       gnr1=0;
     }
     gnames[i]=strdup(grpname[gnr1]);
