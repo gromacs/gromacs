@@ -217,60 +217,6 @@
      H     H   0.280     0
     CA    C1   0.000     1
     HA    HC   0.000     1
-    CB    C2   0.200     2
-   HB1    HC   0.000     2
-   HB2    HC   0.000     2
-    SG     S  -0.200     2
-     C     C   0.380     3
-     O     O  -0.380     3
- [ bonds ]
-     N     H
-     N    CA
-    CA     C
-     C     O
-    -C     N
-    CA    CB
-    CB    SG
- [ impropers ]
-     N    -C    CA     H
-    -C   -CA     N    -O
-    CA     N     C    CB
-
-[ CYS1 ]
- [ atoms ]
-     N     N  -0.280     0
-     H     H   0.280     0
-    CA    C1   0.000     1
-    HA    HC   0.000     1
-    CB    C2   0.000     2
-   HB1    HC   0.000     2
-   HB2    HC   0.000     2
-    SG     S   0.000     3
-     C     C   0.380     4
-     O     O  -0.380     4
- [ bonds ]
-     N     H
-     N    CA
-    CA    HA
-    CA    CB
-    CA     C
-    CB   HB1
-    CB   HB2
-    CB    SG
-    SG    -H
-     C     O
-    -C     N
- [ impropers ]
-     N    -C    CA     H
-    -C   -CA     N    -O
-    CA     N     C    CB
-
-[ CYS2 ]
- [ atoms ]
-     N     N  -0.280     0
-     H     H   0.280     0
-    CA    C1   0.000     1
-    HA    HC   0.000     1
     CB    C2   0.000     2
    HB1    HC   0.000     2
    HB2    HC   0.000     2
