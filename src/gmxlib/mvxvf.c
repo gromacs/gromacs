@@ -127,9 +127,25 @@ void move_x(FILE *log,
 	    int left,int right,rvec x[],t_nsborder *nsb,
 	    t_nrnb *nrnb)
 {
+#ifdef TEST_MPI_X
+  static int *recvcounts=NULL,*displs;
+  int i;
+
+  if (recvcounts == NULL) {
+    snew(recvcounts,nsb->nprocs);
+    snew(displs,nsb->nprocs);
+    for(i=0; i<nsb->nprocs; i++) {
+      recvcounts[i] = nsb->homenr[i]*sizeof(x[0]);
+      displs[i]     = nsb->index[i]*sizeof(x[0]);
+    }
+  }
+  MPI_Allgatherv(arrayp(x[nsb->index[nsb->pid]],nsb->homenr[nsb->pid]),
+		 MPI_BYTE,x,recvcounts,displs,MPI_BYTE,MPI_COMM_WORLD);
+#else
   move_rvecs(log,FALSE,FALSE,left,right,x,NULL,nsb->shift,nsb,nrnb);
   where();
   move_rvecs(log,TRUE, FALSE,left,right,x,NULL,nsb->bshift,nsb,nrnb);
+#endif
   where();
 }
 
@@ -137,9 +153,18 @@ void move_f(FILE *log,
 	    int left,int right,rvec f[],rvec fadd[],
 	    t_nsborder *nsb,t_nrnb *nrnb)
 {
+#ifdef MPI_TEST_F
+#ifdef DOUBLE
+#define mpi_type MPI_DOUBLE
+#else
+#define mpi_type MPI_FLOAT
+#endif
+  MPI_Allreduce(f,f,nsb->natoms*DIM,mpi_type,MPI_SUM,MPI_COMM_WORLD);
+#else
   move_rvecs(log,TRUE, TRUE,left,right,f,fadd,nsb->shift,nsb,nrnb);
   where();
   move_rvecs(log,FALSE,TRUE,left,right,f,fadd,nsb->bshift,nsb,nrnb);
+#endif
   where();
 }
 

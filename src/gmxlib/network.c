@@ -75,18 +75,25 @@ void def_reset_idle(void)
 
 void def_sumd(int nr,double r[],t_commrec *cr)
 {
+#ifdef TEST_MPI_SUM
+  static double *buf;
+  static int nalloc=0;
+  int i;
+  
+  if (nr > nalloc) {
+    nalloc = nr;
+    srenew(buf,nalloc);
+  }
+  MPI_Allreduce(r,buf,nr,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  for(i=0; i<nr; i++)
+    r[i] = buf[i];
+#else
   double *buf[2];
   int  NR,bufs,j,i,cur=0;
 #define next (1-cur)
 
   bufs=nr*sizeof(buf[0][0]);
-#ifdef _amb_
-  bufs+=23;
-  bufs=bufs-(bufs % 24);
-  NR=bufs/sizeof(double);
-#else
   NR=nr;
-#endif
 
   snew(buf[0],NR);
   snew(buf[1],NR);
@@ -105,6 +112,7 @@ void def_sumd(int nr,double r[],t_commrec *cr)
   }
   sfree(buf[1]);
   sfree(buf[0]);
+#endif
 }
 
 void def_sumf(int nr,float r[],t_commrec *cr)
