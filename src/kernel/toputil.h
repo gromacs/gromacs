@@ -69,20 +69,13 @@ extern void done_mi(t_molinfo *mi);
 
 /* PRINTING */
 
-extern void print_bt(FILE *out, directive d, t_atomtype *at,
-		     int ftype,t_params plist[],bool bConsts,
-		     bool bFullDih);
-/* If bFullDih all the atoms are printed not just the two
- * that determine the type for dihedrals.
- */
- 
 extern void print_block(FILE *out,char *szName,char *szIndex, 
 			char *szA,t_block *block);
 
 extern void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,int *cgnr);
 
 extern void print_bondeds(FILE *out,int natoms,directive d,
-			  int ftype,t_params plist[],bool bConsts);
+			  int ftype,int fsubtype,t_params plist[]);
 
 extern void print_excl(FILE *out, t_block *excl);
 

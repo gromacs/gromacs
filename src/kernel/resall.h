@@ -72,12 +72,13 @@ extern t_idihres *search_idih(char *key,int nrdh,t_idihres ires[]);
 
 extern t_atomtype *read_atype(char *adb,t_symtab *tab);
 
-extern int read_resall(char *resdb, t_restp **rtp, t_resbond **rb, 
+extern int read_resall(char *resdb, int bts[], t_restp **rtp, t_resbond **rb, 
 		       t_resang **ra, t_resdih **rd,
 		       t_idihres **ires, t_atomtype *atype,
 		       t_symtab *tab);
 
-extern void print_resall(FILE *out, int nrtp, t_restp rtp[], t_resbond rb[],
+extern void print_resall(FILE *out, int bts[],
+			 int nrtp, t_restp rtp[], t_resbond rb[],
 			 t_resang ra[], t_resdih rd[],
 			 t_idihres ires[], t_atomtype *atype);
 

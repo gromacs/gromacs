@@ -44,6 +44,8 @@ typedef struct {
   atom_id a[MAXATOMLIST];	/* The atom list (eg. bonds: particle	*/
 				/* i = a[0] (AI), j = a[1] (AJ))	*/
   real 	  c[MAXFORCEPARAM];	/* Force parameters (eg. b0 = c[0])	*/
+  char    *s;                   /* A string (instead of parameters),    *
+				 * read from the .rtp file in pdb2gmx   */
 } t_param;
 
 typedef struct {

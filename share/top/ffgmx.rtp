@@ -1,3 +1,7 @@
+[ bondedtypes ]
+; bonds  angles  dihedrals  impropers
+     1       1          1          2
+
 [ ABU ]
  [ atoms ]
      N     N  -0.280     0

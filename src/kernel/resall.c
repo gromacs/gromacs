@@ -182,18 +182,25 @@ static bool read_atoms_old(FILE *in,char *line,
 
 static void print_resbonds(FILE *out,t_resbond *rb)
 {
-  int j;
+  int i,j;
 
   /* fprintf(out,"%5d\n",rb->nb); */
   fprintf(out," [ bonds ]\n");
 
-  for(j=0; (j<rb->nb); j++)
-    fprintf(out,"%6s%6s\n",rb->rbond[j].ai,rb->rbond[j].aj);
+  for(i=0; (i<rb->nb); i++) {
+    fprintf(out,"%6s%6s",rb->rbond[i].ai,rb->rbond[i].aj);
+    if (rb->rbond[i].s[0])
+      fprintf(out,"    %s",rb->rbond[i].s);
+    else
+      for (j=0; (j<MAXFORCEPARAM && (rb->rbond[i].c[j] != NOTSET)); j++)
+	fprintf (out,"%13.6e ",rb->rbond[i].c[j]);
+    fprintf(out,"\n");
+  }
 }
 
 static bool read_bonds(FILE *in,char *line,t_resbond *rb)
 {
-  char ai[12],aj[12];
+  char ai[12],aj[12],str[STRLEN];
   double c[MAXFORCEPARAM];
   int  i,j,n,maxentries;
 
@@ -201,19 +208,26 @@ static bool read_bonds(FILE *in,char *line,t_resbond *rb)
   maxentries=0;
   rb->rbond=NULL;
   while (get_a_line(in,line,STRLEN) && (strchr(line,'[')==NULL)) {
-    if ((n=sscanf(line,"%s%s%lf%lf%lf%lf",ai,aj,&c[0],&c[1],&c[2],&c[3])) < 2)
+    str[0] = '\0';
+    if ((n=sscanf(line,"%s%s%s",ai,aj,str)) < 2)
       return FALSE;
+    if ((n==3) && !isalpha(str[0])) {
+      n=sscanf(line,"%s%s%lf%lf%lf%lf",ai,aj,&c[0],&c[1],&c[2],&c[3]);
+      str[0] = '\0';
+    }
     if (i>=maxentries) {
       maxentries+=100;
       srenew(rb->rbond,maxentries);
     }
     rb->rbond[i].ai=strdup(ai);
     rb->rbond[i].aj=strdup(aj);
-    for (j=0; j<MAXFORCEPARAM; j++)
-      if (j<n-2)
-	rb->rbond[i].c[j]=c[j];
-      else
-	rb->rbond[i].c[j]=NOTSET;
+    rb->rbond[i].s =strdup(str);
+    if (!str[0])
+      for (j=0; j<MAXFORCEPARAM; j++)
+	if (j<n-2)
+	  rb->rbond[i].c[j]=c[j];
+	else
+	  rb->rbond[i].c[j]=NOTSET;
     i++;
   }
   rb->nb=i;
@@ -256,10 +270,13 @@ static void print_resangs(FILE *out,t_resang *ra)
   fprintf(out," [ angles ]\n");
   fprintf(out,";   ai    aj    ak            c0            c1\n");
 
-  for(j=0; (j<ra->na); j++) {
-    fprintf(out,"%6s%6s%6s",ra->rang[j].ai,ra->rang[j].aj,ra->rang[j].ak);
-    for(i=0; (i<MAXFORCEPARAM && (ra->rang[j].c[i] != NOTSET)); i++)
-      fprintf(out,"%14g",ra->rang[j].c[i]);
+  for(i=0; (i<ra->na); i++) {
+    fprintf(out,"%6s%6s%6s",ra->rang[i].ai,ra->rang[i].aj,ra->rang[i].ak);
+    if (ra->rang[i].s[0])
+      fprintf(out,"    %s",ra->rang[i].s);
+    else
+      for(j=0; (j<MAXFORCEPARAM && (ra->rang[i].c[j] != NOTSET)); j++)
+	fprintf(out,"%14g",ra->rang[i].c[j]);
     fprintf(out,"\n");
   }
   
@@ -267,7 +284,7 @@ static void print_resangs(FILE *out,t_resang *ra)
 
 static bool read_angles(FILE *in,char *line,t_resang *ra)
 {
-  char ai[12],aj[12],ak[12];
+  char ai[12],aj[12],ak[12],str[STRLEN];
   double c[MAXFORCEPARAM];
   int  i,j,n,maxentries;
 
@@ -275,9 +292,13 @@ static bool read_angles(FILE *in,char *line,t_resang *ra)
   ra->rang=NULL;
   i=0;
   while (get_a_line(in,line,STRLEN) && (strchr(line,'[')==NULL)) {
-    if ((n=sscanf(line,"%s%s%s%lf%lf%lf%lf",
-		  ai,aj,ak,&c[0],&c[1],&c[2],&c[3])) < 3) 
+    str[0] = '\0';
+    if ((n=sscanf(line,"%s%s%s%s",ai,aj,ak,str)) < 3)
       return FALSE;
+    if ((n==4) && !isalpha(str[0])) {
+      n=sscanf(line,"%s%s%s%lf%lf%lf%lf",ai,aj,ak,&c[0],&c[1],&c[2],&c[3]);
+      str[0] = '\0';
+    }
     if (i>=maxentries) {
       maxentries+=100;
       srenew(ra->rang,maxentries);
@@ -285,11 +306,13 @@ static bool read_angles(FILE *in,char *line,t_resang *ra)
     ra->rang[i].ai=strdup(ai);
     ra->rang[i].aj=strdup(aj);
     ra->rang[i].ak=strdup(ak);
-    for (j=0; j<MAXFORCEPARAM; j++)
-      if (j<n-3)
-	ra->rang[i].c[j]=c[j];
-      else
-	ra->rang[i].c[j]=NOTSET;
+    ra->rang[i].s =strdup(str);
+    if (!str[0])
+      for (j=0; j<MAXFORCEPARAM; j++)
+	if (j<n-3)
+	  ra->rang[i].c[j]=c[j];
+	else
+	  ra->rang[i].c[j]=NOTSET;
     i++;
   }
   ra->na=i;
@@ -304,11 +327,14 @@ static void print_resdihs(FILE *out,t_resdih *rd)
 
   fprintf(out," [ dihedrals ]\n");
   fprintf(out,";   ai    aj    ak    al            c0            c1            c2\n");
-  for(j=0; (j<rd->nd); j++) {
-    fprintf(out,"%6s%6s%6s%6s",rd->rdih[j].ai,rd->rdih[j].aj,
-	                       rd->rdih[j].ak,rd->rdih[j].al);
-    for(i=0; (i<MAXFORCEPARAM && (rd->rdih[j].c[i] != NOTSET)); i++)
-      fprintf(out,"%14g",rd->rdih[j].c[i]);
+  for(i=0; (i<rd->nd); i++) {
+    fprintf(out,"%6s%6s%6s%6s",rd->rdih[i].ai,rd->rdih[i].aj,
+	                       rd->rdih[i].ak,rd->rdih[i].al);
+    if (rd->rdih[i].s[0])
+      fprintf(out,"    %s",rd->rdih[i].s);
+    else
+      for(j=0; (j<MAXFORCEPARAM && (rd->rdih[i].c[j] != NOTSET)); j++)
+	fprintf(out,"%14g",rd->rdih[i].c[j]);
     fprintf(out,"\n");
   }
   
@@ -318,15 +344,20 @@ static bool read_dihedrals(FILE *in,char *line,t_resdih *rd)
 {
   int       i,j,n,maxentries;
   double    c[MAXFORCEPARAM];
-  char      ai[4][12];
+  char      ai[4][12],str[STRLEN];
 
   maxentries=0;
   rd->rdih=NULL;
   i=0;
   while (get_a_line(in,line,STRLEN) && (strchr(line,'[')==NULL)) {
-    if ((n=sscanf(line,"%s%s%s%s%lf%lf%lf%lf",
-		 ai[0],ai[1],ai[2],ai[3],&c[0],&c[1],&c[2],&c[3])) < 4)
+    str[0] = '\0';
+    if ((n=sscanf(line,"%s%s%s%s%s",ai[0],ai[1],ai[2],ai[3],str)) < 4)
       return FALSE;     
+    if ((n==5) && !isalpha(str[0])) {
+      n=sscanf(line,"%s%s%s%s%lf%lf%lf%lf",
+		 ai[0],ai[1],ai[2],ai[3],&c[0],&c[1],&c[2],&c[3]);
+      str[0] = '\0';
+    }
     if (i>=maxentries) {
       maxentries+=100;
       srenew(rd->rdih,maxentries);
@@ -335,11 +366,13 @@ static bool read_dihedrals(FILE *in,char *line,t_resdih *rd)
     rd->rdih[i].aj=strdup(ai[1]);
     rd->rdih[i].ak=strdup(ai[2]);
     rd->rdih[i].al=strdup(ai[3]);
-    for (j=0; j<MAXFORCEPARAM; j++)
-      if (j<n-4)
-	rd->rdih[i].c[j]=c[j];
-      else
-	rd->rdih[i].c[j]=NOTSET;
+    rd->rdih[i].s =strdup(str);
+    if (!str[0])
+      for (j=0; j<MAXFORCEPARAM; j++)
+	if (j<n-4)
+	  rd->rdih[i].c[j]=c[j];
+	else
+	  rd->rdih[i].c[j]=NOTSET;
     i++;
   }
   rd->nd=i;
@@ -350,14 +383,19 @@ static bool read_dihedrals(FILE *in,char *line,t_resdih *rd)
 
 static void print_idihs(FILE *out,t_idihres *ires)
 {
-  int  j,k;
+  int  i,j;
   
   /* fprintf(out,"%5d\n",ires->nidih); */
   fprintf(out," [ impropers ]\n");
 
-  for(j=0; (j<ires->nidih); j++) {
-    for(k=0; (k<4); k++)
-      fprintf(out,"%6s",ires->idih[j].ai[k]);
+  for(i=0; (i<ires->nidih); i++) {
+    for(j=0; (j<4); j++)
+      fprintf(out,"%6s",ires->idih[i].ai[j]);
+    if (ires->idih[i].s[0])
+      fprintf(out,"    %s",ires->idih[i].s);
+    else
+      for(j=0; (i<MAXFORCEPARAM && (ires->idih[i].c[j] != NOTSET)); j++)
+	fprintf(out,"%14g",ires->idih[i].c[j]);
     fprintf(out,"\n");
   }
 }
@@ -366,26 +404,33 @@ static bool read_idihs(FILE *in,char *line,t_idihres *ires)
 {
   int       i,j,n,maxentries;
   double    c[MAXFORCEPARAM];
-  char      ai[4][12];
+  char      ai[4][12],str[STRLEN];
 
   maxentries=0;
   ires->idih=NULL;
   i=0;
   while (get_a_line(in,line,STRLEN) && (strchr(line,'[')==NULL)) {
-    if ((n=sscanf(line,"%s%s%s%s%lf%lf%lf%lf",
-		 ai[0],ai[1],ai[2],ai[3],&c[0],&c[1],&c[2],&c[3])) < 4)
+    str[0] = '\0';
+    if ((n=sscanf(line,"%s%s%s%s%s",ai[0],ai[1],ai[2],ai[3],str)) < 4)
       return FALSE;     
+    if ((n==5) && !isalpha(str[0])) {
+      n=sscanf(line,"%s%s%s%s%lf%lf%lf%lf",
+		 ai[0],ai[1],ai[2],ai[3],&c[0],&c[1],&c[2],&c[3]);
+      str[0] = '\0';
+    }
     if (i>=maxentries) {
       maxentries+=100;
       srenew(ires->idih,maxentries);
     }
     for(j=0; (j<4); j++)
       ires->idih[i].ai[j]=strdup(ai[j]);
-    for (j=0; j<MAXFORCEPARAM; j++)
-      if (j<n-4)
-	ires->idih[i].c[j]=c[j];
-      else
-	ires->idih[i].c[j]=NOTSET;
+    ires->idih[i].s=strdup(str);
+    if (!str[0])
+      for (j=0; j<MAXFORCEPARAM; j++)
+	if (j<n-4)
+	  ires->idih[i].c[j]=c[j];
+	else
+	  ires->idih[i].c[j]=NOTSET;
     i++;
   }
   ires->nidih=i;
@@ -432,7 +477,15 @@ static void check_rtp(int nrtp,t_restp rtp[],char *libfn)
   }
 }
 
+static void old_rtp_warning(FILE *out)
+{
+  fprintf(out,"\n\n\tREADING .rtp FILE IN OLD FORMAT\n\n"
+	  "\tTO CONVERT TO NEW FORMAT USE THE HIDDEN OPTION -newrtp\n"
+	  "\tWHICH WILL PRODUCE A FILE new.rtp\n\n\n");
+}
+
 int read_resall(char       *ff,
+		int        bts[],
 		t_restp    **rtp,
 		t_resbond  **rb,
 		t_resang   **ra,
@@ -461,11 +514,16 @@ int read_resall(char       *ff,
   snew(rrdi,MAXRTP);
   snew(rrid,MAXRTP);
 
+  /* these bonded parameters will overwritten be when  *
+   * there is a [ bondedtypes ] entry in the .rtp file */
+  bts[0] = 1; /* normal bonds     */
+  bts[1] = 1; /* normal angles    */
+  bts[2] = 1; /* normal dihedrals */
+  bts[3] = 2; /* normal impropers */
+
   get_a_line(in,line,STRLEN);
   if (strchr(line,'[') == 0) {
-    fprintf(stderr,"\n\n\tREADING .rtp FILE WITH OLD FORMAT\n\n"
-	    "\tTO CONVERT TO NEW FORMAT USE THE HIDDEN OPTION -newrtp\n"
-	    "\tWHICH WILL PRODUCE A FILE new.rtp\n\n\n");
+    old_rtp_warning(stderr);
     for(nrtp=0; ; nrtp++) {
       if (nrtp >= MAXRTP)
 	fatal_error(0,"nrtp >= MAXRTP(%d). Increase the latter",MAXRTP);
@@ -497,6 +555,17 @@ int read_resall(char       *ff,
     }
   }
   else {
+    if (!get_header(line,header))
+      fatal_error(0,"in .rtp file at line:\n%s\n",line);
+    if (strncasecmp("bondedtypes",header,5)==0) {
+      get_a_line(in,line,STRLEN);
+      if (sscanf(line,"%d %d %d %d",&bts[0],&bts[1],&bts[2],&bts[3]) != ebtsNR)
+	fatal_error(0,"need 4 parameters in .rtp file at line:\n%s\n",line);
+      get_a_line(in,line,STRLEN);
+    } else {
+      old_rtp_warning(stderr);
+      fprintf(stderr,"Reading .rtp file in old format, using 'normal' bonded types (not Gromos96)\n");
+    }
     nrtp=0;
     while (!feof(in)) {
       if (nrtp >= MAXRTP)
@@ -575,6 +644,7 @@ int read_resall(char       *ff,
 }
 
 void print_resall(FILE *out,
+		  int bts[],
 		  int nrtp,
 		  t_restp rtp[],
 		  t_resbond rb[],
@@ -584,7 +654,12 @@ void print_resall(FILE *out,
 		  t_atomtype *atype)
 {
   int i;
-  
+
+  /* print all the ebtsNR type numbers */
+  fprintf(out,"[ bondedtypes ]\n");
+  fprintf(out,"; bonds  angles  dihedrals  impropers\n");
+  fprintf(out," %5d  %6d  %9d  %9d\n\n",bts[0],bts[1],bts[2],bts[3]);
+
   for(i=0; (i<nrtp); i++) {
     if (rtp[i].natom > 0) {
       print_resatoms(out,atype,&rtp[i]);

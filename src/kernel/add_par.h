@@ -33,10 +33,10 @@ static char *SRCID_add_par_h = "$Id$";
 
 #include "typedefs.h"
 
-extern void add_param(t_params *ps,int ai,int aj, real *c);
+extern void add_param(t_params *ps,int ai,int aj,real *c,char *s);
 
 extern void add_imp_param(t_params *ps,int ai,int aj,int ak,int al,
-			  real c0, real c1);
+			  real c0,real c1,char *s);
 
 extern void add_dum2_param(t_params *ps,int ai,int aj,int ak);
 

@@ -220,7 +220,10 @@ int read_pdball(char *inf, char *outf,char *title,
     natom=new_natom;
   }
     
-  printf("'%s': %d atoms\n",title,natom);
+  printf("Read");
+  if (title && title[0])
+    printf(" '%s',",title);
+  printf(" %d atoms\n",natom);
   
   /* Rename residues */
   rename_pdbres(atoms,"SOL","HOH",FALSE);
@@ -593,6 +596,7 @@ int main(int argc, char *argv[])
   char       *ff;
   int        i,j,k,l,nrtp,rN,rC;
   int        *swap_index,si;
+  int        bts[ebtsNR];
   t_restp    *restp;
   t_resbond  *rb;
   t_resang   *ra;
@@ -817,9 +821,10 @@ int main(int argc, char *argv[])
 	   i+1,chains[i].chain,chains[i].pdba->nres,
 	   chains[i].pdba->nr,
 	   chains[i].bAllWat ? "(only water)":"");
-  
+  printf("\n");
+
   ff=choose_ff(bFFMan);
-  printf("\nUsing %s force field\n",ff);
+  printf("Using %s force field\n",ff);
   
   /* Read atomtypes... */
   open_symtab(&tab);
@@ -827,15 +832,15 @@ int main(int argc, char *argv[])
     
   /* read residue database */
   printf("Reading residue database... (%s)\n",ff);
-  nrtp=read_resall(ff,&restp,&rb,&ra,&rd,&idih,atype,&tab);
+  nrtp=read_resall(ff,bts,&restp,&rb,&ra,&rd,&idih,atype,&tab);
   if (debug) {
     fprintf(debug,"\nResidue database with %d residues:\n\n\n",nrtp);
-    print_resall(debug,nrtp,restp,rb,ra,rd,idih,atype);
+    print_resall(debug,bts,nrtp,restp,rb,ra,rd,idih,atype);
     fprintf(debug,"\n");
   }
   if (bNewRTP) {
     fp=ffopen("new.rtp","w");
-    print_resall(fp,nrtp,restp,rb,ra,rd,idih,atype);
+    print_resall(fp,bts,nrtp,restp,rb,ra,rd,idih,atype);
     fclose(fp);
   }
     
@@ -1004,7 +1009,7 @@ int main(int argc, char *argv[])
 	top_file2=top_file;
 
     pdb2top(ff,top_file2,posre_fn,molname,nincl,incls,nmol,mols,pdba,nah,ah,
-	    &x,atype,&tab,nrtp,rb,nrtp,restp,nrtp,ra,nrtp,rd,nrtp,idih,
+	    &x,atype,&tab,bts,nrtp,rb,nrtp,restp,nrtp,ra,nrtp,rd,nrtp,idih,
 	    sel_ntdb,sel_ctdb,bH14,rN,rC,bAlldih,
 	    bDummies,mHmult,nssbonds,ssbonds,NREXCL);
     

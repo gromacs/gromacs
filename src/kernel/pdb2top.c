@@ -232,7 +232,7 @@ void print_top_mols(FILE *out, char *title,
 
 void write_top(char *ff,FILE *out, char *pr,char *molname,
 	       int nincl, char **incls, int nmol, t_mols *mols,
-	       t_atoms *at,t_params plist[],t_block *excl,
+	       t_atoms *at,int bts[],t_params plist[],t_block *excl,
 	       t_atomtype *atype,int *cgnr, int nrexcl, real mHmult)
      /* NOTE: nrexcl is not the size of *excl! */
 {
@@ -242,16 +242,16 @@ void write_top(char *ff,FILE *out, char *pr,char *molname,
     fprintf(out,"%-15s %5d\n\n",molname?molname:"Protein",nrexcl);
     
     print_atoms(out,atype,at,cgnr);
-    print_bondeds(out,at->nr,d_bonds,    F_BONDS     ,plist,FALSE);
-    print_bondeds(out,at->nr,d_pairs,    F_LJ14      ,plist,FALSE);
-    print_bondeds(out,at->nr,d_angles,   F_ANGLES    ,plist,FALSE);
-    print_bondeds(out,at->nr,d_dihedrals,F_PDIHS     ,plist,FALSE);
-    print_bondeds(out,at->nr,d_dihedrals,F_IDIHS     ,plist,FALSE);
-    print_bondeds(out,at->nr,d_dum3,     F_DUMMY3    ,plist,FALSE);
-    print_bondeds(out,at->nr,d_dum3,     F_DUMMY3FD  ,plist,FALSE);
-    print_bondeds(out,at->nr,d_dum3,     F_DUMMY3FAD ,plist,FALSE);
-    print_bondeds(out,at->nr,d_dum3,     F_DUMMY3OUT ,plist,FALSE);
-    print_bondeds(out,at->nr,d_dum4,     F_DUMMY4FD  ,plist,FALSE);
+    print_bondeds(out,at->nr,d_bonds,    F_BONDS,    bts[ebtsBONDS], plist);
+    print_bondeds(out,at->nr,d_pairs,    F_LJ14,     0,              plist);
+    print_bondeds(out,at->nr,d_angles,   F_ANGLES,   bts[ebtsANGLES],plist);
+    print_bondeds(out,at->nr,d_dihedrals,F_PDIHS,    bts[ebtsPDIHS], plist);
+    print_bondeds(out,at->nr,d_dihedrals,F_IDIHS,    bts[ebtsIDIHS], plist);
+    print_bondeds(out,at->nr,d_dum3,     F_DUMMY3,   0,              plist);
+    print_bondeds(out,at->nr,d_dum3,     F_DUMMY3FD, 0,              plist);
+    print_bondeds(out,at->nr,d_dum3,     F_DUMMY3FAD,0,              plist);
+    print_bondeds(out,at->nr,d_dum3,     F_DUMMY3OUT,0,              plist);
+    print_bondeds(out,at->nr,d_dum4,     F_DUMMY4FD, 0,              plist);
     
     if (excl)
       if (excl->nr > 0)
@@ -287,7 +287,7 @@ static void do_ssbonds(t_params *ps,int natoms,t_atom atom[],char **aname[],
     if ((ai == -1) || (aj == -1))
       fatal_error(0,"Trying to make impossible special bond (%s-%s)!",
 		  ssbonds[i].a1,ssbonds[i].a2);
-    add_param(ps,ai,aj,NULL);
+    add_param(ps,ai,aj,NULL,NULL);
   }
 }
 
@@ -305,12 +305,12 @@ static void ter2bonds(t_params *ps,
     for(j=0; (j<tdb->nadd); j++)
       if (strcmp(tdb->ab[j].na[0],*(aname[i])) == 0)
 	if (tdb->ab[j].tp == 9) {         /* COOH terminus */
-	  add_param(ps,i,i+1,NULL);   /* C-O  */
-	  add_param(ps,i,i+2,NULL);   /* C-OA */
-	  add_param(ps,i+2,i+3,NULL);   /* OA-H */
+	  add_param(ps,i,i+1,NULL,NULL);   /* C-O  */
+	  add_param(ps,i,i+2,NULL,NULL);   /* C-OA */
+	  add_param(ps,i+2,i+3,NULL,NULL);   /* OA-H */
 	} else
 	  for(k=0; (k<tdb->ab[j].nh); k++)
-	    add_param(ps,i,i+k+1,NULL);
+	    add_param(ps,i,i+k+1,NULL,NULL);
 }
 
 static void ter2idihs(t_params *ps,
@@ -343,7 +343,7 @@ static void ter2idihs(t_params *ps,
 	a0[k] = aa0;
       }
     }
-    add_imp_param(ps,a0[0],a0[1],a0[2],a0[3],NOTSET,NOTSET);
+    add_imp_param(ps,a0[0],a0[1],a0[2],a0[3],NOTSET,NOTSET,NULL);
   }
 }
 
@@ -373,7 +373,7 @@ static void at2bonds(t_params *ps,
 	      if ( ( !is_hydrogen(rb0->rbond[k].ai) &&
 		     !is_hydrogen(rb0->rbond[k].aj) ) ||
 		   (atom[ai].resnr == atom[aj].resnr))
-		add_param(ps,ai,aj,rb0->rbond[k].c);
+		add_param(ps,ai,aj,rb0->rbond[k].c,rb0->rbond[k].s);
 	} else {
 	  /* else do the normal thing */
 	  if (!is_hydrogen(rb0->rbond[k].ai) && 
@@ -384,7 +384,7 @@ static void at2bonds(t_params *ps,
 		if (dist2 > sqr(LONG_BOND_DIST) )
 		  fprintf(stderr,"Warning: Long Bond (%d-%d = %g nm)\n",
 			  ai+1,aj+1,sqrt(dist2));
-		add_param(ps,ai,aj,rb0->rbond[k].c);
+		add_param(ps,ai,aj,rb0->rbond[k].c,rb0->rbond[k].s);
 	      }
 	  }
 	}
@@ -409,7 +409,7 @@ static void at2bonds(t_params *ps,
 	else
 	  for(l=0; (l<ab0->nh); l++) {
 	    aj=ai+l+1;
-	    add_param(ps,ai,aj,NULL);
+	    add_param(ps,ai,aj,NULL,NULL);
 	  }
       }
     
@@ -490,6 +490,7 @@ void pdb2top(char *ff,FILE *top_file,char *posre_fn,char *molname,
 	     int nincl, char **incls, int nmol, t_mols *mols,
 	     t_atoms *atoms,int nah,t_addh ah[],rvec **x,
 	     t_atomtype *atype,t_symtab *tab,
+	     int bts[],
 	     int nrb, t_resbond rb[],
 	     int nrtp,t_restp rtp[],
 	     int nra, t_resang ra[],
@@ -609,7 +610,7 @@ void pdb2top(char *ff,FILE *top_file,char *posre_fn,char *molname,
   if (top_file) {
     fprintf(stderr,"Writing topology\n");
     write_top(ff,top_file,posre_fn,molname,nincl,incls,nmol,mols,
-	      atoms,plist,&excl,atype,cgnr,nrexcl,mHmult);
+	      atoms,bts,plist,&excl,atype,cgnr,nrexcl,mHmult);
   }
 
   /* cleaning up */

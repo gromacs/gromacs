@@ -184,6 +184,17 @@ static void rm2par(t_param p[], int *np, peq eq)
       p[i].a[j]=p[index[i]].a[j];
     for(j=0; (j<MAXFORCEPARAM); j++)
       p[i].c[j]=p[index[i]].c[j];
+    if (p[index[i]].a[0] == p[index[i]].a[1]) {
+      if (debug)  
+	fprintf(debug,
+		"Something VERY strange is going on in rm2par (gen_ad.c)\n"
+		"a[0] %d a[1] %d a[2] %d a[3] %d\n",
+		p[i].a[0],p[i].a[1],p[i].a[2],p[i].a[3]);
+      p[i].s = strdup(""); 
+    } else {
+      sfree(p[i].s);
+      p[i].s = strdup(p[index[i]].s);
+    }
   }
   (*np)=nind;
 
@@ -206,6 +217,7 @@ static void cppar(t_param p[], int np, t_params plist[], int ftype)
       ps->param[i].a[j]=p[i].a[j];
     for(j=0; (j<nrfp); j++)
       ps->param[i].c[j]=p[i].c[j];
+    ps->param[i].s=strdup(p[i].s);
   }
   ps->nr=np;
 }
@@ -218,9 +230,10 @@ static void cpparam(t_param *dest,t_param *src)
     dest->a[j]=src->a[j];
   for(j=0; (j<MAXFORCEPARAM); j++)
     dest->c[j]=src->c[j];
+  dest->s=strdup(src->s);
 }
 
-static void set_p(t_param *p,atom_id ai[4],real *c)
+static void set_p(t_param *p,atom_id ai[4],real *c,char *s)
 {
   int j;
 
@@ -228,6 +241,7 @@ static void set_p(t_param *p,atom_id ai[4],real *c)
     p->a[j]=ai[j];
   for(j=0; (j<MAXFORCEPARAM); j++)
     p->c[j]=c[j];
+  p->s=strdup(s);
 }
 
 static int int_comp(const void *a,const void *b)
@@ -359,7 +373,7 @@ static void pdih2idih(t_param *alldih,int *nalldih,t_param idih[],int *nidih,
   atom_id   ai[MAXATOMLIST];
   bool      bIsSet,bKeep;
   int bestl,nh,minh;
-  
+
   /* First add all the impropers from the residue database
    * to the list.
    */
@@ -384,7 +398,7 @@ static void pdih2idih(t_param *alldih,int *nalldih,t_param idih[],int *nidih,
 	}
 	if (k==4) {
 	  /* Not broken out */
-	  set_p(&(idih[*nidih]),ai,i0->idih[j].c);
+	  set_p(&(idih[*nidih]),ai,i0->idih[j].c,i0->idih[j].s);
 	  (*nidih)++;
 	}
       }
@@ -399,7 +413,7 @@ static void pdih2idih(t_param *alldih,int *nalldih,t_param idih[],int *nidih,
   /* Copy the impropers and dihedrals to seperate arrays. */
   snew(dih,*nalldih);
   ndih = 0;
-  for(i=0; (i<(*nalldih)); i++) 
+  for(i=0; i<*nalldih; i++) 
     if (is_imp(&(alldih[i]),atoms,nrdh,idh)) {
       cpparam(&(idih[*nidih]),&(alldih[i]));
       (*nidih)++;
@@ -436,7 +450,7 @@ static void pdih2idih(t_param *alldih,int *nalldih,t_param idih[],int *nidih,
     bKeep = TRUE;
     if (!bIsSet)
       /* remove the dihedral if there is an improper on the same bond */
-      for(j=0; (j<*nidih) && bKeep; j++)
+      for(j=0; (j<(*nidih)) && bKeep; j++)
 	bKeep = !deq(&dih[index[i]],&idih[j]);
 
     if (bKeep) {
@@ -459,14 +473,20 @@ static void pdih2idih(t_param *alldih,int *nalldih,t_param idih[],int *nidih,
 	}
       }
       for(j=0; (j<MAXATOMLIST); j++)
-	alldih[k].a[j]=dih[bestl].a[j];
+	alldih[k].a[j] = dih[bestl].a[j];
       for(j=0; (j<MAXFORCEPARAM); j++)
-	alldih[k].c[j]=dih[bestl].c[j];
+	alldih[k].c[j] = dih[bestl].c[j];
+      sfree(alldih[k].s);
+      alldih[k].s = strdup(dih[bestl].s);
       k++;
     }
   }
+  for (i=(*nalldih); i<k; i++)
+    sfree(alldih[i].s);
   *nalldih = k;
-  
+
+  for(i=0; i<ndih; i++)
+    sfree(dih[i].s);
   sfree(dih);
   sfree(index);
 }
@@ -497,6 +517,23 @@ bool is_hydro(t_atoms *atoms,int ai)
   return ((*(atoms->atomname[ai]))[0] == 'H');
 }
 
+static void get_atomnames_min(int n,t_atoms *atoms,atom_id *a,char anm[4][12])
+{
+  int m,maxres;
+
+  maxres = -1;
+
+  for(m=0; m<n; m++)
+    maxres=max(maxres,atoms->atom[a[m]].resnr);
+  for(m=0; m<n; m++) {
+    if (atoms->atom[a[m]].resnr<maxres)
+      strcpy(anm[m],"-");
+    else
+      strcpy(anm[m],"");
+    strcat(anm[m],*(atoms->atomname[a[m]]));
+  }
+}
+
 void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 	     int nrtp,t_restp rtp[],
 	     int nra,t_resang ra[],int nrd,t_resdih rd[], 
@@ -505,6 +542,7 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
   t_param *ang,*dih,*pai,*idih;
   t_resang *i_ra;
   t_resdih *i_rd;
+  char    anm[4][12];
   int     i,j,j1,k,k1,l,l1,m,n;
   int     maxang,maxdih,maxidih,maxpai;
   int     nang,ndih,npai,nidih,nbd;
@@ -546,21 +584,23 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 	  }
 	  ang[nang].C0=NOTSET;
 	  ang[nang].C1=NOTSET;
+	  ang[nang].s=strdup("");
 	  if ((i_ra=search_rang(*(atoms->resname[atoms->atom[j1].resnr]),
 			       nra,ra))) {
 	    for(l=0; (l<i_ra->na); l++) {
-	      if (strcmp(*(atoms->atomname[ang[nang].a[1]]),
-			 i_ra->rang[l].aj)==0) {
+	      get_atomnames_min(3,atoms,ang[nang].a,anm); 
+	      if (strcmp(anm[1],i_ra->rang[l].aj)==0) {
 		bFound=FALSE;
 		for (m=0; m<3; m+=2)
 		  bFound=(bFound ||
-			  ((strcmp(*(atoms->atomname[ang[nang].a[m]]),
-				   i_ra->rang[l].ai)==0) &&
-			   (strcmp(*(atoms->atomname[ang[nang].a[2-m]]),
-				   i_ra->rang[l].ak)==0)));
-		if (bFound) 
+			  ((strcmp(anm[m],i_ra->rang[l].ai)==0) &&
+			   (strcmp(anm[2-m],i_ra->rang[l].ak)==0)));
+		if (bFound) { 
 		  for (m=0; m<MAXFORCEPARAM; m++)
-		    ang[nang].c[m]=i_ra->rang[l].c[m];
+		    ang[nang].c[m] = i_ra->rang[l].c[m];
+		  sfree(ang[nang].s);
+		  ang[nang].s = strdup(i_ra->rang[l].s);
+		}
 	      }
 	    }
 	  }
@@ -585,26 +625,38 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 	      }
 	      for (m=0; m<MAXFORCEPARAM; m++)
 		dih[ndih].c[m]=NOTSET;
+	      dih[ndih].s=strdup("");
 	      if ((i_rd=search_rdih(*(atoms->resname[atoms->atom[j1].resnr]),
 				    nrd,rd))) {
 		for(n=0; (n<i_rd->nd); n++) {
+		  get_atomnames_min(4,atoms,dih[ndih].a,anm);
+		  /*
+		  maxres = -1;
+		  for(m=0; m<4; m++)
+		    maxres=max(maxres,atoms->atom[dih[ndih].a[m]].resnr);
+		  for(m=0; m<4; m++) {
+		    if (atoms->atom[dih[ndih].a[m]].resnr<maxres)
+		      strcpy(anm[m],"-");
+		    else
+		      strcpy(anm[m],"");
+		    strcat(anm[m],*(atoms->atomname[dih[ndih].a[m]]));
+		  }
+		  */
 		  bFound=FALSE;
 		  for (m=0; m<2; m++)
 		    bFound=(bFound ||
-			    ((strcmp(*(atoms->atomname[dih[ndih].a[3*m]]),
-				     i_rd->rdih[n].ai)==0) &&
-			     (strcmp(*(atoms->atomname[dih[ndih].a[1+m]]),
-				     i_rd->rdih[n].aj)==0) &&
-			     (strcmp(*(atoms->atomname[dih[ndih].a[2-m]]),
-				     i_rd->rdih[n].ak)==0) &&
-			     (strcmp(*(atoms->atomname[dih[ndih].a[3-3*m]]),
-				     i_rd->rdih[n].al)==0)));
+			    ((strcmp(anm[3*m],  i_rd->rdih[n].ai)==0) &&
+			     (strcmp(anm[1+m],  i_rd->rdih[n].aj)==0) &&
+			     (strcmp(anm[2-m],  i_rd->rdih[n].ak)==0) &&
+			     (strcmp(anm[3-3*m],i_rd->rdih[n].al)==0)));
 		  if (bFound) {
 		    for (m=0; m<MAXFORCEPARAM-1; m++)
-		      dih[ndih].c[m]=i_rd->rdih[n].c[m];
+		      dih[ndih].c[m] = i_rd->rdih[n].c[m];
+		    sfree(dih[ndih].s);
+		    dih[ndih].s = strdup(i_rd->rdih[n].s);
 		    /* Set the last parameter to be able to see
 		       if the dihedral was in the rtp list */
-		    dih[ndih].c[MAXFORCEPARAM-1]=0;
+		    dih[ndih].c[MAXFORCEPARAM-1] = 0;
 		  }
 		}
 	      }
@@ -616,6 +668,7 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 		pai[npai].AJ=max(i,l1);
 		pai[npai].C0=NOTSET;
 		pai[npai].C1=NOTSET;
+		pai[npai].s =strdup("");
 		if (bH14 || !(is_hydro(atoms,pai[npai].AI) &&
 			      is_hydro(atoms,pai[npai].AJ)))
 		  npai++;

@@ -50,7 +50,7 @@ static void clear_force_param(int i0, real c[])
     c[i]=NOTSET;
 }
 
-void add_param(t_params *ps,int ai,int aj, real *c)
+void add_param(t_params *ps,int ai,int aj, real *c, char *s)
 {
   int i;
   
@@ -65,9 +65,14 @@ void add_param(t_params *ps,int ai,int aj, real *c)
   else
     for(i=0; (i < MAXFORCEPARAM); i++)
       ps->param[ps->nr-1].c[i]=c[i];
+  if (s)
+    ps->param[ps->nr-1].s = strdup(s);
+  else
+    ps->param[ps->nr-1].s = strdup("");
 }
 
-void add_imp_param(t_params *ps,int ai,int aj,int ak,int al,real c0, real c1)
+void add_imp_param(t_params *ps,int ai,int aj,int ak,int al,real c0, real c1,
+		   char *s)
 {
   srenew(ps->param,++ps->nr);
   ps->param[ps->nr-1].AI=ai;
@@ -78,6 +83,10 @@ void add_imp_param(t_params *ps,int ai,int aj,int ak,int al,real c0, real c1)
   ps->param[ps->nr-1].C0=c0;
   ps->param[ps->nr-1].C1=c1;
   clear_force_param(2, ps->param[ps->nr-1].c);
+  if (s)
+    ps->param[ps->nr-1].s = strdup(s);
+  else
+    ps->param[ps->nr-1].s = strdup("");
 }
 
 void add_dum2_param(t_params *ps,int ai,int aj,int ak)

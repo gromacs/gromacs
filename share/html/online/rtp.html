@@ -5,12 +5,16 @@
 The rtp file extension stands for residue toplogy. 
 Such a file is needed by <a href="pdb2gmx.html">pdb2gmx</a>
 to make a Gromacs topology for a protein contained in a <tt>.pdb</tt>
-file. The file contains residue entries, which consist of atoms and
+file. The file contains the default interaction type for the 4 bonded
+interactions and residue entries, which consist of atoms and
 optionally bonds, angles dihedrals and impropers.
 Parameters can be added to bonds, angles, dihedrals and impropers, 
 these parameters override the standard parameters
 in the <a href="itp.html"><tt>.itp</tt></a> files.
 This should only be used in special cases.
+Instead of parameters a string can be added for each bonded interaction,
+the string is copied to the <a href="top.html"><tt>.top</tt></a> file,
+this is used for the Gromos96 forcefield. 
 <p>
 <a href="pdb2gmx.html">pdb2gmx</a> automatically generates all angles,
 this means that the <tt>[angles]</tt> field is only
@@ -26,6 +30,10 @@ A sample is included below.
 
 
 <PRE>
+[ bondedtypes ]  ; mandatory
+; bonds  angles  dihedrals  impropers
+     1       1          1          2  ; mandatory
+
 [ GLY ]  ; mandatory
 
  [ atoms ]  ; mandatory 

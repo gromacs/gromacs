@@ -39,32 +39,38 @@ static char *SRCID_pdb2gmx_h = "$Id$";
 #include "typedefs.h"
 #include "pdbio.h"
 
+/* Used for reading the [ bondedtypes ] entry in the .rtp file */
+enum { ebtsBONDS, ebtsANGLES, ebtsPDIHS, ebtsIDIHS, ebtsNR };
+
 /* BONDS */
 typedef struct {
   char 	*ai;		/* Atom i (may start with '-' to indicat prev residue*/
   char	*aj;		/* is bonded to atom j				*/
-  real c[MAXFORCEPARAM];
+  real  c[MAXFORCEPARAM];
+  char  *s; 
 } t_rbond;
 
 typedef struct {
-  char    *resname;	/* Residue name					*/
+  char     *resname;	/* Residue name					*/
   int      nb;		/* Number of bonds			        */
-  t_rbond *rbond;	/* The atom names of the bonded atoms	        */
+  t_rbond  *rbond;	/* The atom names of the bonded atoms	        */
 } t_resbond;
 
 typedef struct {
-  char *ai;
-  char *aj;
-  char *ak;
-  real c[MAXFORCEPARAM];
+  char  *ai;
+  char  *aj;
+  char  *ak;
+  real  c[MAXFORCEPARAM];
+  char  *s;
 } t_rang;
 
 typedef struct {
-  char *ai;
-  char *aj;
-  char *ak;
-  char *al;
-  real c[MAXFORCEPARAM];
+  char  *ai;
+  char  *aj;
+  char  *ak;
+  char  *al;
+  real  c[MAXFORCEPARAM];
+  char  *s;
 } t_rdih;
 
 /* ANGLES */
@@ -94,6 +100,7 @@ typedef struct {
 typedef struct {
   char *ai[MAXATOMLIST];
   real c[MAXFORCEPARAM];
+  char *s;
 } t_idih;
 
 typedef struct {

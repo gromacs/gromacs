@@ -214,7 +214,7 @@ static void print_nbt (FILE *out,char *title,t_atomtype *at,
 }
 
 void print_bt(FILE *out, directive d, t_atomtype *at,
-	      int ftype,t_params plist[],bool bConsts,
+	      int ftype,int fsubtype,t_params plist[],
 	      bool bFullDih)
 {
   /* This dihp is a DIRTY patch because the dih-types do not use
@@ -262,6 +262,8 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
   }
   if (bFullDih)
     bDih=FALSE;
+  if (fsubtype)
+    f = fsubtype-1;
     
   nral = NRAL(ftype);
   nrfp = NRFP(ftype);
@@ -293,8 +295,12 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
       for(j=0; (j<2); j++)
 	fprintf (out,"%5s ",*(at->atomname[bt->param[i].a[dihp[f][j]]]));
     fprintf (out,"%5d ", bSwapParity ? -f-1 : f+1);
-    for (j=0; (j<nrfp && (bConsts || (bt->param[i].c[j] != NOTSET))); j++)
-      fprintf (out,"%13.6e ",bt->param[i].c[j]);
+
+    if (bt->param[i].s[0])
+      fprintf(out,"   %s",bt->param[i].s);
+    else
+      for (j=0; (j<nrfp && (bt->param[i].c[j] != NOTSET)); j++)
+	fprintf (out,"%13.6e ",bt->param[i].c[j]);
     
     fprintf (out,"\n");
   }
@@ -393,7 +399,7 @@ void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,int *cgnr)
 }
 
 void print_bondeds(FILE *out,int natoms,directive d,
-		   int ftype,t_params plist[],bool bConsts)
+		   int ftype,int fsubtype,t_params plist[])
 {
   t_symtab   stab;
   t_atomtype atype;
@@ -407,7 +413,7 @@ void print_bondeds(FILE *out,int natoms,directive d,
     sprintf(buf,"%4d",(i+1));
     atype.atomname[i]=put_symtab(&stab,buf);
   }
-  print_bt(out,d,&atype,ftype,plist,bConsts,TRUE);
+  print_bt(out,d,&atype,ftype,fsubtype,plist,TRUE);
     
   done_symtab(&stab);
   sfree(atype.atom);

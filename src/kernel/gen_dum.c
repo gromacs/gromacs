@@ -172,7 +172,7 @@ static void add_dum_param(t_params plist[], t_params *newbonds,
       if ( (nrheavies != 1) && (nrHatoms != 1) )
 	fatal_error(0,"cannot make bond in add_dum_param for %d heavy atoms "
 		    "and %d hydrogen atoms",nrheavies,nrHatoms);
-      add_param(newbonds,Hatoms[i],heavies[0],NULL);
+      add_param(newbonds,Hatoms[i],heavies[0],NULL,NULL);
       break;
     case F_DUMMY3:
     case F_DUMMY3FD:
@@ -421,9 +421,9 @@ void do_dummies(int nrtp, t_restp rtp[],
 	}
 	/* add bonds between dummy masses and to heavies[0] */
 	/* 'add_shift' says which atoms won't be renumbered afterwards */
-	add_param(newbonds, heavies[0],   add_shift+i0,   NULL);
-	add_param(newbonds, heavies[0],   add_shift+i0+1, NULL);
-	add_param(newbonds, add_shift+i0, add_shift+i0+1, NULL);
+	add_param(newbonds, heavies[0],   add_shift+i0,   NULL, NULL);
+	add_param(newbonds, heavies[0],   add_shift+i0+1, NULL, NULL);
+	add_param(newbonds, add_shift+i0, add_shift+i0+1, NULL, NULL);
 	
 	/* generate Heavy, H1, H2 and H3 from M1, M2 and heavies[0] */
 	/* note that dummy_type cannot be NOTSET, because we just set it */
