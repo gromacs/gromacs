@@ -384,13 +384,17 @@ void mk_mshift(FILE *log,t_graph *g,matrix box,rvec x[])
   int    nerror=0;
   static egCol *egc=NULL;	/* The colour of each node	*/
 
-  if (!g->nbound)
-    return;
-
+  /* This puts everything in the central box, that is does not move it 
+   * at all. If we return without doing this for a system without bonds
+   * (i.e. only settles) all water molecules are moved to the opposite octant
+   */
   for(i=0; (i<g->nnodes); i++) {
     g->ishift[i]=CENTRAL;
   }
     
+  if (!g->nbound)
+    return;
+
   nnodes=g->nnodes;
   if (egc == NULL)
     snew(egc,nnodes);
