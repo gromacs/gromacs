@@ -399,6 +399,7 @@ int main(int argc,char *argv[])
   }
 
   /* Now do my thing */
+#ifdef USE_MPI
   if (PAR(cr)) {
     if (MASTER(cr))
       disco_master(cr,stdlog,opt2fn("-o",NFILE,fnm),
@@ -410,13 +411,16 @@ int main(int argc,char *argv[])
       disco_slave(cr,stdlog);
   }  
   else {
+#endif
     do_disco(stdlog,opt2fn("-o",NFILE,fnm),
 	     opt2bSet("-keep",NFILE,fnm) ? opt2fn("-keep",NFILE,fnm) : NULL,
 	     corr,bVerbose,&atoms,
 	     xref,xcenter,nstruct,&seed,bFit,nfit,fit_ind,
 	     opt2bSet("-viol",NFILE,fnm),opt2fn("-viol",NFILE,fnm),
 	     boxsize);
+#ifdef USE_MPI
   }
+#endif
   ffclose(stdlog);
 #ifdef USE_MPI
   if (PAR(cr))
