@@ -160,8 +160,6 @@ int calc_dist()
 	}
       }
       nflop += calc_rsq(i,j);
-      if(DO_VECTORIZE) /* calc square separately later, but we  */
-	increment("m","1"); /* need to know the number of items      */
     }
   
   return nflop;
