@@ -529,11 +529,9 @@ real dopdihs(real cpA,real cpB,real phiA,real phiB,int mult,
   /* That was 40 flops */
 }
 
-static real dopdihs_ra(real cpA,real cpB,real phiA,real phiB,int mult,
+static real dopdihs_min(real cpA,real cpB,real phiA,real phiB,int mult,
 		       real phi,real lambda,real *V,real *F)
-     /* equivalent to dopdihs, except that this is the "real" *
-      * dihedral function 1-cos(mult*phi-phi0) instead of     *
-      * 1+cos(mult*phi-phi0)                                  */
+     /* equivalent to dopdihs, except for a minus sign  */
 {
   real v,dvdl,mdphi,v1,sdphi,ddphi;
   real L1   = 1.0-lambda;
@@ -695,12 +693,12 @@ static real low_angres(FILE *log,int nbonds,
     cos_phi = cos_angle(r_ij,r_kl);		/* 25		*/
     phi     = acos(cos_phi);                    /* 10           */
 
-    *dvdlambda += dopdihs_ra(forceparams[type].pdihs.cpA,
-			     forceparams[type].pdihs.cpB,
-			     forceparams[type].pdihs.phiA,
-			     forceparams[type].pdihs.phiB,
-			     forceparams[type].pdihs.mult,
-			     phi,lambda,&vid,&dVdphi); /*  40  */
+    *dvdlambda += dopdihs_min(forceparams[type].pdihs.cpA,
+			      forceparams[type].pdihs.cpB,
+			      forceparams[type].pdihs.phiA,
+			      forceparams[type].pdihs.phiB,
+			      forceparams[type].pdihs.mult,
+			      phi,lambda,&vid,&dVdphi); /*  40  */
     
     vtot += vid;
 
