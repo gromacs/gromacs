@@ -672,7 +672,14 @@ int main (int argc, char *argv[])
   
   if (debug)
     pr_symtab(debug,0,"After new_status",&sys->symtab);
-    
+
+  if (nerror) {
+    print_warn_num();
+    if (nerror==1)
+      fatal_error(0,"There was %d error",nerror);
+    else
+      fatal_error(0,"There were %d errors",nerror);
+  }
   if (opt2bSet("-r",NFILE,fnm))
     sprintf(fn,opt2fn("-r",NFILE,fnm));
   else
