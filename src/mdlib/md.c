@@ -77,7 +77,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   t_pull     pulldata; /* for pull code */
   /* A boolean (disguised as a real) to terminate mdrun */  
   real       terminate=0;
-
+  bool       bGotTermSignalAlready = FALSE;
+  
   /* Turn on signal handling */
   signal(SIGTERM,signal_handler);
 
@@ -310,10 +311,21 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		   mdatoms->massT,mdatoms->tmass,parm->ekin);
     
     if ((terminate > 0) && (step < parm->ir.nsteps)) {
-      parm->ir.nsteps = step+1;
+      if ( !bGotTermSignalAlready && parm->ir.nstxout)
+	/* this is the first TERM signal and we are writing x to trr, 
+	   stop at next x frame in trr */
+	parm->ir.nsteps = (step / parm->ir.nstxout + 1) * parm->ir.nstxout;
+      else
+	/* this is the second TERM signal, or we're not writing x to trr,
+	   so we stop after this step */
+	parm->ir.nsteps = step+1;
       fprintf(log,"\nSetting nsteps to %d\n\n",parm->ir.nsteps);
       if (MASTER(cr))
 	fprintf(stderr,"\nSetting nsteps to %d\n\n",parm->ir.nsteps);
+      /* erase the terminate signal */
+      terminate = 0;
+      /* remember that we already had a TERM signal */
+      bGotTermSignalAlready = TRUE;
     }
 
     if (!bRerunMD) {
@@ -327,9 +339,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       
       /* Do fit to remove overall rotation */
       if (bStopRot) {
+	/* this check is also in grompp.c, if it becomes obsolete here,
+	   also remove it there */
 	if (PAR(cr))
-	  fatal_error(0,"Can not stop rototion about com on a "
-		      "parallel machine\n");
+	  fatal_error(0,"Can not stop rotation about center of mass in a "
+		      "parallel run\n");
 	do_stoprot(log,top->atoms.nr,box_size,x,mdatoms->massT);
       }
       /* Add force and shake contribution to the virial */
