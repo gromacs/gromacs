@@ -301,7 +301,7 @@ _nb_kernel332_x86_64_sse:
 	mov   rax, [rsp + nb332_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax + rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb332_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb332_shiftvec]   ;# rax = base of shiftvec[] 
@@ -313,7 +313,7 @@ _nb_kernel332_x86_64_sse:
 	mov   rcx, [rsp + nb332_iinr]       ;# rcx = pointer into iinr[] 	
 	mov   ebx, [rcx + rsi*4]	    ;# ebx =ii 
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb332_pos]    ;# rax = base of pos[]  
 	mov   [rsp + nb332_ii3], ebx	
 	
@@ -399,10 +399,10 @@ _nb_kernel332_x86_64_sse:
 
 	mov rsi, [rbp + nb332_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
-	lea   ecx, [ecx + ecx*2]     ;# replace jnr with j3 
-	lea   edx, [edx + edx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
+	lea   rcx, [rcx + rcx*2]     ;# replace jnr with j3 
+	lea   rdx, [rdx + rdx*2]	
 	
 	;# move j coordinates to local temp variables 
 	movlps xmm2, [rsi + rax*4]
@@ -735,10 +735,10 @@ _nb_kernel332_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -902,10 +902,10 @@ _nb_kernel332_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -992,10 +992,10 @@ _nb_kernel332_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -1082,10 +1082,10 @@ _nb_kernel332_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -1172,10 +1172,10 @@ _nb_kernel332_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -1262,10 +1262,10 @@ _nb_kernel332_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -1352,10 +1352,10 @@ _nb_kernel332_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -1442,10 +1442,10 @@ _nb_kernel332_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -1532,10 +1532,10 @@ _nb_kernel332_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -1722,7 +1722,7 @@ _nb_kernel332_x86_64_sse:
 	add qword ptr [rsp + nb332_innerjjnr],  4	
 
 	mov rsi, [rbp + nb332_pos]
-	lea   eax, [eax + eax*2]  
+	lea   rax, [rax + rax*2]  
 
 	;# fetch j coordinates 
 	xorps xmm3, xmm3
@@ -1798,9 +1798,9 @@ _nb_kernel332_x86_64_sse:
 
 	mov rsi, [rbp + nb332_VFtab]
 	
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 	
     movlps xmm5, [rsi + rbx*4]
     movlps xmm7, [rsi + rcx*4]
@@ -1995,9 +1995,9 @@ _nb_kernel332_x86_64_sse:
     psrlq mm7, 32
     movd edx, mm7		;# table indices in ebx,ecx,edx 
 
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 	
     movlps xmm5, [rsi + rbx*4]
     movlps xmm7, [rsi + rcx*4]
@@ -2083,9 +2083,9 @@ _nb_kernel332_x86_64_sse:
     psrlq mm7, 32
     movd edx, mm7		;# table indices in ebx,ecx,edx 
 
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 	
     movlps xmm5, [rsi + rbx*4]
     movlps xmm7, [rsi + rcx*4]
@@ -2598,7 +2598,7 @@ _nb_kernel332nf_x86_64_sse:
 	mov   rax, [rsp + nb332nf_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax + rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb332nf_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb332nf_shiftvec]   ;# rax = base of shiftvec[] 
@@ -2610,7 +2610,7 @@ _nb_kernel332nf_x86_64_sse:
 	mov   rcx, [rsp + nb332nf_iinr]       ;# rcx = pointer into iinr[] 	
 	mov   ebx, [rcx + rsi*4]	    ;# ebx =ii 
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb332nf_pos]    ;# rax = base of pos[]  
 	mov   [rsp + nb332nf_ii3], ebx	
 	
@@ -2686,10 +2686,10 @@ _nb_kernel332nf_x86_64_sse:
 
 	mov rsi, [rbp + nb332nf_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
-	lea   ecx, [ecx + ecx*2]     ;# replace jnr with j3 
-	lea   edx, [edx + edx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
+	lea   rcx, [rcx + rcx*2]     ;# replace jnr with j3 
+	lea   rdx, [rdx + rdx*2]	
 	
 	;# move j coordinates to local temp variables 
 	movlps xmm2, [rsi + rax*4]
@@ -2995,10 +2995,10 @@ _nb_kernel332nf_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -3116,10 +3116,10 @@ _nb_kernel332nf_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -3176,10 +3176,10 @@ _nb_kernel332nf_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -3236,10 +3236,10 @@ _nb_kernel332nf_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -3296,10 +3296,10 @@ _nb_kernel332nf_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -3356,10 +3356,10 @@ _nb_kernel332nf_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -3416,10 +3416,10 @@ _nb_kernel332nf_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -3476,10 +3476,10 @@ _nb_kernel332nf_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -3536,10 +3536,10 @@ _nb_kernel332nf_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -3586,7 +3586,7 @@ _nb_kernel332nf_x86_64_sse:
 	add qword ptr [rsp + nb332nf_innerjjnr],  4	
 
 	mov rsi, [rbp + nb332nf_pos]
-	lea   eax, [eax + eax*2]  
+	lea   rax, [rax + rax*2]  
 
 	;# fetch j coordinates 
 	xorps xmm3, xmm3
@@ -3660,9 +3660,9 @@ _nb_kernel332nf_x86_64_sse:
 
 	mov rsi, [rbp + nb332nf_VFtab]
 	
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 	
     movlps xmm5, [rsi + rbx*4]
     movlps xmm7, [rsi + rcx*4]
@@ -3804,9 +3804,9 @@ _nb_kernel332nf_x86_64_sse:
     psrlq mm7, 32
     movd edx, mm7		;# table indices in ebx,ecx,edx 
 
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 	
     movlps xmm5, [rsi + rbx*4]
     movlps xmm7, [rsi + rcx*4]
@@ -3862,9 +3862,9 @@ _nb_kernel332nf_x86_64_sse:
     psrlq mm7, 32
     movd edx, mm7		;# table indices in ebx,ecx,edx 
 
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 	
     movlps xmm5, [rsi + rbx*4]
     movlps xmm7, [rsi + rcx*4]

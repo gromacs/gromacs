@@ -245,7 +245,7 @@ _nb_kernel331_x86_64_sse2:
 	mov   rax, [rsp + nb331_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax+rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb331_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb331_shiftvec]   ;# rax = base of shiftvec[] 
@@ -261,7 +261,7 @@ _nb_kernel331_x86_64_sse2:
 	movapd xmm4, xmm1
 	movapd xmm5, xmm2
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb331_pos]    ;# rax = base of pos[]  
 	mov   [rsp + nb331_ii3], ebx
 
@@ -376,8 +376,8 @@ _nb_kernel331_x86_64_sse2:
 
 	mov rsi, [rbp + nb331_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
 
 	;# move two coordinates to xmm0-xmm2 	
 	movlpd xmm0, [rsi + rax*8]
@@ -548,8 +548,8 @@ _nb_kernel331_x86_64_sse2:
 	movd eax, mm6
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now) 
-	lea   ebx, [ebx + ebx*2]
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now) 
+	lea   rbx, [rbx + rbx*2]
 	
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	movapd xmm3, [rsi + rbx*8]	;# Y2 F2 
@@ -692,8 +692,8 @@ _nb_kernel331_x86_64_sse2:
 	movd eax, mm6
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now) 	
-	lea   ebx, [ebx + ebx*2]
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now) 	
+	lea   rbx, [rbx + rbx*2]
 	
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	movapd xmm3, [rsi + rbx*8]	;# Y2 F2 
@@ -768,8 +768,8 @@ _nb_kernel331_x86_64_sse2:
 	movd eax, mm6
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)
-	lea   ebx, [ebx + ebx*2]
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)
+	lea   rbx, [rbx + rbx*2]
 
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	movapd xmm3, [rsi + rbx*8]	;# Y2 F2 
@@ -891,7 +891,7 @@ _nb_kernel331_x86_64_sse2:
 	movapd [rsp + nb331_c12], xmm6
 	
 	mov rsi, [rbp + nb331_pos]       ;# base of pos[] 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
 	
 	;# move coords to xmm0-xmm2 
 	movlpd xmm0, [rsi + rax*8]
@@ -1053,7 +1053,7 @@ _nb_kernel331_x86_64_sse2:
 	 	
 	shl eax, 2		
 	mov  rsi, [rbp + nb331_VFtab]
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now) 	
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now) 	
 	
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 
 	movapd xmm5, xmm4
@@ -1186,7 +1186,7 @@ _nb_kernel331_x86_64_sse2:
 	
 	shl eax, 2		;# idx *= 4 
 	mov  rsi, [rbp + nb331_VFtab]
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)	
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)	
 
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	xorpd xmm3, xmm3
@@ -1258,7 +1258,7 @@ _nb_kernel331_x86_64_sse2:
 	
 	shl eax, 2		;# idx *= 4 
 	mov  rsi, [rbp + nb331_VFtab]
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)	
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)	
 
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	xorpd xmm3, xmm3
@@ -1683,7 +1683,7 @@ _nb_kernel331nf_x86_64_sse2:
 	mov   rax, [rsp + nb331nf_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax + rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 
 	mov   rax, [rsp + nb331nf_shiftvec]   ;# rax = base of shiftvec[] 
 
@@ -1698,7 +1698,7 @@ _nb_kernel331nf_x86_64_sse2:
 	movapd xmm4, xmm1
 	movapd xmm5, xmm2
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb331nf_pos]    ;# rax = base of pos[]  
 	mov   [rsp + nb331nf_ii3], ebx
 
@@ -1803,8 +1803,8 @@ _nb_kernel331nf_x86_64_sse2:
 
 	mov rsi, [rbp + nb331nf_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
 
 	;# move two coordinates to xmm0-xmm2 	
 	movlpd xmm0, [rsi + rax*8]
@@ -1962,8 +1962,8 @@ _nb_kernel331nf_x86_64_sse2:
 	movd eax, mm6
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now) 
-	lea   ebx, [ebx + ebx*2]
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now) 
+	lea   rbx, [rbx + rbx*2]
 	
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	movapd xmm3, [rsi + rbx*8]	;# Y2 F2 
@@ -2055,8 +2055,8 @@ _nb_kernel331nf_x86_64_sse2:
 	movd eax, mm6
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now) 	
-	lea   ebx, [ebx + ebx*2]
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now) 	
+	lea   rbx, [rbx + rbx*2]
 	
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	movapd xmm3, [rsi + rbx*8]	;# Y2 F2 
@@ -2098,8 +2098,8 @@ _nb_kernel331nf_x86_64_sse2:
 	movd eax, mm6
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)
-	lea   ebx, [ebx + ebx*2]
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)
+	lea   rbx, [rbx + rbx*2]
 
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	movapd xmm3, [rsi + rbx*8]	;# Y2 F2 
@@ -2169,7 +2169,7 @@ _nb_kernel331nf_x86_64_sse2:
 	movapd [rsp + nb331nf_c12], xmm6
 	
 	mov rsi, [rbp + nb331nf_pos]       ;# base of pos[] 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
 	
 	;# move coords to xmm0-xmm2 
 	movlpd xmm0, [rsi + rax*8]
@@ -2319,7 +2319,7 @@ _nb_kernel331nf_x86_64_sse2:
 	 	
 	shl eax, 2		
 	mov  rsi, [rbp + nb331nf_VFtab]
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now) 	
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now) 	
 	
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 
 	xorpd xmm3, xmm3
@@ -2410,7 +2410,7 @@ _nb_kernel331nf_x86_64_sse2:
 	
 	shl eax, 2		;# idx *= 4 
 	mov  rsi, [rbp + nb331nf_VFtab]
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)	
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)	
 
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	xorpd xmm3, xmm3
@@ -2449,7 +2449,7 @@ _nb_kernel331nf_x86_64_sse2:
 	
 	shl eax, 2		;# idx *= 4 
 	mov  rsi, [rbp + nb331nf_VFtab]
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)	
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)	
 
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	xorpd xmm3, xmm3

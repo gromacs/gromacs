@@ -244,7 +244,7 @@ _nb_kernel201_x86_64_sse:
 	mov   rax, [rsp + nb201_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax+rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb201_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb201_shiftvec]   ;# rax = base of shiftvec[] 
@@ -260,7 +260,7 @@ _nb_kernel201_x86_64_sse:
 	movaps xmm4, xmm1
 	movaps xmm5, xmm2
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb201_pos]    ;# rax = base of pos[]  
 	mov   [rsp + nb201_ii3], ebx
 
@@ -358,10 +358,10 @@ _nb_kernel201_x86_64_sse:
 
 	mov rsi, [rbp + nb201_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
-	lea   ecx, [ecx + ecx*2]     ;# replace jnr with j3 
-	lea   edx, [edx + edx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
+	lea   rcx, [rcx + rcx*2]     ;# replace jnr with j3 
+	lea   rdx, [rdx + rdx*2]	
 
 	;# move four coordinates to xmm0-xmm2 	
 	movlps xmm4, [rsi + rax*4]
@@ -676,7 +676,7 @@ _nb_kernel201_x86_64_sse:
 	movaps [rsp + nb201_qqO], xmm3	;# use oxygen qq for storage 
 
 	mov rsi, [rbp + nb201_pos]
-	lea   eax, [eax + eax*2]  
+	lea   rax, [rax + rax*2]  
 	
 	;# move j coords to xmm0-xmm2 
 	movss xmm0, [rsi + rax*4]
@@ -1182,7 +1182,7 @@ _nb_kernel201nf_x86_64_sse:
 	mov   rax, [rsp + nb201nf_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax + rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb201nf_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb201nf_shiftvec]   ;# rax = base of shiftvec[] 
@@ -1198,7 +1198,7 @@ _nb_kernel201nf_x86_64_sse:
 	movaps xmm4, xmm1
 	movaps xmm5, xmm2
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb201nf_pos]    ;# rax = base of pos[]  
 	mov   [rsp + nb201nf_ii3], ebx
 
@@ -1286,10 +1286,10 @@ _nb_kernel201nf_x86_64_sse:
 
 	mov rsi, [rbp + nb201nf_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
-	lea   ecx, [ecx + ecx*2]     ;# replace jnr with j3 
-	lea   edx, [edx + edx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
+	lea   rcx, [rcx + rcx*2]     ;# replace jnr with j3 
+	lea   rdx, [rdx + rdx*2]	
 
 	;# move four coordinates to xmm0-xmm2 	
 	movlps xmm4, [rsi + rax*4]
@@ -1463,7 +1463,7 @@ _nb_kernel201nf_x86_64_sse:
 	movaps [rsp + nb201nf_qqO], xmm3	;# use oxygen qq for storage 
 
 	mov rsi, [rbp + nb201nf_pos]
-	lea   eax, [eax + eax*2]  
+	lea   rax, [rax + rax*2]  
 	
 	;# move j coords to xmm0-xmm2 
 	movss xmm0, [rsi + rax*4]

@@ -190,7 +190,7 @@ _nb_kernel200_x86_64_sse2:
 	mov   rax, [rsp + nb200_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax + rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb200_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb200_shiftvec]   ;# rax = base of shiftvec[] 
@@ -207,7 +207,7 @@ _nb_kernel200_x86_64_sse2:
 	mulsd xmm3, [rsp + nb200_facel]
 	shufpd xmm3, xmm3, 0
 	
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb200_pos]    ;# rax = base of pos[]  
 
 	addsd xmm0, [rax + rbx*8]
@@ -267,8 +267,8 @@ _nb_kernel200_x86_64_sse2:
 	movapd xmm5, [rsp + nb200_iq]
 	mulpd xmm3, xmm5		;# qq 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
 
 	mov rsi, [rbp + nb200_pos]       ;# base of pos[] 
 
@@ -403,7 +403,7 @@ _nb_kernel200_x86_64_sse2:
 	
 	mov rsi, [rbp + nb200_pos]       ;# base of pos[] 
 
-	lea eax, [rax + rax*2]     ;# replace jnr with j3 
+	lea rax, [rax + rax*2]     ;# replace jnr with j3 
 
 	;# move two coordinates to xmm0-xmm2 	
 	movlpd xmm0, [rsi + rax*8]
@@ -737,7 +737,7 @@ _nb_kernel200nf_x86_64_sse2:
 	mov   rax, [rsp + nb200nf_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax+rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 
 	mov   rax, [rsp + nb200nf_shiftvec]   ;# rax = base of shiftvec[] 
 
@@ -753,7 +753,7 @@ _nb_kernel200nf_x86_64_sse2:
 	mulsd xmm3, [rsp + nb200nf_facel]
 	shufpd xmm3, xmm3, 0
 	
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb200nf_pos]    ;# rax = base of pos[]  
 
 	addsd xmm0, [rax + rbx*8]
@@ -809,8 +809,8 @@ _nb_kernel200nf_x86_64_sse2:
 	movapd xmm5, [rsp + nb200nf_iq]
 	mulpd xmm3, xmm5		;# qq 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
 
 	mov rsi, [rbp + nb200nf_pos]       ;# base of pos[] 
 
@@ -898,7 +898,7 @@ _nb_kernel200nf_x86_64_sse2:
 	
 	mov rsi, [rbp + nb200nf_pos]       ;# base of pos[] 
 
-	lea eax, [rax + rax*2]     ;# replace jnr with j3 
+	lea rax, [rax + rax*2]     ;# replace jnr with j3 
 
 	;# move two coordinates to xmm0-xmm2 	
 	movlpd xmm0, [rsi + rax*8]

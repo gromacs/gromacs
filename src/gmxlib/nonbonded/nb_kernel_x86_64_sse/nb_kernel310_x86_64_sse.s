@@ -208,7 +208,7 @@ _nb_kernel310_x86_64_sse:
 	mov   rax, [rsp + nb310_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax+rsi*4]		;# ebx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb310_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb310_shiftvec]   ;# rax = base of shiftvec[] 
@@ -231,7 +231,7 @@ _nb_kernel310_x86_64_sse:
     	shl   edx, 1
     	mov   [rsp + nb310_ntia], edx
 	
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb310_pos]    ;# rax = base of pos[]  
 
 	addss xmm0, [rax + rbx*4]
@@ -340,11 +340,11 @@ _nb_kernel310_x86_64_sse:
 	
 	mov rsi, [rbp + nb310_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
 
-	lea   ecx, [ecx + ecx*2]     ;# replace jnr with j3 
-	lea   edx, [edx + edx*2]	
+	lea   rcx, [rcx + rcx*2]     ;# replace jnr with j3 
+	lea   rdx, [rdx + rdx*2]	
 
 	;# move four coordinates to xmm0-xmm2 	
 
@@ -611,8 +611,8 @@ _nb_kernel310_x86_64_sse:
 	movaps [rsp + nb310_c6], xmm4
 	movaps [rsp + nb310_c12], xmm6	
 	
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
 	;# move coordinates to xmm0-xmm2 
 	movlps xmm1, [rdi + rax*4]
 	movss xmm2, [rdi + rax*4 + 8]	
@@ -810,7 +810,7 @@ _nb_kernel310_x86_64_sse:
 	movaps [rsp + nb310_c6], xmm4
 	movaps [rsp + nb310_c12], xmm6	
 	
-	lea   eax, [eax + eax*2]
+	lea   rax, [rax + rax*2]
 	
 	;# move coordinates to xmm0-xmm2 
 	movss xmm0, [rdi + rax*4]	
@@ -1213,7 +1213,7 @@ _nb_kernel310nf_x86_64_sse:
 	mov   rax, [rsp + nb310nf_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax + rsi*4]		;# ebx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb310nf_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb310nf_shiftvec]   ;# rax = base of shiftvec[] 
@@ -1236,7 +1236,7 @@ _nb_kernel310nf_x86_64_sse:
     	shl   edx, 1
     	mov   [rsp + nb310nf_ntia], edx
 	
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb310nf_pos]    ;# rax = base of pos[]  
 
 	addss xmm0, [rax + rbx*4]
@@ -1341,11 +1341,11 @@ _nb_kernel310nf_x86_64_sse:
 	
 	mov rsi, [rbp + nb310nf_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
 
-	lea   ecx, [ecx + ecx*2]     ;# replace jnr with j3 
-	lea   edx, [edx + edx*2]	
+	lea   rcx, [rcx + rcx*2]     ;# replace jnr with j3 
+	lea   rdx, [rdx + rdx*2]	
 
 	;# move four coordinates to xmm0-xmm2 	
 
@@ -1528,8 +1528,8 @@ _nb_kernel310nf_x86_64_sse:
 	movaps [rsp + nb310nf_c6], xmm4
 	movaps [rsp + nb310nf_c12], xmm6	
 	
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
 	;# move coordinates to xmm0-xmm2 
 	movlps xmm1, [rdi + rax*4]
 	movss xmm2, [rdi + rax*4 + 8]	
@@ -1668,7 +1668,7 @@ _nb_kernel310nf_x86_64_sse:
 	movaps [rsp + nb310nf_c6], xmm4
 	movaps [rsp + nb310nf_c12], xmm6	
 	
-	lea   eax, [eax + eax*2]
+	lea   rax, [rax + rax*2]
 	
 	;# move coordinates to xmm0-xmm2 
 	movss xmm0, [rdi + rax*4]	

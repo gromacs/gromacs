@@ -254,7 +254,7 @@ _nb_kernel333_x86_64_sse:
 	mov   rax, [rsp + nb333_shift]  	;# rax = pointer into shift[] 
 	mov   ebx, [rax + rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]	;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]	;# rbx=3*is 
 	mov   [rsp + nb333_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb333_shiftvec]   ;# rax = base of shiftvec[] 
@@ -272,7 +272,7 @@ _nb_kernel333_x86_64_sse:
 	movaps xmm6, xmm0
 	movaps xmm7, xmm1
 	
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb333_pos]	;# rax = base of pos[]  
 	mov   [rsp + nb333_ii3], ebx
 
@@ -422,10 +422,10 @@ _nb_kernel333_x86_64_sse:
 
 	mov rsi, [rbp + nb333_pos]   	;# base of pos[] 
 
-	lea   eax, [eax + eax*2] 	;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
-	lea   ecx, [ecx + ecx*2] 	;# replace jnr with j3 
-	lea   edx, [edx + edx*2]	
+	lea   rax, [rax + rax*2] 	;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
+	lea   rcx, [rcx + rcx*2] 	;# replace jnr with j3 
+	lea   rdx, [rdx + rdx*2]	
 
 	;# move four coordinates to xmm0-xmm2 	
 	movlps xmm4, [rsi + rax*4]
@@ -614,10 +614,10 @@ _nb_kernel333_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 	
 	;# load dispersion table data into xmm4-xmm7
 	movlps xmm5, [rsi + rax*4 + 16]
@@ -748,10 +748,10 @@ _nb_kernel333_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -842,10 +842,10 @@ _nb_kernel333_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -940,10 +940,10 @@ _nb_kernel333_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -1093,7 +1093,7 @@ _nb_kernel333_x86_64_sse:
 	movaps [rsp + nb333_c12], xmm7
 	
 	mov rsi, [rbp + nb333_pos]
-	lea eax, [eax + eax*2]  
+	lea rax, [rax + rax*2]  
 
 	movss xmm3, [rsp + nb333_ixO]
 	movss xmm4, [rsp + nb333_iyO]
@@ -1176,10 +1176,10 @@ _nb_kernel333_x86_64_sse:
 	psrlq mm7, 32
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	;# first do LJ table for O
 	;# load dispersion table data into xmm4
@@ -1798,7 +1798,7 @@ _nb_kernel333nf_x86_64_sse:
 	mov   rax, [rsp + nb333nf_shift]  	;# rax = pointer into shift[] 
 	mov   ebx, [rax + rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]	;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]	;# rbx=3*is 
 	mov   [rsp + nb333nf_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb333nf_shiftvec]   ;# rax = base of shiftvec[] 
@@ -1816,7 +1816,7 @@ _nb_kernel333nf_x86_64_sse:
 	movaps xmm6, xmm0
 	movaps xmm7, xmm1
 	
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb333nf_pos]	;# rax = base of pos[]  
 	mov   [rsp + nb333nf_ii3], ebx
 
@@ -1954,10 +1954,10 @@ _nb_kernel333nf_x86_64_sse:
 
 	mov rsi, [rbp + nb333nf_pos]   	;# base of pos[] 
 
-	lea   eax, [eax + eax*2] 	;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
-	lea   ecx, [ecx + ecx*2] 	;# replace jnr with j3 
-	lea   edx, [edx + edx*2]	
+	lea   rax, [rax + rax*2] 	;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
+	lea   rcx, [rcx + rcx*2] 	;# replace jnr with j3 
+	lea   rdx, [rdx + rdx*2]	
 
 	;# move four coordinates to xmm0-xmm2 	
 	movlps xmm4, [rsi + rax*4]
@@ -2130,10 +2130,10 @@ _nb_kernel333nf_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 	
 	;# load dispersion table data into xmm4-xmm7
 	movlps xmm5, [rsi + rax*4 + 16]
@@ -2225,10 +2225,10 @@ _nb_kernel333nf_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -2286,10 +2286,10 @@ _nb_kernel333nf_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -2347,10 +2347,10 @@ _nb_kernel333nf_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -2420,7 +2420,7 @@ _nb_kernel333nf_x86_64_sse:
 	movaps [rsp + nb333nf_c12], xmm7
 	
 	mov rsi, [rbp + nb333nf_pos]
-	lea eax, [eax + eax*2]  
+	lea rax, [rax + rax*2]  
 
 	movss xmm3, [rsp + nb333nf_ixO]
 	movss xmm4, [rsp + nb333nf_iyO]
@@ -2498,10 +2498,10 @@ _nb_kernel333nf_x86_64_sse:
 	psrlq mm7, 32
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	;# first do LJ table for O
 	;# load dispersion table data into xmm4

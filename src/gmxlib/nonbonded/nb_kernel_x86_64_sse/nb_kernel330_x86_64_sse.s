@@ -198,7 +198,7 @@ _nb_kernel330_x86_64_sse:
 	mov   rax, [rsp + nb330_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax + rsi*4]		;# ebx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb330_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb330_shiftvec]   ;# rax = base of shiftvec[] 
@@ -221,7 +221,7 @@ _nb_kernel330_x86_64_sse:
     	shl   edx, 1
     	mov   [rsp + nb330_ntia], edx
 	
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb330_pos]    ;# rax = base of pos[]  
 
 	addss xmm0, [rax + rbx*4]
@@ -330,11 +330,11 @@ _nb_kernel330_x86_64_sse:
 	
 	mov rsi, [rbp + nb330_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
 
-	lea   ecx, [ecx + ecx*2]     ;# replace jnr with j3 
-	lea   edx, [edx + edx*2]	
+	lea   rcx, [rcx + rcx*2]     ;# replace jnr with j3 
+	lea   rdx, [rdx + rdx*2]	
 
 	;# move four coordinates to xmm0-xmm2 	
 
@@ -421,10 +421,10 @@ _nb_kernel330_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 	
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -663,8 +663,8 @@ _nb_kernel330_x86_64_sse:
 	movaps [rsp + nb330_c6], xmm4
 	movaps [rsp + nb330_c12], xmm6	
 	
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
 	;# move coordinates to xmm0-xmm2 
 	movlps xmm1, [rdi + rax*4]
 	movss xmm2, [rdi + rax*4 + 8]	
@@ -733,8 +733,8 @@ _nb_kernel330_x86_64_sse:
 	movd ecx, mm6
 	psrlq mm6, 32
 	movd edx, mm6
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rcx*4]
 	movhps xmm5, [rsi + rdx*4] ;# got half coulomb table 
@@ -911,7 +911,7 @@ _nb_kernel330_x86_64_sse:
 	movaps [rsp + nb330_c6], xmm4
 	movaps [rsp + nb330_c12], xmm6	
 	
-	lea   eax, [eax + eax*2]
+	lea   rax, [rax + rax*2]
 	
 	;# move coordinates to xmm0-xmm2 
 	movss xmm0, [rdi + rax*4]	
@@ -965,7 +965,7 @@ _nb_kernel330_x86_64_sse:
 	mov  rsi, [rbp + nb330_VFtab]
 	movd ebx, mm6
 	
-	lea  ebx, [ebx + ebx*2]
+	lea  rbx, [rbx + rbx*2]
 	
 	movlps xmm4, [rsi + rbx*4]
 	movlps xmm6, [rsi + rbx*4 + 8]
@@ -1355,7 +1355,7 @@ _nb_kernel330nf_x86_64_sse:
 	mov   rax, [rsp + nb330nf_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax + rsi*4]		;# ebx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb330nf_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb330nf_shiftvec]   ;# rax = base of shiftvec[] 
@@ -1378,7 +1378,7 @@ _nb_kernel330nf_x86_64_sse:
     	shl   edx, 1
     	mov   [rsp + nb330nf_ntia], edx
 	
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb330nf_pos]    ;# rax = base of pos[]  
 
 	addss xmm0, [rax + rbx*4]
@@ -1483,11 +1483,11 @@ _nb_kernel330nf_x86_64_sse:
 	
 	mov rsi, [rbp + nb330nf_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
 
-	lea   ecx, [ecx + ecx*2]     ;# replace jnr with j3 
-	lea   edx, [edx + edx*2]	
+	lea   rcx, [rcx + rcx*2]     ;# replace jnr with j3 
+	lea   rdx, [rdx + rdx*2]	
 
 	;# move four coordinates to xmm0-xmm2 	
 
@@ -1570,10 +1570,10 @@ _nb_kernel330nf_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 	
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -1719,8 +1719,8 @@ _nb_kernel330nf_x86_64_sse:
 	movaps [rsp + nb330nf_c6], xmm4
 	movaps [rsp + nb330nf_c12], xmm6	
 	
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
 	;# move coordinates to xmm0-xmm2 
 	movlps xmm1, [rdi + rax*4]
 	movss xmm2, [rdi + rax*4 + 8]	
@@ -1785,8 +1785,8 @@ _nb_kernel330nf_x86_64_sse:
 	movd ecx, mm6
 	psrlq mm6, 32
 	movd edx, mm6
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rcx*4]
 	movhps xmm5, [rsi + rdx*4] ;# got half coulomb table 
@@ -1895,7 +1895,7 @@ _nb_kernel330nf_x86_64_sse:
 	movaps [rsp + nb330nf_c6], xmm4
 	movaps [rsp + nb330nf_c12], xmm6	
 	
-	lea   eax, [eax + eax*2]
+	lea   rax, [rax + rax*2]
 	
 	;# move coordinates to xmm0-xmm2 
 	movss xmm0, [rdi + rax*4]	
@@ -1945,7 +1945,7 @@ _nb_kernel330nf_x86_64_sse:
 	mov  rsi, [rbp + nb330nf_VFtab]
 	movd ebx, mm6
 	
-	lea  ebx, [ebx + ebx*2]
+	lea  rbx, [rbx + rbx*2]
 	
 	movlps xmm4, [rsi + rbx*4]
 	movlps xmm6, [rsi + rbx*4 + 8]

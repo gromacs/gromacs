@@ -284,7 +284,7 @@ _nb_kernel304_x86_64_sse2:
 	mov   rax, [rsp + nb304_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax +rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb304_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb304_shiftvec]   ;# rax = base of shiftvec[] 
@@ -296,7 +296,7 @@ _nb_kernel304_x86_64_sse2:
 	mov   rcx, [rsp + nb304_iinr]       ;# rcx = pointer into iinr[] 	
 	mov   ebx, [rcx + rsi*4]	    ;# ebx =ii 
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb304_pos]    ;# rax = base of pos[]  
 	mov   [rsp + nb304_ii3], ebx	
 	
@@ -379,8 +379,8 @@ _nb_kernel304_x86_64_sse2:
 
 	mov rsi, [rbp + nb304_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
 	
 	;# move j coordinates to local temp variables 
 	movlpd xmm2, [rsi + rax*8 + 24]
@@ -1459,7 +1459,7 @@ _nb_kernel304_x86_64_sse2:
 	mov   eax, [rdx]
 
 	mov rsi, [rbp + nb304_pos]
-	lea   eax, [eax + eax*2]  
+	lea   rax, [rax + rax*2]  
 
 	;# move j coordinates to local temp variables 
 	movlpd xmm2, [rsi + rax*8 + 24]
@@ -2817,7 +2817,7 @@ _nb_kernel304nf_x86_64_sse2:
 	mov   rax, [rsp + nb304nf_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax + rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb304nf_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb304nf_shiftvec]   ;# rax = base of shiftvec[] 
@@ -2829,7 +2829,7 @@ _nb_kernel304nf_x86_64_sse2:
 	mov   rcx, [rsp + nb304nf_iinr]       ;# rcx = pointer into iinr[] 	
 	mov   ebx, [rcx + rsi*4]	    ;# ebx =ii 
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb304nf_pos]    ;# rax = base of pos[]  
 	mov   [rsp + nb304nf_ii3], ebx	
 	
@@ -2901,8 +2901,8 @@ _nb_kernel304nf_x86_64_sse2:
 
 	mov rsi, [rbp + nb304nf_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
 	
 	;# move j coordinates to local temp variables 
 	movlpd xmm2, [rsi + rax*8 + 24]
@@ -3628,7 +3628,7 @@ _nb_kernel304nf_x86_64_sse2:
 	mov   eax, [rdx]
 
 	mov rsi, [rbp + nb304nf_pos]
-	lea   eax, [eax + eax*2]  
+	lea   rax, [rax + rax*2]  
 
 	;# move j coordinates to local temp variables 
 	movlpd xmm2, [rsi + rax*8 + 24]

@@ -257,7 +257,7 @@ _nb_kernel333_x86_64_sse2:
 	mov   rax, [rsp + nb333_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax+rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb333_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb333_shiftvec]   ;# rax = base of shiftvec[] 
@@ -275,7 +275,7 @@ _nb_kernel333_x86_64_sse2:
 	movapd xmm6, xmm0
 	movapd xmm7, xmm1
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb333_pos]    ;# rax = base of pos[]  
 	mov   [rsp + nb333_ii3], ebx
 
@@ -404,8 +404,8 @@ _nb_kernel333_x86_64_sse2:
 
 	mov rsi, [rbp + nb333_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
 
 	;# move two coordinates to xmm0-xmm2 	
 	movlpd xmm0, [rsi + rax*8]
@@ -618,8 +618,8 @@ _nb_kernel333_x86_64_sse2:
 	movd eax, mm6
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now) 
-	lea   ebx, [ebx + ebx*2]
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now) 
+	lea   rbx, [rbx + rbx*2]
 	
 	;# Dispersion 
 	movapd xmm4, [rsi + rax*8 + 32]	;# Y1 F1 	
@@ -731,8 +731,8 @@ _nb_kernel333_x86_64_sse2:
 	movd eax, mm6
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now) 	
-	lea   ebx, [ebx + ebx*2]
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now) 	
+	lea   rbx, [rbx + rbx*2]
 	
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	movapd xmm3, [rsi + rbx*8]	;# Y2 F2 
@@ -807,8 +807,8 @@ _nb_kernel333_x86_64_sse2:
 	movd eax, mm6
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)
-	lea   ebx, [ebx + ebx*2]
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)
+	lea   rbx, [rbx + rbx*2]
 
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	movapd xmm3, [rsi + rbx*8]	;# Y2 F2 
@@ -886,8 +886,8 @@ _nb_kernel333_x86_64_sse2:
 	movd eax, mm6
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)
-	lea   ebx, [ebx + ebx*2]
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)
+	lea   rbx, [rbx + rbx*2]
 
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	movapd xmm3, [rsi + rbx*8]	;# Y2 F2 
@@ -1010,7 +1010,7 @@ _nb_kernel333_x86_64_sse2:
 	movapd [rsp + nb333_c12], xmm6
 	
 	mov rsi, [rbp + nb333_pos]       ;# base of pos[] 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
 	
 	;# move coords to xmm0-xmm2 
 	movlpd xmm0, [rsi + rax*8]
@@ -1215,7 +1215,7 @@ _nb_kernel333_x86_64_sse2:
 	 	
 	shl eax, 2		
 	mov  rsi, [rbp + nb333_VFtab]
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now) 	
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now) 	
 	
 	;# Dispersion 
 	movapd xmm4, [rsi + rax*8 + 32]	;# Y1 F1 	
@@ -1318,7 +1318,7 @@ _nb_kernel333_x86_64_sse2:
 	
 	shl eax, 2		;# idx *= 4 
 	mov  rsi, [rbp + nb333_VFtab]
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)	
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)	
 
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	xorpd xmm3, xmm3
@@ -1390,7 +1390,7 @@ _nb_kernel333_x86_64_sse2:
 	
 	shl eax, 2		;# idx *= 4 
 	mov  rsi, [rbp + nb333_VFtab]
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)	
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)	
 
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	xorpd xmm3, xmm3
@@ -1464,7 +1464,7 @@ _nb_kernel333_x86_64_sse2:
 	
 	shl eax, 2		;# idx *= 4 
 	mov  rsi, [rbp + nb333_VFtab]
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)	
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)	
 
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	xorpd xmm3, xmm3
@@ -1921,7 +1921,7 @@ _nb_kernel333nf_x86_64_sse2:
 	mov   rax, [rsp + nb333nf_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax+rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb333nf_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb333nf_shiftvec]   ;# rax = base of shiftvec[] 
@@ -1939,7 +1939,7 @@ _nb_kernel333nf_x86_64_sse2:
 	movapd xmm6, xmm0
 	movapd xmm7, xmm1
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb333nf_pos]    ;# rax = base of pos[]  
 	mov   [rsp + nb333nf_ii3], ebx
 
@@ -2056,8 +2056,8 @@ _nb_kernel333nf_x86_64_sse2:
 
 	mov rsi, [rbp + nb333nf_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
 
 	;# move two coordinates to xmm0-xmm2 	
 	movlpd xmm0, [rsi + rax*8]
@@ -2249,8 +2249,8 @@ _nb_kernel333nf_x86_64_sse2:
 	movd eax, mm6
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now) 
-	lea   ebx, [ebx + ebx*2]
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now) 
+	lea   rbx, [rbx + rbx*2]
 	
 	;# Dispersion 
 	movapd xmm4, [rsi + rax*8 + 32]	;# Y1 F1 	
@@ -2317,8 +2317,8 @@ _nb_kernel333nf_x86_64_sse2:
 	movd eax, mm6
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now) 	
-	lea   ebx, [ebx + ebx*2]
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now) 	
+	lea   rbx, [rbx + rbx*2]
 	
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	movapd xmm3, [rsi + rbx*8]	;# Y2 F2 
@@ -2360,8 +2360,8 @@ _nb_kernel333nf_x86_64_sse2:
 	movd eax, mm6
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)
-	lea   ebx, [ebx + ebx*2]
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)
+	lea   rbx, [rbx + rbx*2]
 
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	movapd xmm3, [rsi + rbx*8]	;# Y2 F2 
@@ -2403,8 +2403,8 @@ _nb_kernel333nf_x86_64_sse2:
 	movd eax, mm6
 	psrlq mm6, 32
 	movd ebx, mm6		;# indices in eax/ebx 
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)
-	lea   ebx, [ebx + ebx*2]
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)
+	lea   rbx, [rbx + rbx*2]
 
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	movapd xmm3, [rsi + rbx*8]	;# Y2 F2 
@@ -2475,7 +2475,7 @@ _nb_kernel333nf_x86_64_sse2:
 	movapd [rsp + nb333nf_c12], xmm6
 	
 	mov rsi, [rbp + nb333nf_pos]       ;# base of pos[] 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
 	
 	;# move coords to xmm0-xmm2 
 	movlpd xmm0, [rsi + rax*8]
@@ -2660,7 +2660,7 @@ _nb_kernel333nf_x86_64_sse2:
 	 	
 	shl eax, 2		
 	mov  rsi, [rbp + nb333nf_VFtab]
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now) 	
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now) 	
 	
 	;# Dispersion 
 	movapd xmm4, [rsi + rax*8 + 32]	;# Y1 F1 	
@@ -2725,7 +2725,7 @@ _nb_kernel333nf_x86_64_sse2:
 	
 	shl eax, 2		;# idx *= 4 
 	mov  rsi, [rbp + nb333nf_VFtab]
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)	
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)	
 
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	xorpd xmm3, xmm3
@@ -2764,7 +2764,7 @@ _nb_kernel333nf_x86_64_sse2:
 	
 	shl eax, 2		;# idx *= 4 
 	mov  rsi, [rbp + nb333nf_VFtab]
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)	
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)	
 
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	xorpd xmm3, xmm3
@@ -2803,7 +2803,7 @@ _nb_kernel333nf_x86_64_sse2:
 	
 	shl eax, 2		;# idx *= 4 
 	mov  rsi, [rbp + nb333nf_VFtab]
-	lea   eax, [eax + eax*2] ;# idx *= 3 (total *=12 now)	
+	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)	
 
 	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
 	xorpd xmm3, xmm3

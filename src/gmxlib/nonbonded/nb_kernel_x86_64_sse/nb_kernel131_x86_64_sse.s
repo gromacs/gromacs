@@ -247,7 +247,7 @@ _nb_kernel131_x86_64_sse:
 	mov   rax, [rsp + nb131_shift]      ;# eax = pointer into shift[] 
 	mov   ebx, [rax +rsi*4]		;# ebx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb131_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb131_shiftvec]   ;# eax = base of shiftvec[] 
@@ -263,7 +263,7 @@ _nb_kernel131_x86_64_sse:
 	movaps xmm4, xmm1
 	movaps xmm5, xmm2
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb131_pos]    ;# eax = base of pos[]  
 	mov   [rsp + nb131_ii3], ebx
 
@@ -400,10 +400,10 @@ _nb_kernel131_x86_64_sse:
 
 	mov rsi, [rbp + nb131_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
-	lea   ecx, [ecx + ecx*2]     ;# replace jnr with j3 
-	lea   edx, [edx + edx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
+	lea   rcx, [rcx + rcx*2]     ;# replace jnr with j3 
+	lea   rdx, [rdx + rdx*2]	
 
 	;# move four coordinates to xmm0-xmm2 	
 	movlps xmm4, [rsi + rax*4]
@@ -820,7 +820,7 @@ _nb_kernel131_x86_64_sse:
 	movaps [rsp + nb131_c12], xmm7
 
 	mov rsi, [rbp + nb131_pos]
-	lea   eax, [eax + eax*2]  
+	lea   rax, [rax + rax*2]  
 	
 	;# move j coords to xmm0-xmm2 
 	movss xmm0, [rsi + rax*4]
@@ -1420,7 +1420,7 @@ _nb_kernel131nf_x86_64_sse:
 	mov   rax, [rsp + nb131nf_shift]      ;# eax = pointer into shift[] 
 	mov   ebx, [rax +rsi*4]		;# ebx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb131nf_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb131nf_shiftvec]   ;# eax = base of shiftvec[] 
@@ -1436,7 +1436,7 @@ _nb_kernel131nf_x86_64_sse:
 	movaps xmm4, xmm1
 	movaps xmm5, xmm2
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb131nf_pos]    ;# eax = base of pos[]  
 	mov   [rsp + nb131nf_ii3], ebx
 
@@ -1563,10 +1563,10 @@ _nb_kernel131nf_x86_64_sse:
 
 	mov rsi, [rbp + nb131nf_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
-	lea   ecx, [ecx + ecx*2]     ;# replace jnr with j3 
-	lea   edx, [edx + edx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
+	lea   rcx, [rcx + rcx*2]     ;# replace jnr with j3 
+	lea   rdx, [rdx + rdx*2]	
 
 	;# move four coordinates to xmm0-xmm2 	
 	movlps xmm4, [rsi + rax*4]
@@ -1815,7 +1815,7 @@ _nb_kernel131nf_x86_64_sse:
 	movaps [rsp + nb131nf_c12], xmm7
 
 	mov rsi, [rbp + nb131nf_pos]
-	lea   eax, [eax + eax*2]  
+	lea   rax, [rax + rax*2]  
 	
 	;# move j coords to xmm0-xmm2 
 	movss xmm0, [rsi + rax*4]

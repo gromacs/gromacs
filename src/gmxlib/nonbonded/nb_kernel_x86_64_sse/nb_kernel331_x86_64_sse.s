@@ -243,7 +243,7 @@ _nb_kernel331_x86_64_sse:
 	mov   rax, [rsp + nb331_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax + rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb331_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb331_shiftvec]   ;# rax = base of shiftvec[] 
@@ -259,7 +259,7 @@ _nb_kernel331_x86_64_sse:
 	movaps xmm4, xmm1
 	movaps xmm5, xmm2
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb331_pos]    ;# rax = base of pos[]  
 	mov   [rsp + nb331_ii3], ebx
 
@@ -396,10 +396,10 @@ _nb_kernel331_x86_64_sse:
 
 	mov rsi, [rbp + nb331_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
-	lea   ecx, [ecx + ecx*2]     ;# replace jnr with j3 
-	lea   edx, [edx + edx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
+	lea   rcx, [rcx + rcx*2]     ;# replace jnr with j3 
+	lea   rdx, [rdx + rdx*2]	
 
 	;# move four coordinates to xmm0-xmm2 	
 	movlps xmm4, [rsi + rax*4]
@@ -562,10 +562,10 @@ _nb_kernel331_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -725,10 +725,10 @@ _nb_kernel331_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -819,10 +819,10 @@ _nb_kernel331_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -964,7 +964,7 @@ _nb_kernel331_x86_64_sse:
 	movaps [rsp + nb331_c12], xmm7
 
 	mov rsi, [rbp + nb331_pos]
-	lea   eax, [eax + eax*2]  
+	lea   rax, [rax + rax*2]  
 	
 	;# move j coords to xmm0-xmm2 
 	movss xmm0, [rsi + rax*4]
@@ -1052,9 +1052,9 @@ _nb_kernel331_x86_64_sse:
     psrlq mm7, 32
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 	
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -1600,7 +1600,7 @@ _nb_kernel331nf_x86_64_sse:
 	mov   rax, [rsp + nb331nf_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax + rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb331nf_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb331nf_shiftvec]   ;# rax = base of shiftvec[] 
@@ -1616,7 +1616,7 @@ _nb_kernel331nf_x86_64_sse:
 	movaps xmm4, xmm1
 	movaps xmm5, xmm2
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb331nf_pos]    ;# rax = base of pos[]  
 	mov   [rsp + nb331nf_ii3], ebx
 
@@ -1743,10 +1743,10 @@ _nb_kernel331nf_x86_64_sse:
 
 	mov rsi, [rbp + nb331nf_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
-	lea   ecx, [ecx + ecx*2]     ;# replace jnr with j3 
-	lea   edx, [edx + edx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
+	lea   rcx, [rcx + rcx*2]     ;# replace jnr with j3 
+	lea   rdx, [rdx + rdx*2]	
 
 	;# move four coordinates to xmm0-xmm2 	
 	movlps xmm4, [rsi + rax*4]
@@ -1897,10 +1897,10 @@ _nb_kernel331nf_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -2017,10 +2017,10 @@ _nb_kernel331nf_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -2078,10 +2078,10 @@ _nb_kernel331nf_x86_64_sse:
     movd ebx, mm6
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ebx, [ebx + ebx*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rbx, [rbx + rbx*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]
@@ -2150,7 +2150,7 @@ _nb_kernel331nf_x86_64_sse:
 	movaps [rsp + nb331nf_c12], xmm7
 
 	mov rsi, [rbp + nb331nf_pos]
-	lea   eax, [eax + eax*2]  
+	lea   rax, [rax + rax*2]  
 	
 	;# move j coords to xmm0-xmm2 
 	movss xmm0, [rsi + rax*4]
@@ -2233,9 +2233,9 @@ _nb_kernel331nf_x86_64_sse:
     psrlq mm7, 32
     movd edx, mm7
 
-    lea   eax, [eax + eax*2]
-    lea   ecx, [ecx + ecx*2]
-    lea   edx, [edx + edx*2]
+    lea   rax, [rax + rax*2]
+    lea   rcx, [rcx + rcx*2]
+    lea   rdx, [rdx + rdx*2]
 	
     movlps xmm5, [rsi + rax*4]
     movlps xmm7, [rsi + rcx*4]

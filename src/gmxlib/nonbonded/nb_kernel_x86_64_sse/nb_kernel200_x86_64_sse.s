@@ -196,7 +196,7 @@ _nb_kernel200_x86_64_sse:
 	mov   rax, [rsp + nb200_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax+rsi*4]		;# ebx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb200_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb200_shiftvec]   ;# rax = base of shiftvec[] 
@@ -213,7 +213,7 @@ _nb_kernel200_x86_64_sse:
 	mulss xmm3, [rsp + nb200_facel]
 	shufps xmm3, xmm3, 0
 	
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb200_pos]    ;# rax = base of pos[]  
 
 	addss xmm0, [rax + rbx*4]
@@ -281,12 +281,12 @@ _nb_kernel200_x86_64_sse:
 
 	mov rsi, [rbp + nb200_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
 
 	mulps xmm3, xmm2
-	lea   ecx, [ecx + ecx*2]     ;# replace jnr with j3 
-	lea   edx, [edx + edx*2]	
+	lea   rcx, [rcx + rcx*2]     ;# replace jnr with j3 
+	lea   rdx, [rdx + rdx*2]	
 
 	;# move four coordinates to xmm0-xmm2 	
 
@@ -454,8 +454,8 @@ _nb_kernel200_x86_64_sse:
 
 	mov rdi, [rbp + nb200_pos]	
 	
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
 	;# move coordinates to xmm0-xmm2 
 	movlps xmm1, [rdi + rax*4]
 	movss xmm2, [rdi + rax*4 + 8]	
@@ -587,7 +587,7 @@ _nb_kernel200_x86_64_sse:
 	mov   eax, [rcx]
 	movss xmm3, [rsi + rax*4]	;# xmm3(0) has the charge 		
 	
-	lea   eax, [eax + eax*2]
+	lea   rax, [rax + rax*2]
 	
 	;# move coordinates to xmm0-xmm2 
 	movss xmm0, [rdi + rax*4]	
@@ -927,7 +927,7 @@ _nb_kernel200nf_x86_64_sse:
 	mov   rax, [rsp + nb200nf_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax+rsi*4]		;# ebx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb200nf_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb200nf_shiftvec]   ;# rax = base of shiftvec[] 
@@ -944,7 +944,7 @@ _nb_kernel200nf_x86_64_sse:
 	mulss xmm3, [rsp + nb200nf_facel]
 	shufps xmm3, xmm3, 0
 	
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb200nf_pos]    ;# rax = base of pos[]  
 
 	addss xmm0, [rax + rbx*4]
@@ -1008,12 +1008,12 @@ _nb_kernel200nf_x86_64_sse:
 
 	mov rsi, [rbp + nb200nf_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
 
 	mulps xmm3, xmm2
-	lea   ecx, [ecx + ecx*2]     ;# replace jnr with j3 
-	lea   edx, [edx + edx*2]	
+	lea   rcx, [rcx + rcx*2]     ;# replace jnr with j3 
+	lea   rdx, [rdx + rdx*2]	
 
 	;# move four coordinates to xmm0-xmm2 	
 
@@ -1104,8 +1104,8 @@ _nb_kernel200nf_x86_64_sse:
 
 	mov rdi, [rbp + nb200nf_pos]	
 	
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
 	;# move coordinates to xmm0-xmm2 
 	movlps xmm1, [rdi + rax*4]
 	movss xmm2, [rdi + rax*4 + 8]	
@@ -1177,7 +1177,7 @@ _nb_kernel200nf_x86_64_sse:
 	xorps xmm3, xmm3
 	mov   eax, [rcx]
 	movss xmm3, [rsi + rax*4]	;# xmm3(0) has the charge 
-	lea   eax, [eax + eax*2]
+	lea   rax, [rax + rax*2]
 	
 	;# move coordinates to xmm0-xmm2 
 	movss xmm0, [rdi + rax*4]	

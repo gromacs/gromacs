@@ -194,7 +194,7 @@ _nb_kernel400_x86_64_sse2:
 	mov   rax, [rsp + nb400_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax+rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb400_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb400_shiftvec]   ;# rax = base of shiftvec[] 
@@ -216,7 +216,7 @@ _nb_kernel400_x86_64_sse2:
 	movsd xmm4, [rdx + rbx*8]
 	shufpd xmm4, xmm4, 0
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb400_pos]    ;# rax = base of pos[]  
 
 	addsd xmm0, [rax + rbx*8]
@@ -292,8 +292,8 @@ _nb_kernel400_x86_64_sse2:
 
 	movd  mm2, eax
 	movd  mm3, ebx
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
 
 	;# move two coordinates to xmm0-xmm2 
 	movlpd xmm0, [rsi + rax*8]
@@ -497,7 +497,7 @@ _nb_kernel400_x86_64_sse2:
 	movapd [rsp + nb400_qq], xmm6
 
 	movd  mm2, eax
-	lea   eax, [eax + eax*2]
+	lea   rax, [rax + rax*2]
 	
 	;# move coordinates to xmm0-xmm2 
 	movlpd xmm0, [rdi + rax*8]
@@ -897,7 +897,7 @@ _nb_kernel400nf_x86_64_sse2:
 	mov   rax, [rsp + nb400nf_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax+rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb400nf_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb400nf_shiftvec]   ;# rax = base of shiftvec[] 
@@ -918,7 +918,7 @@ _nb_kernel400nf_x86_64_sse2:
 	movsd xmm4, [rdx + rbx*8]
 	shufpd xmm4, xmm4, 0
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb400nf_pos]    ;# rax = base of pos[]  
 
 	addsd xmm0, [rax + rbx*8]
@@ -988,8 +988,8 @@ _nb_kernel400nf_x86_64_sse2:
 	
 	mov rsi, [rbp + nb400nf_pos]		;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
 
 	;# move two coordinates to xmm0-xmm2 
 	movlpd xmm0, [rsi + rax*8]
@@ -1113,7 +1113,7 @@ _nb_kernel400nf_x86_64_sse2:
 	mulsd  xmm6, xmm7
 	movapd [rsp + nb400nf_qq], xmm6
 	
-	lea   eax, [eax + eax*2]
+	lea   rax, [rax + rax*2]
 	
 	;# move coordinates to xmm0-xmm2 
 	movlpd xmm0, [rdi + rax*8]

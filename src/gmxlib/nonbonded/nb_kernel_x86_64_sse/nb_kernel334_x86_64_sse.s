@@ -319,7 +319,7 @@ _nb_kernel334_x86_64_sse:
 	mov   rax, [rsp + nb334_shift]  	;# rax = pointer into shift[] 
 	mov   ebx, [rax + rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]	;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]	;# rbx=3*is 
 	mov   [rsp + nb334_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb334_shiftvec]   ;# rax = base of shiftvec[] 
@@ -331,7 +331,7 @@ _nb_kernel334_x86_64_sse:
 	mov   rcx, [rsp + nb334_iinr]   	;# rcx = pointer into iinr[] 	
 	mov   ebx, [rcx + rsi*4]		;# ebx =ii 
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb334_pos]	;# rax = base of pos[]  
 	mov   [rsp + nb334_ii3], ebx	
 	
@@ -433,10 +433,10 @@ _nb_kernel334_x86_64_sse:
 
 	mov rsi, [rbp + nb334_pos]   	;# base of pos[] 
 
-	lea   eax, [eax + eax*2] 	;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
-	lea   ecx, [ecx + ecx*2] 	;# replace jnr with j3 
-	lea   edx, [edx + edx*2]	
+	lea   rax, [rax + rax*2] 	;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
+	lea   rcx, [rcx + rcx*2] 	;# replace jnr with j3 
+	lea   rdx, [rdx + rdx*2]	
 	
 	;# move j coordinates to local temp variables
 	;# Load Ox, Oy, Oz, H1x 
@@ -790,10 +790,10 @@ _nb_kernel334_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 	
 	;# load dispersion table data into xmm4-xmm7
 	movlps xmm5, [rsi + rax*4 + 16]
@@ -923,10 +923,10 @@ _nb_kernel334_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -1016,10 +1016,10 @@ _nb_kernel334_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -1107,10 +1107,10 @@ _nb_kernel334_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 	
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 
 	movlps xmm5, [rsi + rax*4]
@@ -1199,10 +1199,10 @@ _nb_kernel334_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -1290,10 +1290,10 @@ _nb_kernel334_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -1381,10 +1381,10 @@ _nb_kernel334_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -1472,10 +1472,10 @@ _nb_kernel334_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -1563,10 +1563,10 @@ _nb_kernel334_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -1654,10 +1654,10 @@ _nb_kernel334_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -1872,7 +1872,7 @@ _nb_kernel334_x86_64_sse:
 	add qword ptr [rsp + nb334_innerjjnr],  4	
 
 	mov rsi, [rbp + nb334_pos]
-	lea   eax, [eax + eax*2]  
+	lea   rax, [rax + rax*2]  
 
 	;# fetch j coordinates
 	movlps xmm3,  [rsi + rax*4]		;#  Ox  Oy  
@@ -1971,7 +1971,7 @@ _nb_kernel334_x86_64_sse:
 	pslld   mm6, 2
 
 	movd ebx, mm6
-	lea   ebx, [ebx + ebx*2]
+	lea   rbx, [rbx + rbx*2]
 
 	;# load dispersion table data into xmm4
 	movlps xmm4, [rsi + rbx*4 + 16]
@@ -2078,9 +2078,9 @@ _nb_kernel334_x86_64_sse:
 	psrlq mm7, 32
 	movd edx, mm7		;# table indices in ebx,ecx,edx 
 
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 	
 	mov rsi, [rbp + nb334_VFtab]
 
@@ -2229,9 +2229,9 @@ _nb_kernel334_x86_64_sse:
 	psrlq mm7, 32
 	movd edx, mm7		;# table indices in ebx,ecx,edx 
 
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm4, [rsi + rbx*4]
 	movlps xmm3, [rsi + rcx*4]
@@ -2326,9 +2326,9 @@ _nb_kernel334_x86_64_sse:
 	psrlq mm7, 32
 	movd edx, mm7		;# table indices in ebx,ecx,edx 
 
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
         mov rsi, [rbp + nb334_VFtab]
 
@@ -2904,7 +2904,7 @@ _nb_kernel334nf_x86_64_sse:
 	mov   rax, [rsp + nb334nf_shift]  	;# rax = pointer into shift[] 
 	mov   ebx, [rax + rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]	;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]	;# rbx=3*is 
 	mov   [rsp + nb334nf_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb334nf_shiftvec]   ;# rax = base of shiftvec[] 
@@ -2916,7 +2916,7 @@ _nb_kernel334nf_x86_64_sse:
 	mov   rcx, [rsp + nb334nf_iinr]   	;# rcx = pointer into iinr[] 	
 	mov   ebx, [rcx + rsi*4]		;# ebx =ii 
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb334nf_pos]	;# rax = base of pos[]  
 	mov   [rsp + nb334nf_ii3], ebx	
 	
@@ -3006,10 +3006,10 @@ _nb_kernel334nf_x86_64_sse:
 
 	mov rsi, [rbp + nb334nf_pos]   	;# base of pos[] 
 
-	lea   eax, [eax + eax*2] 	;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
-	lea   ecx, [ecx + ecx*2] 	;# replace jnr with j3 
-	lea   edx, [edx + edx*2]	
+	lea   rax, [rax + rax*2] 	;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
+	lea   rcx, [rcx + rcx*2] 	;# replace jnr with j3 
+	lea   rdx, [rdx + rdx*2]	
 	
 	;# move j coordinates to local temp variables
 	;# Load Ox, Oy, Oz, H1x 
@@ -3333,10 +3333,10 @@ _nb_kernel334nf_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 	
 	;# load dispersion table data into xmm4-xmm7
 	movlps xmm5, [rsi + rax*4 + 16]
@@ -3429,10 +3429,10 @@ _nb_kernel334nf_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -3490,10 +3490,10 @@ _nb_kernel334nf_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -3551,10 +3551,10 @@ _nb_kernel334nf_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 	
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 
 	movlps xmm5, [rsi + rax*4]
@@ -3613,10 +3613,10 @@ _nb_kernel334nf_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -3674,10 +3674,10 @@ _nb_kernel334nf_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -3735,10 +3735,10 @@ _nb_kernel334nf_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -3796,10 +3796,10 @@ _nb_kernel334nf_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -3857,10 +3857,10 @@ _nb_kernel334nf_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -3918,10 +3918,10 @@ _nb_kernel334nf_x86_64_sse:
 	movd ebx, mm6
 	movd edx, mm7
 
-	lea   eax, [eax + eax*2]
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rax, [rax + rax*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm5, [rsi + rax*4]
 	movlps xmm7, [rsi + rcx*4]
@@ -3967,7 +3967,7 @@ _nb_kernel334nf_x86_64_sse:
 	add qword ptr [rsp + nb334nf_innerjjnr],  4	
 
 	mov rsi, [rbp + nb334nf_pos]
-	lea   eax, [eax + eax*2]  
+	lea   rax, [rax + rax*2]  
 
 	;# fetch j coordinates
 	movlps xmm3,  [rsi + rax*4]		;#  Ox  Oy  
@@ -4059,7 +4059,7 @@ _nb_kernel334nf_x86_64_sse:
 	pslld   mm6, 2
 
 	movd ebx, mm6
-	lea   ebx, [ebx + ebx*2]
+	lea   rbx, [rbx + rbx*2]
 
 	;# load dispersion table data into xmm4
 	movlps xmm4, [rsi + rbx*4 + 16]
@@ -4129,9 +4129,9 @@ _nb_kernel334nf_x86_64_sse:
 	psrlq mm7, 32
 	movd edx, mm7		;# table indices in ebx,ecx,edx 
 
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 	
 	mov rsi, [rbp + nb334_VFtab]
 
@@ -4243,9 +4243,9 @@ _nb_kernel334nf_x86_64_sse:
 	psrlq mm7, 32
 	movd edx, mm7		;# table indices in ebx,ecx,edx 
 
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
 	movlps xmm4, [rsi + rbx*4]
 	movlps xmm3, [rsi + rcx*4]
@@ -4308,9 +4308,9 @@ _nb_kernel334nf_x86_64_sse:
 	psrlq mm7, 32
 	movd edx, mm7		;# table indices in ebx,ecx,edx 
 
-	lea   ebx, [ebx + ebx*2]
-	lea   ecx, [ecx + ecx*2]
-	lea   edx, [edx + edx*2]
+	lea   rbx, [rbx + rbx*2]
+	lea   rcx, [rcx + rcx*2]
+	lea   rdx, [rdx + rdx*2]
 
         mov rsi, [rbp + nb334_VFtab]
 

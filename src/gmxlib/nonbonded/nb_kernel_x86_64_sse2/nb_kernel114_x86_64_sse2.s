@@ -321,7 +321,7 @@ _nb_kernel114_x86_64_sse2:
 	mov   rax, [rsp + nb114_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax+rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb114_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb114_shiftvec]   ;# rax = base of shiftvec[] 
@@ -339,7 +339,7 @@ _nb_kernel114_x86_64_sse2:
 	movapd xmm6, xmm0
 	movapd xmm7, xmm1
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb114_pos]    ;# rax = base of pos[]  
 	mov   [rsp + nb114_ii3], ebx		
 
@@ -432,8 +432,8 @@ _nb_kernel114_x86_64_sse2:
 
 	mov rsi, [rbp + nb114_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
 	
 	;# move j coordinates to local temp variables 
 	;# load ox, oy, oz, h1x
@@ -1295,7 +1295,7 @@ _nb_kernel114_x86_64_sse2:
 
 	mov rsi, [rbp + nb114_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
 	
 	;# move j coordinates to local temp variables 
 	;# load ox, oy, oz, h1x
@@ -2497,7 +2497,7 @@ _nb_kernel114nf_x86_64_sse2:
 	mov   rax, [rsp + nb114nf_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax+rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb114nf_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb114nf_shiftvec]   ;# rax = base of shiftvec[] 
@@ -2515,7 +2515,7 @@ _nb_kernel114nf_x86_64_sse2:
 	movapd xmm6, xmm0
 	movapd xmm7, xmm1
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb114nf_pos]    ;# rax = base of pos[]  
 	mov   [rsp + nb114nf_ii3], ebx		
 
@@ -2596,8 +2596,8 @@ _nb_kernel114nf_x86_64_sse2:
 
 	mov rsi, [rbp + nb114nf_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
 	
 	;# move j coordinates to local temp variables 
 	;# load ox, oy, oz, h1x
@@ -3041,7 +3041,7 @@ _nb_kernel114nf_x86_64_sse2:
 
 	mov rsi, [rbp + nb114nf_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
 	
 	;# move j coordinates to local temp variables 
 	;# load ox, oy, oz, h1x

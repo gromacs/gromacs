@@ -283,7 +283,7 @@ _nb_kernel302_x86_64_sse:
 	mov   rax, [rsp + nb302_shift]      ;# rax = pointer into shift[] 
 	mov   ebx, [rax + rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
 	mov   [rsp + nb302_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb302_shiftvec]   ;# rax = base of shiftvec[] 
@@ -295,7 +295,7 @@ _nb_kernel302_x86_64_sse:
 	mov   rcx, [rsp + nb302_iinr]       ;# rcx = pointer into iinr[] 	
 	mov   ebx, [rcx + rsi*4]	    ;# ebx =ii 
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb302_pos]    ;# rax = base of pos[]  
 	mov   [rsp + nb302_ii3], ebx	
 	
@@ -380,10 +380,10 @@ _nb_kernel302_x86_64_sse:
 
 	mov rsi, [rbp + nb302_pos]       ;# base of pos[] 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
-	lea   ecx, [ecx + ecx*2]     ;# replace jnr with j3 
-	lea   edx, [edx + edx*2]	
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
+	lea   rcx, [rcx + rcx*2]     ;# replace jnr with j3 
+	lea   rdx, [rdx + rdx*2]	
 	
 	;# move j coordinates to local temp variables 
 	movlps xmm2, [rsi + rax*4]
@@ -1591,7 +1591,7 @@ _nb_kernel302_x86_64_sse:
 	add qword ptr [rsp + nb302_innerjjnr],  4	
 
 	mov rsi, [rbp + nb302_pos]
-	lea   eax, [eax + eax*2]  
+	lea   rax, [rax + rax*2]  
 
 	;# fetch j coordinates 
 	xorps xmm3, xmm3
@@ -2372,7 +2372,7 @@ _nb_kernel302nf_x86_64_sse:
 	mov   rax, [rsp + nb302nf_shift]  	;# rax = pointer into shift[] 
 	mov   ebx, [rax + rsi*4]		;# rbx=shift[n] 
 	
-	lea   ebx, [ebx + ebx*2]	;# ebx=3*is 
+	lea   rbx, [rbx + rbx*2]	;# rbx=3*is 
 	mov   [rsp + nb302nf_is3],ebx    	;# store is3 
 
 	mov   rax, [rsp + nb302nf_shiftvec]   ;# rax = base of shiftvec[] 
@@ -2384,7 +2384,7 @@ _nb_kernel302nf_x86_64_sse:
 	mov   rcx, [rsp + nb302nf_iinr]   	;# rcx = pointer into iinr[] 	
 	mov   ebx, [rcx + rsi*4]		;# ebx =ii 
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
+	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
 	mov   rax, [rbp + nb302nf_pos]	;# rax = base of pos[]  
 	mov   [rsp + nb302nf_ii3], ebx	
 	
@@ -2459,10 +2459,10 @@ _nb_kernel302nf_x86_64_sse:
 
 	mov rsi, [rbp + nb302nf_pos]   	;# base of pos[] 
 
-	lea   eax, [eax + eax*2] 	;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
-	lea   ecx, [ecx + ecx*2] 	;# replace jnr with j3 
-	lea   edx, [edx + edx*2]	
+	lea   rax, [rax + rax*2] 	;# replace jnr with j3 
+	lea   rbx, [rbx + rbx*2]	
+	lea   rcx, [rcx + rcx*2] 	;# replace jnr with j3 
+	lea   rdx, [rdx + rdx*2]	
 	
 	;# move j coordinates to local temp variables 
 	movlps xmm2, [rsi + rax*4]
@@ -3261,7 +3261,7 @@ _nb_kernel302nf_x86_64_sse:
 	add qword ptr [rsp + nb302nf_innerjjnr],  4	
 
 	mov rsi, [rbp + nb302nf_pos]
-	lea   eax, [eax + eax*2]  
+	lea   rax, [rax + rax*2]  
 
 	;# fetch j coordinates 
 	xorps xmm3, xmm3
