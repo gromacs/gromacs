@@ -516,10 +516,12 @@ int main(int argc,char *argv[])
 	  fprintf(stderr,"\nContinue writing frames from t=%g, step=%d\n",
 		  t,outstep);
 	}
-	for(kkk=0; (kkk<nset); kkk++) {
-	  outee[set[kkk]].e    *= scalefac;
-	  outee[set[kkk]].eav  *= scalefac;
-	  outee[set[kkk]].esum *= scalefac;
+	if (scalefac != 1) {
+	  for(kkk=0; (kkk<nset); kkk++) {
+	    outee[set[kkk]].e    *= scalefac;
+	    outee[set[kkk]].eav  *= scalefac;
+	    outee[set[kkk]].esum *= scalefac;
+	  }
 	}
 	do_enx(out,&outt,&outstep,&nre,outee,&ndr,dr);
 	fprintf(stderr,"\rWriting step %d, time %f        ",outstep,outt);
