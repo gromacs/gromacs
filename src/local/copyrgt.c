@@ -1,15 +1,15 @@
 /*
- *       $Id$
- *
- *       This source code is part of
- *
- *        G   R   O   M   A   C   S
- *
- * GROningen MAchine for Chemical Simulations
- *
- *            VERSION 2.0
+ * $Id$
  * 
- * Copyright (c) 1991-1997
+ *       This source code is part of
+ * 
+ *        G   R   O   M   A   C   S
+ * 
+ * GROningen MAchine for Chemical Simulations
+ * 
+ *               VERSION 2.0
+ * 
+ * Copyright (c) 1991-1999
  * BIOSON Research Institute, Dept. of Biophysical Chemistry
  * University of Groningen, The Netherlands
  * 
@@ -17,14 +17,14 @@
  * GROMACS: A message-passing parallel molecular dynamics implementation
  * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
  * Comp. Phys. Comm. 91, 43-56 (1995)
- *
+ * 
  * Also check out our WWW page:
- * http://rugmd0.chem.rug.nl/~gmx
+ * http://md.chem.rug.nl/~gmx
  * or e-mail to:
  * gromacs@chem.rug.nl
- *
+ * 
  * And Hey:
- * GRoups of Organic Molecules in ACtion for Science
+ * Great Red Oystrich Makes All Chemists Sane
  */
 static char *SRCID_copyrgt_c = "$Id$";
 
@@ -62,7 +62,7 @@ static char *head2[] = {
 #define NH2 asize(head2)
 #define MAXS 10240
 
-void head(FILE *out, char *fn_, bool bH, bool bC,
+void head(FILE *out, char *fn_, bool bH, bool bSRCID,
 	  char *cstart, char *ccont, char *cend)
 {
   int i;
@@ -86,7 +86,7 @@ void head(FILE *out, char *fn_, bool bH, bool bC,
     fprintf(out,"#define _%s\n",fn_);
     fprintf(out,"\n");
   }
-  if (bC)
+  if (bSRCID)
     fprintf(out,"static char *SRCID_%s = \"$""Id""$\";\n",fn_);
   /* NOTE: the "" are to mislead CVS so it will not replace by version info */
   fprintf(out,"\n");
@@ -95,13 +95,13 @@ void head(FILE *out, char *fn_, bool bH, bool bC,
 void cr_c(char *fn)
 {
   FILE *in,*out;
-  char ofn[1024],line[MAXS+1];
+  char ofn[1024],line[MAXS+1],cwd[1024];
   char *p,*fn_;
-  bool bH;
+  bool bH,bSRCID;
   
   sprintf(ofn,"%s.bak",fn);
   
-  fprintf(stderr,"Processing %s (backed up to %s.bak)\n",
+  fprintf(stderr,"Processing %s (backed up to %s)\n",
 	  fn,ofn);
   
   if (rename(fn,ofn) != 0) {
@@ -137,7 +137,14 @@ void cr_c(char *fn)
     } while ( ( (strstr(line,fn_) != NULL)  ||
 		(strstr(line,"static char *SRCID") != NULL) ||
 		(strlen(line)==0) ) && (!feof(in) ) );
-    head(out,fn_,bH,TRUE,"/*"," *"," */");
+    getcwd(cwd,STRLEN);
+    bSRCID = TRUE;
+    /* Do not put source id's in include/types since some filenames are
+     * be equal to those in include */
+    if ((strlen(cwd)>strlen("types")) &&
+	(strcmp(cwd+strlen(cwd)-strlen("types"),"types") == NULL))
+      bSRCID = FALSE;
+    head(out,fn_,bH,bSRCID,"/*"," *"," */");
     do {
       fprintf(out,"%s\n",line);
     } while (!feof(in) && fgets2(line,MAXS,in));
@@ -154,8 +161,8 @@ void cr_tex(char *fn)
   
   sprintf(ofn,"%s.bak",fn);
   
-  fprintf(stderr,"Processing (as Tex) %s (backed up to %s.bak)\n",
-	  fn,fn);
+  fprintf(stderr,"Processing (as Tex) %s (backed up to %s)\n",
+	  fn,ofn);
   
   if (rename(fn,ofn) != 0) {
     perror(ofn);
