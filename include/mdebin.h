@@ -42,7 +42,7 @@ static char *SRCID_mdebin_h = "$Id$";
 
 typedef struct {
   t_ebin *ebin;
-  int    ie,ib,isvir,ifvir,ipres,ivir,itc,iu;
+  int    ie,ib,isvir,ifvir,ipres,ivir,itc,iu,imu;
   int    nE,nEg,nEc,nTC,nU;
   int    *igrp;
 } t_mdebin;
@@ -58,7 +58,8 @@ extern void upd_mdebin(t_mdebin *md,real tmass,int step,
 		       tensor fvir,
 		       tensor vir,
 		       tensor pres,
-		       t_groups *grps);
+		       t_groups *grps,
+		       rvec mu_tot);
      
 extern void print_ebin(int fp_ene,FILE *log,int steps,real time,real lamb,
 		       real SAfactor,int mode,bool bCompact,
