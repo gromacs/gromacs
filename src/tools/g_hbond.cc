@@ -221,7 +221,8 @@ int main(int argc,char *argv[])
       break;
   }         
   if (i != nr_frames)
-    fprintf("WARNING: trajectory does not contain the same number of frames "
+    fprintf(stderr,
+	    "WARNING: trajectory does not contain the same number of frames "
 	    "as when it was read for the first time!\n");
     
   nr_frames=i;
