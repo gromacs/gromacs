@@ -373,7 +373,7 @@ static void write_ttyman(FILE *out,
   if (nbug > 0) {
     fprintf(out,"\nDIAGNOSTICS\n");
     for(i=0; i<nbug; i++) {
-      snew(tmp,strlen(bugs[i])+2);
+      snew(tmp,strlen(bugs[i])+3);
       strcpy(tmp,"* ");
       strcpy(tmp+2,bugs[i]);
       fprintf(out,"%s\n",wrap_lines(tmp,80,2));
