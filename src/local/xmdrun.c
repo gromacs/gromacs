@@ -229,7 +229,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     do_pbc_first(log,parm,box_size,fr,graph,x);
   
   /* Initialize pull code */
-  init_pull(log,nfile,fnm,&pulldata,x,top,box_size); 
+  init_pull(log,nfile,fnm,&pulldata,x,mdatoms,box_size); 
   
   if (!parm->ir.bUncStart) 
     do_shakefirst(log,bTYZ,lambda,ener,parm,nsb,mdatoms,x,vold,buf,ft,v,
@@ -370,8 +370,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
        other types in update */
     if (pulldata.bPull && 
 	(pulldata.runtype == eAfm || pulldata.runtype == eUmbrella))
-      pull(log,&pulldata,x,fbuf[next],
-	   parm->box,top,parm->ir.delta_t,step,mdatoms->nr); 
+      pull(&pulldata,x,fbuf[next],
+	   parm->box,top,parm->ir.delta_t,step,nsb->natoms,mdatoms); 
 
     /* Check magnitude of the forces */
     fmax = f_max(cr->left,cr->right,cr->nprocs,START(nsb),
