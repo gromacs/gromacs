@@ -155,7 +155,7 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
     }
 
     fprintf(log,"\nInitializing LINear Constraint Solver\n");
-    fprintf(log,"  number of constraint is %d\n",ncons);
+    fprintf(log,"  number of constraints is %d\n",ncons);
     fprintf(log,"  average number of constraints coupled to one constraint is %.1f\n\n",
 	    (real)(*nrtot)/ncons);
     fflush(log);
