@@ -358,7 +358,7 @@ int main(int argc, char *argv[])
   rvec      *x,*v,gc,min,max,size;
   matrix    box;
   bool      bSetSize,bCubic,bDist,bSetCenter;
-  bool      bHaveV,bScale,bRho,bRotate;
+  bool      bHaveV,bScale,bRho,bRotate,bCalcGeom;
   real      xs,ys,zs,xcent,ycent,zcent,d;
   t_filenm fnm[] = {
     { efSTX, "-f", NULL, ffREAD },
@@ -382,7 +382,8 @@ int main(int argc, char *argv[])
   bRotate   = opt2parg_bSet("-rotate",NPA,pa);
   if (bScale && bRho)
     fprintf(stderr,"WARNING: setting -density overrides -scale");
-  bScale  = bScale || bRho;
+  bScale    = bScale || bRho;
+  bCalcGeom = bCenter || bRotate || bOrient || bScale;
   
   infile  = ftp2fn(efSTX,NFILE,fnm);
   outfile = ftp2fn(efSTO,NFILE,fnm);
@@ -405,7 +406,7 @@ int main(int argc, char *argv[])
   if (bRMPBC) 
     rm_gropbc(&atoms,x,box);
 
-  if (bScale || bOrient || bRotate || bDist || bCenter) {
+  if (bCalcGeom) {
     calc_geom(ftp2fn_null(efNDX,NFILE,fnm),&atoms,x, gc, min, max);
     rvec_sub(max, min, size);
     printf("size      : %6.3f %6.3f %6.3f\n", size[XX], size[YY], size[ZZ]);
@@ -449,14 +450,14 @@ int main(int argc, char *argv[])
     rotate_conf(natom,x,v,rotangles[XX],rotangles[YY],rotangles[ZZ]);
   }
   
-  clear_rvec(size);
-  if (bScale || bOrient || bRotate) {
+  if (bCalcGeom) {
     /* recalc geometrical center and max and min coordinates and size */
     calc_geom(ftp2fn_null(efNDX,NFILE,fnm),&atoms,x, gc, min, max);
     rvec_sub(max, min, size);
-    printf("new size  : %6.3f %6.3f %6.3f\n",size[XX],size[YY],size[ZZ]);
+    if (bScale || bOrient || bRotate)
+      printf("new size  : %6.3f %6.3f %6.3f\n",size[XX],size[YY],size[ZZ]);
   }
-  
+
   /* calculate new boxsize */
   if (bDist) 
     for (i=0; (i<DIM); i++)
