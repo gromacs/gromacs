@@ -2,7 +2,7 @@ In the Makefile.$CPU you set compiler, linker & archiver to use
 on your machine.
 
 In the table below you'll find some info about the variables
-these are just example values that may be usefull on your machine
+these are just example values that might be useful on your machine
 
 Variable=	Value			Meaning
 SYSDEFS	=	-DHAVE_ULONG		System dependent defines, which
@@ -28,9 +28,11 @@ SHAREIT	  Optional, here you can enter the compile line to make a static
 
 CC_MKINL  Optional, special compile command for mkinl 
 LD_MKINL  Optional, special link command for mkinl 
-          These options are needed for machines which produce code which only
-	  runs in parallel, such as IBM SP2. mkinl is needed at compile time
+          These options are needed for machines like IBM SP2 where code 
+	  compiled with the MPI cc command (e.g. mpcc) does not run without 
+	  allocating processor time. mkinl is needed at compile time
 	  to make the innerloops and does not run in parallel.
+	 
 #
 #       MDRUN STUFF
 #
@@ -44,14 +46,20 @@ PARALLEL_ONLY_MDRUN  Useful only when compiling parallel code on machines
 		     with the mpi (or pvm) library, such as IBM SP2.
 		     When set to yes only mdrun is made and placed
 		     in a directory ending in _mpi or _pvm,
-		     the libraries are also in seperate diretories.
+		     The libraries are also in seperate diretories.
 
 #
 #	USER MODIFIABLE SECTION
 #
 #WARNING
-#WARNING The fortran innerloop is tested only on SUN and SGI machines
-#WARNING				
+#WARNING The fortran innerloops are only tested on the following
+#WARNING architectures:
+#WARNING
+#WARNING SGI, SUN, ULT, SP2, SMP, DEC
+#WARNING	
+#WARNING On LNX they work in single precision, but with egcs 1.1.2
+#WARNING you hardly get any performance gain at all.
+#  
 # 	If you want to use fortran innerloops set this to yes
 USEF77		= yes
 #
