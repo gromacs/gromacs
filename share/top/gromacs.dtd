@@ -1,12 +1,15 @@
+<!--                                                              -->
 <!-- GROMACS Data type description (DTD).                         -->
-<!-- $Id$                                                         -->
+<!--                                                              -->
+<!-- $Id$      -->
+<!--                                                              -->
 <!-- David van der Spoel 07/2001, 03/2002                         -->
 <!-- The authorative version of this document can be found at     -->
 <!-- http://www.gromacs.org/gromacs3.1.dtd                        -->
 <!-- and also in the library directory of your local GROMACS      -->
 <!-- installation.                                                -->
 
-<!ELEMENT gromacs (inputrec,system,forcefield,cell,
+<!ELEMENT gromacs (inputrec,system,masstype*,forcefield,cell,
                    coordinates,velocities?,forces?)>
 <!ATTLIST gromacs
           title     CDATA #REQUIRED>
@@ -16,19 +19,19 @@
 <!ATTLIST inputrec
           algorithm ( md | steep | cg | bd | sd ) "md"
 	  nsteps    CDATA "1"
-	  init_t    CDATA "0"
-	  delta_t   CDATA "0.002">
+	  init-t    CDATA "0"
+	  delta-t   CDATA "0.002">
 
 <!-- Output frequency in number of steps -->	  
 <!ELEMENT output EMPTY>
 <!ATTLIST output
           log           CDATA "1"
-	  x_trr         CDATA "1"
-	  v_trr         CDATA "1"
-	  f_trr         CDATA "0"
+	  x-trr         CDATA "1"
+	  v-trr         CDATA "1"
+	  f-trr         CDATA "0"
 	  energy        CDATA "1"
-	  x_xtc         CDATA "1"
-	  xtc_precision CDATA "1000">
+	  xtc           CDATA "1"
+	  xtc-precision CDATA "1000">
 	    	 
 <!-- Coupling algorithm parameters -->		 
 <!ELEMENT coupling (tcoupling,pcoupling)>
@@ -42,16 +45,16 @@
 <!ELEMENT tcparm EMPTY>
 <!ATTLIST tcparm
           groupname CDATA ""
-	  t_ref     CDATA "300"
-	  tau_t     CDATA "0.1">
+	  t-ref     CDATA "300"
+	  tau-t     CDATA "0.1">
 
 <!-- Pressure coupling -->	  
-<!ELEMENT pcoupling (refpress,compress)>
+<!ELEMENT pcoupling (p-ref,compressibility)>
 <!ATTLIST pcoupling
           algorithm ( None | Berendsen | ParinelloRahman ) "None"
 	  type      ( Isotropic | SemiIsotropic | Anisotropic | SurfaceTension ) "Isotropic"
-          tau_p     CDATA "1.0">
-<!ELEMENT p_ref            (tensor)>
+          tau-p     CDATA "1.0">
+<!ELEMENT p-ref            (tensor)>
 <!ELEMENT compressibility  (tensor)>
 <!-- End of coupling stuff -->
 
@@ -62,7 +65,7 @@
 	  rcoulomb             CDATA "1.0"
 	  rcoulswitch          CDATA "0.0"
 	  rvdwswitch           CDATA "0.0"
-	  relative_permitivity CDATA "1.0"
+	  relative-permitivity CDATA "1.0"
 	  nstlist              CDATA "1"
 	  nstype      ( Grid | Simple ) "Grid"
 	  domdecomp   ( No | Yes ) "No"
@@ -97,11 +100,12 @@
 <!ELEMENT atom (atomdef,atomdef?)>
 <!ATTLIST atom
 	  ptype    ( atom | dummy | shell ) "atom">
+<!ELEMENT atomdef EMPTY>	  
 <!ATTLIST atomdef
           name     CDATA #REQUIRED
 	  type     CDATA #REQUIRED
 	  charge   CDATA #REQUIRED
-	  mass     CDATA #REQUIRED>
+	  masstype CDATA #REQUIRED>
 
 <!ELEMENT topology (bonds*,angles*,dihedrals*)>
 
@@ -202,7 +206,7 @@
 
 <!-- The specials -->
 <!ELEMENT special EMPTY>
-<!--ELEMENT special (positionrestraint | distancerestraint | dihedralrestraint)-->
+<!--ELEMENT special (position_restraint | distance_restraint | dihedral_restraint)-->
 
 <!-- Mass types for the atoms, to avoid repeating data -->
 <!ELEMENT masstype EMPTY>
