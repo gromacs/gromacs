@@ -183,8 +183,9 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("start time and timestep in ps");
   RTYPE ("tinit",	ir->init_t,	0.0);
   RTYPE ("dt",		ir->delta_t,	0.001);
-  CTYPE ("number of steps and, number of steps for center of mass motion removal");
   ITYPE ("nsteps",      ir->nsteps,     1);
+  CTYPE ("number of steps and, number of steps for center of mass motion");
+  CTYPE ("removal");
   ITYPE ("nstcomm",	ir->nstcomm,	1);
   
   CCTYPE ("LANGEVIN DYNAMICS OPTIONS");
@@ -211,8 +212,8 @@ void get_ir(char *mdparin,char *mdparout,
   ITYPE ("nstxtcout",   ir->nstxtcout,  0);
   RTYPE ("xtc_precision",ir->xtcprec,   1000.0);
   CTYPE ("This selects the subset of atoms for the XTC file.");
-  CTYPE ("Only the first group gets written out, it does not make sense to have");
-  CTYPE ("multiple groups. By  default all atoms will be written");
+  CTYPE ("Only the first group gets written out, it does not make sense");
+  CTYPE ("to have multiple groups. By default all atoms will be written");
   STYPE ("xtc_grps",    xtc_grps,       NULL);
   CTYPE ("Selection of energy groups");
   STYPE ("energygrps",  energy,         NULL);
@@ -290,7 +291,8 @@ void get_ir(char *mdparin,char *mdparout,
   CCTYPE ("OPTIMIZATIONS FOR SOLVENT MODELS");
   CTYPE ("Solvent molecule name (blank: no optimization)");
   STYPE ("solvent_optimization",   opts->SolventOpt,NULL);
-  CTYPE ("Number of atoms in solvent model. (Not implemented for non-three atom models)");
+  CTYPE ("Number of atoms in solvent model.");
+  CTYPE ("(Not implemented for non-three atom models)");
   ITYPE ("nsatoms",     ir->nsatoms,    3);
 
   /* Shake stuff */
@@ -304,8 +306,8 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("shake_tol", ir->shake_tol, 0.0001);
   CTYPE ("Highest order in the expansion of the constraint coupling matrix");
   ITYPE ("lincs_order", ir->nProjOrder, 4);
-  CTYPE ("Lincs will write a warning to the stderr if in one step a bond rotates"); 
-  CTYPE ("over more degrees than");
+  CTYPE ("Lincs will write a warning to the stderr if in one step a bond"); 
+  CTYPE ("rotates over more degrees than");
   RTYPE ("lincs_warnangle", ir->LincsWarnAngle, 30.0);
   CTYPE ("Output frequency of the Lincs accuracy");
   ITYPE ("nstLincsout",	ir->nstLincsout,100);
