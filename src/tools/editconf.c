@@ -170,7 +170,7 @@ void read_bfac(char *fn, int *n_bfac, double **bfac_val, int **bfac_nr)
 
 void set_pdb_conf_bfac(int natoms,int nres,t_atoms *atoms,rvec x[],
 		       matrix box,int n_bfac,double *bfac,int *bfac_nr,
-		       bool peratom, bool perres, bool bLegend)
+		       bool peratom, bool bLegend)
 {
   FILE *out;
   real bfac_min,bfac_max;
@@ -181,6 +181,11 @@ void set_pdb_conf_bfac(int natoms,int nres,t_atoms *atoms,rvec x[],
   bfac_max=-1e10;
   bfac_min=1e10;
   for(i=0; (i<n_bfac); i++) {
+    if (bfac_nr[i]-1>=atoms->nres)
+      peratom=TRUE;
+    if ((bfac_nr[i]-1<0) || (bfac_nr[i]-1>=atoms->nr))
+      fatal_error(0,"Index of B-Factor %d is out of range: %d (%g)",
+		  i+1,bfac_nr[i],bfac[i]);
     if (bfac[i] > bfac_max) 
       bfac_max = bfac[i];
     if (bfac[i] < bfac_min) 
@@ -206,7 +211,7 @@ void set_pdb_conf_bfac(int natoms,int nres,t_atoms *atoms,rvec x[],
   for(i=0; (i<natoms); i++)
     atoms->pdbinfo[i].bfac=0;
   
-  if ( (n_bfac == nres) || (perres) ) {
+  if (!peratom) {
     fprintf(stderr,"Will attach %d B-factors to %d residues\n",
 	    n_bfac,nres);
     for(i=0; (i<n_bfac); i++) {
@@ -221,24 +226,12 @@ void set_pdb_conf_bfac(int natoms,int nres,t_atoms *atoms,rvec x[],
 	warning(buf);
       }
     }
-  } else if ( (n_bfac == natoms) || (peratom) ){
+  } else {
     fprintf(stderr,"Will attach %d B-factors to %d atoms\n",n_bfac,natoms);
     for(i=0; (i<n_bfac); i++) {
-      found=FALSE;
-      for(n=0; (n<natoms); n++)
-	if ( bfac_nr[i] == n+1 ) {
-	  atoms->pdbinfo[n].bfac=bfac[i];
-	  found=TRUE;
-	}
-      if (!found) {
-	sprintf(buf,"Atom nr %d not found\n",bfac_nr[i]);
-	warning(buf);
-      }
+      atoms->pdbinfo[bfac_nr[i]-1].bfac=bfac[i];
     }
-  } else
-    fatal_error(0,"Number of B-factors (%d) does not match number of atoms "
-		"(%d) or residues (%d) and no attachment type (atom or "
-		"residue) specified.",n_bfac,natoms,nres);
+  }
 }
 
 void pdb_legend(FILE *out,int natoms,int nres,t_atoms *atoms,rvec x[])
@@ -292,11 +285,13 @@ int main(int argc, char *argv[])
     "It is important that the box sizes at the bottom of your input file",
     "are correct when the periodicity is to be removed.[PAR]",
     "When writing [TT].pdb[tt] files, B-factors can be",
-    "added per atom or per residue. B-factors are read",
+    "added with the [TT]-bf[tt] option. B-factors are read",
     "from a file with with following format: first line states number of",
-    "entries in the file, next lines state either residue or atom",
-    "number followed by B-factor. Obiously, any type of numeric data can",
-    "be displayed in stead of B-factors. [TT]-legend[tt] will produce",
+    "entries in the file, next lines state an index",
+    "followed by a B-factor. The B-factors will be attached per residue",
+    "unless an index is larger than the number of residues or unless the",
+    "[TT]-atom option is set. Obviously, any type of numeric data can",
+    "be added in stead of B-factors. [TT]-legend[tt] will produce",
     "a row of CA atoms with B-factors ranging from the minimum to the",
     "maximum value found, effectively making a legend for viewing.[PAR]",
     "Finally with option [TT]-label[tt] editconf can add a chain identifier",
@@ -308,7 +303,7 @@ int main(int argc, char *argv[])
   };
   static real dist   = 0.0,rbox=0.0;
   static bool bNDEF=FALSE,bRMPBC=FALSE,bCenter=FALSE;
-  static bool peratom=FALSE,perres=FALSE,bLegend=FALSE;
+  static bool peratom=FALSE,bLegend=FALSE;
   static rvec scale={1.0,1.0,1.0},newbox={0.0,0.0,0.0};
   static real rho=1000.0;
   static rvec center={0.0,0.0,0.0};
@@ -340,8 +335,7 @@ int main(int argc, char *argv[])
       "Density (g/l) of the output box achieved by scaling" },
     { "-pbc",  FALSE, etBOOL, &bRMPBC, 
       "Remove the periodicity (make molecule whole again)" },
-    { "-atom", FALSE, etBOOL, &peratom, "Attach B-factors per atom" },
-    { "-res",  FALSE, etBOOL, &perres,  "Attach B-factors per residue" },
+    { "-atom", FALSE, etBOOL, &peratom, "Force B-factor attachment per atom" },
     { "-legend",FALSE,etBOOL, &bLegend, "Make B-factor legend" },
     { "-label", FALSE, etSTR, &label,   "Add chain label for all residues" }
   };
@@ -404,7 +398,7 @@ int main(int argc, char *argv[])
 
   infile=ftp2fn(efSTX,NFILE,fnm);
   outfile=ftp2fn(efSTO,NFILE,fnm);
-  outftp=fn2ftp(infile);
+  outftp=fn2ftp(outfile);
   
   get_stx_coordnum(infile,&natom);
   init_t_atoms(&atoms,natom,TRUE);
@@ -518,7 +512,7 @@ int main(int argc, char *argv[])
       if (opt2bSet("-bf",NFILE,fnm)) {
 	read_bfac(opt2fn("-bf",NFILE,fnm),&n_bfac,&bfac,&bfac_nr);
 	set_pdb_conf_bfac(atoms.nr,atoms.nres,&atoms,x,box,
-			  n_bfac,bfac,bfac_nr,peratom,perres,bLegend);
+			  n_bfac,bfac,bfac_nr,peratom,bLegend);
       }
       if (opt2parg_bSet("-label",NPA,pa)) {
 	for(i=0; (i<atoms.nr); i++) 
