@@ -46,10 +46,12 @@ static char *SRCID_gmxdump_c = "$Id$";
 #include "gmxfio.h"
 #include "tpxio.h"
 #include "trnio.h"
+#include "sheader.h"
+#include "txtdump.h"
 
-static void list_tpx(char *fn)
+static void list_tpx(char *fn, bool bAltLayout)
 {
-  int         step,natoms,fp;
+  int         step,natoms,fp,indent;
   real        t,lambda;
   rvec        *x,*v,*f;
   matrix      box;
@@ -69,19 +71,35 @@ static void list_tpx(char *fn)
 	   tpx.bV   ? v : NULL,
 	   tpx.bF   ? f : NULL,
 	   tpx.bTop ? &top: NULL);
-  printf("----------- begin of %s ------------\n",fn);
-  fp = open_tpx(NULL,"w");
-  fio_setdebug(fp,TRUE);
-  fwrite_tpx(fp,step,t,lambda,
-	     tpx.bIr  ? &ir : NULL,
-	     tpx.bBox ? box : NULL,
-	     natoms,
-	     tpx.bX   ? x : NULL,
-	     tpx.bV   ? v : NULL,
-	     tpx.bF   ? f : NULL,
-	     tpx.bTop ? &top : NULL);
-  close_tpx(fp);
-  printf("----------- end of %s ------------\n",fn);
+  
+  if (bAltLayout) {
+    if (available(stdout,&tpx,fn))
+      {
+	indent=0;
+	indent=pr_title(stdout,indent,fn);
+	pr_header(stdout,indent,"header",&(tpx));
+	pr_inputrec(stdout,indent,"ir",&(ir));
+	pr_rvecs(stdout,indent,"box",box,DIM);
+	pr_rvecs(stdout,indent,"x",x,natoms);
+	pr_rvecs(stdout,indent,"v",v,natoms);
+	pr_rvecs(stdout,indent,"f",f,natoms);
+	pr_top(stdout,indent,"topology",&(top));
+      }
+  } else {
+    printf("----------- begin of %s ------------\n",fn);
+    fp = open_tpx(NULL,"w");
+    fio_setdebug(fp,TRUE);
+    fwrite_tpx(fp,step,t,lambda,
+	       tpx.bIr  ? &ir : NULL,
+	       tpx.bBox ? box : NULL,
+	       natoms,
+	       tpx.bX   ? x : NULL,
+	       tpx.bV   ? v : NULL,
+	       tpx.bF   ? f : NULL,
+	       tpx.bTop ? &top : NULL);
+    close_tpx(fp);
+    printf("----------- end of %s ------------\n",fn);
+  }
   
   sfree(x);
   sfree(v);
@@ -232,19 +250,25 @@ int main(int argc,char *argv[])
     { efENX, "-e", NULL, ffOPTRD },
   };
 #define NFILE asize(fnm)
+
+  /* Command line options */
+  static bool bAltLayout=FALSE;
+  t_pargs pa[] = {
+    { "-a", FALSE, etBOOL, &bAltLayout, "Alternative layout for run startup files" }
+  };
   
   CopyRight(stdout,argv[0]);
-  parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,0,NULL,
+  parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
   
   if (ftp2bSet(efTPX,NFILE,fnm)) 
-    list_tpx(ftp2fn(efTPX,NFILE,fnm));
+    list_tpx(ftp2fn(efTPX,NFILE,fnm), bAltLayout);
     
   if (ftp2bSet(efTRX,NFILE,fnm)) 
     list_trx(ftp2fn(efTRX,NFILE,fnm));
   
   if (ftp2bSet(efENX,NFILE,fnm))
-    list_ene(ftp2fn(efENX,NFILE,fnm),FALSE);
+    list_ene(ftp2fn(efENX,NFILE,fnm), FALSE);
     
   thanx(stdout);
 
