@@ -295,7 +295,7 @@ int rm_disre(int nrmols,t_molinfo mols[])
 
 static int *new_status(char *topfile,char *confin,
 		       t_gromppopts *opts,t_inputrec *ir,
-		       bool bVerbose,int *natoms,
+		       bool bGenVel,bool bVerbose,int *natoms,
 		       rvec **x,rvec **v,matrix box,
 		       t_atomtype *atype,t_topology *sys,
 		       t_molinfo *msys,t_params plist[],
@@ -373,7 +373,7 @@ static int *new_status(char *topfile,char *confin,
     exit(1);
   }
 
-  if ((opts->bGenVel) && ir->eI == eiMD) {
+  if (bGenVel) {
     real *mass;
     
     snew(mass,msys->atoms.nr);
@@ -391,7 +391,7 @@ static int *new_status(char *topfile,char *confin,
   return forward;
 }
 
-static void cont_status(char *slog,bool bGenVel, real time,
+static void cont_status(char *slog,bool bNeedVel,bool bGenVel, real time,
 			t_inputrec *ir,int *natoms,
 			rvec **x,rvec **v,matrix box,
 			int *nre,
@@ -404,14 +404,16 @@ static void cont_status(char *slog,bool bGenVel, real time,
 
   tt      = ir->init_t;
   fprintf(stderr,
-	  "Reading Coordinates, Velocities and Box size from old trajectory\n");
+	  "Reading Coordinates%s and Box size from old trajectory\n",
+	  (!bNeedVel || bGenVel) ? "" : ", Velocities");
   if (time == -1)
     fprintf(stderr,"Will read whole trajectory\n");
   else
     fprintf(stderr,"Will read till time %g\n",time);
-  if (bGenVel) {
-    fprintf(stderr,"Velocities generated: "
-	    "ignoring velocities in input trajectory\n");
+  if (!bNeedVel || bGenVel) {
+    if (bGenVel)
+      fprintf(stderr,"Velocities generated: "
+	      "ignoring velocities in input trajectory\n");
     *natoms = read_first_x(&fp,slog,&tt,x,box);
   } else
     *natoms = read_first_x_v(&fp,slog,&tt,x,v,box);
@@ -426,7 +428,7 @@ static void cont_status(char *slog,bool bGenVel, real time,
    * or the ones at step step.
    * Or only until box and x if gen_vel is set.
    */
-  while (bGenVel?
+  while ((!bNeedVel || bGenVel) ?
 	 read_next_x(fp,&tt,*natoms,*x,box):
 	 read_next_x_v(fp,&tt,*natoms,*x,*v,box)) {
     if ( (time != -1) && (tt >= time) )
@@ -612,6 +614,7 @@ int main (int argc, char *argv[])
   matrix       box;
   char         fn[STRLEN];
   int          nerror;
+  bool         bNeedVel,bGenVel;
 
   t_filenm fnm[] = {
     { efMDP, NULL,  NULL,    ffREAD  },
@@ -684,6 +687,9 @@ int main (int argc, char *argv[])
     bShuffle=FALSE;
   }
   
+  bNeedVel = (ir->eI == eiMD);
+  bGenVel  = (bNeedVel && opts->bGenVel);
+
   snew(plist,F_NRE);
   init_plist(plist);
   open_symtab(&sys.symtab);
@@ -691,7 +697,7 @@ int main (int argc, char *argv[])
   if (!fexist(fn)) 
     fatal_error(0,"%s does not exist",fn);
   forward=new_status(fn,opt2fn("-c",NFILE,fnm),
-		     opts,ir,bVerbose,&natoms,
+		     opts,ir,bGenVel,bVerbose,&natoms,
 		     &x,&v,box,&atype,&sys,&msys,plist,
 		     bShuffle ? nprocs : 1,
 		     (opts->eDisre==edrEnsemble),opts->bMorse,nerror);
@@ -733,7 +739,7 @@ int main (int argc, char *argv[])
   if (ftp2bSet(efTRN,NFILE,fnm)) {
     if (bVerbose)
       fprintf(stderr,"getting data from old trajectory ...\n");
-    cont_status(ftp2fn(efTRN,NFILE,fnm),opts->bGenVel,time,ir,&natoms,
+    cont_status(ftp2fn(efTRN,NFILE,fnm),bNeedVel,bGenVel,time,ir,&natoms,
 		&x,&v,box,&nre,&e,&sys);
   }
   /* This is also necessary for setting the multinr arrays */
