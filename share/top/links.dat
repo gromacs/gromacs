@@ -66,6 +66,7 @@ mdrun
 merge_freq
 mk_angndx
 mk_ghat
+mtx
 ndx
 ngmx
 nmrun
@@ -74,14 +75,15 @@ pdb2gmx
 protonate
 rtp
 sas2mat
-stx
 tex
 top
+tpa
 tpb
 tpbconv
+tpr
 trj
 trjconv
-trx
+trr
 waterins
 wheel
 xpm
