@@ -44,7 +44,7 @@ realistic to use for any large systems.
 Don't use Ewald unless you are absolutely sure this is what you want - 
 for almost all cases the PME method below will perform much better. 
 If you still want to employ classical Ewald summation enter this in
-your {\tt .mdp} file:
+your {\tt .mdp} file, if the side of your box is about $3$~nm:
 \begin{verbatim}
 eeltype         = Ewald
 rvdw            = 0.9
@@ -61,7 +61,8 @@ and 5 positive wavevectors in this case.)
 The ewald\_rtol parameter is the relative
 strength of the electrostatic interaction at the cut-off. Decreasing
 this gives you a more accurate direct sum, but a less accurate
-reciprocal sum. 
+reciprocal sum. For a box of different size the fourier\_n* terms
+should be scaled accordingly.
  
 \subsection{PME}
 \label{sec:pme}
