@@ -1080,16 +1080,19 @@ way to make use of the {\tt \#ifdef} option is as follows:
 ...
 \end{verbatim}}
 
-\subsection{\swapindex{Free energy}{calculation}}
+\subsection{\normindex{Free energy calculations}}
 
 Free energy differences between two systems A and B can be calculated as
-described in \secref{fep}. The systems A and B are described by topologies
+described in \secref{fecalc}.
+The systems A and B are described by topologies
 consisting of the same number of molecules with the same number of
 atoms. Masses and non-bonded interactions can be perturbed by adding B
 parameters in the {\tt [~atoms~]} field. Bonded interactions can be 
 perturbed by adding B parameters to the bonded types or the bonded
 interactions. The parameters that can be perturbed are listed in  
 \tabref{topfile1} and \tabref{topfile2}.
+The $\lambda$-dependence of the interactions is described
+in section \secref{feia}.
 Below is an example of a topology which changes from 200 propanols to
 200 pentanes using the \gromosv{96} force field.
 {\small\begin{verbatim}

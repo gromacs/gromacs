@@ -969,40 +969,19 @@ Some parameters for NMR refinement can be specified in the
         distance restraints are written to the energy file.
 \end{description}
 
-\section{Free energy calculations}
-\label{sec:fep}
+\section{\normindex{Free energy interactions}}
+\label{sec:feia}
 \newcommand{\LAM}{\lambda}
 \newcommand{\LL}{(1-\LAM)}
 \newcommand{\dvdl}[1]{\frac{\partial #1}{\partial \LAM}}
-\swapindex{Free energy}{perturbation} calculations can be performed in
-{\gromacs} using either the ``slow-growth'' method, or using umbrella sampling.
-This requires modification of the Hamiltonian $H$, which can be derived
-using the partition function $Z$.
-If we write the Gibbs free energy $G$ using $Z$:
-\bea
-Z       &=&     \int \int \exp\left(-\beta H(p,q))\right) {\rm d}p {\rm d}q \\
-G       &=&     -k_B T \ln Z
-\eea
-where $\beta$=$1/(k_B T)$ with $k_B$ Boltzmann's constant 
-and $T$ the temperature.
-$p$ are the generalized momenta and $q$ are the generalized coordinates.
-We can split the Hamiltonian in the potential $V$ and kinetic $K$ parts:
-\bea
-H       &=&     V(q)    +       K(p)            \\
-K(p)    &=&     \sum_i^N \frac{\ve{p}_i^2}{2 m_i}       
-\eea
-where $N$ is the number of particles in the system and $m_i$ are the masses
-of the particles.
-\beq
-\begin{array}{rcl}
-G &~=~& -1/\beta \ln \left[\int \exp(-\beta V(q)) dq \int \exp(-\beta K(p)) {\rm d}p  \right] \\
-& \mbox{or} \\
-G &~=~&   \left< K(p) \right> -1/\beta \ln \int \exp(-\beta V(q)) {\rm d}q
-\end{array}
-\eeq
-
-Here are the modified equations used to calculate the free energy
-
+This section describes the $\lambda$-dependence of the potentials
+used for free energy calculations (see \secref{fecalc}).
+All common types of potentials and constraints can be
+interpolated smoothly from state A ($\lambda=0$) to state B
+($\lambda=1$) and vice versa.
+All bonded interactions are interpolated by linear interpolation
+of the interaction parameters. Non-bonded interactions can be
+interpolated linearly or via soft-core interactions.
 
 \subsubsection{Harmonic potentials}
 The example given here is for the bond potential which is harmonic
@@ -1017,6 +996,11 @@ V_b     &=&\half(\LL k_b^A +
                 \nonumber\\
 \eea
 
+\subsubsection{\gromosv{96} bonds and angles}
+Fourth power bond stretching and cosine based angle potentials
+are interpolated by linear interpolation of the force constant
+and the equilibrium position. Formulas are not given here.
+
 \subsubsection{Proper dihedrals}
 For the proper dihedrals, the equations are somewhat more complicated:
 \bea
@@ -1028,7 +1012,7 @@ V_d     &=&(\LL k_d^A + \LAM k_d^B)
         \sin(n_{\phi}\phi - [\LL \phi_0^A + \LAM \phi_0^B]\biggr]
 \eea
 {\bf Note:} that the multiplicity $n_{\phi}$ can not be parameterized
-because the function should remain periodic on the interval $0..2\pi$.
+because the function should remain periodic on the interval $[0,2\pi]$.
 
 \subsubsection{Coulomb interaction}
 The \normindex{Coulomb} interaction between two particles 
@@ -1064,7 +1048,7 @@ V_{LJ}  &=&     \frac{(\LL C_{12}^A + \LAM C_{12}^B)}{\rij^{12}} -
                 \frac{C_6^B - C_6^A}{\rij^6}
 \eea
 It should be noted that it is also possible to express a pathway from
-state $A$ to state $B$ using $\sigma$ and $\epsilon$ (see \eqnref{sigeps}).
+state A to state B using $\sigma$ and $\epsilon$ (see \eqnref{sigeps}).
 It may seem to make sense  physically, to vary the forcefield parameters
 $\sigma$ and $\epsilon$ rather 
 than the derived parameters $C_{12}$ and $C_{6}$.
