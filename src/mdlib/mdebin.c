@@ -83,7 +83,7 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
     "#Surf*SurfTen"
   };
   static char *mu_nm[] = {
-    "Mu-X", "Mu-Y", "Mu-Z"
+    "Mu-X (D)", "Mu-Y (D)", "Mu-Z (D)"
   };
   static char *vcos_nm[] = {
     "2CosZ*Vel-X"
@@ -274,6 +274,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
   real   eee[egNR];
   real   ecopy[F_NRE];
   real   tmp;
+  rvec   mu_D;
   
   copy_energy(ener,ecopy);
   add_ebin(md->ebin,md->ie,f_nre,ecopy,step);
@@ -299,7 +300,9 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
   add_ebin(md->ebin,md->ipres,9,pres[0],step);
   tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ];
   add_ebin(md->ebin,md->isurft,1,&tmp,step);
-  add_ebin(md->ebin,md->imu,3,mu_tot,step);
+  for(i=0; (i<DIM); i++)
+    mu_D[i] = mu_tot[i]*ENM2DEBYE;
+  add_ebin(md->ebin,md->imu,3,mu_D,step);
   if (grps->cosacc.cos_accel != 0) {
     add_ebin(md->ebin,md->ivcos,1,&(grps->cosacc.vcos),step);
     /* 1/viscosity, unit 1/(kg m^-1 s^-1) */
