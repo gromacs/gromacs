@@ -136,7 +136,8 @@ void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line)
 #endif
 }
 
-void print_perf(FILE *out,double cputime,double realtime,t_nrnb *nrnb,int nprocs)
+void print_perf(FILE *out,double cputime,double realtime,
+		t_nrnb *nrnb,int nprocs)
 {
   int    nbfs_ind[] = { eNR_LJC, eNR_QQ, eNR_LJCRF, eNR_QQRF, 
 			eNR_FREE, eNR_COULTAB, eNR_TAB, eNR_LR, 
@@ -145,6 +146,10 @@ void print_perf(FILE *out,double cputime,double realtime,t_nrnb *nrnb,int nprocs
   double nbfs,mni,frac,tfrac;
   double mflop,dni,tni,tcyc;
   
+  if (nprocs > 1) {
+    cputime = realtime;
+    fprintf(out,"Performance is based on real time for parallel computer.\n");
+  }
   if (cputime == 0.0) {
     fprintf(out,"cputime = 0! Infinite Giga flopses! \n");
     return;
