@@ -892,10 +892,9 @@ Some parameters for NMR refinement can be specified in the
 	The option {\tt disre\_weighting = conservative}
 	gives conservative forces when {\tt disre\_tau = 0}.
 \item[{\tt disre\_mixed}: how to calculate the violations.]
-	{\tt disre\_mixed = no} gives normal running time
-	averaged violations.
+	{\tt disre\_mixed = no} gives normal time averaged violations.
 	When {\tt disre\_mixed = yes} the square root of the
-	product of the running time averaged and the instantaneous
+	product of the time averaged and the instantaneous
 	violations is used.
 \item[{\tt disre\_fc}: force constant $k_{dr}$ for distance restraints.] 
 	$k_{dr}$  (\eqnref{disre}) can be set
@@ -909,7 +908,7 @@ Some parameters for NMR refinement can be specified in the
 	10 ps. Time averaging can be turned of by setting {\tt disre\_tau}
 	to zero.
 \item[{\tt nstdisreout}: pair distance output frequency.]
-	Determines how often the running time averaged and 
+	Determines how often the time averaged and 
 	instantaneous distances of all atom pairs involved in
 	distance restraints are written to the energy file.
 \end{description}
