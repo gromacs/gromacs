@@ -8,17 +8,17 @@ templatedir = ${datadir}/template
 # we don't build this, it's meant for the user to play with.
 # Since a Makefile is used for the installation, we call the
 # template makefile Template.mak, and rename it to Makefile when installing.
-# We add the DOUBLE define to CPPFLAGS, so users can do without config.h
+# We add the GMX_DOUBLE define to CPPFLAGS, so users can do without config.h
 LDFLAGS = -L@libdir@ @LDFLAGS@
 LIBS = -lmd@LIBSUFFIX@ -lgmx@LIBSUFFIX@ @LIBS@ 
 CC = @CC@
-if DOUBLE
-MYCFLAGS = @CFLAGS@ @INCLUDES@ -I@includedir@ -DDOUBLE
+if GMX_DOUBLE
+MYCFLAGS = @CFLAGS@ @INCLUDES@ -I@includedir@ -DGMX_DOUBLE
 else
 MYCFLAGS = @CFLAGS@ @INCLUDES@ -I@includedir@
 endif
 
-if DOUBLE
+if GMX_DOUBLE
 template_DATA = template.c README Makefile.@host@_double
 else
 template_DATA = template.c README Makefile.@host@

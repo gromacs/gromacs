@@ -90,7 +90,7 @@ void read_umbrella_header(FILE * file,t_UmbrellaHeader * header)
     gmx_fatal(FARGS,"This does not appear to be a valid pdo file");
   if(strcmp(Buffer2,"3.0"))
     gmx_fatal(FARGS,"This does not appear to be a version 3.0 pdo file");
-#ifdef DOUBLE
+#ifdef GMX_DOUBLE
   fscanf(file,"%lf%lf%lf",&(header->Dims[0]),&(header->Dims[1]),&(header->Dims[2]));
 #else
   fscanf(file,"%f%f%f",&(header->Dims[0]),&(header->Dims[1]),&(header->Dims[2]));

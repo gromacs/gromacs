@@ -883,7 +883,7 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
 
-#ifndef DOUBLE
+#ifndef GMX_DOUBLE
   fprintf(stderr,"WARNING: running %s in single precision may produce bad" 
 	  " distances\n",argv[0]);
 #endif

@@ -71,13 +71,13 @@
 
 /* You might have to update the version number in this file.
  * To compile in double precision:
- * 1) Define DOUBLE below
+ * 1) Define GMX_DOUBLE below
  * 2) Check that we use the right FFTW name prefix for double below */
 
 #define PACKAGE "gromacs"
 
 #define VERSION "3.1.99"
-/* #undef DOUBLE */
+/* #undef GMX_DOUBLE */
 
 /* This is just the *default* library directory. Before looking here
  * the program will try to find it relative to the location of the
@@ -91,7 +91,7 @@
 
 #define RETSIGTYPE void
 
-#ifdef DOUBLE
+#ifdef GMX_DOUBLE
 #  define FFTW_NAME_FFTW
 #else
 #  define FFTW_NAME_SFFTW
@@ -122,7 +122,7 @@
 #define STDC_HEADERS
 
 /* Remove these defines to disable assembly loops */
-#ifdef DOUBLE
+#ifdef GMX_DOUBLE
 #  define USE_X86_SSE2
 #else
 #  define USE_X86_SSE_AND_3DNOW
