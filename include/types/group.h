@@ -37,7 +37,8 @@
 #include <config.h>
 #endif
 
-enum { egCOUL, egLJ, egBHAM, egLR, egLJLR, egCOUL14, egLJ14, egNR };
+enum { egCOULSR, egLJSR, egBHAMSR, egCOULLR, egLJLR, egBHAMLR,
+       egCOUL14, egLJ14, egNR };
 	
 typedef struct {
   real    T;		/* Temperature	    */

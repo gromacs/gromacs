@@ -43,9 +43,7 @@
 #include "macros.h"
 #include "smalloc.h"
 #include "assert.h"
-#include "physics.h"
 #include "macros.h"
-#include "vec.h"
 #include "force.h"
 #include "invblock.h"
 #include "confio.h"
@@ -65,7 +63,6 @@
 #include "ewald.h"
 #include "pme.h"
 #include "mdrun.h"
-#include "copyrite.h"
 
 t_forcerec *mk_forcerec(void)
 {
@@ -95,7 +92,7 @@ static void pr_nbfp(FILE *fp,real *nbfp,bool bBHAM,int atnr)
 }
 #endif
 
-static real *mk_nbfp(t_idef *idef,bool bBHAM)
+static real *mk_nbfp(const t_idef *idef,bool bBHAM)
 {
   real *nbfp;
   int  i,j,k,atnr;
@@ -123,14 +120,14 @@ static real *mk_nbfp(t_idef *idef,bool bBHAM)
   return nbfp;
 }
 
-static void check_solvent(FILE *fp,t_topology *top,t_forcerec *fr,
-			  t_mdatoms *md,t_nsborder *nsb)
+static void check_solvent(FILE *fp,const t_topology *top,t_forcerec *fr,
+			  const t_mdatoms *md,const t_nsborder *nsb)
 {
   /* This routine finds out whether a charge group can be used as
    * solvent in the innerloops. The routine should be called once
    * at the beginning of the MD program.
    */
-  t_block *cgs,*excl,*mols;
+  const t_block *cgs,*excl,*mols;
   atom_id *cgid;
   int     i,j,m,j0,j1,nj,k,aj,ak,tjA,tjB,nl_m,nl_n,nl_o;
   int     warncount;
@@ -339,79 +336,51 @@ static void check_solvent(FILE *fp,t_topology *top,t_forcerec *fr,
   }
 }
 
-static void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
-		       real zsq,matrix box,
-		       real *kappa,real *epsfac,real *krf,real *crf)
+void set_chargesum(FILE *log,t_forcerec *fr,const t_mdatoms *mdatoms)
 {
-  /* Compute constants for Generalized reaction field */
-  static bool bFirst=TRUE;
-  real   k1,k2,I,vol,rmin;
-  
-  if ((eel == eelRF) || (eel == eelGRF)) {
-    vol     = det(box);
-    I       = zsq/vol;
-    if (eel == eelGRF) {
-      /* Consistency check */
-      if (Temp <= 0.0)
-	fatal_error(0,"Temperature is %f while using"
-		    " Generalized Reaction Field\n",Temp);
-      /* Ionic strength (only needed for eelGRF */
-      *kappa  = sqrt(2*I/(EPSILON0*eps*BOLTZ*Temp));
-    }
-    else
-      *kappa = 0;
+  double qsum;
+  int    i;
 
-    /* eps == 0 signals infinite dielectric */
-    if (eps == 0) {
-      *krf = 1/(2*Rc*Rc*Rc);
-      *crf = 0;
-    }
-    else {
-      k1      = (1+*kappa*Rc);
-      k2      = eps*sqr((real)(*kappa*Rc));
-      
-      *krf    = (((eps-1)*k1+k2)/((2*eps+1)*k1+2*k2)/(Rc*Rc*Rc));
-      *crf    = 1/Rc + *krf*Rc*Rc;
-    }
-    *epsfac = ONE_4PI_EPS0;
-    rmin    = pow(*krf*2.0,-1.0/3.0);
-    
-    if (bFirst) {
-      if (eel == eelGRF)
-	please_cite(log,"Tironi95a");
-      fprintf(log,"%s:\n"
-	      "epsRF = %10g, I   = %10g, volume = %10g, kappa  = %10g\n"
-	      "rc    = %10g, krf = %10g, crf    = %10g, epsfac = %10g\n",
-	      eel_names[eel],eps,I,vol,*kappa,Rc,*krf,*crf,*epsfac);
-      fprintf(log,
-	      "The electrostatics potential has its minimum at rc = %g\n",
-	      rmin);
-      
-      bFirst=FALSE;
-    }
+  qsum = 0;
+  for(i=0; i<mdatoms->nr; i++)
+    qsum += mdatoms->chargeA[i];
+  fr->qsum[0] = qsum;
+  if (fr->efep != efepNO) {
+    qsum = 0;
+    for(i=0; i<mdatoms->nr; i++)
+    qsum += mdatoms->chargeB[i];
+    fr->qsum[1] = qsum;
+  } else {
+    fr->qsum[1] = fr->qsum[0];
   }
-  else {
-    /* If we're not using a reaction field, set the factor to 0
-     * and multiply the dielectric constant by 1/eps
-     */
-    *kappa  = 0.0;
-    *krf    = 0.0;
-    *crf    = 0.0;
-    if (eps == 0)
-      eps = 1;
-    *epsfac = ONE_4PI_EPS0/eps;
-  } 
+  if (log) {
+    if (fr->efep == efepNO)
+      fprintf(log,"System total charge: %.3f\n",fr->qsum[0]);
+    else
+      fprintf(log,"System total charge, top. A: %.3f top. B: %.3f\n",
+	      fr->qsum[0],fr->qsum[1]);
+  }
 }
 
 void update_forcerec(FILE *log,t_forcerec *fr,matrix box)
 {
-  calc_rffac(log,fr->eeltype,
-	     fr->epsilon_r,fr->rcoulomb,fr->temp,fr->zsquare,box,
-	     &fr->kappa,&fr->epsfac,&fr->k_rf,&fr->c_rf);
+  fr->epsfac = ONE_4PI_EPS0;
+  if (EEL_RF(fr->eeltype))
+    calc_rffac(log,fr->eeltype,
+	       fr->epsilon_r,fr->rcoulomb,fr->temp,fr->zsquare,box,
+	       &fr->kappa,&fr->k_rf,&fr->c_rf);
+  else {
+    if (fr->epsilon_r != 0)
+      /* multiply the dielectric constant by 1/eps */
+      fr->epsfac /= fr->epsilon_r;
+    else
+      /* eps = 0 is infinite dieletric: no coulomb interactions */
+      fr->epsfac = 0;
+  }
 }
 
-void set_avcsixtwelve(FILE *log,t_forcerec *fr,t_mdatoms *mdatoms,
-		      t_block *excl)
+void set_avcsixtwelve(FILE *log,t_forcerec *fr,
+		      const t_mdatoms *mdatoms,const t_block *excl)
 {
   int    i,j,tpi,tpj,j1,j2,k,nexcl;
   double csix,ctwelve;
@@ -482,7 +451,7 @@ void set_avcsixtwelve(FILE *log,t_forcerec *fr,t_mdatoms *mdatoms,
   fr->avctwelve = ctwelve;
 }
 
-static void set_bham_b_max(FILE *log,t_forcerec *fr,t_mdatoms *mdatoms)
+static void set_bham_b_max(FILE *log,t_forcerec *fr,const t_mdatoms *mdatoms)
 {
   int  i,j,tpi,tpj,ntypes,natoms,*type;
   real b,bmin;
@@ -518,23 +487,23 @@ static void set_bham_b_max(FILE *log,t_forcerec *fr,t_mdatoms *mdatoms)
 
 void init_forcerec(FILE *fp,
 		   t_forcerec *fr,
-		   t_inputrec *ir,
-		   t_topology *top,
-		   t_commrec  *cr,
-		   t_mdatoms  *mdatoms,
-		   t_nsborder *nsb,
+		   const t_inputrec *ir,
+		   const t_topology *top,
+		   const t_commrec  *cr,
+		   const t_mdatoms  *mdatoms,
+		   const t_nsborder *nsb,
 		   matrix     box,
 		   bool       bMolEpot,
-		   char       *tabfn,
+		   const char *tabfn,
 		   bool       bNoSolvOpt)
 {
   int     i,j,m,natoms,ngrp;
-  real    q,zsq,nrdf,T;
+  real    q,zsq,nrdf,T,rtab;
   rvec    box_size;
-  double  rtab;
-  t_block *mols,*cgs;
-  t_idef  *idef;
-
+  const t_block *mols,*cgs;
+  const t_idef  *idef;
+  bool    bTab,bSep14tab;
+  
   if (check_box(box))
     fatal_error(0,check_box(box));
 
@@ -543,6 +512,16 @@ void init_forcerec(FILE *fp,
   idef           = &(top->idef);
   
   natoms         = mdatoms->nr;
+
+  /* Copy the user determined parameters */
+  fr->userint1 = ir->userint1;
+  fr->userint2 = ir->userint2;
+  fr->userint3 = ir->userint3;
+  fr->userint4 = ir->userint4;
+  fr->userreal1 = ir->userreal1;
+  fr->userreal2 = ir->userreal2;
+  fr->userreal3 = ir->userreal3;
+  fr->userreal4 = ir->userreal4;
 
   /* Shell stuff */
   fr->fc_stepsize = ir->fc_stepsize;
@@ -564,10 +543,8 @@ void init_forcerec(FILE *fp,
   fr->bTwinRange = fr->rlistlong > fr->rlist;
   fr->bEwald     = fr->eeltype==eelPME || fr->eeltype==eelEWALD;
   fr->bvdwtab    = fr->vdwtype != evdwCUT;
-  fr->bRF        = (fr->eeltype==eelRF || fr->eeltype==eelGRF) &&
-		    fr->vdwtype==evdwCUT;
-  fr->bcoultab   = (fr->eeltype!=eelCUT && !fr->bRF) || fr->bEwald;
-
+  fr->bcoultab   = fr->eeltype != eelCUT && !(EEL_RF(fr->eeltype) &&
+					      fr->vdwtype == evdwCUT);
   if (getenv("GMX_FORCE_TABLES")) {
     fr->bvdwtab  = TRUE;
     fr->bcoultab = TRUE;
@@ -606,7 +583,7 @@ void init_forcerec(FILE *fp,
   fr->temp    = 0.0;
   
   if (fr->eeltype == eelGRF) {
-    if (ir->efep != efepNO)
+    if (ir->efep!=efepNO)
       fprintf(fp,"\nWARNING: the generalized reaction field constants are determined from topology A only\n\n");
     zsq = 0.0;
     for (i=0; (i<cgs->nr); i++) {
@@ -632,7 +609,7 @@ void init_forcerec(FILE *fp,
       fatal_error(0,"No degrees of freedom!");
     fr->temp   = T/nrdf;
   }
-  else if (EEL_LR(fr->eeltype) || (fr->eeltype == eelSHIFT) || 
+  else if (EEL_FULL(fr->eeltype) || (fr->eeltype == eelSHIFT) || 
 	   (fr->eeltype == eelUSER) || (fr->eeltype == eelSWITCH)) {
     /* We must use the long range cut-off for neighboursearching...
      * An extra range of e.g. 0.1 nm (half the size of a charge group)
@@ -661,10 +638,11 @@ void init_forcerec(FILE *fp,
     snew(fr->fshift_twin,SHIFTS);
   }
   
-  if (EEL_LR(fr->eeltype)) {
-    if (ir->efep != efepNO)
-      fprintf(fp,"\nWARNING: With %s the long-range part only uses the charges from topology A\n\n",eel_names[fr->eeltype]);
-    snew(fr->f_pme,natoms);
+  if (EEL_FULL(fr->eeltype)) {
+    if (ir->efep != efepNO) {
+      fprintf(fp,"\nWARNING: With %s the reciprocal part only uses the charges from topology A\n\n",eel_names[fr->eeltype]);
+    }
+    snew(fr->f_el_recip,natoms);
   }
   
   /* Mask that says whether or not this NBF list should be computed */
@@ -724,7 +702,7 @@ void init_forcerec(FILE *fp,
 
   if (fr->bBHAM)
     set_bham_b_max(fp,fr,mdatoms);
-  
+
   /* Copy the GBSA data (radius, volume and surftens for each
    * atomtype) from the topology atomtype section to forcerec.
    */
@@ -742,6 +720,9 @@ void init_forcerec(FILE *fp,
 
   /* Now update the rest of the vars */
   update_forcerec(fp,fr,box);
+  
+  set_chargesum(fp,fr,mdatoms);
+
   /* if we are using LR electrostatics, and they are tabulated,
    * the tables will contain shifted coulomb interactions.
    * Since we want to use the non-shifted ones for 1-4
@@ -754,62 +735,40 @@ void init_forcerec(FILE *fp,
    * A little unnecessary to make both vdw and coul tables sometimes,
    * but what the heck... */
 
-  if (fr->bcoultab || fr->bvdwtab) {
-    if (EEL_LR(fr->eeltype)) {
-      bool bcoulsave,bvdwsave;
-      /* generate extra tables for 1-4 interactions only
-       * fake the forcerec so make_tables thinks it should
-       * just create the non shifted version 
-       */
-      bcoulsave=fr->bcoultab;
-      bvdwsave=fr->bvdwtab;
-      fr->bcoultab=FALSE;
-      fr->bvdwtab=FALSE;
-      fr->rtab=ir->tabext;
-      make_tables(fp,fr,MASTER(cr),tabfn);
-      fr->bcoultab=bcoulsave;
-      fr->bvdwtab=bvdwsave;
-      fr->coulvdw14tab=fr->coulvdwtab;
-      fr->coulvdwtab=NULL;
-    }
-    fr->rtab = fr->rlistlong + ir->tabext;
-  }
-  else if (fr->efep != efepNO) {
-    if (fr->rlistlong == 0) {
-      char *ptr,*envvar="FEP_TABLE_LENGTH";
-      fr->rtab = 5;
-      ptr = getenv(envvar);
-      if (ptr) {
-	sscanf(ptr,"%lf",&rtab);
-	fr->rtab = rtab;
-      }
+  bTab = fr->bcoultab || fr->bvdwtab || (fr->efep != efepNO);
+  bSep14tab = !bTab || EEL_FULL(fr->eeltype) || (EEL_RF(fr->eeltype) &&
+						 fr->eeltype != eelRF_OLD);
+  if (bTab) {
+    rtab = fr->rlistlong + ir->tabext;
+    if (fr->rlistlong == 0 && fr->efep != efepNO && rtab < 5) {
+      rtab = 5;
       if (fp)
-	fprintf(fp,"\nNote: Setting the free energy table length to %g nm\n"
-		"      You can set this value with the environment variable %s"
-		"\n\n",fr->rtab,envvar);
-    } 
-    else
-      fr->rtab = fr->rlistlong + ir->tabext;
-  } 
-  else
-    fr->rtab = ir->tabext;
-  
-  /* make tables for ordinary interactions */
-  make_tables(fp,fr,MASTER(cr),tabfn);
-  if(!(EEL_LR(fr->eeltype) && (fr->bcoultab || fr->bvdwtab)))
-    fr->coulvdw14tab=fr->coulvdwtab;
-
-  /* Copy the contents of the table to separate coulomb and LJ
-   * tables too, to improve cache performance.
-   */
-  snew(fr->coultab,4*(fr->ntab+1));
-  snew(fr->vdwtab,8*(fr->ntab+1));  
-  for(i=0; i<=fr->ntab; i++) {
-    for(j=0; j<4; j++) 
-      fr->coultab[4*i+j]=fr->coulvdwtab[12*i+j];
-    for(j=0; j<8; j++) 
-      fr->vdwtab[8*i+j]=fr->coulvdwtab[12*i+4+j];
+	fprintf(fp,
+		"\nWARNING: Increasing the free energy table length from\n"
+		"         table extension = %f nm to %g nm,\n"
+		"         you can set the table extension in the mdp file\n\n",
+		ir->tabext,rtab);
+    }
+    /* make tables for ordinary interactions */
+    fr->tab = make_tables(fp,fr,MASTER(cr),tabfn,rtab,FALSE);
+    /* Copy the contents of the table to separate coulomb and LJ
+     * tables too, to improve cache performance.
+     */
+    snew(fr->coultab,4*(fr->tab.n+1));
+    snew(fr->vdwtab,8*(fr->tab.n+1));  
+    for(i=0; i<=fr->tab.n; i++) {
+      for(j=0; j<4; j++) 
+	fr->coultab[4*i+j]=fr->tab.tab[12*i+j];
+      for(j=0; j<8; j++) 
+	fr->vdwtab[8*i+j]=fr->tab.tab[12*i+4+j];
+    }
+    if (!bSep14tab)
+      fr->tab14 = fr->tab;
   }
+  if (bSep14tab)
+    /* generate extra tables with plain Coulomb for 1-4 interactions only */
+    fr->tab14 = make_tables(fp,fr,MASTER(cr),tabfn,ir->tabext,TRUE);
+
   if (!fr->mno_index)
     check_solvent(fp,top,fr,mdatoms,nsb);
 }
@@ -828,8 +787,8 @@ void pr_forcerec(FILE *fp,t_forcerec *fr,t_commrec *cr)
   pr_bool(fp,fr->bTwinRange);
   /*pr_int(fp,fr->cg0);
     pr_int(fp,fr->hcg);*/
-  pr_int(fp,fr->ntab);
-  if (fr->ntab > 0) {
+  pr_int(fp,fr->tab.n);
+  if (fr->tab.n > 0) {
     pr_real(fp,fr->rcoulomb_switch);
     pr_real(fp,fr->rcoulomb);
   }
@@ -913,30 +872,39 @@ void force(FILE       *fp,     int        step,
 	   bool       bVerbose, matrix     box,
 	   real       lambda,   t_graph    *graph,
 	   t_block    *excl,    bool       bNBFonly,
-	   matrix lr_vir,       rvec       mu_tot[],
-	   real       qsum[],   bool       bGatherOnly)
+	   rvec       mu_tot[],
+	   bool       bGatherOnly)
 {
   int     i,nit;
-  bool    bDoEpot;
+  bool    bDoEpot,bSepDVDL;
   rvec    box_size;
-  real    Vlr,Vcorr=0;
-  
+  real    dvdlambda,Vlr,Vcorr=0;
+#define PRINT_SEPDVDL(s,v,dvdl) if (bSepDVDL) fprintf(fp,"  %-30s V %12.5e  dVdl %12.5e\n",s,v,dvdl);
+
   /* Reset box */
   for(i=0; (i<DIM); i++)
     box_size[i]=box[i][i];
     
   bDoEpot=((fr->nmol > 0) && (fr->nstcalc > 0) && (mod(step,fr->nstcalc)==0));
+  bSepDVDL=(fr->bSepDVDL && do_per_step(step,ir->nstlog));
   /* Reset epot... */
   if (bDoEpot) 
     for(i=0; (i<fr->nmol); i++)
       fr->mol_epot[i]=0.0;
   debug_gmx();
+
+  if (bSepDVDL)
+    fprintf(fp,"Step %d: non-bonded V and dVdl for node %d:\n",
+	    step,cr->nodeid);
   
   /* Call the short range functions all in one go. */
+  dvdlambda = 0;
   do_fnbf(fp,cr,fr,x,f,md,
-	  fr->bBHAM ? grps->estat.ee[egBHAM] : grps->estat.ee[egLJ],
-	  grps->estat.ee[egCOUL],box_size,nrnb,
-	  lambda,&epot[F_DVDL],FALSE,-1);
+	  fr->bBHAM ? grps->estat.ee[egBHAMSR] : grps->estat.ee[egLJSR],
+	  grps->estat.ee[egCOULSR],box_size,nrnb,
+	  lambda,&dvdlambda,FALSE,-1);
+  epot[F_DVDL] += dvdlambda;
+  PRINT_SEPDVDL("VdW and Coulomb particle-p.",0.0,dvdlambda);
   debug_gmx();
 
   if (debug) 
@@ -946,8 +914,6 @@ void force(FILE       *fp,     int        step,
    * but is also necessary for SHAKE and update, therefore it can NOT 
    * go when no bonded forces have to be evaluated.
    */
-  if (debug && graph && 0)
-    p_graph(debug,"DeBUGGGG",graph);
   
   /* Check whether we need to do bondeds */
   if (!bNBFonly) {
@@ -961,41 +927,60 @@ void force(FILE       *fp,     int        step,
     debug_gmx();
   }
   
-  if (EEL_LR(fr->eeltype)) {
+  if (EEL_FULL(fr->eeltype)) {
     switch (fr->eeltype) {
     case eelPPPM:
-      Vlr = do_pppm(fp,FALSE,x,fr->f_pme,md->chargeA,
+      Vlr = do_pppm(fp,FALSE,x,fr->f_el_recip,md->chargeA,
 		    box_size,fr->phi,cr,nsb,nrnb);
       break;
     case eelPME:
-      Vlr = do_pme(fp,FALSE,ir,x,fr->f_pme,md->chargeA,
-		   box,cr,nsb,nrnb,lr_vir,fr->ewaldcoeff,bGatherOnly);
+      dvdlambda = 0;
+      Vlr = do_pme(fp,FALSE,ir,x,fr->f_el_recip,md->chargeA,
+		   box,cr,nsb,nrnb,fr->vir_el_recip,fr->ewaldcoeff,
+		   bGatherOnly);
+      epot[F_DVDL] += dvdlambda;
+      PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
       break;
     case eelEWALD:
-      Vlr = do_ewald(fp,FALSE,ir,x,fr->f_pme,md->chargeA,
-		     box_size,cr,nsb,lr_vir,fr->ewaldcoeff);
+      dvdlambda = 0;
+      Vlr = do_ewald(fp,FALSE,ir,x,fr->f_el_recip,md->chargeA,
+		     box_size,cr,nsb,fr->vir_el_recip,fr->ewaldcoeff);
+      epot[F_DVDL] += dvdlambda;
+      PRINT_SEPDVDL("Ewald long-range",Vlr,dvdlambda);
       break;
     default:
       Vlr = 0;
       fatal_error(0,"No such electrostatics method implemented %s",
 		  eel_names[fr->eeltype]);
     }
-    if(fr->bEwald)
+    if(fr->bEwald) {
+      dvdlambda = 0;
       Vcorr =
 	ewald_LRcorrection(fp,nsb,cr,fr,md->chargeA,excl,
-			   x,box,mu_tot[0],qsum[0],
-			   ir->ewald_geometry,ir->epsilon_surface,lr_vir);
-    else
+			   x,box,mu_tot[0],fr->qsum[0],
+			   ir->ewald_geometry,ir->epsilon_surface,
+			   fr->vir_el_recip);
+      epot[F_DVDL] += dvdlambda;
+      PRINT_SEPDVDL("Ewald excl./charge/dip. corr.",Vcorr,dvdlambda);
+    } else {
       Vcorr = shift_LRcorrection(fp,nsb,cr,fr,md->chargeA,excl,x,TRUE,box,
-				 lr_vir);
-    epot[F_LR] = Vlr + Vcorr;
+				 fr->vir_el_recip);
+    }
+    epot[F_COUL_RECIP] = Vlr + Vcorr;
     if (debug)
       fprintf(debug,"Vlr = %g, Vcorr = %g, Vlr_corr = %g\n",
-	      Vlr,Vcorr,epot[F_LR]);
+	      Vlr,Vcorr,epot[F_COUL_RECIP]);
     if (debug) {
-      pr_rvecs(debug,0,"lr_vir after corr",lr_vir,DIM);
+      pr_rvecs(debug,0,"vir_el_recip after corr",fr->vir_el_recip,DIM);
       pr_rvecs(debug,0,"fshift after LR Corrections",fr->fshift,SHIFTS);
     }
+  } else if (EEL_RF(fr->eeltype)) {
+    dvdlambda = 0;
+    if (fr->eeltype != eelRF_OLD)
+      epot[F_RF_EXCL] = RF_excl_correction(fp,nsb,fr,graph,md,excl,x,f,
+					   fr->fshift,lambda,&dvdlambda);
+    epot[F_DVDL] += dvdlambda;
+    PRINT_SEPDVDL("RF exclusion correction",epot[F_RF_EXCL],dvdlambda);
   }
   debug_gmx();
   
@@ -1012,8 +997,4 @@ void force(FILE       *fp,     int        step,
   }
   if (debug) 
     pr_rvecs(debug,0,"fshift after bondeds",fr->fshift,SHIFTS);
-  
-  for(i=0; (i<F_EPOT); i++)
-    if (i != F_DISRESVIOL && i != F_ORIRESDEV && i != F_DIHRESVIOL)
-      epot[F_EPOT]+=epot[i];
 }

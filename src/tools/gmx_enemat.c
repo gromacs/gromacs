@@ -108,8 +108,9 @@ int gmx_enemat(int argc,char *argv[])
   static bool bMeanEmtx=TRUE;
   static int  skip=0,nlevels=20;
   static real cutmax=1e20,cutmin=-1e20,reftemp=300.0;
-  static bool bCoul=TRUE,bCoulLR=FALSE,bCoul14=FALSE;
-  static bool bLJ=TRUE,bLJ14=FALSE,bBham=FALSE,bFree=TRUE;
+  static bool bCoulSR=TRUE,bCoulLR=FALSE,bCoul14=FALSE;
+  static bool bLJSR=TRUE,bLJLR=FALSE,bLJ14=FALSE,bBhamSR=FALSE,bBhamLR=FALSE,
+    bFree=TRUE;
   t_pargs pa[] = {
     { "-sum",  FALSE, etBOOL, {&bSum},
       "Sum the energy terms selected rather than display them all" },
@@ -121,12 +122,14 @@ int gmx_enemat(int argc,char *argv[])
     { "-nlevels", FALSE, etINT, {&nlevels},"number of levels for matrix colors"},
     { "-max",FALSE, etREAL, {&cutmax},"max value for energies"},
     { "-min",FALSE, etREAL, {&cutmin},"min value for energies"},
-    { "-coul", FALSE, etBOOL, {&bCoul},"extract Coulomb SR energies"},
+    { "-coul", FALSE, etBOOL, {&bCoulSR},"extract Coulomb SR energies"},
     { "-coulr", FALSE, etBOOL, {&bCoulLR},"extract Coulomb LR energies"},
     { "-coul14",FALSE, etBOOL, {&bCoul14},"extract Coulomb 1-4 energies"},
-    { "-lj", FALSE, etBOOL, {&bLJ},"extract Lennard-Jones SR energies"},
+    { "-lj", FALSE, etBOOL, {&bLJSR},"extract Lennard-Jones SR energies"},
+    { "-lj", FALSE, etBOOL, {&bLJLR},"extract Lennard-Jones LR energies"},
     { "-lj14",FALSE, etBOOL, {&bLJ14},"extract Lennard-Jones 1-4 energies"},
-    { "-bham",FALSE, etBOOL, {&bBham},"extract Buckingham energies"},
+    { "-bhamsr",FALSE, etBOOL, {&bBhamSR},"extract Buckingham SR energies"},
+    { "-bhamlr",FALSE, etBOOL, {&bBhamLR},"extract Buckingham LR energies"},
     { "-free",FALSE, etBOOL, {&bFree},"calculate free energy"},
     { "-temp",FALSE, etREAL, {&reftemp},
       "reference temperature for free energy calculation"}
@@ -171,10 +174,12 @@ int gmx_enemat(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   
-  egrp_use[egCOUL]=bCoul;
-  egrp_use[egLJ]=bLJ;
-  egrp_use[egBHAM]=bBham;
-  egrp_use[egLR]=bCoulLR;
+  egrp_use[egCOULSR]=bCoulSR;
+  egrp_use[egLJSR]=bLJSR;
+  egrp_use[egBHAMSR]=bBhamSR;
+  egrp_use[egCOULLR]=bCoulLR;
+  egrp_use[egLJLR]=bLJLR;
+  egrp_use[egBHAMLR]=bBhamLR;
   egrp_use[egCOUL14]=bCoul14;
   egrp_use[egLJ14]=bLJ14;
   egrp_use[egTotal]=TRUE;

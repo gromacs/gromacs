@@ -130,7 +130,7 @@ void do_glas(FILE *log,int start,int homenr,rvec x[],rvec f[],
 	}
       }
     }
-    ener[F_LJLR] = wd;
+    ener[F_LJ_LR] = wd;
   }
 }
 

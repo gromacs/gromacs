@@ -142,7 +142,7 @@ static void reset_energies(t_grpopts *opts,t_groups *grp,
    * some special cases.
    */
   for(i=0; (i<egNR); i++)
-    if (((i != egLR) && (i != egLJLR)) ||
+    if (((i != egCOULLR) && (i != egLJLR)) ||
 	(fr->bTwinRange && bNS) || (!fr->bTwinRange))
       for(j=0; (j<grp->estat.nn); j++)
 	grp->estat.ee[i][j]=0.0;
@@ -211,21 +211,20 @@ static void calc_f_el(FILE *fp,int  start,int homenr,
 }
 
 void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
-	      t_parm *parm,t_nsborder *nsb,tensor vir_part,tensor pme_vir,
+	      t_parm *parm,t_nsborder *nsb,tensor vir_part,
 	      int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
 	      matrix box,rvec x[],rvec f[],rvec buf[],
 	      t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,bool bVerbose,
 	      real lambda,t_graph *graph,
-	      bool bNS,bool bNBFonly,t_forcerec *fr, rvec mu_tot,
+	      bool bNS,bool bNBFonly,t_forcerec *fr,rvec mu_tot,
 	      bool bGatherOnly,real t,FILE *field)
 {
   static rvec box_size;
   static real dvdl_lr = 0;
   int    cg0,cg1,i,j;
   int    start,homenr;
-  static real mu_and_q[2*(DIM+1)]; 
+  static real mu[2*DIM]; 
   rvec   mu_tot_AB[2];
-  real   qsum_AB[2];
   
   start  = START(nsb);
   homenr = HOMENR(nsb);
@@ -237,8 +236,8 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   /* Calculate total (local) dipole moment in a temporary common array. 
    * This makes it possible to sum them over nodes faster.
    */
-  calc_mu_and_q(nsb,x,mdatoms->chargeA,mdatoms->chargeB,parm->ir.efep!=efepNO,
-		mu_and_q,mu_and_q+DIM,mu_and_q+DIM+1,mu_and_q+DIM+1+DIM);
+  calc_mu(nsb,x,mdatoms->chargeA,mdatoms->chargeB,parm->ir.efep!=efepNO,
+	  mu,mu+DIM);
 
   if (fr->ePBC != epbcNONE) { 
     /* Compute shift vectors every step, because of pressure coupling! */
@@ -268,13 +267,11 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   /* Communicate coordinates and sum dipole and net charge if necessary */
   if (PAR(cr)) {
     move_x(log,cr->left,cr->right,x,nsb,nrnb);
-    gmx_sum(2*(DIM+1),mu_and_q,cr);
+    gmx_sum(2*DIM,mu,cr);
   }
-  for(i=0; i<2; i++) {
+  for(i=0; i<2; i++)
     for(j=0;j<DIM;j++)
-      mu_tot_AB[i][j]=mu_and_q[i*(DIM+1)+j];
-    qsum_AB[i]=mu_and_q[i*(DIM+1)+DIM];
-  }
+      mu_tot_AB[i][j] = mu[i*DIM + j];
   if (fr->efep == efepNO)
     copy_rvec(mu_tot_AB[0],mu_tot);
   else
@@ -302,8 +299,8 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
        cr,nrnb,nsb,step,lambda,&dvdl_lr);
   }
   /* Reset PME/Ewald forces if necessary */
-  if (EEL_LR(fr->eeltype)) 
-    clear_rvecs(homenr,fr->f_pme+start);
+  if (EEL_FULL(fr->eeltype)) 
+    clear_rvecs(homenr,fr->f_el_recip+start);
     
   /* Copy long range forces into normal buffers */
   if (fr->bTwinRange) {
@@ -321,7 +318,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,mcr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(parm->ir.opts),
 	x,f,ener,fcd,bVerbose,box,lambda,graph,&(top->atoms.excl),
-	bNBFonly,pme_vir,mu_tot_AB,qsum_AB,bGatherOnly);
+	bNBFonly,mu_tot_AB,bGatherOnly);
 	
   /* Take long range contribution to free energy into account */
   ener[F_DVDL] += dvdl_lr;
@@ -343,7 +340,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   calc_f_el(MASTER(cr) ? field : NULL,
 	    start,homenr,mdatoms->chargeA,x,f,parm->ir.ex,parm->ir.et,t);
 
-  /* When using PME/Ewald we compute the long range virial (pme_vir) there.
+  /* When using PME/Ewald we compute the long range virial there.
    * otherwise we do it based on long range forces from twin range
    * cut-off based calculation (or not at all).
    */
@@ -359,14 +356,14 @@ void sum_lrforces(rvec f[],t_forcerec *fr,int start,int homenr)
    * forces on the local atoms, this can be safely done after the
    * communication step.
    */
-  if (EEL_LR(fr->eeltype))
-    sum_forces(start,start+homenr,f,fr->f_pme);
+  if (EEL_FULL(fr->eeltype))
+    sum_forces(start,start+homenr,f,fr->f_el_recip);
 }
 
 void calc_virial(FILE *log,int start,int homenr,rvec x[],rvec f[],
-		 tensor vir_part,tensor pme_vir,
+		 tensor vir_part,tensor vir_el_recip,
 		 t_graph *graph,matrix box,
-		 t_nrnb *nrnb,t_forcerec *fr,bool bTweak)
+		 t_nrnb *nrnb,const t_forcerec *fr)
 {
   int i,j;
   tensor virtest;
@@ -379,24 +376,12 @@ void calc_virial(FILE *log,int start,int homenr,rvec x[],rvec f[],
   f_calc_vir(log,start,start+homenr,x,f,vir_part,graph,box);
   inc_nrnb(nrnb,eNR_VIRIAL,homenr);
 
-  /* Add up the long range forces if necessary */
-  /* if (!bTweak) {
-    sum_lrforces(f,fr,start,homenr);
-    }*/
-  
   /* Add up virial if necessary */  
-  if (EEL_LR(fr->eeltype) && (fr->eeltype != eelPPPM)) {
-    if (debug && bTweak) {
-      clear_mat(virtest);
-      f_calc_vir(log,start,start+homenr,x,fr->f_pme,virtest,graph,box);
-      pr_rvecs(debug,0,"virtest",virtest,DIM);
-      pr_rvecs(debug,0,"pme_vir",pme_vir,DIM);
-    }    
-    /* PPPM virial sucks */
-    if (!bTweak)
-      for(i=0; (i<DIM); i++) 
-	for(j=0; (j<DIM); j++) 
-	  vir_part[i][j]+=pme_vir[i][j];
+  if (EEL_FULL(fr->eeltype) && (fr->eeltype != eelPPPM)) {
+    
+    for(i=0; (i<DIM); i++) 
+      for(j=0; (j<DIM); j++) 
+	vir_part[i][j] += vir_el_recip[i][j];
   }
   if (debug)
     pr_rvecs(debug,0,"vir_part",vir_part,DIM);
@@ -538,10 +523,10 @@ static void calc_enervirdiff(FILE *log,int eDispCorr,t_forcerec *fr)
 		    "for vdw-type = %s",evdw_names[fr->vdwtype]);
 
       /* Round the cut-offs to exact table values for precision */
-      ri0 = floor(fr->rvdw_switch*fr->tabscale);
-      ri1 = ceil(fr->rvdw*fr->tabscale);
-      r0  = ri0/fr->tabscale;
-      r1  = ri1/fr->tabscale;
+      ri0 = floor(fr->rvdw_switch*fr->tab.scale);
+      ri1 = ceil(fr->rvdw*fr->tab.scale);
+      r0  = ri0/fr->tab.scale;
+      r1  = ri1/fr->tab.scale;
       rc3 = r0*r0*r0;
       rc9  = rc3*rc3*rc3;
 
@@ -565,7 +550,7 @@ static void calc_enervirdiff(FILE *log,int eDispCorr,t_forcerec *fr)
       eners[0] += 4.0*M_PI*fr->enershiftsix*rc3/3.0;
       eners[1] += 4.0*M_PI*fr->enershifttwelve*rc3/3.0;
       
-      scale = 1.0/(fr->tabscale);  
+      scale = 1.0/(fr->tab.scale);  
       scale2 = scale*scale;
       scale3 = scale*scale2;
 
@@ -710,15 +695,6 @@ void do_pbc_first(FILE *log,matrix box,rvec box_size,t_forcerec *fr,
   fprintf(log,"Done rmpbc\n");
 }
 
-void set_pot_bools(t_inputrec *ir,t_topology *top,
-		   bool *bLR,bool *bLJLR,bool *bBHAM,bool *b14)
-{
-  *bLR   = (ir->rcoulomb > ir->rlist) || EEL_LR(ir->coulombtype);
-  *bLJLR = (ir->rvdw > ir->rlist);
-  *bBHAM = (top->idef.functype[0]==F_BHAM);
-  *b14   = (top->idef.il[F_LJ14].nr > 0);
-}
-
 void finish_run(FILE *log,t_commrec *cr,char *confout,
 		t_nsborder *nsb,t_topology *top,t_parm *parm,
 		t_nrnb nrnb[],double nodetime,double realtime,int step,
@@ -756,11 +732,9 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 	     int nfile,t_filenm fnm[],char **traj,
 	     char **xtc_traj,int *fp_ene,
 	     FILE **fp_dgdl,FILE **fp_field,t_mdebin **mdebin,t_groups *grps,
-	     tensor force_vir,tensor pme_vir,
-	     tensor shake_vir,t_mdatoms *mdatoms,rvec mu_tot,
+	     tensor force_vir,tensor shake_vir,t_mdatoms *mdatoms,rvec mu_tot,
 	     bool *bNEMD,bool *bSimAnn,t_vcm **vcm,t_nsborder *nsb)
 {
-  bool bBHAM,b14,bLR,bLJLR;
   int  i,j,n;
   real tmpt,mod;
 
@@ -787,7 +761,6 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
   
   /* Check Environment variables & other booleans */
   *bTYZ=getenv("TYZ") != NULL;
-  set_pot_bools(ir,top,&bLR,&bLJLR,&bBHAM,&b14);
   
   if (nfile != -1) {
     /* Filenames */
@@ -808,15 +781,11 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
     } else
       *fp_ene = -1;
 
-    *mdebin = init_mdebin(*fp_ene,grps,&(top->atoms),&(top->idef),
-			  bLR,bLJLR,bBHAM,b14,ir->efep!=efepNO,ir->epc,
-			  ir->eDispCorr,(TRICLINIC(ir->compress) || TRICLINIC(box)),
-			  ir->etc,cr);
+    *mdebin = init_mdebin(*fp_ene,grps,&(top->atoms),&(top->idef),ir,cr);
   }
   
   /* Initiate variables */  
   clear_mat(force_vir);
-  clear_mat(pme_vir);
   clear_mat(shake_vir);
   clear_rvec(mu_tot);
   

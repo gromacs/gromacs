@@ -127,10 +127,6 @@ extern bool optRerunMDset (int nfile, t_filenm fnm[]);
 extern void do_pbc_first(FILE *log,matrix box,rvec box_size,t_forcerec *fr,
 			 t_graph *graph,rvec x[]);
 		     
-extern void set_pot_bools(t_inputrec *ir,t_topology *top,
-			  bool *bLR,bool *bLJLR,bool *bBHAM,bool *b14);
-/* Initiate some bools for the potential energy calculation */
-
 /* ROUTINES from stat.c */		
 extern void global_stat(FILE *log,
 			t_commrec *cr,real ener[],
@@ -177,7 +173,7 @@ extern time_t print_date_and_time(FILE *log,int pid,char *title);
 
 extern void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 		     t_parm *parm,t_nsborder *nsb,
-		     tensor vir_part,tensor pme_vir,
+		     tensor vir_part,
 		     int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
 		     matrix box,rvec x[],rvec f[],rvec buf[],
 		     t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,
@@ -187,9 +183,9 @@ extern void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 extern void sum_lrforces(rvec f[],t_forcerec *fr,int start,int homenr);
 		     
 extern void calc_virial(FILE *log,int start,int homenr,rvec x[],rvec f[],
-			tensor vir_part,tensor pme_vir,
+			tensor vir_part,tensor vir_el_recip,
 			t_graph *graph,matrix box,
-			t_nrnb *nrnb,t_forcerec *fr,bool bTweak);
+			t_nrnb *nrnb,const t_forcerec *fr);
 			
 extern void nstop_cm(FILE *log,t_commrec *cr,
 		     int start,int nr_atoms,real mass[],rvec x[],rvec v[]);
@@ -306,8 +302,8 @@ extern void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 		    char **xtc_traj,int *fp_ene,
 		    FILE **fp_dgdl,FILE **fp_field,
 		    t_mdebin **mdebin,t_groups *grps,
-		    tensor force_vir,tensor pme_vir,
-		    tensor shake_vir,t_mdatoms *mdatoms,rvec mu_tot,
+		    tensor force_vir,tensor shake_vir,
+		    t_mdatoms *mdatoms,rvec mu_tot,
 		    bool *bNEMD,bool *bSimAnn,t_vcm **vcm,t_nsborder *nsb);
 /* Routine in sim_util.c */
 

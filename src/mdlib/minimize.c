@@ -222,7 +222,7 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_parm *parm,
 			    rvec *buf, real ener[], int count)
 {
   bool bNS;
-  tensor force_vir,shake_vir,pme_vir;
+  tensor force_vir,shake_vir;
   real terminate=0;
 
   bNS = (parm->ir.nstlist > 0);
@@ -235,7 +235,7 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_parm *parm,
   /* do_force always puts the charge groups in the box and shifts again
    * We do not unshift, so molecules are always whole in congrad.c
    */
-  do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,
+  do_force(log,cr,mcr,parm,nsb,force_vir,
 	   count,&(nrnb[cr->nodeid]),top,grps,box,x,f,
 	   buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
@@ -286,7 +286,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   rvec   mu_tot;
   time_t start_t;
   bool   do_log,do_ene,do_x,do_f;
-  tensor force_vir,shake_vir,pme_vir;
+  tensor force_vir,shake_vir;
   int    number_steps,neval=0,naccept=0,nstcg=parm->ir.nstcgsteep;
   int    fp_ene,fp_trn;
   int    i,m,nfmax,start,end,niti,gf,step,nminstep;
@@ -311,9 +311,6 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   snew(fb,nsb->natoms);
   snew(fc,nsb->natoms);
 
-  /* Set some booleans for the epot routines */
-  set_pot_bools(&(parm->ir),top,&bLR,&bLJLR,&bBHAM,&b14);
-
   /* Open the energy file */  
   if (MASTER(cr))
     fp_ene=open_enx(ftp2fn(efENX,nfile,fnm),"w");
@@ -321,11 +318,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     fp_ene=-1;
     
   /* Init bin for energy stuff */
-  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),
-		     bLR,bLJLR,bBHAM,b14,parm->ir.efep!=efepNO,parm->ir.epc,
-		     parm->ir.eDispCorr,TRICLINIC(parm->ir.compress),
-		     (parm->ir.etc==etcNOSEHOOVER),cr); 
-
+  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),&(parm->ir),cr); 
 
   do_log = do_ene = do_x = do_f = TRUE;
   
@@ -352,7 +345,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   /* do_force always puts the charge groups in the box and shifts again
    * We do not unshift, so molecules are always whole in congrad.c
    */
-  do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,0,&(nrnb[cr->nodeid]),
+  do_force(log,cr,mcr,parm,nsb,force_vir,0,&(nrnb[cr->nodeid]),
 	   top,grps,state->box,
 	   state->x,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
@@ -862,12 +855,12 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   t_vcm      *vcm;
   t_mdebin   *mdebin;
   t_nrnb mynrnb;
-  bool   bNS=TRUE,converged,first,bLR,bLJLR,bBHAM,b14;
+  bool   bNS=TRUE,converged,first;
   rvec   mu_tot;
   real   lambda,fnorm,fmax;
   time_t start_t;
   bool   do_log,do_ene,do_x,do_f,foundlower,*frozen;
-  tensor force_vir,shake_vir,pme_vir;
+  tensor force_vir,shake_vir;
   int    fp_ene,start,end,number_steps;
   int    i,j,k,m,n,nfmax,niti,gf,step;
   /* not used */
@@ -920,9 +913,6 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   /* Print to log file */
   start_t=print_date_and_time(log,cr->nodeid,"Started Low-Memory BFGS Minimization");
   
-  /* Set some booleans for the epot routines */
-  set_pot_bools(&(parm->ir),top,&bLR,&bLJLR,&bBHAM,&b14);
-  
   /* Open the energy file */  
   if (MASTER(cr))
     fp_ene=open_enx(ftp2fn(efENX,nfile,fnm),"w");
@@ -930,10 +920,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
     fp_ene=-1;
   
   /* Init bin for energy stuff */
-  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),
-		     bLR,bLJLR,bBHAM,b14,parm->ir.efep!=efepNO,parm->ir.epc,
-		     parm->ir.eDispCorr,TRICLINIC(parm->ir.compress),
-		     (parm->ir.etc==etcNOSEHOOVER),cr); 
+  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),&(parm->ir),cr);
   
   do_log = do_ene = do_x = do_f = TRUE;
   
@@ -967,7 +954,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
    * We do not unshift, so molecules are always whole in congrad.c
    */
   neval++;
-  do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,0,&(nrnb[cr->nodeid]),
+  do_force(log,cr,mcr,parm,nsb,force_vir,0,&(nrnb[cr->nodeid]),
 	   top,grps,state->box,
 	   state->x,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
@@ -1496,9 +1483,9 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   int        fp_ene; 
   t_mdebin   *mdebin; 
   t_nrnb     mynrnb; 
-  bool   bDone,bAbort,bLR,bLJLR,bBHAM,b14; 
+  bool   bDone,bAbort; 
   time_t start_t; 
-  tensor force_vir,shake_vir,pme_vir; 
+  tensor force_vir,shake_vir; 
   rvec   mu_tot;
 #ifdef DOUBLE 
   real   min_k = 1e-24;
@@ -1526,9 +1513,6 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     snew(pos[i],nsb->natoms); 
     snew(force[i],nsb->natoms); 
   } 
-
-  /* Set some booleans for the epot routines  */
-  set_pot_bools(&(parm->ir),top,&bLR,&bLJLR,&bBHAM,&b14);
   
   /* Open the enrgy file */   
   if (MASTER(cr)) 
@@ -1537,10 +1521,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     fp_ene=-1; 
   
   /* Init bin for energy stuff  */
-  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),bLR,bLJLR,
-		     bBHAM,b14,parm->ir.efep!=efepNO,parm->ir.epc,
-		     parm->ir.eDispCorr,TRICLINIC(parm->ir.compress),
-		     (parm->ir.etc==etcNOSEHOOVER),cr); 
+  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),&(parm->ir),cr);
   
   /* Clear some matrix variables  */
   clear_mat(force_vir); 
@@ -1615,7 +1596,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
      * do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in steep.c
      */
-    do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,
+    do_force(log,cr,mcr,parm,nsb,force_vir,
  	     count,&(nrnb[cr->nodeid]),top,grps,state->box,pos[TRY],
 	     force[TRY],buf,
 	     mdatoms,ener,fcd,bVerbose && !(PAR(cr)), 
@@ -1787,8 +1768,8 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   int        fp_ene,step,nre;
   time_t     start_t;
   real       t,lambda,t0,lam0;
-  bool       bNS,bStopCM,bTYZ,bLR,bLJLR,bBHAM,b14;
-  tensor     force_vir,shake_vir,pme_vir;
+  bool       bNS,bStopCM,bTYZ;
+  tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
   int        i,m,nfmax;
   rvec       mu_tot;
@@ -1828,10 +1809,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     do_pbc_first(log,state->box,box_size,fr,graph,state->x);
 
   fp_ene=-1;
-  set_pot_bools(&(parm->ir),top,&bLR,&bLJLR,&bBHAM,&b14);
-  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),bLR,bLJLR,
-		     bBHAM,b14,parm->ir.efep!=efepNO,parm->ir.epc,
-		     parm->ir.eDispCorr,TRICLINIC(parm->ir.compress),(parm->ir.etc==etcNOSEHOOVER),cr);
+  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),&(parm->ir),cr);
 
   ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
 
@@ -1848,7 +1826,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   clear_mat(force_vir);
     
   bNS=TRUE;
-  do_force(log,cr,NULL,parm,nsb,force_vir,pme_vir,0,&mynrnb,top,grps,
+  do_force(log,cr,NULL,parm,nsb,force_vir,0,&mynrnb,top,grps,
 	   state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
   bNS=FALSE;
@@ -1890,7 +1868,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       
       clear_mat(force_vir);
 
-      do_force(log,cr,NULL,parm,nsb,force_vir,pme_vir,2*(step*DIM+idum),
+      do_force(log,cr,NULL,parm,nsb,force_vir,2*(step*DIM+idum),
 	       &mynrnb,top,grps,
 	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
@@ -1908,7 +1886,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       
       clear_mat(force_vir);
       
-      do_force(log,cr,NULL,parm,nsb,force_vir,pme_vir,2*(step*DIM+idum)+1,
+      do_force(log,cr,NULL,parm,nsb,force_vir,2*(step*DIM+idum)+1,
 	       &mynrnb,top,grps,
 	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);

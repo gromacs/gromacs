@@ -48,49 +48,33 @@
 #include "nsb.h"
 #include "main.h"
 
-void calc_mu_and_q(t_nsborder *nsb,rvec x[],real q[],real qB[],
-		   bool bFreeEnergy,
-		   rvec mu,real *qsum,rvec mu_B,real *qsum_B)
+void calc_mu(t_nsborder *nsb,rvec x[],real q[],real qB[],
+	     bool bFreeEnergy,
+	     rvec mu,rvec mu_B)
 {
   int i,start,end,m;
   /* temporary double prec. to maintain precision */
-  double tmpmu[3];
-  double tmpq;
+  dvec tmpmu;
   
   start = START(nsb);
   end   = start + HOMENR(nsb);  
 
-  tmpq=0;
-  for(m=0;m<DIM;m++)
-    tmpmu[m]=0;
-
-  for(i=start; (i<end); i++) {
-    for(m=0; (m<DIM); m++) {
+  clear_dvec(tmpmu);
+  for(i=start; (i<end); i++)
+    for(m=0; (m<DIM); m++)
       tmpmu[m] += q[i]*x[i][m];
-    }
-    tmpq+=q[i];
-  }
+  
   for(m=0; (m<DIM); m++)
     mu[m] = tmpmu[m] * ENM2DEBYE;
-
-  *qsum=tmpq;
   
-  tmpq=0;
-  for(m=0;m<DIM;m++)
-    tmpmu[m]=0;
-  
+  clear_dvec(tmpmu);
   if (bFreeEnergy) {
-    for(i=start; (i<end); i++) {
-      for(m=0; (m<DIM); m++) {
+    for(i=start; (i<end); i++)
+      for(m=0; (m<DIM); m++)
 	tmpmu[m] += qB[i]*x[i][m];
-      }
-      tmpq+=qB[i];
-    }
   }
   for(m=0; (m<DIM); m++)
     mu_B[m] = tmpmu[m] * ENM2DEBYE;
-
-  *qsum_B = tmpq;
 }
 
 bool read_mu(FILE *fp,rvec mu,real *vol)

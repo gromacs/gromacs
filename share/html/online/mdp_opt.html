@@ -375,6 +375,15 @@ The ionic strength is computed from the number of charged
 The temperature for the GRF potential is set with 
 <b><A HREF="#tc">ref_t</A></b> [K].</dd>
 
+<dt><b>Reaction-Field-old</b></dt>
+<dd>The same as <b>Reaction-Field</b>, but implemented as in
+GROMACS versions before 3.3. No reaction-field correction is applied
+to excluded atom pairs and self pairs.
+The 1-4 interactions are calculated using a reaction-field.
+The missing correction due to the excluded pairs that do not have a 1-4
+interaction is up to a few percent of the total electrostatic
+energy and causes a minor difference in the forces and the pressure.</dd>
+
 <dt><b>Shift</b></dt>
 <dd>The Coulomb
 potential is decreased over the whole range and the forces decay smoothly
@@ -643,7 +652,7 @@ For water at 1 atm and 300 K the compressibility is 4.5e-5 [bar<sup>-1</sup>].</
 <hr>
 <h3><!--Idx-->Simulated annealing<!--EIdx--></h3>
 
-Simulated annealing is controlled separately for each temperature group in Gromacs. The reference temperature is a piecewise linear function, but you can use an arbitrary number of points for each group, and choose either a single sequence or a periodic behaviour for each group. The actual annealing is performed by dynamically changing the reference temperature used in the thermostat algorithm selected, so remember that the system will usually not instantaneously reach the reference temperature!
+Simulated annealing is controlled separately for each temperature group in GROMACS. The reference temperature is a piecewise linear function, but you can use an arbitrary number of points for each group, and choose either a single sequence or a periodic behaviour for each group. The actual annealing is performed by dynamically changing the reference temperature used in the thermostat algorithm selected, so remember that the system will usually not instantaneously reach the reference temperature!
 <dl>
 <dt><h4>annealing:</h4></dt>
 <dd>Type of annealing for each temperature group</dd>
@@ -776,7 +785,7 @@ to use 4 or even 8 (double precision) iteration steps.
 excluded. An example: if you have two energy groups <tt>Protein</tt>
 and <tt>SOL</tt>, specifying
 <br>
-<tt>energy_excl&nbsp;=&nbsp;Protein&nbsp;Protein&nbsp;&nbsp;SOL&nbsp;SOL</tt>
+<tt>energygrp_excl&nbsp;=&nbsp;Protein&nbsp;Protein&nbsp;&nbsp;SOL&nbsp;SOL</tt>
 <br>
 would give only the non-bonded interactions between the protein and the
 solvent. This is especially useful for speeding up energy calculations with
@@ -902,8 +911,10 @@ opposite).</dd>
 <dd>Groups that are to be frozen (i.e. their X, Y, and/or Z position will
 not be updated; e.g. <tt>Lipid SOL</tt>). <b>freezedim</b> specifies for
 which dimension the freezing applies.
-You might want to use <A HREF="#egexcl">energy group exclusions</A>
-for completely frozen groups.</dd>
+To avoid spurious contibrutions to the virial and pressure due to large
+forces between completely frozen atoms you need to use
+<A HREF="#egexcl">energy group exclusions</A>, this also saves computing time.
+Note that frozen coordinates are not subject to pressure scaling.</dd>
 <dt><h4>freezedim: </h4></dt>
 <dd>dimensions for which groups in <b>freezegrps</b> should be frozen, 
 specify <tt>Y</tt> or <tt>N</tt> for X, Y and Z and for each group

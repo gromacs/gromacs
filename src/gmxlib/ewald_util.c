@@ -91,7 +91,7 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   double  q2sum; /* Necessary for precision */
   real    vc,qi,dr,dr2,rinv,fscal,Vexcl,Vcharge,Vdipole,rinv2,ewc=fr->ewaldcoeff;
   rvec    df,dx,mutot,dipcorr;
-  rvec    *f_pme=fr->f_pme;
+  rvec    *f=fr->f_el_recip;
   real    vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
   real    dipole_coeff,qq;
   /*#define TABLES*/
@@ -223,8 +223,8 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 	  if (debug)
 	    fprintf(debug,"dr=%8.4f, fscal=%8.0f, df=%10.0f,%10.0f,%10.0f\n",
 		    dr,fscal,df[XX],df[YY],df[ZZ]);
-	  rvec_inc(f_pme[k],df);
-	  rvec_dec(f_pme[i],df);
+	  rvec_inc(f[k],df);
+	  rvec_dec(f[i],df);
 	  for(iv=0; (iv<DIM); iv++)
 	    for(jv=0; (jv<DIM); jv++)
 	      lr_vir[iv][jv]+=0.5*dx[iv]*df[jv];
@@ -235,10 +235,10 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
     if (dipole_coeff != 0) {
       if (ewald_geometry == eewg3D) {
 	for(j=0; (j<DIM); j++)
-	  f_pme[i][j] -= dipcorr[j]*charge[i];
+	  f[i][j] -= dipcorr[j]*charge[i];
       } 
       else if (ewald_geometry == eewg3DC) {
-	f_pme[i][ZZ] -= dipcorr[ZZ]*charge[i];
+	f[i][ZZ] -= dipcorr[ZZ]*charge[i];
       }
     }
   }

@@ -198,7 +198,7 @@ static void init_table(FILE *fp,int n,int nx0,int tabsel,
     td->x[i] = i/tabscale;
 }
 
-static void read_tables(FILE *fp,char *fn,t_tabledata td[])
+static void read_tables(FILE *fp,const char *fn,t_tabledata td[])
 {
   const char *libfn;
   real **yy=NULL;
@@ -253,7 +253,7 @@ static void done_tabledata(t_tabledata *td)
   sfree(td->v2);
 }
 
-static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
+static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
 {
   /* Fill the table according to the formulas in the manual.
    * In principle, we only need the potential and the second
@@ -473,51 +473,50 @@ static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
 #endif
 }
 
-static void set_table_type(int tabsel[],t_forcerec *fr)
+static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
 {
   /* Set the different table indices.
    * Coulomb first.
    */
-  
-  switch (fr->eeltype) {
-  case eelCUT:
+
+  if (b14only && fr->eeltype != eelRF_OLD) {
     tabsel[etiCOUL] = etabCOUL;
-    break;
-  case eelPPPM:
-  case eelPOISSON:
-    if ((fr->rcoulomb > fr->rcoulomb_switch) && fr->bcoultab)
-	tabsel[etiCOUL] = etabShift;
-    else
-	tabsel[etiCOUL] = etabCOUL;  /* 1-4 */
-    break;
-  case eelSHIFT:
-    if (fr->rcoulomb > fr->rcoulomb_switch)
-      tabsel[etiCOUL] = etabShift;
-    else
+  } else {
+    switch (fr->eeltype) {
+    case eelCUT:
       tabsel[etiCOUL] = etabCOUL;
-    break;
-  case eelEWALD:
-  case eelPME:
-      if(fr->bcoultab)
-	  tabsel[etiCOUL] = etabEwald;
-      else
-	  tabsel[etiCOUL] = etabCOUL; /* 1-4 */
       break;
-  case eelRF:
-  case eelGRF:
-    tabsel[etiCOUL] = etabRF;
-    break;
-  case eelSWITCH:
+    case eelPPPM:
+    case eelPOISSON:
+      tabsel[etiCOUL] = etabShift;
+      break;
+    case eelSHIFT:
+      if (fr->rcoulomb > fr->rcoulomb_switch)
+	tabsel[etiCOUL] = etabShift;
+      else
+	tabsel[etiCOUL] = etabCOUL;
+      break;
+    case eelEWALD:
+    case eelPME:
+      tabsel[etiCOUL] = etabEwald;
+      break;
+    case eelRF:
+    case eelGRF:
+    case eelRF_OLD:
+      tabsel[etiCOUL] = etabRF;
+      break;
+    case eelSWITCH:
     tabsel[etiCOUL] = etabCOULSwitch;
     break;
-  case eelUSER:
-    tabsel[etiCOUL] = etabUSER;
-    break;
-  default:
+    case eelUSER:
+      tabsel[etiCOUL] = etabUSER;
+      break;
+    default:
     fatal_error(0,"Invalid eeltype %d in %s line %d",fr->eeltype,
 		__FILE__,__LINE__);
+    }
   }
-  
+
   /* Van der Waals time */
   if (fr->bBHAM) {
     tabsel[etiLJ6]  = etabLJ6;
@@ -548,21 +547,25 @@ static void set_table_type(int tabsel[],t_forcerec *fr)
   }
 }
 
-void make_tables(FILE *out,t_forcerec *fr,bool bVerbose,char *fn)
+t_forcetable make_tables(FILE *out,const t_forcerec *fr,
+			 bool bVerbose,const char *fn,
+			 real rtab,bool b14only)
 {
   const char *fns[3] = { "ctab.xvg", "dtab.xvg", "rtab.xvg" };
+  const char *fns14[3] = { "ctab14.xvg", "dtab14.xvg", "rtab14.xvg" };
   FILE        *fp;
   t_tabledata *td;
   bool        bReadTab,bGenTab;
-  real        x0,y0,yp,rtab;
+  real        x0,y0,yp;
   int         i,j,k,nx,nx0,tabsel[etiNR];
- 
-  set_table_type(tabsel,fr);
+  t_forcetable table;
+
+  set_table_type(tabsel,fr,b14only);
   snew(td,etiNR);
-  fr->tabscale = 0;
-  rtab         = fr->rtab;
-  nx0          = 10;
-  nx           = 0;
+  table.r     = rtab;
+  table.scale = 0;
+  nx0         = 10;
+  nx          = 0;
   
   /* Check whether we have to read or generate */
   bReadTab = FALSE;
@@ -575,56 +578,58 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose,char *fn)
   }
   if (bReadTab) {
     read_tables(out,fn,td);
-    fr->tabscale = td[0].tabscale;
-    fr->rtab     = td[0].x[td[0].nx-1];
-    nx0          = td[0].nx0;
-    nx           = fr->ntab = fr->rtab*fr->tabscale;
-    if (fr->rtab < rtab) 
+    if (td[0].x[td[0].nx-1] < rtab) 
       fatal_error(0,"Tables in file %s not long enough for cut-off:\n"
 		  "\tshould be at least %f nm\n",fn,rtab);
+    table.scale = td[0].tabscale;
+    nx0         = td[0].nx0;
+    nx          = table.n = rtab*table.scale;
   }
   if (bGenTab) {
     if (!bReadTab) {
 #ifdef DOUBLE
-      fr->tabscale = 2000.0;
+      table.scale = 2000.0;
 #else
-      fr->tabscale = 500.0;
+      table.scale = 500.0;
 #endif
-      nx = fr->ntab = fr->rtab*fr->tabscale;
+      nx = table.n = rtab*table.scale;
     }
   }
   if (fr->bBHAM) {
     if(fr->bham_b_max!=0)
-      fr->tabscale_exp = fr->tabscale/fr->bham_b_max;
+      table.scale_exp = table.scale/fr->bham_b_max;
     else
-      fr->tabscale_exp = fr->tabscale;
+      table.scale_exp = table.scale;
   }
 
   /* Each table type (e.g. coul,lj6,lj12) requires four 
    * numbers per datapoint.
    */
 
-  snew(fr->coulvdwtab,12*(nx+1)+1);
+  snew(table.tab,12*(nx+1)+1);
   for(k=0; (k<etiNR); k++) {
     if (tabsel[k] != etabUSER) {
       init_table(out,nx,nx0,tabsel[k],
-		 (tabsel[k] == etabEXPMIN) ? fr->tabscale_exp : fr->tabscale,
+		 (tabsel[k] == etabEXPMIN) ? table.scale_exp : table.scale,
 		 &(td[k]),!bReadTab);
       fill_table(&(td[k]),tabsel[k],fr);
       if (out) 
-	fprintf(out,"Generated table with %d data points for %s.\n"
+	fprintf(out,"Generated table with %d data points for %s%s.\n"
 		"Tabscale = %g points/nm\n",
-		td[k].nx,tabnm[tabsel[k]],td[k].tabscale);
+		td[k].nx,b14only?"1-4 ":"",tabnm[tabsel[k]],td[k].tabscale);
 
     }
-    copy2table(td[k].nx,k*4,12,td[k].x,td[k].v,td[k].v2,fr->coulvdwtab,-1);
+    copy2table(table.n,k*4,12,td[k].x,td[k].v,td[k].v2,table.tab,-1);
   
     if (bDebugMode() && bVerbose) {
-      fp=xvgropen(fns[k],fns[k],"r","V"); 
+      if (b14only)
+	fp=xvgropen(fns14[k],fns14[k],"r","V");
+      else
+	fp=xvgropen(fns[k],fns[k],"r","V");
       /* plot the output 5 times denser than the table data */
-      for(i=5*nx0;i<5*fr->ntab;i++) {
-	x0=i*fr->rtab/(5*fr->ntab);
-	evaluate_table(fr->coulvdwtab,4*k,12,fr->tabscale,x0,&y0,&yp);
+      for(i=5*nx0;i<5*table.n;i++) {
+	x0=i*rtab/(5*table.n);
+	evaluate_table(table.tab,4*k,12,table.scale,x0,&y0,&yp);
 	fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
       }
       ffclose(fp);
@@ -632,5 +637,6 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose,char *fn)
     done_tabledata(&(td[k]));
   }
   sfree(td);
-}
 
+  return table;
+}

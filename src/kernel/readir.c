@@ -165,7 +165,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
       warning("Flying ice-cubes: We are not removing center of mass motion in a non-periodic system. You should set nstcomm = -1 (will also stop rotation).");
   }
   
-  if ((EEL_LR(ir->coulombtype)) && (ir->efep!=efepNO)) {
+  if ((EEL_FULL(ir->coulombtype)) && (ir->efep!=efepNO)) {
     warning("You are using lattice sum electrostatics with free energy integration. "
 	    "This might give wrong results, since the lattice contribution "
 	    "to the free energy not calculated.");
@@ -1244,7 +1244,7 @@ void do_index(char *ndx,
       bExcl = TRUE;
     }
   }
-  if (bExcl && EEL_LR(ir->coulombtype))
+  if (bExcl && EEL_FULL(ir->coulombtype))
     warning("Can not exclude the lattice Coulomb energy between energy groups");
   
   decode_cos(efield_x,&(ir->ex[XX]),FALSE);

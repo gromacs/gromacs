@@ -55,10 +55,27 @@ extern void f_calc_vir(FILE *log,int i0,int i1,rvec x[],rvec f[],tensor vir,
 		       t_graph *g,rvec shift_vec[]);
 /* Calculate virial taking periodicity into account */
 
+extern real RF_excl_correction(FILE *log,const t_nsborder *nsb,
+			       const t_forcerec *fr,t_graph *g,
+			       const t_mdatoms *mdatoms,const t_block *excl,
+			       rvec x[],rvec f[],rvec *fshift,
+			       real lambda,real *dvdlambda);
+/* Calculate the reaction-field energy correction for this node:
+ * epsfac q_i q_j (k_rf r_ij^2 - c_rf)
+ * and force correction for all excluded pairs, including self pairs.
+ */
+
+extern void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
+		       real zsq,matrix box,
+		       real *kappa,real *krf,real *crf);
+/* Determine the reaction-field constants */
+
 extern t_forcerec *mk_forcerec(void);
 
-extern void make_tables(FILE *fp,t_forcerec *fr,bool bVerbose,char *fn);
-/* Make tables for inner loops. When bVerbose the tables are printed
+extern t_forcetable make_tables(FILE *fp,const t_forcerec *fr,
+				bool bVerbose,const char *fn,
+				real rtab,bool b14only);
+/* Return tables for inner loops. When bVerbose the tables are printed
  * to .xvg files
  */
  
@@ -66,14 +83,14 @@ extern void pr_forcerec(FILE *log,t_forcerec *fr,t_commrec *cr);
 
 extern void init_forcerec(FILE       *log,     
 			  t_forcerec *fr,   
-			  t_inputrec *ir,   
-			  t_topology *top,
-			  t_commrec  *cr,
-			  t_mdatoms  *mdatoms,
-			  t_nsborder *nsb,
+			  const t_inputrec *ir,   
+			  const t_topology *top,
+			  const t_commrec  *cr,
+			  const t_mdatoms  *mdatoms,
+			  const t_nsborder *nsb,
 			  matrix     box,
 			  bool       bMolEpot,
-			  char       *tabfn,
+			  const char *tabfn,
 			  bool       bNoSolvOpt);
 /* The Force rec struct must be created with mk_forcerec 
  * The booleans have the following meaning:
@@ -85,8 +102,8 @@ extern void update_forcerec(FILE *log,t_forcerec *fr,matrix box);
 /* Updates parameters in the forcerec that are time dependent */
 
 /* Compute the average C6 and C12 params for LJ corrections */
-extern void set_avcsixtwelve(FILE *log,t_forcerec *fr,t_mdatoms *mdatoms,
-			     t_block *excl);
+extern void set_avcsixtwelve(FILE *log,t_forcerec *fr,
+			     const t_mdatoms *mdatoms,const t_block *excl);
 
 extern void ns(FILE *log,
 	       t_forcerec *fr,
@@ -128,9 +145,7 @@ extern void force(FILE *log,
 		  t_graph      *graph,
 		  t_block      *excl,
 		  bool         bNBonly,
-		  matrix       lr_vir,
 		  rvec         mu_tot[2],
-		  real         qsum[],
 		  bool         bGatherOnly);
 /* Call all the force routines */
 

@@ -81,7 +81,8 @@ t_coupl_rec *init_coupling(FILE *log,int nfile,t_filenm fnm[],
 static real Ecouple(t_coupl_rec *tcr,real ener[])
 {
   if (tcr->bInter)
-    return ener[F_SR]+ener[F_LJ]+ener[F_LR]+ener[F_LJLR];
+    return ener[F_COUL_SR]+ener[F_LJ]+ener[F_COUL_LR]+ener[F_LJ_LR]+
+      ener[F_RF_EXCL]+ener[F_COUL_RECIP];
   else
     return ener[F_EPOT];
 }

@@ -65,7 +65,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 31;
+static const int tpx_version = 32;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -76,7 +76,7 @@ static const int tpx_version = 31;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 4;
+static const int tpx_generation = 5;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -128,6 +128,9 @@ static const t_ftupd ftupd[] = {
   { 30, F_UREY_BRADLEY      },
   { 26, F_FOURDIHS          },
   { 26, F_PIDIHS            },
+  { 32, F_BHAM_LR           },
+  { 32, F_RF_EXCL           },
+  { 32, F_COUL_RECIP        },
   { 30, F_POLARIZATION      },
   { 22, F_DISRESVIOL        },
   { 22, F_ORIRES            },
@@ -238,6 +241,8 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
       do_int(idum); 
     do_real(ir->rlist); 
     do_int(ir->coulombtype); 
+    if (file_version < 32 && ir->coulombtype == eelRF)
+      ir->coulombtype = eelRF_OLD;      
     do_real(ir->rcoulomb_switch); 
     do_real(ir->rcoulomb); 
     do_int(ir->vdwtype);

@@ -202,8 +202,9 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   if (fr->eeltype == eelPPPM)
     init_pppm(stdlog,cr,nsb,FALSE,TRUE,box_size,getenv("GMXGHAT"),&parm->ir);
   if (fr->eeltype == eelPME)
-    init_pme(stdlog,cr,parm->ir.nkx,parm->ir.nky,parm->ir.nkz,parm->ir.pme_order,
-	     HOMENR(nsb),parm->ir.bOptFFT,parm->ir.ewald_geometry);
+    (void) init_pme(stdlog,cr,parm->ir.nkx,parm->ir.nky,parm->ir.nkz,
+		    parm->ir.pme_order,HOMENR(nsb),
+		    parm->ir.bOptFFT,parm->ir.ewald_geometry);
   
   /* Now do whatever the user wants us to do (how flexible...) */
   switch (parm->ir.eI) {
@@ -288,7 +289,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   bool       bNS,bSimAnn,bStopCM,bTYZ,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bLastStep,bNEMD,do_log,bRerunWarnNoV=TRUE,
 	     bFullPBC;
-  tensor     force_vir,pme_vir,shake_vir;
+  tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
   char       *traj,*xtc_traj; /* normal and compressed trajectory filename */
   int        i,m,status;
@@ -331,7 +332,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   init_md(cr,&parm->ir,state->box,&t,&t0,&state->lambda,&lam0,
 	  &mynrnb,&bTYZ,top,
 	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&fp_field,&mdebin,grps,
-	  force_vir,pme_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&bSimAnn,&vcm,nsb);
+	  force_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&bSimAnn,&vcm,nsb);
   debug_gmx();
 
   /* Check for full periodicity calculations */
@@ -563,7 +564,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       count=relax_shells(log,cr,mcr,bVerbose,bFFscan ? step+1 : step,
 			 parm,bNS,bStopCM,top,ener,fcd,
 			 state,vold,vt,f,buf,mdatoms,nsb,&mynrnb,graph,
-			 grps,force_vir,pme_vir,
+			 grps,force_vir,
 			 nshell,shells,nflexcon,fr,traj,t,mu_tot,
 			 nsb->natoms,&bConverged,bDummies,dummycomm,
 			 fp_field);
@@ -577,7 +578,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
        * This is parallellized as well, and does communication too. 
        * Check comments in sim_util.c
        */
-      do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,step,&mynrnb,top,grps,
+      do_force(log,cr,mcr,parm,nsb,force_vir,step,&mynrnb,top,grps,
 	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       state->lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,t,fp_field);
     }
@@ -607,14 +608,15 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     /* Calculation of the virial must be done after dummies!    */
     /* Question: Is it correct to do the PME forces after this? */
     calc_virial(log,START(nsb),HOMENR(nsb),state->x,f,
-		force_vir,pme_vir,graph,state->box,&mynrnb,fr,FALSE);
+		force_vir,fr->vir_el_recip,graph,state->box,&mynrnb,fr);
 		  
     /* Spread the LR force on dummy particle to the other particles... 
      * This is parallellized. MPI communication is performed
      * if the constructing atoms aren't local.
      */
     if (bDummies && fr->bEwald) 
-      spread_dummy_f(log,state->x,fr->f_pme,&mynrnb,&top->idef,dummycomm,cr);
+      spread_dummy_f(log,state->x,fr->f_el_recip,&mynrnb,&top->idef,
+		     dummycomm,cr);
     
     sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
 
@@ -731,8 +733,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
        */
       if (fr->bTwinRange && !bNS) 
 	for(i=0; (i<grps->estat.nn); i++) {
-	  grps->estat.ee[egLR][i]   /= cr->nnodes;
-	  grps->estat.ee[egLJLR][i] /= cr->nnodes;
+	  grps->estat.ee[egCOULLR][i] /= cr->nnodes;
+	  grps->estat.ee[egLJLR][i]   /= cr->nnodes;
 	}
     }
     else
@@ -811,7 +813,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
      * Use the box from last timestep since we already called update().
      */
     calc_pres(fr->ePBC,lastbox,parm->ekin,parm->vir,parm->pres,
-	      (fr->eeltype==eelPPPM) ? ener[F_LR] : 0.0);
+	      (fr->eeltype==eelPPPM) ? ener[F_COUL_RECIP] : 0.0);
     
     /* Calculate long range corrections to pressure and energy */
     if (bTCR || bFFscan)

@@ -52,7 +52,7 @@
 #include "names.h"
 #include "orires.h"
 
-static bool bEInd[egNR] = { TRUE, TRUE, FALSE, FALSE, FALSE, FALSE };
+static bool bEInd[egNR] = { TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE };
 
 static bool bEner[F_NRE];
 static char *boxs_nm[] = {
@@ -81,9 +81,8 @@ static char *pcouplmu_nm[] = {
 static bool bShake,bTricl;
 static int  f_nre=0,epc,etc;
 
-t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
-		      bool bLR,bool bLJLR,bool bBHAM,bool b14,bool bFEP,
-		      int epcoupl,bool bDispCorr,bool bTriclinic,int etcoupl,
+t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
+		      const t_idef *idef,const t_inputrec *ir,
 		      t_commrec *cr)
 {
   char *ener_nm[F_NRE];
@@ -124,31 +123,41 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
   char     buf[256];
   t_mdebin *md;
   int      i,j,ni,nj,n,k,kk;
+  bool     bBHAM,b14;
   
+  bBHAM = (idef->functype[0] == F_BHAM);
+  b14   = (idef->il[F_LJ14].nr > 0);
+
   for(i=0; i<F_NRE; i++) {
     bEner[i] = FALSE;
     if (i == F_LJ)
       bEner[i] = !bBHAM;
     else if (i == F_BHAM)
       bEner[i] = bBHAM;
-    else if (i == F_LR)
-      bEner[i] = bLR;
-    else if (i == F_LJLR)
-      bEner[i] = bLJLR;
+    else if (i == F_COUL_LR)
+      bEner[i] = (ir->rcoulomb > ir->rlist);
+    else if (i == F_LJ_LR)
+      bEner[i] = (!bBHAM && ir->rvdw > ir->rlist);
+    else if (i == F_BHAM_LR)
+      bEner[i] = (bBHAM && ir->rvdw > ir->rlist);
+    else if (i == F_RF_EXCL)
+      bEner[i] = (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_OLD);
+    else if (i == F_COUL_RECIP)
+      bEner[i] = EEL_FULL(ir->coulombtype);
     else if (i == F_LJ14)
       bEner[i] = b14;
     else if (i == F_COUL14)
       bEner[i] = b14;
     else if ((i == F_DVDL) || (i == F_DVDLKIN))
-      bEner[i] = bFEP;
+      bEner[i] = (ir->efep != efepNO);
     else if ((strstr(interaction_function[i].name,"DUM") != NULL) ||
 	     (i == F_SHAKE) || (i == F_SETTLE))
       bEner[i] = FALSE;
-    else if ((i == F_SR) || (i == F_EPOT) || (i == F_ETOT) || (i == F_EKIN) ||
-	     (i == F_TEMP) || (i == F_PRES))
+    else if ((i == F_COUL_SR) || (i == F_EPOT) || (i == F_ETOT) ||
+	     (i == F_EKIN) || (i == F_TEMP) || (i == F_PRES))
       bEner[i] = TRUE;
-    else if ((i == F_DISPCORR) && bDispCorr)
-      bEner[i] = TRUE;
+    else if (i == F_DISPCORR)
+      bEner[i] = (ir->eDispCorr != edispcNO);
     else if (i == F_DISRESVIOL)
       bEner[i] = (idef->il[F_DISRES].nr > 0);
     else if (i == F_ORIRESDEV)
@@ -170,9 +179,9 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
   bShake = (idef->il[F_SHAKE].nr > 0) || (idef->il[F_SETTLE].nr > 0);
   if (bShake) 
     bShake = (getenv("SHAKEVIR") != NULL);
-  epc = epcoupl;
-  bTricl = bTriclinic;
-  etc = etcoupl;
+  epc = ir->epc;
+  bTricl = TRICLINIC(ir->compress);
+  etc = ir->etc;
   
   /* Energy monitoring */
   snew(md,1);
@@ -198,13 +207,16 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
     md->ivcos = get_ebin_space(md->ebin,asize(vcos_nm),vcos_nm);
     md->ivisc = get_ebin_space(md->ebin,asize(visc_nm),visc_nm);
   }
-  if (bLR) 
-    bEInd[egLR]   = TRUE;
-  if (bLJLR)
-    bEInd[egLJLR] = TRUE;
-  if (bBHAM) {
-    bEInd[egLJ]   = FALSE;
-    bEInd[egBHAM] = TRUE;
+  if (ir->rcoulomb > ir->rlist) 
+    bEInd[egCOULLR] = TRUE;
+  if (!bBHAM) {
+    if (ir->rvdw > ir->rlist)
+      bEInd[egLJLR]   = TRUE;
+  } else {
+    bEInd[egLJSR]   = FALSE;
+    bEInd[egBHAMSR] = TRUE;
+    if (ir->rvdw > ir->rlist)
+      bEInd[egBHAMLR]   = TRUE;
   }
   if (b14) {
     bEInd[egLJ14] = TRUE;

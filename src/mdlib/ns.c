@@ -173,7 +173,7 @@ static unsigned int nbf_index(t_forcerec *fr, bool bvdw, bool bcoul, bool bFree,
   if(bcoul) {
     if(fr->bcoultab || bFree)
       icoul = 3;
-    else if(fr->bRF)
+    else if(EEL_RF(fr->eeltype))
       icoul = 2;
     else 
       icoul = 1;
@@ -355,15 +355,15 @@ static void reset_neighbor_list(t_forcerec *fr,bool bLR,int eNL)
 }
 
 static inline void new_i_nblist(t_nblist *nlist,
-				    int ftype,atom_id i_atom,int shift,int gid,
+				    bool bLR,atom_id i_atom,int shift,int gid,
 				    int *mno)
 {
   int    i,k,nri,nshift;
     
   if (nlist->maxnrj <= nlist->nrj + NLJ_INC-1) {
     if (debug)
-      fprintf(debug,"Adding %5d J particles for nblist %s\n",NLJ_INC,
-	      interaction_function[ftype].longname);
+      fprintf(debug,"Adding %5d J particles for %s nblist %s\n",NLJ_INC,
+	      bLR ? "LR" : "SR",nrnb_str(nlist->il_code));
 
     nlist->maxnrj += NLJ_INC;
     srenew(nlist->jjnr,nlist->maxnrj);
@@ -602,17 +602,17 @@ static inline void put_in_list(bool bHaveLJ[],
       gid     = GID(igid,jgid,ngid);
       /* Create new i_atom for each energy group */
       if (!bCoulOnly && !bVDWOnly) {
-	new_i_nblist(vdwc,bLR ? F_LJLR : F_LJ,i_atom,shift,gid,NULL);
+	new_i_nblist(vdwc,bLR,i_atom,shift,gid,NULL);
 #ifndef DISABLE_WATERWATER_LOOPS
-	new_i_nblist(vdwc_ww,bLR ? F_LJLR : F_LJ,i_atom,shift,gid,NULL);
+	new_i_nblist(vdwc_ww,bLR,i_atom,shift,gid,NULL);
 #endif
       }
       if (!bCoulOnly)
-	new_i_nblist(vdw,bLR ? F_LJLR : F_LJ,i_atom,shift,gid,NULL);
+	new_i_nblist(vdw,bLR,i_atom,shift,gid,NULL);
       if (!bVDWOnly) {
-	new_i_nblist(coul,bLR ? F_LR : F_SR,i_atom,shift,gid,NULL);
+	new_i_nblist(coul,bLR,i_atom,shift,gid,NULL);
 #ifndef DISABLE_WATERWATER_LOOPS
-	new_i_nblist(coul_ww,bLR ? F_LR : F_SR,i_atom,shift,gid,NULL);
+	new_i_nblist(coul_ww,bLR,i_atom,shift,gid,NULL);
 #endif
       }      
       /* Loop over the j charge groups */
@@ -681,14 +681,11 @@ static inline void put_in_list(bool bHaveLJ[],
       
       /* Create new i_atom for each energy group */
       if (!bCoulOnly && !bVDWOnly)
-	new_i_nblist(vdwc,bLR ? F_LJLR : F_LJ,i_atom,shift,gid,
-		     &(fr->mno_index[icg*3]));
+	new_i_nblist(vdwc,bLR,i_atom,shift,gid,&(fr->mno_index[icg*3]));
       if (!bCoulOnly)
-	new_i_nblist(vdw,bLR ? F_LR : F_SR,i_atom,shift,gid,
-		     &(fr->mno_index[icg*3]));
+	new_i_nblist(vdw,bLR,i_atom,shift,gid,&(fr->mno_index[icg*3]));
       if (!bVDWOnly)
-	new_i_nblist(coul,bLR ? F_LR : F_SR,i_atom,shift,gid,
-		     &(fr->mno_index[icg*3]));
+	new_i_nblist(coul,bLR,i_atom,shift,gid,&(fr->mno_index[icg*3]));
       
       /* Loop over the j charge groups */
       for(j=0; (j<nj); j++) {
@@ -731,11 +728,11 @@ static inline void put_in_list(bool bHaveLJ[],
 	
 	/* Create new i_atom for each energy group */
 	if (!bCoulOnly && !bVDWOnly) 
-	  new_i_nblist(vdwc,bLR ? F_LJLR : F_LJ,i_atom,shift,gid,NULL);
+	  new_i_nblist(vdwc,bLR,i_atom,shift,gid,NULL);
 	if (!bCoulOnly)   
-	  new_i_nblist(vdw,bLR ? F_LR : F_SR,i_atom,shift,gid,NULL);
+	  new_i_nblist(vdw,bLR,i_atom,shift,gid,NULL);
 	if (!bVDWOnly) 
-	  new_i_nblist(coul,bLR ? F_LR : F_SR,i_atom,shift,gid,NULL);
+	  new_i_nblist(coul,bLR,i_atom,shift,gid,NULL);
 	
 	if (!(bVDWOnly || qi==0) || !(bCoulOnly || !bHaveLJ[type[i_atom]])) {
 	  /* Loop over the j charge groups */
@@ -798,17 +795,17 @@ static inline void put_in_list(bool bHaveLJ[],
 
       /* Create new i_atom for each energy group */
       if (!bCoulOnly && !bVDWOnly) 
-	new_i_nblist(vdwc,bLR ? F_LJLR : F_LJ,i_atom,shift,gid,
+	new_i_nblist(vdwc,bLR,i_atom,shift,gid,
 		     bMNO ? &(fr->mno_index[icg*3]) : NULL);
       if (!bCoulOnly)   
-	new_i_nblist(vdw,bLR ? F_LR : F_SR,i_atom,shift,gid,
+	new_i_nblist(vdw,bLR,i_atom,shift,gid,
 		     bMNO ? &(fr->mno_index[icg*3]) : NULL);
       if (!bVDWOnly) 
-	new_i_nblist(coul,bLR ? F_LR : F_SR,i_atom,shift,gid,
+	new_i_nblist(coul,bLR,i_atom,shift,gid,
 		     bMNO ? &(fr->mno_index[icg*3]) : NULL);
-      new_i_nblist(vdw_free,F_DVDL,i_atom,shift,gid,NULL);
-      new_i_nblist(coul_free,F_DVDL,i_atom,shift,gid,NULL);
-      new_i_nblist(vdwc_free,F_DVDL,i_atom,shift,gid,NULL);
+      new_i_nblist(vdw_free,bLR,i_atom,shift,gid,NULL);
+      new_i_nblist(coul_free,bLR,i_atom,shift,gid,NULL);
+      new_i_nblist(vdwc_free,bLR,i_atom,shift,gid,NULL);
 
       if (!(bVDWOnly || (qi==0 && qiB==0)) || 
 	  !(bCoulOnly || (!bHaveLJ[type[i_atom]] && !bHaveLJ[typeB[i_atom]]))) {
@@ -1283,7 +1280,8 @@ static void do_longrange(FILE *log,t_commrec *cr,t_topology *top,t_forcerec *fr,
       close_neighbor_list(fr,TRUE,i);
       /* Evaluate the forces */
       do_fnbf(log,cr,fr,x,fr->f_twin,md,
-	      grps->estat.ee[egLJLR],grps->estat.ee[egLR],box_size,
+	      grps->estat.ee[fr->bBHAM ? egBHAMLR : egLJLR],
+	      grps->estat.ee[egCOULLR],box_size,
 	      nrnb,lambda,dvdlambda,TRUE,i);
       
       reset_neighbor_list(fr,TRUE,i);

@@ -20,7 +20,7 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	pme.c		pppm.c		\
 	pull.c 		pullinit.c	\
 	pullio.c	pullutil.c	\
-	shakef.c	sim_util.c	\
+	rf_util.c	shakef.c	sim_util.c	\
 	splittop.c	tables.c	tgroup.c	\
 	update.c	vcm.c		wnblist.c	\
 	splittop.h	wnblist.h	\

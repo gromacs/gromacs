@@ -125,9 +125,16 @@ void calc_bonds(FILE *log,t_commrec *cr,t_commrec *mcr,t_idef *idef,
 	  inc_nrnb(nrnb,ind,nbonds/nat);
 	epot[ftype]  += v;
 	epot[F_DVDL] += dvdl;
-	if (bSepDVDL)
-	  fprintf(log,"  %-15s #%4d  V %12.5e  dVdl %12.5e\n",
-		  interaction_function[ftype].longname,nbonds/nat,v,dvdl);
+	if (bSepDVDL) {
+	  if (ftype != F_LJ14) {
+	    fprintf(log,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
+		    interaction_function[ftype].longname,nbonds/nat,v,dvdl);
+	  } else {
+	    fprintf(log,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
+		    interaction_function[ftype].longname,
+		    interaction_function[F_COUL14].longname,nbonds/nat,dvdl);
+	  }
+	}
       }
     }
   }

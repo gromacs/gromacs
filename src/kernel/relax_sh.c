@@ -288,7 +288,6 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 		 t_state *state,rvec vold[],rvec vt[],rvec f[],
 		 rvec buf[],t_mdatoms *md,t_nsborder *nsb,t_nrnb *nrnb,
 		 t_graph *graph,t_groups *grps,tensor vir_part,
-		 tensor pme_vir_part,
 		 int nshell,t_shell shells[],int nflexcon,
 		 t_forcerec *fr,
 		 char *traj,real t,rvec mu_tot,
@@ -300,7 +299,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   static rvec *pos[2],*force[2];
   static rvec *acc_dir=NULL,*x_old=NULL;
   real   Epot[2],df[2],Estore[F_NRE];
-  tensor my_vir[2],vir_last,pme_vir[2];
+  tensor my_vir[2],vir_last,vir_el_recip[2];
   rvec   dx;
   real   sf_dir;
 #define NEPOT asize(Epot)
@@ -361,14 +360,14 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
    
   /* Calculate the forces first time around */
   clear_mat(my_vir[Min]);
-  clear_mat(pme_vir[Min]);
   if (debug) {
     pr_rvecs(debug,0,"x b4 do_force",state->x + start,homenr);
   }
-  do_force(log,cr,mcr,parm,nsb,my_vir[Min],pme_vir[Min],mdstep,nrnb,top,grps,
+  do_force(log,cr,mcr,parm,nsb,my_vir[Min],mdstep,nrnb,top,grps,
 	   state->box,state->x,force[Min],buf,md,ener,fcd,bVerbose && !PAR(cr),
 	   state->lambda,graph,bDoNS,FALSE,fr,mu_tot,FALSE,t,fp_field);
   sum_lrforces(force[Min],fr,start,homenr);
+  copy_mat(fr->vir_el_recip,vir_el_recip[Min]);
 
   sf_dir = 0;
   if (nflexcon) {
@@ -460,8 +459,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     }
     /* Try the new positions */
     clear_mat(my_vir[Try]);
-    clear_mat(pme_vir[Try]);
-    do_force(log,cr,mcr,parm,nsb,my_vir[Try],pme_vir[Try],1,nrnb,
+    do_force(log,cr,mcr,parm,nsb,my_vir[Try],1,nrnb,
 	     top,grps,state->box,pos[Try],force[Try],buf,md,ener,fcd,
 	     bVerbose && !PAR(cr),
 	     state->lambda,graph,FALSE,FALSE,fr,mu_tot,FALSE,t,fp_field);
@@ -478,9 +476,10 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
      * if the constructing atoms aren't local.
      */
     if (bDummies && fr->bEwald) 
-      spread_dummy_f(log,pos[Try],fr->f_pme,nrnb,&top->idef,dummycomm,cr);
+      spread_dummy_f(log,pos[Try],fr->f_el_recip,nrnb,&top->idef,dummycomm,cr);
     
     sum_lrforces(force[Try],fr,start,homenr);
+    copy_mat(fr->vir_el_recip,vir_el_recip[Try]);
     
     if (debug) {
       pr_rvecs(debug,0,"RELAX: force[Min]",force[Min] + start,homenr);
@@ -540,15 +539,15 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     fprintf(stderr,"EM did not converge in %d steps\n",number_steps);
 
   /* Parallelise this one! */
-  if (EEL_LR(fr->eeltype)) {
+  if (EEL_FULL(fr->eeltype)) {
     for(i=start; (i<end); i++)
-      rvec_dec(force[Min][i],fr->f_pme[i]);
+      rvec_dec(force[Min][i],fr->f_el_recip[i]);
   }
   memcpy(f,force[Min],nsb->natoms*sizeof(f[0]));
 
   /* CHECK VIRIAL */
   copy_mat(my_vir[Min],vir_part);
-  copy_mat(pme_vir[Min],pme_vir_part);
+  copy_mat(vir_el_recip[Min],fr->vir_el_recip);
   
   if (debug) {
     sprintf(cbuf,"myvir step %d",count);

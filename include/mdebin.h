@@ -53,10 +53,9 @@ typedef struct {
   int    *igrp;
 } t_mdebin;
 
-extern t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,
-			     t_idef *idef,bool bLR,bool BLJLR,bool bBHAM,
-			     bool b14,bool bFEP,int epcoupl,bool
-			     bDispCorr,bool bTriclinic,int etcoupl,
+extern t_mdebin *init_mdebin(int fp_ene,
+			     const t_groups *grps,const t_atoms *atoms,
+			     const t_idef *idef,const t_inputrec *ir,
 			     t_commrec *cr);
 /* Initiate MD energy bin and write header to energy file. */
 

@@ -43,6 +43,16 @@ enum { eNL_VDWQQ, eNL_VDW, eNL_QQ,
        eNL_VDWQQ_WATER, eNL_QQ_WATER, 
        eNL_VDWQQ_WATERWATER, eNL_QQ_WATERWATER, 
        eNL_NR };
+
+typedef struct {
+  real r;         /* range of the table */
+  int  n;         /* n+1 is the number of points */
+  real scale;     /* distance between two points */
+  real scale_exp; /* distance for exponential Buckingham table */
+  real *tab;      /* the actual tables, per point there are  4 numbers for
+		   * Coulomb, dispersion and repulsion (in total 12 numbers)
+		   */
+} t_forcetable;
  
 typedef struct {
   /* Cut-Off stuff */
@@ -54,9 +64,11 @@ typedef struct {
   real epsilon_r,epsfac;  
   
   /* Constants for reaction fields */
-  bool bRF;
   real kappa,k_rf,c_rf;
-  
+
+  /* Charge sum for topology A/B ([0]/[1]) for Ewald corrections */
+  double qsum[2];
+
   /* The shift of the shift or user potentials */
   real enershiftsix;
   real enershifttwelve;
@@ -78,14 +90,11 @@ typedef struct {
   /* Table stuff */
   bool bcoultab;
   bool bvdwtab;
-  real rtab;
-  int  ntab;
-  real tabscale;
+  t_forcetable tab;
   /* We duplicate tables for cache optimization purposes */
   real *coultab;      /* Coul only */
   real *vdwtab;       /* Vdw only   */
-  real *coulvdwtab;   /* Both      */
-  real *coulvdw14tab; /* 1,4 table with both */
+  t_forcetable tab14; /* for 1-4 interactions only */
 
   /* PPPM & Shifting stuff */
   real rcoulomb_switch,rcoulomb;
@@ -94,7 +103,6 @@ typedef struct {
   /* VdW stuff */
   real rvdw_switch,rvdw;
   real bham_b_max;
-  real tabscale_exp;
 
   /* Free energy ? */
   int  efep;
@@ -137,9 +145,12 @@ typedef struct {
   int  nlr;
   rvec *f_twin;
   rvec *fshift_twin;
-  
+
+  /* Long-range forces and virial for PPPM/PME/Ewald */
+  rvec *f_el_recip;
+  tensor vir_el_recip;
+
   /* PME/Ewald stuff */
-  rvec *f_pme;
   bool bEwald;
   real ewaldcoeff;
 
@@ -171,6 +182,15 @@ typedef struct {
   /* Implicit solvent - surface tension for each atomtype */
   real *atype_surftens;
 
+  /* User determined parameters, copied from the inputrec */
+  int  userint1;
+  int  userint2;
+  int  userint3;
+  int  userint4;
+  real userreal1;
+  real userreal2;
+  real userreal3;
+  real userreal4;
 } t_forcerec;
 
 #define C6(nbfp,ntp,ai,aj)     (nbfp)[2*((ntp)*(ai)+(aj))]

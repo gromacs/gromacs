@@ -155,10 +155,10 @@ static real *fbuf=NULL;
 #define COUL_ARGS       ,mdatoms->chargeA,SCAL(fr->epsfac),egcoul
 #define SOFTCORE_LJARGS ,mdatoms->typeA,SCAL(fr->ntype),fr->nbfp
 #define RF_ARGS         ,SCAL(fr->k_rf),SCAL(fr->c_rf)
-#define LJCTAB_ARGS     ,SCAL(fr->tabscale),fr->coulvdwtab
-#define LJTAB_ARGS      ,SCAL(fr->tabscale),fr->vdwtab
-#define COULTAB_ARGS    ,SCAL(fr->tabscale),fr->coultab
-#define BHTAB_ARGS      ,SCAL(fr->tabscale_exp)
+#define LJCTAB_ARGS     ,SCAL(fr->tab.scale),fr->tab.tab
+#define LJTAB_ARGS      ,SCAL(fr->tab.scale),fr->vdwtab
+#define COULTAB_ARGS    ,SCAL(fr->tab.scale),fr->coultab
+#define BHTAB_ARGS      ,SCAL(fr->tab.scale_exp)
 #define FREE_ARGS       ,SCAL(lambda),dvdlambda
 #define FREE_CHARGEB    ,mdatoms->chargeB
 #define FREE_TYPEB      ,mdatoms->typeB
@@ -168,9 +168,9 @@ static real *fbuf=NULL;
 #define ASM_LJ_ARGS      ,mdatoms->typeA,fr->ntype,fr->nbfp,egnb
 #define ASM_COUL_ARGS    ,mdatoms->chargeA,fr->epsfac,egcoul
 #define ASM_RF_ARGS      ,fr->k_rf,fr->c_rf
-#define ASM_LJCTAB_ARGS  ,fr->tabscale,fr->coulvdwtab
-#define ASM_LJTAB_ARGS   ,fr->tabscale,fr->vdwtab
-#define ASM_COULTAB_ARGS ,fr->tabscale,fr->coultab
+#define ASM_LJCTAB_ARGS  ,fr->tab.scale,fr->tab.tab
+#define ASM_LJTAB_ARGS   ,fr->tab.scale,fr->vdwtab
+#define ASM_COULTAB_ARGS ,fr->tab.scale,fr->coultab
 
 
 int cpu_capabilities = UNKNOWN_CPU;
@@ -1027,7 +1027,7 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
   /* Reaction field stuff */  
   eps   = fr->epsfac*fr->fudgeQQ;
   
-  rtab2 = sqr(fr->rtab);
+  rtab2 = sqr(fr->tab14.r);
     
   ia0=iatoms;
 
@@ -1107,7 +1107,7 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	  FUNC(inl3302n,INL3302N)(COMMON_ARGS FBUF_ARG, 
 				  md->chargeA,SCAL(eps),egcoul,
 				  md->typeA,SCAL(i3),nbfp,egnb,
-				  SCAL(fr->tabscale),fr->coulvdw14tab,
+				  SCAL(fr->tab14.scale),fr->tab14.tab,
 				  SCAL(lambda),dvdlambda,md->chargeB,
 				  md->typeB,SCAL(fr->sc_alpha),
 				  SCAL(fr->sc_sigma6));
@@ -1116,7 +1116,7 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	  FUNC(inl3302,INL3302)(COMMON_ARGS FBUF_ARG, 
 				md->chargeA,SCAL(eps),egcoul,
 				md->typeA,SCAL(i3),nbfp,egnb,
-				SCAL(fr->tabscale),fr->coulvdw14tab,
+				SCAL(fr->tab14.scale),fr->tab14.tab,
 				SCAL(lambda),dvdlambda,md->chargeB,
 				md->typeB,SCAL(fr->sc_alpha),
 				SCAL(fr->sc_sigma6));
@@ -1128,7 +1128,7 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	  FUNC(inl3301n,INL3301N)(COMMON_ARGS FBUF_ARG, 
 				  md->chargeA,SCAL(eps),egcoul,
 				  md->typeA,SCAL(i3),nbfp,egnb,
-				  SCAL(fr->tabscale),fr->coulvdw14tab,
+				  SCAL(fr->tab14.scale),fr->tab14.tab,
 				  SCAL(lambda),dvdlambda,md->chargeB,
 				  md->typeB);
 #else	
@@ -1136,7 +1136,7 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	  FUNC(inl3301,INL3301)(COMMON_ARGS FBUF_ARG, 
 				md->chargeA,SCAL(eps),egcoul,
 				md->typeA,SCAL(i3),nbfp,egnb,
-				SCAL(fr->tabscale),fr->coulvdw14tab,
+				SCAL(fr->tab14.scale),fr->tab14.tab,
 				SCAL(lambda),dvdlambda,md->chargeB,md->typeB);
 #endif
 	  /* Restore old types */
@@ -1151,14 +1151,14 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	/* special version without some optimizations */
 	FUNC(inl3300n,INL3300N)(COMMON_ARGS FBUF_ARG 
 				,md->chargeA,SCAL(eps),egcoul,md->typeA,SCAL(fr->ntype),
-				nbfp14,egnb,SCAL(fr->tabscale),fr->coulvdw14tab);
+				nbfp14,egnb,SCAL(fr->tab14.scale),fr->tab14.tab);
 #else	
 #if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	if (cpu_capabilities & X86_3DNOW_SUPPORT) {
 	  inl3300_3dnow(i1,&ai,j_index,&aj,&shift_f,fr->shift_vec[0],fr->fshift[0],
 			&gid ,x[0],f[0] FBUF_ARG
 			,md->chargeA,eps,egcoul,md->typeA,fr->ntype,
-			nbfp14,egnb,fr->tabscale,fr->coulvdw14tab);
+			nbfp14,egnb,fr->tab14.scale,fr->tab14.tab);
 	}
 	/* NOTE: special constructions with else inside ifdef */
 	else 
@@ -1167,7 +1167,7 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	  FUNC(inl3300,INL3300)(COMMON_ARGS FBUF_ARG  
 				,md->chargeA,SCAL(eps),egcoul,md->typeA,
 				SCAL(fr->ntype),nbfp14,egnb,
-				SCAL(fr->tabscale),fr->coulvdw14tab);
+				SCAL(fr->tab14.scale),fr->tab14.tab);
 #endif
       }
       /* Now determine the 1-4 force in order to add it to the fshift array 
