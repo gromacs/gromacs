@@ -433,7 +433,7 @@
    NE2  NR5*  -0.580     3
      C     C   0.380     4
      O     O  -0.380     4
- [ bonds ]
+ [ bonds ]      
      N     H
      N    CA
     CA    HA
@@ -452,7 +452,7 @@
    CE1   NE2
      C     O
     -C     N
- [ impropers ]
+ [ impropers ]               
      N    -C    CA     H
     CA     N     C    CB
     CG   ND1   CD2    CB
@@ -465,35 +465,6 @@
    CE1   ND1   NE2   HE1
    CD2    CG   NE2   HD2
     -C   -CA     N    -O
-
- [ bonds ]
-     N     H
-     N    CA
-    CA     C
-     C     O
-    -C     N
-    CA    HA
-    CA    CB
-    CB   HB1
-    CB   HB2
-    CB    CG
-    CG   ND1
-    CG   CD2
-   ND1   HD1
-   ND1   CE1
-   CD2   NE2
-   CE1   NE2
- [ impropers ]
-     N    -C    CA     H
-    -C   -CA     N    -O
-    CA     N     C    CB
-    CG   ND1   CD2    CB
-   CD2    CG   ND1   CE1
-   ND1    CG   CD2   NE2
-    CG   ND1   CE1   NE2
-    CG   CD2   NE2   CE1
-   CD2   NE2   CE1   ND1
-   ND1    CG   CE1   HD1
 
 [ HISA ]
  [ atoms ]
