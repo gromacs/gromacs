@@ -131,14 +131,6 @@ int do_per_step(int step,int nstep)
     return 0;
 }
 
-int do_any_io(int step, t_inputrec *ir)
-{
-  return (do_per_step(step,ir->nstxout)  ||
-	  do_per_step(step,ir->nstprint) ||
-	  do_per_step(step,ir->nstfout)  ||
-	  do_per_step(step,ir->nstvout));
-}
-
 static void moveit(FILE *log,
 		   int left,int right,char *s,rvec xx[],t_nsborder *nsb)
 {
