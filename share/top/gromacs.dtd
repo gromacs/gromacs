@@ -56,13 +56,8 @@
           pname ID #REQUIRED>
 <!ELEMENT aminoacid EMPTY>
 <!ATTLIST aminoacid
-          resname   ID #REQUIRED
-          restype ( ABU | ACE | AIB | ALA  | ARG | ARGN | ASN | ASN1 |
-	            ASP | ASP1| ASPH| CYS  | CYS1| CYS2 | CYSH| 
-		    GLN | GLU | GLUH| GLY  | HIS | HIS1 | HISA| HISB |
-		    HISH| HYP | ILE | LEU  | LYS | LYSH | MET |
-		    NAC | NH2 | PHE | PHEH | PRO | SER  | THR |
-		    TRP | TRPH| TYR | TYRH | VAL ) "ALA"
+          resname   ID    #REQUIRED
+          restype   IDREF #REQUIRED
           protonated ( no | polar | all ) "polar">
 <!ELEMENT aalink EMPTY>
 <!ATTLIST aalink
