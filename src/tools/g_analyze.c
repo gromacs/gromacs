@@ -361,6 +361,7 @@ static void average(char *avfile,int avbar_opt,
   if (avbar_opt == avbar90)
     sfree(tmp);
 }
+
 static real anal_ee_inf(real *parm,real T)
 {
   return sqrt(parm[1]*2*parm[0]/T+parm[3]*2*parm[2]/T);
@@ -523,6 +524,80 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
   fclose(fp);
 }
 
+static void do_fit(char *fn,int nx,int ny,real *x0,real **val)
+{
+  FILE *out;
+  real *c1,*sig,*fitparm;
+  real dt=0,tendfit,tbeginfit,integral;
+  int  i,efitfn,nparm;
+  
+  out = ffopen(fn,"w");
+  efitfn = get_acffitfn();
+  nparm  = nfp_ffn[efitfn];
+  fprintf(out,"Will fit to the following function:\n");
+  fprintf(out,"%s\n",longs_ffn[efitfn]);
+  switch (nx) {
+  case 1:
+    c1 = val[0];
+    snew(sig,ny);
+    fprintf(out,"Using only column as y values\n");
+    break;
+  case 2:
+    c1  = val[0];
+    sig = val[1];
+    fprintf(out,"Using two columns as y and sigma values\n");
+    break;
+  default:
+    fatal_error(0,"Dont know what to do with %d columns of data",nx);
+  }
+  tbeginfit = x0 ? x0[0]    : 0;
+  tendfit   = x0 ? x0[ny-1] : (ny-1)*dt;
+  
+  snew(fitparm,nparm);
+  switch(efitfn) {
+  case effnEXP1:
+    fitparm[0] = 0.5;
+    break;
+  case effnEXP2:
+    fitparm[0] = 0.5;
+    fitparm[1] = c1[0];
+    break;
+  case effnEXP3:
+    fitparm[0] = 1.0;
+    fitparm[1] = 0.5*c1[0];
+    fitparm[2] = 10.0;
+    break;
+  case effnEXP5:
+    fitparm[0] = fitparm[2] = 0.5*c1[0];
+    fitparm[1] = 100;
+    fitparm[3] = 400;
+    break;
+  case effnEXP7:
+    fitparm[0] = fitparm[2] = fitparm[4] = 0.33*c1[0];
+    fitparm[1] = 10;
+    fitparm[3] = 100;
+    fitparm[5] = 1000;
+    fitparm[6] = 0;
+    break;
+  default:
+    fprintf(out,"Warning: don't know how to initialize the parameters\n");
+    for(i=0; (i<nparm); i++)
+      fitparm[i] = 1;
+  }
+  fprintf(out,"Starting parameters:\n");
+  for(i=0; (i<nparm); i++) 
+    fprintf(out,"a%-2d = %12.5e\n",i+1,fitparm[i]);
+  if (do_lmfit(ny,c1,sig,dt,x0,tbeginfit,tendfit,
+	       bDebugMode(),efitfn,fitparm,0)) {
+    for(i=0; (i<nparm); i++) 
+      fprintf(out,"a%-2d = %12.5e\n",i+1,fitparm[i]);
+  }
+  else {
+    fprintf(out,"No solution was found\n");
+  }
+  fclose(out);
+}
+
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -638,7 +713,7 @@ int main(int argc,char *argv[])
   int      n,nlast,s,nset,i,j=0;
   real     **val,*t,dt,tot,error;
   double   *av,*sig,cum1,cum2,cum3,cum4,db;
-  char     *acfile,*msdfile,*ccfile,*distfile,*avfile,*eefile;
+  char     *acfile,*msdfile,*ccfile,*distfile,*avfile,*eefile,*fitfile;
   
   t_filenm fnm[] = { 
     { efXVG, "-f",    "graph",    ffREAD   },
@@ -647,7 +722,8 @@ int main(int argc,char *argv[])
     { efXVG, "-cc",   "coscont",  ffOPTWR  },
     { efXVG, "-dist", "distr",    ffOPTWR  },
     { efXVG, "-av",   "average",  ffOPTWR  },
-    { efXVG, "-ee",   "errest",   ffOPTWR  }
+    { efXVG, "-ee",   "errest",   ffOPTWR  },
+    { efLOG, "-g",    "fitlog",   ffOPTWR  }
   }; 
 #define NFILE asize(fnm) 
 
@@ -667,57 +743,63 @@ int main(int argc,char *argv[])
   distfile = opt2fn_null("-dist",NFILE,fnm);
   avfile   = opt2fn_null("-av",NFILE,fnm);
   eefile   = opt2fn_null("-ee",NFILE,fnm);
-
+  fitfile  = opt2fn_null("-g",NFILE,fnm);
+  
   val=read_val(opt2fn("-f",NFILE,fnm),bHaveT,
 	       opt2parg_bSet("-b",npargs,ppa),tb,
 	       opt2parg_bSet("-e",npargs,ppa),te,
 	       nsets_in,&nset,&n,&dt,&t,linelen);
-  fprintf(stdout,"Read %d sets of %d points, dt = %g\n\n",nset,n,dt);
+  printf("Read %d sets of %d points, dt = %g\n\n",nset,n,dt);
+  
   if (bDer) {
-    fprintf(stdout,"Calculating the derivative as (f[i+%d]-f[i])/(%d*dt)\n\n",
+    printf("Calculating the derivative as (f[i+%d]-f[i])/(%d*dt)\n\n",
 	    d,d);
     n -= d;
     for(s=0; s<nset; s++)
       for(i=0; (i<n); i++)
 	val[s][i] = (val[s][i+d]-val[s][i])/(d*dt);
   }
-
-  fprintf(stdout,"                                      std. dev.    relative deviation of\n");
-  fprintf(stdout,"                       standard       ---------   cumulants from those of\n");
-  fprintf(stdout,"set      average       deviation      sqrt(n-1)   a Gaussian distribition\n");
-  fprintf(stdout,"                                                      cum. 3   cum. 4\n");
-  snew(av,nset);
-  snew(sig,nset);
-  for(s=0; (s<nset); s++) {
-    cum1 = 0;
-    cum2 = 0;
-    cum3 = 0;
-    cum4 = 0;
-    for(i=0; (i<n); i++)
-      cum1 += val[s][i];
-    cum1 /= n;
-    for(i=0; (i<n); i++) {
-      db = val[s][i]-cum1;
-      cum2 += db*db;
-      cum3 += db*db*db;
-      cum4 += db*db*db*db;
-    }
-    cum2  /= n;
-    cum3  /= n;
-    cum4  /= n;
-    av[s]  = cum1;
-    sig[s] = sqrt(cum2);
-    if (n > 1)
-      error = sqrt(cum2/(n-1));
+  if (fitfile) {
+    do_fit(fitfile,nset,n,t,val);
+  }
+  else {
+    printf("                                      std. dev.    relative deviation of\n");
+    printf("                       standard       ---------   cumulants from those of\n");
+    printf("set      average       deviation      sqrt(n-1)   a Gaussian distribition\n");
+    printf("                                                      cum. 3   cum. 4\n");
+    snew(av,nset);
+    snew(sig,nset);
+    for(s=0; (s<nset); s++) {
+      cum1 = 0;
+      cum2 = 0;
+      cum3 = 0;
+      cum4 = 0;
+      for(i=0; (i<n); i++)
+	cum1 += val[s][i];
+      cum1 /= n;
+      for(i=0; (i<n); i++) {
+	db = val[s][i]-cum1;
+	cum2 += db*db;
+	cum3 += db*db*db;
+	cum4 += db*db*db*db;
+      }
+      cum2  /= n;
+      cum3  /= n;
+      cum4  /= n;
+      av[s]  = cum1;
+      sig[s] = sqrt(cum2);
+      if (n > 1)
+	error = sqrt(cum2/(n-1));
     else
       error = 0;
-    fprintf(stdout,"SS%d  %13.6e   %12.6e   %12.6e      %6.3f   %6.3f\n",
-	    s+1,av[s],sig[s],error,
-	    sig[s] ? cum3/(sig[s]*sig[s]*sig[s]*sqrt(8/M_PI)) : 0,
-	    sig[s] ? cum4/(sig[s]*sig[s]*sig[s]*sig[s]*3)-1 : 0); 
+      printf("SS%d  %13.6e   %12.6e   %12.6e      %6.3f   %6.3f\n",
+	     s+1,av[s],sig[s],error,
+	     sig[s] ? cum3/(sig[s]*sig[s]*sig[s]*sqrt(8/M_PI)) : 0,
+	     sig[s] ? cum4/(sig[s]*sig[s]*sig[s]*sig[s]*3)-1 : 0); 
+    }
+    printf("\n");
   }
-  fprintf(stdout,"\n");
-
+  
   if (msdfile) {
     out=xvgropen(msdfile,"Mean square displacement",
 		 "time","MSD (nm\\S2\\N)");

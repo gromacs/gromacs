@@ -59,8 +59,9 @@ static char *SRCID_g_rdf_c = "$Id$";
 #include "gstat.h"
 #include "matio.h"
 
-static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl, char *mcl,
-		       real cut,int nskip,int nlevels)
+static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl, 
+		       char *mcl,real cut,int nskip,int nlevels,
+		       t_rgb rmid,t_rgb rhi)
 {
   FILE    *fp,*gp,*hp;
   atom_id *index=NULL;
@@ -71,8 +72,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl, char *
   real    t,dx2,cut2,**cs_dist=NULL,*t_x=NULL,*t_y,mid,cav;
   int     i,j,k,ai,aj,ak,ci,cj,nframe,nclust,n_x,n_y,max_size=0;
   int     *clust_index,*clust_size,max_clust_size,nav;
-  t_rgb   rlo = { 1.0, 1.0, 1.0 },
-		  rmid = { 1.0, 1.0, 0.0 },rhi = { 0.0, 0.0, 1.0 };
+  t_rgb   rlo = { 1.0, 1.0, 1.0 };
   
   fp = xvgropen(ncl,"Number of clusters","Time (ps)","N");
   gp = xvgropen(acl,"Average cluster size","Time (ps)","#molecules");
@@ -179,17 +179,24 @@ int main(int argc,char *argv[])
   static real cutoff   = 0.35;
   static int  nskip    = 0;
   static int  nlevels  = 20;
+  static rvec rlo      = { 1.0, 1.0, 0.0 };
+  static rvec rhi      = { 0.0, 0.0, 1.0 };
   t_pargs pa[] = {
     { "-cut",      FALSE, etREAL, {&cutoff},
       "Largest distance (nm) to be considered in a cluster" },
     { "-nskip",    FALSE, etINT,  {&nskip},
       "Number of frames to skip between writing" },
-    { "-nlevels",    FALSE, etINT,  {&nlevels},
-      "Number of levels of grey in xpm output" }
+    { "-nlevels",  FALSE, etINT,  {&nlevels},
+      "Number of levels of grey in xpm output" },
+    { "-rgblo",    FALSE, etRVEC, {rlo},
+      "RGB values for the color of the lowest occupied cluster size" },
+    { "-rgbhi",    FALSE, etRVEC, {rhi},
+      "RGB values for the color of the highest occupied cluster size" }
   };
 #define NPA asize(pa)
   char       *fnTPS,*fnNDX;
   bool       bSQ,bRDF;
+  t_rgb      rgblo,rgbhi;
   
   t_filenm   fnm[] = {
     { efTRX, "-f",  NULL,    ffREAD  },
@@ -206,10 +213,12 @@ int main(int argc,char *argv[])
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
 
   fnNDX = ftp2fn_null(efNDX,NFILE,fnm);
-  
+  rgblo.r = rlo[XX],rgblo.g = rlo[YY],rgblo.b = rlo[ZZ];
+  rgbhi.r = rhi[XX],rgbhi.g = rhi[YY],rgbhi.b = rhi[ZZ];
+    
   clust_size(fnNDX,ftp2fn(efTRX,NFILE,fnm),ftp2fn(efXPM,NFILE,fnm),
 	     opt2fn("-nc",NFILE,fnm),opt2fn("-ac",NFILE,fnm),opt2fn("-mc",NFILE,fnm),
-	     cutoff,nskip,nlevels);
+	     cutoff,nskip,nlevels,rgblo,rgbhi);
 
   thanx(stderr);
   

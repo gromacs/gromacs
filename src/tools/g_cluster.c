@@ -699,7 +699,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
 			     int iosize, atom_id *outidx,
 			     char *trxfn, char *sizefn, char *transfn, 
 			     char *ntransfn, char *clustidfn, bool bAverage, 
-			     int write_ncl, int write_nst, real rmsmin,
+			     int write_ncl, int write_nst, real rmsmin,bool bFit,
 			     FILE *log)
 {
   FILE *fp=NULL;
@@ -784,7 +784,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
 	  reset_x(ifsize,fitidx,natom,NULL,xx[i1],mass);
 	  if (nstr == 1)
 	    first = i1;
-	  else
+	  else if (bFit)
 	    do_fit(natom,mass,xx[first],xx[i1]);
 	  if (xav)
 	    for(i=0; i<natom; i++)
@@ -865,7 +865,8 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
 	  copy_rvec(xx[midstr][i],xav[i]);
 	reset_x(ifsize,fitidx,natom,NULL,xav,mass);
       }
-      do_fit(natom,mass,xtps,xav);
+      if (bFit)
+	do_fit(natom,mass,xtps,xav);
       r = cl;
       write_trx(trxout,iosize,outidx,atoms,cl,time[midstr],zerobox,xav,NULL);
     }
@@ -992,7 +993,7 @@ int main(int argc,char *argv[])
 	 m_monte_carlo, m_diagonalize, m_gromos, m_nr };
   static int  nlevels=40,keepfree=-4,skip=1;
   static real scalemax=-1.0,rmsdcut=0.1,rmsmin=0.0;
-  static bool bRMSdist=FALSE,bBinary=FALSE,bAverage=FALSE;
+  static bool bRMSdist=FALSE,bBinary=FALSE,bAverage=FALSE,bFit=TRUE;
   static int  niter=10000,seed=1993,write_ncl=0,write_nst=1;
   static real kT=1e-3;
   static int  M=10,P=3;
@@ -1006,6 +1007,8 @@ int main(int argc,char *argv[])
       "if <0 nlevels/-keepfree+1 levels will not be used"},
     { "-cutoff",FALSE, etREAL, {&rmsdcut},
       "RMSD cut-off (nm) for two structures to be neighbor" },
+    { "-fit",   FALSE, etBOOL, {&bFit},
+      "Use least squares fitting before RMSD calculation" },
     { "-max",   FALSE, etREAL, {&scalemax},
       "Maximum level in RMSD matrix" },
     { "-skip",  FALSE, etINT,  {&skip},
@@ -1115,7 +1118,7 @@ int main(int argc,char *argv[])
   } else /* method != m_jarvis */
     bUseRmsdCut = ( bBinary || method == m_linkage || method == m_gromos );
   if (bUseRmsdCut && method != m_jarvis_patrick)
-    fprintf(log,"Using RMSD cutoff %g\n",rmsdcut);
+    fprintf(log,"Using RMSD cutoff %g nm\n",rmsdcut);
   if ( method==m_monte_carlo )
     fprintf(log,"Using %d iterations\n",niter);
   
@@ -1220,7 +1223,8 @@ int main(int argc,char *argv[])
 	for(i2=i1+1; (i2<nf); i2++) {
 	  for(i=0; i<isize; i++)
 	    copy_rvec(xx[i1][i],x1[i]);
-	  do_fit(isize,mass,xx[i2],x1);
+	  if (bFit)
+	    do_fit(isize,mass,xx[i2],x1);
 	  rmsd = rmsdev(isize,mass,xx[i2],x1);
 	  set_mat_entry(rms,i1,i2,rmsd);
 	}
@@ -1323,7 +1327,7 @@ int main(int argc,char *argv[])
 		     opt2fn_null("-tr",NFILE,fnm),
 		     opt2fn_null("-ntr",NFILE,fnm),
 		     opt2fn_null("-clid",NFILE,fnm),
-		     bAverage, write_ncl, write_nst, rmsmin, log);
+		     bAverage, write_ncl, write_nst, rmsmin, bFit, log);
   }
   ffclose(log);
   

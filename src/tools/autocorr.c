@@ -894,3 +894,11 @@ int get_acfnout(void)
 
   return acf.nout;
 }
+
+int get_acffitfn(void)
+{
+  if (!bACFinit)
+    fatal_error(0,"ACF data not initialized yet");
+
+  return sffn2effn(s_ffn);
+}

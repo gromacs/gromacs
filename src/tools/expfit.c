@@ -46,9 +46,10 @@ static char *SRCID_expfit_c = "$Id$";
 #include "statutil.h"
 #include "rdgroup.h"
 
-int  nfp_ffn[effnNR] = { 0, 1, 2, 3, 2, 3 };
+int  nfp_ffn[effnNR] = { 0, 1, 2, 3, 2, 4, 7, 3 };
 
-char *s_ffn[effnNR+2] = { NULL, "none", "exp", "aexp", "exp_exp", "vac", NULL, NULL };
+char *s_ffn[effnNR+2] = { NULL, "none", "exp", "aexp", "exp_exp", "vac", 
+			  "exp5", "exp7", NULL, NULL };
 /* We don't allow errest as a choice on the command line */
 
 char *longs_ffn[effnNR] = {
@@ -57,6 +58,8 @@ char *longs_ffn[effnNR] = {
   "y = a2 exp(-x/a1)",
   "y = a2 exp(-x/a1) + (1-a2) exp(-x/a3)",
   "y = exp(-v) (cosh(wv) + 1/w sinh(wv)), v = x/(2 a1), w = sqrt(1 - a2)",
+  "y = a1 exp(-x/a2) +  a3 exp(-x/a4) + a5",
+  "y = a1 exp(-x/a2) +  a3 exp(-x/a4) + a5 exp(-x/a6) + a7",
   "y = sqrt(a2*ee(a1,x) + (1-a2)*ee(a2,x))"
 };
 
@@ -127,6 +130,55 @@ static void exp_3_parm(real x,real a[],real *y,real dyda[])
   dyda[3] = x*(1-a[2])*e2/(a[3]*a[3]);
   /* fprintf(stderr,"exp3: x=%10.3e *y=%10.3e dyda=%10.3e %10.3e %10.3e\n",
     x,*y,dyda[1],dyda[2],dyda[3]);  */
+}
+
+static void exp_5_parm(real x,real a[],real *y,real dyda[])
+{
+  /* Fit to function 
+   *
+   * y = a1 exp(-x/a2) + a3 exp(-x/a4) + a5
+   *
+   */
+   
+  real e1,e2;
+
+  e1      = exp(-x/a[2]);
+  e2      = exp(-x/a[4]);
+  *y      = a[1]*e1 + a[3]*e2 + a[5];
+
+  if (debug)
+    fprintf(debug,"exp_5_parm called: x = %10.3f  y = %10.3f\n"
+	    "a = ( %8.3f  %8.3f  %8.3f  %8.3f  %8.3f)\n",
+	    x,*y,a[1],a[2],a[3],a[4],a[5]);
+  dyda[1] = e1;
+  dyda[2] = -(x*e1)/sqr(a[2]);
+  dyda[3] = e2;
+  dyda[4] = -(x*e2)/sqr(a[4]);
+  /* dyda[5] = 0;*/
+}
+
+static void exp_7_parm(real x,real a[],real *y,real dyda[])
+{
+  /* Fit to function 
+   *
+   * y = a1 exp(-x/a2) + a3 exp(-x/a4) + a5 exp(-x/a6) + a7
+   *
+   */
+   
+  real e1,e2,e3;
+  
+  e1      = exp(-x/a[2]);
+  e2      = exp(-x/a[4]);
+  e3      = exp(-x/a[6]);
+  *y      = a[1]*e1 + a[3]*e2 + a[5]*e3 + a[7];
+
+  dyda[1] = e1;
+  dyda[2] = -(x*e1)/sqr(a[2]);
+  dyda[3] = e2;
+  dyda[4] = -(x*e2)/sqr(a[4]);
+  dyda[5] = e3;
+  dyda[6] = -(x*e3)/sqr(a[6]);
+  dyda[7] = 0;
 }
 
 static void vac_2_parm(real x,real a[],real *y,real dyda[])
@@ -200,9 +252,10 @@ static void errest_3_parm(real x,real a[],real *y,real dyda[])
 }
 
 typedef void (*myfitfn)(real x,real a[],real *y,real dyda[]);
-myfitfn mfitfn[effnNR] = 
-{ exp_one_parm, 
-  exp_one_parm, exp_two_parm, exp_3_parm, vac_2_parm, errest_3_parm };
+myfitfn mfitfn[effnNR] = { 
+  exp_one_parm, exp_one_parm, exp_two_parm, exp_3_parm, vac_2_parm,
+  exp_5_parm,   exp_7_parm,   errest_3_parm 
+};
 
 real fit_function(int eFitFn,real *parm,real x)
 {
@@ -254,11 +307,8 @@ static bool lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
   /* Initial params */
   alamda = -1;    /* Starting value   */
   chisq  = 1e12;
-  a[1]   = parm[0];    /* tau1 */
-  if (mfit > 1)
-    a[2]   = parm[1];  /* AA   */
-  if (mfit > 2) 
-    a[3]   = parm[2];  /* tau2 */
+  for(i=0; (i<mfit); i++)
+    a[i+1] = parm[i];
 
   j = 0;      
   if (bVerbose)
@@ -324,15 +374,15 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
   FILE *fp;
   char buf[32];
 
-  int  i,j,nfitpnts;
+  int  i,j,nparm,nfitpnts;
   real integral,ttt;
-  real parm[4],dparm[4];
+  real *parm,*dparm;
   real *x,*y,*dy;
   real ftol = 1e-4;
 
+  nparm = nfp_ffn[eFitFn];
   if (debug) {
-    fprintf(debug,"There are %d points to fit %d vars!\n",
-	    ndata,nfp_ffn[eFitFn]);
+    fprintf(debug,"There are %d points to fit %d vars!\n",ndata,nparm);
     fprintf(debug,"Fit from %g thru %g, dt=%g\n",
 	    begintimefit,endtimefit,dt);
   }
@@ -350,32 +400,29 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
 
       /* mrqmin does not like sig to be zero */
       if (sig[i]<1.0e-7)
-	sig[i]=1.0e-7;
-      dy[j]=sig[i];
-#ifdef DEBUG 
-      fprintf(stderr,"j= %d, i= %d, x= %g, y= %g, dy= %g\n",
-	      j,i,x[j],y[j],dy[j]);
-#endif 
+	dy[j]=1.0e-7;
+      else
+	dy[j]=sig[i];
+      if (debug)
+	fprintf(debug,"j= %d, i= %d, x= %g, y= %g, dy= %g\n",
+		j,i,x[j],y[j],dy[j]);
       j++;
     }
   }
-  parm[0]=1.0;
-  parm[1]=1.0;
-  parm[2]=1.0;
-  nfitpnts=j;
-  if (j < nfp_ffn[eFitFn]) {
+  nfitpnts = j;
+  integral = 0;
+  if (nfitpnts < nparm) 
     fprintf(stderr,"Not enough data points for fitting!\n");
-    integral = 0;
-  } else {
+  else {
+    snew(parm,nparm);
+    snew(dparm,nparm);
     if (fitparms)
-      for(i=0; i<nfp_ffn[eFitFn]; i++)
+      for(i=0; (i < nparm); i++)
 	parm[i]=fitparms[i];
     
-    if (!lmfit_exp(nfitpnts,x,y,dy,ftol,parm,dparm,bVerbose,eFitFn,fix)) {
+    if (!lmfit_exp(nfitpnts,x,y,dy,ftol,parm,dparm,bVerbose,eFitFn,fix))
       fprintf(stderr,"Fit failed!\n");
-      integral=0;
-      parm[0] = parm[1] = parm[2] = 0;
-    } else {
+    else if (nparm <= 3) {
       /* Compute the integral from begintimefit */
       integral=(parm[0]*myexp(begintimefit,parm[1],  parm[0]) +
 		parm[2]*myexp(begintimefit,1-parm[1],parm[2]));
@@ -395,7 +442,7 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
 	fp = xvgropen(buf,"C(t) + Fit to C(t)","Time (ps)","C(t)");
 	fprintf(fp,"# parm0 = %g, parm1 = %g, parm2 = %g\n",
 		parm[0],parm[1],parm[2]);
-	for(j=0; j<nfitpnts; j++) {
+	for(j=0; (j<nfitpnts); j++) {
 	  ttt = x0 ? x0[j] : dt*j;
 	  fprintf(fp,"%10.5e  %10.5e  %10.5e\n",
 		  ttt,c1[j],fit_function(eFitFn,parm,ttt));
@@ -403,12 +450,12 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
 	fclose(fp);
       }
     }
+    for(i=0;(i<nparm);i++)
+      fitparms[i] = parm[i];
+    sfree(parm);
+    sfree(dparm);
   }
   
-  fitparms[0]=parm[0];
-  fitparms[1]=parm[1];
-  fitparms[2]=parm[2]; 
-
   sfree(x);
   sfree(y);
   sfree(dy);

@@ -224,12 +224,24 @@ static void free_convert_matrix(real **b, int nrl)
 
 #define SWAP(a,b) {real temp=(a);(a)=(b);(b)=temp;}
 
+static void dump_mat(int n,real **a)
+{
+  int i,j;
+  
+  for(i=1; (i<=n); i++) {
+    for(j=1; (j<=n); j++)
+      fprintf(stderr,"  %10.3f",a[i][j]);
+    fprintf(stderr,"\n");
+  }
+}
+
 bool gaussj(real **a, int n, real **b, int m)
 {
   int *indxc,*indxr,*ipiv;
   int i,icol=0,irow=0,j,k,l,ll;
   real big,dum,pivinv;
   
+  dump_mat(n,a);
   indxc=ivector(1,n);
   indxr=ivector(1,n);
   ipiv=ivector(1,n);
@@ -258,6 +270,8 @@ bool gaussj(real **a, int n, real **b, int m)
     indxr[i]=irow;
     indxc[i]=icol;
     if (a[icol][icol] == 0.0) {
+      fprintf(stderr,"irow = %d, icol = %d\n",irow,icol);
+      dump_mat(n,a);
       nrerror("GAUSSJ: Singular Matrix-2", FALSE);
       return FALSE;
     }
@@ -489,7 +503,8 @@ bool mrqmin_new(real x[],real y[],real sig[],int ndata,real a[],
       atry[j]=a[j];
   }
   for (j=1;j<=mfit;j++) { /* Alter linearized fitting matrix, by augmenting. */
-    for (k=1;k<=mfit;k++) covar[j][k]=alpha[j][k]; /* diagonal elements. */
+    for (k=1;k<=mfit;k++) 
+      covar[j][k]=alpha[j][k]; /* diagonal elements. */
     covar[j][j]=alpha[j][j]*(1.0+(*alamda));
     oneda[j][1]=beta[j];
   }
