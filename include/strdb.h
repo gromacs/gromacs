@@ -36,6 +36,19 @@ static char *SRCID_strdb_h = "$Id$";
 #ident	"@(#) strdb.h 1.9 2/2/97"
 #endif /* HAVE_IDENT */
 
+#include "typedefs.h"
+
+extern bool get_a_line(FILE *fp,char line[],int n);
+/* Read a line of at most n characters form *fp to line. 
+ * Leading spaces are removed.  
+ * Return FALSE when eof. 
+ */
+
+extern bool get_header(char line[],char header[]);
+/* Read a header between '[' and ']' from line to header.
+ * Returns FALSE no header is found.
+ */
+
 extern int fget_lines(FILE *in,char ***strings);
 /* Read an array of lines from file in. strings should be
  * the address of an array of strings (to be malloced by this routine)

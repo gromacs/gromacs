@@ -31,6 +31,7 @@ static char *SRCID_resall_c = "$Id$";
 #include "sysstuff.h"
 #include "assert.h"
 #include "string2.h"
+#include "strdb.h"
 #include "futil.h"
 #include "smalloc.h"
 #include "fatal.h"
@@ -40,47 +41,6 @@ static char *SRCID_resall_c = "$Id$";
 #include "pgutil.h"
 
 #define PREM(str) fatal_error(0,"Premature EOF on %s",str)
-
-bool get_a_line(char *line,int n,FILE *fp)
-{
-  char line0[STRLEN], *dum;
-
-  do {
-    if (!fgets(line0,n,fp)) {
-      return FALSE;
-    }
-    dum=strchr(line0,'\n');
-    if (dum) 
-      dum[0]='\0';
-    dum=strchr(line0,';');
-    if (dum) 
-      dum[0]='\0';
-    strcpy(line,line0);
-    dum=line0;
-    ltrim(dum);
-  } while (strlen(dum) == 0); 
-
-  return TRUE;
-}
-
-bool get_header(char *line,char *header)
-{
-  char temp[STRLEN],*dum;
-
-  strcpy(temp,line);
-  dum=strchr(temp,'[');
-  if (dum==NULL)
-    return FALSE;
-  dum[0]=' ';
-  dum=strchr(temp,']');
-  if (dum==NULL)
-    return FALSE;
-  dum[0]='\0';
-  if (sscanf(temp,"%s%*s",header) != 1)
-    return FALSE;
-
-  return TRUE;
-}
 
 t_atomtype *read_atype(char *adb,t_symtab *tab)
 {
@@ -151,7 +111,7 @@ static bool read_atoms(FILE *in,char *line,
   r0->atomname= NULL;
   r0->cgnr=     NULL;
   i=0;
-  while (get_a_line(line,STRLEN,in) && (strchr(line,'[')==NULL)) { 
+  while (get_a_line(in,line,STRLEN) && (strchr(line,'[')==NULL)) { 
     if (sscanf(line,"%s%s%lf%d",buf,buf1,&q,&cg) != 4)
       return FALSE;
     if (i>=maxentries) {
@@ -192,11 +152,11 @@ static bool read_atoms_old(FILE *in,char *line,
     return FALSE;
   r0->resname=strdup(buf);
   
-  get_a_line(line,STRLEN,in);
+  get_a_line(in,line,STRLEN);
   /* Read Atoms */
   if (sscanf(line,"%d",&nat) != 1)
     return FALSE;
-  get_a_line(line,STRLEN,in);
+  get_a_line(in,line,STRLEN);
   r0->natom=nat;
   snew(r0->atom,nat);
   snew(r0->atomname,nat);
@@ -215,7 +175,7 @@ static bool read_atoms_old(FILE *in,char *line,
 		  "database",buf1,r0->resname);
     r0->atom[i].type=j;
     r0->atom[i].m=atype->atom[j].m;
-    get_a_line(line,STRLEN,in);
+    get_a_line(in,line,STRLEN);
   }
   return TRUE;
 }
@@ -240,7 +200,7 @@ static bool read_bonds(FILE *in,char *line,t_resbond *rb)
   i=0;
   maxentries=0;
   rb->rbond=NULL;
-  while (get_a_line(line,STRLEN,in) && (strchr(line,'[')==NULL)) {
+  while (get_a_line(in,line,STRLEN) && (strchr(line,'[')==NULL)) {
     if ((n=sscanf(line,"%s%s%lf%lf%lf%lf",ai,aj,&c[0],&c[1],&c[2],&c[3])) < 2)
       return FALSE;
     if (i>=maxentries) {
@@ -270,7 +230,7 @@ static bool read_bonds_old(FILE *in,char *line,t_resbond *rb)
 
   if (sscanf(line,"%d",&nb) != 1)
     return FALSE;
-  get_a_line(line,STRLEN,in);
+  get_a_line(in,line,STRLEN);
   rb->nb=nb;
   snew(rb->rbond,nb);
   for(i=0; (i<nb); i++) {
@@ -283,7 +243,7 @@ static bool read_bonds_old(FILE *in,char *line,t_resbond *rb)
 	rb->rbond[i].c[j]=c[j];
       else
 	rb->rbond[i].c[j]=NOTSET;
-    get_a_line(line,STRLEN,in);
+    get_a_line(in,line,STRLEN);
   }
   return TRUE;
 }
@@ -314,7 +274,7 @@ static bool read_angles(FILE *in,char *line,t_resang *ra)
   maxentries=0;
   ra->rang=NULL;
   i=0;
-  while (get_a_line(line,STRLEN,in) && (strchr(line,'[')==NULL)) {
+  while (get_a_line(in,line,STRLEN) && (strchr(line,'[')==NULL)) {
     if ((n=sscanf(line,"%s%s%s%lf%lf%lf%lf",
 		  ai,aj,ak,&c[0],&c[1],&c[2],&c[3])) < 3) 
       return FALSE;
@@ -363,7 +323,7 @@ static bool read_dihedrals(FILE *in,char *line,t_resdih *rd)
   maxentries=0;
   rd->rdih=NULL;
   i=0;
-  while (get_a_line(line,STRLEN,in) && (strchr(line,'[')==NULL)) {
+  while (get_a_line(in,line,STRLEN) && (strchr(line,'[')==NULL)) {
     if ((n=sscanf(line,"%s%s%s%s%lf%lf%lf%lf",
 		 ai[0],ai[1],ai[2],ai[3],&c[0],&c[1],&c[2],&c[3])) < 4)
       return FALSE;     
@@ -411,7 +371,7 @@ static bool read_idihs(FILE *in,char *line,t_idihres *ires)
   maxentries=0;
   ires->idih=NULL;
   i=0;
-  while (get_a_line(line,STRLEN,in) && (strchr(line,'[')==NULL)) {
+  while (get_a_line(in,line,STRLEN) && (strchr(line,'[')==NULL)) {
     if ((n=sscanf(line,"%s%s%s%s%lf%lf%lf%lf",
 		 ai[0],ai[1],ai[2],ai[3],&c[0],&c[1],&c[2],&c[3])) < 4)
       return FALSE;     
@@ -443,7 +403,7 @@ static bool read_idihs_old(FILE *in,char *line,t_idihres *ires)
   
   if (sscanf(line,"%d",&nidih) != 1)
     return FALSE;
-  get_a_line(line,STRLEN,in);
+  get_a_line(in,line,STRLEN);
   ires->nidih=nidih;
   snew(ires->idih,nidih);
   for(i=0; (i<nidih); i++) {
@@ -457,7 +417,7 @@ static bool read_idihs_old(FILE *in,char *line,t_idihres *ires)
 	ires->idih[i].c[j]=c[j];
       else
 	ires->idih[i].c[j]=NOTSET;
-    get_a_line(line,STRLEN,in);
+    get_a_line(in,line,STRLEN);
   }
   return TRUE;
 }
@@ -501,7 +461,7 @@ int read_resall(char       *ff,
   snew(rrdi,MAXRTP);
   snew(rrid,MAXRTP);
 
-  get_a_line(line,STRLEN,in);
+  get_a_line(in,line,STRLEN);
   if (strchr(line,'[') == 0) {
     fprintf(stderr,"\n\n\tREADING .rtp FILE WITH OLD FORMAT\n\n"
 	    "\tTO CONVERT TO NEW FORMAT USE THE HIDDEN OPTION -newrtp\n"
@@ -545,7 +505,7 @@ int read_resall(char       *ff,
 	fatal_error(0,"in .rtp file at line:\n%s\n",line);
       rrtp[nrtp].resname=strdup(header);
   
-      get_a_line(line,STRLEN,in);
+      get_a_line(in,line,STRLEN);
       rrbd[nrtp].resname=rrtp[nrtp].resname;
       rran[nrtp].resname=rrtp[nrtp].resname;
       rrdi[nrtp].resname=rrtp[nrtp].resname;
@@ -780,7 +740,7 @@ static bool read_mass(FILE *in,char *line,t_dumblock *db)
   maxentries=0;
   db->mass=NULL;
   i=0;
-  while (get_a_line(line,STRLEN,in) && (strchr(line,'[')==NULL)) {
+  while (get_a_line(in,line,STRLEN) && (strchr(line,'[')==NULL)) {
     if (sscanf(line,"%s%s%d%d",name,type,&nm,&tp) < 4)
       return FALSE;
     if (i>=maxentries) {
@@ -830,7 +790,7 @@ static bool read_dum(FILE *in,char *line,t_dumblock *db)
   maxentries=0;
   db->dum=NULL;
   i=0;
-  while (get_a_line(line,STRLEN,in) && (strchr(line,'[')==NULL)) {
+  while (get_a_line(in,line,STRLEN) && (strchr(line,'[')==NULL)) {
     if ((n=sscanf(line,"%s%s%s%s%d%g%g%g",ai,aj,ak,al,&tp,&a,&b,&c)) < 5) 
       return FALSE;
     if (i>=maxentries) {
@@ -873,7 +833,7 @@ static bool read_angcon(FILE *in,char *line,t_dumblock *db)
   maxentries=0;
   db->ang=NULL;
   i=0;
-  while (get_a_line(line,STRLEN,in) && (strchr(line,'[')==NULL)) {
+  while (get_a_line(in,line,STRLEN) && (strchr(line,'[')==NULL)) {
     if (sscanf(line,"%s%s%s%g%g",ai,aj,ak,&c0,&c1) < 5) 
       return FALSE;
     if (i>=maxentries) {
@@ -906,7 +866,7 @@ int read_dum_db(char *ff,t_dumblock **dbptr)
   sprintf(fn,"%s.ddb",ff);
   in=libopen(fn);
   
-  get_a_line(line,STRLEN,in);
+  get_a_line(in,line,STRLEN);
   nddb=0;
   maxddb=100;
   snew(ddb,100);
@@ -917,7 +877,7 @@ int read_dum_db(char *ff,t_dumblock **dbptr)
     if (!get_header(line,header))
       fatal_error(0,"in .ddb file at line:\n%s",line);
     ddb[nddb].bname=strdup(header);
-    get_a_line(line,STRLEN,in);
+    get_a_line(in,line,STRLEN);
     bError=FALSE;
     bNextBlock=FALSE;
     while (!bNextBlock) {

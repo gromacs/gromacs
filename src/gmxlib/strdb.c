@@ -36,6 +36,49 @@ static char *SRCID_strdb_c = "$Id$";
 #include "fatal.h"
 #include "strdb.h"
 
+bool get_a_line(FILE *fp,char line[],int n)
+{
+  char line0[STRLEN], *dum;
+
+  do {
+    if (!fgets(line0,n,fp)) {
+      return FALSE;
+    }
+    dum=strchr(line0,'\n');
+    if (dum) 
+      dum[0]='\0';
+    dum=strchr(line0,';');
+    if (dum) 
+      dum[0]='\0';
+    strcpy(line,line0);
+    dum=line0;
+    ltrim(dum);
+  } while (strlen(dum) == 0); 
+
+  return TRUE;
+}
+
+bool get_header(char line[],char *header)
+{
+  char temp[STRLEN],*dum;
+
+  strcpy(temp,line);
+  dum=strchr(temp,'[');
+  if (dum==NULL)
+    return FALSE;
+  dum[0]=' ';
+  dum=strchr(temp,']');
+  if (dum==NULL) {
+    fatal_error(0,"header is not terminated on line:\n'%s'\n",line); 
+    return FALSE;
+  }
+  dum[0]='\0';
+  if (sscanf(temp,"%s%*s",header) != 1)
+    return FALSE;
+
+  return TRUE;
+}
+
 int get_strings(char *db,char ***strings)
 {
   FILE *in;
