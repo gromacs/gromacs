@@ -101,9 +101,6 @@ int main(int argc,char *argv[])
   natoms=read_first_x(&status,ftp2fn(efMTX,NFILE,fnm),&t,&x,box); 
   ndim=natoms*DIM;
 
-  if (!bEnd)
-    end=ndim;
-
   fprintf(stderr,"Dimensionality of matrix: %d\n",ndim);
 
   /* store two dimensional Hessian matrix in one dimensional array 
