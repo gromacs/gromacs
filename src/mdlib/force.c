@@ -429,7 +429,7 @@ static double calc_avcsix(FILE *log,real *nbfp,int atnr,
 	csix += C6(nbfp,atnr,tpi,tpj);
     }
   }
-  csix /= (natoms*natoms);
+  csix /= ((double)natoms*(double)natoms);
   if (debug)
     fprintf(debug,"Average C6 parameter is: %10g\n",csix);
   
