@@ -65,12 +65,10 @@ void chk_trj(char *fn)
   int          xd;
   int          status,ftp;
   
-#define BOGUSTIME -1e10
-
   ftp    = fn2ftp(fn);
   natoms = 0;  
   t      = 0;
-  t0     = BOGUSTIME;
+  t0     = NOTSET;
   step   = 0;
   count.box_size=0;
   count.vir_size=0;
@@ -100,7 +98,7 @@ void chk_trj(char *fn)
       }
       old_t2=old_t1;
       old_t1=sh.t;
-      if (t0 == BOGUSTIME) t0=sh.t;
+      if (t0 == NOTSET) t0=sh.t;
       fprintf(stderr,"\rframe: %6d, t: %10.3f bytes: %10u",j,sh.t,fpos);
       if (j == 0)
 	fprintf(stderr,"\n");
@@ -135,7 +133,7 @@ void chk_trj(char *fn)
 	}
 	old_t2=old_t1;
 	old_t1=t;
-	if (t0 == BOGUSTIME) t0=t;
+	if (t0 == NOTSET) t0=t;
 	fprintf(stderr,"\rframe: %6d, t: %10.3f",j,t);
 	if (j == 0)
 	  fprintf(stderr,"\n");
@@ -401,7 +399,7 @@ void chk_enx(char *fn)
   old_t2=-2.0;
   old_t1=-1.0;
   fnr=0;
-  t0=BOGUSTIME;
+  t0=NOTSET;
   bShowTStep=TRUE;
   snew(ee,nre);
   while (do_enx(in,&t,&frame,&nre,ee,NULL)) {
@@ -415,7 +413,7 @@ void chk_enx(char *fn)
     }
     old_t2=old_t1;
     old_t1=t;
-    if (t0 == BOGUSTIME) t0=t;
+    if (t0 == NOTSET) t0=t;
     fprintf(stderr,"\rframe: %6d (index %6d), t: %10.3f",frame,fnr,t);
     if (fnr == 0)
       fprintf(stderr,"\n");
