@@ -228,5 +228,16 @@ void pvmio_sync_ring(int pid,int nprocs,int left,int right)
   fatal_error(0,"pvmio_sync_ring called");
 }
 
+void pvm_abort(int pid,int nprocs,int errno)
+{
+  int i;
+
+  for(i=0; i<nprocs; i++)
+    if (i != pid)
+      pvm_sendsig(tids[i],SIGKILL);
+  
+  exit(errno);
+}
+
 #endif
 /* USE_PVM3 */

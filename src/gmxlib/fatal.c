@@ -132,20 +132,6 @@ void _halt(char *file,int line,char *reason)
 
 void quit_gmx(int fatal_errno,char *msg)
 {
-  int  nprocs;
-  
-#ifdef PARALLEL
-  int  pid;
-  
-  nprocs = gmx_cpu_num();
-  pid    = gmx_cpu_id();
-  
-  if (nprocs > 1) 
-    fprintf(stderr,"Terminating processor %d\n",pid);
-#else
-  nprocs=1;
-#endif
-  
   if (!fatal_errno) {
     if (stdlog) 
       fprintf(stdlog,"%s\n",msg);
@@ -156,12 +142,26 @@ void quit_gmx(int fatal_errno,char *msg)
     perror(msg);
   }
   
-  if ((nprocs == 1) && bDebug) {
+#ifdef PARALLEL
+  {
+    int  nprocs;
+    int  pid;
+    
+    nprocs = gmx_cpu_num();
+    pid    = gmx_cpu_id();
+    
+    if (nprocs > 1) 
+      fprintf(stderr,"Error on processor %d, will try to stop all the processors\n",pid);
+    gmx_abort(pid,nprocs,-1);
+  }
+#else
+  if (bDebug) {
     (void) fprintf(stderr,"dump core (y/n):"); 
     fflush(stderr);
     if (toupper(getc(stdin))=='Y') 
       (void) abort(); 
   }
+#endif 
   exit(-1);
 }
 

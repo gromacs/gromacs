@@ -55,6 +55,7 @@ extern void pvmio_wait(int left,int right);
 extern char *pvm_error(int errorno);
 extern void pvmio_sync_ring(int pid,int nprocs,int left,int right);
 extern void pvm_reset_idle();
+extern void pvm_abort(int pid,int nprocs,int errno);
 
 #define gmx_tx       	pvmio_tx
 #define gmx_tx_wait  	pvmio_tx_wait
@@ -70,5 +71,6 @@ extern void pvm_reset_idle();
 #define gmx_idle_send   pvm_idle_send
 #define gmx_idle_rec  	pvm_idle_rec
 #define gmx_reset_idle  pvm_reset_idle
+#define gmx_abort       pvm_abort
 
 #endif

@@ -55,9 +55,9 @@ extern void mpi_left_right(int nprocs,int pid,int *left,int *right);
 extern void mpiio_tx_rx(int send_pid,void *send_buf,int send_bufsize,
 			int rec_pid,void *rec_buf,int rec_bufsize);
 extern void mpiio_wait(int left,int right);
-extern char *mpi_error(int errorno);
 extern void mpiio_sync_ring(int pid,int nprocs,int left,int right);
-extern void mpi_reset_idle();
+extern void mpi_reset_idle(void);
+extern void mpi_abort(int pid,int nprocs,int errorno);
 
 #define gmx_tx       	mpiio_tx
 #define gmx_tx_wait  	mpiio_tx_wait
@@ -73,6 +73,6 @@ extern void mpi_reset_idle();
 #define gmx_idle_send   mpi_idle_send
 #define gmx_idle_rec  	mpi_idle_rec
 #define gmx_reset_idle  mpi_reset_idle
-
+#define gmx_abort       mpi_abort
 
 #endif 

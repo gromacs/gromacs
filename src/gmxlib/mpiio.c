@@ -174,18 +174,19 @@ void mpiio_wait(int left,int right)
   mpiio_rx_wait(right);
 }
 
-char *mpi_error(int errorno)
-{
-  return "BLA";
-}
-
 void mpiio_sync_ring(int pid,int nprocs,int left,int right)
 {
   fatal_error(0,"mpiio_sync_ring called");;
 }
 
-void mpi_reset_idle()
+void mpi_reset_idle(void)
 {
   ;
 }
+
+void mpi_abort(int pid,int nprocs,int errorno)
+{
+  MPI_Abort(MPI_COMM_WORLD,errorno);
+}
+
 
