@@ -132,6 +132,7 @@ END
 HEAD|Covariance analysis
 g_covar|calculates and diagonalizes the covariance matrix
 g_anaeig|analyzes the eigenvectors
+make_edi|generate input files for essential dynamics sampling
 END
 
 HEAD|Normal modes
