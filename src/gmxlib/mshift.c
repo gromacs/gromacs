@@ -186,7 +186,8 @@ static void calc_1se(t_graph *g,t_ilist *il,t_functype ftype[],
 	  g->start=min(g->start,iaa);
 	  g->end  =max(g->end,  iaa);
 	}
-	if ((tp == F_BONDS) || (tp == F_MORSE) || (tp == F_SHAKE) ||
+	if ((tp == F_BONDS) || (tp == F_G96BONDS) || 
+	    (tp == F_MORSE) || (tp == F_SHAKE) ||
 	    (interaction_function[tp].flags & IF_DUMMY))
 	  if (iaa<natoms)
 	    nbond[iaa]++;
