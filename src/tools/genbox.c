@@ -578,6 +578,11 @@ int main(int argc,char *argv[])
     "rotate over 90 degrees, within 500 ps. In general it is therefore ",
     "better to make a more or less cubic box.[PAR]",
     
+    "Setting -shell larger than zero will place a layer of water of",
+    "the specified thickness (nm) around the solute. Hint: it is a good",
+    "idea to put the protein in the center of a box first (using editconf).",
+    "[PAR]",
+    
     "Finally, genbox will optionally remove lines from your topology file in ",
     "which a number of solvent molecules is already added, and adds a ",
     "line with the total number of solvent molecules in your coordinate file."
@@ -627,7 +632,7 @@ int main(int argc,char *argv[])
     { "-vdwd",   FALSE, etREAL, {&r_distance},
       "default vdwaals distance"},
     { "-shell",  FALSE, etREAL, {&r_shell},
-      "Place a layer of water of thickness shell nm around the solute. Hint: it is a good idea to put the protein in the center of a box first (using editconf)" }
+      "thickness of optional water layer around solute" }
   };
 
   CopyRight(stderr,argv[0]);
