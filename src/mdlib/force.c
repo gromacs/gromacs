@@ -516,8 +516,12 @@ void init_forcerec(FILE *fp,
   }
   
   /* Tables are used for direct ewald sum */
-  if(fr->bEwald)
+  if(fr->bEwald) {
     fr->ewaldcoeff=calc_ewaldcoeff(ir->rcoulomb, ir->ewald_rtol);
+    if (fp)
+      fprintf(fp,"Using a Gaussian width (1/beta) of %g nm for Ewald\n",
+	      1/fr->ewaldcoeff);
+  }
 
   /* Domain decomposition parallellism... */
   fr->bDomDecomp = ir->bDomDecomp;
