@@ -268,9 +268,12 @@ void fill_grid(FILE *log,bool bDD,int cg_index[],
    */
   for (i=cg0; (i<cg0+cg1); i++) {
     index = cg_index[i];
-    ix    = (dx*cg_cm[index][XX]);
-    iy    = (dy*cg_cm[index][YY]);
-    iz    = (dz*cg_cm[index][ZZ]);
+    ix    = dx*cg_cm[index][XX];
+    iy    = dy*cg_cm[index][YY];
+    iz    = dz*cg_cm[index][ZZ];
+    if (ix >= nrx) ix = nrx-1;
+    if (iy >= nry) iy = nry-1;
+    if (iz >= nrz) iz = nrz-1;
 #ifdef DEBUG_PBC
     assert((ix >= 0) && (ix < nrx));
     assert((iy >= 0) && (iy < nry));
