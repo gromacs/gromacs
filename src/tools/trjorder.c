@@ -59,8 +59,7 @@
 
 typedef struct {
   atom_id i;
-  atom_id ref;
-  real    d;
+  real    d2;
 } t_order;
 
 t_order *order;
@@ -72,7 +71,7 @@ static int ocomp(const void *a,const void *b)
   oa = (t_order *)a;
   ob = (t_order *)b;
   
-  if (oa->d < ob->d)
+  if (oa->d2 < ob->d2)
     return -1;
   else
     return 1;  
@@ -105,6 +104,7 @@ int main(int argc,char *argv[])
       "Atom used for the distance calculation" }
   };
   int        status,out;
+  bool       bPDBout;
   t_topology top;
   rvec       *x,dx;
   matrix     box;
@@ -158,8 +158,9 @@ int main(int argc,char *argv[])
   snew(swi,natoms);
   for(i=0; (i<natoms); i++)
     swi[i] = i;
-
-  if (!top.atoms.pdbinfo) {
+  
+  bPDBout = (fn2ftp(opt2fn("-o",NFILE,fnm)) == efPDB);
+  if (bPDBout && !top.atoms.pdbinfo) {
     fprintf(stderr,"Creating pdbfino records\n");
     snew(top.atoms.pdbinfo,top.atoms.nr);
   }
@@ -173,17 +174,15 @@ int main(int argc,char *argv[])
       sa = index[SOL][na*i];
       pbc_dx(&pbc,x[index[REF][0]],x[sa+ref_a],dx);
       order[i].i   = sa;
-      order[i].ref = 0;
-      order[i].d   = norm2(dx); 
+      order[i].d2  = norm2(dx); 
     }
     for(j=1; (j<isize[REF]); j++) {
       sr = index[REF][j];
       for(i=0; (i<nwat); i++) {
 	sa = index[SOL][na*i];
 	pbc_dx(&pbc,x[sr],x[sa+ref_a],dx);
-	if (norm2(dx) < order[i].d) {
-	  order[i].d   = norm2(dx);
-	  order[i].ref = sr;
+	if (norm2(dx) < order[i].d2) {
+	  order[i].d2  = norm2(dx);
 	}
       }
     }
@@ -194,10 +193,10 @@ int main(int argc,char *argv[])
 	swi[index[SOL][na*i]+j] = order[i].i+j;
     
     /* Store the distance as the B-factor */
-    if (top.atoms.pdbinfo) {
+    if (bPDBout) {
       for(i=0; (i<nwat); i++) {
 	for(j=0; (j<na); j++) {
-	  top.atoms.pdbinfo[order[i].i+j].bfac = sqrt(order[i].d);
+	  top.atoms.pdbinfo[order[i].i+j].bfac = sqrt(order[i].d2);
 	}
       }
     }
