@@ -124,7 +124,7 @@ static void write_xvgr_graphs(char *file,int ngraphs,
     for(i=0; i<n; i++) {
       if ( bSplit && i>0 && abs(x[i])<1e-5 )
 	fprintf(out,"&\n");
-      fprintf(out,"%10.4g %10.5f\n",x[i]*scale_x,y[g][i]);
+      fprintf(out,"%10.4f %10.5f\n",x[i]*scale_x,y[g][i]);
     }
     fprintf(out,"&\n");
   }
@@ -448,13 +448,17 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
     box[XX][XX] = box[YY][YY] = box[ZZ][ZZ] = 1;
     
     b4D = bPDB && (noutvec >= 4);
-    if (b4D)
+    if (b4D) {
       fprintf(stderr, "You have selected four or more eigenvectors:\n"
 	      "fourth eigenvector will be plotted "
 	      "in bfactor field of pdb file\n");
-
+      sprintf(str,"4D proj. of traj. on eigenv. %d, %d, %d and %d",
+	      eignr[outvec[0]]+1,eignr[outvec[1]]+1,
+	      eignr[outvec[2]]+1,eignr[outvec[3]]+1);
+    } else {
     sprintf(str,"3D proj. of traj. on eigenv. %d, %d and %d",
 	    eignr[outvec[0]]+1,eignr[outvec[1]]+1,eignr[outvec[2]]+1);
+    }
     init_t_atoms(&atoms,nframes,FALSE);
     snew(x,nframes);
     snew(b,nframes);
@@ -476,15 +480,16 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
       
       out=ffopen(threedplotfile,"w");
       fprintf(out,"HEADER    %s\n",str);
+      if ( b4D )
+	fprintf(out,"REMARK    %s\n","fourth dimension plotted as B-factor");
       j=0;
       for(i=0; i<atoms.nr; i++) {
-	if ( j>0 && abs(inprod[noutvec][i])<1e-5 ) {
+	if ( j>0 && bSplit && abs(inprod[noutvec][i])<1e-5 ) {
 	  fprintf(out,"TER\n");
 	  j=0;
 	}
 	fprintf(out,pdbform,"ATOM",i+1,"C","PRJ",' ',j+1,
 		PR_VEC(10*x[i]), 1.0, 10*b[i]);
-	fprintf(out,"\n");
 	if (j>0)
 	  fprintf(out,"CONECT%5d%5d\n", i, i+1);
 	j++;
