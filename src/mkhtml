@@ -39,7 +39,7 @@ EOD
 
 cd 	$GMXHOME/bin/$CPU
 foreach i ( * )
-  if ( ( -x $i ) && ( $i != "my_dssp" ) ) then
+  if ( ( -x $i ) && ( $i != "my_dssp" ) && ( $i != "luck" ) ) then
     echo -n "$i "
     cd $HTMLOL
     $GMXHOME/bin/$CPU/$i -quiet -man html >& /dev/null
