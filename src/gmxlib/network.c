@@ -212,7 +212,7 @@ int  gmx_node_num(void)
   return 1;
 #else
   int i;
-  return MPI_Comm_size(MPI_COMM_WORLD, &i);
+  (void) MPI_Comm_size(MPI_COMM_WORLD, &i);
   return i;
 #endif
 }
@@ -223,7 +223,7 @@ int gmx_node_id(void)
   return 0;
 #else
   int i;
-  return MPI_Comm_rank(MPI_COMM_WORLD, &i);
+  (void) MPI_Comm_rank(MPI_COMM_WORLD, &i);
   return i;
 #endif
 }
