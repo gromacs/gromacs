@@ -41,7 +41,7 @@ static char *SRCID_nsb_c = "$Id$";
 void calc_nsbshift(t_nsborder *nsb)
 {
   int i;
-  int firstcg,lastcg,targetcg,nshift,naaj;
+  int lastcg,targetcg,nshift,naaj;
   
   nsb->bshift=0;
   for(i=1; (i<nsb->nprocs); i++) {
@@ -76,8 +76,7 @@ void calc_nsbshift(t_nsborder *nsb)
 
 void calc_nsb(t_block *cgs,int nprocs,t_nsborder *nsb,int nstDlb)
 {
-  int  i,j,k,cg0,mincg,maxcg,npid;
-  bool bDone;
+  int  i,cg0;
   
   /* Clean! */
   for(i=0; (i<MAXPROC); i++) 
@@ -99,7 +98,7 @@ void calc_nsb(t_block *cgs,int nprocs,t_nsborder *nsb,int nstDlb)
 
 void print_nsb(FILE *fp,char *title,t_nsborder *nsb)
 {
-  int i,tcg,mycg;
+  int i;
 
   fprintf(fp,"%s\n",title);
   fprintf(fp,"nsb->pid:     %5d\n",nsb->pid);
