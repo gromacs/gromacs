@@ -160,23 +160,27 @@ int read_first_xtc(int fp,int *natoms,int *step,real *time,
 }
 
 int read_next_xtc(int fp,
-		  int *natoms,int *step,real *time,
+		  int natoms,int *step,real *time,
 		  matrix box,rvec *x,real *prec,bool *bOK)
 {
   int magic;
+  int n;
   XDR *xd;
 
   *bOK=TRUE;
   xd = fio_getxdr(fp);
   
   /* read header */
-  if (!xtc_header(xd,&magic,natoms,step,time,bOK))
+  if (!xtc_header(xd,&magic,&n,step,time,bOK))
     return 0;
+  if (n>natoms)
+    fatal_error(0, "Frame contains more atoms (%d) than expected (%d)", 
+		n, natoms);
     
   /* Check magic number */
   check_xtc_magic(magic);
 
-  *bOK=xtc_coord(xd,natoms,box,x,prec);
+  *bOK=xtc_coord(xd,&natoms,box,x,prec);
 
   return *bOK;
 }

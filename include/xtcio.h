@@ -59,7 +59,7 @@ extern int read_first_xtc(int fp,
 /* Open xtc file, read xtc file first time, allocate memory for x */
 
 extern int read_next_xtc(int fp,
-			 int *natoms,int *step,real *time,
+			 int natoms,int *step,real *time,
 			 matrix box,rvec *x,real *prec,bool *bOK);
 /* Read subsequent frames */
 

@@ -606,7 +606,7 @@ bool read_next_frame(int status,t_trxframe *fr)
       fr->bBox  = bRet;
       break;
     case efXTC:
-      bRet = read_next_xtc(status,&fr->natoms,&fr->step,&fr->time,fr->box,
+      bRet = read_next_xtc(status,fr->natoms,&fr->step,&fr->time,fr->box,
 			   fr->x,&fr->prec,&bOK);
       fr->bPrec = bRet;
       fr->bStep = bRet;

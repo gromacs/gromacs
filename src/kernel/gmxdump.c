@@ -225,7 +225,7 @@ void list_xtc(char *fn, bool bXVG)
       pr_rvecs(stdout,indent,"x",x,natoms);
     }
     nframe++;
-  } while (read_next_xtc(xd,&natoms,&step,&time,box,x,&prec,&bOK));
+  } while (read_next_xtc(xd,natoms,&step,&time,box,x,&prec,&bOK));
   if (!bOK)
     fprintf(stderr,"\nWARNING: Incomplete frame at time %g\n",time);
   close_xtc(xd);
@@ -245,7 +245,7 @@ void list_trx(char *fn,bool bAltLayout,bool bXVG)
 	    fn,fn);
 }
 
-void list_ene(char *fn,bool bEDR)
+void list_ene(char *fn)
 {
   int       in,ndr;
   bool      bCont;
@@ -334,7 +334,7 @@ int main(int argc,char *argv[])
     list_trx(ftp2fn(efTRX,NFILE,fnm), bAltLayout, bXVG);
   
   if (ftp2bSet(efENX,NFILE,fnm))
-    list_ene(ftp2fn(efENX,NFILE,fnm), FALSE);
+    list_ene(ftp2fn(efENX,NFILE,fnm));
     
   thanx(stderr);
 
