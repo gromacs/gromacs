@@ -42,6 +42,9 @@ static char *SRCID_futil_h = "$Id$";
 extern "C" { 
 #endif
 
+extern void no_buffers(void);
+/* turns off buffers */ 
+
 extern bool fexist(char *fname);
 /* Return TRUE when fname exists, FALSE otherwise */
 
