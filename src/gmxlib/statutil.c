@@ -289,9 +289,9 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   t_pargs *all_pa;
   t_pargs pca_pa[] = {
     { "-b",    FALSE, etREAL, &tbegin,        
-      "first frame (ps) to read from trajectory" },
+      "First frame (ps) to read from trajectory" },
     { "-e",    FALSE, etREAL, &tend,        
-      "last frame (ps) to read from trajectory" },
+      "Last frame (ps) to read from trajectory" },
     { "-w",    FALSE, etBOOL, &bView,     
       "View output using xvgr or ghostview" },
     { "-nice", FALSE, etINT,  &nicelevel, 
