@@ -190,8 +190,7 @@ static void do_disco(FILE *log,char *outfn,char *keepfn,t_correct *c,
       for(kk=0; (kk<natom); kk++)
 	atoms->pdbinfo[kk].bfac = (real) c->bViol[kk];
       gp=ffopen(violfn,"w");
-      write_pdbfile(gp,"Structure coloured by violation",
-		    atoms,x,box,'A',TRUE);
+      write_pdbfile(gp,"Structure coloured by violation",atoms,x,box,0,-1);
       ffclose(gp);
     }
   }

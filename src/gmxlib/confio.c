@@ -857,7 +857,7 @@ void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms,
   case efBRK:
   case efENT:
     out=ffopen(outfile,"w");
-    hwrite_pdb_conf_indexed(out, title, atoms, x, box, nindex, index);
+    write_pdbfile_indexed(out, title, atoms, x, box, 0, -1, nindex, index);
     fclose(out);
     break;
   case efTPR:
@@ -904,7 +904,7 @@ void write_sto_conf(char *outfile, char *title,t_atoms *atoms,
   case efBRK:
   case efENT:
     out=ffopen(outfile,"w");
-    write_pdbfile(out, title, atoms, x, box, 0, TRUE);
+    write_pdbfile(out, title, atoms, x, box, 0, 0);
     fclose(out);
     break;
   case efTPR:

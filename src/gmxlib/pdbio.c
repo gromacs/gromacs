@@ -44,12 +44,13 @@ static char *SRCID_pdbio_c = "$Id$";
 	
 static char *pdbtp[epdbNR]={
   "ATOM  ","HETATM", "ANISOU", "CRYST1",
-  "COMPND", "ENDMDL", "TER", "HEADER", "TITLE", "REMARK" 
+  "COMPND", "MODEL", "ENDMDL", "TER", "HEADER", "TITLE", "REMARK" 
 };
 
 static char *pdbformat ="%-6s%5u  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f";
 static char *pdbformat4="%-6s%5u %-4.4s %3.3s %c%4d    %8.3f%8.3f%8.3f";
-static bool bTER=FALSE,bWideFormat=FALSE;
+static bool bTER=FALSE;
+static bool bWideFormat=FALSE;
 #define REMARK_SIM_BOX "REMARK    THIS IS A SIMULATION BOX"
 
 void set_pdb_wide_format(bool bSet)
@@ -80,8 +81,7 @@ static void gromacs_name(char *name)
 
 void write_pdbfile_indexed(FILE *out,char *title,
 			   t_atoms *atoms,rvec x[],matrix box,char chain,
-			   bool bEndmodel,
-			   atom_id nindex, atom_id index[])
+			   int model_nr, atom_id nindex, atom_id index[])
 {
   char resnm[6],nm[6],ch,pdbform[128];
   atom_id i,ii;
@@ -126,6 +126,11 @@ void write_pdbfile_indexed(FILE *out,char *title,
   else
     bOccup = FALSE;
 
+  if (!bTER)
+    if (model_nr>0)
+      fprintf(out,"MODEL %8d\n",model_nr);
+    else if (model_nr==0)
+      fprintf(out,"MODEL\n");
   for (ii=0; ii<nindex; ii++) {
     i=index[ii];
     resnr=atoms->atom[i].resnr;
@@ -166,47 +171,20 @@ void write_pdbfile_indexed(FILE *out,char *title,
   }
   
   fprintf(out,"TER\n");
-  if (bEndmodel && !bTER)
+  if (model_nr>=0 && !bTER)
     fprintf(out,"ENDMDL\n");
 }
 
-void write_pdbfile(FILE *out,char *title,
-		   t_atoms *atoms,rvec x[],matrix box,char chain,
-		   bool bEndmodel)
+void write_pdbfile(FILE *out,char *title, t_atoms *atoms,rvec x[],
+		   matrix box,char chain,int model_nr)
 {
   atom_id i,*index;
 
   snew(index,atoms->nr);
   for(i=0; i<atoms->nr; i++)
     index[i]=i;
-  write_pdbfile_indexed(out,title,atoms,x,box,chain,bEndmodel,
-			atoms->nr,index);
+  write_pdbfile_indexed(out,title,atoms,x,box,chain,model_nr,atoms->nr,index);
   sfree(index);
-}
-
-void hwrite_pdb_conf_indexed(FILE *out,char *title, 
-			     t_atoms *atoms,rvec x[],matrix box,
-			     atom_id nindex,atom_id index[])
-{
-  write_pdbfile_indexed(out,title,atoms,x,box,0,TRUE,nindex,index);
-}
-
-void write_pdb_confs(char *outfile,t_atoms **atoms,rvec *x[],int number)
-{
-  FILE *out;
-  int n;
-  char chain,str[STRLEN];
-
-  out=ffopen(outfile,"w");
-  
-  for(n=0;(n<number);n++) {
-    chain='A'+n;
-    fprintf(stderr,"writing chain %c\n",chain);
-    sprintf(str,"Chain %c",chain);
-    write_pdbfile(out,str,atoms[n],x[n],NULL,chain,(n==number-1));
-  }
-
-  ffclose(out);
 }
 
 int line2type(char *line)
@@ -395,7 +373,7 @@ bool is_dummymass(char *nm)
   return FALSE;
 }
 
-int read_pdbfile(FILE *in,char *title, 
+int read_pdbfile(FILE *in,char *title,int *model_nr,
 		 t_atoms *atoms,rvec x[],matrix box,bool bChange)
 {
   static t_symtab symtab;
@@ -502,6 +480,10 @@ int read_pdbfile(FILE *in,char *title,
       if (bTER)
 	bStop=TRUE;
       break;
+    case epdbMODEL:
+      if(model_nr)
+	sscanf(line,"%*s%d",model_nr);
+      break;
     case epdbENDMDL:
       bStop=TRUE;
       break;
@@ -530,9 +512,9 @@ void get_pdb_coordnum(FILE *in,int *natoms)
 void read_pdb_conf(char *infile,char *title, 
 		   t_atoms *atoms,rvec x[],matrix box,bool bChange)
 {
-  FILE      *in;
+  FILE *in;
   
   in = ffopen(infile,"r");
-  read_pdbfile(in,title,atoms,x,box,bChange);
+  read_pdbfile(in,title,NULL,atoms,x,box,bChange);
   ffclose(in);
 }

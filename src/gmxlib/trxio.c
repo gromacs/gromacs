@@ -170,7 +170,7 @@ int write_trxframe_indexed(int fnum,t_trxframe *fr,int nind,atom_id *ind)
     break;
   case efTRJ:
   case efTRR:  
-    fwrite_trn(fnum,frame,
+    fwrite_trn(fnum,nframes_read(),
 	       fr->time,fr->step,fr->box,nind,xout,vout,fout);
     break;
   case efGRO:
@@ -186,7 +186,7 @@ int write_trxframe_indexed(int fnum,t_trxframe *fr,int nind,atom_id *ind)
 			  fr->x,fr->bV ? fr->v : NULL,fr->box);
     else
       write_pdbfile_indexed(fio_getfp(fnum),title,fr->atoms,
-			    fr->x,fr->box,0,TRUE,nind,ind);
+			    fr->x,fr->box,0,fr->step,nind,ind);
     break;
   case efG87:
     write_gms(fio_getfp(fnum),nind,xout,fr->box);
@@ -239,7 +239,7 @@ int write_trxframe(int fnum,t_trxframe *fr)
     break;
   case efTRJ:
   case efTRR:  
-    fwrite_trn(fnum,frame,fr->time,fr->step,fr->box,fr->natoms,
+    fwrite_trn(fnum,nframes_read(),fr->time,fr->step,fr->box,fr->natoms,
 	       fr->bX ? fr->x:NULL,fr->bV ? fr->v:NULL ,fr->bF ? fr->f:NULL);
     break;
   case efGRO:
@@ -251,10 +251,11 @@ int write_trxframe(int fnum,t_trxframe *fr)
 		  ftp2ext(fio_getftp(fnum)));
     sprintf(title,"frame t= %.3f",fr->time);
     if (fio_getftp(fnum) == efGRO)
-      write_hconf(fio_getfp(fnum),title,fr->atoms,
-		  fr->x,fr->bV ? fr->v : NULL,fr->box);
+      write_hconf(fio_getfp(fnum),title,
+		  fr->atoms,fr->x,fr->bV ? fr->v : NULL,fr->box);
     else
-      write_pdbfile(fio_getfp(fnum),title,fr->atoms,fr->x,fr->box,0,TRUE);
+      write_pdbfile(fio_getfp(fnum),title,
+		    fr->atoms,fr->x,fr->box,0,fr->step);
     break;
   case efG87:
     write_gms(fio_getfp(fnum),fr->natoms,fr->x,fr->box);
@@ -492,7 +493,7 @@ static int xyz_first_x(FILE *status, real *t, rvec **x, matrix box)
 static bool pdb_next_x(FILE *status,t_trxframe *fr)
 {
   t_atoms   atoms;
-  int       na;
+  int       model_nr, na;
   char      title[STRLEN],*time;
   double    dbl;
   
@@ -500,12 +501,17 @@ static bool pdb_next_x(FILE *status,t_trxframe *fr)
   atoms.atom=NULL;
   atoms.pdbinfo=NULL;
   /* the other pointers in atoms should not be accessed if these are NULL */
-  na=read_pdbfile(status, title, &atoms, fr->x, fr->box, TRUE);
-  if (frame==0)
+  model_nr=NOTSET;
+  na=read_pdbfile(status, title, &model_nr, &atoms, fr->x, fr->box, TRUE);
+  if (nframes_read()==0)
     fprintf(stderr," '%s', %d atoms\n",title, fr->natoms);
   fr->bX = TRUE;
   fr->bBox = fr->box[XX][XX] == 0;
   
+  if (model_nr!=NOTSET) {
+    fr->bStep = TRUE;
+    fr->step = model_nr;
+  }
   time=strstr(title," t= ");
   if (time) {
     fr->bTime = TRUE;
@@ -515,14 +521,17 @@ static bool pdb_next_x(FILE *status,t_trxframe *fr)
     fr->bTime = FALSE;
     /* this is a bit dirty, but it will work: if no time is read from 
        comment line in pdb file, set time to current frame number */
-    fr->time=(real)frame;
+    if (fr->bStep)
+      fr->time=(real)fr->step;
+    else
+      fr->time=(real)nframes_read();
   }
   if (na==0) {
     return FALSE;
   } else { 
     if (na != fr->natoms)
       fatal_error(0,"Number of atoms in pdb frame %d is %d instead of %d",
-		  frame,na,fr->natoms);
+		  nframes_read(),na,fr->natoms);
     return TRUE;
   }
 }

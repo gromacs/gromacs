@@ -268,7 +268,6 @@ void pdb_legend(FILE *out,int natoms,int nres,t_atoms *atoms,rvec x[])
 {
   real bfac_min,bfac_max,xmin,ymin,zmin;
   int  i;
-  char buf[256];
   
   bfac_max=-1e10;
   bfac_min=1e10;
@@ -283,11 +282,9 @@ void pdb_legend(FILE *out,int natoms,int nres,t_atoms *atoms,rvec x[])
     bfac_max = max(bfac_max,atoms->pdbinfo[i].bfac);
   }
   fprintf(stderr,"B-factors range from %g to %g\n",bfac_min,bfac_max);
-  sprintf(buf,"%s","LEG");
-  buf[3]='\0';
   for (i=1; (i<12); i++) {
     fprintf(out,pdbformat,
-	    "ATOM  ",natoms+1+i,"CA",buf,' ',nres+1,
+	    "ATOM  ",natoms+1+i,"CA","LEG",' ',nres+1,
 	    (xmin+(i*0.12))*10,ymin*10,zmin*10,1.0,
 	    bfac_min+ ((i-1.0)*(bfac_max-bfac_min)/10) );
   }
@@ -736,10 +733,12 @@ int main(int argc, char *argv[])
       }
       if (bMead) {
 	set_pdb_wide_format(TRUE);
-        fprintf(out,"REMARK    The b-factors in this file hold atomic radii\n");
-	fprintf(out,"REMARK    The occupancy in this file hold atomic charges\n");
+        fprintf(out,"REMARK    "
+		"The b-factors in this file hold atomic radii\n");
+	fprintf(out,"REMARK    "
+		"The occupancy in this file hold atomic charges\n");
       }
-      write_pdbfile(out,title,&atoms,x,box,0,!bLegend && visbox[0]<=0);
+      write_pdbfile(out,title,&atoms,x,box,0,(!bLegend && visbox[0]<=0)?0:-1);
       if (bLegend)
 	pdb_legend(out,atoms.nr,atoms.nres,&atoms,x);
       if (visbox[0] > 0)

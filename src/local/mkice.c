@@ -554,7 +554,7 @@ int main(int argc,char *argv[])
 	  nx,ny,nz,odist,hdist);
   fprintf(fp,"REMARK    Density of this crystal is %g (g/l)\n",
 	  density(pdba,boxje));
-  write_pdbfile(fp,bromacs(),pdba,xx,boxje,' ',FALSE);
+  write_pdbfile(fp,bromacs(),pdba,xx,boxje,' ',-1);
   fclose(fp);
   
   if (ftp2bSet(efTRN,NFILE,fnm))

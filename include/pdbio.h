@@ -43,7 +43,8 @@ static char *SRCID_pdbio_h = "$Id$";
  * when reading a pdb file 
  */
 enum { epdbATOM, epdbHETATM, epdbANISOU, epdbCRYST1, epdbCOMPND, 
-       epdbENDMDL, epdbTER, epdbHEADER, epdbTITLE, epdbREMARK, epdbNR };
+       epdbMODEL, epdbENDMDL, epdbTER, epdbHEADER, epdbTITLE, epdbREMARK, 
+       epdbNR };
 
 /* Enumerated value for indexing an uij entry (anisotropic temperature factors) */
 enum { U11, U22, U33, U12, U13, U23 };
@@ -52,17 +53,15 @@ extern void set_pdb_wide_format(bool bSet);
 /* If bSet, use wider format for occupancy and bfactor */
 
 extern void pdb_use_ter(bool bSet);
-/* set read_pdbatoms to read upto 'TER' of 'ENDMDL' (default, bSet=FALSE) */
+/* set read_pdbatoms to read upto 'TER' or 'ENDMDL' (default, bSet=FALSE) */
 
-extern void write_pdbfile_indexed(FILE *out,char *title,
-				  t_atoms *atoms,rvec x[],matrix box,
-				  char chain, bool bEndmodel,
-				  atom_id nindex, atom_id index[]);
+extern void write_pdbfile_indexed(FILE *out,char *title,t_atoms *atoms,
+				  rvec x[],matrix box,char chain,
+				  int model_nr,atom_id nindex,atom_id index[]);
 /* REALLY low level */
 
-extern void write_pdbfile(FILE *out,char *title,
-			  t_atoms *atoms,rvec x[],matrix box,char chain,
-			  bool bEndmodel);
+extern void write_pdbfile(FILE *out,char *title,t_atoms *atoms,
+			  rvec x[],matrix box,char chain,int model_nr);
 /* Low level pdb file writing routine.
  * 
  *          ONLY FOR SPECIAL PURPOSES,
@@ -72,17 +71,7 @@ extern void write_pdbfile(FILE *out,char *title,
  * override chain-identifiers with chain when chain>0
  * write ENDMDL when bEndmodel is TRUE */
   
-void hwrite_pdb_conf_indexed(FILE *out,char *title, 
-			     t_atoms *atoms,rvec x[],matrix box,
-			     atom_id nindex,atom_id index[]);
-/* Write a pdb file to FILE *out
- * Use an index to only write out selected atoms. */
-
-extern void write_pdb_confs(char *outfile,
-			    t_atoms **atoms,rvec *x[],int number);
-/* Write multiple chains to one pdb file */ 
-
-extern int read_pdbfile(FILE *in,char *title,
+extern int read_pdbfile(FILE *in,char *title,int *model_nr,
 			t_atoms *atoms,rvec x[],matrix box,bool bChange);
 /* Function returns number of atoms found. */
 
@@ -100,8 +89,6 @@ extern bool is_hydrogen(char *nm);
 /* Return whether atom nm is a hydrogen */
 
 extern bool is_dummymass(char *nm);
-/* Return whether atom nm is a dummy mass.
- * The first character should be an 'M' the last character should be a digit.
- */
+/* Return whether atom nm is a dummy mass */
 
 #endif	/* _pdbio_h */

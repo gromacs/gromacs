@@ -473,7 +473,7 @@ int main(int argc,char *argv[])
 #ifndef MY_DSSP
     tapein=ffopen(pdbfile,"w");
 #endif
-    hwrite_pdb_conf_indexed(tapein,NULL,atoms,x,box,gnx,index);
+    write_pdbfile_indexed(tapein,NULL,atoms,x,box,0,-1,gnx,index);
 #ifdef MY_DSSP
     rewind(tapein);
     dssp_main(bDoAccSurf,bVerbose);
@@ -504,7 +504,7 @@ int main(int argc,char *argv[])
   write_xpm_m(ss,mat);
   ffclose(ss);
   
-  if (opt2fn("-ssdump",NFILE,fnm)) {
+  if (opt2bSet("-ssdump",NFILE,fnm)) {
     snew(ss_str,nres+1);
     for(i=0; (i<nres); i++)
       ss_str[i] = mat.map[mat.matrix[0][i]].code.c1;

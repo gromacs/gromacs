@@ -976,7 +976,7 @@ int main(int argc, char *argv[])
 		cc->nterpairs,cc->rN,cc->rC,NULL,NULL,TRUE,FALSE);
     printf("Now there are %d residues with %d atoms\n",
 	   pdba->nres,pdba->nr);
-    if (debug) write_pdbfile(debug,title,pdba,x,box,0,TRUE);
+    if (debug) write_pdbfile(debug,title,pdba,x,box,0,0);
 
     if (debug)
       for(i=0; (i<natom); i++)

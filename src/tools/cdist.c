@@ -361,7 +361,7 @@ static real *read_weights(char *fn,int natom)
 
   /* Now read it all */  
   rewind(in);
-  read_pdbfile(in,title,&atoms,x,box,FALSE);
+  read_pdbfile(in,title,NULL,&atoms,x,box,FALSE);
   fclose(in);
   fprintf(stderr,"%s\n",title);
   
