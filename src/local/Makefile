@@ -1,3 +1,4 @@
+#!gmake
 #
 #	@(#) Makefile 1.120 10/21/97
 #
@@ -7,6 +8,10 @@
 #
 # 	Makefile for Gromacs kernel
 #
+ifeq ($(GMXHOME),)
+all:
+	echo "No GROMACS environment, Please source your GMXRC file"
+else
 include		$(GMXHOME)/src/makef/Makefile.def
 #
 # Empty library
@@ -45,3 +50,4 @@ anaf:		anaf.o
 		$(LD) -o $@ $^ $(SYSLIBS) -lm
 
 include	Make.dep
+endif
