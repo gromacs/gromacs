@@ -72,7 +72,7 @@ int main(int argc,char *argv[])
   t_filenm  fnm[] = {
     { efTRX, "-f", NULL,  ffREAD },
     { efTPX, NULL, NULL,  ffREAD },
-    { efXVG, NULL, NULL,  ffWRITE }
+    { efXVG, NULL, "rama",ffWRITE }
   };
 #define NFILE asize(fnm)
 

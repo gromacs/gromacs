@@ -270,7 +270,7 @@ int main(int argc,char *argv[])
     { efNDX, NULL, NULL,  ffREAD },    	    /* index file 		  */
     { efNDX, "-nm", NULL, ffOPTRD },        /* index with micelle atoms   */
     { efTPX, NULL, NULL,  ffREAD },    	    /* topology file           	  */
-    { efXVG,"-o",  NULL,  ffWRITE }, 	    /* xvgr output file 	  */
+    { efXVG,"-o",  "order", ffWRITE },      /* xvgr output file 	  */
   };
 
 #define NFILE asize(fnm)

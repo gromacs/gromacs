@@ -159,7 +159,7 @@ int main (int argc,char *argv[])
     { efTRX, "-f",  NULL,    ffREAD  },
     { efTRX, "-f2", NULL,    ffOPTRD },
     { efNDX, NULL,  NULL,    ffOPTRD },
-    { efXVG, NULL,  "rms",   ffWRITE },
+    { efXVG, NULL,  "rmsd",  ffWRITE },
     { efXVG, "-a",  "avgrp", ffOPTWR },
     { efXPM, "-m",  "rmsd",  ffOPTWR },
     { efDAT, "-bin","rmsd",  ffOPTWR },
