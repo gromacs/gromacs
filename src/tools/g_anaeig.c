@@ -68,7 +68,8 @@ static real tick_spacing(real range,int minticks)
 
 static void write_xvgr_graphs(char *file,int ngraphs,
 			      char *title,char *xlabel,char **ylabel,
-			      int n,real *x, real **y,bool bZero)
+			      int n,real *x, real **y,
+			      real scale_x,bool bZero)
 {
   FILE *out;
   int g,i;
@@ -87,7 +88,7 @@ static void write_xvgr_graphs(char *file,int ngraphs,
     else
       min=min-0.1*(max-min);
     max=max+0.1*(max-min);
-    xsp=tick_spacing(x[n-1]-x[0],4);
+    xsp=tick_spacing((x[n-1]-x[0])*scale_x,4);
     ysp=tick_spacing(max-min,3);
     fprintf(out,"@ with g%d\n@ g%d on\n",ngraphs-1-g,ngraphs-1-g);
     fprintf(out,"@ g%d autoscale type AUTO\n",ngraphs-1-g);
@@ -97,8 +98,8 @@ static void write_xvgr_graphs(char *file,int ngraphs,
       fprintf(out,"@ xaxis  label \"%s\"\n",xlabel);
     else 
       fprintf(out,"@ xaxis  ticklabel off\n");
-    fprintf(out,"@ world xmin %g\n",x[0]);
-    fprintf(out,"@ world xmax %g\n",x[n-1]);
+    fprintf(out,"@ world xmin %g\n",x[0]*scale_x);
+    fprintf(out,"@ world xmax %g\n",x[n-1]*scale_x);
     fprintf(out,"@ world ymin %g\n",min);
     fprintf(out,"@ world ymax %g\n",max);
     fprintf(out,"@ view xmin 0.15\n");
@@ -119,7 +120,7 @@ static void write_xvgr_graphs(char *file,int ngraphs,
       fprintf(out,"@ zeroxaxis bar linestyle 3\n");
     }
     for(i=0; i<n; i++) 
-      fprintf(out,"%10.4f %10.5f\n",x[i],y[g][i]);
+      fprintf(out,"%10.4f %10.5f\n",x[i]*scale_x,y[g][i]);
     fprintf(out,"&\n");
   }
   fclose(out);
@@ -233,7 +234,8 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
 		    bool bFit,rvec *xref,int nfit,atom_id *ifit,real *w_rls,
 		    real *sqrtm,rvec *xav,
 		    int *eignr,rvec **eigvec,
-		    int noutvec,int *outvec)
+		    int noutvec,int *outvec,
+		    bool bNS)
 {
   FILE    *xvgrout=NULL;
   int     status,out=0,nat,i,j,d,v,vec,nfr,nframes=0,snew_size,frame;
@@ -337,8 +339,9 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
     }
     sprintf(str,"projection on eigenvectors (%s)",proj_unit);
     write_xvgr_graphs(projfile,noutvec,
-		      str,"Time (ps)",
-		      ylabel,nframes,inprod[noutvec],inprod,FALSE);
+		      str,bNS ? "Time (ns)" : "Time (ps)",
+		      ylabel,nframes,inprod[noutvec],inprod,
+		      bNS ? 0.001 : 1,FALSE);
   }
   
   if (twodplotfile) {
@@ -462,7 +465,7 @@ static void components(char *outfile,int natoms,real *sqrtm,
       y[g][i] = norm(eigvec[v][i])/sqrtm[i];
   }
   write_xvgr_graphs(outfile,noutvec,"Atom displacements (nm)","Atom number",
-		    ylabel,natoms,x,y,TRUE);
+		    ylabel,natoms,x,y,1,TRUE);
   fprintf(stderr,"\n");
 }
 
@@ -509,13 +512,16 @@ int main(int argc,char *argv[])
   };
   static int  first=1,last=8,skip=1,nextr=2;
   static real max=0.0;
+  static bool bNS=FALSE;
   t_pargs pa[] = {
     { "-first", FALSE, etINT, {&first},     
       "First eigenvector for analysis (-1 is select)" },
     { "-last",  FALSE, etINT, {&last}, 
       "Last eigenvector for analysis (-1 is till the last)" },
-     { "-skip",  FALSE, etINT, {&skip},
+    { "-skip",  FALSE, etINT, {&skip},
       "Only analyse every nr-th frame" },
+    { "-ns",  FALSE, etBOOL, {&bNS}, 
+      "Use ns instead of ps as unit for -proj" },
     { "-max",  FALSE, etREAL, {&max}, 
       "Maximum for projection of the eigenvector on the average structure, max=0 gives the extremes" },
     { "-nframes",  FALSE, etINT, {&nextr}, 
@@ -754,7 +760,7 @@ int main(int argc,char *argv[])
 	    ProjOnVecFile,TwoDPlotFile,ThreeDPlotFile,FilterFile,skip,
 	    ExtremeFile,bFirstLastSet,max,nextr,atoms,natoms,index,
 	    bFit1,xref1,nfit,ifit,w_rls,
-	    sqrtm,xav1,eignr1,eigvec1,noutvec,outvec);
+	    sqrtm,xav1,eignr1,eigvec1,noutvec,outvec,bNS);
   
   if (OverlapFile)
     overlap(OverlapFile,natoms,
