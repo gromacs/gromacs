@@ -52,6 +52,7 @@ static char *SRCID_g_sas_c = "$Id$";
 #include "pdbio.h"
 #include "confio.h"
 #include "rmpbc.h"
+#include "names.h"
 #include "atomprop.h"
 
 typedef struct {
@@ -230,7 +231,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   real         *atom_area,*atom_area2;
   real         totarea,totvolume,harea,tarea,resarea;
   atom_id      *index;
-  int          nx,ires;
+  int          nx,ires,nphobic;
   char         *grpname;
   real         stddev,dgsolv;
 
@@ -260,14 +261,23 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   snew(atom_area2,natoms);
   snew(dgs_factor,natoms);
   
+  nphobic = 0;
   for(i=0; (i<natoms); i++) {
     radius[i]     = calc_radius(*(top->atoms.atomname[i])) + solsize;
     if (bDGsol)
       dgs_factor[i] = get_dgsolv(*(top->atoms.resname[top->atoms.atom[i].resnr]),
 				 *(top->atoms.atomtype[i]),dgs_default);
     bPhobic[i]    = fabs(top->atoms.atom[i].q) <= qcut;
+    if (bPhobic[i])
+      nphobic++;
+    if (debug)
+      fprintf(debug,"Atom %5d %5s-%5s: q= %6.3f, r= %6.3f, dgsol= %6.3f, hydrophobic= %s\n",
+	      i+1,*(top->atoms.resname[top->atoms.atom[i].resnr]),*(top->atoms.atomname[i]),
+	      top->atoms.atom[i].q,radius[i]-solsize,dgs_factor[i],BOOL(bPhobic[i]));
   }
-
+  fprintf(stderr,"%d out of %d atoms were classified as hydrophobic\n",
+	  nphobic,natoms);
+  
   fp=xvgropen(opt2fn("-o",nfile,fnm),"Solvent Accessible Surface","Time (ps)",
 	      "Area (nm\\S2\\N)");
   xvgr_legend(fp,asize(legend) - (bDGsol ? 0 : 1),legend);

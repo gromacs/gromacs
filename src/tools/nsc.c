@@ -962,7 +962,7 @@ int nsc_dclm2(rvec *coords, real *radius, int nat, atom_id index[],
   }         /* end of cycle "iat" */
 
   /*free(wkatm); */
-  /*free(wkdot); */
+  free(wkdot);
   free(wknb);
 
   if (mode & FLAG_VOLUME) {
