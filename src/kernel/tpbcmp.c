@@ -258,6 +258,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
 #define CIR(s) cmp_real(fp,"inputrec->"#s,0,ir1->##s,ir2->##s)
   CII(eI);
   CII(nsteps);
+  CII(ePBC);
   CII(ns_type);
   CII(nstlist);
   CII(ndelta);
@@ -281,15 +282,16 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CII(pme_order);
   CIR(ewald_rtol);
   CIB(bOptFFT);
-  CII(eBox);
   CIB(bUncStart);
   CIB(btc);
-  CII(ntcmemory);
   CII(epc);
-  CII(npcmemory);
   CIR(tau_p);
-  cmp_rvec(fp,"inputrec->ref_p",0,ir1->ref_p,ir2->ref_p);
-  cmp_rvec(fp,"inputrec->compress",0,ir1->compress,ir2->compress);
+  cmp_rvec(fp,"inputrec->ref_p(x)",0,ir1->ref_p[XX],ir2->ref_p[XX]);
+  cmp_rvec(fp,"inputrec->ref_p(y)",0,ir1->ref_p[YY],ir2->ref_p[YY]);
+  cmp_rvec(fp,"inputrec->ref_p(z)",0,ir1->ref_p[ZZ],ir2->ref_p[ZZ]);
+  cmp_rvec(fp,"inputrec->compress(x)",0,ir1->compress[XX],ir2->compress[XX]);
+  cmp_rvec(fp,"inputrec->compress(y)",0,ir1->compress[YY],ir2->compress[YY]);
+  cmp_rvec(fp,"inputrec->compress(z)",0,ir1->compress[ZZ],ir2->compress[ZZ]);
   CIB(bSimAnn);
   CIR(zero_temp_time);
   CIR(rlist);

@@ -111,10 +111,10 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
      
   /* NEIGHBOURSEARCHING */
 
-  if (ir->eBox == ebtNONE && ir->ns_type != ensSIMPLE) {
+  if (ir->ePBC == epbcNONE && ir->ns_type != ensSIMPLE) {
     sprintf(warn_buf,"Can only use nstype=%s with box=%s, setting nstype "
 	    "to %s\n",
-	    ens_names[ensSIMPLE],eboxtype_names[ebtNONE],ens_names[ensSIMPLE]);
+	    ens_names[ensSIMPLE],epbc_names[epbcNONE],ens_names[ensSIMPLE]);
     warning(NULL);
     ir->ns_type = ensSIMPLE;
   }
@@ -124,31 +124,22 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	    "with coulombtype = %s and simple neighborsearch\n"
 	    "without periodic boundary conditions (box = %s) and\n"
 	    "rcoulomb and rvdw set to zero",
-	    eel_names[eelCUT],eboxtype_names[ebtNONE]);
+	    eel_names[eelCUT],epbc_names[epbcNONE]);
     CHECK((ir->coulombtype  != eelCUT)  || (ir->ns_type != ensSIMPLE) || 
-	  (ir->eBox     != ebtNONE) || 
-	  (ir->rcoulomb != 0.0)     || (ir->rvdw != 0.0));
-  }
-  if ((ir->epc == epcTRICLINIC) && (ir->eBox != ebtTRICLINIC)) {
-    sprintf(warn_buf,
-	    "%s pressure coupling does not make sense without %s box\n"
-	    "resetting presure coupling to %s\n",
-	    epcoupl_names[epcTRICLINIC],eboxtype_names[ebtTRICLINIC],
-	    epcoupl_names[epcISOTROPIC]);
-    warning(NULL);
-    ir->epc = epcISOTROPIC;
+	  (ir->ePBC     != epbcNONE) || 
+	  (ir->rcoulomb != 0.0)      || (ir->rvdw != 0.0));
   }
   
-  if ((ir->eBox == ebtNONE) && (ir->bDispCorr)) {
+  if ((ir->ePBC == epbcNONE) && (ir->bDispCorr)) {
     warning("Can not have long-range dispersion correction without PBC,"
 	    " turned off.");
     ir->bDispCorr = FALSE;
   }
   
-  if ((ir->eBox != ebtNONE) && (ir->nstcomm < 0))
+  if ((ir->ePBC != epbcNONE) && (ir->nstcomm < 0))
     warning("Removing the rotation around the center of mass in a periodic system (this is not a problem when you have only one molecule).");
     
-  if ((ir->eI == eiMD) && (ir->eBox == ebtNONE)) {
+  if ((ir->eI == eiMD) && (ir->ePBC == epbcNONE)) {
     if (ir->nstcomm > 0)
       warning("Tumbling ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should set nstcomm = -1.");
     if (ir->nstcomm == 0)
@@ -175,7 +166,8 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
        
     sprintf(err_buf,"compressibility must be > 0 when using pressure" 
 	    " coupling %s\n",EPCOUPLTYPE(ir->epc));
-    CHECK(ir->compress[XX]+ir->compress[YY]+ir->compress[ZZ] <= 0);
+    CHECK(ir->compress[XX][XX] < 0 || ir->compress[YY][YY] < 0 || 
+	  ir->compress[ZZ][ZZ] < 0 || trace(ir->compress) == 0);
     
     sprintf(err_buf,"pressure coupling with PPPM not implemented, use PME");
     CHECK(ir->coulombtype == eelPPPM);
@@ -218,10 +210,10 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	    eel_names[ir->coulombtype]);
     CHECK(ir->rcoulomb > ir->rlist);
     if(ir->coulombtype != eelEWALD && ir->coulombtype != eelPME) {
-	sprintf(err_buf,"With coulombtype = %s rcoulomb_switch must be < rcoulomb",
+      sprintf(err_buf,"With coulombtype = %s rcoulomb_switch must be < rcoulomb",
 		eel_names[ir->coulombtype]);
 	CHECK(ir->rcoulomb_switch >= ir->rcoulomb);
-    if (ir->rcoulomb_switch > ir->rcoulomb-0.0999) { 
+	if (ir->rcoulomb_switch > ir->rcoulomb-0.0999) { 
       sprintf(warn_buf,"rcoulomb should be 0.1 to 0.3 nm larger than rcoulomb_switch to account for diffusion and the size of charge groups"); 
       warning(NULL);
     }
@@ -248,7 +240,7 @@ void get_ir(char *mdparin,char *mdparout,
 	    t_inputrec *ir,t_gromppopts *opts,int *nerror)
 {
   char      *dumstr[2];
-  double    dumdub[2][DIM];
+  double    dumdub[2][6];
   char      epsbuf[STRLEN];
   t_inpfile *inp;
   char      *tmp;
@@ -317,8 +309,8 @@ void get_ir(char *mdparin,char *mdparout,
   EETYPE("ns-type",     ir->ns_type,    ens_names, nerror, TRUE);
   /* set ndelta to the optimal value of 2 */
   ir->ndelta = 2;
-  CTYPE ("Box type, rectangular, triclinic, none");
-  EETYPE("box",         ir->eBox,       eboxtype_names, nerror, TRUE);
+  CTYPE ("Periodic boundary conditions: xyz or none");
+  EETYPE("pbc",         ir->ePBC,       epbc_names, nerror, TRUE);
   CTYPE ("nblist cut-off");
   RTYPE ("rlist",	ir->rlist,	1.0);
   EETYPE("domain-decomposition",ir->bDomDecomp, yesno_names, nerror, TRUE);
@@ -355,7 +347,6 @@ void get_ir(char *mdparin,char *mdparout,
   CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
   CTYPE ("Temperature coupling");
   EETYPE("tcoupl",	ir->btc,        yesno_names, nerror, TRUE);
-  ir->ntcmemory = 1;
   CTYPE ("Groups to couple separately");
   STYPE ("tc-grps",     tcgrps,         NULL);
   CTYPE ("Time constant (ps) and reference temperature (K)");
@@ -363,7 +354,6 @@ void get_ir(char *mdparin,char *mdparout,
   STYPE ("ref-t",	ref_t,		NULL);
   CTYPE ("Pressure coupling");
   EETYPE("Pcoupl",	ir->epc,        epcoupl_names, nerror, TRUE);
-  ir->npcmemory = 1;
   CTYPE ("Time constant (ps), compressibility (1/bar) and reference P (bar)");
   RTYPE ("tau-p",	ir->tau_p,	1.0);
   STYPE ("compressibility",	dumstr[0],	NULL);
@@ -490,8 +480,8 @@ void get_ir(char *mdparin,char *mdparout,
     }
   }
   
-  for(m=0; (m<2); m++) {
-    for(i=0; (i<DIM); i++)
+  for(m=0; m<2; m++) {
+    for(i=0; i<2*DIM; i++)
       dumdub[m][i]=0.0;
     switch (ir->epc) {
     case epcNO:
@@ -511,8 +501,9 @@ void get_ir(char *mdparin,char *mdparout,
 	fprintf(stderr,"pressure coupling not enough values\n");
       break;
     case epcANISOTROPIC:
-      if (sscanf(dumstr[m],"%lf%lf%lf",
-		 &(dumdub[m][XX]),&(dumdub[m][YY]),&(dumdub[m][ZZ]))!=3) 
+      if (sscanf(dumstr[m],"%lf%lf%lf%lf%lf%lf",
+		 &(dumdub[m][XX]),&(dumdub[m][YY]),&(dumdub[m][ZZ]),
+		 &(dumdub[m][3]),&(dumdub[m][4]),&(dumdub[m][5]))!=6) 
 	fprintf(stderr,"pressure coupling not enough values\n");
       break;
     default:
@@ -520,11 +511,27 @@ void get_ir(char *mdparin,char *mdparout,
 		  epcoupl_names[ir->epc]);
     }
   }
-  for(i=0; (i<DIM); i++) {
-    ir->ref_p[i]    = dumdub[1][i];
-    ir->compress[i] = dumdub[0][i];
+  clear_mat(ir->ref_p);
+  clear_mat(ir->compress);
+  for(i=0; i<DIM; i++) {
+    ir->ref_p[i][i]    = dumdub[1][i];
+    ir->compress[i][i] = dumdub[0][i];
+  }
+  if (ir->epc == epcANISOTROPIC) {
+    ir->ref_p[XX][YY] = dumdub[1][3];
+    ir->ref_p[XX][ZZ] = dumdub[1][4];
+    ir->ref_p[YY][ZZ] = dumdub[1][5];
+    ir->compress[XX][YY] = dumdub[0][3];
+    ir->compress[XX][ZZ] = dumdub[0][4];
+    ir->compress[YY][ZZ] = dumdub[0][5];
+    for(i=0; i<DIM; i++)
+      for(m=0; m<i; m++) {
+	ir->ref_p[i][m] = ir->ref_p[m][i];
+	ir->compress[i][m] = ir->compress[m][i];
+      }
   }
   fprintf(stderr,"Warning: as of GMX v 2.0 unit of compressibility is truly 1/bar\n");
+
   sfree(dumstr[0]);
   sfree(dumstr[1]);
 }
@@ -1020,7 +1027,7 @@ void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
     (*nerror)++;
   }
 
-  if (ir->eBox != ebtNONE) {
+  if (ir->ePBC != epbcNONE) {
     rlong = max(ir->rlist,max(ir->rcoulomb,ir->rvdw));
     bTWIN = (rlong > ir->rlist);
     if (ir->ns_type==ensGRID) {

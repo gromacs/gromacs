@@ -261,7 +261,7 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   /* Remove periodicity */  
   for(m=0; (m<DIM); m++)
     box_size[m] = parm->box[m][m];
-  if (parm->ir.eBox != ebtNONE)
+  if (parm->ir.ePBC != epbcNONE)
     do_pbc_first(stdlog,parm,box_size,*fr,*graph,*x);
 
   copy_mat(parm->box,box);

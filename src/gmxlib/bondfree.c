@@ -720,7 +720,7 @@ real posres(int nbonds,
     ai   = forceatoms[i++];
     fc   = forceparams[type].posres.fc;
 
-    if (fr->eBox == ebtNONE)
+    if (fr->ePBC == epbcNONE)
       rvec_sub(x[ai],forceparams[type].posres.pos0,dx);
     else
       pbc_dx(x[ai],forceparams[type].posres.pos0,dx);

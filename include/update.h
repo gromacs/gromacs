@@ -110,13 +110,13 @@ extern void calc_ke_part_visc(bool bFirstStep,int start,int homenr,
 extern real run_aver(real old,real cur,int step,int nmem);
 
 extern void tcoupl(bool bTC,t_grpopts *opts,t_groups *grps,
-		   real dt,real SAfactor,int step,int nmem);
+		   real dt,real SAfactor);
 /* Compute temperature scaling factors */
 
 extern real calc_temp(real ekin,real nrdf);
 /* Calculate the temperature */
 
-extern void calc_pres(int eBox,matrix box,
+extern void calc_pres(int ePBC,matrix box,
 		      tensor ekin,tensor vir,tensor pres,real Elr);
 /* Calculate the pressure. Unit of pressure is bar, If Elr != 0
  * a long range correction based on Ewald/PPPM is made (see c-code)

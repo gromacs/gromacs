@@ -828,7 +828,7 @@ static int ns_simple_core(t_forcerec *fr,
   }
   rlist2 = sqr(fr->rlist);
 
-  bBox = (fr->eBox != ebtNONE);
+  bBox = (fr->ePBC != epbcNONE);
   if (bBox)
     for(m=0; (m<DIM); m++)
       b_inv[m]=divide(1.0,box_size[m]);
@@ -1315,7 +1315,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   for(m=0; (m<DIM); m++)
     box_size[m]=box[m][m];
   
-  if (fr->eBox != ebtNONE) {
+  if (fr->ePBC != epbcNONE) {
     if (bGrid) {
       min_size = min(norm2(box[XX]),min(norm2(box[YY]),norm2(box[ZZ])));
       if (sqr(2*fr->rlistlong) >= min_size)

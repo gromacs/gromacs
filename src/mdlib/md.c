@@ -136,7 +136,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 #endif
 
   /* Remove periodicity */  
-  if (fr->eBox != ebtNONE)
+  if (fr->ePBC != epbcNONE)
     do_pbc_first(log,parm,box_size,fr,graph,x);
   debug_gmx();
 
@@ -166,8 +166,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   /* Calculate Temperature coupling parameters lambda */
   ener[F_TEMP] = sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
-  tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor,0,
-	 parm->ir.ntcmemory);
+  tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor);
   debug_gmx();
   
 #ifdef XMDRUN
@@ -504,11 +503,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 #endif
       
       /* Calculate Temperature coupling parameters lambda */
-      tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor,
-	     step,parm->ir.ntcmemory);
+      tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor);
     
       /* Calculate pressure and apply LR correction if PPPM is used */
-      calc_pres(fr->eBox,parm->box,parm->ekin,parm->vir,parm->pres,
+      calc_pres(fr->ePBC,parm->box,parm->ekin,parm->vir,parm->pres,
 		(fr->eeltype==eelPPPM) ? ener[F_LR] : 0.0);
     }
     

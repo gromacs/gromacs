@@ -38,9 +38,9 @@ char *eblock_names[ebNR+1]=
   "CGS","MOLS","SBLOCKS",NULL
 };
 
-char *eboxtype_names[ebtNR+1]=
+char *epbc_names[epbcNR+1]=
 {
-  "Rectangular", "Triclinic", "None", NULL
+  "xyz", "none", NULL
 };
 
 char *ens_names[enNR+1]=
@@ -85,8 +85,7 @@ char *egrp_nm[egNR+1] = {
 };
 
 char *epcoupl_names[epcNR+1] = {
-  "No", "Isotropic", "Semiisotropic", "Anisotropic", "Triclinic",
-  "Surface-Tension", NULL
+  "No", "Isotropic", "Semiisotropic", "Anisotropic", "Surface-Tension", NULL
 };
 
 char *edisre_names[edrNR+1] = {

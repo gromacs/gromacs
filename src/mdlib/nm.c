@@ -84,7 +84,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   init_nrnb(&mynrnb);
 
-  bBox = (fr->eBox != ebtNONE);
+  bBox = (fr->ePBC != epbcNONE);
   if (bBox) {
     calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
     fprintf(log,"Removing pbc first time\n");
@@ -106,8 +106,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   /* Calculate Temperature coupling parameters lambda */
   ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
-  tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,lam0,0,
-	 parm->ir.ntcmemory);
+  tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,lam0);
   where();
   
   /* Write start time and temperature */

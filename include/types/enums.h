@@ -34,11 +34,11 @@ enum {
 };
 
 enum {
-  ebtRECT, ebtTRICLINIC, ebtNONE, ebtNR
+  epbcXYZ, epbcNONE, epbcNR
 };
 
 enum {
-  epcNO, epcISOTROPIC, epcSEMIISOTROPIC, epcANISOTROPIC, epcTRICLINIC,
+  epcNO, epcISOTROPIC, epcSEMIISOTROPIC, epcANISOTROPIC,
   epcSURFACETENSION, epcNR
 };
 

@@ -47,12 +47,12 @@ static char *SRCID_coupling_c = "$Id$";
  *
  */
 
-void calc_pres(int eBox,matrix box,tensor ekin,tensor vir,tensor pres,real Elr)
+void calc_pres(int ePBC,matrix box,tensor ekin,tensor vir,tensor pres,real Elr)
 {
   int  n,m;
   real fac,Plr;
 
-  if (eBox == ebtNONE)
+  if (ePBC == epbcNONE)
     clear_mat(pres);
   else {
     /* Uitzoeken welke ekin hier van toepassing is, zie Evans & Morris - E. 
@@ -90,99 +90,95 @@ real calc_temp(real ekin,real nrdf)
   return (2.0*ekin)/(nrdf*BOLTZ);
 }
 
-real run_aver(real old,real cur,int step,int nmem)
-{
-  nmem   = max(1,nmem);
-  
-  return ((nmem-1)*old+cur)/nmem;
-}
-
-
 void do_pcoupl(t_inputrec *ir,int step,tensor pres,
 	       matrix box,int start,int nr_atoms,
 	       rvec x[],unsigned short cFREEZE[],
 	       t_nrnb *nrnb,ivec nFreeze[])
 {
-  static bool bFirst=TRUE;
-  static rvec PPP;
   int    n,d,g;
   real   scalar_pressure, xy_pressure, p_corr_z;
-  rvec   factor,mu;
+  matrix mu;
   char   *ptr,buf[STRLEN];
-  
+
   /*
    *  PRESSURE SCALING 
    *  Step (2P)
    */
-  if (bFirst) {
-    /* Initiate the pressure to the reference one */
-    for(d=0; d<DIM; d++)
-      PPP[d] = ir->ref_p[d];
-    bFirst=FALSE;
-  }
+
+#define factor(d,m) (ir->compress[d][m]*ir->delta_t/ir->tau_p)
+
   scalar_pressure=0;
   xy_pressure=0;
   for(d=0; d<DIM; d++) {
-    PPP[d]           = run_aver(PPP[d],pres[d][d],step,ir->npcmemory);
-    scalar_pressure += PPP[d]/DIM;
+    scalar_pressure += pres[d][d]/DIM;
     if (d != ZZ)
-      xy_pressure += PPP[d]/(DIM-1);
+      xy_pressure += pres[d][d]/(DIM-1);
   }
   
   /* Pressure is now in bar, everywhere. */
+  /* mu has been changed from pow(1+...,1/3) to 1+.../3, since this is
+   * necessary for triclinic scaling
+   */
   if (scalar_pressure != 0.0) {
-    for(d=0; d<DIM; d++)
-      factor[d] = ir->compress[d]*ir->delta_t/ir->tau_p;
-    clear_rvec(mu);
+    clear_mat(mu);
     switch (ir->epc) {
     case epcNO:
       /* do_pcoupl should not be called in this case to save some work */
       for(d=0; d<DIM; d++)
-	mu[d] = 1.0;
+	mu[d][d] = 1.0;
       break;
     case epcISOTROPIC:
       for(d=0; d<DIM; d++)
-	mu[d] = pow(1.0-factor[d]*(ir->ref_p[d]-scalar_pressure),1.0/DIM);
+	mu[d][d] = 1.0 - factor(d,d)*(ir->ref_p[d][d] - scalar_pressure)/DIM;
       break;
     case epcSEMIISOTROPIC:
       for(d=0; d<ZZ; d++)
-	mu[d] = pow(1.0-factor[d]*(ir->ref_p[d]-xy_pressure),1.0/DIM);
-      mu[ZZ] = pow(1.0-factor[ZZ]*(ir->ref_p[ZZ] - PPP[ZZ]),1.0/DIM);
+	mu[d][d] = 1.0 - factor(d,d)*(ir->ref_p[d][d]-xy_pressure)/DIM;
+      mu[ZZ][ZZ] = 
+	1.0 - factor(d,d)*(ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ])/DIM;
       break;
     case epcANISOTROPIC:
-      for (d=0; d<DIM; d++)
-	mu[d] = pow(1.0-factor[d]*(ir->ref_p[d] - PPP[d]),1.0/DIM);
+      for(d=0; d<DIM; d++)
+	for(n=0; n<DIM; n++)
+	  mu[d][n] = (d==n ? 1.0 : 0.0) 
+	    -factor(d,n)*(ir->ref_p[d][n] - pres[d][n])/DIM;
       break;
     case epcSURFACETENSION:
       /* ir->ref_p[0/1] is the reference surface-tension times *
        * the number of surfaces                                */
       if (ir->compress[ZZ])
-	p_corr_z = ir->delta_t/ir->tau_p*(ir->ref_p[ZZ] - PPP[ZZ]);
+	p_corr_z = ir->delta_t/ir->tau_p*(ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ]);
       else
 	/* when the compressibity is zero, set the pressure correction   *
 	 * in the z-direction to zero to get the correct surface tension */
 	p_corr_z = 0;
-      mu[ZZ] = 1.0 - ir->compress[ZZ]*p_corr_z;
-      for(d=0; d<ZZ; d++)
-	mu[d] = sqrt(1.0+factor[d]*(ir->ref_p[d]/(mu[ZZ]*box[ZZ][ZZ]) - 
-	(PPP[ZZ]+p_corr_z - xy_pressure)));
+      mu[ZZ][ZZ] = 1.0 - ir->compress[ZZ][ZZ]*p_corr_z;
+      for(d=0; d<DIM-1; d++)
+	mu[d][d] = 1.0 + factor(d,d)*(ir->ref_p[d][d]/(mu[ZZ][ZZ]*box[ZZ][ZZ])
+			- (pres[ZZ][ZZ]+p_corr_z - xy_pressure))/(DIM-1);
       break;
-    case epcTRICLINIC:
     default:
       fatal_error(0,"Pressure coupling type %s not supported yet\n",
 		  EPCOUPLTYPE(ir->epc));
     }
+    /* To fullfill the orientation restrictions on triclinic boxes
+     * set mu_yx, mu_zx and mu_zy to 0 and correct the other elements
+     * of mu to first order.
+     */
+    mu[XX][YY] += mu[YY][XX];
+    mu[XX][ZZ] += mu[ZZ][XX];
+    mu[YY][ZZ] += mu[ZZ][YY];
+    
     if (debug) {
-      pr_rvecs(debug,0,"PC: PPP ",&PPP,1);
-      pr_rvecs(debug,0,"PC: fac ",&factor,1);
-      pr_rvecs(debug,0,"PC: mu  ",&mu,1);
+      pr_rvecs(debug,0,"PC: pres ",pres,3);
+      pr_rvecs(debug,0,"PC: mu   ",mu,3);
     }
     
-    if (mu[XX]<0.99 || mu[XX]>1.01 ||
-	mu[YY]<0.99 || mu[YY]>1.01 ||
-	mu[ZZ]<0.99 || mu[ZZ]>1.01) {
+    if (mu[XX][XX]<0.99 || mu[XX][XX]>1.01 ||
+	mu[YY][YY]<0.99 || mu[YY][YY]>1.01 ||
+	mu[ZZ][ZZ]<0.99 || mu[ZZ][ZZ]>1.01) {
       sprintf(buf,"\nStep %d  Warning: pressure scaling more than 1%%, "
-	      "mu: %g %g %g\n",step,mu[XX],mu[YY],mu[ZZ]);
+	      "mu: %g %g %g\n",step,mu[XX][XX],mu[YY][YY],mu[ZZ][ZZ]);
       fprintf(stdlog,"%s",buf);
       fprintf(stderr,"%s",buf);
     }
@@ -192,16 +188,19 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
       g=cFREEZE[n];
       
       if (!nFreeze[g][XX])
-	x[n][XX] *= mu[XX];
+	x[n][XX] = mu[XX][XX]*x[n][XX]+mu[XX][YY]*x[n][YY]+mu[XX][ZZ]*x[n][ZZ];
       if (!nFreeze[g][YY])
-	x[n][YY] *= mu[YY];
+	x[n][YY] = mu[YY][YY]*x[n][YY]+mu[YY][ZZ]*x[n][ZZ];
       if (!nFreeze[g][ZZ])
-	x[n][ZZ] *= mu[ZZ];
+	x[n][ZZ] = mu[ZZ][ZZ]*x[n][ZZ];
     }
     /* compute final boxlengths */
-    for (n=0; n<DIM; n++)
-      for (d=0; d<DIM; d++)
-	box[n][d] *= mu[d];
+    for (d=0; d<DIM; d++) {
+      box[d][XX] = mu[XX][XX]*box[d][XX]+mu[XX][YY]*box[d][YY]
+	+mu[XX][ZZ]*box[n][ZZ];
+      box[d][YY] = mu[YY][YY]*box[d][YY]+mu[YY][ZZ]*box[d][ZZ];
+      box[d][ZZ] = mu[ZZ][ZZ]*box[d][ZZ];
+    }
 
     ptr = check_box(box);
     if (ptr)
@@ -212,25 +211,17 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
 }
 
 void tcoupl(bool bTC,t_grpopts *opts,t_groups *grps,
-	    real dt,real SAfactor,int step,int nmem)
+	    real dt,real SAfactor)
 {
-  static real *Told=NULL;
   int    i;
   real   T,reft,lll;
 
-  if (!Told) {
-    snew(Told,opts->ngtc);
-    for(i=0; (i<opts->ngtc); i++) 
-      Told[i]=opts->ref_t[i]*SAfactor;
-  }
-  
   for(i=0; (i<opts->ngtc); i++) {
     reft=opts->ref_t[i]*SAfactor;
     if (reft < 0)
       reft=0;
     
-    Told[i] = run_aver(Told[i],grps->tcstat[i].T,step,nmem);
-    T       = Told[i];
+    T = grps->tcstat[i].T;
     
     if ((bTC) && (T != 0.0)) {
       lll=sqrt(1.0 + (dt/opts->tau_t[i])*(reft/T-1.0));

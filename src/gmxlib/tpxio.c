@@ -45,9 +45,10 @@ static char *SRCID_tpxio_c = "$Id$";
 #include "confio.h"
 #include "atomprop.h"
 #include "copyrite.h"
+#include "vec.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version = 15;
+static int tpx_version = 16;
 /* This number should be the most recent incompatible version */
 static int tpx_incompatible_version = 9;
 /* This is the version of the file we are reading */
@@ -95,6 +96,8 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
 {
   int  i,j,*tmp,idum; 
   bool bDum=TRUE;
+  real rdum;
+  rvec vdum;
 
   if (file_version != tpx_version) {
     /* Give a warning about features that are not accessible */
@@ -106,7 +109,9 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     /* Basic inputrec stuff */  
     do_int(ir->eI); 
     do_int(ir->nsteps); 
-    do_int(ir->eBox);
+    do_int(ir->ePBC);
+    if (file_version <= 15 && ir->ePBC == epbcNR)
+      ir->ePBC = epbcNONE;
     do_int(ir->ns_type); 
     do_int(ir->nstlist); 
     do_int(ir->ndelta); 
@@ -124,8 +129,8 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_real(ir->delta_t); 
     do_real(ir->xtcprec); 
     do_int(ir->solvent_opt); 
-    do_int(ir->nsatoms); 
-    do_int(ir->eBox); 
+    do_int(ir->nsatoms);
+    do_int(idum); 
     do_real(ir->rlist); 
     do_int(ir->coulombtype); 
     do_real(ir->rcoulomb_switch); 
@@ -143,12 +148,35 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_int(ir->bOptFFT);
     do_int(ir->bUncStart); 
     do_int(ir->btc); 
-    do_int(ir->ntcmemory); 
+    if (file_version <= 15)
+      do_int(idum);
     do_int(ir->epc); 
-    do_int(ir->npcmemory); 
+    if (file_version <= 15) {
+      if (ir->epc == epcNR)
+	ir->epc = epcSURFACETENSION;
+      do_int(idum);
+    }
     do_real(ir->tau_p); 
-    do_rvec(ir->ref_p); 
-    do_rvec(ir->compress); 
+    if (file_version <= 15) {
+      do_rvec(vdum);
+      clear_mat(ir->ref_p);
+      for(i=0; i<DIM; i++)
+	ir->ref_p[i][i] = vdum[i];
+    } else {
+      do_rvec(ir->ref_p[XX]);
+      do_rvec(ir->ref_p[YY]);
+      do_rvec(ir->ref_p[ZZ]);
+    }
+    if (file_version <= 15) {
+      do_rvec(vdum);
+      clear_mat(ir->compress);
+      for(i=0; i<DIM; i++)
+	ir->compress[i][i] = vdum[i];
+    } else {
+      do_rvec(ir->compress[XX]);
+      do_rvec(ir->compress[YY]);
+      do_rvec(ir->compress[ZZ]);
+    }
     do_int(ir->bSimAnn); 
     do_real(ir->zero_temp_time); 
     do_real(ir->epsilon_r); 

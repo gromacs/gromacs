@@ -43,7 +43,7 @@ static char *SRCID_names_h = "$Id$";
  * these should correspond to names.c and include/types/enums.h
  */
 extern char *eblock_names[ebNR+1];
-extern char *eboxtype_names[ebtNR+1];
+extern char *epbc_names[epbcNR+1];
 extern char *epcoupl_names[epcNR+1];
 extern char *ens_names[enNR+1];
 extern char *ei_names[eiNR+1];
@@ -67,7 +67,7 @@ extern char *efep_names[efepNR+1];
 #define BOOL(e)        ENUM_NAME(e,BOOL_NR,bool_names)
 #define ENS(e)         ENUM_NAME(e,enNR,ens_names)
 #define EI(e)          ENUM_NAME(e,eiNR,ei_names)
-#define EBOXTYPE(e)    ENUM_NAME(e,ebtNR,eboxtype_names)
+#define EPBC(e)        ENUM_NAME(e,epbcNR,epbc_names)
 #define EPCOUPLTYPE(e) ENUM_NAME(e,epcNR,epcoupl_names)
 #define EBLOCKS(e)     ENUM_NAME(e,ebNR,eblock_names)
 #define EPARAM(e)      ENUM_NAME(e,epNR,eparam_names)

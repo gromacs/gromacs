@@ -129,6 +129,22 @@ void pr_rvec(FILE *fp,int indent,char *title,real vec[],int n)
     }
 }
 
+/*
+void pr_mat(FILE *fp,int indent,char *title,matrix m)
+{
+  int i,j;
+  
+  if (available(fp,m,title)) {  
+    indent=pr_title_n(fp,indent,title,n);
+    for(i=0; i<n; i++) {
+      pr_indent(fp,indent);
+      fprintf(fp,"%s[%d]=%12.5e %12.5e %12.5e\n",
+	      title,bShowNumbers?i:-1,m[i][XX],m[i][YY],m[i][ZZ]);
+    }
+  }
+}
+*/
+
 void pr_rvecs_len(FILE *fp,int indent,char *title,rvec vec[],int n)
 {
   int i,j;
@@ -307,15 +323,13 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PI("pme_order",ir->pme_order);
     PR("ewald_rtol",ir->ewald_rtol);
     PS("optimize_fft",BOOL(ir->bOptFFT));
-    PS("eBox",EBOXTYPE(ir->eBox));
+    PS("ePBC",EPBC(ir->ePBC));
     PS("bUncStart",BOOL(ir->bUncStart));
     PS("btc",BOOL(ir->btc));
-    PI("ntcmemory",ir->ntcmemory);
     PS("epc",EPCOUPLTYPE(ir->epc));
-    PI("npcmemory",ir->npcmemory);
     PR("tau_p",ir->tau_p);
-    pr_rvec(fp,indent,"ref_p",ir->ref_p,DIM);
-    pr_rvec(fp,indent,"compress",ir->compress,DIM);
+    pr_rvecs(fp,indent,"ref_p",ir->ref_p,DIM);
+    pr_rvecs(fp,indent,"compress",ir->compress,DIM);
     PS("bSimAnn",BOOL(ir->bSimAnn)); 
     PR("zero_temp_time",ir->zero_temp_time); 
     PR("rlist",ir->rlist);

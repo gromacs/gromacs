@@ -189,7 +189,7 @@ void do_force(FILE *log,t_commrec *cr,
   
   update_forcerec(log,fr,parm->box);
  
-  if (fr->eBox != ebtNONE) { 
+  if (fr->ePBC != epbcNONE) { 
     /* Compute shift vectors every step, because of pressure coupling! */
     if (parm->ir.epc != epcNO)
       calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
@@ -220,7 +220,7 @@ void do_force(FILE *log,t_commrec *cr,
   reset_energies(&(parm->ir.opts),grps,fr,bNS,ener);    
   
   if (bNS) {
-    if (fr->eBox != ebtNONE)
+    if (fr->ePBC != epbcNONE)
       /* Calculate intramolecular shift vectors to make molecules whole */
       mk_mshift(log,graph,parm->box,x);
 	       

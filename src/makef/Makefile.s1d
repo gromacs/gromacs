@@ -10,4 +10,5 @@
 include		$(GMXHOME)/src/makef/Makefile.s10
 SYSDEFS		+= -DDOUBLE -D_s10_
 FFLAGS		+= -r8
+USE_MPI = yes
 

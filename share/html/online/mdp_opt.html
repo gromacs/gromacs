@@ -27,7 +27,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#ld"><b>langevin dynamics</b></A> (ld_temp, ld_fric, ld_seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
-<li><A HREF="#nl"><b>neighbor searching</b></A> (nstlist, ns_type, box, rlist)
+<li><A HREF="#nl"><b>neighbor searching</b></A> (nstlist, ns_type, pbc, rlist)
 <li><A HREF="#el"><b>electrostatics and VdW</b></A> (coulombtype, rcoulomb_switch, rcoulomb, vdwtype, rvdw_switch, rvdw, epsilon_r, bDispCorr, fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, optimize_fft)
 <li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, tc_grps, tau_t, ref_t)
 <li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, tau_p, compressibility, ref_p)
@@ -207,10 +207,10 @@ In large systems grid search is much faster than simple search.
 every <b>nstlist</b> steps.
 </dl>
 
-<dt><h4>box:</h4>
+<dt><h4>pbc:</h4>
 <dd><dl compact>
-<dt><b>rectangular</b>
-<dd>use periodic boundary conditions
+<dt><b>xyz</b>
+<dd>use periodic boundary conditions in all directions
 <dt><b>none</b>
 <dd>use no periodic boundary conditions, ignore the box
 </dl>
@@ -429,8 +429,11 @@ but different in the z direction.
 This can be useful for membrane simulations.
 2 values are needed for x/y and z directions respectively.
 <dt><b>anisotropic</b>
-<dd>Idem, but 3 values are needed for x, y and z directions respectively.
-Beware that isotropic scaling can lead to extreme deformation
+<dd>Idem, but 6 values are needed for xx, yy, zz, xy/yx, xz/zx and yz/zy
+components respectively.
+When the off-diagonal compressibilities are set to zero,
+a rectangular box will stay rectangular.
+Beware that anisotropic scaling can lead to extreme deformation
 of the simulation box.
 <dt><b>surface-tension</b>
 <dd>Surface tension coupling for surfaces parallel to the xy-plane.
@@ -744,7 +747,6 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#neq">accelerate</A><br>
 <A HREF="#sa">annealing</A><br>
 <A HREF="#el2">bDispCorr</A><br>
-<A HREF="#nl">box</A><br>
 <A HREF="#pc">compressibility</A><br>
 <A HREF="#bond">constraint_algorithm</A><br>
 <A HREF="#bond">constraints</A><br>
@@ -803,6 +805,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#out">nstxtcout</A><br>
 <A HREF="#nl">ns_type</A><br>
 <A HREF="#el2">optimize_fft</A><br>
+<A HREF="#nl">pbc</A><br>
 <A HREF="#pc">pcoupl</A><br>
 <A HREF="#el2">pme_order</A><br>
 <A HREF="#pc">ref_p</A><br>

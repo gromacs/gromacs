@@ -73,15 +73,13 @@ typedef struct {
   real ewald_rtol;      /* Real space tolerance for Ewald, determines   */
                         /* the real/reciprocal space relative weight    */
   bool bOptFFT;         /* optimize the fft plan at start               */
-  int  eBox;		/* The box type					*/
+  int  ePBC;		/* Type of periodic boundary conditions		*/
   bool bUncStart;       /* Do not constrain the start configuration	*/
   bool btc;		/* temperature coupling         		*/
-  int  ntcmemory;       /* Memory (steps) for T coupling                */
   int  epc;		/* pressure coupling type			*/
-  int  npcmemory;       /* Memory (steps) for P coupling                */
   real tau_p;		/* pressure coupling time (ps)			*/
-  rvec ref_p;		/* reference pressure (kJ/(mol nm^3))		*/
-  rvec compress;	/* compressability ((mol nm^3)/kJ) 		*/
+  tensor ref_p;		/* reference pressure (kJ/(mol nm^3))		*/
+  tensor compress;	/* compressability ((mol nm^3)/kJ) 		*/
   bool bSimAnn;         /* simulated annealing (SA)                     */
   real zero_temp_time;  /* time at which temp becomes zero in sim. ann. */
   real rlist;		/* short range pairlist cut-off (nm)		*/

@@ -759,7 +759,7 @@ int main(int argc,char *argv[])
   if ( natoms > top.atoms.nr )
     fatal_error(0,"Topology (%d atoms) does not match trajectory (%d atoms)",
 		top.atoms.nr,natoms);
-  bBox=ir.eBox!=ebtNONE;
+  bBox = ir.ePBC!=epbcNONE;
   init_grid(bBox, box, rcut, ngrid, &grid);
   max_nframes = nframes = 0;
   max_nrhb    = nrhb    = 0;
