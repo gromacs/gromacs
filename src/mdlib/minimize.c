@@ -74,7 +74,7 @@ static void warn_step(FILE *fp,real ustep,real ftol,bool bConstrain)
 {
   fprintf(fp,"\nStepsize too small (%g nm)"
 	  "Converged to machine precision,\n"
-	  "but not to the requested precision (%g)\n%s",
+	  "but not to the requested precision (%g)\n",
 	  ustep,ftol);
   if (bConstrain)
     fprintf(fp,"You might need to increase your constraint accuracy, or turn\n"
