@@ -1,0 +1,133 @@
+.TH g_clustsize 1 "Sun 25 Jan 2004"
+.SH NAME
+g_clustsize
+.B VERSION 3.2.0
+.SH SYNOPSIS
+\f3g_clustsize\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-n" " index.ndx "
+.BI "-o" " csize.xpm "
+.BI "-ow" " csizew.xpm "
+.BI "-nc" " nclust.xvg "
+.BI "-mc" " maxclust.xvg "
+.BI "-ac" " avclust.xvg "
+.BI "-hc" " histo-clust.xvg "
+.BI "-[no]h" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-tu" " enum "
+.BI "-[no]w" ""
+.BI "-cut" " real "
+.BI "-[no]mol" ""
+.BI "-nskip" " int "
+.BI "-nlevels" " int "
+.BI "-rgblo" " vector "
+.BI "-rgbhi" " vector "
+.SH DESCRIPTION
+This program computes the size distributions of molecular/atomic clusters in
+the gas phase. The output is given in the form of a XPM file.
+The total number of clusters is written to a XVG file.
+
+
+When the 
+.B -mol
+option is given clusters will be made out of
+molecules rather than atoms, which allows clustering of large molecules.
+In this case an index file would still contain atom numbers
+or your calculcation will die with a SEGV.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input, Opt.
+ Portable xdr run input file 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-o" " csize.xpm" 
+.B Output
+ X PixMap compatible matrix file 
+
+.BI "-ow" " csizew.xpm" 
+.B Output
+ X PixMap compatible matrix file 
+
+.BI "-nc" " nclust.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-mc" " maxclust.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-ac" " avclust.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-hc" " histo-clust.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-tu"  " enum" " ps" 
+ Time unit: 
+.B ps
+, 
+.B fs
+, 
+.B ns
+, 
+.B us
+, 
+.B ms
+, 
+.B s
+, 
+.B m
+or 
+.B h
+
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-cut"  " real" "   0.35" 
+ Largest distance (nm) to be considered in a cluster
+
+.BI "-[no]mol"  "    no"
+ Cluster molecules rather than atoms (needs tpr file)
+
+.BI "-nskip"  " int" " 0" 
+ Number of frames to skip between writing
+
+.BI "-nlevels"  " int" " 20" 
+ Number of levels of grey in xpm output
+
+.BI "-rgblo"  " vector" " 1 1 0" 
+ RGB values for the color of the lowest occupied cluster size
+
+.BI "-rgbhi"  " vector" " 0 0 1" 
+ RGB values for the color of the highest occupied cluster size
+
