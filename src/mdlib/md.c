@@ -358,7 +358,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* HACK */
     if (!bLateVir)
       calc_virial(log,START(nsb),HOMENR(nsb),x,f,
-		  force_vir,pme_vir,cr,graph,parm->box,&mynrnb,fr,bTweak);
+		  force_vir,pme_vir,graph,parm->box,&mynrnb,fr,bTweak);
    
 #ifdef XMDRUN
     if (bTCR)
@@ -408,7 +408,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       if(dummycomm)
 	move_dummy_f(dummycomm,f,cr);
 
-      spread_dummy_f(log,x,f,buf,&mynrnb,&top->idef);
+      spread_dummy_f(log,x,f,&mynrnb,&top->idef);
 
       if(dummycomm)
         move_construct_f(dummycomm,f,cr);
@@ -416,7 +416,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     if (bLateVir)
       calc_virial(log,START(nsb),HOMENR(nsb),x,f,
-		  force_vir,pme_vir,cr,graph,parm->box,&mynrnb,fr,bTweak);
+		  force_vir,pme_vir,graph,parm->box,&mynrnb,fr,bTweak);
 		  
     if (bDummies && fr->bEwald) { 
       /* Spread the LR force on dummy particle to the other particles... 
@@ -426,7 +426,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       if(dummycomm)
 	move_dummy_f(dummycomm,fr->f_pme,cr);
 
-      spread_dummy_f(log,x,fr->f_pme,buf,&mynrnb,&top->idef);
+      spread_dummy_f(log,x,fr->f_pme,&mynrnb,&top->idef);
 
       if(dummycomm)
         move_construct_f(dummycomm,fr->f_pme,cr);

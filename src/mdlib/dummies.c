@@ -585,7 +585,7 @@ static void spread_dum3FAD(rvec xi,rvec xj,rvec xk,
 }
 
 static void spread_dum3OUT(rvec xi,rvec xj,rvec xk,
-			rvec fi,rvec fj,rvec fk,rvec f,real a,real b,real c)
+			   rvec fi,rvec fj,rvec fk,rvec f,real a,real b,real c)
 {
   rvec xij,xik,ffj,ffk;
   real cfx,cfy,cfz;
@@ -673,7 +673,7 @@ static void spread_dum4FD(rvec xi,rvec xj,rvec xk,rvec xl,
   /* TOTAL: 77 flops */
 }
 
-void spread_dummy_f(FILE *log,rvec x[],rvec f[],rvec fbuf[],t_nrnb *nrnb,t_idef *idef)
+void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef)
 {
   real      a1,b1,c1;
   int       i,m,nra,nrd,tp,ftype;

@@ -328,7 +328,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       if(dummycomm)
         move_dummy_f(dummycomm,force[TRY],cr);
       
-      spread_dummy_f(log,pos[TRY],force[TRY],buf,&(nrnb[cr->nodeid]),
+      spread_dummy_f(log,pos[TRY],force[TRY],&(nrnb[cr->nodeid]),
 		     &top->idef);
       if(dummycomm)
         move_construct_f(dummycomm,force[TRY],cr);

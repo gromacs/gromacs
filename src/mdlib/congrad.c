@@ -194,7 +194,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     if(dummycomm)
       move_dummy_f(dummycomm,f,cr);
 
-    spread_dummy_f(log,x,f,buf,&(nrnb[cr->nodeid]),&top->idef);
+    spread_dummy_f(log,x,f,&(nrnb[cr->nodeid]),&top->idef);
   
     if(dummycomm)
       move_construct_f(dummycomm,f,cr);
@@ -318,7 +318,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	if(dummycomm)
 	  move_dummy_f(dummycomm,f,cr);
 
-	spread_dummy_f(log,xprime,f,buf,&(nrnb[cr->nodeid]),&top->idef); 
+	spread_dummy_f(log,xprime,f,&(nrnb[cr->nodeid]),&top->idef); 
 
 	if(dummycomm)
 	  move_construct_f(dummycomm,f,cr);
@@ -418,7 +418,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       if(dummycomm)
         move_dummy_f(dummycomm,f,cr);
 
-      spread_dummy_f(log,xprime,f,buf,&(nrnb[cr->nodeid]),&top->idef); 
+      spread_dummy_f(log,xprime,f,&(nrnb[cr->nodeid]),&top->idef); 
 
       if(dummycomm)
         move_construct_f(dummycomm,f,cr);
