@@ -156,15 +156,14 @@ void read_bfac(char *fn, int *n_bfac, double **bfac_val, int **bfac_nr)
   
 }
 
-void write_pdb_conf_bfac(char *fn, t_atoms *atoms, rvec x[], matrix box,
-			 int n_bfac,double *bfac,int *bfac_nr,
-			 bool peratom, bool perres, bool bLegend)
+void set_pdb_conf_bfac(int natoms,int nres,t_pdbatom pdba[],rvec x[],
+		       matrix box,int n_bfac,double *bfac,int *bfac_nr,
+		       bool peratom, bool perres, bool bLegend)
 {
   FILE *out;
-  real bfac_min,bfac_max,xmin,ymin,zmin;
-  int  i,n,natoms;
+  real bfac_min,bfac_max;
+  int  i,n;
   bool found;
-  t_pdbatom *pdba;
   char buf[120];
 
   bfac_max=-1e10;
@@ -184,14 +183,12 @@ void write_pdb_conf_bfac(char *fn, t_atoms *atoms, rvec x[], matrix box,
     bfac_min /= 10;
   }
   
-  pdba=atoms2pdba(atoms,x);  
-  natoms=atoms->nr;
   for(i=0; (i<natoms); i++)
     pdba[i].bfac=0;
   
-  if ( (n_bfac == atoms->nres) || (perres) ) {
+  if ( (n_bfac == nres) || (perres) ) {
     fprintf(stderr,"Will attach %d B-factors to %d residues\n",
-	    n_bfac,atoms->nres);
+	    n_bfac,nres);
     for(i=0; (i<n_bfac); i++) {
       found=FALSE;
       for(n=0; (n<natoms); n++)
@@ -221,31 +218,36 @@ void write_pdb_conf_bfac(char *fn, t_atoms *atoms, rvec x[], matrix box,
   } else
     fatal_error(0,"Number of B-factors (%d) does not match number of atoms "
 		"(%d) or residues (%d) and no attachment type (atom or "
-		"residue) specified.",n_bfac,natoms,atoms->nres);
+		"residue) specified.",n_bfac,natoms,nres);
+}
+
+void pdb_legend(FILE *out,int natoms,int nres,t_pdbatom pdba[])
+{
+  real bfac_min,bfac_max,xmin,ymin,zmin;
+  int  i;
+  char buf[256];
   
-  out=ffopen(fn,"w");
-  print_pdbatoms(out,natoms,pdba,box);
-  if (bLegend) {
-    fprintf(stderr,"B-factors range from %g to %g\n",bfac_min,bfac_max);
-    xmin = 1e10;
-    ymin = 1e10;
-    zmin = 1e10;
-    for (i=0; (i<atoms->nr); i++) {
-      if (pdba[i].x[XX] < xmin) xmin = pdba[i].x[XX];
-      if (pdba[i].x[YY] < ymin) ymin = pdba[i].x[YY];
-      if (pdba[i].x[ZZ] < zmin) zmin = pdba[i].x[ZZ];
-    }
-    sprintf(buf,"%s","LEG");
-    fprintf(out,"REMARK    NOW IT'S LEGEND TIME\n");
-    buf[3]='\0';
-    for (i=1; (i<12); i++) {
-      fprintf(out,pdbformat,
-	      "ATOM  ",atoms->nr+1+i,"CA",buf,' ',atoms->nres+1,
-	      xmin+(i*1.2),ymin,zmin,1.0,
-	      bfac_min+ ((i-1.0)*(bfac_max-bfac_min)/10) );
-    }
+  bfac_max=-1e10;
+  bfac_min=1e10;
+  xmin = 1e10;
+  ymin = 1e10;
+  zmin = 1e10;
+  for (i=0; (i<natoms); i++) {
+    xmin     = min(xmin,pdba[i].x[XX]);
+    ymin     = min(ymin,pdba[i].x[YY]);
+    zmin     = min(zmin,pdba[i].x[ZZ]);
+    bfac_min = min(bfac_min,pdba[i].bfac);
+    bfac_max = max(bfac_max,pdba[i].bfac);
   }
-  fclose(out);
+  fprintf(stderr,"B-factors range from %g to %g\n",bfac_min,bfac_max);
+  sprintf(buf,"%s","LEG");
+  buf[3]='\0';
+  for (i=1; (i<12); i++) {
+    fprintf(out,pdbformat,
+	    "ATOM  ",natoms+1+i,"CA",buf,' ',nres+1,
+	    xmin+(i*1.2),ymin,zmin,1.0,
+	    bfac_min+ ((i-1.0)*(bfac_max-bfac_min)/10) );
+  }
 }
 
 int main(int argc, char *argv[])
@@ -275,7 +277,9 @@ int main(int argc, char *argv[])
     "number followed by B-factor. Obiously, any type of numeric data can",
     "be displayed in stead of B-factors. [TT]-legend[tt] will produce",
     "a row of CA atoms with B-factors ranging from the minimum to the",
-    "maximum value found, effectively making a legend for viewing."
+    "maximum value found, effectively making a legend for viewing.[PAR]",
+    "Finally with option [TT]-label[tt] editconf can add a chain identifier",
+    "to a pdb file, which can be useful for analysis using e.g. rasmol."
   };
   static char *bugs[] = {
     "For complex molecules, the periodicity removal routine may break down,",
@@ -286,6 +290,8 @@ int main(int argc, char *argv[])
   static bool peratom=FALSE,perres=FALSE,bLegend=FALSE;
   static rvec scale={1.0,1.0,1.0},newbox={0.0,0.0,0.0};
   static rvec center={0.0,0.0,0.0};
+  static char *label="A";
+  
   t_pargs pa[] = {
     { "-ndef", FALSE, etBOOL, &bNDEF, "Choose output from default index groups" },    
     { "-d", FALSE, etREAL, &dist, 
@@ -308,7 +314,8 @@ int main(int argc, char *argv[])
     { "-pbc",  FALSE, etBOOL, &bRMPBC, "Remove the periodicity (make molecule whole again)" },
     { "-atom", FALSE, etBOOL, &peratom, "Attach B-factors per atom" },
     { "-res",  FALSE, etBOOL, &perres,  "Attach B-factors per residue" },
-    { "-legend",FALSE,etBOOL, &bLegend, "Make B-factor legend"}
+    { "-legend",FALSE,etBOOL, &bLegend, "Make B-factor legend"},
+    { "-label", FALSE, etSTR, &label,   "Add chain label for all residues" }
   };
 #define NPA asize(pa)
 
@@ -436,12 +443,6 @@ int main(int argc, char *argv[])
     if (opt2bSet("-op",NFILE,fnm)) {
       if (opt2bSet("-bf",NFILE,fnm)) {
 	fatal_error(0,"combination not implemented: -bf -n  or -bf -ndef");
-	/*
-	read_bfac(opt2fn("-bf",NFILE,fnm),&n_bfac,&bfac,&bfac_nr);
-	write_pdb_conf_bfac(opt2fn("-op",NFILE,fnm),
-			    &atoms,x,box,n_bfac,bfac,bfac_nr,
-			    peratom,perres,bLegend);
-	*/
       } else {
 	write_pdb_conf_indexed(opt2fn("-op",NFILE,fnm),
 			       &atoms,x,box,isize,index); 
@@ -455,14 +456,25 @@ int main(int argc, char *argv[])
       fclose(out);
     }
     if (opt2bSet("-op",NFILE,fnm)) {
+      FILE *out;
+      t_pdbatom *pdba = atoms2pdba(&atoms,x);
+      
       if (opt2bSet("-bf",NFILE,fnm)) {
 	read_bfac(opt2fn("-bf",NFILE,fnm),&n_bfac,&bfac,&bfac_nr);
-	write_pdb_conf_bfac(opt2fn("-op",NFILE,fnm),
-			    &atoms,x,box,n_bfac,bfac,bfac_nr,
-			    peratom,perres,bLegend);
-      } else {
-	write_pdb_conf(opt2fn("-op",NFILE,fnm),&atoms,x,box,FALSE); 
+	set_pdb_conf_bfac(atoms.nr,atoms.nres,pdba,x,box,
+			  n_bfac,bfac,bfac_nr,peratom,perres,bLegend);
       }
+      if (opt2parg_bSet("-label",NPA,pa)) {
+	for(i=0; (i<atoms.nr); i++) 
+	  pdba[i].chain=label[0];
+      }
+      
+      out=opt2FILE("-op",NFILE,fnm,"w");
+      print_pdbatoms(out,atoms.nr,pdba,box);
+      if (bLegend)
+	pdb_legend(out,atoms.nr,atoms.nres,pdba);
+      fclose(out);
+      sfree(pdba);
     }  
   }
   
