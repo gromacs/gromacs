@@ -334,7 +334,7 @@ static void einstein_visco(char *fn,char *fni,int nsets,int nframes,real **sum,
 static void analyse_ener(bool bCorr,char *corrfn,
 			 bool bFee,bool bSum,bool bFluct,
 			 bool bVisco,char *visfn,int  nmol,int ndf,
-			 int  oldstep,real oldt,int step,real t,
+			 int firststep,int  oldstep,real oldt,int step,real t,
 			 real time[], real reftemp,
 			 t_energy oldee[],t_energy ee[],
 			 int nset,int set[],int nenergy,real **eneset,
@@ -385,7 +385,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
     }
     for(i=0; (i<nset); i++) {
       iset = set[i];
-      m      = oldstep;
+      m      = oldstep - firststep;
       k      = nsteps;
 #ifdef DEBUG
       fprintf(stdout,"sum: %g, oldsum: %g, k: %d\n",
@@ -747,13 +747,14 @@ int gmx_energy(int argc,char *argv[])
   t_enxframe *frame,*fr=NULL;
   int        cur=0;
 #define NEXT (1-cur)
-  int        nre,teller,teller_disre,oldstep,nor=0,nex=0,norfr=0,enx_i=0;
+  int        nre,teller,teller_disre,firststep,oldstep;
+  int        nor=0,nex=0,norfr=0,enx_i=0;
   real       oldt;
   real       *bounds,*violaver=NULL,*oobs=NULL,*orient=NULL,*odrms=NULL;
   int        *index,*pair,norsel=0,*orsel=NULL,*or_label=NULL;
   int        nbounds=0,npairs;
   bool       bDisRe,bDRAll,bORA,bORT,bODA,bODR,bODT,bORIRE,bOTEN;
-  bool       bStarted,bCont,bEDR,bVisco;
+  bool       bFoundFirst,bFoundOld,bCont,bEDR,bVisco;
   double     sum,sumaver,sumt,dbl;
   real       **eneset=NULL, **enesum=NULL,*time=NULL,Vaver;
   int        *set=NULL,i,j,k,nset,sss,nenergy;
@@ -957,7 +958,10 @@ int gmx_energy(int argc,char *argv[])
   /* Initiate counters */
   teller       = 0;
   teller_disre = 0;
-  oldstep      = -1;
+  bFoundFirst  = FALSE;
+  firststep    = 0;
+  bFoundOld    = FALSE;
+  oldstep      = 0;
   oldt         = 0;
   do {
     /* This loop searches for the first frame (when -b option is given), 
@@ -966,9 +970,13 @@ int gmx_energy(int argc,char *argv[])
     do {
       bCont = do_enx(fp,&(frame[NEXT]));
       
-      if (bCont)
+      if (bCont) {
+	if (!bFoundFirst) {
+	  bFoundFirst = TRUE;
+	  firststep = (frame[NEXT]).step;
+	}
 	timecheck = check_times(frame[NEXT].t);
-      
+      }      
     } while (bCont && (timecheck < 0));
     
     if ((timecheck == 0) && bCont) {
@@ -979,24 +987,21 @@ int gmx_energy(int argc,char *argv[])
 	/* The frame contains energies, so update cur */
 	cur  = NEXT;
 	
-	if (oldstep == -1) {
-	  /* 
-	   * Initiate the previous step data 
-	   * Since step is incremented after reading, it is always >= 1,
-	   * therefore this will be executed only once.
-	   */
+	if (!bFoundOld) {
+	  bFoundOld = TRUE;
+	  /* Initiate the previous step data */
 	  oldstep = fr->step;
 	  oldt    = fr->t;
 	  /* 
-	   * If we did not start at the first step, oldstep will be > 0
+	   * If we did not start at the first step, oldstep will be > firststep
 	   * and we must initiate the data in the array. Otherwise it remains 0
 	   */
-	  if (oldstep > 0)
+	  if (oldstep > firststep)
 	    for(i=0; i<fr->nre; i++) {
 	      oldee[i].esum = fr->ener[i].esum - fr->ener[i].e;
 	      oldee[i].eav  = fr->ener[i].eav  - 
-		(sqr(oldee[i].esum - oldstep*fr->ener[i].e)/
-		 (oldstep*(fr->step+1)));
+		(sqr(oldee[i].esum - (oldstep-firststep)*fr->ener[i].e)/
+		 ((oldstep-firststep)*(fr->step+1-firststep)));
 	    }
 	}
       }
@@ -1197,7 +1202,7 @@ int gmx_energy(int argc,char *argv[])
   else 
     analyse_ener(opt2bSet("-corr",NFILE,fnm),opt2fn("-corr",NFILE,fnm),
 		 bFee,bSum,bFluct,bVisco,opt2fn("-vis",NFILE,fnm),
-		 nmol,ndf,oldstep,oldt,frame[cur].step,frame[cur].t,
+		 nmol,ndf,firststep,oldstep,oldt,frame[cur].step,frame[cur].t,
 		 time,reftemp,oldee,frame[cur].ener,
 		 nset,set,nenergy,eneset,enesum,leg,Vaver,ezero);
   if (opt2bSet("-f2",NFILE,fnm))
