@@ -267,7 +267,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     }
   }
 
-  if ((ir->vdwtype == evdwSWITCH) || (ir->vdwtype == evdwSHIFT) || (ir->vdwtype == eelENCADSHIFT) )
+  if ((ir->vdwtype == evdwSWITCH) || (ir->vdwtype == evdwSHIFT) || (ir->vdwtype == evdwENCADSHIFT) )
   {
     sprintf(err_buf,"With vdwtype = %s rvdw_switch must be < rvdw",
 	    evdw_names[ir->vdwtype]);
