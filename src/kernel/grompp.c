@@ -65,52 +65,6 @@ static char *SRCID_grompp_c = "$Id$";
 #include "txtdump.h"
 #include "calcgrid.h"
 
-void check_solvent(bool bVerbose,t_molinfo msys[],
-		   int Nsim,t_simsystem Sims[],t_inputrec *ir,char *SolventOpt)
-{
-  int  i,wmol,nwt;
-  char buf[128];
-  
-  ir->solvent_opt=-1;
-  if (!SolventOpt || strlen(SolventOpt)==0) {
-    if (bVerbose)
-      fprintf(stderr,"no solvent optimizations...\n");
-  }
-  else {
-    if (bVerbose)
-      fprintf(stderr,"checking for solvent...\n");
-    for(i=0; (i<Nsim); i++) {
-      wmol = Sims[i].whichmol;
-      if ((strcmp(SolventOpt,*(msys[wmol].name)) == 0) && 
-	  (Sims[i].nrcopies > 0)) {
-	nwt = msys[wmol].atoms.atom[0].type;
-	if (ir->solvent_opt == -1) {
-	  if (msys[wmol].atoms.nr == 3)
-	    ir->solvent_opt=nwt;
-	  else {
-	    sprintf(buf,"Sorry, can only do solvent optimization with SPC-like models\n");
-	    warning(buf);
-	  }
-	}
-	else if (ir->solvent_opt == nwt) {
-	  if (debug)
-	    fprintf(debug,"Remark: Multiple topology entries for %s\n",
-		    SolventOpt);
-	} else
-	  fatal_error(0,"Multiple non-matching topology entries for %s",
-		      SolventOpt);
-      }
-    }
-    if (bVerbose) {
-      if (ir->solvent_opt != -1)
-	fprintf(stderr,"...using solvent optimization for atomtype %d\n",
-		ir->solvent_opt);
-      else
-	fprintf(stderr,"...no solvent\n");
-    }
-  }
-}
-
 static int *shuffle_xv(char *ndx,bool bSort,bool bVerbose,
 		       int ntab,int *tab,int nmol,t_molinfo *mol,
 		       int natoms,rvec *x,rvec *v,
@@ -315,8 +269,6 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
   msys->name=do_top(bVerbose,topfile,topppfile,opts,&(sys->symtab),
 		    plist,atype,&nrmols,&molinfo,ir,&Nsim,&Sims);
   
-  check_solvent(bVerbose,molinfo,Nsim,Sims,ir,opts->SolventOpt);
-  
   ntab = 0;
   tab  = NULL;
   if (nnodes > 1) {
@@ -520,18 +472,6 @@ static int renum_atype(t_params plist[],t_topology *top,
       search_array(atnr,&nat,map,top->atoms.atom[i].typeB);
   }
   
-  if (ir->solvent_opt != -1) {
-    if (debug)
-      fprintf(debug,"Solvent_type before: %d\n",ir->solvent_opt);
-    for(j=0; (j<nat); j++)
-      if (map[j] == ir->solvent_opt) {
-	ir->solvent_opt=j;
-	break;
-      }
-    if (debug)
-      fprintf(debug,"Renumbering solvent_opt (atomtype for OW) to %d\n",
-	      ir->solvent_opt);
-  }
   if (debug)
     pr_ivec(debug,0,"map",map,nat);
     

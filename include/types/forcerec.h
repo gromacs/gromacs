@@ -84,8 +84,9 @@ typedef struct {
   int  vdwtype;
   int  cg0,hcg;
   int  ndelta;
-  bool bWaterOpt;
-  int  nWater,nWatMol;
+  bool bSolvOpt;
+  int  nMNOMol;
+  int  nWatMol;
   int  Dimension;
   bool bGrid,bDomDecomp;
   int  *solvent_type;

@@ -33,7 +33,6 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, pcoupltype, tau_p, compressibility, ref_p)
 <li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, zero_temp_time)
 <li><A HREF="#vel"><b>velocity generation</b></A> (gen_vel, gen_temp, gen_seed)
-<li><A HREF="#sol"><b>solvent optimization</b></A> (solvent_optimization)
 <li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_warnangle, morse)
 <li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre_weighting, disre_mixed, disre_fc, disre_tau, nstdisreout)
 <li><A HREF="#free"><b>Free Energy Perturbation</b></A> (free_energy, init_lambda, delta_lambda, sc_alpha, sc_sigma)
@@ -540,22 +539,6 @@ when <b>gen_seed</b> is set to -1, the seed is calculated as
 <tt>(time() + getpid()) % 1000000</tt>
 </dl>
 
-<A NAME="sol"><br>
-<hr>
-<h3>Solvent optimization</h3>
-
-<dl>
-<dt><h4>solvent_optimization:</h4>
-<dd><dl compact>
-<dt><b>&lt;empty&gt;</b>
-<dd>Do not use water specific non-bonded optimizations
-<dt><b>&lt;solvent molecule name&gt;</b>
-<dd>Use water specific non-bonded optimizations. This string should match the
-solvent molecule name in your topology. Check your run time to see 
-if it is faster. 
-</dl>
-</dl>
-
 <A NAME="bond"><br>
 <hr>
 <h3>Bonds</h3>
@@ -850,7 +833,6 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#free">sc_alpha</A><br>
 <A HREF="#free">sc_sigma</A><br>
 <A HREF="#bond2">shake_tol</A><br>
-<A HREF="#sol">solvent_optimization</A><br>
 <A HREF="#pc">tau_p</A><br>
 <A HREF="#tc">tau_t</A><br>
 <A HREF="#tc">tc_grps</A><br>

@@ -279,8 +279,6 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   cmp_real(fp,"inputrec->init_t",0,ir1->init_t,ir2->init_t);
   cmp_real(fp,"inputrec->delta_t",0,ir1->delta_t,ir2->delta_t);
   cmp_real(fp,"inputrec->xtcprec",0,ir1->xtcprec,ir2->xtcprec);
-  cmp_int(fp,"inputrec->solvent_opt",0,ir1->solvent_opt,ir2->solvent_opt);
-  cmp_int(fp,"inputrec->nsatoms",0,ir1->nsatoms,ir2->nsatoms);
   cmp_int(fp,"inputrec->nkx",0,ir1->nkx,ir2->nkx);
   cmp_int(fp,"inputrec->nky",0,ir1->nky,ir2->nky);
   cmp_int(fp,"inputrec->nkz",0,ir1->nkz,ir2->nkz);

@@ -140,7 +140,7 @@ static void check_solvent(FILE *log,t_topology *top,t_forcerec *fr,
   cgid = make_invblock(cgs,cgs->nra);
   
   /* Loop over molecules */
-  fprintf(log,"There are %d molecules, %d charge groups and %d atom\n",
+  fprintf(log,"There are %d molecules, %d charge groups and %d atoms\n",
 	  mols->nr,cgs->nr,cgs->nra);
   for(i=0; (i<mols->nr); i++) {
     /* Set boolean that determines whether the molecules consists of one CG */
@@ -152,7 +152,7 @@ static void check_solvent(FILE *log,t_topology *top,t_forcerec *fr,
     for(j=j0+1; (j<j1); j++) {
       bOneCG = bOneCG && (cgid[mols->a[j]] == cgid[mols->a[j-1]]);
     }
-    if (bOneCG) {
+    if (fr->bSolvOpt && bOneCG) {
       /* Check whether everything is excluded */
       snew(bAllExcl,nj);
       bAE = TRUE;
@@ -214,8 +214,8 @@ static void check_solvent(FILE *log,t_topology *top,t_forcerec *fr,
 	 * qO, and charge on atoms 2/3 is constant qH. /EL
 	 */
 	aj=mols->a[j0];
-	if((top->atoms.atom[aj].type==fr->nWater) &&
-	   (nj==3) && !bHaveLJ[1] && !bHaveLJ[2] &&
+	if((nj==3) && bHaveCoul[0] && bHaveLJ[0] &&
+	   !bHaveLJ[1] && !bHaveLJ[2] &&
 	   (top->atoms.atom[aj+1].q == top->atoms.atom[aj+2].q))
 	  fr->solvent_type[cgid[aj]] = esolWATER;
 	else {
@@ -274,6 +274,7 @@ static void check_solvent(FILE *log,t_topology *top,t_forcerec *fr,
       fprintf(debug,"MNO: cg = %5d, m = %2d, n = %2d, o = %2d\n",
 	      i,fr->mno_index[3*i],fr->mno_index[3*i+1],fr->mno_index[3*i+2]);
   }
+  sfree(cgid);
 }
 
 static void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
@@ -482,19 +483,10 @@ void init_forcerec(FILE *fp,
   fr->rcoulomb_switch = ir->rcoulomb_switch;
   fr->rcoulomb        = ir->rcoulomb;
   
-  /* Must really support table functions with solvent_opt */
-  fr->nWater     = ir->solvent_opt;
-  fr->bWaterOpt  = (fr->nWater >= 0);
-  
-  fr->nWatMol = 0;
-  if (fr->bWaterOpt) {
-    for(i=START(nsb); (i<START(nsb)+HOMENR(nsb)); i++)
-      if (fr->nWater == mdatoms->typeA[i])
-	fr->nWatMol++;
-    if (fp)
-      fprintf(fp,"There are %d water molecules on node %d\n",
-	      fr->nWatMol,nsb->nodeid);
-  }
+  if (getenv("GMX_NO_SOLV_OPT"))
+    fr->bSolvOpt = FALSE;
+  else
+    fr->bSolvOpt = TRUE;
   
   /* Parameters for generalized RF */
   fr->zsquare = 0.0;
@@ -685,6 +677,32 @@ void init_forcerec(FILE *fp,
   }
   if (!fr->mno_index)
     check_solvent(fp,top,fr,mdatoms);
+
+  fr->nMNOMol = 0;
+  fr->nWatMol = 0;
+  {
+    atom_id *cgid;
+    
+    cgid = make_invblock(&(top->blocks[ebCGS]),top->blocks[ebCGS].nra);
+
+    for(i=0; i<mols->nr; i++) {
+      j = mols->a[mols->index[i]];
+      if (j>=START(nsb) && j<START(nsb)+HOMENR(nsb)) {
+	if (fr->solvent_type[cgid[j]] == esolMNO)
+	  fr->nMNOMol++;
+	else if (fr->solvent_type[cgid[j]] == esolWATER)
+	  fr->nWatMol++;
+      }
+    }
+    sfree(cgid);
+  }
+
+  if (fp) {
+    fprintf(fp,"There are %d optimized solvent molecules on node %d\n",
+	    fr->nMNOMol,nsb->nodeid);
+    fprintf(fp,"There are %d optimized water molecules on node %d\n",
+	    fr->nWatMol,nsb->nodeid);
+  }
 }
  
 #define pr_real(fp,r) fprintf(fp,"%s: %e\n",#r,r)
