@@ -282,16 +282,17 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
 	  sprintf(buf,"-[no]%s",pa[i].option+1);
 	else
 	  strcpy(buf,pa[i].option);
-	sprintf(buf2,"%12s %6s %6s  %s\n",
-		buf,argtp[pa[i].type],pa_val(&(pa[i])),pa[i].desc);
 	if (strlen(buf)>((OPTLEN+TYPELEN)-max(strlen(argtp[pa[i].type]),4))) {
 	  fprintf(fp,"%12s\n",buf);
 	  sprintf(buf2,"%12s %6s %6s  %s\n",
-		"",argtp[pa[i].type],pa_val(&(pa[i])),pa[i].desc);
-	} else if (strlen(buf)>OPTLEN)
+		"",argtp[pa[i].type],pa_val(&(pa[i])),check_tty(pa[i].desc));
+	} else if (strlen(buf)>OPTLEN) {
 	  /* so type can be 4 or 5 char's (max(...,4)), this fits in the %5s */
 	  sprintf(buf2,"%-14s%5s %6s  %s\n",
-		  buf,argtp[pa[i].type],pa_val(&(pa[i])),pa[i].desc);
+		  buf,argtp[pa[i].type],pa_val(&(pa[i])),check_tty(pa[i].desc));
+	} else
+	  sprintf(buf2,"%12s %6s %6s  %s\n",
+		buf,argtp[pa[i].type],pa_val(&(pa[i])),check_tty(pa[i].desc));
 	wdesc=wrap_lines(buf2,80,28);
 	fprintf(fp,wdesc);
 	sfree(wdesc);
