@@ -1,33 +1,39 @@
 /*
  * $Id$
  * 
- *       This source code is part of
+ *                This source code is part of
  * 
- *        G   R   O   M   A   C   S
+ *                 G   R   O   M   A   C   S
  * 
- * GROningen MAchine for Chemical Simulations
+ *          GROningen MAchine for Chemical Simulations
  * 
- *               VERSION 2.0
+ *                        VERSION 3.0
  * 
- * Copyright (c) 1991-1999
+ * Copyright (c) 1991-2001
  * BIOSON Research Institute, Dept. of Biophysical Chemistry
  * University of Groningen, The Netherlands
  * 
- * Please cite this reference in all publication using GROMACS:
- * GROMACS: A message-passing parallel molecular dynamics implementation
- * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
- * Comp. Phys. Comm. 91, 43-56 (1995)
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
  * 
- * Also check out our WWW page:
- * http://md.chem.rug.nl/~gmx
- * or e-mail to:
- * gromacs@chem.rug.nl
+ * If you want to redistribute modifications, please consider that
+ * scientific software is very special. Version control is crucial -
+ * bugs must be traceable. We will be happy to consider code for
+ * inclusion in the official distribution, but derived work must not
+ * be called official GROMACS. Details are found in the README & COPYING
+ * files - if they are missing, get the official version at www.gromacs.org.
+ * 
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the papers on the package - you can find them in the top README file.
+ * 
+ * Do check out http://www.gromacs.org , or mail us at gromacs@gromacs.org .
  * 
  * And Hey:
- * Great Red Oystrich Makes All Chemists Sane
+ * GROup of MAchos and Cynical Suckers
  */
 static char *SRCID_copyrgt_c = "$Id$";
-
 #include "stdio.h"
 #include "stdlib.h"
 #include "macros.h"
@@ -37,30 +43,35 @@ static char *SRCID_copyrgt_c = "$Id$";
 
 static char *head1[]= {
   "",
-  "      This source code is part of",
+  "               This source code is part of",
   "",
-  "       G   R   O   M   A   C   S",
+  "                G   R   O   M   A   C   S",
   "",
-  "GROningen MAchine for Chemical Simulations",
+  "         GROningen MAchine for Chemical Simulations",
   ""
 };
-static char *head2[] = {
-  "Please use these references in all publications using GROMACS:",
-  "GROMACS: A message-passing parallel molecular dynamics implementation",
-  "H.J.C. Berendsen, D. van der Spoel and R. van Drunen",
-  "Comp. Phys. Comm. 91, 43-56 (1995)",
+
+static char *head2[]= {
+  "This program is free software; you can redistribute it and/or",
+  "modify it under the terms of the GNU General Public License",
+  "as published by the Free Software Foundation; either version 2",
+  "of the License, or (at your option) any later version.",
   "",
-  "GROMACS 3.0: A package for molecular simulation and trajectory analysis",
-  "Erik Lindahl, Berk Hess and David van der Spoel",
-  "(in preparation, hey it's a beta version anyway)",
+  "If you want to redistribute modifications, please consider that",
+  "scientific software is very special. Version control is crucial -",
+  "bugs must be traceable. We will be happy to consider code for",
+  "inclusion in the official distribution, but derived work must not",
+  "be called official GROMACS. Details are found in the README & COPYING",
+  "files - if they are missing, get the official version at www.gromacs.org.",
   "",
-  "Also check out our WWW page:",
-  "http://md.chem.rug.nl/~gmx",
-  "or e-mail to:",
-  "gromacs@chem.rug.nl",
+  "To help us fund GROMACS development, we humbly ask that you cite",
+  "the papers on the package - you can find them in the top README file.",
+  "",
+  "Do check out http://www.gromacs.org , or mail us at gromacs@gromacs.org .",
   "",
   "And Hey:"
 };
+
 #define NH1 asize(head1)
 #define NCR asize(CopyrightText)
 #define NH2 asize(head2)
@@ -76,7 +87,7 @@ void head(FILE *out, char *fn_, bool bH, bool bSRCID,
   fprintf(out,"%s $""Id""$\n",ccont);
   for(i=0; (i<NH1); i++)
     fprintf(out,"%s %s\n",ccont,head1[i]);
-  fprintf(out,"%s               %s\n",ccont,GromacsVersion());
+  fprintf(out,"%s                        %s\n",ccont,GromacsVersion());
   for(i=0; (i<NCR); i++)
     fprintf(out,"%s %s\n",ccont,CopyrightText[i]);
   for(i=0; (i<NH2); i++)
@@ -118,7 +129,7 @@ void cr_c(char *fn)
   /* Skip over empty lines in the beginning only */
   do { 
     if (fgets2(line,MAXS,in))
-      rtrim(line);
+      rtrim(line); 
   } while ((strlen(line) == 0) && (!feof(in)));
   
   /* Now we are at end of file, or we have a non-empty string */
@@ -146,7 +157,7 @@ void cr_c(char *fn)
     /* Do not put source id's in include/types since some filenames are
      * be equal to those in include */
     if ((strlen(cwd)>strlen("types")) &&
-	(strcmp(cwd+strlen(cwd)-strlen("types"),"types") == NULL))
+	(!strcmp(cwd+strlen(cwd)-strlen("types"),"types")))
       bSRCID = FALSE;
     head(out,fn_,bH,bSRCID,"/*"," *"," */");
     do {
@@ -159,7 +170,9 @@ void cr_c(char *fn)
 
 void cr_other(char *fn)
 {
-  FILE *in,*out;
+
+  /* Doesnt work right now, so its commented out */
+  /*  FILE *in,*out;
   char ofn[1024],line[MAXS+1],line2[MAXS+1],cwd[1024];
   char *p,*fn_,*ptr;
   bool bH,bSRCID;
@@ -175,14 +188,16 @@ void cr_other(char *fn)
   }
   in=ffopen(ofn,"r");
   out=ffopen(fn,"w");
-  
+  */
   /* Skip over empty lines in the beginning only */
+  /*
   do { 
     if (fgets2(line,MAXS,in))
       rtrim(line);
   } while ((strlen(line) == 0) && (!feof(in)));
-  
+  */
   /* Now we are at end of file, or we have a non-empty string */
+  /*
   if (strlen(line) != 0) {  
     strcpy(line2,line);
     trim(line2);
@@ -190,7 +205,8 @@ void cr_other(char *fn)
       fgets2(line,MAXS,in);
       strcpy(line2,line);
       trim(line2);
-    }
+      }
+  */
     /*
     fn_=strdup(fn);
     p=strchr(fn_,'.');
@@ -213,7 +229,8 @@ void cr_other(char *fn)
     /*if ((strlen(cwd)>strlen("types")) &&
 	(strcmp(cwd+strlen(cwd)-strlen("types"),"types") == NULL))
     */
-    bSRCID = FALSE;
+  /*
+  bSRCID = FALSE;
     head(out,fn_,bH,bSRCID,";",";",";");
     do {
       fprintf(out,"%s\n",line);
@@ -221,6 +238,7 @@ void cr_other(char *fn)
   }
   fclose(in);
   fclose(out);
+  */
 }
 
 void cr_tex(char *fn)

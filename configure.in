@@ -4,7 +4,7 @@
 AC_INIT(src/gmxlib/3dview.c)
 AC_PREREQ(2.13)
 AC_CONFIG_AUX_DIR(./config)
-AM_INIT_AUTOMAKE(gromacs, 3.0b)
+AM_INIT_AUTOMAKE(gromacs, 3.0)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 AM_CONFIG_HEADER(src/include/config.h)
 
@@ -743,6 +743,7 @@ AC_OUTPUT([Makefile
                  src/ngmx/Makefile
 		 src/include/Makefile
 		 src/include/types/Makefile
+                 src/contrib/Makefile
 		 tutor/Makefile
 		 tutor/gmxdemo/Makefile
 		 tutor/nmr1/Makefile

@@ -10,44 +10,52 @@ INCLUDES = @INCLUDES@ -I$(top_srcdir)/src/include
 LDFLAGS = @LDFLAGS@ -L${top_builddir}/src/gmxlib -L${top_builddir}/src/mdlib 
 LDADD = -lmdXXX_SUFFIX_XXX -lgmxXXX_SUFFIX_XXX
 
-bin_PROGRAMS = xmdrunXXX_SUFFIX_XXX sigepsXXX_SUFFIX_XXX mk6_nXXX_SUFFIX_XXX
+# NB: The programs in contrib do not get double/mpi suffixes automatically,
+# to make it easier for new developers to understand this file. If you want
+# to have it, append "XXX_SUFFIX_XXX" to the program name.
+# These programs are not compiled or installed by default - you will have to 
+# issue "make <program>" and copy the binary to the correct location yourself! 
+# Add new entries in Makefile.am!
 
-xmdrunXXX_SUFFIX_XXX_SOURCES = xmdrun.c do_gct.c init_sh.c gctio.c glaasje.c ionize.c relax_sh.c
+EXTRA_PROGRAMS 		= xmdrun sigeps mk6_n copyrgt mkyaw prfn eanal hrefify mkice \
+                          total hexamer optwat addquote do_shift g_anavel my_dssp anaf \
+                          listquotes
 
-copyrgtXXX_SUFFIX_XXX_SOURCES 	= copyrgt.c
+xmdrun_SOURCES  	= xmdrun.c do_gct.c init_sh.c gctio.c glaasje.c ionize.c relax_sh.c
 
-sigepsXXX_SUFFIX_XXX_SOURCES	= sigeps.c 
+copyrgt_SOURCES 	= copyrgt.c
 
-mk6_nXXX_SUFFIX_XXX_SOURCES	= mk6_n.c 
+sigeps_SOURCES 		= sigeps.c 
 
-my_dsspXXX_SUFFIX_XXX_SOURCES 	= my_dssp.c	dsspcore.c
+mk6_n_SOURCES 		= mk6_n.c 
 
-hrefifyXXX_SUFFIX_XXX_SOURCES 	= hrefify.c
+my_dssp_SOURCES 	= my_dssp.c dsspcore.c
 
-totalXXX_SUFFIX_XXX_SOURCES 	= total.f
+hrefify_SOURCES 	= hrefify.c
 
-optwatXXX_SUFFIX_XXX_SOURCES 	= optwat.c
+total_SOURCES 		= total.f
 
-hexamerXXX_SUFFIX_XXX_SOURCES 	= hexamer.c
+optwat_SOURCES 		= optwat.c
 
-do_shiftXXX_SUFFIX_XXX_SOURCES 	= do_shift.c
+hexamer_SOURCES 	= hexamer.c
 
-anafXXX_SUFFIX_XXX_SOURCES 	= anaf.c
+do_shift_SOURCES 	= do_shift.c
 
-mkyawXXX_SUFFIX_XXX_SOURCES 	= mkyaw.c
+anaf_SOURCES 		= anaf.c
 
-mkiceXXX_SUFFIX_XXX_SOURCES 	= mkice.c
+mkyaw_SOURCES 		= mkyaw.c
 
-prfnXXX_SUFFIX_XXX_SOURCES 	= prfn.c
+mkice_SOURCES 		= mkice.c
 
-g_anavelXXX_SUFFIX_XXX_SOURCES 	= g_anavel.c
+prfn_SOURCES 		= prfn.c
 
-addquoteXXX_SUFFIX_XXX_SOURCES 	= addquote.c
+g_anavel_SOURCES 	= g_anavel.c
 
-listquotesXXX_SUFFIX_XXX_SOURCES = listquotes.c
+addquote_SOURCES 	= addquote.c
 
-eanalXXX_SUFFIX_XXX_SOURCES 	= eanal.o
+listquotes_SOURCES 	= listquotes.c
 
+eanal_SOURCES 		= eanal.o 
 
 # clean things explicitly, since the target names might have changed
 CLEANFILES   = 	${bin_PROGRAMS}	${EXTRA_PROGRAMS}	\

@@ -5,7 +5,7 @@
 
 include $(srcdir)/Makefile.inc
 
-SUBDIRS = include gmxlib mdlib kernel tools ngmx
+SUBDIRS = include gmxlib mdlib kernel tools ngmx contrib
 # don't do anything for the local directory
 EXTRA_DIST = Makefile.inc
 

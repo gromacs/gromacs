@@ -1,0 +1,540 @@
+# Makefile.in generated automatically by automake 1.4-p1 from Makefile.am
+
+# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
+# This Makefile.in is free software; the Free Software Foundation
+# gives unlimited permission to copy and/or distribute it,
+# with or without modifications, as long as this notice is preserved.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY, to the extent permitted by law; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
+
+#
+# Don't edit - this file is generated automatically from Makefile.am
+#
+
+
+#
+# Don't edit - this file is generated automatically from Makefile.am
+#
+
+# The asm suffix is for intel syntax assembly, and
+# the s suffix for at & t syntax.
+# S suffix files will be preprocessed by cpp, nasm
+# on the other hand can do this directly.
+
+
+SHELL = @SHELL@
+
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+VPATH = @srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+
+bindir = @bindir@
+sbindir = @sbindir@
+libexecdir = @libexecdir@
+datadir = @datadir@
+sysconfdir = @sysconfdir@
+sharedstatedir = @sharedstatedir@
+localstatedir = @localstatedir@
+libdir = @libdir@
+infodir = @infodir@
+mandir = @mandir@
+includedir = @includedir@
+oldincludedir = /usr/include
+
+DESTDIR =
+
+pkgdatadir = $(datadir)/@PACKAGE@
+pkglibdir = $(libdir)/@PACKAGE@
+pkgincludedir = $(includedir)/@PACKAGE@
+
+top_builddir = ../..
+
+ACLOCAL = @ACLOCAL@
+AUTOCONF = @AUTOCONF@
+AUTOMAKE = @AUTOMAKE@
+AUTOHEADER = @AUTOHEADER@
+
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@ $(AM_INSTALL_PROGRAM_FLAGS)
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
+transform = @program_transform_name@
+
+NORMAL_INSTALL = :
+PRE_INSTALL = :
+POST_INSTALL = :
+NORMAL_UNINSTALL = :
+PRE_UNINSTALL = :
+POST_UNINSTALL = :
+host_alias = @host_alias@
+host_triplet = @host@
+AXP_ASM_OBJ = @AXP_ASM_OBJ@
+BUILD_CC = @BUILD_CC@
+CC = @CC@
+CPP = @CPP@
+F77 = @F77@
+FLIBS = @FLIBS@
+IDENT = @IDENT@
+INNER_C_OBJ = @INNER_C_OBJ@
+INNER_F77_OBJ = @INNER_F77_OBJ@
+MAKEINFO = @MAKEINFO@
+MOTIF_OBJ = @MOTIF_OBJ@
+MPICC = @MPICC@
+NASM = @NASM@
+NASMFLAGS = @NASMFLAGS@
+PACKAGE = @PACKAGE@
+PAR_OBJ = @PAR_OBJ@
+RANLIB = @RANLIB@
+SSE_OBJ = @SSE_OBJ@
+SUFFIX = @SUFFIX@
+TDN_OBJ = @TDN_OBJ@
+VERSION = @VERSION@
+X86_ASM_OBJ = @X86_ASM_OBJ@
+XDR_OBJ = @XDR_OBJ@
+bindir = @bindir@
+libdir = @libdir@
+
+SUFFIXES = .asm .S .F
+
+#################
+# We need a second compile command producing executables 
+# that can be run on the local host to make the innerloops.
+# In most cases this is identical to the normal one, but not
+# for cross-compilation. We also need it on parallel machines 
+# where the MPI executables cannot be run outside a batch queue.
+
+# This might be bad - but I don't know any other way to enable
+# us to type make <progname> in subdirs right now
+#AM_CPPFLAGS = -DHAVE_CONFIG_H
+
+BUILD_COMPILE = $(BUILD_CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+
+# This is necessary for VPATH to work, 
+# but it can probably be done in a nicer way...
+INCLUDES = @INCLUDES@ -I$(top_srcdir)/src/include
+LDFLAGS = @LDFLAGS@ -L${top_builddir}/src/gmxlib -L${top_builddir}/src/mdlib 
+LDADD = -lmdXXX_SUFFIX_XXX -lgmxXXX_SUFFIX_XXX
+
+# NB: The programs in contrib do not get double/mpi suffixes automatically,
+# to make it easier for new developers to understand this file. If you want
+# to have it, append "XXX_SUFFIX_XXX" to the program name.
+# These programs are not compiled or installed by default - you will have to 
+# issue "make <program>" and copy the binary to the correct location yourself! 
+# Add new entries in Makefile.am!
+
+EXTRA_PROGRAMS = xmdrun sigeps mk6_n copyrgt mkyaw prfn eanal hrefify mkice                           total hexamer optwat addquote do_shift g_anavel my_dssp anaf                           listquotes
+
+
+xmdrun_SOURCES = xmdrun.c do_gct.c init_sh.c gctio.c glaasje.c ionize.c relax_sh.c
+
+copyrgt_SOURCES = copyrgt.c
+
+sigeps_SOURCES = sigeps.c 
+
+mk6_n_SOURCES = mk6_n.c 
+
+my_dssp_SOURCES = my_dssp.c dsspcore.c
+
+hrefify_SOURCES = hrefify.c
+
+total_SOURCES = total.f
+
+optwat_SOURCES = optwat.c
+
+hexamer_SOURCES = hexamer.c
+
+do_shift_SOURCES = do_shift.c
+
+anaf_SOURCES = anaf.c
+
+mkyaw_SOURCES = mkyaw.c
+
+mkice_SOURCES = mkice.c
+
+prfn_SOURCES = prfn.c
+
+g_anavel_SOURCES = g_anavel.c
+
+addquote_SOURCES = addquote.c
+
+listquotes_SOURCES = listquotes.c
+
+eanal_SOURCES = eanal.o 
+
+# clean things explicitly, since the target names might have changed
+CLEANFILES = ${bin_PROGRAMS}	${EXTRA_PROGRAMS}			*_mpi *_d *~ \\\#*
+
+mkinstalldirs = $(SHELL) $(top_srcdir)/./config/mkinstalldirs
+CONFIG_HEADER = ../../src/include/config.h
+CONFIG_CLEAN_FILES = 
+
+DEFS = @DEFS@ -I. -I$(srcdir) -I../../src/include
+CPPFLAGS = @CPPFLAGS@
+LIBS = @LIBS@
+X_CFLAGS = @X_CFLAGS@
+X_LIBS = @X_LIBS@
+X_EXTRA_LIBS = @X_EXTRA_LIBS@
+X_PRE_LIBS = @X_PRE_LIBS@
+xmdrun_OBJECTS =  xmdrun.o do_gct.o init_sh.o gctio.o glaasje.o ionize.o \
+relax_sh.o
+xmdrun_LDADD = $(LDADD)
+xmdrun_DEPENDENCIES = 
+xmdrun_LDFLAGS = 
+sigeps_OBJECTS =  sigeps.o
+sigeps_LDADD = $(LDADD)
+sigeps_DEPENDENCIES = 
+sigeps_LDFLAGS = 
+mk6_n_OBJECTS =  mk6_n.o
+mk6_n_LDADD = $(LDADD)
+mk6_n_DEPENDENCIES = 
+mk6_n_LDFLAGS = 
+copyrgt_OBJECTS =  copyrgt.o
+copyrgt_LDADD = $(LDADD)
+copyrgt_DEPENDENCIES = 
+copyrgt_LDFLAGS = 
+mkyaw_OBJECTS =  mkyaw.o
+mkyaw_LDADD = $(LDADD)
+mkyaw_DEPENDENCIES = 
+mkyaw_LDFLAGS = 
+prfn_OBJECTS =  prfn.o
+prfn_LDADD = $(LDADD)
+prfn_DEPENDENCIES = 
+prfn_LDFLAGS = 
+eanal_OBJECTS = 
+eanal_LDADD = $(LDADD)
+eanal_DEPENDENCIES = 
+eanal_LDFLAGS = 
+hrefify_OBJECTS =  hrefify.o
+hrefify_LDADD = $(LDADD)
+hrefify_DEPENDENCIES = 
+hrefify_LDFLAGS = 
+mkice_OBJECTS =  mkice.o
+mkice_LDADD = $(LDADD)
+mkice_DEPENDENCIES = 
+mkice_LDFLAGS = 
+total_OBJECTS =  total.o
+total_LDADD = $(LDADD)
+total_DEPENDENCIES = 
+total_LDFLAGS = 
+hexamer_OBJECTS =  hexamer.o
+hexamer_LDADD = $(LDADD)
+hexamer_DEPENDENCIES = 
+hexamer_LDFLAGS = 
+optwat_OBJECTS =  optwat.o
+optwat_LDADD = $(LDADD)
+optwat_DEPENDENCIES = 
+optwat_LDFLAGS = 
+addquote_OBJECTS =  addquote.o
+addquote_LDADD = $(LDADD)
+addquote_DEPENDENCIES = 
+addquote_LDFLAGS = 
+do_shift_OBJECTS =  do_shift.o
+do_shift_LDADD = $(LDADD)
+do_shift_DEPENDENCIES = 
+do_shift_LDFLAGS = 
+g_anavel_OBJECTS =  g_anavel.o
+g_anavel_LDADD = $(LDADD)
+g_anavel_DEPENDENCIES = 
+g_anavel_LDFLAGS = 
+my_dssp_OBJECTS =  my_dssp.o dsspcore.o
+my_dssp_LDADD = $(LDADD)
+my_dssp_DEPENDENCIES = 
+my_dssp_LDFLAGS = 
+anaf_OBJECTS =  anaf.o
+anaf_LDADD = $(LDADD)
+anaf_DEPENDENCIES = 
+anaf_LDFLAGS = 
+listquotes_OBJECTS =  listquotes.o
+listquotes_LDADD = $(LDADD)
+listquotes_DEPENDENCIES = 
+listquotes_LDFLAGS = 
+FFLAGS = @FFLAGS@
+F77COMPILE = $(F77) $(AM_FFLAGS) $(FFLAGS)
+F77LD = $(F77)
+F77LINK = $(F77LD) $(AM_FFLAGS) $(FFLAGS) $(LDFLAGS) -o $@
+CFLAGS = @CFLAGS@
+COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+CCLD = $(CC)
+LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(LDFLAGS) -o $@
+DIST_COMMON =  README Makefile.am Makefile.in
+
+
+DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
+
+TAR = gtar
+GZIP_ENV = --best
+DEP_FILES =  .deps/addquote.P .deps/anaf.P .deps/copyrgt.P \
+.deps/do_gct.P .deps/do_shift.P .deps/dsspcore.P .deps/g_anavel.P \
+.deps/gctio.P .deps/glaasje.P .deps/hexamer.P .deps/hrefify.P \
+.deps/init_sh.P .deps/ionize.P .deps/listquotes.P .deps/mk6_n.P \
+.deps/mkice.P .deps/mkyaw.P .deps/my_dssp.P .deps/optwat.P .deps/prfn.P \
+.deps/relax_sh.P .deps/sigeps.P .deps/total.P .deps/xmdrun.P
+SOURCES = $(xmdrun_SOURCES) $(sigeps_SOURCES) $(mk6_n_SOURCES) $(copyrgt_SOURCES) $(mkyaw_SOURCES) $(prfn_SOURCES) $(eanal_SOURCES) $(hrefify_SOURCES) $(mkice_SOURCES) $(total_SOURCES) $(hexamer_SOURCES) $(optwat_SOURCES) $(addquote_SOURCES) $(do_shift_SOURCES) $(g_anavel_SOURCES) $(my_dssp_SOURCES) $(anaf_SOURCES) $(listquotes_SOURCES)
+OBJECTS = $(xmdrun_OBJECTS) $(sigeps_OBJECTS) $(mk6_n_OBJECTS) $(copyrgt_OBJECTS) $(mkyaw_OBJECTS) $(prfn_OBJECTS) $(eanal_OBJECTS) $(hrefify_OBJECTS) $(mkice_OBJECTS) $(total_OBJECTS) $(hexamer_OBJECTS) $(optwat_OBJECTS) $(addquote_OBJECTS) $(do_shift_OBJECTS) $(g_anavel_OBJECTS) $(my_dssp_OBJECTS) $(anaf_OBJECTS) $(listquotes_OBJECTS)
+
+all: all-redirect
+.SUFFIXES:
+.SUFFIXES: .F .S .asm .c .f .o .s
+$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) $(srcdir)/../Makefile.inc
+	cd $(top_srcdir) && $(AUTOMAKE) --gnu src/contrib/Makefile
+
+Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+	cd $(top_builddir) \
+	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+
+
+.s.o:
+	$(COMPILE) -c $<
+
+.S.o:
+	$(COMPILE) -c $<
+
+mostlyclean-compile:
+	-rm -f *.o core *.core
+
+clean-compile:
+
+distclean-compile:
+	-rm -f *.tab.c
+
+maintainer-clean-compile:
+
+xmdrun: $(xmdrun_OBJECTS) $(xmdrun_DEPENDENCIES)
+	@rm -f xmdrun
+	$(LINK) $(xmdrun_LDFLAGS) $(xmdrun_OBJECTS) $(xmdrun_LDADD) $(LIBS)
+
+sigeps: $(sigeps_OBJECTS) $(sigeps_DEPENDENCIES)
+	@rm -f sigeps
+	$(LINK) $(sigeps_LDFLAGS) $(sigeps_OBJECTS) $(sigeps_LDADD) $(LIBS)
+
+mk6_n: $(mk6_n_OBJECTS) $(mk6_n_DEPENDENCIES)
+	@rm -f mk6_n
+	$(LINK) $(mk6_n_LDFLAGS) $(mk6_n_OBJECTS) $(mk6_n_LDADD) $(LIBS)
+
+copyrgt: $(copyrgt_OBJECTS) $(copyrgt_DEPENDENCIES)
+	@rm -f copyrgt
+	$(LINK) $(copyrgt_LDFLAGS) $(copyrgt_OBJECTS) $(copyrgt_LDADD) $(LIBS)
+
+mkyaw: $(mkyaw_OBJECTS) $(mkyaw_DEPENDENCIES)
+	@rm -f mkyaw
+	$(LINK) $(mkyaw_LDFLAGS) $(mkyaw_OBJECTS) $(mkyaw_LDADD) $(LIBS)
+
+prfn: $(prfn_OBJECTS) $(prfn_DEPENDENCIES)
+	@rm -f prfn
+	$(LINK) $(prfn_LDFLAGS) $(prfn_OBJECTS) $(prfn_LDADD) $(LIBS)
+
+eanal: $(eanal_OBJECTS) $(eanal_DEPENDENCIES)
+	@rm -f eanal
+	$(LINK) $(eanal_LDFLAGS) $(eanal_OBJECTS) $(eanal_LDADD) $(LIBS)
+
+hrefify: $(hrefify_OBJECTS) $(hrefify_DEPENDENCIES)
+	@rm -f hrefify
+	$(LINK) $(hrefify_LDFLAGS) $(hrefify_OBJECTS) $(hrefify_LDADD) $(LIBS)
+
+mkice: $(mkice_OBJECTS) $(mkice_DEPENDENCIES)
+	@rm -f mkice
+	$(LINK) $(mkice_LDFLAGS) $(mkice_OBJECTS) $(mkice_LDADD) $(LIBS)
+
+total: $(total_OBJECTS) $(total_DEPENDENCIES)
+	@rm -f total
+	$(F77LINK) $(total_LDFLAGS) $(total_OBJECTS) $(total_LDADD) $(LIBS)
+
+hexamer: $(hexamer_OBJECTS) $(hexamer_DEPENDENCIES)
+	@rm -f hexamer
+	$(LINK) $(hexamer_LDFLAGS) $(hexamer_OBJECTS) $(hexamer_LDADD) $(LIBS)
+
+optwat: $(optwat_OBJECTS) $(optwat_DEPENDENCIES)
+	@rm -f optwat
+	$(LINK) $(optwat_LDFLAGS) $(optwat_OBJECTS) $(optwat_LDADD) $(LIBS)
+
+addquote: $(addquote_OBJECTS) $(addquote_DEPENDENCIES)
+	@rm -f addquote
+	$(LINK) $(addquote_LDFLAGS) $(addquote_OBJECTS) $(addquote_LDADD) $(LIBS)
+
+do_shift: $(do_shift_OBJECTS) $(do_shift_DEPENDENCIES)
+	@rm -f do_shift
+	$(LINK) $(do_shift_LDFLAGS) $(do_shift_OBJECTS) $(do_shift_LDADD) $(LIBS)
+
+g_anavel: $(g_anavel_OBJECTS) $(g_anavel_DEPENDENCIES)
+	@rm -f g_anavel
+	$(LINK) $(g_anavel_LDFLAGS) $(g_anavel_OBJECTS) $(g_anavel_LDADD) $(LIBS)
+
+my_dssp: $(my_dssp_OBJECTS) $(my_dssp_DEPENDENCIES)
+	@rm -f my_dssp
+	$(LINK) $(my_dssp_LDFLAGS) $(my_dssp_OBJECTS) $(my_dssp_LDADD) $(LIBS)
+
+anaf: $(anaf_OBJECTS) $(anaf_DEPENDENCIES)
+	@rm -f anaf
+	$(LINK) $(anaf_LDFLAGS) $(anaf_OBJECTS) $(anaf_LDADD) $(LIBS)
+
+listquotes: $(listquotes_OBJECTS) $(listquotes_DEPENDENCIES)
+	@rm -f listquotes
+	$(LINK) $(listquotes_LDFLAGS) $(listquotes_OBJECTS) $(listquotes_LDADD) $(LIBS)
+.f.o:
+	$(F77COMPILE) -c $<
+
+tags: TAGS
+
+ID: $(HEADERS) $(SOURCES) $(LISP)
+	list='$(SOURCES) $(HEADERS)'; \
+	unique=`for i in $$list; do echo $$i; done | \
+	  awk '    { files[$$0] = 1; } \
+	       END { for (i in files) print i; }'`; \
+	here=`pwd` && cd $(srcdir) \
+	  && mkid -f$$here/ID $$unique $(LISP)
+
+TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) $(LISP)
+	tags=; \
+	here=`pwd`; \
+	list='$(SOURCES) $(HEADERS)'; \
+	unique=`for i in $$list; do echo $$i; done | \
+	  awk '    { files[$$0] = 1; } \
+	       END { for (i in files) print i; }'`; \
+	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
+
+mostlyclean-tags:
+
+clean-tags:
+
+distclean-tags:
+	-rm -f TAGS ID
+
+maintainer-clean-tags:
+
+distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
+
+subdir = src/contrib
+
+distdir: $(DISTFILES)
+	here=`cd $(top_builddir) && pwd`; \
+	top_distdir=`cd $(top_distdir) && pwd`; \
+	distdir=`cd $(distdir) && pwd`; \
+	cd $(top_srcdir) \
+	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu src/contrib/Makefile
+	@for file in $(DISTFILES); do \
+	  d=$(srcdir); \
+	  if test -d $$d/$$file; then \
+	    cp -pr $$d/$$file $(distdir)/$$file; \
+	  else \
+	    test -f $(distdir)/$$file \
+	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
+	    || cp -p $$d/$$file $(distdir)/$$file || :; \
+	  fi; \
+	done
+
+DEPS_MAGIC := $(shell mkdir .deps > /dev/null 2>&1 || :)
+
+-include $(DEP_FILES)
+
+mostlyclean-depend:
+
+clean-depend:
+
+distclean-depend:
+	-rm -rf .deps
+
+maintainer-clean-depend:
+
+%.o: %.c
+	@echo '$(COMPILE) -c $<'; \
+	$(COMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
+	@-cp .deps/$(*F).pp .deps/$(*F).P; \
+	tr ' ' '\012' < .deps/$(*F).pp \
+	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
+	    >> .deps/$(*F).P; \
+	rm .deps/$(*F).pp
+
+%.lo: %.c
+	@echo '$(LTCOMPILE) -c $<'; \
+	$(LTCOMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
+	@-sed -e 's/^\([^:]*\)\.o[ 	]*:/\1.lo \1.o :/' \
+	  < .deps/$(*F).pp > .deps/$(*F).P; \
+	tr ' ' '\012' < .deps/$(*F).pp \
+	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
+	    >> .deps/$(*F).P; \
+	rm -f .deps/$(*F).pp
+info-am:
+info: info-am
+dvi-am:
+dvi: dvi-am
+check-am: all-am
+check: check-am
+installcheck-am:
+installcheck: installcheck-am
+install-exec-am:
+install-exec: install-exec-am
+
+install-data-am:
+install-data: install-data-am
+
+install-am: all-am
+	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
+install: install-am
+uninstall-am:
+uninstall: uninstall-am
+all-am: Makefile
+all-redirect: all-am
+install-strip:
+	$(MAKE) $(AM_MAKEFLAGS) AM_INSTALL_PROGRAM_FLAGS=-s install
+installdirs:
+
+
+mostlyclean-generic:
+
+clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
+
+distclean-generic:
+	-rm -f Makefile $(CONFIG_CLEAN_FILES)
+	-rm -f config.cache config.log stamp-h stamp-h[0-9]*
+
+maintainer-clean-generic:
+mostlyclean-am:  mostlyclean-compile mostlyclean-tags mostlyclean-depend \
+		mostlyclean-generic
+
+mostlyclean: mostlyclean-am
+
+clean-am:  clean-compile clean-tags clean-depend clean-generic \
+		mostlyclean-am
+
+clean: clean-am
+
+distclean-am:  distclean-compile distclean-tags distclean-depend \
+		distclean-generic clean-am
+
+distclean: distclean-am
+
+maintainer-clean-am:  maintainer-clean-compile maintainer-clean-tags \
+		maintainer-clean-depend maintainer-clean-generic \
+		distclean-am
+	@echo "This command is intended for maintainers to use;"
+	@echo "it deletes files that may require special tools to rebuild."
+
+maintainer-clean: maintainer-clean-am
+
+.PHONY: mostlyclean-compile distclean-compile clean-compile \
+maintainer-clean-compile tags mostlyclean-tags distclean-tags \
+clean-tags maintainer-clean-tags distdir mostlyclean-depend \
+distclean-depend clean-depend maintainer-clean-depend info-am info \
+dvi-am dvi check check-am installcheck-am installcheck install-exec-am \
+install-exec install-data-am install-data install-am install \
+uninstall-am uninstall all-redirect all-am all installdirs \
+mostlyclean-generic distclean-generic clean-generic \
+maintainer-clean-generic clean mostlyclean distclean maintainer-clean
+
+.asm.o:
+	$(NASM) $(NASMFLAGS) $< -o $@
+.S.s:
+	$(CPP) $< > $@
+.F.f:	
+	$(CPP) $< > $@
+
+# Tell versions [3.59,3.63) of GNU make to not export all variables.
+# Otherwise a system limit (for SysV at least) may be exceeded.
+.NOEXPORT:

@@ -1,13 +1,13 @@
 /*
  * $Id$
  * 
- *       This source code is part of
+ *                This source code is part of
  * 
- *        G   R   O   M   A   C   S
+ *                 G   R   O   M   A   C   S
  * 
- * GROningen MAchine for Chemical Simulations
+ *          GROningen MAchine for Chemical Simulations
  * 
- *               VERSION 3.0
+ *                        VERSION 3.0
  * 
  * Copyright (c) 1991-2001
  * BIOSON Research Institute, Dept. of Biophysical Chemistry
@@ -31,7 +31,7 @@
  * Do check out http://www.gromacs.org , or mail us at gromacs@gromacs.org .
  * 
  * And Hey:
- * GROwing Monsters And Cloning Shrimps
+ * Gyas ROwers Mature At Cryogenic Speed
  */
 static char *SRCID_template_c = "$Id$";
 #include "statutil.h"

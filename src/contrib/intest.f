@@ -1,29 +1,35 @@
 C
-C        @(#) in_loopf.f 1.17 18 Aug 1996
+C                This source code is part of
 C 
-C        This  source-code  is  part  of
+C                 G   R   O   M   A   C   S
 C 
-C        G    R    O    M    A    C    S
+C          GROningen MAchine for Chemical Simulations
 C 
-C  GROningen MAchine for Chemical Simulations
+C                        VERSION 3.0
 C 
-C  Copyright (c) 1990-1995,
-C  BIOSON Research Institute, Dept. of Biophysical Chemistry,
-C  University of Groningen, The Netherlands
+C Copyright (c) 1991-2001
+C BIOSON Research Institute, Dept. of Biophysical Chemistry
+C University of Groningen, The Netherlands
 C 
-C  Please refer to:
-C  GROMACS: A Message Passing Parallel Molecular Dynamics Implementation
-C  H.J.C. Berendsen, D. van der Spoel and R. van Drunen
-C  Comp. Phys. Comm. 1995 (in press)
+C This program is free software; you can redistribute it and/or
+C modify it under the terms of the GNU General Public License
+C as published by the Free Software Foundation; either version 2
+C of the License, or (at your option) any later version.
 C 
-C  Also check out our WWW page:
-C  http://rugmd0.chem.rug.nl/~gmx/gmx.cgi
-C  or e-mail to:
-C  gromacs@chem.rug.nl
+C If you want to redistribute modifications, please consider that
+C scientific software is very special. Version control is crucial -
+C bugs must be traceable. We will be happy to consider code for
+C inclusion in the official distribution, but derived work must not
+C be called official GROMACS. Details are found in the README & COPYING
+C files - if they are missing, get the official version at www.gromacs.org.
 C 
-C  And Hey:
-C  Gyas ROwers Mature At Cryogenic Speed
-C
+C To help us fund GROMACS development, we humbly ask that you cite
+C the papers on the package - you can find them in the top README file.
+C 
+C Do check out http://www.gromacs.org , or mail us at gromacs@gromacs.org .
+C 
+C And Hey:
+C GROup of MAchos and Cynical Suckers
 
 C
 C     This code is meant to be called from C routines.

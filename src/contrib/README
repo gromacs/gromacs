@@ -1,0 +1,15 @@
+
+This directory contains programs and scripts contributed by the
+GROMACS developers and users. It is not really officially supported
+or documented, so if there are problems your best bet is probably
+either the mailing lists or to contact the author listed in the file.
+
+To add a program, you should edit Makefile.am. Have a look at 
+developer.gromacs.org if you are unfamiliar with automake/autoconf.
+Unfortunately there is a bug in automake 1.4, so make sure you
+use either version 1.3 or version 1.4-p1 from www.gnu.org.
+
+The EXTRA_PROGRAMS tag used here means they are not compiled and
+installed for the default package configuration setup.
+
+                       The Gromacs Crew
