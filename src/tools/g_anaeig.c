@@ -274,14 +274,18 @@ void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
 	    eigvec[vec][i][2]*(x[i][2]-xav[i][2]))*sqrtm[i];
 	  }
 	  inprod[v][nframes]=inp;
-	  if (filterfile) 
-	    for(i=0; i<natoms; i++)
-	      for(d=0; d<DIM; d++)
-		xread[index[i]][d] = xav[i][d]+
-		  inprod[v][nframes]*eigvec[outvec[v]][i][d]/sqrtm[i];
 	}
-	if (filterfile) 
+	if (filterfile) {
+	  for(i=0; i<natoms; i++)
+	    for(d=0; d<DIM; d++) {
+	      /* misuse xread for output */
+	      xread[index[i]][d] = xav[i][d];
+	      for(v=0; v<noutvec; v++)
+		xread[index[i]][d] +=
+		  inprod[v][nframes]*eigvec[outvec[v]][i][d]/sqrtm[i];
+	    }
 	  write_trx(out,natoms,index,atoms,0,t,box,xread,NULL);
+	}
 	nframes++;
       }
       nfr++;
