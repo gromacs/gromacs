@@ -267,11 +267,15 @@ real calc_xcm(rvec x[],int gnx,atom_id index[],t_atom atom[],rvec xcm,
   clear_rvec(xcm);
   tm=0;
   for(i=0; (i<gnx); i++) {
-    ii=index[i];
-    if (bQ)
-      m0=fabs(atom[ii].q);
-    else
-      m0=atom[ii].m;
+    ii=index ? index[i] : i;
+    if (atom) {
+      if (bQ)
+	m0=fabs(atom[ii].q);
+      else
+	m0=atom[ii].m;
+    }
+    else 
+      m0 = 1;
     tm+=m0;
     for(m=0; (m<DIM); m++)
       xcm[m]+=m0*x[ii][m];
@@ -290,7 +294,7 @@ real sub_xcm(rvec x[],int gnx,atom_id index[],t_atom atom[],rvec xcm,
   
   tm=calc_xcm(x,gnx,index,atom,xcm,bQ);
   for(i=0; (i<gnx); i++) {
-    ii=index[i];
+    ii=index ? index[i] : i;
     rvec_dec(x[ii],xcm);
   }
   return tm;
