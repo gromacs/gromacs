@@ -540,6 +540,37 @@ to the force constants in the harmonic form $k^{\theta,harm}$
 k^{\theta} \sin^2(\tijk^0) = k^{\theta,harm}
 \eeq
 
+\subsection{Bond-Bond cross term}
+The bond-bond cross term for three particles $i, j, k$ forming bonds
+$i-j$ and $k-j$ is given by~\cite{Lawrence2003a}:
+\begin{equation}
+V_{rr'} ~=~ k_{rr'} \left(\left|\ve{r}_{i}-\ve{r}_j\right|-r_{1e}\right) \left(\left|\ve{r}_{k}-\ve{r}_j\right|-r_{2e}\right)
+\label{crossbb}
+\end{equation}
+where $k_{rr'}$ is the force constant, and $r_{1e}$ and $r_{2e}$ are the
+equilibrium bond lengths of the $i-j$ and $k-j$ bonds respectively. The force
+associated with this potential on particle $i$ is:
+\begin{equation}
+\ve{F}_{i} = -k_{rr'}\left(\left|\ve{r}_{k}-\ve{r}_j\right|-r_{2e}\right)\frac{\ve{r}_i-\ve{r}_j}{\left|\ve{r}_{i}-\ve{r}_j\right|}
+\end{equation}
+the force on atom $k$ can be obtained by swapping $i$ and $k$ in the above
+equation. Finally the force on atom $j$ follows from the fact that the sum
+of internal forces should be zero: $\ve{F}_j = -\ve{F}_i-\ve{F}_k$.
+
+\subsection{Bond-Angle cross term}
+The bond-angle cross term for three particles $i, j, k$ forming bonds
+$i-j$ and $k-j$ is given by~\cite{Lawrence2003a}:
+\begin{equation}
+V_{r\theta} ~=~ k_{r\theta} \left(\left|\ve{r}_{i}-\ve{r}_k\right|-r_{3e} \right) \left(\left|\ve{r}_{i}-\ve{r}_j\right|-r_{1e} + \left|\ve{r}_{k}-\ve{r}_j\right|-r_{2e}\right)
+\end{equation}
+where $k_{r\theta}$ is the force constant, $r_{3e}$ is the $i-k$ distance,
+and the other constants are the same as in Eqn.~\ref{crossbb}. The force
+associated with the potential on atom $i$ is:
+\begin{equation}
+\ve{F}_{i} ~=~ -k_{r\theta}\left[\left(\left|\ve{r}_{i}-\ve{r}_{k}\right|-r_{3e}\right)\frac{\ve{r}_i-\ve{r}_j}{\left|\ve{r}_{i}-\ve{r}_j\right|} \\
++ \left(\left|\ve{r}_{i}-\ve{r}_j\right|-r_{1e} + \left|\ve{r}_{k}-\ve{r}_j\right|-r_{2e}\right)\frac{\ve{r}_i-\ve{r}_k}{\left|\ve{r}_{i}-\ve{r}_k\right|}\right]
+\end{equation}
+
 %% new commands %%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\rvkj}{{\bf r}_{kj}}
 \newcommand{\rkj}{r_{kj}}
