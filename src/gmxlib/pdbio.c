@@ -168,6 +168,14 @@ void write_pdbfile_indexed(FILE *out,char *title,
       
     fprintf(out,pdbform,pdbtp[type],(i+1)%100000,nm,resnm,ch,resnr,
 	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ],occup,bfac);
+    if (atoms->pdbinfo[i].bAnisotropic) {
+    
+      fprintf(out,"ANISOU%5u  %-4.4s%3.3s %c%4d  %7d%7d%7d%7d%7d%7d\n",
+	      (i+1)%100000,nm,resnm,ch,resnr,
+	      atoms->pdbinfo[i].uij[0],atoms->pdbinfo[i].uij[1],
+	      atoms->pdbinfo[i].uij[2],atoms->pdbinfo[i].uij[3],
+	      atoms->pdbinfo[i].uij[4],atoms->pdbinfo[i].uij[5]);
+    }
   }
   
   fprintf(out,"TER\n");
