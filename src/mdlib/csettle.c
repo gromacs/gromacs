@@ -159,7 +159,9 @@ void csettle(FILE *fp,int nshake, int owptr[],real b4[], real after[],
   
   /* Initialized data */
   static bool bFirst=TRUE;
-  static real wo,wh,wohh;
+  /* These three weights need have double precision. Using single precision
+   * can result in huge velocity and pressure deviations. */
+  static double wo,wh,wohh;
   static real ra,rb,rc,rc2,rone;
 #ifdef DEBUG_PRES
   static int step = 0;
@@ -197,7 +199,7 @@ void csettle(FILE *fp,int nshake, int owptr[],real b4[], real after[],
 
     wo    /= wohh;
     wh    /= wohh;
-        
+
     fprintf(fp,"wo = %g, wh =%g, wohh = %g, rc = %g, ra = %g\n",
 	    wo,wh,wohh,rc,ra);
     fprintf(fp,"rb = %g, rc2 = %g, rone = %g, dHH = %g, dOH = %g\n",

@@ -61,7 +61,10 @@ c*****************************************************************
 
       real*4  b4(*),after(*),mO,mH
      $     ,dOH,dHH
-      real*4  wo,wh,wohh,ra,rb,rc,rc2,tmp,tmp2
+c These three weights need have double precision. Using single precision
+c can result in huge velocity and pressure deviations.
+      real*8 wo,wh,wohh
+      real*4 ra,rb,rc,rc2,tmp,tmp2
       real*4 gama, beta, alpa, xcom, ycom, zcom, al2be2
       real*4 axlng, aylng, azlng, trns11, trns21, trns31, trns12, 
      &     trns22, trns32, trns13, trns23, trns33, cosphi, 
