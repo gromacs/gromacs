@@ -481,11 +481,8 @@ int main(int argc,char *argv[])
   else
     lastee=NULL;
 
-  if(begin>0)
-    snew(startee,nremax);
-  else
-    startee=NULL;
-
+  snew(startee,nremax);
+    
   noutfr=0;
   bFirst=TRUE;
 
@@ -529,7 +526,7 @@ int main(int argc,char *argv[])
       if (t >= begin-GMX_REAL_EPS) {
 	if (bFirst) {
 	  bFirst = FALSE;
-	  if (startee != NULL)
+	  if (begin > 0)
 	    copy_ee(fr->ener,startee,nre);
 	  startstep = fr->step;		
 	}
