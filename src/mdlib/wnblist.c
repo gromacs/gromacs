@@ -68,7 +68,7 @@ static void write_nblist(FILE *out,t_nblist *nblist)
   fflush(out);
 }
 
-int read_nblist(FILE *in,FILE *log,int **mat,int natoms)
+int read_nblist(FILE *in,FILE *log,int **mat,int natoms,bool bSymm)
 {
   bool bNL;
   char buf[256],b1[32],b2[32],solv[256];
@@ -93,7 +93,6 @@ int read_nblist(FILE *in,FILE *log,int **mat,int natoms)
       /* Number shifts from 1 to 27 iso 0 to 26, to distinguish uninitialized 
        * matrix elements.
        */
-      shift+=1; 
       range_check(iatom,0,natoms);
       nrj+=nj;
       for(i=0; (i<nj); i++) {
@@ -102,8 +101,10 @@ int read_nblist(FILE *in,FILE *log,int **mat,int natoms)
 	range_check(j,0,natoms);
 	if (mat[iatom][j] != 0)
 	  fprintf(log,"mat[%d][%d] changing from %d to %d\n",
-		  i,j,mat[iatom][j],shift);
-	mat[iatom][j] = shift;
+		  i,j,mat[iatom][j],shift+1);
+	mat[iatom][j] = shift+1;
+	if (bSymm)
+	  mat[j][iatom] = 27-shift;
 	njtot++;
       }
     }
