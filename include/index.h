@@ -84,6 +84,14 @@ void get_index(t_atoms *atoms, char *fnm, int ngrps,
  */ 
 
 typedef struct {
+  char    **grpname;
+  t_block *clust;
+  atom_id *inv_clust;
+} t_cluster_ndx;
+
+extern t_cluster_ndx *cluster_index(char *ndx);
+  
+typedef struct {
   int n;
   char **aa;
 } t_aa_names;

@@ -47,9 +47,11 @@
 #include "string2.h"
 #include "statutil.h"
 #include "confio.h"
+#include "main.h"
 #include "copyrite.h"
 #include "typedefs.h"
 #include "smalloc.h"
+#include "invblock.h"
 #include "index.h"
 
 typedef enum { etOther, etProt, etDNA, erestNR } eRestp;
@@ -740,3 +742,21 @@ void get_index(t_atoms *atoms, char *fnm, int ngrps,
   } 
   rd_groups(grps,*gnames,grpnames,ngrps,isize,index,grpnr);
 }
+
+t_cluster_ndx *cluster_index(char *ndx)
+{
+  t_cluster_ndx *c;
+  int i;
+  
+  snew(c,1);
+  c->clust     = init_index(ndx,&c->grpname);
+  for(i=0; (i<c->clust->nra); i++)
+    range_check(c->clust->a[i],0,c->clust->nra);
+  c->inv_clust=make_invblock(c->clust,c->clust->nra);
+  fprintf(stdlog ? stdlog : stdout,
+	  "There are %d clusters containing %d structures\n",
+	  c->clust->nr,c->clust->nra);
+	  
+  return c;
+}
+
