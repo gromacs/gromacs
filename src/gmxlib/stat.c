@@ -129,7 +129,9 @@ void global_stat(FILE *log,
   extract_binr(rb,iterminate,1,terminate);
   where();
 
-  /* Small hack for temp only */
+  /* Small hack for temp & mu only */
+  for(j=0; (j<DIM); j++)
+    mu_tot[j] /=cr->nprocs;
   ener[F_TEMP]/=cr->nprocs;
 }
 
