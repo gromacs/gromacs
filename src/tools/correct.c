@@ -297,7 +297,7 @@ bool do_1shake(int  cons_type,
 	       int  ai,      int aj,       rvec dx,     
 	       real len,     real lb,      real ub,     real wi,
 	       real *dev,    real *maxdev, real *ener,  rvec xptr[],
-	       bool bViol[], int  *seed)
+	       bool bViol[], int  *seed,   bool bLowerOnly)
 {
   int  m;
   real ndev,delta,ddx,wj,guess;
@@ -348,7 +348,7 @@ bool shake_coords(FILE *log,bool bVerbose,
   int    nit,nchk,low,oldlow;
   int    i,j,k,l,m,ai,aj,status,nprint;
   int    nviol[edcNR],nvtot,nswap,nmirror,cons_type;
-  bool   bShort,bConverged,bNB,bPrint,bLowDev,bExplicit,bMyNB;
+  bool   bShort,bConverged,bNB,bPrint,bLowDev,bExplicit,bMyNB,bLowerOnly;
   bool   bVNow;
   bool   *bViol;
   real   lb,ub,lbfac,wi,len,dev,maxdev,len2;
@@ -371,6 +371,7 @@ bool shake_coords(FILE *log,bool bVerbose,
   bExplicit  = c->bExplicit;
   bConverged = FALSE;
   bLowDev    = FALSE;
+  bLowerOnly = c->bLowerOnly;
   step0      = 0.1;
   step       = step0;
   nprint     = 0;
@@ -466,7 +467,7 @@ bool shake_coords(FILE *log,bool bVerbose,
 	else {
 	  bVNow = do_1shake(cons_type,ai,aj,
 			    dx,len,lb,ub,wi,&dev,&maxdev,&ener[next],
-			    xptr,bViol,seed);
+			    xptr,bViol,seed,bLowerOnly);
 #ifdef HEAVY
 	  if (bVNow && c->bDump && debug) {
 	    center_in_box(natom,xptr,box,xwr);

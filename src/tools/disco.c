@@ -201,7 +201,7 @@ int main(int argc,char *argv[])
   
   static int  nstruct=10,maxnit=1000,seed=1997,nbcheck=1;
   static int  nstprint=1,nstranlist=1,ngrow=0;
-  static bool bVerbose=TRUE,bCubic=FALSE,bWeight=FALSE;
+  static bool bVerbose=TRUE,bCubic=FALSE,bWeight=FALSE,bLower=FALSE;
   static real lowdev=0.05,cutoff=0;
   static bool bExplicit=FALSE,bChiral=TRUE,bFit=FALSE,bDump=FALSE,bPep=TRUE;
   static rvec boxsize={ 2, 2, 2 };
@@ -216,6 +216,8 @@ int main(int argc,char *argv[])
       "Check chirality during disco-ing" },
     { "-pep",   FALSE,  etBOOL,   &bPep,
       "Flip all cis-peptide bonds automatically to trans" },
+    { "-lower", FALSE,  etBOOL,   &bLower,
+      "Use lower bounds only for nonbondeds." },
     { "-weighted", FALSE, etBOOL, &bWeight,
       "Use weighted disco. The STX file must be a pdb file in this case and weights are read from the occupancy field" },
     { "-cutoff",   FALSE, etREAL, &cutoff,
@@ -266,7 +268,7 @@ int main(int argc,char *argv[])
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
   /* Copy arguments to correct structure */
   corr = init_corr(maxnit,nstprint,nbcheck,nstranlist,ngrow,bExplicit,
-		   bChiral,bPep,bDump,lowdev);
+		   bChiral,bPep,bDump,lowdev,bLower);
   
   /* Open the log file */
   fp = ftp2FILE(efLOG,NFILE,fnm,"w");

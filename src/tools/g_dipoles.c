@@ -693,7 +693,7 @@ int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_dipoles computes the total dipole plus fluctuations of a simulation",
-    "system. From this you can compute eg. the dielectric constant for",
+    "system. From this you can compute e.g. the dielectric constant for",
     "low dielectric media[PAR]",
     "The file dip.xvg contains the total dipole moment of a frame, the",
     "components as well as the norm of the vector.",
@@ -720,7 +720,7 @@ int main(int argc,char *argv[])
     "an average dipole moment of the molecule of 2.273 (SPC). For the",
     "distribution function a maximum of 5.0 will be used."
   };
-  static real mu_max=-1, mu=-1;
+  static real mu_max=5, mu=2.5;
   static real epsilonRF=0.0, temp=300;
   static bool bAverCorr=FALSE,bFA=FALSE;
   static int  nframes = 10;
@@ -767,9 +767,6 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
 		    
-  if ((mu_max == -1) || (mu == -1))
-    fatal_error(0,"I need both a mu and a mu_max!");
-
   fprintf(stderr,"Using %g as mu_max and %g as the dipole moment.\n", 
 	  mu_max, mu);
   if (epsilonRF == 0.0)
