@@ -111,7 +111,8 @@ static void cmp_ilist(FILE *fp,int ftype,t_ilist *il1,t_ilist *il2)
 {
   int i;
   char buf[256];
-  
+ 
+  fprintf(fp,"comparing ilist %s\n",interaction_function[ftype].name);
   sprintf(buf,"%s->nr",interaction_function[ftype].name);
   cmp_int(fp,buf,0,il1->nr,il2->nr);
   sprintf(buf,"%s->multinr",interaction_function[ftype].name);
@@ -150,6 +151,21 @@ static void cmp_idef(FILE *fp,t_idef *id1,t_idef *id2)
     cmp_ilist(fp,i,&(id1->il[i]),&(id2->il[i]));
 }
 
+static void cmp_block(FILE *fp,t_block *b1,t_block *b2,char *s)
+{
+  int i,j,k;
+  char buf[32];
+  
+  fprintf(fp,"comparing block %s\n",s);
+  sprintf(buf,"%s.nr",s);
+  cmp_int(fp,buf,-1,b1->nr,b2->nr);
+  sprintf(buf,"%s.nra",s);
+  cmp_int(fp,buf,-1,b1->nra,b2->nra);
+  sprintf(buf,"%s.multinr",s);
+  for(i=0; (i<MAXPROC); i++)
+    cmp_int(fp,buf,i,b1->multinr[i],b2->multinr[i]);
+} 
+
 static void cmp_atom(FILE *fp,int index,t_atom *a1,t_atom *a2)
 {
   int  i;
@@ -174,13 +190,18 @@ static void cmp_atoms(FILE *fp,t_atoms *a1,t_atoms *a2)
   cmp_int(fp,"atoms->nr",-1,a1->nr,a2->nr);
   for(i=0; (i<a1->nr); i++)
     cmp_atom(fp,i,&(a1->atom[i]),&(a2->atom[i]));
+  cmp_block(fp,&a1->excl,&a2->excl,"excl");
 }
 
 static void cmp_top(FILE *fp,t_topology *t1,t_topology *t2)
 {
+  int i;
+  
   fprintf(fp,"comparing top\n");
   cmp_idef(fp,&(t1->idef),&(t2->idef));
   cmp_atoms(fp,&(t1->atoms),&(t2->atoms));
+  for(i=0; (i<ebNR); i++)
+    cmp_block(fp,&t1->blocks[i],&t2->blocks[i],EBLOCKS(i));
 }
 
 static void cmp_rvecs(FILE *fp,char *title,int n,rvec x1[],rvec x2[])
@@ -363,7 +384,7 @@ void comp_enx(char *fn1,char *fn2,real ftol)
   bool      b1,b2;
   real      t1,t2;
   
-  fprintf(stdout,"Comparing energy file %s and %s\n\n",fn1,fn2);
+  fprintf(stdout,"comparing energy file %s and %s\n\n",fn1,fn2);
 
   in1 = open_enx(fn1,"r");
   in2 = open_enx(fn2,"r");
