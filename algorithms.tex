@@ -453,13 +453,19 @@ From this the absolute temperature $T$ can be computed using:
 where $k$ is Boltzmann's constant and $N_{df}$ is the number of
 degrees of freedom which can be computed from:
 \beq
-N_{df}  ~=~     3 N - N_c - 3
+N_{df}  ~=~     3 N - N_c - N_{com}
 \eeq
 Here $N_c$ is the number of {\em constraints} imposed on the system.
-The additional 3 degrees of freedom must be removed because the three
+When performing Molecular Dynamics $N_{com}=3$ additional degrees of
+freedom must be removed, because the three
 center-of-mass velocities are constants of the motion, which are usually
-set to zero.  This correction is small; in the current version of
-{\gromacs} it is ignored.
+set to zero. When simulating in vacuo, the rotation around the center of mass
+can also be removed, in this case $N_{com}=6$.
+When more than one temperature coupling group is used, the number of degrees
+of freedom for group $i$ is:
+\beq
+N^i_{df}  ~=~  (3 N^i - N^i_c) \frac{3 N - N_c - N_{com}}{3 N - N_c}
+\eeq
 
 The kinetic energy can also be written as a tensor, which is necessary
 for pressure calculation in a triclinic system, or systems where shear
