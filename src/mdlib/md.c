@@ -409,6 +409,23 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (bLateVir)
       calc_virial(log,START(nsb),HOMENR(nsb),x,f,
 		  force_vir,pme_vir,cr,graph,parm->box,&mynrnb,fr,bTweak);
+		  
+    if (bDummies && fr->bEwald) { 
+      /* Spread the LR force on dummy particle to the other particles... 
+       * This is parallellized. MPI communication is performed
+       * if the constructing atoms aren't local.
+       */
+      if(dummycomm)
+	move_dummy_f(dummycomm,fr->f_pme,cr);
+
+      spread_dummy_f(log,x,fr->f_pme,buf,&mynrnb,&top->idef);
+
+      if(dummycomm)
+        move_construct_f(dummycomm,fr->f_pme,cr);
+    }    
+    if (!bTweak)
+      sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
+    
     xx = (do_per_step(step,parm->ir.nstxout) || bLastStep) ? x : NULL;
     vv = (do_per_step(step,parm->ir.nstvout) || bLastStep) ? v : NULL;
     ff = (do_per_step(step,parm->ir.nstfout)) ? f : NULL;

@@ -329,9 +329,10 @@ void calc_virial(FILE *log,int start,int homenr,rvec x[],rvec f[],
   inc_nrnb(nrnb,eNR_VIRIAL,homenr);
 
   /* Add up the long range forces if necessary */
-  if (!bTweak)
+  /* if (!bTweak) {
     sum_lrforces(f,fr,start,homenr);
-
+    }*/
+  
   /* Add up virial if necessary */  
   if (EEL_LR(fr->eeltype) && (fr->eeltype != eelPPPM)) {
     if (debug && bTweak) {
