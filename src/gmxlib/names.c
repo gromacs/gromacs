@@ -38,7 +38,7 @@ char *eblock_names[ebNR+1]=
 
 char *eboxtype_names[ebtNR+1]=
 {
-  "Cubic","Rectangular", "Triclinic", "None", NULL
+  "Rectangular", "Triclinic", "None", NULL
 };
 
 char *ens_names[enNR+1]=
