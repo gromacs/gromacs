@@ -17,7 +17,7 @@ grompp_SOURCES = \
 	topio.c 	toppush.c 	topcat.c 	topshake.c 	\
 	convparm.c 	tomorse.c	sorting.c 	splitter.c	\
 	dum_parm.c	readir.c  	add_par.c	topexcl.c	\
-	toputil.c	topdirs.c	grompp.c	add_par.h	\
+	Toputil.c	topdirs.c	grompp.c	add_par.h	\
 	splitter.h	topio.h		toputil.h	convparm.h	\
 	sorting.h	topdirs.h	toppush.h	dum_parm.h	\
 	readir.h	topcat.h	topexcl.h	topshake.h
@@ -38,16 +38,16 @@ pdb2gmx_SOURCES = \
 	topdirs.h	genhydro.h	hizzie.h	specbond.h	\
 	topexcl.h
 
-rtp2xml_SOURCES = \
-	hizzie.c	xlate.c		specbond.c	ter_db.c	\
-	h_db.c		genhydro.c     	pdb2top.c 	gen_ad.c 	\
-	gen_dum.c	pgutil.c	resall.c	hackblock.c	\
-	add_par.c	topexcl.c 	toputil.c	topdirs.c	\
-	rtp2xml.c	gen_ad.h	add_par.h	h_db.h		\
-	pdb2top.h	resall.h	toputil.h	xlate.h		\
-	gen_dum.h	hackblock.h	pgutil.h	ter_db.h	\
-	topdirs.h	genhydro.h	hizzie.h	specbond.h	\
-	topexcl.h
+#rtp2xml_SOURCES = \
+#	hizzie.c	xlate.c		specbond.c	ter_db.c	\
+#	h_db.c		genhydro.c     	pdb2top.c 	gen_ad.c 	\
+#	gen_dum.c	pgutil.c	resall.c	hackblock.c	\
+#	add_par.c	topexcl.c 	toputil.c	topdirs.c	\
+#	rtp2xml.c	gen_ad.h	add_par.h	h_db.h		\
+#	pdb2top.h	resall.h	toputil.h	xlate.h		\
+#	gen_dum.h	hackblock.h	pgutil.h	ter_db.h	\
+#	topdirs.h	genhydro.h	hizzie.h	specbond.h	\
+#	topexcl.h
 
 protonate_SOURCES = \
 	hackblock.c	ter_db.c	h_db.c		genhydro.c	\
