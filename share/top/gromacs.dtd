@@ -182,22 +182,22 @@
 <!-- End of angletypes -->
 
 <!-- A number of different types are available for dihedrals -->	 
-<!ELEMENT dihedraltype (proper | harmonic | ryckaertbellemans | cosineseries)>
+<!ELEMENT dihedraltype (proper | harmonic | ryckaert_bellemans | cosine_series)>
 <!ELEMENT proper EMPTY>
 <!ATTLIST proper
           ph0   CDATA #REQUIRED
 	  kph   CDATA #REQUIRED
 	  nmult CDATA #REQUIRED>
-<!ELEMENT ryckaertbellemans EMPTY>
-<!ATTLIST ryckaertbellemans
+<!ELEMENT ryckaert_bellemans EMPTY>
+<!ATTLIST ryckaert_bellemans
           c0 CDATA #REQUIRED
 	  c1 CDATA #REQUIRED
 	  c2 CDATA #REQUIRED
 	  c3 CDATA #REQUIRED
 	  c4 CDATA #REQUIRED
 	  c5 CDATA #REQUIRED>
-<!ELEMENT cosineseries EMPTY>
-<!ATTLIST cosineseries
+<!ELEMENT cosine_series EMPTY>
+<!ATTLIST cosine_series
           c0 CDATA #REQUIRED
 	  c1 CDATA #REQUIRED
 	  c2 CDATA #REQUIRED
@@ -208,14 +208,17 @@
 <!ELEMENT special EMPTY>
 <!--ELEMENT special (position_restraint | distance_restraint | dihedral_restraint)-->
 
-<!-- Mass types for the atoms, to avoid repeating data -->
+<!-- Mass types for the atoms, to avoid repeating data and to enable e.g. -->
+<!-- a quick modification of masses towards heavy hydrogens               -->
 <!ELEMENT masstype EMPTY>
 <!ATTLIST masstype
           name  CDATA #REQUIRED
 	  value CDATA #REQUIRED>
-	  
-<!-- Coordinates and such: this is clear hopefully -->
+
+<!-- Computational cell (box) -->  
 <!ELEMENT cell        (tensor)>
+
+<!-- Coordinates and such: this is clear hopefully -->
 <!ELEMENT coordinates (rvec*)>
 <!ELEMENT velocities  (rvec*)>
 <!ELEMENT forces      (rvec*)>
