@@ -76,11 +76,11 @@ int gmx_densmap(int argc,char *argv[])
     "into account.",
     "[PAR]",
     "When options [TT]-amax[tt] and [TT]-rmax[tt] are set, an axial-radial",
-    "number-density map is made. Two groups should be supplied, the first",
-    "one consisting of two atoms which define the axis, the second the",
+    "number-density map is made. Three groups should be supplied, the centers",
+    "of mass of the first two groups define the axis, the third defines the",
     "analysis group. The axial direction goes from -amax to +amax, where",
-    "the center is defined as the midpoint between the two atoms and",
-    "the positive direction goes from the first to the second atom.",
+    "the center is defined as the midpoint between the centers of mass and",
+    "the positive direction goes from the first to the second center of mass.",
     "The radial direction goes from 0 to rmax or from -rmax to +rmax",
     "when the [TT]-mirror[tt] option has been set.",
     "[PAR]",
@@ -112,13 +112,13 @@ int gmx_densmap(int argc,char *argv[])
   FILE       *fp;
   int        status;
   t_topology top;
-  rvec       *x,direction,center,dx;
+  rvec       *x,xcom[2],direction,center,dx;
   matrix     box;
-  real       t;
+  real       t,m,mtot;
   t_pbc      pbc;
   int        natoms;
-  char       **grpname,title[256];
-  int        i,j,k,ngrps,*gnx=NULL,nindex,nradial=0,nfr;
+  char       **grpname,title[256],buf[STRLEN];
+  int        i,j,k,l,ngrps,anagrp,*gnx=NULL,nindex,nradial=0,nfr;
   atom_id    **ind=NULL,*index;
   real       **grid,maxgrid,mx,mz,boxx,boxz,*tickx,*tickz,invcellvol;
   real       invspa=0,invspz=0,axial,r,vol_old,vol;
@@ -146,23 +146,26 @@ int gmx_densmap(int argc,char *argv[])
   }
 
   if (ftp2bSet(efTPS,NFILE,fnm))
-    read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,FALSE);
+    read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,bRadial);
   if (!bRadial) {
     ngrps = 1;
     fprintf(stderr,"\nSelect an analysis group\n");
   } else {
-    ngrps = 2;
+    ngrps = 3;
     fprintf(stderr,
-	    "\nSelect an axis group of 2 atoms and an analysis group\n");
+	    "\nSelect two groups to define the axis and an analysis group\n");
   }
   snew(gnx,ngrps);
   snew(grpname,ngrps);
   snew(ind,ngrps);
   get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),ngrps,gnx,ind,grpname);
-  nindex = gnx[ngrps-1];
-  index = ind[ngrps-1];
-  if (bRadial && gnx[0]!=2)
-    gmx_fatal(FARGS,"The axis group should consist of 2 atoms, not %d",gnx[0]);
+  anagrp = ngrps - 1;
+  nindex = gnx[anagrp];
+  index = ind[anagrp];
+  if (bRadial) {
+    if ((gnx[0]>1 || gnx[1]>1) && !ftp2bSet(efTPS,NFILE,fnm))
+      gmx_fatal(FARGS,"No run input file was supplied (option -s), this is required for the center of mass calculation");
+  }
   
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
 
@@ -210,9 +213,27 @@ int gmx_densmap(int argc,char *argv[])
       }
     } else {
       set_pbc(&pbc,box);
-      pbc_dx(&pbc,x[ind[0][1]],x[ind[0][0]],direction);
+      for(i=0; i<2; i++) {
+	if (gnx[i] == 1) {
+	  /* One atom, just copy the coordinates */
+	  copy_rvec(x[ind[i][0]],xcom[i]);
+	} else {
+	  /* Calculate the center of mass */
+	  clear_rvec(xcom[i]);
+	  mtot = 0;
+	  for(j=0; j<gnx[i]; j++) {
+	    k = ind[i][j];
+	    m = top.atoms.atom[k].m;
+	    for(l=0; l<DIM; l++)
+	      xcom[i][l] += m*x[k][l];
+	    mtot += m;
+	  }
+	  svmul(1/mtot,xcom[i],xcom[i]);
+	}
+      }
+      pbc_dx(&pbc,xcom[1],xcom[0],direction);
       for(i=0; i<DIM; i++)
-	center[i] = x[ind[0][0]][i] + 0.5*direction[i];
+	center[i] = xcom[0][i] + 0.5*direction[i];
       unitv(direction,direction);
       for(i=0; i<nindex; i++) {
 	j = index[i];
@@ -284,9 +305,9 @@ int gmx_densmap(int argc,char *argv[])
     }
   }
   
+  sprintf(buf,"%s number density map",grpname[anagrp]);
   fp = ffopen(ftp2fn(efXPM,NFILE,fnm),"w");
-  write_xpm(fp,MAT_SPATIAL_X | MAT_SPATIAL_Y,
-	    "Number density map","(nm^-3)",
+  write_xpm(fp,MAT_SPATIAL_X | MAT_SPATIAL_Y,buf,"(nm^-3)",
 	    bRadial ? "axial (nm)" : "x (nm)",bRadial ? "r (nm)" : "z (nm)",
 	    nx,nz,tickx,tickz,grid,0,maxgrid,rlo,rhi,&nlev);     
   ffclose(fp);
