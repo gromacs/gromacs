@@ -183,7 +183,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   char       strbuf[256];
   char       *traj,*xtc_traj; /* normal & compressed trajectory filename */
   int        nDLB;
-  int        i,m;
+  int        i,m,nconverged=0;
   rvec       vcm,mu_tot;
   t_coupl_rec *tcr;
   rvec       *xx,*vv,*ff;  
@@ -199,8 +199,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   /* Initial values */
   init_md(cr,&parm->ir,&t,&t0,&lambda,&lam0,&SAfactor,&mynrnb,&bTYZ,top,
-	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&mdebin,grps,vcm,force_vir,shake_vir,
-	  mdatoms);
+	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&mdebin,grps,vcm,
+	  force_vir,shake_vir,mdatoms);
   
   /* Check whether we have to do dipole stuff */
   if (ftp2bSet(efNDX,nfile,fnm))
@@ -257,22 +257,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
    ************************************************************/
   for (step=0; (step<parm->ir.nsteps); step++) {
     /* Stop Center of Mass motion */
-    /*    bStopCM=do_per_step(step,parm->ir.nstcomm); */
-    /* Stop Center of Mass motion */
-    if (parm->ir.nstcomm == 0) {
-      bStopCM=FALSE;
-      bStopRot=FALSE;
-    } else if (parm->ir.nstcomm > 0) {
-      bStopCM=do_per_step(step,parm->ir.nstcomm);
-      bStopRot=FALSE;
-    } else {
-      bStopCM=FALSE;
-      bStopRot=do_per_step(step,-parm->ir.nstcomm);
-    }
+    get_cmparm(&parm->ir,step,&bStopCM,&bStopRot);
     
-    if (bIonize)
-      ionize(log,mdatoms,top->atoms.atomname,t,&parm->ir,v);
-
     /* Determine whether or not to do Neighbour Searching */
     bNS=((parm->ir.nstlist && ((step % parm->ir.nstlist)==0)) || (step==0));
 
@@ -294,14 +280,20 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     /* Set values for invmass etc. */
     init_mdatoms(mdatoms,lambda,(step==0));
-    
+
+    /* Ionize the atoms if necessary */    
+    if (bIonize)
+      ionize(log,mdatoms,top->atoms.atomname,t,&parm->ir,v);
+
     /* Now is the time to relax the shells */
     count=relax_shells(log,cr,bVerbose,step,parm,bNS,bStopCM,top,ener,
 		       x,vold,v,vt,f,buf,mdatoms,nsb,&mynrnb,graph,grps,force_vir,
 		       nshell,shells,fr,traj,t,lambda,nsb->natoms,parm->box,mdebin,
 		       &bConverged);
     tcount+=count;
-
+    if (bConverged)
+      nconverged++;
+      
     /* Calculate total dipole moment if necessary */
     calc_mu(nsb,x,mdatoms->chargeA,mu_tot);
 
@@ -315,8 +307,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (bTCR && MASTER(cr) && (step == 0)) {
       if (bInteractive)
 	;/* Do it */
-      else
+      else {
 	tcr=init_coupling(log,nfile,fnm,cr,fr,mdatoms,&(top->idef));
+	fprintf(log,"Done init_coupling\n"); fflush(log);
+      }
     }
     /* Now we have the energies and forces corresponding to the 
      * coordinates at time t. 
@@ -351,11 +345,14 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     where();
 
     clear_mat(shake_vir);
+    
     update(nsb->natoms,START(nsb),HOMENR(nsb),
 	   step,lambda,&ener[F_DVDL],&(parm->ir),FALSE,
            mdatoms,x,graph,
            fr->shift_vec,f,buf,vold,v,vt,parm->pres,parm->box,
            top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn);
+    
+
     if (PAR(cr)) 
       accumulate_u(cr,&(parm->ir.opts),grps);
  
@@ -406,9 +403,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       fprintf(stderr,"Energy too large (%g), giving up\n",ener[F_ETOT]);
       break;
     }
-#ifdef DEBUG
-    fprintf(stderr,"Ekin 1: %14.10e", ener[F_EKIN]);
-#endif
+
     /* Calculate Temperature coupling parameters lambda */
     tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor,
 	   step,parm->ir.ntcmemory);
@@ -425,12 +420,15 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     /* Only do GCT when the relaxation of shells (minimization) has converged,
      * otherwise we might be coupling agains bogus energies. 
+     * In parallel we must always do this, because the other sims might
+     * update the FF.
      */
-    if (bTCR && bConverged)
+    if (bTCR)
       do_coupling(log,nfile,fnm,tcr,t,step,ener,fr,
-		  &(parm->ir),MASTER(cr) || bMultiSim,mdatoms,&(top->idef),mu_aver,
+		  &(parm->ir),MASTER(cr) || bMultiSim,
+		  mdatoms,&(top->idef),mu_aver,
 		  top->blocks[ebMOLS].nr,bMultiSim ? cr_msim : cr,
-		  parm->box,parm->vir,mu_tot,x,f);
+		  parm->box,parm->vir,mu_tot,x,f,bConverged);
     
     upd_mdebin(mdebin,mdatoms->tmass,step,ener,parm->box,shake_vir,
                force_vir,parm->vir,parm->pres,grps,mu_tot);
@@ -443,8 +441,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (bVerbose)
       fflush(log);
       
-    if (MASTER(cr) && bVerbose && ((step % stepout)==0))
+    if (MASTER(cr) && bVerbose && ((step % stepout)==0)) {
+      if (nshell > 0)
+	fprintf(stderr,"\n");
       print_time(stderr,start_t,step,&parm->ir);
+    }
   }
   
   if (MASTER(cr)) {
@@ -457,6 +458,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     print_ebin(-1,log,step,t,lambda,SAfactor,
 	       eprRMS,FALSE,mdebin,grps,&(top->atoms));
   }
+  fprintf(log,"Fraction of iterations that converged:           %.2f\n",
+	  (nconverged*0.01)/parm->ir.nsteps);
   fprintf(log,"Average number of force evaluations per MD step: %.2f\n",
 	  tcount/parm->ir.nsteps);
 

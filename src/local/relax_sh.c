@@ -229,12 +229,13 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 	   top,grps,x,v,force[Min],buf,md,ener,bVerbose && !PAR(cr),
 	   lambda,graph,bDoNS,FALSE,fr);
   df[Min]=rms_force(force[Min],nshell,shells);
-  
+#ifdef DEBUG
   if (debug) {
     pr_rvecs(debug,0,"force0",force[Min],md->nr);
     calc_f_dev(md->nr,md->chargeA,x,force[Min],&top->idef,&xiH,&xiS);
-    fprintf(debug,"xiH = %e, xiS = %e\n",xiH,xiS);
+    fprintf(log,"xiH = %e, xiS = %e\n",xiH,xiS);
   }
+#endif
   /* Copy x to pos[Min] & pos[Try]: during minimization only the
    * shell positions are updated, therefore the other particles must
    * be set here.
@@ -249,7 +250,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     gmx_sum(NEPOT,Epot,cr);
   
   step=step0;
-  if (bVerbose && MASTER(cr))
+  if (bVerbose && MASTER(cr) && (nshell > 0))
     print_epot("",mdstep,0,step,Epot[Min],df[Min]);
 
   if (debug) {

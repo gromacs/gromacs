@@ -114,6 +114,6 @@ extern void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 			t_forcerec *fr,t_inputrec *ir,bool bMaster,
 			t_mdatoms *md,t_idef *idef,real mu_aver,int nmols,
 			t_commrec *cr,matrix box,tensor virial,rvec mu_tot,
-			rvec x[],rvec f[]);
+			rvec x[],rvec f[],bool bDoIt);
 		     
 #endif

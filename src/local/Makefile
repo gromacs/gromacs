@@ -22,11 +22,7 @@ all:		bin
 xmdrun:		xmdrun.o $(XOBJ) calcfdev.o
 		$(LD) -o $@ $^ $(RUNSYSLIBS)
 
-shell_md:	shell_md.o $(XOBJ)
-		$(LD) -o $@ $^ $(RUNSYSLIBS)
-
 copyrgt:	copyrgt.o1;
-
 		$(LD) -o $@ $^ $(SYSLIBS) 
 
 my_dssp:	my_dssp.o	dsspcore.o

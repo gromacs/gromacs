@@ -46,6 +46,8 @@ static char *SRCID_do_gct_c = "$Id$";
 #include "main.h"
 #include "txtdump.h"
 
+/*#define DEBUGGCT*/
+
 t_coupl_rec *init_coupling(FILE *log,int nfile,t_filenm fnm[],
 			   t_commrec *cr,t_forcerec *fr,
 			   t_mdatoms *md,t_idef *idef)
@@ -412,7 +414,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 		 t_forcerec *fr,t_inputrec *ir,bool bMaster,
 		 t_mdatoms *md,t_idef *idef,real mu_aver,int nmols,
 		 t_commrec *cr,matrix box,tensor virial,rvec mu_tot,
-		 rvec x[],rvec f[])
+		 rvec x[],rvec f[],bool bDoIt)
 {
 #define enm2Debye 48.0321
 #define d2e(x) (x)/enm2Debye
@@ -438,13 +440,13 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
       fprintf(log,"DOGCT: this is parallel\n");
     else
       fprintf(log,"DOGCT: this is not parallel\n");
+    fflush(log);
     snew(f6, atnr2);
     snew(f12,atnr2);
     snew(fa, atnr2);
     snew(fb, atnr2);
     snew(fc, atnr2);
     snew(fq, idef->atnr);
-    bFirst = FALSE;
     
     if (tcr->bVirial) {
       int  nrdf = 0;
@@ -463,7 +465,9 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
       
       fprintf(log,"DOGCT: TTT = %g, nrdf = %d, vir0 = %g,  Vol = %g\n",
 	      TTT,nrdf,tcr->ref_value[eoVir],Vol);
+      fflush(log);
     }
+    bFirst = FALSE;
   }
   
   bPrint = do_per_step(step,ir->nstprint);
@@ -545,44 +549,47 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   }
   for(i=0; (i<idef->atnr); i++) 
     fq[i] = 1.0;
-  
-  if (!fr->bBHAM) {
-    for(i=0; (i<tcr->nLJ); i++) {
-      tclj=&(tcr->tcLJ[i]);
 
-      ati=tclj->at_i;
-      atj=tclj->at_j;
-      
-      ff6 = ff12 = 1.0;	
-      
-      if (tclj->eObs == eoForce) {
-	fatal_error(0,"Hack code for this to work again ");
-	if (debug)
-	  fprintf(debug,"Have computed derivatives: xiH = %g, xiS = %g\n",xiH,xiS);
-	if (ati == 1) {
-	  /* Hydrogen */
-	  ff12 += xiH; 
-	}
-	else if (ati == 2) {
-	  /* Shell */
-	  ff12 += xiS; 
-	}
-	else
-	  fatal_error(0,"No H, no Shell, edit code at %s, line %d\n",
-		      __FILE__,__LINE__);
-	if (ff6 > 0)
-	  set_factor_matrix(idef->atnr,f6, sqrt(ff6), ati,atj);
-	if (ff12 > 0)
-	  set_factor_matrix(idef->atnr,f12,sqrt(ff12),ati,atj);
-      }
-      else {
-	if (debug)
-	  fprintf(debug,"tcr->tcLJ[%d].xi_6 = %g, xi_12 = %g deviation = %g\n",i,
-		  tclj->xi_6,tclj->xi_12,deviation[tclj->eObs]);
-	factor=deviation[tclj->eObs];
+  /* Now compute the actual coupling compononents */   
+  if (!fr->bBHAM) {
+    if (bDoIt) {
+      for(i=0; (i<tcr->nLJ); i++) {
+	tclj=&(tcr->tcLJ[i]);
 	
-	upd_f_value(log,idef->atnr,tclj->xi_6, dt,factor,f6, ati,atj);
-	upd_f_value(log,idef->atnr,tclj->xi_12,dt,factor,f12,ati,atj);
+	ati=tclj->at_i;
+	atj=tclj->at_j;
+	
+	ff6 = ff12 = 1.0;	
+	
+	if (tclj->eObs == eoForce) {
+	  fatal_error(0,"Hack code for this to work again ");
+	  if (debug)
+	    fprintf(debug,"Have computed derivatives: xiH = %g, xiS = %g\n",xiH,xiS);
+	  if (ati == 1) {
+	    /* Hydrogen */
+	    ff12 += xiH; 
+	  }
+	  else if (ati == 2) {
+	    /* Shell */
+	    ff12 += xiS; 
+	  }
+	  else
+	    fatal_error(0,"No H, no Shell, edit code at %s, line %d\n",
+			__FILE__,__LINE__);
+	  if (ff6 > 0)
+	    set_factor_matrix(idef->atnr,f6, sqrt(ff6), ati,atj);
+	  if (ff12 > 0)
+	    set_factor_matrix(idef->atnr,f12,sqrt(ff12),ati,atj);
+	}
+	else {
+	  if (debug)
+	    fprintf(debug,"tcr->tcLJ[%d].xi_6 = %g, xi_12 = %g deviation = %g\n",i,
+		    tclj->xi_6,tclj->xi_12,deviation[tclj->eObs]);
+	  factor=deviation[tclj->eObs];
+	  
+	  upd_f_value(log,idef->atnr,tclj->xi_6, dt,factor,f6, ati,atj);
+	  upd_f_value(log,idef->atnr,tclj->xi_12,dt,factor,f12,ati,atj);
+	}
       }
     }
     if (PAR(cr)) {
@@ -607,15 +614,17 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
     }
   }
   else {
-    for(i=0; (i<tcr->nBU); i++) {
-      tcbu   = &(tcr->tcBU[i]);
-      factor = deviation[tcbu->eObs];
-      ati    = tcbu->at_i;
-      atj    = tcbu->at_j;
-      
-      upd_f_value(log,idef->atnr,tcbu->xi_a,dt,factor,fa,ati,atj);
-      upd_f_value(log,idef->atnr,tcbu->xi_b,dt,factor,fb,ati,atj);
-      upd_f_value(log,idef->atnr,tcbu->xi_c,dt,factor,fc,ati,atj);
+    if (bDoIt) {
+      for(i=0; (i<tcr->nBU); i++) {
+	tcbu   = &(tcr->tcBU[i]);
+	factor = deviation[tcbu->eObs];
+	ati    = tcbu->at_i;
+	atj    = tcbu->at_j;
+	
+	upd_f_value(log,idef->atnr,tcbu->xi_a,dt,factor,fa,ati,atj);
+	upd_f_value(log,idef->atnr,tcbu->xi_b,dt,factor,fb,ati,atj);
+	upd_f_value(log,idef->atnr,tcbu->xi_c,dt,factor,fc,ati,atj);
+      }
     }
     if (PAR(cr)) {
       gprod(cr,atnr2,fa);
@@ -641,17 +650,17 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 		tcbu->at_i,tcbu->a,tcbu->b,tcbu->c);
     }
   }
-  
-  for(i=0; (i<tcr->nQ); i++) {
-    tcq=&(tcr->tcQ[i]);
-    fprintf(log,"tcr->tcQ[%d].xi_Q = %g deviation = %g\n",i,
-	    tcq->xi_Q,deviation[tcq->eObs]);
-    if (tcq->xi_Q)     
-      ffq = 1.0 + (dt/tcq->xi_Q) * deviation[tcq->eObs];
-    else
-      ffq = 1.0;
-    fq[tcq->at_i] *= ffq;
-    
+  if (bDoIt) {
+    for(i=0; (i<tcr->nQ); i++) {
+      tcq=&(tcr->tcQ[i]);
+      fprintf(log,"tcr->tcQ[%d].xi_Q = %g deviation = %g\n",i,
+	      tcq->xi_Q,deviation[tcq->eObs]);
+      if (tcq->xi_Q)     
+	ffq = 1.0 + (dt/tcq->xi_Q) * deviation[tcq->eObs];
+      else
+	ffq = 1.0;
+      fq[tcq->at_i] *= ffq;
+    }
   }
   if (PAR(cr))
     gprod(cr,idef->atnr,fq);
