@@ -66,12 +66,12 @@ static void write_nblist(FILE *out,t_nblist *nblist)
   fflush(out);
 }
 
-void read_nblist(FILE *in,FILE *log,int **mat,int natoms)
+int read_nblist(FILE *in,FILE *log,int **mat,int natoms)
 {
   bool bNL;
   char buf[256],b1[32],b2[32];
   int  i,ii,j,nnbl,full,icmp,nri,il_code,solv;
-  int  iatom,nrj,nj,shift,gid;
+  int  iatom,nrj,nj,shift,gid,nargs,njtot=0;
   
   do {
     if (fgets2(buf,255,in) == NULL)
@@ -79,13 +79,15 @@ void read_nblist(FILE *in,FILE *log,int **mat,int natoms)
   } while (strstr(buf,header) == NULL);
   
   do {
-    if (fscanf(in,"%*s%d%*s%d",&il_code,&solv) != 2)
-      break;
-    if (fscanf(in,"%*s%d%*s%d",&nri,&nrj) != 2)
-      gmx_fatal(FARGS,"Not enough arguments read line %d",__LINE__);
+    if ((nargs = fscanf(in,"%*s%d%*s%d",&il_code,&solv)) != 2)
+      return njtot;
+    /* gmx_fatal(FARGS,"Can not read il_code or sol (nargs=%d)",nargs);*/
+    if ((nargs = fscanf(in,"%*s%d%*s%d",&nri,&nrj)) != 2)
+      gmx_fatal(FARGS,"Can not read nri or nrj (nargs=%d)",nargs);
     for(ii=0; (ii<nri); ii++) {
-      if (fscanf(in,"%*s%d%*s%d%*s%d%*s%d",&iatom,&gid,&shift,&nj) != 4)
-	gmx_fatal(FARGS,"Not enough arguments read line %d",__LINE__);
+      if ((nargs = fscanf(in,"%*s%d%*s%d%*s%d%*s%d",
+			  &iatom,&shift,&gid,&nj)) != 4)
+	gmx_fatal(FARGS,"Can not read iatom, shift gid or nj (nargs=%d)",nargs);
       /* Number shifts from 1 to 27 iso 0 to 26, to distinguish uninitialized 
        * matrix elements.
        */
@@ -94,18 +96,19 @@ void read_nblist(FILE *in,FILE *log,int **mat,int natoms)
 	gmx_fatal(FARGS,"iatom = %d (max %d)\n",iatom,natoms);
       nrj+=nj;
       for(i=0; (i<nj); i++) {
-	if (fscanf(in,"%*s%d",&j) != 1)
-	  gmx_fatal(FARGS,"Not enough arguments read line %d",__LINE__);
-	if ((j < 0) || (j >= natoms))
-	  gmx_fatal(FARGS,"iatom = %d (max %d)\n",j,natoms);
+	if ((nargs = fscanf(in,"%*s%d",&j)) != 1)
+	  gmx_fatal(FARGS,"Can not read j");
+	range_check(j,0,natoms);
 	if (mat[iatom][j] != 0)
 	  fprintf(log,"mat[%d][%d] changing from %d to %d\n",
 		  i,j,mat[iatom][j],shift);
 	mat[iatom][j] = shift;
+	njtot++;
       }
     }
     fprintf(log,"nri = %d  nrj = %d\n",nri,nrj);
   } while (TRUE);
+  return -1;
 }
 
 void dump_nblist(FILE *out,t_forcerec *fr,int nDNL)

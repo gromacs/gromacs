@@ -52,12 +52,14 @@ int main(int argc,char *argv[])
 {
   FILE    *in,*out;
   int     i,j,nmiss,mod;
-  char    *fn1,*fn2,title[256];
-  int     ***mat;
+  char    **fn,title[256];
+  int     ***mat,nnb;
+  real    mb;
   bool    bConf;
   rvec    *x,dx;
   matrix  box;
   t_atoms atoms;
+  t_pbc   pbc;
   
   t_filenm fnm[] = {
     { efLOG, "-f1", NULL, ffREAD },
@@ -72,7 +74,7 @@ int main(int argc,char *argv[])
   };
 
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,0,TRUE,NFILE,fnm,asize(pa),pa,0,NULL,0,NULL);
+  parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,0,NULL,0,NULL);
 
   bConf = (opt2bSet("-c",NFILE,fnm));
   if (bConf) {
@@ -80,38 +82,39 @@ int main(int argc,char *argv[])
     init_t_atoms(&atoms,natoms,FALSE);
     snew(x,natoms);
     read_stx_conf(opt2fn("-c",NFILE,fnm),title,&atoms,x,NULL,box);
-    init_pbc(box,FALSE);
+    set_pbc(&pbc,box);
   }
+  snew(fn,2);
+  fn[0] = opt2fn("-f1",NFILE,fnm);
+  fn[1] = opt2fn("-f2",NFILE,fnm);
   
   snew(mat,2);  
-  snew(mat[0],natoms);
-  snew(mat[1],natoms);
-  for(i=0; (i<natoms); i++) {
-    snew(mat[0][i],natoms);
-    snew(mat[1][i],natoms);
-  }
   out = ffopen(ftp2fn(efOUT,NFILE,fnm),"w");
-  fn1 = opt2fn("-f1",NFILE,fnm);
-  fn2 = opt2fn("-f2",NFILE,fnm);
-    
+  mb  = sizeof(int)*sqr(natoms/1024.0);
   for(i=0; (i<2); i++) {
-    in = ffopen(fnm[i].fn,"r");
-    fprintf(stderr,"Reading %s\n",fnm[i].fn);
-    fprintf(out,   "Reading %s\n",fnm[i].fn);
-    read_nblist(in,out,mat[i],natoms);
+    in = ffopen(fn[i],"r");
+    fprintf(stderr,"Reading %s\n",fn[i]);
+    fprintf(out,   "Reading %s\n",fn[i]);
+    fprintf(stderr,"Going to allocate %.0f Mb of memory\n",mb);
+    fprintf(out,   "Going to allocate %.0f Mb of memory\n",mb);
+    snew(mat[i],natoms);
+    for(j=0; (j<natoms); j++) 
+      snew(mat[i][j],natoms);
+    nnb = read_nblist(in,out,mat[i],natoms);
     fclose(in);
+    fprintf(stderr,"Interaction matrix %d has %d entries\n",i,nnb);
+    fprintf(out,   "Interaction matrix %d has %d entries\n",i,nnb);
   }
-  mod=1;
   fprintf(stderr,"Comparing Interaction Matrices\n");
-  fprintf(out,   "Comparing Interaction Matrices\n");
+  mod=1;
   nmiss = 0;
   for(i=0; (i<natoms); i+=mod) {
     for(j=0; (j<natoms); j+=mod) {
       if (mat[0][i][j] != mat[1][i][j]) {
 	fprintf(out,"i: %5d, j: %5d, shift[%s]: %3d, shift[%s]: %3d",
-		i,j,fn1,mat[0][i][j]-1,fn2,mat[1][i][j]-1);
+		i,j,fn[0],mat[0][i][j]-1,fn[1],mat[1][i][j]-1);
 	if (bConf) {
-	  pbc_dx(x[i],x[j],dx);
+	  pbc_dx(&pbc,x[i],x[j],dx);
 	  fprintf(out," dist: %8.3f\n",norm(dx));
 	}
 	else

@@ -31,6 +31,10 @@ EXTRA_libmd@LIBSUFFIX@_la_SOURCES = \
 	fshake.f	fsettle.f	flincs.f	\
 	fshaked.f	fsettled.f	flincsd.f
 
+LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
+
+bin_PROGRAMS = compnl
+compnl_SOURCES = compnl.c
 
 # link the mpi library to non-mpi names if the latter are not present
 install-exec-hook:

@@ -42,6 +42,7 @@
 
 extern void dump_nblist(FILE *out,t_forcerec *fr,int nDNL);
 
-extern void read_nblist(FILE *in,FILE *out,int **mat,int natoms);
+extern int read_nblist(FILE *in,FILE *out,int **mat,int natoms);
+/* Returns total number of neighbors */
 
 #endif	/* _wnblist_h */
