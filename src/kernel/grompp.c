@@ -256,7 +256,7 @@ static int *new_status(char *topfile,char *confin,
 		       rvec **x,rvec **v,matrix box,
 		       t_atomtype *atype,t_topology *sys,
 		       t_molinfo *msys,t_params plist[],
-		       int nprocs,bool bEnsemble)
+		       int nprocs,bool bEnsemble,bool bMorse)
 {
   t_molinfo   *molinfo=NULL;
   t_simsystem *Sims=NULL;
@@ -282,6 +282,9 @@ static int *new_status(char *topfile,char *confin,
       for(i=0; (i<ntab); i++)
 	fprintf(debug,"Mol[%5d] = %s\n",i,*molinfo[tab[i]].name);
   }
+  if (bMorse)
+    convert_harmonics(nrmols,molinfo,atype);
+
   topcat(msys,nrmols,molinfo,ntab,tab,Nsim,Sims,bEnsemble);
   
   /* Copy structures from msys to sys */
@@ -514,7 +517,13 @@ int main (int argc, char *argv[])
     "should be supplied with [TT]-r[tt].[PAR]",
     "Starting coordinates can be read from trajectory with [TT]-t[tt].",
     "The last frame with coordinates and velocities will be read,",
-    "unless the [TT]-time[tt] option is used."
+    "unless the [TT]-time[tt] option is used.[PAR]",
+    "Using the [TT]-morse[tt] option grompp can convert the harmonic bonds",
+    "in your topology to morse potentials. This makes it possible to break",
+    "bonds. For this option to work you need an extra file in your $GMXLIB",
+    "with dissociation energy. Use the -debug option to get more information",
+    "on the workings of this option (look for MORSE in the grompp.log file",
+    "using less or something like that)."
   };
   static char *bugs[] = {
     "shuffling is sometimes buggy when used on systems when the number of"
@@ -545,21 +554,24 @@ int main (int argc, char *argv[])
 
   /* Command line options */
   static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=FALSE,bEnsemble=FALSE;
+  static bool bMorse=FALSE;
   static int  nprocs=1;
   static real time=-1;
   t_pargs pa[] = {
     { "-np",      FALSE, etINT,  &nprocs,
-      "Generate statusfile for # processors" },
+	"Generate statusfile for # processors" },
     { "-time",    FALSE, etREAL,  &time,
-      "Take frame at or first after this time." },
+	"Take frame at or first after this time." },
     { "-v",       FALSE, etBOOL, &bVerbose,
-      "Be loud and noisy" },
+	"Be loud and noisy" },
     { "-R",       FALSE, etBOOL, &bRenum,
-      "Renumber atomtypes and minimize number of atomtypes" },
+	"Renumber atomtypes and minimize number of atomtypes" },
     { "-shuffle", FALSE, etBOOL, &bShuffle,
-      "Shuffle molecules over processors (only with N > 1)" },
+	"Shuffle molecules over processors (only with N > 1)" },
     { "-ensemble",FALSE, etBOOL, &bEnsemble, 
-      "Perform ensemble averaging over distance restraints" },
+	"Perform ensemble averaging over distance restraints" },
+    { "-morse",   FALSE, etBOOL, &bMorse,
+	"Convert the harmonic bonds in your topology to morse potentials." }
   };
 #define NPA asize(pa)
   CopyRight(stdout,argv[0]);
@@ -604,7 +616,7 @@ int main (int argc, char *argv[])
   forward=new_status(ftp2fn(efTOP,NFILE,fnm),opt2fn("-c",NFILE,fnm),
 		     opts,ir,bVerbose,&natoms,
 		     &x,&v,box,&atype,&sys,&msys,plist,
-		     bShuffle ? nprocs : 1,bEnsemble);
+		     bShuffle ? nprocs : 1,bEnsemble,bMorse);
   if (opt2bSet("-r",NFILE,fnm)) {
     if (bVerbose)
       fprintf(stderr,"Reading position restraint coords from %s\n",
