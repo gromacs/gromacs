@@ -104,7 +104,7 @@ const char *
 get_warning_file(void);
 /* Get filename for the warning */
   
-char 
+extern char 
 warn_buf[1024];
 /* Warning buffer of 1024 bytes, which can be used to print messages to */
 
