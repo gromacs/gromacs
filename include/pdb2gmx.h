@@ -135,6 +135,8 @@ typedef struct {
   char        **add_nm;		/* Names for added atoms		*/
   int         nidih;		/* Number of impropers to be added	*/
   t_idih      *idih;		/* Improper list			*/
+  int         ndih;		/* Number of propers to be added	*/
+  t_idih      *dih;		/* Proper list			        */
   int         ndel;		/* Number of atoms to delete		*/
   char        **nm_del;		/* Names of atoms to delete		*/
 } t_hackblock;

@@ -242,9 +242,9 @@ extern  void def_sumi(int nr,int r[],t_commrec *cr);
 #endif
 
 #ifdef DEBUGPAR
-#define debug_par() fprintf(stderr,"PID=%d, %s  %d\n",gmx_cpu_id(),__FILE__,__LINE__)
+#define debug_gmx() fprintf(stderr,"PID=%d, %s  %d\n",gmx_cpu_id(),__FILE__,__LINE__)
 #else
-#define debug_par()
+#define debug_gmx()
 #endif
 
 #endif	/* _network_h */
