@@ -12,8 +12,8 @@ include_HEADERS = \
 	atomprop.h  	ns.h        	gmx_thread.h	\
 	shift.h       	trnio.h		ebin.h 		\
 	macros.h    	nsb.h       	shift_util.h  	txtdump.h	\
-	edsam.h         magic.h     	nsgrid.h    	\
-	typedefs.h	block_tx.h  	enxio.h         \
+	edsam.h         magic.h     	nsgrid.h    	sparsematrix.h  \
+	typedefs.h	block_tx.h  	enxio.h         mtxio.h		\
 	main.h      	pbc.h       	smalloc.h     	update.h	\
 	bondf.h     	ewald.h         maths.h     	pdbio.h     	\
 	sortwater.h   	utils.h		ewald_util.h    vsite.h		\
@@ -40,6 +40,8 @@ include_HEADERS = \
 	disre.h     	orires.h	\
 	init.h          reorder.h   	\
 	tags.h		do_fit.h    	nrama.h     	\
-	rmpbc.h     	tgroup.h        
+	rmpbc.h     	tgroup.h        \
+	gmx_blas.h	gmx_lapack.h	gmx_arpack.h
+
 
 
