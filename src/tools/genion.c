@@ -44,141 +44,9 @@ static char *SRCID_genion_c = "$Id$";
 #include "physics.h"
 #include "vec.h"
 #include "tpxio.h"
-
-void get_params(char *giin,char *giout,
-		int *p_num,char p_name[],real *p_q,
-		int *n_num,char n_name[],real *n_q,
-		int *w1,int *nw,real *rcut)
-{
-  t_inpfile *inp;
-  char      *tmp;
-  int       ninp;
-
-  inp=read_inpfile(giin,&ninp);
-  ITYPE("n+",           *p_num,      1);
-  STYPE("name+",    	p_name,	    "");
-  RTYPE("q+",		*p_q,	    1.0);
-  ITYPE("n-",           *n_num,       1);
-  STYPE("name-",	n_name,	    "");
-  RTYPE("q-",		*n_q,	   -1.0);
-  ITYPE("water-1",	*w1,	    0);
-  ITYPE("n-water",	*nw,	    0);
-  RTYPE("rexcl",	*rcut,	    0.5);
-  
-  write_inpfile(giout,ninp,inp);
-}
-
-typedef struct {
-  int     nr;		/* The number of neighbours	*/
-  atom_id *j;		/* The array of j-part		*/
-} t_nl;
-
-static real dr2(rvec xi,rvec xj,matrix box)
-{
-  rvec r_ij;
-  real rn;
-  
-  pbc_dx(box,xi,xj,r_ij);
-  rn=iprod(r_ij,r_ij);
-
-  return rn;
-}
-
-static void insert(t_nl *nl,int j)
-{
-#define HOPS 64 
-
-  if ((nl->nr % HOPS)==0) 
-    srenew(nl->j,nl->nr+HOPS);
-  nl->j[nl->nr++]=j;
-}
-
-static void mk_nl(int nw,int index[],matrix box,rvec x[],real rcut,t_nl nl[])
-{
-
-  int  i,j,ii,jj;
-  real rij2,rc2=rcut*rcut;
-  real avnb;
-
-  fprintf(stderr,"Making neighbourlist with cut-off %g for exclusions\n",rcut);
-  for(i=0; (i<nw); i++) {
-    ii=index[i];
-    for(j=i+1; (j<nw); j++) {
-      jj=index[j];
-      rij2=dr2(x[ii],x[jj],box);
-      if (rij2 < rc2) {
-	insert(&(nl[i]),j);
-	insert(&(nl[j]),i);
-      }
-    }
-  }
-  avnb=0;
-  for(i=0; (i<nw); i++)
-    avnb+=nl[i].nr;
-  avnb/=nw;
-  fprintf(stderr,"Average number of neighbours: %g\n",avnb);
-}
-
-static int calc_pot(char *infile,
-		    t_topology *top,rvec **x0,rvec **v0,
-		    real **coulomb,matrix box,real *rl2)
-{
-  t_inputrec  ir;
-  t_tpxheader sh;
-  
-  rvec        *x;
-  real        *q,qi,rij,rij2,rlong2;
-  real        *coul;
-  int         i,j;
-
-  /* Some dummies */
-  int         step,natoms;
-  real        t;
-
-  read_tpxheader(infile,&sh);
-  snew(x,sh.natoms);
-  snew(*v0,sh.natoms);
-  read_tpx(infile,&step,&t,&t,&ir,box,
-	   &natoms,x,*v0,NULL,top);
-
-  /* Calc the force */
-  fprintf(stderr,"Doing single force calculation...\n");
-
-  /*  do_force(stdout,t_commrec *cr,
-	   t_parm *parm,t_nsborder *nsb,tensor vir_part,
-	   int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
-	   rvec x[],rvec v[],rvec f[],rvec buf[],
-	   t_mdatoms *mdatoms,real ener[],bool bVerbose,
-	   real lambda,t_graph *graph,
-	   bool bNS,bool bNBFonly,t_forcerec *fr);
-  */
-  
-  snew(coul,sh.natoms);
-  snew(q,natoms);
-  init_pbc(box,FALSE);
-  for(i=0; (i<natoms); i++)
-    q[i]=top->atoms.atom[i].q;
-
-  rlong2=ir.rlong*ir.rlong;
-  *rl2=rlong2;
-  for(i=0; (i<natoms); i++) {
-    qi=q[i];
-    for(j=i+1; (j<natoms); j++) {
-      rij2=dr2(x[i],x[j],box);
-      if (rij2 < rlong2) {
-	rij=invsqrt(rij2);
-	coul[i]+=q[j]*rij;
-	coul[j]+=qi*rij;
-      }
-    }
-  }
-  sfree(q);
-
-  *coulomb=coul;
-  *x0=x;
-
-  return sh.natoms;
-}
+#include "mdrun.h"
+#include "calcpot.h"
+#include "main.h"
 
 static int *mk_windex(int w1,int nw)
 {
@@ -192,41 +60,14 @@ static int *mk_windex(int w1,int nw)
   return index;
 }
 
-static void update_coul(real q,int nw,int index[],int ei,
-			real coulomb[],rvec x[],matrix box,real rlong2)
+static void insert_ion(real q,int nw,bool bSet[],int index[],
+		       int nSubs[],real pot[],rvec x[],char *anm,char *resnm,
+		       t_topology *top)
+     /*rvec x[],matrix box,real rlong2,int natoms)*/
 {
-  int  i,ii,j;
-  real rij2;
-  real *xow;
-  real qO=-0.82*ONE_4PI_EPS0;
-  real qH;
-
-  qH=-qO/2;
-  xow=x[ei];
-
-  q*=ONE_4PI_EPS0;
-  for(i=0; (i<nw); i++) {
-    ii=index[i];
-    
-    if (ii != ei) {
-      rij2=dr2(xow,x[ii],box);
-      if (rij2 < rlong2) {
-	coulomb[ii]+=(q-qO)*invsqrt(rij2);
-	for(j=1; (j<3); j++) {
-	  rij2=dr2(x[ei+j],x[ii],box);
-	  coulomb[ii]-=qH*invsqrt(rij2);
-	}
-      }
-    }
-  }
-}
-
-static void insert_ion(real q,int nw,t_nl nl[],bool bSet[],
-		       int index[],int nSubs[],real coulomb[],
-		       rvec x[],matrix box,real rlong2,int natoms)
-{
-  int  i,ii,ei;
-  real extr_e,qii;
+  int  i,ii,ei,m;
+  real extr_e,poti;
+  rvec xei;
   bool bSub=FALSE;
 
   ei=-1;
@@ -235,35 +76,36 @@ static void insert_ion(real q,int nw,t_nl nl[],bool bSet[],
     if (!bSet[i]) {
       ii=index[i];
       if (nSubs[ii] == 0) {
-	qii=coulomb[ii];
+	poti=pot[ii];
 	if (q > 0) {
-	  if ((qii <= extr_e) || !bSub) {
-	    extr_e=qii;
-	    ei=i;
-	    bSub=TRUE;
+	  if ((poti <= extr_e) || !bSub) {
+	    extr_e = poti;
+	    ei     = i;
+	    bSub   = TRUE;
 	  }
 	}
 	else {
-	  if ((qii >= extr_e) || !bSub) {
-	    extr_e=qii;
-	    ei=i;
-	    bSub=TRUE;
-	  }
+	  if ((poti >= extr_e) || !bSub) {
+	    extr_e = poti;
+	    ei     = i;
+	    bSub   = TRUE;
+	  } 
 	}
       }
     }
   }
   if (ei == -1)
     fatal_error(0,"No More replacable waters!");
-
-  /* Now update the coulomb energy... */
-  update_coul(q,nw,index,index[ei],coulomb,x,box,rlong2);
-  nSubs[index[ei]]=(q < 0) ? -1 : 1;
-  for(i=0; (i<nl[ei].nr); i++) {
-    int jj=nl[ei].j[i];
-    assert((jj >= 0) && (jj < nw));
-    bSet[jj]=TRUE;
+  /* Swap ei water at index ei with water at last index */
+  for(m=0; (m<3); m++) {
+    copy_rvec(x[index[ei]+m],xei);
+    copy_rvec(x[index[nw-1]+m],x[index[ei]+m]);
+    copy_rvec(xei,x[index[nw-1]+m]);
   }
+  /* Replace the oxygen with the ion */
+  replace_atom(top,index[nw-1],anm,resnm,q,1,1);
+  delete_atom(top,index[nw-1]+2);
+  delete_atom(top,index[nw-1]+1);
 }
 
 static void copy_atom(t_atoms *at1,int a1,t_atoms *at2,int a2,int r)
@@ -285,81 +127,6 @@ static void copy_atom(t_atoms *at1,int a1,t_atoms *at2,int a2,int r)
   }
 }  
 
-static void print_nsub(int nion,int w1,int nw,
-		       int index[],int nSubs[],
-		       char *p_name,char *n_name,
-		       t_topology *top,rvec x[],rvec v[],
-		       t_atoms *new_at, rvec **xn, rvec **vn)
-{
-  t_atoms     *atoms;
-  int         i,j,m,ii;
-  int         aind,rind;
-
-  atoms=&(top->atoms);
-  init_t_atoms(new_at,atoms->nr-2*nion,FALSE);
-  new_at->nres=atoms->nres;
-  snew(new_at->resname,atoms->nres);
-  snew(*xn,atoms->nr-2*nion);
-  snew(*vn,atoms->nr-2*nion);
-
-  for(i=0; (i<w1); i++) {
-    copy_atom(atoms,i,new_at,i,-1);
-    copy_rvec(x[i],(*xn)[i]);
-    copy_rvec(v[i],(*vn)[i]);
-  }
-
-  aind=w1;
-  rind=atoms->atom[aind].resnr;
-  for(i=0; (i<nw); i++) {
-    ii=index[i];
-    if (nSubs[ii] == 0) {
-      for(m=0; (m<3); m++) { 
-	copy_atom(atoms,ii+m,new_at,aind,rind);
-	copy_rvec(x[ii+m],(*xn)[aind]);
-	copy_rvec(v[ii+m],(*vn)[aind]);
-	aind++;
-      }
-      rind++;
-    }
-  }
-  for(i=0; (i<nw); i++) {
-    ii=index[i];
-    if (nSubs[ii] > 0) {
-      fprintf(stdout,"Water Molec. %5d has been replaced by %s\n",i,p_name);
-      snew(new_at->atomname[aind],1);
-      *new_at->atomname[aind]=strdup(p_name);
-      new_at->atom[aind].resnr=rind;
-      snew(new_at->resname[rind],1);
-      *new_at->resname[rind]=strdup(p_name);
-      copy_rvec(x[ii],(*xn)[aind]);
-      copy_rvec(v[ii],(*vn)[aind]);
-      rind++;
-      aind++;
-    }
-  }
-  for(i=0; (i<nw); i++) {
-    ii=index[i];
-    if (nSubs[ii] < 0) {
-      fprintf(stdout,"Water Molec. %5d has been replaced by %s\n",i,n_name);
-      snew(new_at->atomname[aind],1);
-      *new_at->atomname[aind]=strdup(n_name);
-      new_at->atom[aind].resnr=rind;
-      snew(new_at->resname[rind],1);
-      *new_at->resname[rind]=strdup(n_name);
-      copy_rvec(x[ii],(*xn)[aind]);
-      copy_rvec(v[ii],(*vn)[aind]);
-      rind++;
-      aind++;
-    }
-  }
-  for(i=aind+2*nion; (i<atoms->nr); i++) {
-    copy_atom(atoms,i,new_at,aind,-1);
-    copy_rvec(x[i],(*xn)[aind]);
-    copy_rvec(v[i],(*vn)[aind]);
-    aind++;
-  }
-}
-
 int main(int argc, char *argv[])
 {
   static char *desc[] = {
@@ -371,9 +138,9 @@ int main(int argc, char *argv[])
   static char *bugs[] = {
     "Only monatomic ions can be used. For larger ions, e.g. sulfate we recommended to use genbox."
   };
-  static int  p_num=0,n_num=0;
+  static int  p_num=0,n_num=0,nw=0,w1=1;
   static char *p_name="Na",*n_name="Cl";
-  static real p_q,n_q,rcut;
+  static real p_q=1,n_q=-1,rcut;
   static t_pargs pa[] = {
     { "-p",    FALSE, etINT,  &p_num, "Number of positive ions"       },
     { "-pn",   FALSE, etSTR,  &p_name,"Name of the positive ion"      },
@@ -381,59 +148,92 @@ int main(int argc, char *argv[])
     { "-n",    FALSE, etINT,  &n_num, "Number of negative ions"       },
     { "-nn",   FALSE, etSTR,  &n_name,"Name of the negative ion"      },
     { "-nq",   FALSE, etREAL, &n_q,   "Charge of the negative ion"    },
-    { "-rmin", FALSE, etREAL, &rcut,  "Minimum distance between ions" }
+    { "-rmin", FALSE, etREAL, &rcut,  "Minimum distance between ions" },
+    { "-w1",   FALSE, etINT,  &w1,    "First water atom to be cosidered" },
+    { "-nw",   FALSE, etINT,  &nw,    "Number of water molecules" }
   };
-  t_topology  top;
+  t_topology  *top;
   t_atoms     new_at;
+  t_parm      parm;
+  t_commrec   cr;
+  t_mdatoms   *mdatoms;
+  t_nsborder  nsb;
+  t_groups    grps;
+  t_graph     *graph;
+  t_forcerec  *fr;
   rvec        *x,*v,*xn,*vn;
-  real        *coulomb;
-  real        rlong2;
+  real        *pot;
   matrix      box;
-  int         w1,nw;
   int         *index;
   int         *nSubs;
-  bool        *bSet;
-  t_nl        *nl;
-  int         i,nion,natoms;
+  bool        *bSet,bPDB;
+  int         i,nion;
   t_filenm fnm[] = {
-    { efTPX, NULL,  NULL,     ffREAD },
-    { efSTO, "-o",  NULL,     ffWRITE }
+    { efTPX, NULL,  NULL,     ffREAD  },
+    { efSTO, "-o",  NULL,     ffWRITE },
+    { efLOG, "-g",  "genion", ffWRITE },
+    { efPDB, "-q",  "conf",   ffOPTWR },
+    { efXTC, "-x",  "ctraj",  ffOPTRD },
+    { efTRN, "-t",  "traj",   ffOPTRD },
+    { efENX, "-e",  "ener",   ffOPTRD }
   };
 #define NFILE asize(fnm)
   
   CopyRight(stdout,argv[0]);
   parse_common_args(&argc,argv,0,TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    asize(bugs),bugs);
-
+  bPDB = ftp2bSet(efPDB,NFILE,fnm);
+  
+  /* Check input for something sensible */
+  w1--;
+  if (nw <= 0) {
+#define NOWAT "No water molecules in your system."
+    if ((p_num != 0) || (n_num != 0))
+      fatal_error(0,NOWAT" Can not generate ions");
+    else if (!bPDB)
+      fatal_error(0,NOWAT" And you don't want to know the potential either?");
+    else
+      fprintf(stderr,NOWAT"Will calculate potential anyway\n");
+  }
+  else 
+    fprintf(stderr,"First water atom: %d  Number of water molecules: %d\n",
+	    w1+1,nw);
+  
   nion   = p_num+n_num;
 
-  natoms = calc_pot(ftp2fn(efTPX,NFILE,fnm),&top,&x,&v,&coulomb,box,&rlong2);
   index  = mk_windex(w1,nw);
-  snew(nSubs,natoms);
   snew(bSet,nw);
-  snew(nl,nw);
-  mk_nl(nw,index,box,x,rcut,nl);
-
+  snew(top,1);
+  init_calcpot(NFILE,fnm,top,&x,&parm,&cr,
+	       &graph,&mdatoms,&nsb,&grps,&fr,&pot);
+  snew(nSubs,top->atoms.nr);
+  snew(v,top->atoms.nr);
+  snew(top->atoms.pdbinfo,top->atoms.nr);
   do {
-    for(i=0; (i<nw); i++)
-      printf("coul[%5d]=%g\n",i,coulomb[index[i]]);
-    if (p_num >= n_num) {
-      insert_ion(p_q,nw,nl,bSet,index,nSubs,coulomb,x,box,rlong2,natoms);
+    calc_pot(stdlog,&nsb,&cr,&grps,&parm,top,x,fr,graph,mdatoms,pot);
+    if (bPDB) {
+      for(i=0; (i<top->atoms.nr); i++)
+	top->atoms.pdbinfo[i].bfac = pot[i];
+      write_sto_conf(ftp2fn(efPDB,NFILE,fnm),"Potential calculated by genion",
+		     &top->atoms,x,v,box);
+    }
+    if ((p_num > 0) && (p_num >= n_num))  {
+      insert_ion(p_q,nw,bSet,index,nSubs,pot,x,p_name,p_name,top);
+      nw--;
       fprintf(stderr,"+");
       p_num--;
     }
-    else {
-      insert_ion(n_q,nw,nl,bSet,index,nSubs,coulomb,x,box,rlong2,natoms);
+    else if (n_num > 0) {
+      insert_ion(n_q,nw,bSet,index,nSubs,pot,x,n_name,n_name,top);
+      nw--;
       fprintf(stderr,"-");
       n_num--;
     }
   } while (p_num+n_num > 0);
   fprintf(stderr,"\n");
 
-  print_nsub(nion,w1,nw,index,nSubs,p_name,n_name,&top,x,v,&new_at,&xn,&vn);
-
-  write_sto_conf(ftp2fn(efSTO,NFILE,fnm),*top.name,&new_at,xn,vn,box);
-
+  write_sto_conf(ftp2fn(efSTO,NFILE,fnm),*top->name,&top->atoms,x,v,box);
+  
   thanx(stdout);
   
   return 0;

@@ -48,8 +48,8 @@ protonate:	protonate.o
 eneconv:	eneconv.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
-genion:		genion.o
-		$(LD) -o  $@ $^ $(SYSLIBS)
+genion:		genion.o calcpot.o edittop.o
+		$(LD) $(RUNLDOPT) -o $@ $^ $(RUNSYSLIBS)
 
 genpr:		genpr.o $(OBJ)
 		$(LD) -o $@ $^ $(SYSLIBS)
