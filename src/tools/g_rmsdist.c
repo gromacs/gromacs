@@ -116,6 +116,8 @@ typedef struct {
   int nr;
   real r_3;
   real r_6;
+  real i_3;
+  real i_6;
 } t_noe;
 
 typedef struct {
@@ -128,6 +130,7 @@ typedef struct {
 
 typedef struct {
   int  rnr;
+  char *nname;
   char *rname;
   char *aname;
 } t_equiv;
@@ -148,23 +151,26 @@ static int read_equiv(char *eq_fn, t_equiv ***equivptr)
     srenew(equiv,neq+1);
     equiv[neq]=NULL;
     na=0;
-    if (debug) fprintf(debug,"%d",neq);
-    while (sscanf(lp,"%d %s %s %n",&resnr,resname,atomname,&n)==3) {
-      /* this is not efficient, but I'm lazy (again) */
-      srenew(equiv[neq], na+1);
-      equiv[neq][na].rnr=resnr;
-      equiv[neq][na].rname=strdup(resname);
-      equiv[neq][na].aname=strdup(atomname);
-      if (debug) fprintf(debug," %d %s %s",resnr,resname,atomname);
-      na++;
+    if (sscanf(lp,"%s %n",atomname,&n)==1) {
       lp+=n;
+      snew(equiv[neq], 1);
+      equiv[neq][0].nname=strdup(atomname);
+      while (sscanf(lp,"%d %s %s %n",&resnr,resname,atomname,&n)==3) {
+	/* this is not efficient, but I'm lazy (again) */
+	srenew(equiv[neq], na+1);
+	equiv[neq][na].rnr=resnr-1;
+	equiv[neq][na].rname=strdup(resname);
+	equiv[neq][na].aname=strdup(atomname);
+	if (na>0) equiv[neq][na].nname=NULL;
+	na++;
+	lp+=n;
+      }
     }
     /* make empty element as flag for end of array */
     srenew(equiv[neq], na+1);
     equiv[neq][na].rnr=NOTSET;
     equiv[neq][na].rname=NULL;
     equiv[neq][na].aname=NULL;
-    if (debug) fprintf(debug,".\n");
     
     /* next */
     neq++;
@@ -175,16 +181,28 @@ static int read_equiv(char *eq_fn, t_equiv ***equivptr)
   
   return neq;
 }
+
+static void dump_equiv(FILE *out, int neq, t_equiv **equiv)
+{
+  int i,j;
+  
+  fprintf(out,"Dumping equivalent list\n");
+  for (i=0; i<neq; i++) {
+    fprintf(out,"%s",equiv[i][0].nname);
+    for(j=0; equiv[i][j].rnr!=NOTSET; j++)
+      fprintf(out," %d %s %s",
+	      equiv[i][j].rnr,equiv[i][j].rname,equiv[i][j].aname);
+    fprintf(out,"\n");
+  }
+}
     
-static bool is_equiv(int neq, t_equiv **equiv, 
+static bool is_equiv(int neq, t_equiv **equiv, char **nname,
 		     int rnr1, char *rname1, char *aname1,
 		     int rnr2, char *rname2, char *aname2)
 {
   int i,j;
   bool bFound;
   
-  if(debug)fprintf(debug,"is_equiv %d %s %s - %d %s %s ?",
-		   rnr1, rname1, aname1, rnr2, rname2, aname2);
   bFound=FALSE;
   /* we can terminate each loop when bFound is true! */
   for (i=0; i<neq && !bFound; i++) {
@@ -202,7 +220,8 @@ static bool is_equiv(int neq, t_equiv **equiv,
 		   strcmp(equiv[i][j].aname, aname2)==0 );
     }
   }
-  if(debug)fprintf(debug," %s\n",bool_names[bFound]);
+  if (bFound)
+    *nname = strdup(equiv[i-1][0].nname);
   
   return bFound;
 }
@@ -214,50 +233,34 @@ static int analyze_noe_equivalent(char *eq_fn,
 {
   FILE   *fp;
   int i, j, anmil, anmjl, rnri, rnrj, gi, groupnr, neq;
-  char *anmi, *anmj;
+  char *anmi, *anmj, **nnm;
   bool bMatch,bEquiv;
   t_equiv **equiv;
   
+  snew(nnm,isize);
   if (bSumH) {
-    if (eq_fn)
+    if (eq_fn) {
       neq=read_equiv(eq_fn,&equiv);
-    else {
+      if (debug) dump_equiv(debug,neq,equiv);
+    } else {
       neq=NULL;
       equiv=NULL;
     }
     
     groupnr=0;
     for(i=0; i<isize; i++) {
-      /* look for triplets of consecutive atoms with name XX?, 
-	 X are any number of letters or digits and ? goes from 1 to 3 */
-      anmi  = *atoms->atomname[index[i]];
-      anmil = strlen(anmi);
-      bMatch = i<isize-3 && anmi[anmil-1]=='1';
-      if (bMatch)
-	for(j=1; j<3; j++) {
-	  anmj  = *atoms->atomname[index[i+j]];
-	  anmjl = strlen(anmj);
-	  bMatch = bMatch && ( anmil==anmjl && anmj[anmjl-1]==Hnum[j] &&
-			       strncmp(anmi, anmj, anmil-1)==0 );
-	}
-      /* set index for this atom */
-      noe_index[i]=groupnr;
-      if (bMatch) {
-	/* set index for next two matching atoms */
-	for(j=1; j<3; j++)
-	  noe_index[i+j]=groupnr;
-	/* skip matching atoms */
-	i+=2;
-      } else if (equiv && i<isize-1) {
-	/* check list of equivalent atoms */
+      if (equiv && i<isize-1) {
+	/* check explicit list of equivalent atoms */
 	do {
 	  j=i+1;
 	  rnri=atoms->atom[index[i]].resnr;
 	  rnrj=atoms->atom[index[j]].resnr;
 	  bEquiv = 
-	    is_equiv(neq, equiv, 
+	    is_equiv(neq, equiv, &nnm[i], 
 		     rnri, *atoms->resname[rnri], *atoms->atomname[index[i]],
 		     rnrj, *atoms->resname[rnrj], *atoms->atomname[index[j]]);
+	  if(nnm[i] && bEquiv)
+	    nnm[j]=strdup(nnm[i]);
 	  if (bEquiv) {
 	    /* set index for matching atom */
 	    noe_index[j]=groupnr;
@@ -265,6 +268,31 @@ static int analyze_noe_equivalent(char *eq_fn,
 	    i=j;
 	  }
 	} while ( bEquiv );
+      } else 
+	bEquiv=FALSE;
+      if (!bEquiv) {
+	/* look for triplets of consecutive atoms with name XX?, 
+	   X are any number of letters or digits and ? goes from 1 to 3 
+	   This is supposed to cover all CH3 groups and the like */
+	anmi  = *atoms->atomname[index[i]];
+	anmil = strlen(anmi);
+	bMatch = i<isize-3 && anmi[anmil-1]=='1';
+	if (bMatch)
+	  for(j=1; j<3; j++) {
+	    anmj  = *atoms->atomname[index[i+j]];
+	    anmjl = strlen(anmj);
+	    bMatch = bMatch && ( anmil==anmjl && anmj[anmjl-1]==Hnum[j] &&
+				 strncmp(anmi, anmj, anmil-1)==0 );
+	  }
+	/* set index for this atom */
+	noe_index[i]=groupnr;
+	if (bMatch) {
+	  /* set index for next two matching atoms */
+	  for(j=1; j<3; j++)
+	    noe_index[i+j]=groupnr;
+	  /* skip matching atoms */
+	  i+=2;
+	}
       }
       groupnr++;
     }
@@ -275,22 +303,38 @@ static int analyze_noe_equivalent(char *eq_fn,
     groupnr=isize;
   }
   noe_index[isize]=groupnr;
-  
+
+  if (debug)
+    /* dump new names */
+    for(i=0; i<isize; i++) {
+      rnri=atoms->atom[index[i]].resnr;
+      fprintf(debug,"%s %s %d -> %s\n",*atoms->atomname[index[i]],
+	      *atoms->resname[rnri],rnri,nnm[i]?nnm[i]:"");
+    }
+    
   for(i=0; i<isize; i++) {
     gi=noe_index[i];
     if (!noe_gr[gi].aname) {
       noe_gr[gi].ianr=i;
       noe_gr[gi].anr=index[i];
-      noe_gr[gi].aname=strdup(*atoms->atomname[index[i]]);
-      if ( noe_index[i]==noe_index[i+1] )
-	noe_gr[gi].aname[strlen(noe_gr[gi].aname)-1]='*';
+      if (nnm[i])
+	noe_gr[gi].aname=strdup(nnm[i]);
+      else {
+	noe_gr[gi].aname=strdup(*atoms->atomname[index[i]]);
+	if ( noe_index[i]==noe_index[i+1] )
+	  noe_gr[gi].aname[strlen(noe_gr[gi].aname)-1]='*';
+      }
       noe_gr[gi].rnr=atoms->atom[index[i]].resnr;
       noe_gr[gi].rname=strdup(*atoms->resname[noe_gr[gi].rnr]);
+      /* dump group definitions */
       if (debug) fprintf(debug,"%d %d %d %d %s %s %d\n",i,gi,
 			 noe_gr[gi].ianr,noe_gr[gi].anr,noe_gr[gi].aname,
 			 noe_gr[gi].rname,noe_gr[gi].rnr);
     }
   }
+  for(i=0; i<isize; i++)
+    sfree(nnm[i]);
+  sfree(nnm);
   
   return groupnr;
 }
@@ -304,19 +348,20 @@ static int analyze_noe_equivalent(char *eq_fn,
 static char *noe2scale(real r3, real r6, real rmax)
 {
   int i,s3, s6;
-  char buf[NSCALE+1];
+  static char buf[NSCALE+1];
 
   /* r goes from 0 to rmax
-     r*NSCALE/rmax goes from 0 to NSCALE
-     NSCALE - r*NSCALE/rmax goes from NSCALE to 0 */
-  s3 = NSCALE - min(NSCALE, (int)(r3*NSCALE/rmax));
-  s6 = NSCALE - min(NSCALE, (int)(r6*NSCALE/rmax));
+     NSCALE*r/rmax goes from 0 to NSCALE
+     NSCALE - NSCALE*r/rmax goes from NSCALE to 0 */
+  s3 = NSCALE - min(NSCALE, (int)(NSCALE*r3/rmax));
+  s6 = NSCALE - min(NSCALE, (int)(NSCALE*r6/rmax));
+  
   for(i=0; i<s3; i++)
     buf[i]='=';
   for(   ; i<s6; i++)
     buf[i]='-';
   buf[i]='\0';
-  
+
   return buf;
 }
 
@@ -331,16 +376,16 @@ static void calc_noe(int isize, atom_id *noe_index,
     for(j=i; j<isize; j++) {
       gj=noe_index[j];
       noe[gi][gj].nr++;
-      noe[gi][gj].r_3+=pow(dtot1_3[i][j],-3);
-      noe[gi][gj].r_6+=pow(dtot1_6[i][j],-6);
+      noe[gi][gj].i_3+=pow(dtot1_3[i][j],-3);
+      noe[gi][gj].i_6+=pow(dtot1_6[i][j],-6);
     }
   }
   
   /* make averages */
   for(i=0; i<gnr; i++)
     for(j=i+1; j<gnr; j++) {
-      noe[i][j].r_3 = pow(noe[i][j].r_3/noe[i][j].nr,-1.0/3.0);
-      noe[i][j].r_6 = pow(noe[i][j].r_6/noe[i][j].nr,-1.0/6.0);
+      noe[i][j].r_3 = pow(noe[i][j].i_3/noe[i][j].nr,-1.0/3.0);
+      noe[i][j].r_6 = pow(noe[i][j].i_6/noe[i][j].nr,-1.0/6.0);
       noe[j][i] = noe[i][j];
     }
 }
@@ -350,49 +395,51 @@ static void write_noe(FILE *fp,int gnr,t_noe **noe,t_noe_gr *noe_gr,real rmax)
   int  i,j;
   real r3, r6, min3, min6;
   char buf[10],b3[10],b6[10];
+  t_noe_gr gri, grj;
   
   min3 = min6 = 1e6;
-  fprintf(fp,";%4s %3s %4s %4s %3s %4s %4s %4s %4s %3s "
-	  "%8s %8s %3s %2s %-6s\n",
+  fprintf(fp,
+	  ";%4s %3s %4s %4s%3s %4s %4s %4s %4s%3s %5s %5s %8s %2s %2s %s\n",
 	  "ianr","anr","anm","rnm","rnr","ianr","anr","anm","rnm","rnr",
-	  "1/r^3","1/r^6","Dr","Da","scale");
-  for(i=0; i<gnr; i++)
+	  "1/r^3","1/r^6","intnsty","Dr","Da","scale");
+  for(i=0; i<gnr; i++) {
+    gri=noe_gr[i];
     for(j=i+1; j<gnr; j++) {
+      grj=noe_gr[j];
       r3 = noe[i][j].r_3;
       r6 = noe[i][j].r_6;
       min3 = min(r3,min3);
       min6 = min(r6,min6);
       if ( r3 < rmax || r6 < rmax ) {
-	if (noe_gr[j].rnr == noe_gr[i].rnr)
-	  sprintf(buf,"%2d", noe_gr[j].anr-noe_gr[i].anr);
+	if (grj.rnr == gri.rnr)
+	  sprintf(buf,"%2d", grj.anr-gri.anr);
 	else
 	  buf[0]='\0';
 	if ( r3 < rmax )
-	  sprintf(b3,"%-8g",r3);
+	  sprintf(b3,"%-5.3f",r3);
 	else
 	  strcpy(b3,"-");
 	if ( r6 < rmax )
-	  sprintf(b6,"%-8g",r6);
+	  sprintf(b6,"%-5.3f",r6);
 	else
 	  strcpy(b6,"-");
-	fprintf(fp, "%4d %4d %4s %4s %3d %4d %4d %4s %4s %3d "
-		"%8s %8s %3d %2s %-6s\n",
-		noe_gr[i].ianr+1, noe_gr[i].anr+1, noe_gr[i].aname, 
-		noe_gr[i].rname, noe_gr[i].rnr+1,
-		noe_gr[j].ianr+1, noe_gr[j].anr+1, noe_gr[j].aname, 
-		noe_gr[j].rname, noe_gr[j].rnr+1,
-		b3, b6, noe_gr[j].rnr-noe_gr[i].rnr, buf,
+	fprintf(fp,
+		"%4d %4d %4s %4s%3d %4d %4d %4s %4s%3d %5s %5s %8d %2d %2s %s\n",
+		gri.ianr+1, gri.anr+1, gri.aname, gri.rname, gri.rnr+1,
+		grj.ianr+1, grj.anr+1, grj.aname, grj.rname, grj.rnr+1,
+		b3, b6, (int)(noe[i][j].i_6+0.5), grj.rnr-gri.rnr, buf, 
 		noe2scale(r3, r6, rmax));
       }
     }
-  for(i=3; i<=6; i+=3) {
-    if ( ((i==3)?min3:min6) > rmax )
-      fprintf(stdout,"NOTE: no 1/r^%d averaged distances found below %g, "
-	      "smallest was %g\n", i, rmax, ((i==3)?min3:min6) );
-    else
-      fprintf(stdout,"Smallest 1/r^%d averaged distance was %g\n", 
-	      i, ((i==3)?min3:min6) );
   }
+#define MINI ((i==3)?min3:min6)
+  for(i=3; i<=6; i+=3)
+    if ( MINI > rmax )
+      fprintf(stdout,"NOTE: no 1/r^%d averaged distances found below %g, "
+	      "smallest was %g\n", i, rmax, MINI );
+    else
+      fprintf(stdout,"Smallest 1/r^%d averaged distance was %g\n", i, MINI );
+#undef MINI
 }
 
 static void calc_rms(int nind, int nframes, 
@@ -617,7 +664,8 @@ int main (int argc,char *argv[])
     snew(noe_gr, isize);
     gnr=analyze_noe_equivalent(opt2fn_null("-equiv",NFILE,fnm),
 			       atoms, isize, index, bSumH, noe_index, noe_gr);
-    
+    fprintf(stdout, "Found %d non-equivalent atom-groups in %d atoms\n", 
+	    gnr, isize);
     /* make half matrix of of noe-group distances from atom distances */
     snew(noe,gnr);
     for(i=0; i<gnr; i++)
