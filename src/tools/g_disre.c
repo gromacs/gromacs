@@ -349,7 +349,8 @@ int main (int argc,char *argv[])
   thanx(stderr);
 
 #ifdef USE_MPI
-  MPI_Finalize();
+  if (gmx_parallel)
+    MPI_Finalize();
 #endif
   
   return 0;
