@@ -221,8 +221,8 @@ NOTE: Pressure scaling is not possible with PPPM.
 <b>rvdw</b>=0.9, <b>rcoulomb</b>=0.9. The highest magnitude of
 wavevectors used in reciprocal space is controlled by
 <b>fourier_nx</b>, <b>fourier_ny</b>, <b>fourier_nz</b>. Reasonable
-values are about 5. The relative accuracy of direct/reciprocal space
-is controlled by <b>ewald_rtol</b>. NOTE: Ewald scales as O(N*N) and
+values are about 2 for each nm of box size. The relative accuracy of direct/reciprocal space
+is controlled by <b>ewald_rtol</b>. NOTE: Ewald scales as O(N^(3/2)) and
 is thus extremely slow for large systems. It is included mainly for
 reference - in most cases PME will perform much better.
 
