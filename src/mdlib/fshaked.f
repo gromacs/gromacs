@@ -105,8 +105,8 @@ c      to change to other similarly!
                   xh      = rijx*acor
                   yh      = rijy*acor
                   zh      = rijz*acor
-                  im      = invmass(i)
-                  jm      = invmass(j)
+                  im      = invmass(i+1)
+                  jm      = invmass(j+1)
                   if ((im .ne. 0) .and. (jm .ne. 0)) then
                      xp(ix) = xp(ix) + xh*im
                      xp(iy) = xp(iy) + yh*im
