@@ -16,7 +16,9 @@ MAGIC_H_CR	= magic.h.bak
 all:		$(MAGIC_H)
 
 $(MAGIC_H):	typedefs.h Makefile
-		echo "/* Generated from" `what typedefs.h | awk '{ if (FNR==2) print }'` "*/" > $(MAGIC_H)
+		echo "/* "
+		echo " */"
+		echo "/* Generated from" `what typedefs.h | awk '{ if (FNR==2) print }'` "*/" >! $(MAGIC_H)
 		echo "" >> $(MAGIC_H)
 		echo '#ifndef GROMACS_MAGIC' >> $(MAGIC_H)
 		echo '#define GROMACS_MAGIC '`\
@@ -24,7 +26,7 @@ $(MAGIC_H):	typedefs.h Makefile
 " | sum | awk ' { printf("0x%x",$$1) } '` >> $(MAGIC_H)
 		echo '#endif' >> $(MAGIC_H)
 		copyrgt $(MAGIC_H)
-		echo "y" | $(RM) $(MAGIC_H_CR)
+		$(RM) $(MAGIC_H_CR)
 
 clean:		
 		$(RM) *~ #*# 
