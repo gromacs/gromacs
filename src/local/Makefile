@@ -41,6 +41,8 @@ hrefify:	hrefify.o
 
 total:		total.o
 		$(FLD) -o $@ $^ $(SYSLIBS)
+optwat:		optwat.o
+		$(LD) -o $@ $^ $(SYSLIBS) -lm
 
 do_shift:	do_shift.o
 		$(LD) -o $@ $^ $(SYSLIBS)
