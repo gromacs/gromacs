@@ -368,8 +368,8 @@ void normalize_acf(int nframes,int nf2,int nlag,
   if (bFour) {
     if (debug)
       fprintf(debug,"Correcting for FFT artefacts, nf2 = %d\n",nf2);
-    /*for(j=0; (j<nf2); j++)
-      corr[j] *= (real) nf2/(real) (nf2 - j);*/
+    for(j=0; (j<nf2); j++)
+      corr[j] *= (real) nf2/(real) (nf2 - j);
   }
   if (debug) {
     fprintf(debug,"After normalization\n");
@@ -450,7 +450,7 @@ void do_four_core(unsigned long mode,int nfour,int nf2,int nframes,
      ********************************************/
   case eacNormal:
     /********** F F T ********/
-    low_do_four_core(nfour,nf2,c1,cfour,enNorm,FALSE);
+    low_do_four_core(nfour,nf2,c1,csum,enNorm,FALSE);
     break;
     
     /***************************************************
@@ -470,8 +470,10 @@ void do_four_core(unsigned long mode,int nfour,int nf2,int nframes,
     
     /* Sine term of AC function */
     low_do_four_core(nfour,nf2,ctmp,cfour,enSin,FALSE);
-    for(j=0; (j<nf2); j++)
+    for(j=0; (j<nf2); j++) {
       c1[j] += cfour[j];
+      csum[j] = c1[j];
+    }
     
     break;
     
@@ -590,6 +592,8 @@ void do_four_core(unsigned long mode,int nfour,int nf2,int nframes,
     fatal_error(0,"\nUnknown mode in do_autocorr (%d)",mode);
   }
   sfree(cfour);
+  for(j=0; (j<nf2); j++)
+    c1[j] = csum[j];
 }
 
 void fit_acf(int ncorr,int nfitparm,
@@ -692,9 +696,10 @@ void low_do_autocorr(char *fn,char *title,
     if (k < c0)
       k++;
     k++;
-    nfour = pow(2,k);
-    fprintf(stderr,"Using FFT to calculate %s, #points for FFT = %d\n",
-	    title,nfour);
+    nfour = pow(2.0,(double)k);
+    if (debug)
+      fprintf(debug,"Using FFT to calculate %s, #points for FFT = %d\n",
+	      title,nfour);
 	
     /* Allocate temp arrays */
     snew(csum,nfour);
