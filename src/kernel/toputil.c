@@ -363,7 +363,7 @@ void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,int *cgnr)
   
   as=dir2str(d_atoms);
   fprintf(out,"[ %s ]\n",as);
-  fprintf(out,"; %4s %6s %6s %7s%6s %6s %12s %12s %6s %12s %12s\n",
+  fprintf(out,"; %4s %6s %6s %7s%6s %6s %10s %10s %6s %10s %10s\n",
 	  "nr","type","resnr","residue","atom","cgnr","charge","mass","typeB","chargeB","massB");
     
   qtot  = 0;
@@ -379,19 +379,19 @@ void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,int *cgnr)
       if ((itype < 0) || (itype > atype->nr))
 	fatal_error(0,"itype = %d, i= %d in print_atoms",itype,i);
 	
-      fprintf(out,"%6d %6s %6d %6s %6s %6d %12g %12g",
+      fprintf(out,"%6d %6s %6d %6s %6s %6d %10g %10g",
 	      i+1,*(atype->atomname[itype]),
 	      at->atom[i].resnr+1,  
 	      *(at->resname[at->atom[i].resnr]),
 	      *(at->atomname[i]),cgnr[i],
 	      at->atom[i].q,at->atom[i].m);
       if (PERTURBED(at->atom[i])) {
-	fprintf(out,"  %6s  %12g  %12g",
+	fprintf(out," %6s %10g %10g",
 		*(atype->atomname[at->atom[i].typeB]),
 		at->atom[i].qB,at->atom[i].mB);
       }
       qtot+=at->atom[i].q;
-      fprintf(out,"\t; qtot: %g\n",qtot);
+      fprintf(out,"   ; qtot %g\n",qtot);
     }
   }
   fprintf(out,"\n");
