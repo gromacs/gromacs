@@ -74,12 +74,12 @@ static int read_mass(char *massdata,t_mass **mass)
   return i;
 } /*read_mass()*/
 
-static void write_mass(FILE *fp,int nmass,t_mass *mass[]) 
+static void write_mass(FILE *fp,int nmass,t_mass mass[]) 
 {
   int i;
   
   for (i=0; (i<nmass); i++) 
-    fprintf(fp,"%10s  %10s  %10g\n",mass[i].resname,mass[i].atomname,mass[i].m);
+    fprintf(fp,"%10s  %10s  %10g\n",mass[i].resname,mass[i].atomname,mass[i].mass);
 } /*read_mass()*/
 
 real get_mass(char *resnm, char *atomnm)
