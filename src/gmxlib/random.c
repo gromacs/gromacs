@@ -100,7 +100,7 @@ void low_mspeed(real tempi,int nrdf,int seed,int nat,atom_id a[],
       }
     }
   }
-  temp=(2.0*ekin)/(nat*DIM*BOLTZ);
+  temp=(2.0*ekin)/(nrdf*BOLTZ);
   if (temp > 0) {
     scal=sqrt(tempi/temp);
     for(i=0; (i<nat); i++)
