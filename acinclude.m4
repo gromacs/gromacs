@@ -878,7 +878,8 @@ esac
 if test $ac_cv_prog_gcc = yes; then
   # gcc can add debug info even when optimizing, and
   # it does not reduce performance - what a deal!
-  ACX_CHECK_CC_FLAGS(-g,g,xCFLAGS="$xCFLAGS -g")
+  # but it does increase the filesize enormously
+  # ACX_CHECK_CC_FLAGS(-g,g,xCFLAGS="$xCFLAGS -g")
   ACX_CHECK_CC_FLAGS(-O3,o3,xCFLAGS="$xCFLAGS -O3")
   xCFLAGS="$xCFLAGS -fomit-frame-pointer -finline-functions -Wall -Wno-unused"
   # For alpha axp assembly we need the preprocessor to tell elf from ecoff.
