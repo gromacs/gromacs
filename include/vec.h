@@ -108,8 +108,7 @@ static char *SRCID_vec_h = "$Id$";
 #define EXP_ADDR(val)   (((val)&EXP_MASK)>>EXP_SHIFT)
 #define FRACT_ADDR(val) (((val)&(FRACT_MASK|EXP_LSB))>>FRACT_SHIFT)
 
-
-
+#define PR_VEC(a)       a[XX],a[YY],a[ZZ]
 
 #ifdef SOFTWARE_SQRT
 extern const unsigned int cinvsqrtexptab[];
