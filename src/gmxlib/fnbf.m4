@@ -247,7 +247,7 @@ static real *mk_14parm(int ntype,int nbonds,t_iatom iatoms[],
   return nbfp;
 }
 
-real do_14(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
+real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	   rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
 	   matrix box,real lambda,real *dvdlambda,
 	   t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
@@ -291,18 +291,15 @@ real do_14(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
     copy_rvec(f[aj],fj);
     
     if (r2 >= rtab2) {
-      fprintf(log,"%d %8.3f %8.3f %8.3f\n",(int)ai+1,
-	      x[ai][XX],x[ai][YY],x[ai][ZZ]);
-      fprintf(log,"%d %8.3f %8.3f %8.3f\n",(int)aj+1,
-	      x[aj][XX],x[aj][YY],x[aj][ZZ]);
-      fprintf(log,"1-4 (%d,%d) interaction not within cut-off! r=%g\n",
+      fatal_error(0,"\n%d %8.3f %8.3f %8.3f\n%d %8.3f %8.3f %8.3f\n1-4 (%d,%d) interaction not within cut-off! r=%g",
+	      x[ai][XX],x[ai][YY],x[ai][ZZ],
+	      x[aj][XX],x[aj][YY],x[aj][ZZ],
 	      (int)ai+1,(int)aj+1,sqrt(r2));
-      /* exit(1); */
     }
     
     gid  = GID(md->cENER[ai],md->cENER[aj],ngrp);
 #ifdef DEBUG
-    fprintf(log,"LJ14: grp-i=%2d, grp-j=%2d, ngrp=%2d, GID=%d\n",
+    fprintf(debug,"LJ14: grp-i=%2d, grp-j=%2d, ngrp=%2d, GID=%d\n",
 	    md->cENER[ai],md->cENER[aj],ngrp,gid);
 #endif
 

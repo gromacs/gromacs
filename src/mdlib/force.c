@@ -612,7 +612,8 @@ void force(FILE       *log,     int        step,
   debug_gmx();
   
   if (!bNBFonly) {
-    calc_bonds(log,idef,x,f,fr,graph,epot,nrnb,box,lambda);
+    calc_bonds(log,idef,x,f,fr,graph,epot,nrnb,box,lambda,md,
+	       opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14]);
     debug_gmx();
   }
   
