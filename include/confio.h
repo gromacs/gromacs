@@ -119,10 +119,17 @@ extern void read_xdr_coordnum(char *infile,int *natoms);
 
 extern void read_xdr_conf(char *infile,char *title,t_atoms *atoms,rvec x[],rvec v[],matrix box);
 
+extern void write_sto_conf(char *outfile, char *title,t_atoms *atoms, 
+		   rvec x[],rvec v[], matrix box);
+/* write atoms, x, v (if .gro and not NULL) and box (if not NULL) 
+ * to an STO (.gro or .pdb) file */ 
+
 extern void get_stx_coordnum (char *infile,int *natoms);
+/* read the number of atoms from an STX file */
 
 extern void read_stx_conf(char *infile, char *title,t_atoms *atoms, 
 		   rvec x[],rvec v[], matrix box);
+/* read atoms, x, v and box from an STX file */
 
 #ifdef CPLUSPLUS
 }

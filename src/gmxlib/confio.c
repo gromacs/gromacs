@@ -774,6 +774,33 @@ void read_xdr_conf(char *infile,char *title,t_atoms *atoms,rvec x[],rvec v[],mat
   close_symtab(&symtab);
 }
 
+void write_sto_conf(char *outfile, char *title,t_atoms *atoms, 
+		   rvec x[],rvec v[], matrix box)
+{
+  t_topology *top;
+  int        ftp,natoms,i1;
+  real       r1,r2;
+
+  ftp=fn2ftp(outfile);
+  switch (ftp) {
+  case efGRO:
+    write_conf(outfile, title, atoms, x, v, box);
+    break;
+  case efPDB:
+  case efBRK:
+  case efENT:
+    write_pdb_conf(outfile, title, atoms, x, box, FALSE);
+    break;
+  case efTPR:
+  case efTPB:
+  case efTPA:
+    fatal_error(0,"Sorry, can not write a topology to %s",outfile);
+    break;
+  default:
+    fatal_error(0,"Not supported in write_sto_conf: %s",outfile);
+  }
+}
+
 void get_stx_coordnum (char *infile,int *natoms)
 {
   int ftp;
@@ -831,3 +858,4 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
     fatal_error(0,"Not supported in read_stx_conf: %s",infile);
   }
 }
+
