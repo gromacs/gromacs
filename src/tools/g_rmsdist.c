@@ -176,7 +176,6 @@ void main (int argc,char *argv[])
   int          natom,i,teller;
   real         t;
 
-  t_tpxheader header;
   t_topology   top;
   matrix       box;
   rvec         *x;

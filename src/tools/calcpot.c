@@ -19,7 +19,7 @@ static void c_tabpot(int inr,real ix,real iy,real iz,real qi,
   real      rijX,rijY,rijZ;
   real      rsq;
   real      r1,r1t,poti;
-  real      eps,eps2,Y,F,Fp,Geps,Heps2,two=2.0,VV;
+  real      eps,eps2,Y,F,Fp,Geps,Heps2,VV;
   int       n0,n1,nnn;
   
   poti   = 0;
@@ -90,7 +90,6 @@ static void low_calc_pot(FILE *log,int ftype,t_forcerec *fr,
       k        = nl_i[i].shift;
       nj       = nl_i[i].nj;
       nl_j     = &(nlist[gid].nl_j[nl_i[i].j_index]);
-      itpA     = typeA[inr];
       if (nl_i[i].bWater)
 	fatal_error(0,"Water interaction found...\n");
       nr_inter += nj;

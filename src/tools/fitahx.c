@@ -67,7 +67,7 @@ real fit_ahx(int nres,t_bb bb[],int natoms,int nall,atom_id allindex[],
   const  real rad=0.23;   /* Radius of the helix (nm) */
   real   phi0,trms,rms;
   rvec   dx,xcm;
-  int    ai,i,j,nmass;
+  int    ai,i,nmass;
   
   if (nca < 3)
     fatal_error(0,"Need at least 3 Calphas to fit to, (now %d)...\n",nca);

@@ -259,7 +259,7 @@ static void do_ac_core(int nframes,int nout,
   }
   if (debug)
     fprintf(debug,
-	    "Starting do_ac_core: nframes=%d, nout=%d, nrestart=%d,mode=%u\n",
+	    "Starting do_ac_core: nframes=%d, nout=%d, nrestart=%d,mode=%lu\n",
 	    nframes,nout,nrestart,mode);
   
   for(j=0; (j<nout); j++)
@@ -644,7 +644,7 @@ void low_do_autocorr(char *fn,char *title,
     fatal_error(0,"Incompatible options bCos && bVector (%s, %d)",
 		__FILE__,__LINE__);
   if ((MODE(eacP3) || MODE(eacRcross)) && bFour) {
-    fprintf(stderr,"Can't combine mode %u with FFT, turning off FFT\n",mode);
+    fprintf(stderr,"Can't combine mode %lu with FFT, turning off FFT\n",mode);
     bFour = FALSE;
   }
   if (MODE(eacNormal) && MODE(eacVector)) 
@@ -655,7 +655,7 @@ void low_do_autocorr(char *fn,char *title,
 	  title,nitem,nframes);
   fprintf(stderr,"bAver = %s, bFour = %s bNormalize= %s\n",
 	  bool_names[bAver],bool_names[bFour],bool_names[bNormalize]);
-  fprintf(stderr,"mode = %u, dt = %g, nrestart = %d\n",mode,dt,nrestart);
+  fprintf(stderr,"mode = %lu, dt = %g, nrestart = %d\n",mode,dt,nrestart);
   
   if (bFour) {  
     c0 = log((double)nframes)/log(2.0);
