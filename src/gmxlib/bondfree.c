@@ -52,7 +52,7 @@ static bool bPBC=FALSE;
 void pbc_rvec_sub(matrix box,rvec xi,rvec xj,rvec dx)
 {
   if (bPBC)
-    pbc_dx(box,xi,xj,dx);
+    pbc_dx(xi,xj,dx);
   else
     rvec_sub(xi,xj,dx);
 }
@@ -627,7 +627,7 @@ real posres(FILE *log,int nbonds,
     ai   = forceatoms[i++];
     fc   = forceparams[type].posres.fc;
 
-    pbc_dx(box,x[ai],forceparams[type].posres.pos0,dx);
+    pbc_dx(x[ai],forceparams[type].posres.pos0,dx);
     v=0;
     for (m=0; (m<DIM); m++) {
       fi        = f[ai][m] - fc[m]*dx[m];
@@ -790,15 +790,6 @@ static void do_one14(rvec x[],int ai,int aj,rvec f[],int gid,
   rvec_dec(fshift[sj],f_ip);
 }
 
-static real dist2(rvec x,rvec y)
-{
-  rvec dx;
-  
-  rvec_sub(x,y,dx);
-  
-  return iprod(dx,dx);
-}
-
 real do_14(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	   rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
 	   matrix box,real lambda,real *dvdlambda,
@@ -825,8 +816,8 @@ real do_14(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
     itype = iatom[0];
     ai    = iatom[1];
     aj    = iatom[2];
-
-    r2    = dist2(x[ai],x[aj]);
+    
+    r2    = distance2(x[ai],x[aj]);
     
     if (r2 >= rtab2) {
       fprintf(log,"%d %8.3f %8.3f %8.3f\n",(int)ai+1,

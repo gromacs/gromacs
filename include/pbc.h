@@ -47,11 +47,10 @@ extern void init_pbc(matrix box,bool bTruncOct);
  * TRUE when using a truncated octahedron box.
  */
 
-extern void pbc_dx(matrix box,rvec x1, rvec x2, rvec dx);
+extern void pbc_dx(rvec x1, rvec x2, rvec dx);
 /* Calculate the correct distance vector from x1 and x2 and put it in
  * dx. init_pbc must be called before ever calling this routine
  * (this is done by put_charge_groups_in_box).
- * The box parameter is obsolete and must be removed.
  */
 
 extern bool image_rect(ivec xi,ivec xj,ivec box_size,

@@ -134,8 +134,6 @@ extern void reset_x(int ncm,atom_id ind_cm[],
  *     G E N B O X   S T U F F 
  *
  ***********************************************/
-extern real dist2(rvec x,rvec y,matrix box);
-
 extern int in_box(int NTB,matrix box,rvec x);
 /*in_box() returns zero if atom x is inside the box*/
 

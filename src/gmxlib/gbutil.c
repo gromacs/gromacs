@@ -35,13 +35,13 @@ static char *SRCID_gbutil_c = "$Id$";
 #include "gstat.h"
 #include "pbc.h"
 
-real dist2(rvec x,rvec y,matrix box)
+static real dist2(rvec x,rvec y,matrix box)
 {
   rvec dx;
   
-  pbc_dx(box,x,y,dx);
+  pbc_dx(x,y,dx);
   
-  return iprod(dx,dx);
+  return norm2(dx);
 }
 
 real distance_to_z(rvec x)

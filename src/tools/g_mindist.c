@@ -86,7 +86,7 @@ static void calc_mindist(real MinDist,
     for(j=j0; (j < j1); j++) {
       jx=index3[j];
       if (ix != jx) {
-	pbc_dx(box,x[ix],x[jx],dx);
+	pbc_dx(x[ix],x[jx],dx);
 	r2=iprod(dx,dx);
 	if (r2 < rmin2)
 	  rmin2=r2;

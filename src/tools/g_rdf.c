@@ -208,7 +208,7 @@ int main(int argc,char *argv[])
       ix = index[0][i];
       for(j=0; j < npairs[i]; j++) {
 	jx=pairs[i][j];
-	pbc_dx(box,x[ix],x[jx],dx);
+	pbc_dx(x[ix],x[jx],dx);
 	r2=iprod(dx,dx);
 	if ( r2 <= hbox2 && r2 > cut2 )
 	  count[(int)(sqrt(r2)*invbinw)]++;

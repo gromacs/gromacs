@@ -110,7 +110,7 @@ static void calc_mat(int nres, int natoms, int rndx[],
     resi=rndx[i];
     for(j=i+1; (j<natoms); j++) {
       resj=rndx[j];
-      pbc_dx(box,x[index[i]],x[index[j]],dx);
+      pbc_dx(x[index[i]],x[index[j]],dx);
       r2=iprod(dx,dx);
       if ( r2 < trunc2 ) {
 	nmat[resi][j]++;

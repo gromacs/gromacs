@@ -54,7 +54,7 @@ static void calc_dist(int nind,atom_id index[],
   for(i=0; (i<nind-1); i++) {
     xi=x[index[i]];
     for(j=i+1; (j<nind); j++) {
-      pbc_dx(box,xi,x[index[j]],dx);
+      pbc_dx(xi,x[index[j]],dx);
       d[i][j]=norm(dx);
     }
   }
@@ -72,7 +72,7 @@ static void calc_dist_tot(int nind,atom_id index[], rvec x[],
   for(i=0; (i<nind-1); i++) {
     xi=x[index[i]];
     for(j=i+1; (j<nind); j++) {
-      pbc_dx(box,xi,x[index[j]],dx);
+      pbc_dx(xi,x[index[j]],dx);
       temp2=dx[XX]*dx[XX]+dx[YY]*dx[YY]+dx[ZZ]*dx[ZZ];
       temp =sqrt(temp2);
       d[i][j]=temp;

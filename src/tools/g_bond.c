@@ -81,7 +81,7 @@ void do_bonds(FILE *log,char *fn,char *outf,int gnx,atom_id index[],
   do {
     j++; /* count frames */
     for(i=0; (i<gnx); i+=2) {
-      pbc_dx(box,x[index[i]],x[index[i+1]],dx);
+      pbc_dx(x[index[i]],x[index[i+1]],dx);
       bond   = norm(dx);
       if (bAver) {
 	add_lsq(&b_one,t,bond);

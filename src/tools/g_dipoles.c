@@ -279,7 +279,7 @@ void do_gkr(int ngrp,atom_id grpindex[],
   for(i=0; (i<ngrp); i++) {
     for(j=i+1; (j<ngrp); j++) {
       /* Compute distance between molecules including PBC */
-      pbc_dx(box,xcm[i],xcm[j],dx);
+      pbc_dx(xcm[i],xcm[j],dx);
       r2 = iprod(dx,dx);
       if (r2 < rc2) {
 	index = ngraph*sqrt(r2*rc_2);

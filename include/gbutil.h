@@ -28,8 +28,6 @@
  */
 static char *SRCID_gbutil_h = "$Id$";
 
-extern real dist2(rvec x,rvec y,matrix box);
-
 extern int in_box(int NTB,matrix box,rvec x);
 /*in_box() returns zero if atom x is inside the box*/
 

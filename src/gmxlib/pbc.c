@@ -85,7 +85,7 @@ static void do_trunc(rvec x)
       x[i] -= sign(side_2,x[i]);
 }
 
-void pbc_dx(matrix box,rvec x1, rvec x2, rvec dx)
+void pbc_dx(rvec x1, rvec x2, rvec dx)
 {
   int i;
   

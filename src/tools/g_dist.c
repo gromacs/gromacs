@@ -154,7 +154,7 @@ void main(int argc,char *argv[])
       /* write to output */
       fprintf(fp,"%8.3f ",t);
       for(g=0;(g<ngrps/2);g++) {
-	pbc_dx(box,com[2*g],com[2*g+1],dx);
+	pbc_dx(com[2*g],com[2*g+1],dx);
 	fprintf(fp,"%10.5f %10.5f %10.5f %10.5f",
 		norm(dx),dx[XX],dx[YY],dx[ZZ]);
       }
@@ -162,7 +162,7 @@ void main(int argc,char *argv[])
     } else {
       for(i=0;(i<isize[1]);i++) { 
 	j=index[1][i];
-	pbc_dx(box,x[j],com[0],dx);
+	pbc_dx(x[j],com[0],dx);
 	dist2 = norm2(dx);
 	if (dist2<cut2) {
 	  res=top->atoms.atom[j].resnr;
