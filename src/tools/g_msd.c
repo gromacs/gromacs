@@ -182,12 +182,6 @@ static void corr_print(t_corr *this,char *fn,char *title,char *yaxis,
   int  i,j,imin;
   real t,aa,bb,da,db;
   
-  /*  real err_fac; */
-  
-  /*  err_fac=sqrt(2.0/3.0*sqrt(M_PI)); */
-  for(j=0; (j<this->ngrp); j++)
-    for(i=0; (i<this->nframes); i++)
-      this->data[j][i]/=this->ndata[j][i];
   out=xvgropen(fn,title,"Time (ps)",yaxis);
   if (bXvgr)
     subtitle(out,this);
@@ -528,7 +522,8 @@ void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
   int          *gnx;
   atom_id      **index;
   char         **grpname;
-  
+  int          i,j;
+
   fx=read_first_x;
   nx=read_next_x;
 
@@ -545,6 +540,11 @@ void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
 	    bMol ? prep_data_mol : prep_data_norm,nrestart,dt,
 	    fx,nx);
   
+  /* Correct for the number of points */
+  for(j=0; (j<msd->ngrp); j++)
+    for(i=0; (i<msd->nframes); i++)
+      msd->data[j][i] /= msd->ndata[j][i];
+
   if (opt2bSet("-d",NFILE,fnm))
     corr_print(msd,opt2fn("-d",NFILE,fnm),"Diffusion constant",
 	       "D (10\\S5\\Ncm\\S2\\Ns\\S-1\\N)",TRUE,TRUE);
