@@ -185,7 +185,7 @@ void fill_table(int n0,int n,real x[],
   int  i,p;
   real r1,rc,r12,r13;
   real r,r2,r6;
-  real k_rf,rffac2,expr;
+  real expr;
   /* Parameters for David's function */
   real A=0,B=0,C=0,A_3=0,B_4=0;
   /* Parameters for the switching function */
@@ -212,8 +212,6 @@ void fill_table(int n0,int n,real x[],
     r1 = fr->rvdw_switch;
     rc = fr->rvdw;
   }
-  k_rf   = fr->k_rf;
-  rffac2 = k_rf*2.0;
   if (bSwitch)
     ksw  = 1.0/pow3(rc-r1);
   else
@@ -324,9 +322,9 @@ void fill_table(int n0,int n,real x[],
 	  8*ewc*ewc*ewc*ewc*ewc*r*exp(-(ewc*ewc*r2))*isp;
       break;
     case etabRF:
-      Vtab[i]  = 1.0/r      + k_rf*r2;
-      Ftab[i]  = 1.0/r2     - rffac2*r;
-      Vtab2[i] = 2.0/(r2*r) + rffac2;
+      Vtab[i]  = 1.0/r      +   fr->k_rf*r2 - fr->c_rf;
+      Ftab[i]  = 1.0/r2     - 2*fr->k_rf*r;
+      Vtab2[i] = 2.0/(r*r2) + 2*fr->k_rf;
       Ftab2[i] = 6.0/(r2*r2);
       break;
     case etabEXPMIN:
