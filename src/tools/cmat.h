@@ -61,10 +61,6 @@ typedef struct {
 /* The matrix is indexed using the matrix index */
 #define EROW(m,i)  m->erow[i]
 
-extern real **mk_matrix(int n1,bool b1D);
-
-extern void done_matrix(int n1,real ***m);
-
 extern t_mat *init_mat(int n1,bool b1D);
 
 extern void enlarge_mat(t_mat *m,int deltan);

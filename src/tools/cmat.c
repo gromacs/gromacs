@@ -38,34 +38,7 @@ static char *SRCID_cmat_c = "$Id$";
 #include "smalloc.h"
 #include "macros.h"
 #include "xvgr.h"
-
-real **mk_matrix(int n1,bool b1D)
-{
-  real **m;
-  int  i;
-  
-  snew(m,n1);
-  if (b1D)
-    snew(m[0],n1*n1); 
-  
-  for(i=0; (i<n1); i++) {
-    if (b1D)
-      m[i] = &(m[0][i*n1]);
-    else
-      snew(m[i],n1);
-  }
-  return m;
-}
-
-void done_matrix(int n1,real ***m)
-{
-  int i;
-  
-  for(i=0; (i<n1); i++)
-    sfree((*m)[i]);
-  sfree(*m);
-  *m = NULL;
-}
+#include "matio.h"
 
 t_mat *init_mat(int n1,bool b1D)
 {

@@ -51,6 +51,37 @@ static char mapper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123
 
 #define MAX_XPM_LINELENGTH 4096
 
+real **mk_matrix(int nx, int ny)
+{
+  int  i;
+  real **m;
+  
+  snew(m,nx);
+  for(i=0; (i<nx); i++)
+    snew(m[i],ny);
+  
+  return m;
+}
+
+void done_matrix(int nx, real ***m)
+{
+  int i;
+  
+  for(i=0; (i<nx); i++)
+    sfree((*m)[i]);
+  sfree(*m);
+  *m = NULL;
+}
+
+void clear_matrix(int nx, int ny, real **m)
+{
+  int x, y;
+  
+  for(x=0; x<nx; x++)
+    for(y=0; y<ny; y++)
+      m[x][y]=0;
+}
+
 bool matelmt_cmp(t_xpmelmt e1, t_xpmelmt e2) 
 { 
   return (e1.c1 == e2.c1) && (e1.c2 == e2.c2);

@@ -108,4 +108,10 @@ extern void write_xpm(FILE *out,
  * nlevels    number of color levels for the output
  */
 
+extern real **mk_matrix(int n1,bool b1D);
+
+extern void done_matrix(int n1,real ***m);
+
+extern void clear_matrix(int nx, int ny, real **m);
+
 #endif	/* _matio_h */
