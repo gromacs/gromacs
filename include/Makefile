@@ -13,7 +13,7 @@ CPP		= /lib/cpp -I.
 MAGIC_H		= magic.h
 MAGIC_H_CR	= magic.h.bak
 
-all:		$(MAGIC_H)
+all:		
 
 $(MAGIC_H):	typedefs.h Makefile
 		echo "/* "
