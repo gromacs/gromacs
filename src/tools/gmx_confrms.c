@@ -545,9 +545,9 @@ int gmx_confrms(int argc,char *argv[])
   }
   rms = sqrt(rms/totmass);
   
-  fprintf(stderr,"Root mean square deviation after lsq fit = %g\n",rms);
+  printf("Root mean square deviation after lsq fit = %g\n",rms);
   if (bBfac)
-    fprintf(stderr,"Atomic MSD's range from %g to %g\n",minmsd, maxmsd);
+    printf("Atomic MSD's range from %g to %g\n",minmsd, maxmsd);
   
   if (bFit) {
     /* reset coordinates of reference and fitted structure */
