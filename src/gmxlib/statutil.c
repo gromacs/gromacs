@@ -283,8 +283,8 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   static char *manstr[]      = { NULL, "no", "html", "tex", "java", "ascii", "completion", NULL };
   static char *not_nicestr[] = { NULL, "0", "4", "10", "19", NULL };
   static char *nicestr[]     = { NULL, "19", "10", "4", "0", NULL };
-  static char *not_npristr[] = { NULL, "0", "100", "200", "250", NULL };
-  static char *npristr[]     = { NULL, "250", "200", "100", "0", NULL };
+  static char *not_npristr[] = { NULL, "0", "128", "100", "200", "250", NULL };
+  static char *npristr[]     = { NULL, "128", "250", "200", "100", "0", NULL };
   static int  nicelevel=0,mantp=0,npri=0;
   static bool bExcept=FALSE,bGUI=FALSE,bDebug=FALSE;
   
@@ -302,7 +302,7 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   t_pargs npri_paX = { "-npri", FALSE, etENUM,  not_npristr,
 		       "Set non blocking priority" };
   t_pargs npri_pa  = { "-npri", FALSE, etINT,  &npri,
-		       "Set non blocking priority (try 250)" };
+		       "Set non blocking priority (try 128)" };
   t_pargs nice_paX = { "-nice", FALSE, etENUM, not_nicestr, 
 		       "Set the nicelevel" };
   t_pargs nice_pa  = { "-nice", FALSE, etINT,  &nicelevel, 
