@@ -276,7 +276,7 @@ void sum_epot(t_grpopts *opts,t_groups *grps,real epot[])
   int i;
 
   /* Accumulate energies */
-  epot[F_COUL_SR] += sum_v(grps->estat.nn,grps->estat.ee[egCOULSR]);
+  epot[F_COUL_SR]  = sum_v(grps->estat.nn,grps->estat.ee[egCOULSR]);
   epot[F_LJ]       = sum_v(grps->estat.nn,grps->estat.ee[egLJSR]);
   epot[F_LJ14]     = sum_v(grps->estat.nn,grps->estat.ee[egLJ14]);
   epot[F_COUL14]   = sum_v(grps->estat.nn,grps->estat.ee[egCOUL14]);
