@@ -882,7 +882,7 @@ int main(int argc,char *argv[])
   char     **gnames;
   t_filenm fnm[] = {
     { efSTX, "-f", NULL,     ffREAD  },
-    { efNDX, "-n", "in",     ffOPTRD },
+    { efNDX, "-n", NULL,     ffOPTRD },
     { efNDX, "-o", NULL,     ffWRITE }
   };
 #define NFILE asize(fnm)
