@@ -16,8 +16,6 @@ FILES   =	NOGMX
 SDIRS	=	$(foreach DIR,$(TELLDIRS),src/$(DIR))
 AUX	=	top tutor html
 DIST	=	$(FILES) $(foreach DIR,$(DDDIRS),src/$(DIR)) $(AUX)
-BENCH	=	tests/bench
-TESTS	=	tests/mdrun
 GETIT	=	$(SDIRS)  src/makef
 TDIR	=	$(GMXHOME)
 TARCMD  =	tar cvf #/usr/local/bin/tar cvf 
@@ -31,20 +29,9 @@ all:	dirs
 it:	
 	$(foreach DIR,$(LDIRS),cd $(DIR); $(MAKE); cd ..;)
 
-cdist:	clean
+dist:	oclean
 	cd $(GMXHOME); $(TARCMD) $(TDIR)/gmxcore.tar $(TARFLG) $(DIST)
 	cd $(GMXHOME); $(TARCMD) $(TDIR)/local.tar $(TARFLG) src/$(LOCAL)
-
-bdist:
-	cd $(GMXHOME)/$(BENCH); cleanit
-	cd $(GMXHOME); $(TARCMD) $(TDIR)/gmxbench.tar $(TARFLG) $(BENCH)
-
-tdist:
-	cd $(GMXHOME)/$(TESTS); cleanit
-	cd $(GMXHOME); $(TARCMD) $(TDIR)/gmxtests.tar $(TARFLG) $(TESTS)
-
-dist:	cdist	bdist	tdist
-
 
 # rule to make dirs where binaries and libary go:
 dirs:
@@ -63,6 +50,3 @@ copyrgt:
 
 oclean: 
 	$(foreach dir,$(DIRS),cd $(dir); $(MAKE) oclean; cd ..;)
-
-oget:   
-	$(foreach dir,$(DIRS),cd $(dir); mv obj_$(CPU)/*.o . ; cd ..;)
