@@ -39,7 +39,7 @@ RUNLDOPT     Special link options for mdrun
 LINKSTATIC   Option to link the gromacs libraries static
 LINKDYNAMIC  Option to link the system libraries dynamic
 #
-PARALLEL_MDRUN_ONLY  Useful only when compiling parallel code on machines
+PARALLEL_ONLY_MDRUN  Useful only when compiling parallel code on machines
 		     which can not execute non-parallel programs linked
 		     with the mpi (or pvm) library, such as IBM SP2.
 		     When set to yes only mdrun is made and placed
