@@ -10,49 +10,46 @@ libgmxana@LIBSUFFIX@_la_LIBADD         =
 libgmxana@LIBSUFFIX@_la_DEPENDENCIES   = 
 libgmxana@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@
 
+
 libgmxana@LIBSUFFIX@_la_SOURCES = \
 	autocorr.c 	expfit.c 	polynomials.c 	levenmar.c	\
 	anadih.c 	pp2shift.c 	pp2shift.h 	dlist.c		\
 	eigio.c		lsq.c		cmat.c 		cmat.h		\
 	ql77.c 		ql77.h		nsc.c 		nsc.h		\
 	hxprops.c 	hxprops.h 	fitahx.c 	fitahx.h	\
-	g_analyze.c	g_anaeig.c	g_angle.c	g_bond.c	\
-	g_bundle.c	g_chi.c		g_cluster.c	g_confrms.c	\
-	g_covar.c	g_density.c	g_dielectric.c	g_dih.c		\
-	g_dipoles.c	g_disre.c	g_dist.c	g_dyndom.c	\
-	g_enemat.c	g_energy.c	g_lie.c		g_filter.c	\
-	g_gyrate.c	g_h2order.c	g_hbond.c	g_helix.c	\
-	g_mindist.c	g_msd.c		g_morph.c	g_nmeig.c	\
-	g_nmens.c	g_order.c	g_potential.c	g_rama.c	\
-	g_rdf.c		g_rms.c		g_rmsdist.c	g_rmsf.c	\
-	g_rotacf.c	g_saltbr.c	g_sas.c		g_sgangle.c	\
-	g_sorient.c 	g_tcaf.c	g_traj.c	g_velacc.c	\
-	g_clustsize.c	g_mdmat.c	g_wham.c	eigio.h
+	gmx_analyze.c	gmx_anaeig.c	gmx_angle.c	gmx_bond.c	\
+	gmx_bundle.c	gmx_chi.c	gmx_cluster.c	gmx_confrms.c	\
+	gmx_covar.c	gmx_density.c	gmx_dih.c	gmx_dielectric.c \
+	gmx_dipoles.c	gmx_disre.c	gmx_dist.c	gmx_dyndom.c	\
+	gmx_enemat.c	gmx_energy.c	gmx_lie.c	gmx_filter.c	\
+	gmx_gyrate.c	gmx_h2order.c	gmx_hbond.c	gmx_helix.c	\
+	gmx_mindist.c	gmx_msd.c	gmx_morph.c	gmx_nmeig.c	\
+	gmx_nmens.c	gmx_order.c	gmx_potential.c	gmx_rama.c	\
+	gmx_rdf.c	gmx_rms.c	gmx_rmsdist.c	gmx_rmsf.c	\
+	gmx_rotacf.c	gmx_saltbr.c	gmx_sas.c	gmx_sgangle.c	\
+	gmx_sorient.c 	gmx_tcaf.c	gmx_traj.c	gmx_velacc.c	\
+	gmx_clustsize.c	gmx_mdmat.c	gmx_wham.c	eigio.h
 
 
 bin_PROGRAMS = \
 	average		do_dssp		editconf	eneconv		\
-	gmx-ana		genbox		genconf		genpr		\
+	genbox		genconf		genpr		\
 	make_ndx	mk_angndx	trjcat		trjconv        	\
 	trjorder	wheel		xpm2ps		genion		\
-	anadock		cdist		disco           
+	anadock		cdist		disco           		\
+	g_analyze   	g_anaeig    	g_angle     	g_bond      	\
+	g_bundle    	g_chi       	g_cluster   	g_confrms   	\
+	g_covar     	g_density   	g_dih       	g_dielectric 	\
+	g_dipoles   	g_disre     	g_dist      	g_dyndom    	\
+	g_enemat    	g_energy    	g_lie       	g_filter    	\
+	g_gyrate    	g_h2order   	g_hbond     	g_helix     	\
+	g_mindist   	g_msd       	g_morph     	g_nmeig     	\
+	g_nmens     	g_order     	g_potential 	g_rama      	\
+	g_rdf       	g_rms       	g_rmsdist   	g_rmsf      	\
+	g_rotacf    	g_saltbr    	g_sas       	g_sgangle   	\
+	g_sorient   	g_tcaf      	g_traj      	g_velacc    	\
+	g_clustsize 	g_mdmat     	g_wham     
 
-# If you modify the file list below, you also have to do it in
-# ../../scripts/Makefile.am, otherwise the script won't be installed
-# It's still not clear how to treat double precision
-KKK = \
-	g_analyze	g_anaeig	g_angle		g_bond	\
-	g_bundle	g_chi		g_cluster	g_confrms	\
-	g_covar		g_density	g_dielectric	g_dih		\
-	g_dipoles	g_disre		g_dist		g_dyndom	\
-	g_enemat	g_energy	g_lie		g_filter	\
-	g_gyrate	g_h2order	g_hbond		g_helix	\
-	g_mindist	g_msd		g_morph		g_nmeig	\
-	g_nmens		g_order		g_potential	g_rama	\
-	g_rdf		g_rms		g_rmsdist	g_rmsf	\
-	g_rotacf	g_saltbr	g_sas		g_sgangle	\
-	g_sorient 	g_tcaf		g_traj		g_velacc	\
-	g_clustsize	g_mdmat		g_wham	
 
 
 genbox_SOURCES       = 	genbox.c addconf.c addconf.h
@@ -60,15 +57,11 @@ genion_SOURCES       = 	genion.c calcpot.c calcpot.h edittop.c
 cdist_SOURCES        =  cdist.c smooth.c bondlist.c residues.c cdist.h
 disco_SOURCES        =  disco.c correct.c discopar.c dtools.c disco.h
 anadock_SOURCES	     =  anadock.c  
-gmx_ana_SOURCES      =  gmx-ana.c gmx-ana.h
+
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 	../gmxlib/libgmx@LIBSUFFIX@.la
 
-# Create scripts. This is never done in a normal build - the script files
-# should be in CVS, so we can do it in the source directory.
-scripts:	
-	./gmx-ana.pl $(KKK)
 
 # link the mpi library to non-mpi names if the latter are not present
 install-exec-hook:
@@ -79,7 +72,6 @@ install-exec-hook:
 	  (cd $$libdir && test -e $$libname.a -a ! -e $$nompi.a && $(LN_S) $$libname.a $$nompi.a ; exit 0); \
 	  (cd $$libdir && test -e $$libname.so -a ! -e $$nompi.so && $(LN_S) $$libname.so $$nompi.so ; exit 0); \
 	fi; 
-#	$(foreach sss,$(SCRIPT),install $(sss) $(bindir);)
 
 CLEANFILES   = *.la *~ \\\#*
 
