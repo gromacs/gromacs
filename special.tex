@@ -150,7 +150,7 @@ force from the average constraint force.
 
 When relative weights $w_i$ are used during the calculations, either
 due to a dynamic reference group or by supplying weights in the input,
-the weights need to be scaled correctly:
+the weights need to be scaled to conserve momentum:
 \beq
 w'_i = w_i
 \left. \sum_{j=1}^N w_j \, m_j \right/ \sum_{j=1}^N w_j^2 \, m_j
@@ -169,7 +169,7 @@ on each group can be calculated.
 The force on the center of mass of a group is redistributed to the atoms
 as follows:
 \beq
-\ve{F}_{\!i} = \left. \sum_{i=1}^N w'_i \, m_i \, \ve{F}_{\!com} \right/ M
+\ve{F}_{\!i} = \frac{w'_i \, m_i}{M} \, \ve{F}_{\!com}
 \eeq
 
 \subsection{The parameter file}
