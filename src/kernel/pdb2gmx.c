@@ -66,13 +66,13 @@ static char *select_res(int nr,int resnr,char *name[],char *expl[],char *title)
 {
   int sel=0;
 
-  printf("Which %s type do you want for residue %d\n",title,resnr);
+  printf("Which %s type do you want for residue %d\n",title,resnr+1);
   for(sel=0; (sel < nr); sel++)
     printf("%d. %s (%s)\n",sel,expl[sel],name[sel]);
   printf("\nType a number:"); fflush(stdout);
 
   if (scanf("%d",&sel) != 1)
-    fatal_error(0,"Answer me for res %s %d!",title,resnr);
+    fatal_error(0,"Answer me for res %s %d!",title,resnr+1);
   
   return name[sel];
 }
@@ -316,8 +316,8 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
 	j=1;
       else 
 	fatal_error(0,"Atom %s not found in residue %s (looking for '%s %d')"
-		    " while sorting atoms",
-		    pdba[i].atomnm,rptr->resname,pdba[i].resnm,pdba[i].resnr);
+		    " while sorting atoms",pdba[i].atomnm,
+		    rptr->resname,pdba[i].resnm,pdba[i].resnr+1);
     /* make shadow array to be sorted into indexgroup */
     pdbi[i].resnr=pdba[i].resnr;
     pdbi[i].j    =j;
@@ -355,8 +355,8 @@ static int remove_double_atoms(int natoms,t_pdbatom **pdbaptr)
 	 (strcmp(pdba[i-1].atomnm,pdba[i].atomnm)==0) && 
 	 !( (pdba[i].resnr==nres) && (strcasecmp(pdba[i-1].atomnm,"O")==0) ) ) {
       printf("deleting double atom (%d %s %s %c %d)\n",
-	     i + 1, pdba[i].atomnm, pdba[i].resnm, 
-	     pdba[i].chain, pdba[i].resnr + 1);
+	     i+1, pdba[i].atomnm, pdba[i].resnm, 
+	     pdba[i].chain, pdba[i].resnr+1);
       natoms--;
       for (j=i; (j<natoms); j++)
 	pdba[j]=pdba[j+1];
@@ -609,7 +609,7 @@ int main(int argc, char *argv[])
 	if (chains[j].chain == pdba_all[i].chain)
 	  fatal_error(0,"Chain identifier '%c' was used "
 		      "in two non-sequential blocks (residue %d, atom %d)",
-		      pdba_all[i].chain,pdba_all[i].resnr,i);
+		      pdba_all[i].chain,pdba_all[i].resnr+1,i+1);
       nchain++;
       srenew(chains,nchain);
       chains[nchain-1].chain=pdba_all[i].chain;
@@ -670,7 +670,7 @@ int main(int argc, char *argv[])
   for (i=0; (i<nchain); i++)
     printf("%d '%c' %5d %4d %6d %s\n",
 	   i+1,chains[i].chain,chains[i].start+1,
-	   pdba_all[chains[i+1].start-1].resnr + 1 -
+	   pdba_all[chains[i+1].start-1].resnr+1 -
 	   pdba_all[chains[i  ].start  ].resnr,
 	   chains[i+1].start-chains[i].start,
 	   chains[i].bAllWat ? "(only water)":"");
