@@ -17,7 +17,8 @@ bin_PROGRAMS = \
 	tpbconvXXX_SUFFIX_XXX	  	pdb2gmxXXX_SUFFIX_XXX		\
 	protonateXXX_SUFFIX_XXX		nmrunXXX_SUFFIX_XXX	  	\
 	luckXXX_SUFFIX_XXX		gmxdumpXXX_SUFFIX_XXX		\
-	gmxcheckXXX_SUFFIX_XXX  	x2topXXX_SUFFIX_XXX				
+	gmxcheckXXX_SUFFIX_XXX  	x2topXXX_SUFFIX_XXX		\
+	xmdrunXXX_SUFFIX_XXX
 
 
 
@@ -76,6 +77,11 @@ x2topXXX_SUFFIX_XXX_SOURCES = \
 	resall.h	toputil.h	gen_dum.h	hackblock.h	\
 	pgutil.h	topdirs.h	toppush.h	topexcl.h	\
 	x2top.h
+
+xmdrunXXX_SUFFIX_XXX_SOURCES = \
+	glaasje.c 	glaasje.h 	gctio.c 	init_sh.c 	\
+	init_sh.h 	ionize.c 	ionize.h 	ion_data.h 	\
+	xmdrun.c 	do_gct.c 	do_gct.h 	relax_sh.c
 
 install-mdrun: mdrunXXX_SUFFIX_XXX
 	$(mkinstalldirs) $(DESTDIR)$(bindir)
