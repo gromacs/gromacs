@@ -60,20 +60,20 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   int        status;
   char       outf1[STRLEN],outf2[STRLEN];
   char       title[STRLEN];
-  int        natoms,i,j,k,nbin,j0,j1,n,nframes;
-  int        *count;
+  int        g,ng,natoms,i,j,k,nbin,j0,j1,n,nframes;
+  int        **count;
   char       **grpname;
-  int        isize[3],nrdf;
-  atom_id    *index[3];
-  unsigned long int sum;
+  int        *isize,isize_cm,nrdf,max_i;
+  atom_id    **index,*index_cm;
+  unsigned long int *sum;
   real       t,boxmin,hbox,hbox2,cut2,r,r2,invbinw,normfac;
-  real       segvol,spherevol,prev_spherevol,*rdf;
+  real       segvol,spherevol,prev_spherevol,**rdf;
   rvec       *x,xcom,dx,*x_i1,xi;
   real       *inv_segvol,vol,vol_sum,rho;
   bool       *bExcl,bTop,bNonSelfExcl;
   matrix     box;
-  int        *npairs;
-  atom_id    ix,jx,**pairs;
+  int        **npairs;
+  atom_id    ix,jx,***pairs;
   t_topology top;
   t_block    *excl;
   excl=NULL;
@@ -85,12 +85,19 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
       /* get exclusions from topology */
       excl=&(top.atoms.excl);
   }
-  snew(grpname,2);
-  fprintf(stderr,"\nSelect groups for RDF computation:\n");
+  fprintf(stderr,"\nHow many groups do you want to calculate the RDF of?\n");
+  do {
+    scanf("%d",&ng);
+  } while (ng < 1);
+  snew(grpname,ng+1);
+  snew(isize,ng+1);
+  snew(index,ng+1);
+  fprintf(stderr,"\nSelect a reference group and %d group%s\n",
+	  ng,ng==1?"":"s");
   if (fnTPS)
-    get_index(&top.atoms,fnNDX,2,isize,index,grpname);
+    get_index(&top.atoms,fnNDX,ng+1,isize,index,grpname);
   else
-    rd_index(fnNDX,2,isize,index,grpname);
+    rd_index(fnNDX,ng+1,isize,index,grpname);
   
   natoms=read_first_x(&status,fnTRX,&t,&x,box);
   if ( !natoms )
@@ -101,7 +108,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
       fatal_error(0,"Trajectory (%d atoms) does not match topology (%d atoms)",
 		  natoms,top.atoms.nr);
   /* check with index groups */
-  for (i=0; i<2; i++)
+  for (i=0; i<ng; i++)
     for (j=0; j<isize[i]; j++)
       if ( index[i][j] >= natoms )
 	fatal_error(0,"Atom index (%d) in index group %s (%d atoms) larger "
@@ -109,11 +116,11 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 		    index[i][j],grpname[i],isize[i],natoms);
   
   if (bCM) {
-    /* move index[0] to index[2] and make 'dummy' index[0] */
-    isize[2]=isize[0];
-    snew(index[2],isize[2]);
+    /* move index[0] to index_cm and make 'dummy' index[0] */
+    isize_cm=isize[0];
+    snew(index_cm,isize_cm);
     for(i=0; i<isize[0]; i++)
-      index[2][i]=index[0][i];
+      index_cm[i]=index[0][i];
     isize[0]=1;
     index[0][0]=natoms;
     srenew(index[0],isize[0]);
@@ -128,45 +135,55 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   invbinw = 1.0 / binwidth;
   hbox2  = sqr(hbox);
   cut2   = sqr(cutoff);
-  
-  /* this is THE array */
-  snew(count,nbin+1);
-  
-  /* make pairlist array for groups and exclusions */
-  snew(pairs,isize[0]);
-  snew(npairs,isize[0]);
+
+  snew(count,ng);
+  snew(pairs,ng);
+  snew(npairs,ng);
+
   snew(bExcl,natoms);
-  for( i = 0; i < isize[0]; i++) {
-    ix = index[0][i];
-    for( j = 0; j < natoms; j++)
-      bExcl[j] = FALSE;
-    /* exclusions? */
-    if (excl)
-      for( j = excl->index[ix]; j < excl->index[ix+1]; j++)
-	bExcl[excl->a[j]]=TRUE;
-    k = 0;
-    snew(pairs[i], isize[1]);
-    bNonSelfExcl = FALSE;
-    for( j = 0; j < isize[1]; j++) {
-      jx = index[1][j];
-      if (!bExcl[jx])
-	pairs[i][k++]=jx;
-      else
-	/* Check if we have exclusions other than self exclusions */
-	bNonSelfExcl = bNonSelfExcl || (ix != jx);
-    }
-    if (bNonSelfExcl) {
-      npairs[i]=k;
-      srenew(pairs[i],npairs[i]);
-    } else {
-      /* Save a LOT of memory and some cpu cycles */
-      npairs[i]=-1;
-      sfree(pairs[i]);
+  max_i = 0;
+  for(g=0; g<ng; g++) {
+    if (isize[g+1] > max_i)
+      max_i = isize[g+1];
+
+    /* this is THE array */
+    snew(count[g],nbin+1);
+  
+    /* make pairlist array for groups and exclusions */
+    snew(pairs[g],isize[0]);
+    snew(npairs[g],isize[0]);
+    for(i=0; i<isize[0]; i++) {
+      ix = index[0][i];
+      for(j=0; j < natoms; j++)
+	bExcl[j] = FALSE;
+      /* exclusions? */
+      if (excl)
+	for( j = excl->index[ix]; j < excl->index[ix+1]; j++)
+	  bExcl[excl->a[j]]=TRUE;
+      k = 0;
+      snew(pairs[g][i], isize[g+1]);
+      bNonSelfExcl = FALSE;
+      for(j=0; j<isize[g+1]; j++) {
+	jx = index[g+1][j];
+	if (!bExcl[jx])
+	  pairs[g][i][k++]=jx;
+	else
+	  /* Check if we have exclusions other than self exclusions */
+	  bNonSelfExcl = bNonSelfExcl || (ix != jx);
+      }
+      if (bNonSelfExcl) {
+	npairs[g][i]=k;
+	srenew(pairs[g][i],npairs[g][i]);
+      } else {
+	/* Save a LOT of memory and some cpu cycles */
+	npairs[g][i]=-1;
+	sfree(pairs[g][i]);
+      }
     }
   }
   sfree(bExcl);
 
-  snew(x_i1,isize[1]);
+  snew(x_i1,max_i);
   nframes = 0;
   vol_sum = 0;
   do {
@@ -180,38 +197,40 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     if (bCM) {
       /* calculate centre of mass */
       clear_rvec(xcom);
-      for(i=0; (i < isize[2]); i++) {
-	ix = index[2][i];
+      for(i=0; (i < isize_cm); i++) {
+	ix = index_cm[i];
 	rvec_inc(xcom,x[ix]);
       }
       /* store it in the first 'group' */
       for(j=0; (j<DIM); j++)
-	x[index[0][0]][j] = xcom[j] / isize[2];
+	x[index[0][0]][j] = xcom[j] / isize_cm;
     }
 
-    /* Copy the indexed coordinates to a continuous array */
-    for(i=0; i<isize[1]; i++)
-      copy_rvec(x[index[1][i]],x_i1[i]);
+    for(g=0; g<ng; g++) {
+      /* Copy the indexed coordinates to a continuous array */
+      for(i=0; i<isize[g+1]; i++)
+	copy_rvec(x[index[g+1][i]],x_i1[i]);
     
-    for(i=0; i<isize[0]; i++) {
-      copy_rvec(x[index[0][i]],xi);
-      if (npairs[i] >= 0)
-	/* Expensive loop, because of indexing */
-	for(j=0; j<npairs[i]; j++) {
-	  jx=pairs[i][j];
-	  pbc_dx(xi,x[jx],dx);
-	  r2=iprod(dx,dx);
-	  if (r2>cut2 && r2<=hbox2)
-	    count[(int)(sqrt(r2)*invbinw)]++;
-	}
-      else
-	/* Cheaper loop, no exclusions */
-	for(j=0; j<isize[1]; j++) {
-	  pbc_dx(xi,x_i1[j],dx);
-	  r2=iprod(dx,dx);
-	  if (r2>cut2 && r2<=hbox2)
-	    count[(int)(sqrt(r2)*invbinw)]++;
-	}
+      for(i=0; i<isize[0]; i++) {
+	copy_rvec(x[index[0][i]],xi);
+	if (npairs[g][i] >= 0)
+	  /* Expensive loop, because of indexing */
+	  for(j=0; j<npairs[g][i]; j++) {
+	    jx=pairs[g][i][j];
+	    pbc_dx(xi,x[jx],dx);
+	    r2=iprod(dx,dx);
+	    if (r2>cut2 && r2<=hbox2)
+	      count[g][(int)(sqrt(r2)*invbinw)]++;
+	  }
+	else
+	  /* Cheaper loop, no exclusions */
+	  for(j=0; j<isize[g+1]; j++) {
+	    pbc_dx(xi,x_i1[j],dx);
+	    r2=iprod(dx,dx);
+	    if (r2>cut2 && r2<=hbox2)
+	      count[g][(int)(sqrt(r2)*invbinw)]++;
+	  }
+      }
     }
     nframes++;
   } while (read_next_x(status,&t,natoms,x,box));
@@ -235,27 +254,39 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     prev_spherevol=spherevol;
   }
   
-  /* We have to normalize by dividing by the number of frames */
-  rho     = isize[1]/vol;
-  normfac = 1.0/((rho*nframes)*isize[0]);
+  snew(rdf,ng);
+  for(g=0; g<ng; g++) {
+    /* We have to normalize by dividing by the number of frames */
+    rho     = isize[g+1]/vol;
+    normfac = 1.0/((rho*nframes)*isize[0]);
     
-  /* Do the normalization */
-  nrdf = max(nbin-1,1+(2*fade/binwidth));
-  snew(rdf,nrdf);
-  for(i=0; (i<nbin-1); i++) {
-    r = (i+0.5)*binwidth;
-    if ((fade > 0) && (r >= fade))
-      rdf[i] = 1+(count[i]*inv_segvol[i]*normfac-1)*exp(-16*sqr(r/fade-1));
-    else
-      rdf[i] = count[i]*inv_segvol[i]*normfac;
+    /* Do the normalization */
+    nrdf = max(nbin-1,1+(2*fade/binwidth));
+    snew(rdf[g],nrdf);
+    for(i=0; (i<nbin-1); i++) {
+      r = (i+0.5)*binwidth;
+      if ((fade > 0) && (r >= fade))
+	rdf[g][i] = 1+(count[g][i]*inv_segvol[i]*normfac-1)*exp(-16*sqr(r/fade-1));
+      else
+	rdf[g][i] = count[g][i]*inv_segvol[i]*normfac;
+    }
+    for( ; (i<nrdf); i++)
+      rdf[g][i] = 1.0;
   }
-  for( ; (i<nrdf); i++)
-    rdf[i] = 1.0;
     
   fp=xvgropen(fnRDF,"Radial Distribution","r","");
-  fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
-  for(i=0; (i<nrdf); i++)
-    fprintf(fp,"%10g %10g\n", (i+0.5)*binwidth,rdf[i]);
+  if (ng==1)
+    fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
+  else {
+    fprintf(fp,"@ subtitle \"reference %s\"\n",grpname[0]);
+    xvgr_legend(fp,ng,grpname+1);
+  }
+  for(i=0; (i<nrdf); i++) {
+    fprintf(fp,"%10g", (i+0.5)*binwidth);
+    for(g=0; g<ng; g++)
+      fprintf(fp," %10g",rdf[g][i]);
+    fprintf(fp,"\n");
+  }
   ffclose(fp);
   
   do_view(fnRDF,NULL);
@@ -275,7 +306,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
       for(j=1; (j<nrdf); j++) {
 	r = (j+0.5)*binwidth;
 	integrand[j]  = (Q == 0) ? 1.0 : sin(Q*r)/(Q*r);
-	integrand[j] *= 4.0*M_PI*rho*r*r*(rdf[j]-1.0);
+	integrand[j] *= 4.0*M_PI*rho*r*r*(rdf[0][j]-1.0);
       }
       hq[i] = print_and_integrate(debug,nrdf,binwidth,integrand,NULL,0);
     }
@@ -287,20 +318,33 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     sfree(hq);
     sfree(integrand);
   }
-    
+  
   if (fnCNRDF) {  
     normfac = 1.0/(isize[0]*nframes);
     fp=xvgropen(fnCNRDF,"Cumulative Number RDF","r","number");
-    fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
-    sum = 0;
+    if (ng==1)
+      fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
+    else {
+      fprintf(fp,"@ subtitle \"reference %s\"\n",grpname[0]);
+      xvgr_legend(fp,ng,grpname+1);
+    }
+    snew(sum,ng);
     for(i=0; (i<nbin-1); i++) {
-      fprintf(fp,"%10g %10g\n",i*binwidth,(real)((double)sum*normfac));
-      sum += count[i];
+      fprintf(fp,"%10g",i*binwidth);
+      for(g=0; g<ng; g++) {
+	fprintf(fp," %10g",(real)((double)sum[g]*normfac));
+	sum[g] += count[g][i];
+      }
+      fprintf(fp,"\n");
     }
     ffclose(fp);
+    sfree(sum);
     
     do_view(fnCNRDF,NULL);
   }
+
+  for(g=0; g<ng; g++)
+    sfree(rdf[g]);
   sfree(rdf);
 }
 
