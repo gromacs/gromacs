@@ -70,6 +70,9 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,
     "Pres-YX","Pres-YY","Pres-YZ",
     "Pres-ZX","Pres-ZY","Pres-ZZ"
   };
+  static char *mu_nm[] = {
+    "Mu-X", "Mu-Y", "Mu-Z"
+  };
   static   char   **grpnms;
   char     **gnm;
   char     buf[256];
@@ -83,12 +86,12 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,
   snew(md,1);
   md->ebin  = mk_ebin();
   md->ie    = get_ebin_space(md->ebin,F_NRE,ener_nm);
-  md->ib    = get_ebin_space(md->ebin,5,boxs_nm);
-  md->isvir = get_ebin_space(md->ebin,9,sv_nm);
-  md->ifvir = get_ebin_space(md->ebin,9,fv_nm);
-  md->ivir  = get_ebin_space(md->ebin,9,vir_nm);
-  md->ipres = get_ebin_space(md->ebin,9,pres_nm);
-
+  md->ib    = get_ebin_space(md->ebin,asize(boxs_nm),boxs_nm);
+  md->isvir = get_ebin_space(md->ebin,asize(sv_nm),sv_nm);
+  md->ifvir = get_ebin_space(md->ebin,asize(fv_nm),fv_nm);
+  md->ivir  = get_ebin_space(md->ebin,asize(vir_nm),vir_nm);
+  md->ipres = get_ebin_space(md->ebin,asize(pres_nm),pres_nm);
+  md->imu   = get_ebin_space(md->ebin,asize(mu_nm),mu_nm);
   if (bLR) 
     bEInd[egLR]   = TRUE;
   if (bBHAM) {
@@ -184,7 +187,8 @@ void upd_mdebin(t_mdebin *md,real tmass,int step,
 		tensor fvir,
 		tensor vir,
 		tensor pres,
-		t_groups *grps)
+		t_groups *grps,
+		rvec mu_tot)
 {
   static real *ttt=NULL;
   static rvec *uuu=NULL;
@@ -205,6 +209,7 @@ void upd_mdebin(t_mdebin *md,real tmass,int step,
     for(j=0; (j<DIM); j++)
       ppres[i][j]=pres[i][j]*PRESFAC;
   add_ebin(md->ebin,md->ipres,9,ppres[0],step);
+  add_ebin(md->ebin,md->imu,3,mu_tot,step);
   
   if (md->nE > 1) {
     n=0;
@@ -307,6 +312,8 @@ void print_ebin(int fp_ene,FILE *log,int steps,real time,real lamb,
   pr_ebin(log,md->ebin,md->ivir,9,3,mode,steps,FALSE);   newline();
   fprintf(log,"   Pressure (Bar)\n");
   pr_ebin(log,md->ebin,md->ipres,9,3,mode,steps,FALSE);  newline();
+  fprintf(log,"   Total Dipole (Debye)\n");
+  pr_ebin(log,md->ebin,md->imu,3,3,mode,steps,FALSE);    newline();
   
   if (md->nE > 1) {
     if (grpnms==NULL) {
