@@ -159,7 +159,6 @@ $(LIB)(callf77A.o):	callf77A.m4 $(M4FILE)
 		$(RM) callf77A.c callf77A.o
 
 # Innerloop related stuff
-$(LIB)(lutab.o):	$(CPUMAKEF)
 $(LIB)(shakef.o):	$(CPUMAKEF)
 $(LIB)(fnbf.o):		fnbf.m4 inner.m4 $(M4MAC) $(M4FILE) $(CPUMAKEF)
 			$(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) inner.m4 > inner.h
