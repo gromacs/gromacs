@@ -29,7 +29,6 @@ SYSLIBS		= $(LINKLIB) -lm
 # On our machine it was here, but probably not on yours...
 #
 XLIBS		= $(SYSLIBS) -L/usr/lib/X11R4 -lX11
-AR		= ar ruv
 RANLIB		= echo
 X11INC		= -I/usr/include/X11
 

@@ -22,7 +22,7 @@ LDFLAGS		= -L$(LIBDIR) -g -v -vu -node
 LD		= cs $(LDFLAGS)
 SYSLIBS		= -lm  -lgnu
 XLIBS		= $(SYSLIBS) -lX11
-AR		= ar q
+ARFLAGS		= q
 RANLIB		= ranlib
 X11INC		= -I/usr/local/include
 

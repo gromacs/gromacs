@@ -19,6 +19,5 @@ LDFLAGS		= -L$(LIBDIR)
 LD		= $(CC) $(LDFLAGS)
 SYSLIBS		= -lgmx -lm 
 XLIBS		= $(SYSLIBS) -lX11
-AR		= ar ruv
 RANLIB		= ranlib
 X11INC		= -I/usr/local/include

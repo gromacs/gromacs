@@ -43,13 +43,11 @@ endif
 #
 all:		lib 	bin
 
-lib:		$(OBJ)
+lib:	$(foreach OB,$(OBJ),$(LIB)($(OB)) )
+
 ifeq ($(LIB),)
 	echo "No library in $(CUR)"
 else
-	$(AR) $(LIB) $(OBJ)
-	chmod 664 $(LIB)
-	$(RM) $(SOLIB)
 	$(SHAREIT)
 endif
 

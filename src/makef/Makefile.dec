@@ -80,7 +80,7 @@ SYSLIBS		= $(LINKLIB) -ldnet_stub -lm
 XLIBS		= $(SYSLIBS) -lX11 
 endif
 
-AR		= $(RM) $(LIB); ar q
+ARFLAGS		= q
 RANLIB		= ranlib
 
 ifeq ($(USE_MPI),yes)

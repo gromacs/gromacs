@@ -17,8 +17,8 @@ CCLD	=	$(CCC) $(LDFLAGS)	The link command for c++
 SYSLIBS = 	-lm -lsocket		System dependent default
 					libraries
 XLIBS	= 	$(SYSLIBS) -lX11	System libraries for X-Windows
-AR	= 	ar q			The archiver (to make GROMACS
-					library files from objects)
+ARFLAGS	= 	q			The options for the archiver (to make
+					GROMACS	library files from objects)
 RANLIB	= 	echo			Some systems use ranlib to postprocess
 					library files (esp. BSD systems)
 X11INC	= 	-I/usr1/local/include	Include directory for X Windows 

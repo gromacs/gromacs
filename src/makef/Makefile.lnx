@@ -71,7 +71,6 @@ else
 SYSLIBS		= -lgmx.$(CPU) -lm
 XLIBS		= -L/usr/X11R6/lib -lX11 $(SYSLIBS)
 endif
-AR		= ar ruv
 SHAREIT		= #(cd $(LIBDIR); ar x $(LIBRARY).$(CPU).a; $(CC) $(LDFLAGS) -shared -Wl,-soname,$(LIBRARY).$(CPU).so -o $(LIBDIR)/$(LIBRARY).$(CPU).so *.o; $(RM) *.o)
 RANLIB		= ranlib
 X11INC		= -I/usr/X11R6/include

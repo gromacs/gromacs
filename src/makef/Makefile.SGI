@@ -76,8 +76,7 @@ ifeq ($(USE_SGI_FPE),yes)
 	SYSLIBS += -lfpe
 endif
 
-AR		= ar ruv
-#SHAREIT		= cc -shared -elf -shared -all -no_unresolved \
+#SHAREIT		= cc -n32 -shared -elf -shared -all \
 #		  -quickstart_info -check_registry /usr/lib/so_locations \
 #		  -soname $(SONAME) -o $(SOLIB) $(LIB)
 RANLIB		= echo

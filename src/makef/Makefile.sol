@@ -30,7 +30,7 @@ CCLD		= $(CCC) $(LDFLAGS) -z nodefs
 
 XLIBS		= -lsocket -lX11
 SYSLIBS		= $(LINKLIB) -lm -lnsl 
-AR		= ar ur
+ARFLAGS		= ur
 SHAREIT		= (cd $(LIBDIR); ar x $(LIB); cc $(LDFLAGS) -o $(SOLIB) -G *.o; $(RM) *.o)
 RANLIB		= echo
 X11INC		= -I/usr1/local/include
