@@ -205,7 +205,7 @@ int main (int argc,char *argv[])
     "computes the instantaneous violations rather than time-averaged,",
     "because this analysis is done from a trajectory file afterwards",
     "it does not make sense to use time averaging.[PAR]",
-    "An index file may be used to select out specific restraints for",
+    "An index file may be used to select specific restraints for",
     "printing."
   };
   static bool bProt=FALSE;
@@ -275,6 +275,7 @@ int main (int argc,char *argv[])
     snew(vvindex,isize);
     snew(leg,isize);
     for(i=0; (i<isize); i++) {
+      index[i]++;
       snew(leg[i],12);
       sprintf(leg[i],"index %u",index[i]);
     }
