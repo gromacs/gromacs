@@ -873,7 +873,7 @@ There are three ways to construct dummies from surrounding atoms in {\gromacs}:
 \beq
 	\ve{r} ~=~ a \ve{r}_i + b \ve{r}_j + (1-a-b) \ve{r}_k
 \eeq
-	in this case the dummy is always in the plain of the other three
+	in this case the dummy is always in the plane of the other three
 	particles.
 	The force on particles $i,j$ and $k$ due to the force on the dummy
 	can be computed as:
@@ -888,7 +888,7 @@ There are three ways to construct dummies from surrounding atoms in {\gromacs}:
 	\ve{r} ~=~ \ve{r}_i + a (\ve{r}_{ij} ~+~ \ve{r}_{ik}) +
 		b (\ve{r}_{ij} ~\times~ \ve{r}_{ik})
 \eeq
-	this enables the construction of dummies out of the plain of the
+	this enables the construction of dummies out of the plane of the
 	other atoms.
 	The force on particles $i,j$ and $k$ due to the force on the dummy
 	can be computed as:
