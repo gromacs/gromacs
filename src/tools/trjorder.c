@@ -97,20 +97,24 @@ int main(int argc,char *argv[])
     "will be stored in the B-factor field in order to color with e.g. rasmol."
   };
   static int na=3,ref_a=1;
+  static real rcut=0;
   t_pargs pa[] = {
-    { "-na", FALSE, etINT, {&na},
+    { "-na", FALSE, etINT,  {&na},
       "Number of atoms in a molecule" },
-    { "-da", FALSE, etINT, {&ref_a},
-      "Atom used for the distance calculation" }
+    { "-da", FALSE, etINT,  {&ref_a},
+      "Atom used for the distance calculation" },
+    { "-r",  FALSE, etREAL, {&rcut},
+      "Cutoff used for the distance calculation when computing the number of molecules in a shell around e.g. a protein" },
   };
+  FILE       *fp;
   int        status,out;
   bool       bPDBout;
   t_topology top;
   rvec       *x,dx;
   matrix     box;
   t_pbc      pbc;
-  real       t;
-  int        natoms,nwat;
+  real       t,rcut2,n2;
+  int        natoms,nwat,ncut;
   char       **grpname,title[256];
   int        i,j,*isize;
   atom_id    sa,sr,*swi,**index;
@@ -120,7 +124,8 @@ int main(int argc,char *argv[])
     { efTRX, "-f", NULL, ffREAD  }, 
     { efTPS, NULL, NULL, ffREAD  }, 
     { efNDX, NULL, NULL, ffOPTRD },
-    { efTRX, "-o", "ordered", ffWRITE } 
+    { efTRX, "-o", "ordered", ffWRITE },
+    { efXVG, "-nshell", "nshell", ffOPTWR } 
   }; 
 #define NFILE asize(fnm) 
 
@@ -159,12 +164,24 @@ int main(int argc,char *argv[])
   for(i=0; (i<natoms); i++)
     swi[i] = i;
   
-  bPDBout = (fn2ftp(opt2fn("-o",NFILE,fnm)) == efPDB);
-  if (bPDBout && !top.atoms.pdbinfo) {
-    fprintf(stderr,"Creating pdbfino records\n");
-    snew(top.atoms.pdbinfo,top.atoms.nr);
+  if ((opt2bSet("-nshell",NFILE,fnm)) || (opt2parg_bSet("-r",asize(pa),pa))) {
+    bPDBout = FALSE;
+    out     = -1;
+    rcut2   = rcut*rcut;
+    fp = xvgropen(opt2fn("-nshell",NFILE,fnm),"Number of molecules",
+		  "Time (ps)","N");
+    printf("Will compute the number of molecules within a radius of %g\n",
+	   rcut);
   }
-  out=open_trx(opt2fn("-o",NFILE,fnm),"w");
+  else {
+    bPDBout = (fn2ftp(opt2fn("-o",NFILE,fnm)) == efPDB);
+    if (bPDBout && !top.atoms.pdbinfo) {
+      fprintf(stderr,"Creating pdbfino records\n");
+      snew(top.atoms.pdbinfo,top.atoms.nr);
+    }
+    out = open_trx(opt2fn("-o",NFILE,fnm),"w");
+    fp  = NULL;
+  }
   do {
     rm_pbc(&top.idef,natoms,box,x,x);
     set_pbc(&pbc,box);
@@ -181,30 +198,41 @@ int main(int argc,char *argv[])
       for(i=0; (i<nwat); i++) {
 	sa = index[SOL][na*i];
 	pbc_dx(&pbc,x[sr],x[sa+ref_a],dx);
-	if (norm2(dx) < order[i].d2) {
-	  order[i].d2  = norm2(dx);
-	}
+	n2 = norm2(dx);
+	if (n2 < order[i].d2)
+	  order[i].d2  = n2;
       }
     }
 
-    qsort(order,nwat,sizeof(*order),ocomp);
-    for(i=0; (i<nwat); i++)
-      for(j=0; (j<na); j++) 
-	swi[index[SOL][na*i]+j] = order[i].i+j;
-    
-    /* Store the distance as the B-factor */
-    if (bPDBout) {
-      for(i=0; (i<nwat); i++) {
-	for(j=0; (j<na); j++) {
-	  top.atoms.pdbinfo[order[i].i+j].bfac = sqrt(order[i].d2);
+    if (out != -1) {
+      qsort(order,nwat,sizeof(*order),ocomp);
+      for(i=0; (i<nwat); i++)
+	for(j=0; (j<na); j++) 
+	  swi[index[SOL][na*i]+j] = order[i].i+j;
+      
+      /* Store the distance as the B-factor */
+      if (bPDBout) {
+	for(i=0; (i<nwat); i++) {
+	  for(j=0; (j<na); j++) {
+	    top.atoms.pdbinfo[order[i].i+j].bfac = sqrt(order[i].d2);
+	  }
 	}
       }
+      write_trx(out,natoms,swi,&top.atoms,0,t,box,x,NULL);
     }
-    write_trx(out,natoms,swi,&top.atoms,0,t,box,x,NULL);
-    
+    else {
+      ncut = 0;
+      for(i=0; (i<nwat); i++)
+	if (order[i].d2 < rcut2)
+	  ncut++;
+      fprintf(fp,"%10.3f  %8d\n",t,ncut);
+    }
   } while(read_next_x(status,&t,natoms,x,box));
   close_trj(status);
-  close_trx(out);
+  if (out != -1)
+    close_trx(out);
+  if (fp)
+    ffclose(fp);
 
   thanx(stderr);
   
