@@ -128,7 +128,7 @@ static void calc_pbc_cluster(int nrefat,t_topology *top,rvec x[],atom_id index[]
   }
 }
 
-static void calc_pbc_com(t_atom atom[],int natoms,matrix box,rvec x[])
+static void put_residue_com_in_box(t_atom atom[],int natoms,matrix box,rvec x[])
 {
   atom_id i, j, res_start, res_end, res_nat;
   int     m, presnr;
@@ -323,7 +323,7 @@ int main(int argc,char *argv[])
     "* [TT]whole[tt] puts the atoms in the box and then makes",
     "broken molecules whole (a run input file is required).",
     "Atom number 1 of each molecule will be inside the box.[BR]",
-    "* [TT]com[tt] puts the center of mass of all [IT]residues[tt] ",
+    "* [TT]com[tt] puts the center of mass of all [IT]residues[it] ",
     "in the box. Not that this can break molecules that consist of",
     "more than one residue (e.g. proteins).[BR]",
     "* [TT]inbox[tt] puts all the atoms in the box.[BR]",
@@ -368,15 +368,26 @@ int main(int argc,char *argv[])
     "one specific time from your trajectory."
   };
   
-  static char *pbc_opt[] = { 
-    NULL, "none", "whole", "inbox", "nojump", "cluster", "com", NULL 
-  };
-  static char *unitcell_opt[] = { 
-    NULL, "rect", "tric", "compact", NULL 
-  };
+  int pbc_enum;
+  enum
+    { epSel,epNone, epWhole, epInbox, epNojump, epCluster, epCom, epNR };
+  static char *pbc_opt[epNR+1] = 
+    { NULL, "none", "whole", "inbox", "nojump", "cluster", "com", NULL };
+  
+  int unitcell_enum;
+  enum
+    { euSel,euRect, euTric, euCompact, euNR};
+  static char *unitcell_opt[euNR+1] = 
+    { NULL, "rect", "tric", "compact", NULL };
+  
+  int fit_enum;
+  enum 
+    { efSel, efNone , efFit,      efReset,       efPFit,      efNR };
+  static char *fit[efNR+1] = 
+    { NULL, "none", "rot+trans", "translation", "progressive", NULL };
 
   static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE;
-  static bool  bCenter=FALSE,bFit=FALSE,bPFit=FALSE,bTer=FALSE;
+  static bool  bCenter=FALSE,bFit=FALSE,bPFit=FALSE,bReset=FALSE,bTer=FALSE;
   static int   skip_nr=1,ndec=3;
   static real  tzero=0,delta_t=0,timestep=0,ttrunc=-1,tdump=-1,split_t=0;
   static rvec  newbox = {0,0,0}, shift = {0,0,0};
@@ -403,10 +414,8 @@ int main(int argc,char *argv[])
       "Size for new cubic box (default: read from input)" },
     { "-shift", FALSE, etRVEC, {shift},
       "All coordinates will be shifted by framenr*shift" },
-    { "-fit", FALSE,  etBOOL, {&bFit},
+    { "-fit",  FALSE, etENUM, {fit}, 
       "Fit molecule to ref structure in the structure file" },
-    { "-pfit", FALSE,  etBOOL, {&bPFit},
-      "Progressive fit, to the previous fitted structure" },
     { "-ndec", FALSE,  etINT,  {&ndec},
       "Precision for .xtc and .gro writing in number of decimal places" },
     { "-vel", FALSE, etBOOL, {&bVels},
@@ -426,7 +435,7 @@ int main(int argc,char *argv[])
       "Start writing new file when t MOD split = first time (%t)" },
     { "-sep", FALSE,  etBOOL, {&bSeparate},
       "Write each frame to a separate .gro, .g96 or .pdb file"},
-    { "-ter", FALSE, etBOOL, &bTer,
+    { "-ter",  FALSE, etBOOL, {&bTer},
       "Use 'TER' in pdb file as end of frame in stead of default 'ENDMDL'" }
   };
       
@@ -454,7 +463,7 @@ int main(int argc,char *argv[])
   bool         bPBC,bPBCcom,bInBox,bNoJump,bRect,bTric,bComp,bCluster;
   bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
-  bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSplit;
+  bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSetUR,bSplit;
   char         *top_file,*in_file,*out_file=NULL,out_file2[256],*charpt;
   char         top_title[256],title[256],command[256],filemode[5];
   int          xdr=0;
@@ -478,32 +487,61 @@ int main(int argc,char *argv[])
 
   /* Check command line */
   in_file=opt2fn("-f",NFILE,fnm);
+  
   if (ttrunc != -1) {
 #if (!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64)
     do_trunc(in_file,ttrunc);
 #endif
   }
   else {
-    if (bPFit)
-      bFit = TRUE;
+    /* mark active cmdline options */
     bSetBox   = opt2parg_bSet("-box", asize(pa), pa);
     bSetTime  = opt2parg_bSet("-t0", asize(pa), pa);
     bSetPrec  = opt2parg_bSet("-ndec", asize(pa), pa);
+    bSetUR    = opt2parg_bSet("-ur", asize(pa), pa);
     bExec     = opt2parg_bSet("-exec", asize(pa), pa);
     bTimeStep = opt2parg_bSet("-timestep", asize(pa), pa);
     bTDump    = opt2parg_bSet("-dump", asize(pa), pa);
-    bPBC      = (strcmp(pbc_opt[0],"whole") == 0);
-    bPBCcom   = (strcmp(pbc_opt[0],"com") == 0);
-    bInBox    = (strcmp(pbc_opt[0],"inbox") == 0);
-    bNoJump   = (strcmp(pbc_opt[0],"nojump") == 0);
-    bCluster  = (strcmp(pbc_opt[0],"cluster") == 0);
-    bRect     = (strcmp(unitcell_opt[0],"rect") == 0);
-    bTric     = (strcmp(unitcell_opt[0],"tric") == 0);
-    bComp     = (strcmp(unitcell_opt[0],"compact") == 0);
-    if (bFit && (strcmp(pbc_opt[0],"none") == 0) )
+
+    /* parse enum options */    
+    fit_enum  = nenum(fit);
+    bFit      = fit_enum==efFit;
+    bReset    = fit_enum==efReset;
+    bPFit     = fit_enum==efPFit;
+    pbc_enum  = nenum(pbc_opt);
+    bPBC      = pbc_enum==epWhole;
+    bPBCcom   = pbc_enum==epCom;
+    bInBox    = pbc_enum==epInbox;
+    bNoJump   = pbc_enum==epNojump;
+    bCluster  = pbc_enum==epCluster;
+    unitcell_enum = nenum(unitcell_opt);
+    bRect     = unitcell_enum==euRect;
+    bTric     = unitcell_enum==euTric;
+    bComp     = unitcell_enum==euCompact;
+
+    /* set and check option dependencies */    
+    if (bPFit) bFit = TRUE; /* for pfit, fit *must* be set */
+    if (bFit) bReset = TRUE; /* for fit, reset *must* be set */
+    if (bFit && pbc_enum==epNone )
       bPBC = TRUE;
     if (bPBC && !bFit)
       bInBox = TRUE;
+    if (bSetUR) {
+      if ( bNoJump || bCluster || bPBC ) {
+	fprintf(stderr,"Note: Option for unitcell representation (-ur %s) has "
+		"no effect in\n"
+		"      combination with -pbc %s; ingoring unitcell "
+		"representation.\n\n", unitcell_opt[0], pbc_opt[0]);
+	bSetUR = FALSE;
+      }
+      else if ( !bPBCcom && !bInBox ) {
+	fprintf(stderr,"Note: No PBC option selected in combination with "
+		"unitcell representation\n"
+		"      (-ur %s); will put molecules in unitcell "
+		"(-pbc inbox)\n\n", unitcell_opt[0]);
+	bInBox = TRUE;
+      }
+    }
     /* set flag for pdbio to terminate frames at 'TER' (iso 'ENDMDL') */
     pdb_use_ter(bTer);
 
@@ -528,23 +566,23 @@ int main(int argc,char *argv[])
      
     /* skipping */  
     if (skip_nr <= 0) {
-      fprintf(stderr,"The number of frames to skip is <= 0. "
-	      "Writing out all frames.\n\n");
-      skip_nr = 1;
     } 
     
     /* Determine whether to read a topology */
-    bTPS = (top_file || bPBC || bFit || (ftp == efGRO) || (ftp == efPDB));
+    bTPS = ( top_file || bPBC || bReset || (ftp == efGRO) || (ftp == efPDB));
     if (bTPS && !top_file) {
       top_file = in_file;
-      printf("Will try to read Structure + Mass info from %s\n",top_file);
+      fprintf(stderr,
+	      "Note: No Structure + Mass file specified (option -s)\n"
+	      "      Will try to read Structure + Mass info from %s\n",
+	      top_file);
     }
 
     /* Determine if when can read index groups */
     bIndex = (bIndex || bTPS);
     
     if (bTPS) {
-      read_tps_conf(top_file,top_title,&top,&xp,NULL,top_box,bFit);
+      read_tps_conf(top_file,top_title,&top,&xp,NULL,top_box,bReset);
       atoms=&top.atoms;
       /* top_title is only used for gro and pdb,
        * the header in such a file is top_title t= ...
@@ -565,12 +603,13 @@ int main(int argc,char *argv[])
     }
     
       /* get index groups etc. */
-    if (bFit) {
-      printf("Select group for root least squares fit\n");
+    if (bReset) {
+      printf("Select group for %s fit\n",
+	     bFit?"least squares":"translational");
       get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),
 		1,&ifit,&ind_fit,&gn_fit);
 
-      if (ifit < 3) 
+      if (bFit && ifit < 3) 
 	fatal_error(0,"Need at least 3 points to fit!\n");
     }
     else if (bCluster) {
@@ -604,7 +643,7 @@ int main(int argc,char *argv[])
       }
     }
     
-    if (bFit) {
+    if (bReset) {
       snew(w_rls,atoms->nr);
       for(i=0; (i<ifit); i++)
 	w_rls[ind_fit[i]]=atoms->atom[ind_fit[i]].m;
@@ -678,6 +717,18 @@ int main(int argc,char *argv[])
       case efGRO:
       case efG96:
       case efPDB:
+	if (bSeparate && strstr(out_file,"%d")==NULL) {
+	  /* if no '%d' in out_file for file nr, prepend '%d_' */
+	  charpt = strrchr(out_file, '/');
+	  while(charpt>=out_file && charpt[0]!='/') {
+	    charpt[3] = charpt[0];
+	    charpt--;
+	  }
+	  charpt-=3;
+	  charpt[0]='%';
+	  charpt[1]='d';
+	  charpt[2]='_';
+	}
 	if ( !bSeparate && split_t == 0 )
 	  out=ffopen(out_file,filemode);
 	break;
@@ -828,16 +879,17 @@ int main(int argc,char *argv[])
 	      if (bPBC)
 		rm_pbc(&(top.idef),natoms,fr.box,fr.x,fr.x);
 	  
-	      if (bFit) {
+	      if (bReset) {
 		reset_x(ifit,ind_fit,natoms,NULL,fr.x,w_rls);
+		if (bFit)
 		do_fit(natoms,w_rls,xp,fr.x);
 		for(i=0; i<natoms; i++)
 		  rvec_inc(fr.x[i],x_shift);
 	      }
 	    }
-	    /* put COM of molecules inside box */
+	    /* put COM of residues inside box */
 	    if (bPBCcom) {
-	      calc_pbc_com(atoms->atom, natoms, fr.box, fr.x);
+	      put_residue_com_in_box(atoms->atom, natoms, fr.box, fr.x);
 	    }
 	    /* Copy the input trxframe struct to the output trxframe struct */
 	    frout = fr;
@@ -862,7 +914,7 @@ int main(int argc,char *argv[])
 	  
 	    bSplit = split_t!=0 && bRmod(fr.time-tzero, split_t);
 	    if (bSeparate || bSplit)
-	      sprintf(out_file2,"%d_%s",file_nr,out_file);
+	      sprintf(out_file2,out_file,file_nr);/* out_file contains '%d' */
 	    switch(ftp) {
 	    case efTRJ:
 	    case efTRR:
