@@ -803,6 +803,7 @@ int nsc_dclm2(rvec *coords, real *radius, int nat, atom_id index[],
   real dotarea, area, vol=0.;
   point_real xus, dots=NULL, atom_area=NULL;
   rvec ddx;
+  t_pbc pbc;
 
   int  nxbox, nybox, nzbox, nxy, nxyz;
   real ra2max, d;
@@ -860,7 +861,7 @@ int nsc_dclm2(rvec *coords, real *radius, int nat, atom_id index[],
   wkdot = (int *) CALLOC(n_dot*2, sizeof(int));
   
   if (box)
-    init_pbc(box);
+    set_pbc(&pbc,box);
   
   /* calculate surface for all atoms, step cube-wise */
   for (iat=0; (iat<nat); iat++) {
@@ -885,7 +886,7 @@ int nsc_dclm2(rvec *coords, real *radius, int nat, atom_id index[],
       
       /* DvdS 11/02/02 To be modified for periodicity */
       if (box)
-	pbc_dx(coords[i_at],coords[j_at],ddx);
+	pbc_dx(&pbc,coords[i_at],coords[j_at],ddx);
       else
 	rvec_sub(coords[i_at],coords[j_at],ddx);
       dx = ddx[0], dy = ddx[1], dz = ddx[2];

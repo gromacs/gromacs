@@ -175,7 +175,10 @@ static void calc_dist(int nind,rvec x[],real **d)
   for(i=0; (i<nind-1); i++) {
     xi=x[i];
     for(j=i+1; (j<nind); j++) {
-      pbc_dx(xi,x[j],dx);
+      /* Should use pbc_dx when analysing multiple molecueles,
+       * but the box is not stored for every frame.
+       */
+      rvec_sub(xi,x[j],dx);
       d[i][j]=norm(dx);
     }
   }
@@ -1232,8 +1235,6 @@ int gmx_cluster(int argc,char *argv[])
   }
 
   if (bReadTraj) {
-    init_pbc(box);
-    
     /* Loop over first coordinate file */
     fn = opt2fn("-f",NFILE,fnm);
     

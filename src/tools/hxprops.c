@@ -187,7 +187,7 @@ real ca_phi(int gnx,atom_id index[],rvec x[],matrix box)
     ak=index[i+2];
     al=index[i+3];
     phi=RAD2DEG*
-      dih_angle(x[ai],x[aj],x[ak],x[al],epbcNONE,
+      dih_angle(x[ai],x[aj],x[ak],x[al],NULL,
 		r_ij,r_kj,r_kl,m,n,
 		&cos_phi,&sign,&t1,&t2,&t3);
     phitot+=phi;
@@ -449,11 +449,11 @@ void calc_hxprops(int nres,t_bb bb[],rvec x[],matrix box)
     }
     
     bb[i].phi=RAD2DEG*
-      dih_angle(x[bb[i].Cprev],x[bb[i].N],x[bb[i].CA],x[bb[i].C],epbcNONE,
+      dih_angle(x[bb[i].Cprev],x[bb[i].N],x[bb[i].CA],x[bb[i].C],NULL,
 		r_ij,r_kj,r_kl,m,n,
 		&cos_phi,&sign,&t1,&t2,&t3);
     bb[i].psi=RAD2DEG*
-      dih_angle(x[bb[i].N],x[bb[i].CA],x[bb[i].C],x[bb[i].Nnext],epbcNONE,
+      dih_angle(x[bb[i].N],x[bb[i].CA],x[bb[i].C],x[bb[i].Nnext],NULL,
 		r_ij,r_kj,r_kl,m,n,
 		&cos_phi,&sign,&t1,&t2,&t3);
     bb[i].pprms2=sqr(bb[i].phi-PHI_AHX)+sqr(bb[i].psi-PSI_AHX);

@@ -58,22 +58,24 @@
 #include "matio.h"
 #include "assert.h"
 
-static void calc_dist(int nind,atom_id index[],rvec x[],real **d)
+static void calc_dist(int nind,atom_id index[],rvec x[],matrix box,real **d)
 {
   int     i,j;
   real    *xi;
   rvec    dx;
+  t_pbc   pbc;
 
+  set_pbc(&pbc,box);
   for(i=0; (i<nind-1); i++) {
     xi=x[index[i]];
     for(j=i+1; (j<nind); j++) {
-      pbc_dx(xi,x[index[j]],dx);
+      pbc_dx(&pbc,xi,x[index[j]],dx);
       d[i][j]=norm(dx);
     }
   }
 }
 
-static void calc_dist_tot(int nind,atom_id index[], rvec x[],
+static void calc_dist_tot(int nind,atom_id index[],rvec x[],matrix box,
 			  real **d, real **dtot, real **dtot2,
 			  bool bNMR, real **dtot1_3, real **dtot1_6)
 {
@@ -81,11 +83,13 @@ static void calc_dist_tot(int nind,atom_id index[], rvec x[],
   real    *xi;
   real    temp, temp2, temp1_3;
   rvec    dx;
+  t_pbc   pbc;
 
+  set_pbc(&pbc,box);
   for(i=0; (i<nind-1); i++) {
     xi=x[index[i]];
     for(j=i+1; (j<nind); j++) {
-      pbc_dx(xi,x[index[j]],dx);
+      pbc_dx(&pbc,xi,x[index[j]],dx);
       temp2=dx[XX]*dx[XX]+dx[YY]*dx[YY]+dx[ZZ]*dx[ZZ];
       temp =sqrt(temp2);
       d[i][j]=temp;
@@ -628,8 +632,7 @@ int gmx_rmsdist (int argc,char *argv[])
   }
 
   /*set box type*/
-  init_pbc(box);
-  calc_dist(isize,index,x,d_r);
+  calc_dist(isize,index,x,box,d_r);
   sfree(x);
 
   /*open output files*/
@@ -640,7 +643,7 @@ int gmx_rmsdist (int argc,char *argv[])
   natom=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   
   do {
-    calc_dist_tot(isize,index,x,d,dtot,dtot2,bNMR,dtot1_3,dtot1_6);
+    calc_dist_tot(isize,index,x,box,d,dtot,dtot2,bNMR,dtot1_3,dtot1_6);
     
     rmsnow=rms_diff(isize,d,d_r);
     fprintf(fp,"%g  %g\n",t,rmsnow);

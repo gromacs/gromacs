@@ -45,11 +45,11 @@
 #include "gstat.h"
 #include "pbc.h"
 
-static real dist2(rvec x,rvec y,matrix box)
+static real dist2(t_pbc *pbc,rvec x,rvec y)
 {
   rvec dx;
   
-  pbc_dx(x,y,dx);
+  pbc_dx(pbc,x,y,dx);
   
   return norm2(dx);
 }
@@ -99,14 +99,17 @@ void orient(int natom,rvec *x,rvec *v, rvec angle,matrix box)
   rvec origin;
   int  temp;
   real alfa=0,beta=0,gamma=0;
-  
+  t_pbc pbc;
+
+  set_pbc(&pbc,box);
+
   /*first i am going to look for the longest atom-atom distance*/
-  longest=dist2(x[0],x[1],box);
+  longest=dist2(&pbc,x[0],x[1]);
   i=0;
   j=1;
   for (i=0;(i<natom);i++) {
     for (j=0;(j<natom);j++) {
-      rij=dist2(x[i],x[j],box);
+      rij=dist2(&pbc,x[i],x[j]);
       if (rij>longest) {
 	max_i=i;
 	max_j=j;

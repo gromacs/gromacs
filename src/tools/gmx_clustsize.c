@@ -76,6 +76,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   int     nindex,natoms,status;
   rvec    *x=NULL,*v=NULL,dx;
   matrix  box;
+  t_pbc   pbc;
   char    *gname;
   char    timebuf[32];
   bool    bSame;
@@ -130,7 +131,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
     t_y[i] = i+1;
   do {
     if ((nskip == 0) || ((nskip > 0) && ((nframe % nskip) == 0))) {
-      init_pbc(box);
+      set_pbc(&pbc,box);
       max_clust_size = 1;
       
       /* Put all atoms/molecules in their own cluster, with size 1 */
@@ -161,14 +162,14 @@ static void clust_size(char *ndx,char *trx,char *xpm,
 		aii = mols->a[ii];
 		for(jj=mols->index[aj]; !bSame && (jj<mols->index[aj+1]); jj++) {
 		  ajj   = mols->a[jj];
-		  pbc_dx(x[aii],x[ajj],dx);
+		  pbc_dx(&pbc,x[aii],x[ajj],dx);
 		  dx2   = iprod(dx,dx);
 		  bSame = (dx2 < cut2);
 		}
 	      }
 	    }
 	    else {
-	      pbc_dx(x[ai],x[aj],dx);
+	      pbc_dx(&pbc,x[ai],x[aj],dx);
 	      dx2 = iprod(dx,dx);
 	      bSame = (dx2 < cut2);
 	    }

@@ -86,10 +86,11 @@ void chk_bonds(t_topology *top,rvec *x,matrix box,real tol)
 {
   int  ftype,i,k,ai,aj,type;
   real b0,blen,deviation,devtot;
+  t_pbc pbc;
   rvec dx;
 
   devtot = 0;
-  init_pbc(box);  
+  set_pbc(&pbc,box);  
   for(ftype=0; (ftype<F_NRE); ftype++) 
     if ((interaction_function[ftype].flags & IF_CHEMBOND) == IF_CHEMBOND) {
       for(k=0; (k<top->idef.il[ftype].nr); ) {
@@ -115,7 +116,7 @@ void chk_bonds(t_topology *top,rvec *x,matrix box,real tol)
 	  break;
 	}
 	if (b0 != 0) {
-	  pbc_dx(x[ai],x[aj],dx);
+	  pbc_dx(&pbc,x[ai],x[aj],dx);
 	  blen = norm(dx);
 	  deviation = sqr(blen-b0);
 	  if (sqrt(deviation/sqr(b0) > tol)) {
@@ -251,6 +252,7 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
   rvec      *x,*v;
   rvec      dx;
   matrix    box;
+  t_pbc     pbc;
   bool      bV,bX,bB,bFirst,bOut;
   real      r2,ekin,temp1,temp2,dist2,vdwfac2,bonlo2,bonhi2;
   real      *atom_vdw;
@@ -317,7 +319,7 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
     }
     done_atomprop(&ap);
     if (bB) 
-      init_pbc(box);
+      set_pbc(&pbc,box);
       
     bFirst=TRUE;
     for (i=0; (i<natom); i++) {
@@ -325,7 +327,7 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
 	fprintf(stderr,"\r%5d",i+1);
       for (j=i+1; (j<natom); j++) {
 	if (bB)
-	  pbc_dx(x[i],x[j],dx);
+	  pbc_dx(&pbc,x[i],x[j],dx);
 	else
 	  rvec_sub(x[i],x[j],dx);
 	r2=iprod(dx,dx);

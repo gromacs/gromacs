@@ -48,8 +48,8 @@
 #include "index.h"
 #include "tpxio.h"
 
-static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],atom_id index[],
-			 rvec xref,bool bPBC,matrix box)
+static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],t_pbc *pbc,
+			 atom_id index[],rvec xref,bool bPBC,matrix box)
 {
   const real tol=1e-4;
   bool  bChanged;
@@ -76,7 +76,7 @@ static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],atom_id index[],
       for(m=0; (m<nrefat); m++) {
 	ai   = index[m];
 	mass = top->atoms.atom[ai].m/mtot;
-	pbc_dx(x[ai],xref,dx);
+	pbc_dx(pbc,x[ai],xref,dx);
 	rvec_add(xref,dx,xtest);
 	for(j=0; (j<DIM); j++)
 	  if (fabs(xtest[j]-x[ai][j]) > tol) {
@@ -113,6 +113,7 @@ int gmx_sorient(int argc,char *argv[])
   real    c1,c2;
   char    str[STRLEN];
   rvec    xref,dx,dxh1,dxh2,outer;
+  t_pbc   pbc;
   char    *legr[] = { "<cos(\\8q\\4\\s1\\N)>", 
 		      "<3cos\\S2\\N(\\8q\\4\\s2\\N)-1>" };
   char    *legc[] = { "cos(\\8q\\4\\s1\\N)", 
@@ -194,7 +195,7 @@ int gmx_sorient(int argc,char *argv[])
 
   rmin2 = sqr(rmin);
   rmax2 = sqr(rmax);
-  rcut  = 0.45*min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ]));
+  rcut  = 0.45*sqrt(max_cutoff2(box));
   if (rcut == 0)
     rcut = 10*rmax;
   rcut2 = sqr(rcut);
@@ -218,13 +219,13 @@ int gmx_sorient(int argc,char *argv[])
     /* make molecules whole again */
     rm_pbc(&top.idef,natoms,box,x,x);
     
-    init_pbc(box);
+    set_pbc(&pbc,box);
     n    = 0;
     inp  = 0;
     outp = 0;
     for(p=0; (p<nrefgrp); p++) {
       if (bCom)
-	calc_com_pbc(nrefat,&top,x,index[0],xref,bPBC,box);
+	calc_com_pbc(nrefat,&top,x,&pbc,index[0],xref,bPBC,box);
       else
 	copy_rvec(x[index[0][p]],xref);
 
@@ -232,7 +233,7 @@ int gmx_sorient(int argc,char *argv[])
 	sa0 = index[1][m];
 	sa1 = index[1][m+1];
 	sa2 = index[1][m+2];
-	pbc_dx(x[sa0],xref,dx);
+	pbc_dx(&pbc,x[sa0],xref,dx);
 	r2  = norm2(dx);
 	if (r2 < rcut2) {
 	  r = sqrt(r2);

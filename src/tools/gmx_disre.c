@@ -130,7 +130,7 @@ static void check_viol(FILE *log,t_commrec *mcr,
 		       t_ilist *disres,t_iparams forceparams[],
 		       t_functype functype[],
 		       rvec x[],rvec f[],
-		       t_forcerec *fr,matrix box,t_graph *g,
+		       t_forcerec *fr,t_pbc *pbc,t_graph *g,
 		       real *sumv,real *averv,
 		       real *maxv,int *nv,
 		       int isize,atom_id index[],real vvindex[],
@@ -169,7 +169,7 @@ static void check_viol(FILE *log,t_commrec *mcr,
 	     (forceparams[forceatoms[i+n]].disres.label == label));
     
     calc_disres_R_6(mcr,n,&forceatoms[i],forceparams,
-		    (const rvec*)x,fr->ePBC==epbcFULL,fcd);
+		    (const rvec*)x,pbc,fcd);
 
     rt = pow(fcd->disres.Rt_6[0],-1.0/6.0);
     aver1[ndr]  += rt;
@@ -179,7 +179,7 @@ static void check_viol(FILE *log,t_commrec *mcr,
     ener=interaction_function[F_DISRES].ifunc(n,&forceatoms[i],
 					      forceparams,
 					      (const rvec*)x,f,fr->fshift,
-					      fr->ePBC,g,lam,&dvdl,
+					      pbc,g,lam,&dvdl,
 					      NULL,fcd);
     viol = fcd->disres.sumviol;
     
@@ -387,6 +387,7 @@ int gmx_disre(int argc,char *argv[])
   char        **leg;
   real        *vvindex=NULL,*w_rls=NULL;
   t_mdatoms   *mdatoms;
+  t_pbc       pbc;
   
   t_filenm fnm[] = {
     { efTPX, NULL, NULL, ffREAD },
@@ -493,12 +494,12 @@ int gmx_disre(int argc,char *argv[])
     if (ir.ePBC == epbcXYZ)
       rm_pbc(&top.idef,natoms,box,x,x);
     else if (ir.ePBC == epbcFULL)
-      init_pbc(box);
+      set_pbc(&pbc,box);
     
     check_viol(stdlog,cr,
 	       &(top.idef.il[F_DISRES]),
 	       top.idef.iparams,top.idef.functype,
-	       x,f,fr,box,g,&sumv,&averv,&maxv,&nv,
+	       x,f,fr,ir.ePBC==epbcFULL ? &pbc : NULL,g,&sumv,&averv,&maxv,&nv,
 	       isize,index,vvindex,fcd,aver1,aver2,aver_3);
     if (bPDB) {
       reset_x(top.atoms.nr,ind_fit,top.atoms.nr,NULL,x,w_rls);

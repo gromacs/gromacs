@@ -31,42 +31,31 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * GRoups of Organic Molecules in ACtion for Science
  */
-
-#ifndef _disre_h
-#define _disre_h
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef CPLUSPLUS
-extern "C" {
-#endif
-
-#include "sysstuff.h"
-#include "typedefs.h"
-
-void init_disres(FILE *fplog,int nbonds,const t_iatom *forceatoms,
-		 const t_iparams *ip,const t_inputrec *ir,
-		 const t_commrec *mcr,t_fcdata *fcd);
-/* Initiate *fcd data, must be called once, nbonds is the number 
- * of iatoms in the ilist of the idef struct
+/* Maximum number of combinations of single triclinic box vectors
+ * required to shift atoms that are within a brick of the size of
+ * the diagonal of the box to within the maximum cut-off distance.
  */
+#define MAX_NTRICVEC 12
 
-extern void calc_disres_R_6(const t_commrec *mcr,
-			    int nfa,const t_iatom *fa,const t_iparams ip[],
-			    const rvec *x,const t_pbc *pbc,t_fcdata *fcd);
-/* Calculates r and r^-3 (inst. and time averaged) for all pairs
- * and the ensemble averaged r^-6 (inst. and time averaged) for all restraints
- */
+/* Skip 0 so we have more chance of detecting if we forgot to call set_pbc. */
+enum { epbcdxRECTANGULAR=1, epbcdxTRICLINIC, epbcdxNOPBC, epbcdxUNSUPPORTED };
 
-extern t_ifunc ta_disres;
-/* Calculate the distance restraint forces, return the potential */
-
-#ifdef CPLUSPLUS
-}
-#endif
-
-#endif	/* _disre_h */
+typedef struct {
+  int    ePBCDX;
+  matrix box;
+  rvec   fbox_diag;
+  rvec   hbox_diag;
+  rvec   mhbox_diag;
+  real   max_cutoff2;
+  bool   bLimitDistance;
+  real   limit_distance2;
+  int    ntric_vec;
+  ivec   tric_shift[MAX_NTRICVEC];
+  rvec   tric_vec[MAX_NTRICVEC];
+} t_pbc;

@@ -62,16 +62,32 @@ extern "C" {
    * Otherwise is returns a string with the problem.
    */
 
-  extern void init_pbc(matrix box);
-  /* Initiate the periodic boundary conditions. */
+  extern real max_cutoff2(matrix box);
+  /* Returns the square of the maximum cut-off allowed for the box,
+   * taking into account that the grid neighborsearch code and pbc_dx
+   * only check combinations of single box-vector shifts.
+   */
   
-  extern int pbc_dx(const rvec x1, const rvec x2, rvec dx);
+  extern void set_pbc(t_pbc *pbc,matrix box);
+  /* Initiate the periodic boundary conditions.
+   * pbc_dx will not use pbc and return the normal difference vector
+   * when one or more of the diagonal elements of box is zero.
+   */
+
+  extern int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx);
   /* Calculate the correct distance vector from x2 to x1 and put it in dx.
    * Returns the ishift required to shift x1 at closest distance to x2;
    * i.e. if 0<=ishift<SHIFTS then x1 - x2 + shift_vec[ishift] = dx
    * (see calc_shifts below on how to obtain shift_vec)
-   * init_pbc must be called before ever calling this routine
-   * (this is done by put_charge_groups_in_box).
+   * set_pbc must be called before ever calling this routine.
+   *
+   * For triclinic boxes pbc_dx does not necessarily return the shortest
+   * distance vector. If pbc->bLimitDistance=TRUE an atom pair with
+   * distance vector dx with norm2(dx) > pbc->limit_distance2 could
+   * have a shorter distance, but not shorter than sqrt(pbc->limit_distance2).
+   * pbc->limit_distance2 is always larger than max_cutoff2(box).
+   * For the standard rhombic dodecahedron and truncated octahedron
+   * pbc->bLimitDistance=FALSE and thus all distances are correct.
    */
 
   extern bool image_rect(ivec xi,ivec xj,ivec box_size,
@@ -149,13 +165,13 @@ extern "C" {
    * box center as calculated by calc_box_center.
    */
 
-  extern void put_atoms_in_compact_unitcell(matrix box,int natoms,rvec x[]);
+  extern char *put_atoms_in_compact_unitcell(matrix box,int natoms,rvec x[]);
   /* This puts ALL atoms at the closest distance for the center of the box
    * as calculated by calc_box_center.
+   * Will return NULL is everything went ok and a warning string if not
+   * all atoms could be placed in the unitcell. This can happen for some
+   * triclinic unitcells, see the comment at pbc_dx above.
    */
-  
-  extern void set_gmx_full_pbc();
-  /* Turn on full PBS calculation in the GROMACS bonded routines */
   
 #ifdef CPLUSPLUS
 }

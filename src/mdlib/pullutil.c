@@ -61,9 +61,9 @@ void d_pbc_dx(matrix box,const dvec x1, const dvec x2, dvec dx)
 {
   int m,d;
   
-  /* Not correct for all trilinic boxes !!!
-     Should be as pbc_dx and moved to pbc.c
-  */
+  /* Only correct for atom pairs with a distance within
+   * half of the smallest diagonal element of box.
+   */
   dvec_sub(x1,x2,dx);
   for(m=DIM-1; m>=0; m--) {
     while (dx[m]   < -0.5*box[m][m])
@@ -198,9 +198,12 @@ void calc_running_com(t_pull *pull) {
 }
 
 void correct_t0_pbc(t_pull *pull, rvec x[], t_mdatoms *md, matrix box) {
-  int i,ii,j,m;
+  int i,ii,m;
+  t_pbc pbc;
   rvec dx;
 
+  set_pbc(&pbc,box);
+  
   /* loop over all atoms in index for group i. Check if they moved
      more than half a box with respect to xp. If so add/subtract a box 
      from x0. Copy x to xp.
@@ -209,7 +212,7 @@ void correct_t0_pbc(t_pull *pull, rvec x[], t_mdatoms *md, matrix box) {
     ii = pull->ref.idx[i];
 
     /* correct for jumps across the box */
-    pbc_dx(x[ii],pull->ref.xp[i],dx);
+    pbc_dx(&pbc,x[ii],pull->ref.xp[i],dx);
     for(m=0; m<DIM; m++) {
       pull->ref.x0[i][m] += dx[m];
       pull->ref.xp[i][m]  = x[ii][m];

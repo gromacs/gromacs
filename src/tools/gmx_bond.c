@@ -94,6 +94,7 @@ static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
   matrix box;
   real   t,fac;
   int    bind,i,nframes,i0,i1;
+  t_pbc  pbc;
   
   if (!bAver) {
     snew(b_all,gnx/2);
@@ -106,7 +107,6 @@ static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
   }
   
   natoms=read_first_x(&status,fn,&t,&x,box);
-  init_pbc(box);
   if (natoms == 0) 
     fatal_error(0,"No atoms in trajectory!");
   
@@ -119,12 +119,13 @@ static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
   
   nframes=0;
   do {
+    set_pbc(&pbc,box);
     if (fdist)
       fprintf(outd," %8.4f",t);
     nframes++; /* count frames */
     bav = 0.0;
     for(i=0; (i<gnx); i+=2) {
-      pbc_dx(x[index[i]],x[index[i+1]],dx);
+      pbc_dx(&pbc,x[index[i]],x[index[i+1]],dx);
       bond   = norm(dx);
       if (bAverDist)
 	bav += bond;

@@ -100,9 +100,10 @@ static void calc_mat(int nres, int natoms, int rndx[],
 {
   int i,j,resi,resj;
   real trunc2,r,r2;
-  
+  t_pbc pbc;
+
   if (box)
-    init_pbc(box);
+    set_pbc(&pbc,box);
   trunc2=sqr(trunc);
   for(resi=0; (resi<nres); resi++)
     for(resj=0; (resj<nres); resj++)
@@ -113,7 +114,7 @@ static void calc_mat(int nres, int natoms, int rndx[],
       resj=rndx[j];
       if (box) {
 	rvec ddx;
-	pbc_dx(x[index[i]],x[index[j]],ddx);
+	pbc_dx(&pbc,x[index[i]],x[index[j]],ddx);
 	r2 = iprod(ddx,ddx);
       }
       else

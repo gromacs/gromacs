@@ -553,7 +553,7 @@ static void calc_angles(FILE *log,matrix box,
   
   for(i=ix=0; (ix<n3); i++,ix+=3) 
     ang[i]=bond_angle(x_s[index[ix]],x_s[index[ix+1]],x_s[index[ix+2]],
-		      epbcNONE,
+		      NULL,
 		      r_ij,r_kj,&costh,&t1,&t2);
   if (debug) {
     fprintf(debug,"Angle[0]=%g, costh=%g, index0 = %d, %d, %d\n",
@@ -596,7 +596,7 @@ static void calc_dihs(FILE *log,matrix box,
   
   for(i=ix=0; (ix<n4); i++,ix+=4) {
     aaa=dih_angle(x_s[index[ix]],x_s[index[ix+1]],x_s[index[ix+2]],
-		  x_s[index[ix+3]],epbcNONE,
+		  x_s[index[ix+3]],NULL,
 		  r_ij,r_kj,r_kl,m,n,
 		  &cos_phi,&sign,&t1,&t2,&t3);
     ang[i]=aaa;  /* not taking into account ryckaert bellemans yet */

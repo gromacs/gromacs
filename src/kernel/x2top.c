@@ -157,6 +157,7 @@ void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
   t_atom  *atom;
   char    **nm2mass=NULL,buf[128];
   int     i,j,aai,nmass;
+  t_pbc   pbc;
   rvec    dx;
   real    dx2,c2;
   
@@ -175,14 +176,14 @@ void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
   }
   c2 = sqr(cutoff);
   if (bPBC)
-    init_pbc(box);
+    set_pbc(&pbc,box);
   for(i=0; (i<atoms->nr); i++) {
     if ((i % 10) == 0)
       fprintf(stderr,"\ratom %d",i);
     aai = atom[i].type;
     for(j=i+1; (j<atoms->nr); j++) {
       if (bPBC)
-	pbc_dx(x[i],x[j],dx);
+	pbc_dx(&pbc,x[i],x[j],dx);
       else
 	rvec_sub(x[i],x[j],dx);
       
@@ -329,16 +330,17 @@ void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],bool bPBC,
   int    i,ai,aj,ak,al,t1,t2,t3;
   rvec   r_ij,r_kj,r_kl,m,n;
   real   sign,th,costh,ph,cosph;
+  t_pbc  pbc;
 
-  if (!bPBC)
-    box[XX][XX] = box[YY][YY] = box[ZZ][ZZ] = 1000;
+  if (bPBC)
+    set_pbc(&pbc,box);
   if (debug)
     pr_rvecs(debug,0,"X2TOP",box,DIM);
   for(i=0; (i<ang->nr); i++) {
     ai = ang->param[i].AI;
     aj = ang->param[i].AJ;
     ak = ang->param[i].AK;
-    th = RAD2DEG*bond_angle(x[ai],x[aj],x[ak],bPBC ? epbcFULL : epbcNONE,
+    th = RAD2DEG*bond_angle(x[ai],x[aj],x[ak],bPBC ? &pbc : NULL,
 			    r_ij,r_kj,&costh,&t1,&t2);
     if (debug)
       fprintf(debug,"X2TOP: ai=%3d aj=%3d ak=%3d r_ij=%8.3f r_kj=%8.3f th=%8.3f\n",
@@ -350,7 +352,7 @@ void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],bool bPBC,
     aj = dih->param[i].AJ;
     ak = dih->param[i].AK;
     al = dih->param[i].AL;
-    ph = RAD2DEG*dih_angle(x[ai],x[aj],x[ak],x[al],epbcNONE,
+    ph = RAD2DEG*dih_angle(x[ai],x[aj],x[ak],x[al],bPBC ? & pbc : NULL,
 			   r_ij,r_kj,r_kl,m,n,&cosph,&sign,&t1,&t2,&t3);
     if (debug)
       fprintf(debug,"X2TOP: ai=%3d aj=%3d ak=%3d al=%3d r_ij=%8.3f r_kj=%8.3f r_kl=%8.3f ph=%8.3f\n",

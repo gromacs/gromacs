@@ -108,6 +108,7 @@ void do_gkr(t_gkrbin *gb,int ngrp,atom_id grpindex[],
   int  gi,aj,j0,j1,i,j,k,index;
   real qtot,q,r2;
   rvec dx;
+  t_pbc pbc;
   
   if (!xcm)
     snew(xcm,ngrp);
@@ -134,10 +135,11 @@ void do_gkr(t_gkrbin *gb,int ngrp,atom_id grpindex[],
     }
   }
   
+  set_pbc(&pbc,box);
   for(i=0; i<ngrp; i++) {
     for(j=i+1; j<ngrp; j++) {
       /* Compute distance between molecules including PBC */
-      pbc_dx(xcm[i],xcm[j],dx);
+      pbc_dx(&pbc,xcm[i],xcm[j],dx);
       index = (int)(norm(dx)/gb->spacing);
       gb->elem[index]  += cos_angle(mu[i],mu[j]);
       gb->count[index] ++;
@@ -606,7 +608,6 @@ static void do_dip(char *fn,char *topf,
       M_av2[m] = M_av[m]*M_av[m];
       
     if (bGkr) {
-      init_pbc(box);
       do_gkr(gkrbin,gnx,grpindex,mols->index,mols->a,x,dipole,box,
 	     atom,gkatom);
     }

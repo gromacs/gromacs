@@ -925,6 +925,8 @@ void force(FILE       *fplog,   int        step,
       else
 	inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
     }
+    if (ir->ePBC == epbcFULL)
+      set_pbc(&pbc,box);
     debug_gmx();
   }
   
@@ -938,13 +940,12 @@ void force(FILE       *fplog,   int        step,
     case eelPME:
       Vlr = do_pme(fplog,FALSE,ir,x,fr->f_el_recip,md->chargeA,
 		   box,cr,nsb,nrnb,fr->vir_el_recip,fr->ewaldcoeff,
-		   lambda,&dvdlambda,bGatherOnly);
+		   bGatherOnly);
       PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
       break;
     case eelEWALD:
       Vlr = do_ewald(fplog,FALSE,ir,x,fr->f_el_recip,md->chargeA,
-		     box_size,cr,nsb,fr->vir_el_recip,fr->ewaldcoeff,
-		     lambda,&dvdlambda);
+		     box_size,cr,nsb,fr->vir_el_recip,fr->ewaldcoeff);
       PRINT_SEPDVDL("Ewald long-range",Vlr,dvdlambda);
       break;
     default:
@@ -977,7 +978,7 @@ void force(FILE       *fplog,   int        step,
     dvdlambda = 0;
     if (fr->eeltype != eelRF_OLD)
       epot[F_RF_EXCL] = RF_excl_correction(fplog,nsb,fr,graph,md,excl,x,f,
-					   fr->fshift,lambda,&dvdlambda);
+					   fr->fshift,&pbc,lambda,&dvdlambda);
     epot[F_DVDL] += dvdlambda;
     PRINT_SEPDVDL("RF exclusion correction",epot[F_RF_EXCL],dvdlambda);
   }
@@ -988,8 +989,8 @@ void force(FILE       *fplog,   int        step,
   debug_gmx();
   
   if (!bNBFonly) {
-    calc_bonds(fp,cr,mcr,
-	       idef,x,f,fr,graph,epot,nrnb,box,lambda,md,
+    calc_bonds(fplog,cr,mcr,
+	       idef,x,f,fr,&pbc,graph,epot,nrnb,lambda,md,
 	       opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14],
 	       fcd,step,fr->bSepDVDL && do_per_step(step,ir->nstlog));    
     debug_gmx();

@@ -62,7 +62,7 @@
 
 static void insert_ion(int nsa,int *nwater,
 		       bool bSet[],int repl[],atom_id index[],
-		       real pot[],rvec x[],
+		       real pot[],rvec x[],t_pbc *pbc,
 		       int sign,real q,char *ionname,
 		       t_mdatoms *mdatoms,
 		       real rmin,bool bRandom,int *seed)
@@ -122,7 +122,7 @@ static void insert_ion(int nsa,int *nwater,
     rmin2=rmin*rmin;
     for(i=0; (i<nw); i++) {
       if (!bSet[i]) {
-	pbc_dx(x[index[nsa*ei]],x[index[nsa*i]],dx);
+	pbc_dx(pbc,x[index[nsa*ei]],x[index[nsa*i]],dx);
 	if (iprod(dx,dx) < rmin2)
 	  bSet[i] = TRUE;
       }
@@ -275,6 +275,7 @@ int main(int argc, char *argv[])
   rvec        *x,*v;
   real        *pot;
   matrix      box;
+  t_pbc       pbc;
   int         *repl;
   atom_id     *index;
   char        *grpname;
@@ -343,6 +344,8 @@ int main(int argc, char *argv[])
   snew(v,top->atoms.nr);
   snew(top->atoms.pdbinfo,top->atoms.nr);
 
+  set_pbc(&pbc,box);
+
   /* Now loop over the ions that have to be placed */
   do {
     if (!bRandom) {
@@ -362,12 +365,12 @@ int main(int argc, char *argv[])
       }
     }
     if ((p_num > 0) && (p_num >= n_num))  {
-      insert_ion(nsa,&nw,bSet,repl,index,pot,x,
+      insert_ion(nsa,&nw,bSet,repl,index,pot,x,&pbc,
 		 1,p_q,p_name,mdatoms,rmin,bRandom,&seed);
       p_num--;
     }
     else if (n_num > 0) {
-      insert_ion(nsa,&nw,bSet,repl,index,pot,x,
+      insert_ion(nsa,&nw,bSet,repl,index,pot,x,&pbc,
 		 -1,n_q,n_name,mdatoms,rmin,bRandom,&seed);
       n_num--;
     }

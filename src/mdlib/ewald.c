@@ -101,20 +101,25 @@ static void tabulate_eir(int natom,rvec x[],int kmax,cvec **eir,rvec lll)
 real do_ewald(FILE *log,       bool bVerbose,
 	      t_inputrec *ir,
 	      rvec x[],        rvec f[],
-		  real charge[],   rvec box,
-	      t_commrec *cr,	      t_nsborder *nsb,
-	      matrix lrvir, real ewaldcoeff)
+	      real chargeA[],  real chargeB[],
+	      rvec box,
+	      t_commrec *cr,   t_nsborder *nsb,
+	      matrix lrvir,    real ewaldcoeff,
+	      real lambda,     real *dvdlambda)
 {
   static    bool bFirst = TRUE;
   static    int       nx,ny,nz,kmax;
   static    cvec      **eir;
   static    t_complex  *tab_xy,*tab_qxyz;
   real factor=-1.0/(4*ewaldcoeff*ewaldcoeff);
-  real energy;
+  real *charge,energy_AB[2],energy;
   rvec lll;
-  int  lowiy,lowiz,ix,iy,iz,n;
-  real tmp,cs,ss,ak,akv,mx,my,mz,m2;
-  
+  int  lowiy,lowiz,ix,iy,iz,n,q;
+  real tmp,cs,ss,ak,akv,mx,my,mz,m2,scale;
+  bool bFreeEnergy;
+
+  bFreeEnergy = (ir->efep != efepNO);
+
   if (bFirst) {
       if (bVerbose)
     fprintf(log,"Will do ordinary reciprocal space Ewald sum.\n");
@@ -140,57 +145,77 @@ real do_ewald(FILE *log,       bool bVerbose,
   calc_lll(box,lll);
   /* make tables for the structure factor parts */
   tabulate_eir(HOMENR(nsb),x,kmax,eir,lll);
-  
-  lowiy=0;
-  lowiz=1;
-  energy=0;
-  for(ix=0;ix<nx;ix++) {
-    mx=ix*lll[XX];
-    for(iy=lowiy;iy<ny;iy++) {
-      my=iy*lll[YY];
-      if(iy>=0) 
-	for(n=0;n<HOMENR(nsb);n++) 
-	  tab_xy[n]=cmul(eir[ix][n][XX],eir[iy][n][YY]);
-      else 
-	for(n=0;n<HOMENR(nsb);n++) 
-	  tab_xy[n]=conjmul(eir[ix][n][XX],eir[-iy][n][YY]); 
-      for(iz=lowiz;iz<nz;iz++) {
-	mz=iz*lll[ZZ];	       
-	m2=mx*mx+my*my+mz*mz;
-	ak=exp(m2*factor)/m2;
-	akv=2.0*ak*(1.0/m2-factor);  
-	if(iz>=0) 
+
+  for(q=0; q<(bFreeEnergy ? 2 : 1); q++) {
+    if (!bFreeEnergy) {
+      charge = chargeA;
+      scale = 1.0;
+    } else if (q==0) {
+      charge = chargeA;
+      scale = 1.0 - lambda;
+    } else {
+      charge = chargeB;
+      scale = lambda;
+    }
+    lowiy=0;
+    lowiz=1;
+    energy_AB[q]=0;
+    for(ix=0;ix<nx;ix++) {
+      mx=ix*lll[XX];
+      for(iy=lowiy;iy<ny;iy++) {
+	my=iy*lll[YY];
+	if(iy>=0) 
 	  for(n=0;n<HOMENR(nsb);n++) 
-	    tab_qxyz[n]=rcmul(charge[n],cmul(tab_xy[n],eir[iz][n][ZZ]));
+	    tab_xy[n]=cmul(eir[ix][n][XX],eir[iy][n][YY]);
 	else 
 	  for(n=0;n<HOMENR(nsb);n++) 
-	    tab_qxyz[n]=rcmul(charge[n],conjmul(tab_xy[n],eir[-iz][n][ZZ]));
-            
-	cs=ss=0;
-	for(n=0;n<HOMENR(nsb);n++) {
-	  cs+=tab_qxyz[n].re;
-	  ss+=tab_qxyz[n].im;
+	    tab_xy[n]=conjmul(eir[ix][n][XX],eir[-iy][n][YY]); 
+	for(iz=lowiz;iz<nz;iz++) {
+	  mz=iz*lll[ZZ];	       
+	  m2=mx*mx+my*my+mz*mz;
+	  ak=exp(m2*factor)/m2;
+	  akv=2.0*ak*(1.0/m2-factor);  
+	  if(iz>=0) 
+	    for(n=0;n<HOMENR(nsb);n++) 
+	      tab_qxyz[n]=rcmul(charge[n],cmul(tab_xy[n],eir[iz][n][ZZ]));
+	  else 
+	    for(n=0;n<HOMENR(nsb);n++) 
+	      tab_qxyz[n]=rcmul(charge[n],conjmul(tab_xy[n],eir[-iz][n][ZZ]));
+	  
+	  cs=ss=0;
+	  for(n=0;n<HOMENR(nsb);n++) {
+	    cs+=tab_qxyz[n].re;
+	    ss+=tab_qxyz[n].im;
+	  }
+	  energy_AB[q]+=ak*(cs*cs+ss*ss);
+	  tmp=scale*akv*(cs*cs+ss*ss);	       
+	  lrvir[XX][XX]-=tmp*mx*mx;
+	  lrvir[XX][YY]-=tmp*mx*my;
+	  lrvir[XX][ZZ]-=tmp*mx*mz;
+	  lrvir[YY][YY]-=tmp*my*my;
+	  lrvir[YY][ZZ]-=tmp*my*mz;
+	  lrvir[ZZ][ZZ]-=tmp*mz*mz;
+	  for(n=0;n<HOMENR(nsb);n++) {
+	    tmp=ak*(cs*tab_qxyz[n].im-ss*tab_qxyz[n].re);
+	    f[n][XX]+=tmp*mx;
+	    f[n][YY]+=tmp*my;
+	    f[n][ZZ]+=tmp*mz;
+	  }
+	  lowiz=1-nz;
 	}
-	energy+=ak*(cs*cs+ss*ss);
-	tmp=akv*(cs*cs+ss*ss);	       
-	lrvir[XX][XX]-=tmp*mx*mx;
-	lrvir[XX][YY]-=tmp*mx*my;
-	lrvir[XX][ZZ]-=tmp*mx*mz;
-	lrvir[YY][YY]-=tmp*my*my;
-	lrvir[YY][ZZ]-=tmp*my*mz;
-	lrvir[ZZ][ZZ]-=tmp*mz*mz;
-	for(n=0;n<HOMENR(nsb);n++) {
-	  tmp=ak*(cs*tab_qxyz[n].im-ss*tab_qxyz[n].re);
-	  f[n][XX]+=tmp*mx;
-	  f[n][YY]+=tmp*my;
-	  f[n][ZZ]+=tmp*mz;
-	}
-	lowiz=1-nz;
+	lowiy=1-ny;
       }
-      lowiy=1-ny;
     }
-  }   
+  }
+  
   tmp=4.0*M_PI/(box[XX]*box[YY]*box[ZZ])*ONE_4PI_EPS0;
+
+  if (!bFreeEnergy) {
+    energy = energy_AB[0];
+  } else {
+    energy = (1.0 - lambda)*energy_AB[0] + lambda*energy_AB[1];
+    *dvdlambda += tmp*(energy_AB[1] - energy_AB[0]);
+  }
   for(n=0;n<HOMENR(nsb);n++) {
     f[n][XX]*=2*tmp;
     f[n][YY]*=2*tmp;

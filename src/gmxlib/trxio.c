@@ -523,8 +523,6 @@ static int xyz_first_x(FILE *status, real *t, rvec **x, matrix box)
   if (!xyz_next_x(status,t,NATOMS,*x,box)) 
     return 0;
   *t=0.0;
-
-  init_pbc(box);
   
   return NATOMS;
 }
@@ -657,7 +655,6 @@ bool read_next_frame(int status,t_trxframe *fr)
 	ct=check_times2(fr->time,fr->t0,fr->tpf,fr->tppf);
 	if (ct == 0 || (fr->flags & TRX_DONT_SKIP && ct<0)) {
 	  printcount2(fr->time,fr->t0,fr->tpf,fr->tppf);
-	  init_pbc(fr->box);  
 	} else if (ct > 0)
 	  bRet = FALSE;
 	else {

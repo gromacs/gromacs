@@ -53,7 +53,8 @@ extern "C" {
 
 extern void calc_bonds(FILE *fplog,const t_commrec *cr,const t_commrec *mcr,
 		       const t_idef *idef,
-                       rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+                       rvec x[],rvec f[],t_forcerec *fr,
+		       const t_pbc *pbc,const t_graph *g,
                        real epot[],t_nrnb *nrnb,real lambda,
 		       const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 		       t_fcdata *fcd,
@@ -79,13 +80,13 @@ extern void calc_bonds(FILE *fplog,const t_commrec *cr,const t_commrec *mcr,
  */
 
 extern real bond_angle(const rvec xi,const rvec xj,const rvec xk,
-		       int ePBC,
+		       const t_pbc *pbc,
 		       rvec r_ij,rvec r_kj,real *costh,
 		       int *t1,int *t2);	/* out */
 /* Calculate bond-angle. No PBC is taken into account (use mol-shift) */
 
 extern real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
-		      int ePBC,
+		      const t_pbc *pbc,
 		      rvec r_ij,rvec r_kj,rvec r_kl,rvec m,rvec n, /* out */
 		      real *cos_phi,real *sign,
 		      int *t1,int *t2,int *t3);
@@ -94,7 +95,7 @@ extern real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
 extern void do_dih_fup(int i,int j,int k,int l,real ddphi,
 		       rvec r_ij,rvec r_kj,rvec r_kl,
 		       rvec m,rvec n,rvec f[],rvec fshift[],
-		       int ePBC,const t_graph *g,
+		       const t_pbc *pbc,const t_graph *g,
 		       const rvec *x,int t1,int t2,int t3);
 /* Do an update of the forces for dihedral potentials */
 

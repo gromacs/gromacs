@@ -476,9 +476,6 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     
     do_log = do_per_step(step,parm->ir.nstlog) || bLastStep;
 
-    if (bFullPBC)
-      init_pbc(state->box);
-
     if (parm->ir.efep != efepNO) {
       if (bRerunMD && rerun_fr.bLambda && (parm->ir.delta_lambda!=0))
 	state->lambda = rerun_fr.lambda;

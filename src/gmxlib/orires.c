@@ -237,7 +237,7 @@ void print_orires_log(FILE *log,t_oriresdata *od)
 
 real calc_orires_dev(const t_commrec *mcr,
 		     int nfa,const t_iatom forceatoms[],const t_iparams ip[],
-		     const t_mdatoms *md,const rvec x[],int ePBC,
+		     const t_mdatoms *md,const rvec x[],const t_pbc *pbc,
 		     t_fcdata *fcd)
 {
   int          fa,d,i,j,type,ex,nref;
@@ -292,8 +292,8 @@ real calc_orires_dev(const t_commrec *mcr,
   d = 0;
   for(fa=0; fa<nfa; fa+=3) {
     type = forceatoms[fa];
-    if (ePBC == epbcFULL)
-      pbc_dx(x[forceatoms[fa+1]],x[forceatoms[fa+2]],r_unrot);
+    if (pbc)
+      pbc_dx(pbc,x[forceatoms[fa+1]],x[forceatoms[fa+2]],r_unrot);
     else
       rvec_sub(x[forceatoms[fa+1]],x[forceatoms[fa+2]],r_unrot);
     mvmul(R,r_unrot,r);
@@ -424,7 +424,7 @@ real calc_orires_dev(const t_commrec *mcr,
 
 real orires(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
 	    const rvec x[],rvec f[],rvec fshift[],
-	    int ePBC,const t_graph *g,
+	    const t_pbc *pbc,const t_graph *g,
 	    real lambda,real *dvdlambda,
 	    const t_mdatoms *md,t_fcdata *fcd)
 {
@@ -451,8 +451,8 @@ real orires(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
       type  = forceatoms[fa];
       ai    = forceatoms[fa+1];
       aj    = forceatoms[fa+2];
-      if (ePBC == epbcFULL)
-	ki = pbc_dx(x[ai],x[aj],r);
+      if (pbc)
+	ki = pbc_dx(pbc,x[ai],x[aj],r);
       else
 	rvec_sub(x[ai],x[aj],r);
       r2    = norm2(r);

@@ -158,7 +158,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   int        *isize,isize_cm=0,nrdf=0,max_i;
   atom_id    **index,*index_cm=NULL;
   unsigned long int *sum;
-  real       t,boxmin,hbox,hbox2,cut2,r,r2,invbinw,normfac;
+  real       t,rmax2,cut2,r,r2,invbinw,normfac;
   real       segvol,spherevol,prev_spherevol,**rdf;
   rvec       *x,xcom,dx,*x_i1,xi;
   real       *inv_segvol,vol,vol_sum,rho;
@@ -168,6 +168,8 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   atom_id    ix,jx,***pairs;
   t_topology top;
   t_block    *excl;
+  t_pbc      pbc;
+
   excl=NULL;
   
   if (fnTPS) {
@@ -221,11 +223,9 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   }
   
   /* initialize some handy things */
-  boxmin = min( norm(box[XX]), min( norm(box[YY]), norm(box[ZZ]) ) );
-  hbox   = boxmin / 2.0;
-  nbin   = (int)(hbox / binwidth) + 1;
+  rmax2   = 0.99*0.99*max_cutoff2(box);
+  nbin    = (int)(sqrt(rmax2) / binwidth) + 1;
   invbinw = 1.0 / binwidth;
-  hbox2  = sqr(hbox);
   cut2   = sqr(cutoff);
 
   snew(count,ng);
@@ -280,7 +280,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   vol_sum = 0;
   do {
     /* Must init pbc every step because of pressure coupling */
-    init_pbc(box);
+    set_pbc(&pbc,box);
     rm_pbc(&top.idef,natoms,box,x,x);
     
     vol = det(box);
@@ -309,17 +309,17 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 	  /* Expensive loop, because of indexing */
 	  for(j=0; j<npairs[g][i]; j++) {
 	    jx=pairs[g][i][j];
-	    pbc_dx(xi,x[jx],dx);
+	    pbc_dx(&pbc,xi,x[jx],dx);
 	    r2=iprod(dx,dx);
-	    if (r2>cut2 && r2<=hbox2)
+	    if (r2>cut2 && r2<=rmax2)
 	      count[g][(int)(sqrt(r2)*invbinw)]++;
 	  }
 	else
 	  /* Cheaper loop, no exclusions */
 	  for(j=0; j<isize[g+1]; j++) {
-	    pbc_dx(xi,x_i1[j],dx);
+	    pbc_dx(&pbc,xi,x_i1[j],dx);
 	    r2=iprod(dx,dx);
-	    if (r2>cut2 && r2<=hbox2)
+	    if (r2>cut2 && r2<=rmax2)
 	      count[g][(int)(sqrt(r2)*invbinw)]++;
 	  }
       }
@@ -1076,7 +1076,6 @@ do_scattering_intensity (char* fnTPS, char* fnNDX, char* fnXVG, char *fnTRX,
     /* This is the main loop over frames */
 
     do {
-	init_pbc (box);
 	sf->nSteps++;
 	for (i = 0; i < ng; i++) {
 	    rearrange_atoms (red[i], &fr, index[i], isize[i], &top,

@@ -1383,9 +1383,8 @@ void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
     rlong = max(ir->rlist,max(ir->rcoulomb,ir->rvdw));
     bTWIN = (rlong > ir->rlist);
     if (ir->ns_type==ensGRID) {
-      min_size = min(norm2(box[XX]),min(norm2(box[YY]),norm2(box[ZZ])));
-      if (sqr(2*rlong) >= min_size) {
-	fprintf(stderr,"ERROR: One of the box vectors is shorter than twice the cut-off length. Increase the box size or decrease %s.\n",
+      if (sqr(rlong) >= max_cutoff2(box)) {
+	fprintf(stderr,"ERROR: The cut-off length is longer than half the shortest box vector or longer than the smallest box diagonal element. Increase the box size or decrease %s.\n",
 		bTWIN ? (ir->rcoulomb==rlong ? "rcoulomb" : "rvdw"):"rlist");
 	(*nerror)++;
       }

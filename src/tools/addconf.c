@@ -46,7 +46,6 @@
 #include "addconf.h"
 #include "force.h"
 #include "gstat.h"
-#include "pbc.h"
 #include "names.h"
 #include "nsgrid.h"
 #include "mdatoms.h"
@@ -347,7 +346,6 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
   fprintf(stderr,"box_margin = %g\n",box_margin);
   
   snew(remove,natoms_solvt);
-  init_pbc(box);
 
   nremove = 0;
   for(i=0; i<atoms_solvt->nr; i++)

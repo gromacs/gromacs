@@ -108,6 +108,7 @@ int main(int argc,char *argv[])
   t_topology top;
   rvec       *x,dx;
   matrix     box;
+  t_pbc      pbc;
   real       t;
   int        natoms,nwat;
   char       **grpname,title[256];
@@ -165,12 +166,12 @@ int main(int argc,char *argv[])
   out=open_trx(opt2fn("-o",NFILE,fnm),"w");
   do {
     rm_pbc(&top.idef,natoms,box,x,x);
-    init_pbc(box);
+    set_pbc(&pbc,box);
     
     /* Set distance to first atom */
     for(i=0; (i<nwat); i++) {
       sa = index[SOL][na*i];
-      pbc_dx(x[index[REF][0]],x[sa+ref_a],dx);
+      pbc_dx(&pbc,x[index[REF][0]],x[sa+ref_a],dx);
       order[i].i   = sa;
       order[i].ref = 0;
       order[i].d   = norm2(dx); 
@@ -179,7 +180,7 @@ int main(int argc,char *argv[])
       sr = index[REF][j];
       for(i=0; (i<nwat); i++) {
 	sa = index[SOL][na*i];
-	pbc_dx(x[sr],x[sa+ref_a],dx);
+	pbc_dx(&pbc,x[sr],x[sa+ref_a],dx);
 	if (norm2(dx) < order[i].d) {
 	  order[i].d   = norm2(dx);
 	  order[i].ref = sr;

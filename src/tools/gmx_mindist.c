@@ -155,6 +155,7 @@ static void calc_dist(real rcut, matrix box, rvec x[],
   atom_id *index3;
   rvec    dx;
   real    r2,rmin2,rmax2,rcut2;
+  t_pbc   pbc;
   
   *ixmin = -1;
   *jxmin = -1;
@@ -166,7 +167,7 @@ static void calc_dist(real rcut, matrix box, rvec x[],
   rcut2=sqr(rcut);
   
   /* Must init pbc every step because of pressure coupling */
-  init_pbc(box);
+  set_pbc(&pbc,box);
   if (index2) {
     j0=0;
     j1=nx2;
@@ -186,7 +187,7 @@ static void calc_dist(real rcut, matrix box, rvec x[],
     for(j=j0; (j < j1); j++) {
       jx=index3[j];
       if (ix != jx) {
-	pbc_dx(x[ix],x[jx],dx);
+	pbc_dx(&pbc,x[ix],x[jx],dx);
 	r2=iprod(dx,dx);
 	if (r2 < rmin2) {
 	  rmin2=r2;

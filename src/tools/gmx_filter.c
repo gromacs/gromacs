@@ -51,7 +51,6 @@
 #include "princ.h"
 #include "do_fit.h"
 #include "copyrite.h"
-#include "pbc.h"
 #include "rmpbc.h"
 
 int gmx_filter(int argc,char *argv[])
@@ -134,7 +133,6 @@ int gmx_filter(int argc,char *argv[])
     bTop = read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,topbox,
 			 TRUE);
     if (bTop) {
-      init_pbc(topbox);
       rm_pbc(&(top.idef),top.atoms.nr,topbox,xtop,xtop);
     }
   }
@@ -211,7 +209,6 @@ int gmx_filter(int argc,char *argv[])
 	  }
     }
     if (bTop) {
-      init_pbc(box[nffr - 1]);
       rm_pbc(&(top.idef),nat,box[nffr - 1],xn,xn);
     }
     if (bFit) {

@@ -83,6 +83,7 @@ int gmx_dist(int argc,char *argv[])
   real    *mass;
   FILE    *fp=NULL;
   bool    bCutoff;
+  t_pbc   pbc;
 
   char    *leg[4] = { "|d|","d\\sx\\N","d\\sy\\N","d\\sz\\N" };
 
@@ -150,7 +151,7 @@ int gmx_dist(int argc,char *argv[])
   
   do {
     /* initialisation for correct distance calculations */
-    init_pbc(box);
+    set_pbc(&pbc,box);
     /* make molecules whole again */
     rm_pbc(&top->idef,natoms,box,x,x);
 
@@ -169,7 +170,7 @@ int gmx_dist(int argc,char *argv[])
       /* write to output */
       fprintf(fp,"%8.3f ",t);
       for(g=0;(g<ngrps/2);g++) {
-	pbc_dx(com[2*g],com[2*g+1],dx);
+	pbc_dx(&pbc,com[2*g],com[2*g+1],dx);
 	fprintf(fp,"%10.5f %10.5f %10.5f %10.5f",
 		norm(dx),dx[XX],dx[YY],dx[ZZ]);
       }
@@ -177,7 +178,7 @@ int gmx_dist(int argc,char *argv[])
     } else {
       for(i=0;(i<isize[1]);i++) { 
 	j=index[1][i];
-	pbc_dx(x[j],com[0],dx);
+	pbc_dx(&pbc,x[j],com[0],dx);
 	dist2 = norm2(dx);
 	if (dist2<cut2) {
 	  res=top->atoms.atom[j].resnr;

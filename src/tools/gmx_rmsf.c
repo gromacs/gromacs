@@ -243,9 +243,6 @@ int gmx_rmsf(int argc,char *argv[])
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xref,NULL,box,TRUE);
   snew(w_rls,top.atoms.nr);
 
-  /* Set box type*/
-  init_pbc(box);
-  
   fprintf(stderr,"Select group(s) for root mean square calculation\n");
   get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpnames);
 

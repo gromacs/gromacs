@@ -49,7 +49,7 @@
 real RF_excl_correction(FILE *log,const t_nsborder *nsb,
 			const t_forcerec *fr,t_graph *g,
 			const t_mdatoms *mdatoms,const t_block *excl,
-			rvec x[],rvec f[],rvec *fshift,
+			rvec x[],rvec f[],rvec *fshift,const t_pbc *pbc,
 			real lambda,real *dvdlambda)
 {
   /* Calculate the reaction-field energy correction for this node:
@@ -95,7 +95,7 @@ real RF_excl_correction(FILE *log,const t_nsborder *nsb,
 	      ivec_sub(SHIFT_IVEC(g,i),SHIFT_IVEC(g,k),dt);
 	      ki=IVEC2IS(dt);
 	    } else if (bFullPBC) {
-	      ki = pbc_dx(x[i],x[k],dx);
+	      ki = pbc_dx(pbc,x[i],x[k],dx);
 	    } else
 	      rvec_sub(x[i],x[k],dx);
 	    ener += qqA*(ek*norm2(dx) - ec);
@@ -131,7 +131,7 @@ real RF_excl_correction(FILE *log,const t_nsborder *nsb,
 	      ivec_sub(SHIFT_IVEC(g,i),SHIFT_IVEC(g,k),dt);
 	      ki=IVEC2IS(dt);
 	    } else if (bFullPBC) {
-	      ki = pbc_dx(x[i],x[k],dx);
+	      ki = pbc_dx(pbc,x[i],x[k],dx);
 	    } else
 	      rvec_sub(x[i],x[k],dx);
 	    v = ek*norm2(dx) - ec;

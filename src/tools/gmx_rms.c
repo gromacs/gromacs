@@ -48,7 +48,6 @@
 #include "string2.h"
 #include "vec.h"
 #include "index.h"
-#include "pbc.h"
 #include "fatal.h"
 #include "futil.h"
 #include "princ.h"
@@ -297,9 +296,6 @@ int gmx_rms (int argc,char *argv[])
     bBond=FALSE;
   }
   
-  /*set box type*/
-  init_pbc(box);
-
   if (bReset) {
     fprintf(stderr,"Select group for %s fit\n", 
 	    bFit?"least squares":"translational");

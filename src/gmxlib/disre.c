@@ -104,7 +104,7 @@ void init_disres(FILE *fplog,int nfa,const t_iatom forceatoms[],
 
 void calc_disres_R_6(const t_commrec *mcr,
 		     int nfa,const t_iatom forceatoms[],const t_iparams ip[],
-		     const rvec x[],int ePBC,t_fcdata *fcd)
+		     const rvec x[],const t_pbc *pbc,t_fcdata *fcd)
 {
   atom_id     ai,aj;
   int         fa,res,i,pair,ki,kj,m;
@@ -151,8 +151,8 @@ void calc_disres_R_6(const t_commrec *mcr,
       ai   = forceatoms[fa+1];
       aj   = forceatoms[fa+2];
 
-      if (ePBC == epbcFULL)
-	pbc_dx(x[ai],x[aj],dx);
+      if (pbc)
+	pbc_dx(pbc,x[ai],x[aj],dx);
       else
 	rvec_sub(x[ai],x[aj],dx);
       rt2  = iprod(dx,dx);
@@ -182,7 +182,7 @@ void calc_disres_R_6(const t_commrec *mcr,
 
 real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
 	       const rvec x[],rvec f[],rvec fshift[],
-	       int ePBC,const t_graph *g,
+	       const t_pbc *pbc,const t_graph *g,
 	       real lambda,real *dvdlambda,
 	       const t_mdatoms *md,t_fcdata *fcd)
 {
@@ -318,8 +318,8 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
 	ai   = forceatoms[fa+1];
 	aj   = forceatoms[fa+2];
 
-	if (ePBC == epbcFULL) 
-	  ki = pbc_dx(x[ai],x[aj],dx);
+	if (pbc) 
+	  ki = pbc_dx(pbc,x[ai],x[aj],dx);
 	else
 	  rvec_sub(x[ai],x[aj],dx);
 	rt2 = iprod(dx,dx);

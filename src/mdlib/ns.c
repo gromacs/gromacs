@@ -1680,9 +1680,8 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   
   if (fr->ePBC != epbcNONE) {
     if (bGrid) {
-      min_size = min(norm2(box[XX]),min(norm2(box[YY]),norm2(box[ZZ])));
-      if (sqr(2*fr->rlistlong) >= min_size)
-	fatal_error(0,"One of the box vectors has become shorter than twice the cut-off length.");
+      if (sqr(fr->rlistlong) >= max_cutoff2(box))
+	fatal_error(0,"One of the box vectors has become shorter than twice the cut-off length or one of the box diagonal elements has become smaller than the cut-off.");
     } else {
       min_size = min(box_size[XX],min(box_size[YY],box_size[ZZ]));
       if (2*fr->rlistlong >= min_size)

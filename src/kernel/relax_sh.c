@@ -308,6 +308,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   bool   bDone,bInit;
   int    i,start=START(nsb),homenr=HOMENR(nsb),end=START(nsb)+HOMENR(nsb);
   int    g,number_steps,d,Min=0,count=0;
+  t_pbc  pbc;
 #define  Try (1-Min)             /* At start Try = 1 */
 
   if (bFirst) {
@@ -345,7 +346,6 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
       snew(acc_dir,homenr);
       snew(x_old,homenr);
     }
-    init_pbc(state->box);
     for(i=0; i<homenr; i++) {
       for(d=0; d<DIM; d++)
         x_old[i][d] =
@@ -560,8 +560,9 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     constrain(log,top,&(parm->ir),mdstep,md,start,end,
 	      state->x-start,x_old-start,NULL,state->box,
 	      state->lambda,&dum,nrnb,TRUE);
+    set_pbc(&pbc,state->box);
     for(i=0; i<homenr; i++) {
-      pbc_dx(state->x[start+i],x_old[i],dx);
+      pbc_dx(&pbc,state->x[start+i],x_old[i],dx);
       svmul(1/parm->ir.delta_t,dx,state->v[start+i]);
     }
   }

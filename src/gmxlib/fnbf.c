@@ -945,7 +945,7 @@ static real *_buf2=NULL;
 
 real do_14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
 	   const rvec x[],rvec f[],rvec fshift[],
-	   int ePBC,const t_graph *g,
+	   const t_pbc *pbc,const t_graph *g,
 	   real lambda,real *dvdlambda,
 	   const t_mdatoms *md,
 	   const t_forcerec *fr,int ngrp,real egnb[],real egcoul[])
@@ -974,6 +974,8 @@ real do_14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
     cpu_capabilities=detect_cpu(NULL);
 #endif
   
+  bFullPBC = (fr->ePBC == epbcFULL);
+
   /* Reaction field stuff */  
   eps   = fr->epsfac*fr->fudgeQQ;
   
@@ -984,13 +986,13 @@ real do_14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
     ai    = iatoms[i++];
     aj    = iatoms[i++];
     
-    if (ePBC != epbcFULL) {
+    if (!bFullPBC) {
       /* This is a bonded interaction, atoms are in the same box */
       shift_f = CENTRAL;
       r2 = distance2(x[ai],x[aj]);
     } else {
       /* Apply full periodic boundary conditions */
-      shift_f = pbc_dx(x[ai],x[aj],dx);
+      shift_f = pbc_dx(pbc,x[ai],x[aj],dx);
       r2 = norm2(dx);
     }
 

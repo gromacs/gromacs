@@ -59,8 +59,9 @@
   vector operations:
   void rvec_add(const rvec a,const rvec b,rvec c)  c = a + b
   void dvec_add(const dvec a,const dvec b,dvec c)  c = a + b
-  void rvec_inc(rvec a,rvec b)                     a += b
-  void ivec_inc(ivec a,ivec b)                     a += b
+  void ivec_add(const ivec a,const ivec b,ivec c)  c = a + b
+  void rvec_inc(rvec a,const rvec b)               a += b
+  void ivec_inc(ivec a,const ivec b)               a += b
   void rvec_sub(const rvec a,const rvec b,rvec c)  c = a - b
   void dvec_sub(const dvec a,const dvec b,dvec c)  c = a - b
   void rvec_dec(rvec a,rvec b)                     a -= b
@@ -214,6 +215,19 @@ static inline void rvec_add(const rvec a,const rvec b,rvec c)
 static inline void dvec_add(const dvec a,const dvec b,dvec c)
 {
   double x,y,z;
+  
+  x=a[XX]+b[XX];
+  y=a[YY]+b[YY];
+  z=a[ZZ]+b[ZZ];
+  
+  c[XX]=x;
+  c[YY]=y;
+  c[ZZ]=z;
+}
+
+static inline void ivec_add(const ivec a,const ivec b,ivec c)
+{
+  int x,y,z;
   
   x=a[XX]+b[XX];
   y=a[YY]+b[YY];

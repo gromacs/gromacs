@@ -307,9 +307,11 @@ static void reset_mols(t_block *mols,matrix box,rvec x[])
 static bool step_man(t_manager *man,int *nat)
 {
   static int  ncount=0;
+  static bool bWarn = FALSE;
   bool        bEof;
   real        rdum;
   int         dum;
+  char        *warn;
 
   if (!man->natom) {
     fprintf(stderr,"Not initiated yet!");
@@ -320,7 +322,11 @@ static bool step_man(t_manager *man,int *nat)
   if (ncount == man->nSkip) {
     switch (man->molw->boxtype) {
     case esbTri:
-      put_atoms_in_triclinic_unitcell(man->box,man->natom,man->x);
+      warn = put_atoms_in_triclinic_unitcell(man->box,man->natom,man->x);
+      if (warn && !bWarn) {
+	fprintf(stderr,"\n%s\n",warn);
+	bWarn = TRUE;
+      }
       break;
     case esbTrunc:
       put_atoms_in_compact_unitcell(man->box,man->natom,man->x);

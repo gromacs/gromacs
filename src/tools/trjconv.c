@@ -76,6 +76,7 @@ static void calc_pbc_cluster(int nrefat,t_topology *top,rvec x[],
   bool    *bMol,*bTmp;
   rvec    *m_com,*m_shift,m0;
   real    *m_mass;
+  t_pbc   pbc;
   
   /* Convert atom index to molecular */
   nmol   = top->blocks[ebMOLS].nr;
@@ -133,7 +134,8 @@ static void calc_pbc_cluster(int nrefat,t_topology *top,rvec x[],
     }
   }
   sfree(bTmp);
-   
+
+  set_pbc(&pbc,box);
   /* First calculation is incremental */
   clear_rvec(xref);
   mtot = 0;
@@ -143,7 +145,7 @@ static void calc_pbc_cluster(int nrefat,t_topology *top,rvec x[],
       mass = m_mass[i];
       if ((i > 0) && (mtot > 0)) {
 	svmul(1.0/mtot,xref,xrm);
-	pbc_dx(m_com[i],xrm,dx);
+	pbc_dx(&pbc,m_com[i],xrm,dx);
 	rvec_add(xrm,dx,xtest);
 	/* xtest is now the image of m_com[i] that is closest to xref */
 	for(j=0; (j<DIM); j++)
@@ -174,7 +176,7 @@ static void calc_pbc_cluster(int nrefat,t_topology *top,rvec x[],
 	  mass = m_mass[i]/mtot;
 	  /* Sum com and shift from com */
 	  rvec_add(m_com[i],m_shift[i],m0);
-	  pbc_dx(m0,xref,dx);
+	  pbc_dx(&pbc,m0,xref,dx);
 	  rvec_add(xref,dx,xtest);
 	  for(j=0; (j<DIM); j++)
 	    if (fabs(xtest[j]-m0[j]) > tol) {
@@ -553,6 +555,8 @@ int main(int argc,char *argv[])
   char         *outf_base=NULL,*outf_ext=NULL;
   char         top_title[256],title[256],command[256],filemode[5];
   int          xdr=0;
+  bool         bWarnCompact=FALSE;
+  char         *warn;
 
   t_filenm fnm[] = {
     { efTRX, "-f",  NULL, ffREAD },
@@ -835,9 +839,6 @@ int main(int argc,char *argv[])
       bDTset   = FALSE;
     
       do {
-	if (bCluster)
-	  init_pbc(fr.box);
-	
 	if (!fr.bStep) {
 	  /* set the step */
 	  fr.step = newstep;
@@ -950,8 +951,13 @@ int main(int argc,char *argv[])
 		  put_atoms_in_box(fr.box,natoms,fr.x);
 		else if (bTric)
 		  put_atoms_in_triclinic_unitcell(fr.box,natoms,fr.x);
-		else if (bComp)
-		  put_atoms_in_compact_unitcell(fr.box,natoms,fr.x);
+		else if (bComp) {
+		  warn = put_atoms_in_compact_unitcell(fr.box,natoms,fr.x);
+		  if (warn && !bWarnCompact) {
+		    fprintf(stderr,"\n%s\n",warn);
+		    bWarnCompact = TRUE;
+		  }
+		}
 	      }
 	    
 	      if (bPBC)

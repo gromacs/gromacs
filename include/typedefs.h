@@ -70,6 +70,7 @@ extern "C" {
 #include <types/forcerec.h>
 #include <types/fcdata.h>
 #include <types/mdatom.h>
+#include <types/pbc.h>
 #include <types/ifunc.h>
 #include <types/filenm.h>
 #include <types/group.h>

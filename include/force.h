@@ -58,7 +58,7 @@ extern void f_calc_vir(FILE *fplog,int i0,int i1,rvec x[],rvec f[],tensor vir,
 extern real RF_excl_correction(FILE *fplog,const t_nsborder *nsb,
 			       const t_forcerec *fr,t_graph *g,
 			       const t_mdatoms *mdatoms,const t_block *excl,
-			       rvec x[],rvec f[],rvec *fshift,
+			       rvec x[],rvec f[],rvec *fshift,const t_pbc *pbc,
 			       real lambda,real *dvdlambda);
 /* Calculate the reaction-field energy correction for this node:
  * epsfac q_i q_j (k_rf r_ij^2 - c_rf)
@@ -158,7 +158,7 @@ extern void do_fnbf(FILE *fplog,t_commrec *cr,t_forcerec *fr,
 
 extern real do_14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
 		  const rvec x[],rvec f[],rvec fshift[],
-		  int ePBC,const t_graph *g,
+		  const t_pbc *pbc,const t_graph *g,
 		  real lambda,real *dvdlambda,
 		  const t_mdatoms *md,
 		  const t_forcerec *fr,int ngrp,real egnb[],real egcoul[]);

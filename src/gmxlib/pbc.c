@@ -52,14 +52,18 @@
  *     PERIODIC BOUNDARY CONDITIONS
  *****************************************/
 
+//#define MAX_NTRICVEC 8
+
 /* Global variables */
+/*
 static bool bInit=FALSE;
 static bool bTriclinic,bSupported;
-static rvec gl_fbox,gl_hbox,gl_mhbox,*tric_vec=NULL;
-static ivec *tric_shift=NULL;
+static rvec gl_fbox,gl_hbox,gl_mhbox,tric_vec[MAX_NTRICVEC];
+static ivec tric_shift[MAX_NTRICVEC];
 static matrix gl_box;
 static int ntric_vec;
 static real sure_dist2;
+*/
 
 char *check_box(matrix box)
 {
@@ -82,111 +86,175 @@ char *check_box(matrix box)
   return ptr;
 }
 
-void init_pbc(matrix box)
+real max_cutoff2(matrix box)
 {
-  static int nalloc=0;
+  real min_hv2,min_diag;
+
+  /* Physical limitation of the cut-off
+   * by half the length of the shortest box vector.
+   */
+  min_hv2 = 0.25*min(norm2(box[XX]),min(norm2(box[YY]),norm2(box[ZZ])));
+  
+  /* Limitation to the smallest diagonal element due to optimizations:
+   * checking only linear combinations of single box-vectors
+   * in the grid search and pbc_dx is a lot faster
+   * than checking all possible combinations.
+   */
+  min_diag = min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ]));
+  
+  return min(min_hv2,min_diag*min_diag);
+}
+
+void set_pbc(t_pbc *pbc,matrix box)
+{
   int  i,j,k,d;
-  real diagonal2;
+  real d2old,d2new,x;
   rvec try;
   char *ptr;
+
+  copy_mat(box,pbc->box);
+  pbc->bLimitDistance = FALSE;
+  pbc->max_cutoff2 = 0;
 
   ptr = check_box(box);
   if (ptr) {
     fprintf(stderr,   "Warning: %s\n",ptr);
     pr_rvecs(stderr,0,"         Box",box,DIM);
     fprintf(stderr,   "         Can not fix pbc.\n");
-    bSupported = FALSE;
+    pbc->ePBCDX = epbcdxUNSUPPORTED;
+    pbc->bLimitDistance = TRUE;
+    pbc->limit_distance2 = 0;
+  } else if (box[XX][XX]==0 || box[YY][YY]==0 || box[ZZ][ZZ]==0) {
+    pbc->ePBCDX = epbcdxNOPBC;
   } else {
-    bSupported = TRUE;
-
-    for(i=0; (i<DIM); i++) {
-      gl_fbox[i]  =  box[i][i];
-      gl_hbox[i]  =  gl_fbox[i]*0.5;
-      gl_mhbox[i] = -gl_hbox[i];
+    if (TRICLINIC(box)) {
+      pbc->ePBCDX = epbcdxTRICLINIC;
+    } else {
+      pbc->ePBCDX = epbcdxRECTANGULAR;
     }
-    bTriclinic = TRICLINIC(box);
-    if (bTriclinic) {
-      copy_mat(box,gl_box);
-      /* When a 'shifted' distance is within this number, it is the shortest
-       * possible distance of all shifts.
+    for(i=0; (i<DIM); i++) {
+      pbc->fbox_diag[i]  =  box[i][i];
+      pbc->hbox_diag[i]  =  pbc->fbox_diag[i]*0.5;
+      pbc->mhbox_diag[i] = -pbc->hbox_diag[i];
+    }
+    pbc->max_cutoff2 = max_cutoff2(box);
+    if (pbc->ePBCDX == epbcdxTRICLINIC) {
+      pbc->ntric_vec = 0;
+      /* We will only use single shifts, but we will check a few
+       * more shifts to see if there is a limiting distance
+       * above which we can not be sure of the correct distance.
        */
-      sure_dist2 = 0.25*min(sqr(box[XX][XX]),
-			    min(sqr(box[YY][YY]),sqr(box[ZZ][ZZ])));
-      /* Make shift vectors, assuming the box is not very skewed */
-      diagonal2 = norm2(gl_fbox);
-      ntric_vec = 0;
-      for(i=-2; i<=2; i++)
+      for(i=-1; i<=1; i++)
 	for(j=-2; j<=2; j++)
 	  for(k=-2; k<=2; k++)
 	    if ((i!=0) || (j!=0) || (k!=0)) {
-	      for(d=0; d<DIM; d++)
-		try[d] = i*box[XX][d]+j*box[YY][d]+k*box[ZZ][d];
-	      if (norm2(try) < diagonal2) {
-		if (ntric_vec >= nalloc) {
-		  nalloc+=20;
-		  srenew(tric_vec,nalloc);
-		  srenew(tric_shift,nalloc);
+	      d2old = 0;
+	      d2new = 0;
+	      for(d=0; d<DIM; d++) {
+		try[d] = i*box[XX][d] + j*box[YY][d] + k*box[ZZ][d];
+		/* Choose the vector within the brick around 0,0,0 that
+		 * will become the shortest due to shift try.
+		 */
+		if (try[d] < 0)
+		  x = min( pbc->hbox_diag[d],-try[d]);
+		else
+		  x = max(-pbc->hbox_diag[d],-try[d]);
+		d2old += sqr(x);
+		d2new += sqr(x + try[d]);
+	      }
+	      if (d2new < 0.999*d2old) {
+		/* The shift vector has decreased a distance. */
+		if (d2new > 1.001*pbc->max_cutoff2) {
+		  /* The resulting distance is larger than the maximum cutoff,
+		   * reject this shift vector, as there is no a priori limit
+		   * to the number of shifts that decrease distances.
+		   */
+		  if (!pbc->bLimitDistance || d2new <  pbc->limit_distance2)
+		    pbc->limit_distance2 = d2new;
+		  pbc->bLimitDistance = TRUE;
+		} else {
+		  /* Accept this shift vector. */
+		  if (pbc->ntric_vec >= MAX_NTRICVEC) {
+		    fprintf(stderr,"\nWARNING: Found more than %d triclinic correcion vectors, ignoring some.\n"
+			    "  There is probably something wrong with your box.\n",MAX_NTRICVEC);
+		    pr_rvecs(stderr,0,"         Box",box,DIM);
+		  } else {
+		    copy_rvec(try,pbc->tric_vec[pbc->ntric_vec]);
+		    pbc->tric_shift[pbc->ntric_vec][XX] = i;
+		    pbc->tric_shift[pbc->ntric_vec][YY] = j;
+		    pbc->tric_shift[pbc->ntric_vec][ZZ] = k;
+		    pbc->ntric_vec++;
+		  }
 		}
-	      copy_rvec(try,tric_vec[ntric_vec]);
-	      tric_shift[ntric_vec][XX] = i;
-	      tric_shift[ntric_vec][YY] = j;
-	      tric_shift[ntric_vec][ZZ] = k;
-	      ntric_vec++;
+#ifdef DEBUG
+		fprintf(stderr,"  tricvec %2d = %2d %2d %2d  %5.2f %5.2f %5.2f  %5.2f %5.2f %5.2f\n",
+			pbc->ntric_vec,i,j,k,
+			sqrt(pbc->max_cutoff2),sqrt(d2old),sqrt(d2new),
+			try[XX],try[YY],try[ZZ]);
+#endif
 	      }
 	    }
     }
   }
-  bInit   = TRUE;
 }
 
-int pbc_dx(const rvec x1, const rvec x2, rvec dx)
+int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 {
-  int i,j;
+  int  i,j;
   rvec dx_start,try;
   real d2min,d2try;
-  ivec ishift;
+  ivec ishift,ishift_start;
 
-  if (!bInit)
-    fatal_error(0,"pbc_dx called before init_pbc");
   rvec_sub(x1,x2,dx);
   clear_ivec(ishift);
-  if (bSupported) {
-    if (bTriclinic) {
-      for(i=DIM-1; i>=0; i--)
-	if (dx[i] > gl_hbox[i]) {
-	  for (j=i; j>=0; j--)
-	    dx[j] -= gl_box[i][j];
-	  ishift[i]--;
-	} else if (dx[i] <= gl_mhbox[i]) {
-	  for (j=i; j>=0; j--)
-	    dx[j] += gl_box[i][j];
-	  ishift[i]++;
-	}
-      /* dx is the distance in a rectangular box */
-      copy_rvec(dx,dx_start);
-      d2min = norm2(dx);
-      /* now try all possible shifts */
-      i=0;
-      while ((d2min > sure_dist2) && (i < ntric_vec)) {
-	rvec_add(dx_start,tric_vec[i],try);
-	d2try = norm2(try);
-	if (d2try < d2min) {
-	  copy_rvec(try,dx);
-	  ivec_inc(ishift,tric_shift[i]);
-	  d2min = d2try;
-	}
-	i++;
+
+  switch (pbc->ePBCDX) {
+  case epbcdxRECTANGULAR:
+    for(i=0; i<DIM; i++)
+      if (dx[i] > pbc->hbox_diag[i]) {
+	dx[i] -= pbc->fbox_diag[i];
+	ishift[i]--;
+      } else if (dx[i] <= pbc->mhbox_diag[i]) {
+	dx[i] += pbc->fbox_diag[i];
+	ishift[i]++;
       }
-    } else {
-      for(i=0; i<DIM; i++)
-	if (dx[i] > gl_hbox[i]) {
-	  dx[i] -= gl_fbox[i];
-	  ishift[i]--;
-	} else if (dx[i] <= gl_mhbox[i]) {
-	  dx[i] += gl_fbox[i];
-	  ishift[i]++;
-	}
+    break;
+  case epbcdxTRICLINIC:
+    for(i=DIM-1; i>=0; i--)
+      if (dx[i] > pbc->hbox_diag[i]) {
+	for (j=i; j>=0; j--)
+	  dx[j] -= pbc->box[i][j];
+	ishift[i]--;
+      } else if (dx[i] <= pbc->mhbox_diag[i]) {
+	for (j=i; j>=0; j--)
+	  dx[j] += pbc->box[i][j];
+	ishift[i]++;
+      }
+    /* dx is the distance in a rectangular box */
+    copy_rvec(dx,dx_start);
+    copy_ivec(ishift,ishift_start);
+    d2min = norm2(dx);
+    /* Now try all possible shifts, when the distance is within max_cutoff
+     * it must be the shortest possible distance.
+     */
+    i=0;
+    while ((d2min > pbc->max_cutoff2) && (i < pbc->ntric_vec)) {
+      rvec_add(dx_start,pbc->tric_vec[i],try);
+      d2try = norm2(try);
+      if (d2try < d2min) {
+	copy_rvec(try,dx);
+	ivec_add(ishift_start,pbc->tric_shift[i],ishift);
+	d2min = d2try;
+      }
+      i++;
     }
+    break;
+  case epbcdxNOPBC:
+  case epbcdxUNSUPPORTED:
+    break;
+  default:
+    fatal_error(0,"Internal error in pbx_dx, set_pbc has not been called");
+    break;
   }
 
   return IVEC2IS(ishift);
@@ -264,7 +332,6 @@ void calc_shifts(matrix box,rvec box_size,rvec shift_vec[])
 {
   int k,l,m,d,n,test;
   
-  init_pbc(box);
   for (m=0; (m<DIM); m++)
     box_size[m]=box[m][m];
   
@@ -577,16 +644,21 @@ void put_atoms_in_triclinic_unitcell(matrix box,int natoms,rvec x[])
     }
 }
 
-void put_atoms_in_compact_unitcell(matrix box,int natoms,rvec x[])
+char *put_atoms_in_compact_unitcell(matrix box,int natoms,rvec x[])
 {
+  t_pbc pbc;
   rvec box_center,dx;
   int  i;
 
-  init_pbc(box);
+  set_pbc(&pbc,box);
   calc_box_center(box,box_center);
   for(i=0; i<natoms; i++) {
-    pbc_dx(x[i],box_center,dx);
+    pbc_dx(&pbc,x[i],box_center,dx);
     rvec_add(box_center,dx,x[i]);
   }
+
+  return pbc.bLimitDistance ?
+    "WARNING: Could not put all atoms in the compact unitcell\n"
+    : NULL;
 }
 
