@@ -112,7 +112,8 @@ extern void init_md(t_commrec *cr,
 		    int nfile,t_filenm fnm[],char **traj,char **xtc_traj,
 		    int *fp_ene,FILE **fp_dgdl,
 		    t_mdebin **mdebin,t_groups *grps,rvec vcm,tensor force_vir,
-		    tensor shake_vir,t_mdatoms *mdatoms,bool *bNEMD);
+		    tensor shake_vir,t_mdatoms *mdatoms,
+		    rvec mu_tot,bool *bNEMD);
 		    
 extern void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,
 			 t_graph *graph,rvec x[]);
