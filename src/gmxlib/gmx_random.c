@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <gmx_random.h>
 
@@ -7,6 +10,7 @@
 #include <time.h>
 #include <math.h>
 
+#include "gmx_random_gausstable.h"
 
 #define RNG_N 624
 #define RNG_M 397
@@ -14,8 +18,16 @@
 #define RNG_UPPER_MASK 0x80000000UL /* most significant w-r bits */
 #define RNG_LOWER_MASK 0x7fffffffUL /* least significant r bits */
 
+/* Note that if you change the size of the Gaussian table you will also
+ * have to generate new initialization data for the table in
+ * gmx_random_gausstable.h
+ *
+ * We have included the routine generate_gaussian_table() in this file
+ * for convenience - use it if you need a different size of the table.
+ */
 #define GAUSS_TABLE 14 /* the size of the gauss table is 2^GAUSS_TABLE */
 #define GAUSS_SHIFT (32 - GAUSS_TABLE)
+
 
 struct gmx_rng {
   unsigned int  mt[624];  
@@ -24,11 +36,10 @@ struct gmx_rng {
   double        gauss_saved;
 };
 
-struct gmx_gaussdata {
-  gmx_rng_t rng;
-  real      *table;
-};
- 
+
+
+
+
 gmx_rng_t 
 gmx_rng_init(unsigned int seed)
 {
@@ -246,32 +257,46 @@ gmx_rng_uniform_real(gmx_rng_t rng)
 }
 
 
-/* Initialize a gaussian random number generator by copying the seed
- * and calculating the gaussian table.
- * The routine returns a handle to the new generator.
- */
-gmx_gaussdata_t
-gmx_rng_init_gauss_tab(int seed)
-{
-  gmx_gaussdata_t gaussdata;
-  int n,nh,i;
-  double invn,fac,x,invgauss,det,dx;
-  
-  gaussdata = (gmx_gaussdata_t)malloc(sizeof(struct gmx_gaussdata));
-  /* Initialize the random generator */
-  gaussdata->rng = gmx_rng_init(seed);
-  n = 1 << GAUSS_TABLE;
-  gaussdata->table = (real *)malloc(n*sizeof(real));
 
+real 
+gmx_rng_gaussian_table(gmx_rng_t rng)
+{
+  unsigned int i;
+  float f;
+  
+  
+  f = gmx_rng_uniform_real(rng);
+  
+  i = f*(1 << GAUSS_TABLE);
+  
+  /* The Gaussian table is a static constant in this file */
+  return gaussian_table[i];
+}
+
+
+/*
+ * Print a lookup table for Gaussian numbers with 4 entries on each
+ * line, formatted for inclusion in this file. Size is 2^bits.
+ */
+void
+print_gaussian_table(int bits)
+{
+  int n,nh,i,j;
+  double invn,fac,x,invgauss,det,dx;
+  real  *table;
+  
+  n = 1 << bits;
+  table = (real *)malloc(n*sizeof(real));
+  
   /* Fill a table of size n such that random draws from it
-   * produce a Gaussian distribution.
-   * We integrate the Gaussian distribution G approximating:
-   *   integral(x->x+dx) G(y) dy
-   * with:
-   *   G(x) dx + G'(x) dx^2/2 = G(x) dx - G(x) x dx^2/2
-   * Then we need to find dx such that the integral is 1/n.
-   * The last step uses dx = 1/x as the approximation is not accurate enough.
-   */
+    * produce a Gaussian distribution.
+    * We integrate the Gaussian distribution G approximating:
+    *   integral(x->x+dx) G(y) dy
+    * with:
+    *   G(x) dx + G'(x) dx^2/2 = G(x) dx - G(x) x dx^2/2
+    * Then we need to find dx such that the integral is 1/n.
+    * The last step uses dx = 1/x as the approximation is not accurate enough.
+    */
   invn = 1.0/n;
   fac = sqrt(2*M_PI);
   x = 0.5*fac*invn;
@@ -288,34 +313,20 @@ gmx_rng_init_gauss_tab(int seed)
       }
       x = x + dx;
     }
-    gaussdata->table[nh-1-i] = -x;
-    gaussdata->table[nh+i]   =  x;
+    table[nh-1-i] = -x;
+    table[nh+i]   =  x;
   }
-
-  return gaussdata;
+  printf("static const real *\ngaussian_table[%d] = {\n",n);
+  for(i=0;i<n;i+=4) {
+    printf("  ");
+    for(j=0;j<4;j++) {
+      printf("%14.7e",table[i+j]);
+      if(i+j<(n-1))
+	printf(",");
+    }
+    printf("\n");
+  }
+  printf("};\n");
+  free(table);
 }
 
-
-real 
-gmx_rng_gauss_tab(gmx_gaussdata_t gaussdata)
-{
-  unsigned int i;
-
-  i = gmx_rng_uniform_uint32(gaussdata->rng);
-  
-  return  gaussdata->table[i >> GAUSS_SHIFT];
-}
-
-
-
-/* Release all the resources used for the generator */
-void 
-gmx_rng_destroy_gauss_tab(gmx_gaussdata_t gaussdata)
-{
-  gmx_rng_destroy(gaussdata->rng);
-  free(gaussdata->table);
-  free(gaussdata);
-  gaussdata=NULL;
-  
-  return;
-}

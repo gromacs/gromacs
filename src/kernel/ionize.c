@@ -487,7 +487,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   static int   dq_tot,nkd_tot,ephot,mode;
   static t_cross_atom *ca;
   static int   Eindex=-1;
-  static gmx_gaussdata_t gaussrand=NULL;
+  static gmx_rng_t gaussrand=NULL;
   
   real factor,E_lost=0;
   real pt,ptot,pphot,pcoll[ecollNR],tmax;
@@ -507,7 +507,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     ephot    = ir->userint2;   /* Energy of the photons                 */
     mode     = ir->userint3;   /* Mode of ionizing                      */
     interval = 0.001*ir->userint4;   /* Interval between pulses (ps)    */
-    gaussrand=gmx_rng_init_gauss_tab(ionize_seed);
+    gaussrand=gmx_rng_init(ionize_seed);
    
     if ((width <= 0) || (nphot <= 0))
       fatal_error(0,"Your parameters for ionization are not set properly\n"
@@ -646,7 +646,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	
 	/* Get parameters for photoelestic effect */
 	/* Note that in the article this is called 2 theta */
-	theta = DEG2RAD*gmx_rng_gauss_tab(gaussrand)*26.0+70.0;
+	theta = DEG2RAD*gmx_rng_gaussian_table(gaussrand)*26.0+70.0;
 	
 	phi   = 2*M_PI*rando(&ionize_seed);
 	

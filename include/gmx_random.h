@@ -26,14 +26,6 @@
 typedef struct gmx_rng *
 gmx_rng_t;
 
-/* Abstract data type for a tabulated gaussian random number generator
- *
- * This is a handle to the full state of a random number generator. 
- * You can not access anything inside the t_Gausdata structure outside this
- * file.
- */
-typedef struct gmx_gaussdata *
-gmx_gaussdata_t;
 
 /*! \brief Create a new RNG, seeded from a single integer.
  *
@@ -188,32 +180,25 @@ real
 gmx_rng_gaussian_real(gmx_rng_t rng);
 
 
-/* Initialize a gaussian random number generator by copying the seed
- * and calculating the gaussian table.
- * The routine returns a handle to the new generator.
- *
- * threadsafe: uses gmx_rng_init_array, see above
- */
-gmx_gaussdata_t
-gmx_rng_init_gauss_tab(int seed);
-
 
 /* Return a new gaussian random number with expectation value
  * 0.0 and standard deviation 1.0. This routine uses a table
  * lookup for maximum speed.
  *
- * threadsafe: uses gmx_rng_uniform_uint32, see above
- */
-real 
-gmx_rng_gauss_tab(gmx_gaussdata_t data);
-
-
-/* Release all the resources used for the generator.
+ * WARNING: The lookup table is 16k by default, which means
+ *          the granularity of the random numbers is coarser
+ *	    than what you get from gmx_rng_gauss_real().
+ *          In most cases this is no problem whatsoever,
+ *          and it is particularly true for BD/SD integration.
+ *	    Note that you will NEVER get any really extreme 
+ *          numbers: the maximum absolute value returned is
+ *          4.0255485.
  *
- * threadsafe: uses gmx_rng_destroy, see above
+ * threadsafe: yes
  */
-void 
-gmx_rng_destroy_gauss_tab(gmx_gaussdata_t data);
+real
+gmx_rng_gaussian_table(gmx_rng_t rng);
+
 
 #endif /* _GMX_RANDOM_H_ */
 

@@ -270,7 +270,7 @@ static void do_update_sd(int start,int homenr,
                          unsigned short cTC[],
                          rvec x[],rvec xprime[],rvec v[],rvec vold[],rvec f[],
                          int ngtc,real tau_t[],real ref_t[],
-                         gmx_gaussdata_t gaussrand, bool bFirstHalf)
+                         gmx_rng_t gaussrand, bool bFirstHalf)
 {
   typedef struct {
     real V;
@@ -321,11 +321,11 @@ static void do_update_sd(int start,int homenr,
         if(bFirstHalf) {
 
           if(bFirst)
-            X[n-start][d] = ism*sig[gt].X*gmx_rng_gauss_tab(gaussrand);
+            X[n-start][d] = ism*sig[gt].X*gmx_rng_gaussian_table(gaussrand);
 
           Vmh = X[n-start][d]*sdc[gt].d/(tau_t[gt]*sdc[gt].c) 
-                + ism*sig[gt].Yv*gmx_rng_gauss_tab(gaussrand);
-          V[n-start][d] = ism*sig[gt].V*gmx_rng_gauss_tab(gaussrand);
+                + ism*sig[gt].Yv*gmx_rng_gaussian_table(gaussrand);
+          V[n-start][d] = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand);
 
           v[n][d] = vn*sdc[gt].em 
                     + (invmass[n]*f[n][d] + accel[ga][d])*tau_t[gt]*(1 - sdc[gt].em)
@@ -340,8 +340,8 @@ static void do_update_sd(int start,int homenr,
           (xprime[n][d] - x[n][d])/(tau_t[gt]*(sdc[gt].eph - sdc[gt].emh));  
 
           Xmh = V[n-start][d]*tau_t[gt]*sdc[gt].d/(sdc[gt].em-1) 
-                + ism*sig[gt].Yx*gmx_rng_gauss_tab(gaussrand);
-          X[n-start][d] = ism*sig[gt].X*gmx_rng_gauss_tab(gaussrand);
+                + ism*sig[gt].Yx*gmx_rng_gaussian_table(gaussrand);
+          X[n-start][d] = ism*sig[gt].X*gmx_rng_gaussian_table(gaussrand);
 
           xprime[n][d] += X[n-start][d] - Xmh;
 
@@ -365,7 +365,7 @@ static void do_update_bd(int start,int homenr,double dt,
                          rvec x[],rvec xprime[],rvec v[],rvec vold[],
                          rvec f[],real temp,real fr,
                          int ngtc,real tau_t[],real ref_t[],
-                         gmx_gaussdata_t gaussrand)
+                         gmx_rng_t gaussrand)
 {
   int    gf,gt;
   real   vn;
@@ -391,11 +391,11 @@ static void do_update_bd(int start,int homenr,double dt,
       vold[n][d]     = v[n][d];
       if((ptype[n]!=eptDummy) && (ptype[n]!=eptShell) && !nFreeze[gf][d]) {
         if(fr)
-          vn         = invfr*f[n][d] + rfac*gmx_rng_gauss_tab(gaussrand);
+          vn         = invfr*f[n][d] + rfac*gmx_rng_gaussian_table(gaussrand);
         else
           /* NOTE: invmass = 1/(mass*fric_const*dt) */
           vn         = invmass[n]*f[n][d]*dt 
-                       + sqrt(invmass[n])*rf[gt]*gmx_rng_gauss_tab(gaussrand);
+                       + sqrt(invmass[n])*rf[gt]*gmx_rng_gaussian_table(gaussrand);
 
         v[n][d]      = vn;
         xprime[n][d] = x[n][d]+vn*dt;
@@ -590,7 +590,7 @@ void update(int          natoms,  /* number of atoms in simulation */
   int              i,n,m,g;
   matrix           M;
   t_inputrec       *ir=&(parm->ir);
-  static gmx_gaussdata_t sd_gaussrand=NULL;
+  static gmx_rng_t sd_gaussrand=NULL;
   
   if(bFirst) {
     bHaveConstr = init_constraints(stdlog,top,&(parm->ir),md,start,homenr,
@@ -604,7 +604,7 @@ void update(int          natoms,  /* number of atoms in simulation */
 
     /* Initiate random number generator for stochastic and brownian dynamic integrators */
     if(ir->eI==eiSD || ir->eI==eiBD) 
-      sd_gaussrand = gmx_rng_init_gauss_tab(ir->ld_seed);
+      sd_gaussrand = gmx_rng_init(ir->ld_seed);
     
     /* Allocate memory for xold, original atomic positions
      * and for xprime.
