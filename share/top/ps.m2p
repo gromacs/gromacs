@@ -1,36 +1,41 @@
 ; Command line options of xpm2ps override the parameters in this file
-black&white              = no           ; Obsolete
-titlefont                = Helvetica    ; A PostScript Font
-titlefontsize            = 20           ; Font size (pt)
-legend                   = yes          ; Show the legend
-legendfont               = Helvetica    ; A PostScript Font
-legendlabel              =              ; Used when there is none in the .xpm
-legend2label             =              ; Used when merging two xpm's 
-legendfontsize           = 14           ; Font size (pt)
-xbox                     = 2.0          ; x-size of a matrix element
-ybox                     = 2.0          ; y-size of a matrix element
-matrixspacing            = 20.0         ; Space between 2 matrices
-xoffset                  = 0.0          ; Between matrix and bounding box
-yoffset                  = 0.0          ; Between matrix and bounding box
-x-major                  = 20           ; Major ticks on x axis every .. frames
-x-minor                  = 5            ; Id. Minor ticks
-x-firstmajor             = 0            ; First frame for major tick
-x-majorat0               = no           ; Major tick at first frame
-x-majorticklen           = 8.0          ; x-majorticklength
-x-minorticklen           = 4.0          ; x-minorticklength
-x-label                  =              ; Used when there is none in the .xpm
-x-fontsize               = 16           ; Font size (pt)
-x-font                   = Helvetica    ; A PostScript Font 
-x-tickfontsize           = 10           ; Font size (pt)
-x-tickfont               = Helvetica    ; A PostScript Font
-y-major                  = 20
-y-minor                  = 5
-y-firstmajor             = 0
-y-majorat0               = no
-y-majorticklen           = 8.0
-y-minorticklen           = 4.0
-y-label                  = 
-y-fontsize               = 16
-y-font                   = Helvetica
-y-tickfontsize           = 10
-y-tickfont               = Helvetica
+;--- Matrix options ---
+black&white	no		; Obsolete
+titlefont	Helvetica	; Matrix title Postscript Font name
+titlefontsize	20.0		; Matrix title Font size (pt)
+legend		yes		; Show the legend
+legendfont	Helvetica	; Legend name Postscript Font name
+legendfontsize	14.0		; Legend name Font size (pt)
+legendlabel			; Used when there is none in the .xpm
+legend2label			; Id. when merging two xpm's 
+xbox		2.0		; x-size of a matrix element
+ybox		2.0		; y-size of a matrix element
+matrixspacing	20.0		; Space between 2 matrices
+xoffset		0.0		; Between matrix and bounding box
+yoffset		0.0		; Between matrix and bounding box
+;--- Axis options; x-axis ---
+x-lineat0value	= no		; Draw line at matrix value==0
+x-major		= 20.0		; Major tick spacing
+x-minor		= 5.0		; Id. Minor ticks
+x-firstmajor	= 0.0		; Offset for major tick
+x-majorat0	= no		; Additional Major tick at first frame
+x-majorticklen	= 8.0		; Length of major ticks
+x-minorticklen	= 4.0		; Id. Minor ticks
+x-label		=		; Used when there is none in the .xpm
+x-font		= Helvetica	; Axis label PostScript Font 
+x-fontsize	= 16		; Axis label Font size (pt)
+x-tickfont	= Helvetica	; Tick label PostScript Font
+x-tickfontsize	= 10		; Tick label Font size (pt)
+;--- y-axis options ---
+y-lineat0value	= no
+y-major		= 20.0
+y-minor		= 5.0
+y-firstmajor	= 0.0
+y-majorat0	= no
+y-majorticklen	= 8.0
+y-minorticklen	= 4.0
+y-label		= 
+y-fontsize	= 16
+y-font		= Helvetica
+y-tickfontsize	= 10
+y-tickfont	= Helvetica
