@@ -197,7 +197,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
   t_mapping *map;
   char *line=NULL,*str,buf[256];
   int i,m,col_len,nch;
-  long r,g,b;
+  unsigned long r,g,b;
   double u;
   char *fg;
   bool bGetOnWithIt;
@@ -262,7 +262,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
 	col_len++;
       if (col_len==6) {
 	sscanf(line,"%s %*c #%2x%2x%2x",
-	       buf,&(unsigned int)r,&(unsigned int)g,&(unsigned int)b);
+	       buf,&r,&g,&b);
 	map[m].code.c1=buf[0];
 	if (nch==1)
 	  map[m].code.c2=0;
@@ -274,7 +274,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
       }
       else if (col_len==12) {
 	sscanf(line,"%s %*c #%4x%4x%4x",
-	       buf,&(unsigned int)r,&(unsigned int)g,&(unsigned int)b);
+	       buf,&r,&g,&b);
 	map[m].code.c1=buf[0];
 	if (nch==1)
 	  map[m].code.c2=0;
