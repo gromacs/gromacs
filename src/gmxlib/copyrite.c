@@ -266,7 +266,7 @@ void please_cite(FILE *fp,char *key)
    "H. J. C. Berendsen, D. van der Spoel and R. van Drunen",
    "GROMACS: A message-passing parallel molecular dynamics implementation",
    "Comp. Phys. Comm.",
-   "95 1995 43 56",
+   "91 1995 43 56",
    "Berendsen84a",
    "H. J. C. Berendsen, J. P. M. Postma, A. DiNola and J. R. Haak",
    "Molecular dynamics with coupling to an external bath",
