@@ -32,6 +32,7 @@
 
 #include <math.h>
 #include <ctype.h>
+#include <assert.h>
 #include "string2.h"
 #include "sysstuff.h"
 #include "typedefs.h"
@@ -56,7 +57,8 @@
 #include "matio.h"
 
 static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl, 
-		       char *mcl,real cut,int nskip,int nlevels,
+		       char *mcl,char *histo,
+		       real cut,int nskip,int nlevels,
 		       t_rgb rmid,t_rgb rhi)
 {
   FILE    *fp,*gp,*hp;
@@ -65,9 +67,11 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl,
   rvec    *x=NULL,dx;
   matrix  box;
   char    *gname;
-  real    t,dx2,cut2,**cs_dist=NULL,*t_x=NULL,*t_y,mid,cav;
+  /* Cluster size distribution (matrix) */
+  real    **cs_dist=NULL;
+  real    t,dx2,cut2,*t_x=NULL,*t_y,mid,cav;
   int     i,j,k,ai,aj,ak,ci,cj,nframe,nclust,n_x,n_y,max_size=0;
-  int     *clust_index,*clust_size,max_clust_size,nav;
+  int     *clust_index,*clust_size,max_clust_size,nav,nhisto;
   t_rgb   rlo = { 1.0, 1.0, 1.0 };
   
   fp = xvgropen(ncl,"Number of clusters","Time (ps)","N");
@@ -87,27 +91,43 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl,
     if ((nskip == 0) || ((nskip > 0) && ((nframe % nskip) == 0))) {
       init_pbc(box);
       max_clust_size = 1;
+      
+      /* Put all atoms in their own cluster, with size 1 */
       for(i=0; (i<nindex); i++) {
+	/* Cluster index is indexed with atom index number */
 	clust_index[i] = i;
+	/* Cluster size is indexed with cluster number */
 	clust_size[i]  = 1;
       }
       
+      /* Loop over atoms */
       for(i=0; (i<nindex); i++) {
 	ai = index[i];
 	ci = clust_index[i];
+	
+	/* Loop over atoms (only half a matrix) */
 	for(j=i+1; (j<nindex); j++) {
 	  cj = clust_index[j];
+	  
+	  /* If they are not in the same cluster already */
 	  if (ci != cj) {
 	    aj = index[j];
+	    
+	    /* Compute distance */
 	    pbc_dx(x[ai],x[aj],dx);
 	    dx2 = iprod(dx,dx);
+	    
+	    /* If distance less than cut-off */
 	    if (dx2 < cut2) {
-	      /* Merge clusters */
+	      /* Merge clusters: check for all atoms whether they are in 
+	       * cluster cj and if so, put them in ci
+	       */
 	      for(k=j; (k<nindex); k++) {
 		if (clust_index[k] == cj) {
+		  assert(clust_size[cj] > 0);
 		  clust_size[cj]--;
 		  clust_index[k] = ci;
-		  clust_size[i]++;
+		  clust_size[ci]++;
 		}
 	      }
 	    }
@@ -124,10 +144,11 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl,
       nav    = 0;
       for(i=0; (i<nindex); i++) {
 	ci = clust_size[i];
-	if (ci > max_clust_size) max_clust_size = ci;
+	if (ci > max_clust_size) 
+	  max_clust_size = ci;
 	if (ci > 0) {
 	  nclust++;
-	  cs_dist[n_x-1][ci-1] += 100.0*ci/(real)nindex;
+	  cs_dist[n_x-1][ci-1] += 1.0;
 	  max_size = max(max_size,ci);
 	  if (ci > 1) {
 	    cav += ci;
@@ -159,7 +180,21 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl,
 	     n_x,max_size-1,t_x,t_y,cs_dist,0,mid,100.0,
 	     rlo,rmid,rhi,&nlevels);
   fclose(fp);
-	        
+
+  fp = xvgropen(histo,"Cluster size distribution","Cluster size","()");
+  nhisto = 0;
+  for(j=0; (j<max_size); j++) {
+    real nelem = 0;
+    for(i=0; (i<n_x); i++)
+      nelem += cs_dist[i][j];
+    fprintf(fp,"%5d  %8.3f\n",j+1,nelem/n_x);
+    nhisto += (int)((j+1)*nelem/n_x);
+  }
+  fprintf(fp,"%5d  %8.3f\n",j+1,0.0);
+  fclose(fp);
+
+  fprintf(stderr,"Total number of atoms in clusters = %d\n",nhisto);
+  
   sfree(clust_index);
   sfree(clust_size);
   sfree(index);
@@ -195,12 +230,13 @@ int gmx_clustsize(int argc,char *argv[])
   t_rgb      rgblo,rgbhi;
   
   t_filenm   fnm[] = {
-    { efTRX, "-f",  NULL,    ffREAD  },
-    { efNDX, NULL,  NULL,    ffOPTRD },
-    { efXPM, "-o", "csize",  ffWRITE },
-    { efXVG, "-nc","nclust", ffWRITE },
-    { efXVG, "-mc","maxclust", ffWRITE },
-    { efXVG, "-ac","avclust", ffWRITE }
+    { efTRX, "-f",  NULL,         ffREAD  },
+    { efNDX, NULL,  NULL,         ffOPTRD },
+    { efXPM, "-o", "csize",       ffWRITE },
+    { efXVG, "-nc","nclust",      ffWRITE },
+    { efXVG, "-mc","maxclust",    ffWRITE },
+    { efXVG, "-ac","avclust",     ffWRITE },
+    { efXVG, "-hc","histo-clust", ffWRITE }
   };
 #define NFILE asize(fnm)
   
@@ -213,7 +249,8 @@ int gmx_clustsize(int argc,char *argv[])
   rgbhi.r = rhi[XX],rgbhi.g = rhi[YY],rgbhi.b = rhi[ZZ];
     
   clust_size(fnNDX,ftp2fn(efTRX,NFILE,fnm),ftp2fn(efXPM,NFILE,fnm),
-	     opt2fn("-nc",NFILE,fnm),opt2fn("-ac",NFILE,fnm),opt2fn("-mc",NFILE,fnm),
+	     opt2fn("-nc",NFILE,fnm),opt2fn("-ac",NFILE,fnm),
+	     opt2fn("-mc",NFILE,fnm),opt2fn("-hc",NFILE,fnm),
 	     cutoff,nskip,nlevels,rgblo,rgbhi);
 
   thanx(stderr);
