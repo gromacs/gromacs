@@ -40,16 +40,18 @@ static char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
 
 static MPI_Request mpi_req_tx,mpi_req_rx;
 
+/*#define DEBUG*/
+
 void mpiio_tx(int pid,void *buf,int bufsize)
 {
   int tag;
   
 #ifdef DEBUG
-  fprintf(stdlog,"mpiio_tx: pid=%d, buf=%x, bufsize=%d\n",pid,buf,bufsize);
+  fprintf(stderr,"mpiio_tx: pid=%d, buf=%x, bufsize=%d\n",pid,buf,bufsize);
 #endif
   tag = 0;
   if (MPI_Isend(buf,bufsize,MPI_BYTE,pid,tag,MPI_COMM_WORLD,&mpi_req_tx) != 0)
-    fatal_error(0,"MPI_Send Failed !");
+    fatal_error(0,"MPI_Isend Failed !");
 }
 
 void mpiio_tx_wait(int pid)
@@ -66,11 +68,13 @@ void mpiio_txs(int pid,void *buf,int bufsize)
   int tag;
 
 #ifdef DEBUG
-  fprintf(stdlog,"mpiio_txs: pid=%d, buf=%x, bufsize=%d\n",pid,buf,bufsize);
+  fprintf(stderr,"mpiio_txs: pid=%d, buf=%x, bufsize=%d\n",pid,buf,bufsize);
 #endif
   tag = 0;
   if (MPI_Send(buf,bufsize,MPI_BYTE,pid,tag,MPI_COMM_WORLD) != 0)
     fatal_error(0,"MPI_Send Failed !");
+  /* mpiio_tx(pid,buf,bufsize);
+     mpiio_tx_wait(pid);*/
 }
 
 void mpiio_rx(int pid,void *buf,int bufsize)
@@ -78,7 +82,7 @@ void mpiio_rx(int pid,void *buf,int bufsize)
   int        tag;
 
 #ifdef DEBUG
-  fprintf(stdlog,"mpiio_rx: pid=%d, buf=%x, bufsize=%d\n",pid,buf,bufsize);
+  fprintf(stderr,"mpiio_rx: pid=%d, buf=%x, bufsize=%d\n",pid,buf,bufsize);
 #endif
   tag = 0;
   if (MPI_Irecv( buf, bufsize, MPI_BYTE, pid, tag, MPI_COMM_WORLD, &mpi_req_rx) != 0 )
@@ -100,11 +104,13 @@ void mpiio_rxs(int pid,void *buf,int bufsize)
   int        tag;
 
 #ifdef DEBUG
-  fprintf(stdlog,"mpiio_rxs: pid=%d, buf=%x, bufsize=%d\n",pid,buf,bufsize);
+  fprintf(stderr,"mpiio_rxs: pid=%d, buf=%x, bufsize=%d\n",pid,buf,bufsize);
 #endif
   tag = 0;
   if (MPI_Recv( buf, bufsize, MPI_BYTE, pid, tag, MPI_COMM_WORLD, &stat) != 0 )
     fatal_error(0,"MPI_Recv Failed !");
+  /* mpiio_rx(pid,buf,bufsize);
+     mpiio_rx_wait(pid);*/
 }
 
 int mpiio_setup(int *argc,char **argv,int *nprocs)
@@ -187,4 +193,6 @@ void mpi_abort(int pid,int nprocs,int errorno)
   MPI_Abort(MPI_COMM_WORLD,errorno);
 }
 
-
+#ifdef DEBUG
+#undef DEBUG
+#endif

@@ -76,29 +76,10 @@ static bool      bIonize      = FALSE;
 static bool      bInteractive = FALSE;
 static t_commrec *cr_msim;
 
-char *par_fn(char *base,int ftp,t_commrec *cr)
-{
-  static char buf[256];
-  
-  /* Copy to buf, and strip extension */
-  strcpy(buf,base);
-  buf[strlen(base)-4] = '\0';
-  
-  /* Add processor info */
-  if (PAR(cr)) 
-    sprintf(buf+strlen(buf),"-P%d",cr->pid);
-  strcat(buf,".");
-  
-  /* Add extension again */
-  strcat(buf,(ftp == efTPX) ? "tpr" : (ftp == efENX) ? "edr" : ftp2ext(ftp));
-    
-  return buf;
-}
-
 t_commrec *init_msim(t_commrec *cr,int nfile,t_filenm fnm[])
 {
   t_commrec *cr_new;
-  int  i;
+  int  i,ftp;
   char *buf;
   
   cr_msim = cr;
@@ -110,12 +91,20 @@ t_commrec *init_msim(t_commrec *cr,int nfile,t_filenm fnm[])
   
   /* Patch file names (except log which has been done already) */
   for(i=0; (i<nfile); i++) {
-    if (fnm[i].ftp != efLOG) {
+    /* Becauyse of possible multiple extensions per type we must look 
+     * at the actual file name 
+     */
+    ftp = fn2ftp(fnm[i].fn);
+    if (ftp != efLOG) {
+#ifdef DEBUGPAR
       fprintf(stderr,"Old file name: %s",fnm[i].fn);
-      buf = par_fn(fnm[i].fn,fnm[i].ftp,cr);
+#endif
+      buf = par_fn(fnm[i].fn,ftp,cr);
       sfree(fnm[i].fn);
       fnm[i].fn = strdup(buf);
+#ifdef DEBUGPAR
       fprintf(stderr,", new: %s\n",fnm[i].fn);
+#endif
     }
   }
   
@@ -474,34 +463,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   return start_t;
 }
 
-static void comm_args(t_commrec *cr,int *argc,char ***argv)
-{
-  int i,len;
-  
-  if (!MASTER(cr))
-    *argc=0;
-  gmx_sumi(1,argc,cr);
-  if (!MASTER(cr))
-    srenew(*argv,*argc+1);
-    
-  for(i=0; (i<*argc); i++) {
-    if (MASTER(cr)) {
-      len = strlen((*argv)[i])+1;
-      gmx_txs(cr->left,&len,sizeof(len));
-      gmx_txs(cr->left,(*argv)[i],len);
-    }
-    else {
-      gmx_rxs(cr->right,&len,sizeof(len));
-      if (cr->pid < cr->nprocs-1)
-	gmx_txs(cr->left,&len,sizeof(len));
-      snew((*argv)[i],len);
-      gmx_rxs(cr->right,(*argv)[i],len);
-      if (cr->pid < cr->nprocs-1)
-	gmx_txs(cr->left,(*argv)[i],len);
-    }
-  }
-}
-
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -555,17 +516,12 @@ int main(int argc,char *argv[])
   ulong     Flags;
   t_edsamyn edyn;
   
-  cr          = init_par(&argc,argv);
+  cr          = init_par(&argc,&argv);
   bVerbose    = bVerbose && MASTER(cr);
   edyn.bEdsam = FALSE;
   
   debug_par();
 
-  if (PAR(cr))
-    comm_args(cr,&argc,&argv);
-    
-  debug_par();
-    
   Flags = PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS;
   if (MASTER(cr)) 
     CopyRight(stderr,argv[0]);
@@ -577,13 +533,17 @@ int main(int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   
   debug_par();
-		    
+
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
 
+  debug_par();
+  
   if (bMultiSim && PAR(cr)) {
     cr = init_msim(cr,NFILE,fnm);
   }
     
+  debug_par();  
+  
   if (MASTER(cr)) {
     CopyRight(stdlog,argv[0]);
     please_cite(stdlog,"Berendsen95a");
@@ -594,6 +554,10 @@ int main(int argc,char *argv[])
     
   mdrunner(cr,NFILE,fnm,bVerbose,bCompact,nDLB,FALSE,nstepout,&edyn);
   
+#ifdef USE_MPI
+  MPI_Finalize();
+#endif  
+
   exit(0);
   
   return 0;

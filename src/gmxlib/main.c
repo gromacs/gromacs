@@ -39,8 +39,9 @@ static char *SRCID_main_c = "$Id$";
 #include "main.h"
 #include "macros.h"
 #include "futil.h"
+#include "filenm.h"
 
-#define DEBUG  
+/*#define DEBUGPAR */
 #define BUFSIZE	1024
 
 FILE *stdlog=NULL;
@@ -87,14 +88,14 @@ static int get_pid(FILE *log,int left,int right,int *pid,int *nprocs)
   min_pid=send_pid;
   min_index=*nprocs;
   do {
-#ifdef DEBUG
+#ifdef DEBUGPAR
     fprintf(log,"Sending: %d\n",send_pid);
 #endif
     gmx_tx(left,record(send_pid));
     gmx_rx(right,record(receive_pid));
     gmx_tx_wait(left);
     gmx_rx_wait(right);
-#ifdef DEBUG
+#ifdef DEBUGPAR
     fprintf(log,"Received: %d\n",receive_pid);
 #endif
     if (send_pid<min_pid) {
@@ -105,7 +106,7 @@ static int get_pid(FILE *log,int left,int right,int *pid,int *nprocs)
     send_pid=receive_pid;
   } while (receive_pid!=*pid);
   
-#ifdef DEBUG  
+#ifdef DEBUGPAR  
   fprintf(log,"min_index=%d\n",min_index);
   fprintf(log,"nprocs   =%d\n",*nprocs);
   fprintf(log,"pid      =%d\n",*pid);
@@ -114,7 +115,7 @@ static int get_pid(FILE *log,int left,int right,int *pid,int *nprocs)
   for (i=min_index; (*pid)!=pids[i%(*nprocs)]; i++)
     ;
   (*pid)=(i-min_index+(*nprocs))%(*nprocs);
-#ifdef DEBUG
+#ifdef DEBUGPAR
   fprintf(log,"min_index=%d\n",min_index);
   fprintf(log,"nprocs   =%d\n",*nprocs);
   fprintf(log,"pid      =%d\n",*pid);
@@ -129,21 +130,43 @@ static int get_pid(FILE *log,int left,int right,int *pid,int *nprocs)
   return 1;
 }
 
+char *par_fn(char *base,int ftp,t_commrec *cr)
+{
+  static char buf[256];
+  
+  /* Copy to buf, and strip extension */
+  strcpy(buf,base);
+  buf[strlen(base)-4] = '\0';
+  
+  /* Add processor info */
+  if (PAR(cr)) 
+    sprintf(buf+strlen(buf),"%d",cr->pid);
+  strcat(buf,".");
+  
+  /* Add extension again */
+  strcat(buf,(ftp == efTPX) ? "tpr" : (ftp == efENX) ? "edr" : ftp2ext(ftp));
+  
+  return buf;
+}
+
 void open_log(char *lognm,t_commrec *cr)
 {
-  int  len,testlen;
-  char buf[256];
+  int  len,testlen,pid;
+  char *buf,*host;
   
-  where();
-  
+#ifdef DEBUGPAR
+  debug_par();
   fprintf(stderr,"OPEN_LOG: cr->pid = %d\n",cr->pid);
+#endif
   /* Communicate the filename for logfile */
   if (cr->nprocs > 1) {
     if (MASTER(cr)) {
       len = strlen(lognm)+1;
       gmx_txs(cr->right,record(len));
       gmx_rxs(cr->left,record(testlen));
+#ifdef DEBUGPAR
       fprintf(stderr,"cr->pid = %d, len = %d\n",cr->pid,testlen);
+#endif
       gmx_txs(cr->right,lognm,len);
       gmx_rxs(cr->left,lognm,len);
       if (len != testlen)
@@ -152,7 +175,9 @@ void open_log(char *lognm,t_commrec *cr)
     }
     else {
       gmx_rxs(cr->left,record(len));
+#ifdef DEBUGPAR
       fprintf(stderr,"cr->pid = %d, len = %d\n",cr->pid,len);
+#endif
       gmx_txs(cr->right,record(len));
       snew(lognm,len);
       gmx_rxs(cr->left,lognm,len);
@@ -160,30 +185,74 @@ void open_log(char *lognm,t_commrec *cr)
     }
   }
   
-  /* Since log always ends with '.log' let's use this info */
-  where();
-  strcpy(buf,lognm);
-  if (cr->nprocs > 1) {
-    len=strlen(buf);
-    sprintf(buf+len-4,"%d.log",cr->pid);
-  }
-  stdlog=ffopen(buf,"w");
-  fprintf(stdlog,"Log file opened on pid %d, nprocs = %d",
-	  cr->pid,cr->nprocs);
-  if (getenv("HOST"))
-    fprintf(stdlog,", host %s",getenv("HOST"));
-#ifndef NO_GETPID
-  fprintf(stdlog,", process id %ld",getpid());
+#ifdef DEBUGPAR
+  debug_par();
 #endif
-  fprintf(stdlog,"\n");
+  /* Since log always ends with '.log' let's use this info */
+  buf    = par_fn(lognm,efLOG,cr);
+  stdlog = ffopen(buf,"w");
+  
+  /* Get some machine parameters */
+  host = getenv("HOST");
+#ifndef NO_GETPID
+  pid = getpid();
+#else
+  pid = 0;
+#endif
+  fprintf(stdlog,"Log file opened: pid %d, nprocs = %d, host = %s, process = %d\n",
+	  cr->pid,cr->nprocs,host ? host : "unknown",pid);
   fflush(stdlog);
+#ifdef DEBUGPAR
+  debug_par();
+#endif
 }
 
-t_commrec *init_par(int *argc,char *argv[])
+static void comm_args(t_commrec *cr,int *argc,char ***argv)
+{
+  int i,len;
+  char **argv_tmp,*buf;
+  
+  if (!MASTER(cr))
+    *argc=0;
+  gmx_sumi(1,argc,cr);
+  
+  if (!MASTER(cr))
+    snew(argv_tmp,*argc+1);
+  fprintf(stderr,"PID=%d argc=%d\n",cr->pid,*argc);
+  for(i=0; (i<*argc); i++) {
+    if (MASTER(cr)) {
+      len = strlen((*argv)[i])+1;
+      gmx_txs(cr->right,&len,sizeof(len));
+      gmx_rxs(cr->left,&len,sizeof(len));
+      gmx_txs(cr->right,(*argv)[i],len);
+      snew(buf,len);
+      gmx_rxs(cr->left,buf,len);
+      if (strcmp(buf,(*argv)[i]) != 0)
+	fatal_error(0,"Communicating argv[%d]=%s\n",i,(*argv)[i]);
+      sfree(buf);
+    }
+    else {
+      gmx_rxs(cr->left,&len,sizeof(len));
+      gmx_txs(cr->right,&len,sizeof(len));
+      snew(argv_tmp[i],len);
+      gmx_rxs(cr->left,argv_tmp[i],len);
+      gmx_txs(cr->right,argv_tmp[i],len);
+    }
+  }
+  if (!MASTER(cr)) {
+    argv_tmp[*argc] = NULL;
+    *argv = argv_tmp;
+  }
+  debug_par();
+}
+
+t_commrec *init_par(int *argc,char ***argv_ptr)
 {
   t_commrec *cr;
+  char      **argv;
   int       i;
   
+  argv = *argv_ptr;
   snew(cr,1);
   
   cr->nprocs=1;
@@ -219,18 +288,18 @@ t_commrec *init_par(int *argc,char *argv[])
   
   if (PAR(cr)) {
     gmx_left_right(cr->nprocs,cr->pid,&cr->left,&cr->right);
-#ifdef DEBUG
+#ifdef DEBUGPAR
     fprintf(stderr,"Going to initialise network\n");
 #endif
 
 #ifndef USE_PVM3
-#ifdef DEBUG
+#ifdef DEBUGPAR
     fprintf(stderr,"Initialised network\n");
     fprintf(stderr,"Getting new processor id's\n");
 #endif
     if (get_pid(stderr,cr->left,cr->right,&cr->pid,&cr->nprocs)==0)
       fatal_error(0,"could not get pid & nprocs from ring topology");
-#ifdef DEBUG
+#ifdef DEBUGPAR
     fprintf(stderr,"Got new processor id's\n");
     fprintf(stderr,"nprocs=%d, pid=%d\n",cr->nprocs,cr->pid);
 #endif
@@ -238,6 +307,10 @@ t_commrec *init_par(int *argc,char *argv[])
 #endif
   }
   
+  /* Communicate arguments if parallel */
+  if (PAR(cr))
+    comm_args(cr,argc,argv_ptr);
+    
   return cr;
 }
 

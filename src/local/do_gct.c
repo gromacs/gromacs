@@ -281,19 +281,31 @@ void gprod(t_commrec *cr,int n,real f[])
   /* Compute the global product of all elements in an array 
    * such that after gprod f[i] = PROD_j=1,nprocs f[i][j]
    */
-  int  i,j;
-  real *buf;
-  
-  snew(buf,n);
-  
-  for(i=0; (i<=cr->nprocs); i++) {
-    gmx_tx(cr->left,array(f,n));
-    gmx_rx(cr->right,array(buf,n));
-    gmx_wait(cr->left,cr->right);
-    for(j=0; (j<n); j++)
-      f[j] *= buf[j];
+  static int  nbuf=0;
+  static real *buf[2] = { NULL, NULL };
+  int  i,j,cur=0;
+#define next (1-cur)
+
+  if (n > nbuf) {
+    nbuf = n;
+    srenew(buf[cur], nbuf);
+    srenew(buf[next],nbuf);
   }
-  sfree(buf);
+  
+  for(j=0; (j<n); j++) 
+    buf[cur][j] = f[j];
+  
+  for(i=0; (i<cr->nprocs-1); i++) {
+    gmx_tx(cr->left, array(buf[cur],n));
+    gmx_rx(cr->right,array(buf[next],n));
+    gmx_wait(cr->left,cr->right);
+    /* Multiply f by factor read */
+    for(j=0; (j<n); j++)
+      f[j] *= buf[next][j];
+    /* Swap buffers */
+    cur = next;
+  }
+#undef next
 }
 
 static void set_factor_matrix(int ntypes,real f[],real fmult,int ati,int atj)
@@ -378,8 +390,20 @@ static void upd_f_value(FILE *log,int atnr,real xi,real dt,real factor,real ff[]
   
   if (xi != 0) {
     fff = 1 + (dt/xi)  * factor;
-    if (fff > 0) 
+    if (fff > 0)
       set_factor_matrix(atnr,ff,sqrt(fff),ati,atj);
+  }
+}
+
+static void dump_fm(FILE *fp,int n,real f[],char *s)
+{
+  int i,j;
+  
+  fprintf(fp,"Factor matrix (all numbers -1) %s\n",s);
+  for(i=0; (i<n); i++) {
+    for(j=0; (j<n); j++) 
+      fprintf(fp,"  %10.3e",f[n*i+j]-1.0);
+    fprintf(fp,"\n");
   }
 }
 
@@ -564,6 +588,10 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
     if (PAR(cr)) {
       gprod(cr,atnr2,f6);
       gprod(cr,atnr2,f12);
+#ifdef DEBUGGCT
+      dump_fm(log,idef->atnr,f6,"f6");
+      dump_fm(log,idef->atnr,f12,"f12");
+#endif
     }
     upd_nbfplj(log,fr->nbfp,idef->atnr,f6,f12);
     

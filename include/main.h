@@ -41,14 +41,20 @@ static char *SRCID_main_h = "$Id$";
 
 extern FILE *stdlog;
 
+extern char *par_fn(char *base,int ftp,t_commrec *cr);
+/* Add processor id in the filename right before the extension */
+
 extern void open_log(char *fn,t_commrec *cr);
 /* Open the log file, if necessary (nprocs > 1) the logfile name is
  * communicated around the ring.
  */
 
-extern t_commrec *init_par(int *argc,char *argv[]);
+extern t_commrec *init_par(int *argc,char ***argv_ptr);
 /* Initiate the parallel computer. Return the communication record
- * (see network.h). As a side effect the stdlog file is opened.
+ * (see network.h). The command line arguments are communicated so that they can be
+ * parsed on each processor.
+ * Arguments are the number of command line arguments, and a pointer to the
+ * array of argument strings.
  */
 
 #endif	/* _main_h */

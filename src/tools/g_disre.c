@@ -242,7 +242,7 @@ int main (int argc,char *argv[])
 		    
   top = read_top(ftp2fn(efTPX,NFILE,fnm));
   g   = mk_graph(&top->idef,top->atoms.nr,0);  
-  cr  = init_par(&argc,argv);
+  cr  = init_par(&argc,&argv);
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
   
   if (ftp2bSet(efNDX,NFILE,fnm)) {

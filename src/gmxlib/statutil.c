@@ -373,6 +373,7 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   };
 #define NPCA_PA asize(pca_pa)
 
+  /*#define DEBUGPAR*/
 #ifdef DEBUGPAR
   debug_par();
   fprintf(stderr,"PID=%d, argc = %d\n",gmx_cpu_id(),*argc);

@@ -241,6 +241,10 @@ extern  void def_sumi(int nr,int r[],t_commrec *cr);
 #define gmx_sum gmx_sumf
 #endif
 
+#ifdef DEBUGPAR
 #define debug_par() fprintf(stderr,"PID=%d, %s  %d\n",gmx_cpu_id(),__FILE__,__LINE__)
+#else
+#define debug_par()
+#endif
 
 #endif	/* _network_h */

@@ -50,6 +50,7 @@ void _where(char *file,int line)
 {
   static int where =-1;
   static int nw    = 1;
+  FILE *fp;
   
   if ( where == -1 ) {
     char *temp; 
@@ -63,9 +64,13 @@ void _where(char *file,int line)
     if (where > 1) 
       where--;
     else {
-      fprintf(stdlog,"WHERE %d, file %s - line %d\n",nw,file,line);
+      if (stdlog)
+	fp = stdlog;
+      else
+	fp = stderr;
+      fprintf(fp,"WHERE %d, file %s - line %d\n",nw,file,line);
 #ifdef _amb_
-      fprintf(stdlog,"%512s\n","flushed");
+      fprintf(fp,"%512s\n","flushed");
 #endif    
     }
     nw++;
