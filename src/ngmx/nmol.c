@@ -150,13 +150,11 @@ void set_box_type (t_x11 *x11,t_molwin *mw,int bt)
   fprintf(stderr,"mw->boxtype = %d, bt = %d\n",mw->boxtype,bt);
 #endif
   if (bt != mw->boxtype) {
-    if ((((bt == esbTrunc) || (bt == esbTri)) &&
-	 (mw->realbox == esbTri)) || (bt == esbNone)) {
+    if ((bt==esbTrunc && mw->realbox==esbTri) || bt==esbTri || bt==esbNone) {
       mw->boxtype = bt;
       ExposeWin(x11->disp,mw->wd.self);
-    }
-    else
-      fprintf(stderr,"Can not change rectangular box to triclinic or truncated octahedron\n");
+    } else
+      fprintf(stderr,"Can not change rectangular box to truncated octahedron\n");
   }
 }
 
