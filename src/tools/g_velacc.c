@@ -143,8 +143,8 @@ int gmx_velacc(int argc,char *argv[])
 	  at = a[atndx[index[i]]+j];
 	  m  = top.atoms.atom[at].m;
 	  mv_mol[XX] += m*fr.v[at][XX];
-	  mv_mol[XX] += m*fr.v[at][YY];
-	  mv_mol[XX] += m*fr.v[at][ZZ];
+	  mv_mol[YY] += m*fr.v[at][YY];
+	  mv_mol[ZZ] += m*fr.v[at][ZZ];
 	}
 	c1[i][tel3+XX]=mv_mol[XX];
 	c1[i][tel3+YY]=mv_mol[YY];
