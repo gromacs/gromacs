@@ -343,7 +343,7 @@ int main(int argc, char *argv[])
 #define NFILE asize(fnm)
   static real kb    = 4e5,kt = 400,kp = 5;
   static int  nexcl = 3;
-  static bool bH14  = FALSE,bAllDih = FALSE, bRound = TRUE;
+  static bool bH14  = FALSE,bAllDih = FALSE,bRound = TRUE,bPairs = TRUE;
   static char *molnm="x2top";
   t_pargs pa[] = {
     { "-kb",    FALSE, etREAL, {&kb},
@@ -360,6 +360,8 @@ int main(int argc, char *argv[])
       "Generate all proper dihedrals" },
     { "-round",  FALSE, etBOOL, {&bRound},
       "Round off measured values" },
+    { "-pairs",  FALSE, etBOOL, {&bPairs},
+      "Output 1-4 interactions (pairs) in topology file" },
     { "-name",   FALSE, etSTR,  {&molnm},
       "Name of your molecule" }
   };
@@ -409,6 +411,8 @@ int main(int argc, char *argv[])
   gen_pad(&nnb,atoms,bH14,plist,NULL,bAllDih);
   done_nnb(&nnb);
 
+  if (!bPairs)
+    plist[F_LJ14].nr = 0;
   fprintf(stderr,
 	  "There are %4d dihedrals, %4d impropers, %4d angles\n"
 	  "          %4d pairs,     %4d bonds and  %4d atoms\n",
