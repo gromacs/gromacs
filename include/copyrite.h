@@ -43,11 +43,11 @@ extern "C" {
 #include <stdio.h>
 
 /* Please no spaces in this one... */  
-#define GromacsVersion() "VERSION_2.0"
+#define GromacsVersion() "VERSION 2.0"
 
 static char *CopyrightText[] = {
   "",
-  "Copyright (c) 1991-1998",
+  "Copyright (c) 1991-1999",
   "BIOSON Research Institute, Dept. of Biophysical Chemistry",
   "University of Groningen, The Netherlands",
   ""
