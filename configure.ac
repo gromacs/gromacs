@@ -499,7 +499,7 @@ esac
 # Checks for header files and types
 ########################################################################
 
-AC_CHECK_HEADERS([limits.h malloc.h strings.h unistd.h],,AC_MSG_ERROR([Include headers not found]))
+AC_CHECK_HEADERS([limits.h strings.h unistd.h],,AC_MSG_ERROR([Include headers not found]))
 AC_CHECK_HEADERS(unistd.h)
 
 #####
