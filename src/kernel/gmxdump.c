@@ -219,11 +219,11 @@ void list_ene(char *fn,bool bEDR)
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "gmxdump reads a binary topology ([BB].tpa/,tpr/.tpb[bb]), a"
+    "gmxdump reads a run input file ([BB].tpa/,tpr/.tpb[bb]), a"
     "trajectory ([BB].trn[bb]) an energy ([BB].ene[bb] or [BB].edr[bb])",
-    " or a xtc ([BB].xtc[bb]) file and",
+    "or an xtc ([BB].xtc[bb]) file and",
     "prints that to standard output in a readable format.",
-    "This program is essential for checking your topology",
+    "This program is essential for checking your run input file ",
     "in case of problems.[PAR]",
   };
   t_filenm fnm[] = {

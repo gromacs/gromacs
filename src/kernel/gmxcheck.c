@@ -431,8 +431,9 @@ void chk_enx(char *fn)
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "gmxcheck reads a binary trajectory ([TT].trj[tt]), ",
-    "a xtc ([TT].xtc[tt]) or an index ([TT].ndx[tt]) ",
+    "gmxcheck reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",
+    "[TT].xtc[tt]), an index file ([TT].ndx[tt]) or an energy file",
+    "([TT].ene[tt] or [TT].edr])",
     "and prints out useful information about them.[PAR]",
     "For a coordinate file (generic structure file, e.g. [TT].gro[tt]) ",
     "gmxcheck will check for presence of coordinates, velocities and box",
@@ -440,7 +441,8 @@ int main(int argc,char *argv[])
     "of both Vanderwaals radii) and atoms outside the box (these may occur",
     "often and are no problem). If velocities are present, an estimated",
     "temperature will be calculated from them.[PAR]",
-    "The program will compare binary topology ([TT].tpx[tt]) files",
+    "The program will compare run input ([TT].tpr[tt], [TT].tpb[tt] or",
+    "[TT].tpa[tt]) files",
     "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied."
   };
   t_filenm fnm[] = {
@@ -471,7 +473,7 @@ int main(int argc,char *argv[])
   if (fn1 && fn2)
     comp_tpx(fn1,fn2);
   else if (fn1 || fn2)
-    fprintf(stderr,"Please give me TWO .tpr/.tpa/.tpb files!\n");
+    fprintf(stderr,"Please give me TWO run input (.tpr/.tpa/.tpb) files!\n");
   
   if (ftp2bSet(efSTX,NFILE,fnm))
     chk_stx(ftp2fn(efSTX,NFILE,fnm));

@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
 {
   static char *desc[] = {
     "ngmx is the Gromacs trajectory viewer. This program reads a",
-    "trajectory file, a binary topology and an index file and plots a",
+    "trajectory file, a run input file and an index file and plots a",
     "3D structure of your molecule on your standard X Window",
     "screen. No need for a high end graphics workstation, it even",
     "works on Monochrome screens.[PAR]",

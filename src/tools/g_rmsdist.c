@@ -163,7 +163,7 @@ void main (int argc,char *argv[])
     "g_rmsdist computes the root mean square deviation by a fit free",
     "method, which has certain advantages over standard RMS deviations",
     "as computed by g_rms. The reference structure is taken from the",
-    "binary topology file. The rmsd at time t is calculated as the rms",
+    "run input file. The rmsd at time t is calculated as the rms",
     "of the differences in distance between atom-pairs in the reference",
     "structure and the structure at time t.[PAR]",
     "g_rmsdist can also produce matrices of the rms distances, rms distances",

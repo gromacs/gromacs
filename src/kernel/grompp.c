@@ -532,13 +532,13 @@ int main (int argc, char *argv[])
     "with dissociation energy. Use the -debug option to get more information",
     "on the workings of this option (look for MORSE in the grompp.log file",
     "using less or something like that).[PAR]",
-    "To verify your binary topology file, please make notice of all warnings",
+    "To verify your run input file, please make notice of all warnings",
     "on the screen, and correct where necessary. Do also look at the contents",
     "of the mdout.mdp file, this contains comment lines, as well as the input",
     "that [TT]grompp[tt] has read. If in doubt you can start grompp",
     "with the [TT]-debug[tt] option which will give you more information",
     "in a file called grompp.log (along with real debug info). Finally, you",
-    "can see the contents of [TT].tpr[tt] file with the [TT]gmxdump[tt]",
+    "can see the contents of the run input file with the [TT]gmxdump[tt]",
     "program."
   };
   static char *bugs[] = {
@@ -676,7 +676,7 @@ int main (int argc, char *argv[])
   split_top(bVerbose,nprocs,&sys);
 
   if (bVerbose) 
-    fprintf(stderr,"writing processed topology...\n");
+    fprintf(stderr,"writing run input file...\n");
 
   write_tpx(ftp2fn(efTPX,NFILE,fnm),
 	    0,ir->init_t,ir->init_lambda,ir,box,

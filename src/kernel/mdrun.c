@@ -411,7 +411,7 @@ int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "The mdrun program performs Molecular Dynamics simulations.",
-    "It reads the binary topology (.tpx) file and distributes the",
+    "It reads the run input file (.tpx) file and distributes the",
     "topology over processors if needed. The coordinates are passed",
     "around, so that computations can begin.",
     "First a neighbourlist is made, then the forces are computed.",

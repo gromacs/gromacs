@@ -106,7 +106,7 @@ int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "mk_angndx makes an index file for calculation of",
-    "angle distributions etc. It uses a binary topology for the",
+    "angle distributions etc. It uses a run input file ([TT].tpx[tt]) for the",
     "definitions of the angles, dihedrals etc."
   };
   static char *opt=NULL;

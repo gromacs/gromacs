@@ -224,9 +224,9 @@ int main (int argc, char *argv[])
 {
   static char *desc[] = {
     "tpbconv can edit tpx files in multiple ways.[PAR]"
-    "[BB]1st.[bb] by creating a binary topology file",
+    "[BB]1st.[bb] by creating a run input file",
     "for a continuation run when your simulation has crashed due to e.g.",
-    "a full disk, or by making a continuation topology.",
+    "a full disk, or by making a continuation run input file.",
     "Note that both velocities and coordinates are needed,",
     "which means that when you never write velocities, you can not use",
     "tpbconv and you have to start the run again from the beginning.[PAR]",

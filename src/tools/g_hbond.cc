@@ -63,7 +63,7 @@ int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_hbond is a program which computes hydrogen bonds from a ",
-    "trajectroy file (trj), binary topology file (tpx), and index ", 
+    "trajectroy file (trj), run input file (tpx), and index ", 
     "file (ndx) ",
     "[PAR][BB]Input:[bb][BR] ",
     "For the analysis you can specify one group of atoms. Then only ",

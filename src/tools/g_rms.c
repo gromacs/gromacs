@@ -74,8 +74,9 @@ int main (int argc,char *argv[])
   static char *desc[] = {
     "g_rms computes the root mean square deviation (RMSD) of a structure",
     "from a trajectory with respect to a reference structure from a",
-    "topology by LSQ fitting the structures on top of each other.",
-    "The reference structure is taken from the binary topology file.[PAR]",
+    "run input file by LSQ fitting the structures on top of each other.",
+    "The reference structure is taken from the run input file",
+    "([TT].tpx[tt]).[PAR]",
     "Option [TT]-a[tt] produces time averaged RMSD per group (e.g. residues",
     "in a protein).[PAR]",
     "Option [TT]-prev[tt] produces the RMSD with a previous frame.[PAR]",
