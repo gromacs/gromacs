@@ -84,7 +84,7 @@ void write_pdbfile_indexed(FILE *out,char *title,
   int  resnr,type;
   real occup,bfac;
 
-  fprintf(out,"HEADER    %s\n",title[0]?title:bromacs());
+  fprintf(out,"HEADER    %s\n",(title && title[0])?title:bromacs());
   if (box) {
     fprintf(out,"REMARK    THIS IS A SIMULATION BOX\n");
     fprintf(out,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",
