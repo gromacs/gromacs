@@ -106,7 +106,7 @@ real calc_geom(int isize,atom_id *index,
       if (x[ii][j] < min[j]) min[j]=x[ii][j];
       if (x[ii][j] > max[j]) max[j]=x[ii][j];
     }
-    if (bDiam) 
+    if (bDiam) {
       if (index) 
 	for (j=i+1; j<isize; j++) {
 	  d = distance2(x[ii],x[index[j]]);
@@ -117,6 +117,7 @@ real calc_geom(int isize,atom_id *index,
 	  d = distance2(x[i],x[j]);
 	  diam2 = max(d,diam2);
 	}
+    }
   }
   svmul(1.0/isize,geom_center,geom_center);
   
@@ -403,11 +404,11 @@ int main(int argc, char *argv[])
     "be added instead of B-factors. [TT]-legend[tt] will produce",
     "a row of CA atoms with B-factors ranging from the minimum to the",
     "maximum value found, effectively making a legend for viewing.[PAR]",
-    "If the input file is a run input file and the output a pdb file",
-    "the B-factor field can be filled with the charges of the atoms",
-    "if the option -charge is given as well. This can be used as input",
-    "for programs like Grasp or MEAD which solve the Poisson-Boltzmann",
-    "equation.[PAR]",
+    "With the option -mead a special pdb file for the MEAD electrostatics",
+    "program (Poisson-Boltzmann solver) can be made. A further prerequisite",
+    "is that the input file is a run input file.",
+    "The B-factor field is then filled with the Van der Waals radius",
+    "of the atoms while the occupancy field will hold the charge.[PAR]",
     "Finally with option [TT]-label[tt] editconf can add a chain identifier",
     "to a pdb file, which can be useful for analysis with e.g. rasmol."
   };
@@ -417,9 +418,9 @@ int main(int argc, char *argv[])
   };
   static real dist=0.0,rbox=0.0,to_diam=0.0;
   static bool bNDEF=FALSE,bRMPBC=FALSE,bCenter=FALSE;
-  static bool peratom=FALSE,bLegend=FALSE,bOrient=FALSE,bCharge=FALSE;
+  static bool peratom=FALSE,bLegend=FALSE,bOrient=FALSE,bMead=FALSE;
   static rvec scale={1.0,1.0,1.0},newbox={0.0,0.0,0.0};
-  static real rho=1000.0;
+  static real rho=1000.0,rvdw=0.12;
   static rvec center={0.0,0.0,0.0},rotangles={0.0,0.0,0.0};
   static char *btype[]={ NULL, "rect", "cubic", "truncoct", NULL },*label="A";
   static rvec visbox={0,0,0};
@@ -436,8 +437,10 @@ int main(int argc, char *argv[])
     { "-c",      FALSE, etBOOL, {&bCenter},
       "Center molecule in box (implied by -box and -d)" },
     { "-center", FALSE, etRVEC, {&center}, "Coordinates of geometrical center"},
-    { "-charge", FALSE, etBOOL, {&bCharge},
-      "Store the charge of the atom in the b-factor field" },
+    { "-mead",   FALSE, etBOOL, {&bMead},
+      "Store the charge of the atom in the occupancy field and the radius of the atom in the b-factor field" },
+    { "-rvdw",   FALSE, etREAL, {&rvdw},
+      "Default Van der Waals radius if one can not be found in the database" },
     { "-rotate", FALSE, etRVEC, {rotangles},
       "Rotation around the X, Y and Z axes in degrees" },
     { "-princ",  FALSE, etBOOL, {&bOrient}, "Orient molecule(s) along their principal axes" },
@@ -504,12 +507,17 @@ int main(int argc, char *argv[])
   read_stx_conf(infile,title,&atoms,x,v,box);
   printf("Read %d atoms\n",atoms.nr); 
 
-  if (bCharge) {
+  if (bMead) {
     top = read_top(infile);
     if (atoms.nr != top->atoms.nr)
       fatal_error(0,"Atom numbers don't match");
-    for(i=0; (i<atoms.nr); i++) 
-      atoms.pdbinfo[i].bfac = top->atoms.atom[i].q;
+    for(i=0; (i<atoms.nr); i++) {
+      atoms.pdbinfo[i].occup = top->atoms.atom[i].q;
+      /* Factor of 10 for Angstroms */
+      atoms.pdbinfo[i].bfac  = 
+	10*get_vdw(*top->atoms.resname[top->atoms.atom[i].resnr],
+		   *top->atoms.atomname[i],rvdw);
+    }
   }
   bHaveV=FALSE;
   for (i=0; (i<natom) && !bHaveV; i++)
