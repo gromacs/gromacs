@@ -49,6 +49,8 @@ optwat:		optwat.o
 		$(LD) -o $@ $^ $(SYSLIBS) -lm
 sigeps:		sigeps.o
 		$(LD) -o $@ $^ $(SYSLIBS) -lm
+afterdd:	afterdd.o
+		$(LD) -o $@ $^ $(SYSLIBS) -lm
 do_shift:	do_shift.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 testpt:		testpt.o ionize.o

@@ -38,16 +38,6 @@ typedef real vec4[4];
 
 typedef real mat4[4][4];
 
-extern void m4_op(mat4 m,rvec x,vec4 v);
-
-extern void unity_m4(mat4 m);
-
-extern void mult_matrix(mat4 A, mat4 B, mat4 C);
-
-extern void rotate(int axis, real angle, mat4 A);
-
-extern void translate(real tx, real ty, real tz, mat4 A);
-
 typedef int  iv2[2];
 
 typedef struct {
@@ -59,6 +49,18 @@ typedef struct {
 } t_3dview;
 
 extern void m4_op(mat4 m,rvec x,vec4 v);
+
+extern void unity_m4(mat4 m);
+
+extern void mult_matrix(mat4 A, mat4 B, mat4 C);
+
+extern void rotate(int axis, real angle, mat4 A);
+
+extern void translate(real tx, real ty, real tz, mat4 A);
+
+extern void m4_op(mat4 m,rvec x,vec4 v);
+
+extern void calculate_view(t_3dview *view);
 
 extern t_3dview *init_view(matrix box);
 /* Generate the view matrix from the eye pos and the origin,

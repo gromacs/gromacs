@@ -138,7 +138,7 @@ static void set_scale(t_3dview *view,real sx, real sy)
   view->sc_y=sy;
 }
 
-static void get_view(t_3dview *view)
+void calculate_view(t_3dview *view)
 {
 #define SMALL 1e-6
   mat4 To,Te,T1,T2,T3,T4,T5,N1,D1,D2,D3,D4,D5;
@@ -218,7 +218,7 @@ bool zoom_3d(t_3dview *view,real fac)
 
   for(i=0; (i<DIM); i++)
     view->eye[i]*=fac;
-  get_view(view);
+  calculate_view(view);
   return TRUE;
 }
 
@@ -259,7 +259,7 @@ void rotate_3d(t_3dview *view,int axis,bool bPositive)
     for(j=0; (j<N); j++)
     view->Rot[i][j]=m4[i][j];
 
-  get_view(view);
+  calculate_view(view);
 }
 
 void translate_view(t_3dview *view,int axis,bool bPositive)
@@ -271,7 +271,7 @@ void translate_view(t_3dview *view,int axis,bool bPositive)
     view->origin[axis]+=view->box[axis][axis]/8;
   else
     view->origin[axis]-=view->box[axis][axis]/8;
-  get_view(view);
+  calculate_view(view);
 }
 
 void reset_view(t_3dview *view)
@@ -290,7 +290,7 @@ void reset_view(t_3dview *view)
 
   /* Initiate the matrix */
   unity_m4(view->Rot);
-  get_view(view);
+  calculate_view(view);
 }
 
 t_3dview *init_view(matrix box)
