@@ -615,7 +615,7 @@ void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
   char resnm[6],nm[6],format[100];
   int  ai,i,resnr,l,vpr;
 
-  fprintf (out,"%s\n",title[0]?title:bromacs());
+  fprintf (out,"%s\n",(title && title[0])?title:bromacs());
   fprintf (out,"%5d\n",nx);
   /* build format string for printing, 
      something like "%8.3f" for x and "%8.4f" for v */
@@ -724,6 +724,7 @@ void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms,
     clear_trxframe(&fr,TRUE);
     fr.bTitle = TRUE;
     fr.title = title;
+    fr.natoms = atoms->nr;
     fr.bAtoms = TRUE;
     fr.atoms = atoms;
     fr.bX = TRUE;
@@ -771,6 +772,7 @@ void write_sto_conf(char *outfile, char *title,t_atoms *atoms,
     clear_trxframe(&fr,TRUE);
     fr.bTitle = TRUE;
     fr.title = title;
+    fr.natoms = atoms->nr;
     fr.bAtoms = TRUE;
     fr.atoms = atoms;
     fr.bX = TRUE;
