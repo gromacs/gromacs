@@ -63,40 +63,42 @@ static char *SRCID_trjcat_c = "$Id$";
 
 static void scan_trj_files(char **fnms,int nfiles,real *readtime, real *timestep)
 {
-    /* Check start time of all files */
-    int i,flags,status,natoms=0;
-    real t;
-    t_trxframe fr;
-    bool ok;
-
-    flags = TRX_NEED_X | TRX_READ_V | TRX_READ_F;
-
-    for(i=0;i<nfiles;i++) {
-      ok=read_first_frame(&status,fnms[i],&fr,flags);
-
-      if(!ok) 
-	fatal_error(0,"Couldn't read frame from file.");
-      if(!fr.bTime)
-	fatal_error(0,"Couldn't find a time in the frame.");
-      readtime[i]=fr.time;
- 
-      if(i==0) {
-	natoms=fr.natoms;
-	t=fr.time;
-	
-	ok=read_next_frame(status,&fr);
-	if(!ok || !fr.bTime) 
-	  fatal_error(0,"Couldn't read time from second frame.");
-	
-        *timestep=fr.time-t;
-      }
-      else {
-	if(natoms!=fr.natoms) 
-	  fatal_error(0,"Different number of atoms in files");
-      }
-      close_trj(status);
+  /* Check start time of all files */
+  int i,flags,status,natoms=0;
+  real t;
+  t_trxframe fr;
+  bool ok;
+  
+  flags = TRX_NEED_X;
+  
+  for(i=0;i<nfiles;i++) {
+    ok=read_first_frame(&status,fnms[i],&fr,flags);
+    
+    if(!ok) 
+      fatal_error(0,"Couldn't read frame from file.");
+    if(!fr.bTime)
+      fatal_error(0,"Couldn't find a time in the frame.");
+    readtime[i]=fr.time;
+    
+    if(i==0) {
+      natoms=fr.natoms;
+      t=fr.time;
+      
+      ok=read_next_frame(status,&fr);
+      if(!ok || !fr.bTime) 
+	fatal_error(0,"Couldn't read time from second frame.");
+      
+      *timestep=fr.time-t;
     }
-    fprintf(stderr,"\n");  
+    else {
+      if(natoms!=fr.natoms) 
+	fatal_error(0,"Different number of atoms in files");
+    }
+    close_trj(status);
+  }
+  fprintf(stderr,"\n");
+
+  sfree(fr.x);
 }
 
 
@@ -250,8 +252,8 @@ int main(int argc,char *argv[])
       
   int          status,ftp,ftpin,i,frame,step,trjout=0;
   rvec         *x,*v;
-  real         xtcpr,t,t0=-1,t1;
-  t_trxframe   fr;
+  real         xtcpr,t0=-1;
+  t_trxframe   fr,frout;
   char         **fnms;
   int          trxout=-1;
   bool         bNewFile;
@@ -291,7 +293,6 @@ int main(int argc,char *argv[])
   scan_trj_files(fnms,nfile,readtime,&timestep);
   edit_files(fnms,nfile,readtime,settime,cont_type,bSetTime,bSort);
   
-  t=-1;
   earliersteps=0;    
   out_file=opt2fn("-o",NFILE,fnm);
   ftp=fn2ftp(out_file);
@@ -310,8 +311,7 @@ int main(int argc,char *argv[])
 	fatal_error(0,"Couldn't find a time in the frame.");
       
       if(cont_type[i]==TIME_EXPLICIT)
-	  t0=settime[i]-fr.time;
-      t1=fr.time;
+	t0=settime[i]-fr.time;
    
       bNewFile=TRUE;
       if(i==0) {
@@ -329,36 +329,37 @@ int main(int argc,char *argv[])
       }
       
       do {
-	  /* set the new time */
-	  t=t0+t1;
-	  fr.time=t;
-	  if((end>0) && (t>(end+GMX_REAL_EPS))) {
-	      i=nfile;
-	      break;
-	  }
-	  /* determine if we should write it */
-	  if((t<(settime[i+1]-0.5*timestep)) && (t>=begin)) {
-	      frame++;
-	      last_ok_t=t;
-	      if(bNewFile) {
-		  fprintf(stderr,"\nContinue writing frames from t=%g, frame=%d      \n",t,frame);
-		  bNewFile=FALSE;
-	      }
-	      
-	      switch(ftp) {
-	      case efTRJ:
-	      case efTRR:
+	/* copy the input frame to the output frame */
+	frout=fr;
+	/* set the new time */
+	frout.time += t0;
+	if((end > 0) && (frout.time > end+GMX_REAL_EPS)) {
+	  i=nfile;
+	  break;
+	}
+	/* determine if we should write it */
+	  if(frout.time < settime[i+1]-0.5*timestep && frout.time >= begin) {
+	    frame++;
+	    last_ok_t=frout.time;
+	    if(bNewFile) {
+	      fprintf(stderr,"\nContinue writing frames from t=%g, frame=%d      \n",frout.time,frame);
+	      bNewFile=FALSE;
+	    }
+	    
+	    switch(ftp) {
+	    case efTRJ:
+	    case efTRR:
 	      case efXTC:
-		write_trxframe(trxout,&fr);
+		write_trxframe(trxout,&frout);
 		break;
-	      default:
-		fatal_error(0,"This fileformat doesn't work here yet.");
+	    default:
+	      fatal_error(0,"This fileformat doesn't work here yet.");
 	      }
-	      if ( ((frame % 10) == 0) || (frame < 10) )
-		fprintf(stderr," ->  frame %6d time %8.3f      \r",frame,t);
+	    if ( ((frame % 10) == 0) || (frame < 10) )
+	      fprintf(stderr," ->  frame %6d time %8.3f      \r",
+		      frame,frout.time);
 	  }
-      } while((t<settime[i+1]) &&
-	      read_next_frame(status,&fr));
+      } while((frout.time<settime[i+1]) && read_next_frame(status,&fr));
       
       close_trj(status);
       
@@ -366,19 +367,19 @@ int main(int argc,char *argv[])
       
       /* set the next time from the last in previous file */
       if(cont_type[i+1]==TIME_CONTINUE) {
-	  begin=t+0.5*timestep;
-	  settime[i+1]=t;
+	  begin=frout.time+0.5*timestep;
+	  settime[i+1]=frout.time;
 	  cont_type[i+1]=TIME_EXPLICIT;	  
       }
       else if(cont_type[i+1]==TIME_LAST)
-	  begin=t+0.5*timestep;
+	  begin=frout.time+0.5*timestep;
       
       if(cont_type[i+1]==TIME_EXPLICIT) 
 	if((i<(nfile-1)) &&
-	   (t<(settime[i+1]-1.5*timestep))) 
+	   (frout.time<(settime[i+1]-1.5*timestep))) 
 	  fprintf(stderr,
 		  "WARNING: Frames around t=%f have a different spacing than the rest,\n"
-		  "might be a gap or overlap that couldn't be corrected automatically.\n",t);   
+		  "might be a gap or overlap that couldn't be corrected automatically.\n",frout.time);   
   }
   if (trxout >= 0)
     close_trx(trxout);
