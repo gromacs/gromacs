@@ -501,7 +501,7 @@ int main(int argc,char *argv[])
       /* check if index is meaningful */
       for(i=0; i<nout; i++) {
 	if (index[i] >= natoms)
-	  fatal_error(0,"Index[%d] %d is larger than the number of atoms in the trajectory file (%d)",i,index[i]+1,natoms);
+	  fatal_error(0,"Element %d of index group %s is %d, this is larger than the number of atoms in the trajectory file (%d)",i,grpnm,index[i]+1,natoms);
 	bCopy = bCopy || (i != index[i]);
       }
 
