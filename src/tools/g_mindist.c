@@ -44,11 +44,12 @@ static char *SRCID_g_mindist_c = "$Id$";
 #include "rdgroup.h"
 #include "tpxio.h"
 
-static real periodic_mindist(matrix box,rvec x[],int n,atom_id index[])
+static void periodic_dist(matrix box,rvec x[],int n,atom_id index[],
+			  real *rmin,real *rmax)
 {
 #define NSHIFT 26
   int  sx,sy,sz,i,j,s;
-  real sqr_box,r2min,r2;
+  real sqr_box,r2min,r2max,r2;
   rvec shift[NSHIFT],d0,d;
 
 
@@ -70,10 +71,14 @@ static real periodic_mindist(matrix box,rvec x[],int n,atom_id index[])
 	}
   
   r2min = sqr_box;
-  
+  r2max = 0;
+
   for(i=0; i<n; i++)
     for(j=i+1; j<n; j++) {
       rvec_sub(x[index[i]],x[index[j]],d0);
+      r2 = norm2(d0);
+      if (r2 > r2max)
+	r2max = r2;
       for(s=0; s<NSHIFT; s++) {
 	rvec_add(d0,shift[s],d);
 	r2 = norm2(d);
@@ -81,20 +86,22 @@ static real periodic_mindist(matrix box,rvec x[],int n,atom_id index[])
 	  r2min = r2;
       }
     }
-  
-  return sqrt(r2min);
+
+  *rmin = sqrt(r2min);
+  *rmax = sqrt(r2max);
 }
 
 static void periodic_mindist_plot(char *trxfn,char *outfn,
 				  int n,atom_id index[])
 {
   FILE   *out;
+  char   *leg[5] = { "min per.","max int.","box1","box2","box3" };
   int    status;
   real   t;
   rvec   *x;
   matrix box;
   int    natoms;
-  real   r,rmin,tmin;
+  real   r,rmin,rmax,rmint,tmint;
 
   natoms=read_first_x(&status,trxfn,&t,&x,box);
   
@@ -102,24 +109,27 @@ static void periodic_mindist_plot(char *trxfn,char *outfn,
 
   out = xvgropen(outfn,"Minimum distance to periodic image",
 		 "Time (ps)","Distance (nm)");
-  
-  rmin = box[XX][XX];
-  tmin = 0;
+  fprintf(out,"@ subtitle \"and maximum internal distance\"\n");
+  xvgr_legend(out,5,leg);
+
+  rmint = box[XX][XX];
+  tmint = 0;
 
   do {
-    r = periodic_mindist(box,x,n,index);
-    if (r < rmin) {
-      rmin = r;
-      tmin = t;
+    periodic_dist(box,x,n,index,&rmin,&rmax);
+    if (rmin < rmint) {
+      rmint = rmin;
+      tmint = t;
     }
-    fprintf(out,"\t%g\t%g\n",t,r);
+    fprintf(out,"\t%g\t%6.3f %6.3f %6.3f %6.3f %6.3f\n",t,rmin,rmax,
+	    norm(box[0]),norm(box[1]),norm(box[2]));
   } while(read_next_x(status,&t,natoms,x,box));
 
   fclose(out);
 
   fprintf(stdout,
 	  "\nThe shortest periodic distance is %g (nm) at time %g (ps)\n",
-	  rmin,tmin);
+	  rmint,tmint);
 }
 
 static void calc_mindist(real MinDist,
@@ -271,6 +281,8 @@ int main(int argc,char *argv[])
     "periodic image is plotted. This is useful for checking if a protein",
     "has seen its periodic image during a simulation. Only one shift in",
     "each direction is considered, giving a total of 26 shifts.",
+    "It also plots the maximum distance within the group and the lengths",
+    "of the three box vectors.",
     "This option is very slow."
   };
   
