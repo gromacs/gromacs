@@ -71,7 +71,6 @@ void set_dummies_ptype(bool bVerbose, t_topology *sys)
   }
 }
 
-
 static void constr_dum1(rvec xi,rvec xj,rvec x,real a)
 {
   real b;
@@ -346,46 +345,56 @@ static void spread_dum2FD(rvec xi,rvec xj,rvec xk,
 static void spread_dum2FAD(rvec xi,rvec xj,rvec xk,
 			   rvec fi,rvec fj,rvec fk,rvec f,real a,real b)
 {
-  real fx,fy,fz,c,ci,cj,ck;
-  rvec xij,xjk,xp;
-  real a1,b1,c1,invdij;
+  rvec xij,xjk,xperp,Fpij,Fppp,f1,f2,f3;
+  real a1,b1,c1,c2,invdij,invdij2,invdp,fproj;
+  int d;
   
   rvec_sub(xj,xi,xij);
   rvec_sub(xk,xj,xjk);
   /* 6 flops */
   
   invdij = invsqrt(iprod(xij,xij));
-  c1 = invdij * invdij * iprod(xij,xjk);
-  xp[XX] = xjk[XX] - c1*xij[XX];
-  xp[YY] = xjk[YY] - c1*xij[YY];
-  xp[ZZ] = xjk[ZZ] - c1*xij[ZZ];
+  invdij2 = invdij * invdij;
+  c1 = iprod(xij,xjk) * invdij2;
+  xperp[XX] = xjk[XX] - c1*xij[XX];
+  xperp[YY] = xjk[YY] - c1*xij[YY];
+  xperp[ZZ] = xjk[ZZ] - c1*xij[ZZ];
+  /* xperp in plane ijk, perp. to ij */
+  invdp = invsqrt(iprod(xperp,xperp));
   a1 = a*invdij;
-  b1 = b*invsqrt(iprod(xp,xp));
+  b1 = b*invdp;
   /* 45 flops */
   
-  /* this is already calculated in constr_dum2FD
-     storing it somewhere will save many flops!     */
+  /* a1, b1 and c1 are already calculated in constr_dum2FAD
+     storing them somewhere will save 45 flops!     */
   
-  cj = a1 - b1 - b1 * c1;
-  ck = b1;
-  ci = 1.0 - cj - ck;
-  /* 6 flops */
+  fproj=iprod(xij  ,f)*invdij2;
+  svmul(fproj,                     xij,  Fpij); /* proj. f on xij */
+  svmul(iprod(xperp,f)*invdp*invdp,xperp,Fppp); /* proj. f on xperp */
+  svmul(b1*fproj,                  xperp,f3);
+  /* 23 flops */
   
-  fx=f[XX];
-  fy=f[YY];
-  fz=f[ZZ];
-  fi[XX]+=ci*fx;
-  fi[YY]+=ci*fy;
-  fi[ZZ]+=ci*fz;
-  fj[XX]+=cj*fx;
-  fj[YY]+=cj*fy;
-  fj[ZZ]+=cj*fz;
-  fk[XX]+=ck*fx;
-  fk[YY]+=ck*fy;
-  fk[ZZ]+=ck*fz;
-  /* 9 Flops */
+  rvec_sub(f,Fpij,f1);  /* f1 = f - Fpij */
+  rvec_sub(f1,Fppp,f2); /* f2 = f - Fpij - Fppp */
+  for (d=0; (d<DIM); d++) {
+    f1[d]*=a1;
+    f2[d]*=b1;
+  }
+  /* 12 flops */
   
-  /* TOTAL: 68 flops */
+  c2=1+c1;
+  fi[XX] += f[XX] - f1[XX] + c1*f2[XX] + f3[XX];
+  fi[YY] += f[YY] - f1[YY] + c1*f2[YY] + f3[YY];
+  fi[ZZ] += f[ZZ] - f1[ZZ] + c1*f2[ZZ] + f3[ZZ];
+  fj[XX] +=         f1[XX] - c2*f2[XX] - f3[XX];
+  fj[YY] +=         f1[YY] - c2*f2[YY] - f3[YY];
+  fj[ZZ] +=         f1[ZZ] - c2*f2[ZZ] - f3[ZZ];
+  fk[XX] +=                     f2[XX];
+  fk[YY] +=                     f2[YY];
+  fk[ZZ] +=                     f2[ZZ];
+  /* 30 Flops */
+  
+  /* TOTAL: 113 flops */
 }
 
 static void spread_dum3(rvec xi,rvec xj,rvec xk,
@@ -479,7 +488,7 @@ void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef)
 	  ak = ia[4];
 	  b1 = ip[tp].dummy.b;
 	  spread_dum2FAD(x[ai],x[aj],x[ak],f[ai],f[aj],f[ak],f[adum],a1,b1);
-	  nd2FD++;
+	  nd2FAD++;
 	  break;
 	case F_DUMMY3:
 	  ak = ia[4];
