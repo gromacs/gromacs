@@ -46,11 +46,12 @@ void do_view(char *fn, char *opts)
 	cmd="xv";
       break;
     case efXVG:
-      if ( ! (cmd=getenv("GMX_VIEW_XVG")) ) 
+      if ( ! (cmd=getenv("GMX_VIEW_XVG")) ) {
 	if ( getenv("XMGRACE") )
 	  cmd="xmgrace";
 	else
 	  cmd="xmgr";
+      }
       break;
     case efPDB:
       if ( ! (cmd=getenv("GMX_VIEW_PDB")) )

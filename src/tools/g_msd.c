@@ -501,7 +501,7 @@ void printdist(t_corr *this,char *fn,char *difn)
   }
   dav/=this->nnx;
   fclose(out);
-  xvgr_file(difn,"-graphtype bar");
+  do_view(difn,"-graphtype bar");
   
   ndist=(int *)calloc(NDIST+1,sizeof(*ndist));
   for(i=0; i<NDIST+1; i++)
@@ -516,7 +516,7 @@ void printdist(t_corr *this,char *fn,char *difn)
     fprintf(out,"%10g  %10d\n",
 	    mind+(i*(maxd-mind))/NDIST,ndist[i]);
   fclose(out);
-  xvgr_file(fn,NULL);
+  do_view(fn,NULL);
   
 }
 
@@ -554,14 +554,18 @@ void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
     for(i=0; (i<msd->nframes); i++)
       msd->data[j][i] /= msd->ndata[j][i];
 
-  if (opt2bSet("-d",NFILE,fnm))
+  /* Print and show diffusion constant */
+  if (opt2bSet("-d",NFILE,fnm)) {
     corr_print(msd,opt2fn("-d",NFILE,fnm),"Diffusion constant",
 	       "D (10\\S-5\\Ncm\\S2\\Ns\\S-1\\N)",TRUE,TRUE);
+    do_view(opt2fn("-d",NFILE,fnm),"-nxy");
+  }
+  /* Print and show mean square displacement */
   corr_print(msd,opt2fn("-o",NFILE,fnm),
 	     "Mean Square Displacement",
 	     "MSD (nm\\S2\\N)",TRUE,FALSE);
+  do_view(opt2fn("-o",NFILE,fnm),"-nxy");
   
-  xvgr_file(ftp2fn(efXVG,NFILE,fnm),"-nxy");
   if (bMol) 
     printdist(msd,opt2fn("-m",NFILE,fnm),opt2fn("-d",NFILE,fnm));
 }
