@@ -163,8 +163,9 @@ void main (int argc,char *argv[])
     "binary topology file. The rmsd at time t is calculated as the rms",
     "of the differences in distance between atom-pairs in the reference",
     "structure and the structure at time t.[PAR]",
-    "g_rmsdist also produces matrices of the rms distances, rms distances",
-    "scaled with the mean distance and the mean distances."
+    "g_rmsdist can also produce matrices of the rms distances, rms distances",
+    "scaled with the mean distance and the mean distances and matrices with",
+    "NMR averaged distances (1/r^3 and 1/r^6 averaging)."
   };
   
   int          step,nre,natom,i,j,teller=0;
@@ -190,14 +191,12 @@ void main (int argc,char *argv[])
   
   static bool bAll=FALSE;
   static int  nlevels=20;
-  static real scalemax=-1.0, truncate=1.0;
+  static real scalemax=-1.0;
   t_pargs pa[] = { 
-    { "-t",   FALSE, etREAL, &truncate,
-      "Trunc distance (not implemented yet)." },
     { "-nlevels",   FALSE, etINT,  &nlevels,
       "Discretize rms in # levels." },
-    { "-sc",   FALSE, etREAL, &scalemax,
-      "Max to scale rms to (default: scale to maximum)." },
+    { "-max",   FALSE, etREAL, &scalemax,
+      "Maximum level in matrices." },
     { "-all",  FALSE, etBOOL, &bAll,
       "output all matrices" }
   };
