@@ -229,33 +229,6 @@ void parinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
   mtmul(t2,invbox,M);
 }
 
-
-static void correct_box_elem(tensor box,int v,int d)
-{
-  /* correct elem d of vector v with vector d */
-  while (box[v][d] > BOX_MARGIN*box[d][d]) {
-    fprintf(stdlog,"Correcting invalid box:\n");
-    pr_rvecs(stdlog,0,"old box",box,DIM);
-    rvec_dec(box[v],box[d]);
-    pr_rvecs(stdlog,0,"new box",box,DIM);
-  } 
-  while (-box[v][d] > BOX_MARGIN*box[d][d]) {
-    fprintf(stdlog,"Correcting invalid box:\n");
-    pr_rvecs(stdlog,0,"old box",box,DIM);
-    rvec_inc(box[v],box[d]);
-    pr_rvecs(stdlog,0,"new box",box,DIM);
-  }
-}
-
-void correct_box(tensor box)
-{
-  /* check if the box still obeys the restrictions, if not, correct it */
-  correct_box_elem(box,ZZ,YY);
-  correct_box_elem(box,ZZ,XX);
-  correct_box_elem(box,YY,XX);
-}
-
-
 void berendsen_pcoupl(t_inputrec *ir,int step,tensor pres,
 		      matrix box,int start,int nr_atoms,
 		      rvec x[],unsigned short cFREEZE[],

@@ -147,8 +147,6 @@ extern void berendsen_pcoupl(t_inputrec *ir,int step,tensor pres,
 			     rvec x[],unsigned short cFREEZE[],
 			     t_nrnb *nrnb,ivec nFreeze[]);
 
-extern void correct_box(tensor box);
-		      
 extern void correct_ekin(FILE *log,int start,int end,rvec v[],
 			 rvec vcm,real mass[],real tmass,tensor ekin);
 /* Correct ekin for vcm */

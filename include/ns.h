@@ -59,6 +59,11 @@ static char *SRCID_ns_h = "$Id$";
  *    U T I L I T I E S May be found in ns.c
  *
  ****************************************************/
+extern void correct_box(tensor box,t_forcerec *fr);
+/* Corrects the box by subtracting box vector when the box is too skewed.
+ * The shift indices of the short-range neighborlists are changed accordingly.
+ */
+
 extern void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr);
 /* 
  * nn is the number of energy terms in the energy matrix

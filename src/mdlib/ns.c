@@ -208,6 +208,58 @@ static unsigned int nbf_index(t_forcerec *fr, bool bvdw, bool bcoul, bool bFree,
   return nn;
 }
 
+static int correct_box_elem(tensor box,int v,int d)
+{
+  int shift;
+
+  shift = 0;
+
+  /* correct elem d of vector v with vector d */
+  while (box[v][d] > BOX_MARGIN*box[d][d]) {
+    fprintf(stdlog,"Correcting invalid box:\n");
+    pr_rvecs(stdlog,0,"old box",box,DIM);
+    rvec_dec(box[v],box[d]);
+    shift--;
+    pr_rvecs(stdlog,0,"new box",box,DIM);
+  } 
+  while (-box[v][d] > BOX_MARGIN*box[d][d]) {
+    fprintf(stdlog,"Correcting invalid box:\n");
+    pr_rvecs(stdlog,0,"old box",box,DIM);
+    rvec_inc(box[v],box[d]);
+    shift++;
+    pr_rvecs(stdlog,0,"new box",box,DIM);
+  }
+
+  return shift;
+}
+
+void correct_box(tensor box,t_forcerec *fr)
+{
+  int zy,zx,yx,x,y,z,shift,l,i;
+
+  /* check if the box still obeys the restrictions, if not, correct it */
+  zy = correct_box_elem(box,ZZ,YY);
+  zx = correct_box_elem(box,ZZ,XX);
+  yx = correct_box_elem(box,YY,XX);
+  
+  if (zy || zx || yx)
+    /* correct the shift indices of the short-range neighborlists */
+    for(l=0; l<eNL_NR; l++)
+      for(i=0; i<fr->nlist_sr[l].nri; i++) {
+	shift = fr->nlist_sr[l].shift[i];
+	x = IS2X(shift);
+	y = IS2Y(shift);
+	z = IS2Z(shift);
+	y -= z*zy;
+	x -= z*zx;
+	x -= y*yx;
+	shift = XYZ2IS(x,y,z);
+	if (shift<0 || shift>=SHIFTS)
+	  fatal_error(0,"Could not correct too skewed box");
+	fr->nlist_sr[l].shift[i] = shift;
+      }
+}
+
 void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
 {
   /* Make maxlr tunable! (does not seem to be a big difference though) 

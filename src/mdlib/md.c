@@ -46,6 +46,7 @@ static char *SRCID_md_c = "$Id$";
 #include "calcmu.h"
 #include "dummies.h"
 #include "update.h"
+#include "ns.h"
 #include "trnio.h"
 #include "mdrun.h"
 #include "confio.h"
@@ -477,6 +478,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
            x,graph,f,buf,vold,vt,v,
 	   top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata,bNEMD);
     /* The coordinates (x) were unshifted in update */
+    
+    if (parm->ir.epc != epcNO)
+      correct_box(parm->box,fr);
+    /* (un)shifting should NOT be done after this,
+     * since the box vectors might have changed
+     */
 
     /* Non-equilibrium MD: this is parallellized, but only does communication
      * when there really is NEMD.
