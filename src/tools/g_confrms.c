@@ -228,7 +228,7 @@ int main (int argc,char *argv[])
   
   t_pargs pa[] = {
     { "-one", FALSE, etBOOL, &bSecond, "Only write the fitted structure to file" },
-    { "-pbc", FALSE, etBOOL, &bRmpbc, "Remove periodic boundary conditions" }
+    { "-pbc", FALSE, etBOOL, &bRmpbc, "Try to make molecules whole again" }
   };
   t_filenm fnm[] = {
     { efSTX, "-f1",  "conf1", ffREAD  },
@@ -402,7 +402,7 @@ int main (int argc,char *argv[])
     write_hconf(fp,title_2,&atoms_2,x_2,v_2,box_2);
   } else {
     if (bSecond)
-      write_pdbfile(fp,title_1,&atoms_1,x_1,box_1,0,TRUE);
+      write_pdbfile(fp,title_2,&atoms_2,x_2,box_2,0,TRUE);
     else {
       write_pdbfile(fp,title_1,&atoms_1,x_1,box_1,'A',FALSE);
       write_pdbfile(fp,title_2,&atoms_2,x_2,box_2,'B',TRUE);
