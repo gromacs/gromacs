@@ -123,6 +123,9 @@ extern real convert_time(real time);
 extern void convert_times(int n, real *time);
 /* convert array of times */
 
+extern void default_time(void);
+/* set time conversion to default (i.e. ps) */
+
 /* For trxframe.flags, used in trxframe read routines.
  * When a READ flag is set, the field will be read when present,
  * but a frame might be returned which does not contain the field.

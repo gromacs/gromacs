@@ -165,6 +165,12 @@ void convert_times(int n, real *time)
       time[i] *= timefactor;
 }
 
+void default_time(void)
+{
+  timestr[0] = timestr[1];
+  timefactor = timefactors[1];
+}
+
 /***** T O P O L O G Y   S T U F F ******/
 
 t_topology *read_top(char *fn)
