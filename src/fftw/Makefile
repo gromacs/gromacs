@@ -57,24 +57,24 @@ BLOCKS = $(NOTW_BLOCKS) $(NOTWI_BLOCKS) $(TWID_BLOCKS) $(TWIDI_BLOCKS)
 
 OBJ = $(BLOCKS) $(OTHEROBJ)
 
-ifeq ($(USE_MPI),yes)
-OBJ		+= $(MPIOBJ)
-endif
+#ifeq ($(USE_MPI),yes)
+#OBJ		+= $(MPIOBJ)
+#endif
 
 #
 include		$(STDTARGET)
 #
 
-ifeq ($(USE_MPI),yes)
-test_transpose_mpi:	test_transpose_mpi.o	$(OBJ)
-			$(LD) -o $@ $^ $(SYSLIBS)
-
-test_fftwnd_mpi:	test_fftwnd_mpi.o	$(OBJ)			
-			$(LD) -o $@ $^ $(SYSLIBS)
-
-time_fftwnd_mpi:	time_fftwnd_mpi.o	$(OBJ)
-			$(LD) -o $@ $^ $(SYSLIBS)
-endif
+#ifeq ($(USE_MPI),yes)
+#test_transpose_mpi:	test_transpose_mpi.o	$(OBJ)
+#			$(LD) -o $@ $^ $(SYSLIBS)
+#
+#test_fftwnd_mpi:	test_fftwnd_mpi.o	$(OBJ)			
+#			$(LD) -o $@ $^ $(SYSLIBS)
+#
+#time_fftwnd_mpi:	time_fftwnd_mpi.o	$(OBJ)
+#			$(LD) -o $@ $^ $(SYSLIBS)
+#endif
 
 include Make.dep
 endif

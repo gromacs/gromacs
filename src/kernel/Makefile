@@ -28,15 +28,14 @@ POBJ		= \
 		pgutil.o	resall.o	ter_db.o	\
 		hizzie.o	xlate.o		specbond.o	\
 		add_par.o	gen_dum.o	$(PGOBJ)	
-
-ifneq ($(GMXCPU),amb)
-ifneq ($(GMXCPU),860)
+ifneq ($(PARALLEL),yes)
 PROGRAMS	= \
 		pdb2gmx 	grompp		tpbconv		\
-		nmrun		gmxcheck	luck
+		mdrun		nmrun		gmxcheck	\
+		gmxdump		luck
+else
+PROGRAMS	= mdrun		nmrun
 endif
-endif
-PROGRAMS	+= mdrun	gmxdump
 
 include		$(STDTARGET)
 

@@ -11,9 +11,6 @@ ROOT		:=$(GMXHOME)
 CUR		:=$(shell basename `pwd`)
 SRCDIR		:=$(ROOT)/src
 MKDIR		:=$(SRCDIR)/makef
-OBJDIR		:=$(ROOT)/obj/$(GMXCPU)
-LIBDIR		:=$(ROOT)/lib/$(GMXCPU)
-BINDIR		:=$(ROOT)/bin/$(GMXCPU)
 INCDIR		:=include
 #LIB		:=$(LIBDIR)/libgmx.$(GMXCPU).a
 #SONAME		:=libgmx.$(GMXCPU).so
@@ -25,6 +22,33 @@ MKDEP		:= $(CC) -M
 # Machine dependent stuff
 #
 include		$(MKDIR)/Makefile.$(GMXCPU)
+ifeq ($(USE_MPI),yes)
+PARALLEL	= yes
+else
+ifeq ($(USE_PVM3),yes)
+PARALLEL        = yes
+else
+PARALLEL	= no
+endif
+endif
+ifneq ($(PARALLEL),yes)
+OBJDIR		:=$(ROOT)/obj/$(GMXCPU)
+LIBDIR		:=$(ROOT)/lib/$(GMXCPU)
+BINDIR		:=$(ROOT)/bin/$(GMXCPU)
+else
+SHAREIT		:=echo
+ifeq ($(USE_MPI),yes)
+OBJDIR		:=$(ROOT)/obj/$(GMXCPU)_mpi
+LIBDIR		:=$(ROOT)/lib/$(GMXCPU)_mpi
+BINDIR		:=$(ROOT)/bin/$(GMXCPU)_mpi
+else
+ifeq ($(USE_PVM3),yes)
+OBJDIR		:=$(ROOT)/obj/$(GMXCPU)_pvm
+LIBDIR		:=$(ROOT)/lib/$(GMXCPU)_pvm
+BINDIR		:=$(ROOT)/bin/$(GMXCPU)_pvm
+endif
+endif
+endif
 RUNSYSLIBS      := $(LINKSTATIC) -lmd.$(GMXCPU) -lgmx.$(GMXCPU) -lfftw.$(GMXCPU) $(LINKDYNAMIC) $(SYSLIBS)
 SYSLIBS		:= -lgmx.$(GMXCPU) $(SYSLIBS)
 #

@@ -15,6 +15,7 @@ else
 include		$(GMXHOME)/src/makef/Makefile.def
 
 LIB		=
+ifneq ($(PARALLEL),yes)
 PROGRAMS	= average	do_dssp		editconf	\
 		eneconv		g_anaeig	g_angle		\
 		g_bond		g_chi		g_cluster	\
@@ -34,6 +35,7 @@ PROGRAMS	= average	do_dssp		editconf	\
 		make_ndx	mk_angndx	protonate	\
 		trjconv		wheel		xpm2ps
 # We should add genion again when it works!
+endif
 
 ACOBJ	=	autocorr.o	expfit.o	polynomials.o	\
 		levenmar.o
@@ -180,6 +182,9 @@ g_covar:        g_covar.o ql77.o
 
 g_anaeig:       g_anaeig.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
+
+g_ensemble:	g_ensemble.o
+		$(LD) -o  $@ $^ $(SYSLIBS)
 
 g_dist:         g_dist.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
