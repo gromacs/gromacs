@@ -38,14 +38,6 @@ enum {
 };
 
 typedef struct {
-  int  type;
-  int  atomnr;
-  char pdbresnr[12];
-  bool bAnisotropic;
-  int  uij[6];                  /* Anisotropic B-factor                 */
-} t_pdbinfo;
-
-typedef struct {
   real 		m,q;		/* Mass and charge			*/
   real 		mB,qB;		/* Mass and charge for Free Energy calc */
   ushort	type;		/* Atom type				*/
@@ -53,10 +45,18 @@ typedef struct {
   int           ptype;		/* Particle type			*/
   int 		resnr;		/* Residue number			*/
   unsigned char grpnr[egcNR];   /* Group numbers			*/
-  char chain;
-  real occup;
-  real bfac;
+  unsigned char chain;          /* chain identifier                     */
 } t_atom;
+
+typedef struct {
+  int  type;                    /* PDB record name                      */
+  int  atomnr;                  /* PDB atom number                      */
+  char pdbresnr[12];            /* PDB res number                       */
+  real occup;                   /* Occupancy                            */
+  real bfac;                    /* B-factor                             */
+  bool bAnisotropic;            /* (an)isotropic switch                 */
+  int  uij[6];                  /* Anisotropic B-factor                 */
+} t_pdbinfo;
 
 typedef struct {
   int  nr;			/* Number of different groups		*/
@@ -73,7 +73,6 @@ typedef struct {
   int		nres;		/* Nr of residue names			*/
   char		***resname; 	/* Array of pointers to residue names 	*/
 				/* use: (*(resname[i]))			*/
-  char          *chain;         /* chain identifiers                    */
   int           ngrpname;       /* Number of groupnames                 */
   char          ***grpname;	/* Names of the groups		        */
   t_block	excl;		/* Exclusions				*/
