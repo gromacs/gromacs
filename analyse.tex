@@ -91,8 +91,9 @@ atom numbers may be spread out over as many lines as you like. The
 atom numbering starts at 1.
 
 \subsection{Default Groups}
-When no index file is supplied to analysis tools, a number of default
-groups can be generated to choose from:
+\label{subsec:defaultgroups}
+When no index file is supplied to analysis tools or {\tt grompp},
+a number of default groups are generated to choose from:
 \begin{description}
 \item[{\tt System}]\mbox{}\\
         all atoms in the system
@@ -134,6 +135,9 @@ groups can be generated to choose from:
         all atoms which are neither protein nor DNA.
 \end{description}
 Empty groups will not be generated.
+Most of the groups only contain protein atoms.
+An atom is considered a protein atom if its residue name is listed
+in the {\tt \normindex{aminoacids.dat}} file.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Looking at your trajectory
 

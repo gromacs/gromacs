@@ -47,8 +47,11 @@ atoms: their positions, velocities and forces, but these do not
 strictly belong to the molecular topology.
 
 This Chapter describes the set up of the topology file, the
-{\tt *.top} file: what the parameters stand for and how/where to
-change them if needed.
+{\tt *.top} file and the database files: what the parameters
+stand for and how/where to change them if needed.
+First all file formats are explained.
+Section \ssecref{fffiles} describes the organization of
+the force-field files.
 
 {\bf Note:} if you construct your own topologies, we encourage you
 to upload them to our topology archive at www.gromacs.org! Just imagine
@@ -56,11 +59,6 @@ how thankful you'd have been if your topology had been available
 there before you started. The same goes for new force field or
 modified versions of the standard force fields - contribute them
 to the force field archive!
-
-The files are grouped per force field type (named {\eg} {\tt gmx} for
-the {\gromacs} force field or {\tt G43a1} for the GROMOS96
-force field). All files for one force field have names beginning with
-{\tt ff???} where {\tt ???} stands for the force field name.
 
 \section{Particle type}
 \label{sec:parttype}
@@ -172,7 +170,7 @@ not} as a number (as {\eg} in {\gromos}).
 
 \subsection{Dummy atoms}
 \label{sec:dummytop}
-Some \normindex{force field}s use \swapindex{dummy}{atom}s 
+Some force fields use \swapindex{dummy}{atom}s 
 (\normindex{virtual site}s that are constructed
 from real atoms) on which certain interactions are located
 ({\eg} on benzene rings, to reproduce the correct
@@ -411,7 +409,7 @@ Extra Lennard-Jones and electrostatic interactions between pairs
 of atoms in a molecule can be added in the {\tt [~pairs~]} section of
 a molecule definition. The parameters for these interactions can
 be set independently from the non-bonded interaction parameters.
-In the {\gromacs} and {\gromos} forcefields pairs are only used
+In the {\gromacs} and {\gromos} force fields pairs are only used
 to modify the \normindex{1-4 interaction}s (interactions of atoms
 separated by three bonds). In these forcefields the 1-4 interactions
 are excluded from the non-bonded interactions (see \ssecref{excl}).
@@ -515,6 +513,10 @@ However, in the {\tt ff???.rtp} file the user can define a new
 (TFE) or {\em n}-decane (C10). But when defining new molecules
 (non-protein) it is preferable to create a {\tt *.itp}
 file. This will be discussed in section~\ssecref{molitp}.
+When adding a new protein residue to the database, don't forget to
+add the residue name to the {\tt \normindex{aminoacids.dat}} file,
+so that {\tt grompp}, {\tt make\_ndx} and analysis tools can recognize
+the residue as a protein residue (see \ssecref{defaultgroups}).
 
 The file {\tt ff???.rtp} is only used by {\tt pdb2gmx}.
 As mentioned before, the only extra information this
@@ -691,6 +693,7 @@ on the code selected.
 \end{itemize}
 
 \subsection{Termini database}
+\label{subsec:tdb}
 The \swapindex{termini}{database}s are stored in {\tt ff???-n.tdb} and
 {\tt ff???-c.tdb} for the N- and C-termini respectively. They contain
 information for the {\tt pdb2gmx} program on how to connect new atoms
@@ -1427,3 +1430,83 @@ So {\tt confin.gro} is the {\gromacs} coordinate file and is almost
 the same as the \gromosv{87} file (for {\gromos} users: when used with
 ntx=7).  The only difference is the box for which {\gromacs} uses a
 tensor, not a vector.
+
+\section{Force-field organization \index{force-field organization}}
+\label{sec:fforganization}
+
+\subsection{Force-field files}
+\label{subsec:fffiles}
+{\gromacs} {\gmxver} includes five forcefields.
+They are listed the file {\tt FF.dat}:
+\begin{verbatim}
+5
+ffgmx   Gromacs Forcefield (see manual)
+ffgmx2  Gromacs Forcefield with all hydrogens (proteins only)
+ffG43a1 GROMOS96 43a1 Forcefield (official distribution)
+ffG43b1 GROMOS96 43b1 Vacuum Forcefield (official distribution)
+ffG43a2 GROMOS96 43a2 Forcefield (development) (improved ...)
+\end{verbatim}
+All files for each force field have names beginning with the {\tt ff???}
+string in the {\tt FF.dat} file.
+A force field is included at the beginning of a topology file with an
+{\tt \#include} statement followed by {\tt ff???.itp}.
+This statement includes the force-field file,
+which in turn may include other forcefield files. A the five force fields
+are organized in the same way. As an example we show the {\tt ffgmx.itp}
+force-field file:
+\begin{verbatim}
+#define _FF_GROMACS
+#define _FF_GROMACS1
+
+[ defaults ]
+; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
+  1             1               no              1.0     1.0
+
+#include "ffgmxnb.itp"
+#include "ffgmxbon.itp"
+\end{verbatim}
+The first {\tt \#define} can be used in topologies to parse data which is
+specific for all {\gromacs} force-fields, the second {\tt \#define} to parse
+data which is specific for this force field. The {\tt defaults} section is
+explained in \ssecref{topfile}. The included file {\tt ffgmxnb.itp} contains
+all atom types and non-bonded parameters. The included file {\tt ffgmxbon.itp}
+contains all bonded parameters.
+
+For each force field there a five files which are only used by {\tt pdb2gmx}.
+These are: the residue database ({\tt .rtp}, see \ssecref{rtp})
+the hydrogen database ({\tt .hdb}, see \ssecref{hdb}), two termini databases
+({\tt .tdb}, see \ssecref{tdb}) and
+the atom type database ({\tt .atp}) which contains only the masses.
+
+
+\subsection{Changing force-field parameters
+\index{force-field, changing parameters}}
+If one wants to change the parameters of few bonded interactions in
+a molcule, this is most easily accomplished by typing the parameters
+behind the definition of the bonded interaction in the
+{\tt [ moleculetype ]} section (see \ssecref{topfile} for the format
+and units).
+If one wants to change the parameters for all instances of a certain
+interaction one can change them in the force-field file or add a
+new {\tt [ ???types ]} section after including the force field.
+When parameters for a certain interaction are defined multiple times
+the last definition is used. As of {\gromacs} version 3.1.3 a warning is
+generated when parameters are redefined with a different value.
+Changing the Lennard-Jones parameters of an atom type is not
+recommended, because in the {\gromacs} and {\gromos} force-fields
+the Lennard-Jones parameters for several combinations of atom types
+are not according to the standard combination rules.
+Such combinations (and possibly also combinations that do follow the
+combionation rules) are defined in the {\tt [ nonbonded\_params ]}
+section and changing the Lennard-Jones parameters of an atom type
+has no effect on these combinations.
+
+\subsection{\swapindex{Adding}{atom types}}
+As of {\gromacs} version 3.1.3 atom types can be added in an extra
+{\tt [ atomtypes ]} section after the the inclusing of the normal
+forcefield. After the definition of the new atom type(s), additional
+non-bonded and pair parameters can be defined.
+In pre 3.1.3 versions of {\gromacs} the new atom types needed to be
+added in the {\tt [ atomtypes ]} section of the forcefield files,
+because all non-bonded parameters above the last {\tt [ atomtypes ]}
+section would be overwritten using the standard combination rules.

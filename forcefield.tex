@@ -26,9 +26,9 @@
 % Gnomes, ROck Monsters And Chili Sauce
 %
 
-\chapter{Force fields}
+\chapter{Force fields \index{force-field}}
 \label{ch:ff}
-A \normindex{force field} is built up from two distinct components:
+A force field is built up from two distinct components:
 \begin{itemize}
 \item The set of equations (called the {\em
 \swapindex{potential}{function}s}) used to generate the potential
@@ -41,14 +41,18 @@ parameters form a consistent set. It is in general dangerous to make
 {\em ad hoc} changes in a subset of parameters, because the various
 contributions to the total force are usually interdependent.
 
-In {\gromacs} {\gmxver} the force field is based on
+{\gromacs} {\gmxver} includes two {\gromacs} force fields and
+three {\gromos} forcefields. The {\gromacs} forcefields are based on
 \gromosv{87}~\cite{biomos}\index{gromos-87},
 with a small modification concerning the interaction between
 water-oxygens and carbon atoms~\cite{Buuren93b,Mark94}, as well as 10
 extra atom types~\cite{Jorgensen83,Buuren93a,Buuren93b,Mark94,Liu95}.
 However, the user is free to make her own modifications (beware!).
 This will be explained in details in \chref{top}, which deals
-with the {\bf Topology}.\\ To accommodate the potential functions used
+with the {\bf Topology}. The organization of the force field files
+is described in \secref{fforganization}.
+
+To accommodate the potential functions used
 in some popular force fields, {\gromacs} offers a choice of functions,
 both for non-bonded interaction and for dihedral interactions. They
 are described in the appropriate subsections.
@@ -2001,8 +2005,8 @@ improve the scaling in most cases.
 %of time.
 
 
-\section{\swapindex{All-hydrogen}{forcefield}}
-The {\gromacs} all-hydrogen forcefield is almost identical to the normal
+\section{\swapindex{All-hydrogen}{force-field}}
+The {\gromacs} all-hydrogen force-field is almost identical to the normal
 {\gromacs} forcefield, since the extra hydrogens have no Lennard-Jones
 interaction and zero charge. The only differences are in the bond angle
 and improper dihedral angle terms. This forcefield is only useful when
