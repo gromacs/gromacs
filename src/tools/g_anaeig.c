@@ -502,7 +502,7 @@ int main(int argc,char *argv[])
     "are explicitly set, in which case all eigenvectors will be written",
     "to separate files.",
     "Chain identifiers will be added when",
-    "writing a [TT].pdb[tt] file with two or three strcutures",
+    "writing a [TT].pdb[tt] file with two or three structures",
     "(you can use [TT]rasmol -nmrpdb[tt] to view such a pdb file).[PAR]",
     "[TT]-over[tt]: calculate the subspace overlap of the eigenvectors in",
     "file [TT]-v2[tt] with eigenvectors [TT]-first[tt] to [TT]-last[tt]",
