@@ -700,7 +700,9 @@ int gmx_analyze(int argc,char *argv[])
     "a, tau1 and tau2 are obtained by fitting BA(t) to the calculated block",
     "average.",
     "When the actual block average is very close to the analytical curve,",
-    "the error is sigma*sqrt(2/T (a tau1 + (1-a) tau2)).[PAR]",
+    "the error is sigma*sqrt(2/T (a tau1 + (1-a) tau2)).",
+    "The complete derivation is given in",
+    "B. Hess, J. Chem. Phys. 116:209-217, 2002.[PAR]",
 
     "Option [TT]-filter[tt] prints the RMS high-frequency fluctuation",
     "of each set and over all sets with respect to a filtered average.",
