@@ -211,12 +211,6 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
     "com", "com_t0", "dynamic", "dynamic_t0", NULL
   };
   enum {
-    ereverseTO_REF, ereverseFROM_REF, ereverseNR
-  };
-  static const char *reversetypes[ereverseNR+1] = {
-    "from_reference", "to_reference", NULL
-  };
-  enum {
     everboseYES, everboseNO, everboseNR
   };
   static const char *verbosetypes[erefNR+1] = {
@@ -234,17 +228,18 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   ITYPE("Skip steps",       pull->nSkip,1);
   CTYPE("Runtype: afm, constraint, umbrella");
   EETYPE("runtype",         tmprun, runtypes, &nerror, TRUE);
-  CTYPE("Groups to be pulled and the weights (default all 1)");
+  CTYPE("Groups to be pulled");
   STYPE("group_1",          grpbuf[0], "");
-  STYPE("weights_1",        wbuf[0],   "");
   STYPE("group_2",          grpbuf[1], "");
-  STYPE("weights_2",        wbuf[1],   "");
   STYPE("group_3",          grpbuf[2], "");
-  STYPE("weights_3",        wbuf[2],   "");
   STYPE("group_4",          grpbuf[3], "");
-  STYPE("weights_4",        wbuf[3],   "");
   CTYPE("The group for the reaction force.");
   STYPE("reference_group",  refbuf, "");
+  CTYPE("Weights for all atoms in each group (default all 1)");
+  STYPE("weights_1",        wbuf[0],   "");
+  STYPE("weights_2",        wbuf[1],   "");
+  STYPE("weights_3",        wbuf[2],   "");
+  STYPE("weights_4",        wbuf[3],   "");
   STYPE("reference_weights", refwbuf, "");
   CTYPE("Ref. type: com, com_t0, dynamic, dynamic_t0");
   EETYPE("reftype",         tmpref, reftypes, &nerror, TRUE);
@@ -266,7 +261,7 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   /* constraint run options */
   CCTYPE("CONSTRAINT RUN OPTIONS");
   CTYPE("Direction, default: 0 0 0, no direction");
-  STYPE("constraint_direction",        condir, "0.0 0.0 0");
+  STYPE("constraint_direction",        condir, "0.0 0.0 0.0");
   CTYPE("Rate of chance of the constraint length, in nm/ps");
   RTYPE("constraint_rate",    pull->constr_rate, 0);
   CTYPE("Tolerance of constraints, in nm");
