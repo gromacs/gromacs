@@ -139,44 +139,6 @@
     CG   OD1   ND2    CB
    ND2  HD21  HD22    CG
 
-[ ASN1 ]
- [ atoms ]
-     N     N  -0.280     0
-     H     H   0.280     0
-    CA    C1   0.000     1
-    HA    HC   0.000     1
-    CB    C2   0.000     2
-   HB1    HC   0.000     2
-   HB2    HC   0.000     2
-    CG     C   0.380     3
-   OD1     O  -0.380     3
-   ND2    NL  -0.830     4
-  HD21     H   0.415     4
-  HD22     H   0.415     4
-     C     C   0.380     5
-     O     O  -0.380     5
- [ bonds ]
-     N     H
-     N    CA
-    CA     C
-     C     O
-    -C     N
-    CA    HA
-    CA    CB
-    CB   HB1
-    CB   HB2
-    CB    CG
-    CG   OD1
-    CG   ND2
-   ND2  HD21
-   ND2  HD22
- [ impropers ]
-     N    -C    CA     H
-    -C   -CA     N    -O
-    CA     N     C    CB
-    CG   OD1   ND2    CB
-   ND2    CG  HD22  HD21
-
 [ ASP ]
  [ atoms ]
      N     N  -0.280     0
