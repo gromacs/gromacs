@@ -339,7 +339,7 @@ void print_excl(FILE *out, t_block *excl)
   }
 }
 
-void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,t_block *cgs)
+void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,int *cgnr)
 {
   int  i,j,k;
   int  itype,nrdum;
@@ -363,17 +363,6 @@ void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,t_block *cgs)
   if (at->nres) {
     /* if the information is present... */
     for (i=0; (i < nrdum); i++) {
-      /* quadratic algorithm to find the cg-nr */
-      bFound=FALSE;
-      for (j=0; ((j<cgs->nr) && !bFound); j++)
-	for(k=cgs->index[j]; ((k<((int)cgs->index[j+1])) && !bFound); k++)
-	  if (cgs->a[k]==i) {
-	    bFound=TRUE;
-	    break;
-	  }
-      if (!bFound)
-	fatal_error(0,"Atom %d not in any charge group!",i);
-	
       itype=at->atom[i].type;
       if ((itype < 0) || (itype > atype->nr))
 	fatal_error(0,"itype = %d, i= %d in print_atoms",itype,i);
@@ -382,7 +371,7 @@ void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,t_block *cgs)
 	      i+1,*(atype->atomname[itype]),
 	      at->atom[i].resnr+1,  
 	      *(at->resname[at->atom[i].resnr]),
-	      *(at->atomname[i]),j,
+	      *(at->atomname[i]),cgnr[i],
 	      at->atom[i].q,at->atom[i].m);
       if (PERTURBED(at->atom[i])) {
 	fprintf(out,"  %6s  %12g  %12g",

@@ -79,7 +79,7 @@ extern void print_bt(FILE *out, directive d, t_atomtype *at,
 extern void print_block(FILE *out,char *szName,char *szIndex, 
 			char *szA,t_block *block);
 
-extern void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,t_block *cgs);
+extern void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,int *cgnr);
 
 extern void print_bonds(FILE *out,int natoms,directive d,
 			int ftype,t_params plist[],bool bConsts);

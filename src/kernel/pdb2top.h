@@ -69,7 +69,7 @@ extern void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
 extern void write_top(char *ff,char *fn, char *pr,char *title, char *molname,
 		      int nincl, char **incls, int nmol, char **mols,
 		      t_atoms *at,t_params plist[],t_block *excl,
-		      t_atomtype *atype,t_block *cgs, int nrexcl, real mHmult);
+		      t_atomtype *atype,int *cgnr, int nrexcl, real mHmult);
 /* write a topology 
  * NOTE: nrexcl is not the size of *excl! */
 
