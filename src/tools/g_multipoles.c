@@ -16,6 +16,8 @@
 
 #define NDIM 4          /* We will be using a numerical recipes routine */
 
+static char dim[DIM+1] = "XYZ";
+
 typedef real        	tensor3[DIM][DIM][DIM];      /* 3 rank tensor */
 typedef real        	tensor4[DIM][DIM][DIM][DIM]; /* 4 rank tensor */
 
@@ -307,48 +309,82 @@ void pr_M1(FILE *fp,char *msg,int mol,rvec m1,real time)
 }
 
 /* Print the quadrupole moment components */
-void pr_M2(FILE *fp,char *msg,tensor m2)
+void pr_M2(FILE *fp,char *msg,tensor m2,bool bFull)
 {
-  int i;
+  int i,j;
 
   fprintf(fp,"Quadrupole Moment %s(Debye-Ang):\n",msg);
-  fprintf(fp,"XX= %10.5f YY= %10.5f ZZ= %10.5f\n",
-	  m2[XX][XX],m2[YY][YY],m2[ZZ][ZZ]);
-  fprintf(fp,"XY= %10.5f XZ= %10.5f YZ= %10.5f\n",
-	  m2[XX][YY],m2[XX][ZZ],m2[YY][ZZ]);
+  if (!bFull) {
+    fprintf(fp,"XX= %10.5f YY= %10.5f ZZ= %10.5f\n",
+	    m2[XX][XX],m2[YY][YY],m2[ZZ][ZZ]);
+    fprintf(fp,"XY= %10.5f XZ= %10.5f YZ= %10.5f\n",
+	    m2[XX][YY],m2[XX][ZZ],m2[YY][ZZ]);
+  }
+  else {
+    for(i=0; (i<DIM); i++) {
+      for(j=0; (j<DIM); j++)
+	fprintf(fp,"  %c%c= %10.4f",dim[i],dim[j],m2[i][j]);
+      fprintf(fp,"\n");
+    }
+  }
 }
 
 /* Print the octopole moment components */
-void pr_M3(FILE *fp,char *msg,tensor3 m3)
+void pr_M3(FILE *fp,char *msg,tensor3 m3,bool bFull)
 {
-  int i;
+  int i,j,k;
 
   fprintf(fp,"Octopole Moment %s(Debye-Ang^2):\n",msg);
-  fprintf(fp,"XXX= %10.5f YYY= %10.5f ZZZ= %10.5f XYY= %10.5f\n",
-	  m3[XX][XX][XX],m3[YY][YY][YY],m3[ZZ][ZZ][ZZ],m3[XX][YY][YY]);
-  fprintf(fp,"XXY= %10.5f XXZ= %10.5f XZZ= %10.5f YZZ= %10.5f\n",
-	  m3[XX][XX][YY],m3[XX][XX][ZZ],m3[XX][ZZ][ZZ],m3[YY][ZZ][ZZ]);
-  fprintf(fp,"YYZ= %10.5f XYZ= %10.5f\n",
-	  m3[YY][YY][ZZ],m3[XX][YY][ZZ]);
+  if (!bFull) {
+    fprintf(fp,"XXX= %10.5f YYY= %10.5f ZZZ= %10.5f XYY= %10.5f\n",
+	    m3[XX][XX][XX],m3[YY][YY][YY],m3[ZZ][ZZ][ZZ],m3[XX][YY][YY]);
+    fprintf(fp,"XXY= %10.5f XXZ= %10.5f XZZ= %10.5f YZZ= %10.5f\n",
+	    m3[XX][XX][YY],m3[XX][XX][ZZ],m3[XX][ZZ][ZZ],m3[YY][ZZ][ZZ]);
+    fprintf(fp,"YYZ= %10.5f XYZ= %10.5f\n",
+	    m3[YY][YY][ZZ],m3[XX][YY][ZZ]);
+  }
+  else {
+    for(i=0; (i<DIM); i++) {
+      for(j=0; (j<DIM); j++) {
+	for(k=0; (k<DIM); k++)
+	  fprintf(fp,"  %c%c%c= %10.4f",dim[i],dim[j],dim[k],m3[i][j][k]);
+	fprintf(fp,"\n");
+      }
+    }
+  }
 }
 
 /* Print the hexadecapole moment components */
-void pr_M4(FILE *fp,char *msg,tensor4 m4)
+void pr_M4(FILE *fp,char *msg,tensor4 m4,bool bFull)
 {
-  int i;
+  int i,j,k,l;
 
   fprintf(fp,"Hexadecapole Moment %s(Debye-Ang^3):\n",msg);
-  fprintf(fp,"XXXX= %10.5f YYYY= %10.5f ZZZZ= %10.5f XXXY= %10.5f\n",
-	  m4[XX][XX][XX][XX],m4[YY][YY][YY][YY],
-	  m4[ZZ][ZZ][ZZ][ZZ],m4[XX][XX][XX][YY]);
-  fprintf(fp,"XXXZ= %10.5f YYYX= %10.5f YYYZ= %10.5f ZZZX= %10.5f\n",
-	  m4[XX][XX][XX][ZZ],m4[YY][YY][YY][XX],
-	  m4[YY][YY][YY][ZZ],m4[ZZ][ZZ][ZZ][XX]);
- fprintf(fp,"ZZZY= %10.5f XXYY= %10.5f XXZZ= %10.5f YYZZ= %10.5f\n",
-	  m4[ZZ][ZZ][ZZ][YY],m4[XX][XX][YY][YY],
-	  m4[XX][XX][ZZ][ZZ],m4[YY][YY][ZZ][ZZ]);
-  fprintf(fp,"XXYZ= %10.5f YYXZ= %10.5f ZZXY= %10.5f\n\n",
-	  m4[XX][XX][YY][ZZ],m4[YY][YY][XX][ZZ],m4[ZZ][ZZ][XX][YY]);
+  if (!bFull) {
+    fprintf(fp,"XXXX= %10.5f YYYY= %10.5f ZZZZ= %10.5f XXXY= %10.5f\n",
+	    m4[XX][XX][XX][XX],m4[YY][YY][YY][YY],
+	    m4[ZZ][ZZ][ZZ][ZZ],m4[XX][XX][XX][YY]);
+    fprintf(fp,"XXXZ= %10.5f YYYX= %10.5f YYYZ= %10.5f ZZZX= %10.5f\n",
+	    m4[XX][XX][XX][ZZ],m4[YY][YY][YY][XX],
+	    m4[YY][YY][YY][ZZ],m4[ZZ][ZZ][ZZ][XX]);
+    fprintf(fp,"ZZZY= %10.5f XXYY= %10.5f XXZZ= %10.5f YYZZ= %10.5f\n",
+	    m4[ZZ][ZZ][ZZ][YY],m4[XX][XX][YY][YY],
+	    m4[XX][XX][ZZ][ZZ],m4[YY][YY][ZZ][ZZ]);
+    fprintf(fp,"XXYZ= %10.5f YYXZ= %10.5f ZZXY= %10.5f\n\n",
+	    m4[XX][XX][YY][ZZ],m4[YY][YY][XX][ZZ],m4[ZZ][ZZ][XX][YY]);
+  }
+  else {
+    for(i=0; (i<DIM); i++) {
+      for(j=0; (j<DIM); j++) {
+	for(k=0; (k<DIM); k++) {
+	  for(l=0; (l<DIM); l++)
+	    fprintf(fp,"  %c%c%c%c = %10.4f",dim[i],dim[j],dim[k],dim[l],
+		    m4[i][j][k][l]);
+	  fprintf(fp,"\n");
+	}
+      }
+    }
+  }
 }
 
 /* Compute the inertia tensor and returns in trans a matrix which rotates
@@ -531,7 +567,7 @@ rotate_mol(k0,k1,index,x,r_mat);
 }
 
 /* Does the real work */
-void do_multipoles(char *trjfn,char *topfn,char *molndxfn)
+void do_multipoles(char *trjfn,char *topfn,char *molndxfn,bool bFull)
 {
   int        i;
   int        gnx;
@@ -565,7 +601,6 @@ void do_multipoles(char *trjfn,char *topfn,char *molndxfn)
   snew(m3,gnx);
   snew(m4,gnx);
   
-
   /* Start while loop over frames */
   do {
     /* PvM, bug in rm_pbc??? Doesnot work for dummies...
@@ -590,9 +625,9 @@ void do_multipoles(char *trjfn,char *topfn,char *molndxfn)
 
       /* Spit it out */
       pr_M1(stdout,"",i,m1[i],t);
-      pr_M2(stdout,"",m2[i]);
-      pr_M3(stdout,"",m3[i]);
-      pr_M4(stdout,"",m4[i]);
+      pr_M2(stdout,"",m2[i],bFull);
+      pr_M3(stdout,"",m3[i],bFull);
+      pr_M4(stdout,"",m4[i],bFull);
 
 
     } /* End loop of all molecules in index file */
@@ -610,9 +645,12 @@ int main(int argc,char *argv[])
     "The center of mass of the molecule is used as the origin"
   };
 
-  static ntb=0;
+  static bool bFull = FALSE;
+  static int  ntb=0;
   t_pargs pa[] = {
-    { "-boxtype",FALSE,etINT,&ntb, "HIDDENbox type 0=rectangular; 1=truncated octahedron (only rectangular boxes are fully implemented)"}  
+    { "-boxtype",FALSE,etINT,&ntb, "HIDDENbox type 0=rectangular; 1=truncated octahedron (only rectangular boxes are fully implemented)"},
+    { "-full",   FALSE, etBOOL, &bFull, 
+      "Print all compononents of all multipoles instead of just the interesting ones" }
   };
   int          gnx;
   atom_id      *index;
@@ -647,5 +685,5 @@ int main(int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
 
   do_multipoles(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
-		ftp2fn(efNDX,NFILE,fnm));
+		ftp2fn(efNDX,NFILE,fnm),bFull);
 }
