@@ -399,9 +399,9 @@ int gmx_rmsf(int argc,char *argv[])
   if (devfn) {
     for(i=0; i<isize; i++)
       rmsf[i] = (rmsd_x[i][XX]+rmsd_x[i][YY]+rmsd_x[i][ZZ])/count;
-      if (bRes)
-	average_residues(rmsf,isize,index,w_rls,&top.atoms); 
-      /* Write RMSD output */
+    if (bRes)
+      average_residues(rmsf,isize,index,w_rls,&top.atoms); 
+    /* Write RMSD output */
     fp = xvgropen(devfn,"RMS Deviation",label,"(nm)");
     for(i=0; i<isize; i++)
       if (!bRes || i+1==isize ||

@@ -45,10 +45,10 @@
 #include "statutil.h"
 #include "index.h"
 
-int  nfp_ffn[effnNR] = { 0, 1, 2, 3, 2, 5, 7, 2 };
+int  nfp_ffn[effnNR] = { 0, 1, 2, 3, 2, 5, 7, 9, 2 };
 
 char *s_ffn[effnNR+2] = { NULL, "none", "exp", "aexp", "exp_exp", "vac", 
-			  "exp5", "exp7", NULL, NULL };
+			  "exp5", "exp7", "exp9", NULL, NULL };
 /* We don't allow errest as a choice on the command line */
 
 char *longs_ffn[effnNR] = {
@@ -59,6 +59,7 @@ char *longs_ffn[effnNR] = {
   "y = exp(-v) (cosh(wv) + 1/w sinh(wv)), v = x/(2 a1), w = sqrt(1 - a2)",
   "y = a1 exp(-x/a2) +  a3 exp(-x/a4) + a5",
   "y = a1 exp(-x/a2) +  a3 exp(-x/a4) + a5 exp(-x/a6) + a7",
+  "y = a1 exp(-x/a2) +  a3 exp(-x/a4) + a5 exp(-x/a6) + a7 exp(-x/a8) + a9",
   "y = sqrt(a2*ee(a1,x) + (1-a2)*ee(a2,x))"
 };
 
@@ -176,6 +177,33 @@ static void exp_7_parm(real x,real a[],real *y,real dyda[])
   dyda[5] = e3;
   dyda[6] = x*e3/sqr(a[6]);
   dyda[7] = 0;
+}
+
+static void exp_9_parm(real x,real a[],real *y,real dyda[])
+{
+  /* Fit to function 
+   *
+   * y = a1 exp(-x/a2) + a3 exp(-x/a4) + a5 exp(-x/a6) + a7
+   *
+   */
+   
+  real e1,e2,e3,e4;
+  
+  e1      = exp(-x/a[2]);
+  e2      = exp(-x/a[4]);
+  e3      = exp(-x/a[6]);
+  e4      = exp(-x/a[8]);
+  *y      = a[1]*e1 + a[3]*e2 + a[5]*e3 + a[7]*e4 + a[9];
+
+  dyda[1] = e1;
+  dyda[2] = x*e1/sqr(a[2]);
+  dyda[3] = e2;
+  dyda[4] = x*e2/sqr(a[4]);
+  dyda[5] = e3;
+  dyda[6] = x*e3/sqr(a[6]);
+  dyda[7] = e4;
+  dyda[8] = x*e4/sqr(a[8]);
+  dyda[9] = 0;
 }
 
 static void vac_2_parm(real x,real a[],real *y,real dyda[])

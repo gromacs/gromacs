@@ -63,6 +63,7 @@
 #ifndef FLT_MAX
 #define FLT_MAX 1e36
 #endif
+#define FLAGS (TRX_READ_X | TRX_READ_V | TRX_READ_F)
 
 static real get_timestep(char *fnm)
 {
@@ -75,7 +76,7 @@ static real get_timestep(char *fnm)
   
   dt = NOTSET;
   
-  ok=read_first_frame(&status,fnm,&fr,TRX_NEED_X);
+  ok=read_first_frame(&status,fnm,&fr,FLAGS);
   if(!ok || !fr.bTime)
     fprintf(stderr,"\nWARNING: Couldn't read time from first frame.\n");
   else {
@@ -96,15 +97,13 @@ static real get_timestep(char *fnm)
 static void scan_trj_files(char **fnms,int nfiles,real *readtime,atom_id imax)
 {
   /* Check start time of all files */
-  int i,flags,status,natoms=0;
+  int i,status,natoms=0;
   real t;
   t_trxframe fr;
   bool ok;
   
-  flags = TRX_NEED_X;
-  
   for(i=0;i<nfiles;i++) {
-    ok=read_first_frame(&status,fnms[i],&fr,flags);
+    ok=read_first_frame(&status,fnms[i],&fr,FLAGS);
     
     if(!ok) 
       fatal_error(0,"\nCouldn't read frame from file.");
@@ -318,7 +317,7 @@ int main(int argc,char *argv[])
   int         n_append;
   int         trxout=-1;
   bool        bNewFile,bIndex,bWrite;
-  int         flags,earliersteps,nfile,*cont_type,last_ok_step;
+  int         earliersteps,nfile,*cont_type,last_ok_step;
   real        *readtime,*settime;
   real        first_time=0,lasttime=NOTSET,last_ok_t=-1,timestep;
   int         isize;
@@ -390,8 +389,6 @@ int main(int argc,char *argv[])
   /* Not checking input format, could be dangerous :-) */
   /* Not checking output format, equally dangerous :-) */
  
-  flags = TRX_READ_X | TRX_READ_V | TRX_READ_F;
- 
   frame=-1;
   frame_out=-1;
   /* the default is not to change the time at all,
@@ -405,7 +402,7 @@ int main(int argc,char *argv[])
     trxout = open_trx(out_file,"w");
   else {
     /* Read file to find what is the last frame in it */
-    if (!read_first_frame(&status,out_file,&fr,flags))
+    if (!read_first_frame(&status,out_file,&fr,FLAGS))
       fatal_error(0,"Reading first frame from %s",out_file);
     while (read_next_frame(status,&fr))
       ;
@@ -424,7 +421,7 @@ int main(int argc,char *argv[])
       if ( timestep==NOTSET )
 	timestep = get_timestep(fnms[i]);
       
-      read_first_frame(&status,fnms[i],&fr,flags);
+      read_first_frame(&status,fnms[i],&fr,FLAGS);
       if(!fr.bTime) {
 	fr.time=0;
 	fprintf(stderr,"\nWARNING: Couldn't find a time in the frame.\n");

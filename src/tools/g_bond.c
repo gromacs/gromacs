@@ -75,13 +75,13 @@ static void make_dist_leg(FILE *fp,int gnx,atom_id index[],t_atoms *atoms)
 static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
 		     int gnx,atom_id index[],
 		     real blen,real tol,bool bAver,
-		     t_topology *top)
+		     t_topology *top,bool bAverDist)
 {
 #define MAXTAB 1000
   FILE   *out,*outd=NULL;
   int    *btab=NULL;
   real   b0=0,b1,db=0;
-  real   bond;
+  real   bond,bav;
   t_lsq  b_one,*b_all=NULL;
   /*real   mean, mean2, sqrdev2, sigma2; 
     int    counter;*/
@@ -106,21 +106,26 @@ static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
   init_pbc(box);
   if (natoms == 0) 
     fatal_error(0,"No atoms in trajectory!");
-
+  
   if (fdist) {
-    outd = xvgropen(fdist,"Distances","Time (ps)","Distance (nm)");
-    make_dist_leg(outd,gnx,index,&(top->atoms));
+    outd = xvgropen(fdist,bAverDist ? "Average distance" : "Distances",
+		    "Time (ps)","Distance (nm)");
+    if (!bAverDist) 
+      make_dist_leg(outd,gnx,index,&(top->atoms));
   }
-    
+  
   nframes=0;
   do {
     if (fdist)
       fprintf(outd," %8.4f",t);
     nframes++; /* count frames */
+    bav = 0.0;
     for(i=0; (i<gnx); i+=2) {
       pbc_dx(x[index[i]],x[index[i+1]],dx);
       bond   = norm(dx);
-      if (fdist)
+      if (bAverDist)
+	bav += bond;
+      else if (fdist)
 	fprintf(outd," %.3f",bond);
       if (bAver) {
 	add_lsq(&b_one,t,bond);
@@ -150,6 +155,8 @@ static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
 	add_lsq(&(b_all[i/2]),t,bond);
       }
     }
+    if (bAverDist)
+      fprintf(outd," %.5f",bav*2.0/gnx);
     if (fdist)
       fprintf(outd,"\n");
   } while (read_next_x(status,&t,natoms,x,box));
@@ -215,21 +222,23 @@ int gmx_bond(int argc,char *argv[])
     "a tol of 0.1 gives a distribution from 0.18 to 0.22.[PAR]",
     "Option [TT]-d[tt] plots all the distances as a function of time.",
     "This requires a structure file for the atom and residue names in",
-    "the output."
-    
+    "the output. If however the option [TT]-averdist[tt] is given (as well",
+    "or separately) the average bond length is plotted instead."
   };
   static char *bugs[] = {
     "It should be possible to get bond information from the topology."
   };
   static real blen=-1.0,tol=0.1;
-  static bool bAver=TRUE;
+  static bool bAver=TRUE,bAverDist=TRUE;
   t_pargs pa[] = {
     { "-blen", FALSE, etREAL, {&blen}, 
       "Bond length. By default length of first bond" },
     { "-tol",  FALSE, etREAL, {&tol}, 
       "Half width of distribution as fraction of blen" },
     { "-aver", FALSE, etBOOL, {&bAver},
-      "Sum up distributions" }
+      "Average bond length distributions" },
+    { "-averdist", FALSE, etBOOL, {&bAverDist},
+      "Average distances (turns on -d)" }
   };
   FILE      *fp;
   char      *grpname,*fdist;
@@ -254,27 +263,32 @@ int gmx_bond(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE ,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
   
-  fdist = opt2fn_null("-d",NFILE,fnm);
-  if (fdist)
-    read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,FALSE);
-
+  if (bAverDist)
+    fdist = opt2fn("-d",NFILE,fnm);
+  else {
+    fdist = opt2fn_null("-d",NFILE,fnm);
+    if (fdist)
+      read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,FALSE);
+  }
+  
   rd_index(ftp2fn(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
   if ( !even(gnx) )
     fprintf(stderr,"WARNING: odd number of atoms (%d) in group!\n",gnx);
   fprintf(stderr,"Will gather information on %d bonds\n",gnx/2);
-
+  
   if (!bAver)
     fp = ftp2FILE(efLOG,NFILE,fnm,"w");
   else
     fp = NULL;
   
   do_bonds(fp,ftp2fn(efTRX,NFILE,fnm),opt2fn("-o",NFILE,fnm),fdist,gnx,index,
-	   blen,tol,bAver,&top);
-
+	   blen,tol,bAver,&top,bAverDist);
+  
   do_view(opt2fn("-o",NFILE,fnm),NULL);
   do_view(opt2fn_null("-d",NFILE,fnm),NULL);
-    
+  
   thanx(stderr);
   
   return 0;
 }
+ 

@@ -608,10 +608,18 @@ static void do_fit(char *fn,int nx,int ny,real *x0,real **val)
     break;
   case effnEXP7:
     fitparm[0] = fitparm[2] = fitparm[4] = 0.33*c1[0];
-    fitparm[1] = 10;
-    fitparm[3] = 100;
-    fitparm[5] = 1000;
+    fitparm[1] = 1;
+    fitparm[3] = 10;
+    fitparm[5] = 100;
     fitparm[6] = 0;
+    break;
+  case effnEXP9:
+    fitparm[0] = fitparm[2] = fitparm[4] = fitparm[6] = 0.25*c1[0];
+    fitparm[1] = 0.1;
+    fitparm[3] = 1;
+    fitparm[5] = 10;
+    fitparm[7] = 100;
+    fitparm[8] = 0;
     break;
   default:
     fprintf(out,"Warning: don't know how to initialize the parameters\n");
@@ -803,7 +811,7 @@ int gmx_analyze(int argc,char *argv[])
 	val[s][i] = (val[s][i+d]-val[s][i])/(d*dt);
   }
 
-  if (fitfile) {
+  if (fitfile || opt2parg_bSet("-fitfn",npargs,pa)) {
     do_fit(fitfile,nset,n,t,val);
   }
 

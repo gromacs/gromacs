@@ -529,9 +529,9 @@ static void analyse_ener(bool bCorr,char *corrfn,
 static void print1(FILE *fp,bool bDp,real e)
 {
   if (bDp)
-    fprintf(fp,"  %16f",e);
+    fprintf(fp,"  %16.12f",e);
   else
-    fprintf(fp,"  %10f",e);
+    fprintf(fp,"  %10.6f",e);
 
 }
 
