@@ -64,14 +64,15 @@ extern void calc_ener(FILE *fp,char *title,bool bHeader,
 		      int nmol,int natoms,
 		      real phi[],real charge[],t_block *excl);
 
-extern real calc_LRcorrections(FILE *fp,int start,int natoms,real r1,real rc,
+extern real calc_LRcorrections(FILE *fp,int start,int
+			       natoms,t_forcerec *fr,
 			       real charge[],t_block *excl,rvec x[],rvec f[],
-			       bool bOld);
+			       bool bOld,rvec box_size);
 /* Calculate the self energy and forces
  * when using long range electrostatics methods.
  * Part of this is a constant, it is computed only once and stored in
  * a local variable. The remainder is computed every step.
- * No PBC is taken into account!
+ * No PBC is taken into account!     (Some PBC now.. Erik 990712)
  */
 
 extern void calc_weights(int iatom,int nx,int ny,int nz,
