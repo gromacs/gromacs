@@ -419,14 +419,23 @@
 [ bondtypes ]
 S      S       2    gb_33
 NR     FE      2    gb_32
+; cystine - heme link (is CR1-S, use CH2-S):
+S      CR1     2    gb_30
 
 [ angletypes ]
 CH1    CH2    S     2   ga_15
 CH2    S      S     2   ga_5
 CR1    NR    FE     2	ga_33
 NR     FE    NR     2   ga_16
+; cystine - heme link (is CH2-S-CR1, use CH2-S-CH2):
+CH2    S     CR1    2   ga_3
+; cystine - heme link (is S-CR1-C/CH2, use CHn-CH2-S):
+S      CR1   C      2   ga_15
+S      CR1   CH2    2   ga_15
 
 [ dihedraltypes ]
 S      S      1   gd_10
 NR     FE     1   gd_18
 CH2    S      1   gd_13
+; cystine - heme link (is CH2-S-CR1-C, use -CH2-S-):
+CR1    S      1   gd_13
