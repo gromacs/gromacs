@@ -37,7 +37,8 @@ static char *SRCID_pgutil_h = "$Id$";
 #endif /* HAVE_IDENT */
 #include "typedefs.h"
 
-extern int search_atom(char *type,int start,int natoms,char **atom[]);
+extern int search_atom(char *type,int start,
+		       int natoms,t_atom at[],char **anm[]);
 /* Search an atom in array of pointers to strings, starting from start
  * if type starts with '-' then searches backwards from start.
  */

@@ -269,7 +269,7 @@ static int search_res_atom(char *type,int resnr,
 
   for(i=0; (i<natom); i++)
     if (at[i].resnr == resnr)
-      return search_atom(type,i,natom,aname);
+      return search_atom(type,i,natom,at,aname);
   
   return -1;
 }
@@ -327,7 +327,7 @@ static void ter2idihs(t_params *ps,
   for(j=0; (j<tdb->nidih); j++) {
     for(k=0; (k<4); k++) {
       atomnm=tdb->idih[j].ai[k];
-      if ((aa0=search_atom(atomnm,start,natoms,aname)) == -1)
+      if ((aa0=search_atom(atomnm,start,natoms,atom,aname)) == -1)
 	fatal_error(0,"Trying to add improper %s %s %s %s to res %d,"
 		    "atom %s not found",
 		    tdb->idih[j].ai[0],tdb->idih[j].ai[1],tdb->idih[j].ai[2],
@@ -368,8 +368,8 @@ static void at2bonds(t_params *ps,
       for(k=0; (k<rb0->nb); k++) {
 	if (bAlldih) {
 	  /* if bAlldih is true, don't check for hydrogens */
-	  if ((ai=search_atom(rb0->rbond[k].ai,j,natoms,aname)) != -1)
-	    if ((aj=search_atom(rb0->rbond[k].aj,j,natoms,aname)) != -1)
+	  if ((ai=search_atom(rb0->rbond[k].ai,j,natoms,atom,aname)) != -1)
+	    if ((aj=search_atom(rb0->rbond[k].aj,j,natoms,atom,aname)) != -1)
 	      if ( ( !is_hydrogen(rb0->rbond[k].ai) &&
 		     !is_hydrogen(rb0->rbond[k].aj) ) ||
 		   (atom[ai].resnr == atom[aj].resnr))
@@ -378,8 +378,8 @@ static void at2bonds(t_params *ps,
 	  /* else do the normal thing */
 	  if (!is_hydrogen(rb0->rbond[k].ai) && 
 	      !is_hydrogen(rb0->rbond[k].aj)) {
-	    if ((ai=search_atom(rb0->rbond[k].ai,j,natoms,aname)) != -1)
-	      if ((aj=search_atom(rb0->rbond[k].aj,j,natoms,aname)) != -1) {
+	    if ((ai=search_atom(rb0->rbond[k].ai,j,natoms,atom,aname)) != -1)
+	      if ((aj=search_atom(rb0->rbond[k].aj,j,natoms,atom,aname))!=-1) {
 		dist2 = distance2(x[ai],x[aj]);
 		if (dist2 > sqr(LONG_BOND_DIST) )
 		  fprintf(stderr,"Warning: Long Bond (%d-%d = %g nm)\n",
@@ -403,7 +403,7 @@ static void at2bonds(t_params *ps,
       /* Loop over blocks */
       for(k=0; (k<ah0->n_add); k++) {
 	ab0=&(ah0->ab[k]);
-	if ((ai=search_atom(ab0->na[0],j,natoms,aname)) == -1)
+	if ((ai=search_atom(ab0->na[0],j,natoms,atom,aname)) == -1)
 	  fprintf(stderr,"WARNING: Atom %s not found in residue %s %d\n",
 		  ab0->na[0]+1,*(resname[i]),i+1);
 	else

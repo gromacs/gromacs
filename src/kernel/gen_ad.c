@@ -323,7 +323,7 @@ static bool is_imp(t_param *p,t_atoms *atoms,int nrdh,t_idihres idih[])
     for(n=0; (n<i0->nidih); n++) {
       for(j=0; (j<4); j++) {
 	atom=i0->idih[n].ai[j];
-	aa0=search_atom(atom,start,atoms->nr,atoms->atomname);
+	aa0=search_atom(atom,start,atoms->nr,atoms->atom,atoms->atomname);
 	if (aa0 == -1) {
 	  if (debug) 
 	    fprintf(debug,"Atom %s not found in res %d (pm=%d)\n",atom,
@@ -386,7 +386,7 @@ static void pdih2idih(t_param *alldih,int *nalldih,t_param idih[],int *nidih,
       for(j=0; (j<i0->nidih); j++) {
 	for(k=0; (k<4); k++) {
 	  a0=i0->idih[j].ai[k];
-	  aa0=search_atom(a0,start,atoms->nr,atoms->atomname);
+	  aa0=search_atom(a0,start,atoms->nr,atoms->atom,atoms->atomname);
 	  if (aa0 == -1) {
 	    if (debug) 
 	      fprintf(debug,"Atom %s not found in res %d\n",a0,
@@ -517,17 +517,17 @@ bool is_hydro(t_atoms *atoms,int ai)
   return ((*(atoms->atomname[ai]))[0] == 'H');
 }
 
-static void get_atomnames_min(int n,t_atoms *atoms,atom_id *a,char anm[4][12])
+static void get_atomnames_min(int n,char anm[4][12],
+			      int res,t_atoms *atoms,atom_id *a)
 {
-  int m,maxres;
+  int m;
 
-  maxres = -1;
-
-  for(m=0; m<n; m++)
-    maxres=max(maxres,atoms->atom[a[m]].resnr);
+  /* Assume ascending residue numbering */
   for(m=0; m<n; m++) {
-    if (atoms->atom[a[m]].resnr<maxres)
+    if (atoms->atom[a[m]].resnr < res)
       strcpy(anm[m],"-");
+    else if (atoms->atom[a[m]].resnr > res)
+      strcpy(anm[m],"+");
     else
       strcpy(anm[m],"");
     strcat(anm[m],*(atoms->atomname[a[m]]));
@@ -543,6 +543,7 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
   t_resang *i_ra;
   t_resdih *i_rd;
   char    anm[4][12];
+  int     res,minres,maxres;
   int     i,j,j1,k,k1,l,l1,m,n;
   int     maxang,maxdih,maxidih,maxpai;
   int     nang,ndih,npai,nidih,nbd;
@@ -585,25 +586,34 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 	  ang[nang].C0=NOTSET;
 	  ang[nang].C1=NOTSET;
 	  ang[nang].s=strdup("");
-	  if ((i_ra=search_rang(*(atoms->resname[atoms->atom[j1].resnr]),
-			       nra,ra))) {
-	    for(l=0; (l<i_ra->na); l++) {
-	      get_atomnames_min(3,atoms,ang[nang].a,anm); 
-	      if (strcmp(anm[1],i_ra->rang[l].aj)==0) {
-		bFound=FALSE;
-		for (m=0; m<3; m+=2)
-		  bFound=(bFound ||
-			  ((strcmp(anm[m],i_ra->rang[l].ai)==0) &&
-			   (strcmp(anm[2-m],i_ra->rang[l].ak)==0)));
-		if (bFound) { 
-		  for (m=0; m<MAXFORCEPARAM; m++)
-		    ang[nang].c[m] = i_ra->rang[l].c[m];
-		  sfree(ang[nang].s);
-		  ang[nang].s = strdup(i_ra->rang[l].s);
+	  minres = atoms->atom[ang[nang].a[0]].resnr;
+	  maxres = minres;
+	  for(m=1; m<3; m++) {
+	    minres = min(minres,atoms->atom[ang[nang].a[m]].resnr);
+	    maxres = max(maxres,atoms->atom[ang[nang].a[m]].resnr);
+	  }
+	  res = 2*minres-maxres;
+	  do {
+	    res += maxres-minres;
+	    if ((i_ra=search_rang(*(atoms->resname[res]),nra,ra))) {
+	      for(l=0; (l<i_ra->na); l++) {
+		get_atomnames_min(3,anm,res,atoms,ang[nang].a); 
+		if (strcmp(anm[1],i_ra->rang[l].aj)==0) {
+		  bFound=FALSE;
+		  for (m=0; m<3; m+=2)
+		    bFound=(bFound ||
+			    ((strcmp(anm[m],i_ra->rang[l].ai)==0) &&
+			     (strcmp(anm[2-m],i_ra->rang[l].ak)==0)));
+		  if (bFound) { 
+		    for (m=0; m<MAXFORCEPARAM; m++)
+		      ang[nang].c[m] = i_ra->rang[l].c[m];
+		    sfree(ang[nang].s);
+		    ang[nang].s = strdup(i_ra->rang[l].s);
+		  }
 		}
 	      }
 	    }
-	  }
+	  } while (res < maxres);
 	  nang++;
 	  for(l=0; (l<nnb->nrexcl[k1][1]); l++) {
 	    /* For all first neighbours of k1 */
@@ -626,40 +636,37 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 	      for (m=0; m<MAXFORCEPARAM; m++)
 		dih[ndih].c[m]=NOTSET;
 	      dih[ndih].s=strdup("");
-	      if ((i_rd=search_rdih(*(atoms->resname[atoms->atom[j1].resnr]),
-				    nrd,rd))) {
-		for(n=0; (n<i_rd->nd); n++) {
-		  get_atomnames_min(4,atoms,dih[ndih].a,anm);
-		  /*
-		  maxres = -1;
-		  for(m=0; m<4; m++)
-		    maxres=max(maxres,atoms->atom[dih[ndih].a[m]].resnr);
-		  for(m=0; m<4; m++) {
-		    if (atoms->atom[dih[ndih].a[m]].resnr<maxres)
-		      strcpy(anm[m],"-");
-		    else
-		      strcpy(anm[m],"");
-		    strcat(anm[m],*(atoms->atomname[dih[ndih].a[m]]));
-		  }
-		  */
-		  bFound=FALSE;
-		  for (m=0; m<2; m++)
-		    bFound=(bFound ||
-			    ((strcmp(anm[3*m],  i_rd->rdih[n].ai)==0) &&
-			     (strcmp(anm[1+m],  i_rd->rdih[n].aj)==0) &&
-			     (strcmp(anm[2-m],  i_rd->rdih[n].ak)==0) &&
-			     (strcmp(anm[3-3*m],i_rd->rdih[n].al)==0)));
-		  if (bFound) {
-		    for (m=0; m<MAXFORCEPARAM-1; m++)
-		      dih[ndih].c[m] = i_rd->rdih[n].c[m];
-		    sfree(dih[ndih].s);
-		    dih[ndih].s = strdup(i_rd->rdih[n].s);
-		    /* Set the last parameter to be able to see
-		       if the dihedral was in the rtp list */
-		    dih[ndih].c[MAXFORCEPARAM-1] = 0;
+	      minres = atoms->atom[dih[ndih].a[0]].resnr;
+	      maxres = minres;
+	      for(m=1; m<4; m++) {
+		minres = min(minres,atoms->atom[dih[ndih].a[m]].resnr);
+		maxres = max(maxres,atoms->atom[dih[ndih].a[m]].resnr);
+	      }
+	      res = 2*minres-maxres;
+	      do {
+		res += maxres-minres;
+		if ((i_rd=search_rdih(*(atoms->resname[res]),nrd,rd))) {
+		  for(n=0; (n<i_rd->nd); n++) {
+		    get_atomnames_min(4,anm,res,atoms,dih[ndih].a);
+		    bFound=FALSE;
+		    for (m=0; m<2; m++)
+		      bFound=(bFound ||
+			      ((strcmp(anm[3*m],  i_rd->rdih[n].ai)==0) &&
+			       (strcmp(anm[1+m],  i_rd->rdih[n].aj)==0) &&
+			       (strcmp(anm[2-m],  i_rd->rdih[n].ak)==0) &&
+			       (strcmp(anm[3-3*m],i_rd->rdih[n].al)==0)));
+		    if (bFound) {
+		      for (m=0; m<MAXFORCEPARAM-1; m++)
+			dih[ndih].c[m] = i_rd->rdih[n].c[m];
+		      sfree(dih[ndih].s);
+		      dih[ndih].s = strdup(i_rd->rdih[n].s);
+		      /* Set the last parameter to be able to see
+			 if the dihedral was in the rtp list */
+		      dih[ndih].c[MAXFORCEPARAM-1] = 0;
+		    }
 		  }
 		}
-	      }
+	      } while (res < maxres);
 	      nbd=nb_dist(nnb,i,l1);
 	      if (debug)
 		fprintf(debug,"Distance (%d-%d) = %d\n",i+1,l1+1,nbd);
@@ -673,6 +680,7 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 			      is_hydro(atoms,pai[npai].AJ)))
 		  npai++;
 	      }
+	      
 	      ndih++;
 	    }
 	  }
@@ -700,7 +708,7 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
   rm2par(idih,&nidih,ideq);
   
   /* And for the pairs */
-  fprintf(stderr,"There are %d pairs before\n",npai);
+  fprintf(stderr,"There are %d pairs before sorting\n",npai);
   qsort(pai,npai,(size_t)sizeof(pai[0]),pcomp);
   rm2par(pai,&npai,preq);
 

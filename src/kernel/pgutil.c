@@ -31,22 +31,34 @@ static char *SRCID_pgutil_c = "$Id$";
 #include "pgutil.h"
 #include "string.h"
 	
-int search_atom(char *type,int start,int natoms,char **atom[])
+int search_atom(char *type,int start,int natoms,t_atom at[],char **anm[])
 {
-  int  i;
-  bool bForwards;
+  int  i,resnr;
+  bool bPrevious,bNext;
 
-  bForwards=(strchr(type,'-') == NULL);
+  bPrevious = (strchr(type,'-') != NULL);
 
-  if (bForwards) {
-    for(i=start; (i<natoms); i++)
-      if (strcasecmp(type,*(atom[i]))==0)
+  if (!bPrevious) {
+    resnr = at[start].resnr;
+    if (strchr(type,'+') != NULL) {
+      /* The next residue */
+      type++;
+      while ((start<natoms) && (at[start].resnr == resnr))
+	start++;
+      if (start < natoms)
+	resnr = at[start].resnr;
+    }
+    for(i=start; (i<natoms) && (at[i].resnr == resnr); i++)
+      if (strcasecmp(type,*(anm[i]))==0)
 	return i;
   }
   else {
+    /* The previous residue */
     type++;
-    for(i=start-1; (i>=0); i--)
-      if (strcasecmp(type,*(atom[i]))==0)
+    if (start > 0)
+      resnr = at[start-1].resnr;
+    for(i=start-1; (i>=0) && (at[i].resnr == resnr); i--)
+      if (strcasecmp(type,*(anm[i]))==0)
 	return i;
   }
   return -1;
