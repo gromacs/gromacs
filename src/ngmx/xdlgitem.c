@@ -292,7 +292,7 @@ static bool insert(char *s, char c, int *pos)
   return FALSE;
 }
 
-static bool backspace(char *s, int *pos)
+static bool my_backspace(char *s, int *pos)
 {
   int i,sl;
 
@@ -306,7 +306,7 @@ static bool backspace(char *s, int *pos)
   return FALSE;
 }
 
-static bool delete(char *s, int *pos)
+static bool my_delete(char *s, int *pos)
 {
   int i,sl;
 
@@ -376,7 +376,7 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
 #endif
     switch(keysym) {
     case XK_Delete:
-      if (delete(et->buf,&(et->pos))){
+      if (my_delete(et->buf,&(et->pos))){
 	et->bChanged=TRUE;
 	return ETCHANGED;
       }
@@ -384,7 +384,7 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
 	XBell(x11->disp,50);
       break;
     case XK_BackSpace:
-      if (backspace(et->buf,&(et->pos))) {
+      if (my_backspace(et->buf,&(et->pos))) {
 	et->bChanged=TRUE;
 	return ETCHANGED;
       }
