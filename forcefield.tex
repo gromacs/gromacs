@@ -29,7 +29,7 @@ The potential functions can be subdivided into three parts
 \begin{enumerate}
 \item   {\em Non-bonded}: Lennard-Jones or Buckingham, and Coulomb or
 modified Coulomb. The non-bonded interactions are computed on the
-basis of a neighbour list (a list of non-bonded atoms within a certain
+basis of a neighbor list (a list of non-bonded atoms within a certain
 radius), in which exclusions are already removed.
 \item   {\em Bonded}: covalent bond-stretching, angle-bending,
 improper dihedrals, and proper dihedrals. These are computed on the
@@ -211,7 +211,7 @@ derivatives at the \normindex{cut-off} radius. With such forces the
 time-step integration produces much smaller errors and there are no
 such complications as creating charges from dipoles by the truncation
 procedure. In fact, by using shifted forces there is no need for
-charge groups in the construction of neighbour lists. However, the
+charge groups in the construction of neighbor lists. However, the
 shift function produces a considerable modification of the Coulomb
 potential. Unless the 'missing' long-range potential is properly
 calculated and added (through the use of \normindex{PPPM},
@@ -1092,8 +1092,8 @@ to the hamiltonian using Lagrange multipliers $\lambda$:
 \subsection{Exclusions and 1-4 Interactions.}
 Atoms within a molecule that are close by in the chain, 
 i.e. atoms that are covalently bonded, or linked by one respectively two
-atoms are so-called {\em first neighbours, second neighbours} and 
-{\em \normindex{third neighbours}}, (see Figure~\ref{fig:chain}). Since the
+atoms are so-called {\em first neighbors, second neighbors} and 
+{\em \normindex{third neighbors}}, (see Figure~\ref{fig:chain}). Since the
 interactions of atom {\bf i} with {\bf i+1} 
 
 \begin{figure}
@@ -1106,13 +1106,13 @@ and the interaction of atom {\bf i} with atom {\bf i+2} are mainly
 quantum mechanical, they can not be modeled by a Lennard-Jones potential.
 Instead it is assumed that these interactions are adequately modeled
 by a harmonic bond term or constraint ({\bf i,i+1}) and a harmonic angle term
-({\bf i,i+2}). The first and second neighbours (atoms {\bf i+1}and {\bf i+2}) 
+({\bf i,i+2}). The first and second neighbors (atoms {\bf i+1}and {\bf i+2}) 
 are therefore
 {\em excluded} from the Lennard-Jones \normindex{interaction list} 
 of atom {\bf i};
 atoms {\bf i+1} and {\bf i+2} are called {\em \normindex{exclusions}} of atom {\bf i}.
 
-For third neighbours the normal Lennard-Jones repulsion is sometimes
+For third neighbors the normal Lennard-Jones repulsion is sometimes
 still too strong, which means that when applied to a molecule the
 molecule would deform or break due to the internal strain. This is
 especially the case for Carbon-Carbon interactions in a {\em

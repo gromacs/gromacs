@@ -302,12 +302,12 @@ z_i & = & z_i - c*\verb'round'([z_i-z_0-c/2]/c)
 \subsubsection{Image calculation on a grid.}
 \label{sec:nsgrid}
 {\gromacs} uses an \normindex{interaction list} for nonbonded interactions,
-usually called the {\em \normindex{neighbourlist}}.
+usually called the {\em \normindex{neighborlist}}.
 This list is made every {\tt nstlist} MD steps, where {\tt nstlist} is
 typically 10 MD steps. 
-To make the neighbourlist all particles that are close 
+To make the neighborlist all particles that are close 
 (i.e. within the cut-off) to a given particle must be found.
-This searching, usually called neighbour searching (NS), 
+This searching, usually called neighbor searching (NS), 
 involves peridic boundary conditions and 
 determining the {\em image} (see Sec.~\ref{sec:pbc}).
 When the cut-off is large compared to the box edge $l$ ($>$ 0.4$l$)
@@ -334,22 +334,22 @@ Figure~\ref{fig:nsgrid}.
 In each spatial dimension, a particle $i$ has three images. For each direction
 the image may be -1,0 or 1, corresponding to a translation over -1, 0 or +1
 box vector. We do not search the surrounding {\nsgrid} cells for
-neighbours of $i$ and then calculate the image, 
+neighbors of $i$ and then calculate the image, 
 but rather construct the images first and then 
-search neighbours corresponding to that image of $i$.
+search neighbors corresponding to that image of $i$.
 Since we demand that the number of {\nsgrid} cells $\ge$ 5 in each direction 
-the same neighbour will not be found twice. For every particle, exactly 125 (5$^3$)
-neighbouring cells are searched. Therefore, the algorithm scales linear with the 
+the same neighbor will not be found twice. For every particle, exactly 125 (5$^3$)
+neighboring cells are searched. Therefore, the algorithm scales linear with the 
 number of particles. Although the prefactor is large (125) the scaling behaviour
 makes the algorithm far superior over the standard $O({\natom}^2)$ 
 algorithm when the number of particles exceeds a few hundred.
 
 In the example of Figure~\ref{fig:nsgrid} the image $t_x$ = 0 of particle
-$i$ will find $j$ as a neighbour, while image $t_x$ = 1 of particle $i$
-will find $k$ as a neighbour.
+$i$ will find $j$ as a neighbor, while image $t_x$ = 1 of particle $i$
+will find $k$ as a neighbor.
 
 \subsubsection{Charge groups}
-Where applicable, \normindex{neighbour searching} is carried out on the basis of
+Where applicable, \normindex{neighbor searching} is carried out on the basis of
 {\em  charge groups}. A \normindex{charge group} is a small set of nearby atoms
 that  have net charge zero. Charge groups are defined in the molecular
 topology. If the nearest image  distance between the {\em geometrical
@@ -371,7 +371,7 @@ in {\gromacs} (see chapter~\ref{ch:ff}) but must be used with
 care: in principle they should be combined with a lattice sum for
 long-range electrostatics.
 
-The actual neighbour search is performed on a grid. The details of the
+The actual neighbor search is performed on a grid. The details of the
 algorithm are not relevant for the user and are not given here.
 
 \subsubsection{Potential energy}
@@ -1222,7 +1222,7 @@ over processors, which can be done in two ways:
 \end{itemize}
 
 \subsection{MD on a ring of processors}
-When a neighbourlist is not used the MD problem is in principle an $O(N^2)$ 
+When a neighborlist is not used the MD problem is in principle an $O(N^2)$ 
 problem as each particle can interact
 with every other. This can be simplified using Newtons third law
 \beq

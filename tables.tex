@@ -93,15 +93,15 @@ As an example for the normal dispersion interaction the file would contain:\\
 \centerline{\begin{tabular}{lllll}
 x &-x$^{-6}$  &-6x$^{-7}$ & -42x$^{-8}$ &-336x$^{-9}$\\
 \end{tabular}}\\
-The x should run from 0 to r$_c$+0.5, with a spacing of 0.002 nm when you 
-run in single precision, or 0.0005 when you run in double precision.
-This and other functions contain a singularity at x=0, but since atoms are 
-normally not closer to each other than 0.1 nm, the function value at x=0 is
-not important.
-In this context r$_c$ denotes the single cut-off denoted by the variables
-rshort and rlong (see above). These variables should be the same (but need not be
-1.0) and consistent with the table data.
-The neighboursearching algorithm will search all atom-pairs  within a distance
-rlong and compute the interactions using your potential functions.
+The x should run from 0 to r$_c$+0.5, with a spacing of 0.002 nm when
+you run in single precision, or 0.0005 when you run in double
+precision.  This and other functions contain a singularity at x=0, but
+since atoms are normally not closer to each other than 0.1 nm, the
+function value at x=0 is not important.  In this context r$_c$ denotes
+the single cut-off denoted by the variables rshort and rlong (see
+above). These variables should be the same (but need not be 1.0) and
+consistent with the table data.  The neighborsearching algorithm will
+search all atom-pairs within a distance rlong and compute the
+interactions using your potential functions.
 
 This mechanism allows the user to use their own preferred programming language,

@@ -1,11 +1,11 @@
 \section{Parallel Molecular Dynamics}
 In this chapter we describe some details of the \normindex{parallel MD}  
 algorithm used 
-in {\gromacs}. This also includes some other information on neighboursearching and
+in {\gromacs}. This also includes some other information on neighborsearching and
 a side excursion to parallel sorting.
 Please note the following which we use throughout this chapter:\\
 {\bf definition:} {\natom}: Number of particles, {\nproc} number of processors.\\
-{\gromacs} employs two different grids: the neighboursearching grid ({\nsgrid})
+{\gromacs} employs two different grids: the neighborsearching grid ({\nsgrid})
 and the charge/potential grid ({\fftgrid}), as will be described below.
 To maximize the confusion, 
 these two grids are mapped onto a grid of processors when {\gromacs} runs on a 
@@ -20,13 +20,13 @@ not directly visible for the programmer, a software layer (like \normindex{MPI} 
 \normindex{PVM}) hides this, and makes communication from all processors to all
 others possible. In contrast, in the {\gromacs} hardware~\cite{Berendsen95a}
 only communication in a ring was available, i.e. each processor could communicate
-with its direct neighbours only.
+with its direct neighbors only.
 
 It seems logical to map the computational box of an MD simulation system 
 to a 3D grid of 
 processors (e.g. 4x4x4 for a 64 processor system). This ensures that most 
 interactions that are local in space can be computed with information from 
-neighbouring processors only. However, this means that there have to be
+neighboring processors only. However, this means that there have to be
 communication channels in 3 dimensions too, which is not necessarily the case.
 Although this may be overcome in software, such a mapping is complicated for the MD
 software as well, without clear benefits in terms of performance for most
@@ -57,7 +57,7 @@ is equal to the number of processors. There are multiple ways of dividing the bo
 over processors, but since the {\gromacs} code assumes
 a ring topology for the processors, it is logical to cut the system in slabs in
 just one dimension, the X dimension. 
-The algorithm for neighboursearching then becomes:
+The algorithm for neighborsearching then becomes:
 \begin{enumerate}
 \item	Make a list of charge group indices sorted on (increasing) X coordinate
 	(\figref{parsort}).
@@ -67,15 +67,15 @@ The algorithm for neighboursearching then becomes:
 	charge groups
 \item	Put the particles corresponding to the local slab on a 3D {\nsgrid} as 
 	desribed above (\secref{nsgrid})
-\item	Communicate the {\nsgrid} to neighbouring processors (not necessarily to all
-	processors). The amount of neighbouring {\nsgrid} cells (N$_{gx}$) to 
+\item	Communicate the {\nsgrid} to neighboring processors (not necessarily to all
+	processors). The amount of neighboring {\nsgrid} cells (N$_{gx}$) to 
 	communicate is determined by the cut-off length $r_c$ according to
 	\beq
 	N_{gx}	~=~	\frac{r_c \nproc}{l_x}   
 	\eeq
 	where $l_x$ is the box length in the slabbing direction. 
-\item	On each processor compute the neighbourlist for all charge groups in
-	its slab using the normal grid neighboursearching.
+\item	On each processor compute the neighborlist for all charge groups in
+	its slab using the normal grid neighborsearching.
 \end{enumerate}
 
 \begin{figure}
@@ -141,7 +141,7 @@ parallelized:
 	of space, it only has to calculate the charge distribution for 
 	that region of space. Since {\gromacs} works with slabs, this means that
 	each processor fills the {\fftgrid} cells corresponding to it's slab in space
-	and addition of {\fftgrid}s need only be done for neighbouring slabs.\\
+	and addition of {\fftgrid}s need only be done for neighboring slabs.\\
 	To be more precise, the slab $x$ for processor $i$ is defined as:
 	\beq
 	i\, \frac{l_x}{M} \le x <\, (i+1)\frac{l_x}{M}
@@ -184,7 +184,7 @@ parallelized:
 \item	Interpolate the potential ${\phi}(\ve{r})$ in real space at the particle
 	positions to obtain forces and energy. For this bit the same considerations
 	towards parallellism hold as for the charge spreading. However in this
-	case more neighbouring grid cells are needed, such that we need
+	case more neighboring grid cells are needed, such that we need
 	the following set of {\fftgrid} slabs in the $x$ direction:
 	\beq
 	{\rm trunc}\left(i\,\frac{l_x \nx}{M}\right)-3 \le i_x \le {\rm trunc}\left((i+1)\,\frac{l_x \nx}{M}\right)+4
@@ -205,7 +205,7 @@ also support MPI using the shared memory for communication.
 \subsection{Parallel sorting}
 \label{sec:parsort}
 For the domain decomposition bit of {\gromacs} it is necessary to sort the 
-coordinates (or rather the index to coordinates) every time a neighbourlist is made.
+coordinates (or rather the index to coordinates) every time a neighborlist is made.
 If we use brute force, and sort all coordinates on each processor (which is 
 technically possible since we have all the coordinates), then this sorting procedure
 will take a constant time (proportional to {\natom}$^2\log${\natom}, 
@@ -233,5 +233,5 @@ At subsequent steps of the simulation:
 \end{enumerate}
 
 %\section{A Worked Example}
-%Suppose our box size is 4.0 nm and the cut-off is 0.8 nm. For neighboursearching 
+%Suppose our box size is 4.0 nm and the cut-off is 0.8 nm. For neighborsearching 
 %we use {\dgrid} = 2, such that there 10 {\nsgrid} cells.
