@@ -499,6 +499,14 @@ int main(int argc, char *argv[])
   infile  = ftp2fn(efSTX,NFILE,fnm);
   outfile = ftp2fn(efSTO,NFILE,fnm);
   outftp  = fn2ftp(outfile);
+  if (bMead && (outftp != efPDB))
+    fatal_error(0,"Output file should be a .pdb file"
+		" when using the -mead option\n");
+  if (bMead && !((fn2ftp(infile) == efTPR) || 
+		 (fn2ftp(infile) == efTPA) ||
+		 (fn2ftp(infile) == efTPB)))
+    fatal_error(0,"Input file should be a .tp[abr] file"
+		" when using the -mead option\n");
   
   get_stx_coordnum(infile,&natom);
   init_t_atoms(&atoms,natom,TRUE);
@@ -675,7 +683,8 @@ int main(int argc, char *argv[])
   else {
     if (outftp != efPDB) {
       write_sto_conf(outfile,title,&atoms,x,bHaveV?v:NULL,box); 
-    } else {
+    } 
+    else {
       out=ffopen(outfile,"w");
       if (opt2bSet("-bf",NFILE,fnm)) {
 	read_bfac(opt2fn("-bf",NFILE,fnm),&n_bfac,&bfac,&bfac_nr);
@@ -685,6 +694,10 @@ int main(int argc, char *argv[])
       if (opt2parg_bSet("-label",NPA,pa)) {
 	for(i=0; (i<atoms.nr); i++) 
 	  atoms.atom[i].chain=label[0];
+      }
+      if (bMead) {
+        fprintf(out,"REMARK    The b-factors in this file hold atomic radii\n");
+	fprintf(out,"REMARK    The occupancy in this file hold atomic charges\n");
       }
       write_pdbfile(out,title,&atoms,x,box,0,!bLegend && visbox[0]<=0);
       if (bLegend)
