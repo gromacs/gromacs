@@ -131,26 +131,23 @@ static bool deq(t_param *p1, t_param *p2)
 static bool remove_dih(t_param *p, int i, int np)
      /* check if dihedral p[i] should be removed */
 {
-  bool bMidEq,bRem;
+  bool bRem;
   int j;
 
-  if (i>0)
-    bMidEq = deq(&p[i],&p[i-1]);
-  else
-    bMidEq = FALSE;
-
   if (p[i].c[MAXFORCEPARAM-1]==NOTSET) {
+    if (i>0)
+      bRem = deq(&p[i],&p[i-1]);
+    else
+      bRem = FALSE;
     /* also remove p[i] if there is a dihedral on the same bond
        which has parameters set */
-    bRem = bMidEq;
     j=i+1;
     while (!bRem && (j<np) && deq(&p[i],&p[j])) {
       bRem = (p[j].c[MAXFORCEPARAM-1] != NOTSET);
       j++;
     }
   } else
-    bRem = bMidEq && (((p[i].AI==p[i-1].AI) && (p[i].AL==p[i-1].AL)) ||
-		      ((p[i].AI==p[i-1].AL) && (p[i].AL==p[i-1].AI)));
+    bRem = FALSE;
 
   return bRem;
 }
@@ -321,7 +318,7 @@ static void sort_id(int nr,t_param ps[])
 
 static void dump_param(FILE *fp,char *title,int n,t_param ps[])
 {
-  int i,j;
+ int i,j;
   
   fprintf(fp,"%s: %d entries\n",title,n);
   for(i=0; (i<n); i++) {
@@ -394,11 +391,9 @@ static int n_hydro(atom_id a[],char ***atomname)
   return nh;
 }
 
-static void pdih2idih(t_param *alldih, int *nalldih,t_param idih[],int *nidih,
+static void pdih2idih(t_param *dih, int *ndih,t_param idih[],int *nidih,
 		      t_atoms *atoms, t_hackblock hb[],bool bAlldih)
 {
-  t_param   *dih;
-  int       ndih;
   char      *a0;
   t_rbondeds *idihs;
   t_rbonded  *hbidih;
@@ -437,39 +432,35 @@ static void pdih2idih(t_param *alldih, int *nalldih,t_param idih[],int *nidih,
 	start++;
     }
   }
-  if (*nalldih == 0)
+  if (*ndih == 0)
     return;
-  /* Copy the impropers and dihedrals to separate arrays. */
-  snew(dih,*nalldih);
-  ndih = 0;
-  for(i=0; i<*nalldih; i++) {
-    hbidih = is_imp(&alldih[i],atoms,hb);
-    if ( hbidih ) {
-      set_p(&idih[*nidih],alldih[i].a,NULL,hbidih->s);
-      (*nidih)++;
-    } else {
-      cpparam(&dih[ndih],&alldih[i]);
-      ndih++;
+  /* Remove the dihedrals which are also impropers. */
+  k = 0;
+  for(i=0; i<*ndih; i++) {
+    if (!is_imp(&dih[i],atoms,hb)) {
+      if (k != i) 
+	cpparam(&dih[k],&dih[i]);
+      k++;
     }
   }
-  
-  /* Now, because this list still contains the double entries,
-   * keep the dihedral with parameters or the first one.
-   */
-    
-  snew(index,ndih);
-  nind=0;
+  *ndih = k;
+
+  snew(index,*ndih+1);
   if (bAlldih) {
     fprintf(stderr,"Keeping all generated dihedrals\n");
-    for(i=0; i<ndih; i++) 
-      if ((i==0) || !deq2(&dih[i],&dih[i-1]))
-	index[nind++]=i;
+    nind = *ndih+1;
+    for(i=0; i<nind; i++) 
+      index[i] = i;
   } else {
-    for(i=0; i<ndih; i++) 
-      if (!remove_dih(dih,i,ndih)) 
+    /* Now, because this list still multiple dihedrals over one bond,
+     * keep the dihedral with parameters or the first one.
+     */
+    nind = 0;
+    for(i=0; i<*ndih; i++) 
+      if (!remove_dih(dih,i,*ndih)) 
 	index[nind++]=i;
+    index[nind] = *ndih;
   }
-  index[nind]=ndih;
 
   /* if we don't want all dihedrals, we need to select the ones with the 
    *  fewest hydrogens
@@ -503,19 +494,20 @@ static void pdih2idih(t_param *alldih, int *nalldih,t_param idih[],int *nidih,
 	    break;
 	}
       }
-      for(j=0; (j<MAXATOMLIST); j++)
-	alldih[k].a[j] = dih[bestl].a[j];
-      for(j=0; (j<MAXFORCEPARAM); j++)
-	alldih[k].c[j] = dih[bestl].c[j];
-      set_p_string(&(alldih[k]),dih[bestl].s);
+      if (k != bestl) {
+	for(j=0; (j<MAXATOMLIST); j++)
+	  dih[k].a[j] = dih[bestl].a[j];
+	for(j=0; (j<MAXFORCEPARAM); j++)
+	  dih[k].c[j] = dih[bestl].c[j];
+	set_p_string(&(dih[k]),dih[bestl].s);
+      }
       k++;
     }
   }
-  for (i=k; i < *nalldih; i++)
-    strcpy(alldih[i].s,"");
-  *nalldih = k;
+  for (i=k; i<*ndih; i++)
+    strcpy(dih[i].s,"");
+  *ndih = k;
 
-  sfree(dih);
   sfree(index);
 }
 
@@ -666,9 +658,9 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
   char    anm[4][12];
   int     res,minres,maxres;
   int     i,j,j1,k,k1,l,l1,m,n,i1,i2;
-  int     maxang,maxdih,maxidih,maxpai;
+  int     maxang,maxdih,maxpai;
   int     nang,ndih,npai,nidih,nbd;
-  int     dang,ddih;
+  int     dang,ddih,nFound;
   bool    bFound,bExcl;
   
   /* These are the angles, pairs, impropers and dihedrals that we generate
@@ -676,17 +668,15 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
    * will be retained.
    */
   nang    = 0;
-  nidih   = 0;
   npai    = 0;
   ndih    = 0;
   dang    = 6*nnb->nr;
   ddih    = 24*nnb->nr;
   maxang  = dang;
-  maxdih  = maxpai = maxidih = ddih;
+  maxdih  = maxpai = ddih;
   snew(ang, maxang);
   snew(dih, maxdih);
   snew(pai, maxpai);
-  snew(idih,maxidih);
 
   if (hb)
     gen_excls(atoms,excls,hb);
@@ -701,164 +691,178 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
 	/* For all first neighbours of j1 */
 	k1=nnb->a[j1][1][k];
 	if (k1 != i) {
-	  if (nang == maxang) {
-	    srenew(ang,maxang+dang);
-	    memset(ang+maxang,0,sizeof(ang[0]));
-	    maxang += dang;
-	  }
-	  ang[nang].AJ=j1;
+	  /* Generate every angle only once */
 	  if (i < k1) {
-	    ang[nang].AI=i;
-	    ang[nang].AK=k1;
-	  }
-	  else {
-	    ang[nang].AI=k1;
-	    ang[nang].AK=i;
-	  }
-	  ang[nang].C0=NOTSET;
-	  ang[nang].C1=NOTSET;
-	  set_p_string(&(ang[nang]),"");
-	  if (hb) {
-	    minres = atoms->atom[ang[nang].a[0]].resnr;
-	    maxres = minres;
-	    for(m=1; m<3; m++) {
-	      minres = min(minres,atoms->atom[ang[nang].a[m]].resnr);
-	      maxres = max(maxres,atoms->atom[ang[nang].a[m]].resnr);
+	    if (nang == maxang) {
+	      srenew(ang,maxang+dang);
+	      maxang += dang;
 	    }
-	    res = 2*minres-maxres;
-	    do {
-	      res += maxres-minres;
-	      hbang=&hb[res].rb[ebtsANGLES];
-	      for(l=0; (l<hbang->nb); l++) {
-		get_atomnames_min(3,anm,res,atoms,ang[nang].a); 
-		if (strcmp(anm[1],hbang->b[l].AJ)==0) {
-		  bFound=FALSE;
-		  for (m=0; m<3; m+=2)
-		    bFound=(bFound ||
-			    ((strcmp(anm[m],hbang->b[l].AI)==0) &&
-			     (strcmp(anm[2-m],hbang->b[l].AK)==0)));
-		  if (bFound) {
-		    set_p_string(&(ang[nang]),hbang->b[l].s);
+	    ang[nang].AI=i;
+	    ang[nang].AJ=j1;
+	    ang[nang].AK=k1;
+	    ang[nang].C0=NOTSET;
+	    ang[nang].C1=NOTSET;
+	    set_p_string(&(ang[nang]),"");
+	    if (hb) {
+	      minres = atoms->atom[ang[nang].a[0]].resnr;
+	      maxres = minres;
+	      for(m=1; m<3; m++) {
+		minres = min(minres,atoms->atom[ang[nang].a[m]].resnr);
+		maxres = max(maxres,atoms->atom[ang[nang].a[m]].resnr);
+	      }
+	      res = 2*minres-maxres;
+	      do {
+		res += maxres-minres;
+		get_atomnames_min(3,anm,res,atoms,ang[nang].a);
+		hbang=&hb[res].rb[ebtsANGLES];
+		for(l=0; (l<hbang->nb); l++) {
+		  if (strcmp(anm[1],hbang->b[l].AJ)==0) {
+		    bFound=FALSE;
+		    for (m=0; m<3; m+=2)
+		      bFound=(bFound ||
+			      ((strcmp(anm[m],hbang->b[l].AI)==0) &&
+			       (strcmp(anm[2-m],hbang->b[l].AK)==0)));
+		    if (bFound) {
+		      set_p_string(&(ang[nang]),hbang->b[l].s);
+		    }
 		  }
 		}
-	      }
-	    } while (res < maxres);
+	      } while (res < maxres);
+	    }
+	    nang++;
 	  }
-	  nang++;
-	  for(l=0; (l<nnb->nrexcl[k1][1]); l++) {
-	    /* For all first neighbours of k1 */
-	    l1=nnb->a[k1][1][l];
-	    if ((l1 != i) && (l1 != j1)) {
-	      if (ndih == maxdih) {
-		srenew(dih,maxdih+ddih);
-		memset(dih+maxdih,0,sizeof(dih[0]));
-		srenew(idih,maxdih+ddih);
-		memset(idih+maxdih,0,sizeof(idih[0]));
-		srenew(pai,maxdih+ddih);
-		memset(pai+maxdih,0,sizeof(pai[0]));
-		maxdih += ddih;
-	      }
-	      if (j1 < k1) {
+	  /* Generate every dihedral, 1-4 exclusion and 1-4 interaction
+	     only once */
+	  if (j1 < k1) {
+	    for(l=0; (l<nnb->nrexcl[k1][1]); l++) {
+	      /* For all first neighbours of k1 */
+	      l1=nnb->a[k1][1][l];
+	      if ((l1 != i) && (l1 != j1)) {
+		if (ndih == maxdih) {
+		  maxdih += ddih;
+		  srenew(dih,maxdih);
+		}
 		dih[ndih].AI=i;
 		dih[ndih].AJ=j1;
 		dih[ndih].AK=k1;
 		dih[ndih].AL=l1;
-	      }
-	      else {
-		dih[ndih].AI=l1;
-		dih[ndih].AJ=k1;
-		dih[ndih].AK=j1;
-		dih[ndih].AL=i;
-	      }
-	      for (m=0; m<MAXFORCEPARAM; m++)
-		dih[ndih].c[m]=NOTSET;
-	      set_p_string(&(dih[ndih]),"");
-	      if (hb) {
-		minres = atoms->atom[dih[ndih].a[0]].resnr;
-		maxres = minres;
-		for(m=1; m<4; m++) {
-		  minres = min(minres,atoms->atom[dih[ndih].a[m]].resnr);
-		  maxres = max(maxres,atoms->atom[dih[ndih].a[m]].resnr);
-		}
-		res = 2*minres-maxres;
-		do {
-		  res += maxres-minres;
-		  hbdih=&hb[res].rb[ebtsPDIHS];
-		  for(n=0; (n<hbdih->nb); n++) {
+		for (m=0; m<MAXFORCEPARAM; m++)
+		  dih[ndih].c[m]=NOTSET;
+		set_p_string(&(dih[ndih]),"");
+		nFound = 0;
+		if (hb) {
+		  minres = atoms->atom[dih[ndih].a[0]].resnr;
+		  maxres = minres;
+		  for(m=1; m<4; m++) {
+		    minres = min(minres,atoms->atom[dih[ndih].a[m]].resnr);
+		    maxres = max(maxres,atoms->atom[dih[ndih].a[m]].resnr);
+		  }
+		  res = 2*minres-maxres;
+		  do {
+		    res += maxres-minres;
 		    get_atomnames_min(4,anm,res,atoms,dih[ndih].a);
-		    bFound=FALSE;
-		    for (m=0; m<2; m++)
-		      bFound=(bFound ||
-			      ((strcmp(anm[3*m],  hbdih->b[n].AI)==0) &&
-			       (strcmp(anm[1+m],  hbdih->b[n].AJ)==0) &&
-			       (strcmp(anm[2-m],  hbdih->b[n].AK)==0) &&
-			       (strcmp(anm[3-3*m],hbdih->b[n].AL)==0)));
-		    if (bFound) {
-		      set_p_string(&dih[ndih],hbdih->b[n].s);
+		    hbdih=&hb[res].rb[ebtsPDIHS];
+		    for(n=0; (n<hbdih->nb); n++) {
+		      bFound=FALSE;
+		      for (m=0; m<2; m++)
+			bFound=(bFound ||
+				((strcmp(anm[3*m],  hbdih->b[n].AI)==0) &&
+				 (strcmp(anm[1+m],  hbdih->b[n].AJ)==0) &&
+				 (strcmp(anm[2-m],  hbdih->b[n].AK)==0) &&
+				 (strcmp(anm[3-3*m],hbdih->b[n].AL)==0)));
+		      if (bFound) {
+			if (ndih == maxdih) {
+			  maxdih += ddih;
+			  srenew(dih,maxdih);
+			}
+			dih[ndih].AI=i;
+			dih[ndih].AJ=j1;
+			dih[ndih].AK=k1;
+			dih[ndih].AL=l1;
+			for (m=0; m<MAXFORCEPARAM; m++)
+			  dih[ndih].c[m]=NOTSET;
+			set_p_string(&dih[ndih],hbdih->b[n].s);
 			
-		      /* Set the last parameter to be able to see
-			 if the dihedral was in the rtp list */
-		      dih[ndih].c[MAXFORCEPARAM-1] = 0;
+			/* Set the last parameter to be able to see
+			   if the dihedral was in the rtp list */
+			dih[ndih].c[MAXFORCEPARAM-1] = 0;
+			nFound++;
+			ndih++;
+		      }
+		    }
+		  } while (res < maxres);
+		}
+		if (nFound == 0) {
+		  if (ndih == maxdih) {
+		    maxdih += ddih;
+		    srenew(dih,maxdih);
+		  }
+		  dih[ndih].AI=i;
+		  dih[ndih].AJ=j1;
+		  dih[ndih].AK=k1;
+		  dih[ndih].AL=l1;
+		  for (m=0; m<MAXFORCEPARAM; m++)
+		    dih[ndih].c[m]=NOTSET;
+		  set_p_string(&(dih[ndih]),"");
+		  ndih++;
+		}
+
+		nbd=nb_dist(nnb,i,l1);
+		if (debug)
+		  fprintf(debug,"Distance (%d-%d) = %d\n",i+1,l1+1,nbd);
+		if (nbd == 3) {
+		  i1 = min(i,l1);
+		  i2 = max(i,l1);
+		  bExcl = FALSE;
+		  for(m=0; m<excls[i1].nr; m++)
+		    bExcl = bExcl || excls[i1].e[m]==i2;
+		  if (!bExcl) {
+		    if (bH14 || !(is_hydro(atoms,i1) && is_hydro(atoms,i2))) {
+		      if (npai == maxpai) {
+			maxpai += ddih;
+			srenew(pai,maxpai);
+		      }
+		      pai[npai].AI=i1;
+		      pai[npai].AJ=i2;
+		      pai[npai].C0=NOTSET;
+		      pai[npai].C1=NOTSET;
+		      set_p_string(&(pai[npai]),"");
+		      npai++;
 		    }
 		  }
-		} while (res < maxres);
-	      }
-	      nbd=nb_dist(nnb,i,l1);
-	      if (debug)
-		fprintf(debug,"Distance (%d-%d) = %d\n",i+1,l1+1,nbd);
-	      if (nbd == 3) {
-		i1 = min(i,l1);
-		i2 = max(i,l1);
-		bExcl = FALSE;
-		for(m=0; m<excls[i1].nr; m++)
-		  bExcl = bExcl || excls[i1].e[m]==i2;
-		if (!bExcl) {
-		  if (bH14 || !(is_hydro(atoms,i1) && is_hydro(atoms,i2))) {
-		    pai[npai].AI=i1;
-		    pai[npai].AJ=i2;
-		    pai[npai].C0=NOTSET;
-		    pai[npai].C1=NOTSET;
-		    set_p_string(&(pai[npai]),"");
-		    npai++;
-		  }
 		}
 	      }
-	      
-	      ndih++;
 	    }
 	  }
 	}
       }
     }
-  
-  /* We now have a params list with double entries for each angle,
-   * and even more for each dihedral. We will remove these now.
-   */
+
   /* Sort angles with respect to j-i-k (middle atom first) */
   if (nang > 1)
     qsort(ang,nang,(size_t)sizeof(ang[0]),acomp);
-  rm2par(ang,&nang,aeq);
 
   /* Sort dihedrals with respect to j-k-i-l (middle atoms first) */
-  fprintf(stderr,"before sorting: %d dihedrals\n",ndih);
   if (ndih > 1)
     qsort(dih,ndih,(size_t)sizeof(dih[0]),dcomp);
+  
+  /* Generate impropers, remove dihedrals which are impropers
+     and when bAlldih is not set remove multiple dihedrals over one bond.
+     */
+  fprintf(stderr,"Before cleaning: %d dihedrals\n",ndih);
+  nidih = 0;
+  snew(idih,ndih);
   pdih2idih(dih,&ndih,idih,&nidih,atoms,hb,bAlldih);
-  fprintf(stderr,"after sorting: %d dihedrals\n",ndih);
   
-  /* Now the dihedrals are sorted and doubles removed, this has to be done
-   * for impropers too
-   */
-  if (debug) dump_param(debug,"Before sort",nidih,idih);
+  /* Sort the impropers */
   sort_id(nidih,idih);
-  if (debug) dump_param(debug,"After sort",nidih,idih);
-  rm2par(idih,&nidih,ideq);
-  if (debug) dump_param(debug,"After rm2par",nidih,idih);
   
-  /* And for the pairs */
-  fprintf(stderr,"There are %d pairs before sorting\n",npai);
+  /* Sort the pairs */
   if (npai > 1)
     qsort(pai,npai,(size_t)sizeof(pai[0]),pcomp);
+  /* Remove doubles, could occur in 6-rings, such as phenyls,
+     maybe one does not want this when fudgeQQ < 1.
+     */
   rm2par(pai,&npai,preq);
 
   /* Now we have unique lists of angles and dihedrals 
