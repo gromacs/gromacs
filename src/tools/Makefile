@@ -203,11 +203,11 @@ endif
 g_nmeig.o:	g_nmeig.c
 
 ifeq ($(USEF77),yes)
-g_covar:          g_covar.o
+g_covar:        g_covar.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
 else
 ql77.o:		ql77.c
-g_covar:          g_covar.o ql77.o
+g_covar:        g_covar.o ql77.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
 endif
 
