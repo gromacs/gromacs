@@ -52,6 +52,7 @@ static char *SRCID_g_traj_c = "$Id$";
 #include "tpxio.h"
 #include "rmpbc.h"
 #include "physics.h"
+#include "nrjac.h"
 
 static void low_print_data(FILE *fp,real time,rvec x[],int n,atom_id *index,
 		    bool bDim[])
@@ -148,11 +149,20 @@ static void make_legend(FILE *fp,int ngrps,int isize,atom_id index[],
 
 static real ekrot(rvec x[],rvec v[],real mass[],int isize,atom_id index[])
 {
-  matrix TCM,L;
+  static real **TCM=NULL,**L;
   real   tm,m0,lxx,lxy,lxz,lyy,lyz,lzz,ekrot;
   rvec   dx,a0,ocm;
   rvec   xcm,vcm,acm;
   int    i,j,m,n;
+
+  if (TCM == NULL) {
+    snew(TCM,DIM);
+    for(i=0; i<DIM; i++)
+      snew(TCM[i],DIM);
+    snew(L,DIM);
+    for(i=0; i<DIM; i++)
+      snew(L[i],DIM);
+  }
 
   clear_rvec(xcm);
   clear_rvec(vcm);
@@ -189,7 +199,6 @@ static real ekrot(rvec x[],rvec v[],real mass[],int isize,atom_id index[])
     lyz+=dx[YY]*dx[ZZ]*m0;
     lzz+=dx[ZZ]*dx[ZZ]*m0;
   }
-  clear_mat(L);
   
   L[XX][XX]=lyy+lzz;
   L[YY][XX]=-lxy;
@@ -200,8 +209,8 @@ static real ekrot(rvec x[],rvec v[],real mass[],int isize,atom_id index[])
   L[XX][ZZ]=-lxz;
   L[YY][ZZ]=-lyz;
   L[ZZ][ZZ]=lxx+lyy;
-  
-  m_inv(L,TCM);
+
+  m_inv_gen(L,DIM,TCM);
 
   /* Compute omega (hoeksnelheid) */
   clear_rvec(ocm);

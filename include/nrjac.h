@@ -50,4 +50,13 @@ extern void jacobi(double **a,int n,double d[],double **v,int *nrot);
  * real       **v = v[0..n-1][0..n-1] contains the vectors in columns
  * int      *irot = number of jacobi rotations
  */
+
+int m_inv_gen(real **m,int n,real **minv);
+/* Produces minv, a generalized inverse of m.
+ * Inversion is done via diagonalization,
+ * eigenvalues smaller than 1e-6 times the average diagonal element
+ * are assumed to be zero.
+ * For zero eigenvalues 1/eigenvalue is set to zero for the inverse matrix.
+ * Returns the number of zero eigenvalues.
+ */
 #endif

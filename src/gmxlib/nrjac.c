@@ -61,7 +61,7 @@ void jacobi(double **a,int n,double d[],double **v,int *nrot)
   for (ip=0; ip<n; ip++) {
     for (iq=0; iq<n; iq++) v[ip][iq]=0.0;
     v[ip][ip]=1.0;
-  }
+ }
   for (ip=0; ip<n;ip++) {
     b[ip]=d[ip]=a[ip][ip];
     z[ip]=0.0;
@@ -131,3 +131,52 @@ void jacobi(double **a,int n,double d[],double **v,int *nrot)
   nrerror("Too many iterations in routine JACOBI");
 }
 
+int m_inv_gen(real **m,int n,real **minv)
+{
+  double **md,**v,*eig,tol,s;
+  int    nzero,i,j,k,nrot;
+
+  snew(md,n);
+  for(i=0; i<n; i++)
+    snew(md[i],n);
+  snew(v,n);
+  for(i=0; i<n; i++)
+    snew(v[i],n);
+  snew(eig,n);
+  for(i=0; i<n; i++)
+    for(j=0; j<n; j++)
+      md[i][j] = m[i][j];
+
+  tol = 0;
+  for(i=0; i<n; i++)
+    tol += fabs(md[i][i]);
+  tol = 1e-6*tol/n;
+  
+  jacobi(md,n,eig,v,&nrot);
+
+  nzero = 0;
+  for(i=0; i<n; i++)
+    if (fabs(eig[i]) < tol) {
+      eig[i] = 0;
+      nzero++;
+    } else
+      eig[i] = 1.0/eig[i];
+  
+  for(i=0; i<n; i++)
+    for(j=0; j<n; j++) {
+      s = 0;
+      for(k=0; k<n; k++)
+	s += eig[k]*v[k][i]*v[k][j];
+      minv[i][j] = s;
+    }
+
+  sfree(eig);
+  for(i=0; i<n; i++)
+    sfree(v[i]);
+  sfree(v);
+  for(i=0; i<n; i++)
+    sfree(md[i]);
+  sfree(md);
+
+  return nzero;
+}
