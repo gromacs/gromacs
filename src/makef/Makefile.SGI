@@ -31,13 +31,13 @@ LD		= $(CC) $(LDFLAGS)
 CCLD		= $(CCC) $(LDFLAGS)
 FLD		= $(F77) $(LDFLAGS)
 
-USE_SGI_FFT	= no
+USE_SGI_FFT	= yes
 USE_SGI_FPE	= no
 XLIBS		= -lX11
 SYSLIBS		= $(LINKLIB) -lm
 ifeq ($(USE_SGI_FFT),yes)
 	SYSDEFS += -DUSE_SGI_FFT
-	SYSLIBS += -lcomplib.sgimath 
+	SYSLIBS += -lftn -lcomplib.sgimath 
 endif
 ifeq ($(USE_SGI_FPE),yes)
 	SYSDEFS += -DUSE_SGI_FPE
