@@ -745,14 +745,20 @@ static void MyMainLoop(XtAppContext appcontext,Widget gmxBase,
     XtFree(fn);
     sfree(fnm[i].fn);
     fnm[i].fn = strdup(buf);
-    www = get_widget_other(fnm_index[i],FALSE);
-    if (www != 0) {
-      narg = 0;
-      XtSetArg(args[narg],XmNset,&xmrb); narg++;
-      XtGetValues(www,args,narg);
-      fnm[i].flag = fnm[i].flag | ffSET;
+    if (is_optional(&(fnm[i]))) {
+      www = get_widget_other(fnm_index[i],FALSE);
+      if (www != 0) {
+	narg = 0;
+	XtSetArg(args[narg],XmNset,&xmrb); narg++;
+	XtGetValues(www,args,narg);
+	fnm[i].flag = fnm[i].flag | ffSET;
+      }
+      else
+	fatal_error(0,"No toggle button for optional file (option %s)",
+		    fnm[i].opt);
+      if (strcmp(fnm[i].fn,ftp2defnm(fnm[i].ftp)) != 0)
+	fnm[i].flag = fnm[i].flag | ffSET;
     }
-    
     if (debug)
       fprintf(debug,"%s,%d: File is now %s\n",__FILE__,__LINE__,buf);
     
