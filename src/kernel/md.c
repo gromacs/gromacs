@@ -37,6 +37,7 @@ static char *SRCID_md_c = "$Id$";
 #include "calcmu.h"
 #include "dummies.h"
 #include "update.h"
+#include "trnio.h"
 #include "mdrun.h"
 
 time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
@@ -50,7 +51,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   int        fp_ene,step;
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
-  bool       bNS,bStopCM,bStopRot,bTYZ,bRerunMD,bNotLastFrame;
+  bool       bNS,bStopCM,bStopRot,bTYZ,bRerunMD,bNotLastFrame,bLastStep;
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
   char       *traj,*xtc_traj; /* normal and compressed trajectory filename */
@@ -120,8 +121,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   } 
 
   /* loop over MD steps or if rerunMD to end of input trajectory */
-  for(step=0; ((!bRerunMD && (step<parm->ir.nsteps)) || 
+  for(step=0; ((!bRerunMD && (step<=parm->ir.nsteps)) || 
 	       (bRerunMD && bNotLastFrame)); step++) {
+	       
+    bLastStep=(step==parm->ir.nsteps);
     
     /* for rerun MD always do Neighbour Searching */
     if (bRerunMD) 
@@ -175,9 +178,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       /* Spread the force on dummy particle to the other particles... */
       spread_dummy_f(log,x,f,&mynrnb,&top->idef);
     
-    if (do_per_step(step,parm->ir.nstxout)) xx=x; else xx=NULL;
-    if (do_per_step(step,parm->ir.nstvout)) vv=v; else vv=NULL;
-    if (do_per_step(step,parm->ir.nstfout)) ff=f; else ff=NULL;
+    if (do_per_step(step,parm->ir.nstxout) || bLastStep) xx=x; else xx=NULL;
+    if (do_per_step(step,parm->ir.nstvout) || bLastStep) vv=v; else vv=NULL;
+    if (do_per_step(step,parm->ir.nstfout) || bLastStep) ff=f; else ff=NULL;
     
     write_traj(log,cr,traj,
 	       nsb,step,t,lambda,nrnb,nsb->natoms,xx,vv,ff,parm->box);
@@ -272,19 +275,23 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		 force_vir,parm->vir,parm->pres,grps,mu_tot);
     where();
     
-    if ( MASTER(cr) && (do_per_step(step,parm->ir.nstprint)) ) {
-      print_ebin(fp_ene,log,step,t,lambda,SAfactor,
+    if ( MASTER(cr) ) {
+      bool do_ene,do_log;
+      
+      do_ene=do_per_step(step,parm->ir.nstenergy) || bLastStep;
+      do_log=do_per_step(step,parm->ir.nstlog) || bLastStep;
+      print_ebin(do_ene?fp_ene:-1,do_log?log:NULL,step,t,lambda,SAfactor,
 		 eprNORMAL,bCompact,mdebin,grps,&(top->atoms));
     }
     if (bVerbose)
       fflush(log);
     
     /* Time for performance */
-    if ((step % 10) == 0)
+    if (((step % 10) == 0) || bLastStep)
       update_time();
-      
+    
     /* Remaining runtime */
-    if (MASTER(cr) && bVerbose && ((step % stepout)==0))
+    if (MASTER(cr) && bVerbose && ( ((step % stepout)==0) || bLastStep))
       print_time(stderr,start_t,step,&parm->ir);
     
     /* if rerunMD read next frame from input trajectory */
@@ -294,22 +301,14 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   /* End of main MD loop */
   
   if (MASTER(cr)) {
-    /* if RerunMD don't print energies of last frame again */
-    if ( (parm->ir.nstprint > 1) && !bRerunMD )
-      print_ebin(fp_ene,log,step-1,t,lambda,SAfactor,
-		 eprNORMAL,bCompact,mdebin,grps,&(top->atoms));
-    
     print_ebin(-1,log,step,t,lambda,SAfactor,
 	       eprAVER,FALSE,mdebin,grps,&(top->atoms));
     print_ebin(-1,log,step,t,lambda,SAfactor,
 	       eprRMS,FALSE,mdebin,grps,&(top->atoms));
     close_enx(fp_ene);
+    if (parm->ir.nstxtcout)
+      close_xtc_traj();
   }
-  
-  /* Construct dummy particles, for last output frame */
-  construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef);
-    
-  /*free_nslist(log);*/
   
   return start_t;
 }
