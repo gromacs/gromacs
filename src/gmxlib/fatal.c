@@ -81,8 +81,6 @@ void _where(char *file,int line)
   }
 }
 
-#define MSGSIZE		256
-
 static void bputc(char *msg,int *len,char ch)
 {
   msg[(*len)++]=ch;
@@ -199,7 +197,7 @@ void _unset_fatal_tmp_file(char *fn, char *file, int line)
 void fatal_error(int fatal_errno,char *fmt,...)
 {
   va_list ap;
-  char    *p,cval,*sval,msg[MSGSIZE];
+  char    *p,cval,*sval,msg[STRLEN];
   char    ibuf[64],ifmt[64];
   int     index,ival,fld,len;
   double  dval;
