@@ -60,7 +60,6 @@ extern "C" {
 #endif
 
 extern	int		gmx_nint(real a);
-extern	real		sqr(real x);
 extern  real            sign(real x,real y);
 
 #ifdef CPLUSPLUS

@@ -40,11 +40,6 @@ int gmx_nint(real a)
   return result;
 }
 
-real sqr(real x)
-{
-  return (x*x);
-}
-
 real sign(real x,real y)
 {
   if (y < 0)

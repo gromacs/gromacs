@@ -75,6 +75,11 @@ static real invsqrt(float x)
 #define invsqrt(x) (1.0f/sqrt(x))
 #endif
 
+static real sqr(real x)
+{
+  return (x*x);
+}
+
 static void rvec_add(rvec a,rvec b,rvec c)
 {
   real x,y,z;
