@@ -61,7 +61,7 @@ static    int trns[]={
 #ifdef USE_XDR
   efTRR, 
 #endif
-  efTRJ, efG96 };
+  efTRJ };
 #define NTRNS asize(trns)
 
 static    int stos[]={ efGRO, efG96, efPDB, efBRK, efENT};
@@ -108,7 +108,7 @@ static t_deffile deffile[efNR] = {
   { eftASC, ".mdp", "grompp", "-f", "grompp input file with MD parameters"   },
   { eftASC, ".gct", "gct",    "-f", "general coupling stuff"                 },
   { eftGEN, ".???", "traj",   "-f", "Generic trajectory: xtc trr trj gro g96 pdb"},
-  { eftGEN, ".???", "traj",   NULL, "Full precision trajectory: trr trj g96" },
+  { eftGEN, ".???", "traj",   NULL, "Full precision trajectory: trr trj" },
   { eftXDR, ".trr", "traj",   NULL, "Trajectory in portable xdr format"      },
   { eftBIN, ".trj", "traj",   NULL, "Trajectory file (cpu specific)"         },
   { eftXDR, ".xtc", "traj",   NULL, "Compressed trajectory (portable xdr format)"},
