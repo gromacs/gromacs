@@ -11,12 +11,20 @@ BIB	=	bibtex
 IDX	=	makeindex -s hfill.ist
 DVIPS	=	dvips
 
-AUXFILES = 	algorithms.aux	analyse.aux	averages.aux	\
-		defunits.aux	forcefield.aux	implement.aux	\
-		install.aux	intro.aux	lr-corr.aux	\
-		special.aux	tables.aux	topology.aux
+LOCAL	=	$(GMXHOME)/src/local
+HTML	=	$(GMXHOME)/html
+
+FILES = intro		defunits	algorithms	par-md		\
+	forcefield	lr_elstat	topology	special		\
+	programs	analyse		install		implement	\
+	tables		lr-corr		averages	progman
+
+AUXFILES = $(foreach FILE,$(FILES), $(FILE).aux)
+TEXFILES = $(foreach FILE,$(FILES), $(FILE).tex)
 
 all:		gromacs.ps
+
+full:		man all
 
 dvi:		gromacs.dvi
 
@@ -28,16 +36,16 @@ dvi:		gromacs.dvi
 booklet:	gromacs.ps
 		pstops "4:-3L@.7(21cm,0)+0L@.7(21cm,14.85cm),1L@.7(21cm,0)+-2L@.7(21cm,14.85cm)" $^ booklet.ps
 
+gromacs.tex:	$(TEXFILES)
+
 gromacs.aux:	gromacs.tex $(AUXFILES)
 		$(TEX) gromacs
 
-gromacs.bbl:	*.tex
+gromacs.bbl:	gromacs.aux
 		$(BIB) gromacs
-		$(TEX) gromacs
 
-gromacs.ind:	*.tex
+gromacs.ind:	gromacs.aux
 		$(IDX) gromacs
-		$(TEX) gromacs
 
 gromacs.dvi:	gromacs.aux	gromacs.bbl	gromacs.ind
 		$(TEX) gromacs
@@ -45,44 +53,21 @@ gromacs.dvi:	gromacs.aux	gromacs.bbl	gromacs.ind
 gromacs.ps:	gromacs.dvi
 		dvips -M -o $@ $^
 
-algorithms.aux:	algorithms.tex
+%.aux:		%.tex
 		$(TEX) gromacs
 
-analyse.aux:	analyse.tex
-		$(TEX) gromacs
+prog:		mdp_opt.tex proglist.tex
 
-averages.aux:	averages.tex
-		$(TEX) gromacs
+man:		./mkman
 
-defunits.aux:	defunits.tex
-		$(TEX) gromacs
+mdp_opt.tex:	./mkmdp $(HTML)/progman.html
+		./mkmdp $(GMXHOME)
 
-forcefield.aux:	forcefield.tex
-		$(TEX) gromacs
+proglist.tex:	$(LOCAL)/mkonline $(LOCAL)/programs.txt
+		cd $(LOCAL) ; ./mkonline $(GMXHOME)
 
-implement.aux:	implement.tex
-		$(TEX) gromacs
-
-install.aux:	install.tex
-		$(TEX) gromacs
-
-intro.aux:	intro.tex
-		$(TEX) gromacs
-
-lr-corr.aux:	lr-corr.tex
-		$(TEX) gromacs
-
-special.aux:	special.tex
-		$(TEX) gromacs
-
-tables.aux:	tables.tex
-		$(TEX) gromacs
-
-topology.aux:	topology.tex
-		$(TEX) gromacs
+man:		
+		mkman
 
 clean:
 		$(RM) *.log *.lof *.lot *.bbl *.blg *.toc *.dvi *.aux *~ #*# *.idx *.ilg *.ind
-
-
-
