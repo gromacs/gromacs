@@ -18,7 +18,7 @@ $debug = 1;
 # Turn atom name translation on and off
 $trans = 1;
 
-$res0  = shift || die "I need the residue offset\n";
+$res0  = shift;# || die "I need the residue offset\n";
 $pdb   = shift || die "I need the name of the pdb file with correct atom numbers\n";
 $core  = shift || "core.ndx";
 $tbl   = "/home/spoel/gmxdev/share/top/atom_nom.tbl";
