@@ -145,7 +145,7 @@ int gmx_densmap(int argc,char *argv[])
       gmx_fatal(FARGS,"Both amax and rmax should be larger than zero");
   }
 
-  if (ftp2bSet(efTPS,NFILE,fnm))
+  if (ftp2bSet(efTPS,NFILE,fnm) || !ftp2bSet(efNDX,NFILE,fnm))
     read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,bRadial);
   if (!bRadial) {
     ngrps = 1;
