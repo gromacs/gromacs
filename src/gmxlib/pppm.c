@@ -138,7 +138,10 @@ static void spread_q(FILE *log,bool bVerbose,
   static bool bFirst = TRUE;
   static int  *nnx,*nny,*nnz;
   rvec   invh;
-  real   qi,qt,qwt;
+  real   qi,qwt;
+#ifdef DEBUG
+  real   qt;
+#endif
   real   WXYZ[27];
   ivec   ixyz;
   int    i,iX,iY,iZ,index;
@@ -176,7 +179,9 @@ static void spread_q(FILE *log,bool bVerbose,
       iY  = ixyz[YY] + ny;
       iZ  = ixyz[ZZ] + nz;
 
+#ifdef DEBUG
       qt=0;
+#endif
       nxyz = 0;
       for(jx=-1; (jx<=1); jx++) {
 	jcx = nnx[iX + jx];
@@ -439,7 +444,6 @@ real do_pppm(FILE *log,       bool bVerbose,
   static  t_fftgrid *grid;
   static  rvec      beta;
   static  int       porder;
-  static  int       niter;
   
   const     real tol = 1e-5;
   int       i,m;
@@ -457,7 +461,6 @@ real do_pppm(FILE *log,       bool bVerbose,
       if (cr->nprocs > 1)
 	fatal_error(0,"No parallel PPPM yet...");
     }
-    niter = ir->niter;
     if (bGenerGhat) {    
       fprintf(log,"Generating Ghat function\n");
       beta[XX]=beta[YY]=beta[ZZ]= 4.0/3.0;

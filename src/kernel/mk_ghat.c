@@ -290,7 +290,8 @@ real  ursum(int term,int porder,real acut,real r1,
  
 real  ursum1D(int term,int porder,real acut,real r1,real k1,real h1,int nalias)
 {
-  real kt,ksq,kmag,kcutsq;
+  real kt,ksq,kmag;
+/*   real kcutsq; */
   real kn1,kn2,kn3,urs,tmp;
   real h_1,h_2,h_3;
   int  n1,n2,n3;
@@ -307,7 +308,7 @@ real  ursum1D(int term,int porder,real acut,real r1,real k1,real h1,int nalias)
     c     eps = 10^-20, -ln(eps) = 46
     c
     */
-  kcutsq = 4.0*acut*115;
+/*   kcutsq = 4.0*acut*115; */
 
   if (nalias==0) {
     if (term==1) kt = k1;
@@ -470,17 +471,18 @@ void calc1D(bool bSym,bool bVerbose,
   real twopi=2*M_PI;
   real d1,d2,d3,u1,u2,u3,ss,gg;
   real pval,zval,eref,qopt;
-  int  N1MAX,N2MAX,N3MAX;
+  int  N1MAX;
+/*   int  N2MAX,N3MAX; */
   
   if (bSym) {
     N1MAX = n1max/2+1;
-    N2MAX = n2max/2+1;
-    N3MAX = n3max/2+1;
+/*     N2MAX = n2max/2+1; */
+/*     N3MAX = n3max/2+1; */
   }
   else {
     N1MAX = n1max;
-    N2MAX = n2max;
-    N3MAX = n3max;
+/*     N2MAX = n2max; */
+/*     N3MAX = n3max; */
   }
     
   box1 = n1max*h1;
