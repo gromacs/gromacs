@@ -8,7 +8,7 @@ SUBDIRS = . types
 include_HEADERS = \
 	3dview.h    	do_md.h		invblock.h  	nrjac.h		\
 	rwtop.h       	tpxio.h		assert.h    	do_nm.h		\
-	javaio.h    	nrnb.h      	sheader.h     	transfer.h	\
+	nrnb.h      	sheader.h     	transfer.h	\
 	atomprop.h  	dummies.h       list.h      	ns.h        	\
 	shift.h       	trnio.h		axp_asm.h   	ebin.h 		\
 	macros.h    	nsb.h       	shift_util.h  	txtdump.h	\
@@ -28,7 +28,7 @@ include_HEADERS = \
 	wman.h		comlib.h    	force.h         memtest.h   	\
 	string2.h     	writeps.h	gmxcomplex.h   	\
 	futil.h         metacode.h  	random.h    	struc2.h      	\
-	x86_3dnow.h	comtest.h   	gbutil.h        mpiio.h     	\
+	x86_3dnow.h	comtest.h   	gbutil.h         	\
 	rbin.h      	superb.h      	x86_cpu.h	tgroup.h	\
 	general.h       mshift.h    	rdgroup.h   	symtab.h      	\
 	x86_sse.h	confio.h    	gmxfio.h        mvdata.h    	\
