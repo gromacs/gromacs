@@ -28,7 +28,7 @@
  */
 typedef struct {
   /* Cut-Off stuff */
-  real rshort,rlong;
+  real rlist,rlistlong;
   
   /* Dielectric constant resp. multiplication factor for charges */
   real zsquare,temp;
@@ -58,6 +58,7 @@ typedef struct {
 
   /* NS Stuff */
   int  eeltype;
+  int  vdwtype;
   int  cg0,hcg;
   int  ndelta;
   int  nWater;
@@ -74,6 +75,10 @@ typedef struct {
   t_nblist *vdw;    
   t_nblist *coul;
   t_nblist *free;
+  /* The same for long range */
+  t_nblist *vdw_lr;    
+  t_nblist *coul_lr;
+  t_nblist *free_lr;
   /* This mask array of length nn determines whether or not this bit of the
    * neighbourlists should be computed. Usually all these are true of course,
    * but not when shells are used. During minimisation all the forces that 

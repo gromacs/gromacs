@@ -50,7 +50,7 @@ static char *SRCID_fnbf_c = "$Id$";
 void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
 	     rvec x[],rvec f[],t_mdatoms *mdatoms,
 	     real egnb[],real egcoul[],rvec box_size,
-	     t_nrnb *nrnb,real lambda,real *dvdlambda)
+	     t_nrnb *nrnb,real lambda,real *dvdlambda,bool bLR)
 {
   int      i,itpA,itpB,gid,m,nj,inr,iinr,nri,k;
   rvec     r_i,f_ip,fw[3],xw[3];
@@ -71,20 +71,20 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
 
   svec    = fr->shift_vec;
   fshift  = fr->fshift;
-  bTab    = (fr->eeltype != eelTWIN);
+  bTab    = (fr->eeltype != eelCUT);
   eps     = fr->epsfac;
   
   nr_ljc=nr_qq=nr_bham=nr_fsum=nr_free=0;
 
   switch (ftype) {
   case F_SR:
-    nlist=fr->coul;
+    nlist = bLR ? fr->coul_lr : fr->coul;
     break;
   case F_DVDL:
-    nlist=fr->free;
+    nlist = bLR ? fr->free_lr : fr->free;
     break;
   default:
-    nlist=fr->vdw;
+    nlist = bLR ? fr->vdw_lr  : fr->vdw;
   }
   
   for(gid=0; (gid<fr->nn); gid++) {

@@ -581,8 +581,8 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,0,TRUE,NFILE,fnm,asize(pa),pa,0,NULL,0,NULL);
   
   read_params(ftp2fn(efTPX,NFILE,fnm),&ir,box);
-  acut   = ir.rlong;
-  r1     = ir.rshort;
+  acut   = ir.rcoulomb;
+  r1     = ir.rcoulomb_switch;
   n1max  = ir.nkx;
   n2max  = ir.nky;
   n3max  = ir.nkz;

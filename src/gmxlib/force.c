@@ -119,7 +119,7 @@ static void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
 {
   /* Compute constants for Generalized reaction field */
   static bool bFirst=TRUE;
-  real   k1,k2,I,vol,krf0,rmin,rrc,kkrf;
+  real   k1,k2,I,vol,rmin;
   
   if ((eel == eelRF) || (eel == eelGRF)) {
     vol     = det(box);
@@ -156,7 +156,7 @@ static void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
       fprintf(log,"%s:\n"
 	      "epsRF = %10g, I   = %10g, volume = %10g, kappa  = %10g\n"
 	      "rc    = %10g, krf = %10g, crf    = %10g, epsfac = %10g\n",
-	      eel_names[eel],eps,I,vol,*kappa,Rc,*krf,krf0,*crf,*epsfac);
+	      eel_names[eel],eps,I,vol,*kappa,Rc,*krf,*crf,*epsfac);
       fprintf(log,
 	      "The electrostatics potential has its minimum at rc = %g\n",
 	      rmin);
@@ -273,6 +273,9 @@ void init_forcerec(FILE *log,
   /* Neighbour searching stuff */
   fr->bGrid      = (ir->ns_type == ensGRID);
   fr->ndelta     = ir->ndelta;
+  fr->rlist      = ir->rlist;
+  fr->rlistlong  = max(ir->rlist,ir->rcoulomb);
+  fr->bTwinRange = (fr->rlistlong > fr->rlist);
   
   /* Domain decomposition parallellism... */
   fr->bDomDecomp = ir->bDomDecomp;
@@ -282,24 +285,19 @@ void init_forcerec(FILE *log,
   fr->eeltype    = ir->eeltype;
   fr->epsilon_r  = ir->epsilon_r;
   fr->fudgeQQ    = ir->fudgeQQ;
+  fr->rcoulomb_switch = ir->rcoulomb_switch;
+  fr->rcoulomb        = ir->rcoulomb;
   
-  if (fr->eeltype == eelTWIN) {
-    fr->rshort     = ir->rlist;
-    fr->rlong      = ir->rcoulomb;
+  /* Must really support table functions with solvent_opt */
+  if (fr->eeltype == eelCUT)
     fr->nWater     = ir->solvent_opt;
-    fr->bTwinRange = (fr->rlong > fr->rshort);
-  } else {
+  else 
     fr->nWater     = -1;
-    fr->bTwinRange = FALSE;
-  }
   
   /* Parameters for generalized RF */
   fr->zsquare = 0.0;
   fr->temp    = 0.0;
   
-  /* Electrostatics stuff */
-  fr->rcoulomb_switch = ir->rcoulomb_switch;
-  fr->rcoulomb        = ir->rcoulomb;
   if (fr->eeltype == eelGRF) {
     zsq = 0.0;
     for (i=0; (i<cgs->nr); i++) {
@@ -324,12 +322,6 @@ void init_forcerec(FILE *log,
     if (nrdf == 0) 
       fatal_error(0,"No degrees of freedom!");
     fr->temp   = T/nrdf;
-    fr->rshort = ir->rlist;
-    fr->rlong  = ir->rlist;
-  }
-  else if (fr->eeltype == eelRF) {
-    fr->rshort = ir->rlist;
-    fr->rlong  = ir->rlist;
   }
   else if (EEL_LR(fr->eeltype) || (fr->eeltype == eelSHIFT) || 
 	   (fr->eeltype == eelUSER) || (fr->eeltype == eelSWITCH)) {
@@ -343,12 +335,9 @@ void init_forcerec(FILE *log,
      * (therefore we have to add half the size of a charge group, plus
      * something to account for diffusion if we have nstlist > 1)
      */
-    fr->rshort = ir->rlist;
-    fr->rlong  = ir->rlist;
-    
     for(m=0; (m<DIM); m++) {
       box_size[m]=box[m][m];
-      if (fr->rshort >= box_size[m]*0.5)
+      if (fr->rlist >= box_size[m]*0.5)
 	fatal_error(0,"Cut-off 'rlist' too large for box. Should be less then %g\n",
 		    box_size[m]*0.5);
     }
@@ -396,25 +385,17 @@ void init_forcerec(FILE *log,
   }
 
   /* Van der Waals stuff */
-  fr->rvdw = ir->rvdw;
-  if ((fr->eeltype==eelTWIN) || fr->bBHAM) {
-    fr->bLJshift    = FALSE;
-    fr->rvdw_switch = fr->rvdw;
-    if (fr->bBHAM && (fr->rvdw > fr->rshort))
-      fatal_error(0,"Sorry, long-range Buckingham is not implemented");
-  } else if (fr->eeltype==eelSWITCH) {
-    fr->bLJshift    = FALSE;
-    fr->rvdw_switch = ir->rvdw_switch;
-  } else {
-    fr->rvdw_switch = ir->rvdw_switch;
-    fr->bLJshift = (fr->rvdw_switch < fr->rvdw);
-  }  
+  fr->vdwtype  = ir->vdwtype;
+  fr->rvdw     = ir->rvdw;
+  fr->rvdw_switch = ir->rvdw_switch;
+  fr->bLJshift = (fr->rvdw_switch < fr->rvdw);
+  
   if (fr->rvdw_switch < fr->rvdw)
     fprintf(log,"Using %s Lennard-Jones, switch between %g and %g nm\n",
 	    (fr->eeltype==eelSWITCH) ? "switched":"shifted",
 	    fr->rvdw_switch,fr->rvdw);
   fprintf(log,"Cut-off's:   NS: %g   Coulomb: %g   %s: %g\n",
-	  fr->rshort,fr->rcoulomb,fr->bBHAM ? "BHAM":"LJ",fr->rvdw);
+	  fr->rlist,fr->rcoulomb,fr->bBHAM ? "BHAM":"LJ",fr->rvdw);
   
   if (ir->bDispCorr)
     set_avcsix(log,fr,idef,mdatoms);
@@ -432,8 +413,8 @@ void init_forcerec(FILE *log,
 
 void pr_forcerec(FILE *log,t_forcerec *fr,t_commrec *cr)
 {
-  pr_real(log,fr->rshort);
-  pr_real(log,fr->rlong);
+  pr_real(log,fr->rlist);
+  pr_real(log,fr->rcoulomb);
   pr_real(log,fr->fudgeQQ);
   pr_int(log,fr->ndelta);
   pr_bool(log,fr->bGrid);
@@ -464,7 +445,9 @@ void ns(FILE *log,
 	t_commrec  *cr,
 	t_nrnb     *nrnb,
 	t_nsborder *nsb,
-	int        step)
+	int        step,
+	real       lambda,
+	real       *dvdlambda)
 {
   static bool bFirst=TRUE;
   static int  nDNL;
@@ -485,10 +468,10 @@ void ns(FILE *log,
   }
     
   /* Check box-lengths */
-  if (min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ])) < 2.0*fr->rlong) {
+  if (min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ])) < 2.0*fr->rcoulomb) {
     fprintf(stderr,"Fatal: box too small for cut-off!\n");
     fprintf(stderr,"Box is (%g,%g,%g),cut-off = %g\n",
-	    box[XX][XX],box[YY][YY],box[ZZ][ZZ],fr->rlong);
+	    box[XX][XX],box[YY][YY],box[ZZ][ZZ],fr->rcoulomb);
     exit(1);
   }
     
@@ -506,7 +489,8 @@ void ns(FILE *log,
     fr->cg0=nsb->workload[cr->pid-1];
   fr->hcg=nsb->workload[cr->pid];
 
-  nsearch = search_neighbours(log,fr,x,box,top,grps,cr,nsb,nrnb,md);
+  nsearch = search_neighbours(log,fr,x,box,top,grps,cr,nsb,nrnb,md,
+			      lambda,dvdlambda);
   if (debug)
     fprintf(debug,"nsearch = %d\n",nsearch);
     
@@ -554,23 +538,23 @@ void force(FILE       *log,     int        step,
   
   do_fnbf(log,F_SR,fr,x,f,md,
 	  grps->estat.ee[egLJ],grps->estat.ee[egCOUL],box_size,nrnb,
-	  lambda,&epot[F_DVDL]);
+	  lambda,&epot[F_DVDL],FALSE);
   where();
   
   if (fr->bBHAM) {
     do_fnbf(log,F_BHAM,fr,x,f,md,
 	    grps->estat.ee[egBHAM],grps->estat.ee[egCOUL],box_size,nrnb,
-	    lambda,&epot[F_DVDL]);
+	    lambda,&epot[F_DVDL],FALSE);
   }
   else {
     /* Normal LJ interactions */
     do_fnbf(log,F_LJ,fr,x,f,md,
 	    grps->estat.ee[egLJ],grps->estat.ee[egCOUL],box_size,nrnb,
-	    lambda,&epot[F_DVDL]);
+	    lambda,&epot[F_DVDL],FALSE);
     /* Free energy stuff is extra */
     do_fnbf(log,F_DVDL,fr,x,f,md,
 	    grps->estat.ee[egLJ],grps->estat.ee[egCOUL],box_size,nrnb,
-	    lambda,&epot[F_DVDL]);
+	    lambda,&epot[F_DVDL],FALSE);
   }
   where();
 

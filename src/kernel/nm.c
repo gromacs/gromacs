@@ -100,7 +100,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   else 
     fp_ene=-1;
 
-  bLR = ((parm->ir.eeltype==eelTWIN && parm->ir.rcoulomb > parm->ir.rlist) ||
+  bLR = ((parm->ir.eeltype==eelCUT   && parm->ir.rcoulomb > parm->ir.rlist) ||
 	 (parm->ir.eeltype==eelPPPM) || (parm->ir.eeltype==eelPOISSON));
   bLJLR = (parm->ir.rvdw > parm->ir.rlist);
   bBHAM=(top->idef.functype[0]==F_BHAM);

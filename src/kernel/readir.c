@@ -72,13 +72,26 @@ void init_ir(t_inputrec *ir, t_gromppopts *opts)
   snew(opts->SolventOpt,STRLEN);
 }
 
+static void _low_check(bool b,char *s,int *n)
+{
+  if (b) {
+    fprintf(stderr,"ERROR: %s\n",s);
+    (*n)++;
+  }
+}
+
 void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 /* Check internal consistency */
 {
-#define BS(b,s,val) if (b) fprintf(stderr,"ERROR: "), fprintf(stderr,s,val), (*nerror)++
-
+  /* Strange macro: first one fills the err_buf, and then one can check 
+   * the condition, which will print the message and increase the error
+   * counter.
+   */
+#define CHECK(b) _low_check(b,err_buf,nerror)
+  char err_buf[256];
   bool bLR;
 
+  /* SHAKE / LINCS */
   if ( (opts->nshake > 0) && (ir->eI != eiMD) && (ir->eI != eiLD) ) {
     fprintf(stderr,"Turning off constraints for %s simulation\n",EI(ir->eI));
     opts->nshake=0;
@@ -88,33 +101,29 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	    "Using morse bond-potentials while constraining bonds is useless");
     warning(NULL);
   }
-
-  BS(((ir->shake_tol<=0.0) && (opts->nshake>0) && (ir->eConstrAlg==estSHAKE)),
-     "shake_tol must be > 0 instead of %g while using shake\n",
-     ir->shake_tol);
-  BS(((ir->ndelta < 1) && (ir->ns_type==ensGRID)),
-     "when you use ndelta=%d the neighbour search will be done\n"
-     "on one grid cell, and take much longer than the simple method\n",
-     ir->ndelta);
-  BS((ir->epsilon_r <= 0),"Epsilon-R must be > 0 instead of %g\n",
-     ir->epsilon_r);
-  if (ir->epc != epcNO) {
-    BS((ir->epc && (ir->tau_p <= 0)),
-       "tau_p must be > 0 instead of %g\n",ir->tau_p);
-    BS((ir->epc && (ir->compress[XX]+ir->compress[YY]+ir->compress[ZZ] <= 0)),
-       "compressibility must be > 0 when using pressure coupling%s\n","");
-  }
+  
+  sprintf(err_buf,"shake_tol must be > 0 instead of %g while using shake",
+	  ir->shake_tol);
+  CHECK(((ir->shake_tol <= 0.0) && (opts->nshake>0) && 
+	 (ir->eConstrAlg == estSHAKE)));
+     
+     
+  /* NEIGHBOURSEARCHING */
+  sprintf(err_buf,"when you use ndelta=%d the neighbour search will be done\n"
+	  "on one grid cell, and take much longer than the simple method",
+	  ir->ndelta);
+  CHECK((ir->ndelta < 1) && (ir->ns_type==ensGRID));
+     
+  
   if (ir->rlist == 0.0) {
-    if ((ir->eeltype != eelTWIN) || (ir->ns_type != ensSIMPLE) || 
-	(ir->eBox != ebtNONE) ||
-	(ir->rcoulomb != 0.0) || (ir->rvdw != 0.0)) {
-      fprintf(stderr,
-	      "ERROR: can only have neighborlist cut-off zero (=infinite)\n"
-	      "with eel_type = Twin-Range and simple neighborsearch\n"
-	      "without periodic boundary conditions (box = %s) and\n"
-	      "rcoulomb and rvdw set to zero\n",eboxtype_names[ebtNONE]);
-      (*nerror)++;
-    }
+    sprintf(err_buf,"can only have neighborlist cut-off zero (=infinite)\n"
+	    "with eel_type = %s and simple neighborsearch\n"
+	    "without periodic boundary conditions (box = %s) and\n"
+	    "rcoulomb and rvdw set to zero",
+	    eel_names[eelCUT],eboxtype_names[ebtNONE]);
+    CHECK((ir->eeltype  != eelCUT)  || (ir->ns_type != ensSIMPLE) || 
+	  (ir->eBox     != ebtNONE) || 
+	  (ir->rcoulomb != 0.0)     || (ir->rvdw != 0.0));
   }
   if ((ir->epc == epcTRICLINIC) && (ir->eBox != ebtTRICLINIC)) {
     sprintf(warn_buf,
@@ -126,101 +135,96 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     ir->epc = epcISOTROPIC;
   }
   if ((ir->eBox == ebtNONE) && (ir->bDispCorr)) {
-    warning("Can not have long-range dispersion correction without PBC, turned off.");
+    warning("Can not have long-range dispersion correction without PBC,"
+	    " turned off.");
     ir->bDispCorr = FALSE;
   }
-  if ((ir->eeltype == eelPPPM) && (ir->epc != epcNO)) {
-    fprintf(stderr,"ERROR: pressure coupling with PPPM not implemented\n");
-    (*nerror)++;
+
+  sprintf(err_buf,"Twin-range neighbour searching (NS) with simple NS"
+	  " algorithm not implemented");
+  CHECK((ir->rcoulomb > ir->rlist) && (ir->ns_type == ensSIMPLE));
+  
+  /* PRESSURE COUPLING */
+  if (ir->epc != epcNO) {
+    sprintf(err_buf,"tau_p must be > 0 instead of %g\n",ir->tau_p);
+    CHECK(ir->epc && (ir->tau_p <= 0));
+       
+    sprintf(err_buf,"compressibility must be > 0 when using pressure" 
+	    " coupling %s\n",EPCOUPLTYPE(ir->epc));
+    CHECK(ir->epc && (ir->compress[XX]+ir->compress[YY]+ir->compress[ZZ]<=0));
+    
+    sprintf(err_buf,"pressure coupling with PPPM not implemented");
+    CHECK(ir->eeltype == eelPPPM);
   }
-  if ((ir->eeltype == eelTWIN) && (ir->rcoulomb > ir->rlist) && 
-      (ir->ns_type == ensSIMPLE)) {
-    fprintf(stderr,"ERROR: Twin-range cut-off with simple neighbour searching "
-	    "not implemented\n");
-    (*nerror)++;
+  
+  /* ELECTROSTATICS */
+  sprintf(err_buf,"epsilon_r must be >= 0 instead of %g\n",ir->epsilon_r);
+  CHECK(ir->epsilon_r < 0);
+  
+  if (ir->epsilon_r == 0) {
+    sprintf(err_buf,"epsilon_r can only be %f (=infinity) with (generalized)"
+	    " reaction field",ir->epsilon_r);
+    CHECK((ir->eeltype != eelRF) && (ir->eeltype != eelGRF));
+  }
+  
+  sprintf(err_buf,"With eel_type = %s rcoulomb_switch must be < rcoulomb",
+	  eel_names[ir->eeltype]);
+  CHECK(((ir->eeltype == eelSHIFT) || (ir->eeltype == eelSWITCH)  ||
+	 (ir->eeltype == eelPPPM)  || (ir->eeltype == eelPOISSON) ||
+	 (ir->eeltype == eelPME))  &&
+	 (ir->rcoulomb_switch >= ir->rcoulomb));
+  
+  sprintf(err_buf,"rvdw (%g) may not be > rcoulomb (%g)",
+	  ir->rvdw,ir->rcoulomb);
+  CHECK(ir->rvdw > ir->rcoulomb);
+  
+  sprintf(err_buf,"With vdw_type = %s rvdw_switch must be < rvdw",
+	  evdw_names[ir->vdwtype]);
+  CHECK(((ir->vdwtype == evdwSHIFT) || (ir->vdwtype == evdwSWITCH)) &&
+	(ir->rvdw_switch >= ir->rvdw));
+  if ((ir->vdwtype == evdwCUT) && (ir->rvdw_switch != ir->rvdw)) {
+    sprintf(warn_buf,
+	    "rvdw_switch should be equal to rvdw when using vdw_type = %s\n"
+	    "setting it to %g",
+	    evdw_names[ir->vdwtype],ir->rvdw);
+    warning(NULL);
+    ir->rvdw_switch = ir->rvdw;
+  }
+  
+  sprintf(err_buf,"When using eel_type = %s"
+	  " ref_t for temperature coupling should be > 0",
+	  eel_names[eelGRF]);
+  CHECK((ir->eeltype == eelGRF) && (ir->opts.ref_t[0] <= 0));
+
+  if (((ir->eeltype == eelCUT) || (ir->eeltype == eelRF)  ||
+       (ir->eeltype == eelGRF)) && 
+      (ir->rcoulomb_switch != ir->rcoulomb)) {
+    sprintf(warn_buf,
+	    "rcoulomb_switch should be equal to rcoulomb when using eel_type = %s\n"
+	    "setting it to %g",
+	    eel_names[ir->eeltype],ir->rcoulomb);
+    warning(NULL);
+    ir->rcoulomb_switch = ir->rcoulomb;
   }
 
-  if (ir->eeltype == eelTWIN) {
-    /* Single/Twin-Range, untabulated, unshifted potentials */
-    if (ir->rvdw > ir->rcoulomb) {
-      fprintf(stderr,"ERROR: With eel_type=Twin-Range rvdw (%g) "
-	      "can not be larger than rcoulomb (%g)\n",
-	      ir->rvdw, ir->rcoulomb);
-      (*nerror)++;
-    }
-    if (ir->rlist > ir->rcoulomb) {
-      fprintf(stderr,"ERROR: With eel_type=Twin-Range rlist (%g) "
-	      "can not be larger than rcoulomb (%g)\n",
-	      ir->rlist, ir->rcoulomb);
-      (*nerror)++;
-    }
-    if (ir->rlist > ir->rvdw) {
-      fprintf(stderr,"ERROR: With eel_type=Twin-Range rlist (%g) "
-	      "can not be larger than rvdw (%g)\n",
-	      ir->rlist, ir->rvdw);
-      (*nerror)++;
-    }
-  } else {
-    /* Tabulated potentials */
-    if ((ir->eeltype == eelRF) || (ir->eeltype == eelGRF)) {
-      /* Reaction-field */
-      if (ir->rcoulomb != ir->rlist) {
-	fprintf(stderr,
-		"ERROR: rcoulomb (%g) should be equal to "
-		"rlist (%g) when using %s\n",
-		ir->rcoulomb,ir->rlist,eel_names[ir->eeltype]);
-	(*nerror)++;
-      }
-      if (ir->epsilon_r == 1.0) {
-	sprintf(warn_buf,"Using epsilon_r = 1.0 with %s does not make sense",
-		eel_names[ir->eeltype]);
-	warning(NULL);
-      }
-    } else { 
-      /* Single-Range, possibly shifted potentials */
-      bLR =  ((ir->eeltype==eelPPPM) || (ir->eeltype==eelPOISSON));
-      if ((ir->rcoulomb_switch >= ir->rcoulomb) && 
-	  ((ir->rcoulomb < ir->rlist) || bLR)) {
-	fprintf(stderr,
-		"ERROR: rcoulomb (%g) must be larger than "
-		"rcoulomb_switch (%g) when using %s",
-		ir->rcoulomb,ir->rcoulomb_switch,eel_names[ir->eeltype]);
-	if (bLR)
-	  fprintf(stderr,"\n");
-	else
-	  fprintf(stderr," or both can be equal to rlist (%g)\n",ir->rlist);
-	(*nerror)++;
-      }
-    }
-    if ((ir->rvdw_switch >= ir->rvdw) && (ir->rvdw < ir->rlist)) {
-      fprintf(stderr,
-	      "ERROR: rvdw (%g) must be larger than rvdw_switch (%g) "
-	      "when using %s or both can be equal to rlist (%g)\n",
-	      ir->rvdw,ir->rvdw_switch,eel_names[ir->eeltype],ir->rlist);
-      (*nerror)++;
-    }
-    if ((ir->rcoulomb > ir->rlist) ||  (ir->rvdw > ir->rlist)) {
-      fprintf(stderr,
-	      "ERROR: rcoulomb (%g) and rvdw (%g) can not be larger than "
-	      "rlist (%g) when eel_type is not %s\n",
-	      ir->rcoulomb,ir->rvdw,ir->rlist,eel_names[eelTWIN]);
-      (*nerror)++;
-    }
-    if (ir->rcoulomb > ir->rlist-0.099) {
-      sprintf(warn_buf,
-	      "To prevent cut-off effects rlist (%g) should be 0.1 to 0.3 "
-	      "nm larger than rcoulomb (%g)",ir->rlist,ir->rcoulomb);
+  if ((ir->rvdw_switch < ir->rvdw) && (ir->vdwtype != evdwCUT)) {
+    sprintf(warn_buf,
+	    "rvdw = rlist = %g, rvdw_switch = %g, will switch the VdW "
+	    "forces to zero exactly at the cut-off, to prevent cut-off "
+	    "effects rlist should be 0.1 to 0.3 nm larger than rvdw\n"
+	    "The shift and switch can be turned off by making rvdw_switch "
+	    "equal to rvdw\n",
+	    ir->rlist,ir->rvdw_switch);
+    warning(NULL);
+  }
+  
+  if ((ir->eeltype == eelRF) || (ir->eeltype == eelGRF)) {
+    if (ir->epsilon_r == 1.0) {
+      sprintf(warn_buf,"Using epsilon_r = 1.0 with %s does not make sense"
+	      "setting eeltype to %s",
+	      eel_names[ir->eeltype],eel_names[eelCUT]);
       warning(NULL);
-    }
-    if ((ir->rvdw_switch < ir->rvdw) && (ir->rvdw == ir->rlist)) {
-      sprintf(warn_buf,
-	      "rvdw = rlist = %g, rvdw_switch = %g, will switch the VdW "
-	      "forces to zero exactly at the cut-off, to prevent cut-off "
-	      "effects rlist should be 0.1 to 0.3 nm larger than rvdw\n"
-	      "The shift and switch can be turned off by making rvdw_switch "
-	      "equal to rvdw\n",
-	      ir->rlist,ir->rvdw_switch);
-      warning(NULL);
+      ir->eeltype = eelCUT;
     }
   }
 }
@@ -230,11 +234,13 @@ void get_ir(char *mdparin,char *mdparout,
 {
   char      *dumstr[2];
   double    dumdub[2][DIM];
+  char      epsbuf[STRLEN];
   t_inpfile *inp;
   char      *tmp;
   int       i,m,ninp;
   char      dummy[STRLEN];
-
+  double    epsje;
+  
   inp=read_inpfile(mdparin,&ninp);
 
   snew(dumstr[0],STRLEN);
@@ -296,19 +302,25 @@ void get_ir(char *mdparin,char *mdparout,
   ITYPE ("deltagrid",	ir->ndelta,	2);
   CTYPE ("Box type, rectangular, triclinic, none");
   EETYPE("box",         ir->eBox,       eboxtype_names, nerror, TRUE);
+  RTYPE ("rlist",	ir->rlist,	1.0);
 
   /* Electrostatics */
   CCTYPE ("OPTIONS FOR ELECTROSTATICS AND VDW");
   CTYPE ("Method for doing electrostatics");
   EETYPE("eel_type",	ir->eeltype,    eel_names, nerror, TRUE);
   CTYPE ("cut-off lengths");
-  RTYPE ("rlist",	ir->rlist,	1.0);
   RTYPE ("rcoulomb_switch",	ir->rcoulomb_switch,	0.0);
   RTYPE ("rcoulomb",	ir->rcoulomb,	1.0);
+  CTYPE ("Dielectric constant (DC) for cut-off or DC of reaction field");
+  CTYPE ("This may be set to 0 or inf to use infinite eps in combination");
+  CTYPE ("with (generalized) reaction field.");
+  STYPE ("epsilon_r",   epsbuf,         "1");
+  CTYPE ("Method for doing Van der Waals");
+  EETYPE("vdw_type",	ir->vdwtype,    evdw_names, nerror, TRUE);
+  CTYPE ("cut-off lengths");
   RTYPE ("rvdw_switch",	ir->rvdw_switch,	0.0);
   RTYPE ("rvdw",	ir->rvdw,	1.0);
-  CTYPE ("Dielectric constant (DC) for twin-range or DC of reaction field");
-  RTYPE ("epsilon_r",   ir->epsilon_r,  1.0);
+    
   CTYPE ("Apply long range dispersion corrections for Energy and Pressure");
   EETYPE("bDispCorr",   ir->bDispCorr,  yesno_names, nerror, TRUE);
   CTYPE ("Some thingies for future use");
@@ -318,15 +330,6 @@ void get_ir(char *mdparin,char *mdparout,
   ITYPE ("fourier_ny",  ir->nky,        10);
   ITYPE ("fourier_nz",  ir->nkz,        10);
 
-  /* 1-4 Stuff */  
-  /*  CCTYPE ("LENNARD JONES 1-4 INTERACTION THINGIES");
-  CTYPE ("Compute LJ 1-4 parameters by scaling normal LJ parameters by this");
-  RTYPE ("fudgeLJ",     ir->fudgeLJ,    1.0);
-  CTYPE ("Scale charge in 1-4 interaction by this");
-  RTYPE ("fudgeQQ",     ir->fudgeQQ,    1.0);
-  CTYPE ("Generate 1-4 parameters (sometimes for non GROMOS force fields)");
-  ETYPE ("gen_pairs",   opts->bGenPairs,yesno_names);
-  */
   /* Coupling stuff */
   CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
   CTYPE ("Temperature coupling");
@@ -436,6 +439,7 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("userreal2",   ir->userreal2,  0);
   RTYPE ("userreal3",   ir->userreal3,  0);
   RTYPE ("userreal4",   ir->userreal4,  0);
+#undef CTYPE
 
   write_inpfile(mdparout,ninp,inp);
   for (i=0; (i<ninp); i++) {
@@ -443,7 +447,25 @@ void get_ir(char *mdparin,char *mdparout,
     sfree(inp[i].value);
   }
   sfree(inp);
-#undef CTYPE
+
+  /* Process options if necessary */
+  /* Convert to uppercase and trim the epsilon_r string buffer */
+  upstring(epsbuf);
+  trim(epsbuf);
+  if (strlen(epsbuf) == 0) 
+    ir->epsilon_r = 1;
+  else {
+    if (strstr(epsbuf,"INF") != NULL)
+      ir->epsilon_r = 0;
+    else if (sscanf(epsbuf,"%lf",&epsje) == 1)
+      ir->epsilon_r = epsje;
+    else {
+      sprintf(warn_buf,"Invalid value for epsilon_r: %s, setting to 1",epsbuf);
+      warning(NULL);
+    ir->epsilon_r = 1;
+    }
+  }
+  
   for(m=0; (m<2); m++) {
     for(i=0; (i<DIM); i++)
       dumdub[m][i]=0.0;

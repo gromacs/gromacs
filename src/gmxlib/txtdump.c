@@ -34,6 +34,7 @@ static char *SRCID_txtdump_c = "$Id$";
 #include "names.h"
 #include "txtdump.h"
 #include "string2.h"
+#include "vec.h"
 
 int available(FILE *fp,void *p,char *title)
 {
@@ -138,6 +139,27 @@ void pr_rvecs(FILE *fp,int indent,char *title,rvec vec[],int n)
               fprintf(fp,"%12.5e",vec[i][j]);
             }
           (void) fprintf(fp,"}\n");
+        }
+    }
+}
+
+void pr_rvecs_len(FILE *fp,int indent,char *title,rvec vec[],int n)
+{
+  int i,j;
+
+  if (available(fp,vec,title))
+    {  
+      indent=pr_title_nxn(fp,indent,title,n,DIM);
+      for (i=0; i<n; i++)
+        {
+          (void) pr_indent(fp,indent);
+          (void) fprintf(fp,"%s[%5d]={",title,i);
+          for (j=0; j<DIM; j++)
+            {
+              if (j!=0) (void) fprintf(fp,", ");
+              fprintf(fp,"%12.5e",vec[i][j]);
+            }
+          (void) fprintf(fp,"} len=%12.5g\n",norm(vec[i]));
         }
     }
 }
@@ -278,10 +300,11 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     pr_rvec(fp,indent,"compress",ir->compress,DIM);
     PS("bSimAnn",BOOL(ir->bSimAnn)); 
     PR("zero_temp_time",ir->zero_temp_time); 
-    PS("eeltype",EELTYPE(ir->eeltype));
     PR("rlist",ir->rlist);
+    PS("eeltype",EELTYPE(ir->eeltype));
     PR("rcoulomb_switch",ir->rcoulomb_switch);
     PR("rcoulomb",ir->rcoulomb);
+    PS("vdwtype",EVDWTYPE(ir->vdwtype));
     PR("rvdw_switch",ir->rvdw_switch);
     PR("rvdw",ir->rvdw);
     PR("epsilon_r",ir->epsilon_r);

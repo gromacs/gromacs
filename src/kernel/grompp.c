@@ -136,8 +136,8 @@ static void double_check(t_inputrec *ir, matrix box, t_molinfo *mol,
   }
   bmin=(min(min(box[XX][XX],box[YY][YY]),box[ZZ][ZZ]));
   if (ir->eBox != ebtNONE) {
-    /* rlong must be less than half the box */
-    if (ir->rlist > 0.5*bmin) {
+    /* rlist must be less than half the box */
+    if (max(ir->rlist,ir->rcoulomb) > 0.5*bmin) {
       fprintf(stderr,
 	      "ERROR: rlist (%g) must be < half a box (%g,%g,%g)\n",
 	      ir->rlist,box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
@@ -150,11 +150,8 @@ static void double_check(t_inputrec *ir, matrix box, t_molinfo *mol,
       real rlong;
       bool bTWIN;
 
-      bTWIN = (ir->eeltype == eelTWIN);
-      if (bTWIN)
-	rlong = ir->rcoulomb;
-      else
-	rlong = ir->rlist;
+      rlong = max(ir->rlist,ir->rcoulomb);
+      bTWIN = (rlong > ir->rlist);
       for(k=0; (k<DIM); k++)
 	cx[k]=ir->ndelta*box[k][k]/rlong;
       if ( !( (cx[XX] >= 2*ir->ndelta+1) && 

@@ -8,7 +8,7 @@
 include		$(GMXHOME)/src/makef/Makefile.def
 #
 LIB	= $(LIBDIR)/libfftw.$(GMXCPU).a
-SONAME	= $(LIBDIR)/libfftw.$(GMXCPU).so
+SONAME	= libfftw.$(GMXCPU).so
 # Or, on primitive systems with 8.3 filenames:
 NOTW_PREFIX=fn_
 TWID_PREFIX=ftw_

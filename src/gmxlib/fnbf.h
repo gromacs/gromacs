@@ -37,7 +37,8 @@ static char *SRCID_fnbf_h = "$Id$";
 extern void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
 		    rvec x[],rvec f[],t_mdatoms *md,
 		    real egnb[],real egcoul[],rvec box_size,
-		    t_nrnb *nrnb,real lambda,real *dvdlambda);
+		    t_nrnb *nrnb,real lambda,real *dvdlambda,
+		    bool bLR);
 
 extern void fdo_flr(FILE *log,int nri,atom_id i_atoms[],int shift,
 		    int njcg,atom_id jcg[],atom_id index[],atom_id acg[],

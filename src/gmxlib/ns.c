@@ -90,16 +90,30 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int nn)
   snew(fr->vdw,nn);
   snew(fr->free,nn);
   snew(fr->coul,nn);
+  if (fr->bTwinRange) {
+    snew(fr->vdw_lr,nn);
+    snew(fr->free_lr,nn);
+    snew(fr->coul_lr,nn);
+  }
 }
 
-static void reset_neighbor_list(FILE *log,t_forcerec *fr)
+static void reset_neighbor_list(FILE *log,t_forcerec *fr,bool bLR)
 {
   int i;
   
   for(i=0; (i < fr->nn); i++) {
-    fr->vdw[i].nri  = fr->vdw[i].nrj  = 0;
-    fr->coul[i].nri = fr->coul[i].nrj = 0;
-    fr->free[i].nri = fr->free[i].nrj = 0;
+    if (bLR) {
+      if (fr->bTwinRange) {
+	fr->vdw_lr[i].nri  = fr->vdw_lr[i].nrj  = 0;
+	fr->coul_lr[i].nri = fr->coul_lr[i].nrj = 0;
+	fr->free_lr[i].nri = fr->free_lr[i].nrj = 0;
+      }
+    }
+    else {
+      fr->vdw[i].nri  = fr->vdw[i].nrj  = 0;
+      fr->coul[i].nri = fr->coul[i].nrj = 0;
+      fr->free[i].nri = fr->free[i].nrj = 0;
+    }
   }
 }
 
@@ -108,9 +122,14 @@ static int count_neighbours(t_forcerec *fr,int *n_c,int *n_ljc,int *n_free)
   int i,nrj_c=0,nrj_ljc=0,nrj_free=0;
   
   for(i=0; (i < fr->nn); i++) {
-    nrj_c    += fr->vdw[i].nrj;
-    nrj_ljc  += fr->coul[i].nrj;
+    nrj_c    += fr->coul[i].nrj;
+    nrj_ljc  += fr->vdw[i].nrj;
     nrj_free += fr->free[i].nrj;
+    if (fr->bTwinRange) {
+      nrj_c    += fr->coul_lr[i].nrj;
+      nrj_ljc  += fr->vdw_lr[i].nrj;
+      nrj_free += fr->free_lr[i].nrj;
+    }
   }
   *n_c    = nrj_c;
   *n_ljc  = nrj_ljc;
@@ -181,7 +200,7 @@ void put_in_list(FILE *log,t_iparams ip[],int atnr,int nWater,
 		 int icg,int nj,atom_id jjcg[],
 		 atom_id index[],atom_id a[],
 		 t_excl bExcl[],int shift,
-		 t_forcerec *fr)
+		 t_forcerec *fr,bool bLR)
 {
   t_nblist  *vdw,*coul,*free;
   
@@ -196,14 +215,20 @@ void put_in_list(FILE *log,t_iparams ip[],int atnr,int nWater,
   bool      bWater,bFree,bFreeJ,bNotEx,*bPert;
   
   /* Copy some pointers */
-  charge = md->chargeA;
-  type   = md->typeA;
-  cENER  = md->cENER;
-  bPert  = md->bPerturbed;
-  vdw    = fr->vdw;
-  coul   = fr->coul;
-  free   = fr->free;
-    
+  charge  = md->chargeA;
+  type    = md->typeA;
+  cENER   = md->cENER;
+  bPert   = md->bPerturbed;
+  if (bLR) {
+    vdw   = fr->vdw_lr;
+    coul  = fr->coul_lr;
+    free  = fr->free_lr;
+  }
+  else {
+    vdw   = fr->vdw;
+    coul  = fr->coul;
+    free  = fr->free;
+  }
   i0   = index[icg];
   nicg = index[icg+1]-i0;
   
@@ -223,7 +248,7 @@ void put_in_list(FILE *log,t_iparams ip[],int atnr,int nWater,
     
     /* Create new i_atom for each energy group */
     for(gid=0; (gid<fr->nn); gid++) {
-      new_i_nblist(log,&vdw[gid],F_LJ,   i_atom,bWater,shift);
+      new_i_nblist(log,&vdw[gid], F_LJ,  i_atom,bWater,shift);
       new_i_nblist(log,&coul[gid],F_SR,  i_atom,FALSE, shift);
       new_i_nblist(log,&free[gid],F_DVDL,i_atom,bWater,shift);
     }
@@ -309,21 +334,6 @@ void setexcl(FILE *log,int nri,atom_id ia[],t_block *excl,bool b,
   }
 }
 
-void put_in_nblr(FILE *log,int nrj,atom_id j_atoms[],
-			t_nblist_lr *nlr)
-{
-  int j,n;
-  
-  n=nlr->nj;
-  if (n+nrj >= MAXNB_LR) 
-    fatal_error(0,"Too many long range neighbours. Increase MAXNB_LR");
-  
-  for(j=0; (j<nrj); j++) {
-    nlr->nlj[n++]=j_atoms[j];
-  }
-  nlr->nj+=nrj;    
-}
-
 int calc_naaj(FILE *log,int icg,int cgtot)
 {
   int naaj;
@@ -365,6 +375,32 @@ int calc_naaj(FILE *log,int icg,int cgtot)
  *  S I M P L E      C O R E     S T U F F
  *
  ************************************************/
+real calc_image_rect_test(rvec xi,rvec xj,rvec box_size,
+			  rvec b_inv,t_ishift *shift)
+{
+  /* This code sucks! */
+  real dd,hb,r2;
+  ivec tt;
+  int  m;
+  
+  r2 = 0;
+  for(m=0; (m<DIM); m++) {
+    hb = 0.5*box_size[m];
+    dd = xj[m]-xi[m];
+    if (dd < -hb)
+      tt[m]=1;
+    else if (dd >= hb)
+      tt[m]=-1;
+    else
+      tt[m]=0;
+    r2+=sqr(dd+tt[m]*box_size[m]);
+  }
+  
+  *shift=XYZ2IS(tt[XX],tt[YY],tt[ZZ]);
+  
+  return r2;
+}
+
 real calc_image_rect(rvec xi,rvec xj,rvec box_size,
 		     rvec b_inv,t_ishift *shift)
 {
@@ -435,7 +471,7 @@ static int ns_simple_core(FILE *log,t_forcerec *fr,
 {
   static   atom_id  *aaj=NULL;
   int      naaj,k;
-  real     rshort2;
+  real     rlist2;
   int      nsearch;
   int      icg,jcg;
   int      i0,nri;
@@ -452,7 +488,7 @@ static int ns_simple_core(FILE *log,t_forcerec *fr,
       aaj[jcg+cgs->nr]=jcg;
     }
   }
-  rshort2 = sqr(fr->rshort);
+  rlist2 = sqr(fr->rlist);
 
   for(m=0; (m<DIM); m++)
     b_inv[m]=divide(1.0,box_size[m]);
@@ -466,14 +502,14 @@ static int ns_simple_core(FILE *log,t_forcerec *fr,
     
     naaj=calc_naaj(log,icg,cgs->nr);
     ns_inner_rect(log,fr->cg_cm,icg,naaj,&(aaj[icg]),
-		  box_size,b_inv,rshort2,cgs,ns_buf);
+		  box_size,b_inv,rlist2,cgs,ns_buf);
     nsearch += naaj;
     
     for(k=0; (k<SHIFTS); k++) {
       if (ns_buf[k].ncg > 0) { 
 	put_in_list(log,top->idef.iparams,top->idef.atnr,fr->nWater,
 		    ngener,md,icg,ns_buf[k].ncg,ns_buf[k].jcg,
-		    cgs->index,cgs->a,bexcl,k,fr);
+		    cgs->index,cgs->a,bexcl,k,fr,FALSE);
 	ns_buf[k].ncg=ns_buf[k].nj=0;
       }
     }
@@ -531,20 +567,46 @@ static bool get_dx(int cx,int Nx,int tx,int delta,int *dx0,int *dx1)
  *
  ****************************************************/
 
-int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
-	     matrix box,rvec box_size,int ngener,
-	     t_topology *top,t_groups *grps,
-	     t_grid *grid,rvec x[],t_excl bexcl[],
-	     t_nrnb *nrnb,t_mdatoms *md)
+static void do_longrange(FILE *log,t_topology *top,t_forcerec *fr,
+			 int ngener,t_mdatoms *md,int icg,int nlr,
+			 atom_id lr[],t_excl bexcl[],int shift,
+			 rvec x[],rvec box_size,t_nrnb *nrnb,
+			 real lambda,real *dvdlambda,
+			 t_groups *grps)
 {
-  static atom_id *nl_lr1, *nl_lr2, *nl_sr=NULL;
+  int ftypes[] = { F_SR, F_DVDL, F_LJ };
+#define NFTYPES asize(ftypes)
+  int i;
+  
+  /* Put the long range particles in a list */
+  put_in_list(log,top->idef.iparams,top->idef.atnr,fr->nWater,
+	      ngener,md,icg,nlr,lr,top->blocks[ebCGS].index,
+	      top->blocks[ebCGS].a,bexcl,shift,fr,TRUE);
+	      
+  /* Evaluate the forces */
+  for(i=0; (i<NFTYPES); i++) {
+    do_fnbf(log,ftypes[i],fr,x,fr->flr,md,
+	    grps->estat.ee[egLJLR],grps->estat.ee[egLR],box_size,
+	    nrnb,lambda,dvdlambda,TRUE);
+  }
+  reset_neighbor_list(log,fr,TRUE);
+}
+  
+static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
+		    matrix box,rvec box_size,int ngener,
+		    t_topology *top,t_groups *grps,
+		    t_grid *grid,rvec x[],t_excl bexcl[],
+		    t_nrnb *nrnb,t_mdatoms *md,
+		    real lambda,real *dvdlambda)
+{
+  static atom_id *nl_lr_ljc, *nl_lr_coul, *nl_sr=NULL;
   t_block *cgs=&(top->blocks[ebCGS]);
   int  tx,ty,tz,cx,cy,cz,dx,dy,dz;
   int  cj;
   int  dx0,dx1,dy0,dy1,dz0,dz1;
   int  Nx,Ny,Nz,delta,shift;
   real r2;
-  int  nlr1,nlr2,nsr,nns;
+  int  nlr_ljc,nlr_coul,nsr,nns;
   int  j,nrj;
   int  icg,iicg,total_cg,i0,nri,naaj,min_icg,icg_naaj,jjcg,cgj0;
   atom_id *i_atoms;
@@ -553,19 +615,22 @@ int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
   real rs2,rvdw2,rl2,XI,YI,ZI;
   bool bCyl;
   
-  total_cg=cgs->nr;
-  rs2   = fr->rshort*fr->rshort;
-  rvdw2 = fr->rvdw*fr->rvdw;
-  rl2   = fr->rlong*fr->rlong;
+  total_cg = cgs->nr;
+  rs2      = sqr(fr->rlist);
+  rvdw2    = sqr(fr->rvdw);
+  rl2      = sqr(fr->rcoulomb);
   
   if (nl_sr == NULL) {
     snew(nl_sr,MAX_CG);
     if (rvdw2 > rs2)
-      snew(nl_lr1,MAX_CG);
+      snew(nl_lr_ljc,MAX_CG);
     if (rl2 > rvdw2)
-      snew(nl_lr2,MAX_CG);
+      snew(nl_lr_coul,MAX_CG);
+    fprintf(log,"ns5_core: rs2 = %g, rvdw2 = %g, rl2 = %g (nm^2)\n",
+	    rs2,rvdw2,rl2);
   }
   
+  /* Unpack arrays */
   cgcm    = fr->cg_cm;
   svec    = fr->shift_vec;
   Nx      = grid->nrx;
@@ -575,29 +640,34 @@ int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
   gridind = grid->index;
   gridnra = grid->nra;
   delta   = grid->delta;
-  bCyl    = FALSE;
   nns     = 0;
   
-  if (bCyl) {
-    fatal_error(0,"The rest of the implementation for "
-		" Cylindrical cut-off should be done in "
-		" file %s",__FILE__);
-  }
+  /* Loop over charge groups */
   for(iicg=fr->cg0; (iicg < fr->hcg); iicg++) {
     icg      = cg_index[iicg];
+    /* Consistency check */
     if (icg != iicg)
       fatal_error(0,"icg = %d, iicg = %d, file %s, line %d",icg,iicg,__FILE__,
 		  __LINE__);
     i0       = cgs->index[icg];
     nri      = cgs->index[icg+1]-i0;
     i_atoms  = &(cgs->a[i0]);
-    
+
+    /* Set the exclusions for the atoms in charge group icg using
+     * a bitmask
+     */    
     setexcl(log,nri,i_atoms,&top->atoms.excl,TRUE,bexcl);
+    
+    /* Compute the number of charge groups that fall within the control
+     * of this one (icg)
+     */
     naaj     = calc_naaj(log,icg,cgs->nr);
     icg_naaj = icg+naaj;
     min_icg  = icg_naaj-total_cg;
     
-    /* Changed iicg to icg, DvdS 990115 */
+    /* Changed iicg to icg, DvdS 990115 
+     * (but see consistency check above, DvdS 990330) 
+     */
     ci2xyz(grid,icg,&cx,&cy,&cz);
 #ifdef NS5DB
     fprintf(log,"icg=%5d, naaj=%5d, cx=%2d, cy=%2d, cz=%2d\n",
@@ -627,8 +697,8 @@ int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 	  rvec_add(cgcm[icg],svec[shift],xi);
 	  XI=xi[XX],YI=xi[YY],ZI=xi[ZZ];
 	  nsr=0;
-	  nlr1=0;
-	  nlr2=0;
+	  nlr_ljc=0;
+	  nlr_coul=0;
 #ifdef NS5DB
 	  fprintf(log,"shift: %2d, dx0,1: %2d,%2d, dy0,1: %2d,%2d, dz0,1: %2d,%2d\n",
 		  shift,dx0,dx1,dy0,dy1,dz0,dz1);
@@ -655,30 +725,26 @@ int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 				    top->idef.atnr,fr->nWater,
 				    ngener,md,icg,nsr,nl_sr,
 				    cgs->index,cgs->a,bexcl,
-				    shift,fr);
+				    shift,fr,FALSE);
 			nsr=0;
 		      }
 		      nl_sr[nsr++]=jjcg;
 		    } else if (r2 < rvdw2) {
-		      if (nlr1 >= MAX_CG) {
-			fdo_flr(log,nri,i_atoms,shift,
-				nlr1,nl_lr1,cgs->index,cgs->a,
-				x,grps->estat.ee[egLR],grps->estat.ee[egLJLR],
-				md,ngener,fr,FALSE);
-			inc_nrnb(nrnb,eNR_FSUM,nri);
-			nlr1=0;
+		      if (nlr_ljc >= MAX_CG) {
+			do_longrange(log,top,fr,ngener,md,icg,nlr_ljc,
+				     nl_lr_ljc,bexcl,shift,x,box_size,nrnb,
+				     lambda,dvdlambda,grps);
+			nlr_ljc=0;
 		      }
-		      nl_lr1[nlr1++]=jjcg;
+		      nl_lr_ljc[nlr_ljc++]=jjcg;
 		    } else if (r2 < rl2) {
-		      if (nlr2 >= MAX_CG) {
-			fdo_flr(log,nri,i_atoms,shift,
-				nlr2,nl_lr2,cgs->index,cgs->a,
-				x,grps->estat.ee[egLR],grps->estat.ee[egLJLR],
-				md,ngener,fr,TRUE);
-			inc_nrnb(nrnb,eNR_FSUM,nri);
-			nlr2=0;
+		      if (nlr_coul >= MAX_CG) {
+			do_longrange(log,top,fr,ngener,md,icg,nlr_coul,
+				     nl_lr_coul,bexcl,shift,x,box_size,nrnb,
+				     lambda,dvdlambda,grps);
+			nlr_coul=0;
 		      }
-		      nl_lr2[nlr2++]=jjcg;
+		      nl_lr_coul[nlr_coul++]=jjcg;
 		    }
 		    nns++;
 		  }
@@ -686,26 +752,22 @@ int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 	      }
 	    }
 	  }
+	  /* CHECK whether there is anything left in the buffers */
 	  if (nsr > 0)
-	    put_in_list(log,top->idef.iparams,
-			top->idef.atnr,fr->nWater,
-			ngener,md,icg,nsr,nl_sr,
-			cgs->index,cgs->a,bexcl,
-			shift,fr);
-	  if (nlr1 > 0) {
-	    fdo_flr(log,nri,i_atoms,shift,
-		    nlr1,nl_lr1,cgs->index,cgs->a,
-		    x,grps->estat.ee[egLR],grps->estat.ee[egLJLR],
-		    md,ngener,fr,FALSE);
-	    inc_nrnb(nrnb,eNR_FSUM,nri);
-	  }
-	  if (nlr2 > 0) {
-	    fdo_flr(log,nri,i_atoms,shift,
-		    nlr2,nl_lr2,cgs->index,cgs->a,
-		    x,grps->estat.ee[egLR],grps->estat.ee[egLJLR],
-		    md,ngener,fr,TRUE);
-	    inc_nrnb(nrnb,eNR_FSUM,nri);
-	  }
+	    put_in_list(log,top->idef.iparams,top->idef.atnr,fr->nWater,
+			ngener,md,icg,nsr,nl_sr,cgs->index,cgs->a,bexcl,
+			shift,fr,FALSE);
+			
+	  if (nlr_ljc > 0) 
+	    do_longrange(log,top,fr,ngener,md,icg,nlr_ljc,
+			 nl_lr_ljc,bexcl,shift,x,box_size,nrnb,
+			 lambda,dvdlambda,grps);
+	  
+	  if (nlr_coul > 0) 
+	    do_longrange(log,top,fr,ngener,md,icg,nlr_coul,
+			 nl_lr_coul,bexcl,shift,x,box_size,nrnb,
+			 lambda,dvdlambda,grps);
+	  
 	}
       }
     }
@@ -760,7 +822,8 @@ int search_neighbours(FILE *log,t_forcerec *fr,
 		      rvec x[],matrix box,
 		      t_topology *top,t_groups *grps,
 		      t_commrec *cr,t_nsborder *nsb,
-		      t_nrnb *nrnb,t_mdatoms *md)
+		      t_nrnb *nrnb,t_mdatoms *md,
+		      real lambda,real *dvdlambda)
 {
   static   bool        bFirst=TRUE;
   static   t_grid      *grid=NULL;
@@ -835,17 +898,17 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     
     if (bGrid) {
       snew(grid,1);
-      init_grid(log,grid,fr->ndelta,box,fr->rlong,cgs->nr);
+      init_grid(log,grid,fr->ndelta,box,fr->rlistlong,cgs->nr);
     }
     bFirst=FALSE;
   }
   debug_gmx();
   
   /* Reset the neighbourlists */
-  reset_neighbor_list(log,fr);
+  reset_neighbor_list(log,fr,FALSE);
   
   if (bGrid) {
-    grid_first(log,grid,box,fr->rlong);
+    grid_first(log,grid,box,fr->rlistlong);
     /* Check if box is big enough to do grid searching... */
     if ( !( (grid->nrx >= 2*grid->delta+1) && 
 	    (grid->nry >= 2*grid->delta+1) && 
@@ -904,7 +967,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   /* Do the core! */
   if (bGrid)
     nsearch = ns5_core(log,fr,cg_index,box,box_size,ngener,top,grps,
-		       grid,x,bexcl,nrnb,md);
+		       grid,x,bexcl,nrnb,md,lambda,dvdlambda);
   else {
     /* Only allocate this when necessary, saves 100 kb */
     if (ns_buf == NULL)
@@ -929,3 +992,19 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   }
   return nsearch;
 }
+
+static void put_in_nblr(FILE *log,int nrj,atom_id j_atoms[],
+			t_nblist_lr *nlr)
+{
+  int j,n;
+  
+  n=nlr->nj;
+  if (n+nrj >= MAXNB_LR) 
+    fatal_error(0,"Too many long range neighbours. Increase MAXNB_LR");
+  
+  for(j=0; (j<nrj); j++) {
+    nlr->nlj[n++]=j_atoms[j];
+  }
+  nlr->nj+=nrj;    
+}
+

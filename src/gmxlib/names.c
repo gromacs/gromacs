@@ -68,8 +68,12 @@ char *ptype_str[eptNR+1] = {
 };
 
 char *eel_names[eelNR+1] = {
-  "Twin-Range", "Reaction-Field", "Generalized-Reaction-Field",
+  "Cut-off", "Reaction-Field", "Generalized-Reaction-Field",
   "PME", "PPPM", "Poisson", "Switch", "Shift", "User", NULL
+};
+
+char *evdw_names[evdwNR+1] = {
+  "Cut-off", "Switch", "Shift", "User", NULL
 };
 
 char *eshake_names[estNR+1] = {

@@ -50,6 +50,7 @@ extern char *ei_names[eiNR+1];
 extern char *yesno_names[BOOL_NR+1];
 extern char *bool_names[BOOL_NR+1];
 extern char *eel_names[eelNR+1];
+extern char *evdw_names[evdwNR+1];
 extern char *eshake_names[estNR+1];
 extern char *ptype_str[eptNR+1];
 extern char *egrp_nm[egNR+1];
@@ -69,6 +70,7 @@ extern char *ecomb_names[eCOMB_NR+1];
 #define EBLOCKS(e)     ENUM_NAME(e,ebNR,eblock_names)
 #define EPARAM(e)      ENUM_NAME(e,epNR,eparam_names)
 #define EELTYPE(e)     ENUM_NAME(e,eelNR,eel_names)
+#define EVDWTYPE(e)    ENUM_NAME(e,evdwNR,evdw_names)
 #define ESHAKETYPE(e)  ENUM_NAME(e,estNR,eshake_names)
 #define EDISRETYPE(e)  ENUM_NAME(e,edrNR,edisre_names)
 #define EDISREWEIGHTING(e)  ENUM_NAME(e,edrwNR,edisreweighting_names)

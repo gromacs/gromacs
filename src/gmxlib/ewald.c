@@ -411,7 +411,7 @@ real do_ewald_new(FILE *log,       t_inputrec *ir,
     nind  = sort_ivecs(niv,iv,box,iv_index);
     snew(all_k,niv);
     snew(gk,niv);
-    mk_kprops(niv,iv,nx,ny,nz,lll,ir->rlong,all_k,gk);
+    mk_kprops(niv,iv,nx,ny,nz,lll,ir->rcoulomb,all_k,gk);
     snew(qk,niv);
     
     if (debug) 
@@ -521,7 +521,7 @@ real do_ewald(FILE *log,       t_inputrec *ir,
     gtab = mk_rgrid(nx,ny,nz);
     qtab = mk_cgrid(nx,ny,nz);
 
-    mk_ghat(NULL,nx,ny,nz,gtab,box,ir->rshort,ir->rlong,TRUE,bOld);
+    mk_ghat(NULL,nx,ny,nz,gtab,box,ir->rshort,ir->rcoulomb,TRUE,bOld);
             
     bFirst = FALSE;
   }

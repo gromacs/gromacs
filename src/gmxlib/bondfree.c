@@ -817,7 +817,7 @@ real do_14(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
   /* Reaction field stuff */  
   eps    = fr->epsfac*fr->fudgeQQ;
   
-  rlong2 = fr->rlong*fr->rlong;
+  rlong2 = sqr(fr->rcoulomb);
     
   ia0=iatoms;
 

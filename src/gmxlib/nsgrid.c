@@ -52,13 +52,14 @@ static void _range_check(char *s,int i,int nr,char *file,int line)
 }
 #define range_check(i,nr) _range_check(#i,i,nr,__FILE__,__LINE__)
 
-void init_grid(FILE *log,t_grid *grid,int delta,matrix box,real rlong,int ncg)
+void init_grid(FILE *log,t_grid *grid,int delta,matrix box,
+	       real rlistlong,int ncg)
 {
   int     m;
   ivec    cx;
 
   for(m=0; (m<DIM); m++) 
-    cx[m]=(delta*box[m][m])/rlong; 
+    cx[m]=(delta*box[m][m])/rlistlong; 
 
   grid->nr      = ncg;
   grid->nrx     = cx[XX];
@@ -103,14 +104,14 @@ void ci2xyz(t_grid *grid, int i, int *x, int *y, int *z)
   *z  = ci;
 }
 
-void grid_first(FILE *log,t_grid *grid,matrix box,real rlong)
+void grid_first(FILE *log,t_grid *grid,matrix box,real rlistlong)
 {
   int    *nra=grid->nra;
   int    i,k,ncells;
   ivec   cx;
 
   for(k=0; (k<DIM); k++)
-    cx[k]=(grid->delta*box[k][k])/rlong;
+    cx[k]=(grid->delta*box[k][k])/rlistlong;
 
   grid->nrx    = cx[XX];
   grid->nry    = cx[YY];

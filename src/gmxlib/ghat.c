@@ -189,12 +189,12 @@ void pr_scalar_gk(char *fn,int nx,int ny,int nz,rvec box,real ***ghat)
 }
 
 real ***rd_ghat(FILE *log,char *fn,ivec igrid,rvec gridspace,
-		rvec beta,int *porder,real *rshort,real *rlong)
+		rvec beta,int *porder,real *r1,real *rc)
 {
   FILE   *in;
   real   ***gh;
   double gx,gy,gz,alX,alY,alZ,ddd;
-  double acut,r1,pval,zval,eref,qopt;
+  double acut,pval,zval,eref,qopt,r11;
   int    nalias,niter,bSym;
   int    ix,iy,iz,ixmax,iymax,izmax;
   
@@ -203,7 +203,9 @@ real ***rd_ghat(FILE *log,char *fn,ivec igrid,rvec gridspace,
   igrid[XX]=ix, igrid[YY]=iy, igrid[ZZ]=iz;
   gridspace[XX]=gx,  gridspace[YY]=gy,  gridspace[ZZ]=gz;
   fscanf(in,"%d%d%d%d%lf%lf%lf",&nalias,porder,&niter,&bSym,&alX,&alY,&alZ);
-  fscanf(in,"%lf%lf%lf%lf%lf%lf",&acut,&r1,&pval,&zval,&eref,&qopt);
+  fscanf(in,"%lf%lf%lf%lf%lf%lf",&acut,&r11,&pval,&zval,&eref,&qopt);
+  *r1 = r11;
+  *rc = acut;
   
   fprintf(log,"\nOpened %s for reading ghat function\n",fn);
   fprintf(log,"gridsize: %10d %10d %10d\n",ix,iy,iz);
@@ -212,14 +214,12 @@ real ***rd_ghat(FILE *log,char *fn,ivec igrid,rvec gridspace,
 	  "%10d%10d%10d%10d%10g%10g%10g\n",
 	  nalias,*porder,niter,bSym,alX,alY,alZ);
   fprintf(log,"      acut        r1      pval      zval      eref      qopt\n"
-	  "%10g%10g%10g%10g%10g%10g\n",acut,r1,pval,zval,eref,qopt);
+	  "%10g%10g%10g%10g%10g%10g\n",acut,*r1,pval,zval,eref,qopt);
   fflush(log);
   
   beta[XX] = alX;
   beta[YY] = alY;
   beta[ZZ] = alZ;
-  *rshort  = r1;
-  *rlong   = acut;
   
   gh      = mk_rgrid(ix,iy,iz);
   if (bSym) {
@@ -243,7 +243,7 @@ real ***rd_ghat(FILE *log,char *fn,ivec igrid,rvec gridspace,
 
   wr_ghat("output.hat",igrid[XX],igrid[YY],igrid[ZZ],gx,gy,gz,gh,
 	  nalias,*porder,niter,bSym,beta,
-	  *rshort,*rlong,pval,zval,eref,qopt);
+	  *r1,*rc,pval,zval,eref,qopt);
     
   if (bSym) 
     symmetrize_ghat(igrid[XX],igrid[YY],igrid[ZZ],gh);

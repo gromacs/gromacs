@@ -248,7 +248,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     fp_ene=-1; 
   
   /* Set some booleans for the epot routines  */
-  bLR = ((parm->ir.eeltype==eelTWIN && parm->ir.rcoulomb > parm->ir.rlist) ||
+  bLR = ((parm->ir.eeltype==eelCUT   && parm->ir.rcoulomb > parm->ir.rlist) ||
 	 (parm->ir.eeltype==eelPPPM) || (parm->ir.eeltype==eelPOISSON)); 
                                                /* Long Range Coulomb   ?  */
   bLJLR    = (parm->ir.rvdw > parm->ir.rlist); /* Long Range LJ        ?  */

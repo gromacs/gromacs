@@ -185,8 +185,8 @@ void test_four(FILE *log,int NFILE,t_filenm fnm[],t_atoms *atoms,
 static void print_opts(FILE *fp,t_inputrec *ir,bool bFour)
 {
   fprintf(fp,"Ewald solution: %s\n",bool_names[bFour]);
-  fprintf(fp,"r1:       %10.3e\n",ir->rshort);
-  fprintf(fp,"rc:       %10.3e\n",ir->rlong);
+  fprintf(fp,"r1:       %10.3e\n",ir->rcoulomb_switch);
+  fprintf(fp,"rc:       %10.3e\n",ir->rcoulomb);
   if (bFour)
     fprintf(fp,"KVectors: %10d  %10d  %10d\n",ir->nkx,ir->nky,ir->nkz);
   fprintf(fp,"\n");
@@ -307,7 +307,7 @@ int main(int argc,char *argv[])
   fr      = mk_forcerec();
   mdatoms = atoms2md(&(top.atoms),FALSE,FALSE);
   
-  set_LRconsts(log,ir.rshort,ir.rlong,box_size,fr);
+  set_LRconsts(log,ir.rcoulomb_switch,ir.rcoulomb,box_size,fr);
   init_forcerec(log,fr,&ir,&(top.blocks[ebMOLS]),cr,
 		&(top.blocks[ebCGS]),&(top.idef),mdatoms,box,FALSE);
   calc_shifts(box,box_size,fr->shift_vec,FALSE);
@@ -316,14 +316,14 @@ int main(int argc,char *argv[])
   graph = mk_graph(&(top.idef),top.atoms.nr,FALSE);
   shift_self(graph,fr->shift_vec,x);
 
-  calc_LRcorrections(log,0,natoms,ir.rshort,ir.rlong,charge,excl,x,
-		     f_excl,bOld);
+  calc_LRcorrections(log,0,natoms,ir.rcoulomb_switch,
+		     ir.rcoulomb,charge,excl,x,f_excl,bOld);
   pr_f("f_excl.dat",natoms,f_excl);
   
   /* Compute the short range potential */
   put_atoms_in_box(natoms,box,x);
-  vsr=phi_sr(log,natoms,x,charge,ir.rlong,ir.rshort,box_size,phi_s,excl,f_sr,
-	     bOld); 
+  vsr=phi_sr(log,natoms,x,charge,ir.rcoulomb,
+	     ir.rcoulomb_switch,box_size,phi_s,excl,f_sr,bOld); 
   pr_f("f_sr.dat",natoms,f_sr);
   
   /* Plot the short range potential in a matrix */    

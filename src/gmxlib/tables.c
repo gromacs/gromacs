@@ -36,7 +36,20 @@ static char *SRCID_tables_c = "$Id$";
 #include "xvgr.h"
 #include "vec.h"
 #include "main.h"
+ 
+/* All the possible (implemented) table functions */
+enum { etabLJ6,   etabLJ12, etabLJ6Shift, etabLJ12Shift, etabShift,
+       etabRF,    etabCOUL, etabLJ6Switch, etabLJ12Switch,etabCOULSwitch, 
+       etabEXPMIN,etabUSER, etabNR };
+       
+/* This flag tells whether this is a Coulomb type funtion */
+bool bCoulomb[etabNR] = { FALSE, FALSE, FALSE, FALSE, TRUE,
+			  TRUE,  TRUE,  FALSE, FALSE, TRUE, 
+			  FALSE, FALSE }; 
 
+/* Index in the table that says which function to use */
+enum { etiCOUL, etiLJ6, etiLJ12, etiNR };
+			  
 void spline(real x[],real y[],int n,real yp1,real ypn,real y2[])
 {
   int  i,k;
@@ -127,11 +140,6 @@ void copy2table(int n,int n0,int stride,
   }
 }
 
-enum { etabLJ6, etabLJ12, etabLJ6David, etabLJ12David, etabDavid,
-       etabRF, etabCOUL, etabLJ6sw, etabLJ12sw, etabCOULsw, etabEXPMIN,
-       etabNR };
-bool bCoulomb[etabNR] = { FALSE, FALSE, FALSE, FALSE, TRUE,
-			  TRUE,  TRUE,  FALSE, FALSE, TRUE, FALSE }; 
 
 void read_table(int n0,int n,real x[],
 		real Vtab[],real Vtab2[],
@@ -171,20 +179,23 @@ void fill_table(int n0,int n,real x[],
   int  i,p;
   real r1,rc,r12,r13;
   real r,r2,r6;
-  real k_rf,c_rf,rffac2,rmin,Vrmin;
+  real k_rf,c_rf,rffac2,rmin;
   /* Parameters for David's function */
   real A=0,B=0,C=0,A_3=0,B_4=0;
   /* Parameters for the switching function */
   real ksw,swi,swi1,swi2,swi3;
   /* Temporary parameters */
-  bool bSwitch,bDavid,bTabTest;
+  bool bSwitch,bShift;
   real VtabT;  
   real VtabT1;  
   real VtabT2; 
   real VtabT3;
    
-  bSwitch= ((tp == etabLJ6sw) || (tp == etabLJ12sw) || (tp == etabCOULsw));
-  bDavid= ((tp == etabLJ6David) || (tp == etabLJ12David) || (tp == etabDavid));
+  bSwitch = ((tp == etabLJ6Switch)    || (tp == etabLJ12Switch)    || 
+	     (tp == etabCOULSwitch));
+  bShift  = ((tp == etabLJ6Shift) || (tp == etabLJ12Shift) || 
+	     (tp == etabShift));
+	     
   if (bCoulomb[tp]) {
     r1 = fr->rcoulomb_switch;
     rc = fr->rcoulomb;
@@ -195,34 +206,22 @@ void fill_table(int n0,int n,real x[],
   k_rf   = fr->k_rf;
   c_rf   = fr->c_rf;
   rffac2 = k_rf*2.0;
-  bTabTest = (getenv("NOTABTEST") == NULL);
-  if (bTabTest) {
-    rmin  = pow(2*k_rf,-1.0/3.0);
-    Vrmin = 1/rmin+k_rf*rmin*rmin;
-    c_rf  = 0.0;
-    fprintf(stdlog,"Env. var. NOTABTEST is *not* set."
-	    " Truncating RF table at %g\n",rmin);
-  }
-  else {
-    rmin  = rc;
-    Vrmin = 0.0;
-  }
   if (bSwitch)
     ksw  = 1.0/pow((rc-r1),3.0);
   else
     ksw  = 0.0;
-  if (bDavid) {
-    if (tp==etabDavid) 
+  if (bShift) {
+    if (tp==etabShift) 
       p=1;
     else
-      if (tp==etabLJ6David) 
+      if (tp==etabLJ6Shift) 
 	p=6; 
       else 
 	p=12;
     A = p * ((p+1)*r1-(p+4)*rc)/(pow(rc,p+2)*pow(rc-r1,2));
     B = -p * ((p+1)*r1-(p+3)*rc)/(pow(rc,p+2)*pow(rc-r1,3));
     C = pow(rc,-p)-A/3.0*pow(rc-r1,3)-B/4.0*pow(rc-r1,4);
-    if (tp==etabLJ6David) {
+    if (tp==etabLJ6Shift) {
       A=-A;
       B=-B;
       C=-C;
@@ -263,8 +262,8 @@ void fill_table(int n0,int n,real x[],
       Vtab2[i] = 7.0*Ftab[i]/r;
       Ftab2[i] = 8.0*Vtab2[i]/r;
       break;
-    case etabLJ6sw:
-    case etabLJ6David:
+    case etabLJ6Switch:
+    case etabLJ6Shift:
       /* Dispersion */
       if (r < rc) {      
 	Vtab[i]  = -r6;
@@ -280,8 +279,8 @@ void fill_table(int n0,int n,real x[],
       Vtab2[i] = 13.0*Ftab[i]/r;
       Ftab2[i] = 14.0*Vtab2[i]/r;
       break;
-    case etabLJ12sw:
-    case etabLJ12David:
+    case etabLJ12Switch:
+    case etabLJ12Shift:
       /* Repulsion */
       if (r < rc) {      
 	Vtab[i]  = r12;
@@ -296,8 +295,8 @@ void fill_table(int n0,int n,real x[],
       Vtab2[i] = 2.0/(r*r2);
       Ftab2[i] = 6.0/(r2*r2);
       break;
-    case etabCOULsw:
-    case etabDavid:
+    case etabCOULSwitch:
+    case etabShift:
       if (r < rc) { 
 	Vtab[i]  = 1.0/r;
 	Ftab[i]  = 1.0/r2;
@@ -306,18 +305,10 @@ void fill_table(int n0,int n,real x[],
       }
       break;
     case etabRF:
-      if (bTabTest && (r > rmin)) {
-	Vtab[i]  = Vrmin;
-	Ftab[i]  = 0.0;
-	Vtab2[i] = 0.0;
-	Ftab2[i] = 0.0;
-      }
-      else {
-	Vtab[i]  = 1.0/r      + k_rf*r2  - c_rf;
-	Ftab[i]  = 1.0/r2     - rffac2*r;
-	Vtab2[i] = 2.0/(r2*r) + rffac2;
-	Ftab2[i] = 6.0/(r2*r2);
-      }
+      Vtab[i]  = 1.0/r      + k_rf*r2;
+      Ftab[i]  = 1.0/r2     - rffac2*r;
+      Vtab2[i] = 2.0/(r2*r) + rffac2;
+      Ftab2[i] = 6.0/(r2*r2);
       break;
     case etabEXPMIN:
       Vtab[i]  = exp(-r);
@@ -329,11 +320,11 @@ void fill_table(int n0,int n,real x[],
       fatal_error(0,"Table type %d not implemented yet. (%s,%d)",
 		  tp,__FILE__,__LINE__);
     }
-    if (bDavid) {
+    if (bShift) {
       /* Normal coulomb with cut-off correction for potential */
       if (r < rc) {
 	Vtab[i] -= C;
-	/* If in shifting range add something to it */
+	/* If in Shifting range add something to it */
 	if (r > r1) {
 	  r12 = (r-r1)*(r-r1);
 	  r13 = (r-r1)*r12;
@@ -367,20 +358,10 @@ void fill_table(int n0,int n,real x[],
 
 void make_tables(t_forcerec *fr,bool bVerbose)
 {
-  char *fns[3]      = { "ctab.xvg", "dtab.xvg", "rtab.xvg" };
-
-  /*
-  int  pppmtab[3] = { etabDavid,  etabLJ6David,   etabLJ12David };
-  int  rftab[3]   = { etabRF,     etabLJ6,   etabLJ12 };
-  int  normtab[3] = { etabCOUL,   etabLJ6,   etabLJ12 };
-  int  swtab[3]   = { etabCOULsw, etabLJ6sw, etabLJ12sw  };
-  */
-  int  ljtab[2]   = { etabLJ6,      etabLJ12 };
-  int  ljshtab[2] = { etabLJ6David, etabLJ12David };
-  int  ljswtab[2] = { etabLJ6sw,    etabLJ12sw  };
+  char *fns[etiNR]    = { "ctab.xvg", "dtab.xvg", "rtab.xvg" };
   FILE     *fp;
   real     x0,y0,yp;
-  int      i,j,k,n0,n,tabsel,ntabs;
+  int      i,j,k,n0,n,tabsel[etiNR],ntabs;
   real     *x,*xnormal,*xexp=NULL,*Vtab,*Vtab2,*Ftab,*Ftab2;
   
 #ifdef DOUBLE
@@ -415,60 +396,75 @@ void make_tables(t_forcerec *fr,bool bVerbose)
       xexp[i]  = (i/fr->tabscale_exp);
   }
 
-  for(k=0; (k<3); k++) {
-    /* Check which table we have to use */
-    if (k == 0)
-      switch (fr->eeltype) {
-      case eelPPPM:
-      case eelPOISSON:
-      case eelSHIFT:
-	if (fr->rcoulomb > fr->rcoulomb_switch)
-	  tabsel = etabDavid;
-	else
-	  tabsel = etabCOUL;
-	break;
-      case eelRF:
-      case eelGRF:
-	tabsel = etabRF;
-	break;
-      case eelSWITCH:
-	tabsel = etabCOULsw;
-	break;
-      case eelUSER:
-      default:
-	tabsel = etabCOUL;
-      }
+  /* Now set the different table indices 
+   * Coulomb first.
+   */
+  
+  switch (fr->eeltype) {
+  case eelCUT:
+    tabsel[etiCOUL] = etabCOUL;
+    break;
+  case eelPPPM:
+  case eelPOISSON:
+  case eelSHIFT:
+    if (fr->rcoulomb > fr->rcoulomb_switch)
+      tabsel[etiCOUL] = etabShift;
     else
-      if (!fr->bBHAM) 
-	switch (fr->eeltype) {
-	case eelSWITCH:
-	  tabsel = ljswtab[k-1];
-	  break;
-	default:
-	  if (fr->bLJshift)
-	    tabsel = ljshtab[k-1];
-	  else
-	    tabsel = ljtab[k-1];
-	}  
-      else
-	if (k==1)
-	  tabsel = etabLJ6;
-	else
-	  tabsel = etabEXPMIN;
-    if (tabsel == etabEXPMIN)
+      tabsel[etiCOUL] = etabCOUL;
+    break;
+  case eelRF:
+  case eelGRF:
+    tabsel[etiCOUL] = etabRF;
+    break;
+  case eelSWITCH:
+    tabsel[etiCOUL] = etabCOULSwitch;
+    break;
+  case eelUSER:
+    tabsel[etiCOUL] = etabUSER;
+    break;
+  default:
+    fatal_error(0,"Invalid eeltype %d in %s line %d",fr->eeltype,
+		__FILE__,__LINE__);
+  }
+  /* Van der Waals time */
+  if (fr->bBHAM) {
+    tabsel[etiLJ6]  = etabLJ6;
+    tabsel[etiLJ12] = etabEXPMIN;
+  }
+  else {
+    switch (fr->vdwtype) {
+    case evdwSWITCH:
+      tabsel[etiLJ6]  = etabLJ6Switch;
+      tabsel[etiLJ12] = etabLJ12Switch;
+      break;
+    case evdwSHIFT:
+      tabsel[etiLJ6]  = etabLJ6Shift;
+      tabsel[etiLJ12] = etabLJ12Shift;
+      break;
+    case evdwUSER:
+      tabsel[etiLJ6]  = etabUSER;
+      tabsel[etiLJ12] = etabUSER;
+      break;
+    case evdwCUT:
+      tabsel[etiLJ6]  = etabLJ6;
+      tabsel[etiLJ12] = etabLJ12;
+      break;
+    default:
+      fatal_error(0,"Invalid vdwtype %d in %s line %d",fr->vdwtype,
+		  __FILE__,__LINE__);
+    } 
+  }
+     
+  for(k=0; (k<etiNR); k++) {
+    if (tabsel[k] == etabEXPMIN)
       x = xexp;
     else
       x = xnormal;
-    if (fr->eeltype == eelUSER)
+    if (tabsel[k] == etabUSER)
       /* Read tables from file */
       read_table(n0,n,x,Vtab,Vtab2,Ftab,Ftab2,fns[k],fr);
     else
-      fill_table(n0,n,x,Vtab,Vtab2,Ftab,Ftab2,tabsel,fr);
-    /*
-      if (tabsel == etabRF)
-      copy2table(n,k*4,12,x,Vtab,Vtab2,fr->VFtab,fr->rcoulomb);
-      else
-      */
+      fill_table(n0,n,x,Vtab,Vtab2,Ftab,Ftab2,tabsel[k],fr);
     copy2table(n,k*4,12,x,Vtab,Vtab2,fr->VFtab,-1);
     
     if (bDebugMode()) {

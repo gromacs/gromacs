@@ -54,6 +54,7 @@ extern void pr_ivec(FILE *fp,int indent,char *title,int vec[],int n);
 extern void pr_ivecs(FILE *fp,int indent,char *title,ivec vec[],int n);
 extern void pr_rvec(FILE *fp,int indent,char *title,real vec[],int n);
 extern void pr_rvecs(FILE *fp,int indent,char *title,rvec vec[],int n);
+extern void pr_rvecs_len(FILE *fp,int indent,char *title,rvec vec[],int n);
 extern void pr_block(FILE *fp,int indent,char *title,t_block *block);
 extern void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams);
 extern void pr_idef(FILE *fp,int indent,char *title,t_idef *idef);

@@ -190,6 +190,7 @@ void do_force(FILE *log,t_commrec *cr,
 	      bool bNS,bool bNBFonly,t_forcerec *fr)
 {
   static rvec box_size;
+  static real dvdl_lr = 0;
   int    pid,cg0,cg1;
   int    start,homenr;
   
@@ -240,8 +241,9 @@ void do_force(FILE *log,t_commrec *cr,
     /* Do the actual neighbour searching and if twin range electrostatics
      * also do the calculation of long range forces and energies.
      */
+    dvdl_lr = 0;
     ns(log,fr,x,f,parm->box,grps,&(parm->ir.opts),top,mdatoms,
-       cr,nrnb,nsb,step);
+       cr,nrnb,nsb,step,lambda,&dvdl_lr);
   }
   
   /* Reset forces or copy them from long range forces */
@@ -252,6 +254,8 @@ void do_force(FILE *log,t_commrec *cr,
 	top->atoms.grps[egcENER].nr,&(parm->ir.opts),
 	x,f,ener,bVerbose,parm->box,lambda,graph,&(top->atoms.excl),
 	bNBFonly);
+  /* Take long range contribution to free energy into account */
+  ener[F_DVDL] += dvdl_lr;
   
   /* Compute forces due to electric field */
   calc_f_el(START(nsb),HOMENR(nsb),mdatoms->chargeT,f,parm->ir.ex);

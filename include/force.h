@@ -92,7 +92,9 @@ extern void ns(FILE *log,
 	       t_commrec  *cr,
 	       t_nrnb     *nrnb,
 	       t_nsborder *nsb,
-	       int        step);
+	       int        step,
+	       real       lambda,
+	       real       *dvdlambda);
 /* Call the neighborsearcher */
 
 extern void force(FILE *log,  

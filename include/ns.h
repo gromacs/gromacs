@@ -76,7 +76,7 @@ extern int search_neighbours(FILE *log,t_forcerec *fr,
 			     rvec x[],matrix box,
 			     t_topology *top,t_groups *grps,
 			     t_commrec *cr,t_nsborder *nsb,t_nrnb *nrnb,
-			     t_mdatoms *md);
+			     t_mdatoms *md,real lambda,real *dvdlambda);
  
 
 #endif	/* _ns_h */

@@ -139,7 +139,7 @@ static int read_g96_vel(char line[],FILE *fp,char *infile,
 			int nwanted,t_g96info *info,rvec *v)
 {
   bool   bEnd;
-  int    natoms,shift;
+  int    natoms=-1,shift;
   double db1,db2,db3;
 
   if (v && info->bVel) {
