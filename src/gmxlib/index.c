@@ -54,6 +54,7 @@
 #include "invblock.h"
 #include "macros.h"
 #include "index.h"
+#include "txtdump.h"
 
 typedef enum { etOther, etProt, etDNA, erestNR } eRestp;
 static const char *ResTP[erestNR] = { "OTHER", "PROTEIN", "DNA" };
@@ -552,7 +553,7 @@ t_block *init_index(char *gfile, char ***grpname)
 	while ((i=sscanf(pt,"%s",str)) == 1) {
 	  i=b->index[b->nr];
 	  if (i>=maxentries) {
-	    maxentries+=100;
+	    maxentries+=1024;
 	    srenew(b->a,maxentries);
 	  }
 	  b->a[i]=atoi(str)-1;
@@ -751,20 +752,20 @@ t_cluster_ndx *cluster_index(char *ndx)
   
   snew(c,1);
   c->clust     = init_index(ndx,&c->grpname);
-  if (debug) {
-    for(i=0; (i<c->clust->nra); i++)
-      range_check(c->clust->a[i],0,c->clust->nra);
-    c->maxframe = c->clust->nra;
-  }
-  else {
-    c->maxframe = -1;
-    for(i=0; (i<c->clust->nra); i++)
-      c->maxframe = max(c->maxframe,c->clust->a[i]);
-  }
-  c->inv_clust=make_invblock(c->clust,c->maxframe);
+  c->maxframe = -1;
+  for(i=0; (i<c->clust->nra); i++)
+    c->maxframe = max(c->maxframe,c->clust->a[i]);
   fprintf(stdlog ? stdlog : stdout,
 	  "There are %d clusters containing %d structures, highest framenr is %d\n",
 	  c->clust->nr,c->clust->nra,c->maxframe);
+  if (debug) {
+    pr_block(debug,0,"clust",c->clust,TRUE);
+    for(i=0; (i<c->clust->nra); i++)
+      if ((c->clust->a[i] < 0) || (c->clust->a[i] > c->maxframe))
+	gmx_fatal(FARGS,"Ramge check error for c->clust->a[%d] = %d\n"
+		  "should be within 0 and %d",i,c->clust->a[i],c->maxframe+1);
+  }
+  c->inv_clust=make_invblock(c->clust,c->maxframe);
 	  
   return c;
 }
