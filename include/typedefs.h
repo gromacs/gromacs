@@ -55,7 +55,7 @@ extern "C" {
 #include "types/graph.h"
 #include "types/nrnb.h"
 #include "types/nblist.h"
-#include "types/grid.h"
+#include "types/nsgrid.h"
 #include "types/commrec.h"
 #include "types/forcerec.h"
 #include "types/mdatom.h"
