@@ -664,7 +664,10 @@ int main (int argc, char *argv[])
   snew(plist,F_NRE);
   init_plist(plist);
   open_symtab(&sys.symtab);
-  forward=new_status(ftp2fn(efTOP,NFILE,fnm),opt2fn("-c",NFILE,fnm),
+  strcpy(fn,ftp2fn(efTOP,NFILE,fnm));
+  if (!fexist(fn)) 
+    fatal_error(0,"%s does not exist",fn);
+  forward=new_status(fn,opt2fn("-c",NFILE,fnm),
 		     opts,ir,bVerbose,&natoms,
 		     &x,&v,box,&atype,&sys,&msys,plist,
 		     bShuffle ? nprocs : 1,
