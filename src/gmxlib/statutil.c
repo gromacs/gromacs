@@ -280,6 +280,9 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   static int  mantp=0;
 #ifdef _SGI_
   static int  npri=0;
+#ifdef USE_SGI_FPE
+    static bool bExcept=FALSE;
+#endif
 #endif
   static bool bDebug=FALSE;
   

@@ -326,7 +326,7 @@ static void handle_signals(int n)
 }
 
 #ifdef USE_SGI_FPE
-void doexceptions()
+void doexceptions(void)
 {
 #include <sigfpe.h>
 #include <signal.h>

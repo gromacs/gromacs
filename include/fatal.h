@@ -109,8 +109,8 @@ void init_debug (char *dbgfile);
 extern bool bDebugMode(void);
 /* Return TRUE when the program was started in debug mode */
   
-#ifdef _SGI_
-extern void doexeceptions(void);
+#ifdef USE_SGI_FPE
+extern void doexceptions(void);
 /* Set exception handlers for debugging */
 #endif
   
