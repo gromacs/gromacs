@@ -86,9 +86,9 @@ static void calc_weights(rvec x,rvec box,rvec invh,ivec ixyz,real WXYZ[])
     /* Fraction (offset) from grid point */
     abc        = ttt - (real)ixyz[m];
     
-    wxyz[m][0] = sqr(half  - abc);
+    wxyz[m][0] = sqr((real)(half  - abc));
     wxyz[m][1] = 1.5 - 2.0*sqr(abc);
-    wxyz[m][2] = sqr(half  + abc);
+    wxyz[m][2] = sqr((real)(half  + abc));
   }
   Wzx=wxyz[ZZ][XX];
   Wzy=wxyz[ZZ][YY];
@@ -266,19 +266,16 @@ static real gather_f(FILE *log,bool bVerbose,
   static bool bFirst=TRUE;
   static int  *nnx,*nny,*nnz;
   static int  JCXYZ[81];
-  int    i,j,k,l,m;
+  int    i,m;
   real   energy;
-  real   w1,weight,rhs,rix,riy,riz,qi,pi;
+  real   qi,pi;
   ivec   ixyz;
   rvec   invh,c1,c2;
   real   WXYZ[27];
-  real   c1x,c1y,c1z,c2x,c2y,c2z,fX,fY,fZ;
+  real   c1x,c1y,c1z,c2x,c2y,c2z;
   int    ixw[7],iyw[7],izw[7];
-  int    ll,jx,jy,jz,jcx,jcy,jcz;
-  int    jcx_2,jcx_1,jcx0,jcx1,jcx2;
-  int    jcy_2,jcy_1,jcy0,jcy1,jcy2;
-  int    jcz_2,jcz_1,jcz0,jcz1,jcz2;
-  int    jxyz,nx,ny,nz,la1,la2,la12;
+  int    ll;
+  int    nx,ny,nz,la1,la2,la12;
   t_fft_tp *ptr;
   
   unpack_fftgrid(grid,&nx,&ny,&nz,&la1,&la2,&la12,&ptr);
@@ -348,7 +345,7 @@ static real gather_f(FILE *log,bool bVerbose,
 
 void convolution(FILE *fp,bool bVerbose,t_fftgrid *grid,real ***ghat)
 {
-  int      i,i0,i1,j,k,index;
+  int      i,j,k,index;
   real     gk;
   int      nx,ny,nz,la1,la2,la12;
   t_fft_tp *ptr;
@@ -446,9 +443,8 @@ real do_pppm(FILE *log,       bool bVerbose,
   static  int       porder;
   
   const     real tol = 1e-5;
-  int       i,m;
-  real      ctot;
-  real      aver,tot,ener,r1,rc;
+  int       m;
+  real      ener,r1,rc;
   ivec      grids;
   rvec      spacing;
   

@@ -353,10 +353,11 @@ void plot_phi(char *fn,rvec box,int natoms,rvec x[],real phi[])
 #ifdef DEBUG
   fprintf(stderr,"Scaling box by %g\n",fac);
 #endif
-  eps=ps_open(fn,0,0,fac*box[XX]+2*offset,fac*box[YY]+2*offset);
+  eps=ps_open(fn,0,0,
+	      (real)(fac*box[XX]+2*offset),(real)(fac*box[YY]+2*offset));
   ps_translate(eps,offset,offset);
   ps_color(eps,0,0,0);
-  ps_box(eps,1,1,fac*box[XX]-1,fac*box[YY]-1);
+  ps_box(eps,1,1,(real)(fac*box[XX]-1),(real)(fac*box[YY]-1));
   dx=0.15*fac;
   for(i=0; (i<natoms); i++) {
     rr=gg=bb=1.0;
@@ -370,7 +371,7 @@ void plot_phi(char *fn,rvec box,int natoms,rvec x[],real phi[])
     ps_color(eps,rr,gg,bb);
     x0=fac*x[i][XX];
     y0=fac*x[i][YY];
-    ps_fillbox(eps,x0-dx,y0-dx,x0+dx,y0+dx);
+    ps_fillbox(eps,(real)(x0-dx),(real)(y0-dx),(real)(x0+dx),(real)(y0+dx));
   }
   ps_close(eps);
 }
@@ -429,7 +430,7 @@ void write_pqr(char *fn,t_atoms *atoms,rvec x[],real phi[],real dx)
     rnr=atoms->atom[i].resnr;
     fprintf(fp,"%-6s%5d  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
 	    "ATOM",i+1,*atoms->atomname[i],*atoms->resname[rnr],' ',rnr+1,
-	    10*(dx+x[i][XX]),10*x[i][YY],10*(x[i][ZZ]),0,phi[i]);
+	    10*(dx+x[i][XX]),10*x[i][YY],10*(x[i][ZZ]),0.0,phi[i]);
   }
   fclose(fp);
 }

@@ -78,8 +78,8 @@ real  uhat(int porder,real k1,real k2,real k3,real h1,real h2,real h3)
 
 real  uhat1D(int porder,real k1,real h1)
 {
-  real fac1,fac2,fac3;
-  real f123,fff;
+  real fac1;
+  real fff;
   int  i;
   
   fac1 = sinx_x(k1*h1*0.5);
@@ -212,7 +212,7 @@ real usqsq1D(int porder,real k1,real h1)
 {
   const real tt=2.0/3.0;
   const real tx=2.0/15.0;
-  real t1,t2,t3,t12,t22,t32,tmp;
+  real t1,t12,tmp;
   
   t1 = sin(k1*h1*0.5);
   t12 = t1*t1;
@@ -292,9 +292,9 @@ real  ursum1D(int term,int porder,real acut,real r1,real k1,real h1,int nalias)
 {
   real kt,ksq,kmag;
 /*   real kcutsq; */
-  real kn1,kn2,kn3,urs,tmp;
-  real h_1,h_2,h_3;
-  int  n1,n2,n3;
+  real kn1,urs,tmp;
+  real h_1;
+  int  n1;
 
   real twopi=2*M_PI;
   h_1=twopi/h1;
@@ -463,13 +463,13 @@ void calc1D(bool bSym,bool bVerbose,
 	    real ***ghat,real *ppval,real *zzval,real *eeref,real *qqopt)
 {     
   real box1,box2,box3;
-  real k1,k2,k3,ksq,kmag;
-  real gnumer,dsq,gdenom,gsq;
-  real ufrth,rsqal,rsq;
+  real k1,k2,k3;
+  real gnumer,dsq,gdenom;
+  real rsqal;
   real symfac;
-  int  l1,l2,l3;
+  int  l1;
   real twopi=2*M_PI;
-  real d1,d2,d3,u1,u2,u3,ss,gg;
+  real d1,u1;
   real pval,zval,eref,qopt;
   int  N1MAX;
 /*   int  N2MAX,N3MAX; */
