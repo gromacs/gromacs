@@ -9,7 +9,7 @@ LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 
 bin_PROGRAMS = \
 	grompp		mdrun		tpbconv	  	pdb2gmx		\
-	protonate	luck		gmxdump		\
+	protonate	luck		gmxdump		rtp2xml		\
 	gmxcheck  	x2top		ffscan
 
 
@@ -33,6 +33,17 @@ pdb2gmx_SOURCES = \
 	gen_dum.c	pgutil.c	resall.c	hackblock.c	\
 	add_par.c	topexcl.c 	toputil.c	topdirs.c	\
 	pdb2gmx.c	gen_ad.h	add_par.h	h_db.h		\
+	pdb2top.h	resall.h	toputil.h	xlate.h		\
+	gen_dum.h	hackblock.h	pgutil.h	ter_db.h	\
+	topdirs.h	genhydro.h	hizzie.h	specbond.h	\
+	topexcl.h
+
+rtp2xml_SOURCES = \
+	hizzie.c	xlate.c		specbond.c	ter_db.c	\
+	h_db.c		genhydro.c     	pdb2top.c 	gen_ad.c 	\
+	gen_dum.c	pgutil.c	resall.c	hackblock.c	\
+	add_par.c	topexcl.c 	toputil.c	topdirs.c	\
+	rtp2xml.c	gen_ad.h	add_par.h	h_db.h		\
 	pdb2top.h	resall.h	toputil.h	xlate.h		\
 	gen_dum.h	hackblock.h	pgutil.h	ter_db.h	\
 	topdirs.h	genhydro.h	hizzie.h	specbond.h	\
