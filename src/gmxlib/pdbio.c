@@ -172,7 +172,7 @@ void write_pdbfile_indexed(FILE *out,char *title,
     if (bWideFormat)
       strcat(pdbform,"%8.4f%8.4f\n");
     else
-      strcat(pdbform,"%6.2f%7.3f\n");
+      strcat(pdbform,"%6.2f%6.2f\n");
       
     fprintf(out,pdbform,pdbtp[type],(i+1)%100000,nm,resnm,ch,resnr,
 	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ],occup,bfac);
