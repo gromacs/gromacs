@@ -16,15 +16,14 @@ TELLDIRS=	$(LDIRS)
 DDDIRS	=	$(DIRS)	Makefile makef mkhtml
 FILES   =	NOGMX
 SDIRS	=	$(foreach DIR,$(TELLDIRS),src/$(DIR))
-DIST	=	$(foreach DIR,$(DDDIRS),src/$(DIR))
-AUX	=	top tutor
+AUX	=	top tutor html
 DIST	=	$(FILES) $(foreach DIR,$(DDDIRS),src/$(DIR)) $(AUX)
 BENCH	=	tests/bench
 TESTS	=	tests/mdrun
 GETIT	=	$(SDIRS)  src/makef
 TDIR	=	$(GMXHOME)
-TARCMD  =	tar cvf 
-#TARFLG  =	--exclude=CVS
+TARCMD  =	/usr/local/bin/tar cvf 
+TARFLG  =	--exclude=CVS
 COPYRGT	=	$(GMXHOME)/src/local/copyrgt
 PROGRAMS=	(cd bin/s10; ls; cd ../..)
 
