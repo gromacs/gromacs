@@ -216,6 +216,10 @@ int main(int argc,char *argv[])
     "molecules may diffuse out of the box. The starting configuration",
     "for this procedure is taken from the structure file, if one is",
     "supplied, otherwise it is the first frame.",
+    "[TT]compact[tt] is only useful for triclinic boxes. It makes",
+    "molecules whole and puts them at the shortest distance from the center",
+    "of the box. This can be useful for visualizing truncated octahedrons.",
+    "[PAR]",
     "Use [TT]-center[tt] to put the system in the center of the box.",
     "This is especially useful for multimeric proteins, since this",
     "procedure will ensure the subunits stay together in the trajectory",
@@ -239,7 +243,8 @@ int main(int argc,char *argv[])
     "one specific time from your trajectory."
   };
   
-  static char *pbc_opt[] = { NULL, "none", "whole", "inbox", "nojump", NULL };
+  static char *pbc_opt[] = { NULL, "none", "whole", "inbox", "nojump", 
+			     "compact", NULL };
 
   static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE;
   static bool  bCenter=FALSE,bFit=FALSE,bPFit=FALSE,bBox=TRUE;
@@ -298,7 +303,7 @@ int main(int argc,char *argv[])
   int          trjout=0;
   int          status,ftp,ftpin,file_nr;
   rvec         *x,*xn,*xout,*v,*vn,*vout;
-  rvec         *xp,x_shift;
+  rvec         *xp,x_shift,box_center,dx;
   real         xtcpr, lambda,*w_rls=NULL;
   matrix       box;
   int          m,i,d,frame,outframe,natoms=0,nout,nre,step;
@@ -311,7 +316,7 @@ int main(int argc,char *argv[])
   atom_id      *ind_fit,*ind_rms;
   char         *gn_fit,*gn_rms;
   real         t,pt,tshift=0,t0=-1,dt=0.001;
-  bool         bPBC,bInBox,bNoJump;
+  bool         bPBC,bInBox,bNoJump,bCompact;
   bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bToldYouOnce=FALSE;
   bool         bHaveNextFrame,bHaveX=FALSE,bHaveV=FALSE,bSetBox;
@@ -353,7 +358,10 @@ int main(int argc,char *argv[])
     bPBC      = (strcmp(pbc_opt[0],"whole") == 0);
     bInBox    = (strcmp(pbc_opt[0],"inbox") == 0);
     bNoJump   = (strcmp(pbc_opt[0],"nojump") == 0);
+    bCompact  = (strcmp(pbc_opt[0],"compact") == 0);
     if (bFit && (strcmp(pbc_opt[0],"none") == 0))
+      bPBC = TRUE;
+    if (bCompact)
       bPBC = TRUE;
 
     /* prec is in nr of decimal places, xtcprec is a multiplication factor: */
@@ -501,7 +509,7 @@ int main(int argc,char *argv[])
       /* check if index is meaningful */
       for(i=0; i<nout; i++) {
 	if (index[i] >= natoms)
-	  fatal_error(0,"Element %d of index group %s is %d, this is larger than the number of atoms in the trajectory file (%d)",i,grpnm,index[i]+1,natoms);
+	  fatal_error(0,"Index[%d] %d is larger than the number of atoms in the trajectory file (%d)",i,index[i]+1,natoms);
 	bCopy = bCopy || (i != index[i]);
       }
 
@@ -611,6 +619,19 @@ int main(int argc,char *argv[])
 	  if ( ((outframe % SKIP) == 0) || (outframe < SKIP) )
 	    fprintf(stderr," ->  frame %6d time %8.3f      \r",outframe,t);
 	  
+	  if (bCompact) {
+	    printf("Making trunc oct\n");
+	    init_pbc(box,FALSE);
+	    for(i=0; i<DIM; i++)
+	      box_center[i] = 0.5*box[i][i];
+	    for(i=0; i<natoms; i++) {
+	      pbc_dx(x[i],box_center,dx);
+	      rvec_add(box_center,dx,x[i]);
+	    }
+	    if (bPFit)
+	      rm_pbc(&(top.idef),natoms,box,x,x);
+	  }
+
 	  if (!bPFit) {
 	    /* Now modify the coords according to the flags,
 	       for PFit we did this already! */
