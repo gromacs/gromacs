@@ -301,9 +301,9 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   t_pargs fpe_pa   = { "-exception", FALSE, etBOOL, &bExcept,
 		       "HIDDENTurn on exception handling" };
   t_pargs npri_paX = { "-npri", FALSE, etENUM,  npri_str,
-		       "Set non blocking priority." };
+		       "Set non blocking priority" };
   t_pargs npri_pa  = { "-npri", FALSE, etINT,  &npri,
-		       "Set non blocking priority." };
+		       "Set non blocking priority (try 250)" };
   t_pargs nice_paX = { "-nice", FALSE, etENUM, NULL, 
 		       "Set the nicelevel" };
   t_pargs nice_pa  = { "-nice", FALSE, etINT,  &nicelevel, 
@@ -368,27 +368,26 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   for(i=npall=0; (i<NPCA_PA); i++)
     npall = add_parg(npall,&(all_pa),&(pca_pa[i]));
 
-  if (FF(PCA_CAN_BEGIN)) 
-    npall = add_parg(npall,&(all_pa),&begin_pa);
-  if (FF(PCA_CAN_END))
-    npall = add_parg(npall,&(all_pa),&end_pa);
-  if (FF(PCA_CAN_END))
-    npall = add_parg(npall,&(all_pa),&view_pa);
-    
+  /* Motif options */
+#ifdef HAVE_MOTIF
+  npall = add_parg(npall,&(all_pa),&motif_pa);
+#endif
 
   bAddNice = TRUE;    
 #ifdef _SGI_
-#ifndef NO_NICE
-  if (FF(PCA_SET_NPRI)) {
-    if (bGUI)
-      npall = add_parg(npall,&(all_pa),&npri_paX);
-    else
-      npall = add_parg(npall,&(all_pa),&npri_pa);
-    bAddNice = FALSE;
-  }
-#endif
 #ifdef USE_SGI_FPE
   npall = add_parg(npall,&(all_pa),&fpe_pa);
+#endif
+#ifndef NO_NICE
+  if (bGUI)
+    npall = add_parg(npall,&(all_pa),&npri_paX);
+  else {
+    if (FF(PCA_SET_NPRI) && !opt2parg_bSet("-npri",npall,all_pa)) {
+      npri=atoi(getenv("GMXNPRI"));
+      bAddNice = FALSE;
+    }
+    npall = add_parg(npall,&(all_pa),&npri_pa);
+  }
 #endif
 #endif
 
@@ -407,11 +406,12 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   }
 #endif
 
-  /* Motif options */
-#ifdef HAVE_MOTIF
-  npall = add_parg(npall,&(all_pa),&motif_pa);
-  
-#endif
+  if (FF(PCA_CAN_BEGIN)) 
+    npall = add_parg(npall,&(all_pa),&begin_pa);
+  if (FF(PCA_CAN_END))
+    npall = add_parg(npall,&(all_pa),&end_pa);
+  if (FF(PCA_CAN_END))
+    npall = add_parg(npall,&(all_pa),&view_pa);
 
   /* Now append the program specific arguments */
   for(i=0; (i<npargs); i++)
@@ -455,9 +455,6 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   
   /* Set the nice level */
 #ifdef _SGI_
-  /* if (FF(PCA_SET_NPRI) && !opt2parg_bSet("-npri",npall,all_pa))
-     npri=atoi(getenv("GMXNPRI"));
-  */
   if (bGUI)
     sscanf(npri_str[0],"%d",&npri);
   if (npri != 0) {
