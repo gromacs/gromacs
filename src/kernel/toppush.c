@@ -744,11 +744,8 @@ void push_mol(int nrmols,t_molinfo mols[],char *pline,int *whichmol,
   if (i<nrmols) {
     *nrcopies        = copies;
     *whichmol        = i;
-  }
-  else {
-    sprintf(errbuf,"No such moleculetype %s",type);
-    warning(errbuf);
-  }
+  } else
+    fatal_error(0,"No such moleculetype %s",type);
 }
 
 void init_block2(t_block2 *b2, int natom)
