@@ -201,7 +201,7 @@ the last energies are always written
 <dd>Make a grid in the box and only check atoms in neighboring grid
 cells when constructing a new neighbor list every <b>nstlist</b> steps.
 The number of grid cells per Coulomb cut-off
-length is set with <b>deltagrid</b>, this number should be 2 for
+length is set with <b>deltagrid</b>, this number should be 2 or 3 for
 optimal performance.  In large systems grid search is much faster than
 simple search.
 <dt><b>simple</b>
@@ -209,7 +209,7 @@ simple search.
 every <b>nstlist</b> steps.
 </dl>
 <dt><h4>deltagrid: </b>(2)</h4>
-<dd>number of grid cells per Coulomb cut-off length
+<dd>number of grid cells per longest cut-off length
 
 <dt><h4>box:</h4>
 <dd><dl compact>
