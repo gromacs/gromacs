@@ -173,11 +173,11 @@ int main(int argc, char *argv[])
   nz   = (int)(nrbox[ZZ]+0.5);
   
   if ((nx <= 0) || (ny <= 0) || (nz <= 0))
-    fatal_error(0,"Number of boxes (-nbox) should be positive");
+    fatal_error(0,"Number of boxes (-nbox) should be larger than zero");
   if ((nmolat <= 0) && bShuffle)
     fatal_error(0,"Can not shuffle if the molecules only have %d atoms",
 		nmolat);
-    
+  
   vol=nx*ny*nz;     /* calculate volume in grid points (= nr. molecules) */
 
   get_stx_coordnum(opt2fn("-f",NFILE,fnm),&natoms); 
