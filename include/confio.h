@@ -118,10 +118,3 @@ extern void read_stx_conf(char *infile, char *title,t_atoms *atoms,
 #endif
 
 #endif	/* _confio_h */
-
-
-
-
-
-
-
