@@ -274,9 +274,9 @@ real potential(real r1,real rc,real R)
     return 0.0;
 }
 
-real calc_LRcorrections(FILE *fp,int start,int natoms,real r1,real rc,
+real calc_LRcorrections(FILE *fp,int start,int natoms,t_forcerec *fr,
 			real charge[],t_block *excl,rvec x[],
-			rvec f[],bool bOld)
+			rvec f[],bool bOld,rvec box_size)
 {
   static bool bFirst=TRUE;
   static real Vself;
@@ -284,22 +284,29 @@ real calc_LRcorrections(FILE *fp,int start,int natoms,real r1,real rc,
   unsigned int *AA;
   real   qi,qq,dr,ddd,dr2,dr_1,dr_3,fscal,Vexcl;
   rvec   df,dx;
+  real   r1=fr->rcoulomb_switch;
+  real   rc=fr->rcoulomb;
+  real   ewc=fr->ewaldcoeff;
+  real   isp=0.564189583547756;
+  ivec   shift;
   
   if (bFirst) {
     qq =0;  
-    for(i=start; (i<natoms); i++) 
+    for(i=start; (i<start+natoms); i++) 
       qq  += charge[i]*charge[i];
+    if(fr->bEwald)
+      Vself=ewc*ONE_4PI_EPS0*qq/sqrt(M_PI);
+    else
     Vself = 0.5*C*ONE_4PI_EPS0*qq;
     fprintf(fp,"calc_LRcorrections: r1 = %g, rc=%g\n",r1,rc);
     fprintf(fp,"calc_LRcorrections: start=%d,natoms=%d\n",start,natoms);
     fprintf(fp,"calc_LRcorrections: qq = %g, Vself=%g\n",qq,Vself);
     bFirst = FALSE;
   }
-  
   AA = excl->a;
-  
   Vexcl = 0;
-  for(i=start; (i<natoms); i++) {
+
+  for(i=start; (i<start+natoms); i++) {
     /* Initiate local variables (for this i-particle) to 0 */
     i1  = excl->index[i];
     i2  = excl->index[i+1];
@@ -322,17 +329,30 @@ real calc_LRcorrections(FILE *fp,int start,int natoms,real r1,real rc,
 	  dr2 = 0;
 	  for(m=0; (m<DIM); m++) {
 	    ddd = x[i][m] - x[k][m];
+	      if(ddd>box_size[m]/2) {  /* ugly hack,   */
+		ddd-=box_size[m];      /* to fix pbc.. */ 
+		shift[m]=-1;
+	      } else if (ddd<-box_size[m]/2) {
+		ddd+=box_size[m];
+		shift[m]=+1;
+	      } else
+		shift[m]=0;
 	    dx[m] = ddd;
 	    dr2  += ddd*ddd;
 	  }
 	  dr_1    = invsqrt(dr2);
 	  dr      = 1.0/dr_1;
 	  dr_3    = dr_1*dr_1*dr_1;
-	  
 	  /* Compute exclusion energy and scalar force */
+	  if(fr->bEwald) {
+	      Vexcl  += qq*erf(ewc*dr)*dr_1;
+	      fscal   =
+		  qq*(erf(ewc*dr)*dr_3-2*exp(-ewc*ewc*dr2)*ewc*isp*dr_1*dr_1);
+	  }
+	  else {
 	  Vexcl  += qq*(dr_1-potential(r1,rc,dr));
 	  fscal   = qq*(-shiftfunction(r1,rc,dr))*dr_3;
-	  
+	  }
 	  if ((fscal != 0) && debug)
 	    fprintf(debug,"i: %d, k: %d, dr: %.3f fscal: %.3f\n",i,k,dr,fscal);
 	    
@@ -342,11 +362,11 @@ real calc_LRcorrections(FILE *fp,int start,int natoms,real r1,real rc,
 	  svmul(fscal,dx,df);
 	  rvec_inc(f[k],df);
 	  rvec_dec(f[i],df);
+	  rvec_dec(fr->fshift[XYZ2IS(shift[0],shift[1],shift[2])],df);
 	}
       }
     }
   }
-  
   return (Vself+Vexcl);
 }
 
