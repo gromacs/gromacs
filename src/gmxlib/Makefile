@@ -222,34 +222,34 @@ endif
 ctabdata.o:		ctabdata.c $(CPUMAKEF)
 
 mkinl.o:		mkinl.c $(CPUMAKEF)
-			$(CC_MKINL) -c mkinl.c
+			$(CC_MKINL) $(C-FLAGS) -c mkinl.c
 
 mkinl_declarations.o:	mkinl_declarations.c  $(CPUMAKEF)
-			$(CC_MKINL) -c mkinl_declarations.c
+			$(CC_MKINL) $(C-FLAGS) -c mkinl_declarations.c
 
 mkinl_outerloop.o:	mkinl_outerloop.c  $(CPUMAKEF)
-			$(CC_MKINL) -c mkinl_outerloop.c
+			$(CC_MKINL) $(C-FLAGS) -c mkinl_outerloop.c
 
 mkinl_innerloop.o:	mkinl_innerloop.c  $(CPUMAKEF)
-			$(CC_MKINL) -c mkinl_innerloop.c
+			$(CC_MKINL) $(C-FLAGS) -c mkinl_innerloop.c
 
 mkinl_calcdist.o:	mkinl_calcdist.c  $(CPUMAKEF)
-			$(CC_MKINL) -c mkinl_calcdist.c
+			$(CC_MKINL) $(C-FLAGS) -c mkinl_calcdist.c
 
 mkinl_invsqrt.o:	mkinl_invsqrt.c $(CPUMAKEF)
-			$(CC_MKINL) -c mkinl_invsqrt.c
+			$(CC_MKINL) $(C-FLAGS) -c mkinl_invsqrt.c
 
 mkinl_recip.o:		mkinl_recip.c $(CPUMAKEF)
-			$(CC_MKINL) -c mkinl_recip.c
+			$(CC_MKINL) $(C-FLAGS) -c mkinl_recip.c
 
 mkinl_interactions.o:	mkinl_interactions.c  $(CPUMAKEF)
-			$(CC_MKINL) -c mkinl_interactions.c
+			$(CC_MKINL) $(C-FLAGS) -c mkinl_interactions.c
 
 metacode.o:		metacode.c $(CPUMAKEF)
-			$(CC_MKINL) -c metacode.c
+			$(CC_MKINL) $(C-FLAGS) -c metacode.c
 
 mkinl:			$(MKINL_OBJ) $(CPUMAKEF)
-			$(LD_MKINL) -o $@ $(MKINL_OBJ)
+			$(LD_MKINL)  $(C-FLAGS) -o $@ $(MKINL_OBJ)
 
 inner.h:		inner.m4 $(CPUMAKEF)
 			$(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) inner.m4 > inner.h
