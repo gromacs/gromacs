@@ -2,6 +2,7 @@
 # Process this file wth autoconf to produce a configure script.
 #######################################################################
 AC_INIT(src/gmxlib/3dview.c)
+AC_PREREQ(2.13)
 AC_CONFIG_AUX_DIR(./config)
 AM_INIT_AUTOMAKE(gromacs, 3.0b)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
