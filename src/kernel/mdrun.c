@@ -122,6 +122,7 @@ int main(int argc,char *argv[])
     { efENX, "-e",      "ener",     ffWRITE },
     { efLOG, "-g",      "md",       ffWRITE },
     { efXVG, "-dgdl",   "dgdl",     ffOPTWR },
+    { efXVG, "-field",  "field",    ffOPTWR },
     { efXVG, "-table",  "table",    ffOPTRD },
     { efTRX, "-rerun",  "rerun",    ffOPTRD },
     { efEDI, "-ei",     "sam",      ffOPTRD },

@@ -48,6 +48,8 @@
 #include "names.h"
 #include "constr.h"
 
+bool bDebug = FALSE;
+
 static void do_1pos(rvec xnew,rvec xold,rvec f,real k_1,real step)
 {
   real xo,yo,zo;
@@ -89,7 +91,7 @@ static void shell_pos_sd(FILE *log,real step,rvec xold[],rvec xnew[],rvec f[],
     shell = s[i].shell;
     k_1   = fudge*s[i].k_1;
     do_1pos(xnew[shell],xold[shell],f[shell],k_1,step);
-    if (debug && 0) {
+    if (debug && bDebug) {
       pr_rvec(debug,0,"fshell",f[shell],DIM,TRUE);
       pr_rvec(debug,0,"xold",xold[shell],DIM,TRUE);
       pr_rvec(debug,0,"xnew",xnew[shell],DIM,TRUE);
@@ -302,7 +304,8 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 		 int nshell,t_shell shells[],t_forcerec *fr,
 		 char *traj,real t,rvec mu_tot,
 		 int natoms,bool *bConverged,
-		 bool bDummies,t_comm_dummies *dummycomm)
+		 bool bDummies,t_comm_dummies *dummycomm,
+		 FILE *fp_field)
 {
   static bool bFirst=TRUE,bForceInit=FALSE,bNoPredict=FALSE;
   static rvec *pos[2],*force[2];
@@ -321,6 +324,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 #define  Try (1-Min)             /* At start Try = 1 */
 
   if (bFirst) {
+    bDebug = getenv("DEBUGSHELLS") != NULL;
     /* Check for directional minimization */
     if (fr->fc_stepsize != 0)
       ndir = count_zero_length_constraints(&(top->idef));
@@ -380,7 +384,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   }
   do_force(log,cr,mcr,parm,nsb,my_vir[Min],pme_vir[Min],mdstep,nrnb,top,grps,
 	   state->box,state->x,force[Min],buf,md,ener,fcd,bVerbose && !PAR(cr),
-	   state->lambda,graph,bDoNS,FALSE,fr,mu_tot,FALSE,t);
+	   state->lambda,graph,bDoNS,FALSE,fr,mu_tot,FALSE,t,fp_field);
   sum_lrforces(force[Min],fr,start,homenr);
 
   sf_dir = 0;
@@ -404,11 +408,10 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     pr_rvecs(debug,0,cbuf,my_vir[Min],DIM);
   }
     
-#ifdef DEBUG
-  if (debug) {
+  if (debug && bDebug) {
     pr_rvecs(debug,0,"force0",force[Min],md->nr);
   }
-#endif
+
   if (nshell+ndir > 0) {
     /* Copy x to pos[Min] & pos[Try]: during minimization only the
      * shell positions are updated, therefore the other particles must
@@ -427,7 +430,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   step=step0;
   
   if (bVerbose && MASTER(cr) && (nshell+ndir > 0))
-    print_epot(stdout,mdstep,0,step,Epot[Min],df[Min],FALSE);
+    print_epot(stdout,mdstep,-1,step,Epot[Min],df[Min],FALSE);
 
   if (debug) {
     fprintf(debug,"%17s: %14.10e\n",
@@ -446,13 +449,14 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   
   for(count=1; (!bDone && (count < number_steps)); count++) {
 
+    /* Replace Try with Min in the dummies bit. DvdS 18-01-04 */
     if (bDummies) {
-      shift_self(graph,state->box,pos[Try]);
+      shift_self(graph,state->box,pos[Min]);
       
-      construct_dummies(log,pos[Try],nrnb,parm->ir.delta_t,state->v,&top->idef,
+      construct_dummies(log,pos[Min],nrnb,parm->ir.delta_t,state->v,&top->idef,
 			graph,cr,state->box,dummycomm);
       
-      unshift_self(graph,state->box,pos[Try]);
+      unshift_self(graph,state->box,pos[Min]);
     }
      
     if (ndir) {
@@ -475,9 +479,9 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     clear_mat(my_vir[Try]);
     clear_mat(pme_vir[Try]);
     do_force(log,cr,mcr,parm,nsb,my_vir[Try],pme_vir[Try],1,nrnb,
-	     top,grps,pos[Try],state->v,force[Try],buf,md,ener,fcd,
+	     top,grps,state->box,pos[Try],force[Try],buf,md,ener,fcd,
 	     bVerbose && !PAR(cr),
-	     state->lambda,graph,FALSE,FALSE,fr,mu_tot,FALSE,t);
+	     state->lambda,graph,FALSE,FALSE,fr,mu_tot,FALSE,t,fp_field);
     if (bDummies) 
       spread_dummy_f(log,pos[Try],force[Try],nrnb,&top->idef,dummycomm,cr);
       
@@ -517,11 +521,14 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
       fprintf(debug,"df = %g  %g\n",df[Min],df[Try]);
 
     if (debug) {
-      /*pr_rvecs(debug,0,"F na do_force",force[Try] + start,homenr);*/
+      if (bDebug)
+	pr_rvecs(debug,0,"F na do_force",force[Try] + start,homenr);
       sprintf(cbuf,"myvir step %d",count);
       pr_rvecs(debug,0,cbuf,my_vir[Try],DIM);
-      /*fprintf(debug,"SHELL ITER %d\n",count);
-	dump_shells(debug,pos[Try],force[Try],ftol,nshell,shells);*/
+      if (bDebug) {
+	fprintf(debug,"SHELL ITER %d\n",count);
+	dump_shells(debug,pos[Try],force[Try],ftol,nshell,shells);
+      }
     }
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(parm->ir.opts),grps,ener);
@@ -536,8 +543,8 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     *bConverged = (df[Try] < ftol);
     bDone       = *bConverged || (step < 0.01);
     
-    /* if ((Epot[Try] < Epot[Min])) { */
-    if ((df[Try] < df[Min])) {
+    /*if ((Epot[Try] < Epot[Min])) {*/
+      if ((df[Try] < df[Min])) {
       if (debug)
 	fprintf(debug,"Swapping Min and Try\n");
       Min  = Try;

@@ -39,6 +39,7 @@
 #include "assert.h"
 #include "names.h"
 #include "vec.h"
+#include "physics.h"
 	
 static void pr_shell(FILE *log,int ns,t_shell s[])
 {
@@ -173,13 +174,14 @@ t_shell *init_shells(FILE *log,int start,int homenr,
 	    shell[nsi].k    += idef->iparams[type].cubic.kb;
 	    break;
 	  case F_POLARIZATION:
-	    shell[nsi].k    += sqr(qS)/idef->iparams[type].polarize.alpha;
+	    shell[nsi].k    += sqr(qS)*ONE_4PI_EPS0/
+	      idef->iparams[type].polarize.alpha;
 	  break;
 	  case F_WATER_POL:
 	    alpha          = (idef->iparams[type].wpol.al_x+
 			      idef->iparams[type].wpol.al_y+
 			      idef->iparams[type].wpol.al_z)/3.0;
-	    shell[nsi].k  += sqr(qS)/alpha;
+	    shell[nsi].k  += sqr(qS)*ONE_4PI_EPS0/alpha;
 	    break;
 	  default:
 	    fatal_error(0,"Death Horror: %s, %d",__FILE__,__LINE__);

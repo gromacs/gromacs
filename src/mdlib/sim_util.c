@@ -204,7 +204,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 	      t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,bool bVerbose,
 	      real lambda,t_graph *graph,
 	      bool bNS,bool bNBFonly,t_forcerec *fr, rvec mu_tot,
-	      bool bGatherOnly,real t)
+	      bool bGatherOnly,real t,FILE *field)
 {
   static rvec box_size;
   static real dvdl_lr = 0;
@@ -318,7 +318,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
     pr_rvecs(debug,0,"vir_shifts",vir_part,DIM);
 
   /* Compute forces due to electric field */
-  calc_f_el(MASTER(cr) ? log : NULL,
+  calc_f_el(MASTER(cr) ? field : NULL,
 	    start,homenr,mdatoms->chargeT,x,f,parm->ir.ex,parm->ir.et,t);
 
   /* When using PME/Ewald we compute the long range virial (pme_vir) there.
@@ -593,7 +593,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 	     t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
 	     int nfile,t_filenm fnm[],char **traj,
 	     char **xtc_traj,int *fp_ene,
-	     FILE **fp_dgdl,t_mdebin **mdebin,t_groups *grps,
+	     FILE **fp_dgdl,FILE **fp_field,t_mdebin **mdebin,t_groups *grps,
 	     tensor force_vir,tensor pme_vir,
 	     tensor shake_vir,t_mdatoms *mdatoms,rvec mu_tot,
 	     bool *bNEMD,bool *bSimAnn,t_vcm **vcm,t_nsborder *nsb)
@@ -639,6 +639,10 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 	  xvgropen(opt2fn("-dgdl",nfile,fnm),
 		   "dG/d\\8l\\4","Time (ps)",
 		   "dG/d\\8l\\4 (kJ mol\\S-1\\N nm\\S-2\\N \\8l\\4\\S-1\\N)");
+      if ((fp_field != NULL) && (ir->ex[XX].n || ir->ex[YY].n ||ir->ex[ZZ].n))
+	*fp_field = xvgropen(opt2fn("-field",nfile,fnm),
+			     "Applied electric field","Time (ps)",
+			     "E (V/nm)");
     } else
       *fp_ene = -1;
 

@@ -83,7 +83,8 @@ extern int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 			int nshell,t_shell shells[],t_forcerec *fr,
 			char *traj,real t,rvec mu_tot,
 			int natoms,bool *bConverged,
-			bool bDummies,t_comm_dummies *dummycomm);
+			bool bDummies,t_comm_dummies *dummycomm,
+			FILE *fp_field);
 
 /* GENERAL COUPLING THEORY (GCT) STUFF */
 enum { eoPres, eoEpot, eoVir, eoDist, eoMu, eoForce, eoFx, eoFy, eoFz,

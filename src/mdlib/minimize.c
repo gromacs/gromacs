@@ -207,52 +207,54 @@ void init_em(FILE *log,const char *title,t_parm *parm,
 
 
 
-static real 
-evaluate_energy(FILE *log, bool bVerbose, t_parm *parm, t_topology *top,
-		t_groups *grps, t_nsborder *nsb, t_nrnb nrnb[], t_nrnb *mynrnb,
-		bool bDummies,t_comm_dummies *dummycomm,t_fcdata *fcd,
-		t_commrec *cr, t_commrec *mcr,t_graph *graph,t_mdatoms *mdatoms,
-		t_forcerec *fr, real lambda, t_vcm *vcm, rvec mu_tot, matrix box,
-		rvec *x, rvec *f, rvec *buf, real ener[], int count)
+static real evaluate_energy(FILE *log, bool bVerbose,t_parm *parm, 
+			    t_topology *top,t_groups *grps,t_nsborder *nsb, 
+			    t_nrnb nrnb[], t_nrnb *mynrnb,
+			    bool bDummies,t_comm_dummies *dummycomm,
+			    t_fcdata *fcd,t_commrec *cr,t_commrec *mcr,
+			    t_graph *graph,t_mdatoms *mdatoms,
+			    t_forcerec *fr, real lambda, t_vcm *vcm, 
+			    rvec mu_tot, matrix box,rvec *x, rvec *f, 
+			    rvec *buf, real ener[], int count)
 {
-	bool bNS;
-    tensor force_vir,shake_vir,pme_vir;
-	real terminate=0;
+  bool bNS;
+  tensor force_vir,shake_vir,pme_vir;
+  real terminate=0;
 
-    bNS = (parm->ir.nstlist > 0);
+  bNS = (parm->ir.nstlist > 0);
 
-    if (bDummies)
-	  construct_dummies(log,x,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
-						  graph,cr,box,dummycomm);
+  if (bDummies)
+    construct_dummies(log,x,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
+		      graph,cr,box,dummycomm);
       
-    /* Calc force & energy on new trial position  */
-    /* do_force always puts the charge groups in the box and shifts again
-     * We do not unshift, so molecules are always whole in congrad.c
-     */
-    do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,
-	     count,&(nrnb[cr->nodeid]),top,grps,box,x,f,
-	     buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
-	     lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
+  /* Calc force & energy on new trial position  */
+  /* do_force always puts the charge groups in the box and shifts again
+   * We do not unshift, so molecules are always whole in congrad.c
+   */
+  do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,
+	   count,&(nrnb[cr->nodeid]),top,grps,box,x,f,
+	   buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
+	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
      
-    /* Spread the force on dummy particle to the other particles... */
-    if(bDummies) 
-	spread_dummy_f(log,x,f,&(nrnb[cr->nodeid]),&top->idef,dummycomm,cr); 
+  /* Spread the force on dummy particle to the other particles... */
+  if(bDummies) 
+    spread_dummy_f(log,x,f,&(nrnb[cr->nodeid]),&top->idef,dummycomm,cr); 
       
-    /* Sum the potential energy terms from group contributions */
-    sum_epot(&(parm->ir.opts),grps,ener);
-    where();
+  /* Sum the potential energy terms from group contributions */
+  sum_epot(&(parm->ir.opts),grps,ener);
+  where();
 
-    /* Clear stuff again */
-    clear_mat(force_vir);
-    clear_mat(shake_vir);
+  /* Clear stuff again */
+  clear_mat(force_vir);
+  clear_mat(shake_vir);
       
-    /* Communicate stuff when parallel */
-    if (PAR(cr)) 
-	  global_stat(log,cr,ener,force_vir,shake_vir,
-		    &(parm->ir.opts),grps,mynrnb,nrnb,vcm,&terminate);
+  /* Communicate stuff when parallel */
+  if (PAR(cr)) 
+    global_stat(log,cr,ener,force_vir,shake_vir,
+		&(parm->ir.opts),grps,mynrnb,nrnb,vcm,&terminate);
     
-    ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
-    return ener[F_EPOT];
+  ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
+  return ener[F_EPOT];
 }
 
 
@@ -349,7 +351,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,0,&(nrnb[cr->nodeid]),
 	   top,grps,state->box,
 	   state->x,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
-	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
+	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
   where();
 
   /* Spread the force on dummy particle to the other particles... */
@@ -964,7 +966,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,0,&(nrnb[cr->nodeid]),
 	   top,grps,state->box,
 	   state->x,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
-	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
+	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
   where();
   
   /* Spread the force on dummy particle to the other particles... */
@@ -1614,7 +1616,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	     force[TRY],buf,
 	     mdatoms,ener,fcd,bVerbose && !(PAR(cr)), 
  	     lambda,graph,parm->ir.nstlist>0 || count==0,FALSE,fr,mu_tot,
-	     FALSE,0.0); 
+	     FALSE,0.0,NULL); 
     
     /* Spread the force on dummy particle to the other particles... */
     if (bDummies) 
@@ -1844,7 +1846,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   bNS=TRUE;
   do_force(log,cr,NULL,parm,nsb,force_vir,pme_vir,0,&mynrnb,top,grps,
 	   state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
-	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
+	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
   bNS=FALSE;
   
   if (graph)
@@ -1887,7 +1889,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       do_force(log,cr,NULL,parm,nsb,force_vir,pme_vir,2*(step*DIM+idum),
 	       &mynrnb,top,grps,
 	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
-	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
+	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
       if (graph)
 	/* Shift back the coordinates, since we're not calling update */
 	unshift_self(graph,state->box,state->x);
@@ -1905,7 +1907,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       do_force(log,cr,NULL,parm,nsb,force_vir,pme_vir,2*(step*DIM+idum)+1,
 	       &mynrnb,top,grps,
 	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
-	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
+	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
       if (graph)
 	/* Shift back the coordinates, since we're not calling update */
 	unshift_self(graph,state->box,state->x);

@@ -273,7 +273,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 {
   t_mdebin   *mdebin;
   int        fp_ene=0,fp_trn=0,step,step_rel;
-  FILE       *fp_dgdl=NULL;
+  FILE       *fp_dgdl=NULL,*fp_field=NULL;
   time_t     start_t;
   real       t,t0,lam0;
   bool       bNS,bSimAnn,bStopCM,bTYZ,bRerunMD,bNotLastFrame=FALSE,
@@ -321,7 +321,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   /* Initial values */
   init_md(cr,&parm->ir,state->box,&t,&t0,&state->lambda,&lam0,
 	  &mynrnb,&bTYZ,top,
-	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&mdebin,grps,
+	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&fp_field,&mdebin,grps,
 	  force_vir,pme_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&bSimAnn,&vcm,nsb);
   debug_gmx();
 
@@ -552,7 +552,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 			 state,vold,vt,f,buf,mdatoms,nsb,&mynrnb,graph,
 			 grps,force_vir,pme_vir,bShell,
 			 nshell,shells,fr,traj,t,mu_tot,
-			 nsb->natoms,&bConverged,bDummies,dummycomm);
+			 nsb->natoms,&bConverged,bDummies,dummycomm,
+			 fp_field);
       tcount+=count;
       
       if (bConverged)
@@ -565,7 +566,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
        */
       do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,step,&mynrnb,top,grps,
 	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
-	       state->lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,t);
+	       state->lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,t,fp_field);
     }
    
     if (bTCR)
@@ -886,6 +887,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     close_trn(fp_trn);
     if (fp_dgdl)
       fclose(fp_dgdl);
+    if (fp_field)
+      fclose(fp_field);
   }
   debug_gmx();
 

@@ -352,7 +352,7 @@ real polarize(int nbonds,
     type = forceatoms[i++];
     ai   = forceatoms[i++];
     aj   = forceatoms[i++];
-    ksh  = sqr(md->chargeT[aj])/forceparams[type].polarize.alpha;
+    ksh  = sqr(md->chargeT[aj])*ONE_4PI_EPS0/forceparams[type].polarize.alpha;
   
     ki   = pbc_rvec_sub(x[ai],x[aj],dx);	/*   3 		*/
     dr2  = iprod(dx,dx);			/*   5		*/
@@ -404,9 +404,9 @@ real water_pol(int nbonds,
     type0  = forceatoms[0];
     aS     = forceatoms[i+5];
     qS     = md->chargeT[aS];
-    kk[XX] = sqr(qS)/forceparams[type0].wpol.al_x;
-    kk[YY] = sqr(qS)/forceparams[type0].wpol.al_y;
-    kk[ZZ] = sqr(qS)/forceparams[type0].wpol.al_z;
+    kk[XX] = sqr(qS)*ONE_4PI_EPS0/forceparams[type0].wpol.al_x;
+    kk[YY] = sqr(qS)*ONE_4PI_EPS0/forceparams[type0].wpol.al_y;
+    kk[ZZ] = sqr(qS)*ONE_4PI_EPS0/forceparams[type0].wpol.al_z;
     r_HH   = 1.0/forceparams[type0].wpol.rHH;
     r_OD   = 1.0/forceparams[type0].wpol.rOD;
     if (debug) {

@@ -183,7 +183,7 @@ extern void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 		     t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,
 		     bool bVerbose,real lambda,t_graph *graph,
 		     bool bNS,bool bNBFonly,t_forcerec *fr, rvec mu_tot,
-		     bool bGatherOnly,real t);
+		     bool bGatherOnly,real t,FILE *field);
 extern void sum_lrforces(rvec f[],t_forcerec *fr,int start,int homenr);
 		     
 extern void calc_virial(FILE *log,int start,int homenr,rvec x[],rvec f[],
@@ -304,7 +304,8 @@ extern void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 		    t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
 		    int nfile,t_filenm fnm[],char **traj,
 		    char **xtc_traj,int *fp_ene,
-		    FILE **fp_dgdl,t_mdebin **mdebin,t_groups *grps,
+		    FILE **fp_dgdl,FILE **fp_field,
+		    t_mdebin **mdebin,t_groups *grps,
 		    tensor force_vir,tensor pme_vir,
 		    tensor shake_vir,t_mdatoms *mdatoms,rvec mu_tot,
 		    bool *bNEMD,bool *bSimAnn,t_vcm **vcm,t_nsborder *nsb);

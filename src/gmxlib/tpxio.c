@@ -594,7 +594,7 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     break;
   case F_WATER_POL:
     if (file_version < 31) 
-      fatal_error(0,"Sorry, old tpr files with water_polarization not supported. Make a new one.");
+      fatal_error(0,"Old tpr files with water_polarization not supported. Make a new.");
     do_real(iparams->wpol.al_x);
     do_real(iparams->wpol.al_y);
     do_real(iparams->wpol.al_z);
