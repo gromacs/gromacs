@@ -15,7 +15,8 @@ else
 SRCDIRS	=	$(BASIC)	tools
 endif
 LOCALDIRS =	local
-ALLDIRS	=	$(SRCDIRS)	$(LOCALDIRS)
+ALLDIRS	=	$(SRCDIRS)	$(LOCALDIRS)		
+COPYRGTDIRS =	include	include/types	gmxlib	mdlib	kernel	tools	ngmx	$(LOCALDIRS)
 SRCFILES =	Makefile makef mkhtml mkcompl
 SRCDIST	=	$(SRCDIRS)	$(SRCFILES)
 AUXFILES =	NOGMX
@@ -62,7 +63,7 @@ clean:
 	$(foreach dir,$(SRCDIRS),cd $(dir); $(MAKE) clean; cd ..;)
 
 copyrgt:
-	$(foreach dir,$(ALLDIRS),echo $(dir); cd $(dir); $(COPYRGT) *.c; $(COPYRGT) *.h; cd $(GMXHOME)/src;)
+	$(foreach dir,$(COPYRGTDIRS),echo $(dir); cd $(dir); $(COPYRGT) *.c; $(COPYRGT) *.h; cd $(GMXHOME)/src;)
 
 oclean:
 	$(foreach dir,$(SRCDIRS),cd $(dir); $(MAKE) oclean; cd ..;)
