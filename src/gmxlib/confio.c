@@ -90,7 +90,7 @@ static void get_coordnum_fp (FILE *in,char *title, int *natoms)
   sscanf (line,"%d",natoms);
 }
 
-void get_coordnum (char *infile,int *natoms)
+static void get_coordnum (char *infile,int *natoms)
 {
   FILE *in;
   char title[STRLEN];
@@ -237,8 +237,8 @@ static void get_w_conf(FILE *in, char *infile, char *title,
   close_symtab(&symtab);
 }
 
-void read_whole_conf(char *infile, char *title,
-		     t_atoms *atoms, rvec x[],rvec v[], matrix box)
+static void read_whole_conf(char *infile, char *title,
+			    t_atoms *atoms, rvec x[],rvec v[], matrix box)
 {
   FILE   *in;
   
@@ -248,24 +248,6 @@ void read_whole_conf(char *infile, char *title,
   get_w_conf(in, infile, title, atoms, x, v, box);
   
   fclose(in);
-}
-
-void read_conf(char *infile,char *title,int *natoms,
-	       rvec x[],rvec v[],matrix box)
-{
-  t_atoms  atoms;
-
-  atoms.nr=*natoms;
-  snew(atoms.atom,*natoms);
-  atoms.nres=*natoms;
-  snew(atoms.resname,*natoms);
-  snew(atoms.atomname,*natoms);
-  
-  read_whole_conf(infile,title,&atoms,x,v,box);
-  
-  sfree(atoms.atom);
-  sfree(atoms.resname);
-  sfree(atoms.atomname);
 }
 
 static void get_conf(FILE *in, char *title, int *natoms, 
@@ -532,8 +514,8 @@ void write_conf_p(char *outfile, char *title, t_atoms *atoms, int pr,
   ffclose (out);
 }
 
-void write_conf(char *outfile, char *title, t_atoms *atoms,
-		rvec *x, rvec *v,matrix box)
+static void write_conf(char *outfile, char *title, t_atoms *atoms,
+		       rvec *x, rvec *v,matrix box)
 {
   write_conf_p(outfile, title, atoms, 3, x, v, box);
 }

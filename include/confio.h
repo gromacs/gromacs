@@ -52,14 +52,6 @@ extern void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo);
 extern void free_t_atoms(t_atoms *atoms);
 /* free all the arrays and set the nr and nres to 0 */
 
-extern void get_coordnum(char *infile, int *natoms);
-
-extern void read_whole_conf(char *infile, char *title,t_atoms *atoms, 
-			    rvec x[], rvec v[], matrix box);
-
-extern void read_conf(char *infile,char *title,int *natoms,
-		      rvec x[],rvec v[],matrix box);
-
 extern bool gro_next_x(FILE *status,real *t,int natoms,rvec x[],matrix box);
 extern int gro_first_x(FILE *status, real *t, rvec **x, matrix box);
 /* read first/next x frame from gro file */
@@ -84,9 +76,6 @@ extern void write_hconf(FILE *out,char *title,
 			t_atoms *atoms,rvec *x, 
 			rvec *v,matrix box);
 			
-extern void write_hconf_p(FILE *out,char *title,t_atoms *atoms, int pr,
-			  rvec *x,rvec *v,matrix box);
-			
 extern void write_hconf_indexed(FILE *out,char *title,t_atoms *atoms,
 				int nx,atom_id index[],
 				rvec *x,rvec *v,matrix box);
@@ -96,15 +85,13 @@ extern void write_hconf_p(FILE *out,char *title,t_atoms *atoms, int pr,
 /* Write a Gromos file with precision pr: number of decimal places in x,
  * v has one place more. */ 
 
-extern void write_conf(char *outfile,char *title,t_atoms *atoms,
-		       rvec *x,rvec *v,matrix box);
-/* Obsolete, use write_sto_conf */
-
-extern void write_xdr_conf(char *outfile,char *title,t_atoms *atoms,rvec x[],rvec v[],matrix box);
+extern void write_xdr_conf(char *outfile,char *title,t_atoms *atoms,
+			   rvec x[],rvec v[],matrix box);
 
 extern void read_xdr_coordnum(char *infile,int *natoms);
 
-extern void read_xdr_conf(char *infile,char *title,t_atoms *atoms,rvec x[],rvec v[],matrix box);
+extern void read_xdr_conf(char *infile,char *title,t_atoms *atoms,
+			  rvec x[],rvec v[],matrix box);
 
 void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms, 
 			    rvec x[],rvec v[],matrix box,
@@ -112,7 +99,7 @@ void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms,
 /* like write_sto_conf, but indexed */ 
 
 extern void write_sto_conf(char *outfile, char *title,t_atoms *atoms, 
-		   rvec x[],rvec v[], matrix box);
+			   rvec x[],rvec v[], matrix box);
 /* write atoms, x, v (if .gro and not NULL) and box (if not NULL) 
  * to an STO (.gro or .pdb) file */ 
 
@@ -120,7 +107,7 @@ extern void get_stx_coordnum (char *infile,int *natoms);
 /* read the number of atoms from an STX file */
 
 extern void read_stx_conf(char *infile, char *title,t_atoms *atoms, 
-		   rvec x[],rvec v[], matrix box);
+			  rvec x[],rvec v[], matrix box);
 /* read atoms, x, v and box from an STX file */
 
 #ifdef CPLUSPLUS

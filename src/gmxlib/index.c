@@ -107,33 +107,6 @@ void add_grp(t_block *b,char ***gnames,int nra,atom_id a[],char *name)
   b->index[b->nr]=b->nra;
 }
 
-static t_atoms *get_atoms(char *infile)
-{
-  int     natoms;
-  rvec    *x,*v;
-  matrix  box;
-  char    title[256];
-  t_atoms *atoms;
-
-  (void) get_coordnum(infile,&natoms);
-  snew(x,natoms);
-  snew(v,natoms);
-  snew(atoms,1);
-  snew(atoms->atom,natoms);
-  snew(atoms->atomname,natoms);
-  snew(atoms->resname,natoms);
-  atoms->nr=0;
-  atoms->nres=0;
-  read_whole_conf(infile,title,atoms,x,v,box);
-  printf("Read coordinate file. Title was:\n");
-  printf("%s\n",title);
-
-  sfree(x);
-  sfree(v);
-
-  return atoms;
-}
-
 static void p_status(int nres,eRestp restp[],int natres[],bool bVerb)
 {
   int i,j,ntp[erestNR];
