@@ -119,8 +119,6 @@ void free_t_atoms(t_atoms *atoms)
     *atoms->atomname[i]=NULL;
   }
   sfree(atoms->atomname);
-  for(i=0; i<atoms->nres; i++)
-    sfree(*atoms->resname[i]);
   sfree(atoms->resname);
   sfree(atoms->atom);
   if (atoms->pdbinfo)
