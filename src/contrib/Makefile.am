@@ -14,13 +14,15 @@ EXTRA_DIST              = README
 # Add new entries in Makefile.am!
 
 EXTRA_PROGRAMS 	= 	sigeps mk6_n copyrgt mkyaw prfn options hrefify mkice \
-                          total hexamer optwat addquote do_shift g_anavel my_dssp anaf 
+                          total hexamer optwat addquote do_shift g_anavel my_dssp anaf ehole
 
 # Note: you don't have to list sources for "prog" if it is the single file prog.c
 
 my_dssp_SOURCES 	= my_dssp.c dsspcore.c
 
 total_SOURCES		= total.f
+
+ehole_SOURCES		= ehole.c ehdata.c
 
 CLEANFILES   = 	*~ \\\#*
 
