@@ -83,4 +83,24 @@ static void calc_k(rvec lll,int ix,int iy,int iz,int nx,int ny,int nz,rvec k)
 #undef IDX
 }
 
+/******************************************************************
+ *
+ *   PLOTTING ROUTINES FOR DEBUGGING
+ *
+ ******************************************************************/
+ 
+extern void plot_phi(char *fn,rvec box,int natoms,rvec x[],real phi[]);
+/* Plot potential (or whatever) in a postscript matrix */
+
+extern void print_phi(char *fn,int natoms,rvec x[],real phi[]);
+/* Print to a text file in x y phi format */
+
+extern void plot_qtab(char *fn,int nx,int ny,int nz,real ***qtab);
+/* Plot a charge table to a postscript matrix */
+
+extern void write_pqr(char *fn,t_atoms *atoms,rvec x[],real phi[],real dx);
+/* Write a pdb file where the potential phi is printed as B-factor (for
+ * viewing with rasmol). All atoms are moved over a distance dx in the X 
+ * direction, to enable viewing of two data sets simultaneously with rasmol
+ */
 #endif

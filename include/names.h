@@ -43,6 +43,7 @@ static char *SRCID_names_h = "$Id$";
  */
 extern char *eblock_names[ebNR+1];
 extern char *eboxtype_names[ebtNR+1];
+extern char *epcoupl_names[epcNR+1];
 extern char *ens_names[enNR+1];
 extern char *ei_names[eiNR+1];
 extern char *yesno_names[BOOL_NR+1];
@@ -59,6 +60,7 @@ extern char *egrp_nm[egNR+1];
 #define	ENS(e)			ENUM_NAME(e,enNR,ens_names)
 #define	EI(e)			ENUM_NAME(e,eiNR,ei_names)
 #define EBOXTYPE(e)             ENUM_NAME(e,ebtNR,eboxtype_names)
+#define EPCOUPLTYPE(e)          ENUM_NAME(e,epcNR,epcoupl_names)
 #define	EBLOCKS(e)		ENUM_NAME(e,ebNR,eblock_names)
 #define	EPARAM(e)		ENUM_NAME(e,epNR,eparam_names)
 #define EELTYPE(e)              ENUM_NAME(e,eelNR,eel_names)

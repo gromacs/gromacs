@@ -48,7 +48,7 @@ extern real calc_temp(real ekin,int nrdf);
 /* Calculate the temperature */
 
 extern void calc_pres(matrix box,tensor ekin,tensor vir,tensor pres);
-/* Calculate the pressure */
+/* Calculate the pressure. Unit of pressure is bar */
 
 extern void update(int          natoms,	/* number of atoms in simulation */
 		   int      	 start,
