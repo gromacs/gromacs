@@ -282,7 +282,7 @@ real potential(real r1,real rc,real R)
 
 real shift_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 			real charge[],t_block *excl,rvec x[],
-			bool bOld,rvec box_size,matrix lr_vir)
+			bool bOld,matrix box,matrix lr_vir)
 {
   static bool bFirst=TRUE;
   static real Vself;
@@ -290,7 +290,7 @@ real shift_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   unsigned int *AA;
   double qq; /* Necessary for precision */
   double isp=0.564189583547756;
-  real   qi,dr,ddd,dr2,dr_1,dr_3,fscal,Vexcl,qtot=0;
+  real   qi,dr,dr2,dr_1,dr_3,fscal,Vexcl,qtot=0;
   rvec   df,dx;
   real   r1=fr->rcoulomb_switch;
   real   rc=fr->rcoulomb;
@@ -340,17 +340,15 @@ real shift_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
       if (k > i) {
 	qq = qi*charge[k];
 	if (qq != 0.0) {
-	  /* Compute distance vector, no PBC check! */
 	  dr2 = 0;
-	  for(m=0; (m<DIM); m++) {
-	    ddd = x[i][m] - x[k][m];
-	      if(ddd>box_size[m]/2) {  /* ugly hack,   */
-		ddd-=box_size[m];      /* to fix pbc.. */ 
-	      } else if (ddd<-box_size[m]/2)
-		  ddd+=box_size[m];
-	      
-	    dx[m] = ddd;
-	    dr2  += ddd*ddd;
+	  rvec_sub(x[i],x[k],dx);
+	  for(m=DIM-1; m>=0; m--) {
+	    if (dx[m] > 0.5*box[m][m])
+	      rvec_dec(dx,box[m]);
+	    else if (dx[m] < -0.5*box[m][m])
+	      rvec_inc(dx,box[m]);
+	    
+	    dr2  += dx[m]*dx[m];
 	  }
 	  dr_1    = invsqrt(dr2);
 	  dr      = 1.0/dr_1;

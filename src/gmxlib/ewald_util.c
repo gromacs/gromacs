@@ -72,7 +72,7 @@ real calc_ewaldcoeff(real rc,real dtol)
 
 real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 			real charge[],t_block *excl,rvec x[],
-			rvec box_size,rvec mu_tot,real qsum,
+			matrix box,rvec mu_tot,real qsum,
 			real epsilon_surface,matrix lr_vir)
 {
   static  bool bFirst=TRUE;
@@ -81,10 +81,10 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   int     i,i1,i2,j,k,m,iv,jv;
   atom_id *AA;
   double  q2sum; /* Necessary for precision */
-  real    vc,qi,dr,ddd,dr2,rinv,fscal,Vexcl,Vcharge,Vdipole,rinv2,ewc=fr->ewaldcoeff;
+  real    vc,qi,dr,dr2,rinv,fscal,Vexcl,Vcharge,Vdipole,rinv2,ewc=fr->ewaldcoeff;
   rvec    df,dx;
   rvec    *f_pme=fr->f_pme;
-  real    vol = box_size[XX]*box_size[YY]*box_size[ZZ];
+  real    vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
   real    dipole_coeff,qq;
   /*#define TABLES*/
 #ifdef TABLES
@@ -129,18 +129,15 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
       if (k > i) {
 	qq = qi*charge[k];
 	if (qq != 0.0) {
-	  /* Compute distance vector, no PBC check! */
 	  dr2 = 0;
-	  for(m=0; (m<DIM); m++) {
-	    ddd = x[i][m] - x[k][m];
-	      if(ddd>box_size[m]/2) {  /* ugly hack,   */
-		ddd-=box_size[m];      /* to fix pbc.. */
-		/* Can this be done better? */
-	      } else if (ddd<-box_size[m]/2)
-		  ddd+=box_size[m];
+	  rvec_sub(x[i],x[k],dx);
+	  for(m=DIM-1; m>=0; m--) {
+	    if (dx[m] > 0.5*box[m][m])
+	      rvec_dec(dx,box[m]);
+	    else if (dx[m] < -0.5*box[m][m])
+	      rvec_inc(dx,box[m]);
 	      
-	    dx[m] = ddd;
-	    dr2  += ddd*ddd;
+	    dr2  += dx[m]*dx[m];
 	  }
 
 	  /* It might be possible to optimize this slightly 

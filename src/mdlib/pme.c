@@ -223,7 +223,7 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
 }
 
 real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
-	       splinevec bsp_mod,matrix recipbox,
+	       splinevec bsp_mod,matrix box,
 	       matrix vir,t_commrec *cr)
 {
   /* do recip sum over local cells in grid */
@@ -243,13 +243,13 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
   
   unpack_fftgrid(grid,&nx,&ny,&nz,&la2,&la12,FALSE,(t_fft_r **)&ptr);
   clear_mat(vir);
-   
-  rxx = recipbox[XX][XX];
-  ryx = recipbox[YY][XX];
-  ryy = recipbox[YY][YY];
-  rzx = recipbox[ZZ][XX];
-  rzy = recipbox[ZZ][YY];
-  rzz = recipbox[ZZ][ZZ];
+
+  rxx = box[XX][XX]/norm2(box[XX]);
+  ryx = box[YY][XX]/norm2(box[YY]);
+  ryy = box[YY][YY]/norm2(box[YY]);
+  rzx = box[ZZ][XX]/norm2(box[ZZ]);
+  rzy = box[ZZ][YY]/norm2(box[ZZ]);
+  rzz = box[ZZ][ZZ]/norm2(box[ZZ]);
  
   maxkx = (nx+1)/2;
   maxky = (ny+1)/2;
@@ -346,7 +346,7 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
   return(0.5*energy);
 }
 
-void gather_f_bsplines(t_fftgrid *grid,matrix recipbox,
+void gather_f_bsplines(t_fftgrid *grid,matrix box,
 		       ivec idx[],rvec f[],real *charge,splinevec theta,
 		       splinevec dtheta,int nr,int order,
 		       int nnx[],int nny[],int nnz[])
@@ -376,12 +376,12 @@ void gather_f_bsplines(t_fftgrid *grid,matrix recipbox,
   jj0  = nny+ny+1-order;
   kk0  = nnz+nz+1-order;
   
-  rxx = recipbox[XX][XX];
-  ryx = recipbox[YY][XX];
-  ryy = recipbox[YY][YY];
-  rzx = recipbox[ZZ][XX];
-  rzy = recipbox[ZZ][YY];
-  rzz = recipbox[ZZ][ZZ];
+  rxx = box[XX][XX]/norm2(box[XX]);
+  ryx = box[YY][XX]/norm2(box[YY]);
+  ryy = box[YY][YY]/norm2(box[YY]);
+  rzx = box[ZZ][XX]/norm2(box[ZZ]);
+  rzy = box[ZZ][YY]/norm2(box[ZZ]);
+  rzz = box[ZZ][ZZ]/norm2(box[ZZ]);
 
 
 
@@ -696,7 +696,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
   gmxfft3D(grid,FFTW_FORWARD,cr);
   
   /* solve in k-space for our local cells */
-  energy=solve_pme(grid,ewaldcoeff,vol,bsp_mod,recipbox,vir,cr);
+  energy=solve_pme(grid,ewaldcoeff,vol,bsp_mod,box,vir,cr);
   inc_nrnb(nrnb,eNR_SOLVEPME,nx*ny*nz*0.5);
 
   /* do 3d-invfft */
@@ -707,7 +707,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
     sum_qgrid(cr,nsb,grid,FALSE);
   
   /* interpolate forces for our local atoms */
-  gather_f_bsplines(grid,recipbox,idx,f+START(nsb),charge+START(nsb),
+  gather_f_bsplines(grid,box,idx,f+START(nsb),charge+START(nsb),
 		    theta,dtheta,HOMENR(nsb),ir->pme_order,
 		    nnx,nny,nnz);
 

@@ -899,10 +899,10 @@ void force(FILE       *fp,     int        step,
     }
     if(fr->bEwald)
       Vcorr =
-	ewald_LRcorrection(fp,nsb,cr,fr,md->chargeA,excl,x,box_size,
+	ewald_LRcorrection(fp,nsb,cr,fr,md->chargeA,excl,x,box,
 			   mu_tot,qsum,ir->epsilon_surface,lr_vir);
     else
-      Vcorr = shift_LRcorrection(fp,nsb,cr,fr,md->chargeA,excl,x,TRUE,box_size,lr_vir);
+      Vcorr = shift_LRcorrection(fp,nsb,cr,fr,md->chargeA,excl,x,TRUE,box,lr_vir);
     epot[F_LR] = Vlr + Vcorr;
     if (debug)
       fprintf(debug,"Vlr = %g, Vcorr = %g, Vlr_corr = %g\n",
