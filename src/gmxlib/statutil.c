@@ -291,7 +291,7 @@ static char *mk_desc(t_pargs *pa)
     len += 4;
   if (pa->type == etENUM) {
     len += 10;
-    for(k=0; (pa->u.c[k] != NULL); k++) {
+    for(k=1; (pa->u.c[k] != NULL); k++) {
       len += strlen(pa->u.c[k])+4;
     }
   }
@@ -305,7 +305,7 @@ static char *mk_desc(t_pargs *pa)
   /* Add extra comment for enumerateds */
   if (pa->type == etENUM) {
     strcat(newdesc,": ");
-    for(k=0; (pa->u.c[k] != NULL); k++) {
+    for(k=1; (pa->u.c[k] != NULL); k++) {
       strcat(newdesc,pa->u.c[k]);
       /* Print a comma everywhere but at the last one */
       if (pa->u.c[k+1] != NULL) {
@@ -324,11 +324,11 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 		       int ndesc,char **desc,int nbugs,char **bugs)
 {
   static bool bHelp=FALSE,bHidden=FALSE,bQuiet=FALSE;
-  static char *manstr[]      = { "no", "html", "tex", "java", "ascii", NULL };
-  static char *not_nicestr[] = { "0", "4", "10", "19", NULL };
-  static char *nicestr[]     = { "19", "10", "4", "0", NULL };
-  static char *not_npristr[] = { "0", "100", "200", "250", NULL };
-  static char *npristr[]     = { "250", "200", "100", "0", NULL };
+  static char *manstr[]      = { NULL, "no", "html", "tex", "java", "ascii", NULL };
+  static char *not_nicestr[] = { NULL, "0", "4", "10", "19", NULL };
+  static char *nicestr[]     = { NULL, "19", "10", "4", "0", NULL };
+  static char *not_npristr[] = { NULL, "0", "100", "200", "250", NULL };
+  static char *npristr[]     = { NULL, "250", "200", "100", "0", NULL };
   static int  nicelevel=0,mantp=0,npri=0;
   static bool bExcept=FALSE,bGUI=FALSE,bDebug=FALSE;
   
@@ -374,10 +374,11 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 
   /* Check for double arguments */
   for (i=1; (i<*argc); i++)
-    for (j=i+1; (j<*argc); j++)
-      if ( (argv[i][0]=='-') && (argv[j][0]=='-') && 
-           (strcmp(argv[i],argv[j])==0) )
-	fatal_error(0,"Double command line argument %s\n",argv[i]);
+    if ( !isdigit(argv[i][1]) )
+      for (j=i+1; (j<*argc); j++)
+	if ( (argv[i][0]=='-') && (argv[j][0]=='-') && 
+	(strcmp(argv[i],argv[j])==0) )
+	  fatal_error(0,"Double command line argument %s\n",argv[i]);
   
   /* Handle the flags argument, which is a bit field 
    * The FF macro returns whether or not the bit is set
@@ -456,6 +457,11 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   /* Now append the program specific arguments */
   for(i=0; (i<npargs); i++)
     npall = add_parg(npall,&(all_pa),&(pa[i]));
+
+  /* set etENUM options to default */
+  for(i=0; (i<npall); i++)
+    if (all_pa[i].type==etENUM)
+      all_pa[i].u.c[0]=all_pa[i].u.c[1];
   
   /* Now parse all the command-line options */
   get_pargs(argc,argv,npall,all_pa,FF(PCA_KEEP_ARGS));
