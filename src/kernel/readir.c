@@ -970,7 +970,7 @@ void do_index(char *ndx,
   int     i,j,k,restnm;
   real    SAtime;
   bool    bExcl,bSetTCpar,bAnneal;
-  
+
   if (bVerbose)
     fprintf(stderr,"processing index file...\n");
   debug_gmx();
@@ -1033,7 +1033,6 @@ void do_index(char *ndx,
 	fatal_error(0,"ref_t for group %d negative",i);
     }
   }
-
   /* Simulated annealing for each group. There are nr groups */
   nSA = str_nelem(anneal,MAXPTR,ptr1);
   if(nSA>0 && nSA != nr) 
@@ -1077,23 +1076,28 @@ void do_index(char *ndx,
 	  snew(ir->opts.anneal_temp[i],ir->opts.anneal_npoints[i]);
 	  k += ir->opts.anneal_npoints[i];
 	}
-	
+
 	nSA_time = str_nelem(anneal_time,MAXPTR,ptr1);
 	if(nSA_time!=k) 
 	  fatal_error(0,"Found %d annealing_time values, wanter %d\n",nSA_time,k);
 	nSA_temp = str_nelem(anneal_temp,MAXPTR,ptr2);
 	if(nSA_temp!=k) 
 	  fatal_error(0,"Found %d annealing_temp values, wanted %d\n",nSA_temp,k);
+
 	for(i=0,k=0;i<nr;i++) {
-	    if(ir->opts.anneal_time[i][0] > (ir->init_t+GMX_REAL_EPS))
-	      fatal_error(0,"First time point for annealing > init_t.\n");      
 	  
 	  for(j=0;j<ir->opts.anneal_npoints[i];j++) {
 	    ir->opts.anneal_time[i][j]=atof(ptr1[k]);
 	    ir->opts.anneal_temp[i][j]=atof(ptr2[k]);
-	    if(j>0 && (ir->opts.anneal_time[i][j]<ir->opts.anneal_time[i][j-1]))
-	      fatal_error(0,"Annealing timepoints out of order: t=%f comes after t=%f\n",
-			  ir->opts.anneal_time[i][j],ir->opts.anneal_time[i][j-1]);
+	    if(j==0) {
+	      if(ir->opts.anneal_time[i][0] > (ir->init_t+GMX_REAL_EPS))
+		fatal_error(0,"First time point for annealing > init_t.\n");      
+	    } else { 
+	      /* j>0 */
+	      if(ir->opts.anneal_time[i][j]<ir->opts.anneal_time[i][j-1])
+		fatal_error(0,"Annealing timepoints out of order: t=%f comes after t=%f\n",
+			    ir->opts.anneal_time[i][j],ir->opts.anneal_time[i][j-1]);
+	    }
 	    if(ir->opts.anneal_temp[i][j]<0) 
 	      fatal_error(0,"Found negative temperature in annealing: %f\n",ir->opts.anneal_temp[i][j]);    
 	    k++;
@@ -1257,9 +1261,12 @@ void do_index(char *ndx,
   sfree(gnames);
   done_block(grps);
   sfree(grps);
-	}
 
-	static void check_disre(t_topology *sys)
+}
+
+
+
+static void check_disre(t_topology *sys)
 {
   t_functype *functype;
   t_iparams  *ip;
