@@ -1,3 +1,4 @@
+
 /*
  * $Id$
  * 
@@ -48,7 +49,7 @@
 #define	BUFSIZE			1024
 #define	TABLESIZE		5
 
-static char *trim_string(char *s,char *out, int maxlen)
+static char *trim_string(const char *s,char *out, int maxlen)
      /*
       * Returns a pointer to a static area which contains a copy 
       * of s without leading or trailing spaces. Strings are

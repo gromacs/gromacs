@@ -7,12 +7,8 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
+ *                        VERSION 3.1
+ * Copyright (c) 1991-2001, University of Groningen, The Netherlands
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -31,12 +27,13 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * Getting the Right Output Means no Artefacts in Calculating Stuff
  */
 
 #ifndef _ppc_altivec_h
 #define _ppc_altivec_h
 
+static char *SRCID_ppc_altivec_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -44,64 +41,79 @@
 
 
 
+
 static void printvec(vector float v)
 {
   int i;
+  union { vector float v; float f[4]; } conv;
+
+  conv.v=v;
+
   printf(" ");
 
   for(i=0;i<4;i++)
-    printf("%8.5f ",*(((float *)&v)+i));
+    printf("%8.5f ",conv.f[i]);
   printf("\n");
 }
 
 
 /* Altivec utility routines */
+
 static void set_non_java_mode(void)
 {
   vector unsigned short vsr1,vsr2;
-  vector unsigned int tmp;
+  vector unsigned int tmp1,tmp2;
 
   vsr1=vec_mfvscr();
-  tmp=vec_sl(vec_splat_u32(1),vec_splat_u32(8));
-  vsr2=(vector unsigned short)vec_sl(tmp,vec_splat_u32(8));
+  tmp1=vec_splat_u32(1);
+  tmp2=vec_splat_u32(8);
+  tmp1=vec_sl(tmp1,tmp2);
+  vsr2=(vector unsigned short)vec_sl(tmp1,tmp2);
   vsr1=vec_or(vsr1,vsr2);
   vec_mtvscr(vsr1);
-}  
+}
 
 /* Simple numerical constants */
 static inline vector float vec_zero(void)
 {
-  return vec_ctf(vec_splat_u32(0),0);
+  vector unsigned int tmp = vec_splat_u32(0);
+  return vec_ctf(tmp,0);
 }
 
 static inline vector float vec_half(void)
 {  /* 0.5 */
-  return vec_ctf(vec_splat_u32(1),1);
+  vector unsigned int tmp = vec_splat_u32(1);
+  return vec_ctf(tmp,1);
 }
 
 static inline vector float vec_one(void)
 {
-  return vec_ctf(vec_splat_u32(1),0);
+  vector unsigned int tmp = vec_splat_u32(1);
+  return vec_ctf(tmp,0);
 }
 
 static inline vector float vec_two(void)
 {
-  return vec_ctf(vec_splat_u32(2),0);
+  vector unsigned int tmp = vec_splat_u32(2);
+  return vec_ctf(tmp,0);
 }
 
 static inline vector float vec_three(void)
 {
-  return vec_ctf(vec_splat_u32(3),0);
+  vector unsigned int tmp = vec_splat_u32(3);
+  return vec_ctf(tmp,0);
 }
 
 static inline vector float vec_six(void)
 {
-  return vec_ctf(vec_splat_u32(6),0);
+  vector unsigned int tmp = vec_splat_u32(6);
+  return vec_ctf(tmp,0);
 }
 
 static inline vector float vec_twelve(void)
 {
-  return vec_ctf(vec_splat_u32(12),0);
+  vector unsigned int tmp = vec_splat_u32(12);
+  return vec_ctf(tmp,0);
 }
 
 
@@ -1282,16 +1294,22 @@ static inline void do_4_ctable_coul(float *VFtab,
 				   vector float *FF)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2,tab1,tab2,tab3,tab4;
   int idx1,idx2,idx3,idx4;
+  union { vector signed int v; int i[4]; } conv;
+
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
-  idx3     = *(((int *)&vidx)+2);
-  idx4     = *(((int *)&vidx)+3);
+  conv.v   = vidx;
+  
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
+  idx3     = conv.i[2];
+  idx4     = conv.i[3];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -1334,17 +1352,23 @@ static inline void do_4_ljctable_coul(float *VFtab,
 				      vector float *FF)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2,tab1,tab2,tab3,tab4;
   int idx1,idx2,idx3,idx4;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(1);
+  vidx     = vec_add(vidx,vec_sl(vidx,tmp)); /* multiply by 3 */
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
-  idx3     = *(((int *)&vidx)+2);
-  idx4     = *(((int *)&vidx)+3);
+  conv.v   = vidx;
+
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
+  idx3     = conv.i[2];
+  idx4     = conv.i[3];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -1388,19 +1412,24 @@ static inline void do_4_ljtable_lj(float *VFtab,
 				   vector float *FFrep)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2;
   vector float tabd1,tabd2,tabd3,tabd4;
   vector float tabr1,tabr2,tabr3,tabr4;
+  union { vector signed int v; int i[4]; } conv;
 
   int    idx1,idx2,idx3,idx4;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_sl(vidx,vec_splat_u32(3));
+  tmp      = vec_splat_u32(3);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
-  idx3     = *(((int *)&vidx)+2);
-  idx4     = *(((int *)&vidx)+3);
+  conv.v   = vidx;
+
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
+  idx3     = conv.i[2];
+  idx4     = conv.i[3];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -1472,19 +1501,24 @@ static inline void do_4_ljctable_coul_and_lj(float *VFtab,
 					     vector float *FFrep)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2;
   vector float tabd1,tabr1,tabc1,tabd2,tabr2,tabc2;
   vector float tabd3,tabr3,tabc3,tabd4,tabr4,tabc4;
   int idx1,idx2,idx3,idx4;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(1);
+  vidx     = vec_add(vidx,vec_sl(vidx,tmp)); /* multiply by 3 */
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
-  idx3     = *(((int *)&vidx)+2);
-  idx4     = *(((int *)&vidx)+3);
+  conv.v = vidx;
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
+  idx3     = conv.i[2];
+  idx4     = conv.i[3];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -1572,16 +1606,20 @@ static inline void do_3_ctable_coul(float *VFtab,
 				    vector float *FF)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2,tab1,tab2,tab3;
   int idx1,idx2,idx3;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
-  idx3     = *(((int *)&vidx)+2);
-
+  conv.v   = vidx;
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
+  idx3     = conv.i[2];
+  
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -1620,16 +1658,22 @@ static inline void do_3_ljctable_coul(float *VFtab,
 				      vector float *FF)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2,tab1,tab2,tab3;
   int idx1,idx2,idx3;
+  union { vector signed int v; int i[4]; } conv;
 
-  vidx     = vec_cts(rtab,0); 
-  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  vidx     = vec_cts(rtab,0);
+  tmp      = vec_splat_u32(1);
+  vidx     = vec_add(vidx,vec_sl(vidx,tmp));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
-  idx3     = *(((int *)&vidx)+2);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
+  idx3     = conv.i[2];
+  
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -1672,17 +1716,21 @@ static inline void do_3_ljtable_lj(float *VFtab,
 				   vector float *FFrep)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2;
   int    idx1,idx2,idx3;
   vector float tabd1,tabd2,tabd3;
   vector float tabr1,tabr2,tabr3;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_sl(vidx,vec_splat_u32(3));
+  tmp      = vec_splat_u32(3);
+  vidx     = vec_sl(vidx,tmp);
+  conv.v   = vidx;
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
-  idx3     = *(((int *)&vidx)+2);
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
+  idx3     = conv.i[2];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -1746,18 +1794,23 @@ static inline void do_3_ljctable_coul_and_lj(float *VFtab,
 					     vector float *FFrep)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2;
   vector float tabd1,tabr1,tabc1,tabd2,tabr2,tabc2;
   vector float tabd3,tabr3,tabc3;
   int idx1,idx2,idx3;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(1);
+  vidx     = vec_add(vidx,vec_sl(vidx,tmp));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
-  idx3     = *(((int *)&vidx)+2);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
+  idx3     = conv.i[2];
   
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -1836,14 +1889,19 @@ static inline void do_2_ctable_coul(float *VFtab,
 				    vector float *FF)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2,tab1,tab2;
   int idx1,idx2;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
+  conv.v   = vidx;
+
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -1878,15 +1936,20 @@ static inline void do_2_ljctable_coul(float *VFtab,
 				      vector float *FF)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2,tab1,tab2;
   int idx1,idx2;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(1);
+  vidx     = vec_add(vidx,vec_sl(vidx,tmp));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -1925,16 +1988,21 @@ static inline void do_2_ljtable_lj(float *VFtab,
 				   vector float *FFrep)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2;
   int    idx1,idx2;
   vector float tabd1,tabd2;
   vector float tabr1,tabr2;
+  union { vector signed int v; int i[4]; } conv;
 
-  vidx     = vec_cts(rtab,0); 
-  vidx     = vec_sl(vidx,vec_splat_u32(3));
+  vidx     = vec_cts(rtab,0);
+  tmp      = vec_splat_u32(3);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
+  conv.v   = vidx;
+
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -1990,16 +2058,22 @@ static inline void do_2_ljctable_coul_and_lj(float *VFtab,
 					     vector float *FFrep)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2;
   vector float tabd1,tabr1,tabc1,tabd2,tabr2,tabc2;
-  int idx1,idx2;
+   int idx1,idx2;
+   union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(1);
+  vidx     = vec_add(vidx,vec_sl(vidx,tmp));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
+  conv.v   = vidx;
+
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
   
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -2066,13 +2140,17 @@ static inline void do_1_ctable_coul(float *VFtab,
 				    vector float *FF)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2,tab1;
   int idx1;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -2103,14 +2181,19 @@ static inline void do_1_ljctable_coul(float *VFtab,
 				      vector float *FF)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2,tab1;
   int idx1;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(1);
+  vidx     = vec_add(vidx,vec_sl(vidx,tmp));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -2145,15 +2228,19 @@ static inline void do_1_ljtable_lj(float *VFtab,
 				   vector float *FFrep)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2;
   int    idx1;
   vector float tabd1;
   vector float tabr1;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_sl(vidx,vec_splat_u32(3));
+  tmp      = vec_splat_u32(3);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -2201,15 +2288,20 @@ static inline void do_1_ljctable_coul_and_lj(float *VFtab,
 					     vector float *FFrep)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2;
   vector float tabd1,tabr1,tabc1;
   int idx1;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(1);
+  vidx     = vec_add(vidx,vec_sl(vidx,tmp));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
   
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -2265,16 +2357,20 @@ static inline void do_vonly_4_ctable_coul(float *VFtab,
 				   vector float *VV)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2,tab1,tab2,tab3,tab4;
   int idx1,idx2,idx3,idx4;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
-  idx3     = *(((int *)&vidx)+2);
-  idx4     = *(((int *)&vidx)+3);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
+  idx3     = conv.i[2];
+  idx4     = conv.i[3];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -2314,17 +2410,22 @@ static inline void do_vonly_4_ljctable_coul(float *VFtab,
 				      vector float *VV)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2,tab1,tab2,tab3,tab4;
   int idx1,idx2,idx3,idx4;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(1);
+  vidx     = vec_add(vidx,vec_sl(vidx,tmp));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
-  idx3     = *(((int *)&vidx)+2);
-  idx4     = *(((int *)&vidx)+3);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
+  idx3     = conv.i[2];
+  idx4     = conv.i[3];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -2364,19 +2465,23 @@ static inline void do_vonly_4_ljtable_lj(float *VFtab,
 				   vector float *VVrep)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2;
   vector float tabd1,tabd2,tabd3,tabd4;
   vector float tabr1,tabr2,tabr3,tabr4;
+  union { vector signed int v; int i[4]; } conv;
 
   int    idx1,idx2,idx3,idx4;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_sl(vidx,vec_splat_u32(3));
+  tmp      = vec_splat_u32(3);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
-  idx3     = *(((int *)&vidx)+2);
-  idx4     = *(((int *)&vidx)+3);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
+  idx3     = conv.i[2];
+  idx4     = conv.i[3];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -2441,19 +2546,24 @@ static inline void do_vonly_4_ljctable_coul_and_lj(float *VFtab,
 					     vector float *VVrep)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2;
   vector float tabd1,tabr1,tabc1,tabd2,tabr2,tabc2;
   vector float tabd3,tabr3,tabc3,tabd4,tabr4,tabc4;
   int idx1,idx2,idx3,idx4;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(1);
+  vidx     = vec_add(vidx,vec_sl(vidx,tmp));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
-  idx3     = *(((int *)&vidx)+2);
-  idx4     = *(((int *)&vidx)+3);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
+  idx3     = conv.i[2];
+  idx4     = conv.i[3];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -2534,15 +2644,19 @@ static inline void do_vonly_3_ctable_coul(float *VFtab,
 				    vector float *VV)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2,tab1,tab2,tab3;
   int idx1,idx2,idx3;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
-  idx3     = *(((int *)&vidx)+2);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
+  idx3     = conv.i[2];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -2579,16 +2693,20 @@ static inline void do_vonly_3_ljctable_coul(float *VFtab,
 				      vector float *VV)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2,tab1,tab2,tab3;
   int idx1,idx2,idx3;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
-
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
-  idx3     = *(((int *)&vidx)+2);
+  tmp      = vec_splat_u32(1);
+  vidx     = vec_add(vidx,vec_sl(vidx,tmp));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
+  idx3     = conv.i[2];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -2627,17 +2745,21 @@ static inline void do_vonly_3_ljtable_lj(float *VFtab,
 				   vector float *VVrep)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2;
   int    idx1,idx2,idx3;
   vector float tabd1,tabd2,tabd3;
   vector float tabr1,tabr2,tabr3;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_sl(vidx,vec_splat_u32(3));
+  tmp      = vec_splat_u32(3);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
-  idx3     = *(((int *)&vidx)+2);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
+  idx3     = conv.i[2];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -2694,18 +2816,23 @@ static inline void do_vonly_3_ljctable_coul_and_lj(float *VFtab,
 					     vector float *VVrep)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2;
   vector float tabd1,tabr1,tabc1,tabd2,tabr2,tabc2;
   vector float tabd3,tabr3,tabc3;
   int idx1,idx2,idx3;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(1);
+  vidx     = vec_add(vidx,vec_sl(vidx,tmp));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
-  idx3     = *(((int *)&vidx)+2);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
+  idx3     = conv.i[2];
   
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -2777,14 +2904,18 @@ static inline void do_vonly_2_ctable_coul(float *VFtab,
 				    vector float *VV)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2,tab1,tab2;
   int idx1,idx2;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -2816,15 +2947,20 @@ static inline void do_vonly_2_ljctable_coul(float *VFtab,
 				      vector float *VV)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2,tab1,tab2;
   int idx1,idx2;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(1);
+  vidx     = vec_add(vidx,vec_sl(vidx,tmp));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -2858,17 +2994,21 @@ static inline void do_vonly_2_ljtable_lj(float *VFtab,
 				   vector float *VVdisp,
 				   vector float *VVrep)
 {
+  vector unsigned int tmp;
   vector signed int vidx;
   vector float Y,F,G,H,eps,eps2;
   int    idx1,idx2;
   vector float tabd1,tabd2;
   vector float tabr1,tabr2;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_sl(vidx,vec_splat_u32(3));
+  tmp      = vec_splat_u32(3);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -2917,16 +3057,21 @@ static inline void do_vonly_2_ljctable_coul_and_lj(float *VFtab,
 					     vector float *VVrep)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2;
   vector float tabd1,tabr1,tabc1,tabd2,tabr2,tabc2;
   int idx1,idx2;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(1);
+  vidx     = vec_add(vidx,vec_sl(vidx,tmp));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
-  idx2     = *(((int *)&vidx)+1);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
+  idx2     = conv.i[1];
   
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -2986,13 +3131,17 @@ static inline void do_vonly_1_ctable_coul(float *VFtab,
 				    vector float *VV)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2,tab1;
   int idx1;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -3020,14 +3169,19 @@ static inline void do_vonly_1_ljctable_coul(float *VFtab,
 				      vector float *VV)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2,tab1;
   int idx1;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(1);
+  vidx     = vec_add(vidx,vec_sl(vidx,tmp));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -3058,15 +3212,19 @@ static inline void do_vonly_1_ljtable_lj(float *VFtab,
 				   vector float *VVrep)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2;
   int    idx1;
   vector float tabd1;
   vector float tabr1;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_sl(vidx,vec_splat_u32(3));
+  tmp      = vec_splat_u32(3);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
 
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());
@@ -3107,15 +3265,20 @@ static inline void do_vonly_1_ljctable_coul_and_lj(float *VFtab,
 					     vector float *VVrep)
 {
   vector signed int vidx;
+  vector unsigned int tmp;
   vector float Y,F,G,H,eps,eps2;
   vector float tabd1,tabr1,tabc1;
   int idx1;
+  union { vector signed int v; int i[4]; } conv;
 
   vidx     = vec_cts(rtab,0); 
-  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
-  vidx     = vec_sl(vidx,vec_splat_u32(2));
+  tmp      = vec_splat_u32(1);
+  vidx     = vec_add(vidx,vec_sl(vidx,tmp));
+  tmp      = vec_splat_u32(2);
+  vidx     = vec_sl(vidx,tmp);
 
-  idx1     = *((int *)&vidx);
+  conv.v   = vidx;
+  idx1     = conv.i[0];
   
   eps      = vec_sub(rtab,vec_floor(rtab));
   eps2     = vec_madd(eps,eps,vec_zero());

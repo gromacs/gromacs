@@ -7,12 +7,8 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
+ *                        VERSION 3.1
+ * Copyright (c) 1991-2001, University of Groningen, The Netherlands
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -31,8 +27,9 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * GROningen Mixture of Alchemy and Childrens' Stories
+ * Great Red Owns Many ACres of Sand 
  */
+static char *SRCID_inner_altivec_c = "$Id$";
 #include <ppc_altivec.h>
 
 #include<stdio.h>
@@ -41,11 +38,13 @@
 void check_altivec(void)
 {
   vector unsigned short vsr1,vsr2;
-  vector unsigned int tmp;
+  vector unsigned int tmp1,tmp2;
 
   vsr1=vec_mfvscr();
-  tmp=vec_sl(vec_splat_u32(1),vec_splat_u32(8));
-  vsr2=(vector unsigned short)vec_sl(tmp,vec_splat_u32(8));
+  tmp1=vec_splat_u32(1);
+  tmp2=vec_splat_u32(8);
+  tmp1=vec_sl(tmp1,tmp2);
+  vsr2=(vector unsigned short)vec_sl(tmp1,tmp2);
   vsr1=vec_or(vsr1,vsr2);
   vec_mtvscr(vsr1);
 }
@@ -5435,12 +5434,6 @@ void inl1130_altivec(
 
   int j3a,j3b,j3c,j3d;
 
-  /* set non java mode */
-  v10       = (vector float)vec_mfvscr();
-  v11       = (vector float)vec_sl(vec_splat_u32(1),vec_splat_u32(8));
-  v12       = (vector float)vec_sl((vector unsigned int)v11,vec_splat_u32(8));
-  v10       = (vector float)vec_or((vector unsigned short)v10,(vector unsigned short)v12);
-  vec_mtvscr((vector unsigned short)v10);
 
   v0        = (vector float)vec_splat_u32(0);
   v0        = vec_ctf((vector unsigned int)v0,0);     /* load 0 to v0 */
@@ -5543,7 +5536,7 @@ void inl1130_altivec(
 
     nj0        = jindex[n];
     nj1        = jindex[n+1];
-    vec_dst( jjnr + nj1, 0x10010100, 0 );
+  
     vec_st(v0, 224, (float *)stackdata); /* zero vctot, in stack pos 14 */
     vec_st(v0, 240, (float *)stackdata); /* zero vctot, in stack pos 15 */
     vec_st(v0, 256, (float *)stackdata); /* zero fiOx, in stack pos 16 */
@@ -5563,14 +5556,12 @@ void inl1130_altivec(
       jnrc            = jjnr[k+2];
       jnrd            = jjnr[k+3];
 
-      vec_dst( jjnr + k + 4, 0x02020020, 0 );
 
       j3a             = 3*jnra;
       j3b             = 3*jnrb;
       j3c             = 3*jnrc;
       j3d             = 3*jnrd;
 
-      vec_dst( pos+j3a, 0x10010100, 1 );
 
       v1              = (vector float)vec_lvsl(0, pos+j3a);
       v8              = (vector float)vec_lvsl(0, pos+j3b);
@@ -5793,7 +5784,6 @@ void inl1130_altivec(
       v28             = vec_ld(16, (float *) stackdata);
       v29             = vec_ld(32, (float *) stackdata);
 
-      vec_dstst( faction+j3a, 0x10010100, 2 );
 
      /* put rinvsq in v10-v18, rinv6_OO in v30 and rinv12_OO in v31 */
       /* load c6 to v25 and c12 to v26 */
@@ -6342,7 +6332,6 @@ void inl1130_altivec(
       v29             = vec_ld(32, (float *) stackdata);
       
 
-      vec_dstst( faction+j3a, 0x10010100, 2 );
 
       v27             = vec_sld(v27,v0,4);
       v28             = vec_sld(v28,v0,4);
@@ -6857,7 +6846,6 @@ void inl1130_altivec(
       v28             = vec_ld(16, (float *) stackdata);
       v29             = vec_ld(32, (float *) stackdata);
 
-      vec_dstst( faction+j3a, 0x10010100, 2 );
      
      /* put rinvsq in v10-v18, rinv6_OO in v30 and rinv12_OO in v31 */
       /* load c6 to v25 and c12 to v26 */
@@ -7323,7 +7311,6 @@ void inl1130_altivec(
       v27             = vec_ld(0, (float *) stackdata);
       v28             = vec_ld(16, (float *) stackdata);
       v29             = vec_ld(32, (float *) stackdata);
-      vec_dstst( faction+j3a, 0x10010100, 2 );
       
      /* put rinvsq in v10-v18, rinv6_OO in v30 and rinv12_OO in v31 */
       /* load c6 to v25 and c12 to v26 */

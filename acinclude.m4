@@ -595,6 +595,16 @@ case "${host_cpu}-${host_os}" in
     esac
     ;;
 
+  powerpc*-darwin*)
+    # Check for IBM compilers on OS X     
+    if $CC 2>&1 | grep 'IBM' > /dev/null 2>&1; then
+       xCFLAGS="-O3 -Q=1000 -qtune=ppc970 -qarch=ppcv -qaltivec"
+    fi
+    if $F77 -V 2>&1 | grep 'IBM' > /dev/null 2>&1; then
+      xFFLAGS="-O3 -Q=1000 -qtune=ppc970 -qarch=ppcv"
+    fi
+    ;;
+
   mips*-irix*)
     xCFLAGS="-O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -LNO:opt=1 -LNO:ou_further=3 -OPT:Olimit=0:roundoff=3:alias=typed -woff 1174 -D__INLINE_INTRINSICS"
     xFFLAGS="-O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -LNO:opt=1 -LNO:ou_further=3 -OPT:Olimit=0:roundoff=3:alias=typed -OPT:cray_ivdep=TRUE"
@@ -784,8 +794,7 @@ if test "$GCC" = "yes"; then
     powerpc*)
         # don't use the separate apple cpp on OS X
         ACX_CHECK_CC_FLAGS(-no-cpp-precomp,no_cpp_precomp,xCFLAGS="$xCFLAGS -no-cpp-precomp")
-        ACX_CHECK_CC_FLAGS(-finline-limit=6000,finline_limit_6000,xCFLAGS="$xCFLAGS -finline-limit=6000")
-        ACX_CHECK_CC_FLAGS(-fstrict-aliasing,fstrict_aliasing,xCFLAGS="$xCFLAGS -fstrict-aliasing")
+        ACX_CHECK_CC_FLAGS(-finline-limit=1000,finline_limit_1000,xCFLAGS="$xCFLAGS -finline-limit=1000")
         if test "$enable_ppc_altivec" = "yes"; then
           # And try to add -fvec or -faltivec to get altivec extensions!
           ACX_CHECK_CC_FLAGS(-fvec,fvec,xCFLAGS="$xCFLAGS -fvec",
@@ -798,7 +807,7 @@ if test "$GCC" = "yes"; then
         if $CC --version 2>&1 | grep '2.95' > /dev/null 2>&1; then
 	  echo "*****************************************************************************"
           echo "* IMPORTANT INFO: You are using gcc-2.95.x on PowerPC. This compiler works, *"
-          echo "* but you will get better performance with gcc-3.1 or later. If you are     *"
+          echo "* but you will get better performance with gcc-3.3 or later. If you are     *"
           echo "* running OS X, download the latest devtools from http://developer.apple.com*"
 	  echo "*****************************************************************************"
           ACX_CHECK_CC_FLAGS(-fno-schedule-insns,fno_schedule_insns,xCFLAGS="$xCFLAGS -fno-schedule-insns")
@@ -806,6 +815,7 @@ if test "$GCC" = "yes"; then
           ACX_CHECK_CC_FLAGS(-funroll-all-loops,funroll_all_loops,xCFLAGS="$xCFLAGS -funroll-all-loops")
         fi
 	ACX_CHECK_CC_FLAGS(-mcpu=7450,m_cpu_7450,CPU_FLAGS="-mcpu=7450")
+	ACX_CHECK_CC_FLAGS(-mtune=970,m_tune_970,CPU_FLAGS="$CPU_FLAGS -mtune=970")
 	if test -z "$CPU_FLAGS"; then
   	  ACX_CHECK_CC_FLAGS(-mcpu=powerpc,m_cpu_powerpc,CPU_FLAGS="-mcpu=powerpc")
         fi	

@@ -143,7 +143,7 @@ void *save_realloc(char *name,char *file,int line,void *ptr,unsigned size)
   return p;
 }
 
-void save_free(char *name,char *file,int line,const void *ptr)
+void save_free(char *name,char *file,int line, void *ptr)
 {
 #ifdef DEBUG
   log_action(0,name,file,line,0,0,ptr);

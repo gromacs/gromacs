@@ -90,7 +90,7 @@
  *    If ptr equals NULL, malloc is called in stead of realloc, in this way
  *    it is possible to combine first and later allocations.
  *
- * extern void save_free(char *name,char *file,int line,const void *ptr);
+ * extern void save_free(char *name,char *file,int line, void *ptr);
  *    Like free, uses name, file and line to generate an error message when 
  *    the free failed.
  *
@@ -128,7 +128,7 @@ void *save_calloc(char *name,char *file,int line,
 		  unsigned nelem,unsigned elsize); 
 void *save_realloc(char *name,char *file,int line,
 		   void *ptr,unsigned size);
-void save_free(char *name,char *file,int line,const void *ptr);
+void save_free(char *name,char *file,int line, void *ptr);
 unsigned maxavail(void);
 unsigned memavail(void);
 

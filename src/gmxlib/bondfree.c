@@ -847,7 +847,8 @@ static real low_angres(int nbonds,
   real st,sth,sin_phi,nrij2,nrkl2,c,cij,ckl;
 
   ivec dt;  
-  
+  t2 = 0; /* avoid warning with gcc-3.3. It is never used uninitialized */
+
   vtot = 0.0;
   ak=al=0; /* to avoid warnings */
   for(i=0; i<nbonds; ) {

@@ -54,9 +54,9 @@ bin_PROGRAMS = \
 
 genbox_SOURCES       = 	genbox.c addconf.c addconf.h
 genion_SOURCES       = 	genion.c calcpot.c calcpot.h edittop.c
-cdist_SOURCES        =  cdist.c smooth.c bondlist.c residues.c dlist.c
-disco_SOURCES        =  disco.c correct.c discopar.c dtools.c dlist.c
-anadock_SOURCES	     =  anadock.c lsq.c
+cdist_SOURCES        =  cdist.c smooth.c bondlist.c residues.c # in library: dlist.c
+disco_SOURCES        =  disco.c correct.c discopar.c dtools.c # in library: dlist.c
+anadock_SOURCES	     =  anadock.c   # lsq.c included in the library
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 	../gmxlib/libgmx@LIBSUFFIX@.la
