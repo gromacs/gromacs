@@ -1057,26 +1057,6 @@ Or to be more precise, with title etc., it looks like this:
 {\bf Fortran format:} \verb'(i5,2a5,i5,3f8.3,3f8.4)'
 
 So \verb'confin.gro' is the gromacs coordinate file and is almost the
-same as the GROMOS87 file (for GROMOS users: when used with
-ntx=7). The only difference is the box for which gromacs uses a
-tensor, not a vector.
-
-\section{Including other force fields}
-\label{sec:otherff}
-It is possible to include \normindex{other force fields} 
-in {\gromacs}, like for
-example OPLS~\cite{Jorgensen88}, AMBER~\cite{Weiner86} or 
-CHARMm~\cite{BBrooks83},
-but so far this has not become a standard in {\gromacs}. At the moment
-it is possible to use the OPLS force field, but it is not in {\gromacs}
-1.0. The problem arises in the fact that for other force fields, other
-parameter files have to be constructed. E.g. OPLS has many more atom
-types compared to {\gromacs} and therefore all the parameter files as
-mentioned in this chapter have to be reconstructed. It is still not
-straightforward to produce an \normindex{OPLS topology} file with {\gromacs}
-software. 
-
-For more information on this, contact
-
-{\bf gromacs@chem.rug.nl}
-
+same as the GROMOS87 file (for GROMOS users: when used with ntx=7). 
+The only difference is the box for which gromacs uses a tensor, not a
+vector.
