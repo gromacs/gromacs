@@ -43,6 +43,7 @@ static char *SRCID_stat_c = "$Id$";
 #include "main.h"
 #include "force.h"
 #include "nrnb.h"
+#include "vcm.h"
 #include "smalloc.h"
 #include "futil.h"
 #include "network.h"
@@ -58,11 +59,13 @@ void global_stat(FILE *log,
 		 tensor fvir,tensor svir,
 		 t_grpopts *opts,t_groups *grps,
 		 t_nrnb *mynrnb,t_nrnb nrnb[],
-		 rvec vcm,real *terminate)
+		 t_vcm *vcm,real *terminate)
 {
   static t_bin *rb=NULL; 
   static int   *itc;
-  int    iterminate,imu,ie,ifv,isv,icm,ica,in[MAXNODES],inn[egNR];
+  int    iterminate,imu,ie,ifv,isv,icm,imass,ica;
+  int    in[MAXNODES];
+  int    inn[egNR];
   int    j;
   
   if (rb==NULL) {
@@ -96,9 +99,11 @@ void global_stat(FILE *log,
   for(j=0; (j<egNR); j++)
     inn[j]=add_binr(log,rb,grps->estat.nn,grps->estat.ee[j]);
   where();
-  icm = add_binr(log,rb,DIM,vcm);
+  icm   = add_binr(log,rb,DIM*vcm->nr,vcm->group_mvcm[0]);
   where();
-  ica = add_binr(log,rb,1,&(grps->cosacc.mvcos));
+  imass = add_binr(log,rb,vcm->nr,vcm->group_mass);
+  where();
+  ica   = add_binr(log,rb,1,&(grps->cosacc.mvcos));
   where();
   iterminate = add_binr(log,rb,1,terminate);
   
@@ -116,7 +121,9 @@ void global_stat(FILE *log,
     extract_binr(rb,itc[j],DIM*DIM,grps->tcstat[j].ekin[0]);
   for(j=0; (j<egNR); j++)
     extract_binr(rb,inn[j],grps->estat.nn,grps->estat.ee[j]);
-  extract_binr(rb,icm,DIM,vcm);
+  extract_binr(rb,icm,DIM*vcm->nr,vcm->group_mvcm[0]);
+  where();
+  extract_binr(rb,imass,vcm->nr,vcm->group_mass);
   where();
   extract_binr(rb,ica,1,&(grps->cosacc.mvcos));
   where();
