@@ -17,6 +17,7 @@ ifeq ($(USE_MPI),yes)
 SYSDEFS         += -DUSE_MPI -DPARALLEL
 INCDIR		+= -I$(MPIR_HOME)/include
 SYSLIBS         += -lmpi
+RUNSYSLIBS      += -lmpi
 endif
 
 ifeq ($(USE_PVM3),yes)
