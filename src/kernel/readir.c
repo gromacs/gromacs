@@ -57,7 +57,7 @@ static char *SRCID_readir_c = "$Id$";
 
 
 static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
-  acc[STRLEN],accgrps[STRLEN],freeze[STRLEN],fdim[STRLEN],
+  acc[STRLEN],accgrps[STRLEN],freeze[STRLEN],frdim[STRLEN],
   energy[STRLEN],user1[STRLEN],user2[STRLEN],user3[STRLEN],xtc_grps[STRLEN];
 static char efield_x[STRLEN],efield_xt[STRLEN],efield_y[STRLEN],
   efield_yt[STRLEN],efield_z[STRLEN],efield_zt[STRLEN];
@@ -339,7 +339,7 @@ void get_ir(char *mdparin,char *mdparout,
   STYPE ("acc_grps",    accgrps,        NULL);
   STYPE ("accelerate",  acc,            NULL);
   STYPE ("freezegrps",  freeze,         NULL);
-  STYPE ("freezedim",   fdim,           NULL);
+  STYPE ("freezedim",   frdim,          NULL);
   
   /* Electric fields */
   CCTYPE("Electric fields");
@@ -618,7 +618,7 @@ void do_index(char *ndx,
   };
   t_block *grps;
   char    **gnames;
-  int     nr,ntcg,ntau_t,nref_t,nacc,nacg,nfreeze,nfdim,nenergy,nuser;
+  int     nr,ntcg,ntau_t,nref_t,nacc,nacg,nfreeze,nfrdim,nenergy,nuser;
   char    *ptr1[MAXPTR],*ptr2[MAXPTR],*ptr3[MAXPTR];
   int     i,j,k,restnm;
   
@@ -699,11 +699,11 @@ void do_index(char *ndx,
     for(j=0; (j<DIM); j++)
       ir->opts.acc[i][j]=0;
   
-  nfdim   = str_nelem(fdim,MAXPTR,ptr1);
+  nfrdim  = str_nelem(frdim,MAXPTR,ptr1);
   nfreeze = str_nelem(freeze,MAXPTR,ptr2);
-  if (nfdim != DIM*nfreeze)
+  if (nfrdim != DIM*nfreeze)
     fatal_error(0,"Invalid Freezing input: %d groups and %d freeze values",
-		nfreeze,nfdim);
+		nfreeze,nfrdim);
   do_numbering(atoms,nfreeze,ptr2,grps,gnames,egcFREEZE,"Freeze",
 	       restnm,forward,bVerbose);
   nr=atoms->grps[egcFREEZE].nr;
