@@ -742,7 +742,8 @@ int main(int argc,char *argv[])
       
       /* Restore reference structure and set to origin, 
          store original location (to put structure back) */
-      rm_pbc(&(top.idef),atoms->nr,top_box,xp,xp);
+      if (bPBC)
+	rm_pbc(&(top.idef),atoms->nr,top_box,xp,xp);
       copy_rvec(xp[index[0]],x_shift);
       reset_x(ifit,ind_fit,atoms->nr,NULL,xp,w_rls);
       rvec_dec(x_shift,xp[index[0]]);
@@ -872,7 +873,9 @@ int main(int argc,char *argv[])
 	if (bNoJump && (bTPS || frame!=0)) {
 	  for(d=0; d<DIM; d++)
 	    hbox[d] = 0.5*fr.box[d][d];
-	  for(i=0; i<natoms; i++)
+	  for(i=0; i<natoms; i++) {
+	    if (bReset)
+	      rvec_dec(fr.x[i],x_shift);
 	    for(m=DIM-1; m>=0; m--)
 	      if (hbox[m] > 0) {
 		while (fr.x[i][m]-xp[i][m] <= -hbox[m])
@@ -882,6 +885,7 @@ int main(int argc,char *argv[])
 		  for(d=0; d<=m; d++)
 		    fr.x[i][d] -= fr.box[m][d];
 	      }
+	  }
 	}
 	else if (bCluster && bTPS) {
 	  rvec com;
@@ -892,7 +896,8 @@ int main(int argc,char *argv[])
 	if (bPFit) {
 	  /* Now modify the coords according to the flags,
 	     for normal fit, this is only done for output frames */
-	  rm_pbc(&(top.idef),natoms,fr.box,fr.x,fr.x);
+	  if (bPBC)
+	    rm_pbc(&(top.idef),natoms,fr.box,fr.x,fr.x);
 	
 	  reset_x(ifit,ind_fit,natoms,NULL,fr.x,w_rls);
 	  do_fit(natoms,w_rls,xp,fr.x);
@@ -966,7 +971,7 @@ int main(int argc,char *argv[])
 	      if (bReset) {
 		reset_x(ifit,ind_fit,natoms,NULL,fr.x,w_rls);
 		if (bFit)
-		do_fit(natoms,w_rls,xp,fr.x);
+		  do_fit(natoms,w_rls,xp,fr.x);
 		for(i=0; i<natoms; i++)
 		  rvec_inc(fr.x[i],x_shift);
 	      }
