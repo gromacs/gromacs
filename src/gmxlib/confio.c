@@ -143,6 +143,7 @@ static void get_w_conf(FILE *in, char *infile, char *title,
     /* eventueel controle atomnumber met i+1 */
 
     /* coordinates (start after residue shit) */
+    /* 'format' was built previously */
     if (sscanf (line+20,format,&x1,&y1,&z1) != 3) {
       too_few();
     }
@@ -154,6 +155,7 @@ static void get_w_conf(FILE *in, char *infile, char *title,
     }
 
     /* velocities (start after residues and coordinates) */
+    /* 'format' was built previously */
     if (sscanf (line+20+(3*prec),format,&x1,&y1,&z1) != 3) {
       v[i][XX] = 0.0;
       v[i][YY] = 0.0;
