@@ -215,7 +215,7 @@ int do_softcore(int i, int j)
     
     if(DO_COULTAB) {
       assign("qqA","iqA*%s",ARRAY(charge,jnr));
-      sprintf(ifbuf, bC ? "(qqA != 0)" : "(qqA.neq.0)");
+      sprintf(ifbuf, bC ? "(qqA != 0)" : "(qqA.ne.0)");
     }
     if(DO_VDWTAB) {
       if(strlen(ifbuf)>0)
@@ -290,7 +290,7 @@ int do_softcore(int i, int j)
     /* now do B */
     if(DO_COULTAB) {
       assign("qqB","iqB*%s",ARRAY(chargeB,jnr));
-      sprintf(ifbuf, bC ? "(qqB != 0)" : "(qqB.neq.0)");
+      sprintf(ifbuf, bC ? "(qqB != 0)" : "(qqB.ne.0)");
     }
     if(DO_VDWTAB) {
       if(strlen(ifbuf)>0)
