@@ -36,6 +36,7 @@
 /* This line is only for CVS version info */
 
 static float Temperature=298.0;
+#include "config.h"
 #include "statutil.h"
 #include "typedefs.h"
 #include "smalloc.h"

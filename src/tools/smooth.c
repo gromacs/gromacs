@@ -34,6 +34,7 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 #include "cdist.h"
+#include "config.h"
 
 #define NMRLEN  99.9
 #define OVERLAP(a_lb,a_ub,b_lb,b_ub) !((a_ub)<(b_lb)) || ((b_ub)<(a_lb))

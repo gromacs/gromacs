@@ -34,6 +34,7 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 #include <typedefs.h>
+#include "config.h"
 #include "smalloc.h"
 #include "macros.h"
 #include "math.h"

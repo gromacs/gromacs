@@ -35,6 +35,7 @@
  */
 #include <stdlib.h>
 #include <ctype.h>
+#include "config.h"
 #include "assert.h"
 #include "macros.h"
 #include "vec.h"

@@ -35,6 +35,7 @@
  */
 #include <stdlib.h>
 #include <math.h>
+#include "config.h"
 #include "typedefs.h"
 #include "futil.h"
 #include "macros.h"

@@ -35,6 +35,7 @@
  */
 #include <math.h>
 #include <ctype.h>
+#include "config.h"
 #include "sysstuff.h"
 #include "string.h"
 #include "typedefs.h"

@@ -35,6 +35,7 @@
  */
 #include <stdio.h>
 #include <math.h>
+#include "config.h"
 #include "string2.h"
 #include "smalloc.h"
 #include "statutil.h"

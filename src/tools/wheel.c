@@ -36,6 +36,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "config.h"
 #include "sysstuff.h"
 #include "physics.h"
 #include "string2.h"

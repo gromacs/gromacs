@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
+#include "config.h"
 #include "copyrite.h"
 #include "typedefs.h"
 #include "string2.h"

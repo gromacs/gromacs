@@ -36,6 +36,7 @@
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
+#include "config.h"
 #include "macros.h"
 #include "assert.h"
 #include "smalloc.h"

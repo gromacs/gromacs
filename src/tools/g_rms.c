@@ -33,6 +33,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
+#include "config.h"
 #include "smalloc.h"
 #include "math.h"
 #include "macros.h"

@@ -35,6 +35,7 @@
  */
 #include <string.h>
 #include <math.h>
+#include "config.h"
 #include "typedefs.h"
 #include "fatal.h"
 #include "vec.h"

@@ -33,6 +33,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
+#include "config.h"
 #include "recomb.h"
 #include "futil.h"
 #include "wgms.h"

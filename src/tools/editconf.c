@@ -36,6 +36,7 @@
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
+#include "config.h"
 #include "pdbio.h"
 #include "confio.h"
 #include "symtab.h"

@@ -33,6 +33,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
+#include "config.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "smalloc.h"

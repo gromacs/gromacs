@@ -34,6 +34,7 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 #include <ctype.h>
+#include "config.h"
 #include "sysstuff.h"
 #include "strdb.h"
 #include "futil.h"

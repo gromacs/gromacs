@@ -36,6 +36,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include "config.h"
 #include "physics.h"
 #include "smalloc.h"
 #include "macros.h"

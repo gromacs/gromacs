@@ -34,6 +34,7 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 #include <string.h>
+#include "config.h"
 #include "sysstuff.h"
 #include "matio.h"
 #include "copyrite.h"

@@ -36,6 +36,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "config.h"
 #include "types/simple.h"
 
 static void nrerror(char error_text[], bool bExit)

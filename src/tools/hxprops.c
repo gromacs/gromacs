@@ -35,6 +35,7 @@
  */
 #include <math.h>
 #include <string.h>
+#include "config.h"
 #include "macros.h"
 #include "physics.h"
 #include "vec.h"

@@ -33,6 +33,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
+#include "config.h"
 #include "fitahx.h"
 #include "vec.h"
 #include "do_fit.h"

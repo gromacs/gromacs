@@ -34,6 +34,7 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 #include "cdist.h"
+#include "config.h"
 
 typedef struct list {
   char *residue;

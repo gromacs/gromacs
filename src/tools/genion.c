@@ -34,6 +34,7 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 #include <ctype.h>
+#include "config.h"
 #include "copyrite.h"
 #include "string2.h"
 #include "smalloc.h"

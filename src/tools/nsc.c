@@ -39,6 +39,7 @@
 #include <math.h>
 #include <stdarg.h>
 /* Modified DvdS */
+#include "config.h"
 #include "pbc.h"
 #include "macros.h"
 #include "vec.h"

@@ -33,6 +33,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
+#include "config.h"
 #include "3dview.h"
 #include "statutil.h"
 #include "smalloc.h"

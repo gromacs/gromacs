@@ -37,6 +37,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include "config.h"
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "macros.h"
