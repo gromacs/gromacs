@@ -1004,7 +1004,7 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
   case efTPB:
   case efTPA: 
     snew(top,1);
-    read_tpx(infile,&i1,&r1,&r2,NULL,box,i1,x,v,NULL,top);
+    read_tpx(infile,&i1,&r1,&r2,NULL,box,&i1,x,v,NULL,top);
     
     strcpy(title,*(top->name));
     /* Scalars */
