@@ -446,7 +446,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
   if (rn>=0)
     copy_t_hackblock(ntdb, &(*hb)[rn]);
   if (rc>=0)
-    copy_t_hackblock(ctdb, &(*hb)[rc]);
+    merge_t_hackblock(ctdb, &(*hb)[rc]);
   
   /* then the whole rtp */
   for(i=0; i < nres; i++) {

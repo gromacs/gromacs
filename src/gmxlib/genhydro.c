@@ -108,7 +108,7 @@ static t_hackblock *get_hackblocks(t_atoms *pdba, int nah, t_hackblock ah[],
   if ( rN >= 0 )
     copy_t_hackblock(ntdb, &hb[rN]);
   if ( rC >= 0 )
-    copy_t_hackblock(ctdb, &hb[rC]);
+    merge_t_hackblock(ctdb, &hb[rC]);
   /* then the whole hdb */
   for(rnr=0; rnr < pdba->nres; rnr++) {
     ahptr=search_h_db(nah,ah,*pdba->resname[rnr]);
