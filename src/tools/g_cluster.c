@@ -273,16 +273,17 @@ void gather(t_mat *m,real cutoff,t_clusters *clust)
   for(k=0; k<n1; k++)
     clust->cl[c[k].conf] = c[k].clust;
 
-  mcpy = mk_matrix(n1,FALSE);
-  for(i=0; (i<n1); i++) {
-    for(j=0; (j<n1); j++)
-      mcpy[c[i].conf][c[j].conf] = m->mat[i][j];
-  }
-  for(i=0; (i<n1); i++) {
-    for(j=0; (j<n1); j++)
-      m->mat[i][j] = mcpy[i][j];
-  }
-  done_matrix(n1,&mcpy);
+/* I don't see the point in this... (AF) */
+/*   mcpy = mk_matrix(n1,FALSE); */
+/*   for(i=0; (i<n1); i++) { */
+/*     for(j=0; (j<n1); j++) */
+/*       mcpy[c[i].conf][c[j].conf] = m->mat[i][j]; */
+/*   } */
+/*   for(i=0; (i<n1); i++) { */
+/*     for(j=0; (j<n1); j++) */
+/*       m->mat[i][j] = mcpy[i][j]; */
+/*   } */
+/*   done_matrix(n1,&mcpy); */
   
   sfree(c);
   sfree(d);
@@ -423,15 +424,17 @@ static void jarvis_patrick(int n1,real **mat,int M,int P,
       fprintf(debug,"Cluster index for conformation %d: %d\n",
 	      c[k].conf,c[k].clust);
 
-  for(i=0; (i<n1); i++) {
-    for(j=0; (j<n1); j++)
-      mcpy[c[i].conf][c[j].conf] = mat[i][j];
-  }
-  for(i=0; (i<n1); i++) {
-    for(j=0; (j<n1); j++)
-      mat[i][j] = mcpy[i][j];
-  }
-    
+/* Again, I don't see the point in this... (AF) */
+/*   for(i=0; (i<n1); i++) { */
+/*     for(j=0; (j<n1); j++) */
+/*       mcpy[c[i].conf][c[j].conf] = mat[i][j]; */
+/*   } */
+/*   for(i=0; (i<n1); i++) { */
+/*     for(j=0; (j<n1); j++) */
+/*       mat[i][j] = mcpy[i][j]; */
+/*   } */
+  done_matrix(n1,&mcpy);
+  
   sfree(c);
   for(i=0; (i<n1); i++)
     sfree(nnb[i]);
@@ -542,7 +545,7 @@ rvec **read_whole_trj(char *fn,int isize,atom_id index[],int skip,int *nframe,
   matrix box;
   real   t;
   int    i,i0,j,max_nf;
-  int    nbytes,status,natom;
+  int    status,natom;
   
   max_nf = 0;
   xx     = NULL;
@@ -775,8 +778,9 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     fprintf(logf,"\n");
 
     if (trxfn) {
-      for(i=0; i<nstr; i++)
-	bWrite[i]=FALSE;
+      if (write_ncl)
+	for(i=0; i<nstr; i++)
+	  bWrite[i]=FALSE;
       if ( cl < write_ncl+1 && nstr > write_nst ) {
 	/* Dump all structures for this cluster */
 	/* generate numbered filename (there is a %d in trxfn!) */
@@ -892,7 +896,7 @@ int main(int argc,char *argv[])
   bool         bSameF;
   t_matrix     *readmat;
   
-  int      status1,status2,isize,ifsize=0,iosize=0,nbytes;
+  int      status1,status2,isize,ifsize=0,iosize=0;
   atom_id  *index, *fitidx, *outidx;
   char     *grpname;
   real     rmsd,**d1,**d2,*time,*mass=NULL;
@@ -1207,7 +1211,7 @@ int main(int argc,char *argv[])
     gromos(rms->nn,rms->mat,rmsdcut,&clust);
     break;
   default:
-    fatal_error(0,"unknown method \"%s\"",methodname[0]);
+    fatal_error(0,"DEATH HORROR unknown method \"%s\"",methodname[0]);
   }
   
   if (method == m_monte_carlo || method == m_diagonalize)
