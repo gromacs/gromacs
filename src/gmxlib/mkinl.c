@@ -276,11 +276,19 @@ int main(int argc,char *argv[])
 #ifdef USE_SSE_AND_3DNOW
   arch.sse_and_3dnow=FALSE; /* no support - yet */
   fprintf(stderr,">>> Including x86 assembly loops with SSE and 3DNOW instructions\n");
-  fprintf(stderr,"The SSE innerloops are not included yet, but SSE vectorization works.\n");
 #else
   arch.sse_and_3dnow=FALSE;
 #endif
 
+#if (defined __GNUC__ && defined _lnx_)
+#ifdef FAST_X86TRUNC
+  fprintf(stderr,">>> Using fast inline assembly gcc/x86 truncation. Since we are changing\n"
+	         "    the control word this might affect the numerical result slightly.\n");
+#else
+  fprintf(stderr,">>> Using normal x86 truncation\n");
+#endif  
+#endif  
+  
 #ifdef GMX_INVSQRT
   arch.gmx_invsqrt = TRUE;
   fprintf(stderr,">>> Using gromacs invsqrt code\n");

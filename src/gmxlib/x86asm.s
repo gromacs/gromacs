@@ -43,8 +43,6 @@ check3dnow:
 	femms
 	ret
 	
-
-segment .text
 	
 	global vecrecip_3dnow
 vecrecip_3dnow

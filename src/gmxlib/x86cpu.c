@@ -81,8 +81,13 @@ int check_x86cpu(FILE *log)
   } else if(log) {
     if(!cpuSSE && !cpu3DNow)
       fprintf(log,"No SSE or 3DNow support found.\n");
-    else if(cpuSSE)
+    else if(cpuSSE) {
       fprintf(log,"CPU supports SSE, but your OS doesn't.\n");
+      fprintf(stderr,"NOTE: This version of gromacs is compiled with assembly innerloops\n" 
+	      "      using Intel SSE instructions. Your processor supports this,\n"
+	      "      but not your OS. Fixing this (e.g., upgrade to linux kernel 2.4)\n"
+	      "      will boost your gromacs performance significantly.\n");
+    }
     else if(cpu3DNow)
       fprintf(log,"CPU supports extended 3DNow, but your OS doesn't.\n");
     fprintf(log,"Using normal Gromacs innerloops.\n\n");

@@ -63,7 +63,8 @@ void fetch_coord(bool bPrefetch)
       
   } else {
     if(bPrefetch)
-      assign("nextj3","3*nextjnr");
+      assign("nextj3", bC ? "3*nextjnr" : "3*nextjnr-2");  
+
     for(j=1;j<=loop.nj;j++) {
       offset=3*(j-1);
       assign("jx%d",_array("pos", bPrefetch ? "nextj3+%d" : "j3+%d",offset),j);

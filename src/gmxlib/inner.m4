@@ -1,6 +1,9 @@
 #ifndef _inner_h
 #define _inner_h
 #include "typedefs.h"
+ifdef(`VECTORIZE_INVSQRT_WW',`define(`VECTORIZE_INVSQRT_W')')
+ifdef(`VECTORIZE_INVSQRT_W',`define(`VECTORIZE_INVSQRT')')
+
 
 define(`COMMON_ARGS',`int SCALARG(nri),int iinr[],int jindex[],int jjnr[],'`int `shift'[],real shiftvec[],real fshift[],int gid[] ,real x[],real f[]ifdef(`USE_VECTOR',`,real fbuf[]')ifdef(`USE_THREADS',`,int SCALARG(threadid),int SCALARG(nthreads),int *count,pthread_mutex_t *mtx')')
 /* note the pushed definition of common args further down */
@@ -165,7 +168,7 @@ void FUNC(inl3301)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTA
 void FUNC(inl3302)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS FREE_ARGS FREE_CHARGEB FREE_TYPEB SOFTCORE_ARGS);
 
 
-#if (defined VECTORIZE_INVSQRT || defined USE_THREADS)
+#if (defined VECTORIZE_INVSQRT || defined VECTORIZE_INVSQRT_W || defined VECTORIZE_INVSQRT_WW || defined USE_THREADS)
 pushdef(`COMMON_ARGS',`int SCALARG(nri),int iinr[],int jindex[],int jjnr[],'`int `shift'[],real shiftvec[],real fshift[],int gid[] ,real x[],real f[]ifdef(`USE_VECTOR',`,real fbuf[]')')
 
 void FUNC(inl3300n)(COMMON_ARGS COUL_ARGS LJ_ARGS LJCTAB_ARGS);

@@ -543,6 +543,9 @@ void func_localvars()
   declare_int("nsvdwc");
   declare_int("nscoul");
 
+  /* Wrapper routine to call C pow() from f77 */
+  declare_real("cpow");
+  
   if(DO_INLINE_INVSQRT)
     invsqrt_vars();
   if(DO_INLINE_RECIP)

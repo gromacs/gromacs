@@ -13,3 +13,8 @@ real FUNCTION(cerfc)(real x)
 {
 	return erfc(x);
 }
+
+real FUNCTION(cpow)(real x,real y)
+{
+	return pow(x,y);
+}

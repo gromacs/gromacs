@@ -209,11 +209,15 @@ int do_softcore(int i, int j)
     
     assign("rfour","rsq%d*rsq%d",ij,ij);
     assign("rsix","rfour*rsq%d",ij);
-    
+
+    /* since this might be linked with a c compiler it might
+     * not find the pow f77 library call corresponding to **.
+     * Use a c wrapper routine instead.
+     */
     assign("rA", bC ? "pow(Alpha*sigma6a*lam2+rsix,onesixth)" :
-	   "(Alpha*sigma6a*lam2+rsix)**onesixth");
+	   "cpow(Alpha*sigma6a*lam2+rsix,onesixth)");
     assign("rB", bC ? "pow(Alpha*sigma6b*L12+rsix,onesixth)" :
-	   "(Alpha*sigma6b*L12+rsix)**onesixth");   
+	   "cpow(Alpha*sigma6b*L12+rsix,onesixth)");   
 
     assign("rinva","1.0/rA");
     assign("rinvb","1.0/rB");
