@@ -225,7 +225,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   t_topology   *top;
   bool         *bPhobic;
   bool         bConnelly;
-  bool         bAtom,bITP;
+  bool         bAtom,bITP,bDGsol;
   real         *radius,*dgs_factor,*area=NULL,*surfacedots=NULL;
   real         *atom_area,*atom_area2;
   real         totarea,totvolume,harea,tarea,resarea;
@@ -244,8 +244,12 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 			   &t,&x,box))==0)
     fatal_error(0,"Could not read coordinates from statusfile\n");
 
-  top=read_top(ftp2fn(efTPX,nfile,fnm));
-
+  top     = read_top(ftp2fn(efTPX,nfile,fnm));
+  bDGsol  = strcmp(*top->atoms.atomtype[0],"?") != 0;
+  if (!bDGsol) 
+    fprintf(stderr,"Warning: your tpr file is too old, will not compute"
+	    "Delta G of solvation\n");
+    
   fprintf(stderr,"Select group for calculation of surface and for output:\n");
   get_index(&(top->atoms),ftp2fn(efNDX,nfile,fnm),1,&nx,&index,&grpname);
 
@@ -258,8 +262,9 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   
   for(i=0; (i<natoms); i++) {
     radius[i]     = calc_radius(*(top->atoms.atomname[i])) + solsize;
-    dgs_factor[i] = get_dgsolv(*(top->atoms.resname[top->atoms.atom[i].resnr]),
-			       *(top->atoms.atomtype[i]),dgs_default);
+    if (bDGsol)
+      dgs_factor[i] = get_dgsolv(*(top->atoms.resname[top->atoms.atom[i].resnr]),
+				 *(top->atoms.atomtype[i]),dgs_default);
     bPhobic[i]    = fabs(top->atoms.atom[i].q) <= qcut;
   }
 
@@ -303,8 +308,11 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	if (bPhobic[ii])
 	  harea += area[ii];
       }
-      fprintf(fp,"%10g  %10g  %10g  %10g  %10g\n",
-	      t,harea,tarea-harea,tarea,dgsolv);
+      fprintf(fp,"%10g  %10g  %10g  %10g",t,harea,tarea-harea,tarea);
+      if (bDGsol)
+	fprintf(fp,"  %10g\n",dgsolv);
+      else
+	fprintf(fp,"\n");
       
       if (area) 
 	sfree(area);
