@@ -58,10 +58,11 @@ void do_bonds(char *fn,char *outf,int gnx,atom_id index[],
   int    natoms;
   matrix box;
   real   t,fac;
-  int    bind,i,j,i0,i1,gnx_2;
+  int    bind,i,j,i0,i1;
   
   snew(btab,MAXTAB+1);
   natoms=read_first_x(&status,fn,&t,&x,box);
+  init_pbc(box,FALSE);
   if (natoms == 0) 
     fatal_error(0,"No atoms in trajectory!");
   j=0;
@@ -69,8 +70,7 @@ void do_bonds(char *fn,char *outf,int gnx,atom_id index[],
   mean2 = 0.0;
   counter = 0;
   do {
-    if ((j++  % 10) == 0)
-      fprintf(stderr,"\rFrame: %d",j-1);
+    j++; /* count frames */
     for(i=0; (i<gnx); i+=2) {
       pbc_dx(box,x[index[i]],x[index[i+1]],dx);
       bond=norm(dx);
@@ -109,14 +109,16 @@ void do_bonds(char *fn,char *outf,int gnx,atom_id index[],
   sigma2 = sqrdev2*counter / (counter - 1);
   
   /* For definitions see "Weet wat je meet" */
-  fprintf(stderr,"\n\nTotal number of samples               : %d\n",counter);
-  fprintf(stderr,"\nMean                                  : %g\n",mean);
-  fprintf(stderr,"\nStandard deviation of the distribution: %g\n",
+  fprintf(stderr,"\n");
+  fprintf(stderr,"Total number of samples               : %d\n",counter);
+  fprintf(stderr,"Mean                                  : %g\n",mean);
+  fprintf(stderr,"Standard deviation of the distribution: %g\n",
 	  sqrt(sigma2));
-  fprintf(stderr,"\nStandard deviation  of the mean       : %g\n",
+  fprintf(stderr,"Standard deviation of the mean        : %g\n",
 	  sqrt(sigma2/counter));
 
-  out=xvgropen(outf,"Bond Stretching Distribution","Bond Length","");
+  out=xvgropen(outf,
+	       "Bond Stretching Distribution","Bond Length (nm)","Time (ps)");
   
   for(i0=0;      ((i0 < MAXTAB) && (btab[i0]==0)); i0++);
   i0=max(0,i0-1);
@@ -124,7 +126,7 @@ void do_bonds(char *fn,char *outf,int gnx,atom_id index[],
   i1=min(MAXTAB,i1+1);
   
   if (i0 >= i1)
-    fatal_error(0,"No fucking distribution...? ? ! ! ? !");
+    fatal_error(0,"No distribution...? ? ! ! ? !");
   
   fac=((2.0/j)/gnx);
   for(i=i0; (i<=i1); i++)
@@ -138,12 +140,20 @@ int main(int argc,char *argv[])
     "g_bond makes a distribution of bond lengths. If all is well a",
     "gaussian distribution should be made when using a harmonic potential.",
     "bonds are read from a single group in the index file in order i1-j1",
-    "i2-j2 thru in-jn."
+    "i2-j2 thru in-jn.[PAR]",
+    "[TT]-tol[tt] gives the half-width of the distribution as a fraction",
+    "of the bondlength ([TT]-blen[tt]). That means, for a bond of 0.2",
+    "a tol of 0.1 gives a distribution from 0.18 to 0.22"
   };
-  static real      blen=-1.0,tol=0.1;
+  static char *bugs[] = {
+    "It should be possible to get bond information from the topology."
+  };
+  static real blen=-1.0,tol=0.1;
   t_pargs pa[] = {
-    { "-blen", FALSE, etREAL, &blen, "Bond length. By default, blen is set to the first bond calculated" },
-    { "-tol",  FALSE, etREAL, &tol, "Half width of the distribution given as a fraction of blen. That means, for a bond of 0.2 a tol of 0.1 gives a distribution from 0.18 to 0.22" }
+    { "-blen", FALSE, etREAL, &blen, 
+      "Bond length. By default length of first bond" },
+    { "-tol",  FALSE, etREAL, &tol, 
+      "Half width of distribution as fraction of blen" }
   };
   FILE      *status;
   char      *grpname;
@@ -158,9 +168,12 @@ int main(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
   
   rd_index(ftp2fn(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
+  if ( !even(gnx) )
+    fprintf(stderr,"WARNING: odd number of atoms (%d) in group!\n",gnx);
+  fprintf(stderr,"Will gather information on %d bonds\n",gnx/2);
 
   do_bonds(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efXVG,NFILE,fnm),gnx,index,blen,tol);
 
