@@ -354,7 +354,7 @@ int main(int argc,char *argv[])
   FILE     *out;
   int      n,nlast,s,nset,i,t;
   real     **val,t0,dt,tot;
-  double   *av;
+  double   *av,*av2;
   char     *acfile,*msdfile,*distfile,*avfile,*eefile;
   
   t_filenm fnm[] = { 
@@ -402,11 +402,16 @@ int main(int argc,char *argv[])
   }	
 
   snew(av,nset);
+  snew(av2,nset);
   for(s=0; s<nset; s++) {
-    for(i=0; i<n; i++)
-      av[s] += val[s][i];
-    av[s] /= n;
-    fprintf(stdout,"Average of set %d: %g\n",s+1,av[s]); 
+    for(i=0; i<n; i++) {
+      av[s]  += val[s][i];
+      av2[s] += sqr(val[s][i]);
+    }
+    av[s]  /= n;
+    av2[s] /= n;
+    fprintf(stdout,"Average of set %2d: %13.6e  stddev: %12.6e\n",
+	    s+1,av[s],sqrt(av2[s]-sqr(av[s]))); 
   }
   fprintf(stdout,"\n");
 
