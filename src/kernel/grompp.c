@@ -34,8 +34,6 @@ static char *SRCID_grompp_c = "$Id$";
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
-#include <time.h>
-#include <unistd.h>
 
 #include "sysstuff.h"
 #include "smalloc.h"
@@ -646,8 +644,8 @@ int main (int argc, char *argv[])
     fprintf(stderr,"checking input for internal consistency...\n");
   check_ir(ir,opts,&nerror);
 
-  if (ir->ld_seed == 0) {
-    ir->ld_seed = (time(NULL)+getpid()) % 65536;
+  if (ir->ld_seed == -1) {
+    ir->ld_seed = make_seed();
     fprintf(stderr,"Setting the LD random seed to %d\n",ir->ld_seed);
   }
 

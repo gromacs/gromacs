@@ -28,7 +28,14 @@
  */
 static char *SRCID_rando_c = "$Id$";
 
+#include <time.h>
+#include <unistd.h>
 #include "typedefs.h"
+
+int make_seed()
+{
+  return (int)(((long)time(NULL)+(long)getpid()) % (long)65536);
+}
 	
 real rando(int *ig)
      /* generate a random number. */
