@@ -140,16 +140,6 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     ir->bDispCorr = FALSE;
   }
 
-  if (!(EEL_LR(ir->coulombtype)) && (ir->bDispCorr)) {
-      warning("You are using dispersion correction without "
-	      "long-range electrostatics.");
-  }  
-  
-  if ((EEL_LR(ir->coulombtype)) && (!(ir->bDispCorr))) {
-      warning("You are using long-range electrostatics without "
-	    "dispersion correction.");
-  }  
-
   if ((EEL_LR(ir->coulombtype)) && (ir->bPert)) {
       warning("You are using long-range electrostatics with free energy integration. "
 	      "This might give wrong results, since the long-range contributions "
