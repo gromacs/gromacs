@@ -64,8 +64,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{prefix}/lib/libgmx_mpi.so.3
 %{prefix}/lib/libmd_mpi.so.3.0.0
 %{prefix}/lib/libmd_mpi.so.3
-%{prefix}/lib/libgmxana_mpi.so.3.0.0
-%{prefix}/lib/libgmxana_mpi.so.3
 %files devel
 %defattr(-,root,root)
 %{prefix}/lib/libgmx_mpi.so
@@ -74,9 +72,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{prefix}/lib/libmd_mpi.so
 %{prefix}/lib/libmd_mpi.a
 %{prefix}/lib/libmd_mpi.la
-%{prefix}/lib/libgmxana_mpi.so
-%{prefix}/lib/libgmxana_mpi.a
-%{prefix}/lib/libgmxana_mpi.la
 
 
 
