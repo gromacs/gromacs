@@ -159,7 +159,8 @@ somewhat smaller in order to reduce the computational cost.
 For efficiency reasons the cut-off with simple search in triclinic boxes
 is more restriced:
 \beq
-  R_c < \half \min(a_x,b_y,c_z)
+\label{simplerc}
+R_c < \half \min(a_x,b_y,c_z)
 \eeq
 
 Each unit cell (cubic, rectangular or triclinic)
@@ -346,51 +347,33 @@ displacement vectors that must be applied to  obtain the nearest
 image, for  all particle pairs that
 have a  nearest-image distance less than \verb'rshort'. The list is
 updated  every \verb'nstlist' steps, where \verb'nstlist' is typically
-10 for the {\gromacs} forcefield and 5 for the \gromosv{96}.
+10 for the {\gromacs} forcefield and 5 for the \gromosv{96} forcefield.
 There is an option to calculate the total non-bonded force
 on each  particle due to all particle in a shell around the
 list-cutoff, {\em  i.e}, at a distance between \verb'rshort' and
 \verb'rlong'.  This force is calculated during the pair list update
 and  retained during \verb'nstlist' steps.
 
-For  it is convenient to have all particles in a rectangular
-box. As shown in \figref{pbc}, it is possible to transform a
-triclinic box to a rectangular box.
-The output coordinates are always in a rectangular box, even when a
-truncated octahedron or triclinic box was used for the simulation.
-Equations (\ref{box_rot}) ensure
-that we can reset particles in a rectangular box by first shifting them with
-box vector ${\bf c}$, then with ${\bf b}$ and finally with ${\bf a}$.
-Equations (\ref{box_shift2}) ensure that we can find the 14 nearest 
-triclinic images within a linear combination which does not involve
-multiples of box vectors.
+To make the \normindex{neighbor} list all particles that are close
+({\ie} within the cut-off) to a given particle must be found.
+This searching, usually called neighbor searching (NS),
+involves periodic boundary conditions and determining the {\em image}
+(see \secref{pbc}). Without periodic boundary conditions a simple
+$O(N^2)$ algorithm must be used. With periodic boundary conditions
+a grid search can be used, which is $O(N)$.
 
-Due to equation (\ref{box_rot}), the vector $\rvij$ connecting nearest
-images can be found by constructing:
+\subsubsection{\normindex{Simple search}}
+Due to equations (\ref{box_rot}) and (\ref{simplerc}), the vector $\rvij$
+connecting images within the cut-off $R_c$ can be found by constructing:
 \begin{eqnarray}
 \ve{r}'''   & = & \ve{r}_j-\ve{r}_i \\
 \ve{r}''    & = & \ve{r}''' - {\bf a}*\verb'round'(r'''_z/c_z)) \\
 \ve{r}'     & = & \ve{r}'' - {\bf b}*\verb'round'(r''_y/b_y) \\
 \ve{r}_{ij} & = & \ve{r}' - {\bf c}*\verb'round'(r'_x/a_x)
 \end{eqnarray}
-where the box vectors are denoted by ${\bf a}$, ${\bf b}$, ${\bf c}$ and the
-function \verb'round'($x$)  delivers the integer number that is nearest
-to $x$. The translation vector index is determined by the 27
-combinations of the -1, 0, or +1 values of the three \verb'round'
-function results (assuming that all primary particles are in the central box).
-
-\subsubsection{Image calculation on a grid.}
-\label{sec:nsgrid}
-{\gromacs} uses an \normindex{interaction list} for non-bonded
-interactions, usually called the {\em \normindex{neighbor list}}.
-This list is made every {\tt nstlist} MD steps, where {\tt nstlist} is
-typically 10 MD steps.  To make the neighbor list all particles that
-are close ({\ie} within the cut-off) to a given particle must be
-found.  This searching, usually called neighbor searching (NS),
-involves periodic boundary conditions and determining the {\em image}
-(see \secref{pbc}). Without periodic boundary conditions a simple
-$O(N^2)$ algorithm must be used. With periodic boundary conditions
-a \normindex{grid search} can be used, which is $O(N)$.
+When distances between any two particles in a triclinic box are needed,
+many shifts of combinations of box vectors need to be considered to find
+the nearest image.
 
 \begin{figure}
 \centerline{\psfig {figure=plots/nstric.eps,width=8cm}}
@@ -398,6 +381,8 @@ a \normindex{grid search} can be used, which is $O(N)$.
 \label{fig:grid}
 \end{figure}
 
+\subsubsection{\normindex{Grid search}}
+\label{sec:nsgrid}
 The grid search is schematically depicted in \figref{grid}.
 All particles are put on the {\nsgrid}, with the smallest spacing
 $\ge$ $R_c/2$ in each of the directions.
@@ -416,7 +401,7 @@ Although the prefactor is large
 the scaling behavior makes the algorithm far superior over the
 standard $O(N^2)$ algorithm when the number of particles
 exceeds a few hundred.
-The grid search is equally fast for triclinic and rectangular boxes.
+The grid search is equally fast for rectangular and triclinic boxes.
 Thus for most protein and peptide simulations the truncated
 octahedron will be the preferable box shape.
 
