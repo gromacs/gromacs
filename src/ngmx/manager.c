@@ -572,6 +572,12 @@ t_manager *init_man(t_x11 *x11,Window Parent,
 
 void done_man(t_x11 *x11,t_manager *man)
 {
+  done_bbox(x11,man->vbox);
+  done_bbox(x11,man->bbox);
+  done_mw(x11,man->molw);
+  done_legw(x11,man->legw);
+  x11->UnRegisterCallback(x11,man->title.self);
+  x11->UnRegisterCallback(x11,man->wd.self);
   sfree(man->x);
   sfree(man->obj);
   sfree(man->bHydro);
@@ -579,12 +585,6 @@ void done_man(t_x11 *x11,t_manager *man)
   sfree(man->szLab);
   sfree(man->col);
   sfree(man);
-  done_bbox(x11,man->vbox);
-  done_bbox(x11,man->bbox);
-  done_mw(x11,man->molw);
-  done_legw(x11,man->legw);
-  x11->UnRegisterCallback(x11,man->title.self);
-  x11->UnRegisterCallback(x11,man->wd.self);
 }
 
 void do_filter(t_x11 *x11,t_manager *man,t_filter *filter)
