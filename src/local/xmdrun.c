@@ -89,7 +89,7 @@ t_commrec *init_msim(t_commrec *cr,int nfile,t_filenm fnm[])
   
   /* Patch file names (except log which has been done already) */
   for(i=0; (i<nfile); i++) {
-    /* Becauyse of possible multiple extensions per type we must look 
+    /* Because of possible multiple extensions per type we must look 
      * at the actual file name 
      */
     ftp = fn2ftp(fnm[i].fn);
