@@ -109,7 +109,7 @@ int main(int argc,char *argv[])
     "angle distributions etc. It uses a run input file ([TT].tpx[tt]) for the",
     "definitions of the angles, dihedrals etc."
   };
-  static char *opt=NULL;
+  static char *opt="A";
   t_pargs pa[] = {
     { "-type", FALSE, etSTR, &opt,
       "Select either A (angles), D (dihedrals), I (impropers), R (Ryckaert-Bellemans) or P (phi/psi)" }
