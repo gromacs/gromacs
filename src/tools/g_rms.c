@@ -130,7 +130,7 @@ int main (int argc,char *argv[])
     { "-aver", FALSE, etINT, &avl,
       "average over this distance in the RMSD matrix" }
   };
-  int          step,nre,natom,natoms,i,j,k,m,teller,tel_mat,tel_mat2;
+  int          step,nre,natom,natoms,i,j,k,m,teller,teller2,tel_mat,tel_mat2;
 #define NFRAME 5000
   int          maxframe=NFRAME,maxframe2=NFRAME;
   real         t,lambda,*w_rls,*w_rms,tmas;
@@ -386,7 +386,7 @@ int main (int argc,char *argv[])
 		  "(%d atoms)",top.atoms.nr,natoms);
     if (!bFreq2) freq2=freq;
     tel_mat2 = 0;
-    teller = 0;
+    teller2 = 0;
     do {
       if (bPBC) 
 	rm_pbc(&(top.idef),top.atoms.nr,box,x,x);
@@ -397,7 +397,7 @@ int main (int argc,char *argv[])
 	do_fit(header.natoms,w_rls,xp,x);
       }
 
-      if (teller % freq2 == 0) {
+      if (teller2 % freq2 == 0) {
 	if (bMat) {
 	  if (tel_mat2 >= NFRAME) 
 	    srenew(mat_x2,tel_mat2+1);
@@ -417,11 +417,11 @@ int main (int argc,char *argv[])
 	tel_mat2++;
       }
       
-      time2[teller]=t;
-      if (bNano) time2[teller] *= 0.001;
+      time2[teller2]=t;
+      if (bNano) time2[teller2] *= 0.001;
 
-      teller++;
-      if (teller >= maxframe2) {
+      teller2++;
+      if (teller2 >= maxframe2) {
 	fprintf(stderr,"\nGoing to realloc memory\n");
 	maxframe2 +=NFRAME;
 	srenew(time2,maxframe2);
