@@ -197,9 +197,10 @@ void upd_mdebin(t_mdebin *md,real tmass,int step,
   real   eee[egNR];
   
   add_ebin(md->ebin,md->ie,F_NRE,ener,step);
-  for(m=0; (m<DIM); m++) bs[m]=box[m][m];
-  bs[3]=bs[XX]*bs[YY]*bs[ZZ];
-  bs[4]=(tmass*AMU)/(bs[3]*NANO*NANO*NANO*KILO);
+  for(m=0; (m<DIM); m++) 
+    bs[m]=box[m][m];
+  bs[3] = bs[XX]*bs[YY]*bs[ZZ];
+  bs[4] = (tmass*AMU)/(bs[3]*NANO*NANO*NANO*KILO);
   add_ebin(md->ebin,md->ib,5,bs,step);
   add_ebin(md->ebin,md->isvir,9,svir[0],step);
   add_ebin(md->ebin,md->ifvir,9,fvir[0],step);
@@ -224,8 +225,8 @@ void upd_mdebin(t_mdebin *md,real tmass,int step,
     if (ttt == NULL)
       snew(ttt,2*md->nTC);
     for(i=0; (i<md->nTC); i++) {
-      ttt[2*i]=grps->tcstat[i].T;
-      ttt[2*i+1]=grps->tcstat[i].lambda;
+      ttt[2*i]   = grps->tcstat[i].T;
+      ttt[2*i+1] = grps->tcstat[i].lambda;
     }
     add_ebin(md->ebin,md->itc,2*md->nTC,ttt,step);
   }

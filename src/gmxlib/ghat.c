@@ -67,7 +67,7 @@ void symmetrize_ghat(int nx,int ny,int nz,real ***ghat)
 }
 
 void mk_ghat(FILE *fp,int nx,int ny,int nz,real ***ghat,
-	     rvec box,real r1,real rc,bool bSym)
+	     rvec box,real r1,real rc,bool bSym,bool bOld)
 {
   int  ix,iy,iz;
   int  ixmax,iymax,izmax;
@@ -94,9 +94,12 @@ void mk_ghat(FILE *fp,int nx,int ny,int nz,real ***ghat,
 	k2 = iprod(k,k);
 	if ((ix == 0) && (iy == 0) && (iz == 0))
 	  ggg = 0.0;
-	else 
-	  ggg = gk(sqrt(k2),rc,r1)/(k2*EPSILON0);
-	
+	else {
+	  if (bOld)
+	    ggg = gk(sqrt(k2),rc,r1)/(k2*EPSILON0);
+	  else
+	    ggg = gknew(sqrt(k2),rc,r1)/(k2*EPSILON0);
+	}
 	ghat[ix][iy][iz]=ggg;
       }
     }
