@@ -52,7 +52,8 @@ $(LIB)(callf77.o):	callf77.m4 $(M4FILE)
 		$(CC) $(C-FLAGS) -c callf77.c
 		$(AR) $(ARFLAGS) $(LIB) callf77.o
 		$(RM) callf77.c callf77.o
-
+timefft:	timefft.o
+		$(LD) $(RUNLDOPT) -o $@ $^ $(RUNSYSLIBS)
 include	Make.dep
 endif
 
