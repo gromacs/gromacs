@@ -130,53 +130,65 @@ static void inprod_matrix(char *matfile,int natoms,
 			  int nvec2,int *eignr2,rvec **eigvec2,
 			  bool bSelect,int noutvec,int *outvec)
 {
-  FILE *out;
-  real **mat;
-  int i,x1,x,y,nlevels;
-  int n1;
-  real inp,*t_x,*t_y,max;
+  FILE  *out;
+  real  **mat;
+  int   i,x1,y1,x,y,nlevels;
+  int   nx,ny;
+  real  inp,*t_x,*t_y,max;
   t_rgb rlo,rhi;
 
-  if (bSelect)
-    n1 = noutvec;
-  else
-    n1 = nvec1;
-
-  fprintf(stderr,"Calculating inner-product matrix of %dx%d eigenvectors\n",
-	  n1,nvec2);
+  snew(t_y,nvec2);
+  if (bSelect) {
+    nx = noutvec;
+    ny = 0;
+    for(y1=0; y1<nx; y1++)
+      if (outvec[y1] < nvec2) {
+	t_y[ny] = eignr2[outvec[y1]]+1;
+	ny++;
+      }
+  } else {
+    nx = nvec1;
+    ny = nvec2;
+    for(y=0; y<ny; y++)
+      t_y[y] = eignr2[y]+1;
+  }
   
-  snew(mat,n1);
-  for(x=0; x<n1; x++)
-    snew(mat[x],nvec2);
-
-  snew(t_x,n1);
+  fprintf(stderr,"Calculating inner-product matrix of %dx%d eigenvectors\n",
+	  nx,nvec2);
+  
+  snew(mat,nx);
+  snew(t_x,nx);
   max = 0;
-  for(x1=0; x1<n1; x1++) {
+  for(x1=0; x1<nx; x1++) {
+    snew(mat[x1],ny);
     if (bSelect)
       x = outvec[x1];
     else
       x = x1;
     t_x[x1] = eignr1[x]+1;
     fprintf(stderr," %d",eignr1[x]+1);
-    for(y=0; y<nvec2; y++) {
+    for(y1=0; y1<ny; y1++) {
       inp = 0;
+      if (bSelect) {
+	while (outvec[y1] >= nvec2)
+	  y1++;
+	y= outvec[y1];
+      } else
+	y = y1;
       for(i=0; i<natoms; i++)
 	inp += iprod(eigvec1[x][i],eigvec2[y][i]);
-      mat[x1][y] = fabs(inp);
-      if (mat[x1][y]>max)
-	max = mat[x1][y];
+      mat[x1][y1] = fabs(inp);
+      if (mat[x1][y1]>max)
+	max = mat[x1][y1];
     }
   }
   fprintf(stderr,"\n");
-  snew(t_y,nvec2);
-  for(i=0; i<nvec2; i++)
-    t_y[i] = eignr2[i]+1;
   rlo.r = 1; rlo.g = 1; rlo.b = 1;
   rhi.r = 0; rhi.g = 0; rhi.b = 0;
   nlevels = 41;
   out = ffopen(matfile,"w");
   write_xpm(out,"Eigenvector inner-products","in.prod.","run 1","run 2",
-	    n1,nvec2,t_x,t_y,mat,0.0,max,rlo,rhi,&nlevels);
+	    nx,ny,t_x,t_y,mat,0.0,max,rlo,rhi,&nlevels);
   fclose(out);
 }
 
@@ -491,7 +503,7 @@ int main(int argc,char *argv[])
     "file [TT]-v2[tt] with eigenvectors [TT]-first[tt] to [TT]-last[tt]",
     "in file [TT]-v[tt].[PAR]",
     "[TT]-inpr[tt]: calculate a matrix of inner-products between eigenvectors",
-    "in files [TT]-v[tt] and [TT]-v2[tt]. All eigenvectors of the first file",
+    "in files [TT]-v[tt] and [TT]-v2[tt]. All eigenvectors of both files",
     "will be used unless [TT]-first[tt] and [TT]-last[tt] have been set",
     "explicitly."
   };
