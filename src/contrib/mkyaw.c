@@ -55,18 +55,32 @@
 
 bool is_hb(rvec x[],int id,int ih,int ia,real ccut)
 {
+  bool bHB;
+  rvec doo,doh;
+  real doh2,cut2;
   rvec dh,ha;
   
   pbc_dx(x[id],x[ih],dh);
-  pbc_dx(x[ih],x[ia],ha);
-  return (cos_angle(dh,ha) > ccut);
+  pbc_dx(x[id],x[ia],ha);
+  bHB = (cos_angle(dh,ha) > ccut);
+  
+  if (bHB) {
+    pbc_dx(x[id],x[ia],doo);
+    pbc_dx(x[ih],x[ia],doh);
+    doh2 = iprod(doh,doh);
+    if (doh2 > 0.09) {
+      printf("ia = %d, ih = %d, ia = %d, doo = %g, doh = %g\n",
+	     ia,ih,id,norm(doo),sqrt(doh2));
+    }
+  }
+  return bHB;
 }
 
 int qnd_hbonds(int natom,rvec x[],matrix box)
 {
   int  i,j,kd,ka,nhb=0;
-  rvec dx;
-  real dx2,cut2,ccut;
+  rvec doo;
+  real doo2,cut2,ccut;
   
   cut2 = sqr(0.35);
   ccut = cos(30*DEG2RAD);
@@ -76,9 +90,9 @@ int qnd_hbonds(int natom,rvec x[],matrix box)
   
   for(i=0; (i<natom); i+=3) {
     for(j=i+3; (j<natom); j+= 3) {
-      pbc_dx(x[i],x[j],dx);
-      dx2 = iprod(dx,dx);
-      if (dx2 < cut2) {
+      pbc_dx(x[i],x[j],doo);
+      doo2 = iprod(doo,doo);
+      if (doo2 < cut2) {
 	if (is_hb(x,i,i+1,j,ccut) || is_hb(x,i,i+2,j,ccut) || 
 	    is_hb(x,j,j+1,i,ccut) || is_hb(x,j,j+2,i,ccut))
 	  nhb++;
