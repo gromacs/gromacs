@@ -363,8 +363,17 @@ static void push_atom_now(t_symtab *symtab,t_atoms *at,int atomnr,
 			  char *resname,char *name,real m0,real q0,
 			  int typeB,real mB,real qB)
 {
-  int j;
+  int j,resnr_diff;
   int nr = at->nr;
+
+  if (((nr==0) && (atomnr != 1)) || (nr && (atomnr != at->nr+1)))
+    fatal_error(0,"Atoms in the .top are not numbered consecutively from 1\n");
+  if (nr)
+    resnr_diff = resnumber - (at->atom[at->nr-1].resnr+1);
+  if (((nr==0) && (resnumber != 1)) || 
+      (nr && (resnr_diff != 0) && (resnr_diff != 1))) 
+    fatal_error(0,"Residue numbers in the .top are not numbered consecutively from 1\n");
+  
   /* New atom instance
    * get new space for arrays 
    */
