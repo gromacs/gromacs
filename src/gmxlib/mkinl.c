@@ -443,10 +443,12 @@ int p_invsqrt(char *left,char *right)
   bool bInvsqrt = FALSE;
   
 #ifdef CINVSQRT
-  bInvsqrt = bC;
+  if (bC)
+    bInvsqrt = TRUE;
 #endif
 #ifdef FINVSQRT
-  bInvsqrt = !bC;
+  if (!bC)
+    bInvsqrt = TRUE;
 #endif
 
   if (bInvsqrt) {
