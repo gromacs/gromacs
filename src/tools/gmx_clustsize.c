@@ -65,12 +65,12 @@
 
 static void clust_size(char *ndx,char *trx,char *xpm,
 		       char *xpmw,char *ncl,char *acl, 
-		       char *mcl,char *histo,
+		       char *mcl,char *histo,char *tempf,
 		       bool bMol,char *tpr,
 		       real cut,int nskip,int nlevels,
 		       t_rgb rmid,t_rgb rhi)
 {
-  FILE    *fp,*gp,*hp;
+  FILE    *fp,*gp,*hp,*tp;
   atom_id *index=NULL;
   int     nindex,natoms,status;
   rvec    *x=NULL,*v=NULL,dx;
@@ -85,12 +85,12 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   t_topology  top;
   t_block *mols=NULL;
   int     version,generation,sss,ii,jj,aii,ajj,nsame;
-  real    ttt,lll;
+  real    ttt,lll,temp;
   /* Cluster size distribution (matrix) */
   real    **cs_dist=NULL;
-  real    tf,dx2,cut2,*t_x=NULL,*t_y,cmid,cmax,cav;
+  real    tf,dx2,cut2,*t_x=NULL,*t_y,cmid,cmax,cav,ekin;
   int     i,j,k,ai,aj,ak,ci,cj,nframe,nclust,n_x,n_y,max_size=0;
-  int     *clust_index,*clust_size,max_clust_size,nav,nhisto;
+  int     *clust_index,*clust_size,max_clust_size,max_clust_ind,nav,nhisto;
   t_rgb   rlo = { 1.0, 1.0, 1.0 };
   
   clear_trxframe(&fr,TRUE);
@@ -99,6 +99,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   fp     = xvgropen(ncl,"Number of clusters",timebuf,"N");
   gp     = xvgropen(acl,"Average cluster size",timebuf,"#molecules");
   hp     = xvgropen(mcl,"Max cluster size",timebuf,"#molecules");
+  tp     = xvgropen(tempf,"Temperature of largest cluster",timebuf,"T (K)");
   if (!read_first_frame(&status,trx,&fr,TRX_NEED_X | TRX_READ_V))
     gmx_file(trx);
     
@@ -119,7 +120,6 @@ static void clust_size(char *ndx,char *trx,char *xpm,
     for(i=0; (i<nindex); i++)
       index[i] = i;
     gname = strdup("mols");
-    
   }
   else
     rd_index(ndx,1,&nindex,&index,&gname);
@@ -136,6 +136,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
     if ((nskip == 0) || ((nskip > 0) && ((nframe % nskip) == 0))) {
       set_pbc(&pbc,box);
       max_clust_size = 1;
+      max_clust_ind  = -1;
       
       /* Put all atoms/molecules in their own cluster, with size 1 */
       for(i=0; (i<nindex); i++) {
@@ -205,8 +206,10 @@ static void clust_size(char *ndx,char *trx,char *xpm,
       nav    = 0;
       for(i=0; (i<nindex); i++) {
 	ci = clust_size[i];
-	if (ci > max_clust_size) 
+	if (ci > max_clust_size) {
 	  max_clust_size = ci;
+	  max_clust_ind  = i;
+	}
 	if (ci > 0) {
 	  nclust++;
 	  cs_dist[n_x-1][ci-1] += 1.0;
@@ -226,6 +229,16 @@ static void clust_size(char *ndx,char *trx,char *xpm,
     if (fr.bV) {
       v = fr.v;
       /* Loop over clusters and for each cluster compute 1/2 m v^2 */
+      if (max_clust_ind >= 0) {
+	ekin = 0;
+	for(i=0; (i<nindex); i++) 
+	  if (clust_index[i] == max_clust_ind) {
+	    ai    = index[i];
+	    ekin += 0.5*top.atoms.atom[ai].m*iprod(v[ai],v[ai]);
+	  }
+	temp = (ekin*2.0)/(3.0*max_clust_size*BOLTZ);
+	fprintf(tp,"%10.3f  %10.3f\n",fr.time,temp);
+      }
     }
     nframe++;
   } while (read_next_frame(status,&fr));
@@ -233,7 +246,8 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   fclose(fp);
   fclose(gp);
   fclose(hp);
-
+  fclose(tp);
+  
   /* Look for the smallest entry that is not zero 
    * This will make that zero is white, and not zero is coloured.
    */
@@ -294,7 +308,9 @@ int gmx_clustsize(int argc,char *argv[])
     "When the [TT]-mol[tt] option is given clusters will be made out of",
     "molecules rather than atoms, which allows clustering of large molecules.",
     "In this case an index file would still contain atom numbers",
-    "or your calculcation will die with a SEGV."
+    "or your calculcation will die with a SEGV.[PAR]",
+    "When velocities are present in your trajectory, the temperature of",
+    "the largest cluster will be printed in a separate xvg file."
   };
   static real cutoff   = 0.35;
   static int  nskip    = 0;
@@ -330,7 +346,8 @@ int gmx_clustsize(int argc,char *argv[])
     { efXVG, "-nc","nclust",      ffWRITE },
     { efXVG, "-mc","maxclust",    ffWRITE },
     { efXVG, "-ac","avclust",     ffWRITE },
-    { efXVG, "-hc","histo-clust", ffWRITE }
+    { efXVG, "-hc","histo-clust", ffWRITE },
+    { efXVG, "-temp", "temp",     ffOPTWR }
   };
 #define NFILE asize(fnm)
   
@@ -346,6 +363,7 @@ int gmx_clustsize(int argc,char *argv[])
 	     opt2fn("-ow",NFILE,fnm),
 	     opt2fn("-nc",NFILE,fnm),opt2fn("-ac",NFILE,fnm),
 	     opt2fn("-mc",NFILE,fnm),opt2fn("-hc",NFILE,fnm),
+	     opt2fn("-temp",NFILE,fnm),
 	     bMol,ftp2fn(efTPR,NFILE,fnm),
 	     cutoff,nskip,nlevels,rgblo,rgbhi);
 
