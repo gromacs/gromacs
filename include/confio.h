@@ -76,6 +76,12 @@ int read_g96_conf(FILE *fp,char *infile,int nwanted,t_g96info *info,
  * set this to -1 if you want to know the number of atoms in the file   *
  * title, atoms, x, v can all be NULL, in which case they won't be read */
 
+void write_g96_conf(FILE *out,char *title,t_atoms *atoms,
+                    rvec *x,rvec *v,matrix box,
+                    int nindex,atom_id *index);
+/* write a Gromos96 coordinate file *
+ * x, v and index can be NULL       */
+
 extern bool gro_next_x(FILE *status,real *t,int natoms,rvec x[],matrix box);
 extern int gro_first_x(FILE *status, real *t, rvec **x, matrix box);
 /* read first/next x frame from gro file */

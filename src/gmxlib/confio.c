@@ -268,9 +268,9 @@ int read_g96_conf(FILE *fp,char *infile,int nwanted,t_g96info *info,
   return natoms;
 }
 
-static void write_g96_conf(FILE *out,char *title,t_atoms *atoms,
-			   rvec *x,rvec *v,matrix box, 
-			   int nindex,atom_id *index)
+void write_g96_conf(FILE *out,char *title,t_atoms *atoms,
+		    rvec *x,rvec *v,matrix box,
+		    int nindex,atom_id *index)
 {
   int nout,i,a;
   
