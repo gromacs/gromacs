@@ -245,13 +245,13 @@ int main (int argc, char *argv[])
   int          fp;
   t_tpxheader  tpx;
   int          i,nstep,natoms;
-  real         t,lambda;
+  real         t,newt,lambda;
   bool         bCont;
   t_topology   top;
   t_inputrec   *ir,*irnew;
   t_gromppopts *gopts;
-  rvec         *x=NULL,*v=NULL;
-  matrix       box;
+  rvec         *x=NULL,*v=NULL,*newx,*newv,*tmpx,*tmpv;
+  matrix       box,newbox,tmpbox;
   int          gnx;
   char         *grpname;
   atom_id      *index=NULL;
@@ -310,6 +310,8 @@ int main (int argc, char *argv[])
     sfree(x);
     sfree(v);
     natoms = read_first_x_v(&fp,ftp2fn(efTRN,NFILE,fnm),&t,&x,&v,box);
+    snew(newx,tpx.natoms);
+    snew(newv,tpx.natoms);
 
     if (top.atoms.nr != natoms) 
       fatal_error(0,"Number of atoms in Topology (%d) "
@@ -319,7 +321,18 @@ int main (int argc, char *argv[])
     /* Now scan until the last set of x and v (step == 0)
      * or the ones at step step.
      */
-    while (read_next_x_v(fp,&t,natoms,x,v,box)) {
+    while (read_next_x_v(fp,&newt,natoms,newx,newv,newbox)) {
+      tmpx=newx;
+      newx=x;
+      x=tmpx;
+      tmpv=newv;
+      newv=v;
+      v=tmpv;
+      t=newt;
+      copy_mat(newbox,tmpbox);
+      copy_mat(box,newbox);
+      copy_mat(tmpbox,box);
+
       if ((max_t != -1.0) && (t >= max_t))
 	break;
     }
