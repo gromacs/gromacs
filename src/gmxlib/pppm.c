@@ -367,31 +367,14 @@ void convolution(FILE *fp,bool bVerbose,t_fftgrid *grid,real ***ghat)
   unpack_fftgrid(grid,&nx,&ny,&nz,&la1,&la2,&la12,&ptr);
   
   snew(nTest,grid->nptr);
-  /* CHECK THIS.... */
-#ifdef USE_SGI_FFT
-  for(i=0; (i<nx/2); i++) {
-#else
   for(i=0; (i<nx); i++) {
-#endif
     for(j=0; (j<ny); j++) {
       for(k=0; (k<nz); k++) {
-#ifdef USE_SGI_FFT
-	gk    = ghat[k][j][i];
-	index = INDEX(2*i,j,k);
-	ptr[index] *= gk;
-	nTest[index]++;
-	/* fprintf(fp,"SGI: index = %d\n",index); */
-	index = INDEX(2*i+1,j,k);
-	ptr[index] *= gk;
-	nTest[index]++;
-	/* fprintf(fp,"SGI: index = %d\n",index); */
-#else
 	gk    = ghat[i][j][k];
 	index = INDEX(i,j,k);
 	ptr[index].re *= gk;
 	ptr[index].im *= gk;
 	nTest[index]++;
-#endif
       }
     }
   }
