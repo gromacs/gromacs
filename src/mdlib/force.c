@@ -44,6 +44,7 @@
 #include "smalloc.h"
 #include "macros.h"
 #include "force.h"
+#include "nonbonded.h"
 #include "invblock.h"
 #include "confio.h"
 #include "nsb.h"
@@ -119,232 +120,393 @@ static real *mk_nbfp(const t_idef *idef,bool bBHAM)
   return nbfp;
 }
 
-static void check_solvent(FILE *fp,const t_topology *top,t_forcerec *fr,
-			  const t_mdatoms *md,const t_nsborder *nsb)
+/* This routine sets fr->solvent_opt to the most common solvent in the 
+ * system, e.g. esolSPC or esolTIP4P. It will also mark each charge group in 
+ * the fr->solvent_type array with the correct type (or esolNO).
+ *
+ * Charge groups that fulfill the conditions but are not identical to the
+ * most common one will be marked as esolNO in the solvent_type array. 
+ *
+ * TIP3p is identical to SPC for these purposes, so we call it
+ * SPC in the arrays (Apologies to Bill Jorgensen ;-)
+ */
+static void
+check_solvent(FILE *                fp,
+              const t_topology *    top,
+              t_forcerec *          fr,
+			  const t_mdatoms *     md,
+              const t_nsborder *    nsb)
 {
-  /* This routine finds out whether a charge group can be used as
-   * solvent in the innerloops. The routine should be called once
-   * at the beginning of the MD program.
-   */
-  const t_block *cgs,*excl,*mols;
-  atom_id *cgid;
-  int     i,j,m,j0,j1,nj,k,aj,ak,tjA,tjB,nl_m,nl_n,nl_o;
-  int     warncount;
-  bool    bOneCG;
-  bool    *bAllExcl,bAE,bOrder;
-  bool    *bHaveLJ,*bHaveCoul;
-  
-  cgs  = &(top->blocks[ebCGS]);
-  excl = &(top->atoms.excl);
-  mols = &(top->blocks[ebMOLS]);
+    const t_block *   cgs;
+    const t_block *   excl;
+    const t_block *   mols;
+    atom_id *         cgid;
+    int               i,j,k;
+    int               j0,j1,nj;
+    int               aj,ak;
+    int               n_solvent_parameters;
+    bool              is_single_chargegroup;
+    bool              excluded[4];
+    bool              all_excluded;
+	bool              perturbed;
+    bool              has_vdw[4];
+    bool              match;
+    real              tmp_charge[4];
+    int               tmp_vdwtype[4];
+    int               nexcl;
+    int               tjA;
+    int               bestsol;
+    
+    /* We use a list with parameters for each solvent type. 
+     * Every time we discover a new molecule that fulfills the basic 
+     * conditions for a solvent we compare with the previous entries
+     * in these lists. If the parameters are the same we just increment
+     * the counter for that type, and otherwise we create a new type
+     * based on the current molecule.
+     *
+     * Once we've finished going through all molecules we check which
+     * solvent is most common, and mark all those molecules while we
+     * clear the flag on all others.
+     */   
+    struct 
+    {
+        int    model;          
+        int    count;
+        int    vdwtype[4];
+        real   charge[4];
+    } * solvent_parameters;
+    
 
-  if (fp)
-    fprintf(fp,"Going to determine what solvent types we have.\n");
-  snew(fr->solvent_type,cgs->nr+1);
-  snew(fr->mno_index,(cgs->nr+1)*3);
+    cgs  = &(top->blocks[ebCGS]);
+    excl = &(top->atoms.excl);
+    mols = &(top->blocks[ebMOLS]);
+    
+    if (debug)
+        fprintf(debug,"Going to determine what solvent types we have.\n");
   
-  /* Generate charge group number for all atoms */
-  cgid = make_invblock(cgs,cgs->nra);
+    snew(fr->solvent_type,cgs->nr);
+   
+    /* Overkill to allocate a separate set of parameters for each molecule, 
+	 * but it is not a lot of memory, will be released soon, and it is better
+     * than calling realloc lots of times.
+     */   	 
+    snew(solvent_parameters,mols->nr);
+    
+    
+    n_solvent_parameters = 0;
+        
+    /* Generate charge group number for all atoms */
+    cgid = make_invblock(cgs,cgs->nra);
 
-  /* Statistics for MFlops counting */  
-  fr->nMNOMol = 0;
-  fr->nWatMol = 0;
-  for(m=0; m<3; m++)
-    fr->nMNOav[m] = 0;
-  
-  warncount=0;
+    /* Loop over molecules */
+    if (debug)
+        fprintf(debug,"There are %d molecules, %d charge groups and %d atoms\n",
+                mols->nr,cgs->nr,cgs->nra);
 
-  /* Loop over molecules */
-  if (fp)
-    fprintf(fp,"There are %d molecules, %d charge groups and %d atoms\n",
-	    mols->nr,cgs->nr,cgs->nra);
-  for(i=0; (i<mols->nr); i++) {
-    j = mols->a[mols->index[i]];
-    if (j>=START(nsb) && j<START(nsb)+HOMENR(nsb)) {
-      /* Set boolean that determines whether the molecules consists of one CG */
-      bOneCG = TRUE;
-      /* Set some counters */
-      j0     = mols->index[i];
-      j1     = mols->index[i+1];
-      nj     = j1-j0;
-      for(j=j0+1; (j<j1); j++) {
-	bOneCG = bOneCG && (cgid[mols->a[j]] == cgid[mols->a[j-1]]);
-      }
-      if (fr->bSolvOpt && bOneCG && nj>1) {
-	/* Check whether everything is excluded */
-	snew(bAllExcl,nj);
-	bAE = TRUE;
-	/* Loop over all atoms in molecule */
-	for(j=j0; (j<j1) && bAE; j++) {
-	  /* Set a flag for each atom in the molecule that determines whether
-	   * it is excluded or not 
-	   */
-	  for(k=0; (k<nj); k++)
-	    bAllExcl[k] = FALSE;
-	  /* Now check all the exclusions of this atom */
-	  for(k=excl->index[j]; (k<excl->index[j+1]); k++) {
-	    ak = excl->a[k];
-	    /* Consistency and range check */
-	    if ((ak < j0) || (ak >= j1)) 
-	      gmx_fatal(FARGS,"Exclusion outside molecule? ak = %d, j0 = %d, j1 = 5d, mol is %d",ak,j0,j1,i);
-	    bAllExcl[ak-j0] = TRUE;
-	  }
-	  /* Now sum up the booleans */
-	  for(k=0; (k<nj); k++)
-	    bAE = bAE && bAllExcl[k];
-	}
-	if (bAE) {
-	  snew(bHaveCoul,nj);
-	  snew(bHaveLJ,nj);
-	  for(j=j0; (j<j1); j++) {
-	    /* Check for coulomb */
-	    aj = mols->a[j];
-	    bHaveCoul[j-j0] = ((top->atoms.atom[aj].q != 0.0) ||
-			       (top->atoms.atom[aj].qB != 0.0));
-	    /* Check for LJ. */
-	    tjA = top->atoms.atom[aj].type;
-	    tjB = top->atoms.atom[aj].typeB;
-	    bHaveLJ[j-j0] = FALSE;
-	    for(k=0; (k<fr->ntype); k++) {
-	      if (fr->bBHAM) 
-		bHaveLJ[j-j0] = (bHaveLJ[j-j0] || 
-				 (BHAMA(fr->nbfp,fr->ntype,tjA,k) != 0.0) ||
-				 (BHAMB(fr->nbfp,fr->ntype,tjA,k) != 0.0) ||
-				 (BHAMC(fr->nbfp,fr->ntype,tjA,k) != 0.0) ||
-				 (BHAMA(fr->nbfp,fr->ntype,tjB,k) != 0.0) ||
-				 (BHAMB(fr->nbfp,fr->ntype,tjB,k) != 0.0) ||
-				 (BHAMC(fr->nbfp,fr->ntype,tjB,k) != 0.0));
-	      else
-		bHaveLJ[j-j0] = (bHaveLJ[j-j0] || 
-				 (C6(fr->nbfp,fr->ntype,tjA,k)  != 0.0) ||
-				 (C12(fr->nbfp,fr->ntype,tjA,k) != 0.0) ||
-				 (C6(fr->nbfp,fr->ntype,tjB,k)  != 0.0) ||
-				 (C12(fr->nbfp,fr->ntype,tjB,k) != 0.0));
-	    }
-	  }
-	  /* Now we have determined what particles have which interactions 
-	   * In the case of water-like molecules we only check for the number
-	   * of particles and the LJ, not for the Coulomb. Let's just assume
-	   * that the water loops are faster than the MNO loops anyway. DvdS
-	   */
-	  /* No - there's another problem: To optimize the water
-	   * innerloop assumes the charge of the first i atom is constant
-	   * qO, and charge on atoms 2/3 is constant qH. /EL
-	   */
-	  /* I won't write any altivec versions of the general solvent inner 
-	   * loops. Thus, when USE_PPC_ALTIVEC is defined it is faster 
-	   * to use the normal loops instead of the MNO solvent version. /EL
-	   */
-	  aj=mols->a[j0];
-	  if((nj==3) && bHaveCoul[0] && bHaveLJ[0] &&
-	     !bHaveLJ[1] && !bHaveLJ[2] &&
-	     (top->atoms.atom[aj+1].q == top->atoms.atom[aj+2].q)) {
-	    fr->solvent_type[cgid[aj]] = esolWATER;
-	    fr->nWatMol++;
-	  }
-	  else {
-/* Do not use MNO loops as they are often much slower than the normal loops */
-#define DISABLE_MNO
-#ifdef DISABLE_MNO
-/* #ifdef USE_PPC_ALTIVEC */
-	    fr->solvent_type[cgid[aj]] = esolNO;
-#else
-	    /* Time to compute M & N & O */
-	    for(k=0; (k<nj) && (bHaveLJ[k] && bHaveCoul[k]); k++)
-	      ;
-	    nl_n = k;
-	    for(; (k<nj) && (!bHaveLJ[k] && bHaveCoul[k]); k++)
-	      ;
-	    nl_o = k;
-	    for(; (k<nj) && (bHaveLJ[k] && !bHaveCoul[k]); k++)
-	      ;
-	    nl_m = k;
-	    /* Now check whether we're at the end of the pack */
-	    bOrder = FALSE;
-	    for(; (k<nj); k++)
-	      bOrder = bOrder || (bHaveLJ[k] || bHaveCoul[k]);
-	    if (bOrder) {
-	      /* If we have a solvent molecule with LJC everywhere, then
-	       * we shouldn't issue a warning. Only if we suspect something
-	       * could be better.
-	       */
-	      if (nl_n != nj) {
-		warncount++;
-		if(warncount<11) 
-		  fprintf(fp,"The order in molecule %d could be optimized"
-			  " for better performance\n",i);
-		if(warncount==10)
-		  fprintf(fp,"(More than 10 molecules where the order can be optimized)\n");
-	      }
-	      nl_m = nl_n = nl_o = nj;
-	    }
-	    fr->mno_index[cgid[aj]*3]   = nl_m;
-	    fr->mno_index[cgid[aj]*3+1] = nl_n;
-	    fr->mno_index[cgid[aj]*3+2] = nl_o;
-	    fr->solvent_type[cgid[aj]]  = esolMNO;
-	    /* Now compute the number of solvent molecules for MFlops accounting.
-	     * The base for this counting is not determined by the order in the
-	     * algorithm but by the number of actual interactions.
-	     */
-	    
-	    fr->nMNOMol++;
-	    for(k=0; (k<nj); k++)
-	      if (bHaveLJ[k] || bHaveCoul[k])
-		fr->nMNOav[0]++;
-	    for(k=0; (k<nj); k++)
-	      if (!bHaveLJ[k] && bHaveCoul[k])
-		fr->nMNOav[1]++;
-	    for(k=nl_m=0; (k<nj); k++)
-	      if (bHaveLJ[k] && !bHaveCoul[k])
-		fr->nMNOav[2]++;
-#endif /* MNO solvent if not using altivec */
-	  }    
-	  /* Last check for perturbed atoms */
-	  for(j=j0; (j<j1); j++)
-	    if (md->bPerturbed[mols->a[j]])
-	      fr->solvent_type[cgid[mols->a[j0]]] = esolNO;
-	  
-	  sfree(bHaveLJ);
-	  sfree(bHaveCoul);
-	}
-	else {
-	  /* Turn off solvent optimization for all cg's in the molecule,
-	   * here there is only one.
-	   */
-	  fr->solvent_type[cgid[mols->a[j0]]] = esolNO;
-	}
-	sfree(bAllExcl);
-      }
-      else {
-	/* Turn off solvent optimization for all cg's in the molecule */
-	for(j=mols->index[i]; (j<mols->index[i+1]); j++) {
-	  fr->solvent_type[cgid[mols->a[j]]] = esolNO;
-	}
-      }
-    }      
-  }
-  if (debug) {
-    for(i=0; (i<cgs->nr); i++) 
-      fprintf(debug,"MNO: cg = %5d, m = %2d, n = %2d, o = %2d\n",
-	      i,fr->mno_index[3*i],fr->mno_index[3*i+1],fr->mno_index[3*i+2]);
-  }
-  
-  if (fr->nMNOMol > 0)
-    for(m=0; (m<3); m++)
-      fr->nMNOav[m] /= fr->nMNOMol;
-  
-  sfree(cgid);
 
-  if (fp) {
-    fprintf(fp,"There are %d optimized solvent molecules on node %d\n",
-	    fr->nMNOMol,nsb->nodeid);
-    if (fr->nMNOMol > 0)
-      fprintf(fp,"  aver. nr. of atoms per molecule: vdwc %.1f coul %.1f vdw %.1f\n",
-	      fr->nMNOav[0],fr->nMNOav[1],fr->nMNOav[2]);
-    fprintf(fp,"There are %d optimized water molecules on node %d\n",
-	    fr->nWatMol,nsb->nodeid);
-  }
+    /* Set a temporary "no solvent" flag everywhere */
+    for(i=0; i<cgs->nr; i++) 
+    {
+        fr->solvent_type[i] = -1;
+    }
+    
+    /* Go through all molecules in system and see if they fulfill the conditions
+     * for the water innerloops. We don't care if they really ARE waters or not,
+     * but we need to check charges and LJ to make sure all molecules of a 
+     * certain solvent type have the same parameters.
+     */   
+    
+    for(i=0; i<mols->nr; i++) {
+        
+        /* Get the indices of the first atom in this and the next molecule */
+        j0     = mols->index[i];
+        j1     = mols->index[i+1];
+
+        /* Number of atoms in our molecule */
+        nj     = j1-j0;
+
+        /* Check if it could be an SPC (3 atoms) or TIP4p (4) water, otherwise skip it */
+        if(nj<3 || nj>4)
+        {
+            continue;
+        }
+        
+        /* Check that all subsequent atoms in the molecule belong to
+         * the same chargegroup as the first.
+         */   
+
+        is_single_chargegroup = TRUE;
+        
+        for( j = j0+1 ; j<j1 && is_single_chargegroup ; j++ ) 
+        {
+            if(cgid[mols->a[j]] != cgid[mols->a[j-1]])
+            {
+                is_single_chargegroup = FALSE;
+            }
+        }
+        
+        if(is_single_chargegroup == FALSE)
+        {
+            /* Cannot be a solvent, go to next molecule */
+            continue;
+        }
+
+        /* It has 3 or 4 atoms in a single chargegroup. Next we check if
+         * all intra-molecular interactions are excluded. 
+         */
+		
+        all_excluded = TRUE;
+
+        /* Loop over all atoms in molecule */
+        for( j = j0 ; j<j1 && all_excluded ; j++ ) 
+        {
+
+            for( k=0 ; k<nj ; k++ )
+            {
+                excluded[k] = FALSE;
+            }
+
+            excluded[j-j0] = TRUE;
+            
+             /* Count the exclusions for this atom. */
+            for(k=excl->index[j]; k<excl->index[j+1]; k++) 
+            {
+                /* Index of the atom we exclude from j */
+                ak = excl->a[k];
+               
+                /* There cannot be any exclusions to other molecules! */
+                if ((ak < j0) || (ak >= j1)) 
+                    gmx_fatal(FARGS,"Exclusion outside molecule? ak = %d, j0 = %d, j1 = 5d, mol is %d",ak,j0,j1,i);
+
+                /* Indices are relative to the first atom in the molecule */
+                excluded[ak-j0] = TRUE;
+            }
+            
+            /* Make really sure everything is excluded, even if we did something
+             * stupid like list one exclusion multiple times in the list above.
+             */   
+            for(k=0;k<nj && all_excluded;k++)
+            {
+                all_excluded = all_excluded & excluded[k];
+            }
+        }
+        
+        /* Skip to next molecule if any intramolecules weren't excluded */
+        if(all_excluded == FALSE)
+        {
+            continue;
+        }
+        
+        /* Still looks like a solvent, time to check parameters */
+
+        /* If it is perturbed (free energy) we can't use the solvent loops,
+         * so then we just skip to the next molecule.
+         */   
+		perturbed = FALSE; 
+		
+        for(j=j0 ; j<j1 && !perturbed; j++)
+        {
+			perturbed =	md->bPerturbed[mols->a[j]];
+        }
+	
+	    if(perturbed)
+		{
+			continue;
+		}
+
+        /* Now it's only a question if the VdW and charge parameters 
+         * are OK. Before doing the check we compare and see if they are 
+         * identical to a possible previous solvent type.
+         * First we assign the current types and charges.    
+         */
+		for( j=0; j<nj ; j++)
+		{
+			aj = mols->a[j0+j];
+		    tmp_vdwtype[j] = top->atoms.atom[aj].type;
+			tmp_charge[j]  = top->atoms.atom[aj].q;
+		} 
+		 
+        /* Does it match any previous solvent type? */
+        match = FALSE;
+
+        for(k=0 ; k<n_solvent_parameters && !match; k++)
+        {
+            match = TRUE;
+         
+            
+            /* We can only match SPC with 3 atoms and TIP4p with 4 atoms */
+            if( (solvent_parameters[k].model==esolSPC && nj!=3)  ||
+                (solvent_parameters[k].model==esolTIP4P && nj!=4) )
+			    match = FALSE;
+
+            /* Check that types & charges match for all atoms in molecule */
+            for(j=0 ; j<nj && match==TRUE; j++)
+            {			
+                if(tmp_vdwtype[j] != solvent_parameters[k].vdwtype[j])
+                    match = FALSE;
+                
+                if(tmp_charge[j] != solvent_parameters[k].charge[j])
+                    match = FALSE;
+            }
+            if(match == TRUE)
+            {
+                /* Congratulations! We have a matched solvent.
+                * Flag it with this type for later processing.
+                */
+				aj = mols->a[j0];
+                fr->solvent_type[cgid[aj]] = k;
+                (solvent_parameters[k].count)++;
+            }
+        }
+        
+        if(match == TRUE)
+        {
+            /* Continue to next molecule if we already identified this */
+            continue;
+        }
+        
+        /* If we get here, we have a tentative new solvent type.
+         * Before we add it we must check that it fulfills the requirements
+         * of the solvent optimized loops. First determine which atoms have
+         * VdW interactions.   
+         */
+        for(j=0; j<nj; j++) 
+        {
+            has_vdw[j] = FALSE;
+            tjA        = tmp_vdwtype[j];
+            
+            /* Go through all other tpes and see if any have non-zero
+            * VdW parameters when combined with this one.
+            */   
+            for(k=0; k<fr->ntype && (has_vdw[j]==FALSE); k++)
+            {
+                /* We already checked that the atoms weren't perturbed,
+                 * so we only need to check state A now.
+                 */ 
+                if (fr->bBHAM) 
+                {
+                    has_vdw[j] = (has_vdw[j] || 
+                                  (BHAMA(fr->nbfp,fr->ntype,tjA,k) != 0.0) ||
+                                  (BHAMB(fr->nbfp,fr->ntype,tjA,k) != 0.0) ||
+                                  (BHAMC(fr->nbfp,fr->ntype,tjA,k) != 0.0));
+                }
+                else
+                {
+                   /* Standard LJ */
+                    has_vdw[j] = (has_vdw[j] || 
+                                  (C6(fr->nbfp,fr->ntype,tjA,k)  != 0.0) ||
+                                  (C12(fr->nbfp,fr->ntype,tjA,k) != 0.0));
+                }
+            }
+        }
+        
+        /* Now we know all we need to make the final check and assignment. */
+        if(nj==3)
+        {
+            /* So, is it an SPC?
+             * For this we require thatn all atoms have charge, 
+             * the charges on atom 2 & 3 should be the same, and only
+             * atom 1 should have VdW.
+             */
+            if(has_vdw[0] == TRUE && 
+               has_vdw[1] == FALSE &&
+               has_vdw[2] == FALSE &&
+               tmp_charge[0]  != 0 &&
+               tmp_charge[1]  != 0 &&
+               tmp_charge[2]  == tmp_charge[1])
+            {
+                solvent_parameters[n_solvent_parameters].model=esolSPC;
+                solvent_parameters[n_solvent_parameters].count=1;
+                for(k=0;k<3;k++)
+                {
+                    solvent_parameters[n_solvent_parameters].vdwtype[k] = tmp_vdwtype[k];
+                    solvent_parameters[n_solvent_parameters].charge[k]  = tmp_charge[k];
+                }
+            }
+			aj = mols->a[j0];
+            fr->solvent_type[cgid[aj]] = n_solvent_parameters;
+            n_solvent_parameters++;
+        }
+        else if(nj==4)
+        {
+            /* Or could it be a TIP4P?
+            * For this we require thatn atoms 2,3,4 have charge, but not atom 1. 
+            * Only atom 1 should have VdW.
+            */
+            if(has_vdw[0] == TRUE && 
+               has_vdw[1] == FALSE &&
+               has_vdw[2] == FALSE &&
+               has_vdw[3] == FALSE &&
+               tmp_charge[1]  != 0 &&
+               tmp_charge[2]  == tmp_charge[1] &&
+               tmp_charge[3]  != 0)
+            {
+                solvent_parameters[n_solvent_parameters].model=esolTIP4P;
+                solvent_parameters[n_solvent_parameters].count=1;
+                for(k=0;k<4;k++)
+                {
+                    solvent_parameters[n_solvent_parameters].vdwtype[k] = tmp_vdwtype[k];
+                    solvent_parameters[n_solvent_parameters].charge[k]  = tmp_charge[k];
+                }
+            }
+			aj = mols->a[j0];
+            fr->solvent_type[cgid[aj]] = n_solvent_parameters;
+            n_solvent_parameters++;
+        }
+    }
+    
+   
+    /* Puh! We finished going through all molecules. Now find the most
+     * common solvent model.
+     */   
+    
+    /* Most common solvent this far */
+    j = -2;
+    for(i=0;i<n_solvent_parameters;i++)
+    {
+        if(j==-2 || (solvent_parameters[i].count>solvent_parameters[j].count))
+            j = i;
+    }
+    
+    if(j>=0)
+    {
+        bestsol = solvent_parameters[j].model;
+    }
+    else
+    {
+        bestsol = esolNO;
+    }
+    
+#ifdef DISABLE_WATER_NLIST
+	bestsol = esolNO;
+#endif
+
+	fr->nWatMol = 0;
+    for(i=0;i<cgs->nr;i++)
+    {
+        if(fr->solvent_type[i]==j)
+        {
+            fr->solvent_type[i] = bestsol;
+            fr->nWatMol++;
+        }
+        else
+        {
+            fr->solvent_type[i] = esolNO;
+        }
+    }
+    
+    if(bestsol!=esolNO && fp!=NULL)
+    {
+        fprintf(fp,"\nEnabling %s water optimization for %d molecules.\n\n",
+                esol_names[bestsol],
+                solvent_parameters[j].count);
+    }
+    
+    sfree(solvent_parameters);
+    fr->solvent_opt = bestsol;
 }
+ 
+
 
 void set_chargesum(FILE *log,t_forcerec *fr,const t_mdatoms *mdatoms)
 {
@@ -552,9 +714,10 @@ void init_forcerec(FILE *fp,
 
   fr->bTwinRange = fr->rlistlong > fr->rlist;
   fr->bEwald     = fr->eeltype==eelPME || fr->eeltype==eelEWALD;
-  fr->bvdwtab    = fr->vdwtype != evdwCUT;
-  fr->bcoultab   = fr->eeltype != eelCUT && !(EEL_RF(fr->eeltype) &&
-					      fr->vdwtype == evdwCUT);
+  fr->bvdwtab    = (fr->vdwtype != evdwCUT);
+  
+  fr->bcoultab   = (fr->eeltype != eelCUT) && !EEL_RF(fr->eeltype);
+  
   if (getenv("GMX_FORCE_TABLES")) {
     fr->bvdwtab  = TRUE;
     fr->bcoultab = TRUE;
@@ -582,12 +745,7 @@ void init_forcerec(FILE *fp,
   fr->fudgeQQ    = ir->fudgeQQ;
   fr->rcoulomb_switch = ir->rcoulomb_switch;
   fr->rcoulomb        = ir->rcoulomb;
-  
-  if (bNoSolvOpt || getenv("GMX_NO_SOLV_OPT"))
-    fr->bSolvOpt = FALSE;
-  else
-    fr->bSolvOpt = TRUE;
-  
+
   /* Parameters for generalized RF */
   fr->zsquare = 0.0;
   fr->temp    = 0.0;
@@ -690,6 +848,7 @@ void init_forcerec(FILE *fp,
     fr->bBHAM = (idef->functype[0] == F_BHAM);
     fr->nbfp  = mk_nbfp(idef,fr->bBHAM);
   }
+  
   /* Copy the energy group exclusions */
   fr->eg_excl = ir->opts.eg_excl;
 
@@ -785,8 +944,13 @@ void init_forcerec(FILE *fp,
     /* generate extra tables with plain Coulomb for 1-4 interactions only */
     fr->tab14 = make_tables(fp,fr,MASTER(cr),tabfn,ir->tabext,TRUE);
 
-  if (!fr->mno_index)
-    check_solvent(fp,top,fr,mdatoms,nsb);
+  check_solvent(fp,top,fr,mdatoms,nsb);
+
+  
+  if (bNoSolvOpt || getenv("GMX_NO_SOLV_OPT"))
+  {
+      fr->solvent_opt = esolNO;
+  }
 }
  
 #define pr_real(fp,r) fprintf(fp,"%s: %e\n",#r,r)
@@ -901,7 +1065,7 @@ void force(FILE       *fplog,   int        step,
   /* Reset box */
   for(i=0; (i<DIM); i++)
     box_size[i]=box[i][i];
-    
+
   bDoEpot=((fr->nmol > 0) && (fr->nstcalc > 0) && (mod(step,fr->nstcalc)==0));
   bSepDVDL=(fr->bSepDVDL && do_per_step(step,ir->nstlog));
   /* Reset epot... */
@@ -916,10 +1080,12 @@ void force(FILE       *fplog,   int        step,
   
   /* Call the short range functions all in one go. */
   dvdlambda = 0;
-  do_fnbf(fplog,cr,fr,x,f,md,
+
+  do_nonbonded(fplog,cr,fr,x,f,md,
 	  fr->bBHAM ? grps->estat.ee[egBHAMSR] : grps->estat.ee[egLJSR],
 	  grps->estat.ee[egCOULSR],box_size,nrnb,
 	  lambda,&dvdlambda,FALSE,-1);
+  
   epot[F_DVDL] += dvdlambda;
   PRINT_SEPDVDL("VdW and Coulomb particle-p.",0.0,dvdlambda);
   debug_gmx();
@@ -945,7 +1111,7 @@ void force(FILE       *fplog,   int        step,
       set_pbc(&pbc,box);
     debug_gmx();
   }
-  
+
   if (EEL_FULL(fr->eeltype)) {
     dvdlambda = 0;
     switch (fr->eeltype) {
@@ -993,9 +1159,11 @@ void force(FILE       *fplog,   int        step,
     }
   } else if (EEL_RF(fr->eeltype)) {
     dvdlambda = 0;
-    if (fr->eeltype != eelRF_OLD)
+
+      if (fr->eeltype != eelRF_OLD)
       epot[F_RF_EXCL] = RF_excl_correction(fplog,nsb,fr,graph,md,excl,x,f,
 					   fr->fshift,&pbc,lambda,&dvdlambda);
+
     epot[F_DVDL] += dvdlambda;
     PRINT_SEPDVDL("RF exclusion correction",epot[F_RF_EXCL],dvdlambda);
   }
@@ -1012,6 +1180,7 @@ void force(FILE       *fplog,   int        step,
 	       fcd,step,fr->bSepDVDL && do_per_step(step,ir->nstlog));    
     debug_gmx();
   }
+
   if (debug) 
     pr_rvecs(debug,0,"fshift after bondeds",fr->fshift,SHIFTS);
 }
