@@ -163,8 +163,8 @@ TYR 	8
 	2	6	CB	CG	CA
 	1	1	CD1	CG	CE1
 	1	1	CD2	CG	CE2
-	1	1	CE1	CD1	OH
-	1	1	CE2	CD2	OH	
+	1	1	CE1	CD1	CZ
+	1	1	CE2	CD2	CZ
 	1	2	OH 	CZ	CE1
 VAL 	5
         1       1       N       -C      CA 
