@@ -8,10 +8,9 @@
      H     H   0.280     0
     CA   CH1   0.000     1
     CB   CH2   0.000     2
-    CG   CH2   0.000     3
-    CD   CH3   0.000     4
-     C     C   0.380     5
-     O     O  -0.380     5
+    CG   CH3   0.000     3
+     C     C   0.380     4
+     O     O  -0.380     4
  [ bonds ]
      N     H
      N    CA
@@ -20,7 +19,6 @@
     -C     N
     CA    CB
     CB    CG
-    CG    CD
  [ impropers ]
      N    -C    CA     H
     -C   -CA     N    -O
