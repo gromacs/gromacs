@@ -104,8 +104,8 @@ int gmx_sorient(int argc,char *argv[])
   matrix   box;
   
   FILE    *fp;
-  int     i,j,p,sa0,sa1,sa2,n,ntot,nf,m,*hist1,*hist2,*histn,nrbin;
-  real    *histi1,*histi2,rbinw,invbw;
+  int     i,j,p,sa0,sa1,sa2,n,ntot,nf,m,*hist1,*hist2,*histn,nbin1,nbin2,nrbin;
+  real    *histi1,*histi2,invbw,rbinw,invrbw;
   int     *isize,nrefgrp,nrefat;
   atom_id **index;
   char    **grpname;
@@ -132,8 +132,8 @@ int gmx_sorient(int argc,char *argv[])
     "consist of 3 atoms per solvent molecule.",
     "Only solvent molecules between [TT]-rmin[tt] and [TT]-rmax[tt] are",
     "considered for [TT]-o[tt] and [TT]-no[tt] each frame.[PAR]",
-    "[TT]-o[tt]: angle distribution of theta1.[PAR]",
-    "[TT]-no[tt]: angle distribution of theta2.[PAR]",
+    "[TT]-o[tt]: distribtion of cos(theta1) for rmin<=r<=rmax.[PAR]",
+    "[TT]-no[tt]: distribution of 3cos^2(theta2)-1 for rmin<=r<=rmax.[PAR]",
     "[TT]-ro[tt]: <cos(theta1)> and <3cos^2(theta2)-1> as a function of the",
     "distance.[PAR]",
     "[TT]-co[tt]: the sum over all solvent molecules within distance r",
@@ -141,14 +141,13 @@ int gmx_sorient(int argc,char *argv[])
   };
   
   static bool bCom = FALSE,bPBC = FALSE;
-  static int nbin=20;
-  static real rmin=0.0,rmax=0.5;
+  static real rmin=0.0,rmax=0.5,binwidth=0.02;
   t_pargs pa[] = {
     { "-com",  FALSE, etBOOL,  {&bCom},
       "Use the center of mass as the reference postion" },
     { "-rmin",  FALSE, etREAL, {&rmin}, "Minimum distance" },
     { "-rmax",  FALSE, etREAL, {&rmax}, "Maximum distance" },
-    { "-nbin",  FALSE, etINT,  {&nbin}, "Number of bins" },
+    { "-bin",   FALSE, etREAL, {&binwidth}, "Binwidth" },
     { "-pbc",   FALSE, etBOOL, {&bPBC}, "Check PBC for the center of mass calculation. Only necessary when your reference group consists of several molecules." }
   };
   
@@ -199,14 +198,19 @@ int gmx_sorient(int argc,char *argv[])
   if (rcut == 0)
     rcut = 10*rmax;
   rcut2 = sqr(rcut);
+
+  invbw = 1/binwidth;
+  nbin1 = (int)(2*invbw + 0.5);
+  nbin2 = (int)(3*invbw + 0.5);
+
   rbinw = 0.02;
-  invbw = 1/rbinw;
+  invrbw = 1/rbinw;
   
   ntot = 0;
   nf = 0;
   
-  snew(hist1,nbin);
-  snew(hist2,nbin);
+  snew(hist1,nbin1+1);
+  snew(hist2,nbin2+1);
   nrbin = rcut/rbinw;
   if (nrbin == 0)
     nrbin = 1;
@@ -246,13 +250,13 @@ int gmx_sorient(int argc,char *argv[])
 	  oprod(dxh1,dxh2,outer);
 	  unitv(outer,outer);
 	  outp = iprod(dx,outer);
-	  (histi1[(int)(invbw*r)])+=inp;
-	  (histi2[(int)(invbw*r)])+=3*sqr(outp)-1;
-	  (histn[(int)(invbw*r)])++;
+	  (histi1[(int)(invrbw*r)]) += inp;
+	  (histi2[(int)(invrbw*r)]) += 3*sqr(outp) - 1;
+	  (histn[(int)(invrbw*r)])++;
 	  if (r2>=rmin2 && r2<rmax2) {
+	    (hist1[(int)(invbw*(inp + 1))])++;
+	    (hist2[(int)(invbw*(3*sqr(outp)))])++;
 	    n++;
-	    (hist1[(int)(nbin*0.5*two_pi*acos(inp))])++;
-	    (hist2[(int)(nbin*two_pi*acos(fabs(outp)))])++;
 	  }
 	}
       }
@@ -265,30 +269,32 @@ int gmx_sorient(int argc,char *argv[])
   /* clean up */
   sfree(x);
   close_trj(status);
+
+  /* Add the bin for the exact maximum to the previous bin */
+  hist1[nbin1-1] += hist1[nbin1];
+  hist2[nbin2-1] += hist2[nbin2];
   
   nav     = (real)ntot/(nrefgrp*nf);
-  normfac = nbin/(ntot*M_PI/2);
+  normfac = invbw/ntot;
   
   fprintf(stderr,"Average number of molecules between %g and %g nm is %.1f\n",
 	  rmin,rmax,nav);
   
   sprintf(str,"Solvent orientation between %g and %g nm",rmin,rmax);
   fp=xvgropen(opt2fn("-o",NFILE,fnm), 
-	      str,"Angle","Number"); 
+	      str,"cos(\\8q\\4\\s1\\N)",""); 
   fprintf(fp,"@ subtitle \"average shell size %.1f molecules\"\n",nav);
-  for(i=0; i<nbin; i++) {
-    r = 90*2*(i+0.5)/nbin;
-    fprintf(fp,"%g %g %g\n",r,normfac*hist1[i],sin(M_PI*r/180));
+  for(i=0; i<nbin1; i++) {
+    fprintf(fp,"%g %g\n",(i+0.5)*binwidth-1,2*normfac*hist1[i]);
   }
   fclose(fp);
   
   sprintf(str,"Solvent normal orientation between %g and %g nm",rmin,rmax);
   fp=xvgropen(opt2fn("-no",NFILE,fnm), 
-	      str,"Angle","Number");
+	      str,"3 cos\\S2\\N(\\8q\\4\\s2\\N) - 1","");
   fprintf(fp,"@ subtitle \"average shell size %.1f molecules\"\n",nav);
-  for(i=0; i<nbin; i++) {
-    r = 90*(i+0.5)/nbin;
-    fprintf(fp,"%g %g %g\n",r,normfac*hist2[i],sin(M_PI*r/180));
+  for(i=0; i<nbin2; i++) {
+    fprintf(fp,"%g %g\n",(i+0.5)*binwidth-1,3*normfac*hist2[i]);
   }
   fclose(fp);
 
@@ -318,8 +324,8 @@ int gmx_sorient(int argc,char *argv[])
   }
   fclose(fp);
 
-  do_view(opt2fn("-o",NFILE,fnm),"-nxy");
-  do_view(opt2fn("-no",NFILE,fnm),"-nxy");
+  do_view(opt2fn("-o",NFILE,fnm),NULL);
+  do_view(opt2fn("-no",NFILE,fnm),NULL);
   do_view(opt2fn("-ro",NFILE,fnm),"-nxy");
   do_view(opt2fn("-co",NFILE,fnm),"-nxy");
 
