@@ -403,6 +403,11 @@ int main(int argc, char *argv[])
     "be added instead of B-factors. [TT]-legend[tt] will produce",
     "a row of CA atoms with B-factors ranging from the minimum to the",
     "maximum value found, effectively making a legend for viewing.[PAR]",
+    "If the input file is a [TT].tpx[tt] file and the output a pdb file",
+    "the B-factor field can be filled with the charges of the atoms",
+    "if the option -charge is given as well. This can be used as input",
+    "for programs like Grasp or MEAD which solve the Poisson-Boltzmann",
+    "equation.[PAR]",
     "Finally with option [TT]-label[tt] editconf can add a chain identifier",
     "to a pdb file, which can be useful for analysis with e.g. rasmol."
   };
@@ -412,7 +417,7 @@ int main(int argc, char *argv[])
   };
   static real dist=0.0,rbox=0.0,to_diam=0.0;
   static bool bNDEF=FALSE,bRMPBC=FALSE,bCenter=FALSE;
-  static bool peratom=FALSE,bLegend=FALSE,bOrient=FALSE;
+  static bool peratom=FALSE,bLegend=FALSE,bOrient=FALSE,bCharge=FALSE;
   static rvec scale={1.0,1.0,1.0},newbox={0.0,0.0,0.0};
   static real rho=1000.0;
   static rvec center={0.0,0.0,0.0},rotangles={0.0,0.0,0.0};
@@ -431,6 +436,8 @@ int main(int argc, char *argv[])
     { "-c",      FALSE, etBOOL, {&bCenter},
       "Center molecule in box (implied by -box and -d)" },
     { "-center", FALSE, etRVEC, {&center}, "Coordinates of geometrical center"},
+    { "-charge", FALSE, etBOOL, {&bCharge},
+      "Store the charge of the atom in the b-factor field" },
     { "-rotate", FALSE, etRVEC, {rotangles},
       "Rotation around the X, Y and Z axes in degrees" },
     { "-princ",  FALSE, etBOOL, {&bOrient}, "Orient molecule(s) along their principal axes" },
@@ -445,20 +452,21 @@ int main(int argc, char *argv[])
   };
 #define NPA asize(pa)
 
-  FILE      *out;
-  char      *infile,*outfile,title[STRLEN];
-  int       outftp,natom,i,j,n_bfac;
-  double    *bfac=NULL;
-  int       *bfac_nr=NULL;
-  t_atoms   atoms;
-  char      *grpname,*sgrpname;
-  int       isize,ssize;
-  atom_id   *index,*sindex;
-  rvec      *x,*v,gc,min,max,size;
-  matrix    box;
-  bool      bIndex,bSetSize,bCubic,bDist,bSetCenter;
-  bool      bHaveV,bScale,bRho,bRotate,bCalcGeom,bCalcDiam;
-  real      xs,ys,zs,xcent,ycent,zcent,diam,d;
+  FILE       *out;
+  char       *infile,*outfile,title[STRLEN];
+  int        outftp,natom,i,j,n_bfac;
+  double     *bfac=NULL;
+  int        *bfac_nr=NULL;
+  t_topology *top;
+  t_atoms    atoms;
+  char       *grpname,*sgrpname;
+  int        isize,ssize;
+  atom_id    *index,*sindex;
+  rvec       *x,*v,gc,min,max,size;
+  matrix     box;
+  bool       bIndex,bSetSize,bCubic,bDist,bSetCenter;
+  bool       bHaveV,bScale,bRho,bRotate,bCalcGeom,bCalcDiam;
+  real       xs,ys,zs,xcent,ycent,zcent,diam,d;
   t_filenm fnm[] = {
     { efSTX, "-f", NULL, ffREAD },
     { efNDX, "-n", NULL, ffOPTRD },
@@ -496,6 +504,13 @@ int main(int argc, char *argv[])
   read_stx_conf(infile,title,&atoms,x,v,box);
   printf("Read %d atoms\n",atoms.nr); 
 
+  if (bCharge) {
+    top = read_top(infile);
+    if (atoms.nr != top->atoms.nr)
+      fatal_error(0,"Atom numbers don't match");
+    for(i=0; (i<atoms.nr); i++) 
+      atoms.pdbinfo[i].bfac = top->atoms.atom[i].q;
+  }
   bHaveV=FALSE;
   for (i=0; (i<natom) && !bHaveV; i++)
     for (j=0; (j<DIM) && !bHaveV; j++)
