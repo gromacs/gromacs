@@ -43,11 +43,15 @@ typedef struct {
   /* Fudge factors */
   real fudgeQQ;
 
-  /* PPPM & Shifting stuff */
-  real rcoulomb_switch,rcoulomb;
+  /* Table stuff */
+  bool bTab;
+  real rtab;
   int  ntab;
   real tabscale;
   real *VFtab;
+
+  /* PPPM & Shifting stuff */
+  real rcoulomb_switch,rcoulomb;
   real *phi;
 
   /* VdW stuff */

@@ -276,7 +276,12 @@ void init_forcerec(FILE *log,
   fr->rlist      = ir->rlist;
   fr->rlistlong  = max(ir->rlist,max(ir->rcoulomb,ir->rvdw));
   fr->bTwinRange = (fr->rlistlong > fr->rlist);
-  
+  fr->bTab       = ((fr->eeltype != eelCUT) || (fr->vdwtype != evdwCUT));
+  if (fr->bTab)
+    fr->rtab = fr->rlistlong+0.5;
+  else
+    fr->rtab = fr->rlist+0.5;
+
   /* Domain decomposition parallellism... */
   fr->bDomDecomp = ir->bDomDecomp;
   fr->Dimension  = ir->decomp_dir;

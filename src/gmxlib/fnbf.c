@@ -72,7 +72,7 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
 
   svec    = fr->shift_vec;
   fshift  = fr->fshift;
-  bTab    = ((fr->eeltype != eelCUT) || (fr->vdwtype != evdwCUT));
+  bTab    = fr->bTab;
   eps     = fr->epsfac;
   
   nr_ljc=nr_qq=nr_bham=nr_fsum=nr_free=0;

@@ -179,7 +179,7 @@ void fill_table(int n0,int n,real x[],
   int  i,p;
   real r1,rc,r12,r13;
   real r,r2,r6;
-  real k_rf,c_rf,rffac2,rmin;
+  real k_rf,rffac2,rmin;
   /* Parameters for David's function */
   real A=0,B=0,C=0,A_3=0,B_4=0;
   /* Parameters for the switching function */
@@ -204,7 +204,6 @@ void fill_table(int n0,int n,real x[],
     rc = fr->rvdw;
   }
   k_rf   = fr->k_rf;
-  c_rf   = fr->c_rf;
   rffac2 = k_rf*2.0;
   if (bSwitch)
     ksw  = 1.0/pow((rc-r1),3.0);
@@ -369,8 +368,12 @@ void make_tables(t_forcerec *fr,bool bVerbose)
 #else
   fr->tabscale = 500.0;
 #endif
-  n = fr->ntab = (fr->rcoulomb+0.5)*fr->tabscale;
+  n = fr->ntab = fr->rtab*fr->tabscale;
 
+  fprintf(stdlog,"Making 3 tables%s of %g/%g = %d points (%d bytes)\n",
+	  fr->bTab ? "" : " for 1-4 int.",
+	  fr->rtab,fr->tabscale,fr->ntab,12*sizeof(real)*fr->ntab);
+  
   snew(fr->VFtab,12*n+1);
   snew(xnormal,n+1);
   
