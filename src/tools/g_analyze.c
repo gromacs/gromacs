@@ -628,7 +628,7 @@ static void do_fit(char *fn,int nx,int ny,real *x0,real **val)
   fclose(out);
 }
 
-int main(int argc,char *argv[])
+int gmx_analyze(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_analyze reads an ascii file and analyzes data sets.",

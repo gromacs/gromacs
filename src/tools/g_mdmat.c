@@ -143,7 +143,7 @@ static void tot_nmat(int nres, int natoms, int nframes, int **nmat,
   }
 }
 
-int main(int argc,char *argv[])
+int gmx_mdmat(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_mdmat makes distance matrices consisting of the smallest distance",

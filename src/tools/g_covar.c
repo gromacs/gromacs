@@ -57,7 +57,7 @@
 
 typedef double drvec[DIM];
 
-int main(int argc,char *argv[])
+int gmx_covar(int argc,char *argv[])
 {
   static char *desc[] = {
     "[TT]g_covar[tt] calculates and diagonalizes the (mass-weighted)",

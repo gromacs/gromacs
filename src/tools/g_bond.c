@@ -200,7 +200,7 @@ static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
   }
 }
 
-int main(int argc,char *argv[])
+int gmx_bond(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_bond makes a distribution of bond lengths. If all is well a",

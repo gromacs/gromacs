@@ -301,7 +301,7 @@ void order_plot(rvec order[], real *slOrder[], char *afile, char *bfile,
   }
 }
 
-int main(int argc,char *argv[])
+int gmx_order(int argc,char *argv[])
 {
   static char *desc[] = {
     "Compute the order parameter per atom for carbon tails. For atom i the",

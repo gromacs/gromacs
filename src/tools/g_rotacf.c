@@ -46,7 +46,7 @@
 #include "gstat.h"
 #include "vec.h"
 
-int main(int argc,char *argv[])
+int gmx_rotacf(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_rotacf calculates the rotational correlation function",

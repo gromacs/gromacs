@@ -623,7 +623,7 @@ static void fec(char *ene2fn, char *runavgfn,
   sfree(fr);
 }
 
-int main(int argc,char *argv[])
+int gmx_energy(int argc,char *argv[])
 {
   static char *desc[] = {
     

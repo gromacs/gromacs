@@ -942,7 +942,7 @@ static void convert_mat(t_matrix *mat,t_mat *rms)
   rms->nn = mat->nx;
 }  
 
-int main(int argc,char *argv[])
+int gmx_cluster(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_cluster can cluster structures with several different methods.",

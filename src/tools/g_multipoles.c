@@ -667,7 +667,7 @@ void do_multipoles(char *trjfn,char *topfn,char *molndxfn,bool bFull)
   
 }
 
-int main(int argc,char *argv[])
+int gmx_multipoles(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_multipoles computes the electric multipole moments of",

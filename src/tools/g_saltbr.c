@@ -126,7 +126,7 @@ real calc_dist(rvec x[],rvec box_size,t_block *cgs,int icg,int jcg)
   return sqrt(mindist);
 }
 
-int main(int argc,char *argv[])
+int gmx_saltbr(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_saltbr plots the difference between all combination of charged groups",

@@ -296,7 +296,7 @@ static void ana_trans(FILE *out, t_xrama *xr,real **dih,real time[],
   }
 }
 
-int main(int argc,char *argv[])
+int gmx_dih(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_dih can do two things. The default is to analyze dihedral transitions",

@@ -116,7 +116,7 @@ static void rot_conf(t_atoms *atoms,rvec x[],rvec v[],real trans,real angle,
   }
 }
 
-int main(int argc,char *argv[])
+int gmx_dyndom(int argc,char *argv[])
 {
   char *desc[] = {
     "g_dyndom reads a pdb file output from DynDom",

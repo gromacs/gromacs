@@ -396,7 +396,7 @@ void dump_res(FILE *out, int nres, atom_id *resindex, int n, atom_id index[])
   }
 }
 
-int main(int argc,char *argv[])
+int gmx_mindist(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_mindist computes the distance between one group and a number of",

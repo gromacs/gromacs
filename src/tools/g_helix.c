@@ -138,7 +138,7 @@ void dump_otrj(FILE *otrj,int natoms,atom_id all_index[],rvec x[],
   write_gms_ndx(otrj,natoms,all_index,x,NULL);
 }
 
-int main(int argc,char *argv[])
+int gmx_helix(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_helix computes all kind of helix properties. First, the peptide",

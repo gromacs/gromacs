@@ -58,7 +58,7 @@ static void plot_rama(FILE *out,t_xrama *xr)
   }
 }
 
-int main(int argc,char *argv[])
+int gmx_rama(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_rama selects the Phi/Psi dihedral combinations from your topology file",

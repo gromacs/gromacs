@@ -68,7 +68,7 @@ static int search_str2(int nstr,char **str,char *key)
   return -1;
 }
 
-int main(int argc,char *argv[])
+int gmx_enemat(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_enemat extracts an energy matrix from the energy file ([TT]-f[tt]).",

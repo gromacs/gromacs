@@ -320,7 +320,7 @@ static void dump_stats(FILE *log,int nsteps,int ndr,t_ilist *disres,
   sfree(drs);
 }
 
-int main (int argc,char *argv[])
+int gmx_disre(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_disre computes violations of distance restraints.",

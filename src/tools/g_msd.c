@@ -542,7 +542,7 @@ void do_corr(char *trx_file, char *ndx_file, char *msd_file, char *mol_file,
 	     beginfit,endfit,DD,SigmaD,grpname);
 }
 
-int main(int argc,char *argv[])
+int gmx_msd(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_msd computes the mean square displacement (MSD) of atoms from",

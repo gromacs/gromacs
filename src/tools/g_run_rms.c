@@ -61,7 +61,7 @@ real calc_ener(int natoms,real w_rms[],rvec x[],rvec xp[])
   return(sqrt(e/tmas));
 }
 
-int main (int argc,char *argv[])
+int gmx_run_rms (int argc,char *argv[])
 {
   static char *desc[] = {
     "g_run_rms computes the root mean square deviation (RMSD) of a structure",

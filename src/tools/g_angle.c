@@ -46,7 +46,7 @@
 #include "xvgr.h"
 #include "gstat.h"
 
-int main(int argc,char *argv[])
+int gmx_angle(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_angle computes the angle distribution for a number of angles",

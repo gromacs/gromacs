@@ -492,7 +492,7 @@ real rms_diff(int natom,real **d,real **d_r)
   return sqrt(r2);
 }
 
-int main (int argc,char *argv[])
+int gmx_rmsdist (int argc,char *argv[])
 {
   static char *desc[] = {
     "g_rmsdist computes the root mean square deviation of atom distances,",

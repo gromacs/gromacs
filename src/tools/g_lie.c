@@ -113,7 +113,7 @@ real calc_lie(t_liedata *ld,t_energy ee[],real lie_lj,real lie_qq,
   return fac_lj*(lj_tot-lie_lj)+fac_qq*(qq_tot-lie_qq);
 }
 
-int main(int argc,char *argv[])
+int gmx_lie(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_lie computes a free energy estimate based on an energy analysis",

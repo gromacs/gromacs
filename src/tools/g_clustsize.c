@@ -165,7 +165,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl,
   sfree(index);
 }
 
-int main(int argc,char *argv[])
+int gmx_clustsize(int argc,char *argv[])
 {
   static char *desc[] = {
     "This program computes the size distributions of molecular/atomic clusters in",

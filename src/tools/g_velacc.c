@@ -51,7 +51,7 @@
 #include "strdb.h"
 #include "xvgr.h"
 
-int main(int argc,char *argv[])
+int gmx_velacc(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_velacc computes the velocity autocorrelation function.",

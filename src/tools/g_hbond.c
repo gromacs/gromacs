@@ -496,7 +496,7 @@ static void sort_hb(int *nr_a, t_donor **donors)
 	  }
 }
 
-int main(int argc,char *argv[])
+int gmx_hbond(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_hbond computes and analyzes hydrogen bonds. Hydrogen bonds are",

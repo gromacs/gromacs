@@ -55,7 +55,7 @@ static real dointerp(int n,rvec x1[],rvec x2[],rvec xx[],
   return fac;
 }
 
-int main(int argc,char *argv[])
+int gmx_morph(int argc,char *argv[])
 {
   char *desc[] = {
     "g_morph does a linear interpolation of conformations in order to",

@@ -155,7 +155,7 @@ static void dump_axes(int fp,t_trxframe *fr,t_atoms *outat,t_bundle *bun)
   write_trxframe(fp,&frout);
 }
 
-int main(int argc,char *argv[])
+int gmx_bundle(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_bundle analyzes bundles of axes. The axes can be for instance",

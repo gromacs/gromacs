@@ -756,7 +756,7 @@ static void do_dip(char *fn,char *topf,
     done_gkrbin(&gkrbin);
 }
 
-int main(int argc,char *argv[])
+int gmx_dipoles(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_dipoles computes the total dipole plus fluctuations of a simulation",

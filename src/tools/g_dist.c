@@ -46,7 +46,7 @@
 #include "gstat.h"
 #include "pbc.h"
 
-int main(int argc,char *argv[])
+int gmx_dist(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_dist can calculate the distance between the centers of mass of two",

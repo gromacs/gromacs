@@ -204,7 +204,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
 }
 
 
-int main(int argc,char *argv[])
+int gmx_tcaf(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_tcaf computes tranverse current autocorrelations.",

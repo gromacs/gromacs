@@ -299,7 +299,7 @@ void plot_potential(real *potential[], real *charge[], real *field[],
   fclose(fie);
 }
 
-int main(int argc,char *argv[])
+int gmx_potential(int argc,char *argv[])
 {
   static char *desc[] = {
     "Compute the electrostatical potential across the box. The potential is"

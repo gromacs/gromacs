@@ -142,7 +142,7 @@ void print_dir(FILE *fp,real *Uaver)
   }
 }
 
-int main (int argc,char *argv[])
+int gmx_rmsf(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_rmsf computes the root mean square fluctuation (RMSF, i.e. standard ",

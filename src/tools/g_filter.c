@@ -44,7 +44,7 @@ static char *SRCID_g_filter_c = "$Id$";
 #include "princ.h"
 #include "do_fit.h"
 
-int main(int argc,char *argv[])
+int gmx_filter(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_filter performs frequency filtering on a trajectory.",

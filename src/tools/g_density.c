@@ -334,7 +334,7 @@ void plot_density(real *slDensity[], char *afile, int nslices,
   fclose(den);
 }
  
-int main(int argc,char *argv[])
+int gmx_density(int argc,char *argv[])
 {
   static char *desc[] = {
     "Compute partial densities across the box, using an index file. Densities",

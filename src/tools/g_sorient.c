@@ -86,7 +86,7 @@ static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],atom_id index[],
   }
 }
 
-int main(int argc,char *argv[])
+int gmx_sorient(int argc,char *argv[])
 {
   t_topology top;
   char     title[STRLEN];

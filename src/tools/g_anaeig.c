@@ -585,7 +585,7 @@ static void components(char *outfile,int natoms,real *sqrtm,
   fprintf(stderr,"\n");
 }
 
-int main(int argc,char *argv[])
+int gmx_anaeig(int argc,char *argv[])
 {
   static char *desc[] = {
     "[TT]g_anaeig[tt] analyzes eigenvectors. The eigenvectors can be of a",

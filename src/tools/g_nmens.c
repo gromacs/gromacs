@@ -77,7 +77,7 @@ fprintf(stderr,"Invalid line in %s: '%s'\n",fn,line);
   return n;
 }
 
-int main(int argc,char *argv[])
+int gmx_nmens(int argc,char *argv[])
 {
   static char *desc[] = {
     "[TT]g_nmens[tt] generates an ensemble around an average structure",

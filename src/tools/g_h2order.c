@@ -55,10 +55,10 @@
 /* directions.                                                              */
 /****************************************************************************/
 
-void calc_order(char *fn, atom_id index[], int ngx, rvec **slDipole,
-		real **slOrder, real *slWidth, int *nslices, 
-		t_topology *top, int axis, bool bMicel, atom_id micel[], 
-		int nmic)
+void calc_h2order(char *fn, atom_id index[], int ngx, rvec **slDipole,
+		  real **slOrder, real *slWidth, int *nslices, 
+		  t_topology *top, int axis, bool bMicel, atom_id micel[], 
+		  int nmic)
 {
   rvec *x0,              /* coordinates with pbc */
        dipole,           /* dipole moment due to one molecules */
@@ -204,8 +204,8 @@ void calc_order(char *fn, atom_id index[], int ngx, rvec **slDipole,
   sfree(x0);  /* free memory used by coordinate arrays */
 }
 
-void order_plot(rvec dipole[], real order[], char *afile, 
-		int nslices, real slWidth)
+void h2order_plot(rvec dipole[], real order[], char *afile, 
+		  int nslices, real slWidth)
 {
   FILE       *ord;                /* xvgr files with order parameters  */
   int        slice;               /* loop index     */
@@ -226,7 +226,7 @@ void order_plot(rvec dipole[], real order[], char *afile,
   fclose(ord);
 }
 
-int main(int argc,char *argv[])
+int gmx_h2order(int argc,char *argv[])
 {
   static char *desc[] = {
     "Compute the orientation of water molecules with respect to the normal",
@@ -288,11 +288,11 @@ int main(int argc,char *argv[])
   if (bMicel)
     rd_index(opt2fn("-nm",NFILE,fnm), 1, &nmic, &micelle, &micname);
 
-  calc_order(ftp2fn(efTRX,NFILE,fnm), index, ngx, &slDipole, &slOrder, 
-	     &slWidth, &nslices, top, axis, bMicel, micelle, nmic); 
+  calc_h2order(ftp2fn(efTRX,NFILE,fnm), index, ngx, &slDipole, &slOrder, 
+	       &slWidth, &nslices, top, axis, bMicel, micelle, nmic); 
 
-  order_plot(slDipole, slOrder, opt2fn("-o",NFILE,fnm), nslices, 
-	     slWidth);
+  h2order_plot(slDipole, slOrder, opt2fn("-o",NFILE,fnm), nslices, 
+	       slWidth);
 
   do_view(opt2fn("-o",NFILE,fnm), NULL);      /* view xvgr file */
   thanx(stderr);

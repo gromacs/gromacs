@@ -454,7 +454,7 @@ void spectrum(bool bVerbose,
   plot_spectrum(noefn,npair,pair,spec,taum);
 }
 
-int main(int argc,char *argv[])
+int gmx_relax(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_noe calculates a NOE spectrum"

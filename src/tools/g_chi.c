@@ -921,7 +921,7 @@ static void order_params(FILE *log,
   fprintf(log,"\n");
 }
 
-int main(int argc,char *argv[])
+int gmx_chi(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_chi computes phi, psi, omega and chi dihedrals for all your ",

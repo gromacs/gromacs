@@ -77,7 +77,7 @@ static void norm_princ(t_atoms *atoms, int isize, atom_id *index,
       x[i][m] *= vec[m];
 }
 
-int main (int argc,char *argv[])
+int gmx_rms (int argc,char *argv[])
 {
   static char *desc[] = {
     "g_rms compares two structures by computing the root mean square",

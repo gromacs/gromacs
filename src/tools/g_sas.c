@@ -431,7 +431,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   sfree(x);
 }
 
-int main(int argc,char *argv[])
+int gmx_sas(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_sas computes hydrophobic, hydrophilic and total solvent accessible surface area.",

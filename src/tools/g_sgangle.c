@@ -216,7 +216,7 @@ void sgangle_plot(char *fn,char *afile,char *bfile,
   sfree(x0);
 }
 
-int main(int argc,char *argv[])
+int gmx_sgangle(int argc,char *argv[])
 {
   static char *desc[] = {
     "Compute the angle and distance between two groups. ",

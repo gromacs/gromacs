@@ -50,7 +50,7 @@
 #include "ql77.h"
 #include "eigio.h"
 
-int main(int argc,char *argv[])
+int gmx_nmeig(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_nmeig calculates the eigenvectors/values of a (Hessian) matrix,",

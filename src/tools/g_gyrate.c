@@ -90,7 +90,7 @@ real calc_gyro(rvec x[],int gnx,atom_id index[],t_atom atom[],real tm,
   return sqrt(gyro/tm);
 }
 
-int main(int argc,char *argv[])
+int gmx_gyrate(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_gyrate computes the radius of gyration of a group of atoms",

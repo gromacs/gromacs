@@ -311,7 +311,7 @@ static void write_pdb_bfac(char *fname,char *title,t_atoms *atoms,matrix box,
   }
 }
 
-int main(int argc,char *argv[])
+int gmx_traj(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_traj plots coordinates, velocities, forces and/or the box.",

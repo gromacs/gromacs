@@ -182,7 +182,7 @@ void do_four(char *fn,char *cn,int nx,real x[],real dy[],real eps0,real epsRF)
   sfree(tmp);
 }
 
-int main(int argc,char *argv[])
+int gmx_dielectric(int argc,char *argv[])
 {
   static char *desc[] = {
     "dielectric calculates frequency dependent dielectric constants",

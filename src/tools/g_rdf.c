@@ -650,7 +650,7 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
   }
 }
 
-int main(int argc,char *argv[])
+int gmx_rdf(int argc,char *argv[])
 {
   static char *desc[] = {
     "The structure of liquids can be studied by either neutron or X-ray",

@@ -136,7 +136,7 @@ real calc_cm_group(real mass[],rvec x[],rvec cm,
   return tm;
 }
 	
-int main(int argc,char *argv[])
+int gmx_com(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_com computes the translational and rotational motion ",
