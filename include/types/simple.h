@@ -62,10 +62,7 @@ extern "C" {
 #endif
 
 
-typedef unsigned int 	atom_id;	/* To indicate an atoms id         */
-typedef unsigned int 	atom_nr;	/* To indicate a number of atoms   */
-/* Notice that atom_id cannot use its full range when the types of atom_id */
-/* and atom_nr are equal.                                                  */
+typedef int     	atom_id;	/* To indicate an atoms id         */
 #define NO_ATID		(atom_id)(~0)	/* Use this to indicate invalid atid */
 
 #ifdef DOUBLE
