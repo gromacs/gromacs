@@ -25,8 +25,8 @@ USEF77		= no
 # set both to no. If you select both, something will break!!!
 #
 USE_PVM3	= no
-HOME		= /usr/local
-USE_MPI		= yes
+#LAMHOME		= /usr/local
+USE_MPI		= no
 #
 # If you want to use compressed data files set this to yes
 # This uses the xdr libraries of your UNIX system, which is virtually
@@ -52,9 +52,14 @@ HAVE_MOTIF	= no
 
 # GNU C compiler
 MKDEP		= $(CC) -MM
-CC		= $(HOME)/bin/hcc
-F77		= $(HOME)/bin/hf77
+ifeq ($(LAMHOME),)
+CC		= gcc
+F77		= g77
+else
+CC		= $(LAMHOME)/bin/hcc
+F77		= $(LAMHOME)/bin/hf77
 LAMHF77		= g77
+endif
 CFLAGS		= -O3 -ffast-math -finline-functions -Winline -fPIC -funroll-all-loops  -Wall -Wno-unused -mcpu=i486 -march=i486 #-fomit-frame-pointer
 # -mcpu=pentiumpro -march=pentiumpro
 #
