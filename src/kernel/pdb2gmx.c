@@ -774,7 +774,7 @@ int main(int argc, char *argv[])
   /* Encad only works with the f3c water model */
   if(strncmp(forcefield,"ffencad",7) == 0)
   {
-      printf("Encad detected, switch to the F3C water model...\n");
+      printf("Encad detected, switching to the F3C water model...\n");
       watstr[0] = "f3c";
       watres = "WAT";
   }    
