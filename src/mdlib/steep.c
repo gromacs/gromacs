@@ -146,7 +146,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 { 
   static char *SD="STEEPEST DESCENTS",sbuf[STRLEN]; 
   real   stepsize,constepsize,lambda,ftol,fmax; 
-  rvec   *pos[2],*force[2],*xcf; 
+  rvec   *pos[2],*force[2],*xcf=NULL; 
   rvec   *xx,*ff; 
   real   Fmax[2]; 
   real   Epot[2]; 
