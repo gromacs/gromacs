@@ -88,8 +88,8 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   real Vself;
   int     i,i1,i2,j,k,m,iv,jv;
   atom_id *AA;
-  double  q2sum; /* Necessary for precision */
-  real    vc,qi,dr,dr2,rinv,fscal,Vexcl,Vcharge,Vdipole,rinv2,ewc=fr->ewaldcoeff;
+  double  q2sum,Vexcl; /* Necessary for precision */
+  real    vc,qi,dr,dr2,rinv,fscal,Vcharge,Vdipole,rinv2,ewc=fr->ewaldcoeff;
   rvec    df,dx,mutot,dipcorr;
   rvec    *f_pme=fr->f_pme;
   real    vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
