@@ -42,7 +42,7 @@ foreach i ( * )
   if ( ( -x $i ) && ( $i != "my_dssp" ) ) then
     echo -n "$i "
     cd $HTMLOL
-    $GMXHOME/bin/$CPU/$i -quiet -man 2 >& /dev/null
+    $GMXHOME/bin/$CPU/$i -quiet -man html >& /dev/null
       cat >> $INDEX << EOK
 <br><a href="$MANDIR/$i.html">$i</a>
 EOK
