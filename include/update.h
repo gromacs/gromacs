@@ -134,7 +134,8 @@ extern void calc_pres(int ePBC,matrix box,
  */
 
 extern void parrinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
-				   tensor box,tensor boxv,tensor M);
+				   tensor box,tensor boxv,tensor M,
+				    bool bFirstStep);
   
 extern void berendsen_pcoupl(t_inputrec *ir,int step,tensor pres,matrix box,
 			     matrix mu);

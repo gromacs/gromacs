@@ -155,26 +155,43 @@ void done_inputrec(t_inputrec *ir)
   if (ir->opts.nFreeze) sfree(ir->opts.nFreeze);
 }
 
+void init_gtc_state(t_state *state,int ngtc)
+{
+  int i;
+
+  state->ngtc = ngtc;
+  if (state->ngtc > 0) {
+    snew(state->nosehoover_xi,state->ngtc);
+    snew(state->tcoupl_lambda,state->ngtc);
+    for(i=0; i<state->ngtc; i++) {
+      state->nosehoover_xi[i] = 0.0;
+      state->tcoupl_lambda[i] = 1.0;
+    }
+  } else {
+    state->nosehoover_xi = NULL;
+    state->tcoupl_lambda = NULL;
+  }
+}
+
 void init_state(t_state *state,int natoms,int ngtc)
 {
   int i;
 
   state->natoms = natoms;
-  state->ngtc = ngtc;
   state->lambda = 0;
   clear_mat(state->box);
   clear_mat(state->boxv);
   clear_mat(state->pcoupl_mu);
   for(i=0; i<DIM; i++)
     state->pcoupl_mu[i][i] = 1.0;
-  snew(state->nosehoover_xi,state->ngtc);
-  snew(state->tcoupl_lambda,state->ngtc);
-  for(i=0; i<state->ngtc; i++) {
-    state->nosehoover_xi[i] = 0.0;
-    state->tcoupl_lambda[i] = 1.0;
+  init_gtc_state(state,ngtc);
+  if (state->natoms > 0) {
+    snew(state->x,state->natoms);
+    snew(state->v,state->natoms);
+  } else {
+    state->x = NULL;
+    state->v = NULL;
   }
-  snew(state->x,state->natoms);
-  snew(state->v,state->natoms);
 }
 
 void done_state(t_state *state)

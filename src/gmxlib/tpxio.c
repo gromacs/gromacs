@@ -61,7 +61,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 27;
+static const int tpx_version = 28;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -72,7 +72,7 @@ static const int tpx_version = 27;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 2;
+static const int tpx_generation = 3;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -963,6 +963,10 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, int
   
   do_section(eitemHEADER,bRead);
   do_int (tpx->natoms);
+  if (fver >= 28)
+    do_int(tpx->ngtc);
+  else
+    tpx->ngtc = 0;
   do_int (tpx->step);
   do_real(tpx->t);
   do_real(tpx->lambda);
@@ -986,11 +990,14 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
   t_tpxheader tpx;
   t_inputrec  dum_ir;
   t_topology  dum_top;
-  bool        TopOnlyOK;
+  bool        TopOnlyOK,bDum=TRUE;
   int         file_version,file_generation;
+  int         i;
+  rvec        *xptr,*vptr;
   
   if (!bRead) {
     tpx.natoms = state->natoms;
+    tpx.ngtc   = state->ngtc;
     tpx.step   = *step;
     tpx.t      = *t;
     tpx.lambda = state->lambda;
@@ -1007,24 +1014,36 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
   do_tpxheader(fp,bRead,&tpx,TopOnlyOK,&file_version,&file_generation);
 
   if (bRead) {
-    state->natoms = tpx.natoms;
     *step         = tpx.step;
     *t            = tpx.t;
     state->lambda = tpx.lambda;
+    if (bXVallocated) {
+      xptr = state->x;
+      vptr = state->v;
+      init_state(state,0,tpx.ngtc);
+      state->natoms = tpx.natoms;
+      state->x = xptr;
+      state->v = vptr;
+    } else {
+      init_state(state,tpx.natoms,tpx.ngtc);
+    }
   }
 
 #define do_test(b,p) if (bRead && (p!=NULL) && !b) fatal_error(0,"No %s in %s",#p,fio_getname(fp)) 
 
   do_test(tpx.bBox,state->box);
   do_section(eitemBOX,bRead);
-  if (tpx.bBox) ndo_rvec(state->box,DIM);
-  /* Needs to be implemented */
-  if (bRead) {
-    clear_mat(state->boxv);
-    clear_mat(state->pcoupl_mu);
-    state->pcoupl_mu[XX][XX] = 1.0;
-    state->pcoupl_mu[YY][YY] = 1.0;
-    state->pcoupl_mu[ZZ][ZZ] = 1.0;
+  if (tpx.bBox) {
+    ndo_rvec(state->box,DIM);
+    if (file_version >= 28) {
+      ndo_rvec(state->boxv,DIM);
+      ndo_rvec(state->pcoupl_mu,DIM);
+    }
+  }
+  
+  if (state->ngtc > 0 && file_version >= 28) {
+    ndo_real(state->nosehoover_xi,state->ngtc,bDum);
+    ndo_real(state->tcoupl_lambda,state->ngtc,bDum);
   }
 
   /* Prior to tpx version 26, the inputrec was here.
@@ -1082,20 +1101,10 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
     if (tpx.bIr && ir)
       do_inputrec(ir,bRead,file_version);
   }
-  /* Needs to be implemented */
-  if (bRead) {
-    int i;
 
-    if (tpx.bIr && ir)
-      state->ngtc = ir->opts.ngtc;
-    else
-      state->ngtc = 0;
-    snew(state->nosehoover_xi,state->ngtc);
-    snew(state->tcoupl_lambda,state->ngtc);
-    for(i=0; i<state->ngtc; i++) {
-      state->nosehoover_xi[i] = 0.0;
-      state->tcoupl_lambda[i] = 1.0;
-    }
+  if (bRead && state->ngtc == 0 && tpx.bIr && ir) {
+    /* Reading old version without tcoupl state data: set it */
+    init_gtc_state(state,ir->opts.ngtc);
   }
 }
 
@@ -1153,12 +1162,12 @@ void write_tpx_state(char *fn,int step,real t,
 }
 
 void read_tpx_state(char *fn,int *step,real *t,
-		    t_inputrec *ir,t_state *state,t_topology *top)
+		    t_inputrec *ir,t_state *state,rvec *f,t_topology *top)
 {
   int fp;
 
   fp = open_tpx(fn,"r");
-  do_tpx(fp,TRUE,step,t,ir,state,NULL,top,FALSE);
+  do_tpx(fp,TRUE,step,t,ir,state,f,top,FALSE);
   close_tpx(fp);
 }
 

@@ -44,15 +44,16 @@
 
 typedef struct {
   t_ebin *ebin;
-  int    ie,ib,isvir,ifvir,ipres,ivir,isurft,itc,iu,imu,ivcos,ivisc;
+  int    ie,ib,isvir,ifvir,ipres,ivir,isurft,ipc,itemp,itc,iu,imu,ivcos,ivisc;
   int    nE,nEg,nEc,nTC,nU;
   int    *igrp;
 } t_mdebin;
 
 extern t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,
 			     t_idef *idef,bool bLR,bool BLJLR,bool bBHAM,
-			     bool b14,bool bFEP,bool bPcoupl,bool
-			     bDispCorr,bool bTriclinic,bool bNoseHoover, t_commrec *cr);
+			     bool b14,bool bFEP,int epcoupl,bool
+			     bDispCorr,bool bTriclinic,int etcoupl,
+			     t_commrec *cr);
 /* Initiate MD energy bin and write header to energy file. */
 
 extern void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
@@ -64,7 +65,7 @@ extern void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 		       tensor vir,
 		       tensor pres,
 		       t_groups *grps,
-		       rvec mu_tot, bool bNoseHoover);
+		       rvec mu_tot);
      
 extern void print_ebin_header(FILE *log,int steps,real time,real lamb);
 

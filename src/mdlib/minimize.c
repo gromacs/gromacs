@@ -287,8 +287,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     /* Copy stuff to the energy bin for easy printing etc. */
     upd_mdebin(mdebin,NULL,mdatoms->tmass,count,(real)count,
 	       ener,state,shake_vir,
-	       force_vir,parm->vir,parm->pres,grps,mu_tot,
-	       (parm->ir.etc==etcNOSEHOOVER));
+	       force_vir,parm->vir,parm->pres,grps,mu_tot);
     
     print_ebin_header(log,count,count,lambda);
     print_ebin(fp_ene,TRUE,FALSE,FALSE,FALSE,log,count,count,eprNORMAL,
@@ -503,8 +502,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	/* Store the new (lower) energies */
       upd_mdebin(mdebin,NULL,mdatoms->tmass,count,(real)count,
 		 ener,state,shake_vir,
-		 force_vir,parm->vir,parm->pres,grps,mu_tot,
-		 (parm->ir.etc==etcNOSEHOOVER));
+		 force_vir,parm->vir,parm->pres,grps,mu_tot);
       /* Print the energies allways when we should be verbose */
       print_ebin_header(log,count,count,lambda);
       print_ebin(fp_ene,TRUE,FALSE,FALSE,FALSE,log,count,count,eprNORMAL,
@@ -738,7 +736,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	/* Store the new (lower) energies  */
 	upd_mdebin(mdebin,NULL,mdatoms->tmass,count,(real)count,
 		   ener,state,shake_vir, 
-		   force_vir,parm->vir,parm->pres,grps,mu_tot,(parm->ir.etc==etcNOSEHOOVER)); 
+		   force_vir,parm->vir,parm->pres,grps,mu_tot);
 	print_ebin(fp_ene,TRUE,
 		   do_per_step(steps_accepted,parm->ir.nstdisreout),
 		   do_per_step(steps_accepted,parm->ir.nstorireout),

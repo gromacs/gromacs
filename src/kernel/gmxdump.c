@@ -53,36 +53,33 @@
 
 static void list_tpx(char *fn, bool bShowNumbers)
 {
-  int         step,natoms,fp,indent,i,j,**gcount,atot;
-  real        t,lambda;
-  rvec        *x,*v,*f;
-  matrix      box;
+  int         step,fp,indent,i,j,**gcount,atot;
+  real        t;
+  t_state     state;
+  rvec        *f=NULL;
   t_inputrec  ir;
   t_tpxheader tpx;
   t_topology  top;
   read_tpxheader(fn,&tpx,TRUE,NULL,NULL);
-  snew(x,tpx.natoms);
-  snew(v,tpx.natoms);
-  snew(f,tpx.natoms);
 
-  read_tpx(fn,&step,&t,&lambda,
-	   tpx.bIr  ? &ir : NULL,
-	   tpx.bBox ? box : NULL,
-	   &natoms,
-	   tpx.bX   ? x : NULL,
-	   tpx.bV   ? v : NULL,
-	   tpx.bF   ? f : NULL,
-	   tpx.bTop ? &top: NULL);
+  read_tpx_state(fn,&step,&t,
+		 tpx.bIr  ? &ir : NULL,
+		 &state,tpx.bF ? f : NULL,
+		 tpx.bTop ? &top: NULL);
   
   if (available(stdout,&tpx,fn)) {
     indent=0;
     indent=pr_title(stdout,indent,fn);
     pr_header(stdout,indent,"header",&(tpx));
     pr_inputrec(stdout,indent,"ir",&(ir));
-    pr_rvecs(stdout,indent,"box",box,DIM);
-    pr_rvecs(stdout,indent,"x",x,natoms);
-    pr_rvecs(stdout,indent,"v",v,natoms);
-    pr_rvecs(stdout,indent,"f",f,natoms);
+    pr_rvecs(stdout,indent,"box",tpx.bBox ? state.box : NULL,DIM);
+    pr_rvecs(stdout,indent,"boxv",tpx.bBox ? state.boxv : NULL,DIM);
+    pr_rvecs(stdout,indent,"pcoupl_mu",tpx.bBox ? state.pcoupl_mu : NULL,DIM);
+    pr_reals(stdout,indent,"nosehoover_xi",state.nosehoover_xi,state.ngtc);
+    pr_reals(stdout,indent,"tcoupl_lambda",state.tcoupl_lambda,state.ngtc);
+    pr_rvecs(stdout,indent,"x",tpx.bX ? state.x : NULL,state.natoms);
+    pr_rvecs(stdout,indent,"v",tpx.bV ? state.v : NULL,state.natoms);
+    pr_rvecs(stdout,indent,"f",f,state.natoms);
     pr_top(stdout,indent,"topology",&(top),bShowNumbers);
   }
 
@@ -106,9 +103,8 @@ static void list_tpx(char *fn, bool bShowNumbers)
     sfree(gcount[i]);
   }
   sfree(gcount);
-  
-  sfree(x);
-  sfree(v);
+
+  done_state(&state);
   sfree(f);
 }
 

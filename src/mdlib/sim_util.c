@@ -641,7 +641,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
     *mdebin = init_mdebin(*fp_ene,grps,&(top->atoms),&(top->idef),
 			  bLR,bLJLR,bBHAM,b14,ir->efep!=efepNO,ir->epc,
 			  ir->eDispCorr,(TRICLINIC(ir->compress) || TRICLINIC(box)),
-			  (ir->etc==etcNOSEHOOVER),cr);
+			  ir->etc,cr);
   }
   
   /* Initiate variables */  

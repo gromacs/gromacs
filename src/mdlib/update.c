@@ -621,16 +621,6 @@ void update(int          natoms,  /* number of atoms in simulation */
   dt_1 = 1.0/dt;
   dt_2 = 1.0/(dt*dt);
 
-  for(i=0; i<ngtc; i++) {
-    real l=state->tcoupl_lambda[i];
-
-    if(bTYZ)
-      lamb[i][XX]=1;
-    else
-      lamb[i][XX]=l;
-    lamb[i][YY]=l;
-    lamb[i][ZZ]=l;
-  }
   if(bDoUpdate) {
     /* update mean velocities */
     for(g=0; g<ngacc; g++) {
@@ -649,9 +639,20 @@ void update(int          natoms,  /* number of atoms in simulation */
       
       if (ir->epc == epcBERENDSEN)
 	berendsen_pcoupl(ir,step,parm->pres,state->box,state->pcoupl_mu);
-      else if (ir->epc == epcPARRINELLORAHMAN)
-	parrinellorahman_pcoupl(&(parm->ir),step,parm->pres,
-				state->box,state->boxv,M);
+    }
+    if (ir->epc == epcPARRINELLORAHMAN)
+      parrinellorahman_pcoupl(&(parm->ir),step,parm->pres,
+			      state->box,state->boxv,M,bFirstStep);
+
+    for(i=0; i<ngtc; i++) {
+      real l=state->tcoupl_lambda[i];
+      
+      if(bTYZ)
+	lamb[i][XX]=1;
+      else
+	lamb[i][XX]=l;
+      lamb[i][YY]=l;
+      lamb[i][ZZ]=l;
     }
     /* Now do the actual update of velocities and positions */
     where();

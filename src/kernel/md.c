@@ -798,8 +798,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       bool do_ene,do_dr,do_or,do_dihr;
       
       upd_mdebin(mdebin,fp_dgdl,mdatoms->tmass,step,t,ener,state,shake_vir,
-		 force_vir,parm->vir,parm->pres,grps,mu_tot,
-		 (parm->ir.etc==etcNOSEHOOVER));
+		 force_vir,parm->vir,parm->pres,grps,mu_tot);
       do_ene = do_per_step(step,parm->ir.nstenergy) || bLastStep;
       do_dr  = do_per_step(step,parm->ir.nstdisreout) || bLastStep;
       do_or  = do_per_step(step,parm->ir.nstorireout) || bLastStep;

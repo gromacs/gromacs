@@ -58,15 +58,26 @@ static char *tricl_boxs_nm[] = {
   "Volume", "Density (SI)", "pV"
 };
 
+static char *boxvel_nm[] = {
+  "Box-Vel-XX", "Box-Vel-YY", "Box-Vel-ZZ",
+  "Box-Vel-YX", "Box-Vel-ZX", "Box-Vel-ZY"
+};
+
+static char *pcouplmu_nm[] = {
+  "Pcoupl-Mu-XX", "Pcoupl-Mu-YY", "Pcoupl-Mu-ZZ",
+  "Pcoupl-Mu-YX", "Pcoupl-Mu-ZX", "Pcoupl-Mu-ZY"
+};
+
 #define NBOXS asize(boxs_nm)
 #define NTRICLBOXS asize(tricl_boxs_nm)
 
-static bool bShake,bPC,bTricl;
-static int  f_nre=0;
+static bool bShake,bTricl;
+static int  f_nre=0,epc,etc;
 
 t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
 		      bool bLR,bool bLJLR,bool bBHAM,bool b14,bool bFEP,
-		      bool bPcoupl,bool bDispCorr,bool bTriclinic, bool bNoseHoover,t_commrec *cr)
+		      int epcoupl,bool bDispCorr,bool bTriclinic,int etcoupl,
+		      t_commrec *cr)
 {
   char *ener_nm[F_NRE];
   static char *vir_nm[] = {
@@ -152,14 +163,15 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
   bShake = (idef->il[F_SHAKE].nr > 0) || (idef->il[F_SETTLE].nr > 0);
   if (bShake) 
     bShake = (getenv("SHAKEVIR") != NULL);
-  bPC    = bPcoupl;
+  epc = epcoupl;
   bTricl = bTriclinic;
+  etc = etcoupl;
   
   /* Energy monitoring */
   snew(md,1);
   md->ebin  = mk_ebin();
   md->ie    = get_ebin_space(md->ebin,f_nre,ener_nm);
-  if (bPC)
+  if (epc != epcNO)
     md->ib    = get_ebin_space(md->ebin, bTricl ? NTRICLBOXS :
 			       NBOXS, bTricl ? tricl_boxs_nm : boxs_nm);
   if (bShake) {
@@ -169,6 +181,11 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
   md->ivir   = get_ebin_space(md->ebin,asize(vir_nm),vir_nm);
   md->ipres  = get_ebin_space(md->ebin,asize(pres_nm),pres_nm);
   md->isurft = get_ebin_space(md->ebin,asize(surft_nm),surft_nm);
+  if (epc == epcPARRINELLORAHMAN) {
+    md->ipc  = get_ebin_space(md->ebin,bTricl ? 6 : 3,boxvel_nm);
+  } else if (epc == epcBERENDSEN || epc == epcISOTROPIC) {
+    md->ipc = get_ebin_space(md->ebin,bTricl ? 6 : 3,pcouplmu_nm);
+  }
   md->imu    = get_ebin_space(md->ebin,asize(mu_nm),mu_nm);
   if (grps->cosacc.cos_accel != 0) {
     md->ivcos = get_ebin_space(md->ebin,asize(vcos_nm),vcos_nm);
@@ -223,18 +240,28 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
   }
   
   md->nTC=atoms->grps[egcTC].nr;
-  snew(grpnms,2*md->nTC);
+  snew(grpnms,md->nTC);
   for(i=0; (i<md->nTC); i++) {
     ni=atoms->grps[egcTC].nm_ind[i];
     sprintf(buf,"T-%s",*(atoms->grpname[ni]));
-    grpnms[2*i]=strdup(buf);
-    if(bNoseHoover) 
-      sprintf(buf,"Xi-%s",*(atoms->grpname[ni]));
-    else 
-      sprintf(buf,"Lamb-%s",*(atoms->grpname[ni]));
-    grpnms[2*i+1]=strdup(buf);
+    grpnms[i]=strdup(buf);
   }
-  md->itc=get_ebin_space(md->ebin,2*md->nTC,grpnms);
+  md->itemp=get_ebin_space(md->ebin,md->nTC,grpnms);
+  if (etc == etcNOSEHOOVER) {
+    for(i=0; (i<md->nTC); i++) {
+      ni=atoms->grps[egcTC].nm_ind[i];
+      sprintf(buf,"Xi-%s",*(atoms->grpname[ni]));
+      grpnms[i]=strdup(buf);
+    }
+    md->itc=get_ebin_space(md->ebin,md->nTC,grpnms);
+  } else  if (etc == etcBERENDSEN || etc == etcYES) {
+    for(i=0; (i<md->nTC); i++) {
+      ni=atoms->grps[egcTC].nm_ind[i];
+      sprintf(buf,"Lamb-%s",*(atoms->grpname[ni]));
+      grpnms[i]=strdup(buf);
+    }
+    md->itc=get_ebin_space(md->ebin,md->nTC,grpnms);
+  }
   sfree(grpnms);
   
   md->nU=atoms->grps[egcACC].nr;
@@ -282,12 +309,12 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 		tensor vir,
 		tensor pres,
 		t_groups *grps,
-		rvec mu_tot, bool bNoseHoover)
+		rvec mu_tot)
 {
   static real *ttt=NULL;
   static rvec *uuu=NULL;
   int    i,j,k,kk,m,n,gid;
-  real   bs[NBOXS];
+  real   bs[NBOXS],tmp6[6];
   real   tricl_bs[NTRICLBOXS];
   real   eee[egNR];
   real   ecopy[F_NRE];
@@ -295,7 +322,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
   
   copy_energy(ener,ecopy);
   add_ebin(md->ebin,md->ie,f_nre,ecopy,step);
-  if (bPC || grps->cosacc.cos_accel != 0) {
+  if (epc != epcNO || grps->cosacc.cos_accel != 0) {
     if(bTricl) {
       tricl_bs[0]=state->box[XX][XX];
       tricl_bs[1]=state->box[YY][XX];
@@ -316,7 +343,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
       bs[4] = (tmass*AMU)/(bs[3]*NANO*NANO*NANO);
     }
   }  
-  if (bPC) {
+  if (epc != epcNO) {
     /* This is pV (in kJ/mol) */  
     if(bTricl) {
       tricl_bs[8] = tricl_bs[6]*ener[F_PRES]/PRESFAC;
@@ -334,6 +361,23 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
   add_ebin(md->ebin,md->ipres,9,pres[0],step);
   tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*state->box[ZZ][ZZ];
   add_ebin(md->ebin,md->isurft,1,&tmp,step);
+  if (epc == epcPARRINELLORAHMAN) {
+    tmp6[0] = state->boxv[XX][XX];
+    tmp6[1] = state->boxv[YY][YY];
+    tmp6[2] = state->boxv[ZZ][ZZ];
+    tmp6[3] = state->boxv[YY][XX];
+    tmp6[4] = state->boxv[ZZ][XX];
+    tmp6[5] = state->boxv[ZZ][YY];
+    add_ebin(md->ebin,md->ipc,bTricl ? 6 : 3,tmp6,step);
+  } else if (epc == epcBERENDSEN || epc == epcISOTROPIC) {
+    tmp6[0] = state->pcoupl_mu[XX][XX];
+    tmp6[1] = state->pcoupl_mu[YY][YY];
+    tmp6[2] = state->pcoupl_mu[ZZ][ZZ];
+    tmp6[3] = state->pcoupl_mu[YY][XX];
+    tmp6[4] = state->pcoupl_mu[ZZ][XX];
+    tmp6[5] = state->pcoupl_mu[ZZ][YY];
+    add_ebin(md->ebin,md->ipc,bTricl ? 6 : 3,tmp6,step);
+  }
   add_ebin(md->ebin,md->imu,3,mu_tot,step);
 
   if (grps->cosacc.cos_accel != 0) {
@@ -362,15 +406,19 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
   }
   
   if(ttt == NULL) 
-    snew(ttt,2*md->nTC);
-  for(i=0; (i<md->nTC); i++) {
-    ttt[2*i]   = grps->tcstat[i].T;
-    if(bNoseHoover)
-      ttt[2*i+1] = state->nosehoover_xi[i];
-    else
-      ttt[2*i+1] = state->tcoupl_lambda[i];
+    snew(ttt,md->nTC);
+  for(i=0; (i<md->nTC); i++)
+    ttt[i]   = grps->tcstat[i].T;
+  add_ebin(md->ebin,md->itemp,md->nTC,ttt,step);
+  if (etc == etcNOSEHOOVER) {
+    for(i=0; (i<md->nTC); i++)
+      ttt[i] = state->nosehoover_xi[i];
+    add_ebin(md->ebin,md->itc,md->nTC,ttt,step);
+  } else if (etc == etcBERENDSEN || etc == etcYES) {
+    for(i=0; (i<md->nTC); i++)
+      ttt[i] = state->tcoupl_lambda[i];
+    add_ebin(md->ebin,md->itc,md->nTC,ttt,step);
   }
-  add_ebin(md->ebin,md->itc,2*md->nTC,ttt,step);  
   
   if (md->nU > 1) {
     if (uuu == NULL)
@@ -469,7 +517,7 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
     fprintf(log,"\n");
 
     if (!bCompact) {
-      if (bPC) {
+      if (epc != epcNO) {
 	pr_ebin(log,md->ebin,md->ib, bTricl ? NTRICLBOXS : NBOXS,5,mode,steps,TRUE);      
 	fprintf(log,"\n");
       }

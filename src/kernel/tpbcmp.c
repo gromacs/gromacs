@@ -265,10 +265,10 @@ static void cmp_grpopts(FILE *fp,t_grpopts *opt1,t_grpopts *opt2,real ftol)
   int i,j;
   char buf1[256],buf2[256];
   
-  cmp_int(fp,"inputrec->grpopts.ngtc",0,  opt1->ngtc,opt2->ngtc);
-  cmp_int(fp,"inputrec->grpopts.ngacc",0, opt1->ngacc,opt2->ngacc);
-  cmp_int(fp,"inputrec->grpopts.ngfrz",0, opt1->ngfrz,opt2->ngfrz);
-  cmp_int(fp,"inputrec->grpopts.ngener",0,opt1->ngener,opt2->ngener);
+  cmp_int(fp,"inputrec->grpopts.ngtc",-1,  opt1->ngtc,opt2->ngtc);
+  cmp_int(fp,"inputrec->grpopts.ngacc",-1, opt1->ngacc,opt2->ngacc);
+  cmp_int(fp,"inputrec->grpopts.ngfrz",-1, opt1->ngfrz,opt2->ngfrz);
+  cmp_int(fp,"inputrec->grpopts.ngener",-1,opt1->ngener,opt2->ngener);
   for(i=0; (i<min(opt1->ngtc,opt2->ngtc)); i++) {
     cmp_real(fp,"inputrec->grpopts.nrdf",i,opt1->nrdf[i],opt2->nrdf[i],ftol);
     cmp_real(fp,"inputrec->grpopts.ref_t",i,opt1->ref_t[i],opt2->ref_t[i],ftol);
@@ -317,103 +317,131 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
    * #define CII(s) cmp_int(fp,"inputrec->"#s,0,ir1->##s,ir2->##s)
    * #define CIR(s) cmp_real(fp,"inputrec->"#s,0,ir1->##s,ir2->##s,ftol)
    */
-  cmp_int(fp,"inputrec->eI",0,ir1->eI,ir2->eI);
-  cmp_int(fp,"inputrec->nsteps",0,ir1->nsteps,ir2->nsteps);
-  cmp_int(fp,"inputrec->init_step",0,ir1->init_step,ir2->init_step);
-  cmp_int(fp,"inputrec->ePBC",0,ir1->ePBC,ir2->ePBC);
-  cmp_int(fp,"inputrec->ns_type",0,ir1->ns_type,ir2->ns_type);
-  cmp_int(fp,"inputrec->nstlist",0,ir1->nstlist,ir2->nstlist);
-  cmp_int(fp,"inputrec->ndelta",0,ir1->ndelta,ir2->ndelta);
-  cmp_int(fp,"inputrec->bDomDecomp",0,ir1->bDomDecomp,ir2->bDomDecomp);
-  cmp_int(fp,"inputrec->decomp_dir",0,ir1->decomp_dir,ir2->decomp_dir);
-  cmp_int(fp,"inputrec->nstcomm",0,ir1->nstcomm,ir2->nstcomm);
-  cmp_int(fp,"inputrec->nstcheckpoint",0,ir1->nstcheckpoint,ir2->nstcheckpoint);
-  cmp_int(fp,"inputrec->nstlog",0,ir1->nstlog,ir2->nstlog);
-  cmp_int(fp,"inputrec->nstxout",0,ir1->nstxout,ir2->nstxout);
-  cmp_int(fp,"inputrec->nstvout",0,ir1->nstvout,ir2->nstvout);
-  cmp_int(fp,"inputrec->nstfout",0,ir1->nstfout,ir2->nstfout);
-  cmp_int(fp,"inputrec->nstenergy",0,ir1->nstenergy,ir2->nstenergy);
-  cmp_int(fp,"inputrec->nstxtcout",0,ir1->nstxtcout,ir2->nstxtcout);
-  cmp_real(fp,"inputrec->init_t",0,ir1->init_t,ir2->init_t,ftol);
-  cmp_real(fp,"inputrec->delta_t",0,ir1->delta_t,ir2->delta_t,ftol);
-  cmp_real(fp,"inputrec->xtcprec",0,ir1->xtcprec,ir2->xtcprec,ftol);
-  cmp_int(fp,"inputrec->nkx",0,ir1->nkx,ir2->nkx);
-  cmp_int(fp,"inputrec->nky",0,ir1->nky,ir2->nky);
-  cmp_int(fp,"inputrec->nkz",0,ir1->nkz,ir2->nkz);
-  cmp_int(fp,"inputrec->pme_order",0,ir1->pme_order,ir2->pme_order);
-  cmp_real(fp,"inputrec->ewald_rtol",0,ir1->ewald_rtol,ir2->ewald_rtol,ftol);
-  cmp_int(fp,"inputrec->ewald_geometry",0,ir1->ewald_geometry,ir2->ewald_geometry);
-  cmp_real(fp,"inputrec->epsilon_surface",0,ir1->epsilon_surface,ir2->epsilon_surface,ftol);
-  cmp_int(fp,"inputrec->bOptFFT",0,ir1->bOptFFT,ir2->bOptFFT);
-  cmp_int(fp,"inputrec->bUncStart",0,ir1->bUncStart,ir2->bUncStart);
-  cmp_int(fp,"inputrec->bShakeSOR",0,ir1->bShakeSOR,ir2->bShakeSOR);
-  cmp_int(fp,"inputrec->etc",0,ir1->etc,ir2->etc);
-  cmp_int(fp,"inputrec->epc",0,ir1->epc,ir2->epc);
-  cmp_int(fp,"inputrec->epct",0,ir1->epct,ir2->epct);
-  cmp_real(fp,"inputrec->tau_p",0,ir1->tau_p,ir2->tau_p,ftol);
-  cmp_rvec(fp,"inputrec->ref_p(x)",0,ir1->ref_p[XX],ir2->ref_p[XX],ftol);
-  cmp_rvec(fp,"inputrec->ref_p(y)",0,ir1->ref_p[YY],ir2->ref_p[YY],ftol);
-  cmp_rvec(fp,"inputrec->ref_p(z)",0,ir1->ref_p[ZZ],ir2->ref_p[ZZ],ftol);
-  cmp_rvec(fp,"inputrec->compress(x)",0,ir1->compress[XX],ir2->compress[XX],ftol);
-  cmp_rvec(fp,"inputrec->compress(y)",0,ir1->compress[YY],ir2->compress[YY],ftol);
-  cmp_rvec(fp,"inputrec->compress(z)",0,ir1->compress[ZZ],ir2->compress[ZZ],ftol);
-  cmp_int(fp,"inputrec->andersen_seed",0,ir1->andersen_seed,ir2->andersen_seed);
-  cmp_real(fp,"inputrec->rlist",0,ir1->rlist,ir2->rlist,ftol);
-  cmp_int(fp,"inputrec->coulombtype",0,ir1->coulombtype,ir2->coulombtype);
-  cmp_real(fp,"inputrec->rcoulomb_switch",0,ir1->rcoulomb_switch,ir2->rcoulomb_switch,ftol);
-  cmp_real(fp,"inputrec->rcoulomb",0,ir1->rcoulomb,ir2->rcoulomb,ftol);
-  cmp_int(fp,"inputrec->vdwtype",0,ir1->vdwtype,ir2->vdwtype);
-  cmp_real(fp,"inputrec->rvdw_switch",0,ir1->rvdw_switch,ir2->rvdw_switch,ftol);
-  cmp_real(fp,"inputrec->rvdw",0,ir1->rvdw,ir2->rvdw,ftol);
-  cmp_real(fp,"inputrec->epsilon_r",0,ir1->epsilon_r,ir2->epsilon_r,ftol);
-  cmp_int(fp,"inputrec->gb_algorithm",0,ir1->gb_algorithm,ir2->gb_algorithm);
-  cmp_int(fp,"inputrec->nstgbradii",0,ir1->nstgbradii,ir2->nstgbradii);
-  cmp_real(fp,"inputrec->rgbradii",0,ir1->rgbradii,ir2->rgbradii,ftol);
-  cmp_real(fp,"inputrec->gb_saltconc",0,ir1->gb_saltconc,ir2->gb_saltconc,ftol);
-  cmp_int(fp,"inputrec->implicit_solvent",0,ir1->implicit_solvent,ir2->implicit_solvent);
-  cmp_int(fp,"inputrec->eDispCorr",0,ir1->eDispCorr,ir2->eDispCorr);
-  cmp_real(fp,"inputrec->shake_tol",0,ir1->shake_tol,ir2->shake_tol,ftol);
-  cmp_real(fp,"inputrec->fudgeQQ",0,ir1->fudgeQQ,ir2->fudgeQQ,ftol);
-  cmp_int(fp,"inputrec->efep",0,ir1->efep,ir2->efep);
-  cmp_real(fp,"inputrec->init_lambda",0,ir1->init_lambda,ir2->init_lambda,ftol);
-  cmp_real(fp,"inputrec->delta_lambda",0,ir1->delta_lambda,ir2->delta_lambda,ftol);
-  cmp_real(fp,"inputrec->sc_alpha",0,ir1->sc_alpha,ir2->sc_alpha,ftol);
-  cmp_real(fp,"inputrec->sc_sigma",0,ir1->sc_sigma,ir2->sc_sigma,ftol);
-  cmp_real(fp,"inputrec->dr_fc",0,ir1->dr_fc,ir2->dr_fc,ftol);
-  cmp_int(fp,"inputrec->eDisreWeighting",0,ir1->eDisreWeighting,ir2->eDisreWeighting);
-  cmp_int(fp,"inputrec->bDisreMixed",0,ir1->bDisreMixed,ir2->bDisreMixed);
-  cmp_int(fp,"inputrec->nstdisreout",0,ir1->nstdisreout,ir2->nstdisreout);
-  cmp_real(fp,"inputrec->dr_tau",0,ir1->dr_tau,ir2->dr_tau,ftol);
-  cmp_real(fp,"inputrec->orires_fc",0,ir1->orires_fc,ir2->orires_fc,ftol);
-  cmp_real(fp,"inputrec->orires_tau",0,ir1->orires_tau,ir2->orires_tau,ftol);
-  cmp_int(fp,"inputrec->nstorireout",0,ir1->nstorireout,ir2->nstorireout);
-  cmp_real(fp,"inputrec->dihre_fc",0,ir1->dihre_fc,ir2->dihre_fc,ftol);
-  cmp_int(fp,"inputrec->nstdihreout",0,ir1->nstdihreout,ir2->nstdihreout);
-  cmp_real(fp,"inputrec->dihre_tau",0,ir1->dihre_tau,ir2->dihre_tau,ftol);
-  cmp_real(fp,"inputrec->em_stepsize",0,ir1->em_stepsize,ir2->em_stepsize,ftol);
-  cmp_real(fp,"inputrec->em_tol",0,ir1->em_tol,ir2->em_tol,ftol);
-  cmp_int(fp,"inputrec->niter",0,ir1->niter,ir2->niter);
-  cmp_real(fp,"inputrec->fc_stepsize",0,ir1->fc_stepsize,ir2->fc_stepsize,ftol);
-  cmp_int(fp,"inputrec->nstcgsteep",0,ir1->nstcgsteep,ir2->nstcgsteep);
-  cmp_int(fp,"inputrec->eConstrAlg",0,ir1->eConstrAlg,ir2->eConstrAlg);
-  cmp_int(fp,"inputrec->nProjOrder",0,ir1->nProjOrder,ir2->nProjOrder);
-  cmp_real(fp,"inputrec->LincsWarnAngle",0,ir1->LincsWarnAngle,ir2->LincsWarnAngle,ftol);
-  cmp_int(fp,"inputrec->nLincsIter",0,ir1->nLincsIter,ir2->nLincsIter);
-  cmp_real(fp,"inputrec->bd_temp",0,ir1->bd_temp,ir2->bd_temp,ftol);
-  cmp_real(fp,"inputrec->bd_fric",0,ir1->bd_fric,ir2->bd_fric,ftol);
-  cmp_int(fp,"inputrec->ld_seed",0,ir1->ld_seed,ir2->ld_seed);
-  cmp_real(fp,"inputrec->cos_accel",0,ir1->cos_accel,ir2->cos_accel,ftol);
-  cmp_int(fp,"inputrec->userint1",0,ir1->userint1,ir2->userint1);
-  cmp_int(fp,"inputrec->userint2",0,ir1->userint2,ir2->userint2);
-  cmp_int(fp,"inputrec->userint3",0,ir1->userint3,ir2->userint3);
-  cmp_int(fp,"inputrec->userint4",0,ir1->userint4,ir2->userint4);
-  cmp_real(fp,"inputrec->userreal1",0,ir1->userreal1,ir2->userreal1,ftol);
-  cmp_real(fp,"inputrec->userreal2",0,ir1->userreal2,ir2->userreal2,ftol);
-  cmp_real(fp,"inputrec->userreal3",0,ir1->userreal3,ir2->userreal3,ftol);
-  cmp_real(fp,"inputrec->userreal4",0,ir1->userreal4,ir2->userreal4,ftol);
+  cmp_int(fp,"inputrec->eI",-1,ir1->eI,ir2->eI);
+  cmp_int(fp,"inputrec->nsteps",-1,ir1->nsteps,ir2->nsteps);
+  cmp_int(fp,"inputrec->init_step",-1,ir1->init_step,ir2->init_step);
+  cmp_int(fp,"inputrec->ePBC",-1,ir1->ePBC,ir2->ePBC);
+  cmp_int(fp,"inputrec->ns_type",-1,ir1->ns_type,ir2->ns_type);
+  cmp_int(fp,"inputrec->nstlist",-1,ir1->nstlist,ir2->nstlist);
+  cmp_int(fp,"inputrec->ndelta",-1,ir1->ndelta,ir2->ndelta);
+  cmp_int(fp,"inputrec->bDomDecomp",-1,ir1->bDomDecomp,ir2->bDomDecomp);
+  cmp_int(fp,"inputrec->decomp_dir",-1,ir1->decomp_dir,ir2->decomp_dir);
+  cmp_int(fp,"inputrec->nstcomm",-1,ir1->nstcomm,ir2->nstcomm);
+  cmp_int(fp,"inputrec->nstcheckpoint",-1,ir1->nstcheckpoint,ir2->nstcheckpoint);
+  cmp_int(fp,"inputrec->nstlog",-1,ir1->nstlog,ir2->nstlog);
+  cmp_int(fp,"inputrec->nstxout",-1,ir1->nstxout,ir2->nstxout);
+  cmp_int(fp,"inputrec->nstvout",-1,ir1->nstvout,ir2->nstvout);
+  cmp_int(fp,"inputrec->nstfout",-1,ir1->nstfout,ir2->nstfout);
+  cmp_int(fp,"inputrec->nstenergy",-1,ir1->nstenergy,ir2->nstenergy);
+  cmp_int(fp,"inputrec->nstxtcout",-1,ir1->nstxtcout,ir2->nstxtcout);
+  cmp_real(fp,"inputrec->init_t",-1,ir1->init_t,ir2->init_t,ftol);
+  cmp_real(fp,"inputrec->delta_t",-1,ir1->delta_t,ir2->delta_t,ftol);
+  cmp_real(fp,"inputrec->xtcprec",-1,ir1->xtcprec,ir2->xtcprec,ftol);
+  cmp_int(fp,"inputrec->nkx",-1,ir1->nkx,ir2->nkx);
+  cmp_int(fp,"inputrec->nky",-1,ir1->nky,ir2->nky);
+  cmp_int(fp,"inputrec->nkz",-1,ir1->nkz,ir2->nkz);
+  cmp_int(fp,"inputrec->pme_order",-1,ir1->pme_order,ir2->pme_order);
+  cmp_real(fp,"inputrec->ewald_rtol",-1,ir1->ewald_rtol,ir2->ewald_rtol,ftol);
+  cmp_int(fp,"inputrec->ewald_geometry",-1,ir1->ewald_geometry,ir2->ewald_geometry);
+  cmp_real(fp,"inputrec->epsilon_surface",-1,ir1->epsilon_surface,ir2->epsilon_surface,ftol);
+  cmp_int(fp,"inputrec->bOptFFT",-1,ir1->bOptFFT,ir2->bOptFFT);
+  cmp_int(fp,"inputrec->bUncStart",-1,ir1->bUncStart,ir2->bUncStart);
+  cmp_int(fp,"inputrec->bShakeSOR",-1,ir1->bShakeSOR,ir2->bShakeSOR);
+  cmp_int(fp,"inputrec->etc",-1,ir1->etc,ir2->etc);
+  cmp_int(fp,"inputrec->epc",-1,ir1->epc,ir2->epc);
+  cmp_int(fp,"inputrec->epct",-1,ir1->epct,ir2->epct);
+  cmp_real(fp,"inputrec->tau_p",-1,ir1->tau_p,ir2->tau_p,ftol);
+  cmp_rvec(fp,"inputrec->ref_p(x)",-1,ir1->ref_p[XX],ir2->ref_p[XX],ftol);
+  cmp_rvec(fp,"inputrec->ref_p(y)",-1,ir1->ref_p[YY],ir2->ref_p[YY],ftol);
+  cmp_rvec(fp,"inputrec->ref_p(z)",-1,ir1->ref_p[ZZ],ir2->ref_p[ZZ],ftol);
+  cmp_rvec(fp,"inputrec->compress(x)",-1,ir1->compress[XX],ir2->compress[XX],ftol);
+  cmp_rvec(fp,"inputrec->compress(y)",-1,ir1->compress[YY],ir2->compress[YY],ftol);
+  cmp_rvec(fp,"inputrec->compress(z)",-1,ir1->compress[ZZ],ir2->compress[ZZ],ftol);
+  cmp_int(fp,"inputrec->andersen_seed",-1,ir1->andersen_seed,ir2->andersen_seed);
+  cmp_real(fp,"inputrec->rlist",-1,ir1->rlist,ir2->rlist,ftol);
+  cmp_int(fp,"inputrec->coulombtype",-1,ir1->coulombtype,ir2->coulombtype);
+  cmp_real(fp,"inputrec->rcoulomb_switch",-1,ir1->rcoulomb_switch,ir2->rcoulomb_switch,ftol);
+  cmp_real(fp,"inputrec->rcoulomb",-1,ir1->rcoulomb,ir2->rcoulomb,ftol);
+  cmp_int(fp,"inputrec->vdwtype",-1,ir1->vdwtype,ir2->vdwtype);
+  cmp_real(fp,"inputrec->rvdw_switch",-1,ir1->rvdw_switch,ir2->rvdw_switch,ftol);
+  cmp_real(fp,"inputrec->rvdw",-1,ir1->rvdw,ir2->rvdw,ftol);
+  cmp_real(fp,"inputrec->epsilon_r",-1,ir1->epsilon_r,ir2->epsilon_r,ftol);
+  cmp_int(fp,"inputrec->gb_algorithm",-1,ir1->gb_algorithm,ir2->gb_algorithm);
+  cmp_int(fp,"inputrec->nstgbradii",-1,ir1->nstgbradii,ir2->nstgbradii);
+  cmp_real(fp,"inputrec->rgbradii",-1,ir1->rgbradii,ir2->rgbradii,ftol);
+  cmp_real(fp,"inputrec->gb_saltconc",-1,ir1->gb_saltconc,ir2->gb_saltconc,ftol);
+  cmp_int(fp,"inputrec->implicit_solvent",-1,ir1->implicit_solvent,ir2->implicit_solvent);
+  cmp_int(fp,"inputrec->eDispCorr",-1,ir1->eDispCorr,ir2->eDispCorr);
+  cmp_real(fp,"inputrec->shake_tol",-1,ir1->shake_tol,ir2->shake_tol,ftol);
+  cmp_real(fp,"inputrec->fudgeQQ",-1,ir1->fudgeQQ,ir2->fudgeQQ,ftol);
+  cmp_int(fp,"inputrec->efep",-1,ir1->efep,ir2->efep);
+  cmp_real(fp,"inputrec->init_lambda",-1,ir1->init_lambda,ir2->init_lambda,ftol);
+  cmp_real(fp,"inputrec->delta_lambda",-1,ir1->delta_lambda,ir2->delta_lambda,ftol);
+  cmp_real(fp,"inputrec->sc_alpha",-1,ir1->sc_alpha,ir2->sc_alpha,ftol);
+  cmp_real(fp,"inputrec->sc_sigma",-1,ir1->sc_sigma,ir2->sc_sigma,ftol);
+  cmp_real(fp,"inputrec->dr_fc",-1,ir1->dr_fc,ir2->dr_fc,ftol);
+  cmp_int(fp,"inputrec->eDisreWeighting",-1,ir1->eDisreWeighting,ir2->eDisreWeighting);
+  cmp_int(fp,"inputrec->bDisreMixed",-1,ir1->bDisreMixed,ir2->bDisreMixed);
+  cmp_int(fp,"inputrec->nstdisreout",-1,ir1->nstdisreout,ir2->nstdisreout);
+  cmp_real(fp,"inputrec->dr_tau",-1,ir1->dr_tau,ir2->dr_tau,ftol);
+  cmp_real(fp,"inputrec->orires_fc",-1,ir1->orires_fc,ir2->orires_fc,ftol);
+  cmp_real(fp,"inputrec->orires_tau",-1,ir1->orires_tau,ir2->orires_tau,ftol);
+  cmp_int(fp,"inputrec->nstorireout",-1,ir1->nstorireout,ir2->nstorireout);
+  cmp_real(fp,"inputrec->dihre_fc",-1,ir1->dihre_fc,ir2->dihre_fc,ftol);
+  cmp_int(fp,"inputrec->nstdihreout",-1,ir1->nstdihreout,ir2->nstdihreout);
+  cmp_real(fp,"inputrec->dihre_tau",-1,ir1->dihre_tau,ir2->dihre_tau,ftol);
+  cmp_real(fp,"inputrec->em_stepsize",-1,ir1->em_stepsize,ir2->em_stepsize,ftol);
+  cmp_real(fp,"inputrec->em_tol",-1,ir1->em_tol,ir2->em_tol,ftol);
+  cmp_int(fp,"inputrec->niter",-1,ir1->niter,ir2->niter);
+  cmp_real(fp,"inputrec->fc_stepsize",-1,ir1->fc_stepsize,ir2->fc_stepsize,ftol);
+  cmp_int(fp,"inputrec->nstcgsteep",-1,ir1->nstcgsteep,ir2->nstcgsteep);
+  cmp_int(fp,"inputrec->eConstrAlg",-1,ir1->eConstrAlg,ir2->eConstrAlg);
+  cmp_int(fp,"inputrec->nProjOrder",-1,ir1->nProjOrder,ir2->nProjOrder);
+  cmp_real(fp,"inputrec->LincsWarnAngle",-1,ir1->LincsWarnAngle,ir2->LincsWarnAngle,ftol);
+  cmp_int(fp,"inputrec->nLincsIter",-1,ir1->nLincsIter,ir2->nLincsIter);
+  cmp_real(fp,"inputrec->bd_temp",-1,ir1->bd_temp,ir2->bd_temp,ftol);
+  cmp_real(fp,"inputrec->bd_fric",-1,ir1->bd_fric,ir2->bd_fric,ftol);
+  cmp_int(fp,"inputrec->ld_seed",-1,ir1->ld_seed,ir2->ld_seed);
+  cmp_real(fp,"inputrec->cos_accel",-1,ir1->cos_accel,ir2->cos_accel,ftol);
+  cmp_int(fp,"inputrec->userint1",-1,ir1->userint1,ir2->userint1);
+  cmp_int(fp,"inputrec->userint2",-1,ir1->userint2,ir2->userint2);
+  cmp_int(fp,"inputrec->userint3",-1,ir1->userint3,ir2->userint3);
+  cmp_int(fp,"inputrec->userint4",-1,ir1->userint4,ir2->userint4);
+  cmp_real(fp,"inputrec->userreal1",-1,ir1->userreal1,ir2->userreal1,ftol);
+  cmp_real(fp,"inputrec->userreal2",-1,ir1->userreal2,ir2->userreal2,ftol);
+  cmp_real(fp,"inputrec->userreal3",-1,ir1->userreal3,ir2->userreal3,ftol);
+  cmp_real(fp,"inputrec->userreal4",-1,ir1->userreal4,ir2->userreal4,ftol);
   cmp_grpopts(fp,&(ir1->opts),&(ir2->opts),ftol);
   cmp_cosines(fp,"ex",ir1->ex,ir2->ex,ftol);
   cmp_cosines(fp,"et",ir1->et,ir2->et,ftol);
+}
+
+static void comp_state(t_state *st1, t_state *st2,real ftol)
+{
+  int i;
+
+  fprintf(stdout,"comparing box\n");
+  cmp_rvecs(stdout,"box",DIM,st1->box,st2->box,ftol);
+  fprintf(stdout,"comparing boxv\n");
+  cmp_rvecs(stdout,"boxv",DIM,st1->boxv,st2->boxv,ftol);
+  fprintf(stdout,"comparing pcoupl_mu\n");
+  cmp_rvecs(stdout,"pcoupl_mu",DIM,st1->pcoupl_mu,st2->pcoupl_mu,ftol);
+  cmp_int(stdout,"ngtc",-1,st1->ngtc,st2->ngtc);
+  if (st1->ngtc == st2->ngtc) {
+    for(i=0; i<st1->ngtc; i++)
+      cmp_real(stdout,"nosehoover_xi",
+	       i,st1->nosehoover_xi[i],st2->nosehoover_xi[i],ftol);
+    for(i=0; i<st1->ngtc; i++)
+      cmp_real(stdout,"tcoupl_lambda",
+	       i,st1->tcoupl_lambda[i],st2->tcoupl_lambda[i],ftol);
+  }
+  cmp_int(stdout,"natoms",-1,st1->natoms,st2->natoms);
+  if (st1->natoms == st2->natoms) {
+    fprintf(stdout,"comparing x\n");
+    cmp_rvecs(stdout,"x",st1->natoms,st1->x,st2->x,ftol);
+    fprintf(stdout,"comparing v\n");
+    cmp_rvecs(stdout,"v",st1->natoms,st1->v,st2->v,ftol);
+  }
 }
 
 void comp_tpx(char *fn1,char *fn2,real ftol)
@@ -421,29 +449,19 @@ void comp_tpx(char *fn1,char *fn2,real ftol)
   char        *ff[2];
   t_tpxheader sh[2];
   t_inputrec  ir[2];
-  rvec        *xx[2],*vv[2];
+  t_state     state[2];
   t_topology  top[2];
-  matrix      box[2];
-  int         i,step,natoms;
-  real        t,lambda;
+  int         i,step;
+  real        t;
 
   ff[0]=fn1;
   ff[1]=fn2;
   for(i=0; (i<2); i++) {
-    read_tpxheader(ff[i],&(sh[i]),FALSE,NULL,NULL);
-    snew(xx[i],sh[i].natoms);
-    snew(vv[i],sh[i].natoms);
-    read_tpx(ff[i],&step,&t,&lambda,&(ir[i]),box[i],&natoms,
-	     xx[i],vv[i],NULL,&(top[i]));
+    read_tpx_state(ff[i],&step,&t,&(ir[i]),&state[i],NULL,&(top[i]));
   }
   cmp_inputrec(stdout,&ir[0],&ir[1],ftol);
   cmp_top(stdout,&top[0],&top[1],ftol);
-  fprintf(stdout,"comparing box\n");
-  cmp_rvecs(stdout,"box",DIM,box[0],box[1],ftol);
-  fprintf(stdout,"comparing x\n");
-  cmp_rvecs(stdout,"x",natoms,xx[0],xx[1],ftol);
-  fprintf(stdout,"comparing v\n");
-  cmp_rvecs(stdout,"v",natoms,vv[0],vv[1],ftol);
+  comp_state(&state[0],&state[1],ftol);
 }
 
 void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2, real ftol)

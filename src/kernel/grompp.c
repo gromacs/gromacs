@@ -67,6 +67,7 @@
 #include "txtdump.h"
 #include "calcgrid.h"
 #include "add_par.h"
+#include "enxio.h"
 
 static void write_deshufndx(char *ndx,int *forward,t_atoms *atoms)
 {
@@ -422,7 +423,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
     /* make space for coordinates and velocities */
     snew(confat,1);
     init_t_atoms(confat,state->natoms,FALSE);
-    init_state(state,state->natoms,ir->opts.ngtc);
+    init_state(state,state->natoms,0);
     read_stx_conf(confin,opts->title,confat,state->x,state->v,state->box);
 
     if (ntab > 0) {
@@ -473,7 +474,8 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
   return forward;
 }
 
-static void cont_status(char *slog,bool bNeedVel,bool bGenVel, real fr_time,
+static void cont_status(char *slog,char *ener,
+			bool bNeedVel,bool bGenVel, real fr_time,
 			t_inputrec *ir,t_state *state,
 			t_topology *sys)
      /* If fr_time == -1 read the last frame available which is complete */
@@ -517,6 +519,10 @@ static void cont_status(char *slog,bool bNeedVel,bool bGenVel, real fr_time,
 
   fprintf(stderr,"Using frame at t = %g ps\n",fr.time);
   fprintf(stderr,"Starting time for run is %g ps\n",ir->init_t); 
+  
+  if ((ir->epc != epcNO  || ir->etc !=etcNO) && ener) {
+    get_enx_state(ener,fr.time,&sys->atoms,ir,state);
+  }
 }
 
 static void read_posres(t_params *pr, char *fn, int offset)
@@ -791,7 +797,12 @@ int main (int argc, char *argv[])
     "The last frame with coordinates and velocities will be read,",
     "unless the [TT]-time[tt] option is used.",
     "Note that these velocities will not be used when [TT]gen_vel = yes[tt]",
-    "in your [TT].mdp[tt] file. If you want to continue a crashed run, it is",
+    "in your [TT].mdp[tt] file. An energy file can be supplied with",
+    "[TT]-e[tt] to have exact restarts when using pressure and/or",
+    "temperature coupling. For an exact restart do not forget to turn off",
+    "velocity generation and turn on unconstrained starting when constraints",
+    "are present in the system.",
+    "If you want to continue a crashed run, it is",
     "easier to use [TT]tpbconv[tt].[PAR]",
 
     "When preparing an input file for parallel [TT]mdrun[tt] it may",
@@ -860,7 +871,8 @@ int main (int argc, char *argv[])
     { efTOP, NULL,  NULL,        ffREAD  },
     { efTOP, "-pp", "processed", ffOPTWR },
     { efTPX, "-o",  NULL,        ffWRITE },
-    { efTRN, "-t",  NULL,        ffOPTRD }
+    { efTRN, "-t",  NULL,        ffOPTRD },
+    { efENX, "-e",  NULL,        ffOPTRD }
   };
 #define NFILE asize(fnm)
 
@@ -1081,6 +1093,9 @@ int main (int argc, char *argv[])
 	   &sys->symtab,&(sys->atoms),bVerbose,ir,&sys->idef,
 	   forward,bGenVel ? state.v : NULL);
 
+  /* Init the temperature coupling state */
+  init_gtc_state(&state,ir->opts.ngtc);
+
   if (bVerbose)
     fprintf(stderr,"Checking consistency between energy and charge groups...\n");
   check_eg_vs_cg(&(sys->atoms),&(sys->blocks[ebCGS]));
@@ -1097,8 +1112,8 @@ int main (int argc, char *argv[])
   if (ftp2bSet(efTRN,NFILE,fnm)) {
     if (bVerbose)
       fprintf(stderr,"getting data from old trajectory ...\n");
-    cont_status(ftp2fn(efTRN,NFILE,fnm),bNeedVel,bGenVel,fr_time,ir,&state,
-		sys);
+    cont_status(ftp2fn(efTRN,NFILE,fnm),ftp2fn_null(efENX,NFILE,fnm),
+		bNeedVel,bGenVel,fr_time,ir,&state,sys);
   }
   
   if ((ir->coulombtype == eelPPPM) || (ir->coulombtype == eelPME) ||

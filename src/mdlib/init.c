@@ -103,7 +103,7 @@ void init_single(FILE *log,t_parm *parm,
   int         step;
   real        t;
   
-  read_tpx_state(tpxfile,&step,&t,&parm->ir,state,top);
+  read_tpx_state(tpxfile,&step,&t,&parm->ir,state,NULL,top);
   check_nnodes_top(tpxfile,top,1);
 
   *mdatoms=atoms2md(log,&top->atoms,parm->ir.opts.nFreeze,
@@ -125,7 +125,7 @@ void distribute_parts(int left,int right,int nodeid,int nnodes,t_parm *parm,
   t_nsborder  nsb;
   t_state     state;
   
-  read_tpx_state(tpxfile,&step,&t,&parm->ir,&state,&top);
+  read_tpx_state(tpxfile,&step,&t,&parm->ir,&state,NULL,&top);
   check_nnodes_top(tpxfile,&top,nnodes);
   
   calc_nsb(stdlog,&(top.blocks[ebCGS]),nnodes,&nsb,nstDlb);

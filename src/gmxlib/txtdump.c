@@ -196,6 +196,19 @@ void pr_rvecs(FILE *fp,int indent,char *title,rvec vec[],int n)
   }
 }
 
+void pr_reals(FILE *fp,int indent,char *title,real *vec,int n)
+{
+  int i;
+    
+  if (available(fp,vec,title)) {  
+    (void) pr_indent(fp,indent);
+    (void) fprintf(fp,"%s:\t",title);
+    for(i=0; i<n; i++)
+      fprintf(fp,"  %10g",vec[i]);
+    (void) fprintf(fp,"\n");
+  }
+}
+
 void pr_energies(FILE *fp,int indent,char *title,t_energy *e,int n)
 {
   int i;

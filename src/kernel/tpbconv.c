@@ -41,6 +41,7 @@
 #include "typedefs.h"
 #include "tpxio.h"
 #include "trnio.h"
+#include "enxio.h"
 #include "readir.h"
 #include "statutil.h"
 #include "copyrite.h"
@@ -239,7 +240,9 @@ int main (int argc, char *argv[])
     "a full disk, or by making a continuation run input file.",
     "Note that a frame with coordinates and velocities is needed,",
     "which means that when you never write velocities, you can not use",
-    "tpbconv and you have to start the run again from the beginning.[PAR]",
+    "tpbconv and you have to start the run again from the beginning.",
+    "When pressure and/or temperature coupling is used an energy file",
+    "can be supplied to get an exact continuation of the original run.[PAR]",
     "[BB]2nd.[bb] by creating a tpx file for a subset of your original",
     "tpx file, which is useful when you want to remove the solvent from",
     "your tpx file, or when you want to make e.g. a pure Ca tpx file.",
@@ -267,6 +270,7 @@ int main (int argc, char *argv[])
   t_filenm fnm[] = {
     { efTPX, NULL,  NULL,    ffREAD  },
     { efTRN, "-f",  NULL,    ffOPTRD },
+    { efENX, "-e",  NULL,    ffOPTRD },
     { efNDX, NULL,  NULL,    ffOPTRD },
     { efTPX, "-o",  "tpxout",ffWRITE }
   };
@@ -301,7 +305,7 @@ int main (int argc, char *argv[])
   fprintf(stderr,"Reading toplogy and shit from %s\n",top_fn);
   
   snew(ir,1);
-  read_tpx_state(top_fn,&step,&run_t,ir,&state,&top);
+  read_tpx_state(top_fn,&step,&run_t,ir,&state,NULL,&top);
 
   if (ir->bUncStart != bUncStart)
     fprintf(stderr,"Modifying ir->bUncStart to %s\n",bool_names[bUncStart]);
@@ -362,6 +366,14 @@ int main (int argc, char *argv[])
       fprintf(stderr,"Frame %d (step %d, time %g) is incomplete\n",
 	      frame-1,head.step,head.t);
     fprintf(stderr,"\nUsing frame of step %d time %g\n",run_step,run_t);
+
+    if (ir->epc != epcNO || ir->etc != etcNO) {
+      if (ftp2bSet(efENX,NFILE,fnm)) {
+	get_enx_state(ftp2fn(efENX,NFILE,fnm),run_t,&top.atoms,ir,&state);
+      } else if (ir->epc != epcNO || ir->etc != etcNO)
+	fprintf(stderr,"\nWARNING: The simulation uses pressure and/or temperature coupling,\n"
+		"         the continuation will be only be exact when an energy file is supplied\n\n");
+    }
   } 
   else {
     frame_fn = ftp2fn(efTPX,NFILE,fnm);

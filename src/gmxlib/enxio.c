@@ -36,6 +36,7 @@
 #include "smalloc.h"
 #include "gmxfio.h"
 #include "enxio.h"
+#include "vec.h"
 
 void free_enxframe(t_enxframe *fr)
 {
@@ -339,5 +340,87 @@ bool do_enx(int fp,t_enxframe *fr)
   return TRUE;
 }
 
+static real find_energy(char *name, int nre, char **enm, t_enxframe *fr)
+{
+  int i;
+
+  for(i=0; i<nre; i++)
+    if (strcmp(enm[i],name) == 0)
+      return  fr->ener[i].e;
+
+  fatal_error(0,"Could not find energy term named '%s'",name);
+
+  return 0;
+}
 
 
+void get_enx_state(char *fn, real t, t_atoms *atoms, t_inputrec *ir,
+		   t_state *state)
+{
+  /* Should match the names in mdebin.c */
+  static char *boxvel_nm[] = {
+  "Box-Vel-XX", "Box-Vel-YY", "Box-Vel-ZZ",
+  "Box-Vel-YX", "Box-Vel-ZX", "Box-Vel-ZY"
+  };
+  
+  static char *pcouplmu_nm[] = {
+    "Pcoupl-Mu-XX", "Pcoupl-Mu-YY", "Pcoupl-Mu-ZZ",
+    "Pcoupl-Mu-YX", "Pcoupl-Mu-ZX", "Pcoupl-Mu-ZY"
+  };
+  int ind0[] = { XX,YY,ZZ,YY,ZZ,ZZ };
+  int ind1[] = { XX,YY,ZZ,XX,XX,YY };
+
+  int in,nre,nfr,i,ni,npcoupl;
+  char       **enm=NULL,buf[STRLEN];
+  t_enxframe *fr;
+
+  in = open_enx(fn,"r");
+  do_enxnms(in,&nre,&enm);
+  snew(fr,1);
+  nfr = 0;
+  while ((nfr==0 || fr->t != t) && do_enx(in,fr)) {
+    nfr++;
+  }
+  close_enx(in);
+  fprintf(stderr,"\n");
+
+  if (nfr == 0 || fr->t != t)
+    fatal_error(0,"Could not find frame with time %f in '%s'",t,fn);
+  
+  npcoupl = TRICLINIC(ir->compress) ? 6 : 3;
+  if (ir->epc == epcPARRINELLORAHMAN) {
+    clear_mat(state->boxv);
+    for(i=0; i<npcoupl; i++) {
+      state->boxv[ind0[i]][ind1[i]] =
+	find_energy(boxvel_nm[i],nre,enm,fr);
+    }
+    fprintf(stderr,"\nREAD %d BOX VELOCITIES FROM %s\n\n",npcoupl,fn);
+  } else if (ir->epc == epcBERENDSEN || ir->epc == epcISOTROPIC) {
+    clear_mat(state->pcoupl_mu);
+    for(i=0; i<npcoupl; i++) {
+      state->pcoupl_mu[ind0[i]][ind1[i]] =
+	find_energy(pcouplmu_nm[i],nre,enm,fr);
+    }
+    fprintf(stderr,"\nREAD %d PRESSURE COUPLING MU'S FROM %s\n\n",npcoupl,fn);
+  }
+
+  if (ir->etc == etcNOSEHOOVER) {
+    for(i=0; i<state->ngtc; i++) {
+      ni=atoms->grps[egcTC].nm_ind[i];
+      sprintf(buf,"Xi-%s",*(atoms->grpname[ni]));
+      state->nosehoover_xi[i] = find_energy(buf,nre,enm,fr);
+    }
+    fprintf(stderr,"\nREAD %d NOSE-HOOVER Xi's FROM %s\n\n",state->ngtc,fn);
+  } else if (ir->etc == etcBERENDSEN || ir->etc == etcYES) {
+    for(i=0; i<state->ngtc; i++) {
+      ni=atoms->grps[egcTC].nm_ind[i];
+      sprintf(buf,"Lamb-%s",*(atoms->grpname[ni]));
+      state->tcoupl_lambda[i] = find_energy(buf,nre,enm,fr);
+    }
+    fprintf(stderr,"\nREAD %d TEMPERATURE COUPLING LAMBDAS FROM %s\n\n",
+	    state->ngtc,fn);
+  }
+  
+  free_enxframe(fr);
+  sfree(fr);
+}

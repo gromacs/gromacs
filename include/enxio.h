@@ -53,6 +53,7 @@ external "C" {
 
 #include "sysstuff.h"
 #include "typedefs.h"
+#include "pbc.h"
   
   /* 
    * Index for the additional blocks in the energy file.
@@ -116,6 +117,14 @@ external "C" {
   extern bool do_enx(int fp_ene,t_enxframe *fr);
   /* Reads enx_frames, memory in fr is (re)allocated if necessary */
 
+  extern void get_enx_state(char *fn, real t, t_atoms *atoms, t_inputrec *ir,
+			    t_state *state);
+  /*
+   * Reads state variables from enx file fn at time t.
+   * atoms and ir are required for determining which things must be read.
+   * Currently pcoupl and tcoupl state are read from enx.
+   */
+  
 #ifdef CPLUSPLUS
 }
 #endif

@@ -61,6 +61,7 @@ typedef struct
   int	bF;		/* Non zero if forces are present		*/
 
   int	natoms;		/* The total number of atoms			*/
+  int   ngtc;           /* The number of temperature coupling groups    */
   int	step;		/* Current step number				*/
   real	t;		/* Current time					*/
   real	lambda;		/* Current value of lambda			*/
@@ -104,7 +105,8 @@ extern void write_tpx_state(char *fn,int step,real t,
  */
 
 extern void read_tpx_state(char *fn,int *step,real *t,
-			   t_inputrec *ir,t_state *state,t_topology *top);
+			   t_inputrec *ir,t_state *state,rvec *f,
+			   t_topology *top);
 extern void read_tpx(char *fn,int *step,real *t,real *lambda,
 		     t_inputrec *ir,matrix box,int *natoms,
 		     rvec *x,rvec *v,rvec *f,t_topology *top);
