@@ -272,38 +272,6 @@
     CG   OD1   ND2    CB
    ND2  HD21  HD22    CG
 
-[ ASN1 ]
- [ atoms ]
-     N     N  -0.280     0
-     H     H   0.280     0
-    CA   CH1   0.000     1
-    CB   CH2   0.000     2
-    CG     C   0.380     3
-   OD1     O  -0.380     3
-   ND2    NL  -0.830     4
-  HD21     H   0.415     4
-  HD22     H   0.415     4
-     C     C   0.380     5
-     O     O  -0.380     5
- [ bonds ]
-     N     H
-     N    CA
-    CA     C
-     C     O
-    -C     N
-    CA    CB
-    CB    CG
-    CG   OD1
-    CG   ND2
-   ND2  HD21
-   ND2  HD22
- [ impropers ]
-     N    -C    CA     H
-    -C   -CA     N    -O
-    CA     N     C    CB
-    CG   OD1   ND2    CB
-   ND2    CG  HD22  HD21
-
 [ ASP ]
  [ atoms ]
      N     N  -0.280     0
@@ -2406,9 +2374,35 @@
    CHA   C4D
    CHA   C1A
  [ angles ]
-;   ai    aj    ak            c0            c1
-    NA    FE    NC           180             0
-    NB    FE    ND           180             0
+;   ai    aj    ak            c0      c1
+    NA    FE    NC           180       0
+    NB    FE    ND           180       0
+ [ dihedrals ]
+;   ai    aj    ak    al      c0      c1    mult
+    ND    FE    NA   C1A       0       0       2
+    NA    FE    NB   C1B       0       0       2
+    NB    FE    NC   C1C       0       0       2
+    NC    FE    ND   C1D       0       0       2
+    FE    NA   C1A   CHA       0       0       2
+    FE    NA   C4A   C3A       0       0       2
+    FE    NB   C1B   CHB       0       0       2
+    FE    NB   C4B   C3B       0       0       2
+    FE    NC   C1C   CHC       0       0       2
+    FE    NC   C4C   C3C       0       0       2
+    FE    ND   C1D   CHD       0       0       2
+    FE    ND   C4D   CHA       0       0       2
+    NA   C1A   C2A   C3A       0       0       2
+   C1A   C2A   C3A   C4A       0       0       2
+   C2A   C3A   C4A    NA       0       0       2
+    NB   C1B   C2B   C3B       0       0       2
+   C1B   C2B   C3B   C4B       0       0       2
+   C2B   C3B   C4B    NB       0       0       2
+    NC   C1C   C2C   C3C       0       0       2
+   C1C   C2C   C3C   C4C       0       0       2
+   C2C   C3C   C4C    NC       0       0       2
+    ND   C1D   C2D   C3D       0       0       2
+   C1D   C2D   C3D   C4D       0       0       2
+   C2D   C3D   C4D    ND       0       0       2
  [ impropers ]
     FE   C1A   C4A    NA
     FE   C1B   C4B    NB
