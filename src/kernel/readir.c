@@ -417,6 +417,11 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("lincs-warnangle", ir->LincsWarnAngle, 30.0);
   CTYPE ("Convert harmonic bonds to morse potentials");
   EETYPE("morse",       opts->bMorse,yesno_names, nerror, TRUE);
+
+  /* Energy group exclusions */
+  CCTYPE ("ENERGY GROUP EXCLUSIONS");
+  CTYPE ("Pairs of energy groups for which all non-bonded interactions are excluded");
+  STYPE ("energygrp_excl", egexcl,      NULL);
   
   /* Refinement */
   CCTYPE("NMR refinement stuff");
@@ -446,7 +451,6 @@ void get_ir(char *mdparin,char *mdparout,
   STYPE ("freezegrps",  freeze,         NULL);
   STYPE ("freezedim",   frdim,          NULL);
   RTYPE ("cos-acceleration", ir->cos_accel, 0);
-  STYPE ("energygrp_excl", egexcl,      NULL);
   
   /* Electric fields */
   CCTYPE("Electric fields");

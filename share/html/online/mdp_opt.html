@@ -38,9 +38,10 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, zero_temp_time)
 <li><A HREF="#vel"><b>velocity generation</b></A> (gen_vel, gen_temp, gen_seed)
 <li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_warnangle, morse)
+<li><A HREF="#egexcl"><b>Energy group exclusions</b></A> (energygrp_excl)
 <li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre_weighting, disre_mixed, disre_fc, disre_tau, nstdisreout)
 <li><A HREF="#free"><b>Free Energy Perturbation</b></A> (free_energy, init_lambda, delta_lambda, sc_alpha, sc_sigma)
-<li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc_grps, accelerate, freezegrps, freezedim, cos_acceleration, energygrp_excl )
+<li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc_grps, accelerate, freezegrps, freezedim, cos_acceleration)
 <li><A HREF="#ef"><b>Electric fields</b></A> (E_x, E_xt, E_y, E_yt, E_z, E_zt )
 <li><A HREF="#user"><b>User defined thingies</b></A> (user1_grps, user2_grps, userint1, userint2, userint3, userint4, userreal1, userreal2, userreal3, userreal4)
 <li><A HREF="#idx">Index</b></A>
@@ -658,6 +659,20 @@ during energy minimization, only one iteration is used in MD.
 </dl>
 </dl>
 
+<A NAME="egexcl"><br>
+<hr>
+<h3>Energy group exclusions</h3>
+<dl>
+<dt><h4>energygrp_excl: </b></h4>
+<dd>Pairs of energy groups for which all non-bonded interactions are
+excluded. An example: if you have two energy groups <tt>Protein</tt>
+and <tt>SOL</tt>, specifying
+<tt>energy_excl&nbsp;=&nbsp;Protein&nbsp;Protein&nbsp;&nbsp;SOL&nbsp;SOL</tt>
+would give only the non-bonded interactions between the protein and the
+solvent. This is especially useful for speeding up energy calculations with
+<tt>mdrun -rerun</tt> and for excluding interactions within frozen groups.
+</dl>
+
 <A NAME="nmr"><br>
 <hr>
 <h3><!--Idx-->NMR refinement<!--EIdx--></h3>
@@ -762,14 +777,6 @@ The acceleration is in the X-direction and the magnitude is
 <b>cos_acceleration</b> cos(2 pi z/boxheight).
 Two terms are added to the energy file:
 the amplitude of the velocity profile and 1/viscosity.
-<dt><h4>energygrp_excl: </b></h4>
-<dd>Pairs of energy groups for which all non-bonded interactions are
-excluded. An example: if you have two energy groups <tt>Protein</tt>
-and <tt>SOL</tt>, specifying
-<tt>energy_excl&nbsp;=&nbsp;Protein&nbsp;Protein&nbsp;&nbsp;SOL&nbsp;SOL</tt>
-would give only the non-bonded interactions between the protein and the
-solvent. This is especially useful for speeding up energy calculations with
-<tt>mdrun -rerun</tt> and for excluding interactions within frozen groups.
 </dl>
 
 <A NAME="ef"><br>
@@ -833,7 +840,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#run">dt</A><br>
 <A HREF="#em">emstep</A><br>
 <A HREF="#em">emtol</A><br>
-<A HREF="#neq">energygrp_excl</A><br>
+<A HREF="#egexcl">energygrp_excl</A><br>
 <A HREF="#out">energygrps</A><br>
 <A HREF="#el2">epsilon_r</A><br>
 <A HREF="#el2">ewald_rtol</A><br>
