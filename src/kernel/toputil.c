@@ -68,47 +68,26 @@ char *type2nm(int nt, t_atomtype *at)
 
 void pr_alloc (int extra, t_params *pr)
 {
+  int i,j;
+  
   /* get new space for arrays */
-  if (pr->nr+extra < 0) {
-    fprintf(stderr,"Trying to make array < 0 bytes\n");
-    exit(1);
+  if (extra < 0) 
+    fatal_error(0,"Trying to make array < 0 bytes\n");
+  if (extra == 0)
+    return;
+  if ((pr->nr == 0) && (pr->param != NULL)) {
+    fprintf(stderr,"Warning: dangling pointer at %x\n",pr->param);
+    pr->param = NULL;
   }
-  if (extra) {
-    if (pr->nr+extra == 0) {
-      sfree(pr->param);
-      pr->param=NULL;
-    }
-    else {
-      int i,j;
-      srenew(pr->param,pr->nr+extra);
-      for(i=pr->nr; (i<pr->nr+extra); i++) {
-	for(j=0; (j<MAXATOMLIST); j++)
-	  pr->param[i].a[j]=0;
-	for(j=0; (j<MAXFORCEPARAM); j++)
-	  pr->param[i].c[j]=0;
-      }
-    }
+  srenew(pr->param,pr->nr+extra);
+  for(i=pr->nr; (i<pr->nr+extra); i++) {
+    for(j=0; (j<MAXATOMLIST); j++)
+      pr->param[i].a[j]=0;
+    for(j=0; (j<MAXFORCEPARAM); j++)
+      pr->param[i].c[j]=0;
+    pr->param[i].s = NULL;
   }
-  if (pr->nr+extra < 0) {
-    fprintf(stderr,"Trying to make array < 0 bytes\n");
-    exit(1);
-  }
-  if (extra) {
-    if (pr->nr+extra == 0) {
-      sfree(pr->param);
-      pr->param=NULL;
-    }
-    else {
-      int i,j;
-      srenew(pr->param,pr->nr+extra);
-      for(i=pr->nr; (i<pr->nr+extra); i++) {
-	for(j=0; (j<MAXATOMLIST); j++)
-	  pr->param[i].a[j]=0;
-	for(j=0; (j<MAXFORCEPARAM); j++)
-	  pr->param[i].c[j]=0;
-      }
-    }
-  }
+  pr->nr += extra;
 }
 
 /* INIT STRUCTURES */
@@ -296,7 +275,7 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
 	fprintf (out,"%5s ",*(at->atomname[bt->param[i].a[dihp[f][j]]]));
     fprintf (out,"%5d ", bSwapParity ? -f-1 : f+1);
 
-    if (bt->param[i].s[0])
+    if (bt->param[i].s)
       fprintf(out,"   %s",bt->param[i].s);
     else
       for (j=0; (j<nrfp && (bt->param[i].c[j] != NOTSET)); j++)

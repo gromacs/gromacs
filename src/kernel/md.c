@@ -70,12 +70,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   init_md(cr,&parm->ir,&t,&t0,&lambda,&lam0,&SAfactor,&mynrnb,&bTYZ,top,
 	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&mdebin,grps,vcm,
 	  force_vir,shake_vir,mdatoms);
-  debug_par();
+  debug_gmx();
   
   /* Remove periodicity */  
   if (parm->ir.eBox != ebtNONE)
     do_pbc_first(log,parm,box_size,fr,graph,x);
-  debug_par();
+  debug_gmx();
   
   if (!parm->ir.bUncStart) 
     do_shakefirst(log,bTYZ,lambda,ener,parm,nsb,mdatoms,x,vold,buf,f,v,
@@ -89,13 +89,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     global_stat(log,cr,ener,force_vir,shake_vir,
 		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
   clear_rvec(vcm);
-  debug_par();
+  debug_gmx();
   
   /* Calculate Temperature coupling parameters lambda */
   ener[F_TEMP] = sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
   tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor,0,
 	 parm->ir.ntcmemory);
-  debug_par();
+  debug_gmx();
 
   /* Write start time and temperature */
   start_t=print_date_and_time(log,cr->pid,"Started mdrun");
@@ -107,7 +107,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       fprintf(stderr,"starting mdrun '%s'\n%d steps, %8.1f ps.\n\n",
 	      *(top->name),parm->ir.nsteps,parm->ir.nsteps*parm->ir.delta_t);
   }
-  debug_par();
+  debug_gmx();
   
   /***********************************************************
    *
@@ -150,7 +150,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef);
       unshift_self(graph,fr->shift_vec,x);
     }
-    debug_par();
+    debug_gmx();
     
     /* Set values for invmass etc. */
     init_mdatoms(mdatoms,lambda,(step==0));
@@ -163,7 +163,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     do_force(log,cr,parm,nsb,force_vir,step,&mynrnb,
 	     top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
 	     lambda,graph,bNS,FALSE,fr);
-    debug_par();
+    debug_gmx();
 #ifdef DEBUG
     pr_rvecs(log,0,"force_vir",force_vir,DIM);
 #endif     
@@ -192,7 +192,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (do_per_step(step,parm->ir.nstfout)) ff=f; else ff=NULL;
     fp_trn = write_traj(log,cr,traj,nsb,step,t,lambda,
 			nrnb,nsb->natoms,xx,vv,ff,parm->box);
-    debug_par();
+    debug_gmx();
     
     /* for rerunMD, certain things don't have to be done */
     if (!bRerunMD) {
@@ -204,7 +204,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		       *top->name, &(top->atoms),x,v,parm->box);
       }
-      debug_par();
+      debug_gmx();
       
       clear_mat(shake_vir);
       update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
@@ -217,7 +217,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       if (PAR(cr)) 
 	accumulate_u(cr,&(parm->ir.opts),grps);
       
-      debug_par();
+      debug_gmx();
       /* Calculate partial Kinetic Energy (for this processor) 
        * per group!
        */
@@ -225,7 +225,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		   vold,v,vt,&(parm->ir.opts),
 		   mdatoms,grps,&mynrnb,
 		   lambda,&ener[F_DVDL]);
-      debug_par();
+      debug_gmx();
       if (bStopCM)
 	calc_vcm(log,HOMENR(nsb),START(nsb),mdatoms->massT,v,vcm);
     }
@@ -285,7 +285,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (MASTER(cr))
       upd_mdebin(mdebin,mdatoms->tmass,step,ener,parm->box,shake_vir,
 		 force_vir,parm->vir,parm->pres,grps,mu_tot);
-    debug_par();
+    debug_gmx();
     
     if ( MASTER(cr) ) {
       bool do_ene,do_log,do_dr;
@@ -312,7 +312,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       bNotLastFrame = read_next_x(status,&t,natoms,x,parm->box);
   }
   /* End of main MD loop */
-  debug_par();
+  debug_gmx();
   
   if (MASTER(cr)) {
     print_ebin(fp_ene,FALSE,FALSE,log,step,t,lambda,SAfactor,
@@ -324,7 +324,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       close_xtc_traj();
     close_trn(fp_trn);
   }
-  debug_par();
+  debug_gmx();
 
   return start_t;
 }

@@ -242,11 +242,15 @@ void write_top(char *ff,FILE *out, char *pr,char *molname,
     fprintf(out,"%-15s %5d\n\n",molname?molname:"Protein",nrexcl);
     
     print_atoms(out,atype,at,cgnr);
-    print_bondeds(out,at->nr,d_bonds,    F_BONDS,    bts[ebtsBONDS], plist);
-    print_bondeds(out,at->nr,d_bonds,    F_G96BONDS, bts[ebtsBONDS], plist);
+    if (bts[ebtsBONDS] == 1)
+      print_bondeds(out,at->nr,d_bonds,    F_BONDS,    bts[ebtsBONDS], plist);
+    else
+      print_bondeds(out,at->nr,d_bonds,    F_G96BONDS, bts[ebtsBONDS], plist);
     print_bondeds(out,at->nr,d_pairs,    F_LJ14,     0,              plist);
-    print_bondeds(out,at->nr,d_angles,   F_ANGLES,   bts[ebtsANGLES],plist);
-    print_bondeds(out,at->nr,d_angles,   F_G96ANGLES,bts[ebtsANGLES],plist);
+    if (bts[ebtsANGLES] == 1)
+      print_bondeds(out,at->nr,d_angles,   F_ANGLES,   bts[ebtsANGLES],plist);
+    else
+      print_bondeds(out,at->nr,d_angles,   F_G96ANGLES,bts[ebtsANGLES],plist);
     print_bondeds(out,at->nr,d_dihedrals,F_PDIHS,    bts[ebtsPDIHS], plist);
     print_bondeds(out,at->nr,d_dihedrals,F_IDIHS,    bts[ebtsIDIHS], plist);
     print_bondeds(out,at->nr,d_dum3,     F_DUMMY3,   0,              plist);
@@ -547,7 +551,7 @@ void pdb2top(char *ff,FILE *top_file,char *posre_fn,char *molname,
     do_dum_excl(&excl,dummy_type);
     
     /* add newbonds to plist */
-    srenew(plist[fbonds].param, plist[fbonds].nr+newbonds.nr);
+    pr_alloc(newbonds.nr,&plist[fbonds]);
     for (i=0; i < newbonds.nr; i++)
       plist[fbonds].param[plist[fbonds].nr+i] = newbonds.param[i];
     plist[fbonds].nr += newbonds.nr;

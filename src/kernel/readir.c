@@ -44,6 +44,7 @@ static char *SRCID_readir_c = "$Id$";
 #include "readir.h"
 #include "toputil.h"
 #include "index.h"
+#include "network.h"
 
 #define MAXPTR 254
 #define NOGID  255
@@ -685,6 +686,7 @@ void do_index(char *ndx,
   
   if (bVerbose)
     fprintf(stderr,"processing index file...\n");
+  debug_gmx();
   if (ndx == NULL) {
     snew(grps,1);
     snew(grps->index,1);

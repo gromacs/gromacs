@@ -203,23 +203,28 @@ static void rm2par(t_param p[], int *np, peq eq)
 
 static void cppar(t_param p[], int np, t_params plist[], int ftype)
 {
-  int      i,j,nral,nrfp;
+  int      i,j,k,nral,nrfp;
   t_params *ps;
 
   ps   = &(plist[ftype]);
+  /*  if (ps->nr != 0) 
+      fatal_error(0,"Inconsistency in cppar ps->nr = %d (%s, %d)",
+      ps->nr,__FILE__,__LINE__);
+  */
   nral = NRAL(ftype);
   nrfp = NRFP(ftype);
   
   /* Keep old stuff */
-  srenew(ps->param,np);
-  for(i=ps->nr; (i<np); i++) {
+  pr_alloc(np,ps);
+  ps->nr -= np;
+  for(i=0,k=ps->nr; (i<np); i++,k++) {
     for(j=0; (j<nral); j++)
-      ps->param[i].a[j]=p[i].a[j];
+      ps->param[k].a[j] = p[i].a[j];
     for(j=0; (j<nrfp); j++)
-      ps->param[i].c[j]=p[i].c[j];
-    ps->param[i].s=strdup(p[i].s);
+      ps->param[k].c[j] = p[i].c[j];
+    ps->param[k].s=strdup(p[i].s);
   }
-  ps->nr=np;
+  ps->nr+=np;
 }
 
 static void cpparam(t_param *dest,t_param *src)

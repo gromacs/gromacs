@@ -56,7 +56,7 @@ void add_param(t_params *ps,int ai,int aj, real *c, char *s)
   
   if ((ai < 0) || (aj < 0)) 
     fatal_error(0,"Trying to add impossible atoms: ai=%d, aj=%d",ai,aj);
-  srenew(ps->param,++ps->nr);
+  pr_alloc(1,ps);
   ps->param[ps->nr-1].AI=ai;
   ps->param[ps->nr-1].AJ=aj;
   clear_atom_list(2, ps->param[ps->nr-1].a);
@@ -74,7 +74,7 @@ void add_param(t_params *ps,int ai,int aj, real *c, char *s)
 void add_imp_param(t_params *ps,int ai,int aj,int ak,int al,real c0, real c1,
 		   char *s)
 {
-  srenew(ps->param,++ps->nr);
+  pr_alloc(1,ps);
   ps->param[ps->nr-1].AI=ai;
   ps->param[ps->nr-1].AJ=aj;
   ps->param[ps->nr-1].AK=ak;
@@ -91,7 +91,7 @@ void add_imp_param(t_params *ps,int ai,int aj,int ak,int al,real c0, real c1,
 
 void add_dum2_param(t_params *ps,int ai,int aj,int ak)
 {
-  srenew(ps->param,++ps->nr);
+  pr_alloc(1,ps);
   ps->param[ps->nr-1].AI=ai;
   ps->param[ps->nr-1].AJ=aj;
   ps->param[ps->nr-1].AK=ak;
@@ -102,7 +102,7 @@ void add_dum2_param(t_params *ps,int ai,int aj,int ak)
 
 void add_dum3_param(t_params *ps,int ai,int aj,int ak,int al, bool bSwapParity)
 {
-  srenew(ps->param,++ps->nr);
+  pr_alloc(1,ps);
   ps->param[ps->nr-1].AI=ai;
   ps->param[ps->nr-1].AJ=aj;
   ps->param[ps->nr-1].AK=ak;
@@ -116,7 +116,7 @@ void add_dum3_param(t_params *ps,int ai,int aj,int ak,int al, bool bSwapParity)
 
 void add_dum4_param(t_params *ps,int ai,int aj,int ak,int al,int am)
 {
-  srenew(ps->param,++ps->nr);
+  pr_alloc(1,ps);
   ps->param[ps->nr-1].AI=ai;
   ps->param[ps->nr-1].AJ=aj;
   ps->param[ps->nr-1].AK=ak;
