@@ -33,6 +33,7 @@ static char *SRCID_ewald_c = "$Id$";
 #include "typedefs.h"
 #include "vec.h"
 #include "complex.h"
+#include "smalloc.h"
 #include "futil.h"
 #include "lrutil.h"
 #include "fftgrid.h"
@@ -149,6 +150,102 @@ void print_qkgrid(FILE *out,char *title,t_complex ***grid,real factor,
   fflush(fp);
 }
 
+static int mk_ivecs(int nx,int ny,int nz,ivec **ivptr)
+{
+  int  i,j,k,niv;
+  ivec *iv;
+  
+  niv = 0;
+  snew(iv,(2*nx+1)*(2*ny+1)*(2*nz+1));
+  for(i=-nx; (i<=nx); i++)
+    for(j=-ny; (j<=ny); j++)
+      for(k=-nz; (k<=nz); k++) 
+	if ((i!=0) || (j!=0) || (k!=0)) { 
+	  iv[niv][XX] = i;
+	  iv[niv][YY] = j;
+	  iv[niv][ZZ] = k;
+	  niv++;
+	}
+  *ivptr = iv;
+  
+  return niv;
+}
+
+static rvec box_save;
+
+real box_length(ivec iv,rvec box)
+{
+  int m;
+  rvec x;
+  
+  for(m=0; (m<DIM); m++) 
+    x[m] = box[m]*(abs(iv[m]));
+  return iprod(x,x);
+}
+
+static int box_cmp(const void *a,const void *b)
+{
+  int  *ia,*ib;
+  real xa,xb;
+  int  m;
+  
+  ia = (int *)a;
+  ib = (int *)b;
+  xa = box_length(ia,box_save);
+  xb = box_length(ib,box_save);
+  
+  if (xa < xb)
+    return -1;
+  else if (xa > xb)
+    return 1;
+  else
+    return 0;
+}
+
+static int sort_ivecs(int niv,ivec iv[],rvec box,int index[])
+{
+  const real tolerance = 1e-3;
+  int   i,nind;
+  real  length[2];
+  int   cur=0;
+#define new (1-cur)
+
+  /* First step, sort all the boxes on distance from the origin */
+  copy_rvec(box,box_save);
+  qsort(iv,niv,sizeof(iv[0]),box_cmp);
+  
+  /* Next step sort all the indices so that we add symmetrically all boxes
+   * at the same distance from the origin
+   */
+  nind        = 0;
+  index[0]    = 0;
+  length[cur] = box_length(iv[0],box);
+  for(i=1; (i<niv); i++) {
+    length[new] = box_length(iv[i],box);
+    if ((length[new]/length[cur]) - 1 > tolerance) {
+      index[++nind] = i;
+      cur = new;
+    }
+  }
+  index[++nind] = i;
+  
+  return nind;
+}
+
+static void print_ivecs(FILE *fp,int niv,ivec iv[],rvec box,int nind,int index[])
+{
+  int i,j;
+ 
+  fprintf(fp,"EWALD BOX ORDER\n"); 
+  fprintf(fp,"There are %d ivecs and %d indices\n",niv,nind);
+  fprintf(fp,"Index   Ivec      X      Y      Z      Dist\n");
+  for(i=0; (i<nind); i++) 
+    for(j=index[i]; (j<index[i+1]); j++) {
+      fprintf(fp,"%5d  %5d  %5d  %5d  %5d  %8.3f\n",
+	      i,j,iv[j][XX],iv[j][YY],iv[j][ZZ],box_length(iv[j],box));
+    }
+}
+
 real do_ewald(FILE *log,       t_inputrec *ir,
 	      int natoms,      rvec x[],rvec f[],
 	      real charge[],   rvec box,
@@ -159,7 +256,8 @@ real do_ewald(FILE *log,       t_inputrec *ir,
   static    t_complex ***qtab;
   static    real      ***gtab;
   static    int       nx,ny,nz;
-  
+  static    ivec      *iv;
+  static    int       *iv_index,nind,niv;
   real      Gk,energy;
   int       m,ix,iy,iz,i;
   rvec      k,lll;
@@ -183,7 +281,12 @@ real do_ewald(FILE *log,       t_inputrec *ir,
     qtab = mk_cgrid(nx,ny,nz);
 
     mk_ghat(NULL,nx,ny,nz,gtab,box,ir->rshort,ir->rlong,TRUE,bOld);
-    
+
+    niv  = mk_ivecs(nx,ny,nz,&iv);
+    snew(iv_index,niv);
+    nind = sort_ivecs(niv,iv,box,iv_index);
+    if (debug) 
+      print_ivecs(debug,niv,iv,box,nind,iv_index);
     bFirst = FALSE;
   }
   
