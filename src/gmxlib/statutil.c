@@ -275,7 +275,7 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 		       int nfile,t_filenm fnm[],int npargs,t_pargs pa[],
 		       int ndesc,char *desc[],int nbugs,char *bugs[])
 {
-  static bool bHelp=FALSE,bHidden=FALSE;
+  static bool bHelp=FALSE,bHidden=FALSE,bQuiet=FALSE;
   static int  nicelevel=0;
   static int  mantp=0;
 #ifdef _SGI_
@@ -300,6 +300,8 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
       "HIDDENwrite file with debug information" },
     { "-h",    FALSE, etBOOL, &bHelp,     
       "Print help info and quit" },
+    { "-quiet",FALSE, etBOOL, &bQuiet,
+      "HIDDENDo not print help info" },
     { "-hidden", FALSE, etBOOL, &bHidden,
       "HIDDENPrint hidden options" },
     { "-man",  FALSE, etINT,  &mantp,
@@ -319,12 +321,12 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   bool bFlags[NPCA_PA] = 
 #ifdef _SGI_
 #ifdef USE_SGI_FPE
-  { 0, 0, 0, 1, 1, 1, 1, 1, 1, 1 };
+  { 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 };
 #else
-  { 0, 0, 0, 1, 1, 1, 1, 1, 1 };
+  { 0, 0, 0, 1, 1, 1, 1, 1, 1, 1 };
 #endif
 #else
-  { 0, 0, 0, 1, 1, 1, 1, 1 };
+  { 0, 0, 0, 1, 1, 1, 1, 1, 1 };
 #endif
   
   /* First do file stuff */
@@ -394,7 +396,7 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 	    buf,__FILE__,__LINE__);
   }
   
-  if (!FF(PCA_QUIET)) {
+  if (!(FF(PCA_QUIET) || bQuiet )) {
     if (bHelp)
       write_man(stdout,eotHelp,program,ndesc,desc,nfile,fnm,npall,all_pa,nbugs,bugs,bHidden);
     else if (bPrint) {
