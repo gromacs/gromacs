@@ -306,6 +306,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
   bool bPrint;
   int  i,j,k,npall;
   char *ptr,*newdesc;
+  char *envstr;
   
   t_pargs *all_pa=NULL;
   
@@ -409,8 +410,10 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
   npall = add_parg(npall,&(all_pa),&fpe_pa);
 #endif
 #ifndef NO_NICE
+  envstr = getenv("GMXNPRIALL");
+  if (envstr)
+    npri=atoi(envstr);
   if (FF(PCA_SET_NPRI)) {
-    char *envstr;
     envstr = getenv("GMXNPRI");
     if (envstr)
       npri=atoi(envstr);
