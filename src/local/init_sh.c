@@ -71,7 +71,9 @@ t_shell *init_shells(FILE *log,int start,int homenr,
     if (md->ptype[i] == eptShell)
       shell_index[i-start] = nsi++;
   }
-  assert(nsi == n[eptShell]);
+  if (nsi != n[eptShell])
+    fatal_error(0,"Your number of shells %d is not equal to the number of shells %d",nsi,n[eptShell]);
+  
   for(i=0; (i<eptNR); i++)
     if (n[i]!=0)
       fprintf(log,"There are: %d %s\n",n[i],ptype_str[i]);
@@ -174,7 +176,8 @@ t_shell *init_shells(FILE *log,int start,int homenr,
       i  += nra+1;
     }
     /* Verify whether it's all correct */
-    assert(ns == *nshell);
+    if (ns != *nshell)
+      fatal_error(0,"Something weird with shells. They may not be bonded to something");
 
     for(i=0; (i<ns); i++)
       shell[i].k_1 = 1.0/shell[i].k;

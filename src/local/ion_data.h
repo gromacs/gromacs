@@ -99,14 +99,15 @@ static t_element element[] = {
 #define NELEM asize(element)
 
 /* 
- * in the first column the energy of the K-electrons; 
+ * In the first column the binding energy of the K-electrons; 
  * THIS IS IN eV,  which matches the photon energies. 
-* In the second column the binding energy of the outer shell electrons
+ * In the second column the binding energy of the outer shell electrons
  * The third column describes the photoelectric cross sections, 
  * where this now gives the fraction of photoelectric events 
  * which correspond to K-shell events, I called f_j in my 
  * notes:
- * The final column (a new column) now gives the values for the lifetimes, 
+ * The final column (a new column) now gives the values for the lifetimes
+ * in ps. 
  */
 typedef struct {
   real E_K,E_L,Prob_K,tau;
