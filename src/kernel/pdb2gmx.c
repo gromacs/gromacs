@@ -630,11 +630,10 @@ int main(int argc, char *argv[])
     fatal_error(0,"No atoms found in pdb file %s.\n",opt2fn("-f",NFILE,fnm));
 
   printf("Analyzing pdb file\n");
-  pchain='\0';
   nchain=0;
   chains=NULL;
   for (i=0; (i<natom); i++)
-    if (pdba_all.atom[i].chain!=pchain) {
+    if ((i==0) || (pdba_all.atom[i].chain!=pchain)) {
       pchain=pdba_all.atom[i].chain;
       /* set natom for previous chain */
       if (nchain > 0)
