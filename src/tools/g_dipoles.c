@@ -93,11 +93,11 @@ static void done_gkrbin(t_gkrbin **gb)
 
 void do_gkr(t_gkrbin *gb,int ngrp,atom_id grpindex[],
 	    atom_id mindex[],atom_id ma[],rvec x[],rvec mu[],
-	    matrix box,int nAtom)
+	    matrix box,t_atom *atom,int nAtom)
 {
   static rvec *xcm=NULL;
   int  gi,aj,j0,j1,i,j,k,index;
-  real fac,r2;
+  real qtot,q,r2;
   rvec dx;
   
   if (!xcm)
@@ -108,17 +108,20 @@ void do_gkr(t_gkrbin *gb,int ngrp,atom_id grpindex[],
     gi = grpindex ? grpindex[i] : i;
     j0 = mindex[gi];
     
-    if (nAtom >= 0)
-      copy_rvec(x[ma[j0+nAtom]],xcm[i]);
+    if (nAtom > 0)
+      copy_rvec(x[ma[j0+nAtom-1]],xcm[i]);
     else {
       j1 = mindex[gi+1];
       clear_rvec(xcm[i]);
-      fac=1.0/(j1-j0);
-      for(j=j0; (j<j1); j++) {
-      aj = ma[j];
-      for(k=0; (k<DIM); k++)
-	xcm[i][k] += fac*x[aj][k];
+      qtot = 0;
+      for(j=j0; j<j1; j++) {
+	aj = ma[j];
+	q = fabs(atom[aj].q);
+	qtot += q;
+	for(k=0; k<DIM; k++)
+	  xcm[i][k] += q*x[aj][k];
       }
+      svmul(1/qtot,xcm[i],xcm[i]);
     }
   }
   
@@ -635,7 +638,8 @@ static void do_dip(char *fn,char *topf,
     }    
     if (bGkr) {
       init_pbc(box,FALSE);
-      do_gkr(gkrbin,gnx,grpindex,mols->index,mols->a,x,dipole,box,gkatom);
+      do_gkr(gkrbin,gnx,grpindex,mols->index,mols->a,x,dipole,box,
+	     atom,gkatom);
     }
     
     if (bAverCorr) {
@@ -844,7 +848,7 @@ int main(int argc,char *argv[])
     { "-avercorr", FALSE, etBOOL, {&bAverCorr},
       "calculate AC function of average dipole moment of the simulation box rather than average of AC function per molecule" },
     { "-gkratom", FALSE, etINT, {&nFA},
-      "Use the n-th atom of a molecule (starting from 0) to calculate the distance between molecules rather than the center of geometry (when -1) in the calculation of distance dependent Kirkwood factors" }
+      "Use the n-th atom of a molecule (starting from 1) to calculate the distance between molecules rather than the center of charge (when 0) in the calculation of distance dependent Kirkwood factors" }
   };
   int          gnx;
   atom_id      *grpindex;
