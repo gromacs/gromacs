@@ -100,7 +100,8 @@ void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
 
   index=0; /* For the compiler only */
 
-  for(j=0;(j<3);j++) {
+  /* Copy only the first two eigenvectors */  
+  for(j=0;(j<2);j++) {
     max_d=-1000;
     for(i=0;(i<6);i++)
       if (d[i+1]>max_d) {
@@ -113,20 +114,20 @@ void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
       vk[j][i]=M_SQRT2*om[i+4][index+1];
     }
   }
-  
+  /* Calculate the last eigenvector as the outer-product of the first two.
+   * This insures that the conformation is not mirrored and
+   * prevents problems with completely flat reference structures.
+   */  
+  oprod(vh[0],vh[1],vh[2]);
+  oprod(vk[0],vk[1],vk[2]);
+
   /*determine R*/
   for(c=0;(c<3);c++)
     for(r=0;(r<3);r++)
       R[c][r]=vk[0][r]*vh[0][c]+
 	      vk[1][r]*vh[1][c]+
 	      vk[2][r]*vh[2][c];
-  if (det(R) < 0)
-    for(c=0;(c<3);c++)
-      for(r=0;(r<3);r++)
-	R[c][r]=vk[0][r]*vh[0][c]+
-	        vk[1][r]*vh[1][c]-
-	        vk[2][r]*vh[2][c];
-  
+
   /*rotate X*/
   for(j=0;(j<natoms);j++) {
     for(m=0;(m<3);m++)
