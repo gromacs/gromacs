@@ -112,10 +112,10 @@ int main(int argc,char *argv[])
     "angle distributions etc. It uses a run input file ([TT].tpx[tt]) for the",
     "definitions of the angles, dihedrals etc."
   };
-  static char *opt="A";
+  static char *opt[] = { "angle", "dihedral", "improper", "ryckaert-bellemans", "phi-psi", NULL };
   t_pargs pa[] = {
-    { "-type", FALSE, etSTR, &opt,
-      "Select either A (angles), D (dihedrals), I (impropers), R (Ryckaert-Bellemans) or P (phi/psi)" }
+    { "-type", FALSE, etENUM, opt,
+      "Type of angle" }
   };
       
   FILE       *out;
@@ -129,7 +129,7 @@ int main(int argc,char *argv[])
   char       **grpnames;
   t_filenm fnm[] = {
     { efTPX, NULL, NULL, ffREAD  },
-    { efNDX, NULL, NULL, ffWRITE }
+    { efNDX, NULL, "angle", ffWRITE }
   };
 #define NFILE asize(fnm)
 
@@ -137,30 +137,27 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
 
-  if (!opt)
-    usage(argv[0],opt);
-    
   bPP  = FALSE;
   mult = 4;
-  switch(opt[0]) {
-  case 'A':
+  switch(opt[0][0]) {
+  case 'a':
     mult=3;
     FTYPE=F_ANGLES;
     break;
-  case 'D':
+  case 'd':
     FTYPE=F_PDIHS;
     break;
-  case 'I':
+  case 'i':
     FTYPE=F_IDIHS;
     break;
-  case 'R':
+  case 'r':
     FTYPE=F_RBDIHS;
     break;
-  case 'P':
+  case 'p':
     bPP=TRUE;
     break;
   default:
-    usage(argv[0],opt);
+    break;
   }
 
   top=read_top(ftp2fn(efTPX,NFILE,fnm));
@@ -180,9 +177,8 @@ int main(int argc,char *argv[])
     fill_ang(FTYPE,mult,nr,index,ft_ind,&(top->idef));
 
     out=ftp2FILE(efNDX,NFILE,fnm,"w");
-    fprintf(out,"%10d%10d\n",nftype,nang*mult);
     for(i=0; (i<nftype); i++) {
-      fprintf(out,"%12s  %d  ",grpnames[i],mult*nr[i]);
+      fprintf(out,"[ %s ]\n",grpnames[i]);
       for(j=0; (j<nr[i]*mult); j++) {
 	fprintf(out,"%d  ",index[i][j]);
       }

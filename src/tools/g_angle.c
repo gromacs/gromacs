@@ -61,12 +61,12 @@ int main(int argc,char *argv[])
     "atom-triples for angles or atom-quadruplets for dihedrals.",
     "If this is not the case, the program will crash."
   };
-  static char *opt[] = { "angles", "dihedrals", "impropers", "ryckaert-bellemans", NULL };
+  static char *opt[] = { "angle", "dihedral", "improper", "ryckaert-bellemans", NULL };
   static bool bALL=FALSE,bChandler=FALSE,bAverCorr=FALSE;
   static real binwidth=1;
   t_pargs pa[] = {
     { "-type", FALSE, etENUM, opt,
-      "Select either type of angle you want to analyse" },
+      "Type of angle to analyse" },
     { "-all",    FALSE,  etBOOL, &bALL,
       "Plot all angles separately in the averages file, in the order of appearance in the index file." },
     { "-binwidth", FALSE, etREAL, &binwidth,
@@ -102,7 +102,7 @@ int main(int argc,char *argv[])
   t_filenm   fnm[] = {
     { efTRX, "-f", NULL,  ffREAD  },
     { efTPX, NULL, NULL,  ffREAD  },
-    { efNDX, NULL, NULL,  ffREAD  },
+    { efNDX, NULL, "angle",  ffREAD  },
     { efXVG, "-od", "angdist",  ffWRITE },
     { efXVG, "-ov", "angaver",  ffOPTWR },
     { efXVG, "-of", "dihfrac",  ffOPTWR },
