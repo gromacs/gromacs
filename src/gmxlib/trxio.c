@@ -115,7 +115,8 @@ int write_trx(int fnum,int nind,atom_id *ind,t_atoms *atoms,
   int i;
 
   switch (trx_out[fnum].ftp) {
-  case efTRN: 
+  case efTRJ:
+  case efTRR:
     if (v) {
       snew(vout,nind);
       for(i=0; i<nind; i++) 
@@ -135,7 +136,8 @@ int write_trx(int fnum,int nind,atom_id *ind,t_atoms *atoms,
   case efXTC: 
     write_xtc(trx_out[fnum].fnum,nind,step,time,box,xout,1000);
     break;
-  case efTRN:
+  case efTRJ:
+  case efTRR:  
     fwrite_trn(trx_out[fnum].fnum,frame,time,step,box,nind,xout,vout,NULL);
     break;
   case efPDB:
@@ -152,13 +154,15 @@ int write_trx(int fnum,int nind,atom_id *ind,t_atoms *atoms,
     write_gms(trx_out[fnum].fp,nind,xout,box);
     break;
   default:
-    fatal_error(0,"Sorry, write_trx_x can not write %s",
+    fatal_error(0,"Sorry, write_trx can not write %s",
 		ftp2ext(trx_out[fnum].ftp));
     break;
   }
 
   switch (trx_out[fnum].ftp) {
   case efTRN:
+  case efTRJ:
+  case efTRR:
     if (v) sfree(vout);
   case efXTC:
   case efG87:
@@ -177,7 +181,8 @@ int close_trx(int fnum)
   case efXTC: 
     close_xtc(trx_out[fnum].fnum);
     break;
-  case efTRN:
+  case efTRJ:
+  case efTRR:
     close_trn(trx_out[fnum].fnum);
     break;
   case efPDB:
@@ -188,7 +193,7 @@ int close_trx(int fnum)
     fclose(trx_out[fnum].fp);
     break;
   default:
-    fatal_error(0,"Sorry, write_trx_x can not close file %d",fnum);
+    fatal_error(0,"Sorry, write_trx can not close file %d",fnum);
     break;
   }
 
@@ -198,7 +203,7 @@ int close_trx(int fnum)
 int open_trx(char *outfile,char *filemode)
 {
   if (filemode[0] != 'w')
-    fatal_error(0,"Sorry, write_trx_x can only write");
+    fatal_error(0,"Sorry, write_trx can only write");
   
   srenew(trx_out,nfile+1);
   
@@ -208,7 +213,8 @@ int open_trx(char *outfile,char *filemode)
   case efXTC: 
     trx_out[nfile].fnum = open_xtc(outfile,filemode);
     break;
-  case efTRN:
+  case efTRJ:
+  case efTRR:
     trx_out[nfile].fnum = open_trn(outfile,filemode);
     break;
   case efPDB:
@@ -219,7 +225,7 @@ int open_trx(char *outfile,char *filemode)
     trx_out[nfile].fp = ffopen(outfile,filemode);
     break;
   default:
-    fatal_error(0,"Sorry write_trx_x can not write %s",outfile);
+    fatal_error(0,"Sorry write_trx can not write %s",outfile);
     break;
   }
   
