@@ -431,7 +431,7 @@ static int remove_duplicate_atoms(t_atoms *pdba,rvec x[])
   return pdba->nr;
 }
 
-static char *choose_ff(bool bFFMan)
+static char *choose_ff(void)
 {
   typedef struct { char *desc,*fn; } t_fff;
   static  char *fnsel;
@@ -455,7 +455,7 @@ static char *choose_ff(bool bFFMan)
   }
   fclose(in);
 
-  if (bFFMan && (nff > 1)) {
+  if (nff > 1) {
     printf("\nSelect the Force Field:\n");
     for(i=0; (i<nff); i++)
       printf("%2d: %s\n",i,fff[i].desc);
@@ -627,7 +627,7 @@ int main(int argc, char *argv[])
   
   /* Command line arguments msut be static */
   static bool bNewRTP=FALSE;
-  static bool bInter=FALSE, bFFMan=FALSE, bCysMan=FALSE; 
+  static bool bInter=FALSE, bCysMan=FALSE; 
   static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan = FALSE;
   static bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
   static bool bH14= FALSE,bSort=TRUE, bRetainH=FALSE;
@@ -638,9 +638,7 @@ int main(int argc, char *argv[])
     { "-newrtp", FALSE, etBOOL, &bNewRTP,
       "HIDDENWrite the residue database in new format to 'new.rtp'"},
     { "-inter",  FALSE, etBOOL, &bInter,
-      "Set the next 7 options to interactive"},
-    { "-ff",     FALSE, etBOOL, &bFFMan, 
-      "Interactive Force Field selection, iso the first one" },
+      "Set the next 6 options to interactive"},
     { "-ss",     FALSE, etBOOL, &bCysMan, 
       "Interactive SS bridge selection" },
     { "-ter",    FALSE, etBOOL, &bTerMan, 
@@ -680,7 +678,6 @@ int main(int argc, char *argv[])
 		    asize(bugs),bugs);
   if (bInter) {
     /* if anything changes here, also change description of -inter */
-    bFFMan  = TRUE;
     bCysMan = TRUE;
     bTerMan = TRUE;
     bLysMan = TRUE;
@@ -827,8 +824,8 @@ int main(int argc, char *argv[])
 	   chains[i].pdba->nres, chains[i].pdba->nr,
 	   chains[i].bAllWat ? "(only water)":"");
   printf("\n");
-
-  ff=choose_ff(bFFMan);
+  
+  ff=choose_ff();
   printf("Using %s force field\n",ff);
   
   /* Read atomtypes... */
