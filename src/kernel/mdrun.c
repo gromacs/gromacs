@@ -93,15 +93,16 @@ int main(int argc,char *argv[])
   static bool bVerbose=FALSE,bCompact=TRUE;
   static int  nprocs=1,nDLB=0,nstepout=10;
   static t_pargs pa[] = {
+#ifdef PARALLEL
     { "-np",      FALSE, etINT, &nprocs,
       "Number of processors, must be the same as used for grompp" },
-    { "-v",       FALSE, etBOOL,&bVerbose, "Verbose mode" },
-    { "-compact", FALSE, etBOOL,&bCompact,
-      "Write a compact log file, i.e. do not write a lot of things which are already in the energy file" },
+#endif
+    { "-v",       FALSE, etBOOL,&bVerbose, "Print remaining runtime" },
+    { "-compact", FALSE, etBOOL,&bCompact, "Write a compact log file" },
     { "-dlb",     FALSE, etINT, &nDLB,
       "HIDDENUse dynamic load balancing every ... step. BUGGY do not use" },
     { "-stepout", FALSE, etINT, &nstepout,
-      "Frequency of writing the remaining runtime" }
+      "HIDDENFrequency of writing the remaining runtime" }
   };
   t_edsamyn edyn;
   
