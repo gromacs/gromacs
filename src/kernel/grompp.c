@@ -117,10 +117,10 @@ static void double_check(t_inputrec *ir, matrix box, t_molinfo *mol)
   }
 }
 
-void check_water(bool bVerbose,
-		 int nmol,t_molinfo msys[],t_inputrec *ir,char *watertype)
+void check_water(bool bVerbose,int nmol,t_molinfo msys[],
+		 int Nsim,t_simsystem Sims[],t_inputrec *ir,char *watertype)
 {
-  int i;
+  int i,wmol;
   
   if (bVerbose)
     fprintf(stderr,"checking for water... ");
@@ -130,16 +130,20 @@ void check_water(bool bVerbose,
       fprintf(stderr,"no water optimizations...\n");
   }
   else {
-    for(i=0; (i<nmol); i++) {
-      if (strcmp(watertype,*(msys[i].name)) == 0) {
+    for(i=0; (i<Nsim); i++) {
+      wmol = Sims[i].whichmol;
+      if ((strcmp(watertype,*(msys[wmol].name)) == 0) && (Sims[i].nrcopies > 0)) {
 	if (ir->watertype != -1)
 	  fatal_error(0,"Twice the same moleculetype %s",watertype);
-	ir->watertype=msys[i].atoms.atom[0].type;
-	if (bVerbose)
-	  fprintf(stderr,"using atomtype %d for water oxygen\n",
-		  ir->watertype);
+	ir->watertype=msys[wmol].atoms.atom[0].type;
       }
     }
+  }
+  if (bVerbose) {
+    if (ir->watertype != -1)
+      fprintf(stderr,"using atomtype %d for water oxygen\n",ir->watertype);
+    else
+      fprintf(stderr,"no water\n");
   }
 }
 
@@ -277,7 +281,7 @@ static int *new_status(char *topfile,char *confin,
   msys->name=do_top(bVerbose,topfile,opts,&(sys->symtab),
 		    plist,atype,&nrmols,&molinfo,ir,&Nsim,&Sims);
 
-  check_water(bVerbose,nrmols,molinfo,ir,opts->watertype);
+  check_water(bVerbose,nrmols,molinfo,Nsim,Sims,ir,opts->watertype);
   
   ntab = 0;
   tab  = NULL;
