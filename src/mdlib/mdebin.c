@@ -78,6 +78,9 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
     "Pres-YX","Pres-YY","Pres-YZ",
     "Pres-ZX","Pres-ZY","Pres-ZZ"
   };
+  static char *surft_nm[] = {
+    "#Surf*SurfTen"
+  };
   static char *mu_nm[] = {
     "Mu-X", "Mu-Y", "Mu-Z"
   };
@@ -131,9 +134,10 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
     md->isvir = get_ebin_space(md->ebin,asize(sv_nm),sv_nm);
     md->ifvir = get_ebin_space(md->ebin,asize(fv_nm),fv_nm);
   }
-  md->ivir  = get_ebin_space(md->ebin,asize(vir_nm),vir_nm);
-  md->ipres = get_ebin_space(md->ebin,asize(pres_nm),pres_nm);
-  md->imu   = get_ebin_space(md->ebin,asize(mu_nm),mu_nm);
+  md->ivir   = get_ebin_space(md->ebin,asize(vir_nm),vir_nm);
+  md->ipres  = get_ebin_space(md->ebin,asize(pres_nm),pres_nm);
+  md->isurft = get_ebin_space(md->ebin,asize(surft_nm),surft_nm);
+  md->imu    = get_ebin_space(md->ebin,asize(mu_nm),mu_nm);
   if (bLR) 
     bEInd[egLR]   = TRUE;
   if (bLJLR)
@@ -250,6 +254,7 @@ void upd_mdebin(t_mdebin *md,real tmass,int step,
   real   bs[NBOXS];
   real   eee[egNR];
   real   ecopy[F_NRE];
+  real   tmp;
   
   copy_energy(ener,ecopy);
   add_ebin(md->ebin,md->ie,f_nre,ecopy,step);
@@ -272,6 +277,8 @@ void upd_mdebin(t_mdebin *md,real tmass,int step,
   }
   add_ebin(md->ebin,md->ivir,9,vir[0],step);
   add_ebin(md->ebin,md->ipres,9,pres[0],step);
+  tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ];
+  add_ebin(md->ebin,md->isurft,1,&tmp,step);
   add_ebin(md->ebin,md->imu,3,mu_tot,step);
   
   if (md->nE > 1) {
