@@ -337,7 +337,7 @@ void get_ir(char *mdparin,char *mdparout,
   EETYPE("ns-type",     ir->ns_type,    ens_names, nerror, TRUE);
   /* set ndelta to the optimal value of 2 */
   ir->ndelta = 2;
-  CTYPE ("Periodic boundary conditions: xyz or none");
+  CTYPE ("Periodic boundary conditions: xyz or no");
   EETYPE("pbc",         ir->ePBC,       epbc_names, nerror, TRUE);
   CTYPE ("nblist cut-off");
   RTYPE ("rlist",	ir->rlist,	1.0);
