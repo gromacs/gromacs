@@ -47,6 +47,44 @@ static char *SRCID_eneconv_c = "$Id$";
 #define FLT_MAX 1e36
 #endif
 
+static int *select_it(int nre,char *nm[],int *nset)
+{
+  bool *bE;
+  int  n,k,j,i;
+  int  *set;
+  bool bVerbose = TRUE;
+  
+  if ((getenv("VERBOSE")) != NULL)
+    bVerbose = FALSE;
+  
+  fprintf(stderr,"Select the terms you want to scale from the following list\n");
+  fprintf(stderr,"End your selection with 0\n");
+
+  if ( bVerbose ) {
+    for(k=0; (k<nre); ) {
+      for(j=0; (j<4) && (k<nre); j++,k++) 
+	fprintf(stderr," %3d=%14s",k+1,nm[k]);
+      fprintf(stderr,"\n");
+    }
+  }
+
+  snew(bE,nre);
+  do {
+    scanf("%d",&n);
+    if ((n>0) && (n<=nre))
+      bE[n-1]=TRUE;
+  } while (n != 0);
+
+  snew(set,nre);
+  for(i=(*nset)=0; (i<nre); i++)
+    if (bE[i])
+      set[(*nset)++]=i;
+ 
+  sfree(bE);
+  
+  return set;
+}
+
 static bool same_time(real t1,real t2)
 {
   const real tol=1e-5;
@@ -337,7 +375,7 @@ int main(int argc,char *argv[])
   int       in,out=0;
   t_energy  *ee,*lastee,*outee,*startee;
   int       step,laststep,outstep,startstep;
-  int       nre,nfile,i,j,ndr;
+  int       nre,nfile,i,j,kkk,ndr,nset,*set;
   real      t=0,outt=-1; 
   char      **fnms;
   char      **enm=NULL;
@@ -356,7 +394,6 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)  
   bool   bWrite;
   static real  delta_t=0.0, toffset=0,scalefac=1;
-  static int   scaleindex=-1;
   static bool  bSetTime=FALSE;
   static bool  bSort=TRUE,bError=TRUE;
   static real  begin=-1;
@@ -376,9 +413,7 @@ int main(int argc,char *argv[])
     { "-sort",     FALSE, etBOOL, {&bSort},
       "Sort energy files (not frames)"},
     { "-scalefac", FALSE, etREAL, {&scalefac},
-      "Multiply energy component by this factor (with -scaleindex)" },
-    { "-scaleindex", FALSE, etINT, {&scaleindex},
-      "Scale this energy (if not -1) by factor given above" },
+      "Multiply energy component by this factor" },
     { "-error",    FALSE, etBOOL, {&bError},
       "Stop on errors in the file" }
   };
@@ -432,6 +467,9 @@ int main(int argc,char *argv[])
     in=open_enx(fnms[i],"r");
     do_enxnms(in,&nre,&enm);
     if(i==0) {
+      if (scalefac != 1)
+	set = select_it(nre,enm,&nset);
+      
       /* write names to the output file */
       out=open_enx(opt2fn("-o",NFILE,fnm),"w");  
       do_enxnms(out,&nre,&enm);
@@ -478,8 +516,11 @@ int main(int argc,char *argv[])
 	  fprintf(stderr,"\nContinue writing frames from t=%g, step=%d\n",
 		  t,outstep);
 	}
-	if ((scaleindex >=0) && (scaleindex < nre))
-	  outee[scaleindex].e *= scalefac;
+	for(kkk=0; (kkk<nset); kkk++) {
+	  outee[set[kkk]].e    *= scalefac;
+	  outee[set[kkk]].eav  *= scalefac;
+	  outee[set[kkk]].esum *= scalefac;
+	}
 	do_enx(out,&outt,&outstep,&nre,outee,&ndr,dr);
 	fprintf(stderr,"\rWriting step %d, time %f        ",outstep,outt);
       }
