@@ -46,7 +46,7 @@ extern "C" {
 
 static char *CopyrightText[] = {
   "",
-  "Copyright (c) 1991-1997",
+  "Copyright (c) 1991-1998",
   "BIOSON Research Institute, Dept. of Biophysical Chemistry",
   "University of Groningen, The Netherlands",
   ""
