@@ -39,7 +39,6 @@ static char *SRCID_libxdrf_c = "$Id$";
 #endif
 
 #include <limits.h>
-#include <malloc.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
