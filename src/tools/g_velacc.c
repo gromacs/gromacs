@@ -55,11 +55,6 @@ int main(int argc,char *argv[])
   static char *desc[] = {
     "g_velacc computes the velocity autocorrelation function"
   };
-  static int  nf = 10;
-  t_pargs pa[] = {
-    { "-nframes",   FALSE, etINT,  &nf,
-      "Number of frames in your trajectory" }
-  };
 
   FILE       *fp;
   rvec       *v;
@@ -69,23 +64,23 @@ int main(int argc,char *argv[])
   char       title[256];
   real       t,t0,t1,lambda;
   matrix     box;
-  int        status,natoms,teller,i,tel3;
+  int        status,natoms,teller,n_alloc,i,tel3;
   real       **c1;
   
 #define NHISTO 360
     
   t_filenm  fnm[] = {
     { efTRN, "-f",    NULL,   ffREAD },
-    { efXVG, "-o",    "vac",  ffWRITE },
-    { efNDX, NULL,    NULL,   ffREAD }
+    { efNDX, NULL,    NULL,   ffREAD },
+    { efXVG, "-o",    "vac",  ffWRITE }
   };
 #define NFILE asize(fnm)
   int     npargs;
   t_pargs *ppa;
 
   CopyRight(stderr,argv[0]);
-  npargs = asize(pa);
-  ppa    = add_acf_pargs(&npargs,pa);
+  npargs = 0;
+  ppa    = add_acf_pargs(&npargs,NULL);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
 
@@ -94,19 +89,20 @@ int main(int argc,char *argv[])
   
   /* Correlation stuff */
   snew(c1,gnx);
-  if (nf < 0) 
-    fatal_error(0,"No frames (%d) in trajectory ? DIY!\n",nf);
-  fprintf(stderr,"Going to malloc %d bytes!\n",gnx*DIM*nf*sizeof(c1[0][0]));
   for(i=0; (i<gnx); i++)
-    snew(c1[i],DIM*nf);
+    c1[i]=NULL;
   
   natoms=read_first_v(&status,ftp2fn(efTRN,NFILE,fnm),&t,&v,box);
   t0=t;
       
+  n_alloc=0;
   teller=0;
   do {
-    if (teller >= nf)
-      break;
+    if (teller >= n_alloc) {
+      n_alloc+=100;
+      for(i=0; (i<gnx); i++)
+	srenew(c1[i],DIM*n_alloc);
+    }
     tel3=3*teller;
     for(i=0; (i<gnx); i++) {
       c1[i][tel3+XX]=v[index[i]][XX];
@@ -120,9 +116,9 @@ int main(int argc,char *argv[])
   close_trj(status);
 
   t1=t;
-  
+
   do_autocorr(ftp2fn(efXVG,NFILE,fnm),"Velocity Autocorrelation Function",
-	      teller,gnx,c1,(t1-t0)/teller,eacVector,
+	      teller,gnx,c1,(t1-t0)/(teller-1),eacVector,
 	      TRUE,NULL,NULL);
   
   xvgr_file(ftp2fn(efXVG,NFILE,fnm),"-nxy");
