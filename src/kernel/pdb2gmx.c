@@ -865,8 +865,8 @@ int main(int argc, char *argv[])
 	  
   printf("\n  %5s  %4s %6s\n","chain","#res","#atoms");
   for (i=0; (i<nch); i++)
-    printf("  %d '%c'%s  %4d %6d  %s\n",
-	   i+1, chains[i].chain, chains[i].chain?"":" ",
+    printf("  %d '%c' %5d %6d  %s\n",
+	   i+1, chains[i].chain ? chains[i].chain:'-',
 	   chains[i].pdba->nres, chains[i].pdba->nr,
 	   chains[i].bAllWat ? "(only water)":"");
   printf("\n");
