@@ -76,7 +76,7 @@ enum {
 };
 
 enum {
-  eiMD, eiSteep, eiCG, eiBD, eiSD, eiNR
+  eiMD, eiSteep, eiCG, eiBD, eiSD, eiNM, eiNR
 };
 
 enum {

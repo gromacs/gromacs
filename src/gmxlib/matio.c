@@ -494,12 +494,20 @@ void write_xpm_header(FILE *out,
     fprintf(out,"/* type:    \"Continuous\" */\n");
 }
 
+static int calc_nmid(int nlevels,real lo,real mid,real hi)
+{
+  /* Take care that we have at least 1 entry in the low to mid range
+   * and at least 1 entry in themid to low range
+   */
+  return min(max(1,((mid-lo)/(hi-lo))*(nlevels-1)),nlevels-1);
+}
+
 void write_xpm_map3(FILE *out,int n_x,int n_y,int *nlevels,
 		    real lo,real mid,real hi,
 		    t_rgb rlo,t_rgb rmid,t_rgb rhi)
 {
   int    i,nlo,nmid;
-  real   r,g,b,clevels;
+  real   r,g,b,clev_lo,clev_hi;
 
   if (*nlevels > NMAP*NMAP) {
     fprintf(stderr,"Warning, too many levels (%d) in matrix, using %d only\n",
@@ -518,16 +526,14 @@ void write_xpm_map3(FILE *out,int n_x,int n_y,int *nlevels,
   fprintf(out,"\"%d %d   %d %d\",\n",
 	  n_x,n_y,*nlevels,(*nlevels <= NMAP) ? 1 : 2);
 
-  nmid = max(1,((mid-lo)/(hi-lo))*(*nlevels-1));
-  if (*nlevels > (2 * nmid))
-    clevels = *nlevels-1-nmid;
-  else
-    clevels = nmid;
+  nmid    = calc_nmid(*nlevels,lo,mid,hi);
+  clev_lo = nmid;
+  clev_hi = (*nlevels - nmid);
   for(i=0; (i<nmid); i++) {
-    nlo=nmid-i;
-    r=rlo.r+(i*(rmid.r-rlo.r)/clevels);
-    g=rlo.g+(i*(rmid.g-rlo.g)/clevels);
-    b=rlo.b+(i*(rmid.b-rlo.b)/clevels);
+    nlo = nmid-i;
+    r   = rlo.r+(i*(rmid.r-rlo.r)/clev_lo);
+    g   = rlo.g+(i*(rmid.g-rlo.g)/clev_lo);
+    b   = rlo.b+(i*(rmid.b-rlo.b)/clev_lo);
     fprintf(out,"\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n",
 	    mapper[i % NMAP],
 	    (*nlevels <= NMAP) ? ' ' : mapper[i/NMAP],
@@ -535,19 +541,19 @@ void write_xpm_map3(FILE *out,int n_x,int n_y,int *nlevels,
 	    (unsigned int)round(255*g),
 	    (unsigned int)round(255*b),
 	    (nlo*lo+i*mid)/nmid);
-     }
-  for(i=0; (i<(*nlevels-nmid)); i++) {
-    nlo=(*nlevels-1-nmid)-i;
-    r=rmid.r+(i*(rhi.r-rmid.r)/clevels);
-    g=rmid.g+(i*(rhi.g-rmid.g)/clevels);
-    b=rmid.b+(i*(rhi.b-rmid.b)/clevels);
+  }
+  for(i=nmid; (i<*nlevels); i++) {
+    nlo = *nlevels-i;
+    r   = rmid.r+(i*(rhi.r-rmid.r)/clev_hi);
+    g   = rmid.g+(i*(rhi.g-rmid.g)/clev_hi);
+    b   = rmid.b+(i*(rhi.b-rmid.b)/clev_hi);
     fprintf(out,"\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n",
 	    mapper[(i+nmid) % NMAP],
 	    (*nlevels <= NMAP) ? ' ' : mapper[(i+nmid)/NMAP],
 	    (unsigned int)round(255*r),
 	    (unsigned int)round(255*g),
 	    (unsigned int)round(255*b),
-	    (nlo*mid+i*hi)/(*nlevels-1-nmid));
+	    (nlo*mid+i*hi)/(*nlevels-nmid));
   }
 }
 
@@ -631,6 +637,42 @@ void write_xpm_data(FILE *out, int n_x, int n_y, real **matrix,
   }
 }
 
+void write_xpm_data3(FILE *out,int n_x,int n_y,real **matrix, 
+		    real lo,real mid,real hi,int nlevels)
+{
+  int  i,j,c,nmid;
+  real invlev_lo,invlev_hi;
+
+  nmid = calc_nmid(nlevels,lo,mid,hi);
+  invlev_hi=(nlevels-nmid)/(hi-mid);
+  invlev_lo=(nmid)/(mid-lo);
+  
+  for(j=n_y-1; (j>=0); j--) {
+    if(j%(1+n_y/100)==0) 
+      fprintf(stderr,"%3d%%\b\b\b\b",(100*(n_y-j))/n_y);
+    fprintf(out,"\"");
+    for(i=0; (i<n_x); i++) {
+      if (c >= mid)
+	c=round((matrix[i][j]-mid)*invlev_hi);
+      else if (c >= lo)
+	c=round((matrix[i][j]-lo)*invlev_lo);
+	
+      if (c<0) 
+	c=0;
+      if (c>=nlevels) 
+	c=nlevels-1;
+      if (nlevels <= NMAP)
+	fprintf(out,"%c",mapper[c]);
+      else
+	fprintf(out,"%c%c",mapper[c % NMAP],mapper[c / NMAP]);
+    }
+    if (j > 0)
+      fprintf(out,"\",\n");
+    else
+      fprintf(out,"\"\n");
+  }
+}
+
 void write_xpm_m(FILE *out, t_matrix m)
 {
   /* Writes a t_matrix struct to .xpm file */ 
@@ -689,7 +731,7 @@ void write_xpm3(FILE *out,
   write_xpm_map3(out,n_x,n_y,nlevels,lo,mid,hi,rlo,rmid,rhi);
   write_xpm_axis(out,"x",n_x,axis_x);
   write_xpm_axis(out,"y",n_y,axis_y);
-  write_xpm_data(out,n_x,n_y,matrix,lo,hi,*nlevels);
+  write_xpm_data3(out,n_x,n_y,matrix,lo,mid,hi,*nlevels);
 }
 
 void write_xpm(FILE *out,

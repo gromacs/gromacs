@@ -49,8 +49,16 @@ static char *SRCID_mdrun_c = "$Id$";
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "The mdrun program performs Molecular Dynamics simulations.",
-    "It reads the run input file ([TT]-s[tt]) and distributes the",
+    "The mdrun program is the main computational chemistry engine",
+    "within GROMACS. Obviously, it performs Molecular Dynamics simulations,",
+    "but it can also perform Brownian Dynamics and Langevin Dynamics",
+    "as well as Conjugate Gradient or Steepest Descents energy minimization.",
+    "Normal mode analysis is another option. In this case mdrun",
+    "builds a Hessian matrix from single conformation.",
+    "For usual Normal Modes-like calculations, make sure that",
+    "the structure provided is properly energy-minimised.",
+    "The generated matrix can be diagonalized by g_nmeig.[PAR]"
+    "The mdrun program reads the run input file ([TT]-s[tt]) and distributes the",
     "topology over nodes if needed. The coordinates are passed",
     "around, so that computations can begin.",
     "First a neighborlist is made, then the forces are computed.",
@@ -134,12 +142,10 @@ int main(int argc,char *argv[])
   /* Command line options ! */
   static bool bVerbose     = FALSE;
   static bool bCompact     = TRUE;
-  static bool bLateVir     = TRUE;
   static bool bSepDVDL     = FALSE;
   static bool bMultiSim    = FALSE;
   static bool bGlas        = FALSE;
   static bool bIonize      = FALSE;
-  static bool bPolarize    = FALSE;
   
   static int  nDLB=0; 
   static int  nnodes=1;
@@ -153,16 +159,12 @@ int main(int argc,char *argv[])
       "Write a compact log file" },
     { "-multi",   FALSE, etBOOL,{&bMultiSim}, 
       "Do multiple simulations in parallel (only with -np > 1)" },
-    { "-polarize",FALSE, etBOOL,{&bPolarize},
-      "Do polarization simulations using a shell model" },
     { "-glas",    FALSE, etBOOL,{&bGlas},
       "Do glass simulation with special long range corrections" },
     { "-ionize",  FALSE, etBOOL,{&bIonize},
       "Do a simulation including the effect of an X-Ray bombardment on your system" },
     { "-sepdvdl", FALSE, etBOOL,{&bSepDVDL},
       "HIDDENWrite separate V and dVdl terms for each interaction and node(!) to log file(s)" },
-    { "-latevir", FALSE, etBOOL,{&bLateVir},
-      "HIDDENCalculate virial late in the algorithm" },
     { "-stepout", FALSE, etINT, {&nstepout},
       "HIDDENFrequency of writing the remaining runtime" }
   };
@@ -202,7 +204,6 @@ int main(int argc,char *argv[])
     ed_open(NFILE,fnm,&edyn);
     
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
-  Flags = Flags | (bLateVir ? MD_LATEVIR : 0);
   Flags = Flags | (bSepDVDL ? MD_SEPDVDL : 0);
   
   Flags = (Flags | 
@@ -210,14 +211,18 @@ int main(int argc,char *argv[])
 	   (bMultiSim ? MD_MULTISIM : 0) |
 	   (bGlas     ? MD_GLAS     : 0));
   
-  if (bPolarize || bIonize || bMultiSim || bGlas)
-    Flags = Flags | MD_XMDRUN;
-	   
-  mdrunner(cr,NFILE,fnm,bVerbose,bCompact,nDLB,FALSE,nstepout,&edyn,Flags);
+  if (bIonize || bMultiSim || bGlas)
+     Flags = Flags | MD_XMDRUN;
+  
+  mdrunner(cr,NFILE,fnm,bVerbose,bCompact,nDLB,nstepout,&edyn,Flags);
   
   if (gmx_parallel)
     gmx_finalize();
 
+  if (MASTER(cr)) {
+    thanx(stderr);
+  }
+  
   return 0;
 }
 

@@ -64,10 +64,9 @@ static char *SRCID_mdrun_h = "$Id$";
 #define MD_POLARISE  (1<<2)
 #define MD_IONIZE    (1<<3)
 #define MD_RERUN     (1<<4)
-#define MD_LATEVIR   (1<<5)
-#define MD_XMDRUN    (1<<6)
-#define MD_FFSCAN    (1<<7)
-#define MD_SEPDVDL   (1<<8)
+#define MD_XMDRUN    (1<<5)
+#define MD_FFSCAN    (1<<6)
+#define MD_SEPDVDL   (1<<7)
 
 /* ROUTINES from md.c */
 extern time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
@@ -101,7 +100,7 @@ extern real f_norm(t_commrec *cr,
 
 extern real f_max(int left,int right,int nnodes,
 		  t_grpopts *opts,t_mdatoms *mdatoms,
-		  int start,int end,rvec grad[]);
+		  int start,int end,rvec grad[],int *nfmax);
 /* Calculates max force */
 
 extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
@@ -127,30 +126,11 @@ extern time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 /* ROUTINES from runner.c */
 extern bool optRerunMDset (int nfile, t_filenm fnm[]);
 
-extern void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
-		     bool bCompact,int nDlb,bool bNM,int nstepout,
-		     t_edsamyn *edyn,unsigned long Flags);
-		    
-/* Initialization routines to make maintainance easier */ 
-extern void init_md(t_commrec *cr,t_inputrec *ir,tensor box,
-		    real *t,real *t0,real *lambda,real *lam0,
-		    real *SAfactor,t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
-		    int nfile,t_filenm fnm[],char **traj,char **xtc_traj,
-		    int *fp_ene,FILE **fp_dgdl,
-		    t_mdebin **mdebin,t_groups *grps,
-		    tensor force_vir,tensor pme_vir,
-		    tensor shake_vir,t_mdatoms *mdatoms,
-		    rvec mu_tot,bool *bNEMD,t_vcm **vcm,
-		    t_nsborder *nsb);
-		    
 extern void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,
 			 t_graph *graph,rvec x[]);
 		     
-extern void get_cmparm(t_inputrec *ir,int step,bool *bStopCM,bool *bStopRot);
-/* Initiate center of mass removal parameters */
-
-void set_pot_bools(t_inputrec *ir,t_topology *top,
-		   bool *bLR,bool *bLJLR,bool *bBHAM,bool *b14);
+extern void set_pot_bools(t_inputrec *ir,t_topology *top,
+			  bool *bLR,bool *bLJLR,bool *bBHAM,bool *b14);
 /* Initiate some bools for the potential energy calculation */
 
 /* ROUTINES from stat.c */		
@@ -298,9 +278,6 @@ extern void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
 			  t_groups *grps,t_forcerec *fr,t_topology *top,
 			  t_edsamyn *edyn,t_pull *pulldata);
 			  
-extern void get_cmparm(t_inputrec *ir,int step,bool *bStopCM,bool *bStopRot);
-/* Determine from the input whether or not to stop center of mass motion */
-
 extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
 				   int dimension,t_mdatoms *md,t_topology *top,
 				   rvec x[],rvec v[],matrix box);
@@ -308,4 +285,9 @@ extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
  * based on their coordinates in the "dimension" direction.
  */
 				   
+extern void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
+		     bool bCompact,int nDlb,int nstepout,t_edsamyn *edyn,
+		     unsigned long Flags);
+/* Driver routine, that calls the different methods */
+		     
 #endif	/* _mdrun_h */

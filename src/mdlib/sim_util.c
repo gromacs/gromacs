@@ -508,3 +508,211 @@ void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
   ener[F_ETOT] += ener[F_DISPCORR];
 }
 
+void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,
+		  t_graph *graph,rvec x[])
+{
+  fprintf(log,"Removing pbc first time\n");
+  calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
+  mk_mshift(log,graph,parm->box,x);
+  if (getenv ("NOPBC") == NULL)
+    shift_self(graph,parm->box,x);
+  else
+    fprintf(log,"Not doing first shift_self\n");
+  fprintf(log,"Done rmpbc\n");
+}
+
+void set_pot_bools(t_inputrec *ir,t_topology *top,
+		   bool *bLR,bool *bLJLR,bool *bBHAM,bool *b14)
+{
+  *bLR   = (ir->rcoulomb > ir->rlist) || EEL_LR(ir->coulombtype);
+  *bLJLR = (ir->rvdw > ir->rlist);
+  *bBHAM = (top->idef.functype[0]==F_BHAM);
+  *b14   = (top->idef.il[F_LJ14].nr > 0);
+}
+
+static void finish_run(FILE *log,t_commrec *cr,char *confout,
+		       t_nsborder *nsb,t_topology *top,t_parm *parm,
+		       t_nrnb nrnb[],double nodetime,double realtime,int step,
+		       bool bWriteStat)
+{
+  int    i,j;
+  t_nrnb ntot;
+  real   runtime;
+  for(i=0; (i<eNRNB); i++)
+    ntot.n[i]=0;
+  for(i=0; (i<nsb->nnodes); i++)
+    for(j=0; (j<eNRNB); j++)
+      ntot.n[j]+=nrnb[i].n[j];
+  runtime=0;
+  if (bWriteStat) {
+    runtime=parm->ir.nsteps*parm->ir.delta_t;
+    if (MASTER(cr)) {
+      fprintf(stderr,"\n\n");
+      print_perf(stderr,nodetime,realtime,runtime,&ntot,nsb->nnodes);
+    }
+    else
+      print_nrnb(log,&(nrnb[nsb->nodeid]));
+  }
+
+  if (MASTER(cr)) {
+    print_perf(log,nodetime,realtime,runtime,&ntot,nsb->nnodes);
+    if (nsb->nnodes > 1)
+      pr_load(log,nsb->nnodes,nrnb);
+  }
+}
+
+void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
+	      bool bCompact,int nDlb,int nstepout,t_edsamyn *edyn,
+	      unsigned long Flags)
+{
+  double     nodetime=0,realtime;
+  t_parm     *parm;
+  rvec       *buf,*f,*vold,*v,*vt,*x,box_size;
+  real       tmpr1,tmpr2;
+  real       *ener;
+  t_nrnb     *nrnb;
+  t_nsborder *nsb;
+  t_topology *top;
+  t_groups   *grps;
+  t_graph    *graph;
+  t_mdatoms  *mdatoms;
+  t_forcerec *fr;
+  time_t     start_t=0;
+  bool       bDummies,bParDummies;
+  t_comm_dummies dummycomm;
+  int        i,m;
+  char       *gro;
+  
+  /* Initiate everything (snew sets to zero!) */
+  snew(ener,F_NRE);
+  snew(nsb,1);
+  snew(top,1);
+  snew(grps,1);
+  snew(parm,1);
+  snew(nrnb,cr->nnodes);
+  
+  if (bVerbose && MASTER(cr)) 
+    fprintf(stderr,"Getting Loaded...\n");
+
+  if (PAR(cr)) {
+    /* The master thread on the master node reads from disk, then passes everything
+     * around the ring, and finally frees the stuff
+     */
+    if (MASTER(cr)) 
+      distribute_parts(cr->left,cr->right,cr->nodeid,cr->nnodes,parm,
+		       ftp2fn(efTPX,nfile,fnm),nDlb);
+    
+    /* Every node (including the master) reads the data from the ring */
+    init_parts(stdlog,cr,
+	       parm,top,&x,&v,&mdatoms,nsb,
+	       MASTER(cr) ? LIST_SCALARS | LIST_PARM : 0, 
+	       &bParDummies,&dummycomm);
+  } else {
+    /* Read it up... */
+    init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),top,&x,&v,&mdatoms,nsb);
+    bParDummies=FALSE;
+  }
+  snew(buf,nsb->natoms);
+  snew(f,nsb->natoms);
+  snew(vt,nsb->natoms);
+  snew(vold,nsb->natoms);
+
+  if (bVerbose && MASTER(cr))
+    fprintf(stderr,"Loaded with Money\n\n");
+  
+  /* Index numbers for parallellism... */
+  nsb->nodeid      = cr->nodeid;
+  top->idef.nodeid = cr->nodeid;
+
+  /* Group stuff (energies etc) */
+  init_groups(stdlog,mdatoms,&(parm->ir.opts),grps);
+  /* Copy the cos acceleration to the groups struct */
+  grps->cosacc.cos_accel = parm->ir.cos_accel;
+  
+  /* Periodicity stuff */  
+  graph=mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
+  if (debug)
+    p_graph(debug,"Initial graph",graph);
+  
+  /* Distance Restraints */
+  init_disres(stdlog,top->idef.il[F_DISRES].nr,&(parm->ir));
+
+  /* check if there are dummies */
+  bDummies=FALSE;
+  for(i=0; (i<F_NRE) && !bDummies; i++)
+    bDummies = ((interaction_function[i].flags & IF_DUMMY) && 
+		(top->idef.il[i].nr > 0));
+
+  /* Initiate forcerecord */
+  fr = mk_forcerec();
+  init_forcerec(stdlog,fr,&(parm->ir),top,cr,mdatoms,nsb,parm->box,FALSE,
+		opt2fn("-table",nfile,fnm),FALSE);
+  fr->bSepDVDL = ((Flags & MD_SEPDVDL) == MD_SEPDVDL);
+  /* Initiate box */
+  for(m=0; (m<DIM); m++)
+    box_size[m]=parm->box[m][m];
+    
+  /* Initiate PPPM if necessary */
+  if (fr->eeltype == eelPPPM)
+    init_pppm(stdlog,cr,nsb,FALSE,TRUE,box_size,getenv("GMXGHAT"),&parm->ir);
+  if (fr->eeltype == eelPME)
+    init_pme(stdlog,cr,parm->ir.nkx,parm->ir.nky,parm->ir.nkz,parm->ir.pme_order,
+	     HOMENR(nsb),parm->ir.bOptFFT);
+  
+  /* Now do whatever the user wants us to do (how flexible...) */
+  switch (parm->ir.eI) {
+  case eiMD:
+  case eiSD:
+  case eiBD:
+    start_t=do_md(stdlog,cr,nfile,fnm,
+		  bVerbose,bCompact,bDummies,
+		  bParDummies ? &dummycomm : NULL,
+		  nstepout,parm,grps,top,ener,x,vold,v,vt,f,buf,
+		  mdatoms,nsb,nrnb,graph,edyn,fr,box_size,Flags);
+    break;
+  case eiCG:
+    start_t=do_cg(stdlog,nfile,fnm,parm,top,grps,nsb,
+		  x,f,buf,mdatoms,parm->ekin,ener,
+		  nrnb,bVerbose,bDummies,
+		  bParDummies ? &dummycomm : NULL,
+		  cr,graph,fr,box_size);
+    break;
+  case eiSteep:
+    start_t=do_steep(stdlog,nfile,fnm,parm,top,grps,nsb,
+		     x,f,buf,mdatoms,parm->ekin,ener,
+		     nrnb,bVerbose,bDummies,
+		     bParDummies ? &dummycomm : NULL,
+		     cr,graph,fr,box_size);
+    break;
+  case eiNM:
+    start_t=do_nm(stdlog,cr,nfile,fnm,
+		  bVerbose,bCompact,nstepout,parm,grps,
+		  top,ener,x,vold,v,vt,f,buf,
+		  mdatoms,nsb,nrnb,graph,edyn,fr,box_size);
+  default:
+    fatal_error(0,"Invalid integrator (%d)...\n",parm->ir.eI);
+  }
+  
+    /* Some timing stats */  
+  if (MASTER(cr)) {
+    realtime=difftime(time(NULL),start_t);
+    if ((nodetime=node_time()) == 0)
+      nodetime=realtime;
+  }
+  else 
+    realtime=0;
+    
+  /* Convert back the atoms */
+  md2atoms(mdatoms,&(top->atoms),TRUE);
+  
+  /* Finish up, write some stuff
+   * if rerunMD, don't write last frame again 
+   */
+  finish_run(stdlog,cr,ftp2fn(efSTO,nfile,fnm),
+	     nsb,top,parm,nrnb,nodetime,realtime,parm->ir.nsteps,
+	     parm->ir.eI==eiMD || parm->ir.eI==eiSD || parm->ir.eI==eiBD);
+  
+  /* Does what it says */  
+  print_date_and_time(stdlog,cr->nodeid,"Finished mdrun");
+}
+

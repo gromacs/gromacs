@@ -35,7 +35,7 @@
  */
 static char *SRCID_do_gct_c = "$Id$";
 #include "typedefs.h"
-#include "do_gct.h"
+#include "xmdrun.h"
 #include "block_tx.h"
 #include "futil.h"
 #include "xvgr.h"
@@ -46,7 +46,6 @@ static char *SRCID_do_gct_c = "$Id$";
 #include "string2.h"
 #include "readinp.h"
 #include "filenm.h"
-#include "mdrun.h"
 #include "update.h"
 #include "vec.h"
 #include "main.h"

@@ -65,32 +65,41 @@ static char *SRCID_steep_c = "$Id$";
 
 real f_max(int left,int right,int nnodes,
 	   t_grpopts *opts,t_mdatoms *mdatoms,
-	   int start,int end,rvec grad[])
+	   int start,int end,rvec grad[],int *nfmax)
 {
-  real fmax2,fmax2_0,fam;
+  real fmax2,fmax2_0,fam,nfm;
   int  i,m,gf;
 
   /* This routine finds the largest force and returns it.
    * On parallel machines the global max is taken.
    */
   fmax2 = 0;
-  
+  nfm   = -1;
   for(i=start; i<end; i++) {
     gf = mdatoms->cFREEZE[i];
     fam = 0;
     for(m=0; m<DIM; m++)
       if (!opts->nFreeze[gf][m])
 	fam += sqr(grad[i][m]);
-    fmax2 = max(fmax2,fam);
+    if (fam > fmax2) {
+      fmax2 = fam;
+      nfm   = i;
+    }
   }
 
+  *nfmax = nfm;
   if (nnodes > 1) {
     for(i=0; i<nnodes-1; i++) {
       gmx_tx(left,(void *)&fmax2,sizeof(fmax2));
       gmx_rx(right,(void *)&fmax2_0,sizeof(fmax2_0));
       gmx_wait(left,right);
-      if (fmax2_0 > fmax2)
-	fmax2 = fmax2_0;
+      gmx_tx(left,(void *)nfmax,sizeof(*nfmax));
+      gmx_rx(right,(void *)&nfm,sizeof(nfm));
+      gmx_wait(left,right);
+      if (fmax2_0 > fmax2) {
+	fmax2  = fmax2_0;
+	*nfmax = nfm;
+      }
     }
   }
 
@@ -170,7 +179,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   time_t start_t; 
   tensor force_vir,shake_vir,pme_vir; 
   rvec   mu_tot;
-  int    nsteps;
+  int    nfmax,nsteps;
   int    count=0; 
   int    i,m,start,end,gf; 
   int    Min=0; 
@@ -342,7 +351,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 
     if (bConstrain) {
       fmax=f_max(cr->left,cr->right,nsb->nnodes,&(ir->opts),mdatoms,start,end,
-		 force[TRY]);
+		 force[TRY],&nfmax);
       constepsize=ustep/fmax;
       for(i=start; (i<end); i++)  
 	for(m=0;(m<DIM);m++) 
@@ -368,7 +377,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     /* This is the new energy  */
     Fmax[TRY]=f_max(cr->left,cr->right,nsb->nnodes,&(ir->opts),mdatoms,
-		    start,end,force[TRY]);
+		    start,end,force[TRY],&nfmax);
     Epot[TRY]=ener[F_EPOT];
     if (count == 0)
       Epot[Min] = Epot[TRY]+1;
@@ -376,8 +385,9 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     /* Print it if necessary  */
     if (MASTER(cr)) { 
       if (bVerbose) {
-	fprintf(stderr,"Step = %5d, Dmax = %7.2e nm, Epot = %12.5e Fmax = %11.5e%c",
-		count,ustep,Epot[TRY],Fmax[TRY],(Epot[TRY]<Epot[Min])?'\n':'\r');
+	fprintf(stderr,"Step = %5d, Dmax = %7.2e nm, Epot = %12.5e Fmax = %11.5e, atom = %d%c",
+		count,ustep,Epot[TRY],Fmax[TRY],nfmax,
+		(Epot[TRY]<Epot[Min])?'\n':'\r');
       }
 
       if (Epot[TRY] < Epot[Min]) {
@@ -428,7 +438,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     /* Determine new step  */
     fmax = f_max(cr->left,cr->right,nsb->nnodes,&(ir->opts),mdatoms,start,end,
-		 force[Min]);
+		 force[Min],&nfmax);
     stepsize=ustep/fmax;
     
     /* Check if stepsize is too small, with 1 nm as a characteristic length */

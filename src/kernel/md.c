@@ -54,6 +54,7 @@ static char *SRCID_md_c = "$Id$";
 #include "network.h"
 #include "sim_util.h"
 #include "pull.h"
+#include "xvgr.h"
 #include "physics.h"
 #include "names.h"
 #include "xmdrun.h"
@@ -72,6 +73,97 @@ static RETSIGTYPE signal_handler(int n)
   }
 }
 
+void get_cmparm(t_inputrec *ir,int step,bool *bStopCM,bool *bStopRot)
+{
+  if (ir->nstcomm == 0) {
+    *bStopCM  = FALSE;
+    *bStopRot = FALSE;
+  } 
+  else if (ir->nstcomm > 0) {
+    *bStopCM  = do_per_step(step,ir->nstcomm);
+    *bStopRot = FALSE;
+  } 
+  else {
+    *bStopCM  = FALSE;
+    *bStopRot = do_per_step(step,-ir->nstcomm);
+  }
+}
+
+static void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
+		    real *lambda,real *lam0,real *SAfactor,
+		    t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
+		    int nfile,t_filenm fnm[],char **traj,
+		    char **xtc_traj,int *fp_ene,
+		    FILE **fp_dgdl,t_mdebin **mdebin,t_groups *grps,
+		    tensor force_vir,tensor pme_vir,
+		    tensor shake_vir,t_mdatoms *mdatoms,rvec mu_tot,
+		    bool *bNEMD,t_vcm **vcm,t_nsborder *nsb)
+{
+  bool bBHAM,b14,bLR,bLJLR;
+  int  i;
+  
+  /* Initial values */
+  *t = *t0       = ir->init_t;
+  if (ir->efep != efepNO) {
+    *lambda = *lam0 = ir->init_lambda;
+  }
+  else {
+    *lambda = *lam0   = 0.0;
+  } 
+  if (ir->bSimAnn) {
+    *SAfactor = 1.0 - *t0/ir->zero_temp_time;
+    if (*SAfactor < 0) 
+      *SAfactor = 0;
+  } else
+    *SAfactor     = 1.0;
+    
+  init_nrnb(mynrnb);
+  
+  /* Check Environment variables & other booleans */
+  *bTYZ=getenv("TYZ") != NULL;
+  set_pot_bools(ir,top,&bLR,&bLJLR,&bBHAM,&b14);
+  
+  if (nfile != -1) {
+    /* Filenames */
+    *traj     = ftp2fn(efTRN,nfile,fnm);
+    *xtc_traj = ftp2fn(efXTC,nfile,fnm);
+    
+    if (MASTER(cr)) {
+      *fp_ene = open_enx(ftp2fn(efENX,nfile,fnm),"w");
+      if ((fp_dgdl != NULL) && ir->efep!=efepNO)
+	*fp_dgdl =
+	  xvgropen(opt2fn("-dgdl",nfile,fnm),
+		   "dG/d\\8l\\4","Time (ps)",
+		   "dG/d\\8l\\4 (kJ mol\\S-1\\N nm\\S-2\\N \\8l\\4\\S-1\\N)");
+    } else
+      *fp_ene = -1;
+
+    *mdebin = init_mdebin(*fp_ene,grps,&(top->atoms),&(top->idef),
+			  bLR,bLJLR,bBHAM,b14,ir->efep!=efepNO,ir->epc,
+			  ir->eDispCorr,(TRICLINIC(ir->compress) || TRICLINIC(box)),
+			  (ir->etc==etcNOSEHOOVER),cr);
+  }
+  
+  /* Initiate variables */  
+  clear_mat(force_vir);
+  clear_mat(pme_vir);
+  clear_mat(shake_vir);
+  clear_rvec(mu_tot);
+  
+  /* Set initial values for invmass etc. */
+  init_mdatoms(mdatoms,*lambda,TRUE);
+
+  *vcm = init_vcm(stdlog,top,mdatoms,0,mdatoms->nr,ir->nstcomm);
+    
+  debug_gmx();
+
+  *bNEMD = (ir->opts.ngacc > 1) || (norm(ir->opts.acc[0]) > 0);
+
+  if (ir->eI == eiSD)
+    init_sd_consts(ir->opts.ngtc,ir->opts.tau_t,ir->delta_t);
+
+}
+
 time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,bool bDummies, t_comm_dummies *dummycomm,
 	     int stepout,t_parm *parm,t_groups *grps,t_topology *top,real ener[],
@@ -86,8 +178,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
   bool       bNS,bStopCM,bStopRot,bTYZ,bRerunMD,bNotLastFrame=FALSE,
-             bFirstStep,bLastStep,bNEMD,do_log,bRerunWarnNoV=TRUE,
-	     bLateVir;
+             bFirstStep,bLastStep,bNEMD,do_log,bRerunWarnNoV=TRUE;
   tensor     force_vir,pme_vir,shake_vir;
   t_nrnb     mynrnb;
   char       *traj,*xtc_traj; /* normal and compressed trajectory filename */
@@ -102,7 +193,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
  
   /* XMDRUN stuff: shell, general coupling etc. */
   bool        bXmdrun,bFFscan,bDynamicStep;
-  int         nshell,count,nconverged=0;
+  int         nshell,nshell_tot,count,nconverged=0;
   t_shell     *shells=NULL;
   real        timestep=0;
   double      tcount=0;
@@ -132,9 +223,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	  force_vir,pme_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&vcm,nsb);
   debug_gmx();
 
-  bLateVir = ((Flags & MD_LATEVIR) == MD_LATEVIR);
-  
-  fprintf(log,"Late virial: %s\n",bool_names[bLateVir]);
+  /* Check for polarizable models */
+  shells     = init_shells(log,START(nsb),HOMENR(nsb),&top->idef,
+			   mdatoms,&nshell);
+  nshell_tot = nshell;
+  if (PAR(cr))
+    gmx_sumi(1,&nshell_tot,cr);
+  bXmdrun = bXmdrun || (nshell_tot > 0);
   
   if (bXmdrun) {
     bDynamicStep = FALSE;
@@ -204,8 +299,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   debug_gmx();
   
   /* Initiate data for the special cases */
-  if (bXmdrun)
-    shells = init_shells(log,START(nsb),HOMENR(nsb),&top->idef,mdatoms,&nshell);
   if (bFFscan) {
     snew(xcopy,nsb->natoms);
     for(ii=0; (ii<nsb->natoms); ii++)
@@ -342,9 +435,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       
       /* Now is the time to relax the shells */
       count=relax_shells(log,cr,bVerbose,step,parm,bNS,bStopCM,top,ener,
-			 x,vold,v,vt,f,
-			 buf,mdatoms,nsb,&mynrnb,graph,grps,force_vir,
-			 pme_vir,nshell,shells,fr,traj,t,lambda,mu_tot,
+			 x,vold,v,vt,f,buf,mdatoms,nsb,&mynrnb,graph,
+			 grps,force_vir,pme_vir,(nshell_tot > 0),
+			 nshell,shells,fr,traj,t,lambda,mu_tot,
 			 nsb->natoms,parm->box,&bConverged);
       tcount+=count;
       
@@ -360,9 +453,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	       top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
     }
-    if (!bLateVir)
-      calc_virial(log,START(nsb),HOMENR(nsb),x,f,
-		  force_vir,pme_vir,graph,parm->box,&mynrnb,fr,FALSE);
    
     if (bXmdrun) {
       if (bTCR)
@@ -416,10 +506,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       if(dummycomm)
         move_construct_f(dummycomm,f,cr);
     }    
-    
-    if (bLateVir)
-      calc_virial(log,START(nsb),HOMENR(nsb),x,f,
-		  force_vir,pme_vir,graph,parm->box,&mynrnb,fr,FALSE);
+    /* Calculation of the virial must be done after dummies!    */
+    /* Question: Is it correct to do the PME forces after this? */
+    calc_virial(log,START(nsb),HOMENR(nsb),x,f,
+		force_vir,pme_vir,graph,parm->box,&mynrnb,fr,FALSE);
 		  
     if (bDummies && fr->bEwald) { 
       /* Spread the LR force on dummy particle to the other particles... 

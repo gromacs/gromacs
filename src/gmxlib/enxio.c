@@ -225,7 +225,7 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
   int       i,ndisre=0,nuser=0;
   t_eheader eh;
   bool      bRead,bOK,bOK1;
-  real      tmp;
+  real      tmp1,tmp2;
 
   bOK = TRUE;
   bRead = fio_getread(fp);
@@ -275,14 +275,14 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
   }
   for(i=0; (i<*nre); i++) {
     bOK = bOK && do_real(ener[i].e);
-    tmp=ener[i].eav;
-    if((tmp/(*step+1))<GMX_REAL_EPS)
-      tmp=0;
-    bOK = bOK && do_real(tmp);
-    ener[i].eav=tmp;
-    tmp=ener[i].esum;
-    bOK = bOK && do_real(tmp);
-    ener[i].esum=tmp;
+    
+    tmp1=ener[i].eav;
+    if((tmp1/(*step+1))<GMX_REAL_EPS)
+      tmp1=0;
+    bOK = bOK && do_real(tmp1);
+    ener[i].eav=tmp1;
+    
+    bOK = bOK && do_real(ener[i].esum);
     bOK = bOK && do_real(ener[i].e2sum);
   }
   if (ndisre) {

@@ -9,7 +9,7 @@ LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 
 bin_PROGRAMS = \
 	grompp		mdrun		tpbconv	  	pdb2gmx		\
-	protonate	nmrun	  	luck		gmxdump		\
+	protonate	luck		gmxdump		\
 	gmxcheck  	x2top		ffscan
 
 
@@ -61,20 +61,14 @@ mdrun_SOURCES = \
 	glaasje.c 	glaasje.h 	gctio.c 	init_sh.c 	\
 	init_sh.h 	ionize.c 	ionize.h 	ion_data.h 	\
 	do_gct.c 	do_gct.h 	relax_sh.c	xutils.c	\
-	mdrunner.c	md.c		mdrun.c		genalg.c
-
-nmrun_SOURCES = \
-	glaasje.c 	glaasje.h 	gctio.c 	init_sh.c 	\
-	init_sh.h 	ionize.c 	ionize.h 	ion_data.h 	\
-	do_gct.c 	do_gct.h 	relax_sh.c	xutils.c	\
-	md.c		mdrunner.c	nmrun.c		genalg.c
+	md.c		mdrun.c		genalg.c
 
 ffscan_SOURCES = \
 	ffscan.c	\
 	glaasje.c 	glaasje.h 	gctio.c 	init_sh.c 	\
 	init_sh.h 	ionize.c 	ionize.h 	ion_data.h 	\
 	do_gct.c 	do_gct.h 	relax_sh.c	xutils.c	\
-	mdrunner.c	md.c		genalg.c
+	md.c		genalg.c
 
 
 # shortcut to install only mdrun

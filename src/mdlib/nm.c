@@ -65,7 +65,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   bool       bNS,bStopCM,bTYZ,bLR,bLJLR,bBHAM,b14,bBox;
   tensor     force_vir,shake_vir,pme_vir;
   t_nrnb     mynrnb;
-  int        i,m;
+  int        i,m,nfmax;
   rvec       mu_tot;
   rvec       *xx,*vv,*ff;
   
@@ -136,7 +136,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   /* if forces not small, warn user */
   fmax=f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,
-	     0,top->atoms.nr,f);
+	     0,top->atoms.nr,f,&nfmax);
   fprintf(stderr,"Maximum force:%12.5e\n",fmax);
   if (fmax > 1.0e-3) {
     fprintf(stderr,"Maximum force probably not small enough to");

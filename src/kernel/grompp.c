@@ -936,7 +936,7 @@ int main (int argc, char *argv[])
     fprintf(stderr,"initialising group options...\n");
   do_index(ftp2fn_null(efNDX,NFILE,fnm),
 	   &sys->symtab,&(sys->atoms),bVerbose,ir,&sys->idef,
-	   forward);
+	   forward,bGenVel ? v : NULL);
 
   if (bVerbose)
     fprintf(stderr,"Checking consistency between energy and charge groups...\n");

@@ -34,7 +34,7 @@
  * Gromacs Runs On Most of All Computer Systems
  */
 static char *SRCID_init_sh_c = "$Id$";
-#include "init_sh.h"
+#include "xmdrun.h"
 #include "smalloc.h"
 #include "assert.h"
 #include "names.h"

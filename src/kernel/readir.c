@@ -846,7 +846,7 @@ static void decode_cos(char *s,t_cosines *cosine)
 void do_index(char *ndx,
 	      t_symtab   *symtab,
 	      t_atoms    *atoms,bool bVerbose,
-	      t_inputrec *ir,t_idef *idef,int *forward)
+	      t_inputrec *ir,t_idef *idef,int *forward,rvec *v)
 {
   t_block *grps;
   char    warnbuf[STRLEN],**gnames;
@@ -979,6 +979,19 @@ void do_index(char *ndx,
 
   /* Now we have filled the freeze struct, so we can calculate NRDF */ 
   calc_nrdf(atoms,idef,&(ir->opts),gnames,ir->nstcomm);
+  if (v) {
+    real fac,ntot=0;
+    
+    for(i=0; (i<ir->opts.ngtc); i++)
+      ntot += ir->opts.nrdf[i];
+    if (ntot != (DIM*atoms->nr)) {
+      fac = sqrt(ntot/(DIM*atoms->nr));
+      if (bVerbose)
+	fprintf(stderr,"Scaling velocities by a factor of %.3f to account for constraints.\n",fac);
+      for(i=0; (i<atoms->nr); i++)
+	svmul(fac,v[i],v[i]);
+    }
+  }
   
   nuser=str_nelem(user1,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser1,"User1",

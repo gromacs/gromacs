@@ -41,11 +41,9 @@ static char *SRCID_relax_sh_c = "$Id$";
 #include "fatal.h"
 #include "vec.h"
 #include "txtdump.h"
-#include "mdrun.h"
-#include "init_sh.h"
+#include "xmdrun.h"
 #include "mdatoms.h"
 #include "network.h"
-#include "do_gct.h"
 #include "names.h"
 #include "constr.h"
 
@@ -298,43 +296,42 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
 		 rvec buf[],t_mdatoms *md,t_nsborder *nsb,t_nrnb *nrnb,
 		 t_graph *graph,t_groups *grps,tensor vir_part,
-		 tensor pme_vir_part,
+		 tensor pme_vir_part,bool bShell,
 		 int nshell,t_shell shells[],t_forcerec *fr,
 		 char *traj,real t,real lambda,rvec mu_tot,
 		 int natoms,matrix box,bool *bConverged)
 {
   static bool bFirst=TRUE,bInit;
   static rvec *pos[2],*force[2];
+  static rvec *acc_dir=NULL,*x_old=NULL;
+  static int  ndir;
   real   Epot[2],df[2],Estore[F_NRE];
   tensor my_vir[2],vir_last,pme_vir[2];
-  static rvec *acc_dir=NULL,*x_old=NULL;
   rvec   dx;
   real   sf_dir;
 #define NEPOT asize(Epot)
   real   ftol,step,step0,xiH,xiS,dum=0;
   char   cbuf[56];
   bool   bDone;
-  int    g,ndir;
-  int    number_steps;
-  int    count=0;
   int    i,start=START(nsb),homenr=HOMENR(nsb),end=START(nsb)+HOMENR(nsb);
-  int    d;
-  int    Min=0;
+  int    g,number_steps,d,Min=0,count=0;
 #define  Try (1-Min)             /* At start Try = 1 */
 
-  if (fr->fc_stepsize != 0)
-    ndir = count_zero_length_constraints(&(top->idef));
-  else
-    ndir = 0;
-
   if (bFirst) {
+    /* Check for directional minimization */
+    if (fr->fc_stepsize != 0)
+      ndir = count_zero_length_constraints(&(top->idef));
+    else
+      ndir = 0;
     /* Allocate local arrays */
-    for(i=0; (i<2); i++) {
-      if (nshell+ndir > 0) {
+    if (bShell) {
+      for(i=0; (i<2); i++) {
 	snew(pos[i],nsb->natoms);
 	snew(force[i],nsb->natoms);
       }
     }
+    else
+      force[Min] = f;
     bInit  = (getenv("FORCEINIT") != NULL);
     bFirst = FALSE;
   }

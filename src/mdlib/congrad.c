@@ -80,10 +80,10 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     t_forcerec *fr,rvec box_size)
 {
   static char *CG="Conjugate Gradients";
+  double gpa,gpb;
   real   step0,lambda,ftol,fmax,testf,zet,w,smin;
   rvec   *p,*f,*xprime,*xx,*ff;
   real   EpotA=0.0,EpotB=0.0,a=0.0,b,beta=0.0;
-  double gpa,gpb;
   real   fnorm,pnorm,fnorm_old;
   t_vcm      *vcm;
   t_mdebin   *mdebin;
@@ -94,13 +94,13 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   tensor force_vir,shake_vir,pme_vir;
   int    number_steps,naccept=0,nstcg=parm->ir.nstcgsteep;
   int    fp_ene,count=0;
-  int    i,m,start,end,niti,gf;
+  int    i,m,nfmax,start,end,niti,gf;
   /* not used */
   real   terminate=0;
 
   /* Initiate some variables */
   if (parm->ir.efep != efepNO)
-    lambda       = parm->ir.init_lambda;
+    lambda = parm->ir.init_lambda;
   else 
     lambda = 0.0;
 
@@ -109,6 +109,9 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   clear_rvec(mu_tot);
   calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
   
+  /* Set initial values for invmass etc. */
+  init_mdatoms(mdatoms,lambda,TRUE);
+
   vcm = init_vcm(stdlog,top,mdatoms,
 		 START(nsb),HOMENR(nsb),parm->ir.nstcomm);
     
@@ -135,7 +138,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   /* Init bin for energy stuff */
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),
 		     bLR,bLJLR,bBHAM,b14,parm->ir.efep!=efepNO,parm->ir.epc,
-		     parm->ir.eDispCorr,TRICLINIC(parm->ir.compress),(parm->ir.etc==etcNOSEHOOVER),cr); 
+		     parm->ir.eDispCorr,TRICLINIC(parm->ir.compress),
+		     (parm->ir.etc==etcNOSEHOOVER),cr); 
 
   /* Clear some matrix variables */
   clear_mat(force_vir);
@@ -323,6 +327,10 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	if(dummycomm)
 	  move_construct_f(dummycomm,f,cr);
       }
+      
+      /* Sum the potential energy terms from group contributions */
+      sum_epot(&(parm->ir.opts),grps,ener);
+      where();
 
       bNS = (parm->ir.nstlist > 0);
 
@@ -424,7 +432,6 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
         move_construct_f(dummycomm,f,cr);
     }
 
-
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(parm->ir.opts),grps,ener); 
     fnorm = f_norm(cr,&(parm->ir.opts),mdatoms,start,end,f);
@@ -454,16 +461,17 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 
     /* Test whether the convergence criterion is met */
     fmax=f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,
-	       start,end,f);
+	       start,end,f,&nfmax);
 
     /* Print it if necessary */
     if (bVerbose && MASTER(cr)) {
-      fprintf(stderr,"\rStep %d, E-Pot = %16.10e, F-max = %12.5e\n",
-	      count,EpotA,fmax);
+      fprintf(stderr,"\rStep %d, E-Pot = %16.10e, Fmax = %12.5e, atom = %d\n",
+	      count,EpotA,fmax,nfmax);
       /* Store the new (lower) energies */
       upd_mdebin(mdebin,NULL,mdatoms->tmass,count,(real)count,
 		 ener,parm->box,shake_vir,
-		 force_vir,parm->vir,parm->pres,grps,mu_tot,(parm->ir.etc==etcNOSEHOOVER));
+		 force_vir,parm->vir,parm->pres,grps,mu_tot,
+		 (parm->ir.etc==etcNOSEHOOVER));
       /* Print the energies allways when we should be verbose */
       print_ebin_header(log,count,count,lambda,0.0);
       print_ebin(fp_ene,TRUE,FALSE,log,count,count,eprNORMAL,
@@ -491,7 +499,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		   *top->name, &(top->atoms),xx,NULL,parm->box);
 
   fmax=f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,
-	     start,end,f);
+	     start,end,f,&nfmax);
   if (MASTER(cr)) {
     fprintf(stderr,"Maximum force: %12.5e\n",fmax);
     if (bDone) {

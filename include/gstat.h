@@ -71,7 +71,8 @@ extern real LegendreP(real x,unsigned long m);
 #define eacP4     (1<<8  | eacVector)
 
 enum {
-  effnNONE, effnEXP1, effnEXP2, effnEXP3, effnVAC, effnERREST, effnNR
+  effnNONE, effnEXP1, effnEXP2, effnEXP3, effnVAC, 
+  effnEXP5, effnEXP7, effnERREST, effnNR
 };
 
 extern int  nfp_ffn[effnNR];
@@ -310,6 +311,11 @@ extern real print_and_integrate(FILE *fp,int n,real dt,
  
 extern int get_acfnout(void);
 /* Return the output length for the correlation function 
+ * Works only AFTER do_auto_corr has been called!
+ */
+
+extern int get_acffitfn(void);
+/* Return the fit function type.
  * Works only AFTER do_auto_corr has been called!
  */
  

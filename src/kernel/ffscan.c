@@ -117,7 +117,7 @@ int main(int argc,char *argv[])
   
   Flags = (Flags | MD_FFSCAN | MD_XMDRUN);
 
-  mdrunner(cr,NFILE,fnm,bVerbose,TRUE,0,FALSE,1,&edyn,Flags);
+  mdrunner(cr,NFILE,fnm,bVerbose,TRUE,0,1,&edyn,Flags);
 
   if (gmx_parallel)
     gmx_finalize();
