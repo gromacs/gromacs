@@ -60,9 +60,14 @@ t_sandr sandrTeX[] = {
   { ">",    "$>$"    },
   { "^",    "\\^"    },
   { "\\^2",   "$^2$" },
+  { "\\^3",   "$^3$" },
+  { "\\^6",   "$^6$" },
   { "#",    "\\#"    },
   { "[BR]", "\\\\"   },
-  { "%",    "\\%"    }
+  { "%",    "\\%"    },
+  { "&",    "\\&"    },
+  { "||",    "or"    },
+  { "|",     "or"    }
 };
 #define NSRTEX asize(sandrTeX)
 
@@ -74,12 +79,6 @@ t_sandr sandrTty[] = {
   { "[IT]", "" },
   { "[it]", "" },
   { "[PAR]","\n\n" },
-/*   { "_",    "_" }, */
-/*   { "<",    "" }, */
-/*   { ">",    ">" }, */
-/*   { "^",    "^" }, */
-/*   { "#",    "#" }, */
-/*   { "$",    "$"  }, */
   { "[BR]", "\n"}
 };
 #define NSRTTY asize(sandrTty)
@@ -220,46 +219,49 @@ static void write_texman(FILE *out,char *program,
 			 int nbug,char **bugs)
 {
   int i;
-
-  fprintf(out,"\\newpage\n");
-  fprintf(out,"\\section{%s.}\n",check_tex(program));
+  
+  fprintf(out,"\\section{\\normindex{%s}}\n\n",check_tex(program));
   
   if (nldesc > 0) {
-    fprintf(out,"\\subsubsection*{Description.}\n");
+    fprintf(out,"\n\\subsubsection*{Description}\n\n");
     for(i=0; (i<nldesc); i++) 
       fprintf(out,"%s\n",check_tex(desc[i]));
   }
   if (nfile > 0) {
-    fprintf(out,"\\subsubsection*{Files.}\n");
-    fprintf(out,"\\begin{table}[htp]\n");
-    fprintf(out,"\\begin{tabularx}{\\linewidth}{lllX}\n");
+    fprintf(out,"\n\\subsubsection*{Files}\n\n");
+    fprintf(out,"\\begin{tabbing}\n");
+    fprintf(out,"~~~~~~~~~~ \\= ~~~~~~~~~~~~~~~~~~~~~ \\= "
+	    "~~~~~~~~~~~~~~~~~~~~~ \\= \\\\\n");
     for(i=0; (i<nfile); i++)
-      fprintf(out,"%s & %s & %s & %s \\\\\n",
-	      fnm[i].opt,fnm[i].fn,
-	      fileopt(fnm[i].flag),check_tex(ftp2desc(fnm[i].ftp)));
-    fprintf(out,"\\end{tabularx}\n");
-    fprintf(out,"\\end{table}\n");
+      fprintf(out,"%s \\> %s \\> %s \\> "
+	      "\\parbox[t]{0.55\\linewidth}{%s} \\\\\n",
+	      check_tex(fnm[i].opt),check_tex(fnm[i].fn),
+	      check_tex(fileopt(fnm[i].flag)),
+	      check_tex(ftp2desc(fnm[i].ftp)));
+    fprintf(out,"\\end{tabbing}\n");
   }
   if (npargs > 0) {
-    fprintf(out,"\\subsubsection*{Other options.}\n");
-    fprintf(out,"\\begin{table}[htp]\n");
-    fprintf(out,"\\begin{tabularx}{\\linewidth}{lllX}\n");
+    fprintf(out,"\n\\subsubsection*{Other options}\n\n");
+    fprintf(out,"\\begin{tabbing}\n");
+    fprintf(out,"~~~~~~~~~~~~~~~~~ \\= ~~~~~~~~~ \\= "
+	    "~~~~~~~~~~~~ \\= \\\\\n");
     for(i=0; (i<npargs); i++) {
-      fprintf(out,"%s & %s & %s &%s\\\\\n",
+      fprintf(out,"%s \\> %s \\> %s \\> "
+	      "\\parbox[t]{0.65\\linewidth}{%s}\\\\\n",
 	      check_tex(pa[i].option),argtp[pa[i].type],
 	      check_tex(pa_val(&(pa[i]))),
 	      check_tex(pa[i].desc));
     }
-    fprintf(out,"\\end{tabularx}\n");
-    fprintf(out,"\\end{table}\n");
+    fprintf(out,"\\end{tabbing}\n");
   }
   if (nbug > 0) {
-    fprintf(out,"\\subsubsection*{Diagnostics.}\n");
+    fprintf(out,"\n\\subsubsection*{Diagnostics}\n\n");
     fprintf(out,"\\begin{itemize}\n");
     for(i=0; (i<nbug); i++)
       fprintf(out,"\\item\t%s\n",check_tex(bugs[i]));
     fprintf(out,"\\end{itemize}\n");
   }
+/*   fprintf(out,"\n\\newpage\n"); */
 }
 
 static void write_nroffman(FILE *out,
@@ -501,11 +503,8 @@ static void pr_opts(FILE *fp,
 }
 
 static void write_compl(FILE *out,
-			char *program,
-			int nldesc, char **desc,
 			int nfile,  t_filenm *fnm,
-			int npargs, t_pargs *pa,
-			int nbug,   char **bugs)
+			int npargs, t_pargs *pa)
 {
   fprintf(out,"complete %s",ShortProgram());
   pr_enums(out,npargs,pa);
@@ -556,7 +555,7 @@ void write_man(FILE *out,char *mantp,
   if (strcmp(mantp,"java")==0)
     write_java(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs);
   if (strcmp(mantp,"completion")==0)
-    write_compl(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs);
+    write_compl(out,nfile,fnm,npar,par);
 
   if (!bHidden)
     sfree(par);
