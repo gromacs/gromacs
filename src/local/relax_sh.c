@@ -157,6 +157,32 @@ static void dump_shells(FILE *fp,rvec x[],rvec f[],real ftol,int ns,t_shell s[])
   }
 }
 
+void set_nbfmask(t_forcerec *fr,t_mdatoms *md,int ngrp,bool bMask)
+{
+  static bool *bShell=NULL;
+  int    i,j,gid;
+  
+  if (!bShell) {
+    snew(bShell,ngrp);
+    /* Loop over atoms */
+    for(i=0; (i<md->nr); i++) 
+      /* If it is a shell, then set the value to TRUE */
+      if (md->ptype[i] == eptShell)
+	bShell[md->cENER[i]] = TRUE;
+  }
+  
+  /* Loop over all the energy groups */
+  for(i=0; (i<ngrp); i++)
+    for(j=i; (j<ngrp); j++) {
+      gid = GID(i,j,ngrp);
+      /* If either of the groups denote a group with shells, then */
+      if (bShell[i] || bShell[j])
+	fr->bMask[gid] = bMask;
+      else
+	fr->bMask[gid] = !bMask;
+    }
+}
+
 int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 int mdstep,t_parm *parm,bool bDoNS,bool bStopCM,
 		 t_topology *top,real ener[],
@@ -173,7 +199,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   tensor my_vir[2];
 #define NEPOT asize(Epot)
   real   ftol,step,step0,xiH,xiS;
-  bool   bDone,bMinSet;
+  bool   bDone;
   int    g;
   int    number_steps;
   int    count=0;
@@ -242,7 +268,6 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
    * even without minimization.
    */
   *bConverged = bDone = (df[Min] < ftol) || (nshell == 0);
-  bMinSet     = FALSE;
   
   for(count=1; (!bDone && (count < number_steps)); count++) {
     
@@ -281,7 +306,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     *bConverged = (df[Try] < ftol);
     bDone       = *bConverged || (step < 0.5);
     
-    if ((Epot[Try] < Epot[Min])/*  || (df[Try] < df[Min])*/) {
+    if ((Epot[Try] < Epot[Min])) {
       Min  = Try;
       step = step0;
     }
@@ -296,194 +321,6 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   memcpy(f,force[Min],nsb->natoms*sizeof(f[0]));
   copy_mat(my_vir[Min],vir_part);
   
-  return count; 
-}
-
-int relax_shells2(FILE *log,t_commrec *cr,
-		  bool bVerbose,int mdstep,
-		  t_parm *parm,bool bDoNS,bool bStopCM,
-		  t_topology *top,real ener[],
-		  rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
-		  rvec buf[],t_mdatoms *md,
-		  t_nsborder *nsb,t_nrnb *nrnb,
-		  t_graph *graph,
-		  t_groups *grps,tensor vir_part,
-		  int nshell,t_shell shells[],
-		  t_forcerec *fr,char *traj,
-		  real t,real lambda,
-		  int natoms,matrix box,t_mdebin *mdebin)
-{
-  static bool bFirst=TRUE;
-  static rvec *pos[3],*force[3];
-  static real step;
-  real   ftol,s1,s2,eold,step0;
-  rvec   EEE,abc,rmsF;
-  matrix SSS = { { 0, 0, 1 }, { 1, 1, 1}, { 0, 1, 0 }};
-  matrix Sinv;
-  bool   bDone,bMinSet;
-  int    g;
-  int    number_steps;
-  int    count=0;
-  int    i,start=START(nsb),homenr=HOMENR(nsb),end=START(nsb)+HOMENR(nsb);
-  int    Min=0;
-  /* #define  Try (1-Min)  */           /* At start Try = 1 */
-#define  Try1 ((Min+1) % 3)
-#define  Try2 ((Min+2) % 3)
-
-  if (bFirst) {
-    /* Allocate local arrays */
-    for(i=0; (i<3); i++) {
-      snew(pos[i],nsb->natoms);
-      snew(force[i],nsb->natoms);
-    }
-    bFirst=FALSE;
-  }
-  
-  ftol         = parm->ir.em_tol;
-  number_steps = parm->ir.niter;
-  step0        = 1.0;   
-  step         = step0;
-  
-  /* Do a prediction of the shell positions */
-  predict_shells(log,x,v,parm->ir.delta_t,nshell,shells,md->massT,(mdstep == 0));
-    
-  /* Calculate the forces first time around */
-  do_force(log,cr,parm,nsb,vir_part,mdstep,nrnb,
-	   top,grps,x,v,force[Min],buf,md,ener,bVerbose && !PAR(cr),
-	   lambda,graph,bDoNS,FALSE,fr);
-
-  if (nshell) 
-    rmsF[0]=rms_force(force[Min],nshell,shells);
-  
-  /* Copy x to pos[Min] & pos[Try1]: during minimization only the
-   * shell positions are updated, therefore the other particles must
-   * be set here.
-   */
-  memcpy(pos[Min], x,nsb->natoms*sizeof(x[0]));
-  memcpy(pos[Try1],x,nsb->natoms*sizeof(x[0]));
-  memcpy(pos[Try2],x,nsb->natoms*sizeof(x[0]));
-  for(i=0; (i<nsb->natoms); i++) {
-    clear_rvec(force[Try1][i]);
-    clear_rvec(force[Try2][i]);
-  }
-  /* Sum the potential energy terms from group contributions */
-  sum_epot(&(parm->ir.opts),grps,ener);
-  EEE[0] = ener[F_EPOT];
-  
-  if (bVerbose && MASTER(cr))
-    print_epot("",mdstep,0,step,EEE[0],rmsF[Min]);
-  if (debug) {
-    fprintf(debug,"%17s: %14.10e\n",
-	    interaction_function[F_EKIN].longname, ener[F_EKIN]);
-    fprintf(debug,"%17s: %14.10e\n",
-	    interaction_function[F_EPOT].longname, ener[F_EPOT]);
-    fprintf(debug,"%17s: %14.10e\n",
-	    interaction_function[F_ETOT].longname, ener[F_ETOT]);
-  }
-      
-  bDone=((nshell == 0) || (rmsF[0] < ftol));
-  bMinSet=FALSE;
-  
-  /****************************************************** 
-   *  Start the shell-relaxation loop 
-   ******************************************************/
-  for(count=1; 
-      !(bDone || ((number_steps > 0) && (count>=number_steps))); ) {
-    
-    /* New positions, Steepest descent */
-    shell_pos_sd(log,step,pos[Min],pos[Try1],force[Min],nshell,shells); 
-
-#ifdef DEBUGHARD
-    pr_rvecs(log,0,"pos[Try1] b4 do_force",&(pos[Try1][start]),homenr);
-    pr_rvecs(log,0,"pos[Try2] b4 do_force",&(pos[Try2][start]),homenr);
-    pr_rvecs(log,0,"pos[Min] b4 do_force",&(pos[Min][start]),homenr);
-#endif
-    
-    /* Try the new positions */
-    do_force(log,cr,parm,nsb,vir_part,1,nrnb,
-	     top,grps,pos[Try1],v,force[Try1],buf,md,ener,bVerbose && !PAR(cr),
-	     lambda,graph,FALSE,FALSE,fr);
-    count++;
-    rmsF[Try1]=rms_force(force[Try1],nshell,shells);
-#ifdef DEBUGHARD
-    pr_rvecs(log,0,"F na do_force",&(force[Try1][start]),homenr);
-#endif
-
-    /* Sum the potential energy terms from group contributions */
-    sum_epot(&(parm->ir.opts),grps,ener);
-    EEE[1] = ener[F_EPOT];
-    
-    if (bVerbose && MASTER(cr))
-      print_epot("",mdstep,count,step,EEE[1],rmsF[Try1]);
-    bDone=(rmsF[Try1] < ftol);
-    
-    /* NOW! Do line mimization *
-     * Assume the energy is a quadratic function of the stepsize x:
-     * a x^2 + b x + c = E
-     * We try to solve the following equations:
-     * a x^2 + b x + c = E[0] (x = 0)
-     * a x^2 + b x + c = E[1] (x = 1)
-     * 2 a x + b       = F[1] (x = 1)
-     * This we can write as a matrix equation:
-     *
-     * ( 0  0  1 ) a   E[0]
-     * ( 1  1  1 ) b = E[1]
-     * ( 0  2  1 ) c   F[1]
-     */
-    EEE[2] = rmsF[Min]*sqrt(nshell*1.0);
-    
-    m_inv(SSS,Sinv);
-    mvmul(Sinv,EEE,abc);
-	
-    if ((abc[0] == 0) || (abc[0]*abc[1] > 0)) {
-      pr_rvecs(log,0,"SSS",SSS,DIM);
-      pr_rvecs(log,0,"Sinv",Sinv,DIM);
-      pr_rvec(log,0,"EEE",EEE,DIM);
-      pr_rvec(log,0,"abc",abc,DIM);
-      fatal_error(0,"Relaxing shells: line minimization failed. Check log");
-    }
-    /* We know and checked that the solution for step must be > 0 because 
-     * the new positions are in the direction of the forces
-     * i.e. the first derivative of the energy is < 0 at step = 0
-     */
-    step = min(2.0*step0,-abc[1]/(2*abc[0]));
-	
-    /* New positions at half the step size, Steepest descent */
-    shell_pos_sd(log,step,pos[Min],pos[Try2],force[Min],nshell,shells); 
-      
-    /* Try the new positions */
-    do_force(log,cr,parm,nsb,vir_part,1,nrnb,
-	     top,grps,pos[Try2],v,force[Try2],buf,md,ener,
-	     bVerbose && !PAR(cr),
-	     lambda,graph,FALSE,FALSE,fr);
-    count++;
-      
-    /* Sum the potential energy terms from group contributions */
-    sum_epot(&(parm->ir.opts),grps,ener);
-    
-    eold      = EEE[0];
-    EEE[0]  = ener[F_EPOT];
-    rmsF[Min] = rms_force(force[Try2],nshell,shells);
-    bDone     = (rmsF[Min] < ftol);
-      
-    if (bVerbose && MASTER(cr)) {
-      print_epot("",mdstep,count,step,EEE[0],rmsF[Min]);
-      fprintf(stderr,"DE1=%10g, DE0= %10g\n",eold-EEE[1],eold-EEE[0]);
-    }
-    step = step0;
-    Min  = Try2;
-  }
-  if (MASTER(cr) && !bDone) 
-    fprintf(stderr,"EM did not converge in %d steps\n",number_steps);
-  
-  /* Parallelise this one! */
-  memcpy(x,pos[Min],nsb->natoms*sizeof(x[Min]));
-  memcpy(f,force[Min],nsb->natoms*sizeof(f[Min]));
-#ifdef DEBUGHARD
-  pr_rvecs(log,0,"X na do_relax",&(x[start]),homenr);
-  pr_rvecs(log,0,"F na do_relax",&(f[start]),homenr);
-#endif
-
   return count; 
 }
 

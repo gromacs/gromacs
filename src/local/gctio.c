@@ -268,7 +268,7 @@ void write_gct(char *fn,t_coupl_rec *tcr,t_idef *idef)
   fclose(fp);
 }
 
-static bool add_lj(int *nLJ,t_coupl_LJ **tcLJ,char *s)
+static bool add_lj(int *nLJ,t_coupl_LJ **tcLJ,char *s,bool bObsUsed[])
 {
   int       j,ati,atj,eo;
   char      buf[256];
@@ -300,11 +300,12 @@ static bool add_lj(int *nLJ,t_coupl_LJ **tcLJ,char *s)
   (*tcLJ)[j].at_j   = atj;
   (*tcLJ)[j].xi_6   = xi6;
   (*tcLJ)[j].xi_12  = xi12;
+  bObsUsed[eo] = TRUE;
   
   return FALSE;
 }
 
-static bool add_bu(int *nBU,t_coupl_BU **tcBU,char *s)
+static bool add_bu(int *nBU,t_coupl_BU **tcBU,char *s,bool bObsUsed[])
 {
   int       j,ati,atj,eo;
   char      buf[256];
@@ -333,15 +334,16 @@ static bool add_bu(int *nBU,t_coupl_BU **tcBU,char *s)
     fatal_error(0,"Invalid observable for BU coupling: %s",buf);
   }
   (*tcBU)[j].at_i   = ati;
-    (*tcBU)[j].at_j   = atj;
-    (*tcBU)[j].xi_a   = xia;
-    (*tcBU)[j].xi_b   = xib;
-    (*tcBU)[j].xi_c   = xic;
-  
-    return FALSE;
+  (*tcBU)[j].at_j   = atj;
+  (*tcBU)[j].xi_a   = xia;
+  (*tcBU)[j].xi_b   = xib;
+  (*tcBU)[j].xi_c   = xic;
+  bObsUsed[eo] = TRUE;
+
+  return FALSE;
 }
 
-static bool add_ip(int *nIP,t_coupl_iparams **tIP,char *s,int ftype)
+static bool add_ip(int *nIP,t_coupl_iparams **tIP,char *s,int ftype,bool bObsUsed[])
 {
   int    i,eo,type;
   char   buf[256];
@@ -374,6 +376,7 @@ static bool add_ip(int *nIP,t_coupl_iparams **tIP,char *s,int ftype)
     (*tIP)[i].eObs=eo;
     (*tIP)[i].xi.harmonic.krA = kb;
     (*tIP)[i].xi.harmonic.rA  = b0;
+    bObsUsed[eo] = TRUE;
     break;
   default:
     fprintf(stderr,"ftype %s not supported (yet)\n",
@@ -383,9 +386,9 @@ static bool add_ip(int *nIP,t_coupl_iparams **tIP,char *s,int ftype)
   return FALSE;
 }
 
-static bool add_q(int *nQ,t_coupl_Q **tcQ,char *s)
+static bool add_q(int *nQ,t_coupl_Q **tcQ,char *s,bool bObsUsed[])
 {
-  int       j,ati;
+  int       j,ati,eo;
   char      buf[256];
   double    xiQ;
   
@@ -404,12 +407,13 @@ static bool add_q(int *nQ,t_coupl_Q **tcQ,char *s)
     fprintf(stderr,"\n*** WARNING: overwriting entry for Q coupling '%s'\n",s);
   
   clear_q(&((*tcQ)[j]));
-  (*tcQ)[j].eObs = Name2eo(buf);
+  eo = (*tcQ)[j].eObs = Name2eo(buf);
   if ((*tcQ)[j].eObs == -1) {
     fatal_error(0,"Invalid observable for Q coupling: %s",buf);
   }
   (*tcQ)[j].at_i   = ati;
   (*tcQ)[j].xi_Q  = xiQ;
+  bObsUsed[eo] = TRUE;
   
   return FALSE;
 }
@@ -421,9 +425,10 @@ void read_gct(char *fn,t_coupl_rec *tcr)
   bool      bWrong;
   
   inp=read_inpfile(fn,&ninp);
-  for(i=0; (i<eoObsNR); i++)
+  for(i=0; (i<eoObsNR); i++) {
+    tcr->bObsUsed[i] = FALSE;
     RTYPE (eoNames[i],	tcr->ref_value[i],	0.0);
-  
+  }
   ITYPE (eoNames[eoMemory],     tcr->nmemory,   1);
   ETYPE (eoNames[eoInter],      tcr->bInter,    yesno_names);
   ETYPE (eoNames[eoUseVirial],  tcr->bVirial,   yesno_names);
@@ -437,13 +442,13 @@ void read_gct(char *fn,t_coupl_rec *tcr)
   for(i=0; (i<ninp); i++) {
     bWrong=FALSE;
     if (strcasecmp(inp[i].name,"LJ") == 0) 
-      bWrong=add_lj(&nLJ,&(tcr->tcLJ),inp[i].value);
+      bWrong=add_lj(&nLJ,&(tcr->tcLJ),inp[i].value,tcr->bObsUsed);
     else if (strcasecmp(inp[i].name,"BU") == 0) 
-      bWrong=add_bu(&nBU,&(tcr->tcBU),inp[i].value);
+      bWrong=add_bu(&nBU,&(tcr->tcBU),inp[i].value,tcr->bObsUsed);
     else if (strcasecmp(inp[i].name,"Q") == 0) 
-      bWrong=add_q(&nQ,&(tcr->tcQ),inp[i].value);
+      bWrong=add_q(&nQ,&(tcr->tcQ),inp[i].value,tcr->bObsUsed);
     else if (strcasecmp(inp[i].name,"Bonds") == 0)
-      bWrong=add_ip(&nIP,&(tcr->tIP),inp[i].value,F_BONDS);
+      bWrong=add_ip(&nIP,&(tcr->tIP),inp[i].value,F_BONDS,tcr->bObsUsed);
       
     if (bWrong)
       fprintf(stderr,"Wrong line in %s: '%s = %s'\n",

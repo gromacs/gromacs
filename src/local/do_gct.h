@@ -78,12 +78,7 @@ typedef struct {
   real       act_value[eoObsNR];
   real       av_value [eoObsNR];
   real       ref_value[eoObsNR];
-  /*real       force0,force,fx0,fx,fy0,fy,fz0,fz;
-  real       pres0,pres;
-  real       vir0,vir;
-  real       epot0,epot;
-  real       dist0,dist;
-  real       mu0,mu;*/
+  bool       bObsUsed[eoObsNR];
   int        nLJ,nBU,nQ,nIP;
   t_coupl_LJ *tcLJ;
   t_coupl_BU *tcBU;

@@ -105,19 +105,21 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
   char        *leg[] =  { "C12", "C6" };
   char        *bleg[] = { "A", "B", "C" };
   char        **raleg;
-  int         i,index;
+  int         i,j,index;
   
   if ((prop == NULL) && (out == NULL) && (qq == NULL) && (ip == NULL)) {
     prop=xvgropen(opt2fn("-runav",nfile,fnm),
 		  "Properties and Running Averages","Time (ps)","");
     snew(raleg,2*eoObsNR);
-    for(i=0; (i<eoObsNR); i++) {
-      raleg[i] = strdup(eoNames[i]);
-      sprintf(buf,"RA-%s",eoNames[i]);
-      raleg[eoObsNR+i] = strdup(buf);
+    for(i=j=0; (i<eoObsNR); i++) {
+      if (tcr->bObsUsed[i]) {
+	raleg[j++] = strdup(eoNames[i]);
+	sprintf(buf,"RA-%s",eoNames[i]);
+	raleg[j++] = strdup(buf);
+      }
     }
-    xvgr_legend(prop,2*eoObsNR,raleg);
-    for(i=0; (i<2*eoObsNR); i++) 
+    xvgr_legend(prop,j,raleg);
+    for(i=0; (i<j); i++) 
       sfree(raleg[i]);
     sfree(raleg);
       
@@ -175,13 +177,12 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
 	      interaction_function[idef->functype[index]].longname);
       fflush(ip[i]);
     }
-    }
-    /* Write properties to file */
+  }
+  /* Write properties to file */
   fprintf(prop,"%10.3f",time);
-  for(i=0; (i<eoObsNR); i++)
-    fprintf(prop,"  %10.3e",tcr->act_value[i]);
-  for(i=0; (i<eoObsNR); i++)
-    fprintf(prop,"  %10.3e",tcr->av_value[i]);
+  for(i=0; (i<eoObsNR); i++) 
+    if (tcr->bObsUsed[i])
+      fprintf(prop,"  %10.3e  %10.3e",tcr->act_value[i],tcr->av_value[i]);
   fprintf(prop,"\n");
   fflush(prop);
   
@@ -222,19 +223,27 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
   }
 }
 
-static void pr_dev(real t,real dev[eoObsNR],t_commrec *cr,int nfile,t_filenm fnm[])
+static void pr_dev(t_coupl_rec *tcr,
+		   real t,real dev[eoObsNR],t_commrec *cr,int nfile,t_filenm fnm[])
 {
   static FILE *fp=NULL;
-  int    i;
+  char   **ptr;
+  int    i,j;
   
   if (!fp) {
     fp=xvgropen(opt2fn("-devout",nfile,fnm),
 		"Deviations from target value","Time (ps)","");
-    xvgr_legend(fp,eoObsNR,eoNames);
+    snew(ptr,eoObsNR);
+    for(i=j=0; (i<eoObsNR); i++)
+      if (tcr->bObsUsed[i])
+	ptr[j++] = eoNames[i];
+    xvgr_legend(fp,j,ptr);
+    sfree(ptr);
   }
   fprintf(fp,"%10.3f",t);
   for(i=0; (i<eoObsNR); i++)
-    fprintf(fp,"  %10.3e",dev[i]);
+    if (tcr->bObsUsed[i])
+      fprintf(fp,"  %10.3e",dev[i]);
   fprintf(fp,"\n");
   fflush(fp);
 }
@@ -492,7 +501,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   prdev[eoEpot]     = epot0 - tcr->act_value[eoEpot];
   
   if (bPrint)
-    pr_dev(t,prdev,cr,nfile,fnm);
+    pr_dev(tcr,t,prdev,cr,nfile,fnm);
   
   /* First set all factors to 1 */
   for(i=0; (i<atnr2); i++) {

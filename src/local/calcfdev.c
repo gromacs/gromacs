@@ -7,7 +7,7 @@
 void calc_force(int natom,rvec f[],rvec fff[])
 {
   int  i,j,m;
-  int  jindex[] = { 0, 4, 8};
+  int  jindex[] = { 0, 5, 10};
   rvec dx,df;
   real msf1,msf2;
   
@@ -16,6 +16,7 @@ void calc_force(int natom,rvec f[],rvec fff[])
     for(i=jindex[j]; (i<jindex[j+1]); i++) {
       for(m=0; (m<DIM); m++) {
 	fff[j][m] += f[i][m];
+	xcm[j][m] += 
       }
     }
   }
@@ -91,9 +92,3 @@ void calc_f_dev(int natoms,real charge[],rvec x[],rvec f[],
   else
     *xiS=rmsf/(10*c12[wwwS]*dFS);
 }
-
-
-
-
-
-
