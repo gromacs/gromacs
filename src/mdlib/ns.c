@@ -696,9 +696,14 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
 	      bNotEx = NOTEXCL(bExcl,i,jj);
 	      
 	      if (bNotEx) {
-                if (bFreeJ) 
-		  add_j_to_nblist(vdwc_free,jj);
-                else if (bCoulOnly) { 
+                if (bFreeJ) {
+		  if (bCoulOnly)
+		    add_j_to_nblist(coul_free,jj);
+		  else if (bVDWOnly)
+		    add_j_to_nblist(vdw_free,jj);
+		  else
+		    add_j_to_nblist(vdwc_free,jj);
+		} else if (bCoulOnly) { 
                   /* This is done whether or  not bWater is set */
                   if (charge[jj] != 0)
                     add_j_to_nblist(coul,jj);
