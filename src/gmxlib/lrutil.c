@@ -274,7 +274,7 @@ real potential(real r1,real rc,real R)
     return 0.0;
 }
 
-real calc_LRcorrections(FILE *fp,int start,int natoms,t_forcerec *fr,
+real calc_LRcorrections(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 			real charge[],t_block *excl,rvec x[],
 			rvec f[],bool bOld,rvec box_size,matrix lrvir)
 {
@@ -282,26 +282,29 @@ real calc_LRcorrections(FILE *fp,int start,int natoms,t_forcerec *fr,
   static real Vself;
   int    i,i1,i2,j,k,m;
   unsigned int *AA;
-  real   qi,qq,dr,ddd,dr2,dr_1,dr_3,fscal,Vexcl,qtot;
+  real   qi,qq,dr,ddd,dr2,dr_1,dr_3,fscal,Vexcl,qtot=0;
   rvec   df,dx;
   real   r1=fr->rcoulomb_switch;
   real   rc=fr->rcoulomb;
   real   ewc=fr->ewaldcoeff;
   real   isp=0.564189583547756;
-  real   e_plasma;  /* assume uniform plasma for correction due */
-  ivec   shift;     /* to a charged system with Ewald/PME       */
-  
+  ivec   shift;     
+  int    start=START(nsb);
+  int    natoms=HOMENR(nsb);
+
   if (bFirst) {
     qq =0;  
-    qtot = 0;
     for(i=start; (i<start+natoms); i++) {
 	qq  += charge[i]*charge[i];
-	qtot += charge[i];
     }
+    qtot=0;
+    for(i=0;i<nsb->natoms;i++)
+      qtot+=charge[i];
+    
     if(fr->bEwald)
 	Vself=ewc*ONE_4PI_EPS0*qq/sqrt(M_PI);
     else
-    Vself = 0.5*C*ONE_4PI_EPS0*qq;
+	Vself = 0.5*C*ONE_4PI_EPS0*qq;
     fprintf(fp,"calc_LRcorrections: r1 = %g, rc=%g\n",r1,rc);
     fprintf(fp,"calc_LRcorrections: start=%d,natoms=%d\n",start,natoms);
     fprintf(fp,"calc_LRcorrections: qq = %g, Vself=%g\n",qq,Vself);
@@ -309,14 +312,7 @@ real calc_LRcorrections(FILE *fp,int start,int natoms,t_forcerec *fr,
   }
   AA = excl->a;
   Vexcl = 0;
-  if(fr->bEwald) {
-      /* might still be a factor 2 off here! EL 990727 */
-      e_plasma=ONE_4PI_EPS0*sqrt(M_PI)*qtot*qtot/(ewc*box_size[XX]*box_size[YY]*box_size[ZZ]);
-      lrvir[XX][XX]+=e_plasma;
-      lrvir[YY][YY]+=e_plasma;
-      lrvir[ZZ][ZZ]+=e_plasma;      
-  }
-  
+ 
   for(i=start; (i<start+natoms); i++) {
     /* Initiate local variables (for this i-particle) to 0 */
     i1  = excl->index[i];
