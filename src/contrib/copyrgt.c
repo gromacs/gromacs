@@ -27,7 +27,7 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * GROningen Mixture of Alchemy and Childrens' Stories
+ * Great Red Owns Many ACres of Sand 
  */
 static char *SRCID_copyrgt_c = "$Id$";
 #include "stdio.h"
