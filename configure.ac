@@ -331,6 +331,8 @@ if test "$IDENT" != "no"; then
     AC_MSG_RESULT([no]))
 fi
 
+# MPI builds on aix break with shared libs.
+AC_DISABLE_SHARED
 AC_PROG_LIBTOOL
 AC_PROG_LN_S
 
@@ -744,8 +746,10 @@ fi
 
 if test "$enable_shared" = "yes"; then
   echo ""
-  echo "* To save space, we use shared libraries. If this causes any problems,"
-  echo "  you can turn it off with --disable-shared."
+  echo "* To save space, you might want to use shared libraries. 
+  echo "  This should work on almost any platform, but since there are"
+  echo "  a few exceptions (MPI builds on aix) it is not used by default."
+  echo "  Turn it on with --enable-shared."
 fi
 echo ""
 
