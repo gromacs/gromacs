@@ -128,7 +128,7 @@ void print_nnb(t_nextnb *nnb, char *s)
   }
 }
 
-static void nnb2excl (t_nextnb *nnb, t_block *excl)
+void nnb2excl (t_nextnb *nnb, t_block *excl)
 {
   int i,j,j_index;
   int nre,nrx,nrs,nr_of_sortables;
@@ -230,12 +230,12 @@ static void add_b(t_params *bonds, int *nrf, sortable s[])
   int ai,aj;
   
   for (i=0; (i < bonds->nr); i++) {
-    /* Add every bond twice */
     ai = bonds->param[i].AI;
     aj = bonds->param[i].AJ;
     if ((ai < 0) || (aj < 0)) 
       fatal_error(0,"Impossible atom numbers in bond %d: ai=%d, aj=%d",
 		  i,ai,aj);
+    /* Add every bond twice */
     s[(*nrf)].ai   = ai;
     s[(*nrf)++].aj = aj;
     s[(*nrf)].aj   = ai;
@@ -248,10 +248,10 @@ void gen_nnb(t_nextnb *nnb,t_params plist[])
   sortable *s;
   int      i,nrbonds,nrf;
 
-  /* we need every bond twice (bidirectional) */
   nrbonds=0;
   for(i=0; (i<F_NRE); i++)
     if (interaction_function[i].flags & IF_CONNECT)
+      /* we need every bond twice (bidirectional) */
       nrbonds += 2*plist[i].nr;
   
   snew(s,nrbonds);
