@@ -221,20 +221,18 @@ static void analyse_prot(int nres,eRestp restp[],int natres[],t_atoms *atoms,
 {
   static char *pnoh[]    = { "H" };
   static char *calpha[]  = { "CA" };
-  static char *bb[]      = { "N", "CA", "C" };
-  static char *mc[]      = { "N", "CA", "C", "O" };
-  static char *mcb[]     = { "N", "CA", "CB", "C", "O" };
-  static char *mch[]     = { "N", "CA", "C", "O" , "H" };
-  static char *sc[]      = { "N", "CA", "C", "O" , "H" };
-  static char *scnoh[]   = { "N", "CA", "C", "O" , "H" };
-  static char **chains[] = { NULL, pnoh, calpha, bb, mc, mcb ,mch, sc, scnoh};
+  static char *bb[]      = { "N","CA","C" };
+  static char *mc[]      = { "N","CA","C","O","O1","O2","OXT" };
+  static char *mcb[]     = { "N","CA","CB","C","O","O1","O2","OT","OXT" };
+  static char *mch[]     = { "N","CA","C","O","O1","O2","OT","OXT","H1","H2","H3","H" };
+  static char **chains[] = { NULL, pnoh, calpha, bb, mc, mcb ,mch, mch, mch};
 
 #define NCH asize(chains)
 
-  static int       sizes[NCH] = { 0, asize(pnoh), asize(calpha), asize(bb), asize(mc), asize(mcb), asize(mch), asize(sc), asize(scnoh)};
+  static int       sizes[NCH] = { 0, asize(pnoh), asize(calpha), asize(bb), asize(mc), asize(mcb), asize(mch), asize(mch), asize(mch)};
   static char   *ch_name[NCH] = { "Protein", "Protein-H", "C-Alpha", "Backbone", "MainChain", "MainChain+Cb", "MainChain+H", "SideChain", "SideChain-H" };
   static bool complement[NCH] = { 1, 1, 0, 0, 0, 0, 0, 1, 1};
-  static int  wholename[NCH]  = {-1, 0,-1,-1,-1,-1,-1,-1, 4};
+  static int  wholename[NCH]  = {-1, 0,-1,-1,-1,-1,-1,-1, 11};
   /* the index in wholename gives the first item in the arrays of 
    * atomtypes that should be tested with 'strncmp' in stead of
    * strcasecmp, or -1 if all items should be tested with strcasecmp
