@@ -136,7 +136,7 @@ void correlate_aniso(char *fn,t_atoms *ref,t_atoms *calc)
   for(i=0; (i<ref->nr); i++) {
     if (ref->pdbinfo[i].bAnisotropic) {
       for(j=U11; (j<=U23); j++)
-	fprintf(fp,"%10g  %10g\n",ref->pdbinfo[i].uij[j],calc->pdbinfo[i].uij[j]);
+	fprintf(fp,"%10d  %10d\n",ref->pdbinfo[i].uij[j],calc->pdbinfo[i].uij[j]);
     }
   }
   fclose(fp);
