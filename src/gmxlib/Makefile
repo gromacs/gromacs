@@ -10,7 +10,7 @@
 #
 ifeq ($(GMXHOME),)
 all:
-	echo "No GROMACS environment, Please source your GMXRC file"
+	@echo "No GROMACS environment, Please source your GMXRC file"
 else
 include		$(GMXHOME)/src/makef/Makefile.def
 #
@@ -175,12 +175,21 @@ $(LIB)(fnbf.o):		fnbf.c inner.h $(M4MAC) $(M4FILE) $(CPUMAKEF)
 			$(AR) $(ARFLAGS) $(LIB) fnbf.o
 
 x86asm.o:		x86asm.s
+			@echo "If your build bails out here, make sure you are"
+			@echo "using a version of nasm which supports the"
+			@echo "extended 3dnow instruction set. You'll find it"
+			@echo "under software on the gromacs homepage."
 ifeq ($(GMXCPU),win)
 			nasm -f win32 -o x86asm.o x86asm.s
 else
 			nasm -f elf -o x86asm.o x86asm.s
 endif
+
 inner_3dnow.o:		inner_3dnow.s
+			@echo "If your build bails out here, make sure you are"
+			@echo "using a version of nasm which supports the"
+			@echo "extended 3dnow instruction set. You'll find it"
+			@echo "under software on the gromacs homepage."
 ifeq ($(GMXCPU),win)
 			nasm -f win32 -o inner_3dnow.o inner_3dnow.s
 else
@@ -259,7 +268,7 @@ tst:			tst.o
 			$(FLD) -o tst tst.o $(SYSLIBS)
 
 $(GMXHOME)/src/makef/Makefile.def:
-	echo "Wrong GROMACS environment, Please source GMXRC in this source tree"
+	@echo "Wrong GROMACS environment, Please source GMXRC in this source tree"
 
 include	Make.dep
 endif
