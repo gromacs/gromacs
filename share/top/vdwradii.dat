@@ -3,9 +3,29 @@
 ; longest matches are used
 ; '???' or '*' matches any residue name
 ; 'AAA' matches any protein residue name
-??? C   0.15
-??? F   0.12
-??? H   0.04
-??? N   0.110
-??? O   0.105
-??? S   0.16
+???  C     0.15
+???  F     0.12
+???  H     0.04
+???  N     0.110
+???  O     0.105
+???  S     0.16
+GLY  MN1   0
+GLY  MN2   0
+ALA  MCB1  0
+ALA  MCB2  0
+VAL  MCG1  0
+VAL  MCG2  0
+ILE  MCG1  0
+ILE  MCG2  0
+ILE  MCD1  0
+ILE  MCD2  0
+LEU  MCD1  0
+LEU  MCD2  0
+MET  MCE1  0
+MET  MCE2  0
+TRP  MTRP1 0
+TRP  MTRP2 0
+THR  MCG1  0
+THR  MCG2  0
+LYSH MNZ1  0
+LYSH MNZ2  0
