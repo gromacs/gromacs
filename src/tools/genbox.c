@@ -418,28 +418,24 @@ void add_solv(char *solv,int ntb,
 	  *atoms_added,*residues_added);
 }
 
-char *read_prot(char *confin,char *indexnm,
-		int ntb,bool bRotate,
+char *read_prot(char *confin,
+		int ntb,
 		t_atoms *atoms,rvec **x,rvec **v,real **r,
-		matrix box,t_vdw **vdw,int *max_vdw,real r_distance,
-		real prot_wall)
+		matrix box,t_vdw **vdw,int *max_vdw,real r_distance)
 {
   char *title;
   rvec xmin,xmax;
-  int  i,m;
+  int  i,m,natoms;
   
   snew(title,STRLEN);
-  get_stx_coordnum(confin,&(atoms->nr));
-  
+  get_stx_coordnum(confin,&natoms);
+
   /* allocate memory for atom coordinates of configuration 1 */
-  snew(*x,atoms->nr);
-  snew(*v,atoms->nr);
-  snew(*r,atoms->nr);
-  snew(atoms->resname,atoms->nr);
-  snew(atoms->atom,atoms->nr);
-  snew(atoms->atomname,atoms->nr);
-  atoms->pdbinfo = NULL;
-  
+  snew(*x,natoms);
+  snew(*v,natoms);
+  snew(*r,natoms);
+  init_t_atoms(atoms,natoms,FALSE);
+
   /* read residue number, residue names, atomnames, coordinates etc. */
   fprintf(stderr,"Reading solute configuration \n");
   read_stx_conf(confin,title,atoms,*x,*v,box);
@@ -449,30 +445,6 @@ char *read_prot(char *confin,char *indexnm,
   /* initialise van der waals arrays of configuration 1 */
   mk_vdw(atoms,*r,vdw,max_vdw,r_distance);
   
-  /*orient configuration along z-axis*/
-  if (bRotate) 
-    orient_mol(atoms,indexnm,*x);
-    
-  /* Compute new box size */
-  copy_rvec((*x)[0],xmin);
-  copy_rvec((*x)[0],xmax);
-  for(i=1; (i<atoms->nr); i++) {
-    for(m=0; (m<DIM); m++) {
-      xmin[m] = min((*x)[i][m],xmin[m]);
-      xmax[m] = max((*x)[i][m],xmax[m]);
-    }
-  }
-  for(m=0; (m<DIM); m++) {
-    box[m][m] = 2*prot_wall+xmax[m]-xmin[m];
-  }
-  fprintf(stderr,"xmin           = %8.3f  %8.3f  %8.3f\n",
-	  xmin[XX],xmin[YY],xmin[ZZ]);
-  fprintf(stderr,"xmax           = %8.3f  %8.3f  %8.3f\n",
-	  xmax[XX],xmax[YY],xmax[ZZ]);
-  fprintf(stderr,"New box size   = %8.3f  %8.3f  %8.3f, volume = %g\n",
-	  box[XX][XX],box[YY][YY],box[ZZ][ZZ],det(box));
-  
-  center_conf(atoms->nr,*x,box);
   
   return title;
 }
@@ -664,7 +636,6 @@ int main(int argc,char *argv[])
     { efSTX, "-cp", "protein", ffOPTRD },
     { efSTX, "-cs", "spc216",  ffLIBOPTRD},
     { efSTX, "-ci", "insert",  ffOPTRD},
-    { efNDX, "-n",  NULL,      ffOPTRD},
     { efVDW, "-w",  NULL,      ffLIBRD},
     { efSTO, NULL,  NULL,      ffWRITE},
     { efTOP, NULL,  NULL,      ffOPTRW},
@@ -672,17 +643,14 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
   
   static int nmol_ins=0,maxsol=0,seed=1997,ntb=0;
-  static bool bRotate=FALSE;
-  static real r_distance=0.105,prot_wall=0.0;
+  static real r_distance=0.105;
   static rvec new_box={0.0,0.0,0.0};
   t_pargs pa[] = {
     { "-box",   FALSE,etRVEC,&new_box,   "box size" },
     { "-nmol",  FALSE,etINT ,&nmol_ins,    "no of extra molecules to insert" },
     { "-maxsol",FALSE,etINT ,&maxsol,    "max no of solvent molecules to add"},
-    { "-rot",   FALSE,etBOOL,&bRotate,   "rotate solute to fit box best"},
     { "-seed",  FALSE,etINT ,&seed,      "random generator seed"},
     { "-vdwd",  FALSE,etREAL,&r_distance,"default vdwaals distance"},
-    { "-wall",  FALSE,etREAL,&prot_wall, "distance between protein and wall (nly useful with option -rot)" },
     { "-boxtype",FALSE,etINT,&ntb, "HIDDENbox type 0=rectangular; "
       "1=truncated octahedron (only rectangular boxes are fully implemented)"}
   };
@@ -708,9 +676,9 @@ int main(int argc,char *argv[])
   if (bProt) {
     /*generate a solute configuration*/
     conf_prot = opt2fn("-cp",NFILE,fnm);
-    title     = read_prot(conf_prot,ftp2fn_null(efNDX,NFILE,fnm),
-			  ntb,bRotate,&atoms,&x,&v,&r,box,
-			  &vdw,&max_vdw,r_distance,prot_wall);
+    title     = read_prot(conf_prot,
+			  ntb,&atoms,&x,&v,&r,box,
+			  &vdw,&max_vdw,r_distance);
     if (atoms.nr == 0) {
       fprintf(stderr,"No protein in %s, check your input\n",conf_prot);
       exit(1);
@@ -719,7 +687,6 @@ int main(int argc,char *argv[])
   else {
     atoms.nr=0;
     atoms.nres=0;
-    bRotate=FALSE;
     atoms.resname=NULL;
     atoms.atomname=NULL;
     atoms.atom=NULL;
