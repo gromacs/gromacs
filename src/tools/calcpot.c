@@ -34,6 +34,8 @@ static void c_tabpot(int inr,real ix,real iy,real iz,real qi,
          
     rsq            = (rijX*rijX)+(rijY*rijY)+(rijZ*rijZ);
     r1             = sqrt(rsq);
+    if (r1 < 0.14)
+      fatal_error(0,"Distance between %d and %d = %f\n",inr,jnr,r1);
     r1t            = r1*tabscale;
     n0             = r1t;
     n1             = 12*n0;

@@ -222,7 +222,7 @@ void orient_mol(t_atoms *atoms,char *indexnm,rvec x[], rvec *v)
   matrix  trans;
   
   /* Make an index for principal component analysis */
-  fprintf(stderr,"Select group for orientation of molecule:\n");
+  fprintf(stderr,"\nSelect group for orientation of molecule:\n");
   get_index(atoms,indexnm,1,&isize,&index,&grpnames);
   snew(simp,atoms->nr);
   for(i=0; (i<atoms->nr); i++) {

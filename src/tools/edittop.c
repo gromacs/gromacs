@@ -15,7 +15,8 @@ void replace_atom(t_topology *top,int inr,char *anm,char *resnm,
   /* Replace important properties of an atom by other properties */  
   if ((inr < 0) || (inr > atoms->nr))
     fatal_error(0,"Replace_atom: inr (%d) not in %d .. %d",inr,0,atoms->nr);
-  fprintf(stderr,"Replacing atom %d ... ",inr);
+  if (debug)
+    fprintf(debug,"Replacing atom %d ... ",inr);
   /* Charge, mass and type */
   atoms->atom[inr].q    = atoms->atom[inr].qB    = q;
   atoms->atom[inr].m    = atoms->atom[inr].mB    = m;
@@ -25,7 +26,8 @@ void replace_atom(t_topology *top,int inr,char *anm,char *resnm,
   atoms->resname[atoms->atom[inr].resnr] = put_symtab(&top->symtab,resnm);
   /* Atom name */
   atoms->atomname[inr] = put_symtab(&top->symtab,anm);
-  fprintf(stderr," done\n");
+  if (debug)
+    fprintf(debug," done\n");
 }
 
 static void delete_from_interactions(t_idef *idef,int inr)
@@ -125,7 +127,8 @@ void delete_atom(t_topology *top,int inr)
   if ((inr < 0) || (inr >= top->atoms.nr))
     fatal_error(0,"Delete_atom: inr (%d) not in %d .. %d",inr,0,
 		top->atoms.nr);
-  fprintf(stderr,"Deleting atom %d ...",inr);
+  if (debug)
+    fprintf(debug,"Deleting atom %d ...",inr);
 
   /* First remove bonds etc. */
   delete_from_interactions(&top->idef,inr);
@@ -134,5 +137,6 @@ void delete_atom(t_topology *top,int inr)
     delete_from_block(&(top->blocks[k]),inr);
   /* Now from the atoms struct */
   delete_from_atoms(&top->atoms,inr);
-  fprintf(stderr," done\n");
+  if (debug)
+    fprintf(debug," done\n");
 }

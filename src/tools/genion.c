@@ -82,6 +82,7 @@ static void insert_ion(real q,int *nwater,bool bSet[],int index[],
     } while (bSet[ei] && (maxrand > 0));
   }
   else {
+    extr_e = 0;
     for(i=0; (i<nw); i++) {
       if (!bSet[i]) {
 	ii=index[i];

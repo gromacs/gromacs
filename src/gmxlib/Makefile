@@ -24,7 +24,7 @@ SONAME		= libgmx.$(GMXCPU).so
 OBJ		= \
 		3dview.o	atomprop.o	block_tx.o	\
 		bondfree.o	buffer.o	calch.o		\
-		confio.o	copyrite.o	\
+		callf77A.o	confio.o	copyrite.o	\
 		disre.o		do_fit.o	enxio.o		\
 		fatal.o		ffscanf.o	filenm.o	\
 		futil.o		gbutil.o	genhydro.o	\
@@ -151,21 +151,33 @@ compnl:		compnl.o
 calcrf:		calcrf.o
 		$(LD) -o $@ $^  $(SYSLIBS) 
 
+$(LIB)(callf77A.o):	callf77A.m4 $(M4FILE)
+		$(M4) $(M4FILE) callf77A.m4  > callf77A.c
+		$(CC) $(C-FLAGS) -c callf77A.c
+		$(AR) $(ARFLAGS) $(LIB) callf77A.o
+		$(RM) callf77A.c callf77A.o
 # Innerloop related stuff
 $(LIB)(lutab.o):	$(CPUMAKEF)
 $(LIB)(shakef.o):	$(CPUMAKEF)
-fnbf.c:		fnbf.m4 $(M4MAC) $(M4FILE) $(CPUMAKEF)
-		m4 $(SYSDEFS) $(M4FILE) $(M4MAC) fnbf.m4 > $@
-$(LIB)(fnbf.o):		fnbf.c inner.h $(CPUMAKEF)
-mkinl.o:	$(CPUMAKEF)
-mkinl:		mkinl.o 
-		$(LD) -o $@ mkinl.o
-inner.h:	inner.m4 $(M4MAC) $(CPUMAKEF)
-		$(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) inner.m4 > inner.h
-innerc.c:	mkinl inner.h Makefile $(CPUMAKEF)
-		./mkinl 1 1
-innerf.f:	mkinl inner.h Makefile $(CPUMAKEF)
-		./mkinl 0 1
+fnbf.c:			fnbf.m4 $(M4MAC) $(M4FILE) $(CPUMAKEF)
+			m4 $(SYSDEFS) $(M4FILE) $(M4MAC) fnbf.m4 > $@
+fnbf.o:			fnbf.c inner.h $(CPUMAKEF)
+			$(CC) $(C-FLAGS) -c fnbf.c
+			$(RM) fnbf.c inner.h
+
+mkinl:			$(CPUMAKEF)
+			$(CC) -g -c $(SYSDEFS) mkinl.c 
+			$(LD) -o $@ mkinl.o
+
+inner.h:		inner.m4 $(M4MAC) $(CPUMAKEF)
+			$(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) inner.m4 > inner.h
+innerc.c:		mkinl inner.h Makefile $(CPUMAKEF)
+			./mkinl 1 1
+innerf.f:		mkinl inner.h Makefile $(CPUMAKEF)
+			./mkinl 0 1
+innerc.o:		innerc.c inner.h
+			$(CC) $(C-FLAGS) -c innerc.c
+			$(RM) innerc.c inner.h
 
 include	Make.dep
 endif

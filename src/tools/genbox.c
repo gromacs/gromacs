@@ -69,7 +69,7 @@ void print_stat(rvec *x,int natoms,matrix box)
   }
   for(m=0;(m<DIM);m++)
     fprintf(stderr,"DIM %d XMIN %8.3f XMAX %8.3f BOX %8.3f\n",
-    m,xmin[m],xmax[m],box[m][m]);
+	    m,xmin[m],xmax[m],box[m][m]);
 }
 #endif
 
