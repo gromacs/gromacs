@@ -721,7 +721,7 @@ static bool is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
 
 static void merge_hb(t_hbdata *hb,bool bTwo)
 {
-  int  i,inew,j,m,id,ia,ia0,id0,grp;
+  int  i,inew,j,ii,jj,m,id,ia,ia0,id0,grp;
   bool *bIsD,*bIsA;
   
   inew = hb->nrhb;
@@ -750,15 +750,17 @@ static void merge_hb(t_hbdata *hb,bool bTwo)
   for(i=0; (i<hb->nd); i++) {
     if (bIsA[i]) {
       id = hb->d[gr0]->d[i];
+      ii = hb->a[gr0]->aptr[id];
       for(j=0; (j<hb->na); j++) {
 	if (bIsD[j]) {
 	  ia = hb->a[gr0]->acc[j];
+	  jj = hb->d[gr0]->dptr[ia];
 	  if (id != ia) {
-	    if (hb->hbmap[i][j].exist[0] && hb->hbmap[j][i].exist[0]) {
+	    if (hb->hbmap[i][j].exist[0] && hb->hbmap[jj][ii].exist[0]) {
 	      for(m=0; (m<hb->max_frames/hb->wordlen); m++)
-		hb->hbmap[i][j].exist[0][m] |= hb->hbmap[j][i].exist[0][m];
-	      sfree(hb->hbmap[j][i].exist[0]);
-	      hb->hbmap[j][i].exist[0] = NULL;
+		hb->hbmap[i][j].exist[0][m] |= hb->hbmap[jj][ii].exist[0][m];
+	      sfree(hb->hbmap[jj][ii].exist[0]);
+	      hb->hbmap[jj][ii].exist[0] = NULL;
 	      inew--;
 	    }
 	  }
@@ -798,8 +800,12 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,bool bDump,bool bMerge)
       fprintf(fp,"%10g",hb->time[j]);
       for(i=0; (i<hb->nd); i++) {
 	for(k=0; (k<hb->na); k++) {
-	  if (bMerge)
-	    ihb = is_hb(hb->hbmap[i][k].exist[0],j);
+	  if (bMerge) {
+	    if (hb->hbmap[i][k].exist[0]) 
+	      ihb = is_hb(hb->hbmap[i][k].exist[0],j);
+	    else
+	      ihb = 0;
+	  }
 	  else {
 	    ihb = 0;
 	    for(m=0; (m<hb->maxhydro) && !ihb ; m++)
