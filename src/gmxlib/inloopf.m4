@@ -123,6 +123,9 @@ C
       integer*4 nj,jjnr(*)
       
       integer   k,jnr,j3
+#ifdef FINVSQRT	
+      real      invsqrt
+#endif
       real      fX,fY,fZ
       real      rijX,rijY,rijZ
       real      fijscal,rsq,vijcoul,vctot
@@ -191,6 +194,9 @@ c$dir ivdep
       real      Vc,Vnb,nbfp(*)
       
       integer   k,jnr,j3,tj
+#ifdef FINVSQRT	
+      real      invsqrt
+#endif
       real      twelve,six
       real      fX,fY,fZ
       real      rijX,rijY,rijZ,rsq
@@ -332,6 +338,9 @@ c
 
       real       twelve, six
       integer    k,jnr,j3,tjA,tjB
+#ifdef FINVSQRT	
+      real      invsqrt
+#endif
       real       fX,fY,fZ
       real       rijX,rijY,rijZ
       real       fijscal,rsq,vijcoul,vctot,vnbtot
