@@ -119,6 +119,9 @@ the inverse friction constant for each group is set with
 <b><A HREF="#tc">tau_t</A></b> [ps]. The parameter <b><A HREF="#tc">tcoupl</A></b>
 is ignored.
 The random generator is initialized with <b><A HREF="#ld">ld_seed</A></b>.
+<br>
+NOTE: temperature deviations decay twice as fast as with
+a Berendsen thermostat with the same <b>tau_t</b>.
 <dt><b>bd</b>
 <dd> An Euler integrator for Brownian or position Langevin dynamics, the
 velocity is the force divided by a friction coefficient 
@@ -278,7 +281,9 @@ Use e.g. <b>rlist</b>=0.9,
 <b>rvdw</b>=0.9, <b>rcoulomb</b>=0.9. The highest magnitude of
 wave vectors used in reciprocal space is controlled by <b>fourierspacing</b>.
 The relative accuracy of direct/reciprocal space
-is controlled by <b>ewald_rtol</b>. NOTE: Ewald scales as O(N<sup>3/2</sup>)
+is controlled by <b>ewald_rtol</b>.
+<br>
+NOTE: Ewald scales as O(N<sup>3/2</sup>)
 and is thus extremely slow for large systems. It is included mainly for
 reference - in most cases PME will perform much better.
 
@@ -302,6 +307,7 @@ and <b>rvdw</b><tt>=1.0</TT>. The grid
 dimensions are controlled by <b>fourierspacing</b>.
 Reasonable grid spacing for PPPM is 0.05-0.1 nm.
 See <tt>Shift</tt> for the details of the particle-particle potential.
+<br>
 NOTE: the pressure in incorrect when using PPPM.
 
 <dt><b><!--Idx-->Reaction-Field<!--EIdx--></b>
