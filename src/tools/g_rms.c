@@ -288,11 +288,10 @@ int main (int argc,char *argv[])
     if (bPBC) 
       rm_pbc(&(top.idef),natoms,box,x,x);
     
-    if (bFit) {  
+    reset_x(ifit,ind_fit,natoms,all_at,x,w_rls);
+    if (bFit)
       /*do the least squares fit to original structure*/
-      reset_x(ifit,ind_fit,natoms,all_at,x,w_rls);
       do_fit(natoms,w_rls,xp,x);
-    }
 
     if (teller % freq == 0) {
       if (bMat || bPrev) {
@@ -322,10 +321,9 @@ int main (int argc,char *argv[])
 	j=0;
       for (i=0;i<natoms;i++)
 	copy_rvec(mat_x[j][i],xp[i]);
-      if (bFit) {  
-	reset_x(ifit,ind_fit,natoms,all_at,xp,w_rls);
+      reset_x(ifit,ind_fit,natoms,all_at,xp,w_rls);
+      if (bFit)
 	do_fit(natoms,w_rls,x,xp);
-      }
     }    
 
     for(j=0; (j<nrms); j++) 
@@ -361,11 +359,10 @@ int main (int argc,char *argv[])
       if (bPBC) 
 	rm_pbc(&(top.idef),natoms,box,x,x);
 
-      if (bFit) {  
+      reset_x(ifit,ind_fit,natoms,all_at,x,w_rls);
+      if (bFit)
 	/*do the least squares fit to original structure*/
-	reset_x(ifit,ind_fit,natoms,all_at,x,w_rls);
 	do_fit(natoms,w_rls,xp,x);
-      }
 
       if (teller2 % freq2 == 0) {
 	if (bMat) {
