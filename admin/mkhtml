@@ -42,18 +42,20 @@ cat > $HTMLIDX << EOD
 <LINK rel=stylesheet href="online/style.css" type="text/css">
 <BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
 
-<table WIDTH="800" NOSAVE NOBORDER >
-<tr NOSAVE>
-<td WIDTH="120" HEIGHT="140" NOSAVE><a href="http://www.gromacs.org/"><img SRC="
-gif/gmxlogo_small.jpg" BORDER=0 height=133 width=116></a></td>
-
-<td ALIGN=LEFT VALIGN=TOP WIDTH=480 NOSAVE>
+<table WIDTH="98%" NOSAVE NOBORDER >
+<TR><TD WIDTH=400>
+<TABLE WIDTH=400 NOBORDER>
+<TD WIDTH=116>
+<a href="http://www.gromacs.org/">
+<img SRC="images/gmxlogo_small.jpg" BORDER=0 height=133 width=116></a></td>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280>
 <br><br>
 <h2>
 GROMACS 3.0<br>
 Online Reference</h2>
 </td>
-<td ALIGN=RIGHT VALIGN=BOTTOM WIDTH=200 NOSAVE>
+</TABLE></TD>
+<td ALIGN=RIGHT VALIGN=BOTTOM WIDTH="*" NOSAVE>
 <B>VERSION 3.0<br>
 Tue 15 May 2001</B></td>
 </tr>
@@ -83,7 +85,9 @@ cat >> $HTMLIDX <<EOD
 <br>
 EOD
 foreach program ( $PROGRAMS )
-  echo "<br><a href="$MANDIR/$program.html">$program</a>" >> $HTMLIDX
+  if ( ( -x $GMXBINDIR/$program ) && ( $program != "my_dssp" ) && ( $program != "GMXRC" ) && ( $program != "completion.csh" ) && ( $program != "completion.zsh" ) && ( $program != "average" ) && ( $program != "completion.bash" ) && ( $program != "luck" ) ) then  
+    echo "<br><a href="$MANDIR/$program.html">$program</a>" >> $HTMLIDX
+  endif
 end
 cat >> $HTMLIDX << EOD
 </multicol>
@@ -113,7 +117,7 @@ awk -F '|' -v mandir=$MANDIR '{\
     } else if ( $1 == "END" ) {\
       printf("</TABLE>\n");\
     } else {\
-      printf("<TR><TD><A HREF=\"%s/%s.html\">%s</A><TD>%s\n",mandir,$1,$1,$2);\
+      printf("<TR><TD><A HREF=\"%s/%s.html\">%s</A></TD><TD>%s</TD>\n",mandir,$1,$1,$2);\
     }\
   }\
 }' $PROGFILE >> $HTMLIDX
