@@ -569,7 +569,12 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       
     /* Update force field in ffscan program */
     if (bFFscan) 
-      update_forcefield(nfile,fnm,fr,mdatoms->nr,state->x,state->box);
+      if (update_forcefield(nfile,fnm,fr,mdatoms->nr,state->x,state->box)) {
+      	if (gmx_parallel_env)
+	  gmx_finalize(cr);
+	else
+	  break; /* Exit the loop */
+      }
     
     if (bShell_FlexCon) {
       /* Now is the time to relax the shells */
@@ -843,9 +848,14 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 
     /* The coordinates (x) were unshifted in update */
     if (bFFscan && (!bShell_FlexCon || bConverged))
-      print_forcefield(log,ener,HOMENR(nsb),f,buf,xcopy,
-		       &(top->blocks[ebMOLS]),mdatoms->massT,
-		       parm->pres); 
+      if (print_forcefield(log,ener,HOMENR(nsb),f,buf,xcopy,
+			   &(top->blocks[ebMOLS]),mdatoms->massT,
+			   parm->pres)) {
+	if (gmx_parallel_env)
+	  gmx_finalize(cr);
+	else
+	  break; /* Exit the loop */
+      }
     
     if (bTCR) {
       /* Only do GCT when the relaxation of shells (minimization) has converged,

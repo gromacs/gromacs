@@ -551,7 +551,7 @@ int gmx_disre(int argc,char *argv[])
   thanx(stderr);
 
   if (gmx_parallel_env)
-    gmx_finalize();
+    gmx_finalize(cr);
   
   return 0;
 }

@@ -173,7 +173,7 @@ extern void gmx_sumd(int nr,double r[],const t_commrec *cr);
 extern void gmx_abort(int nodeid,int nnodes,int errorno);
 /* Abort the parallel run */
 
-extern void gmx_finalize(void);
+extern void gmx_finalize(t_commrec *cr);
 /* Finish the parallel run in an ordered manner */
 
 #ifdef DOUBLE

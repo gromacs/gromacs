@@ -193,14 +193,14 @@ typedef struct {
 } t_ffscan;
 
 
-extern void update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr,
+extern bool update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr,
 			      int natoms,rvec x[],matrix box);
-/* Modify the parameters */
+/* Modify the parameters. Return TRUE when the scan is finished. */
 
-extern void print_forcefield(FILE *fp,real ener[],int natoms,rvec f[],
+extern bool print_forcefield(FILE *fp,real ener[],int natoms,rvec f[],
 			     rvec fshake[],rvec x[],t_block *mols,real mass[],
 			     tensor pres);
-/* Print results */
+/* Print results. Return TRUE when the scan is finished. */
 
 extern void set_ffvars(t_ffscan *ff);
 /* Set variables for force scanning */

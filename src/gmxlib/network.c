@@ -441,11 +441,31 @@ void gmx_sumi(int nr,int r[],const t_commrec *cr)
 #endif
 }
 
-void gmx_finalize(void)
+void gmx_finalize(t_commrec *cr)
 {
 #ifndef USE_MPI
   MYFATAL("gmx_finalize");
 #else
-  MPI_Finalize();
+#ifdef MPICH_NAME
+#ifdef DEBUG
+  fprintf(stdlog,"In gmx_finalize. Will try to synchronize the ring\n");
+#endif
+  gmx_sync_ring(cr->nodeid,cr->nnodes,cr->left,cr->right);
+#ifdef DEBUG
+  fprintf(stdlog,"Succesfully did so! Exiting now.\n");
+#endif
+  thanx(stdlog);
+  exit(0);
+#else
+#ifdef DEBUG
+  fprintf(stdlog,"Will call MPI_Finalize now\n");
+  fflush(stdlog);
+#endif
+  ret = MPI_Finalize();
+#ifdef DEBUG
+  fprintf(stdlog,"Return code from MPI_Finalize = %d\n",ret);
+  fflush(stdlog);
+#endif
+#endif
 #endif
 }

@@ -331,8 +331,7 @@ static void scale_box(int natoms,rvec x[],matrix box)
   }
 }
 
-
-void update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr,
+bool update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr,
 		       int natoms,rvec x[],matrix box)
 {
   static int ntry,ntried;
@@ -379,9 +378,7 @@ void update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr,
     }
     if (i == nparm) {
       fprintf(stdlog,"Finished with %d out of %d iterations\n",ntried+1,ntry);
-      if (gmx_parallel_env)
-	gmx_finalize();
-      exit(0);
+      return TRUE;
     }
   }
 
@@ -390,6 +387,8 @@ void update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr,
   
   /* Update box and coordinates if necessary */
   scale_box(natoms,x,box);
+  
+  return FALSE;
 }
 
 static void print_range(FILE *fp,tensor P,real MSF,real energy)
@@ -450,7 +449,7 @@ static void print_grid(FILE *fp,real ener[],int natoms,rvec f[],rvec fshake[],
   }
 }
 
-void print_forcefield(FILE *fp,real ener[],int natoms,rvec f[],rvec fshake[],
+bool print_forcefield(FILE *fp,real ener[],int natoms,rvec f[],rvec fshake[],
 		      rvec x[],t_block *mols,real mass[],tensor pres)
 {
   real msf1;
@@ -462,14 +461,12 @@ void print_forcefield(FILE *fp,real ener[],int natoms,rvec f[],rvec fshake[],
 	      ener[F_PRES],sqrt(msf1),ener[F_EPOT]/ff.nmol-ff.epot,
 	      cost(pres,msf1,ener[F_EPOT]/ff.nmol));
     if (print_ga(fp,ga,msf1,pres,scale,(ener[F_EPOT]/ff.nmol),range,ff.tol)) {
-      if (gmx_parallel_env)
-	gmx_finalize();
-      fprintf(stderr,"\n");
-      exit(0);
+      return TRUE;
     }
     fflush(fp);
   }
   else
     print_grid(fp,ener,natoms,f,fshake,x,mols,mass,pres);
+  return FALSE;
 }
  

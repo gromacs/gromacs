@@ -47,6 +47,7 @@
 #include "names.h"
 #include "copyrite.h"
 #include "macros.h"
+#include "fatal.h"
 #include "enxio.h"
 
 #define TIME_EXPLICIT 0
@@ -460,8 +461,8 @@ int main(int argc,char *argv[])
   
   nfile = opt2fns(&fnms,"-f",NFILE,fnm);
   
-  if(!nfile)
-    gmx_fatal(FARGS,"No input files!");
+  if (!nfile)
+    fatal_error(0,"No input files!");
   
   snew(settime,nfile+1);
   snew(readtime,nfile+1);
