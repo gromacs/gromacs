@@ -302,10 +302,10 @@ static bool step_man(t_manager *man,int *nat)
   if (ncount == man->nSkip) {
     switch (man->molw->boxtype) {
     case esbTri:
-      put_atoms_in_triclinic_unitcell(man->natom,man->box,man->x);
+      put_atoms_in_triclinic_unitcell(man->box,man->natom,man->x);
       break;
     case esbTrunc:
-      put_atoms_in_compact_unitcell(man->natom,man->box,man->x);
+      put_atoms_in_compact_unitcell(man->box,man->natom,man->x);
       break;
     case esbRect:
     case esbNone:
