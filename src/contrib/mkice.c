@@ -189,7 +189,7 @@ static t_bbb *mk_bonds(int natoms,rvec x[],real odist,
   rvec  dx;
   
   if (bPBC)
-    init_pbc(box,FALSE);
+    init_pbc(box);
   snew(bbb,natoms);
   for(i=0; (i<natoms); i++) {
     for(j=i+1; (j<natoms); j++) {
@@ -296,10 +296,7 @@ void virial(FILE *fp,bool bFull,int nmol,rvec x[],matrix box,real rcut,
   rvec dx,f,ftot,dvir,vir,pres,xcmi,xcmj,*force;
   real dx6,dx2,dx1,fscal,c6,c12,vcoul,v12,v6,vctot,v12tot,v6tot;
   
-  init_pbc(box,FALSE);
-  /* Initiate the periodic boundary conditions. Set bTruncOct to
-   * TRUE when using a truncated octahedron box.
-   */
+  init_pbc(box);
   fprintf(fp,"%3s   -  %3s: %6s %6s %6s  %6s %8s %8s %8s\n",
 	  "ai","aj","dx","dy","dz","|d|","virx","viry","virz");
   clear_rvec(ftot);

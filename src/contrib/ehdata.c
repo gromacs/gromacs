@@ -39,6 +39,7 @@ static char *SRCID_ehdata_c = "$Id$";
 #include "statutil.h"
 #include "fatal.h"
 #include "random.h"
+#include "strdb.h"
 #include "futil.h"
 #include "physics.h"
 #include "ehdata.h"
