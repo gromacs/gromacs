@@ -49,14 +49,16 @@ static void nrerror(char error_text[], bool bExit)
   }
 }
 
+/* dont use the keyword vector - it will clash with the
+ * altivec extensions used for powerpc processors.
+ */
 
-
-static real *vector(int nl,int nh)
+static real *rvector(int nl,int nh)
 {
   real *v;
   
   v=(real *)malloc((unsigned) (nh-nl+1)*sizeof(real));
-  if (!v) nrerror("allocation failure in vector()", TRUE);
+  if (!v) nrerror("allocation failure in rvector()", TRUE);
   return v-nl;
 }
 
@@ -342,7 +344,7 @@ static void mrqcof(real x[], real y[], real sig[], int ndata, real a[],
   int k,j,i;
   real ymod,wt,sig2i,dy,*dyda;
   
-  dyda=vector(1,ma);
+  dyda=rvector(1,ma);
   for (j=1;j<=mfit;j++) {
     for (k=1;k<=j;k++) alpha[j][k]=0.0;
     beta[j]=0.0;
@@ -377,9 +379,9 @@ bool mrqmin(real x[], real y[], real sig[], int ndata, real a[],
   
   if (*alamda < 0.0) {
     oneda=matrix1(1,mfit,1,1);
-    atry=vector(1,ma);
-    da=vector(1,ma);
-    beta=vector(1,ma);
+    atry=rvector(1,ma);
+    da=rvector(1,ma);
+    beta=rvector(1,ma);
     kk=mfit+1;
     for (j=1;j<=ma;j++) {
       ihit=0;
@@ -474,9 +476,9 @@ bool mrqmin_new(real x[],real y[],real sig[],int ndata,real a[],
   static real ochisq,*atry,*beta,*da,**oneda;
 
   if (*alamda < 0.0) {                    /* Initialization. */
-    atry=vector(1,ma);
-    beta=vector(1,ma);
-    da=vector(1,ma);
+    atry=rvector(1,ma);
+    beta=rvector(1,ma);
+    da=rvector(1,ma);
     for (mfit=0,j=1;j<=ma;j++)
       if (ia[j]) mfit++;
     oneda=matrix1(1,mfit,1,1);
@@ -532,7 +534,7 @@ void mrqcof_new(real x[], real y[], real sig[], int ndata, real a[],
   int i,j,k,l,m,mfit=0;
   real ymod,wt,sig2i,dy,*dyda;
 
-  dyda=vector(1,ma);
+  dyda=rvector(1,ma);
   for (j=1;j<=ma;j++)
     if (ia[j]) mfit++;
   for (j=1;j<=mfit;j++) { /* Initialize (symmetric) alpha), beta. */
