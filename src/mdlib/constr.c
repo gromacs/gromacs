@@ -117,7 +117,7 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
   t_idef      *idef=&(top->idef);
   t_iatom     *iatom;
   int         i,j,k,n,b1,b,cen;
-  int         ncons;
+  int         ncons,nZeroLen;
   int         type,a1,a2,b2,nr,n1,n2,nc4;
   real        len=0,len1,sign;
   real        im1,im2;
@@ -177,6 +177,7 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
     
     /* Make constraint-neighbor list */
     (*blnr)[0] = 0;
+    nZeroLen = 0;
     for(i=0; (i<ncons); i++) {
       j=3*i;
       a1=iatom[j+1];
@@ -185,6 +186,11 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
       type=iatom[j];
       len =idef->iparams[type].shake.dA;
       len1=idef->iparams[type].shake.dB;
+      if ((len==0 || len1==0) && len1!=len)
+	fatal_error(0,"It is not allowed to have a constraint length "
+		    "zero and non-zero in the A and B topology");
+      if (len == 0)
+	nZeroLen++;
       (*bla1)[i]=a1;
       (*bla2)[i]=a2;
       (*bllen)[i]=len;
@@ -213,8 +219,11 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
     
     fprintf(log,"\nInitializing LINear Constraint Solver\n");
     fprintf(log,"  number of constraints is %d\n",ncons);
-    fprintf(log,"  average number of constraints coupled to one constraint is %.1f\n\n",
+    fprintf(log,"  average number of constraints coupled to one constraint is %.1f\n",
 	    (real)(*nrtot)/ncons);
+    if (nZeroLen)
+      fprintf(log,"  found %d constraints with zero length\n",nZeroLen);
+    fprintf(log,"\n");
     fflush(log);
 
     /* Construct the coupling coefficient matrix blcc */
@@ -262,7 +271,7 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
   static bool      bItEqOrder;
 
   char             buf[STRLEN];
-  int              i,nit,warn,p_imax,error;
+  int              b,i,j,nit,warn,p_imax,error;
   real             wang,p_max,p_rms;
   real             dt,dt_2;
 
@@ -277,26 +286,37 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
   } else {
     if (nc == 0)
       return;
-    dt   = ir->delta_t;
-    dt_2 = 1.0/(dt*dt);
-    
-    if (ir->efep != efepNO)
-      for(i=0;i<nc;i++)
-	bllen[i]=bllen0[i]+lambda*ddist[i];
-    
-    wang=ir->LincsWarnAngle;
-    
-    if (do_per_step(step,ir->nstlog) || step<0)
-      cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
 
-    if ((ir->eI == eiSteep) || (ir->eI == eiCG) || bItEqOrder)
-      /* Use more iterations when doing energy minimization, *
-       * because we need very accurate positions and forces. */
-      nit = ir->nProjOrder;
-    else
-      nit = 1;
-    
     if (bCoordinates) {
+      dt   = ir->delta_t;
+      dt_2 = 1.0/(dt*dt);
+      
+      if (ir->efep != efepNO)
+	for(i=0;i<nc;i++)
+	  bllen[i]=bllen0[i]+lambda*ddist[i];
+
+      /* Set the zero lengths to the old lengths */
+      for(b=0; b<nc; b++)
+	if (bllen0[b]==0) {
+	  i = bla1[b];
+	  j = bla2[b];
+	  bllen[b] = sqrt(sqr(x[i][XX]-x[j][XX])+
+			  sqr(x[i][YY]-x[j][YY])+
+			  sqr(x[i][ZZ]-x[j][ZZ]));
+	}
+
+      wang=ir->LincsWarnAngle;
+      
+      if (do_per_step(step,ir->nstlog) || step<0)
+	cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
+      
+      if ((ir->eI == eiSteep) || (ir->eI == eiCG) || bItEqOrder)
+	/* Use more iterations when doing energy minimization, *
+	 * because we need very accurate positions and forces. */
+	nit = ir->nProjOrder;
+      else
+	nit = 1;
+      
 #ifdef USE_FORTRAN
       F77_FUNC(flincs,FLINCS)(x[0],xprime[0],&nc,bla1,bla2,blnr,blbnb,
 			      bllen,blc,blcc,blm,&nit,&ir->nProjOrder,
@@ -307,6 +327,41 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 	     bllen,blc,blcc,blm,nit,ir->nProjOrder,
 	     md->invmass,r,tmp1,tmp2,tmp3,wang,&warn,lincslam);
 #endif
+      if (ir->efep != efepNO) {
+	real dvdl=0;
+	
+	for(i=0; (i<nc); i++)
+	  dvdl+=lincslam[i]*dt_2*ddist[i];
+	*dvdlambda+=dvdl;
+      }
+      
+      if (do_per_step(step,ir->nstlog) || step<0) {
+	fprintf(stdlog,"   Rel. Constraint Deviation:  Max    between atoms     RMS\n");
+	fprintf(stdlog,"       Before LINCS         %.6f %6d %6d   %.6f\n",
+		p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
+	cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
+	fprintf(stdlog,"        After LINCS         %.6f %6d %6d   %.6f\n\n",
+		p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
+      }
+      
+      if (warn > 0) {
+	cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
+	sprintf(buf,"\nStep %d, time %g (ps)  LINCS WARNING\n"
+		"relative constraint deviation after LINCS:\n"
+		"max %.6f (between atoms %d and %d) rms %.6f\n",
+		step,ir->init_t+step*ir->delta_t,
+		p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
+	fprintf(stdlog,"%s",buf);
+	fprintf(stderr,"%s",buf);
+	lincs_warning(x,xprime,nc,bla1,bla2,bllen,wang);
+	if (p_max > 0.5) {
+	  dump_confs(step,&(top->atoms),x,xprime,box);
+	  fatal_error(0,"Bond deviates more than half its own length");
+	}
+      }
+      for(b=0; b<nc; b++)
+	if (bllen0[b] == 0)
+	  bllen[b] = 0;
     } else {
 #ifdef USE_FORTRAN
       F77_FUNC(flincsp,FLINCSP)(x[0],xprime[0],min_proj[0],&nc,bla1,bla2,blnr,blbnb,
@@ -322,38 +377,6 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
     /* count assuming nit=1 */
     inc_nrnb(nrnb,eNR_LINCS,nc);
     inc_nrnb(nrnb,eNR_LINCSMAT,(2+ir->nProjOrder)*nrtot);
-    if (ir->efep != efepNO) {
-      real dvdl=0;
-      
-      for(i=0; (i<nc); i++)
-	dvdl+=lincslam[i]*dt_2*ddist[i];
-      *dvdlambda+=dvdl;
-    }
-    
-    if (do_per_step(step,ir->nstlog) || step<0) {
-      fprintf(stdlog,"   Rel. Constraint Deviation:  Max    between atoms     RMS\n");
-      fprintf(stdlog,"       Before LINCS         %.6f %6d %6d   %.6f\n",
-	      p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
-      cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
-      fprintf(stdlog,"        After LINCS         %.6f %6d %6d   %.6f\n\n",
-	      p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
-    }
-    
-    if (warn > 0) {
-      cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
-      sprintf(buf,"\nStep %d, time %g (ps)  LINCS WARNING\n"
-	      "relative constraint deviation after LINCS:\n"
-	      "max %.6f (between atoms %d and %d) rms %.6f\n",
-	      step,ir->init_t+step*ir->delta_t,
-	      p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
-      fprintf(stdlog,"%s",buf);
-      fprintf(stderr,"%s",buf);
-      lincs_warning(x,xprime,nc,bla1,bla2,bllen,wang);
-      if (p_max > 0.5) {
-	dump_confs(step,&(top->atoms),x,xprime,box);
-	fatal_error(0,"Bond deviates more than half its own length");
-      }
-    }
   }
 }
      
