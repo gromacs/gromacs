@@ -43,6 +43,7 @@ static char *SRCID_do_gct_c = "$Id$";
 #include "mdrun.h"
 #include "update.h"
 #include "vec.h"
+#include "main.h"
 
 t_coupl_rec *init_coupling(FILE *log,int nfile,t_filenm fnm[],
 			   t_commrec *cr,t_forcerec *fr,
@@ -286,7 +287,9 @@ void set_factor_matrix(int ntypes,real f[],real fmult,int ati,int atj)
 #define FMAX 1.05
   int i;
 
+  fprintf(stdlog,"fmult before: %g",fmult);
   fmult = min(FMAX,max(FMIN,fmult));  
+  fprintf(stdlog,", after: %g\n",fmult);
   if (atj != -1) {
     f[ntypes*ati+atj] *= fmult;
     f[ntypes*atj+ati] *= fmult;
@@ -365,7 +368,7 @@ static real calc_force(int natom,rvec f[],rvec x[])
   rvec_sub(xxx[0],xxx[1],dx);
   rvec_sub(fff[0],fff[1],df);
   
-  return iprod(dx,df);
+  return iprod(fff[0],fff[0])+iprod(fff[1],fff[1]);
 }
 
 void do_coupling(FILE *log,int nfile,t_filenm fnm[],
@@ -386,7 +389,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   int         i,j,ati,atj,atnr2,type,ftype;
   real        deviation[eoNR],prdev[eoNR],epot0,dist,rmsf;
   real        ff6,ff12,ffa,ffb,ffc,ffq,factor,dt,mu_ind;
-  real        Epol,Eintern,Virial,muabs;
+  real        Epol,Eintern,Virial,muabs,xiH,xiS,xi6,xi12;
   bool        bTest,bPrint;
   t_coupl_LJ  *tclj;
   t_coupl_BU  *tcbu;
@@ -456,7 +459,9 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   muabs     = norm(mu_tot);
   Eintern   = Ecouple(tcr,ener);
   Virial    = virial[XX][XX]+virial[YY][YY]+virial[ZZ][ZZ];
-  
+
+  fprintf(log,"MSF: %g\n",calc_force(md->nr,x,f));
+    
   /* Use a memory of tcr->nmemory steps, so we actually couple to the
    * average observable over the last tcr->nmemory steps. This may help
    * in avoiding local minima in parameter space.
@@ -466,7 +471,6 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   tcr->vir  = run_aver(tcr->vir, Virial,      step,tcr->nmemory);
   tcr->mu   = run_aver(tcr->mu,muabs,step,tcr->nmemory);
   tcr->dist = run_aver(tcr->dist,dist,step,tcr->nmemory);
-  tcr->force= run_aver(tcr->force,rmsf,step,tcr->nmemory);
   
   if (bPrint)
     pr_ff(tcr,t,idef,ener,Virial,muabs,cr,nfile,fnm);
@@ -494,7 +498,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   deviation[eoVir]    = calc_deviation(tcr->vir,  Virial,      tcr->vir0);
   deviation[eoDist]   = calc_deviation(tcr->dist, dist,        tcr->dist0);
   deviation[eoMu]     = calc_deviation(tcr->mu,   muabs,       tcr->mu0);
-  deviation[eoForce]  = calc_f_dev(tcr->force,,        tcr->force0);
+  calc_f_dev(md->nr,md->chargeA,x,idef,&xiH,&xiS);
   
   prdev[eoPres]   = tcr->pres0 - ener[F_PRES];
   prdev[eoEpot]   = epot0      - Eintern;
@@ -516,23 +520,41 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   if (!fr->bBHAM) {
     for(i=0; (i<tcr->nLJ); i++) {
       tclj=&(tcr->tcLJ[i]);
-      
-      fprintf(log,"tcr->tcLJ[%d].xi_12 = %g deviation = %g\n",i,
-	      tclj->xi_12,deviation[tclj->eObs]);
-      factor=deviation[tclj->eObs];
-      
+
       ati=tclj->at_i;
       atj=tclj->at_j;
       
       ff6 = ff12 = 1.0;	
-      if (tclj->xi_6)      
-	ff6  += (dt/tclj->xi_6)  * factor;
-      if (tclj->xi_12)     
-	ff12 += (dt/tclj->xi_12) * factor;
       
+      if (tclj->eObs == eoForce) {
+	fprintf(log,"Have computed derivatives: xiH = %g, xiS = %g\n",xiH,xiS);
+	if (ati == 1) {
+	  /* Hydrogen */
+	  ff12 += max(-1,dt*xiH); 
+	}
+	else if (ati == 2) {
+	  /* Shell */
+	  ff12 += max(-1,dt*xiS); 
+	}
+	else
+	  fatal_error(0,"No H, no Shell, edit code at %s, line %d\n",__FILE__,__LINE__);
+      }
+      else {
+	fprintf(log,"tcr->tcLJ[%d].xi_12 = %g deviation = %g\n",i,
+		tclj->xi_12,deviation[tclj->eObs]);
+	factor=deviation[tclj->eObs];
+	
+	xi6  = tclj->xi_6;
+	xi12 = tclj->xi_12;
+	
+	if (xi6)      
+	  ff6  += (dt/xi6)  * factor;
+	if (xi12)     
+	  ff12 += (dt/xi12) * factor;
+      }
+
       set_factor_matrix(idef->atnr,f6, sqrt(ff6), ati,atj);
       set_factor_matrix(idef->atnr,f12,sqrt(ff12),ati,atj);
-      
     }
     if (PAR(cr)) {
       gprod(cr,atnr2,f6);

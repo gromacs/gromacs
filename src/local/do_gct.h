@@ -104,6 +104,9 @@ extern void copy_ff(t_coupl_rec *tcr,t_forcerec *fr,t_mdatoms *md,
 extern t_coupl_rec *init_coupling(FILE *log,int nfile,t_filenm fnm[],
 				  t_commrec *cr,t_forcerec *fr,t_mdatoms *md,
 				  t_idef *idef);
+				  
+/* Maple generated C code for optimization of LJ params */
+extern void calc_f_dev(int natoms,real charge[],rvec x[],t_idef *idef,real *xiH,real *xiS);
 
 extern void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 			t_coupl_rec *tcr,real t,int step,real ener[],

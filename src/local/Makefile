@@ -20,7 +20,7 @@ include		$(STDTARGET)
 
 all:		bin
 
-xmdrun:		xmdrun.o $(XOBJ)
+xmdrun:		xmdrun.o $(XOBJ) calcfdev.o
 		$(LD) -o $@ $^ -lmd.$(GMXCPU) $(SYSLIBS) $(FFTLIBS) $(SYSLIBS)
 
 shell_md:	shell_md.o $(XOBJ)
