@@ -567,11 +567,12 @@ int main (int argc, char *argv[])
 
   /* Command line options */
   static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=FALSE,bEnsemble=FALSE;
-  static int  nprocs=1,time=-1;
+  static int  nprocs=1;
+  static real time=-1;
   t_pargs pa[] = {
     { "-np",      FALSE, etINT,  &nprocs,
       "Generate statusfile for # processors" },
-    { "-time",       FALSE, etINT,  &time,
+    { "-time",    FALSE, etREAL,  &time,
       "Take frame at or first after this time." },
     { "-v",       FALSE, etBOOL, &bVerbose,
       "Be loud and noisy" },
