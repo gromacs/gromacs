@@ -342,20 +342,15 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
 static int remove_double_atoms(t_atoms *pdba,rvec x[])
 {
   int     i,j,natoms,oldnatoms;
-/*   int nres; */
   
   printf("Checking for double atoms....\n");
   natoms    = pdba->nr;
   oldnatoms = natoms;
-/*   nres      = pdba->nres; */
   
   /* NOTE: natoms is modified inside the loop */
   for(i=1; (i<natoms); i++) {
     if ( (pdba->atom[i-1].resnr == pdba->atom[i].resnr) &&
 	 (strcmp(*pdba->atomname[i-1],*pdba->atomname[i])==0) 
-	 /*&& 
-	   !( (pdba->atom[i].resnr==nres-1) && 
-	   (strcasecmp(*pdba->atomname[i-1],"O")==0) ) */
 	 ) {
       printf("deleting double atom (%d %s %s %c %d)\n",
 	     i+1, *pdba->atomname[i], *pdba->resname[pdba->atom[i].resnr], 
@@ -457,7 +452,10 @@ int main(int argc, char *argv[])
     "residue she wants. For LYS the choice is between LYS (two protons on",
     "NZ) or LYSH (three protons), for HIS the proton can be either on ND1",
     "(HISA), on NE2 (HISB) or on both (HISH). By default these selections",
-    "are done automatically.[PAR]",
+    "are done automatically. For His, this is based on an optimal hydrogen",
+    "bonding conformation. With [TT]-angle[tt] and [TT]-dist[tt] respectively",
+    "the maximum hydrogen-donor-acceptor angle and donor-acceptor distance",
+    "for a hydrogen bond can be specified.[PAR]",
     
     "During processing the atoms will be reordered according to Gromacs",
     "conventions.",
@@ -469,7 +467,20 @@ int main(int argc, char *argv[])
     "if you have hydrogens in your input file, you [BB]must[bb] select",
     "the [TT]-reth[tt] option to obtain a useful index file.[PAR]",
     
-    "The option -dummies removes or slows down hydrogen motions.",
+    "When using [TT]-reth[tt] to keep all hydrogens from the [TT].pdb[tt]",
+    "file, the names of the hydrogens in the [TT].pdb[tt] file [IT]must[it]",
+    "match names in the database files used by pdb2gmx. Except for residues",
+    "Tyr, Trp, Phe, Lys and His, no additional hydrogen atoms will be added.",
+    "[PAR]",
+    
+    "[TT]-sort[tt] will sort all residues according to the order in the",
+    "database, sometimes this is necessary to get charge groups together.[PAR]",
+    
+    "[TT]-alldih[tt] will generate all proper dihedrals instead of only",
+    "those with as few hydrogens as possible, this is useful for use with",
+    "the Charmm forcefield.[PAR]",
+    
+    "The option -convert removes or slows down hydrogen motions.",
     "Angular and out-of-plane motions can be removed by changing",
     "hydrogens into dummy atoms and fixing angles,",
     "which fixes their position relative to",
@@ -478,9 +489,9 @@ int main(int argc, char *argv[])
     "for water hydrogens to slow down the rotational motion of water.",
     "The increase in mass of the hydrogens is subtracted from the bonded",
     "(heavy) atom so that the total mass of the system remains the same.",
-    "Three options are available: 0: normal topology, 1: dummy hydrogens",
-    "and fixed angles, 2: increase mass of hydrogens, 3: options 1 and",
-    "2 combined."
+    "Three options are available: normal topology; dummy hydrogens",
+    "and fixed angles; increase mass of hydrogens (heavy); both dummies",
+    "and increased mass."
   };
   static char *bugs[] = {
     "Generation of N-terminal hydrogen atoms on OPLS files does not work.",
@@ -553,46 +564,41 @@ int main(int argc, char *argv[])
   static bool bTerMan=FALSE, bUnA=FALSE;
   static bool bH14= FALSE,bSort=TRUE, bRetainH=FALSE;
   static bool bAlldih=FALSE,bHisMan = FALSE;
-  static int  dumtp=0; 
   static real angle=135.0,distance=0.3;
+  static char *dumstr[] = { NULL, "normal", "dummy", "heavy", "both", NULL };
   t_pargs pa[] = {
-    { "-newrtp", FALSE,   etBOOL, &bNewRTP,
+    { "-newrtp", FALSE, etBOOL, &bNewRTP,
       "HIDDENWrite the residue database in new format to 'new.rtp'"},
-    { "-inter", FALSE,    etBOOL, &bInter,
-      "Overrides the next 5 options and makes their selections interactive"},
-    { "-ff", FALSE,    etBOOL, &bFFMan, 
+    { "-inter",  FALSE, etBOOL, &bInter,
+      "Set the next 5 options to interactive"},
+    { "-ff",     FALSE, etBOOL, &bFFMan, 
       "Interactive Force Field selection, instead of the first one" },
-    { "-ss", FALSE,    etBOOL, &bCysMan, 
+    { "-ss",     FALSE, etBOOL, &bCysMan, 
       "Interactive SS bridge selection" },
-    { "-ter", FALSE,    etBOOL, &bTerMan, 
+    { "-ter",    FALSE, etBOOL, &bTerMan, 
       "Interactive termini selection, instead of charged" },
-    { "-lysh", FALSE,  etBOOL, &bLysH,
-      "Selects the LysH (charge +1) residue type, instead of interactive "
-      "selection" },
-    { "-his", FALSE, etBOOL, &bHisMan,
+    { "-lysh",   FALSE, etBOOL, &bLysH, 
+      "Select the LysH (charge +1) residue type, "
+      "instead of interactive selection" },
+    { "-his",    FALSE, etBOOL, &bHisMan,
       "Interactive Histidine selection, instead of checking H-bonds" },
-    { "-angle", FALSE, etREAL, &angle,
-      "Minimum angle for a hydrogen bond (180 = ideal)" },
-    { "-dist", FALSE, etREAL,  &distance,
-      "Maximum distance for a hydrogen bond  (in nm)" },
-    { "-una", FALSE,  etBOOL, &bUnA, 
-      "Selects aromatic rings with united CH atoms on Phenylalanine, "
-      "Tryptophane and Tyrosine. " },
-    { "-sort", FALSE,  etBOOL, &bSort,  
-      "Sort the residues according to database, sometimes this is necessary "
-      "to get charge groups together" },
-    { "-H14",  FALSE,  etBOOL, &bH14, 
+    { "-angle",  FALSE, etREAL, &angle, 
+      "Minimum hydrogen-donor-acceptor angle for a H-bond (degrees)" },
+    { "-dist",   FALSE, etREAL, &distance,
+      "Maximum donor-acceptor distance for a H-bond (nm)" },
+    { "-una",    FALSE, etBOOL, &bUnA, 
+      "Select aromatic rings with united CH atoms on Phenylalanine, "
+      "Tryptophane and Tyrosine" },
+    { "-sort",   FALSE, etBOOL, &bSort, 
+      "Sort the residues according to database" },
+    { "-H14",    FALSE, etBOOL, &bH14, 
       "Use 3rd neighbour interactions for hydrogen atoms" },
-    { "-reth", FALSE,  etBOOL, &bRetainH, 
-      "Retain hydrogen atoms that are in the pdb file. Their names *must* "
-      "match names in the database files used by pdb2gmx. Except for "
-      "residues Tyr, Trp, Phe, Lys and His, no additional "
-      "hydrogen atoms will be added." },
-    { "-alldih",FALSE, etBOOL, &bAlldih, 
-      "Generate all proper dihedrals instead of only those with as few "
-      "hydrogens as possible (useful for use with Charmm)" },
-    { "-dummies",FALSE,etINT, &dumtp,
-      "1: dummy hydrogens, 2: heavy hydrogens, 3: both" }
+    { "-reth",   FALSE, etBOOL, &bRetainH, 
+      "Retain hydrogen atoms that are in the pdb file" },
+    { "-alldih", FALSE, etBOOL, &bAlldih, 
+      "Generate all proper dihedrals" },
+    { "-convert",FALSE, etENUM, &dumstr, 
+      "Convert atoms" }
   };
 #define NPARGS asize(pa)
 
@@ -608,25 +614,25 @@ int main(int argc, char *argv[])
     bHisMan=TRUE;
   }
   
-  switch(dumtp) {
-  case 0: 
+  switch(dumstr[0][0]) {
+  case 'n': /* normal */
     bDummies=FALSE;
     mHmult=1.0;
     break;
-  case 1:
+  case 'd': /* dummy */
     bDummies=TRUE;
     mHmult=1.0;
     break;
-  case 2:
+  case 'h': /* heavy */
     bDummies=FALSE;
     mHmult=4.0;
     break;
-  case 3:
+  case 'b': /* both */
     bDummies=TRUE;
     mHmult=4.0;
     break;
   default:
-    fatal_error(0,"Illegal argument -dummies %d (must be 0, 1, 2 or 3)",dumtp);
+    fatal_error(0,"DEATH HORROR in pdb2gmx: dumstr[0]='%s'",dumstr[0]);
   }/* end switch */
   
   clear_mat(box);
