@@ -974,6 +974,34 @@ static void init_hbframe(t_hbdata *hb,int nframes,real t)
 	    set_hb(hb->hbmap[i][j].exist[m],nframes,HB_NO);
 }
 
+static void analyse_donor_props(char *fn,t_hbdata *hb,int nframes,real t)
+{
+  static FILE *fp = NULL;
+  static char *leg[] = { "Nbound", "Nfree" };
+  int i,j,k,nbound,nb,nhtot;
+  
+  if (!fn)
+    return;
+  if (!fp) {
+    fp = xvgropen(fn,"Donor properties","Time (ps)","Number");
+    xvgr_legend(fp,asize(leg),leg);
+  }
+  nbound = 0;
+  nhtot  = 0;
+  for(i=0; (i<hb->d.nrd); i++) {
+    for(k=0; (k<hb->d.nhydro[i]); k++) {
+      nb = 0;
+      nhtot ++;
+      for(j=0; (j<hb->a.nra) && (nb == 0); j++) {
+	if ((hb->hbmap[i][j].exist[k]) && 
+	    is_hb(hb->hbmap[i][j].exist[k],nframes)) 
+	  nb = 1;
+      }
+      nbound += nb;
+    }
+  }
+  fprintf(fp,"%10.3e  %6d  %6d\n",t,nbound,nhtot-nbound);
+}
 
 int gmx_hbond(int argc,char *argv[])
 {
@@ -1079,6 +1107,7 @@ int gmx_hbond(int argc,char *argv[])
     { efXVG, "-hx",  "hbhelix",ffOPTWR },
     { efNDX, "-hbn", "hbond",  ffOPTWR },
     { efXPM, "-hbm", "hbmap",  ffOPTWR },
+    { efXVG, "-don",  "donor", ffOPTWR },
     { efXVG, "-dan",  "danum",  ffOPTWR }
   };
 #define NFILE asize(fnm)
@@ -1155,7 +1184,7 @@ int gmx_hbond(int argc,char *argv[])
       add_dh (&hb->d,dd,hh,i);
       add_acc(&hb->a,aa,i);
       /* Should this be here ? */
-      add_hbond(hb,dd,aa,hh,gr0,gr0,-1,FALSE,bMerge);
+      /* add_hbond(hb,dd,aa,hh,gr0,gr0,-1,FALSE,bMerge);*/
     }
     fprintf(stderr,"Analyzing %d selected hydrogen bonds from '%s'\n",
 	    hb->nrhb,grpnames[0]);
@@ -1278,7 +1307,6 @@ int gmx_hbond(int argc,char *argv[])
   
   do {
     bTric = bBox && TRICLINIC(box);
-    bDebug = (t >= 590);
     build_grid(hb,x,x[shatom], bBox,box,hbox, rcut, rshell, ngrid,grid);
     if (debug && bDebug)
       dump_grid(debug, ngrid, grid);
@@ -1436,6 +1464,7 @@ int gmx_hbond(int argc,char *argv[])
 	    } /* for ai  */
 	  } /* for grp */
 	} /* for xi,yi,zi */
+    analyse_donor_props(opt2fn_null("-don",NFILE,fnm),hb,nframes,t);
     nframes++;
   } while (read_next_x(status,&t,natoms,x,box));
   
