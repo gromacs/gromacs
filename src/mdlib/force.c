@@ -234,16 +234,19 @@ static void check_solvent(FILE *fp,t_topology *top,t_forcerec *fr,
 	  for(; (k<nj); k++)
 	    bOrder = bOrder || (bHaveLJ[k] || bHaveCoul[k]);
 	  if (bOrder) {
-	    fprintf(fp,"The order in molecule %d should be optimized"
-		    " for better performance\n",i);
-	    fr->solvent_type[cgid[aj]] = esolNO;
+	    /* If we have a solvent molecule with LJC everywhere, then
+	     * we shouldn't issue a warning. Only if we suspect something
+	     * could be better.
+	     */
+	    if (nl_n != nj)
+	      fprintf(fp,"The order in molecule %d could be optimized"
+		      " for better performance\n",i);
+	    nl_m = nl_n = nl_o = nj;
 	  }
-	  else {
-	    fr->mno_index[cgid[aj]*3]   = nl_m;
-	    fr->mno_index[cgid[aj]*3+1] = nl_n;
-	    fr->mno_index[cgid[aj]*3+2] = nl_o;
-	    fr->solvent_type[cgid[aj]]  = esolMNO;
-	  }
+	  fr->mno_index[cgid[aj]*3]   = nl_m;
+	  fr->mno_index[cgid[aj]*3+1] = nl_n;
+	  fr->mno_index[cgid[aj]*3+2] = nl_o;
+	  fr->solvent_type[cgid[aj]]  = esolMNO;
 	}
 
 	/* Last check for perturbed atoms */
