@@ -135,7 +135,7 @@ void done_mat(t_mat **m)
   *m = NULL;
 }
 
-real row_energy(int nn,int row,real *mat,int m_ind[])
+real row_energy(int nn,int row,real *mat)
 {
   real re = 0;
   int  i;
@@ -154,7 +154,7 @@ real mat_energy(t_mat *m)
   retot = 0;
   for(j=0; (j<m->nn); j++) {
     jj = m->m_ind[j];
-    re = row_energy(m->nn,jj,m->mat[j],m->m_ind);
+    re = row_energy(m->nn,jj,m->mat[j]);
     m->erow[j] = re;
     retot += re;
   }

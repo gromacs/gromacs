@@ -71,7 +71,7 @@ extern void set_mat_entry(t_mat *m,int i,int j,real val);
 
 extern void done_mat(t_mat **m);
 
-extern real row_energy(int n1,int row,real *mat,int m_ind[]);
+extern real row_energy(int n1,int row,real *mat);
 
 extern real mat_energy(t_mat *mat);
 
@@ -84,6 +84,3 @@ extern void rmsd_distribution(char *fn,t_mat *m);
 extern t_clustid *new_clustid(int n1);
 
 #endif
-
-
-
