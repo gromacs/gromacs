@@ -544,7 +544,7 @@ static real tick_spacing(int n, real axis[], real offset)
 {
   real space;
   bool bTryAgain,bFive;
-  int  i,j;
+  int  i,j,prev_i;
   
   /* start with interval between 10 matrix points: */
   space = max(10*axis[1]-axis[0], axis[min(10,n-1)]-axis[0]);
@@ -552,6 +552,7 @@ static real tick_spacing(int n, real axis[], real offset)
   space = pow(10,ceil(log(space)/log(10)));
   bTryAgain = TRUE;
   bFive = TRUE;
+  prev_i = 0;
   while ( bTryAgain ) {
     /* count how many ticks we would get: */
     i = 0;
@@ -560,15 +561,22 @@ static real tick_spacing(int n, real axis[], real offset)
 	i++;
     /* do we have a reasonable number of ticks ? */
     if ( i < 10 ) {
-      /* need more ticks -> smaller interval */
-      space *= bFive ? 0.5 : 0.2;
-    } else if ( i > 20 ) {
+      if ( prev_i > 25 ) {
+	/* we've whizzed past our window of 10-25 ticks */
+	space *= 0.5;
+      } else {
+	/* need more ticks -> smaller interval */
+	space *= bFive ? 0.5 : 0.2;
+      }
+    } else if ( i > 25 ) {
       /* need more ticks -> larger interval */
       space *= bFive ? 5 : 2;
     } else
       /* it's OK, get on with it! */
       bTryAgain = FALSE;
+    prev_i = i;
     bFive = !bFive;
+    fprintf(stderr,"%d ticks, space = %g%s\n",i,space,bTryAgain?", will try again":"");
   }
   return space;
 }
