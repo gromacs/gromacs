@@ -588,7 +588,7 @@ void update(int          natoms,  /* number of atoms in simulation */
   int              i,n,m,g;
   matrix           M;
   t_inputrec       *ir=&(parm->ir);
-  t_Gaussdata      sd_gaussrand=NULL;
+  static t_Gaussdata      sd_gaussrand=NULL;
   
   if(bFirst) {
     bHaveConstr = init_constraints(stdlog,top,&(parm->ir),md,start,homenr,
