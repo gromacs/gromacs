@@ -495,10 +495,11 @@ void find_nc_ter(int natom,t_atoms *pdba,int *rn,int *rc/*,int ter_type[]*/)
 int main(int argc, char *argv[])
 {
   static char *desc[] = {
-    "This program reads a pdb file, reads up some database files, adds",
-    "hydrogens to the molecules if requested and generates coordinates",
-    "in Gromacs (Gromos) format and a topology in Gromacs format. These",
-    "files can subsequently be processed to generate a status file.[PAR]",
+    "This program reads a pdb file, lets you choose a forcefield, reads",
+    "some database files, adds hydrogens to the molecules and generates",
+    "coordinates in Gromacs (Gromos) format and a topology in Gromacs format.",
+    "These files can subsequently be processed to generate a run input file.",
+    "[PAR]",
     
     "Note that a pdb file is nothing more than a file format, and it",
     "need not necessarily contain a protein structure. Every kind of",
