@@ -37,19 +37,34 @@ static char *SRCID_pme_h = "$Id$";
 #include "complex.h"
 #include "fftgrid.h"
 
+typedef real *splinevec[DIM];
+
 extern real do_pme(FILE *log,       bool bVerbose,
 		   t_inputrec *ir,
 		   rvec x[],        rvec f[],
 		   real charge[],   matrix box,
 		   t_commrec *cr,
 		   t_nsborder *nsb, t_nrnb *nrnb,
-		   matrix lrvir,real ewaldcoeff);
+		   matrix lrvir,real ewaldcoeff,
+		   bool bGatherOnly);
     
-/* Do a PME calculation for the long range electrostatics. */
+/* Do a PME calculation for the long range electrostatics. 
+ * If bGatherOnly is set, the energy from the last computation will be used, and 
+ * the forces will be interpolated at the new positions. No new solving is done then.
+ */
 
 extern void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForward);
 
-void init_pme(FILE *log,t_commrec *cr,t_nsborder *nsb,t_inputrec *ir);
+extern void init_pme(FILE *log,t_commrec *cr,
+		     int nkx,int nky,int nkz,int pme_order,int homenr,
+		     bool bOptFFT);
 
+/* Routine for spreading something on a grid. Can be misused for non-PME
+ * related things. init_pme must be called before this guy.
+ */
+extern t_fftgrid *spread_on_grid(FILE *logfile,   int homenr,
+				 int pme_order,   rvec x[],
+				 real charge[],   matrix box,
+				 bool bGatherOnly);
 
 #endif
