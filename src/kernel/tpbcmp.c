@@ -235,6 +235,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CII(ns_type);
   CII(nstlist);
   CII(ndelta);
+  CII(nstcomm);
   CII(nstprint);
   CII(nstxout);
   CII(nstvout);
@@ -277,6 +278,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CIR(dr_tau);
   CIR(em_stepsize);
   CIR(em_tol);
+  CII(nstcgsteep);
   CII(eShakeType);
   CII(nProjOrder);
   CIR(LincsWarnAngle);
