@@ -43,7 +43,7 @@ cd 	$GMXHOME/bin/$CPU
 foreach i ( * )
   if ( ( -x $i ) && ( $i != "my_dssp" ) ) then
     echo -n "$i "
-    $i -man 2 >& /dev/null
+    $i -quiet -man 2 >& /dev/null
     if ( -f $i.html ) then 
       if ( -f $HTMLOL/$i.html ) \rm $HTMLOL/$i.html
       mv $i.html $HTMLOL
