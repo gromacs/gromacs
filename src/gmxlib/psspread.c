@@ -7,6 +7,9 @@
 #include "poisson.h"
 #include "physics.h"
 
+/* a dirty fix for a problem with the variable hz on an SP2 */
+#undef hz
+
 void spread_q_poisson(FILE *log,bool bVerbose,bool bCoulomb,
 		      int natoms,rvec x[],real prop[],rvec box,
 		      real rc,t_PSgrid *grid,t_nrnb *nrnb,
