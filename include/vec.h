@@ -64,6 +64,7 @@ static char *SRCID_vec_h = "$Id$";
   void ivec_sub(const ivec a,const ivec b,ivec c)  c = a - b
   void svmul(real a,rvec v1,rvec v2)               v2 = a * v1
   void clear_rvec(rvec a)                          a = 0
+  void clear_ivec(rvec a)                          a = 0
   void clear_rvecs(int n,rvec v[])
   real iprod(rvec a,rvec b)                        = a . b (inner product)
   real iiprod(ivec a,ivec b)                       = a . b (integers)
@@ -321,6 +322,13 @@ static inline void clear_rvec(rvec a)
   a[XX]=0.0;
   a[YY]=0.0;
   a[ZZ]=0.0;
+}
+
+static inline void clear_ivec(ivec a)
+{
+  a[XX]=0;
+  a[YY]=0;
+  a[ZZ]=0;
 }
 
 static inline void clear_rvecs(int n,rvec v[])
