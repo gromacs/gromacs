@@ -390,17 +390,17 @@ void add_electron(FILE *fp,t_mdatoms *md,t_electron_db *edb,int ion,
   
   if (edb->nelec < edb->maxelec) {
     ee = edb->elec0+edb->nelec++;
-    /*md->chargeA[ee] = md->chargeB[ee] = md->chargeT[ee] = -1;
-      md->typeA[ee]   = md->typeB[ee]   = edb->elmin_type;*/
+    md->chargeA[ee] = md->chargeB[ee] = md->chargeT[ee] = -1;
+    md->typeA[ee]   = md->typeB[ee]   = edb->elmin_type;
     copy_rvec(x[ion],x[ee]);
     /* Velocity! */
-    svmul(-md->massA[ion]*md->invmass[ee],v[ee],dv);
+    svmul(-md->massA[ion]*md->invmass[ee],dv,v[ee]);
     /* Do a first step to prevent the elctron from being on top of the 
      * nucleus, move it 1 A from the nucleus 
      */
     nv = norm(v[ee]);
     for(m=0; (m<DIM); m++) 
-      x[ee][m] += 0.05;
+      x[ee][m] += v[ee][m]*dt;
   } 
   else
     fatal_error(0,PREFIX"No more particles to turn into electrons\n");
