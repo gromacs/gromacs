@@ -303,9 +303,9 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
 	   (strcasecmp(atomnm,"OXT")==0) )
 	j=1;
       else 
-	fatal_error(0,"Atom %s not found in residue %s (looking for '%s %d')"
+	fatal_error(0,"Atom %s in residue %s %d not found in database"
 		    " while sorting atoms",atomnm,
-		    rptr->resname,resnm,pdba->atom[i].resnr+1);
+		    rptr->resname,pdba->atom[i].resnr+1);
     /* make shadow array to be sorted into indexgroup */
     pdbi[i].resnr=pdba->atom[i].resnr;
     pdbi[i].j    =j;
