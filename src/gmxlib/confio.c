@@ -57,6 +57,7 @@
 #include "copyrite.h"
 #include "filenm.h"
 #include "statutil.h"
+#include "pbc.h"
 
 #define CHAR_SHIFT 24
 
@@ -354,6 +355,292 @@ void write_g96_conf(FILE *out,t_trxframe *fr,
     fprintf(out,"\n");
     fprintf(out,"END\n");
   }
+}
+
+static int get_espresso_word(FILE *fp,char word[])
+{
+  int  ret,nc,i;
+  
+  ret = 0;
+  nc = 0;
+  
+  do {
+    i = fgetc(fp);
+    if (i != EOF) {
+      if (i == ' ' || i == '\n' || i == '\t') {
+	if (nc > 0)
+	  ret = 1;
+      } else if (i == '{') {
+	if (nc == 0)
+	  word[nc++] = '{';
+	ret = 2;
+      } else if (i == '}') {
+	if (nc == 0)
+	  word[nc++] = '}';
+	ret = 3;
+      } else {
+	word[nc++] = (char)i;
+      }
+    }
+  } while (i != EOF && ret == 0);
+  
+  word[nc] = '\0';
+
+  /*  printf("'%s'\n",word); */
+  
+  return ret;
+}
+
+static int check_open_parenthesis(FILE *fp,int r,
+				  const char *infile,const char *keyword)
+{
+  int level_inc;
+  char word[STRLEN];
+
+  level_inc = 0;
+  if (r == 2) {
+    level_inc++;
+  } else {
+    r = get_espresso_word(fp,word);
+    if (r == 2)
+      level_inc++;
+    else
+      gmx_fatal(FARGS,"Expected '{' after '%s' in file '%s'",
+		keyword,infile);
+  }
+
+  return level_inc;
+}
+
+static int check_close_parenthesis(FILE *fp,int r,
+				  const char *infile,const char *keyword)
+{
+  int level_inc;
+  char word[STRLEN];
+  
+  level_inc = 0;
+  if (r == 3) {
+    level_inc--;
+  } else {
+    r = get_espresso_word(fp,word);
+    if (r == 3)
+      level_inc--;
+    else
+      gmx_fatal(FARGS,"Expected '}' after section '%s' in file '%s'",
+		keyword,infile);
+  }
+
+  return level_inc;
+}
+
+enum { espID, espPOS, espTYPE, espQ, espV, espF, espNR };
+const char *esp_prop[espNR] = { "id", "pos", "type", "q", "v", "f" };
+
+static void read_espresso_conf(char *infile,
+			       t_atoms *atoms,rvec x[],rvec *v,matrix box)
+{
+  static t_symtab *symtab=NULL;
+  FILE *fp;
+  char word[STRLEN],buf[STRLEN];
+  int  natoms,level,npar,r,nprop,p,i,m;
+  int  prop[32];
+  double d;
+  bool bFoundParticles,bFoundProp,bFoundVariable;
+
+  if (!symtab) {
+    snew(symtab,1);
+    open_symtab(symtab);
+  }
+
+  clear_mat(box);
+  
+  fp = ffopen(infile,"r");
+  
+  bFoundParticles = FALSE;
+  bFoundVariable = FALSE;
+  level = 0;
+  while ((r=get_espresso_word(fp,word))) {
+    if (level==1 && strcmp(word,"particles")==0 && !bFoundParticles) {
+      bFoundParticles = TRUE;
+      level += check_open_parenthesis(fp,r,infile,"particles");
+      nprop = 0;
+      while (level == 2 && (r=get_espresso_word(fp,word))) {
+	bFoundProp = FALSE;
+	for(p=0; p<espNR; p++) {
+	  if (strcmp(word,esp_prop[p]) == 0) {
+	    bFoundProp = TRUE;
+	    prop[nprop++] = p;
+	    /* printf("  prop[%d] = %s\n",nprop-1,esp_prop[prop[nprop-1]]); */
+	  }
+	}
+	if (!bFoundProp && word[0] != '}') {
+	  gmx_fatal(FARGS,"Can not read Espresso files with particle property '%s'",word);
+	}
+	if (r == 3)
+	  level--;
+      }
+      
+      i = 0;
+      while (level > 0 && (r=get_espresso_word(fp,word))) {
+	if (r == 2) {
+	  level++;
+	} else if (r == 3) {
+	  level--;
+	}
+	if (level == 2) {
+	  for(p=0; p<nprop; p++) {
+	    switch (prop[p]) {
+	    case espID:
+	      r = get_espresso_word(fp,word);
+	      /* Not used */
+	      break;
+	    case espPOS:
+	      for(m=0; m<3; m++) {
+		r = get_espresso_word(fp,word);
+		sscanf(word,"%lf",&d);
+		x[i][m] = d;
+	      }
+	      break;
+	    case espTYPE:
+	      r = get_espresso_word(fp,word);
+	      atoms->atom[i].type = atoi(word);
+	      break;
+	    case espQ:
+	      r = get_espresso_word(fp,word);
+	      sscanf(word,"%lf",&d);
+	      atoms->atom[i].q = d;
+	      break;
+	    case espV:
+	      for(m=0; m<3; m++) {
+		r = get_espresso_word(fp,word);
+		sscanf(word,"%lf",&d);
+		v[i][m] = d;
+	      }
+	      break;
+	    case espF:
+	      for(m=0; m<3; m++) {
+		r = get_espresso_word(fp,word);
+		/* not used */
+	      }
+	      break;
+	    }
+	  }
+	  atoms->atom[i].resnr = i;
+	  sprintf(buf,"T%d",atoms->atom[i].type);
+	  atoms->atomname[i] = put_symtab(symtab,buf);
+	  if (atoms->atom[i].type < 26) {
+	    sprintf(buf,"T%c",'A'+atoms->atom[i].type);
+	  } else {
+	    sprintf(buf,"T%c%c",
+		    'A'+atoms->atom[i].type/26,'A'+atoms->atom[i].type%26);
+	  }
+	  atoms->resname[atoms->atom[i].resnr] = put_symtab(symtab,buf);
+	  
+	  if (r == 3)
+	    level--;
+	  i++;
+	}
+      }
+      atoms->nres = atoms->nr;
+
+      if (i != atoms->nr) {
+	gmx_fatal(FARGS,"Internal inconsistency in Espresso routines, read %d atoms, expected %d atoms",i,atoms->nr);
+      }
+    } else if (level==1 && strcmp(word,"variable")==0 && !bFoundVariable) {
+      bFoundVariable = TRUE;
+      level += check_open_parenthesis(fp,r,infile,"variable");
+      while (level==2 && (r=get_espresso_word(fp,word))) {
+	if (level==2 && strcmp(word,"box_l") == 0) {
+	  for(m=0; m<3; m++) {
+	    r = get_espresso_word(fp,word);
+	    sscanf(word,"%lf",&d);
+	    box[m][m] = d;
+	  }
+	  level += check_close_parenthesis(fp,r,infile,"box_l");
+	}
+      }
+    } else if (r == 2) {
+      level++;
+    } else if (r == 3) {
+      level--;
+    }
+  }
+  
+  if (!bFoundParticles) {
+    fprintf(stderr,"Did not find a particles section in Espresso file '%s'\n",
+	    infile);
+  }
+  
+  ffclose(fp);
+}
+
+static int get_espresso_coordnum(char *infile)
+{
+  FILE *fp;
+  char word[STRLEN];
+  int  natoms,level,r;
+  bool bFoundParticles;
+
+  natoms = 0;
+  
+  fp = ffopen(infile,"r");
+  
+  bFoundParticles = FALSE;
+  level = 0;
+  while ((r=get_espresso_word(fp,word)) && !bFoundParticles) {
+    if (level==1 && strcmp(word,"particles")==0 && !bFoundParticles) {
+      bFoundParticles = TRUE;
+      level += check_open_parenthesis(fp,r,infile,"particles");
+      while (level > 0 && (r=get_espresso_word(fp,word))) {
+	if (r == 2) {
+	  level++;
+	  if (level == 2)
+	    natoms++;
+	} else if (r == 3) {
+	  level--;
+	}
+      }
+    } else if (r == 2) {
+      level++;
+    } else if (r == 3) {
+      level--;
+    }
+  }
+  if (!bFoundParticles) {
+    fprintf(stderr,"Did not find a particles section in Espresso file '%s'\n",
+	    infile);
+  }
+  
+  ffclose(fp);
+  
+  return natoms;
+}
+
+static void write_espresso_conf_indexed(FILE *out,const char *title,
+					t_atoms *atoms,int nx,atom_id *index,
+					rvec *x,rvec *v,matrix box)
+{
+  int i,j;
+
+  fprintf(out,"# %s\n",title);
+  if (TRICLINIC(box))
+    fprintf(stderr,"\nWARNING: the Espresso format does not support triclinic unit-cells\n\n");
+  fprintf(out,"{variable {box_l %f %f %f}}\n",box[0][0],box[1][1],box[2][2]);
+  
+  fprintf(out,"{particles {id pos type q%s}\n",v ? " v" : "");
+  for(i=0; i<nx; i++) {
+    if (index)
+      j = index[i];
+    else
+      j = i;
+    fprintf(out,"\t{%d %f %f %f %d %g",
+	    j,x[j][XX],x[j][YY],x[j][ZZ],
+	    atoms->atom[j].type,atoms->atom[j].q);
+    if (v)
+      fprintf(out," %f %f %f",v[j][XX],v[j][YY],v[j][ZZ]);
+    fprintf(out,"}\n");
+  }
+  fprintf(out,"}\n");
 }
 
 static void get_coordnum_fp (FILE *in,char *title, int *natoms)
@@ -774,6 +1061,11 @@ void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms,
     write_pdbfile_indexed(out, title, atoms, x, box, 0, -1, nindex, index);
     fclose(out);
     break;
+  case efESP:
+    out=ffopen(outfile,"w"); 
+    write_espresso_conf_indexed(out, title, atoms, nindex, index, x, v, box);
+    fclose(out);
+    break;
   case efTPR:
   case efTPB:
   case efTPA:
@@ -822,6 +1114,11 @@ void write_sto_conf(char *outfile, char *title,t_atoms *atoms,
     write_pdbfile(out, title, atoms, x, box, 0, -1);
     fclose(out);
     break;
+  case efESP:
+    out=ffopen(outfile,"w");
+    write_espresso_conf_indexed(out, title, atoms, atoms->nr, NULL, x, v, box);
+    fclose(out);
+    break;
   case efTPR:
   case efTPB:
   case efTPA:
@@ -860,6 +1157,9 @@ void get_stx_coordnum(char *infile,int *natoms)
     in=ffopen(infile,"r");
     get_pdb_coordnum(in, natoms);
     fclose(in);
+    break;
+  case efESP:
+    *natoms = get_espresso_coordnum(infile);
     break;
   case efTPA:
   case efTPB:
@@ -911,6 +1211,9 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
   case efBRK:
   case efENT:
     read_pdb_conf(infile, title, atoms, x, box, TRUE);
+    break;
+  case efESP:
+    read_espresso_conf(infile,atoms,x,v,box);
     break;
   case efTPR:
   case efTPB:

@@ -84,10 +84,10 @@ static const int stos[]={ efGRO, efG96, efPDB, efBRK,
 #ifdef HAVE_LIBXML2
   efXML, 
 #endif
-  efENT};
+  efENT, efESP};
 #define NSTOS asize(stos)
 
-static const int stxs[]={ efGRO, efG96, efPDB, efBRK, efENT,
+static const int stxs[]={ efGRO, efG96, efPDB, efBRK, efENT, efESP,
 #ifdef USE_XDR 
 		       efTPR, 
 #endif 
@@ -158,6 +158,7 @@ static t_deffile deffile[efNR] = {
   { eftASC, ".pdb", "eiwit",  "-f", "Protein data bank file"                 },
   { eftASC, ".brk", "eiwit",  "-f", "Brookhaven data bank file"              },
   { eftASC, ".ent", "eiwit",  "-f", "Entry in the protein date bank"         },
+  { eftASC, ".esp", "conf",   "-f", "Coordinate file in Espresso format"     },
   { eftASC, ".log", "run",    "-l", "Log file"                               },
   { eftASC, ".xvg", "graph",  "-o", "xvgr/xmgr file"                         },
   { eftASC, ".out", "hello",  "-o", "Generic output file"                    },
