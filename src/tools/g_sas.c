@@ -394,7 +394,7 @@ int main(int argc,char *argv[])
     { "-qmax",    FALSE, etREAL, {&qcut},
 	"The maximum charge (e, absolute value) of a hydrophobic atom" },
     { "-minarea", FALSE, etREAL, {&minarea},
-	"The maximum charge (e, absolute value) of a hydrophobic atom" },
+      "The minimum area (nm^2) to count an atom as a surface atom when writing a position restraint file  (see help)" },
     { "-skip",    FALSE, etINT,  {&nskip},
       "Do only every nth frame" },
     { "-prot",    FALSE, etBOOL, {&bSave},
