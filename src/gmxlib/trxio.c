@@ -624,6 +624,11 @@ bool read_next_frame(int status,t_trxframe *fr)
       fr->bTime = bRet;
       fr->bX    = bRet;
       fr->bBox  = bRet;
+      if (!bOK) {
+	/* Actually the header could also be not ok,
+	   but from bOK from read_next_xtc this can't be distinguished */
+	fr->not_ok = DATA_NOT_OK;
+      }
       break;
     case efPDB:
       bRet = pdb_next_x(fio_getfp(status),fr);
