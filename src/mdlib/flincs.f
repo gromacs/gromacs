@@ -1,4 +1,39 @@
-c     IMPORTANT!
+
+C
+C                This source code is part of
+C 
+C                 G   R   O   M   A   C   S
+C 
+C          GROningen MAchine for Chemical Simulations
+C 
+C                        VERSION 3.0
+C 
+C Copyright (c) 1991-2001
+C BIOSON Research Institute, Dept. of Biophysical Chemistry
+C University of Groningen, The Netherlands
+C 
+C This program is free software; you can redistribute it and/or
+C modify it under the terms of the GNU General Public License
+C as published by the Free Software Foundation; either version 2
+C of the License, or (at your option) any later version.
+C 
+C If you want to redistribute modifications, please consider that
+C scientific software is very special. Version control is crucial -
+C bugs must be traceable. We will be happy to consider code for
+C inclusion in the official distribution, but derived work must not
+C be called official GROMACS. Details are found in the README & COPYING
+C files - if they are missing, get the official version at www.gromacs.org.
+C 
+C To help us fund GROMACS development, we humbly ask that you cite
+C the papers on the package - you can find them in the top README file.
+C 
+C Do check out http://www.gromacs.org , or mail us at gromacs@gromacs.org .
+C 
+C And Hey:
+C GROup of MAchos and Cynical Suckers
+
+
+c     IMPORTANT IMPORTANT IMPORTANT IMPORTANT !
 c     Note that this file comes in two flavours -
 c     fshake.f for single precision and fshaked.f 
 c     for double precision. The only difference is 

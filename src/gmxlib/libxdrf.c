@@ -1,162 +1,39 @@
-/*____________________________________________________________________________
- |
- | libxdrf - portable fortran interface to xdr. some xdr routines
- |	     are C routines for compressed coordinates
- |
- | version 1.1.1
- |
- | IMPORTANT CHANGE FROM VERSION 1.1:
- |
- | The fortran part of the interface is now only compiled
- | when --enable-fortran is used. The reason for this is that
- | we need the f77 compiler to construct the appropriate
- | F77_FUNC macros for the interface. /EL 2001-02-23
- |
- | This collection of routines is intended to write and read
- | data in a portable way to a file, so data written on one type
- | of machine can be read back on a different type.
- |
- | all fortran routines use an integer 'xdrid', which is an id to the
- | current xdr file, and is set by xdrfopen.
- | most routines have in integer 'ret' which is the return value.
- | The value of 'ret' is zero on failure, and most of the time one
- | on succes.
- |
- | There are three routines useful for C users:
- |  xdropen(), xdrclose(), xdr3dfcoord().
- | The first two replace xdrstdio_create and xdr_destroy, and *must* be
- | used when you plan to use xdr3dfcoord(). (they are also a bit
- | easier to interface). For writing data other than compressed coordinates 
- | you should use the standard C xdr routines (see xdr man page)
- |
- | xdrfopen(xdrid, filename, mode, ret)
- |	character *(*) filename
- |	character *(*) mode
- |
- |	this will open the file with the given filename (string)
- |	and the given mode, it returns an id in xdrid, which is
- |	to be used in all other calls to xdrf routines.
- |	mode is 'w' to create, or update an file, for all other
- |	values of mode the file is opened for reading
- |
- |	you need to call xdrfclose to flush the output and close
- |	the file.
- |	Note that you should not use xdrstdio_create, which comes with the
- |	standard xdr library
- |
- | xdrfclose(xdrid, ret)
- |	flush the data to the file, and closes the file;
- |	You should not use xdr_destroy (which comes standard with
- |	the xdr libraries.
- |
- | xdrfbool(xdrid, bp, ret)
- |	integer pb
- |
- | 	This filter produces values of either 1 or 0	
- |
- | xdrfchar(xdrid, cp, ret)
- |	character cp
- |
- |	filter that translate between characters and their xdr representation
- |	Note that the characters in not compressed and occupies 4 bytes.
- |
- | xdrfdouble(xdrid, dp, ret)
- |	double dp
- |
- |	read/write a double.
- |
- | xdrffloat(xdrid, fp, ret)
- |	float fp
- |
- |	read/write a float.
- |
- | xdrfint(xdrid, ip, ret)
- |	integer ip
- |
- |	read/write integer.
- |
- | xdrflong(xdrid, lp, ret)
- |	integer lp
- |
- |	this routine has a possible portablility problem due to 64 bits longs.
- |
- | xdrfshort(xdrid, sp, ret)
- |	integer *2 sp
- |
- | xdrfstring(xdrid, sp, maxsize, ret)
- |	character *(*)
- |	integer maxsize
- |
- |	read/write a string, with maximum length given by maxsize
- |
- | xdrfwrapstring(xdris, sp, ret)
- |	character *(*)
- |
- |	read/write a string (it is the same as xdrfstring accept that it finds
- |	the stringlength itself.
- |
- | xdrfvector(xdrid, cp, size, xdrfproc, ret)
- |	character *(*)
- |	integer size
- |	external xdrfproc
- |
- |	read/write an array pointed to by cp, with number of elements
- |	defined by 'size'. the routine 'xdrfproc' is the name
- |	of one of the above routines to read/write data (like xdrfdouble)
- |	In contrast with the c-version you don't need to specify the
- |	byte size of an element.
- |	xdrfstring is not allowed here (it is in the c version)
- |	
- | xdrf3dfcoord(xdrid, fp, size, precision, ret)
- |	real (*) fp
- |	real precision
- |	integer size
- |
- |	this is *NOT* a standard xdr routine. I named it this way, because
- |	it invites people to use the other xdr routines.
- | 	It is introduced to store specifically 3d coordinates of molecules
- |	(as found in molecular dynamics) and it writes it in a compressed way.
- |	It starts by multiplying all numbers by precision and
- |	rounding the result to integer. effectively converting
- |	all floating point numbers to fixed point.
- |	it uses an algorithm for compression that is optimized for
- |	molecular data, but could be used for other 3d coordinates
- |	as well. There is subtantial overhead involved, so call this
- |	routine only if you have a large number of coordinates to read/write
- |    
- |      ONCE AGAIN: Note that from version 1.1.1, the fortran interface
- |      routines are only built when you are using fortran with gromacs.
- |
- | ________________________________________________________________________
- |
- | Below are the rotuiens to be used by C programmers. Use the 'normal'
- | xdr routines to write integers, floats, etc (see man xdr)	
- |
- | int xdropen(XDR *xdrs, const char *filename, const char *type)
- |	This will open the file with the given filename and the 
- |	given mode. You should pass it an allocated XDR struct
- |	in xdrs, to be used in all other calls to xdr routines.
- |	Mode is 'w' to create, or update an file, and for all 
- |	other values of mode the file is opened for reading. 
- |	You need to call xdrclose to flush the output and close
- |	the file.
- |
- |	Note that you should not use xdrstdio_create, which
- |	comes with the standard xdr library.
- |
- | int xdrclose(XDR *xdrs)
- |	Flush the data to the file, and close the file;
- |	You should not use xdr_destroy (which comes standard
- |	with the xdr libraries).
- |	 
- | int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
- |	This is \fInot\fR a standard xdr routine. I named it this 
- |	way, because it invites people to use the other xdr 
- |	routines.
- |
- |	frans van hoesel hoesel@chem.rug.nl
-*/	
-
+/*
+ * $Id$
+ * 
+ *                This source code is part of
+ * 
+ *                 G   R   O   M   A   C   S
+ * 
+ *          GROningen MAchine for Chemical Simulations
+ * 
+ *                        VERSION 3.0
+ * 
+ * Copyright (c) 1991-2001
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry
+ * University of Groningen, The Netherlands
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * If you want to redistribute modifications, please consider that
+ * scientific software is very special. Version control is crucial -
+ * bugs must be traceable. We will be happy to consider code for
+ * inclusion in the official distribution, but derived work must not
+ * be called official GROMACS. Details are found in the README & COPYING
+ * files - if they are missing, get the official version at www.gromacs.org.
+ * 
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the papers on the package - you can find them in the top README file.
+ * 
+ * Do check out http://www.gromacs.org , or mail us at gromacs@gromacs.org .
+ * 
+ * And Hey:
+ * Gromacs Runs On Most of All Computer Systems
+ */
+static char *SRCID_libxdrf_c = "$Id$";
 #include <limits.h>
 #include <malloc.h>
 #include <math.h>
