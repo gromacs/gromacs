@@ -146,7 +146,7 @@ static bool missing_atoms(t_restp *rp, int resnr,
 	bRet=TRUE;
 	fprintf(stderr,
 		"\nWARNING: atom %s is missing in residue %s %d in the pdb file\n\n",
-		name,*(at->resname[resnr]),resnr);
+		name,*(at->resname[resnr]),resnr+1);
       }
     }
   }
@@ -517,14 +517,14 @@ static void ter2idihs(t_params *ps,
 	fatal_error(0,"Trying to add improper %s %s %s %s to res %d,"
 		    "atom %s not found",
 		    tdb->idih[j].ai[0],tdb->idih[j].ai[1],tdb->idih[j].ai[2],
-		    tdb->idih[j].ai[3],resnr,
+		    tdb->idih[j].ai[3],resnr+1,
 		    tdb->idih[j].ai[k]);
       else {
 	if (atom[aa0].resnr > (resnr+1)) {
 	  fprintf(stderr,"WARNING: improper spans more than 2 residues:\n");
 	  for (i=0; (i<k); i++)
 	    fprintf(stderr,"atom %d %s, res %d\n",
-		    a0[i],*aname[a0[i]],atom[a0[i]].resnr);
+		    a0[i],*aname[a0[i]],atom[a0[i]].resnr+1);
 	}
 	a0[k] = aa0;
       }
@@ -577,7 +577,7 @@ static void at2bonds(t_params *ps,
     }
     else
       fprintf(stderr,"No bond information for residue %d (%s)\n",
-	      i,*(resname[i]));
+	      i+1,*(resname[i]));
     while ((j < natoms-1) && (atom[j].resnr == atom[j+1].resnr))
       j++;
     j++;
