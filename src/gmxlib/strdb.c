@@ -38,22 +38,34 @@ static char *SRCID_strdb_c = "$Id$";
 
 bool get_a_line(FILE *fp,char line[],int n)
 {
-  char line0[STRLEN], *dum;
-
+  static char *line0=NULL;
+  static int nalloc=0;
+  char *dum;
+  
+  if (n>nalloc) {
+    nalloc=n;
+    srenew(line0,nalloc+1);
+  }
   do {
-    if (!fgets(line0,n,fp)) {
+    if (!fgets(line0,n+1,fp)) {
       return FALSE;
     }
     dum=strchr(line0,'\n');
     if (dum) 
       dum[0]='\0';
+    else if (strlen(line0)==n) {
+      fprintf(stderr,"Warning: line length exceeds buffer length (%d), data might be corrupted\n",n);
+      line0[n-1] ='\0';
+    } else
+      fprintf(stderr,"Warning: file does end with a newline, last line:\n%s\n",
+	      line0);
     dum=strchr(line0,';');
     if (dum) 
       dum[0]='\0';
     strcpy(line,line0);
     dum=line0;
     ltrim(dum);
-  } while (strlen(dum) == 0); 
+  } while (dum[0] == '\0'); 
 
   return TRUE;
 }
