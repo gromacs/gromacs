@@ -155,7 +155,6 @@ int main(int argc,char *argv[])
   int      *isize;      /* the size of each group */
   char     **grpnames;  /* the name of each group */
   atom_id  **index;     /* the index array of each group */
-  t_block   *block;     /* the total index file */
   t_topology *top;
   int      g;           /* group counter */
   char     format[STRLEN],filename[STRLEN];
@@ -253,8 +252,8 @@ int main(int argc,char *argv[])
       for(i=0; (i<natoms); i++)
 	for(m=0; (m<DIM); m++)
 	  v[i][m]=-x[i][m];
-  }  while ((bReadV && read_next_x_or_v(status,&t,natoms,x,v,box)) ||
-	    (!bReadV && read_next_x(status,&t,natoms,x,box)));
+  } while ((bReadV && read_next_x_or_v(status,&t,natoms,x,v,box)) ||
+	   (!bReadV && read_next_x(status,&t,natoms,x,box)));
   sfree(x);
   sfree(v);
   sfree(mass);
