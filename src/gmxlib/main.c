@@ -133,7 +133,8 @@ static int get_nodeid(FILE *log,int left,int right,int *nodeid,int *nnodes)
   return 1;
 }
 
-static void par_fn(char *base,int ftp,t_commrec *cr, char buf[], int bufsize)
+static void par_fn(char *base,int ftp,const t_commrec *cr,
+		   char buf[],int bufsize)
 {
   int n;
   
@@ -233,7 +234,7 @@ void open_log(char *lognm,const t_commrec *cr)
   debug_gmx();
 }
 
-static void comm_args(t_commrec *cr,int *argc,char ***argv)
+static void comm_args(const t_commrec *cr,int *argc,char ***argv)
 {
   int i,len;
   char **argv_tmp=NULL,*buf;
