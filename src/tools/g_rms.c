@@ -116,14 +116,10 @@ int main (int argc,char *argv[])
   char *whatlabel[ewNR]    ={NULL, "RMSD (nm)", "Rho",     "Rho sc"};
   char *whatxvgname[ewNR]  ={NULL, "RMSD",      "\\8r\\4", "\\8r\\4\\ssc\\N"};
   char *whatxvglabel[ewNR] ={NULL, "RMSD (nm)", "\\8r\\4", "\\8r\\4\\ssc\\N"};
-  /* select axis timings */
-  static char *timename[] =  {NULL, "ps", "fs", "ns", "us", NULL};
-  real timefactor[] = {0, 1, 1e3, 1e-3, 1e-6, 0};
   t_pargs pa[] = {
     { "-what",  FALSE, etENUM, {what},  "Structural difference measure" },
     { "-pbc",   FALSE, etBOOL, {&bPBC}, "PBC check" },
     { "-fit",   FALSE, etBOOL, {&bFit}, "Fit to reference structure" },
-    { "-time",  FALSE, etENUM, {timename},"time unit on axis"},
     { "-prev",  FALSE, etINT,  {&prev}, "Compare with previous frame" },
     { "-split", FALSE, etBOOL, {&bSplit},"Split graph where time is zero" },
     { "-fitall",FALSE, etBOOL, {&bFitAll},
@@ -195,8 +191,8 @@ int main (int argc,char *argv[])
 #define NFILE asize(fnm)
 
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW,
+		    TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   ewhat=nenum(what);
   if (ewhat==ewRho || ewhat==ewRhoSc)
     please_cite(stdout,"Maiorov95");
@@ -249,7 +245,7 @@ int main (int argc,char *argv[])
   /*set box type*/
   init_pbc(box,FALSE);
 
-  sprintf(timelabel, "Time (%s)", timename[0]);
+  sprintf(timelabel, "Time (%s)", time_label());
   
   if (bFit)
     fprintf(stderr,"Select group for least squares fit\n");
@@ -445,10 +441,8 @@ int main (int argc,char *argv[])
 	rlsm[j][teller] = 
 	  calc_similar_ind(ewhat!=ewRMSD,irms[j],ind_rms[j],w_rms,x,xm);
     }
-    time[teller]=t;
-    if (timefactor[nenum(timename)]!=1)
-      time[teller] *= timefactor[nenum(timename)];
-
+    time[teller]=convert_time(t);
+    
     teller++;
     if (teller >= maxframe) {
       maxframe +=NFRAME;
@@ -507,9 +501,7 @@ int main (int argc,char *argv[])
 	tel_mat2++;
       }
       
-      time2[teller2]=t;
-      if (timefactor[nenum(timename)]!=1)
-	time2[teller2] *= timefactor[nenum(timename)];
+      time2[teller2]=convert_time(t);
 
       teller2++;
       if (teller2 >= maxframe2) {
@@ -729,7 +721,7 @@ int main (int argc,char *argv[])
     sprintf(buf,"%s Difference",whatxvgname[ewhat]);
   else
     sprintf(buf,"%s with frame %g %s ago",whatxvgname[ewhat],
-	    time[prev*freq]-time[0], timename[0]);
+	    time[prev*freq]-time[0], time_label());
   fp=xvgropen(opt2fn("-o",NFILE,fnm),buf,timelabel,whatxvglabel[ewhat]);
   if (nrms == 1)
     fprintf(fp,"@ subtitle \"of %s after lsq fit to %s\"\n",gn_rms[0],gn_fit);
