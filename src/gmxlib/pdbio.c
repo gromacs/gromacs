@@ -195,15 +195,6 @@ void write_pdb_confs(char *outfile,t_atoms **atoms,rvec *x[],int number)
   ffclose(out);
 }
 
-extern void write_pdb_conf(char *outfile,char *title,
-			   t_atoms *atoms,rvec x[],matrix box)
-{
-  FILE *out;
-  out=ffopen(outfile,"w");
-  write_pdbfile(out,title,atoms,x,box,0,TRUE);
-  fclose(out);
-}
-
 int line2type(char *line)
 {
   int  k;
@@ -268,8 +259,8 @@ static int read_atom(char line[],int type,int natom,
   char nc='\0';
   char anr[12],anm[12],resnm[12],chain[12],resnr[12];
   char xc[12],yc[12],zc[12],occup[12],bfac[12],pdbresnr[12];
-  static int oldres;
-  int  resnri,newres;
+  static char oldresnm[12],oldresnr[12];
+  int  newres;
 
   if (natom>=atoms->nr)
     fatal_error(0,"\nFound more atoms (%d) in pdb file than expected (%d)",
@@ -324,9 +315,10 @@ static int read_atom(char line[],int type,int natom,
   bfac[k]=nc;
 
   atomn=&(atoms->atom[natom]);
-  resnri=atoi(resnr);
-  if ((natom==0) || (resnri != oldres)) {
-    oldres=resnri;
+  if ((natom==0) || (strcmp(oldresnr,resnr)!=0) || 
+      (strcmp(oldresnm,resnm)!=0)) {
+    strcpy(oldresnr,resnr);
+    strcpy(oldresnm,resnm);
     if (natom==0)
       newres=0;
     else
@@ -541,36 +533,6 @@ void print_pdbatoms(FILE *out,char *title,
   fprintf(out,"%s\n",bTER?"TER":"ENDMDL");
 }
 
-void renumber_pdb(int natom,t_pdbatom pdba[])
-{
-  int i,nres;
-  char pdbnr[12],pdbnm[12];
-  
-  pdbnr[0]='\0';
-  pdbnm[0]='\0';
-  nres=-1;
-  for(i=0; (i<natom); i++) {
-    if ((strcmp(pdba[i].pdbresnr,pdbnr) != 0) ||
-	(strcmp(pdba[i].resnm,pdbnm) != 0)) {
-      strcpy(pdbnr,pdba[i].pdbresnr);
-      strcpy(pdbnm,pdba[i].resnm);
-      nres++;
-    }
-    pdba[i].atomnr=i;
-    pdba[i].resnr=nres;
-  }
-}
-
-void pdba_trimnames(int natom,t_pdbatom pdba[])
-{
-  int i;
-  
-  for(i=0; (i<natom); i++) {
-    trim(pdba[i].atomnm);
-    trim(pdba[i].resnm);
-  }
-}
-
 int pdbasearch_atom(char *name,int resnr,int natom,t_pdbatom pdba[])
 {
   int  i;
@@ -589,38 +551,6 @@ int pdbasearch_atom(char *name,int resnr,int natom,t_pdbatom pdba[])
       return i;
   }
   return -1;
-}
-
-void pdb2atoms(int natom,t_pdbatom pdba[],t_atoms *atoms,rvec **x,
-	       t_symtab *symtab)
-{
-  int i,m,nres,rnr=-83;
-
-  renumber_pdb(natom,pdba);
-  nres=pdba[natom-1].resnr+1;
-  
-  snew(atoms->atom,natom);
-  snew(atoms->atomname,natom);
-  snew(atoms->resname,nres);
-  snew(*x,natom);
-  for(i=0; (i<natom); i++) {
-    if (pdba[i].resnr != rnr) {
-      rnr=pdba[i].resnr;
-      atoms->resname[rnr]=put_symtab(symtab,pdba[i].resnm);
-    }
-    atoms->atom[i].resnr=pdba[i].resnr;
-    atoms->atom[i].chain=pdba[i].chain;
-    atoms->atom[i].m=pdba[i].m;
-    atoms->atom[i].q=pdba[i].q;
-    atoms->atom[i].type=pdba[i].type;
-    sfree(atoms->atomname[i]);
-    atoms->atomname[i]=put_symtab(symtab,pdba[i].atomnm);
-    for(m=0; (m<DIM); m++)
-      (*x)[i][m]=pdba[i].x[m];
-  }
-  assert(nres=rnr+1);
-  atoms->nres=nres;
-  atoms->nr=natom;
 }
 
 t_pdbatom *atoms2pdba(t_atoms *atoms,rvec x[])

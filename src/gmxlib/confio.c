@@ -748,6 +748,7 @@ void read_xdr_conf(char *infile,char *title,t_atoms *atoms,rvec x[],rvec v[],mat
 void write_sto_conf(char *outfile, char *title,t_atoms *atoms, 
 		   rvec x[],rvec v[], matrix box)
 {
+  FILE       *out;
   int        ftp;
 
   ftp=fn2ftp(outfile);
@@ -758,7 +759,9 @@ void write_sto_conf(char *outfile, char *title,t_atoms *atoms,
   case efPDB:
   case efBRK:
   case efENT:
-    write_pdb_conf(outfile, title, atoms, x, box);
+    out=ffopen(outfile,"w");
+    write_pdbfile(out, title, atoms, x, box, 0, TRUE);
+    fclose(out);
     break;
   case efTPR:
   case efTPB:
