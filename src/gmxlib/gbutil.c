@@ -145,7 +145,7 @@ void orient(int natom,rvec *x,rvec *v, rvec angle,matrix box)
 } /*orient()*/
 
 
-void genconf(t_atoms *atoms,rvec *x,real *r,matrix box,ivec n_box)
+void genconf(t_atoms *atoms,rvec *x,rvec *v,real *r,matrix box,ivec n_box)
 {
   int     i,ix,iy,iz,m,j,imol,offset;
   rvec    delta;
@@ -166,6 +166,9 @@ void genconf(t_atoms *atoms,rvec *x,real *r,matrix box,ivec n_box)
 	for (i=0;(i < atoms->nr);i++) {
 	  for (m=0;(m < DIM);m++)
 	    x[offset+i][m]=delta[m]+x[i][m];
+	  if (v) 
+	    for (m=0;(m < DIM);m++)
+	      v[offset+i][m]=v[i][m];
 	  r[offset+i]=r[i];
         }
 	imol++;

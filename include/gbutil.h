@@ -37,7 +37,7 @@ extern void orient(int natom,rvec *x,rvec *v, rvec angle,matrix box);
  *the y-axis. Finally the third longest distance is placed along the x-axis
  */
 
-extern void genconf(t_atoms *atoms,rvec *x,real *r,matrix box,ivec n_box);
+extern void genconf(t_atoms *atoms,rvec *x,rvec *v,real *r,matrix box,ivec n_box);
 /*genconf() generates a new configuration by adding boxes*/
 extern void gen_box(int NTB,int natoms,rvec *x, matrix box,rvec box_space,
 		    bool bCenter);

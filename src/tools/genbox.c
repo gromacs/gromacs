@@ -100,13 +100,13 @@ typedef struct {
   int  res0;
 } t_moltypes;
 
-void sort_molecule(t_atoms **atoms_solvt,rvec *x,real *r)
+void sort_molecule(t_atoms **atoms_solvt,rvec *x,rvec *v,real *r)
 {
   int atnr,i,j,moltp=0,nrmoltypes,resnr;
   t_moltypes *moltypes;
   int *tps;
   t_atoms *atoms,*newatoms;
-  rvec *newx;
+  rvec *newx, *newv;
   real *newr;
   
   fprintf(stderr,"Sorting configuration\n");
@@ -170,6 +170,7 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,real *r)
     newatoms->nres=atoms->nres;
     snew(newatoms->resname,atoms->nres);
     snew(newx,atoms->nr);
+    if (v) snew(newv,atoms->nr);
     snew(newr,atoms->nr);
     
     for (i=0; i<atoms->nr; i++) {
@@ -180,6 +181,7 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,real *r)
       newatoms->atom[moltypes[tps[i]].i] = atoms->atom[i];
       newatoms->atom[moltypes[tps[i]].i].resnr = resnr;
       copy_rvec(x[i],newx[moltypes[tps[i]].i]);
+      if (v) copy_rvec(v[i],newv[moltypes[tps[i]].i]);
       newr[moltypes[tps[i]].i] = r[i];
       moltypes[tps[i]].i++;
     }
@@ -192,9 +194,11 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,real *r)
     *atoms_solvt = newatoms;
     for (i=0; i<(*atoms_solvt)->nr; i++) {
       copy_rvec(newx[i],x[i]);
+      if (v) copy_rvec(newv[i],v[i]);
       r[i]=newr[i];
     }
     sfree(newx);
+    sfree(newv);
     sfree(newr);
   }
   sfree(moltypes);
@@ -306,7 +310,8 @@ char *insert_mols(char *mol_insrt,int nmol_insrt,int ntry,int seed,
       continue;
     onr=atoms->nr;
     
-    add_conf(atoms,x,r,FALSE,box,TRUE,&atoms_insrt,x_n,r_insrt,FALSE,rshell);
+    add_conf(atoms,x,NULL,r,FALSE,box,TRUE,
+	     &atoms_insrt,x_n,NULL,r_insrt,FALSE,rshell);
     
     if (atoms->nr==(atoms_insrt.nr+onr)) {
       mol++;
@@ -327,7 +332,7 @@ char *insert_mols(char *mol_insrt,int nmol_insrt,int ntry,int seed,
   return title_insrt;
 }
 
-void add_solv(char *fn,t_atoms *atoms,rvec **x,real **r,matrix box,
+void add_solv(char *fn,t_atoms *atoms,rvec **x,rvec **v,real **r,matrix box,
 	      real r_distance,int *atoms_added,int *residues_added,
 	      real rshell)
 {
@@ -336,7 +341,7 @@ void add_solv(char *fn,t_atoms *atoms,rvec **x,real **r,matrix box,
   char    filename[STRLEN];
   char    title_solvt[STRLEN];
   t_atoms *atoms_solvt;
-  rvec    *x_solvt;
+  rvec    *x_solvt,*v_solvt=NULL;
   real    *r_solvt;
   matrix  box_solvt;
   int     onr,onres;
@@ -347,13 +352,15 @@ void add_solv(char *fn,t_atoms *atoms,rvec **x,real **r,matrix box,
   if (atoms_solvt->nr == 0)
     fatal_error(0,"No solvent in %s, please check your input\n",filename);
   snew(x_solvt,atoms_solvt->nr);
+  if (v) snew(v_solvt,atoms_solvt->nr);
   snew(r_solvt,atoms_solvt->nr);
   snew(atoms_solvt->resname,atoms_solvt->nr);
   snew(atoms_solvt->atomname,atoms_solvt->nr);
   snew(atoms_solvt->atom,atoms_solvt->nr);
   atoms_solvt->pdbinfo = NULL;
-  fprintf(stderr,"Reading solvent configuration \n");
-  read_stx_conf(filename,title_solvt,atoms_solvt,x_solvt,NULL,box_solvt);
+  fprintf(stderr,"Reading solvent configuration%s\n",
+	  v_solvt?" and velocities":"");
+  read_stx_conf(filename,title_solvt,atoms_solvt,x_solvt,v_solvt,box_solvt);
   fprintf(stderr,"\"%s\"\n",title_solvt);
   fprintf(stderr,"solvent configuration contains %d atoms in %d residues\n",
 	  atoms_solvt->nr,atoms_solvt->nres);
@@ -381,10 +388,11 @@ void add_solv(char *fn,t_atoms *atoms,rvec **x,real **r,matrix box,
   srenew(atoms_solvt->atomname,atoms_solvt->nr*nmol);
   srenew(atoms_solvt->atom,atoms_solvt->nr*nmol);
   srenew(x_solvt,atoms_solvt->nr*nmol);
+  if (v_solvt) srenew(v_solvt,atoms_solvt->nr*nmol);
   srenew(r_solvt,atoms_solvt->nr*nmol);
   
   /* generate a new solvent configuration */
-  genconf(atoms_solvt,x_solvt,r_solvt,box_solvt,n_box);
+  genconf(atoms_solvt,x_solvt,v_solvt,r_solvt,box_solvt,n_box);
 
 #ifdef DEBUG
   print_stat(x_solvt,atoms_solvt->nr,box_solvt);
@@ -394,12 +402,13 @@ void add_solv(char *fn,t_atoms *atoms,rvec **x,real **r,matrix box,
   print_stat(x_solvt,atoms_solvt->nr,box_solvt);
 #endif
   /* Sort the solvent mixture, not the protein... */
-  sort_molecule(&atoms_solvt,x_solvt,r_solvt);
+  sort_molecule(&atoms_solvt,x_solvt,v_solvt,r_solvt);
   
   /* add the two configurations */
   onr=atoms->nr;
   onres=atoms->nres;
-  add_conf(atoms,x,r,TRUE,box,FALSE,atoms_solvt,x_solvt,r_solvt,TRUE,rshell);
+  add_conf(atoms,x,v,r,TRUE,box,FALSE,
+	   atoms_solvt,x_solvt,v_solvt,r_solvt,TRUE,rshell);
   *atoms_added=atoms->nr-onr;
   *residues_added=atoms->nres-onres;
   
@@ -410,7 +419,7 @@ void add_solv(char *fn,t_atoms *atoms,rvec **x,real **r,matrix box,
 	  *atoms_added,*residues_added);
 }
 
-char *read_prot(char *confin,t_atoms *atoms,rvec **x,real **r,
+char *read_prot(char *confin,t_atoms *atoms,rvec **x,rvec **v,real **r,
 		matrix box,real r_distance)
 {
   char *title;
@@ -421,12 +430,13 @@ char *read_prot(char *confin,t_atoms *atoms,rvec **x,real **r,
 
   /* allocate memory for atom coordinates of configuration 1 */
   snew(*x,natoms);
+  if (v) snew(*v,natoms);
   snew(*r,natoms);
   init_t_atoms(atoms,natoms,FALSE);
 
   /* read residue number, residue names, atomnames, coordinates etc. */
-  fprintf(stderr,"Reading solute configuration \n");
-  read_stx_conf(confin,title,atoms,*x,NULL,box);
+  fprintf(stderr,"Reading solute configuration%s\n",v?" and velocities":"");
+  read_stx_conf(confin,title,atoms,*x,v?*v:NULL,box);
   fprintf(stderr,"%s\nContaining %d atoms in %d residues\n",
 	  title,atoms->nr,atoms->nres);
   
@@ -612,7 +622,7 @@ int main(int argc,char *argv[])
   /* protein configuration data */
   char    *title=NULL;
   t_atoms atoms;
-  rvec    *x;
+  rvec    *x,*v=NULL;
   matrix  box;
   
   /* other data types */
@@ -630,6 +640,7 @@ int main(int argc,char *argv[])
   static int nmol_ins=0,nmol_try=10,seed=1997;
   static real r_distance=0.105,r_shell=0;
   static rvec new_box={0.0,0.0,0.0};
+  static bool bReadV=FALSE;
   t_pargs pa[] = {
     { "-box",    FALSE, etRVEC, {&new_box},   
       "box size" },
@@ -642,7 +653,9 @@ int main(int argc,char *argv[])
     { "-vdwd",   FALSE, etREAL, {&r_distance},
       "default vdwaals distance"},
     { "-shell",  FALSE, etREAL, {&r_shell},
-      "thickness of optional water layer around solute" }
+      "thickness of optional water layer around solute" },
+    { "-vel",    FALSE, etBOOL, {&bReadV},
+      "HIDDENkeep velocities from input solute and solvent" }
   };
 
   CopyRight(stderr,argv[0]);
@@ -665,7 +678,9 @@ int main(int argc,char *argv[])
   if (bProt) {
     /*generate a solute configuration */
     conf_prot = opt2fn("-cp",NFILE,fnm);
-    title     = read_prot(conf_prot,&atoms,&x,&r,box,r_distance);
+    title = read_prot(conf_prot,&atoms,&x,bReadV?&v:NULL,&r,box,r_distance);
+    if (bReadV && !v)
+      fprintf(stderr,"Note: no velocities found\n");
     if (atoms.nr == 0) {
       fprintf(stderr,"Note: no atoms in %s\n",conf_prot);
       bProt = FALSE;
@@ -688,7 +703,8 @@ int main(int argc,char *argv[])
     box[ZZ][ZZ]=new_box[ZZ];
   }
   if (det(box) == 0) 
-    fatal_error(0,"Undefined solute box.\nCreate one with editconf or give explicit -box command line option");
+    fatal_error(0,"Undefined solute box.\nCreate one with editconf "
+		"or give explicit -box command line option");
   
   init_pbc(box,FALSE);
   
@@ -702,18 +718,18 @@ int main(int argc,char *argv[])
   
   /* add solvent */
   if (bSol)
-    add_solv(opt2fn("-cs",NFILE,fnm),&atoms,&x,&r,box,
+    add_solv(opt2fn("-cs",NFILE,fnm),&atoms,&x,v?&v:NULL,&r,box,
 	     r_distance,&atoms_added,&residues_added,r_shell);
 	     
   /* write new configuration 1 to file confout */
   confout = ftp2fn(efSTO,NFILE,fnm);
   fprintf(stderr,"Writing generated configuration to %s\n",confout);
   if (bProt) {
-    write_sto_conf(confout,title,&atoms,x,NULL,box);
+    write_sto_conf(confout,title,&atoms,x,v,box);
     /* print box sizes and box type to stderr */
     fprintf(stderr,"%s\n",title);  
   } else 
-    write_sto_conf(confout,title_ins,&atoms,x,NULL,box);
+    write_sto_conf(confout,title_ins,&atoms,x,v,box);
   
   /* print size of generated configuration */
   fprintf(stderr,"\nOutput configuration contains %d atoms in %d residues\n",

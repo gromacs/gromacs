@@ -130,11 +130,12 @@ static real find_max_real(int n,real radius[])
   return rmax;
 }
 
-static void combine_atoms(t_atoms *ap,t_atoms *as,rvec xp[],rvec xs[],
-			  t_atoms **a_comb,rvec **x_comb)
+static void combine_atoms(t_atoms *ap,t_atoms *as,
+			  rvec xp[],rvec *vp,rvec xs[],rvec *vs,
+			  t_atoms **a_comb,rvec **x_comb,rvec **v_comb)
 {
   t_atoms *ac;
-  rvec    *xc;
+  rvec    *xc,*vc=NULL;
   int     i,j,natot,res0;
   
   /* Total number of atoms */
@@ -145,16 +146,19 @@ static void combine_atoms(t_atoms *ap,t_atoms *as,rvec xp[],rvec xs[],
   stupid_fill(&(ac->excl),natot,FALSE);
   
   snew(xc,natot);
+  if (vp && vs) snew(vc,natot);
     
   /* Fill the new structures */
   for(i=j=0; (i<ap->nr); i++,j++) {
     copy_rvec(xp[i],xc[j]);
+    if (vc) copy_rvec(vp[i],vc[j]);
     memcpy(&(ac->atom[j]),&(ap->atom[i]),sizeof(ap->atom[i]));
     ac->atom[j].type = 0;
   }
   res0 = ap->nres;
   for(i=0; (i<as->nr); i++,j++) {
     copy_rvec(xs[i],xc[j]);
+    if (vc) copy_rvec(vs[i],vc[j]);
     memcpy(&(ac->atom[j]),&(as->atom[i]),sizeof(as->atom[i]));
     ac->atom[j].type   = 0;
     ac->atom[j].resnr += res0;
@@ -177,6 +181,7 @@ static void combine_atoms(t_atoms *ap,t_atoms *as,rvec xp[],rvec xs[],
   /* Return values */
   *a_comb = ac;
   *x_comb = xc;
+  *v_comb = vc;
 }
 
 static t_forcerec *fr=NULL;
@@ -299,8 +304,9 @@ bool bXor(bool b1,bool b2)
   return (b1 && !b2) || (b2 && !b1);
 }
 
-void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
-	      bool bInsert,t_atoms *atoms_solvt, rvec *x_solvt, real *r_solvt, 
+void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
+	      matrix box, bool bInsert,
+	      t_atoms *atoms_solvt,rvec *x_solvt,rvec *v_solvt,real *r_solvt,
 	      bool bVerbose,real rshell)
 {
   t_nblist   *nlist;
@@ -311,7 +317,7 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
   int        prev,resnr,nresadd,d,k,ncells,maxincell;
   int        dx0,dx1,dy0,dy1,dz0,dz1;
   int        ntest,nremove,nkeep;
-  rvec       dx,xi,xj,xpp,*x_all;
+  rvec       dx,xi,xj,xpp,*x_all,*v_all;
   bool       *remove,*keep;
   int        bSolSol;
 
@@ -352,7 +358,8 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
     r_all[j]=r_solvt[i];
 
   /* Combine arrays */
-  combine_atoms(atoms,atoms_solvt,*x,x_solvt,&atoms_all,&x_all);
+  combine_atoms(atoms,atoms_solvt,*x,v?*v:NULL,x_solvt,v_solvt,
+		&atoms_all,&x_all,&v_all);
 	     
   /* Do neighboursearching step */
   do_nsgrid(stdout,bVerbose,box,x_all,atoms_all,max_vdw);
@@ -464,6 +471,7 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
     srenew(atoms->atomname, atoms->nr+j);
     srenew(atoms->atom,     atoms->nr+j);
     srenew(*x,              atoms->nr+j);
+    if (v) srenew(*v,       atoms->nr+j);
     srenew(*r,              atoms->nr+j);
   }
   
@@ -484,6 +492,7 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
       atoms->atom[atoms->nr] = atoms_solvt->atom[i];
       atoms->atomname[atoms->nr] = atoms_solvt->atomname[i];
       rvec_add(x_solvt[i],dx,(*x)[atoms->nr]);
+      if (v) copy_rvec(v_solvt[i],(*v)[atoms->nr]);
       (*r)[atoms->nr]   = r_solvt[i];
       atoms->atom[atoms->nr].resnr = atoms->nres-1;
       atoms->resname[atoms->nres-1] =
@@ -496,10 +505,11 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
   
   if (bVerbose)
     fprintf(stderr,"Added %d molecules\n",nresadd);
-
+  
   sfree(remove);
   done_atom(atoms_all);
   sfree(x_all);
+  sfree(v_all);
 }
 
 void orient_mol(t_atoms *atoms,char *indexnm,rvec x[], rvec *v)
