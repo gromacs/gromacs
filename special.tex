@@ -30,6 +30,43 @@
 \chapter{Special Topics}
 \label{ch:special}
 
+\section{Calculating potentials of mean force}
+
+A potential of mean force (pmf) is a potential which is obtained
+by integrating the mean force from an ensemble of configurations.
+In {\gromacs} there are several different methods to calculate the mean force.
+Each method has its limitations, which are listed below.
+\begin{itemize}
+\item{\bf pull code:} between the centers of mass of molecules or groups of molecules.
+\item{\bf free-energy code with harmonic bonds or constraints:} between single atoms. 
+\item{\bf free-energy code with position restraints:} changing the conformation of a relatively immobile group of atoms.
+\item{\bf not possible currently:} between groups of atoms that are
+part of a larger molecule for which the bonds are constrained with
+SHAKE or LINCS.
+\end{itemize}
+The pull and free-energy code a desribed in more detail
+in the following two sections.
+
+\subsection{Entropic effects}
+When a distance between two atoms or the centers of mass of two groups
+is constrained or restrained, there will be a purely entropic contribution
+to the pmf due to the rotation of the two groups.
+For a system of two non-interacting masses the potential of mean force is:
+\beq
+V_{pmf}(r) = -(n_c - 1) k_B T \log(r)
+\eeq
+where $n_c$ is the number of dimensions in which the constraint works
+(i.e. $n_c=3$ for a normal constraint and $n_c=1$ when only
+the $z$-direction is constrained).
+Whether one needs to correct for this contribution depends on what
+the pmf should represent. When one wants to pull a substrate
+into a protein, this entropic term indeed contributes to the work to
+get the substrate into the protein. But when calculating a pmf
+between two solutes in a solvent, for the purpose of simulating
+without solvent, the entropic contribution should be removed.
+Note that this term can be significant; when at 300K the distance is halved
+the contribution is 3.5 kJ~mol$^{-1}$.
+
 \section{Calculating potentials of mean force: the pull code}
 \label{sec:pull}
 There are a number of options to calculate \swapindex{potentials
@@ -445,7 +482,7 @@ to groups that are parts of molecules that use SHAKE or LINCS, and a
 combination of the starting structure calculation with constraints for
 faster convergence of starting structures.
 
-\section{Calculating potentials of mean force: the free energy code}
+\section{Calculating potentials of mean force: the free-energy code}
 \label{sec:fepmf}
 \index{potentials of mean force}
 \index{free energy calculations}
@@ -487,16 +524,6 @@ confined between walls were one wants to measure the force required
 to change the separation between the boundaries or walls.
 Because the boundaries or walls already need to be fixed,
 the position restraints do not limit the system in its sampling.
-
-\subsection{Summary of the methods for pulling}
-\begin{itemize}
-\item{\bf pull code:} between the centers of mass of molecules or groups of molecules.
-\item{\bf free energy code with harmonic bonds or constraints:} between single atoms. 
-\item{\bf free energy code with position restraints:} changing the conformation of a relatively immobile group of atoms.
-\item{\bf not possible currently:} between groups of atoms that are
-part of a larger molecule for which the bonds are constrained with
-SHAKE or LINCS.
-\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
