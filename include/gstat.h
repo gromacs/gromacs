@@ -360,10 +360,10 @@ extern void ana_dih_trans(char *fn_trans,char *fn_histo,
 extern void read_ang_dih(char *trj_fn,char *tpb_fn,
 			 bool bAngles,bool bSaveAll,bool bRb,
 			 int maxangstat,int angstat[],
-			 int *nframes,real time[],
+			 int *nframes,real **time,
 			 int isize,atom_id index[],
-			 real trans_frac[],
-			 real aver_angle[],
+			 real **trans_frac,
+			 real **aver_angle,
 			 real *dih[]);
 /* 
  * Read a trajectory and calculate angles and dihedrals.
@@ -375,9 +375,7 @@ extern void read_ang_dih(char *trj_fn,char *tpb_fn,
  * bRb         do we have Ryckaert-Bellemans dihedrals (trans = 0)
  * maxangstat  number of entries in distribution array
  * angstat     angle distribution
- * *nframes    INPUT: max number of frames that can be stored in arrays time
- *             trans_frac aver_angle and dih
- *             OUTPUT: number of frames read
+ * *nframes    number of frames read
  * time        simulation time at each time frame
  * isize       number of entries in the index, when angles 3*number of angles
  *             else 4*number of angles

@@ -63,7 +63,6 @@ int main(int argc,char *argv[])
   static char *opt="A";
   static bool bALL=FALSE,bChandler=FALSE;
   static real binwidth=1;
-  static int  nframes = 10;
   t_pargs pa[] = {
     { "-type", FALSE, etSTR, &opt,
       "Select either A (angles), D (dihedrals), I (impropers), R (Ryckaert-Bellemans)" },
@@ -71,8 +70,6 @@ int main(int argc,char *argv[])
       "Plot all angles separately in the averages file, in the order of appearance in the index file. This way the first graph is the average, the rest are the individual angles." },
     { "-binwidth", FALSE, etREAL, &binwidth,
       "binwidth (degrees) for calculating the distribution" },
-    { "-nframes",   FALSE, etINT,  &nframes,
-      "Number of frames in your trajectory" },
     { "-chandler", FALSE,  etBOOL, &bChandler,
       "Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine correlation function. Trans is defined as phi < -60 || phi > 60." },
   };
@@ -87,7 +84,7 @@ int main(int argc,char *argv[])
   char       *grpname;
   real       maxang=0,Jc,S2;
   unsigned long mode;
-  int        maxangstat=0,mult,*angstat;
+  int        nframes,maxangstat=0,mult,*angstat;
   int        i,j,total,nangles,natoms,nat2,first,last,angind;
   bool       bAver,bRb=FALSE,
     bFrac,          /* calculate fraction too?  */
@@ -176,24 +173,14 @@ int main(int argc,char *argv[])
    * We need to know the nr of frames so we can allocate memory for an array 
    * with all dihedral angles at all timesteps. Works for me.
    */
-  if (bTrans || bCorr  || bALL) {
-    fprintf(stderr,"Reading at most %d frames. Hang on.\n",nframes);
-    
+  if (bTrans || bCorr  || bALL)
     snew(dih,nangles);
-    for (i=0; (i<nangles); i++)
-      snew(dih[i],nframes);
-  }
 
-  /* Allocate time array */
-  snew(time,nframes);
-  snew(trans_frac,nframes);
-  snew(aver_angle,nframes);
   snew(angstat,maxangstat+1);
 
   read_ang_dih(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),(mult == 3),
 	       bALL || bCorr || bTrans,bRb,maxangstat,angstat,
-	       &nframes,time,isize,index,trans_frac,aver_angle,dih);
-  fprintf(stderr,"Read %d frames\n",nframes);
+	       &nframes,&time,isize,index,&trans_frac,&aver_angle,dih);
   
   dt=(time[nframes-1]-time[0])/(nframes-1);
   

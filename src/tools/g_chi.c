@@ -770,7 +770,7 @@ int main(int argc,char *argv[])
   static char *bugs[] = {
     "Produces MANY output files (up to about 4 times the number of residues in the protein, twice that if autocorrelation functions are calculated). Typically several hundred files are output."
   };
-  static int  r0=1,ndeg=1,maxchi=2,nf=10;
+  static int  r0=1,ndeg=1,maxchi=2;
   static bool bAll=FALSE;
   static bool bPhi=FALSE,bPsi=FALSE,bChi=FALSE;
   static real bfac_init=-1.0;
@@ -788,8 +788,6 @@ int main(int argc,char *argv[])
       "Generate Phi/Psi and Chi1/Chi2 ramachandran plots" },
     { "-all",  FALSE, etBOOL, &bAll,
       "Output separate files for every dihedral." },
-    { "-nframes", FALSE, etINT, &nf,
-      "Number of frames in your trajectory" },
     { "-shift", FALSE, etBOOL, &bShift,
 	"Compute chemical shifts from Phi/Psi angles" },
     { "-run", FALSE, etINT, &ndeg,
@@ -815,7 +813,7 @@ int main(int argc,char *argv[])
   real       dt,rh1,rh2,rj,invth,tdc,tds;
 
   atom_id    isize,*index;
-  int        ndih;
+  int        ndih,nf;
   real       **dih,*trans_frac,*aver_angle,*time;
   
   t_filenm  fnm[] = {
@@ -880,19 +878,12 @@ int main(int argc,char *argv[])
   isize=4*ndih;
   fprintf(stderr,"%d dihedrals found\n", ndih);
 
-  if (nf <= 0) 
-    fatal_error(0,"No frames (%d) in trajectory ? DIY!\n",nf);
-  snew(time,nf);
-  snew(trans_frac,nf);
-  snew(aver_angle,nf);
   snew(dih,ndih);
-  for(i=0; (i<ndih); i++)
-    snew(dih[i],nf);
     
   /* COMPUTE ALL DIHEDRALS! */
   read_ang_dih(opt2fn("-f",NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
 	       FALSE,TRUE,FALSE,1,&idum,
-	       &nf,time,isize,index,trans_frac,aver_angle,dih);
+	       &nf,&time,isize,index,&trans_frac,&aver_angle,dih);
   
   if (nf < 2)
     fatal_error(0,"No frames in trajectory %s",opt2fn("-f",NFILE,fnm));

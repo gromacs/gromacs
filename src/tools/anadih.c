@@ -325,14 +325,14 @@ void normalize_histo(int npoints,int histo[],real dx,real normhisto[])
 void read_ang_dih(char *trj_fn,char *tpb_fn,
 		  bool bAngles,bool bSaveAll,bool bRb,
 		  int maxangstat,int angstat[],
-		  int *nframes,real time[],
+		  int *nframes,real **time,
 		  int isize,atom_id index[],
-		  real trans_frac[],
-		  real aver_angle[],
+		  real **trans_frac,
+		  real **aver_angle,
 		  real *dih[])
 {
   t_topology *top;
-  int        i,angind,status,natoms,nat,total,teller,maxframes,nangles,nat2;
+  int        i,angind,status,natoms,nat,total,teller,nangles,nat2,n_alloc;
   real       t,fraction,pifac,aa,tmp;
   real       *angles[2];
   matrix     box;
@@ -368,17 +368,25 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
   snew(angles[prev],nangles);
   
   /* Start the loop over frames */
-  maxframes = *nframes; /* on input holds the max number of frames */
-  total     = 0;
-  teller    = 0;
+  total       = 0;
+  teller      = 0;
+  n_alloc     = 0;
+  *time       = NULL;
+  *trans_frac = NULL;
+  *aver_angle = NULL;
+
   do {
-    time[teller] = t;
-      
-    if (bSaveAll && (teller == maxframes)) {
-      fprintf(stderr,"Read %d frames. That's more than the %d you told me.\n"
-	      "Stopping analysis here.\n",teller+1,maxframes);
-      break;
+    if (teller >= n_alloc) {
+      n_alloc+=100;
+      if (bSaveAll)
+	for (i=0; (i<nangles); i++)
+	  srenew(dih[i],n_alloc);
+      srenew(*time,n_alloc);
+      srenew(*trans_frac,n_alloc);
+      srenew(*aver_angle,n_alloc);
     }
+
+    (*time)[teller] = t;
 
     rm_pbc(&(top->idef),natoms,box,x,x_s);
     
@@ -389,7 +397,7 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
 
       /* Trans fraction */
       fraction = calc_fraction(angles[cur], nangles, bRb);
-      trans_frac[teller] = fraction;
+      (*trans_frac)[teller] = fraction;
       
       /* Periodicity in dihedral space... */
       if (teller > 1) {
@@ -445,7 +453,7 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
     }
     
     /* average over all angles */
-    aver_angle[teller] = (aa/nangles);  
+    (*aver_angle)[teller] = (aa/nangles);  
     
     /* this copies all current dih. angles to dih[i], teller is frame */
     if (bSaveAll) 
@@ -459,7 +467,6 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
     teller++;
   } while (read_next_x(status,&t,natoms,x,box));  
   close_trj(status); 
-  fprintf(stderr,"\nDone with trajectory\n");
   
   sfree(x);
   sfree(x_s);
