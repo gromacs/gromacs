@@ -147,7 +147,7 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
   init_nblist(&fr->nlist_sr[eNL_QQ],(homenr-fr->nWatMol*3),
 	      nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
   if (fr->bPert)
-    init_nblist(&fr->nlist_sr[eNL_FREE],homenr,
+    init_nblist(&fr->nlist_sr[eNL_FREE],homenr-fr->nWatMol*3,
 		fr->bBHAM ? eNR_BHAM_FREE : eNR_LJC_FREE);
   if (fr->bWaterOpt) {
     init_nblist(&fr->nlist_sr[eNL_VDW_WAT],fr->nWatMol,
