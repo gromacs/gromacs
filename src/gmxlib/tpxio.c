@@ -47,7 +47,7 @@
 /* This number should be increased whenever the file format changes! */
 static int tpx_version = 7;
 /* This number should be the most recent incompatible version */
-static int tpx_incompatible_version = 5; 
+static int tpx_incompatible_version = 6; 
 /* This is the version of the file we are reading */
 static int file_version = 0;
 
