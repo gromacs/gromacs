@@ -18,12 +18,14 @@ RUNOBJ		= runner.o 	md.o		steep.o 	\
 PGOBJ		= toputil.o 	topdirs.o 	topexcl.o	
 # Objects for grompp
 GOBJ		= grompp.o	topio.o 	toppush.o 	\
-		  topcat.o 	topshake.o 	convparm.o 	tomorse.o\
-		  sorting.o 	splitter.o	$(PGOBJ)	readir.o
+		  topcat.o 	topshake.o 	convparm.o 	\
+		  tomorse.o	sorting.o 	splitter.o	\
+		  readir.o	$(PGOBJ)
 # Objects for pdb2gmx
 POBJ		= pdb2gmx.o	pdb2top.o 	gen_ad.o 	\
 		  pgutil.o	resall.o	ter_db.o	\
-		  hizzie.o	$(PGOBJ)	xlate.o	specbond.o
+		  hizzie.o	xlate.o		specbond.o	\
+		  gen_dum.o	add_par.o	$(PGOBJ)	
 
 #
 ifneq ($(CPU),amb)
