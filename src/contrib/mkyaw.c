@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 {
   t_symtab tab;
   static char *desc[] = {
-    "mkyaw adds to an existing conf file for every OW atom an DW and SW",
+    "mkyaw adds to an existing conf file for every OW atom a DW and SW",
     "after the hydrogens (or the inverse with the -back option)."
   };
   static bool bBack=FALSE,bDW=TRUE,bHB=FALSE;
@@ -192,9 +192,9 @@ int main(int argc, char *argv[])
 	}
       }
       aout.nr = iout;
-      close_symtab(&tab);
       fprintf(stderr,"iout = %d\n",iout);
       write_sto_conf(outfile,"Gravity Sucks",&aout,xout,vout,box); 
+      close_symtab(&tab);
     }
   }
   thanx(stderr);
