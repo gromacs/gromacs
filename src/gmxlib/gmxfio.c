@@ -28,6 +28,7 @@
  */
 static char *SRCID_gmxfio_c = "$Id$";
 
+#include <ctype.h>
 #include "fatal.h"
 #include "macros.h"
 #include "smalloc.h"
