@@ -268,10 +268,10 @@ static int read_atom(char line[],int type,int natom,
   }
   resnr[k]=nc;
   trim(resnr);
-  for( ;(k<8); k++,j++)
-    pdbresnr[k]=line[j];
-  pdbresnr[k]=nc;
+  pdbresnr[k]=line[j];
+  pdbresnr[k+1]=nc;
   trim(pdbresnr);
+  j+=4;
 
   /* X,Y,Z Coordinate */
   for(k=0; (k<8); k++,j++) xc[k]=line[j];
@@ -290,9 +290,9 @@ static int read_atom(char line[],int type,int natom,
   bfac[k]=nc;
 
   atomn=&(atoms->atom[natom]);
-  if ((natom==0) || (strcmp(oldresnr,resnr)!=0) || 
+  if ((natom==0) || (strcmp(oldresnr,pdbresnr)!=0) || 
       (strcmp(oldresnm,resnm)!=0)) {
-    strcpy(oldresnr,resnr);
+    strcpy(oldresnr,pdbresnr);
     strcpy(oldresnm,resnm);
     if (natom==0)
       newres=0;
