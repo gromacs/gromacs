@@ -128,7 +128,7 @@ static void do_both(rvec xold,rvec x_unc,rvec x,rvec g,
 static void do_elupdate(int start,int homenr,double dt,
 			rvec lamb[],t_grp_acc gstat[],
 			rvec accel[],rvec freezefac[],
-			real invmass[],real charge[],
+			real invmass[],ushort ptype[],real charge[],
 			ushort cFREEZE[],ushort cACC[],
 			ushort cTC[],
 			rvec x[],rvec xprime[],rvec v[],rvec vold[],
@@ -165,15 +165,19 @@ static void do_elupdate(int start,int homenr,double dt,
       vn             = v[n][d];
       lg             = lamb[gt][d];
       vold[n][d]     = vn;
-      vv             = lg*(vn + f[n][d]*w_dt);
- 
-      /* do not scale the mean velocities u */
-      uold           = gstat[ga].uold[d];
-      va             = vv + adds[d];
-      l1             = (real1-lg);
-      vb             = va + l1*uold ;
-      v[n][d]        = vb;
-      xprime[n][d]   = x[n][d]+vb*dt*freezefac[gf][d];
+      if ((ptype[n]!=eptDummy) && freezefac[gf][d]) {
+	vv             = lg*(vn + f[n][d]*w_dt);
+	
+	/* do not scale the mean velocities u */
+	uold           = gstat[ga].uold[d];
+	va             = vv + adds[d];
+	l1             = (real1-lg);
+	vb             = va + l1*uold ;
+	v[n][d]        = vb;
+	xprime[n][d]   = x[n][d]+vb*dt*freezefac[gf][d];
+      }
+      else
+	xprime[n][d]   = x[n][d];
     }
   }
 }
@@ -181,8 +185,7 @@ static void do_elupdate(int start,int homenr,double dt,
 static void do_update(int start,int homenr,double dt,
 		      rvec lamb[],t_grp_acc gstat[],
 		      rvec accel[],rvec freezefac[],
-		      real invmass[],
-		      ushort ptype[],
+		      real invmass[],ushort ptype[],
 		      ushort cFREEZE[],ushort cACC[],
 		      ushort cTC[],
 		      rvec x[],rvec xprime[],rvec v[],rvec vold[],rvec f[])
@@ -203,30 +206,30 @@ static void do_update(int start,int homenr,double dt,
       vn             = v[n][d];
       lg             = lamb[gt][d];
       vold[n][d]     = vn;
-      if (ptype[n]!=eptDummy) {
+      if ((ptype[n]!=eptDummy) && freezefac[gf][d]) {
 	vv             = lg*(vn + f[n][d]*w_dt);
 	
 	/* do not scale the mean velocities u */
 	uold           = gstat[ga].uold[d];
 	va             = vv + accel[ga][d]*dt;
 	vb             = va + (1.0-lg)*uold ;
-	v[n][d]        = vb;
-	xprime[n][d]   = x[n][d]+vb*dt*freezefac[gf][d];
-      } else {
-	v[n][d]        = vn;
+	xprime[n][d]   = x[n][d]+vb*dt;
+      } 
+      else
 	xprime[n][d]   = x[n][d];
-      }
     }
   }
 }
 
 static void do_update_lang(int start,int homenr,double dt,
-		      rvec x[],rvec xprime[],rvec v[],rvec vold[],rvec f[],
-		      real temp, real fr, int *seed)
+			   rvec freezefac[],ushort ptype[],ushort cFREEZE[],
+			   rvec x[],rvec xprime[],rvec v[],rvec vold[],
+			   rvec f[],real temp, real fr, int *seed)
 {
   const unsigned long im = 0xffff;
   const unsigned long ia = 1093;
   const unsigned long ic = 18257;
+  int    gf;
   real   vn,vv;
   real   rfac,invfr,rhalf,jr;
   int    n,d;
@@ -243,20 +246,25 @@ static void do_update_lang(int start,int homenr,double dt,
   jran = (unsigned long)((real)im*rando(seed));
 
   for (n=start; (n<start+homenr); n++) {  
+    gf   = cFREEZE[n];
     for (d=0; (d<DIM); d++) {
       vn             = v[n][d];
       vold[n][d]     = vn;
-      jran = (jran*ia+ic) & im;
-      jr = (real)jran;
-      jran = (jran*ia+ic) & im;
-      jr += (real)jran;
-      jran = (jran*ia+ic) & im;
-      jr += (real)jran;
-      jran = (jran*ia+ic) & im;
-      jr += (real)jran;
-      vv             = invfr*f[n][d] + rfac * jr - rhalf;
-      v[n][d]        = vv;
-      xprime[n][d]   = x[n][d]+v[n][d]*dt;
+      if ((ptype[n]!=eptDummy) && freezefac[gf][d]) {
+	jran = (jran*ia+ic) & im;
+	jr = (real)jran;
+	jran = (jran*ia+ic) & im;
+	jr += (real)jran;
+	jran = (jran*ia+ic) & im;
+	jr += (real)jran;
+	jran = (jran*ia+ic) & im;
+	jr += (real)jran;
+	vv             = invfr*f[n][d] + rfac * jr - rhalf;
+	v[n][d]        = vv;
+	xprime[n][d]   = x[n][d]+v[n][d]*dt;
+      }
+      else
+	xprime[n][d]   = x[n][d];
     }
   }
 }
@@ -847,7 +855,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
       do_elupdate(start,homenr,dt, 
 		  lamb, grps->grpstat,
 		  ir->opts.acc,freezefac,
-		  md->invmass,md->chargeA,
+		  md->invmass,md->ptype,md->chargeA,
 		  md->cFREEZE,md->cACC,md->cTC,
 		  x,xprime,v,vold,force,ir->ex,ir->et);
     else {
@@ -862,8 +870,9 @@ void update(int          natoms, 	/* number of atoms in simulation */
 		x,xprime,v,vold,force);
       if (ir->eI==eiLD) 
 	do_update_lang(start,homenr,dt,
-		x,xprime,v,vold,force,
-		ir->ld_temp,ir->ld_fric,&ir->ld_seed);
+		       freezefac,md->ptype,md->cFREEZE,
+		       x,xprime,v,vold,force,
+		       ir->ld_temp,ir->ld_fric,&ir->ld_seed);
     }
 
     where();
