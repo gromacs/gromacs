@@ -255,7 +255,7 @@ nb_kernel112_ppc_altivec  (int *             p_nri,
 
 			nj0        = jindex[n];
 			nj1        = jindex[n+1];
-//			vec_dst( jjnr + nj1, 0x10010100, 0 );
+			/*			vec_dst( jjnr + nj1, 0x10010100, 0 ); */
 			/* zero vctot, in stack pos 14 */
 			vec_st(v0, 224, (float *)stackdata); 
 			/* zero vctot, in stack pos 15 */
@@ -285,14 +285,14 @@ nb_kernel112_ppc_altivec  (int *             p_nri,
 				jnrc            = jjnr[k+2];
 				jnrd            = jjnr[k+3];
 
-//				vec_dst( jjnr + k + 4, 0x02020020, 0 );
+				/*				vec_dst( jjnr + k + 4, 0x02020020, 0 ); */
 
 				j3a             = 3*jnra;
 				j3b             = 3*jnrb;
 				j3c             = 3*jnrc;
 				j3d             = 3*jnrd;
 
-//				vec_dst( pos+j3a, 0x10010100, 1 );
+				/*				vec_dst( pos+j3a, 0x10010100, 1 ); */
 
 				v1              = (vector float)vec_lvsl(0, pos+j3a);
 				v8              = (vector float)vec_lvsl(0, pos+j3b);
@@ -554,7 +554,7 @@ nb_kernel112_ppc_altivec  (int *             p_nri,
 				v28             = vec_ld(16, (float *) stackdata);
 				v29             = vec_ld(32, (float *) stackdata);
 
-//				vec_dstst( faction+j3a, 0x10010100, 2 );
+				/*				vec_dstst( faction+j3a, 0x10010100, 2 ); */
 
 				/* put rinvsq in v10-v18, rinv6_OO in v30 & rinv12_OO in v31 */
 				/* load c6 to v25 and c12 to v26 */
@@ -1161,7 +1161,7 @@ nb_kernel112_ppc_altivec  (int *             p_nri,
 				v29             = vec_ld(32, (float *) stackdata);
       
 
-//				vec_dstst( faction+j3a, 0x10010100, 2 );
+				/*				vec_dstst( faction+j3a, 0x10010100, 2 ); */
 
 				v27             = vec_sld(v27,v0,4);
 				v28             = vec_sld(v28,v0,4);
@@ -1702,7 +1702,7 @@ nb_kernel112_ppc_altivec  (int *             p_nri,
 				v28             = vec_ld(16, (float *) stackdata);
 				v29             = vec_ld(32, (float *) stackdata);
 
-//				vec_dstst( faction+j3a, 0x10010100, 2 );
+				/*				vec_dstst( faction+j3a, 0x10010100, 2 ); */
      
 				/* put rinvsq in v10-v18, rinv6_OO in v30 & rinv12_OO in v31 */
 				/* load c6 to v25 and c12 to v26 */
@@ -2208,7 +2208,7 @@ nb_kernel112_ppc_altivec  (int *             p_nri,
 				v27             = vec_ld(0, (float *) stackdata);
 				v28             = vec_ld(16, (float *) stackdata);
 				v29             = vec_ld(32, (float *) stackdata);
-//				vec_dstst( faction+j3a, 0x10010100, 2 );
+				/*				vec_dstst( faction+j3a, 0x10010100, 2 ); */
       
 				/* put rinvsq in v10-v18, rinv6_OO in v30 and
 				 * rinv12_OO in v31
