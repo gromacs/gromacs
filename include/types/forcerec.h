@@ -86,6 +86,7 @@ typedef struct {
 
   /* Free energy ? */
   int  efep;
+  int  nfeq;      /* When free energy is used: number of atoms with qA!=qB */
   real sc_alpha;
   real sc_sigma6;
   bool bSepDVDL;
