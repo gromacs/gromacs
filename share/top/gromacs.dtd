@@ -49,6 +49,40 @@
                    [...]>
 -->
 
+<!-- Generic stuff to define proteins as built up from amino acids -->
+<!-- and other building blocks (e.g. HEME)                         -->
+<!ELEMENT protein (aminoacid+,aalink*)>
+<!ATTLIST protein
+          pname ID #REQUIRED>
+<!ELEMENT aminoacid EMPTY>
+<!ATTLIST aminoacid
+          resname   ID #REQUIRED
+          restype ( ABU | ACE | AIB | ALA  | ARG | ARGN | ASN | ASN1 |
+	            ASP | ASP1| ASPH| CYS  | CYS1| CYS2 | CYSH| 
+		    GLN | GLU | GLUH| GLY  | HIS | HIS1 | HISA| HISB |
+		    HISH| HYP | ILE | LEU  | LYS | LYSH | MET |
+		    NAC | NH2 | PHE | PHEH | PRO | SER  | THR |
+		    TRP | TRPH| TYR | TYRH | VAL ) "ALA"
+          protonated ( no | polar | all ) "polar">
+<!ELEMENT aalink EMPTY>
+<!ATTLIST aalink
+          aalinktype  ( peptide | disulphide | special ) "peptide"
+          resname   IDREFS #REQUIRED>
+
+<!-- Generic stuff to define DNA/RNA as built up from nucleotides  -->
+<!ELEMENT rdna (nucleotide+,rdlink*)>
+<!ATTLIST rdna
+          rdname ID #REQUIRED>
+<!ELEMENT nucleotide EMPTY>
+<!ATTLIST nucleotide
+          nucname   ID #REQUIRED
+          nuctype    ( ADE | CYT | GUA | THY | URA ) "ADE"
+          protonated ( no | polar | all ) "polar">
+<!ELEMENT rdlink EMPTY>
+<!ATTLIST rdlink
+          rdlinktype  ( normal | special ) "normal"
+          nucname   IDREFS #REQUIRED>
+
 <!ELEMENT gromacs (units,parameters,system,atomtypes,forcefield,cell,
                    coordinates,velocities?,forces?)>
 <!ATTLIST gromacs
