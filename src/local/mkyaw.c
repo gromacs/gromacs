@@ -101,9 +101,15 @@ int main(int argc, char *argv[])
   open_symtab(&tab);
   if (!bBack) {
     now = 0;
-    for(i=0; (i<natom); i++) {
-      if (strstr(*atoms.atomname[i],"HW3") != NULL)
+    for(i=0; (i<natom-2); ) {
+      if ((strstr(*atoms.atomname[i],"OW")   != NULL) &&
+	  (strstr(*atoms.atomname[i+1],"HW") != NULL) &&
+	  (strstr(*atoms.atomname[i+2],"HW") != NULL)) {
 	now++;
+	i+=3;
+      }
+      else
+	i++;
     }
     fprintf(stderr,"There are %d water molecules\n",now);
     init_t_atoms(&aout,natom+2*now,TRUE);
@@ -112,13 +118,15 @@ int main(int argc, char *argv[])
     for(i=iout=0; (i<natom); i++) {
       copy_atom(&tab,&atoms,i,&aout,iout,xin,xout,vin,vout);
       iout++;
-      if (strstr(*atoms.atomname[i],"HW3") != NULL) {
-	copy_atom(&tab,&atoms,i-2,&aout,iout,xin,xout,vin,vout);
-	aout.atomname[iout] = put_symtab(&tab,"DW");
-	iout++;
-	copy_atom(&tab,&atoms,i-2,&aout,iout,xin,xout,vin,vout);
-	aout.atomname[iout] = put_symtab(&tab,"SW");
-	iout++;
+      if (i >= 2) {
+	if (strstr(*atoms.atomname[i-2],"OW") != NULL) {
+	  copy_atom(&tab,&atoms,i-2,&aout,iout,xin,xout,vin,vout);
+	  aout.atomname[iout] = put_symtab(&tab,"DW");
+	  iout++;
+	  copy_atom(&tab,&atoms,i-2,&aout,iout,xin,xout,vin,vout);
+	  aout.atomname[iout] = put_symtab(&tab,"SW");
+	  iout++;
+	}
       }
     }
     close_symtab(&tab);
@@ -130,4 +138,8 @@ int main(int argc, char *argv[])
   
   return 0;
 }
+
+
+
+
 
