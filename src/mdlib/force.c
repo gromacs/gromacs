@@ -316,6 +316,8 @@ void init_forcerec(FILE *log,
     for(i=START(nsb); (i<START(nsb)+HOMENR(nsb)); i++)
       if (fr->nWater == mdatoms->typeA[i])
 	fr->nWatMol++;
+    fprintf(log,"There are %d water molecules on cpu %d\n",
+	    fr->nWatMol,nsb->pid);
   }
   
   /* Parameters for generalized RF */
