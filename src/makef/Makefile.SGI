@@ -18,7 +18,7 @@ F77		= f77
 OPT		= -O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -LNO:opt=1 -LNO:ou_further=3 -OPT:Olimit=0:roundoff=3:alias=typed -fullwarn
 # All warnings except unused vars: -fullwarn -woff 1174
 CFLAGS		= $(ABI) $(OPT) -woff 1174
-CCFLAGS		= $(ABI) $(OPT) -DHAVE_BOOL 
+CCFLAGS		= $(ABI) $(OPT) -woff 1174 -DHAVE_BOOL 
 FFLAGS		= $(ABI) $(OPT) -OPT:cray_ivdep=TRUE  -TENV:X=4
 #FFLAGS		+= -GCM:aggressive_speculation -GCM:array_speculation
 
