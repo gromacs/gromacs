@@ -43,8 +43,9 @@
 #include "constr.h"
 #include "physics.h"
 #include "vec.h"
+#include "pbc.h"
 
-void clincsp(rvec *x,rvec *f,rvec *fp,int ncons,
+void clincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,int ncons,
 	     int *bla1,int *bla2,int *blnr,int *blbnb,
 	     real *blc,real *blcc,real *blm,
 	     int nrec,real *invmass,rvec *r,
@@ -53,20 +54,21 @@ void clincsp(rvec *x,rvec *f,rvec *fp,int ncons,
   int     b,i,j,k,n,it,rec;
   real    tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,wfac,lam;  
   real    u0,u1,u2,v0,v1,v2;
+  rvec    dx;
   real    *tmp;
 
   /* Compute normalized i-j vectors */
-  for(b=0;b<ncons;b++) {
-    i=bla1[b];
-    j=bla2[b];
-    tmp0=x[i][0]-x[j][0];
-    tmp1=x[i][1]-x[j][1];
-    tmp2=x[i][2]-x[j][2];
-    rlen=invsqrt(tmp0*tmp0+tmp1*tmp1+tmp2*tmp2);
-    r[b][0]=rlen*tmp0;
-    r[b][1]=rlen*tmp1;
-    r[b][2]=rlen*tmp2;
-  } /* 16 ncons flops */
+  if (pbc) {
+    for(b=0;b<ncons;b++) {
+      pbc_dx(pbc,x[bla1[b]],x[bla2[b]],dx);
+      unitv(dx,r[b]);
+    }
+  } else {
+    for(b=0;b<ncons;b++) {
+      rvec_sub(x[bla1[b]],x[bla2[b]],dx);
+      unitv(dx,r[b]);
+    } /* 16 ncons flops */
+  }
   
   for(b=0;b<ncons;b++) {
     tmp0=r[b][0];
@@ -86,7 +88,6 @@ void clincsp(rvec *x,rvec *f,rvec *fp,int ncons,
     /* 7 flops */
   }
   /* Together: 23*ncons + 6*nrtot flops */
-  
     
   for(rec=0;rec<nrec;rec++) {
     for(b=0;b<ncons;b++) {
@@ -127,7 +128,7 @@ void clincsp(rvec *x,rvec *f,rvec *fp,int ncons,
   } /* 16 ncons flops */
 }
 
-void clincs(rvec *x,rvec *xp,int ncons,
+void clincs(rvec *x,rvec *xp,t_pbc *pbc,int ncons,
 	    int *bla1,int *bla2,int *blnr,int *blbnb,real *bllen,
 	    real *blc,real *blcc,real *blm,
 	    int nit,int nrec,real *invmass,rvec *r,
@@ -137,43 +138,60 @@ void clincs(rvec *x,rvec *xp,int ncons,
   int     b,i,j,k,n,it,rec;
   real    tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,wfac,lam;  
   real    u0,u1,u2,v0,v1,v2;
+  rvec    dx;
   real    *tmp;
 
   *warn=0;
 
-  /* Compute normalized i-j vectors */
-  for(b=0;b<ncons;b++) {
-    i=bla1[b];
-    j=bla2[b];
-    tmp0=x[i][0]-x[j][0];
-    tmp1=x[i][1]-x[j][1];
-    tmp2=x[i][2]-x[j][2];
-    rlen=invsqrt(tmp0*tmp0+tmp1*tmp1+tmp2*tmp2);
-    r[b][0]=rlen*tmp0;
-    r[b][1]=rlen*tmp1;
-    r[b][2]=rlen*tmp2;
-  } /* 16 ncons flops */
-  
-  for(b=0;b<ncons;b++) {
-    tmp0=r[b][0];
-    tmp1=r[b][1];
-    tmp2=r[b][2];
-    len=bllen[b];
-    i=bla1[b];
-    j=bla2[b];
-    for(n=blnr[b];n<blnr[b+1];n++) {
-      k=blbnb[n];
-      blm[n]=blcc[n]*(tmp0*r[k][0]+tmp1*r[k][1]+tmp2*r[k][2]); 
-    } /* 6 nr flops */
-    mvb=blc[b]*(tmp0*(xp[i][0]-xp[j][0])+
-		tmp1*(xp[i][1]-xp[j][1])+    
-		tmp2*(xp[i][2]-xp[j][2])-len);
-    rhs1[b]=mvb;
-    sol[b]=mvb;
-    /* 8 flops */
+  if (pbc) {
+    /* Compute normalized i-j vectors */
+    for(b=0; b<ncons; b++) {
+      pbc_dx(pbc,x[bla1[b]],x[bla2[b]],dx);
+      unitv(dx,r[b]);
+    }  
+    for(b=0; b<ncons; b++) {
+      for(n=blnr[b]; n<blnr[b+1]; n++) {
+	blm[n] = blcc[n]*iprod(r[b],r[blbnb[n]]);
+      }
+      pbc_dx(pbc,xp[bla1[b]],x[bla2[b]],dx);
+      mvb = blc[b]*(iprod(r[b],dx) - bllen[b]);
+      rhs1[b] = mvb;
+      sol[b]  = mvb;
+    }
+  } else {
+    /* Compute normalized i-j vectors */
+    for(b=0;b<ncons;b++) {
+      i=bla1[b];
+      j=bla2[b];
+      tmp0=x[i][0]-x[j][0];
+      tmp1=x[i][1]-x[j][1];
+      tmp2=x[i][2]-x[j][2];
+      rlen=invsqrt(tmp0*tmp0+tmp1*tmp1+tmp2*tmp2);
+      r[b][0]=rlen*tmp0;
+      r[b][1]=rlen*tmp1;
+      r[b][2]=rlen*tmp2;
+    } /* 16 ncons flops */
+    
+    for(b=0;b<ncons;b++) {
+      tmp0=r[b][0];
+      tmp1=r[b][1];
+      tmp2=r[b][2];
+      len=bllen[b];
+      i=bla1[b];
+      j=bla2[b];
+      for(n=blnr[b];n<blnr[b+1];n++) {
+	k=blbnb[n];
+	blm[n]=blcc[n]*(tmp0*r[k][0]+tmp1*r[k][1]+tmp2*r[k][2]); 
+      } /* 6 nr flops */
+      mvb=blc[b]*(tmp0*(xp[i][0]-xp[j][0])+
+		  tmp1*(xp[i][1]-xp[j][1])+    
+		  tmp2*(xp[i][2]-xp[j][2])-len);
+      rhs1[b]=mvb;
+      sol[b]=mvb;
+      /* 8 flops */
+    }
+    /* Together: 24*ncons + 6*nrtot flops */
   }
-  /* Together: 24*ncons + 6*nrtot flops */
-  
     
   for(rec=0;rec<nrec;rec++) {
     for(b=0;b<ncons;b++) {
@@ -226,19 +244,19 @@ void clincs(rvec *x,rvec *xp,int ncons,
   for(it=0; it<nit; it++) {
   
     for(b=0;b<ncons;b++) {
-      len=bllen[b];
-      i=bla1[b];
-      j=bla2[b];
-      tmp0=xp[i][0]-xp[j][0];
-      tmp1=xp[i][1]-xp[j][1];
-      tmp2=xp[i][2]-xp[j][2];
-      u1=len*len;
-      u0=2.*u1-(tmp0*tmp0+tmp1*tmp1+tmp2*tmp2);
-      if (u0 < wfac*u1) *warn=b;	
-      if (u0 < 0) u0=0;
-      mvb=blc[b]*(len-u0*invsqrt(u0));
-      rhs1[b]=mvb;
-      sol[b]=mvb;
+      len = bllen[b];
+      if (pbc) {
+	pbc_dx(pbc,xp[bla1[b]],xp[bla2[b]],dx);
+      } else {
+	rvec_sub(xp[bla1[b]],xp[bla2[b]],dx);
+      }
+      u1 = len*len;
+      u0 = 2*u1 - norm2(dx);
+      if (u0 < wfac*u1) *warn = b;	
+      if (u0 < 0) u0 = 0;
+      mvb = blc[b]*(len - u0*invsqrt(u0));
+      rhs1[b] = mvb;
+      sol[b]  = mvb;
     } /* 18*ncons flops */
     
     for(rec=0;rec<nrec;rec++) {
@@ -291,5 +309,3 @@ void clincs(rvec *x,rvec *xp,int ncons,
    * (59+nrec)*ncons + (6+4*nrec)*nrtot
    */
 }
-
-

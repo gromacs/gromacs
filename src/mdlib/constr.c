@@ -49,6 +49,7 @@
 #include "physics.h"
 #include "names.h"
 #include "txtdump.h"
+#include "pbc.h"
 
 typedef struct {
   atom_id iatom[3];
@@ -106,6 +107,75 @@ static void dump_confs(int step,t_atoms *atoms,
 static int int_comp(const void *a,const void *b)
 {
   return (*(int *)a) - (*(int *)b);
+}
+
+void lincs_warning(rvec *x,rvec *xprime,t_pbc *pbc,
+		   int ncons,int *bla1,int *bla2,real *bllen,real wangle)
+{
+  int b,i,j;
+  rvec v0,v1;
+  real wfac,d0,d1,cosine;
+  char buf[STRLEN];
+  
+  wfac=cos(DEG2RAD*wangle);
+  
+  sprintf(buf,"bonds that rotated more than %g degrees:\n"
+	  " atom 1 atom 2  angle  previous, current, constraint length\n",
+	  wangle);
+  fprintf(stderr,buf);
+  fprintf(stdlog,buf); 
+
+  for(b=0;b<ncons;b++) {
+    i=bla1[b];
+    j=bla2[b];
+    if (pbc) {
+      pbc_dx(pbc,x[i],x[j],v0);
+      pbc_dx(pbc,xprime[i],xprime[j],v1);
+    } else {
+      rvec_sub(x[i],x[j],v0);
+      rvec_sub(xprime[i],xprime[j],v1);
+    }
+    d0=norm(v0);
+    d1=norm(v1);
+    cosine=iprod(v0,v1)/(d0*d1);
+    if (cosine<wfac) {
+      sprintf(buf," %6d %6d  %5.1f  %8.4f %8.4f    %8.4f\n",
+	      i+1,j+1,RAD2DEG*acos(cosine),d0,d1,bllen[b]);
+      fprintf(stderr,buf);
+      fprintf(stdlog,buf);
+    }
+  }
+}
+
+void cconerr(real *max,real *rms,int *imax,rvec *x,t_pbc *pbc,
+	     int ncons,int *bla1,int *bla2,real *bllen)
+     
+{
+  real      len,d,ma,ms,r2;
+  int       b,im;
+  rvec      dx;
+  
+  ma=0;
+  ms=0;
+  im=0;
+  for(b=0;b<ncons;b++) {
+    if (pbc) {
+      pbc_dx(pbc,x[bla1[b]],x[bla2[b]],dx);
+    } else {
+      rvec_sub(x[bla1[b]],x[bla2[b]],dx);
+    }
+    r2=norm2(dx);
+    len=r2*invsqrt(r2);
+    d=fabs(len/bllen[b]-1);
+    if (d > ma) {
+      ma=d;
+      im=b;
+    }
+    ms=ms+d*d;
+  }
+  *max=ma;
+  *rms=sqrt(ms/ncons);
+  *imax=im;
 }
 
 static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
@@ -272,6 +342,8 @@ static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
   int              b,i,j,nit,warn,p_imax,error;
   real             wang,p_max,p_rms;
   real             dt,dt_2,tmp;
+  t_pbc            pbc,*pbc_null;
+  rvec             dx;
   bool             bOK;
   
   bOK = TRUE;
@@ -290,28 +362,39 @@ static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
       dt_2 = 1.0/(dt*dt);
       
       if (ir->efep != efepNO)
-	for(i=0;i<nc;i++)
-	  bllen[i]=bllen0[i]+lambda*ddist[i];
+	for(i=0; i<nc; i++)
+	  bllen[i] = bllen0[i] + lambda*ddist[i];
 
-      /* Set the zero lengths to the old lengths */
-      for(b=0; b<nc; b++)
-	if (bllen[b] == 0) {
-	  i = bla1[b];
-	  j = bla2[b];
-	  tmp =   sqr(x[i][XX]-x[j][XX])+
-			  sqr(x[i][YY]-x[j][YY])+
-			  sqr(x[i][ZZ]-x[j][ZZ]);
-	  bllen[b] = tmp * invsqrt(tmp);	  
-	}
+      if (ir->ePBC == epbcFULL) {
+	/* This is wasting some CPU time as we now do this multiple times
+	 * per MD step.
+	 */
+	set_pbc(&pbc,box);
+	pbc_null = &pbc;
+	
+	/* Set the zero lengths to the old lengths */
+	for(b=0; b<nc; b++)
+	  if (bllen[b] == 0) {
+	    pbc_dx(pbc_null,x[bla1[b]],x[bla2[b]],dx);
+	    bllen[b] = norm(dx);
+	  }
+      } else {
+	pbc_null = NULL;
+	
+	/* Set the zero lengths to the old lengths */
+	for(b=0; b<nc; b++)
+	  if (bllen[b] == 0)
+	    bllen[b] = sqrt(distance2(x[bla1[b]],x[bla2[b]]));
+      }
 
       wang=ir->LincsWarnAngle;
       
       if (do_per_step(step,ir->nstlog) || step<0)
-	cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
+	cconerr(&p_max,&p_rms,&p_imax,xprime,pbc_null,nc,bla1,bla2,bllen);
 
       nit = ir->nLincsIter;
       
-      clincs(x,xprime,nc,bla1,bla2,blnr,blbnb,
+      clincs(x,xprime,pbc_null,nc,bla1,bla2,blnr,blbnb,
 	     bllen,blc,blcc,blm,nit,ir->nProjOrder,
 	     md->invmass,r,tmp1,tmp2,tmp3,wang,&warn,lincslam);
 
@@ -327,14 +410,14 @@ static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 	fprintf(stdlog,"   Rel. Constraint Deviation:  Max    between atoms     RMS\n");
 	fprintf(stdlog,"       Before LINCS         %.6f %6d %6d   %.6f\n",
 		p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
-	cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
+	cconerr(&p_max,&p_rms,&p_imax,xprime,pbc_null,nc,bla1,bla2,bllen);
 	fprintf(stdlog,"        After LINCS         %.6f %6d %6d   %.6f\n\n",
 		p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
       }
       
       if (warn > 0) {
 	if (bDumpOnError) {
-	  cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
+	  cconerr(&p_max,&p_rms,&p_imax,xprime,pbc_null,nc,bla1,bla2,bllen);
 	  sprintf(buf,"\nStep %d, time %g (ps)  LINCS WARNING\n"
 		  "relative constraint deviation after LINCS:\n"
 		  "max %.6f (between atoms %d and %d) rms %.6f\n",
@@ -342,7 +425,7 @@ static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 		  p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
 	  fprintf(stdlog,"%s",buf);
 	  fprintf(stderr,"%s",buf);
-	  lincs_warning(x,xprime,nc,bla1,bla2,bllen,wang);
+	  lincs_warning(x,xprime,pbc_null,nc,bla1,bla2,bllen,wang);
 	}
 	bOK = (p_max < 0.5);
       }
@@ -351,7 +434,7 @@ static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 	  bllen[b] = 0;
     } 
     else {
-      clincsp(x,xprime,min_proj,nc,bla1,bla2,blnr,blbnb,
+      clincsp(x,xprime,min_proj,pbc_null,nc,bla1,bla2,blnr,blbnb,
 	      blc,blcc,blm,ir->nProjOrder,
 	      md->invmass,r,tmp1,tmp2,tmp3);
     }
@@ -579,67 +662,4 @@ int init_constraints(FILE *log,t_topology *top,t_inputrec *ir,
 		0,NULL,NULL,bOnlyCoords,TRUE);
   
   return count_constraints(top,cr);
-}
-
-void lincs_warning(rvec *x,rvec *xprime,
-		   int ncons,int *bla1,int *bla2,real *bllen,real wangle)
-{
-  int b,i,j;
-  rvec v0,v1;
-  real wfac,d0,d1,cosine;
-  char buf[STRLEN];
-  
-  wfac=cos(DEG2RAD*wangle);
-  
-  sprintf(buf,"bonds that rotated more than %g degrees:\n"
-	  " atom 1 atom 2  angle  previous, current, constraint length\n",
-	  wangle);
-  fprintf(stderr,buf);
-  fprintf(stdlog,buf); 
-
-  for(b=0;b<ncons;b++) {
-    i=bla1[b];
-    j=bla2[b];
-    rvec_sub(x[i],x[j],v0);
-    rvec_sub(xprime[i],xprime[j],v1);
-    d0=norm(v0);
-    d1=norm(v1);
-    cosine=iprod(v0,v1)/(d0*d1);
-    if (cosine<wfac) {
-      sprintf(buf," %6d %6d  %5.1f  %8.4f %8.4f    %8.4f\n",
-	      i+1,j+1,RAD2DEG*acos(cosine),d0,d1,bllen[b]);
-      fprintf(stderr,buf);
-      fprintf(stdlog,buf);
-    }
-  }
-}
-
-void cconerr(real *max,real *rms,int *imax,rvec *xprime,
-	     int ncons,int *bla1,int *bla2,real *bllen)
-     
-{
-  real      len,d,ma,ms,tmp0,tmp1,tmp2,r2;
-  int       b,i,j,im;
-  
-  ma=0;
-  ms=0;
-  im=0;
-  for(b=0;b<ncons;b++) {
-    i=bla1[b];
-    j=bla2[b];
-    tmp0=xprime[i][0]-xprime[j][0];
-    tmp1=xprime[i][1]-xprime[j][1];
-    tmp2=xprime[i][2]-xprime[j][2];
-    r2=tmp0*tmp0+tmp1*tmp1+tmp2*tmp2;
-    len=r2*invsqrt(r2);
-    d=fabs(len/bllen[b]-1);
-    if (d > ma) {
-      ma=d;
-      im=b;
-    }
-    ms=ms+d*d;
-  }
-  *max=ma;
-  *rms=sqrt(ms/ncons);
-  *imax=im;
 }

@@ -103,23 +103,17 @@ extern int init_constraints(FILE *log,t_topology *top,t_inputrec *ir,
 /* Initialize constraints stuff */
 
 /* C routines for LINCS algorithm */ 
-extern void clincsp(rvec *x,rvec *f,rvec *fp,int ncons,
+extern void clincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,int ncons,
 		    int *bla1,int *bla2,int *blnr,int *blbnb,
 		    real *blc,real *blcc,real *blm,
 		    int nrec,real *invmass,rvec *r,
 		    real *vbo,real *vbn,real *vbt);
 
-extern void clincs(rvec *x,rvec *xp,int ncons,
+extern void clincs(rvec *x,rvec *xp,t_pbc *pbc,int ncons,
 		   int *bla1,int *bla2,int *blnr,int *blbnb,real *bllen,
 		   real *blc,real *blcc,real *blm,
 		   int nit,int nrec,real *invmass,rvec *r,
 		   real *vbo,real *vbn,real *vbt,real wangle,int *warn,
 		   real *lambda);
-
-extern void cconerr(real *max,real *rms,int *imax,rvec *xprime,
-		    int ncons,int *bla1,int *bla2,real *bllen);
-
-void lincs_warning(rvec *x,rvec *xprime,
-		   int ncons,int *bla1,int *bla2,real *bllen,real wangle);
 
 
