@@ -52,7 +52,7 @@
  *     PERIODIC BOUNDARY CONDITIONS
  *****************************************/
 
-//#define MAX_NTRICVEC 8
+/* #define MAX_NTRICVEC 8 */
 
 /* Global variables */
 /*
