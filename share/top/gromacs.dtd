@@ -61,7 +61,7 @@
 	  time        ( fs | ps | ns | us ) "ps"
 	  temperature ( kelvin | celsius | fahrenheit ) "kelvin"
 	  energy      ( kJ | kcal ) "kJ"
-	  angle       ( degree | radian)>
+	  angle       ( degree | radian ) "degree">
 
 <!-- Input parameters -->		   
 <!ELEMENT parameters (output,coupling,cutoff)>
