@@ -2,6 +2,10 @@
 <TITLE>mdp options</TITLE>
 <BODY>
 
+<!-- Please be very carefull when editing this file: it must be
+automatically parsed by a simple script to produce a corresponding
+LaTeX file. If you're not sure about what you're doing, don't do it! -->
+
 <h1>mdp options</h1>
 
 <A NAME="TOP">
@@ -36,7 +40,7 @@
 <hr>
 
 <A NAME="general"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#top"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#pp"><IMG SRC="../gif/charts_down.gif"></A> General:</h3>
+<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#top"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#pp"><IMG SRC="../gif/charts_down.gif"></A> General</h3>
 
 <P>
 Default values are given in parentheses. The first option is
@@ -51,7 +55,7 @@ simulation. Edit it to suit your specific needs and desires. </P>
 <hr>
 
 <A NAME="pp"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#general"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#run"><IMG SRC="../gif/charts_down.gif"></A> Preprocessing:</h3>
+<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#general"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#run"><IMG SRC="../gif/charts_down.gif"></A> Preprocessing</h3>
 
 <dl>
 <dt><h4>title:</h4>
@@ -68,8 +72,9 @@ that are already available by default are:
 <dd><dl compact>
 <dt><b>-DFLEX_SPC</b>
 <dd>Will tell grompp to include FLEX_SPC in stead of SPC into your
-topology, this is necessary to make the energy minimizing integrators
-(<b><A HREF="#run">steep</A></b> and <b><A HREF="#run">cg</A></b>) work.
+topology, this is necessary to make 
+<b><A HREF="#run">conjugate gradient</A></b> work and will allow 
+<b><A HREF="#run">steepest descent</A></b> to minimize further.
 <dt><b>-DPOSRE</b>
 <dd>Will tell grompp to include posre.itp into your topology, used for
 position restraints.
@@ -77,7 +82,7 @@ position restraints.
 </dl>
 
 <A NAME="run"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#pp"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#ld"><IMG SRC="../gif/charts_down.gif"></A> Run control:</h3>
+<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#pp"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#ld"><IMG SRC="../gif/charts_down.gif"></A> Run control</h3>
 
 <dl>
 <dt><h4>integrator:</h4>
@@ -87,17 +92,17 @@ position restraints.
 <dt><b>steep</b>
 <dd>A steepest descent algorithm for energy minimization.
 The maximum stepsize is <b><A HREF="#em">emstep</A></b> [nm], the tolerance is 
-<b><A HREF="#em">emtol</A></b> [<sup>kJ</sup>/<sub>mol nm</sub>].
+<b><A HREF="#em">emtol</A></b> [kJ mol<sup>-1</sup> nm<sup>-1</sup>].
 <dt><b>cg</b>
-<dd> A conjugate gradients algorithm for energy minimization,
-the tolerance is <b>emtol</b> [<sup>kJ</sup>/<sub>mol nm</sub>]. 
+<dd> A conjugate gradient algorithm for energy minimization,
+the tolerance is <b>emtol</b> [kJ mol<sup>-1</sup> nm<sup>-1</sup>]. 
 CG is more efficient
 when a steepest descent step is done every once in a while,
 this is determined by <b><A HREF="#em">nstcgsteep</A></b>.
 <dt><b>ld</b>
 <dd> An Euler integrator for position Langevin dynamics, the
 velocity is the force divided by a friction coefficient 
-(<b><A HREF="#ld">ld_fric</A></b> [amu/ps])
+(<b><A HREF="#ld">ld_fric</A></b> [amu ps<sup>-1</sup>])
 plus random thermal noise (<b><A HREF="#ld">ld_temp</A></b> [K]). 
 The random generator is initialized with <b><A HREF="#ld">ld_seed</A></b>
 </dl>
@@ -122,7 +127,7 @@ motion removal (should only be used for vacuum simulations)
 <dl>
 <dt><h4>ld_temp: </b>(300) [K]</h4>
 <dd>temperature in ld run (controls thermal noise level)
-<dt><h4>ld_fric: </b>(0) [amu/ps]</h4>
+<dt><h4>ld_fric: </b>(0) [amu ps<sup>-1</sup>]</h4>
 <dd>ld friction coefficient
 <dt><h4>ld_seed: </b>(1993) [integer]</h4>
 <dd>used to initialize random generator for thermal noise
@@ -133,14 +138,14 @@ motion removal (should only be used for vacuum simulations)
 <A NAME="em"><br>
 <h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#ld"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#out"><IMG SRC="../gif/charts_down.gif"></A> Energy minimization</h3>
 <dl>
-<dt><h4>emtol: </b>(100.0) [<sup>kJ</sup>/<sub>mol nm</sub>]</h4>
+<dt><h4>emtol: </b>(100.0) [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</h4>
 <dd>the minimization is converged when the maximum force is smaller than 
 this value
 <dt><h4>emstep: </b>(0.01) [nm]</h4>
 <dd>initial step-size
 <dt><h4>nstcgsteep: </b>(1000) [steps]</h4>
-<dd>frequency of performing 1 steepest descents step while doing
-conjugate gradients energy minimization.
+<dd>frequency of performing 1 steepest descent step while doing
+conjugate gradient energy minimization.
 </dl>
 
 <A NAME="out"><br>
@@ -153,8 +158,9 @@ conjugate gradients energy minimization.
 <dt><h4>nstfout: </b>(0) [steps]</h4>
 <dd>frequency to write forces to output trajectory
 <dt><h4>nstlog: </b>(100) [steps]</h4>
+<dd>frequency to write energies to log file
 <dt><h4>nstenergy: </b>(100) [steps]</h4>
-<dd>frequency to write energies to log file and energy file
+<dd>frequency to write energies to energy file
 <dt><h4>nstxtcout: </b>(0) [steps]</h4>
 <dd>frequency to write coordinates to xtc trajectory
 <dt><h4>xtc_precision: </b>(1000) [real]</h4>
@@ -220,7 +226,7 @@ The dielectric constant is set with <b>epsilon_r</b>.
 <b>rvdw</b>=0.9, <b>rcoulomb</b>=0.9. The highest magnitude of
 wavevectors used in reciprocal space is controlled by <b>fourierspacing</b>.
 The relative accuracy of direct/reciprocal space
-is controlled by <b>ewald_rtol</b>. NOTE: Ewald scales as O(N^(3/2)) and
+is controlled by <b>ewald_rtol</b>. NOTE: Ewald scales as O(N<sup>3/2</sup>)) and
 is thus extremely slow for large systems. It is included mainly for
 reference - in most cases PME will perform much better.
 
@@ -338,9 +344,7 @@ highest magnitude to use in each direction. In all cases
 each direction can be overriden by entering a non-zero value for
 <b>fourier_n*</b>. 
 
-<dt><h4>fourier_nx </b>(0)<b> ;  
-fourier_ny </b>(0)<b> ;  
-fourier_nz: </b>(0)</h4>
+<dt><h4>fourier_nx </b>(0)<b> ; fourier_ny </b>(0)<b> ; fourier_nz: </b>(0)</h4>
 <dd>Highest magnitude of wavevectors in reciprocal space when using Ewald.
 <dd>Grid size when using PPPM or PME. These values override
 <b>fourierspacing</b> per direction. The best choice is powers of
@@ -364,6 +368,7 @@ direct sum, but then you need more wavevectors for the reciprocal sum.
 few percent for long simulations, but takes a couple of minutes
 at start.
 </dl>
+
 </dl>
 
 <A NAME="tc"><br>
@@ -402,7 +407,7 @@ Several groups can be coupled seperately, these are specified in the
 <dt><b>isotropic</b>
 <dd>Pressure coupling with time constant <b>tau_p</b> [ps].
 The compressibility and reference pressure are set with
-<b>compressibility</b> [1/bar] and <b>ref_p</b> [bar], one
+<b>compressibility</b> [bar<sup>-1</sup>] and <b>ref_p</b> [bar], one
 value is needed.
 <dt><b>semiisotropic</b>
 <dd>Pressure coupling which is isotropic in the x and y direction,
@@ -420,7 +425,7 @@ is coupled to the x/y dimensions of the box.
 The first <b>ref_p</b> value is the reference surface tension times
 the number of surfaces [bar nm], 
 the second value is the reference z-pressure [bar].
-The two <b>compressibility</b> [1/bar] values are the compressibility
+The two <b>compressibility</b> [bar<sup>-1</sup>] values are the compressibility
 in the x/y and z direction respectively.
 The value for the z-compressibility should be reasonably accurate since it
 influences the converge of the surface-tension, it can also be set to zero
@@ -433,9 +438,9 @@ to have a box with constant height.
 <dd>memory for running average to couple
 <dt><h4>tau_p: </b>(1) [ps]</h4>
 <dd>time constant for coupling
-<dt><h4>compressibility: </b>[1/bar]</h4>
-<dd>compressibility (NOTE: this is now really in 1/bar).
-For water at 1 atm and 300 K the compressibility is 4.5e-5 [1/bar].
+<dt><h4>compressibility: </b>[bar<sup>-1</sup>]</h4>
+<dd>compressibility (NOTE: this is now really in bar<sup>-1</sup>)
+For water at 1 atm and 300 K the compressibility is 4.5e-5 [bar<sup>-1</sup>].
 <dt><h4>ref_p: </b>[bar]</h4>
 <dd>reference pressure for coupling
 
@@ -601,7 +606,7 @@ time averaged violation
 <dd>the violation used in the calculation of the restraint force is the
 square root of the time averaged violation times the instantaneous violation 
 </dl>
-<dt><h4>disre_fc: </b>(1000) [<sup>kJ</sup>/<sub>mol nm<sup>2</sup></sub>]</h4>
+<dt><h4>disre_fc: </b>(1000) [kJ mol<sup>-1</sup> nm<sup>-2</sup>]</h4>
 <dd>force constant for distance restraints, which is multiplied by a
 (possibly) different factor for each restraint
 <dt><h4>disre_tau: </b>(10) [ps]</h4>
@@ -641,10 +646,10 @@ per time step is <b>delta_lambda</b>.
 <dd>groups for constant acceleration (e.g.: <tt>Protein Sol</tt>)
 all atoms in groups Protein and Sol will experience constant acceleration
 as specified in the <b>accelerate</b> line
-<dt><h4>accelerate: </b>(0) [nm/ps<sup>2</sup>]</h4>
+<dt><h4>accelerate: </b>(0) [nm ps<sup>-2</sup>]</h4>
 <dd>acceleration for <b>acc_grps</b>; x, y and z for each group
 (e.g. <tt>0.1 0.0 0.0 -0.1 0.0 0.0</tt> means that first group has constant 
-acceleration of 0.1 nm/ps<sup>2</sup> in X direction, second group the 
+acceleration of 0.1 nm ps<sup>-2</sup> in X direction, second group the 
 opposite).
 <dt><h4>freezegrps: </b></h4>
 <dd>Groups that are to be frozen (i.e. their X, Y, and/or Z position will
@@ -678,11 +683,9 @@ since a cosine of frequency zero has no phase.
 <h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#ef"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_down.gif"></A> User defined thingies</h3>
 
 <dl>
-<dt><h4>user1_grps </b><b> ;  user2_grps </b><b> ;  user3_grps: </b></h4>
-<dt><h4>userint1 </b>(0)<b> ;  userint2 </b>(0)<b> ;  
-userint3 </b>(0)<b> ;  userint4: </b>(0)</h4>
-<dt><h4>userreal1 </b>(0)<b> ;  userreal2 </b>(0)<b> ;  
-userreal3 </b>(0)<b> ;  userreal4: </b>(0)</h4>
+<dt><h4>user1_grps </b><b> ; user2_grps </b><b> ; user3_grps: </b></h4>
+<dt><h4>userint1 </b>(0)<b> ; userint2 </b>(0)<b> ; userint3 </b>(0)<b> ; userint4: </b>(0)</h4>
+<dt><h4>userreal1 </b>(0)<b> ; userreal2 </b>(0)<b> ; userreal3 </b>(0)<b> ; userreal4: </b>(0)</h4>
 <dd>These you can use if you hack out code. You can pass integers and
 reals to your subroutine. Check the inputrec definition in
 <tt>src/include/types/inputrec.h</tt>
