@@ -241,13 +241,13 @@ int main (int argc, char *argv[])
     "as the topology does not have to be processed again."
   };
 
-  char         *fn;
+  char         *top_fn,*frame_fn;
   int          fp;
   t_tpxheader  tpx;
   t_trnheader head;
-  int          i,natoms,frame,step,trn_step;
-  real         t,lambda;
-  bool         bMDP,bOK,bFrame;
+  int          i,natoms,frame,step,run_step;
+  real         run_t,run_lambda;
+  bool         bMDP,bTRN,bOK,bFrame;
   t_topology   top;
   t_inputrec   *ir,*irnew;
   t_gromppopts *gopts;
@@ -283,15 +283,16 @@ int main (int argc, char *argv[])
 
   bSel = (bSel || ftp2bSet(efNDX,NFILE,fnm));
   
-  fn = ftp2fn(efTPX,NFILE,fnm);
-  fprintf(stderr,"Reading toplogy and shit from %s\n",fn);
+  top_fn = ftp2fn(efTPX,NFILE,fnm);
+  fprintf(stderr,"Reading toplogy and shit from %s\n",top_fn);
   
-  read_tpxheader(fn,&tpx);
+  read_tpxheader(top_fn,&tpx);
   snew(x,tpx.natoms);
   snew(v,tpx.natoms);
   snew(ir,1);
-  read_tpx(fn,&step,&t,&lambda,ir,box,&natoms,x,v,NULL,&top);
-  
+  read_tpx(top_fn,&step,&run_t,&run_lambda,ir,box,&natoms,x,v,NULL,&top);
+  run_step   = 0;
+
   bMDP=(ftp2bSet(efMDP,NFILE,fnm));
   if (bMDP) {
     fprintf(stderr,"Reading new inputrec from %s\n",ftp2fn(efMDP,NFILE,fnm));
@@ -306,11 +307,12 @@ int main (int argc, char *argv[])
   }
   
   if (ftp2bSet(efTRN,NFILE,fnm)) {
-    fn = ftp2fn(efTRN,NFILE,fnm);
+    frame_fn = ftp2fn(efTRN,NFILE,fnm);
     fprintf(stderr,
-	    "\nREADING COORDS, VELS AND BOX FROM TRAJECTORY %s...\n\n",fn);
+	    "\nREADING COORDS, VELS AND BOX FROM TRAJECTORY %s...\n\n",
+	    frame_fn);
     
-    fp=open_trn(fn,"r");
+    fp=open_trn(frame_fn,"r");
     fread_trnheader(fp,&head,&bOK);
     if (top.atoms.nr != head.natoms) 
       fatal_error(0,"Number of atoms in Topology (%d) "
@@ -318,8 +320,9 @@ int main (int argc, char *argv[])
 		  top.atoms.nr,head.natoms);
     snew(newx,head.natoms);
     snew(newv,head.natoms);
-    t=head.t;
-    trn_step=head.step;
+    run_t=head.t;
+    run_step=head.step;
+    run_lambda=head.lambda;
     bOK=fread_htrn(fp,&head,box,x,v,NULL);
 
     /* Now scan until the last set of x and v (step == 0)
@@ -328,7 +331,8 @@ int main (int argc, char *argv[])
     bFrame=bOK;
     frame=0;
     while (bFrame) {
-      fprintf(stderr,"\rRead frame %6d: step %6d time %8.3f",frame,trn_step,t);
+      fprintf(stderr,"\rRead frame %6d: step %6d time %8.3f",
+	      frame,run_step,run_t);
       bFrame=fread_trnheader(fp,&head,&bOK);
       if (bFrame || !bOK)
 	frame++;
@@ -343,8 +347,9 @@ int main (int argc, char *argv[])
 	tmpv=newv;
 	newv=v;
 	v=tmpv;
-	t=head.t;
-	trn_step=head.step;
+	run_t=head.t;
+	run_step=head.step;
+	run_lambda=head.lambda;
 	copy_mat(newbox,box);
       }
       if ((max_t != -1.0) && (head.t >= max_t))
@@ -355,26 +360,29 @@ int main (int argc, char *argv[])
     if (!bOK)
       fprintf(stderr,"Frame %d (step %d, time %g) is incomplete\n",
 	      frame,head.step,head.t);
-    fprintf(stderr,"\nUsing frame of step %d time %g\n",trn_step,t);
+    fprintf(stderr,"\nUsing frame of step %d time %g\n",run_step,run_t);
   } 
-  else 
+  else {
+    frame_fn = ftp2fn(efTPX,NFILE,fnm);
     fprintf(stderr,"\nUSING COORDS, VELS AND BOX FROM TPX FILE %s...\n\n",
-	   ftp2fn(efTPX,NFILE,fnm));
+	    ftp2fn(efTPX,NFILE,fnm));
+  }
 
   /* change the input record to the actual data */
   if (bMDP) {
     ir=irnew;
-    if (ir->init_t != t)
-      fprintf(stderr,"WARNING: I'm using t_init in mdp-file (%g)"
-	      " while in trajectory it is (%g)\n",ir->init_t,t);
-    if (ir->init_lambda != lambda)
-      fprintf(stderr,"WARNING: I'm using lambda_init in mdp-file (%g)"
-	      " while in trajectory it is (%g)\n",ir->init_lambda,lambda);
+    if (ir->init_t != run_t)
+      fprintf(stderr,"WARNING: I'm using t_init in mdp-file (%g),\n"
+	      "         while in %s it is (%g)\n",ir->init_t,frame_fn,run_t);
+    if (ir->init_lambda != run_lambda)
+      fprintf(stderr,"WARNING: I'm using lambda_init in mdp-file (%g),\n"
+	      "         while in %s it is (%g)\n",
+	      ir->init_lambda,frame_fn,run_lambda);
   }
   else {
-    ir->nsteps     -= trn_step;
-    ir->init_t      = t;
-    ir->init_lambda = lambda;
+    ir->nsteps     -= run_step;
+    ir->init_t      = run_t;
+    ir->init_lambda = run_lambda;
   }
   
   if (!ftp2bSet(efTRN,NFILE,fnm)) {
