@@ -597,7 +597,7 @@ void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
         press *= natoms*natoms*M_PI*(1/vol)*PRESFAC/vol;
         
         spres            = (real)press;
-        svir             = -3*(vol/PRESFAC)*spres;
+        svir             = -0.5*(vol/PRESFAC)*spres;
         ener[F_PRES]    += spres;
         for(m=0; (m<DIM); m++) {
           pres[m][m]    += spres;
@@ -625,7 +625,7 @@ void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
         }
 	
         spres *= natoms*natoms*M_PI*(1/vol)*PRESFAC/vol;
-        svir             = -3*(vol/PRESFAC)*spres;
+        svir             = -0.5*(vol/PRESFAC)*spres;
         ener[F_PRES]    += spres;
         for(m=0; (m<DIM); m++) {
           pres[m][m]    += spres;
