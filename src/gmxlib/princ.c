@@ -261,10 +261,13 @@ static void dump_shit(FILE *out,matrix trans,rvec prcomp,real totmass)
 void orient_princ(t_atoms *atoms,int isize,atom_id *index,
 		  int natoms, rvec x[], rvec *v, rvec d)
 {
-  int     m;
+  int     i,m;
   rvec    xcm,prcomp;
   matrix  trans;
-  
+
+  calc_xcm(x,isize,index,atoms->atom,xcm,FALSE);
+  for(i=0; i<natoms; i++)
+    rvec_dec(x[i],xcm);
   principal_comp(isize,index,atoms->atom,x,trans,prcomp);
   if (d) 
     copy_rvec(prcomp, d);
@@ -277,6 +280,7 @@ void orient_princ(t_atoms *atoms,int isize,atom_id *index,
   rotate_atoms(natoms,NULL,x,trans);
   if (v) rotate_atoms(natoms,NULL,v,trans);
   
-  add_xcm(x,natoms,NULL,xcm);
+  for(i=0; i<natoms; i++)
+    rvec_inc(x[i],xcm);
 }
 
