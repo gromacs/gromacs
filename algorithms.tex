@@ -616,41 +616,50 @@ than one time step. The algorithm is stable up to $\tau_T \approx \Dt$.
 \subsubsection*{\normindex{Pressure coupling}}
 In the same spirit as the temperature coupling, the system can also be
 coupled to a 'pressure bath'. 
-This is accomplished~\cite{Berendsen84} by scaling
-coordinates and box size every step with a parameter $\mu$, which has
-the effect of a first-order kinetic relaxation of the pressure towards
-a given reference pressure $P_0$:
+This is accomplished~\cite{Berendsen84} by scaling the
+coordinates and box vectors every step with a matrix {\boldmath $\mu$},
+which has the effect of a first-order kinetic relaxation of the pressure
+towards a given reference pressure ${\bf P}_0$:
 \beq
-\frac{\de P}{\de t} = \frac{P_0-P}{\tau_p}
+\frac{\de {\bf P}}{\de t} = \frac{{\bf P}_0-{\bf P}}{\tau_p}
 \eeq
-The scaling factor is given by
+The scaling matrix {\boldmath $\mu$} is given by
 \beq
-\mu = \left[ 1 + \frac{\Delta t}{\tau_p} \beta \{P(t) - P_0 \}
-\right]^{1/3}
+\mu_{ij}
+= \delta_{ij} - \frac{\Delta t}{3\, \tau_p} \beta_{ij} \{P_{0ij} - P_{ij}(t) \}
 \label{eqn:mu}
 \eeq
-Here $\beta$ is the isothermal compressibility of the system. In general
-this is not known. It suffices to take a rough estimate because the
-value of $\beta$ only influences the non-critical time constant of the
-pressure relaxation without affecting the average pressure itself. For
-water at 1 atm and 300 K 
+Here {\boldmath $\beta$} is the isothermal compressibility of the system.
+In most cases this will be a diagonal matrix, with equal elements on the
+diagonal, the value of which is generally not known.
+It suffices to take a rough estimate because the value of {\boldmath $\beta$}
+only influences the non-critical time constant of the
+pressure relaxation without affecting the average pressure itself.
+For water at 1 atm and 300 K 
 $\beta = 4.6 \times 10^{-10}$ Pa$^{-1} = 4.6 \times 10^{-5}$ Bar$^{-1}$,
 which is $7.6 \times 10^{-4}$ MD units (see \chref{defunits}).
 Most other liquids have similar values.
+When scaling completely anisotropically, the system has to be rotated in
+order to  obey the box restriction (\ref{box_rot}).
+This rotation is approximated in first order in the scaling, which is usually
+less than $10^{-4}$. The actual scaling matrix {\boldmath $\mu'$} is:
+\beq
+\mbox{\boldmath $\mu'$} = 
+\left(\begin{array}{ccc}
+\mu_{xx} & \mu_{xy} + \mu_{yx} & \mu_{xz} + \mu_{zx} \\
+0        & \mu_{yy}            & \mu_{yz} + \mu_{zy} \\
+0        & 0                   & \mu_{zz}
+\end{array}\right)                             
+\eeq
+The velocities are neither scaled nor rotated.
 
-In the present version of {\gromacs} the pressure coupling can be done
-anisotropically: the $x,y,z$ dimensions are scaled separately, based
-on the diagonal elements of the pressure tensor. This allows {\eg}  to couple
-one dimension to an external pressure, while keeping a fixed surface
-area in the other two dimensions (useful in membrane simulations). The
-system  axes remain orthogonal (the scaling method allows in principle
-also  dynamic changes in box angles, but this is not implemented yet).
-
-Since the pressure fluctuates heavily, it is recommended to take
-$\tau_p$ not too small; a value between 0.4 and 1 ps will often be
-satisfactory. When using lattice sum methods it is easy to get pressure
-oscillations, but this can be overcome by either slower scaling or by
-averaging the calculated pressure over several steps.
+In {\gromacs} the scaling can also be done isotropically, which means that
+instead of $\ve{P}$ a diagonal matrix with elements of size
+trace$(\ve{P})/3$ is used.
+For systems with interfaces semi-isotropic scaling can be useful.
+In this case the $x/y$-directions are scaled isotropically and the $z$
+direction is scaled independently. The compressibility in the $x/y$ or
+$z$-direction can be set to zero, to scale only in the other direction(s).
 
 \subsubsection*{\normindex{Surface tension coupling}}
 When a periodic system consists of more than one phase, separated by
@@ -662,18 +671,18 @@ the difference between the normal and the lateral pressure:
 \begin{eqnarray}
 \gamma(t) & = & 
 \frac{1}{n} \int_0^{L_z}
-\left\{ P_z(z,t) - \frac{P_x(z,t) + P_y(z,t)}{2} \right\} \mbox{d}z \\
+\left\{ P_{zz}(z,t) - \frac{P_{xx}(z,t) + P_{yy}(z,t)}{2} \right\} \mbox{d}z \\
 & = &
-\frac{L_z}{n} \left\{ P_z(t) - \frac{P_x(t) + P_y(t)}{2} \right\}
+\frac{L_z}{n} \left\{ P_{zz}(t) - \frac{P_{xx}(t) + P_{yy}(t)}{2} \right\}
 \end{eqnarray}
 where $L_z$ is the height of the box and $n$ is the number of surfaces.
 The pressure in the z-direction is corrected by scaling the height of
 the box with $\mu_z$:
 \beq
-\Delta P_z = \frac{\Delta t}{\tau_p} \{ P_{z0} - P_z(t) \}
+\Delta P_{zz} = \frac{\Delta t}{\tau_p} \{ P_{0zz} - P_{zz}(t) \}
 \eeq
 \beq
-\mu_z = 1 + \beta_z \Delta P_z
+\mu_{zz} = 1 + \beta_{zz} \Delta P_{zz}
 \eeq
 This is similar to normal pressure coupling, except that the power
 of one third is missing. 
@@ -681,16 +690,16 @@ The pressure correction in the z-direction is then used to get the
 correct convergence for the surface tension to the reference value $\gamma_0$.
 The correction factor for the box-length in the x/y-direction is:
 \beq
-\mu_{xy} = \left[ 1 + \frac{\Delta t}{\tau_p} \beta_{xy}
-        \left( \frac{n \gamma_0}{\mu_z L_z} 
-        - \left\{ P_z(t)+\Delta P_z - \frac{P_x(t) + P_y(t)}{2} \right\} 
-        \right) \right]^\frac{1}{2}
+\mu_{x/y} = 1 + \frac{\Delta t}{2\,\tau_p} \beta_{x/y}
+        \left( \frac{n \gamma_0}{\mu_{zz} L_z}
+        - \left\{ P_{zz}(t)+\Delta P_{zz} - \frac{P_{xx}(t) + P_{yy}(t)}{2} \right\} 
+        \right)
 \eeq
-The value of $\beta_z$ is more critical than with normal pressure
+The value of $\beta_{zz}$ is more critical than with normal pressure
 coupling. Normally an incorrect compressibility will just scale $\tau_p$,
 but with surface tension coupling it affects the convergence of the surface
 tension. 
-When $\beta_z$ is set to zero (constant box height), $\Delta P_z$ is also set
+When $\beta_{zz}$ is set to zero (constant box height), $\Delta P_z$ is also set
 to zero, which is necessary for obtaining the correct surface tension. 
 
 \subsubsection*{The complete update algorithm}
