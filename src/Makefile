@@ -9,12 +9,13 @@ TELLDIRS=	$(LDIRS)	$(IDIRS)
 DDDIRS	=	$(DIRS)	$(IDIRS) Makefile makef
 SDIRS	=	$(foreach DIR,$(TELLDIRS),src/$(DIR))
 DIST	=	$(foreach DIR,$(DDDIRS),src/$(DIR))
-AUX	=	top tutor man/man1 man/sample bin/script
+AUX	=	top tutor man/man1 man/sample
 BENCH	=	tests/bench
 TESTS	=	tests/mdrun
 GETIT	=	$(SDIRS)  src/makef
-TDIR	=	$(GMXHOME)/tar
+TDIR	=	$(GMXHOME)
 COPYRGT	=	$(GMXHOME)/src/local/copyrgt
+PROGRAMS=	(cd bin/s10; ls; cd ../..)
 
 all:	
 	$(foreach DIR,$(DIRS),cd $(DIR); $(MAKE); cd ..;)
@@ -39,6 +40,9 @@ tdist:
 	cd $(GMXHOME); tar cvFFf $(TDIR)/gmxtests.tar $(TESTS)
 
 dist:	cdist	bdist	tdist
+
+man:
+	./mknroff
 
 tell:	info
 info:
