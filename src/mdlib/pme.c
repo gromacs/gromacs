@@ -72,7 +72,16 @@ static char *SRCID_pme_c = "$Id$";
 
 #define DFT_TOL 1e-7
 
-typedef real *splinevec[DIM];
+void my_range_check(char *s,int i,int nr,char *file,int line)
+{
+  int c;
+  
+  if ((i<0) || (i>=nr)) {
+    fprintf(stdlog,"%s = %d should be in 0 .. %d [FILE %s, LINE %d]\n",
+	    s,i,nr-1,file,line);
+  }
+}
+#define range_check(i,nr) my_range_check(#i,i,nr,__FILE__,__LINE__)
 
 void calc_recipbox(matrix box,matrix recipbox)
 {
@@ -92,9 +101,9 @@ void calc_recipbox(matrix box,matrix recipbox)
 }
 
 
-static void calc_idx(int natoms,matrix recipbox,
-		     rvec x[],rvec fractx[],ivec idx[],int nx,int ny,int nz,
-		     int nnx[],int nny[],int nnz[])
+void calc_idx(int natoms,matrix recipbox,
+	      rvec x[],rvec fractx[],ivec idx[],int nx,int ny,int nz,
+	      int nnx[],int nny[],int nnz[])
 {
   int  i;
   int  *idxptr,tix,tiy,tiz;
@@ -142,6 +151,11 @@ static void calc_idx(int natoms,matrix recipbox,
     idxptr[XX] = nnx[tix];
     idxptr[YY] = nny[tiy];
     idxptr[ZZ] = nnz[tiz];
+#ifdef DEBUG
+    range_check(idxptr[XX],nx);
+    range_check(idxptr[YY],ny);
+    range_check(idxptr[ZZ],nz);
+#endif
   }  
 #if (defined __GNUC__ && defined _lnx_ && defined FAST_X86TRUNC)  
   asm("fldcw %0" : : "m" (*&x86_cwsave));
@@ -220,6 +234,11 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
       xidx    = idxptr[XX];
       yidx    = idxptr[YY];
       zidx    = idxptr[ZZ];
+#ifdef DEBUG
+      range_check(xidx,nx);
+      range_check(yidx,ny);
+      range_check(zidx,nz);
+#endif
       i0      = ii0+xidx; /* Pointer arithmetic */
       norder  = n*order;
       norder1 = norder+order;
@@ -237,6 +256,12 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
 	  
 	  for(ithz=norder; (ithz<norder1); ithz++,k0++) {
 	    k = *k0;
+#ifdef DEBUG
+	    range_check(i,nx);
+	    range_check(j,ny);
+	    range_check(k,nz);
+	    range_check(ind0+k,grid->nptr);
+#endif
 	    ptr[ind0+k] += valxy*thz[ithz];
 	  }
 	}
@@ -420,6 +445,11 @@ void gather_f_bsplines(t_fftgrid *grid,matrix recipbox,
       xidx = idxptr[XX];
       yidx = idxptr[YY];
       zidx = idxptr[ZZ];
+#ifdef DEBUG
+      range_check(xidx,nx);
+      range_check(yidx,ny);
+      range_check(zidx,nz);
+#endif
       
       i0      = ii0+xidx;   /* Pointer arithemtic */
       norder  = n*order;
@@ -474,10 +504,15 @@ void gather_f_bsplines(t_fftgrid *grid,matrix recipbox,
             dy    = dthy[ithy];
             k0    = kk0+zidx; /* Pointer arithemtic */
             ind0  = INDEX(i,j,0);
-            
             fxy1 = fz1 = 0;
             for(ithz=norder; (ithz<norder1); ithz++,k0++) {
               k     = *k0;
+#ifdef DEBUG
+	      range_check(i,nx);
+	      range_check(j,ny);
+	      range_check(k,nz);
+	      range_check(ind0+k,grid->nptr);
+#endif            
               gval  = ptr[ind0+k];
               fxy1 += thz[ithz]*gval;
               fz1  += dthz[ithz]*gval;
@@ -626,107 +661,139 @@ void make_bspline_moduli(splinevec bsp_mod,int nx,int ny,int nz,int order)
   sfree(bsp_data);
 }
 
-static t_fftgrid *grid=NULL;
-
-static int nx,ny,nz;
-static rvec *fractx; /* Fractional coordinate relative to the
-		      * lower cell boundary 
-		      */
+/* Global variables! Yucky... */
+static    t_fftgrid *grid=NULL;
+/*static    int  nx,ny,nz;*/
+static    int  *nnx,*nny,*nnz;
+static    ivec *idx=NULL;
+static    rvec *fractx; /* Fractional coordinate relative to the
+			 * lower cell boundary 
+			 */
+static    matrix    recipbox;
 static    splinevec theta;
 static    splinevec dtheta;
 static    splinevec bsp_mod;
 
 
-void init_pme(FILE *log,t_commrec *cr,t_nsborder *nsb,t_inputrec *ir)
+void init_pme(FILE *log,t_commrec *cr,
+	      int nkx,int nky,int nkz,int pme_order,int homenr,
+	      bool bOptFFT)
 {
   int i;
-    
+  bool bPar;
+
   fprintf(log,"Will do PME sum in reciprocal space.\n");
-  nx = ir->nkx;
-  ny = ir->nky;
-  nz = ir->nkz;
-    
-  if (PAR(cr) && cr->nnodes>1) {
+
+  bPar = cr && (cr->nnodes>1);
+  if (bPar) {
     fprintf(log,"Parallelized PME sum used.\n");
-    if(nx%(cr->nnodes)!=0)
+    if ((nkx % cr->nnodes) != 0)
       fprintf(log,"Warning: For load balance, "
 	      "fourier_nx should be divisible by NNODES\n");
   } 
  
   /* allocate space for things */
-  snew(bsp_mod[XX],nx);
-  snew(bsp_mod[YY],ny);
-  snew(bsp_mod[ZZ],nz);
+  snew(bsp_mod[XX],nkx);
+  snew(bsp_mod[YY],nky);
+  snew(bsp_mod[ZZ],nkz);
   for(i=0;i<DIM;i++) {
-    snew(theta[i],ir->pme_order*HOMENR(nsb)); 
-    snew(dtheta[i],ir->pme_order*HOMENR(nsb));
+    snew(theta[i],pme_order*homenr); 
+    snew(dtheta[i],pme_order*homenr);
   }
-  snew(fractx,HOMENR(nsb)); 
+  snew(fractx,homenr); 
 
-  grid=mk_fftgrid(log,PAR(cr),nx,ny,nz,ir->bOptFFT);
-  make_bspline_moduli(bsp_mod,nx,ny,nz,ir->pme_order);   
+  snew(idx,homenr);
+  snew(nnx,3*nkx);
+  snew(nny,3*nky);
+  snew(nnz,3*nkz);
+  for(i=0; (i<3*nkx); i++)
+    nnx[i] = i % nkx;
+  for(i=0; (i<3*nky); i++)
+    nny[i] = i % nky;
+  for(i=0; (i<3*nkz); i++)
+    nnz[i] = i % nkz;
+
+  grid=mk_fftgrid(log,bPar,nkx,nky,nkz,bOptFFT);
+
+  make_bspline_moduli(bsp_mod,nkx,nky,nkz,pme_order);   
 }
+
+t_fftgrid *spread_on_grid(FILE *logfile,   int homenr,
+			  int pme_order,   rvec x[],
+			  real charge[],   matrix box,
+			  bool bGatherOnly)
+{ 
+  int nx,ny,nz,la2,la12;
+  t_fft_r *ptr;
+  
+  /* Unpack structure */
+  unpack_fftgrid(grid,&nx,&ny,&nz,&la2,&la12,TRUE,&ptr);
+  
+  /* Inverse box */
+  calc_recipbox(box,recipbox); 
+
+  if (!bGatherOnly) {
+    /* Compute fftgrid index for all atoms, with help of some extra variables */
+    calc_idx(homenr,recipbox,x,fractx,idx,nx,ny,nz,nnx,nny,nnz);
+    
+    /* make local bsplines  */
+    make_bsplines(theta,dtheta,pme_order,nx,ny,nz,fractx,idx,charge,homenr);
+    
+    /* put local atoms on grid. */
+    spread_q_bsplines(grid,idx,charge,theta,homenr,pme_order,nnx,nny,nnz);
+  }
+  return grid;
+}
+
 
 real do_pme(FILE *logfile,   bool bVerbose,
 	    t_inputrec *ir,  rvec x[],
 	    rvec f[],        real charge[],
 	    matrix box,	     t_commrec *cr,
 	    t_nsborder *nsb, t_nrnb *nrnb,    
-	    matrix vir,      real ewaldcoeff)
+	    matrix vir,      real ewaldcoeff,
+	    bool bGatherOnly)
 { 
-  static ivec *idx=NULL;
-  static int *nnx,*nny,*nnz;
-  int  i,ntot,npme;
-  matrix recipbox;
-  real energy,vol;
-   
-  energy=0;
-  
-  calc_recipbox(box,recipbox); 
-  
-  vol=det(box);
-  
-  /* Compute fftgrid index for all atoms, with help of some extra variables */
-  if (!idx) {
-    snew(idx,HOMENR(nsb));
-    snew(nnx,3*nx);
-    snew(nny,3*ny);
-    snew(nnz,3*nz);
-    for(i=0; (i<3*nx); i++)
-      nnx[i] = i % nx;
-    for(i=0; (i<3*ny); i++)
-      nny[i] = i % ny;
-    for(i=0; (i<3*nz); i++)
-      nnz[i] = i % nz;
-  }    
-  calc_idx(HOMENR(nsb),recipbox,x+START(nsb),fractx,
-	   idx,nx,ny,nz,nnx,nny,nnz);
-  /* make local bsplines  */
-  make_bsplines(theta,dtheta,ir->pme_order,nx,ny,nz,fractx,idx,
-		charge+START(nsb),HOMENR(nsb));
-  /* put local atoms on grid. */
-  spread_q_bsplines(grid,idx,charge+START(nsb),
-		    theta,HOMENR(nsb),ir->pme_order,nnx,nny,nnz);
-  inc_nrnb(nrnb,eNR_SPREADQBSP,
-	   ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
-  
-  /* sum contributions to local grid from other processors */
-  if (PAR(cr))
-    sum_qgrid(cr,nsb,grid,TRUE);
-  
-  /* do 3d-fft */ 
-  gmxfft3D(grid,FFTW_FORWARD,cr);
+  static  real energy = 0;
+  int     i,ntot,npme;
+  int     nx,ny,nz,la12,la2;
+  t_fft_r *ptr;
+  real    vol;
 
-  /* solve in k-space for our local cells */
-  energy=solve_pme(grid,ewaldcoeff,vol,bsp_mod,recipbox,vir,cr);
-  inc_nrnb(nrnb,eNR_SOLVEPME,nx*ny*nz*0.5);
- 
-  /* do 3d-invfft */
-  gmxfft3D(grid,FFTW_BACKWARD,cr);
+  /* Unpack structure */
+  unpack_fftgrid(grid,&nx,&ny,&nz,&la2,&la12,TRUE,&ptr);
   
-  /* distribute local grid to all processors */
-  if (PAR(cr))
-    sum_qgrid(cr,nsb,grid,FALSE);
+  /* Spread the charges on a grid */
+  (void) spread_on_grid(logfile,HOMENR(nsb),ir->pme_order,
+			x+START(nsb),charge+START(nsb),box,bGatherOnly);
+   
+  if (!bGatherOnly) {
+    inc_nrnb(nrnb,eNR_SPREADQBSP,
+	     ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
+    
+    /* sum contributions to local grid from other nodes */
+    if (PAR(cr))
+      sum_qgrid(cr,nsb,grid,TRUE);
+    
+    /* do 3d-fft */ 
+    gmxfft3D(grid,FFTW_FORWARD,cr);
+    
+    /* solve in k-space for our local cells */
+    vol = det(box);
+    energy=solve_pme(grid,ewaldcoeff,vol,bsp_mod,box,vir,cr);
+    inc_nrnb(nrnb,eNR_SOLVEPME,nx*ny*nz*0.5);
+    
+    /* do 3d-invfft */
+    gmxfft3D(grid,FFTW_BACKWARD,cr);
+    
+    /* distribute local grid to all nodes */
+    if (PAR(cr))
+      sum_qgrid(cr,nsb,grid,FALSE);
+      
+    ntot  = grid->nxyz;  
+    npme  = ntot*log((real)ntot)/(cr->nnodes*log(2.0));
+    inc_nrnb(nrnb,eNR_FFT,2*npme);
+  }
   
   /* interpolate forces for our local atoms */
   gather_f_bsplines(grid,recipbox,idx,f+START(nsb),charge+START(nsb),
@@ -735,10 +802,6 @@ real do_pme(FILE *logfile,   bool bVerbose,
 
   inc_nrnb(nrnb,eNR_GATHERFBSP,
 	   ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
-
-  ntot  = grid->nxyz;  
-  npme  = ntot*log((real)ntot)/(cr->nnodes*log(2.0));
-  inc_nrnb(nrnb,eNR_FFT,2*npme);
 
   return energy;  
 }
