@@ -192,7 +192,7 @@ int main(int argc,char *argv[])
     "plot should be one half of a circle"
   };
   t_filenm fnm[] = {
-    { efXVG, "-f", "graph",  ffREAD  },
+    { efXVG, "-f", "Mtot",  ffREAD  },
     { efXVG, "-d", "deriv",  ffWRITE },
     { efXVG, "-o", "epsw",   ffWRITE },
     { efXVG, "-c", "cole",   ffWRITE }

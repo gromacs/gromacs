@@ -93,7 +93,7 @@ int main (int argc,char *argv[])
     { efTRX, "-f", NULL, ffREAD },
     { efTPX, NULL, NULL, ffREAD },
     { efNDX, NULL, NULL, ffREAD },
-    { efXVG, NULL, NULL, ffWRITE }
+    { efXVG, NULL, "runrms", ffWRITE }
   };
 #define NFILE asize(fnm)
   

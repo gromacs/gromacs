@@ -567,13 +567,13 @@ int main(int argc,char *argv[])
   char       **enm=NULL,**leg=NULL,**pairleg;
   char       **nms;
   t_filenm   fnm[] = {
-    { efENX, "-f", NULL, ffOPTRD },
-    { efTPX, "-s", NULL, ffOPTRD },
-    { efXVG, "-o", NULL, ffWRITE },
-    { efXVG, "-viol", "violaver",  ffOPTWR },
-    { efXVG, "-pairs","pairs",     ffOPTWR },
-    { efXVG, "-corr", "enecorr",   ffOPTWR },
-    { efXVG, "-vis",  "visco.xvg", ffOPTWR }
+    { efENX, "-f",    NULL,      ffOPTRD },
+    { efTPX, "-s",    NULL,      ffOPTRD },
+    { efXVG, "-o",    "energy",  ffWRITE },
+    { efXVG, "-viol", "violaver",ffOPTWR },
+    { efXVG, "-pairs","pairs",   ffOPTWR },
+    { efXVG, "-corr", "enecorr", ffOPTWR },
+    { efXVG, "-vis",  "visco",   ffOPTWR }
   };
 #define NFILE asize(fnm)
   int     npargs;
