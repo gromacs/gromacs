@@ -33,6 +33,10 @@
  * And Hey:
  * Good ROcking Metal Altar for Chronical Sinners
  */
+
+#ifndef _axp_asm_h
+#define _axp_asm_h
+
 static char *SRCID_axp_asm_h = "$Id$";
 
 #ifdef HAVE_CONFIG_H
@@ -52,4 +56,6 @@ void ssqrtiv_(float *indata, float *outdata, int *n);
 
 /* Single precision square root */
 void ssqrtv_(float *indata, float *outdata, int *n);
+
+#endif
 
