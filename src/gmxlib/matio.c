@@ -200,7 +200,6 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
   int i,m,col_len,nch,n_axis_x,n_axis_y;
   unsigned int r,g,b;
   double u;
-  char *fg;
   bool bGetOnWithIt;
   t_xpmelmt c;
   
