@@ -61,9 +61,9 @@ state of the art. Ideally, the (relativistic) time-dependent
 describes the properties of molecular systems 
 with high accuracy, but anything more complex than the equilibrium 
 state of a few atoms cannot be handled at this {\em ab initio} level. 
-Thus approximations are mandatory; the higher the complexity of a 
+Thus approximations are necessary; the higher the complexity of a 
 system and the longer the time span of the processes of interest is, 
-the more severe approximations are required. At a certain point 
+the more severe the required approximations are. At a certain point 
 (reached very much earlier than one would wish) the {\em ab initio} 
 approach must be augmented or replaced by {\em empirical} 
 parameterization of the model used. Where simulations based on physical 
@@ -121,7 +121,7 @@ excessively large and the MD simulation may fail. In those cases a
 robust {\em energy minimization} is required. Another reason to perform 
 an energy minimization is the removal of all kinetic energy from the 
 system: if several 'snapshots' from dynamic simulations must be compared, 
-energy minimization reduces the thermal 'noise' in the structures and  
+energy minimization reduces the thermal noise in the structures and  
 potential energies,  so that they can be compared better.
 
 \section{Molecular Dynamics Simulations}
@@ -168,7 +168,7 @@ oscillator, when the resonance frequency $\nu$ approximates or exceeds
 $k_BT/h$. Now at room temperature the wavenumber $\sigma = 1/\lambda =
 \nu/c$ at which $h
 \nu = k_BT$ is approximately 200 cm$^{-1}$. Thus all frequencies
-higher than, say, 100 cm$^{-1}$ are suspect of misbehavior in
+higher than, say, 100 cm$^{-1}$ may misbehave in
 classical simulations. This means that practically all bond and
 bond-angle vibrations are suspect, and even hydrogen-bonded motions as
 translational or librational H-bond vibrations are beyond the
@@ -198,7 +198,7 @@ liquids. Compare $kT/h = 200$ cm$^{-1}$ at 300~K.}
 \label{tab:vibrations}
 \end{table}
 
-Well, apart from real quantum-dynamical simulations, we can do either
+Well, apart from real quantum-dynamical simulations, we can do one
 of two things: \\ (a) If we perform MD simulations using harmonic
 oscillators for bonds, we should make corrections to the total
 internal energy $U = E_{kin} + E_{pot}$ and specific heat $C_V$ (and
@@ -223,7 +223,7 @@ choice is that the algorithm can use larger time steps when the
 highest frequencies are removed. In practice the time step can be made
 four times as large when bonds are constrained than when they are
 oscillators~\cite{Gunsteren77}. {\gromacs} has this option for the
-bonds, and for the bond angles.  The flexibility of the latter is
+bonds and bond angles.  The flexibility of the latter is
 rather essential to allow for the realistic motion and coverage of
 configurational space~\cite{Gunsteren77}.
 
@@ -231,7 +231,7 @@ configurational space~\cite{Gunsteren77}.
 In MD we use a {\em conservative} force field that is a
 function of the positions of atoms only.  This means that the
 electronic motions are not considered: the electrons are supposed to
-adjust their dynamics infinitely fast when the atomic positions change
+adjust their dynamics instantly when the atomic positions change
 (the {\em \normindex{Born-Oppenheimer}} approximation), and remain in
 their ground state. This is really all right, almost always. But of
 course, electron transfer processes and electronically excited states
@@ -270,17 +270,17 @@ interaction between (partial) charges. Thus the simulations will
 exaggerate the long-range Coulomb terms. Luckily, the next item
 compensates this effect a bit.
 
-\item[{\bf Long-range interactions are cut-off}]\mbox{}\\
-In this version {\gromacs} always uses a cut-off radius for the
-Lennard-Jones interactions and sometimes also for Coulomb. 
-Due to the minimum-image convention (only one image of
-each particle in the periodic boundary conditions is considered for a
-pair interaction), the cut-off range can not exceed half the box
-size. That is still pretty big for large systems, and trouble is only
-expected for systems containing charged particles. But then real bad
-things may happen, like accumulation of charges at the cut-off
-boundary or very wrong energies! For such systems you should consider
-using one of the implemented long-range electrostatic algorithms.
+\item[{\bf Long-range interactions are cutoff}]\mbox{}\\
+In this version {\gromacs} always uses a cutoff radius for the
+Lennard-Jones interactions and sometimes for the Coulomb interactions
+as well.  Due to the minimum-image convention (only one image of each
+particle in the periodic boundary conditions is considered for a pair
+interaction), the cutoff range can not exceed half the box size. That
+is still pretty big for large systems, and trouble is only expected
+for systems containing charged particles. But then truly bad things can
+happen, like accumulation of charges at the cutoff boundary or very
+wrong energies! For such systems you should consider using one of the
+implemented long-range electrostatic algorithms.
 
 \item[{\bf Boundary conditions are unnatural}]\mbox{}\\
 Since system size is small (even 10,000 particles is small), a cluster
@@ -288,8 +288,8 @@ of particles will have a lot of unwanted boundary with its environment
 (vacuum). This we must avoid if we wish to simulate a bulk system. So
 we use periodic boundary conditions, to avoid real phase
 boundaries. But liquids are not crystals, so something unnatural
-remains. This item is mentioned in the last place because it is the
-least evil of all. For large systems the errors are small, but for
+remains. This item is mentioned last because it is the
+least of the evils. For large systems the errors are small, but for
 small systems with a lot of internal spatial correlation, the periodic
 boundaries may enhance internal correlation. In that case, beware and
 test the influence of system size. This is especially important when
@@ -324,29 +324,30 @@ structural transitions. Unfortunately, the dimensionality of the
 configurational space and the number of local minima is so high that
 it is impossible to sample the space at a sufficient number of points
 to obtain a complete survey. In particular, no minimization method
-exists that guarantees the determination of the global
-minimum. However, given a starting configuration, it is possible to
-find the {\em nearest local minimum}. Nearest in this context does not
-always imply nearest in a geometrical sense ({\ie}, the least sum
-of square coordinate differences), but means the minimum that can be
-reached by systematically moving down the steepest local
-gradient. Finding this nearest local minimum is all that {\gromacs}
-can do for you, sorry! If you want to find other minima and hope to
-discover the global minimum in the process, the best advice is to
-experiment with temperature-coupled MD: run your system at a high
+exists that guarantees the determination of the global minimum in any
+practical amount of time [Impractical methods exist, some much faster
+than others~\cite{Geman84}].  However, given a starting configuration,
+it is possible to find the {\em nearest local minimum}. Nearest in
+this context does not always imply nearest in a geometrical sense
+({\ie}, the least sum of square coordinate differences), but means the
+minimum that can be reached by systematically moving down the steepest
+local gradient. Finding this nearest local minimum is all that
+{\gromacs} can do for you, sorry! If you want to find other minima and
+hope to discover the global minimum in the process, the best advice is
+to experiment with temperature-coupled MD: run your system at a high
 temperature for a while and then quench it slowly down to the required
 temperature; do this repeatedly!  If something as a melting or glass
 transition temperature exists, it is wise to stay for some time
 slightly below that temperature and cool down slowly according to some
 clever scheme, a process called {\em simulated annealing}. Since no
-physical truth is required, you can use your phantasy to speed up this
+physical truth is required, you can use your imagination to speed up this
 process. One trick that often works is to make hydrogen atoms heavier
 (mass 10 or so): although that will slow down the otherwise very rapid
 motions of hydrogen atoms, it will hardly influence the slower motions
 in the system while enabling you to increase the time step by a factor
 of 3 or 4. You can also modify the potential energy function during
-the search procedure, {\eg} by removing barriers (remove dihedral angle
-functions or replace repulsive potentials by {\em soft core}
+the search procedure, {\eg} by removing barriers (remove dihedral
+angle functions or replace repulsive potentials by {\em soft core}
 potentials~\cite{Nilges88}), but always take care to restore the
 correct functions slowly. The best search method that allows rather
 drastic structural changes is to allow excursions into

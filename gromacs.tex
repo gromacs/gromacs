@@ -37,65 +37,15 @@
 %after a couple of hours of trial I gave up... /EL
 \input{macros}
 
-\newif\ifpdf
-\ifx\pdfoutput\undefined
-  \pdffalse % not using pdflatex  
-\else
-  \pdfoutput=1 % using pdflatex
-  \pdftrue
-\fi
-
-\ifpdf
-  \usepackage[pdftex]{graphicx}
-  \usepackage[pdftex,plainpages=false,pdfpagelabels,colorlinks=true,urlcolor=blue,citecolor=blue,pdfstartview=FitV]{hyperref}
-\else
-  \usepackage{graphicx}
-  \usepackage[plainpages=false,colorlinks=true,urlcolor=blue,citecolor=blue]{hyperref}
-\fi
-% Slightly darker colors print better on b/w printers
-\usepackage{color}
-\definecolor{blue}{rgb}{0,0,0.5}
-\definecolor{red}{rgb}{0.5,0,0}
-
-\makeindex
-% The total a4 paper width is 210 mm, and the margins are defined
-% relative to the standard margin of 1 inch.
-\setlength{\textwidth}{15cm}
-\setlength{\oddsidemargin}{9.6mm}  %35mm-1inch
-\setlength{\evensidemargin}{-0.4mm} %25mm-1inch
-\setlength{\topmargin}{-4.4mm} % 21mm top margin
-\setlength{\textheight}{22cm}
-
-\renewcommand{\textfraction}{0.0}
-\newcommand{\qtw}{3.75cm}  % 1/4 of the textwidth
-\newcommand{\ttw}{4.33cm}  % 1/3 of the textwidth
-\newcommand{\htw}{7.5cm}  % 1/2 of the textwidth
-\newcommand{\ntw}{13cm} % 0.9 of the textwidth
-\newcommand{\gmxver}{3.1$\beta$}
-\newcommand{\figref}[1]{Fig.~\ref{fig:#1}}
-\newcommand{\figsref}[2]{Figs.~\ref{fig:#1} and ~\ref{fig:#2}}
-\newcommand{\tabref}[1]{Table~\ref{tab:#1}}
-\newcommand{\eqnref}[1]{eqn.~\ref{eqn:#1}}
-\newcommand{\eqnsref}[2]{eqns.~\ref{eqn:#1} and \ref{eqn:#2}}
-\newcommand{\secref}[1]{sec.~\ref{sec:#1}}
-\newcommand{\ssecref}[1]{\ref{subsec:#1}}
-\newcommand{\chref}[1]{chapter~\ref{ch:#1}}
-\newcommand{\appref}[1]{Appendix~\ref{app:#1}}
-\newcommand{\wwwpage}{\href{http://www.gromacs.org}{www.gromacs.org}}
-% NOTE: \wwwpage is explicitly included in the 'verbatim' citing instructions!
-\newcommand{\email}{\href{mailto:gromacs@gromacs.org}{gromacs@gromacs.org}}
-\newcommand{\mcc}[2]{\multicolumn{#1}{c|}{#2}}
-\newcommand{\mcl}[2]{\multicolumn{#1}{l}{#2}}
-\setlength{\headwidth}{\textwidth}
-\setlength{\headheight}{1.0cm}
-
-
 \begin{document}
+
 %roman pagenumbers for the preamble stuff
 \pagenumbering{roman}
+
 % Adjust margins on front page to make it
 % symmetrical. It is reset on the next page.
 \addtolength{\oddsidemargin}{-5mm}
+
 %
 %       F R O N T P A G E       
 %
@@ -184,18 +134,18 @@ please refer to it as:
 
 \begin{quote}
 \raggedright
-van der Spoel, D., A.~R. van Buuren, E. Apol, P.~J. Meulenhoff, D.~P.
+D. van der Spoel, A.~R. van Buuren, E. Apol, P.~J. Meulenhoff, D.~P.
 Tieleman, A.~L.~T.~M. Sij\-bers, B. Hess, K.~A. Feenstra, E. Lindahl,
 R. van Drunen and H.~J.~C. Berendsen,
 \hspace{0.3em} {\em Gromacs {U}ser {M}anual version \gmxver},
 \hspace{0.3em} Nij\-enborgh 4, 9747 AG Groningen, The Netherlands.
-Internet: {\wwwpage} (2001)
+Internet: {\wwwpage} (2002)
 \end{quote}
 
 or, if you use BibTeX, you can directly copy the following:
 \begin{verbatim}
-@Manual{gmx30,
-  title =  "Gromacs {U}ser {M}anual version 3.0",
+@Manual{gmx31,
+  title =  "Gromacs {U}ser {M}anual version 3.1",
   author = "David van der Spoel and Aldert R. van Buuren and 
            Emile Apol and Pieter J. Meulen\-hoff and D. Peter 
            Tieleman and Alfons L. T. M. Sij\-bers and Berk Hess 
@@ -209,11 +159,11 @@ or, if you use BibTeX, you can directly copy the following:
 
 We humbly ask that you cite the {\gromacs} 
 papers~\cite{Berendsen95a,Lindahl2001a} when you publish your
-results. Any future developement depends on academic
+results. Any future development depends on academic
 research grants, since the package is distributed as free software!
 
 
-Any comments are welcome, please send them by e-mail to {\email}.
+Comments are welcome, please send them by e-mail to {\email}.
 \medskip
 
 Groningen, \today.

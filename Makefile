@@ -22,7 +22,7 @@ OPTIONS =       options
 TEXFS = algorithms	analyse		averages			\
 	defunits	files		forcefield	ieee		\
 	implement	install		intro		lr-corr		\
-	lr_elstat	macros		mdp_opt		par-md		\
+	lr_elstat	macros		mdp_opt		\
 	proglist	progman		programs	special		\
 	sqrt		tables		topolfig	topology	\
 	virial
