@@ -169,8 +169,7 @@ void print_perf(FILE *out,double cputime,double realtime,real runtime,
   double nbfs,mni,frac,tfrac,mflop,tflop;
   
   if (cputime == 0.0) {
-    fprintf(out,"cputime = 0! Infinite Giga flopses! \n");
-    return;
+    fprintf(out,"cputime = 0! Infinite Giga flopses!\n");
   }
   
   nbfs=0.0;
@@ -188,7 +187,7 @@ void print_perf(FILE *out,double cputime,double realtime,real runtime,
     fprintf(out,"No MEGA Flopsen this time\n");
     return;
   }
-  fprintf(out,"\tM E G A - F L O P S   A C C O U N T I N G\n\n");
+  fprintf(out,"\n\tM E G A - F L O P S   A C C O U N T I N G\n\n");
   if (nprocs > 1) {
     cputime = realtime;
     fprintf(out,"\tBased on real time for parallel computer.\n");
@@ -208,19 +207,21 @@ void print_perf(FILE *out,double cputime,double realtime,real runtime,
   }
   fprintf(out,"%15s  %12s  %12.5f  %6.1f\n\n",
 	  "Total","",mflop,tfrac);
-  fprintf(out,"%12s %10s %10s %8s\n","","CPU (s)","Real (s)","(%)");
-  fprintf(out,"%12s %10.3f %10.3f %8.1f\n","Time:",
-	  cputime, realtime, 100.0*cputime/realtime);
-  if (cputime > 60) {
-    fprintf(out,"%12s %10s","","");
-    pr_difftime(out,cputime);
-  }
-  if(runtime>0) { /* runtime=0 means calc energies only */
-  fprintf(out,"%12s %10s %10s %10s %10s\n",
-	  "","(Mnbf/s)","(MFlops)","(ps/CPU hour)","(CPU hour/ns)");
-  fprintf(out,"%12s %10.3f %10.3f %10.3f %10.3f\n","Performance:",
-	  nbfs/cputime,mflop/cputime,
-	  runtime*3600/cputime,1000*cputime/(3600*runtime));
+  if (cputime > 0) {
+    fprintf(out,"%12s %10s %10s %8s\n","","CPU (s)","Real (s)","(%)");
+    fprintf(out,"%12s %10.3f %10.3f %8.1f\n","Time:",
+	    cputime, realtime, 100.0*cputime/realtime);
+    if (cputime > 60) {
+      fprintf(out,"%12s %10s","","");
+      pr_difftime(out,cputime);
+    }
+    if (runtime>0) { /* runtime=0 means calc energies only */
+      fprintf(out,"%12s %10s %10s %10s %10s\n",
+	      "","(Mnbf/s)","(MFlops)","(ps/CPU hour)","(CPU hour/ns)");
+      fprintf(out,"%12s %10.3f %10.3f %10.3f %10.3f\n","Performance:",
+	      nbfs/cputime,mflop/cputime,
+	      runtime*3600/cputime,1000*cputime/(3600*runtime));
+    }
   }
 }
 
