@@ -78,7 +78,7 @@ static bool in_data(t_corr *this,int nx00)
   return this->nframes-this->n_offs[nx00]; 
 }
 
-t_corr *init_corr(int nrgrp,int type,int axis,real dim_factor,
+t_corr *init_corr(int nrgrp,int type,real dim_factor,
 		  bool bMass,bool bMol,t_topology *top)
 {
   t_corr  *this;
@@ -107,14 +107,8 @@ t_corr *init_corr(int nrgrp,int type,int axis,real dim_factor,
       this->mass[i]=atoms->atom[i].m;
     }
   }
-  if (bMol) {
-    atoms=&top->atoms;
-    snew(this->mass,atoms->nr);
-    for(i=0; (i<atoms->nr); i++) {
-      this->mass[i]=atoms->atom[i].m;
-    }
+  if (bMol)
     this->mols = &(top->blocks[ebMOLS]);
-  }
   
   return this;
 }
@@ -146,57 +140,25 @@ static void init_restart(t_corr *this,int nrestart,real dt)
   snew(this->n_offs,this->nrestart);
 }
 
-void lsq_y_ax_b2(int n, real x[], real y[], real *a, real *b,
-		 real *sa,real *sb)
-{
-  int    i;
-  double yx,xx,sx,sy,sa2;
-
-  yx=xx=sx=sy=0.0;
-  for (i=0; (i < n); i++) {
-    yx+=y[i]*x[i];
-    xx+=x[i]*x[i];
-    sx+=x[i];
-    sy+=y[i];
-  }
-  *a=(n*yx-sy*sx)/(n*xx-sx*sx);
-  *b=(sy-(*a)*sx)/n;
-  sa2=0.0;
-  for(i=0; (i<n); i++) {
-    real tmp=(y[i]-(*a)*x[i]-(*b));
-    sa2+=tmp*tmp;
-  }
-  *sa=sqrt((sa2/(n*(n-2)))*(1.0/(xx/n-(sx/n)*(sx/n))));
-  *sb=(*sa)*sqrt(xx/n);
-}
-
 static void corr_print(t_corr *this,char *fn,char *title,char *yaxis,
-		       bool bDiff,real beginfit,
+		       real beginfit,real endfit,
 		       real *DD,real *SigmaD,char *grpname[])
 {
   FILE *out;
-  int  i,j,imin;
-  real t,aa,bb,da,db;
+  int  i,j;
   
   out=xvgropen(fn,title,"Time (ps)",yaxis);
   if (DD) {
-    fprintf(out,"# Diffusion constants fitted from time %.3f to end of trajectory\n",beginfit);
-    for(j=0; (j<this->ngrp); j++) 
+    fprintf(out,"# Diffusion constants fitted from time %g to %g (ps)\n",
+	    beginfit,endfit);
+    for(i=0; i<this->ngrp; i++) 
       fprintf(out,"# D[%10s] = %.3f (+/- %.3f) (1e-5 cm^2/s)\n",
-	      grpname[j],DD[j],SigmaD[j]);
+	      grpname[i],DD[i],SigmaD[i]);
   }
-    
-  lsq_y_ax_b2(this->nframes,this->time,this->data[0],&aa,&bb,&da,&db);
-  if (bDiff) 
-    imin = 1;
-  else
-    imin = 0;
-  for(i=imin; (i<this->nframes); i++) {
-    t = this->time[i]-this->time[0];
-    fprintf(out,"%10g",t);
-    for(j=0; (j<this->ngrp); j++)
-      fprintf(out,"  %10g",
-	      bDiff ? FACTOR*this->data[j][i]/(6*t) : this->data[j][i]);
+  for(i=0; i<this->nframes; i++) {
+    fprintf(out,"%10g",this->time[i]);
+    for(j=0; j<this->ngrp; j++)
+      fprintf(out,"  %10g",this->data[j][i]);
     fprintf(out,"\n");
   }
   fclose(out);
@@ -211,7 +173,7 @@ static void calc_corr(t_corr *this,int nr,int nx,atom_id index[],rvec xc[],
   
   /* Check for new starting point */
   if (this->nlast < this->nrestart) {
-    if ((thistime(this) >= (this->t0+this->nlast*this->delta_t)) && (nr==0)) {
+    if ((thistime(this) >= (this->nlast*this->delta_t)) && (nr==0)) {
       printf("New starting point\n");
       memcpy(this->x0[this->nlast],xc,this->natoms*sizeof(xc[0]));
       this->n_offs[this->nlast]=this->nframes;
@@ -278,8 +240,7 @@ static real calc1_norm(t_corr *this,int nx,atom_id index[],int nx0,rvec xc[])
  */
 void corr_loop(t_corr *this,char *fn,int gnx[],atom_id *index[],
 	       t_calc_func *calc1,t_prep_data_func *prep1,
-	       int nrestart,real dt,
-	       t_first_x *fx,t_next_x *nx)
+	       int nrestart,real dt)
 {
   rvec         *x[2];
   real         t;
@@ -287,7 +248,7 @@ void corr_loop(t_corr *this,char *fn,int gnx[],atom_id *index[],
 #define        prev (1-cur)
   matrix       box;
   
-  this->natoms=fx(&status,fn,&this->t0,&(x[prev]),box);
+  this->natoms=read_first_x(&status,fn,&this->t0,&(x[prev]),box);
 #ifdef DEBUG
   fprintf(stderr,"Read %d atoms for first frame\n",this->natoms);
 #endif
@@ -318,7 +279,7 @@ void corr_loop(t_corr *this,char *fn,int gnx[],atom_id *index[],
       srenew(this->time,maxframes);
     }
 
-    this->time[this->nframes]=t;
+    this->time[this->nframes] = t - this->t0;
     
     /* loop over all groups in index file */
     for(i=0; (i<this->ngrp); i++) {
@@ -330,7 +291,7 @@ void corr_loop(t_corr *this,char *fn,int gnx[],atom_id *index[],
     cur=prev;
     
     this->nframes++;
-  } while (nx(status,&t,this->natoms,x[cur],box));
+  } while (read_next_x(status,&t,this->natoms,x[cur],box));
   fprintf(stderr,"\n");
   
   close_trj(status);
@@ -458,19 +419,16 @@ static real calc1_mol(t_corr *this,int nx,atom_id index[],int nx0,rvec xc[])
   return gtot/nx;
 }
 
-void printdist(t_corr *this,char *fn,char *difn)
+void printmol(t_corr *this,char *fn)
 {
 #define NDIST 100
   FILE  *out;
-  int   *ndist;
-  real  *diff,mind=0,maxd=0,dav,a,b;
   t_lsq lsq1;
   int   i,j;
+  real  a,b;
   
-  out=xvgropen(difn,"Diffusion Coefficients / Molecule","Molecule","D");
+  out=xvgropen(fn,"Diffusion Coefficients / Molecule","Molecule","D");
   
-  dav=0;
-  snew(diff,this->nnx);
   for(i=0; (i<this->nnx); i++) {
     init_lsq(&lsq1);
     for(j=0; (j<this->nrestart); j++) {
@@ -481,68 +439,35 @@ void printdist(t_corr *this,char *fn,char *difn)
       lsq1.np+=this->lsq[j][i].np;
     }
     get_lsq_ab(&lsq1,&a,&b);
-    diff[i]=a*FACTOR/this->dim_factor;
-    fprintf(out,"%10d  %10g\n",i,diff[i]);
-    if (dav == 0) {
-      mind=maxd=dav=diff[i];
-    }
-    else {
-      mind=min(mind,diff[i]);
-      maxd=max(maxd,diff[i]);
-      dav+=diff[i];
-    }
+    fprintf(out,"%10d  %10g\n",i,a*FACTOR/this->dim_factor);
   }
-  dav/=this->nnx;
   fclose(out);
-  do_view(difn,"-graphtype bar");
-  
-  ndist=(int *)calloc(NDIST+1,sizeof(*ndist));
-  for(i=0; i<NDIST+1; i++)
-    ndist[i]=0;
-  for(i=0; (i<this->nnx); i++) {
-    int index=(int)(0.5+NDIST*(diff[i]-mind)/(maxd-mind));
-    if ((index >= 0) && (index <= NDIST))
-      ndist[index]++;
-  }
-  out=xvgropen(fn,"Distribution of Diffusion Constants","D ()","Number");
-  for(i=0; (i<=NDIST); i++)
-    fprintf(out,"%10g  %10d\n",
-	    mind+(i*(maxd-mind))/NDIST,ndist[i]);
-  fclose(out);
-  do_view(fn,NULL);
-  
+  do_view(fn,"-graphtype bar");
 }
 
 void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
 	     t_topology *top,bool bMol,bool bMW,
 	     int type,real dim_factor,int axis,
-	     int nrestart,real dt,real beginfit)
+	     int nrestart,real dt,real beginfit,real endfit)
 {
   t_corr       *msd;
-  t_first_x    *fx;
-  t_next_x     *nx;
   int          *gnx;
   atom_id      **index;
   char         **grpname;
-  int          i,i0,j,N;
-  real         DeltaT,D,Dav,D2av,Dav2;
-  real         *DD,*SigmaD;
+  int          i,i0,i1,j,N;
+  real         *DD,*SigmaD,a,a2,b;
   
-  fx=read_first_x;
-  nx=read_next_x;
-
   gnx     = (int *)calloc(nrgrp,sizeof(int));
   index   = (atom_id **)calloc(nrgrp,sizeof(atom_id *));
   grpname = (char **)calloc(nrgrp,sizeof(char *));
     
   get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),nrgrp,gnx,index,grpname);
 
-  msd = init_corr(nrgrp,type,axis,dim_factor,bMW,bMol,top);
+  msd = init_corr(nrgrp,type,dim_factor,bMW,bMol,top);
   
   corr_loop(msd,ftp2fn(efTRX,NFILE,fnm),gnx,index,
-	    bMW ? calc1_mw : (bMol ? calc1_mol : calc1_norm), 
-	    bMol ? prep_data_mol : prep_data_norm,nrestart,dt,
-	    fx,nx);
+	    bMol ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
+	    bMol ? prep_data_mol : prep_data_norm,nrestart,dt);
   
   /* Correct for the number of points */
   for(j=0; (j<msd->ngrp); j++)
@@ -550,53 +475,45 @@ void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
       msd->data[j][i] /= msd->ndata[j][i];
 
   if (bMol) 
-    printdist(msd,opt2fn("-m",NFILE,fnm),opt2fn("-d",NFILE,fnm));
-  else {
-    DD = SigmaD = NULL;
-    for(i0=0; (i0<msd->nframes) && (msd->time[i0] < beginfit); i0++) 
-      ;
-    if (i0 < msd->nframes) {
-      snew(DD,msd->ngrp);
-      snew(SigmaD,msd->ngrp);
-      for(j=0; (j<msd->ngrp); j++) {
-	Dav = D2av = 0;
-	for(i=i0; (i<msd->nframes); i++) { 
-	  DeltaT  = msd->time[i] - msd->time[0];
-	  if (DeltaT > 0) {
-	    D     = msd->data[j][i]/(msd->dim_factor*DeltaT);
-	    Dav  += D;
-	    D2av += D*D;
-	  }
-	}
-	N         = (msd->nframes-i0);
-	Dav      /= N;
-	D2av     /= N;
-	Dav2      = Dav*Dav;
-	DD[j]     = FACTOR*Dav;
-	SigmaD[j] = FACTOR*sqrt(D2av-Dav2);
-	fprintf(stderr,"D[%10s] %.3f (+/- %.3f) 1e-5 cm^2/s\n",
+    printmol(msd,opt2fn("-mol",NFILE,fnm));
+
+  DD     = NULL;
+  SigmaD = NULL;
+  for(i0=0; i0<msd->nframes && msd->time[i0]<beginfit; i0++) 
+    ;
+  if (endfit == -1) {
+      i1 = msd->nframes;
+      endfit = msd->time[i1-1];
+  } else
+    for(i1=i0; i1<msd->nframes && msd->time[i1]<=endfit; i1++)
+		      ;
+  N = i1-i0;
+  if (N <= 2) {
+    fprintf(stdout,"Not enough points for fitting (%d).\n"
+	    "Can not determine the diffusion constant.\n",N);
+  } else {
+    snew(DD,msd->ngrp);
+    snew(SigmaD,msd->ngrp);
+    for(j=0; j<msd->ngrp; j++) {
+      if (N >= 4) {
+	lsq_y_ax_b(N/2,&(msd->time[i0]),&(msd->data[j][i0]),&a,&b);
+	lsq_y_ax_b(N/2,&(msd->time[i0+N/2]),&(msd->data[j][i0+N/2]),&a2,&b);
+	SigmaD[j] = fabs(a-a2);
+      } else
+	SigmaD[j] = 0;
+      lsq_y_ax_b(N,&(msd->time[i0]),&(msd->data[j][i0]),&(DD[j]),&b);
+      DD[j]     *= FACTOR/msd->dim_factor;
+      SigmaD[j] *= FACTOR/msd->dim_factor;
+      fprintf(stdout,"D[%10s] %.3f (+/- %.3f) 1e-5 cm^2/s\n",
 		grpname[j],DD[j],SigmaD[j]);
-      }
     }
-    else {
-      fprintf(stderr,"beginfit %g is larger than trajectory length %g. "
-	      "Can not determine Diffusion constant\n");
-    }
-  
-    /* Print and show diffusion constant */
-    if (opt2bSet("-d",NFILE,fnm)) {
-      corr_print(msd,opt2fn("-d",NFILE,fnm),"Diffusion constant",
-		 "D (10\\S-5\\Ncm\\S2\\Ns\\S-1\\N)",TRUE,
-		 beginfit,DD,SigmaD,grpname);
-      do_view(opt2fn("-d",NFILE,fnm),"-nxy");
-    }
-    /* Print and show mean square displacement */
-    corr_print(msd,opt2fn("-o",NFILE,fnm),
-	       "Mean Square Displacement",
-	       "MSD (nm\\S2\\N)",FALSE,
-	       beginfit,DD,SigmaD,grpname);
-    do_view(opt2fn("-o",NFILE,fnm),"-nxy");
   }
+  /* Print and show mean square displacement */
+  corr_print(msd,opt2fn("-o",NFILE,fnm),
+	     "Mean Square Displacement",
+	     "MSD (nm\\S2\\N)",
+	     beginfit,endfit,DD,SigmaD,grpname);
+  do_view(opt2fn("-o",NFILE,fnm),NULL);
 }
 
 int main(int argc,char *argv[])
@@ -604,9 +521,14 @@ int main(int argc,char *argv[])
   static char *desc[] = {
     "g_msd computes the mean square displacement (MSD) of atoms from",
     "their initial positions. This provides an easy way to compute",
-    "the diffusion constant using the Einstein relation.[PAR]",
-    "If the -d option is given, the diffusion constant will be printed in",
-    "addition to the MSD[PAR]",
+    "the diffusion constant using the Einstein relation.",
+    "The diffusion constant is calculated by least squares fitting a",
+    "straight line through the MSD from [TT]-beginfit[tt] to",
+    "[TT]-endfit[tt]. An error estimate given, which is the difference",
+    "of the diffusion coefficients obtained from fits over the two halfs",
+    "of the fit interval.[PAR]",
+    "Option [TT]-mol[tt] plots the MSD for molecules, this implies",
+    "[TT]-mw[tt].[PAR]",
     "Mean Square Displacement calculations and Correlation functions",
     "can be calculated more accurately, when using multiple starting",
     "points (see also Gromacs Manual). You can select the number of",
@@ -619,6 +541,7 @@ int main(int argc,char *argv[])
   static int  nrestart   = 1;
   static real dt         = 0; 
   static real beginfit   = 0; 
+  static real endfit     = -1; 
   static bool bMW        = TRUE;
   t_pargs pa[] = {
     { "-type",    FALSE, etENUM, {normtype},
@@ -632,18 +555,19 @@ int main(int argc,char *argv[])
     { "-nrestart",FALSE, etINT,  {&nrestart},
       "Number of restarting points in trajectory" },
     { "-trestart",FALSE, etREAL, {&dt},
-      "Time between restarting points in trajectory (only with -nrestart > 1)" },
+      "Time between restarting points in trajectory" },
     { "-beginfit",FALSE, etREAL, {&beginfit},
-      "Time at which to start fitting to obtain the diffusion constant" }
+      "Start time for fitting the MSD" },
+    { "-endfit",FALSE, etREAL, {&endfit},
+      "End time for fitting the MSD (-1 is to the end)" }
   };
 
   t_filenm fnm[] = { 
     { efTRX, NULL, NULL,  ffREAD },
     { efTPS, NULL, NULL,  ffREAD }, 
     { efNDX, NULL, NULL,  ffOPTRD },
-    { efXVG, NULL, "msd",  ffWRITE },
-    { efXVG, "-m", "mol", ffOPTWR },
-    { efXVG, "-d", "diff",ffOPTWR }
+    { efXVG, NULL, "msd", ffWRITE },
+    { efXVG, "-mol", "diff_mol",ffOPTWR }
   };
 #define NFILE asize(fnm)
 
@@ -651,7 +575,7 @@ int main(int argc,char *argv[])
   matrix      box;
   char        title[256];
   rvec        *xdum;
-  bool        bMol,bTop;
+  bool        bTop,bMol;
   int         axis,type;
   real        dim_factor;
 
@@ -663,11 +587,11 @@ int main(int argc,char *argv[])
   if (ngroup < 1)
     fatal_error(0,"Must have at least 1 group (now %d)",ngroup);
 
-  bMol = opt2bSet("-m",NFILE,fnm);
-  if (bMol && bMW) 
-    fatal_error(0,"Can't have mass weighted diffusion per molecule");
-  if (bMol) 
+  if (opt2bSet("-mol",NFILE,fnm)) {
+    bMol = TRUE;
+    bMW  = TRUE;
     fprintf(stderr,"Calculating diffusion coefficients for molecules.\n");
+  }
 
   if (normtype[0][0]!='n') {
     type = normtype[0][0] - 'x'+1; /* See defines above */
@@ -684,7 +608,7 @@ int main(int argc,char *argv[])
   }
   else
     axis = 0;
-  fprintf(stderr,"type = %d, axis = %d, dim_factor = %g\n",
+  fprintf(stdout,"type = %d, axis = %d, dim_factor = %g\n",
 	  type,axis,dim_factor);
   bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xdum,NULL,box,bMW); 
   if (bMol && !bTop)
@@ -693,7 +617,7 @@ int main(int argc,char *argv[])
     
   do_corr(NFILE,fnm,ngroup,
 	  &top,bMol,bMW,type,dim_factor,axis,
-	  nrestart,dt,beginfit);
+	  nrestart,dt,beginfit,endfit);
 
   thanx(stderr);
   
