@@ -301,7 +301,7 @@ int main(int argc, char *argv[])
     "It is important that the box sizes at the bottom of your input file",
     "are correct when the periodicity is to be removed.[PAR]",
     "The program can optionally rotate the solute molecule to align the",
-    "molecule along its principal axes (-bRotate)[PAR]",
+    "molecule along its principal axes ([TT]-rotate[tt])[PAR]",
     "When writing [TT].pdb[tt] files, B-factors can be",
     "added with the [TT]-bf[tt] option. B-factors are read",
     "from a file with with following format: first line states number of",
