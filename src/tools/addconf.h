@@ -36,7 +36,7 @@ extern void add_conf(t_atoms *atoms_1,rvec *x_1,rvec *v_1,real *r_1,
 		     bool bVerbose,int maxmol);
 /* Add two conformations together */
 
-extern void orient_mol(t_atoms *atoms,char *indexnm,rvec x[]);
+extern void orient_mol(t_atoms *atoms,char *indexnm,rvec x[],rvec *v);
 /* Orient a molecule along its principal component axes. 
  * indexnm may be the name of an index file or null.
  */

@@ -203,7 +203,7 @@ void add_conf(t_atoms *atoms_1,rvec *x_1,rvec *v_1,real *r_1,
   sfree(atom_flag);
 }
 
-void orient_mol(t_atoms *atoms,char *indexnm,rvec x[])
+void orient_mol(t_atoms *atoms,char *indexnm,rvec x[], rvec *v)
 {
   int     isize;
   atom_id *index,*simp;
@@ -243,6 +243,8 @@ void orient_mol(t_atoms *atoms,char *indexnm,rvec x[])
     fprintf(stderr,"Totmass = %g\n",totmass);
     principal_comp(isize,index,atoms->atom,x,trans,angle);
     rotate_atoms(atoms->nr,simp,x,trans);
+    if (v) 
+      rotate_atoms(atoms->nr,simp,v,trans);
     pr_rvecs(stderr,0,"Rot Matrix",trans,DIM);
   }
   sfree(simp);
