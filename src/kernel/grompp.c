@@ -531,6 +531,7 @@ static void gen_posres(t_params *pr,char *fn)
   get_stx_coordnum(fn,&natoms);
   snew(x,natoms);
   snew(v,natoms);
+  dumat.nr=natoms;
   snew(dumat.resname,natoms);
   snew(dumat.atom,natoms);
   snew(dumat.atomname,natoms);
