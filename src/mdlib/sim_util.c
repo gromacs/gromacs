@@ -496,13 +496,13 @@ void do_shakefirst(FILE *log,bool bTYZ,real ener[],
 void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
 		   matrix box,tensor pres,tensor virial,real ener[])
 {
-  // modified for switched VdW corrections Michael R. Shirts 2/21/03
+  /* modified for switched VdW corrections Michael R. Shirts 2/21/03 */
   static bool bFirst=TRUE;
   double dnatoms;
   real vol,rc3,rc9,spres=0,svir=0;
   int  m,offset;
   
-  //    variables for switched VdW correction
+  /*    variables for switched VdW correction */
   double r;
   double eners,press,enersum,pressum,y0,f,g,h;
   double rswitch,roff,ea,eb,ec,pa,pb,pc,pd;
@@ -544,8 +544,9 @@ void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
         enersum = 0.0; pressum = 0.0;
         if (i==0) {offstart = 0; multf = fr->avcsix;}
         if (i==1) {offstart = 4; multf = fr->avctwelve;}
-        // the second time through, we are doing the r12 correction,which we only need to do
-        // if the user selects the "All" variants
+        /* the second time through, we are doing the r12 correction,which we only need to do
+         * if the user selects the "All" variants.
+	 */
         if ((i==1) && (!((eDispCorr == edispcAllEner) || (eDispCorr == edispcAllEnerPres)))) {break;}
         for (r=rswitch;r<roff;r+=scale) {
           ea = scale3;
