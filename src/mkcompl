@@ -25,6 +25,6 @@ foreach i ( $PROGRAMS )
   endif
 end
 
-printf "endif\n" >> $out
+echo "endif" >> $out
 
 #last line
