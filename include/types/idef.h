@@ -58,11 +58,13 @@ enum {
   F_CUBICBONDS,
   F_CONNBONDS,
   F_HARMONIC,
+  F_FENEBONDS,
   F_ANGLES, 
   F_G96ANGLES,
   F_CROSS_BOND_BONDS,
   F_CROSS_BOND_ANGLES,
   F_UREY_BRADLEY,
+  F_QUARTIC_ANGLES,
   F_PDIHS,
   F_RBDIHS, 
   F_FOURDIHS,
@@ -120,11 +122,13 @@ typedef union
    */
   struct {real a,b,c;	                                   } bham;
   struct {real rA,krA,rB,krB;           	           } harmonic; 
-  /* No free energy supported for cubic bonds, WPOL or cross terms */ 
+  /* No free energy supported for cubic bonds, FENE, WPOL or cross terms */ 
   struct {real b0,kb,kcub;                                 } cubic;
+  struct {real bm,kb;                                      } fene;
   struct {real r1e,r2e,krr;                                } cross_bb;
   struct {real r1e,r2e,r3e,krt;                            } cross_ba;
   struct {real theta,ktheta,r13,kUB;                       } u_b;
+  struct {real theta,c[5];                                 } qangle; 
   struct {real alpha;                                      } polarize;
   struct {real al_x,al_y,al_z,rOH,rHH,rOD;                 } wpol;
   struct {real c6,c12;				           } lj;

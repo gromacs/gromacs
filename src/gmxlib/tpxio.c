@@ -64,7 +64,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 33;
+static const int tpx_version = 34;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -75,7 +75,7 @@ static const int tpx_version = 33;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 5;
+static const int tpx_generation = 6;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -122,9 +122,11 @@ static const t_ftupd ftupd[] = {
   { 20, F_CUBICBONDS        },
   { 20, F_CONNBONDS         },
   { 20, F_HARMONIC          },
+  { 34, F_FENEBONDS         },
   { 30, F_CROSS_BOND_BONDS  },
   { 30, F_CROSS_BOND_ANGLES },
   { 30, F_UREY_BRADLEY      },
+  { 34, F_QUARTIC_ANGLES    },
   { 26, F_FOURDIHS          },
   { 26, F_PIDIHS            },
   { 32, F_BHAM_LR           },
@@ -571,6 +573,10 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
   case F_ANGRESZ:
     do_harm(iparams,bRead);
     break;
+  case F_FENEBONDS:
+    do_real(iparams->fene.bm);
+    do_real(iparams->fene.kb);
+    break;
   case F_CROSS_BOND_BONDS:
     do_real(iparams->cross_bb.r1e);
     do_real(iparams->cross_bb.r2e);
@@ -587,6 +593,10 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_real(iparams->u_b.ktheta);
     do_real(iparams->u_b.r13);
     do_real(iparams->u_b.kUB);
+    break;
+  case F_QUARTIC_ANGLES:
+    do_real(iparams->qangle.theta);
+    ndo_real(iparams->qangle.c,5,bDum);
     break;
   case F_BHAM:
     do_real(iparams->bham.a);

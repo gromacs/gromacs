@@ -491,6 +491,12 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     fprintf(fp,"theta=%15.8e, ktheta=%15.8e, r13=%15.8e, kUB=%15.8e\n",
 	    iparams->u_b.theta,iparams->u_b.ktheta,iparams->u_b.r13,iparams->u_b.kUB);
     break;
+  case F_QUARTIC_ANGLES:
+    fprintf(fp,"theta=%15.8e",iparams->qangle.theta);
+    for(i=0; i<5; i++)
+      fprintf(fp,", c%c=%15.8e",'0'+i,iparams->qangle.c[i]);
+    fprintf(fp,"\n");
+    break;
   case F_BHAM:
     fprintf(fp,"a=%15.8e, b=%15.8e, c=%15.8e\n",
 	    iparams->bham.a,iparams->bham.b,iparams->bham.c);
@@ -513,6 +519,9 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     break;
   case F_CONNBONDS:
     fprintf(fp,"\n");
+    break;
+  case F_FENEBONDS:
+    fprintf(fp,"bm=%15.8e, kb=%15.8e\n",iparams->fene.bm,iparams->fene.kb);
     break;
   case F_POLARIZATION:
     fprintf(fp,"alpha=%15.8e\n",iparams->polarize.alpha);

@@ -74,6 +74,10 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->harmonic.rB =sqr(old[2]);
     new->harmonic.krB=old[3];
     break;
+  case F_FENEBONDS:
+    new->fene.bm=old[0];
+    new->fene.kb=old[1];
+    break;
   case F_CROSS_BOND_BONDS:
     new->cross_bb.r1e=old[0];
     new->cross_bb.r2e=old[1];
@@ -90,6 +94,11 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->u_b.ktheta=old[1];
     new->u_b.r13=old[2];
     new->u_b.kUB=old[3];
+    break;
+    case F_QUARTIC_ANGLES:
+    new->qangle.theta=old[0];
+    for(i=0; i<5; i++)
+      new->qangle.c[i]=old[i+1];
     break;
   case F_ANGLES:
   case F_BONDS:

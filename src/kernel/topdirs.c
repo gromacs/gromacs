@@ -63,6 +63,8 @@ int ifunc_index(directive d,int type)
       return F_CONNBONDS;
     else if (type == 6)
       return F_HARMONIC;
+     else if (type == 7)
+      return F_FENEBONDS;
     else
       gmx_fatal(FARGS,"Invalid bond type %d",type);
   case d_angles:
@@ -77,6 +79,8 @@ int ifunc_index(directive d,int type)
       return F_CROSS_BOND_ANGLES;
     else if (type == 5)
       return F_UREY_BRADLEY;
+    else if (type == 6)
+      return F_QUARTIC_ANGLES;
     else
       gmx_fatal(FARGS,"Invalid angle type %d",type);
   case d_pairs:

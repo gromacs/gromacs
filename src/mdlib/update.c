@@ -852,14 +852,14 @@ void update(int          natoms,  /* number of atoms in simulation */
         where();
       }
 
-      inc_nrnb(nrnb,eNR_SHAKE_V,homenr);
+      inc_nrnb(nrnb,eNR_CONSTR_V,homenr);
       dump_it_all(stdlog,"After Shake-V",
 		  natoms,state->x,xprime,state->v,vold,force);
       where();
 
       /* Calculate virial due to constraints (for this node) */
       calc_vir(stdlog,homenr,&(state->x[start]),&(delta_f[start]),vir_part);
-      inc_nrnb(nrnb,eNR_SHAKE_VIR,homenr);
+      inc_nrnb(nrnb,eNR_CONSTR_VIR,homenr);
       where();
       if (debug)
 	pr_rvecs(debug,0,"constraint virial",vir_part,DIM);

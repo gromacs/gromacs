@@ -149,8 +149,10 @@ static const t_nrnb_data nbdata[eNRNB] = {
   { "Sum Forces",                "-",             1 },
   { "Bonds",                     "-",            43 },
   { "G96Bonds",                  "-",            40 },
+  { "FENE Bonds",                "-",            58 },
   { "Angles",                    "-",           163 },
   { "G96Angles",                 "-",           150 },
+  { "Quartic Angles",            "-",           160 },
   { "Propers",                   "-",           229 },
   { "Impropers",                 "-",           208 },
   { "RB-Dihedrals",              "-",           247 },
@@ -173,13 +175,10 @@ static const t_nrnb_data nbdata[eNRNB] = {
   { "Lincs",                     "-",            60 },
   { "Lincs-Mat",                 "-",             4 },
   { "Shake",                     "-",            30 },
-  { "Shake-V",                   "-",            15 },
+  { "Constraint-V",              "-",            15 },
   { "Shake-Init",                "-",            10 },
-  { "Shake-Vir",                 "-",            18 },
+  { "Constraint-Vir",            "-",            18 },
   { "Settle",                    "-",           323 },
-  { "PShake-InitLD",             "-",            59 },    
-  { "PShake-InitMD",             "-",            65 },   
-  { "PShake",                    "-",             7 },
   { "Virtual Site 2",            "-",            17 },
   { "Virtual Site 3",            "-",            28 },
   { "Virtual Site 3fd",          "-",            95 },
@@ -242,7 +241,7 @@ void print_perf(FILE *out,double nodetime,double realtime,real runtime,
 {
   int    i;
   double nbfs,mni,frac,tfrac,mflop,tflop;
-  char   *myline = "---------------------------------------------------------------------";
+  char   *myline = "-----------------------------------------------------------------------";
   if (nodetime == 0.0) {
     fprintf(out,"nodetime = 0! Infinite Giga flopses!\n");
   }
@@ -272,7 +271,7 @@ void print_perf(FILE *out,double nodetime,double realtime,real runtime,
 
   fprintf(out,"   RF=Reaction-field  Free=Free Energy  SC=Softcore\n");
   fprintf(out,"   T=Tabulated        S=Solvent         W=Water     WW=Water-Water\n\n");
-  fprintf(out,"%-21s  %8s  %12s  %12s  %8s\n",
+  fprintf(out," %-21s  %8s %14s %14s %8s\n",
 	  "Computing:","Function","M-Number","M-Flops","% Flops");
   fprintf(out,"%s\n",myline);
   mflop=0.0;
@@ -283,11 +282,11 @@ void print_perf(FILE *out,double nodetime,double realtime,real runtime,
     frac   = 100.0*mni*nbdata[i].flop/tflop;
     tfrac += frac;
     if (mni != 0)
-      fprintf(out,"%-21s  %8s  %12.6f  %12.6f  %6.1f\n",
+      fprintf(out," %-21s  %8s %14.6f %14.6f  %6.1f\n",
 	      nbdata[i].name,nbdata[i].loop,mni,mni*nbdata[i].flop,frac);
   }
   fprintf(out,"%s\n",myline);
-  fprintf(out,"%-21s  %8s  %12s  %12.5f  %6.1f\n",
+  fprintf(out," %-21s  %8s %14s %14.6f  %6.1f\n",
 	  "Total","","",mflop,tfrac);
   fprintf(out,"%s\n\n",myline);
   
@@ -328,11 +327,11 @@ static const int    force_index[]={
 };
 #define NFORCE_INDEX asize(force_index)
 
-static const int    shake_index[]={ 
+static const int    constr_index[]={ 
   eNR_SHAKE,     eNR_SHAKE_RIJ, eNR_SETTLE,       eNR_UPDATE,       eNR_PCOUPL,
-  eNR_SHAKE_VIR, eNR_SHAKE_V,   eNR_PSHAKEINITLD, eNR_PSHAKEINITMD, eNR_PSHAKE
+  eNR_CONSTR_VIR,eNR_CONSTR_V
 };
-#define NSHAKE_INDEX asize(shake_index)
+#define NCONSTR_INDEX asize(constr_index)
 
 static double pr_av(FILE *log,int nprocs,double fav,double ftot[],char *title)
 {
@@ -379,8 +378,8 @@ void pr_load(FILE *log,int nprocs,t_nrnb nrnb[])
     for(j=0; (j<NFORCE_INDEX); j++) 
       ftot[i]+=nrnb[i].n[force_index[j]]*cost_nrnb(force_index[j]);
     /* Due to shake */
-    for(j=0; (j<NSHAKE_INDEX); j++) {
-      stot[i]+=nrnb[i].n[shake_index[j]]*cost_nrnb(shake_index[j]);
+    for(j=0; (j<NCONSTR_INDEX); j++) {
+      stot[i]+=nrnb[i].n[constr_index[j]]*cost_nrnb(constr_index[j]);
     }
   }    
   for(j=0; (j<eNRNB); j++)
