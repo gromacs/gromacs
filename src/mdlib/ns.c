@@ -1392,14 +1392,16 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 		    /* Loop over cgs */
 		    for (j=0; (j<nrj); j++) {
 		      jjcg = grida[cgj0+j];
-		      jgid = gid[cgsindex[jjcg]];
-		      /* check energy group exclusions */
-		      if (!i_eg_excl[jgid]) {		      
-			/* check whether this guy is in range! */
-			if (((jjcg >= icg) && (jjcg < icg_naaj)) ||
-			    ((jjcg < min_icg))) {
-			  r2=calc_dx2(XI,YI,ZI,cgcm[jjcg]);
-			  if (r2 < rl2) {
+		      
+		      /* check whether this guy is in range! */
+		      if (((jjcg >= icg) && (jjcg < icg_naaj)) ||
+			  ((jjcg < min_icg))) {
+			r2=calc_dx2(XI,YI,ZI,cgcm[jjcg]);
+			if (r2 < rl2) {
+			  /* jgid = gid[cgsatoms[cgsindex[jjcg]]]; */
+			  jgid = gid[cgsindex[jjcg]];
+			  /* check energy group exclusions */
+			  if (!i_eg_excl[jgid]) {
 			    if (r2 < rs2) {
 			      if (nsr[jgid] >= MAX_CG) {
 				put_in_list(bHaveLJ,ngid,md,icg,jgid,
@@ -1435,9 +1437,9 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 			      nl_lr_one[jgid][nlr_one[jgid]++]=jjcg;
 			    }
 			  }
-			  nns++;
 			}
-		      } 
+			nns++;
+		      }
 		    }
 		  }
 		}
