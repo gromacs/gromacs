@@ -1,4 +1,4 @@
-11
+13
 ILE 	 CD1 	CD
 HOH 	 O   	OW
 HOH      OW1    OW
@@ -10,3 +10,5 @@ protein	 O1	O
 protein	 O2	O
 protein	 OT	O
 protein	 OXT	O
+protein  O'     O
+protein  O''    O
