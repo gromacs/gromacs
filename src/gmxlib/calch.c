@@ -27,7 +27,7 @@
  * S  C  A  M  O  R  G
  */
 static char *SRCID_calch_c = "$Id$";
-
+#include "macros.h"
 #include "calch.h"
 #include "maths.h"
 #include "vec.h"
@@ -69,7 +69,7 @@ void gen_waterhydrogen(rvec x[3])
   l=(l+1) % 6;
 }
 
-void calc_h_pos(int nht,int nh[],int na[],rvec x[])
+void calc_h_pos(int nht,int nh[],int a[],rvec x[])
 {
 #define alfaH   (DEG2RAD*109.5)
 #define alfaCOM (DEG2RAD*117)
@@ -87,11 +87,13 @@ void calc_h_pos(int nht,int nh[],int na[],rvec x[])
   
   if ((nht < 1) || (nht > 9))
     fatal_error(0,"Invalid argument (%d) for nht in routine genh\n",nht);
-  
-#define AI na[0]
-#define AJ na[1]
-#define AK na[2]
-#define AL na[3]
+ 
+  /* from macros.h:  
+   * #define AI a[0]
+   * #define AJ a[1]
+   * #define AK a[2]
+   * #define AL a[3]
+   */
 #define H1 nh[0]
 #define H2 nh[1]
 #define H3 nh[2]
