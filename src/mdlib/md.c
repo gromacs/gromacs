@@ -161,7 +161,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,
-		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot,&terminate);
+		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,&terminate);
   clear_rvec(vcm);
   debug_gmx();
   
@@ -304,8 +304,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 #endif
    
 #ifdef XMDRUN
-    mu_aver=calc_mu_aver(cr,nsb,x,mdatoms->chargeA,mu_tot,top,mdatoms,
-			 gnx,grpindex);
+    if (bTCR)
+      mu_aver=calc_mu_aver(cr,nsb,x,mdatoms->chargeA,mu_tot,top,mdatoms,
+			   gnx,grpindex);
     
     if (bGlas)
       do_glas(log,START(nsb),HOMENR(nsb),x,f,
@@ -441,7 +442,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
        * This includes communication 
        */
       global_stat(log,cr,ener,force_vir,shake_vir,
-		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot,&terminate);
+		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,&terminate);
       /* Correct for double counting energies, should be moved to 
        * global_stat 
        */

@@ -58,7 +58,7 @@ void global_stat(FILE *log,
 		 tensor fvir,tensor svir,
 		 t_grpopts *opts,t_groups *grps,
 		 t_nrnb *mynrnb,t_nrnb nrnb[],
-		 rvec vcm,rvec mu_tot, real *terminate)
+		 rvec vcm,real *terminate)
 {
   static t_bin *rb=NULL; 
   static int   *itc;
@@ -98,8 +98,6 @@ void global_stat(FILE *log,
   where();
   icm = add_binr(log,rb,DIM,vcm);
   where();
-  imu = add_binr(log,rb,DIM,mu_tot);
-  where();
   ica = add_binr(log,rb,1,&(grps->cosacc.mvcos));
   where();
   iterminate = add_binr(log,rb,1,terminate);
@@ -120,18 +118,12 @@ void global_stat(FILE *log,
     extract_binr(rb,inn[j],grps->estat.nn,grps->estat.ee[j]);
   extract_binr(rb,icm,DIM,vcm);
   where();
-  extract_binr(rb,imu,DIM,mu_tot);
-  where();
-  extract_binr(rb,imu,1,mu_tot);
-  where();
   extract_binr(rb,ica,1,&(grps->cosacc.mvcos));
   where();
   extract_binr(rb,iterminate,1,terminate);
   where();
 
-  /* Small hack for temp & mu only */
-  for(j=0; (j<DIM); j++)
-    mu_tot[j] /=cr->nprocs;
+  /* Small hack for temp only */
   ener[F_TEMP]/=cr->nprocs;
 }
 

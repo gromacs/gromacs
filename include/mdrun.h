@@ -138,7 +138,7 @@ extern void global_stat(FILE *log,
 			tensor fvir,tensor svir,
 			t_grpopts *opts,t_groups *grps,
 			t_nrnb *mynrnb,t_nrnb nrnb[],
-			rvec vcm,rvec mu_tot,real *terminate);
+			rvec vcm,real *terminate);
 /* Communicate statistics around the ring */
 
 extern int write_traj(FILE *log,t_commrec *cr,char *traj,t_nsborder *nsb,

@@ -320,7 +320,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     /* Communicat stuff when parallel  */
     if (PAR(cr))  
       global_stat(log,cr,ener,force_vir,shake_vir, 
- 		  &(ir->opts),grps,&mynrnb,nrnb,vcm,mu_tot,&terminate); 
+ 		  &(ir->opts),grps,&mynrnb,nrnb,vcm,&terminate); 
     
     /* This is the new energy  */
     Fmax[TRY]=f_max(cr->left,cr->right,nsb->nprocs,start,end,force[TRY]);
