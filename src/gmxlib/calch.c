@@ -89,14 +89,6 @@ static void gen_waterhydrogen(int nh,rvec xa[], rvec xh[])
     copy_rvec(xAI,xH3);
   if (nh > 3)
     copy_rvec(xAI,xH4);
-  /* Do some more magic for weird tip5p */
-  if (nh == 4) {
-    copy_rvec(xAI,kkk);
-    copy_rvec(xH1,xAI);
-    for(m=1; (m<4); m++)
-      copy_rvec(xh[m],xh[m-1]);
-    copy_rvec(kkk,xH4);
-  }
       
   l=(l+1) % 6;
 }
