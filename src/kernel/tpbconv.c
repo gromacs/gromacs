@@ -357,7 +357,9 @@ int main (int argc, char *argv[])
 	   extend_t,ir->nsteps);
   }
   else if (until_t) {
-    ir->nsteps = (int)((until_t-ir->init_t)/ir->delta_t + 0.5) - run_step;
+    printf("nsteps = %d, run_step = %d, current_t = %g, until = %g\n",
+	   ir->nsteps,run_step,run_t,until_t);
+    ir->nsteps = (int)((until_t-run_t)/ir->delta_t + 0.5);
     printf("Extending remaining runtime until %g ps (now %d steps)\n",
 	   until_t,ir->nsteps);
   }
