@@ -255,8 +255,10 @@ int main (int argc,char *argv[])
   
   if (bReadPDB) {
     get_stx_coordnum(opt2fn("-q",NFILE,fnm),&npdbatoms);
-    pdbatoms = new_atoms(npdbatoms);
-    refatoms = new_atoms(npdbatoms);
+    snew(pdbatoms,1);
+    snew(refatoms,1);
+    init_t_atoms(pdbatoms,npdbatoms,TRUE);
+    init_t_atoms(refatoms,npdbatoms,TRUE);
     snew(pdbx,npdbatoms);
     /* Read coordinates twice */
     read_stx_conf(opt2fn("-q",NFILE,fnm),title,pdbatoms,pdbx,NULL,pdbbox);    

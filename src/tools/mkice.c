@@ -32,6 +32,7 @@ static char *SRCID_mkice_c = "$Id$";
 #include <math.h>
 #include "typedefs.h"
 #include "statutil.h"
+#include "copyrite.h"
 #include "fatal.h"
 #include "pdbio.h"
 #include "macros.h"
@@ -132,7 +133,8 @@ int main(int argc,char *argv[])
 
   nmax = 24*nx*ny*nz;
   snew(xx,nmax);
-  pdba = new_atoms(nmax);
+  snew(pdba,1);
+  init_t_atoms(pdba,nmax,TRUE);
   pdba->nr = nmax;
   open_symtab(&symtab);
   for(n=0; (n<nmax); n++) {
