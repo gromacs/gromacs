@@ -476,7 +476,7 @@ int main(int argc,char *argv[])
       tzero=t;
     
     if (natoms == 0)
-      fatal_error(0,"No atoms found in file %s",in_file);
+      fatal_error(0,"Number of atoms found in file %s",in_file);
 
     /* open output for writing */
     if ((bAppend) && (fexist(out_file))) {
@@ -620,7 +620,6 @@ int main(int argc,char *argv[])
 	    fprintf(stderr," ->  frame %6d time %8.3f      \r",outframe,t);
 	  
 	  if (bCompact) {
-	    printf("Making trunc oct\n");
 	    init_pbc(box,FALSE);
 	    for(i=0; i<DIM; i++)
 	      box_center[i] = 0.5*box[i][i];
