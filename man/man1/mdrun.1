@@ -1,4 +1,4 @@
-.TH mdrun 1 "Tue 15 May 2001"
+.TH mdrun 1 "Thu 5 Jul 2001"
 .SH NAME
 mdrun
 .B VERSION 3.0
@@ -23,6 +23,7 @@ mdrun
 .BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-deffnm" " string "
+.BI "-np" " int "
 .BI "-[no]v" ""
 .BI "-[no]compact" ""
 .SH DESCRIPTION
@@ -204,6 +205,9 @@ the mdrun process that is the parent of the others.
 
 .BI "-deffnm"  " string" " " 
  Set the default filename for all file options
+
+.BI "-np"  " int" " 1" 
+ Number of nodes, must be the same as used for grompp
 
 .BI "-[no]v"  "    no"
  Be loud and noisy

@@ -393,7 +393,7 @@ static void handle_signals(int n)
   abort();
 }
 
-#ifdef USE_SGI_FPE
+#ifdef __sgi
 void doexceptions(void)
 {
 #include <sigfpe.h>
@@ -412,4 +412,5 @@ void doexceptions(void)
     signal(hs[i],handle_signals);
 }
 #endif
+
 #endif

@@ -512,7 +512,7 @@ int main(int argc,char *argv[])
   };
 
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
+  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   if (taum <= 0)
     fatal_error(0,"Please give me a sensible taum!\n");

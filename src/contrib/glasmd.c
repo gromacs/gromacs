@@ -380,7 +380,7 @@ int main(int argc,char *argv[])
   
   if (MASTER(cr)) {
     CopyRight(stderr,argv[0]);
-    parse_common_args(&argc,argv,PCA_KEEP_ARGS,TRUE,
+    parse_common_args(&argc,argv,PCA_KEEP_ARGS | PCA_BE_NICE ,
 		      NFILE,fnm,0,NULL,asize(desc),desc,0,NULL);
     print_pargs(stderr,asize(pa),pa);
   }	      

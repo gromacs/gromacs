@@ -1,4 +1,4 @@
-.TH xpm2ps 1 "Tue 15 May 2001"
+.TH xpm2ps 1 "Thu 5 Jul 2001"
 .SH NAME
 xpm2ps
 .B VERSION 3.0
@@ -16,11 +16,14 @@ xpm2ps
 .BI "-[no]w" ""
 .BI "-[no]frame" ""
 .BI "-title" " enum "
+.BI "-[no]yonce" ""
 .BI "-legend" " enum "
 .BI "-diag" " enum "
+.BI "-combine" " enum "
 .BI "-bx" " real "
 .BI "-by" " real "
 .BI "-rainbow" " enum "
+.BI "-gradient" " vector "
 .BI "-skip" " int "
 .BI "-[no]zeroline" ""
 .SH DESCRIPTION
@@ -61,7 +64,12 @@ setting
 .B -diag
 to 
 .B none
-.
+. With 
+
+.B -combine
+an alternative operation can be selected to combine
+the matrices. In this case, a new color map will be generated with
+a red gradient for negative numbers and a blue for positive.
 
 
 If the color coding and legend labels of both matrices are identical,
@@ -132,13 +140,51 @@ option.
  Display frame, ticks, labels, title and legend
 
 .BI "-title"  " enum" " top" 
- Show title at: top, ylabel or none
+ Show title at: 
+.B top
+, 
+.B once
+, 
+.B ylabel
+or 
+.B none
+
+
+.BI "-[no]yonce"  "    no"
+ Show y-label only once
 
 .BI "-legend"  " enum" " both" 
- Show legend: both, first, second or none
+ Show legend: 
+.B both
+, 
+.B first
+, 
+.B second
+or 
+.B none
+
 
 .BI "-diag"  " enum" " first" 
- Diagonal: first, second or none
+ Diagonal: 
+.B first
+, 
+.B second
+or 
+.B none
+
+
+.BI "-combine"  " enum" " halves" 
+ Combine two matrices: 
+.B halves
+, 
+.B add
+, 
+.B sub
+, 
+.B mult
+or 
+.B div
+
 
 .BI "-bx"  " real" "      0" 
  Box x-size (also y-size when -by is not set)
@@ -147,7 +193,16 @@ option.
  Box y-size
 
 .BI "-rainbow"  " enum" " no" 
- Rainbow colors, convert white to: no, blue or red
+ Rainbow colors, convert white to: 
+.B no
+, 
+.B blue
+or 
+.B red
+
+
+.BI "-gradient"  " vector" " 0 0 0" 
+ Re-scale colormap to a smooth gradient from white {1,1,1} to {r,g,b}
 
 .BI "-skip"  " int" " 1" 
  only write out every nr-th row and column

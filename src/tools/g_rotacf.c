@@ -108,7 +108,7 @@ int main(int argc,char *argv[])
   npargs = asize(pa);
   ppa    = add_acf_pargs(&npargs,pa);
   
-  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
+  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
   
   rd_index(ftp2fn(efNDX,NFILE,fnm),1,&isize,&index,&grpname);

@@ -51,7 +51,7 @@ static char *SRCID_futil_h = "$Id$";
 #ifdef CPLUSPLUS
 extern "C" { 
 #endif
-
+  
 extern void no_buffers(void);
 /* Turn off buffering of files (which is default) for debugging purposes */
 
@@ -91,11 +91,13 @@ extern FILE *gunzip(char *fn,char *mode);
 
 extern char *libfn(char *file);
 
-extern FILE *libopen(char *file);
+  extern FILE *libopen(char *file);
 /* Open a library file for reading. This looks in the current directory
  * first, and then in the library directory. If the file is not found,
  * it terminates with a fatal_error
  */
+  
+extern bool get_libdir(char *libdir);
 
 extern char *low_libfn(char *file,bool bFatal);
 

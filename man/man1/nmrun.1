@@ -1,4 +1,4 @@
-.TH nmrun 1 "Tue 15 May 2001"
+.TH nmrun 1 "Thu 5 Jul 2001"
 .SH NAME
 nmrun
 .B VERSION 3.0
@@ -10,6 +10,7 @@ nmrun
 .BI "-[no]h" ""
 .BI "-[no]X" ""
 .BI "-nice" " int "
+.BI "-np" " int "
 .BI "-[no]v" ""
 .BI "-[no]compact" ""
 .SH DESCRIPTION
@@ -39,6 +40,9 @@ The generated matrix can be diagonalized by g_nmeig.
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
+
+.BI "-np"  " int" " 1" 
+ Number of nodes, must be the same as used for grompp
 
 .BI "-[no]v"  "    no"
  Verbose mode

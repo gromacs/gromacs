@@ -180,7 +180,7 @@ int main(int argc,char *argv[])
   bool     bHaveV,bReadV;
 
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_TIME,TRUE,NFILE,fnm,
+  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,NFILE,fnm,
 		    0,NULL,asize(desc),desc,0,NULL);
   ftpout=fn2ftp(ftp2fn(efTRX,NFILE,fnm));
   bHaveV=((ftpout==efTRJ) || (ftpout==efTRR));

@@ -393,7 +393,7 @@ int main(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]);
 
-  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
+  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
 
   /* Calculate axis */

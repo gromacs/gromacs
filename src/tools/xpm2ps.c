@@ -1104,7 +1104,7 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_VIEW,FALSE,
+  parse_common_args(&argc,argv,PCA_CAN_VIEW,
 		    NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
 
@@ -1124,12 +1124,12 @@ int main(int argc,char *argv[])
 
   epsfile=ftp2fn_null(efEPS,NFILE,fnm);
   xpmfile=opt2fn_null("-xpm",NFILE,fnm);
-  if ( epsfile==NULL && xpmfile==NULL )
+  if ( epsfile==NULL && xpmfile==NULL ) {
     if (ecombine!=ecHalves)
       xpmfile=opt2fn("-xpm",NFILE,fnm);
     else
       epsfile=ftp2fn(efEPS,NFILE,fnm);
-  
+  }
   if (ecombine!=ecHalves && epsfile) {
     fprintf(stderr,
 	    "WARNING: can only write result of arithmetic combination "

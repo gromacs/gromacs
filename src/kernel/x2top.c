@@ -384,7 +384,7 @@ int main(int argc, char *argv[])
   
   CopyRight(stdout,argv[0]);
 
-  parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
+  parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,asize(bugs),bugs);
   bRTP = opt2bSet("-r",NFILE,fnm);
   bTOP = opt2bSet("-r",NFILE,fnm);

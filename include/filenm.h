@@ -76,7 +76,7 @@ extern void pr_defs(FILE *fp);
 extern void pr_fns(FILE *fp,int nf,t_filenm tfn[]);
 /* Print nf file names and types */
 
-extern void pr_fopts(FILE *fp,int nf,t_filenm tfn[]);
+extern void pr_fopts(FILE *fp,int nf,t_filenm tfn[], int shell);
 /* prints file options in tcsh 'complete' format */
 
 extern void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],

@@ -115,3 +115,9 @@ enum {
 enum {
   edispcNO, edispcEnerPres, edispcEner, edispcNR
 }; 
+
+/* Shell types, for completion stuff */
+enum {
+  eshellCSH, eshellBASH, eshellZSH, eshellNR
+}; 
+

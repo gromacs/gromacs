@@ -1,4 +1,4 @@
-.TH do_dssp 1 "Tue 15 May 2001"
+.TH do_dssp 1 "Thu 5 Jul 2001"
 .SH NAME
 do_dssp
 .B VERSION 3.0
@@ -20,6 +20,7 @@ do_dssp
 .BI "-b" " time "
 .BI "-e" " time "
 .BI "-dt" " time "
+.BI "-tu" " enum "
 .BI "-[no]w" ""
 .BI "-sss" " string "
 .SH DESCRIPTION
@@ -136,12 +137,30 @@ function of secondary structure type.
 .BI "-dt"  " time" "     -1" 
  Only use frame when t MOD dt = first time (ps)
 
+.BI "-tu"  " enum" " ps" 
+ Time unit: 
+.B ps
+, 
+.B fs
+, 
+.B ns
+, 
+.B us
+, 
+.B ms
+, 
+.B s
+, 
+.B m
+or 
+.B h
+
+
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
 
 .BI "-sss"  " string" " HEBT" 
  Secondary structures for structure count
 
-.SH DIAGNOSTICS
 \- The program is very slow
 

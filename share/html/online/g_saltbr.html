@@ -1,14 +1,17 @@
-<HTML>/n<HEAD>/n<TITLE>g_saltbr</TITLE>
+<HTML>
+<HEAD>
+<TITLE>g_saltbr</TITLE>
 <LINK rel=stylesheet href="style.css" type="text/css">
 <BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
 <table WIDTH="800" NOBORDER >
 <TR>
 <td WIDTH="120" HEIGHT="133">
-<a href="http://www.gromacs.org/"><img SRC="../gif/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td><td ALIGN=LEFT VALIGN=TOP WIDTH=480><br><br><h2>Online Reference:<br>g_saltbr</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td><td ALIGN=LEFT VALIGN=TOP WIDTH=480><br><br><h2>GROMACS Online Reference:<br>g_saltbr</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
 <TD ALIGN=RIGHT VALIGN=BOTTOM><B>VERSION 3.0<br>
-Mon 11 Jun 2001</B></td></tr></TABLE>
+Thu 5 Jul 2001</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
+<p>
 g_saltbr plots the difference between all combination of charged groups
 as a function of time. The groups are combined in different ways.A minimum distance can be given, (eg. the cut-off), then groups
 that are never closer than that distance will not be plotted.<br>
@@ -28,9 +31,9 @@ and plus-plus.<a href="xvg.html">xvg</a>, or files for every individual ion-pair
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]X</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use dialog box GUI to edit command line options </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (fs) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (fs) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Only use frame when t MOD dt = first time (fs) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-t</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>  1000</tt> </TD><TD> trunc distance </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]sep</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use separate files for each interaction (may be MANY) </TD></TD>
 </TABLE>

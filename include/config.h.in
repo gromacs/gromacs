@@ -84,9 +84,6 @@
 /* If defined, only start MPI runs when this variable is set */
 #undef CHECK_MPI_ENV
 
-/* Turn off the automatic nicing of GROMACS */
-#undef NO_NICE
-
 /* Optimize for a vector architecture */
 #undef USE_VECTOR
 

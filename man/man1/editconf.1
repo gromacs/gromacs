@@ -1,4 +1,4 @@
-.TH editconf 1 "Tue 15 May 2001"
+.TH editconf 1 "Thu 5 Jul 2001"
 .SH NAME
 editconf
 .B VERSION 3.0
@@ -197,6 +197,18 @@ Finally with option
 .B -label
 editconf can add a chain identifier
 to a pdb file, which can be useful for analysis with e.g. rasmol.
+
+
+To convert a truncated octrahedron file produced by a package which uses
+a cubic box with the corners cut off (such as Gromos) use:
+
+
+.B editconf -f infile -rotate 0 -45 -35.2644 -bt o -box veclen -o outfile
+
+
+where 
+.B veclen
+is the size of the cubic box times sqrt(3)/2.
 .SH FILES
 .BI "-f" " conf.gro" 
 .B Input
@@ -231,7 +243,15 @@ to a pdb file, which can be useful for analysis with e.g. rasmol.
  Choose output from default index groups
 
 .BI "-bt"  " enum" " tric" 
- Box type for -box and -d: tric, cubic, dodecahedron or octahedron
+ Box type for -box and -d: 
+.B tric
+, 
+.B cubic
+, 
+.B dodecahedron
+or 
+.B octahedron
+
 
 .BI "-box"  " vector" " 0 0 0" 
  Box vector lengths (a,b,c)
@@ -281,6 +301,5 @@ to a pdb file, which can be useful for analysis with e.g. rasmol.
 .BI "-label"  " string" " A" 
  Add chain label for all residues
 
-.SH DIAGNOSTICS
 \- For complex molecules, the periodicity removal routine may break down, in that case you can use trjconv
 

@@ -91,7 +91,7 @@ int main(int argc,char *argv[])
   
   /* CopyRight(stdout,argv[0]);*/
   parse_common_args(&argc,argv,PCA_CAN_VIEW,
-		    FALSE,NFILE,fnm,asize(pa),pa,asize(desc),
+		    NFILE,fnm,asize(pa),pa,asize(desc),
 		    desc,0,NULL);
 
   if (opt2parg_bSet("-sig",asize(pa),pa) ||

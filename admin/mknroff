@@ -11,6 +11,7 @@ echo "-------------------------------------------"
 
 if ( $#argv < 1 ) then
   echo "Error: provide the binary directory as first argument."
+  echo "Man pages will be written in the current dir."
   exit
 endif
 
@@ -24,7 +25,7 @@ set PROGRAMS = [a-z]*
 cd $dir
 
 foreach program ( $PROGRAMS )
-if ( -x $GMXBINDIR/$program ) then
+if ( ( -x $GMXBINDIR/$program ) && ( $program != "my_dssp" ) && ( $program != "GMXRC" ) && ( $program != "completion.csh" ) && ( $program != "completion.zsh" ) && ( $program != "average" ) && ( $program != "completion.bash" ) && ( $program != "luck" ) ) then
 echo -n " $program"
 $GMXBINDIR/$program -man nroff >& /dev/null
 if ( -f $program.nroff ) mv $program.nroff $program.1

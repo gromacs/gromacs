@@ -896,7 +896,7 @@ int main(int argc,char *argv[])
   
   CopyRight(stderr,argv[0]);
   
-  parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,0,NULL,asize(desc),
+  parse_common_args(&argc,argv,0,NFILE,fnm,0,NULL,asize(desc),
 		    desc,0,NULL);
   
   get_stx_coordnum(ftp2fn(efSTX,NFILE,fnm),&(atoms.nr));

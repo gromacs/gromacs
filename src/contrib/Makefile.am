@@ -20,6 +20,8 @@ EXTRA_PROGRAMS 		= sigeps mk6_n copyrgt mkyaw prfn options hrefify mkice \
 
 my_dssp_SOURCES 	= my_dssp.c dsspcore.c
 
+total_SOURCES		= total.f
+
 CLEANFILES   = 	*~ \\\#*
 
 

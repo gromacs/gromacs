@@ -3,6 +3,7 @@
 if ( $#argv < 2 ) then
   echo "Error: provide the binary directory as first argument,"
   echo "and the location of programs.txt as the second."
+  echo "Proglist.tex will be written in the current directory."
   exit
 endif
 
@@ -12,8 +13,7 @@ set PROGFILE	= $2
 set dir = $cwd
 
 set VER		= 3.0
-set TEXDIR	= $cwd/doc
-set TEXIDX	= $TEXDIR/proglist.tex
+set TEXIDX	= proglist.tex
 
 set GENERAL 	= "getting_started:Getting_Started flow:Flow_Chart files:File_Formats mdp_opt:mdp_options"
 
@@ -24,8 +24,6 @@ cd $dir
 echo ""
 echo "generating latex page $TEXIDX"
 echo "--------------------------------"
-
-if ( ! -d $TEXDIR ) mkdir $TEXDIR
 
 if ( -f $TEXIDX ) \rm $TEXIDX
 touch $TEXIDX

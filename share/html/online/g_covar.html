@@ -1,14 +1,17 @@
-<HTML>/n<HEAD>/n<TITLE>g_covar</TITLE>
+<HTML>
+<HEAD>
+<TITLE>g_covar</TITLE>
 <LINK rel=stylesheet href="style.css" type="text/css">
 <BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
 <table WIDTH="800" NOBORDER >
 <TR>
 <td WIDTH="120" HEIGHT="133">
-<a href="http://www.gromacs.org/"><img SRC="../gif/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td><td ALIGN=LEFT VALIGN=TOP WIDTH=480><br><br><h2>Online Reference:<br>g_covar</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td><td ALIGN=LEFT VALIGN=TOP WIDTH=480><br><br><h2>GROMACS Online Reference:<br>g_covar</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
 <TD ALIGN=RIGHT VALIGN=BOTTOM><B>VERSION 3.0<br>
-Mon 11 Jun 2001</B></td></tr></TABLE>
+Thu 5 Jul 2001</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
+<p>
 <tt>g_covar</tt> calculates and diagonalizes the (mass-weighted)
 covariance matrix.
 All structures are fitted to the structure in the structure file.
@@ -20,8 +23,15 @@ When the same atoms are used for the fit and the covariance analysis,
 the reference structure for the fit is written first with t=-1.
 The average (or reference when <tt>-ref</tt> is used) structure is
 written with t=0, the eigenvectors
-are written as frames with the eigenvector number as timestamp.<p>
+are written as frames with the eigenvector number as timestamp.
+<p>
 The eigenvectors can be analyzed with <tt><a href="g_anaeig.html">g_anaeig</a></tt>.
+<p>
+Option <tt>-<a href="xpm.html">xpm</a></tt> writes the whole covariance matrix to an <a href="xpm.html">xpm</a> file.
+<p>
+Option <tt>-xpma</tt> writes the atomic covariance matrix to an <a href="xpm.html">xpm</a> file,
+i.e. for each atom pair the sum of the xx, yy and zz covariances is
+written.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
@@ -33,6 +43,8 @@ The eigenvectors can be analyzed with <tt><a href="g_anaeig.html">g_anaeig</a></
 <TR><TD ALIGN=RIGHT> <b><tt>-v</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">eigenvec.trr</a></tt> </TD><TD> Output </TD><TD> Full precision trajectory: <a href="trr.html">trr</a> <a href="trj.html">trj</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-av</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html"> average.pdb</a></tt> </TD><TD> Output </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-l</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="log.html">   covar.log</a></tt> </TD><TD> Output </TD><TD> Log file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-xpm</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xpm.html">   covar.xpm</a></tt> </TD><TD> Output, Opt. </TD><TD> X PixMap compatible matrix file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-xpma</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xpm.html">  covara.xpm</a></tt> </TD><TD> Output, Opt. </TD><TD> X PixMap compatible matrix file </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
@@ -41,9 +53,9 @@ The eigenvectors can be analyzed with <tt><a href="g_anaeig.html">g_anaeig</a></
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]X</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use dialog box GUI to edit command line options </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (fs) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (fs) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Only use frame when t MOD dt = first time (fs) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]fit</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Fit to a reference structure </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]ref</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use the deviation from the conformation in the structure file instead of from the average </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]mwa</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Mass-weighted covariance analysis </TD></TD>

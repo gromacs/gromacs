@@ -1,14 +1,17 @@
-<HTML>/n<HEAD>/n<TITLE>editconf</TITLE>
+<HTML>
+<HEAD>
+<TITLE>editconf</TITLE>
 <LINK rel=stylesheet href="style.css" type="text/css">
 <BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
 <table WIDTH="800" NOBORDER >
 <TR>
 <td WIDTH="120" HEIGHT="133">
-<a href="http://www.gromacs.org/"><img SRC="../gif/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td><td ALIGN=LEFT VALIGN=TOP WIDTH=480><br><br><h2>Online Reference:<br>editconf</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td><td ALIGN=LEFT VALIGN=TOP WIDTH=480><br><br><h2>GROMACS Online Reference:<br>editconf</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
 <TD ALIGN=RIGHT VALIGN=BOTTOM><B>VERSION 3.0<br>
-Mon 11 Jun 2001</B></td></tr></TABLE>
+Thu 5 Jul 2001</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
+<p>
 editconf converts generic structure format to <tt>.<a href="gro.html">gro</a></tt>, <tt>.<a href="g96.html">g96</a></tt>
 or <tt>.<a href="pdb.html">pdb</a></tt>.
 <p>
@@ -101,7 +104,7 @@ where <tt>veclen</tt> is the size of the cubic box times sqrt(3)/2.
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]ndef</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Choose output from default index groups </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-bt</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>tric</tt> </TD><TD> Box type for -box and -d: tric, cubic, dodecahedron or octahedron </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-bt</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>tric</tt> </TD><TD> Box type for -box and -d: <tt>tric</tt>, <tt>cubic</tt>, <tt>dodecahedron</tt> or <tt>octahedron</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-box</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Box vector lengths (a,b,c) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-angles</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>90 90 90</tt> </TD><TD> Angles between the box vectors (bc,ac,ab) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-d</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Distance between the solute and the box </TD></TD>
@@ -120,7 +123,6 @@ where <tt>veclen</tt> is the size of the cubic box times sqrt(3)/2.
 <TR><TD ALIGN=RIGHT> <b><tt>-label</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt>A</tt> </TD><TD> Add chain label for all residues </TD></TD>
 </TABLE>
 <P>
-<H3>Diagnostics</H3>
 <UL>
 <LI>For complex molecules, the periodicity removal routine may break down, in that case you can use <a href="trjconv.html">trjconv</a>
 </UL>

@@ -1,14 +1,17 @@
-<HTML>/n<HEAD>/n<TITLE>g_msd</TITLE>
+<HTML>
+<HEAD>
+<TITLE>g_msd</TITLE>
 <LINK rel=stylesheet href="style.css" type="text/css">
 <BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
 <table WIDTH="800" NOBORDER >
 <TR>
 <td WIDTH="120" HEIGHT="133">
-<a href="http://www.gromacs.org/"><img SRC="../gif/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td><td ALIGN=LEFT VALIGN=TOP WIDTH=480><br><br><h2>Online Reference:<br>g_msd</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td><td ALIGN=LEFT VALIGN=TOP WIDTH=480><br><br><h2>GROMACS Online Reference:<br>g_msd</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
 <TD ALIGN=RIGHT VALIGN=BOTTOM><B>VERSION 3.0<br>
-Mon 11 Jun 2001</B></td></tr></TABLE>
+Thu 5 Jul 2001</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
+<p>
 g_msd computes the mean square displacement (MSD) of atoms from
 their initial positions. This provides an easy way to compute
 the diffusion constant using the Einstein relation.
@@ -45,10 +48,10 @@ the most useful number.<p>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: ps, fs, ns, us, ms, s, m or h </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: <tt>ps</tt>, <tt>fs</tt>, <tt>ns</tt>, <tt>us</tt>, <tt>ms</tt>, <tt>s</tt>, <tt>m</tt> or <tt>h</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-type</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>no</tt> </TD><TD> Compute diffusion coefficient in one direction: no, x, y or z </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-lateral</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>no</tt> </TD><TD> Calculate the lateral diffusion in a plane perpendicular to: no, x, y or z </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-type</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>no</tt> </TD><TD> Compute diffusion coefficient in one direction: <tt>no</tt>, <tt>x</tt>, <tt>y</tt> or <tt>z</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-lateral</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>no</tt> </TD><TD> Calculate the lateral diffusion in a plane perpendicular to: <tt>no</tt>, <tt>x</tt>, <tt>y</tt> or <tt>z</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-ngroup</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Number of groups to calculate MSD for </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]mw</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Mass weighted MSD </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-trestart</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Time between restarting points in trajectory (ps) </TD></TD>

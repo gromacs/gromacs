@@ -125,7 +125,7 @@ int main (int argc,char *argv[])
   real    rms;
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,0,TRUE,
+  parse_common_args(&argc,argv,PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   
   /* reading reference structure from first structure file */

@@ -291,26 +291,71 @@ void pr_fns(FILE *fp,int nf,t_filenm tfn[])
   fflush(fp);
 }
 
-void pr_fopts(FILE *fp,int nf,t_filenm tfn[])
+void pr_fopts(FILE *fp,int nf,t_filenm tfn[], int shell)
 {
   int i,j;
   
-  for(i=0; (i<nf); i++) {
-    fprintf(fp," \"n/%s/f:*.",tfn[i].opt);
-    if (deffile[tfn[i].ftp].ntps) {
+  switch (shell) {
+  case eshellCSH:
+    for(i=0; (i<nf); i++) {
+      fprintf(fp," \"n/%s/f:*.",tfn[i].opt);
+      if (deffile[tfn[i].ftp].ntps) {
+	fprintf(fp,"{");
+	for(j=0; j<deffile[tfn[i].ftp].ntps; j++) {
+	  if (j>0)
+	    fprintf(fp,",");
+	  fprintf(fp,"%s",deffile[deffile[tfn[i].ftp].tps[j]].ext+1);
+	}
+	fprintf(fp,"}");
+      } else
+	fprintf(fp,"%s",deffile[tfn[i].ftp].ext+1);
       fprintf(fp,"{");
-      for(j=0; j<deffile[tfn[i].ftp].ntps; j++) {
+      for(j=0; j<NZEXT; j++)
+	fprintf(fp,",%s",z_ext[j]);
+      fprintf(fp,"}/\"");
+    }
+    break;
+  case eshellBASH:
+    for(i=0; (i<nf); i++) {
+	fprintf(fp,"%s) COMPREPLY=( $(compgen -X '!*.",tfn[i].opt);
+      if (deffile[tfn[i].ftp].ntps) {
+	fprintf(fp,"+(");
+	for(j=0; j<deffile[tfn[i].ftp].ntps; j++) {
+	  if (j>0)
+	    fprintf(fp,"|");
+	  fprintf(fp,"%s",deffile[deffile[tfn[i].ftp].tps[j]].ext+1);
+	}
+	fprintf(fp,")");
+      } else
+	fprintf(fp,"%s",deffile[tfn[i].ftp].ext+1);
+      fprintf(fp,"*(");
+      for(j=0; j<NZEXT; j++) {
 	if (j>0)
-	  fprintf(fp,",");
-	fprintf(fp,"%s",deffile[deffile[tfn[i].ftp].tps[j]].ext+1);
+	  fprintf(fp,"|");
+	fprintf(fp,"%s",z_ext[j]);
       }
-      fprintf(fp,"}");
-    } else
-      fprintf(fp,"%s",deffile[tfn[i].ftp].ext+1);
-    fprintf(fp,"{");
-    for(j=0; j<NZEXT; j++)
-      fprintf(fp,",%s",z_ext[j]);
-    fprintf(fp,"}/\"");
+      fprintf(fp,")' -f $c ; compgen -S '/' -X '.*' -d $c ));;\n");
+    }
+    break;
+  case eshellZSH:
+    for(i=0; (i<nf); i++) {
+      fprintf(fp,"- 'c[-1,%s]' -g '*.",tfn[i].opt);
+      if (deffile[tfn[i].ftp].ntps) {
+	fprintf(fp,"(");
+	for(j=0; j<deffile[tfn[i].ftp].ntps; j++) {
+	  if (j>0)
+	    fprintf(fp,"|");
+	  fprintf(fp,"%s",deffile[deffile[tfn[i].ftp].tps[j]].ext+1);
+	}
+	fprintf(fp,")");
+      } else
+	fprintf(fp,"%s",deffile[tfn[i].ftp].ext+1);
+      fprintf(fp,"(");
+      for(j=0; j<NZEXT; j++)
+	fprintf(fp,"|%s",z_ext[j]);
+      fprintf(fp,") *(/)' ");
+    }
+    break;
   }
 }
 

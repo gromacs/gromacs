@@ -1,4 +1,4 @@
-.TH g_analyze 1 "Tue 15 May 2001"
+.TH g_analyze 1 "Thu 5 Jul 2001"
 .SH NAME
 g_analyze
 .B VERSION 3.0
@@ -190,7 +190,15 @@ zero or negative value are ignored.
  Binwidth for the distribution
 
 .BI "-errbar"  " enum" " none" 
- Error bars for -av: none, stddev, error or 90
+ Error bars for -av: 
+.B none
+, 
+.B stddev
+, 
+.B error
+or 
+.B 90
+
 
 .BI "-[no]power"  "    no"
  Fit data to: b ta
@@ -208,10 +216,28 @@ zero or negative value are ignored.
  Normalize ACF
 
 .BI "-P"  " enum" " 0" 
- Order of Legendre polynomial for ACF (0 indicates none): 0, 1, 2 or 3
+ Order of Legendre polynomial for ACF (0 indicates none): 
+.B 0
+, 
+.B 1
+, 
+.B 2
+or 
+.B 3
+
 
 .BI "-fitfn"  " enum" " none" 
- Fit function: none, exp, aexp, exp_exp or vac
+ Fit function: 
+.B none
+, 
+.B exp
+, 
+.B aexp
+, 
+.B exp_exp
+or 
+.B vac
+
 
 .BI "-ncskip"  " int" " 0" 
  Skip N points in the output file of correlation functions

@@ -406,7 +406,7 @@ static char *mk_desc(t_pargs *pa, char *time_unit)
   return newdesc;
 }
 
-void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
+void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 		       int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
 		       int ndesc,char **desc,int nbugs,char **bugs)
 {
@@ -430,12 +430,10 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
   
   t_pargs motif_pa  = { "-X",    FALSE, etBOOL,  {&bGUI},
 		       "Use dialog box GUI to edit command line options" };
-  t_pargs fpe_pa    = { "-exception", FALSE, etBOOL, {&bExcept},
-		       "HIDDENTurn on exception handling" };
   t_pargs npri_paX  = { "-npri", FALSE, etENUM,  {not_npristr},
 		       "Set non blocking priority" };
   t_pargs npri_pa   = { "-npri", FALSE, etINT,   {&npri},
-		       "Set non blocking priority (try 128)" };
+		       "HIDDEN Set non blocking priority (try 128)" };
   t_pargs nice_paX  = { "-nice", FALSE, etENUM,  {not_nicestr}, 
 		       "Set the nicelevel" };
   t_pargs nice_pa   = { "-nice", FALSE, etINT,   {&nicelevel}, 
@@ -507,6 +505,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
   }
   if (bGUI)
     bQuiet = TRUE;
+#else
+  bGUI = FALSE;
 #endif
   
   /* When you run a dynamically linked program before installing
@@ -524,19 +524,15 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
     npall = add_parg(npall,&(all_pa),&(pca_pa[i]));
 
   /* Motif options */
-#ifdef HAVE_MOTIF
   npall = add_parg(npall,&(all_pa),&motif_pa);
-#endif
 
 #ifdef __sgi
-#ifdef USE_SGI_FPE
-  npall = add_parg(npall,&(all_pa),&fpe_pa);
-#endif
-#ifndef NO_NICE
+  bExcept = (getenv("GMXSGIFPE") != NULL);
+
   envstr = getenv("GMXNPRIALL");
   if (envstr)
     npri=atoi(envstr);
-  if (FF(PCA_SET_NPRI)) {
+  if (FF(PCA_BE_NICE)) {
     envstr = getenv("GMXNPRI");
     if (envstr)
       npri=atoi(envstr);
@@ -549,21 +545,18 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
   else
     npall = add_parg(npall,&(all_pa),&npri_pa);
 #endif
-#endif
 
-#ifndef NO_NICE
   if (bGUI) {
     /* Automatic nice or scheduling options */
-    if (bNice) 
+    if (FF(PCA_BE_NICE)) 
       nice_paX.u.c = nicestr;
     npall = add_parg(npall,&(all_pa),&nice_paX);
   }
   else {
-    if (bNice) 
+    if (FF(PCA_BE_NICE)) 
       nicelevel=19;
     npall = add_parg(npall,&(all_pa),&nice_pa);
   }
-#endif
 
   if (FF(PCA_CAN_SET_DEFFNM)) 
     npall = add_parg(npall,&(all_pa),&deffnm_pa);   
@@ -616,14 +609,16 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
 	    buf,__FILE__,__LINE__);
   }
 
-#ifdef HAVE_MOTIF
   /* Now we have parsed the command line arguments. If the user wants it
    * we can now plop up a GUI dialog box to edit options.
    */
   if (bGUI) {
+#ifdef HAVE_MOTIF
     gmx_gui(argc,argv,nfile,fnm,npall,all_pa,ndesc,desc,nbugs,bugs);
-  }
+#else
+    fatal_error(0,"GROMACS compiled without MOTIF support - can't use X interface");
 #endif
+  }
 
   /* Now copy the results back... */
   for(i=0,k=npall-npargs; (i<npargs); i++,k++) 
@@ -635,13 +630,11 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
   bExit = bHelp || (strcmp(manstr[0],"no") != 0);
 
 #ifdef __sgi
-#ifdef USE_SGI_FPE
   /* Install exception handler if necessary */
   if (bExcept)
     doexceptions();
 #endif
-#endif
-  
+
   /* Set the nice level */
 #ifdef __sgi
   if (bGUI)
@@ -653,17 +646,17 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
     (void) schedctl(MPTS_RTPRI,0,npri);
   }
   else
-#endif
-#ifndef NO_NICE
+#endif 
+
+#ifdef HAVE_UNISTD_H
     if (bGUI) {
-      if (bNice)
+      if (FF(PCA_BE_NICE))
 	sscanf(nicestr[0],"%d",&nicelevel);
       else
 	sscanf(not_nicestr[0],"%d",&nicelevel);
     }
   if (nicelevel != 0 && !bExit)
     nice(nicelevel);
-  
 #endif
   
   if (!(FF(PCA_QUIET) || bQuiet )) {
@@ -677,10 +670,22 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
   }
 
   if (strcmp(manstr[0],"no") != 0) {
-    fp=man_file(program,manstr[0]);
-    write_man(fp,manstr[0],program,ndesc,desc,nfile,fnm,npall,all_pa,
-	      nbugs,bugs,bHidden);
-    fclose(fp);
+    if(!strcmp(manstr[0],"completion")) {
+      /* one file each for csh, bash and zsh if we do completions */
+      fp=man_file(program,"completion-zsh");
+      write_man(fp,"completion-zsh",program,ndesc,desc,nfile,fnm,npall,all_pa,nbugs,bugs,bHidden);
+      fclose(fp);
+      fp=man_file(program,"completion-bash");
+      write_man(fp,"completion-bash",program,ndesc,desc,nfile,fnm,npall,all_pa,nbugs,bugs,bHidden);
+      fclose(fp);
+      fp=man_file(program,"completion-csh");
+      write_man(fp,"completion-csh",program,ndesc,desc,nfile,fnm,npall,all_pa,nbugs,bugs,bHidden);
+      fclose(fp);
+    } else {
+      fp=man_file(program,manstr[0]);
+      write_man(fp,manstr[0],program,ndesc,desc,nfile,fnm,npall,all_pa,nbugs,bugs,bHidden);
+      fclose(fp);
+    }
   }
   
   /* convert time options, must be done after printing! */

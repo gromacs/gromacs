@@ -3,6 +3,7 @@
 if ( $#argv < 2 ) then
   echo "Error: provide the binary directory as first argument,"
   echo "and the location of programs.txt as the second."
+  echo "A html subdirectory will be created in the current dir."
   exit
 endif
 
@@ -132,7 +133,7 @@ echo "-------------------------------------------"
 cd $dir
 
 foreach program ( $PROGRAMS )
-  if ( ( -x $GMXBINDIR/$program ) && ( $program != "my_dssp" ) && ( $program != "luck" ) ) then
+  if ( ( -x $GMXBINDIR/$program ) && ( $program != "my_dssp" ) && ( $program != "GMXRC" ) && ( $program != "completion.csh" ) && ( $program != "completion.zsh" ) && ( $program != "average" ) && ( $program != "completion.bash" ) && ( $program != "luck" ) ) then
     echo -n "$program "
     cd $HTMLOL
     $GMXBINDIR/$program -quiet -man html >& /dev/null

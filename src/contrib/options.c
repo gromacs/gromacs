@@ -52,12 +52,12 @@ int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "All GROMACS programs have 6 standard options,",
-    "of which 4 are hidden by default:"
+    "of which some are hidden by default:"
   };
 
   static char *bugs[] = {
-    "If the configuration script found Motif (or Lesstif) on your system, "
-    "all GROMACS programs will have an additional option:[BR]"
+    "If the configuration script found Motif or Lesstif on your system, "
+    "you can use the graphical interface (if not, you will get an error):[BR]"
     "[TT]-X[tt] bool [TT]no[tt] Use dialog box GUI to edit command line options",
     
     "When compiled on an SGI-IRIX system, all GROMACS programs have an "
@@ -104,7 +104,7 @@ int main(int argc,char *argv[])
   };
 
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,0,TRUE,
+  parse_common_args(&argc,argv,0,
 		    0,NULL,0,NULL,asize(desc),desc,asize(bugs),bugs);
   
   thanx(stderr);

@@ -709,7 +709,7 @@ int main(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   npargs = asize(pa);
   ppa    = add_acf_pargs(&npargs,pa);
-  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END,TRUE,
+  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END | PCA_BE_NICE,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
   
   bDRAll = opt2bSet("-pairs",NFILE,fnm);

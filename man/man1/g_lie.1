@@ -1,4 +1,4 @@
-.TH g_lie 1 "Tue 15 May 2001"
+.TH g_lie 1 "Thu 5 Jul 2001"
 .SH NAME
 g_lie
 .B VERSION 3.0
@@ -9,6 +9,9 @@ g_lie
 .BI "-[no]h" ""
 .BI "-[no]X" ""
 .BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
 .BI "-[no]w" ""
 .BI "-Elj" " real "
 .BI "-Eqq" " real "
@@ -38,6 +41,15 @@ Coul (A-B) LJ-SR (A-B) etc.
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
 
@@ -53,6 +65,6 @@ Coul (A-B) LJ-SR (A-B) etc.
 .BI "-Cqq"  " real" "      0" 
  Factor in the LIE equation for Coulomb component of energy
 
-.BI "-ligand"  " string" " " 
+.BI "-ligand"  " string" " none" 
  Name of the ligand in the energy file
 

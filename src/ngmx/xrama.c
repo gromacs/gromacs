@@ -321,7 +321,7 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_TIME,FALSE,NFILE,fnm,0,NULL,
+  parse_common_args(&argc,argv,PCA_CAN_TIME,NFILE,fnm,0,NULL,
 		    asize(desc),desc,0,NULL);
 
 		      

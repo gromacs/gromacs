@@ -112,7 +112,7 @@ int main(int argc,char *argv[])
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW,
-		    FALSE,NFILE,fnm,asize(pa),pa,asize(desc),desc,
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    0,NULL);
   get_stx_coordnum (opt2fn("-f1",NFILE,fnm),&nat1);
   get_stx_coordnum (opt2fn("-f2",NFILE,fnm),&nat2);

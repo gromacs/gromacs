@@ -138,23 +138,22 @@ int main(int argc,char *argv[])
   /* Command line options ! */
   static bool bVerbose     = FALSE;
   static bool bCompact     = TRUE;
-  static bool bLateVir     = TRUE;
-  static bool bTweak       = FALSE;
   static bool bSepDVDL     = FALSE;
+
+  /*  static bool bLateVir     = TRUE; */
+  /*  static bool bTweak       = FALSE; */
+  static int nDLB=0; 
+
 #ifdef XMDRUN
   static bool bMultiSim    = FALSE;
   static bool bGlas        = FALSE;
   static bool bIonize      = FALSE;
 #endif
-#ifdef USE_MPI
   static int  nnodes=1;
-#endif
-  static int  nDLB=0,nstepout=10;
+  static int  nstepout=10;
   static t_pargs pa[] = {
-#ifdef USE_MPI
     { "-np",      FALSE, etINT, {&nnodes},
       "Number of nodes, must be the same as used for grompp" },
-#endif
     { "-v",       FALSE, etBOOL,{&bVerbose}, "Be loud and noisy" },
     { "-compact", FALSE, etBOOL,{&bCompact}, "Write a compact log file" },
 #ifdef XMDRUN
@@ -165,31 +164,37 @@ int main(int argc,char *argv[])
       "Do a simulation including the effect of an X-Ray bombardment on your system" },
 #endif
     { "-sepdvdl", FALSE, etBOOL,{&bSepDVDL},
-      "HIDDENWrite separate V and dVdl terms for each interaction type and each node(!) to log file(s)" },
-    { "-latevir", FALSE, etBOOL,{&bLateVir},
-      "HIDDENCalculate virial late in the algorithm" },
-    { "-tweak",   FALSE, etBOOL,{&bTweak},
-      "HIDDENModify PME virial computation" },
-    { "-dlb",     FALSE, etINT, {&nDLB},
-      "HIDDENUse dynamic load balancing every ... step. BUGGY do not use" },
+      "HIDDENWrite separate V and dVdl terms for each interaction and node(!) to log file(s)" },
+    /*    { "-latevir", FALSE, etBOOL,{&bLateVir},
+	  "HIDDENCalculate virial late in the algorithm" },   */
+    /*    { "-tweak",   FALSE, etBOOL,{&bTweak},
+	  "HIDDENModify PME virial computation" },                */
+    /*    { "-dlb",     FALSE, etINT, {&nDLB},
+	  "HIDDENUse dynamic load balancing every ... step. BUGGY do not use" },    */
     { "-stepout", FALSE, etINT, {&nstepout},
       "HIDDENFrequency of writing the remaining runtime" }
   };
   t_edsamyn edyn;
   unsigned long Flags;
-  
+
   cr = init_par(&argc,&argv);
   bVerbose = bVerbose && MASTER(cr);
   edyn.bEdsam=FALSE;
   
+
   if (MASTER(cr))
     CopyRight(stderr,argv[0]);
 
   parse_common_args(&argc,argv,
-		    PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_SET_NPRI |
+		    PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_BE_NICE |
 		    PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET),
-		    TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
     
+#ifndef USE_MPI
+  if (nnodes>1) 
+    fatal_error(0,"GROMACS compiled without MPI support - can't do parallel runs");
+#endif
+
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
 
 #ifdef XMDRUN
@@ -207,8 +212,8 @@ int main(int argc,char *argv[])
     ed_open(NFILE,fnm,&edyn);
     
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
-  Flags = Flags | (bLateVir ? MD_LATEVIR : 0);
-  Flags = Flags | (bTweak ? MD_TWEAK : 0);
+  /*  Flags = Flags | (bLateVir ? MD_LATEVIR : 0); */
+  /*  Flags = Flags | (bTweak ? MD_TWEAK : 0);     */
   Flags = Flags | (bSepDVDL ? MD_SEPDVDL : 0);
   
 #ifdef XMDRUN

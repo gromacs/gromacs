@@ -10,16 +10,18 @@ clear
 cat << _EOF_
 -----------------------------------------------------------------
 -----------------------------------------------------------------
-This is the GROMACS demo. ( This demo takes about 10-15 min. )
+Welcome to the GROMACS demo!
 
-In this demo we will demonstrate you how to simulate Molecular
+This is a script that takes about 10 min to run.
+
+In this demo we will demonstrate how to simulate Molecular
 Dynamics (MD) using the GROMACS software package.
 
-This demo will perform a complete molecular dynamics (MD) simulation
-of a small peptide in water. The only input file we need to do this is
-a pdb file of this peptide.
+The demo will perform a complete molecular dynamics (MD) simulation
+of a small peptide in water. The only input file we need to do this
+is a pdb file of a small peptide.
 
-If you have a problem or remark with respect to this demonstration,
+If you have any problems or remarks with respect to this demonstration,
 please mail to: gromacs@gromacs.org , or check the resources on
 our website http://www.gromacs.org .
 -----------------------------------------------------------------

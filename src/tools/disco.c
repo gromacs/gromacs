@@ -314,7 +314,7 @@ int main(int argc,char *argv[])
   if (MASTER(cr)) {
     CopyRight(stderr,argv[0]);
 
-    parse_common_args(&argc,argv,0,TRUE,
+    parse_common_args(&argc,argv,PCA_BE_NICE,
 		      NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
 		      
     /* Copy arguments to correct structure */

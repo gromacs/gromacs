@@ -219,8 +219,8 @@ extern bool bDoView(void);
 /* no fatal_error when invalid options are encountered */
 #define PCA_QUIET          (1<<12)
 /* does something for non-master mdrun nodes */
-#define PCA_SET_NPRI       (1<<13)
-/* set weightless prioriy by default */
+#define PCA_BE_NICE        (1<<13)
+/* Default to low priority, unless configured with --disable-nice */
 
 extern int iscan(int argc,char *argv[],int *i);
 /* Scan an int from the argument at *i. If the argument length
@@ -258,7 +258,7 @@ extern void gmx_gui(int *argc,char *argv[],
  */
 #endif
 
-extern void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
+extern void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 			      int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
 			      int ndesc,char **desc,int nbugs,char **bugs);
 /* Get arguments from the arg-list. The arguments extracted

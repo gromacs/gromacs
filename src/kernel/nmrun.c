@@ -60,15 +60,11 @@ int main(int argc,char *argv[])
 
   /* Command line options ! */
   static bool bVerbose=FALSE,bCompact=TRUE;
-#ifdef USE_MPI
   static int  nnodes=1;
-#endif
   static int  nDLB=0,nstepout=10;
   static t_pargs pa[] = {
-#ifdef USE_MPI
     { "-np",      FALSE, etINT, {&nnodes},
       "Number of nodes, must be the same as used for grompp" },
-#endif
     { "-v",       FALSE, etBOOL,{&bVerbose}, "Verbose mode" },
     { "-compact", FALSE, etBOOL,{&bCompact},
       "Write a compact log file" },
@@ -87,9 +83,14 @@ int main(int argc,char *argv[])
     CopyRight(stderr,argv[0]);
 
   parse_common_args(&argc,argv,
-		    PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_SET_NPRI |
+		    PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_BE_NICE | 
 		    (MASTER(cr) ? 0 : PCA_QUIET),
-		    TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+
+#ifndef USE_MPI
+  if (nnodes>1) 
+    fatal_error(0,"GROMACS compiled without MPI support - can't do parallel runs");
+#endif
     
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
   

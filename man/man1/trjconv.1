@@ -1,4 +1,4 @@
-.TH trjconv 1 "Tue 15 May 2001"
+.TH trjconv 1 "Thu 5 Jul 2001"
 .SH NAME
 trjconv
 .B VERSION 3.0
@@ -34,6 +34,7 @@ trjconv
 .BI "-trunc" " time "
 .BI "-exec" " string "
 .BI "-[no]app" ""
+.BI "-split" " time "
 .BI "-[no]sep" ""
 .SH DESCRIPTION
 trjconv can convert trajectory files in many ways:
@@ -310,7 +311,23 @@ one specific time from your trajectory.
  Last frame (ps) to read from trajectory
 
 .BI "-tu"  " enum" " ps" 
- Time unit: ps, fs, ns, us, ms, s, m or h
+ Time unit: 
+.B ps
+, 
+.B fs
+, 
+.B ns
+, 
+.B us
+, 
+.B ms
+, 
+.B s
+, 
+.B m
+or 
+.B h
+
 
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
@@ -331,10 +348,24 @@ one specific time from your trajectory.
  Change time step between input frames (ps)
 
 .BI "-pbc"  " enum" " none" 
- PBC treatment: none, whole, inbox or nojump
+ PBC treatment: 
+.B none
+, 
+.B whole
+, 
+.B inbox
+or 
+.B nojump
+
 
 .BI "-ur"  " enum" " rect" 
- Unit-cell representation: rect, tric or compact
+ Unit-cell representation: 
+.B rect
+, 
+.B tric
+or 
+.B compact
+
 
 .BI "-[no]center"  "    no"
  Center atoms in box
@@ -368,6 +399,9 @@ one specific time from your trajectory.
 
 .BI "-[no]app"  "    no"
  Append output
+
+.BI "-split"  " time" "      0" 
+ Start writing new file when t MOD split = first time (ps)
 
 .BI "-[no]sep"  "    no"
  Write each frame to a separate .gro or .pdb file

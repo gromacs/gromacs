@@ -120,7 +120,7 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   CopyRight(stdout,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_TIME,TRUE,NFILE,fnm,
+  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE ,NFILE,fnm,
 		    asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
 		    
   top=read_top(ftp2fn(efTPX,NFILE,fnm));

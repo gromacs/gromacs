@@ -100,7 +100,7 @@ int main(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]);
 
-  parse_common_args(&argc,argv,PCA_CAN_TIME,TRUE,
+  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
   
   bCutoff=opt2parg_bSet("-dist",NPA,pa);

@@ -80,7 +80,7 @@ int main(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   npargs = asize(pa);
   ppa    = add_acf_pargs(&npargs,pa);
-  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
+  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
   snew(data,nframes);
   snew(data2,nframes);

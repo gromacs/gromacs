@@ -72,9 +72,9 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
 			 char *fn_tca,char *fn_tc,char *fn_tcf,char *fn_cub,
 			 char *fn_vk)
 {
-  FILE *fp,*fp_vk,*fp_cub;
+  FILE *fp,*fp_vk,*fp_cub=NULL;
   int  nk,ntc;
-  real **tcaf,**tcafc,eta;
+  real **tcaf,**tcafc=NULL,eta;
   int  i,j,k,kc;
   int  ncorr;
   real fitparms[3],*sig;
@@ -260,7 +260,7 @@ int main(int argc,char *argv[])
   matrix     box;
   bool       bTPS,bTop; /* ,bCubic; */
   int        gnx;
-  atom_id    *index,*a,*atndx,at;
+  atom_id    *index,*a=NULL,*atndx=NULL,at;
   char       *grpname;
   char       title[256];
   real       t0,t1,dt,m,mtot,sysmass,rho,sx,cx;
@@ -287,7 +287,7 @@ int main(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]);
   npargs = asize(pa);
-  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
+  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,npargs,pa,asize(desc),desc,0,NULL);
 
   bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,NULL,NULL,box,TRUE);

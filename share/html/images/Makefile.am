@@ -14,7 +14,7 @@ image_DATA = \
 	bench.gif        	flow_hline.gif          \
 	flow_right.gif          manual.gif		\
 	charts_down.gif  	flow_left.gif           \
-	flow_rightleftdown.gif  rainbow.gif		\
+	flow_rightleftdown.gif  gmxlogo_small.jpg	\
 	charts_up.gif    	flow_leftright.gif      \
 	flow_uprightleft.gif    software.gif		\
 	faq.gif          	flow_leftrightdown.gif  \

@@ -69,8 +69,8 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   int        g,ng,natoms,i,j,k,nbin,j0,j1,n,nframes;
   int        **count;
   char       **grpname;
-  int        *isize,isize_cm,nrdf,max_i;
-  atom_id    **index,*index_cm;
+  int        *isize,isize_cm=0,nrdf=0,max_i;
+  atom_id    **index,*index_cm=NULL;
   unsigned long int *sum;
   real       t,boxmin,hbox,hbox2,cut2,r,r2,invbinw,normfac;
   real       segvol,spherevol,prev_spherevol,**rdf;
@@ -720,7 +720,7 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
+  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
 
   fnTPS = ftp2fn_null(efTPS,NFILE,fnm);

@@ -1,4 +1,4 @@
-.TH g_angle 1 "Tue 15 May 2001"
+.TH g_angle 1 "Thu 5 Jul 2001"
 .SH NAME
 g_angle
 .B VERSION 3.0
@@ -111,7 +111,15 @@ If this is not the case, the program will crash.
  View output xvg, xpm, eps and pdb files
 
 .BI "-type"  " enum" " angle" 
- Type of angle to analyse: angle, dihedral, improper or ryckaert-bellemans
+ Type of angle to analyse: 
+.B angle
+, 
+.B dihedral
+, 
+.B improper
+or 
+.B ryckaert-bellemans
+
 
 .BI "-[no]all"  "    no"
  Plot all angles separately in the averages file, in the order of appearance in the index file.
@@ -132,10 +140,28 @@ If this is not the case, the program will crash.
  Normalize ACF
 
 .BI "-P"  " enum" " 0" 
- Order of Legendre polynomial for ACF (0 indicates none): 0, 1, 2 or 3
+ Order of Legendre polynomial for ACF (0 indicates none): 
+.B 0
+, 
+.B 1
+, 
+.B 2
+or 
+.B 3
+
 
 .BI "-fitfn"  " enum" " none" 
- Fit function: none, exp, aexp, exp_exp or vac
+ Fit function: 
+.B none
+, 
+.B exp
+, 
+.B aexp
+, 
+.B exp_exp
+or 
+.B vac
+
 
 .BI "-ncskip"  " int" " 0" 
  Skip N points in the output file of correlation functions
@@ -146,6 +172,5 @@ If this is not the case, the program will crash.
 .BI "-endfit"  " real" "     -1" 
  Time where to end the exponential fit of the correlation function, -1 is till the end
 
-.SH DIAGNOSTICS
 \- Counting transitions only works for dihedrals with multiplicity 3
 

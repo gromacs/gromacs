@@ -632,7 +632,7 @@ int main(int argc,char *argv[])
   real       **rhbex;
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_TIME,TRUE,NFILE,fnm,asize(pa),pa,
+  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
 
   /* process input */

@@ -282,7 +282,7 @@ int main (int argc, char *argv[])
   CopyRight(stdout,argv[0]);
   
   /* Parse the command line */
-  parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
+  parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
 
   bTime = opt2parg_bSet("-time",asize(pa),pa);

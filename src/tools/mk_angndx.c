@@ -144,7 +144,7 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
+  parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
 
   bPP  = FALSE;

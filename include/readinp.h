@@ -136,6 +136,6 @@ extern bool opt2parg_bSet(char *option,int nparg,t_pargs pa[]);
 
 extern void print_pargs(FILE *fp, int npargs,t_pargs pa[]);
 
-extern void pr_enums(FILE *fp, int npargs,t_pargs pa[]);
+extern void pr_enums(FILE *fp, int npargs,t_pargs pa[],int shell);
 
 #endif

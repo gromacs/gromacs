@@ -340,8 +340,8 @@ int main(int argc,char *argv[])
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,
-		    PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT,
-		    TRUE, NFILE,fnm,asize(pa),pa,asize(desc),desc,
+		    PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT | PCA_BE_NICE,
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    0,NULL);
 
   top_file=ftp2fn(efTPS,NFILE,fnm);

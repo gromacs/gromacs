@@ -443,7 +443,7 @@ int main(int argc,char *argv[])
   };
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS,TRUE,
+  parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS | PCA_BE_NICE ,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
   tadjust=0;
   snew(fnms,argc);

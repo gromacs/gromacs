@@ -1,14 +1,17 @@
-<HTML>/n<HEAD>/n<TITLE>g_rms</TITLE>
+<HTML>
+<HEAD>
+<TITLE>g_rms</TITLE>
 <LINK rel=stylesheet href="style.css" type="text/css">
 <BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
 <table WIDTH="800" NOBORDER >
 <TR>
 <td WIDTH="120" HEIGHT="133">
-<a href="http://www.gromacs.org/"><img SRC="../gif/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td><td ALIGN=LEFT VALIGN=TOP WIDTH=480><br><br><h2>Online Reference:<br>g_rms</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td><td ALIGN=LEFT VALIGN=TOP WIDTH=480><br><br><h2>GROMACS Online Reference:<br>g_rms</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
 <TD ALIGN=RIGHT VALIGN=BOTTOM><B>VERSION 3.0<br>
-Mon 11 Jun 2001</B></td></tr></TABLE>
+Thu 5 Jul 2001</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
+<p>
 g_rms compares two structures by computing the root mean square
 deviation (RMSD), the size-independent 'rho' similarity parameter
 (rho) or the scaled rho (rhosc), 
@@ -57,9 +60,9 @@ comparison group are considered.
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: ps, fs, ns, us, ms, s, m or h </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: <tt>ps</tt>, <tt>fs</tt>, <tt>ns</tt>, <tt>us</tt>, <tt>ms</tt>, <tt>s</tt>, <tt>m</tt> or <tt>h</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-what</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>rmsd</tt> </TD><TD> Structural difference measure: rmsd, rho or rhosc </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-what</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>rmsd</tt> </TD><TD> Structural difference measure: <tt>rmsd</tt>, <tt>rho</tt> or <tt>rhosc</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> PBC check </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]fit</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Fit to reference structure </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-prev</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Compare with previous frame </TD></TD>

@@ -44,7 +44,7 @@ static char *SRCID_topio_c = "$Id$";
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
-
+#include "futil.h"
 #include "assert.h"
 #include "sysstuff.h"
 #include "typedefs.h"
@@ -163,13 +163,15 @@ void preprocess(char *infile,char *outfile,
   static int  bFirst=1;
 
   if(bFirst) {
-    if((lib=getenv("GMXLIB")) != NULL)
+    lib=getenv("GMXLIB");
+    if(lib!=NULL) {
       strcpy(libdir,lib);
-    else
-      strcpy(libdir,GMXLIBDIR);
+    } else {
+      if(get_libdir(libdir))
+	strcpy(libdir,GMXLIBDIR);
+    }
     bFirst=0;
   }
-  
 
   /* build the command line */
   sprintf(command,"%s %s -I%s %s %s %s",
@@ -533,7 +535,7 @@ char **do_top(bool         bVerbose,
 	      int          *nsim,
 	      t_simsystem  **sims)
 {
-  char tmpfile[L_tmpnam];
+  char tmpfile[13];
   char **title;
   int  combination_rule;
   

@@ -155,7 +155,7 @@ int main (int argc,char *argv[])
   int        i,j,k,m,n,teller,teller2,tel_mat,tel_mat2;
 #define NFRAME 5000
   int        maxframe=NFRAME,maxframe2=NFRAME;
-  real       t,lambda,*w_rls,*w_rms,tmas,*w_rls_m,*w_rms_m;
+  real       t,lambda,*w_rls,*w_rms,tmas,*w_rls_m=NULL,*w_rms_m=NULL;
   bool       bTruncOct,bNorm,bAv,bFreq2,bFile2,bMat,bBond,bDelta,bMirror;
   
   t_topology top;
@@ -169,16 +169,16 @@ int main (int argc,char *argv[])
   
   int        nrms,ncons=0;
   FILE       *fp;
-  real       rlstot=0,**rls,**rlsm,*time,*time2,*rlsnorm=NULL,**rmsd_mat=NULL,
+  real       rlstot=0,**rls,**rlsm=NULL,*time,*time2,*rlsnorm=NULL,**rmsd_mat=NULL,
              **bond_mat=NULL,
              *axis,*axis2,*del_xaxis,*del_yaxis,
              rmsd_max,rmsd_min,rmsd_avg,bond_max,bond_min,ang,ipr;
   real       **rmsdav_mat=NULL,av_tot,weight,weight_tot;
   real       **delta=NULL,delta_max,delta_scalex=0,delta_scaley=0,*delta_tot;
   int        delta_xsize=0,del_lev=100,mx,my,abs_my;
-  bool       bA1,bA2,bPrev,bTop,*bInMat;
-  int        ifit,*irms,ibond=0,*ind_bond=NULL,n_ind_m;
-  atom_id    *ind_fit,**ind_rms,*ind_m,*rev_ind_m,*ind_rms_m;
+  bool       bA1,bA2,bPrev,bTop,*bInMat=NULL;
+  int        ifit,*irms,ibond=0,*ind_bond=NULL,n_ind_m=0;
+  atom_id    *ind_fit,**ind_rms,*ind_m=NULL,*rev_ind_m,*ind_rms_m=NULL;
   char       *gn_fit,**gn_rms;
   t_rgb      rlo,rhi;
   t_filenm fnm[] = {
@@ -197,8 +197,8 @@ int main (int argc,char *argv[])
 #define NFILE asize(fnm)
 
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW,
-		    TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   ewhat=nenum(what);
   if (ewhat==ewRho || ewhat==ewRhoSc)
     please_cite(stdout,"Maiorov95");

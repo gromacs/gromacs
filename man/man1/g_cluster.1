@@ -1,4 +1,4 @@
-.TH g_cluster 1 "Tue 15 May 2001"
+.TH g_cluster 1 "Thu 5 Jul 2001"
 .SH NAME
 g_cluster
 .B VERSION 3.0
@@ -97,6 +97,69 @@ the smallest average distance to the others or the average structure
 or all structures for each cluster will be written to a trajectory
 file. When writing all structures, separate numbered files are made
 for each cluster.
+
+Two output files are always written:
+
+
+.B -o
+writes the RMSD values in the upper left half of the matrix
+and a graphical depiction of the clusters in the lower right half
+(depends on 
+.B -max
+and 
+.B -keepfree
+).
+
+
+.B -g
+writes information on the options used and a detailed list
+of all clusters and their members.
+
+
+Additionally, a number of optional output files can be written:
+
+
+.B -dist
+writes the RMSD distribution.
+
+
+.B -ev
+writes the eigenvectors of the RMSD matrix
+diagonalization.
+
+
+.B -sz
+writes the cluster sizes.
+
+
+.B -tr
+writes a matrix of the number transitions between
+cluster pairs.
+
+
+.B -ntr
+writes the total number of transitions to or from
+each cluster.
+
+
+.B -clid
+writes the cluster number as a function of time.
+
+
+.B -cl
+writes average (with option 
+.B -av
+) or central
+structure of each cluster or writes numbered files with cluster members
+for a selected set of clusters (with option 
+.B -wcl
+, depends on
+
+.B -nst
+and 
+.B -rmsmin
+).
+
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input, Opt.
@@ -170,7 +233,23 @@ for each cluster.
  Only use frame when t MOD dt = first time (ps)
 
 .BI "-tu"  " enum" " ps" 
- Time unit: ps, fs, ns, us, ms, s, m or h
+ Time unit: 
+.B ps
+, 
+.B fs
+, 
+.B ns
+, 
+.B us
+, 
+.B ms
+, 
+.B s
+, 
+.B m
+or 
+.B h
+
 
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
@@ -206,7 +285,17 @@ for each cluster.
  minimum rms difference with rest of cluster for writing structures
 
 .BI "-method"  " enum" " linkage" 
- Method for cluster determination: linkage, jarvis-patrick, monte-carlo, diagonalization or gromos
+ Method for cluster determination: 
+.B linkage
+, 
+.B jarvis-patrick
+, 
+.B monte-carlo
+, 
+.B diagonalization
+or 
+.B gromos
+
 
 .BI "-[no]binary"  "    no"
  Treat the RMSD matrix as consisting of 0 and 1, where the cut-off is given by -cutoff

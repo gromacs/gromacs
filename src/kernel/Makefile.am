@@ -12,6 +12,11 @@ bin_PROGRAMS = \
 	protonate	nmrun	  	luck		gmxdump		\
 	gmxcheck  	x2top		xmdrun
 
+EXTRA_dist = mdrun.1  
+
+mdrun.1:
+	cp mdrun.c mdrun.1
+	touch mdrun.1
 
 
 grompp_SOURCES = \

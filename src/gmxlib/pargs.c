@@ -302,16 +302,38 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
   }
 }
 
-void pr_enums(FILE *fp, int npargs,t_pargs pa[])
+void pr_enums(FILE *fp, int npargs,t_pargs pa[], int shell)
 {
   int i,j;
-  
-  for (i=0; i<npargs; i++) 
-    if (pa[i].type==etENUM) {
-      fprintf(fp," \"n/%s/(",pa[i].option);
-      for(j=1; pa[i].u.c[j]; j++)
-	fprintf(fp," %s",pa[i].u.c[j]);
-      fprintf(fp,")/\"");
-    }
+
+  switch (shell) {
+  case eshellCSH:
+    for (i=0; i<npargs; i++) 
+      if (pa[i].type==etENUM) {
+	fprintf(fp," \"n/%s/(",pa[i].option);
+	for(j=1; pa[i].u.c[j]; j++)
+	  fprintf(fp," %s",pa[i].u.c[j]);
+	fprintf(fp,")/\"");
+      }
+    break;
+  case eshellBASH:
+    for (i=0; i<npargs; i++) 
+      if (pa[i].type==etENUM) {
+	fprintf(fp,"%s) COMPREPLY=( $(compgen -W '",pa[i].option);
+	for(j=1; pa[i].u.c[j]; j++)
+	  fprintf(fp," %s",pa[i].u.c[j]);
+	fprintf(fp," ' -- $c ));;\n");
+      }    
+    break;
+  case eshellZSH:
+    for (i=0; i<npargs; i++) 
+      if (pa[i].type==etENUM) {
+	fprintf(fp,"- 'c[-1,%s]' -s \"", pa[i].option);
+	for(j=1; pa[i].u.c[j]; j++)
+	  fprintf(fp," %s",pa[i].u.c[j]);
+	fprintf(fp,"\" ");
+      }
+    break;
+  }
 }
 

@@ -1,4 +1,4 @@
-.TH g_chi 1 "Tue 15 May 2001"
+.TH g_chi 1 "Thu 5 Jul 2001"
 .SH NAME
 g_chi
 .B VERSION 3.0
@@ -153,7 +153,21 @@ the average omega angle is plotted using color coding.
  perform running average over ndeg degrees for histograms
 
 .BI "-maxchi"  " enum" " 0" 
- calculate first ndih Chi dihedrals: 0, 1, 2, 3, 4, 5 or 6
+ calculate first ndih Chi dihedrals: 
+.B 0
+, 
+.B 1
+, 
+.B 2
+, 
+.B 3
+, 
+.B 4
+, 
+.B 5
+or 
+.B 6
+
 
 .BI "-[no]normhisto"  "   yes"
  Normalize histograms
@@ -174,10 +188,28 @@ the average omega angle is plotted using color coding.
  Normalize ACF
 
 .BI "-P"  " enum" " 0" 
- Order of Legendre polynomial for ACF (0 indicates none): 0, 1, 2 or 3
+ Order of Legendre polynomial for ACF (0 indicates none): 
+.B 0
+, 
+.B 1
+, 
+.B 2
+or 
+.B 3
+
 
 .BI "-fitfn"  " enum" " none" 
- Fit function: none, exp, aexp, exp_exp or vac
+ Fit function: 
+.B none
+, 
+.B exp
+, 
+.B aexp
+, 
+.B exp_exp
+or 
+.B vac
+
 
 .BI "-ncskip"  " int" " 0" 
  Skip N points in the output file of correlation functions
@@ -188,6 +220,5 @@ the average omega angle is plotted using color coding.
 .BI "-endfit"  " real" "     -1" 
  Time where to end the exponential fit of the correlation function, -1 is till the end
 
-.SH DIAGNOSTICS
 \- Produces MANY output files (up to about 4 times the number of residues in the protein, twice that if autocorrelation functions are calculated). Typically several hundred files are output.
 

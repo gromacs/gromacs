@@ -20,7 +20,7 @@ EXTRA_DIST = template.c README Template.mak
 #BUILT_SOURCES = Makefile.@host@
 
 Makefile.@host@: Template.mak Makefile 
-	cat $< | sed 's,@libdir\@,$(libdir),' | \
+	cat $(srcdir)/Template.mak | sed 's,@libdir\@,$(libdir),' | \
 	sed 's,@LDFLAGS\@,$(LDFLAGS),' | \
 	sed 's,@LIBS\@,$(LIBS),' | \
 	sed 's,@CPPFLAGS\@,$(CPPFLAGS),' | \
@@ -30,9 +30,9 @@ Makefile.@host@: Template.mak Makefile
 	sed 's,@host\@,@host@,' >$@
 
 install-data-hook:
-	(cd $(DESTDIR)$(templatedir) && test ! -e Makefile && $(LN_S) Makefile.@host@ Makefile)
+	(cd $(DESTDIR)$(templatedir) && test ! -e Makefile && $(LN_S) Makefile.@host@ Makefile ; exit 0)
 
-CLEANFILES = *~ \\\#* 
+CLEANFILES = Makefile.@host@ *~ \\\#*
 
 
 

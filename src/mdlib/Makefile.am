@@ -6,6 +6,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
 libmd@LIBSUFFIX@_la_LIBADD         = @MDLIB_LIBOBJS@	
 libmd@LIBSUFFIX@_la_DEPENDENCIES   = @MDLIB_LIBOBJS@	
+libmd@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@
 
 lib_LTLIBRARIES = libmd@LIBSUFFIX@.la
 
@@ -36,13 +37,10 @@ EXTRA_libmd@LIBSUFFIX@_la_SOURCES = \
 install-exec-hook:
 	libname="libmd@LIBSUFFIX@"; nompi="`echo $$libname | sed -e 's,_mpi,,'`";
 	if test `echo $$libname|grep _mpi`; then \
-	(cd $(libdir) && test -e $$libname.a -a ! -e $$nompi.a && $(LN_S) $$libname.a $$nompi.a); \
-	  (cd $(libdir) && test -e $$libname.so -a ! -e $$nompi.so && $(LN_S) $$libname.so $$nompi.so);\
+	  (cd $(libdir) && test -e $$libname.a -a ! -e $$nompi.a && $(LN_S) $$libname.a $$nompi.a ; exit 0); \
+	  (cd $(libdir) && test -e $$libname.so -a ! -e $$nompi.so && $(LN_S) $$libname.so $$nompi.so ; exit 0);\
 	fi;
+
 
 # clean all libtool libraries, since the target names might have changed
 CLEANFILES     = *.la *~ \\\#*
-
-
-
-

@@ -1,4 +1,4 @@
-.TH g_covar 1 "Tue 15 May 2001"
+.TH g_covar 1 "Thu 5 Jul 2001"
 .SH NAME
 g_covar
 .B VERSION 3.0
@@ -11,6 +11,8 @@ g_covar
 .BI "-v" " eigenvec.trr "
 .BI "-av" " average.pdb "
 .BI "-l" " covar.log "
+.BI "-xpm" " covar.xpm "
+.BI "-xpma" " covara.xpm "
 .BI "-[no]h" ""
 .BI "-[no]X" ""
 .BI "-nice" " int "
@@ -44,9 +46,24 @@ written with t=0, the eigenvectors
 are written as frames with the eigenvector number as timestamp.
 
 
+
 The eigenvectors can be analyzed with 
 .B g_anaeig
 .
+
+
+
+Option 
+.B -xpm
+writes the whole covariance matrix to an xpm file.
+
+
+
+Option 
+.B -xpma
+writes the atomic covariance matrix to an xpm file,
+i.e. for each atom pair the sum of the xx, yy and zz covariances is
+written.
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input
@@ -75,6 +92,14 @@ The eigenvectors can be analyzed with
 .BI "-l" " covar.log" 
 .B Output
  Log file 
+
+.BI "-xpm" " covar.xpm" 
+.B Output, Opt.
+ X PixMap compatible matrix file 
+
+.BI "-xpma" " covara.xpm" 
+.B Output, Opt.
+ X PixMap compatible matrix file 
 
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"

@@ -9,6 +9,8 @@ define([AC_CACHE_SAVE], )
 AC_INIT(src/gmxlib/3dview.c)
 AC_PREREQ(2.13)
 AC_CONFIG_AUX_DIR(config)
+AC_CANONICAL_HOST
+
 AM_INIT_AUTOMAKE(gromacs, 3.0)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 AM_CONFIG_HEADER(include/config.h)
@@ -17,7 +19,6 @@ dnl It does *not* correspond to the release number.
 SHARED_VERSION_INFO="1:0:0"
 AC_SUBST(SHARED_VERSION_INFO)
 
-AC_CANONICAL_HOST
 
 
 
@@ -77,17 +78,9 @@ if test "$with_mpi_environment" != "no"; then
 fi
 
 
-### Automatic nicing of programs
-AC_ARG_ENABLE(nice,
- [  --disable-nice                disable the nice priority on programs],, enable_nice=yes)
-if test "$enable_nice" = "no"; then
-  AC_DEFINE(NO_NICE,,[Turn off the automatic nicing of GROMACS])
-fi
-
-
 ### X86 assembly code
 AC_ARG_ENABLE(x86_asm,     
- [  --disable-x86-asm             don't build assembly loops for x86],,enable_x86_asm=yes)
+ [  --disable-x86-asm             don't build assembly loops on x86],,enable_x86_asm=yes)
 case "${host_cpu}" in
    i?86) ;;	
    *) enable_x86_asm=no ;;
@@ -97,6 +90,7 @@ esac
 ### Optimize for host cpu version
 AC_ARG_ENABLE(cpu-optimization,     
  [  --disable-cpu-optimization    no detection or tuning flags for cpu version],, enable_cpu_optimization=yes)
+
 
 ### Vector machine inner loops
 AC_ARG_ENABLE(vector,     
@@ -108,7 +102,7 @@ fi
 
 ### Simplewater hack for SGI - disabled unrolling is the same as simplewater=yes
 AC_ARG_ENABLE(waterloop-unrolling,     
- [  --disable-waterloop-unrolling expand water loops (hack for sgi)],, 
+ [  --disable-waterloop-unrolling expand the loops instead (hack for sgi)],, 
 [case "${host_cpu}-${host_os}" in
   mips*-irix*) enable_waterloop_unrolling=yes ;;
   *) enable_waterloop_unrolling=no ;;
@@ -272,13 +266,12 @@ fi
 
 AC_PROG_CPP
 
-if test "$enable_cpu_tuning" = "yes"; then
+if test "$enable_cpu_optimization" = "yes"; then
   ACX_DETECT_GMXCPU
 else
   gmxcpu=""
 fi
 ACX_COMPILER_MAXOPT
-
 
 # Check x86 asm prerequisites and the capabilities of as
 if test "$enable_x86_asm" = "yes"; then
@@ -326,7 +319,6 @@ AC_PROG_LN_S
 
 
 
-
 ############################################################################
 # Checks for libraries.
 ############################################################################
@@ -343,13 +335,13 @@ if test "${host_vendor}" = "ibm"; then
   case "$gmxcpu" in
     power4*)
 	# first check for a power4 lib, then power3, power2.
-      AC_SEARCH_LIBS(main,[massvp4,massvp3,massvp2,massv],[vectmass=yes]) ;;
+      AC_SEARCH_LIBS(vsrsqrt,massvp4 massvp3 massvp2 massv,[vectmass=yes]) ;;
     power3*)
-      AC_SEARCH_LIBS(main,[massvp3,massvp2,massv],[vectmass=yes]) ;;
+      AC_SEARCH_LIBS(vsrsqrt,massvp3 massvp2 massv,[vectmass=yes]) ;;
     power2*)
-      AC_SEARCH_LIBS(main,[massvp2,massv],[vectmass=yes]) ;;
+      AC_SEARCH_LIBS(vsrsqrt,massvp2 massv,[vectmass=yes]) ;;
     *)
-      AC_SEARCH_LIBS(main,[massv],[vectmass=yes]) ;;
+      AC_CHECK_LIB(vsrsqrt,main,[vectmass=yes LIBS="$LIBS -lmassv"]) ;;
   esac
   if test "$vectmass" = "yes"; then
     AC_DEFINE(HAVE_LIBMASSV_ANY,,[Use vectorized routines in the IBM MASS library])
@@ -630,8 +622,6 @@ if test "$exec_prefix" = "NONE"; then
     exec_prefix="\${prefix}/${host}"
   fi
 fi
-
-
 AC_SUBST(exec_prefix)
 
 AC_OUTPUT([Makefile include/Makefile include/types/Makefile src/Makefile
@@ -662,7 +652,7 @@ eval "show_path=`echo ${exec_prefix} | sed -e s,NONE,${ac_default_prefix},`"
 echo ""
 echo "* Binaries and libraries for this host will be installed under"
 echo "  ${show_path}" 
-echo "  (You can change it with the --exec-prefix option)"
+echo "  (You can change it with the --exec-prefix option.)"
 
 if test "$enable_float" = "no" -a "$name_transform_provided" = "no"; then
   echo ""

@@ -535,31 +535,86 @@ static void write_htmlman(FILE *out,
 
 static void pr_opts(FILE *fp, 
 		    int nfile,  t_filenm *fnm, 
-		    int npargs, t_pargs pa[])
+		    int npargs, t_pargs pa[], int shell)
 {
   int i;
   
-  fprintf(fp," \"c/-/(");
-  for (i=0; i<nfile; i++)
-    fprintf(fp," %s",fnm[i].opt+1);
-  for (i=0; i<npargs; i++)
-    if ( (pa[i].type==etBOOL) && *(pa[i].u.b) )
-      fprintf(fp," no%s",pa[i].option+1);
-    else
-      fprintf(fp," %s",pa[i].option+1);
-  fprintf(fp,")/\"");
-    
+  switch (shell) {
+  case eshellCSH:
+    fprintf(fp," \"c/-/(");
+    for (i=0; i<nfile; i++)
+      fprintf(fp," %s",fnm[i].opt+1);
+    for (i=0; i<npargs; i++)
+      if ( (pa[i].type==etBOOL) && *(pa[i].u.b) )
+	fprintf(fp," no%s",pa[i].option+1);
+      else
+	fprintf(fp," %s",pa[i].option+1);
+    fprintf(fp,")/\"");
+    break;
+  case eshellBASH:
+    fprintf(fp,"if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W '");
+    for (i=0; i<nfile; i++)
+      fprintf(fp," -%s",fnm[i].opt+1);
+    for (i=0; i<npargs; i++)
+      if ( (pa[i].type==etBOOL) && *(pa[i].u.b) )
+	fprintf(fp," -no%s",pa[i].option+1);
+      else
+	fprintf(fp," -%s",pa[i].option+1);
+    fprintf(fp,"' -- $c)); return 0; fi\n");
+    break;
+  case eshellZSH:
+    fprintf(fp," -x 's[-]' -s \"");
+    for (i=0; i<nfile; i++)
+      fprintf(fp," %s",fnm[i].opt+1);
+    for (i=0; i<npargs; i++)
+      if ( (pa[i].type==etBOOL) && *(pa[i].u.b) )
+	fprintf(fp," no%s",pa[i].option+1);
+      else
+	fprintf(fp," %s",pa[i].option+1);
+    fprintf(fp,"\" ");
+    break;
+  }
 }
 
-static void write_compl(FILE *out,
-			int nfile,  t_filenm *fnm,
-			int npargs, t_pargs *pa)
+static void write_cshcompl(FILE *out,
+			   int nfile,  t_filenm *fnm,
+			   int npargs, t_pargs *pa)
 {
   fprintf(out,"complete %s",ShortProgram());
-  pr_enums(out,npargs,pa);
-  pr_fopts(out,nfile,fnm);
-  pr_opts(out,nfile,fnm,npargs,pa);
+  pr_enums(out,npargs,pa,eshellCSH);
+  pr_fopts(out,nfile,fnm,eshellCSH);
+  pr_opts(out,nfile,fnm,npargs,pa,eshellCSH);
   fprintf(out,"\n");
+}
+
+static void write_zshcompl(FILE *out,
+			   int nfile,  t_filenm *fnm,
+			   int npargs, t_pargs *pa)
+{
+  fprintf(out,"compctl ");
+
+  /* start with options, since they are always present */
+  pr_opts(out,nfile,fnm,npargs,pa,eshellZSH);
+  pr_enums(out,npargs,pa,eshellZSH);
+  pr_fopts(out,nfile,fnm,eshellZSH);
+  fprintf(out,"-- %s\n",ShortProgram());
+}
+
+static void write_bashcompl(FILE *out,
+			    int nfile,  t_filenm *fnm,
+			    int npargs, t_pargs *pa)
+{
+  /* Advanced bash completions are handled by shell functions.
+   * p and c hold the previous and current word on the command line.
+   * We need to use extended globbing, so write it in each completion file */
+  fprintf(out,"shopt -s extglob\n");
+  fprintf(out,"_%s_compl() {\nlocal p c\n",ShortProgram());
+  fprintf(out,"COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}\n");
+  pr_opts(out,nfile,fnm,npargs,pa,eshellBASH);
+  fprintf(out,"case \"$p\" in\n");
+  pr_enums(out,npargs,pa,eshellBASH);
+  pr_fopts(out,nfile,fnm,eshellBASH);
+  fprintf(out,"esac }\ncomplete -F _%s_compl %s\n",ShortProgram(),ShortProgram());
 }
 
 void write_man(FILE *out,char *mantp,
@@ -572,10 +627,12 @@ void write_man(FILE *out,char *mantp,
   char    *pr;
   int     i,npar;
   t_pargs *par;
-  bool    bCopy;
-  
-  bCopy = !(bHidden || (strcmp(mantp,"completion")==0) );
-  if (!bCopy) {
+ 
+  /* Don't write hidden options to completions, it just
+   * makes the options more complicated for normal users
+   */
+
+  if (bHidden) {
     npar=npargs;
     par=pa;
   }
@@ -605,9 +662,13 @@ void write_man(FILE *out,char *mantp,
     write_htmlman(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs);
   if (strcmp(mantp,"java")==0)
     write_java(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs);
-  if (strcmp(mantp,"completion")==0)
-    write_compl(out,nfile,fnm,npar,par);
+  if (strcmp(mantp,"completion-zsh")==0)
+    write_zshcompl(out,nfile,fnm,npar,par);
+  if (strcmp(mantp,"completion-bash")==0)
+    write_bashcompl(out,nfile,fnm,npar,par);
+  if (strcmp(mantp,"completion-csh")==0)
+    write_cshcompl(out,nfile,fnm,npar,par);
 
-  if (bCopy)
+  if (!bHidden)
     sfree(par);
 }
