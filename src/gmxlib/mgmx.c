@@ -6,6 +6,7 @@
 #include <Xm/ScrolledW.h>
 #include <Xm/ScrollBar.h>
 #include <Xm/PushB.h>
+#include <Xm/PushBP.h>
 #include <Xm/ToggleB.h>
 #include <Xm/ArrowB.h>
 #include <Xm/CascadeB.h>
@@ -88,6 +89,27 @@ static void popup_menu_handler(Widget w,Widget popup,XButtonEvent * event)
   XtManageChild(popup);
 }
 
+static void popup_select_handler(Widget w,XtPointer value,XtPointer blah)
+{
+  int      narg;
+  windex   www;
+  XmString xms;
+  Widget   pushb;
+  XmPushButtonWidget pb;
+  
+  www   = get_windex(w);
+  pushb = get_parent(get_windex(get_parent(www)));
+  pb    = (XmPushButtonWidget) pushb;
+  pb->pushbutton.armed = False;
+  narg  = 0;
+  xms   = char2xms(value);
+  XtSetArg(args[narg],XmNlabelString,xms); narg++;
+  XtSetValues(pushb,args,narg);
+  narg = 0;
+  XtSetArg(args[narg],XmNset,True); narg++;
+  XtSetValues(get_widget_other(get_windex(get_parent(www)),TRUE),args,narg);
+}
+
 static void cancel_callback(Widget w,caddr_t client_data,caddr_t call_data)
 {
   printf("Maybe next time...\n");
@@ -103,22 +125,6 @@ static void ok_callback(Widget w,caddr_t client_data,caddr_t call_data)
 static void help_callback(Widget w,caddr_t client_data,caddr_t call_data)
 {
   XtManageChild(get_widget(helpw));
-}
-
-static void popup_select_handler(Widget w,XtPointer value,XtPointer blah)
-{
-  int      narg;
-  windex   www;
-  XmString xms;
-  
-  www  = get_windex(w);
-  xms  = char2xms(value);
-  narg = 0;
-  XtSetArg(args[narg],XmNlabelString,xms); narg++;
-  XtSetValues(get_parent(get_windex(get_parent(www))),args,narg);
-  narg = 0;
-  XtSetArg(args[narg],XmNset,True); narg++;
-  XtSetValues(get_widget_other(get_windex(get_parent(www)),TRUE),args,narg);
 }
 
 static void help_ok_callback(Widget w,caddr_t client_data,caddr_t call_data)
@@ -372,9 +378,9 @@ static void mk_enumerated(int parent,int top,int left,
     }
     XtSetArg(args[narg],XmNbottomAttachment,  XmATTACH_NONE);     narg++;
     
-    if (j == nwcBUTTON) {
-      ;
-    }
+    /*if (j == nwcBUTTON) {
+      XtSetArg(args[narg],XmNdisarmCallback,True); narg++;
+      }*/
     ww[j] = add_widget(XtCreateWidget(wlab[j],wc[j],
 				      get_widget(parent),args,narg),desc);
   }
@@ -688,55 +694,22 @@ static windex mk_pargs(int parent,int npargs,t_pargs pa[],int pa_index[],
   return separator;
 }
 
-static void mk_help1(Widget parent,int ndesc,char *desc[],int nbugs,char *bugs[])
-{
-  Widget   label,dialog,ok;
-  XmString xmstr;
-  char     buf[256];
-  int      narg;
-
-  /* Convert the strings */  
-  xmstr = xs_str_array_to_xmstr("DESCRIPTION:",ndesc,desc);
-  if (nbugs > 0) {
-    xmstr = XmStringConcat(xmstr,XmStringSeparatorCreate());
-    xmstr = XmStringConcat(xmstr,XmStringSeparatorCreate());
-    xmstr = XmStringConcat(xmstr,xs_str_array_to_xmstr("DIAGNOSTICS:",
-						       nbugs,bugs));
-  }
-  if (debug)
-    fprintf(debug,"%s,%d: Created xmstr\n",__FILE__,__LINE__);
-  narg  = 0;
-  XtSetArg(args[narg],XmNautoUnmanage,FALSE);  narg++;
-  XtSetArg(args[narg],XmNmessageString,xmstr); narg++;
-  /*XtSetArg(args[narg],XmNdialogType,XmDIALOG_INFORMATION); narg++;*/
-  sprintf(buf,"Gromacs Help - %s",ShortProgram());
-  XtSetArg(args[narg],XmNdialogTitle,char2xms(buf)); narg++;
-  dialog = XmCreateMessageDialog(parent,"Help",args,narg);
-  helpw  = add_widget(dialog,NULL);
-  XtUnmanageChild(XmMessageBoxGetChild(dialog,XmDIALOG_CANCEL_BUTTON));
-  XtUnmanageChild(XmMessageBoxGetChild(dialog,XmDIALOG_HELP_BUTTON));
-  if (debug)
-    fprintf(debug,"%s,%d: Unmanaged children\n",__FILE__,__LINE__);
-  ok = XmMessageBoxGetChild(dialog,XmDIALOG_OK_BUTTON);
-  XtAddCallback(ok,XmNactivateCallback,
-		(XtCallbackProc) help_ok_callback,NULL);
-  
-  label = XmMessageBoxGetChild(dialog,XmDIALOG_MESSAGE_LABEL);
-  narg  = 0;
-  XtSetArg(args[narg],XmNalignment,XmALIGNMENT_BEGINNING); narg++;
-  XtSetValues(label,args,narg);
-  if (debug)
-    fprintf(debug,"%s,%d: Aligned help\n",__FILE__,__LINE__);
-}
-
-void append_str(char **buf,int *blen,int *maxlen,char *str)
+static void append_str(char **buf,int *blen,int *maxlen,char *str,
+		       int indent)
 {
 #define DELTA 256
   int  i,slen;
-  char *ptr;
+  char *ptr,*nptr;
  
   ptr = check_tty(str);
-  str = wrap_lines(ptr,70,0);
+  if (indent > 0) {
+    slen=strlen(ptr);
+    snew(nptr,slen+8);
+    sprintf(nptr,"* %s",ptr);
+    str = wrap_lines(nptr,70,indent);
+  }
+  else
+    str = wrap_lines(ptr,70,indent);
   
   while ((ptr = strstr(str,"\n\n")) != 0)
     *ptr = ' ';
@@ -755,23 +728,23 @@ void append_str(char **buf,int *blen,int *maxlen,char *str)
 #undef DELTA
 }
 
-char *concat_str(int ndesc,char *desc[],int nbugs,char *bugs[])
+static char *concat_str(int ndesc,char *desc[],int nbugs,char *bugs[])
 {
   char *ptr  = NULL;
   int  i,blen=0,maxlen=0;
 
-  append_str(&ptr,&blen,&maxlen,"DESCRIPTION:");
+  append_str(&ptr,&blen,&maxlen,"DESCRIPTION:",0);
   if (ndesc == 0) 
-    append_str(&ptr,&blen,&maxlen,"none?");
+    append_str(&ptr,&blen,&maxlen,"none?",0);
   for(i=0; (i<ndesc); i++)
-    append_str(&ptr,&blen,&maxlen,desc[i]);
+    append_str(&ptr,&blen,&maxlen,desc[i],0);
   if (nbugs > 0) {
-    append_str(&ptr,&blen,&maxlen," ");
-    append_str(&ptr,&blen,&maxlen,"DIAGNOSTICS:");
+    append_str(&ptr,&blen,&maxlen," ",0);
+    append_str(&ptr,&blen,&maxlen,"DIAGNOSTICS:",0);
   }
-  for(i=0; (i<nbugs); i++)
-    append_str(&ptr,&blen,&maxlen,bugs[i]);
-  
+  for(i=0; (i<nbugs); i++) {
+    append_str(&ptr,&blen,&maxlen,bugs[i],2);
+  }  
   return ptr;
 }
 
@@ -807,11 +780,14 @@ static void mk_help(Widget parent,int ndesc,char *desc[],
   sep    = mk_separator(helpw,sw);
   
   narg   = 0;
-  XtSetArg(args[narg],XmNtopAttachment,   XmATTACH_WIDGET);   narg++;
-  XtSetArg(args[narg],XmNtopWidget,       get_widget(sep));   narg++;
-  XtSetArg(args[narg],XmNleftAttachment,  XmATTACH_FORM);     narg++;
-  XtSetArg(args[narg],XmNrightAttachment, XmATTACH_FORM);     narg++;
-  XtSetArg(args[narg],XmNbottomAttachment,XmATTACH_FORM);     narg++;
+  XtSetArg(args[narg],XmNtopAttachment,   XmATTACH_WIDGET);    narg++;
+  XtSetArg(args[narg],XmNtopWidget,       get_widget(sep));    narg++;
+  XtSetArg(args[narg],XmNleftAttachment,  XmATTACH_FORM);      narg++;
+  XtSetArg(args[narg],XmNrightAttachment, XmATTACH_FORM);      narg++;
+  /*XtSetArg(args[narg],XmNleftPosition,    (int)30);           narg++;
+    XtSetArg(args[narg],XmNrightPosition,   (int)70);           narg++;*/
+  XtSetArg(args[narg],XmNalignment,       XmALIGNMENT_CENTER); narg++;
+  XtSetArg(args[narg],XmNbottomAttachment,XmATTACH_FORM);      narg++;
   ok     = add_widget(XmCreatePushButton(get_widget(helpw),"OK",args,narg),"");
   XtAddCallback(get_widget(ok),XmNactivateCallback,
 		(XtCallbackProc) help_ok_callback,NULL);

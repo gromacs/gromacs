@@ -38,8 +38,8 @@ int main(int argc, char *argv[])
     "rather than angles themselves, resolves the problem of periodicity."
   };
   static char *bugs[] = {
-    "Produces MANY output files (up to about 4 times the number of residues in the protein, twice that if autocorrelation functions are calculated). Typically several hundred files are output."
-    "Produces MANY output files (up to about 4 times the number of residues in the protein, twice that if autocorrelation functions are calculated). Typically several hundred files are output."
+    "Produces MANY output files (up to about 4 times the number of residues in the protein, twice that if autocorrelation functions are calculated). Typically several hundred files are output.",
+    "Produces MANY output files (up to about 4 times the number of residues in the protein, twice that if autocorrelation functions are calculated). Typically several hundred files are output.",
     "Produces MANY output files (up to about 4 times the number of residues in the protein, twice that if autocorrelation functions are calculated). Typically several hundred files are output."
   };
   int    dummy;
@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
   static real bfac_init=-1.0;
   static bool bRama=FALSE,bShift=TRUE;
   static char *maxchistr[] = { "0", "1", "2", "3",  "4", "5", "6", NULL };
+
   t_pargs pa[] = {
     { "-r0",  FALSE, etINT, &r0,
       "Starting residue number" },
