@@ -21,8 +21,11 @@ $pdb   = shift || die "I need the name of the pdb file with correct atom numbers
 printf "[ distance_restraints ]\n";
 printf "; Read an xplor distance restraint file, and output GROMACS distance restraints.\n";
 printf "; This also needs a pdb file with correct GROMACS atom numbering.\n";
+printf "; I used $pdb for the atom numbers\n";
 printf "; This also needs the offset in residues.\n";
+printf "; I used $res0 for the offset\n";
 
+# If things go wrong, check whether your pdb file is read correctly.
 $natom = 0;
 open(PDB,$pdb) || die "Can not open file $pdb";
 while ($line = <PDB>) {
@@ -89,10 +92,12 @@ if ($debug == 1) {
 }
 
 $myindex = 0;
-$linec = 0;
+$linec   = 0;
+$npair   = 0;
 while ($line = <STDIN>) {
-    if ((index($line,"assign") >= 0) && (index($line,"!assign") < 0)) {
-	@tmp = split('\(',$line);
+    @ttt = split('!',$line);
+    if ((index($ttt[0],"assign") >= 0) && (index($ttt[0],"!assign") < 0)) {
+	@tmp = split('\(',$ttt[0]);
 	# Find first argument
 	if (($rhaak  = index($tmp[1],')')) < 0) {
 	    printf "No ) in '$tmp[1]'\n";
@@ -128,8 +133,14 @@ while ($line = <STDIN>) {
 			    for ( ; ($j < $natom) && ($resnr[$j] == $r2); $j++) { 
 				foreach $jj ( @atoms2 ) {
 				    if ($jj eq $aname[$j]) {
-					$dd = 0.1*$dist[0];
-					printf("%5d %5d %5d %5d %5d %7.3f %7.3f 0.0 1.0; res $r1 $ii - res $r2 $jj\n",$i,$j,1,$myindex,1,$dd,$dd+0.1);
+					$dd     = 0.1*$dist[0];
+					$dminus = 0.1*$dist[1];
+					$dplus  = 0.1*$dist[2];
+					$low    = $dd-$dminus;
+					$up1    = $dd+$dplus;
+					$up2    = $up1+1;
+					printf("%5d %5d %5d %5d %5d %7.3f %7.3f %7.3f 1.0; res $r1 $ii - res $r2 $jj\n",$i,$j,1,$myindex,1,$low,$up1,$up2);
+					$npair++;
 				    }
 				}
 			    }
@@ -143,4 +154,5 @@ while ($line = <STDIN>) {
     $linec++;
 }
 
-print "; A total of $myindex distance restraints were generated from $linec input lines\n";
+printf "; A total of $myindex lines with distance restraints were read from $linec input lines\n";
+printf "; From this, $npair actual restraints were generated.\n";
