@@ -179,7 +179,7 @@ static void check_occupancy(t_atoms *atoms,char *filename)
   
   ftp = fn2ftp(filename);
   if (!atoms->pdbinfo || ((ftp != efPDB) && (ftp != efBRK) && (ftp != efENT)))
-    fprintf(stderr,"No pdb information fields in atoms\n");
+    fprintf(stderr,"No occupancies in %s\n",filename);
   else {
     for(i=0; (i<atoms->nr); i++) {
       if (atoms->pdbinfo[i].occup == 0)
@@ -194,6 +194,8 @@ static void check_occupancy(t_atoms *atoms,char *filename)
 	      "WARNING: there were %d atoms with zero occupancy and %d atoms"
 	      " with\n         occupancy unequal to one (out of %d atoms)."
 	      " Check your pdb file.\n",nzero,nnotone,atoms->nr);
+    else
+      fprintf(stderr,"All occupancies are one\n");
   }
 }
 
