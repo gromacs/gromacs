@@ -33,14 +33,14 @@
 \begin{document}
 \sloppy
 %
-%	F R O N T P A G E	
+%       F R O N T P A G E       
 %
 \thispagestyle{empty}
 \begin{center}
-{\Large\bf\underline {Groningen Machine for Chemical Simulations}}	\\[1cm]
+{\Large\bf\underline {Groningen Machine for Chemical Simulations}}      \\[1cm]
 
-{\LARGE\bf GROMACS USER MANUAL}				\\[1cm]
-{\LARGE\bf Version \gmxver}				\\[1cm]
+{\LARGE\bf GROMACS USER MANUAL}                         \\[1cm]
+{\LARGE\bf Version \gmxver}                             \\[1cm]
 \end{center}
 
 \centerline{\psfig {figure=plots/warning.eps,width=1.8cm,angle=-80}}
@@ -52,7 +52,7 @@
 \thispagestyle{empty}
 
 %
-%	P R E F A C E
+%       P R E F A C E
 %
 \cleardoublepage
 \footrulewidth 0.4pt
@@ -68,19 +68,20 @@
 \setcounter{page}{1}
 
 \begin{center}
-{\LARGE\bf GROMACS USER MANUAL}				\\[1cm]
-{\LARGE\bf Version \gmxver}				\\[1cm]
-{\LARGE\bf \today}					\\[1cm]
+{\LARGE\bf GROMACS USER MANUAL}                         \\[1cm]
+{\LARGE\bf Version \gmxver}                             \\[1cm]
+{\LARGE\bf \today}                                      \\[1cm]
 {\large\bf 
-David van der Spoel 	\\
-Aldert R. van Buuren 	\\
-Emile Apol 		\\
-Pieter J. Meulenhoff 	\\
-D. Peter Tieleman	\\
-Alfons L.T.M. Sijbers 	\\
-Berk Hess		\\
-K. Anton Feenstra	\\
-Rudi van Drunen 	\\
+David van der Spoel     \\
+Aldert R. van Buuren    \\
+Emile Apol              \\
+Pieter J. Meulenhoff    \\
+D. Peter Tieleman       \\
+Alfons L.T.M. Sijbers   \\
+Berk Hess               \\
+K. Anton Feenstra       \\
+Erik Lindahl            \\
+Rudi van Drunen         \\
 Herman J.C. Berendsen}
 \end{center}
 
@@ -98,8 +99,8 @@ Herman J.C. Berendsen}
 University of Groningen \\ 
 Nijenborgh 4\\
 9747 AG Groningen \\
-The Netherlands	\\
-Fax: 31-50-634800	\\
+The Netherlands \\
+Fax: 31-50-634800       \\
 \hline
 \end{tabular}
 }
@@ -132,7 +133,8 @@ or, if you use BibTeX, you can directly copy the following:
   author =       "David van der Spoel and Aldert R. van Buuren and Emile
                  Apol and Pieter J. Meulenhoff and D. Peter Tieleman and
                  Alfons L. T. M. Sij\-bers and Berk Hess and K. Anton
-                 Feenstra and Rudi van Drunen and Herman J. C. Berendsen",
+                 Feenstra and Erik Lindahl and Rudi van Drunen 
+                 and Herman J. C. Berendsen",
   address =      "Nij\-enborgh 4, 9747 AG Groningen, The Netherlands.
                  Internet: http://rugmd0.chem.rug.nl/\~{ }gmx",
   year =         "1998"
@@ -148,11 +150,11 @@ Any comment is welcome, please send it by e-mail to
 Groningen, \today
 \medskip
 
-{\sf BIOSON} Research Institute and Department of Biophysical Chemistry	\\
+{\sf BIOSON} Research Institute and Department of Biophysical Chemistry \\
 University of Groningen \\ 
-Nijenborgh 4				\\
-9747 AG Groningen			\\
-The Netherlands				\\
+Nijenborgh 4                            \\
+9747 AG Groningen                       \\
+The Netherlands                         \\
 Fax: 31-50-634800
 
 \newpage
@@ -181,14 +183,14 @@ HyperChem & is a trademark of AutoDesk inc.\\
 The figure on frontpage was made with Molscript~\cite{Kraulis91}.
 
 %
-%	C O N T E N T S
+%       C O N T E N T S
 %
 \tableofcontents
 \listoffigures
 \listoftables
 
 %
-%	R E A L   M A N U A L
+%       R E A L   M A N U A L
 %
 \cleardoublepage
 \setcounter{page}{1}
@@ -199,14 +201,14 @@ The figure on frontpage was made with Molscript~\cite{Kraulis91}.
 \include{algorithms}
 \include{par-md}
 \include{forcefield}
-\include{pppm}
+\include{lr_elstat}
 \include{topology}
 %\include{starting}
 \include{special}
 \include{analyse}
 
 %
-%	A P P E N D I C E S
+%       A P P E N D I C E S
 %
 \appendix
 \include{install}
@@ -216,7 +218,7 @@ The figure on frontpage was made with Molscript~\cite{Kraulis91}.
 \include{averages}
 
 %
-% 	B I B L I O G R A P H Y
+%       B I B L I O G R A P H Y
 %
 \cleardoublepage
 \addcontentsline{toc}{chapter}{Bibliography}
@@ -224,7 +226,7 @@ The figure on frontpage was made with Molscript~\cite{Kraulis91}.
 \bibliography{texutil/monster,texutil/unpubl}
 
 %
-%	I N D E X
+%       I N D E X
 %
 \cleardoublepage
 \addcontentsline{toc}{chapter}{Index}

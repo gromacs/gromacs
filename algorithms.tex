@@ -70,15 +70,12 @@ other unit cell shapes. However, in the present version
 only rectangular boxes are allowed.
   
 
-\gromacs uses exclusively periodic boundary conditions, combined
+\gromacs uses periodic boundary conditions, combined
 with the {\em minimum image convention:} only one - the nearest -
-image of each particle is considered for non-bonded interaction terms.
-The present version of \gromacs has no provisions to extend
-interactions beyond the minimum image convention, e.g. to complete
-lattice sums. Thus Ewald summation, Poisson solvers, or hierarchical
-long-range summation methods are not implemented. We intend to
-incorporate a lattice-sum method in a later version, after the best
-method has been evaluated and parallelized.
+image of each particle is considered for short-range non-bonded interaction terms.
+For long-range electrostatic interactions this is not always accurate
+enough, and \gromacs therefore also incorporates lattice sum methods
+like Ewald, PME and PPPM.
   
 The box can be of arbitrary dimensions, but must be rectangular. An
 isolated cluster of molecules can of course be simulated as well within these
@@ -363,17 +360,16 @@ the use  of a cut-off (when one charge of a dipole is within range and
 the  other not), which can have disastrous consequences for the
 behaviour of  the Coulomb interaction function at distances near the
 cut-off  radius. If molecular groups have full charges (ions), charge
-groups  do not avoid adverse cut-off effects, and the inclusing of
-lattice  sums for long-range interactions must be considered (not
-supplied  by {\gromacs})~\cite{Berendsen93a}. 
+groups  do not avoid adverse cut-off effects, and you shold consider
+using one of the lattice sum methods supplied by {\gromacs}~\cite{Berendsen93a}. 
 
 If appropriately
 constructed \myindex{shift function}s are used for the 
 \myindex{electrostatic force}s, no
-charge groups are needed. Such shift functions are already implemented
+charge groups are needed. Such shift functions are implemented
 in {\gromacs} (see chapter~\ref{ch:ff}) but must be used with
-care: in principle they should be combined with proper computation of
-long-range interactions, which is not yet implemented in \gromacs.  
+care: in principle they should be combined with a lattice sum for
+long-range electrostatics.
 
 The actual neighbour search is performed on a grid. The details of the
 algorithm are not relevant for the user and are not given here.
@@ -399,7 +395,7 @@ From this the absolute temperature $T$ can be computed using:
 where $k$ is Boltzmann's constant and $N_{df}$ is the number of
 degrees of freedom which can be computed from:
 \beq
-N_{df}	~=~	3 N - N_c - 3
+N_{df}  ~=~     3 N - N_c - 3
 \eeq
 Here $N_c$ is the number of {\em constraints} imposed on the system.
 The additional 3 degrees of freedom must be removed because the three
@@ -426,7 +422,7 @@ where $V$ is the volume of the computational box.
 The scalar pressure $P$, which can be used for pressure coupling in the case
 of isotropic systems, is computed as:
 \beq
-P	= {\rm trace}({\bf P})/3
+P       = {\rm trace}({\bf P})/3
 \eeq
 
 The virial ${\bf \Xi}$ tensor is defined as 
@@ -448,8 +444,8 @@ velocities $\ve{v}$ at time $t-\hDt$; it updates positions and
 velocities using the forces
 $\ve{F}(t)$ determined by the positions at time $t$: 
 \bea
-\ve{v}(t+\hDt)	&~=~&	\ve{v}(t-\hDt)+\frac{\ve{F}(t)}{m}\Dt	\\
-\ve{r}(t+\Dt)	&~=~&	\ve{r}(t)+\ve{v}(t+\hDt)\Dt
+\ve{v}(t+\hDt)  &~=~&   \ve{v}(t-\hDt)+\frac{\ve{F}(t)}{m}\Dt   \\
+\ve{r}(t+\Dt)   &~=~&   \ve{r}(t)+\ve{v}(t+\hDt)\Dt
 \eea
 The algorithm is visualised in Figure~\ref{fig:leapfrog}.
 It is equivalent to the Verlet~\cite{Verlet67} algorithm:
@@ -479,7 +475,7 @@ system. \gromacs uses the {\em weak coupling} scheme~\cite{Berendsen84}
 that mimics weak coupling with first-order kinetics to an external
 heat bath with given temperature $T_0$. See ref~\cite{Berendsen91} for
 a comparison of this temperature control method with the
-Nos\'{e}-Hoover scheme~\cite{Nose84,Hoover85}. The effect of the algorithm is
+Nos{\'e}-Hoover scheme~\cite{Nose84,Hoover85}. The effect of the algorithm is
 that a deviation of the system temperature from $T_0$ is slowly
 corrected according to
 \beq
@@ -564,7 +560,9 @@ also  dynamic changes in box angles, but this is not implemented yet).
 
 Since the pressure fluctuates heavily, it is recommended to take
 $\tau_p$ not too small; a value between 0.4 and 1 ps will often be
-satisfactory.
+satisfactory. When using lattice sum methods it is easy to get pressure
+oscillations, but this can be overcome by either slower scaling or by
+averaging the calculated pressure over several steps.
 
 \subsubsection*{\normindex{Surface tension coupling}}
 When a periodic system consists of more than one phase, separated by
@@ -596,9 +594,9 @@ correct convergence for the surface tension to the reference value $\gamma_0$.
 The correction factor for the box-length in the x/y-direction is:
 \beq
 \mu_{xy} = \left[ 1 + \frac{\Delta t}{\tau_p} \beta_{xy}
-	\left( \frac{n \gamma_0}{\mu_z L_z} 
-	- \left\{ P_z(t)+\Delta P_z - \frac{P_x(t) + P_y(t)}{2} \right\} 
-	\right) \right]^\frac{1}{2}
+        \left( \frac{n \gamma_0}{\mu_z L_z} 
+        - \left\{ P_z(t)+\Delta P_z - \frac{P_x(t) + P_y(t)}{2} \right\} 
+        \right) \right]^\frac{1}{2}
 \eeq
 The value of $\beta_z$ is more critical than with normal pressure
 coupling. Normally an incorrect compressibility will just scale $\tau_p$,
@@ -832,7 +830,7 @@ The matrix $\ve{A}_n$ is symmetric and sparse and has zeros on the diagonal.
 Thus a simple trick can be used to calculate the inverse
 \fs{m3}
 (\ve{I}-\ve{A}_n)^{-1}= 
-	\ve{I} + \ve{A}_n + \ve{A}_n^2 + \ve{A}_n^3 + \ldots
+        \ve{I} + \ve{A}_n + \ve{A}_n^2 + \ve{A}_n^3 + \ldots
 \fe
 
 This inversion method is only valid if the absolute values of all the
@@ -957,8 +955,8 @@ $\langle \rond_i\!(t) \rond_j\!(0) \rangle =
 In {\gromacs} the equations are integrated with an explicit scheme
 \beq
 \ve{r}_{n+1} = \ve{r}_{n} +
-	{\Delta t \over \gamma} \ve{F}(\ve{r}_n) 
-	+ \sqrt{2 k_b T {\Delta t \over \gamma}}\, \ruis 
+        {\Delta t \over \gamma} \ve{F}(\ve{r}_n) 
+        + \sqrt{2 k_b T {\Delta t \over \gamma}}\, \ruis 
 \eeq
 where $\ruis$ is  Gaussian distributed noise with $\mu = 0$, $\sigma = 1$.
 Because the system is assumed to be overdamped, large timesteps
@@ -985,7 +983,7 @@ Initially a maximum displacement $h_0$ (e.g. 0.01 nm) must be given.
 First the forces $\ve{F}$ and potential energy are calculated.
 New positions are calculated by
 \beq
-\ve{r}_{n+1} =	\ve{r}_n + \frac{\ve{F}_n}{\max (|\ve{F}_n|)} h_n
+\ve{r}_{n+1} =  \ve{r}_n + \frac{\ve{F}_n}{\max (|\ve{F}_n|)} h_n
 \eeq
 where $h_n$ is the maximum displacement and $\ve{F}_n$ is the force,
 or the negative gradient of the  potential $V$. The notation $\max
@@ -1021,7 +1019,7 @@ $f=7.7$ kJ~mol$^{-1}$~nm$^{-1}$. A value for $\epsilon$ between 1 and
 can be performed using {\gromacs}, by diagonalization of the mass-weighted
 \myindex{Hessian}:
 \beq
-M^{-1/2} H M^{-1/2} Q	~=~	\omega^2 Q
+M^{-1/2} H M^{-1/2} Q   ~=~     \omega^2 Q
 \eeq
 where $M$ contains the atomic masses, $Q$ contains eigenvectors, and $\omega$
 contains the corresponding eigenvalues (frequencies).
@@ -1029,13 +1027,13 @@ contains the corresponding eigenvalues (frequencies).
 First, the Hessian matrix, which is a 3N x 3N matrix where N is the number
 of atoms, has to be calculated:
 \beq
-H_{ij}	~=~	\frac{\partial^2 V}{\partial x_i \partial x_j}
+H_{ij}  ~=~     \frac{\partial^2 V}{\partial x_i \partial x_j}
 \eeq
 where $x_i$ and $x_j$ denote the atomic x,y or z coordinates.
 In practice, these equations have not been developed analytically, but
 the force is used
 \beq
-F_i	~=~	\frac{\partial V}{\partial x_i}
+F_i     ~=~     \frac{\partial V}{\partial x_i}
 \eeq
 from which the Hessian is computed numerically. It should be noted that
 for a usual Normal Mode calculation, it is necessary to completely minimize 
@@ -1060,7 +1058,7 @@ the enzyme in a reasonable amount of computer time with reasonable accuracy.
 However, if we consider the free energy cycle in (\figref{free}A)
 we can write
 \beq
-\Delta G_1 - \Delta G_2	=	\Delta G_3 - \Delta G_4
+\Delta G_1 - \Delta G_2 =       \Delta G_3 - \Delta G_4
 \label{eqn:ddg}
 \eeq
 If we are interested in the left-hand term we can equally well compute
@@ -1129,37 +1127,37 @@ them with their own advantages and disadvantages. The method to
 choose depends on the hardware and compilers available.
 We list them here:
 \begin{enumerate}
-\item[1]	{\em \myindex{Message Passing}.}\\
-		In this method, which is more or less the traditional
-		way of parallel programming, all the parallelism is
-		explicitly programmed by the user. The disadvantage
-		is that it takes extra code and effort, the advantage
-		is that the programmer keeps full control over the data
-		flow and can do optimisations a compiler could not come 
-		up with. 
+\item[1]        {\em \myindex{Message Passing}.}\\
+                In this method, which is more or less the traditional
+                way of parallel programming, all the parallelism is
+                explicitly programmed by the user. The disadvantage
+                is that it takes extra code and effort, the advantage
+                is that the programmer keeps full control over the data
+                flow and can do optimisations a compiler could not come 
+                up with. 
 
-		The implementation is typically done by calling a set of 
-		library routines to send and receive data to and from 
-		other processors. Almost all hardware vendors support 
-		this way of
-		parallellism in their C and Fortran compilers.
-		
-\item[2]	{\em \myindex{Data Parallel}.}\\
-		This method lets the user define arrays on which to
-		operate in parallel. Programming this way is much
-		like vectorising: recurrence is not parallelised
-		(eg. {\tt for(i=1; (i<MAX); i++) a[i] = a[i-1] + 1;}
-		does not vectorise and not parallelise, because for
-		every i the result from the previous step is needed).
+                The implementation is typically done by calling a set of 
+                library routines to send and receive data to and from 
+                other processors. Almost all hardware vendors support 
+                this way of
+                parallellism in their C and Fortran compilers.
+                
+\item[2]        {\em \myindex{Data Parallel}.}\\
+                This method lets the user define arrays on which to
+                operate in parallel. Programming this way is much
+                like vectorising: recurrence is not parallelised
+                (eg. {\tt for(i=1; (i<MAX); i++) a[i] = a[i-1] + 1;}
+                does not vectorise and not parallelise, because for
+                every i the result from the previous step is needed).
 
-		The advantage of data parallellism is that it is
-		easier for the user; the compiler takes care of the
-		parallellism. The disadvantage is that it is supported
-		by a small (though growing) number of hardware vendors,
-		and that it is much harder to maintain a program that has to
-		run on both parallel and sequential machines, because
-		the only standard language that supports it is Fortran-90
-		which is not available on many platforms.
+                The advantage of data parallellism is that it is
+                easier for the user; the compiler takes care of the
+                parallellism. The disadvantage is that it is supported
+                by a small (though growing) number of hardware vendors,
+                and that it is much harder to maintain a program that has to
+                run on both parallel and sequential machines, because
+                the only standard language that supports it is Fortran-90
+                which is not available on many platforms.
 \end{enumerate}
 Both methods allow for the MD algorithm to be implemented without much
 trouble. Message passing MD algorithms have been published
@@ -1201,25 +1199,25 @@ it even though it might come in handy at times.
 When using a message passing scheme one has to divide the particles 
 over processors, which can be done in two ways:
 \begin{itemize}
-\item	{\em \myindex{Space Decomposition}.}\\
-	An element of space is allocated to each processor, when dividing
-	a cubic box with edge $b$ over $P$ processors this can be done 
-	by giving
-	each processor a slab of length $b/P$. This method 
-	has the advantage
-	that each processor has about the same number of interactions
-	to calculate (at least when the simulated system has a homogeneous
-	density, like a liquid or a gas). The disadvantage is that a lot of
-	bookkeeping is necessary for particles that move over processor
-	boundaries. When using more complex systems like macromolecules there
-	are also 3- and 4-atom interactions that would 
-	complicate the bookkeeping so much that this method is not used
-	in our program.
-\item	{\em \myindex{Particle Decomposition}.}\\
-	Every processor is allocated a number of particles. When
-	dividing $N$ particles over $P$ processors each processor will
-	get $N/P$ particles. The implementation of this method
-	is described in the next section.
+\item   {\em \myindex{Space Decomposition}.}\\
+        An element of space is allocated to each processor, when dividing
+        a cubic box with edge $b$ over $P$ processors this can be done 
+        by giving
+        each processor a slab of length $b/P$. This method 
+        has the advantage
+        that each processor has about the same number of interactions
+        to calculate (at least when the simulated system has a homogeneous
+        density, like a liquid or a gas). The disadvantage is that a lot of
+        bookkeeping is necessary for particles that move over processor
+        boundaries. When using more complex systems like macromolecules there
+        are also 3- and 4-atom interactions that would 
+        complicate the bookkeeping so much that this method is not used
+        in our program.
+\item   {\em \myindex{Particle Decomposition}.}\\
+        Every processor is allocated a number of particles. When
+        dividing $N$ particles over $P$ processors each processor will
+        get $N/P$ particles. The implementation of this method
+        is described in the next section.
 \end{itemize}
 
 \subsection{MD on a ring of processors}
@@ -1227,7 +1225,7 @@ When a neighbourlist is not used the MD problem is in principle an $O(N^2)$
 problem as each particle can interact
 with every other. This can be simplified using Newtons third law
 \beq
-F_{ij}	~=~	-F_{ji}
+F_{ij}  ~=~     -F_{ji}
 \label{Eq:Newt3}
 \eeq
 This implies that there is half a matrix of interactions (without diagonal, 
@@ -1259,12 +1257,12 @@ implies integer division, ie. with truncation.}
 \centerline{
 \begin{tabular}{l|c|c|c|c}
 \dline
-	   & i mod 2 = 0 & i mod 2 = 0 	& i mod 2 = 1	& i mod 2 = 1 \T \\
-	   & i $<$ N/2& i $\ge$ N/2 	& i $<$ N/2	& i $\ge$ N/2 \B \\
+           & i mod 2 = 0 & i mod 2 = 0  & i mod 2 = 1   & i mod 2 = 1 \T \\
+           & i $<$ N/2& i $\ge$ N/2     & i $<$ N/2     & i $\ge$ N/2 \B \\
 \hline
-N mod 2 = 1 & N/2	& N/2		& N/2		& N/2	\T	\\
-N mod 4 = 2 & N/2	& N/2 		& N/2 - 1	& N/2 - 1	\\
-N mod 4 = 0 & N/2	& N/2 - 1	& N/2 - 1	& N/2 	\B	\\
+N mod 2 = 1 & N/2       & N/2           & N/2           & N/2   \T      \\
+N mod 4 = 2 & N/2       & N/2           & N/2 - 1       & N/2 - 1       \\
+N mod 4 = 0 & N/2       & N/2 - 1       & N/2 - 1       & N/2   \B      \\
 \dline
 \end{tabular}
 }
@@ -1312,7 +1310,7 @@ void communicate_r(int nprocs,int pid,rvec vecs[],int start[],int homenr[])
   shift = nprocs/2;
 
   for (i=0; (i<shift); i++) {
-    next=(cur+1) % nprocs;	
+    next=(cur+1) % nprocs;      
     send   (left,  vecs[start[cur]],  homenr[cur]);
     receive(right, vecs[start[next]], homenr[next]);
     cur=next;

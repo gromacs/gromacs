@@ -28,7 +28,7 @@ changes, reaction kinetics, or the dynamics of defects in crystals.
 The choice of technique depends on the question asked and on the 
 feasibility of the method to yield reliable results at the present 
 state of the art. Ideally, the (relativistic) time-dependent 
-\normindex{Schr\"{o}dinger equation} 
+\normindex{Schr{\"o}dinger equation} 
 describes the properties of molecular systems 
 with high accuracy, but anything more complex than the equilibrium 
 state of a few atoms cannot be handled at this {\em ab initio} level. 
@@ -51,32 +51,32 @@ representative statistical ensemble (either equilibrium or
 non-equilibrium) of molecular systems. For molecular modelling this has 
 two important consequences:
 \begin{itemize}
-\item 	The knowledge of a single structure, even if it is the structure 
-	of the global energy minimum, is not sufficient. It is necessary to 
-	generate a representative ensemble at a given temperature, in order to 
-	compute macroscopic properties. But this is not enough to compute 
-	thermodynamic equilibrium properties that are based on free energies, 
-	such as phase equilibria, binding constants, solubilities,  relative 
-	stability of molecular conformations, etc. The computation of free 
-	energies and thermodynamic potentials requires special extensions of 
-	molecular simulation techniques.
-\item 	While molecular simulations in principle provide atomic details 
-	of the structures and motions, such details are often not relevant for 
-	the macroscopic properties of interest. This opens the way to simplify 
-	the description of interactions and average over irrelevant details. 
-	The science of \normindex{statistical mechanics} 
-	provides the theoretical framework 
-	for such simplifications. There is a hierarchy of methods ranging from 
-	considering groups of atoms as one unit, describing motion in a 
-	reduced 
-	number of collective coordinates, averaging over solvent molecules 
-	with 
-	potentials of mean force combined with 
-	\normindex{stochastic dynamics}~\cite{Gunsteren90}, to {\em 
-	\normindex{mesoscopic dynamics}} 
-	describing densities rather than atoms and fluxes 
-	as response to thermodynamic gradients rather than velocities or 
-	accelerations as response to forces~\cite{Fraaije93}.
+\item   The knowledge of a single structure, even if it is the structure 
+        of the global energy minimum, is not sufficient. It is necessary to 
+        generate a representative ensemble at a given temperature, in order to 
+        compute macroscopic properties. But this is not enough to compute 
+        thermodynamic equilibrium properties that are based on free energies, 
+        such as phase equilibria, binding constants, solubilities,  relative 
+        stability of molecular conformations, etc. The computation of free 
+        energies and thermodynamic potentials requires special extensions of 
+        molecular simulation techniques.
+\item   While molecular simulations in principle provide atomic details 
+        of the structures and motions, such details are often not relevant for 
+        the macroscopic properties of interest. This opens the way to simplify 
+        the description of interactions and average over irrelevant details. 
+        The science of \normindex{statistical mechanics} 
+        provides the theoretical framework 
+        for such simplifications. There is a hierarchy of methods ranging from 
+        considering groups of atoms as one unit, describing motion in a 
+        reduced 
+        number of collective coordinates, averaging over solvent molecules 
+        with 
+        potentials of mean force combined with 
+        \normindex{stochastic dynamics}~\cite{Gunsteren90}, to {\em 
+        \normindex{mesoscopic dynamics}} 
+        describing densities rather than atoms and fluxes 
+        as response to thermodynamic gradients rather than velocities or 
+        accelerations as response to forces~\cite{Fraaije93}.
 \end{itemize}
 
 For the generation of a representative equilibrium ensemble two methods 
@@ -210,8 +210,8 @@ simulation method and their parameters can be user-modified as the
 need arises or knowledge improves. But the form of the forces that can
 be used in a particular program is subject to limitations. The force
 field that is incorporated in {\gromacs} is described in Chapter 4. In
-the present version the force field is pair-additive, it does not
-allow the inclusion of long-range forces, it cannot incorporate
+the present version the force field is pair-additive (apart from
+long-range coulomb forces), it cannot incorporate
 polarisabilities, and it does not contain fine-tuning of bonded
 interactions. This urges the inclusion of some limitations in this
 list below.  For the rest it is quite useful and fairly reliable for
@@ -236,15 +236,16 @@ exaggerate the long-range Coulombic terms. Luckily, the next item
 compensates this effect a bit.
 
 {\bf Long-range interactions are cut-off}
-In this version {\gromacs} uses a cut-off radius for the Coulomb
-interactions. Due to the minimum-image convention (only one image of
+In this version {\gromacs} always uses a cut-off radius for the
+Lennard-Jones interactions and sometimes also for Coulomb. 
+Due to the minimum-image convention (only one image of
 each particle in the periodic boundary conditions is considered for a
 pair interaction), the cut-off range can not exceed half the box
 size. That is still pretty big for large systems, and trouble is only
 expected for systems containing charged particles. But then real bad
 things may happen, like accumulation of charges at the cut-off
-boundary or very wrong energies! This problem is being worked on, and
-it will improve.
+boundary or very wrong energies! For such systems you should consider
+using one of the implemented long-range electrostatic algorithms.
 
 {\bf Boundary conditions are unnatural}
 Since system size is small (even 10,000 particles is small), a cluster
@@ -256,7 +257,9 @@ remains. This item is mentioned in the last place because it is the
 least evil of all. For large systems the errors are small, but for
 small systems with a lot of internal spatial correlation, the periodic
 boundaries may enhance internal correlation. In that case, beware and
-test the influence of system size.
+test the influence of system size. This is especially important when
+using lattice sums for long-range electrostatics, since these are known
+to sometimes introduce extra ordering.
 
 \section{Energy Minimization and Search Methods}
 
@@ -316,26 +319,26 @@ programming beyond the standard capabilities of {\gromacs}.
 
 Three possible energy minimization methods are:
 \begin{itemize}
-\item 	Those that require only function evaluations. Examples are the 
-	simplex method and its variants. A step is made on the basis of the 
-	results of previous evaluations. If derivative information is 
-	available, such methods are inferior to those that use 
-	this information.
-\item 	Those that use derivative information. Since the partial 
-	derivatives of the potential energy with respect to all 
-	coordinates are known in MD programs (these are equal to minus 
-	the forces) this class of methods is very suitable as modification 
-	of MD programs.
-\item 	Those that use second derivative information as well. These methods 
-	are superior in their convergence properties near the minimum: a 
-	quadratic potential function is minimised in one step! The problem 
-	is that for $N$ particles a $3N\times 3N$ matrix must be computed, 
-	stored and inverted. Apart from the extra programming to obtain 
-	second derivatives, for most systems of interest this is beyond the 
-	available capacity. There are intermediate methods building up the 
-	Hessian matrix on the fly, but they also suffer from excessive 
-	storage requirements. So {\gromacs} will shy away from this class 
-	of methods.
+\item   Those that require only function evaluations. Examples are the 
+        simplex method and its variants. A step is made on the basis of the 
+        results of previous evaluations. If derivative information is 
+        available, such methods are inferior to those that use 
+        this information.
+\item   Those that use derivative information. Since the partial 
+        derivatives of the potential energy with respect to all 
+        coordinates are known in MD programs (these are equal to minus 
+        the forces) this class of methods is very suitable as modification 
+        of MD programs.
+\item   Those that use second derivative information as well. These methods 
+        are superior in their convergence properties near the minimum: a 
+        quadratic potential function is minimised in one step! The problem 
+        is that for $N$ particles a $3N\times 3N$ matrix must be computed, 
+        stored and inverted. Apart from the extra programming to obtain 
+        second derivatives, for most systems of interest this is beyond the 
+        available capacity. There are intermediate methods building up the 
+        Hessian matrix on the fly, but they also suffer from excessive 
+        storage requirements. So {\gromacs} will shy away from this class 
+        of methods.
 \end{itemize}
 
 

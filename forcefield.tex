@@ -28,14 +28,14 @@ are described in the appropriate subsections.
 \section{Potentials}
 The potential functions can be subdivided into three parts
 \begin{enumerate}
-\item	{\em Non-bonded}: Lennard-Jones or Buckingham, and Coulomb or
+\item   {\em Non-bonded}: Lennard-Jones or Buckingham, and Coulomb or
 modified Coulomb. The non-bonded interactions are computed on the
 basis of a neighbour list (a list of non-bonded atoms within a certain
 radius), in which exclusions are already removed.
-\item	{\em Bonded}: covalent bond-stretching, angle-bending,
+\item   {\em Bonded}: covalent bond-stretching, angle-bending,
 improper dihedrals, and proper dihedrals. These are computed on the
 basis of fixed lists. 
-\item	{\em Special}: position restraints and distance restraints,
+\item   {\em Special}: position restraints and distance restraints,
 based on fixed lists. 
 \end{enumerate}
 
@@ -58,8 +58,8 @@ act through the Coulomb term.
 \label{sec:lj}
 The \normindex{Lennard Jones} potential $V_{LJ}$ between two atoms equals
 \beq
-V_{LJ}(\rij) =	\frac{C_{ij}^{(12)}}{\rij^{12}} -
-			\frac{C_{ij}^{(6)}}{\rij^6}	
+V_{LJ}(\rij) =  \frac{C_{ij}^{(12)}}{\rij^{12}} -
+                        \frac{C_{ij}^{(6)}}{\rij^6}     
 \eeq
 see also fig~\ref{fig:lj}
 The parameters $C^{(12)}_{ij}$ and $C^{(6)}_{ij}$  depend on pairs of
@@ -75,29 +75,29 @@ LJ-parameters.
 The force derived from this potential is:
 \beq
 \ve{F}_i(\rvij) = \left( 12~\frac{C_{ij}^{(12)}}{\rij^{12}} -
-				 6~\frac{C_{ij}^{(6)}}{\rij^6} \right) \rnorm 
+                                 6~\frac{C_{ij}^{(6)}}{\rij^6} \right) \rnorm 
 \eeq
 
 The LJ potential may also be written in the following form :
 \beq
 V_{LJ}(\rvij) = 4\epsilon_{ij}\left(\left(\frac{\sigma_{ij}} {\rij}\right)^{12}
-		- \left(\frac{\sigma_{ij}}{\rij}\right)^{6} \right)
-\label{eqn:sigeps}	
+                - \left(\frac{\sigma_{ij}}{\rij}\right)^{6} \right)
+\label{eqn:sigeps}      
 \eeq
 
 In constructing the parameter matrix for the non-bonded LJ-parameters,
 two types of combination rules can be used within {\gromacs}: 
 \beq
 \begin{array}{rcl}
-C_{ij}^{(6)}	&=& \left({C_{ii}^{(6)} * C_{jj}^{(6)}}\right)^{1/2}	\\
-C_{ij}^{(12)}	&=& \left({C_{ii}^{(12)} * C_{jj}^{(12)}}\right)^{1/2}
+C_{ij}^{(6)}    &=& \left({C_{ii}^{(6)} * C_{jj}^{(6)}}\right)^{1/2}    \\
+C_{ij}^{(12)}   &=& \left({C_{ii}^{(12)} * C_{jj}^{(12)}}\right)^{1/2}
 \label{eqn:comb}
 \end{array}
 \eeq
 or, alternatively,
 \beq
 \begin{array}{rcl}
- \sigma_{ij}   &=& \frac{1}{ 2}(\sigma_{ii}+\sigma_{jj})	\\
+ \sigma_{ij}   &=& \frac{1}{ 2}(\sigma_{ii}+\sigma_{jj})        \\
  \epsilon_{ij} &=& \left({\epsilon_{ii} \epsilon_{jj}}\right)^{1/2}
 \end{array}
 \eeq
@@ -109,7 +109,7 @@ than the Lennard Jones interaction, but is also more expensive to
 compute. The potential form is:
 \beq
 V_{bh}(\rij) = A_{ij} \exp(-B_{ij} \rij) -
-			\frac{C_{ij}}{\rij^6}
+                        \frac{C_{ij}}{\rij^6}
 \eeq
 \begin{figure}
 \centerline{\psfig {figure=plots/f_bham.eps,angle=270,width=8cm}}
@@ -120,7 +120,7 @@ V_{bh}(\rij) = A_{ij} \exp(-B_{ij} \rij) -
 see also fig~\ref{fig:bham}, the force derived from this is:
 \beq
  \ve{F}_i(\rij) = \left[ -A_{ij}B_{ij}\rij exp(-B_{ij} \rij) -
-				 6\frac{C_{ij}}{\rij^6} \right] \rnorm
+                                 6\frac{C_{ij}}{\rij^6} \right] \rnorm
 \eeq
 
 \subsection{Coulomb interaction}
@@ -161,18 +161,18 @@ The coulomb interaction can be modified for homogeneous systems, by
 assuming a constant dielectric environment beyond the cut-off $r_c$
 with a dielectric constant of {$\epsrf$}. The interaction then reads:
 \beq
-V_{crf}	~=~	f \frac{q_i q_j}{\rij}\left[1+\frac{\epsrf-1}{2\epsrf+1}\frac{\rij^3}{r_c^3}\right] - f\frac{q_i q_j}{r_c}\frac{3\epsrf}{2\epsrf+1}
+V_{crf} ~=~     f \frac{q_i q_j}{\rij}\left[1+\frac{\epsrf-1}{2\epsrf+1}\frac{\rij^3}{r_c^3}\right] - f\frac{q_i q_j}{r_c}\frac{3\epsrf}{2\epsrf+1}
 \label{eqn:vcrf}
 \eeq
 in which the constant expression on the right makes the potential
 zero at the cut-off $r_c$. We can rewrite this for simplicity as
 \beq
-V_{crf}	~=~	f q_i q_j\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]
+V_{crf} ~=~     f q_i q_j\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]
 \eeq
 with
 \bea
-k_{rf}	&=&	\frac{1}{r_c^3}\,\frac{\epsrf-1}{(2\epsrf+1)}	\label{eqn:krf}\\
-c_{rf}	&=&	\frac{1}{r_c}+k_{rf}\,r_c^2 ~=~ \frac{1}{r_c}\,\frac{3\epsrf}{(2\epsrf+1)}
+k_{rf}  &=&     \frac{1}{r_c^3}\,\frac{\epsrf-1}{(2\epsrf+1)}   \label{eqn:krf}\\
+c_{rf}  &=&     \frac{1}{r_c}+k_{rf}\,r_c^2 ~=~ \frac{1}{r_c}\,\frac{3\epsrf}{(2\epsrf+1)}
 \label{eqn:crf}
 \eea
 for large $\epsrf$ the $k_{rf}$ goes to 0.5~$r_c^{-3}$,
@@ -192,9 +192,9 @@ the dielectric continuum beyond the cut-off $r_c$ also has an ionic strength
 $I$~\cite{Tironi95}. In this case we can rewrite the constants $k_{rf}$ and 
 $c_{rf}$ using the inverse Debye screening length $\kappa$:
 \bea
-\kappa	&=&	\frac{2 I \,F^2}{\varepsilon_0 \epsrf RT}=\frac{F^2}{\varepsilon_0 \epsrf RT}\sum_{i=1}^{K} c_i z_i	\\
-k_{rf}	&=&	\frac{1}{r_c^3}\,\frac{(\epsrf-1)(1+\kappa r_c) + \epsrf(\kappa r_c)^2}{(2\epsrf+1)(1+\kappa r_c) + \epsrf(\kappa r_c)^2}	\label{eqn:kgrf}\\
-c_{rf}	&=&	\frac{1}{r_c}\,\frac{3\epsrf(1+\kappa r_c)+2\epsrf(\kappa r_c)^2}{(2\epsrf+1)(1+\kappa r_c) + \epsrf(\kappa r_c)^2}
+\kappa  &=&     \frac{2 I \,F^2}{\varepsilon_0 \epsrf RT}=\frac{F^2}{\varepsilon_0 \epsrf RT}\sum_{i=1}^{K} c_i z_i     \\
+k_{rf}  &=&     \frac{1}{r_c^3}\,\frac{(\epsrf-1)(1+\kappa r_c) + \epsrf(\kappa r_c)^2}{(2\epsrf+1)(1+\kappa r_c) + \epsrf(\kappa r_c)^2}       \label{eqn:kgrf}\\
+c_{rf}  &=&     \frac{1}{r_c}\,\frac{3\epsrf(1+\kappa r_c)+2\epsrf(\kappa r_c)^2}{(2\epsrf+1)(1+\kappa r_c) + \epsrf(\kappa r_c)^2}
 \label{eqn:cgrf}
 \eea
 where $F$ is Faraday's constant, $R$ is the ideal gas constant, $T$ the
@@ -214,9 +214,9 @@ creating charges from dipoles by the truncation procedure. In fact, by
 using shifted forces there is no need for charge groups in the
 construction of neighbour lists. However, the shift function produces
 a considerable modification of the Coulomb potential. Unless the
-'missing' long-range potential is properly calculated and added (later
-version of {\gromacs}!), the effect of such modifications must be
-carefully evaluated. 
+'missing' long-range potential is properly calculated and added
+(through the use of PPPM, Ewald, or PME), the effect of such 
+modifications must be carefully evaluated. 
 The modification of the Lennard-Jones dispersion and repulsion is only
 minor, but it does remove the noise caused by cut-off effects.
  
@@ -235,10 +235,10 @@ The shifted force $F_s(r)$ can generally be written as:
 \beq
 \begin{array}{rcl}
 \vspace{2mm}
-F_s(r)~=&~F_\alpha(r)	& r < r_1		\\
+F_s(r)~=&~F_\alpha(r)   & r < r_1               \\
 \vspace{2mm}
-F_s(r)~=&~F_\alpha(r)+S(r)	& r_1 \le r < r_c	\\
-F_s(r)~=&~0		& r_c \le r	
+F_s(r)~=&~F_\alpha(r)+S(r)      & r_1 \le r < r_c       \\
+F_s(r)~=&~0             & r_c \le r     
 \end{array}
 \eeq
 When $r_1=0$ this is a traditional shift function, otherwise it acts as a 
@@ -255,10 +255,10 @@ The {\gromacs} shift function should be smooth at the boundaries, therefore
 the following boundary conditions are imposed on the shift function:
 \beq
 \begin{array}{rcl}
-S(r_1)		&=&0		\\
-S'(r_1)		&=&0		\\
-S(r_c)		&=&-F_\alpha(r_c)	\\
-S'(r_c)		&=&-F_\alpha'(r_c)
+S(r_1)          &=&0            \\
+S'(r_1)         &=&0            \\
+S(r_c)          &=&-F_\alpha(r_c)       \\
+S'(r_c)         &=&-F_\alpha'(r_c)
 \end{array}
 \eeq
 A 3$^{rd}$ degree polynomial of the form
@@ -270,10 +270,10 @@ boundary condition at $r_c$:
 \beq
 \begin{array}{rcl}
 \vspace{2mm}
-A &~=~&	-\displaystyle
-	\frac{(\alpha+4)r_c~-~(\alpha+1)r_1} {r_c^{\alpha+2}~(r_c-r_1)^2} \\
-B &~=~&	\displaystyle
-	\frac{(\alpha+3)r_c~-~(\alpha+1)r_1}{r_c^{\alpha+2}~(r_c-r_1)^3}
+A &~=~& -\displaystyle
+        \frac{(\alpha+4)r_c~-~(\alpha+1)r_1} {r_c^{\alpha+2}~(r_c-r_1)^2} \\
+B &~=~& \displaystyle
+        \frac{(\alpha+3)r_c~-~(\alpha+1)r_1}{r_c^{\alpha+2}~(r_c-r_1)^3}
 \end{array}
 \eeq
 Thus the total force function is
@@ -336,7 +336,7 @@ V_b~(\rij) = \half k^b_{ij}(\rij-b_{ij})^2
 \eeq
 see also fig~\ref{fig:bstretch1}, with the force
 \beq
-\ve{F}_i(\rvij)	= k^b_{ij}(\rij-b_{ij}) \rnorm
+\ve{F}_i(\rvij) = k^b_{ij}(\rij-b_{ij}) \rnorm
 \eeq
 
 \subsection{Fourth power bond stretching}
@@ -435,9 +435,9 @@ form is the same as the bond stretching (Figure~\ref{fig:bstretch1}).
 The force equations are given by the chain rule:
 \beq
 \begin{array}{l}
-\Fvi	~=~ -\displaystyle\frac{d V_a(\tijk)}{d \rvi}	\\
-\Fvk	~=~ -\displaystyle\frac{d V_a(\tijk)}{d \rvk}	\\
-\Fvj	~=~ -\Fvi-\Fvk
+\Fvi    ~=~ -\displaystyle\frac{d V_a(\tijk)}{d \rvi}   \\
+\Fvk    ~=~ -\displaystyle\frac{d V_a(\tijk)}{d \rvk}   \\
+\Fvj    ~=~ -\Fvi-\Fvk
 \end{array}
 ~ \mbox{ ~ where ~ } ~
  \tijk = \arccos \frac{(\rvij \cdot \ve{r}_{kj})}{r_{ij}r_{kj}}
@@ -540,8 +540,8 @@ An example of constants for $C$ is given in Table~\ref{tab:crb}.
 \centerline{
 \begin{tabular}{|lr|lr|lr|}
 \hline
-$C_0$ 	& 9.28	& $C_2$   & -13.12  & $C_4$   & 26.24   \\
-$C_1$	& 12.16	& $C_3$   & -3.06   & $C_5$   & -31.5   \\
+$C_0$   & 9.28  & $C_2$   & -13.12  & $C_4$   & 26.24   \\
+$C_1$   & 12.16 & $C_3$   & -3.06   & $C_5$   & -31.5   \\
 \hline
 \end{tabular}
 }
@@ -632,8 +632,8 @@ V_{pr}(\ve{r}_i) = \halfje{1} \left[ k_{pr}^x (x_i-X_i)^2 ~\unitv{x} + k_{pr}^y 
 Now the forces are:
 \beq
 \begin{array}{rcl}
-F_i^x &=& -k_{pr}^x~(x_i - X_i)	\\
-F_i^y &=& -k_{pr}^y~(y_i - Y_i)	\\
+F_i^x &=& -k_{pr}^x~(x_i - X_i) \\
+F_i^y &=& -k_{pr}^y~(y_i - Y_i) \\
 F_i^z &=& -k_{pr}^z~(z_i - Z_i)
 \end{array}
 \eeq
@@ -652,8 +652,8 @@ The functional form is similar to that of a proper dihedral.
 For two pairs of atoms: 
 \beq
 V_{ar}(\ve{r}_i,\ve{r}_j,\ve{r}_k,\ve{r}_l)
-	= k_{ar}(1 - cos(n (\theta - \theta_0))
-	)
+        = k_{ar}(1 - cos(n (\theta - \theta_0))
+        )
 ,~~~~\mbox{where}~~
 \theta = \arccos\left(\frac{\ve{r}_j -\ve{r}_i}{\|\ve{r}_j -\ve{r}_i\|}
  \cdot \frac{\ve{r}_l -\ve{r}_k}{\|\ve{r}_l -\ve{r}_k\|} \right)
@@ -661,7 +661,7 @@ V_{ar}(\ve{r}_i,\ve{r}_j,\ve{r}_k,\ve{r}_l)
 For one pair of atoms and the Z-axis: 
 \beq
 V_{ar}(\ve{r}_i,\ve{r}_j) = k_{ar}(1 - cos(n (\theta - \theta_0))
-	)
+        )
 ,~~~~\mbox{where}~~
 \theta = \arccos\left(\frac{\ve{r}_j -\ve{r}_i}{\|\ve{r}_j -\ve{r}_i\|}
  \cdot \left( \begin{array}{c} 0 \\ 0 \\ 1 \\ \end{array} \right) \right)
@@ -684,11 +684,11 @@ beyond the largest distance (see figure~\ref{fig:dist}).
 \beq
 V_{dr}(r_{ij}) ~=~ \left\{
 \begin{array}{lcllllll}
-0		&\mbox{for}& 	 &     & r_{ij} & < & r_1	\\[1.5ex]
-\half k_{dr}(r_{ij}-r_1)^2	
-		&\mbox{for}& r_1 & \le & r_{ij} & < & r_2	\\[1.5ex]
-\half k_{dr}(r_2-r_1)(2r_{ij}-r_2-r_1)	
-		&\mbox{for}& r_2 & \le & r_{ij} &   &
+0               &\mbox{for}&     &     & r_{ij} & < & r_1       \\[1.5ex]
+\half k_{dr}(r_{ij}-r_1)^2      
+                &\mbox{for}& r_1 & \le & r_{ij} & < & r_2       \\[1.5ex]
+\half k_{dr}(r_2-r_1)(2r_{ij}-r_2-r_1)  
+                &\mbox{for}& r_2 & \le & r_{ij} &   &
 \end{array}\right.
 \label{eqn:disre}
 \eeq
@@ -703,11 +703,11 @@ The forces are
 \beq
 \ve{F}_i~=~ \left\{
 \begin{array}{lcllllll}
-0		&\mbox{for}& 	 &     & r_{ij} & < & r_1	\\[1.5ex]
--k_{dr}(r_{ij}-r_1)\frac{\rvij}{r_{ij}}	
-		&\mbox{for}& r_1 & \le & r_{ij} & < & r_2	\\[1.5ex]
--k_{dr}(r_2-r_1)\frac{\rvij}{r_{ij}}	
-		&\mbox{for}& r_2 & \le & r_{ij} &   &
+0               &\mbox{for}&     &     & r_{ij} & < & r_1       \\[1.5ex]
+-k_{dr}(r_{ij}-r_1)\frac{\rvij}{r_{ij}} 
+                &\mbox{for}& r_1 & \le & r_{ij} & < & r_2       \\[1.5ex]
+-k_{dr}(r_2-r_1)\frac{\rvij}{r_{ij}}    
+                &\mbox{for}& r_2 & \le & r_{ij} &   &
 \end{array} \right.
 \eeq
 The above formulae have been improved by introducing the
@@ -729,8 +729,8 @@ The computation of the time
 averaged distance in the {\tt mdrun} program is done in the following fashion:
 \beq
 \begin{array}{rcl}
-\bar{r}_{ij}(0)^{-3} 	&=& r_{ij}(0)^{-3}	\\
-\bar{r}_{ij}(t)^{-3}	&=& \bar{r}_{ij}(t-\Delta t)^{-3}~\exp{\left(-\frac{\Delta t}{\tau}\right)} + r_{ij}(t)^{-3}\left[1-\exp{\left(-\frac{\Delta t}{\tau}\right)}\right]
+\bar{r}_{ij}(0)^{-3}    &=& r_{ij}(0)^{-3}      \\
+\bar{r}_{ij}(t)^{-3}    &=& \bar{r}_{ij}(t-\Delta t)^{-3}~\exp{\left(-\frac{\Delta t}{\tau}\right)} + r_{ij}(t)^{-3}\left[1-\exp{\left(-\frac{\Delta t}{\tau}\right)}\right]
 \label{eqn:ravdisre}
 \end{array}
 \eeq
@@ -759,8 +759,8 @@ It is also possible to use {\em ensemble averaging} using multiple
 (protein)  molecules. In this case the bounds should be lowered as in:
 \beq
 \begin{array}{rcl}
-r_1	&~=~&	r_1 * M^{-1/6}	\\
-r_2	&~=~&	r_2 * M^{-1/6}
+r_1     &~=~&   r_1 * M^{-1/6}  \\
+r_2     &~=~&   r_2 * M^{-1/6}
 \end{array}
 \eeq
 where $M$ is the number of molecules. The {\gromacs} preprocessor {\tt grompp}
@@ -771,7 +771,7 @@ then used to calculate the scalar force according to:
 \begin{array}{rcl}
 \ve{F}_i~=~&~0 \hspace{4cm}  & r_{N} < r_1         \\
   = ~&-~ k_{dr}(r_{N}-r_1)\frac{\rvij}{r_{ij}} & r_1 \le r_{N} < r_2 \\
-  = ~&-~ k_{dr}(r_2-r_1)\frac{\rvij}{r_{ij}}    & r_{N} \ge r_2	
+  = ~&-~ k_{dr}(r_2-r_1)\frac{\rvij}{r_{ij}}    & r_{N} \ge r_2 
 \end{array}
 \eeq
 where $i$ and $j$ denote the atoms  of all the 
@@ -788,24 +788,24 @@ This requires modification of the hamiltonian $H$, which can be derived
 using the partition function $Z$.
 If we write the Gibbs free energy $G$ using $Z$:
 \bea
-Z	&=&	\int \int \exp\left(-\beta H(p,q))\right) {\rm d}p {\rm d}q \\
-G	&=&	-k_B T \ln Z
+Z       &=&     \int \int \exp\left(-\beta H(p,q))\right) {\rm d}p {\rm d}q \\
+G       &=&     -k_B T \ln Z
 \eea
 where $\beta$=$1/(k_B T)$ with $k_B$ Boltzmann's constant 
 and $T$ the temperature.
 $p$ are the generalized momenta and $q$ are the generalized coordinates.
 We can split the hamiltonian in the potential $V$ and kinetic $K$ parts:
 \bea
-H	&=&	V(q)	+ 	K(p)		\\
-K(p)	&=&	\sum_i^N \frac{\ve{p}_i^2}{2 m_i}	
+H       &=&     V(q)    +       K(p)            \\
+K(p)    &=&     \sum_i^N \frac{\ve{p}_i^2}{2 m_i}       
 \eea
 where $N$ is the number of particles in the system and $m_i$ are the masses
 of the particles.
 \beq
 \begin{array}{rcl}
-G	&~=~&	-1/\beta \ln \left[\int \exp(-\beta V(q)) dq \int \exp(-\beta K(p)) dp  \right] \\
+G       &~=~&   -1/\beta \ln \left[\int \exp(-\beta V(q)) dq \int \exp(-\beta K(p)) dp  \right] \\
 & \mbox{or} \\
-G	&~=~&	\left< K(p) \right>	-1/\beta \ln 
+G       &~=~&   \left< K(p) \right>     -1/\beta \ln 
 \end{array}
 \eeq
 
@@ -817,23 +817,23 @@ The example given here is for the bond potential which is harmonic
 in {\gromacs}. However,  these equations apply to the angle potential
 and the improper dihedral potential as well.
 \bea
-V_b	&=&\half(\LL k_b^A + 
-		\LAM k_b^B) (b - \LL b_0^A - \LAM b_0^B)^2	\\
+V_b     &=&\half(\LL k_b^A + 
+                \LAM k_b^B) (b - \LL b_0^A - \LAM b_0^B)^2      \\
 \dvdl{V_b}&=&\half(k_b^B-k_b^A)
-		\left[b - \LL b_0^A + \LAM b_0^B)^2 + 
-		      (b_0^A-b_0^B) (b - \LL b_0^A -\LAM b_0^B)\right]
-		\nonumber\\
+                \left[b - \LL b_0^A + \LAM b_0^B)^2 + 
+                      (b_0^A-b_0^B) (b - \LL b_0^A -\LAM b_0^B)\right]
+                \nonumber\\
 \eea
 
 \subsubsection{Proper dihedrals}
 For the proper dihedrals, the equations are somewhat more complicated:
 \bea
-V_d	&=&(\LL k_d^A + \LAM k_d^B) 
-	( 1+ \cos(n_{\phi} \phi - (\LL \phi_0^A + \LAM \phi_0^B)) \\
+V_d     &=&(\LL k_d^A + \LAM k_d^B) 
+        ( 1+ \cos(n_{\phi} \phi - (\LL \phi_0^A + \LAM \phi_0^B)) \\
 \dvdl{V_d}&=&(k_d^B-k_d^A) 
-		\biggl[ 1+ \cos(n_{\phi} \phi- [\LL \phi_0^A + \LAM \phi_0^B])-\nonumber\\
-	&&(\LL k_d^A + \LAM k_d^B) (\phi_0^A - \phi_0^B) 
-	\sin(n_{\phi}\phi - [\LL \phi_0^A + \LAM \phi_0^B]\biggr]
+                \biggl[ 1+ \cos(n_{\phi} \phi- [\LL \phi_0^A + \LAM \phi_0^B])-\nonumber\\
+        &&(\LL k_d^A + \LAM k_d^B) (\phi_0^A - \phi_0^B) 
+        \sin(n_{\phi}\phi - [\LL \phi_0^A + \LAM \phi_0^B]\biggr]
 \eea
 {\bf Note:} that the multiplicity $n_{\phi}$ can not be parametrized
 because the function should remain periodic on the interval $0..2\pi$.
@@ -842,9 +842,9 @@ because the function should remain periodic on the interval $0..2\pi$.
 The \normindex{Coulomb} interaction between two particles 
 of which the charge varies with $\LAM$ is:
 \bea
-V_c &=& \frac{f}{\epsrf \rij}\left[(\LL q_i^A+\LAM q_i^B)\cdot(\LL q_j^A+\LAM q_i^B)\right]	\\
+V_c &=& \frac{f}{\epsrf \rij}\left[(\LL q_i^A+\LAM q_i^B)\cdot(\LL q_j^A+\LAM q_i^B)\right]     \\
 \dvdl{V_c}&=& \frac{f}{\epsrf \rij}\left[(q_j^B-q_j^A)(\LL q_i^A+\LAM q_i^B)\,+\,
-			(q_i^B-q_i^A)(\LL q_j^A+\LAM q_j^B)\right]
+                        (q_i^B-q_i^A)(\LL q_j^A+\LAM q_j^B)\right]
 \eea
 where $f = \frac{1}{4\pi \varepsilon_0} = 138.935\,485$ (see Chapter~\ref{ch:defunits})
 
@@ -852,11 +852,11 @@ where $f = \frac{1}{4\pi \varepsilon_0} = 138.935\,485$ (see Chapter~\ref{ch:def
 The coulomb interaction including a reaction field, between two particles 
 of which the charge varies with $\LAM$ is:
 \bea
-V_c 	&=& f\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]
-	\left[(\LL q_i^A+\LAM q_i^B)\cdot(\LL q_j^A+\LAM q_i^B)\right]	\\
+V_c     &=& f\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]
+        \left[(\LL q_i^A+\LAM q_i^B)\cdot(\LL q_j^A+\LAM q_i^B)\right]  \\
 \dvdl{V_c}&=& f\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]\cdot\nonumber\\
-	&~&\left[(q_j^B-q_j^A)(\LL q_i^A+\LAM q_i^B)\,+\,
-			(q_i^B-q_i^A)(\LL q_j^A+\LAM q_j^B)\right]
+        &~&\left[(q_j^B-q_j^A)(\LL q_i^A+\LAM q_i^B)\,+\,
+                        (q_i^B-q_i^A)(\LL q_j^A+\LAM q_j^B)\right]
 \eea
 {\bf Note} that the constants $k_{rf}$ and $c_{rf}$ are 
 defined using the dielectric 
@@ -867,10 +867,10 @@ constant $\epsrf$ of the medium (see section~\ref{sec:coulrf}).
 For the \normindex{Lennard Jones} interaction between two particles 
 of which the {\em atomtype} varies with $\LAM$ we can write:
 \bea
-V_{LJ} 	&=&	\frac{(\LL C_{12}^A + \LAM C_{12}^B)}{\rij^{12}} -
-		\frac{\LL C_6^A + \LAM C_6^B}{\rij^6}	\\
+V_{LJ}  &=&     \frac{(\LL C_{12}^A + \LAM C_{12}^B)}{\rij^{12}} -
+                \frac{\LL C_6^A + \LAM C_6^B}{\rij^6}   \\
 \dvdl{V_{LJ}}&=&\frac{C_{12}^B - C_{12}^A}{\rij^{12}} -
-		\frac{C_6^B - C_6^A}{\rij^6}
+                \frac{C_6^B - C_6^A}{\rij^6}
 \eea
 It should be noted that it is also possible to express a pathway from
 state $A$ to state $B$ using $\sigma$ and $\epsilon$ (see \eqnref{sigeps}).
@@ -889,19 +889,19 @@ at the end points of the TI calculation ({$\LAM$} = 0, or 1) for the case of
 creation or annihilation of particles. State B should the correspond to no particle.
 The modified equations for the Lennard-Jones contribution are:
 \bea
-V_{LJ} 	&=&	\frac{(\LL^4 C_{12}^A + \LAM^4 C_{12}^B)}{\rij^{12}} \,-\,
-		\frac{\LL^3 C_6^A + \LAM^3 C_6^B}{\rij^6}	\\
+V_{LJ}  &=&     \frac{(\LL^4 C_{12}^A + \LAM^4 C_{12}^B)}{\rij^{12}} \,-\,
+                \frac{\LL^3 C_6^A + \LAM^3 C_6^B}{\rij^6}       \\
 \dvdl{V_{LJ}}&=&4\,\frac{\LAM^3 C_{12}^B - \LL^3 C_{12}^A}{\rij^{12}} \,-\,
-		3\,\frac{\LAM^2 C_6^B - \LL^2 C_6^A}{\rij^6}
+                3\,\frac{\LAM^2 C_6^B - \LL^2 C_6^A}{\rij^6}
 \eea
 It can be seen immediately that when $C_{12}^B = C_6^B = 0$ (no particle) and
 $\LAM$ = 1, both $V_{LJ}$ and $\dvdl{V_{LJ}}$ are zero. (This means they need not 
 be evaluated either).
 For the coulomb contribution we have:
 \bea
-V_c &=& \frac{f}{\epsrf \rij}\left[(\LL^2 q_i^A+\LAM^2 q_i^B)\,(\LL^2 q_j^A+\LAM^2 q_i^B)\right]	\\
+V_c &=& \frac{f}{\epsrf \rij}\left[(\LL^2 q_i^A+\LAM^2 q_i^B)\,(\LL^2 q_j^A+\LAM^2 q_i^B)\right]        \\
 \dvdl{V_c}&=& 2\,\frac{f}{\epsrf \rij}[(\LAM q_j^B-\LL q_j^A)(\LL^2 q_i^A+\LAM^2 q_i^B)\,+\,\\\nonumber
-	&~ &		(\LAM q_i^B-\LL q_i^A)(\LL^2 q_j^A+\LAM^2 q_j^B)]
+        &~ &            (\LAM q_i^B-\LL q_i^A)(\LL^2 q_j^A+\LAM^2 q_j^B)]
 \eea
 Resat and Mezei have tested which exponents to $\LAM$ resp. $\LL$ are best and found
 that 4 for the repulsion, 3 for the dispersion and 2 for the Coulomb interaction to
@@ -919,12 +919,12 @@ the momentum \ve{p} as m\ve{v} since that would result
 in the sign of $\dvdl{Ek}$ being incorrect~\cite{Gunsteren98a}):
 
 \bea
-Ek	&=&	\half\frac{\ve{p}^2}{\LL m^A + \LAM m^B}	\\
-\dvdl{Ek}&=&	-\half\frac{\ve{p}^2(m^B-m^A)}{(\LL m^A + \LAM m^B)^2}
+Ek      &=&     \half\frac{\ve{p}^2}{\LL m^A + \LAM m^B}        \\
+\dvdl{Ek}&=&    -\half\frac{\ve{p}^2(m^B-m^A)}{(\LL m^A + \LAM m^B)^2}
 \eea
 after taking the derivative, we {\em can} insert \ve{p} = m\ve{v}, such that:
 \beq
-\dvdl{Ek}~=~	-\half\ve{v}^2(m^B-m^A)
+\dvdl{Ek}~=~    -\half\ve{v}^2(m^B-m^A)
 \eeq
 
 \subsubsection{Constraints}
@@ -934,19 +934,19 @@ they give a contribution to the free energy. In {\gromacs} this can be
 calculated using the \normindex{LINCS} algorithm only.
 If we have a number of constraint equations $g_k$:
 \beq
-g_k	=	r_{k} - d_{k}
+g_k     =       r_{k} - d_{k}
 \eeq
 where $\ve{r}_k$ is the distance vector between two particles and 
 $d_k$ is the constraint distance between the two particles we can write
 this using a $\LAM$ dependent distance as
 \beq
-g_k 	=	r_{k} - \left(\LL d_{k}^A + \LAM d_k^B\right)
+g_k     =       r_{k} - \left(\LL d_{k}^A + \LAM d_k^B\right)
 \eeq
 the contribution $\clam$ 
 to the hamiltonian using Lagrange multipliers $\lambda$:
 \bea
-\clam		&=&	\sum_k \lambda_k g_k	\\
-\dvdl{\clam}	&=&	\sum_k \lambda_k \left(d_k^B-d_k^A\right)
+\clam           &=&     \sum_k \lambda_k g_k    \\
+\dvdl{\clam}    &=&     \sum_k \lambda_k \left(d_k^B-d_k^A\right)
 \eea
 
 
@@ -996,7 +996,8 @@ only the particles within a certain distance of each other
 are interacting. This reduces the cost to $O(N)$ (typically
 $100N$ to $200N$) of the NBF. It also introduces an error,
 which is, in most cases, acceptable, except when applying the cut-off
-implies the creation of charges.
+implies the creation of charges, in which case you should consider 
+using the lattice sum methods provided by {\gromacs}.
 
 Consider a water molecule interacting with another atom. When we would apply
 the cut-off on an atom-atom basis we might include the atom-Oxygen
@@ -1034,10 +1035,10 @@ V = V(\ve{r}_d,\ve{r}_1..\ve{r}_n) = V^*(\ve{r}_1..\ve{r}_n)
 The force on the particle $i$ is then
 \beq
 \ve{F}_i = -\frac{\partial V^*}{\partial \ve{r}_i} 
-	 = -\frac{\partial V}{\partial \ve{r}_i} - 
-	    \frac{\partial \ve{r}_d}{\partial \ve{r}_i}
-	    \frac{\partial V}{\partial \ve{r}_d} 
-	 = \ve{F}_i^{direct} + \Fi
+         = -\frac{\partial V}{\partial \ve{r}_i} - 
+            \frac{\partial \ve{r}_d}{\partial \ve{r}_i}
+            \frac{\partial V}{\partial \ve{r}_d} 
+         = \ve{F}_i^{direct} + \Fi
 \eeq
 the first term of which is the normal force. 
 The second term is the force on particle $i$ due to the dummy particle, which
@@ -1045,8 +1046,8 @@ can be written in tensor notation:
 \newcommand{\partd}[2]{\displaystyle\frac{\partial #1}{\partial #2_i}}
 \beq
 \Fi = \left[\begin{array}{ccc}
-\partd{x_d}{x} & \partd{y_d}{x} & \partd{z_d}{x}	\\[1ex]
-\partd{x_d}{y} & \partd{y_d}{y} & \partd{z_d}{y}	\\[1ex]
+\partd{x_d}{x} & \partd{y_d}{x} & \partd{z_d}{x}        \\[1ex]
+\partd{x_d}{y} & \partd{y_d}{y} & \partd{z_d}{y}        \\[1ex]
 \partd{x_d}{z} & \partd{y_d}{z} & \partd{z_d}{z}
 \end{array}\right]\Fdum
 \eeq
@@ -1073,165 +1074,165 @@ of the dummy constructions is given in fig.~\ref{fig:dummies}.
 
 \begin{itemize}
 \item[2.]As a linear combination of two atoms
-	(fig.~\ref{fig:dummies} 2):
+        (fig.~\ref{fig:dummies} 2):
 \beq
-	\ve{r}_d ~=~ \ve{r}_i + a \rvij
+        \ve{r}_d ~=~ \ve{r}_i + a \rvij
 \eeq
-	in this case the dummy is on the line through atoms $i$ and
-	$j$. The force on particles $i$ and $j$ due to the force on
-	the dummy can be computed as:
+        in this case the dummy is on the line through atoms $i$ and
+        $j$. The force on particles $i$ and $j$ due to the force on
+        the dummy can be computed as:
 \beq
-	\begin{array}{lcr}
-	\Fi &=&	(1-a)\Fdum	\\
-	\Fj &=&	a\,\Fdum	\\
-	\end{array}
+        \begin{array}{lcr}
+        \Fi &=& (1-a)\Fdum      \\
+        \Fj &=& a\,\Fdum        \\
+        \end{array}
 \eeq
 
 \item[3.]As a linear combination of three atoms
-	(fig.~\ref{fig:dummies} 3):
+        (fig.~\ref{fig:dummies} 3):
 \beq
-	\ve{r}_d ~=~ \ve{r}_i + a \rvij + b \rvik
+        \ve{r}_d ~=~ \ve{r}_i + a \rvij + b \rvik
 \eeq
-	in this case the dummy is in the plane of the other three particles.
-	The force on particles $i$, $j$ and $k$ due to the force on the dummy
-	can be computed as:
+        in this case the dummy is in the plane of the other three particles.
+        The force on particles $i$, $j$ and $k$ due to the force on the dummy
+        can be computed as:
 \beq
-	\begin{array}{lcr}
-	\Fi &=&	(1-a-b)\Fdum	\\
-	\Fj &=&	a\,\Fdum 	\\
-	\Fk &=&	b\,\Fdum 	\\
-	\end{array}
+        \begin{array}{lcr}
+        \Fi &=& (1-a-b)\Fdum    \\
+        \Fj &=& a\,\Fdum        \\
+        \Fk &=& b\,\Fdum        \\
+        \end{array}
 \eeq
 
 \item[3fd.]In the plane of three atoms, with a fixed distance
-	(fig.~\ref{fig:dummies} 3fd):
+        (fig.~\ref{fig:dummies} 3fd):
 \beq
-	\ve{r}_d ~=~ \ve{r}_i + b \frac{  \rvij + a \rvjk  }
-				     {| \rvij + a \rvjk |}	
+        \ve{r}_d ~=~ \ve{r}_i + b \frac{  \rvij + a \rvjk  }
+                                     {| \rvij + a \rvjk |}      
 \eeq
-	in this case the dummy is in the plane of the other three
-	particles at a distance of $|b|$ from $i$.
-	The force on particles $i$, $j$ and $k$ due to the force on the dummy
-	can be computed as:
+        in this case the dummy is in the plane of the other three
+        particles at a distance of $|b|$ from $i$.
+        The force on particles $i$, $j$ and $k$ due to the force on the dummy
+        can be computed as:
 \beq
-	\begin{array}{lcr}
-	\Fi &=&	\displaystyle \Fdum - \gamma ( \Fdum - \ve{p} )	\\[1ex]
-	\Fj &=&	\displaystyle (1-a)\gamma (\Fdum - \ve{p})	\\[1ex]
-	\Fk &=&	\displaystyle a \gamma (\Fdum - \ve{p}) 	\\
-	\end{array}
-	~\mbox{~ where~ }~
-	\begin{array}{c}
+        \begin{array}{lcr}
+        \Fi &=& \displaystyle \Fdum - \gamma ( \Fdum - \ve{p} ) \\[1ex]
+        \Fj &=& \displaystyle (1-a)\gamma (\Fdum - \ve{p})      \\[1ex]
+        \Fk &=& \displaystyle a \gamma (\Fdum - \ve{p})         \\
+        \end{array}
+        ~\mbox{~ where~ }~
+        \begin{array}{c}
 \displaystyle \gamma = \frac{b}{| \rvij + a \rvjk |} \\[2ex]
 \displaystyle \ve{p} = \frac{ \rvid \cdot \Fdum }
-		      { \rvid \cdot \rvid } \rvid
-	\end{array}
+                      { \rvid \cdot \rvid } \rvid
+        \end{array}
 \eeq
 
 \item[3fad.]In the plane of three atoms, with a fixed angle and
-	distance (fig.~\ref{fig:dummies} 3fad):
+        distance (fig.~\ref{fig:dummies} 3fad):
 \beq
 \label{eqn:dum2fad-F}
-	 \ve{r}_d ~=~ \ve{r}_i +
-	 	    d \cos \theta \frac{\rvij}{|\rvij|} +
-		    d \sin \theta \frac{\ve{r}_\perp}{|\ve{r}_\perp|}
-	~\mbox{~ where~ }~
-	\ve{r}_\perp ~=~ \rvjk - 
-			\frac{ \rvij \cdot \rvjk }
-			     { \rvij \cdot \rvij }
-			 \rvij
+         \ve{r}_d ~=~ \ve{r}_i +
+                    d \cos \theta \frac{\rvij}{|\rvij|} +
+                    d \sin \theta \frac{\ve{r}_\perp}{|\ve{r}_\perp|}
+        ~\mbox{~ where~ }~
+        \ve{r}_\perp ~=~ \rvjk - 
+                        \frac{ \rvij \cdot \rvjk }
+                             { \rvij \cdot \rvij }
+                         \rvij
 \eeq
-	in this case the dummy is in the plane of the other three
-	particles at a distance of $|d|$ from $i$ at an angle of
-	$\alpha$ with $\rvij$. Atom $k$ defines the plane and the
-	direction of the angle. Note that in this case $b$ and
-	$\alpha$ must be specified in stead of $a$ and $b$ (see also
-	\secref{dummytop}). The force on particles $i$, $j$ and $k$
-	due to the force on the dummy can be computed as (with
-	$\ve{r}_\perp$ as defined in \eqnref{dum2fad-F}):
+        in this case the dummy is in the plane of the other three
+        particles at a distance of $|d|$ from $i$ at an angle of
+        $\alpha$ with $\rvij$. Atom $k$ defines the plane and the
+        direction of the angle. Note that in this case $b$ and
+        $\alpha$ must be specified in stead of $a$ and $b$ (see also
+        \secref{dummytop}). The force on particles $i$, $j$ and $k$
+        due to the force on the dummy can be computed as (with
+        $\ve{r}_\perp$ as defined in \eqnref{dum2fad-F}):
 \newcommand{\dfrac}{\displaystyle\frac}
 \beq
 \begin{array}{c}
-	\begin{array}{lclllll}
-	\Fi &=& \Fdum &-& 
-		\dfrac{d \cos \theta}{|\rvij|} \ve{F}_1 &+&
-		\dfrac{d \sin \theta}{|\ve{r}_\perp|} \left( 
-		\dfrac{ \rvij \cdot \rvjk }
-		     { \rvij \cdot \rvij } \ve{F}_2	+
-		\ve{F}_3 \right)				\\[3ex]
-	\Fj &=& &&
-		\dfrac{d \cos \theta}{|\rvij|} \ve{F}_1 &-&
-		\dfrac{d \sin \theta}{|\ve{r}_\perp|} \left(
-		 \ve{F}_2 + 
-		 \dfrac{ \rvij \cdot \rvjk }
-			{ \rvij \cdot \rvij } \ve{F}_2 +
-		\ve{F}_3 \right)				\\[3ex]
-	\Fk &=& && &&
-		\dfrac{d \sin \theta}{|\ve{r}_\perp|} \ve{F}_2	\\[3ex]
-	\end{array}						\\[5ex]
-	\mbox{where ~}
-	\ve{F}_1 = \Fdum -
-	 	  \dfrac{ \rvij \cdot \Fdum }
-		      	{ \rvij \cdot \rvij } \rvij
-	\mbox{\,, ~}
-	\ve{F}_2 = \ve{F}_1 -
-		  \dfrac{ \ve{r}_\perp \cdot \Fdum }
-			{ \ve{r}_\perp \cdot \ve{r}_\perp } \ve{r}_\perp
-	\mbox{~and ~}
-	\ve{F}_3 = \dfrac{ \rvij \cdot \Fdum }
-			 { \rvij \cdot \rvij } \ve{r}_\perp
+        \begin{array}{lclllll}
+        \Fi &=& \Fdum &-& 
+                \dfrac{d \cos \theta}{|\rvij|} \ve{F}_1 &+&
+                \dfrac{d \sin \theta}{|\ve{r}_\perp|} \left( 
+                \dfrac{ \rvij \cdot \rvjk }
+                     { \rvij \cdot \rvij } \ve{F}_2     +
+                \ve{F}_3 \right)                                \\[3ex]
+        \Fj &=& &&
+                \dfrac{d \cos \theta}{|\rvij|} \ve{F}_1 &-&
+                \dfrac{d \sin \theta}{|\ve{r}_\perp|} \left(
+                 \ve{F}_2 + 
+                 \dfrac{ \rvij \cdot \rvjk }
+                        { \rvij \cdot \rvij } \ve{F}_2 +
+                \ve{F}_3 \right)                                \\[3ex]
+        \Fk &=& && &&
+                \dfrac{d \sin \theta}{|\ve{r}_\perp|} \ve{F}_2  \\[3ex]
+        \end{array}                                             \\[5ex]
+        \mbox{where ~}
+        \ve{F}_1 = \Fdum -
+                  \dfrac{ \rvij \cdot \Fdum }
+                        { \rvij \cdot \rvij } \rvij
+        \mbox{\,, ~}
+        \ve{F}_2 = \ve{F}_1 -
+                  \dfrac{ \ve{r}_\perp \cdot \Fdum }
+                        { \ve{r}_\perp \cdot \ve{r}_\perp } \ve{r}_\perp
+        \mbox{~and ~}
+        \ve{F}_3 = \dfrac{ \rvij \cdot \Fdum }
+                         { \rvij \cdot \rvij } \ve{r}_\perp
 \end{array}
 \eeq
 
 \item[3out.]As a non-linear combination of three atoms, out of plane
-	(fig.~\ref{fig:dummies} 3out):
+        (fig.~\ref{fig:dummies} 3out):
 \beq
-	\ve{r}_d ~=~ \ve{r}_i + a \rvij + b \rvik +
-		c (\rvij \times \rvik)
+        \ve{r}_d ~=~ \ve{r}_i + a \rvij + b \rvik +
+                c (\rvij \times \rvik)
 \eeq
-	this enables the construction of dummies out of the plane of the
-	other atoms.
-	The force on particles $i,j$ and $k$ due to the force on the dummy
-	can be computed as:
+        this enables the construction of dummies out of the plane of the
+        other atoms.
+        The force on particles $i,j$ and $k$ due to the force on the dummy
+        can be computed as:
 \beq
 \begin{array}{lcl}
 \vspace{4mm}
 \Fj &=& \left[\begin{array}{ccc}
- a 		&  -c\,z_{ik}	& c\,y_{ik}	\\[0.5ex]
- c\,z_{ik} 	&   a 		& -c\,x_{ik}	\\[0.5ex]
--c\,y_{ik} 	&   c\,x_{ik} 	& a
-\end{array}\right]\Fdum					\\
+ a              &  -c\,z_{ik}   & c\,y_{ik}     \\[0.5ex]
+ c\,z_{ik}      &   a           & -c\,x_{ik}    \\[0.5ex]
+-c\,y_{ik}      &   c\,x_{ik}   & a
+\end{array}\right]\Fdum                                 \\
 \vspace{4mm}
 \Fk &=& \left[\begin{array}{ccc}
- b 		&   c\,z_{ij}	& -c\,y_{ij}	\\[0.5ex]
--c\,z_{ij} 	&   b 		& c\,x_{ij}	\\[0.5ex]
- c\,y_{ij} 	&  -c\,x_{ij} 	& b
-\end{array}\right]\Fdum					\\
+ b              &   c\,z_{ij}   & -c\,y_{ij}    \\[0.5ex]
+-c\,z_{ij}      &   b           & c\,x_{ij}     \\[0.5ex]
+ c\,y_{ij}      &  -c\,x_{ij}   & b
+\end{array}\right]\Fdum                                 \\
 \Fi &=& \Fdum - \Fj - \Fk
 \end{array}
 \eeq
 
 \item[4fd.]From four atoms, with a fixed distance
-	(fig.~\ref{fig:dummies} 4fd):
+        (fig.~\ref{fig:dummies} 4fd):
 \beq
-	\ve{r}_d ~=~ \ve{r}_i + c \frac{  \rvij + a \rvjk + b \rvjl }
-				     {| \rvij + a \rvjk + b \rvjl|}	
+        \ve{r}_d ~=~ \ve{r}_i + c \frac{  \rvij + a \rvjk + b \rvjl }
+                                     {| \rvij + a \rvjk + b \rvjl|}     
 \eeq
-	in this case the dummy is at a distance of $|c|$ from $i$.
-	The force on particles $i$, $j$, $k$ and $l$ due to the force 
-	on the dummy can be computed as:
+        in this case the dummy is at a distance of $|c|$ from $i$.
+        The force on particles $i$, $j$, $k$ and $l$ due to the force 
+        on the dummy can be computed as:
 \beq
-	\begin{array}{lcr}
-	\Fi &=&	\displaystyle \Fdum - \gamma ( \Fdum - \ve{p} )	\\[1ex]
-	\Fj &=&	\displaystyle (1-a-b)\gamma (\Fdum - \ve{p})	\\[1ex]
-	\Fk &=&	\displaystyle a \gamma (\Fdum - \ve{p}) 	\\[1ex]
-	\Fl &=&	\displaystyle b \gamma (\Fdum - \ve{p}) 	\\
-	\end{array}
-	~\mbox{~ where~ }~
-	\begin{array}{c}
+        \begin{array}{lcr}
+        \Fi &=& \displaystyle \Fdum - \gamma ( \Fdum - \ve{p} ) \\[1ex]
+        \Fj &=& \displaystyle (1-a-b)\gamma (\Fdum - \ve{p})    \\[1ex]
+        \Fk &=& \displaystyle a \gamma (\Fdum - \ve{p})         \\[1ex]
+        \Fl &=& \displaystyle b \gamma (\Fdum - \ve{p})         \\
+        \end{array}
+        ~\mbox{~ where~ }~
+        \begin{array}{c}
 \displaystyle \gamma = \frac{c}{| \rvij + a \rvjk + b \rvjl |} \\[2ex]
 \displaystyle \ve{p} = \frac{ \rvid \cdot \Fdum }
-		      { \rvid \cdot \rvid } \rvid
-	\end{array}
+                      { \rvid \cdot \rvid } \rvid
+        \end{array}
 \eeq
 
 
@@ -1242,9 +1243,8 @@ of the dummy constructions is given in fig.~\ref{fig:dummies}.
 {\undercons}
 In future versions of the force field there will be
 \begin{itemize}
-\item  	Inclusion of long-range electrostatic interactions.
-\item	A choice of force fields, including either Gromos, OPLS or
+\item   A choice of force fields, including either Gromos, OPLS or
         MM2/MM3 parameters. 
-\item	The ultimate force field including polarisability. If done
+\item   The ultimate force field including polarisability. If done
         well, this may simplify many other terms in the force field. 
 \end{itemize}
