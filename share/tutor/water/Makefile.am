@@ -5,7 +5,7 @@
 
 waterdir = ${datadir}/tutor/water
 
-water_DATA = oxygen.ndx  spc216.gro  spc216.pdb  water.mdp  water.top
+water_DATA = index.ndx  conf.gro  spc216.pdb  grompp.mdp  topol.top
 
 EXTRA_DIST = ${water_DATA}
 
