@@ -83,7 +83,7 @@ int main(int argc,char *argv[])
     "In that case the reference group would be the protein and the group",
     "of molecules would consist of all the water atoms. When an index group",
     "of the first n waters is made, the ordered trajectory can be used",
-    "with any Gromacs program to analyze the first n waters."
+    "with any Gromacs program to analyze the n closest waters."
   };
   static int nsa=3,ref_sa=1;
   t_pargs pa[] = {
@@ -125,9 +125,13 @@ int main(int argc,char *argv[])
   get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),2,isize,index,grpname);
 
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
-  if (natoms != top.atoms.nr)
-    fatal_error(0,"Number of atoms in run input file and trjactory doesn't match");
-
+  if (natoms > top.atoms.nr)
+    fatal_error(0,"Number of atoms in the run input file is larger than in the trjactory");
+  for(i=0; i<2; i++)
+    for(j=0; j<isize[i]; j++)
+      if (index[i][j] > natoms)
+	fatal_error(0,"An atom number in group %s is larger than the number of atoms in the trajectory");
+  
   if (isize[1] % nsa)
     fatal_error(0,"Number of atoms in the molecule group (%d) is not a multiple of nsa (%d)",isize[1],nsa);
   nwat = isize[1]/nsa;
