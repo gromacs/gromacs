@@ -303,7 +303,33 @@ static int idcomp(const void *a,const void *b)
 
 static void sort_id(int nr,t_param ps[])
 {
+  int i,tmp;
+  
+  /* First swap order of atoms around if necessary */
+  for(i=0; (i<nr); i++) {
+    if (ps[i].a[3] < ps[i].a[0]) {
+      tmp = ps[i].a[3]; ps[i].a[3] = ps[i].a[0]; ps[i].a[0] = tmp;
+      tmp = ps[i].a[2]; ps[i].a[2] = ps[i].a[1]; ps[i].a[1] = tmp;
+    }
+  }
+  /* Now sort it */
   qsort(ps,nr,(size_t)sizeof(ps[0]),idcomp);
+}
+
+static void dump_param(FILE *fp,char *title,int n,t_param ps[])
+{
+  int i,j;
+  
+  fprintf(fp,"%s: %d entries\n",title,n);
+  for(i=0; (i<n); i++) {
+    fprintf(fp,"%3d:  A=[ ",i);
+    for(j=0; (j<MAXATOMLIST); j++)
+      fprintf(fp," %5d",ps[i].a[j]);
+    fprintf(fp,"]  C=[");
+    for(j=0; (j<MAXFORCEPARAM); j++)
+      fprintf(fp," %10.5e",ps[i].c[j]);
+    fprintf(fp,"]\n");  
+  }
 }
 
 static t_rbonded *is_imp(t_param *p,t_atoms *atoms,t_hackblock hb[])
@@ -383,7 +409,7 @@ static void pdih2idih(t_param *alldih, int *nalldih,t_param idih[],int *nidih,
    * to the list.
    */
   start=0;
-  if (hb) {
+  if (hb != NULL) {
     for(i=0; (i<atoms->nres); i++) {
       idihs=&hb[i].rb[ebtsIDIHS];
       for(j=0; (j<idihs->nb); j++) {
@@ -401,7 +427,7 @@ static void pdih2idih(t_param *alldih, int *nalldih,t_param idih[],int *nidih,
 	if (!bStop) {
 	  /* Not broken out */
 	  set_p(&idih[*nidih],ai,NULL,idihs->b[j].s);
-	(*nidih)++;
+	  (*nidih)++;
 	}
       }
       while ((start<atoms->nr) && (atoms->atom[start].resnr==i))
@@ -411,7 +437,7 @@ static void pdih2idih(t_param *alldih, int *nalldih,t_param idih[],int *nidih,
   if (*nalldih == 0)
     return;
   
-  /* Copy the impropers and dihedrals to seperate arrays. */
+  /* Copy the impropers and dihedrals to separate arrays. */
   snew(dih,*nalldih);
   ndih = 0;
   for(i=0; i<*nalldih; i++) {
@@ -432,7 +458,7 @@ static void pdih2idih(t_param *alldih, int *nalldih,t_param idih[],int *nidih,
   snew(index,ndih);
   nind=0;
   if (bAlldih) {
-    fprintf(stderr,"bAlldih = true\n");
+    fprintf(stderr,"Keeping all generated dihedrals\n");
     for(i=0; i<ndih; i++) 
       if ((i==0) || !deq2(&dih[i],&dih[i-1]))
 	index[nind++]=i;
@@ -819,8 +845,11 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
   /* Now the dihedrals are sorted and doubles removed, this has to be done
    * for impropers too
    */
+  if (debug) dump_param(debug,"Before sort",nidih,idih);
   sort_id(nidih,idih);
+  if (debug) dump_param(debug,"After sort",nidih,idih);
   rm2par(idih,&nidih,ideq);
+  if (debug) dump_param(debug,"After rm2par",nidih,idih);
   
   /* And for the pairs */
   fprintf(stderr,"There are %d pairs before sorting\n",npai);
