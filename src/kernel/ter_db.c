@@ -40,7 +40,14 @@ static char *SRCID_ter_db_c = "$Id$";
 #include "ter_db.h"
 #include "toputil.h"
 
+void check_kw(char *inf,char *x,char *keyw,char *file,int line)
+{
+  if (strcasecmp(x,keyw) != 0)
+    fatal_error(0,"Reading Termini Database %s (source %s, line %d) looking for keyword %s, found %s",inf,file,line,keyw,x);
+}
+
 #define FATAL() fatal_error(0,"Reading Termini Database (source code line: %d)",__LINE__)
+#define CHECK_KW(x,kw) check_kw(inf,x,kw,__FILE__,__LINE__)
 
 static void read_atom(FILE *in,t_atom *a,t_atomtype *atype,char nnew[])
 {
@@ -56,22 +63,29 @@ static void read_atom(FILE *in,t_atom *a,t_atomtype *atype,char nnew[])
 int read_ter_db(char *inf,t_hackblock **tbptr,t_atomtype *atype)
 {
   FILE       *in;
-  char       bname[124],nnew[24],oldnm[24],buf[24];
+  char       bname[124],nnew[24],oldnm[24],buf[24],keyw[128];
   t_hackblock *tb=NULL;
   int        i,j,nb=0;
 
   in=libopen(inf);
+  if (debug)
+    fprintf(debug,"Opened %s\n",inf);
     
-  while (fscanf(in,"%s",bname) == 1) {
+  while (fscanf(in,"%s%s",keyw,bname) == 2) {
+    if (debug) 
+      fprintf(debug,"block name %s\n",bname);
+    CHECK_KW(keyw,"BLOCK_NAME");
     srenew(tb,nb+1);
     
     /* Name of block */
     tb[nb].bname=strdup(bname);
-    if (debug) printf("block name %s\n",bname);
     
     /* Number of replacements */
-    if (fscanf(in,"%d",&(tb[nb].nreplace)) != 1) FATAL();
-    if (debug) printf("# replace %d\n",tb[nb].nreplace);
+    if (fscanf(in,"%s%d",keyw,&(tb[nb].nreplace)) != 2) FATAL();
+    CHECK_KW(keyw,"N_REPLACE");
+
+    if (debug) 
+      fprintf(debug,"N_REPLACE %d\n",tb[nb].nreplace);
     snew(tb[nb].nm_repl,tb[nb].nreplace);
     snew(tb[nb].new_nm,tb[nb].nreplace);
     snew(tb[nb].repl_by,tb[nb].nreplace);
@@ -82,8 +96,10 @@ int read_ter_db(char *inf,t_hackblock **tbptr,t_atomtype *atype)
       tb[nb].new_nm[i]=strdup(nnew);
     }
     /* Number of additions */
-    if (fscanf(in,"%d",&(tb[nb].nadd)) != 1) FATAL();
-    if (debug) printf("# additions %d\n",tb[nb].nadd);
+    if (fscanf(in,"%s%d",keyw,&(tb[nb].nadd)) != 2) FATAL();
+    CHECK_KW(keyw,"N_ADD");
+    if (debug) 
+      fprintf(debug,"N_ADD %d\n",tb[nb].nadd);
     snew(tb[nb].ab,tb[nb].nadd);
     snew(tb[nb].adder,tb[nb].nadd);
     snew(tb[nb].add_nm,tb[nb].nadd);
@@ -93,8 +109,10 @@ int read_ter_db(char *inf,t_hackblock **tbptr,t_atomtype *atype)
       tb[nb].add_nm[i]=strdup(nnew);
     }
     /* Number of impropers */
-    fscanf(in,"%d",&(tb[nb].nidih));
-    if (debug) printf("# impropers %d\n",tb[nb].nidih);
+    if (fscanf(in,"%s%d",keyw,&(tb[nb].nidih)) != 2) FATAL();
+    CHECK_KW(keyw,"N_IDIH");
+    if (debug) 
+      fprintf(debug,"N_IDIH %d\n",tb[nb].nidih);
     snew(tb[nb].idih,tb[nb].nidih);
     for(i=0; (i<tb[nb].nidih); i++) {
       for(j=0; (j<MAXATOMLIST); j++) {
@@ -103,8 +121,10 @@ int read_ter_db(char *inf,t_hackblock **tbptr,t_atomtype *atype)
       }
     }
     /* Number of delete atoms! */
-    if (fscanf(in,"%d",&(tb[nb].ndel)) != 1) FATAL();
-    if (debug) printf("# delete %d\n",tb[nb].ndel);
+    if (fscanf(in,"%s%d",keyw,&(tb[nb].ndel)) != 2) FATAL();
+    CHECK_KW(keyw,"N_DELETE");
+    if (debug) 
+      fprintf(debug,"N_DELETE %d\n",tb[nb].ndel);
     snew(tb[nb].nm_del,tb[nb].ndel);
     for(i=0; (i<tb[nb].ndel); i++) {
       if (fscanf(in,"%s",nnew) != 1) FATAL();

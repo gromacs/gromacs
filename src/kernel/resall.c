@@ -486,12 +486,12 @@ int read_resall(char       *ff,
       rrid[nrtp].resname=rrtp[nrtp].resname;
     
       if (debug) {
-	fprintf(stderr,"Residue %d",nrtp+1);
-	fprintf(stderr,"(%s): %d atoms,",rrtp[nrtp].resname,rrtp[nrtp].natom);
-	fprintf(stderr," %d bonds and",rrbd[nrtp].nb);
-	fprintf(stderr," %d angles and",rran[nrtp].na);
-	fprintf(stderr," %d dihedrals and",rrdi[nrtp].nd);
-	fprintf(stderr," %d impropers\n",rrid[nrtp].nidih);
+	fprintf(debug,"Residue %d",nrtp+1);
+	fprintf(debug,"(%s): %d atoms,",rrtp[nrtp].resname,rrtp[nrtp].natom);
+	fprintf(debug," %d bonds and",rrbd[nrtp].nb);
+	fprintf(debug," %d angles and",rran[nrtp].na);
+	fprintf(debug," %d dihedrals and",rrdi[nrtp].nd);
+	fprintf(debug," %d impropers\n",rrid[nrtp].nidih);
       }
       fprintf(stderr,"\rResidue %d",nrtp+1);
     }
@@ -544,7 +544,7 @@ int read_resall(char       *ff,
 		    rrtp[nrtp].resname);
 
       if (debug) {
-	fprintf(stderr,"Residue %d(%s): %d atoms, %d bonds, %d angles "
+	fprintf(debug,"Residue %d(%s): %d atoms, %d bonds, %d angles "
 		"%d dihedrals and %d impropers\n",nrtp+1,rrtp[nrtp].resname,
 		rrtp[nrtp].natom,rrbd[nrtp].nb,rran[nrtp].na,rrdi[nrtp].nd,
 		rrid[nrtp].nidih);
@@ -907,7 +907,7 @@ int read_dum_db(char *ff,t_dumblock **dbptr)
       fatal_error(0,"No data found in .ddb file in block %s\n",
 		  ddb[nddb].bname);
     if (debug) {
-      fprintf(stderr,"Block %d (%s): %d masses, %d dummies and %d angles\n",
+      fprintf(debug,"Block %d (%s): %d masses, %d dummies and %d angles\n",
 	      nddb+1, ddb[nddb].bname,
 	      ddb[nddb].nmass, ddb[nddb].ndum, ddb[nddb].nang);
     }

@@ -350,10 +350,12 @@ static int remove_double_atoms(t_atoms *pdba,rvec x[])
   
   /* NOTE: natoms is modified inside the loop */
   for(i=1; (i<natoms); i++) {
-    if ( (pdba->atom[i-1].resnr     == pdba->atom[i].resnr) &&
-	 (strcmp(*pdba->atomname[i-1],*pdba->atomname[i])==0) && 
-	 !( (pdba->atom[i].resnr==nres-1) && 
-	    (strcasecmp(*pdba->atomname[i-1],"O")==0) ) ) {
+    if ( (pdba->atom[i-1].resnr == pdba->atom[i].resnr) &&
+	 (strcmp(*pdba->atomname[i-1],*pdba->atomname[i])==0) 
+	 /*&& 
+	   !( (pdba->atom[i].resnr==nres-1) && 
+	   (strcasecmp(*pdba->atomname[i-1],"O")==0) ) */
+	 ) {
       printf("deleting double atom (%d %s %s %c %d)\n",
 	     i+1, *pdba->atomname[i], *pdba->resname[pdba->atom[i].resnr], 
 	     pdba->atom[i].chain, pdba->atom[i].resnr+1);

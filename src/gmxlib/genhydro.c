@@ -314,16 +314,15 @@ int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
   j=0;
   for(i=0; (i<pdba->nr); i++,j++) {
     if (ab[i] != NULL) {
-      rnr=newpdba->atom[j].resnr;
+      rnr   = /*newpdba->atom[j].resnr;*/
+	pdba->atom[i].resnr;
       ncntl = ncontrol[ab[i]->tp];
       for(m=0; (m<ncntl); m++) {
 	na[m]=pdbasearch_atom(ab[i]->na[m],rnr,newpdba);
 	if (na[m] == -1)
 	  fatal_error(0,"Atom %s not found in residue %s%d"
 		      " while adding hydrogens",
-		      ab[i]->na[m],
-		      *newpdba->resname[newpdba->atom[j].resnr],
-		      newpdba->atom[j].resnr+1);
+		      ab[i]->na[m],*newpdba->resname[rnr],rnr+1);
       }
       
       for(m=0; (m<ab[i]->nh); m++)
