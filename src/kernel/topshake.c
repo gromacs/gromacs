@@ -73,7 +73,7 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype *at,int nshake)
   t_params     *bonds;
   t_param      p,*bond,*ang;
   real         b_ij,b_jk;
-  int          nb,b,i,j,ftype;
+  int          nb,b,i,j,ftype,ftype_a;
   bool         bFound;
   
   if (nshake != eshNONE) {
@@ -94,77 +94,78 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype *at,int nshake)
       fatal_error(0,"Invalid option for make_shake (%d)",nshake);
     }
     
-    /* Add all the angles with hydrogens to the shake list
+    if ((nshake == eshHANGLES) || (nshake == eshALLANGLES)) {
+      /* Add all the angles with hydrogens to the shake list
+       * and remove them from the bond list
+       */
+      for(ftype = 0; (ftype < F_NRE); ftype++) {
+	if (interaction_function[ftype].flags & IF_BTYPE) {
+	  bonds=&(plist[ftype]);
+
+	  for(ftype_a = 0; (ftype_a < F_NRE); ftype_a++) {
+	    if (interaction_function[ftype_a].flags & IF_ATYPE) {
+	      pr = &(plist[ftype_a]);
+
+	      for (i=0; (i < pr->nr); ) {
+		ang=&(pr->param[i]);
+#ifdef DEBUG
+		printf("Angle: %d-%d-%d\n",ang->AI,ang->AJ,ang->AK); 
+#endif
+		if ((nshake == eshALLANGLES) || 
+		    (count_hydrogens(info,3,ang->a) > 0)) {
+		  /* Can only add hydrogen angle shake, if the two bonds
+		   * are constrained.
+		   * append this angle to the shake list 
+		   */
+		  p.AI = ang->AI;
+		  p.AJ = ang->AK;
+		  
+		  /* Calculate length of constraint */
+		  bFound=FALSE;
+		  b_ij=b_jk=0.0;
+		  for (j=0; !bFound && (j<bonds->nr); j++) {
+		    bond=&(bonds->param[j]);
+		    if (((bond->AI==ang->AI) && 
+			 (bond->AJ==ang->AJ)) ||
+			((bond->AI==ang->AJ) && 
+			 (bond->AJ==ang->AI)))
+		      b_ij=bond->C0;
+		    if (((bond->AI==ang->AK) && 
+			 (bond->AJ==ang->AJ)) ||
+			((bond->AI==ang->AJ) && 
+			 (bond->AJ==ang->AK)))
+		      b_jk=bond->C0;
+		    bFound = (b_ij!=0.0) && (b_jk!=0.0);
+		  }
+		  if (!bFound)
+		    fatal_error(0,"No bond information for bond %s-%s or %s-%s",
+				*info[ang->AI],*info[ang->AJ],
+				*info[ang->AJ],*info[ang->AK]);
+		  /* apply law of cosines */
+		  p.C0 = sqrt( b_ij*b_ij + b_jk*b_jk - 
+			       2.0*b_ij*b_jk*cos(DEG2RAD*ang->C0) );
+		  p.C1 = p.C0;
+#ifdef DEBUG
+		  printf("p: %d, q: %d, dist: %12.5e\n",p.AI,p.AJ,p.C0);
+#endif
+		  push_bondnow (&(plist[F_SHAKE]),&p);
+		  /* move the last bond to this position */
+		  copy_bond (pr,i,pr->nr-1);
+		  /* should free memory here!! */
+		  pr->nr--;
+		}
+		else
+		  i++;
+	      }
+	    } /* if IF_ATYPE */
+	  } /* for ftype_A */
+	} /* if IF_BTYPE */
+      } /* for ftype */
+    } /* if shake angles */
+  
+    /* Add all the bonds with hydrogens to the shake list
      * and remove them from the bond list
      */
-    for(ftype = 0; (ftype < F_NRE); ftype++) {
-      if (interaction_function[ftype].flags & IF_BTYPE) {
-	bonds=&(plist[ftype]);
-	
-	if ((nshake == eshHANGLES) || (nshake == eshALLANGLES)) {
-	  /* horrible shortcut */
-	  pr = &(plist[F_ANGLES]);
-	  for (i=0; (i < pr->nr); ) {
-	    ang=&(pr->param[i]);
-#ifdef DEBUG
-	    printf("Angle: %d-%d-%d\n",ang->AI,ang->AJ,ang->AK); 
-#endif
-	    if ((nshake == eshALLANGLES) || 
-		(count_hydrogens(info,3,ang->a) > 0)) {
-	      /* Can only add hydrogen angle shake, if the two bonds
-	       * are constrained.
-	       * append this angle to the shake list 
-	       */
-	      p.AI = ang->AI;
-	      p.AJ = ang->AK;
-	      
-	      /* Calculate length of constraint */
-	      bFound=FALSE;
-	      b_ij=b_jk=0.0;
-	      for (j=0; !bFound && (j<bonds->nr); j++) {
-		bond=&(bonds->param[j]);
-		if (((bond->AI==ang->AI) && 
-		     (bond->AJ==ang->AJ)) ||
-		    ((bond->AI==ang->AJ) && 
-		     (bond->AJ==ang->AI)))
-		  b_ij=bond->C0;
-		if (((bond->AI==ang->AK) && 
-		     (bond->AJ==ang->AJ)) ||
-		    ((bond->AI==ang->AJ) && 
-		     (bond->AJ==ang->AK)))
-		  b_jk=bond->C0;
-		bFound = (b_ij!=0.0) && (b_jk!=0.0);
-	      }
-	      if (!bFound)
-		fatal_error(0,"No bond information for bond %s-%s or %s-%s",
-			    *info[ang->AI],*info[ang->AJ],
-			    *info[ang->AJ],*info[ang->AK]);
-	      /* apply law of cosines */
-	      p.C0 = sqrt( b_ij*b_ij + b_jk*b_jk - 
-			   2.0*b_ij*b_jk*cos(DEG2RAD*ang->C0) );
-	      p.C1 = p.C0;
-#ifdef DEBUG
-	      printf("p: %d, q: %d, dist: %12.5e\n",p.AI,p.AJ,p.C0);
-#endif
-	      push_bondnow (&(plist[F_SHAKE]),&p);
-	      /* move the last bond to this position */
-	      copy_bond (pr,i,pr->nr-1);
-	      /* should free memory here!! */
-	      pr->nr--;
-	    }
-	    else
-	      i++;
-	  }
-	} /* if nshake == ANGLES or ALLANGLES */
-      } /* if IF_BTYPE */
-    } /* for ftype */
-  } /* nshake != NONE */
-  
-  /* Add all the bonds with hydrogens to the shake list
-   * and remove them from the bond list
-   */
-  if ( (nshake == eshHBONDS)    || (nshake == eshALLBONDS) || 
-       (nshake == eshALLANGLES) || (nshake == eshHANGLES) ) {
     for (ftype=0; (ftype < F_NRE); ftype++) {
       if (interaction_function[ftype].flags & IF_BTYPE) {
 	pr = &(plist[ftype]);
