@@ -122,9 +122,13 @@ t_corr *init_corr(int nrgrp,int type,int axis,real dim_factor,
       this->mass[i]=atoms->atom[i].m;
     }
   }
-  if (bMol)
+  if (bMol) {
     this->mols = &(top->blocks[ebMOLS]);
-  
+    this->nnx = this->mols->nr;
+  }
+  else {
+    this->nnx  = 0;
+  }
   return this;
 }
 
@@ -136,17 +140,6 @@ static void done_corr(t_corr *this)
   for(i=0; (i<this->nrestart); i++)
     sfree(this->x0[i]);
   sfree(this->x0);
-}
-
-static void init_restart(t_corr *this)
-{
-  int i;
-  
-  this->nrestart++;
-  
-  srenew(this->x0,this->nrestart);
-  snew(this->x0[this->nrestart-1],this->natoms);
-  srenew(this->n_offs,this->nrestart);
 }
 
 static void corr_print(t_corr *this,char *fn,char *title,char *yaxis,
@@ -262,12 +255,21 @@ void corr_loop(t_corr *this,char *fn,int gnx[],atom_id *index[],
 
   snew(x[cur],this->natoms);
 
-  /* init_restart(this,nrestart,dt); */
   memcpy(x[cur],x[prev],this->natoms*sizeof(x[prev][0]));
   t=this->t0;
   do {
-    if (bRmod(t,this->t0,dt))
-      init_restart(this);
+    if (bRmod(t,this->t0,dt)) {
+      this->nrestart++;
+  
+      srenew(this->x0,this->nrestart);
+      snew(this->x0[this->nrestart-1],this->natoms);
+      srenew(this->n_offs,this->nrestart);
+      srenew(this->lsq,this->nrestart);
+      snew(this->lsq[this->nrestart-1],this->nnx);
+      if (debug)
+	fprintf(debug,"Extended data structures because of new restart %d\n",
+		this->nrestart);
+    }
     if (this->nframes >= maxframes-1) {
       if (maxframes==0) {
 	for(i=0; (i<this->ngrp); i++) {
@@ -410,12 +412,6 @@ static real calc1_mol(t_corr *this,int nx,atom_id index[],int nx0,rvec xc[])
   int  i,ii,j;
   real g,mm,gtot,tt;
 
-  if (this->lsq == NULL) {
-    this->nnx = nx;
-    snew(this->lsq,this->nrestart);
-    for(i=0; (i<this->nrestart); i++)
-      snew(this->lsq[i],nx);
-  }
   tt=this->time[in_data(this,nx0)];
   gtot=0;
   for(i=0; (i<nx); i++) {
