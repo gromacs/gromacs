@@ -403,8 +403,10 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
     sfree(confat);
     
     if (nmismatch) {
-      sprintf(buf,"%d non-matching atom name%s\n",nmismatch,
-	      (nmismatch == 1) ? "" : "s");
+      sprintf(buf,"%d non-matching atom name%s\n"
+	      "atom names from %s will be used\n"
+	      "atom names from %s will be ingnored\n",
+	      nmismatch,(nmismatch == 1) ? "" : "s",topfile,confin);
       warning(buf);
     }    
     if (bVerbose) 
@@ -659,6 +661,12 @@ int main (int argc, char *argv[])
     "Eventually a binary file is produced that can serve as the sole input",
     "file for the MD program.[PAR]",
     
+    "grompp uses the atom names from the topology file. The atom names",
+    "in the coordinate file (option [TT]-c[tt]) are only read to generate",
+    "warnings when they do not match the atom names in the topology.",
+    "Note that the atom names are irrelevant for the simulation as",
+    "only the atom types are used for generating interaction parameters.[PAR]",
+
     "grompp calls the c-preprocessor to resolve includes, macros ",
     "etcetera. To specify a macro-preprocessor other than /lib/cpp ",
     "(such as m4)",
