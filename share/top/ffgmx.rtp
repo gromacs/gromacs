@@ -2685,7 +2685,7 @@
      N    -C    CA     H
     -C   -CA     N    -O
     CA     N     C    CB
-    CG   CD1   CD2    CB
+    CG   CD2   CD1    CB
 
 [ LYS ]
  [ atoms ]
@@ -5074,7 +5074,7 @@
      N    -C    CA     H
     -C   -CA     N    -O
     CA     N     C    CB
-    CB   CG1   CG2    CA
+    CB   CG2   CG1    CA
 
 [ ZN ]
  [ atoms ]
