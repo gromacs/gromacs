@@ -161,8 +161,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   debug_gmx();
 
   /* Initialize pull code */
-  init_pull(log,nfile,fnm,&pulldata,x,mdatoms,parm->box); 
-  
+  init_pull(log,nfile,fnm,&pulldata,x,mdatoms,parm->box);
+  if (pulldata.bPull && cr->nnodes>1)
+    fatal_error(0,"Can not pull in parallel");
+    
   if (!parm->ir.bUncStart) 
     do_shakefirst(log,bTYZ,lambda,ener,parm,nsb,mdatoms,x,vold,buf,f,v,
 		  graph,cr,&mynrnb,grps,fr,top,edyn,&pulldata);
