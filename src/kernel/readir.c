@@ -996,9 +996,11 @@ void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
       if ( !( (cx[XX] >= 2*ir->ndelta+1) && 
 	      (cx[YY] >= 2*ir->ndelta+1) && 
 	      (cx[ZZ] >= 2*ir->ndelta+1) ) ) {
-	fprintf(stderr,"ERROR: box too small for grid-search,\n"
-		"  increase the boxsize or decrease %s or use simple "
-		"neighboursearch.\n",bTWIN ? "rcoulomb":"rlist");
+	fprintf(stderr,"ERROR: box too small for grid-search,"
+		" %s must be < box/(2+1/deltagrid)\n"
+		"       increase boxsize or decrease %s or use simple "
+		"neighboursearch.\n",
+		bTWIN ? "rcoulomb":"rlist",bTWIN ? "rcoulomb":"rlist");
 	(*nerror)++;
       }
     }
