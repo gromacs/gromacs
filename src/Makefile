@@ -3,7 +3,7 @@
 #
 include		$(GMXHOME)/src/makef/Makefile.def
 #
-DIRS	=	include	gmxlib 	kernel	tools	ngmx
+DIRS	=	include	gmxlib fftw	kernel	tools	ngmx
 LOCAL	=	local
 LDIRS	=	$(DIRS)	$(LOCAL)
 TELLDIRS=	$(LDIRS)
