@@ -102,6 +102,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     lambda       = parm->ir.init_lambda;
   else 
     lambda = 0.0;
+
+  init_nrnb(&mynrnb);
     
   clear_rvec(mu_tot);
   calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);

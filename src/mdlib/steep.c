@@ -183,6 +183,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     lambda = 0.0;
   ir = &(parm->ir);
 
+  init_nrnb(&mynrnb);
+
   clear_rvec(mu_tot);
   calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
    
