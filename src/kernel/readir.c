@@ -104,7 +104,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
        "compressibility must be > 0 when using pressure coupling%s\n","");
   }
   if (ir->rlist == 0.0) {
-    if ((ir->eeltype != eelTWIN) || (ir->ns_type != ensGRID) || 
+    if ((ir->eeltype != eelTWIN) || (ir->ns_type != ensSIMPLE) || 
 	(ir->eBox != ebtNONE) ||
 	(ir->rcoulomb != 0.0) || (ir->rvdw != 0.0)) {
       fprintf(stderr,
