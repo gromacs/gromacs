@@ -55,7 +55,7 @@ static char *SRCID_g_dipoles_c = "$Id$";
 
 typedef struct {
   int  nelem,totcount;
-  real spacing;
+  real spacing,radius,r2;
   real *elem;
   int  *count;
 } t_gkrbin;
@@ -63,11 +63,21 @@ typedef struct {
 static t_gkrbin *mk_gkrbin(real radius)
 {
   t_gkrbin *gb;
-  
+  char *ptr;
+
   snew(gb,1);
   
-  gb->spacing = 0.01; /* nm */
+  if ((ptr = getenv("GKRWIDTH")) != NULL) {
+    double bw;
+
+    sscanf(ptr,"%lf",&bw);
+    gb->spacing = bw; 
+  }
+  else
+    gb->spacing = 0.01; /* nm */
   gb->nelem   = 1 + radius/gb->spacing;
+  gb->radius  = radius;
+  gb->r2      = sqr(radius);
   snew(gb->elem,gb->nelem);
   snew(gb->count,gb->nelem);
   gb->totcount = 0;
@@ -131,34 +141,43 @@ void do_gkr(t_gkrbin *gb,int ngrp,atom_id grpindex[],
       /* Compute distance between molecules including PBC */
       pbc_dx(xcm[i],xcm[j],dx);
       r2  = iprod(dx,dx);
-      mu2 = iprod(mu[i],mu[j]);
-      add_gkrelem(gb,sqrt(r2),mu2);
+      if (r2 < gb->r2) {
+	mu2 = iprod(mu[i],mu[j]);
+	add_gkrelem(gb,sqrt(r2),mu2);
+      }
     }
   }
 }
 
-void print_gkrbin(char *fn,t_gkrbin *gb,real mu)
+void print_gkrbin(char *fn,t_gkrbin *gb,real mu,int ngrp,int nframes)
 {
-  FILE *fp;
-  char *leg[] = { "G\\sk\\N(r)", "<mu\\si\\N mu\\sj\\N> (r\\sij\\N = r)", 
-		  "Unnormalized raw data" }; 
-  int  i;
-  real x,y,ytot;
-  
+  FILE   *fp;
+  char   *leg[] = { "G\\sk\\N(r)", "<mu\\si\\N mu\\sj\\N> (r\\sij\\N = r)" };
+  int    i;
+  real   x,y,ytot,area;
+  double ctot,fac;
+    
+  if (mu == 0)
+    fatal_error(0,"Trying to print Gk(r) but average dipole is zero!");
   fp=xvgropen(fn,"Distance dependent Gk","r (nm)","G\\sk\\N(r)");
   xvgr_legend(fp,asize(leg),leg);
   ytot = 0;
+  ctot = 0;
+  fac  = 1.0/((mu*ngrp)*(mu*nframes));
+  /*fac  = 1.0/(mu*mu);*/
   for(i=0; (i<gb->nelem); i++) {
-    x = i*gb->spacing;
-    if (gb->count[i] > 0) {
+    x     = (i+0.5)*gb->spacing;
+    ctot += gb->count[i];
+    area   = 4.0*M_PI*x*x;
+    if (gb->count[i] > 0) 
+      /*y = gb->elem[i]*fac;*/
       y = gb->elem[i]/(mu*mu*gb->count[i]);
-    }
     else
       y = 0.0;
       
-    ytot += y;
+    ytot += gb->spacing*y;
     
-    fprintf(fp,"%10.5e  %12.7e  %12.7e  %12.7e\n",x,ytot,y,gb->elem[i]);
+    fprintf(fp,"%10.5e  %12.7e  %12.7e\n",x,100*ytot,y);
   }
   ffclose(fp);
 }
@@ -341,8 +360,9 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 		   bool bQuad,   char *quadfn,
 		   bool bMU,     char *mufn,
 		   int gnx,atom_id grpindex[],
-		   real mu_max,real mu,real epsilonRF,real temp,
-		   bool bFA,int skip)
+		   real mu_max,real mu_aver,
+		   real epsilonRF,real temp,
+		   int gkatom,int skip)
 {
   FILE       *out,*outaver;
   static char *legoutf[] = { 
@@ -351,13 +371,16 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
     "< M\\sz \\N>",
     "< |M\\stot \\N| >"
   };
-  static char *legoutfa[] = { 
+  static char *leg_aver[] = { 
+    "epsilon",
     "< |M|\\S2\\N >", 
     "< |M| >\\S2\\N",
     "< |M|\\S2\\N > - < |M| >\\S2\\N",
     "G\\sk",
-    "epsilon"
+    "g\\sk"
   };
+#define NLEGAVER asize(leg_aver)
+
   rvec       *x,*dipole=NULL,mu_t,M_av,M_av2,Q_av,Q_av2,*quadrupole=NULL;
   t_gkrbin   *gkrbin;
   int        nframes=1000,fmu=0,nre,timecheck=0;
@@ -452,10 +475,13 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   xvgr_line_props(out, 1, elDotDashed, ecFrank);
   xvgr_line_props(out, 2, elLongDashed, ecFrank);
   xvgr_line_props(out, 3, elSolid, ecFrank);
-  outaver=xvgropen(outfa,"Averages of the total dipole moment vs. time",
-		   "Time (ps)","<|M|\\S2\\N>, <|M|>\\S2\\N (Debye\\S2)");
-  xvgr_legend(outaver,asize(legoutfa),legoutfa);
-
+  outaver=xvgropen(outfa,"Epsilon and other properties",
+		   "Time (ps)","");
+  if (bMU && (mu_aver == -1))
+    xvgr_legend(outaver,NLEGAVER-2,leg_aver);
+  else
+    xvgr_legend(outaver,NLEGAVER,leg_aver);
+    
   teller = 0;
   /* Read the first frame from energy or traj file */
   if (bMU)
@@ -488,15 +514,14 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   if (bQuad)
     clear_rvec(quad_ave);
 
-  /* Start while loop over frames */
-  t1 = t0 = t;
-  teller = 0;
-
   if (bGkr) {
     rcut   = 0.475*min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ]));
     gkrbin = mk_gkrbin(rcut); 
   }
-  teller=0;
+
+  /* Start while loop over frames */
+  t1 = t0 = t;
+  teller = 0;
   do {
     if (bCorr && (teller >= nframes)) {
       nframes += 1000;
@@ -551,7 +576,6 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 	mu_mol = 0.0;
 	for(m=0; (m<DIM); m++) {
 	  M_av[m]  += dipole[i][m];               /* M per frame */
-	  M_av2[m] += dipole[i][m]*dipole[i][m];  /* M^2 per frame */
 	  mu_mol   += dipole[i][m]*dipole[i][m];  /* calc. mu for distribution */
 	}
 
@@ -560,7 +584,6 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 	  clear_rvec(quad_mol);
 	  for(m=0; (m<DIM); m++) {
 	    Q_av[m]  += quadrupole[i][m];                    /* Q per frame */
-	    Q_av2[m] += quadrupole[i][m]*quadrupole[i][m];   /* Q^2 per frame */
 	    quad_mol[m]  += quadrupole[i][m]*quadrupole[i][m];  
 	    quad_ave[m] += quadrupole[i][m];
 	  }
@@ -571,11 +594,17 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 	if (ibin < ndipbin)
 	  dipole_bin[ibin]++;
       } /* End loop of all molecules in frame */
-    } 
-    
+      
+      /* Compute square of total dipole an quadrupole */
+      for(m=0; (m<DIM); m++) {
+	M_av2[m] = sqr(M_av[m]);
+	if (bQuad)
+	  Q_av2[m] = sqr(Q_av[m]);
+      }
+    }    
     if (bGkr) {
       init_pbc(box,FALSE);
-      do_gkr(gkrbin,gnx,grpindex,mols->index,mols->a,x,dipole,box,bFA);
+      do_gkr(gkrbin,gnx,grpindex,mols->index,mols->a,x,dipole,box,gkatom);
     }
     
     if (bAverCorr) {
@@ -620,24 +649,34 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 
     epsilon = calc_eps(M_diff,volume,epsilonRF,temp);
 
-    /* Finite system Kirkwood G-factor */
-    Gk = M_diff/(gnx*mu*mu);
-    /* Infinite system Kirkwood G-factor */
-    if (epsilonRF == 0.0) {
-      g_k = ((2*epsilon+1)*Gk/(3*epsilon));
-    } else {
-       g_k = ((2*epsilonRF+epsilon)*(2*epsilon+1)*
-	       Gk/(3*epsilon*(2*epsilonRF+1)));
+    /* Calculate running average for dipole */
+    if (mu_ave != 0) 
+      mu_aver = (mu_ave/gnx)/teller;
+    
+    
+    if ((skip == 0) || ((teller % skip) == 0)) {
+      /* Write to file < |M|^2 >, < |M| >^2. And the difference between 
+       * the two. Here M is sum mu_i. Further write the finite system
+       * Kirkwood G factor and epsilon.
+       */
+      if (!bMU || (mu_aver != -1)) {
+	/* Finite system Kirkwood G-factor */
+	Gk = M_diff/(gnx*mu_aver*mu_aver);
+	/* Infinite system Kirkwood G-factor */
+	if (epsilonRF == 0.0) 
+	  g_k = ((2*epsilon+1)*Gk/(3*epsilon));
+	else 
+	  g_k = ((2*epsilonRF+epsilon)*(2*epsilon+1)*
+		 Gk/(3*epsilon*(2*epsilonRF+1)));
+	
+	fprintf(outaver,"%10g  %10.3e %12.5e %12.5e %12.5e %10.3e  %10.3e\n",
+		t,epsilon,M2_ave,M_ave2,M_diff,Gk,g_k);
+      }
+      else 
+	fprintf(outaver,"%10g  %12.8e %12.8e %12.8e %12.8e\n",
+		t,epsilon,M2_ave,M_ave2,M_diff);
     }
-
-    /* Write to file < |M|^2 >, < |M| >^2. And the difference between 
-     * the two. Here M is sum mu_i. Further write the finite system
-     * Kirkwood G factor and epsilon.
-     */
-    if ((skip == 0) || ((teller % skip) == 0))
-      fprintf(outaver,"%10g  %12.8e %12.8e %12.8e %12.8e %12.8e\n",
-	      t, M2_ave, M_ave2, M_diff, Gk, epsilon);
-
+    
     if (bMU)
       bCont = read_mu_from_enx(fmu,Vol,iMu,mu_t,&volume,&t,teller,nre); 
     else
@@ -651,7 +690,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   fclose(outaver);
 
   if (bGkr) 
-    print_gkrbin(gkrfn,gkrbin,mu);
+    print_gkrbin(gkrfn,gkrbin,mu_aver,gnx,teller);
 
   /* Autocorrelation function */  
   if (bCorr) {
@@ -674,7 +713,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   }
   if (!bMU) {
     fprintf(stderr,"\n\nAverage dipole moment (Debye)\n");
-    fprintf(stderr," Tot= %g\n",  mu_ave/(gnx*teller));
+    fprintf(stderr," Tot= %g\n",  (mu_ave/gnx)/teller);
     if (bQuad) {
       fprintf(stderr,"Average quadrupole moment (Debye-Ang)\n");
       fprintf(stderr," XX=  %g  YY=  %g ZZ=  %g norm= %g asymm= %g\n\n",  
@@ -698,8 +737,10 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   fprintf(stderr," Total < |M| >^2 = %g Debye^2\n\n", M_ave2);
 
   fprintf(stderr," < |M|^2 > - < |M| >^2 = %g Debye^2\n\n", M_diff);
-  fprintf(stderr,"Finite system Kirkwood g factor G_k = %g\n", Gk);
-  fprintf(stderr,"Infinite system Kirkwood g factor g_k = %g\n\n", g_k);
+  if (!bMU || (mu_aver != -1)) {
+    fprintf(stderr,"Finite system Kirkwood g factor G_k = %g\n", Gk);
+    fprintf(stderr,"Infinite system Kirkwood g factor g_k = %g\n\n", g_k);
+  }
   fprintf(stderr,"Epsilon = %g\n", epsilon);
 
   if (!bMU) {
@@ -746,12 +787,12 @@ int main(int argc,char *argv[])
     "an average dipole moment of the molecule of 2.273 (SPC). For the",
     "distribution function a maximum of 5.0 will be used."
   };
-  static real mu_max=5, mu=2.5;
+  static real mu_max=5, mu_aver=-1;
   static real epsilonRF=0.0, temp=300;
   static bool bAverCorr=FALSE;
   static int  skip=0,nFA=0;
   t_pargs pa[] = {
-    { "-mu",       FALSE, etREAL, {&mu},
+    { "-mu",       FALSE, etREAL, {&mu_aver},
       "dipole of a single molecule (in Debye)" },
     { "-mumax",    FALSE, etREAL, {&mu_max},
       "max dipole in Debye (for histrogram)" },
@@ -793,20 +834,30 @@ int main(int argc,char *argv[])
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
 		    
   fprintf(stderr,"Using %g as mu_max and %g as the dipole moment.\n", 
-	  mu_max, mu);
+	  mu_max,mu_aver);
   if (epsilonRF == 0.0)
     fprintf(stderr,"WARNING: EpsilonRF = 0.0, this really means EpsilonRF = infinity\n");
   
-  bMU = (opt2bSet("-enx",NFILE,fnm));
+  bMU   = opt2bSet("-enx",NFILE,fnm);
+  bQuad = opt2bSet("-q",NFILE,fnm);
+  bGkr  = opt2bSet("-g",NFILE,fnm);
   if (bMU) {
     bAverCorr = TRUE;
-    bQuad = FALSE;
-    bGkr  = FALSE;
+    if (bQuad) {
+      fprintf(stderr,"WARNING: "
+	      "Can not determine quadrupoles from energy file\n");
+      bQuad = FALSE;
+    }
+    if (bGkr) {
+      fprintf(stderr,"WARNING: Can not determine Gk(r) from energy file\n");
+      bGkr  = FALSE;
+    }
+    if (mu_aver == -1) 
+      fprintf(stderr,
+	      "WARNING: Can not calculate Gk and gk, since you did\n"
+	      "         not enter a valid dipole for the molecules\n");
   }
-  else {
-    bQuad   = opt2bSet("-q",NFILE,fnm);
-    bGkr    = opt2bSet("-g",NFILE,fnm);
-  }
+  
   if (ftp2bSet(efNDX,NFILE,fnm))
     rd_index(ftp2fn(efNDX,NFILE,fnm),1,&gnx,&grpindex,&grpname);
   else {
@@ -822,7 +873,7 @@ int main(int argc,char *argv[])
 	 bGkr,    opt2fn("-g",NFILE,fnm),
 	 bQuad,   opt2fn("-q",NFILE,fnm),
 	 bMU,     opt2fn("-enx",NFILE,fnm),
-	 gnx,grpindex,mu_max,mu,epsilonRF,temp,nFA,skip);
+	 gnx,grpindex,mu_max,mu_aver,epsilonRF,temp,nFA,skip);
   
   do_view(opt2fn("-o",NFILE,fnm),"-autoscale xy -nxy");
   do_view(opt2fn("-a",NFILE,fnm),"-autoscale xy -nxy");
