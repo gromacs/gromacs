@@ -10,24 +10,23 @@
 include		$(GMXHOME)/src/makef/Makefile.def
 
 LIB		=
-PROGRAMS	= do_dssp	editconf	eneconv		\
-		g_anaeig	g_angle		g_bond		\
-		g_chi		g_com		g_confrms	\
-		g_covar		g_density	g_dielectric	\
-		g_dih		g_dipoles	g_disre		\
-		g_dist		g_enemat	g_energy	\
-		g_gyrate	g_h2order	g_hbond		\
-		g_helix		g_mdmat		g_mindist	\
-		g_msd		g_nmeig		g_order		\
-		g_potential	g_rama		g_rdens		\
-		g_rdf		g_rms		g_rmsdist	\
-		g_rmsf		g_rotacf	g_saltbr	\
-		g_sas		g_sgangle	g_velacc	\
-		genbox		genconf		gendr		\
-		genion		genpr		make_ndx	\
-		mk_angndx	protonate	\
-		sas2mat		trjconv		wheel		\
-		xpm2ps		average		g_diffuse
+PROGRAMS	= average	do_dssp		editconf	\
+		eneconv		g_anaeig	g_angle		\
+		g_bond		g_chi		g_com		\
+		g_confrms	g_covar		g_density	\
+		g_dielectric	g_dih		g_dipoles	\
+		g_disre		g_dist		g_enemat	\
+		g_energy	g_gyrate	g_h2order	\
+		g_hbond		g_helix		g_mdmat		\
+		g_mindist	g_msd		g_nmeig		\
+		g_order		g_potential	g_rama		\
+		g_rdens		g_rdf		g_rms		\
+		g_rmsdist	g_rmsf		g_rotacf	\
+		g_saltbr	g_sas		g_sgangle	\
+		g_velacc	genbox		genconf		\
+		gendr		genion		genpr		\
+		make_ndx	mk_angndx	protonate	\
+		trjconv		wheel		xpm2ps
 
 ACOBJ	=	autocorr.o	expfit.o	polynomials.o	\
 		levenmar.o
@@ -205,7 +204,7 @@ wheel:		wheel.o
 mkice:		mkice.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-g_rdf:		g_rdf.o 	do_rdf.o	rdfn.o	rdfang.o
+g_rdf:		g_rdf.o 	do_rdf.o	rdfn.o		rdfang.o
 		$(CCLD) -o $@ $^ $(SYSLIBS)
 
 g_msd:		g_msd.o	lsq.o
