@@ -42,9 +42,9 @@ static MPI_Request mpi_req_tx=MPI_REQUEST_NULL,mpi_req_rx;
 
 /*#define DEBUG*/
 
-#ifdef _SGI_
-#define MPI_TEST
-#endif
+/* Try setting MPI_TEST when you experience unexplainable crashes, *
+ * up til now these crashes have only occured with IRIX 6.5        */
+/* #define MPI_TEST */
 
 void mpiio_tx(int pid,void *buf,int bufsize)
 {
