@@ -16,7 +16,7 @@ set HTMLOL	= $HTML/$MANDIR
 set HTMLIDX	= $HTML/$MANDIR.html
 set TEXDIR	= $cwd/doc
 set TEXIDX	= $TEXDIR/proglist.tex
-set PROGFILE	= programs.txt
+set PROGFILE	= ../programs.txt
 
 set GENERAL 	= "getting_started:Getting_Started flow:Flow_Chart files:File_Formats mdp_opt:mdp_options"
 
@@ -130,6 +130,6 @@ awk -F '|' -v mandir=$MANDIR -v longest="mk\\_angndx" '{\
     }\
   }\
 }' $PROGFILE | sed -e 's/e\.g\./{\\eg}/g' >> $TEXIDX
-echo "\end{description}" >> $TEXIDX
+echo "\\end{description}" >> $TEXIDX
 
 #last line

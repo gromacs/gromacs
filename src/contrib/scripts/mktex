@@ -14,7 +14,6 @@ set dir = $cwd
 set VER		= 3.0
 set TEXDIR	= $cwd/doc
 set TEXIDX	= $TEXDIR/proglist.tex
-set PROGFILE	= programs.txt
 
 set GENERAL 	= "getting_started:Getting_Started flow:Flow_Chart files:File_Formats mdp_opt:mdp_options"
 
@@ -32,7 +31,7 @@ if ( -f $TEXIDX ) \rm $TEXIDX
 touch $TEXIDX
 
 echo "\\begin{description}" >> $TEXIDX
-awk -F '|' -v mandir=$MANDIR -v longest="mk\\_angndx" '{\
+awk -F '|' -v longest="mk\\_angndx" '{\
   gsub("_","\\_",$0);\
   gsub("%","\\%",$0);\
   if (NF) {\
