@@ -92,7 +92,7 @@ static int *select_it(int nre,char *nm[],int *nset)
   return set;
 }
 
-int get_bounds(char *topnm,real **bounds,int **dr_index)
+int get_bounds(char *topnm,real **bounds,int **dr_index,int *npairs)
 {
   t_topology *top;
   t_functype *functype;
@@ -153,6 +153,7 @@ int get_bounds(char *topnm,real **bounds,int **dr_index)
     i += natom;
   }
   ind[j]  = k;
+  *npairs = k;
   assert(j == nb);
   
   *dr_index = ind;
@@ -548,7 +549,7 @@ int main(int argc,char *argv[])
 #define NEXT (1-cur)
   real       *bounds,*violaver=NULL;
   int        *index;
-  int        nbounds;
+  int        nbounds,npairs;
   bool       bStarted,bCont,bEDR,bVisco;
   double     sum,sumaver,sumt;
   real       **eneset,*time;
@@ -625,8 +626,8 @@ int main(int argc,char *argv[])
     time = NULL;
   }
   else {
-    nbounds=get_bounds(ftp2fn(efTPX,NFILE,fnm),&bounds,&index);
-    snew(violaver,nbounds);
+    nbounds=get_bounds(ftp2fn(efTPX,NFILE,fnm),&bounds,&index,&npairs);
+    snew(violaver,npairs);
     out=xvgropen(opt2fn("-o",NFILE,fnm),"Sum of Violations","Time (ps)","nm");
     if (!bDRAll)
       xvgr_legend(out,2,drleg);    
