@@ -437,7 +437,8 @@
    C2   OS    C    1   119.000     397.480
 
 ; Added by DvdS, Oct 95
-   NL   C1   HC    1   109.500     292.880	; N-terminuse
+   NL   C1   HC    1   109.500     292.880	; N-terminus
+   NT   C1   HC    1   109.500     292.880	; N-terminus
  NR5*   CB  CR5    1   108.000     418.400	; HIS stuff
    CB  CR5   HC    1   126.000     292.880
  NR5*  CR5   HC    1   126.000     292.880
