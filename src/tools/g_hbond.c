@@ -48,6 +48,7 @@ static char *SRCID_g_hbond_c = "$Id$";
 #include "gstat.h"
 #include "matio.h"
 #include "lutab.h"
+#include "string2.h"
 #include <math.h>
 
 #define max_hx 7
@@ -63,7 +64,7 @@ enum { gr0D, gr0H, gr0A, gr1D, gr1H, gr1A, grID, grIH, grIA, grNR };
 #define gr0 gr0D
 #define gr1 gr1D
 #define grI grID
-#define grINC gr1-gr0
+#define grINC (gr1-gr0)
 
 typedef struct {
   int nr;
@@ -1053,7 +1054,7 @@ int main(int argc,char *argv[])
       }
       low_do_autocorr(opt2fn("-ac",NFILE,fnm), "Hydrogen Bond Autocorrelation",
 		      nframes,nrhb,-1,rhbex,time[1]-time[0],eacNormal,1,
-		      TRUE,TRUE,TRUE,NULL,NULL,FALSE,0,0,0);
+		      TRUE,TRUE,TRUE,FALSE,0,0,0);
       for(i=0; i<nrhb; i++)
 	sfree(rhbex[i]);
       sfree(rhbex);
