@@ -91,10 +91,10 @@ static void reallocate_nblist(t_nblist *nl)
   if (debug)
     fprintf(debug,"reallocating neigborlist il_code=%d, maxnri=%d\n",
 	    nl->il_code,nl->maxnri); 
-  srenew(nl->iinr,   nl->maxnri+2);
-  srenew(nl->gid,    nl->maxnri+2);
-  srenew(nl->shift,  nl->maxnri+2);
-  srenew(nl->jindex, nl->maxnri+2);
+  srenew(nl->iinr,   nl->maxnri+4);
+  srenew(nl->gid,    nl->maxnri+4);
+  srenew(nl->shift,  nl->maxnri+4);
+  srenew(nl->jindex, nl->maxnri+4);
 }
 
 static void init_nblist(t_nblist *nl,int homenr,int il_code)
@@ -209,8 +209,10 @@ static void reset_nblist(t_nblist *nl)
   nl->nrj       = 0;
   if (nl->maxnri > 0) {
     nl->iinr[0]   = -1;
-    nl->jindex[0] = 0;
-    nl->jindex[1] = 0;
+    if (nl->maxnrj > 1) {
+      nl->jindex[0] = 0;
+      nl->jindex[1] = 0;
+    }
   }
 }
 
