@@ -116,18 +116,21 @@ tstsqrtc:	tstsqrtc.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 tstsqrtf:	tstsqrtf.o inloopf.o
 		$(F77) -o $@ $^ -lm
-libxdrf.o:	libxdrf.m4 $(M4FILE)
+$(LIB)(libxdrf.o):	libxdrf.m4 $(M4FILE)
 		$(M4) $(M4FILE) libxdrf.m4 > libxdrf.c
 		$(CC) $(C-FLAGS) -c libxdrf.c
-		$(RM) libxdrf.c
-callf77.o:	callf77.m4 $(M4FILE)
+		$(AR) $(ARFLAGS) $(LIB) libxdrf.o
+		$(RM) libxdrf.c libxdrf.o
+$(LIB)(callf77.o):	callf77.m4 $(M4FILE)
 		$(M4) $(M4FILE) callf77.m4  > callf77.c
 		$(CC) $(C-FLAGS) -c callf77.c
-		$(RM) callf77.c
-inloopf.o:	inloopf.m4 
+		$(AR) $(ARFLAGS) $(LIB) callf77.o
+		$(RM) callf77.c callf77.o
+$(LIB)(inloopf.o):	inloopf.m4 
 		$(CC) -E $(SYSDEFS) inloopf.m4 | grep -v '#' > inloopf.f
 		$(F77) $(FFLAGS) -c inloopf.f
-		$(RM) inloopf.f
+		$(AR) $(ARFLAGS) $(LIB) inloopf.o
+		$(RM) inloopf.f inloopf.o
 
 prfn:		prfn.o
 		$(LD) -o $@ $^ $(SYSLIBS)
@@ -153,4 +156,4 @@ fitter:		fitter.o
 mgmxtest:	mgmxtest.o
 		$(LD) -o $@ $^  $(SYSLIBS) 
 
-include	Make.dep
+#include	Make.dep
