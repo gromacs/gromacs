@@ -35,8 +35,11 @@ static char *SRCID_ifunc_c = "$Id$";
 #define def_bond(str,lstr,nra,nrpa,nrpb,ind,func) \
    {str,lstr,(nra),(nrpa),(nrpb),IF_BOND,(ind),(func)}
    
+#define def_ang(str,lstr,nra,nrpa,nrpb,ind,func) \
+   {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_ATYPE,(ind),(func)}
+   
 #define def_connect(str,lstr,nra,nrpa,nrpb,ind,func) \
-   {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_CONNECT,(ind),(func)}
+   {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_CONNECT | IF_BTYPE,(ind),(func)}
    
 #define def_dumm(str,lstr,nra,nrpa) \
    {str,lstr,(nra),(nrpa),0,IF_DUMMY | IF_CONNECT, -1, unimplemented}
@@ -56,8 +59,8 @@ static char *SRCID_ifunc_c = "$Id$";
 /* this MUST correspond to the enum in include/types/idef.h */
 t_interaction_function interaction_function[F_NRE]=
 {
-  def_bond   ("ANGLES",   "Angle",          3, 2, 2,  eNR_ANGLES, angles),
-  def_bond   ("G96ANGLES","G96Angle",       3, 2, 2,  eNR_ANGLES, g96angles),
+  def_ang    ("ANGLES",   "Angle",          3, 2, 2,  eNR_ANGLES, angles),
+  def_ang    ("G96ANGLES","G96Angle",       3, 2, 2,  eNR_ANGLES, g96angles),
   def_nb     ("BHAM",     "BuckingHam",     2, 3),
   def_connect("BONDS",    "Bonds",          2, 2, 2,  eNR_BONDS,  bonds),
   def_connect("G96BONDS", "G96Bonds",       2, 2, 2,  eNR_BONDS,  g96bonds),
