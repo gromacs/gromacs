@@ -45,7 +45,8 @@ void pr_texdefs(FILE *fp)
 	  "Name","Extension","Type","Option","Description");
   fprintf(fp,"\\hline\n");
   for(i=0; (i<efNR); i++)
-    pr_def(fp,i);
+    if ( (i!=efGCT) && (i!=efHAT) )
+      pr_def(fp,i);
   fprintf(fp,"\\hline\n");
   fprintf(fp,"\\end{tabularx}\n");
   fprintf(fp,"\\caption{File types: A = ascii, B = binary, P = XDR portable.}\n");
