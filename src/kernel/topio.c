@@ -232,7 +232,8 @@ static char **read_topol(char        *infile,
 			 real        *fudgeQQ,
 			 int         *nsim,
 			 t_simsystem **sims,
-			 bool        bVerbose)
+			 bool        bVerbose,
+			 int         *combination_rule)
 {
   FILE       *in;
   int        i,nb_funct,comb;
@@ -351,6 +352,7 @@ static char **read_topol(char        *infile,
 	    *fudgeQQ  = 1.0;
 	    
 	    get_nbparm(nb_str,comb_str,&nb_funct,&comb);
+	    *combination_rule = comb;
 	    if (nscan >= 3) 
 	      bGenPairs = (strncasecmp(genpairs,"Y",1) == 0);
 	    if (nscan >= 4)
@@ -533,6 +535,7 @@ char **do_top(bool         bVerbose,
 {
   char tmpfile[L_tmpnam];
   char **title;
+  int  combination_rule;
   
   init_atomtype(atype);
 
@@ -547,7 +550,14 @@ char **do_top(bool         bVerbose,
 
   if (bVerbose) printf("processing topology...\n");
   title=read_topol(tmpfile,symtab,atype,nrmols,molinfo,
-		   plist,opts->nshake,&ir->fudgeQQ,nsim,sims,bVerbose);
+		   plist,opts->nshake,&ir->fudgeQQ,nsim,sims,bVerbose,
+		   &combination_rule);
+  if ((combination_rule != eCOMB_ARITHMETIC) && 
+      (ir->vdwtype == evdwUSER)) {
+    warning("Using sigma/epsilon based combination rules with"
+	    " user supplied potential function may produce unwanted"
+	    " results");
+  }
   if (!topppfile) {
     if (unlink(tmpfile) != 0)
       perror ("Unable to remove temporary file");
