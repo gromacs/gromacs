@@ -106,13 +106,14 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   if (ir->rlist == 0.0) {
     if ((ir->eeltype != eelTWIN) || (ir->ns_type != ensGRID) || 
 	(ir->eBox != ebtNONE) ||
-	(ir->rcoulomb != 0.0) || (ir->rvdw != 0.0))
+	(ir->rcoulomb != 0.0) || (ir->rvdw != 0.0)) {
       fprintf(stderr,
 	      "ERROR: can only have neighborlist cut-off zero (=infinite)\n"
 	      "with eel_type = Twin-Range and simple neighborsearch\n"
 	      "without periodic boundary conditions (box = %s) and\n"
 	      "rcoulomb and rvdw set to zero\n",eboxtype_names[ebtNONE]);
-    (*nerror)++;
+      (*nerror)++;
+    }
   }
   if ((ir->epc == epcTRICLINIC) && (ir->eBox != ebtTRICLINIC)) {
     sprintf(warn_buf,
