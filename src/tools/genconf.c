@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
     
   };
   static char *bugs[] = {
-    "The program should be more flexible, to allow for random displacement off lattice points (for each cartesian coordinate), and specify the (maximum) random rotation per coordinate to be useful for building membranes." };
+    "The program should allow for random displacement off lattice points." };
 
   int     vol;          
   t_atoms *atoms;       /* list with all atoms */
