@@ -7,7 +7,7 @@ SOL		2
 
 [ atoms ]
 ; id	at type	res nr 	residu name	at name	cg nr	charge
-#ifdef FF_OPLS
+#ifdef _FF_OPLS
 1	opls_115	1	SOL	MW1	1      -1.04
 2	opls_114	1	SOL	HW2	1	0.52
 3	opls_114	1	SOL	HW3	1	0.52
