@@ -33,10 +33,11 @@ static char *SRCID_writeps_c = "$Id$";
 #include "fatal.h"
 #include "copyrite.h"
 #include "writeps.h"
+#include "smalloc.h"
 
-#define MAXRGB 200
+static int maxrgb=0;
 static int   nrgb=0;
-static t_rgb rgb[MAXRGB];
+static t_rgb *rgb=NULL;
 
 FILE *ps_open(char *fn,real x1,real y1,real x2,real y2)
 {
@@ -87,26 +88,23 @@ static int search_col(FILE *ps,real r,real g,real b)
 {
   int  i;
   
-  for(i=0; (i<nrgb); i++) {
+  for(i=0; (i<nrgb); i++)
     if ((rgb[i].r == r) && (rgb[i].g == g) && (rgb[i].b == b))
       return i;
+  
+  if (nrgb >= maxrgb) {
+    maxrgb+=100;
+    srenew(rgb,maxrgb);
   }
-  if (nrgb < MAXRGB) {
-    ps_defcolor(ps,r,g,b,i2a(nrgb));
-    fprintf(ps,"/B%d {%s b} bind def\n",nrgb,i2a(nrgb));
-    rgb[i].r=r;
-    rgb[i].g=g;
-    rgb[i].b=b;
-    nrgb++;
-    
-    return nrgb-1;
-  }
-  else {
-    fclose(ps);
-    fatal_error(0,"Colormap full! Increase MAXRGB");
-  }
-    
-  return -1;
+  
+  ps_defcolor(ps,r,g,b,i2a(nrgb));
+  fprintf(ps,"/B%d {%s b} bind def\n",nrgb,i2a(nrgb));
+  rgb[i].r=r;
+  rgb[i].g=g;
+  rgb[i].b=b;
+  nrgb++;
+  
+  return nrgb-1;
 }
 
 void ps_color(FILE *ps,real r,real g,real b)
