@@ -49,39 +49,6 @@ real distance_to_z(rvec x)
   return (sqr(x[XX])+sqr(x[YY]));
 } /*distance_to_z()*/
 
-int in_box(int NTB,matrix box,rvec x)
-{
-  switch (NTB) {
-  /* cubic box*/
-  case 0: 
-    if (
-	( (x[0]>=0.0) && (x[0]<=box[0][0]) ) &&
-	( (x[1]>=0.0) && (x[1]<=box[1][1]) ) &&
-	( (x[2]>=0.0) && (x[2]<=box[2][2]) )
-	)
-      return 0;
-    else
-      return 1;
-      
-  /*truncated octahedron*/
-  case 1: 
-    if (
-	((fabs(box[XX][XX]/2-x[XX]) <= box[XX][XX]/2) &&
-	 (fabs(box[YY][YY]/2-x[YY]) <= box[YY][YY]/2) &&
-	 (fabs(box[ZZ][ZZ]/2-x[ZZ]) <= box[ZZ][ZZ]/2))
-	&&
-	(fabs(x[XX]-box[XX][XX]/2)+fabs(x[YY]-box[YY][YY]/2)+fabs(x[ZZ]-box[ZZ][ZZ]/2) 
-	 <3*box[XX][XX]/4)
-	)
-      return 0;
-    else 
-      return 1;
-  default: 
-    fatal_error(0,"Illegal boxtype\nProgram terminated");
-  }
-  return 1;
-}/*in_box()*/
-
 static void low_rotate_conf(int natom,rvec *x,real alfa, real beta,real gamma)
 {
   int  i;

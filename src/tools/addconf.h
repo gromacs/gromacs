@@ -31,7 +31,7 @@ static char *SRCID_addconf_h = "$Id$";
 #include "typedefs.h"
 
 extern void add_conf(t_atoms *atoms, rvec **x, real **r, bool bSrenew,
-		     int NTB,matrix box,
+		     matrix box,
 		     t_atoms *atoms_solvt, rvec *x_solvt, real *r_solvt, 
 		     bool bVerbose);
 /* Add two conformations together, without generating overlap */

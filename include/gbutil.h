@@ -28,9 +28,6 @@
  */
 static char *SRCID_gbutil_h = "$Id$";
 
-extern int in_box(int NTB,matrix box,rvec x);
-/*in_box() returns zero if atom x is inside the box*/
-
 extern void rotate_conf(int natom,rvec *x,rvec *v,real alfa, real beta,real gamma);
 /*rotate() rotates a configuration alfa degrees around the x_axis and beta degrees around the y_axis, *v can be NULL */
 
