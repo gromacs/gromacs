@@ -298,6 +298,9 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PI("nkx",ir->nkx);
     PI("nky",ir->nky);
     PI("nkz",ir->nkz);
+    PI("pme_order",ir->pme_order);
+    PR("ewald_rtol",ir->ewald_rtol);
+    PS("optimize_fft",BOOL(ir->bOptFFT));
     PS("eBox",EBOXTYPE(ir->eBox));
     PS("bUncStart",BOOL(ir->bUncStart));
     PS("btc",BOOL(ir->btc));
