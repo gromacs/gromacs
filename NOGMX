@@ -36,8 +36,6 @@ if ($?VER) then
   unsetenv VER
 endif
 if ($?CPUGMX) then
-  if ( "$1" != "-quiet" ) echo "unsetenv CPU ($CPU)"
-  unsetenv CPU
   if ( "$1" != "-quiet" ) echo "unsetenv GMXCPU ($GMXCPU)"
   unsetenv GMXCPU
 endif
