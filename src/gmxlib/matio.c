@@ -368,7 +368,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
 	snew(mm->axis_x,mm->nx + 1);
       while (sscanf(line,"%lf",&u)==1) {
 	if (n_axis_x > mm->nx) {
-	  gmx_file("Too many x-axis labels in xpm");
+	  gmx_fatal(FARGS,"Too many x-axis labels in xpm (max %d)",mm->nx);
 	} else if (n_axis_x == mm->nx) {
 	  mm->flags |= MAT_SPATIAL_X;
 	}
