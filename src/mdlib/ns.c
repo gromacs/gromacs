@@ -506,7 +506,7 @@ static inline void put_in_list(bool bHaveLJ[],
   unsigned short    *cENER;
   real      *charge,*chargeB;
   real      qi,qiB,qq,rlj;
-  bool      bWater,bMNO,bFree,bFreeJ,bNotEx,*bPert;
+  bool      bWater,bMNO,bFreeEnergy,bFree,bFreeJ,bNotEx,*bPert;
   
 #ifdef SORTNLIST
   /* Quicksort the charge groups in the neighbourlist to obtain
@@ -531,6 +531,25 @@ static inline void put_in_list(bool bHaveLJ[],
   bWater = (fr->solvent_type[icg] == esolWATER);
   bMNO   = (fr->solvent_type[icg] == esolMNO);
 
+  bFreeEnergy = FALSE;
+  if (fr->efep != efepNO) {
+    /* Check if any of the particles involved are perturbed. 
+     * If not we can do the cheaper normal put_in_list
+     * and use more solvent optimization.
+     */
+    for(i=0; i<nicg; i++)
+      bFreeEnergy |= bPert[i0+i];
+    /* Loop over the j charge groups */
+    for(j=0; (j<nj && !bFreeEnergy); j++) {
+      jcg = jjcg[j];
+      jj0 = index[jcg];
+      jj1 = index[jcg+1];
+      /* Finally loop over the atoms in the j-charge group */	
+      for(jj=jj0; jj<jj1; jj++)
+	bFreeEnergy |= bPert[jj];
+    }
+  }
+
   /* Unpack pointers to neighbourlist structs */
   if (bLR) {
     /* Long range */
@@ -551,11 +570,6 @@ static inline void put_in_list(bool bHaveLJ[],
       vdwc = &fr->nlist_lr[eNL_VDWQQ];
       vdw  = &fr->nlist_lr[eNL_VDW];
       coul = &fr->nlist_lr[eNL_QQ];
-    }
-    if (fr->efep != efepNO) {
-      vdwc_free = &fr->nlist_lr[eNL_VDWQQ_FREE];
-      vdw_free  = &fr->nlist_lr[eNL_VDW_FREE];
-      coul_free = &fr->nlist_lr[eNL_QQ_FREE];
     }
   }
   else {
@@ -578,14 +592,9 @@ static inline void put_in_list(bool bHaveLJ[],
       vdw  = &fr->nlist_sr[eNL_VDW];
       coul = &fr->nlist_sr[eNL_QQ];
     }
-    if (fr->efep != efepNO) {
-      vdwc_free = &fr->nlist_sr[eNL_VDWQQ_FREE];
-      vdw_free  = &fr->nlist_sr[eNL_VDW_FREE];
-      coul_free = &fr->nlist_sr[eNL_QQ_FREE];
-    }
   }
-  
-  if (fr->efep==efepNO) {
+
+  if (!bFreeEnergy) {
     if (bWater) {
       /* Loop over the atoms in the i charge group */    
       i_atom  = i0;
@@ -770,6 +779,15 @@ static inline void put_in_list(bool bHaveLJ[],
       }
     }
   } else { /* we are doing free energy */
+    if (bLR) {
+      vdwc_free = &fr->nlist_lr[eNL_VDWQQ_FREE];
+      vdw_free  = &fr->nlist_lr[eNL_VDW_FREE];
+      coul_free = &fr->nlist_lr[eNL_QQ_FREE];
+    } else {
+      vdwc_free = &fr->nlist_sr[eNL_VDWQQ_FREE];
+      vdw_free  = &fr->nlist_sr[eNL_VDW_FREE];
+      coul_free = &fr->nlist_sr[eNL_QQ_FREE];
+    }
     /* Loop over the atoms in the i charge group */    
     for(i=0; i<nicg; i++) {
       i_atom  = i0+i;
@@ -847,12 +865,6 @@ static inline void put_in_list(bool bHaveLJ[],
       close_i_nblist(vdw);
       close_i_nblist(coul);
       close_i_nblist(vdwc);
-#ifndef DISABLE_WATERWATER_LOOPS
-      if (bWater && (i==0)) {
-	close_i_nblist(coul_ww);
-	close_i_nblist(vdwc_ww); 
-      }
-#endif
       close_i_nblist(vdw_free);
       close_i_nblist(coul_free);
       close_i_nblist(vdwc_free);
