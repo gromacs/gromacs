@@ -146,9 +146,8 @@ int iscan(int argc,char *argv[],int *i)
 
   if (argc > (*i)+1) {
     if (!sscanf(argv[++(*i)],"%d",&var))
-      usage("an integer",argv[*i]);
-  }
-  else
+      usage("an integer",argv[(*i)-1]);
+  } else
     usage("an integer",argv[*i]);
 
   return var;
@@ -160,9 +159,8 @@ double dscan(int argc,char *argv[],int *i)
 
   if (argc > (*i)+1) {
     if (!sscanf(argv[++(*i)],"%lf",&var))
-      usage("a real",argv[*i]);
-  }
-  else
+      usage("a real",argv[(*i)-1]);
+  } else
     usage("a real",argv[*i]);
 
   return var;
@@ -170,17 +168,14 @@ double dscan(int argc,char *argv[],int *i)
 
 char *sscan(int argc,char *argv[],int *i)
 {
-  /* 
-     if (strlen(argv[*i]) > 2) 
-     return &(argv[*i][2]);
-     else
-     */
-  if (argc > (*i)+1) 
-    return argv[++(*i)];
-  else
+  if (argc > (*i)+1) {
+    if ( (argv[(*i)+1][0]=='-') && (argc > (*i)+2) && (argv[(*i)+2][0]!='-') )
+      fprintf(stderr,"Possible missing string argument for option %s\n\n",
+	      argv[*i]);
+  } else
     usage("a string",argv[*i]);
-
-  return NULL; /* For the compiler! */
+  
+  return argv[++(*i)];
 }
 
 static void pdesc(char *desc)
