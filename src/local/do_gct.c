@@ -270,16 +270,6 @@ static void upd_nbfpbu(FILE *log,t_coupl_BU *tcbu,
   }
 }
 
-real run_aver(real old,real cur,int step,int nmem)
-{
-  nmem   = max(1,nmem);
-  
-  /*if (step < nmem) 
-    return (step*old+cur)/(step+1);
-  else */
-  return ((nmem-1)*old+cur)/nmem;
-}
-
 void do_coupling(FILE *log,t_coupl_rec *tcr,real t,int step,real ener[],
 		 t_forcerec *fr,t_inputrec *ir,bool bMaster,
 		 t_mdatoms *md,t_idef *idef,real mu_aver)

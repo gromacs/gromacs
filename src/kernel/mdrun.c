@@ -166,7 +166,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   /* Calculate Temperature coupling parameters lambda */
   ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
-  tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor);
+  tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor,0,
+	 parm->ir.ntcmemory);
   where();
   
   /* Write start time and temperature */
@@ -290,8 +291,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       clear_mat(shake_vir);
       update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
 	     &(parm->ir),FALSE,mdatoms,x,graph,
-      fr->shift_vec,f,buf,vold,v,vt,parm->pres,parm->box,
-      top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn);
+	     fr->shift_vec,f,buf,vold,v,vt,parm->pres,parm->box,
+	     top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn);
 #ifdef DEBUG
       pr_rvecs(log,0,"shake_vir",shake_vir,DIM);
 #endif
@@ -348,7 +349,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       ener[F_ETOT]=ener[F_EPOT]+ener[F_EKIN];
       
       /* Calculate Temperature coupling parameters lambda */
-      tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor);
+      tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor,
+	     step,parm->ir.ntcmemory);
     
       /* Calculate pressure ! */
       calc_pres(parm->box,parm->ekin,parm->vir,parm->pres);
@@ -453,7 +455,7 @@ int main(int argc,char *argv[])
     /* function "optRerunMDset" (in runner.c) checks if -rerun is specified */
     { efHAT, "-hat","ghat",   ffOPTRD },
     { efEDI, "-ei", "sam",    ffOPTRD },
-    { efEDO, "-eo", "sam",    ffOPTWR },
+    { efEDO, "-eo", "sam",    ffOPTWR }
   };
 #define NFILE asize(fnm)
 

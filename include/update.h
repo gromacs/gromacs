@@ -42,14 +42,6 @@ static char *SRCID_update_h = "$Id$";
 #include "network.h"
 #include "force.h"
 
-extern void tcoupl(bool bTC,t_grpopts *opts,t_groups *grps,real dt,real lamb);
-
-extern real calc_temp(real ekin,int nrdf);
-/* Calculate the temperature */
-
-extern void calc_pres(matrix box,tensor ekin,tensor vir,tensor pres);
-/* Calculate the pressure. Unit of pressure is bar */
-
 extern void update(int          natoms,	/* number of atoms in simulation */
 		   int      	 start,
 		   int          homenr,	/* number of home particles 	*/
@@ -137,21 +129,41 @@ extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 
 
 /* C routines for LINCS algorithm */ 
-void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
-              int *bla1,int *bla2,int *blnr,int *blbnb,real *bllen,
-	      real *blc,real *blcc,real *blm,
-              int nrec,real *invmass,rvec * r,
-	      real *vbo,real *vbn,real *vbt,real wangle,int *warn,
-	      real *lambda);
+extern void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
+		   int *bla1,int *bla2,int *blnr,int *blbnb,real *bllen,
+		   real *blc,real *blcc,real *blm,
+		   int nrec,real *invmass,rvec * r,
+		   real *vbo,real *vbn,real *vbt,real wangle,int *warn,
+		   real *lambda);
 
-void clincsld(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
-              int *bla1,int *bla2,int *blnr,int *blbnb,real *bllen,
-	      real *blcc,real *blm,
-              int nrec,rvec * r,
-	      real *rhs1,real *rhs2,real *sol,real wangle,int *warn);
+extern void clincsld(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
+		     int *bla1,int *bla2,int *blnr,int *blbnb,real *bllen,
+		     real *blcc,real *blm,int nrec,rvec * r,
+		     real *rhs1,real *rhs2,real *sol,real wangle,int *warn);
 
-void cconerr(real *max,real *rms,int *imax,rvec *xprime,
-	     int ncons,int *bla1,int *bla2,real *bllen);
+extern void cconerr(real *max,real *rms,int *imax,rvec *xprime,
+		    int ncons,int *bla1,int *bla2,real *bllen);
 
+	     
+/* Routines from coupling.c to do with Temperature, Pressure and coupling
+ * algorithms.
+ */
+extern real run_aver(real old,real cur,int step,int nmem);
+
+extern void tcoupl(bool bTC,t_grpopts *opts,t_groups *grps,
+		   real dt,real SAfactor,int step,int nmem);
+/* Compute temperature scaling factors */
+
+extern real calc_temp(real ekin,int nrdf);
+/* Calculate the temperature */
+
+extern void calc_pres(matrix box,tensor ekin,tensor vir,tensor pres);
+/* Calculate the pressure. Unit of pressure is bar */
+
+extern void do_pcoupl(t_inputrec *ir,int step,tensor pres,
+		      matrix box,int start,int nr_atoms,
+		      rvec x[],ushort cFREEZE[],
+		      t_nrnb *nrnb,rvec freezefac[]);
+		      
 #endif	/* _update_h */
 

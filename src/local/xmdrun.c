@@ -118,41 +118,6 @@ real calc_mu_aver(t_commrec *cr,t_nsborder *nsb,rvec x[],real q[],rvec mu,
   return(mu_ave/gnx);
 }
 
-
-void Etcoupl(bool bTC,t_grpopts *opts,t_groups *grps,real dt,real SAfactor,
-	     int step,int nmem)
-{
-  static real *Told=NULL;
-  int    i;
-  real   T,reft,lll;
-
-  if (!Told) {
-    snew(Told,opts->ngtc);
-    for(i=0; (i<opts->ngtc); i++) 
-      Told[i]=opts->ref_t[i]*SAfactor;
-  }
-  
-  for(i=0; (i<opts->ngtc); i++) {
-    reft=opts->ref_t[i]*SAfactor;
-    if (reft < 0)
-      reft=0;
-    
-    Told[i] = run_aver(Told[i],grps->tcstat[i].T,step,nmem);
-    T       = Told[i];
-    
-    if ((bTC) && (T != 0.0)) {
-      lll=sqrt(1.0 + (dt/opts->tau_t[i])*(reft/T-1.0));
-      grps->tcstat[i].lambda=max(min(lll,1.25),0.8);
-    }
-    else
-      grps->tcstat[i].lambda=1.0;
-#ifdef DEBUGTC
-    fprintf(stdlog,"group %d: T: %g, Lambda: %g\n",
-	    i,T,grps->tcstat[i].lambda);
-#endif
-  }
-}
-
 static void do_1pos(rvec xnew,rvec xold,rvec f,real k_1,real step)
 {
   real xo,yo,zo;
@@ -598,8 +563,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   /* Calculate Temperature coupling parameters lambda */
   ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
-  Etcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor,
-	  0,parm->ir.ntcmemory);
+  tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor,
+	 0,parm->ir.ntcmemory);
   where();
   
   init_shells(log,START(nsb),HOMENR(nsb),&top->idef,md,&nas,&as,&nbs,&bs);
@@ -771,8 +736,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     fprintf(stderr,"Ekin 1: %14.10e", ener[F_EKIN]);
 #endif
     /* Calculate Temperature coupling parameters lambda */
-    Etcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor,
-	    step,parm->ir.ntcmemory);
+    tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor,
+	   step,parm->ir.ntcmemory);
     
     /* Calculate pressure ! */
     calc_pres(parm->box,parm->ekin,parm->vir,parm->pres);
