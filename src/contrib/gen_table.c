@@ -171,30 +171,6 @@ void lo_do_guillot_maple(double r,double xi,double xir,
   *vr2  = 1.0/sqrt(M_PI)/(xir*xir)*exp(-r*r/(xir*xir)/4.0)+4.0/sqrt(M_PI)*exp(-r*r/(xir*xir)/4.0)/(r*r)+4.0*erfc(r/xir/2.0)/(r*r*r)*xir;
 }
 
-/* use with coulombtype = user */
-void lo_do_guillot_maple_pme(double r,double xi,double xir,
-			     double rcoulomb, double ewald_rtol,
-			     double *vc,double *vc2,
-			     double *vd,double *vd2,
-			     double *vr,double *vr2)
-{
-  double qO    = -0.888;
-  double qOd   = 0.226;
-  double f0    = qOd/qO;
-  double sqpi  = sqrt(M_PI);
-  double isp   = 0.564189583547756;
-  double ewc;
-
-  ewc = calc_ewaldcoeff(rcoulomb,ewald_rtol);
-  *vc = pow(-f0/(1.0+f0)+1.0,2.0)/r+pow(-f0/(1.0+f0)+1.0,2.0)*f0*f0*erf(r/xi/2.0)/r+2.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0*erf(r*sqrt(2.0)/xi/2.0)/r;
-  *vc2 = 2.0*pow(-f0/(1.0+f0)+1.0,2.0)/(r*r*r)-pow(-f0/(1.0+f0)+1.0,2.0)*f0*f0/sqrt(M_PI)/(xi*xi*xi)*exp(-r*r/(xi*xi)/4.0)/2.0-2.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0*f0/sqrt(M_PI)*exp(-r*r/(xi*xi)/4.0)/xi/(r*r)+2.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0*f0*erf(r/xi/2.0)/(r*r*r)-2.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0/sqrt(M_PI)/(xi*xi*xi)*exp(-r*r/(xi*xi)/2.0)*sqrt(2.0)-4.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0/sqrt(M_PI)*exp(-r*r/(xi*xi)/2.0)*sqrt(2.0)/xi/(r*r)+4.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0*erf(r*sqrt(2.0)/xi/2.0)/(r*r*r);
-  
-  *vd   = -1.0/(r*r*r*r*r*r);
-  *vd2  = -42.0/(r*r*r*r*r*r*r*r);
-  *vr   = 2.0*erfc(r/xir/2.0)/r*xir;
-  *vr2  = 1.0/sqrt(M_PI)/(xir*xir)*exp(-r*r/(xir*xir)/4.0)+4.0/sqrt(M_PI)*exp(-r*r/(xir*xir)/4.0)/(r*r)+4.0*erfc(r/xir/2.0)/(r*r*r)*xir;
-}
-
 static void do_guillot(FILE *fp,int eel,double resolution,double rc,double rtol,double xi,double xir)
 {
   int    i,i0,imax;
@@ -252,7 +228,7 @@ static void do_guillot_maple(FILE *fp,int eel,double resolution,double rc,double
     }
     else
       if (eel == eelPME) {
-	lo_do_guillot_maple_pme(r,xi,xir,rc,rtol,&vc,&vc2,&vd,&vd2,&vr,&vr2);
+	fprintf(fp, "Not implemented\n");
       } else if (eel == eelCUT) { 
 	lo_do_guillot_maple(r,xi,xir,&vc,&vc2,&vd,&vd2,&vr,&vr2);
       }
