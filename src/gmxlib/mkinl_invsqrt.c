@@ -296,7 +296,7 @@ void fortran_invsqrt()
   /* And now the vectorized version */
   newline();
   comment("fortran vectorized invsqrt routine");
-  strcat(header,"      subroutine vecinvsqrt(");
+  strcat(header,"      subroutine f77vecinvsqrt(");
   declare_real_vector("indata");
   declare_real_vector("utdata");
   declare_int("n");

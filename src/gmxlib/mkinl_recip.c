@@ -292,7 +292,7 @@ void fortran_recip()
   /* And now the vectorized version */
   newline();
   comment("fortran vectorized recip routine");
-  strcat(header,"      subroutine vecrecip(");
+  strcat(header,"      subroutine f77vecrecip(");
   declare_real_vector("indata");
   declare_real_vector("utdata");
   declare_int("n");

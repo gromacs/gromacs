@@ -92,7 +92,7 @@ void call_vectorized_routines()
     /* this is a vanilla GMX routine, suitable for most chips w/o hardware sqrt.
      * It is quite fast though - about 18 clocks on intel! */
 
-    code( bC ? "vecinvsqrt(buf1,%s,m);" : "call vecinvsqrt(buf1,%s,m)",
+    code( bC ? "vecinvsqrt(buf1,%s,m);" : "call f77vecinvsqrt(buf1,%s,m)",
 	  OVERWRITE_RSQ ? "buf1" : "buf2" );
  
 #endif
@@ -116,7 +116,7 @@ void call_vectorized_routines()
 	 * vectorizable.
 	 */
     vector_pragma();
-    code( bC ? "vecrecip(buf1,%s,m);" : "call vecrecip(buf1,%s,m)",
+    code( bC ? "vecrecip(buf1,%s,m);" : "call f77vecrecip(buf1,%s,m)",
 	  OVERWRITE_RSQ ? "buf1" : "buf2" );
    
 #endif
