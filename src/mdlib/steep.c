@@ -154,7 +154,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   t_mdebin   *mdebin; 
   t_nrnb mynrnb; 
   t_inputrec *ir;
-  bool   bNS=TRUE,bDone,bAbort,bLR,bLJLR,bBHAM,b14,do_log; 
+  bool   bDone,bAbort,bLR,bLJLR,bBHAM,b14,do_log; 
   time_t start_t; 
   tensor force_vir,shake_vir; 
   rvec   mu_tot;
@@ -286,7 +286,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     do_force(log,cr,parm,nsb,force_vir, 
  	     count,&(nrnb[cr->pid]),top,grps,pos[TRY],buf,force[TRY],buf,
 	     mdatoms,ener,bVerbose && !(PAR(cr)), 
- 	     lambda,graph,bNS,FALSE,fr); 
+ 	     lambda,graph,parm->ir.nstlist>0 || count==0,FALSE,fr); 
 
     /* Spread the force on dummy particle to the other particles... */
     spread_dummy_f(log,pos[TRY],force[TRY],&(nrnb[cr->pid]),&top->idef);

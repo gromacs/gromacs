@@ -194,12 +194,14 @@ void do_force(FILE *log,t_commrec *cr,
     if (parm->ir.epc != epcNO)
       calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
     
-    if (bNS || parm->ir.eI==eiSteep || parm->ir.eI==eiCG) { 
+    if (bNS) { 
       put_charge_groups_in_box(log,cg0,cg1,FALSE,
 			       parm->box,box_size,&(top->blocks[ebCGS]),x,
 			       fr->cg_cm);
       inc_nrnb(nrnb,eNR_RESETX,homenr);
-    }
+    } else if (parm->ir.eI==eiSteep || parm->ir.eI==eiCG)
+      unshift_self(graph,parm->box,x);
+
   }
   else if (bNS)
     calc_cgcm(log,cg0,cg1,&(top->blocks[ebCGS]),x,fr->cg_cm);
