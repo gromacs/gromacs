@@ -163,7 +163,7 @@ fnbf.c:			fnbf.m4 $(M4MAC) $(M4FILE) $(CPUMAKEF)
 			m4 $(SYSDEFS) $(M4FILE) $(M4MAC) fnbf.m4 > $@
 fnbf.o:			fnbf.c inner.h $(CPUMAKEF)
 			$(CC) $(C-FLAGS) -c fnbf.c
-			$(RM) fnbf.c inner.h
+			$(RM) fnbf.c
 
 mkinl:			$(CPUMAKEF)
 			$(CC) -g -c $(SYSDEFS) mkinl.c 

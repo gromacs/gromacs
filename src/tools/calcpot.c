@@ -7,6 +7,7 @@
 #include "force.h"
 #include "main.h"
 #include "filenm.h"
+#include "fatal.h"
 #include "mdrun.h"
 #include "ns.h"
 
@@ -63,8 +64,6 @@ static void low_calc_pot(FILE *log,int ftype,t_forcerec *fr,
   rvec     r_i,f_ip;
   real     qi,eps;
   t_nblist *nlist;
-  t_nl_i   *nl_i;
-  t_nl_j   *nl_j;
   int      *typeA;
   real     *chargeA;
   rvec     *svec;
@@ -83,7 +82,8 @@ static void low_calc_pot(FILE *log,int ftype,t_forcerec *fr,
   else
     nlist=fr->vdw;
   
-  for(gid=0; (gid<fr->nn); gid++) {
+  fatal_error(0,"Potential calculation out of order");
+  /*  for(gid=0; (gid<fr->nn); gid++) {
     nri  = nlist[gid].nri;
     nl_i = nlist[gid].nl_i;
     
@@ -103,7 +103,7 @@ static void low_calc_pot(FILE *log,int ftype,t_forcerec *fr,
       c_tabpot(inr,r_i[XX],r_i[YY],r_i[ZZ],qi,x[0],nj,typeA,nl_j,
 	       chargeA,pot,fr->ntab,fr->tabscale,fr->VFtab);
     }
-  }
+    }*/
   fprintf(stderr,"There were %d interactions\n",nr_inter);
 }
 
