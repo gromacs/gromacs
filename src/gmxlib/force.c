@@ -249,10 +249,10 @@ void init_forcerec(FILE *log,
     
   fr->bGrid      = (ir->ns_type == ensGRID);
   fr->bLongRange = (fr->rlong > fr->rshort);
-  /*
+  
   fr->bDomDecomp = (ir->userint3 != 0);
   fr->Dimension  = ir->userint4;
-  */
+  
   fr->zsquare = 0.0;
   fr->temp    = 0.0;
   
@@ -517,7 +517,8 @@ void force(FILE *log,
     real Vpppm,Vself;
     Vpppm = do_pppm(log,FALSE,FALSE,NULL,NULL,md->nr,x,f,md->chargeT,
 		    box_size,fr->phi,cr,nrnb);
-    Vself = calc_selfenergy(log,md->nr,md->chargeT,excl);
+    Vself = calc_LRcorrections(log,0,md->nr,fr->r1,fr->rc,
+			       md->chargeT,excl,x,f);
     epot[F_LR] = Vpppm - Vself;
 #ifdef DEBUG    
     fprintf(log,"Vpppm = %g, Vself = %g, Vlr = %g\n",
