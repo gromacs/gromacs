@@ -247,7 +247,7 @@ static void do_ac_core(int nframes,int nlag,
 		       real corr[],real c1[],int nrestart,
 		       unsigned long mode,bool bFull)
 {
-  int     j,k,j3,jk3,m,n,nstart;
+  int     j,k,j3,jk3,m,n;
   fftreal ccc,c0,cth;
   rvec    xj,xk,rr;
 
@@ -255,14 +255,12 @@ static void do_ac_core(int nframes,int nlag,
     if (nrestart != 1) 
       fprintf(stderr,"WARNING: setting number of restarts to 1 for Full ACF\n");
     nrestart = 1;
-    nstart   = nframes;
   }
   else {
     if (nrestart < 1) {
       fprintf(stderr,"WARNING: setting number of restarts to 1\n");
       nrestart = 1;
     }
-    nstart   = nframes - nlag;
   }
   if (debug)
     fprintf(debug,"Starting do_ac_core: nframes=%d, nlag=%d, nrestart=%d,mode=%d\n",
@@ -270,15 +268,15 @@ static void do_ac_core(int nframes,int nlag,
   
   for(j=0; (j<nlag); j++)
     corr[j]=0;
-
+  
   /* Loop over starting points. */
-  for(j=0; (j<nstart); j+=nrestart) {
+  for(j=0; (j<nframes); j+=nrestart) {
     j3  = DIM*j;
     
     /* Loop over the correlation length for this starting point */
     for(k=0; (k<nlag) && (j+k < nframes); k++) {
       jk3 = DIM*(j+k);
-
+      
       /* Switch over possible ACF types. 
        * It might be more efficient to put the loops inside the switch,
        * but this is more clear, and save development time!
@@ -336,9 +334,11 @@ static void do_ac_core(int nframes,int nlag,
       }
     }
   }
-  /* Copy results to the data array */
-  for(j=0; (j<nlag); j++)
-    c1[j] = corr[j];
+  /* Correct for the number of points and copy results to the data array */
+  for(j=0; (j<nlag); j++) {
+    n = (nframes-j)/nrestart;
+    c1[j] = corr[j]/n;
+  }
 }
 
 void normalize_acf(int nframes,int nf2,int nlag,
@@ -353,24 +353,6 @@ void normalize_acf(int nframes,int nf2,int nlag,
       fprintf(debug,"%5d  %10f\n",j,corr[j]);
   }
   
-  /* Normalize the acf for the number of data points */
-  if (!bFour) {
-    if (bFull) {
-      /* For the first point there are nf2 data entries, for the subsequent
-       * points j there are nf2-j points. We first correct for this.
-       */
-      for(j=0; (j<nf2); j++) 
-	corr[j] /= (nf2-j);
-    }
-    else {
-      /* For all the points there are nframes-nlag data entries.
-       * We first correct for this.
-       */
-      c0 = 1.0/(nframes-nlag);
-      for(j=0; (j<nlag); j++) 
-	corr[j] *= c0;
-    }
-  }
   /* Normalisation makes that c[0] = 1.0 and that other points are scaled
    * accordingly.
    */
@@ -672,6 +654,8 @@ void low_do_autocorr(char *fn,char *title,
   else {
     if (nlag == -1)
       nlag = acf.nlag = (nframes+1)/2;
+    else if (nlag > nframes)
+      nlag=nframes;
     ncorr = nlag;
   }
   
@@ -770,15 +754,15 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
 {
   t_pargs acfpa[] = {
     { "-fft",      FALSE, etBOOL, &acf.bFour,
-      "use fast fourier transform for correlation function" },
+      "Use fast fourier transform for correlation function" },
     { "-full",     FALSE, etBOOL,  &acf.bFull,
-      "compute full ACF leading to inaccurate tail" },
-    { "-normalize", FALSE, etBOOL, &acf.bNormalize,
+      "HIDDENCompute full ACF leading to inaccurate tail" },
+    { "-normalize",FALSE, etBOOL, &acf.bNormalize,
       "Normalize ACF" },
-    { "-nrestart", FALSE, etINT,   &acf.nrestart,
+    { "-nrestart", FALSE, etINT,  &acf.nrestart,
       "Number of frames between time origins for ACF when no FFT is used" },
-    { "-lag",      FALSE, etINT,   &acf.nlag,
-      "Lag for calculation of direct ACF" },
+    { "-acflen",     FALSE, etINT,  &acf.nlag,
+      "Length of the ACF when no FFT is used, default is half the number of frames" },
     { "-P",        FALSE, etINT,  &acf.P,
       "Order of Legendre polynomial for ACF (1,2 or 3)" },
     { "-nparm",    FALSE, etINT,  &acf.nfitparm,
