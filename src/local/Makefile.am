@@ -10,13 +10,15 @@ INCLUDES = @INCLUDES@ -I$(top_srcdir)/src/include
 LDFLAGS = @LDFLAGS@ -L${top_builddir}/src/gmxlib -L${top_builddir}/src/mdlib 
 LDADD = -lmdXXX_SUFFIX_XXX -lgmxXXX_SUFFIX_XXX
 
-bin_PROGRAMS = xmdrunXXX_SUFFIX_XXX sigepsXXX_SUFFIX_XXX
+bin_PROGRAMS = xmdrunXXX_SUFFIX_XXX sigepsXXX_SUFFIX_XXX mk6_nXXX_SUFFIX_XXX
 
 xmdrunXXX_SUFFIX_XXX_SOURCES = xmdrun.c do_gct.c init_sh.c gctio.c glaasje.c ionize.c relax_sh.c
 
 copyrgtXXX_SUFFIX_XXX_SOURCES 	= copyrgt.c
 
 sigepsXXX_SUFFIX_XXX_SOURCES	= sigeps.c 
+
+mk6_nXXX_SUFFIX_XXX_SOURCES	= mk6_n.c 
 
 my_dsspXXX_SUFFIX_XXX_SOURCES 	= my_dssp.c	dsspcore.c
 
@@ -27,8 +29,6 @@ totalXXX_SUFFIX_XXX_SOURCES 	= total.f
 optwatXXX_SUFFIX_XXX_SOURCES 	= optwat.c
 
 hexamerXXX_SUFFIX_XXX_SOURCES 	= hexamer.c
-
-sigepsXXX_SUFFIX_XXX_SOURCES 	= sigeps.c
 
 do_shiftXXX_SUFFIX_XXX_SOURCES 	= do_shift.c
 
