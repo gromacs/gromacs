@@ -369,7 +369,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   init_pull(log,nfile,fnm,&pulldata,state->x,mdatoms,parm->ir.opts.nFreeze,
 	    state->box,START(nsb),HOMENR(nsb),cr);
     
-  if (!parm->ir.bUncStart) 
+  if (!parm->ir.bUncStart && !bRerunMD) 
     do_shakefirst(log,bTYZ,ener,parm,nsb,mdatoms,state,vold,buf,f,
 		  graph,cr,&mynrnb,grps,fr,top,edyn,&pulldata);
   debug_gmx();
@@ -527,9 +527,14 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     }
     
     if (bDummies) {
-      if (graph)
+      if (graph) {
+	/* Following is necessary because the graph may get out of sync
+	 * with the coordinates if we only have every N'th coordinate set
+	 */
+	if (bRerunMD)
+	  mk_mshift(log,graph,state->box,state->x);
 	shift_self(graph,state->box,state->x);
-    
+      }
       construct_dummies(log,state->x,&mynrnb,parm->ir.delta_t,state->v,
 			&top->idef,graph,cr,state->box,dummycomm);
       
@@ -660,15 +665,21 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     /* This is also parallellized, but check code in update.c */
     /* bOK = update(nsb->natoms,START(nsb),HOMENR(nsb),step,state->lambda,&ener[F_DVDL], */
     bOK = TRUE;
-    update(nsb->natoms,START(nsb),HOMENR(nsb),step,&ener[F_DVDL],
-	   parm,mdatoms,state,graph,f,buf,vold,
-	   top,grps,shake_vir,cr,&mynrnb,bTYZ,edyn,&pulldata,bNEMD,
-	   TRUE,bFirstStep,NULL);
+    if (!rerun_fr.bV)
+      update(nsb->natoms,START(nsb),HOMENR(nsb),step,&ener[F_DVDL],
+	     parm,mdatoms,state,graph,f,buf,vold,
+	     top,grps,shake_vir,cr,&mynrnb,bTYZ,edyn,&pulldata,bNEMD,
+	     TRUE,bFirstStep,NULL);
+    else {
+      /* Need to unshift here */
+      if ((parm->ir.ePBC == epbcXYZ) && (graph->nnodes > 0))
+	unshift_self(graph,state->box,state->x);
+    }
     if (!bOK && !bFFscan)
       fatal_error(0,"Constraint error: Shake, Lincs or Settle could not solve the constrains");
 
     /* Correct the new box if it is too skewed */
-    if (parm->ir.epc != epcNO)
+    if ((parm->ir.epc != epcNO) && !bRerunMD)
       correct_box(state->box,fr,graph);
     /* (un)shifting should NOT be done after this,
      * since the box vectors might have changed
@@ -697,7 +708,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     
     debug_gmx();
     /* Calculate center of mass velocity if necessary, also parallellized */
-    if (bStopCM && !bFFscan)
+    if (bStopCM && !bFFscan && !bRerunMD)
       calc_vcm_grp(log,START(nsb),HOMENR(nsb),mdatoms->massT,
 		   state->x,state->v,vcm);
 
@@ -764,7 +775,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     }
       
     /* Do center of mass motion removal */
-    if (bStopCM && !bFFscan) {
+    if (bStopCM && !bFFscan && !bRerunMD) {
       check_cm_grp(log,vcm);
       do_stopcm_grp(log,START(nsb),HOMENR(nsb),state->x,state->v,vcm);
       inc_nrnb(&mynrnb,eNR_STOPCM,HOMENR(nsb));
