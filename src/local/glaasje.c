@@ -33,6 +33,7 @@ static char *SRCID_glaasje_c = "$Id$";
 #include "typedefs.h"
 #include "smalloc.h"
 #include "glaasje.h"
+#include "macros.h"
 	
 void do_glas(FILE *log,int start,int homenr,rvec x[],rvec f[],
 	     t_forcerec *fr,t_mdatoms *md,int atnr,t_inputrec *ir,
@@ -56,10 +57,10 @@ void do_glas(FILE *log,int start,int homenr,rvec x[],rvec f[],
     bGlas = (pi6 != 0) && (pi12 != 0) && (d[0] != 0) && (d[1] != 0);
     
     if (bGlas) {
-      if (ir->bLJcorr) {
+      if (ir->bDispCorr) {
 	fatal_error(0,"Can not have Long Range C6 corrections and GLASMD");
       }
-      rc   = fr->rshort;
+      rc   = max(fr->rvdw,fr->rlist);
       rc3  = rc*rc*rc;
       rc4  = rc3*rc;
       rc9  = rc3*rc3*rc3;

@@ -419,9 +419,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Calculate long range corrections to pressure and energy */
     if (bTCR)
       set_avcsix(log,fr,&top->idef,mdatoms);
-    calc_ljcorr(log,parm->ir.bLJcorr,
-		fr,mdatoms->nr,parm->box,parm->pres,parm->vir,ener);
-    
+    calc_dispcorr(log,parm->ir.bDispCorr,
+		  fr,mdatoms->nr,parm->box,parm->pres,parm->vir,ener);
+
     /* Only do GCT when the relaxation of shells (minimization) has converged,
      * otherwise we might be coupling agains bogus energies. 
      * In parallel we must always do this, because the other sims might

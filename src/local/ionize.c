@@ -15,6 +15,9 @@
 
 #define PREFIX "IONIZE: "
 
+static int   Energies[] = { 6, 8, 10, 12, 15, 20 };
+#define NENER asize(Energies)
+
 enum { ecollPHOTO, ecollINELASTIC, ecollNR };
 
 typedef struct {
@@ -195,13 +198,13 @@ real rand_theta_incoh(int Eindex,int *seed)
   static real **intp;
   static int  i,j,cur=1;
   real theta,sum,rrr,dx;
-  real g[5],y[2];
+  real g[NENER],y[2];
   
   dx = 90.0/(real)NINTP;
   if (bFirst) {
     /* Compute cumulative integrals of all probability distributions */
-    snew(intp,5);
-    for(i=0; (i<5); i++) {
+    snew(intp,NENER);
+    for(i=0; (i<NENER); i++) {
       snew(intp[i],NINTP+1);
       y[prev]    = ptheta_incoh(i,0.0);
       /*sum        = y[prev];*/
@@ -216,7 +219,7 @@ real rand_theta_incoh(int Eindex,int *seed)
       fprintf(debug,"Integrated probability functions for theta incoherent\n");
       for(j=0; (j<NINTP); j++) {
 	fprintf(debug,"%10f",dx*j);
-	for(i=0; (i<5); i++) 
+	for(i=0; (i<NENER); i++) 
 	  fprintf(debug,"  %10f",intp[i][j]);
 	fprintf(debug,"\n");
       }
@@ -274,8 +277,6 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   static int   seed,total,ephot;
   static t_cross_atom *ca;
   static int   Eindex=-1;
-  static int   Energies[] = { 6, 8, 10, 12, 15, 20 };
-#define NENER asize(Energies)
   real r,factor,ndv,E_lost,cross_atom,dvz,rrc;
   real pt,ptot,pphot,pcoll[ecollNR];
   real incoh,incoh_abs,sigmaPincoh;
@@ -300,7 +301,6 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     
     imax  = (nphot/(M_PI*rho*rho))*1e-10*sqrt(1.0/M_PI)*(2.0/width);
 
-    
     if (seed == 0)
       seed = 1993;
     
