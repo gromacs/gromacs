@@ -43,6 +43,7 @@ static char *SRCID_g_nmeig_c = "$Id$";
 #include "statutil.h"
 #include "rdgroup.h"
 #include "pdbio.h"
+#include "confio.h"
 #include "tpxio.h"
 #include "trnio.h"
 #include "matio.h"
@@ -200,7 +201,8 @@ void overlap(char *outfile,int natoms,
 }
 
 void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
-	     char *projfile,char *twodplotfile,char *filterfile,int skip,
+	     char *projfile,char *twodplotfile,char *threedplotfile,
+	     char *filterfile,int skip,
 	     char *extremefile,bool bExtrAll,real extreme,int nextr,
 	     t_atoms *atoms,int natoms,atom_id *index,
 	     bool bFit,rvec *xref,int nfit,atom_id *ifit,real *w_rls,
@@ -313,6 +315,7 @@ void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
 		      str,"Time (ps)",
 		      ylabel,nframes,inprod[noutvec],inprod,FALSE);
   }
+  
   if (twodplotfile) {
     sprintf(str,"projection on eigenvector %d (%s)",
 	    eignr[outvec[0]]+1,proj_unit);
@@ -323,6 +326,34 @@ void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
       fprintf(xvgrout,"%10.5f %10.5f\n",inprod[0][i],inprod[noutvec-1][i]);
     fclose(xvgrout);
   }
+  
+  if (threedplotfile) {
+    t_atoms atoms;
+    rvec    *x;
+    matrix  box;
+    char    *resnm,*atnm;
+    
+    sprintf(str,"3D proj. of traj. on eigenv. %d, %d and %d",
+	    eignr[outvec[0]]+1,eignr[outvec[1]]+1,eignr[outvec[noutvec-1]]+1);
+    init_t_atoms(&atoms,nframes,FALSE);
+    snew(x,nframes);
+    atnm=strdup("CA");
+    resnm=strdup("GLY");
+    for(i=0; i<nframes; i++) {
+      atoms.resname[i]=&resnm;
+      atoms.atomname[i]=&atnm;
+      atoms.atom[i].resnr=i;
+      x[i][XX]=inprod[0][i];
+      x[i][YY]=inprod[1][i];
+      x[i][ZZ]=inprod[noutvec-1][i];
+    }
+    clear_mat(box);
+    box[XX][XX] = box[YY][YY] = box[ZZ][ZZ] = 1;
+    write_sto_conf(threedplotfile,str,&atoms,x,NULL,box); 
+    free_t_atoms(&atoms);
+    fclose(xvgrout);
+  }
+  
   if (extremefile) {
     if (extreme==0) {
       fprintf(stderr,"%11s %17s %17s\n","eigenvector","Minimum","Maximum");
@@ -547,7 +578,8 @@ int main(int argc,char *argv[])
   int        i,j,d;
   int        nout,*iout,noutvec,*outvec,nfit;
   atom_id    *index,*ifit;
-  char       *Vec2File,*topfile,*CompFile,*ProjOnVecFile,*TwoDPlotFile;
+  char       *Vec2File,*topfile,*CompFile;
+  char       *ProjOnVecFile,*TwoDPlotFile,*ThreeDPlotFile;
   char       *FilterFile,*ExtremeFile;
   char       *OverlapFile,*InpMatFile;
   bool       bFit1,bFit2,bM,bIndex,bTPS,bTop,bVec2,bProj;
@@ -562,6 +594,7 @@ int main(int argc,char *argv[])
     { efXVG, "-disp", "eigdisp",     ffOPTWR },
     { efXVG, "-proj", "proj",        ffOPTWR },
     { efXVG, "-2d",   "2dproj",      ffOPTWR },
+    { efSTO, "-3d",   "3dproj.pdb",  ffOPTWR },
     { efTRX, "-filt", "filtered",    ffOPTWR },
     { efTRX, "-extr", "extreme.pdb", ffOPTWR },
     { efXVG, "-over", "overlap",     ffOPTWR },
@@ -580,12 +613,14 @@ int main(int argc,char *argv[])
   CompFile        = opt2fn_null("-disp",NFILE,fnm);
   ProjOnVecFile   = opt2fn_null("-proj",NFILE,fnm);
   TwoDPlotFile    = opt2fn_null("-2d",NFILE,fnm);
+  ThreeDPlotFile  = opt2fn_null("-3d",NFILE,fnm);
   FilterFile      = opt2fn_null("-filt",NFILE,fnm);
   ExtremeFile     = opt2fn_null("-extr",NFILE,fnm);
   OverlapFile     = opt2fn_null("-over",NFILE,fnm);
   InpMatFile      = ftp2fn_null(efXPM,NFILE,fnm);
   bTop   = fn2bTPX(topfile);
-  bProj  = ProjOnVecFile || FilterFile || ExtremeFile || TwoDPlotFile;
+  bProj  = ProjOnVecFile || TwoDPlotFile || ThreeDPlotFile 
+    || FilterFile || ExtremeFile;
   bExtremeAll  = 
     opt2parg_bSet("-first",NPA,pa) && opt2parg_bSet("-last",NPA,pa);
   bFirstToLast = CompFile || ProjOnVecFile || FilterFile || OverlapFile || 
@@ -593,7 +628,7 @@ int main(int argc,char *argv[])
   bVec2  = Vec2File || OverlapFile || InpMatFile;
   bM     = CompFile || bProj;
   bTraj  = ProjOnVecFile || FilterFile || (ExtremeFile && (max==0))
-    || TwoDPlotFile;
+    || TwoDPlotFile || ThreeDPlotFile;
   bIndex = bM || bProj;
   bTPS   = ftp2bSet(efTPS,NFILE,fnm) || bM || bTraj ||
     FilterFile  || (bIndex && indexfile);
@@ -703,6 +738,13 @@ int main(int argc,char *argv[])
       snew(iout,nout);
       for(i=0; i<nout; i++)
 	iout[i]=first-1+i;
+    } else if (ThreeDPlotFile) {
+      /* make an index of first, first+1 and last */
+      nout=3;
+      snew(iout,nout);
+      iout[0]=first-1;
+      iout[1]=first;
+      iout[2]=last-1;
     } else {
       /* make an index of first and last */
       nout=2;
@@ -746,7 +788,7 @@ int main(int argc,char *argv[])
   if (bProj)
     project(bTraj ? opt2fn("-f",NFILE,fnm) : NULL,
 	    bTop ? &top : NULL,topbox,xtop,
-	    ProjOnVecFile,TwoDPlotFile,FilterFile,skip,
+	    ProjOnVecFile,TwoDPlotFile,ThreeDPlotFile,FilterFile,skip,
 	    ExtremeFile,bExtremeAll,max,nextr,atoms,natoms,index,
 	    bFit1,xref1,nfit,ifit,w_rls,
 	    sqrtm,xav1,nvec1,eignr1,eigvec1,noutvec,outvec);
