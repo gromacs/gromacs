@@ -39,6 +39,7 @@
  [ impropers ]
      N    -C    CA     H
     -C   -CA     N    -O
+    CA     N     C    CB
 
 [ ARG ]
  [ atoms ]
@@ -94,6 +95,7 @@
  [ impropers ]
      N    -C    CA     H
     -C   -CA     N    -O
+    CA     N     C    CB
     NE    CD    CZ    HE
     CZ   NH1   NH2    NE
    NH1  HH11  HH12    CZ
@@ -133,6 +135,7 @@
  [ impropers ]
      N    -C    CA     H
     -C   -CA     N    -O
+    CA     N     C    CB
     CG   OD1   ND2    CB
    ND2  HD21  HD22    CG
 
@@ -204,6 +207,7 @@
  [ impropers ]
      N    -C    CA     H
     -C   -CA     N    -O
+    CA     N     C    CB
     CG   OD1   OD2    CB
 
 [ ASPH ]
@@ -238,6 +242,7 @@
  [ impropers ]
      N    -C    CA     H
     -C   -CA     N    -O
+    CA     N     C    CB
     CG   OD1   OD2    CB
 
 [ CYS ]
@@ -292,6 +297,7 @@
  [ impropers ]
      N    -C    CA     H
     -C   -CA     N    -O
+    CA     N     C    CB
 
 [ CYS2 ]
  [ atoms ]
@@ -319,6 +325,7 @@
  [ impropers ]
      N    -C    CA     H
     -C   -CA     N    -O
+    CA     N     C    CB
 
 [ CYSH ]
  [ atoms ]
@@ -348,6 +355,7 @@
  [ impropers ]
      N    -C    CA     H
     -C   -CA     N    -O
+    CA     N     C    CB
 
 [ GLN ]
  [ atoms ]
@@ -388,6 +396,7 @@
     -C     N
  [ impropers ]
      N    -C    CA     H
+    CA     N     C    CB
     CD   OE1   NE2    CG
    NE2  HE21  HE22    CD
     -C   -CA     N    -O
@@ -427,6 +436,7 @@
     -C     N
  [ impropers ]
      N    -C    CA     H
+    CA     N     C    CB
     CD   OE1   OE2    CG
     -C   -CA     N    -O
 
@@ -467,6 +477,7 @@
     -C     N
  [ impropers ]
      N    -C    CA     H
+    CA     N     C    CB
     CD   OE1   OE2    CG
     -C   -CA     N    -O
 
@@ -577,6 +588,7 @@
     -C     N
  [ impropers ]
      N    -C    CA     H
+    CA     N     C    CB
     CG   ND1   CD2    CB
    CD2    CG   ND1   CE1
    ND1    CG   CD2   NE2
@@ -628,6 +640,7 @@
     -C     N
  [ impropers ]
      N    -C    CA     H
+    CA     N     C    CB
     CG   ND1   CD2    CB
    CD2    CG   ND1   CE1
    ND1    CG   CD2   NE2
@@ -681,6 +694,7 @@
     -C     N
  [ impropers ]
      N    -C    CA     H
+    CA     N     C    CB
     CG   ND1   CD2    CB
    CD2    CG   ND1   CE1
    ND1    CG   CD2   NE2
@@ -786,6 +800,8 @@
  [ impropers ]
      N    -C    CA     H
     -C   -CA     N    -O
+    CA     N     C    CB
+    CB   CG1   CG2    CA
 
 [ LEU ]
  [ atoms ]
@@ -831,6 +847,8 @@
  [ impropers ]
      N    -C    CA     H
     -C   -CA     N    -O
+    CA     N     C    CB
+    CG   CD2   CD1    CB
 
 [ LYS ]
  [ atoms ]
@@ -881,6 +899,8 @@
      N    -C    CA     H
     NZ    CE   HZ2    NZ
     -C   -CA     N    -O
+    CA     N     C    CB
+    NZ    CE   HZ2   HZ1
 
 [ LYSH ]
  [ atoms ]
@@ -932,6 +952,7 @@
  [ impropers ]
      N    -C    CA     H
     -C   -CA     N    -O
+    CA     N     C    CB
 
 [ MET ]
  [ atoms ]
@@ -973,6 +994,7 @@
  [ impropers ]
      N    -C    CA     H
     -C   -CA     N    -O
+    CA     N     C    CB
 
 [ NAC ]
  [ atoms ]
@@ -1046,6 +1068,7 @@
     -C     N
  [ impropers ]
      N    -C    CA     H
+    CA     N     C    CB
     CG   CD1   CD2    CB
    CD2    CG   CD1   CE1
    CD1    CG   CD2   CE2
@@ -1095,6 +1118,7 @@
  [ impropers ]
      N    -C    CA    CD
     -C   -CA     N    -O
+    CA     N     C    CB
 
 [ SER ]
  [ atoms ]
@@ -1124,6 +1148,7 @@
  [ impropers ]
      N    -C    CA     H
     -C   -CA     N    -O
+    CA     N     C    CB
 
 [ THR ]
  [ atoms ]
@@ -1159,6 +1184,7 @@
  [ impropers ]
      N    -C    CA     H
     -C   -CA     N    -O
+    CA     N     C    CB
 
 [ TRP ]
  [ atoms ]
@@ -1215,6 +1241,7 @@
     -C     N
  [ impropers ]
      N    -C    CA     H
+    CA     N     C    CB
     CG   CD1   CD2    CB
    CD2    CG   CD1   NE1
    CD1    CG   CD2   CE2
@@ -1285,6 +1312,7 @@
     -C     N
  [ impropers ]
      N    -C    CA     H
+    CA     N     C    CB
     CG   CD1   CD2    CB
    CD2    CG   CD1   CE1
    CD1    CG   CD2   CE2
@@ -1337,3 +1365,5 @@
  [ impropers ]
      N    -C    CA     H
     -C   -CA     N    -O
+    CA     N     C    CB
+    CB   CG2   CG1    CA
