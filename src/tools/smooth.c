@@ -104,10 +104,10 @@ void check_tri(t_dist *d,int natoms,int i,int j,int k)
   }
 }
 
-int triangle_upper_bound (t_dist *d,int natoms,real tol)
+double triangle_upper_bound (t_dist *d,int natoms,real tol)
 {
-  double possible;
-  int    i,j,k,nsmooth,innerloop,count=0,nloops=0,ntotal=0;
+  double possible,ntotal=0;
+  int    i,j,k,nsmooth,innerloop,count=0,nloops=0;
   real   a_lb,a_ub,a_len,b_lb,b_ub,b_len,c_lb,c_ub,c_len;
 
   if (debug)
@@ -182,17 +182,17 @@ int triangle_upper_bound (t_dist *d,int natoms,real tol)
   fprintf(stderr,"Checked %d triples (of %.0f) in %d rounds of ub"
 	  " triangle smoothing.\n",
 	  count/nloops,possible,nloops);
-  fprintf(stderr,"Smoothed %d upper bounds with triagonal ineq.\n",ntotal);
+  fprintf(stderr,"Smoothed %g upper bounds with triagonal ineq.\n",ntotal);
   
   return ntotal;
 }
 
 
-int triangle_lower_bound (t_dist *d,int natoms,real tol)
+double triangle_lower_bound (t_dist *d,int natoms,real tol)
 {
-
-  int i,j,k,nsmooth,innerloop,ntotal=0;
-  real a_lb,a_ub,a_len,b_lb,b_ub,b_len,c_lb,c_ub,c_len,new_lb;
+  double ntotal = 0;
+  int    i,j,k,nsmooth,innerloop;
+  real   a_lb,a_ub,a_len,b_lb,b_ub,b_len,c_lb,c_ub,c_len,new_lb;
 
   /*fprintf(stderr,"Just entered triangle_lower_bound!\n");*/
 
@@ -270,14 +270,13 @@ int triangle_lower_bound (t_dist *d,int natoms,real tol)
     ntotal += nsmooth;
   }
   while (nsmooth>0);
-  fprintf(stderr,"Smoothed %d lower bounds with triagonal ineq.\n",ntotal);
+  fprintf(stderr,"Smoothed %g lower bounds with triagonal ineq.\n",ntotal);
   return ntotal;
 }
 
-
-int do_triangle (t_dist *d,t_atoms *atoms,real tol)
+double do_triangle (t_dist *d,t_atoms *atoms,real tol)
 {
-  int ntot=0;
+  double ntot=0;
   /* Do triangular smoothing only */
   int natoms = atoms->nr;
   
@@ -750,10 +749,10 @@ void do_smooth (t_dist *d,t_atoms *atoms,real tol)
      fprintf(stderr,"Finished %d loop(s) of smoothing.\n",nloops);
      } while (ntri > 0); 
   */
-  ntri = do_triangle(d,atoms,tol);
+  ntri    = do_triangle(d,atoms,tol);
   nsmooth = tetrangle (d,natoms,tol);
   fprintf(stderr,"Smoothed %d distances with tetr. ineq.\n",nsmooth);
-  ntri = do_triangle(d,atoms,tol);
+  ntri    = do_triangle(d,atoms,tol);
   
   fprintf(stderr,"Finished smoothing.\n");
 }
