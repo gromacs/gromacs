@@ -306,7 +306,7 @@ void put_atoms_in_box(int natoms,matrix box,rvec x[])
     for(m=0; m < DIM; m++) {
       while (x[i][m] < 0) 
 	x[i][m] += box[m][m];
-      while (x[i][m] > box[m][m]) 
+      while (x[i][m] >= box[m][m]) 
 	x[i][m] -= box[m][m];
     }
 }
