@@ -334,15 +334,18 @@ int main(int argc,char *argv[])
     do_guillot(fp,eel,resolution,rc,rtol,xi,xir);
     break;
   case mGuillot_Maple:
+    fprintf(fp, "#\n# Table Guillot_Maple: rc=%g, rtol=%g, xi=%g, xir=%g\n#\n",rc,rtol,xi,xir);
     do_guillot_maple(fp,eel,resolution,rc,rtol,xi,xir);
     break;
   case mMaaren:
     do_maaren(fp,eel,resolution,npow);
     break;
   case mN61:
+    fprintf(fp, "#\n# Table N61: npow=%d\n#\n",npow);
     do_n61(fp,eel,resolution,npow);
     break;
   case mLjc:
+    fprintf(fp, "#\n# Table LJC(12-6-1): rc=%g, rtol=%g\n#\n",rc,rtol);
     do_ljc(fp,eel,resolution,rc,rtol);
     break;
   case mHard_Wall:
