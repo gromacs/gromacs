@@ -284,14 +284,17 @@ int main(int argc,char *argv[])
 
   /* Command line options */
   static bool bAltLayout=FALSE;
+  static bool bShowNumbers=TRUE;
   t_pargs pa[] = {
-    { "-a", FALSE, etBOOL, &bAltLayout, "HIDDENAlternative layout for run startup files" }
+    { "-a", FALSE, etBOOL, &bAltLayout, "HIDDENAlternative layout for run startup files" },
+    { "-nr",FALSE, etBOOL, &bShowNumbers,"Show index numbers in output (leaving them out makes comparsion easier, but creates a useless topology)" }
   };
   
   CopyRight(stdout,argv[0]);
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
   
+  pr_shownumbers(bShowNumbers);
   if (ftp2bSet(efTPX,NFILE,fnm)) 
     list_tpx(ftp2fn(efTPX,NFILE,fnm), bAltLayout);
     

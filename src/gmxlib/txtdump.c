@@ -36,6 +36,13 @@ static char *SRCID_txtdump_c = "$Id$";
 #include "string2.h"
 #include "vec.h"
 
+static bool bShowNumbers=TRUE;
+
+void pr_shownumbers(bool bShow)
+{
+  bShowNumbers=bShow;
+}
+
 int available(FILE *fp,void *p,char *title)
 {
   if (!p) (void) fprintf(fp,"not available: %s\n",title);
@@ -81,7 +88,7 @@ void pr_ivec(FILE *fp,int indent,char *title,int vec[],int n)
       for (i=0; i<n; i++)
         {
           (void) pr_indent(fp,indent);
-          (void) fprintf(fp,"%s[%d]=%d\n",title,i,vec[i]);
+          (void) fprintf(fp,"%s[%d]=%d\n",title,bShowNumbers?i:-1,vec[i]);
         }
     }
 }
@@ -96,7 +103,7 @@ void pr_ivecs(FILE *fp,int indent,char *title,ivec vec[],int n)
       for (i=0; i<n; i++)
         {
           (void) pr_indent(fp,indent);
-          (void) fprintf(fp,"%s[%d]={",title,i);
+          (void) fprintf(fp,"%s[%d]={",title,bShowNumbers?i:-1);
           for (j=0; j<DIM; j++)
             {
               if (j!=0) (void) fprintf(fp,", ");
@@ -117,7 +124,7 @@ void pr_rvec(FILE *fp,int indent,char *title,real vec[],int n)
       for (i=0; i<n; i++)
         {
           (void) pr_indent(fp,indent);
-          (void) fprintf(fp,"%s[%d]=%12.5e\n",title,i,vec[i]);
+          (void) fprintf(fp,"%s[%d]=%12.5e\n",title,bShowNumbers?i:-1,vec[i]);
         }
     }
 }
@@ -474,7 +481,9 @@ static void pr_ilist(FILE *fp,int indent,char *title,
 	  type=*(iatoms++);
 	  ftype=idef->functype[type];
 	  (void) fprintf(fp,"%d type=%d (%s)",
-			 j++,type,interaction_function[ftype].name);
+			 bShowNumbers?j:-1,bShowNumbers?type:-1,
+			 interaction_function[ftype].name);
+	  j++;
 	  for (k=0; k<interaction_function[ftype].nratoms; k++)
 	    (void) fprintf(fp," %u",*(iatoms++));
 	  (void) fprintf(fp,"\n");
@@ -503,7 +512,8 @@ void pr_idef(FILE *fp,int indent,char *title,t_idef *idef)
     for (i=0; i<idef->ntypes; i++) {
       (void) pr_indent(fp,indent+INDENT);
       (void) fprintf(fp,"functype[%d]=%s, ",
-		     i,interaction_function[idef->functype[i]].name);
+		     bShowNumbers?i:-1,
+		     interaction_function[idef->functype[i]].name);
       pr_iparams(fp,idef->functype[i],&idef->iparams[i]);
     }
     for(j=0; (j<F_NRE); j++)
@@ -542,12 +552,14 @@ static void low_pr_block(FILE *fp,int indent,char *title,t_block *block)
       for (i=0; i<=block->nr; i++)
         {
           (void) pr_indent(fp,indent+INDENT);
-          (void) fprintf(fp,"%s->index[%d]=%u\n",title,i,block->index[i]);
+          (void) fprintf(fp,"%s->index[%d]=%u\n",
+			 title,bShowNumbers?i:-1,block->index[i]);
         }
       for (i=0; i<block->nra; i++)
         {
           (void) pr_indent(fp,indent+INDENT);
-          (void) fprintf(fp,"%s->a[%d]=%u\n",title,i,block->a[i]);
+          (void) fprintf(fp,"%s->a[%d]=%u\n",
+			 title,bShowNumbers?i:-1,block->a[i]);
         }
     }
 }
@@ -571,7 +583,9 @@ void pr_block(FILE *fp,int indent,char *title,t_block *block)
             if (end<=start)
               size+=fprintf(fp,"%s[%d]={",title,i);
             else
-              size+=fprintf(fp,"%s[%d][%d..%d]={",title,i,start,end-1);
+              size+=fprintf(fp,"%s[%d][%d..%d]={",
+			    title,bShowNumbers?i:-1,
+			    bShowNumbers?start:-1,bShowNumbers?end-1:-1);
             for (j=start; j<end; j++)
               {
                 if (j>start) size+=fprintf(fp,", ");
@@ -639,7 +653,7 @@ static void pr_grps(FILE *fp,int indent,char *title,t_grps grps[],int ngrp,
   int i,j;
   
   for(i=0; (i<ngrp); i++) {
-    fprintf(fp,"%s[%d] nr=%d, name=[",title,i,grps[i].nr);
+    fprintf(fp,"%s[%d] nr=%d, name=[",title,bShowNumbers?i:-1,grps[i].nr);
     for(j=0; (j<grps[i].nr); j++)
       fprintf(fp," %s",*(grpname[grps[i].nm_ind[j]]));
     fprintf(fp,"]\n");
@@ -656,7 +670,8 @@ static void pr_strings(FILE *fp,int indent,char *title,char ***nm,int n)
       for (i=0; i<n; i++)
         {
           (void) pr_indent(fp,indent);
-          (void) fprintf(fp,"%s[%d]={name=\"%s\"}\n",title,i,*(nm[i]));
+          (void) fprintf(fp,"%s[%d]={name=\"%s\"}\n",
+			 title,bShowNumbers?i:-1,*(nm[i]));
         }
     }
 }
