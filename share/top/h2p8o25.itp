@@ -1,3 +1,10 @@
+;
+; Force field based on GROMOS with new charges as described in
+; D. van der Spoel, K.A. Feenstra, M.A. Hemminga and H.J.C. Berendsen: 
+; Molecular modeling of the RNA binding N-terminal part of cowpea chlorotic 
+; mottle virus coat protein in solution with phosphate ions 
+; Biophys. J. 71 pp. 2920-2932 (1996)
+;
 ; Octa Phosphate  h2p8o25(5-)
 ; Anton Feenstra,  June 23 '95
 ; based on ab-initio full geometry opt. by Gaussian '92 on tetra phosphate
