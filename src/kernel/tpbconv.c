@@ -372,7 +372,7 @@ int main (int argc, char *argv[])
 	get_enx_state(ftp2fn(efENX,NFILE,fnm),run_t,&top.atoms,ir,&state);
       } else if (ir->epc != epcNO || ir->etc != etcNO)
 	fprintf(stderr,"\nWARNING: The simulation uses pressure and/or temperature coupling,\n"
-		"         the continuation will be only be exact when an energy file is supplied\n\n");
+		"         the continuation will only be exact when an energy file is supplied\n\n");
     }
   } 
   else {
