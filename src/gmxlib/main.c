@@ -41,6 +41,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <time.h>
 #include "smalloc.h"
 #include "fatal.h"
 #include "network.h"
@@ -48,6 +49,10 @@
 #include "macros.h"
 #include "futil.h"
 #include "filenm.h"
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #define BUFSIZE	1024
 
@@ -178,8 +183,9 @@ void check_multi_int(FILE *log,const t_commrec *mcr,int val,char *name)
 void open_log(char *lognm,const t_commrec *cr)
 {
   int  len,testlen,pid;
-  char buf[256],*host;
-  
+  char buf[256],host[256];
+  time_t t;
+
   debug_gmx();
   
   /* Communicate the filename for logfile */
@@ -215,14 +221,32 @@ void open_log(char *lognm,const t_commrec *cr)
   stdlog = ffopen(buf,"w");
   
   /* Get some machine parameters */
-  host = getenv("HOST");
+#ifdef HAVE_UNISTD_H
+  if( gethostname(host,255) != 0)
+    sprintf(host,"unknown");
+#else
+  sprintf(host,"unknown");
+#endif  
+
+  time(&t);
+
 #ifndef NO_GETPID
   pid = getpid();
 #else
   pid = 0;
 #endif
-  fprintf(stdlog,"Log file opened: nodeid %d, nnodes = %d, host = %s, process = %d\n",
-	  cr->nodeid,cr->nnodes,host ? host : "unknown",pid);
+
+  fprintf(stdlog,
+	  "Log file opened on %s"
+	  "Host: %s  pid: %d  nodeid: %d  nnodes:  %d\n",
+	  ctime(&t),host,pid,cr->nodeid,cr->nnodes);
+
+#if (defined BUILD_MACHINE && defined BUILD_TIME && defined BUILD_USER) 
+  fprintf(stdlog,
+	  "The Gromacs distribution was built %s by\n"
+	  "%s (%s)\n\n\n",BUILD_TIME,BUILD_USER,BUILD_MACHINE);
+#endif
+
   fflush(stdlog);
   debug_gmx();
 }
