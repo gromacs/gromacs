@@ -346,7 +346,7 @@ int main (int argc,char *argv[])
 
   for(i=0; i<isize; i++) {
     rmsf[i] = U[i][XX][XX] + U[i][YY][YY] + U[i][ZZ][ZZ];
-    pdbatoms->pdbinfo[index[i]].bfac = 800*M_PI/3.0*rmsf[i];
+    pdbatoms->pdbinfo[index[i]].bfac = 800*M_PI*M_PI/3.0*rmsf[i];
   }
   
   if (dirfn) {
