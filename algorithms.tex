@@ -372,8 +372,8 @@ periodic systems with filled boxes, the overall rotational motion is
 coupled to other degrees of freedom and does not give any problems.
 
 
-\section{\swapindex{Neighbor}{searching}}
-\label{sec:ns}
+\subsection{\swapindex{Neighbor}{searching}}
+\label{subsec:ns}
 As mentioned in \chref{ff}, internal forces are
 either generated from fixed (static) lists, or from dynamics lists.
 The latter concern non-bonded interactions between any pair of particles.
@@ -790,12 +790,29 @@ account the update algorithm for the velocities becomes:
 \eeq
 where $g$ and $h$ are group indices which differ per atom.
 
-\subsection{\normindex{Constraint} algorithms}
+\subsection{Output step}
+The important output of the MD run is the {\em
+\swapindex{trajectory}{file}} \verb'name.trj' which contains particle coordinates
+and -optionally- velocities at regular intervals. Since the trajectory
+files are lengthy, one should not save every step! To retain all
+information it suffices to write a frame every 15 steps, since at
+least 30 steps are made per period of the highest frequency in the
+system, and Shannon's \normindex{sampling} theorem states that two samples per
+period of the highest frequency in a band-limited signal contain all
+available information. But that still gives very long files! So, if
+the highest frequencies are not of interest, 10 or 20 samples per ps
+may suffice. Be aware of the distortion of high-frequency motions by
+the {\em stroboscopic effect}, called {\em aliasing}: higher frequencies
+are  mirrored with respect to the sampling frequency and appear as
+lower frequencies. 
 
-\subsubsection*{SHAKE}
-Constraints can be imposed in {\gromacs} using the traditional 
-\normindex{SHAKE}
-method~\cite{Ryckaert77}. The SHAKE routine changes a set of unconstrained
+
+\section{\normindex{Constraint} algorithms}
+Constraints can be imposed in {\gromacs} using LINCS (default) or
+the traditional SHAKE method.
+
+\subsection{\normindex{SHAKE}}
+The SHAKE~\cite{Ryckaert77} algorithm changes a set of unconstrained
 coordinates $\ve{r}^{'}$ to a set of coordinates $\ve{r}''$ that
 fulfill a  list of distance constraints, using a set $\ve{r}$ as
 reference: \\[1ex] 
@@ -848,8 +865,10 @@ algorithm~\cite{Miyamoto92} (\secref{constraints}).
 \newcommand{\con}{\ve{g}}
 \newcommand{\lenc}{\ve{d}}
 
+\subsection{\normindex{LINCS}}
+
 \subsubsection*{The LINCS algorithm}
-\normindex{LINCS} is an algorithm that resets bonds to their correct lengths
+LINCS is an algorithm that resets bonds to their correct lengths
 after an unconstrained update~\cite{Hess97}. 
 The method is non-iterative, as it always uses two steps.
 Although LINCS is based on matrices, no matrix-matrix multiplications are 
@@ -989,22 +1008,6 @@ However, LINCS will generate a warning when in one step a bond
 rotates over more than a predefined angle.
 This angle is set by the user in the input file for \verb'mdrun'.
 
-
-\subsection{Output step}
-The important output of the MD run is the {\em
-\swapindex{trajectory}{file}} \verb'name.trj' which contains particle coordinates
-and -optionally- velocities at regular intervals. Since the trajectory
-files are lengthy, one should not save every step! To retain all
-information it suffices to write a frame every 15 steps, since at
-least 30 steps are made per period of the highest frequency in the
-system, and Shannon's \normindex{sampling} theorem states that two samples per
-period of the highest frequency in a band-limited signal contain all
-available information. But that still gives very long files! So, if
-the highest frequencies are not of interest, 10 or 20 samples per ps
-may suffice. Be aware of the distortion of high-frequency motions by
-the {\em stroboscopic effect}, called {\em aliasing}: higher frequencies
-are  mirrored with respect to the sampling frequency and appear as
-lower frequencies. 
 
 \section{Simulated Annealing}
 \label{sec:SA}
@@ -1152,6 +1155,7 @@ Cojugate gradient is slower than steepest descent in the early stages of
 the minimization, but becomes more efficient closer to the energy minimum.
 The parameters and stop criterion are the same as for steepest descent.
 Cojugate gradient can not be used with constraints or freeze groups.
+
 
 \section{Normal Mode Analysis}
 \swapindex{Normal mode}{analysis}~\cite{Levitt83,Go83,BBrooks83b} 
