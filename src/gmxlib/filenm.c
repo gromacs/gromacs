@@ -53,6 +53,7 @@ typedef struct {
   char *descr;
 } t_deffile;
 
+/* this array should correspond to the enum in include/types/filenm.h */
 static t_deffile deffile[efNR] = {
   { FALSE, ".mdp", "grompp", "-f", "grompp input file with MD parameters"    },
   { FALSE, ".gbp", "genbox", "-f", "genbox input file with parameters etc."  },
@@ -67,7 +68,6 @@ static t_deffile deffile[efNR] = {
   { TRUE,  ".trj", "btraj",  NULL, "Trajectory file (cpu specific)"    },
   { TRUE , ".xtc", "ctraj",  NULL, "Compressed trajectory (portable xdr format)"},
   { FALSE, ".g87", "gtraj",  NULL, "Gromos-87 ASCII trajectory format" },
-  { FALSE, ".asc", "atraj",  NULL, "Trajectory file in ascii converted by stat2asc" },
   { TRUE,  ".???", "ener",   NULL, "Generic energy format" },
   { TRUE,  ".edr", "ener",   NULL, "Energy file in portable XDR format"      },
   { TRUE,  ".ene", "ener",   NULL, "Energy file"                             },
@@ -83,10 +83,10 @@ static t_deffile deffile[efNR] = {
   { FALSE, ".ndx", "index",  "-n", "GROMACS indexfile",                      },
   { FALSE, ".top", "topol",  "-p", "GROMACS topology file"                   },
   { FALSE, ".itp", "topinc", NULL, "Include file for GROMACS topology"       },
-  { TRUE,  ".???", "topol",  "-s", "Generic GROMACS processed topology"      },
-  { TRUE,  ".tpr", "topol",  "-s", "XDR GROMACS processed topology"          },
-  { FALSE, ".tpa", "topol",  "-s", "Ascii GROMACS processed topology"        },
-  { TRUE,  ".tpb", "topol",  "-s", "Binary GROMACS processed topology"       },
+  { TRUE,  ".???", "topol",  "-s", "Generic GROMACS run input file"          },
+  { TRUE,  ".tpr", "topol",  "-s", "XDR GROMACS run input file"              },
+  { FALSE, ".tpa", "topol",  "-s", "Ascii GROMACS run input file"            },
+  { TRUE,  ".tpb", "topol",  "-s", "Binary GROMACS run input file"           },
   { FALSE, ".tex", "doc",    "-o", "LaTeX file, suitable for inclusion in article" },
   { FALSE, ".rtp", "residue",NULL, "Residue Type file used by pdb2gmx"       },
   { FALSE, ".atp", "atomtp", NULL, "Atomtype file used by pdb2gmx"           },
