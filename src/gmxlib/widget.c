@@ -266,7 +266,11 @@ void set_widget_other(windex win,Widget www)
    
 XmString char2xms(const char *ptr)
 {
-  return XmStringCreate(ptr,XmSTRING_DEFAULT_CHARSET);
+  char tmp[4096];
+
+  strncpy(tmp,ptr,4095);
+
+  return XmStringCreate(tmp,XmSTRING_DEFAULT_CHARSET);
 }
 
 char *xms2char(XmString xms)
