@@ -757,6 +757,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
 	    matrix box,	     t_commrec *cr,
 	    t_nsborder *nsb, t_nrnb *nrnb,    
 	    matrix vir,      real ewaldcoeff,
+	    bool bFreeEnergy,
 	    real lambda,     real *dvdlambda,
 	    bool bGatherOnly)
 { 
@@ -767,9 +768,6 @@ real do_pme(FILE *logfile,   bool bVerbose,
   t_fft_r *ptr;
   real    *homecharge=NULL,vol,energy;
   matrix  vir_AB[2];
-  bool    bFreeEnergy;
-
-  bFreeEnergy = (ir->efep != efepNO);
 
   for(q=0; q<(bFreeEnergy ? 2 : 1); q++) {
     if (q == 0) {

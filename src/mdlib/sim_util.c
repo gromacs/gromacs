@@ -236,7 +236,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   /* Calculate total (local) dipole moment in a temporary common array. 
    * This makes it possible to sum them over nodes faster.
    */
-  calc_mu(nsb,x,mdatoms->chargeA,mdatoms->chargeB,parm->ir.efep!=efepNO,
+  calc_mu(nsb,x,mdatoms->chargeA,mdatoms->chargeB,mdatoms->bChargePerturbed,
 	  mu,mu+DIM);
 
   if (fr->ePBC != epbcNONE) { 

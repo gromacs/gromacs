@@ -78,6 +78,7 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
   snew(md->cU2,md->nr);
   
   md->nPerturbed=0;
+  md->bChargePerturbed=FALSE;
   tm=0.0;
   for(i=0; (i<md->nr); i++) {
     if (bBD) {
@@ -125,8 +126,11 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
     }
     if (bPert) {
       md->bPerturbed[i] = PERTURBED(atoms->atom[i]);
-      if (md->bPerturbed[i])
+      if (md->bPerturbed[i]) {
 	md->nPerturbed++;
+	if (atoms->atom[i].qB != atoms->atom[i].q)
+	  md->bChargePerturbed = TRUE;
+      }
     }
 
     md->cU1[i]      	= atoms->atom[i].grpnr[egcUser1];

@@ -1125,7 +1125,7 @@ void force(FILE       *fplog,   int        step,
     case eelPMEUSER:
       Vlr = do_pme(fplog,FALSE,ir,x,fr->f_el_recip,md->chargeA,md->chargeB,
 		   box,cr,nsb,nrnb,fr->vir_el_recip,fr->ewaldcoeff,
-		   lambda,&dvdlambda,bGatherOnly);
+		   md->bChargePerturbed,lambda,&dvdlambda,bGatherOnly);
       PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
       break;
     case eelEWALD:

@@ -55,6 +55,7 @@ extern real do_pme(FILE *log,       bool bVerbose,
 		   matrix box,      t_commrec *cr,
 		   t_nsborder *nsb, t_nrnb *nrnb,
 		   matrix lrvir,    real ewaldcoeff,
+		   bool bFreeEnergy,
 		   real lambda,     real *dvdlambda,
 		   bool bGatherOnly);
     
