@@ -121,24 +121,51 @@ t_atomtype *set_atom_type(t_atoms *atoms,int nbonds[],
   static t_symtab symtab;
   t_atomtype *atype;
   char elem[2];
-  int  i;
+  char *type;
+  int  i,k;
   
   open_symtab(&symtab);
   snew(atype,1);
-  atype->nr       = atoms->nr;
-  atype->atom     = atoms->atom;
-  snew(atype->atomname,atoms->nr);
+  atype->nr       = 0;
+  atype->atom     = NULL;
+  atype->atomname = NULL;
   elem[1]='\0';
+  k=0;
   for(i=0; (i<atoms->nr); i++) {
     elem[0] = (*atoms->atomname[i])[0];
     if ((elem[0] >= 0) && (elem[0] <= 9))
       elem[0] = (*atoms->atomname[i])[1];
-    atype->atomname[i] = put_symtab(&symtab,
-				    nm2type(nnm,nm2t,elem,nbonds[i]));
+    if ((type = nm2type(nnm,nm2t,elem,nbonds[i])) == NULL)
+      fatal_error(0,"No forcefield type for element %s (atom %d) with %d bonds",
+		  elem,i+1,nbonds[i]);
+    else if (debug)
+      fprintf(debug,"Selected atomtype %s for atom %s\n",
+	      type,*atoms->atomname[i]);
+    for(k=0; (k<atype->nr); k++) {
+      if (strcmp(type,*atype->atomname[k]) == 0) {
+	atoms->atom[i].type  = k;
+	atoms->atom[i].typeB = k;
+	break;
+      }
+    }
+    if (k==atype->nr) {
+      /* New atomtype */
+      atype->nr++;
+      srenew(atype->atomname,atype->nr);
+      srenew(atype->atom,atype->nr);
+      atype->atomname[k]   = put_symtab(&symtab,type);
+      atype->atom[k].type  = k;
+      atoms->atom[i].type  = k;
+      atype->atom[k].typeB = k;
+      atoms->atom[i].typeB = k;
+    }
   } 
   /* MORE CODE */
 
   close_symtab(&symtab);
+    
+  fprintf(stderr,"There are %d different atom types in your sample\n",
+	  atype->nr);
     
   return atype;
 }
@@ -224,6 +251,11 @@ int main(int argc, char *argv[])
     "The program assumes all hydrogens are present when defining",
     "the hybridization from the atom name and the number of bonds."
   };
+  static char *bugs[] = {
+    "The atom type selection is primitive. Virtually no chemical knowledge is used",
+    "Periodic boundary conditions screw up the bonding",
+    "No improper dihedrals are generated"
+  };
   FILE       *fp;
   t_params   plist[F_NRE];
   t_atoms    *atoms;       /* list with all atoms */
@@ -274,7 +306,7 @@ int main(int argc, char *argv[])
   CopyRight(stdout,argv[0]);
 
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
-		    asize(desc),desc,0,NULL);
+		    asize(desc),desc,asize(bugs),bugs);
 
   mymol.name = strdup(molnm);
   mymol.nr   = 1;

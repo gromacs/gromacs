@@ -126,10 +126,7 @@ char *nm2type(int nnm,t_nm2type nm2t[],char *elem,int nbonds)
 	(nm2t[i].nbonds == nbonds))
       return nm2t[i].type;
   }
-  fatal_error(0,"No forcefield type for element %s with %d bonds",
-	      elem,nbonds);
 	      
-  /* Make the compiler happy */
   return NULL;
 }
      
