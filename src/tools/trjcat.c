@@ -275,6 +275,7 @@ int main(int argc,char *argv[])
   static int   prec=3;
   static bool  bCat=FALSE;
   static bool  bSort=TRUE;
+  static bool  bKeepLast=FALSE;
   static bool  bSetTime=FALSE;
   static real  begin=-1;
   static real  end=-1;
@@ -295,28 +296,31 @@ int main(int argc,char *argv[])
       "Change starting time interactively" },
     { "-sort",    FALSE, etBOOL, {&bSort},
       "Sort trajectory files (not frames)" },
+    { "-keeplast",FALSE, etBOOL, {&bKeepLast},
+      "keep overlapping frames at end of trajectory" },
     { "-cat",     FALSE, etBOOL, {&bCat},
       "do not discard double time frames" }
   };
       
-  int         status,ftp,ftpin,i,frame,frame_out,step,trjout=0;
+  int         status,ftpin,i,frame,frame_out,step=0,trjout=0;
   rvec        *x,*v;
   real        xtcpr,t_corr;
   t_trxframe  fr,frout;
   char        **fnms;
   int         trxout=-1;
-  bool        bNewFile,bIndex;
+  bool        bNewFile,bIndex,bWrite;
   char        *in_file,*out_file;
   int         flags,earliersteps,nfile,*cont_type,last_ok_step;
-  real        *readtime,*settime,first_time=0,last_ok_t=-1,timestep;
+  real        *readtime,*settime;
+  real        first_time=0,lasttime=NOTSET,last_ok_t=-1,timestep;
   int         isize;
   atom_id     *index=NULL,imax;
   char        *grpname;
 
   t_filenm fnm[] = {
-    { efTRX, "-f",  NULL,     ffRDMULT },
-      { efTRX, "-o", "trajout", ffWRITE },
-      { efNDX, NULL,  NULL,     ffOPTRD }
+      { efTRX, "-f",  NULL,     ffRDMULT },
+      { efTRX, "-o", "trajout", ffWRITE  },
+      { efNDX, NULL,  NULL,     ffOPTRD  }
   };
   
 #define NFILE asize(fnm)
@@ -341,13 +345,14 @@ int main(int argc,char *argv[])
   /* prec is in nr of decimal places, xtcprec is a multiplication factor: */
   xtcpr=1;
   for (i=0; i<prec; i++)
-      xtcpr*=10;
+    xtcpr*=10;
   
   nfile = opt2fns(&fnms,"-f",NFILE,fnm);
   
   if(!nfile)
       fatal_error(0,"No input files!");
   
+  timestep = get_timestep(fnms[0]);
   snew(readtime,nfile+1);
   scan_trj_files(fnms,nfile,readtime,imax);
   
@@ -357,9 +362,9 @@ int main(int argc,char *argv[])
   
   earliersteps=0;    
   out_file=opt2fn("-o",NFILE,fnm);
-  ftp=fn2ftp(out_file);
   
   /* Not checking input format, could be dangerous :-) */
+  /* Not checking output format, equally dangerous :-) */
  
   flags = TRX_READ_X | TRX_READ_V | TRX_READ_F;
  
@@ -399,19 +404,10 @@ int main(int argc,char *argv[])
        */
       
       bNewFile=TRUE;
-      if(i==0) {
-	switch(ftp) {
-	case efXTC:
-	case efTRR:
-	case efTRJ:
+      if(i==0)
 	  trxout = open_trx(out_file,"w");
-	  break;
-	default:
-	  fatal_error(0,"This fileformat doesn't work here yet.");
 	  
-	  break;
-	}
-      }
+      printf("\nlasttime %g\n", lasttime);
       
       do {
 	/* copy the input frame to the output frame */
@@ -423,13 +419,21 @@ int main(int argc,char *argv[])
 	  i=nfile;
 	  break;
 	}
-	/* determine if we should write this frame */
-      if( ( bCat || timestep==NOTSET ||
-	      ( !bCat && frout.time < settime[i+1]-0.5*timestep ) ) && 
-	    frout.time >= begin) {
+	
+	/* determine if we should write this frame (dt is handled elsewhere) */
+	if (bCat) /* write all frames of all files */ 
+	  bWrite = TRUE;
+	else if ( bKeepLast ) /* write till last frame of this traj
+				 and skip first frame(s) of next traj */
+	  bWrite = ( frout.time > lasttime+0.5*timestep );
+	else /* write till first frame of next traj */
+	  bWrite = ( frout.time < settime[i+1]-0.5*timestep );
+	
+	if( bWrite && frout.time >= begin ) {
 	  frame++;
 	  if (frame_out == -1)
 	    first_time = frout.time;
+	  lasttime = frout.time;
 	  if (dt==0 || bRmod(frout.time-first_time,dt)) {
 	    frame_out++;
 	    last_ok_t=frout.time;
@@ -440,25 +444,16 @@ int main(int argc,char *argv[])
 	      bNewFile=FALSE;
 	    }
 	    
-	    switch(ftp) {
-	    case efTRJ:
-	    case efTRR:
-	    case efXTC:
 	      if (bIndex)
 		write_trxframe_indexed(trxout,&frout,isize,index);
 	      else
 		write_trxframe(trxout,&frout);
-	      break;
-	    default:
-	      fatal_error(0,"This fileformat doesn't work here yet.");
-	    }
 	    if ( ((frame % 10) == 0) || (frame < 10) )
 	      fprintf(stderr," ->  frame %6d time %8.3f %s     \r",
 		      frame_out,convert_time(frout.time),time_unit());
 	  }
 	}
-      } while( ( bCat || ( !bCat && frout.time<settime[i+1]) ) && 
-	       read_next_frame(status,&fr));
+      } while( bWrite && read_next_frame(status,&fr));
       
       close_trj(status);
       
@@ -483,8 +478,8 @@ int main(int argc,char *argv[])
       
       /* Or, if time is set explicitly, we check for overlap/gap */
       if(cont_type[i+1]==TIME_EXPLICIT) 
-	if((i<(nfile-1)) &&
-	   (frout.time<(settime[i+1]-1.5*timestep))) 
+	if( ( i+1 < nfile ) &&
+	    ( frout.time < settime[i+1]-1.5*timestep ) ) 
 	  fprintf(stderr, "WARNING: Frames around t=%f %s have a different "
 		  "spacing than the rest,\n"
 		  "might be a gap or overlap that couldn't be corrected "
