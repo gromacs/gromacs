@@ -267,17 +267,8 @@ int main(int argc,char *argv[])
   t_pargs pa[] = {
     { "-min", FALSE, etREAL, {&min},
       "Minimum coordinate in profile"},
-    /*{ "-min2", FALSE, etdouble, {&min[1]},
-      "Minimum coordinate in profile"},
-      { "-min3", FALSE, etdouble, {&min[2]},
-      "Minimum coordinate in profile"},*/
-      
     { "-max", FALSE, etREAL, {&max},
       "Maximum coordinate in profile"},
-    /*	{ "-max2", FALSE, etdouble, {&max[1]},
-    	"Maximum coordinate in profile"},
-	{ "-max3", FALSE, etdouble, {&max[2]},
-    	"Maximum coordinate in profile"},*/
     { "-bins",FALSE, etINT, {&bins},
       "Number of bins in profile"},
     { "-prof", FALSE, etBOOL, {&noprof},
@@ -291,8 +282,8 @@ int main(int argc,char *argv[])
   };
   
   t_filenm fnm[] = {
-    { efXVG, "-o", "profile", ffWRITE },     	/* output file for profile */
-    { efXVG, "-hist","histo", ffWRITE}				/* output file for histograms */
+    { efXVG, "-o", "profile", ffWRITE },    /* output file for profile */
+    { efXVG, "-hist","histo", ffWRITE}	    /* output file for histograms */
   };
   
   int i,j,k,l; 

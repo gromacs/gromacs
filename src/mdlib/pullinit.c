@@ -332,6 +332,10 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
   }
   pull->ref.tmass[0] = tm;
 
+  /* Initialize a couple of formerly static vars */
+  pull->start_nout = 0;
+  pull->bFirst = FALSE;
+
   /* if we use dynamic reference groups, do some initialising for them */
   if(pull->bCyl) {
     make_refgrps(pull,x,md);

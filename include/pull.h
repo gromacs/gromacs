@@ -101,6 +101,8 @@ typedef struct {
   real       UmbCons[4];/* force constant of umbrella potential */
   int        nSkip;     /* only write output every nSkip steps */
   bool       bCompress; /* compress output */
+  int        start_nout;/* should we output starting structure? */
+  bool       bFirst;    /* is this the first step for dynamic ref group? */
 } t_pull;
 
 /* main pull routine that controls all the action */

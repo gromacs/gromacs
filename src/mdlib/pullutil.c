@@ -213,11 +213,13 @@ void string2rvec(char buf[], rvec nums) {
   nums[0]=a; nums[1]=b; nums[2]=c;
 }
 
-/* TODO: FIX STATIC STUFF */
 /* switch function, x between r and w */
 real get_weight(real x, real r, real w) {
-  static bool bFirst = TRUE;
-  static real rw, a0, a1, a2, a3;
+  
+  /* Removed static stuff. Wasn't being used anyway */
+  /*  static bool bFirst = TRUE;
+  static real rw, a0, a1, a2, a3; */
+  
   real weight; 
 
   /*  if (bFirst) {
@@ -260,17 +262,16 @@ static real get_cylinder_distance(rvec x, rvec com, matrix box) {
   return dr;
 }
 
-/* TODO Fix Static Stuff */
 void make_refgrps(t_pull *pull,matrix box,t_mdatoms *md) 
 {
   int ngrps,i,ii,j,k,m;
-  static bool bFirst = TRUE;
+
   real dr,mass;
   real truemass;
   rvec test;
 
   ngrps = pull->pull.n;
-  if(bFirst) {
+  if(pull->bFirst) {
     snew(pull->dyna.ngx,ngrps);
     snew(pull->dyna.idx,ngrps);
     snew(pull->dyna.weights,ngrps);
@@ -278,7 +279,7 @@ void make_refgrps(t_pull *pull,matrix box,t_mdatoms *md)
       snew(pull->dyna.idx[i],pull->ref.ngx[0]);    /* more than nessary */
       snew(pull->dyna.weights[i],pull->ref.ngx[0]);
     }      
-    bFirst = FALSE;
+    pull->bFirst = FALSE;
   }
 
   /* loop over all groups to make a reference group for each*/

@@ -152,7 +152,6 @@ static void do_start(t_pull *pull, rvec *x, rvec *f, matrix box, t_mdatoms *md,
   int i,j,ii,m;
   rvec dr,dx,tmp;     
   bool bThereYet,bDump;
-  static int nout = 0;
   rvec ds;
   real k;
 
@@ -202,8 +201,8 @@ static void do_start(t_pull *pull, rvec *x, rvec *f, matrix box, t_mdatoms *md,
                 pull->pull.xtarget[i][0],pull->pull.xtarget[i][1],
                 pull->pull.xtarget[i][2]);
     }
-    dump_conf(pull,x,box,top,nout,step*dt/1000); 
-    nout++;
+    dump_conf(pull,x,box,top,pull->start_nout,step*dt/1000); 
+    pull->start_nout++;
     pull->k_step=0;
   }
 }
@@ -602,13 +601,13 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top,
           t_commrec * cr) 
 {
   int i,niter;
-  static rvec *x_s = NULL;
+  rvec *x_s = NULL;
   bool bShakeFirst;
 
   bShakeFirst = (f == NULL);
 
-  if(!x_s)
-    snew(x_s,md->nr); /* can't rely on natoms */
+  
+  snew(x_s,md->nr); /* can't rely on natoms */
 
   /* copy x to temp array x_s. We assume all molecules are whole already */
   for(i=0;i<md->nr;i++)
