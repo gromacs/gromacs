@@ -74,8 +74,8 @@ analysis programs.  To help creating such \swapindex{index}{file}s ({\tt
 index.ndx}), there are a couple of programs to generate them, using
 either your input configuration or the topology.  To generate an
 index file consisting of a series of {\em atom numbers} (as in the
-example of $g_{AB}$) use {\tt make\_ndx}. To generate an index file
-with angles or dihedrals, use {\tt mk\_angndx}. Of course you can also
+example of $g_{AB}$) use {\tt \normindex{make\_ndx}}. To generate an index file
+with angles or dihedrals, use {\tt \normindex{mk\_angndx}}. Of course you can also
 make them by hand. The general format is presented here:
 {\samepage
 \begin{verbatim}
@@ -152,7 +152,7 @@ ngmx
 
 Before analyzing your trajectory it is often informative to look at
 your trajectory first. Gromacs comes with a simple trajectory
-viewer {\tt ngmx}; the advantage with this one is that it does not
+viewer {\tt \normindex{ngmx}}; the advantage with this one is that it does not
 require OpenGL, which usually isn't present e.g. on supercomputers.
 It is also possible to generate a
 hard-copy in Encapsulated Postscript format, see
@@ -171,7 +171,7 @@ g_com
 \end{verbatim}
 To analyze some or all {\em energies} and other properties, such as
 {\em total pressure}, {\em pressure tensor}, {\em density}, {\em
-box-volume} and {\em box-sizes}, use the program {\tt g\_energy}.  A
+box-volume} and {\em box-sizes}, use the program {\tt \normindex{g\_energy}}.  A
 choice can be made from a list a set of energies, like potential,
 kinetic or total energy, or individual contributions, like
 Lennard-Jones or dihedral energies.
@@ -181,7 +181,7 @@ The {\em center-of-mass velocity}, defined as
 {\bf v}_{com} = {1 \over M} \sum_{i=1}^N m_i {\bf v}_i
 \eeq
 with $M = \sum_{i=1}^N m_i$ the total mass of the system, can be
-monitored in time by the program {\tt g\_com}. It is however
+monitored in time by the program {\tt \normindex{g\_com}}. It is however
 recommended to remove the center-of-mass velocity every step (see
 \chref{algorithms})!
 
@@ -221,7 +221,7 @@ $\langle\rho_B\rangle_{local,\:\theta }$. Normalization volumes are colored grey
 
 Usually the value of $r_{max}$ is half of the box length.  The
 averaging is also performed in time.  In practice the analysis program
-{\tt g\_rdf} divides the system into spherical slices (from $r$ to
+{\tt \normindex{g\_rdf}} divides the system into spherical slices (from $r$ to
 $r+dr$, see \figref{rdfex}A) and makes a histogram in stead of
 the $\delta$-function. An example of the rdf of Oxygen-Oxygen in
 SPC-water~\cite{Berendsen81} is given in \figref{rdf}.
@@ -268,7 +268,7 @@ $f(t)$ and $g(t)$:
 C_{fg}(t) ~=~   \left\langle f(\xi) g(\xi+t)\right\rangle_{\xi}
 \eeq
 however, in {\gromacs} there is no standard mechanism to do this
-({\bf note:} you can use the {\tt xmgr} program to compute cross correlations).
+({\bf note:} you can use the {\tt \normindex{xmgr}} program to compute cross correlations).
 The integral of the correlation function over time is the 
 correlation time $\tau_f$:
 \beq
@@ -331,8 +331,8 @@ Such correlation times
 can actually be obtained experimentally using {\eg} NMR or other relaxation 
 experiments. {\gromacs} can compute correlations using 
 the 1${st}$ and 2$^{nd}$ order Legendre polynomial (\eqnref{corrleg}).
-This can a.o. be used for rotational autocorrelation ({\tt g\_rotacf}), 
-dipole autocorrelation ({\tt g\_dipoles}).
+This can a.o. be used for rotational autocorrelation ({\tt \normindex{g\_rotacf}}), 
+dipole autocorrelation ({\tt \normindex{g\_dipoles}}).
 
 In order to study torsion angle dynamics we define a dihedral 
 autocorrelation function as~\cite{Spoel97a}:
@@ -349,7 +349,7 @@ C(t)    ~=~     \left\langle\cos(\theta(\tau))\cos(\theta(\tau+t))\,+\,\sin(\the
 \eeq
 
 \subsection{Some Applications}
-The program {\tt g\_velacc} calculates this {\em Velocity Auto Correlation 
+The program {\tt \normindex{g\_velacc}} calculates this {\em Velocity Auto Correlation 
 Function}.
 \beq
 C_{\ve{v}} (\tau) ~=~ \langle {\ve{v}}_i(\tau) \cdot {\ve{v}}_i(0) \rangle_{i \in A}
@@ -368,7 +368,7 @@ contribution to the velocity ACF can not be ignored, so care must be taken.
 
 Another important quantity is the dipole correlation time. The {\em dipole 
 correlation function} for particles $A$ is calculated as follows by 
-{\tt g\_dipoles}:
+{\tt \normindex{g\_dipoles}}:
 \beq
 C_{\mu} (\tau) ~=~
 \langle {\bf \mu}_i(\tau) \cdot {\bf \mu}_i(0) \rangle_{i \in A}
@@ -379,19 +379,19 @@ For some applications see~\cite{Spoel98a}.
 
 The \normindex{viscosity} of a liquid can be related to the correlation 
 time of the Pressure tensor $\ve{P}$~\cite{PSmith93c,Balasubramanian96}.
-{\tt g\_energy} can compute the viscosity, but in our experience this is not very
+{\tt \normindex{g\_energy}} can compute the viscosity, but in our experience this is not very
 accurate (actually the values do not converge...).
 
 \subsection{Mean Square Displacement}
 \label{sec:msd}
 To determine the self \swapindex{diffusion}{coefficient} $D_A$ of particles $A$ one
-can use the Einstein relation~\cite{Allen87}
+can use the \normindex{Einstein relation}~\cite{Allen87}
 \beq
 \lim_{t \rightarrow \infty}
 \langle \|{\bf r}_i(t) - {\bf r}_i(0)\|^2 \rangle_{i \in A} ~=~ 6 D_A t
 \eeq
 This {\em Mean Square Displacement} and $D_A$ are calculated by the
-program {\tt g\_msd}. For molecules consisting of more than one atom,
+program {\tt \normindex{g\_msd}}. For molecules consisting of more than one atom,
 ${\bf r}_i$ is the center of mass positions. In that case you should
 use an index file with molecule numbers! The program can also be used
 for calculating diffusion in one or two dimensions. This is useful for
@@ -418,7 +418,7 @@ g_angle
 g_sgangle
 \end{verbatim}
 To monitor specific {\em bonds} in your molecules during time, the program 
-{\tt g\_bond} calculates the distribution of the bond length in time. 
+{\tt \normindex{g\_bond}} calculates the distribution of the bond length in time. 
 The index file consists of pairs of atom numbers, for example
 {\samepage
 \begin{verbatim}
@@ -430,7 +430,7 @@ The index file consists of pairs of atom numbers, for example
 12    13
 \end{verbatim}}
 
-The program {\tt g\_angle} calculates the distribution of {\em angles} and 
+The program {\tt \normindex{g\_angle}} calculates the distribution of {\em angles} and 
 {\em dihedrals} in time. It also gives the average angle or dihedral. 
 The index file consists of triplets or quadruples of atom numbers:
 {\samepage
@@ -459,7 +459,7 @@ convention''. B. ``Polymer convention''.}
 To follow specific {\em angles} in time between two vectors, a vector
 and a plane or two planes (defined by 2, resp. 3 atoms inside your
 molecule, see \figref{sgangle}A, B, C), use the program {\tt
-g\_sgangle}.
+\normindex{g\_sgangle}}.
 
 \begin{figure}
 \centerline{
@@ -497,7 +497,7 @@ g_mdmat
 xpm2ps
 \end{verbatim}
 To have a rough measure for the compactness of a structure, you can calculate 
-the {\em radius of gyration} with the program {\tt g\_gyrate} as follows:
+the {\em radius of gyration} with the program {\tt \normindex{g\_gyrate}} as follows:
 \beq
 R_g ~=~ \left({\frac{\sum_i \|{\bf r}_i\|^2 m_i}{\sum_i m_i}}\right)^{\half}
 \label{eqn:rg}
@@ -514,16 +514,16 @@ possibilities:
 \begin{description}
 \item[$\bullet$] 
 The {\em distance between the geometrical centers} of two groups can be 
-calculated with {\tt g\_sgangle}, as explained in \secref{bad}. 
+calculated with {\tt \normindex{g\_sgangle}}, as explained in \secref{bad}. 
 \item[$\bullet$] 
 The {\em minimum distance} between two groups of atoms during time 
-can be calculated with the program {\tt g\_mindist}. It also calculates the 
+can be calculated with the program {\tt \normindex{g\_mindist}}. It also calculates the 
 {\em number of contacts} between these groups 
 within a certain radius $r_{max}$.
 \item[$\bullet$] 
 To monitor the {\em minimum distances between residues} 
 (see \chref{top}) within a (protein) molecule, you can use 
-the program {\tt g\_mdmat}. This minimum distance between two residues
+the program {\tt \normindex{g\_mdmat}}. This minimum distance between two residues
 A$_i$ and A$_j$ is defined as the smallest distance between any pair of 
 atoms (i $\in$ A$_i$, j $\in$ A$_j$).
 The output is a symmetrical matrix of smallest distances 
@@ -553,7 +553,7 @@ g_rmsdist
 \end{verbatim}
 The {\em root mean square deviation} ($RMSD$) of certain atoms in a molecule
 with respect to a reference structure can be calculated with the program 
-{\tt g\_rms} by least-square fitting the structure to the reference structure
+{\tt \normindex{g\_rms}} by least-square fitting the structure to the reference structure
 ($t_2 = 0$) and subsequently calculating the $RMSD$ (\eqnref{rmsd}).
 \beq
 RMSD(t_1,t_2) ~=~ \left[\frac{1}{N} \sum_{i=1}^N \|{\bf r}_i(t_1)-{\bf r}_i(t_2)\|^2 \right]^{\frac{1}{2}}
@@ -575,7 +575,7 @@ If there are transitions in a trajectory, they will clearly show up in
 such a matrix.
 
 Alternatively the $RMSD$ can be computed using a fit-free method with the 
-program {\tt g\_rmsdist}:
+program {\tt \normindex{g\_rmsdist}}:
 \beq
 RMSD(t) ~=~     \left[\frac{1}{N^2}\sum_{i=1}^N \sum_{j=1}^N    \|{\bf r}_{ij}(t)-{\bf r}_{ij}(0)\|^2\right]^{\frac{1}{2}}
 \label{eqn:rmsdff}
@@ -591,7 +591,7 @@ RMSD(t;\tau) ~=~ \left[\frac{1}{N} \sum_{i=1}^N \|{\bf r}_i(t)-{\bf r}_i(t-\tau)
 \label{eqn:rmdstau}
 \eeq
 so comparing to a least-square structure at $t-\tau$. This gives some insight 
-in the mobility as a function of $\tau$. Use the program {\tt g\_run\_rms}.
+in the mobility as a function of $\tau$. Use the program {\tt \normindex{g\_run\_rms}}.
 
 \section{\normindex{Covariance analysis}}
 \label{sec:covanal}
@@ -715,7 +715,7 @@ The covariance matrix is built and diagonalized by
 {\tt \normindex{g\_covar}}.
 The principal components and overlap (any many more things) 
 can be plotted and analyzed with {\tt \normindex{g\_anaeig}}.
-The cosine content can be calculated with {\tt g\_analyze}.
+The cosine content can be calculated with {\tt \normindex{g\_analyze}}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Hydrogen bonds
 
@@ -723,7 +723,7 @@ The cosine content can be calculated with {\tt g\_analyze}.
 \begin{verbatim}
 g_hbond
 \end{verbatim}
-The program {\tt g\_hbond} analyses the {\em hydrogen bonds} (H-bonds)
+The program {\tt \normindex{g\_hbond}} analyses the {\em hydrogen bonds} (H-bonds)
 between all possible donors D and acceptors A. To determine if an
 H-bond exists, a geometrical criterion is used, see also
 \figref{hbond}:
@@ -823,7 +823,7 @@ gyration or the minimum residue distances during time
 (see \secref{rg}), or calculate the RMSD (\secref{rmsd}).
 
 You can also look at the changing of {\em secondary structure elements} 
-during your run. For this you can use the program {\tt do\_dssp}, which is 
+during your run. For this you can use the program {\tt \normindex{do\_dssp}}, which is 
 an interface for the commercial program {\tt dssp}~\cite{Kabsch83}. For 
 further information, see the {\tt dssp}-manual. A typical output plot of 
 {\tt do\_dssp} is given in \figref{dssp}.
@@ -847,7 +847,7 @@ $\psi$ of the protein backbone, see \figref{phipsi}.
 \label{fig:phipsi}
 \end{figure}
 
-To evaluate this Ramachandran plot you can use the program {\tt g\_rama}. 
+To evaluate this Ramachandran plot you can use the program {\tt \normindex{g\_rama}}. 
 A typical output is given in \figref{rama}.
 
 \begin{figure}
@@ -859,12 +859,12 @@ A typical output is given in \figref{rama}.
 
 It is also possible to generate an {\em animation of the Ramachandran plot} 
 in time. This can be of help for analyzing certain dihedral transitions 
-in your protein. You can use the program {\tt xrama} for this.
+in your protein. You can use the program {\tt \normindex{xrama}} for this.
 
 When studying $\alpha$-helices 
 it is useful to have a {\em helical wheel} projection
 of your peptide, to see whether a peptide is amphipatic. This can be done
-using the {\tt wheel} program. Two examples are 
+using the {\tt \normindex{wheel}} program. Two examples are 
 plotted in \figref{wheel}.
 
 \begin{figure}
@@ -886,7 +886,7 @@ g_coord
 When simulating molecules with long carbon tails, it can be
 interesting to calculate their average orientation. There are several
 flavors of order parameters, most of which are related. The program
-{\tt g\_order} can calculate order parameters using the equation
+{\tt \normindex{g\_order}} can calculate order parameters using the equation
 
 \begin{equation}
 S_{z} = \frac{3}{2}\langle {\cos^2{\theta_z}} \rangle - \frac{1}{2}
@@ -917,13 +917,13 @@ charge density ($\rho(z)$):
 where the position $z=-\infty$ is far enough in the bulk phase that
 the field is zero.  With this method, it is possible to ``split'' the
 total potential into separate contributions from lipid and water
-molecules. The program {\tt g\_potential} divides the box in slices and
+molecules. The program {\tt \normindex{g\_potential}} divides the box in slices and
 sums all charges of the atoms in each slice. It then integrates this
 charge density, giving the electric field, and the electric field,
 giving the potential. Charge density, field and potential are written
 to {\tt xvgr-}input files.
 
-The program {\tt g\_coord} is a very simple analysis program. All it
+The program {\tt \normindex{g\_coord}} is a very simple analysis program. All it
 does is print the coordinates of selected atoms to three files,
 containing respectively the {\em x-, y-} and {\em z-}coordinates of
 those atoms. It can also calculate the center of mass of one or more
@@ -932,10 +932,10 @@ files. By itself, this is probably not a very useful analysis, but
 having the coordinates of selected molecules or atoms can be very
 handy for further analysis, not only in interface systems.
 
-The program {\tt g\_pvd} calculates a lot of properties, among which
+The program {\tt \normindex{g\_pvd}} calculates a lot of properties, among which
 the density of a group in particles per unit of volume, but not a
 density that takes the mass of the atoms into account. The program
-{\tt g\_density} also calculates the density of a group, but takes the
+{\tt \normindex{g\_density}} also calculates the density of a group, but takes the
 masses into account and gives a plot of the density against a box
 axis. This is useful for looking at the distribution of groups or
 atoms across the interface.
@@ -948,7 +948,7 @@ total
 do_shift
 \end{verbatim}
 You can compute the NMR chemical shifts of protons with the program
-{\tt do\_shift}. This is just an {\gromacs} interface to the public
+{\tt \normindex{do\_shift}}. This is just an {\gromacs} interface to the public
 domain program {\tt total}~\cite{Williamson93a}. For further
 information, read the article.
 
