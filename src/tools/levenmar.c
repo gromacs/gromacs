@@ -237,7 +237,6 @@ bool gaussj(real **a, int n, real **b, int m)
   int i,icol=0,irow=0,j,k,l,ll;
   real big,dum,pivinv;
   
-  dump_mat(n,a);
   indxc=ivector(1,n);
   indxr=ivector(1,n);
   ipiv=ivector(1,n);
