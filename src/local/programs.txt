@@ -1,5 +1,6 @@
 HEAD|Generating topologies and coordinates
-pdb2gmx|converts pdb files to topology and coordinate files 
+pdb2gmx|converts pdb files to topology and coordinate files
+x2top|generates a primitive topology from coordinates 
 editconf|edits the box and writes subgroups 
 genbox|solvates a system
 genion|generates mono atomic ions on energetically favorable positions
@@ -39,6 +40,7 @@ mk_angndx|generates index files for g_angle
 gmxcheck|checks and compares files
 gmxdump|makes binary files human readable
 g_analyze|analyzes data sets
+trjorder|orders molecules according to their distance to a group
 END
 
 HEAD|Distances between structures
