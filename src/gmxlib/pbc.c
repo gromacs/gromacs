@@ -237,18 +237,16 @@ void put_charge_groups_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
     }
     /* Now check pbc for this cg */
     for(d=0; d<DIM; d++) {
-      if (cg[d] < 0) 
-	while(cg[d] < 0) {
-	  cg[d] += box[d][d];
-	  for(k=k0; (k<k1); k++) 
-	    pos[cga[k]][d] += box[d][d];
-	}
-      else 
-	while(cg[d] >= box[d][d]) {
-	  cg[d] -= box[d][d];
-	  for(k=k0; (k<k1); k++) 
-	    pos[cga[k]][d] -= box[d][d];
-	}
+      while(cg[d] < 0) {
+	cg[d] += box[d][d];
+	for(k=k0; (k<k1); k++) 
+	  pos[cga[k]][d] += box[d][d];
+      }
+      while(cg[d] >= box[d][d]) {
+	cg[d] -= box[d][d];
+	for(k=k0; (k<k1); k++) 
+	  pos[cga[k]][d] -= box[d][d];
+      }
       cg_cm[icg][d] = cg[d];
     }
 #ifdef DEBUG_PBC
