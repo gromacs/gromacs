@@ -69,7 +69,7 @@ trjconv:	trjconv.o
 g_rmsdist:	g_rmsdist.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-editconf:	editconf.o
+editconf:	editconf.o	addconf.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_energy:	g_energy.o	$(ACOBJ)

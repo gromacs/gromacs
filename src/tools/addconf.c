@@ -33,7 +33,9 @@ static char *SRCID_addconf_c = "$Id$";
 #include "smalloc.h"
 #include "addconf.h"
 #include "gstat.h"
-
+#include "princ.h"
+#include "rdgroup.h"
+#include "txtdump.h"
 
 real mydist2(rvec x,rvec y,matrix box)
 {
@@ -201,5 +203,40 @@ void add_conf(t_atoms *atoms_1,rvec *x_1,rvec *v_1,real *r_1,
   sfree(atom_flag);
 }
 
-
+void orient_mol(t_atoms *atoms,char *indexnm,rvec x[])
+{
+  int     isize;
+  atom_id *index,*simp;
+  char    *grpnames;
+  real    totmass;
+  int     i,m;
+  rvec    xcm,angle;
+  matrix  trans;
+  
+  /* Make an index for principal component analysis */
+  fprintf(stderr,"Select group for orientation of molecule:\n");
+  get_index(atoms,indexnm,1,&isize,&index,&grpnames);
+  snew(simp,atoms->nr);
+  for(i=0; (i<atoms->nr); i++) {
+    simp[i]=i;
+    atoms->atom[i].m=1;
+  }
+  totmass = sub_xcm(x,atoms->nr,simp,atoms->atom,xcm,FALSE);
+  principal_comp(isize,index,atoms->atom,x,trans,angle);
+  rotate_atoms(atoms->nr,simp,x,trans);
+  
+  if (debug) {
+    pr_rvecs(stderr,0,"Rot Matrix",trans,DIM);
+    
+    /* print principal component data */
+    fprintf(stderr,"Norm of principal axes before rotation: "
+	    "(%.3f, %.3f, %.3f)\n",angle[XX],angle[YY],angle[ZZ]);
+    principal_comp(isize,index,atoms->atom,x,trans,angle);
+    rotate_atoms(atoms->nr,simp,x,trans);
+    pr_rvecs(stderr,0,"Rot Matrix",trans,DIM);
+  }
+  sfree(simp);
+  sfree(index);
+  sfree(grpnames);
+}
 

@@ -319,33 +319,34 @@ int main(int argc, char *argv[])
   };
   static real dist   = 0.0,rbox=0.0;
   static bool bNDEF=FALSE,bRMPBC=FALSE,bCenter=FALSE;
-  static bool peratom=FALSE,bLegend=FALSE;
+  static bool peratom=FALSE,bLegend=FALSE,bOrient=FALSE;
   static rvec scale={1.0,1.0,1.0},newbox={0.0,0.0,0.0};
   static real rho=1000.0;
   static rvec center={0.0,0.0,0.0};
   static char *label="A";
   static char  *cRotate[] = { NULL, "no", "X", "Y", "Z", NULL };  
   t_pargs pa[] = {
-    { "-ndef", FALSE, etBOOL, &bNDEF, 
+    { "-ndef",   FALSE, etBOOL, &bNDEF, 
       "Choose output from default index groups" },    
-    { "-d", FALSE, etREAL, &dist, 
+    { "-d",      FALSE, etREAL, &dist, 
       "Distance between the solute and the rectangular box" }, 
-    { "-dc", FALSE, etREAL, &dist,
+    { "-dc",     FALSE, etREAL, &dist,
       "Distance between the solute and the cubic box" },
-    { "-box", FALSE, etRVEC, &newbox, "Size of box" },
-    { "-c", FALSE, etBOOL, &bCenter,
+    { "-box",    FALSE, etRVEC, &newbox, "Size of box" },
+    { "-c",      FALSE, etBOOL, &bCenter,
       "Center molecule in box (implied by -d -dc -box)" },
     { "-center", FALSE, etRVEC, &center, "Coordinates of geometrical center"},
-    { "-scale", FALSE, etRVEC, &scale, "Scaling factor" },
+    { "-scale",  FALSE, etRVEC, &scale, "Scaling factor" },
     { "-density",FALSE, etREAL, &rho, 
       "Density (g/l) of the output box achieved by scaling" },
-    { "-pbc",  FALSE, etBOOL, &bRMPBC, 
+    { "-pbc",    FALSE, etBOOL, &bRMPBC, 
       "Remove the periodicity (make molecule whole again)" },
-    { "-atom", FALSE, etBOOL, &peratom, "Force B-factor attachment per atom" },
-    { "-legend",FALSE,etBOOL, &bLegend, "Make B-factor legend" },
-    { "-label", FALSE, etSTR, &label,   "Add chain label for all residues" },
+    { "-atom",   FALSE, etBOOL, &peratom, "Force B-factor attachment per atom" },
+    { "-legend", FALSE, etBOOL, &bLegend, "Make B-factor legend" },
+    { "-label",  FALSE, etSTR,  &label,   "Add chain label for all residues" },
     { "-rotate", FALSE, etENUM, cRotate,
-      "Rotate around an axis" }
+      "Rotate around an axis" },
+    { "-princ",  FALSE, etBOOL, &bOrient, "Orient molecule(s) along their pricipal component axes" }
   };
 #define NPA asize(pa)
 
@@ -386,9 +387,9 @@ int main(int argc, char *argv[])
     fprintf(stderr,"WARNING: setting -density overrides -scale");
   bScale  = bScale || bRho;
   
-  infile=ftp2fn(efSTX,NFILE,fnm);
-  outfile=ftp2fn(efSTO,NFILE,fnm);
-  outftp=fn2ftp(outfile);
+  infile  = ftp2fn(efSTX,NFILE,fnm);
+  outfile = ftp2fn(efSTO,NFILE,fnm);
+  outftp  = fn2ftp(outfile);
   
   get_stx_coordnum(infile,&natom);
   init_t_atoms(&atoms,natom,TRUE);
@@ -406,6 +407,9 @@ int main(int argc, char *argv[])
   /* remove pbc */
   if (bRMPBC) 
     rm_gropbc(&atoms,x,box);
+    
+  if (bOrient)
+    orient_mol(&atoms,ftp2fn_null(efNDX,NFILE,fnm),x);
     
   /* calc geometrical center and max and min coordinates and size */
   calc_geom(natom, x, gc, min, max);

@@ -49,7 +49,6 @@ static char *SRCID_genbox_c = "$Id$";
 #include "vec.h"
 #include "gstat.h"
 #include "addconf.h"
-#include "princ.h"
 
 typedef struct {
   char **name;
@@ -230,9 +229,10 @@ void m_sort(t_atoms *atoms,rvec *x,rvec *v,real *r,int left, int right)
   }
 }/*m_sort()*/
 
-char *add_mol3(char *mol3,int nmol_3,int seed,int ntb,
-	       t_atoms *atoms_1,rvec **x_1,rvec **v_1,real **r_1,matrix box_1,
-	       t_vdw **vdw,int *max_vdw,real r_distance)
+char *insert_mols(char *mol3,int nmol_3,int seed,int ntb,
+		  t_atoms *atoms_1,rvec **x_1,rvec **v_1,
+		  real **r_1,matrix box_1,
+		  t_vdw **vdw,int *max_vdw,real r_distance)
 {
   static  char    *title_3;
   t_atoms atoms_3;
@@ -416,83 +416,153 @@ void add_solv(char *solv,int ntb,
 	  *atoms_added,*residues_added);
 }
 
-char *read_prot(char *confin_1,int ntb,bool bRotate,
-		t_atoms *atoms_1,
-		rvec **x_1,rvec **v_1,real **r_1,
-		matrix box_1,rvec angle,
-		t_vdw **vdw,int *max_vdw,real r_distance,
+char *read_prot(char *confin,char *indexnm,
+		int ntb,bool bRotate,
+		t_atoms *atoms,rvec **x,rvec **v,real **r,
+		matrix box,t_vdw **vdw,int *max_vdw,real r_distance,
 		real prot_wall)
 {
-  char    *title;
-  atom_id *indexje;
-  real    tm;
-  int     i,m;
-  rvec    xcm,xmin,xmax;
-  matrix  trans;
+  char *title;
+  rvec xmin,xmax;
+  int  i,m;
   
   snew(title,STRLEN);
-  get_stx_coordnum(confin_1,&(atoms_1->nr));
+  get_stx_coordnum(confin,&(atoms->nr));
   
-  /*allocate memory for atom coordinates of configuration 1*/
-  snew(*x_1,atoms_1->nr);
-  snew(*v_1,atoms_1->nr);
-  snew(*r_1,atoms_1->nr);
-  snew(atoms_1->resname,atoms_1->nr);
-  snew(atoms_1->atom,atoms_1->nr);
-  snew(atoms_1->atomname,atoms_1->nr);
+  /* allocate memory for atom coordinates of configuration 1 */
+  snew(*x,atoms->nr);
+  snew(*v,atoms->nr);
+  snew(*r,atoms->nr);
+  snew(atoms->resname,atoms->nr);
+  snew(atoms->atom,atoms->nr);
+  snew(atoms->atomname,atoms->nr);
   
-  /*read residue number, residue names, atomnames, coordinates etc.*/
+  /* read residue number, residue names, atomnames, coordinates etc. */
   fprintf(stderr,"Reading solute configuration \n");
-  read_stx_conf(confin_1,title,atoms_1,*x_1,*v_1,box_1);
+  read_stx_conf(confin,title,atoms,*x,*v,box);
   fprintf(stderr,"%s\nContaining %d atoms in %d residues\n",
-	  title,atoms_1->nr,atoms_1->nres);
-  /*srenew(atoms_1->resname,atoms_1->nres);*/
-    
-  /*initialise van der waals arrays of configuration 1*/
-  mk_vdw(atoms_1,*r_1,vdw,max_vdw,r_distance);
+	  title,atoms->nr,atoms->nres);
+  
+  /* initialise van der waals arrays of configuration 1 */
+  mk_vdw(atoms,*r,vdw,max_vdw,r_distance);
   
   /*orient configuration along z-axis*/
-  if (bRotate) {
-    snew(indexje,atoms_1->nr);
-    for(i=0; (i<atoms_1->nr); i++) {
-      indexje[i] =i ;
-      if (atoms_1->atom[i].m == 0)
-	atoms_1->atom[i].m = 1;
-    }
-    principal_comp(atoms_1->nr,indexje,atoms_1->atom,*x_1,trans,angle);
-    rotate_atoms(atoms_1->nr,indexje,*x_1,trans);
-    pr_rvecs(stderr,0,"Rot Matrix",trans,DIM);
+  if (bRotate) 
+    orient_mol(atoms,indexnm,*x);
     
-    /* Compute new box size */
-    copy_rvec((*x_1)[0],xmin);
-    copy_rvec((*x_1)[0],xmax);
-    for(i=1; (i<atoms_1->nr); i++) {
-      for(m=0; (m<DIM); m++) {
-	xmin[m] = min((*x_1)[i][m],xmin[m]);
-	xmax[m] = max((*x_1)[i][m],xmax[m]);
-      }
-    }
+  /* Compute new box size */
+  copy_rvec((*x)[0],xmin);
+  copy_rvec((*x)[0],xmax);
+  for(i=1; (i<atoms->nr); i++) {
     for(m=0; (m<DIM); m++) {
-      box_1[m][m] = 2*prot_wall+xmax[m]-xmin[m];
+      xmin[m] = min((*x)[i][m],xmin[m]);
+      xmax[m] = max((*x)[i][m],xmax[m]);
     }
-    fprintf(stderr,"xmin           = %8.3f  %8.3f  %8.3f\n",
-	    xmin[XX],xmin[YY],xmin[ZZ]);
-    fprintf(stderr,"xmax           = %8.3f  %8.3f  %8.3f\n",
-	    xmax[XX],xmax[YY],xmax[ZZ]);
-    fprintf(stderr,"New box size   = %8.3f  %8.3f  %8.3f, volume = %g\n",
-	    box_1[XX][XX],box_1[YY][YY],box_1[ZZ][ZZ],det(box_1));
+  }
+  for(m=0; (m<DIM); m++) {
+    box[m][m] = 2*prot_wall+xmax[m]-xmin[m];
+  }
+  fprintf(stderr,"xmin           = %8.3f  %8.3f  %8.3f\n",
+	  xmin[XX],xmin[YY],xmin[ZZ]);
+  fprintf(stderr,"xmax           = %8.3f  %8.3f  %8.3f\n",
+	  xmax[XX],xmax[YY],xmax[ZZ]);
+  fprintf(stderr,"New box size   = %8.3f  %8.3f  %8.3f, volume = %g\n",
+	  box[XX][XX],box[YY][YY],box[ZZ][ZZ],det(box));
+  
+  center_conf(atoms->nr,*x,box);
+  
+  return title;
+}
 
-    center_conf(atoms_1->nr,*x_1,box_1);
-    
-    /* Compute center of mass */
-    /* Center the molecule in the box */
-    /*for(m=0; (m<DIM); m++)
-      xcm[m] = 0.5*box_1[m][m]-xmin[m];
-    add_xcm(*x_1,atoms_1->nr,indexje,xcm);
-    sfree(indexje);*/
+static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[])
+{
+#define TEMP_FILE_NM "temp.top"
+  FILE *fpin,*fpout;
+  char buf[STRLEN],buf2[STRLEN],*temp,*topinout;
+  int  line;
+  bool bSystem,bMolecules,bSkip;
+  int  i,nsol=0;
+  real vol;
+  
+  for(i=0; (i<atoms->nres); i++) {
+    /* calculate number of SOLvent molecules */
+    if ( (strcmp(*atoms->resname[i],"SOL")==0) ||
+	 (strcmp(*atoms->resname[i],"HOH")==0) )
+      nsol++;
   }
     
-  return title;
+  vol=det(box);
+  
+  fprintf(stderr,"Volume                 :  %10g (nm^3)\n",vol);
+  fprintf(stderr,"Number of SOL molecules:  %5d   \n\n",nsol);
+  
+  /* open topology file and append sol molecules */
+  topinout  = ftp2fn(efTOP,NFILE,fnm);
+  if ( ftp2bSet(efTOP,NFILE,fnm) ) {
+    fprintf(stderr,"Processing topology\n");
+    fpin = ffopen(topinout,"r");
+    fpout= ffopen(TEMP_FILE_NM,"w");
+    line=0;
+    bSystem = bMolecules = FALSE;
+    while (fgets(buf, STRLEN, fpin)) {
+      bSkip=FALSE;
+      line++;
+      strcpy(buf2,buf);
+      if ((temp=strchr(buf2,'\n')) != NULL)
+	temp[0]='\0';
+      ltrim(buf2);
+      if (buf2[0]=='[') {
+	buf2[0]=' ';
+	if ((temp=strchr(buf2,'\n')) != NULL)
+	  temp[0]='\0';
+	rtrim(buf2);
+	if (buf2[strlen(buf2)-1]==']') {
+	  buf2[strlen(buf2)-1]='\0';
+	  ltrim(buf2);
+	  rtrim(buf2);
+	  bSystem=(strcasecmp(buf2,"system")==0);
+	  bMolecules=(strcasecmp(buf2,"molecules")==0);
+	}
+      } else if (bSystem && nsol && (buf[0]!=';') ) {
+	/* if sol present, append "in water" to system name */
+	rtrim(buf2);
+	if (buf2[0] && (!strstr(buf2," water")) ) {
+	  sprintf(buf,"%s in water\n",buf2);
+	  bSystem = FALSE;
+	}
+      } else if (bMolecules) {
+	/* check if this is a line with solvent molecules */
+	sscanf(buf,"%s",buf2);
+	if (strcmp(buf2,"SOL")==0) {
+	  sscanf(buf,"%*s %d",&i);
+	  nsol-=i;
+	  if (nsol<0) {
+	    bSkip=TRUE;
+	    nsol+=i;
+	  }
+	}
+      }
+      if (bSkip) {
+	if ((temp=strchr(buf,'\n')) != NULL)
+	  temp[0]='\0';
+	fprintf(stdout,"Removing line #%d '%s' from topology file (%s)\n",
+		line,buf,topinout);
+      } else
+	fprintf(fpout,"%s",buf);
+    }
+    fclose(fpin);
+    if ( nsol ) {
+      fprintf(stdout,"Adding line for %d solute molecules to "
+	      "topology file (%s)\n",nsol,topinout);
+      fprintf(fpout,"%-15s %5d\n","SOL",nsol);
+    }
+    fclose(fpout);
+    /* use ffopen to generate backup of topinout */
+    fpout=ffopen(topinout,"w");
+    fclose(fpout);
+    rename(TEMP_FILE_NM,topinout);
+  }
+#undef TEMP_FILE_NM
 }
 
 int main(int argc,char *argv[])
@@ -556,7 +626,6 @@ int main(int argc,char *argv[])
   };
 
   static char *bugs[] = {
-    
     "The program does not take periodic boundary conditions in the initial "
     "configuration into account, therefore the solute configuration should "
     "only contain whole molecules. This can be especially tricky when using "
@@ -570,43 +639,42 @@ int main(int argc,char *argv[])
   
   /* parameter data */
   bool bSol,bProt,bBox;
-  char *confin_1,*confin_2,*confin_3,*confout,*topinout;
+  char *conf_prot,*confout;
   int  bInsert;
-  real *r_1;
-  char *title_3;
+  real *r;
+  char *title_ins;
   
   /* protein configuration data */
   char    *title=NULL;
-  t_atoms atoms_1;
-  rvec    *x_1,*v_1;
-  matrix  box_1;
+  t_atoms atoms;
+  rvec    *x,*v;
+  matrix  box;
   
   /* other data types */
   int  atoms_added,residues_added;
   
   /* van der waals data */
   int    max_vdw;
-  t_vdw  *vdw;
+  t_vdw  *vdw=NULL;
   
-  /*angle variables*/
-  rvec angle;
   t_filenm fnm[] = {
     { efSTX, "-cp", "protein", ffOPTRD },
     { efSTX, "-cs", "spc216",  ffLIBOPTRD},
     { efSTX, "-ci", "insert",  ffOPTRD},
+    { efNDX, "-n",  NULL,      ffOPTRD},
     { efVDW, "-w",  NULL,      ffLIBRD},
     { efSTO, NULL,  NULL,      ffWRITE},
     { efTOP, NULL,  NULL,      ffOPTRW},
   };
 #define NFILE asize(fnm)
   
-  static int nmol_3=0,maxsol=0,seed=1997,ntb=0;
+  static int nmol_ins=0,maxsol=0,seed=1997,ntb=0;
   static bool bRotate=FALSE;
   static real r_distance=0.105,prot_wall=0.0;
   static rvec new_box={0.0,0.0,0.0};
   t_pargs pa[] = {
     { "-box",   FALSE,etRVEC,&new_box,   "box size" },
-    { "-nmol",  FALSE,etINT ,&nmol_3,    "no of extra molecules to insert" },
+    { "-nmol",  FALSE,etINT ,&nmol_ins,    "no of extra molecules to insert" },
     { "-maxsol",FALSE,etINT ,&maxsol,    "max no of solvent molecules to add"},
     { "-rot",   FALSE,etBOOL,&bRotate,   "rotate solute to fit box best"},
     { "-seed",  FALSE,etINT ,&seed,      "random generator seed"},
@@ -621,181 +689,88 @@ int main(int argc,char *argv[])
 		    asize(desc),desc,asize(bugs),bugs);
   
   /* Copy filenames... */
-  confin_1=opt2fn("-cp",NFILE,fnm);
-  confin_2=opt2fn("-cs",NFILE,fnm);
-  confin_3=opt2fn("-ci",NFILE,fnm);
-  confout =ftp2fn(efSTO,NFILE,fnm);
-  topinout=ftp2fn(efTOP,NFILE,fnm);
   
-  bInsert = opt2bSet("-ci",NFILE,fnm);
-  bSol = opt2bSet("-cs",NFILE,fnm);
-  bProt= opt2bSet("-cp",NFILE,fnm);
-  bBox = opt2parg_bSet("-box",asize(pa),pa);
+  bInsert   = (opt2bSet("-ci",NFILE,fnm) && (nmol_ins > 0));
+  bSol      = opt2bSet("-cs",NFILE,fnm);
+  bProt     = opt2bSet("-cp",NFILE,fnm);
+  bBox      = opt2parg_bSet("-box",asize(pa),pa);
   if (!bProt && !bBox) {
     fprintf(stderr,"You must supply a solute (-cp) or a box size (-box)\n\n");
     exit(0);
   }
+  
   /* read van der waals distances for all the existing atoms*/
-  vdw=NULL;
-  max_vdw=read_vdw(ftp2fn(efVDW,NFILE,fnm),&vdw);
+  max_vdw = read_vdw(ftp2fn(efVDW,NFILE,fnm),&vdw);
 
   if (bProt) {
     /*generate a solute configuration*/
-    title=read_prot(confin_1,ntb,bRotate,&atoms_1,&x_1,&v_1,&r_1,box_1,angle,
-		    &vdw,&max_vdw,r_distance,prot_wall);
-    if (atoms_1.nr == 0) {
-      fprintf(stderr,"No protein in %s, check your input\n",confin_1);
+    conf_prot = opt2fn("-cp",NFILE,fnm);
+    title     = read_prot(conf_prot,ftp2fn_null(efNDX,NFILE,fnm),
+			  ntb,bRotate,&atoms,&x,&v,&r,box,
+			  &vdw,&max_vdw,r_distance,prot_wall);
+    if (atoms.nr == 0) {
+      fprintf(stderr,"No protein in %s, check your input\n",conf_prot);
       exit(1);
     }
   }
   else {
-    atoms_1.nr=0;
-    atoms_1.nres=0;
+    atoms.nr=0;
+    atoms.nres=0;
     bRotate=FALSE;
-    atoms_1.resname=NULL;
-    atoms_1.atomname=NULL;
-    atoms_1.atom=NULL;
-    x_1=NULL;
-    v_1=NULL;
-    r_1=NULL;
+    atoms.resname=NULL;
+    atoms.atomname=NULL;
+    atoms.atom=NULL;
+    x=NULL;
+    v=NULL;
+    r=NULL;
   }
   if (bBox) {
-    clear_mat(box_1);
-    box_1[XX][XX]=new_box[XX];
-    box_1[YY][YY]=new_box[YY];
-    box_1[ZZ][ZZ]=new_box[ZZ];
+    clear_mat(box);
+    box[XX][XX]=new_box[XX];
+    box[YY][YY]=new_box[YY];
+    box[ZZ][ZZ]=new_box[ZZ];
     if (bProt)
-      center_conf(atoms_1.nr,x_1,box_1);
+      center_conf(atoms.nr,x,box);
   }
-  init_pbc(box_1,ntb);
+  init_pbc(box,ntb);
   
-  /*add nmol_3 molecules of atoms_3 in random orientation at random place*/
-  if (bInsert && (nmol_3 > 0))
-    title_3=add_mol3(confin_3,nmol_3,seed,ntb,
-		     &atoms_1,&x_1,&v_1,&r_1,box_1,
-		     &vdw,&max_vdw,r_distance);
+  /*add nmol_ins molecules of atoms_ins in random orientation at random place*/
+  if (bInsert) 
+    title_ins = insert_mols(opt2fn("-ci",NFILE,fnm),nmol_ins,seed,ntb,
+			    &atoms,&x,&v,&r,box,
+			    &vdw,&max_vdw,r_distance);
   else
-    title_3=strdup("Generated by genbox");
+    title_ins = strdup("Generated by genbox");
   
   if (bSol) 
-    add_solv(confin_2,ntb,&atoms_1,&x_1,&v_1,&r_1,box_1,
+    add_solv(opt2fn("-cs",NFILE,fnm),ntb,&atoms,&x,&v,&r,box,
 	     &vdw,&max_vdw,r_distance,&atoms_added,&residues_added,maxsol);
   
   if (debug)
     write_vdw("outradii.vdw",vdw,max_vdw);
 
   /*write new configuration 1 to file confout*/
-  fprintf(stderr,"Writing generated configuration to disk\n");
- 
+  confout = ftp2fn(efSTO,NFILE,fnm);
+  fprintf(stderr,"Writing generated configuration to %s\n",confout);
   if (bProt) {
-    write_sto_conf(confout,title,&atoms_1,x_1,v_1,box_1);
+    write_sto_conf(confout,title,&atoms,x,v,box);
     /*print box sizes and box type to stderr*/
     fprintf(stderr,"%s\n",title);  
     fprintf(stderr,"Generated a %s box sizes: %f %f %f\n",
-	    eboxtype_names[ntb],box_1[XX][XX],box_1[YY][YY],box_1[ZZ][ZZ]);
+	    eboxtype_names[ntb],box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
   }
   else 
-    write_sto_conf(confout,title_3,&atoms_1,x_1,v_1,box_1);
+    write_sto_conf(confout,title_ins,&atoms,x,v,box);
 
   if (debug)
     write_vdw("out.vdw",vdw,max_vdw);
   
-  /*print rotation data*/
-  if (bRotate)
-    fprintf(stderr,"Configuration is rotated \nalfa=%f beta=%f gamma=%f\n",
-	    angle[0],angle[1],angle[2]);
   
   /* print size of generated configuration */
   fprintf(stderr,"\nOutput configuration contains %d atoms in %d residues\n",
-	  atoms_1.nr,atoms_1.nres);
-  {
-    int  i,nsol=0;
-    real vol;
-  
-    for(i=0; (i<atoms_1.nres); i++) {
-      /* calculate number of SOLvent molecules */
-      if ( (strcmp(*atoms_1.resname[i],"SOL")==0) ||
-	   (strcmp(*atoms_1.resname[i],"HOH")==0) )
-	nsol++;
-    }
-    
-    vol=det(box_1);
-    
-    fprintf(stderr,"Volume                 :  %10g (nm^3)\n",vol);
-    fprintf(stderr,"Number of SOL molecules:  %5d   \n\n",nsol);
-    
-    /* open topology file and append sol molecules */
-    if ( ftp2bSet(efTOP,NFILE,fnm) ) {
-#define TEMP_FILE_NM "temp.top"
-      FILE *fpin,*fpout;
-      char buf[STRLEN],buf2[STRLEN],*temp;
-      int  line;
-      bool bSystem,bMolecules,bSkip;
-      
-      fprintf(stderr,"Processing topology\n");
-      fpin = ffopen(topinout,"r");
-      fpout= ffopen(TEMP_FILE_NM,"w");
-      line=0;
-      bSystem = bMolecules = FALSE;
-      while (fgets(buf, STRLEN, fpin)) {
-	bSkip=FALSE;
-	line++;
-	strcpy(buf2,buf);
-	if ((temp=strchr(buf2,'\n')) != NULL)
-	  temp[0]='\0';
-	ltrim(buf2);
-	if (buf2[0]=='[') {
-	  buf2[0]=' ';
-	  if ((temp=strchr(buf2,'\n')) != NULL)
-	    temp[0]='\0';
-	  rtrim(buf2);
-	  if (buf2[strlen(buf2)-1]==']') {
-	    buf2[strlen(buf2)-1]='\0';
-	    ltrim(buf2);
-	    rtrim(buf2);
-	    bSystem=(strcasecmp(buf2,"system")==0);
-	    bMolecules=(strcasecmp(buf2,"molecules")==0);
-	  }
-	} else if (bSystem && nsol && (buf[0]!=';') ) {
-	  /* if sol present, append "in water" to system name */
-	  rtrim(buf2);
-	  if (buf2[0] && (!strstr(buf2," water")) ) {
-	    sprintf(buf,"%s in water\n",buf2);
-	    bSystem = FALSE;
-	  }
-	} else if (bMolecules) {
-	  /* check if this is a line with solvent molecules */
-	  sscanf(buf,"%s",buf2);
-	  if (strcmp(buf2,"SOL")==0) {
-	    sscanf(buf,"%*s %d",&i);
-	    nsol-=i;
-	    if (nsol<0) {
-	      bSkip=TRUE;
-	      nsol+=i;
-	    }
-	  }
-	}
-	if (bSkip) {
-	  if ((temp=strchr(buf,'\n')) != NULL)
-	    temp[0]='\0';
-	  fprintf(stdout,"Removing line #%d '%s' from topology file (%s)\n",
-		  line,buf,topinout);
-	} else
-	  fprintf(fpout,"%s",buf);
-      }
-      fclose(fpin);
-      if ( nsol ) {
-	fprintf(stdout,"Adding line for %d solute molecules to "
-		"topology file (%s)\n",nsol,topinout);
-	fprintf(fpout,"%-15s %5d\n","SOL",nsol);
-      }
-      fclose(fpout);
-      /* use ffopen to generate backup of topinout */
-      fpout=ffopen(topinout,"w");
-      fclose(fpout);
-      rename(TEMP_FILE_NM,topinout);
-    }
-  }
+	  atoms.nr,atoms.nres);
+  update_top(&atoms,box,NFILE,fnm);
+	  
   thanx(stdout);
   
   return 0;
