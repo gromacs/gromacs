@@ -61,7 +61,10 @@ extern int nframes_read(void);
 
 int write_trx(int fnum,int nind,atom_id *ind,t_atoms *atoms,
 	      int step,real time,matrix box,rvec x[],rvec *v);
-/* write an indexed frame to a TRX file */ 
+/* Write an indexed frame to a TRX file.
+ * v can be NULL. 
+ * atoms can be NULL for file types which don't need atom names.
+ */ 
 
 int close_trx(int fnum);
 /* Close a TRX file */

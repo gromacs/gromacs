@@ -140,15 +140,18 @@ int write_trx(int fnum,int nind,atom_id *ind,t_atoms *atoms,
   case efTRR:  
     fwrite_trn(trx_out[fnum].fnum,frame,time,step,box,nind,xout,vout,NULL);
     break;
+  case efGRO:
   case efPDB:
   case efBRK:
   case efENT:
+    if (atoms == NULL)
+      fatal_error(0,"Can not write a %s file without atom names",
+		  ftp2ext(trx_out[fnum].ftp));
     sprintf(title,"frame t= %.3f",time);
-    write_pdbfile_indexed(trx_out[fnum].fp,title,atoms,x,box,0,TRUE,nind,ind);
-    break;
-  case efGRO:
-    sprintf(title,"frame t= %.3f",time);
-    write_hconf_indexed(trx_out[fnum].fp,title,atoms,nind,ind,x,v,box);
+    if (trx_out[fnum].ftp == efGRO)
+      write_hconf_indexed(trx_out[fnum].fp,title,atoms,nind,ind,x,v,box);
+    else
+      write_pdbfile_indexed(trx_out[fnum].fp,title,atoms,x,box,0,TRUE,nind,ind);
     break;
   case efG87:
     write_gms(trx_out[fnum].fp,nind,xout,box);
