@@ -241,8 +241,9 @@ static void get_conf(FILE *in, char *title, int *natoms,
 bool gro_next_x_or_v(FILE *status,real *t,int natoms,
 		     rvec x[],rvec *v,matrix box)
 {
-  char title[STRLEN],*p;
-  
+  char   title[STRLEN],*p;
+  double tt;
+
   if (eof(status))
     return FALSE;
     
@@ -250,7 +251,9 @@ bool gro_next_x_or_v(FILE *status,real *t,int natoms,
 
   if (p=strstr(title,"t=")) {
     p+=2;
-    if (sscanf(p,"%f",t)!=1)
+    if (sscanf(p,"%lf",&tt)==1)
+      *t=tt;
+    else
       *t=0.0;
   }
   return TRUE;
