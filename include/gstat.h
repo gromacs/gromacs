@@ -35,6 +35,7 @@ static char *SRCID_gstat_h = "$Id$";
 #include "typedefs.h"
 #include "statutil.h"
 #include "mshift.h"
+#include "rmpbc.h"
 
 /***********************************************
  *
@@ -128,15 +129,6 @@ extern void reset_x(int ncm,atom_id ind_cm[],
  * the atoms in ind_rms are reset.
  */
  
- 
-/***********************************************
- *
- *     R E M O V E   P B C
- *
- ***********************************************/
-extern void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[]);
-/* Remove periodic boundary conditions */
-
 /***********************************************
  *
  *     G E N B O X   S T U F F 
