@@ -60,22 +60,10 @@ void head(FILE *out, char *fn)
 #define NH1 asize(head1)
 #define NCR asize(CopyrightText)
 #define NH2 asize(head2)
-  int i,day,year;
-  char *ts,month[STRLEN];
-  time_t now;
+  int i
 
-  printf("%s\n",fn);
-  now=time(NULL);
-  ts=ctime(&now);
-  printf("%s",ts);
-  /* ts = "Fri Sep 13 00:00:00 1986\n\0" */
-  sscanf(ts,"%*s %s %d %*s %d",month,&day,&year);
-  printf("%d\n",day);
-  printf("%s\n",month);
-  printf("%d\n",year);
-  
   fprintf(out,"/*\n");
-  fprintf(out," *       %s %d %s %d\n",fn,day,month,year);
+  fprintf(out," *       $id$\n");
   for(i=0; (i<NH1); i++)
     fprintf(out,"%s\n",head1[i]);
   fprintf(out," *            %s\n",GromacsVersion());
@@ -85,6 +73,7 @@ void head(FILE *out, char *fn)
     fprintf(out,"%s\n",head2[i]);
 
   fprintf(out," * %s\n */\n",bromacs());
+  fprintf(out,"static *char SRCID = \"$Id$\"\n");
 }
 
 void cr(char *fn)
