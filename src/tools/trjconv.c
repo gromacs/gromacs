@@ -713,7 +713,8 @@ int main(int argc,char *argv[])
 		1,&nout,&index,&grpnm);
     } else {
       /* no index file, so read natoms from TRX */
-      read_first_frame(&status,in_file,&fr,TRX_DONT_SKIP);
+      if (!read_first_frame(&status,in_file,&fr,TRX_DONT_SKIP))
+	fatal_error(0,"Could not read a frame from %s",in_file);
       natoms = fr.natoms;
       close_trj(status);
       sfree(fr.x);
@@ -1030,7 +1031,8 @@ int main(int argc,char *argv[])
 		frout.title = title;
 		if (bSeparate || bTDump) {
 		  frout.bTitle = TRUE;
-		  frout.bAtoms = TRUE;
+		  if (bTPS) 
+		    frout.bAtoms = TRUE;
 		  frout.atoms  = &useatoms;
 		  frout.bStep  = FALSE;
 		  frout.bTime  = FALSE;
