@@ -198,6 +198,7 @@ void recip_vars()
 
 void fortran_recip()
 {
+  /* First the nonvectorized version */
   newline();
   comment("fortran recip routine");
   strcat(header,"      function recip(");
@@ -241,15 +242,75 @@ void fortran_recip()
   assign("addr","rshift(and(bval,or(fractmask,explsb)),fractshift)");
   assign("result","or(frecipexptab(iexp+1),frecipfracttab(addr+1))");
 #ifdef DOUBLE
-  assign("y","lu*(two-rsq*lu)");
-  assign("recip","y*(two-rsq*y)");
+  assign("y","lu*(two-x*lu)");
+  assign("recip","y*(two-x*y)");
 #else
-  assign("recip","lu*(two-rsq*lu)");
+  assign("recip","lu*(two-x*lu)");
 #endif
   
   code("return");
   code("end");
-  flush_buffers();  
+  flush_buffers();
+  
+  /* And now the vectorized version */
+  newline();
+  comment("fortran vectorized recip routine");
+  strcat(header,"      subroutine vecrecip(");
+  declare_real_vector("indata");
+  declare_real_vector("utdata");
+  declare_int("n");
+  
+  nargs=ndecl; 
+
+  declare_real4("x");
+  
+  declare_int4("frecipexptab"); 
+  declare_int4("frecipfracttab"); 
+
+  declare_int4("bval");
+  declare_real4("fval");
+  declare_int4("result");
+  declare_real4("lu");
+  declare_int("iexp");
+  declare_int("addr");
+  declare_int("i");  
+  code("equivalence(bval,fval)");
+  code("equivalence(result,lu)");
+  
+#ifdef DOUBLE
+  declare_real("y");
+#endif
+  declare_const_real("two",2.0);
+  declare_const_int("nexp",256);
+  declare_const_int("nfract",4096);
+  declare_const_int("maxfract",8388607);
+  declare_const_int("fractshift",12);
+  declare_const_int("fractmask",8388607);
+  declare_const_int("fractf",1065353216);
+  declare_const_int("expshift",23);
+  declare_const_int("expmask",2139095040);
+  declare_const_int("explsb",8388608);
+  
+  
+  code("common /frecipdata/ frecipexptab(nexp),frecipfracttab(nfract)");
+  
+  start_loop("i","1","n");
+  assign("x","indata(i)");
+  assign("fval","x");
+  assign("iexp","rshift(and(bval,expmask),expshift)");
+
+  assign("addr","rshift(and(bval,or(fractmask,explsb)),fractshift)");
+  assign("result","or(frecipexptab(iexp+1),frecipfracttab(addr+1))");
+#ifdef DOUBLE
+  assign("y","lu*(two-x*lu)");
+  assign("utdata(i)","y*(two-x*y)");
+#else
+  assign("utdata(i)","lu*(two-x*lu)");
+#endif
+  end_loop();
+  
+  code("end");
+  flush_buffers();
 }
 
 

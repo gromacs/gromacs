@@ -11,9 +11,9 @@ void init_block_data(void)
   fprintf(output,"%sinteger*4 I\n",indent());
 
   if(arch.gmx_invsqrt) 
-    fprintf(output,"%scommon /finvsqrtdata/ finvsqrtexptab(256),finvsqrtfracttab(4096)",indent());
+    fprintf(output,"%scommon /finvsqrtdata/ finvsqrtexptab(256),finvsqrtfracttab(4096)\n",indent());
   if(arch.gmx_recip) 
-    fprintf(output,"%scommon /frecipdata/ frecipexptab(256),frecipfracttab(4096)",indent());
+    fprintf(output,"%scommon /frecipdata/ frecipexptab(256),frecipfracttab(4096)\n",indent());
   
   if(arch.gmx_invsqrt)
     fprintf(output,"%sinteger*4 finvsqrtexptab,finvsqrtfracttab\n",indent());
@@ -52,7 +52,7 @@ void file_header(void)
     if(arch.gmx_invsqrt) 
       fortran_invsqrt();
     if(arch.gmx_recip) 
-      fortran_invsqrt();
+      fortran_recip();
     if(arch.gmx_invsqrt || arch.gmx_recip)
       init_block_data();
   } 

@@ -200,6 +200,7 @@ void invsqrt_vars()
 
 void fortran_invsqrt()
 {
+  /* First the nonvectorized version */
   newline();
   comment("fortran invsqrt routine");
   strcat(header,"      function invsqrt(");
@@ -251,6 +252,66 @@ void fortran_invsqrt()
 #endif
   
   code("return");
+  code("end");
+  flush_buffers();
+
+  
+  /* And now the vectorized version */
+  newline();
+  comment("fortran vectorized invsqrt routine");
+  strcat(header,"      subroutine vecinvsqrt(");
+  declare_real_vector("indata");
+  declare_real_vector("utdata");
+  declare_int("n");
+  nargs=ndecl;
+  
+  
+  declare_int4("finvsqrtexptab"); 
+  declare_int4("finvsqrtfracttab"); 
+
+  declare_real4("x");
+  declare_int4("bval");
+  declare_real4("fval");
+  declare_int4("result");
+  declare_real4("lu");
+  declare_int("iexp");
+  declare_int("addr");
+  declare_int("i");
+  
+  code("equivalence(bval,fval)");
+  code("equivalence(result,lu)");
+  
+#ifdef DOUBLE
+  declare_real("y");
+#endif
+  declare_const_real("half",0.5);
+  declare_const_real("three",3.0);
+  declare_const_int("nexp",256);
+  declare_const_int("nfract",4096);
+  declare_const_int("maxfract",8388607);
+  declare_const_int("fractshift",12);
+  declare_const_int("fractmask",8388607);
+  declare_const_int("fractf",1065353216);
+  declare_const_int("expshift",23);
+  declare_const_int("expmask",2139095040);
+  declare_const_int("explsb",8388608);  
+  
+  code("common /finvsqrtdata/ finvsqrtexptab(nexp),finvsqrtfracttab(nfract)");
+
+  start_loop("i","1","n");
+  assign("x","indata(i)");
+  assign("fval","x");
+  assign("iexp","rshift(and(bval,expmask),expshift)");
+
+  assign("addr","rshift(and(bval,or(fractmask,explsb)),fractshift)");
+  assign("result","or(finvsqrtexptab(iexp+1),finvsqrtfracttab(addr+1))");
+#ifdef DOUBLE
+  assign("y","(half*lu*(three-((x*lu)*lu)))");
+  assign("utdata(i)","(half*y*(three-((x*y)*y)))");
+#else
+  assign("utdata(i)","(half*lu*(three-((x*lu)*lu)))");
+#endif
+  end_loop();
   code("end");
   flush_buffers();
 }
