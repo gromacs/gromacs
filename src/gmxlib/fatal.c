@@ -195,7 +195,7 @@ void fatal_error(int fatal_errno,char *fmt,...)
       case 'x':
 	ival=va_arg(ap,int);
 	sprintf(ifmt,"0x%%%dx",fld);
-	sprintf(ibuf,ifmt,ival);
+	sprintf(ibuf,ifmt,(unsigned int)ival);
 	for(index=0; (index<(int)strlen(ibuf)); index++)
 	  bputc(msg,&len,ibuf[index]);
 	break;
