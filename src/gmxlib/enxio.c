@@ -171,8 +171,10 @@ int open_enx(char *fn,char *mode)
     do_eheader(fp,eh,&bDum);
     
     /* Now check whether this file is in single precision */
-    if (((eh->e_size && (eh->nre == nre) && (nre*4*sizeof(float) == eh->e_size)) ||
-	 (eh->d_size && (eh->ndisre*sizeof(float)*2+sizeof(int) == eh->d_size)))){
+    if (((eh->e_size && (eh->nre == nre) && 
+	  (nre*4*sizeof(float) == eh->e_size)) ||
+	 (eh->d_size && 
+	  (eh->ndisre*sizeof(float)*2+sizeof(int) == eh->d_size)))){
       fprintf(stderr,"Opened %s as single precision energy file\n",fn);
       for(i=0; (i<nre); i++)
 	sfree(nm[i]);
@@ -184,8 +186,10 @@ int open_enx(char *fn,char *mode)
       fio_setprecision(fp,TRUE);
       do_enxnms(fp,&nre,&nm);
       do_eheader(fp,eh,&bDum);
-      if (((eh->e_size && (eh->nre == nre) && (nre*4*sizeof(double) == eh->e_size)) ||
-	   (eh->d_size && (eh->ndisre*sizeof(double)*2+sizeof(int) == eh->d_size))))
+      if (((eh->e_size && (eh->nre == nre) && 
+	    (nre*4*sizeof(double) == eh->e_size)) ||
+	   (eh->d_size && 
+	    (eh->ndisre*sizeof(double)*2+sizeof(int) == eh->d_size))))
 	fprintf(stderr,"Opened %s as double precision energy file\n",fn);
       else {
 	if (empty_file(fn))
@@ -247,7 +251,7 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
     framenr++;
   }
   /* Check sanity of this header */
-  if (( eh.step >= 0 ) && ( eh.nre > 0) && (eh.nuser == 0)) {
+  if ((eh.step >= 0) && (eh.nre > 0 || eh.ndisre > 0) && (eh.nuser == 0)) {
     *t     = eh.t;
     *step  = eh.step;
     *nre   = eh.nre;
