@@ -563,7 +563,7 @@ void init_forcerec(FILE *fp,
     for (i=0; (i<cgs->nr); i++) {
       q = 0;
       for(j=cgs->index[i]; (j<cgs->index[i+1]); j++)
-	q+=mdatoms->chargeA[cgs->a[j]];
+	q+=mdatoms->chargeT[cgs->a[j]];
       if (q != 0.0)
 	/* Changed from square to fabs 990314 DvdS 
 	 * Does not make a difference for monovalent ions, but doe for 
@@ -906,19 +906,19 @@ void force(FILE       *fp,     int        step,
   if (EEL_LR(fr->eeltype)) {
     switch (fr->eeltype) {
     case eelPPPM:
-      Vlr = do_pppm(fp,FALSE,x,fr->f_pme,md->chargeA,
+      Vlr = do_pppm(fp,FALSE,x,fr->f_pme,md->chargeT,
 		    box_size,fr->phi,cr,nsb,nrnb);
       break;
     case eelPOISSON:
-      Vlr = do_poisson(fp,FALSE,ir,md->nr,x,fr->f_pme,md->chargeA,
+      Vlr = do_poisson(fp,FALSE,ir,md->nr,x,fr->f_pme,md->chargeT,
 		       box_size,fr->phi,cr,nrnb,&nit,TRUE);
       break;
     case eelPME:
-      Vlr = do_pme(fp,FALSE,ir,x,fr->f_pme,md->chargeA,
+      Vlr = do_pme(fp,FALSE,ir,x,fr->f_pme,md->chargeT,
 		   box,cr,nsb,nrnb,lr_vir,fr->ewaldcoeff,bGatherOnly);
       break;
     case eelEWALD:
-      Vlr = do_ewald(fp,FALSE,ir,x,fr->f_pme,md->chargeA,
+      Vlr = do_ewald(fp,FALSE,ir,x,fr->f_pme,md->chargeT,
 		     box_size,cr,nsb,lr_vir,fr->ewaldcoeff);
       break;
     default:
@@ -928,10 +928,10 @@ void force(FILE       *fp,     int        step,
     }
     if(fr->bEwald)
       Vcorr =
-	ewald_LRcorrection(fp,nsb,cr,fr,md->chargeA,excl,x,box,
+	ewald_LRcorrection(fp,nsb,cr,fr,md->chargeT,excl,x,box,
 			   mu_tot,qsum,ir->epsilon_surface,lr_vir);
     else
-      Vcorr = shift_LRcorrection(fp,nsb,cr,fr,md->chargeA,excl,x,TRUE,box,lr_vir);
+      Vcorr = shift_LRcorrection(fp,nsb,cr,fr,md->chargeT,excl,x,TRUE,box,lr_vir);
     epot[F_LR] = Vlr + Vcorr;
     if (debug)
       fprintf(debug,"Vlr = %g, Vcorr = %g, Vlr_corr = %g\n",
