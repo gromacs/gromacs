@@ -47,7 +47,7 @@
 #define int64_t long long
 #endif
 
-#if (defined WIN32 || defined _WIN32 || defined WIN64  || defined _WIN64 || defined __CYGWIN__ || defined __CYGWIN32__ || defined USE_GMX_XDR)
+#if (defined WIN32 || defined _WIN32 || defined WIN64  || defined _WIN64 || defined __CYGWIN__ || defined __CYGWIN32__ || defined GMX_INTERNAL_XDR)
 #include "gmx_system_xdr.h"
 #else
 #include <rpc/rpc.h>
