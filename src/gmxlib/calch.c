@@ -82,21 +82,19 @@ void calc_h_pos(int nht,int nh[],int na[],rvec x[])
 #define distOM  0.136
 
   rvec sa,sb,sij;
-  int  ai,aj,ak,al;
-  int  h1,h2,h3;
   real s6,rij,ra,rb,xh;
   int  m;
   
   if ((nht < 1) || (nht > 9))
     fatal_error(0,"Invalid argument (%d) for nht in routine genh\n",nht);
   
-  ai  = na[0];
-  aj  = na[1];
-  ak  = na[2];
-  al  = na[3];
-  h1  = nh[0];
-  h2  = nh[1];
-  h3  = nh[2];
+#define AI na[0]
+#define AJ na[1]
+#define AK na[2]
+#define AL na[3]
+#define H1 nh[0]
+#define H2 nh[1]
+#define H3 nh[2]
 
   s6=0.5*sqrt(3.e0);
 
@@ -105,8 +103,8 @@ void calc_h_pos(int nht,int nh[],int na[],rvec x[])
     rij = 0.e0;
     rb  = 0.e0;
     for(m=0; (m<DIM); m++) {
-      sij[m] = x[ai][m]-x[aj][m];
-      sb[m]  = x[ai][m]-x[ak][m];
+      sij[m] = x[AI][m]-x[AJ][m];
+      sb[m]  = x[AI][m]-x[AK][m];
       rij   += sqr(sij[m]);
       rb    += sqr(sb[m]);
     }
@@ -119,7 +117,7 @@ void calc_h_pos(int nht,int nh[],int na[],rvec x[])
     }
     ra = sqrt(ra);
     for(m=0; (m<DIM); m++)
-      x[h1][m] = x[ai][m]+distH*sa[m]/ra;
+      x[H1][m] = x[AI][m]+distH*sa[m]/ra;
 
     return;
   }
@@ -127,9 +125,9 @@ void calc_h_pos(int nht,int nh[],int na[],rvec x[])
   /* construct one, two or three dihedral hydrogens */
   rij = 0.e0;
   for(m=0; (m<DIM); m++) {
-    xh     = x[aj][m];
-    sij[m] = x[ai][m]-xh;
-    sb[m]  = xh-x[ak][m];
+    xh     = x[AJ][m];
+    sij[m] = x[AI][m]-xh;
+    sb[m]  = xh-x[AK][m];
     rij   += sqr(sij[m]);
   }
   
@@ -153,21 +151,21 @@ void calc_h_pos(int nht,int nh[],int na[],rvec x[])
   switch (nht) {
   case 2:
     for(m=0; (m<DIM); m++) {
-      x[h1][m] = x[ai][m]+distH*sin(alfaH)*sb[m]-distH*cos(alfaH)*sij[m];
+      x[H1][m] = x[AI][m]+distH*sin(alfaH)*sb[m]-distH*cos(alfaH)*sij[m];
     }
     break;
   case 3:
     for(m=0; (m<DIM); m++) {
-      x[h1][m] = x[ai][m]-distH*sin(alfaH)*sb[m]-distH*cos(alfaH)*sij[m];
-      x[h2][m] = x[ai][m]+distH*sin(alfaH)*sb[m]-distH*cos(alfaH)*sij[m];
+      x[H1][m] = x[AI][m]-distH*sin(alfaH)*sb[m]-distH*cos(alfaH)*sij[m];
+      x[H2][m] = x[AI][m]+distH*sin(alfaH)*sb[m]-distH*cos(alfaH)*sij[m];
     }
     break;
   case 4:
     for(m=0; (m<DIM); m++) {
-      x[h1][m] = x[ai][m]+distH*sin(alfaH)*sb[m]-distH*cos(alfaH)*sij[m];
-      x[h2][m] = x[ai][m]-distH*sin(alfaH)*0.5*sb[m]+distH*sin(alfaH)*s6*sa[m]-distH*cos(alfaH)*sij[m];
-      if (h3 != -1) 
-	x[h3][m] = x[ai][m]-distH*sin(alfaH)*0.5*sb[m]-distH*sin(alfaH)*s6*sa[m]-distH*cos(alfaH)*sij[m];
+      x[H1][m] = x[AI][m]+distH*sin(alfaH)*sb[m]-distH*cos(alfaH)*sij[m];
+      x[H2][m] = x[AI][m]-distH*sin(alfaH)*0.5*sb[m]+distH*sin(alfaH)*s6*sa[m]-distH*cos(alfaH)*sij[m];
+      if (H3 != -1) 
+	x[H3][m] = x[AI][m]-distH*sin(alfaH)*0.5*sb[m]-distH*sin(alfaH)*s6*sa[m]-distH*cos(alfaH)*sij[m];
     }
     break;
   case 5: {
@@ -175,12 +173,12 @@ void calc_h_pos(int nht,int nh[],int na[],rvec x[])
     rvec dxc;
     
     for(m=0; (m<DIM); m++) {
-      center=(x[aj][m]+x[ak][m]+x[al][m])/3.0;
-      dxc[m]=x[ai][m]-center;
+      center=(x[AJ][m]+x[AK][m]+x[AL][m])/3.0;
+      dxc[m]=x[AI][m]-center;
     }
     center=norm(dxc);
     for(m=0; (m<DIM); m++)
-      x[h1][m]=x[ai][m]+dxc[m]*distH/center;
+      x[H1][m]=x[AI][m]+dxc[m]*distH/center;
     break;
   }
   case 6: {
@@ -188,29 +186,29 @@ void calc_h_pos(int nht,int nh[],int na[],rvec x[])
     real bb,nn;
     
     for(m=0; (m<DIM); m++) 
-      BB[m]=x[ai][m]-0.5*(x[aj][m]+x[ak][m]);
+      BB[m]=x[AI][m]-0.5*(x[AJ][m]+x[AK][m]);
     bb=norm(BB);
 
-    rvec_sub(x[ai],x[aj],CC1);
-    rvec_sub(x[ai],x[ak],CC2);
+    rvec_sub(x[AI],x[AJ],CC1);
+    rvec_sub(x[AI],x[AK],CC2);
     oprod(CC1,CC2,NN);
     nn=norm(NN);
     
     for(m=0; (m<DIM); m++) {
-      x[h1][m]=x[ai][m]+distH*(cos(alfaH/2.0)*BB[m]/bb+
+      x[H1][m]=x[AI][m]+distH*(cos(alfaH/2.0)*BB[m]/bb+
 			       sin(alfaH/2.0)*NN[m]/nn);
-      x[h2][m]=x[ai][m]+distH*(cos(alfaH/2.0)*BB[m]/bb-
+      x[H2][m]=x[AI][m]+distH*(cos(alfaH/2.0)*BB[m]/bb-
 			       sin(alfaH/2.0)*NN[m]/nn);
     }
     break;
   }
   case 7:
-    gen_waterhydrogen(&(x[ai]));
+    gen_waterhydrogen(&(x[AI]));
     break;
   case 8: {
     for(m=0; (m<DIM); m++) {
-      x[h1][m] = x[ai][m]-distOM*sin(alfaCOM)*sb[m]-distOM*cos(alfaCOM)*sij[m];
-      x[h2][m] = x[ai][m]+distOM*sin(alfaCOM)*sb[m]-distOM*cos(alfaCOM)*sij[m];
+      x[H1][m] = x[AI][m]-distOM*sin(alfaCOM)*sb[m]-distOM*cos(alfaCOM)*sij[m];
+      x[H2][m] = x[AI][m]+distOM*sin(alfaCOM)*sb[m]-distOM*cos(alfaCOM)*sij[m];
     }
     break;
   }
@@ -220,16 +218,16 @@ void calc_h_pos(int nht,int nh[],int na[],rvec x[])
 
     /* first add two oxygens */
     for(m=0; (m<DIM); m++) {
-      x[h1][m] = x[ai][m]-distO *sin(alfaCO )*sb[m]-distO *cos(alfaCO )*sij[m];
-      x[h2][m] = x[ai][m]+distOA*sin(alfaCOA)*sb[m]-distOA*cos(alfaCOA)*sij[m];
+      x[H1][m] = x[AI][m]-distO *sin(alfaCO )*sb[m]-distO *cos(alfaCO )*sij[m];
+      x[H2][m] = x[AI][m]+distOA*sin(alfaCOA)*sb[m]-distOA*cos(alfaCOA)*sij[m];
     }
     
     /* now use rule 2 to add hydrogen to 2nd oxygen */
-    na2[0]=nh[1]; /* new i = n' */
-    na2[1]=na[0]; /* new j = i  */
-    na2[2]=na[1]; /* new k = j  */
-    na2[3]=na[2]; /* new l = k, not used */
-    nh2[0]=nh[2]; /* n' is third new atom */
+    na2[0]=H2; /* new i = n' */
+    na2[1]=AI; /* new j = i  */
+    na2[2]=AJ; /* new k = j  */
+    na2[3]=AK; /* new l = k, not used */
+    nh2[0]=H3; /* n' is third new atom */
     calc_h_pos(2,nh2,na2,x);
     
     break;
