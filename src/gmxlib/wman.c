@@ -424,25 +424,50 @@ static void write_htmlman(FILE *out,
   if (nfile > 0) {
     fprintf(out,"<p>\n");
     fprintf(out,"<h3>Files</h3>\n");
-    fprintf(out,"<dl>\n");
+    fprintf(out,
+	    "<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>\n"
+	    "<TR>"
+	    "<TH>option</TH>"
+	    "<TH>filename</TH>"
+	    "<TH>type</TH>"
+	    "<TH>description</TH>"
+	    "</TR>\n");
     for(i=0; (i<nfile); i++)
-      fprintf(out,"<dt>%s <a href=\"%s.html\">%12s</a> <b>%s</b><dd>%s\n",
-	      fnm[i].opt,
-	      ftp2ext(fnm[i].ftp),
-	      fnm[i].fn,fileopt(fnm[i].flag),
+      fprintf(out,
+	      "<TR>"
+	      "<TD ALIGN=RIGHT> <b>%s</b> </TD>"
+	      "<TD> <a href=\"%s.html\">%12s</a> </TD>"
+	      "<TD> %s </TD>"
+	      "<TD> %s </TD>"
+	      "</TR>\n",
+	      fnm[i].opt,ftp2ext(fnm[i].ftp),fnm[i].fn,fileopt(fnm[i].flag),
 	      NSR(ftp2desc(fnm[i].ftp)));
-    fprintf(out,"</dl>\n");
+    fprintf(out,"</TABLE>\n");
     fprintf(out,"Remember that filenames are not fixed, but \n");
     fprintf(out,"file extensions are.\n");
   }
   if (npargs > 0) {
-    fprintf(out,"<p>\n");
+    fprintf(out,"<p><br>\n");
     fprintf(out,"<h3>Other options</h3>\n");
-    fprintf(out,"<dl>\n");
+    fprintf(out,
+	    "<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>\n"
+	    "<TR>"
+	    "<TH>option</TH>"
+	    "<TH>type</TH>"
+	    "<TH>default</TH>"
+	    "<TH>description</TH>"
+	    "</TR>\n");
     for(i=0; (i<npargs); i++)
-      fprintf(out,"<dt><b>%s</b> %s <i>%s</i><dd>%s\n",pa[i].option,
+      fprintf(out,
+	      "<TR>"
+	      "<TD ALIGN=RIGHT> <b>%s%s</b> </TD>"
+	      "<TD> %s </TD>"
+	      "<TD> <i>%s</i> </TD>"
+	      "<TD> %s </TD>"
+	      "</TD>\n",
+	      (pa[i].type == etBOOL)?"-</b>[no]<b>":"-",pa[i].option+1,
 	      argtp[pa[i].type],pa_val(&(pa[i])),NSR(pa[i].desc));
-    fprintf(out,"</dl>\n");
+    fprintf(out,"</TABLE>\n");
   }
   if (nbug > 0) {
     fprintf(out,"<p>\n");
