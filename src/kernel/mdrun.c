@@ -132,7 +132,7 @@ int main(int argc,char *argv[])
   static bool bIonize      = FALSE;
 #endif
 #ifdef PARALLEL
-  static int  nnodess=1;
+  static int  nnodes=1;
 #endif
   static int  nDLB=0,nstepout=10;
   static t_pargs pa[] = {
