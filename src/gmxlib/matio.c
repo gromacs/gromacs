@@ -536,7 +536,7 @@ void write_xpm_axis(FILE *out, char *axis, int n, real *label)
     for(i=0;i<n;i++) {
       if (i % 80 == 0) {
 	if (i) 
-	  fprintf(out,"*/\n",axis);
+	  fprintf(out,"*/\n");
 	fprintf(out,"/* %s-axis:  ",axis);
       }
       fprintf(out,"%g ",label[i]);
