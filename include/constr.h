@@ -28,6 +28,11 @@
  */
 static char *SRCID_constr_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include<config.h>
+#endif
+#include<callf77.h>
+
 extern int bshakef(FILE *log,		/* Log file			*/
 		   int natoms,		/* Total number of atoms	*/
 		   real invmass[],	/* Atomic masses		*/
@@ -125,12 +130,12 @@ extern void F77_FUNC(flincsp,FLINCSP)(real *x,real *f,real *fp,
 				      int *nrec,real *invmass,
 				      real *r, real *rhs1, real *rhs2,
 				      real *sol);
-extern void F77_FUNC(flincsp,FLINCSP)(real *x,real *xp,int *nc,
-				      int *bla1,int *bla2,int *blnr,
-				      int *blbnb,real *bllen,
-				      real *blc,real *blcc,real *blm,
-				      int *nit,int *nrec,real *invmass,
-				      real *r,real *temp1,real *temp2,
-				      real *temp3,real *wangle,
-				      int *warn,real *lambda);
+extern void F77_FUNC(flincs,FLINCS)(real *x,real *xp,int *nc,
+				    int *bla1,int *bla2,int *blnr,
+				    int *blbnb,real *bllen,
+				    real *blc,real *blcc,real *blm,
+				    int *nit,int *nrec,real *invmass,
+				    real *r,real *temp1,real *temp2,
+				    real *temp3,real *wangle,
+				    int *warn,real *lambda);
 #endif 
