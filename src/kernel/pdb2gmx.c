@@ -502,11 +502,15 @@ int main(int argc, char *argv[])
     "These files can subsequently be processed to generate a run input file.",
     "[PAR]",
     "The force fields in the distribution are currently:[PAR]",
-    "G43a1  GROMOS96 43a1 Forcefield (official distribution)[BR]",
+      
     "oplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)[BR]",
     "G43b1  GROMOS96 43b1 Vacuum Forcefield (official distribution)[BR]",
+    "G43a1  GROMOS96 43a1 Forcefield (official distribution)[BR]",
+    "G43a2  GROMOS96 43a2 Forcefield (development) (improved alkane dihedrals)[BR]",
     "gmx    Gromacs Forcefield (a modified GROMOS87, see manual)[BR]",
-    "G43a2  GROMOS96 43a2 Forcefield (development) (improved alkane dihedrals)[PAR]",
+    "encads Encad all-atom force field, using scaled-down vacuum charges[BR]",
+    "encadv Encad all-atom force field, using full solvent charges[PAR]",
+      
     "The corresponding data files can be found in the library directory",
     "with names like ffXXXX.YYY. Check chapter 5 of the manual for more",
     "information about file formats. By default the forcefield selection",
@@ -651,7 +655,7 @@ int main(int argc, char *argv[])
   static real angle=135.0, distance=0.3,posre_fc=1000;
   static real long_bond_dist=0.25, short_bond_dist=0.05;
   static char *dumstr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
-  static char *watstr[] = { NULL, "spc", "spce", "tip3p", "tip4p", "tip5p", NULL };
+  static char *watstr[] = { NULL, "spc", "spce", "tip3p", "tip4p", "tip5p", "f3c", NULL };
   static char *ff = "select";
   t_pargs pa[] = {
     { "-newrtp", FALSE, etBOOL, {&bNewRTP},
@@ -761,6 +765,14 @@ int main(int argc, char *argv[])
 
   /* Amino acid database */  
   aan = get_aa_names();
+
+  /* Encad only works with the f3c water model */
+  if(strncmp(forcefield,"ffencad",7) == 0)
+  {
+      printf("Encad detected, switch to the F3C water model...\n");
+      watstr[0] = "f3c";
+      watres = "WAT";
+  }    
 
   clear_mat(box);
   if (strcmp(watstr[0],"tip4p") == 0)

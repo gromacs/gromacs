@@ -239,7 +239,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
    * means the interaction is zero outside rcoulomb, but it helps to
    * provide accurate energy conservation.
    */
-  if ((ir->coulombtype == eelSHIFT) || (ir->coulombtype == eelSWITCH)) {
+  if ((ir->coulombtype == eelSHIFT) || (ir->coulombtype == eelSWITCH) || (ir->coulombtype == eelENCADSHIFT)) {
     sprintf(err_buf,"With coulombtype = %s rcoulomb_switch must be < rcoulomb",
 	    eel_names[ir->coulombtype]);
     CHECK(ir->rcoulomb_switch >= ir->rcoulomb);
@@ -264,7 +264,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     }
   }
 
-  if ((ir->vdwtype == evdwSWITCH) || (ir->vdwtype == evdwSHIFT)) {
+  if ((ir->vdwtype == evdwSWITCH) || (ir->vdwtype == evdwSHIFT) || (ir->vdwtype == evdwENCADSHIFT)) {
     sprintf(err_buf,"With vdwtype = %s rvdw_switch must be < rvdw",
 	    evdw_names[ir->vdwtype]);
     CHECK(ir->rvdw_switch >= ir->rvdw);
