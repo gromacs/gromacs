@@ -89,7 +89,7 @@ real ta_disres(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
 	       matrix box,real lambda,real *dvdlambda,
 	       t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
 {
-#define MAX_DRPAIRS 100
+#define MAX_DRPAIRS 1000
   static real sixth=1.0/6.0;
   static real seven_three=7.0/3.0;
   
