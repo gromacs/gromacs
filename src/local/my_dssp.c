@@ -205,7 +205,7 @@ int main(int argc,char *argv[])
     { "-dt", FALSE, etREAL, &dt,
       "Time interval between frames." },
     { "-r0", FALSE, etINT,  &r0,
-      "For proteins or peptides which do not start at residue 1 , this option sets the starting residue to be the correct one in the output files" }
+      "Starting residue for output files" }
   };
   int        status;
   FILE       *ss,*acc,*acct;
