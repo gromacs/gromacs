@@ -215,25 +215,25 @@ int main (int argc,char *argv[])
 {
   static char *desc[] = {
     "g_confrms computes the root mean square deviation (RMSD) of two",
-    "structure files after LSQ fitting the structures on top of each other.",
+    "structures after LSQ fitting the second structure on the first one.",
     "The two structures do NOT need to have the same number of atoms,",
-    "only the two index groups used for the fit need to be identical",
+    "only the two index groups used for the fit need to be identical.",
     "[PAR]",
-    "Option -o2 produces a Gromos file with the second structure fitted on",
-    "the first structure,",
-    "[PAR]",
-    "Option -op produces a PDB file with the superimposed structures"
+    "The superimposed structures are written to file. In a [TT].pdb[tt] file",
+    "the two structures will have chain identifiers 'A' and 'B' respectively.",
+    "When the option [TT]-one[tt] is set, only the fitted structure is",
+    "written to file and the chain identifiers are not changed."
   };
-  static bool bRmpbc=FALSE;
+  static bool bSecond=FALSE,bRmpbc=FALSE;
   
   t_pargs pa[] = {
+    { "-one", FALSE, etBOOL, &bSecond, "Only write the fitted structure to file" },
     { "-pbc", FALSE, etBOOL, &bRmpbc, "Remove periodic boundary conditions" }
   };
   t_filenm fnm[] = {
     { efSTX, "-f1",  "conf1", ffREAD  },
     { efSTX, "-f2",  "conf2", ffREAD  },
-    { efGRO, "-o2", "confout2.gro", ffOPTWR },
-    { efPDB, "-op",  "conf.pdb",  ffOPTWR },
+    { efSTO, "-o",    "fit.pdb",  ffWRITE },
     { efNDX, "-n1" ,  "fit1.ndx",   ffOPTRD  },
     { efNDX, "-n2" ,  "fit2.ndx",   ffOPTRD  }
   };
@@ -241,6 +241,7 @@ int main (int argc,char *argv[])
 #define NFILE asize(fnm)
   
   /* the two gromos files */
+  FILE    *fp;
   char    title_1[STRLEN],title_2[STRLEN],*name1,*name2;
   t_atoms atoms_1,atoms_2;
   int     natoms_1,natoms_2; 
@@ -393,25 +394,22 @@ int main (int argc,char *argv[])
   
   
 
-  /* write gromos file of fitted structure */
-  if ( opt2bSet("-o2",NFILE,fnm) )
-    write_conf(opt2fn("-o2",NFILE,fnm),title_2,&atoms_2,x_2,v_2,box_2);
-
-  /* write pdb conf to output file */
-  if ( opt2bSet("-op",NFILE,fnm) ) {
-    t_atoms **temp_at;
-    rvec    **temp_x;
-    snew(temp_at,2);
-    temp_at[0]=&atoms_1;
-    temp_at[1]=&atoms_2;
-    snew(temp_x,2);
-    temp_x[0]=x_1;
-    temp_x[1]=x_2;
-    
-    write_pdb_confs(opt2fn("-op",NFILE,fnm),temp_at,temp_x,2);
-    sfree(temp_at);
-    sfree(temp_x);
+  /* write gromos file of fitted structure(s) */
+  fp=ffopen(opt2fn("-o",NFILE,fnm),"w");
+  if (fn2ftp(opt2fn("-o",NFILE,fnm))==efGRO) {
+    if (!bSecond)
+      write_hconf(fp,title_1,&atoms_1,x_1,v_1,box_1);
+    write_hconf(fp,title_2,&atoms_2,x_2,v_2,box_2);
+  } else {
+    if (bSecond)
+      write_pdbfile(fp,title_1,&atoms_1,x_1,box_1,0,TRUE);
+    else {
+      write_pdbfile(fp,title_1,&atoms_1,x_1,box_1,'A',FALSE);
+      write_pdbfile(fp,title_2,&atoms_2,x_2,box_2,'B',TRUE);
+    }
   }
+  fclose(fp);
+
   thanx(stdout);
   
   return 0;
