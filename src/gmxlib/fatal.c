@@ -164,7 +164,7 @@ void quit_gmx(int fatal_errno,char *msg)
   if (bDebug) {
     (void) fprintf(stderr,"dump core (y/n):"); 
     fflush(stderr);
-    if (toupper(getc(stdin))=='Y') 
+    if (toupper(getc(stdin))!='N') 
       (void) abort(); 
   }
 #endif 
