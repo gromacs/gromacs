@@ -135,7 +135,7 @@ PRO	4
 	1	5	CA	N	C	CB
 	2	6	CB	CG	CA
 	2	6	CG	CD	CB
-	2	6	CD	CG	N
+	2	6	CD	N	CG
 SER	4
 	1	1	N	-C	CA	
 	1	5	CA	N	C	CB
