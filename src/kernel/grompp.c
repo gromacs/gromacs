@@ -270,7 +270,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
   /* TOPOLOGY processing */
   msys->name=do_top(bVerbose,topfile,topppfile,opts,&(sys->symtab),
 		    plist,atype,&nrmols,&molinfo,ir,&Nsim,&Sims);
-
+  
   check_solvent(bVerbose,nrmols,molinfo,Nsim,Sims,ir,opts->SolventOpt);
   
   ntab = 0;
@@ -283,7 +283,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
   }
   if (bMorse)
     convert_harmonics(nrmols,molinfo,atype);
-
+  
   if (opts->eDisre==edrNone) {
     i=rm_disre(nrmols,molinfo);
     if (bVerbose && i)
@@ -294,11 +294,11 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
   
   /* Copy structures from msys to sys */
   mi2top(sys,msys);
-
+  
   /* COORDINATE file processing */
   if (bVerbose) 
     fprintf(stderr,"processing coordinates...\n");
-
+  
   get_stx_coordnum(confin,natoms);
   if (*natoms != sys->atoms.nr) {
     fprintf(stderr,
@@ -312,13 +312,10 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
     snew(*x,*natoms);
     snew(*v,*natoms);
     read_stx_conf(confin,opts->title,confat,*x,*v,box);
-    /* We can not dispose of atoms, as that might fuck up the stack,
-     * at least in gcc/linux it does.
-     *
-     * free_t_atoms(dumat);
-     * sfree(dumat);
-     */
     nmismatch=check_atom_names(topfile, confin, &(sys->atoms), confat);
+    free_t_atoms(confat);
+    sfree(confat);
+    
     if (nmismatch) {
       sprintf(buf,"%d non-matching atom name%s\n",nmismatch,
 	      (nmismatch == 1) ? "" : "s");
@@ -335,14 +332,14 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
       fprintf(stderr,"double-checking input for internal consistency...\n");
     double_check(ir,box,msys,nerror);
   }
-
+  
   if (bGenVel) {
     real *mass;
     
     snew(mass,msys->atoms.nr);
     for(i=0; (i<msys->atoms.nr); i++)
       mass[i]=msys->atoms.atom[i].m;
-
+    
     maxwell_speed(opts->tempi,sys->atoms.nr*DIM,
 		  opts->seed,&(sys->atoms),*v);
     stop_cm(stdout,sys->atoms.nr,mass,*x,*v);
@@ -692,7 +689,10 @@ int main (int argc, char *argv[])
   }
   
   /* set parameters for Dummy construction */
-  set_dummies(bVerbose, &sys->atoms, atype, plist, msys.plist);
+  set_dummies(bVerbose, &sys->atoms, atype, msys.plist);
+  
+  /* now throw away all obsolete bonds, angles and dihedrals: */
+  clean_dum_bad(msys.plist,sys->atoms.nr);
   
   if (bRenum) 
     atype.nr=renum_atype(plist, sys, atype.nr, ir, bVerbose);
