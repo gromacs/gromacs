@@ -545,14 +545,16 @@ void write_man(FILE *out,char *mantp,
 	       int npargs,t_pargs *pa,
 	       int nbug,char **bugs,bool bHidden)
 {
-  char *pr;
+  char    *pr;
   int     i,npar;
   t_pargs *par;
+  bool    bCopy;
   
-  if (bHidden || (strcmp(mantp,"completion")==0) ) {
+  bCopy = !(bHidden || (strcmp(mantp,"completion")==0) );
+  if (!bCopy) {
     npar=npargs;
     par=pa;
-  }    
+  }
   else {
     snew(par,npargs);
     npar=0;
@@ -582,6 +584,6 @@ void write_man(FILE *out,char *mantp,
   if (strcmp(mantp,"completion")==0)
     write_compl(out,nfile,fnm,npar,par);
 
-  if (!bHidden)
+  if (bCopy)
     sfree(par);
 }
