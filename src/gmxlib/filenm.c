@@ -216,26 +216,24 @@ char *ftp2defnm(int ftp)
 void pr_def(FILE *fp,int ftp)
 {
   t_deffile *df;
-  char c;
+  char *s;
   
   df=&(deffile[ftp]);
   switch (df->ftype) {
-  case eftASC: c='A';
+  case eftASC: s="Asc";
     break;
-  case eftBIN: c='B';
+  case eftBIN: s="Bin";
     break;
-  case eftXDR: c='P';
+  case eftXDR: s="XDR";
     break;
-  case eftGEN: c=' ';
+  case eftGEN: s="";
     break;
   default: 
-    c = ' ';
-    fatal_error(0,"Some error, some ints %d %d",ftp,efNR);
-    break;
+    fatal_error(0,"Unimplemented filetype %d %d",ftp,df->ftype);
   }
-  fprintf(fp,"%8s & %5s & %c & %5s & ",
-	  df->defnm,df->ext,c,df->defopt ? df->defopt : "");
-  fprintf(fp,"%s \\\\\n",check_tex(df->descr));
+  fprintf(fp,"\\tt %8s & \\tt %4s & %3s & \\tt %2s & %s \\\\\n",
+	  df->defnm,df->ext,s,df->defopt ? df->defopt : "",
+	  check_tex(df->descr));
 }
 
 void pr_fns(FILE *fp,int nf,t_filenm tfn[])
