@@ -747,7 +747,6 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   if (bExit) {
     if (gmx_parallel_env)
       gmx_abort(gmx_node_id(),gmx_node_num(),0);
-    exit(0);
   }
 }
 

@@ -326,9 +326,15 @@ void gmx_abort(int nodeid,int nnodes,int errorno)
 #ifndef USE_MPI
   gmx_call("gmx_abort");
 #else
-  fprintf(stdlog,"Going to call MPI_Abort from node %d\n",nodeid);
+  if (nnodes > 1)
+    fprintf(stderr,"Halting parallel program %s on CPU %d out of %d\n",
+	    ShortProgram(),nodeid,nnodes);
+  else
+    fprintf(stderr,"Halting program %s\n",ShortProgram());
+  if (stdlog)
+    fclose(stdlog);
+  thanx(stderr);
   MPI_Abort(MPI_COMM_WORLD,errorno);
-  fclose(stdlog);
   exit(1);
 #endif
 }
