@@ -43,6 +43,8 @@ static char *SRCID_editconf_c = "$Id$";
 #include "vec.h"
 #include "typedefs.h"
 #include "gstat.h"
+#include "strdb.h"
+#include "rdgroup.h"
 
 typedef struct {
   char   sanm[12];

@@ -338,8 +338,7 @@ static void pdih2idih(t_param dih[],int *ndih,t_param idih[],int *nidih,
 {
   char      *rname,*a0;
   t_idihres *i0;
-  t_restp   *r0;
-  int       i,j,k,l,start,aa0,nral;
+  int       i,j,k,l,start,aa0;
   int       *index,nind;
   atom_id   ai[MAXATOMLIST];
   bool      *bRM,brm;
@@ -347,11 +346,10 @@ static void pdih2idih(t_param dih[],int *ndih,t_param idih[],int *nidih,
   /* First add all the impropers from the residue database
    * to the list.
    */
-  nral = NRAL(F_IDIHS);
   start=0;
   for(i=0; (i<atoms->nres); i++) {
     rname=*(atoms->resname[i]);
-    if ((r0=search_rtp(rname,nrtp,rtp)) == NULL) 
+    if (search_rtp(rname,nrtp,rtp) == NULL) 
       fatal_error(0,"Residue %s not in residue database\n",rname);
     else if ((i0=search_idih(rname,nrdh,idh)) != NULL) {
       for(j=0; (j<i0->nidih); j++) {

@@ -135,7 +135,7 @@ void c_rdf::add(real cutoff,t_block *excl,matrix box,rvec x[],
   else {
     for(i=0; (i < nx1); i++) {
       ix=index1[i];
-      bExcl=(bool *)calloc(excl->nr,sizeof(bExcl[0]));
+      bExcl=(bool *)calloc(excl->nr,sizeof(*bExcl));
       for(j=excl->index[ix]; (j<excl->index[ix+1]); j++)
 	bExcl[excl->a[j]]=TRUE;
       if (!index2)

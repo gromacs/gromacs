@@ -71,7 +71,7 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype *at,int nshake)
   t_params     *bonds;
   t_param      p,*bond,*ang;
   real         b_ij,b_jk;
-  int          nr,nb,b,i,j;
+  int          nb,b,i,j;
   bool         bFound;
 
   switch (nshake) {
@@ -102,7 +102,6 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype *at,int nshake)
   if ((nshake == eshHANGLES) || (nshake == eshALLANGLES)) {
     /* horrible shortcut */
     pr = &(plist[F_ANGLES]);
-    nr = pr->nr;
     for (i=0; (i < pr->nr); ) {
       ang=&(pr->param[i]);
 #ifdef DEBUG
@@ -165,7 +164,6 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype *at,int nshake)
   if ((nshake == eshHBONDS) || (nshake == eshALLBONDS)) {
     /* horrible shortcut */
     pr = &(plist[F_BONDS]);
-    nr = pr->nr;
     for (i=0; (i < pr->nr); ) {
       if ((nshake == eshALLBONDS) || 
 	  (count_hydrogens (info,2,pr->param[i].a) > 0)) {

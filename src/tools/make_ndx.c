@@ -49,7 +49,6 @@ typedef enum { etOther, etProt, etDNA, erestNR } eRestp;
 static  char *ResTP[erestNR] = { "OTHER", "PROTEIN", "DNA" };
 
 static char **AminoAcids;   
-static int NAA;
 
 static char   *Sugars[]     = { "A", "T", "G", "C", "U" };
 #define  NDNA asize(Sugars)
@@ -781,7 +780,7 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,0,NULL,asize(desc),
 		    desc,0,NULL);
   
-  NAA = get_strings("aminoacids.dat",&AminoAcids);
+  get_strings("aminoacids.dat",&AminoAcids);
 
   block = new_block();
   snew(gnames,1);

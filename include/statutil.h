@@ -94,12 +94,17 @@ extern int read_first_x_v(int *status,char *fn,real *t,rvec **x,rvec **v,matrix 
 /* Same as above, but for coordinates and velocities */
   
 extern  bool read_next_x_v(int status,real *t,int natoms,rvec x[],rvec v[],matrix box);
-  /* Idem */
-  
-extern bool read_next_x_or_v(int status,real *t, int natoms, 
-			     rvec x[],rvec v[],matrix box);
-/* idem */
-  
+/* Idem */
+
+extern  bool read_next_x_or_v(int status,real *t,int natoms,rvec x[],rvec v[],matrix box);
+/* Same as above, but for coordinates *AND/OR* velocities */
+
+extern  bool read_first_x_or_v(int *status,char *fn,real *t,rvec **x,rvec **v,matrix box);
+/* Idem */
+ 
+extern bool next_e(FILE *status, real *t, t_energy e[]);
+/* Read energy terms from trajectory file */
+
 extern t_topology *read_top(char *fn);
 /* Extract a topology data structure from a topology file */
 

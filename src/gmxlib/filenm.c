@@ -40,8 +40,8 @@ static char *SRCID_filenm_c = "$Id$";
 #include "macros.h"
 
 /* Use bitflag ... */
-#define is_set(fn) (fn.flag & ffSET)
-#define is_opt(fn) (fn.flag & ffOPT)
+#define is_set(fn) ((fn.flag & ffSET) != 0)
+#define is_opt(fn) ((fn.flag & ffOPT) != 0)
 #define un_set(fn) (fn.flag = (fn.flag & ~ffSET))
 #define do_set(fn) (fn.flag = (fn.flag |  ffSET))
 

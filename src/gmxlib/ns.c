@@ -383,11 +383,8 @@ static void ns_inner_rect(FILE *log,rvec x[],int icg,int njcg,atom_id jcg[],
   t_ishift shift;
   int      j,nri,nrj;
   atom_id  cg_j;
-  atom_id  *aai,*aaj;
+  atom_id  *aaj;
 
-  nri = cgs->index[icg+1]-cgs->index[icg];
-  aai = &(cgs->a[cgs->index[icg]]);
-  
   for(j=0; (j<njcg); j++) {
     cg_j   = jcg[j];
     nrj    = cgs->index[cg_j+1]-cgs->index[cg_j];
@@ -413,8 +410,7 @@ static int ns_simple_core(FILE *log,t_forcerec *fr,
 {
   static   atom_id  *aaj=NULL;
   int      naaj,k;
-  real     rshort2,rlong2;
-  int      npart;
+  real     rshort2;
   int      nsearch;
   int      icg,jcg;
   int      i0,nri;
@@ -432,8 +428,6 @@ static int ns_simple_core(FILE *log,t_forcerec *fr,
     }
   }
   rshort2 = sqr(fr->rshort);
-  rlong2  = sqr(fr->rlong);
-  npart   = cgs->nra;
 
   for(m=0; (m<DIM); m++)
     b_inv[m]=divide(1.0,box_size[m]);
@@ -707,21 +701,21 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   rvec     box_size;
   int      m,ncg_2,ngener;
   int      nsearch;
-  real     rlong2;
   bool     bGrid;
   char     *ptr;
   
   /* Set some local variables */
   bGrid=fr->bGrid;
   ngener=top->atoms.grps[egcENER].nr;
+  /*
   ncg_2=min(cgs->nr,2+cgs->nr/2);
+  */
   for(m=0; (m<DIM); m++)
     box_size[m]=box[m][m];
-  rlong2=fr->rlong*fr->rlong;
 
   /* First time initiation of arrays etc. */  
   if (bFirst) {
-    int icg,nr_in_cg,maxcg,natom;
+    int icg,nr_in_cg,maxcg;
     
     /* Test whether we have Buckingham or Lennard-Jones... */
     bBHAM=(top->idef.functype[0] == F_BHAM);
@@ -752,12 +746,6 @@ int search_neighbours(FILE *log,t_forcerec *fr,
 	      __FILE__,NLI_INC,NLJ_INC);
     }
         
-    if (cr->nprocs < 3)
-      natom=cgs->nra;
-    else {
-      natom=(3*cgs->nra)/cr->nprocs;
-    }
-
     if (bGrid) {
       snew(grid,1);
       init_grid(log,grid,fr->ndelta,box,fr->rlong,cgs->nr);

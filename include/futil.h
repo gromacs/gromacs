@@ -70,6 +70,8 @@ extern void frewind(FILE *fp);
 
 #define rewind frewind
 
+bool is_pipe(FILE *fp);
+
 extern FILE *uncompress(char *fn);
 extern FILE *gunzip(char *fn);
 /* Open a pipe to uncompress or unzip files. Must be closed with pclose */

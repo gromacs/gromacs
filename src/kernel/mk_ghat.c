@@ -30,6 +30,7 @@ static char *SRCID_mk_ghat_c = "$Id$";
 
 #include <math.h>
 #include <stdio.h>
+#include "copyrite.h"
 #include "macros.h"
 #include "smalloc.h"
 #include "typedefs.h"
@@ -210,8 +211,8 @@ real  ursum(int term,int porder,real acut,real r1,
     c     eps = 10^-10, -ln(eps) = 23
     c     eps = 10^-20, -ln(eps) = 46
     c
-    */
-  kcutsq = 4.0*acut*115;
+    c     kcutsq = 4.0*acut*115;
+  */
 
   if (nalias==0) {
     if (term==1) kt = k1;

@@ -43,8 +43,12 @@ extern int searchcmap(int n,t_mapping map[],char c);
  * return -1 if not found
  */
 
+int getcmap(FILE *in,char *fn,t_mapping **map);
+/* Read the mapping table from in, return number of entries */
+
 extern int readcmap(char *fn,t_mapping **map);
 /* Read the mapping table from fn, return number of entries */
+
 extern void read2cmap(char *fn,
 		      t_mapping **map1,int *n1,t_mapping **map2,int *n2);
 /* Read 2 mapping tables from fn */

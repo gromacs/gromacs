@@ -83,7 +83,12 @@ extern void write_hconf_p(FILE *out,char *title,t_atoms *atoms, int pr,
 extern void write_hconf_indexed(FILE *out,char *title,t_atoms *atoms,
 				int nx,atom_id index[],
 				rvec *x,rvec *v,matrix box);
-  
+
+extern void write_hconf_p(FILE *out,char *title,t_atoms *atoms, int pr,
+			  rvec *x,rvec *v,matrix box); 
+/* Write a Gromos file with precision pr: number of decimal places in x,
+ * v has one place more. */ 
+
 extern void write_conf(char *outfile,char *title,t_atoms *atoms,
 		       rvec *x,rvec *v,matrix box);
 /* For three write_conf routines, if v == NULL, it is not written */

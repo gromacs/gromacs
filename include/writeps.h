@@ -60,6 +60,8 @@ extern void ps_color(FILE *ps,real r,real g,real b);
 
 extern void ps_rgb(FILE *ps,t_rgb *rgb);
 
+extern void ps_rgb_box(FILE *ps,t_rgb *rgb);
+
 extern void ps_lineto(FILE *ps,real x,real y);
 
 extern void ps_linerel(FILE *ps,real dx,real dy);

@@ -41,6 +41,9 @@ static char *SRCID_nrama_c = "$Id$";
 #include "fatal.h"
 #include "gstat.h"
 
+static char *pp_pat[] = { "C", "N", "CA", "C", "N" };
+#define NPP (sizeof(pp_pat)/sizeof(pp_pat[0]))
+
 static int d_comp(const void *a,const void *b)
 {
   t_dih *da,*db;
@@ -119,8 +122,6 @@ static void add_xr(t_xrama *xr,int ff[5],t_atoms *atoms)
 
 static void get_dih(t_xrama *xr,t_atoms *atoms)
 {
-  static char *pp_pat[] = { "C", "N", "CA", "C", "N" };
-#define NPP (sizeof(pp_pat)/sizeof(pp_pat[0]))
   int found,ff[NPP];
   int i,j;
 
@@ -138,9 +139,6 @@ static void get_dih(t_xrama *xr,t_atoms *atoms)
   }
   fprintf(stderr,"Found %d phi-psi combinations\n",xr->npp);
 }
-
-static char *pp_pat[] = { "C", "N", "CA", "C", "N" };
-#define NPP (sizeof(pp_pat)/sizeof(pp_pat[0]))
 
 static int search_ff(int thisff[NPP],int ndih,int **ff)
 {

@@ -17,8 +17,8 @@ BENCH	=	tests/bench
 TESTS	=	tests/mdrun
 GETIT	=	$(SDIRS)  src/makef
 TDIR	=	$(GMXHOME)
-TARCMD  =	tar cvf #/usr/local/freeware/bin/tar cvf 
-TARFLG  =	#--exclude=CVS
+TARCMD  =	/usr/local/bin/tar cvf 
+TARFLG  =	--exclude=CVS
 COPYRGT	=	$(GMXHOME)/src/local/copyrgt
 PROGRAMS=	(cd bin/s10; ls; cd ../..)
 

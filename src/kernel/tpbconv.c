@@ -45,6 +45,8 @@ static char *SRCID_tpbconv_c = "$Id$";
 #include "futil.h"
 #include "assert.h"
 #include "vec.h"
+#include "rdgroup.h"
+
 
 static bool *bKeepIt(int gnx,int natoms,atom_id index[])
 {

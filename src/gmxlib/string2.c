@@ -32,7 +32,7 @@ static char *SRCID_string2_c = "$Id$";
 #include <ctype.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#ifndef _860_
+#ifndef NO_PWUID
 #include <pwd.h>
 #endif
 #include <time.h>

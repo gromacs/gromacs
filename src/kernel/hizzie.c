@@ -169,7 +169,7 @@ void set_histp(int natom,t_pdbatom pdba[],real angle,real dist)
   
   bool *donor,*acceptor;
   bool *hbond,bHaveH=FALSE;
-  bool bHDa,bHDd,bHEa,bHEd;
+  bool bHDd,bHEd;
   rvec xh1,xh2;
   int  i,j,nd,na,aj,hisnr,his0,type;
   int  nd1,ne2,cg,cd2,ce1;
@@ -228,9 +228,9 @@ void set_histp(int natom,t_pdbatom pdba[],real angle,real dist)
 	  calc_ringh(ne2,ce1,cd2,pdba,xh2);
 	  
 	  bHDd = chk_hbonds(nd1,natom,pdba,acceptor,hbond,xh1,angle,dist);
-	  bHDa = chk_hbonds(nd1,natom,pdba,donor,hbond,xh1,angle,dist);
+	  chk_hbonds(nd1,natom,pdba,donor,hbond,xh1,angle,dist);
 	  bHEd = chk_hbonds(ne2,natom,pdba,acceptor,hbond,xh2,angle,dist);
-	  bHEa = chk_hbonds(ne2,natom,pdba,donor,hbond,xh2,angle,dist);
+	  chk_hbonds(ne2,natom,pdba,donor,hbond,xh2,angle,dist);
 	  
 	  if (bHDd) {
 	    if (bHEd)

@@ -342,7 +342,7 @@ static void do_update_lang(int start,int homenr,double dt,
   const unsigned long im = 0xffff;
   const unsigned long ia = 1093;
   const unsigned long ic = 18257;
-  real   vn,vv,rim;
+  real   vn,vv;
   real   rfac,invfr,rhalf,jr;
   int    n,d;
   ulong  jran;
@@ -352,24 +352,23 @@ static void do_update_lang(int start,int homenr,double dt,
   
   rfac  = sqrt(3.0 * 2.0*BOLTZ*temp/(fr*dt));
   rhalf = 2.0*rfac; 
-  rim   = (real)im;
-  rfac  = rfac/rim;
+  rfac  = rfac/(real)im;
   invfr = 1.0/fr;
   
-  jran = (ulong)(rim*rando(seed));
+  jran = (unsigned long)((real)im*rando(seed));
 
   for (n=start; (n<start+homenr); n++) {  
     for (d=0; (d<DIM); d++) {
       vn             = v[n][d];
       vold[n][d]     = vn;
       jran = (jran*ia+ic) & im;
-      jr   = (real)jran;
+      jr = (real)jran;
       jran = (jran*ia+ic) & im;
-      jr  += (real)jran;
+      jr += (real)jran;
       jran = (jran*ia+ic) & im;
-      jr  += (real)jran;
+      jr += (real)jran;
       jran = (jran*ia+ic) & im;
-      jr  += (real)jran;
+      jr += (real)jran;
       vv             = invfr*f[n][d] + rfac * jr - rhalf;
       v[n][d]        = vv;
       xprime[n][d]   = x[n][d]+v[n][d]*dt;
@@ -867,12 +866,11 @@ void update(int          natoms, 	/* number of atoms in simulation */
   static t_edpar   edpar;
 
   t_idef           *idef=&(top->idef);
-  rvec             box_size;
   double           dt;
   real             dt_1,dt_2;
   real             L1=1.0-lambda;
   int              i,d,n,m,g;
-  int              ncons=0,nc,nupdate=0;
+  int              ncons=0,nc;
   int              ret;
   int              warn,p_imax;
   real             wang,p_max,p_rms;
@@ -933,8 +931,6 @@ void update(int          natoms, 	/* number of atoms in simulation */
     /* done with initializing */
     bFirst=FALSE;
   }
-  for(m=0; (m<DIM); m++)
-    box_size[m]=box[m][m];
   
   dt   = ir->delta_t;
   dt_1 = 1.0/dt;
@@ -1006,7 +1002,6 @@ void update(int          natoms, 	/* number of atoms in simulation */
  
   if ((nblocks > 0) || (nsettle > 0)) {
     /* Copy Unconstrained X to temp array */
-    nupdate=0;
     for(n=start; (n<start+homenr); n++)
       copy_rvec(xprime[n],x_unc[n-start]);
 
@@ -1135,7 +1130,6 @@ void update(int          natoms, 	/* number of atoms in simulation */
     if (bDoUpdate) {
       real mdt_2;
       
-      nupdate=0;
       for(n=start; (n<start+homenr); n++) {
 	mdt_2 = dt_2*md->massT[n];
 	do_both(x[n],x_unc[n-start],xprime[n],delta_f[n],

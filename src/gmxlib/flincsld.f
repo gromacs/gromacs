@@ -10,7 +10,7 @@
       integer*4 cmax,warn
 
       integer*4 b,i,j,k,n,b3,b4,i3,j3,rec,nr,n1,n2,nc4 
-      real    tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,wfac                      
+      real    tmp0,tmp1,tmp2,mvb,rlen,len,wfac                      
       real    u0,u1,u2,v0,v1,v2
 
       warn=0

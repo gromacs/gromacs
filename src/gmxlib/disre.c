@@ -92,7 +92,7 @@ real ta_disres(FILE *log,int nbonds,t_iatom forceatoms[],t_iparams ip[],
   rvec        *fshift;
   real        rt,rN,rav,rav_3,rt_11,rt_3,rav_6,rt_6,rt222,k_1;
   real        k0,f_scal,fmax_scal,fk_scal,fij,viol,viol2,violtot;
-  real        rx0,rx1,rx2,rx3;
+  real        rx0,rx1;
   
   fshift  = fr->fshift; 
   violtot = 0;
@@ -139,8 +139,6 @@ real ta_disres(FILE *log,int nbonds,t_iatom forceatoms[],t_iparams ip[],
     /* Take action depending on type, calculate scalar force */
     rx0       = ip[type].disres.rx0;
     rx1       = ip[type].disres.rx1;
-    rx2       = ip[type].disres.rx2;
-    rx3       = ip[type].disres.rx3;
     
     k0        = dr_fc;
     fmax_scal = -k0*(rx1-rx0); 

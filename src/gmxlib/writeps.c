@@ -93,6 +93,7 @@ static int search_col(FILE *ps,real r,real g,real b)
   }
   if (nrgb < MAXRGB) {
     ps_defcolor(ps,r,g,b,i2a(nrgb));
+    fprintf(ps,"/B%d {%s b} bind def\n",nrgb,i2a(nrgb));
     rgb[i].r=r;
     rgb[i].g=g;
     rgb[i].b=b;
@@ -116,6 +117,11 @@ void ps_color(FILE *ps,real r,real g,real b)
 void ps_rgb(FILE *ps,t_rgb *rgb)
 {
   ps_color(ps,rgb->r,rgb->g,rgb->b);
+}
+
+void ps_rgb_box(FILE *ps,t_rgb *rgb)
+{
+  fprintf(ps,"B%d\n",search_col(ps,rgb->r,rgb->g,rgb->b));
 }
 
 void ps_lineto(FILE *ps,real x,real y)

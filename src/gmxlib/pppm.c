@@ -45,6 +45,7 @@ static char *SRCID_pppm_c = "$Id$";
 #include "pppm.h"
 #include "lrutil.h"
 #include "mdrun.h"
+#include "nr.h"
 
 #ifdef USEF77
 DECLAREF77(doconv) (int *n,real grid[],real gk[]);
@@ -57,7 +58,7 @@ DECLAREF77(doconv) (int *n,real grid[],real gk[]);
 #define llim2 (-3)
 #define ulim2  (3)
 
-void rlft3f_()
+void rlft3f_(real *a,real *b,int *c,int *d,int *e,int *f)
 {
   fprintf(stderr,"Just called rlft3f_!\n");
   exit(1);

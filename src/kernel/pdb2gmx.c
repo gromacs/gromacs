@@ -28,7 +28,6 @@
  */
 static char *SRCID_pdb2gmx_c = "$Id$";
 
-#include <pwd.h>
 #include <time.h>
 #include <ctype.h>
 #include "assert.h"

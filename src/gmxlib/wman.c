@@ -40,6 +40,7 @@ static char *SRCID_wman_c = "$Id$";
 #include "strdb.h"
 #include "time.h"
 #include "readinp.h"
+#include "javaio.h"
 
 static char *argtp[etNR] = { "int", "real", "string", "bool" };
 

@@ -442,8 +442,10 @@ void do_edfit(int natoms,rvec *xp,rvec *x,matrix R)
   /* this is a copy of do_fit with some modifications */
   int    c,r,n,j,i,irot;
   double omega[7][7],om[7][7],d[7],xnr,xpc;
-  matrix vh,vk,vh_d,vk_d,u;
-  real   du,sigd;
+  matrix vh,vk,u;
+  /*
+  matrix vh_d,vk_d;
+  */
   int    index;
   real   max_d;
 
@@ -467,16 +469,6 @@ void do_edfit(int natoms,rvec *xp,rvec *x,matrix R)
     }
   }
   
-  /*calculate its determinant*/
-  du=det(u);
-    
-  if (fabs(du)<EPS) {
-    fprintf(stderr,"\n");
-    pr_rvecs(stderr,0,"U",u,DIM);
-    fatal_error(0,"Determinant of U = 0\n");
-  }  
-  sigd=du/fabs(du);
-
   /*construct omega*/
   /*omega is symmetric -> omega==omega' */
   for(r=0;(r<6);r++)
@@ -497,12 +489,6 @@ void do_edfit(int natoms,rvec *xp,rvec *x,matrix R)
     fprintf(stderr,"IROT=0\n");
   }
 
-  for(c=0;(c<3);c++)
-    for(r=0;(r<3);r++) {
-      vh_d[r][c]=om[c+4][r+1];
-      vk_d[r][c]=om[c+4][r+4];
-    }
-
   index=0; /* For the compiler only */
 
   for(j=0;(j<3);j++) {
@@ -516,8 +502,6 @@ void do_edfit(int natoms,rvec *xp,rvec *x,matrix R)
     for(i=0;(i<3);i++) {
       vh[j][i]=M_SQRT2*om[i+1][index+1];
       vk[j][i]=M_SQRT2*om[i+4][index+1];
-      vh_d[j][i]=om[i+1][index+1];
-      vk_d[j][i]=om[i+4][index+1];
     }
   }
 
@@ -525,8 +509,14 @@ void do_edfit(int natoms,rvec *xp,rvec *x,matrix R)
   for(c=0;(c<3);c++)
     for(r=0;(r<3);r++)
       R[c][r]=vk[0][r]*vh[0][c]+
-              vk[1][r]*vh[1][c]+sigd*
+              vk[1][r]*vh[1][c]+
               vk[2][r]*vh[2][c];
+  if (det(R) < 0)
+    for(c=0;(c<3);c++)
+      for(r=0;(r<3);r++)
+	R[c][r]=vk[0][r]*vh[0][c]+
+	        vk[1][r]*vh[1][c]-
+	        vk[2][r]*vh[2][c];
 }
 
 void put_in_origin(int nr,rvec *x,int nmass,int *masnrs,real *mass,real tmass)

@@ -31,8 +31,8 @@ static char *SRCID_vcm_c = "$Id$";
 #include "macros.h"
 #include "vcm.h"
 #include "vec.h"
-#include "do_fit.h"
 #include "smalloc.h"
+#include "do_fit.h"
  
 void calc_vcm(FILE *log,int homenr,int start,real mass[],rvec v[],rvec vcm)
 {

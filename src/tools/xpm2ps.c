@@ -154,7 +154,7 @@ bool diff_maps(int nmap1,t_mapping *map1,int nmap2,t_mapping *map2)
 void leg_discrete(FILE *ps,int x0,int y0,char *label,
 		  real fontsize,char *font,int nmap,t_mapping map[])
 {
-  int   i,yy,yhh;
+  int   i,yhh;
   real  boxhh;
   
   boxhh=fontsize+DDD;
@@ -164,7 +164,6 @@ void leg_discrete(FILE *ps,int x0,int y0,char *label,
   yhh=y0+fontsize+3*DDD;
   if ((int)strlen(label) > 0)
     ps_ctext(ps,x0,yhh,label,eXLeft);
-  yy=y0;
   ps_moveto(ps,x0,y0);
   for(i=0; (i<nmap); i++) {
     ps_setorigin(ps);
@@ -521,7 +520,11 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
 		2*psr->titfontsize);
   else
   */
-    out=ps_open(outf,0,0,W+psr->xoffs+5*DDD,H+psr->yoffs+4*DDD);
+  out=ps_open(outf,0,0,W+psr->xoffs+5*DDD,H+psr->yoffs+4*DDD);
+  fprintf(out,"/b {currentpoint %g %g r %g %g r %g %g r %g %g r f %g add moveto} bind def\n",
+	  0,psr->yboxsize,psr->xboxsize,0,0,-psr->yboxsize,-psr->xboxsize,0,
+	  psr->yboxsize);
+	  
   ps_translate(out,psr->xoffs,psr->yoffs);
     
 
@@ -556,19 +559,17 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
     ps_comment(out,buf);
     for(x=0; (x<mat[i].nx); x++) {
       xx=x0+x*psr->xboxsize;
-      for(y=0; (y<mat[i].ny); y++) {
-	if (x<=y) { /* upper left  -> map1 */
-	  col=searchcmap(nmap1,map1,mat[i].matrix[x][y]);
-	  ps_rgb(out,&(map1[col].rgb));
-	} else  {   /* lower right -> map2 */
-	  col=searchcmap(nmap2,map2,mat[i].matrix[x][y]);
-	  ps_rgb(out,&(map2[col].rgb));
+      ps_moveto(out,xx,y0);
+      for(y=0; (y<mat[i].ny); y++)
+	if ((bDiag) || (x!=y)) {
+	  if (x<=y) { /* upper left  -> map1 */
+	    col=searchcmap(nmap1,map1,mat[i].matrix[x][y]);
+	    ps_rgb_box(out,&(map1[col].rgb));
+	  } else  {   /* lower right -> map2 */
+	    col=searchcmap(nmap2,map2,mat[i].matrix[x][y]);
+	    ps_rgb_box(out,&(map2[col].rgb));
+	  }
 	}
-	if ((bDiag) || (x!=y)) { /* no diagonal */
-	  ps_fillbox(out,xx,y0+(y*psr->yboxsize),xx+psr->xboxsize,
-		     y0+(y+1)*psr->yboxsize);
-	}
-      }
     }
     y0+=box_height(&(mat[i]),psr)+box_dh(psr)+box_dh_top(psr);
   }
@@ -634,9 +635,6 @@ int main(int argc,char *argv[])
     "half of the second one ([BB]-f2[bb]). The diagonal will contain",
     "values from the first matrix file ([BB]-f[bb]).[PAR]"
   };
-  static char *bugs[] = {
-    "Output files can be huge"
-  };
 
   char      *fn,*epsfile=NULL,*xpmfile=NULL;
   int       i,nmat,nmat2;
@@ -665,7 +663,7 @@ int main(int argc,char *argv[])
   CopyRight(stdout,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW,FALSE,
 		    NFILE,fnm,asize(pa),pa,
-		    asize(desc),desc,asize(bugs),bugs);
+		    asize(desc),desc,0,NULL);
 
   if (ftp2bSet(efEPS,NFILE,fnm))
     epsfile=ftp2fn(efEPS,NFILE,fnm);

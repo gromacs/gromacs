@@ -234,7 +234,7 @@ short *sp;
 void
 FUNCTION(xdrfuchar) ARGS(`xdrid, ucp, ret')
 int *xdrid, *ret;
-char *ucp;
+unsigned char *ucp;
 {
 	*ret = xdr_u_char(xdridptr[*xdrid], ucp);
 	cnt += sizeof(char);

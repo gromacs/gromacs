@@ -143,7 +143,7 @@ int main (int argc,char *argv[])
   t_iatom     *iatom;
 
   matrix       box;
-  rvec         *x,*xp,*v,**mat_x,**mat_x2,*mat_x2_j,**mat_b,**mat_b2,vec;
+  rvec         *x,*xp,**mat_x,**mat_x2,*mat_x2_j,**mat_b,**mat_b2,vec;
   int          status;
   char         buf[256],buf2[256],tstr[12];
   
@@ -214,7 +214,6 @@ int main (int argc,char *argv[])
   snew(xp,header.natoms);
   snew(w_rls,header.natoms);
   snew(w_rms,header.natoms);
-  snew(v,header.natoms);
 
   read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,box,
 	   &natom,xp,NULL,NULL,&top);
@@ -594,12 +593,12 @@ int main (int argc,char *argv[])
 		  tstr,"RMSD (nm)",
 		  delta_xsize,del_lev+1,del_xaxis,del_yaxis,
 		  delta,0.0,delta_max,rlo,rhi,&nlevels);
-	if (opt2bSet("-bin",NFILE,fnm)) {
-	  fp=ftp2FILE(efDAT,NFILE,fnm,"w");
-	  for(i=0;i<tel_mat;i++) 
-	    fwrite(rmsd_mat[i],sizeof(**rmsd_mat),tel_mat,fp);
-	  fclose(fp);
-	}
+      }
+      if (opt2bSet("-bin",NFILE,fnm)) {
+	fp=ftp2FILE(efDAT,NFILE,fnm,"w");
+	for(i=0;i<tel_mat;i++) 
+	  fwrite(rmsd_mat[i],sizeof(**rmsd_mat),tel_mat,fp);
+	fclose(fp);
       }
     }
     if (bBond) {

@@ -33,6 +33,7 @@ static char *SRCID_levenmar_c = "$Id$";
 #include <stdio.h>
 #include <stdlib.h>
 
+
 #ifdef DOUBLE
 typedef double real;
 #else
@@ -41,8 +42,6 @@ typedef float real;
 
 void nrerror(char error_text[])
 {
-  void exit();
-  
   fprintf(stderr,"Numerical Recipes run-time error...\n");
   fprintf(stderr,"%s\n",error_text);
   fprintf(stderr,"...now exiting to system...\n");
@@ -51,8 +50,7 @@ void nrerror(char error_text[])
 
 
 
-real *vector(nl,nh)
-int nl,nh;
+real *vector(int nl,int nh)
 {
   real *v;
   
@@ -61,8 +59,7 @@ int nl,nh;
   return v-nl;
 }
 
-int *ivector(nl,nh)
-     int nl,nh;
+int *ivector(int nl, int nh)
 {
   int *v;
   
@@ -71,8 +68,7 @@ int *ivector(nl,nh)
   return v-nl;
 }
 
-double *dvector(nl,nh)
-     int nl,nh;
+double *dvector(int nl, int nh)
 {
   double *v;
 	
@@ -83,8 +79,7 @@ double *dvector(nl,nh)
 
 
 
-real **matrix(nrl,nrh,ncl,nch)
-int nrl,nrh,ncl,nch;
+real **matrix(int nrl, int nrh, int ncl, int nch)
 {
 	int i;
 	real **m;
@@ -101,8 +96,7 @@ int nrl,nrh,ncl,nch;
 	return m;
 }
 
-double **dmatrix(nrl,nrh,ncl,nch)
-int nrl,nrh,ncl,nch;
+double **dmatrix(int nrl, int nrh, int ncl, int nch)
 {
 	int i;
 	double **m;
@@ -119,8 +113,7 @@ int nrl,nrh,ncl,nch;
 	return m;
 }
 
-int **imatrix(nrl,nrh,ncl,nch)
-int nrl,nrh,ncl,nch;
+int **imatrix(int nrl, int nrh, int ncl, int nch)
 {
 	int i,**m;
 
@@ -138,9 +131,8 @@ int nrl,nrh,ncl,nch;
 
 
 
-real **submatrix(a,oldrl,oldrh,oldcl,oldch,newrl,newcl)
-real **a;
-int oldrl,oldrh,oldcl,oldch,newrl,newcl;
+real **submatrix(real **a, int oldrl, int oldrh, int oldcl, int oldch,
+		 int newrl, int newcl)
 {
 	int i,j;
 	real **m;
@@ -156,31 +148,24 @@ int oldrl,oldrh,oldcl,oldch,newrl,newcl;
 
 
 
-void free_vector(v,nl,nh)
-real *v;
-int nl,nh;
+void free_vector(real *v, int nl, int nh)
 {
 	free((char*) (v+nl));
 }
 
-void free_ivector(v,nl,nh)
-int *v,nl,nh;
+void free_ivector(int *v, int nl, int nh)
 {
 	free((char*) (v+nl));
 }
 
-void free_dvector(v,nl,nh)
-double *v;
-int nl,nh;
+void free_dvector(int *v, int nl, int nh)
 {
 	free((char*) (v+nl));
 }
 
 
 
-void free_matrix(m,nrl,nrh,ncl,nch)
-real **m;
-int nrl,nrh,ncl,nch;
+void free_matrix(real **m, int nrl, int nrh, int ncl, int nch)
 {
 	int i;
 
@@ -188,9 +173,7 @@ int nrl,nrh,ncl,nch;
 	free((char*) (m+nrl));
 }
 
-void free_dmatrix(m,nrl,nrh,ncl,nch)
-double **m;
-int nrl,nrh,ncl,nch;
+void free_dmatrix(double **m, int nrl, int nrh, int ncl, int nch)
 {
 	int i;
 
@@ -198,9 +181,7 @@ int nrl,nrh,ncl,nch;
 	free((char*) (m+nrl));
 }
 
-void free_imatrix(m,nrl,nrh,ncl,nch)
-int **m;
-int nrl,nrh,ncl,nch;
+void free_imatrix(int **m, int nrl, int nrh, int ncl, int nch)
 {
 	int i;
 
@@ -210,18 +191,14 @@ int nrl,nrh,ncl,nch;
 
 
 
-void free_submatrix(b,nrl,nrh,ncl,nch)
-real **b;
-int nrl,nrh,ncl,nch;
+void free_submatrix(real **b, int nrl, int nrh, int ncl, int nch)
 {
 	free((char*) (b+nrl));
 }
 
 
 
-real **convert_matrix(a,nrl,nrh,ncl,nch)
-real *a;
-int nrl,nrh,ncl,nch;
+real **convert_matrix(real *a, int nrl, int nrh, int ncl, int nch)
 {
 	int i,j,nrow,ncol;
 	real **m;
@@ -237,23 +214,18 @@ int nrl,nrh,ncl,nch;
 
 
 
-void free_convert_matrix(b,nrl,nrh,ncl,nch)
-real **b;
-int nrl,nrh,ncl,nch;
+void free_convert_matrix(real **b, int nrl, int nrh, int ncl, int nch)
 {
 	free((char*) (b+nrl));
 }
 
 #define SWAP(a,b) {real temp=(a);(a)=(b);(b)=temp;}
 
-void gaussj(a,n,b,m)
-     real **a,**b;
-     int n,m;
+void gaussj(real **a, int n, real **b, int m)
 {
   int *indxc,*indxr,*ipiv;
-  int i,icol,irow,j,k,l,ll,*ivector();
+  int i,icol,irow,j,k,l,ll;
   real big,dum,pivinv;
-  void nrerror(),free_ivector();
   
   indxc=ivector(1,n);
   indxr=ivector(1,n);
@@ -305,9 +277,7 @@ void gaussj(a,n,b,m)
 #undef SWAP
 
 
-void covsrt(covar,ma,lista,mfit)
-     real **covar;
-     int ma,lista[],mfit;
+void covsrt(real **covar, int ma, int lista[], int mfit)
 {
   int i,j;
   real swap;
@@ -355,13 +325,13 @@ void covsrt_new(real **covar,int ma, int ia[], int mfit)
 }
 #undef SWAP
 	
-void mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,funcs)
-     real x[],y[],sig[],a[],**alpha,beta[],*chisq;
-     int ndata,ma,lista[],mfit;
-     void (*funcs)(real,real *,real *,real *,int); 
+void mrqcof(real x[], real y[], real sig[], int ndata, real a[], 
+	    int ma, int lista[], int mfit, 
+	    real **alpha, real beta[], real *chisq,
+	    void (*funcs)(real,real *,real *,real *,int)) 
 {
   int k,j,i;
-  real ymod,wt,sig2i,dy,*dyda,*vector();
+  real ymod,wt,sig2i,dy,*dyda;
   
   dyda=vector(1,ma);
   for (j=1;j<=mfit;j++) {
@@ -385,17 +355,16 @@ void mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,funcs)
     for (k=1;k<=j-1;k++) alpha[k][j]=alpha[j][k];
   free_vector(dyda,1,ma);
 }
+
 	
-	
-void mrqmin(x,y,sig,ndata,a,ma,lista,mfit,covar,alpha,chisq,funcs,alamda)
-     real x[],y[],sig[],a[],**covar,**alpha,*chisq,*alamda;
-     int ndata,ma,lista[],mfit;
-     void (*funcs)();
+void mrqmin(real x[], real y[], real sig[], int ndata, real a[], 
+	    int ma, int lista[], int mfit, 
+	    real **covar, real **alpha, real *chisq,
+	    void (*funcs)(real,real *,real *,real *,int),
+	    real *alamda) 
 {
   int k,kk,j,ihit;
   static real *da,*atry,**oneda,*beta,ochisq;
-  real *vector(),**matrix();
-  void mrqcof(),gaussj(),covsrt(),nrerror(),free_matrix(),free_vector();
   
   if (*alamda < 0.0) {
     oneda=matrix(1,mfit,1,1);

@@ -31,9 +31,12 @@ extern "C" {
 #endif
 
 
-
+#ifndef FALSE
 #define FALSE   0
+#endif
+#ifndef TRUE
 #define TRUE    1
+#endif
 #define BOOL_NR 2
 
 #define XX	0			/* Defines for indexing in	*/

@@ -29,6 +29,7 @@
 static char *SRCID_index_c = "$Id$";
 
 #include <ctype.h>
+#include <string.h>
 #include "sysstuff.h"
 #include "strdb.h"
 #include "futil.h"

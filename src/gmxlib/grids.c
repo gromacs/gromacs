@@ -188,7 +188,7 @@ t_complex print_cgrid(FILE *fp,char *title,int nx,int ny,int nz,
 void print_cgrid_pdb(char *fn,int nx,int ny,int nz,t_complex ***grid)
 {
   FILE *fp;
-  int  ix,iy,iz,n,ig;
+  int  ix,iy,iz,n;
   real x,y,z,g;
 
   n=1;
@@ -197,7 +197,6 @@ void print_cgrid_pdb(char *fn,int nx,int ny,int nz,t_complex ***grid)
     for(iy=0; (iy<ny); iy++) {
       for(iz=0; (iz<nz); iz++) {
 	g=grid[ix][iy][iz].re;
-	ig=g;
 	if (g != 0) {
 	  x = 4*ix;
 	  y = 4*iy;

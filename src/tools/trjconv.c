@@ -47,6 +47,8 @@ static char *SRCID_trjconv_c = "$Id$";
 #include "vec.h"
 #include "xtcio.h"
 #include "gstat.h"
+#include "magic.h"
+#include "binio.h"
 
 static void center_x(rvec x[],matrix box,int n,atom_id index[])
 {

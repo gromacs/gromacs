@@ -232,13 +232,10 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
       if (parm->ir.nstxtcout != 0) { 
 	write_xtc_traj(stdlog,cr,opt2fn("-x",nfile,fnm),nsb,mdatoms,
 		       step,t,x,parm->box,parm->ir.xtcprec);
+	close_xtc_traj();
       }
     }
     
-    if (parm->ir.nstxtcout != 0) { 
-      close_xtc_traj();
-    }
-
     md2atoms(mdatoms,&(top->atoms));
     
     /* Finish up, write some stuff */

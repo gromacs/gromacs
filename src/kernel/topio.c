@@ -186,7 +186,7 @@ static char **read_topol(char        *infile,
   FILE       *in;
   int        nb_funct,comb;
   bool       nb_flag = FALSE;
-  char       *dummy,*pline,**title=NULL;
+  char       *pline,**title=NULL;
   int        curline;
   char       curfile[STRLEN],line[STRLEN],errbuf[256];
   char       *dirstr,*dummy2;
@@ -217,12 +217,12 @@ static char **read_topol(char        *infile,
   nb_funct = F_LJ;
   
   /* parse the actual file */
-  while ((dummy = fgets2(line,STRLEN-2,in)) != NULL) {
+  while (fgets2(line,STRLEN-2,in) != NULL) {
     curline++;
     assert (pline = strdup(line));
     
     /* build one long line from several fragments */
-    while (continuing(line) && ((dummy = fgets2(line,STRLEN-1,in)) != NULL)) {
+    while (continuing(line) && (fgets2(line,STRLEN-1,in) != NULL)) {
       curline++;
       srealloc(pline,strlen(pline)+strlen(line)+1);
       strcat(pline,line);

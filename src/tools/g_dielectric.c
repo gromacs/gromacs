@@ -32,6 +32,7 @@ static char *SRCID_g_dielectric_c = "$Id$";
 #include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
+#include "copyrite.h"
 #include "typedefs.h"
 #include "string2.h"
 #include "gstat.h"
@@ -40,6 +41,7 @@ static char *SRCID_g_dielectric_c = "$Id$";
 #include "macros.h"
 #include "xvgr.h"
 #include "complex.h"
+#include "nr.h"
 
 /* Determines at which point in the array the fit should start */
 int calc_nbegin(int nx,real x[],real tbegin)
@@ -310,6 +312,8 @@ int main(int argc,char *argv[])
   xvgr_file(opt2fn("-d",NFILE,fnm),"-nxy");
 	    
   thanx(stdout);
+
+  return 0;
 }
 
 

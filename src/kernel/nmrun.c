@@ -102,7 +102,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Initial values */
   t0           = parm->ir.init_t;
   lam0         = parm->ir.init_lambda;
-  nre          = F_NRE;
   t            = t0;
   lambda       = lam0;
 

@@ -8,9 +8,9 @@
       integer*4 error
       real      dist2(*),xp(*),rij(*),m2(*),invmass(*),tt(*)
       
-      integer*4 ll,i,j,i3,j3,l3,type,m,nconv,iconv
+      integer*4 ll,i,j,i3,j3,l3,nconv,iconv
       integer*4 ix,iy,iz,jx,jy,jz
-      real    toler,rpij2,rrpr,rrpr2,tx,ty,tz,diff,acor,im,jm
+      real    toler,rpij2,rrpr,tx,ty,tz,diff,acor,im,jm
       real    xh,yh,zh,rijx,rijy,rijz
       real    tix,tiy,tiz
       real    tjx,tjy,tjz

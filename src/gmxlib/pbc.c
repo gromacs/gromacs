@@ -60,13 +60,17 @@ void init_pbc(matrix box,bool bTruncOct)
   side    = box[0][0];
   side_2  = 0.5*side;
   side3_4 = 0.75*side;
+  /*
   diag    = side_2*sqrt(3.0);
+  */
   m_inv(box,box_inv);
+  /*
   bTriclinic=FALSE;
   for(i=0; (i<DIM); i++)
     for(j=0; (j<DIM); j++)
       if ((i != j) && (box[i][j] != 0.0))
 	bTriclinic=TRUE;
+	*/
   for(i=0; (i<DIM); i++) {
     gl_fbox[i]  =  box[i][i];
     gl_hbox[i]  =  gl_fbox[i]*0.5;

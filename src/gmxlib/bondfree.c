@@ -476,7 +476,7 @@ real idihs(FILE *log,int nbonds,
 			   phi,lambda,&vid,&ddphi);
 
     vtot += vid;
-    do_dih_fup(log,ai,aj,ak,al,-ddphi,r_ij,r_kj,r_kl,m,n,
+    do_dih_fup(log,ai,aj,ak,al,(real)(-ddphi),r_ij,r_kj,r_kl,m,n,
 	       f,fr,g,x);				/* 118		*/
     /* 208 TOTAL	*/
 #ifdef DEBUG
@@ -651,7 +651,7 @@ static void do_one14(rvec x[],int ai,int aj,rvec f[],int gid,
 	   lambda,dvdlambda,ntab,tabscale,VFtab);
   }
   else {
-    c_tab(r_i[XX],r_i[YY],r_i[ZZ],eps*chargeA[ai],
+    c_tab(r_i[XX],r_i[YY],r_i[ZZ],(real)(eps*chargeA[ai]),
 	  x[0],1,typeA,&aj,chargeA,nbfpA,f[0],f_ip,
 	  &vijcoul,&vnb,ntab,tabscale,VFtab);
   }
@@ -681,7 +681,6 @@ real do_14(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	   t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
 {
   real      eps;
-  rvec      b_inv,box_size;
   real      r2,rlong2;
   atom_id   ai,aj,itype;
   t_iatom   *ia0,*iatom;
@@ -695,10 +694,6 @@ real do_14(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
   /* Reaction field stuff */  
   eps    = fr->epsfac*fr->fudgeQQ;
   
-  for(m=0; (m<DIM); m++) {
-    box_size[m]=box[m][m];
-    b_inv[m]=divide(1.0,box_size[m]);
-  }
   rlong2 = fr->rlong*fr->rlong;
     
   ia0=iatoms;

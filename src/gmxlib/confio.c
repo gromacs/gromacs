@@ -47,6 +47,8 @@ static char *SRCID_confio_c = "$Id$";
 #include "tpxio.h"
 #include "fatal.h"
 #include "copyrite.h"
+#include "filenm.h"
+#include "statusio.h"
 
 static void get_coordnum_fp (FILE *in,char *title, int *natoms)
 {

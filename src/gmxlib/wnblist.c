@@ -143,9 +143,10 @@ void read_nblistshift(FILE *in,int **matje,int maxatom)
     fatal_error(0,"Not enough arguments read line %d",__LINE__);
   if (full)
     fprintf(stderr,"Also reading grp info...\n");
+  /*
   for(li=0; (li<nnbl); li++) {
     list=&(nbl[li]);
-    /*low_readnblist(in,list,full);
+    low_readnblist(in,list,full);
       nrI=list->nri;
       for(ia=0; (ia<nrI); ia++) {
       nli=&(list->nl_i[ia]);
@@ -174,8 +175,9 @@ void read_nblistshift(FILE *in,int **matje,int maxatom)
       }
       }
       }
-      }*/
+      }
   }
+  */
   if (ntw > 0)
     fprintf(stderr,"# twice=%d\n",ntw);
 }

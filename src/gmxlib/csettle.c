@@ -84,7 +84,7 @@ void csettle(FILE *log,int nshake, int owptr[],real b4[], real after[],
     xb0, yb0, zb0, xc0, yc0, zc0, xa1;
   real ya1, za1, xb1, yb1;
   real zb1, xc1, yc1, zc1, yaksyd, zaksyd, sinpsi, xa3, ya3, za3, 
-    xb3, yb3, zb3, xc3, yc3, zc3, xb0d, yb0d, xc0d, yc0d, xa1d, ya1d, 
+    xb3, yb3, zb3, xc3, yc3, zc3, xb0d, yb0d, xc0d, yc0d, 
     za1d, xb1d, yb1d, zb1d, xc1d, yc1d, zc1d, ya2d, xb2d, yb2d, yc2d, 
     xa3d, ya3d, za3d, xb3d, yb3d, zb3d, xc3d, yc3d, zc3d;
   real t1,t2;
@@ -170,8 +170,10 @@ void csettle(FILE *log,int nshake, int owptr[],real b4[], real after[],
     yb0d = trns12 * xb0 + trns22 * yb0 + trns32 * zb0;
     xc0d = trns11 * xc0 + trns21 * yc0 + trns31 * zc0;
     yc0d = trns12 * xc0 + trns22 * yc0 + trns32 * zc0;
+    /*
     xa1d = trns11 * xa1 + trns21 * ya1 + trns31 * za1;
     ya1d = trns12 * xa1 + trns22 * ya1 + trns32 * za1;
+    */
     za1d = trns13 * xa1 + trns23 * ya1 + trns33 * za1;
     xb1d = trns11 * xb1 + trns21 * yb1 + trns31 * zb1;
     yb1d = trns12 * xb1 + trns22 * yb1 + trns32 * zb1;

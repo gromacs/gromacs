@@ -43,7 +43,7 @@ static char *SRCID_gen_ad_h = "$Id$";
 
 extern void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 		    int nrtp,t_restp rtp[],
-		    int nsang,t_angres angs[],
+		    int nsang,t_resang angs[],
 		    int nid,t_idihres idihs[],
 		    bool bAlldih);
 

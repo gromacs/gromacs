@@ -41,7 +41,6 @@ force.o:	wnblist.h
 force.o:	fnbf.h
 four1.o:	four1.c
 fourn.o:	fourn.c
-fourn.o:	nr.h
 ftest.o:	ftest.c
 ftocstr.o:	ftocstr.c
 futil.o:	futil.c
@@ -90,7 +89,6 @@ pbc.o:	pbc.c
 pdbio.o:	pdbio.c
 pgc-bug.o:	pgc-bug.c
 pppm.o:	pppm.c
-pppm.o:	nr.h
 pppm.o:	ghat.h
 prfn.o:	prfn.c
 princ.o:	princ.c

@@ -343,7 +343,9 @@ void c_msd_mol::printdist(char *fn,char *difn)
   fclose(out);
   xvgr_file(difn,"-graphtype bar");
   
-  ndist=(int *)calloc(NDIST+1,sizeof(ndist[0]));
+  ndist=(int *)calloc(NDIST+1,sizeof(*ndist));
+  for(i=0; i<NDIST+1; i++)
+    ndist[i]=0;
   for(i=0; (i<nnx); i++) {
     int index=(int)(0.5+NDIST*(diff[i]-mind)/(maxd-mind));
     if ((index >= 0) && (index <= NDIST))

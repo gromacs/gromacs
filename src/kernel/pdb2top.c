@@ -48,6 +48,7 @@ static char *SRCID_pdb2top_c = "$Id$";
 #include "topio.h"
 #include "physics.h"
 #include "pdbio.h"
+#include "gen_ad.h"
 
 real distance(rvec a,rvec b) 
 {

@@ -26,38 +26,20 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_ftocstr_c = "$Id$";
 
-int ftocstr(char *ds, int dl, char *ss, int sl)
-    /* dst, src ptrs */
-    /* dst max len */
-    /* src len */
-{
-    char *p;
+#ifndef _javaio_h
+#define _javaio_h
 
-    for (p = ss + sl; --p >= ss && *p == ' '; ) ;
-    sl = p - ss + 1;
-    dl--;
-    ds[0] = 0;
-    if (sl > dl)
-        return 1;
-    while (sl--)
-	(*ds++ = *ss++);
-    *ds = '\0';
-    return 0;
-}
+static char *SRCID_javaio_h = "$Id$";
 
+#include "typedefs.h"
 
-int ctofstr(char *ds, int dl, char *ss)
-     /* dest space */
-     /* max dest length */
-     /* src string (0-term) */
-{
-    while (dl && *ss) {
-	*ds++ = *ss++;
-	dl--;
-    }
-    while (dl--)
-	*ds++ = ' ';
-    return 0;
-}
+void write_java(FILE *out,
+                char *program,
+                int nldesc,char *desc[],
+                int nfile,t_filenm fnm[],
+                int npargs,t_pargs pa[],
+                int nbug,char *bugs[]);
+
+#endif  /* _javaio_h */
+ 

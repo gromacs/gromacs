@@ -265,7 +265,7 @@ void fdo_flr(FILE *log,int nri,atom_id i_atoms[],int shift,
   int      i,j,k,k0,k1,jj,m;
   rvec     f_ip,r_i,fw[3],xw[3];
   real     qi,epsje,eps;
-  int      igid,jgid,gid,usegid,iaa,nr_fsum;
+  int      igid,jgid,gid,usegid,iaa;
   rvec     *fshift,*flr,*sv;
   ushort   *cENER;
   int      *type;
@@ -279,8 +279,6 @@ void fdo_flr(FILE *log,int nri,atom_id i_atoms[],int shift,
   cENER  = md->cENER;
   type   = md->typeA;
   charge = md->chargeA;
-  
-  nr_fsum=0;
   
   if (nlj == NULL) {
     /* Allocate memory for long range */

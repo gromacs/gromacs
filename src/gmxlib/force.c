@@ -425,9 +425,13 @@ void ns(FILE *log,
   else
     fr->cg0=nsb->workload[cr->pid-1];
   fr->hcg=nsb->workload[cr->pid];
-  
+
+  search_neighbours(log,fr,x,box,top,grps,cr,nsb,nrnb,md);
+
+  /*
   nns=search_neighbours(log,fr,x,box,top,grps,cr,nsb,nrnb,md);
-  
+  */
+
   /* Check whether we have to do dynamic load balancing */
   /*if ((nsb->nstDlb > 0) && (mod(step,nsb->nstDlb) == 0))
     count_nb(cr,nsb,&(top->blocks[ebCGS]),nns,fr->nlr,
