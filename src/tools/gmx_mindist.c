@@ -288,14 +288,14 @@ void dist_plot(char *fn,char *afile,char *dfile,
       if (num) fprintf(num, "&\n");
       if (atm) fprintf(atm, "&\n");
     }
-    fprintf(dist,"%12g",convert_time(t));
-    if (num) fprintf(num,"%12g",convert_time(t));
+    fprintf(dist,"%12e",convert_time(t));
+    if (num) fprintf(num,"%12e",convert_time(t));
     
     if (bMat) {
       if (ng == 1) {
 	calc_dist(rcut,box,x0,gnx[0],gnx[0],index[0],index[0],
 		  &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2);
-	fprintf(dist,"  %12g",bMin?dmin:dmax);
+	fprintf(dist,"  %12e",bMin?dmin:dmax);
 	if (num) fprintf(num,"  %8d",bMin?nmin:nmax);
       }
       else {
@@ -303,7 +303,7 @@ void dist_plot(char *fn,char *afile,char *dfile,
 	  for(k=i+1; (k<ng); k++) {
 	    calc_dist(rcut,box,x0,gnx[i],gnx[k],index[i],index[k],
 		      &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2);
-	    fprintf(dist,"  %12g",bMin?dmin:dmax);
+	    fprintf(dist,"  %12e",bMin?dmin:dmax);
 	    if (num) fprintf(num,"  %8d",bMin?nmin:nmax);
 	  }
 	}
@@ -313,7 +313,7 @@ void dist_plot(char *fn,char *afile,char *dfile,
       for(i=1; (i<ng); i++) {
 	calc_dist(rcut,box,x0,gnx[0],gnx[i],index[0],index[i],
 		  &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2);
-	fprintf(dist,"  %12g",bMin?dmin:dmax);
+	fprintf(dist,"  %12e",bMin?dmin:dmax);
 	if (num) fprintf(num,"  %8d",bMin?nmin:nmax);
 	if (nres) {
 	  for(j=0; j<nres; j++) {
@@ -331,7 +331,7 @@ void dist_plot(char *fn,char *afile,char *dfile,
       fprintf(num,"\n");
     if ( bMin?min1:max1 != -1 )
       if (atm)
-	fprintf(atm,"%12g  %12d  %12d\n",
+	fprintf(atm,"%12e  %12d  %12d\n",
 		convert_time(t),1+(bMin ? min1 : max1),1+(bMin ? min2 : max2));
     
     if (trxout>=0) {
