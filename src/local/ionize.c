@@ -57,15 +57,20 @@ typedef struct {
   real fj,sigPh,sigIn,vAuger;
 } t_cross_atom;
 
+typedef struct {
+  int nelec,maxelec,elec0,elmin_type;
+} t_electron_db;
+
 void dump_ca(FILE *fp,t_cross_atom *ca,int i,char *file,int line)
 {
-  fprintf(fp,PREFIX"atom %d, z = %d, n = %d, k = %d\n",i,ca->z,ca->n,ca->k);
+  fprintf(fp,PREFIX"(line %d) atom %d, z = %d, n = %d, k = %d\n",
+	  line,i,ca->z,ca->n,ca->k);
 }
 
 t_cross_atom *mk_cross_atom(FILE *log,t_mdatoms *md,
 			    char **atomname[],int Eindex)
 {
-  int elem_index[] = { 0, 0, 0, 0, 0, 0, 1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 4 };
+  int elem_index[] = { 0, 0, 0, 0, 0, 0, 1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 5, 6 };
   t_cross_atom *ca;
   int  *elemcnt;
   char *cc;
@@ -103,6 +108,7 @@ t_cross_atom *mk_cross_atom(FILE *log,t_mdatoms *md,
       ca[i].vAuger  = 0.929;
       break;
     case 16:
+    case 20:
       ca[i].vAuger = 1.0;
       break;
     default:
@@ -350,25 +356,76 @@ real electron_cross_section(FILE *fp,rvec v,real mass,int nelec)
   return sigma;
 }
 
+static bool analyze_electrons(FILE *fp,t_electron_db *edb,
+			      int natom,char **atomname[])
+{
+  int  i,etp;
+  char *cc;
+ 
+  cc = getenv("GENERATE_ELECTRONS");
+  if (sscanf(cc,"%d",&etp) == 1) {
+    for(i=0; (i<natom); i++) {
+      if (strcmp(*atomname[i],"EL") == 0)
+	break;
+    }
+    edb->elec0      = i;
+    edb->nelec      = 0;
+    edb->maxelec    = natom-i;
+    edb->elmin_type = etp;
+    fprintf(fp,PREFIX"There are %d possible electrons\n",edb->maxelec);
+    
+    return TRUE;
+  }
+  else {
+    fprintf(fp,PREFIX"No electron features today.\n");
+    return FALSE;
+  }
+}
+
+void add_electron(FILE *fp,t_mdatoms *md,t_electron_db *edb,int ion,
+		  rvec x[],rvec v[],rvec dv,real dt)
+{
+  int  m,ee;
+  real nv;
+  
+  if (edb->nelec < edb->maxelec) {
+    ee = edb->elec0+edb->nelec++;
+    /*md->chargeA[ee] = md->chargeB[ee] = md->chargeT[ee] = -1;
+      md->typeA[ee]   = md->typeB[ee]   = edb->elmin_type;*/
+    copy_rvec(x[ion],x[ee]);
+    /* Velocity! */
+    svmul(-md->massA[ion]*md->invmass[ee],v[ee],dv);
+    /* Do a first step to prevent the elctron from being on top of the 
+     * nucleus, move it 1 A from the nucleus 
+     */
+    nv = norm(v[ee]);
+    for(m=0; (m<DIM); m++) 
+      x[ee][m] += 0.05;
+  } 
+  else
+    fatal_error(0,PREFIX"No more particles to turn into electrons\n");
+}
+
 void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	    rvec x[],rvec v[],int start,int end,matrix box,t_commrec *cr)
 {
   static FILE  *xvg,*ion;
   static char  *leg[] = { "Probability", "Primary Ionization", "Integral over PI", "KHole-Decay", "Integral over KD" };
-  static bool  bFirst = TRUE,bImpulse = TRUE,bExtraKinetic=FALSE;
-  static real  t0,imax,width,inv_nratoms,rho,nphot,ztot;
-  static real  protein_radius,interval;
+  static bool  bFirst = TRUE,bElectron = FALSE;
+  static real  t0,imax,width,inv_nratoms,rho,nphot;
+  static real  interval;
   static int   seed,dq_tot,nkd_tot,ephot,mode;
   static t_cross_atom *ca;
   static int   Eindex=-1;
-  
+  static t_electron_db edb;
+    
   real r,factor,ndv,E_lost=0,cross_atom,dvz,rrc;
-  real pt,ptot,pphot,pcoll[ecollNR],mtot,delta_ekin,tmax;
+  real pt,ptot,pphot,pcoll[ecollNR],tmax;
   real incoh,incoh_abs,sigmaPincoh,hboxx,hboxy,rho2;
   rvec dv,ddv;
   bool bIonize=FALSE,bKHole,bL,bDOIT;
   char *cc;
-  int  i,j,k,kk,m,nK,nL,dq,nkh,nkdecay;
+  int  i,j,k,kk,m,nK,nL,dq,nkh,nkdecay,elmin_type;
   int  *nionize,*nkhole,*ndecay,nbuf[2];
   
   if (bFirst) {
@@ -420,41 +477,25 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     nkd_tot = 0;
     inv_nratoms = 1.0/md->nr;
 
-    bExtraKinetic = (getenv("EXTRAEKIN") != NULL);
-    bImpulse      = (getenv("NOIMPULSE") == NULL);
-    
-    /* compute total charge of the system */
-    ztot = 0;
-    mtot = 0;
-    for(i=0; (i<md->nr); i++) {
-      mtot += md->massA[i];
-      ztot += md->chargeA[i];
-    }
-    protein_radius = pow(mtot*AVOGADRO*1e-27*0.75/M_PI,1.0/3.0);
-    
     xvg   = xvgropen("ionize.xvg","Ionization Events","Time (ps)","()");
     xvgr_legend(xvg,asize(leg),leg);
     ion   = ffopen("ionize.log","w");
     
     fprintf(fp,PREFIX"Parameters for ionization events:\n");
     fprintf(fp,PREFIX"Imax = %g, t0 = %g, width = %g, seed = %d\n"
-	    PREFIX"# Photons = %g, rho = %g, ephot = %d (keV), Impulse = %s\n",
-	    imax,t0,width,seed,nphot,rho,ephot,yesno_names[bImpulse]);
+	    PREFIX"# Photons = %g, rho = %g, ephot = %d (keV), Electrons = %s\n",
+	    imax,t0,width,seed,nphot,rho,ephot,yesno_names[bElectron]);
     fprintf(fp,PREFIX"Electron_mass: %10.3e(keV) Atomic_mass: %10.3e(keV)\n"
 	    PREFIX"Speed_of_light: %10.3e(nm/ps)\n",
 	    ELECTRONMASS_keV,ATOMICMASS_keV,SPEED_OF_LIGHT);
     fprintf(fp,PREFIX"Interval between shots: %g ps\n",interval);
     fprintf(fp,PREFIX"Eindex = %d\n",Eindex);
-    fprintf(fp,PREFIX"Total charge on system: %g e. Total mass: %g u\n",
-	    ztot,mtot);
-    fprintf(fp,PREFIX"Estimated system radius to be %g nm\n",protein_radius);
-    fprintf(fp,PREFIX
-	    "Adding extra kinetic energy because of leaving electrons: %s\n",
-	    bool_names[bExtraKinetic]);
     fprintf(fp,PREFIX"Doing ionizations for atoms %d - %d\n",start,end);
+    
+    bElectron = analyze_electrons(fp,&edb,md->nr,atomname);
+    
     fflush(fp);
-    if (bExtraKinetic)
-      fatal_error(0,"Extra kinetic energy is not implemented as it should...");
+
     bFirst = FALSE;
   }
 
@@ -568,6 +609,8 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	  polar2cart(phi,theta,ddv);
 	  for(m=0; (m<DIM); m++)
 	    dv[m] -= factor*ddv[m];
+	
+	  add_electron(fp,md,&edb,i,x,v,dv,ir->delta_t);
 	  
 	  if (debug)
 	    pr_rvec(debug,0,"ELL",dv,DIM);
@@ -624,9 +667,8 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	}
       }
       /* Now actually add the impulse to the velocities */
-      if (bImpulse)
-	for(m=0; (m<DIM); m++)
-	  v[i][m] += dv[m];
+      for(m=0; (m<DIM); m++)
+	v[i][m] += dv[m];
       if (bKHole) {
 	ca[i].k ++;
 	nkhole[i]++;
@@ -646,27 +688,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     if (debug && (ca[i].n > 0))
       dump_ca(debug,&(ca[i]),i,__FILE__,__LINE__);
   }
-  /* Now add random velocities corresponding to the energy depositied by 
-   * the leaving electrons.
-   */ 
-  delta_ekin = 0;
-  if (bExtraKinetic && (dq > 0)) {
-    for(i=0; (i<dq); i++) {
-      delta_ekin += ONE_4PI_EPS0*ztot/protein_radius;
-      ztot+=1;
-    }
-    delta_ekin=fabs(delta_ekin);
-    if (debug)
-      fprintf(debug,
-	      "%d leaving electrons deposited %g kJ/mol in the protein. Z=%.0f\n",
-	      dq,delta_ekin,ztot);
-    delta_ekin /= md->nr;
-    for(i=0; (i<md->nr); i++) {
-      rand_vector(dv,&seed);
-      svmul(sqrt(2*delta_ekin/md->massA[i]),dv,dv);
-      rvec_inc(v[i],dv);
-    }
-  }
+
   /* Sum events for statistics if necessary */
   if (PAR(cr)) {
     gmx_sumi(md->nr,nionize,cr);
@@ -699,10 +721,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     /* Print statictics to file */
     fprintf(xvg,"%10.5f  %10.3e  %6d  %6d  %6d  %6d",
 	    t,pt,dq,dq_tot,nkdecay,nkd_tot);
-    if (bExtraKinetic)
-      fprintf(xvg,"%10g\n",delta_ekin);
-    else
-      fprintf(xvg,"\n");
+    fprintf(xvg,"\n");
     if (debug)
       fflush(xvg);
   }

@@ -92,7 +92,9 @@ static t_element element[] = {
   { "C",   6, cross_sec_c },
   { "N",   7, cross_sec_n },
   { "O",   8, cross_sec_o },
-  { "S",  16, cross_sec_s  }
+  { "S",  16, cross_sec_s },
+  { "AR", 20, cross_sec_s },  /* This is not correct! */
+  { "EL",  1, cross_sec_h }   /* This is not correct! */
 };
 #define NELEM asize(element)
 

@@ -64,6 +64,10 @@ prfn:		prfn.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 g_anavel:	g_anavel.o
 		$(LD) -o $@ $^ $(SYSLIBS)
+addquote:	addquote.o
+		$(LD) -o $@ $^ $(SYSLIBS)
+listquotes:	listquotes.o
+		$(LD) -o $@ $^ $(SYSLIBS)
 eanal:	eanal.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
