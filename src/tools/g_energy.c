@@ -129,14 +129,9 @@ int get_bounds(char *topnm,real **bounds,int **index,int **dr_pair,int *npairs,
     ftype = functype[i];
     if (ftype == F_DISRES) {
       index1 = ip[i].disres.index;
-      if (b[index1] != 0.0)
-	fprintf(stderr,"warning index %d occurs multiple times in topology."
-		" i=%d, nb=%d\n",index1,i,nb);
-      else {
-	b[nb]   = ip[i].disres.up1;
-	ind[nb] = index1;
-	nb++;
-      }
+      b[nb]   = ip[i].disres.up1;
+      ind[nb] = index1;
+      nb++;
     }
   }
   *bounds = b;
