@@ -466,27 +466,27 @@ int main(int argc,char *argv[])
   close_trj(status);
   if (bOX) {
     fclose(outx);
-    xvgr_file(opt2fn("-ox",NFILE,fnm), NULL);
+    do_view(opt2fn("-ox",NFILE,fnm), NULL);
   }
   if (bOV) {
     fclose(outx);
-    xvgr_file(opt2fn("-ov",NFILE,fnm), NULL);
+    do_view(opt2fn("-ov",NFILE,fnm), NULL);
   }
   if (bOF) {
     fclose(outf);
-    xvgr_file(opt2fn("-of",NFILE,fnm), NULL);
+    do_view(opt2fn("-of",NFILE,fnm), NULL);
   }
   if (bOB) {
     fclose(outb);
-    xvgr_file(opt2fn("-ob",NFILE,fnm), NULL);
+    do_view(opt2fn("-ob",NFILE,fnm), NULL);
   }
   if (bOT) {
     fclose(outt);
-    xvgr_file(opt2fn("-ot",NFILE,fnm), NULL);
+    do_view(opt2fn("-ot",NFILE,fnm), NULL);
   }
   if (bEKR) {
     fclose(outekr);
-    xvgr_file(opt2fn("-ekr",NFILE,fnm), NULL);
+    do_view(opt2fn("-ekr",NFILE,fnm), NULL);
   } 
 
   thanx(stderr);

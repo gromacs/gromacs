@@ -230,7 +230,7 @@ static void analyse_disre(char *voutfn,    int nframes,
   fprintf(stdout,"\nSum of violations averaged over simulation: %g nm\n",sumt);
   fprintf(stdout,"Largest violation averaged over simulation: %g nm\n\n",sum);
   
-  xvgr_file(voutfn,"-graphtype bar");
+  do_view(voutfn,"-graphtype bar");
 }
 
 static void einstein_visco(char *fn,char *fni,int nsets,int nframes,real **sum,

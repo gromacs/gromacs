@@ -275,10 +275,10 @@ int main(int argc,char *argv[])
 	       index[1],gnx[1],grpname[1],
 	       top);
 
-  xvgr_file(opt2fn("-oa",NFILE,fnm),NULL);     /* view xvgr file */
-  xvgr_file(opt2fn("-od",NFILE,fnm),NULL);     /* view xvgr file */
-  xvgr_file(opt2fn("-od1",NFILE,fnm),NULL);
-  xvgr_file(opt2fn("-od2",NFILE,fnm),NULL);
+  do_view(opt2fn("-oa",NFILE,fnm),NULL);     /* view xvgr file */
+  do_view(opt2fn("-od",NFILE,fnm),NULL);     /* view xvgr file */
+  do_view(opt2fn("-od1",NFILE,fnm),NULL);
+  do_view(opt2fn("-od2",NFILE,fnm),NULL);
 
   thanx(stderr);
   return 0;

@@ -119,7 +119,7 @@ int main(int argc,char *argv[])
   }
   ffclose(fp);
 
-  xvgr_file(opt2fn("-c",NFILE,fnm),"-nxy");
+  do_view(opt2fn("-c",NFILE,fnm),"-nxy");
     
   thanx(stderr);
 

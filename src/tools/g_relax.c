@@ -359,7 +359,7 @@ void plot_spectrum(char *noefn,int npair,t_pair pair[],t_sij *spec,real taum)
   
   sfree(Sij);
   
-  xvgr_file(noefn,NULL);
+  do_view(noefn,NULL);
 }
 
 void spectrum(bool bVerbose,

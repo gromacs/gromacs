@@ -116,7 +116,7 @@ int main(int argc,char *argv[])
   do_autocorr(ftp2fn(efXVG,NFILE,fnm),"Velocity Autocorrelation Function",
 	      teller,gnx,c1,(t1-t0)/(teller-1),eacVector,TRUE);
   
-  xvgr_file(ftp2fn(efXVG,NFILE,fnm),"-nxy");
+  do_view(ftp2fn(efXVG,NFILE,fnm),"-nxy");
   
   thanx(stderr);
   

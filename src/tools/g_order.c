@@ -403,9 +403,9 @@ int main(int argc,char *argv[])
   order_plot(order, slOrder, opt2fn("-o",NFILE,fnm), opt2fn("-os",NFILE,fnm), 
 	     opt2fn("-od",NFILE,fnm), ngrps, nslices, slWidth, bSzonly);
   
-  xvgr_file(opt2fn("-o",NFILE,fnm), NULL);      /* view xvgr file */
-  xvgr_file(opt2fn("-os",NFILE,fnm), NULL);     /* view xvgr file */
-  xvgr_file(opt2fn("-od",NFILE,fnm), NULL);     /* view xvgr file */
+  do_view(opt2fn("-o",NFILE,fnm), NULL);      /* view xvgr file */
+  do_view(opt2fn("-os",NFILE,fnm), NULL);     /* view xvgr file */
+  do_view(opt2fn("-od",NFILE,fnm), NULL);     /* view xvgr file */
 
   thanx(stderr);
   return 0;

@@ -317,9 +317,9 @@ int main(int argc,char *argv[])
   do_four(opt2fn("-o",NFILE,fnm),opt2fn("-c",NFILE,fnm),
 	  nx,y[0],y[4],eps0,epsRF);
 
-  xvgr_file(opt2fn("-o",NFILE,fnm),"-nxy -log x");
-  xvgr_file(opt2fn("-c",NFILE,fnm),NULL);
-  xvgr_file(opt2fn("-d",NFILE,fnm),"-nxy");
+  do_view(opt2fn("-o",NFILE,fnm),"-nxy -log x");
+  do_view(opt2fn("-c",NFILE,fnm),NULL);
+  do_view(opt2fn("-d",NFILE,fnm),"-nxy");
 	    
   thanx(stderr);
 

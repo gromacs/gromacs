@@ -323,7 +323,7 @@ int main (int argc,char *argv[])
 		"Distance (nm)","Atom Index","Atom Index",
 		isize,isize,resnr,resnr,dtot1_6,0.0,max1_6,rlo,rhi,&nlevels);
   
-  xvgr_file(ftp2fn(efXVG,NFILE,fnm),NULL);
+  do_view(ftp2fn(efXVG,NFILE,fnm),NULL);
  
   thanx(stdout);
   return 0;

@@ -67,7 +67,7 @@ FILE *xvgropen(char *fn,char *title,char *xaxis,char *yaxis)
 /* don't use xvgr_file, use do_view in stead */
 /* optional support for xmgrace now via env. GMX_VIEW_XVG */
 /* see viewit.c/.h (gmxlib) */
-void xvgr_file(char *fn,char *opts)
+static void xvgr_file(char *fn,char *opts)
 {
   do_view(fn,opts);
 }

@@ -418,11 +418,11 @@ int main (int argc,char *argv[])
   }
   if (bAniso) { 
     correlate_aniso(opt2fn("-oc",NFILE,fnm),refatoms,pdbatoms);
-    xvgr_file(opt2fn("-oc",NFILE,fnm),"-nxy");
+    do_view(opt2fn("-oc",NFILE,fnm),"-nxy");
   }
-  xvgr_file(opt2fn("-o",NFILE,fnm),"-nxy");
+  do_view(opt2fn("-o",NFILE,fnm),"-nxy");
   if (devfn)
-    xvgr_file(opt2fn("-od",NFILE,fnm),"-nxy");
+    do_view(opt2fn("-od",NFILE,fnm),"-nxy");
     
   thanx(stderr);
   

@@ -358,9 +358,9 @@ int main(int argc,char *argv[])
     fclose(atm);
   }
 
-  xvgr_file(opt2fn("-od",NFILE,fnm),"-nxy");
+  do_view(opt2fn("-od",NFILE,fnm),"-nxy");
   if (!bPer)
-    xvgr_file(opt2fn("-on",NFILE,fnm),"-nxy");
+    do_view(opt2fn("-on",NFILE,fnm),"-nxy");
   
   thanx(stderr);
   

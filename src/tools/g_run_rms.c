@@ -190,7 +190,7 @@ int main (int argc,char *argv[])
 
   close_trj(status);
   
-  xvgr_file(ftp2fn(efXVG,NFILE,fnm),NULL);
+  do_view(ftp2fn(efXVG,NFILE,fnm),NULL);
   
   thanx(stderr);
   

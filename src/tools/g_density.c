@@ -427,7 +427,7 @@ int main(int argc,char *argv[])
   plot_density(density, opt2fn("-o",NFILE,fnm),
 	       nslices, ngrps, grpname, slWidth, bElectron, bNumber, bCount);
   
-  xvgr_file(opt2fn("-o",NFILE,fnm), NULL);       /* view xvgr file */
+  do_view(opt2fn("-o",NFILE,fnm), NULL);       /* view xvgr file */
   thanx(stderr);
   return 0;
 }

@@ -340,12 +340,12 @@ int main (int argc,char *argv[])
   fclose(maxxv);
   if (isize > 0) {
     fclose(xvg);
-    xvgr_file(opt2fn("-dr",NFILE,fnm),"-nxy");
+    do_view(opt2fn("-dr",NFILE,fnm),"-nxy");
   }
-  xvgr_file(opt2fn("-dn",NFILE,fnm),NULL);
-  xvgr_file(opt2fn("-da",NFILE,fnm),NULL);
-  xvgr_file(opt2fn("-ds",NFILE,fnm),NULL);
-  xvgr_file(opt2fn("-dm",NFILE,fnm),NULL);
+  do_view(opt2fn("-dn",NFILE,fnm),NULL);
+  do_view(opt2fn("-da",NFILE,fnm),NULL);
+  do_view(opt2fn("-ds",NFILE,fnm),NULL);
+  do_view(opt2fn("-dm",NFILE,fnm),NULL);
   
   thanx(stderr);
 

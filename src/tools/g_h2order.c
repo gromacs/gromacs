@@ -292,7 +292,7 @@ int main(int argc,char *argv[])
   order_plot(slDipole, slOrder, opt2fn("-o",NFILE,fnm), nslices, 
 	     slWidth);
 
-  xvgr_file(opt2fn("-o",NFILE,fnm), NULL);      /* view xvgr file */
+  do_view(opt2fn("-o",NFILE,fnm), NULL);      /* view xvgr file */
   thanx(stderr);
   
   return 0;

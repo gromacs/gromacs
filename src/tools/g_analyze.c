@@ -429,20 +429,20 @@ int main(int argc,char *argv[])
     }
     fclose(out);
     fprintf(stderr,"\r%d, time=%g\n",t-1,(t-1)*dt);
-    xvgr_file(msdfile, NULL);
+    do_view(msdfile, NULL);
   }
   
   if (distfile) {
     histogram(distfile,binwidth,n,nset,val);
-    xvgr_file(distfile, NULL);
+    do_view(distfile, NULL);
   }
   if (avfile) {
     average(avfile,avbar_opt,n,nset,val,t0,dt);
-    xvgr_file(avfile, NULL);
+    do_view(avfile, NULL);
   }
   if (eefile) {
     estimate_error(eefile,resol,n,nset,av,val,dt);
-    xvgr_file(eefile, NULL);
+    do_view(eefile, NULL);
   }
   if (acfile) {
     if (bSubAv) 
@@ -451,7 +451,7 @@ int main(int argc,char *argv[])
 	  val[s][i] -= av[s];
     do_autocorr(acfile,"Autocorrelation",n,nset,val,dt,
 		eacNormal,bAverCorr);
-    xvgr_file(acfile, NULL);
+    do_view(acfile, NULL);
   }
 
   thanx(stderr);

@@ -42,6 +42,8 @@ extern "C" {
 
 #include "sysstuff.h"
 #include "typedefs.h"
+#include "viewit.h"
+
 /***************************************************
  *            XVGR   DEFINITIONS
  ***************************************************/
@@ -76,7 +78,7 @@ enum {
 extern FILE *xvgropen(char *fn,char *title,char *xaxis,char *yaxis);
 /* Open a file, and write a title, and axis-labels in Xvgr format */
 
-extern void xvgr_file(char *fn,char *opts);
+  /*extern void xvgr_file(char *fn,char *opts);*/
 /* ! - - - DEPRECATED - - - !
  * use do_view now instead!
  * optional support for xmgrace now via env. GMX_VIEW_XVG

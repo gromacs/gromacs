@@ -285,7 +285,7 @@ int main(int argc,char *argv[])
 	 nrframes,nstart,dt,nx,index,grpname,bfit,efit);
 	
   if (bDoView())
-    xvgr_file(ftp2fn(efXVG,NFILE,fnm),"-nxy");
+    do_view(ftp2fn(efXVG,NFILE,fnm),"-nxy");
 	 
   thanx(stderr);
   

@@ -372,7 +372,7 @@ int main(int argc,char *argv[])
     fclose(xf[i].fp);
     if (xf[i].bfp2)
       fclose(xf[i].fp2);
-    xvgr_file(xf[i].filenm,NULL);
+    do_view(xf[i].filenm,NULL);
   }
   
   thanx(stderr);

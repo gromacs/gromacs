@@ -36,35 +36,41 @@ void do_view(char *fn, char *opts)
   char buf[256], *cmd;
 
   if (bDoView() && fn) {
-    switch(fn2ftp(fn)) {
-    case efEPS:
-      if ( ! (cmd=getenv("GMX_VIEW_EPS")) )
-	cmd="ghostview";
-      break;
-    case efXPM:
-      if ( ! (cmd=getenv("GMX_VIEW_XPM")) )
-	cmd="xv";
-      break;
-    case efXVG:
-      if ( ! (cmd=getenv("GMX_VIEW_XVG")) ) {
-	if ( getenv("XMGRACE") )
-	  cmd="xmgrace";
-	else
-	  cmd="xmgr";
-      }
-      break;
-    case efPDB:
-      if ( ! (cmd=getenv("GMX_VIEW_PDB")) )
-	cmd="xterm -e rasmol";
-      break;
-    default:
-      fprintf(stderr,"Cannot view file %s",fn);
-      return;
+    if (getenv("DISPLAY") == NULL) {
+      fprintf(stderr,"Can not view %s, no DISPLAY environment variable.\n",
+	      fn);
     }
-    if ( strlen(cmd) ) {
-      sprintf(buf,"%s %s %s &",cmd,fn,opts ? opts : "");
-      fprintf(stderr,"executing '%s'\n",buf);
-      system(buf);
+    else {
+      switch(fn2ftp(fn)) {
+      case efEPS:
+	if ( ! (cmd=getenv("GMX_VIEW_EPS")) )
+	  cmd="ghostview";
+	break;
+      case efXPM:
+	if ( ! (cmd=getenv("GMX_VIEW_XPM")) )
+	  cmd="xv";
+	break;
+      case efXVG:
+	if ( ! (cmd=getenv("GMX_VIEW_XVG")) ) {
+	  if ( getenv("XMGRACE") )
+	    cmd="xmgrace";
+	  else
+	    cmd="xmgr";
+	}
+	break;
+      case efPDB:
+	if ( ! (cmd=getenv("GMX_VIEW_PDB")) )
+	  cmd="xterm -e rasmol";
+	break;
+      default:
+	fprintf(stderr,"Don't know how to view file %s",fn);
+	return;
+      }
+      if ( strlen(cmd) ) {
+	sprintf(buf,"%s %s %s &",cmd,fn,opts ? opts : "");
+	fprintf(stderr,"executing '%s'\n",buf);
+	system(buf);
+      }
     }
   }
 }

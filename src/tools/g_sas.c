@@ -420,8 +420,8 @@ int main(int argc,char *argv[])
   
   sas_plot(NFILE,fnm,solsize,ndots,qcut,nskip,bSave,minarea);
   
-  xvgr_file(opt2fn("-o",NFILE,fnm),"-nxy");
-  xvgr_file(opt2fn("-ao",NFILE,fnm),"-xydy");
+  do_view(opt2fn("-o",NFILE,fnm),"-nxy");
+  do_view(opt2fn("-ao",NFILE,fnm),"-xydy");
 
   thanx(stderr);
   

@@ -300,9 +300,9 @@ int main(int argc,char *argv[])
   
   fclose(out);
 
-  xvgr_file(opt2fn("-od",NFILE,fnm),NULL);
+  do_view(opt2fn("-od",NFILE,fnm),NULL);
   if (bAver)
-    xvgr_file(opt2fn("-ov",NFILE,fnm),"-nxy");
+    do_view(opt2fn("-ov",NFILE,fnm),"-nxy");
     
   thanx(stderr);
     

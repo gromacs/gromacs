@@ -41,7 +41,7 @@ include		$(STDTARGET)
 movebin:
 	mv $(EXECUTABLES) $(BINDIR)
 
-disco:		disco.o dlist.o dtools.o correct.o
+disco:		disco.o dlist.o dtools.o correct.o discopar.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
 cdist:		cdist.o bondlist.o smooth.o residues.o

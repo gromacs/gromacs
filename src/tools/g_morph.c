@@ -139,7 +139,7 @@ int main(int argc,char *argv[])
   
   if (bRMS) {
     fclose(fp);
-    xvgr_file(opt2fn("-or",NFILE,fnm),"-nxy");
+    do_view(opt2fn("-or",NFILE,fnm),"-nxy");
   }
   
   thanx(stderr);

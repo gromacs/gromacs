@@ -1003,10 +1003,10 @@ int main(int argc,char *argv[])
 	       maxchi,bPhi,bPsi,bChi,bOmega);
   
   
-  xvgr_file(opt2fn("-o",NFILE,fnm),"-nxy");
-  xvgr_file(opt2fn("-jc",NFILE,fnm),"-nxy");
+  do_view(opt2fn("-o",NFILE,fnm),"-nxy");
+  do_view(opt2fn("-jc",NFILE,fnm),"-nxy");
   if (bCorr)
-    xvgr_file(opt2fn("-corr",NFILE,fnm),"-nxy");
+    do_view(opt2fn("-corr",NFILE,fnm),"-nxy");
     
   thanx(stderr);
     

@@ -101,7 +101,7 @@ int main(int argc,char *argv[])
   fprintf(stderr,"\n");
   fclose(out);
   
-  xvgr_file(ftp2fn(efXVG,NFILE,fnm),NULL);
+  do_view(ftp2fn(efXVG,NFILE,fnm),NULL);
   
   thanx(stderr);
   

@@ -54,7 +54,7 @@ real sphere_vol(real r)
 void rdf_add(int bin[], real mbin[],real width,real hb2,rvec x[],rvec xcm,
 	     int nx2,atom_id index2[], t_atom atom[])
 {
-  int     j,ind,nout;
+  int     j,ind;
   int     jx;
   rvec    dx;
   real    r2;
@@ -68,8 +68,6 @@ void rdf_add(int bin[], real mbin[],real width,real hb2,rvec x[],rvec xcm,
       mbin[ind]+=atom[jx].m;
       bin[ind]++;
     }
-    else
-      nout++;
   }
 }
 

@@ -169,7 +169,7 @@ int main(int argc,char *argv[])
   
   fclose(out);
 
-  xvgr_file(ftp2fn(efXVG,NFILE,fnm),"-nxy");
+  do_view(ftp2fn(efXVG,NFILE,fnm),"-nxy");
   
   thanx(stderr);
   

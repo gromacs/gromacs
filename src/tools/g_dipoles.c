@@ -792,10 +792,10 @@ int main(int argc,char *argv[])
 	 bMU,     opt2fn("-enx",NFILE,fnm),
 	 gnx,grpindex,mu_max,mu,epsilonRF,temp,nFA,skip);
   
-  xvgr_file(opt2fn("-o",NFILE,fnm),"-autoscale xy -nxy");
-  xvgr_file(opt2fn("-a",NFILE,fnm),"-autoscale xy -nxy");
-  xvgr_file(opt2fn("-d",NFILE,fnm),"-autoscale xy");
-  xvgr_file(opt2fn("-c",NFILE,fnm),"-autoscale xy");
+  do_view(opt2fn("-o",NFILE,fnm),"-autoscale xy -nxy");
+  do_view(opt2fn("-a",NFILE,fnm),"-autoscale xy -nxy");
+  do_view(opt2fn("-d",NFILE,fnm),"-autoscale xy");
+  do_view(opt2fn("-c",NFILE,fnm),"-autoscale xy");
 
   thanx(stderr);
   
