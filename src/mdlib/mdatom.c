@@ -108,6 +108,8 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
 	   to avoid div by zero in lincs or shake.
 	   Note that constraints can still move a partially frozen particle. */
 	md->invmass[i]	= ALMOST_ZERO;
+      else if (md->massT[i] == 0)
+	md->invmass[i]  = 0;
       else
 	md->invmass[i]	= 1.0/md->massT[i];
     }

@@ -701,27 +701,36 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
   for(i=0; (i<idef->il[F_SHAKE].nr); ) {
     /* Subtract degrees of freedom for the constraints,
      * if the particles still have degrees of freedom left.
+     * If one of the particles is a dummy or a shell, then all
+     * constraints motion will go there, but since they do not
+     * contribute to the constraints the degrees of freedom do not
+     * change.
      */
     ai=ia[1];
     aj=ia[2];
-    if (nrdf[ai] > 0)
-      jmin = 1;
-    else
-      jmin = 2;
-    if (nrdf[aj] > 0)
-      imin = 1;
-    else
-      imin = 2;
-    imin = min(imin,nrdf[ai]);
-    jmin = min(jmin,nrdf[aj]);
-    nrdf[ai] -= imin;
-    nrdf[aj] -= jmin;
-    opts->nrdf[atoms->atom[ai].grpnr[egcTC]] -= 0.5*imin;
-    opts->nrdf[atoms->atom[aj].grpnr[egcTC]] -= 0.5*jmin;
-    nrdf_vcm[atoms->atom[ai].grpnr[egcVCM]] -= 0.5*imin;
-    nrdf_vcm[atoms->atom[aj].grpnr[egcVCM]] -= 0.5*jmin;
-    ia += 3;
-    i += 3;
+    if (((atoms->atom[ai].ptype == eptNucleus) ||
+	 (atoms->atom[ai].ptype == eptAtom)) &&
+	((atoms->atom[aj].ptype == eptNucleus) ||
+	 (atoms->atom[aj].ptype == eptAtom))) {
+      if (nrdf[ai] > 0) 
+	jmin = 1;
+      else
+	jmin = 2;
+      if (nrdf[aj] > 0)
+	imin = 1;
+      else
+	imin = 2;
+      imin = min(imin,nrdf[ai]);
+      jmin = min(jmin,nrdf[aj]);
+      nrdf[ai] -= imin;
+      nrdf[aj] -= jmin;
+      opts->nrdf[atoms->atom[ai].grpnr[egcTC]] -= 0.5*imin;
+      opts->nrdf[atoms->atom[aj].grpnr[egcTC]] -= 0.5*jmin;
+      nrdf_vcm[atoms->atom[ai].grpnr[egcVCM]] -= 0.5*imin;
+      nrdf_vcm[atoms->atom[aj].grpnr[egcVCM]] -= 0.5*jmin;
+    }
+    ia += interaction_function[F_SHAKE].nratoms+1;
+    i  += interaction_function[F_SHAKE].nratoms+1;
   }
   ia=idef->il[F_SETTLE].iatoms;
   for(i=0; i<idef->il[F_SETTLE].nr; ) {

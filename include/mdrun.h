@@ -54,6 +54,7 @@ static char *SRCID_mdrun_h = "$Id$";
 #define MD_IONIZE    8
 #define MD_RERUN    16
 #define MD_LATEVIR  32
+#define MD_TWEAK    64
 
 /* ROUTINES from md.c */
 extern time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
@@ -193,7 +194,7 @@ extern void sum_lrforces(rvec f[],t_forcerec *fr,int start,int homenr);
 extern void calc_virial(FILE *log,int start,int homenr,rvec x[],rvec f[],
 			tensor vir_part,tensor pme_vir,
 			t_commrec *cr,t_graph *graph,matrix box,
-			t_nrnb *nrnb,t_forcerec *fr);
+			t_nrnb *nrnb,t_forcerec *fr,bool bTweak);
 			
 extern void nstop_cm(FILE *log,t_commrec *cr,
 		     int start,int nr_atoms,real mass[],rvec x[],rvec v[]);

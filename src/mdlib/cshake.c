@@ -90,23 +90,32 @@ void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 	  error=ll;
 	else {
 	  acor    = diff*m2[ll]/rrpr;
-	  im      = invmass[i];
-	  jm      = invmass[j];
 	  xh      = rijx*acor;
 	  yh      = rijy*acor;
 	  zh      = rijz*acor;
-	  tix     = xp[ix] + xh*im;
-	  tiy     = xp[iy] + yh*im;
-	  tiz     = xp[iz] + zh*im;
-	  tjx     = xp[jx] - xh*jm;
-	  tjy     = xp[jy] - yh*jm;
-	  tjz     = xp[jz] - zh*jm;
-	  xp[ix] = tix;
-	  xp[iy] = tiy;
-	  xp[iz] = tiz;
-	  xp[jx] = tjx;
-	  xp[jy] = tjy;
-	  xp[jz] = tjz;
+	  im      = invmass[i];
+	  jm      = invmass[j];
+	  if ((im != 0) && (jm != 0)) {
+	    xp[ix] += xh*im;
+	    xp[iy] += yh*im;
+	    xp[iz] += zh*im;
+	    xp[jx] -= xh*jm;
+	    xp[jy] -= yh*jm;
+	    xp[jz] -= zh*jm;
+	  }
+	  else if (im == 0) {
+	    xp[ix] += xh*jm;
+	    xp[iy] += yh*jm;
+	    xp[iz] += zh*jm;
+	  }
+	  else if (jm == 0) {
+	    xp[jx] -= xh*im;
+	    xp[jy] -= yh*im;
+	    xp[jz] -= zh*im;
+	  }
+	  else 
+	    fatal_error(0,"Constraint between two massless particles %d and %",
+			im,jm);
 	}
       }
     }

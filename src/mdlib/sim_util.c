@@ -289,12 +289,8 @@ void do_force(FILE *log,t_commrec *cr,
   calc_vir(log,SHIFTS,fr->shift_vec,fr->fshift,vir_part,cr);
   inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
 
-#ifdef DEBUG
-  if (debug) {
-    pr_rvecs(debug,0,"fr->fshift",fr->fshift,SHIFTS);
-    pr_rvecs(debug,0,"vir_part",vir_part,DIM);
-  }
-#endif
+  if (debug) 
+    pr_rvecs(debug,0,"vir_shifts",vir_part,DIM);
 
   /* When using PME/Ewald we compute the long range virial (pme_vir) there.
    * otherwise we do it based on long range forces from twin range
@@ -319,9 +315,10 @@ void sum_lrforces(rvec f[],t_forcerec *fr,int start,int homenr)
 void calc_virial(FILE *log,int start,int homenr,rvec x[],rvec f[],
 		 tensor vir_part,tensor pme_vir,
 		 t_commrec *cr,t_graph *graph,matrix box,
-		 t_nrnb *nrnb,t_forcerec *fr)
+		 t_nrnb *nrnb,t_forcerec *fr,bool bTweak)
 {
   int i,j;
+  tensor virtest;
   
   /* Now it is time for the short range virial. At this timepoint vir_part
    * already contains the virial from surrounding boxes.
@@ -332,14 +329,22 @@ void calc_virial(FILE *log,int start,int homenr,rvec x[],rvec f[],
   inc_nrnb(nrnb,eNR_VIRIAL,homenr);
 
   /* Add up the long range forces if necessary */
-  sum_lrforces(f,fr,start,homenr);
+  if (!bTweak)
+    sum_lrforces(f,fr,start,homenr);
 
   /* Add up virial if necessary */  
   if (EEL_LR(fr->eeltype) && (fr->eeltype != eelPPPM)) {
+    if (debug && bTweak) {
+      clear_mat(virtest);
+      f_calc_vir(log,start,start+homenr,x,fr->f_pme,virtest,cr,graph,box);
+      pr_rvecs(debug,0,"virtest",virtest,DIM);
+      pr_rvecs(debug,0,"pme_vir",pme_vir,DIM);
+    }    
     /* PPPM virial sucks */
-    for(i=0; (i<DIM); i++) 
-      for(j=0; (j<DIM); j++) 
-	vir_part[i][j]+=pme_vir[i][j];
+    if (!bTweak)
+      for(i=0; (i<DIM); i++) 
+	for(j=0; (j<DIM); j++) 
+	  vir_part[i][j]+=pme_vir[i][j];
   }
   if (debug)
     pr_rvecs(debug,0,"vir_part",vir_part,DIM);

@@ -127,6 +127,7 @@ int main(int argc,char *argv[])
   static bool bVerbose     = FALSE;
   static bool bCompact     = TRUE;
   static bool bLateVir     = TRUE;
+  static bool bTweak       = FALSE;
 #ifdef XMDRUN
   static bool bMultiSim    = FALSE;
   static bool bGlas        = FALSE;
@@ -152,6 +153,8 @@ int main(int argc,char *argv[])
 #endif
     { "-latevir", FALSE, etBOOL,{&bLateVir},
       "HIDDENCalculate virial late in the algorithm" },
+    { "-tweak",   FALSE, etBOOL,{&bTweak},
+      "HIDDENModify PME virial computation" },
     { "-dlb",     FALSE, etINT, {&nDLB},
       "HIDDENUse dynamic load balancing every ... step. BUGGY do not use" },
     { "-stepout", FALSE, etINT, {&nstepout},
@@ -189,7 +192,8 @@ int main(int argc,char *argv[])
     
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
   Flags = Flags | (bLateVir ? MD_LATEVIR : 0);
-    
+  Flags = Flags | (bTweak ? MD_TWEAK : 0);
+  
 #ifdef XMDRUN
   Flags = (Flags | 
 	   (bIonize   ? MD_IONIZE   : 0) |

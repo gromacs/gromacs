@@ -297,7 +297,7 @@ int vec_shakef(FILE *log,
 	 &error);
 #else
   /* And a c shake also ! */
-  cshake(iatom,ncon,&nit,maxnit,dist2,xp[0],rij[0],M2,invmass,tt,&error);
+  cshake(iatom,ncon,&nit,maxnit,dist2,xp[0],rij[0],M2,invmass,tt,lagr,&error);
 #endif
   if (nit >= maxnit) {
     fprintf(log,"Shake did not converge in %d steps\n",maxnit);

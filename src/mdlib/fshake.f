@@ -55,23 +55,33 @@
                else
                   acor    = diff*m2(ll)/rrpr
                   lambda(ll) = lambda(ll) + acor
-                  im      = invmass(i+1)
-                  jm      = invmass(j+1)
                   xh      = rijx*acor
                   yh      = rijy*acor
                   zh      = rijz*acor
-                  tix     = xp(ix) + xh*im
-                  tiy     = xp(iy) + yh*im
-                  tiz     = xp(iz) + zh*im
-                  tjx     = xp(jx) - xh*jm
-                  tjy     = xp(jy) - yh*jm
-                  tjz     = xp(jz) - zh*jm
-                  xp(ix) = tix
-                  xp(iy) = tiy
-                  xp(iz) = tiz
-                  xp(jx) = tjx
-                  xp(jy) = tjy
-                  xp(jz) = tjz
+                  im      = invmass(i)
+                  jm      = invmass(j)
+                  if ((im .ne. 0) .and. (jm .ne. 0)) then
+                     xp(ix) = xp(ix) + xh*im
+                     xp(iy) = xp(iy) + yh*im
+                     xp(iz) = xp(iz) + zh*im
+                     xp(jx) = xp(jx) - xh*jm
+                     xp(jy) = xp(jy) - yh*jm
+                     xp(jz) = xp(jz) - zh*jm
+                  else
+                     if (im .eq. 0) then
+                        xp(ix) = xp(ix) + xh*jm
+                        xp(iy) = xp(iy) + yh*jm
+                        xp(iz) = xp(iz) + zh*jm
+                     else if (jm .eq. 0) then
+                        xp(jx) = xp(jx) - xh*im
+                        xp(jy) = xp(jy) - yh*im
+                        xp(jz) = xp(jz) - zh*im
+                     else
+                        print *,'Constraint between two massless ',
+     &                       'particles ',i,' and ',j
+                        stop
+                     endif
+                  endif
                end if
             end if
          end do

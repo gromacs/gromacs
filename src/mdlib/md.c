@@ -78,7 +78,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   real       t,lambda,t0,lam0,SAfactor;
   bool       bNS,bStopCM,bStopRot,bTYZ,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bLastStep,bNEMD,do_log,bRerunWarnNoV=TRUE,
-	     bLateVir;
+	     bLateVir,bTweak;
   tensor     force_vir,pme_vir,shake_vir;
   t_nrnb     mynrnb;
   char       *traj,*xtc_traj; /* normal and compressed trajectory filename */
@@ -120,8 +120,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   debug_gmx();
 
   bLateVir = ((Flags & MD_LATEVIR) == MD_LATEVIR);
-  if (!bLateVir)
-    fprintf(log,"Late virial turned off.\n");
+  bTweak   = ((Flags & MD_TWEAK) == MD_TWEAK);
+  
+  fprintf(log,"Late virial: %s Tweak PME virial: %s\n",
+	  bool_names[bLateVir],bool_names[bTweak]);
   
 #ifdef XMDRUN
   bDynamicStep = FALSE;
@@ -329,9 +331,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     debug_gmx();
     
 #endif
+    /* HACK */
+    if (bTweak)
+      sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
+    /* HACK */
     if (!bLateVir)
       calc_virial(log,START(nsb),HOMENR(nsb),x,f,
-		  force_vir,pme_vir,cr,graph,parm->box,&mynrnb,fr);
+		  force_vir,pme_vir,cr,graph,parm->box,&mynrnb,fr,bTweak);
    
 #ifdef XMDRUN
     if (bTCR)
@@ -373,7 +379,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (MASTER(cr) && do_log)
       print_ebin_header(log,step,t,lambda,SAfactor);
     
-    if (bDummies)
+    if (bDummies) 
       /* Spread the force on dummy particle to the other particles... 
        * This is parallellized
        */
@@ -381,7 +387,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     if (bLateVir)
       calc_virial(log,START(nsb),HOMENR(nsb),x,f,
-		  force_vir,pme_vir,cr,graph,parm->box,&mynrnb,fr);
+		  force_vir,pme_vir,cr,graph,parm->box,&mynrnb,fr,bTweak);
     xx = (do_per_step(step,parm->ir.nstxout) || bLastStep) ? x : NULL;
     vv = (do_per_step(step,parm->ir.nstvout) || bLastStep) ? v : NULL;
     ff = (do_per_step(step,parm->ir.nstfout)) ? f : NULL;

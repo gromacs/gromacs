@@ -290,7 +290,6 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
   real rxx,ryx,ryy,rzx,rzy,rzz;
   
   unpack_fftgrid(grid,&nx,&ny,&nz,&la2,&la12,FALSE,(t_fft_r **)&ptr);
-  clear_mat(vir);
    
   rxx = recipbox[XX][XX];
   ryx = recipbox[YY][XX];
@@ -375,24 +374,19 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
     }
   }
     
-  /* Update virial with local values */  
-  vir[XX][XX] = virxx;
-  vir[XX][YY] = virxy;
-  vir[XX][ZZ] = virxz;
-  vir[YY][XX] = virxy;
-  vir[YY][YY] = viryy;
-  vir[YY][ZZ] = viryz;
-  vir[ZZ][XX] = virxz; 
-  vir[ZZ][YY] = viryz;
-  vir[ZZ][ZZ] = virzz;
-  
-  for(nx=0;nx<DIM;nx++) 
-    for(ny=0;ny<DIM;ny++) 
-      vir[nx][ny]*=0.25;
-  /* this virial seems ok for isotropic scaling, but I'm
-   * experiencing problems on semiisotropic membranes */
+  /* Update virial with local values. The virial is symmetric by definition.
+   * this virial seems ok for isotropic scaling, but I'm
+   * experiencing problems on semiisotropic membranes.
+   * IS THAT COMMENT STILL VALID??? (DvdS, 2001/02/07).
+   */
+  vir[XX][XX] = 0.25*virxx;
+  vir[YY][YY] = 0.25*viryy;
+  vir[ZZ][ZZ] = 0.25*virzz;
+  vir[XX][YY] = vir[YY][XX] = 0.25*virxy;
+  vir[XX][ZZ] = vir[ZZ][XX] = 0.25*virxz;
+  vir[YY][ZZ] = vir[ZZ][YY] = 0.25*viryz;
    
-  /* this energy should be corrected for a charged system */
+  /* This energy should be corrected for a charged system */
   return(0.5*energy);
 }
 
