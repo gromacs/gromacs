@@ -267,7 +267,7 @@ static void push_bondtype(t_params *bt,t_param *b,int nral,int ftype,
   bool bTest,bFound,bId;
   int  nr   = bt->nr;
   int  nrfp = NRFP(ftype);
-  
+
   /* Check if this entry overwrites another */
   bFound=FALSE;
   for (i=0; (i < nr); i++) {
@@ -681,9 +681,9 @@ void push_molt(t_symtab *symtab,t_molinfo *newmol,char *line)
 }
 
 static bool default_nb_params(int ftype,t_params bt[],t_atoms *at,
-			      t_param *p,bool bB)
+			      t_param *p,bool bB,bool bGenPairs)
 {
-  int      i,j;
+  int      i,j,ti,tj,ntype;
   bool     bFound;
   t_param  *pi=NULL;
   int      nr   = bt[ftype].nr;
@@ -692,15 +692,34 @@ static bool default_nb_params(int ftype,t_params bt[],t_atoms *at,
   int      nrfpB= interaction_function[ftype].nrfpB;
 
   bFound=FALSE;
-  for (i=0; ((i < nr) && !bFound); i++) {
-    pi=&(bt[ftype].param[i]);
-    if (bB)
-      for (j=0; ((j < nral) && 
-		 (at->atom[p->a[j]].typeB == pi->a[j])); j++);
-    else
-      for (j=0; ((j < nral) && 
-		 (at->atom[p->a[j]].type == pi->a[j])); j++);
-    bFound=(j==nral);
+  if(bGenPairs) {
+    /* First test the generated-pair position to save
+     * time when we have 1000*1000 entries for e.g. OPLS...
+     */
+    ntype=sqrt(nr);
+    if(bB) {
+      ti=at->atom[p->a[0]].typeB;
+      tj=at->atom[p->a[1]].typeB;
+    } else {
+      ti=at->atom[p->a[0]].type;
+      tj=at->atom[p->a[1]].type;
+    } 
+    pi=&(bt[ftype].param[ntype*ti+tj]);
+    bFound=((ti == pi->a[0]) && (tj == pi->a[1]));
+  }
+
+  /* Search explicitly if we didnt find it */
+  if(!bFound) {
+    for (i=0; ((i < nr) && !bFound); i++) {
+      pi=&(bt[ftype].param[i]);
+      if (bB)
+	for (j=0; ((j < nral) && 
+		   (at->atom[p->a[j]].typeB == pi->a[j])); j++);
+      else
+	for (j=0; ((j < nral) && 
+		   (at->atom[p->a[j]].type == pi->a[j])); j++);
+      bFound=(j==nral);
+    }
   }
   
   if (bFound) {
@@ -731,91 +750,44 @@ static bool default_params(int ftype,t_params bt[],t_atoms *at,t_atomtype *atype
   int      nral = NRAL(ftype);
   int      nrfp = interaction_function[ftype].nrfpA;
   int      nrfpB= interaction_function[ftype].nrfpB;
+  int     *batype=atype->bondatomtype;
 
-  bFound=FALSE;
-  for (i=0; ((i < nr) && !bFound); i++) {
-    pi=&(bt[ftype].param[i]);
-    if (bB)
-      for (j=0; ((j < nral) && 
-		 (atype->bondatomtype[at->atom[p->a[j]].typeB] == pi->a[j])); j++);
-    else
-      for (j=0; ((j < nral) && 
-		 (atype->bondatomtype[at->atom[p->a[j]].type] == pi->a[j])); j++);
-    bFound=(j==nral);
-  }
-  /* If we didn't find a 4-atom dihedral, check for a dihedraltype where
-   * ONE of the atoms is wildcarded. This can be I or L for proper 
-   * dihedrals and J or K for improper dihedrals.
+  /* We allow wildcards now. The first type (with or without wildcards) that
+   * fits is used, so you should probably put the wildcarded bondtypes
+   * at the end of each section.
    */
-  if(!bFound && (ftype == F_PDIHS || ftype == F_RBDIHS || ftype == F_IDIHS)) {
-    for(i=0; ((i < nr) && !bFound); i++) {
-      pi=&(bt[ftype].param[i]);
-      if ((ftype == F_PDIHS)  || (ftype == F_RBDIHS)) {
-	/* The j and k atoms are decisive about which dihedral type
-	 * we should take.
-	 */
-	if(bB) 
-	  bFound=((atype->bondatomtype[at->atom[p->AJ].typeB]==pi->AJ) &&
-		  (atype->bondatomtype[at->atom[p->AK].typeB]==pi->AK) &&
-		  (((atype->bondatomtype[at->atom[p->AI].typeB]==pi->AI) && (pi->AL==-1)) ||
-		   ((atype->bondatomtype[at->atom[p->AL].typeB]==pi->AL) && (pi->AI==-1))));
-	else
-	  bFound=((atype->bondatomtype[at->atom[p->AJ].type]==pi->AJ) &&
-		  (atype->bondatomtype[at->atom[p->AK].type]==pi->AK) &&
-		  (((atype->bondatomtype[at->atom[p->AI].type]==pi->AI) && (pi->AL==-1)) ||
-		   ((atype->bondatomtype[at->atom[p->AL].type]==pi->AL) && (pi->AI==-1))));
+  bFound=FALSE;
+  /* OPLS uses 1000s of dihedraltypes, so in order to speed up the scanning we have a 
+   * special case for this. Check for B state outside loop to speed it up.
+   */
+  if( ftype==F_PDIHS || ftype == F_RBDIHS || ftype == F_IDIHS) {
+    if (bB) {
+      for (i=0; ((i < nr) && !bFound); i++) {
+	pi=&(bt[ftype].param[i]);
+	bFound=( ((pi->AI==-1) || (batype[at->atom[p->AI].typeB]==pi->AI)) &&
+		 ((pi->AJ==-1) || (batype[at->atom[p->AJ].typeB]==pi->AJ)) &&
+		 ((pi->AK==-1) || (batype[at->atom[p->AK].typeB]==pi->AK)) &&
+		 ((pi->AL==-1) || (batype[at->atom[p->AL].typeB]==pi->AL)) );
       }
-      else if (ftype == F_IDIHS) {
-	/* The i and l atoms are decisive about which dihedral type
-	 * we should take. 
-	 */
-	if (bB)
-	  bFound=((atype->bondatomtype[at->atom[p->AI].typeB]==pi->AI) &&
-		  (atype->bondatomtype[at->atom[p->AL].typeB]==pi->AL) &&
-		  (((atype->bondatomtype[at->atom[p->AJ].typeB]==pi->AJ) && (pi->AK==-1)) ||
-		   ((atype->bondatomtype[at->atom[p->AK].typeB]==pi->AK) && (pi->AJ==-1))));
-	else
-	  bFound=((atype->bondatomtype[at->atom[p->AI].type]==pi->AI) &&
-		  (atype->bondatomtype[at->atom[p->AL].type]==pi->AL) &&
-		  (((atype->bondatomtype[at->atom[p->AJ].type]==pi->AJ) && (pi->AK==-1)) ||
-		   ((atype->bondatomtype[at->atom[p->AK].type]==pi->AK) && (pi->AJ==-1))));
+    } else {
+      for (i=0; ((i < nr) && !bFound); i++) {
+	pi=&(bt[ftype].param[i]);
+	bFound=( ((pi->AI==-1) || (batype[at->atom[p->AI].type]==pi->AI)) &&
+		 ((pi->AJ==-1) || (batype[at->atom[p->AJ].type]==pi->AJ)) &&
+		 ((pi->AK==-1) || (batype[at->atom[p->AK].type]==pi->AK)) &&
+		 ((pi->AL==-1) || (batype[at->atom[p->AL].type]==pi->AL)) );
       }
     }
-    /* Still not found, check for types with two wildcards */
-    if(!bFound) {
-      for(i=0; ((i < nr) && !bFound); i++) {
-	pi=&(bt[ftype].param[i]);
-	if ((ftype == F_PDIHS)  || (ftype == F_RBDIHS)) {
-	  /* The j and k atoms are decisive about which dihedral type
-	   * we should take.
-	   */
-	  if(bB) 
-	    bFound=((pi->AI==-1) &&
-		    (atype->bondatomtype[at->atom[p->AJ].typeB]==pi->AJ) &&
-		    (atype->bondatomtype[at->atom[p->AK].typeB]==pi->AK) &&
-		    (pi->AL==-1));
-	  else
-	    bFound=((pi->AI==-1) &&
-		    (atype->bondatomtype[at->atom[p->AJ].type]==pi->AJ) &&
-		    (atype->bondatomtype[at->atom[p->AK].type]==pi->AK) &&
-		    (pi->AL==-1));
-	}
-	else if (ftype == F_IDIHS) {
-	  /* The i and l atoms are decisive about which dihedral type
-	   * we should take. 
-	   */
-	  if(bB) 
-	    bFound=((atype->bondatomtype[at->atom[p->AI].typeB]==pi->AI) &&
-		    (pi->AJ==-1) &&
-		    (pi->AK==-1) &&
-		    (atype->bondatomtype[at->atom[p->AL].typeB]==pi->AL) );
-	  else
-	    bFound=((atype->bondatomtype[at->atom[p->AI].type]==pi->AI) &&
-		    (pi->AJ==-1) &&
-		    (pi->AK==-1) &&
-		    (atype->bondatomtype[at->atom[p->AL].type]==pi->AL) );
-	}
-      }
+  } else { /* Not a dihedral */
+    for (i=0; ((i < nr) && !bFound); i++) {
+      pi=&(bt[ftype].param[i]);
+      if (bB)
+	for (j=0; ((j < nral) && 
+		   (atype->bondatomtype[at->atom[p->a[j]].typeB] == pi->a[j])); j++);
+      else
+	for (j=0; ((j < nral) && 
+		   (atype->bondatomtype[at->atom[p->a[j]].type] == pi->a[j])); j++);
+      bFound=(j==nral);
     }
   }
   if (bFound) {
@@ -853,7 +825,7 @@ void push_bondnow(t_params *bond, t_param *b)
 }
 
 void push_bond(directive d,t_params bondtype[],t_params bond[],
-	       t_atoms *at,t_atomtype *atype,char *line,bool bBonded)
+	       t_atoms *at,t_atomtype *atype,char *line,bool bBonded,bool bGenPairs)
 {
   static char *aaformat[MAXATOMLIST]= {
     "%d%d",
@@ -949,8 +921,8 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     bFoundA = default_params(ftype,bondtype,at,atype,&param,FALSE);
     bFoundB = default_params(ftype,bondtype,at,atype,&param,TRUE);
   } else {
-    bFoundA = default_nb_params(ftype,bondtype,at,&param,FALSE);
-    bFoundB = default_nb_params(ftype,bondtype,at,&param,TRUE);
+    bFoundA = default_nb_params(ftype,bondtype,at,&param,FALSE,bGenPairs);
+    bFoundB = default_nb_params(ftype,bondtype,at,&param,TRUE,bGenPairs);
   }
   bDef    = TRUE;
   
@@ -1043,6 +1015,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   /* Put the values in the appropriate arrays */
   push_bondnow (&bond[ftype],&param);
 }
+
 
 
 

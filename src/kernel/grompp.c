@@ -546,14 +546,26 @@ static void gen_posres(t_params *pr,char *fn)
   sfree(v);
 }
 
-static int search_array(int atnr,int *n,int map[],int key)
+static int search_array(int atnr,int *n,int map[],int key,
+			t_param param[],int ftype)
 {
-  int i,nn;
-  
+  int i,nn,nrfp,j,k,found;
+
   nn = *n;
-  for(i=0; (i<nn); i++)
-    if (map[i] == key)
+  nrfp  = NRFP(ftype);
+
+  for(i=0; (i<nn); i++) {
+    if (map[i] == key) /* This type number has already been added */
       break;
+    /* If not, check if the parameters are identical */
+    found=1;
+    for(j=0;j<atnr && found;j++) {
+      for(k=0;k<nrfp && found;k++)
+	found=(param[atnr*map[i]+j].c[k]==param[atnr*key+j].c[k]);
+    }
+    if(found) 
+      break;
+  }
   
   if (i == nn) {
     if (debug)
@@ -571,30 +583,44 @@ static int search_array(int atnr,int *n,int map[],int key)
 static int renum_atype(t_params plist[],t_topology *top,
 		       int atnr,t_inputrec *ir,bool bVerbose)
 {
+
   int      i,j,k,l,mi,mj,nat,nrfp,ftype;
   t_param  *nbsnew;
   int      *map;
 
   snew(map,atnr);
+
   if (bVerbose)
     fprintf(stderr,"renumbering atomtypes...\n");
-  /* Renumber atomtypes and meanwhile make a list of atomtypes */    
+
+  /* Since the bonded interactions have been assigned now,
+   * we want to reduce the number of atom types by merging 
+   * ones with identical nonbonded interactions, in addition
+   * to removing unused ones.
+   */
+  
+  /* Get nonbonded interaction type */
+  if (plist[F_LJ].nr > 0)
+    ftype=F_LJ;
+  else
+    ftype=F_BHAM;
+   
+  /* Renumber atomtypes and meanwhile make a list of atomtypes.
+   * We provide the list of nonbonded parameters so search_array
+   * can determine if two types should be merged. 
+   */    
   nat=0;
   for(i=0; (i<top->atoms.nr); i++) {
     top->atoms.atom[i].type=
-      search_array(atnr,&nat,map,top->atoms.atom[i].type);
+      search_array(atnr,&nat,map,top->atoms.atom[i].type,plist[ftype].param,ftype);
     top->atoms.atom[i].typeB=
-      search_array(atnr,&nat,map,top->atoms.atom[i].typeB);
+      search_array(atnr,&nat,map,top->atoms.atom[i].typeB,plist[ftype].param,ftype);
   }
   
   if (debug)
     pr_ivec(debug,0,"map",map,nat);
     
   /* Renumber nlist */
-  if (plist[F_LJ].nr > 0)
-    ftype=F_LJ;
-  else
-    ftype=F_BHAM;
     
   nbsnew = NULL;
   snew(nbsnew,plist[ftype].nr);
@@ -613,7 +639,7 @@ static int renum_atype(t_params plist[],t_topology *top,
       plist[ftype].param[i].c[l]=nbsnew[i].c[l];
   }
   plist[ftype].nr=i;
-  
+ 
   sfree(nbsnew);
   sfree(map);
   

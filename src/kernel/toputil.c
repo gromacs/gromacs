@@ -138,6 +138,7 @@ void init_bond_atomtype (t_bond_atomtype *bat)
   bat->atomname = NULL;
 }
 
+
 void init_plist(t_params plist[])
 {
   int i;

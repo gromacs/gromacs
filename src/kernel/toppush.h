@@ -73,7 +73,7 @@ extern void push_atom(t_symtab   *symtab,
 extern void push_bondnow (t_params *bond, t_param *b);
 
 extern void push_bond(directive d,t_params bondtype[],t_params bond[],
-		      t_atoms *at,t_atomtype *atype,char *line,bool bBonded);
+		      t_atoms *at,t_atomtype *atype,char *line,bool bBonded,bool bGenPairs);
 
 extern void push_mol(int nrmols,t_molinfo mols[],char *pline,
 		     int *whichmol,int *nrcopies);
