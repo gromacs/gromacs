@@ -849,7 +849,8 @@ void update(int          natoms, 	/* number of atoms in simulation */
 	for(m=0;m<=i;m++)
 	  parm->box[i][m] += dt * parm->boxv[i][m];
     }
-    correct_box(parm->box);
+    if (ir->epc != epcNO)
+      correct_box(parm->box);
     where();
     /* (un)shifting should NOT be done after this,
      * since the box vectors might have changed
