@@ -124,7 +124,7 @@ void done_fftgrid(t_fftgrid *grid)
 }
 
 
-void gmxfft3D(FILE *fp,bool bVerbose,t_fftgrid *grid,int dir,t_commrec *cr)
+void gmxfft3D(t_fftgrid *grid,int dir,t_commrec *cr)
 {
   if (cr && PAR(cr) && grid->localptr) {
 #ifdef USE_MPI
@@ -192,58 +192,7 @@ void unpack_fftgrid(t_fftgrid *grid,int *nx,int *ny,int *nz,
   *ptr = grid->ptr;
 }
 
-void print_fftgrid(FILE *out,char *title,t_fftgrid *grid,real factor,char *pdb,
-		   rvec box,bool bReal)
-{
-    /*
-#define PDBTOL -1
-  static char *pdbformat="%-6s%5d  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n";
-  FILE     *fp;
-  int      i,ix,iy,iz;
-  real     fac=50.0,value;
-  rvec     boxfac;
-  int      nx,ny,nz,la1,la2,la12;
-  t_fft_r *ptr,g;
-  
-  if (pdb)
-    fp = ffopen(pdb,"w");
-  else
-    fp = out;
-  if (!fp)
-    return;
 
-  unpack_fftgrid(grid,&nx,&ny,&nz,&la1,&la2,&la12,&ptr);
-    
-  boxfac[XX] = fac*box[XX]/nx;
-  boxfac[YY] = fac*box[YY]/ny;
-  boxfac[ZZ] = fac*box[ZZ]/nz;
-  
-  if (pdb)
-    fprintf(fp,"REMARK ");
-  
-  fprintf(fp,"Printing all non-zero %s elements of %s\n",
-	  bReal ? "Real" : "Imaginary",title);
-  for(i=ix=0; (ix<nx); ix++)
-    for(iy=0; (iy<ny); iy++)
-      for(iz=0; (iz<nz); iz++,i++) {
-	g = ptr[INDEX(ix,iy,iz)];
-	if (pdb) {
-	  value = bReal ? g.re : g.im;
-	  if (fabs(value) > PDBTOL)
-	    fprintf(fp,pdbformat,"ATOM",i,"H","H",' ',
-		    (i%10000),ix*boxfac[XX],iy*boxfac[YY],iz*boxfac[ZZ],
-		    1.0,factor*value);
-	} 
-	else {
-	  if ((fabs(g.re) > PDBTOL) || (fabs(g.im) > PDBTOL))
-	    fprintf(fp,"%s[%2d][%2d][%2d] = %12.5e + i %12.5e%s\n",
-		    title,ix,iy,iz,g.re*factor,g.im*factor,
-		    (g.im != 0) ? " XXX" : "");
-	}
-      }
-  fflush(fp);
-  #undef PDBTOL*/
-}
 
 /*****************************************************************
  * 
