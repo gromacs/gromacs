@@ -100,9 +100,13 @@ static void init_nblist(t_nblist *nl,int homenr,int il_code)
 }
 
 static unsigned int nbf_index(bool bCoul,bool bRF,bool bBham,
-			      bool bTab,bool bWater)
+			      bool bTab,bool bWater,bool bEwald)
 {
-  int inloop[32] = { 
+    /* lot of redundancy here,
+     * since we cant have RF and EWALD simultaneously...
+     */
+
+  int inloop[64] = { 
     eNR_LJC,        eNR_QQ,         eNR_BHAM,       eNR_QQ,
     eNR_LJCRF,      eNR_QQRF,       eNR_BHAMRF,     eNR_QQRF,
     eNR_TAB,        eNR_COULTAB,    eNR_BHAMTAB,    eNR_COULTAB,
@@ -110,12 +114,21 @@ static unsigned int nbf_index(bool bCoul,bool bRF,bool bBham,
     eNR_LJC_WAT,    eNR_QQ_WAT,     eNR_BHAM_WAT,   eNR_QQ_WAT,
     eNR_LJCRF_WAT,  eNR_QQRF_WAT,   eNR_BHAMRF_WAT, eNR_QQRF_WAT,
     eNR_TAB_WAT,    eNR_COULTAB_WAT,eNR_BHAMTAB_WAT,eNR_COULTAB_WAT,
+    eNR_TAB_WAT,    eNR_COULTAB_WAT,eNR_BHAMTAB_WAT,eNR_COULTAB_WAT,
+    eNR_LJC_EW,     eNR_QQ_EW,      eNR_BHAM_EW,    eNR_QQ_EW,
+    eNR_LJC_EW,     eNR_QQ_EW,      eNR_BHAM_EW,    eNR_QQ_EW,
+    eNR_TAB,        eNR_COULTAB,    eNR_BHAMTAB,    eNR_COULTAB,
+    eNR_TAB,        eNR_COULTAB,    eNR_BHAMTAB,    eNR_COULTAB,
+    eNR_LJC_WAT_EW, eNR_QQ_WAT_EW,  eNR_BHAM_WAT_EW,eNR_QQ_WAT_EW,
+    eNR_LJC_WAT_EW, eNR_QQ_WAT_EW,  eNR_BHAM_WAT_EW,eNR_QQ_WAT_EW,
+    eNR_TAB_WAT,    eNR_COULTAB_WAT,eNR_BHAMTAB_WAT,eNR_COULTAB_WAT,
     eNR_TAB_WAT,    eNR_COULTAB_WAT,eNR_BHAMTAB_WAT,eNR_COULTAB_WAT
   };
 
   unsigned int ni;
   
-  ni = bCoul | (bBham << 1) | (bRF << 2) | (bTab << 3) | (bWater << 4);
+  ni = bCoul | (bBham << 1) | (bRF << 2) | (bTab << 3) | (bWater << 4)
+      | (bEwald << 5);
   
   return inloop[ni];
 }
@@ -126,28 +139,28 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
   int maxlr=max(homenr/20,50);
   
   init_nblist(&fr->nlist_sr[eNL_VDW],homenr,
-	      nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,FALSE));
+	      nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
   init_nblist(&fr->nlist_sr[eNL_QQ],homenr,
-	      nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,FALSE));
+	      nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
   init_nblist(&fr->nlist_sr[eNL_FREE],homenr,
 	      fr->bBHAM ? eNR_BHAM_FREE : eNR_LJC_FREE);
   init_nblist(&fr->nlist_sr[eNL_VDW_WAT],homenr,
-	      nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,TRUE));
+	      nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
   init_nblist(&fr->nlist_sr[eNL_QQ_WAT],homenr,
-	      nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,TRUE));
+	      nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
   if (fr->bTwinRange) {
     fprintf(log,"Allocating space for long range neighbour list of %d atoms\n",
 	    maxlr);
     init_nblist(&fr->nlist_lr[eNL_VDW],maxlr,
-		nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,FALSE));
+		nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
     init_nblist(&fr->nlist_lr[eNL_QQ],maxlr,
-		nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,FALSE));
+		nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
     init_nblist(&fr->nlist_lr[eNL_FREE],maxlr,
 		fr->bBHAM ? eNR_BHAM_FREE : eNR_LJC_FREE);
     init_nblist(&fr->nlist_lr[eNL_VDW_WAT],maxlr,
-		nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,TRUE));
+		nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
     init_nblist(&fr->nlist_lr[eNL_QQ_WAT],maxlr,
-		nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,TRUE));
+		nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
   }
 }
 
