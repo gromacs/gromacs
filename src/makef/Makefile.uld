@@ -1,0 +1,12 @@
+# Sun Ultra Double Prec.
+#       @(#) Makefile.s18 1.1 15 Sep 1996
+#
+#
+#       GROMACS - Groningen Machine for Chemical Simulation
+#       Copyright (c) 1990, 1991, 1992, Groningen University
+#
+#       Makefile for gromacs on double precision sun ultra
+#
+include         $(GMXHOME)/src/makef/Makefile.ult
+SYSDEFS         += -DDOUBLE -D_ult_
+FFLAGS          += -r8 -i4
