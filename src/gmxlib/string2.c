@@ -184,8 +184,20 @@ char *wrap_lines(char *buf,int line_width, int indent)
 {
   char *b2;
   int i,i0,i2,j,b2len,lspace=0,l2space=0;
-  bool bFirst;
+  bool bFirst,bFitsOnLine;
 
+  /* characters are copied from buf to b2 with possible spaces changed
+   * into newlines and extra space added for indentation.
+   * i indexes buf (source buffer) and i2 indexes b2 (destination buffer)
+   * i0 points to the beginning of the current line (in buf, source)
+   * lspace and l2space point to the last space on the current line
+   * bFirst is set to prevent indentation of first line
+   * bFitsOnLine says if the first space occurred before line_width, if 
+   * that is not the case, we have a word longer than line_width which 
+   * will also not fit on the next line, so we might as well keep it on 
+   * the current line (where it also won't fit, but looks better)
+   */
+  
   b2=NULL;
   b2len=strlen(buf)+1;
   snew(b2,b2len);
@@ -194,35 +206,48 @@ char *wrap_lines(char *buf,int line_width, int indent)
   bFirst=TRUE;
   do {
     l2space = -1;
-    for(i=i0; ((i<i0+line_width) || (l2space==-1)) && (buf[i]); i++) {
+    /* find the last space before end of line */
+    for(i=i0; ((i-i0 < line_width) || (l2space==-1)) && (buf[i]); i++) {
       b2[i2++] = buf[i];
+      /* remember the position of a space */
       if (buf[i] == ' ') {
         lspace = i;
 	l2space = i2-1;
       }
+      /* if we have a newline before the line is full, reset counters */
       if (buf[i]=='\n' && buf[i+1]) { 
 	i0=i+1;
 	b2len+=indent;
 	srenew(b2, b2len);
+	/* add indentation after the newline */
 	for(j=0; (j<indent); j++)
 	  b2[i2++]=' ';
       }
     }
+    /* check if one word does not fit on the line */
+    bFitsOnLine = (i-i0 <= line_width);
+    /* if we're not at the end of the string */
     if (buf[i]) {
-      b2[l2space] = '\n';
+      /* reset line counters to just after the space */
       i0 = lspace+1;
       i2 = l2space+1;
-      if (indent) {
-	if (bFirst) {
-	  line_width-=indent;
-	  bFirst=FALSE;
-	}
-	b2len++;
-	if (i==i0+line_width) {
+      /* if the words fit on the line, and we're beyond the indentation part */
+      if ( (bFitsOnLine) && (l2space >= indent) ) {
+	/* start a new line */
+	b2[l2space] = '\n';
+	/* and add indentation */
+	if (indent) {
+	  if (bFirst) {
+	    line_width-=indent;
+	    bFirst=FALSE;
+	  }
 	  b2len+=indent;
 	  srenew(b2, b2len);
 	  for(j=0; (j<indent); j++)
 	    b2[i2++]=' ';
+	  /* no extra spaces after indent; */
+	  while(buf[i0]==' ')
+	    i0++;
 	}
       }
     }
