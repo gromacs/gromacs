@@ -367,10 +367,10 @@ int bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
 
     if (bSafe)
       n0=shakef(log,natoms,invmass,blen,idef->iparams,
-		iatoms,ir->tol,x_s,xp,omega);
+		iatoms,ir->shake_tol,x_s,xp,omega);
     else
       n0=vec_shakef(log,natoms,invmass,blen,idef->iparams,
-		    iatoms,ir->tol,x_s,xp);
+		    iatoms,ir->shake_tol,x_s,xp);
     
 #ifdef DEBUGSHAKE
     check_cons(log,blen,x_s,xp,idef->iparams,iatoms,invmass);

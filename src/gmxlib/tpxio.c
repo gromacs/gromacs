@@ -107,14 +107,14 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_real(ir->delta_t); 
     do_real(ir->xtcprec); 
     do_int(ir->niter); 
-    do_int(ir->watertype); 
-    do_int(ir->nwatoms); 
+    do_int(ir->solvent_opt); 
+    do_int(ir->nsatoms); 
     do_real(ir->gausswidth); 
     do_int(ir->nkx); 
     do_int(ir->nky); 
     do_int(ir->nkz); 
     do_int(ir->eBox); 
-    do_int(ir->bShakeFirst); 
+    do_int(ir->bUncStart); 
     do_int(ir->btc); 
     do_int(ir->ntcmemory); 
     do_int(ir->epc); 
@@ -129,7 +129,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_real(ir->rlong); 
     do_int(ir->bLJcorr); 
     do_real(ir->epsilon_r); 
-    do_real(ir->tol); 
+    do_real(ir->shake_tol); 
     do_real(ir->fudgeLJ); 
     do_real(ir->fudgeQQ); 
     do_int(ir->bPert); 
@@ -140,7 +140,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_real(ir->dihr_fc); 
     do_real(ir->em_stepsize); 
     do_real(ir->em_tol); 
-    do_int(ir->eShakeType); 
+    do_int(ir->eConstrAlg); 
     do_int(ir->nProjOrder); 
     do_real(ir->LincsWarnAngle); 
     do_int(ir->nstLincsout); 

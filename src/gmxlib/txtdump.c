@@ -259,14 +259,14 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PR("delta_t",ir->delta_t);
     PR("xtcprec",ir->xtcprec);
     PI("niter",ir->niter);
-    PI("watertype",ir->watertype);
-    PI("nwatoms",ir->nwatoms);
+    PI("solvent_opt",ir->solvent_opt);
+    PI("nsatoms",ir->nsatoms);
     PR("gausswidth",ir->gausswidth);
     PI("nkx",ir->nkx);
     PI("nky",ir->nky);
     PI("nkz",ir->nkz);
     PS("eBox",EBOXTYPE(ir->eBox));
-    PS("bShakeFirst",BOOL(ir->bShakeFirst));
+    PS("bUncStart",BOOL(ir->bUncStart));
     PS("btc",BOOL(ir->btc));
     PI("ntcmemory",ir->ntcmemory);
     PS("epc",EPCOUPLTYPE(ir->epc));
@@ -281,7 +281,7 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PR("rlong",ir->rlong);
     PR("epsilon_r",ir->epsilon_r);
     PS("bLJcorr",BOOL(ir->bLJcorr));
-    PR("tol",ir->tol);
+    PR("tol",ir->shake_tol);
     PR("fudgeLJ",ir->fudgeLJ);
     PR("fudgeQQ",ir->fudgeQQ);
     PS("free_energy",BOOL(ir->bPert));
@@ -293,8 +293,8 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PR("em_stepsize",ir->em_stepsize);
     PR("em_tol",ir->em_tol);
     PI("nstcgsteep",ir->nstcgsteep);
-    PS("shake_type",ESHAKETYPE(ir->eShakeType));
-    PR("shake-tol",ir->tol);
+    PS("ConstAlg",ESHAKETYPE(ir->eConstrAlg));
+    PR("shake_tol",ir->shake_tol);
     PI("lincs_order",ir->nProjOrder);
     PR("lincs_warnangle",ir->LincsWarnAngle);
     PI("nstLincsout",ir->nstLincsout);

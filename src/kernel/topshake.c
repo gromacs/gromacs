@@ -33,6 +33,7 @@ static char *SRCID_topshake_c = "$Id$";
 #include "sysstuff.h"
 #include "physics.h"
 #include "macros.h"
+#include "readir.h"
 #include "typedefs.h"
 #include "topshake.h"
 #include "toppush.h"

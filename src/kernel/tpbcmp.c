@@ -246,13 +246,13 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CIR(delta_t);
   CIR(xtcprec);
   CII(niter);
-  CII(watertype);
+  CII(solvent_opt);
   CIR(gausswidth);
   CII(nkx);
   CII(nky);
   CII(nkz);
   CII(eBox);
-  CIB(bShakeFirst);
+  CIB(bUncStart);
   CIB(btc);
   CII(epc);
   CII(ntcmemory);
@@ -267,7 +267,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CIR(rlong);
   CII(bLJcorr);
   CIR(epsilon_r);
-  CIR(tol);
+  CIR(shake_tol);
   CIR(fudgeLJ);
   CIR(fudgeQQ);
   CIB(bPert);
@@ -279,7 +279,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CIR(em_stepsize);
   CIR(em_tol);
   CII(nstcgsteep);
-  CII(eShakeType);
+  CII(eConstrAlg);
   CII(nProjOrder);
   CIR(LincsWarnAngle);
   CII(nstLincsout);

@@ -62,13 +62,13 @@ typedef struct {
   real delta_t;		/* time step (ps)				*/
   real xtcprec;         /* precision of xtc file                        */
   int  niter;           /* max number of iterations for iterations      */
-  int  watertype;       /* atomtype of water oxygen                     */
-  int  nwatoms;         /* Number of atoms in water molecule            */
+  int  solvent_opt;     /* atomtype of water oxygen                     */
+  int  nsatoms;         /* Number of atoms in solvent molecule          */
   real gausswidth;      /* width of gaussian function for Ewald sum     */
   int  nkx,nky,nkz;     /* number of k vectors in each spatial dimension*/
                         /* for fourier methods for long range electrost.*/
   int  eBox;		/* The box type					*/
-  bool bShakeFirst;     /* Perform shake before first step ?		*/
+  bool bUncStart;       /* Do not constrain the start configuration	*/
   bool btc;		/* temperature coupling         		*/
   int  ntcmemory;       /* Memory (steps) for T coupling                */
   int  epc;		/* pressure coupling type			*/
@@ -83,7 +83,7 @@ typedef struct {
   real rlong;		/* long range pairlist cutoff (nm)		*/
   real epsilon_r;       /* relative dielectric constant                 */
   bool bLJcorr;         /* Perform Long range corrections for LJ        */
-  real tol;		/* tolerance for shake				*/
+  real shake_tol;	/* tolerance for shake				*/
   real fudgeLJ;		/* Fudge factor for 1-4 interactions		*/
   real fudgeQQ;		/* Id. for 1-4 coulomb interactions		*/
   bool bPert;		/* is perturbation turned on			*/
@@ -97,7 +97,7 @@ typedef struct {
   real em_tol;		/* The tolerance				*/
   int  nstcgsteep;      /* number of steps after which a steepest       */
                         /* descents step is done while doing cg         */
-  int  eShakeType;      /* Type of SHAKE algorithm                      */
+  int  eConstrAlg;      /* Type of constraint algorithm                 */
   int  nProjOrder;      /* Order of the LINCS Projection Algorithm      */
   real LincsWarnAngle;  /* If bond rotates more than %g degrees, warn   */
   int  nstLincsout;     /* Frequence for output from LINCS              */

@@ -41,6 +41,10 @@ static char *SRCID_readir_h = "$Id$";
 
 enum { eshNONE, eshHBONDS, eshALLBONDS, eshHANGLES, eshALLANGLES, eshNR };
 
+static char *constraints[eshNR+1]    = { 
+    "none", "h-bonds", "all-bonds", "h-angles", "all-angles", NULL 
+  };
+
 typedef struct {
   int warnings;
   int nshake;
@@ -50,7 +54,7 @@ typedef struct {
   char *cpp;
   char *include;
   char *define;
-  char *watertype;
+  char *SolventOpt;
   bool bGenVel;
   bool bGenPairs;
   real tempi;

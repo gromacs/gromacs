@@ -160,7 +160,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   init_mdatoms(mdatoms,lambda,TRUE);
   where();
   
-  if (parm->ir.bShakeFirst) 
+  if (!parm->ir.bUncStart) 
     do_shakefirst(log,bTYZ,lambda,ener,parm,nsb,mdatoms,x,vold,buf,f,v,
 		  graph,cr,&mynrnb,grps,fr,top,edyn);
   where();

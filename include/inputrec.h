@@ -39,8 +39,6 @@ static char *SRCID_inputrec_h = "$Id$";
 #include "typedefs.h"
 #include "string2.h"
 
-enum { eshNONE, eshHBONDS, eshALLBONDS, eshHANGLES, eshALLANGLES, eshNR };
-
 typedef struct {
   int warnings;
   int nshake;

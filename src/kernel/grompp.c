@@ -98,8 +98,9 @@ static void double_check(t_inputrec *ir, matrix box, t_molinfo *mol)
 
 #define BS(b,s,val) if (b) { fprintf(stderr,s,val); bStop=TRUE; }
   ncons=mol->plist[F_SHAKE].nr+mol->plist[F_SETTLE].nr;
-  BS((ir->tol <= 0.0) && (ncons > 0),
-     "tol must be > 0 instead of %10.5e when using shake\n",ir->tol);
+  BS((ir->shake_tol <= 0.0) && (ncons > 0),
+     "shake_tol must be > 0 instead of %10.5e when using shake\n",
+     ir->shake_tol);
      
   /* rlong must be less than half the box */
   bmin=min(box[XX][XX],box[YY][YY]);
@@ -116,41 +117,42 @@ static void double_check(t_inputrec *ir, matrix box, t_molinfo *mol)
   }
 }
 
-void check_water(bool bVerbose,int nmol,t_molinfo msys[],
-		 int Nsim,t_simsystem Sims[],t_inputrec *ir,char *watertype)
+void check_solvent(bool bVerbose,int nmol,t_molinfo msys[],
+		   int Nsim,t_simsystem Sims[],t_inputrec *ir,char *SolventOpt)
 {
   int i,wmol,nwt;
   
-  if (bVerbose)
-    fprintf(stderr,"checking for water...\n");
-  ir->watertype=-1;
-  if (strlen(watertype) == 0) {
+  ir->solvent_opt=-1;
+  if (!SolventOpt || strlen(SolventOpt)==0) {
     if (bVerbose)
-      fprintf(stderr,"no water optimizations...\n");
+      fprintf(stderr,"no solvent optimizations...\n");
   }
   else {
+    if (bVerbose)
+      fprintf(stderr,"checking for solvent...\n");
     for(i=0; (i<Nsim); i++) {
       wmol = Sims[i].whichmol;
-      if ((strcmp(watertype,*(msys[wmol].name)) == 0) && 
+      if ((strcmp(SolventOpt,*(msys[wmol].name)) == 0) && 
 	  (Sims[i].nrcopies > 0)) {
 	nwt = msys[wmol].atoms.atom[0].type;
-	if (ir->watertype == -1) 
-	  ir->watertype=nwt;
-	else if (ir->watertype == nwt) {
-	  sprintf(warn_buf,"Multiple topology entries for %s",watertype);
+	if (ir->solvent_opt == -1) 
+	  ir->solvent_opt=nwt;
+	else if (ir->solvent_opt == nwt) {
+	  sprintf(warn_buf,"Multiple topology entries for %s",SolventOpt);
 	  warning(NULL);
 	}
 	else
 	  fatal_error(0,"Multiple non-matching topology entries for %s",
-		      watertype);
+		      SolventOpt);
       }
     }
-  }
-  if (bVerbose) {
-    if (ir->watertype != -1)
-      fprintf(stderr,"...using atomtype %d for water oxygen\n",ir->watertype);
-    else
-      fprintf(stderr,"...no water\n");
+    if (bVerbose) {
+      if (ir->solvent_opt != -1)
+	fprintf(stderr,"...using solvent optimization for atomtype %d\n",
+		ir->solvent_opt);
+      else
+	fprintf(stderr,"...no solvent\n");
+    }
   }
 }
 
@@ -301,7 +303,7 @@ static int *new_status(char *topfile,char *confin,
   msys->name=do_top(bVerbose,topfile,opts,&(sys->symtab),
 		    plist,atype,&nrmols,&molinfo,ir,&Nsim,&Sims);
 
-  check_water(bVerbose,nrmols,molinfo,Nsim,Sims,ir,opts->watertype);
+  check_solvent(bVerbose,nrmols,molinfo,Nsim,Sims,ir,opts->SolventOpt);
   
   ntab = 0;
   tab  = NULL;
@@ -480,13 +482,13 @@ static int renum_atype(t_params plist[],t_topology *top,
       search_array(&nat,map,top->atoms.atom[i].typeB);
   }
   
-  if (ir->watertype != -1) {
+  if (ir->solvent_opt != -1) {
     for(j=0; (j<nat); j++)
-      if (map[j] == ir->watertype)
-	ir->watertype=j;
+      if (map[j] == ir->solvent_opt)
+	ir->solvent_opt=j;
     if (debug)
-      fprintf(debug,"Renumbering watertype (atomtype for OW) to %d\n",
-	      ir->watertype);
+      fprintf(debug,"Renumbering solvent_opt (atomtype for OW) to %d\n",
+	      ir->solvent_opt);
   }
     
   /* Renumber nlist */

@@ -165,10 +165,12 @@ int gmx_strcasecmp(const char *str1, const char *str2)
   
   do
     {
-      ch1=toupper(*(str1++));
-      ch2=toupper(*(str2++));
-      if (ch1=='-') ch1='_';
-      if (ch2=='-') ch2='_';
+      do
+	ch1=toupper(*(str1++));
+      while ((ch1=='-') || (ch1=='_'));
+      do 
+	ch2=toupper(*(str2++));
+      while ((ch2=='-') || (ch2=='_'));
       if (ch1!=ch2) return (ch1-ch2);
     }
   while (ch1);

@@ -25,15 +25,15 @@ underscore is ignored. </P>
 <li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, nstcomm)
 <li><A HREF="#ld"><b>langevin dynamics</b></A> (ld_temp, ld_fric, ld_seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
-<li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstgrp, nstprint, nstxtcout, xtc_precision, xtc_grps, energygrps)
+<li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstprint, nstxtcout, xtc_precision, xtc_grps, energygrps)
 <li><A HREF="#nl"><b>neighborsearching</b></A> (nstlist, ns_type, deltagrid, box)
 <li><A HREF="#el"><b>electrostatics</b></A> (eel_type, rshort, rlong, epsilon_r, bLJcorr, niter, gauss_width, fourier_nx, fourier_ny, fourier_nz)
 <li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, ntcmemory, tc_grps, tau_t, ref_t)
-<li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, npcmemory, tau_p, compress, ref_p)
+<li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, npcmemory, tau_p, compressibility, ref_p)
 <li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, zero_temp_time)
 <li><A HREF="#vel"><b>velocity generation</b></A> (gen_vel, gen_temp, gen_seed)
-<li><A HREF="#sol"><b>solvent optimization</b></A> (solvent_opt, nsatoms)
-<li><A HREF="#bond"><b>bonds</b></A> (constraints, constr_alg, unc_start, shake_tol, lincs_order, lincs_warnangle, nstlincsout, morse)
+<li><A HREF="#sol"><b>solvent optimization</b></A> (solvent_optimization, nsatoms)
+<li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_warnangle, nstlincsout, morse)
 <li><A HREF="#nmr"><b>NMR refinement</b></A> (dihre_fc, disre, disre_fc, disre_tau)
 <li><A HREF="#free"><b>Free energy</b></A> (free_energy, init_lambda, delta_lambda)
 <li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc_grps, accelerate, freezegrps, freezedim )
@@ -139,8 +139,6 @@ conjugate gradients energy minimization.
 <dd>frequency  to write velocities to output trajectory
 <dt><h4>nstfout: </b>(1) [steps]</h4>
 <dd>frequency to write forces to output trajectory
-<dt><h4>nstgrp: </b>(1) [steps]</h4>
-<dd>frequency] to write group stuff to logfile
 <dt><h4>nstprint: </b>(1) [steps]</h4>
 <dd>frequency to write energies to energy file
 <dt><h4>nstxtcout: </b>(0) [steps]</h4>
@@ -290,7 +288,7 @@ Several groups can be coupled seperately, these are specified in the
 <dt><b>isotropic</b>
 <dd>Pressure coupling with time constant <b>tau_p</b> [ps].
 The compressibility and reference pressure are set with
-<b>compress</b> [1/bar] and <b>ref_p</b> [bar], one
+<b>compressibility</b> [1/bar] and <b>ref_p</b> [bar], one
 value is needed.
 <dt><b>anisotropic</b>
 <dd>Idem, but 3 values are needed for x, y and z directions respectively.
@@ -304,7 +302,7 @@ of the simulation box.
 <dd>memory for running average to couple
 <dt><h4>tau_p: </b>(1) [ps]</h4>
 <dd>time constant for coupling
-<dt><h4>compress: </b>[1/bar]</h4>
+<dt><h4>compressibility: </b>[1/bar]</h4>
 <dd>compressibility (NOTE: this is now really in 1/bar)
 <dt><h4>ref_p: </b>[bar]</h4>
 <dd>reference pressure for coupling
@@ -358,7 +356,7 @@ This is only meaningful with integrator <b><A HREF="#run">md</A></b>.
 <A NAME="sol"><br><h3><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#vel"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#bond"><IMG SRC="../gif/charts_down.gif"></A> Solvent optimization</h3>
 
 <dl>
-<dt><h4>solvent_opt:</h4>
+<dt><h4>solvent_optimization:</h4>
 <dd><dl compact>
 <dt><b>&lt;empty&gt;</b>
 <dd>Do not use water specific non-bonded optimizations
@@ -392,7 +390,7 @@ by adding bond-constraints.
 <dd>Constrain all bonds and constrain all angles by adding bond-constraints.
 </dl>
 
-<dt><h4>constr_alg:</h4>
+<dt><h4>constraint_alg:</h4>
 <dd><dl compact>
 <dt><b>lincs</b>
 <dd>LINear Constraint Solver. The accuracy in set with
@@ -408,7 +406,7 @@ angle constraints.
 The relative tolerance is set with <b>shake_tol</b>, 0.0001 is a good value
 for "normal" MD. 
 </dl>
-<dt><h4>unc_start:</h4>
+<dt><h4>unconstrained_start:</h4>
 <dd><dl compact>
 <dt><b>no</b>
 <dd>apply constraints to the start configuration
@@ -542,8 +540,8 @@ desired parameter.
 <A HREF="#sa">annealing</A><br>
 <A HREF="#el2">bLJcorr</A><br>
 <A HREF="#nl">box</A><br>
-<A HREF="#pc">compress</A><br>
-<A HREF="#bond">constr_alg</A><br>
+<A HREF="#pc">compressibility</A><br>
+<A HREF="#bond">constraint_algorithm</A><br>
 <A HREF="#bond">constraints</A><br>
 <A HREF="#pp">cpp</A><br>
 <A HREF="#pp">define</A><br>
@@ -590,7 +588,6 @@ desired parameter.
 <A HREF="#run">nstcomm</A><br>
 <A HREF="#run">nsteps</A><br>
 <A HREF="#out">nstfout</A><br>
-<A HREF="#out">nstgrp</A><br>
 <A HREF="#bond2">nstlincsout</A><br>
 <A HREF="#nl">nstlist</A><br>
 <A HREF="#out">nstprint</A><br>
@@ -606,14 +603,14 @@ desired parameter.
 <A HREF="#el2">rlong</A><br>
 <A HREF="#el2">rshort</A><br>
 <A HREF="#bond2">shake_tol</A><br>
-<A HREF="#sol">solvent_opt</A><br>
+<A HREF="#sol">solvent_optimization</A><br>
 <A HREF="#pc">tau_p</A><br>
 <A HREF="#tc">tau_t</A><br>
 <A HREF="#tc">tc_grps</A><br>
 <A HREF="#tc">tcoupl</A><br>
 <A HREF="#run">tinit</A><br>
 <A HREF="#pp">title</A><br>
-<A HREF="#bond">unc_start</A><br>
+<A HREF="#bond">unconstrained_start</A><br>
 <A HREF="#user">user1_grps</A><br>
 <A HREF="#user">user2_grps</A><br>
 <A HREF="#user">user3_grps</A><br>

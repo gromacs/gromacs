@@ -151,14 +151,14 @@ do { \
       block##io(fp,(ir).delta_t); \
       block##io(fp,(ir).xtcprec); \
       block##io(fp,(ir).niter); \
-      block##io(fp,(ir).watertype); \
-      block##io(fp,(ir).nwatoms); \
+      block##io(fp,(ir).solvent_opt); \
+      block##io(fp,(ir).nsatoms); \
       block##io(fp,(ir).gausswidth); \
       block##io(fp,(ir).nkx); \
       block##io(fp,(ir).nky); \
       block##io(fp,(ir).nkz); \
       block##io(fp,(ir).eBox); \
-      block##io(fp,(ir).bShakeFirst); \
+      block##io(fp,(ir).bUncStart); \
       block##io(fp,(ir).btc); \
       block##io(fp,(ir).ntcmemory); \
       block##io(fp,(ir).bpc); \
@@ -173,7 +173,7 @@ do { \
       block##io(fp,(ir).rlong); \
       block##io(fp,(ir).bLJcorr); \
       block##io(fp,(ir).epsilon_r); \
-      block##io(fp,(ir).tol); \
+      block##io(fp,(ir).shake_tol); \
       block##io(fp,(ir).fudgeLJ); \
       block##io(fp,(ir).fudgeQQ); \
       block##io(fp,(ir).bPert); \
@@ -185,7 +185,7 @@ do { \
       block##io(fp,(ir).em_stepsize); \
       block##io(fp,(ir).em_tol); \
       block##io(fp,(ir).nstcgsteep); \
-      block##io(fp,(ir).eShakeType); \
+      block##io(fp,(ir).eConstrAlg); \
       block##io(fp,(ir).nProjOrder); \
       block##io(fp,(ir).LincsWarnAngle); \
       block##io(fp,(ir).nstLincsout); \

@@ -68,7 +68,7 @@ void init_ir(t_inputrec *ir, t_gromppopts *opts)
   snew(opts->cpp,STRLEN); 
   snew(opts->include,STRLEN); 
   snew(opts->define,STRLEN);
-  snew(opts->watertype,STRLEN);
+  snew(opts->SolventOpt,STRLEN);
 }
 
 void check_ir(t_inputrec *ir, t_gromppopts *opts)
@@ -87,8 +87,9 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts)
     warning(NULL);
   }
  
-  BS(((ir->tol <= 0.0) && (opts->nshake > 0)),
-     "tol must be > 0 instead of %10.5e while using shake\n",ir->tol);
+  BS(((ir->shake_tol<=0.0) && (opts->nshake>0) && (ir->eConstrAlg==estSHAKE)),
+     "shake_tol must be > 0 instead of %10.5e while using shake\n",
+     ir->shake_tol);
   BS(((ir->ndelta < 1) && (ir->ns_type==ensGRID)),
      "when you use ndelta=%d the neighbour search will be done\n"
      "on one grid cell, and take much longer than the simple method\n",
@@ -160,10 +161,6 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts)
 void get_ir(char *mdparin,char *mdparout,
 	    t_inputrec *ir,t_gromppopts *opts)
 {
-  static char *shake[eshNR+1]    = { 
-    "none", "h-bonds", "all-bonds", "h-angles", "all-angles", NULL 
-  };
-  
   char      *dumstr[2];
   double    dumdub[2][DIM];
   t_inpfile *inp;
@@ -207,9 +204,8 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("Output frequency for coords (x), velocities (v) and forces (f)");
   ITYPE ("nstxout",	ir->nstxout,	1);
   ITYPE ("nstvout",	ir->nstvout,	1);
-  ITYPE ("nstfout",	ir->nstfout,	1);
+  ITYPE ("nstfout",	ir->nstfout,	0);
   CTYPE ("Output frequency for group stuff and for energies (nstprint)");
-  ITYPE ("nstgrp",	ir->nstgrp,	1);
   ITYPE ("nstprint",	ir->nstprint,	1);
   CTYPE ("Output frequency for xtc files, and associated precision");
   ITYPE ("nstxtcout",   ir->nstxtcout,  0);
@@ -275,7 +271,7 @@ void get_ir(char *mdparin,char *mdparout,
   ITYPE ("npcmemory",   ir->npcmemory,  1);
   CTYPE ("Time constant (ps), compressibility (1/bar) and reference P (bar)");
   RTYPE ("tau_p",	ir->tau_p,	1.0);
-  STYPE ("compress",	dumstr[0],	NULL);
+  STYPE ("compressibility",	dumstr[0],	NULL);
   STYPE ("ref_p",       dumstr[1],      NULL);
   
   /* Simulated annealing */
@@ -292,26 +288,26 @@ void get_ir(char *mdparin,char *mdparout,
   
   /* Optimization */
   CCTYPE ("OPTIMIZATIONS FOR SOLVENT MODELS");
-  CTYPE ("Type of solvent optimization");
-  STYPE ("watertype",   opts->watertype,NULL);
+  CTYPE ("Solvent molecule name (blank: no optimization)");
+  STYPE ("solvent_optimization",   opts->SolventOpt,NULL);
   CTYPE ("Number of atoms in solvent model. (Not implemented for non-three atom models)");
-  ITYPE ("nwatoms",     ir->nwatoms,    3);
+  ITYPE ("nsatoms",     ir->nsatoms,    3);
 
   /* Shake stuff */
   CCTYPE ("OPTIONS FOR BONDS");
-  ETYPE ("constraints",	opts->nshake,	shake);
-  CTYPE ("Type of constraint solver");
-  ETYPE ("shake_type",  ir->eShakeType, eshake_names);
-  CTYPE ("Shake the start configuration (using either shake of lincs)");
-  ETYPE ("shake_first", ir->bShakeFirst,yesno_names);
+  ETYPE ("constraints",	opts->nshake,	constraints);
+  CTYPE ("Type of constraint algorithm");
+  ETYPE ("constraint_algorithm",  ir->eConstrAlg, eshake_names);
+  CTYPE ("Do not constrain the start configuration");
+  ETYPE ("unconstrained_start", ir->bUncStart, yesno_names);
   CTYPE ("Relative tolerance of shake");
-  RTYPE ("tol",		ir->tol,	0.0001);
+  RTYPE ("shake_tol", ir->shake_tol, 0.0001);
   CTYPE ("Highest order in the expansion of the constraint coupling matrix");
   ITYPE ("lincs_order", ir->nProjOrder, 4);
   CTYPE ("Lincs will write a warning to the stderr if in one step a bond rotates"); 
   CTYPE ("over more degrees than");
   RTYPE ("lincs_warnangle", ir->LincsWarnAngle, 30.0);
-  CTYPE ("Output frequency of the constraint accuracy");
+  CTYPE ("Output frequency of the Lincs accuracy");
   ITYPE ("nstLincsout",	ir->nstLincsout,100);
   CTYPE ("Convert harmonic bonds to morse potentials");
   ETYPE ("morse",       opts->bMorse,yesno_names);

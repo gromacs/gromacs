@@ -250,7 +250,7 @@ void init_forcerec(FILE *log,
   fr->ndelta     = ir->ndelta;
   fr->eeltype    = ir->eeltype;
   if (fr->eeltype == eelTWIN)
-    fr->nWater   = ir->watertype;
+    fr->nWater   = ir->solvent_opt;
   else
     fr->nWater   = -1;
     

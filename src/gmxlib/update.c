@@ -764,7 +764,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
 		start,homenr,
 		&nblocks,&sblock,
 		&nsettle,&owptr,&settle_type);
-    if (ir->eShakeType == estLINCS) {
+    if (ir->eConstrAlg == estLINCS) {
       please_cite(stdlog,"Hess97a");
       init_project(stdlog,top,ir,md,
 		   start,homenr,
@@ -896,11 +896,11 @@ void update(int          natoms, 	/* number of atoms in simulation */
 
       nc=idef->il[F_SHAKE].nr/3;
 
-      if (ir->eShakeType == estSHAKE)
+      if (ir->eConstrAlg == estSHAKE)
 	ncons=bshakef(stdlog,natoms,md->invmass,nblocks,sblock,idef,
 		      ir,box,x,xprime,nrnb);
       
-      if (ir->eShakeType == estLINCS) {
+      if (ir->eConstrAlg == estLINCS) {
 	
 	if (ir->bPert) {
 	  for(i=0;i<nc;i++)
