@@ -713,9 +713,10 @@ int gmx_analyze(int argc,char *argv[])
     "by fitting to a t + b on log-log scale. All points after the first",
     "zero or negative value are ignored."
   };
-  static real tb=-1,te=-1,frac=0.5,filtlen=0,binwidth=0.1;
-  static bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE;
-  static bool bEESEF=FALSE,bEENLC=FALSE,bEeFitAc=FALSE,bPower=FALSE; 
+  static real tb=-1,te=-1,frac=0.5,filtlen=0,binwidth=0.1,aver_start=0;
+  static bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE,bXYdy=FALSE;
+  static bool bEESEF=FALSE,bEENLC=FALSE,bEeFitAc=FALSE,bPower=FALSE;
+  static bool bIntegrate=FALSE; 
   static int  linelen=4096,nsets_in=1,d=1,nb_min=4,resol=10;
 
   /* must correspond to enum avbar* declared at beginning of file */
@@ -742,6 +743,12 @@ int gmx_analyze(int argc,char *argv[])
       "Binwidth for the distribution" },
     { "-errbar",  FALSE, etENUM, {avbar_opt},
       "Error bars for -av" },
+    { "-integrate",FALSE,etBOOL, {&bIntegrate},
+      "Integrate data function(s) numerically using trapezium rule" },
+    { "-aver_start",FALSE, etREAL, {&aver_start},
+      "Start averaging the integral from here" },
+    { "-xydy",    FALSE, etBOOL, {&bXYdy},
+      "Interpret second data set as error in the y values for integrating" },
     { "-nbmin",   FALSE, etINT, {&nb_min},
       "HIDDENMinimum number of blocks for block averaging" },
     { "-resol", FALSE, etINT, {&resol},
@@ -817,7 +824,23 @@ int gmx_analyze(int argc,char *argv[])
       for(i=0; (i<n); i++)
 	val[s][i] = (val[s][i+d]-val[s][i])/(d*dt);
   }
+  if (bIntegrate) {
+    printf("Calculating the integral using the trapezium rule\n");
+    
+    if (bXYdy) {
+      real sum,stddev,start=0;
+      
+      sum = evaluate_integral(n,dt,val[0],val[1],start,&stddev);
+      printf("Integral %8.3f +/- %8.3f\n",sum,stddev);
+    }
+    else {
+      for(s=0; s<nset; s++)
+	printf("Integral %d  %8.3f\n",s+1,
+	       print_and_integrate(NULL,n,dt,val[s],NULL,0));
+    }
+  }
 
+  
   if (fitfile)
     do_fit(fitfile,nset,n,t,val);
 
