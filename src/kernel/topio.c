@@ -463,6 +463,8 @@ static char **read_topol(char        *infile,
 	  Sims[Nsim].whichmol=whichmol;
 	  Sims[Nsim].nrcopies=nrcopies;
 	  Nsim++;
+	  if (mi0->atoms.nr == 0)
+	    fatal_error(0,"Moleculetype %s contains no atoms",*mi0->name);
 	  fprintf(stderr,"Excluding %d bonded neighbours for %s\n",
 		    mi0->nrexcl,pline);
 	  if (!mi0->bProcessed) {
