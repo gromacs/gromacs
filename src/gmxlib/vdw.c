@@ -91,7 +91,8 @@ real get_vdw(int nvdw,t_vdw vdw[],char *atom)
   }
 
   if (best == -1) {
-    fprintf(stderr,"Could not find atom %s\n",atom);
+    if (debug)
+      fprintf(debug,"Could not find atom %s\n",atom);
     return 0.0;
   }
   else
