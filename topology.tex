@@ -406,12 +406,25 @@ computed according to the \normindex{combination rule}:
 \end{array}
 \end{eqnarray}
 
-\subsection{1-4 interactions}
-The \swapindex{1-4}{interaction}s for the atom types
+\subsection{\normindex{pair interaction}s}
+Extra Lennard-Jones and electrostatic interactions between pairs
+of atoms in a molecule can be added in the {\tt [~pairs~]} section of
+a molecule definition. The parameters for these interactions can
+be set independently from the non-bonded interaction parameters.
+In the {\gromacs} and {\gromos} forcefields pairs are only used
+to modify the \normindex{1-4 interaction}s (interactions of atoms
+separated by three bonds). In these forcefields the 1-4 interactions
+are excluded from the non-bonded interactions (see \ssecref{excl}).
+
+The pair interaction parameters for the atom types
 in {\tt ff???nb.itp} are listed in the {\tt [~pairtypes~]} section.
-The GROMACS and GROMOS force fields lists all these interactions 
+The {\gromacs} and {\gromos} force fields lists all these interactions 
 explicitly, but this section might be empty for force fields like
 OPLS that calculate the 1-4 interactions by scaling.
+Pair parameters which are not present in the {\tt [~pairtypes~]} section
+are only generated when generate pairs is set to yes in the topology
+(see \ssecref{topfile}). When generate pairs is set to no, {\tt grompp}
+will give a warning for each pair type for which no parameters are given.
 
 \subsection{\normindex{Exclusions}}
 \label{subsec:excl}
@@ -1069,7 +1082,7 @@ here too.
 
 {\bf {\tt [~bonds~]} :} no comment.
 
-{\bf {\tt [~pairs~]} :} 1-4 interactions
+{\bf {\tt [~pairs~]} :} LJ and Coulomb 1-4 interactions
 
 {\bf {\tt [~angles~]} :} no comment
 
