@@ -250,10 +250,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
   m=0;
   while ((m < mm->nmap) && fgetline(&line,in)) {
     line=strchr(line,'\"');
-
-    if  ( line == NULL ) 
-      fatal_error(0,"Not enough color map entries");
-    else {
+    if  (line) {
       line++;
       /* Read xpm color map entry */
       str=strchr(line+2,'#')+1;
@@ -274,7 +271,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
       }
       else if (col_len==12) {
 	sscanf(line,"%s %*c #%4x%4x%4x",
-	       buf,&r,&g,&b);
+		 buf,&r,&g,&b);
 	map[m].code.c1=buf[0];
 	if (nch==1)
 	  map[m].code.c2=0;
@@ -293,6 +290,8 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
       m++;
     }
   }
+  if  ( m != mm->nmap ) 
+    fatal_error(0,"Number read colors (%d) does not match the number of color map entries (%d)",m,mm->nmap);
   mm->map = map;
   if (debug)
     for(m=0;m<mm->nmap;m++) 
