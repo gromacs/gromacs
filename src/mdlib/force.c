@@ -286,11 +286,10 @@ void init_forcerec(FILE *log,
   fr->vdwtype    = ir->vdwtype;
   fr->bTwinRange = (fr->rlistlong > fr->rlist);
   fr->bEwald     = ((fr->eeltype == eelPME) || (fr->eeltype == eelEWALD));
-  fr->bTab       = ((fr->eeltype != eelCUT) || (fr->vdwtype != evdwCUT) ||
-		    (fr->bPert));
+  fr->bTab       = ((fr->eeltype != eelCUT) || (fr->vdwtype != evdwCUT));
   fr->bRF        = (((fr->eeltype == eelRF) || (fr->eeltype == eelGRF)) &&
 		    (fr->vdwtype == evdwCUT));
-  if ((fr->bRF) && (fr->vdwtype == evdwCUT) && !fr->bPert)
+  if ((fr->bRF) && (fr->vdwtype == evdwCUT))
     fr->bTab = FALSE;
   fprintf(log,"Table routines are used: %s\n",bool_names[fr->bTab]);
   
@@ -460,12 +459,20 @@ void init_forcerec(FILE *log,
       fr->VFtab14=fr->VFtab;
       fr->VFtab=NULL;
     }
-    if (fr->eBox == ebtNONE)
+    fr->rtab = max(fr->rlistlong+TAB_EXT,MAX_14_DIST);
+  } else if (fr->bPert) {
+    if (fr->rlistlong == 0) {
+      char *ptr,*envvar="FEP_TABLE_LENGTH";
       fr->rtab = 5;
-    else
+      ptr = getenv(envvar);
+      if (ptr)
+	sscanf(ptr,"%f",&(fr->rtab));
+      fprintf(log,"\nNote: Setting the free energy table length to %g nm\n"
+	      "      You can set this value with the environment variable %s"
+	      "\n\n",fr->rtab,envvar);
+    } else
       fr->rtab = max(fr->rlistlong+TAB_EXT,MAX_14_DIST);
-  } 
-  else
+  } else
     fr->rtab = MAX_14_DIST;
     
   /* make tables for ordinary interactions */
