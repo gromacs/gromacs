@@ -286,7 +286,7 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
     
     wang=ir->LincsWarnAngle;
     
-    if (do_per_step(step,ir->nstlog))
+    if (do_per_step(step,ir->nstlog) || step<0)
       cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
 
     if ((ir->eI == eiSteep) || (ir->eI == eiCG) || bItEqOrder)
@@ -330,7 +330,7 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
       *dvdlambda+=dvdl;
     }
     
-    if (do_per_step(step,ir->nstlog)) {
+    if (do_per_step(step,ir->nstlog) || step<0) {
       fprintf(stdlog,"   Rel. Constraint Deviation:  Max    between atoms     RMS\n");
       fprintf(stdlog,"       Before LINCS         %.6f %6d %6d   %.6f\n",
 	      p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);

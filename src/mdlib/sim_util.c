@@ -390,7 +390,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
 		   t_groups *grps,t_forcerec *fr,t_topology *top,
 		   t_edsamyn *edyn,t_pull *pulldata)
 {
-  int    i,m,start,homenr,end;
+  int    i,m,start,homenr,end,step;
   tensor shake_vir;
   double mass,tmass,vcm[4];
   real   dt=parm->ir.delta_t;
@@ -404,8 +404,10 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
     if (debug)
       fprintf(debug,"vcm: start=%d, homenr=%d, end=%d\n",start,homenr,end);
     /* Do a first SHAKE to reset particles... */
+    step = -2;
+    fprintf(log,"\nConstraining the starting coordinates (step %d)\n",step);
     clear_mat(shake_vir);
-    update(nsb->natoms,start,homenr,-1,lambda,&ener[F_DVDL],
+    update(nsb->natoms,start,homenr,step,lambda,&ener[F_DVDL],
 	   parm,1.0,md,x,graph,
 	   NULL,NULL,vold,NULL,x,top,grps,shake_vir,cr,nrnb,bTYZ,
 	   FALSE,edyn,pulldata,TRUE,FALSE);
@@ -421,30 +423,13 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
     /* Shake the positions at t=-dt with the positions at t=0
      * as reference coordinates.
      */
+    step = -1;
+    fprintf(log,"\nConstraining the coordinates at t0-dt (step %d)\n",step);
     clear_mat(shake_vir);
     update(nsb->natoms,start,homenr,
-	   0,lambda,&ener[F_DVDL],parm,1.0,md,f,graph,
+	   step,lambda,&ener[F_DVDL],parm,1.0,md,f,graph,
 	   NULL,NULL,vold,NULL,buf,top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,
 	   edyn,pulldata,TRUE,FALSE);
-    
-    /* Compute the velocities at t=-dt/2 using the coordinates at
-     * t=-dt and t=0
-     */
-    dt_1=1.0/dt;
-    for(i=start; (i<end); i++) {
-      /*for(i=0; (i<nsb->natoms); i++) {*/
-      for(m=0; (m<DIM); m++)
-	v[i][m]=(x[i][m]-f[i][m])*dt_1;
-    }
-  
-    /* Shake the positions at t=-dt with the positions at t=0
-     * as reference coordinates.
-     */
-    clear_mat(shake_vir);
-    update(nsb->natoms,start,homenr,
-	   0,lambda,&ener[F_DVDL],parm,1.0,md,f,graph,
-	   NULL,NULL,vold,NULL,buf,top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,
-	   pulldata,TRUE,FALSE);
     
     /* Compute the velocities at t=-dt/2 using the coordinates at
      * t=-dt and t=0
