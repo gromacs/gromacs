@@ -7,6 +7,7 @@ typedef struct {
   Widget   w,other,parent;
   bool     bDesc,bPopup;
   XmString desc;
+  char     *orignm;
   char     *directory;
   int      ftp;
 } t_widget;
@@ -34,6 +35,7 @@ windex add_widget(Widget new_widget,char *desc)
       w[i].parent= 0;
       w[i].bDesc = FALSE;
       w[i].bPopup= FALSE;
+      w[i].orignm    = NULL;
       w[i].directory = NULL;
     }
   }
@@ -72,6 +74,23 @@ void set_parent(windex win,Widget parent)
     fatal_error(0,"Parent widget already set for widget %d",win);
   
   w[win].parent = parent;
+}
+
+void set_windex_orignm(windex win,char *orignm)
+{
+  widget_range_check(win);
+
+  if (orignm)
+    w[win].orignm = strdup(orignm);
+  else
+    w[win].orignm = NULL;
+}
+
+char *get_windex_orignm(windex win)
+{
+  widget_range_check(win);
+  
+  return w[win].orignm;
 }
 
 void set_windex_popup(windex win,bool bPopup)

@@ -165,7 +165,7 @@ lfft:		lfft.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 fitter:		fitter.o
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS)
-mgmxtest:	mgmxtest.o 	mgmx.o	widget.o
+mgmxtest:	mgmxtest.o 	mgmx.o	widget.o statutil.o
 		$(LD) -o $@ $^  $(SYSLIBS) 
 
 include	Make.dep

@@ -12,6 +12,8 @@ extern Widget   get_widget(windex win);
 extern windex   get_windex(Widget www);
 extern Widget   get_parent(windex win);
 extern void     set_parent(windex win,Widget parent);
+extern void     set_windex_orignm(windex win,char *orignm);
+extern char     *get_windex_orignm(windex win);
 extern XmString get_widget_desc(Widget www);
 extern bool     have_windex_desc(windex www);
 extern bool     get_windex_popup(windex win);
