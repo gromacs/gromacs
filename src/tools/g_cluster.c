@@ -464,24 +464,18 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
   snew(nnb,n1);
   snew(row,n1);
   for(i=0; (i<n1); i++) {
-    /* get one row from matrix */
-    for(j=0; (j<n1); j++) {
-      row[j].j    = j;
-      row[j].dist = mat[i][j];
-    }
-    /* sort it on rms distance, smallest first */
-    qsort(row,n1,sizeof(row[0]),rms_dist_comp);
     max=0;
     k=0;
-    /* copy neighbors within cut-off to list */
-    for(j=0; j<n1 && row[j].dist < rmsdcut; j++) {
-      if (k >= max) {
-	max += 10;
-	srenew(nnb[i].nb,max);
+    /* put all neighbors within cut-off in list */
+    for(j=0; j<n1; j++) 
+      if (mat[i][j] < rmsdcut) {
+	if (k >= max) {
+	  max += 10;
+	  srenew(nnb[i].nb,max);
+	}
+	nnb[i].nb[k] = j;
+	k++;
       }
-      nnb[i].nb[k] = row[j].j;
-      k++;
-    }
     /* store nr of neighbors, we'll need that */
     nnb[i].nr = k;
     if (i%(1+n1/100)==0) fprintf(stderr,"%3d%%\b\b\b\b",(i*100+1)/n1);
@@ -613,18 +607,20 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
 			     real *mass, rvec **xx, real *time,
 			     int ifsize, atom_id *fitidx,
 			     int iosize, atom_id *outidx,
-			     char *trxfn, char *sizefn, char *transfn,
-			     bool bAverage, bool bFirstIsMiddle,
+			     char *trxfn, char *sizefn, 
+			     char *transfn, char *ntransfn, 
+			     bool bAverage, 
 			     int write_ncl, int write_nst, real rmsmin,
 			     FILE *logf)
 {
   FILE *fp;
   char buf[STRLEN],buf1[20],buf2[20],*ext,*trxsfn;
   int  trxout=0,trxsout=0;
-  int  i,i1,i2,cl,nstr,*structure,first=0,midstr,ntrans,maxtrans,nlevels;
+  int  i,i1,i2,j,cl,nstr,*structure,first=0,midstr,ntrans,maxtrans,nlevels;
   bool *bWrite;
   real r,clrmsd,midrmsd;
   real **trans,*axis;
+  int  *ntransi,*ntranso;
   rvec *xav=NULL;
   matrix zerobox;
 
@@ -684,7 +680,8 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
 	trans[clust->cl[i-1]-1][clust->cl[i]-1]++;
 	maxtrans = max(maxtrans, trans[clust->cl[i]-1][clust->cl[i-1]-1]);
       }
-    fprintf(stderr,"Counted %d transitions in total, max %d per cluster\n",
+    fprintf(stderr,"Counted %d transitions in total, "
+	    "max %d between two specific clusters\n",
 	    ntrans,maxtrans);
     fp=ffopen(transfn,"w");
     nlevels = min(maxtrans+1, 80);
@@ -692,6 +689,22 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
 	      "from cluster","to cluster", 
 	      clust->ncl, clust->ncl, axis, axis, trans, 
 	      0, maxtrans, rlo, rhi, &nlevels);
+    ffclose(fp);
+    /* sum up transitions per cluster in first row and column */
+    fp=xvgropen(ntransfn,"Cluster Transitions","Cluster #","# transitions");
+    { 
+      char *legend[] = { "in", "out" };
+      xvgr_legend(fp,asize(legend),legend);
+    }
+    snew(ntransi,clust->ncl);
+    snew(ntranso,clust->ncl);
+    for(i=1; i<clust->ncl; i++)
+      for(j=1; j<clust->ncl; j++) {
+	ntranso[i] += trans[i][j];
+	ntransi[j] += trans[i][j];
+      }
+    for(i=0; i<clust->ncl; i++)
+      fprintf(fp,"%5d %5d %5d\n",i,ntransi[i],ntranso[i]);
     ffclose(fp);
   }
   if (sizefn) {
@@ -732,8 +745,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
 	  r += rmsd[structure[i1]][structure[i]];
 	r /= (nstr - 1);
       }
-      if ( (  bFirstIsMiddle && (i1==0) ) || 
-	   ( !bFirstIsMiddle && (r < midrmsd) ) ) {
+      if ( r < midrmsd ) {
 	midstr = structure[i1];
 	midrmsd = r;
       }
@@ -778,7 +790,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
 	      if (bWrite[i1])
 		bWrite[i] = rmsd[structure[i1]][structure[i]] > rmsmin;
 	  if (bWrite[i])
-	    write_trx(trxsout,iosize,outidx,atoms,0,time[structure[i]],zerobox,
+	    write_trx(trxsout,iosize,outidx,atoms,i,time[structure[i]],zerobox,
 		      xx[structure[i]],NULL);
 	}
 	close_trx(trxsout);
@@ -795,7 +807,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
       }
       do_fit(natom,mass,xtps,xav);
       r = cl;
-      write_trx(trxout,iosize,outidx,atoms,0,r,zerobox,xav,NULL);
+      write_trx(trxout,iosize,outidx,atoms,cl,time[structure[i]],zerobox,xav,NULL);
     }
   }
   if (trxfn) {
@@ -850,7 +862,7 @@ int main(int argc,char *argv[])
     "diagonalization: diagonalize the RMSD matrix.[PAR]"
     
     "gromos: use algorithm as described in Daura [IT]et al.[it]",
-    "([IT]Angew. Chem. Int. Ed.[it] [BB]1999[b], [IT]38[it], No. 1/2).",
+    "([IT]Angew. Chem. Int. Ed.[it] [BB]1999[bb], [IT]38[it], pp 236-240).",
     "Count number of neighbors using cut-off, take structure with",
     "largest number of neighbors with all its neighbors as cluster",
     "and eleminate it from the pool of clusters. Repeat for remaining",
@@ -951,7 +963,8 @@ int main(int argc,char *argv[])
     { efXVG, "-dist", "rmsd-dist",  ffOPTWR },
     { efXVG, "-ev",   "rmsd-eig",   ffOPTWR },
     { efXVG, "-sz",   "clust-size", ffOPTWR},
-    { efXPM, "-trans","clust-trans",ffOPTWR},
+    { efXPM, "-tr",   "clust-trans",ffOPTWR},
+    { efXVG, "-ntr",  "clust-trans",ffOPTWR},
     { efTRX, "-cl",   "clusters.pdb", ffOPTWR }
   };
 #define NFILE asize(fnm)
@@ -1216,11 +1229,11 @@ int main(int argc,char *argv[])
     useatoms.nr=isize;
     analyze_clusters(nf,&clust,rms->mat,isize,&useatoms,usextps,mass,xx,time,
 		     ifsize,fitidx,iosize,outidx,
-		     bReadTraj?trx_out_fn:NULL, 
-		     opt2fn_null("-sz",NFILE,fnm), 
-		     opt2fn_null("-trans",NFILE,fnm),
-		     bAverage, method==m_gromos, write_ncl, write_nst, rmsmin,
-		     log);
+		     bReadTraj?trx_out_fn:NULL,
+		     opt2fn_null("-sz",NFILE,fnm),
+		     opt2fn_null("-tr",NFILE,fnm),
+		     opt2fn_null("-ntr",NFILE,fnm),
+		     bAverage, write_ncl, write_nst, rmsmin, log);
   }
   ffclose(log);
   
@@ -1251,9 +1264,11 @@ int main(int argc,char *argv[])
     do_view(opt2fn_null("-ev",NFILE,fnm),NULL);
   if (bWriteDist)
     do_view(opt2fn("-dist",NFILE,fnm),NULL);
-  if (bAnalyze)
-    do_view(opt2fn_null("-trans",NFILE,fnm),NULL);
-
+  if (bAnalyze) {
+    do_view(opt2fn_null("-tr",NFILE,fnm),NULL);
+    do_view(opt2fn_null("-ntr",NFILE,fnm),NULL);
+  }
+  
   /* Thank the user for her patience */  
   thanx(stderr);
   
