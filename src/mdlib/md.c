@@ -113,7 +113,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   init_md(cr,&parm->ir,parm->box,&t,&t0,&lambda,&lam0,&SAfactor,
 	  &mynrnb,&bTYZ,top,
 	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&mdebin,grps,
-	  force_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&vcm);
+	  force_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&vcm,nsb);
   debug_gmx();
   
 #ifdef XMDRUN
