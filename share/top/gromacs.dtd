@@ -49,7 +49,7 @@
                    [...]>
 -->
 
-<!ELEMENT gromacs (inputrec,system,atomtypes,forcefield,cell,
+<!ELEMENT gromacs (parameters,system,atomtypes,forcefield,cell,
                    coordinates,velocities?,forces?)>
 <!ATTLIST gromacs
           title     CDATA #REQUIRED>
@@ -262,7 +262,7 @@
 <!ELEMENT forces      (rvec*)>
 <!ELEMENT rvec EMPTY>
 <!ATTLIST rvec 
-          id IDREF #REQUIRED
+          id CDATA #REQUIRED
           x  CDATA #REQUIRED
           y  CDATA #REQUIRED
           z  CDATA #REQUIRED>
