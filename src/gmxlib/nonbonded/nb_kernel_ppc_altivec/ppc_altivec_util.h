@@ -2109,11 +2109,11 @@ update_i_4atoms_forces(float *water,
 	l1                = vec_ld(  0, water);
 	l2                = vec_ld( 16, water);
 	l3                = vec_ld( 32, water);
-	if(((unsigned int)water) & 0xf)
+	if(((unsigned int)water) & 0xf) {
 		l4            = vec_ld( 48, water );
-	else
+	} else {
 		l4            = nul;
-
+	}
 	mask              = vec_perm(ox00,
 								 (vector unsigned int)vec_splat_s32(-1),perm);
   
