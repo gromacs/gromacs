@@ -39,13 +39,13 @@ static char *SRCID_ter_db_h = "$Id$";
 #include "sysstuff.h"
 #include "pdb2gmx.h"
 
-extern int read_ter_db(char *inf,t_terblock **tbptr,t_atomtype *atype);
+extern int read_ter_db(char *inf,t_hackblock **tbptr,t_atomtype *atype);
 /* Read database for N&C terminal hacking */
 
-extern t_terblock *choose_ter(int nb,t_terblock tb[],char *title);
+extern t_hackblock *choose_ter(int nb,t_hackblock tb[],char *title);
 /* Interactively select one.. */
 
-extern void print_ter_db(FILE *out,int nb,t_terblock tb[],t_atomtype *atype);
+extern void print_ter_db(FILE *out,int nb,t_hackblock tb[],t_atomtype *atype);
 /* Print the stuff */
 
 #endif	/* _ter_db_h */

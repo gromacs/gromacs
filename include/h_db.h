@@ -40,7 +40,7 @@ static char *SRCID_h_db_h = "$Id$";
 
 /* functions for the h-database */
 
-extern void read_ab(FILE *in,t_add_block *ab);
+extern void read_ab(FILE *in,char *fn,t_add_block *ab);
 /* Read one add block */
 
 extern int read_h_db(char *fn,t_addh **ah);

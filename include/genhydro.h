@@ -36,7 +36,7 @@ static char *SRCID_genhydro_h = "$Id$";
 #include "pdb2gmx.h"
 
 extern int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
-		 t_terblock *ntdb,t_terblock *ctdb,
+		 t_hackblock *ntdb,t_hackblock *ctdb,
 		 int rN,int rC);
 /* Generate hydrogen atoms and N and C terminal patches.
  * ntdb and ctdb may be NULL, no replacement will be done then.

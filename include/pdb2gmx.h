@@ -90,7 +90,7 @@ typedef struct {
 /* Structures for the h-database */
 typedef struct {
   int 		nh;		/* Number of h-atoms		*/
-  int 		tp;		/* Type of attachment (1..5)	*/
+  int 		tp;		/* Type of attachment (1..10)	*/
   char 		*na[4];		/* Control atoms i,j,k,l	*/
 } t_add_block;
 
@@ -115,7 +115,7 @@ typedef struct {
   t_idih      *idih;		/* Improper list			*/
   int         ndel;		/* Number of atoms to delete		*/
   char        **nm_del;		/* Names of atoms to delete		*/
-} t_terblock;
+} t_hackblock;
 
 /*extern real min_dist(int ncys,real **d,int *ii,int *jj,bool bCheckID);*/
 /* Find the lowest number in a distance matrix d */
