@@ -145,7 +145,7 @@ static void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
       k1      = (1+*kappa*Rc);
       k2      = eps*sqr((real)(*kappa*Rc));
       
-      *krf    = (((eps-1)*k1+k2)/((2*eps+1)*k1+k2)/(Rc*Rc*Rc));
+      *krf    = (((eps-1)*k1+k2)/((2*eps+1)*k1+2*k2)/(Rc*Rc*Rc));
       *crf    = 1/Rc + *krf*Rc*Rc;
     }
     *epsfac = ONE_4PI_EPS0;
