@@ -718,7 +718,7 @@ int main (int argc,char *argv[])
 
   /* Write the RMSD's to file */
   if (!bPrev)
-    sprintf(buf,"%s Difference",whatxvgname[ewhat]);
+    sprintf(buf,"%s",whatxvgname[ewhat]);
   else
     sprintf(buf,"%s with frame %g %s ago",whatxvgname[ewhat],
 	    time[prev*freq]-time[0], time_label());
@@ -743,7 +743,7 @@ int main (int argc,char *argv[])
   
   if (bMirror) {
     /* Write the mirror RMSD's to file */
-    sprintf(buf,"Mirror %s Difference",whatxvgname[ewhat]);
+    sprintf(buf,"%s with Mirror",whatxvgname[ewhat]);
     sprintf(buf2,"Mirror %s",whatxvglabel[ewhat]);
     fp=xvgropen(opt2fn("-mir",NFILE,fnm), buf, timelabel, buf2);
     if (nrms == 1)
