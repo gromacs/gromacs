@@ -287,6 +287,7 @@ void pdb2atoms(int natom,t_pdbatom pdba[],t_atoms *atoms,rvec **x,
   snew(atoms->atom,natom);
   snew(atoms->atomname,natom);
   snew(atoms->resname,nres);
+  snew(atoms->chain,natom);
   snew(*x,natom);
   for(i=0; (i<natom); i++) {
     if (pdba[i].resnr != rnr) {
@@ -294,6 +295,7 @@ void pdb2atoms(int natom,t_pdbatom pdba[],t_atoms *atoms,rvec **x,
       atoms->resname[rnr]=put_symtab(symtab,pdba[i].resnm);
     }
     atoms->atom[i].resnr=pdba[i].resnr;
+    atoms->chain[i]=pdba[i].chain;
     atoms->atom[i].m=pdba[i].m;
     atoms->atom[i].q=pdba[i].q;
     atoms->atom[i].type=pdba[i].type;
@@ -321,7 +323,10 @@ t_pdbatom *atoms2pdba(t_atoms *atoms,rvec x[])
     sprintf(pdba[i].pdbresnr,"%d",atoms->atom[i].resnr);
     strcpy(pdba[i].atomnm,*(atoms->atomname[i]));
     strcpy(pdba[i].resnm,*(atoms->resname[pdba[i].resnr]));
-    pdba[i].chain=' ';
+    if (atoms->chain)
+      pdba[i].chain=atoms->chain[i];
+    else
+      pdba[i].chain=' ';
     pdba[i].m=atoms->atom[i].m;
     pdba[i].q=atoms->atom[i].q;
     pdba[i].type=atoms->atom[i].type;

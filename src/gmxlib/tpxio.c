@@ -439,6 +439,27 @@ static void do_symtab(t_symtab *symtab,bool bRead)
   }
 }
 
+static void make_chain_identifiers(t_atoms *atoms,t_block *mols)
+{
+  int m,a,a0,a1;
+  char c,chain;
+#define CHAIN_MIN 15
+
+  snew(atoms->chain,atoms->nr);
+  chain='A';
+  for(m=0; m<mols->nr; m++) {
+    a0=mols->index[m];
+    a1=mols->index[m+1];
+    if ((a1-a0 >= CHAIN_MIN) && (chain <= 'Z')) {
+      c=chain;
+      chain++;
+    } else
+      c=' ';
+    for(a=a0; a<a1; a++)
+      atoms->chain[mols->a[a]]=c;  
+  }
+}
+  
 static void do_top(t_topology *top,bool bRead)
 {
   int  i;
@@ -449,8 +470,10 @@ static void do_top(t_topology *top,bool bRead)
   do_idef  (&(top->idef),bRead);
   for(i=0; (i<ebNR); i++)
     do_block(&(top->blocks[i]),bRead);
-  if (bRead)
+  if (bRead) {
     close_symtab(&(top->symtab));
+    make_chain_identifiers(&(top->atoms),&(top->blocks[ebMOLS]));
+  }
 }
 
 static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)

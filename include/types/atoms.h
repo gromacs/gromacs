@@ -62,6 +62,7 @@ typedef struct {
   int		nres;		/* Nr of residue names			*/
   char		***resname; 	/* Array of pointers to residue names 	*/
 				/* use: (*(resname[i]))			*/
+  char          *chain;         /* chain identifiers                    */
   int           ngrpname;       /* Number of groupnames                 */
   char          ***grpname;	/* Names of the groups		        */
   t_block	excl;		/* Exclusions				*/
