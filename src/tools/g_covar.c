@@ -90,7 +90,8 @@ int main(int argc,char *argv[])
   int        ntopatoms,step;
   int        natoms,nat,ndim,count,nframes;
   int        WriteXref;
-  char       *fitfile,*trxfile,*eigvalfile,*eigvecfile,*averfile,*logfile;
+  char       *fitfile,*trxfile,*ndxfile;
+  char       *eigvalfile,*eigvecfile,*averfile,*logfile;
   char       str[STRLEN],*fitname,*ananame;
   int        i,j,k,l,d,dj,nfit;
   atom_id    *index,*all_at,*ifit;
@@ -115,6 +116,7 @@ int main(int argc,char *argv[])
 
   fitfile    = ftp2fn(efTPS,NFILE,fnm);
   trxfile    = ftp2fn(efTRX,NFILE,fnm);
+  ndxfile    = ftp2fn_null(efNDX,NFILE,fnm);
   eigvalfile = ftp2fn(efXVG,NFILE,fnm);
   eigvecfile = ftp2fn(efTRN,NFILE,fnm);
   averfile   = ftp2fn(efSTO,NFILE,fnm);
@@ -125,15 +127,13 @@ int main(int argc,char *argv[])
 
   if (bFit) {
     printf("\nChoose a group for the least squares fit\n"); 
-    get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
-	      &nfit,&ifit,&fitname);
+    get_index(atoms,ndxfile,1,&nfit,&ifit,&fitname);
     if (nfit < 3) 
       fatal_error(0,"Need >= 3 points to fit!\n");
   } else
     nfit=0;
   printf("\nChoose a group for the covariance analysis\n"); 
-  get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
-	    &natoms,&index,&ananame);
+  get_index(atoms,ndxfile,1,&natoms,&index,&ananame);
 
   bDiffMass1=FALSE;
   if (bFit) {
@@ -308,16 +308,22 @@ int main(int argc,char *argv[])
 		     WriteXref,x,bDiffMass1,xav,bM);
 
   out = ffopen(logfile,"w");
+
   now = time(NULL);
   fprintf(out,"Covariance analysis log, written %s\n",
 	  ctime(&now));
   fprintf(out,"Program: %s\n",argv[0]);
   getcwd(str,STRLEN);
   fprintf(out,"Working directory: %s\n\n",str);
+
   fprintf(out,"Read %d frames from %s (time %g to %g)\n",nframes,trxfile,
 	  tstart,tend);
   if (bFit)
-    fprintf(out,"Read reference structure for fit from %s\n\n",fitfile);
+    fprintf(out,"Read reference structure for fit from %s\n",fitfile);
+  if (ndxfile)
+    fprintf(out,"Read index groups from %s\n",ndxfile);
+  fprintf(out,"\n");
+
   fprintf(out,"Analysis group is '%s' (%d atoms)\n",ananame,natoms);
   if (bFit)
     fprintf(out,"Fit group is '%s' (%d atoms)\n",fitname,nfit);
@@ -331,11 +337,13 @@ int main(int argc,char *argv[])
 	  trace);
   fprintf(out,"Trace of the covariance matrix after diagonalizing: %g\n\n",
 	  sum);
+
   fprintf(out,"Wrote %d eigenvalues to %s\n",ndim,eigvalfile);
   if (WriteXref == eWXR_YES)
     fprintf(out,"Wrote reference structure to %s\n",eigvecfile);
   fprintf(out,"Wrote average structure to %s and %s\n",averfile,eigvecfile);
   fprintf(out,"Wrote eigenvectors %d to %d to %s\n",1,end,eigvecfile);
+
   fclose(out);
 
   fprintf(stderr,"Wrote the log to %s\n",logfile);
