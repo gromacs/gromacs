@@ -102,7 +102,7 @@ void update_COM(t_pull * pull, rvec * x, t_mdatoms * md, matrix box, int step)
 
 /* Apply forces in a mass weighted fashion */
 static void apply_forces_grp(t_pullgrp *pgrp, t_mdatoms * md, rvec * f,
-			     int start, int homenr, rvec f_pull, int sign)
+			     int start, int homenr, dvec f_pull, int sign)
 {
   int i, ii, m;
   double wmass,inv_wm;
