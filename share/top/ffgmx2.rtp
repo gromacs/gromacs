@@ -693,6 +693,15 @@
    CD2    CG   NE2   HD2
     -C   -CA     N    -O
 
+[ HOH ]
+ [ atoms ]
+    OW    OW  -0.820     0
+   HW1    HW   0.410     0
+   HW2    HW   0.410     0
+ [ bonds ]
+    OW   HW1
+    OW   HW2
+
 [ HYP ]
  [ atoms ]
      N     N   0.000     0
