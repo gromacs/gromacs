@@ -120,7 +120,7 @@
 \rhead[\fancyplain{}{\bf\sf\leftmark}]{\fancyplain{}{\bf\sf\thepage}}
 \cfoot{}
 
-\pagenumbering{roman}
+%\pagenumbering{roman}
 \setcounter{page}{1}
 
 \begin{center}
@@ -249,8 +249,8 @@ The figure on front page was made with Molscript~\cite{Kraulis91}.
 %       R E A L   M A N U A L
 %
 \cleardoublepage
-\setcounter{page}{1}
-\pagenumbering{arabic}
+%\setcounter{page}{1}
+%\pagenumbering{arabic}
 
 \include{intro}
 \include{defunits}
@@ -284,6 +284,7 @@ The figure on front page was made with Molscript~\cite{Kraulis91}.
 %
 \cleardoublepage
 \addcontentsline{toc}{chapter}{Index}
+\renewcommand{\see}[2]{\mbox{} \mbox{\textit{see} #1}}
 \printindex
 
 \end{document}
