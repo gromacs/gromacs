@@ -1038,8 +1038,8 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
     
     if (r2 >= rtab2) {
       if (!bWarn) {
-        fprintf(stderr,"Warning: 1-4 interaction at distance larger than %g\n",
-	        rtab2);
+        fprintf(stderr,"Warning: 1-4 interaction between %d and %d "
+		"at distance larger than %g nm\n", ai+1, aj+1, sqrt(rtab2));
 	fprintf(stderr,"These are ignored for the rest of the simulation\n"
 	        "turn on -debug for more information\n");
 	bWarn = TRUE;
