@@ -259,9 +259,9 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
   };
   /* descriptive names of index groups */
   static char   *ch_name[NCH] = { 
-    "Protein", "Protein-H", "C-Alpha", "Backbone", 
+    "Protein", "Protein-H", "C-alpha", "Backbone", 
     "MainChain", "MainChain+Cb", "MainChain+H", "SideChain", "SideChain-H", 
-    "Prot-Dummies"
+    "Prot-Masses"
   };
   /* construct index group containing (TRUE) or excluding (FALSE)
      given atom names */
