@@ -484,7 +484,6 @@ static void do_symtab(t_symtab *symtab,bool bRead)
     }
   }
   else {
-    fprintf(stderr,"nr = %d\n",nr);
     symbuf = symtab->symbuf;
     while (symbuf!=NULL) {
       for (i=0; (i<symbuf->bufsize) && (i<nr); i++) 
