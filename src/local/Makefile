@@ -11,7 +11,7 @@ include		$(GMXHOME)/src/makef/Makefile.def
 #
 # Empty library
 LIB		= 
-XOBJ		= do_gct.o init_sh.o gctio.o glaasje.o ionize.o
+XOBJ		= do_gct.o init_sh.o gctio.o glaasje.o ionize.o relax_sh.o
 PROGRAMS	= my_dssp
 # 		  xmdrun	total		do_shift	shell_md
 #
@@ -23,7 +23,7 @@ all:		bin
 xmdrun:		xmdrun.o $(XOBJ)
 		$(LD) -o $@ $^ -lmd.$(CPU) $(SYSLIBS) $(FFTLIBS) $(SYSLIBS)
 
-shell_md:	shell_md.o relax_sh.o $(XOBJ)
+shell_md:	shell_md.o $(XOBJ)
 		$(LD) -o $@ $^ -lmd.$(CPU) $(SYSLIBS) $(FFTLIBS) $(SYSLIBS)
 
 copyrgt:	copyrgt.o1;

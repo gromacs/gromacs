@@ -57,4 +57,19 @@ extern int relax_shells(FILE *ene,FILE *log,t_commrec *cr,bool bVerbose,
 			char *traj,real t,real lambda,
 			int natoms,matrix box,t_mdebin *mdebin);
 
+extern  int relax_shells2(FILE *ene,FILE *log,t_commrec *cr,
+			  bool bVerbose,int mdstep,
+			  t_parm *parm,bool bDoNS,bool bStopCM,
+			  t_topology *top,real ener[],
+			  rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
+			  rvec buf[],t_mdatoms *md,
+			  t_nsborder *nsb,t_nrnb *nrnb,
+			  t_graph *graph,
+			  t_groups *grps,tensor vir_part,
+			  int nshell,t_shell shells[],
+			  t_forcerec *fr,char *traj,
+			  real t,real lambda,
+			  int natoms,matrix box,t_mdebin *mdebin);
+/* Experimental version with line min */
+
 #endif

@@ -90,9 +90,7 @@ char *par_fn(char *base,int ftp,t_commrec *cr)
   strcat(buf,".");
   
   /* Add extension again */
-  strcat(buf,(ftp == efTPX) ? "tpr" : 
-	 (ftp == efENX) ? "edr" :
-	 ftp2ext(ftp));
+  strcat(buf,(ftp == efTPX) ? "tpr" : (ftp == efENX) ? "edr" : ftp2ext(ftp));
     
   return buf;
 }
@@ -171,296 +169,6 @@ real calc_mu_aver(t_commrec *cr,t_nsborder *nsb,rvec x[],real q[],rvec mu,
     return 0;
 }
 
-static void do_1pos(rvec xnew,rvec xold,rvec f,real k_1,real step)
-{
-  real xo,yo,zo;
-  real dx,dy,dz,dx2;
-  
-  xo=xold[XX];
-  yo=xold[YY];
-  zo=xold[ZZ];
-  
-  dx=f[XX]*k_1;
-  dy=f[YY]*k_1;
-  dz=f[ZZ]*k_1;
-  
-  xnew[XX]=xo+dx*step;
-  xnew[YY]=yo+dy*step;
-  xnew[ZZ]=zo+dz*step;
-}
-
-static void shell_pos_sd(FILE *log,real step,
-			 rvec xold[],rvec xnew[],rvec f[],
-			 int nas,t_atomshell as[],
-			 int nbs,t_bondshell bs[])
-{
-  int  i,shell;
-  real k_1;
-  
-  for(i=0; (i<nas); i++) {
-    shell = as[i].shell;
-    k_1   = as[i].k_1;
-    do_1pos(xnew[shell],xold[shell],f[shell],k_1,step);
-  }
-  for(i=0; (i<nbs); i++) {
-    shell = bs[i].shell;
-    k_1   = bs[i].k_1;
-    do_1pos(xnew[shell],xold[shell],f[shell],k_1,step);
-  }
-}
-
-
-static void shell_pos_sd2(FILE *log,real step,
-			  rvec xold[],rvec xnew[],rvec fmin[],rvec ftry[],
-			  int nas,t_atomshell as[],
-			  int nbs,t_bondshell bs[])
-{
-  int  i,m,shell;
-  real k_1;
-  
-  for(i=0; (i<nas); i++) {
-    shell = as[i].shell;
-    k_1   = as[i].k_1;
-    rvec_inc(fmin[shell],ftry[shell]);
-    do_1pos(xnew[shell],xold[shell],fmin[shell],k_1,step);
-  }
-  for(i=0; (i<nbs); i++) {
-    shell = bs[i].shell;
-    k_1   = bs[i].k_1;
-    rvec_inc(fmin[shell],ftry[shell]);
-    do_1pos(xnew[shell],xold[shell],fmin[shell],k_1,step);
-  }
-}
-
-
-static void predict_shells(FILE *log,rvec x[],rvec v[],real dt,
-			   int nas,t_atomshell as[],
-			   int nbs,t_bondshell bs[])
-{
-  int  i,m;
-  real hdt;
-  
-  for(i=0; (i<nas); i++)
-    for(m=0; (m<DIM); m++)
-      x[as[i].shell][m]+=v[as[i].nucl1][m]*dt;
-  
-  hdt=0.5*dt;
-  for(i=0; (i<nbs); i++) 
-    for(m=0; (m<DIM); m++)
-      x[bs[i].shell][m]+=(v[bs[i].nucl1][m]+v[bs[i].nucl2][m])*hdt;
-}
-
-static void print_epot(char *which,
-		       int mdstep,int count,real step,real epot,real df)
-{
-  fprintf(stderr,"MDStep=%5d/%2d lamb: %10.5f, E-Pot: %12.8e",
-	  mdstep,count,step,epot);
-  
-  if (count != 0)
-    fprintf(stderr,", rmsF: %12.8e %s\n",df,which);
-  else
-    fprintf(stderr,"\n");
-}
-
-
-static real rms_force(rvec f[],
-		      int nas,t_atomshell as[],
-		      int nbs,t_bondshell bs[])
-{
-  int  i,shell;
-  real df2;
-  
-  df2=0.0;
-  for(i=0; (i<nas); i++) {
-    shell = as[i].shell;
-    df2  += iprod(f[shell],f[shell]);
-  }
-  for(i=0; (i<nbs); i++) {
-    shell = bs[i].shell;
-    df2  += iprod(f[shell],f[shell]);
-  }
-  return sqrt(df2/(nas+nbs));
-}
-
-static int relax_shells(FILE *ene,FILE *log,t_commrec *cr,
-			bool bVerbose,int mdstep,
-			t_parm *parm,bool bDoNS,bool bStopCM,
-			t_topology *top,real ener[],
-			rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
-			rvec buf[],t_mdatoms *md,
-			t_nsborder *nsb,t_nrnb *nrnb,
-			t_graph *graph,
-			t_groups *grps,tensor vir_part,
-			int nas,t_atomshell as[],
-			int nbs,t_bondshell bs[],
-			t_forcerec *fr,
-			char *traj,
-			real t,real lambda,
-			int natoms,matrix box,t_mdebin *mdebin)
-{
-  static bool bFirst=TRUE;
-  static rvec *pos[3],*force[3];
-  static real step;
-#define NEPOT asize(Epot)
-  real   ftol,s1,s2,eold,step0;
-  rvec   EEE,abc,rmsF;
-  matrix SSS = { { 0, 0, 1 }, { 1, 1, 1}, { 0, 1, 0 }};
-  matrix Sinv;
-  bool   bDone,bMinSet;
-  int    g;
-  int    number_steps;
-  int    count=0;
-  int    i,start=START(nsb),homenr=HOMENR(nsb),end=START(nsb)+HOMENR(nsb);
-  int    Min=0;
-  /* #define  Try (1-Min)  */           /* At start Try = 1 */
-#define  Try1 ((Min+1) % 3)
-#define  Try2 ((Min+2) % 3)
-
-   if (bFirst) {
-    /* Allocate local arrays */
-    for(i=0; (i<3); i++) {
-      snew(pos[i],nsb->natoms);
-      snew(force[i],nsb->natoms);
-    }
-    bFirst=FALSE;
-  }
-  
-  ftol  = parm->ir.em_tol;
-  number_steps=parm->ir.userint4;
-  step0 = parm->ir.userreal1;   
-  step  = step0;
-  
-  /* Do a prediction of the shell positions */
-  predict_shells(log,x,v,parm->ir.delta_t,nas,as,nbs,bs);
-    
-  /* Calculate the forces first time around */
-  do_force(log,cr,parm,nsb,vir_part,mdstep,nrnb,
-	   top,grps,x,v,force[Min],buf,md,ener,bVerbose && !PAR(cr),
-	   lambda,graph,bDoNS,FALSE,fr);
-
-  if ((nas != 0) || (nbs != 0)) 
-    rmsF[0]=rms_force(force[Min],nas,as,nbs,bs);
-  
-  /* Copy x to pos[Min] & pos[Try1]: during minimization only the
-   * shell positions are updated, therefore the other particles must
-   * be set here.
-   */
-  memcpy(pos[Min],x,nsb->natoms*sizeof(x[0]));
-  memcpy(pos[Try1],x,nsb->natoms*sizeof(x[0]));
-  memcpy(pos[Try2],x,nsb->natoms*sizeof(x[0]));
-  for(i=0; (i<nsb->natoms); i++) {
-    clear_rvec(force[Try1][i]);
-    clear_rvec(force[Try2][i]);
-  }
-  /* Sum the potential energy terms from group contributions */
-  sum_epot(&(parm->ir.opts),grps,ener);
-  EEE[0] = ener[F_EPOT];
-  
-#ifdef DEBUG
-  if (bVerbose && MASTER(cr))
-    print_epot("",mdstep,0,step,Epot[Min],df[Min]);
-  fprintf(stderr,"%17s: %14.10e\n",
-	  interaction_function[F_EKIN].longname, ener[F_EKIN]);
-  fprintf(stderr,"%17s: %14.10e\n",
-	  interaction_function[F_EPOT].longname, ener[F_EPOT]);
-  fprintf(stderr,"%17s: %14.10e\n",
-      interaction_function[F_ETOT].longname, ener[F_ETOT]);
-#endif
-      
-  bDone=((nas == 0) && (nbs == 0) || (rmsF[0] < ftol));
-  bMinSet=FALSE;
-  
-  /****************************************************** 
-   *  Start the shell-relaxation loop 
-   ******************************************************/
-  for(count=1; 
-      !(bDone || ((number_steps > 0) && (count>=number_steps))); ) {
-    
-    /* New positions, Steepest descent */
-    shell_pos_sd(log,step,pos[Min],pos[Try1],force[Min],nas,as,nbs,bs); 
-
-#ifdef DEBUGHARD
-    pr_rvecs(log,0,"pos[Try1] b4 do_force",&(pos[Try1][start]),homenr);
-    pr_rvecs(log,0,"pos[Try2] b4 do_force",&(pos[Try2][start]),homenr);
-    pr_rvecs(log,0,"pos[Min] b4 do_force",&(pos[Min][start]),homenr);
-#endif
-    
-    /* Try the new positions */
-    do_force(log,cr,parm,nsb,vir_part,1,nrnb,
-	     top,grps,pos[Try1],v,force[Try1],buf,md,ener,bVerbose && !PAR(cr),
-	     lambda,graph,FALSE,FALSE,fr);
-    count++;
-    rmsF[1]=rms_force(force[Try1],nas,as,nbs,bs);
-#ifdef DEBUGHARD
-    pr_rvecs(log,0,"F na do_force",&(force[Try1][start]),homenr);
-#endif
-
-    /* Sum the potential energy terms from group contributions */
-    sum_epot(&(parm->ir.opts),grps,ener);
-    EEE[1] = ener[F_EPOT];
-    
-    if (bVerbose && MASTER(cr))
-      print_epot("",mdstep,count,step,EEE[1],rmsF[1]);
-    bDone=(rmsF[1] < ftol);
-    
-    /* NOW! Do line mimization */
-    EEE[2] = rmsF[0];
-    
-    m_inv(SSS,Sinv);
-    mvmul(Sinv,EEE,abc);
-	
-    if ((abc[0] == 0) || (abc[0]*abc[1] > 0)) {
-      pr_rvecs(log,0,"SSS",SSS,DIM);
-      pr_rvecs(log,0,"Sinv",Sinv,DIM);
-      pr_rvec(log,0,"EEE",EEE,DIM);
-      pr_rvec(log,0,"abc",abc,DIM);
-      fatal_error(0,"Relaxing shells: line minimization failed. Check log");
-    }
-    /* We know and checked that the solution for step must be > 0 because 
-     * the new positions are in the direction of the forces
-     * i.e. the first derivative of the energy is < 0 at step = 0
-     */
-    step = min(2.0*step0,-abc[1]/(2*abc[0]));
-	
-    /* New positions at half the step size, Steepest descent */
-    shell_pos_sd(log,step,pos[Min],pos[Try2],force[Min],nas,as,nbs,bs); 
-      
-    /* Try the new positions */
-    do_force(log,cr,parm,nsb,vir_part,1,nrnb,
-	     top,grps,pos[Try2],v,force[Try2],buf,md,ener,
-	     bVerbose && !PAR(cr),
-	     lambda,graph,FALSE,FALSE,fr);
-    count++;
-      
-    /* Sum the potential energy terms from group contributions */
-    sum_epot(&(parm->ir.opts),grps,ener);
-    
-    eold    = EEE[0];
-    EEE[0]  = ener[F_EPOT];
-    rmsF[0] = rms_force(force[Try2],nas,as,nbs,bs);
-    bDone   = (rmsF[0] < ftol);
-      
-    if (bVerbose && MASTER(cr)) {
-      print_epot("",mdstep,count,step,EEE[0],rmsF[0]);
-      fprintf(stderr,"DE1=%10g, DE0= %10g\n",eold-EEE[1],eold-EEE[0]);
-    }
-    step = step0;
-    Min  = Try2;
-  }
-  if (MASTER(cr) && !bDone) 
-    fprintf(stderr,"EM did not converge in %d steps\n",number_steps);
-  
-  /* Parallelise this one! */
-  memcpy(x,pos[Min],nsb->natoms*sizeof(x[0]));
-  memcpy(f,force[Min],nsb->natoms*sizeof(f[0]));
-#ifdef DEBUGHARD
-  pr_rvecs(log,0,"X na do_relax",&(x[start]),homenr);
-  pr_rvecs(log,0,"F na do_relax",&(f[start]),homenr);
-#endif
-
-  return count; 
-}
-
 time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,bool bDummies,int stepout,
 	     t_parm *parm,t_groups *grps,
@@ -495,10 +203,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   char       *grpname;
 
   /* Shell stuff */
-  int         nas;
-  int         nbs;
-  t_atomshell *as;
-  t_bondshell *bs;
+  int         nshell;
+  t_shell     *shells;
 
   /* Check whether we have to do dipole stuff */
   if (ftp2bSet(efNDX,nfile,fnm))
@@ -615,7 +321,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	 0,parm->ir.ntcmemory);
   where();
   
-  init_shells(log,START(nsb),HOMENR(nsb),&top->idef,md,&nas,&as,&nbs,&bs);
+  shells = init_shells(log,START(nsb),HOMENR(nsb),&top->idef,md,&nshell);
   where();
   
   /* Write start time and temperature */
@@ -673,13 +379,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     mu_aver=calc_mu_aver(cr,nsb,x,md->chargeA,mu_tot,top,md,gnx,grpindex);
     
     /* Now is the time to relax the shells */
-    count=relax_shells(ene,log,cr,bVerbose,step,parm,
-		       bNS,bStopCM,top,ener,
-		       x,vold,v,vt,f,
-		       buf,md,nsb,&mynrnb,
-		       graph,grps,force_vir,
-		       nas,as,nbs,bs,fr,
-		       traj,t,lambda,nsb->natoms,parm->box,mdebin);
+    count=relax_shells(ene,log,cr,bVerbose,step,parm,bNS,bStopCM,top,ener,
+		       x,vold,v,vt,f,buf,md,nsb,&mynrnb,graph,grps,force_vir,
+		       nshell,shells,fr,traj,t,lambda,nsb->natoms,parm->box,mdebin);
     tcount+=count;
 
     if (bGlas)
