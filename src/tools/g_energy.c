@@ -493,8 +493,12 @@ int main(int argc,char *argv[])
     "Total drift is drift multiplied by total time."
   };
   static bool bDisRe=FALSE,bDRAll=FALSE;
-  static bool bSum=FALSE,bDp=FALSE,bAll=FALSE,bFluct=FALSE;
-  static bool bVisco=FALSE,bDG=FALSE;
+  static bool bSum=FALSE,bDG=FALSE,bAll=FALSE,bFluct=FALSE;
+#ifdef DOUBLE
+  static bool bDp=TRUE;
+#else
+  static bool bDp=FALSE;
+#endif
   static int  skip=0,nmol=1,ndf=3;
   static real reftemp=300.0;
   t_pargs pa[] = {
@@ -509,7 +513,7 @@ int main(int argc,char *argv[])
     { "-sum",  FALSE, etBOOL, &bSum,
       "Sum the energy terms selected rather than display them all" },
     { "-dp",   FALSE, etBOOL, &bDp,
-      "Print energies in high precision (%16.10e)" },
+      "HIDDENPrint energies in high precision (%16g)" },
     { "-skip", FALSE, etINT,  &skip,
       "Skip number of frames between data points" },
     { "-aver", FALSE, etBOOL, &bAll,
@@ -545,7 +549,7 @@ int main(int argc,char *argv[])
   real       *bounds,*violaver=NULL;
   int        *index;
   int        nbounds;
-  bool       bStarted,bCont,bEDR;
+  bool       bStarted,bCont,bEDR,bVisco;
   double     sum,sumaver,sumt;
   real       **eneset,*time;
   int        *set,i,j,k,nset,sss,nenergy;
