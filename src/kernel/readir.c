@@ -424,10 +424,10 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("cut-off lengths");
   RTYPE ("rvdw-switch",	ir->rvdw_switch,	0.0);
   RTYPE ("rvdw",	ir->rvdw,	1.0);
-
-
   CTYPE ("Apply long range dispersion corrections for Energy and Pressure");
   EETYPE("DispCorr",    ir->eDispCorr,  edispc_names, nerror, TRUE);
+  CTYPE ("Extension of the potential lookup tables beyond the cut-off");
+  RTYPE ("table-extension", ir->tabext, 1.0);
   CTYPE ("Spacing for the PME/PPPM FFT grid");
   RTYPE ("fourierspacing", opts->fourierspacing,0.12);
   CTYPE ("FFT grid size, when a value is 0 fourierspacing will be used");

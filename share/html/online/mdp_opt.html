@@ -293,13 +293,12 @@ To simulate without cut-offs, set all cut-offs to 0 and <b>nstlist</b>=0.</dd>
 <dt><b>Cut-off</b></dt>
 <dd>Twin range cut-off's with neighborlist cut-off <b>rlist</b> and 
 Coulomb cut-off <b>rcoulomb</b>,
-where <b>rlist</b> <tt>&lt=</tt> <b>rvdw</b> <tt>&lt=</tt> <b>rcoulomb</b>.
+where <b>rcoulomb</b> &gt= <b>rlist</b>.
 The dielectric constant is set with <b>epsilon_r</b>.</dd>
 
 <dt><b>Ewald</b></dt>
 <dd>Classical <!--Idx-->Ewald sum<!--EIdx--> electrostatics.
-Use e.g. <b>rlist</b>=0.9,
-<b>rvdw</b>=0.9, <b>rcoulomb</b>=0.9. The highest magnitude of
+Use e.g. <b>rlist</b>=0.9, <b>rcoulomb</b>=0.9. The highest magnitude of
 wave vectors used in reciprocal space is controlled by <b>fourierspacing</b>.
 The relative accuracy of direct/reciprocal space
 is controlled by <b>ewald_rtol</b>.
@@ -322,10 +321,8 @@ while increasing interpolation.</dd>
 <dt><b><!--Idx-->PPPM<!--EIdx--></b></dt>
 <dd>Particle-Particle Particle-Mesh algorithm for long range
 electrostatic interactions.
-Use for example <b>rlist</b><tt>=1.0</tt>, <b>rcoulomb_switch</b><tt>=0.0</TT>,
-<b>rcoulomb</b><tt>=0.85</TT>, <b>rvdw_switch</b><tt>=1.0</TT>
-and <b>rvdw</b><tt>=1.0</TT>. The grid
-dimensions are controlled by <b>fourierspacing</b>.
+Use for example <b>rlist</b><tt>=0.9</tt>, <b>rcoulomb</b><tt>=0.9</TT>.
+The grid dimensions are controlled by <b>fourierspacing</b>.
 Reasonable grid spacing for PPPM is 0.05-0.1 nm.
 See <tt>Shift</tt> for the details of the particle-particle potential.
 <br>
@@ -333,13 +330,13 @@ NOTE: the pressure in incorrect when using PPPM.</dd>
 
 <dt><b><!--Idx-->Reaction-Field<!--EIdx--></b></dt>
 <dd>Reaction field with Coulomb cut-off <b>rcoulomb</b>,
-where <b>rcoulomb</b> <tt>&gt=</tt> <b>rvdw</b> <tt>&gt=</tt> <b>rlist</b>.
+where <b>rcoulomb</b> &gt= <b>rlist</b>.
 The dielectric constant beyond the cut-off is <b>epsilon_r</b>.
 The dielectric constant can be set to infinity by setting <b>epsilon_r</b>=0.</dd>
 
 <dt><b>Generalized-Reaction-Field</b></dt>
 <dd>Generalized reaction field with Coulomb cut-off <b>rcoulomb</b>,
-where <b>rcoulomb</b> <tt>&gt=</tt> <b>rvdw</b> <tt>&gt=</tt> <b>rlist</b>.
+where <b>rcoulomb</b> &gt= <b>rlist</b>.
 The dielectric constant beyond the cut-off is <b>epsilon_r</b>.
 The ionic strength is computed from the number of charged 
 (i.e. with non zero charge) <!--Idx-->charge group<!--EIdx-->s.
@@ -355,8 +352,7 @@ The neighbor search cut-off <b>rlist</b> should be 0.1 to 0.3 nm larger than
 between neighbor list updates.</dd>
 
 <dt><b>User</b></dt> 
-<dd><a name="user"></a>Specify <b>rlist</b> and <b>rcoulomb</b> to the
-same value, <tt>mdrun</tt> will now expect to find a file
+<dd><a name="user"></a><tt>mdrun</tt> will now expect to find a file
 <tt>table.xvg</tt> with user-defined potential functions for
 repulsion, dispersion and Coulomb.  This file should contain 7
 columns: the <tt>x</tt> value, <tt>f(x)</tt>,
@@ -364,11 +360,13 @@ columns: the <tt>x</tt> value, <tt>f(x)</tt>,
 <tt>-g<sup>(2)</sup>(x)</tt>, <tt>h(x)</tt>,
 <tt>-h<sup>(2)</sup>(x)</tt>, where <tt>f<sup>(2)</sup>(x)</tt>
 denotes the <tt>2<sup>nd</sup></tt> derivative of function
-<tt>f(x)</tt> with respect to <tt>x</tt>.  f(x) is the repulsion
-function, g(x) the dispersion function and h(x) the Coulomb function.
-The <tt>x</tt> should run from 0 [nm] to <b>rlist</b><tt>+0.5</tt>
-[nm], with a spacing of <tt>0.002</tt> [nm] when you run in single
-precision, or <tt>0.0005</tt> [nm] when you run in double precision.
+<tt>f(x)</tt> with respect to <tt>x</tt>.  f(x) is the Coulomb
+function, g(x) the dispersion function and h(x) the repulsion function.
+The <tt>x</tt> values should run from 0 to the largest cut-off distance
++ <b>table-extension</b> and should be uniformly spaced.
+The optimal spacing, which is used for non-user tables,
+is <tt>0.002</tt> [nm] when you run in single precision
+or <tt>0.0005</tt> [nm] when you run in double precision.
 The function value at <tt>x=0</tt> is not important. More information is
 in the printed manual.</dd>
 
@@ -384,6 +382,7 @@ in the printed manual.</dd>
 <dt><h4>epsilon_r: (1)</h4></dt>
 <dd><!--Idx-->dielectric constant<!--EIdx--></dd>
 
+<A NAME="vdw">
 <dt><h4>vdwtype:</h4></dt>
 <dd><dl compact>
 <dt><b>Cut-off</b></dt>
@@ -423,6 +422,15 @@ and Pressure</dd>
 only</dd>
 </dl>
 
+<dt><h4>table-extension: (1) [nm]</h4></dt>
+<dd>Extension of the non-bonded potential lookup tables beyond the largest cut-off distance.
+The value should be large enough to account for charge group sizes
+and the diffusion between neighbor-list updates.
+This value also specifies the length of the lookup tables for
+the 1-4 interactions, which are always tabulated irrespective of the use of
+tables for the non-bonded interactions. </dd>
+
+<A NAME="ewald">
 <dt><h4>fourierspacing: (0.12) [nm]</h4></dt>
 <dd>The maximum grid spacing for the FFT grid when using PPPM or PME.
 For ordinary Ewald the spacing times the box dimensions determines the
@@ -889,7 +897,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#sa">annealing</A><br>
 <A HREF="#ld">bd_fric</A><br>
 <A HREF="#ld">bd_temp</A><br>
-<A HREF="#el2">bDispCorr</A><br>
+<A HREF="#vdw">bDispCorr</A><br>
 <A HREF="#run">comm_mode</A><br>
 <A HREF="#run">comm_grps</A><br>
 <A HREF="#pc">compressibility</A><br>
@@ -911,19 +919,19 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#egexcl">energygrp_excl</A><br>
 <A HREF="#out">energygrps</A><br>
 <A HREF="#el2">epsilon_r</A><br>
-<A HREF="#el2">ewald_rtol</A><br>
-<A HREF="#el2">ewald_geometry</A><br>
-<A HREF="#el2">surface_epsilon</A><br>
+<A HREF="#ewald">ewald_rtol</A><br>
+<A HREF="#ewald">ewald_geometry</A><br>
+<A HREF="#ewald">surface_epsilon</A><br>
 <A HREF="#ef">E_x</A><br>
 <A HREF="#ef">E_xt</A><br>
 <A HREF="#ef">E_y</A><br>
 <A HREF="#ef">E_yt</A><br>
 <A HREF="#ef">E_z</A><br>
 <A HREF="#ef">E_zt </A><br>
-<A HREF="#el2">fourier_nx</A><br>
-<A HREF="#el2">fourier_ny</A><br>
-<A HREF="#el2">fourier_nz</A><br>
-<A HREF="#el2">fourierspacing</A><br>
+<A HREF="#ewald">fourier_nx</A><br>
+<A HREF="#ewald">fourier_ny</A><br>
+<A HREF="#ewald">fourier_nz</A><br>
+<A HREF="#ewald">fourierspacing</A><br>
 <A HREF="#free">free_energy</A><br>
 <A HREF="#neq">freezedim </A><br>
 <A HREF="#neq">freezegrps</A><br>
@@ -949,7 +957,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#out">nstxout</A><br>
 <A HREF="#out">nstxtcout</A><br>
 <A HREF="#nl">ns_type</A><br>
-<A HREF="#el2">optimize_fft</A><br>
+<A HREF="#ewald">optimize_fft</A><br>
 <A HREF="#nmr2">orire</A><br>
 <A HREF="#nmr2">orire_fc</A><br>
 <A HREF="#nmr2">orire_tau</A><br>
@@ -958,17 +966,18 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#nl">pbc</A><br>
 <A HREF="#pc">pcoupl</A><br>
 <A HREF="#pc">pcoupltype</A><br>
-<A HREF="#el2">pme_order</A><br>
+<A HREF="#ewald">pme_order</A><br>
 <A HREF="#pc">ref_p</A><br>
 <A HREF="#tc">ref_t</A><br>
-<A HREF="#el2">rlist</A><br>
+<A HREF="#nl">rlist</A><br>
 <A HREF="#el2">rcoulomb_switch</A><br>
 <A HREF="#el2">rcoulomb</A><br>
-<A HREF="#el2">rvdw_switch</A><br>
-<A HREF="#el2">rvdw</A><br>
+<A HREF="#vdw">rvdw_switch</A><br>
+<A HREF="#vdw">rvdw</A><br>
 <A HREF="#free">sc_alpha</A><br>
 <A HREF="#free">sc_sigma</A><br>
 <A HREF="#bond2">shake_tol</A><br>
+<A HREF="#vdw">table-extension</A><br>
 <A HREF="#pc">tau_p</A><br>
 <A HREF="#tc">tau_t</A><br>
 <A HREF="#tc">tc_grps</A><br>

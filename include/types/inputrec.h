@@ -110,6 +110,8 @@ typedef struct {
   real rvdw;		/* Van der Waals cutoff (nm)		        */
   int  implicit_solvent;/* No (=explicit water), or GBSA solvent models */
   int  eDispCorr;       /* Perform Long range dispersion corrections    */
+  real tabext;          /* Extension of the table beyond the cut-off,   *
+			 * as well as the table length for 1-4 interac. */
   real shake_tol;	/* tolerance for shake				*/
   real fudgeQQ;		/* Id. for 1-4 coulomb interactions		*/
   int  efep;   		/* free energy interpolation no/yes		*/

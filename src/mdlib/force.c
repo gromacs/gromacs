@@ -702,15 +702,6 @@ void init_forcerec(FILE *fp,
    * ugly hack, but it works for now...
    */
 
-#define MAX_14_DIST 1.0
-  /* Shell to account for the maximum chargegroup radius (2*0.2 nm) 
-   * and diffusion during nstlist steps (0.2 nm)                    
-   * Changed 020624: Increased to 1.2 since we never check for this,
-   * so we must make absolutely sure the table length is always
-   * sufficient. It doesn't affect the performance either...
-   */ 
-#define TAB_EXT 1.2
-
   /* Construct tables.
    * A little unnecessary to make both vdw and coul tables sometimes,
    * but what the heck... */
@@ -726,14 +717,14 @@ void init_forcerec(FILE *fp,
       bvdwsave=fr->bvdwtab;
       fr->bcoultab=FALSE;
       fr->bvdwtab=FALSE;
-      fr->rtab=MAX_14_DIST;
+      fr->rtab=ir->tabext;
       make_tables(fp,fr,MASTER(cr),tabfn);
       fr->bcoultab=bcoulsave;
       fr->bvdwtab=bvdwsave;
       fr->coulvdw14tab=fr->coulvdwtab;
       fr->coulvdwtab=NULL;
     }
-    fr->rtab = max(fr->rlistlong+TAB_EXT,MAX_14_DIST);
+    fr->rtab = fr->rlistlong + ir->tabext;
   }
   else if (fr->efep != efepNO) {
     if (fr->rlistlong == 0) {
@@ -750,10 +741,10 @@ void init_forcerec(FILE *fp,
 		"\n\n",fr->rtab,envvar);
     } 
     else
-      fr->rtab = max(fr->rlistlong+TAB_EXT,MAX_14_DIST);
+      fr->rtab = fr->rlistlong + ir->tabext;
   } 
   else
-    fr->rtab = MAX_14_DIST;
+    fr->rtab = ir->tabext;
   
   /* make tables for ordinary interactions */
   make_tables(fp,fr,MASTER(cr),tabfn);

@@ -61,7 +61,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 28;
+static const int tpx_version = 29;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -208,7 +208,11 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
     do_real(ir->rvdw); 
     do_int(ir->eDispCorr); 
     do_real(ir->epsilon_r);
-
+    if (file_version >= 29)
+      do_real(ir->tabext);
+    else
+      ir->tabext=1.0;
+ 
     if(file_version > 25) {
       do_int(ir->gb_algorithm);
       do_int(ir->nstgbradii);
@@ -243,6 +247,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
       do_real(ir->epsilon_surface);
     
     do_int(ir->bOptFFT);
+
     do_int(ir->bUncStart); 
     do_int(ir->etc);
     /* before version 18, ir->etc was a bool (ir->btc),
