@@ -400,15 +400,13 @@ static gmx_inline void put_in_list(FILE *log,bool bHaveLJ[],
       if (bWater && (jcg==icg))
 	continue;
 
-      /* The atoms in this j charge group run from jj0 to jj1 */
-      jj0=index[jcg];
-      jj1=index[jcg+1];
+      /* Check for large charge groups */
+      if (jcg == icg) 
+	jj0 = i0 + i + 1;
+      else 
+	jj0 = index[jcg];
       
-      /* Patch for the same charge group, to prevent double interactions within
-       * one charge group.
-       */
-      if (icg == jcg)
-	jj0 += i+1;
+      jj1=index[jcg+1];
 
       if (bWater && !fr->bPert) {
 	if (bCoulOnly) {
@@ -738,7 +736,7 @@ static void do_longrange(FILE *log,t_topology *top,t_forcerec *fr,
   int i;
 
   for(i=0; (i<eNL_NR); i++) {
-    if ((fr->nlist_lr[i].nri > fr->nlist_lr[i].maxnri-10) || bDoForces) {
+    if ((fr->nlist_lr[i].nri > fr->nlist_lr[i].maxnri-32) || bDoForces) {
       close_neighbor_list(fr,TRUE,i);
 
       /* Evaluate the forces */
