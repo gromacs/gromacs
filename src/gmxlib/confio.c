@@ -972,7 +972,9 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
   int        i,ftp,natoms,i1;
   real       d,r1,r2;
 
-  if (atoms->atom == NULL) {
+  if (atoms->nr == 0)
+    fprintf(stderr,"Warning: Number of atoms in %s is 0\n",infile);
+  else if (atoms->atom == NULL) {
     sprintf(buf,"Uninitialized array atom in %s, %d",__FILE__,__LINE__);
     fatal_error(0,buf);
   }

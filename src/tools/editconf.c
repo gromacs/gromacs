@@ -93,37 +93,42 @@ real calc_geom(int isize,atom_id *index,
   int     ii,i,j;
   
   clear_rvec(geom_center);
-  if (index)
-    ii=index[0];
-  else
-    ii=0;
-  for (j=0; j<DIM; j++)
-    min[j]=max[j]=x[ii][j];
   diam2 = 0;
-  for (i=0; i<isize; i++) {
+  if (isize == 0) {
+    clear_rvec(min);
+    clear_rvec(max);
+  } else {
     if (index)
-      ii = index[i];
+      ii=index[0];
     else
-      ii = i;
-    rvec_inc(geom_center,x[ii]);
-    for (j=0; j<DIM; j++) {
-      if (x[ii][j] < min[j]) min[j]=x[ii][j];
-      if (x[ii][j] > max[j]) max[j]=x[ii][j];
-    }
-    if (bDiam) {
-      if (index) 
+      ii=0;
+    for (j=0; j<DIM; j++)
+      min[j]=max[j]=x[ii][j];
+    for (i=0; i<isize; i++) {
+      if (index)
+      ii = index[i];
+      else
+	ii = i;
+      rvec_inc(geom_center,x[ii]);
+      for (j=0; j<DIM; j++) {
+	if (x[ii][j] < min[j]) min[j]=x[ii][j];
+	if (x[ii][j] > max[j]) max[j]=x[ii][j];
+      }
+      if (bDiam) {
+	if (index) 
 	for (j=i+1; j<isize; j++) {
 	  d = distance2(x[ii],x[index[j]]);
 	  diam2 = max(d,diam2);
 	}
-      else
-	for (j=i+1; j<isize; j++) {
+	else
+	  for (j=i+1; j<isize; j++) {
 	  d = distance2(x[i],x[j]);
 	  diam2 = max(d,diam2);
-	}
+	  }
+      }
     }
+    svmul(1.0/isize,geom_center,geom_center);
   }
-  svmul(1.0/isize,geom_center,geom_center);
   
   return sqrt(diam2);
 }
