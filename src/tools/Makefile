@@ -140,7 +140,7 @@ g_traj:		g_traj.o
 g_rms:	 	g_rms.o cmat.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-g_rmsf:	 	g_rmsf.o
+g_rmsf:	 	g_rmsf.o ql77.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_diffuse:	g_diffuse.o
