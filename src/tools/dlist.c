@@ -221,8 +221,7 @@ bool has_dihedral(int Dih,t_dlist *dl)
 
 static void pr_props(FILE *fp,t_dlist *dl,int nDih,real dt)
 {
-  fprintf(fp,"  %6.2f  %6.2f\n",(dt ==0 ) ?  0 : dl->ntr[nDih]/dt,
-	  dl->S2[nDih]);
+  fprintf(fp,"  %6.2f  %6.2f\n",(dt == 0) ? 0 : dl->ntr[nDih]/dt,dl->S2[nDih]);
 }
 
 void pr_dlist(FILE *fp,int nl,t_dlist dl[],real dt)
