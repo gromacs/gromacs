@@ -2,9 +2,8 @@
 \label{ch:ff}
 A \normindex{force field} is built up from two distinct components:
 \begin{itemize}
-\item The set of equations (called the {\em \normindex{potential function}s}
- used
-to generate the potential energies and their derivatives, the forces. 
+\item The set of equations (called the {\em \normindex{potential function}s})
+used to generate the potential energies and their derivatives, the forces. 
 \item The parameters used in this set of equations
 \end{itemize}
 Within one set of equations various sets of parameters can be
@@ -197,9 +196,6 @@ eqns.~\ref{eqn:kgrf} and ~\ref{eqn:cgrf} reduce to the simple forms
 of eqns.~\ref{eqn:krf} and ~\ref{eqn:crf} respectively.
 
 \subsection{Modified Coulomb interaction}
-{\em Although it appears to be running, the \normindex{shift function} is
-{\tt not} supported in {\gromacs} {\gmxver}}
-
 In the {\gromacs} force field the coulomb force can be modified by
 a shift function. The purpose of this is to replace the truncated
 forces by forces that are continuous and have continuous derivatives
@@ -721,6 +717,7 @@ defined using the dielectric
 constant $\epsrf$ of the medium (see section~\ref{sec:coulrf}).
 
 \subsubsection{Lennard-Jones interaction}
+{\undercons}
 For the \normindex{Lennard Jones} interaction between two particles 
 of which the {\em atomtype} varies with $\LAM$ we can write:
 \bea
@@ -740,12 +737,15 @@ does not depend on the pathway, therefore we use the simple formulation
 presented above.
 
 \subsubsection{Kinetic Energy}
+{\undercons}
 When the mass of a particle changes there is also a contribution of
 the kinetic energy to the free energy:
 \bea
-Ek	&=&	\half(\LL m^A + \LAM m^B)v^2	\\
-\dvdl{Ek}&=&	\half(m^B-m^A)v^2
+Ek	&=&	\half\frac{\ve{p}^2}{\LL m^A + \LAM m^B}	\\
+\dvdl{Ek}&=&	-\half\frac{\ve{p}^2(m^B-m^A)}{(\LL m^A + \LAM m^B)^2}
 \eea
+Note that we can not write the momentum \ve{p} as m\ve{v} since that would result 
+in the sign of $\dvdl{Ek}$ being incorrect~\cite{Gunsteren98a}.
 
 \subsubsection{Contraints}
 \newcommand{\clam}{C_{\lambda}}
@@ -916,6 +916,7 @@ There are three ways to construct dummies from surrounding atoms in {\gromacs}:
 
 
 \section{Future Improvements.}
+{\undercons}
 In future versions of the force field there will be
 \begin{itemize}
 \item  	Inclusion of long-range electrostatic interactions.

@@ -5,7 +5,7 @@
 \input{macros}
 \sloppy
 %\topmargin -1cm
-
+\hoffset -1cm
 \setlength{\textwidth}{15cm}
 \setlength{\textheight}{22cm}
 \renewcommand{\textfraction}{0.0}
@@ -18,9 +18,11 @@
 \newcommand{\figsref}[2]{Figs.~\ref{fig:#1} and ~\ref{fig:#2}}
 \newcommand{\tabref}[1]{Table~\ref{tab:#1}}
 \newcommand{\eqnref}[1]{eqn.~\ref{eqn:#1}}
+\newcommand{\eqnsref}[2]{eqns.~\ref{eqn:#1} and \ref{eqn:#2}}
 \newcommand{\secref}[1]{sec.~\ref{sec:#1}}
 \newcommand{\chref}[1]{chapter~\ref{ch:#1}}
 \newcommand{\wwwpage}{\bf http://rugmd0.chem.rug.nl/$\sim$gmx}
+\newcommand{\undercons}{\centerline{\em Note: this section is still under construction}}
 \setlength{\headwidth}{\textwidth}
 \setlength{\headheight}{1.0cm}
 %\addtolength{\headwidth}{\marginparsep}
@@ -77,6 +79,7 @@ Emile Apol 		\\
 Pieter J. Meulenhoff 	\\ 
 D. Peter Tieleman	\\
 Alfons L.T.M. Sijbers 	\\ 
+Berk A. Hess		\\
 Rudi van Drunen 	\\
 Herman J.C. Berendsen}
 \end{center}
@@ -115,11 +118,11 @@ file types that are listed in the appendix are obsolete.
 When \boldindex{citing} this document in any scientific publication
 please refer to it as:	\\
 \begin{verbatim}
-@Manual{gmx3,
-  title =        "Gromacs {U}ser {M}anual version 1.5",
+@Manual{gmx20,
+  title =        "Gromacs {U}ser {M}anual version 2.0",
   author =       "David van der Spoel and Aldert R. van Buuren and Emile
                  Apol and Pieter J. Meulenhoff and D. Peter Tieleman and
-                 Alfons L. T. M. Sij\-bers and Rudi van Drunen and
+                 Alfons L. T. M. Sij\-bers and Berk Hess and Rudi van Drunen and
                  Herman J. C. Berendsen",
   address =      "Nij\-enborgh 4, 9747 AG Groningen, The Netherlands.
                  Internet: {\wwwpage}",
@@ -185,7 +188,7 @@ The figure on frontpage was made with Molscript~\cite{Kraulis91}.
 \include{defunits}
 \include{algorithms}
 \include{forcefield}
-%\include{pppm}
+\input{pppm}
 \include{topology}
 %\include{starting}
 \include{special}
@@ -197,14 +200,15 @@ The figure on frontpage was made with Molscript~\cite{Kraulis91}.
 \appendix
 \include{install}
 \include{implement}
-\include{lr-corr}
 \include{tables}
+\include{lr-corr}
+\include{averages}
 
 %
 % 	B I B L I O G R A P H Y
 %
 \bibliographystyle{texutil/proteins}
-\bibliography{texutil/monster}
+\bibliography{texutil/monster,texutil/unpubl}
 
 %
 %	I N D E X

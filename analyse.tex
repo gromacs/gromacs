@@ -3,8 +3,8 @@
 In this chapter different ways of analysing your trajectory are described. 
 The names of the corresponding analysis programs are given. 
 Specific info on the in- and output of these programs can be found 
-in the on-line manual or in Appendix~\ref{ch:online}. 
-Often the output files are in {\tt xvgr}-format.
+in the on-line manual at {\wwwpage}.
+Often the output files are in {\tt xmgr}-format.
 
 First in section~\ref{sec:groups} the group concept in analysis is explained. 
 Then the different analysis tools are presented.
@@ -166,24 +166,151 @@ up to $r_{max}$, so angle dependent, see fig.~\ref{fig:rdfex}D.
 %
 \section{Correlation functions}
 \label{sec:corr}
-\begin{verbatim}
-g_msd
-g_velacc
-g_dipoles
-\end{verbatim}
-With \gromacs~several correlation functions can be calculated. 
 
-To determine the self diffusion coefficient $D_A$ of particles $A$ one
+\subsection{Theory of correlation functions}
+The theory of correlation functions is well established~\cite{Allen87}.
+However we want to describe here the implementation of the various 
+\myindex{correlation function} flavors in the {\gromacs} code.
+The definition of the \myindex{autocorrelation function} (ACF)
+$C_f(t)$ for a property $f(t)$ is
+\beq
+C_f(t)	~=~	\left<f(\xi) f(\xi+t)\right>_{\xi}
+\label{eqn:corr}
+\eeq
+where the notation on the right hand side means averaging over $\xi$, i.e. over
+time origins.
+It is also possible to compute cross-correlation function from two properties
+$f(t)$ and $g(t)$:
+\beq
+C_{fg}(t) ~=~ 	\left<f(\xi) g(\xi+t)\right>_{\xi}
+\eeq
+however, in {\gromacs} there is no standard mechanism to do this
+({\bf note:} you can use the {\tt xmgr} program to compute cross correlations).
+The integral of the correlation function over time is the 
+\myindex{correlation time} $\tau_f$:
+\beq
+\tau_f	~=~	\int_0^{\infty} C_f(t) {\rm d} t
+\label{eqn:corrtime}
+\eeq
+
+In practice correlation functions are calculated based on data points with
+discrete time intervals {$\Delta$t}, so that the ACF from an MD simulation is:
+\beq
+C_f(j\Delta t)	~=~	\frac{1}{N-j}\sum_{i=0}^{N-1-j} f(i\Delta t) f((i+j)\Delta t)
+\label{eqn:corrmd}
+\eeq
+where $N$ is the number of available time frames for the calculation.
+The resulting ACF is
+obviously only available at time points with the same interval {$\Delta$t}.
+Since for many applications it is necessary to know  the short time behaviour
+of the ACF (e.g. the first 10 ps) this often means that we have to save the
+atomic coordinates with short intervals.
+Another implication of \eqnref{corrmd} is that in principle we can not compute
+all points of the ACF with the same accuracy, since we have $N-1$ data points
+for $C_f(\Delta t)$ but only 1 for $C_f((N-1)\Delta t)$. However, if we decide to
+compute only an ACF of length $M\Delta t$, where $M \leq N/2$ we can compute 
+all points with the same statistical accuracy:
+\beq
+C_f(j\Delta t)	~=~ \frac{1}{M}\sum_{i=0}^{N-1-M} f(i\Delta t)f((i+j)\Delta t)
+\eeq
+here of course $j < M$.
+$M$ is sometimes referred to as the \myindex{time lag} of the correlation function. 
+When we decide to do this, we intentionally do not use all the available points
+for very short time intervals ($j << M$), but it makes it easier to interpret
+the results.
+Another aspect that may not be neglected when computing
+ACFs from simulation, is that usually the time origins $\xi$ (\eqnref{corr})
+are not statistically independent, which may introduce a bias in the results.
+This can be tested using a block-averaging procedure, where only time origins
+with a spacing at least the length of the time lag are included, e.g. using 
+$k$ time origins with spacing of $M\Delta t$ (where $kM \leq N$):
+\beq
+C_f(j\Delta t)	~=~ \frac{1}{k}\sum_{i=0}^{k-1} f(iM\Delta t)f((iM+j)\Delta t)
+\eeq
+However, one
+needs very long simulations to get good accuracy this way, because there are 
+many fewer points that contribute to the ACF.
+
+\subsection{Using FFT for computation of the ACF}
+The computational cost for calculating an ACF according to \eqnref{corrmd}
+is proportional to $N^2$, which is considerable. However, this can be improved
+by using fast fourier transforms to do the convolution~\cite{Allen87}.
+
+\subsection{Special forms of the ACF}
+There are some important varieties on the ACF, e.g. the ACF of a vector \ve{p}:
+\beq
+C_{\ve{p}}(t) ~=~	\int_0^{\infty} P_n(\cos\angle\left(\ve{p}(t),\ve{p}(t+\xi)\right) {\rm d} \xi
+\label{eqn:corrleg}
+\eeq
+where $P_n(x)$ is the $n^{th}$ order Legendre polynomial
+\footnote{$P_0(x) = 1$, $P_1(x) = x$, $P_2(x) = (3x^2-1)/2$}.
+Such correlation times 
+can actually be obtained experimentally using e.g. NMR or other relaxation 
+experiments. {\gromacs} can compute correlations using 
+the 1${st}$ and 2$^{nd}$ order Legendre polynomial (\eqnref{corrleg}).
+This can a.o. be used for rotational autocorrelation ({\tt g\_rotacf}), 
+dipole autocorrelation ({\tt g\_dipoles}).
+
+In order to study torsion angle dynamics we define a dihedral 
+autocorrelation function as~\cite{Spoel97a}:
+\beq
+C(t)	~=~	\left< \cos(\theta(\tau)-\theta(\tau+t))\right>_{\tau}
+\label{eqn:coenk}
+\eeq
+Note that this is not a  product of two functions 
+as is generally used for correlation
+functions, but it may be rewritten as the sum of two products:
+\beq
+C(t)	~=~	\left<\cos(\theta(\tau))\cos(\theta(\tau+t))\,+\,\sin(\theta(\tau))\sin(\theta(\tau+t))\right>_{\tau}
+\label{eqn:cot}
+\eeq
+
+\subsection{Some Applications}
+The program {\tt g\_velacc} calculates this {\em Velocity AutoCorrelation 
+Function}.
+\beq
+C_{\ve{v}} (\tau) ~=~ < {\ve{v}}_i(\tau) \cdot {\ve{v}}_i(0) >_{i \in A}
+\eeq
+The self diffusion coefficient can be calculated using the Green-Kubo 
+relation~\cite{Allen87}
+\beq
+D_A ~=~ {1\over 3} \int_0^{\infty} < {\bf v}_i(t) \cdot {\bf v}_i(0) >_{i \in A} \; dt
+\eeq
+which is just the integral of the velocity autocorrelation function.
+There is a widely held belief that the velocity ACF converges faster than the mean
+square displacement (\secref{msd}), which can also be used for the computation of 
+diffusion constants. However, Allen \& Tildesly~\cite{Allen87} 
+warn us that the long time 
+contribution to the velocity ACF can not be ignored, so care must be taken.
+
+Another important quantity is the dipole correlation time. The {\em dipole 
+correlation function} for particles $A$ is calculated as follows by 
+{\tt g\_dipoles}:
+\beq
+C_{\mu} (\tau) ~=~ < {\bf \mu}_i(\tau) \cdot {\bf \mu}_i(0) >_{i \in A}
+\eeq
+with ${\bf \mu}_i = \sum_{j \in i} {\bf r}_j q_j$. The dipole correlation time 
+can be computed using \eqnref{corrtime}.
+For some applications see~\cite{Spoel98a}.
+
+The \myindex{viscosity} of a liquid can be related to the correlation 
+time of the Pressure tensor $\ve{P}$~\cite{PSmith93c,Balasubramanian96}.
+{\tt g\_energy} can compute the viscosity, but in our experience this is not very
+accurate (actually the values do not converge...).
+
+\subsection{Mean Square Displacement}
+\label{sec:msd}
+To determine the self \myindex{diffusion coefficient} $D_A$ of particles $A$ one
 can use the Einstein relation~\cite{Allen87} \beq \lim_{t \rightarrow
 \infty} <|{\bf r}_i(t) - {\bf r}_i(0)|^2>_{i \in A} ~=~ 6 D_A t \eeq
-This {\em Mean Square Displacement} and $D_A$ is calculated by the
+This {\em Mean Square Displacement} and $D_A$ are calculated by the
 program {\tt g\_msd}. For molecules consisting of more than one atom,
 ${\bf r}_i$ is the centre of mass positions. In that case you should
 use an index-file with molecule numbers! The program can also be used
 for calculating diffusion in one or two dimensions. This is useful for
 studying lateral diffusion on interfaces. 
 
-An example of the self diffusion of SPC-water is given in
+An example of the mean square displacement of SPC-water is given in
 fig.~\ref{fig:msdwater}.
 %
 \begin{figure}[hbtp]
@@ -194,20 +321,6 @@ fig.~\ref{fig:msdwater}.
 \end{figure}
 %
 
-The self diffusion coefficient can also be calculated using the Green-Kubo 
-relation~\cite{Allen87}
-\beq
-D_A ~=~ {1\over 3} \int_0^{\infty} < {\bf v}_i(t) \cdot {\bf v}_i(0) >_{i \in A} \; dt
-\eeq
-The program {\tt g\_velacc} calculates this {\em Velocity AutoCorrelation 
-Function}.
-
-Another important quantity is the dipole correlation time. The {\em dipole 
-correlation function} for particles $A$ is calculated as follows by {\tt g\_dipoles}:
-\beq
-C_{\mu} (\tau) ~=~ < {\bf \mu}_i(\tau) \cdot {\bf \mu}_i(0) >_{i \in A}
-\eeq
-with ${\bf \mu}_i = \sum_{j \in i} {\bf r}_j q_j$. The dipole correlation time is simply $\int_0^{\infty} C_{\mu} (\tau) \; d\tau$.
 % 
 %%%%%%%%%%%%%%%%%%%%% Bonds, angles and dihedral %%%%%%%%%%%%%%%%%%%
 % 
@@ -326,7 +439,7 @@ between all residues. To visualize this matrix, you can convert it with
 \begin{figure}[hbtp]
 \centerline{
 \psfig {figure=plots/distm.eps,width=6.5cm}}
-\caption{A minimum distance matrix for a protein at time $t=0$.}
+\caption{A minimum distance matrix for a peptide~\protect\cite{Spoel96b}.}
 \label{fig:mdmat}
 \end{figure}
 %
