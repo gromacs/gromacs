@@ -61,7 +61,8 @@ else
 endif
 
 dep:
-	$(CC) -M -I. -I$(GMXHOME)/src/include *.c *.cc  |  grep -v include  |  sed sx./xx > Make.dep
+	$(CC) -M -I. -I$(GMXHOME)/src/include  *.c *.cc  |  grep -v '/usr/include'  > Make.dep
+#	$(CC) -M -I. -I$(GMXHOME)/src/include  *.c *.cc  |  grep -v '/usr/include'  |  sed sx./xx > Make.dep
 	
 clean:
 		$(RM) $(EXECUTABLES) *.o *.l *~ *.bak \#*\# 
