@@ -355,7 +355,8 @@ int main(int argc,char *argv[])
 
 #define NFILE asize(fnm)  
   bool   bWrite;
-  static real  delta_t=0.0, toffset=0;
+  static real  delta_t=0.0, toffset=0,scalefac=1;
+  static int   scaleindex=-1;
   static bool  bSetTime=FALSE;
   static bool  bSort=TRUE,bError=TRUE;
   static real  begin=-1;
@@ -374,6 +375,10 @@ int main(int argc,char *argv[])
       "Change starting time interactively" },
     { "-sort",     FALSE, etBOOL, {&bSort},
       "Sort energy files (not frames)"},
+    { "-scalefac", FALSE, etREAL, {&scalefac},
+      "Multiply energy component by this factor (with -scaleindex)" },
+    { "-scaleindex", FALSE, etINT, {&scaleindex},
+      "Scale this energy (if not -1) by factor given above" },
     { "-error",    FALSE, etBOOL, {&bError},
       "Stop on errors in the file" }
   };
@@ -473,6 +478,8 @@ int main(int argc,char *argv[])
 	  fprintf(stderr,"\nContinue writing frames from t=%g, step=%d\n",
 		  t,outstep);
 	}
+	if ((scaleindex >=0) && (scaleindex < nre))
+	  outee[scaleindex].e *= scalefac;
 	do_enx(out,&outt,&outstep,&nre,outee,&ndr,dr);
 	fprintf(stderr,"\rWriting step %d, time %f        ",outstep,outt);
       }
