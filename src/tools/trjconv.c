@@ -53,6 +53,7 @@ static char *SRCID_trjconv_c = "$Id$";
 #include "magic.h"
 #include "binio.h"
 #include "pbc.h"
+#include "viewit.h"
 
 static void center_x(rvec x[],matrix box,
 		     int n,atom_id index[],int nc,atom_id ci[])
@@ -328,8 +329,8 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_BEGIN | PCA_CAN_END,TRUE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,
+  parse_common_args(&argc,argv,PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW,
+		    TRUE, NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    0,NULL);
 
   top_file=ftp2fn(efTPS,NFILE,fnm);
@@ -395,7 +396,7 @@ int main(int argc,char *argv[])
     bIndex = (bIndex || bTPS);
     
     if (bTPS) {
-      (void) read_tps_conf(top_file,top_title,&top,&xp,NULL,top_box,bFit);
+      read_tps_conf(top_file,top_title,&top,&xp,NULL,top_box,bFit);
       atoms=&top.atoms;
       /* top_title is only used for gro and pdb,
        * the header in such a file is top_title t= ...
@@ -752,6 +753,8 @@ int main(int argc,char *argv[])
     else if (out != NULL)
       fclose(out);
   }
+  
+  do_view(out_file,NULL);
   
   thanx(stderr);
   
