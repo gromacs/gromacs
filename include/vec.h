@@ -141,7 +141,7 @@ static inline real invsqrt(real x)
   const real  three=3.0;
   t_convert   result,bit_pattern;
   unsigned int exp,fract;
-  float       lu;
+  real        lu;
   real        y;
 #ifdef DOUBLE
   real        y2;
