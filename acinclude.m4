@@ -400,35 +400,44 @@ AC_REQUIRE([AC_CANONICAL_HOST])
 # not visible from the host triplet.
 # (on e.g. intel and dec/tru64 the host type is enough)
 
+gmxcpu="";
+
 case "${host_cpu}-${host_os}" in
 
-rs6000*-aix*)
+*-aix*)
+  # some versions of config.status says these systems are PowerPC even
+  # when they have Power3 CPUs (they used to be recognized as rs6000), 
+  # so we need to work around that.
+  # 
   # we need to fool the combination of m4, sh and awk - thus the seemingly unnecessary n
-  IBM_CPU_ID=`/usr/sbin/lsdev -C -c processor -S available | head -1 | awk '{ n=1; print $n }'`
-  if /usr/sbin/lsattr -EHl ${IBM_CPU_ID} | grep POWER4 >/dev/null 2>&1; then
-    gmxcpu=power4
-  elif /usr/sbin/lsattr -EHl ${IBM_CPU_ID} | grep POWER3 >/dev/null 2>&1; then
-    gmxcpu=power3
-  elif /usr/sbin/lsattr -EHl ${IBM_CPU_ID} | grep POWER2 >/dev/null 2>&1; then
-    gmxcpu=power2
-  else
-    gmxcpu=""
+  if test -f /usr/sbin/lsdev && test -f /usr/sbin/lsattr; then
+    IBM_CPU_ID=`/usr/sbin/lsdev -C -c processor -S available | head -1 | awk '{ n=1; print $n }'`
+    if /usr/sbin/lsattr -EHl ${IBM_CPU_ID} | grep POWER4 >/dev/null 2>&1; then
+      gmxcpu=power4
+    elif /usr/sbin/lsattr -EHl ${IBM_CPU_ID} | grep POWER3 >/dev/null 2>&1; then
+      gmxcpu=power3
+    elif /usr/sbin/lsattr -EHl ${IBM_CPU_ID} | grep POWER2 >/dev/null 2>&1; then
+      gmxcpu=power2
+    fi
   fi
-  ;;
-
-powerpc*-aix*)
-  if /usr/sbin/lscfg -vp | grep PowerPC | grep 604 >/dev/null 2>&1; then
-    gmxcpu=ppc604
-  elif /usr/sbin/lscfg -vp | grep PowerPC | grep 603 >/dev/null 2>&1; then
-    gmxcpu=ppc603
-  elif /usr/sbin/lscfg -vp | grep PowerPC | grep rs64a >/dev/null 2>&1; then
-    gmxcpu=rs64a
-  elif /usr/sbin/lscfg -vp | grep PowerPC | grep rs64b >/dev/null 2>&1; then
-    gmxcpu=rs64b
-  elif /usr/sbin/lscfg -vp | grep PowerPC | grep rs64c >/dev/null 2>&1; then
-    gmxcpu=rs64c
-  else
-    gmxcpu=""
+  if test -z "${gmxcpu}" && test -f /usr/sbin/lscfg; then
+    if /usr/sbin/lscfg -vp | grep PowerPC | grep 604 >/dev/null 2>&1; then
+      gmxcpu=ppc604
+    elif /usr/sbin/lscfg -vp | grep PowerPC | grep 603 >/dev/null 2>&1; then
+      gmxcpu=ppc603
+    elif /usr/sbin/lscfg -vp | grep PowerPC | grep rs64a >/dev/null 2>&1; then
+      gmxcpu=rs64a
+    elif /usr/sbin/lscfg -vp | grep PowerPC | grep rs64b >/dev/null 2>&1; then
+      gmxcpu=rs64b
+    elif /usr/sbin/lscfg -vp | grep PowerPC | grep rs64c >/dev/null 2>&1; then
+      gmxcpu=rs64c
+    elif /usr/sbin/lscfg -vp | grep POWER2 >/dev/null 2>&1; then
+      gmxcpu=power2
+    elif /usr/sbin/lscfg -vp | grep POWER3 >/dev/null 2>&1; then
+      gmxcpu=power3
+    elif /usr/sbin/lscfg -vp | grep POWER4 >/dev/null 2>&1; then
+      gmxcpu=power4
+    fi
   fi
   ;;
 
@@ -538,7 +547,7 @@ case "${host_cpu}-${host_os}" in
    fi  
    # PORTME 2. Check for intel compilers when we get our hands on one!
    ;;	
-  rs6000*-aix*)
+  *-aix*)
     # dont use inter-procedure analysis for the innerloops - they take
     # forever to compile with it, and it doesnt help at all.
     case "${gmxcpu}" in
@@ -558,18 +567,6 @@ case "${host_cpu}-${host_os}" in
 	xCFLAGS="-O3 -qarch=pwr -qtune=pwr -qmaxmem=16384"
 	xFFLAGS="-O3 -Q -qarch=pwr -qtune=pwr -qmaxmem=16384 -qhot -qnoipa"
 	;;
-      *)
-	# I don't think people are using anything older than power2, so we tune for
-        # pwr, but dont set the arch since it is nice to have common binaries 
-        # that run also on powerpc.
-	xCFLAGS="-O3 -qtune=pwr -qmaxmem=16384"
-	xFFLAGS="-O3 -Q -qtune=pwr -qmaxmem=16384 -qhot"
-	;;
-    esac
-    ;;
-
-  powerpc*-aix*)
-    case "${gmxcpu}" in
       ppc604)
 	xCFLAGS="-O3 -qarch=604 -qtune=604 -qmaxmem=16384"
 	xFFLAGS="-O3 -Q -qarch=604 -qtune=604 -qmaxmem=16384 -qhot"
