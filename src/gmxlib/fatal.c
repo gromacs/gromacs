@@ -167,6 +167,8 @@ void quit_gmx(int fatal_errno,char *msg)
     if (toupper(getc(stdin))!='N') 
       (void) abort(); 
   }
+  if (debug)
+    fflush(debug);
 #endif 
   exit(-1);
 }
