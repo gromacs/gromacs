@@ -62,7 +62,7 @@ g_rdf|calculates RDF's
 g_rdens|calculates radial densities
 END
 
-HEAD|Anlyzing bonded properties
+HEAD|Analyzing bonded interactions
 g_bond|calculates bond length distributions
 mk_angndx|generates index files for g_angle
 g_angle|calculates distributions and correlations for angles and dihedrals
