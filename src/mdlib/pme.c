@@ -552,7 +552,7 @@ real do_pme(FILE *logfile,       bool bVerbose,
   
   /* put local atoms on grid. */
   spread_q_bsplines(grid,invh,nsb,x,charge,theta,ir->pme_order);
-  inc_nrnb(nrnb,eNR_SPREADQBSP,nx*ny*nz*HOMENR(nsb));
+  inc_nrnb(nrnb,eNR_SPREADQBSP,ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
   /* sum contributions to local grid from other processors */
   if (PAR(cr))
       sum_qgrid(cr,nsb,grid,TRUE);
@@ -572,7 +572,7 @@ real do_pme(FILE *logfile,       bool bVerbose,
       sum_qgrid(cr,nsb,grid,FALSE);
   /* interpolate forces for our local atoms */
   gather_f_bsplines(grid,invh,nsb,x,f,charge,theta,dtheta,ir->pme_order);
-  inc_nrnb(nrnb,eNR_GATHERFBSP,nx*ny*nz*HOMENR(nsb));
+  inc_nrnb(nrnb,eNR_GATHERFBSP,ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
 
   ntot  = grid->nxyz;  
   npme  = ntot*log((real)ntot)/log(2.0);
