@@ -216,20 +216,6 @@ static void edit_files(char **fnms,int nfiles,real *readtime, real
     readtime[nfiles]=FLT_MAX;
 }
 
-
-bool bRmod(double a,double b)
-{
-  int iq;
-  double tol = 1e-6;
-  
-  iq = ((1.0+tol)*a)/b;
-  
-  if (fabs(a-b*iq) <= tol*a)
-    return TRUE;
-  else
-    return FALSE;
-}
-
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -262,8 +248,7 @@ int main(int argc,char *argv[])
       "Sort trajectory files (not frames)"}
   };
       
-  FILE         *out=NULL;
-  int          status,ftp,ftpin,i,frame,natoms=0,step,trjout=0;
+  int          status,ftp,ftpin,i,frame,step,trjout=0;
   rvec         *x,*v;
   real         xtcpr,t,t0=-1,t1;
   t_trxframe   fr;
@@ -320,7 +305,7 @@ int main(int argc,char *argv[])
   for(i=0;i<nfile;i++) {
       /* Open next file */
   
-      natoms=read_first_frame(&status,fnms[i],&fr,flags);
+      read_first_frame(&status,fnms[i],&fr,flags);
       if(!fr.bTime)
 	fatal_error(0,"Couldn't find a time in the frame.");
       
@@ -334,7 +319,6 @@ int main(int argc,char *argv[])
 	case efXTC:
 	case efTRR:
 	case efTRJ:
-	  out=NULL;
 	  trxout = open_trx(out_file,"w");
 	  break;
 	default:
