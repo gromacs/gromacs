@@ -44,6 +44,10 @@ extern "C" {
 
 #define TRICLINIC(box) (box[YY][XX]!=0) || (box[ZZ][XX]!=0) || (box[ZZ][YY]!=0)
 
+#define NTRICIMG 14
+#define NCUCVERT 24
+#define NCUCEDGE 36
+
 extern char *check_box(matrix box);
 /* Returns NULL if the box is supported by Gromacs.
  * Otherwise is returns a string with the problem.
@@ -121,6 +125,19 @@ extern void put_charge_groups_in_box (FILE *log,int cg0,int cg1,bool bTruncOct,
 
 extern void calc_box_center(matrix box,rvec box_center);
 /* Calculates the center of the box */
+
+extern void calc_triclinic_images(matrix box,rvec img[]);
+/* Calculates the NTRICIMG box images */
+
+extern void calc_compact_unitcell_vertices(matrix box,rvec vert[]);
+/* Calculates the NCUCVERT vertices of a compact unitcell */
+
+extern int *compact_unitcell_edges(void);
+/* Return an array of unitcell edges of length NCUCEDGE*2,
+ * this is an index in vert[], which is calculated by calc_unitcell_vertices.
+ * The index consists of NCUCEDGE pairs of vertex indices.
+ * The index does not change, so it needs to be retrieved only once.
+ */
 
 extern void put_atoms_in_box(int natoms,matrix box,rvec x[]);
 /* This puts ALL atoms in the box, not caring about charge groups!

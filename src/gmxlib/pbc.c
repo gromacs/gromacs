@@ -372,6 +372,119 @@ void calc_box_center(matrix box,rvec box_center)
     box_center[d] = 0.5*box[d][d];
 }
 
+void calc_triclinic_images(matrix box,rvec img[])
+{
+  int i;
+
+  /* Calculate 3 adjacent images in the xy-plane */
+  copy_rvec(box[0],img[0]);
+  copy_rvec(box[1],img[1]);
+  if (img[1][XX] < 0)
+    svmul(-1,img[1],img[1]);
+  rvec_sub(img[1],img[0],img[2]);
+
+  /* Get the next 3 in the xy-plane as mirror images */
+  for(i=0; i<3; i++)
+    svmul(-1,img[i],img[3+i]);
+
+  /* Calculate the first 4 out of xy-plane images */
+  copy_rvec(box[2],img[6]);
+  if (img[6][XX] < 0)
+    svmul(-1,img[6],img[6]);
+  for(i=0; i<3; i++)
+    rvec_add(img[6],img[i+1],img[7+i]);
+
+  /* Mirror the last 4 from the previous in opposite rotation */
+  for(i=0; i<4; i++)
+    svmul(-1,img[6 + (2+i) % 4],img[10+i]);
+}
+
+void calc_compact_unitcell_vertices(matrix box,rvec vert[])
+{
+  rvec img[NTRICIMG],box_center;
+  int n,i,j,tmp[4],d;
+
+  calc_triclinic_images(box,img);
+
+  n=0;
+  for(i=2; i<=5; i+=3) {
+    tmp[0] = i-1;
+    if (i==2)
+      tmp[1] = 8;
+    else 
+      tmp[1] = 6;
+    tmp[2] = (i+1) % 6;
+    tmp[3] = tmp[1]+4;
+    for(j=0; j<4; j++) {
+      for(d=0; d<DIM; d++)
+	vert[n][d] = img[i][d]+img[tmp[j]][d]+img[tmp[(j+1)%4]][d];
+      n++;
+    }
+  }
+  for(i=7; i<=13; i+=6) {
+    tmp[0] = (i-7)/2;
+    tmp[1] = tmp[0]+1;
+    if (i==7)
+      tmp[2] = 8;
+    else
+      tmp[2] = 10;
+    tmp[3] = i-1;
+    for(j=0; j<4; j++) {
+      for(d=0; d<DIM; d++)
+	vert[n][d] = img[i][d]+img[tmp[j]][d]+img[tmp[(j+1)%4]][d];
+      n++;
+    }
+  }
+  for(i=9; i<=11; i+=2) {
+    if (i==9)
+      tmp[0] = 3;
+    else
+      tmp[0] = 0;
+    tmp[1] = tmp[0]+1;
+    if (i==9)
+      tmp[2] = 6;
+    else
+      tmp[2] = 12;
+    tmp[3] = i-1;
+    for(j=0; j<4; j++) {
+      for(d=0; d<DIM; d++)
+	vert[n][d] = img[i][d]+img[tmp[j]][d]+img[tmp[(j+1)%4]][d];
+      n++;
+    }
+  }
+
+  calc_box_center(box,box_center);
+  for(i=0; i<NCUCVERT; i++)
+    for(d=0; d<DIM; d++)
+      vert[i][d] = vert[i][d]*0.25+box_center[d];
+}
+
+int *compact_unitcell_edges()
+{
+  /* this is an index in vert[] (see calc_box_vertices) */
+  static int edge[NCUCEDGE*2];
+  static int hexcon[24] = { 0,9, 1,19, 2,15, 3,21, 
+			    4,17, 5,11, 6,23, 7,13,
+			    8,20, 10,18, 12,16, 14,22 };
+  int e,i,j;
+  bool bFirst = TRUE;
+
+  if (bFirst) {
+    e = 0;
+    for(i=0; i<6; i++)
+      for(j=0; j<4; j++) {
+	edge[e++] = 4*i + j;
+	edge[e++] = 4*i + (j+1) % 4;
+      }
+    for(i=0; i<12*2; i++)
+      edge[e++] = hexcon[i];
+    
+    bFirst = FALSE;
+  }
+
+  return edge;
+}
+
 void put_atoms_in_box(int natoms,matrix box,rvec x[])
 {
   int i,m,d;
