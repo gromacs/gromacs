@@ -545,31 +545,45 @@ int main (int argc, char *argv[])
     "is zero.",
     "Eventually a binary file is produced that can serve as the sole input",
     "file for the MD program.[PAR]",
+    
     "grompp calls the c-preprocessor to resolve includes, macros ",
     "etcetera. To specify a macro-preprocessor other than /lib/cpp ",
     "(such as m4)",
     "you can put a line in your parameter file specifying the path",
     "to that cpp. Specifying [TT]-pp[tt] will get the pre-processed",
     "topology file written out.[PAR]",
+    
     "If your system does not have a c-preprocessor, you can still",
     "use grompp, but you do not have access to the features ",
     "from the cpp. Command line options to the c-preprocessor can be given",
     "in the [TT].mdp[tt] file. See your local manual (man cpp).[PAR]",
+    
     "When using position restraints a file with restraint coordinates",
     "can be supplied with [TT]-r[tt], otherwise constraining will be done",
     "relative to the conformation from the [TT]-c[tt] option.[PAR]",
+    
     "Starting coordinates can be read from trajectory with [TT]-t[tt].",
     "The last frame with coordinates and velocities will be read,",
     "unless the [TT]-time[tt] option is used.",
     "Note that these velocities will not be used when [TT]gen_vel = yes[tt]",
     "in your [TT].mdp[tt] file. If you want to continue a crashed run, it is",
     "easier to use [TT]tpbconv[tt].[PAR]",
+    
     "Using the [TT]-morse[tt] option grompp can convert the harmonic bonds",
     "in your topology to morse potentials. This makes it possible to break",
     "bonds. For this option to work you need an extra file in your $GMXLIB",
     "with dissociation energy. Use the -debug option to get more information",
     "on the workings of this option (look for MORSE in the grompp.log file",
     "using less or something like that).[PAR]",
+    
+    "By default all bonded interactions which have constant energy due to",
+    "dummy atom constructions will be removed. If this constant energy is",
+    "not zero, this will result in a shift in the total energy. All bonded",
+    "interactions can be kept by turning off [TT]-rmdumbds[tt]. Additionally,",
+    "all constraints for distances which will be constant anyway because",
+    "of dummy atom constructions will be removed. If any constraints remain",
+    "which involve dummy atoms, a fatal error will result.[PAR]"
+    
     "To verify your run input file, please make notice of all warnings",
     "on the screen, and correct where necessary. Do also look at the contents",
     "of the [TT]mdout.mdp[tt] file, this contains comment lines, as well as",
@@ -616,20 +630,20 @@ int main (int argc, char *argv[])
   static int  nprocs=1,maxwarn=10;
   static real fr_time=-1;
   t_pargs pa[] = {
-    { "-np",      FALSE, etINT,  {&nprocs},
-      "Generate statusfile for # processors" },
-    { "-time",    FALSE, etREAL, {&fr_time},
-      "Take frame at or first after this time." },
     { "-v",       FALSE, etBOOL, {&bVerbose},
       "Be loud and noisy" },
+    { "-time",    FALSE, etREAL, {&fr_time},
+      "Take frame at or first after this time." },
+    { "-np",      FALSE, etINT,  {&nprocs},
+      "Generate statusfile for # processors" },
+    { "-shuffle", FALSE, etBOOL, {&bShuffle},
+      "Shuffle molecules over processors" },
+    { "-rmdumbds",FALSE, etBOOL, {&bRmDumBds},
+      "Remove constant bonded interactions with dummies" },
+    { "-maxwarn", FALSE, etINT,  {&maxwarn},
+      "Number of warnings after which input processing stops" },
     { "-renum",   FALSE, etBOOL, {&bRenum},
       "HIDDENRenumber atomtypes and minimize number of atomtypes" },
-    { "-shuffle", FALSE, etBOOL, {&bShuffle},
-      "Shuffle molecules over processors (only with np > 1)" },
-    { "-rmdumbds",FALSE, etBOOL, {&bRmDumBds},
-      "Remove bonded interactions involving dummy atoms" },
-    { "-maxwarn", FALSE, etINT,  {&maxwarn},
-      "Number of warnings after which input processing stops" }
   };
   
   CopyRight(stdout,argv[0]);
