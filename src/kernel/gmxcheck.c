@@ -115,7 +115,7 @@ void chk_trj(char *fn)
     old_t2=old_t1;
     old_t1=fr.time;
     if (t0 == NOTSET) t0=fr.time;
-    if (fpos)
+    if (fpos && (j<10 || j%10==0))
       fprintf(stderr," byte: %10lu",(unsigned long)fpos);
     j++;
     t=fr.time;
