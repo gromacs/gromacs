@@ -99,8 +99,8 @@ extern void calc_shifts(matrix box,rvec box_size,rvec shift_vec[],
 extern void 
   put_charge_groups_in_box (FILE *log,int cg0,int cg1,bool bTruncOct,
 			    matrix box,rvec box_size,t_block *cgs,
-			    rvec pos[],rvec shift_vec[],rvec cg_cm[],
-			    ushort ptype[]);
+			    rvec pos[],rvec shift_vec[],rvec cg_cm[]);
+			    
 /* This routine puts charge groups in the periodic box, keeping them
  * together. When bTruncOct==TRUE a truncated octahedron
  * box is used. There are no checks: the first element of the box matrix

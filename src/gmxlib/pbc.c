@@ -209,12 +209,12 @@ void calc_shifts(matrix box,rvec box_size,rvec shift_vec[],bool bTruncOct)
 
 void put_charge_groups_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
 			      matrix box,rvec box_size,t_block *cgs,
-			      rvec pos[],rvec shift_vec[],rvec cg_cm[],
-			      ushort ptype[])
+			      rvec pos[],rvec shift_vec[],rvec cg_cm[])
+			      
 {
   int  icg,ai,k,k0,k1,d;
   rvec cg;
-  real weight,tweight,nrcg,inv_ncg;
+  real nrcg,inv_ncg;
   atom_id *cga,*cgindex;
   
 #ifdef DEBUG
@@ -228,24 +228,13 @@ void put_charge_groups_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
     k0      = cgindex[icg];
     k1      = cgindex[icg+1];
     nrcg    = k1-k0;
-    /*inv_ncg = 1.0/nrcg;*/
+    inv_ncg = 1.0/nrcg;
     
     clear_rvec(cg);
-    tweight = 0;
     for(k=k0; (k<k1); k++)  {
       ai     = cga[k];
-      weight = (ptype[ai] == eptAtom) ? 1.0 : 0.0; 
-      tweight += weight;
       for(d=0; d<DIM; d++)
-	cg[d] += weight*pos[ai][d];
-    }
-    if (tweight == 0)
-      fatal_error(0,"Charge group (%d) with zero mass in %s, %d",
-		  icg,__FILE__,__LINE__);
-    else {
-      inv_ncg = 1.0/tweight;
-      for(d=0; d<DIM; d++)
-	cg[d] = inv_ncg*cg[d];
+	cg[d] += inv_ncg*pos[ai][d];
     }
     /* Now check pbc for this cg */
     for(d=0; d<DIM; d++) {
