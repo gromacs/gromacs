@@ -16,7 +16,6 @@ g_angle
 g_bond
 g_chi
 g_cluster
-g_com
 g_confrms
 g_coord
 g_covar
@@ -49,6 +48,7 @@ g_rotacf
 g_saltbr
 g_sas
 g_sgangle
+g_traj
 g_velacc
 genbox
 genconf

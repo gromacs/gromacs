@@ -19,7 +19,7 @@ ifneq ($(PARALLEL_ONLY_MDRUN),yes)
 PROGRAMS	= average	do_dssp		editconf	\
 		eneconv		g_analyze	g_anaeig	\
 		g_angle		g_bond		g_chi		\
-		g_cluster	g_com		\
+		g_cluster	\
 		g_confrms	g_covar		g_density	\
 		g_dielectric	g_dih		g_dipoles	\
 		g_disre		g_dist		g_enemat	\
@@ -31,6 +31,7 @@ PROGRAMS	= average	do_dssp		editconf	\
 		g_rdens		g_rdf		g_rms		\
 		g_rmsdist	g_rmsf		g_rotacf	\
 		g_saltbr	g_sas		g_sgangle	\
+		g_traj		\
 		g_velacc	genbox		genconf		\
 		gendr		genion		genpr		\
 		make_ndx	mk_angndx	protonate	\
@@ -133,7 +134,7 @@ g_dielectric:	g_dielectric.o	$(ACOBJ)
 g_bond:		g_bond.o 	lsq.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-g_com:		g_com.o  
+g_traj:		g_traj.o  
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_rms:	 	g_rms.o cmat.o
