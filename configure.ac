@@ -292,7 +292,7 @@ cat > conftest.s << EOF
 checkasm:
 	emms
 	pswapd mm0,mm0
-	movups xmm0,[checkasm]
+	movups xmm0,[[checkasm]]
 	emms
 	ret
 EOF
@@ -300,8 +300,7 @@ EOF
       AC_MSG_RESULT([yes])
     else
       AC_MSG_RESULT([no]) 
-      AC_MSG_ERROR([Upgrade to a more recent binutils, download the as executable]     
-                   [from www.gromacs.org, or disable assembly loops.])
+      AC_MSG_ERROR([Upgrade to a more recent binutils (or disable assembly loops).])
     fi
     GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} x86_cpuid.lo x86_sse.lo x86_3dnow.lo"
     AC_DEFINE([USE_X86_ASM],,[Use X86 SSE/3DNow multimedia assembly code])

@@ -331,7 +331,7 @@ bool get_libdir(char *libdir)
 
   /* First - detect binary name */
   strcpy(bin_name,Program());
-  
+
   /* Only do the smart search part if we got a real name */
   if(bin_name && strcmp(bin_name,"GROMACS")) {
   
@@ -401,7 +401,7 @@ char *low_libfn(char *file, bool bFatal)
   static char buf[1024];
   static char libpath[4096],tmppath[4096];
   static int  bFirst=1;
-  static bool env_is_set;
+  static bool env_is_set=FALSE;
   bool found;
   
   if(bFirst) {
