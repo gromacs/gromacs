@@ -17,5 +17,7 @@ SOL		1
 ; i	j	funct	length
 1	1	0.09572	0.15139
 
-
-
+[ exclusions ]
+1	2	3
+2	1	3
+3	1	2
