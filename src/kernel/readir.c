@@ -492,7 +492,7 @@ void get_ir(char *mdparin,char *mdparout,
 	dumdub[m][YY]=dumdub[m][ZZ]=dumdub[m][XX];
       else {
 	fprintf(stderr,"ERROR: pressure coupling wrong number of values\n");
-	nerror++;
+	(*nerror)++;
       }
       break;
     case epcSEMIISOTROPIC:
@@ -502,7 +502,7 @@ void get_ir(char *mdparin,char *mdparout,
 	dumdub[m][YY]=dumdub[m][XX];
       else {
 	fprintf(stderr,"ERROR: pressure coupling wrong number of values\n");
-	nerror++;
+	(*nerror)++;
       }
 	break;
     case epcANISOTROPIC:
@@ -511,7 +511,7 @@ void get_ir(char *mdparin,char *mdparout,
 		 &(dumdub[m][3]),&(dumdub[m][4]),&(dumdub[m][5]))!=6)
 	{
 	  fprintf(stderr,"ERROR: pressure coupling wrong number of values\n");
-	  nerror++;
+	  (*nerror)++;
 	}
       break;
     default:
