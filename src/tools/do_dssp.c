@@ -374,7 +374,7 @@ int main(int argc,char *argv[])
   rvec       *xp,*x;
   int        *average_area;
   real       **accr,*av_area, *norm_av_area;
-  char       pdbfile[L_tmpnam],tmpfile[L_tmpnam],title[256];
+  char       pdbfile[32],tmpfile[32],title[256];
 #ifdef MY_DSSP
 #define MAXBUF 1000000
   char       inbuf[MAXBUF],outbuf[MAXBUF];
@@ -426,9 +426,12 @@ int main(int argc,char *argv[])
     }
   }
   fprintf(stderr,"There are %d residues in your selected group\n",nres);
+
+  strcpy(pdbfile,"ddXXXXXX");
+  gmx_tmpnam(pdbfile);
+  strcpy(tmpfile,"ddXXXXXX");
+  gmx_tmpnam(tmpfile);
   
-  (void) tmpnam(pdbfile);
-  (void) tmpnam(tmpfile);
 #ifdef MY_DSSP
   /* Open all files read-write */
   tapein=ffopen(pdbfile,"w+");

@@ -473,16 +473,20 @@ FILE *libopen(char *file)
   return low_libopen(file,TRUE);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+void gmx_tmpnam(char *buf)
+{
+  int i,len,fd;
+  
+  if ((len = strlen(buf)) < 7)
+    fatal_error(0,"Buf passed to gmx_tmpnam must be at least 7 bytes long");
+  for(i=len-6; (i<len); i++) {
+    buf[i] = 'X';
+  }
+  fd = mkstemp(buf);
+  if (fd == EINVAL)
+    fatal_error(0,"Invalid template %s for mkstemp (source %s, line %d)",buf,__FILE__,__LINE__);
+  else if (fd == EEXIST)
+    fatal_error(0,"mkstemp created existing file %s (source %s, line %d)",buf,__FILE__,__LINE__);
+  close(fd);
+  /* Buf should now be OK */
+}

@@ -102,7 +102,7 @@ t_dlg *select_filter(t_x11 *x11,t_gmx *gmx)
   static char *ok="\"Ok\"";
   FILE   *tmp;
   t_dlg  *dlg;
-  char   tmpfile[L_tmpnam];
+  char   tmpfile[32];
   int    i,j,k,len,tlen,ht,ncol,nrow,x0;
 
   len=strlen(title);
@@ -120,7 +120,8 @@ t_dlg *select_filter(t_x11 *x11,t_gmx *gmx)
   else {
     ht=1+(gmx->filter->grps->nr+1)*2+3;
   }
-  tmpnam(tmpfile);
+  strcpy(tmpfile,"filterXXXXXX");
+  gmx_tmpnam(tmpfile);
 #ifdef DEBUG
   fprintf(stderr,"file: %s\n",tmpfile);
 #endif

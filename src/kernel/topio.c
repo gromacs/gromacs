@@ -551,17 +551,18 @@ char **do_top(bool         bVerbose,
 	      t_simsystem  **sims)
 {
   /* Tmpfile might contain a long path */
-  char tmpfile[1024];
+  char tmpfile[32];
   char **title;
   int  combination_rule;
   
   init_atomtype(atype);
 
   if (bVerbose) printf("calling %s...\n",opts->cpp);
-  if(topppfile)
+  if (topppfile)
     strcpy(tmpfile,topppfile);
   else {
-    tmpnam(tmpfile);
+    strcpy(tmpfile,"gromppXXXXXX");
+    gmx_tmpnam(tmpfile);
     set_fatal_tmp_file(tmpfile);
   }
   preprocess(topfile,tmpfile,opts->cpp,opts->define,opts->include);

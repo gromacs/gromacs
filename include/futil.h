@@ -104,6 +104,11 @@ extern char *low_libfn(char *file,bool bFatal);
 extern FILE *low_libopen(char *file,bool bFatal);
 /* The same as the above, but does not terminate if (!bFatal) */
 
+/* Create unique name for temp file (wrapper around mkstemp). 
+ * Buf should be at least 7 bytes long 
+ */
+extern void gmx_tmpnam(char *buf);
+
 #ifdef CPLUSPLUS
 }
 #endif

@@ -66,13 +66,12 @@ static void shell_comm(char *title,char *script,int nsleep)
 {
   FILE *tfil;
   char command[STRLEN];
-  char *tmp;
+  char tmp[32];
 
-  tmp=tmpnam(NULL);
-  if ((tfil=fopen(tmp,"w"))==NULL) {
-    perror(tmp);
-    exit(1);
-  }
+  strcpy(tmp,"dialogXXXXXX");
+  gmx_tmpnam(tmp);
+  
+  tfil = ffopen(tmp,"w");
   fprintf(tfil,"%s\n",script);
   fprintf(tfil,"sleep %d\n",nsleep);
   fclose(tfil);

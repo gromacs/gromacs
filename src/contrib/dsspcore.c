@@ -666,11 +666,6 @@ extern Void	P_sun_argv  PP( (char *, int, int) );
 #define BadInputFormat   14
 #define EndOfFile        30
 
-/* Creating temporary files */
-#if (defined(BSD) || defined(NO_TMPFILE)) && !defined(HAVE_TMPFILE)
-# define tmpfile()  (fopen(tmpnam(NULL), "w+"))
-#endif
-
 /* File buffers */
 #define FILEBUF(f,sc,type) sc int __CAT__(f,_BFLAGS);   \
 			   sc type __CAT__(f,_BUFFER)

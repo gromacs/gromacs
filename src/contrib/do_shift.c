@@ -90,7 +90,7 @@ int main(int argc,char *argv[])
   };
   static real dt=0.0;
   t_pargs pa[] = {
-    { "-dt", FALSE, etREAL, &dt, "Time interval between frames." }
+    { "-dt", FALSE, etREAL, { &dt }, "Time interval between frames." }
   };
   static char *bugs[] = {
     "The program is very slow"
@@ -107,7 +107,7 @@ int main(int argc,char *argv[])
   char       *grpnm,*randf;
   atom_id    *index;
   rvec       *x,*x_s;
-  char       pdbfile[L_tmpnam],tmpfile[L_tmpnam];
+  char       pdbfile[32],tmpfile[32];
   char       total[256],*dptr;
   t_filenm   fnm[] = {
     { efTRX, "-f",   NULL,     ffREAD },
@@ -136,8 +136,10 @@ int main(int argc,char *argv[])
   
   snew(x_s,atoms->nr);
 
-  (void) tmpnam(pdbfile);
-  (void) tmpnam(tmpfile);
+  strcpy(pdbfile,"dsXXXXXX");
+  gmx_tmpnam(pdbfile);
+  strcpy(tmpfile,"dsXXXXXX");
+  gmx_tmpnam(tmpfile);
   fprintf(stderr,"pdbfile = %s\ntmpfile = %s\n",pdbfile,tmpfile);
   
   if ((dptr=getenv("TOTAL")) == NULL)
