@@ -75,7 +75,7 @@ extern void pdb2top(char *ff,FILE *top_file,char *posre_fn,char *molname,
 		    int nid, t_idihres idi[],
 		    t_hackblock *ntdb,t_hackblock *ctdb,
 		    bool bH14,int rn,int rc,bool bAlldih,
-		    int nddb, t_dumblock *ddb,bool bDummies,real mHmult,
+		    bool bDummies,real mHmult,
 		    int nssbonds,t_ssbond ssbonds[], int nrexcl);
 /* Create a topology ! */
 
