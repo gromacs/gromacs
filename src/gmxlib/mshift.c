@@ -98,7 +98,7 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,bool bAll)
 {
   t_iatom *ia;
   t_iatom tp;
-  int     i,j,np;
+  int     i,j,np,nbonded;
   int     end;
 
   end=il->nr;
@@ -107,17 +107,22 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,bool bAll)
     tp=ftype[ia[0]];
     np=interaction_function[tp].nratoms;
 
-    if (interaction_function[tp].flags & (IF_BOND | IF_SHAKE)) {
+    if (interaction_function[tp].flags & (IF_BOND | IF_SHAKE | IF_DUMMY)) {
+      if (interaction_function[tp].flags & IF_DUMMY)
+	/* Bond a dummy only to the first constructing atom */
+	nbonded = 2;
+      else
+	nbonded = np;
       if (bAll) {
-	add_gbond(g,&(ia[1]),np);
+	add_gbond(g,&(ia[1]),nbonded);
       }
       else {
 	/* Check whether all atoms are bonded now! */
 	for(j=0; (j<np); j++)
 	  if (g->nedge[ia[1+j]-g->start] == 0)
 	    break;
-	if (j < np)
-	  add_gbond(g,&(ia[1]),np);
+	if (j < nbonded)
+	  add_gbond(g,&(ia[1]),nbonded);
       }
     }
     ia+=np+1;
@@ -149,7 +154,7 @@ void p_graph(FILE *log,char *title,t_graph *g)
 static void calc_1se(t_graph *g,t_ilist *il,t_functype ftype[],
 		     short nbond[],int natoms)
 {
-  int     k,nratoms,tp,end,j;
+  int     k,nratoms,nbonded,tp,end,j;
   t_iatom *ia,iaa;
 
   end=il->nr;
@@ -170,22 +175,21 @@ static void calc_1se(t_graph *g,t_ilist *il,t_functype ftype[],
       }
     }
     else {
-      for(k=0; (k<nratoms); k++) {
+      if (interaction_function[tp].flags & IF_DUMMY)
+	/* Bond a dummy only to the first constructing atom */
+	nbonded = 2;
+      else
+	nbonded = nratoms;
+      for(k=0; (k<nbonded); k++) {
 	iaa=ia[k+1];
 	if (iaa<natoms) {
 	  g->start=min(g->start,iaa);
 	  g->end  =max(g->end,  iaa);
 	}
-	switch (tp) {
-	case F_BONDS:
-	case F_MORSE:
-	case F_SHAKE:
+	if ((tp == F_BONDS) || (tp == F_MORSE) || (tp == F_SHAKE) ||
+	    (interaction_function[tp].flags & IF_DUMMY))
 	  if (iaa<natoms)
 	    nbond[iaa]++;
-	  break;
-	default:
-	  break;
-	}
       }
     }
   }
@@ -201,7 +205,7 @@ static void calc_start_end(t_graph *g,t_idef *idef,int natoms)
 
   snew(nbond,natoms);
   for(i=0; (i<F_NRE); i++) {
-    if (interaction_function[i].flags & (IF_BOND | IF_SHAKE))
+    if (interaction_function[i].flags & (IF_BOND | IF_SHAKE | IF_DUMMY))
       calc_1se(g,&idef->il[i],idef->functype,nbond,natoms);
   }
   
