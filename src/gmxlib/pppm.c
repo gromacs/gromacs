@@ -41,7 +41,6 @@ static char *SRCID_pppm_c = "$Id$";
 #include "nr.h"
 #include "assert.h"
 #include "nrnb.h"
-#include "ghat.h"
 #include "pppm.h"
 #include "lrutil.h"
 #include "mdrun.h"
@@ -462,6 +461,8 @@ real do_pppm(FILE *log,       bool bVerbose,
       nz     = ir->nkz;
       ghat   = mk_rgrid(nx,ny,nz);
       mk_ghat(NULL,nx,ny,nz,ghat,box,ir->rshort,ir->rlong,TRUE);
+      
+      pr_scalar_gk("generghat.xvg",nx,ny,nz,box,ghat);
     }
     else {
       fprintf(stderr,"Reading Ghat function from %s\n",ghatfn);
@@ -489,6 +490,8 @@ real do_pppm(FILE *log,       bool bVerbose,
       nx = grids[XX];
       ny = grids[YY];
       nz = grids[ZZ];
+      
+      pr_scalar_gk("optimghat.xvg",nx,ny,nz,box,ghat);
     }
 
     fprintf(log,"Will use the PPPM algorithm for long-range electrostatics\n");

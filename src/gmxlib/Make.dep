@@ -47,7 +47,6 @@ futil.o:	futil.c
 gbutil.o:	gbutil.c
 genhydro.o:	genhydro.c
 ghat.o:	ghat.c
-ghat.o:	ghat.h
 grid.o:	grid.c
 h_db.o:	h_db.c
 idtio.o:	idtio.c
@@ -88,7 +87,6 @@ pbc.o:	pbc.c
 pdbio.o:	pdbio.c
 pgc-bug.o:	pgc-bug.c
 pppm.o:	pppm.c
-pppm.o:	ghat.h
 prfn.o:	prfn.c
 princ.o:	princ.c
 pvmio.o:	pvmio.c
