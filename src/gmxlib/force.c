@@ -277,10 +277,14 @@ void init_forcerec(FILE *log,
   fr->rlistlong  = max(ir->rlist,max(ir->rcoulomb,ir->rvdw));
   fr->bTwinRange = (fr->rlistlong > fr->rlist);
   fr->bTab       = ((fr->eeltype != eelCUT) || (fr->vdwtype != evdwCUT));
+#define MAX_14_DIST 1.0
+  /* Shell to account for the maximum chargegroup radius (2*0.2 nm) *
+   * and diffusion during nstlist steps (0.2 nm)                    */
+#define TAB_EXT 0.6
   if (fr->bTab)
-    fr->rtab = fr->rlistlong+0.5;
+    fr->rtab = max(fr->rlistlong+TAB_EXT,MAX_14_DIST);
   else
-    fr->rtab = fr->rlist+0.5;
+    fr->rtab = MAX_14_DIST;
 
   /* Domain decomposition parallellism... */
   fr->bDomDecomp = ir->bDomDecomp;

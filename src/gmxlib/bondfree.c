@@ -805,7 +805,7 @@ real do_14(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	   t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
 {
   real      eps;
-  real      r2,rlong2;
+  real      r2,rtab2;
   atom_id   ai,aj,itype;
   t_iatom   *ia0,*iatom;
   int       gid;
@@ -817,7 +817,7 @@ real do_14(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
   /* Reaction field stuff */  
   eps    = fr->epsfac*fr->fudgeQQ;
   
-  rlong2 = sqr(fr->rlistlong);
+  rtab2 = sqr(fr->rtab);
     
   ia0=iatoms;
 
@@ -828,7 +828,7 @@ real do_14(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
 
     r2    = dist2(x[ai],x[aj]);
     
-    if ((rlong2 > 0) && (r2 >= rlong2)) {
+    if (r2 >= rtab2) {
       fprintf(log,"%d %8.3f %8.3f %8.3f\n",(int)ai+1,
 	      x[ai][XX],x[ai][YY],x[ai][ZZ]);
       fprintf(log,"%d %8.3f %8.3f %8.3f\n",(int)aj+1,
