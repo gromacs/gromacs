@@ -197,14 +197,10 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 		    mdatoms,nsb,nrnb,graph,edyn);
       break;
     case eiCG:
-#ifdef DOUBLE
       start_t=do_cg(stdlog,nfile,fnm,parm,top,grps,nsb,
 		    x,f,buf,mdatoms,parm->ekin,ener,
 		    nrnb,bVerbose,cr,graph);
       break;
-#else
-      fprintf(stderr,"Can't do Conjugate Gradients in single precision/\n");
-#endif
     case eiSteep:
       start_t=do_steep(stdlog,nfile,fnm,parm,top,grps,nsb,
 		       x,f,buf,mdatoms,parm->ekin,ener,
