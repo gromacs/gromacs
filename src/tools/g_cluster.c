@@ -779,6 +779,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     }
   
     /* Prepare a reference structure for the orientation of the clusters  */
+    if (bFit)
     reset_x(ifsize,fitidx,natom,NULL,xtps,mass);
     trxout = open_trx(trxfn,"w");
     /* Calculate the average structure in each cluster,               *
@@ -816,6 +817,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
 	structure[nstr] = i1;
 	nstr++;
 	if (trxfn && (bAverage || write_ncl) ) {
+	  if (bFit)
 	  reset_x(ifsize,fitidx,natom,NULL,xx[i1],mass);
 	  if (nstr == 1)
 	    first = i1;
@@ -898,6 +900,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
       } else {
 	for(i=0; i<natom; i++)
 	  copy_rvec(xx[midstr][i],xav[i]);
+	if (bFit)
 	reset_x(ifsize,fitidx,natom,NULL,xav,mass);
       }
       if (bFit)
@@ -1232,6 +1235,7 @@ int main(int argc,char *argv[])
       snew(mass,isize);
       for(i=0; i<ifsize; i++)
 	mass[fitidx[i]] = top.atoms.atom[index[fitidx[i]]].m;
+      if (bFit)
       for(i=0; i<nf; i++)
 	reset_x(ifsize,fitidx,isize,NULL,xx[i],mass);
     }
