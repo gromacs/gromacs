@@ -49,10 +49,19 @@
                    [...]>
 -->
 
-<!ELEMENT gromacs (parameters,system,atomtypes,forcefield,cell,
+<!ELEMENT gromacs (units,parameters,system,atomtypes,forcefield,cell,
                    coordinates,velocities?,forces?)>
 <!ATTLIST gromacs
           title     CDATA #REQUIRED>
+
+<!-- Units -->
+<!ELEMENT units EMPTY>
+<!ATTLIST units
+          length      ( nm | angstrom ) "nm"
+	  time        ( fs | ps | ns | us ) "ps"
+	  temperature ( kelvin | celsius | fahrenheit ) "kelvin"
+	  energy      ( kJ | kcal ) "kJ"
+	  angle       ( degree | radian)>
 
 <!-- Input parameters -->		   
 <!ELEMENT parameters (output,coupling,cutoff)>
