@@ -851,9 +851,8 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	    }
 	    bufsize = size3 * 1.2;
 	    buf = (int *)realloc(buf, (size_t)(bufsize * sizeof(*buf)));
-	    buf = (int *)malloc((size_t)(bufsize * sizeof(*buf)));
 	    if (buf == NULL) {
-		fprintf(stderr,"malloc failed\n");
+		fprintf(stderr,"realloc failed\n");
 		exit(1);
 	    }
 	    oldsize = *size;
