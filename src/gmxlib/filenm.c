@@ -197,7 +197,7 @@ static void check_opts(int nf,t_filenm fnm[])
     df=&(deffile[fnm[i].ftp]);
     if (fnm[i].opt == NULL) {
       if (df->defopt == NULL)
-	fatal_error(0,"No default cmd-line option for %s",fnm[i].fn);
+	fatal_error(0,"No default cmd-line option for %s\n",fnm[i].fn);
       else
 	fnm[i].opt=df->defopt;
     }
@@ -493,9 +493,4 @@ char *ftp2fn_null(int ftp,int nfile,t_filenm fnm[])
   fprintf(stderr,"ftp2fn: No filetype %s\n",deffile[ftp].ext);
   return NULL;
 }
-
-
-
-
-
 
