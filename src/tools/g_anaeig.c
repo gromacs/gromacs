@@ -812,7 +812,7 @@ int main(int argc,char *argv[])
 
   snew(sqrtm,natoms);
   if (bM && bDMA1) {
-    proj_unit="amu\\S1/2\\Nnm";
+    proj_unit="u\\S1/2\\Nnm";
     for(i=0; (i<natoms); i++)
       sqrtm[i]=sqrt(atoms->atom[index[i]].m);
   } else {
