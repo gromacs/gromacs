@@ -254,7 +254,7 @@ int main(int argc,char *argv[])
   };
   static real frac=0.5,binwidth=0.1;
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=FALSE,bAverCorr=FALSE;
-  static int  nsets_in=1,d=1,resol=4;
+  static int  nsets_in=1,d=1,resol=8;
 
   static char *avbar_opt[] = { NULL, "none", "stddev", "error", NULL };
 
