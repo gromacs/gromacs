@@ -62,8 +62,10 @@ real         tend   = -1;
 real         tdelta = -1;
 real         timefactor = NOTSET;
 char         *timelabel = NULL;
-static char *timestr[] = { NULL, "ps", "fs", "ns", "us", "ms", "s",   NULL };
-real timefactors[]     = { 0,    1,    1e3,  1e-3, 1e-6, 1e-9, 1e-12, 0 };
+static char *timestr[] = { NULL, "ps", "fs", "ns", "us", "ms", "s",   
+			   "m",              "h",                NULL };
+real timefactors[]     = { 0,    1,    1e3,  1e-3, 1e-6, 1e-9, 1e-12, 
+			   (1.0/60.0)*1e-12, (1.0/3600.0)*1e-12, 0 };
 static bool  bView=FALSE;
 static unsigned long uFlags=0;
 static char  *program=NULL;
