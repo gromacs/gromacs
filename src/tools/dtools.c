@@ -34,6 +34,7 @@
 #include "strdb.h"
 #include "futil.h"
 #include "pdbio.h"
+#include "string.h"
 #include "vec.h"
 #include "names.h"
 #include "disco.h"

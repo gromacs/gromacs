@@ -31,6 +31,8 @@
  */
 
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "sysstuff.h"
 #include "physics.h"
 #include "string2.h"
@@ -115,8 +117,7 @@ void wheel(char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
   if (title) 
     ps_ctext(out,0,-fontsize*1.5/2.0,title,eXCenter);
   ps_font(out,efontHELV,fontsize);  
-  
-  fprintf(out,"%g rotate\n",rot0);
+  ps_rotate(out,rot0);
   for(i=0; (i<nres); ) {
     if (bPh[i]) {
       ps_color(out,gray,gray,gray);
@@ -126,7 +127,7 @@ void wheel(char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
     ps_arcslice(out,0,0,inner,outer,-10,10);
     
     ps_ctext(out,inner+fontwidth,-fontsize/2.0,rnms[i],eXLeft);
-    fprintf(out,"-100 rotate\n");
+    ps_rotate(out,-100);
     i++;
     
     if ((i % 18) == 0) {
@@ -145,7 +146,7 @@ void wheel2(char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
   const int  angle     = 9;
   const real fontwidth = fontsize*fontasp;
   
-  FILE *out;
+  t_psdata out;
   int  i,slen;
   real ring,inner,outer;
   real xc,yc,box;
@@ -171,7 +172,7 @@ void wheel2(char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
     ps_ctext(out,0,-fontsize*1.5/2.0,title,eXCenter);
   ps_font(out,efontHELV,fontsize);  
   
-  fprintf(out,"%g rotate\n",rot0);
+  ps_rotate(out,rot0);
   for(i=0; (i<nres); ) {
     if ((i % 5) == 4) {
       ps_color(out,gray,gray,1.0);
@@ -181,7 +182,7 @@ void wheel2(char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
     ps_arcslice(out,0,0,inner,outer,-angle,angle);
     
     ps_ctext(out,inner+fontwidth,-fontsize/2.0,resnm[i],eXLeft);
-    fprintf(out,"%d rotate\n",-2*angle);
+    ps_rotate(out,-2*angle);
     i++;
     
     if ((i % (2*angle)) == 0) {

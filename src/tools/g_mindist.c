@@ -212,9 +212,9 @@ void dist_plot(char *fn,char *afile,char *dfile,
   int          trxout;
   char         buf[256];
   char         **leg;
-  real         t,dmin,dmax,**mindres,**maxdres;
+  real         t,dmin,dmax,**mindres=NULL,**maxdres=NULL;
   int          nmin,nmax,status;
-  int          i,j,k,natoms;
+  int          i=-1,j,k,natoms;
   int	       min1,min2,max1,max2;
   atom_id      oindex[2];
   rvec         *x0;

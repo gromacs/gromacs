@@ -279,12 +279,17 @@ void ps_text(t_psdata ps,real x1,real y1,char *str)
   fprintf(ps->fp,"(%s) show\n",str);
 }
 
-void ps_rotate(t_psdata ps,bool bPlus)
+void ps_flip(t_psdata ps,bool bPlus)
 {
   if (bPlus) 
     fprintf(ps->fp,"612.5 0 translate 90 rotate\n");
   else
     fprintf(ps->fp,"-90 rotate -612.5 0 translate\n");
+}
+
+void ps_rotate(t_psdata ps,real angle)
+{
+  fprintf(ps->fp,"%f rotate\n",angle);
 }
 
 void ps_ctext(t_psdata ps,real x1,real y1,char *str,int expos)

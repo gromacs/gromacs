@@ -7,7 +7,7 @@ SUBDIRS = . types
 
 include_HEADERS = \
 	3dview.h    	do_md.h		invblock.h  	nrjac.h		\
-	rwtop.h       	tpxio.h		assert.h    	dihre.h		\
+	tpxio.h		assert.h    	dihre.h		\
 	nrnb.h      	sheader.h     	transfer.h	\
 	atomprop.h  	dummies.h       ns.h        	\
 	shift.h       	trnio.h		axp_asm.h   	ebin.h 		\

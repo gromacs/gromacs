@@ -101,8 +101,11 @@ extern void ps_ctext(t_psdata ps,real x1,real y1,char *str,int expos);
 
 extern void ps_close(t_psdata ps);
 
-extern void ps_rotate(t_psdata ps,bool bPlus);
+extern void ps_flip(t_psdata ps,bool bPlus);
 /* Rotate over 90 (bPlus) or -90 (!bPlus) degrees */
+
+extern void ps_rotate(t_psdata ps,real angle);
+
 extern void ps_translate(t_psdata ps,real x,real y);
 
 extern void ps_setorigin(t_psdata ps);

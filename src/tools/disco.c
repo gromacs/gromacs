@@ -229,7 +229,7 @@ int main(int argc,char *argv[])
   };
   FILE        *fp,*dp;
   char        title[256];
-  bool        bCenter,bBox;
+  bool        bCenter=FALSE,bBox;
   t_commrec   *cr;
   t_atoms     atoms,newatoms;
   t_correct   *corr;

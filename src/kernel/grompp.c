@@ -551,17 +551,15 @@ static void gen_posres(t_params *pr,char *fn)
   sfree(v);
 }
 
-static int 
-search_atomtypes(t_atomtype *at,int *n,int typelist[],int thistype,
-		 t_param param[],int ftype)
+static int search_atomtypes(t_atomtype *at,int *n,int typelist[],int thistype,
+			    t_param param[],int ftype)
 {
   int i,nn,nrfp,j,k,found;
 
   nn    = *n;
   nrfp  = NRFP(ftype);
   if (debug)
-    fprintf(debug,"atnr = %d, key = %d, nrfp = %d\n",
-	    atnr,key,nrfp);
+    fprintf(debug,"%s, %d: nrfp = %d\n",__FILE__,__LINE__,nrfp);
   for(i=0; (i<nn); i++) {
     if (typelist[i] == thistype) /* This type number has already been added */
       break;
