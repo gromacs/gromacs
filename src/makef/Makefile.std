@@ -27,12 +27,7 @@ CFLAGS		+= -I$(PVM_ROOT)/include
 CCFLAGS		+= -I$(PVM_ROOT)/include
 endif
 
-ifeq ($(USE_SGI_FFT),yes)
-SYSDEFS		+= -DUSE_SGI_FFT
-FFTLIBS		= -lcomplib.sgimath -lftn
-else
 FFTLIBS		= -lfftw
-endif
 
 ifeq ($(USE_XDR),yes)
 SYSDEFS		+= -DUSE_XDR
