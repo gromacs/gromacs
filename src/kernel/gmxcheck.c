@@ -340,9 +340,8 @@ void chk_enx(char *fn)
     old_t2=old_t1;
     old_t1=t;
     if (t0 == NOTSET) t0=t;
-    fprintf(stderr,"\rframe: %6d (index %6d), t: %10.3f",frame,fnr,t);
     if (fnr == 0)
-      fprintf(stderr,"\n");
+      fprintf(stderr,"\rframe: %6d (index %6d), t: %10.3f\n",frame,fnr,t);
     fnr++;
   }
   fprintf(stderr,"\n\nFound %d frames",fnr);
