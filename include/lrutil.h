@@ -66,7 +66,7 @@ extern void calc_ener(FILE *fp,char *title,bool bHeader,
 
 extern real calc_LRcorrections(FILE *fp,t_nsborder *nsb,
 			       t_commrec *cr,t_forcerec *fr,
-			       real charge[],t_block *excl,rvec x[],rvec f[],
+			       real charge[],t_block *excl,rvec x[],
 			       bool bOld,rvec box_size,matrix lrvir);
 /* Calculate the self energy and forces
  * when using long range electrostatics methods.
