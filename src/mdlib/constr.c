@@ -207,7 +207,7 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
     }
 
     sfree(at_cn);
-    for(i=0; i<ncons; i++)
+    for(i=0; i<homenr; i++)
       sfree(at_c[i]);
     sfree(at_c);
     
