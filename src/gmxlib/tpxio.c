@@ -153,8 +153,10 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_real(ir->zero_temp_time); 
     do_real(ir->epsilon_r); 
     do_real(ir->shake_tol);
-    do_real(ir->fudgeQQ); 
-    do_int(ir->efep); 
+    do_real(ir->fudgeQQ);
+    do_int(ir->efep);
+    if (file_version <= 14 && ir->efep > efepNO)
+      ir->efep = efepYES;
     do_real(ir->init_lambda); 
     do_real(ir->delta_lambda);
     if (file_version >= 13)
