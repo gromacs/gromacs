@@ -305,13 +305,15 @@ static void do_ssbonds(t_params *ps,int natoms,t_atom atom[],char **aname[],
 
 static void at2bonds(t_params *psb, t_hackblock *hb,
 		     int natoms, t_atom atom[], char **aname[], 
-		     int nres, rvec x[])
+		     int nres, rvec x[], 
+		     real long_bond_dist, real short_bond_dist)
 {
   int     resnr,i,j,k;
   int     ai,aj;
-  real    dist2;
-#define LONG_BOND_DIST2 sqr(0.25)
-#define SHORT_BOND_DIST2 sqr(0.05)
+  real    dist2, long_bond_dist2, short_bond_dist2;
+  
+  long_bond_dist2  = sqr(long_bond_dist);
+  short_bond_dist2 = sqr(short_bond_dist);
   
   fprintf(stderr,"Making bonds...\n");
   i=0;
@@ -322,10 +324,10 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
       aj=search_atom(hb[resnr].rb[ebtsBONDS].b[j].AJ,i,natoms,atom,aname);
       if ( ai != -1 && aj != -1 ) {
 	dist2 = distance2(x[ai],x[aj]);
-	if (dist2 > LONG_BOND_DIST2 )
+	if (dist2 > long_bond_dist2 )
 	  fprintf(stderr,"Warning: Long Bond (%d-%d = %g nm)\n",
 		  ai+1,aj+1,sqrt(dist2));
-	else if (dist2 < SHORT_BOND_DIST2 )
+	else if (dist2 < short_bond_dist2 )
 	  fprintf(stderr,"Warning: Short Bond (%d-%d = %g nm)\n",
 		  ai+1,aj+1,sqrt(dist2));
 	add_param(psb,ai,aj,NULL,hb[resnr].rb[ebtsBONDS].b[j].s);
@@ -390,14 +392,14 @@ static void clean_bonds(t_params *ps)
     qsort(ps->param,ps->nr,(size_t)sizeof(ps->param[0]),pcompar);
     
     /* remove doubles */
-    for(i=j=1; (i<ps->nr); i++) {
+    j=1;
+    for (i=1; (i<ps->nr); i++) {
       if ( ps->param[i].AI != ps->param[j-1].AI ||
 	   ps->param[i].AJ != ps->param[j-1].AJ ) {
-	/* This sfree causes a lot of trouble
-	   Anton should look at this.
-	sfree(ps->param[j].s);
-	*/
-	ps->param[j] =  ps->param[i];
+	if (j != i) {
+	  sfree(ps->param[j].s);
+	  ps->param[j] = ps->param[i];
+	}
 	j++;
       }
     }
@@ -549,7 +551,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 	     t_hackblock *ntdb, t_hackblock *ctdb,
 	     bool bH14, int rn, int rc, bool bAlldih,
 	     bool bDummies, bool bDummyAromatics, real mHmult,
-	     int nssbonds, t_ssbond *ssbonds, int nrexcl)
+	     int nssbonds, t_ssbond *ssbonds, int nrexcl, 
+	     real long_bond_dist, real short_bond_dist)
 {
   t_hackblock *hb;
   t_restp  *restp;
@@ -576,7 +579,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   
   /* Make bonds */
   at2bonds(&(plist[F_BONDS]), hb, 
-	   atoms->nr, atoms->atom, atoms->atomname, atoms->nres, *x);
+	   atoms->nr, atoms->atom, atoms->atomname, atoms->nres, *x, 
+	   long_bond_dist, short_bond_dist);
   
   /* specbonds: disulphide bonds & heme-his */
   do_ssbonds(&(plist[F_BONDS]),
