@@ -280,7 +280,7 @@ static void einstein_visco(char *fn,int nsets,int nframes,real **set,
 }
 
 static void analyse_ener(bool bCorr,char *corrfn,
-			 bool bDG,bool bSum,bool bFluct,
+			 bool bGibbs,bool bSum,bool bFluct,
 			 bool bVisco,char *visfn,int  nmol,int ndf,
 			 int  oldstep,real oldt,int step,real t,
 			 real time[], real reftemp,
@@ -293,7 +293,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
   real Dt,a,b,aver,avertot,stddev,delta_t,sigma,totaldrift;
   real xxx,integral,intBulk;
   real sfrac,oldfrac,diffsum,diffav,fstep,pr_aver,pr_stddev,fluct2;
-  double beta,expE,expEtot,*deltag;
+  double beta,expE,expEtot,*gibbs;
   int  nsteps,iset;
   real x1m,x1mk,Temp=-1,Pres=-1,VarV=-1,Vaver=-1,VarT=-1;
   int  i,j,m,k;
@@ -316,8 +316,8 @@ static void analyse_ener(bool bCorr,char *corrfn,
     
     fprintf(stderr,"%-24s %10s %10s %10s %10s %10s",
 	    "Energy","Average","RMS","Fluct.","Drift","Tot-Drift");
-    if (bDG)
-      fprintf(stderr,"  %10s  %10s\n","-Ln<e^(b E)>/b","Entropy");
+    if (bGibbs)
+      fprintf(stderr,"  %10s  %10s\n","-ln<e^(E/kT)>*kT");
     else
       fprintf(stderr,"\n");
     fprintf(stderr,"-------------------------------------------------------------------------------\n");
@@ -325,9 +325,9 @@ static void analyse_ener(bool bCorr,char *corrfn,
     /* Initiate locals, only used with -sum */
     avertot=0;
     expEtot=0;
-    if (bDG) {
+    if (bGibbs) {
       beta = 1.0/(BOLTZ*reftemp);
-      snew(deltag,nset);
+      snew(gibbs,nset);
     }
     for(i=0; (i<nset); i++) {
       iset = set[i];
@@ -347,7 +347,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
       
       if (bSum) 
 	avertot+=aver;
-      if (bDG) {
+      if (bGibbs) {
 	expE = 0;
 	for(j=0; (j<nenergy); j++) {
 	  expE += exp(beta*(eneset[i][j]-aver)/nmol);
@@ -355,7 +355,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
 	if (bSum) 
 	  expEtot+=expE/nenergy;
 	
-	deltag[i] = log(expE/nenergy)/beta + aver/nmol;
+	gibbs[i] = log(expE/nenergy)/beta + aver/nmol;
       }
       if (strstr(leg[i],"empera") != NULL) {
 	VarT = sqr(stddev);
@@ -381,8 +381,8 @@ static void analyse_ener(bool bCorr,char *corrfn,
 	fluct2 = 0;
       fprintf(stderr,"%-24s %10g %10g %10g %10g %10g",
 	      leg[i],pr_aver,pr_stddev,sqrt(fluct2),a,totaldrift);
-      if (bDG) 
-	fprintf(stderr,"  %10g  %10g\n",deltag[i],deltag[i]-pr_aver);
+      if (bGibbs) 
+	fprintf(stderr,"  %10g\n",gibbs[i]);
       else
 	fprintf(stderr,"\n");
       if (bFluct) {
@@ -394,7 +394,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
       fprintf(stderr,"%-24s %10g %10s %10s %10s %10s",
 	      "Total",avertot/nmol,"--","--","--","--");
       /* pr_aver,pr_stddev,a,totaldrift */
-      if (bDG) 
+      if (bGibbs) 
 	fprintf(stderr,"  %10g  %10g\n",
 		log(expEtot)/beta + avertot/nmol,log(expEtot)/beta);
       else
@@ -483,28 +483,39 @@ void print_one(FILE *fp,bool bDp,real e)
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "g_energy extracts energy components or distance restraint data",
-    "from an energy file.",
-    "The user is prompted to interactively select the energy terms",
-    "she wants.[PAR]",
-    "When the [TT]-viol[tt] option is set, the time averaged violations",
-    "are plotted and the running time averaged and instantaneous sum of",
-    "violations are recalculated.",
-    "Additionally running time averaged and instantaneous distances between",
+    
+    "g_energy extracts energy components or distance restraint",
+    "data from an energy file. The user is prompted to interactively",
+    "select the energy terms she wants.[PAR]",
+    
+    "When the [TT]-viol[tt] option is set, the time averaged",
+    "violations are plotted and the running time-averaged and",
+    "instantaneous sum of violations are recalculated. Additionally",
+    "running time-averaged and instantaneous distances between",
     "selected pairs can be plotted with the [TT]-pairs[tt] option.[PAR]",
-    "Average and RMS are calculated with full precision from",
-    "the simulation (see printed manual). Drift is calculated",
-    "by performing a LSQ fit of the data to a straight line.",
-    "Total drift is drift multiplied by total time."
+    
+    "Average and RMS are calculated with full precision from the",
+    "simulation (see printed manual). Drift is calculated by performing",
+    "a LSQ fit of the data to a straight line. Total drift is drift",
+    "multiplied by total time.[PAR]",
+    
+    "With [TT]-G[tt] a Gibbs free energy estimate is calculated using",
+    "the formula: G = -ln < e ^ (E/kT) > * kT, where k is Boltzmann's",
+    "constant, T is set by [TT]-Gtemp[tt] and the average is over the",
+    "ensemble (or time in a trajectory). Note that this is in principle",
+    "only correct when averaging over the whole (Boltzmann) ensemble",
+    "and using the potential energy. This also allows for an entropy",
+    "estimate using G = H - T S, where H is the enthalpy (H = U + p V)",
+    "and S entropy."
   };
-  static bool bSum=FALSE,bDG=FALSE,bAll=FALSE,bFluct=FALSE;
+  static bool bSum=FALSE,bGibbs=FALSE,bAll=FALSE,bFluct=FALSE;
   static bool bDp=FALSE,bMutot=FALSE;
   static int  skip=0,nmol=1,ndf=3;
   static real reftemp=300.0,ezero=0;
   t_pargs pa[] = {
-    { "-dg",   FALSE, etBOOL, &bDG,
+    { "-G",   FALSE, etBOOL,  &bGibbs,
       "Do a free energy estimate" },
-    { "-temp", FALSE, etREAL, &reftemp,
+    { "-Gtemp", FALSE, etREAL,&reftemp,
       "Reference temperature for free energy calculation" },
     { "-zero", FALSE, etREAL, &ezero,
       "Subtract a zero-point energy" },
@@ -812,7 +823,7 @@ int main(int argc,char *argv[])
 		  teller_disre,violaver,bounds,index,pair,nbounds);
   else 
     analyse_ener(opt2bSet("-corr",NFILE,fnm),opt2fn("-corr",NFILE,fnm),
-		 bDG,bSum,bFluct,bVisco,opt2fn("-vis",NFILE,fnm),
+		 bGibbs,bSum,bFluct,bVisco,opt2fn("-vis",NFILE,fnm),
 		 nmol,ndf,oldstep,oldt,step[cur],t[cur],time,reftemp,
 		 oldee,ee[cur],nset,set,nenergy,eneset,leg);
   
