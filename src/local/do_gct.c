@@ -228,7 +228,7 @@ static void pr_dev(bool bVirial,
 		"Deviations from target value",
 		bVirial ? "Vir" : "Pres","Epot");
   }
-  fprintf(fp,"%12.5e  %12.5e\n",bVirial ? dev[eoVir] : dev[eoPres],dev[eoEpot]);
+  fprintf(fp,"%12.5e  %12.5e  %12.5e\n",t,bVirial ? dev[eoVir] : dev[eoPres],dev[eoEpot]);
   fflush(fp);
 }
 
@@ -308,17 +308,17 @@ real calc_deviation(real xav,real xt,real x0)
   /* This may prevent overshooting in GCT coupling... */
   if (xav > x0) {
     if (xt > x0)
-      dev = max(x0-xav,x0-xt);
+      dev = /*max(x0-xav,x0-xt);*/ min(xav-x0,xt-x0);
     else
       dev = 0;
   }
   else {
     if (xt < x0)
-      dev = min(x0-xav,x0-xt);
+      dev = max(xav-x0,xt-x0);
     else
       dev = 0;
   }
-  return dev;
+  return x0-xav;
 }
 
 static real calc_dist(FILE *log,rvec x[])
@@ -453,7 +453,6 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
    * if you want this.
    */
   dist      = calc_dist(log,x);
-  rmsf      = calc_force(md->nr,f,x);
   muabs     = norm(mu_tot);
   Eintern   = Ecouple(tcr,ener);
   Virial    = virial[XX][XX]+virial[YY][YY]+virial[ZZ][ZZ];
@@ -495,7 +494,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   deviation[eoVir]    = calc_deviation(tcr->vir,  Virial,      tcr->vir0);
   deviation[eoDist]   = calc_deviation(tcr->dist, dist,        tcr->dist0);
   deviation[eoMu]     = calc_deviation(tcr->mu,   muabs,       tcr->mu0);
-  deviation[eoForce]  = calc_deviation(tcr->force,rmsf,        tcr->force0);
+  deviation[eoForce]  = calc_f_dev(tcr->force,,        tcr->force0);
   
   prdev[eoPres]   = tcr->pres0 - ener[F_PRES];
   prdev[eoEpot]   = epot0      - Eintern;
@@ -590,13 +589,13 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
     gprod(cr,idef->atnr,fq);
   
   for(j=0; (j<md->nr); j++) {
-    md->chargeT[j] *= fq[md->typeA[j]];
+    md->chargeA[j] *= fq[md->typeA[j]];
   }
   for(i=0; (i<tcr->nQ); i++) {
     tcq=&(tcr->tcQ[i]);
     for(j=0; (j<md->nr); j++) {
       if (md->typeA[j] == tcq->at_i) {
-	tcq->Q = md->chargeT[j];
+	tcq->Q = md->chargeA[j];
 	break;
       }
     }

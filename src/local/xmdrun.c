@@ -298,7 +298,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
 
     /* Set values for invmass etc. */
-    init_mdatoms(mdatoms,lambda,FALSE);
+    init_mdatoms(mdatoms,lambda,(step==0));
     
     /* Now is the time to relax the shells */
     count=relax_shells(log,cr,bVerbose,step,parm,bNS,bStopCM,top,ener,
@@ -307,9 +307,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     tcount+=count;
 
     /* Calculate total dipole moment if necessary */
-    calc_mu(nsb,x,mdatoms->chargeT,mu_tot);
+    calc_mu(nsb,x,mdatoms->chargeA,mu_tot);
 
-    mu_aver=calc_mu_aver(cr,nsb,x,mdatoms->chargeA,mu_tot,top,mdatoms,gnx,grpindex);
+    mu_aver=calc_mu_aver(cr,nsb,x,mdatoms->chargeA,mu_tot,top,mdatoms,
+			 gnx,grpindex);
     
     if (bGlas)
       do_glas(log,START(nsb),HOMENR(nsb),x,f,fr,mdatoms,top->idef.atnr,
