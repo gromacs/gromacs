@@ -35,14 +35,15 @@ int ftocstr(char *ds, int dl, char *ss, int sl)
 {
     char *p;
 
-    for (p = ss + sl; --p >= ss && *p == ' '; ) ;
+    p = ss + sl;
+    while ( --p >= ss && *p == ' ' );
     sl = p - ss + 1;
     dl--;
     ds[0] = 0;
     if (sl > dl)
-        return 1;
+      return 1;
     while (sl--)
-	(*ds++ = *ss++);
+      (*ds++ = *ss++);
     *ds = '\0';
     return 0;
 }
