@@ -242,6 +242,7 @@ static void check_solvent(FILE *fp,t_topology *top,t_forcerec *fr,
 	    fr->mno_index[cgid[aj]*3]   = nl_m;
 	    fr->mno_index[cgid[aj]*3+1] = nl_n;
 	    fr->mno_index[cgid[aj]*3+2] = nl_o;
+	    fr->solvent_type[cgid[aj]]  = esolMNO;
 	  }
 	}
 

@@ -151,7 +151,7 @@ static unsigned int nbf_index(t_forcerec *fr, bool bvdw, bool bcoul, bool bFree,
   /* solopt is 0 for none, 1 for general M:N solvent, 2 for water
    * and 3 for water-water loops.
    */
-  int inloop[64] = { 
+  int inloop[20] = { 
     eNR_INLNONE,eNR_INL0100,eNR_INL0200,eNR_INL0300,eNR_INL0400,  
     eNR_INL1000,eNR_INL1100,eNR_INL1200,eNR_INL1300,eNR_INL1400,
     eNR_INL2000,eNR_INL2100,eNR_INL2200,eNR_INL2300,eNR_INL2400,
@@ -323,6 +323,7 @@ static gmx_inline void new_i_nblist(t_nblist *nlist,
     nlist->gid[nri]      = gid;
     nlist->shift[nri]    = shift;
     if (mno) {
+      /* Three here comes from M, N, O, not number of particles */
       for(k=0; k<3; k++)
 	nlist->nsatoms[3*nri+k] = mno[k];
     }
@@ -365,10 +366,10 @@ static gmx_inline void close_i_nblist(t_nblist *nlist)
   nlist->jindex[nri+1] = nlist->nrj;
 
   len=nlist->nrj -  nlist->jindex[nri];
-  /*********************** SUSPICIOUS CODE *************************/
+  /* Three here comes from M, N, O, not number of particles */
   if (nlist->solvent==esolMNO)
     len *= nlist->nsatoms[3*nri];
-  /*********************** SUSPICIOUS CODE *************************/
+  
   /* nlist length for water i molecules is treated statically 
    * in the innerloops 
    */
@@ -765,7 +766,7 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
       close_i_nblist(coul);
       close_i_nblist(vdwc);
 #ifndef DISABLE_WATERWATER_LOOPS
-      if (bWater && i==0) {
+      if (bWater && (i==0)) {
 	close_i_nblist(coul_ww);
 	close_i_nblist(vdwc_ww); 
       }
