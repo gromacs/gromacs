@@ -372,7 +372,7 @@ static void copy2block(int n,atom_id *index,t_block *block)
   srenew(block->index,block->nr+1);
   block->index[block->nr]=n0+n;
   srenew(block->a,n0+n);
-  for(i=0; i<n; i++)
+  for(i=0; (i<n); i++)
     block->a[n0+i]=index[i];
 }
 
@@ -852,9 +852,10 @@ static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
     }
   } while (string[0]!='q');
 
-  sfree(index);
+  /* Comment out the sfree-ing. May generate SEGV */
+  /*sfree(index);
   sfree(index1);
-  sfree(index2);
+  sfree(index2);*/
 }
 
 int main(int argc,char *argv[])
