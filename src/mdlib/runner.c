@@ -172,8 +172,6 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 
   if (bVerbose && MASTER(cr))
     fprintf(stderr,"Loaded with Money\n\n");
-
-  fprintf(stderr,"WARNING: new innerloops 2000-09-01. Problems to erik@theophys.kth.se.\n\n");
   
   /* Index numbers for parallellism... */
   nsb->nodeid      = cr->nodeid;
