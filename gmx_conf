@@ -157,9 +157,9 @@ if ( \$?MANPATH ) then
 endif
 
 if ( \$?LD_LIBRARY_PATH ) then
-	 setenv LD_LIBRARY_PATH	"\$LD_LIBRARY_PATH":\$GMXLIB
+	 setenv LD_LIBRARY_PATH	"\$LD_LIBRARY_PATH":\$GMXHOME/lib/\$CPU
 else
-	 setenv LD_LIBRARY_PATH	\$GMXLIB
+	 setenv LD_LIBRARY_PATH	\$GMXHOME/lib/\$CPU
 endif
 
 # Now finally, if you consider our Cool Quotes to be offensive
