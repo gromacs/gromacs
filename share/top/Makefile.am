@@ -17,9 +17,16 @@ topol_DATA = \
 	ffG43b1bon.itp	ffG43b1.atp	ffG43b1.hdb	ffG43b1.rtp	\
 	ffG43b1-c.tdb	ffG43b1-n.tdb	ffgmx.ddb	ffgmx2.ddb	\
 	ffG43a1.ddb	ffG43a2.ddb	ffG43b1.ddb			\
+	ffG45a3-c.tdb  	ffG45a3.atp    	ffG45a3.hdb    	ffG45a3.rtp	\
+	ffG45a3nb.itp	ffG45a3-n.tdb  	ffG45a3.ddb    	ffG45a3.itp	\
+	ffG45a3bon.itp							\
 	ffoplsaa.atp    ffoplsaa.itp	ffoplsaabon.itp ffoplsaanb.itp  \
 	ffoplsaa.hdb	ffoplsaa-n.tdb	ffoplsaa-c.tdb	ffoplsaa.rtp	\
 	ffoplsaa.ddb							\
+	ffencads-c.tdb  ffencads.itp    ffencadv-c.tdb  ffencadv.itp	\
+	ffencads-n.tdb  ffencads.rtp    ffencadv-n.tdb  ffencadv.rtp	\
+	ffencads.atp    ffencadsbon.itp ffencadv.atp    ffencadvbon.itp	\
+	ffencads.hdb    ffencadsnb.itp  ffencadv.hdb    ffencadvnb.itp	\
 	1mlg.itp	2mlg.itp	benzamide.itp	bondadd.itp	\
 	buck.itp	decane.itp	dlg.itp		dmso.itp	\
 	fa.itp		ff_dum.itp	flexspc.itp	flexspce.itp	\
@@ -28,7 +35,7 @@ topol_DATA = \
 	spce.itp	tfe.itp		tip3p.itp	tip4p.itp	\
 	urea.itp	dgsolv.dat					\
 	dec50.gro	dmso.gro	spc216.gro	tip4p.gro	\
-	urea+h2o.gro							\
+	urea+h2o.gro    f3c.itp						\
 	aminoacids.dat	atommass.dat	bromacs.dat	ca-shift.dat	\
 	cb-shift.dat	co-shift.dat	edissoc.dat	FF.dat		\
 	gurgle.dat	ha-shift.dat	links.dat	phbres.dat	\

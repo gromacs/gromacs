@@ -1,0 +1,19 @@
+#define _FF_ENCAD
+; Implemented from encad library version 25/xi/91, 
+; with 1,4 interaction setup modified by Michael Levitt.
+; In this forcefield, both coulombic and Lennard-Jones interactions
+; are completely excluded for 1,4 interaction sites.
+;
+; Vacuum version - scaled down charges.
+
+;
+[ defaults ]
+; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ
+  	1			3			yes			0.0		0.0
+
+#include "ffencadvnb.itp"
+#include "ffencadvbon.itp"
+
+
+
+

@@ -1,7 +1,11 @@
-6
-ffG43a1  GROMOS96 43a1 Forcefield (official distribution)
-ffG43b1  GROMOS96 43b1 Vacuum Forcefield (official distribution)
-ffG43a2  GROMOS96 43a2 Forcefield (development) (improved alkane dihedrals)
+9
+ffG43a1  GROMOS96 43a1 force field (official distribution)
+ffG43b1  GROMOS96 43b1 vacuum force field (official distribution)
+ffG43a2  GROMOS96 43a2 force field (development) (improved alkane dihedrals)
+ffG45a3  GROMOS96 45a3 force field (Schuler JCC 2001 22 1205)
 ffoplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)
-ffgmx    Gromacs Forcefield (see manual)
-ffgmx2   gmx Forcefield with hydrogens for NMR stuff (Do NOT use for new runs)
+ffgmx    Gromacs force field (see manual)
+ffgmx2   Gromacs force field with hydrogens for NMR (Do NOT use for new runs)
+ffencadv Encad all-atom force field, using scaled-down vacuum charges
+ffencads Encad all-atom force field, using full solvent charges    
+
