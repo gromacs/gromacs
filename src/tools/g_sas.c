@@ -212,14 +212,14 @@ real calc_radius(char *atom)
 
 void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	      real qcut,bool bSave,real minarea,bool bPBC,
-	      real dgs_default)
+	      real dgs_default,bool bFindex)
 {
   FILE         *fp,*fp2,*fp3=NULL;
   char         *legend[] = { "Hydrophobic", "Hydrophilic", 
 			     "Total", "D Gsolv" };
   real         t;
   int          status;
-  int          i,ii,nfr,natoms,flag,nsurfacedots,res;
+  int          i,j,ii,nfr,natoms,flag,nsurfacedots,res;
   rvec         *x;
   matrix       box;
   t_topology   *top;
@@ -231,9 +231,9 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   real         at_area,*atom_area=NULL,*atom_area2=NULL;
   real         *res_a=NULL,*res_area=NULL,*res_area2=NULL;
   real         totarea,totvolume,harea,tarea,fluc2;
-  atom_id      *index;
-  int          nx,nphobic;
-  char         *grpname;
+  atom_id      *index,*findex;
+  int          nx,nphobic,npcheck;
+  char         *grpname,*fgrpname;
   real         dgsolv;
 
   bITP   = opt2bSet("-i",nfile,fnm);
@@ -253,6 +253,11 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   fprintf(stderr,"Select group for calculation of surface and for output:\n");
   get_index(&(top->atoms),ftp2fn_null(efNDX,nfile,fnm),1,&nx,&index,&grpname);
 
+  if (bFindex) {
+    fprintf(stderr,"Select group of hydrophobic atoms:\n");
+    get_index(&(top->atoms),ftp2fn_null(efNDX,nfile,fnm),1,&nphobic,&findex,&fgrpname);
+  }
+  
   /* Now compute atomic readii including solvent probe size */
   snew(radius,natoms);
   snew(bPhobic,nx);
@@ -265,15 +270,37 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   }
   if (bDGsol)
     snew(dgs_factor,nx);
-  
-  nphobic = 0;
+
+  /* Get a Van der Waals radius for each atom */
   for(i=0; (i<natoms); i++)
     radius[i]     = calc_radius(*(top->atoms.atomname[i])) + solsize;
-  for(i=0; i<nx; i++) {
+  
+  /* Determine which atom is counted as hydrophobic */
+  if (bFindex) {
+    npcheck = 0;
+    for(i=0; (i<nx); i++) {
+      ii = index[i];
+      for(j=0; (j<nphobic); j++) {
+	if (findex[j] == ii) {
+	  bPhobic[i] = TRUE;
+	  npcheck++;
+	}
+      }
+    }
+    if (npcheck != nphobic)
+      fatal_error(0,"Consistency check failed: not all %d atoms in the hydrophobic index\n"
+		  "found in the normal index selection (%d atoms)",nphobic,npcheck);
+  }
+  else
+    nphobic = 0;
+    
+  for(i=0; (i<nx); i++) {
     ii = index[i];
-    bPhobic[i] = fabs(atoms->atom[ii].q) <= qcut;
-    if (bPhobic[i])
-      nphobic++;
+    if (!bFindex) {
+      bPhobic[i] = fabs(atoms->atom[ii].q) <= qcut;
+      if (bPhobic[i])
+	nphobic++;
+    }
     if (bDGsol)
       dgs_factor[i] = get_dgsolv(*(atoms->resname[atoms->atom[ii].resnr]),
 				 *(atoms->atomtype[ii]),dgs_default);
@@ -423,14 +450,16 @@ int main(int argc,char *argv[])
   static int  ndots   = 24;
   static real qcut    = 0.2;
   static real minarea = 0.5, dgs_default=0;
-  static bool bSave   = TRUE,bPBC=TRUE;
+  static bool bSave   = TRUE,bPBC=TRUE,bFindex=FALSE;
   t_pargs pa[] = {
     { "-solsize", FALSE, etREAL, {&solsize},
-	"Radius of the solvent probe (nm)" },
+      "Radius of the solvent probe (nm)" },
     { "-ndots",   FALSE, etINT,  {&ndots},
-	"Number of dots per sphere, more dots means more accuracy" },
+      "Number of dots per sphere, more dots means more accuracy" },
     { "-qmax",    FALSE, etREAL, {&qcut},
-	"The maximum charge (e, absolute value) of a hydrophobic atom" },
+      "The maximum charge (e, absolute value) of a hydrophobic atom" },
+    { "-f_index", FALSE, etBOOL, {&bFindex},
+      "Determine from a group in the index file what are the hydrophobic atoms rather than from the charge" },
     { "-minarea", FALSE, etREAL, {&minarea},
       "The minimum area (nm^2) to count an atom as a surface atom when writing a position restraint file  (see help)" },
     { "-pbc",     FALSE, etBOOL, {&bPBC},
@@ -466,7 +495,7 @@ int main(int argc,char *argv[])
 
   please_cite(stderr,"Eisenhaber95");
     
-  sas_plot(NFILE,fnm,solsize,ndots,qcut,bSave,minarea,bPBC,dgs_default);
+  sas_plot(NFILE,fnm,solsize,ndots,qcut,bSave,minarea,bPBC,dgs_default,bFindex);
   
   do_view(opt2fn("-o",NFILE,fnm),NULL);
   do_view(opt2fn_null("-or",NFILE,fnm),NULL);
