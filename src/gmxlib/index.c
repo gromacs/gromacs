@@ -34,6 +34,7 @@ static char *SRCID_index_c = "$Id$";
 #include "strdb.h"
 #include "futil.h"
 #include "macros.h"
+#include "names.h"
 #include "string2.h"
 #include "statutil.h"
 #include "confio.h"
@@ -105,6 +106,25 @@ void add_grp(t_block *b,char ***gnames,int nra,atom_id a[],char *name)
     b->a[b->nra++]=a[i];
   b->nr++;
   b->index[b->nr]=b->nra;
+}
+
+/* compare index in `a' with group in `b' at `index', 
+   when `index'<0 it is relative to end of `b' */
+static bool grp_cmp(t_block *b, int nra, atom_id a[], int index)
+{
+  int i;
+  
+  if (index < 0)
+    index = b->nr-1+index;
+  if (index >= b->nr)
+    fatal_error(0,"no such index group %d in t_block (nr=%d)",index,b->nr);
+  /* compare sizes */
+  if ( nra != b->index[index+1] - b->index[index] )
+    return FALSE;
+  for(i=0; i<nra; i++)
+    if ( a[i] != b->a[b->index[index]+i] )
+      return FALSE;
+  return TRUE;
 }
 
 static void p_status(int nres,eRestp restp[],bool bVerb)
@@ -219,24 +239,44 @@ static void analyse_other(int nres,eRestp Restp[],t_atoms *atoms,
 static void analyse_prot(int nres,eRestp restp[],t_atoms *atoms,
 			 t_block *gb,char ***gn,bool bASK,bool bVerb)
 {
+  /* atomnames to be used in constructing index groups: */
   static char *pnoh[]    = { "H" };
+  static char *pnodum[]  = { "MN1",  "MN2",  "MCB1", "MCB2", "MCG1", "MCG2", 
+			     "MCD1", "MCD2", "MCE1", "MCE2", "MNZ1", "MNZ2" };
   static char *calpha[]  = { "CA" };
   static char *bb[]      = { "N","CA","C" };
   static char *mc[]      = { "N","CA","C","O","O1","O2","OXT" };
   static char *mcb[]     = { "N","CA","CB","C","O","O1","O2","OT","OXT" };
-  static char *mch[]     = { "N","CA","C","O","O1","O2","OT","OXT","H1","H2","H3","H" };
-  static char **chains[] = { NULL, pnoh, calpha, bb, mc, mcb ,mch, mch, mch};
-
+  static char *mch[]     = { "N","CA","C","O","O1","O2","OT","OXT",
+			     "H1","H2","H3","H" };
+  /* array of arrays of atomnames: */
+  static char **chains[] = { NULL,pnoh,pnodum,calpha,bb,mc,mcb,mch,mch,mch };
 #define NCH asize(chains)
-
-  static int       sizes[NCH] = { 0, asize(pnoh), asize(calpha), asize(bb), asize(mc), asize(mcb), asize(mch), asize(mch), asize(mch)};
-  static char   *ch_name[NCH] = { "Protein", "Protein-H", "C-Alpha", "Backbone", "MainChain", "MainChain+Cb", "MainChain+H", "SideChain", "SideChain-H" };
-  static bool complement[NCH] = { TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE};
-  static int  wholename[NCH]  = {-1, 0,-1,-1,-1,-1,-1,-1, 11};
+  /* array of sizes of arrays of atomnames: */
+  static int       sizes[NCH] = { 
+    0, asize(pnoh), asize(pnodum), asize(calpha), asize(bb), 
+    asize(mc), asize(mcb), asize(mch), asize(mch), asize(mch)
+  };
+  /* descriptive names of index groups */
+  static char   *ch_name[NCH] = { 
+    "Protein", "Protein-H", "Prot-Dummies", "C-Alpha", "Backbone", 
+    "MainChain", "MainChain+Cb", "MainChain+H", "SideChain", "SideChain-H" 
+  };
+  /* construct index group containing (TRUE) or excluding (FALSE)
+     given atom names */
+  static bool complement[NCH] = { 
+    TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE
+  };
+  static int  wholename[NCH]  = { -1, 0,-1,-1,-1,-1,-1,-1,-1, 11 };
   /* the index in wholename gives the first item in the arrays of 
    * atomtypes that should be tested with 'strncasecmp' in stead of
    * strcasecmp, or -1 if all items should be tested with strcasecmp
+   * This is comparable to using a '*' wildcard at the end of specific
+   * atom names, but that is more involved to implement...
    */
+  /* only add index group if it differs from the specified one, 
+     specify -1 to always add group */
+  static int compareto[NCH] = { -1,-1, 0,-1,-1,-1,-1,-1,-1,-1 };
 
   int     i,n,j;
   atom_id *aid;
@@ -277,10 +317,12 @@ static void analyse_prot(int nres,eRestp restp[],t_atoms *atoms,
 	  aid[nra++]=n;
       }
     }
-    add_grp(gb,gn,nra,aid,ch_name[i]); 
+    /* if we want to add this group always or it differs from previous 
+       group, add it: */
+    if ( compareto[i] == -1 || !grp_cmp(gb,nra,aid,compareto[i]-i) )
+      add_grp(gb,gn,nra,aid,ch_name[i]); 
   }
   
-  /* find matching or complement atoms*/
   if (bASK) {
     for(i=0; (i<NCH); i++) {
       printf("Split %12s into %5d residues (y/n) ? ",ch_name[i],npres);
@@ -310,39 +352,32 @@ static void analyse_prot(int nres,eRestp restp[],t_atoms *atoms,
     printf("Make group with sidechain and C=O swapped (y/n) ? ");
     if (yn(bASK)) {
       /* Make swap sidechain C=O index */
-      {
-	int resnr,hold;
+      int resnr,hold;
+      nra = 0;
+      for(n=0;((atoms->atom[n].resnr<npres) && (n<atoms->nr));) {
+	resnr = atoms->atom[n].resnr;
+	hold  = -1;
+	for(;((atoms->atom[n].resnr==resnr) && (n<atoms->nr));n++)
+	  if (strcmp("CA",*atoms->atomname[n]) == 0) {
+	    aid[nra++]=n;
+	    hold=nra;
+	    nra+=2;
+	  } else if (strcmp("C",*atoms->atomname[n]) == 0) {
+	    assert(hold != -1);
+	    aid[hold]=n;
+	  } else if (strcmp("O",*atoms->atomname[n]) == 0) {
+	    assert(hold != -1);
+	    aid[hold+1]=n;
+	  } else if (strcmp("O1",*atoms->atomname[n]) == 0) {
+	    assert(hold != -1);
+	    aid[hold+1]=n;
+	  } else 
+	    aid[nra++]=n;
+      }
+      /* copy the residuename to the tail of the groupname */
+      if (nra > 0) {
+	add_grp(gb,gn,nra,aid,"SwapSC-CO");
 	nra = 0;
-	for(n=0;((atoms->atom[n].resnr<npres) && (n<atoms->nr));) {
-	  resnr = atoms->atom[n].resnr;
-	  hold  = -1;
-	  for(;((atoms->atom[n].resnr==resnr) && (n<atoms->nr));n++) {
-	    if (strcmp("CA",*atoms->atomname[n]) == 0) {
-	      aid[nra++]=n;
-	      hold=nra;
-	      nra+=2;
-	    }
-	    else if (strcmp("C",*atoms->atomname[n]) == 0) {
-	      assert(hold != -1);
-	      aid[hold]=n;
-	    }
-	    else if (strcmp("O",*atoms->atomname[n]) == 0) {
-	      assert(hold != -1);
-	      aid[hold+1]=n;
-	    }
-	    else if (strcmp("O1",*atoms->atomname[n]) == 0) {
-	      assert(hold != -1);
-	      aid[hold+1]=n;
-	    }
-	    else 
-	      aid[nra++]=n;
-	  }
-	}
-	/* copy the residuename to the tail of the groupname */
-	if (nra > 0) {
-	  add_grp(gb,gn,nra,aid,"SwapSC-CO");
-	  nra = 0;
-	}
       } 
     }
   }
@@ -354,6 +389,9 @@ static void analyse_dna(int nres,eRestp restp[],t_atoms *atoms,
 {
   if (bVerb)
     printf("Analysing DNA... (not really)\n");
+  if (debug)
+    printf("nres %d; eRestp %p; atoms %p; gb %p; gn %p; bASK %s; bASK %s",
+	   nres, restp, atoms, gb, gn, bool_names[bASK], bool_names[bVerb]);
 }
 
 bool is_protein(char *resnm)
