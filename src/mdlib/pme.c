@@ -43,13 +43,13 @@ static char *SRCID_pme_c = "$Id$";
 #include "pppm.h"
 #include "network.h"
 #include "physics.h"
+#include "nrnb.h"
 
 #define DFT_TOL 1e-7
 
 typedef real *splinevec[DIM];
 
-void sum_qgrid(FILE *log,bool bVerbose,t_commrec *cr,
-		      t_nsborder *nsb,t_fftgrid *grid,bool bForward)
+void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForward)
 {
     static bool bFirst=TRUE;
     static t_fft_r *tmp;
@@ -67,6 +67,7 @@ void sum_qgrid(FILE *log,bool bVerbose,t_commrec *cr,
     /* NOTE: FFTW doesnt necessarily use all processors for the fft;
      * above I assume that the ones that do have equal amounts of data.
      * this is bad since its not guaranteed by fftw, but works for now...
+     * This will be fixed in the next release.
      */
     bFirst=FALSE;
     if(grid->workspace)
@@ -110,15 +111,12 @@ void spread_q_bsplines(t_fftgrid *grid,rvec invh,t_nsborder *nsb,
     /* ugly, but it works. */
     for(n=0;n<nr;n++) {
 	if(charge[start+n]!=0) {
-	    /* the nx/2 factors is a temporary hack to be able to
-	     * compare with the algorithm of Darden -
-	     * they will eventually be removed
-	     */
-	    xidx=(int)(x[start+n][XX]*invh[XX]+nx/2.0);
-	    yidx=(int)(x[start+n][YY]*invh[YY]+ny/2.0);
-	    zidx=(int)(x[start+n][ZZ]*invh[ZZ]+nz/2.0);
 
-	    if(xidx>=nx)   /* ugly */
+	    xidx=(int)(x[start+n][XX]*invh[XX]);
+	    yidx=(int)(x[start+n][YY]*invh[YY]);
+	    zidx=(int)(x[start+n][ZZ]*invh[ZZ]);
+
+	    if(xidx>=nx)   /* ugly, replace with shifts! */
 		xidx-=nx;
 	    else if(xidx<0)
 		xidx+=nx;
@@ -130,6 +128,7 @@ void spread_q_bsplines(t_fftgrid *grid,rvec invh,t_nsborder *nsb,
 		zidx-=nz;
 	    else if(zidx<0)
 		zidx+=nz;
+
 	    i0=xidx-order;
 	    for(ithx=0;ithx<order;ithx++) {
 		i0++;
@@ -160,84 +159,139 @@ void spread_q_bsplines(t_fftgrid *grid,rvec invh,t_nsborder *nsb,
 
 
 real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
-	       splinevec bsp_mod,rvec invh,matrix vir)
+	       splinevec bsp_mod,rvec invh,matrix vir,t_commrec *cr)
 {
     /* do recip sum over local cells in grid */
     int nx,ny,nz,la2,la12;
     t_fft_c *ptr;
-    int kx,ky,kz,idx,maxkx,maxky,maxkz;
+    int kx,ky,kz,idx,maxkx,maxky,maxkz,kzmin;
     real m2,mx,my,mz,m2b;
     real factor=M_PI*M_PI/(ewaldcoeff*ewaldcoeff);
     real struct2,vfactor;
     real eterm,d1,d2,energy=0;
-    int kystart,kyend;
-    rvec invbox;
     real denom;
     real bx,by;
-
+    real invx,invy,invz;
     unpack_fftgrid(grid,&nx,&ny,&nz,&la2,&la12,FALSE,(t_fft_r **)&ptr);
     clear_mat(vir);
+    
+    invx=invh[XX]/nx;
+    invy=invh[YY]/ny;
+    invz=invh[ZZ]/nz;
     
     maxkx=(nx+1)/2;
     maxky=(ny+1)/2;
     maxkz=nz/2+1;
     
-#ifdef USE_MPI
-    kystart=grid->pfft.local_y_start_after_transpose;
-    kyend=kystart+grid->pfft.local_ny_after_transpose;
-#else
-    kystart=0;
-    kyend=ny;
-#endif
-    /* might be useful trying to change the x/y order here when
-     * using mpi to optimize access to the matrix
+    /* I use two completely different loops here to avoid an
+     * extra if statement inside the loop 
      */
-    for(kx=0;kx<nx;kx++) {
-	if(kx<maxkx)
-	    mx=kx*invh[XX]/nx;
+    if(PAR(cr)) { /* transpose X & Y and only sum local cells */
+#ifdef USE_MPI
+      int kystart=grid->pfft.local_y_start_after_transpose;
+      int kyend=kystart+grid->pfft.local_ny_after_transpose;
+     
+      for(ky=kystart;ky<kyend;ky++) {  /* our local cells */
+	if(ky<maxky)
+	  my=(ky)*invy;
 	else
-	    mx=(kx-nx)*invh[XX]/nx;
-	bx=M_PI*vol*bsp_mod[XX][kx];
-	for(ky=kystart;ky<kyend;ky++) {  /* our local cells */
-	    if(ky<maxky)
-		my=(ky)*invh[YY]/ny;
-	    else
-		my=(ky-ny)*invh[YY]/ny;
-	    by=bsp_mod[YY][ky];
-	    for(kz=0;kz<maxkz;kz++)  {
-		if(kx==0 && ky==0 && kz==0)
-		    continue;
-#ifdef USE_MPI    /* This wont work with MPI and non-parallel fft */
-		idx=INDEX(ky,kx,kz);
-#else             /* then we should use this line instead  (put an if there) */
-		idx=INDEX(kx,ky,kz);
-#endif
-		d1=ptr[idx].re;
-		d2=ptr[idx].im;
-		mz=(kz)*invh[ZZ]/nz;
-		m2=mx*mx+my*my+mz*mz;
-		denom=(m2*bx*by*bsp_mod[ZZ][kz]);
-		eterm=ONE_4PI_EPS0*exp(-factor*m2)/denom;
+	  my=(ky-ny)*invy;
+	by=M_PI*vol*bsp_mod[YY][ky];
+
+	for(kx=0;kx<nx;kx++) {
+	  if(kx<maxkx)
+	    mx=kx*invx;
+	  else
+	    mx=(kx-nx)*invx;
+	  bx=bsp_mod[XX][kx];
+	  
+	  for(kz=0;kz<maxkz;kz++)  {
+	    if(kx==0 && ky==0 && kz==0)
+	      continue;
+	    idx=INDEX(ky,kx,kz); /* Transposed X & Y */
+	    d1=ptr[idx].re;
+	    d2=ptr[idx].im;
+	    mz=(kz)*invz;
+	    m2=mx*mx+my*my+mz*mz;
+	    denom=(m2*bx*by*bsp_mod[ZZ][kz]);
+	    eterm=ONE_4PI_EPS0*exp(-factor*m2)/denom;
 		
-		struct2=d1*d1+d2*d2;
-		if(kz>0 && kz<(nz+1)/2)
-		    struct2*=2;
-		energy+=eterm*struct2;
-		vfactor=(factor*m2+1)*2.0/m2;
-		vir[XX][XX]+=0.25*eterm*struct2*(vfactor*mx*mx-1.0);
-		vir[XX][YY]+=0.25*eterm*struct2*(vfactor*mx*my);   
-		vir[XX][ZZ]+=0.25*eterm*struct2*(vfactor*mx*mz);  
-		vir[YY][YY]+=0.25*eterm*struct2*(vfactor*my*my-1.0);
-		vir[YY][ZZ]+=0.25*eterm*struct2*(vfactor*my*mz);
-		vir[ZZ][ZZ]+=0.25*eterm*struct2*(vfactor*mz*mz-1.0);
-		ptr[idx].re=d1*eterm;
-		ptr[idx].im=d2*eterm;
-	    }
+	    struct2=d1*d1+d2*d2;
+	    if(kz>0 && kz<(nz+1)/2)
+	      struct2*=2;
+	    energy+=eterm*struct2;
+	    /* the sign of the virial terms here are as
+	     * in Dardens code, but this is the opposite
+	     * of the sign in the article in jcp 103:1995
+	     */	    
+	    vfactor=(factor*m2+1)*2.0/m2;
+	    vir[XX][XX]+=eterm*struct2*(vfactor*mx*mx-1.0);
+	    vir[XX][YY]+=eterm*struct2*(vfactor*mx*my);   
+	    vir[XX][ZZ]+=eterm*struct2*(vfactor*mx*mz);  
+	    vir[YY][YY]+=eterm*struct2*(vfactor*my*my-1.0);
+	    vir[YY][ZZ]+=eterm*struct2*(vfactor*my*mz);
+	    vir[ZZ][ZZ]+=eterm*struct2*(vfactor*mz*mz-1.0);
+	    ptr[idx].re=d1*eterm;
+	    ptr[idx].im=d2*eterm;
+	  }
 	}
-    }
+      }
+#endif /* end of parallel case loop */
+    } else {/* not parallel */  
+    
+      for(kx=0;kx<nx;kx++) {
+	if(kx<maxkx)
+	  mx=kx*invx;
+	else
+	  mx=(kx-nx)*invx;
+	bx=M_PI*vol*bsp_mod[XX][kx];	
+
+	for(ky=0;ky<ny;ky++) {  /* all cells */	  
+	  if(ky<maxky)
+	    my=(ky)*invy;
+	  else
+	    my=(ky-ny)*invy;
+	  by=bsp_mod[YY][ky];
+	  
+	  for(kz=0;kz<maxkz;kz++)  {
+	    if(kx==0 && ky==0 && kz==0)
+	      continue;
+	    idx=INDEX(kx,ky,kz);
+	    d1=ptr[idx].re;
+	    d2=ptr[idx].im;
+	    mz=(kz)*invz;
+	    m2=mx*mx+my*my+mz*mz;
+	    denom=(m2*bx*by*bsp_mod[ZZ][kz]);
+	    eterm=ONE_4PI_EPS0*exp(-factor*m2)/denom;
+	    
+	    struct2=d1*d1+d2*d2;
+	    if(kz>0 && kz<(nz+1)/2)
+	      struct2*=2;
+	    energy+=eterm*struct2;
+	    /* the sign of the virial terms here are as
+	     * in Dardens code, but this is the opposite
+	     * of the sign in the article in jcp 103:1995
+	     */
+	    vfactor=(factor*m2+1)*2.0/m2;
+	    vir[XX][XX]+=eterm*struct2*(vfactor*mx*mx-1.0);
+	    vir[XX][YY]+=eterm*struct2*(vfactor*mx*my);   
+	    vir[XX][ZZ]+=eterm*struct2*(vfactor*mx*mz);  
+	    vir[YY][YY]+=eterm*struct2*(vfactor*my*my-1.0);
+	    vir[YY][ZZ]+=eterm*struct2*(vfactor*my*mz);
+	    vir[ZZ][ZZ]+=eterm*struct2*(vfactor*mz*mz-1.0);
+	    ptr[idx].re=d1*eterm;
+	    ptr[idx].im=d2*eterm;
+	  }
+	}
+      }
+    } /* end, nonparallel case loop */
+    
     vir[YY][XX]=vir[XX][YY];
     vir[ZZ][XX]=vir[XX][ZZ];
     vir[ZZ][YY]=vir[YY][ZZ];
+    for(nx=0;nx<DIM;nx++)
+	for(ny=0;ny<DIM;ny++)
+	    vir[nx][ny]*=0.25;
     /* this virial seems ok for isotropic scaling, but I'm
      * experiencing problems on semiisotropic membranes */
     return(0.5*energy);
@@ -266,9 +320,9 @@ void gather_f_bsplines(t_fftgrid *grid,rvec invh,t_nsborder *nsb,
  
     for(n=0;n<nr;n++) {
 	if(charge[start+n]!=0) {
-	    xidx=(int)(x[start+n][XX]*invh[XX]+nx/2.0);
-	    yidx=(int)(x[start+n][YY]*invh[YY]+ny/2.0);
-	    zidx=(int)(x[start+n][ZZ]*invh[ZZ]+nz/2.0);
+	    xidx=(int)(x[start+n][XX]*invh[XX]);
+	    yidx=(int)(x[start+n][YY]*invh[YY]);
+	    zidx=(int)(x[start+n][ZZ]*invh[ZZ]);
 	    if(xidx>=nx)
 		xidx-=nx;
 	    else if(xidx<0)
@@ -345,7 +399,7 @@ void make_bsplines(splinevec theta,splinevec dtheta,int order,int nx,
     for(i=0;i<nr;i++) {
 	if(charge[start+i]!=0) {
 	for(j=0;j<DIM;j++) {
-		dr=x[start+i][j]*invh[j]+nk[j]/2.0;
+		dr=x[start+i][j]*invh[j];
 		dr-=(int)dr;
 		/* dr is relative offset from lower cell limit */
 		data=&(theta[j][i*order]);
@@ -452,8 +506,7 @@ static    splinevec dtheta;
 static    splinevec bsp_mod;
 
 
-void init_pme(FILE *log,t_commrec *cr,t_nsborder *nsb,
-	      bool bVerbose,t_inputrec *ir)
+void init_pme(FILE *log,t_commrec *cr,t_nsborder *nsb,t_inputrec *ir)
 {
     int i;
     
@@ -482,48 +535,54 @@ void init_pme(FILE *log,t_commrec *cr,t_nsborder *nsb,
     make_bspline_moduli(bsp_mod,nx,ny,nz,ir->pme_order);   
 }
 
-real do_pme(FILE *log,       bool bVerbose,
+real do_pme(FILE *logfile,       bool bVerbose,
 	    t_inputrec *ir,  rvec x[],
 	    rvec f[],        real charge[],
-	    rvec box,        real phi[],
-	    t_commrec *cr,   t_nsborder *nsb,
+	    rvec box,	    t_commrec *cr,
+	    t_nsborder *nsb,
 	    t_nrnb *nrnb,    matrix vir,
-	    real ewaldcoeff)
-{
-  int       start,end;
+  	    real ewaldcoeff)
+{ 
+  int start,end,ntot,npme;
   int i,j,k;
   rvec invh;
   real energy,vol;
-  
+   
   energy=0;
   calc_invh(box,nx,ny,nz,invh);
-
+  
   vol=box[XX]*box[YY]*box[ZZ];
   /* make local bsplines  */
-
+  
   make_bsplines(theta,dtheta,ir->pme_order,nx,ny,nz,x,charge,nsb,invh);
-
+  
   /* put local atoms on grid. */
   spread_q_bsplines(grid,invh,nsb,x,charge,theta,ir->pme_order);
-
+  inc_nrnb(nrnb,eNR_SPREADQBSP,nx*ny*nz*HOMENR(nsb));
   /* sum contributions to local grid from other processors */
   if (PAR(cr))
-      sum_qgrid(log,bVerbose,cr,nsb,grid,TRUE);
-
-  /* do 3d-fft */ 
-  gmxfft3D(log,bVerbose,grid,FFTW_FORWARD,cr);
-
-  /* solve in k-space for our local cells */
-  energy=solve_pme(grid,ewaldcoeff,vol,bsp_mod,invh,vir);
-  /* do 3d-invfft */
-  gmxfft3D(log,bVerbose,grid,FFTW_BACKWARD,cr);
+      sum_qgrid(cr,nsb,grid,TRUE);
   
+  /* do 3d-fft */ 
+  gmxfft3D(grid,FFTW_FORWARD,cr);
+  
+  /* solve in k-space for our local cells */
+  energy=solve_pme(grid,ewaldcoeff,vol,bsp_mod,invh,vir,cr);
+  inc_nrnb(nrnb,eNR_SOLVEPME,nx*ny*nz*0.5);
+
+  /* do 3d-invfft */
+  gmxfft3D(grid,FFTW_BACKWARD,cr);
+   
   /* distribute local grid to all processors */
   if (PAR(cr))
-      sum_qgrid(log,bVerbose,cr,nsb,grid,FALSE);
-
+      sum_qgrid(cr,nsb,grid,FALSE);
   /* interpolate forces for our local atoms */
   gather_f_bsplines(grid,invh,nsb,x,f,charge,theta,dtheta,ir->pme_order);
+  inc_nrnb(nrnb,eNR_GATHERFBSP,nx*ny*nz*HOMENR(nsb));
+
+  ntot  = grid->nxyz;  
+  npme  = ntot*log((real)ntot)/log(2.0);
+  inc_nrnb(nrnb,eNR_FFT,2*npme);
 
   return energy;  
 }
