@@ -42,8 +42,6 @@ static char *SRCID_wman_c = "$Id$";
 #include "readinp.h"
 #include "javaio.h"
 
-static char *argtp[etNR] = { "int", "real", "string", "bool" };
-
 typedef struct {
   char *search,*replace;
 } t_sandr;
@@ -421,18 +419,19 @@ static void write_htmlman(FILE *out,
   
 #define NSR(s) check_html(s,program)
   
-  fprintf(out,"<title>%s</title>\n",program);
-  fprintf(out,"<h2>%s</h2>\n",program);
-  fprintf(out,"<b>%s</b><br>\n<b>%s</b><p>",GromacsVersion(),mydate());
+  fprintf(out,"<TITLE>%s</TITLE>\n",program);
+  fprintf(out,"<BODY>\n");
+  fprintf(out,"<H2>%s</H2>\n",program);
+  fprintf(out,"<B>%s</B><BR>\n<B>%s</B><P>",GromacsVersion(),mydate());
   
   if (nldesc > 0) {
-    fprintf(out,"<h3>Description</h3>\n");
+    fprintf(out,"<H3>Description</H3>\n");
     for(i=0; (i<nldesc); i++) 
       fprintf(out,"%s\n",NSR(desc[i]));
   }
   if (nfile > 0) {
-    fprintf(out,"<p>\n");
-    fprintf(out,"<h3>Files</h3>\n");
+    fprintf(out,"<P>\n");
+    fprintf(out,"<H3>Files</H3>\n");
     fprintf(out,
 	    "<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>\n"
 	    "<TR>"
@@ -456,14 +455,10 @@ static void write_htmlman(FILE *out,
 	      NSR(ftp2desc(fnm[i].ftp)));
     }
     fprintf(out,"</TABLE>\n");
-    /*
-    fprintf(out,"Remember that filenames are not fixed, but \n");
-    fprintf(out,"file extensions are.\n");
-    */
   }
   if (npargs > 0) {
-    fprintf(out,"<p>\n");
-    fprintf(out,"<h3>Other options</h3>\n");
+    fprintf(out,"<P>\n");
+    fprintf(out,"<H3>Other options</H3>\n");
     fprintf(out,
 	    "<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>\n"
 	    "<TR>"
@@ -485,14 +480,15 @@ static void write_htmlman(FILE *out,
     fprintf(out,"</TABLE>\n");
   }
   if (nbug > 0) {
-    fprintf(out,"<p>\n");
-    fprintf(out,"<h3>Diagnostics</h3>\n");
-    fprintf(out,"<ul>\n");
+    fprintf(out,"<P>\n");
+    fprintf(out,"<H3>Diagnostics</H3>\n");
+    fprintf(out,"<UL>\n");
     for(i=0; (i<nbug); i++)
-      fprintf(out,"<li>%s\n",NSR(bugs[i]));
-    fprintf(out,"</ul>\n");
+      fprintf(out,"<LI>%s\n",NSR(bugs[i]));
+    fprintf(out,"</UL>\n");
   }
-  fprintf(out,"<p>\n");
+  fprintf(out,"<P>\n");
+  fprintf(out,"</BODY>\n");
 }
 
 void write_man(FILE *out,int otype,
