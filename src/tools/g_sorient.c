@@ -10,7 +10,7 @@
 #include "rdgroup.h"
 #include "tpxio.h"
 
-void main(int argc,char *argv[])
+int main(int argc,char *argv[])
 {
   t_topology top;
   char     title[STRLEN];
@@ -60,11 +60,11 @@ void main(int argc,char *argv[])
   static int nbin=20;
   static real rmin=0.0,rmax=0.5;
   t_pargs pa[] = {
-    { "-com",  FALSE, etBOOL,  &bCom,
+    { "-com",  FALSE, etBOOL,  {&bCom},
       "Use the center of mass as the reference postion" },
-    { "-rmin",  FALSE, etREAL, &rmin, "Minimum distance" },
-    { "-rmax",  FALSE, etREAL, &rmax, "Maximum distance" },
-    { "-nbin",  FALSE, etINT,  &nbin, "Number of bins" }
+    { "-rmin",  FALSE, etREAL, {&rmin}, "Minimum distance" },
+    { "-rmax",  FALSE, etREAL, {&rmax}, "Maximum distance" },
+    { "-nbin",  FALSE, etINT,  {&nbin}, "Number of bins" }
   };
   
   t_filenm fnm[] = {
@@ -238,4 +238,6 @@ void main(int argc,char *argv[])
   do_view(opt2fn("-co",NFILE,fnm),NULL);
 
   thanx(stderr);
+  
+  return 0;
 }
