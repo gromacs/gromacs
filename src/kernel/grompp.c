@@ -277,9 +277,12 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
   tab  = NULL;
   if (nprocs > 1) {
     tab=mk_shuffle_tab(nrmols,molinfo,nprocs,&ntab,Nsim,Sims,bVerbose);
-    if (debug)
+    if (debug) {
       for(i=0; (i<ntab); i++)
 	fprintf(debug,"Mol[%5d] = %s\n",i,*molinfo[tab[i]].name);
+      fflush(debug);
+    }
+    fprintf(stderr,"Made a shuffling table with %d entries\n",ntab);
   }
   if (bMorse)
     convert_harmonics(nrmols,molinfo,atype);
