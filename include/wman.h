@@ -39,16 +39,16 @@ static char *SRCID_wman_h = "$Id$";
 #include "readinp.h"
 
 extern void write_java(FILE *out,char *program,
-		       int nldesc,char *desc[],
-		       int nfile,t_filenm fnm[],
-		       int npargs,t_pargs pa[],
-		       int nbug,char *bugs[]);
+		       int nldesc,char **desc,
+		       int nfile,t_filenm *fnm,
+		       int npargs,t_pargs *pa,
+		       int nbug,char **bugs);
      
 extern void write_man(FILE *out,char *mantp,char *program,
-		      int nldesc,char *desc[],
-		      int nfile,t_filenm fnm[],
-		      int npargs,t_pargs pa[],
-		      int nbug,char *bugs[],
+		      int nldesc,char **desc,
+		      int nfile,t_filenm *fnm,
+		      int npargs,t_pargs *pa,
+		      int nbug,char **bugs,
 		      bool bHidden);
 
 extern char *fileopt(ulong flag);

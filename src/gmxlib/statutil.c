@@ -286,7 +286,7 @@ static char *mk_desc(t_pargs *pa)
   int  len,k;
   
   /* First compute length for description */
-  len = strlen(pa->desc);
+  len = strlen(pa->desc)+1;
   if ((ptr = strstr(pa->desc,"HIDDEN")) != NULL)
     len += 4;
   if (pa->type == etENUM) {
@@ -320,8 +320,8 @@ static char *mk_desc(t_pargs *pa)
 }
 
 void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
-		       int nfile,t_filenm fnm[],int npargs,t_pargs pa[],
-		       int ndesc,char *desc[],int nbugs,char *bugs[])
+		       int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
+		       int ndesc,char **desc,int nbugs,char **bugs)
 {
   static bool bHelp=FALSE,bHidden=FALSE,bQuiet=FALSE;
   static char *manstr[]      = { "no", "html", "tex", "java", "ascii", NULL };
@@ -536,6 +536,8 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
     fclose(fp);
     exit(0);
   }
+  for(i=0; i<npall; i++)
+    sfree(all_pa[i].desc);
   sfree(all_pa);
 
   if (!FF(PCA_NOEXIT_ON_ARGS)) {

@@ -133,6 +133,8 @@ static char *repall(char *s,int nsr,t_sandr sa[])
   buf=s;
   for(i=0; (i<nsr); i++) {
     buf2=replace(buf,sa[i].search,sa[i].replace);
+    if (i && buf)
+      sfree(buf);
     buf=buf2;
   }
   
@@ -147,6 +149,8 @@ static char *repallww(char *s,int nsr,t_sandr sa[])
   buf=s;
   for(i=0; (i<nsr); i++) {
     buf2=replaceww(buf,sa[i].search,sa[i].replace);
+    if (i && buf)
+      sfree(buf);
     buf=buf2;
   }
   
@@ -208,10 +212,10 @@ char *fileopt(ulong flag)
 }
 
 static void write_texman(FILE *out,char *program,
-			 int nldesc,char *desc[],
-			 int nfile,t_filenm fnm[],
-			 int npargs,t_pargs pa[],
-			 int nbug,char *bugs[])
+			 int nldesc,char **desc,
+			 int nfile,t_filenm *fnm,
+			 int npargs,t_pargs *pa,
+			 int nbug,char **bugs)
 {
   int i;
 
@@ -259,10 +263,10 @@ static void write_texman(FILE *out,char *program,
 
 static void write_nroffman(FILE *out,
 			   char *program,
-			   int nldesc,char *desc[],
-			   int nfile,t_filenm fnm[],
-			   int npargs,t_pargs pa[],
-			   int nbug,char *bugs[])
+			   int nldesc,char **desc,
+			   int nfile,t_filenm *fnm,
+			   int npargs,t_pargs *pa,
+			   int nbug,char **bugs)
 
 {
   int i; /* counter */
@@ -325,7 +329,7 @@ char *check_tty(char *s)
   return repall(s,NSRTTY,sandrTty);
 }
 
-void print_tty_formatted(FILE *out, int nldesc, char *desc[])
+void print_tty_formatted(FILE *out, int nldesc, char **desc)
 {
   char *buf,*temp;
   int i,j;
@@ -352,10 +356,10 @@ void print_tty_formatted(FILE *out, int nldesc, char *desc[])
 
 static void write_ttyman(FILE *out,
 			 char *program,
-			 int nldesc,char *desc[],
-			 int nfile,t_filenm fnm[],
-			 int npargs,t_pargs pa[],
-			 int nbug,char *bugs[],bool bHeader)
+			 int nldesc,char **desc,
+			 int nfile,t_filenm *fnm,
+			 int npargs,t_pargs *pa,
+			 int nbug,char **bugs,bool bHeader)
 {
   int i;
   char *tmp;
@@ -405,10 +409,10 @@ char *check_html(char *s,char *program)
 
 static void write_htmlman(FILE *out,
 			  char *program,
-			  int nldesc,char *desc[],
-			  int nfile,t_filenm fnm[],
-			  int npargs,t_pargs pa[],
-			  int nbug,char *bugs[])
+			  int nldesc,char **desc,
+			  int nfile,t_filenm *fnm,
+			  int npargs,t_pargs *pa,
+			  int nbug,char **bugs)
 {
   int i;
   char link[10];
@@ -489,10 +493,10 @@ static void write_htmlman(FILE *out,
 
 void write_man(FILE *out,char *mantp,
 	       char *program,
-	       int nldesc,char *desc[],
-	       int nfile,t_filenm fnm[],
-	       int npargs,t_pargs pa[],
-	       int nbug,char *bugs[],bool bHidden)
+	       int nldesc,char **desc,
+	       int nfile,t_filenm *fnm,
+	       int npargs,t_pargs *pa,
+	       int nbug,char **bugs,bool bHidden)
 {
   char *pr;
   int     i,npar;

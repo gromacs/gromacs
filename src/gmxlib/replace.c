@@ -42,9 +42,11 @@ char *replace(char *string,char *search,char *replace)
   
   slen=strlen(search);
   stringlen=strlen(string);
-  if ((string == NULL) || (slen == 0) || (stringlen == 0))
-    return string;
-  
+  if ((string == NULL) || (slen == 0) || (stringlen == 0)) {
+    if (string)
+      buf=strdup(string);
+    return buf;
+  }
   rlen=strlen(replace);
   blen=max(stringlen,(rlen*stringlen)/slen);
   snew(buf,blen+1);
@@ -84,9 +86,11 @@ char *replaceww(char *string,char *search,char *replace)
   
   searchlen=strlen(search);
   stringlen=strlen(string);
-  if ((string == NULL) || (searchlen == 0) || (stringlen == 0))
-    return string;
-  
+  if ((string == NULL) || (searchlen == 0) || (stringlen == 0)) {
+    if (string)
+      buf=strdup(string);
+    return buf;
+  }  
   replacelen=strlen(replace);
   buflen=max(stringlen,(replacelen*stringlen)/searchlen);
   snew(buf,buflen+1);
