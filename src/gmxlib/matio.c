@@ -538,7 +538,7 @@ void write_xpm_map3(FILE *out,int n_x,int n_y,int *nlevels,
 	    (unsigned int)round(255*b),
 	    (nlo*lo+i*mid)/nmid);
   }
-  for(i=nmid; (i<*nlevels); i++) {
+  for(i=0; (i<(*nlevels-nmid)); i++) {
     nlo = *nlevels-i;
     r   = rmid.r+(i*(rhi.r-rmid.r)/clev_hi);
     g   = rmid.g+(i*(rhi.g-rmid.g)/clev_hi);
