@@ -115,6 +115,9 @@ extern t_pargs *add_acf_pargs(int *npargs,t_pargs *pa);
  * it will be incremented appropriately.
  */
 
+extern void cross_corr(int n,real f[],real g[],real corr[]);
+/* Simple minded cross correlation algorithm */
+  
 extern void do_autocorr(char *fn,char *title,int nframes,int nitem,real **c1,
 			real dt,unsigned long mode,bool bAver);
 /* Calls low_do_autocorr (see below). After calling add_acf_pargs */
@@ -122,7 +125,7 @@ extern void do_autocorr(char *fn,char *title,int nframes,int nitem,real **c1,
 extern void low_do_autocorr(char *fn,char *title,
 			    int  nframes,int nitem,int nout,real **c1,
 			    real dt,unsigned long mode,int nrestart,
-			    bool bAver,bool bFour,bool bNormalize,
+			    bool bAver,bool bNormalize,
 			    bool bVerbose,real tbeginfit,real tendfit,
 			    int nfitparm,int nskip);
 /* 
@@ -171,8 +174,8 @@ extern void low_do_autocorr(char *fn,char *title,
  * dt 		is the time between frames
  * bAver 	If set, all ndih C(t) functions are averaged into a single 
  *       	C(t)
- * bFour      	If set, will use fast fourier transform (FFT) for evaluating
- *            	the ACF
+ * (bFour      	If set, will use fast fourier transform (FFT) for evaluating
+ *            	the ACF: removed option, now on the command line only)
  * bNormalize 	If set, all ACFs will be normalized to start at 0
  * nskip        Determines whether steps a re skipped in the output 
  */
@@ -344,9 +347,12 @@ extern real do_lmfit(int ndata,real c1[],real sig[],real dt,real *x,
  * of fix is set. 
  */
 
-  extern real evaluate_integral(int n,real dx,real y[],real dy[],
-				real aver_start,real *stddev);
-  /* Integrate data in y, and, if given, use dy as weighting */
+extern real evaluate_integral(int n,real dx,real y[],real dy[],
+			      real aver_start,real *stddev);
+/* Integrate data in y, and, if given, use dy as weighting 
+ * aver_start should be set to a value where the function has 
+ * converged to 0.
+ */
 
 extern real print_and_integrate(FILE *fp,int n,real dt,
 				real c[],real *fit,int nskip);
