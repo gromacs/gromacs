@@ -39,7 +39,6 @@ static char *SRCID_manager_c = "$Id$";
 #include <maths.h>
 #include <atomprop.h>
 #include <names.h>
-#include "bondf.h"
 #include "manager.h"
 #include "futil.h"
 #include "pbc.h"

@@ -77,13 +77,15 @@ static void low_calc_pot(FILE *log,int ftype,t_forcerec *fr,
   
   nr_inter = 0;
 
+  fatal_error(0,"Potential calculation out of order");
+
+  /*
   if (ftype == F_SR) 
     nlist=fr->coul;
   else
     nlist=fr->vdw;
   
-  fatal_error(0,"Potential calculation out of order");
-  /*  for(gid=0; (gid<fr->nn); gid++) {
+  for(gid=0; (gid<fr->nn); gid++) {
     nri  = nlist[gid].nri;
     nl_i = nlist[gid].nl_i;
     

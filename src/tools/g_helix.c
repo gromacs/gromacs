@@ -29,7 +29,6 @@
 static char *SRCID_g_helix_c = "$Id$";
 
 #include <math.h>
-#include "bondf.h"
 #include "confio.h"
 #include "copyrite.h"
 #include "fatal.h"

@@ -30,7 +30,6 @@ static char *SRCID_mshift_c = "$Id$";
 
 #include <string.h>
 #include "assert.h"
-#include "bondf.h"
 #include "smalloc.h"
 #include "fatal.h"
 #include "macros.h"

@@ -28,6 +28,7 @@ buttons.o: $(GMXHOME)/src/include/types/drblock.h
 buttons.o: $(GMXHOME)/src/include/types/parm.h
 buttons.o: $(GMXHOME)/src/include/types/matrix.h
 buttons.o: $(GMXHOME)/src/include/types/edsams.h
+buttons.o: $(GMXHOME)/src/include/types/pulls.h
 buttons.o: $(GMXHOME)/src/include/writeps.h
 dialogs.o: $(GMXHOME)/src/include/smalloc.h
 dialogs.o: $(GMXHOME)/src/include/sysstuff.h
@@ -59,6 +60,7 @@ dialogs.o: $(GMXHOME)/src/include/types/drblock.h
 dialogs.o: $(GMXHOME)/src/include/types/parm.h
 dialogs.o: $(GMXHOME)/src/include/types/matrix.h
 dialogs.o: $(GMXHOME)/src/include/types/edsams.h
+dialogs.o: $(GMXHOME)/src/include/types/pulls.h
 dialogs.o: $(GMXHOME)/src/include/string2.h
 dialogs.o: $(GMXHOME)/src/include/writeps.h
 dialogs.o: $(GMXHOME)/src/include/3dview.h
@@ -91,6 +93,7 @@ dlg.o: $(GMXHOME)/src/include/types/drblock.h
 dlg.o: $(GMXHOME)/src/include/types/parm.h
 dlg.o: $(GMXHOME)/src/include/types/matrix.h
 dlg.o: $(GMXHOME)/src/include/types/edsams.h
+dlg.o: $(GMXHOME)/src/include/types/pulls.h
 dlg.o: $(GMXHOME)/src/include/writeps.h
 fgrid.o: $(GMXHOME)/src/include/string2.h
 fgrid.o: $(GMXHOME)/src/include/typedefs.h
@@ -121,6 +124,7 @@ fgrid.o: $(GMXHOME)/src/include/types/drblock.h
 fgrid.o: $(GMXHOME)/src/include/types/parm.h
 fgrid.o: $(GMXHOME)/src/include/types/matrix.h
 fgrid.o: $(GMXHOME)/src/include/types/edsams.h
+fgrid.o: $(GMXHOME)/src/include/types/pulls.h
 fgrid.o: $(GMXHOME)/src/include/smalloc.h
 fgrid.o: $(GMXHOME)/src/include/writeps.h
 filter.o: $(GMXHOME)/src/include/sysstuff.h
@@ -152,6 +156,7 @@ filter.o: $(GMXHOME)/src/include/types/drblock.h
 filter.o: $(GMXHOME)/src/include/types/parm.h
 filter.o: $(GMXHOME)/src/include/types/matrix.h
 filter.o: $(GMXHOME)/src/include/types/edsams.h
+filter.o: $(GMXHOME)/src/include/types/pulls.h
 filter.o: $(GMXHOME)/src/include/smalloc.h
 filter.o: $(GMXHOME)/src/include/macros.h
 filter.o: $(GMXHOME)/src/include/rdgroup.h
@@ -186,6 +191,7 @@ gmxlogo.o: $(GMXHOME)/src/include/types/drblock.h
 gmxlogo.o: $(GMXHOME)/src/include/types/parm.h
 gmxlogo.o: $(GMXHOME)/src/include/types/matrix.h
 gmxlogo.o: $(GMXHOME)/src/include/types/edsams.h
+gmxlogo.o: $(GMXHOME)/src/include/types/pulls.h
 gmxlogo.o: $(GMXHOME)/src/include/writeps.h
 highway.o: $(GMXHOME)/src/include/futil.h
 highway.o: $(GMXHOME)/src/include/typedefs.h
@@ -216,6 +222,7 @@ highway.o: $(GMXHOME)/src/include/types/drblock.h
 highway.o: $(GMXHOME)/src/include/types/parm.h
 highway.o: $(GMXHOME)/src/include/types/matrix.h
 highway.o: $(GMXHOME)/src/include/types/edsams.h
+highway.o: $(GMXHOME)/src/include/types/pulls.h
 highway.o: $(GMXHOME)/src/include/macros.h
 highway.o: $(GMXHOME)/src/include/smalloc.h
 highway.o: $(GMXHOME)/src/include/writeps.h
@@ -252,6 +259,7 @@ logo.o: $(GMXHOME)/src/include/types/drblock.h
 logo.o: $(GMXHOME)/src/include/types/parm.h
 logo.o: $(GMXHOME)/src/include/types/matrix.h
 logo.o: $(GMXHOME)/src/include/types/edsams.h
+logo.o: $(GMXHOME)/src/include/types/pulls.h
 logo.o: $(GMXHOME)/src/include/writeps.h
 logo.o: $(GMXHOME)/src/include/smalloc.h
 logo.o: $(GMXHOME)/src/include/macros.h
@@ -285,18 +293,17 @@ manager.o: $(GMXHOME)/src/include/types/drblock.h
 manager.o: $(GMXHOME)/src/include/types/parm.h
 manager.o: $(GMXHOME)/src/include/types/matrix.h
 manager.o: $(GMXHOME)/src/include/types/edsams.h
+manager.o: $(GMXHOME)/src/include/types/pulls.h
 manager.o: $(GMXHOME)/src/include/tpxio.h
 manager.o: $(GMXHOME)/src/include/xdrf.h
 manager.o: $(GMXHOME)/src/include/macros.h
 manager.o: $(GMXHOME)/src/include/maths.h
 manager.o: $(GMXHOME)/src/include/atomprop.h
 manager.o: $(GMXHOME)/src/include/names.h
-manager.o: $(GMXHOME)/src/include/bondf.h
-manager.o: $(GMXHOME)/src/include/nrnb.h
-manager.o: $(GMXHOME)/src/include/pbc.h
 manager.o: $(GMXHOME)/src/include/writeps.h
 manager.o: $(GMXHOME)/src/include/3dview.h
 manager.o: $(GMXHOME)/src/include/futil.h
+manager.o: $(GMXHOME)/src/include/pbc.h
 manager.o: $(GMXHOME)/src/include/copyrite.h
 manager.o: $(GMXHOME)/src/include/gstat.h
 manager.o: $(GMXHOME)/src/include/statutil.h
@@ -336,6 +343,7 @@ molps.o: $(GMXHOME)/src/include/types/drblock.h
 molps.o: $(GMXHOME)/src/include/types/parm.h
 molps.o: $(GMXHOME)/src/include/types/matrix.h
 molps.o: $(GMXHOME)/src/include/types/edsams.h
+molps.o: $(GMXHOME)/src/include/types/pulls.h
 molps.o: $(GMXHOME)/src/include/writeps.h
 molps.o: $(GMXHOME)/src/include/3dview.h
 nener.o: $(GMXHOME)/src/include/smalloc.h
@@ -368,6 +376,7 @@ nener.o: $(GMXHOME)/src/include/types/drblock.h
 nener.o: $(GMXHOME)/src/include/types/parm.h
 nener.o: $(GMXHOME)/src/include/types/matrix.h
 nener.o: $(GMXHOME)/src/include/types/edsams.h
+nener.o: $(GMXHOME)/src/include/types/pulls.h
 nener.o: $(GMXHOME)/src/include/names.h
 nener.o: $(GMXHOME)/src/include/writeps.h
 ngmx.o: $(GMXHOME)/src/include/sysstuff.h
@@ -399,6 +408,7 @@ ngmx.o: $(GMXHOME)/src/include/types/drblock.h
 ngmx.o: $(GMXHOME)/src/include/types/parm.h
 ngmx.o: $(GMXHOME)/src/include/types/matrix.h
 ngmx.o: $(GMXHOME)/src/include/types/edsams.h
+ngmx.o: $(GMXHOME)/src/include/types/pulls.h
 ngmx.o: $(GMXHOME)/src/include/smalloc.h
 ngmx.o: $(GMXHOME)/src/include/string2.h
 ngmx.o: $(GMXHOME)/src/include/statutil.h
@@ -442,6 +452,7 @@ nleg.o: $(GMXHOME)/src/include/types/drblock.h
 nleg.o: $(GMXHOME)/src/include/types/parm.h
 nleg.o: $(GMXHOME)/src/include/types/matrix.h
 nleg.o: $(GMXHOME)/src/include/types/edsams.h
+nleg.o: $(GMXHOME)/src/include/types/pulls.h
 nleg.o: $(GMXHOME)/src/include/writeps.h
 nload.o: $(GMXHOME)/src/include/typedefs.h
 nload.o: $(GMXHOME)/src/include/sysstuff.h
@@ -471,6 +482,7 @@ nload.o: $(GMXHOME)/src/include/types/drblock.h
 nload.o: $(GMXHOME)/src/include/types/parm.h
 nload.o: $(GMXHOME)/src/include/types/matrix.h
 nload.o: $(GMXHOME)/src/include/types/edsams.h
+nload.o: $(GMXHOME)/src/include/types/pulls.h
 nload.o: $(GMXHOME)/src/include/macros.h
 nload.o: $(GMXHOME)/src/include/smalloc.h
 nload.o: $(GMXHOME)/src/include/writeps.h
@@ -504,6 +516,7 @@ nmol.o: $(GMXHOME)/src/include/types/drblock.h
 nmol.o: $(GMXHOME)/src/include/types/parm.h
 nmol.o: $(GMXHOME)/src/include/types/matrix.h
 nmol.o: $(GMXHOME)/src/include/types/edsams.h
+nmol.o: $(GMXHOME)/src/include/types/pulls.h
 nmol.o: $(GMXHOME)/src/include/writeps.h
 nmol.o: $(GMXHOME)/src/include/3dview.h
 popup.o: $(GMXHOME)/src/include/macros.h
@@ -535,6 +548,7 @@ popup.o: $(GMXHOME)/src/include/types/drblock.h
 popup.o: $(GMXHOME)/src/include/types/parm.h
 popup.o: $(GMXHOME)/src/include/types/matrix.h
 popup.o: $(GMXHOME)/src/include/types/edsams.h
+popup.o: $(GMXHOME)/src/include/types/pulls.h
 popup.o: $(GMXHOME)/src/include/smalloc.h
 popup.o: $(GMXHOME)/src/include/writeps.h
 pulldown.o: $(GMXHOME)/src/include/smalloc.h
@@ -566,6 +580,7 @@ pulldown.o: $(GMXHOME)/src/include/types/drblock.h
 pulldown.o: $(GMXHOME)/src/include/types/parm.h
 pulldown.o: $(GMXHOME)/src/include/types/matrix.h
 pulldown.o: $(GMXHOME)/src/include/types/edsams.h
+pulldown.o: $(GMXHOME)/src/include/types/pulls.h
 pulldown.o: $(GMXHOME)/src/include/macros.h
 pulldown.o: $(GMXHOME)/src/include/writeps.h
 scrollw.o: $(GMXHOME)/src/include/sysstuff.h
@@ -596,6 +611,7 @@ scrollw.o: $(GMXHOME)/src/include/types/drblock.h
 scrollw.o: $(GMXHOME)/src/include/types/parm.h
 scrollw.o: $(GMXHOME)/src/include/types/matrix.h
 scrollw.o: $(GMXHOME)/src/include/types/edsams.h
+scrollw.o: $(GMXHOME)/src/include/types/pulls.h
 scrollw.o: $(GMXHOME)/src/include/writeps.h
 scrollw.o: $(GMXHOME)/src/include/smalloc.h
 scrollw.o: $(GMXHOME)/src/include/macros.h
@@ -631,6 +647,7 @@ showcol.o: $(GMXHOME)/src/include/types/drblock.h
 showcol.o: $(GMXHOME)/src/include/types/parm.h
 showcol.o: $(GMXHOME)/src/include/types/matrix.h
 showcol.o: $(GMXHOME)/src/include/types/edsams.h
+showcol.o: $(GMXHOME)/src/include/types/pulls.h
 showcol.o: $(GMXHOME)/src/include/writeps.h
 vbox.o: $(GMXHOME)/src/include/typedefs.h
 vbox.o: $(GMXHOME)/src/include/sysstuff.h
@@ -660,6 +677,7 @@ vbox.o: $(GMXHOME)/src/include/types/drblock.h
 vbox.o: $(GMXHOME)/src/include/types/parm.h
 vbox.o: $(GMXHOME)/src/include/types/matrix.h
 vbox.o: $(GMXHOME)/src/include/types/edsams.h
+vbox.o: $(GMXHOME)/src/include/types/pulls.h
 vbox.o: $(GMXHOME)/src/include/writeps.h
 x11.o: $(GMXHOME)/src/include/sysstuff.h
 x11.o: $(GMXHOME)/src/include/assert.h
@@ -691,6 +709,7 @@ x11.o: $(GMXHOME)/src/include/types/drblock.h
 x11.o: $(GMXHOME)/src/include/types/parm.h
 x11.o: $(GMXHOME)/src/include/types/matrix.h
 x11.o: $(GMXHOME)/src/include/types/edsams.h
+x11.o: $(GMXHOME)/src/include/types/pulls.h
 xdlg.o: $(GMXHOME)/src/include/string2.h
 xdlg.o: $(GMXHOME)/src/include/typedefs.h
 xdlg.o: $(GMXHOME)/src/include/sysstuff.h
@@ -720,6 +739,7 @@ xdlg.o: $(GMXHOME)/src/include/types/drblock.h
 xdlg.o: $(GMXHOME)/src/include/types/parm.h
 xdlg.o: $(GMXHOME)/src/include/types/matrix.h
 xdlg.o: $(GMXHOME)/src/include/types/edsams.h
+xdlg.o: $(GMXHOME)/src/include/types/pulls.h
 xdlg.o: $(GMXHOME)/src/include/assert.h
 xdlg.o: $(GMXHOME)/src/include/macros.h
 xdlg.o: $(GMXHOME)/src/include/smalloc.h
@@ -753,6 +773,7 @@ xdlghi.o: $(GMXHOME)/src/include/types/drblock.h
 xdlghi.o: $(GMXHOME)/src/include/types/parm.h
 xdlghi.o: $(GMXHOME)/src/include/types/matrix.h
 xdlghi.o: $(GMXHOME)/src/include/types/edsams.h
+xdlghi.o: $(GMXHOME)/src/include/types/pulls.h
 xdlghi.o: $(GMXHOME)/src/include/string2.h
 xdlghi.o: $(GMXHOME)/src/include/smalloc.h
 xdlghi.o: $(GMXHOME)/src/include/macros.h
@@ -786,6 +807,7 @@ xdlgitem.o: $(GMXHOME)/src/include/types/drblock.h
 xdlgitem.o: $(GMXHOME)/src/include/types/parm.h
 xdlgitem.o: $(GMXHOME)/src/include/types/matrix.h
 xdlgitem.o: $(GMXHOME)/src/include/types/edsams.h
+xdlgitem.o: $(GMXHOME)/src/include/types/pulls.h
 xdlgitem.o: $(GMXHOME)/src/include/assert.h
 xdlgitem.o: $(GMXHOME)/src/include/smalloc.h
 xdlgitem.o: $(GMXHOME)/src/include/macros.h
@@ -818,6 +840,7 @@ xmb.o: $(GMXHOME)/src/include/types/drblock.h
 xmb.o: $(GMXHOME)/src/include/types/parm.h
 xmb.o: $(GMXHOME)/src/include/types/matrix.h
 xmb.o: $(GMXHOME)/src/include/types/edsams.h
+xmb.o: $(GMXHOME)/src/include/types/pulls.h
 xmb.o: $(GMXHOME)/src/include/macros.h
 xmb.o: $(GMXHOME)/src/include/writeps.h
 xrama.o: $(GMXHOME)/src/include/copyrite.h
@@ -850,6 +873,7 @@ xrama.o: $(GMXHOME)/src/include/types/drblock.h
 xrama.o: $(GMXHOME)/src/include/types/parm.h
 xrama.o: $(GMXHOME)/src/include/types/matrix.h
 xrama.o: $(GMXHOME)/src/include/types/edsams.h
+xrama.o: $(GMXHOME)/src/include/types/pulls.h
 xrama.o: $(GMXHOME)/src/include/writeps.h
 xrama.o: $(GMXHOME)/src/include/futil.h
 xrama.o: $(GMXHOME)/src/include/smalloc.h
@@ -889,6 +913,7 @@ xstat.o: $(GMXHOME)/src/include/types/drblock.h
 xstat.o: $(GMXHOME)/src/include/types/parm.h
 xstat.o: $(GMXHOME)/src/include/types/matrix.h
 xstat.o: $(GMXHOME)/src/include/types/edsams.h
+xstat.o: $(GMXHOME)/src/include/types/pulls.h
 xstat.o: $(GMXHOME)/src/include/string2.h
 xstat.o: $(GMXHOME)/src/include/macros.h
 xstat.o: $(GMXHOME)/src/include/writeps.h
@@ -923,4 +948,5 @@ xutil.o: $(GMXHOME)/src/include/types/drblock.h
 xutil.o: $(GMXHOME)/src/include/types/parm.h
 xutil.o: $(GMXHOME)/src/include/types/matrix.h
 xutil.o: $(GMXHOME)/src/include/types/edsams.h
+xutil.o: $(GMXHOME)/src/include/types/pulls.h
 xutil.o: $(GMXHOME)/src/include/writeps.h

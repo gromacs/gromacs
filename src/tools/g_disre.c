@@ -37,7 +37,6 @@ static char *SRCID_g_disre_c = "$Id$";
 #include "xvgr.h"
 #include "smalloc.h"
 #include "nrnb.h"
-#include "bondf.h"
 #include "disre.h"
 #include "statutil.h"
 #include "force.h"
@@ -138,10 +137,9 @@ void check_viol(FILE *log,
   for(i=0; (i<bonds->nr); ) {
     type=forceatoms[i++];
     ftype=functype[type];
-    viol=interaction_function[ftype].ifunc(log,bonds->nr,&forceatoms[i],
+    viol=interaction_function[ftype].ifunc(bonds->nr,&forceatoms[i],
 					   &forceparams[type],
-					   x,f,fr,g,box,lam,&dvdl,
-					   NULL,0,NULL,NULL);
+					   x,f,fr,g,box,lam,&dvdl);
     if (viol > 0) {
       nviol++;
       add5(forceparams[type].disres.index,viol);

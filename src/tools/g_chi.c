@@ -30,7 +30,6 @@ static char *SRCID_g_chi_c = "$Id$";
 
 #include <stdio.h>
 #include <math.h>
-#include "bondf.h"
 #include "confio.h"
 #include "pdbio.h"
 #include "copyrite.h"

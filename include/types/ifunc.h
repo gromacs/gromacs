@@ -29,10 +29,9 @@
 #ifndef _ifunc_h
 #define _ifunc_h
 
-typedef real t_ifunc(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
+typedef real t_ifunc(int nbonds,t_iatom iatoms[],t_iparams *iparams,
                      rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-		     matrix box,real lambd,real *dvdlambda,
-		     t_mdatoms *md,int ngrp,real egnb[],real egcoul[]);
+		     matrix box,real lambd,real *dvdlambda);
 /*
  * The function type t_ifunc() calculates one interaction, using iatoms[] 
  * and iparams. Within the function the number of atoms to be used is 

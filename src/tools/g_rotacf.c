@@ -39,7 +39,6 @@ static char *SRCID_g_rotacf_c = "$Id$";
 #include "copyrite.h"
 #include "rdgroup.h"
 #include "macros.h"
-#include "bondf.h"
 #include "fatal.h"
 #include "xvgr.h"
 #include "gstat.h"

@@ -36,7 +36,6 @@ static char *SRCID_convparm_c = "$Id$";
 #include "smalloc.h"
 #include "typedefs.h"
 #include "fatal.h"
-#include "bondf.h"
 #include "topio.h"
 #include "toputil.h"
 #include "convparm.h"

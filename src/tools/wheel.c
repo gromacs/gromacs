@@ -41,7 +41,6 @@ static char *SRCID_wheel_c = "$Id$";
 #include "copyrite.h"
 #include "futil.h"
 #include "strdb.h"
-#include "bondf.h"
 #include "statutil.h"
 #include "pbc.h"
 #include "rdgroup.h"
