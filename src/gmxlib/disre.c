@@ -84,7 +84,7 @@ t_drblock *get_drblock(void)
   return &drblock;
 }
 
-real ta_disres(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
+real ta_disres(int nfa,t_iatom forceatoms[],t_iparams ip[],
 	       rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
 	       matrix box,real lambda,real *dvdlambda,
 	       t_mdatoms *md,int ngrp,real egnb[],real egcoul[])

@@ -48,7 +48,7 @@ void init_disres(FILE *log,int nbonds,t_inputrec *ir);
  * of iatoms in the ilist of the idef struct
  */
 
-extern real ta_disres(FILE *log,int nbonds,t_iatom fa[],t_iparams *fp,
+extern real ta_disres(int nbonds,t_iatom fa[],t_iparams *fp,
 		      rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
 		      matrix box,real lambda,real *dvdlambda,
 		      t_mdatoms *md,int ngrp,real egnb[],real egcoul[]);
