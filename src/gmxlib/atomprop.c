@@ -43,26 +43,22 @@
 #include "copyrite.h"
 
 typedef struct {
-  bool bAvail;
-  real val;
-} t_prop;
-
-typedef struct {
-  char   *atomnm;
-  char   *resnm;
-  t_prop p[epropNR];
+  int    nprop,maxprop;
+  char   *db;
+  double def;
+  char   **atomnm;
+  char   **resnm;
+  bool   *bAvail;
+  real   *value;
 } t_props;
 
 typedef struct {
-  int        nprop,maxprop;
-  char       *db[epropNR];
-  double     def[epropNR];
-  t_props    *props;
+  t_props    props[epropNR];
   t_aa_names *aan;
 } t_atomprop;
 
 /* NOTFOUND should be smallest, others larger in increasing priority */
-enum { NOTFOUND=-3, WILDCARD, PROTEIN };
+enum { NOTFOUND=-4, WILDCARD, WILDPROT, PROTEIN };
 
 /* return number of matching characters, 
    or NOTFOUND if not at least all characters in char *database match */
@@ -79,74 +75,91 @@ static int dbcmp_len(char *search, char *database)
   return i;
 }
 
-static int get_prop_index(t_atomprop *ap,char *resnm,char *atomnm)
+static int get_prop_index(t_props *ap,t_aa_names *aan,
+			  char *resnm,char *atomnm,
+			  bool *bExact)
 {
   int  i,j=NOTFOUND,alen,rlen,malen,mrlen;
+  bool bProtein,bProtWild;
   
+  bProtein  = is_protein(aan,resnm);
+  bProtWild = (strcmp(resnm,"AAA")==0);
   malen = NOTFOUND;
   mrlen = NOTFOUND;
   for(i=0; (i<ap->nprop); i++) {
-    if ( (strcmp(ap->props[i].resnm,"*")==0) ||
-	 (strcmp(ap->props[i].resnm,"???")==0) )
+    if ( (strcmp(ap->resnm[i],"*")==0) ||
+	 (strcmp(ap->resnm[i],"???")==0) )
       rlen=WILDCARD;
-    else if ( is_protein(ap->aan,resnm) && 
-	      (strcmp(ap->props[i].resnm,"AAA")==0) )
-      rlen=PROTEIN;
+    else if (strcmp(ap->resnm[i],"AAA")==0)
+      rlen=WILDPROT;
     else {
-      rlen = dbcmp_len(resnm, ap->props[i].resnm);
+      rlen = dbcmp_len(resnm, ap->resnm[i]);
     }
-    alen = dbcmp_len(atomnm, ap->props[i].atomnm);
-    if ( (alen>=malen) && (rlen>=mrlen) ) {
-      malen = alen;
-      mrlen = rlen;
-      j     = i;
+    alen = dbcmp_len(atomnm, ap->atomnm[i]);
+    if ( (alen > NOTFOUND) && (rlen > NOTFOUND)) {
+      if ( (alen>=malen) && (rlen>=mrlen) ) {
+	malen = alen;
+	mrlen = rlen;
+	j     = i;
+      }
     }
   }
   
+  *bExact = ((malen == strlen(atomnm)) &&
+	     ((mrlen == strlen(resnm)) || 
+	      ((mrlen == WILDPROT) && bProtWild) ||
+	      ((mrlen == WILDCARD) && !bProtein && !bProtWild)));
+  
   if (debug)
     fprintf(debug,"search: %4s %4s match: %4s %4s\n",
-	    resnm,atomnm, ap->props[j].resnm, ap->props[j].atomnm);
+	    resnm,atomnm, ap->resnm[j],ap->atomnm[j]);
   
   return j;
 }
 
-static void add_prop(t_atomprop *ap,int eprop,char *resnm,char *atomnm,
+static void add_prop(t_props *ap,t_aa_names *aan,
+		     char *resnm,char *atomnm,
 		     real p,int line) 
 {
-  int i,j;
+  int  i,j;
+  bool bExact;
   
-  j = get_prop_index(ap,resnm,atomnm);
+  j = get_prop_index(ap,aan,resnm,atomnm,&bExact);
   
-  if (j < 0) {
+  if (!bExact) {
     if (ap->nprop >= ap->maxprop) {
-      ap->maxprop+=10;
-      srenew(ap->props,ap->maxprop);
+      ap->maxprop += 10;
+      srenew(ap->resnm,ap->maxprop);
+      srenew(ap->atomnm,ap->maxprop);
+      srenew(ap->value,ap->maxprop);
+      srenew(ap->bAvail,ap->maxprop);
       for(i=ap->nprop; (i<ap->maxprop); i++) {
-	ap->props[i].atomnm = NULL;
-	ap->props[i].resnm  = NULL;
-	memset(ap->props[i].p,0,epropNR*sizeof(ap->props[i].p[0]));
+	ap->atomnm[i] = NULL;
+	ap->resnm[i]  = NULL;
+	ap->value[i]  = 0;
+	ap->bAvail[i] = FALSE;
       }
     }
     
-    ap->props[ap->nprop].atomnm = strdup(atomnm);
-    ap->props[ap->nprop].resnm  = strdup(resnm);
+    ap->atomnm[ap->nprop] = strdup(atomnm);
+    ap->resnm[ap->nprop]  = strdup(resnm);
     j = ap->nprop;
     ap->nprop++;
   }
-  if (ap->props[j].p[eprop].bAvail) {
-    if (ap->props[j].p[eprop].val == p)
+  if (ap->bAvail[j]) {
+    if (ap->value[j] == p)
       fprintf(stderr,"Warning double identical entries for %s %s %g on line %d in file %s\n",
-	      resnm,atomnm,p,line,ap->db[eprop]);
+	      resnm,atomnm,p,line,ap->db);
     else {
       fprintf(stderr,"Warning double different entries %s %s %g and %g on line %d in file %s\n"
 	      "Using last entry (%g)\n",
-	      resnm,atomnm,p,ap->props[j].p[eprop].val,line,ap->db[eprop],p);
-      ap->props[j].p[eprop].val    = p;
+	      resnm,atomnm,p,ap->value[j],line,ap->db,p);
+      ap->value[j] = p;
     }
   }
   else {
-    ap->props[j].p[eprop].bAvail = TRUE;
-    ap->props[j].p[eprop].val    = p;
+    ap->bAvail[j] = TRUE;
+    ap->value[j]  = p;
   }
 }
 
@@ -157,16 +170,17 @@ static void read_props(t_atomprop *ap,int eprop,double factor)
   double pp;
   int    line_no;
   
-  fp      = libopen(ap->db[eprop]);
+  fp      = libopen(ap->props[eprop].db);
   line_no = 0;
   while(get_a_line(fp,line,STRLEN)) {
+    line_no++;
     if (sscanf(line,"%s %s %lf",resnm,atomnm,&pp) == 3) {
       pp *= factor;
-      add_prop(ap,eprop,resnm,atomnm,pp,line_no);
+      add_prop(&(ap->props[eprop]),ap->aan,resnm,atomnm,pp,line_no);
     }
     else 
       fprintf(stderr,"WARNING: Error in file %s at line %d ignored\n",
-	      ap->db[eprop],line_no);
+	      ap->props[eprop].db,line_no);
   }
   fclose(fp);
 }
@@ -190,11 +204,15 @@ void *get_atomprop(void)
 
   ap->aan = get_aa_names();
   for(i=0; (i<epropNR); i++) {
-    ap->db[i] = strdup(fns[i]);
-    ap->def[i] = def[i];
+    ap->props[i].db  = strdup(fns[i]);
+    ap->props[i].def = def[i];
     read_props(ap,i,fac[i]);
   }
-    
+  printf("#Entries in");
+  for(i=0; (i<epropNR); i++) 
+    printf(" %s: %d",ap->props[i].db,ap->props[i].nprop);
+  printf("\n");
+  
   return (void *)ap;
 }
 
@@ -209,6 +227,7 @@ bool query_atomprop(void *atomprop,int eprop,char *resnm,char *atomnm,
   t_atomprop *ap = (t_atomprop *) atomprop;
   int  i,j;
   char *atomname;
+  bool bExact;
   
   if (isdigit(atomnm[0])) {
     /* put digit after atomname */
@@ -221,14 +240,14 @@ bool query_atomprop(void *atomprop,int eprop,char *resnm,char *atomnm,
   else 
     atomname = atomnm;
 
-  j = get_prop_index(ap,resnm,atomname);
-    
-  if ((j >= 0)  && (ap->props[j].p[eprop].bAvail)) {
-    *value = ap->props[j].p[eprop].val;
+  j = get_prop_index(&(ap->props[eprop]),ap->aan,resnm,atomname,&bExact);
+  
+  if (j >= 0) {
+    *value = ap->props[eprop].value[j];
     return TRUE;
   }
   else {
-    *value = ap->def[eprop];
+    *value = ap->props[eprop].def;
     return FALSE;
   }
 }
