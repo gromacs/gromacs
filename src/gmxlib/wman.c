@@ -295,6 +295,14 @@ static void write_nroffman(FILE *out,
       fprintf(out,".BI \"%s\" \" %s \"\n",fnm[i].opt,
 	      fnm[i].fn);
   }
+  if (npargs > 0) {
+    for(i=0; (i<npargs); i++)
+      if (pa[i].type == etBOOL)
+	fprintf(out,".BI \"-[no]%s\" \"\"\n",pa[i].option+1);
+      else
+	fprintf(out,".BI \"%s\" \" %s \"\n",pa[i].option,
+		argtp[pa[i].type]);
+  }
   
   /* description */
   if (nldesc > 0) {
@@ -313,12 +321,17 @@ static void write_nroffman(FILE *out,
   }
   
   /* other options */
-  fprintf(out,".SH OPTIONS\n");
+  fprintf(out,".SH OTHER OPTIONS\n");
   if ( npargs > 0 ) {
     for(i=0; (i<npargs); i++) {
-      fprintf(out,".BI %s & %s & %s &%s\\\\\n",
-	      check_nroff(pa[i].option),argtp[pa[i].type],
-	      pa_val(&(pa[i])),check_nroff(pa[i].desc));
+      if (pa[i].type == etBOOL)
+	fprintf(out,".BI \"-[no]%s\"  \"%s\"\n %s\n\n",
+		check_nroff(pa[i].option+1),
+		pa_val(&(pa[i])),check_nroff(pa[i].desc));
+      else
+	fprintf(out,".BI \"%s\"  \" %s\" \"%s\" \n %s\n\n",
+		check_nroff(pa[i].option),argtp[pa[i].type],
+		pa_val(&(pa[i])),check_nroff(pa[i].desc));
     }
   }
 
