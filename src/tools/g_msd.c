@@ -50,7 +50,7 @@ static char *SRCID_g_msd_cc = "$Id$";
    coefficient in X,Y,Z direction. LATERAL is diffusion coefficient in
    plane perpendicular to axis
 */
-enum { NORMAL, X, Y, Z, LATERAL };
+enum { NOT_USED, NORMAL, X, Y, Z, LATERAL };
 
 typedef struct {
   real    t0,delta_t,dim_factor;
@@ -70,7 +70,7 @@ typedef void t_prep_data_func(t_corr *this,int gnx,atom_id index[],
 static real thistime(t_corr *this) 
 {
   return this->time[this->nframes]; 
-};
+}
 
 static bool in_data(t_corr *this,int nx00) 
 { 
@@ -573,11 +573,11 @@ int main(int argc,char *argv[])
   static char *desc[] = {
     "g_msd computes the mean square displacement of atoms from",
     "their initial positions. This provides an easy way to compute",
-    "the diffusion constant using the Einstein relation.[PAR]",
+    "the diffusion constant using the Einstein relation."
   };
-  static char *normtype[]= { "no","x","y","z",NULL };
-  static char *axtitle[] = { "no","x","y","z",NULL };
-  static char *msdtype[] = { "normal", "mass_weighted", "molecular", NULL };
+  static char *normtype[]= { NULL,"no","x","y","z",NULL };
+  static char *axtitle[] = { NULL,"no","x","y","z",NULL };
+  static char *msdtype[] = { NULL,"normal","mass_weighted","molecular",NULL };
   static int  ngroup     = 1;
   static bool bMW        = TRUE;
   t_pargs pa[] = {
