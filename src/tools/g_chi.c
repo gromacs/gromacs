@@ -866,12 +866,14 @@ int main(int argc,char *argv[])
   read_ang_dih(opt2fn("-f",NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
 	       FALSE,TRUE,FALSE,1,&idum,
 	       &nf,&time,isize,index,&trans_frac,&aver_angle,dih);
-  
-  if (nf < 2)
-    fatal_error(0,"No frames in trajectory %s",opt2fn("-f",NFILE,fnm));
+
+  if (bCorr) {
+    if (nf < 2)
+      fatal_error(0,"Need at least 2 frames for correlation");
     
-  dt=(time[nf-1]-time[0])/(nf-1);
-  
+    dt=(time[nf-1]-time[0])/(nf-1);
+  }
+
   /* put angles in -M_PI to M_PI ! and correct phase factor for phi and psi */
   reset_em_all(nlist,dlist,nf,dih,maxchi,bPhi,bPsi,bChi);
   
