@@ -70,13 +70,11 @@ extern time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		    t_forcerec *fr,rvec box_size);
 
 /* ROUTINES from steep.c */
-extern real f_norm(FILE *log,
-		   int left,int right,int nprocs,
+extern real f_norm(int left,int right,int nprocs,
 		   int start,int end,rvec grad[]);
 /* Calculates norm of force */
 
-extern real f_max(FILE *log,
-		  int left,int right,int nprocs,
+extern real f_max(int left,int right,int nprocs,
 		  int start,int end,rvec grad[]);
 /* Calculates max force */
 

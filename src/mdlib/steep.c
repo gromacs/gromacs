@@ -28,8 +28,6 @@
  */
 static char *SRCID_steep_c = "$Id$";
 
-#define FORCE_CRIT
-
 #include <string.h>
 #include <time.h>
 #include <math.h>
@@ -60,27 +58,7 @@ static char *SRCID_steep_c = "$Id$";
 #include "dummies.h"
 #include "constr.h"
 
-#ifdef FORCE_CRIT
-static void sp_header(FILE *out,real epot,real fsqrt,real stepsize,real ftol)
-{
-  fprintf(out,"STEEPEST DESCENTS:\n");
-  fprintf(out,"   Stepsize          = %12.5e\n",stepsize);
-  fprintf(out,"   Tolerance         = %12.5e\n",ftol);
-  fprintf(out,"   Starting rmsF     = %30.20e\n",fsqrt);
-  fprintf(out,"   Starting Energy   = %30.20e\n",epot);
-}
-#else
-static void sp_header(FILE *out,real epot,real stepsize,real ftol)
-{
-  fprintf(out,"STEEPEST DESCENTS:\n");
-  fprintf(out,"   Stepsize          = %12.5e\n",stepsize);
-  fprintf(out,"   Tolerance         = %12.5e\n",ftol);
-  fprintf(out,"   Starting Energy   = %30.20e\n",epot);
-}
-#endif
-
-real f_max(FILE *log,
-	   int left,int right,int nprocs,
+real f_max(int left,int right,int nprocs,
 	   int start,int end,rvec grad[])
 {
   real fmax,fmax_0,fam;
@@ -110,9 +88,8 @@ real f_max(FILE *log,
   return fmax;
 }
 
-real f_norm(FILE *log,
-	   int left,int right,int nprocs,
-	   int start,int end,rvec grad[])
+real f_norm(int left,int right,int nprocs,
+	    int start,int end,rvec grad[])
 {
   real fnorm;
   int  i,m;
@@ -133,34 +110,6 @@ real f_norm(FILE *log,
   
   fatal_error(0,"This version of Steepest Descents cannot be run in parallel"); 
   return fnorm; 
-} 
-
-real f_sqrt(FILE *log, 
- 	    int left,int right,int nprocs, 
- 	    int start,int end,rvec f[]) 
-{ 
-  int i,m; 
-  real fsqr; 
-  
-  
-  /* this routine calculates the route mean square force  */
-  
-  fsqr=0; 
-  
-  /* calculate the sum of the square force of this processor  */
-  for(i=start;(i<end);i++) 
-    for(m=0;(m<DIM);m++)  
-      fsqr += sqr(f[i][m]); 
-  
-  
-  if (nprocs == 1) 
-    return sqrt(fsqr)/(end - start); 
-  
-  
-  fatal_error(0,"This version of f_sqrt cannot run in parrallel"); 
- 
-
-  return ( sqrt(fsqr) );
 } 
 
 static void do_step(int start,int end,rvec x[],rvec f[], 
@@ -199,9 +148,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   real   stepsize,constepsize,lambda,ftol,fmax; 
   rvec   *pos[2],*force[2],*xcf; 
   rvec   *xx,*ff; 
-#ifdef FORCE_CRIT 
-  real   Fsqrt[2]; 
-#endif 
+  real   Fmax[2]; 
   real   Epot[2]; 
   real   vcm[4],fnorm,ustep,dvdlambda; 
   int        fp_ene; 
@@ -292,11 +239,10 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   if (MASTER(cr)) { 
     /* Print to the screen  */
     start_t=print_date_and_time(log,cr->pid,"Started EM"); 
-    fprintf(stderr,"STEEPEST DESCENTS:\n");
-    fprintf(log,"STEEPEST DESCENTS:\n");
-    fprintf(stderr,"   Tolerance         = %12.5g\n",ftol); 
-    fprintf(log,"   Tolerance         = %12.5g\n",ftol); 
-    } 
+    sprintf(sbuf,"%s\n   Tolerance         = %12.5g\n",SD,ftol); 
+    fprintf(stderr,sbuf);
+    fprintf(log,sbuf);
+  } 
     
   /**** HERE STARTS THE LOOP ****
    * count is the counter for the number of steps 
@@ -346,8 +292,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     sum_epot(&(ir->opts),grps,ener); 
 
     if (bConstrain) {
-      fnorm=f_norm(log,cr->left,cr->right,nsb->nprocs,start,end,force[TRY]);
-      constepsize=ustep/fnorm;
+      fmax=f_max(cr->left,cr->right,nsb->nprocs,start,end,force[TRY]);
+      constepsize=ustep/fmax;
       for(i=start; (i<end); i++)  
 	for(m=0;(m<DIM);m++) 
 	  xcf[i][m] = pos[TRY][i][m] + constepsize*force[TRY][i][m];
@@ -371,20 +317,13 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
  		  &(ir->opts),grps,&mynrnb,nrnb,vcm,mu_tot,&terminate); 
     
     /* This is the new energy  */
-#ifdef FORCE_CRIT 
-    Fsqrt[TRY]=f_sqrt(log,cr->left,cr->right,nsb->nprocs,start,end,force[TRY]);
-#endif 
-    Epot[TRY]=ener[F_EPOT]; 
+    Fmax[TRY]=f_max(cr->left,cr->right,nsb->nprocs,start,end,force[TRY]);
+    Epot[TRY]=ener[F_EPOT];
     
     /* Print it if necessary  */
     if (bVerbose && MASTER(cr)) { 
-#ifdef FORCE_CRIT 
-      fprintf(stderr,"Step = %5d, Dx = %12.5e, Epot = %12.5e rmsF = %12.5e%c",
-	      count,stepsize,Epot[TRY],Fsqrt[TRY],(Epot[TRY]<Epot[Min])?'\n':'\r');
-#else 
-      fprintf(stderr,"Step = %5d, Dx = %12.5e, E-Pot = %30.20e%c", 
- 	      count,stepsize,Epot[TRY],(Epot[TRY]<Epot[Min])?'\n':'\r' ); 
-#endif 
+      fprintf(stderr,"Step = %5d, Dmax = %7.2e nm, Epot = %12.5e Fmax = %11.5e%c",
+	      count,ustep,Epot[TRY],Fmax[TRY],(Epot[TRY]<Epot[Min])?'\n':'\r');
       if (Epot[TRY] < Epot[Min]) {
 	/* Store the new (lower) energies  */
 	upd_mdebin(mdebin,mdatoms->tmass,count,ener,parm->box,shake_vir, 
@@ -416,14 +355,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	xx=NULL; 
       
       /* Test whether the convergence criterion is met...  */
-#ifdef FORCE_CRIT 
-      bDone=(Fsqrt[TRY] < ftol);
-#else 
-      /* Stop when the difference between two tries is less than 
-       * the tolerance times the energy. 
-       */
-      bDone=(fabs(Epot[Min]-Epot[TRY]) < ftol*fabs(Epot[Min])); 
-#endif 
+      bDone=(Fmax[TRY] < ftol);
       
       /* Copy the arrays for force, positions and energy  */
       /* The 'Min' array always holds the coords and forces of the minimal 
@@ -439,18 +371,20 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       ustep *= 0.5;
     
     /* Determine new step  */
-    fnorm = f_norm(log,cr->left,cr->right,nsb->nprocs,start,end,force[Min]);
-    stepsize=ustep/fnorm;
+    fmax = f_max(cr->left,cr->right,nsb->nprocs,start,end,force[Min]);
+    stepsize=ustep/fmax;
     
-    /* Check if stepsize is too small
-     * NOTE: this involves machine precision and some compilers might not 
-     * recognize that the expression could return TRUE for small stepsize */
-    if (ustep/ir->em_stepsize < 1e-6) {
-      fprintf(stderr,
-	      "The stepsize is now so small that we may assume a local"
-	      " minimum is reached.\n"
-	      "Stepsize: %g (mol kJ^-1), ustep: %g (nm), fnorm: %g"
-	      " (kJ mol-1 nm-1)\n",ustep,fnorm,stepsize);
+    /* Check if stepsize is too small, with 1 nm as a characteristic length */
+#ifdef DOUBLE
+    if (ustep < 1e-12) {
+#else
+    if (ustep < 1e-6) {
+#endif
+      sprintf(sbuf,"\nStepsize too small "
+	      "Converged to machine precision,\n"
+	      "but not to the requested precision (%g)\n",ftol);
+      fprintf(stderr,sbuf);
+      fprintf(log,sbuf);
       bAbort=TRUE;
     }
     
@@ -468,22 +402,21 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		   *top->name, &(top->atoms),xx,NULL,parm->box);
     
-    fmax=f_max(log,cr->left,cr->right,nsb->nprocs,start,end,force[Min]); 
+    fmax=f_max(cr->left,cr->right,nsb->nprocs,start,end,force[Min]); 
     fprintf(stderr,"Maximum force: %12.5e\n",fmax); 
     if (bDone) { 
-      fprintf(stderr,"\n%s converged to %8.6f \n",SD,ftol); 
-      fprintf(log,"%s converged to %8.6f \n",SD,ftol); 
+      sprintf(sbuf,"\n%s converged to %8.6f \n",SD,ftol); 
+      fprintf(stderr,sbuf);
+      fprintf(log,sbuf);
     } 
     else { 
-      fprintf(stderr,"\n%s did not converge in %d steps\n",SD,nsteps); 
-      fprintf(log,"%s did not converge in %d steps\n",SD,nsteps); 
+      sprintf(sbuf,"\n%s did not converge in %d steps\n",SD,nsteps); 
+      fprintf(stderr,sbuf);
+      fprintf(log,sbuf);
     } 
-#ifdef FORCE_CRIT 
-    fprintf(stderr,"  Minimum Root Mean Square Force  = %12.4e\n",Fsqrt[Min]); 
-    fprintf(log,"  Minimum Root Mean Square Force = %12.4e\n",Fsqrt[Min]); 
-#endif
-    fprintf(stderr,"  Function value at minimum = %12.4e\n",Epot[Min]); 
-    fprintf(log,"  Function value at minimum = %12.4e\n",Epot[Min]); 
+    sprintf(sbuf,"  Maximum Force  = %12.4e\n",Fmax[Min]); 
+    fprintf(stderr,sbuf);
+    fprintf(log,sbuf);
   }
   if (MASTER(cr))
     close_enx(fp_ene);

@@ -195,7 +195,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   /* normalising step size, this saves a few hundred steps in the
    * beginning of the run.
    */
-  fnorm=f_norm(log,cr->left,cr->right,nsb->nprocs,start,end,f);
+  fnorm=f_norm(cr->left,cr->right,nsb->nprocs,start,end,f);
   fnorm_old=fnorm;
   
   /* Print stepsize */
@@ -219,7 +219,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	gpa     = gpa - p[i][m]*f[i][m];
       }
     }
-    pnorm=f_norm(log,cr->left,cr->right,nsb->nprocs,start,end,p);
+    pnorm=f_norm(cr->left,cr->right,nsb->nprocs,start,end,p);
 
     a    = 0.0;
     b    = step0/pnorm;
@@ -329,7 +329,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(parm->ir.opts),grps,ener); 
-    fnorm = f_norm(log,cr->left,cr->right,nsb->nprocs,start,end,f);
+    fnorm = f_norm(cr->left,cr->right,nsb->nprocs,start,end,f);
     
     /* Clear stuff again */
     clear_mat(force_vir);
@@ -355,7 +355,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     fnorm_old=fnorm;
 
     /* Test whether the convergence criterion is met */
-    fmax=f_max(log,cr->left,cr->right,nsb->nprocs,start,end,f);     
+    fmax=f_max(cr->left,cr->right,nsb->nprocs,start,end,f);     
 
     /* Print it if necessary */
     if (bVerbose && MASTER(cr)) {
@@ -387,7 +387,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	       lambda,nrnb,nsb->natoms,xx,NULL,ff,parm->box);
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		   *top->name, &(top->atoms),xx,NULL,parm->box);
-    fmax=f_max(log,cr->left,cr->right,nsb->nprocs,start,end,f);
+    fmax=f_max(cr->left,cr->right,nsb->nprocs,start,end,f);
     fprintf(stderr,"Maximum force: %12.5e\n",fmax);
     if (bDone) {
       fprintf(stderr,"\n%s converged to %8.6f in %d steps\n",CG,ftol,count-1);
