@@ -314,7 +314,43 @@ bool khole_decay(FILE *log,t_cross_atom *ca,rvec v,int *seed,real dt,int atom)
     return FALSE;
 }
 
-void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
+real electron_cross_section(FILE *fp,rvec v,real mass,int nelec)
+{
+  /* Compute cross section for electrons */
+  real T,B,U,S,Q,t,u,lnt,sigma;
+  real a0 = 0.05292; /* nm */
+  
+  /* Have to determine T (kinetic energy of electron) */
+  T = 0.5*mass*iprod(v,v);
+  
+  /* R is the binding energy of the electron in hydrogen */
+  R = 13.61*ELECTRONVOLT;
+  
+  /* Have to determine the binding energy B, differs per orbital of course */
+  B = R;
+  
+  /* Have to determine the orbital kinetic energy U */
+  U = R;
+  
+  /* Have to know number of electrons */
+  N = nelec;
+  
+  /* Magic constant Q */
+  Q = 1;
+  
+  /* Some help variables */
+  t     = T/B;
+  u     = U/B;
+  S     = 4*M_PI*sqr(a0)*N*sqr(R/B);
+  lnt   = log(t);
+  
+  /* Resulting variable */
+  sigma = (S/(t+u+1))*( 0.5*Q*lnt*(1-1/sqr(t)) + (2-Q)*(1-1/t-lnt/(t+1)) ); 
+  
+  return sigma;
+}
+
+void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	    rvec x[],rvec v[],int start,int end,matrix box,t_commrec *cr)
 {
   static FILE  *xvg,*ion;
@@ -368,7 +404,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     if (PAR(cr)) {
       for(i=0; (i<cr->pid); i++)
 	seed = INT_MAX*rando(&seed);
-      fprintf(log,PREFIX"Modifying seed on parallel processor to %d\n",
+      fprintf(fp,PREFIX"Modifying seed on parallel processor to %d\n",
 	      seed);
     }
           
@@ -378,7 +414,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
       fatal_error(0,PREFIX"Energy level of %d keV not supported",ephot);
     
     /* Initiate cross section data etc. */
-    ca      = mk_cross_atom(log,md,atomname,Eindex);
+    ca      = mk_cross_atom(fp,md,atomname,Eindex);
     
     dq_tot  = 0;
     nkd_tot = 0;
@@ -400,23 +436,23 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     xvgr_legend(xvg,asize(leg),leg);
     ion   = ffopen("ionize.log","w");
     
-    fprintf(log,PREFIX"Parameters for ionization events:\n");
-    fprintf(log,PREFIX"Imax = %g, t0 = %g, width = %g, seed = %d\n"
+    fprintf(fp,PREFIX"Parameters for ionization events:\n");
+    fprintf(fp,PREFIX"Imax = %g, t0 = %g, width = %g, seed = %d\n"
 	    PREFIX"# Photons = %g, rho = %g, ephot = %d (keV), Impulse = %s\n",
 	    imax,t0,width,seed,nphot,rho,ephot,yesno_names[bImpulse]);
-    fprintf(log,PREFIX"Electron_mass: %10.3e(keV) Atomic_mass: %10.3e(keV)\n"
+    fprintf(fp,PREFIX"Electron_mass: %10.3e(keV) Atomic_mass: %10.3e(keV)\n"
 	    PREFIX"Speed_of_light: %10.3e(nm/ps)\n",
 	    ELECTRONMASS_keV,ATOMICMASS_keV,SPEED_OF_LIGHT);
-    fprintf(log,PREFIX"Interval between shots: %g ps\n",interval);
-    fprintf(log,PREFIX"Eindex = %d\n",Eindex);
-    fprintf(log,PREFIX"Total charge on system: %g e. Total mass: %g u\n",
+    fprintf(fp,PREFIX"Interval between shots: %g ps\n",interval);
+    fprintf(fp,PREFIX"Eindex = %d\n",Eindex);
+    fprintf(fp,PREFIX"Total charge on system: %g e. Total mass: %g u\n",
 	    ztot,mtot);
-    fprintf(log,PREFIX"Estimated system radius to be %g nm\n",protein_radius);
-    fprintf(log,PREFIX
+    fprintf(fp,PREFIX"Estimated system radius to be %g nm\n",protein_radius);
+    fprintf(fp,PREFIX
 	    "Adding extra kinetic energy because of leaving electrons: %s\n",
 	    bool_names[bExtraKinetic]);
-    fprintf(log,PREFIX"Doing ionizations for atoms %d - %d\n",start,end);
-    fflush(log);
+    fprintf(fp,PREFIX"Doing ionizations for atoms %d - %d\n",start,end);
+    fflush(fp);
     if (bExtraKinetic)
       fatal_error(0,"Extra kinetic energy is not implemented as it should...");
     bFirst = FALSE;
@@ -602,7 +638,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     /* Now check old event: Loop over k holes! */
     nkh = ca[i].k;
     for (kk = 0; (kk < nkh); kk++) 
-      if (khole_decay(log,&(ca[i]),v[i],&seed,ir->delta_t,i)) {
+      if (khole_decay(fp,&(ca[i]),v[i],&seed,ir->delta_t,i)) {
 	nkdecay ++;
 	ndecay[i]++;
       }
