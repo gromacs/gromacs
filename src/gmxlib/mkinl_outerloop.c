@@ -37,6 +37,10 @@
  * the innerloops during the build process, so it will never be
  * executed by multiple threads.
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 
 #include <string.h>
 #include "mkinl.h"
