@@ -37,6 +37,7 @@ static char *SRCID_anadih_c = "$Id$";
 #include "xvgr.h"
 #include "typedefs.h"
 #include "gstat.h"
+#include "lutab.h"
 
 static int calc_RBbin(real phi)
 {
