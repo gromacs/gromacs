@@ -77,6 +77,9 @@ int gmx_covar(int argc,char *argv[])
     "[PAR]",
     "The eigenvectors can be analyzed with [TT]g_anaeig[tt].",
     "[PAR]",
+    "Option [TT]-ascii[tt] writes the whole covariance matrix to",
+    "an ASCII file. The order of the elements is: x1x1, x1y1, x1z1, x1x2, ...",
+    "[PAR]",
     "Option [TT]-xpm[tt] writes the whole covariance matrix to an xpm file.",
     "[PAR]",
     "Option [TT]-xpma[tt] writes the atomic covariance matrix to an xpm file,",
@@ -109,7 +112,8 @@ int gmx_covar(int argc,char *argv[])
   int        natoms,nat,ndim,count,nframes0,nframes,nlevels;
   int        WriteXref;
   char       *fitfile,*trxfile,*ndxfile;
-  char       *eigvalfile,*eigvecfile,*averfile,*logfile,*xpmfile,*xpmafile;
+  char       *eigvalfile,*eigvecfile,*averfile,*logfile;
+  char       *asciifile,*xpmfile,*xpmafile;
   char       str[STRLEN],*fitname,*ananame;
   int        i,j,k,l,d,dj,nfit;
   atom_id    *index,*ifit;
@@ -125,6 +129,7 @@ int gmx_covar(int argc,char *argv[])
     { efTRN, "-v",  "eigenvec", ffWRITE },
     { efSTO, "-av", "average.pdb", ffWRITE },
     { efLOG, NULL,  "covar", ffWRITE },
+    { efDAT, "-ascii","covar", ffOPTWR },
     { efXPM, "-xpm","covar", ffOPTWR },
     { efXPM, "-xpma","covara", ffOPTWR }
   }; 
@@ -143,6 +148,7 @@ int gmx_covar(int argc,char *argv[])
   eigvecfile = ftp2fn(efTRN,NFILE,fnm);
   averfile   = ftp2fn(efSTO,NFILE,fnm);
   logfile    = ftp2fn(efLOG,NFILE,fnm);
+  asciifile  = opt2fn_null("-ascii",NFILE,fnm);
   xpmfile    = opt2fn_null("-xpm",NFILE,fnm);
   xpmafile   = opt2fn_null("-xpma",NFILE,fnm);
 
@@ -297,14 +303,14 @@ int gmx_covar(int argc,char *argv[])
   fprintf(stderr,"\nTrace of the covariance matrix: %g (%snm^2)\n",
 	  trace,bM ? "u " : "");
   
-  if (debug) {
-    fprintf(stderr,"Dumping the covariance matrix to covmat.dat\n"); 
-    out = ffopen("covmat.dat","w");
+  if (asciifile) {
+    out = ffopen(asciifile,"w");
     for (j=0; j<ndim; j++) {
-      for (i=0; i<ndim; i++)
-	fprintf(out," %g",mat[ndim*j+i]);
-      fprintf(out,"\n");
+      for (i=0; i<ndim; i+=3)
+	fprintf(out,"%g %g %g\n",
+		mat[ndim*j+i],mat[ndim*j+i+1],mat[ndim*j+i+2]);
     }
+    fclose(out);
   }
   
   if (xpmfile) {
