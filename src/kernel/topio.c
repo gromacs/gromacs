@@ -71,7 +71,37 @@ static char *SRCID_topio_c = "$Id$";
   printf("line: %d, maxavail: %d\n",__LINE__,maxavail()); \
   fflush(stdout)
 
-void gen_pairs(t_params *nbs,t_params *pairs,real fudge, bool bVerbose)
+static void free_nbparam(t_nbparam **param,int nr)
+{
+  int i;
+
+  for(i=0; i<nr; i++)
+    sfree(param[i]);
+  sfree(param);
+}
+
+static int copy_nbparams(t_nbparam **param,int ftype,t_params *plist,int nr)
+{
+  int i,j,f;
+  int nrfp,ncopy;
+
+  nrfp = NRFP(ftype);
+  
+  ncopy = 0;
+  for(i=0; i<nr; i++)
+    for(j=0; j<=i; j++)
+      if (param[i][j].bSet) {
+	for(f=0; f<nrfp; f++) {
+	  plist->param[nr*i+j].c[f] = param[i][j].c[f];
+	  plist->param[nr*j+i].c[f] = param[i][j].c[f];
+	}
+	ncopy++;
+      }
+  
+  return ncopy;
+}
+
+static void gen_pairs(t_params *nbs,t_params *pairs,real fudge, bool bVerbose)
 {
   int     i,j,ntp,nrfp,nrfpA,nrfpB,nnn;
 
@@ -243,13 +273,12 @@ static char **read_topol(char        *infile,
 {
   FILE       *in;
   int        i,nb_funct,comb;
-  bool       nb_flag = FALSE;
   char       *pline,**title=NULL;
   int        curline;
   char       curfile[STRLEN],line[STRLEN],errbuf[256],comb_str[256],nb_str[256];
   char       genpairs[32];
   char       *dirstr,*dummy2;
-  int        nrcopies,nmol,nblock=0,Nsim=0,nscan;
+  int        nrcopies,nmol,nblock=0,Nsim=0,nscan,ncombs,ncopy;
   double     fLJ,fQQ,fPOW;
   t_simsystem *Sims=NULL;
   t_topology *block=NULL;
@@ -258,10 +287,11 @@ static char **read_topol(char        *infile,
   t_molinfo  *mi0=NULL,*bi0;
   DirStack   *DS;
   directive  d,newd;
+  t_nbparam  **nbparam,**pair;
   t_block2   *block2;
   real       fudgeLJ=-1;    /* Multiplication factor to generate 1-4 from LJ */
   real       npow=12.0;     /* Default value for repulsion power */
-  bool       bReadDefaults,bGenPairs=FALSE;
+  bool       bReadDefaults,bReadMolType,bGenPairs;
   double     qt=0,qBt=0; /* total charge */
 
   /* open input and output file */
@@ -269,16 +299,20 @@ static char **read_topol(char        *infile,
     fatal_error(0,"Could not open %s",infile);
 
   /* some local variables */
-  DS_Init(&DS);			/* directive stack			*/
-  strcpy(curfile,infile);	/* filename    				*/
-  nmol     = 0;			/* no molecules yet...			*/
-  curline  = 0;              	/* line number 				*/
-  d        = d_invalid;         /* first thing should be a directive 	*/
-  block2   = NULL;		/* the extra exclusions			*/
+  DS_Init(&DS);			/* directive stack			 */
+  strcpy(curfile,infile);	/* filename    				 */
+  nmol     = 0;			/* no molecules yet...			 */
+  curline  = 0;              	/* line number 				 */
+  d        = d_invalid;         /* first thing should be a directive 	 */
+  nbparam  = NULL;              /* The temporary non-bonded matrix       */
+  pair     = NULL;              /* The temporary pair interaction matrix */
+  block2   = NULL;		/* the extra exclusions			 */
   nb_funct = F_LJ;
   
   /* parse the actual file */
   bReadDefaults = FALSE;
+  bGenPairs     = FALSE;
+  bReadMolType  = FALSE;
   while (fgets2(line,STRLEN-2,in) != NULL) {
     curline++;
     assert (pline = strdup(line));
@@ -350,7 +384,7 @@ static char **read_topol(char        *infile,
 	switch (d) {
 	case d_defaults:
 	  if (bReadDefaults)
-	    warning("Found another defaults entry, will use the last one");
+	    fatal_error(0,"Found a second defaults directive, file %s, line %d",curfile,curline);
 	  bReadDefaults = TRUE;
 	  nscan = sscanf(pline,"%s%s%s%lf%lf%lf",
 			 nb_str,comb_str,genpairs,&fLJ,&fQQ,&fPOW);
@@ -376,8 +410,8 @@ static char **read_topol(char        *infile,
 	  
 	  break;
 	case d_atomtypes:
-	  nb_flag = TRUE;      /* must generate nbparams   */
-	  push_at(symtab,atype,pline,nb_funct);
+	  push_at(symtab,atype,pline,nb_funct,
+		  &nbparam,bGenPairs ? &pair : NULL);
 	  break;
 
 #define PUSHBT(nral) push_bt(d,plist,nral,atype,pline)
@@ -388,15 +422,10 @@ static char **read_topol(char        *infile,
 	  PUSHBT(2);
 	  break;
 	case d_pairtypes:
-	  if (nb_flag) {
-	    generate_nbparams(comb,nb_funct,&(plist[nb_funct]),atype,npow);
-	    nb_flag=FALSE;
-	  }
-	  if (bGenPairs) {
-	    gen_pairs(&(plist[nb_funct]),&(plist[F_LJ14]),fudgeLJ,bVerbose);
-	    bGenPairs=FALSE;
-	  }
-	  PUSHBT(2);
+	  if (bGenPairs)
+	    push_nbt(d,pair,atype,pline,nb_funct);
+	  else
+	    PUSHBT(2);
 	  break;
 	case d_angletypes:
 	  PUSHBT(3);
@@ -407,11 +436,7 @@ static char **read_topol(char        *infile,
 #undef PUSHBT
 
 	case d_nonbond_params:
-	  if (nb_flag) {
-	    generate_nbparams(comb,nb_funct,&(plist[nb_funct]),atype,npow);
-	    nb_flag=FALSE;
-	  }
-	  push_nbt(d,plist,atype,pline,nb_funct);
+	  push_nbt(d,nbparam,atype,pline,nb_funct);
 	  break;
 	case d_blocktype:
 	  nblock++;
@@ -424,15 +449,24 @@ static char **read_topol(char        *infile,
 	  push_molt(symtab,bi0,pline);
 	  break;
 	case d_moleculetype: {
-	  if (nb_flag) {
+	  if (!bReadMolType) {
+	    ncombs = atype->nr*(atype->nr+1)/2;
 	    generate_nbparams(comb,nb_funct,&(plist[nb_funct]),atype,npow);
-	    nb_flag=FALSE;
+	    ncopy = copy_nbparams(nbparam,nb_funct,&(plist[nb_funct]),
+				  atype->nr);
+	    fprintf(stderr,"Generated %d of the %d non-bonded parameter combinations\n",ncombs-ncopy,ncombs);
+	    free_nbparam(nbparam,atype->nr);
+	    
+	    if (bGenPairs) {
+	      gen_pairs(&(plist[nb_funct]),&(plist[F_LJ14]),fudgeLJ,bVerbose);
+	      ncopy = copy_nbparams(pair,nb_funct,&(plist[F_LJ14]),
+				    atype->nr);
+	      fprintf(stderr,"Generated %d of the %d 1-4 parameter combinations\n",ncombs-ncopy,ncombs);
+	      free_nbparam(pair,atype->nr);
+	    }
+	    bReadMolType = TRUE;
 	  }
-	  if (bGenPairs) {
-	    gen_pairs(&(plist[nb_funct]),&(plist[F_LJ14]),fudgeLJ,bVerbose);
-	    bGenPairs=FALSE;
-	  }
-
+	  
 	  nmol++;
 	  srenew((*molinfo),nmol);
 	  srenew(block2,nmol);
