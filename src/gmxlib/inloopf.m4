@@ -118,7 +118,7 @@ C
      $     faction,fip,
      $     Vc)
       
-      real      ix,iy,iz,qi,Vc,invsqrt
+      real      ix,iy,iz,qi,Vc
       real      pos(*),charge(*),faction(*),fip(3)
       integer*4 nj,jjnr(*)
       
@@ -191,7 +191,7 @@ c$dir ivdep
       real      Vc,Vnb,nbfp(*)
       
       integer   k,jnr,j3,tj
-      real      twelve,six,invsqrt
+      real      twelve,six
       real      fX,fY,fZ
       real      rijX,rijY,rijZ,rsq
       real      fijscal,vijcoul
@@ -331,12 +331,12 @@ c
       real      Vc, Vnb, lambda, dvdlambda,krf,crf,tfac,trunctab(*)
 
       real       twelve, six
-      integer    k,jnr,j3,tjA,tjB,m
+      integer    k,jnr,j3,tjA,tjB
       real       fX,fY,fZ
-      real       rijX,rijY,rijZ,invsqrt
+      real       rijX,rijY,rijZ
       real       fijscal,rsq,vijcoul,vctot,vnbtot
       real       rinv1,rinv2,rinv6,rinv12,fjx,fjy,fjz
-      real       tx,ty,tz,vnb6,vnb12,tt,ffj,L1,dvdl
+      real       tx,ty,tz,vnb6,vnb12,L1,dvdl
       real       qi,qiA,qiB,qj,qjA,qjB,dqi,c6,c12,c6a,c6b,c12a,c12b
   
       twelve = 12.0
@@ -582,14 +582,14 @@ C     Total force
       real      Vc,Vnb,nbfp(*),tabscale
       real      VFtab(*)
       
-      integer     k,jnr,j3,tj
+      integer     k,jnr,j3
       real        fX,fY,fZ
       real        rijX,rijY,rijZ
-      real        vijcoul,fijD,fijR,fijC,fijscal
+      real        vijcoul,fijC,fijscal
       real        fjx,fjy,fjz
-      real        tx,ty,tz,vnb6,vnb12
+      real        tx,ty,tz
       real        vctot,vnbtot
-      real        qq,c6,c12,rsq
+      real        qq,rsq
       real        r1,r1t,h_1,eps,VV,FF
       real        Y,F,G,epsH,eGeH,FeGeH
       integer     n0,n1,nn
