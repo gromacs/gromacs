@@ -34,46 +34,16 @@ void fshake fshake_args
 
 /* LINCS */
 
-define(`flincs_args',`(real *x,real *xp,int *nc,int *ncm,int *cmax,int *bla1,int *bla2,int *blnr,int *blbnb,real *bllen,real *blc,real *blcc,real *blm,int *nit,int *nrec,real *invmass,real *r,real *temp1,real *temp2,real *temp3,real *wangle,int *warn,real *lambda)')
+define(`flincs_args',`(real *x,real *xp,int *nc,int *bla1,int *bla2,int *blnr,int *blbnb,real *bllen,real *blc,real *blcc,real *blm,int *nit,int *nrec,real *invmass,real *r,real *temp1,real *temp2,real *temp3,real *wangle,int *warn,real *lambda)')
 
 extern void FUNCTION(forlincs) flincs_args;
 
 void flincs flincs_args
 {
 #ifdef USEF77
-  FUNCTION(forlincs)(x,xp,nc,ncm,cmax,bla1,bla2,blnr,blbnb,bllen,blc,blcc,
+  FUNCTION(forlincs)(x,xp,nc,bla1,bla2,blnr,blbnb,bllen,blc,blcc,
   	blm,nit,nrec,invmass,r,temp1,temp2,temp3,wangle,warn,lambda);
 #else
   fatal_error(0,"flincs called (Fortran routine from %s %d)",__FILE__,__LINE__);
 #endif
 }
-
-define(`flincsld_args',`(real *x,real *xp,int *nc,int *ncm,int *cmax,int *bla1,int *bla2,int *blnr,int *blbnb,real *bllen,real *blcc,real *blm,int *nit,int *nrec,real *r,real *temp1,real *temp2,real *temp3,real *wangle,int *warn)')
-
-extern void FUNCTION(forlincsld) flincsld_args;
-
-void flincsld flincsld_args
-{
-#ifdef USEF77
-  FUNCTION(forlincsld)(x,xp,nc,ncm,cmax,bla1,bla2,blnr,blbnb,bllen,blcc,
-  	blm,nit,nrec,r,temp1,temp2,temp3,wangle,warn);
-#else
-  fatal_error(0,"flincsld called (Fortran routine from %s %d)",__FILE__,__LINE__);
-#endif
-}
-
-define(`fconerr_args',`(real *max,real *rms,int *imax,rvec *xprime,int *ncons,int *bla1,int *bla2,real *bllen)')
-
-extern void FUNCTION(forconerr) fconerr_args;
-
-void fconerr fconerr_args
-{
-#ifdef USEF77
-  FUNCTION(forconerr) (max,rms,imax,xprime,ncons,bla1,bla2,bllen);
-#else
-  fatal_error(0,"fconerr called (Fortran routine from %s %d)",__FILE__,__LINE__);
-#endif
-}
-
-
-
