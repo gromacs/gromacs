@@ -1,0 +1,38 @@
+#!/bin/csh -f
+
+set THISDIR	= `pwd`
+set MANDIR	= progman
+set TEXMAN	= $THISDIR/$MANDIR
+set INDEX	= $TEXMAN/all.tex
+
+cd $GMXHOME/bin/$GMXCPU
+set PROGRAMS 	= *
+
+if ( ! -d $TEXMAN ) mkdir $TEXMAN
+cd $TEXMAN
+\rm *
+touch $INDEX
+foreach prog ( $PROGRAMS )
+  set PROG = $GMXHOME/bin/$GMXCPU/$prog
+  if ( ( -x $PROG ) && ( $prog != "my_dssp" ) && ( $prog != "luck" ) ) then
+    echo -n "$prog "
+    $PROG -quiet -man tex >& /dev/null
+    endif
+    if ( -f $prog.tex ) then
+      echo "\\input{"$MANDIR"/"$prog"}" >> $INDEX
+    endif
+  endif
+end
+
+cat >! $TEXMAN.tex << EOD
+\chapter{Manual Pages}
+
+{\small
+\input{online/all}
+}
+EOD
+echo ""
+
+cd $THISDIR
+
+#last line
