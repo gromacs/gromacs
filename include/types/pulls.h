@@ -22,7 +22,7 @@ typedef struct {
   rvec       *x_ref;    /* reference positions */
   rvec       *dir;      /* direction of constraint */
   real       *d_ref;    /* reference distance  */
-  rvec       *xstart;   /* starting point for structure generation */
+  rvec       *xtarget;  /* target coordinates for structure generation */
   rvec       *xprev;    /* position of coms in last written structure */
   rvec       **comhist; /* com over the last nhist steps (for running aver) */
 } t_pullgrps; 
@@ -34,7 +34,7 @@ typedef struct {
   t_runtype  runtype;   /* 0: startstructure 1: afmrun 2: constraint 
 			   3: umbrella sampling 4: particle insertion */
   t_reftype  reftype;   /* 0: com 1: com at t=0 2: dynamic */
-  rvec       dir;       /* used to select components for constraint */
+  rvec       dims;      /* used to select components for constraint */
   rvec       coor;      /* reaction coordinate */
   real       r;         /* radius of cylinder for dynamic COM */
   real       rc;        /* radius of cylinder including switch length */
