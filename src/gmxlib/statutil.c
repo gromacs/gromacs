@@ -33,7 +33,14 @@
  * And Hey:
  * GRowing Old MAkes el Chrono Sweat
  */
+
 static char *SRCID_statutil_c = "$Id$";
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+
 #include <ctype.h>
 #include "sysstuff.h"
 #include "macros.h"
