@@ -16,10 +16,13 @@ DVIPS	=	dvips
 LOCAL	=	$(GMXHOME)/src/local
 HTML	=	$(GMXHOME)/html
 
-FILES = intro		defunits	algorithms	par-md		\
-	forcefield	topology	special		programs	\
-	analyse		install		implement	tables		\
-	lr-corr		averages	progman
+FILES = algorithms	analyse		averages	cutoff		\
+	defunits	files		forcefield	gromacs		\
+	ieee		implement	install		intro		\
+	lr-corr		lr_elstat	macros		mdp_opt		\
+	par-md		proglist	progman		programs	\
+	special		sqrt		tables		topolfig	\
+	topology	virial
 
 AUXFILES = $(foreach FILE,$(FILES), $(FILE).aux)
 TEXFILES = $(foreach FILE,$(FILES), $(FILE).tex)
