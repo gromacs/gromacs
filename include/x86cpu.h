@@ -3,7 +3,6 @@
 #define FLAGS_SUPPORT_SSE 0x02000000
 #define FLAGS_SUPPORT_EXT_3DNOW 0xc0000000
 
-
 /* Assembly routines in gmxcpuid.s */
 void gmxcpuid(int,unsigned long *,unsigned long *,unsigned long *,unsigned long *);
 void checksse();
