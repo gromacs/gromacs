@@ -18,7 +18,7 @@ cd $dir
 echo "if ( "'$shell'" == /bin/tcsh ) then" >> $out
 
 foreach program ( $PROGRAMS )
-  if ( ( $program != "average" ) && ( $program != "luck" ) ) then
+  if ( ( $program != "average" ) && ( $program != "luck" ) && ( $program != mdrun ) && ( $program != nmrun ) && ( $program != xmdrun )) then
     $GMXHOME/bin/$GMXCPU/$program -man completion >& /dev/null
     cat $program.completion >> $out
     \rm $program.completion
