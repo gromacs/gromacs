@@ -518,6 +518,42 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
   fclose(fp);
 }
 
+static void filter(real flen,int n,int nset,real **val,real dt)
+{
+  int    f,s,i,j;
+  double *filt,sum,vf,fluc,fluctot;
+
+  f = (int)(flen/(2*dt));
+  snew(filt,f+1);
+  filt[0] = 1;
+  sum = 1;
+  for(i=1; i<=f; i++) {
+    filt[i] = cos(M_PI*dt*i/flen);
+    sum += 2*filt[i];
+  }
+  for(i=0; i<=f; i++)
+    filt[i] /= sum;
+  fprintf(stdout,"Will calculate the fluctuation over %d points\n",n-2*f);
+  fprintf(stdout,"  using a filter of length %g of %d points\n",flen,2*f+1);
+  fluctot = 0;
+  for(s=0; s<nset; s++) {
+    fluc = 0;
+    for(i=f; i<n-f; i++) {
+      vf = filt[0]*val[s][i];
+      for(j=1; j<=f; j++)
+	vf += filt[j]*(val[s][i-f]+val[s][i+f]);
+      fluc += sqr(val[s][i] - vf);
+    }
+    fluc /= n - 2*f;
+    fluctot += fluc;
+    fprintf(stdout,"Set %3d filtered fluctuation: %12.6e\n",s+1,sqrt(fluc));
+  }
+  fprintf(stdout,"Overall filtered fluctuation: %12.6e\n",sqrt(fluctot/nset));
+  fprintf(stdout,"\n");
+
+  sfree(filt);
+}
+
 static void do_fit(char *fn,int nx,int ny,real *x0,real **val)
 {
   FILE *out;
@@ -649,12 +685,19 @@ int main(int argc,char *argv[])
     "average.",
     "When the actual block average is very close to the analytical curve,",
     "the error is sigma*sqrt(2/T (a tau1 + (1-a) tau2)).[PAR]",
+
+    "Option [TT]-filter[tt] prints the RMS high-frequency fluctuation",
+    "of each set and over all sets with respect to a filtered average.",
+    "The filter is proportional to cos(pi t/len) where t goes from -len/2",
+    "to len/2. len is supplied with the option [TT]-filter[tt].",
+    "This filter reduces oscillations with period len/2 and len by a factor",
+    "of 0.79 and 0.33 respectively.[PAR]",
     
     "Option [TT]-power[tt] fits the data to b t^a, which is accomplished",
     "by fitting to a t + b on log-log scale. All points after the first",
     "zero or negative value are ignored."
   };
-  static real tb=-1,te=-1,frac=0.5,binwidth=0.1;
+  static real tb=-1,te=-1,frac=0.5,filtlen=0,binwidth=0.1;
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE;
   static bool bEESEF=FALSE,bEENLC=FALSE,bEeFitAc=FALSE,bPower=FALSE; 
   static int  linelen=4096,nsets_in=1,d=1,nb_min=4,resol=10;
@@ -694,6 +737,8 @@ int main(int argc,char *argv[])
       "HIDDENAllow a negative long-time correlation" },
     { "-eefitac", FALSE, etBOOL, {&bEeFitAc},
       "HIDDENAlso plot analytical block average using a autocorrelation fit" },
+    { "-filter",  FALSE, etREAL, {&filtlen},
+      "Print the high-frequency fluctuation after filtering with a cosine filter of length #" },
     { "-power", FALSE, etBOOL, {&bPower},
       "Fit data to: b t^a" },
     { "-subav", FALSE, etBOOL, {&bSubAv},
@@ -793,6 +838,9 @@ int main(int argc,char *argv[])
 	   sig[s] ? cum4/(sig[s]*sig[s]*sig[s]*sig[s]*3)-1 : 0); 
   }
   printf("\n");
+
+  if (filtlen)
+    filter(filtlen,n,nset,val,dt);
   
   if (msdfile) {
     out=xvgropen(msdfile,"Mean square displacement",
