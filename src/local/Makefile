@@ -25,10 +25,7 @@ xmdrun:		xmdrun.o $(XOBJ) calcfdev.o
 copyrgt:	copyrgt.o1;
 		$(LD) -o $@ $^ $(SYSLIBS) 
 
-my_dssp.c:	
-		ln -s ../tools/do_dssp.c $@
-my_dssp.o:	my_dssp.c
-		$(CC) $(C-FLAGS) -DMY_DSSP -c $<
+my_dssp.o:	../tools/do_dssp.c
 my_dssp:	my_dssp.o	dsspcore.o
 		$(LD) -o $@ $^ $(SYSLIBS) 
 
