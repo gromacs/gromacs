@@ -358,6 +358,9 @@ static void jarvis_patrick(FILE *log,int n1,real **mat,int M,int P,
   int       i,j,k,cid,diff,max;
   bool      bChange;
 
+  if (rmsdcut < 0)
+    rmsdcut = 10000;
+
   /* First we sort the entries in the RMSD matrix row by row.
    * This gives us the nearest neighbor list.
    */
@@ -372,12 +375,12 @@ static void jarvis_patrick(FILE *log,int n1,real **mat,int M,int P,
     if (M>0) {
       /* Put the M nearest neighbors in the list */
       snew(nnb[i],M+1);
-      for(j=k=0; (k<M) && (j<n1); j++)
+      for(j=k=0; (k<M) && (j<n1) && (mat[i][tmp[j].j] < rmsdcut); j++)
 	if (tmp[j].j  != i) {
 	  nnb[i][k]  = tmp[j].j;
 	  k++;
 	}
-      nnb[i][M] = -1;
+      nnb[i][k] = -1;
     } else {
       /* Put all neighbors nearer than rmsdcut in the list */
       max=0;
@@ -553,7 +556,8 @@ static void analyze_clusters(int nf,t_clusters *clust,real **rmsd,
   snew(xav,isize);
   snew(xnatom,natom);
   snew(structure,nf);
-  sprintf(buf,"\n%3s %3s %4s %6s %4s\n","cl.","#st","rmsd","middle","rmsd");
+  sprintf(buf,"\n%3s | %3s %4s | %6s %4s | cluster members\n",
+	  "cl.","#st","rmsd","middle","rmsd");
   fprintf(stderr,buf);
   fprintf(log,buf);
   for(cl=1; cl<=clust->ncl; cl++) {
@@ -602,13 +606,13 @@ static void analyze_clusters(int nf,t_clusters *clust,real **rmsd,
       sprintf(buf1,"%5s","");
       sprintf(buf2,"%5s","");
     }
-    sprintf(buf,"%3d %3d%s %6.f%s:",
+    sprintf(buf,"%3d | %3d%s | %6.f%s |",
 	    cl,nstr,buf1,time[midstr],buf2);
     fprintf(stderr,buf);
     fprintf(log,buf);
     for(i=0; i<nstr; i++) {
-      if ((i % 8 == 0) && i)
-	sprintf(buf,"\n%25s","");
+      if ((i % 7 == 0) && i)
+	sprintf(buf,"\n%3s | %3s %4s | %6s %4s |","","","","","");
       else
 	buf[0] = '\0';
       i1 = structure[i];
@@ -683,7 +687,7 @@ int main(int argc,char *argv[])
   char     *grpname;
   real     rmsd,**d1,**d2,*time,*mass;
   char     buf[STRLEN];
-  bool     bAnalyze;
+  bool     bAnalyze,bJP_RMSD;
   
   static char *method[] = { NULL, "linkage", "jarvis-patrick","monte-carlo",
 			    "diagonalization", NULL };
@@ -742,13 +746,30 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
 
-  if ((M<0) || (M == 1))
-    fatal_error(0,"M (%d) must be 0 or larger than 1",M);
-  if (M < 2)
-    fprintf(stderr,"Will use RMSD cutoff (%g) for determining the neighbors\n",
-	    rmsdcut);
-  else if (P >= M)
-    fatal_error(0,"Number of neighbors required (P) must be less than M");
+    /* Open log file */
+  log = ftp2FILE(efLOG,NFILE,fnm,"w");
+
+  fprintf(stderr,"Using %s for clustering\n",method[0]);
+  fprintf(log,"Using %s for clustering\n",method[0]);
+
+  if (m_jarvis_patrick) {
+    bJP_RMSD = (M == 0) || opt2parg_bSet("-cutoff",asize(pa),pa);
+    if ((M<0) || (M == 1))
+      fatal_error(0,"M (%d) must be 0 or larger than 1",M);
+    if (M < 2)
+      sprintf(buf,"Will use P=%d and RMSD cutoff (%g)",P,rmsdcut);
+    else {
+      if (P >= M)
+	fatal_error(0,"Number of neighbors required (P) must be less than M");
+      if (bJP_RMSD)
+	sprintf(buf,"Will use P=%d, M=%d and RMSD cutoff (%g)",P,M,rmsdcut);
+      else
+	sprintf(buf,"Will use P=%d, M=%d",P,M);
+    }
+    fprintf(stderr,"%s for determining the neighbors\n\n",buf);
+    fprintf(log,"%s for determining the neighbors\n\n",buf);
+  }
+
   if (skip < 1)
     fatal_error(0,"skip (%d) should be >= 1",skip);
 
@@ -817,9 +838,6 @@ int main(int argc,char *argv[])
   }
   fprintf(stderr,"\n\n");
 
-  /* Open log file */
-  log = ftp2FILE(efLOG,NFILE,fnm,"w");
-  
   sprintf(buf,"The maximum RMSD is %g nm\n"
 	  "Average RMSD is %g\n"
 	  "Number of structures for matrix %d\n"
@@ -827,8 +845,6 @@ int main(int argc,char *argv[])
 	  rms->maxrms,2*rms->sumrms/(nf*(nf-1)),nf,mat_energy(rms));
   fprintf(stderr,buf);
   fprintf(log,buf);
-  fprintf(stderr,"Using %s for clustering\n",method[0]);
-  fprintf(log,"Using %s for clustering\n",method[0]);
 
   /* Plot the rmsd distribution */
   rmsd_distribution(opt2fn("-dist",NFILE,fnm),rms);
@@ -869,7 +885,7 @@ int main(int argc,char *argv[])
   else if (m_monte_carlo)
     mc_optimize(log,rms,niter,&seed,kT);
   else if (m_jarvis_patrick)
-    jarvis_patrick(log,rms->nn,rms->mat,M,P,rmsdcut,&clust);
+    jarvis_patrick(log,rms->nn,rms->mat,M,P,bJP_RMSD ? rmsdcut : -1,&clust);
   else
     fatal_error(0,"unknown method \"%s\"",method[0]);
 
