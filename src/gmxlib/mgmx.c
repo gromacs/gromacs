@@ -52,17 +52,112 @@ static int      *pa_index,*fnm_index;
 static bool     bFdlgUp=FALSE,bDone=FALSE;
 extern XmString empty_str;
 
-static void help_callback();
-static void help_ok_callback();
-static void cancel_callback();
-static void ok_callback();
-static void enter_callback();
-static void leave_callback();
-static void file_callback();
-static void file_ok_callback();
-static void file_cancel_callback();
+/******************************************************************
+ *
+ *      C A L L B A C K       R O U T I N E S
+ *
+ ******************************************************************/
 
-void mk_desc_callbacks()
+static void cancel_callback(Widget w,caddr_t client_data,caddr_t call_data)
+{
+  printf("Maybe next time...\n");
+  thanx(stdout);
+  exit(0);
+}
+
+static void ok_callback(Widget w,caddr_t client_data,caddr_t call_data)
+{
+  bDone = TRUE;
+}
+
+static void help_callback(Widget w,caddr_t client_data,caddr_t call_data)
+{
+  XtManageChild(get_widget(helpw));
+}
+
+static void help_ok_callback(Widget w,caddr_t client_data,caddr_t call_data)
+{
+  XtUnmanageChild(get_widget(helpw));
+}
+
+static void enter_callback(Widget www,int *which,caddr_t call_data)
+{
+  int narg;
+
+  if (descw != -1) {  
+    narg=0;
+    XtSetArg(args[narg],XmNlabelString,get_widget_desc(www));  narg++;
+    XtSetValues(get_widget(descw),args,narg);
+  }
+}
+
+static void file_callback(Widget www,caddr_t client_data,caddr_t call_data)
+{
+  int      ftp,narg;
+  Widget   fdlg;
+  XmString xms;
+
+  if (fdlgw != -1) {
+    if (bFdlgUp)
+      fprintf(stderr,"Only one file selector box at a time!\n");
+    else {
+      fdlg = get_widget(fdlgw);
+      if ((ftp = get_widget_ftp(www)) != -1) {
+	xms  = char2xms(ftp2filter(ftp));
+	narg = 0;
+	XtSetArg(args[narg],XmNdirMask,xms);        narg++;
+	/*XtSetArg(args[narg],XmNpattern,xms);        narg++;*/
+	XtSetArg(args[narg],XmNlistUpdated, False); narg++;
+	
+	XtSetValues(fdlg,args,narg);
+	XmStringFree(xms);
+      }
+      XtManageChild(fdlg);
+      bFdlgUp    = TRUE;
+      FdlgCaller = get_widget_other(get_windex(www),TRUE);
+    }
+  }
+}
+
+static void file_ok_callback(Widget www,int *which,
+			     XmFileSelectionBoxCallbackStruct *xmf)
+{
+  if (bFdlgUp) {
+    if ((xmf->reason == XmCR_OK) && (xmf->length > 0))
+      set_widget_dir(FdlgCaller,xmf->value);
+  
+    XtUnmanageChild(get_widget(fdlgw));
+    bFdlgUp = FALSE;
+  }
+}
+
+static void file_cancel_callback(Widget www,int *which,
+				 XmFileSelectionBoxCallbackStruct *xmf)
+{
+  if (bFdlgUp) {
+    XtUnmanageChild(get_widget(fdlgw));
+    bFdlgUp = FALSE;
+  }
+}
+
+static void leave_callback(Widget www,int *which,caddr_t call_data)
+{
+  int narg;
+
+  if (descw != -1) {  
+    narg=0;
+    XtSetArg(args[narg],XmNlabelString,empty_str); narg++;
+    XtSetValues(get_widget(descw),args,narg);
+  }
+}
+
+/************************************************************************
+ *
+ *    S E T T I N G     U P    T H E   D I A L O G B O X   
+ *
+ ************************************************************************/
+ 
+static void mk_desc_handlers(void)
 {
   Widget www;
   int    i,narg;
@@ -70,8 +165,8 @@ void mk_desc_callbacks()
   for(i=0; (i<nwidget()); i++) {
     if (have_windex_desc(i)) {
       www  = get_widget(i);
-      XtAddEventHandler(www,EnterWindowMask,True,enter_callback,&i);
-      XtAddEventHandler(www,LeaveWindowMask,True,leave_callback,&i);
+      XtAddEventHandler(www,EnterWindowMask,True,(XtEventHandler) enter_callback,&i);
+      XtAddEventHandler(www,LeaveWindowMask,True,(XtEventHandler) leave_callback,&i);
     }
   }
   empty_str = char2xms("");
@@ -146,7 +241,7 @@ static void mk_editor(int parent,int top,int left,int right,
 				      get_widget(parent),args,narg),desc);
 }
 
-char **mk_but_array(char *val,int *n)
+static char **mk_but_array(char *val,int *n)
 {
   int  i,j,nn;
   char **but=NULL;
@@ -263,11 +358,12 @@ static void mk_buttons(int parent,int top,int nb,t_button bbb[])
     bw = add_widget(XtCreateWidget(bbb[i].label,xmPushButtonWidgetClass,
 				   get_widget(parent),args,narg),
 		    bbb[i].desc);
-    XtAddCallback(get_widget(bw),XmNactivateCallback,bbb[i].cbfn,NULL);
+    XtAddCallback(get_widget(bw),XmNactivateCallback,
+		  (XtCallbackProc) bbb[i].cbfn,NULL);
   }
 }
 
-XmString xs_str_array_to_xmstr(char *header,int ndesc,char *desc[])
+static XmString xs_str_array_to_xmstr(char *header,int ndesc,char *desc[])
 {
   int      i;
   XmString xmstr;
@@ -297,7 +393,7 @@ XmString xs_str_array_to_xmstr(char *header,int ndesc,char *desc[])
   }
 }
 
-int mk_separator(int parent,int topw)
+static int mk_separator(int parent,int topw)
 {
   int narg;
   
@@ -318,7 +414,7 @@ int mk_separator(int parent,int topw)
 				   get_widget(parent),args,narg),NULL);
 }
 
-int mk_helplabel(int parent,int top)
+static int mk_helplabel(int parent,int top)
 {
   int narg;
   
@@ -333,20 +429,21 @@ int mk_helplabel(int parent,int top)
 				   get_widget(parent),args,narg),NULL);
 }
 
-void mk_filedlgs(int parent,int top,int nfile,t_filenm fnm[],int fnm_index[])
+static void mk_filedlgs(int parent,int top,int nfile,t_filenm fnm[],int fnm_index[])
 {
-#define NWC 3
+  enum { nwcTOGGLE, nwcLABEL, nwcTEXT, nwcFDLG, NWC };
   WidgetClass wc[NWC];
-  int    left[NWC]  = { 1,  8, 40 };
-  int    right[NWC] = { 8, 40, 49 };
+  int    left[NWC]  = { 1,  5, 12, 41 };
+  int    right[NWC] = { 4, 11, 40, 49 };
   char   **wname;
   int    i,j,ftp,narg,dx,www[NWC];
   Widget topw;
   char   *fn,dbuf[256];
-  
-  wc[0] = xmLabelWidgetClass;
-  wc[1] = xmTextFieldWidgetClass;
-  wc[2] = xmPushButtonWidgetClass;
+
+  wc[nwcTOGGLE] = xmToggleButtonWidgetClass;
+  wc[nwcLABEL]  = xmLabelWidgetClass;
+  wc[nwcTEXT]   = xmTextFieldWidgetClass;
+  wc[nwcFDLG]   = xmPushButtonWidgetClass;
   snew(wname,NWC);
   for(i=0; (i<nfile); i++) {
     ftp = fnm[i].ftp;
@@ -356,42 +453,48 @@ void mk_filedlgs(int parent,int top,int nfile,t_filenm fnm[],int fnm_index[])
       fn = fnm[i].fn;
     else
       fn++;
-    wname[0]  = fnm[i].opt;
-    wname[1]  = fn;
-    wname[2]  = "Browse";
+    wname[nwcTOGGLE]  = "";
+    wname[nwcLABEL]   = fnm[i].opt;
+    wname[nwcTEXT]    = fn;
+    wname[nwcFDLG]    = "Browse";
     
-    for(j=0; (j<3); j++) {
-      narg    = 0;
-      if (i < 2) {
-	if (top == parent) {
-	  XtSetArg(args[narg],XmNtopAttachment, XmATTACH_FORM); narg++;
+    for(j=0; (j<NWC); j++) {
+      if ((j != nwcTOGGLE) || (is_optional(&(fnm[i])))) {
+	narg    = 0;
+	if (i < 2) {
+	  if (top == parent) {
+	    XtSetArg(args[narg],XmNtopAttachment, XmATTACH_FORM); narg++;
+	  }
+	  else {
+	    XtSetArg(args[narg],XmNtopAttachment, XmATTACH_WIDGET); narg++;
+	    XtSetArg(args[narg],XmNtopWidget,     get_widget(top)); narg++;
+	  }
 	}
 	else {
-	  XtSetArg(args[narg],XmNtopAttachment, XmATTACH_WIDGET); narg++;
-	  XtSetArg(args[narg],XmNtopWidget,     get_widget(top)); narg++;
+	  XtSetArg(args[narg],XmNtopAttachment, XmATTACH_WIDGET);    narg++;
+	  XtSetArg(args[narg],XmNtopWidget,     topw);               narg++;
 	}
+	
+	XtSetArg(args[narg],XmNleftAttachment,  XmATTACH_POSITION);  narg++;
+	XtSetArg(args[narg],XmNleftPosition,    dx+left[j]);         narg++;
+	if (j == nwcTEXT) {
+	  XtSetArg(args[narg],XmNvalue,         wname[j]);           narg++;
+	}
+	www[j] = add_widget(XtCreateWidget(wname[j],wc[j],
+					   get_widget(parent),args,narg),dbuf);
       }
-      else {
-	XtSetArg(args[narg],XmNtopAttachment, XmATTACH_WIDGET);    narg++;
-	XtSetArg(args[narg],XmNtopWidget,     topw);               narg++;
-      }
-
-      XtSetArg(args[narg],XmNleftAttachment,  XmATTACH_POSITION);  narg++;
-      XtSetArg(args[narg],XmNleftPosition,    dx+left[j]);         narg++;
-      /*XtSetArg(args[narg],XmNrightAttachment, XmATTACH_POSITION);  narg++;
-	XtSetArg(args[narg],XmNrightPosition,   dx+right[j]);        narg++;*/
-      if (j == 1) {
-	XtSetArg(args[narg],XmNvalue,         wname[j]);           narg++;
-      }
-      www[j] = add_widget(XtCreateWidget(wname[j],wc[j],
-					 get_widget(parent),args,narg),dbuf);
     }
-    fnm_index[i] = www[1];
-    set_widget_ftp(www[2],ftp);
-    set_widget_other(www[2],get_widget(www[1]));
-    XtAddCallback(get_widget(www[2]),XmNactivateCallback,file_callback,NULL);
+    fnm_index[i] = www[nwcTEXT];
+    set_widget_ftp(www[nwcFDLG],ftp);
+    set_widget_other(www[nwcFDLG],get_widget(www[nwcTEXT]));
+    
+    if (is_optional(&(fnm[i])))
+      set_widget_other(www[nwcTEXT],get_widget(www[nwcTOGGLE]));
+      
+    XtAddCallback(get_widget(www[nwcFDLG]),XmNactivateCallback,
+		  (XtCallbackProc) file_callback,NULL);
     if ((i % 2) == 1)
-      topw = get_widget(www[1]);
+      topw = get_widget(www[nwcTEXT]);
   }
   
   if (nfile > 0) 
@@ -399,7 +502,7 @@ void mk_filedlgs(int parent,int top,int nfile,t_filenm fnm[],int fnm_index[])
   sfree(wname);
 }
 
-int mk_pargs(int parent,int npargs,t_pargs pa[],int pa_index[])
+static int mk_pargs(int parent,int npargs,t_pargs pa[],int pa_index[])
 {
   /**************************************************************
    *
@@ -433,7 +536,9 @@ int mk_pargs(int parent,int npargs,t_pargs pa[],int pa_index[])
     npa  = 0;
     topw = nwidget()-1;
     for(i=0; (i<npargs); i++) {
-      if (!is_hidden(&(pa[i]))) {
+      if (!is_hidden(&(pa[i])) && 
+	  (strcmp(pa[i].option,"-X") != 0) &&
+	  (strcmp(pa[i].option,"-h") != 0)) {
 	if ((icb == 0) && (pa[i].type == etBOOL)) {
 	  left = 1+(npa % nbool)*bwidth;
 	  if (debug)
@@ -490,7 +595,7 @@ int mk_pargs(int parent,int npargs,t_pargs pa[],int pa_index[])
   return separator;
 }
 
-void mk_help(Widget parent,int ndesc,char *desc[],int nbugs,char *bugs[])
+static void mk_help(Widget parent,int ndesc,char *desc[],int nbugs,char *bugs[])
 {
   Widget   label,dialog,ok;
   XmString xmstr;
@@ -518,7 +623,8 @@ void mk_help(Widget parent,int ndesc,char *desc[],int nbugs,char *bugs[])
   if (debug)
     fprintf(debug,"%s,%d: Unmanaged children\n",__FILE__,__LINE__);
   ok = XmMessageBoxGetChild(dialog,XmDIALOG_OK_BUTTON);
-  XtAddCallback(ok,XmNactivateCallback,help_ok_callback,NULL);
+  XtAddCallback(ok,XmNactivateCallback,
+		(XtCallbackProc) help_ok_callback,NULL);
   
   label = XmMessageBoxGetChild(dialog,XmDIALOG_MESSAGE_LABEL);
   narg  = 0;
@@ -528,17 +634,19 @@ void mk_help(Widget parent,int ndesc,char *desc[],int nbugs,char *bugs[])
     fprintf(debug,"%s,%d: Aligned help\n",__FILE__,__LINE__);
 }
 
-void mk_fdlg(Widget base)
+static void mk_fdlg(Widget base)
 {
   int narg;
   
   narg  = 0;
   fdlgw = add_widget(XmCreateFileSelectionDialog(base,"GMX File Selector",
 						 args,narg),NULL);
-  XtAddCallback(get_widget(fdlgw),XmNokCallback,file_ok_callback,NULL);
+  XtAddCallback(get_widget(fdlgw),XmNokCallback,
+		(XtCallbackProc) file_ok_callback,NULL);
   XtAddCallback(XmFileSelectionBoxGetChild(get_widget(fdlgw),
 					   XmDIALOG_CANCEL_BUTTON),
-		XmNactivateCallback,file_cancel_callback,NULL);
+		XmNactivateCallback,
+		(XtCallbackProc) file_cancel_callback,NULL);
   XtUnmanageChild(XmFileSelectionBoxGetChild(get_widget(fdlgw),
 					     XmDIALOG_HELP_BUTTON));
   /*XtUnmanageChild(XmFileSelectionBoxGetChild(get_widget(fdlgw),
@@ -597,123 +705,30 @@ static void mk_gui(Widget gmxBase,
   descw = mk_helplabel(gmxDialog,sep2);
 
   /* Make eventhandlers for the help line */  
-  mk_desc_callbacks();
+  mk_desc_handlers();
   
   /* Give the children a father or mother */
   for(i=widg0; (i<nwidget()); i++)
     XtManageChild(get_widget(i));
 }
 
-/******************************************************************
+/***************************************************************************
  *
- *      C A L L B A C K       R O U T I N E S
+ *                         M A I N      L O O P
  *
- ******************************************************************/
+ ***************************************************************************/
 
-static void cancel_callback(Widget w,caddr_t client_data,caddr_t call_data)
+static void MyMainLoop(XtAppContext appcontext,Widget gmxBase,
+		       int nfile,t_filenm fnm[],int npargs,t_pargs pa[])
 {
-  printf("Maybe next time...\n");
-  thanx(stdout);
-  exit(0);
-}
-
-static void ok_callback(Widget w,caddr_t client_data,caddr_t call_data)
-{
-  bDone = TRUE;
-}
-
-static void help_callback(Widget w,caddr_t client_data,caddr_t call_data)
-{
-  XtManageChild(get_widget(helpw));
-}
-
-static void help_ok_callback(Widget w,caddr_t client_data,caddr_t call_data)
-{
-  XtUnmanageChild(get_widget(helpw));
-}
-
-static void enter_callback(Widget www,int *which,caddr_t call_data)
-{
-  int narg;
-
-  if (descw != -1) {  
-    narg=0;
-    XtSetArg(args[narg],XmNlabelString,get_widget_desc(www));  narg++;
-    XtSetValues(get_widget(descw),args,narg);
-  }
-}
-
-static void file_callback(Widget www,caddr_t client_data,caddr_t call_data)
-{
-  int      ftp,narg;
-  Widget   fdlg;
-  XmString xms;
-
-  if (fdlgw != -1) {
-    if (bFdlgUp)
-      fprintf(stderr,"Only one file selector box at a time!\n");
-    else {
-      fdlg = get_widget(fdlgw);
-      if ((ftp = get_widget_ftp(www)) != -1) {
-	xms  = char2xms(ftp2filter(ftp));
-	narg = 0;
-	XtSetArg(args[narg],XmNdirMask,xms);        narg++;
-	/*XtSetArg(args[narg],XmNpattern,xms);        narg++;*/
-	XtSetArg(args[narg],XmNlistUpdated, False); narg++;
-	
-	XtSetValues(fdlg,args,narg);
-	XmStringFree(xms);
-      }
-      XtManageChild(fdlg);
-      bFdlgUp    = TRUE;
-      FdlgCaller = get_widget_other(get_windex(www));
-    }
-  }
-}
-
-static void file_ok_callback(Widget www,int *which,
-			     XmFileSelectionBoxCallbackStruct *xmf)
-{
-  if (bFdlgUp) {
-    if ((xmf->reason == XmCR_OK) && (xmf->length > 0))
-      set_widget_dir(FdlgCaller,xmf->value);
-  
-    XtUnmanageChild(get_widget(fdlgw));
-    bFdlgUp = FALSE;
-  }
-}
-
-static void file_cancel_callback(Widget www,int *which,
-				 XmFileSelectionBoxCallbackStruct *xmf)
-{
-  if (bFdlgUp) {
-    XtUnmanageChild(get_widget(fdlgw));
-    bFdlgUp = FALSE;
-  }
-}
-
-static void leave_callback(Widget www,int *which,caddr_t call_data)
-{
-  int narg;
-
-  if (descw != -1) {  
-    narg=0;
-    XtSetArg(args[narg],XmNlabelString,empty_str); narg++;
-    XtSetValues(get_widget(descw),args,narg);
-  }
-}
-
-void MyMainLoop(XtAppContext appcontext,Widget gmxBase,
-		int nfile,t_filenm fnm[],int npargs,t_pargs pa[])
-{
-  int      i,narg;
-  Widget   www;
-  XEvent   event;
-  XmString xms;
-  Boolean  bbb;
-  char     *fn,buf[256],*ptr;
-  double   ddd,dx,dy,dz;
-  int      iii;
+  int        i,narg;
+  Widget     www;
+  XEvent     event;
+  XmString   xms;
+  Boolean    xmrb,bbb;
+  char       *fn,buf[256],*ptr;
+  double     ddd,dx,dy,dz;
+  int        iii;
   
   while (!bDone) {
     /*XtAppNextEvent(appcontext,&event);*/
@@ -724,19 +739,23 @@ void MyMainLoop(XtAppContext appcontext,Widget gmxBase,
   for(i=0; (i<nfile); i++) {
     www  = get_widget(fnm_index[i]);
     narg = 0;
-    /*xms  = char2xms("");
-      XtSetArg(args[narg], XmNlabelString, &xms); narg++;
-      XtGetValues(www,args,narg);
-      fn = xms2char(xms);
-    */
     XtSetArg(args[narg], XmNvalue, &fn); narg++;
     XtGetValues(www,args,narg);
     sprintf(buf,"%s%s",get_widget_dir(fnm_index[i]),fn);
     XtFree(fn);
     sfree(fnm[i].fn);
     fnm[i].fn = strdup(buf);
+    www = get_widget_other(fnm_index[i],FALSE);
+    if (www != 0) {
+      narg = 0;
+      XtSetArg(args[narg],XmNset,&xmrb); narg++;
+      XtGetValues(www,args,narg);
+      fnm[i].flag = fnm[i].flag | ffSET;
+    }
+    
     if (debug)
       fprintf(debug,"%s,%d: File is now %s\n",__FILE__,__LINE__,buf);
+    
   }
   for(i=0; (i<npargs); i++) {
     if (!is_hidden(&pa[i])) {
@@ -812,5 +831,3 @@ void gmx_gui(int *argc,char *argv[],
   XtRealizeWidget(gmxBase);
   MyMainLoop(appcontext,gmxBase,nfile,fnm,npargs,pa);
 }
-
-

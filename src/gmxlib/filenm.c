@@ -606,3 +606,8 @@ char *ftp2filter(int ftp)
   }
   return filter;
 }
+
+bool is_optional(t_filenm *fnm)
+{
+  return ((fnm->flag & ffOPT) == ffOPT);
+}

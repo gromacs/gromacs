@@ -15,7 +15,7 @@ static   t_widget *w=NULL;
 static   int      nwindex=0,maxwindex=0;
 XmString empty_str;
 
-int nwidget()
+int nwidget(void)
 {
   return nwindex;
 }
@@ -148,15 +148,21 @@ void set_widget_dir(Widget www,XmString label)
     if (strlen(ptr) > 0) {
       narg = 0;
       XtSetArg(args[narg],XmNvalue, ptr); narg++;
-      XtSetValues(www,args,narg);    
+      XtSetValues(www,args,narg); 
+      /* Set the toggle button if we have an optional one */
+      if (w[i].other != 0) {
+	narg = 0;
+	XtSetArg(args[narg], XmNset, True); narg++;
+	XtSetValues(w[i].other,args,narg); 
+      }
     }
   }
 }
 
-Widget get_widget_other(windex win)
+Widget get_widget_other(windex win,bool bFail)
 {
   widget_range_check(win);
-  if (w[win].other == 0)
+  if ((w[win].other == 0) && bFail)
     fatal_error(0,"Calling the wrong window: %d, no other widget\n",win);
   
   return w[win].other;

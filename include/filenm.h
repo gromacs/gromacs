@@ -109,6 +109,9 @@ extern char *ftp2fn_null(int ftp,int nfile,t_filenm fnm[]);
  * Also return NULL when ftp is optional and option is not set.
  */
 
+extern bool is_optional(t_filenm *fnm);
+/* Return whether or not this filenm is optional */
+
 #ifdef CPLUSPLUS
 }
 #endif

@@ -19,7 +19,7 @@ extern void     set_widget_ftp(windex win,int ftp);
 extern char     *get_widget_dir(windex win);
 extern void     set_widget_dir(Widget www,XmString label);
 
-extern Widget   get_widget_other(windex win);
+extern Widget   get_widget_other(windex win,bool bFail);
 extern void     set_widget_other(windex win,Widget www);
 
 extern void     mk_desc_callbacks(void);
