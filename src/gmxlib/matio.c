@@ -518,16 +518,16 @@ void write_xpm_map3(FILE *out,int n_x,int n_y,int *nlevels,
   fprintf(out,"\"%d %d   %d %d\",\n",
 	  n_x,n_y,*nlevels,(*nlevels <= NMAP) ? 1 : 2);
 
-  nmid = ((mid-lo)/(hi-lo))*(*nlevels-1);
+  nmid = max(1,((mid-lo)/(hi-lo))*(*nlevels-1));
   if (*nlevels > (2 * nmid))
     clevels = *nlevels-1-nmid;
   else
     clevels = nmid;
   for(i=0; (i<nmid); i++) {
     nlo=nmid-i;
-    r=rmid.r+(nlo*(rlo.r-rmid.r)/clevels);
-    g=rmid.g+(nlo*(rlo.g-rmid.g)/clevels);
-    b=rmid.b+(nlo*(rlo.b-rmid.b)/clevels);
+    r=rlo.r+(i*(rmid.r-rlo.r)/clevels);
+    g=rlo.g+(i*(rmid.g-rlo.g)/clevels);
+    b=rlo.b+(i*(rmid.b-rlo.b)/clevels);
     fprintf(out,"\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n",
 	    mapper[i % NMAP],
 	    (*nlevels <= NMAP) ? ' ' : mapper[i/NMAP],
