@@ -62,7 +62,7 @@ enum {
 
 enum {
   eelCUT,     eelRF,     eelGRF,   eelPME,  eelEWALD,  eelPPPM, 
-  eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB, eelRF_OLD, eelNR
+  eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB, eelRF_OLD, eelENCADSHIFT, eelNR
 };
 
 /* Ewald geometry */
@@ -75,7 +75,7 @@ enum {
 #define EEL_FULL(e) ((e == eelPPPM) || (e == eelPOISSON) || (e ==  eelPME) || (e == eelEWALD))
 
 enum {
-  evdwCUT,    evdwSWITCH, evdwSHIFT, evdwUSER, evdwNR
+  evdwCUT, evdwSWITCH, evdwSHIFT, evdwUSER, evdwENCADSHIFT, evdwNR
 };
 
 enum { 
