@@ -366,7 +366,8 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,real h,
 }
 
 static void box_dim(int nmat,t_matrix mat[],t_matrix *mat2,t_psrec *psr,
-		    char w_legend,real *w,real *h,real *dw,real *dh)
+		    char w_legend,bool bFrame,
+		    real *w,real *h,real *dw,real *dh)
 {
   int i,maxytick;
   real ww,hh,dww,dhh;
@@ -380,30 +381,29 @@ static void box_dim(int nmat,t_matrix mat[],t_matrix *mat2,t_psrec *psr,
     hh+=box_height(&(mat[i]),psr);
     maxytick=max(maxytick,mat[i].nx);
   }
-  dww=0;
-  if (mat[0].label_y[0])
-    dww+=2.0*(psr->Y.fontsize+DDD);
-  if (psr->Y.major > 0) 
-    dww+=psr->Y.majorticklen+DDD+psr->Y.tickfontsize*(log(maxytick)/log(10.0));
-  else if (psr->Y.minor > 0)
-    dww+=psr->Y.minorticklen;
-  
-  dhh=0;
-  if (mat[0].label_x[0])
-    dhh+=psr->X.fontsize+2*DDD;
-  if (((w_legend == 'b') && (mat[0].legend[0] || mat2[0].legend[0])) ||
-      ((w_legend == 'f') && mat[0].legend[0]) ||
-      ((w_legend == 's') && mat2[0].legend[0]))
-    dhh+=2*(psr->legfontsize*FUDGE+2*DDD);
-  else 
-    dhh+=psr->legfontsize*FUDGE+2*DDD;
-  if (psr->X.major > 0)
-    dhh+=psr->X.tickfontsize*FUDGE+2*DDD+psr->X.majorticklen;
-  else if (psr->X.minor > 0)
-    dhh+=psr->X.minorticklen;
+  if (bFrame) {
+    if (mat[0].label_y[0])
+      dww+=2.0*(psr->Y.fontsize+DDD);
+    if (psr->Y.major > 0) 
+      dww+=psr->Y.majorticklen+DDD+psr->Y.tickfontsize*(log(maxytick)/log(10.0));
+    else if (psr->Y.minor > 0)
+      dww+=psr->Y.minorticklen;
     
-  hh+=(nmat-1)*box_dh(psr)+nmat*box_dh_top(psr);
-  
+    if (mat[0].label_x[0])
+      dhh+=psr->X.fontsize+2*DDD;
+    if (((w_legend == 'b') && (mat[0].legend[0] || mat2[0].legend[0])) ||
+	((w_legend == 'f') && mat[0].legend[0]) ||
+    ((w_legend == 's') && mat2[0].legend[0]))
+      dhh+=2*(psr->legfontsize*FUDGE+2*DDD);
+    else 
+      dhh+=psr->legfontsize*FUDGE+2*DDD;
+    if (psr->X.major > 0)
+    dhh+=psr->X.tickfontsize*FUDGE+2*DDD+psr->X.majorticklen;
+    else if (psr->X.minor > 0)
+      dhh+=psr->X.minorticklen;
+    
+    hh+=(nmat-1)*box_dh(psr)+nmat*box_dh_top(psr);
+  }
   *w=ww;
   *h=hh;
   *dw=dww;
@@ -477,6 +477,7 @@ void xpm_mat(char *outf,
 }
 
 void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
+	    bool bFrame,
 	    bool bDiag,bool bFirstDiag,bool bTitle,char w_legend,
 	    real boxx,real boxy,char *m2p,char *m2pout)
 {
@@ -529,7 +530,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   psr->bTitle = bTitle;
 
   /* Set up size of box for nice colors */
-  box_dim(nmat,mat,mat2,psr,w_legend,&w,&h,&dw,&dh);
+  box_dim(nmat,mat,mat2,psr,w_legend,bFrame,&w,&h,&dw,&dh);
   
   /* Set up bounding box */
   W=w+dw;
@@ -544,13 +545,21 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
 		2*psr->titfontsize);
   else
   */
-  out=ps_open(outf,0,0,W+psr->xoffs+5*DDD,H+psr->yoffs+4*DDD);
+  x = W+psr->xoffs;
+  y = H+psr->yoffs;
+  if (bFrame) {
+    x += 5*DDD;
+    y += 4*DDD;
+  }
+  out=ps_open(outf,0,0,x,y);
   ps_init_rgb_box(out,psr->xboxsize,psr->yboxsize);
   ps_init_rgb_nbox(out,psr->xboxsize,psr->yboxsize);
   ps_translate(out,psr->xoffs,psr->yoffs);
-    
-  ps_comment(out,"Here starts the BOX drawing");  
-  draw_boxes(out,x0,y0,w,h,nmat,mat,psr);
+
+  if (bFrame) {
+    ps_comment(out,"Here starts the BOX drawing");  
+    draw_boxes(out,x0,y0,w,h,nmat,mat,psr);
+  }
   /*
   if (bTitle) {
     ps_strfont(out,psr->titfont,psr->titfontsize); 
@@ -646,6 +655,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
 }
 
 void do_mat(int nmat,t_matrix *mat,int nmat2,t_matrix *mat2,
+	    bool bFrame,
 	    bool bDiag,bool bFirstDiag,bool bTitle,char w_legend,
 	    real boxx,real boxy,
 	    char *epsfile,char *xpmfile,char *m2p,char *m2pout)
@@ -672,7 +682,7 @@ void do_mat(int nmat,t_matrix *mat,int nmat2,t_matrix *mat2,
 
   
   if (epsfile!=NULL)
-    ps_mat(epsfile,nmat,mat,mat2,bDiag,bFirstDiag,
+    ps_mat(epsfile,nmat,mat,mat2,bFrame,bDiag,bFirstDiag,
 	   bTitle,w_legend,boxx,boxy,m2p,m2pout);
   if (xpmfile!=NULL)
     xpm_mat(xpmfile,nmat,mat,mat2,bDiag,bFirstDiag);
@@ -750,12 +760,14 @@ int main(int argc,char *argv[])
   int       i,nmat,nmat2;
   t_matrix *mat=NULL,*mat2=NULL;
   bool      bTitle,bDiag,bFirstDiag;
+  static bool bFrame=TRUE;
   static real boxx=0,boxy=0;
   static char *title[]   = { NULL, "top", "ylabel", "none", NULL };
   static char *legend[]  = { NULL, "both", "first", "second", "none", NULL };
   static char *diag[]    = { NULL, "first", "second", "none", NULL };
   static char *rainbow[] = { NULL, "no", "blue", "red", NULL };
   t_pargs pa[] = {
+    { "-frame",   FALSE, etBOOL, {&bFrame}, "Display frame, ticks, labels, title and legend" },
     { "-title",   FALSE, etENUM, {title},   "Show title at" },
     { "-legend",  FALSE, etENUM, {legend},  "Show legend" },
     { "-diag",    FALSE, etENUM, {diag},    "Diagonal" },
@@ -778,6 +790,11 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW,FALSE,
 		    NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
+
+  if (!bFrame) {
+    title[0]  = "none";
+    legend[0] = "none";
+  }
 
   if (ftp2bSet(efEPS,NFILE,fnm))
     epsfile=ftp2fn(efEPS,NFILE,fnm);
@@ -821,7 +838,7 @@ int main(int argc,char *argv[])
   if ((mat2 == NULL) && (w_legend != 'n'))
     w_legend = 'f';
 
-  do_mat(nmat,mat,nmat2,mat2,bDiag,bFirstDiag,bTitle,w_legend,
+  do_mat(nmat,mat,nmat2,mat2,bFrame,bDiag,bFirstDiag,bTitle,w_legend,
 	 boxx,boxy,epsfile,xpmfile,
 	 opt2fn_null("-di",NFILE,fnm),opt2fn_null("-do",NFILE,fnm));
   
