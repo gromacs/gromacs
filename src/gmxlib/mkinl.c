@@ -526,7 +526,8 @@ int main(int argc,char *argv[])
  
   fclose(output);
   nlines = count_lines(fn);
-  fprintf(stderr,"\r>>> Generated %d lines of code in %d functions\n\n",nlines,nfunc);
+  fprintf(stderr,"\r>>> Generated %d lines of code in %d functions\n",nlines,nfunc);
+  fprintf(stderr,"(%s may take a while to compile)\n\n",  bC ? "innerc.c" : "innerf.f");
   return 0;
 }
 

@@ -287,7 +287,7 @@ real shift_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   static bool bFirst=TRUE;
   static real Vself;
   int    i,i1,i2,j,k,m,iv,jv;
-  unsigned int *AA;
+  int *AA;
   double qq; /* Necessary for precision */
   double isp=0.564189583547756;
   real   qi,dr,dr2,dr_1,dr_3,fscal,Vexcl,qtot=0;
