@@ -38,7 +38,7 @@ enum {
 };
 
 enum {
-  epcNO, epcISOTROPIC, epcANISOTROPIC, epcTRICLINIC, epcNR
+  epcNO, epcISOTROPIC, epcSEMIISOTROPIC, epcANISOTROPIC, epcTRICLINIC, epcNR
 };
 
 enum {
