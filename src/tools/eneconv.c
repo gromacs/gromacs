@@ -10,7 +10,7 @@
  *               VERSION 2.0
  * 
  * Copyright (c) 1991-1999
- * BIOSON Research Institute, Dept. of Biophysical Chemistry
+ * BIOSON Research Institute, Dept. of Biophysical Chemistr
  * University of Groningen, The Netherlands
  * 
  * Please refer to:
@@ -127,39 +127,60 @@ static void sort_files(char **fnms,real *settime,int nfile)
 }
 
 
-static int scan_ene_files(char **fnms,int nfiles,real *readtime, real *timestep)
+static int scan_ene_files(char **fnms, int nfiles,
+			  real *readtime, real *timestep, int *nremax)
 {
-    /* Check number of energy terms and start time of all files */
-    int i,in,nre,ndr,nresav=0,step;
-    real t1,t2;
-    char      **enm=NULL;
-    t_drblock dr;
-    t_energy  *ee=NULL;
-    
-    for(i=0;i<nfiles;i++) {
-	in = open_enx(fnms[i],"r");
-	do_enxnms(in,&nre,&enm);
+  /* Check number of energy terms and start time of all files */
+  int f,i,in,nre,nremin,ndr,nresav=0,step;
+  real t1,t2;
+  char      **enm=NULL,inputstring[STRLEN];
+  t_drblock dr;
+  t_energy  *ee=NULL;
+  
+  for(f=0; f<nfiles; f++) {
+    in = open_enx(fnms[f],"r");
+    do_enxnms(in,&nre,&enm);
+    snew(ee,nre);
 
-	if (i == 0) {
-	  nresav = nre;
-	  snew(ee,nre);
-	  do_enx(in,&t1,&step,&nre,ee,&ndr,&dr);
-	  do_enx(in,&t2,&step,&nre,ee,&ndr,&dr);
-	  *timestep=t2-t1;
-	  readtime[i]=t1;
-	  close_enx(in);
-	} else if (nre != nresav) {
-	  fatal_error(0,"Energy files don't match, different number"
-		      " of energies (%s)",fnms[i]);
-	} else {
-	  do_enx(in,&t1,&step,&nre,ee,&ndr,&dr);
-	  readtime[i]=t1;
-	  close_enx(in);
+    if (f == 0) {
+      nresav  = nre;
+      nremin  = nre;
+      *nremax = nre;
+      do_enx(in,&t1,&step,&nre,ee,&ndr,&dr);
+      do_enx(in,&t2,&step,&nre,ee,&ndr,&dr);
+      *timestep=t2-t1;
+	readtime[f]=t1;
+	close_enx(in);
+    } else {
+      nremin  = min(nremin,nre);
+      *nremax = max(*nremax,nre);
+      if (nre != nresav) {
+	fprintf(stderr,
+		"Energy files don't match, different number of energies:\n"
+		" %s: %d\n %s: %d\n",fnms[f-1],nresav,fnms[f],nre);
+	fprintf(stderr,
+		"\nContinu conversion using only the first %d terms (n/y)?\n"
+		"(you should be sure that the energy terms match)\n",nremin);
+	fgets(inputstring,STRLEN-1,stdin);
+	if (inputstring[0]!='y' && inputstring[0]!='Y') {
+	  fprintf(stderr,"Will not convert\n");
+	  exit(0);
 	}
-	fprintf(stderr,"\n");  
+	nresav = nre;
+      }
+      do_enx(in,&t1,&step,&nre,ee,&ndr,&dr);
+      readtime[f]=t1;
+      close_enx(in);
     }
+    fprintf(stderr,"\n");
+    for(i=0; i<nre; i++)
+      sfree(enm[i]);
+    sfree(enm);
+    enm = NULL;
     sfree(ee);
-    return nre;
+  }
+  sfree(ee);
+  return nremin;
 }
 
 
@@ -373,7 +394,7 @@ int main(int argc,char *argv[])
   int       in,out=0;
   t_energy  *ee,*lastee,*outee,*startee;
   int       step,laststep,outstep,startstep;
-  int       nre,nfile,i,j,kkk,ndr,nset,*set=NULL;
+  int       nre,nremax,this_nre,nfile,i,j,kkk,ndr,nset,*set=NULL;
   real      t=0,outt=-1; 
   char      **fnms;
   char      **enm=NULL;
@@ -443,19 +464,19 @@ int main(int argc,char *argv[])
     fnms[0]=opt2fn("-f",NFILE,fnm);
   }
 
-  nre=scan_ene_files(fnms,nfile,readtime,&timestep);   
+  nre=scan_ene_files(fnms,nfile,readtime,&timestep,&nremax);   
   edit_files(fnms,nfile,readtime,settime,cont_type,bSetTime,bSort);     
 
-  snew(ee,nre);
-  snew(outee,nre);
+  snew(ee,nremax);
+  snew(outee,nremax);
 
   if(nfile>1)
-    snew(lastee,nre);
+    snew(lastee,nremax);
   else
     lastee=NULL;
 
   if(begin>0)
-    snew(startee,nre);
+    snew(startee,nremax);
   else
     startee=NULL;
 
@@ -465,7 +486,7 @@ int main(int argc,char *argv[])
     bNewFile=TRUE;
     bNewOutput=TRUE;
     in=open_enx(fnms[i],"r");
-    do_enxnms(in,&nre,&enm);
+    do_enxnms(in,&this_nre,&enm);
     if(i==0) {
       if (scalefac != 1)
 	set = select_it(nre,enm,&nset);
@@ -477,7 +498,7 @@ int main(int argc,char *argv[])
     
     /* start reading from the next file */
     while((t<(settime[i+1]-GMX_REAL_EPS)) &&
-	  do_enx(in,&t1,&step,&nre,ee,&ndr,&dr)) {
+	  do_enx(in,&t1,&step,&this_nre,ee,&ndr,&dr)) {
       if(bNewFile) {
 	tadjust=settime[i]-t1;	  
 	if(cont_type[i+1]==TIME_LAST) {
@@ -557,7 +578,11 @@ int main(int argc,char *argv[])
     
     /* move energies to lastee */
     close_enx(in);
-    
+    for(kkk=0; kkk<this_nre; kkk++)
+      sfree(enm[kkk]);
+    sfree(enm);
+    enm = NULL;
+
     fprintf(stderr,"\n");
   }
   if(outstep==0)
