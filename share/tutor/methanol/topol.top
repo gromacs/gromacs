@@ -1,0 +1,9 @@
+#include "ffG43a1.itp"
+#include "methanol.itp"
+
+[ system ]
+Pure Methanol - Yummie!
+
+[ molecules ]
+Methanol	216
+
