@@ -183,6 +183,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl,
 
   fp = xvgropen(histo,"Cluster size distribution","Cluster size","()");
   nhisto = 0;
+  fprintf(fp,"%5d  %8.3f\n",0,0.0);
   for(j=0; (j<max_size); j++) {
     real nelem = 0;
     for(i=0; (i<n_x); i++)
