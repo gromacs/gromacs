@@ -222,7 +222,7 @@ void write_posres(char *fn,t_atoms *pdba)
 }
 
 int read_pdball(char *inf, char *outf,char *title,
-		t_atoms *atoms, rvec **x,matrix box, bool bRetainH)
+		t_atoms *atoms, rvec **x,matrix box, bool bRemoveH)
 /* Read a pdb file. (containing proteins) */
 {
   int       natom,new_natom,i;
@@ -233,7 +233,7 @@ int read_pdball(char *inf, char *outf,char *title,
   init_t_atoms(atoms,natom,TRUE);
   snew(*x,natom);
   read_stx_conf(inf,title,atoms,*x,NULL,box);
-  if (!bRetainH) {
+  if (bRemoveH) {
     new_natom=0;
     for(i=0; i<atoms->nr; i++)
       if (!is_hydrogen(*atoms->atomname[i])) {
@@ -368,12 +368,13 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
 	char buf[STRLEN];
 	
 	sprintf(buf,"Atom %s in residue %s %d not found in database\n"
-		"             while sorting atoms%n",atomnm,
-		rptr->resname,pdba->atom[i].resnr+1,&i);
-	if ( is_hydrogen(atomnm) )
-	  sprintf(buf+i,". Maybe different protonation state.\n"
-		  "             Remove this hydrogen or choose a different "
-		  "protonation state.");
+		"             while sorting atoms%s",atomnm,
+		rptr->resname,pdba->atom[i].resnr+1,
+		is_hydrogen(atomnm) ? ". Maybe different protonation state.\n"
+		"             Remove this hydrogen or choose a different "
+		"protonation state.\n"
+		"             Option -ignh will ignore all hydrogens "
+		"in the input." : "");
 	fatal_error(0,buf);
       }
     }
@@ -524,16 +525,12 @@ int main(int argc, char *argv[])
     "convert a Gromos trajectory and coordinate file to Gromos. There is",
     "one limitation: reordering is done after the hydrogens are stripped",
     "from the input and before new hydrogens are added. This means that",
-    "you should not turn off [TT]-reth[tt].[PAR]",
+    "you should not use [TT]-ignh[tt].[PAR]",
 
     "The [TT].gro[tt] and [TT].g96[tt] file formats do not support chain",
     "identifiers. Therefore it is useful to enter a pdb file name at",
     "the [TT]-o[tt] option when you want to convert a multichain pdb file.",
     "[PAR]",
-    
-    "When using [TT]-reth[tt] to keep all hydrogens from the [TT].pdb[tt]",
-    "file, the names of the hydrogens in the [TT].pdb[tt] file [IT]must[it]",
-    "match the names in the database.[PAR]", 
     
     "[TT]-sort[tt] will sort all residues according to the order in the",
     "database, sometimes this is necessary to get charge groups",
@@ -628,7 +625,7 @@ int main(int argc, char *argv[])
   static bool bInter=FALSE, bCysMan=FALSE; 
   static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan=FALSE;
   static bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
-  static bool bH14=FALSE, bSort=TRUE, bRetainH=TRUE;
+  static bool bH14=FALSE, bSort=TRUE, bRemoveH=FALSE;
   static bool bAlldih=FALSE;
   static real angle=135.0, distance=0.3;
   static real long_bond_dist=0.25, short_bond_dist=0.05;
@@ -667,8 +664,8 @@ int main(int argc, char *argv[])
       "Sort the residues according to database" },
     { "-H14",    FALSE, etBOOL, {&bH14}, 
       "Use 1-4 interactions for hydrogen atoms" },
-    { "-reth",   FALSE, etBOOL, {&bRetainH}, 
-      "Retain hydrogen atoms that are in the pdb file" },
+    { "-ignh",   FALSE, etBOOL, {&bRemoveH}, 
+      "Ignore hydrogen atoms that are in the pdb file" },
     { "-alldih", FALSE, etBOOL, {&bAlldih}, 
       "Generate all proper dihedrals" },
     { "-dummy",  FALSE, etENUM, {dumstr}, 
@@ -716,7 +713,7 @@ int main(int argc, char *argv[])
   
   clear_mat(box);
   natom=read_pdball(opt2fn("-f",NFILE,fnm),opt2fn_null("-q",NFILE,fnm),title,
-		    &pdba_all,&pdbx,box,bRetainH);
+		    &pdba_all,&pdbx,box,bRemoveH);
   
   if (natom==0)
     fatal_error(0,"No atoms found in pdb file %s\n",opt2fn("-f",NFILE,fnm));
@@ -918,8 +915,8 @@ int main(int argc, char *argv[])
       sort_pdbatoms(nrtp,restp,natom,&pdba,&x,block,&gnames);
       natom = remove_duplicate_atoms(pdba,x);
       if (ftp2bSet(efNDX,NFILE,fnm)) {
-	if (!bRetainH)
-	  fprintf(stderr,"WARNING: without the -reth option the generated "
+	if (bRemoveH)
+	  fprintf(stderr,"WARNING: with the -remh option the generated "
 		  "index file (%s) might be useless\n"
 		  "(the index file is generated before hydrogens are added)",
 		  ftp2fn(efNDX,NFILE,fnm));
