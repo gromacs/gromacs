@@ -313,7 +313,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
 	    nsteps,oldt,t,nset);
     
     fprintf(stderr,"%-24s %10s %10s %10s %10s %10s",
-	    "Energy","Average","RMS","Fluct.","Drift","Tot-Drift");
+	    "Energy","Average","RMSD","Fluct.","Drift","Tot-Drift");
     if (bGibbs)
       fprintf(stderr,"  %10s\n","-ln<e^(E/kT)>*kT");
     else
@@ -492,7 +492,7 @@ int main(int argc,char *argv[])
     "running time-averaged and instantaneous distances between",
     "selected pairs can be plotted with the [TT]-pairs[tt] option.[PAR]",
     
-    "Average and RMS are calculated with full precision from the",
+    "Average and RMSD are calculated with full precision from the",
     "simulation (see printed manual). Drift is calculated by performing",
     "a LSQ fit of the data to a straight line. Total drift is drift",
     "multiplied by total time.[PAR]",
