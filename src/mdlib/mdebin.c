@@ -90,44 +90,43 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
   char     buf[256];
   t_mdebin *md;
   int      i,j,ni,nj,n,k,kk;
-  int      bBBB;
   
-  for(i=0; (i<F_NRE); i++) {
-    bBBB = FALSE;
+  for(i=0; i<F_NRE; i++) {
+    bEner[i] = FALSE;
     if (i == F_LJ)
-      bBBB = !bBHAM;
+      bEner[i] = !bBHAM;
     else if (i == F_BHAM)
-      bBBB = bBHAM;
+      bEner[i] = bBHAM;
     else if (i == F_LR)
-      bBBB = bLR;
+      bEner[i] = bLR;
     else if (i == F_LJLR)
-      bBBB = bLJLR;
+      bEner[i] = bLJLR;
     else if (i == F_LJ14)
-      bBBB = b14;
+      bEner[i] = b14;
     else if (i == F_COUL14)
-      bBBB = b14;
+      bEner[i] = b14;
     else if ((i == F_DVDL) || (i == F_DVDLKIN))
-      bBBB = bFEP;
+      bEner[i] = bFEP;
     else if ((strstr(interaction_function[i].name,"DUM") != NULL) ||
 	     (i == F_SHAKE) || (i == F_SETTLE))
-      bBBB = FALSE;
+      bEner[i] = FALSE;
     else if ((i == F_SR) || (i == F_EPOT) || (i == F_ETOT) || (i == F_EKIN) ||
 	     (i == F_TEMP) || (i == F_PRES))
-      bBBB = TRUE;
+      bEner[i] = TRUE;
     else if ((i == F_DISPCORR) && bDispCorr)
-      bBBB = TRUE;
+      bEner[i] = TRUE;
     else
-      bBBB = (idef->il[i].nr > 0);
-    
-    if (PAR(cr))
-      gmx_sumi(1,&bBBB,cr);
-    bEner[i] = bBBB;
-    
+      bEner[i] = (idef->il[i].nr > 0);
+  }
+  if (PAR(cr))
+    gmx_sumi(F_NRE,bEner,cr);
+
+  for(i=0; i<F_NRE; i++)
     if (bEner[i]) {
       ener_nm[f_nre]=interaction_function[i].longname;
       f_nre++;
     }
-  }
+
   bShake = (idef->il[F_SHAKE].nr > 0) || (idef->il[F_SETTLE].nr > 0);
   if (bShake) 
     bShake = (getenv("SHAKEVIR") != NULL);
