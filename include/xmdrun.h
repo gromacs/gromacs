@@ -169,11 +169,6 @@ extern void ionize(FILE *log,t_mdatoms *md,char **atomname[],
 		   real t,t_inputrec *ir,rvec x[],rvec v[],
 		   int start,int end,matrix box,t_commrec *cr);
 
-/* Calculate what the name says. Don't call me just yet... */
-extern real electron_atom_interactions(FILE *fp,t_mdatoms *md,t_inputrec *ir,
-				       int start,int end,
-				       rvec x[],rvec v[],rvec f[],matrix box);
-
 /* CODE TO ADD SPECIAL 2-DIMENSIONAL LENNARD-JONES CORRECTION TO FORCES AND ENERGY */
 extern void do_glas(FILE *log,int start,int homenr,rvec x[],rvec f[],
 		    t_forcerec *fr,t_mdatoms *md,int atnr,t_inputrec *ir,

@@ -174,17 +174,10 @@ typedef struct {
   real fj,sigPh,sigIn,vAuger;
 } t_cross_atom;
 
-typedef struct {
-  int nelec,maxelec,elec0,elmin_type;
-} t_electron_db;
-
 /* BEGIN GLOBAL VARIABLES */
 static int   Energies[] = { 6, 8, 10, 12, 15, 20 };
 static int   ionize_seed = 1993;
 #define NENER asize(Energies)
-
-static t_electron_db edb;
-
 /* END GLOBAL VARIABLES */
 
 void dump_ca(FILE *fp,t_cross_atom *ca,int i,char *file,int line)
@@ -452,59 +445,8 @@ real electron_cross_section(FILE *fp,rvec v,real mass,int nelec)
   return sigma;
 }
 
-static bool analyze_electrons(FILE *fp,t_electron_db *edb,
-			      int natom,char **atomname[])
-{
-  int  i,etp;
-  char *cc;
- 
-  if (((cc = getenv("GENERATE_ELECTRONS")) != NULL) &&
-      (sscanf(cc,"%d",&etp) == 1)) {
-    for(i=0; (i<natom); i++) {
-      if (strcmp(*atomname[i],"EL") == 0)
-	break;
-    }
-    edb->elec0      = i;
-    edb->nelec      = 0;
-    edb->maxelec    = natom-i;
-    edb->elmin_type = etp;
-    fprintf(fp,PREFIX"There are %d possible electrons\n",edb->maxelec);
-    
-    return TRUE;
-  }
-  else {
-    fprintf(fp,PREFIX"No electron features today.\n");
-    return FALSE;
-  }
-}
-
-void add_electron(FILE *fp,t_mdatoms *md,t_electron_db *edb,int ion,
-		  rvec x[],rvec v[],rvec dv,real dt)
-{
-  int  m,ee;
-  real nv;
-  
-  if (edb->nelec < edb->maxelec) {
-    ee = edb->elec0+edb->nelec++;
-    md->chargeA[ee] = md->chargeB[ee] = md->chargeT[ee] = -1;
-    md->typeA[ee]   = md->typeB[ee]   = edb->elmin_type;
-
-    /* Velocity! */
-    svmul(-md->massA[ion]*md->invmass[ee],dv,v[ee]);
-    /* Do a first step to prevent the electron from being on top of the 
-     * nucleus, move it 0.05 nm from the nucleus 
-     */
-    nv = 1.0/norm(v[ee]);
-    for(m=0; (m<DIM); m++) 
-      x[ee][m] = x[ion][m] + v[ee][m]*nv*0.05;
-  } 
-  else
-    fatal_error(0,PREFIX"No more particles to turn into electrons\n");
-}
-
 bool khole_decay(FILE *fp,t_cross_atom *ca,rvec x[],rvec v[],int ion,
-		 int *seed,real dt,bool bElectron,
-		 t_mdatoms *md,t_electron_db *edb)
+		 int *seed,real dt)
 {
   rvec dv;
   real factor;
@@ -528,63 +470,10 @@ bool khole_decay(FILE *fp,t_cross_atom *ca,rvec x[],rvec v[],int ion,
     svmul(factor,dv,dv);
     rvec_inc(v[ion],dv);
 
-    /* Now put the electron in place */
-    if (bElectron)    
-      add_electron(fp,md,edb,ion,x,v,dv,dt);
-
     return TRUE;
   }
   else
     return FALSE;
-}
-
-real electron_atom_interactions(FILE *fp,t_mdatoms *md,t_inputrec *ir,
-				int start,int end,
-				rvec x[],rvec v[],rvec f[],matrix box)
-{
-  /* Compute what the name says... */
-  int  i,j,m,elec1,e1;
-  rvec dx;
-  real mindist2,vc,vtot,fscal,fc,dx2,dx_1,qi,*q;
-  
-  mindist2 = sqr(0.05);
-  vtot     = 0;
-  
-  if (edb.nelec > 0) {
-    /* Do a search... */
-    q = md->chargeT;
-    if (ir->ePBC != epbcNONE) 
-      init_pbc(box,FALSE);
-    /* the end variable usually includes electrons */
-    e1 = min(end,edb.elec0);
-    for(i=start; (i<e1); i++) {
-      elec1 = edb.elec0 + edb.nelec;
-      qi = q[i]*ONE_4PI_EPS0;
-      for(j=edb.elec0; (j<elec1); j++) {
-	if (ir->ePBC == epbcNONE) 
-	  rvec_sub(x[i],x[j],dx);
-	else
-	  pbc_dx(x[i],x[j],dx);
-	dx2 = iprod(dx,dx);
-	if (dx2 < mindist2) {
-	  /* Model collision */
-	}
-	else {
-	  /* Do normal coulomb */
-	  dx_1  = invsqrt(dx2);
-	  vc    = qi*q[j]*dx_1;
-	  vtot += vc;
-	  fscal = vc*dx_1*dx_1;
-	  for(m=0; (m<DIM); m++) {
-	    fc       = fscal*dx[m];
-	    f[i][m] += fc;
-	    f[j][m] -= fc;
-	  }
-	}
-      }
-    }
-  }
-  return vtot;
 }
 
 void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
@@ -592,7 +481,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 {
   static FILE  *xvg,*ion;
   static char  *leg[] = { "Probability", "Primary Ionization", "Integral over PI", "KHole-Decay", "Integral over KD" };
-  static bool  bFirst = TRUE,bElectron = FALSE;
+  static bool  bFirst = TRUE;
   static real  t0,imax,width,rho,nphot;
   static real  interval;
   static int   dq_tot,nkd_tot,ephot,mode;
@@ -659,12 +548,10 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     xvgr_legend(xvg,asize(leg),leg);
     ion   = ffopen("ionize.log","w");
 
-    bElectron = analyze_electrons(fp,&edb,md->nr,atomname);
-    
     fprintf(fp,PREFIX"Parameters for ionization events:\n");
     fprintf(fp,PREFIX"Imax = %g, t0 = %g, width = %g, seed = %d\n"
-	    PREFIX"# Photons = %g, rho = %g, ephot = %d (keV), Electrons = %s\n",
-	    imax,t0,width,ionize_seed,nphot,rho,ephot,yesno_names[bElectron]);
+	    PREFIX"# Photons = %g, rho = %g, ephot = %d (keV)\n",
+	    imax,t0,width,ionize_seed,nphot,rho,ephot);
     fprintf(fp,PREFIX"Electron_mass: %10.3e(keV) Atomic_mass: %10.3e(keV)\n"
 	    PREFIX"Speed_of_light: %10.3e(nm/ps)\n",
 	    ELECTRONMASS_keV,ATOMICMASS_keV,SPEED_OF_LIGHT);
@@ -785,9 +672,6 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	  for(m=0; (m<DIM); m++)
 	    dv[m] -= factor*ddv[m];
 	
-	  if (bElectron)
-	    add_electron(fp,md,&edb,i,x,v,dv,ir->delta_t);
-	  
 	  if (debug)
 	    pr_rvec(debug,0,"ELL",dv,DIM);
 	  
@@ -856,8 +740,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     /* Now check old event: Loop over k holes! */
     nkh = ca[i].k;
     for (kk = 0; (kk < nkh); kk++) 
-      if (khole_decay(fp,&(ca[i]),x,v,i,&ionize_seed,ir->delta_t,
-		      bElectron,md,&edb)) {
+      if (khole_decay(fp,&(ca[i]),x,v,i,&ionize_seed,ir->delta_t)) {
 	nkdecay ++;
 	ndecay[i]++;
       }
