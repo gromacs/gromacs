@@ -100,9 +100,22 @@ static void cmp_str(FILE *fp, char *s, int index, char *s1, char *s2)
   }
 }
 
+static bool equal_real(real i1,real i2,real ftol)
+{
+  double nom,denom,error;
+  
+  nom   = fabs(i1-i2);
+  denom = fabs(i1)+fabs(i2);
+  if (denom != 0) {
+    error = 2*nom/denom;
+    return (error <= ftol);
+  }
+  return TRUE;
+}
+
 static void cmp_real(FILE *fp,char *s,int index,real i1,real i2,real ftol)
 {
-  if (fabs(i1 - i2) > ftol) {
+  if (!equal_real(i1,i2,ftol)) {
     if (index != -1)
       fprintf(fp,"%s[%d] (%e - %e)\n",s,index,i1,i2);
     else
@@ -469,23 +482,25 @@ void comp_trx(char *fn1, char *fn2, real ftol)
     fprintf(stdout,"\nBoth files read correctly\n");
 }
 
-static void cmp_energies(FILE *fp,int frame1,int frame2,int nre,
+static void cmp_energies(FILE *fp,int step1,int step2,int nre,
 			 t_energy e1[],t_energy e2[],
-			 char *enm1[],char *enm2[],real ftol)
+			 char *enm1[],char *enm2[],real ftol,
+			 int maxener)
 {
   int  i;
   
-  for(i=0; (i<nre); i++)
-    if (fabs(e1[i].e - e2[i].e) > ftol)
-      fprintf(fp,"%-15s  frame %3d:  %12g, %s frame %3d: %12g\n",
-	      enm1[i],frame1,e1[i].e,
-	      strcmp(enm1[i],enm2[i])!=0 ? enm2[i]:"",frame2,e2[i].e);
+  for(i=0; (i<maxener); i++) {
+    if (!equal_real(e1[i].e,e2[i].e,ftol))
+      fprintf(fp,"%-15s  step %3d:  %12g, %s step %3d: %12g\n",
+	      enm1[i],step1,e1[i].e,
+	      strcmp(enm1[i],enm2[i])!=0 ? enm2[i]:"",step2,e2[i].e);
+  }
 }
 
-void comp_enx(char *fn1,char *fn2,real ftol)
+void comp_enx(char *fn1,char *fn2,real ftol,char *lastener)
 {
-  int       in1,in2,nre,nre1,nre2,frame1,frame2,ndr1,ndr2;
-  int       i;
+  int       in1,in2,nre,nre1,nre2,step1,step2,ndr1,ndr2;
+  int       i,maxener;
   char      **enm1=NULL,**enm2=NULL;
   t_energy  *ee1,*ee2;
   t_drblock dr1,dr2;
@@ -505,15 +520,22 @@ void comp_enx(char *fn1,char *fn2,real ftol)
   nre = nre1;
   fprintf(stdout,"There are %d terms in the energy files\n\n",nre);
   
+  maxener = nre;
   for(i=0; (i<nre); i++) {
     cmp_str(stdout,"enm",i,enm1[i],enm2[i]);
+    if ((lastener != NULL) && (strstr(enm1[i],lastener) != NULL)) {
+      maxener=i+1;
+      break;
+    }
   }
+  fprintf(stdout,"There are %d terms to compare in the energy files\n\n",
+	  maxener);
   
   snew(ee1,nre);
   snew(ee2,nre);
   do { 
-    b1 = do_enx(in1,&t1,&frame1,&nre1,ee1,&ndr1,&dr1);
-    b2 = do_enx(in2,&t2,&frame2,&nre2,ee2,&ndr2,&dr2);
+    b1 = do_enx(in1,&t1,&step1,&nre1,ee1,&ndr1,&dr1);
+    b2 = do_enx(in2,&t2,&step2,&nre2,ee2,&ndr2,&dr2);
     if (b1 && !b2)
       fprintf(stdout,"\nEnd of file on %s but not on %s\n",fn2,fn1);
     else if (!b1 && b2) 
@@ -522,7 +544,7 @@ void comp_enx(char *fn1,char *fn2,real ftol)
       fprintf(stdout,"\nFiles read succesfully\n");
     else {
       cmp_real(stdout,"t",-1,t1,t2,ftol);
-      cmp_int(stdout,"frame",-1,frame1,frame2);
+      cmp_int(stdout,"step",-1,step1,step2);
       cmp_int(stdout,"nre",-1,nre1,nre2);
       cmp_int(stdout,"ndr",-1,ndr1,ndr2);
 
@@ -538,9 +560,11 @@ void comp_enx(char *fn1,char *fn2,real ftol)
 		fn2,nre,nre2);
 	break;
       }
-      cmp_energies(stdout,frame1,frame2,nre,ee1,ee2,enm1,enm2,ftol);
+      if (nre < maxener)
+	maxener = nre;
+      cmp_energies(stdout,step1,step2,nre,ee1,ee2,enm1,enm2,ftol,maxener);
       /*if ((ndr1 == ndr2) && (ndr1 > 0))
-	cmp_disres(stdout,frame1,frame2,ndr1,dr1,dr2);*/
+	cmp_disres(stdout,step1,step2,ndr1,dr1,dr2);*/
     }
   } while (b1 && b2);
     

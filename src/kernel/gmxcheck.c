@@ -385,6 +385,7 @@ int main(int argc,char *argv[])
   static real bon_lo=0.4;
   static real bon_hi=0.7;
   static real ftol=0;
+  static char *lastener=NULL;
   static t_pargs pa[] = {
     { "-vdwfac", FALSE, etREAL, {&vdw_fac},
       "Fraction of sum of VdW radii used as warning cutoff" },
@@ -393,7 +394,9 @@ int main(int argc,char *argv[])
     { "-bonhi",  FALSE, etREAL, {&bon_hi},
       "Max. fract. of sum of VdW radii for bonded atoms" },
     { "-tol",    FALSE, etREAL, {&ftol},
-      "Tolerance for comparing real values" }
+      "Relative tolerance for comparing real values defined as 2*(a-b)/(|a|+|b|)" },
+    { "-lastener",FALSE, etSTR,  {&lastener},
+      "Last energy term to compare (if not given all are tested). It makes sense to go up until the Pressure." }
   };
 
   CopyRight(stdout,argv[0]);
@@ -419,7 +422,7 @@ int main(int argc,char *argv[])
   fn1 = opt2fn_null("-e",NFILE,fnm);
   fn2 = opt2fn_null("-e2",NFILE,fnm);
   if (fn1 && fn2)
-    comp_enx(fn1,fn2,ftol);
+    comp_enx(fn1,fn2,ftol,lastener);
   else if (fn1)
     chk_enx(ftp2fn(efENX,NFILE,fnm));
   else if (fn2)
