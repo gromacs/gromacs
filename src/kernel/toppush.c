@@ -496,19 +496,23 @@ void push_nbt(directive d,t_nbparam **nbt,t_atomtype *atype,
   
   /* Get the force parameters */
   nrfp = NRFP(ftype);
-  if (nrfp) {
+  if (nrfp == 2) {
     if (sscanf(pline,form2,&c[0],&c[1]) != 2) {
       too_few();
       return;
     }
   }
-  else {
+  else if (nrfp == 3) {
     if (sscanf(pline,form3,&c[0],&c[1],&c[2]) != 3) {
       too_few();
       return;
     }
   }
-  for(i=0; i<nrfp; i++)
+  else {
+    fatal_error(0,"Number of force parameters for nonbonded interactions is %d"
+		" in file %s, line %d",nrfp,__FILE__,__LINE__);
+  }
+  for(i=0; (i<nrfp); i++)
     cr[i] = c[i];
 
   /* Put the parameters in the matrix */
