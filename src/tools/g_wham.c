@@ -256,7 +256,7 @@ int main(int argc,char *argv[])
     { efXVG, "-hist","histo", ffWRITE}	 /* output file for histograms */
   };
   
-  int i,j,k,l; 
+  int i,j,k,l,nfile; 
   t_UmbrellaHeader header;
   t_UmbrellaWindow * window=NULL;
   double *profile;
@@ -275,7 +275,7 @@ int main(int argc,char *argv[])
   
   nfile = ftp2fns(&fnms,efPDO,NFILE,fnm);
   
-  if(!nfile) 
+  if (!nfile) 
     fatal_error(0,"No input files");
   
   for(i=0;i<nfile;++i)
