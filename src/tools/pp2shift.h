@@ -1,5 +1,7 @@
 #ifndef _pp2shift_h
 #define _pp2shift_h
+
+#include "typedefs.h"
 	
 enum { edPhi=0, edPsi, edOmega, edChi1, edChi2, edChi3, edChi4, edChi5, edChi6, edMax };
 
@@ -26,5 +28,15 @@ extern void do_pp2shifts(FILE *fp,int nframes,
 			 int nlist,t_dlist dlist[],real **dih);
 
 extern bool has_dihedral(int Dih,t_dlist *dl);
+
+extern t_dlist *mk_dlist(FILE *log, 
+			 t_atoms *atoms, int *nlist,
+			 bool bPhi, bool bPsi, bool bChi, int maxchi,
+			 int r0,int naa,char **aa);
+			 
+extern void pr_dlist(FILE *fp,int nl,t_dlist dl[],real dt);
+
+extern int pr_trans(FILE *fp,int nl,t_dlist dl[],real dt,int Xi);
+
 
 #endif

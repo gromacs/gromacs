@@ -94,7 +94,7 @@ g_disre:	g_disre.o
 g_gyrate:	g_gyrate.o  
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-g_chi:		g_chi.o		anadih.o	pp2shift.o	$(ACOBJ)
+g_chi:		g_chi.o		anadih.o pp2shift.o	dlist.o $(ACOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_velacc:	g_velacc.o	$(ACOBJ)
