@@ -38,37 +38,55 @@ static char *SRCID_do_fit_c = "$Id$";
 
 #define EPS  1.0e-09
 
+real calc_similar_ind(bool bRho,int nind,atom_id *index,real mass[],
+		      rvec x[],rvec xp[])
+{
+  int i, j, d;
+  real m, tm, xs, xd, rs, rd;
+  
+  tm=0;
+  rs=0;
+  rd=0;
+  for(j=0; j<nind; j++) {
+    if (index)
+      i = index[j];
+    else
+      i = j;
+    m = mass[i];
+    tm += m;
+    for(d=0 ; d<DIM; d++) {
+      xd = x[i][d] - xp[i][d];
+      rd += m * xd * xd;
+      if (bRho) {
+	xs = x[i][d] + xp[i][d];
+	rs += m * xs * xs;
+      }
+    }
+  }
+  if (bRho)
+    return sqrt(rd/rs);
+  else
+    return sqrt(rd/tm);
+}
+
 real rmsdev_ind(int nind,atom_id index[],real mass[],rvec x[],rvec xp[])
 {
-  int  i,j,m;
-  real sqd,totmass;
-  
-  sqd = 0;
-  totmass = 0;
-  for(j=0; j<nind; j++) {
-    i=index[j];
-    totmass += mass[i];
-    for(m=0; m<DIM; m++)
-      sqd += mass[i]*(x[i][m]-xp[i][m])*(x[i][m]-xp[i][m]);
-  }
-  
-  return sqrt(sqd/totmass);
+  return calc_similar_ind(FALSE, nind, index, mass, x, xp);
 }
 
 real rmsdev(int natoms,real mass[],rvec x[],rvec xp[])
 {
-  int  i,m;
-  real sqd,totmass;
-  
-  sqd = 0;
-  totmass = 0;
-  for(i=0; i<natoms; i++) {
-    totmass += mass[i];
-    for(m=0; m<DIM; m++)
-      sqd += mass[i]*(x[i][m]-xp[i][m])*(x[i][m]-xp[i][m]);
-  }
-  
-  return sqrt(sqd/totmass);
+  return calc_similar_ind(FALSE, natoms, NULL, mass, x, xp);
+}
+
+real rhodev_ind(int nind,atom_id index[],real mass[],rvec x[],rvec xp[])
+{
+  return calc_similar_ind(TRUE, nind, index, mass, x, xp);
+}
+
+real rhodev(int natoms,real mass[],rvec x[],rvec xp[])
+{
+  return calc_similar_ind(TRUE, natoms, NULL, mass, x, xp);
 }
 
 void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
