@@ -160,7 +160,7 @@ int main(int argc,char *argv[])
     "[BB]6.[bb] fit atoms to reference structure[BR]",
     "[BB]7.[bb] remove duplicate frames[BR]",
     "[BB]8.[bb] reduce the number of frames[BR]",
-    "[BB]9.[bb] change the timestamps of the frames (e.g. t0 and delta-t)",
+    "[BB]9.[bb] change the timestamps of the frames (e.g. t0 and dt)",
     "[PAR]",
     "The program [TT]trjcat[tt] can concatenate multiple trajectory files.",
     "[PAR]",
@@ -397,14 +397,14 @@ int main(int argc,char *argv[])
     bIndex = (bIndex || bTPS);
     
     if (bTPS) {
-      read_tps_conf(top_file,top_title,&top,&xp,NULL,top_box,bFit);
+      (void) read_tps_conf(top_file,top_title,&top,&xp,NULL,top_box,bFit);
       atoms=&top.atoms;
       /* top_title is only used for gro and pdb,
        * the header in such a file is top_title t= ...
        * to prevent a double t=, remove it from top_title
        */
       if ((charpt=strstr(top_title," t= ")))
-	  charpt[0]='\0';
+	charpt[0]='\0';
     }
 
     if (bFit) {
