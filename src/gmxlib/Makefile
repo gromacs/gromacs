@@ -179,10 +179,11 @@ $(LIB)(fnbf.o):		fnbf.c inner.h $(M4MAC) $(M4FILE) $(CPUMAKEF)
 			$(AR) $(ARFLAGS) $(LIB) fnbf.o
 
 x86asm.o:		x86asm.s
-			@echo "If your build bails out here, make sure you are"
-			@echo "using a version of nasm which supports the"
-			@echo "extended 3dnow instruction set. You'll find it"
-			@echo "under software on the gromacs homepage."
+			@echo "If your build bails out here, it is most probably because"
+			@echo "you are using a version of nasm which does not support the"
+			@echo "*EXTENDED* 3dnow instruction set. Vanilla nasm 0.98 has to"
+                        @echo "be patched to enable this. You'll find both these patches and"
+			@echo "a precompiled version under software on the gromacs homepage."
 ifeq ($(GMXCPU),win)
 			nasm -f win32 -o x86asm.o x86asm.s
 else
@@ -190,10 +191,11 @@ else
 endif
 
 inner_3dnow.o:		inner_3dnow.s
-			@echo "If your build bails out here, make sure you are"
-			@echo "using a version of nasm which supports the"
-			@echo "extended 3dnow instruction set. You'll find it"
-			@echo "under software on the gromacs homepage."
+			@echo "If your build bails out here, it is most probably because"
+			@echo "you are using a version of nasm which does not support the"
+			@echo "*EXTENDED* 3dnow instruction set. Vanilla nasm 0.98 has to"
+                        @echo "be patched to enable this. You'll find both these patches and"
+			@echo "a precompiled version under software on the gromacs homepage."
 ifeq ($(GMXCPU),win)
 			nasm -f win32 -o inner_3dnow.o inner_3dnow.s
 else
