@@ -175,8 +175,7 @@ static void do_elupdate(int start,int homenr,double dt,
 	vb             = va + l1*uold ;
 	v[n][d]        = vb;
 	xprime[n][d]   = x[n][d]+vb*dt*freezefac[gf][d];
-      }
-      else
+      } else 
 	xprime[n][d]   = x[n][d];
     }
   }
@@ -212,10 +211,10 @@ static void do_update(int start,int homenr,double dt,
 	/* do not scale the mean velocities u */
 	uold           = gstat[ga].uold[d];
 	va             = vv + accel[ga][d]*dt;
-	vb             = va + (1.0-lg)*uold ;
+	vb             = va + (1.0-lg)*uold;
+	v[n][d]        = vb;
 	xprime[n][d]   = x[n][d]+vb*dt;
-      } 
-      else
+      } else
 	xprime[n][d]   = x[n][d];
     }
   }
@@ -262,8 +261,7 @@ static void do_update_lang(int start,int homenr,double dt,
 	vv             = invfr*f[n][d] + rfac * jr - rhalf;
 	v[n][d]        = vv;
 	xprime[n][d]   = x[n][d]+v[n][d]*dt;
-      }
-      else
+      } else
 	xprime[n][d]   = x[n][d];
     }
   }
