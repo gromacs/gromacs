@@ -250,7 +250,8 @@ void gen_nnb(t_nextnb *nnb,t_params plist[])
 
   nrbonds=0;
   for(i=0; (i<F_NRE); i++)
-    if (interaction_function[i].flags & IF_CONNECT)
+    if ( (interaction_function[i].flags & IF_CONNECT) && 
+	 !(interaction_function[i].flags & IF_DUMMY) )
       /* we need every bond twice (bidirectional) */
       nrbonds += 2*plist[i].nr;
   
@@ -258,7 +259,8 @@ void gen_nnb(t_nextnb *nnb,t_params plist[])
 
   nrf=0;
   for(i=0; (i<F_NRE); i++)
-    if (interaction_function[i].flags & IF_CONNECT)
+    if ( (interaction_function[i].flags & IF_CONNECT) && 
+	 !(interaction_function[i].flags & IF_DUMMY) )
       add_b(&plist[i],&nrf,s);
 
   /* now sort the bonds */
