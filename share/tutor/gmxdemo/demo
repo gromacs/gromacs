@@ -78,7 +78,7 @@ echo "Starting pdb2gmx"
 if ( $?DISPLAY ) then 
 	xterm -title pdb2gmx -sb -e tail +0f output.pdb2gmx &
 endif
-echo 0 | pdb2gmx -f ${MOL}.pdb -o ${MOL}.gro -p ${MOL}.top >& output.pdb2gmx
+echo 0 | pdb2gmx -f ${MOL}.pdb -o ${MOL}.gro -p ${MOL}.top >& ! output.pdb2gmx
 echo "pdb2gmx finished"
 echo -n "Press <enter>"
 set  ans = $<
@@ -117,13 +117,13 @@ echo "Starting editconf and genbox..."
 if ( $?DISPLAY ) then 
 	xterm -title genbox -sb -e tail +0f output.genbox &
 endif
-editconf -f ${MOL}.gro -o ${MOL}.gro -dc 0.5 >& output.genbox 
+editconf -f ${MOL}.gro -o ${MOL}.gro -dc 0.5 >& ! output.genbox 
 
 echo "editconf finished"
 echo -n "Press <enter>"
 set  ans = $<
 
-genbox -cp ${MOL}.gro -cs -o ${MOL}_b4em.gro -p ${MOL}.top >>& output.genbox 
+genbox -cp ${MOL}.gro -cs -o ${MOL}_b4em.gro -p ${MOL}.top >>& ! output.genbox 
 
 echo "genbox finished"
 echo -n "Press <enter>"
@@ -193,7 +193,7 @@ echo "Starting grompp..."
 if ( $?DISPLAY ) then 
 	xterm -title grompp -sb -e tail +0f output.grompp_em &
 endif
-grompp -f em -c ${MOL}_b4em -p ${MOL} -o ${MOL}_em >& output.grompp_em
+grompp -f em -c ${MOL}_b4em -p ${MOL} -o ${MOL}_em >& ! output.grompp_em
 
 echo "grompp finished"
 echo -n "Press <enter>"
@@ -233,7 +233,7 @@ echo "starting energy minimisation mdrun..."
 if ( $?DISPLAY ) then 
 	xterm -title mdrun -sb -e tail +0f output.mdrun_em &
 endif
-mdrun -s ${MOL}_em -o ${MOL}_em -c ${MOL}_b4pr -v >& output.mdrun_em 
+mdrun -s ${MOL}_em -o ${MOL}_em -c ${MOL}_b4pr -v >& ! output.mdrun_em 
 
 echo "mdrun finished"
 echo -n "Press <enter>"
@@ -323,7 +323,7 @@ echo "Starting grompp..."
 if ( $?DISPLAY ) then 
 	xterm -title grompp -sb -e tail +0f output.grompp_pr &
 endif
-grompp -f pr -c ${MOL}_b4pr -r ${MOL}_b4pr -p ${MOL} -o ${MOL}_pr >& output.grompp_pr
+grompp -f pr -c ${MOL}_b4pr -r ${MOL}_b4pr -p ${MOL} -o ${MOL}_pr >& ! output.grompp_pr
 echo "grompp finished"
 
 echo -n "Press <enter>"
@@ -357,7 +357,7 @@ echo "starting mdrun..."
 if ( $?DISPLAY ) then 
 	xterm -title mdrun -sb -e tail +0f output.mdrun_pr &
 endif
-mdrun -s ${MOL}_pr -o ${MOL}_pr -c ${MOL}_b4md -v >& output.mdrun_pr
+mdrun -s ${MOL}_pr -o ${MOL}_pr -c ${MOL}_b4md -v >& ! output.mdrun_pr
 
 echo "mdrun finished"
 echo -n "Press <enter>"
@@ -427,7 +427,7 @@ echo "Starting grompp..."
 if ( $?DISPLAY ) then 
 	xterm -title grompp -sb -e tail +0f output.grompp_md &
 endif
-grompp -f md -c ${MOL}_b4md  -p ${MOL} -o ${MOL}_md >& output.grompp_md
+grompp -f md -c ${MOL}_b4md  -p ${MOL} -o ${MOL}_md >& ! output.grompp_md
 
 echo "grompp finished"
 echo -n "Press <enter>"
@@ -459,7 +459,7 @@ echo "starting mdrun..."
 if ( $?DISPLAY ) then 
 	xterm -title mdrun -sb -e tail +0f output.mdrun_md &
 endif
-mdrun -s ${MOL}_md -o ${MOL}_md -c ${MOL}_after_md -v >& output.mdrun_md
+mdrun -s ${MOL}_md -o ${MOL}_md -c ${MOL}_after_md -v >& ! output.mdrun_md
 
 echo "mdrun finished"
 echo -n "Press <enter>"
