@@ -93,7 +93,7 @@ void write_pdbfile_indexed(FILE *out,char *title,
     fprintf(out,"REMARK    This file does not adhear to the PDB standard\n");
     fprintf(out,"REMARK    As a result of, some programs may not like it\n");
   }
-  if (box) {
+  if (box && ( norm2(box[XX]) || norm2(box[YY]) || norm2(box[ZZ]) ) ) {
     if (norm2(box[YY])*norm2(box[ZZ])!=0)
       alpha = RAD2DEG*acos(cos_angle_no_table(box[YY],box[ZZ]));
     else
