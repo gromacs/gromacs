@@ -300,7 +300,6 @@ int main(int argc,char *argv[])
 #define SKIP 10
   t_topology   top;
   t_atoms      *atoms,useatoms;
-  int          isize;
   atom_id      *index;
   char         *grpname;
   int          ifit,irms;
@@ -308,7 +307,7 @@ int main(int argc,char *argv[])
   char         *gn_fit,*gn_rms;
   real         t,pt,tshift,t0=-1,dt=0.001;
   bool         bPBC,bInBox,bNoJump;
-  bool         bSelect,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
+  bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bToldYouOnce=FALSE;
   bool         bHaveNextFrame,bHaveX,bHaveV,bSetBox;
   char         *grpnm;
@@ -411,7 +410,7 @@ int main(int argc,char *argv[])
     if (bIndex) {
       printf("Select group for output\n");
       get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),
-		1,&isize,&index,&grpnm);
+		1,&nout,&index,&grpnm);
     }
     else {
       /* no index file, so read natoms from TRX */
@@ -420,7 +419,7 @@ int main(int argc,char *argv[])
       snew(index,natoms);
       for(i=0;i<natoms;i++)
 	index[i]=i;
-      isize=natoms; 
+      nout=natoms; 
     }
     
     /* if xp was not snew-ed before, do it now */
@@ -436,7 +435,7 @@ int main(int argc,char *argv[])
          store original location (to put structure back) */
       rm_pbc(&(top.idef),atoms->nr,box,xp,xp);
       copy_rvec(xp[index[0]],x_shift);
-      reset_x(ifit,ind_fit,isize,index,xp,w_rls);
+      reset_x(ifit,ind_fit,nout,index,xp,w_rls);
       rvec_dec(x_shift,xp[index[0]]);
     }
     
@@ -446,12 +445,12 @@ int main(int argc,char *argv[])
       init_t_atoms(&useatoms,atoms->nr,FALSE);
       sfree(useatoms.resname);
       useatoms.resname=atoms->resname;
-      for(i=0;(i<isize);i++) {
+      for(i=0;(i<nout);i++) {
 	useatoms.atomname[i]=atoms->atomname[index[i]];
 	useatoms.atom[i].resnr=atoms->atom[index[i]].resnr;
 	useatoms.nres=max(useatoms.nres,useatoms.atom[i].resnr+1);
       }
-      useatoms.nr=isize;
+      useatoms.nr=nout;
     }
     /* open trj file for reading */
     if (bVels)
@@ -489,24 +488,23 @@ int main(int argc,char *argv[])
       break;
     }
     
-    bSelect=FALSE;
+    bCopy=FALSE;
     if (bIndex)
       /* check if index is meaningful */
-      for(i=0; i<isize; i++) {
+      for(i=0; i<nout; i++) {
 	if (index[i] >= natoms)
 	  fatal_error(0,"Index[%d] %d is larger than the number of atoms in the trajectory file (%d)",i,index[i]+1,natoms);
-	bSelect = bSelect || (i != index[i]);
+	bCopy = bCopy || (i != index[i]);
       }
-    if (bSelect) {
-      snew(xn,isize);
+
+    if (bCopy) {
+      snew(xn,nout);
       xout=xn;
-      snew(vn,isize);
+      snew(vn,nout);
       vout=vn;
-      nout=isize;
     } else {
       xout=x;
       vout=v;
-      nout=natoms;
     }
   
     if (ftp == efG87)
@@ -556,7 +554,7 @@ int main(int argc,char *argv[])
 	   for normal fit, this is only done for output frames */
 	rm_pbc(&(top.idef),natoms,box,x,x);
 	
-	reset_x(ifit,ind_fit,isize,index,x,w_rls);
+	reset_x(ifit,ind_fit,nout,index,x,w_rls);
 	do_fit(natoms,w_rls,xp,x);
       }
       
@@ -612,7 +610,7 @@ int main(int argc,char *argv[])
 	      rm_pbc(&(top.idef),natoms,box,x,x);
 	  
 	    if (bFit) {
-	      reset_x(ifit,ind_fit,isize,index,x,w_rls);
+	      reset_x(ifit,ind_fit,nout,index,x,w_rls);
 	      do_fit(natoms,w_rls,xp,x);
 	      for(i=0; (i<natoms); i++)
 		rvec_inc(x[i],x_shift);
@@ -620,11 +618,11 @@ int main(int argc,char *argv[])
 	  }
 	  
 	  if (bCenter) {
-	    center_x(x,box,isize,index);
+	    center_x(x,box,nout,index);
 	  } 
 	  
-	  if (bSelect) {
-	    for(i=0; (i<isize); i++) {
+	  if (bCopy) {
+	    for(i=0; (i<nout); i++) {
 	      copy_rvec(x[index[i]],xout[i]);
 	      if (bVels) copy_rvec(v[index[i]],vout[i]);
 	    }
@@ -635,10 +633,10 @@ int main(int argc,char *argv[])
 	     Peter Tieleman, Mon Jul 15 1996
 	     */
 	  if (bInBox)
-	    put_atoms_in_box(isize,box,xout);
+	    put_atoms_in_box(nout,box,xout);
 	  
 	  if (opt2parg_bSet("-shift",asize(pa),pa))
-	    for(i=0; (i<isize); i++)
+	    for(i=0; (i<nout); i++)
 	      for (d=0; (d<DIM); d++)
 		xout[i][d] += outframe*shift[d];
 	  
