@@ -414,9 +414,15 @@ void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
 			   int nx,atom_id index[], int pr,
 			   rvec *x,rvec *v,matrix box)
 {
-  char resnm[6],nm[6],format[100];
+  char resnm[6],nm[6],anr[8],format[100];
   int  ai,i,resnr,l,vpr;
 
+  if (nx >= 10000)
+    fprintf(stderr,"\n"
+	           "WARNING: Writing a .gro file with more than 99999 atoms\n"
+	           "         with only 5 digits for the atom numbers.\n"
+	           "         All Gromacs programs ignore atom numbers.\n"  
+	           "         Use .pdb if you need the atom numbers.\n"); 
   fprintf (out,"%s\n",title[0]?title:bromacs());
   fprintf (out,"%5d\n",nx);
   /* build format string for printing, 
@@ -446,7 +452,8 @@ void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
     else
       strcpy(nm," ??? ");
 
-    fprintf(out,"%5d%-5.5s%5.5s%5d",resnr+1,resnm,nm,ai+1);
+    sprintf(anr,"%d",ai+1);
+    fprintf(out,"%5d%-5.5s%5.5s%5.5s",resnr+1,resnm,nm,anr);
     /* next fprintf uses built format string */
     if (v)
       fprintf(out,format,
