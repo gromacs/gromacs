@@ -413,7 +413,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     fmax=f_max(cr->left,cr->right,nsb->nprocs,start,end,force[Min]); 
     fprintf(stderr,"Maximum force: %12.5e\n",fmax); 
     if (bDone) { 
-      sprintf(sbuf,"\n%s converged to %8.6f \n",SD,ftol); 
+      sprintf(sbuf,"\n%s converged to %g\n",SD,ftol); 
       fprintf(stderr,sbuf);
       fprintf(log,sbuf);
     } 
@@ -422,7 +422,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       fprintf(stderr,sbuf);
       fprintf(log,sbuf);
     } 
-    sprintf(sbuf,"  Maximum Force  = %12.4e\n",Fmax[Min]); 
+    sprintf(sbuf,"  Potential Energy  = %12.5e\n",Epot[Min]); 
     fprintf(stderr,sbuf);
     fprintf(log,sbuf);
   }
