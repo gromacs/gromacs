@@ -292,7 +292,8 @@ void warning(char *s)
 void print_warn_num(void)
 {
   if (nwarn > 0)
-    fprintf(stderr,"There were %d warnings\n",nwarn);
+    fprintf(stderr,"There %s %d warning%s\n",
+	    (nwarn==1) ? "was" : "were", nwarn, (nwarn==1) ? "" : "s");
 }
 
 void _too_few(char *fn,int line)
