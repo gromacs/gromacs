@@ -56,7 +56,7 @@ FFLAGS		= $(ABI) $(OPT) -OPT:cray_ivdep=TRUE
 #       the 7.2 does not.
 #FFLAGS		+= -GCM:aggressive_speculation -GCM:array_speculation
 # Some nasty options for the 7.30 compilers
-FFLAGS		+= -SWP:heur=fdms,nhms,fdnms
+#FFLAGS		+= -SWP:heur=fdms,nhms,fdnms
 
 LDFLAGS		= -L$(LIBDIR) $(ABI) 
 LD		= $(CC) $(LDFLAGS)
