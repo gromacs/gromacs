@@ -506,6 +506,20 @@ static int renum_atype(t_params plist[],t_topology *top,
   return nat;
 }
 
+int count_constraints(t_params plist[])
+{
+  int count,i;
+
+  count = 0;
+  for(i=0; i<F_NRE; i++)
+    if (i == F_SETTLE)
+      count += 3*plist[i].nr;
+    else if (interaction_function[i].flags & IF_SHAKE)
+      count += plist[i].nr;
+  
+  return count;
+}
+
 int main (int argc, char *argv[])
 {
   static char *desc[] = {
@@ -675,6 +689,17 @@ int main (int argc, char *argv[])
   
   if (debug)
     pr_symtab(debug,0,"After new_status",&sys->symtab);
+
+  if (ir->eI == eiCG) {
+    int nc;
+    nc = count_constraints(msys.plist);
+    if (nc) {
+      fprintf(stderr,
+	      "ERROR: can not do Conjugate Gradients with constraints (%d)\n",
+	      nc);
+      nerror++;
+    }
+  }
 
   if (nerror) {
     print_warn_num();
