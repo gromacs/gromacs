@@ -8,15 +8,15 @@
 #
 # 	See README file for info
 #
-SYSDEFS		= -DHAVE_IDENT -DHAVE_STRDUP -DGMX_INVSQRT -DINLINE_INVSQRT -DDECREASE_SQUARE_LATENCY -DFAST_X86TRUNC
-#
+SYSDEFS		= -DHAVE_IDENT -DHAVE_STRDUP -DGMX_INVSQRT -DINLINE_GMXCODE -DFAST_X86TRUNC -DUSE_SSE_AND_3DNOW -DVECTORIZE_INVSQRT -DVECTORIZE_RECIP 
+# 
 #	USER MODIFIABLE SECTION 
 #
 # If you want to use fortran innerloops set this to yes
 # For most machines this will improve the performance quite a bit
 # because C-compilers are not as good as Fortran compilers
 # 
-# Unfortunately for linux users: g77 performs much worse than gcc
+# Note for linux users: g77 performs much worse than gcc
 # since we cant use inline assembly fast truncation - dont use it!
 #
 USEF77		= no
@@ -26,7 +26,7 @@ USEF77		= no
 # to see what's installed at your site. If you have neither,
 # set both to no. If you select both, something will break!!!
 #
-USE_PVM3	= no
+USE_PVM3	= no 
 #LAMHOME		= /usr/local
 USE_MPI		= no
 #
