@@ -711,7 +711,7 @@ int main(int argc,char *argv[])
       error = sqrt(cum2/(n-1));
     else
       error = 0;
-    fprintf(stdout,"%3d  %13.6e   %12.6e   %12.6e      %6.3f   %6.3f\n",
+    fprintf(stdout,"SS%d  %13.6e   %12.6e   %12.6e      %6.3f   %6.3f\n",
 	    s+1,av[s],sig[s],error,
 	    sig[s] ? cum3/(sig[s]*sig[s]*sig[s]*sqrt(8/M_PI)) : 0,
 	    sig[s] ? cum4/(sig[s]*sig[s]*sig[s]*sig[s]*3)-1 : 0); 
