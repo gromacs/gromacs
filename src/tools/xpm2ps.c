@@ -84,10 +84,10 @@ void get_params(char *mpin,char *mpout,t_psrec *psr)
   
   inp=read_inpfile(mpin,&ninp);
   ETYPE("black&white",		psr->bw,          bools);
-  STYPE("titlefont",		psr->titfont,     "Times-Roman");
+  STYPE("titlefont",		psr->titfont,     "Helvetica");
   RTYPE("titlefontsize",	psr->titfontsize, 20.0);
   ETYPE("legend",		psr->legend,     bools);
-  STYPE("legendfont",		psr->legfont,     "Times-Roman");
+  STYPE("legendfont",		psr->legfont,     "Helvetica");
   STYPE("legendlabel",		psr->leglabel,	 "");
   STYPE("legend2label",		psr->leg2label,	 psr->leglabel);
   RTYPE("legendfontsize",	psr->legfontsize, 14.0);
@@ -104,7 +104,7 @@ void get_params(char *mpin,char *mpout,t_psrec *psr)
   RTYPE("x-minorticklen", 	psr->X.minorticklen,	4.0);
   STYPE("x-label",		psr->X.label,		"");
   RTYPE("x-fontsize",     	psr->X.fontsize, 	16.0);
-  STYPE("x-font",      		psr->X.font,      	"Times-Roman");
+  STYPE("x-font",      		psr->X.font,      	"Helvetica");
   RTYPE("x-tickfontsize",     	psr->X.tickfontsize, 	10.0);
   STYPE("x-tickfont",      	psr->X.tickfont,		"Helvetica");
   ITYPE("y-major",      	psr->Y.major,      	20);
@@ -115,7 +115,7 @@ void get_params(char *mpin,char *mpout,t_psrec *psr)
   RTYPE("y-minorticklen", 	psr->Y.minorticklen,  	4.0);
   STYPE("y-label",		psr->Y.label,		"");
   RTYPE("y-fontsize",     	psr->Y.fontsize, 	16.0);
-  STYPE("y-font",      		psr->Y.font,      	"Times-Roman");
+  STYPE("y-font",      		psr->Y.font,      	"Helvetica");
   RTYPE("y-tickfontsize",     	psr->Y.tickfontsize, 	10.0);
   STYPE("y-tickfont",      	psr->Y.tickfont,		"Helvetica");
   if (mpout)
