@@ -551,6 +551,9 @@ int calc_naaj(int icg,int cgtot)
 static real calc_image_tric(rvec xi,rvec xj,matrix box,
 			    rvec b_inv,int *shift)
 {
+  /* This code assumes that the cut-off is smaller than
+   * a half times the smallest diagonal element of the box.
+   */
   const real h15=1.5;
   real dx,dy,dz;
   real r2;
@@ -1166,11 +1169,11 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   static   bool        *bHaveLJ;
   static   t_ns_buf    **ns_buf=NULL;
   static   int         *cg_index=NULL,*slab_index=NULL;
-  static   bool        bSwitched=FALSE;
   
   t_block  *cgs=&(top->blocks[ebCGS]);
   rvec     box_size;
   int      i,j,m,ngid;
+  real     min_size;
 
   int      nsearch;
   bool     bGrid;
@@ -1182,6 +1185,18 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   
   for(m=0; (m<DIM); m++)
     box_size[m]=box[m][m];
+  
+  if (fr->eBox != ebtNONE) {
+    if (bGrid) {
+      min_size = min(norm2(box[XX]),min(norm2(box[YY]),norm2(box[ZZ])));
+      if (sqr(2*fr->rlistlong) >= min_size)
+	fatal_error(0,"One of the box vectors has become shorter than twice the cut-off length.");
+    } else {
+      min_size = min(box_size[XX],min(box_size[YY],box_size[ZZ]));
+      if (2*fr->rlistlong >= min_size)
+	fatal_error(0,"One of the box lengths has become smaller than twice the cut-off length.");
+    }
+  }
 
   /* First time initiation of arrays etc. */  
   if (bFirst) {
@@ -1259,27 +1274,8 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   /* Reset the neighbourlists */
   reset_neighbor_list(fr,FALSE,-1);
   
-  if (bGrid) {
+  if (bGrid)
     grid_first(log,grid,box,fr->rlistlong);
-    /* Check if box is big enough to do grid searching... */
-    if ( !( (grid->nrx >= 2*grid->delta+1) && 
-	    (grid->nry >= 2*grid->delta+1) && 
-	    (grid->nrz >= 2*grid->delta+1) ) ) {
-      if (!bSwitched)
-	fprintf(log,"WARNING: Box too small for grid-search, "
-		"switching to simple neighboursearch.\n");
-      if (fr->bTwinRange)
-	fatal_error(0,"TWIN-RANGE cut-off with Simple "
-		    "neighboursearching not implemented.\n"
-		    "Use grid neighboursearching, and make (rlong < 0.4 box)");
-      bGrid=FALSE;
-      bSwitched=TRUE;
-    } else {
-      if (bSwitched)
-	fprintf(log,"WARNING: Box large enough again for grid-search\n");
-      bSwitched=FALSE;
-    }
-  }
   debug_gmx();
   
   if (bGrid) {
