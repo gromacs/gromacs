@@ -253,30 +253,26 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
     if  (line) {
       line++;
       /* Read xpm color map entry */
-      str=strchr(line+2,'#')+1;
-      col_len=0;
+      map[m].code.c1 = line[0];
+      if (nch==1)
+	map[m].code.c2 = 0;
+      else
+	map[m].code.c2 = line[1];
+      line += nch;
+      str = strchr(line,'#')+1;
+      printf("line %s\n",line);
+      col_len = 0;
       while (isxdigit(str[col_len]))
 	col_len++;
+      printf("collen %d\n",col_len);
       if (col_len==6) {
-	sscanf(line,"%s %*c #%2x%2x%2x",
-	       buf,&r,&g,&b);
-	map[m].code.c1=buf[0];
-	if (nch==1)
-	  map[m].code.c2=0;
-	else
-	  map[m].code.c2=buf[1];
+	sscanf(line,"%*s #%2x%2x%2x",&r,&g,&b);
 	map[m].rgb.r=r/255.0;
 	map[m].rgb.g=g/255.0;
 	map[m].rgb.b=b/255.0;
       }
       else if (col_len==12) {
-	sscanf(line,"%s %*c #%4x%4x%4x",
-		 buf,&r,&g,&b);
-	map[m].code.c1=buf[0];
-	if (nch==1)
-	  map[m].code.c2=0;
-	else
-	  map[m].code.c2=buf[1];
+	sscanf(line,"%*s #%4x%4x%4x",&r,&g,&b);
 	map[m].rgb.r=r/65535.0;
 	map[m].rgb.g=g/65535.0;
 	map[m].rgb.b=b/65535.0;
@@ -295,10 +291,10 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
   mm->map = map;
   if (debug)
     for(m=0;m<mm->nmap;m++) 
-      printf("%c %f %f %f %s\n",map[m].code.c1,map[m].rgb.r,map[m].rgb.g,
+      printf("%c %f %f %f '%s'\n",map[m].code.c1,map[m].rgb.r,map[m].rgb.g,
 	     map[m].rgb.b,map[m].desc);
 
-  /* Read axes, if the are any */ 
+  /* Read axes, if there are any */ 
   n_axis_x=0;
   n_axis_y=0;
   bGetOnWithIt=FALSE;
