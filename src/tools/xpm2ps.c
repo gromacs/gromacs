@@ -560,7 +560,7 @@ static real tick_spacing(int n, real axis[], real offset)
       if ( bRmod(axis[j] - offset, space) )
 	i++;
     /* do we have a reasonable number of ticks ? */
-    if ( i < 10 ) {
+    if ( i < min(10, n-1) ) {
       if ( prev_i > 25 ) {
 	/* we've whizzed past our window of 10-25 ticks */
 	space *= 0.5;
@@ -576,7 +576,6 @@ static real tick_spacing(int n, real axis[], real offset)
       bTryAgain = FALSE;
     prev_i = i;
     bFive = !bFive;
-    fprintf(stderr,"%d ticks, space = %g%s\n",i,space,bTryAgain?", will try again":"");
   }
   return space;
 }
@@ -602,17 +601,17 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
 
   psr=&psrec;
 
-  if (psr->X.major == NOTSET) {
+  if (psr->X.major <= 0 ) {
     psr->X.major = tick_spacing(mat[0].nx, mat[0].axis_x, psr->X.offset);
     psr->X.minor = psr->X.major / 2;
   }
-  if (psr->X.minor == NOTSET)
+  if (psr->X.minor <= 0 )
     psr->X.minor = psr->X.major / 2;
-  if (psr->Y.major == NOTSET) {
+  if (psr->Y.major <= 0) {
     psr->Y.major = tick_spacing(mat[0].ny, mat[0].axis_y, psr->Y.offset);
     psr->Y.minor = psr->Y.major / 2;
   }
-  if (psr->Y.minor == NOTSET)
+  if (psr->Y.minor <= 0)
     psr->Y.minor = psr->Y.major / 2;
   
   if (boxx>0) {
