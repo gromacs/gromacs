@@ -39,6 +39,7 @@ static char *SRCID_mdebin_c = "$Id$";
 #include "vec.h"
 #include "disre.h"
 #include "main.h"
+#include "network.h"
 #include "names.h"
 
 static bool bEInd[egNR] = { TRUE, TRUE, FALSE, FALSE, FALSE, FALSE };
@@ -55,7 +56,7 @@ static int  f_nre=0;
 
 t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
 		      bool bLR,bool bLJLR,bool bBHAM,bool b14,bool bFEP,
-		      bool bPcoupl,bool bDispCorr)
+		      bool bPcoupl,bool bDispCorr,t_commrec *cr)
 {
   char *ener_nm[F_NRE];
   static char *vir_nm[] = {
@@ -89,32 +90,38 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
   char     buf[256];
   t_mdebin *md;
   int      i,j,ni,nj,n,k,kk;
-
+  int      bBBB;
+  
   for(i=0; (i<F_NRE); i++) {
+    bBBB = FALSE;
     if (i == F_LJ)
-      bEner[i] = !bBHAM;
+      bBBB = !bBHAM;
     else if (i == F_BHAM)
-      bEner[i] = bBHAM;
+      bBBB = bBHAM;
     else if (i == F_LR)
-      bEner[i] = bLR;
+      bBBB = bLR;
     else if (i == F_LJLR)
-      bEner[i] = bLJLR;
+      bBBB = bLJLR;
     else if (i == F_LJ14)
-      bEner[i] = b14;
+      bBBB = b14;
     else if (i == F_COUL14)
-      bEner[i] = b14;
+      bBBB = b14;
     else if ((i == F_DVDL) || (i == F_DVDLKIN))
-      bEner[i] = bFEP;
+      bBBB = bFEP;
     else if ((strstr(interaction_function[i].name,"DUM") != NULL) ||
 	     (i == F_SHAKE) || (i == F_SETTLE))
-      bEner[i] = FALSE;
+      bBBB = FALSE;
     else if ((i == F_SR) || (i == F_EPOT) || (i == F_ETOT) || (i == F_EKIN) ||
 	     (i == F_TEMP) || (i == F_PRES))
-      bEner[i] = TRUE;
+      bBBB = TRUE;
     else if ((i == F_DISPCORR) && bDispCorr)
-      bEner[i] = TRUE;
+      bBBB = TRUE;
     else
-      bEner[i] = (idef->il[i].nr > 0);
+      bBBB = (idef->il[i].nr > 0);
+    
+    if (PAR(cr))
+      gmx_sumi(1,&bBBB,cr);
+    bEner[i] = bBBB;
     
     if (bEner[i]) {
       ener_nm[f_nre]=interaction_function[i].longname;
