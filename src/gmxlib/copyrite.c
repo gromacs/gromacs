@@ -286,7 +286,13 @@ void please_cite(FILE *fp,char *key)
    "B. Hess and H. Bekker and H. J. C. Berendsen and J. G. E. M. Fraaije",
    "LINCS: A Linear Constraint Solver for molecular simulations",
    "J. Comp. Chem.",
-   "18 1997 1463 1472" 
+   "18 1997 1463 1472",
+   
+   "DeGroot97a",
+   "B. L. de Groot and D. M. F. van Aalten and R. M. Scheek and A. Amadei and G. Vriend and H. J. C. Berendsen",
+   "Prediction of Protein Conformational Freedom From Distance Constrains",
+   "Proteins",
+   "29 1997 240 251"
   };
 #define NSTR asize(citedb)
   
