@@ -331,17 +331,16 @@ real ewald_LRcorrection(FILE *fplog,
   VselfA = ewc*ONE_4PI_EPS0*q2sumA/sqrt(M_PI);
 
   if (!bFreeEnergy) {
-    enercorr = Vdipole[0] + Vcharge[0] - VselfA - Vexcl;
     *vcharge = Vcharge[0];
     *vdip    = Vdipole[0];
-  } else {
+    enercorr = *vcharge + *vdip - VselfA - Vexcl;
+   } else {
     VselfB = ewc*ONE_4PI_EPS0*q2sumB/sqrt(M_PI);
-    enercorr = L1*(Vdipole[0] + Vcharge[0] - VselfA)
-      +  lambda*(Vdipole[1] + Vcharge[1] - VselfB) - Vexcl;
+    *vcharge = L1*Vcharge[0]+lambda*Vcharge[1];
+    *vdip    = L1*Vdipole[0]+lambda*Vdipole[1];
+    enercorr = *vcharge + *vdip - (L1*VselfA + lambda*VselfB) - Vexcl;
     *dvdlambda += Vdipole[1] + Vcharge[1] - VselfB
       - (Vdipole[0] + Vcharge[0] - VselfA) - dvdl_excl;
-    *vcharge = L1*Vcharge[0]+lambda*Vcharge[1];
-    *vdip    = L1*Vdipole[0]+lambda*Vcharge[1];
   }
 
   if (debug) {
