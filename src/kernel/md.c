@@ -665,7 +665,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     /* This is also parallellized, but check code in update.c */
     /* bOK = update(nsb->natoms,START(nsb),HOMENR(nsb),step,state->lambda,&ener[F_DVDL], */
     bOK = TRUE;
-    if ((bRerunMD && rerun_fr.bV) !! !bRerunMD)
+    if ((bRerunMD && rerun_fr.bV) || !bRerunMD)
       update(nsb->natoms,START(nsb),HOMENR(nsb),step,&ener[F_DVDL],
 	     parm,mdatoms,state,graph,f,buf,vold,
 	     top,grps,shake_vir,cr,&mynrnb,bTYZ,edyn,&pulldata,bNEMD,
