@@ -574,7 +574,7 @@ int main(int argc,char *argv[])
   static t_pargs pa[] = {
     { "-v",     FALSE, etBOOL, &bVerbose, "Verbose on"},
     { "-cubic", FALSE, etBOOL, &bCubic,   "Force beta to be the same in all directions" },
-    { "-sym",   FALSE, etBOOL, &bSym,     "Use symmetry for the generation of ghat function (turn off for debugging only!)" }
+    { "-sym",   FALSE, etBOOL, &bSym,     "HIDDENUse symmetry for the generation of ghat function (turn off for debugging only!)" }
   };
   
   CopyRight(stdout,argv[0]);
