@@ -7,19 +7,19 @@
 #define facNR 6
 int factor[facNR] = {2,3,5,7,11,13};
 int decomp[facNR];
-int ng,ng_max,*list,nlist,nlist_alloc;
+int ng,ng_max,*list,n_list,n_list_alloc;
 
 static void make_list(int start_fac)
 {
   int i;
   
   if (ng < ng_max) {
-    if (nlist >= nlist_alloc) {
-      nlist_alloc += 100;
-      srenew(list,nlist_alloc);
+    if (n_list >= n_list_alloc) {
+      n_list_alloc += 100;
+      srenew(list,n_list_alloc);
     }
-    list[nlist] = ng;
-    nlist++;
+    list[n_list] = ng;
+    n_list++;
 
     for(i=start_fac; i<facNR; i++) {
       /* allow any power of 2, 3, 5 and 7, but only one of 11 or 13 */
@@ -63,8 +63,8 @@ real calc_grid(matrix box,real gr_sp,int *nx,int *ny,int *nz,int nprocs)
     if (2*nmin[d] > ng_max)
       ng_max = 2*nmin[d];
   }
-  nlist=0;
-  nlist_alloc=0;
+  n_list=0;
+  n_list_alloc=0;
   list=NULL;
   for(i=0; i<facNR; i++)
     decomp[i]=0;
@@ -74,9 +74,9 @@ real calc_grid(matrix box,real gr_sp,int *nx,int *ny,int *nz,int nprocs)
     fprintf(stderr,"Calculating fourier grid dimensions for%s%s%s\n",
 	    *nx > 0 ? "":" X",*ny > 0 ? "":" Y",*nz > 0 ? "":" Z");
 
-  qsort(list,nlist,sizeof(list[0]),list_comp);
+  qsort(list,n_list,sizeof(list[0]),list_comp);
   if (debug)
-    for(i=0; i<nlist; i++)
+    for(i=0; i<n_list; i++)
       fprintf(debug,"grid: %d\n",list[i]);
   
   if (((*nx>0) && (*nx != nprocs*(*nx/nprocs))) ||
@@ -84,7 +84,7 @@ real calc_grid(matrix box,real gr_sp,int *nx,int *ny,int *nz,int nprocs)
     fatal_error(0,"the x or y grid spacing (nx %d, ny %d) is not divisible by the number of processors (%d)",*nx,*ny,nprocs);
   
   for(d=0; d<DIM; d++) {
-    for(i=0; (i<nlist) && (n[d]<=0); i++)
+    for(i=0; (i<n_list) && (n[d]<=0); i++)
       if ((list[i] >= nmin[d]) && 
 	  ((d == ZZ) || (list[i] == nprocs*(list[i]/nprocs))))
 	n[d] = list[i];
