@@ -67,6 +67,9 @@ prog:		mdp_opt.tex proglist.tex
 
 man:		./mkman
 
+files.tex:	
+		$(LOCAL)/prfn
+
 progman.tex:	
 		$(TOUCH) progman.tex
 
