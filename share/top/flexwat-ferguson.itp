@@ -1,0 +1,44 @@
+;
+; D. M. Ferguson: Parametrization and Evaluation of a Flexible Water Model 
+; J. Comp. Chem. 16(4), 501-511 (1995)
+;
+; Implementation in Gromacs by David van der Spoel
+; 06 April 2000
+;
+[ defaults ]
+; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ  
+1		1		no		1.0	1.0
+
+[ atomtypes ]
+;name        mass      charge   ptype            c6           c12
+   OW    15.99940       0.000       A   2.6171E-03    	2.7196E-06
+   HW     1.00800       0.000       A   0   		0
+
+[ moleculetype ]
+; molname	nrexcl
+SOL		2
+
+[ atoms ]
+;   nr   type  resnr residue  atom   cgnr     charge       mass
+     1	   OW	   1	SOL     OW      1      -0.826
+     2	   HW	   1	SOL    HW1      1       0.413
+     3	   HW	   1	SOL    HW2	1       0.413
+
+[ bonds ]
+;
+; Original parameters are: 
+; kb   = 547.5 kcal/mol/A^2
+; kcub =  -1.65 / A
+;
+; i	j	funct	length	kb	kcub
+1	2	4	0.1	229074	-16.5
+1	3	4	0.1	229074	-16.5
+
+[ angles ]
+;
+; Original parameters are:
+; kt = 49.9 kcal/mol/rad^2 (x 2 for a different functional form)
+;
+; i	j	k	funct	angle	force.c.
+2	1	3	1	109.5	417.6
+
