@@ -150,7 +150,7 @@ void quit_gmx(int fatal_errno,char *msg)
     perror(msg);
   }
   
-#ifdef PARALLEL
+#ifdef USE_MPI
   if (gmx_parallel) {
     int  nnodes;
     int  nodeid;

@@ -133,12 +133,12 @@ int main(int argc,char *argv[])
   static bool bGlas        = FALSE;
   static bool bIonize      = FALSE;
 #endif
-#ifdef PARALLEL
+#ifdef USE_MPI
   static int  nnodes=1;
 #endif
   static int  nDLB=0,nstepout=10;
   static t_pargs pa[] = {
-#ifdef PARALLEL
+#ifdef USE_MPI
     { "-np",      FALSE, etINT, {&nnodes},
       "Number of nodes, must be the same as used for grompp" },
 #endif

@@ -628,7 +628,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
     }
   } 
   if (bHelp || (strcmp(manstr[0],"no") != 0)) {
-#ifdef PARALLEL
+#ifdef USE_MPI
     if (gmx_parallel)
       gmx_abort(gmx_node_id(),gmx_node_num(),0);
 #endif
