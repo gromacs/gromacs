@@ -602,6 +602,7 @@ extern double   strtod      PP( (Const Char *, Char **) );
 extern long     strtol      PP( (Const Char *, Char **, int) );
 #endif /*P2C_H_PROTO*/
 
+#define HAS_STDLIB
 #ifndef HAS_STDLIB
 extern Anyptr   malloc      PP( (size_t) );
 extern Void     free        PP( (Anyptr) );
@@ -3994,6 +3995,8 @@ Local Void Statistics()
       }
     }
   }
+  if (nres == 0)
+    return;
   fprintf(tapeout,
     "%5ld%3ld%3ld%3ld%3ld TOTAL NUMBER OF RESIDUES, NUMBER OF CHAINS, NUMBER OF SS-BRIDGES(TOTAL,INTRACHAIN,INTERCHAIN)                .\n",
     nres, nchain, nssinter + nssintra, nssintra, nssinter);

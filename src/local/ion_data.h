@@ -36,7 +36,9 @@ typedef struct {
 /* THIS TABLE HAS ADDED A 12 keV COLUMN TO HYDROGEN, CARBON,  */ 
 /* OXYGEN, NITROGEN AND SULPHUR BY FITTING A QUADRATIC TO THE */
 /* POINTS 8keV, 10keV and 12keV - now contains 6, 8, 10, 12,  */ 
-/* 15 and 20 keV */
+/* 15 and 20 keV 
+/* Units are barn. They are converted to nm^2 by multiplying  */
+/* by 1e-10, which is done in Imax (ionize.c)                 */
 
 static t_cross   cross_sec_h[] = {
   { 2.63e-2,     1.01e-1,      5.49e-1,         7.12e-3 },

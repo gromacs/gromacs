@@ -44,7 +44,7 @@ static char *SRCID_ionize_c = "$Id$";
 
 #define PREFIX "IONIZE: "
 
-enum { eionCYL, eionSURF, eionNR };
+enum { eionCYL, eionSURF, eionGAUSS, eionNR };
 
 static int   Energies[] = { 6, 8, 10, 12, 15, 20 };
 #define NENER asize(Energies)
