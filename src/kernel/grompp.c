@@ -579,6 +579,47 @@ int count_constraints(t_params plist[])
   return count;
 }
 
+static real *mk_capacity(char *str,int nprocs)
+{
+  char   f0[256],f1[256];
+  double d,tcap=0;
+  int    i;
+  real   *capacity;
+  
+  snew(capacity,nprocs);
+  if (str) {
+    f0[0] = '\0';
+    for(i=0; (i<nprocs); i++) {
+      strcpy(f1,f0);
+      strcat(f1,"%lf");
+      if (sscanf(str,f1,&d) != 1)
+	fatal_error(0,"Not enough elements for -load parameter (I need %d)",
+		    nprocs);
+      capacity[i] = d;
+      tcap += d;
+      strcat(f0,"%*s");
+    }
+  }
+  /* Normalize input */
+  if (tcap == 0) {
+    for(i=0; (i<nprocs); i++) {
+      capacity[i] = 1.0/nprocs;
+      tcap += capacity[i];
+    }
+  }
+  else {
+    for(i=0; (i<nprocs); i++) 
+      capacity[i] /= tcap;
+    tcap = 0;
+    for(i=0; (i<nprocs); i++) 
+      tcap += capacity[i];
+  }
+  /* Take care that the sum of capacities is 1.0 */
+  capacity[nprocs-1] = 1.0 - (tcap - capacity[nprocs-1]);
+  
+  return capacity;
+}
+
 int main (int argc, char *argv[])
 {
   static char *desc[] = {
@@ -670,7 +711,7 @@ int main (int argc, char *argv[])
   t_params     *plist;
   rvec         *x=NULL,*v=NULL;
   matrix       box;
-  real         max_spacing;
+  real         max_spacing,*capacity;
   char         fn[STRLEN],*mdparin;
   int          nerror;
   bool         bNeedVel,bGenVel;
@@ -694,6 +735,7 @@ int main (int argc, char *argv[])
   static bool bRmDumBds=TRUE,bSort=FALSE;
   static int  nprocs=1,maxwarn=10;
   static real fr_time=-1;
+  static char *cap=NULL;
   t_pargs pa[] = {
     { "-v",       FALSE, etBOOL, {&bVerbose},
       "Be loud and noisy" },
@@ -707,6 +749,8 @@ int main (int argc, char *argv[])
       "Sort molecules according to X coordinate" },
     { "-rmdumbds",FALSE, etBOOL, {&bRmDumBds},
       "Remove constant bonded interactions with dummies" },
+    { "-load",    FALSE, etSTR,  {&cap},
+      "Releative load capacity of each node on a parallel machine. Be sure to use quotes around the string, which should contain a number for each processor" },
     { "-maxwarn", FALSE, etINT,  {&maxwarn},
       "Number of warnings after which input processing stops" },
     { "-renum",   FALSE, etBOOL, {&bRenum},
@@ -887,8 +931,10 @@ int main (int argc, char *argv[])
   }
   
   /* This is also necessary for setting the multinr arrays */
-  split_top(bVerbose,nprocs,sys);
-
+  capacity = mk_capacity(cap,nprocs);
+  split_top(bVerbose,nprocs,sys,capacity);
+  sfree(capacity);
+  
   if (bVerbose) 
     fprintf(stderr,"writing run input file...\n");
 

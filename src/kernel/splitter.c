@@ -292,13 +292,13 @@ t_border *mk_border(bool bVerbose,int natom,atom_id *invcgs,
 }
 
 static void split_blocks(bool bVerbose,int nprocs,
-			 t_block *cgs,t_block *sblock)
+			 t_block *cgs,t_block *sblock,real capacity[])
 {
   int      maxatom[MAXPROC];
   int      i,ai,b0,b1;
   int      pid,last_shk,nbor;
   t_border *border;
-  double   load,tload;
+  double   *load,tload;
   
   bool    bSHK;
   atom_id *shknum,*cgsnum;
@@ -312,8 +312,16 @@ static void split_blocks(bool bVerbose,int nprocs,
   cgsnum = make_invblock(cgs,cgs->nra+1);
   border = mk_border(bVerbose,cgs->nra,cgsnum,shknum,&nbor);
 
-  load   = (double)cgs->nra / (double)nprocs;  
-  tload  = load;
+  snew(load,nprocs);
+  for(i=0; (i<nprocs); i++)
+    load[i] = capacity[i]*cgs->nra;
+  
+  /* Now the load array holds the load per processor in number of atoms */
+  if (debug)
+    for(i=0; (i<nprocs); i++)
+      fprintf(debug,"load[%3d] = %g\n",i,load[i]);
+      
+  tload  = load[0];
   pid    = 0;
   for(i=0; (i<nbor) && (tload < cgs->nra); i++) {
     if(i<(nbor-1)) 
@@ -330,7 +338,7 @@ static void split_blocks(bool bVerbose,int nprocs,
       sblock->multinr[pid] = border[i].atom;
       maxatom[pid]         = b0;
       pid++;
-      tload += load;
+      tload += load[pid];
     } 
   }
   /* Now the last one... */
@@ -357,6 +365,7 @@ static void split_blocks(bool bVerbose,int nprocs,
   sfree(shknum);
   sfree(cgsnum);
   sfree(border);
+  sfree(load);
 }
 
 static void def_mnr(int nr,int mnr[])
@@ -566,7 +575,7 @@ void gen_sblocks(bool bVerbose,int natoms,t_idef *idef,t_block *sblock,
   sfree(g);
 }
 
-void split_top(bool bVerbose,int nprocs,t_topology *top)
+void split_top(bool bVerbose,int nprocs,t_topology *top,real *capacity)
 {
   int     j,k,mj,atom,maxatom;
   t_block sblock;
@@ -588,7 +597,7 @@ void split_top(bool bVerbose,int nprocs,t_topology *top)
     init_block(&sblock);
     gen_sblocks(bVerbose,top->atoms.nr,&top->idef,&sblock,TRUE);
 
-    split_blocks(bVerbose,nprocs,&(top->blocks[ebCGS]),&sblock);
+    split_blocks(bVerbose,nprocs,&(top->blocks[ebCGS]),&sblock,capacity);
     
     /* Now transform atom numbers to real inverted shake blocks */
     sblinv = make_invblock(&(top->blocks[ebSBLOCKS]),top->atoms.nr+1);

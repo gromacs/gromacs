@@ -28,9 +28,12 @@
  */
 static char *SRCID_splitter_h = "$Id$";
 
-extern void split_top(bool bVerbose,int nprocs,t_topology *top);
+extern void split_top(bool bVerbose,int nprocs,t_topology *top,real *capacity);
 /* Split the topology (blocks and forces, based on charge groups 
  * and shake blocks.
+ * The capacity is releated to the capacity of each node. If all numbers are 
+ * equal, load will be distributed equally. If not some (the higher ones)
+ * will get more than others. The sum of capacities should be 1.
  */
 
 extern void gen_sblocks(bool bVerbose,int natoms,t_idef *idef,t_block *sblock,
