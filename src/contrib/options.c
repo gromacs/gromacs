@@ -7,12 +7,12 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.0
- * 
- * Copyright (c) 1991-2001
- * BIOSON Research Institute, Dept. of Biophysical Chemistry
- * University of Groningen, The Netherlands
- * 
+ *                        VERSION 3.2.0
+ * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2004, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
+
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -28,13 +28,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
  * 
- * Do check out http://www.gromacs.org , or mail us at gromacs@gromacs.org .
+ * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * GROup of MAchos and Cynical Suckers
+ * Good gRace! Old Maple Actually Chews Slate
  */
-
-
 #include "typedefs.h"
 #include "macros.h"
 #include "statutil.h"

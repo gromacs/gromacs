@@ -7,8 +7,12 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.1
- * Copyright (c) 1991-2001, University of Groningen, The Netherlands
+ *                        VERSION 3.2.0
+ * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2004, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
+
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -27,9 +31,8 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Great Red Owns Many ACres of Sand 
+ * GROningen Mixture of Alchemy and Childrens' Stories
  */
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -149,7 +152,8 @@ static void ster_print(FILE *out,const char *s)
 }
 
 
-static char *pukeit(char *db,char *defstring, char *retstring, int retsize, int *cqnum)
+static char *pukeit(char *db,char *defstring, char *retstring, 
+		    int retsize, int *cqnum)
 {
   FILE *fp;
   char **help;
@@ -238,13 +242,13 @@ void CopyRight(FILE *out,char *szProgram)
   fprintf(out,"\n");
 
   ster_print(out,GromacsVersion());
-  fprintf(out,"\n");
+  fprintf(out,"\n\n");
 
-  fprintf(out,"\n");
+  /* fprintf(out,"\n");*/
 
-  sp_print(out,"PLEASE NOTE: THIS IS A BETA VERSION\n");
+  /* sp_print(out,"PLEASE NOTE: THIS IS A BETA VERSION\n");
   
-  fprintf(out,"\n");
+  fprintf(out,"\n"); */
 
   for(i=0; (i<NCR); i++) 
     sp_print(out,CopyrightText[i]);

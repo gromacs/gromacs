@@ -7,8 +7,12 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.1
- * Copyright (c) 1991-2001, University of Groningen, The Netherlands
+ *                        VERSION 3.2.0
+ * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2004, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
+
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -27,9 +31,8 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Gyas ROwers Mature At Cryogenic Speed
+ * GROningen Mixture of Alchemy and Childrens' Stories
  */
-
 #include <math.h>
 #include "assert.h"
 #include "sysstuff.h"
