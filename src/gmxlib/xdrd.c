@@ -66,11 +66,11 @@ int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision)
   int    i,ret,isize;
   
   isize=*size*DIM;
-  if (isize > 0) 
-    snew(ffp,isize);
-  else
+  if(isize <= 0)
     fatal_error(0,"Don't know what to malloc for ffp (file %s, line %d)",
 		__FILE__,__LINE__);
+
+  snew(ffp,isize);
 
   for(i=0; (i<isize); i++)
     ffp[i]=fp[i];
