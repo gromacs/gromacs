@@ -187,7 +187,7 @@ void average(char *avfile,char **avbar_opt,
       snew(tmp,nset);
       fprintf(fp,"@TYPE xydydy\n");
       edge = (int)(nset*0.05+0.5);
-      fprintf(stderr,"Errorbars: discarding %d points on both sides: %d%%"
+      fprintf(stdout,"Errorbars: discarding %d points on both sides: %d%%"
 	      " interval\n",edge,(int)(100*(nset-2*edge)/nset+0.5));
     } else
       fprintf(fp,"@TYPE xydy\n");
@@ -374,9 +374,9 @@ int main(int argc,char *argv[])
   }
 
   val=read_val(opt2fn("-f",NFILE,fnm),bHaveT,nsets_in,&nset,&n,&t0,&dt);
-  fprintf(stderr,"Read %d sets of %d points, dt = %g\n",nset,n,dt);
+  fprintf(stdout,"Read %d sets of %d points, dt = %g\n",nset,n,dt);
   if (bDer) {
-    fprintf(stderr,"Calculating the derivative as (f[i+%d]-f[i])/(%d*dt)\n",
+    fprintf(stdout,"Calculating the derivative as (f[i+%d]-f[i])/(%d*dt)\n",
 	    d,d);
     n -= d;
     for(s=0; s<nset; s++)
@@ -389,7 +389,7 @@ int main(int argc,char *argv[])
     for(i=0; i<n; i++)
       av[s] += val[s][i];
     av[s] /= n;
-    fprintf(stderr,"Average of set %d: %g\n",s+1,av[s]); 
+    fprintf(stdout,"Average of set %d: %g\n",s+1,av[s]); 
   }
 
   if (msdfile) {
