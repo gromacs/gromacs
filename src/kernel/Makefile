@@ -11,6 +11,9 @@ include		$(GMXHOME)/src/makef/Makefile.def
 #
 # Empty library
 LIB		= 
+# Objects for mdrun and nmrun
+RUNOBJ		= runner.o 	md.o		steep.o 	\
+		  congrad.o	nm.o	
 # Common object files
 PGOBJ		= toputil.o 	topdirs.o 	topexcl.o	
 # Objects for grompp
@@ -45,13 +48,13 @@ tpbconv:	$(PGOBJ)	tpbconv.o	readir.o
 pdb2gmx:	$(POBJ) 
 		$(LD) -o $@ $^ $(SYSLIBS) 
 
-mdrun:		mdrun.o
+mdrun:		mdrun.o $(RUNOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS) -lm
 
 mk_ghat:	mk_ghat.o
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS) -lm
 
-nmrun:		nmrun.o
+nmrun:		nmrun.o $(RUNOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS) -lm
 
 luck:		luck.o
