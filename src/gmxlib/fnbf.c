@@ -119,6 +119,10 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
 	  fprintf(log,"Using water table routines\n");
 	  bFirst = FALSE;
 	}
+	if (bFirst && bWater && (ftype == F_SR)) {
+	  fprintf(log,"Using water coulomb routines\n");
+	  bFirst = FALSE;
+	}
 	
 	if (bWater) {
 	  for(m=0; (m<3); m++) {
@@ -150,6 +154,8 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
 		       x[0],SCAL(nj),nl_j,chargeA,f[0],f_ip,&Vc);
 	  
 	  nr_qq+=nj;
+	  if (bWater)
+	    nr_qq+=2*nj;
 	  break;
 	  
 	case F_LJ:

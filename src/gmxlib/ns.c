@@ -195,13 +195,14 @@ static void add_j_to_nblist(t_nblist nlist[],int gid,int j_atom)
   nlist[gid].nrj ++;
 }
 
-void put_in_list(FILE *log,t_iparams ip[],int atnr,int nWater,
-		 int ngener,t_mdatoms *md,
-		 int icg,int nj,atom_id jjcg[],
-		 atom_id index[],atom_id a[],
-		 t_excl bExcl[],int shift,
-		 t_forcerec *fr,bool bLR)
+inline void put_in_list(FILE *log,t_iparams ip[],int atnr,int nWater,
+			int ngener,t_mdatoms *md,
+			int icg,int nj,atom_id jjcg[],
+			atom_id index[],atom_id a[],
+			t_excl bExcl[],int shift,
+			t_forcerec *fr,bool bLR,bool bCoulOnly)
 {
+  static bool bFirst = TRUE;
   t_nblist  *vdw,*coul,*free;
   
   int 	    i,j,jcg,nit,igid,jgid,gid,ind_ij;
@@ -252,7 +253,11 @@ void put_in_list(FILE *log,t_iparams ip[],int atnr,int nWater,
       new_i_nblist(log,&coul[gid],F_SR,  i_atom,bWater,shift);
       new_i_nblist(log,&free[gid],F_DVDL,i_atom,bWater,shift);
     }
-    
+
+    if (bFirst && bWater && bCoulOnly) {
+      fprintf(log,"put_in_list: icg = %d\n",icg);
+      bFirst = FALSE;
+    }    
     /* Loop over the j charge groups */
     for(j=0; (j<nj); j++) {
       jcg=jjcg[j];
@@ -279,31 +284,27 @@ void put_in_list(FILE *log,t_iparams ip[],int atnr,int nWater,
 	bNotEx = NOTEXCL(bExcl,i,j_atom);
 	
 	if (bNotEx) {
-	  if (bFreeJ) {
+	  if (bFreeJ) 
 	    add_j_to_nblist(free,gid,j_atom);
-	  }      
-	  else if (bWater) {
+	  else if (bCoulOnly) 
+	    /* This is done whether or  not bWater is set */
+	    add_j_to_nblist(coul,gid,j_atom);
+	  else if (bWater)
 	    add_j_to_nblist(vdw,gid,j_atom);
-	  }
 	  else {
 	    ind_ij = nit+type[j_atom];
 	    rlj    = ip[ind_ij].lj.c6+ip[ind_ij].lj.c12;
-	    qq     = qi*charge[j_atom];
 	    
-	    if (rlj) {
+	    if (rlj) 
 	      add_j_to_nblist(vdw,gid,j_atom);
-	    }
-	    else if (qq) {
+	    else if (qi*charge[j_atom] != 0)
 	      add_j_to_nblist(coul,gid,j_atom);
-	    }
 	  }
 	}
       }
     }
     for(gid=0; (gid<fr->nn); gid++) {
-      if (!bWater) {
-	close_i_nblist(&coul[gid]);
-      }
+      close_i_nblist(&coul[gid]);
       close_i_nblist(&vdw[gid]);
       close_i_nblist(&free[gid]);
     }
@@ -509,7 +510,7 @@ static int ns_simple_core(FILE *log,t_forcerec *fr,
       if (ns_buf[k].ncg > 0) { 
 	put_in_list(log,top->idef.iparams,top->idef.atnr,fr->nWater,
 		    ngener,md,icg,ns_buf[k].ncg,ns_buf[k].jcg,
-		    cgs->index,cgs->a,bexcl,k,fr,FALSE);
+		    cgs->index,cgs->a,bexcl,k,fr,FALSE,FALSE);
 	ns_buf[k].ncg=ns_buf[k].nj=0;
       }
     }
@@ -567,12 +568,12 @@ static bool get_dx(int cx,int Nx,int tx,int delta,int *dx0,int *dx1)
  *
  ****************************************************/
 
-static void do_longrange(FILE *log,t_topology *top,t_forcerec *fr,
+inline static void do_longrange(FILE *log,t_topology *top,t_forcerec *fr,
 			 int ngener,t_mdatoms *md,int icg,int nlr,
 			 atom_id lr[],t_excl bexcl[],int shift,
 			 rvec x[],rvec box_size,t_nrnb *nrnb,
 			 real lambda,real *dvdlambda,
-			 t_groups *grps)
+			 t_groups *grps,bool bCoulOnly)
 {
   int ftypes[] = { F_SR, F_DVDL, F_LJ };
 #define NFTYPES asize(ftypes)
@@ -581,8 +582,8 @@ static void do_longrange(FILE *log,t_topology *top,t_forcerec *fr,
   /* Put the long range particles in a list */
   put_in_list(log,top->idef.iparams,top->idef.atnr,fr->nWater,
 	      ngener,md,icg,nlr,lr,top->blocks[ebCGS].index,
-	      top->blocks[ebCGS].a,bexcl,shift,fr,TRUE);
-	      
+	      top->blocks[ebCGS].a,bexcl,shift,fr,TRUE,bCoulOnly);
+
   /* Evaluate the forces */
   for(i=0; (i<NFTYPES); i++) {
     do_fnbf(log,ftypes[i],fr,x,fr->flr,md,
@@ -612,22 +613,23 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
   atom_id *i_atoms;
   int  *grida,*gridnra,*gridind;
   rvec xi,*cgcm,*svec;
-  real rs2,rvdw2,rl2,XI,YI,ZI;
+  real rs2,rvdw2,rcoul2,XI,YI,ZI;
   bool bCyl;
   
   total_cg = cgs->nr;
   rs2      = sqr(fr->rlist);
   rvdw2    = sqr(fr->rvdw);
-  rl2      = sqr(fr->rcoulomb);
+  rcoul2   = sqr(fr->rcoulomb);
   
   if (nl_sr == NULL) {
     snew(nl_sr,MAX_CG);
     if (rvdw2 > rs2)
       snew(nl_lr_ljc,MAX_CG);
-    if (rl2 > rvdw2)
+    if (rcoul2 > rvdw2)
       snew(nl_lr_coul,MAX_CG);
-    fprintf(log,"ns5_core: rs2 = %g, rvdw2 = %g, rl2 = %g (nm^2)\n",
-	    rs2,rvdw2,rl2);
+    if (debug)
+      fprintf(debug,"ns5_core: rs2 = %g, rvdw2 = %g, rcoul2 = %g (nm^2)\n",
+	      rs2,rvdw2,rcoul2);
   }
   
   /* Unpack arrays */
@@ -679,39 +681,46 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
       if (get_dx(cx,Nx,tx,delta,&dx0,&dx1))
 	continue;
       for (ty=-1; (ty<=1); ty++) {
+	/* Calculate range of cells in Y direction that have the shift ty */
 	if (get_dx(cy,Ny,ty,delta,&dy0,&dy1))
 	  continue;
 	for (tz=-1; (tz<=1); tz++) {
-	  if (bCyl) {
-	    dz0=0;
-	    dz1=Nz-1;
-	  }
-	  else if (get_dx(cz,Nz,tz,delta,&dz0,&dz1))
+	  /* Calculate range of cells in Z direction that have the shift tz */
+	  if (get_dx(cz,Nz,tz,delta,&dz0,&dz1))
 	    continue;
-	    
+
+	  /* Get shift vector */	  
 	  shift=XYZ2IS(tx,ty,tz);
 #ifdef NS5DB
 	  assert(shift >= 0);
 	  assert(shift < SHIFTS);
 #endif
-	  rvec_add(cgcm[icg],svec[shift],xi);
-	  XI=xi[XX],YI=xi[YY],ZI=xi[ZZ];
-	  nsr=0;
-	  nlr_ljc=0;
-	  nlr_coul=0;
+	  XI       = cgcm[icg][XX]+svec[shift][XX];
+	  YI       = cgcm[icg][YY]+svec[shift][YY];
+	  ZI       = cgcm[icg][ZZ]+svec[shift][ZZ];
+	  nsr      = 0;
+	  nlr_ljc  = 0;
+	  nlr_coul = 0;
 #ifdef NS5DB
 	  fprintf(log,"shift: %2d, dx0,1: %2d,%2d, dy0,1: %2d,%2d, dz0,1: %2d,%2d\n",
 		  shift,dx0,dx1,dy0,dy1,dz0,dz1);
 	  fprintf(log,"cgcm: %8.3f  %8.3f  %8.3f\n",cgcm[icg][XX],
 		  cgcm[icg][YY],cgcm[icg][ZZ]);
-	  fprintf(log,"xi:   %8.3f  %8.3f  %8.3f\n",xi[XX],xi[YY],xi[ZZ]);
+	  fprintf(log,"xi:   %8.3f  %8.3f  %8.3f\n",XI,YI,ZI);
 #endif
 	  for (dx=dx0; (dx<=dx1); dx++) {
 	    for (dy=dy0; (dy<=dy1); dy++) {
 	      for (dz=dz0; (dz<=dz1); dz++) {
+		/* Find the grid-cell cj in which possible neighbours are */
 		cj   = xyz2ci(Ny,Nz,dx,dy,dz);
+		
+		/* Check out how many cgs (nrj) there in this cell */
 		nrj  = gridnra[cj];
+		
+		/* Find the offset in the cg list */
 		cgj0 = gridind[cj];
+		
+		/* Loop over cgs */
 		for (j=0; (j<nrj); j++) {
 		  jjcg = grida[cgj0+j];
 		  
@@ -725,7 +734,7 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 				    top->idef.atnr,fr->nWater,
 				    ngener,md,icg,nsr,nl_sr,
 				    cgs->index,cgs->a,bexcl,
-				    shift,fr,FALSE);
+				    shift,fr,FALSE,FALSE);
 			nsr=0;
 		      }
 		      nl_sr[nsr++]=jjcg;
@@ -733,15 +742,15 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 		      if (nlr_ljc >= MAX_CG) {
 			do_longrange(log,top,fr,ngener,md,icg,nlr_ljc,
 				     nl_lr_ljc,bexcl,shift,x,box_size,nrnb,
-				     lambda,dvdlambda,grps);
+				     lambda,dvdlambda,grps,FALSE);
 			nlr_ljc=0;
 		      }
 		      nl_lr_ljc[nlr_ljc++]=jjcg;
-		    } else if (r2 < rl2) {
+		    } else if (r2 < rcoul2) {
 		      if (nlr_coul >= MAX_CG) {
 			do_longrange(log,top,fr,ngener,md,icg,nlr_coul,
 				     nl_lr_coul,bexcl,shift,x,box_size,nrnb,
-				     lambda,dvdlambda,grps);
+				     lambda,dvdlambda,grps,TRUE);
 			nlr_coul=0;
 		      }
 		      nl_lr_coul[nlr_coul++]=jjcg;
@@ -756,17 +765,17 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 	  if (nsr > 0)
 	    put_in_list(log,top->idef.iparams,top->idef.atnr,fr->nWater,
 			ngener,md,icg,nsr,nl_sr,cgs->index,cgs->a,bexcl,
-			shift,fr,FALSE);
+			shift,fr,FALSE,FALSE);
 			
 	  if (nlr_ljc > 0) 
 	    do_longrange(log,top,fr,ngener,md,icg,nlr_ljc,
 			 nl_lr_ljc,bexcl,shift,x,box_size,nrnb,
-			 lambda,dvdlambda,grps);
+			 lambda,dvdlambda,grps,FALSE);
 	  
 	  if (nlr_coul > 0) 
 	    do_longrange(log,top,fr,ngener,md,icg,nlr_coul,
 			 nl_lr_coul,bexcl,shift,x,box_size,nrnb,
-			 lambda,dvdlambda,grps);
+			 lambda,dvdlambda,grps,TRUE);
 	  
 	}
       }

@@ -39,9 +39,7 @@ static char *SRCID_inloopc_c = "$Id$";
 
 void c_coul(real ix,real iy,real iz,real qi,
 	    real pos[],int nj,t_nl_j jjnr[],
-	    real charge[],
-	    real faction[],real fip[3],
-	    real *Vc)
+	    real charge[],real faction[],real fip[3],real *Vc)
 {
   int     k,jnr,j3;
   real    fX,fY,fZ;
@@ -171,9 +169,9 @@ void c_bham(real ix,real iy,real iz,real qi,
   real   fjx,fjy,fjz;
   real   tx,ty,tz,vnb6,vnbexp,br;
   
-  fX=0;
-  fY=0;
-  fZ=0;
+  fX     = 0;
+  fY     = 0;
+  fZ     = 0;
   vctot  = 0;
   vnbtot = 0;
   
@@ -227,11 +225,11 @@ void c_bham(real ix,real iy,real iz,real qi,
   *Vnb    += vnbtot;
 }
 
-void c_water2(int i0,real xw[],real fudge,
-	      real pos[],int nj,int type[],t_nl_j jjnr[],
-	      real charge[],real nbfp[],
-	      real faction[],real fw[],
-	      real *Vc,real *Vnb)
+void c_water(int i0,real xw[],real fudge,
+	     real pos[],int nj,int type[],t_nl_j jjnr[],
+	     real charge[],real nbfp[],
+	     real faction[],real fw[],
+	     real *Vc,real *Vnb)
 {      
   const  real twelve=12.0;
   const  real six=6.0;
@@ -374,10 +372,10 @@ void c_water2(int i0,real xw[],real fudge,
   *Vnb    += vnbtot;
 }
 
-void c_wcoul2(int i0,real xw[],real fudge,
-	      real pos[],int nj,t_nl_j jjnr[],
-	      real charge[],real faction[],real fw[],
-	      real *Vc)
+void c_wcoul(int i0,real xw[],real fudge,
+	     real pos[],int nj,t_nl_j jjnr[],
+	     real charge[],real faction[],real fw[],
+	     real *Vc)
 {      
   int    k,jnr,j3;
   real   fxJ,fyJ,fzJ;
@@ -531,6 +529,7 @@ void c_ljcfree(real ix,real iy,real iz,int inr,
   real   qiA,qiB,qqA=0,qqB=0,c6,c12,c6a,c6b,c12a,c12b;
   real   rffac2,qqq;
   
+  fatal_error(0,"Don't use c_ljcfree");
   fX     = 0.0;
   fY     = 0.0;
   fZ     = 0.0;
@@ -1110,32 +1109,6 @@ void c_free(real ix,real iy,real iz,int inr,
   }
 }
 
-void c_water(int i0,real xw[],real fudge,
-	     real pos[],int nj,int type[],t_nl_j jjnr[],
-	     real charge[],real nbfp[],
-	     real faction[],real fw[],
-	     real *Vc,real *Vnb)
-{
-  c_ljc(xw[0],xw[1],xw[2],charge[i0]*fudge,pos,nj,type,jjnr,charge,nbfp,
-	faction,fw,Vc,Vnb);
-  c_coul(xw[3],xw[4],xw[5],charge[i0+1]*fudge,pos,nj,jjnr,charge,
-	 faction,fw+3,Vc);
-  c_coul(xw[6],xw[7],xw[8],charge[i0+2]*fudge,pos,nj,jjnr,charge,
-	 faction,fw+6,Vc);
-}
-
-void c_wcoul(int i0,real xw[],real fudge,real pos[],int nj,t_nl_j jjnr[],
-	     real charge[],real faction[],real fw[],real *Vc)
-{
-  int m,m3;
-  
-  for(m=0; (m<3); m++) {
-    m3=3*m;
-    c_coul(xw[m3],xw[m3+1],xw[m3+2],charge[i0+m]*fudge,pos,nj,jjnr,charge,
-	   faction,fw+m3,Vc);
-  }
-}
-
 void c_watertab(int i0,real xw[],real fudge,
 		real pos[],int nj,int type[],t_nl_j jjnr[],
 		real charge[],real nbfp[],
@@ -1161,6 +1134,35 @@ void c_wcoultab(int i0,real xw[],real fudge,
     m3 = 3*m;
     c_coultab(xw[m3],xw[m3+1],xw[m3+2],charge[i0+m]*fudge,pos,nj,jjnr,charge,
 	      faction,fw+m3,Vc,ntab,tabscale,VFtab);
+  }
+}
+
+/* These two routines are considerably slower than the written out ones
+ * on my Linux box.
+ */
+void c_water2(int i0,real xw[],real fudge,
+	      real pos[],int nj,int type[],t_nl_j jjnr[],
+	      real charge[],real nbfp[],
+	      real faction[],real fw[],
+	      real *Vc,real *Vnb)
+{
+  c_ljc(xw[0],xw[1],xw[2],charge[i0]*fudge,pos,nj,type,jjnr,charge,nbfp,
+	faction,fw,Vc,Vnb);
+  c_coul(xw[3],xw[4],xw[5],charge[i0+1]*fudge,pos,nj,jjnr,charge,
+	 faction,fw+3,Vc);
+  c_coul(xw[6],xw[7],xw[8],charge[i0+2]*fudge,pos,nj,jjnr,charge,
+	 faction,fw+6,Vc);
+}
+
+void c_wcoul2(int i0,real xw[],real fudge,real pos[],int nj,t_nl_j jjnr[],
+	      real charge[],real faction[],real fw[],real *Vc)
+{
+  int m,m3;
+  
+  for(m=0; (m<3); m++) {
+    m3=3*m;
+    c_coul(xw[m3],xw[m3+1],xw[m3+2],charge[i0+m]*fudge,pos,nj,jjnr,charge,
+	   faction,fw+m3,Vc);
   }
 }
 
