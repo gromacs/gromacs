@@ -211,7 +211,7 @@ void put_atoms_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
 		      matrix box,rvec box_size,t_block *cgs,
 		      rvec pos[],rvec shift_vec[],rvec cg_cm[])
 {
-  int  icg,ai,k,k0,k1;
+  int  icg,ai,k,k0,k1,m;
   real dx,dy,dz,cgx,cgy,cgz,nrcg,inv_ncg;
   real bx,by,bz,hbx,hby,hbz,tx,ty,tz;
   real binv_x,binv_y,binv_z;
@@ -249,14 +249,13 @@ void put_atoms_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
       cgy += inv_ncg*pos[ai][YY];
       cgz += inv_ncg*pos[ai][ZZ];
     }
-    
     /* Now check pbc for this cg */
-    tx = (cgx-hbx)*binv_x;
-    ty = (cgy-hby)*binv_y;
-    tz = (cgz-hbz)*binv_z;
-    dx = bx*nint(tx);
-    dy = by*nint(ty);
-    dz = bz*nint(tz);
+    tx = cgx*binv_x;
+    ty = cgy*binv_y;
+    tz = cgz*binv_z;
+    dx = -bx*floor(tx);
+    dy = -by*floor(ty);
+    dz = -bz*floor(tz);
 
     /* We now have a shift vector for this CG 
      * let's add it to all the atoms and to the
@@ -265,13 +264,20 @@ void put_atoms_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
     for(k=k0; (k<k1); k++) {
       ai=cga[k];
       
-      pos[ai][XX] -= dx;
-      pos[ai][YY] -= dy;
-      pos[ai][ZZ] -= dz;
+      pos[ai][XX] += dx;
+      pos[ai][YY] += dy;
+      pos[ai][ZZ] += dz;
     }
-    cg_cm[icg][XX] = cgx-dx;
-    cg_cm[icg][YY] = cgy-dy;
-    cg_cm[icg][ZZ] = cgz-dz;
+    cg_cm[icg][XX] = cgx+dx;
+    cg_cm[icg][YY] = cgy+dy;
+    cg_cm[icg][ZZ] = cgz+dz;
+#ifdef DEBUG_PBC
+    for(k=0; (k<DIM); k++) {
+      if ((cg_cm[icg][k] < 0) || (cg_cm[icg][k] >= box[k][k]))
+	fatal_error(0,"cg_cm[%d] = %8.3f  %8.3f  %8.3f",icg,cg_cm[icg][XX],
+		    cg_cm[icg][YY],cg_cm[icg][ZZ]);
+    }
+#endif
   }
 }
 

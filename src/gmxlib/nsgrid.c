@@ -76,7 +76,8 @@ void init_grid(FILE *log,t_grid *grid,int delta,matrix box,real rlong,int ncg)
   fprintf(log,"Grid: %d x %d x %d cells\n",
 	  grid->nrx,grid->nry,grid->nrz);
     
-  if (debug) fprintf(log,"Succesfully allocated memory for grid pointers.");
+  if (debug) 
+    fprintf(log,"Succesfully allocated memory for grid pointers.");
 }
 
 int xyz2ci_(int nry,int nrz,int x,int y,int z)
@@ -260,12 +261,21 @@ void fill_grid(FILE *log,bool bDD,int cg_index[],
   if (debug)
     fprintf(debug,"Filling grid from %d to %d (total %d)\n",cg0,cg1,ncg);
 
+  /* We assume here that the charge group center of mass is allways
+   * 0 <= cgcm < box
+   * If not this will generate errors (SEGV). If you suspect this, turn on
+   * DEBUG_PBC
+   */
   for (i=cg0; (i<cg0+cg1); i++) {
     index = cg_index[i];
-    ix    = mod(dx*cg_cm[index][XX],nrx);
-    iy    = mod(dy*cg_cm[index][YY],nry);
-    iz    = mod(dz*cg_cm[index][ZZ],nrz);
-    
+    ix    = (dx*cg_cm[index][XX]);
+    iy    = (dy*cg_cm[index][YY]);
+    iz    = (dz*cg_cm[index][ZZ]);
+#ifdef DEBUG_PBC
+    assert((ix >= 0) && (ix < nrx));
+    assert((iy >= 0) && (iy < nry));
+    assert((iz >= 0) && (iz < nrz));
+#endif
     ci    = xyz2ci(nry,nrz,ix,iy,iz);
     cell_index[i] = ci;
   }
