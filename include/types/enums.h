@@ -85,5 +85,5 @@ enum {
 
 /* FEP selection */
 enum {
-  efepNO, efepLAMBDA234, efepSOFTCORE, efepNR
+  efepNO, efepYES, efepNR
 };

@@ -34,9 +34,9 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, zero_temp_time)
 <li><A HREF="#vel"><b>velocity generation</b></A> (gen_vel, gen_temp, gen_seed)
 <li><A HREF="#sol"><b>solvent optimization</b></A> (solvent_optimization)
-<li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_warnangle, nstlincsout, morse)
+<li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_warnangle, morse)
 <li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre_weighting, disre_mixed, disre_fc, disre_tau, nstdisreout)
-<li><A HREF="#free"><b>Free Energy Perturbation</b></A> (free_energy, init_lambda, delta_lambda, sc_alpha)
+<li><A HREF="#free"><b>Free Energy Perturbation</b></A> (free_energy, init_lambda, delta_lambda, sc_alpha, sc_sigma)
 <li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc_grps, accelerate, freezegrps, freezedim, cos_acceleration, energygrp_excl )
 <li><A HREF="#ef"><b>Electric fields</b></A> (E_x, E_xt, E_y, E_yt, E_z, E_zt )
 <li><A HREF="#user"><b>User defined thingies</b></A> (user1_grps, user2_grps, user3_grps, userint1, userint2, userint3, userint4, userreal1, userreal2, userreal3, userreal4)
@@ -550,8 +550,9 @@ by adding bond-constraints.
 <dd>LINear Constraint Solver. The accuracy in set with
 <b>lincs_order</b>, which sets the number of matrices in the expansion
 for the matrix inversion, 4 is enough for a "normal" MD simulation, 8 is
-needed for LD with large time-steps. If a bond rotates more than
-<b>lincs_warnangle</b> [degrees] in one step, 
+needed for LD with large time-steps. The accuray of the constraints is
+printed to the log file every <b>nstlog</b> steps.
+If a bond rotates more than <b>lincs_warnangle</b> [degrees] in one step, 
 a warning will be printed both to the log file and to <TT>stderr</TT>. 
 Lincs should not be used with coupled angle constraints.
 <dt><b><!--Idx-->shake<!--EIdx--></b>
@@ -577,8 +578,6 @@ for "normal" MD.
 during energy minimization, only one iteration is used in MD.
 <dt><h4>lincs_warnangle: </b>(30) [degrees]</h4>
 <dd>maximum angle that a bond can rotate before Lincs will complain
-<dt><h4>nstlincsout: </b>(1000) [steps]</h4>
-<dd>frequency to output constraint accuracy in log file
 
 <dt><h4>morse:</h4>
 <dd><dl compact>
@@ -641,25 +640,26 @@ of all atom pairs involved in restraints to the energy file
 <dd><dl compact>
 <dt><b>no</b>
 <dd>Only use topology A. 
-<dt><b>lambda234</b>
-<dd>Change the system from topology A (lambda=0) to topology B (lambda=1)
-and calculate the free energy difference. The non-bonded potentials are
-interpolated with powers of lambda: Coulomb with a power 2, dispersion
-with a power 3, repulsion with a power 4.
-<dt><b>softcore</b>
-<dd>Change the system from topology A (lambda=0) to topology B (lambda=1)
-and calculate the free energy difference. The Coulomb and LJ interactions
-are interpolated via softcore potentials.
-The softcore parameter is <b>sc_alpha</b>.
+<dt><b>yes</b>
+<dd>Interpolate between topology A (lambda=0) to topology B (lambda=1)
+and write the derivative of the Hamiltonian with respect to lambda to
+the energy file and to <tt>dgdl.xvg</tt>.
+The potentials, bond-lengths and angles are interpolated linearly as
+described in the manual. When <b>sc_alpha</b> is larger than zero, soft-core
+potentials are used for the LJ and Coulomb interactions.
 </dl>
 <dt><h4>init_lambda: </b>(0)</h4>
 <dd>starting value for lambda
 <dt><h4>delta_lambda: </b>(0)</h4>
 <dd>increase per time step for lambda
 <dt><h4>sc_alpha: </b>(0)</h4>
-<dd>the softcore parameter, a value of 0 results in linear interpolation of
-the Coulomb and LJ interactions.
+<dd>the soft-core parameter, a value of 0 results in linear interpolation of
+the LJ and Coulomb interactions
+<dt><h4>sc_sigma: </b>(0.3) [nm]</h4>
+<dd>the soft-core sigma for particles which have a C6 or C12 parameter equal
+to zero
 </dl>
+
 
 <A NAME="neq"><br>
 <hr>
@@ -796,7 +796,6 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#out">nstenergy</A><br>
 <A HREF="#run">nsteps</A><br>
 <A HREF="#out">nstfout</A><br>
-<A HREF="#bond2">nstlincsout</A><br>
 <A HREF="#nl">nstlist</A><br>
 <A HREF="#out">nstlog</A><br>
 <A HREF="#out">nstvout</A><br>
@@ -814,6 +813,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#el2">rvdw_switch</A><br>
 <A HREF="#el2">rvdw</A><br>
 <A HREF="#free">sc_alpha</A><br>
+<A HREF="#free">sc_sigma</A><br>
 <A HREF="#bond2">shake_tol</A><br>
 <A HREF="#sol">solvent_optimization</A><br>
 <A HREF="#pc">tau_p</A><br>

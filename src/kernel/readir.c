@@ -406,8 +406,6 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("Lincs will write a warning to the stderr if in one step a bond"); 
   CTYPE ("rotates over more degrees than");
   RTYPE ("lincs-warnangle", ir->LincsWarnAngle, 30.0);
-  CTYPE ("Output frequency of the Lincs accuracy");
-  ITYPE ("nstLincsout",	ir->nstLincsout,1000);
   CTYPE ("Convert harmonic bonds to morse potentials");
   EETYPE("morse",       opts->bMorse,yesno_names, nerror, TRUE);
   
@@ -430,6 +428,7 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("init-lambda",	ir->init_lambda,0.0);
   RTYPE ("delta-lambda",ir->delta_lambda,0.0);
   RTYPE ("sc-alpha",ir->sc_alpha,0.0);
+  RTYPE ("sc-sigma",ir->sc_alpha,0.3);
 
   /* Non-equilibrium MD stuff */  
   CCTYPE("Non-equilibrium MD stuff");

@@ -47,7 +47,7 @@ static char *SRCID_tpxio_c = "$Id$";
 #include "copyrite.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version = 14;
+static int tpx_version = 15;
 /* This number should be the most recent incompatible version */
 static int tpx_incompatible_version = 9;
 /* This is the version of the file we are reading */
@@ -93,7 +93,7 @@ void _do_section(int fp,int key,bool bRead,char *src,int line)
  **************************************************************/
 static void do_inputrec(t_inputrec *ir,bool bRead)
 {
-  int  i,j,*tmp; 
+  int  i,j,*tmp,idum; 
   bool bDum=TRUE;
 
   if (file_version != tpx_version) {
@@ -161,6 +161,10 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
       do_real(ir->sc_alpha);
     else
       ir->sc_alpha = 0;
+    if (file_version >= 15)
+      do_real(ir->sc_alpha);
+    else
+      ir->sc_alpha = 0.3;
     do_int(ir->eDisreWeighting); 
     do_int(ir->bDisreMixed); 
     do_real(ir->dr_fc); 
@@ -178,7 +182,8 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_int(ir->eConstrAlg);
     do_int(ir->nProjOrder);
     do_real(ir->LincsWarnAngle);
-    do_int(ir->nstLincsout);
+    if (file_version <= 14)
+      do_int(idum);
     do_real(ir->ld_temp);
     do_real(ir->ld_fric);
     do_int(ir->ld_seed);

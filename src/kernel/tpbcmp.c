@@ -307,6 +307,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CIR(init_lambda);
   CIR(delta_lambda);
   CIR(sc_alpha);
+  CIR(sc_sigma);
   CIR(dr_fc);
   CII(eDisreWeighting);
   CIB(bDisreMixed);
@@ -318,7 +319,6 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CII(eConstrAlg);
   CII(nProjOrder);
   CIR(LincsWarnAngle);
-  CII(nstLincsout);
   CIR(ld_temp);
   CIR(ld_fric);
   CII(ld_seed);

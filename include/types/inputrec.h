@@ -95,10 +95,11 @@ typedef struct {
   bool bDispCorr;       /* Perform Long range dispersion corrections    */
   real shake_tol;	/* tolerance for shake				*/
   real fudgeQQ;		/* Id. for 1-4 coulomb interactions		*/
-  int  efep;   		/* type of free energy perturbation		*/
+  int  efep;   		/* free energy interpolation no/yes		*/
   real init_lambda;	/* initial value for perturbation variable	*/
   real delta_lambda;	/* change of lambda per time step (1/dt)	*/
-  real sc_alpha;        /* fep soft core parameter                      */
+  real sc_alpha;        /* free energy soft-core parameter              */
+  real sc_sigma;        /* free energy soft-core sigma when c6 or c12=0 */
   real dr_fc;		/* force constant for ta_disre			*/
   int  eDisreWeighting; /* type of weighting of pairs in one restraints	*/
   bool bDisreMixed;     /* Use comb of time averaged and instan. viol's	*/
@@ -113,7 +114,6 @@ typedef struct {
   int  eConstrAlg;      /* Type of constraint algorithm                 */
   int  nProjOrder;      /* Order of the LINCS Projection Algorithm      */
   real LincsWarnAngle;  /* If bond rotates more than %g degrees, warn   */
-  int  nstLincsout;     /* Frequency for output from LINCS              */
   real ld_temp;         /* Temperature for Langevin Dynamics (LD)       */
   real ld_fric;         /* Friction coefficient for LD (amu / ps)       */
   int  ld_seed;         /* Random seed for LD                           */

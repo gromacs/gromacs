@@ -334,6 +334,7 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PS("free_energy",EFEPTYPE(ir->efep));
     PR("init_lambda",ir->init_lambda);
     PR("sc_alpha",ir->sc_alpha);
+    PR("sc_sigma",ir->sc_sigma);
     PR("delta_lambda",ir->delta_lambda);
     PS("disre_weighting",EDISREWEIGHTING(ir->eDisreWeighting));
     PS("disre_mixed",BOOL(ir->bDisreMixed));
@@ -347,7 +348,6 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PR("shake_tol",ir->shake_tol);
     PI("lincs_order",ir->nProjOrder);
     PR("lincs_warnangle",ir->LincsWarnAngle);
-    PI("nstLincsout",ir->nstLincsout);
     PR("ld_temp",ir->ld_temp);
     PR("ld_fric",ir->ld_fric);
     PI("ld_seed",ir->ld_seed);

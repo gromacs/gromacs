@@ -111,5 +111,5 @@ char *gtypes[egcNR+1] = {
 };
 
 char *efep_names[efepNR+1] = {
-  "No", "Lambda234", "Softcore", NULL
+  "no", "yes", NULL
 };
