@@ -127,6 +127,21 @@ static real find_pdb_bfac(t_atoms *atoms,char *resnm,int resnr,char *atomnm)
   return atoms->pdbinfo[i].bfac;
 }
 
+void correlate_aniso(char *fn,t_atoms *ref,t_atoms *calc)
+{
+  FILE *fp;
+  int  i,j;
+  
+  fp = xvgropen(fn,"Correlation between X-Ray and Computed Uij","X-Ray","Computed");
+  for(i=0; (i<ref->nr); i++) {
+    if (ref->pdbinfo[i].bAnisotropic) {
+      for(j=U11; (j<=U23); j++)
+	fprintf(fp,"%10g  %10g\n",ref->pdbinfo[i].uij[j],calc->pdbinfo[i].uij[j]);
+    }
+  }
+  fclose(fp);
+}
+
 int main (int argc,char *argv[])
 {
   static char *desc[] = {
@@ -142,7 +157,11 @@ int main (int argc,char *argv[])
     "and then it will also output average coordinates and a pdb file with ANISOU",
     "records (corresonding to the -oq option). Please note that the U values",
     "are orientation dependent, so before comparison with experimental data",
-    "you should verify that you fit to the experimental coordinates."
+    "you should verify that you fit to the experimental coordinates.[PAR]",
+    "When a pdb input file is passed to the program and the [TT]-aniso[tt]",
+    "flag is set",
+    "a correlation plot of the Uij will be created, if any anisotropic",
+    "temperature factors are present in the pdb file."
   };
   static bool bAverX=FALSE,bAniso=FALSE;
   t_pargs pargs[] = { 
@@ -157,7 +176,7 @@ int main (int argc,char *argv[])
   t_tpxheader  header;
   t_inputrec   ir;
   t_topology   top;
-  t_atoms      *pdbatoms;
+  t_atoms      *pdbatoms,*refatoms;
   bool         bCont;
 
   matrix       box,pdbbox;
@@ -190,6 +209,7 @@ int main (int argc,char *argv[])
     { efPDB, "-oq", "anisou", ffOPTWR },
     { efNDX, NULL,  NULL,     ffOPTRD },
     { efXVG, "-o",  "rmsf",   ffWRITE },
+    { efXVG, "-oc", "correl", ffOPTWR },
     { efGRO, "-ox", "xaver",  ffOPTWR }
   };
 #define NFILE asize(fnm)
@@ -237,11 +257,15 @@ int main (int argc,char *argv[])
   if (bReadPDB) {
     get_stx_coordnum(opt2fn("-q",NFILE,fnm),&npdbatoms);
     pdbatoms = new_atoms(npdbatoms);
+    refatoms = new_atoms(npdbatoms);
     snew(pdbx,npdbatoms);
+    /* Read coordinates twice */
     read_stx_conf(opt2fn("-q",NFILE,fnm),title,pdbatoms,pdbx,NULL,pdbbox);    
+    read_stx_conf(opt2fn("-q",NFILE,fnm),title,refatoms,pdbx,NULL,pdbbox);    
   }
   else {
     pdbatoms  = &top.atoms;
+    refatoms  = &top.atoms;
     pdbx      = xref;
     npdbatoms = pdbatoms->nr;
     copy_mat(box,pdbbox);
@@ -345,10 +369,12 @@ int main (int argc,char *argv[])
   fclose(fp);
   
   /* Write a pdb file with anisou records */
-  if (bAniso)
+  if (bAniso) {
     write_sto_conf(opt2fn("-oq",NFILE,fnm),title,pdbatoms,pdbx,NULL,pdbbox);
-
-  xvgr_file(ftp2fn(efXVG,NFILE,fnm),"-nxy");
+    correlate_aniso(opt2fn("-oc",NFILE,fnm),refatoms,pdbatoms);
+    xvgr_file(opt2fn("-oc",NFILE,fnm),"-nxy");
+  }
+  xvgr_file(opt2fn("-o",NFILE,fnm),"-nxy");
     
   thanx(stdout);
   
