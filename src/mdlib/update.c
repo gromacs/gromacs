@@ -616,6 +616,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
 	    bool         bDoUpdate,
 	    t_edsamyn    *edyn,
 	    t_pull       *pulldata,
+	    bool         bConstrain,
 	    bool         bNEMD)
 {
   static bool      bFirst=TRUE;
@@ -623,7 +624,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
   static int       ngtc,ngacc;
   static rvec      *lamb;
   static t_edpar   edpar;
-  static bool      bConstraints,bExtended;
+  static bool      bHaveConstr,bExtended;
   double           dt;
   real             dt_1,dt_2,mdt_2;
   int              i,n,m,g,vol;
@@ -631,9 +632,10 @@ void update(int          natoms, 	/* number of atoms in simulation */
   t_inputrec       *ir=&(parm->ir);
   
   if (bFirst) {
-    bConstraints = init_constraints(stdlog,top,&(parm->ir),md,start,homenr);
-    bConstraints = bConstraints || pulldata->bPull;
-    bExtended    = (ir->etc==etcNOSEHOOVER) || (ir->epc==epcPARINELLORAHMAN);
+    bHaveConstr = init_constraints(stdlog,top,&(parm->ir),md,start,homenr,
+				    ir->eI!=eiSteep && bConstrain);
+    bHaveConstr = bHaveConstr || pulldata->bPull;
+    bExtended   = (ir->etc==etcNOSEHOOVER) || (ir->epc==epcPARINELLORAHMAN);
     
     if (edyn->bEdsam) 
       init_edsam(stdlog,top,md,start,homenr,x,parm->box,
@@ -704,12 +706,12 @@ void update(int          natoms, 	/* number of atoms in simulation */
 		   x,xprime,v,vold,force,
 		   ir->opts.ngtc,ir->opts.tau_t,ir->opts.ref_t,
 		   &ir->ld_seed,TRUE);
-      if (bConstraints) {
+      if (bHaveConstr && bConstrain) {
 	for(n=start; n<start+homenr; n++)
 	  copy_rvec(xprime[n],x_unc[n-start]);
 	/* Constrain the coordinates xprime */
-	constrain(stdlog,top,ir,step,md,start,homenr,x,xprime,parm->box,
-		  lambda,dvdlambda,nrnb);
+	constrain(stdlog,top,ir,step,md,start,homenr,x,xprime,NULL,
+		  parm->box,lambda,dvdlambda,nrnb,TRUE);
 
 	for(n=start; n<start+homenr; n++) {
 	  /* A correction factor eph is needed for the SD constraint force */
@@ -760,15 +762,15 @@ void update(int          natoms, 	/* number of atoms in simulation */
    * it is enough to do this once though, since the relative velocities 
    * after this will be normal to the bond vector
    */
-  if (bConstraints) {
+  if (bHaveConstr && bConstrain) {
     if (ir->eI != eiSD)
       /* Copy Unconstrained X to temp array */
       for(n=start; n<start+homenr; n++)
 	copy_rvec(xprime[n],x_unc[n-start]);
     
     /* Constrain the coordinates xprime */
-    constrain(stdlog,top,ir,step,md,start,homenr,x,xprime,parm->box,
-	      lambda,dvdlambda,nrnb);
+    constrain(stdlog,top,ir,step,md,start,homenr,x,xprime,NULL,
+	      parm->box,lambda,dvdlambda,nrnb,TRUE);
     
     where();
     

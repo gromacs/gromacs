@@ -143,7 +143,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   bTCR = ftp2bSet(efGCT,nfile,fnm);
   if (MASTER(cr) && bTCR)
     fprintf(stderr,"Will do General Coupling Theory!\n");
-  
+
+  fr->k_dirmin = parm->ir.userreal4;
 #endif
 
   /* Remove periodicity */  
@@ -154,7 +155,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Initialize pull code */
   init_pull(log,nfile,fnm,&pulldata,x,mdatoms,parm->box); 
   
-  if (!parm->ir.bUncStart) 
+  if (!parm->ir.bUncStart && fr->k_dirmin==0) 
     do_shakefirst(log,bTYZ,lambda,ener,parm,nsb,mdatoms,x,vold,buf,f,v,
 		  graph,cr,&mynrnb,grps,fr,top,edyn,&pulldata);
   debug_gmx();
@@ -423,7 +424,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	   parm,SAfactor,mdatoms,
            x,graph,f,buf,vold,vt,v,
 	   top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata,
-	   bNEMD);
+	   fr->k_dirmin==0,bNEMD);
     /* The coordinates (x) were unshifted in update */
 
     /* Non-equilibrium MD: this is parallellized, but only does communication

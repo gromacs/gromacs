@@ -136,6 +136,9 @@ typedef struct {
 
   /* Energy group exclusions */
   bool *eg_excl;
+
+  /* xmdrun directional minimization */
+  real k_dirmin;
 } t_forcerec;
 
 #define C6(nbfp,ntp,ai,aj)     (nbfp)[2*((ntp)*(ai)+(aj))]

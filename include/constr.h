@@ -67,21 +67,36 @@ extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 
 extern void constrain(FILE *log,t_topology *top,t_inputrec *ir,int step,
 		      t_mdatoms *md,int start,int homenr,
-		      rvec *x,rvec *xprime,matrix box,
-		      real lambda,real *dvdlambda,t_nrnb *nrnb);
-/* Constrain coordinates xprime using the directions in x,
- * init_constraints must have be called once, before calling constrain      
+		      rvec *x,rvec *xprime,rvec *min_proj,matrix box,
+		      real lambda,real *dvdlambda,t_nrnb *nrnb,
+		      bool bCoordinates);
+/*
+ * When bCoordinates=TRUE constrains coordinates xprime using th
+ * directions in x, min_proj is not used.
+ *
+ * When bCoordinates=FALSE, calculates the components xprime in
+ * the constraint directions and subtracts these components from min_proj.
+ * So when min_proj=xprime, the constraint components are projected out.
+ *
+ * Init_constraints must have be called once, before calling constrain.
  */
 
 extern bool init_constraints(FILE *log,t_topology *top,t_inputrec *ir,
-			     t_mdatoms *md,int start,int homenr);
+			     t_mdatoms *md,int start,int homenr,
+			     bool bOnlyCoords);
 /* Initialize constraints stuff */
 
 /* C routines for LINCS algorithm */ 
+extern void clincs_proj(rvec *x,rvec *f,rvec *fp,int ncons,
+			int *bla1,int *bla2,int *blnr,int *blbnb,
+			real *blc,real *blcc,real *blm,
+			int nrec,real *invmass,rvec *r,
+			real *vbo,real *vbn,real *vbt);
+
 extern void clincs(rvec *x,rvec *xp,int ncons,
 		   int *bla1,int *bla2,int *blnr,int *blbnb,real *bllen,
 		   real *blc,real *blcc,real *blm,
-		   int nit,int nrec,real *invmass,rvec * r,
+		   int nit,int nrec,real *invmass,rvec *r,
 		   real *vbo,real *vbn,real *vbt,real wangle,int *warn,
 		   real *lambda);
 

@@ -41,6 +41,7 @@ static char *SRCID_relax_sh_c = "$Id$";
 #include "network.h"
 #include "do_gct.h"
 #include "names.h"
+#include "constr.h"
 
 static void do_1pos(rvec xnew,rvec xold,rvec f,real k_1,real step)
 {
@@ -58,6 +59,15 @@ static void do_1pos(rvec xnew,rvec xold,rvec f,real k_1,real step)
   xnew[XX]=xo+dx*step;
   xnew[YY]=yo+dy*step;
   xnew[ZZ]=zo+dz*step;
+}
+
+static void directional_sd(FILE *log,real step,rvec xold[],rvec xnew[],
+			   rvec min_f[],int start,int homenr,real k)
+{
+  int  i;
+  
+  for(i=start; i<homenr; i++)
+    do_1pos(xnew[i],xold[i],min_f[i],-k,step);
 }
 
 static void shell_pos_sd(FILE *log,real step,rvec xold[],rvec xnew[],rvec f[],
@@ -214,8 +224,9 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   static rvec *pos[2],*force[2];
   real   Epot[2],df[2],Estore[F_NRE];
   tensor my_vir[2],vir_last,pme_vir[2];
+  rvec   *min_f_dir=NULL;
 #define NEPOT asize(Epot)
-  real   ftol,step,step0,xiH,xiS;
+  real   ftol,step,step0,xiH,xiS,dum=0;
   char   cbuf[56];
   bool   bDone;
   int    g;
@@ -304,6 +315,16 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     
     /* New positions, Steepest descent */
     shell_pos_sd(log,step,pos[Min],pos[Try],force[Min],nshell,shells); 
+
+    if (fr->k_dirmin) {
+      if (min_f_dir == NULL)
+	snew(min_f_dir,homenr);
+      constrain(log,top,&(parm->ir),mdstep,md,start,end,
+		pos[Min],force[Min],min_f_dir,parm->box,
+		lambda,&dum,nrnb,FALSE);
+      directional_sd(log,step,pos[Min],pos[Try],min_f_dir,start,homenr,
+		     fr->k_dirmin);
+    }
 
     if (debug) {
       pr_rvecs(debug,0,"pos[Try] b4 do_force",pos[Try] + start,homenr);

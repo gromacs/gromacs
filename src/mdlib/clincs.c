@@ -34,10 +34,93 @@ static char *SRCID_clincs_c = "$Id$";
 #include "physics.h"
 #include "vec.h"
 
+void clincs_proj(rvec *x,rvec *f,rvec *fp,int ncons,
+		 int *bla1,int *bla2,int *blnr,int *blbnb,
+		 real *blc,real *blcc,real *blm,
+		 int nrec,real *invmass,rvec *r,
+		 real *rhs1,real *rhs2,real *sol)
+{
+  int     b,i,j,k,n,it,rec;
+  real    tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,wfac,lam;  
+  real    u0,u1,u2,v0,v1,v2;
+  real    *tmp;
+
+  /* Compute normalized i-j vectors */
+  for(b=0;b<ncons;b++) {
+    i=bla1[b];
+    j=bla2[b];
+    tmp0=x[i][0]-x[j][0];
+    tmp1=x[i][1]-x[j][1];
+    tmp2=x[i][2]-x[j][2];
+    rlen=invsqrt(tmp0*tmp0+tmp1*tmp1+tmp2*tmp2);
+    r[b][0]=rlen*tmp0;
+    r[b][1]=rlen*tmp1;
+    r[b][2]=rlen*tmp2;
+  } /* 16 ncons flops */
+  
+  for(b=0;b<ncons;b++) {
+    tmp0=r[b][0];
+    tmp1=r[b][1];
+    tmp2=r[b][2];
+    i=bla1[b];
+    j=bla2[b];
+    for(n=blnr[b];n<blnr[b+1];n++) {
+      k=blbnb[n];
+      blm[n]=blcc[n]*(tmp0*r[k][0]+tmp1*r[k][1]+tmp2*r[k][2]); 
+    } /* 6 nr flops */
+    mvb=blc[b]*(tmp0*(f[i][0]-f[j][0])+
+		tmp1*(f[i][1]-f[j][1])+    
+		tmp2*(f[i][2]-f[j][2]));
+    rhs1[b]=mvb;
+    sol[b]=mvb;
+    /* 7 flops */
+  }
+  /* Together: 23*ncons + 6*nrtot flops */
+  
+    
+  for(rec=0;rec<nrec;rec++) {
+    for(b=0;b<ncons;b++) {
+      mvb=0;
+      for(n=blnr[b];n<blnr[b+1];n++) {
+	j=blbnb[n];
+	mvb=mvb+blm[n]*rhs1[j];
+      }
+      rhs2[b]=mvb;
+      sol[b]=sol[b]+mvb;
+    }
+    tmp=rhs1;
+    rhs1=rhs2;
+    rhs2=tmp;
+  } /* nrec*(ncons+2*nrtot) flops */
+  
+  for(b=0;b<ncons;b++) {
+    i=bla1[b];
+    j=bla2[b];
+    mvb=blc[b]*sol[b];
+    im1=invmass[i];
+    im2=invmass[j];
+    tmp0=r[b][0]*mvb;
+    tmp1=r[b][1]*mvb;
+    tmp2=r[b][2]*mvb;
+    u0=fp[i][0]-tmp0*im1;
+    u1=fp[i][1]-tmp1*im1;
+    u2=fp[i][2]-tmp2*im1;
+    v0=fp[j][0]+tmp0*im2;
+    v1=fp[j][1]+tmp1*im2;
+    v2=fp[j][2]+tmp2*im2;
+    fp[i][0]=u0;
+    fp[i][1]=u1;
+    fp[i][2]=u2;
+    fp[j][0]=v0;
+    fp[j][1]=v1;
+    fp[j][2]=v2;
+  } /* 16 ncons flops */
+}
+
 void clincs(rvec *x,rvec *xp,int ncons,
 	    int *bla1,int *bla2,int *blnr,int *blbnb,real *bllen,
 	    real *blc,real *blcc,real *blm,
-	    int nit,int nrec,real *invmass,rvec * r,
+	    int nit,int nrec,real *invmass,rvec *r,
 	    real *rhs1,real *rhs2,real *sol,real wangle,int *warn,
 	    real *lambda)
 {

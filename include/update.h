@@ -68,6 +68,7 @@ extern void update(int          natoms,	/* number of atoms in simulation */
 		   bool         bDoUpdate,
 		   t_edsamyn    *edyn,
 		   t_pull       *pulldata,
+		   bool         bConstrain,
 		   bool         bNEMD);
      
 extern void calc_ke_part(bool bFirstStep,bool bSD,int start,int homenr,

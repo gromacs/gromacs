@@ -217,9 +217,9 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 			    int step,t_mdatoms *md,int start,int homenr,
 			    int *nbl,int **sbl,
-			    rvec *x,rvec *xprime,matrix box,
-			    real lambda,real *dvdlambda,bool bInit,
-			    t_nrnb *nrnb)
+			    rvec *x,rvec *xprime,rvec *min_proj,matrix box,
+			    real lambda,real *dvdlambda,bool bCoordinates,
+			    bool bInit,t_nrnb *nrnb)
 {
   static int       *bla1,*bla2,*blnr,*blbnb,nrtot=0;
   static rvec      *r;
@@ -261,16 +261,29 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
     else
       nit = 1;
     
+    if (bCoordinates) {
 #ifdef USEF77
-    flincs(x[0],xprime[0],&nc,bla1,bla2,blnr,blbnb,
-	   bllen,blc,blcc,blm,&nit,&ir->nProjOrder,
-	   md->invmass,r[0],tmp1,tmp2,tmp3,&wang,&warn,
-	   lincslam);
+      flincs(x[0],xprime[0],&nc,bla1,bla2,blnr,blbnb,
+	     bllen,blc,blcc,blm,&nit,&ir->nProjOrder,
+	     md->invmass,r[0],tmp1,tmp2,tmp3,&wang,&warn,
+	     lincslam);
 #else
-    clincs(x,xprime,nc,bla1,bla2,blnr,blbnb,
-	   bllen,blc,blcc,blm,nit,ir->nProjOrder,
-	   md->invmass,r,tmp1,tmp2,tmp3,wang,&warn,lincslam);
+      clincs(x,xprime,nc,bla1,bla2,blnr,blbnb,
+	     bllen,blc,blcc,blm,nit,ir->nProjOrder,
+	     md->invmass,r,tmp1,tmp2,tmp3,wang,&warn,lincslam);
 #endif
+    } else {
+#ifdef USEF77
+      flincs_proj(x[0],xprime[0],min_proj[0],&nc,bla1,bla2,blnr,blbnb,
+		  blc,blcc,blm,&ir->nProjOrder,
+		  md->invmass,r[0],tmp1,tmp2,tmp3);
+#else
+      clincs_proj(x,xprime,min_proj,nc,bla1,bla2,blnr,blbnb,
+		  blc,blcc,blm,ir->nProjOrder,
+		  md->invmass,r,tmp1,tmp2,tmp3);
+#endif
+    }
+
     /* count assuming nit=1 */
     inc_nrnb(nrnb,eNR_LINCS,nc);
     inc_nrnb(nrnb,eNR_LINCSMAT,(2+ir->nProjOrder)*nrtot);
@@ -322,9 +335,9 @@ static void pr_sortblock(FILE *fp,char *title,int nsb,t_sortblock sb[])
 
 static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
 			  int step,t_mdatoms *md,int start,int homenr,
-			  rvec *x,rvec *xprime,matrix box,
+			  rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 			  real lambda,real *dvdlambda,t_nrnb *nrnb,
-			  bool bInit)
+			  bool bCoordinates,bool bInit)
 {
   static int       nblocks=0;
   static int       *sblock=NULL;
@@ -442,12 +455,12 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
     }
     
     if (idef->il[F_SHAKE].nr) {
-      if (ir->eConstrAlg == estLINCS) {
+      if (ir->eConstrAlg == estLINCS || !bCoordinates) {
 	please_cite(stdlog,"Hess97a");
 	constrain_lincs(stdlog,top,ir,0,md,
 			start,homenr,
 			&nblocks,&sblock,
-			NULL,NULL,NULL,0,NULL,TRUE,nrnb);
+			NULL,NULL,NULL,NULL,0,NULL,bCoordinates,TRUE,nrnb);
       } else
 	please_cite(stdlog,"Ryckaert77a");
     }
@@ -469,7 +482,8 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
 	constrain_lincs(stdlog,top,ir,step,md,
 			start,homenr,
 			&nblocks,&sblock,
-			x,xprime,box,lambda,dvdlambda,FALSE,nrnb);
+			x,xprime,min_proj,box,lambda,dvdlambda,
+			bCoordinates,FALSE,nrnb);
     }
     if (nsettle > 0) {
       int  ow1;
@@ -503,18 +517,18 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
 
 void constrain(FILE *log,t_topology *top,t_inputrec *ir,int step,
 	       t_mdatoms *md,int start,int homenr,
-	       rvec *x,rvec *xprime,matrix box,
-	       real lambda,real *dvdlambda,t_nrnb *nrnb)
+	       rvec *x,rvec *xprime,rvec *min_proj,matrix box,
+	       real lambda,real *dvdlambda,t_nrnb *nrnb,bool bCoordinates)
 {
-  low_constrain(log,top,ir,step,md,start,homenr,x,xprime,box,
-		lambda,dvdlambda,nrnb,FALSE);
+  low_constrain(log,top,ir,step,md,start,homenr,x,xprime,min_proj,box,
+		lambda,dvdlambda,nrnb,bCoordinates,FALSE);
 }
 
 bool init_constraints(FILE *log,t_topology *top,t_inputrec *ir,
-		      t_mdatoms *md,int start,int homenr)
+		      t_mdatoms *md,int start,int homenr,bool bOnlyCoords)
 {
-  return low_constrain(log,top,ir,0,md,start,homenr,NULL,NULL,NULL,
-		       0,NULL,NULL,TRUE);
+  return low_constrain(log,top,ir,0,md,start,homenr,NULL,NULL,NULL,NULL,
+		       0,NULL,NULL,bOnlyCoords,TRUE);
 }
 
 void lincs_warning(rvec *x,rvec *xprime,
