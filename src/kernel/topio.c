@@ -566,8 +566,6 @@ static char **read_topol(char        *infile,
   
   *nsim=Nsim;
   *sims=Sims;
-  
-  check_warning_error(FARGS);
 
   return title;
 }

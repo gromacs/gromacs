@@ -1096,6 +1096,8 @@ int main (int argc, char *argv[])
   /* check masses */
   check_mol(&(sys->atoms));
   
+  check_warning_error(FARGS);
+
   /* Now build the shakeblocks from the shakes */
   gen_sblocks(bVerbose,sys->atoms.nr,&(sys->idef),
 	      &(sys->blocks[ebSBLOCKS]),FALSE);
