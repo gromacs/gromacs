@@ -85,7 +85,7 @@ Make.dep:
 	touch Make.dep
 
 oclean:
-	$(RM) $(EXECUTABLES) *.o *.l *~ *.bak \#*\#
+	$(RM) $(EXECUTABLES) $(TMPFILES) *.o *.l *~ *.bak \#*\#
 
 clean:	oclean
 	$(RM) $(LIB)
