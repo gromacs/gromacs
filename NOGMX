@@ -1,11 +1,11 @@
 # remove all environment variables set by GMXRC
 
 if ($?GMXLIB) then
-  if ($LD_LIBRARY_PATH == $GMXLIB) then
+  if ($LD_LIBRARY_PATH == $GMXHOME/lib/\$CPU) then
     unsetenv LD_LIBRARY_PATH
   endif
   if ($?LD_LIBRARY_PATH) then
-    echo "You might want to remove $GMXLIB ("\$"GMXLIB) from "\$"LD_LIBRARY_PATH"
+    echo "You might want to remove the gmx path from "\$"LD_LIBRARY_PATH"
   endif
   echo "unsetenv GMXLIB ($GMXLIB)"
   unsetenv GMXLIB 
@@ -39,7 +39,6 @@ if ($?GMXROOT) then
   unsetenv GMXROOT
 endif
 if ($?GMXBIN) then
-  echo Remove $GMXBIN from path
   foreach i ( $path )
     if ( ( "$i" != "$GMXBIN" ) && ( "$i/" != "$GMXBIN" ) ) then
       if ( ! $?TEMPPATH ) then
@@ -51,6 +50,7 @@ if ($?GMXBIN) then
   end
   setenv PATH $TEMPPATH
   unsetenv TEMPPATH
+  echo Removed $GMXBIN from path
   echo "unsetenv GMXBIN ($GMXBIN)"
   unsetenv GMXBIN
 endif
