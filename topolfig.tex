@@ -58,6 +58,20 @@ Buckingham    	& {\tt nonbond\_params}	& 2 & 2	& a (\kJmol); b (nm$^{-1})$;  & \
  & & & & c$_6$ (\kJmolnm{6}) & \\
 \dline
 \multicolumn{6}{c}{~} \\
+\multicolumn{6}{c}{\bf \large Molecule definition} \\
+\dline
+\multicolumn{6}{|c|}{} \\
+\multicolumn{6}{|c|}{SEE NEXT PAGE} \\
+\multicolumn{6}{|c|}{} \\
+\dline
+\multicolumn{6}{c}{~} \\
+\multicolumn{6}{c}{\bf \large System} \\
+\dline
+{\em mandatory} & {\tt system}		& & &	system name				&	\\
+\hline
+{\em mandatory} & {\tt molecules}	& & &	\multicolumn{2}{l|}{molecule name; number of molecules}	\\
+\dline
+\multicolumn{6}{c}{~} \\
 \multicolumn{6}{l}{'\# at' is the number of atom types} \\
 \multicolumn{6}{l}{'f. tp' is function type} \\
 \multicolumn{6}{l}{'pert' indicates if this interaction type
@@ -70,7 +84,7 @@ can be modified during free energy perturbation} \\
 in the same order as the normal parameters.} \\
 \end{tabular}
 }
-\caption{The topology ({\tt *.top}) file, part 1.}
+\caption{The topology ({\tt *.top}) file.}
 \label{tab:topfile1}
 \end{table}
 \begin{table}[p]
@@ -91,6 +105,10 @@ type	&		      	      & at. & tp &					& 	\\
 bond		& {\tt bonds}		& 2 & 1	& b$_0$ (nm); f$_c$ (\kJmolnm{-2})	& X	\\
 G96 bond	& {\tt bonds}		& 2 & 2	& b$_0$ (nm); f$_c$ (\kJmolnm{-4})	& X	\\
 morse		& {\tt bonds}		& 2 & 3	& b$_0$ (nm); D (\kJmol); $\beta$ (nm$^{-1}$) & X \\
+cubic bond	& {\tt bonds}		& 2 & 4	& b$_0$ (nm); C$_2$ (\kJmolnm{-2}); & \\
+ & & & & C$_3$ (\kJmolnm{-3}) & \\
+connection	& {\tt bonds}		& 2 & 5	& & \\
+harmonic pot.	& {\tt bonds}		& 2 & 6	& b$_0$ (nm); f$_c$ (\kJmolnm{-2})	& X	\\
 LJ 1-4		& {\tt pairs}		& 2 & 1	& c$_6$ (\kJmolnm{6}); & \\
  & & & & c$_{12}$ (\kJmolnm{12}) & X \\
 angle		& {\tt angles}		& 3 & 1	& $\theta_0$ (deg); f$_c$ (\kJmolrad{-2}) & X	\\
@@ -107,20 +125,13 @@ dummy3fd	& {\tt dummies3}	& 4 & 2	& a (); d (nm)				& 	\\
 dummy3fad	& {\tt dummies3}	& 4 & 3	& $\theta$ (deg); d (nm) 		& 	\\
 dummy3out	& {\tt dummies3}	& 4 & 4	& a, b (); c (nm$^{-1}$) 		& 	\\
 dummy4fd	& {\tt dummies4}	& 5 & 1	& a, b (); d (nm);	   		& 	\\
-position res.	& {\tt position\_restraints}	& 1 & 1	& k$_{x}$, k$_{y}$, k$_{z}$ (\kJmolnm{-2}) & 	\\
+position res.	& {\small\tt position\_restraints}	& 1 & 1	& k$_{x}$, k$_{y}$, k$_{z}$ (\kJmolnm{-2}) & 	\\
 %wpol	& {\tt position\_restraints}	& 1 & 2	& ???	& 	\\
-distance res.	& {\tt distance\_restraints}	& 2 & 1	& type; index; low, up$_1$, up$_2$ (nm); & \\
+distance res.	& {\small\tt distance\_restraints}	& 2 & 1	& type; index; low, up$_1$, up$_2$ (nm); & \\
  & & & & factor () & \\
-angle res.	& {\tt angle\_restraints}	& 4 & 1	& $\theta_0$ (deg); f$_c$ (\kJmol); mult & X$^{(a)}$	\\
-angle res. z & {\tt angle\_restraints\_z}	& 2 & 1	& $\theta_0$ (deg); f$_c$ (\kJmol); mult & X$^{(a)}$	\\
+angle res.	& {\small\tt angle\_restraints}	& 4 & 1	& $\theta_0$ (deg); f$_c$ (\kJmol); mult & X$^{(a)}$	\\
+angle res. z & {\small\tt angle\_restraints\_z}	& 2 & 1	& $\theta_0$ (deg); f$_c$ (\kJmol); mult & X$^{(a)}$	\\
 exclusions	& {\tt exclusions}	& 1 & 	& one or more atom indices				& 	\\
-\dline
-\multicolumn{6}{c}{~} \\
-\multicolumn{6}{c}{\bf \large System} \\
-\dline
-{\em mandatory} & {\tt system}		& & &	system name				&	\\
-\hline
-{\em mandatory} & {\tt molecules}	& & &	\multicolumn{2}{l|}{molecule name; number of molecules}	\\
 \dline
 \multicolumn{6}{c}{~} \\
 \multicolumn{6}{l}{'\# at' is the number of atom indices} \\
@@ -134,7 +145,7 @@ can be modified during free energy perturbation} \\
 in the same order as the normal parameters.} \\
 \end{tabular}
 }
-\caption{The topology ({\tt *.top}) file, part 2.}
+\caption{The molecule definition.}
 \label{tab:topfile2}
 \end{table}
 
