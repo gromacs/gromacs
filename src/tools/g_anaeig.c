@@ -69,7 +69,7 @@ static real tick_spacing(real range,int minticks)
 static void write_xvgr_graphs(char *file,int ngraphs,
 			      char *title,char *xlabel,char **ylabel,
 			      int n,real *x, real **y,
-			      real scale_x,bool bZero)
+			      real scale_x,bool bZero, bool bSplit)
 {
   FILE *out;
   int g,i;
@@ -119,8 +119,11 @@ static void write_xvgr_graphs(char *file,int ngraphs,
       fprintf(out,"@ zeroxaxis bar on\n");
       fprintf(out,"@ zeroxaxis bar linestyle 3\n");
     }
-    for(i=0; i<n; i++) 
-      fprintf(out,"%10.4f %10.5f\n",x[i]*scale_x,y[g][i]);
+    for(i=0; i<n; i++) {
+      if ( bSplit && i>0 && abs(x[i])<1e-5 )
+	fprintf(out,"&\n");
+      fprintf(out,"%10.4g %10.5f\n",x[i]*scale_x,y[g][i]);
+    }
     fprintf(out,"&\n");
   }
   fclose(out);
@@ -304,8 +307,7 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
 		    bool bFit,rvec *xref,int nfit,atom_id *ifit,real *w_rls,
 		    real *sqrtm,rvec *xav,
 		    int *eignr,rvec **eigvec,
-		    int noutvec,int *outvec,
-		    bool bNS)
+		    int noutvec,int *outvec, bool bSplit)
 {
   FILE    *xvgrout=NULL;
   int     status,out=0,nat,i,j,d,v,vec,nfr,nframes=0,snew_size,frame;
@@ -408,10 +410,10 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
       ylabel[v]=strdup(str);
     }
     sprintf(str,"projection on eigenvectors (%s)",proj_unit);
-    write_xvgr_graphs(projfile,noutvec,
-		      str,bNS ? "Time (ns)" : "Time (ps)",
-		      ylabel,nframes,inprod[noutvec],inprod,
-		      bNS ? 0.001 : 1,FALSE);
+    sprintf(str2, "Time (%s)", time_label());
+    write_xvgr_graphs(projfile, noutvec, str, str2,
+		      ylabel, nframes, inprod[noutvec], inprod,
+		      time_factor(), FALSE, bSplit);
   }
   
   if (twodplotfile) {
@@ -420,8 +422,11 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
     sprintf(str2,"projection on eigenvector %d (%s)",
 	    eignr[outvec[noutvec-1]]+1,proj_unit); 
     xvgrout=xvgropen(twodplotfile,"2D projection of trajectory",str,str2);
-    for(i=0; i<nframes; i++)
+    for(i=0; i<nframes; i++) {
+      if ( bSplit && i>0 && abs(inprod[noutvec][i])<1e-5 ) 
+	fprintf(xvgrout,"&\n");
       fprintf(xvgrout,"%10.5f %10.5f\n",inprod[0][i],inprod[noutvec-1][i]);
+    }
     fclose(xvgrout);
   }
   
@@ -430,16 +435,23 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
     rvec    *x;
     matrix  box;
     char    *resnm,*atnm;
+    bool    bPDB;
+    FILE    *out;
     
     if (noutvec < 3)
       fatal_error(0,"You have selected less than 3 eigenvectors");  
 
+    /* initialize */
+    bPDB = fn2ftp(threedplotfile)==efPDB;
+    clear_mat(box);
+    box[XX][XX] = box[YY][YY] = box[ZZ][ZZ] = 1;
+    
     sprintf(str,"3D proj. of traj. on eigenv. %d, %d and %d",
 	    eignr[outvec[0]]+1,eignr[outvec[1]]+1,eignr[outvec[2]]+1);
     init_t_atoms(&atoms,nframes,FALSE);
     snew(x,nframes);
-    atnm=strdup("CA");
-    resnm=strdup("GLY");
+    atnm=strdup("C");
+    resnm=strdup("PRJ");
     for(i=0; i<nframes; i++) {
       atoms.resname[i]=&resnm;
       atoms.atomname[i]=&atnm;
@@ -448,11 +460,27 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
       x[i][YY]=inprod[1][i];
       x[i][ZZ]=inprod[2][i];
     }
-    clear_mat(box);
-    box[XX][XX] = box[YY][YY] = box[ZZ][ZZ] = 1;
-    write_sto_conf(threedplotfile,str,&atoms,x,NULL,box); 
+    if ( bSplit && bPDB ) {
+      out=ffopen(threedplotfile,"w");
+      fprintf(out,"HEADER    %s\n",str);
+      j=0;
+      for(i=0; i<atoms.nr; i++) {
+	if ( j>0 && abs(inprod[noutvec][i])<1e-5 ) {
+	  fprintf(out,"TER\n");
+	  j=0;
+	}
+	fprintf(out,pdbformat,"ATOM",i+1,"C","PRJ",' ',j+1,
+		PR_VEC(10*x[i]));
+	fprintf(out,"\n");
+	if (j>0)
+	  fprintf(out,"CONECT%5d%5d\n", i, i+1);
+	j++;
+      }
+      fprintf(out,"TER\n");
+      fclose(out);
+    } else
+      write_sto_conf(threedplotfile,str,&atoms,x,NULL,box); 
     free_t_atoms(&atoms);
-    fclose(xvgrout);
   }
   
   if (extremefile) {
@@ -535,7 +563,7 @@ static void components(char *outfile,int natoms,real *sqrtm,
       y[g][i] = norm(eigvec[v][i])/sqrtm[i];
   }
   write_xvgr_graphs(outfile,noutvec,"Atom displacements (nm)","Atom number",
-		    ylabel,natoms,x,y,1,TRUE);
+		    ylabel,natoms,x,y,1,TRUE,FALSE);
   fprintf(stderr,"\n");
 }
 
@@ -598,7 +626,7 @@ int main(int argc,char *argv[])
   };
   static int  first=1,last=8,skip=1,nextr=2;
   static real max=0.0;
-  static bool bNS=FALSE;
+  static bool bSplit=FALSE;
   t_pargs pa[] = {
     { "-first", FALSE, etINT, {&first},     
       "First eigenvector for analysis (-1 is select)" },
@@ -606,12 +634,13 @@ int main(int argc,char *argv[])
       "Last eigenvector for analysis (-1 is till the last)" },
     { "-skip",  FALSE, etINT, {&skip},
       "Only analyse every nr-th frame" },
-    { "-ns",  FALSE, etBOOL, {&bNS}, 
-      "Use ns instead of ps as unit for -proj" },
     { "-max",  FALSE, etREAL, {&max}, 
-      "Maximum for projection of the eigenvector on the average structure, max=0 gives the extremes" },
+      "Maximum for projection of the eigenvector on the average structure, "
+      "max=0 gives the extremes" },
     { "-nframes",  FALSE, etINT, {&nextr}, 
-      "Number of frames for the extremes output" }
+      "Number of frames for the extremes output" },
+    { "-split", FALSE, etBOOL, {&bSplit},
+      "Split eigenvector projections where time is zero" }
   };
 #define NPA asize(pa)
   
@@ -659,8 +688,8 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm) 
 
   CopyRight(stderr,argv[0]); 
-  parse_common_args(&argc,argv,PCA_CAN_TIME,TRUE,
-		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL); 
+  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW,
+		    TRUE,NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL); 
 
   indexfile=ftp2fn_null(efNDX,NFILE,fnm);
 
@@ -853,7 +882,7 @@ int main(int argc,char *argv[])
 	    ProjOnVecFile,TwoDPlotFile,ThreeDPlotFile,FilterFile,skip,
 	    ExtremeFile,bFirstLastSet,max,nextr,atoms,natoms,index,
 	    bFit1,xref1,nfit,ifit,w_rls,
-	    sqrtm,xav1,eignr1,eigvec1,noutvec,outvec,bNS);
+	    sqrtm,xav1,eignr1,eigvec1,noutvec,outvec,bSplit);
   
   if (OverlapFile)
     overlap(OverlapFile,natoms,
@@ -870,6 +899,8 @@ int main(int argc,char *argv[])
   if (!CompFile && !bProj && !OverlapFile && !InpMatFile && !bCompare)
     fprintf(stderr,"\nIf you want some output,"
 	    " set one (or two or ...) of the output file options\n");
+
+  view_all(NFILE, fnm);
 
   return 0;
 }
