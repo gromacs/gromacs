@@ -233,10 +233,10 @@ static int int_comp(const void *a,const void *b)
 
 static int eq_imp(atom_id a1[],atom_id a2[])
 {
-  int b1[MAXATOMLIST],b2[MAXATOMLIST];
+  int b1[4],b2[4];
   int j;
 
-  for(j=0; (j<MAXATOMLIST); j++) {
+  for(j=0; (j<4); j++) {
     b1[j]=a1[j];
     b2[j]=a2[j];
   }
