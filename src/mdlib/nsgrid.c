@@ -341,8 +341,7 @@ void check_grid(FILE *log,t_grid *grid)
   int ix,iy,iz,ci,cci,nra;
 
   if(grid->ncells<=0) 
-    gmx_fatal(FARGS,"Number of grid cells is zero. This should never happen, and\n"
-		"is either due to an internal Gromacs bug or a compiler error.\n");  
+    gmx_fatal(FARGS,"Number of grid cells is zero. Probably the system and box collapsed.\n");
   
   ci=0;
   cci=0;
