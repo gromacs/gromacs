@@ -551,10 +551,10 @@ int main(int argc,char *argv[])
   int          ifit,irms,my_clust;
   atom_id      *ind_fit,*ind_rms;
   char         *gn_fit,*gn_rms;
-  t_cluster_ndx *clust;
-  int          *clust_status;
+  t_cluster_ndx *clust=NULL;
+  int          *clust_status=NULL;
   int          ntrxopen=0;
-  int          *nfwritten;
+  int          *nfwritten=NULL;
   real         tshift=0,t0=-1,dt=0.001,prec;
   bool         bPBC,bPBCcom,bInBox,bNoJump,bRect,bTric,bComp,bCluster;
   bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
@@ -1167,9 +1167,11 @@ int main(int argc,char *argv[])
       close_trx(trxout);
     else if (out != NULL)
       fclose(out);
-    for(i=0; (i<clust->clust->nr); i++)
-      if (clust_status[i] >= 0)
-	close_trx(clust_status[i]);
+    if (bSubTraj) {
+      for(i=0; (i<clust->clust->nr); i++)
+	if (clust_status[i] >= 0)
+	  close_trx(clust_status[i]);
+    }
   }
   
   do_view(out_file,NULL);
