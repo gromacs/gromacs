@@ -409,7 +409,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
      * t=-dt and t=0
      * Compute velocity of center of mass and total mass
      */
-    for(m=0; (m<8); m++)
+    for(m=0; (m<4); m++)
       vcm[m] = 0;
     dt_1=1.0/dt;
     for(i=start; (i<end); i++) {
@@ -426,7 +426,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
       fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
 	      " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],vcm[3]);
     if (PAR(cr))
-      gmx_sumd(8,vcm,cr);
+      gmx_sumd(4,vcm,cr);
     tmass = vcm[3];
     for(m=0; (m<DIM); m++)
       vcm[m] /= tmass;
