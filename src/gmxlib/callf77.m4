@@ -120,13 +120,13 @@ void f77coultab fct_args
 }
 
 /* Fortran versions of shake and settle */
-define(`fsettle_args',`(int *nshake,int owptr[],real b4[],real after[],real *dOH,real *dHH,real *mO,real *mH)')
+define(`fsettle_args',`(int *nshake,int owptr[],real b4[],real after[],real *dOH,real *dHH,real *mO,real *mH,int *error)')
 
 extern void FUNCTION(forsettle) fsettle_args;
 void fsettle fsettle_args
 {
 #ifdef USEF77
-  FUNCTION(forsettle) (nshake,owptr,b4,after,dOH,dHH,mO,mH);
+  FUNCTION(forsettle) (nshake,owptr,b4,after,dOH,dHH,mO,mH,error);
 #else
   fatal_error(0,"fsettle called (Fortran routine from %s %d)",__FILE__,__LINE__);
 #endif

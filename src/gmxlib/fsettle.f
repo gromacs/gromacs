@@ -1,5 +1,5 @@
       subroutine FORSETTLE(nshake,owptr,b4,after,
-     &     dOH,dHH,mO,mH)
+     &     dOH,dHH,mO,mH,error)
       implicit none
 c*****************************************************************
 c                                                               **
@@ -11,11 +11,11 @@ c    Reference for the SETTLE algorithm                         **
 c           S. Miyamoto et al., J. Comp. Chem., 13, 952 (1992). **
 c                                                               **
 c*****************************************************************
-      integer nshake,owptr(*)
+      integer nshake,owptr(*),error
       real  b4(*),after(*),mO,mH,dOH,dHH
       
       integer i,ow1,hw2,hw3
-      real  wo,wh,wohh,ra,rb,rc,rc2
+      real  wo,wh,wohh,ra,rb,rc,rc2,tmp
 
       real gama, beta, alpa, xcom, ycom, zcom, al2be2
       real axlng, aylng, azlng, trns11, trns21, trns31, trns12, 
@@ -30,7 +30,8 @@ c*****************************************************************
      &     za1d, xb1d, yb1d, zb1d, xc1d, yc1d, zc1d, ya2d, 
      &     xb2d, yb2d, yc2d, 
      &     xa3d, ya3d, za3d, xb3d, yb3d, zb3d, xc3d, yc3d, zc3d
-    
+
+      error= -1
       wo   = mO
       wh   = mH
       wohh = mO+2.0*mH
@@ -113,17 +114,12 @@ c
          yc1d = trns12*xc1 + trns22*yc1 + trns32*zc1
          zc1d = trns13*xc1 + trns23*yc1 + trns33*zc1
 c
-c      if ( abs(za1d) .ge. ra) then
-c         write  (6,699)
-c  699    format (5x,' ### SETLEP : deviation is too big !! ')
-c         call exit
-c      endif
-c                                                --- Step2  A2' ---
-c
          sinphi = za1d / ra
-         cosphi = sqrt (1.d0 - sinphi*sinphi)
+         tmp    = 1.0 - sinphi*sinphi
+         if ( tmp .le. 0.0) error = i-1
+         cosphi = sqrt (tmp)
          sinpsi = ( zb1d - zc1d ) / (rc2 * cosphi)
-         cospsi = sqrt (1.d0 - sinpsi*sinpsi)
+         cospsi = sqrt (1.0 - sinpsi*sinpsi)
 c 
          ya2d =   ra * cosphi
          xb2d = - rc * cospsi

@@ -68,7 +68,7 @@ extern void fillbuf(void);
 /* Fortran versions of shake and settle */
 extern void fsettle(int *nshake,int owptr[],
 		    real b4[],real after[],
-		    real *dOH,real *dHH,real *mO,real *mH);
+		    real *dOH,real *dHH,real *mO,real *mH,int *error);
 		     
 extern void fshake(atom_id iatom[],int *ncon,int *nit,int *maxnit,
 		   real dist2[],real xp[],real rij[],real m2[],

@@ -51,7 +51,7 @@ static void check_cons(FILE *log,char *title,real x[],int OW1,int HW2,int HW3)
 #endif
 
 void csettle(FILE *log,int nshake, int owptr[],real b4[], real after[],
-	     real dOH,real dHH,real mO,real mH)
+	     real dOH,real dHH,real mO,real mH,int *error)
 {
   /* ***************************************************************** */
   /*                                                               ** */
@@ -70,7 +70,7 @@ void csettle(FILE *log,int nshake, int owptr[],real b4[], real after[],
   static real ra,rb,rc,rc2,rone;
   
   /* Local variables */
-  real gama, beta, alpa, xcom, ycom, zcom, al2be2;
+  real gama, beta, alpa, xcom, ycom, zcom, al2be2, tmp;
   real axlng, aylng, azlng, trns11, trns21, trns31, trns12, trns22, 
     trns32, trns13, trns23, trns33, cosphi, costhe, sinphi, sinthe, 
     cospsi, xaksxd, yaksxd, xakszd, yakszd, zakszd, zaksxd, xaksyd, 
@@ -84,6 +84,7 @@ void csettle(FILE *log,int nshake, int owptr[],real b4[], real after[],
   
   int i, ow1, hw2, hw3;
 
+  *error=-1;
   if (bFirst) {
     fprintf(log,"Going to use C-settle (%d waters)\n",nshake);
     wo     = mO;
@@ -175,7 +176,10 @@ void csettle(FILE *log,int nshake, int owptr[],real b4[], real after[],
     /* 65 flops */
         
     sinphi = za1d / ra;
-    cosphi = sqrt(rone - sinphi * sinphi);
+    tmp    = rone - sinphi * sinphi;
+    if (tmp <= 0)
+      *error=i;
+    cosphi = sqrt(tmp);
     sinpsi = (zb1d - zc1d) / (rc2 * cosphi);
     cospsi = sqrt(rone - sinpsi * sinpsi);
     /* 46 flops */

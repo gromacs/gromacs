@@ -760,7 +760,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
   real             dt_1,dt_2;
   int              i,n,m,g;
   int              ncons=0,nc;
-  int              warn,p_imax;
+  int              warn,p_imax,error;
   real             wang,p_max,p_rms;
 
   set_led(UPDATE_LED);
@@ -1021,11 +1021,14 @@ void update(int          natoms, 	/* number of atoms in simulation */
       dOH  = top->idef.iparams[settle_type].settle.doh;
       dHH  = top->idef.iparams[settle_type].settle.dhh;
 #ifdef USEF77
-      fsettle(&nsettle,owptr,x[0],xprime[0],&dOH,&dHH,&mO,&mH);
+      fsettle(&nsettle,owptr,x[0],xprime[0],&dOH,&dHH,&mO,&mH,&error);
 #else
-      csettle(stdlog,nsettle,owptr,x[0],xprime[0],dOH,dHH,mO,mH);
+      csettle(stdlog,nsettle,owptr,x[0],xprime[0],dOH,dHH,mO,mH,&error);
 #endif
       inc_nrnb(nrnb,eNR_SETTLE,nsettle);
+      if (error>=0)
+	fatal_error(0,"Molecule starting at atomnr. %d can not be settled\n",
+		    owptr[error]+1);
       where();
     }
     if (bDoUpdate) {

@@ -119,8 +119,8 @@ extern void csettle(FILE *log,
 		    real dOH,		/* Constraint length Ox-Hyd	*/
 		    real dHH, 		/* Constraint length Hyd-Hyd	*/
 		    real mO,  		/* Mass of Oxygen		*/
-		    real mH  		/* Mass of Hydrogen		*/
-		    );
+		    real mH, 		/* Mass of Hydrogen		*/
+		    int *xerror);
 
 extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 		   real dist2[],real xp[],real rij[],real m2[],
