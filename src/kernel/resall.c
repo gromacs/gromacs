@@ -39,8 +39,6 @@ static char *SRCID_resall_c = "$Id$";
 #include "resall.h"
 #include "pgutil.h"
 
-#define MAXENTRIES 400
-
 #define PREM(str) fatal_error(0,"Premature EOF on %s",str)
 
 bool get_a_line(char *line,int n,FILE *fp)
@@ -143,20 +141,25 @@ static void print_resatoms(FILE *out,t_atomtype *atype,t_restp *rtp)
 static bool read_atoms(FILE *in,char *line,
 		       t_restp *r0,t_symtab *tab,t_atomtype *atype)
 {
-  int    i,j,cg;
+  int    i,j,cg,maxentries;
   char   buf[256],buf1[256];
   double q;
 
   /* Read Atoms */
-  snew(r0->atom,MAXENTRIES);
-  snew(r0->atomname,MAXENTRIES);
-  snew(r0->cgnr,MAXENTRIES);
+  maxentries=0;
+  r0->atom=     NULL;
+  r0->atomname= NULL;
+  r0->cgnr=     NULL;
   i=0;
   while (get_a_line(line,STRLEN,in) && (strchr(line,'[')==NULL)) { 
     if (sscanf(line,"%s%s%lf%d",buf,buf1,&q,&cg) != 4)
       return FALSE;
-    if (i>=MAXENTRIES)
-      fatal_error(0,"MAXENTRIES in resall.c not large enough (%d)",MAXENTRIES);
+    if (i>=maxentries) {
+      maxentries+=100;
+      srenew(r0->atom,     maxentries);
+      srenew(r0->atomname, maxentries);
+      srenew(r0->cgnr,     maxentries);
+    }
     r0->atomname[i]=put_symtab(tab,buf);
     r0->atom[i].q=q;
     r0->cgnr[i]=cg;
@@ -232,15 +235,18 @@ static bool read_bonds(FILE *in,char *line,t_resbond *rb)
 {
   char ai[12],aj[12];
   double c[MAXFORCEPARAM];
-  int  i,j,n;
+  int  i,j,n,maxentries;
 
   i=0;
-  snew(rb->rbond,MAXENTRIES);
+  maxentries=0;
+  rb->rbond=NULL;
   while (get_a_line(line,STRLEN,in) && (strchr(line,'[')==NULL)) {
     if ((n=sscanf(line,"%s%s%lf%lf%lf%lf",ai,aj,&c[0],&c[1],&c[2],&c[3])) < 2)
       return FALSE;
-    if (i>=MAXENTRIES)
-      fatal_error(0,"MAXENTRIES in resall.c not large enough (%d)",MAXENTRIES);
+    if (i>=maxentries) {
+      maxentries+=100;
+      srenew(rb->rbond,maxentries);
+    }
     rb->rbond[i].ai=strdup(ai);
     rb->rbond[i].aj=strdup(aj);
     for (j=0; j<MAXFORCEPARAM; j++)
@@ -303,16 +309,19 @@ static bool read_angles(FILE *in,char *line,t_resang *ra)
 {
   char ai[12],aj[12],ak[12];
   double c[MAXFORCEPARAM];
-  int  i,j,n;
+  int  i,j,n,maxentries;
 
-  snew(ra->rang,MAXENTRIES);
+  maxentries=0;
+  ra->rang=NULL;
   i=0;
   while (get_a_line(line,STRLEN,in) && (strchr(line,'[')==NULL)) {
     if ((n=sscanf(line,"%s%s%s%lf%lf%lf%lf",
 		  ai,aj,ak,&c[0],&c[1],&c[2],&c[3])) < 3) 
       return FALSE;
-    if (i>=MAXENTRIES)
-      fatal_error(0,"MAXENTRIES in resall.c not large enough (%d)",MAXENTRIES);
+    if (i>=maxentries) {
+      maxentries+=100;
+      srenew(ra->rang,maxentries);
+    }
     ra->rang[i].ai=strdup(ai);
     ra->rang[i].aj=strdup(aj);
     ra->rang[i].ak=strdup(ak);
@@ -345,19 +354,21 @@ static void print_idihs(FILE *out,t_idihres *ires)
 
 static bool read_idihs(FILE *in,char *line,t_idihres *ires)
 {
-  int       i,j,n;
+  int       i,j,n,maxentries;
   double    c[MAXFORCEPARAM];
   char      ai[4][12];
 
-  
-  snew(ires->idih,MAXENTRIES);
+  maxentries=0;
+  ires->idih=NULL;
   i=0;
   while (get_a_line(line,STRLEN,in) && (strchr(line,'[')==NULL)) {
     if ((n=sscanf(line,"%s%s%s%s%lf%lf%lf%lf",
 		 ai[0],ai[1],ai[2],ai[3],&c[0],&c[1],&c[2],&c[3])) < 4)
       return FALSE;     
-    if (i>=MAXENTRIES)
-      fatal_error(0,"MAXENTRIES in resall.c not large enough (%d)",MAXENTRIES);
+    if (i>=maxentries) {
+      maxentries+=100;
+      srenew(ires->idih,maxentries);
+    }
     for(j=0; (j<4); j++)
       ires->idih[i].ai[j]=strdup(ai[j]);
     for (j=0; j<MAXFORCEPARAM; j++)
@@ -411,7 +422,7 @@ static void check_rtp(int nrtp,t_restp rtp[],char *libfn)
   }
 }
 
-int read_resall(char       *resdb,
+int read_resall(char       *ff,
 		t_restp    **rtp,
 		t_resbond  **rb,
 		t_resang   **ra,
@@ -427,9 +438,9 @@ int read_resall(char       *resdb,
   t_resbond *rrbd;
   t_resang  *rran;
   t_idihres *rrid;
-  bool      bGetOnWithIt,bError;
+  bool      bNextResidue,bError;
   
-  sprintf(rrdb,"%s.rtp",resdb);
+  sprintf(rrdb,"%s.rtp",ff);
   in=libopen(rrdb);
   /* fscanf(in,"%d",&nrtp); */
   snew(rrtp,MAXRTP);
@@ -484,11 +495,11 @@ int read_resall(char       *resdb,
       rran[nrtp].resname=rrtp[nrtp].resname;
       rrid[nrtp].resname=rrtp[nrtp].resname;
       bError=FALSE;
-      bGetOnWithIt=FALSE;
-      while (!bGetOnWithIt) {
+      bNextResidue=FALSE;
+      while (!bNextResidue) {
 	if (!get_header(line,header))
 	  if (feof(in))
-	    bGetOnWithIt=TRUE;
+	    bNextResidue=TRUE;
 	  else
 	    bError=TRUE;
 	else {
@@ -503,7 +514,7 @@ int read_resall(char       *resdb,
 	  else {
 	    if (!feof(in) && !get_header(line,header))
 	      bError=TRUE;
-	    bGetOnWithIt=TRUE;
+	    bNextResidue=TRUE;
 	  }
 	}
 	if (bError)
@@ -515,11 +526,9 @@ int read_resall(char       *resdb,
 		    rrtp[nrtp].resname);
 
       if (debug) {
-	fprintf(stderr,"Residue %d",nrtp+1);
-	fprintf(stderr,"(%s): %d atoms,",rrtp[nrtp].resname,rrtp[nrtp].natom);
-	fprintf(stderr," %d bonds and",rrbd[nrtp].nb);
-	fprintf(stderr," %d angles and",rran[nrtp].na); 
-	fprintf(stderr," %d impropers\n",rrid[nrtp].nidih);
+	fprintf(stderr,"Residue %d(%s): %d atoms, %d bonds and %d angles "
+		"and %d impropers\n",nrtp+1,rrtp[nrtp].resname,
+		rrtp[nrtp].natom,rrbd[nrtp].nb,rran[nrtp].na,rrid[nrtp].nidih);
       }
       nrtp++;
       fprintf(stderr,"\rResidue %d",nrtp);
@@ -672,6 +681,250 @@ t_idihres *search_idih(char *key,int nrdh,t_idihres ires[])
 
   return (t_idihres *)bsearch((void *)&rkey,ires,nrdh,
 			      (size_t)sizeof(rkey),icomp);
+}
+
+/************************************************************
+ *
+ *                  DUMMY DATABASE ROUTINES
+ * 
+ ***********************************************************/
+static bool read_mass(FILE *in,char *line,t_dumblock *db)
+{
+  char name[12],type[12],ai[12],aj[12],ak[12],al[12];
+  real c[MAXFORCEPARAM];
+  int  i,j,n,maxentries,tp,nm;
+  
+  maxentries=0;
+  db->mass=NULL;
+  i=0;
+  while (get_a_line(line,STRLEN,in) && (strchr(line,'[')==NULL)) {
+    if (sscanf(line,"%s%s%d%d",name,type,&nm,&tp) < 4)
+      return FALSE;
+    if (i>=maxentries) {
+      maxentries+=100;
+      srenew(db->mass,maxentries);
+    }
+    n=sscanf(line,"%*s%*s%*d%*d%g%g%g%g%g%g",
+	     &c[0],&c[1],&c[2],&c[3],&c[4],&c[5]);
+    for(j=n; (j<MAXFORCEPARAM); j++)
+      c[j]=NOTSET;
+    switch(tp) {
+    case 1:
+      if (n < 3)
+	return FALSE;
+      else
+	if (n > 4) {
+	  fprintf(stderr,"WARNING: Ignoring arguments 9..%d in .ddb database "
+		  "file on line:\n%s\n",4+n,line);
+	  for(j=4; (j<n); j++)
+	    c[j]=NOTSET;
+	}
+      break;
+    default:
+      fatal_error(0,"Invalid dummy mass type (%d) in .ddb database file "
+		  "(resall)\n",tp);
+    }
+    db->mass[i].mname=strdup(name);
+    db->mass[i].mtype=strdup(type);
+    db->mass[i].nm=nm;
+    db->mass[i].tp=tp;
+    for(j=0; (j<MAXFORCEPARAM); j++)
+      db->mass[i].c[j]=c[j];
+    i++;
+  }
+  db->nmass=i;
+  srenew(db->mass,i);
+  
+  return TRUE ;
+}
+
+static bool read_dum(FILE *in,char *line,t_dumblock *db)
+{
+  char ai[12],aj[12],ak[12],al[12];
+  real a,b,c;
+  int  i,n,maxentries,tp;
+  
+  maxentries=0;
+  db->dum=NULL;
+  i=0;
+  while (get_a_line(line,STRLEN,in) && (strchr(line,'[')==NULL)) {
+    if ((n=sscanf(line,"%s%s%s%s%d%g%g%g",ai,aj,ak,al,&tp,&a,&b,&c)) < 5) 
+      return FALSE;
+    if (i>=maxentries) {
+      maxentries+=100;
+      srenew(db->dum,maxentries);
+    }
+    db->dum[i].na[0]=strdup(ai);
+    db->dum[i].na[1]=strdup(aj);
+    db->dum[i].na[2]=strdup(ak);
+    db->dum[i].na[3]=strdup(al);
+    db->dum[i].tp=tp;
+    if ( ( ( (tp==2) || (tp==5) ) && (n<7) ) || ( (tp==3) && (n<8) ) )
+      return FALSE;
+    if (n>=7) {
+      db->dum[i].a = a;
+      db->dum[i].b = b;
+    } else {
+      db->dum[i].a = NOTSET;
+      db->dum[i].b = NOTSET;
+    }
+    if (n>=8) {
+      db->dum[i].c = c;
+    } else {
+      db->dum[i].c = NOTSET;
+    }
+    i++;
+  }
+  db->ndum=i;
+  srenew(db->dum,i);
+  
+  return TRUE ;
+}
+
+static bool read_angcon(FILE *in,char *line,t_dumblock *db)
+{
+  char ai[12],aj[12],ak[12];
+  real c0,c1;
+  int  i,k,maxentries;
+  
+  maxentries=0;
+  db->ang=NULL;
+  i=0;
+  while (get_a_line(line,STRLEN,in) && (strchr(line,'[')==NULL)) {
+    if (sscanf(line,"%s%s%s%g%g",ai,aj,ak,&c0,&c1) < 5) 
+      return FALSE;
+    if (i>=maxentries) {
+      maxentries+=100;
+      srenew(db->ang,maxentries);
+    }
+    db->ang[i].na[0]=strdup(ai);
+    db->ang[i].na[1]=strdup(aj);
+    db->ang[i].na[2]=strdup(ak);
+    db->ang[i].c[0]=c0;
+    db->ang[i].c[1]=c1;
+    for (k=2; (k<MAXFORCEPARAM); k++)
+      db->ang[i].c[k]=NOTSET;
+    i++;
+  }
+  db->nang=i;
+  srenew(db->ang,i);
+  
+  return TRUE ;
+}
+
+int read_dum_db(char *ff,t_dumblock **dbptr)
+{
+  FILE       *in;
+  char       fn[STRLEN],line[STRLEN],*dum,header[STRLEN];
+  int        nddb,maxddb,i,j;
+  t_dumblock *ddb;
+  bool       bNextBlock,bError;
+  
+  sprintf(fn,"%s.ddb",ff);
+  in=libopen(fn);
+  
+  get_a_line(line,STRLEN,in);
+  nddb=0;
+  maxddb=100;
+  snew(ddb,100);
+  while (!feof(in)) {
+    if (nddb >= maxddb) {
+      fatal_error(0,"too much in .ddb file");
+    }
+    if (!get_header(line,header))
+      fatal_error(0,"in .ddb file at line:\n%s",line);
+    ddb[nddb].bname=strdup(header);
+    get_a_line(line,STRLEN,in);
+    bError=FALSE;
+    bNextBlock=FALSE;
+    while (!bNextBlock) {
+      if (!get_header(line,header))
+	if (feof(in))
+	  bNextBlock=TRUE;
+	else
+	  bError=TRUE;
+      else {
+	if (strncasecmp("masses",header,6)==0) 
+	  bError=!read_mass  (in,line,&(ddb[nddb]));
+	else if (strncasecmp("dummies",header,7)==0)
+	  bError=!read_dum   (in,line,&(ddb[nddb]));
+	else if (strncasecmp("angles",header,6)==0) 
+	  bError=!read_angcon(in,line,&(ddb[nddb]));
+	else {
+	  if (!feof(in) && !get_header(line,header))
+	    bError=TRUE;
+	  bNextBlock=TRUE;
+	}
+      }
+    }
+    if (bError)
+      fatal_error(0,"in .ddb file in block %s at line:\n%s\n",
+		  ddb[nddb].bname,line);
+    if (ddb[nddb].nmass + ddb[nddb].ndum + ddb[nddb].nang == 0)
+      fatal_error(0,"No data found in .ddb file in block %s\n",
+		  ddb[nddb].bname);
+    if (debug) {
+      fprintf(stderr,"Block %d (%s): %d masses, %d dummies and %d angles\n",
+	      nddb+1, ddb[nddb].bname,
+	      ddb[nddb].nmass, ddb[nddb].ndum, ddb[nddb].nang);
+    }
+    nddb++;
+  }
+  fclose(in);
+  
+  *dbptr=ddb;
+  return nddb;
+}
+
+t_dumblock *search_dum_db(int nddb, t_dumblock *ddb, char resnm[])
+{
+  int i;
+  
+  for (i=0; (i<nddb); i++)
+    if (strcmp(resnm,ddb[i].bname)==0)
+      break;
+  
+  return &ddb[i];
+}
+
+void print_dum_db(FILE *out,int nddb,t_dumblock *ddb)
+{
+  int i,j,k,l;
+  
+  fprintf(out,"; Dummies Database\n");
+  for (i=0; (i<nddb); i++) {
+    fprintf(out,"[ %s ]\n",ddb[i].bname);
+    if (ddb[i].nmass) {
+      fprintf(out," [ masses ]\n");
+      fprintf(out,"; %4s %5s %5s %5s %5s\n","name","type","n","type","from");
+    }
+    for(j=0; (j<ddb[i].nmass); j++) {
+      fprintf(out," %5s %5s %5d %5d",ddb[i].mass[j].mname,
+	      ddb[i].mass[j].mtype,ddb[i].mass[j].nm,ddb[i].mass[j].tp);
+      fprintf(out,"\n");
+    }
+    if (ddb[i].ndum) {
+      fprintf(out," [ dummies ]\n");
+      fprintf(out,"; %4s %5s %5s %5s %5s %9s %9s %9s\n",
+	      "atom","from","","","type","a","b","c");
+    }
+    for(j=0; (j<ddb[i].ndum); j++) {
+      for(k=0; (k<4); k++)
+	fprintf(out," %5s",ddb[i].dum[j].na[k]);
+      fprintf(out," %5d",ddb[i].dum[j].tp);
+      if (ddb[i].dum[j].a != NOTSET)
+	fprintf(out," %9g %9g",ddb[i].dum[j].a,ddb[i].dum[j].b);
+      if (ddb[i].dum[j].c != NOTSET)
+	fprintf(out," %9g",ddb[i].dum[j].c);
+      fprintf(out,"\n");
+    }
+    if (ddb[i].nang) fprintf(out," [ angles ]\n");
+    for(j=0; (j<ddb[i].nang); j++) {
+      for(k=0; (k<3); k++)
+	fprintf(out," %5s",ddb[i].ang[j].na[k]);
+      fprintf(out,"\n");
+    }
+  }
 }
 
 #ifdef DEBUG
