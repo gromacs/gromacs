@@ -157,8 +157,13 @@ static void cmp_ilist(FILE *fp,int ftype,t_ilist *il1,t_ilist *il2)
   for(i=0; (i<MAXNODES); i++)
     cmp_int(fp,buf,i,il1->multinr[i],il2->multinr[i]);
   sprintf(buf,"%s->iatoms",interaction_function[ftype].name);
-  for(i=0; (i<il1->nr); i++) 
-    cmp_int(fp,buf,i,il1->iatoms[i],il2->iatoms[i]);
+  if (((il1->nr > 0) && (!il1->iatoms)) || 
+      ((il2->nr > 0) && (!il2->iatoms)) ||
+      ((il1->nr != il2->nr)))
+    fprintf(fp,"Comparing radically different topologies - %s is wrong\n",buf);
+  else
+    for(i=0; (i<il1->nr); i++) 
+      cmp_int(fp,buf,i,il1->iatoms[i],il2->iatoms[i]);
 }
 
 void cmp_iparm(FILE *fp,char *s,t_functype ft,
