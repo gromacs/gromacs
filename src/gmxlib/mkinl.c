@@ -31,7 +31,8 @@
 
 typedef int bool;
 
-enum { FALSE, TRUE };
+#define FALSE 0
+#define TRUE  1
 
 int CIND = 2;
 int FIND = 6;
@@ -44,6 +45,7 @@ static bool bC     = TRUE;
 static bool bLJC   = FALSE;
 static bool bEquiv = TRUE; /* Don't make false: generates type errors */
 static bool bCoul,bBHAM,bRF,bTab,bWater,bFREE,bInline,bUnroll;
+static bool bDelayInvsqrt;
 static int  prec = 4;
 static char buf[256];
 static char buf2[256];
@@ -478,6 +480,40 @@ void fwarning(void)
 	  "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\n");
 }
 
+void fcall_args(void)
+{
+  if (bBHAM || !bCoul)
+    fprintf(fp,"%s",bC ? 
+	    "\tntype,type,nbfp,Vnb,\n\t" :
+	    FCON "ntype,type,nbfp,vnb,\n");
+  if (bRF)
+    fprintf(fp,"%s",bC ? "krf,\n\t" : FCON "   krf,\n");
+  if (bTab)
+    fprintf(fp,"%s",bC ? 
+	    "tabscale,VFtab,\n\t" :
+	    FCON "  tabscale,vftab,\n");
+  if (bBHAM && bTab)
+    fprintf(fp,"%s",bC ? 
+	    "exptabscale,\n\t" : 
+	    FCON "  exptabscale,\n");
+  if (bFREE) 
+    fprintf(fp,"%s",bC ?
+	    "chargeB,typeB,lambda,dvdlambda,\n\t" :
+	    FCON "  chargeB,typeB,lambda,dvdlambda,\n");
+#ifdef USEVECTOR
+  fprintf(fp,"%s",bC ? "fbuf,\n\t" : FCON "  fbuf,\n");
+#endif	
+  /* Petty formatting... */
+  if (bC && bCoul && !bTab && !bRF)
+    fprintf(fp,"\t");
+    
+  fprintf(fp,"%s",bC ?
+	  "nri,iinr,shift,gid,jindex,jjnr,pos,fshift,\n\t"
+	  "facel,charge,faction,Vc,shiftvec);\n" :
+	  FCON "  nri,iinr,shift,gid,jindex,jjnr,pos,fshift,\n"
+	  FCON "  facel,charge,faction,Vc,shiftvec)\n");
+}
+
 void fargs(void)
 {
   if (bBHAM || !bCoul)
@@ -772,7 +808,6 @@ int fetch_j(void)
 
 void start_loop(char *lvar,char *from,char *to)
 {
-  p_ivdep();
   if (bC) {
     fprintf(fp,"%sfor(%s=%s; (%s<%s); %s++) {\n",
 	    indent(),lvar,from,lvar,to,lvar);
@@ -801,6 +836,7 @@ int unpack_f(void)
   int nflop = 0;
 
   comment("Unpack forces for vectorization");
+  p_ivdep();
   start_loop("k","nj0","nj1");
   nflop += fetch_j();
   
@@ -821,6 +857,7 @@ void finnerloop(char *loopname)
   nflop += unpack_f();
 #endif
   comment("Inner loop (over j-particles) starts right here");
+  p_ivdep();
   start_loop("k","nj0","nj1");
   nflop += fetch_j();
   if (!bFREE) 
@@ -833,15 +870,17 @@ void finnerloop(char *loopname)
   comment("First one is for oxygen, with LJ");
   nflop += p_sqr("O");
   nflop += p_invsqrt("rinv1O","rsqO");
-  
-  if (bWater) {
-    comment("Now for first hydrogen");
-    nflop += p_sqr("H1");
-    nflop += p_invsqrt("rinv1H1","rsqH1");
-    
-    comment("Now for second hydrogen");
-    nflop += p_sqr("H2");
-    nflop += p_invsqrt("rinv1H2","rsqH2");
+
+  if (!bDelayInvsqrt) {  
+    if (bWater) {
+      comment("Now for first hydrogen");
+      nflop += p_sqr("H1");
+      nflop += p_invsqrt("rinv1H1","rsqH1");
+      
+      comment("Now for second hydrogen");
+      nflop += p_sqr("H2");
+      nflop += p_invsqrt("rinv1H2","rsqH2");
+    }
   }
   
 #ifdef PREFETCH
@@ -1099,6 +1138,10 @@ void finnerloop(char *loopname)
     nflop += 1;
     
     comment("H1 block");
+    if (bDelayInvsqrt) {
+      nflop += p_sqr("H1");
+      nflop += p_invsqrt("rinv1H1","rsqH1");
+    }
     if (bTab) {
       p_state("r1","one/rinv1H1");
       p_state("r1t","r1*tabscale");
@@ -1150,6 +1193,10 @@ void finnerloop(char *loopname)
     nflop += 10;
     
     comment("H2 block");
+    if (bDelayInvsqrt) {
+      nflop += p_sqr("H2");
+      nflop += p_invsqrt("rinv1H2","rsqH2");
+    }
     if (bTab) {
       p_state("r1","one/rinv1H2");
       p_state("r1t","r1*tabscale");
@@ -1352,16 +1399,35 @@ void closeit(void)
     fprintf(fp,"%sreturn\n%send\n\n",indent(),indent());
 }
 
-void doit(void)
+void fcall(char *func_nm)
 {
-  char buf[256];
-  
-  bLJC = (!bCoul && !bBHAM);
-  
-  if (bFREE && (!bTab || bCoul || bRF || bWater)) {
-    fprintf(stderr,"Unsupported combination of options to doit\n");
-    return;
+  if (bC)
+    fprintf(fp,"%s%s(\n",indent(),func_nm);
+  else
+    fprintf(fp,"%scall %s(\n",indent(),func_nm);
+}
+
+void doit_simple(char *simple,char *simple_coul)
+{
+  if (bCoul) {
+    p_int("m");
+    start_loop("m",bC ? "0" : "1","3");
+    fcall(simple_coul);
+    fcall_args();
+    end_loop();
   }
+  else {
+    fcall(simple);
+    fcall_args();
+    fcall(simple_coul);
+    fcall_args();
+    fcall(simple_coul);
+    fcall_args();
+  }
+}
+
+void make_funcnm(char *buf)
+{
   sprintf(buf,"%s",bC ? "c_" : "f77");
   if (bBHAM)
     strcat(buf,"bham");
@@ -1373,16 +1439,45 @@ void doit(void)
     strcat(buf,"tab"); 
   else if (bRF)
     strcat(buf,"rf");
+}
+
+void doit(void)
+{
+  bool bSimpleWater,bCSave;
+  char simple[256],simple_coul[256];
+  
+  bLJC = (!bCoul && !bBHAM);
+  
+  if (bFREE && (!bTab || bCoul || bRF || bWater)) {
+    fprintf(stderr,"Unsupported combination of options to doit\n");
+    return;
+  }
+  make_funcnm(buf);
+  strcpy(simple,buf);
   if (bWater)
     strcat(buf,"water");
   if (bFREE)
     strcat(buf,"free");
   fname(buf);
   fargs();
-  flocal();
-  flocal_init();
-  fouterloop(buf);
-  
+#ifdef SIMPLEWATER
+  bSimpleWater = bWater;
+#else
+  bSimpleWater = FALSE;
+#endif
+  if (bSimpleWater) {
+    bCSave = bCoul;
+    bCoul = TRUE;
+    make_funcnm(buf);
+    strcpy(simple_coul,buf);
+    bCoul = bCSave;
+    doit_simple(simple,simple_coul);
+  }
+  else {
+    flocal();
+    flocal_init();
+    fouterloop(buf);
+  }
   closeit();
 }
 
@@ -1446,7 +1541,11 @@ int main(int argc,char *argv[])
   bBHAM  = TRUE;
   doit();
   bFREE  = FALSE;
-
+#ifdef SGI
+  bDelayInvsqrt = TRUE;
+#else
+  bDelayInvsqrt = FALSE;
+#endif
   for(i=0; (i<2); i++) 
     for(j=0; (j<9); j++) {
       bCoul  = bbb[j][0];
