@@ -59,10 +59,10 @@ static char *SRCID_g_rdf_c = "$Id$";
 #include "gstat.h"
 #include "matio.h"
 
-static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl,
+static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl, char *mcl,
 		       real cut,int nskip,int nlevels)
 {
-  FILE    *fp,*gp;
+  FILE    *fp,*gp,*hp;
   atom_id *index=NULL;
   int     nindex,natoms,status;
   rvec    *x=NULL,dx;
@@ -70,12 +70,13 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl,
   char    *gname;
   real    t,dx2,cut2,**cs_dist=NULL,*t_x=NULL,*t_y,mid,cav;
   int     i,j,k,ai,aj,ak,ci,cj,nframe,nclust,n_x,n_y,max_size=0;
-  int     *clust_index,*clust_size,nav;
+  int     *clust_index,*clust_size,max_clust_size,nav;
   t_rgb   rlo = { 1.0, 1.0, 1.0 },
 		  rmid = { 1.0, 1.0, 0.0 },rhi = { 0.0, 0.0, 1.0 };
   
   fp = xvgropen(ncl,"Number of clusters","Time (ps)","N");
   gp = xvgropen(acl,"Average cluster size","Time (ps)","#molecules");
+  hp = xvgropen(mcl,"Max cluster size","Time (ps)","#molecules");
   rd_index(ndx,1,&nindex,&index,&gname);
   natoms = read_first_x(&status,trx,&t,&x,box);
   snew(clust_index,nindex);
@@ -89,6 +90,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl,
   do {
     if ((nskip == 0) || ((nskip > 0) && ((nframe % nskip) == 0))) {
       init_pbc(box,FALSE);
+      max_clust_size = 1;
       for(i=0; (i<nindex); i++) {
 	clust_index[i] = i;
 	clust_size[i]  = 1;
@@ -126,6 +128,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl,
       nav    = 0;
       for(i=0; (i<nindex); i++) {
 	ci = clust_size[i];
+	if (ci > max_clust_size) max_clust_size = ci;
 	if (ci > 0) {
 	  nclust++;
 	  cs_dist[n_x-1][ci-1] += 100.0*ci/(real)nindex;
@@ -139,12 +142,14 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl,
       fprintf(fp,"%10.3e  %10d\n",t,nclust);
       if (nav > 0)
 	fprintf(gp,"%10.3e  %10.3f\n",t,cav/nav);
+      fprintf(hp, "%10.3e  %10d\n", t, max_clust_size);
     }
     nframe++;
   } while (read_next_x(status,&t,natoms,x,box));
   close_trx(status);
   fclose(fp);
   fclose(gp);
+  fclose(hp);
 
   /* Look for the smallest entry that is not zero */
   mid = 100.0;
@@ -191,6 +196,7 @@ int main(int argc,char *argv[])
     { efNDX, NULL,  NULL,    ffOPTRD },
     { efXPM, "-o", "csize",  ffWRITE },
     { efXVG, "-nc","nclust", ffWRITE },
+    { efXVG, "-mc","maxclust", ffWRITE },
     { efXVG, "-ac","avclust", ffWRITE }
   };
 #define NFILE asize(fnm)
@@ -202,7 +208,7 @@ int main(int argc,char *argv[])
   fnNDX = ftp2fn_null(efNDX,NFILE,fnm);
   
   clust_size(fnNDX,ftp2fn(efTRX,NFILE,fnm),ftp2fn(efXPM,NFILE,fnm),
-	     opt2fn("-nc",NFILE,fnm),opt2fn("-ac",NFILE,fnm),
+	     opt2fn("-nc",NFILE,fnm),opt2fn("-ac",NFILE,fnm),opt2fn("-mc",NFILE,fnm),
 	     cutoff,nskip,nlevels);
 
   thanx(stderr);
