@@ -710,6 +710,18 @@ void init_project(FILE *log,t_topology *top,t_inputrec *ir,
   }
 }
 
+void dump_confs(int step,t_atoms *atoms,rvec x[],rvec xprime[],matrix box)
+{
+  char buf[256];
+  
+  sprintf(buf,"step%d.pdb",step-1);
+  write_sto_conf(buf,"one step before crash",atoms,x,NULL,box);
+  sprintf(buf,"step%d.pdb",step);
+  write_sto_conf(buf,"crashed",atoms,xprime,NULL,box);
+  fprintf(stdlog,"Wrote pdb files with previous and current coordinates\n");
+  fprintf(stderr,"Wrote pdb files with previous and current coordinates\n");
+}
+
 void update(int          natoms, 	/* number of atoms in simulation */
 	    int      	 start,
 	    int          homenr,	/* number of home particles 	*/
@@ -985,12 +997,8 @@ void update(int          natoms, 	/* number of atoms in simulation */
 	  fprintf(stdlog,"%s",buf);
 	  fprintf(stderr,"%s",buf);
 	  if (p_max > 0.5) {
-	    sprintf(buf,"step%d.pdb",step-1);
-	    write_sto_conf(buf,"one step before crash",&(top->atoms),x,NULL,box);
-	    sprintf(buf,"step%d.pdb",step);
-	    write_sto_conf(buf,"crashed",&(top->atoms),xprime,NULL,box);  
-	    fatal_error(0,"Bond deviates more than half its own length,\n"
-			"             wrote pdb files with previous and current coordinates");
+	    dump_confs(step,&(top->atoms),x,xprime,box);
+	    fatal_error(0,"Bond deviates more than half its own length");
 	  }
 	}
       }
@@ -1006,7 +1014,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
       dump_it_all(stdlog,"After Shake",natoms,x,xprime,v,vold,force);
     }
 
-    /* apply Essetial Dynamics constraints when required */
+    /* apply Essential Dynamics constraints when required */
     if (edyn->bEdsam)
       do_edsam(stdlog,top,ir,step,md,start,homenr,&nblocks,&sblock,xprime,x,
 	       x_unc,force,box,edyn,&edpar,bDoUpdate);
@@ -1026,9 +1034,13 @@ void update(int          natoms, 	/* number of atoms in simulation */
       csettle(stdlog,nsettle,owptr,x[0],xprime[0],dOH,dHH,mO,mH,&error);
 #endif
       inc_nrnb(nrnb,eNR_SETTLE,nsettle);
-      if (error>=0)
-	fatal_error(0,"Molecule starting at atomnr. %d can not be settled\n",
-		    owptr[error]+1);
+      if (error>=0) {
+	dump_confs(step,&(top->atoms),x,xprime,box);
+	sprintf(buf,"Molecule starting at atomnr. %d can not be settled,\n"
+		    "             step %d, time %g (ps)",
+		owptr[error]+1,step,ir->init_t+step*dt);
+	fatal_error(0,buf);
+      }
       where();
     }
     if (bDoUpdate) {
