@@ -15,6 +15,7 @@ endif
 
 ifeq ($(USE_MPI),yes)
 SYSDEFS         += -DUSE_MPI -DPARALLEL
+INCDIR		+= -I$(MPIR_HOME)/include
 SYSLIBS         += -lmpi
 endif
 
@@ -60,9 +61,13 @@ else
 	mv $(EXECUTABLES) $(BINDIR)
 endif
 
+#	$(CC) -M -I. -I$(GMXHOME)/src/include  *.c *.cc  |  grep -v '/usr/include'  > Make.dep
+
+GMXINS	= \$$\(GMXHOME\)
 dep:
-	$(CC) -M -I. -I$(GMXHOME)/src/include  *.c *.cc  |  grep -v '/usr/include'  > Make.dep
-#	$(CC) -M -I. -I$(GMXHOME)/src/include  *.c *.cc  |  grep -v '/usr/include'  |  sed sx./xx > Make.dep
+	$(CC) -MM -I. -I$(GMXHOME)/src/include  *.c  |  sed  s~$(GMXHOME)~$(GMXINS)~ 
+#	|  grep -v '/include'  |  sed sx./xx 
+#	$(CC) -M -I. -I$(GMXHOME)/src/include  *.c  |  grep -v '/usr/include'  |  sed sx./xx >> Make.dep
 	
 clean:
 		$(RM) $(EXECUTABLES) *.o *.l *~ *.bak \#*\# 

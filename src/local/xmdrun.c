@@ -69,7 +69,6 @@ static char *SRCID_xmdrun_c = "$Id$";
 #include "edsam.h"
 #include "calcmu.h"
 #include "ionize.h" 
-#include "pppm.h"
 
 static bool      bMultiSim = FALSE;
 static bool      bGlas     = FALSE;
@@ -174,23 +173,21 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     t_parm *parm,t_groups *grps,
 	     t_topology *top,real ener[],
 	     rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
-	     rvec buf[],t_mdatoms *md,
+	     rvec buf[],t_mdatoms *mdatoms,
 	     t_nsborder *nsb,t_nrnb nrnb[],
 	     t_graph *graph,t_edsamyn *edyn,
 	     t_forcerec *fr,rvec box_size)
 {
   t_mdebin   *mdebin;
-  FILE       *ene;
   int        fp_ene,step,k,n,count;
   double     tcount;
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
-  bool       bNS,bStopCM,bStopRot,bTYZ,bLR,bBHAM,b14;
+  bool       bNS,bStopCM,bStopRot,bTYZ;
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
   char       strbuf[256];
-  char       *traj;
-  char       *xtc_traj; /* compressed trajectory filename */
+  char       *traj,*xtc_traj; /* normal & compressed trajectory filename */
   int        nDLB;
   int        i,m;
   rvec       vcm,mu_tot;
@@ -206,114 +203,37 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   int         nshell;
   t_shell     *shells;
 
+  /* Initial values */
+  init_md(cr,&parm->ir,&t,&t0,&lambda,&lam0,&SAfactor,&mynrnb,&bTYZ,top,
+	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&mdebin,grps,vcm,force_vir,shake_vir,
+	  mdatoms);
+  
   /* Check whether we have to do dipole stuff */
   if (ftp2bSet(efNDX,nfile,fnm))
     rd_index(ftp2fn(efNDX,nfile,fnm),1,&gnx,&grpindex,&grpname);
-  else {
+  else 
     gnx = 0;
-  }
   
-  /* Initial values */
-  t = t0       = parm->ir.init_t;
-  if (parm->ir.bPert) {
-    lam0         = parm->ir.init_lambda;
-    lambda       = lam0;
-  }
-  else {
-    lam0   = 0.0;
-    lambda = 0.0;
-  } 
-  if (parm->ir.bSimAnn) {
-    SAfactor = 1.0  - t0/parm->ir.zero_temp_time;
-    if (SAfactor < 0) 
-      SAfactor = 0;
-  } else
-    SAfactor     = 1.0;
-  tcount       = 0;
+  /* Check whether we have to GCT stuff */
+  bTCR = ftp2bSet(efGCT,nfile,fnm);
+  if (MASTER(cr) && bTCR)
+    fprintf(stderr,"Will do General Coupling Theory!\n");
   
-  where();
-
-  /* Check Environment variables */
-  bTCR=ftp2bSet(efGCT,nfile,fnm);
-  if (MASTER(cr)) {
-    if (bTCR)
-      fprintf(stderr,"Will do General Coupling Theory!\n");
-    else
-      fprintf(stderr,"*NO* General Coupling Theory ! ? !\n");
-  }
-
-  /* Check Environment variables */
-  bTYZ=getenv("TYZ") != NULL;
-  
-  init_nrnb(&mynrnb);
-  
-  calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
-  
-  fprintf(log,"Removing pbc first time\n");
-  mk_mshift(log,graph,parm->box,x);
-  shift_self(graph,fr->shift_vec,x);
-  fprintf(log,"Done rmpbc\n");
-  
-  traj     = ftp2fn(efTRN,nfile,fnm);
-  xtc_traj = ftp2fn(efXTC,nfile,fnm);
-  where();
-
-  bLR      = (parm->ir.rlong > parm->ir.rshort);
-  bBHAM    = (top->idef.functype[0]==F_BHAM);
-  b14      = (top->idef.il[F_LJ14].nr > 0);
-  
-  if (MASTER(cr)) {
-    fp_ene=open_enx(ftp2fn(efENX,nfile,fnm),"w");
-    mdebin=init_mdebin(fp_ene,grps,&(top->atoms),bLR,bBHAM,b14);
-  }
-  else {
-    fp_ene = -1;
-    mdebin = NULL;
-  }
-
-  /* Sat Jan  3 19:49:58 CET 1998 PvM
-  if (MASTER(cr))
-    ene=ftp2FILE(efENE,nfile,fnm,"w");
-  else
-    ene=NULL;
-  bLR    = ((parm->ir.rlong > parm->ir.rshort) && 
-	    (parm->ir.eeltype == eelTWIN));
-  bBHAM  = (top->idef.functype[0]==F_BHAM);
-  b14    = (top->idef.il[F_LJ14].nr > 0);
-  mdebin = init_mdebin(ene,grps,&(top->atoms),bLR,bBHAM,b14);
-  */
-
-  /*  init_dummies(log,md,START(nsb),HOMENR(nsb)); */
-  where();
-  
-  clear_rvec(vcm);
+  /* Remove periodicity */  
+  do_pbc_first(log,parm,box_size,fr,graph,x);
   
   if (!parm->ir.bUncStart) 
-    do_shakefirst(log,bTYZ,lambda,ener,parm,nsb,md,x,vold,buf,f,v,
+    do_shakefirst(log,bTYZ,lambda,ener,parm,nsb,mdatoms,x,vold,buf,f,v,
 		  graph,cr,nrnb,grps,fr,top,edyn);
   
   /* Compute initial EKin for all.. */
-  clear_mat(force_vir);
-  clear_mat(shake_vir);
   calc_ke_part(TRUE,0,top->atoms.nr,
                vold,v,vt,&(parm->ir.opts),
-               md,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
+               mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,
 		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
   clear_rvec(vcm);
-
-  /* Compute initial EKin for all.. dit zat er in gmx151 nog wel in???? 
-  clear_mat(force_vir);
-  clear_mat(shake_vir);
-  calc_ke_part(TRUE,0,top->atoms.nr,
-               vold,v,vt,&(parm->ir.opts),
-               md,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
-  if (PAR(cr)) 
-    global_stat(log,cr,ener,force_vir,shake_vir,
-		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
-  clear_rvec(vcm);
-  */
 
   /* Calculate Temperature coupling parameters lambda */
   ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
@@ -321,19 +241,19 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	 0,parm->ir.ntcmemory);
   where();
   
-  shells = init_shells(log,START(nsb),HOMENR(nsb),&top->idef,md,&nshell);
+  shells = init_shells(log,START(nsb),HOMENR(nsb),&top->idef,mdatoms,&nshell);
   where();
   
   /* Write start time and temperature */
   sprintf(strbuf,"Started %s",Program());
-  start_t=print_date_and_time(log,cr->pid,strbuf);
+  start_t = print_date_and_time(log,cr->pid,strbuf);
   if (MASTER(cr)) {
     fprintf(log,"Initial temperature: %g K\n",ener[F_TEMP]);
     printf("starting %s '%s'\n%d steps, %8.1f ps.\n\n",strbuf,
 	   *(top->name),parm->ir.nsteps,parm->ir.nsteps*parm->ir.delta_t);
   }
   
-    
+  tcount       = 0;
 
   /***********************************************************
    *
@@ -356,40 +276,38 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
     
     if (bIonize)
-      ionize(log,md,top->atoms.atomname,t,&parm->ir,v);
+      ionize(log,mdatoms,top->atoms.atomname,t,&parm->ir,v);
 
     /* Determine whether or not to do Neighbour Searching */
     bNS=((parm->ir.nstlist && ((step % parm->ir.nstlist)==0)) || (step==0));
 
-    /* Construct dummy particles */
-    construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef);
+    if (bDummies) {
+      /* Construct dummy particles */
+      shift_self(graph,fr->shift_vec,x);
+      construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef);
+      unshift_self(graph,fr->shift_vec,x);
+    }
 
-    /* ??? Or should this be after relax_shells ??? */
-    /* Calculate total dipole moment of the simulation box and the average
-       dipole moment of the molecules */    
-
-    /* Do I need this one??? PvM */
-    /* Set values for invmass etc. 
-    init_mdatoms(md,lambda,FALSE);
-    */
-
+    /* Set values for invmass etc. */
+    init_mdatoms(mdatoms,lambda,FALSE);
+    
     /* Calculate total dipole moment if necessary */
-    calc_mu(nsb,x,md->chargeT,mu_tot);
+    calc_mu(nsb,x,mdatoms->chargeT,mu_tot);
 
-    mu_aver=calc_mu_aver(cr,nsb,x,md->chargeA,mu_tot,top,md,gnx,grpindex);
+    mu_aver=calc_mu_aver(cr,nsb,x,mdatoms->chargeA,mu_tot,top,mdatoms,gnx,grpindex);
     
     /* Now is the time to relax the shells */
-    count=relax_shells(ene,log,cr,bVerbose,step,parm,bNS,bStopCM,top,ener,
-		       x,vold,v,vt,f,buf,md,nsb,&mynrnb,graph,grps,force_vir,
+    count=relax_shells(log,cr,bVerbose,step,parm,bNS,bStopCM,top,ener,
+		       x,vold,v,vt,f,buf,mdatoms,nsb,&mynrnb,graph,grps,force_vir,
 		       nshell,shells,fr,traj,t,lambda,nsb->natoms,parm->box,mdebin);
     tcount+=count;
 
     if (bGlas)
-      do_glas(log,START(nsb),HOMENR(nsb),x,f,fr,md,top->idef.atnr,
+      do_glas(log,START(nsb),HOMENR(nsb),x,f,fr,mdatoms,top->idef.atnr,
 	      &parm->ir,ener);
 	         
     if (bTCR && MASTER(cr) && (step == 0)) 
-      tcr=init_coupling(log,nfile,fnm,cr,fr,md,&(top->idef));
+      tcr=init_coupling(log,nfile,fnm,cr,fr,mdatoms,&(top->idef));
 
 
     /* Now we have the energies and forces corresponding to the 
@@ -416,7 +334,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     where();
 
     if (do_per_step(step,parm->ir.nstxtcout)) {
-      write_xtc_traj(log,cr,xtc_traj,nsb,md,
+      write_xtc_traj(log,cr,xtc_traj,nsb,mdatoms,
                      step,t,x,parm->box,parm->ir.xtcprec);
       where();
     }
@@ -426,7 +344,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     clear_mat(shake_vir);
     update(nsb->natoms,START(nsb),HOMENR(nsb),
 	   step,lambda,&ener[F_DVDL],&(parm->ir),FALSE,
-           md,x,graph,
+           mdatoms,x,graph,
            fr->shift_vec,f,buf,vold,v,vt,parm->pres,parm->box,
            top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn);
     if (PAR(cr)) 
@@ -437,10 +355,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
      */
     calc_ke_part(FALSE,START(nsb),HOMENR(nsb),
                  vold,v,vt,&(parm->ir.opts),
-                 md,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
+                 mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
     where();
     if (bStopCM)
-      calc_vcm(log,HOMENR(nsb),START(nsb),md->massT,v,vcm);
+      calc_vcm(log,HOMENR(nsb),START(nsb),mdatoms->massT,v,vcm);
     
     /* Copy the partial virial to the global virial (to be summed) */
     if (PAR(cr)) {
@@ -454,14 +372,14 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       cp_nrnb(&(nrnb[0]),&mynrnb);
     
     if (bStopCM) {
-      check_cm(log,vcm,md->tmass);
-      do_stopcm(log,HOMENR(nsb),START(nsb),v,vcm,md->tmass);
+      check_cm(log,vcm,mdatoms->tmass);
+      do_stopcm(log,HOMENR(nsb),START(nsb),v,vcm,mdatoms->tmass);
       inc_nrnb(&mynrnb,eNR_STOPCM,HOMENR(nsb));
     }
     
     /* Do fit to remove overall rotation */
     if (bStopRot)
-      do_stoprot(log,top->atoms.nr,box_size,x,md->massT);
+      do_stoprot(log,top->atoms.nr,box_size,x,mdatoms->massT);
     
     /* Add force and shake contribution to the virial */
     m_add(force_vir,shake_vir,parm->vir);
@@ -492,17 +410,17 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     /* Calculate long range corrections to pressure and energy */
     if (bTCR)
-      set_avcsix(log,fr,&top->idef,md);
+      set_avcsix(log,fr,&top->idef,mdatoms);
     calc_ljcorr(log,parm->ir.bLJcorr,
-		fr,md->nr,parm->box,parm->pres,parm->vir,ener);
+		fr,mdatoms->nr,parm->box,parm->pres,parm->vir,ener);
     
     if (bTCR)
       do_coupling(log,nfile,fnm,tcr,t,step,ener,fr,
-		  &(parm->ir),MASTER(cr) || bMultiSim,md,&(top->idef),mu_aver,
+		  &(parm->ir),MASTER(cr) || bMultiSim,mdatoms,&(top->idef),mu_aver,
 		  top->blocks[ebMOLS].nr,bMultiSim ? cr_msim : cr,
 		  parm->box,parm->vir);
     
-    upd_mdebin(mdebin,md->tmass,step,ener,parm->box,shake_vir,
+    upd_mdebin(mdebin,mdatoms->tmass,step,ener,parm->box,shake_vir,
                force_vir,parm->vir,parm->pres,grps,mu_tot);
                
     where();

@@ -28,44 +28,6 @@
  */
 static char *SRCID_md_c = "$Id$";
 
-/*
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
-#include "sysstuff.h"
-#include "string2.h"
-#include "led.h"
-#include "nrnb.h"
-#include "network.h"
-#include "confio.h"
-#include "copyrite.h"
-#include "smalloc.h"
-#include "main.h"
-#include "pbc.h"
-#include "force.h"
-#include "macros.h"
-#include "names.h"
-#include "fatal.h"
-#include "txtdump.h"
-#include "futil.h"
-#include "typedefs.h"
-#include "update.h"
-#include "random.h"
-#include "vec.h"
-#include "filenm.h"
-#include "statutil.h"
-#include "tgroup.h"
-#include "mdrun.h"
-#include "vcm.h"
-#include "ebin.h"
-#include "mdebin.h"
-#include "dummies.h"
-#include "mdrun.h"
-#include "physics.h"
-#include "pppm.h"
-#include "edsam.h"
-#include "calcmu.h"
-*/
 #include "typedefs.h"
 #include "vec.h"
 #include "statutil.h"
@@ -74,29 +36,24 @@ static char *SRCID_md_c = "$Id$";
 #include "nrnb.h"
 #include "calcmu.h"
 #include "dummies.h"
-#include "pppm.h"
 #include "update.h"
 #include "mdrun.h"
 
 time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,bool bDummies,int stepout,
-	     t_parm *parm,t_groups *grps,
-	     t_topology *top,real ener[],
+	     t_parm *parm,t_groups *grps,t_topology *top,real ener[],
 	     rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
-	     rvec buf[],t_mdatoms *mdatoms,
-	     t_nsborder *nsb,t_nrnb nrnb[],
-	     t_graph *graph,t_edsamyn *edyn,
-	     t_forcerec *fr,rvec box_size)
+	     rvec buf[],t_mdatoms *mdatoms,t_nsborder *nsb,t_nrnb nrnb[],
+	     t_graph *graph,t_edsamyn *edyn,t_forcerec *fr,rvec box_size)
 {
   t_mdebin   *mdebin;
   int        fp_ene,step;
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
-  bool       bNS,bStopCM,bStopRot,bTYZ,bLR,bBHAM,b14,bRerunMD,bNotLastFrame;
+  bool       bNS,bStopCM,bStopRot,bTYZ,bRerunMD,bNotLastFrame;
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
-  char       *traj,*enerfile;
-  char       *xtc_traj; /* compressed trajectory filename */
+  char       *traj,*xtc_traj; /* normal and compressed trajectory filename */
   int        i,m;
   rvec       vcm,mu_tot;
   rvec       *xx,*vv,*ff;
@@ -106,74 +63,28 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   bRerunMD = optRerunMDset(nfile,fnm);
   
   /* Initial values */
-  t0           = parm->ir.init_t;
-  if (parm->ir.bPert) {
-    lam0         = parm->ir.init_lambda;
-    lambda       = lam0;
-  }
-  else {
-    lam0   = 0.0;
-    lambda = 0.0;
-  } 
-  if (parm->ir.bSimAnn) {
-    SAfactor = 1.0  - t0/parm->ir.zero_temp_time;
-    if (SAfactor < 0) 
-      SAfactor = 0;
-  } else
-    SAfactor     = 1.0;
+  init_md(cr,&parm->ir,&t,&t0,&lambda,&lam0,&SAfactor,&mynrnb,&bTYZ,top,
+	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&mdebin,grps,vcm,force_vir,shake_vir,
+	  mdatoms);
   
-  /* Check Environment variables */
-  bTYZ=getenv("TYZ") != NULL;
-  
-  init_nrnb(&mynrnb);
-  
-  calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
-  
-  fprintf(log,"Removing pbc first time\n");
-  mk_mshift(log,graph,parm->box,x);
-  shift_self(graph,fr->shift_vec,x);
-  fprintf(log,"Done rmpbc\n");
-
-  traj     = ftp2fn(efTRN,nfile,fnm);
-  xtc_traj = ftp2fn(efXTC,nfile,fnm);
-  where();
-  
-  bLR      = (parm->ir.rlong > parm->ir.rshort);
-  bBHAM    = (top->idef.functype[0]==F_BHAM);
-  b14      = (top->idef.il[F_LJ14].nr > 0);
-  
-  if (MASTER(cr)) 
-    fp_ene=open_enx(ftp2fn(efENX,nfile,fnm),"w");
-  else 
-    fp_ene = -1;
-  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),bLR,bBHAM,b14);
-  where();
-  
-  clear_rvec(vcm);
-  
-  /* Set initial values for invmass etc. */
-  init_mdatoms(mdatoms,lambda,TRUE);
-  where();
+  /* Remove periodicity */  
+  do_pbc_first(log,parm,box_size,fr,graph,x);
   
   if (!parm->ir.bUncStart) 
     do_shakefirst(log,bTYZ,lambda,ener,parm,nsb,mdatoms,x,vold,buf,f,v,
 		  graph,cr,&mynrnb,grps,fr,top,edyn);
-  where();
     
   /* Compute initial EKin for all.. */
-  clear_mat(force_vir);
-  clear_mat(shake_vir);
-  calc_ke_part(TRUE,START(nsb),HOMENR(nsb),
-	       vold,v,vt,&(parm->ir.opts),
-	       mdatoms,grps,&mynrnb,
-	       lambda,&ener[F_DVDLKIN]);
+  calc_ke_part(TRUE,START(nsb),HOMENR(nsb),vold,v,vt,&(parm->ir.opts),
+	       mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
+	       
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,
 		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
   clear_rvec(vcm);
   
   /* Calculate Temperature coupling parameters lambda */
-  ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
+  ener[F_TEMP] = sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
   tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor,0,
 	 parm->ir.ntcmemory);
   where();
@@ -201,17 +112,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     int i;
 
     natoms=read_first_x(&status,opt2fn("-rerun",nfile,fnm),&t,&x,parm->box);
-    for(i=0;(i<natoms);i++) {
-      v[i][XX]=0;
-      v[i][YY]=0;
-      v[i][ZZ]=0;
-    }
+    for(i=0;(i<natoms);i++) 
+      clear_rvec(v[i]);
+
     bNotLastFrame = (natoms!=0);
   } 
 
-  
-  /* loop over MD steps or if rerunMD to end of 
-   * input trajectory */
+  /* loop over MD steps or if rerunMD to end of input trajectory */
   for(step=0; ((!bRerunMD && (step<parm->ir.nsteps)) || 
 	       (bRerunMD && bNotLastFrame)); step++) {
     
@@ -221,14 +128,14 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     else {
       /* Stop Center of Mass motion */
       if (parm->ir.nstcomm == 0) {
-	bStopCM=FALSE;
-	bStopRot=FALSE;
+	bStopCM  = FALSE;
+	bStopRot = FALSE;
       } else if (parm->ir.nstcomm > 0) {
-	bStopCM=do_per_step(step,parm->ir.nstcomm);
-	bStopRot=FALSE;
+	bStopCM  = do_per_step(step,parm->ir.nstcomm);
+	bStopRot = FALSE;
       } else {
-	bStopCM=FALSE;
-	bStopRot=do_per_step(step,-parm->ir.nstcomm);
+	bStopCM  = FALSE;
+	bStopRot = do_per_step(step,-parm->ir.nstcomm);
       }
       /* Determine whether or not to do Neighbour Searching */
       bNS=((parm->ir.nstlist && ((step % parm->ir.nstlist)==0)) || (step==0));

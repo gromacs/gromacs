@@ -47,7 +47,7 @@ typedef struct {
 extern t_shell *init_shells(FILE *log,int start,int homenr,
 			    t_idef *idef,t_mdatoms *md,int *nshell);
 
-extern int relax_shells(FILE *ene,FILE *log,t_commrec *cr,bool bVerbose,
+extern int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 			int mdstep,t_parm *parm,bool bDoNS,bool bStopCM,
 			t_topology *top,real ener[],
 			rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
@@ -57,7 +57,7 @@ extern int relax_shells(FILE *ene,FILE *log,t_commrec *cr,bool bVerbose,
 			char *traj,real t,real lambda,
 			int natoms,matrix box,t_mdebin *mdebin);
 
-extern  int relax_shells2(FILE *ene,FILE *log,t_commrec *cr,
+extern  int relax_shells2(FILE *log,t_commrec *cr,
 			  bool bVerbose,int mdstep,
 			  t_parm *parm,bool bDoNS,bool bStopCM,
 			  t_topology *top,real ener[],

@@ -45,6 +45,7 @@ static char *SRCID_mdrun_h = "$Id$";
 #include "force.h"
 #include "time.h"
 #include "edsam.h"
+#include "mdebin.h"
 
 /* ROUTINES from md.c */
 extern time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
@@ -106,6 +107,17 @@ extern bool optRerunMDset (int nfile, t_filenm fnm[]);
 extern void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 		     bool bCompact,int nDlb,bool bNM,int nstepout,
 		     t_edsamyn *edyn);
+		    
+/* Initialization routines to make maintainance easier */ 
+extern void init_md(t_commrec *cr,
+		    t_inputrec *ir,real *t,real *t0,real *lambda,real *lam0,
+		    real *SAfactor,t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
+		    int nfile,t_filenm fnm[],char **traj,char **xtc_traj,int *fp_ene,
+		    t_mdebin **mdebin,t_groups *grps,rvec vcm,tensor force_vir,
+		    tensor shake_vir,t_mdatoms *mdatoms);
+		    
+extern void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,
+			 t_graph *graph,rvec x[]);
 		     
 /* ROUTINES from stat.c */		
 extern void global_stat(FILE *log,

@@ -126,7 +126,7 @@ static void dump_shells(FILE *fp,rvec x[],rvec f[],real ftol,int ns,t_shell s[])
   }
 }
 
-int relax_shells(FILE *ene,FILE *log,t_commrec *cr,bool bVerbose,
+int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 int mdstep,t_parm *parm,bool bDoNS,bool bStopCM,
 		 t_topology *top,real ener[],
 		 rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
@@ -139,6 +139,7 @@ int relax_shells(FILE *ene,FILE *log,t_commrec *cr,bool bVerbose,
   static bool bFirst=TRUE;
   static rvec *pos[2],*force[2];
   real   Epot[2],df[2];
+  tensor my_vir[2];
 #define NEPOT asize(Epot)
   real   ftol,step;
   real   step0;
@@ -167,7 +168,8 @@ int relax_shells(FILE *ene,FILE *log,t_commrec *cr,bool bVerbose,
   predict_shells(log,x,v,parm->ir.delta_t,nshell,shells);
     
   /* Calculate the forces first time around */
-  do_force(log,cr,parm,nsb,vir_part,mdstep,nrnb,
+  clear_mat(my_vir[Min]);
+  do_force(log,cr,parm,nsb,my_vir[Min],mdstep,nrnb,
 	   top,grps,x,v,force[Min],buf,md,ener,bVerbose && !PAR(cr),
 	   lambda,graph,bDoNS,FALSE,fr);
   df[Min]=rms_force(force[Min],nshell,shells);
@@ -216,7 +218,8 @@ int relax_shells(FILE *ene,FILE *log,t_commrec *cr,bool bVerbose,
     }
 #endif
     /* Try the new positions */
-    do_force(log,cr,parm,nsb,vir_part,1,nrnb,
+    clear_mat(my_vir[Try]);
+    do_force(log,cr,parm,nsb,my_vir[Try],1,nrnb,
 	     top,grps,pos[Try],v,force[Try],buf,md,ener,bVerbose && !PAR(cr),
 	     lambda,graph,FALSE,FALSE,fr);
     df[Try]=rms_force(force[Try],nshell,shells);
@@ -252,11 +255,12 @@ int relax_shells(FILE *ene,FILE *log,t_commrec *cr,bool bVerbose,
   /* Parallelise this one! */
   memcpy(x,pos[Min],nsb->natoms*sizeof(x[0]));
   memcpy(f,force[Min],nsb->natoms*sizeof(f[0]));
-
+  copy_mat(my_vir[Min],vir_part);
+  
   return count; 
 }
 
-int relax_shells2(FILE *ene,FILE *log,t_commrec *cr,
+int relax_shells2(FILE *log,t_commrec *cr,
 		  bool bVerbose,int mdstep,
 		  t_parm *parm,bool bDoNS,bool bStopCM,
 		  t_topology *top,real ener[],
