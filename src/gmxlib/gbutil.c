@@ -178,29 +178,27 @@ void orient(int natom,rvec *x,rvec *v, rvec angle,matrix box)
 } /*orient()*/
 
 
-void genconf(t_atoms *atoms,rvec *x,rvec *v,real *r,matrix box,ivec n_box)
+void genconf(t_atoms *atoms,rvec *x,real *r,matrix box,ivec n_box)
 {
-  int     i,ix,iy,iz,m,j,imol=0,offset;
+  int     i,ix,iy,iz,m,j,imol,offset;
   rvec    delta;
-  int     nmol=1;
+  int     nmol;
   
-  for (i=0;i<DIM;i++)
-    nmol*=n_box[i];
-    
+  nmol=n_box[XX]*n_box[YY]*n_box[ZZ];
+  
   /*print message*/
   fprintf(stderr,"Generating configuration\n");
-  for(ix=0; (ix < n_box[0]); ix++) {
+  imol=0;
+  for(ix=0; (ix < n_box[XX]); ix++) {
     delta[XX]=ix*box[XX][XX];
-    for(iy=0; (iy < n_box[1]); iy++) {
+    for(iy=0; (iy < n_box[YY]); iy++) {
       delta[YY]=iy*box[YY][YY];
-      for(iz=0; (iz < n_box[2]); iz++) {
+      for(iz=0; (iz < n_box[ZZ]); iz++) {
 	delta[ZZ]=iz*box[ZZ][ZZ];
 	offset=imol*atoms->nr;
 	for (i=0;(i < atoms->nr);i++) {
-	  for (m=0;(m < DIM);m++) {
+	  for (m=0;(m < DIM);m++)
 	    x[offset+i][m]=delta[m]+x[i][m];
-	    v[offset+i][m]=v[i][m];
-	  }
 	  r[offset+i]=r[i];
         }
 	imol++;
@@ -219,11 +217,9 @@ void genconf(t_atoms *atoms,rvec *x,rvec *v,real *r,matrix box,ivec n_box)
   }
   atoms->nr*=nmol;
   atoms->nres*=nmol;
-  for(i=0;(i<DIM);i++) {
-    box[XX][i]*=n_box[0];
-    box[YY][i]*=n_box[1];
-    box[ZZ][i]*=n_box[2];
-  }
+  for(i=0; i<DIM; i++)
+    for(j=0; j<DIM; j++)
+      box[j][i]*=n_box[j];
 } /*genconf()*/
 
 /*gen_box() generates a box around a configuration*/
