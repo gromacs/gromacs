@@ -105,13 +105,9 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
 {
   static bool bFirst=TRUE;
   static rvec PPP;
-  int    n,d,m,g,ncoupl=0;
+  int    n,d,g;
   real   scalar_pressure, xy_pressure, p_corr_z;
-  real   X,Y,Z;
-  rvec   factor;
-  tensor mu;
-  real   muxx,muxy,muxz,muyx,muyy,muyz,muzx,muzy,muzz;
-  real   fgx,fgy,fgz;
+  rvec   factor,mu;
   
   /*
    *  PRESSURE SCALING 
@@ -119,37 +115,42 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
    */
   if (bFirst) {
     /* Initiate the pressure to the reference one */
-    for(m=0; m<DIM; m++)
-      PPP[m] = ir->ref_p[m];
+    for(d=0; d<DIM; d++)
+      PPP[d] = ir->ref_p[d];
     bFirst=FALSE;
   }
   scalar_pressure=0;
   xy_pressure=0;
-  for(m=0; m<DIM; m++) {
-    PPP[m]           = run_aver(PPP[m],pres[m][m],step,ir->npcmemory);
-    scalar_pressure += PPP[m]/DIM;
-    if (m != ZZ)
-      xy_pressure += PPP[m]/(DIM-1);
+  for(d=0; d<DIM; d++) {
+    PPP[d]           = run_aver(PPP[d],pres[d][d],step,ir->npcmemory);
+    scalar_pressure += PPP[d]/DIM;
+    if (d != ZZ)
+      xy_pressure += PPP[d]/(DIM-1);
   }
   
   /* Pressure is now in bar, everywhere. */
-  if ((ir->epc != epcNO) && (scalar_pressure != 0.0)) {
-    for(m=0; m<DIM; m++)
-      factor[m] = ir->compress[m]*ir->delta_t/ir->tau_p;
-    clear_mat(mu);
+  if (scalar_pressure != 0.0) {
+    for(d=0; d<DIM; d++)
+      factor[d] = ir->compress[d]*ir->delta_t/ir->tau_p;
+    clear_rvec(mu);
     switch (ir->epc) {
+    case epcNO:
+      /* do_pcoupl should not be called in this case to save some work */
+      for(d=0; d<DIM; d++)
+	mu[d] = 1.0;
+      break;
     case epcISOTROPIC:
-      for(m=0; m<DIM; m++)
-	mu[m][m] = pow(1.0-factor[m]*(ir->ref_p[m]-scalar_pressure),1.0/DIM);
+      for(d=0; d<DIM; d++)
+	mu[d] = pow(1.0-factor[d]*(ir->ref_p[d]-scalar_pressure),1.0/DIM);
       break;
     case epcSEMIISOTROPIC:
-      for(m=0; m<ZZ; m++)
-	mu[m][m] = pow(1.0-factor[m]*(ir->ref_p[m]-xy_pressure),1.0/DIM);
-      mu[ZZ][ZZ] = pow(1.0-factor[ZZ]*(ir->ref_p[ZZ] - PPP[ZZ]),1.0/DIM);
+      for(d=0; d<ZZ; d++)
+	mu[d] = pow(1.0-factor[d]*(ir->ref_p[d]-xy_pressure),1.0/DIM);
+      mu[ZZ] = pow(1.0-factor[ZZ]*(ir->ref_p[ZZ] - PPP[ZZ]),1.0/DIM);
       break;
     case epcANISOTROPIC:
-      for (m=0; m<DIM; m++)
-	mu[m][m] = pow(1.0-factor[m]*(ir->ref_p[m] - PPP[m]),1.0/DIM);
+      for (d=0; d<DIM; d++)
+	mu[d] = pow(1.0-factor[d]*(ir->ref_p[d] - PPP[d]),1.0/DIM);
       break;
     case epcSURFACETENSION:
       /* ir->ref_p[0/1] is the reference surface-tension times *
@@ -160,9 +161,9 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
 	/* when the compressibity is zero, set the pressure correction   *
 	 * in the z-direction to zero to get the correct surface tension */
 	p_corr_z = 0;
-      mu[ZZ][ZZ] = 1.0 - ir->compress[ZZ]*p_corr_z;
-      for(m=0; m<ZZ; m++)
-	mu[m][m] = sqrt(1.0+factor[m]*(ir->ref_p[m]/(mu[ZZ][ZZ]*box[ZZ][ZZ]) - 
+      mu[ZZ] = 1.0 - ir->compress[ZZ]*p_corr_z;
+      for(d=0; d<ZZ; d++)
+	mu[d] = sqrt(1.0+factor[d]*(ir->ref_p[d]/(mu[ZZ]*box[ZZ][ZZ]) - 
 	(PPP[ZZ]+p_corr_z - xy_pressure)));
       break;
     case epcTRICLINIC:
@@ -173,35 +174,26 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
     if (debug) {
       pr_rvecs(debug,0,"PC: PPP ",&PPP,1);
       pr_rvecs(debug,0,"PC: fac ",&factor,1);
-      pr_rvecs(debug,0,"PC: mu  ",mu,DIM);
+      pr_rvecs(debug,0,"PC: mu  ",&mu,1);
     }
-    /* Scale the positions using matrix operation */
-    nr_atoms+=start;
-    muxx=mu[XX][XX],muxy=mu[XX][YY],muxz=mu[XX][ZZ];
-    muyx=mu[YY][XX],muyy=mu[YY][YY],muyz=mu[YY][ZZ];
-    muzx=mu[ZZ][XX],muzy=mu[ZZ][YY],muzz=mu[ZZ][ZZ];
-    for (n=start; n<nr_atoms; n++) {
+    /* Scale the positions */
+    for (n=start; n<start+nr_atoms; n++) {
       g=cFREEZE[n];
       
-      X=x[n][XX];
-      Y=x[n][YY];
-      Z=x[n][ZZ];
-
       if (!nFreeze[g][XX])
-	x[n][XX] = muxx*X+muxy*Y+muxz*Z;
+	x[n][XX] *= mu[XX];
       if (!nFreeze[g][YY])
-	x[n][YY] = muyx*X+muyy*Y+muyz*Z;
+	x[n][YY] *= mu[YY];
       if (!nFreeze[g][ZZ])
-	x[n][ZZ] = muzx*X+muzy*Y+muzz*Z;
-      
-      ncoupl++;
+	x[n][ZZ] *= mu[ZZ];
     }
     /* compute final boxlengths */
-    for (d=0; d<DIM; d++)
-      for (m=0; m<DIM; m++)
-	box[d][m] *= mu[d][d];
+    for (n=0; n<DIM; n++)
+      for (d=0; d<DIM; d++)
+	box[n][d] *= mu[d];
+
+    inc_nrnb(nrnb,eNR_PCOUPL,nr_atoms);
   }
-  inc_nrnb(nrnb,eNR_PCOUPL,ncoupl);
 }
 
 void tcoupl(bool bTC,t_grpopts *opts,t_groups *grps,

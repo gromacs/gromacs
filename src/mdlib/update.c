@@ -469,8 +469,9 @@ void update(int          natoms, 	/* number of atoms in simulation */
   
   if (bDoUpdate) {  
     update_grps(start,homenr,grps,&(ir->opts),v,md);
-    do_pcoupl(ir,step,pressure,box,start,homenr,x,md->cFREEZE,nrnb,
-	      ir->opts.nFreeze);
+    if (ir->epc != epcNO)
+      do_pcoupl(ir,step,pressure,box,start,homenr,x,md->cFREEZE,nrnb,
+		ir->opts.nFreeze);
     where();
   }
 }

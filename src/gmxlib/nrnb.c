@@ -101,7 +101,7 @@ static t_nrnb_data nbdata[eNRNB] = {
   { "Virial",          18 },
   { "Update",          31 },
   { "Stop-CM",         10 },
-  { "P-Coupling",      24 },
+  { "P-Coupling",       3 },
   { "Calc-Ekin",       27 },
   { "Lincs",           60 },
   { "Lincs-Mat",        4 },
