@@ -64,6 +64,4 @@ libnonbonded_la_LIBADD = \
 
 
 libnonbonded_la_SOURCES = \
-	nb_free_energy_lambda.c   	nb_free_energy_softcore.c	\
-	nb_free_energy_lambda.h   	nb_free_energy_softcore.h	\
 	nb_kerneltype.h			nonbonded.c
