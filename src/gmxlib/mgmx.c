@@ -53,6 +53,13 @@ static int      *pa_index,*pa_set_index,*fnm_index;
 static bool     bFdlgUp=FALSE,bDone=FALSE;
 extern XmString empty_str;
 
+#define TOGGLECLASS "gmxtoggle"
+#define EDITCLASS   "gmxedit"
+#define BUTTONCLASS "gmxbutton"
+#define PDCLASS     "gmxpd"
+#define DESCCLASS   "gmxdesc"
+#define SEPCLASS    "gmxsep"
+
 /* Height handling routines */
 static windex TopW=0,NewTopW=0;
 static void set_top_windex(windex t)
@@ -69,8 +76,10 @@ static windex top_windex(void)
 
 static void new_windex_row(void)
 {
-  if ((NewTopW == 0) && (TopW != 0)) 
-    fprintf(stderr,"Empty windex row!\n");
+  if ((NewTopW == 0) && (TopW != 0)) {
+    if (debug)
+      fprintf(debug,"Empty windex row!\n");
+  }
   else {
     TopW    = NewTopW;
     NewTopW = 0;
@@ -171,7 +180,7 @@ static void leave_callback(Widget www,int *which,caddr_t call_data)
 
   if (descw != -1) {  
     narg=0;
-    XtSetArg(args[narg],XmNlabelString,empty_str); narg++;
+    XtSetArg(args[narg],XmNlabelString,NULL); narg++;
     XtSetValues(get_widget(descw),args,narg);
   }
 }
@@ -214,11 +223,17 @@ static int mk_toggle(int parent,char *title,int top,int left,
   }
   XtSetArg(args[narg],XmNleftAttachment, XmATTACH_POSITION);  narg++;
   XtSetArg(args[narg],XmNleftPosition,   left+1);             narg++;
-  XtSetArg(args[narg],XmNrightAttachment, XmATTACH_NONE);     narg++;
+  XtSetArg(args[narg],XmNrightAttachment,XmATTACH_NONE);      narg++;
+  /*XtSetArg(args[narg],XmNindicatorType,  XmONE_OF_MANY);      narg++;*/
+  /*XtSetArg(args[narg],XmNvisibleWhenOff, False);              narg++;*/
+  /*XtSetArg(args[narg],XmNselectPixmap*/
+  XtSetArg(args[narg],XmNindicatorOn,  True);      narg++;
   if (bStatus) {
     XtSetArg(args[narg],XmNset,             True);            narg++;
   }
-  return add_widget(XtCreateWidget(title,xmToggleButtonWidgetClass,
+  XtSetArg(args[narg],XmNlabelString, char2xms(title)); narg++;
+  
+  return add_widget(XtCreateWidget(TOGGLECLASS,xmToggleButtonWidgetClass,
 				   get_widget(parent),args,narg),desc);
 }
 
@@ -236,8 +251,8 @@ static void mk_editor(int paindex,int parent,int top,int left,
   /* Create & Position the label */
   wc[nwcTOGGLE]   = xmToggleButtonWidgetClass;
   wc[nwcTEXT]     = xmTextFieldWidgetClass;
-  wlab[nwcTOGGLE] = label;
-  wlab[nwcTEXT]   = initial_value;
+  wlab[nwcTOGGLE] = TOGGLECLASS;
+  wlab[nwcTEXT]   = EDITCLASS;
   
   for(j=0; (j<NWC); j++) {  
     narg = 0;
@@ -260,6 +275,9 @@ static void mk_editor(int paindex,int parent,int top,int left,
     XtSetArg(args[narg],XmNbottomAttachment,  XmATTACH_NONE);     narg++;
     if (j == nwcTEXT) {
       XtSetArg(args[narg],XmNvalue,           initial_value);     narg++;
+    }
+    else {
+      XtSetArg(args[narg],XmNlabelString,     char2xms(label)); narg++;
     }
     if (debug)
       fprintf(debug,"There are %d args for %s\n",narg,wlab[j]);
@@ -286,8 +304,8 @@ static void mk_enumerated(int parent,int top,int left,
   /* Create & Position the label */
   wc[nwcTOGGLE]   = xmToggleButtonWidgetClass;
   wc[nwcBUTTON]   = 0; 
-  wlab[nwcTOGGLE] = label;
-  wlab[nwcBUTTON] = but[0];
+  wlab[nwcTOGGLE] = TOGGLECLASS;
+  wlab[nwcBUTTON] = BUTTONCLASS;
 
   for(j=0; (j<NWC); j++) {  
     narg = 0;
@@ -307,16 +325,17 @@ static void mk_enumerated(int parent,int top,int left,
     XtSetArg(args[narg],XmNbottomAttachment,  XmATTACH_NONE);     narg++;
     
     if (j == nwcBUTTON) {
-      ww[j] = add_widget(XmCreateOptionMenu(get_widget(parent),"option",
+      ww[j] = add_widget(XmCreateOptionMenu(get_widget(parent),BUTTONCLASS,
 					    args,narg),desc);
     }
-    else
+    else {
+      XtSetArg(args[narg], XmNlabelString, char2xms(label)); narg++;
       ww[j] = add_widget(XtCreateWidget(wlab[j],wc[j],
 					get_widget(parent),args,narg),desc);
+    }
   }
-
   /* Create the popup menu father */
-  pd = add_widget(XmCreatePulldownMenu(get_widget(parent),"pulldown",NULL,0),
+  pd = add_widget(XmCreatePulldownMenu(get_widget(parent),PDCLASS,NULL,0),
 		  desc);
   
   /* Now create the popup menu children */
@@ -326,8 +345,10 @@ static void mk_enumerated(int parent,int top,int left,
   
   for(i=0; (but[i] != NULL); i++) {
     sprintf(buf,"%s = %s",desc,but[i]);
-    wi = add_widget(XtCreateWidget(but[i],xmPushButtonWidgetClass,
-				   get_widget(pd),NULL,0),buf);
+    narg = 0;
+    XtSetArg(args[narg],XmNlabelString,char2xms(but[i])); narg++;
+    wi = add_widget(XtCreateWidget(BUTTONCLASS,xmPushButtonWidgetClass,
+				   get_widget(pd),args,narg),buf);
     set_parent(wi,get_widget(pd));
   }
 
@@ -368,8 +389,8 @@ static void mk_buttons(int parent,int top,int nb,t_button bbb[])
       XtSetArg(args[narg],XmNrightAttachment, XmATTACH_POSITION);  narg++;
       XtSetArg(args[narg],XmNrightPosition,   right);              narg++;
     }
-    
-    bw = add_widget(XtCreateWidget(bbb[i].label,xmPushButtonWidgetClass,
+    XtSetArg(args[narg],XmNlabelString,char2xms(bbb[i].label));    narg++;
+    bw = add_widget(XtCreateWidget(BUTTONCLASS,xmPushButtonWidgetClass,
 				   get_widget(parent),args,narg),
 		    bbb[i].desc);
     XtAddCallback(get_widget(bw),XmNactivateCallback,
@@ -424,7 +445,7 @@ static windex mk_separator(windex parent,windex topw)
   XtSetArg(args[narg],XmNleftAttachment,  XmATTACH_FORM);   narg++;
   XtSetArg(args[narg],XmNrightAttachment, XmATTACH_FORM);   narg++;
   
-  sep = add_widget(XtCreateWidget("separator",xmSeparatorWidgetClass,
+  sep = add_widget(XtCreateWidget(SEPCLASS,xmSeparatorWidgetClass,
 				  get_widget(parent),args,narg),NULL);
   
   set_top_windex(sep);
@@ -443,7 +464,7 @@ static int mk_helplabel(int parent,int top)
   XtSetArg(args[narg],XmNrightAttachment, XmATTACH_FORM);   narg++;
   XtSetArg(args[narg],XmNalignment,XmALIGNMENT_BEGINNING);  narg++;
   
-  return add_widget(XtCreateWidget("  ",xmLabelWidgetClass,
+  return add_widget(XtCreateWidget(DESCCLASS,xmLabelWidgetClass,
 				   get_widget(parent),args,narg),NULL);
 }
 
@@ -452,8 +473,8 @@ static windex mk_filedlgs(int parent,int top,int nfile,
 {
   enum { nwcLABEL, nwcTEXT, nwcFDLG, NWC };
   WidgetClass wc[NWC];
-  int    left[NWC]  = { 1,  12, 41 };
-  int    right[NWC] = { 11, 40, 49 };
+  int    left[NWC]  = { 1,  12, 39 };
+  int    right[NWC] = { 11, 38, 49 };
   char   **wname;
   int    i,j,ftp,narg,dx,www[NWC];
   Widget topw;
@@ -461,7 +482,11 @@ static windex mk_filedlgs(int parent,int top,int nfile,
 
   wc[nwcTEXT]   = xmTextFieldWidgetClass;
   wc[nwcFDLG]   = xmPushButtonWidgetClass;
+  
   snew(wname,NWC);
+  wname[nwcLABEL]   = TOGGLECLASS;
+  wname[nwcTEXT]    = EDITCLASS;
+  wname[nwcFDLG]    = BUTTONCLASS;
   for(i=0; (i<nfile); i++) {
     ftp = fnm[i].ftp;
     dx  = (i % 2)*50;
@@ -470,9 +495,6 @@ static windex mk_filedlgs(int parent,int top,int nfile,
       fn = fnm[i].fn;
     else
       fn++;
-    wname[nwcLABEL]   = fnm[i].opt;
-    wname[nwcTEXT]    = fn;
-    wname[nwcFDLG]    = "Browse";
     
     if (is_optional(&(fnm[i])))
       wc[nwcLABEL] = xmToggleButtonWidgetClass;
@@ -497,12 +519,22 @@ static windex mk_filedlgs(int parent,int top,int nfile,
       
       XtSetArg(args[narg],XmNleftAttachment,  XmATTACH_POSITION);  narg++;
       XtSetArg(args[narg],XmNleftPosition,    dx+left[j]);         narg++;
+      
+      
       if (j != nwcLABEL) {
 	XtSetArg(args[narg],XmNrightAttachment, XmATTACH_POSITION);  narg++;
 	XtSetArg(args[narg],XmNrightPosition,   dx+right[j]);         narg++;
       }
-      if (j == nwcTEXT) {
-	XtSetArg(args[narg],XmNvalue,         wname[j]);           narg++;
+      switch (j) {
+      case nwcLABEL:
+	XtSetArg(args[narg],XmNlabelString,   char2xms(fnm[i].opt)); narg++;
+	break;
+      case nwcFDLG:
+	XtSetArg(args[narg],XmNlabelString,   char2xms("Browse")); narg++;
+	break;
+      case nwcTEXT:
+	XtSetArg(args[narg],XmNvalue,         fnm[i].fn);   narg++;
+	break;
       }
       www[j] = add_widget(XtCreateWidget(wname[j],wc[j],
 					 get_widget(parent),args,narg),dbuf);
@@ -981,15 +1013,27 @@ void gmx_gui(int *argc,char *argv[],
 	     int nfile,t_filenm fnm[],int npargs,t_pargs pa[],
 	     int ndesc,char *desc[],int nbugs,char *bugs[])
 {
-  Widget            gmxBase;
-  XtAppContext      appcontext;
-  XrmOptionDescList xrmd;
+  Widget           gmxBase;
+  XtAppContext     appcontext;
+  String           Fallbacks[] = {
+    "*gmxDialog.background: lightgrey",
+    "*gmxbutton.background: lightgrey",
+    "*gmxtoggle.background: lightgrey",
+    "*gmxedit.background:   lightgoldenrod1",
+    "*gmxdesc.background:   lightsalmon1",
+    "*gmxsep.background:    black",
+    NULL
+  };
   
   /* Initialize toolkit and parse command line options. */
-  gmxBase = XtOpenApplication(&appcontext,argv[0],xrmd,0,argc,argv,NULL,
+  gmxBase = XtOpenApplication(&appcontext,"gmx",NULL,0,argc,argv,Fallbacks,
 			      applicationShellWidgetClass,NULL,0);
 			      
   mk_gui(gmxBase,nfile,fnm,npargs,pa,ndesc,desc,nbugs,bugs);
   XtRealizeWidget(gmxBase);
   MyMainLoop(appcontext,gmxBase,nfile,fnm,npargs,pa);
 }
+
+
+
+
