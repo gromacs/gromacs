@@ -384,7 +384,7 @@ static void do_update_bd(int start,int homenr,double dt,
 			 int *seed)
 {
   int    gf,gt;
-  real   vn,vv;
+  real   vn;
   static real *rf=NULL;
   real   rfac,invfr;
   int    n,d;
@@ -398,7 +398,7 @@ static void do_update_bd(int start,int homenr,double dt,
     invfr = 1.0/fr;
   } else
     for(n=0; n<ngtc; n++)
-      rf[n]  = sqrt(2.0*BOLTZ*ref_t[n]/dt);
+      rf[n]  = sqrt(2.0*BOLTZ*ref_t[n]);
   
   jran = (unsigned long)((real)im*rando(seed));
 
@@ -406,18 +406,17 @@ static void do_update_bd(int start,int homenr,double dt,
     gf = cFREEZE[n];
     gt = cTC[n];
     for (d=0; (d<DIM); d++) {
-      vn             = v[n][d];
-      vold[n][d]     = vn;
+      vold[n][d]     = v[n][d];
       if ((ptype[n]!=eptDummy) && (ptype[n]!=eptShell) && !nFreeze[gf][d]) {
 	if (fr)
-	  vv         = invfr*f[n][d] + rfac*fgauss(&jran);
+	  vn         = invfr*f[n][d] + rfac*fgauss(&jran);
 	else
 	  /* NOTE: invmass = 1/(mass*fric_const) */
-	  vv         = invmass[n]*f[n][d] 
+	  vn         = invmass[n]*f[n][d]*dt 
 	               + sqrt(invmass[n])*rf[gt]*fgauss(&jran);
 
-	v[n][d]      = vv;
-	xprime[n][d] = x[n][d]+v[n][d]*dt;
+	v[n][d]      = vn;
+	xprime[n][d] = x[n][d]+vn*dt;
       } else {
 	v[n][d]      = 0.0;
 	xprime[n][d] = x[n][d];
