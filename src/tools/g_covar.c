@@ -252,7 +252,7 @@ int main(int argc,char *argv[])
 	for (i=j; i<natoms; i++) { 
 	  k = ndim*(DIM*j+dj)+DIM*i;
 	  for (d=0; d<DIM; d++)
-	    matd[k+d] = matd[k+d]*inv_nframes*sqrtm[i]*sqrtm[j];
+	    mat[k+d] = matd[k+d]*inv_nframes*sqrtm[i]*sqrtm[j];
 	}
   } else {
     /* copy the average structure to the ouput array x */
