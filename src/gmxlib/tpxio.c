@@ -141,7 +141,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_int(ir->vdwtype);
     do_real(ir->rvdw_switch); 
     do_real(ir->rvdw); 
-    do_int(ir->bDispCorr); 
+    do_int(ir->eDispCorr); 
     do_real(ir->epsilon_r);
     do_int(ir->nkx); 
     do_int(ir->nky); 

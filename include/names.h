@@ -63,6 +63,7 @@ extern char *ecomb_names[eCOMB_NR+1];
 extern char *gtypes[egcNR+1];
 extern char *efep_names[efepNR+1];
 extern char *esolv_names[esolNR+1];
+extern char *edispc_names[edispcNR+1];
 
 #define	UNDEFINED		"UNDEFINED"
 #define ENUM_NAME(e,max,names)	((((e)<0)||((e)>=(max)))?UNDEFINED:(names)[e])
@@ -85,4 +86,5 @@ extern char *esolv_names[esolNR+1];
 #define ECOMBNAME(e)   ENUM_NAME(e,eCOMB_NR,ecomb_names)
 #define EFEPTYPE(e)    ENUM_NAME(e,efepNR,efep_names)
 #define ESOLVTYPE(e)   ENUM_NAME(e,esolNR,esolv_names)
+#define EDISPCORR(e)   ENUM_NAME(e,edispcNR,edispc_names)
 #endif	/* _names_h */
