@@ -598,7 +598,7 @@ static real fit_acf(int ncorr,int fitfn,bool bVerbose,
 		    real tbeginfit,real tendfit,real dt,real c1[],real *fit)
 {
   real    fitparm[3];
-  real    tStart,tail_corr,sum,sumtot=0,*sig;
+  real    tStart,tail_corr,sum,sumtot=0,ct_estimate,*sig;
   int     i,j,jmax,nf_int;
   bool    bPrint;
 
@@ -610,7 +610,13 @@ static real fit_acf(int ncorr,int fitfn,bool bVerbose,
     tendfit = ncorr*dt;
   nf_int = min(ncorr,(int)(tendfit/dt));
   sum    = print_and_integrate(debug,nf_int,dt,c1,NULL,1);
-  
+
+  /* Estimate the correlation time for better fitting */
+  ct_estimate = 0.5*c1[0];
+  for(i=1; i<ncorr && c1[i]>0; i++)
+      ct_estimate += c1[i];
+  ct_estimate *= dt/c1[0];
+
   if (bPrint) printf("COR: Correlation time (plain integral from %6.3f to %6.3f ps) = %8.5f ps\n", 
 		       0.0,dt*nf_int,sum);
   if (bPrint) printf("COR: Relaxation times are computed as fit to an exponential:\n");
@@ -631,18 +637,16 @@ static real fit_acf(int ncorr,int fitfn,bool bVerbose,
     fitparm[1] = 0.95;
     fitparm[2] = 0.2*ncorr*dt;
   } else {
-    if (sum > 0)
     /* Good initial guess, this increases the probability of convergence */
-      fitparm[0] = sum;
-    else
-      fitparm[0] = 1.0;
+    fitparm[0] = ct_estimate;
     fitparm[1] = 1.0;
     fitparm[2] = 1.0;
   }
+
   snew(sig,ncorr);
-  sig[0] = 1;
-  for(i=1; i<ncorr; i++)
-    sig[i] = sqrt(i);
+  for(i=0; i<ncorr; i++)
+    sig[i] = sqrt(ct_estimate+dt*i);
+
   for(j=0; ((j<jmax) && (tStart < tendfit)); j++) {
     /* Use the previous fitparm as starting values for the next fit */
     nf_int = min(ncorr,(int)((tStart+1e-4)/dt));
