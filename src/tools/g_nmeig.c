@@ -54,7 +54,7 @@ int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_nmeig calculates the eigenvectors/values of a (Hessian) matrix,",
-    "which can be calculated with [TT]nmrun[tt].",
+    "which can be calculated with [TT]mdrun[tt].",
     "The eigenvectors are written to a trajectory file ([TT]-v[tt]).",
     "The structure is written first with t=0. The eigenvectors",
     "are written as frames with the eigenvector number as timestamp.",
