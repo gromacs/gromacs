@@ -74,7 +74,8 @@ real rmsdev(int natoms,real mass[],rvec x[],rvec xp[])
 void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
 {
   int    c,r,n,j,m,i,irot;
-  double **omega=NULL,**om=NULL,d[2*DIM],xnr,xpc;
+  static double **omega=NULL,**om=NULL;
+  double d[2*DIM],xnr,xpc;
   matrix vh,vk,R,u;
   /*
   matrix vh,vk,R,vh_d,vk_d,u;
