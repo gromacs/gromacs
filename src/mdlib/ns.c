@@ -71,9 +71,9 @@ static bool ISEXCL_(t_excl e[],atom_id i,atom_id j)
 static bool NOTEXCL_(t_excl e[],atom_id i,atom_id j)
 {  return !(ISEXCL(e,i,j)); }
 #else
-#define SETEXCL(e,i,j) (e)[((atom_id) j)] |= (1<<((atom_id) i))
-#define RMEXCL(e,i,j)  (e)[((atom_id) j)] &= (~(1<<((atom_id) i)))
-#define ISEXCL(e,i,j)  (bool) ((e)[((atom_id) j)] & (1<<((atom_id) i)))
+#define SETEXCL(e,i,j) (e)[((atom_id) (j))] |= (1<<((atom_id) (i)))
+#define RMEXCL(e,i,j)  (e)[((atom_id) (j))] &= (~(1<<((atom_id) (i))))
+#define ISEXCL(e,i,j)  (bool) ((e)[((atom_id) (j))] & (1<<((atom_id) (i))))
 #define NOTEXCL(e,i,j) !(ISEXCL(e,i,j))
 #endif
 
@@ -410,12 +410,13 @@ static void add_j_to_nblist(t_nblist *nlist,atom_id j_atom)
 }
 
 static inline void put_in_list(bool bHaveLJ[],
-				   int ngid,t_mdatoms *md,
-				   int icg,int jgid,int nj,atom_id jjcg[],
-				   atom_id index[],atom_id a[],
-				   t_excl bExcl[],int shift,
-				   t_forcerec *fr,bool bLR,
-				   bool bVDWOnly,bool bCoulOnly)
+			       int ngid,t_mdatoms *md,
+			       int icg,int jgid,int nj,atom_id jjcg[],
+			       atom_id index[],
+			       /* atom_id a[], */
+			       t_excl bExcl[],int shift,
+			       t_forcerec *fr,bool bLR,
+			       bool bVDWOnly,bool bCoulOnly)
 {
   /* The a[] index has been removed,
      to put it back in i_atom should be a[i0] and jj should be a[jj].
@@ -786,8 +787,9 @@ static inline void put_in_list(bool bHaveLJ[],
   }
 }
 
-void setexcl(int nri,atom_id ia[],t_block *excl,bool b,
-	     t_excl bexcl[])
+/*
+static void setexcl(int nri,atom_id ia[],t_block *excl,bool b,
+	            t_excl bexcl[])
 {
   atom_id k;
   int     i,inr;
@@ -805,6 +807,28 @@ void setexcl(int nri,atom_id ia[],t_block *excl,bool b,
       inr = ia[i];
       for(k=excl->index[inr]; (k<excl->index[inr+1]); k++) {
 	RMEXCL(bexcl,i,excl->a[k]);
+      }
+    }
+  }
+}
+*/
+
+static void setexcl(atom_id start,atom_id end,t_block *excl,bool b,
+		    t_excl bexcl[])
+{
+  atom_id i,k;
+  
+  if (b) {
+    for(i=start; i<end; i++) {
+      for(k=excl->index[i]; k<excl->index[i+1]; k++) {
+	SETEXCL(bexcl,i-start,excl->a[k]);
+      }
+    }
+  }
+  else {
+    for(i=start; i<end; i++) {
+      for(k=excl->index[i]; k<excl->index[i+1]; k++) {
+	RMEXCL(bexcl,i-start,excl->a[k]);
       }
     }
   }
@@ -938,7 +962,7 @@ static void add_simple(t_ns_buf *nsbuf,int nrj,atom_id cg_j,
 {
   if (nsbuf->ncg >= MAX_CG) {
     put_in_list(bHaveLJ,ngid,md,icg,jgid,nsbuf->ncg,nsbuf->jcg,
-		cgs->index,cgs->a,bexcl,shift,fr,FALSE,FALSE,FALSE);
+		cgs->index,/* cgs->a, */ bexcl,shift,fr,FALSE,FALSE,FALSE);
     /* Reset buffer contents */
     nsbuf->ncg = nsbuf->nj = 0;
   }
@@ -1033,7 +1057,7 @@ static int ns_simple_core(t_forcerec *fr,
   real     rlist2;
   int      nsearch,icg,jcg,i0,nri,nn;
   t_ns_buf *nsbuf;
-  atom_id  *i_atoms;
+  /* atom_id  *i_atoms; */
   t_block  *cgs=&(top->blocks[ebCGS]);
   t_block  *excl=&(top->atoms.excl);
   rvec     b_inv;
@@ -1057,11 +1081,15 @@ static int ns_simple_core(t_forcerec *fr,
 
   nsearch=0;
   for (icg=fr->cg0; (icg<fr->hcg); icg++) {
+    /*
     i0        = cgs->index[icg];
     nri       = cgs->index[icg+1]-i0;
     i_atoms   = &(cgs->a[i0]);
     i_eg_excl = fr->eg_excl + ngid*md->cENER[*i_atoms];
     setexcl(nri,i_atoms,excl,TRUE,bexcl);
+    */
+    i_eg_excl = fr->eg_excl + ngid*md->cENER[cgs->index[icg]];
+    setexcl(cgs->index[icg],cgs->index[icg+1],excl,TRUE,bexcl);
     
     naaj=calc_naaj(icg,cgs->nr);
     if (bTriclinic)
@@ -1079,12 +1107,13 @@ static int ns_simple_core(t_forcerec *fr,
 	nsbuf = &(ns_buf[nn][k]);
 	if (nsbuf->ncg > 0) {
 	  put_in_list(bHaveLJ,ngid,md,icg,nn,nsbuf->ncg,nsbuf->jcg,
-		      cgs->index,cgs->a,bexcl,k,fr,FALSE,FALSE,FALSE);
+		      cgs->index,/* cgs->a, */ bexcl,k,fr,FALSE,FALSE,FALSE);
 	  nsbuf->ncg=nsbuf->nj=0;
 	}
       }
     }
-    setexcl(nri,i_atoms,excl,FALSE,bexcl);
+    /* setexcl(nri,i_atoms,excl,FALSE,bexcl); */
+    setexcl(cgs->index[icg],cgs->index[icg+1],excl,FALSE,bexcl);
   }
   close_neighbor_list(fr,FALSE,-1);
   
@@ -1177,7 +1206,7 @@ static void do_longrange(FILE *log,t_commrec *cr,t_topology *top,t_forcerec *fr,
   if (!bDoForces) {  
     /* Put the long range particles in a list */
     put_in_list(bHaveLJ,ngid,md,icg,jgid,nlr,lr,top->blocks[ebCGS].index,
-		top->blocks[ebCGS].a,bexcl,shift,fr,
+		/* top->blocks[ebCGS].a, */ bexcl,shift,fr,
 		TRUE,bVDWOnly,bCoulOnly);
   }
 }
@@ -1196,7 +1225,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
   
   t_block *cgs=&(top->blocks[ebCGS]);
   unsigned short  *gid=md->cENER;
-  atom_id *i_atoms,*cgsatoms=cgs->a,*cgsindex=cgs->index;
+  /* atom_id *i_atoms,*cgsindex=cgs->index; */
   int     tx,ty,tz,dx,dy,dz,cj;
 #ifdef ALLOW_OFFDIAG_LT_HALFDIAG
   int zsh_ty,zsh_tx,ysh_tx;
@@ -1305,15 +1334,19 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
     if(bExcludeAlleg[icg])
       continue;
     
+    /*
     i0        = cgsindex[icg];
     nri       = cgsindex[icg+1]-i0;
     i_atoms   = &(cgsatoms[i0]);
     i_eg_excl = fr->eg_excl + ngid*gid[*i_atoms];
- 
+    */
+    i_eg_excl = fr->eg_excl + ngid*gid[cgs->index[icg]];
+
     /* Set the exclusions for the atoms in charge group icg using
      * a bitmask
      */    
-    setexcl(nri,i_atoms,&top->atoms.excl,TRUE,bexcl);
+    /* setexcl(nri,i_atoms,&top->atoms.excl,TRUE,bexcl); */
+    setexcl(cgs->index[icg],cgs->index[icg+1],&top->atoms.excl,TRUE,bexcl);
     
     /* Compute the number of charge groups that fall within the control
      * of this one (icg)
@@ -1348,7 +1381,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 #ifdef ALLOW_OFFDIAG_LT_HALFDIAG
 	for (tx=-1+zsh_tx*tz+ysh_tx*ty; tx<=1+zsh_tx*tz+ysh_tx*ty; tx++) {
 #else
-	for (tx=-1; tx<=1; tx++) {
+        for (tx=-1; tx<=1; tx++) {
 #endif
 	  XI = cgcm[icg][XX]+tx*box[XX][XX]+ty*box[YY][XX]+tz*box[ZZ][XX];
 	  /* Calculate range of cells in X direction that have the shift tx */
@@ -1399,14 +1432,14 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 			r2=calc_dx2(XI,YI,ZI,cgcm[jjcg]);
 			if (r2 < rl2) {
 			  /* jgid = gid[cgsatoms[cgsindex[jjcg]]]; */
-			  jgid = gid[cgsindex[jjcg]];
+			  jgid = gid[cgs->index[jjcg]];
 			  /* check energy group exclusions */
 			  if (!i_eg_excl[jgid]) {
 			    if (r2 < rs2) {
 			      if (nsr[jgid] >= MAX_CG) {
 				put_in_list(bHaveLJ,ngid,md,icg,jgid,
 					    nsr[jgid],nl_sr[jgid],
-					    cgsindex,cgsatoms,bexcl,
+					    cgs->index,/* cgsatoms, */ bexcl,
 					    shift,fr,FALSE,FALSE,FALSE);
 				nsr[jgid]=0;
 			      }
@@ -1449,7 +1482,8 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 	  for(nn=0; (nn<ngid); nn++) {
 	    if (nsr[nn] > 0)
 	      put_in_list(bHaveLJ,ngid,md,icg,nn,nsr[nn],nl_sr[nn],
-			  cgsindex,cgsatoms,bexcl,shift,fr,FALSE,FALSE,FALSE);
+			  cgs->index, /* cgsatoms, */ bexcl,
+			  shift,fr,FALSE,FALSE,FALSE);
 	    
 	    if (nlr_ljc[nn] > 0) 
 	      do_longrange(log,cr,top,fr,ngid,md,icg,nn,nlr_ljc[nn],
@@ -1465,7 +1499,8 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 	}
       }
     }
-    setexcl(nri,i_atoms,&top->atoms.excl,FALSE,bexcl);
+    /* setexcl(nri,i_atoms,&top->atoms.excl,FALSE,bexcl); */
+    setexcl(cgs->index[icg],cgs->index[icg+1],&top->atoms.excl,FALSE,bexcl);
   }
   /* Perform any left over force calculations */
   for (nn=0; (nn<ngid); nn++) {
@@ -1596,7 +1631,8 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     for(i=0;i<cgs->nr;i++) {
       allexcl=TRUE;
       /* Make ptr to the excl list for the 1st atoms energy group */
-      i_eg_excl = fr->eg_excl + ngid*md->cENER[cgs->a[cgs->index[i]]];      
+      /* i_eg_excl = fr->eg_excl + ngid*md->cENER[cgs->a[cgs->index[i]]]; */
+      i_eg_excl = fr->eg_excl + ngid*md->cENER[cgs->index[i]];
       
       for(j=0; j<ngid && allexcl;j++) {
 	if(!i_eg_excl[j]) {
