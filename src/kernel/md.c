@@ -181,7 +181,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     if (do_per_step(step,parm->ir.nstxout) || bLastStep) xx=x; else xx=NULL;
     if (do_per_step(step,parm->ir.nstvout) || bLastStep) vv=v; else vv=NULL;
-    if (do_per_step(step,parm->ir.nstfout) || bLastStep) ff=f; else ff=NULL;
+    if (do_per_step(step,parm->ir.nstfout)) ff=f; else ff=NULL;
     fp_trn = write_traj(log,cr,traj,nsb,step,t,lambda,
 			nrnb,nsb->natoms,xx,vv,ff,parm->box);
     where();
