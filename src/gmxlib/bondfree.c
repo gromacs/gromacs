@@ -912,8 +912,7 @@ real g96bonds(FILE *log,int nbonds,
 			      forceparams[type].harmonic.rB,
 			      dr2,lambda,&vbond,&fbond);
 
-    vtot  += vbond;                             /* 1*/
-    fbond *= 2.0;
+    vtot  += 0.5*vbond;                             /* 1*/
 #ifdef DEBUG
     if (debug)
       fprintf(debug,"G96-BONDS: dr = %10g  vbond = %10g  fbond = %10g\n",
