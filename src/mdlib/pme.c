@@ -31,6 +31,7 @@ static char *SRCID_pme_c = "$Id$";
 #include <stdio.h>
 #include <math.h>
 #include "typedefs.h"
+#include "txtdump.h"
 #include "vec.h"
 #include "complex.h"
 #include "smalloc.h"
@@ -113,48 +114,49 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForward)
 #endif
 }
 
-
 void spread_q_bsplines(t_fftgrid *grid,rvec invh,t_nsborder *nsb,
 		       ivec idx[],real *charge,splinevec theta,int order,
 		       int nnx[],int nny[],int nnz[])
 {
   /* spread charges from home atoms to local grid */
-  int      i,j,k,n,*i0,*j0,*k0,ithx,ithy,ithz;
-  int      nx,ny,nz,la2,la12,xidx,yidx,zidx;
   t_fft_r *ptr;
-  int      start,nr,sn,norder,norder1,*idxptr,ind0;
+  int      i,j,k,n,*i0,*j0,*k0,*ii0,*jj0,*kk0,ithx,ithy,ithz;
+  int      nx,ny,nz,la2,la12,xidx,yidx,zidx;
+  int      start,nr,norder,norder1,*idxptr,ind0;
   real     valx,valxy,qn;
   real     *thx,*thy,*thz;
   
-  start = START(nsb);
-  nr    = HOMENR(nsb);
   clear_fftgrid(grid);
   unpack_fftgrid(grid,&nx,&ny,&nz,&la2,&la12,TRUE,&ptr);
-  /* ugly, but it works. */
+  start = START(nsb);
+  nr    = HOMENR(nsb);
+  ii0   = nnx+nx+1-order;
+  jj0   = nny+ny+1-order;
+  kk0   = nnz+nz+1-order;
+  thx   = theta[XX];
+  thy   = theta[YY];
+  thz   = theta[ZZ];
   
-  thx = theta[XX];
-  thy = theta[YY];
-  thz = theta[ZZ];
   for(n=0; (n<nr); n++) {
-    sn     = start+n;
-    qn     = charge[sn];
+    qn     = charge[start+n];
     idxptr = idx[n];
+    
     if (qn != 0) {
-      xidx = idxptr[XX];
-      yidx = idxptr[YY];
-      zidx = idxptr[ZZ];
-
-      i0      = nnx+xidx-order+nx+1; /* Pointer arithmetic */
+      xidx    = idxptr[XX];
+      yidx    = idxptr[YY];
+      zidx    = idxptr[ZZ];
+      i0      = ii0+xidx; /* Pointer arithmetic */
       norder  = n*order;
       norder1 = norder+order;
+      
       for(ithx=norder; (ithx<norder1); ithx++,i0++) {
-	i    = *i0;;
-	j0   = nny+yidx-order+ny+1; /* Pointer arithmetic */
+	i    = *i0;
+	j0   = jj0+yidx; /* Pointer arithmetic */
 	valx = qn*thx[ithx];
 	
 	for(ithy=norder; (ithy<norder1); ithy++,j0++) {
 	  j     = *j0;
-	  k0    = nnz+zidx-order+nz+1; /* Pointer arithmetic */
+	  k0    = kk0+zidx; /* Pointer arithmetic */
 	  valxy = valx*thy[ithy];
 	  ind0  = INDEX(i,j,0);
 	  
@@ -175,8 +177,8 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
   /* do recip sum over local cells in grid */
   t_fft_c *ptr,*p0;
   int     nx,ny,nz,la2,la12;
-  int     kx,ky,kz,idx,idx0,maxkx,maxky,maxkz,kzmin;
-  real    m2,mx,my,mz,m2b;
+  int     kx,ky,kz,idx,idx0,maxkx,maxky,maxkz;
+  real    m2,mx,my,mz;
   real    factor=M_PI*M_PI/(ewaldcoeff*ewaldcoeff);
   real    ets2,struct2,vfactor,ets2vf;
   real    eterm,d1,d2,energy=0;
@@ -321,8 +323,6 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
   /* this energy should be corrected for a charged system */
   return(0.5*energy);
 }
-
-
 
 void gather_f_bsplines(t_fftgrid *grid,rvec invh,t_nsborder *nsb,
 		       ivec idx[],rvec f[],real *charge,splinevec theta,
@@ -578,8 +578,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
 { 
   static ivec *idx=NULL;
   static int *nnx,*nny,*nnz;
-  int  start,end,ntot,npme;
-  int  i,j,k;
+  int  i,ntot,npme;
   rvec invh;
   real energy,vol;
    
@@ -588,7 +587,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
   
   vol=box[XX]*box[YY]*box[ZZ];
 
-  /* Put all atoms in the computational box */
+  /* Compute fftgrid index for all atoms, with help of some extra variables */
   if (!idx) {
     snew(idx,HOMENR(nsb));
     snew(nnx,3*nx);
@@ -598,7 +597,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
       nnx[i] = i % nx;
     for(i=0; (i<3*ny); i++)
       nny[i] = i % ny;
-    for(i=0; (i<3*nx); i++)
+    for(i=0; (i<3*nz); i++)
       nnz[i] = i % nz;
   }    
   calc_idx(HOMENR(nsb),invh,x+START(nsb),idx,nx,ny,nz,nnx,nny,nnz);
@@ -607,8 +606,8 @@ real do_pme(FILE *logfile,   bool bVerbose,
   make_bsplines(theta,dtheta,ir->pme_order,nx,ny,nz,x,charge,nsb,invh);
   
   /* put local atoms on grid. */
-  spread_q_bsplines(grid,invh,nsb,idx,charge,theta,ir->pme_order,
-		    nnx,nny,nnz);
+  spread_q_bsplines(grid,invh,nsb,idx,charge,theta,ir->pme_order,nnx,nny,nnz);
+		    
   inc_nrnb(nrnb,eNR_SPREADQBSP,
 	   ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
 	   
@@ -633,6 +632,8 @@ real do_pme(FILE *logfile,   bool bVerbose,
   /* interpolate forces for our local atoms */
   gather_f_bsplines(grid,invh,nsb,idx,f,charge,theta,dtheta,ir->pme_order,
 		    nnx,nny,nnz);
+  /* gather_f_bsplines(grid,invh,nsb,x,f,charge,theta,dtheta,ir->pme_order);*/
+
   inc_nrnb(nrnb,eNR_GATHERFBSP,
 	   ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
 
