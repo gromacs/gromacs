@@ -47,19 +47,6 @@ static char *SRCID_eneconv_c = "$Id$";
 #define FLT_MAX 1e36
 #endif
 
-bool bRmod(double a,double b)
-{
-  int iq;
-  double tol = 1e-6;
-  
-  iq = ((1.0+tol)*a)/b;
-  
-  if (fabs(a-b*iq) <= tol*a)
-    return TRUE;
-  else
-    return FALSE;
-}
-
 static bool same_time(real t1,real t2)
 {
   const real tol=1e-5;
