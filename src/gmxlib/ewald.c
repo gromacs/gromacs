@@ -108,6 +108,52 @@ static t_complex Qk(rvec k,int nj,rvec rj[],real qj[])
   return c;
 }
 
+static t_complex exp_ikr(t_complex eix,t_complex eiy,t_complex eiz)
+{
+  /* Function derived using maple, see complex.map */
+  t_complex c;
+  
+  c.re = ((eix.re*(eiy.re*eiz.re-eiy.im*eiz.im)) -
+	  (eix.im*(eiy.re*eiz.im+eiy.im*eiz.re)));
+  c.im = ((eix.re*(eiy.re*eiz.im+eiy.im*eiz.re)) +
+	  (eix.im*(eiy.re*eiz.re-eiy.im*eiz.im)));
+  if (debug) 
+    fprintf(debug,"c.re: %g, c.im: %g\n",c.re,c.im);
+  
+  return c;
+}
+
+static t_complex exp_min_ikr(t_complex eix,t_complex eiy,t_complex eiz)
+{
+  /* Function derived using maple, see complex.map */
+  t_complex c;
+  
+  c.re = ((eix.re*eiy.re-eix.im*eiy.im)*eiz.re -
+	  (eix.im*eiy.re+eix.re*eiy.im)*eiz.im);
+  c.im = ((eix.im*eiy.im-eix.re*eiy.re)*eiz.im -
+	  (eix.im*eiy.re+eix.re*eiy.im)*eiz.re);
+  if (debug) 
+    fprintf(debug,"c.re: %g, c.im: %g\n",c.re,c.im);
+  
+  return c;
+}
+
+static t_complex Qk2(int nj,rvec rj[],real qj[],cvec *eix,cvec *eiy,cvec *eiz)
+/* Return fourier component of discrete charge distribution for all particles
+ * (Eq. 33)
+ */
+{
+  int       i;
+  t_complex c;
+  
+  c = cnul;
+  for(i=0; (i<nj); i++) 
+    if (qj[i] != 0.0) 
+      c = cadd(c,rcmul(qj[i],exp_min_ikr(eix[i][XX],eiy[i][YY],eiz[i][ZZ])));
+  
+  return c;
+}
+
 static void mk_qtab(int nx,int ny,int nz,t_complex ***qtab,
 		    rvec box,int nj,rvec rj[],real charge[])
 {
@@ -145,6 +191,11 @@ static t_complex phi_k(rvec k,rvec rj,real gk,t_complex qk)
   cp     = rcmul(gk,cmul(qk,cpkr));
   
   return cp;
+}
+
+static t_complex phi_k2(real gk,t_complex qk,cvec eix,cvec eiy,cvec eiz)
+{
+  return rcmul(gk,cmul(qk,exp_ikr(eix[XX],eiy[YY],eiz[ZZ])));
 }
 
 void print_qkgrid(FILE *out,char *title,t_complex ***grid,real factor,
@@ -271,7 +322,8 @@ static int sort_ivecs(int niv,ivec iv[],rvec box,int index[])
   return nind;
 }
 
-static void print_ivecs(FILE *fp,int niv,ivec iv[],rvec box,int nind,int index[])
+static void print_ivecs(FILE *fp,int niv,ivec iv[],rvec box,
+			int nind,int index[])
 {
   int i,j;
  
@@ -296,21 +348,41 @@ static void mk_kprops(int niv,ivec iv[],int nx,int ny,int nz,rvec lll,
   }
 }
 
-real do_ewald(FILE *log,       t_inputrec *ir,
-	      int natoms,      rvec x[],rvec f[],
-	      real charge[],   rvec box,
-	      real phi[],      t_commrec *cr,
-	      bool bOld)
+static void tabulate_eir(int natom,rvec x[],int kmax,cvec **eir,rvec lll)
+{
+  int  i,j,m;
+  
+  if (kmax < 1)
+    fatal_error(0,"Go away! kmax = %d\n",kmax);
+  for(i=0; (i<natom); i++) {
+    for(m=0; (m<DIM); m++) {
+      eir[0][i][m].re = 1;
+      eir[0][i][m].im = 0;
+    }
+    for(m=0; (m<DIM); m++) {
+      eir[1][i][m].re = cos(x[i][m]*lll[m]);
+      eir[1][i][m].im = sin(x[i][m]*lll[m]); 
+    }
+    for(j=2; (j<kmax); j++) 
+      for(m=0; (m<DIM); m++)
+	eir[j][i][m] = cmul(eir[j-1][i][m],eir[1][i][m]);
+  }
+}
+
+real do_ewald_new(FILE *log,       t_inputrec *ir,
+		  int natoms,      rvec x[],rvec f[],
+		  real charge[],   rvec box,
+		  real phi[],      t_commrec *cr,
+		  bool bOld)
 {
   static    bool bFirst = TRUE;
-  static    t_complex ***qtab;
-  static    real      ***gtab;
-  static    int       nx,ny,nz;
+  static    int       nx,ny,nz,kmax;
   static    ivec      *iv;
   static    int       *iv_index,nind,niv;
   static    rvec      *all_k;
   static    real      *gk;
   static    t_complex *qk;
+  static    cvec      **eir;
   
   real      Gk,energy;
   int       m,ix,iy,iz,i,j,n;
@@ -325,7 +397,120 @@ real do_ewald(FILE *log,       t_inputrec *ir,
       if (cr->nprocs > 1)
 	fatal_error(0,"No parallel Ewald (yet)");
     }
+    
+    nx = ir->nkx;
+    ny = ir->nky;
+    nz = ir->nkz;
+    
+    fprintf(log,"Will do Ewald summation using %d x %d x %d k-vectors\n",
+	    nx,ny,nz);
+    fprintf(log,"This code is not optimized, so be prepared to wait!\n"); 
+       
+    niv   = mk_ivecs(nx/2-1,ny/2-1,nz/2-1,&iv);
+    snew(iv_index,niv);
+    nind  = sort_ivecs(niv,iv,box,iv_index);
+    snew(all_k,niv);
+    snew(gk,niv);
+    mk_kprops(niv,iv,nx,ny,nz,lll,ir->rlong,all_k,gk);
+    snew(qk,niv);
+    
+    if (debug) 
+      print_ivecs(debug,niv,iv,box,nind,iv_index);
+
+    kmax = 1+max(nx/2,max(ny/2,nz/2));
+    snew(eir,kmax);
+    for(j=0; (j<kmax); j++)
+      snew(eir[j],natoms);
+            
+    bFirst = FALSE;
+  }
   
+  /* Compute the exp(-ir) vectors */
+  tabulate_eir(natoms,x,kmax,eir,lll);
+  
+  /* Compute the charge spread function */
+  for(j=0; (j<nind); j++) {
+    for(n=iv_index[j]; (n<iv_index[j+1]); n++) {
+      qk[n] = Qk2(natoms,x,charge,
+		  eir[iv[n][XX]],eir[iv[n][YY]],eir[iv[n][ZZ]]);
+    }
+  }
+  
+  energy = 0;
+  for(i=0; (i<natoms); i++) {
+    /* Loop over atoms */
+    phitot = cnul;
+    
+    /* Electric field vector */
+    for(m=0; (m<DIM); m++)
+      Ei[m] = cnul;
+      
+    for(j=0; (j<nind); j++) {
+      for(n=iv_index[j]; (n<iv_index[j+1]); n++) {
+	QQk = qk[n];
+	Gk  = gk[n];
+	
+	/* Calculate potential */
+	phik   = phi_k2(Gk,QQk,eir[iv[n][XX]][i],eir[iv[n][YY]][i],
+			eir[iv[n][ZZ]][i]);
+	phitot = cadd(phik,phitot);
+	
+	for(m=0; (m<DIM); m++)
+	  Ei[m] = cadd(Ei[m],rcmul(all_k[n][m],phik));
+      }
+    }
+    /* Potential at atom i, and energy contribution */
+#ifdef DEBUG
+    fprintf(log,"phi[%3d] = %10.3e + i %10.3e\n",i,phitot.re,phitot.im);
+#endif
+    phi[i]  = phitot.re;
+    energy += phi[i]*charge[i];
+    
+    /* Force on the atom */
+    for(m=0; (m<DIM); m++) {
+      f[i][m] = charge[i]*Ei[m].im;
+#ifdef DEBUG
+      if (fabs(Ei[m].re) > 1e-6)
+	fprintf(log,"Ei[%1d] atom %3d = %10.3e + i%10.3e\n",
+		m,i,Ei[m].re,Ei[m].im);
+#endif
+    }
+  }
+  return energy;
+}
+
+
+real do_ewald(FILE *log,       t_inputrec *ir,
+	      int natoms,      rvec x[],rvec f[],
+	      real charge[],   rvec box,
+	      real phi[],      t_commrec *cr,
+	      bool bOld)
+{
+  static    bool bFirst = TRUE;
+  static    t_complex ***qtab;
+  static    real      ***gtab;
+  static    int       nx,ny,nz,kmax;
+  static    ivec      *iv;
+  static    int       *iv_index,nind,niv;
+  static    rvec      *all_k;
+  static    real      *gk;
+  static    t_complex *qk;
+  static    cvec      **eir;
+  
+  real      Gk,energy;
+  int       m,ix,iy,iz,i,j,n;
+  rvec      k,lll;
+  t_complex phik,phitot,Ei[3],QQk;
+
+  /* Now start the actual solution! */
+  calc_lll(box,lll);
+  
+  if (bFirst) {  
+    if (cr != NULL) {
+      if (cr->nprocs > 1)
+	fatal_error(0,"No parallel Ewald (yet)");
+    }
+    
     nx = ir->nkx;
     ny = ir->nky;
     nz = ir->nkz;
@@ -337,7 +522,7 @@ real do_ewald(FILE *log,       t_inputrec *ir,
     gtab = mk_rgrid(nx,ny,nz);
     qtab = mk_cgrid(nx,ny,nz);
 
-#define OLD
+    /*#define OLD*/
 #ifdef OLD
     mk_ghat(NULL,nx,ny,nz,gtab,box,ir->rshort,ir->rlong,TRUE,bOld);
 #endif
@@ -352,7 +537,12 @@ real do_ewald(FILE *log,       t_inputrec *ir,
     
     if (debug) 
       print_ivecs(debug,niv,iv,box,nind,iv_index);
-      
+
+    kmax = 1+max(nx/2,max(ny/2,nz/2));
+    snew(eir,kmax);
+    for(j=0; (j<kmax); j++)
+      snew(eir[j],natoms);
+            
     bFirst = FALSE;
   }
 #ifdef OLD
@@ -361,9 +551,15 @@ real do_ewald(FILE *log,       t_inputrec *ir,
   
   print_qkgrid(log,"qk",qtab,1.0,"qkfour.pdb",box,nx,ny,nz);
 #else
+  
+  /* Compute the exp(-ir) vectors */
+  tabulate_eir(natoms,x,kmax,eir,lll);
+  
+  /* Compute the charge spread function */
   for(j=0; (j<nind); j++) {
     for(n=iv_index[j]; (n<iv_index[j+1]); n++) {
-      qk[n] = Qk(all_k[n],natoms,x,charge);	
+      qk[n] = Qk2(natoms,x,charge,
+		  eir[iv[n][XX]],eir[iv[n][YY]],eir[iv[n][ZZ]]);
     }
   }
 #endif
@@ -400,13 +596,15 @@ real do_ewald(FILE *log,       t_inputrec *ir,
       }
     }
 #else
+    /* NEW */
     for(j=0; (j<nind); j++) {
       for(n=iv_index[j]; (n<iv_index[j+1]); n++) {
 	QQk = qk[n];
 	Gk  = gk[n];
 	
 	/* Calculate potential */
-	phik   = phi_k(all_k[n],x[i],Gk,QQk);
+	phik   = phi_k2(Gk,QQk,eir[iv[n][XX]][i],eir[iv[n][YY]][i],
+			eir[iv[n][ZZ]][i]);
 	phitot = cadd(phik,phitot);
 	
 	for(m=0; (m<DIM); m++)
