@@ -310,7 +310,7 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("Some thingies for future use");
   ITYPE ("niter",       ir->niter,      100);
   RTYPE ("gauss_width", ir->gausswidth, 0.1);
-  RTYPE ("fourierspacing", opts->fourierspacing,0.125);
+  RTYPE ("fourierspacing", opts->fourierspacing,0.12);
   ITYPE ("fourier_nx",  ir->nkx,         0);
   ITYPE ("fourier_ny",  ir->nky,         0);
   ITYPE ("fourier_nz",  ir->nkz,         0);
