@@ -54,29 +54,32 @@ static char *SRCID_trjconv_c = "$Id$";
 #include "binio.h"
 #include "pbc.h"
 
-static void center_x(rvec x[],matrix box,int n,atom_id index[])
+static void center_x(rvec x[],matrix box,
+		     int n,atom_id index[],int nc,atom_id ci[])
 {
   int i,m,ai;
-  rvec cmin,cmax,dx;
-  
-  if (n==0) return;
-  copy_rvec(x[index[0]],cmin);
-  copy_rvec(x[index[0]],cmax);
-  for(i=0; (i<n); i++) {
-    ai=index[i];
-    for(m=0; (m<DIM); m++) {
-      if (x[ai][m] < cmin[m])
-	cmin[m]=x[ai][m];
-      else if (x[ai][m] > cmax[m])
-	cmax[m]=x[ai][m];
+  rvec cmin,cmax,box_center,dx;
+
+  if (nc > 0) {
+    copy_rvec(x[ci[0]],cmin);
+    copy_rvec(x[ci[0]],cmax);
+    for(i=0; i<nc; i++) {
+      ai=ci[i];
+      for(m=0; m<DIM; m++) {
+	if (x[ai][m] < cmin[m])
+	  cmin[m]=x[ai][m];
+	else if (x[ai][m] > cmax[m])
+	  cmax[m]=x[ai][m];
+      }
     }
-  }
-  for(m=0; (m<DIM); m++) {
-    dx[m]=-(box[m][m]-(cmin[m]+cmax[m]))*0.5;
-  }
-  for(i=0; (i<n); i++) {
-    ai=index[i];
-    rvec_dec(x[ai],dx);
+    calc_box_center(box,box_center);
+    for(m=0; m<DIM; m++)
+      dx[m] = box_center[m]-(cmin[m]+cmax[m])*0.5;
+      
+    for(i=0; i<n; i++) {
+      ai=index[i];
+      rvec_inc(x[ai],dx);
+    }
   }
 }
 
@@ -310,11 +313,11 @@ int main(int argc,char *argv[])
   rvec         *xp,x_shift,hbox,box_center,dx;
   real         xtcpr, lambda,*w_rls=NULL;
   matrix       box;
-  int          m,i,d,frame,outframe,natoms=0,nout,nre,step;
+  int          m,i,d,frame,outframe,natoms=0,nout,ncent,nre,step;
 #define SKIP 10
   t_topology   top;
   t_atoms      *atoms=NULL,useatoms;
-  atom_id      *index;
+  atom_id      *index,*cindex;
   char         *grpname;
   int          ifit,irms;
   atom_id      *ind_fit,*ind_rms;
@@ -427,6 +430,11 @@ int main(int argc,char *argv[])
     }
     
     if (bIndex) {
+      if (bCenter) {
+	printf("Select group for centering\n");
+	get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),
+		  1,&ncent,&cindex,&grpnm);
+      }
       printf("Select group for output\n");
       get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),
 		1,&nout,&index,&grpnm);
@@ -439,6 +447,10 @@ int main(int argc,char *argv[])
       for(i=0;i<natoms;i++)
 	index[i]=i;
       nout=natoms; 
+      if (bCenter) {
+	ncent = nout;
+	cindex = index;
+      }
     }
     
     /* if xp was not snew-ed before, do it now */
@@ -635,6 +647,9 @@ int main(int argc,char *argv[])
 	    /* Now modify the coords according to the flags,
 	       for PFit we did this already! */
 	    
+	    if (bCenter)
+	      center_x(x,box,nout,index,ncent,cindex);
+
 	    if (bInBox) {
 	      if (bRect)
 		put_atoms_in_box(natoms,box,x);
@@ -654,9 +669,6 @@ int main(int argc,char *argv[])
 		rvec_inc(x[i],x_shift);
 	    }
 	  }
-	  
-	  if (bCenter)
-	    center_x(x,box,nout,index);
 	  
 	  if (bCopy) {
 	    for(i=0; (i<nout); i++) {
