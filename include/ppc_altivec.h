@@ -38,12 +38,11 @@
 #ifndef _ppc_altivec_h
 #define _ppc_altivec_h
 
-#include<stdio.h>
-
-static char *SRCID_ppc_altivec_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include<stdio.h>
+
 
 
 static void printvec(vector float v)
@@ -2241,6 +2240,903 @@ static inline void do_1_ljctable_coul_and_lj(float *VFtab,
 
 
 
+static inline void do_vonly_4_ctable_coul(float *VFtab,
+				   vector float rtab,
+				   vector float *VV)
+{
+  vector signed int vidx;
+  vector float Y,F,G,H,eps,eps2,tab1,tab2,tab3,tab4;
+  int idx1,idx2,idx3,idx4;
+
+  vidx     = vec_cts(rtab,0); 
+  vidx     = vec_sl(vidx,vec_splat_u32(2));
+
+  idx1     = *((int *)&vidx);
+  idx2     = *(((int *)&vidx)+1);
+  idx3     = *(((int *)&vidx)+2);
+  idx4     = *(((int *)&vidx)+3);
+
+  eps      = vec_sub(rtab,vec_floor(rtab));
+  eps2     = vec_madd(eps,eps,vec_zero());
+
+  if(((unsigned int)VFtab)%16) { /* not 16-byte aligned, but must be 8 byte. */
+    tab1   = vec_ld( 0, VFtab+idx1);
+    Y      = vec_ld(16, VFtab+idx1);
+    tab1   = vec_sld(tab1,Y,8);
+    tab2   = vec_ld( 0, VFtab+idx2);
+    F      = vec_ld(16, VFtab+idx2);
+    tab2   = vec_sld(tab2,F,8);
+    tab3   = vec_ld( 0, VFtab+idx3);
+    G      = vec_ld(16, VFtab+idx3);
+    tab3   = vec_sld(tab3,G,8);
+    tab4   = vec_ld( 0, VFtab+idx4);
+    H      = vec_ld(16, VFtab+idx4);
+    tab4   = vec_sld(tab4,H,8);
+  } else { /* aligned */
+    tab1=vec_ld(0, VFtab+idx1);
+    tab2=vec_ld(0, VFtab+idx2);
+    tab3=vec_ld(0, VFtab+idx3);
+    tab4=vec_ld(0, VFtab+idx4);
+  }  
+  
+  /* table data is aligned */
+  transpose_4_to_4(tab1,tab2,tab3,tab4,&Y,&F,&G,&H);
+  
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VV       = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+}
+
+/* do only coulomb, but on a table with both coulomb and lj data */
+static inline void do_vonly_4_ljctable_coul(float *VFtab,
+				      vector float rtab,
+				      vector float *VV)
+{
+  vector signed int vidx;
+  vector float Y,F,G,H,eps,eps2,tab1,tab2,tab3,tab4;
+  int idx1,idx2,idx3,idx4;
+
+  vidx     = vec_cts(rtab,0); 
+  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
+  vidx     = vec_sl(vidx,vec_splat_u32(2));
+
+  idx1     = *((int *)&vidx);
+  idx2     = *(((int *)&vidx)+1);
+  idx3     = *(((int *)&vidx)+2);
+  idx4     = *(((int *)&vidx)+3);
+
+  eps      = vec_sub(rtab,vec_floor(rtab));
+  eps2     = vec_madd(eps,eps,vec_zero());
+
+  if(((unsigned int)VFtab)%16) { /* not 16-byte aligned, but must be 8 byte. */
+    tab1   = vec_ld( 0, VFtab+idx1);
+    Y      = vec_ld(16, VFtab+idx1);
+    tab1   = vec_sld(tab1,Y,8);
+    tab2   = vec_ld( 0, VFtab+idx2);
+    F      = vec_ld(16, VFtab+idx2);
+    tab2   = vec_sld(tab2,F,8);
+    tab3   = vec_ld( 0, VFtab+idx3);
+    G      = vec_ld(16, VFtab+idx3);
+    tab3   = vec_sld(tab3,G,8);
+    tab4   = vec_ld( 0, VFtab+idx4);
+    H      = vec_ld(16, VFtab+idx4);
+    tab4   = vec_sld(tab4,H,8);
+  } else { /* aligned */
+    tab1=vec_ld(0, VFtab+idx1);
+    tab2=vec_ld(0, VFtab+idx2);
+    tab3=vec_ld(0, VFtab+idx3);
+    tab4=vec_ld(0, VFtab+idx4);
+  }  
+
+  transpose_4_to_4(tab1,tab2,tab3,tab4,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VV       = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+}
+
+
+static inline void do_vonly_4_ljtable_lj(float *VFtab,
+				   vector float rtab,
+				   vector float *VVdisp,
+				   vector float *VVrep)
+{
+  vector signed int vidx;
+  vector float Y,F,G,H,eps,eps2;
+  vector float tabd1,tabd2,tabd3,tabd4;
+  vector float tabr1,tabr2,tabr3,tabr4;
+
+  int    idx1,idx2,idx3,idx4;
+
+  vidx     = vec_cts(rtab,0); 
+  vidx     = vec_sl(vidx,vec_splat_u32(3));
+
+  idx1     = *((int *)&vidx);
+  idx2     = *(((int *)&vidx)+1);
+  idx3     = *(((int *)&vidx)+2);
+  idx4     = *(((int *)&vidx)+3);
+
+  eps      = vec_sub(rtab,vec_floor(rtab));
+  eps2     = vec_madd(eps,eps,vec_zero());
+
+  if(((unsigned int)VFtab)%16) { 
+    /* not 16 byte aligned, i.e. must be 8 byte. */
+    /* use Y,F,G,H as temp storage */
+    tabd1  =  vec_ld( 0, VFtab+idx1);
+    tabr1  =  vec_ld(16, VFtab+idx1);
+    Y      =  vec_ld(32, VFtab+idx1);
+    tabd1  =  vec_sld(tabd1,tabr1,8);
+    tabr1  =  vec_sld(tabr1,Y,8);
+
+    tabd2  =  vec_ld( 0, VFtab+idx2);
+    tabr2  =  vec_ld(16, VFtab+idx2);
+    F      =  vec_ld(32, VFtab+idx2);
+    tabd2  =  vec_sld(tabd2,tabr2,8);
+    tabr2  =  vec_sld(tabr2,F,8);
+
+    tabd3  =  vec_ld( 0, VFtab+idx3);
+    tabr3  =  vec_ld(16, VFtab+idx3);
+    G      =  vec_ld(32, VFtab+idx3);
+    tabd3  =  vec_sld(tabd3,tabr3,8);
+    tabr3  =  vec_sld(tabr3,G,8);
+
+    tabd4  =  vec_ld( 0, VFtab+idx4);
+    tabr4  =  vec_ld(16, VFtab+idx4);
+    H      =  vec_ld(32, VFtab+idx4);
+    tabd4  =  vec_sld(tabd4,tabr4,8);
+    tabr4  =  vec_sld(tabr4,H,8);
+  } else { /* 16 byte aligned */
+    tabd1  = vec_ld( 0, VFtab+idx1);
+    tabr1  = vec_ld(16, VFtab+idx1);
+    tabd2  = vec_ld( 0, VFtab+idx2);
+    tabr2  = vec_ld(16, VFtab+idx2);
+    tabd3  = vec_ld( 0, VFtab+idx3);
+    tabr3  = vec_ld(16, VFtab+idx3);
+    tabd4  = vec_ld( 0, VFtab+idx4);
+    tabr4  = vec_ld(16, VFtab+idx4);
+  }
+    
+  transpose_4_to_4(tabd1,tabd2,tabd3,tabd4,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VVdisp   = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+
+  transpose_4_to_4(tabr1,tabr2,tabr3,tabr4,&Y,&F,&G,&H);
+ 
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VVrep    = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+}
+
+
+static inline void do_vonly_4_ljctable_coul_and_lj(float *VFtab,
+					     vector float rtab,
+					     vector float *VVcoul,
+					     vector float *VVdisp,
+					     vector float *VVrep)
+{
+  vector signed int vidx;
+  vector float Y,F,G,H,eps,eps2;
+  vector float tabd1,tabr1,tabc1,tabd2,tabr2,tabc2;
+  vector float tabd3,tabr3,tabc3,tabd4,tabr4,tabc4;
+  int idx1,idx2,idx3,idx4;
+
+  vidx     = vec_cts(rtab,0); 
+  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
+  vidx     = vec_sl(vidx,vec_splat_u32(2));
+
+  idx1     = *((int *)&vidx);
+  idx2     = *(((int *)&vidx)+1);
+  idx3     = *(((int *)&vidx)+2);
+  idx4     = *(((int *)&vidx)+3);
+
+  eps      = vec_sub(rtab,vec_floor(rtab));
+  eps2     = vec_madd(eps,eps,vec_zero());
+
+  if(((unsigned int)VFtab)%16) {
+    /* not 16-byte aligned, but must be 8 byte. */
+    /* use Y,F,G,H as temp storage */
+    tabc1  =  vec_ld( 0, VFtab+idx1);
+    tabd1  =  vec_ld(16, VFtab+idx1);
+    tabr1  =  vec_ld(32, VFtab+idx1);
+    Y      =  vec_ld(48, VFtab+idx1);
+    tabc1  =  vec_sld(tabc1,tabd1,8);
+    tabd1  =  vec_sld(tabd1,tabr1,8);
+    tabr1  =  vec_sld(tabr1,Y,8);
+
+    tabc2  =  vec_ld( 0, VFtab+idx2);
+    tabd2  =  vec_ld(16, VFtab+idx2);
+    tabr2  =  vec_ld(32, VFtab+idx2);
+    F      =  vec_ld(48, VFtab+idx2);
+    tabc2  =  vec_sld(tabc2,tabd2,8);
+    tabd2  =  vec_sld(tabd2,tabr2,8);
+    tabr2  =  vec_sld(tabr2,F,8);
+
+    tabc3  =  vec_ld( 0, VFtab+idx3);
+    tabd3  =  vec_ld(16, VFtab+idx3);
+    tabr3  =  vec_ld(32, VFtab+idx3);
+    G      =  vec_ld(48, VFtab+idx3);
+    tabc3  =  vec_sld(tabc3,tabd3,8);
+    tabd3  =  vec_sld(tabd3,tabr3,8);
+    tabr3  =  vec_sld(tabr3,G,8);
+
+    tabc4  =  vec_ld( 0, VFtab+idx4);
+    tabd4  =  vec_ld(16, VFtab+idx4);
+    tabr4  =  vec_ld(32, VFtab+idx4);
+    H      =  vec_ld(48, VFtab+idx4);
+    tabc4  =  vec_sld(tabc4,tabd4,8);
+    tabd4  =  vec_sld(tabd4,tabr4,8);
+    tabr4  =  vec_sld(tabr4,H,8);
+  } else { /* 16 byte aligned */
+    tabc1  = vec_ld( 0, VFtab+idx1);
+    tabd1  = vec_ld(16, VFtab+idx1);
+    tabr1  = vec_ld(32, VFtab+idx1);
+    tabc2  = vec_ld( 0, VFtab+idx2);
+    tabd2  = vec_ld(16, VFtab+idx2);
+    tabr2  = vec_ld(32, VFtab+idx2);
+    tabc3  = vec_ld( 0, VFtab+idx3);
+    tabd3  = vec_ld(16, VFtab+idx3);
+    tabr3  = vec_ld(32, VFtab+idx3);
+    tabc4  = vec_ld( 0, VFtab+idx4);
+    tabd4  = vec_ld(16, VFtab+idx4);
+    tabr4  = vec_ld(32, VFtab+idx4);
+  }
+  transpose_4_to_4(tabc1,tabc2,tabc3,tabc4,&Y,&F,&G,&H);
+   
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VVcoul   = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+
+ transpose_4_to_4(tabd1,tabd2,tabd3,tabd4,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VVdisp   = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+
+ transpose_4_to_4(tabr1,tabr2,tabr3,tabr4,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VVrep    = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+}
+
+
+static inline void do_vonly_3_ctable_coul(float *VFtab,
+				    vector float rtab,
+				    vector float *VV)
+{
+  vector signed int vidx;
+  vector float Y,F,G,H,eps,eps2,tab1,tab2,tab3;
+  int idx1,idx2,idx3;
+
+  vidx     = vec_cts(rtab,0); 
+  vidx     = vec_sl(vidx,vec_splat_u32(2));
+
+  idx1     = *((int *)&vidx);
+  idx2     = *(((int *)&vidx)+1);
+  idx3     = *(((int *)&vidx)+2);
+
+  eps      = vec_sub(rtab,vec_floor(rtab));
+  eps2     = vec_madd(eps,eps,vec_zero());
+
+  if(((unsigned int)VFtab)%16) { /* not 16-byte aligned, but must be 8 byte. */
+    tab1   = vec_ld( 0, VFtab+idx1);
+    Y      = vec_ld(16, VFtab+idx1);
+    tab1   = vec_sld(tab1,Y,8);
+    tab2   = vec_ld( 0, VFtab+idx2);
+    F      = vec_ld(16, VFtab+idx2);
+    tab2   = vec_sld(tab2,F,8);
+    tab3   = vec_ld( 0, VFtab+idx3);
+    G      = vec_ld(16, VFtab+idx3);
+    tab3   = vec_sld(tab3,G,8);
+   } else { /* aligned */
+    tab1=vec_ld(0, VFtab+idx1);
+    tab2=vec_ld(0, VFtab+idx2);
+    tab3=vec_ld(0, VFtab+idx3);
+   }  
+
+  /* table data is aligned */
+  transpose_3_to_4(tab1,tab2,tab3,&Y,&F,&G,&H);
+  
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VV       = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+}
+
+/* do only coulomb, but on a table with both coulomb and lj data */
+static inline void do_vonly_3_ljctable_coul(float *VFtab,
+				      vector float rtab,
+				      vector float *VV)
+{
+  vector signed int vidx;
+  vector float Y,F,G,H,eps,eps2,tab1,tab2,tab3;
+  int idx1,idx2,idx3;
+
+  vidx     = vec_cts(rtab,0); 
+  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
+  vidx     = vec_sl(vidx,vec_splat_u32(2));
+
+  idx1     = *((int *)&vidx);
+  idx2     = *(((int *)&vidx)+1);
+  idx3     = *(((int *)&vidx)+2);
+
+  eps      = vec_sub(rtab,vec_floor(rtab));
+  eps2     = vec_madd(eps,eps,vec_zero());
+
+
+  if(((unsigned int)VFtab)%16) { 
+    /* not 16-byte aligned, but must be 8 byte. */
+    tab1   = vec_ld( 0, VFtab+idx1);
+    Y      = vec_ld(16, VFtab+idx1);
+    tab1   = vec_sld(tab1,Y,8);
+    tab2   = vec_ld( 0, VFtab+idx2);
+    F      = vec_ld(16, VFtab+idx2);
+    tab2   = vec_sld(tab2,F,8);
+    tab3   = vec_ld( 0, VFtab+idx3);
+    G      = vec_ld(16, VFtab+idx3);
+    tab3   = vec_sld(tab3,G,8);
+  } else { /* aligned */
+    tab1=vec_ld(0, VFtab+idx1);
+    tab2=vec_ld(0, VFtab+idx2);
+    tab3=vec_ld(0, VFtab+idx3);
+  }  
+  
+  /* table data is aligned */
+  transpose_3_to_4(tab1,tab2,tab3,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VV       = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+}
+
+
+static inline void do_vonly_3_ljtable_lj(float *VFtab,
+				   vector float rtab,
+				   vector float *VVdisp,
+				   vector float *VVrep)
+{
+  vector signed int vidx;
+  vector float Y,F,G,H,eps,eps2;
+  int    idx1,idx2,idx3;
+  vector float tabd1,tabd2,tabd3;
+  vector float tabr1,tabr2,tabr3;
+
+  vidx     = vec_cts(rtab,0); 
+  vidx     = vec_sl(vidx,vec_splat_u32(3));
+
+  idx1     = *((int *)&vidx);
+  idx2     = *(((int *)&vidx)+1);
+  idx3     = *(((int *)&vidx)+2);
+
+  eps      = vec_sub(rtab,vec_floor(rtab));
+  eps2     = vec_madd(eps,eps,vec_zero());
+
+  if(((unsigned int)VFtab)%16) { 
+    /* not 16 byte aligned, i.e. must be 8 byte. */
+    /* use Y,F,G,H as temp storage */
+    tabd1  =  vec_ld( 0, VFtab+idx1);
+    tabr1  =  vec_ld(16, VFtab+idx1);
+    Y      =  vec_ld(32, VFtab+idx1);
+    tabd1  =  vec_sld(tabd1,tabr1,8);
+    tabr1  =  vec_sld(tabr1,Y,8);
+
+    tabd2  =  vec_ld( 0, VFtab+idx2);
+    tabr2  =  vec_ld(16, VFtab+idx2);
+    F      =  vec_ld(32, VFtab+idx2);
+    tabd2  =  vec_sld(tabd2,tabr2,8);
+    tabr2  =  vec_sld(tabr2,F,8);
+
+    tabd3  =  vec_ld( 0, VFtab+idx3);
+    tabr3  =  vec_ld(16, VFtab+idx3);
+    G      =  vec_ld(32, VFtab+idx3);
+    tabd3  =  vec_sld(tabd3,tabr3,8);
+    tabr3  =  vec_sld(tabr3,G,8);
+  } else { /* 16 byte aligned */
+    tabd1  = vec_ld( 0, VFtab+idx1);
+    tabr1  = vec_ld(16, VFtab+idx1);
+    tabd2  = vec_ld( 0, VFtab+idx2);
+    tabr2  = vec_ld(16, VFtab+idx2);
+    tabd3  = vec_ld( 0, VFtab+idx3);
+    tabr3  = vec_ld(16, VFtab+idx3);
+  }
+    
+  transpose_3_to_4(tabd1,tabd2,tabd3,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VVdisp   = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+
+  transpose_3_to_4(tabr1,tabr2,tabr3,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VVrep    = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+}
+
+
+static inline void do_vonly_3_ljctable_coul_and_lj(float *VFtab,
+					     vector float rtab,
+					     vector float *VVcoul,
+					     vector float *VVdisp,
+					     vector float *VVrep)
+{
+  vector signed int vidx;
+  vector float Y,F,G,H,eps,eps2;
+  vector float tabd1,tabr1,tabc1,tabd2,tabr2,tabc2;
+  vector float tabd3,tabr3,tabc3;
+  int idx1,idx2,idx3;
+
+  vidx     = vec_cts(rtab,0); 
+  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
+  vidx     = vec_sl(vidx,vec_splat_u32(2));
+
+  idx1     = *((int *)&vidx);
+  idx2     = *(((int *)&vidx)+1);
+  idx3     = *(((int *)&vidx)+2);
+  
+  eps      = vec_sub(rtab,vec_floor(rtab));
+  eps2     = vec_madd(eps,eps,vec_zero());
+
+  if(((unsigned int)VFtab)%16) {
+    /* not 16-byte aligned, but must be 8 byte. */
+    /* use Y,F,G,H as temp storage */
+    tabc1  =  vec_ld( 0, VFtab+idx1);
+    tabd1  =  vec_ld(16, VFtab+idx1);
+    tabr1  =  vec_ld(32, VFtab+idx1);
+    Y      =  vec_ld(48, VFtab+idx1);
+    tabc1  =  vec_sld(tabc1,tabd1,8);
+    tabd1  =  vec_sld(tabd1,tabr1,8);
+    tabr1  =  vec_sld(tabr1,Y,8);
+
+    tabc2  =  vec_ld( 0, VFtab+idx2);
+    tabd2  =  vec_ld(16, VFtab+idx2);
+    tabr2  =  vec_ld(32, VFtab+idx2);
+    F      =  vec_ld(48, VFtab+idx2);
+    tabc2  =  vec_sld(tabc2,tabd2,8);
+    tabd2  =  vec_sld(tabd2,tabr2,8);
+    tabr2  =  vec_sld(tabr2,F,8);
+
+    tabc3  =  vec_ld( 0, VFtab+idx3);
+    tabd3  =  vec_ld(16, VFtab+idx3);
+    tabr3  =  vec_ld(32, VFtab+idx3);
+    G      =  vec_ld(48, VFtab+idx3);
+    tabc3  =  vec_sld(tabc3,tabd3,8);
+    tabd3  =  vec_sld(tabd3,tabr3,8);
+    tabr3  =  vec_sld(tabr3,G,8);  
+  } else { /* 16 byte aligned */
+    tabc1  = vec_ld( 0, VFtab+idx1);
+    tabd1  = vec_ld(16, VFtab+idx1);
+    tabr1  = vec_ld(32, VFtab+idx1);
+    tabc2  = vec_ld( 0, VFtab+idx2);
+    tabd2  = vec_ld(16, VFtab+idx2);
+    tabr2  = vec_ld(32, VFtab+idx2);
+    tabc3  = vec_ld( 0, VFtab+idx3);
+    tabd3  = vec_ld(16, VFtab+idx3);
+    tabr3  = vec_ld(32, VFtab+idx3);
+  }
+  transpose_3_to_4(tabc1,tabc2,tabc3,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VVcoul   = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+
+  transpose_3_to_4(tabd1,tabd2,tabd3,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VVdisp   = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+
+  transpose_3_to_4(tabr1,tabr2,tabr3,&Y,&F,&G,&H);
+ 
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VVrep    = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+}
+
+
+
+
+static inline void do_vonly_2_ctable_coul(float *VFtab,
+				    vector float rtab,
+				    vector float *VV)
+{
+  vector signed int vidx;
+  vector float Y,F,G,H,eps,eps2,tab1,tab2;
+  int idx1,idx2;
+
+  vidx     = vec_cts(rtab,0); 
+  vidx     = vec_sl(vidx,vec_splat_u32(2));
+
+  idx1     = *((int *)&vidx);
+  idx2     = *(((int *)&vidx)+1);
+
+  eps      = vec_sub(rtab,vec_floor(rtab));
+  eps2     = vec_madd(eps,eps,vec_zero());
+
+  if(((unsigned int)VFtab)%16) { /* not 16-byte aligned, but must be 8 byte. */
+    tab1   = vec_ld( 0, VFtab+idx1);
+    Y      = vec_ld(16, VFtab+idx1);
+    tab1   = vec_sld(tab1,Y,8);
+    tab2   = vec_ld( 0, VFtab+idx2);
+    F      = vec_ld(16, VFtab+idx2);
+    tab2   = vec_sld(tab2,F,8);
+   } else { /* aligned */
+    tab1=vec_ld(0, VFtab+idx1);
+    tab2=vec_ld(0, VFtab+idx2);
+   }  
+
+  /* table data is aligned */
+  transpose_2_to_4(tab1,tab2,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VV       = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+}
+
+/* do only coulomb, but on a table with both coulomb and lj data */
+static inline void do_vonly_2_ljctable_coul(float *VFtab,
+				      vector float rtab,
+				      vector float *VV)
+{
+  vector signed int vidx;
+  vector float Y,F,G,H,eps,eps2,tab1,tab2;
+  int idx1,idx2;
+
+  vidx     = vec_cts(rtab,0); 
+  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
+  vidx     = vec_sl(vidx,vec_splat_u32(2));
+
+  idx1     = *((int *)&vidx);
+  idx2     = *(((int *)&vidx)+1);
+
+  eps      = vec_sub(rtab,vec_floor(rtab));
+  eps2     = vec_madd(eps,eps,vec_zero());
+
+
+  if(((unsigned int)VFtab)%16) { 
+    /* not 16-byte aligned, but must be 8 byte. */
+    tab1   = vec_ld( 0, VFtab+idx1);
+    Y      = vec_ld(16, VFtab+idx1);
+    tab1   = vec_sld(tab1,Y,8);
+    tab2   = vec_ld( 0, VFtab+idx2);
+    F      = vec_ld(16, VFtab+idx2);
+    tab2   = vec_sld(tab2,F,8);
+  } else { /* aligned */
+    tab1=vec_ld(0, VFtab+idx1);
+    tab2=vec_ld(0, VFtab+idx2);
+  }  
+  
+  /* table data is aligned */
+  transpose_2_to_4(tab1,tab2,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VV       = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+}
+
+
+static inline void do_vonly_2_ljtable_lj(float *VFtab,
+				   vector float rtab,
+				   vector float *VVdisp,
+				   vector float *VVrep)
+{
+  vector signed int vidx;
+  vector float Y,F,G,H,eps,eps2;
+  int    idx1,idx2;
+  vector float tabd1,tabd2;
+  vector float tabr1,tabr2;
+
+  vidx     = vec_cts(rtab,0); 
+  vidx     = vec_sl(vidx,vec_splat_u32(3));
+
+  idx1     = *((int *)&vidx);
+  idx2     = *(((int *)&vidx)+1);
+
+  eps      = vec_sub(rtab,vec_floor(rtab));
+  eps2     = vec_madd(eps,eps,vec_zero());
+
+  if(((unsigned int)VFtab)%16) { 
+    /* not 16 byte aligned, i.e. must be 8 byte. */
+    /* use Y,F,G,H as temp storage */
+    tabd1  =  vec_ld( 0, VFtab+idx1);
+    tabr1  =  vec_ld(16, VFtab+idx1);
+    Y      =  vec_ld(32, VFtab+idx1);
+    tabd1  =  vec_sld(tabd1,tabr1,8);
+    tabr1  =  vec_sld(tabr1,Y,8);
+
+    tabd2  =  vec_ld( 0, VFtab+idx2);
+    tabr2  =  vec_ld(16, VFtab+idx2);
+    F      =  vec_ld(32, VFtab+idx2);
+    tabd2  =  vec_sld(tabd2,tabr2,8);
+    tabr2  =  vec_sld(tabr2,F,8);
+  } else { /* 16 byte aligned */
+    tabd1  = vec_ld( 0, VFtab+idx1);
+    tabr1  = vec_ld(16, VFtab+idx1);
+    tabd2  = vec_ld( 0, VFtab+idx2);
+    tabr2  = vec_ld(16, VFtab+idx2);
+  }
+    
+  transpose_2_to_4(tabd1,tabd2,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VVdisp   = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+
+  transpose_2_to_4(tabr1,tabr2,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VVrep    = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+}
+
+
+static inline void do_vonly_2_ljctable_coul_and_lj(float *VFtab,
+					     vector float rtab,
+					     vector float *VVcoul,
+					     vector float *VVdisp,
+					     vector float *VVrep)
+{
+  vector signed int vidx;
+  vector float Y,F,G,H,eps,eps2;
+  vector float tabd1,tabr1,tabc1,tabd2,tabr2,tabc2;
+  int idx1,idx2;
+
+  vidx     = vec_cts(rtab,0); 
+  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
+  vidx     = vec_sl(vidx,vec_splat_u32(2));
+
+  idx1     = *((int *)&vidx);
+  idx2     = *(((int *)&vidx)+1);
+  
+  eps      = vec_sub(rtab,vec_floor(rtab));
+  eps2     = vec_madd(eps,eps,vec_zero());
+
+  if(((unsigned int)VFtab)%16) {
+    /* not 16-byte aligned, but must be 8 byte. */
+    /* use Y,F,G,H as temp storage */
+    tabc1  =  vec_ld( 0, VFtab+idx1);
+    tabd1  =  vec_ld(16, VFtab+idx1);
+    tabr1  =  vec_ld(32, VFtab+idx1);
+    Y      =  vec_ld(48, VFtab+idx1);
+    tabc1  =  vec_sld(tabc1,tabd1,8);
+    tabd1  =  vec_sld(tabd1,tabr1,8);
+    tabr1  =  vec_sld(tabr1,Y,8);
+
+    tabc2  =  vec_ld( 0, VFtab+idx2);
+    tabd2  =  vec_ld(16, VFtab+idx2);
+    tabr2  =  vec_ld(32, VFtab+idx2);
+    F      =  vec_ld(48, VFtab+idx2);
+    tabc2  =  vec_sld(tabc2,tabd2,8);
+    tabd2  =  vec_sld(tabd2,tabr2,8);
+    tabr2  =  vec_sld(tabr2,F,8);
+  } else { /* 16 byte aligned */
+    tabc1  = vec_ld( 0, VFtab+idx1);
+    tabd1  = vec_ld(16, VFtab+idx1);
+    tabr1  = vec_ld(32, VFtab+idx1);
+    tabc2  = vec_ld( 0, VFtab+idx2);
+    tabd2  = vec_ld(16, VFtab+idx2);
+    tabr2  = vec_ld(32, VFtab+idx2);
+  }
+  transpose_2_to_4(tabc1,tabc2,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VVcoul   = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+
+  transpose_2_to_4(tabd1,tabd2,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VVdisp   = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+
+  transpose_2_to_4(tabr1,tabr2,&Y,&F,&G,&H);
+ 
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VVrep    = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+}
+
+
+
+static inline void do_vonly_1_ctable_coul(float *VFtab,
+				    vector float rtab,
+				    vector float *VV)
+{
+  vector signed int vidx;
+  vector float Y,F,G,H,eps,eps2,tab1;
+  int idx1;
+
+  vidx     = vec_cts(rtab,0); 
+  vidx     = vec_sl(vidx,vec_splat_u32(2));
+
+  idx1     = *((int *)&vidx);
+
+  eps      = vec_sub(rtab,vec_floor(rtab));
+  eps2     = vec_madd(eps,eps,vec_zero());
+
+  if(((unsigned int)VFtab)%16) { /* not 16-byte aligned, but must be 8 byte. */
+    tab1   = vec_ld( 0, VFtab+idx1);
+    Y      = vec_ld(16, VFtab+idx1);
+    tab1   = vec_sld(tab1,Y,8);
+   } else { /* aligned */
+    tab1=vec_ld(0, VFtab+idx1);
+   }  
+
+  /* table data is aligned */
+  transpose_1_to_4(tab1,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VV       = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+}
+
+/* do only coulomb, but on a table with both coulomb and lj data */
+static inline void do_vonly_1_ljctable_coul(float *VFtab,
+				      vector float rtab,
+				      vector float *VV)
+{
+  vector signed int vidx;
+  vector float Y,F,G,H,eps,eps2,tab1;
+  int idx1;
+
+  vidx     = vec_cts(rtab,0); 
+  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
+  vidx     = vec_sl(vidx,vec_splat_u32(2));
+
+  idx1     = *((int *)&vidx);
+
+  eps      = vec_sub(rtab,vec_floor(rtab));
+  eps2     = vec_madd(eps,eps,vec_zero());
+
+
+  if(((unsigned int)VFtab)%16) { 
+    /* not 16-byte aligned, but must be 8 byte. */
+    tab1   = vec_ld( 0, VFtab+idx1);
+    Y      = vec_ld(16, VFtab+idx1);
+    tab1   = vec_sld(tab1,Y,8);
+  } else { /* aligned */
+    tab1=vec_ld(0, VFtab+idx1);
+  }  
+  
+  /* table data is aligned */
+  transpose_1_to_4(tab1,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VV       = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+}
+
+
+static inline void do_vonly_1_ljtable_lj(float *VFtab,
+				   vector float rtab,
+				   vector float *VVdisp,
+				   vector float *VVrep)
+{
+  vector signed int vidx;
+  vector float Y,F,G,H,eps,eps2;
+  int    idx1;
+  vector float tabd1;
+  vector float tabr1;
+
+  vidx     = vec_cts(rtab,0); 
+  vidx     = vec_sl(vidx,vec_splat_u32(3));
+
+  idx1     = *((int *)&vidx);
+
+  eps      = vec_sub(rtab,vec_floor(rtab));
+  eps2     = vec_madd(eps,eps,vec_zero());
+
+  if(((unsigned int)VFtab)%16) { 
+    /* not 16 byte aligned, i.e. must be 8 byte. */
+    /* use Y,F,G,H as temp storage */
+    tabd1  =  vec_ld( 0, VFtab+idx1);
+    tabr1  =  vec_ld(16, VFtab+idx1);
+    Y      =  vec_ld(32, VFtab+idx1);
+    tabd1  =  vec_sld(tabd1,tabr1,8);
+    tabr1  =  vec_sld(tabr1,Y,8);
+  } else { /* 16 byte aligned */
+    tabd1  = vec_ld( 0, VFtab+idx1);
+    tabr1  = vec_ld(16, VFtab+idx1);
+  }
+    
+  transpose_1_to_4(tabd1,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VVdisp   = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+
+  transpose_1_to_4(tabr1,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VVrep    = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+}
+
+
+static inline void do_vonly_1_ljctable_coul_and_lj(float *VFtab,
+					     vector float rtab,
+					     vector float *VVcoul,
+					     vector float *VVdisp,
+					     vector float *VVrep)
+{
+  vector signed int vidx;
+  vector float Y,F,G,H,eps,eps2;
+  vector float tabd1,tabr1,tabc1;
+  int idx1;
+
+  vidx     = vec_cts(rtab,0); 
+  vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
+  vidx     = vec_sl(vidx,vec_splat_u32(2));
+
+  idx1     = *((int *)&vidx);
+  
+  eps      = vec_sub(rtab,vec_floor(rtab));
+  eps2     = vec_madd(eps,eps,vec_zero());
+
+  if(((unsigned int)VFtab)%16) {
+    /* not 16-byte aligned, but must be 8 byte. */
+    /* use Y,F,G,H as temp storage */
+    tabc1  =  vec_ld( 0, VFtab+idx1);
+    tabd1  =  vec_ld(16, VFtab+idx1);
+    tabr1  =  vec_ld(32, VFtab+idx1);
+    Y      =  vec_ld(48, VFtab+idx1);
+    tabc1  =  vec_sld(tabc1,tabd1,8);
+    tabd1  =  vec_sld(tabd1,tabr1,8);
+    tabr1  =  vec_sld(tabr1,Y,8);
+  } else { /* 16 byte aligned */
+    tabc1  = vec_ld( 0, VFtab+idx1);
+    tabd1  = vec_ld(16, VFtab+idx1);
+    tabr1  = vec_ld(32, VFtab+idx1);
+  }
+  transpose_1_to_4(tabc1,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VVcoul   = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+
+  transpose_1_to_4(tabd1,&Y,&F,&G,&H);
+
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VVdisp   = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+
+  transpose_1_to_4(tabr1,&Y,&F,&G,&H);
+ 
+  F         = vec_madd(G,eps,F);           /* F + Geps   */
+  H         = vec_madd(H,eps2,vec_zero()); /* Heps2 */
+  F         = vec_add(F,H);                /* F + Geps + Heps2 (=Fp) */
+  *VVrep    = vec_madd(eps,F,Y);           /* VV = Y + eps*Fp */
+}
+
 
 
 
@@ -2467,4 +3363,109 @@ void inl3330_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
 		     int type[],int ntype,float nbfp[],float Vnb[],
 		     float tabscale,float VFtab[]);
 
+/*---*/
+
+void mcinl0100_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],int type[],
+		       int ntype,float nbfp[],float Vnb[]);
+void mcinl0300_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],int type[],
+		       int ntype,float nbfp[],float Vnb[],
+		       float tabscale,float VFtab[]);
+void mcinl1000_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[]);
+void mcinl1020_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[]);
+void mcinl1030_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[]);
+void mcinl1100_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[],
+		       int type[],int ntype,float nbfp[],float Vnb[]);
+void mcinl1120_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[],
+		       int type[],int ntype,float nbfp[],float Vnb[]);
+void mcinl1130_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[],
+		       int type[],int ntype,float nbfp[],float Vnb[]);
+void mcinl2000_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[],
+		       float krf, float crf);
+void mcinl2020_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[],
+		       float krf, float crf);
+void mcinl2030_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[],
+		       float krf, float crf);
+void mcinl2100_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[],
+		       float krf, float crf, int type[],int ntype,
+		       float nbfp[],float Vnb[]);
+void mcinl2120_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[],
+		       float krf, float crf, int type[],int ntype,
+		       float nbfp[],float Vnb[]);
+void mcinl2130_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[],
+		       float krf, float crf, int type[],int ntype,
+		       float nbfp[],float Vnb[]);
+void mcinl3000_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[],
+		       float tabscale,float VFtab[]); 
+void mcinl3020_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[],
+		       float tabscale,float VFtab[]);
+void mcinl3030_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[],
+		       float tabscale,float VFtab[]);
+void mcinl3100_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[],
+		       int type[],int ntype,float nbfp[],float Vnb[],
+		       float tabscale, float VFtab[]);
+void mcinl3120_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[],
+		       int type[],int ntype,float nbfp[],float Vnb[],
+		       float tabscale, float VFtab[]);
+void mcinl3130_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[],
+		       int type[],int ntype,float nbfp[],float Vnb[],
+		       float tabscale, float VFtab[]);
+void mcinl3300_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[],
+		       int type[],int ntype,float nbfp[],float Vnb[],
+		       float tabscale,float VFtab[]);
+void mcinl3320_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[],
+		       int type[],int ntype,float nbfp[],float Vnb[],
+		       float tabscale,float VFtab[]);
+void mcinl3330_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		       float shiftvec[],int gid[],float pos[],
+		       float charge[],float facel,float Vc[],
+		       int type[],int ntype,float nbfp[],float Vnb[],
+		       float tabscale,float VFtab[]);
+
+
+
 #endif /* ppc_altivec.h */
+
+
+

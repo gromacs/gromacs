@@ -178,6 +178,136 @@ void inl3330_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
 		 int type[],int ntype,float nbfp[],float Vnb[],
 		 float tabscale,float VFtab[]);
 
+void mcinl0100_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 int type[],int ntype,float nbfp[],
+		 float Vnb[]);
+void mcinl0110_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 int type[],int ntype,float nbfp[],
+		 float Vnb[], int nsatoms[]);
+void mcinl0300_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 int type[],int ntype,float nbfp[],
+		 float Vnb[],float tabscale,float VFtab[]);
+void mcinl0310_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 int type[],int ntype,float nbfp[],
+		 float Vnb[],float tabscale,float VFtab[], int nsatoms[]);
+void mcinl1000_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[]);
+void mcinl1010_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel, float Vc[],
+		 int nsatoms[]);
+void mcinl1020_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[]);
+void mcinl1030_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[]);
+void mcinl1100_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 int type[],int ntype,float nbfp[],float Vnb[]);
+void mcinl2000_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 float krf, float crf);
+void mcinl2100_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 float krf, float crf, int type[],int ntype,
+		 float nbfp[],float Vnb[]);
+void mcinl1110_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 int type[],int ntype,float nbfp[],float Vnb[],
+		 int nsatoms[]);
+void mcinl1120_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 int type[],int ntype,float nbfp[],float Vnb[]);
+void mcinl2020_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 float krf, float crf);
+void mcinl2120_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 float krf, float crf, int type[],int ntype,
+		 float nbfp[],float Vnb[]);
+void mcinl1130_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 int type[],int ntype,float nbfp[],float Vnb[]);
+void mcinl2030_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 float krf, float crf);
+void mcinl2130_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 float krf, float crf, int type[],int ntype,
+		 float nbfp[],float Vnb[]);
+void mcinl3000_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 float tabscale,float VFtab[]); 
+void mcinl3010_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 float tabscale,float VFtab[], int nsatoms[]);
+void mcinl3020_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 float tabscale,float VFtab[]);
+void mcinl3030_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 float tabscale,float VFtab[]);
+void mcinl3100_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 int type[],int ntype,float nbfp[],float Vnb[],
+		 float tabscale, float VFtab[]);
+void mcinl3110_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 int type[],int ntype,float nbfp[],float Vnb[],
+		 float tabscale, float VFtab[], int nsatoms[]);
+void mcinl3120_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 int type[],int ntype,float nbfp[],float Vnb[],
+		 float tabscale, float VFtab[]);
+void mcinl3130_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 int type[],int ntype,float nbfp[],float Vnb[],
+		 float tabscale, float VFtab[]);
+void mcinl3300_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 int type[],int ntype,float nbfp[],float Vnb[],
+		 float tabscale,float VFtab[]);
+void mcinl3310_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 int type[],int ntype,float nbfp[],float Vnb[],
+		 float tabscale,float VFtab[], int nsatoms[]);
+void mcinl3320_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 int type[],int ntype,float nbfp[],float Vnb[],
+		 float tabscale,float VFtab[]);
+void mcinl3330_sse(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
+		 float shiftvec[],int gid[],float pos[],
+		 float charge[],float facel,float Vc[],
+		 int type[],int ntype,float nbfp[],float Vnb[],
+		 float tabscale,float VFtab[]);
+
 #endif
 #endif
 
