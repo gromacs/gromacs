@@ -297,21 +297,28 @@ static void spread_dum2(rvec fi,rvec fj,rvec fk,rvec f,real a,real b)
 static void spread_dum2FD(rvec xi,rvec xj,rvec xk,
 			  rvec fi,rvec fj,rvec fk,rvec f,real a,real b)
 {
-  real fx,fy,fz,c,ci,cj,ck;
-  rvec xij,xjk,temp;
+  real fx,fy,fz,c,invl,fproj,ci,cj,ck;
+  rvec xij,xjk,xix,temp;
   
   rvec_sub(xj,xi,xij);
   rvec_sub(xk,xj,xjk);
   /* 6 flops */
   
-  /* temp goes from i to a point on the line jk */  
-  temp[XX]=xij[XX]+a*xjk[XX];
-  temp[YY]=xij[YY]+a*xjk[YY];
-  temp[ZZ]=xij[ZZ]+a*xjk[ZZ];
+  /* xix goes from i to point x on the line jk */  
+  xix[XX]=xij[XX]+a*xjk[XX];
+  xix[YY]=xij[YY]+a*xjk[YY];
+  xix[ZZ]=xij[ZZ]+a*xjk[ZZ];
   /* 6 flops */
   
-  c=b*invsqrt(iprod(temp,temp));
+  invl=invsqrt(iprod(xix,xix));
+  c=b*invl;
   /* 4 + ?10? flops */
+  
+  fproj=iprod(xix,f)*invl*invl; /* = (xix . f)/(xix . xix) */
+  temp[XX]=-fproj*xix[XX];
+  temp[YY]=-fproj*xix[YY];
+  temp[ZZ]=-fproj*xix[ZZ];
+  /* 10 */
   
   /* c is already calculated in constr_dum2FD
      storing c somewhere will save 26 flops!     */
@@ -324,18 +331,18 @@ static void spread_dum2FD(rvec xi,rvec xj,rvec xk,
   fx=f[XX];
   fy=f[YY];
   fz=f[ZZ];
-  fi[XX]+=ci*fx;
-  fi[YY]+=ci*fy;
-  fi[ZZ]+=ci*fz;
-  fj[XX]+=cj*fx;
-  fj[YY]+=cj*fy;
-  fj[ZZ]+=cj*fz;
-  fk[XX]+=ck*fx;
-  fk[YY]+=ck*fy;
-  fk[ZZ]+=ck*fz;
-  /* 9 Flops */
+  fi[XX]+=ci*fx-c*temp[XX];
+  fi[YY]+=ci*fy-c*temp[YY];
+  fi[ZZ]+=ci*fz-c*temp[ZZ];
+  fj[XX]+=cj*(fx+temp[XX]);
+  fj[YY]+=cj*(fy+temp[YY]);
+  fj[ZZ]+=cj*(fz+temp[ZZ]);
+  fk[XX]+=ck*(fx+temp[XX]);
+  fk[YY]+=ck*(fy+temp[YY]);
+  fk[ZZ]+=ck*(fz+temp[ZZ]);
+  /* 21 Flops */
   
-  /* TOTAL: 38 flops */
+  /* TOTAL: 60 flops */
 }
 
 static void spread_dum2FAD(rvec xi,rvec xj,rvec xk,
