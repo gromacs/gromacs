@@ -55,6 +55,8 @@ mkyaw:		mkyaw.o
 mkice:		mkice.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
+prfn:		prfn.o
+		$(LD) -o $@ $^ $(SYSLIBS)
 
 include	Make.dep
 endif

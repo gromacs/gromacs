@@ -108,9 +108,6 @@ $(LIB)(callf77.o):	callf77.m4 $(M4FILE)
 		$(AR) $(ARFLAGS) $(LIB) callf77.o
 		$(RM) callf77.c callf77.o
 
-prfn:		prfn.o
-		$(LD) -o $@ $^ $(SYSLIBS)
-
 repfirst:	repfirst.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
