@@ -355,7 +355,7 @@ static int check_atom_names(char *fn1, char *fn2, t_atoms *at1, t_atoms *at2)
   return nmismatch;
 }
 
-static int *new_status(char *topfile,char *confin,
+static int *new_status(char *topfile,char *topppfile,char *confin,
 		       t_gromppopts *opts,t_inputrec *ir,
 		       bool bGenVel,bool bVerbose,int *natoms,
 		       rvec **x,rvec **v,matrix box,
@@ -375,7 +375,7 @@ static int *new_status(char *topfile,char *confin,
   init_molinfo(msys);
   
   /* TOPOLOGY processing */
-  msys->name=do_top(bVerbose,topfile,opts,&(sys->symtab),
+  msys->name=do_top(bVerbose,topfile,topppfile,opts,&(sys->symtab),
 		    plist,atype,&nrmols,&molinfo,ir,&Nsim,&Sims);
 
   check_solvent(bVerbose,nrmols,molinfo,Nsim,Sims,ir,opts->SolventOpt);
@@ -646,7 +646,8 @@ int main (int argc, char *argv[])
     "etcetera. To specify a macro-preprocessor other than /lib/cpp ",
     "(such as m4)",
     "you can put a line in your parameter file specifying the path",
-    "to that cpp.[PAR]",
+    "to that cpp. Specifying [TT]-pp[tt] will get the pre-processed",
+    "topology file written out.[PAR]",
     "If your system does not have a c-preprocessor, you can still",
     "use grompp, but you do not have access to the features ",
     "from the cpp. Command line options to the c-preprocessor can be given",
@@ -695,14 +696,15 @@ int main (int argc, char *argv[])
   bool         bNeedVel,bGenVel;
 
   t_filenm fnm[] = {
-    { efMDP, NULL,  NULL,    ffREAD  },
-    { efMDP, "-po", "mdout", ffWRITE },
-    { efSTX, "-c",  NULL,    ffREAD  },
-    { efSTX, "-r",  NULL,    ffOPTRD },
-    { efNDX, NULL,  NULL,    ffOPTRD },
-    { efTOP, NULL,  NULL,    ffREAD  },
-    { efTPX, "-o",  NULL,    ffWRITE },
-    { efTRN, "-t",  NULL,    ffOPTRD }
+    { efMDP, NULL,  NULL,        ffREAD  },
+    { efMDP, "-po", "mdout",     ffWRITE },
+    { efSTX, "-c",  NULL,        ffREAD  },
+    { efSTX, "-r",  NULL,        ffOPTRD },
+    { efNDX, NULL,  NULL,        ffOPTRD },
+    { efTOP, NULL,  NULL,        ffREAD  },
+    { efTOP, "-pp", "processed", ffOPTWR },
+    { efTPX, "-o",  NULL,        ffWRITE },
+    { efTRN, "-t",  NULL,        ffOPTRD }
   };
 #define NFILE asize(fnm)
 
@@ -712,17 +714,17 @@ int main (int argc, char *argv[])
   static real time=-1;
   t_pargs pa[] = {
     { "-np",      FALSE, etINT,  &nprocs,
-	"Generate statusfile for # processors" },
+      "Generate statusfile for # processors" },
     { "-time",    FALSE, etREAL, &time,
-	"Take frame at or first after this time." },
+      "Take frame at or first after this time." },
     { "-v",       FALSE, etBOOL, &bVerbose,
-	"Be loud and noisy" },
+      "Be loud and noisy" },
     { "-renum",   FALSE, etBOOL, &bRenum,
-	"HIDDENRenumber atomtypes and minimize number of atomtypes" },
+      "HIDDENRenumber atomtypes and minimize number of atomtypes" },
     { "-shuffle", FALSE, etBOOL, &bShuffle,
-	"Shuffle molecules over processors (only with N > 1)" },
+      "Shuffle molecules over processors (only with N > 1)" },
     { "-maxwarn", FALSE, etINT,  &maxwarn,
-	"Number of warnings after which input processing stops" }
+      "Number of warnings after which input processing stops" }
   };
   
   CopyRight(stdout,argv[0]);
@@ -774,12 +776,11 @@ int main (int argc, char *argv[])
   strcpy(fn,ftp2fn(efTOP,NFILE,fnm));
   if (!fexist(fn)) 
     fatal_error(0,"%s does not exist",fn);
-  forward=new_status(fn,opt2fn("-c",NFILE,fnm),
-		     opts,ir,bGenVel,bVerbose,&natoms,
-		     &x,&v,box,&atype,&sys,&msys,plist,
-		     bShuffle ? nprocs : 1,
+  forward=new_status(fn,opt2fn_null("-pp",NFILE,fnm),opt2fn("-c",NFILE,fnm),
+		     opts,ir,bGenVel,bVerbose,&natoms,&x,&v,box,
+		     &atype,&sys,&msys,plist,bShuffle ? nprocs : 1,
 		     (opts->eDisre==edrEnsemble),opts->bMorse,nerror);
-		     
+  
   if (opt2bSet("-r",NFILE,fnm))
     sprintf(fn,opt2fn("-r",NFILE,fnm));
   else

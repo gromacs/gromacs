@@ -57,7 +57,8 @@ extern void preprocess(char *infile,
 		       char *include);
 
 extern char **do_top(bool         bVerbose,
-		     char         *topol,
+		     char         *topfile,
+		     char         *topppfile,
 		     t_gromppopts *opts,
 		     t_symtab     *symtab,
 		     t_params     plist[],

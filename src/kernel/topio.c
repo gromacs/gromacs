@@ -506,7 +506,8 @@ static char **read_topol(char        *infile,
 }
 
 char **do_top(bool         bVerbose,
-	      char         *topol,
+	      char         *topfile,
+	      char         *topppfile,
 	      t_gromppopts *opts,
 	      t_symtab     *symtab,
 	      t_params     plist[],
@@ -523,15 +524,18 @@ char **do_top(bool         bVerbose,
   init_atomtype(atype);
 
   if (bVerbose) printf("calling %s...\n",opts->cpp);
-  tmpnam(tmpfile);
-  preprocess(topol,tmpfile,opts->cpp,opts->define,opts->include);
+  if(topppfile)
+    strcpy(tmpfile,topppfile);
+  else
+    tmpnam(tmpfile);
+  preprocess(topfile,tmpfile,opts->cpp,opts->define,opts->include);
 
   if (bVerbose) printf("processing topology...\n");
   title=read_topol(tmpfile,symtab,atype,nrmols,molinfo,
 		   plist,opts->nshake,&ir->fudgeQQ,nsim,sims,bVerbose);
-
-  if (unlink(tmpfile) != 0)
-    perror ("Unable to remove temporary file");
+  if (!topppfile)
+    if (unlink(tmpfile) != 0)
+      perror ("Unable to remove temporary file");
     
   return title;
 }
