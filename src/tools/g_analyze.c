@@ -438,7 +438,7 @@ int main(int argc,char *argv[])
     "a, tau1 and tau2 are obtained by fitting BA(t) to the calculated block",
     "average.",
     "When the actual block average is very close to the analytical curve,",
-    "the error is sigma*sqrt(2/T (a tau1 + (1-a) tau2))."
+    "the error is sigma*sqrt(2/T (a tau1 + (1-a) tau2)).",
   };
   static real tb=-1,te=-1,frac=0.5,binwidth=0.1;
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=FALSE,bAverCorr=FALSE;
@@ -450,23 +450,23 @@ int main(int argc,char *argv[])
   t_pargs pa[] = {
     { "-linelen", FALSE, etINT, {&linelen},
       "HIDDENMaximum input line length" },
-    { "-time", FALSE, etBOOL, {&bHaveT},
+    { "-time",    FALSE, etBOOL, {&bHaveT},
       "Expect a time in the input" },
-    { "-b", FALSE, etREAL, {&tb},
+    { "-b",       FALSE, etREAL, {&tb},
       "First time to read from set" },
-    { "-e", FALSE, etREAL, {&te},
+    { "-e",       FALSE, etREAL, {&te},
       "Last time to read from set" },
-    { "-n", FALSE, etINT, {&nsets_in},
+    { "-n",       FALSE, etINT, {&nsets_in},
       "Read # sets seperated by &" },
-    { "-d", FALSE, etBOOL, {&bDer},
+    { "-d",       FALSE, etBOOL, {&bDer},
 	"Use the derivative" },
-    { "-dp",  FALSE, etINT, {&d}, 
+    { "-dp",      FALSE, etINT, {&d}, 
       "HIDDENThe derivative is the difference over # points" },
-    { "-bw", FALSE, etREAL, {&binwidth},
+    { "-bw",      FALSE, etREAL, {&binwidth},
       "Binwidth for the distribution" },
-    { "-errbar", FALSE, etENUM, {&avbar_opt},
+    { "-errbar",  FALSE, etENUM, {&avbar_opt},
       "Error bars for -av" },
-    { "-nbmin", FALSE, etINT, {&nb_min},
+    { "-nbmin",   FALSE, etINT, {&nb_min},
       "HIDDENMinimum number of blocks for block averaging" },
     { "-resol", FALSE, etINT, {&resol},
       "HIDDENResolution for the block averaging, block size increases with"
