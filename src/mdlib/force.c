@@ -431,7 +431,28 @@ void init_forcerec(FILE *log,
   
   /* Now update the rest of the vars */
   update_forcerec(log,fr,box);
+  /* if we are using LR electrostatics, and they are tabulated,
+   * the tables will contain shifted coulomb interactions.
+   * Since we want to use the non-shifted ones for 1-4
+   * coulombic interactions, we must have an extra set of
+   * tables. This should be done in tables.c, instead of this
+   * ugly hack, but it works for now...
+   */
+  
+  if(EEL_LR(fr->eeltype) && fr->bTab) {
+      /* fake the forcerec so make_tables thinks it should
+       * just create the nonshifted version 
+       */
+      fr->bTab=FALSE;
+      make_tables(fr,MASTER(cr));
+      fr->bTab=TRUE;
+      fr->VFtab14=fr->VFtab;
+      fr->VFtab=NULL;
+  }
+/* make tables for ordinary interactions */
   make_tables(fr,MASTER(cr));
+  if(!(EEL_LR(fr->eeltype) && fr->bTab))
+      fr->VFtab14=fr->VFtab;
 }
 
 #define pr_real(fp,r) fprintf(fp,"%s: %e\n",#r,r)

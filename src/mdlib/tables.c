@@ -422,6 +422,11 @@ void make_tables(t_forcerec *fr,bool bVerbose)
     break;
   case eelPPPM:
   case eelPOISSON:
+    if ((fr->rcoulomb > fr->rcoulomb_switch) && fr->bTab)
+	tabsel[etiCOUL] = etabShift;
+    else
+	tabsel[etiCOUL] = etabCOUL;  /* 1-4 */
+    break;
   case eelSHIFT:
     if (fr->rcoulomb > fr->rcoulomb_switch)
       tabsel[etiCOUL] = etabShift;
@@ -430,7 +435,10 @@ void make_tables(t_forcerec *fr,bool bVerbose)
     break;
   case eelEWALD:
   case eelPME:
-      tabsel[etiCOUL] = etabEwald;
+      if(fr->bTab)
+	  tabsel[etiCOUL] = etabEwald;
+      else
+	  tabsel[etiCOUL] = etabCOUL; /* 1-4 */
       break;
   case eelRF:
   case eelGRF:
