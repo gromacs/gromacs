@@ -1,11 +1,19 @@
 #!/bin/csh -f
 
+
+if ( $#argv < 1 ) then
+  echo "Error: provide the GROMACS bin directory as first argument."
+  exit
+endif
+
+set BINDIR = $1
+
 set THISDIR	= `pwd`
 set MANDIR	= progman
 set TEXMAN	= $THISDIR/$MANDIR
 set INDEX	= $TEXMAN/all.tex
 
-cd $GMXHOME/bin/$GMXCPU
+cd $BINDIR
 echo -n "Generating manpage from gromacs binaries in "
 pwd
 set PROGRAMS    = 
@@ -20,7 +28,7 @@ cd $TEXMAN
 \rm *
 touch $INDEX
 foreach prog ( $PROGRAMS )
-  set PROG = $GMXHOME/bin/$GMXCPU/$prog
+  set PROG = $BINDIR/$prog
   if ( ( -x $PROG ) && ( $prog != "my_dssp" ) && ( $prog != "luck" ) ) then
     echo -n "$prog "
     $PROG -quiet -man tex >& /dev/null
@@ -38,6 +46,10 @@ cat >! $TEXMAN.tex << EOD
 \chapter{Manual Pages}
 \label{app:progman}
 
+{\small
+%options.tex is created by the GROMACS binary options in the contrib directory 
+\input{options.tex}
+}
 {\small
 \input{$MANDIR/all}
 }
