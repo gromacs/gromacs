@@ -1319,7 +1319,7 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
   bool *bResProcessed;
   real mHtot,mtot,fact,fact2;
   rvec rpar,rperp,temp;
-  char name[10],atomname[32],tpname[32],nexttpname[32],*ch;
+  char name[10],tpname[32],nexttpname[32],*ch;
   rvec *newx;
   int  *o2n,*newdummy_type,*newcgnr,ats[MAXATOMSPERRESIDUE];
   t_atom *newatom;
@@ -1494,7 +1494,6 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
       count_bonds(i, &plist[F_BONDS], at->atomname, 
 		  &nrbonds, &nrHatoms, Hatoms, &Heavy, &nrheavies, heavies);
       /* get Heavy atom type */
-      strncpy(atomname,*at->atomname[Heavy],9);
       tpHeavy=get_atype(Heavy,at,nrtp,rtp,aan);
       strcpy(tpname,type2nm(tpHeavy,atype));
 
@@ -1515,8 +1514,10 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
 	default: /* nrbonds != 2, 3 or 4 */
 	  bWARNING=TRUE;
 	}
-      } else if ( (nrHatoms == 2) && (nrbonds == 2) && 
-		  (strncasecmp(atomname,"OW",2)==0) ) {
+	
+      } else if ( /*(nrHatoms == 2) && (nrbonds == 2) && REMOVED this test
+		   DvdS 19-01-04 */
+		  (strncasecmp(*at->atomname[Heavy],"OW",2)==0) ) {
 	bAddDumParam=FALSE; /* this is water: skip these hydrogens */
 	if (bFirstWater) {
 	  bFirstWater=FALSE;
@@ -1533,7 +1534,7 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
 	 * If it is a nitrogen, first check if it is planar.
 	 */
 	isN=planarN=FALSE;
-	if((nrHatoms == 2) && (atomname[0]=='N')) {
+	if((nrHatoms == 2) && ((*at->atomname[Heavy])[0]=='N')) {
 	  isN=TRUE;
 	  j=nitrogen_is_planar(dumconflist,ndumconf,tpname);
 	  if(j<0) 

@@ -55,9 +55,6 @@ typedef struct {
   int  nr;
 } t_mols;
 
-extern char *choose_ff(char buf[],int sz);
-/* Strange place for this function... */
-
 extern void print_top_comment(FILE *out,char *filename,char *title,bool bITP);
 
 extern void print_top_header(FILE *out,char *filename,char *title,bool bITP, 

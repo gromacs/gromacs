@@ -374,9 +374,9 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
       else {
 	char buf[STRLEN];
 	
-	sprintf(buf,"Atom %s in residue %s %d not found in rtp database\n"
+	sprintf(buf,"Atom %s in residue %s %d not found in rtp entry with %d atoms\n"
 		"             while sorting atoms%s",atomnm,
-		rptr->resname,pdba->atom[i].resnr+1,
+		rptr->resname,pdba->atom[i].resnr+1,rptr->natom,
 		is_hydrogen(atomnm) ? ". Maybe different protonation state.\n"
 		"             Remove this hydrogen or choose a different "
 		"protonation state.\n"
@@ -492,11 +492,20 @@ void find_nc_ter(t_atoms *pdba,int r0,int r1,int *rn,int *rc,t_aa_names *aan)
 int main(int argc, char *argv[])
 {
   static char *desc[] = {
-    "This program reads a pdb file, lets you choose a forcefield, reads",
+    "This program reads a pdb file, reads",
     "some database files, adds hydrogens to the molecules and generates",
     "coordinates in Gromacs (Gromos) format and a topology in Gromacs format.",
     "These files can subsequently be processed to generate a run input file.",
     "[PAR]",
+    "The force fields supported currently are:[PAR]",
+    "G43a1  GROMOS96 43a1 Forcefield (official distribution)[PAR]",
+    "oplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)[PAR]",
+    "G43b1  GROMOS96 43b1 Vacuum Forcefield (official distribution)[PAR]",
+    "gmx    Gromacs Forcefield (a modified GROMOS87, see manual)[PAR]",
+    "G43a2  GROMOS96 43a2 Forcefield (development) (improved alkane dihedrals)[PAR]",
+    "The corresponding data files can be found in the library directory",
+    "with names like ffXXXX.YYY. Check chapter 5 of the manual for more",
+    "information about file formats.[PAR]",
     
     "Note that a pdb file is nothing more than a file format, and it",
     "need not necessarily contain a protein structure. Every kind of",
@@ -594,7 +603,6 @@ int main(int argc, char *argv[])
   char       **gnames;
   matrix     box;
   rvec       box_space;
-  char       ff[256];
   int        i,j,k,l,nrtp;
   int        *swap_index,si;
   int        bts[ebtsNR];
@@ -605,7 +613,7 @@ int main(int argc, char *argv[])
   t_aa_names *aan;
   char       fn[256],*top_fn,itp_fn[STRLEN],posre_fn[STRLEN],buf_fn[STRLEN];
   char       molname[STRLEN],title[STRLEN],resname[STRLEN],quote[256];
-  char       *c,*watres;
+  char       *c,*watres,forcefield[32];
   int        nah,nNtdb,nCtdb,ntdblist;
   t_hackblock *ntdb,*ctdb,**tdblist;
   int        nssbonds;
@@ -636,7 +644,8 @@ int main(int argc, char *argv[])
   static real angle=135.0, distance=0.3,posre_fc=1000;
   static real long_bond_dist=0.25, short_bond_dist=0.05;
   static char *dumstr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
-  static char *watstr[] = { NULL, "spc", "spce", "tip3p", "tip4p", NULL };
+  static char *watstr[] = { NULL, "spc", "spce", "tip3p", "tip4p", "tip5p", NULL };
+  static char *ff[] = { NULL, "G43a1", "oplsaa", "gmx", "G43a2", "G43b1", NULL };
   t_pargs pa[] = {
     { "-newrtp", FALSE, etBOOL, {&bNewRTP},
       "HIDDENWrite the residue database in new format to 'new.rtp'"},
@@ -644,14 +653,16 @@ int main(int argc, char *argv[])
       "HIDDENLong bond warning distance" },
     { "-sb",     FALSE, etREAL, {&short_bond_dist},
       "HIDDENShort bond warning distance" },
-    { "-merge", FALSE, etBOOL, {&bMerge},
+    { "-merge",  FALSE, etBOOL, {&bMerge},
       "Merge multiple chains into one molecule"},
+    { "-ff",     FALSE, etENUM, {ff},
+      "Select the force field for your simulation" },
+    { "-water",  FALSE, etENUM, {watstr},
+      "Water model to use: with GROMOS we recommend SPC, with OPLS, TIP4P" },
     { "-inter",  FALSE, etBOOL, {&bInter},
       "Set the next 6 options to interactive"},
     { "-ss",     FALSE, etBOOL, {&bCysMan}, 
       "Interactive SS bridge selection" },
-    { "-water",  FALSE, etENUM, {watstr},
-      "Water model to use: with GROMOS we recommend SPC, with OPLS, TIP4P" },
     { "-ter",    FALSE, etBOOL, {&bTerMan}, 
       "Interactive termini selection, iso charged" },
     { "-lys",    FALSE, etBOOL, {&bLysMan}, 
@@ -673,7 +684,7 @@ int main(int argc, char *argv[])
       "HIDDENSort the residues according to database, turning this off is dangerous as charge groups might be broken in parts" },
     { "-ignh",   FALSE, etBOOL, {&bRemoveH}, 
       "Ignore hydrogen atoms that are in the pdb file" },
-    { "-missing",   FALSE, etBOOL, {&bMissing}, 
+    { "-missing",FALSE, etBOOL, {&bMissing}, 
       "Continue when atoms are missing, dangerous" },
     { "-posrefc",FALSE, etREAL, {&posre_fc},
       "Force constant for position restraints" },
@@ -689,7 +700,8 @@ int main(int argc, char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    0,NULL);
-		    
+  sprintf(forcefield,"ff%s",ff[0]);
+
   if (bInter) {
     /* if anything changes here, also change description of -inter */
     bCysMan = TRUE;
@@ -734,6 +746,8 @@ int main(int argc, char *argv[])
   clear_mat(box);
   if (strcmp(watstr[0],"tip4p") == 0)
     watres = "HO4";
+  else if (strcmp(watstr[0],"tip5p") == 0)
+    watres = "HO5";
   else
     watres = "HOH";
 
@@ -889,15 +903,13 @@ int main(int argc, char *argv[])
   
   check_occupancy(&pdba_all,opt2fn("-f",NFILE,fnm));
   
-  choose_ff(ff,255);
-  printf("Using %s force field\n",ff);
-  
   /* Read atomtypes... */
-  atype=read_atype(ff,&symtab);
+  atype=read_atype(forcefield,&symtab);
   
   /* read residue database */
-  printf("Reading residue database... (%s)\n",ff);
-  nrtp=read_resall(ff,bts,&restp,atype,&symtab,&bAlldih,&nrexcl,&HH14,&bRemoveDih);
+  printf("Reading residue database... (%s)\n",forcefield);
+  nrtp=read_resall(forcefield,bts,&restp,atype,&symtab,
+		   &bAlldih,&nrexcl,&HH14,&bRemoveDih);
   if (bNewRTP) {
     fp=ffopen("new.rtp","w");
     print_resall(fp,bts,nrtp,restp,atype,bAlldih,nrexcl,HH14,bRemoveDih);
@@ -905,15 +917,15 @@ int main(int argc, char *argv[])
   }
     
   /* read hydrogen database */
-  nah=read_h_db(ff,&ah);
+  nah=read_h_db(forcefield,&ah);
   
   /* Read Termini database... */
-  nNtdb=read_ter_db(ff,'n',&ntdb,atype);
-  nCtdb=read_ter_db(ff,'c',&ctdb,atype);
+  nNtdb=read_ter_db(forcefield,'n',&ntdb,atype);
+  nCtdb=read_ter_db(forcefield,'c',&ctdb,atype);
   
   top_fn=ftp2fn(efTOP,NFILE,fnm);
   top_file=ffopen(top_fn,"w");
-  print_top_header(top_file,top_fn,title,FALSE,ff,mHmult);
+  print_top_header(top_file,top_fn,title,FALSE,forcefield,mHmult);
 
   nincl=0;
   nmol=0;
@@ -1086,7 +1098,7 @@ int main(int argc, char *argv[])
     
     pdb2top(top_file2,posre_fn,molname,pdba,&x,atype,&symtab,bts,nrtp,restp,
 	    cc->nterpairs,cc->ntdb,cc->ctdb,cc->rN,cc->rC,bMissing,
-	    HH14,bAlldih,bRemoveDih,bDummies,bDummyAromatics,ff,
+	    HH14,bAlldih,bRemoveDih,bDummies,bDummyAromatics,forcefield,
 	    mHmult,nssbonds,ssbonds,nrexcl, 
 	    long_bond_dist,short_bond_dist,bDeuterate);
     
@@ -1160,7 +1172,18 @@ int main(int argc, char *argv[])
     gen_box(0,atoms->nr,x,box,box_space,FALSE);
   write_sto_conf(ftp2fn(efSTO,NFILE,fnm),title,atoms,x,NULL,box);
 
-  thanx(stderr);
+  printf("\t\t--------- PLEASE NOTE ------------\n");
+  printf("You have succesfully generated a topology from: %s.\n",
+	 opt2fn("-f",NFILE,fnm));
+  printf("The %s force field and the %s water model are used.\n",
+	 ff[0],watstr[0]);
+  printf("Note that the default mechanism for selecting a force fields has\n"
+	 "changed, starting from GROMACS version 3.2.0\n");
+  sprintf(forcefield,"ff%s",ff[0]);
+  printf("\t\t--------- ETON ESAELP ------------\n");
+  
+
+  thanx(stdout);
   
   return 0;
 }

@@ -1,3 +1,4 @@
+#ifdef FF_OPLS
 ;
 ; This topology file should work with ffoplsaa.itp
 ;
@@ -85,4 +86,5 @@ SOL             2
 3       1       2       4       5
 4       1       2       3       5
 5       1       2       3       4
+#endif
 #endif

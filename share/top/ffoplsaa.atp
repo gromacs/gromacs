@@ -696,6 +696,7 @@
  MCH3A       0.0      ; Dummy mass in rigid tetraedrical CH3 group
  MCH3B       0.0      ; Dummy mass in rigid tetraedrical CH3 group
  MW          0.0      ; Dummy mass in rigid tyrosine rings
+ DUM         0.0      ; Dummy mass in TIP4P etc.
 ; These ion atomtypes are NOT part of OPLS, but since they are
 ; needed for some proteins we have added them.
  Cu2+       63.546    ; Copper. See Inorg. Chem. 40, 5223 (2001).

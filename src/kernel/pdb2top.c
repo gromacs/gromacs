@@ -107,52 +107,6 @@ bool is_int(double x)
   return (fabs(x-ix) < tol);
 }
 
-char *choose_ff(char ffbuf[],int size)
-{
-  typedef struct { char *desc,*fn; } t_fff;
-  FILE    *in;
-  t_fff   *fff;
-  int     i,nff,sel;
-  char    *c,buf[STRLEN],fn[32];
-  
-  in=libopen("FF.dat");
-  fgets2(buf,255,in);
-  sscanf(buf,"%d",&nff);
-  snew(fff,nff);
-  for(i=0; (i<nff); i++) {
-    fgets2(buf,255,in);
-    sscanf(buf,"%s",fn);
-    fff[i].fn=strdup(fn);
-    /* Search for next non-space character, there starts description */
-    c=&(buf[strlen(fn)+1]);
-    while (isspace(*c)) c++;
-    fff[i].desc=strdup(c);
-  }
-  fclose(in);
-
-  if (nff > 1) {
-    printf("\nSelect the Force Field:\n");
-    for(i=0; (i<nff); i++)
-      printf("%2d: %s\n",i,fff[i].desc);
-    do {
-      fgets(buf,STRLEN,stdin);
-      sscanf(buf,"%d",&sel);
-    } while ((sel < 0) || (sel >= nff));
-  }
-  else
-    sel=0;
-
-  strncpy(ffbuf,fff[sel].fn,size-1);
-
-  for(i=0; (i<nff); i++) {
-    sfree(fff[i].desc);
-    sfree(fff[i].fn);
-  }
-  sfree(fff);
-  
-  return ffbuf;
-}
-
 static int name2type(t_atoms *at, int **cgnr, t_atomtype *atype, 
 		     t_restp restp[])
 {

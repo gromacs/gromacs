@@ -88,7 +88,8 @@ typedef struct {
    */
   t_atom  *atom;    /* New atom data              */
   int     cgnr;     /* chargegroup number. if not read will be NOTSET */
-  int     tp;       /* Type of attachment (1..10) */
+  int     tp;       /* Type of attachment (1..11) */
+  int     nctl;     /* How many control atoms there are */
   char 	  *a[4];    /* Control atoms i,j,k,l	  */
   rvec    newx;     /* calculated new position    */
   atom_id newi;     /* new atom index number (after additions) */

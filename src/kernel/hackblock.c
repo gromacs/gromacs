@@ -116,6 +116,7 @@ void clear_t_hackblock(t_hackblock *hb)
 {
   int i;
   
+  hb->name   = NULL;
   hb->nhack  = 0;
   hb->maxhack= 0;
   hb->hack   = NULL;
@@ -135,6 +136,7 @@ void clear_t_hack(t_hack *hack)
   hack->atom  = NULL;
   hack->cgnr  = NOTSET;
   hack->tp    = 0;
+  hack->nctl  = 0;
   for(i=0; i<4; i++)
     hack->a[i]  = NULL;
   for(i=0; i<DIM; i++)

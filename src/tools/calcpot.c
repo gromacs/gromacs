@@ -264,7 +264,7 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
   /* Initiate forcerecord */
   *fr = mk_forcerec();
   init_forcerec(stdlog,*fr,&(parm->ir),top,cr,*mdatoms,
-		nsb,box,FALSE,table,TRUE);
+		nsb,state->box,FALSE,table,TRUE);
 
   /* Remove periodicity */  
   for(m=0; (m<DIM); m++)

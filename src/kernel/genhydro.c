@@ -168,11 +168,12 @@ static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
        delete/replace from tdb (oname!=NULL) and oname matches this atom */
     if (debug) fprintf(debug," %s",
 		       hbr->hack[j].oname?hbr->hack[j].oname:hbr->hack[j].AI);
-    if ( !bIgnore && 
-	 ( ( ( hbr->hack[j].tp > 0 || hbr->hack[j].oname==NULL ) &&
-	     strcmp(atomname, hbr->hack[j].AI) == 0 ) ||
-	   ( hbr->hack[j].oname!=NULL && 
-	     strcmp(atomname, hbr->hack[j].oname) == 0) ) ) {
+
+    if ( !bIgnore &&
+         ( ( ( hbr->hack[j].tp > 0 || hbr->hack[j].oname==NULL ) &&
+             strcmp(atomname, hbr->hack[j].AI) == 0 ) ||
+           ( hbr->hack[j].oname!=NULL &&
+             strcmp(atomname, hbr->hack[j].oname) == 0) ) ) {
       /* now expand all hacks for this atom */
       if (debug) fprintf(debug," +%dh",hbr->hack[j].nr);
       srenew(*abi,*nabi + hbr->hack[j].nr);
@@ -276,15 +277,16 @@ static int check_atoms_present(t_atoms *pdba, int nab[], t_hack *ab[])
 static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[])
 {
   int i, j, ii, jj, m, ia, d, rnr;
-  rvec xa[4]; /* control atoms for calc_h_pos */
-  rvec xh[3]; /* hydrogen positions from calc_h_pos */
+#define MAXH 4
+  rvec xa[4];     /* control atoms for calc_h_pos */
+  rvec xh[MAXH]; /* hydrogen positions from calc_h_pos */
   
   for(i=0; i < pdba->nr; i++) {
     rnr   = pdba->atom[i].resnr;
     for(j=0; j < nab[i]; j+=ab[i][j].nr) {
       /* check if we're adding: */
       if (ab[i][j].oname==NULL && ab[i][j].tp > 0) {
-	for(m=0; m<ncontrol[ab[i][j].tp]; m++) {
+	for(m=0; (m<ab[i][j].nctl); m++) {
 	  ia = pdbasearch_atom(ab[i][j].a[m], rnr, pdba);
 	  if (ia < 0) {
 	    /* not found in original atoms, might still be in t_hack (ab) */
@@ -298,7 +300,7 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[])
 	  } else
 	    copy_rvec(x[ia], xa[m]);
 	}
-	for(m=0; m<3; m++)
+	for(m=0; (m<MAXH); m++)
 	  for(d=0; d<DIM; d++)
 	    if (m<ab[i][j].nr)
 	      xh[m][d] = 0;

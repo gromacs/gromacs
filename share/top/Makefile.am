@@ -5,7 +5,7 @@
 topoldir = ${datadir}/top
 
 topol_DATA = \
-	FF.dat		ffgmx.itp	ffgmxnb.itp	ffgmxbon.itp	\
+	ffgmx.itp	ffgmxnb.itp	ffgmxbon.itp	\
 	ffgmx.atp	ffgmx.hdb	ffgmx.n2t	ffgmx.rtp	\
 	ffgmx-c.tdb 	ffgmx-n.tdb	ffgmx2.itp	ffgmx2nb.itp	\
 	ffgmx2bon.itp	ffgmx2.atp	ffgmx2.hdb	ffgmx2.rtp	\

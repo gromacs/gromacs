@@ -155,11 +155,12 @@ real check_mol(t_atoms *atoms)
     } else 
       if ((m!=0) && (pt == eptDummy)) {
 	rn=atoms->atom[i].resnr;
-	sprintf(buf,"dummy atom %s (Res %s-%d) has non-zero mass %g,"
-		"will be set to zero\n",
+	sprintf(buf,"dummy atom %s (Res %s-%d) has non-zero mass %g\n"
+		"     Check your topology.\n",
 		*(atoms->atomname[i]),*(atoms->resname[rn]),rn+1,m);
 	warning(buf);
-	atoms->atom[i].m=0;
+	/* The following statements make LINCS break! */
+	/* atoms->atom[i].m=0; */
       }
   }
   return q;

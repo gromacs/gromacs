@@ -43,14 +43,13 @@
 #include "symtab.h"
 #include "h_db.h"
 
-/* There are 9 types of adding hydrogens, numbered from
- * 1 thru 9. Each of these has a specific number of
+/* There are 11 types of adding hydrogens, numbered from
+ * 1 thru 11. Each of these has a specific number of
  * control atoms, that determine how the hydrogens are added.
  * Here these number are given. Because arrays start at 0 an
  * extra dummy for index 0 is added 
  */
-/*                                    1  2  3  4  5  6  7  8  9 */
-const int ncontrol[12] = { -1, 3, 3, 3, 3, 4, 3, 1, 3, 3 };
+/* const int ncontrol[12] = { -1, 3, 3, 3, 3, 4, 3, 1, 3, 3, 1, 1 }; */
 
 int compaddh(const void *a,const void *b)
 {
@@ -63,21 +62,18 @@ int compaddh(const void *a,const void *b)
 
 void read_ab(char *line,char *fn,t_hack *hack)
 {
-  int  i,n,nh,tp,ncntl;
-  char buf[80];
+  int  i,nh,tp,ns;
+  char a[4][12];
   
-  if (sscanf(line,"%d%d%n",&nh,&tp,&n) != 2)
+  ns = sscanf(line,"%d%d%s%s%s%s",&nh,&tp,a[0],a[1],a[2],a[3]);
+  if (ns < 3)
     fatal_error(0,"wrong format in input file %s on line\n%s\n",fn,line);
-  line+=n;
+  
   hack->nr=nh;
   hack->tp=tp;
-  ncntl=ncontrol[tp];
-  for(i=0; i<ncntl; i++) {
-    if (sscanf(line,"%s%n",buf,&n) != 1)
-      fatal_error(0,"Expected %d control atoms instead of %d while reading Hydrogen Database %s on line\n%s\n",ncntl,i-1,fn,line);
-    hack->a[i]=strdup(buf);
-    line+=n;
-  }
+  hack->nctl = ns - 2;
+  for(i=0; (i<hack->nctl); i++) 
+    hack->a[i]=strdup(a[i]);
   for(   ; i<4; i++)
     hack->a[i]=NULL;
   hack->oname=NULL;
@@ -108,7 +104,9 @@ int read_h_db(char *fn,t_hackblock **ah)
     }
     if (debug) fprintf(debug,"%s",buf);
     srenew(aah,nah+1);
+    clear_t_hackblock(&aah[nah]);
     aah[nah].name=strdup(buf);
+    
     if (sscanf(line+n,"%d",&nab) == 1) {
       if (debug) fprintf(debug,"  %d\n",nab);
       snew(aah[nah].hack,nab);
@@ -139,7 +137,7 @@ void print_ab(FILE *out,t_hack *hack)
   int i;
 
   fprintf(out,"%d\t%d",hack->nr,hack->tp);
-  for(i=0; i < ncontrol[hack->tp]; i++)
+  for(i=0; (i < hack->nctl); i++)
     fprintf(out,"\t%s",hack->a[i]);
   fprintf(out,"\n");
 }

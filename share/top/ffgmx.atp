@@ -49,3 +49,4 @@
   CHE  12.01100 ;     HEME RING CARBON
  MNH3   0       ;     Dummy mass in rigid tetraedrical NH3 group
    MW   0       ;     Dummy mass in rigid tyrosine rings
+   IW   0       ;     Dummy particle in TIP4P etc.

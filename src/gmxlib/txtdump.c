@@ -732,7 +732,7 @@ static void low_pr_block(FILE *fp,int indent,char *title,t_block *block, bool bS
     }
 }
 
-void pr_block(FILE *fp,int indent,char *title,t_block *block, bool bShowNumbers)
+void pr_block(FILE *fp,int indent,char *title,t_block *block,bool bShowNumbers)
 {
   int i,j,ok,size,start,end;
   

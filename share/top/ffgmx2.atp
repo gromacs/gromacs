@@ -52,3 +52,4 @@
   CHE  12.01100 ;     HEME RING CARBON
   CH3  15.03500 ;     
   CH2  14.02700 ;     
+   IW   0       ;     Dummy particle in TIP4P etc.

@@ -46,8 +46,9 @@
 #define xH1 xh[0]
 #define xH2 xh[1]
 #define xH3 xh[2]
+#define xH4 xh[3]
 
-void gen_waterhydrogen(rvec xa[], rvec xh[])
+static void gen_waterhydrogen(int nh,rvec xa[], rvec xh[])
 {
 #define AA 0.081649
 #define BB 0.0
@@ -73,14 +74,25 @@ void gen_waterhydrogen(rvec xa[], rvec xh[])
 #undef CC
   static int l=0;
   int        m;
+  rvec       kkk;
   
   /* This was copied from Gromos */
   for(m=0; (m<DIM); m++) {
     xH1[m]=xAI[m]+matrix1[l][m];
     xH2[m]=xAI[m]+matrix2[l][m];
   }
-  if ((xH3[XX] == NOTSET) && (xH3[YY] == NOTSET) &&(xH3[ZZ] == NOTSET))
+  if (nh > 2) 
     copy_rvec(xAI,xH3);
+  if (nh > 3)
+    copy_rvec(xAI,xH4);
+  /* Do some more magic for weird tip5p */
+  if (nh == 4) {
+    copy_rvec(xAI,kkk);
+    copy_rvec(xH1,xAI);
+    for(m=1; (m<4); m++)
+      copy_rvec(xh[m],xh[m-1]);
+    copy_rvec(kkk,xH4);
+  }
       
   l=(l+1) % 6;
 }
@@ -217,8 +229,14 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[])
     }
     break;
   }
-  case 7: /* two or three water hydrogens */
-    gen_waterhydrogen(xa, xh);
+  case 7:  /* two water hydrogens */
+    gen_waterhydrogen(2, xa, xh);
+    break;
+  case 10: /* three water hydrogens */
+    gen_waterhydrogen(3, xa, xh);
+    break;
+  case 11: /* four water hydrogens */
+    gen_waterhydrogen(4, xa, xh);
     break;
   case 8: /* two carboxyl oxygens, -COO- */
     for(d=0; (d<DIM); d++) {

@@ -430,7 +430,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   step=step0;
   
   if (bVerbose && MASTER(cr) && (nshell+ndir > 0))
-    print_epot(stdout,mdstep,-1,step,Epot[Min],df[Min],FALSE);
+    print_epot(stdout,mdstep,0,step,Epot[Min],df[Min],FALSE);
 
   if (debug) {
     fprintf(debug,"%17s: %14.10e\n",
