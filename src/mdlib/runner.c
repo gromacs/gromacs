@@ -57,6 +57,7 @@ static char *SRCID_runner_c = "$Id$";
 #include "mdrun.h"
 #include "callf77.h"
 #include "pppm.h"
+#include "pme.h"
 
 bool optRerunMDset (int nfile, t_filenm fnm[])
 {
@@ -98,13 +99,11 @@ void finish_run(FILE *log,t_commrec *cr,
   int    i,j;
   t_nrnb ntot;
   real   runtime;
-  
   for(i=0; (i<eNRNB); i++)
     ntot.n[i]=0;
   for(i=0; (i<nsb->nprocs); i++)
     for(j=0; (j<eNRNB); j++)
       ntot.n[j]+=nrnb[i].n[j];
-  
   runtime=0;
   if (bWriteStat) {
     runtime=parm->ir.nsteps*parm->ir.delta_t;
@@ -218,6 +217,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   /* Initiate PPPM if necessary */
   if (fr->eeltype == eelPPPM)
     init_pppm(stdlog,cr,nsb,FALSE,TRUE,box_size,ftp2fn(efHAT,nfile,fnm),&parm->ir);
+  if (fr->eeltype == eelPME)
+    init_pme(stdlog,cr,nsb,FALSE,&parm->ir);
 		
   /* Now do whatever the user wants us to do (how flexible...) */
   if (bNM) {
@@ -257,20 +258,16 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     }
     else 
       realtime=0;
-    
     md2atoms(mdatoms,&(top->atoms),TRUE);
-    
     /* Finish up, write some stuff */
     { 
       char *gro=ftp2fn(efSTO,nfile,fnm);
-      
       /* if rerunMD, don't write last frame again */
       finish_run(stdlog,cr,gro,nsb,top,parm,
 		 nrnb,cputime,realtime,parm->ir.nsteps,
 		 (parm->ir.eI==eiMD) || (parm->ir.eI==eiLD));
     }
   }
-  
   /* Does what it says */  
   print_date_and_time(stdlog,cr->pid,"Finished mdrun");
 
