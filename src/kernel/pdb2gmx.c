@@ -344,8 +344,8 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
 		rptr->resname,pdba->atom[i].resnr+1,&i);
 	if ( is_hydrogen(atomnm) )
 	  sprintf(buf+i,". Maybe different protonation state.\n"
-		  "             Remove this hydrogen or choose different "
-		  "protonation state");
+		  "             Remove this hydrogen or choose a different "
+		  "protonation state.");
 	fatal_error(0,buf);
       }
     }
