@@ -52,12 +52,12 @@ static char *SRCID_g_nmeig_c = "$Id$";
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "[TT]g_covar[tt] calculates and diagonalizes the (mass weighted)",
+    "[TT]g_covar[tt] calculates and diagonalizes the (mass-weighted)",
     "covariance matrix.",
     "All structures are fitted to the structure in the structure file.",
     "When this is not a run input file periodicity will not be taken into",
     "account. When the fit and analysis groups are identical and the analysis",
-    "is non mass weighted, the fit will also be non mass weighted.[PAR]",
+    "is non mass-weighted, the fit will also be non mass-weighted.[PAR]",
     "The eigenvectors are written to a trajectory file ([TT]-v[tt]).",
     "When the same atoms are used for the fit and the covariance analysis,",
     "the reference structure is written first with t=-1.",
@@ -66,12 +66,10 @@ int main(int argc,char *argv[])
     "The eigenvectors can be analyzed with [TT]g_anaeig[tt]."
   };
   static bool bM=FALSE;
-  static int  begin=1,end=-1;
+  static int  end=-1;
   t_pargs pa[] = {
     { "-mwa",  FALSE, etBOOL, &bM,
-      "Mass weighted covariance analysis"},
-    { "-first", FALSE, etINT, &begin,     
-      "First eigenvector to write away" },
+      "Mass-weighted covariance analysis"},
     { "-last",  FALSE, etINT, &end, 
       "Last eigenvector to write away (-1 is till the last)" }
   };
@@ -267,11 +265,14 @@ int main(int argc,char *argv[])
   fclose(out);  
 
   if (end==-1)
-    end=ndim;
+    if (nframes-1 < ndim)
+      end=nframes-1;
+    else
+      end=ndim;
   fprintf (stderr,
-	   "Writing %saverage structure\nand eigenvectors %d to %d to %s\n",
+	   "\nWriting %saverage structure\nand eigenvectors 1 to %d to %s\n",
 	   (nfit==natoms) ? "reference and " : "",
-	   begin,end,opt2fn("-v",NFILE,fnm));
+	   end,opt2fn("-v",NFILE,fnm));
 
   trjout = open_tpx(opt2fn("-v",NFILE,fnm),"w");
   if (nfit==natoms) {
@@ -282,7 +283,7 @@ int main(int argc,char *argv[])
   }
   /* misuse lambda: 0/1 mass weighted analysis no/yes */ 
   fwrite_trn(trjout,0,0,bDiffMass2 ? 1 : 0,zerobox,natoms,xav,NULL,NULL);
-  for(i=begin; i<=end; i++) {
+  for(i=1; i<=end; i++) {
     for (j=0; j<natoms; j++)
       for(d=0; d<DIM; d++)
 	x[j][d]=mat[(ndim-i)*ndim+DIM*j+d];
