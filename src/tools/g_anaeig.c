@@ -272,7 +272,7 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
     if (nat>atoms->nr)
       fatal_error(0,"the number of atoms in your trajectory (%d) is larger than the number of atoms in your structure file (%d)",nat,atoms->nr); 
     snew(all_at,nat);
-    for(i=0; (i<nat); i++)
+    for(i=0; i<nat; i++)
       all_at[i]=i;
     do {
       if (nfr % skip == 0) {
@@ -287,7 +287,7 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
 	/* calculate x: a fitted struture of the selected atoms */
 	if (bFit && (xref==NULL)) {
 	  reset_x(nfit,ifit,nat,NULL,xread,w_rls);
-	  do_fit(atoms->nr,w_rls,xtop,xread);
+	  do_fit(nat,w_rls,xtop,xread);
 	}
 	for (i=0; i<natoms; i++)
 	  copy_rvec(xread[index[i]],x[i]);
