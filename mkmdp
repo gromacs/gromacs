@@ -70,7 +70,7 @@ awk '{\
   if (output) print;\
 }' temp4 >! $TEXMDPOPT
 
-#\rm temp1 temp2 temp3 temp4
+\rm temp1 temp2 temp3 temp4
 
 #last line
 exit
