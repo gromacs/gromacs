@@ -194,6 +194,14 @@ void set_pdb_conf_bfac(int natoms,int nres,t_pdbatom pdba[],rvec x[],
     bfac_max /= 10;
     bfac_min /= 10;
   }
+  while ( (abs(bfac_max) < 0.5) && (abs(bfac_min) < 0.5) ) {
+    fprintf(stderr,"Range of values for B-factors too small (min %g, max %g) "
+	    "will scale up a factor 10\n",bfac_min,bfac_max);
+    for(i=0; (i<n_bfac); i++)
+      bfac[i] *= 10;
+    bfac_max *= 10;
+    bfac_min *= 10;
+  }
   
   for(i=0; (i<natoms); i++)
     pdba[i].bfac=0;
