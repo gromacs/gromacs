@@ -21,18 +21,15 @@ SONAME		= libgmx.$(GMXCPU).so
 OBJ		= \
 		3dview.o	atomprop.o	block_tx.o	\
 		bondfree.o	buffer.o	calch.o		\
-		callf77.o	clincs.o	\
-		clincsld.o	confio.o	copyrite.o	\
-		csettle.o	cshake.o	\
-		disre.o		do_fit.o	dummies.o	\
-		ebin.o		enxio.o		\
+		confio.o	copyrite.o	\
+		disre.o		do_fit.o	enxio.o		\
 		fatal.o		ffscanf.o	filenm.o	\
 		futil.o		gbutil.o	genhydro.o	\
 		gmxfio.o	h_db.o		\
 		ifunc.o		index.o		\
 		inloopc.o	invblock.o	javaio.o	\
 		lutab.o		macros.o	main.o		\
-		maths.o		matio.o		mdebin.o	\
+		maths.o		matio.o		\
 		memdump.o	mshift.o	mvdata.o	\
 		mvxvf.o		names.o		network.o	\
 		nrama.o		nrjac.o		nrnb.o		\
@@ -40,8 +37,7 @@ OBJ		= \
 		princ.o		\
 		rando.o		random.o	rbin.o		\
 		rdgroup.o	readinp.o	replace.o	\
-		rmpbc.o		shakef.o	\
-		smalloc.o	stat.o		\
+		rmpbc.o		smalloc.o	stat.o		\
 		statutil.o	strdb.o		string2.o	\
 		symtab.o	\
 		tpxio.o		trnio.o		trxio.o		\
@@ -50,8 +46,7 @@ OBJ		= \
 		xdrd.o		xtcio.o		xvgr.o
 
 ifeq ($(USEF77),yes)
-OBJ		+= inloopf.o	fshake.o	fsettle.o	\
-		   flincs.o	flincsld.o	fql77.o
+OBJ		+= inloopf.o
 endif
 ifeq ($(HAVE_MOTIF),yes)
 OBJ		+= mgmx.o widget.o
@@ -120,11 +115,6 @@ $(LIB)(libxdrf.o):	libxdrf.m4 $(M4FILE)
 		$(CC) $(C-FLAGS) -c libxdrf.c
 		$(AR) $(ARFLAGS) $(LIB) libxdrf.o
 		$(RM) libxdrf.c libxdrf.o
-$(LIB)(callf77.o):	callf77.m4 $(M4FILE)
-		$(M4) $(M4FILE) callf77.m4  > callf77.c
-		$(CC) $(C-FLAGS) -c callf77.c
-		$(AR) $(ARFLAGS) $(LIB) callf77.o
-		$(RM) callf77.c callf77.o
 $(LIB)(inloopf.o):	inloopf.m4 
 		/lib/cpp $(SYSDEFS) inloopf.m4 | grep -v '#' > inloopf.f
 		$(F77) $(FFLAGS) -c inloopf.f
