@@ -50,6 +50,10 @@ static char *SRCID_mkice_c = "$Id$";
 #define TET   109.47
 #define DCONS 0.117265878
 
+typedef struct {
+  int n,aa[4];
+} t_bbb;
+
 static char *watname[] = { "OW ", "HW1", "HW2", "DW", "SW" };
 static char *diamname[] = { "C1", "H2", "H3", "H4", "H5", "H2", "H3", "H4", "H5" };
 static real qspc[]     = { -0.82, 0.41, 0.41 };
@@ -174,24 +178,16 @@ void unitcell_d(rvec x[],rvec box,real odist)
   printf("Unitcell:  %10.5f  %10.5f  %10.5f\n",box[XX],box[YY],box[ZZ]);
 }
 
-static void mk_diamond(t_atoms *a,rvec x[],real odist,t_symtab *symtab)
+static t_bbb *mk_bonds(int natoms,rvec x[],real odist)
 {
-  typedef struct {
-    int n,aa[4];
-  } t_bbb;
-  
-  int   i,ib,j,k,nh=0,nunsat=0,nrm=0;
+  real  od2 = odist*odist+1e-5;
   t_bbb *bbb;
-  bool  *bRemove;
+  int   i,j;
   rvec  dx;
-  real  dx2,od2,b2;
   
-  od2 = odist*odist+1e-5;
-  b2  = od2;
-  
-  snew(bbb,a->nr);
-  for(i=0; (i<a->nr); i++) {
-    for(j=i+1; (j<a->nr); j++) {
+  snew(bbb,natoms);
+  for(i=0; (i<natoms); i++) {
+    for(j=i+1; (j<natoms); j++) {
       rvec_sub(x[i],x[j],dx);
       if (iprod(dx,dx) <= od2) {
 	bbb[i].aa[bbb[i].n++] = j;
@@ -201,12 +197,25 @@ static void mk_diamond(t_atoms *a,rvec x[],real odist,t_symtab *symtab)
   }
   if (debug) 
 #define PRB(nn) (bbb[(i)].n >= (nn)) ? bbb[i].aa[nn-1] : -1
-    for(i=0; (i<a->nr); i++)
+    for(i=0; (i<natoms); i++)
       fprintf(debug,"bonds from %3d:  %d %d %d %d\n",
 	      i,PRB(1),PRB(2),PRB(3),PRB(4));
 #undef PRB
+  return bbb;
+}
+
+static void mk_diamond(t_atoms *a,rvec x[],real odist,t_symtab *symtab)
+{
+  
+  int   i,ib,j,k,l,m,nrm=0;
+  t_bbb *bbb;
+  bool  *bRemove;
+  rvec  dx;
+  
   do {
     nrm = 0;
+    bbb = mk_bonds(a->nr,x,odist);
+    
     for(i=0; (i<a->nr); i++) {
       if (bbb[i].n < 2) {
 	for(k=0; (k<bbb[i].n); k++) {
@@ -224,17 +233,35 @@ static void mk_diamond(t_atoms *a,rvec x[],real odist,t_symtab *symtab)
 	bbb[i].n = 0;
       }
     }
-  } while (nrm > 0);
   
-  for(i=j=0; (i<a->nr); i++) {
-    if (bbb[i].n >= 3) {
-      copy_rvec(x[i],x[j]);
-      j++;
+    for(i=j=0; (i<a->nr); i++) {
+      if (bbb[i].n >= 2) {
+	copy_rvec(x[i],x[j]);
+	j++;
+      }
     }
+    fprintf(stderr,"Kicking out %d carbon atoms (out of %d)\n",
+	    a->nr-j,a->nr);
+    a->nr = j;
+    sfree(bbb);
+  } while (nrm > 0);
+  /* Rename atoms */
+  for(i=0; (i<a->nr); i++) {
+    switch (bbb[i].n) {
+    case 4:
+      a->atomname[i] = put_symtab(symtab,"C");
+      break;
+    case 3:
+      a->atomname[i] = put_symtab(symtab,"CH1");
+      break;
+    case 2:
+      a->atomname[i] = put_symtab(symtab,"CH2");
+      break;
+    default:
+      fatal_error(0,"This atom (%d) has %d bonds only",i,bbb[i].n);
+    }
+      
   }
-  fprintf(stderr,"Kicking out %d carbon atoms (out of %d)\n",
-	  a->nr-j,2*a->nr/3);
-  a->nr = j;
 }
 
 static real calc_ener(real c6,real c12,rvec dx,tensor vir)
@@ -297,7 +324,8 @@ void virial(FILE *fp,bool bFull,int nmol,rvec x[],matrix box,real rcut,
       if (norm(dx) < rcut) {
 	ninter++;
 	/* Neirest neighbour molecules! */
-	for(ik=0; (ik<natmol); ik++) 
+	clear_rvec(dvir);
+	for(ik=0; (ik<natmol); ik++) {
 	  for(jk=0; (jk<natmol); jk++) {
 	    pbc_dx(x[im+ik],x[jm+jk],dx);
 	    dx2    = iprod(dx,dx);
@@ -325,18 +353,23 @@ void virial(FILE *fp,bool bFull,int nmol,rvec x[],matrix box,real rcut,
 	      fscal  = vcoul/dx2;
 	    for(m=0; (m<DIM); m++) {
 	      f[m]     = dx[m]*fscal;
-	      dvir[m]  = -0.5*dx[m]*f[m];
-	      vir[m]  += dvir[m];
+	      dvir[m] -= 0.5*dx[m]*f[m];
 	    }
 	    rvec_inc(force[ik+im],f);
 	    rvec_dec(force[jk+jm],f);
-	    if (bFull)
+	    /*if (bFull)
 	      fprintf(fp,"%3s%4d-%3s%4d: %6.3f %6.3f %6.3f %6.3f"
 		      " %8.3f %8.3f %8.3f\n",
 		      watname[ik],im+ik,watname[jk],jm+jk,
 		      dx[XX],dx[YY],dx[ZZ],norm(dx),
-		      dvir[XX],dvir[YY],dvir[ZZ]);
+		      dvir[XX],dvir[YY],dvir[ZZ]);*/
 	  }
+	}
+	if (bFull)
+	  fprintf(fp,"%3s%4d-%3s%4d: "
+		  " %8.3f %8.3f %8.3f\n",
+		  "SOL",i,"SOL",j,dvir[XX],dvir[YY],dvir[ZZ]);
+	rvec_inc(vir,dvir);
       }
     }
   }
@@ -374,7 +407,7 @@ int main(int argc,char *argv[])
     { "-rcut",  FALSE,etREAL,  {&rcut},"Cut-off for virial calculations" },
     { "-full",  FALSE,etBOOL,  {&bFull},"Full virial output" },
     { "-odist", FALSE, etREAL, {&odist}, "Distance between oxygens" },
-    { "-diamond",FALSE,etBOOL, {&bDiamond}, "Make a diamond instaed" },
+    { "-diamond",FALSE,etBOOL, {&bDiamond}, "Make a diamond instead" },
     { "-series",FALSE, etBOOL, {&bSeries}, 
       "Do a series of virial calculations with different cut-off (from 0.3 up till the specified one)" }
   };
