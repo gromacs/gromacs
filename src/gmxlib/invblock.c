@@ -42,7 +42,7 @@
 #include "smalloc.h"
 #include "invblock.h"
 
-atom_id *make_invblock(t_block *block,int nr)
+atom_id *make_invblock(const t_block *block,int nr)
 {
   int i,j;
   atom_id *invblock;

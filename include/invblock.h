@@ -43,7 +43,7 @@
 
 #include <typedefs.h>
 
-extern atom_id *make_invblock(t_block *block,int nr);
+extern atom_id *make_invblock(const t_block *block,int nr);
 /* Inverse the block structure. nr is the maximum entry in the inversed
  * array, and therefore the dimension of the returned array
  */
