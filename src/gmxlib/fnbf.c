@@ -134,7 +134,11 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
 	
 	switch (ftype) {
 	case F_SR:
-	  if (bTab)
+	  if (bWaterTab) 
+	    FUNC(wcoultab)(SCAL(inr),xw[0],SCAL(eps),x[0],SCAL(nj),nl_j,
+			   chargeA,f[0],fw[0],&Vc,SCAL(fr->ntab),
+			   SCAL(fr->tabscale),fr->VFtab);
+	  else if (bTab)
 	    FUNC(coultab)(SCAL(r_i[XX]),SCAL(r_i[YY]),SCAL(r_i[ZZ]),SCAL(qi),
 			  x[0],SCAL(nj),nl_j,chargeA,f[0],f_ip,&Vc,
 			  SCAL(fr->ntab),SCAL(fr->tabscale),fr->VFtab);
