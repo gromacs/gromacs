@@ -442,8 +442,10 @@ char *read_prot(char *confin_1,int ntb,bool bRotate,
   mk_vdw(atoms_1,*r_1,vdw,max_vdw,r_distance);
   
   /*orient configuration along z-axis*/
-  if (bRotate)
+  if (bRotate) {
+    init_pbc(box_1,ntb);
     orient(atoms_1->nr,*x_1,*v_1,angle,box_1); 
+  }
   
   return title;
 }
