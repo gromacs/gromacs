@@ -46,25 +46,34 @@ bool newres(int i,t_atom atom[])
 
 t_correct *init_corr(int maxnit,int nstprint,int nbcheck,int nstranlist,
 		     int ngrow,bool bExplicit,bool bChiral,bool bPep,
-		     bool bDump,real lowdev,bool bLowerOnly)
+		     bool bDump,real lowdev,bool bLowerOnly,
+		     bool bRanlistFirst)
 {
   t_correct *c;
   
   snew(c,1);
-  c->maxnit     = maxnit;
-  c->nstprint   = nstprint;
-  c->nbcheck    = nbcheck;
-  c->nstranlist = nstranlist;
-  c->bExplicit  = bExplicit;
-  c->bChiral    = bChiral;
-  c->bPep       = bPep;
-  c->bDump      = bDump;
-  c->lodev      = lowdev;
-  c->maxdist    = 0;
-  c->ndist      = 0;
-  c->ngrow      = ngrow;
-  c->bLowerOnly = bLowerOnly;
-  
+  c->maxnit        = maxnit;
+  c->nstprint      = nstprint;
+  c->nbcheck       = nbcheck;
+  c->nstranlist    = nstranlist;
+  c->bExplicit     = bExplicit;
+  c->bChiral       = bChiral;
+  c->bPep          = bPep;
+  c->bDump         = bDump;
+  c->lodev         = lowdev;
+  c->maxdist       = 0;
+  c->ndist         = 0;
+  c->ngrow         = ngrow;
+  c->bLowerOnly    = bLowerOnly;
+  c->bRanlistFirst = bRanlistFirst;
+
+  if (bRanlistFirst) {
+    if (nstranlist != 0) {
+      fprintf(stderr,
+	      "Warning: setting nstranlist to 0 when using ranlistfirst");
+      c->nstranlist = 0;
+    }
+  }
   return c;
 }
 

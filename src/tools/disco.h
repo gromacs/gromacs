@@ -49,7 +49,7 @@ typedef struct {
 /* Garbage bin with flags and data for the correct routine */
 typedef struct {
   int         maxnit,nbcheck,nstprint,nstranlist,ngrow;
-  bool        bExplicit,bChiral,bPep,bDump,bLowerOnly;
+  bool        bExplicit,bChiral,bPep,bDump,bLowerOnly,bRanlistFirst;
   real        lodev;
   int         maxdist,ndist;
   int         *ip,*tag;
@@ -62,7 +62,8 @@ typedef struct {
 
 extern t_correct *init_corr(int maxnit,int nstprint,int nbcheck,int nstranlist,
 			    int ngrow,bool bExplicit,bool bChiral,bool bPep,
-			    bool bDump,real lowdev,bool bLowerOnly);
+			    bool bDump,real lowdev,bool bLowerOnly,
+			    bool bRanlistFirst);
 /* Initiate the data structure and set some of the parameters */
 
 extern void make_tags(t_correct *c,int natom);

@@ -234,6 +234,7 @@ int main(int argc,char *argv[])
   static bool bVerbose=TRUE,bCubic=FALSE,bWeight=FALSE,bLower=FALSE;
   static real lowdev=0.05,cutoff=0;
   static bool bExplicit=FALSE,bChiral=TRUE,bFit=FALSE,bDump=FALSE,bPep=TRUE;
+  static bool bRanlistFirst=TRUE;
   static rvec boxsize={ 2, 2, 2 };
   t_pargs pa[] = {
     { "-nf",    FALSE, etINT,     {&nstruct},
@@ -266,6 +267,8 @@ int main(int argc,char *argv[])
       "Print number of violations every N steps" },
     { "-ranlist",  FALSE, etINT,  {&nstranlist},
       "Update list order to avoid bias every n steps" },
+    { "-ranlistfirst",  FALSE, etBOOL,  {&bRanlistFirst},
+      "Randomize list once before shaking" },
     { "-lowdev",   FALSE, etREAL, {&lowdev},
       "Low deviation [Sum of distance deviation per atom in nm] beyond which nonbondeds are done every step" },
     { "-seed",     FALSE, etINT,  {&seed},
@@ -298,7 +301,7 @@ int main(int argc,char *argv[])
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
   /* Copy arguments to correct structure */
   corr = init_corr(maxnit,nstprint,nbcheck,nstranlist,ngrow,bExplicit,
-		   bChiral,bPep,bDump,lowdev,bLower);
+		   bChiral,bPep,bDump,lowdev,bLower,bRanlistFirst);
   
   /* Open the log file */
   fp = ftp2FILE(efLOG,NFILE,fnm,"w");

@@ -429,6 +429,9 @@ bool shake_coords(FILE *log,bool bVerbose,
     copy_rvec(x[i],xtry[next][i]);
   }
   xptr = xtry[next];
+
+  if (c->bRanlistFirst)
+    randomize_list(nchk,ip,seed);
   
   for(nit=0; ((nit < c->maxnit) && !bConverged); nit++) {
     /* Reset violation counters */
