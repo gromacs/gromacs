@@ -83,7 +83,7 @@ extern void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,
 /* Create positions of dummy atoms based on surrounding atoms.
  */
  
-extern void spread_dummy_f(FILE *log,rvec x[],rvec f[],rvec buf[],
+extern void spread_dummy_f(FILE *log,rvec x[],rvec f[],
 			   t_nrnb *nrnb,t_idef *idef);
 /* Spread the force operating on the dummy atoms on the surrounding atoms.
  */
