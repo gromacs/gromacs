@@ -933,6 +933,8 @@
     H2     H   0.415     0
  [ bonds ]
     -C     N
+     N	   H1
+     N     H2
 
 [ PHE ]
  [ atoms ]
