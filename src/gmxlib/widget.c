@@ -4,7 +4,7 @@
 #include "fatal.h"
 
 typedef struct {
-  Widget   w;
+  Widget   w,other;
   bool     bDesc;
   XmString desc;
   char     *directory;
@@ -30,6 +30,7 @@ windex add_widget(Widget new_widget,char *desc)
     for(i=nwindex; (i<maxwindex); i++) {
       w[i].ftp   = -1;
       w[i].w     = 0;
+      w[i].other = 0;
       w[i].bDesc = FALSE;
       w[i].directory = NULL;
     }
@@ -58,6 +59,18 @@ Widget get_widget(windex win)
   widget_range_check(win);
   
   return w[win].w;
+}
+
+windex get_windex(Widget www)
+{
+  int i;
+  
+  for(i=0; (i<nwindex); i++)
+    if (w[i].w == www)
+      return i;
+  fatal_error(0,"No such widget %x\n",www);
+  
+  return -1;
 }
 
 XmString get_widget_desc(Widget www)
@@ -89,7 +102,7 @@ int get_widget_ftp(Widget www)
   return -1;
 }
 
-char *get_widget_directory(windex win)
+char *get_widget_dir(windex win)
 {
   widget_range_check(win);
 
@@ -110,35 +123,51 @@ void set_widget_dir(Widget www,XmString label)
   char *ptr,*clab,tmp;
   XmString xms;
 
-  for(i=0; (i<nwindex); i++)
-    if (w[i].w == www)
-      break;
+  i = get_windex(www);
+  
   if (i < nwindex) {
     clab = xms2char(label);
     if (w[i].directory)
       sfree(w[i].directory);
+    /* Check for last directory slash */
     if ((ptr = strrchr(clab,'/')) != NULL) {
-      tmp = ptr[1];
-      ptr[1] = '\0';
-      w[i].directory = strdup(clab);
-      ptr[1] = tmp;
+      /* check whether there is more than the directory */
+      if (ptr[1] != '\0') {
+	tmp = ptr[1];
+	ptr[1] = '\0';
+	w[i].directory = strdup(clab);
+	ptr[1] = tmp;
+      }
+      /* Increase the pointer beyond the slash */
       ptr++;
     }
     else {
       w[i].directory = NULL;
       ptr = clab;
     }
-    /*xms  = char2xms(ptr);
+    if (strlen(ptr) > 0) {
       narg = 0;
-      XtSetArg(args[narg], XmNlabelString, xms); narg++;
-      XtSetValues(www,args,narg);
-    */
-    narg = 0;
-    XtSetArg(args[narg],XmNvalue, ptr); narg++;
-    XtSetValues(www,args,narg);    
+      XtSetArg(args[narg],XmNvalue, ptr); narg++;
+      XtSetValues(www,args,narg);    
+    }
   }
 }
 
+Widget get_widget_other(windex win)
+{
+  widget_range_check(win);
+  if (w[win].other == 0)
+    fatal_error(0,"Calling the wrong window: %d, no other widget\n",win);
+  
+  return w[win].other;
+}
+   
+void set_widget_other(windex win,Widget www)
+{
+  widget_range_check(win);
+  w[win].other = www;
+}
+   
 XmString char2xms(char *ptr)
 {
   return XmStringCreate(ptr,XmSTRING_DEFAULT_CHARSET);

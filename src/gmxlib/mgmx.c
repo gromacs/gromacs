@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <Xm/Xm.h>
 #include <Xm/ScrolledW.h>
@@ -387,6 +388,7 @@ void mk_filedlgs(int parent,int top,int nfile,t_filenm fnm[],int fnm_index[])
     }
     fnm_index[i] = www[1];
     set_widget_ftp(www[2],ftp);
+    set_widget_other(www[2],get_widget(www[1]));
     XtAddCallback(get_widget(www[2]),XmNactivateCallback,file_callback,NULL);
     if ((i % 2) == 1)
       topw = get_widget(www[1]);
@@ -664,7 +666,7 @@ static void file_callback(Widget www,caddr_t client_data,caddr_t call_data)
       }
       XtManageChild(fdlg);
       bFdlgUp    = TRUE;
-      FdlgCaller = www;
+      FdlgCaller = get_widget_other(get_windex(www));
     }
   }
 }
@@ -673,7 +675,7 @@ static void file_ok_callback(Widget www,int *which,
 			     XmFileSelectionBoxCallbackStruct *xmf)
 {
   if (bFdlgUp) {
-    if (xmf->reason == XmCR_OK)
+    if ((xmf->reason == XmCR_OK) && (xmf->length > 0))
       set_widget_dir(FdlgCaller,xmf->value);
   
     XtUnmanageChild(get_widget(fdlgw));
@@ -729,7 +731,7 @@ void MyMainLoop(XtAppContext appcontext,Widget gmxBase,
     */
     XtSetArg(args[narg], XmNvalue, &fn); narg++;
     XtGetValues(www,args,narg);
-    sprintf(buf,"%s%s",get_widget_directory(fnm_index[i]),fn);
+    sprintf(buf,"%s%s",get_widget_dir(fnm_index[i]),fn);
     XtFree(fn);
     sfree(fnm[i].fn);
     fnm[i].fn = strdup(buf);

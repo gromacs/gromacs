@@ -94,8 +94,7 @@ int main(int argc, char *argv[])
 
   parse_common_args(&argc,argv,PCA_QUIET,FALSE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
-  gmx_gui(&argc,argv,NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
-
+  
   printf("You made it back in main of mgmxtest!\n");
   thanx(stdout);
     
