@@ -84,12 +84,12 @@ int main(int argc,char *argv[])
   t_topology   top;
   rvec       *x,*xread,*xref,*xav;
   matrix     box,zerobox;
-  real       t,*mat,dev,trace,*rdum1,*rdum2,rdum,avmass,inv_nframes;
-  real       xid,*mass,*w_rls,lambda;
+  real       t,*mat,dev,trace,sum,*rdum1,*rdum2,rdum,avmass,inv_nframes;
+  real       xj,*mass,*w_rls,lambda;
   int        ntopatoms,step;
   int        natoms,nat,ndim,count,nframes;
   char       *grpname,*stxfile,*infile,str[STRLEN];
-  int        i,j,k,l,d,d2,nfit;
+  int        i,j,k,l,d,dj,nfit;
   atom_id    *index,*all_at,*ifit;
   bool       bTop,bDiffMass1,bDiffMass2;
   t_filenm fnm[] = { 
@@ -205,17 +205,17 @@ int main(int argc,char *argv[])
     for (i=0; i<natoms; i++)
       copy_rvec(xread[index[i]],x[i]);
 
-    for (i=0; i<natoms; i++) {
+    for (j=0; j<natoms; j++) {
       /* calculate average structure */
-      rvec_inc(xav[i],x[i]);
+      rvec_inc(xav[j],x[j]);
       /* calculate cross product matrix */
-      for (d=0; d<DIM; d++) {
-	k=ndim*(DIM*i+d);
-	xid=x[i][d];
-	for (j=0; j<natoms; j++) {
-	  l=k+DIM*j;
-	  for(d2=0; d2<DIM; d2++)
-	    mat[l+d2] += xid*x[j][d2];
+      for (dj=0; dj<DIM; dj++) {
+	k=ndim*(DIM*j+dj);
+	xj=x[j][dj];
+	for (i=j; i<natoms; i++) {
+	  l=k+DIM*i;
+	  for(d=0; d<DIM; d++)
+	    mat[l+d] += x[i][d]*xj;
 	}
       }
     }
@@ -231,45 +231,28 @@ int main(int argc,char *argv[])
     avmass+=mass[i];
     copy_rvec(xav[i],xread[index[i]]);
   }
+  avmass=sqr(natoms/avmass);
 
   write_sto_conf_indexed(opt2fn("-av",NFILE,fnm),"Average structure",
 			   &(top.atoms),xread,NULL,NULL,natoms,index);
-  avmass=sqr(natoms/avmass);
-  for (i=0; i<natoms; i++) 
-    for (j=0; j<natoms; j++) 
-      for (d=0; d<DIM; d++) {
-	k=ndim*(DIM*i+d)+DIM*j;
-	for (d2=0; d2<DIM; d2++)
-	  mat[k+d2]=(mat[k+d2]*inv_nframes-xav[i][d]*xav[j][d2])
+  for (j=0; j<natoms; j++) 
+    for (dj=0; dj<DIM; dj++) 
+      for (i=j; i<natoms; i++) { 
+	k=ndim*(DIM*j+dj)+DIM*i;
+	for (d=0; d<DIM; d++) {
+	  mat[k+d]=(mat[k+d]*inv_nframes-xav[i][d]*xav[j][dj])
 	    *mass[i]*mass[j]*avmass;
+	}
       }
+  for (j=0; j<ndim; j++) 
+    for (i=j; i<ndim; i++)
+      mat[ndim*i+j]=mat[ndim*j+i];
+  
   trace=0;
   for(i=0; i<ndim; i++)
     trace+=mat[i*ndim+i];
-  fprintf(stderr,"\nTrace of the covariance matrix: %g nm^2\n",trace);
+  fprintf(stderr,"\nTrace of the covariance matrix: %g (nm^2)\n",trace);
 
-  /* check if matrix is approximately symmetric */
-  for (i=0; (i<ndim); i++) {
-    for (j=0; (j<i); j++) {
-      if (mat[i*ndim+j] != 0.0 && mat[j*ndim+i] != 0.0)
-	rdum=(mat[i*ndim+j]-mat[j*ndim+i])/(mat[i*ndim+j]+mat[j*ndim+i]);
-      else {
-	if (fabs(mat[i*ndim+j] - mat[j*ndim+i]) > 1.0e-5)
-	  rdum=1.0;      
-	else
-	  rdum=0.0;
-      }
-      if (abs(rdum)>1.0e-5) {
-	fprintf(stderr,"possible non-symmetric matrix:\n");
-	fprintf(stderr,"x[%d][%d]=%e,x[%d][%d]=%e\n",i,j,\
-		mat[i*ndim+j],j,i,mat[j*ndim+i]);
-      }
-      /* make sure that it is symmetric 
-       * this is not very nice, but we did warn, did't we? */
-      mat[j*ndim+i]=mat[i*ndim+j];
-    }
-  }
-	  
   /* call diagonalization routine. Tested only fortran double precision */
 
   fprintf(stderr,"\nDiagonalizing...\n");
@@ -288,14 +271,21 @@ int main(int argc,char *argv[])
   
   /* now write the output */
 
-  fprintf (stderr,"Writing eigenvalues to %s\n",ftp2fn(efXVG,NFILE,fnm));
+  sum=0;
+  for(i=0; i<ndim; i++)
+    sum+=rdum1[i];
+  fprintf(stderr,"\nSum of the eigenvalues: %g (nm^2)\n",sum);
+  if (fabs(trace-sum)>0.01*trace)
+    fprintf(stderr,"\nWARNING: eigenvalue sum deviates from the trace of the covariance matrix\n");
+  
+  fprintf (stderr,"\nWriting eigenvalues to %s\n",ftp2fn(efXVG,NFILE,fnm));
 
   out=xvgropen(ftp2fn(efXVG,NFILE,fnm), 
 	       "Eigenvalues of the covariance matrix",
 	       "Eigenvector index","(nm\\S2\\N)");  
 
   for (i=0; (i<ndim); i++) {
-    fprintf (out,"%10d %15.6e\n",i+1,rdum1[ndim-1-i]);
+    fprintf (out,"%10d %g\n",i+1,rdum1[ndim-1-i]);
   }
   fclose(out);  
 
