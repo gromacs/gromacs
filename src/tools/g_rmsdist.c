@@ -160,10 +160,11 @@ real rms_diff(int isize,real **d,real **d_r)
 void main (int argc,char *argv[])
 {
   static char *desc[] = {
-    "g_rmsdist computes the root mean square deviation by a fit free",
-    "method, which has certain advantages over standard RMS deviations",
-    "as computed by g_rms. The reference structure is taken from the",
-    "run input file. The rmsd at time t is calculated as the rms",
+    "g_rmsdist computes the root mean square deviation of atom distances,",
+    "which has the advantage that no fit is needed like in standard RMS",
+    "deviation as computed by g_rms.",
+    "The reference structure is taken from the structure file.",
+    "The rmsd at time t is calculated as the rms",
     "of the differences in distance between atom-pairs in the reference",
     "structure and the structure at time t.[PAR]",
     "g_rmsdist can also produce matrices of the rms distances, rms distances",
@@ -183,7 +184,7 @@ void main (int argc,char *argv[])
 
   int      status,isize;
   atom_id  *index;
-  char     *grpnames;
+  char     *grpname;
   real     **d_r,**d,**dtot,**dtot2,**mean,**rms,**rmsc,*resnr;
   real     **dtot1_3,**dtot1_6;
   real     rmsnow,meanmax,rmsmax,rmscmax;
@@ -192,22 +193,19 @@ void main (int argc,char *argv[])
   char     buf[255];
   bool bRMS, bScale, bMean, bNMR3, bNMR6;
   
-  static bool bAll=FALSE;
-  static int  nlevels=20;
+  static int  nlevels=40;
   static real scalemax=-1.0;
-  t_pargs pa[] = { 
+  t_pargs pa[] = {
     { "-nlevels",   FALSE, etINT,  &nlevels,
-      "Discretize rms in # levels." },
+      "Discretize rms in # levels" },
     { "-max",   FALSE, etREAL, &scalemax,
-      "Maximum level in matrices." },
-    { "-all",  FALSE, etBOOL, &bAll,
-      "output all matrices" }
+      "Maximum level in matrices" }
   };
   t_filenm fnm[] = {
-    { efTRX, "-f", NULL, ffREAD },
-    { efNDX, NULL, NULL, ffOPTRD },
-    { efXVG, NULL, NULL, ffWRITE },
-    { efTPX, NULL, NULL, ffREAD },
+    { efTRX, "-f",   NULL,       ffREAD },
+    { efTPS, NULL,   NULL,       ffREAD },
+    { efNDX, NULL,   NULL,       ffOPTRD },
+    { efXVG, NULL,   "distrmsd",  ffWRITE },
     { efXPM, "-rms", "rmsdist",  ffOPTWR },
     { efXPM, "-scl", "rmsscale", ffOPTWR },
     { efXPM, "-mean","rmsmean",  ffOPTWR },
@@ -220,25 +218,17 @@ void main (int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   
-  if (bAll)
-    bRMS=bScale=bMean=bNMR3=bNMR6=TRUE;
-  else {
-    bRMS  =opt2bSet("-rms", NFILE,fnm);
-    bScale=opt2bSet("-scl", NFILE,fnm);
-    bMean =opt2bSet("-mean",NFILE,fnm);
-    bNMR3 =opt2bSet("-nmr3",NFILE,fnm);
-    bNMR6 =opt2bSet("-nmr6",NFILE,fnm);
-  }
+  bRMS  =opt2bSet("-rms", NFILE,fnm);
+  bScale=opt2bSet("-scl", NFILE,fnm);
+  bMean =opt2bSet("-mean",NFILE,fnm);
+  bNMR3 =opt2bSet("-nmr3",NFILE,fnm);
+  bNMR6 =opt2bSet("-nmr6",NFILE,fnm);
   
-  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header);
-  snew(x,header.natoms);
-  
-  read_tpx(ftp2fn(efTPX,NFILE,fnm),
-	   &step,&t,&lambda,&ir,
-	   box,&natom,x,NULL,NULL,&top);
+  /* don't read mass-database as masses (and top) are not used */
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),buf,&top,&x,NULL,box,FALSE);
   
   get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
-	    1,&isize,&index,&grpnames);
+	    1,&isize,&index,&grpname);
   
   snew(d,isize);
   snew(dtot,isize);
@@ -274,8 +264,7 @@ void main (int argc,char *argv[])
 
   /*open output files*/
   fp=xvgropen(ftp2fn(efXVG,NFILE,fnm),"RMS Deviation","Time (ps)","RMSD (nm)");
-  fprintf(fp,"@ subtitle \"Using Distance Matrix\"\n");
-  
+  fprintf(fp,"@ subtitle \"of distances between %s atoms\"\n",grpname);
   
   /*do a first step*/
   natom=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
@@ -285,10 +274,7 @@ void main (int argc,char *argv[])
 		  (bNMR3 || bNMR6),dtot1_3,dtot1_6);
     
     rmsnow=rms_diff(isize,d,d_r);
-    fprintf(fp,"%e  %e\n",t,rmsnow);
-    
-    if ((teller++ % 10) == 0)
-      fprintf(stderr,"  %8.3f",rmsnow);
+    fprintf(fp,"%g  %g\n",t,rmsnow);
   } while (read_next_x(status,&t,natom,x,box));
   fprintf(stderr, "\n");
 
