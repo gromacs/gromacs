@@ -687,7 +687,7 @@ int main(int argc,char *argv[])
 	      frout.v = vmem;
 	      for(i=0; i<nout; i++) {
 		copy_rvec(fr.x[index[i]],frout.x[i]);
-		if (bVels) copy_rvec(fr.v[index[i]],frout.v[i]);
+		if (bVels && fr.bV) copy_rvec(fr.v[index[i]],frout.v[i]);
 	      }
 	    }
 	  
