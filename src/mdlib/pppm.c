@@ -144,10 +144,10 @@ static void calc_nxyz(int nx,int ny,int nz,
     (*nnz)[i] = i % nz;
 }
 	
-static void spread_q(FILE *log,bool bVerbose,
-		     int start,int nr,
-		     rvec x[],real charge[],rvec box,
-		     t_fftgrid *grid,t_nrnb *nrnb)
+void spread_q(FILE *log,bool bVerbose,
+	      int start,int nr,
+	      rvec x[],real charge[],rvec box,
+	      t_fftgrid *grid,t_nrnb *nrnb)
 {
   static bool bFirst = TRUE;
   static int  *nnx,*nny,*nnz;

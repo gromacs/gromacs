@@ -204,6 +204,8 @@ g_dist:         g_dist.o
 g_confrms:      g_confrms.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
 
+chkbang:	chkbang.o
+		$(LD) -o $@ $^ $(SYSLIBS)
 #
 # Helix stuff
 #
@@ -219,7 +221,7 @@ wheel:		wheel.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_rdf:		g_rdf.o
-		$(LD) -o $@ $^ $(SYSLIBS)
+		$(LD) -o $@ $^ $(RUNSYSLIBS)
 
 g_com:		g_com.o
 		$(LD) -o $@ $^ $(SYSLIBS)

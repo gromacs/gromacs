@@ -212,11 +212,11 @@ void unpack_fftgrid(t_fftgrid *grid,int *nx,int *ny,int *nz,
   *ny  = grid->ny;
   *nz  = grid->nz;
   if(bReal) {
-  *la2 = grid->la2r;
-  *la12= grid->la12r;
+    *la2 = grid->la2r;
+    *la12= grid->la12r;
   } else {
-  *la2 = grid->la2c;
-  *la12= grid->la12c;
+    *la2 = grid->la2c;
+    *la12= grid->la12c;
   }
   *ptr = grid->ptr;
 }

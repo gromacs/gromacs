@@ -44,43 +44,25 @@ static char *SRCID_g_rdf_c = "$Id$";
 #include "tpxio.h"
 #include "rdgroup.h"
 #include "smalloc.h"
+#include "fftgrid.h"
+#include "calcgrid.h"
+#include "nrnb.h"
+#include "shift_util.h"
+#include "pppm.h"
 
-int main(int argc,char *argv[])
+static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
+		   char *fnRDF,char *fnCNRDF,
+		   bool bCM,real cutoff,real binwidth)
 {
-  static char *desc[] = {
-    "g_rdf calculates radial distribution functions in different ways.",
-    "The normal method is around a (set of) particle(s), the other method",
-    "is around the center of mass of a set of particles.[PAR]",
-    "If a run input file is supplied ([TT]-s[tt]), exclusions defined",
-    "in that file are taken into account when calculating the rdf.",
-    "The option [TT]-cut[tt] is meant as an alternative way to avoid",
-    "intramolecular peaks in the rdf plot.",
-    "It is however better to supply a run input file with a higher number of",
-    "exclusions. For eg. benzene a topology with nrexcl set to 5",
-    "would eliminate all intramolecular contributions to the rdf.",
-    "Note that all atoms in the selected groups are used, also the ones",
-    "that don't have Lennard-Jones interactions.[PAR]",
-    "Option [TT]-cn[tt] produces the cumulative number rdf."
-  };
-  static bool bCM=FALSE;
-  static real cutoff=0, binwidth=0.005;
-  t_pargs pa[] = {
-    { "-bin",      FALSE, etREAL, {&binwidth},
-      "Binwidth (nm)" },
-    { "-com",      FALSE, etBOOL, {&bCM},
-      "RDF with respect to the center of mass of first group" },
-    { "-cut",      FALSE, etREAL, {&cutoff},
-      "Shortest distance (nm) to be considered"},
-  };
-#define NPA asize(pa)
   FILE       *fp;
-  char       *fnTPS,*fnNDX;
   int        status;
-  char       **grpname;
   char       outf1[STRLEN],outf2[STRLEN];
   char       title[STRLEN];
   int        natoms,i,j,k,nbin,j0,j1,n,nframes;
   int        *count;
+  char       **grpname;
+  int        isize[3];
+  atom_id    *index[3];
   unsigned long int sum;
   real       t,boxmin,hbox,hbox2,cut2,r,r2,invbinw,normfac;
   real       segvol,spherevol,prev_spherevol;
@@ -88,30 +70,12 @@ int main(int argc,char *argv[])
   real       *inv_segvol;
   bool       *bExcl,bTop,bNonSelfExcl;
   matrix     box;
-  int        isize[3],*npairs;
-  atom_id    *index[3],ix,jx,**pairs;
+  int        *npairs;
+  atom_id    ix,jx,**pairs;
   t_topology top;
   t_block    *excl;
-  t_filenm   fnm[] = {
-    { efTRX, "-f",  NULL,     ffREAD },
-    { efTPS, NULL,  NULL,     ffOPTRD },
-    { efNDX, NULL,  NULL,     ffOPTRD },
-    { efXVG, "-o",  "rdf",    ffWRITE },
-    { efXVG, "-cn", "rdf_cn", ffWRITE }
-  };
-#define NFILE asize(fnm)
-  
-  CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
-		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
-
-  fnTPS = ftp2fn_null(efTPS,NFILE,fnm);
-  fnNDX = ftp2fn_null(efNDX,NFILE,fnm);
-  if (!fnTPS && !fnNDX)
-    fatal_error(0,"Neither index file nor topology file specified\n"
-		"             Nothing to do!");
-  
   excl=NULL;
+  
   if (fnTPS) {
     bTop=read_tps_conf(fnTPS,title,&top,&x,NULL,box,TRUE);
     mk_single_top(&top);
@@ -119,14 +83,13 @@ int main(int argc,char *argv[])
       /* get exclusions from topology */
       excl=&(top.atoms.excl);
   }
-  
   snew(grpname,2);
   if (fnTPS)
     get_index(&top.atoms,fnNDX,2,isize,index,grpname);
   else
     rd_index(fnNDX,2,isize,index,grpname);
   
-  natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
+  natoms=read_first_x(&status,fnTRX,&t,&x,box);
   if ( !natoms )
     fatal_error(0,"Could not read coordinates from statusfile\n");
   if (fnTPS)
@@ -269,14 +232,14 @@ int main(int argc,char *argv[])
   r = nbin*binwidth;
   normfac = (4.0/3.0)*M_PI * r*r*r / sum;
   
-  fp=xvgropen(opt2fn("-o",NFILE,fnm),"Radial Distribution","r","");
+  fp=xvgropen(fnRDF,"Radial Distribution","r","");
   fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
   for(i=0; i<nbin; i++)
     fprintf(fp,"%10g %10g\n", (i+0.5)*binwidth,count[i]*inv_segvol[i]*normfac);
   ffclose(fp);
 
   normfac = 1.0/(isize[0]*nframes);
-  fp=xvgropen(opt2fn("-cn",NFILE,fnm),"Cumulative Number RDF","r","number");
+  fp=xvgropen(fnCNRDF,"Cumulative Number RDF","r","number");
   fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
   sum = 0;
   for(i=0; i<nbin; i++) {
@@ -284,9 +247,254 @@ int main(int argc,char *argv[])
     sum += count[i];
   }
   ffclose(fp);
+}
 
-  do_view(opt2fn("-o",NFILE,fnm),NULL);
-  do_view(opt2fn("-cn",NFILE,fnm),NULL);
+static void extract_sq(t_fftgrid *fftgrid,int nbin,real factor,
+		       real count[],rvec box)
+{
+  int nx,ny,nz,la2,la12;
+  t_fft_c *ptr,*p0;
+  int i,j,k,maxkx,maxky,maxkz,n,ind;
+  real k1,z,k_max;
+  rvec lll,kk;
+  
+  calc_lll(box,lll);
+  k_max = nbin/factor;
+  unpack_fftgrid(fftgrid,&nx,&ny,&nz,&la2,&la12,FALSE,(t_fft_r **)&ptr);
+  /* This bit copied from pme.c */
+  maxkx = (nx+1)/2;
+  maxky = (ny+1)/2;
+  maxkz = nz/2+1;
+  for(i=0; (i<nx); i++)
+    for(j=0; (j<ny); j++) {
+      ind = INDEX(i,j,0);
+      p0  = ptr + ind;
+      for(k=0; (k<maxkz); k++,p0++) {
+	if ((i==0) && (j==0) && (k==0))
+	  continue;
+	z   = sqrt(sqr(p0->re)+sqr(p0->im));
+	calc_k(lll,i,j,k,nx,ny,nz,kk);
+	k1  = norm(kk);
+	ind = k1*factor;
+	if (ind < nbin)
+	  count[ind] += z;
+	else
+	  fprintf(stderr,"k (%g) > k_max (%g)\n",k1,k_max);
+      }
+    }
+}
+
+static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
+		  real grid)
+{
+  FILE       *fp;
+  int        status;
+  char       title[STRLEN],*aname;
+  int        natoms,i,j,k,nbin,j0,j1,n,nframes;
+  real       *count;
+  char       *grpname;
+  int        isize;
+  atom_id    *index;
+  real       t,k_max,factor,yfactor;
+  rvec       *x,*xndx,box_size,kk,lll;
+  real       *inv_segvol,*fj,max_spacing;
+  bool       *bExcl,bTop,bNonSelfExcl;
+  matrix     box;
+  int        nx,ny,nz,nelectron;
+  atom_id    ix,jx,**pairs;
+  t_topology top;
+  t_fftgrid  *fftgrid;
+  t_nrnb     nrnb;
+  
+  bTop=read_tps_conf(fnTPS,title,&top,&x,NULL,box,TRUE);
+
+  get_index(&top.atoms,fnNDX,1,&isize,&index,&grpname);
+  if (isize < top.atoms.nr)
+    snew(xndx,isize);
+  else
+    xndx = x;
+  
+  natoms=read_first_x(&status,fnTRX,&t,&x,box);
+
+  init_nrnb(&nrnb);
+    
+  if ( !natoms )
+    fatal_error(0,"Could not read coordinates from statusfile\n");
+  /* check with topology */
+  if ( natoms > top.atoms.nr ) 
+    fatal_error(0,"Trajectory (%d atoms) does not match topology (%d atoms)",
+		natoms,top.atoms.nr);
+	
+  /* Atomic scattering factors */
+  snew(fj,isize);
+  nelectron = 0;
+  for(i=0; (i<isize); i++) {
+    aname = *(top.atoms.atomname[index[i]]);
+    switch (aname[0]) {
+    case 'H':
+      fj[i] = 1;
+      break;
+    case 'C':
+      fj[i] = 6;
+      break;
+    case 'N':
+      fj[i] = 7;
+      break;
+    case 'O':
+      fj[i] = 8;
+      break;
+    case 'F':
+      fj[i] = 9;
+      break;
+    case 'S':
+      fj[i] = 16;
+      break;
+    default:
+      fprintf(stderr,"Warning: don't know number of electrons for atom %s\n",
+	      aname);
+      fj[i] = 1;
+    }
+    nelectron += fj[i];
+  }
+
+  nx = ny = nz = 0;
+  max_spacing = calc_grid(box,grid,&nx,&ny,&nz,1);	
+
+  fftgrid = mk_fftgrid(stdout,FALSE,nx,ny,nz,FALSE);
+  
+  /* Determine largest k vector length */
+  for(i=0; (i<DIM); i++)
+    box_size[i] = box[i][i];
+  calc_lll(box_size,lll);
+  calc_k(lll,nx/2,ny/2,nz/2,nx,ny,nz,kk);
+  k_max = 1+norm(kk);
+  
+  /* this is the S(q) array */
+  nbin = 200;
+  snew(count,nbin+1);
+  
+  nframes = 0;
+  do {
+    /* Put the atoms with scattering factor on a grid. Misuses
+     * an old routine from the PPPM code.
+     */
+    for(i=0; (i<DIM); i++)
+      box_size[i] = box[i][i];
+
+    /* Make the grid empty */
+    clear_fftgrid(fftgrid);
+  
+    /* Put particles on a grid */
+    if (xndx != x) 
+      for(i=0; (i<isize); i++)
+	copy_rvec(x[index[i]],xndx[i]);
+    spread_q(stdout,TRUE,0,isize,xndx,fj,box_size,fftgrid,&nrnb);
+ 
+    /* FFT the density */
+    gmxfft3D(fftgrid,FFTW_FORWARD,NULL);  
+    
+    /* Extract the Sq function and sum it into the average array */
+    factor = nbin/k_max;
+    extract_sq(fftgrid,nbin,factor,count,box_size);
+    
+    nframes++;
+  } while (read_next_x(status,&t,natoms,x,box));
+  fprintf(stderr,"\n");
+  
+  close_trj(status);
+  
+  sfree(x);
+
+  /* Normalize it ?? */  
+
+  factor  = k_max*grid/(nbin);
+  yfactor = nelectron*(1.0/nframes)*(1.0/fftgrid->nxyz);
+  fp=xvgropen(fnSQ,"Structure Factor","q (/nm)","S(q)");
+  for(i=0; i<nbin; i++)
+    fprintf(fp,"%10g %10g\n", (i+0.5)*factor,count[i]*yfactor);
+  ffclose(fp);
+}
+
+int main(int argc,char *argv[])
+{
+  static char *desc[] = {
+    "g_rdf calculates radial distribution functions in different ways.",
+    "The normal method is around a (set of) particle(s), the other method",
+    "is around the center of mass of a set of particles.[PAR]",
+    "If a run input file is supplied ([TT]-s[tt]), exclusions defined",
+    "in that file are taken into account when calculating the rdf.",
+    "The option [TT]-cut[tt] is meant as an alternative way to avoid",
+    "intramolecular peaks in the rdf plot.",
+    "It is however better to supply a run input file with a higher number of",
+    "exclusions. For eg. benzene a topology with nrexcl set to 5",
+    "would eliminate all intramolecular contributions to the rdf.",
+    "Note that all atoms in the selected groups are used, also the ones",
+    "that don't have Lennard-Jones interactions.[PAR]",
+    "Option [TT]-cn[tt] produces the cumulative number rdf.[PAR]"
+    "To bridge the gap between theory and experiment structure factors can",
+    "be computed (option [TT]-sq[tt]). The algorithm uses FFT, the grid"
+    "spacing of which is determined by option [TT]-grid[tt]."
+  };
+  static bool bCM=FALSE;
+  static real cutoff=0, binwidth=0.005, grid = 0.1;
+  t_pargs pa[] = {
+    { "-bin",      FALSE, etREAL, {&binwidth},
+      "Binwidth (nm)" },
+    { "-com",      FALSE, etBOOL, {&bCM},
+      "RDF with respect to the center of mass of first group" },
+    { "-cut",      FALSE, etREAL, {&cutoff},
+      "Shortest distance (nm) to be considered"},
+    { "-grid",     FALSE, etREAL, {&grid},
+      "Grid spacing (in nm) for FFTs when computing structure factors" }
+  };
+#define NPA asize(pa)
+  char       *fnTPS,*fnNDX;
+  bool       bSQ,bRDF;
+  
+  t_filenm   fnm[] = {
+    { efTRX, "-f",  NULL,     ffREAD },
+    { efTPS, NULL,  NULL,     ffOPTRD },
+    { efNDX, NULL,  NULL,     ffOPTRD },
+    { efXVG, "-o",  "rdf",    ffWRITE },
+    { efXVG, "-sq", "sq",     ffOPTWR },
+    { efXVG, "-cn", "rdf_cn", ffWRITE }
+  };
+#define NFILE asize(fnm)
+  
+  CopyRight(stderr,argv[0]);
+  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
+		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
+
+  fnTPS = ftp2fn_null(efTPS,NFILE,fnm);
+  fnNDX = ftp2fn_null(efNDX,NFILE,fnm);
+  bSQ   = opt2bSet("-sq",NFILE,fnm) || opt2parg_bSet("-grid",NPA,pa);
+  bRDF  = opt2bSet("-o",NFILE,fnm) || !bSQ;
+  
+  if (bSQ) {
+    if (!fnTPS)
+      fatal_error(0,"Need a tps file for calculating structure factors\n");
+  }
+  else {
+    if (!fnTPS && !fnNDX)
+      fatal_error(0,"Neither index file nor topology file specified\n"
+		  "             Nothing to do!");
+  }
+ 
+  if  (bSQ) 
+    do_sq(fnNDX,fnTPS,ftp2fn(efTRX,NFILE,fnm),opt2fn("-sq",NFILE,fnm),
+	  grid);
+  
+  if (bRDF) 
+    do_rdf(fnNDX,fnTPS,ftp2fn(efTRX,NFILE,fnm),
+	   opt2fn("-o",NFILE,fnm),opt2fn("-cn",NFILE,fnm),
+	   bCM,cutoff,binwidth);
+ 
+  if (bRDF) { 
+    do_view(opt2fn("-o",NFILE,fnm),NULL);
+    do_view(opt2fn("-cn",NFILE,fnm),NULL);
+  }
+  if (bSQ)
+    do_view(opt2fn("-sq",NFILE,fnm),NULL);
 
   thanx(stderr);
   

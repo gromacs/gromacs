@@ -63,8 +63,12 @@ extern real do_opt_pppm(FILE *log,       bool bVerbose,
  * the grid should be initiated beforehand.
  */
 
-void calc_invh(rvec box,int nx,int ny,int nz,rvec invh);
+extern void calc_invh(rvec box,int nx,int ny,int nz,rvec invh);
 		    
+extern void spread_q(FILE *log,bool bVerbose,
+		     int start,int nr,
+		     rvec x[],real charge[],rvec box,
+		     t_fftgrid *grid,t_nrnb *nrnb);
  
 #endif
 
