@@ -307,7 +307,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     calc_mu(nsb,x,mdatoms->chargeT,mu_tot);
 
     pr_rvec(log,0,"mu_tot 1",mu_tot,DIM);
-    mu_aver=calc_mu_aver(cr,nsb,x,mdatoms->chargeA,mu_tot,top,mdatoms,gnx,grpindex);
+    mu_aver=calc_mu_aver(cr,nsb,x,mdatoms->chargeA,mu_tot,top,mdatoms,gnx,
+			 grpindex);
     pr_rvec(log,0,"mu_tot 2",mu_tot,DIM);
     
     if (bGlas)
@@ -430,7 +431,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       do_coupling(log,nfile,fnm,tcr,t,step,ener,fr,
 		  &(parm->ir),MASTER(cr) || bMultiSim,mdatoms,&(top->idef),mu_aver,
 		  top->blocks[ebMOLS].nr,bMultiSim ? cr_msim : cr,
-		  parm->box,parm->vir);
+		  parm->box,parm->vir,mu_tot,x,f);
     
     upd_mdebin(mdebin,mdatoms->tmass,step,ener,parm->box,shake_vir,
                force_vir,parm->vir,parm->pres,grps,mu_tot);

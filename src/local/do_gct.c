@@ -346,12 +346,33 @@ static real calc_dist(FILE *log,rvec x[])
     return 0.0;
 }
 
+static real calc_force(int natom,rvec f[],rvec x[])
+{
+  int  i,j,m;
+  rvec fff[2],xxx[2],dx,df;
+  
+  for(j=0; (j<2); j++) {
+    clear_rvec(fff[j]);
+    clear_rvec(xxx[j]);
+    for(i=j*(natom/2); (i<(j+1)*(natom/2)); i++) {
+      for(m=0; (m<DIM); m++) {
+	fff[j][m] += f[i][m];
+	xxx[j][m] += x[i][m];
+      }
+    }
+  }
+  rvec_sub(xxx[0],xxx[1],dx);
+  rvec_sub(fff[0],fff[1],df);
+  
+  return iprod(dx,df);
+}
+
 void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 		 t_coupl_rec *tcr,real t,int step,real ener[],
 		 t_forcerec *fr,t_inputrec *ir,bool bMaster,
 		 t_mdatoms *md,t_idef *idef,real mu_aver,int nmols,
 		 t_commrec *cr,matrix box,tensor virial,rvec mu_tot,
-		 rvec x[])
+		 rvec x[],rvec f[])
 {
 
 #define enm2Debye 48.0321
@@ -362,9 +383,9 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   static bool bFirst = TRUE;
   
   int         i,j,ati,atj,atnr2,type,ftype;
-  real        deviation[eoNR],prdev[eoNR],epot0,dist;
-  real        ff6,ff12,ffa,ffb,ffc,ffq,factor,dt,mu_ind,
-    Epol,Eintern,Virial,muabs;
+  real        deviation[eoNR],prdev[eoNR],epot0,dist,rmsf;
+  real        ff6,ff12,ffa,ffb,ffc,ffq,factor,dt,mu_ind;
+  real        Epol,Eintern,Virial,muabs;
   bool        bTest,bPrint;
   t_coupl_LJ  *tclj;
   t_coupl_BU  *tcbu;
@@ -414,6 +435,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
     tcr->pres = tcr->pres0;
     tcr->vir  = tcr->vir0;
     tcr->dist = tcr->dist0;
+    tcr->force= tcr->force0;
     tcr->mu   = tcr->mu0;
     if ((tcr->dipole) != 0.0) {
       mu_ind = mu_aver - d2e(tcr->dipole); /* in e nm */
@@ -430,12 +452,11 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
    * if you want this.
    */
   dist      = calc_dist(log,x);
+  rmsf      = calc_force(md->nr,f,x);
   muabs     = norm(mu_tot);
   Eintern   = Ecouple(tcr,ener);
   Virial    = virial[XX][XX]+virial[YY][YY]+virial[ZZ][ZZ];
-  tcr->mu   = run_aver(tcr->mu,muabs,step,tcr->nmemory);
-  tcr->dist = run_aver(tcr->dist,dist,step,tcr->nmemory);
-    
+  
   /* Use a memory of tcr->nmemory steps, so we actually couple to the
    * average observable over the last tcr->nmemory steps. This may help
    * in avoiding local minima in parameter space.
@@ -443,6 +464,9 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   tcr->pres = run_aver(tcr->pres,ener[F_PRES],step,tcr->nmemory);
   tcr->epot = run_aver(tcr->epot,Eintern,     step,tcr->nmemory);
   tcr->vir  = run_aver(tcr->vir, Virial,      step,tcr->nmemory);
+  tcr->mu   = run_aver(tcr->mu,muabs,step,tcr->nmemory);
+  tcr->dist = run_aver(tcr->dist,dist,step,tcr->nmemory);
+  tcr->force= run_aver(tcr->force,rmsf,step,tcr->nmemory);
   
   if (bPrint)
     pr_ff(tcr,t,idef,ener,Virial,muabs,cr,nfile,fnm);
@@ -470,12 +494,14 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   deviation[eoVir]    = calc_deviation(tcr->vir,  Virial,      tcr->vir0);
   deviation[eoDist]   = calc_deviation(tcr->dist, dist,        tcr->dist0);
   deviation[eoMu]     = calc_deviation(tcr->mu,   muabs,       tcr->mu0);
+  deviation[eoForce]  = calc_deviation(tcr->force,rmsf,        tcr->force0);
   
   prdev[eoPres]   = tcr->pres0 - ener[F_PRES];
   prdev[eoEpot]   = epot0      - Eintern;
   prdev[eoVir]    = tcr->vir0  - Virial;
   prdev[eoMu]     = tcr->mu0   - muabs;
   prdev[eoDist]   = tcr->dist0 - dist;
+  prdev[eoForce]  = tcr->force0- rmsf;
   
   if (bPrint)
     pr_dev(tcr->bVirial,t,prdev,cr,nfile,fnm);
