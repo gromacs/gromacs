@@ -24,18 +24,16 @@ OBJ		= \
 		coupling.o	csettle.o	cshake.o	\
 		dummies.o	ebin.o		edsam.o		\
 		ewald.o         fftgrid.o	force.o  	\
-		ghat.o		\
-		init.o		md.o		\
+		ghat.o		init.o		md.o		\
 		mdatom.o	mdebin.o	nm.o		\
 		ns.o		nsb.o		nsgrid.o	\
 		pme.o		poisson.o	pppm.o		\
-		psgather.o	\
+		psgather.o	pull.o 		pullinit.o	\
+		pullio.o	pullutil.o	\
 		pssolve.o	psspread.o	runner.o	\
 		shakef.o	sim_util.o	splittop.o	\
 		steep.o		tables.o	tgroup.o	\
-		update.o	vcm.o		wnblist.o       \
-                pull.o 		pullinit.o	pullutil.o      \
-                pullio.o
+		update.o	vcm.o		wnblist.o
 
 ifeq ($(USEF77),yes)
 OBJ		+= fshake.o	fsettle.o	flincs.o
