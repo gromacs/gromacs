@@ -420,8 +420,16 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
       fprintf(stderr,"Fit failed!\n");
     else if (nparm <= 3) {
       /* Compute the integral from begintimefit */
-      integral=(parm[0]*myexp(begintimefit,parm[1],  parm[0]) +
-		parm[2]*myexp(begintimefit,1-parm[1],parm[2]));
+      if (nparm == 3) 
+	integral=(parm[0]*myexp(begintimefit,parm[1],  parm[0]) +
+		  parm[2]*myexp(begintimefit,1-parm[1],parm[2]));
+      else if (nparm == 2)
+	integral=parm[0]*myexp(begintimefit,parm[1],  parm[0]);
+      else if (nparm == 1)
+	integral=parm[0]*myexp(begintimefit,1,  parm[0]);
+      else
+	fatal_error(0,"nparm = %d in file %s, line %d",
+		    nparm,__FILE__,__LINE__);
       
       /* Generate THE output */
       if (bVerbose) {
