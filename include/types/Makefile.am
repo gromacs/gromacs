@@ -11,4 +11,5 @@ includetypes_HEADERS = \
 	nsgrid.h    	symtab.h	commrec.h  	enums.h   	\
 	group.h     	ishift.h    	nbslist.h  	parm.h		\
 	topology.h	fcdata.h  	filenm.h  	idef.h 		\
-	matrix.h    	nrnb.h     	trx.h		state.h
+	matrix.h    	nrnb.h     	trx.h		state.h		\
+	pbc.h
