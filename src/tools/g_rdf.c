@@ -69,7 +69,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   real       t,boxmin,hbox,hbox2,cut2,r,r2,invbinw,normfac;
   real       segvol,spherevol,prev_spherevol,*rdf;
   rvec       *x,xcom,dx,*x_i1,xi;
-  real       *inv_segvol,vol,vol_sum;
+  real       *inv_segvol,vol,vol_sum,rho;
   bool       *bExcl,bTop,bNonSelfExcl;
   matrix     box;
   int        *npairs;
@@ -235,13 +235,10 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     prev_spherevol=spherevol;
   }
   
-  /* Calculate normalization factor and totals */
-  sum = 0;
-  for(i=0; (i<nbin-1); i++)
-    sum += count[i];
-  r = nbin*binwidth;
-  normfac = (4.0/3.0)*M_PI * r*r*r / sum;
-
+  /* We have to normalize by dividing by the number of frames */
+  rho     = isize[1]/vol;
+  normfac = 1.0/((rho*nframes)*isize[0]);
+    
   /* Do the normalization */
   nrdf = max(nbin-1,1+(2*fade/binwidth));
   snew(rdf,nrdf);
@@ -266,7 +263,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   /* h(Q) function: fourier transform of rdf */  
   if (fnHQ) {
     int nhq = 401;
-    real *hq,*integrand,Q,rho;
+    real *hq,*integrand,Q;
     
     /* Get a better number density later! */
     rho = isize[1]/vol;
@@ -372,18 +369,20 @@ static void extract_sq(t_fftgrid *fftgrid,int nbin,real k_max,real lambda,
   maxky = (ny+1)/2;
   maxkz = nz/2+1;
   factor = nbin/k_max;
-  for(i=0; (i<nx); i++)
+  for(i=0; (i<nx); i++) {
+#define IDX(i,n)  (i<=n/2) ? (i) : (i-n)
+    kk[XX] = IDX(i,nx);
     for(j=0; (j<ny); j++) {
+      kk[YY] = IDX(j,ny);
       ind = INDEX(i,j,0);
       p0  = ptr + ind;
       for(k=0; (k<maxkz); k++,p0++) {
 	if ((i==0) && (j==0) && (k==0))
 	  continue;
+	kk[ZZ] = IDX(k,nz);
 	z   = sqrt(sqr(p0->re)+sqr(p0->im));
-	/*calc_k(lll,i,j,k,nx,ny,nz,kk);*/
 	kxy2 = sqr(kk[XX]) + sqr(kk[YY]);
 	k2   = kxy2+sqr(kk[ZZ]);
-	kxy  = sqrt(kxy2);
 	k1   = sqrt(k2);
 	ind  = k1*factor;
 	if (ind < nbin) {
@@ -411,6 +410,7 @@ static void extract_sq(t_fftgrid *fftgrid,int nbin,real k_max,real lambda,
 	  fprintf(stderr,"k (%g) > k_max (%g)\n",k1,k_max);
       }
     }
+  }
 }
 
 typedef struct {
@@ -512,7 +512,7 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
   init_pme(stdout,NULL,nx,ny,nz,pme_order,isize,FALSE);
     
   /* Determine largest k vector length. */
-  k_max = 1+sqrt(sqr(1+nx/2)+sqr(1+ny/2)+sqr(1+nz/2))/lambda;
+  k_max = 1+sqrt(sqr(1+nx/2)+sqr(1+ny/2)+sqr(1+nz/2));
 
   /* this is the S(q) array */
   nbin = npixel;
@@ -553,11 +553,12 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
   /* Normalize it ?? */  
   factor  = k_max/(nbin);
   yfactor = (1.0/nframes)/*(1.0/fftgrid->nxyz)*/;
-  fp=xvgropen(fnSQ,"Structure Factor","q (1/lambda)","S(q)");
+  fp=xvgropen(fnSQ,"Structure Factor","q (1/nm)","S(q)");
   fprintf(fp,"@ subtitle \"Lambda = %g nm. Grid spacing = %g nm\"\n",
 	  lambda,grid);
+  factor *= lambda;
   for(i=0; i<nbin; i++) {
-    r = (i+0.5)*factor*2*M_PI;
+    r      = (i+0.5)*factor*2*M_PI;
     segvol = 4*M_PI*sqr(r)*factor;
     fprintf(fp,"%10g %10g\n",r,count[i]*yfactor/segvol);
   }
@@ -630,7 +631,7 @@ int main(int argc,char *argv[])
     "spacing of which is determined by option [TT]-grid[tt]."
   };
   static bool bCM=FALSE;
-  static real cutoff=0,binwidth=0.005,grid=0.05,fade=0.0,lambda=0.1,distance=10;
+  static real cutoff=0,binwidth=0.001,grid=0.05,fade=0.0,lambda=0.1,distance=10;
   static int  npixel=256,nlevel=20;
   t_pargs pa[] = {
     { "-bin",      FALSE, etREAL, {&binwidth},
