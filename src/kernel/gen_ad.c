@@ -241,6 +241,7 @@ static void set_p(t_param *p,atom_id ai[4],real *c,char *s)
     p->a[j]=ai[j];
   for(j=0; (j<MAXFORCEPARAM); j++)
     p->c[j]=c[j];
+  sfree(p->s);
   p->s=strdup(s);
 }
 
@@ -295,7 +296,7 @@ static void sort_id(int nr,t_param ps[])
   qsort(ps,nr,(size_t)sizeof(ps[0]),idcomp);
 }
 
-static bool is_imp(t_param *p,t_atoms *atoms,int nrdh,t_idihres idih[])
+static t_idih *is_imp(t_param *p,t_atoms *atoms,int nrdh,t_idihres idih[])
 {
   int        j,n,pm,start;
   atom_id    a0[MAXATOMLIST];
@@ -335,10 +336,10 @@ static bool is_imp(t_param *p,t_atoms *atoms,int nrdh,t_idihres idih[])
       }
       if (j==4) /* Not broken out */
 	if (eq_imp(p->a,a0))
-	  return TRUE;
+	  return &i0->idih[n];
     }
   }
-  return FALSE;
+  return NULL;
 }
 
 static int n_hydro(atom_id a[],char ***atomname)
@@ -365,9 +366,10 @@ static void pdih2idih(t_param *alldih,int *nalldih,t_param idih[],int *nidih,
 		      int nrdh,t_idihres idh[],bool bAlldih)
 {
   t_param   *dih,tmp_param;
-  int       ndih;
+  int       ndih,imp;
   char      *rname,*a0;
   t_idihres *i0;
+  t_idih    *idihpar;
   int       i,j,k,l,start,aa0;
   int       *index,nind;
   atom_id   ai[MAXATOMLIST];
@@ -414,8 +416,8 @@ static void pdih2idih(t_param *alldih,int *nalldih,t_param idih[],int *nidih,
   snew(dih,*nalldih);
   ndih = 0;
   for(i=0; i<*nalldih; i++) 
-    if (is_imp(&(alldih[i]),atoms,nrdh,idh)) {
-      cpparam(&(idih[*nidih]),&(alldih[i]));
+    if ((idihpar=is_imp(&(alldih[i]),atoms,nrdh,idh))) {
+      set_p(&(idih[*nidih]),alldih[i].a,idihpar->c,idihpar->s);
       (*nidih)++;
     } else {
       cpparam(&(dih[ndih]),&(alldih[i]));

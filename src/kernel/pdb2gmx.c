@@ -833,11 +833,6 @@ int main(int argc, char *argv[])
   /* read residue database */
   printf("Reading residue database... (%s)\n",ff);
   nrtp=read_resall(ff,bts,&restp,&rb,&ra,&rd,&idih,atype,&tab);
-  if (debug) {
-    fprintf(debug,"\nResidue database with %d residues:\n\n\n",nrtp);
-    print_resall(debug,bts,nrtp,restp,rb,ra,rd,idih,atype);
-    fprintf(debug,"\n");
-  }
   if (bNewRTP) {
     fp=ffopen("new.rtp","w");
     print_resall(fp,bts,nrtp,restp,rb,ra,rd,idih,atype);
@@ -1008,7 +1003,7 @@ int main(int argc, char *argv[])
       else
 	top_file2=top_file;
 
-    pdb2top(ff,top_file2,posre_fn,molname,nincl,incls,nmol,mols,pdba,nah,ah,
+    pdb2top(ff,top_file2,posre_fn,molname,nincl,incls,nmol,mols,pdba,
 	    &x,atype,&tab,bts,nrtp,rb,nrtp,restp,nrtp,ra,nrtp,rd,nrtp,idih,
 	    sel_ntdb,sel_ctdb,bH14,rN,rC,bAlldih,
 	    bDummies,mHmult,nssbonds,ssbonds,NREXCL);

@@ -348,13 +348,12 @@ static void ter2idihs(t_params *ps,
 }
 
 static void at2bonds(t_params *ps,
-		     int nrb,t_resbond rb[],int nah,t_addh ah[],
+		     int nrb,t_resbond rb[],
 		     int natoms,t_atom atom[],char **aname[],
 		     int nres,char **resname[],bool bAlldih,
 		     rvec x[])
 {
   t_resbond *rb0;
-  t_addh    *ah0;
   t_add_block *ab0;
   int        i,j,k,l;
   int        ai,aj;
@@ -364,55 +363,20 @@ static void at2bonds(t_params *ps,
   /* First generate bonds along the heavy atoms */
   fprintf(stderr,"Making bonds on the heavy atoms...\n");
   for(i=j=0; ((i<nres) && (j<natoms)); i++) {
-    if ((rb0=search_rb(*(resname[i]),nrb,rb)) != NULL) {
+   if ((rb0=search_rb(*(resname[i]),nrb,rb)) != NULL) {
       for(k=0; (k<rb0->nb); k++) {
-	if (bAlldih) {
-	  /* if bAlldih is true, don't check for hydrogens */
-	  if ((ai=search_atom(rb0->rbond[k].ai,j,natoms,atom,aname)) != -1)
-	    if ((aj=search_atom(rb0->rbond[k].aj,j,natoms,atom,aname)) != -1)
-	      if ( ( !is_hydrogen(rb0->rbond[k].ai) &&
-		     !is_hydrogen(rb0->rbond[k].aj) ) ||
-		   (atom[ai].resnr == atom[aj].resnr))
-		add_param(ps,ai,aj,rb0->rbond[k].c,rb0->rbond[k].s);
-	} else {
-	  /* else do the normal thing */
-	  if (!is_hydrogen(rb0->rbond[k].ai) && 
-	      !is_hydrogen(rb0->rbond[k].aj)) {
-	    if ((ai=search_atom(rb0->rbond[k].ai,j,natoms,atom,aname)) != -1)
-	      if ((aj=search_atom(rb0->rbond[k].aj,j,natoms,atom,aname))!=-1) {
-		dist2 = distance2(x[ai],x[aj]);
-		if (dist2 > sqr(LONG_BOND_DIST) )
-		  fprintf(stderr,"Warning: Long Bond (%d-%d = %g nm)\n",
-			  ai+1,aj+1,sqrt(dist2));
-		add_param(ps,ai,aj,rb0->rbond[k].c,rb0->rbond[k].s);
-	      }
-	  }
+	if (((ai=search_atom(rb0->rbond[k].ai,j,natoms,atom,aname)) != -1) &&
+	    ((aj=search_atom(rb0->rbond[k].aj,j,natoms,atom,aname)) != -1)) {
+	  dist2 = distance2(x[ai],x[aj]);
+	  if (dist2 > sqr(LONG_BOND_DIST) )
+	    fprintf(stderr,"Warning: Long Bond (%d-%d = %g nm)\n",
+		    ai+1,aj+1,sqrt(dist2));
+	  add_param(ps,ai,aj,rb0->rbond[k].c,rb0->rbond[k].s);
 	}
       }
     } else
       fprintf(stderr,"No bond information for residue %d (%s)\n",
 	      i+1,*(resname[i]));
-    while ((j < natoms-1) && (atom[j].resnr == atom[j+1].resnr))
-      j++;
-    j++;
-  }
-  /* And now the hydrogen atoms. */
-  fprintf(stderr,"Making bonds on the hydrogen atoms...\n");
-  for(i=j=0; ((i<nres) && (j<natoms)); i++) {
-    if ((ah0=search_h_db(nah,ah,*(resname[i]))) != NULL)
-      /* Loop over blocks */
-      for(k=0; (k<ah0->n_add); k++) {
-	ab0=&(ah0->ab[k]);
-	if ((ai=search_atom(ab0->na[0],j,natoms,atom,aname)) == -1)
-	  fprintf(stderr,"WARNING: Atom %s not found in residue %s %d\n",
-		  ab0->na[0]+1,*(resname[i]),i+1);
-	else
-	  for(l=0; (l<ab0->nh); l++) {
-	    aj=ai+l+1;
-	    add_param(ps,ai,aj,NULL,NULL);
-	  }
-      }
-    
     while ((j < natoms-1) && (atom[j].resnr == atom[j+1].resnr))
       j++;
     j++;
@@ -488,7 +452,7 @@ void print_sums(t_atoms *atoms, bool bSystem)
 
 void pdb2top(char *ff,FILE *top_file,char *posre_fn,char *molname,
 	     int nincl, char **incls, int nmol, t_mols *mols,
-	     t_atoms *atoms,int nah,t_addh ah[],rvec **x,
+	     t_atoms *atoms,rvec **x,
 	     t_atomtype *atype,t_symtab *tab,
 	     int bts[],
 	     int nrb, t_resbond rb[],
@@ -514,7 +478,7 @@ void pdb2top(char *ff,FILE *top_file,char *posre_fn,char *molname,
   
   /* Make bonds */
   at2bonds(&(plist[F_BONDS]),
-	   nrb,rb,nah,ah,atoms->nr,atoms->atom,atoms->atomname,
+	   nrb,rb,atoms->nr,atoms->atom,atoms->atomname,
 	   atoms->nres,atoms->resname,bAlldih,*x);
   
   /* Terminal bonds */

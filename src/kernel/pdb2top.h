@@ -66,7 +66,7 @@ extern void print_top_mols(FILE *out, char *title, int nincl, char **incls,
 
 extern void pdb2top(char *ff,FILE *top_file,char *posre_fn,char *molname,
 		    int nincl, char **incls, int nmol, t_mols *mols,
-		    t_atoms *atoms,int nah,t_addh ah[],rvec **x,
+		    t_atoms *atoms,rvec **x,
 		    t_atomtype *atype,t_symtab *tab,
 		    int bts[],
 		    int nrb, t_resbond rb[],
