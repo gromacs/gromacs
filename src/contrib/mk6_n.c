@@ -75,7 +75,7 @@ int main(int argc,char *argv[])
 #else
   double tabscale = 500;
 #endif
-  int n = (int) (2.0*tabscale);
+  int n = (int) (3.0*tabscale);
     
   doit("table6-8.xvg",my8,n,tabscale);
   doit("table6-9.xvg",my9,n,tabscale);
