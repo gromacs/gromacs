@@ -7,8 +7,9 @@
 #include "macros.h"
 #include "vec.h"
 #include "statutil.h"
+#include "ewald.h"
 
-enum { mGuillot, mN61, mMaaren, mGuillot_Maple, mHard_Wall, mNR };
+enum { mGuillot, mN61, mLjc, mMaaren, mGuillot_Maple, mHard_Wall, mNR };
 
 static double erf2(double x)
 {
@@ -75,6 +76,60 @@ void do_n61(FILE *fp,int eel,double resolution,int npow)
     }
     fprintf(fp,"\n");
   }
+}
+
+void lo_do_ljc(double r, int npow,
+	       double *vc,double *vc2,
+	       double *vd,double *vd2,
+	       double *vr,double *vr2)
+{
+  double rpow;
+  double r2,r6,r12;
+  
+  r2    = r*r;
+  r6    = 1.0/(r2*r2*r2);
+  r12   = r6*r6;
+  
+  rpow = npow;
+
+  *vc   = 1.0/r;
+  *vc2  = 2.0/(r*r2);
+
+  *vd   = -r6;
+  *vd2  = 42.0*(*vd)/r2;
+
+  *vr  = r12;
+  *vr2 = 156.0*(*vr)/r2;
+}
+
+void lo_do_ljc_pme(double r, int npow,
+		   double rcoulomb, double ewald_rtol,
+		   double *vc,double *vc2,
+		   double *vd,double *vd2,
+		   double *vr,double *vr2)
+{
+  double rpow;
+  double r2,r6,r12;
+  double isp= 0.564189583547756;
+  double ewc;
+
+  ewc = calc_ewaldcoeff(rcoulomb,ewald_rtol);
+
+  r2    = r*r;
+  r6    = 1.0/(r2*r2*r2);
+  r12   = r6*r6;
+  
+  rpow = npow;
+
+  *vc   = erfc(ewc*r)/r;;
+  *vc2  = 2*erfc(ewc*r)/(r*r2)+4*exp(-(ewc*ewc*r2))*ewc*isp/r2+
+          4*ewc*ewc*ewc*exp(-(ewc*ewc*r2))*isp;
+
+  *vd   = -r6;
+  *vd2  = 42.0*(*vd)/r2;
+
+  *vr  = r12;
+  *vr2 = 156.0*(*vr)/r2;
 }
 
 void lo_do_guillot(double r,double xi,
@@ -150,6 +205,29 @@ static void do_guillot(FILE *fp,int eel,double resolution)
   }
 }
 
+static void do_ljc(FILE *fp,int eel,double resolution,int npow)
+{
+  int    i,i0,imax;
+  double r,vc,vc2,vd,vd2,vr,vr2;
+
+  imax = 3/resolution;
+  for(i=0; (i<=imax); i++) {
+    r     = i*resolution;
+    /* Avoid very large numbers */
+    if (r < 0.04) {
+      vc = vc2 = vd = vd2 = vr = vr2 = 0;
+    } else {
+      if (eel == eelPME) {
+	lo_do_ljc_pme(r,npow,0.9,1e-05,&vc,&vc2,&vd,&vd2,&vr,&vr2);
+      } else if (eel == eelCUT) { 
+	lo_do_ljc(r,npow,&vc,&vc2,&vd,&vd2,&vr,&vr2);
+      }
+    }
+    fprintf(fp,"%10g  %10g  %10g   %10g  %10g  %10g  %10g\n",
+	    r,vc,vc2,vd,vd2,vr,vr2);
+  }
+}
+
 static void do_guillot_maple(FILE *fp,int eel,double resolution)
 {
   int    i,i0,imax;
@@ -200,7 +278,7 @@ int main(int argc,char *argv[])
     "potentials."
   };
   static char *opt[]     = { NULL, "cut", "rf", "pme", NULL };
-  static char *model[]   = { NULL, "guillot", "n61", "maaren", "guillot_maple", "hard_wall", NULL };
+  static char *model[]   = { NULL, "guillot", "n61", "ljc", "maaren", "guillot_maple", "hard_wall", NULL };
   static real resolution = 0.001,delta=0,efac=500;
   static int  npow       = 12;
   t_pargs pa[] = {
@@ -241,6 +319,8 @@ int main(int argc,char *argv[])
     m = mMaaren;
   else if (strcmp(model[0],"n61") == 0) 
     m = mN61;
+  else if (strcmp(model[0],"ljc") == 0) 
+    m = mLjc;
   else if (strcmp(model[0],"guillot") == 0) 
     m = mGuillot;
   else if (strcmp(model[0],"guillot_maple") == 0) 
@@ -263,6 +343,9 @@ int main(int argc,char *argv[])
     break;
   case mN61:
     do_n61(fp,eel,resolution,npow);
+    break;
+  case mLjc:
+    do_ljc(fp,eel,resolution,npow);
     break;
   case mHard_Wall:
     do_hard(fp,resolution,efac,delta);
