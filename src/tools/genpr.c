@@ -55,12 +55,17 @@ int main(int argc,char *argv[])
     "block in the topology. Since the atom numbers in every moleculetype",
     "in the topology start at 1 and the numbers in the input file for",
     "genpr number consecutively from 1, genpr will only produce a useful",
-    "file for the first molecule."
+    "file for the first molecule.[PAR]",
+    "The -of option produces an index file that can be used for",
+    "freezing atoms. In this case the input file must be a pdb file."
   };
   static rvec    fc={1000.0,1000.0,1000.0};
+  static real    freeze_level;
   t_pargs pa[] = {
     { "-fc", FALSE, etRVEC, {fc}, 
-      "force constants (kJ mol-1 nm-2)" }
+      "force constants (kJ mol-1 nm-2)" },
+    { "-freeze", FALSE, etREAL, {&freeze_level},
+      "if the -of option or this one is given an index file will be written containing atom numbers of all atoms that have a B-factor less than the level given here" }
   };
   
   t_atoms atoms;
@@ -71,11 +76,13 @@ int main(int argc,char *argv[])
   char         *gn_grp;
   char         title[STRLEN];
   matrix       box;
+  bool         bFreeze;
   
   t_filenm fnm[] = {
-    { efSTX, "-f", NULL, ffREAD },
-    { efNDX, "-n", NULL, ffOPTRD },
-    { efITP, "-o", "posre", ffWRITE }
+    { efSTX, "-f",  NULL,    ffREAD },
+    { efNDX, "-n",  NULL,    ffOPTRD },
+    { efITP, "-o",  "posre", ffWRITE },
+    { efNDX, "-of", "freeze",    ffOPTWR }
   };
 #define NFILE asize(fnm)
   
@@ -83,7 +90,9 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
   
-  if ( !ftp2bSet(efNDX,NFILE,fnm) ) {
+  bFreeze = opt2bSet("-of",NFILE,fnm) || opt2parg_bSet("-freeze",asize(pa),pa);
+  
+  if ( !opt2bSet("-n",NFILE,fnm) ) {
     if ( !ftp2bSet(efSTX,NFILE,fnm) )
       fatal_error(0,"no index file and no structure file suplied");
     else {
@@ -99,18 +108,32 @@ int main(int argc,char *argv[])
       sfree(v);
     }
   }
-  printf("Select group to position restrain\n");
-  get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&igrp,&ind_grp,&gn_grp);
-  
-  out=ftp2FILE(efITP,NFILE,fnm,"w");
-  fprintf(out,"; position restraints for %s of %s\n\n",gn_grp,title);
-  fprintf(out,"[ position_restraints ]\n");
-  fprintf(out,";%3s %5s %9s %10s %10s\n","i","funct","fcx","fcy","fcz");
-  for(i=0; i<igrp; i++) 
-    fprintf(out,"%4d %4d %10g %10g %10g\n",
-	    ind_grp[i]+1,1,fc[XX],fc[YY],fc[ZZ]);
-  fclose(out);
-  
+  if (bFreeze) {
+    if (atoms.pdbinfo == NULL) 
+      fatal_error(0,"No B-factors in input file %s, use a pdb file next time.",
+		  ftp2fn(efSTX,NFILE,fnm));
+    
+    out=opt2FILE("-of",NFILE,fnm,"w");
+    fprintf(out,"[ freeze ]\n");
+    for(i=0; (i<atoms.nr); i++) {
+      if (atoms.pdbinfo[i].bfac <= freeze_level)
+	fprintf(out,"%d\n",i+1);
+    }
+    fclose(out);
+  }
+  else {
+    printf("Select group to position restrain\n");
+    get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&igrp,&ind_grp,&gn_grp);
+    
+    out=ftp2FILE(efITP,NFILE,fnm,"w");
+    fprintf(out,"; position restraints for %s of %s\n\n",gn_grp,title);
+    fprintf(out,"[ position_restraints ]\n");
+    fprintf(out,";%3s %5s %9s %10s %10s\n","i","funct","fcx","fcy","fcz");
+    for(i=0; i<igrp; i++) 
+      fprintf(out,"%4d %4d %10g %10g %10g\n",
+	      ind_grp[i]+1,1,fc[XX],fc[YY],fc[ZZ]);
+    fclose(out);
+  }
   thanx(stderr);
   
   return 0;
