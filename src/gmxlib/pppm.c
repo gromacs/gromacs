@@ -58,7 +58,7 @@ static void calc_invh(rvec box,int nx,int ny,int nz,rvec invh)
   invh[ZZ] = nz/box[ZZ];
 }
 
-void calc_weights(int nx,int ny,int nz,
+void calc_weights(int iatom,int nx,int ny,int nz,
 		  rvec x,rvec box,rvec invh,ivec ixyz,real WXYZ[])
 {
   const  real half=0.5;
@@ -92,7 +92,7 @@ void calc_weights(int nx,int ny,int nz,
       it -=nm;
     }
     if ((it < 0) || (it >= nxyz[m]))
-      fatal_error(0,"it = %d, x=%f, ttt=%f",it,x[m],ttt);
+      fatal_error(0,"iatom = %d, it = %d, x=%f, ttt=%f",iatom,it,x[m],ttt);
     ixyz[m]    = it;
     
     /* Fraction (offset) from grid point */
@@ -187,7 +187,7 @@ static void spread_q(FILE *log,bool bVerbose,
      */
     
     if (qi != 0.0) {
-      calc_weights(nx,ny,nz,x[i],box,invh,ixyz,WXYZ);
+      calc_weights(i,nx,ny,nz,x[i],box,invh,ixyz,WXYZ);
       iX  = ixyz[XX] + nx;
       iY  = ixyz[YY] + ny;
       iZ  = ixyz[ZZ] + nz;
@@ -333,7 +333,7 @@ static real gather_f(FILE *log,bool bVerbose,
      * see Luty et. al, JCP 103 (1995) 3014
      */
      
-    calc_weights(nx,ny,nz,x[i],box,invh,ixyz,WXYZ);
+    calc_weights(i,nx,ny,nz,x[i],box,invh,ixyz,WXYZ);
 
     for(ll=llim2; (ll<=ulim2); ll++) {
       ixw[ll-llim2] = nnx[ixyz[XX]+ll+nx];

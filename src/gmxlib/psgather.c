@@ -113,7 +113,7 @@ real ps_gather_f(FILE *log,bool bVerbose,
      * see Luty et. al, JCP 103 (1995) 3014
      */
      
-    calc_weights(nx,ny,nz,x[i],box,invh,ixyz,WXYZ);
+    calc_weights(i,nx,ny,nz,x[i],box,invh,ixyz,WXYZ);
 
     for(ll=llim2; (ll<=ulim2); ll++) {
       ixw[ll-llim2] = nnx[ixyz[XX]+ll+nx];
