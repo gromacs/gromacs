@@ -323,7 +323,7 @@ void close_trx(int status)
 
 int open_trx(char *outfile,char *filemode)
 {
-  if (filemode[0] != 'w')
+  if (filemode[0]!='w' && filemode[0]!='a')
     fatal_error(0,"Sorry, write_trx can only write");
 
   return fio_open(outfile,filemode);

@@ -632,8 +632,10 @@ int fio_open(char *fn,char *mode)
       m="rb";
     else if (mode[0]=='w')
       m="wb";
-    else
+    else if (mode[0]=='a')
       m="ab";
+    else
+      fatal_error(0,"DEATH HORROR in fio_open, mode is '%s'",m);
   }
 
   /* Determine whether we have to make a new one */
