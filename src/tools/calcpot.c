@@ -259,7 +259,7 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   /* Initiate forcerecord */
   *fr = mk_forcerec();
   init_forcerec(stdlog,*fr,&(parm->ir),top,cr,*mdatoms,
-		nsb,parm->box,FALSE,NULL,TRUE);
+		nsb,parm->box,FALSE,"table.xvg",TRUE);
 
   /* Remove periodicity */  
   for(m=0; (m<DIM); m++)
