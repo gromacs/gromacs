@@ -193,7 +193,7 @@ static unsigned int nbf_index(t_forcerec *fr, bool bvdw, bool bcoul, bool bFree,
   if (bFree) 
     nn += (fr->sc_alpha==0) ? 1 : 2;
   else {
-    /* No solvent optimization with free energy */
+    /* We never combine solvent opt and free energy */
     nn += solopt;
     if((solopt>0) && (icoul==3 && (ivdw==0 || ivdw==3 || ivdw==4)))
       nn += 2; /* solvent comes after the two free energy	loops */   
