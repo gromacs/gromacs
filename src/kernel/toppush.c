@@ -54,7 +54,8 @@ static char *SRCID_toppush_c = "$Id$";
 
 static char  errbuf[256];
 
-void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype)
+void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype,
+		       real npow)
 {
   int   i,j,k=-1,nf;
   int   nr,nrfp;
@@ -102,7 +103,7 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype)
 	  sig6     = pow(sigma_ij,6.0);
 	  
 	  plist->param[k].c[0] = 4*eps_ij*sig6;
-	  plist->param[k].c[1] = 4*eps_ij*sig6*sig6;
+	  plist->param[k].c[1] = 4*eps_ij*pow(sigma_ij,npow);
 	}
       
       break;

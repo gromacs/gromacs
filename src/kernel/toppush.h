@@ -54,7 +54,7 @@ typedef struct {
 } t_block2;
 
 extern void generate_nbparams(int comb,int funct,t_params plist[],
-			      t_atomtype *atype);
+			      t_atomtype *atype,real npow);
 			      
 extern void push_at (t_symtab *symtab, t_atomtype *at, char *line,int nb_funct);
 

@@ -254,7 +254,7 @@ static char **read_topol(char        *infile,
   char       genpairs[32];
   char       *dirstr,*dummy2;
   int        nrcopies,nmol,nblock=0,Nsim=0,nscan;
-  double     fLJ,fQQ;
+  double     fLJ,fQQ,fPOW;
   t_simsystem *Sims=NULL;
   t_topology *block=NULL;
   t_molinfo  *blockinfo=NULL;
@@ -264,6 +264,7 @@ static char **read_topol(char        *infile,
   directive  d,newd;
   t_block2   *block2;
   real       fudgeLJ=-1;    /* Multiplication factor to generate 1-4 from LJ */
+  real       npow=12.0;     /* Default value for repulsion power */
   bool       bReadDefaults,bGenPairs=FALSE;
   double     qt=0,qBt=0; /* total charge */
 
@@ -356,8 +357,8 @@ static char **read_topol(char        *infile,
 	  if (bReadDefaults)
 	    warning("Found another defaults entry, will use the last one");
 	  bReadDefaults = TRUE;
-	  nscan = sscanf(pline,"%s%s%s%lf%lf",
-			 nb_str,comb_str,genpairs,&fLJ,&fQQ);
+	  nscan = sscanf(pline,"%s%s%s%lf%lf%lf",
+			 nb_str,comb_str,genpairs,&fLJ,&fQQ,&fPOW);
 	  if (nscan < 2)
 	    too_few();
 	  else {
@@ -373,6 +374,8 @@ static char **read_topol(char        *infile,
 	      fudgeLJ   = fLJ;
 	    if (nscan >= 5)
 	      *fudgeQQ  = fQQ;
+	    if (nscan >= 6)
+	      npow      = fPOW;
 	  }
 	  nb_funct = ifunc_index(d_nonbond_params,nb_funct);
 	  
@@ -391,7 +394,7 @@ static char **read_topol(char        *infile,
 	  break;
 	case d_pairtypes:
 	  if (nb_flag) {
-	    generate_nbparams(comb,nb_funct,&(plist[nb_funct]),atype);
+	    generate_nbparams(comb,nb_funct,&(plist[nb_funct]),atype,npow);
 	    nb_flag=FALSE;
 	  }
 	  if (bGenPairs) {
@@ -410,7 +413,7 @@ static char **read_topol(char        *infile,
 
 	case d_nonbond_params:
 	  if (nb_flag) {
-	    generate_nbparams(comb,nb_funct,&(plist[nb_funct]),atype);
+	    generate_nbparams(comb,nb_funct,&(plist[nb_funct]),atype,npow);
 	    nb_flag=FALSE;
 	  }
 	  push_nbt(d,plist,atype,pline,nb_funct);
@@ -427,7 +430,7 @@ static char **read_topol(char        *infile,
 	  break;
 	case d_moleculetype: {
 	  if (nb_flag) {
-	    generate_nbparams(comb,nb_funct,&(plist[nb_funct]),atype);
+	    generate_nbparams(comb,nb_funct,&(plist[nb_funct]),atype,npow);
 	    nb_flag=FALSE;
 	  }
 	  if (bGenPairs) {
