@@ -122,9 +122,9 @@ class Cin:
        " Returns linenumber of string in list"
        for i in range(len(list)):
                 if list[i] == string:
-                   index = i
-       return index
-
+                   return i
+       print >> sys.stderr "Could not find string",string,"in list of length",len(list)
+       return -1
 
 #--------------------------#
 # unravel gromos list
