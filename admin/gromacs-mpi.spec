@@ -38,11 +38,11 @@ it if you are hacking parallel mdrun stuff, and then
 you probably want the full source anyway...
 
 %prep
-%setup
+%setup -n gromacs-%{version}
 
 %build
 # Call it mdrun_mpi
-./configure --prefix=%{prefix} --exec-prefix=%{prefix} --program_suffix="_mpi" 
+./configure --enable-mpi --prefix=%{prefix} --exec-prefix=%{prefix} --program-suffix=_mpi
 make mdrun
 
 %install
@@ -77,6 +77,15 @@ rm -rf ${RPM_BUILD_ROOT}
 %{prefix}/lib/libmd_mpi.so
 %{prefix}/lib/libmd_mpi.a
 %{prefix}/lib/libmd_mpi.la
+
+
+
+
+
+
+
+
+
 
 
 

@@ -35,9 +35,9 @@ Makefile.@host@ Makefile.@host@_double: Template.mak Makefile
 
 install-data-hook:
 if DOUBLE
-	(cd $(DESTDIR)$(templatedir) && test ! -f Makefile && $(LN_S) Makefile.@host@_double Makefile ; exit 0)
+	(cd $(DESTDIR)$(templatedir) && test ! -e Makefile && $(LN_S) Makefile.@host@_double Makefile ; exit 0)
 else
-	(cd $(DESTDIR)$(templatedir) && test ! -f Makefile && $(LN_S) Makefile.@host@ Makefile ; exit 0)
+	(cd $(DESTDIR)$(templatedir) && test ! -e Makefile && $(LN_S) Makefile.@host@ Makefile ; exit 0)
 endif
 CLEANFILES = Makefile.@host@ Makefile.@host@_double *~ \\\#*
 

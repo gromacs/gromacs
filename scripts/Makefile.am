@@ -25,3 +25,11 @@ GMXRC:	GMXRC.in
 CLEANFILES = GMXRC \\\#* *~
 
 
+
+
+
+
+
+
+
+

@@ -28,6 +28,8 @@ AC_ARG_ENABLE(float,
 if test "$enable_float" = "no"; then
   AC_DEFINE(DOUBLE,,[Compile in double precision])
   AM_CONDITIONAL(DOUBLE,true)
+else
+  AM_CONDITIONAL(DOUBLE,false)
 fi
 
 ### Fortran or not
@@ -309,9 +311,9 @@ case "${host_cpu}" in
 #endif	
 EOF
     if AC_TRY_COMMAND($CC -c conftest.s); then
-      AM_CONDITIONAL(AXP_ASM_CAPITAL_S,FALSE)
+      AM_CONDITIONAL(AXP_ASM_CAPITAL_S,false)
     else
-      AM_CONDITIONAL(AXP_ASM_CAPITAL_S,TRUE)
+      AM_CONDITIONAL(AXP_ASM_CAPITAL_S,true)
     fi
     GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} axp_asm.lo"
      ;;

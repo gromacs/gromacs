@@ -59,18 +59,16 @@ rpm:
 	@echo "Finished - the packages are in rpmdir/RPMS and rpmdir/SRPMS!"
 
 
-# Dont try to make rpm and mpi-rpm in parallel.
-
 mpi-rpm:	
 	mkdir -p rpmdir/BUILD \
 	  rpmdir/SPECS \
 	  rpmdir/SOURCES \
 	  rpmdir/SRPMS \
 	  rpmdir/RPMS/$(RPMARCH)
-	cp -f $(PACKAGE)-$(VERSION).tar.gz rpmdir/SOURCES/$(PACKAGE)-mpi-$(VERSION).tar.gz
-	$(RPM) --buildroot $$PWD/rpmdir/buildroot-mpi --clean -ba rpm_build/SPECS/$(PACKAGE)-mpi.spec --define "_topdir $$PWD/rpmdir"
-	@echo "==========================================================="
-	@echo "Finished - the packages are in rpmdir/RPMS & rpmdir/SRPMS !"
+	cp -f $(PACKAGE)-$(VERSION).tar.gz rpmdir/SOURCES/$(PACKAGE)-$(VERSION).tar.gz
+	$(RPM) --buildroot $$PWD/rpmdir/buildroot --clean -bb $(top_srcdir)/admin/$(PACKAGE)-mpi.spec --define "_topdir $$PWD/rpmdir"
+	@echo "============================================"
+	@echo "Finished - the packages are in rpmdir/RPMS!"
 
 CLEANFILES = *~ \\\#* 
 
