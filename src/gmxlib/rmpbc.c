@@ -30,6 +30,7 @@ static char *SRCID_rmpbc_c = "$Id$";
 
 #include "sysstuff.h"
 #include "typedefs.h"
+#include "smalloc.h"
 #include "mshift.h"
 #include "pbc.h"
 #include "gstat.h"
@@ -37,16 +38,34 @@ static char *SRCID_rmpbc_c = "$Id$";
 	
 void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
 {
-  static bool    bFirst=TRUE;
+
+  typedef struct {
+    int     natoms;
+    t_graph *gr;
+  } multi_graph;
+  
+  static int ngraph;
+  static multi_graph *mgraph=NULL;
   static t_graph *graph;
   rvec   sv[SHIFTS],box_size;
-  
-  if (bFirst) {
-    graph=mk_graph(idef,natoms,FALSE);
-    bFirst=FALSE;
+  int n,i;
+ 
+  if (box[0][0]) {
+    n=-1;
+    for(i=0; i<ngraph; i++)
+      if (mgraph[n].natoms==natoms)
+	n=i;
+    if (n==-1) {
+      /* make a new graph if there isn't one with this number of atoms */
+      n=ngraph;
+      ngraph++;
+      srenew(mgraph,ngraph);
+      mgraph[n].natoms=natoms;
+      mgraph[n].gr=mk_graph(idef,natoms,FALSE);
+    }
+    mk_mshift(stdout,mgraph[n].gr,box,x);
+    calc_shifts(box,box_size,sv,FALSE);
+    shift_x(mgraph[n].gr,sv,x,x_s);
   }
-  mk_mshift(stdout,graph,box,x);
-  calc_shifts(box,box_size,sv,FALSE);
-  shift_x(graph,sv,x,x_s);
 }
 
