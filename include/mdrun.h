@@ -54,7 +54,8 @@ extern time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		    rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
 		    rvec buf[],t_mdatoms *mdatoms,
 		    t_nsborder *nsb,t_nrnb nrnb[],
-		    t_graph *graph,t_edsamyn *edyn);
+		    t_graph *graph,t_edsamyn *edyn,
+		    t_forcerec *fr,rvec box_size);
 
 /* ROUTINES from nm.c */
 extern time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
@@ -64,7 +65,8 @@ extern time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		    rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
 		    rvec buf[],t_mdatoms *mdatoms,
 		    t_nsborder *nsb,t_nrnb nrnb[],
-		    t_graph *graph,t_edsamyn *edyn);
+		    t_graph *graph,t_edsamyn *edyn,
+		    t_forcerec *fr,rvec box_size);
 
 /* ROUTINES from steep.c */
 extern real f_norm(FILE *log,
@@ -84,9 +86,19 @@ extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		       tensor ekin,real ener[],
 		       t_nrnb nrnb[],
 		       bool bVerbose,bool bDummies,t_commrec *cr,
-		       t_graph *graph);
+		       t_graph *graph,
+		       t_forcerec *fr,rvec box_size);
 /* Do steepest descents EM or something like that! */
 
+/* ROUTINES from congrad.c */
+extern time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
+		       t_parm *parm,t_topology *top,
+		       t_groups *grps,t_nsborder *nsb,
+		       rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
+		       tensor ekin,real ener[],t_nrnb nrnb[],
+		       bool bVerbose,t_commrec *cr,t_graph *graph,t_forcerec *fr,
+		       rvec box_size);
+/* Do conjugate gradients EM! */
 
 /* ROUTINES from runner.c */
 extern bool optRerunMDset (int nfile, t_filenm fnm[]);
