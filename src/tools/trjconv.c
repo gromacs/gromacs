@@ -499,8 +499,12 @@ int main(int argc,char *argv[])
     bHaveFirstFrame = read_first_frame(&status,in_file,&fr,flags);
     if (fr.bPrec)
       fprintf(stderr,"\nPrecision of %s is %g (nm)\n",in_file,1/fr.prec);
-    if (bNeedPrec && (bSetPrec || !fr.bPrec))
-      fprintf(stderr,"\nSetting output precision to %g (nm)\n",1/prec);
+    if (bNeedPrec) {
+      if (bSetPrec || !fr.bPrec)
+	fprintf(stderr,"\nSetting output precision to %g (nm)\n",1/prec);
+      else
+	fprintf(stderr,"Using output precision of %g (nm)\n",1/prec);
+    }
 
     if (bHaveFirstFrame) {
       natoms = fr.natoms;
