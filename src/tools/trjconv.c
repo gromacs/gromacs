@@ -566,7 +566,7 @@ int main(int argc,char *argv[])
 		    NFILE,fnm,NPA,pa,asize(desc),desc,
 		    0,NULL);
 
-  top_file=ftp2fn_null(efTPS,NFILE,fnm);
+  top_file = ftp2fn(efTPS,NFILE,fnm);
 
   /* Check command line */
   in_file=opt2fn("-f",NFILE,fnm);
@@ -659,14 +659,8 @@ int main(int argc,char *argv[])
     } 
     
     /* Determine whether to read a topology */
-    bTPS = ( top_file || bPBC || bReset || (ftp == efGRO) || (ftp == efPDB));
-    if (bTPS && !top_file) {
-      top_file = in_file;
-      fprintf(stderr,
-	      "Note: No Structure + Mass file specified (option -s)\n"
-	      "      Will try to read Structure + Mass info from %s\n",
-	      top_file);
-    }
+    bTPS = (ftp2bSet(efTPS,NFILE,fnm) ||
+	    bPBC || bReset || (ftp == efGRO) || (ftp == efPDB));
 
     /* Determine if when can read index groups */
     bIndex = (bIndex || bTPS);
