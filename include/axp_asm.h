@@ -35,7 +35,6 @@
  */
 static char *SRCID_axp_asm_h = "$Id$";
 #include <config.h>
-#endif
 
 /* Function definitions for alpha AXP assembly routines */
 
