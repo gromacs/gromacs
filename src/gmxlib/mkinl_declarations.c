@@ -2,7 +2,7 @@ static char *SRCID_mkinl_declarations_c = "";
 
 #include "mkinl.h"
 #include <string.h>
-
+#include <mkinl_fortrandata.h>
 
 void init_block_data(void) 
 {
@@ -21,9 +21,9 @@ void init_block_data(void)
     fprintf(output,"%sinteger*4 frecipexptab,frecipfracttab\n",indent());
 
   if(arch.gmx_invsqrt)
-    fprintf(output,"%sinclude 'finvsqrtdata.inc'\n",indent());   
+    fprintf(output,finvsqrtdata);   
   if(arch.gmx_recip)
-    fprintf(output,"%sinclude 'frecipdata.inc'\n",indent());   
+    fprintf(output,frecipdata);   
   
   fprintf(output,"%send\n\n\n",indent());
 }
@@ -553,8 +553,11 @@ void func_localvars()
   
   if(DO_INLINE_INVSQRT)
     invsqrt_vars();
-  if(DO_INLINE_RECIP)
-    recip_vars();
+  if(DO_INLINE_RECIP ||
+     (loop.sol==SOL_MNO && !loop.vectorize_recip &&
+      opt.inline_gmxcode && loop.vdw &&
+      !(loop.vdw_needs_rinv || loop.vdw_needs_r)))
+     recip_vars();
 }
 
 

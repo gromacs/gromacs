@@ -196,14 +196,14 @@ void set_loop_options(void)
   loop.invsqrt=
     (loop.coul && (loop.coul_needs_rinv || loop.coul_needs_r)) ||
     (loop.vdw && (loop.vdw_needs_rinv || loop.vdw_needs_r));
-  
-  loop.recip=!loop.invsqrt;
 
   loop.vectorize_invsqrt=loop.invsqrt && !DO_SOFTCORE &&
     ((loop.sol==SOL_NO && (opt.vectorize_invsqrt & TYPE_NORMAL)) ||
      (loop.sol==SOL_MNO && (opt.vectorize_invsqrt & TYPE_SOLVENT)) ||
      (loop.sol==SOL_WATER && (opt.vectorize_invsqrt & TYPE_WATER)) ||
      (loop.sol==SOL_WATERWATER && (opt.vectorize_invsqrt & TYPE_WATERWATER)));
+
+  loop.recip=!loop.invsqrt;
 
   loop.vectorize_recip=loop.recip && opt.vectorize_recip && !DO_SOFTCORE;
      

@@ -39,9 +39,7 @@ EXTRA_libgmxXXX_SUFFIX_XXX_a_SOURCES = \
 	mpiio.c		libnet.c	innerf.f	innerc.c	\
 	libxdrf.c	ftocstr.c	dumxdrf.c	mgmx.c		\
 	widget.c	widget.h	x86_cpuid.asm	axp_asm.S	\
-	x86_sse.asm	x86_3dnow.asm	f77_wrappers.c  frecipdata.inc  \
-	finvsqrtdata.inc
-
+	x86_sse.asm	x86_3dnow.asm	f77_wrappers.c  
 
 mpi_obj 	= mpiio.o
 libnet_obj 	= libnet.o
@@ -71,8 +69,6 @@ libgmxXXX_SUFFIX_XXX_a_DEPENDENCIES = \
 # The inner loops
 innerf.f:	mkinl 
 		./mkinl	fortran	
-		cp $(srcdir)/finvsqrtdata.inc .
-		cp $(srcdir)/frecipdata.inc .
 
 innerc.c:	mkinl
 		./mkinl c
@@ -84,7 +80,7 @@ mkinl_SOURCES 	 = \
 	mkinl.c			mkinl_declarations.c	mkinl_outerloop.c  \
 	mkinl_innerloop.c	mkinl_calcdist.c	mkinl_invsqrt.c	   \
 	mkinl_recip.c		mkinl_interactions.c	metacode.c	   \
-	mkinl.h
+	mkinl.h			mkinl_fortrandata.h
 
 metacode.o:	metacode.c
 		$(BUILD_COMPILE) -c $(srcdir)/metacode.c
