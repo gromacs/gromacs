@@ -85,7 +85,7 @@ static void do_my_pme(FILE *fp,real tm,bool bVerbose,t_inputrec *ir,
 		      t_block *excl,real qtot,
 		      t_forcerec *fr,int index[],FILE *fp_xvg)
 {
-  real   ener,vcorr,q,xx,dvdl=0;
+  real   ener,vcorr,q,xx,dvdl=0,vdip,vcharge;
   tensor vir,vir_corr,vir_tot;
   rvec   mu_tot[2];
   int    i,m,ii;
@@ -133,13 +133,13 @@ static void do_my_pme(FILE *fp,real tm,bool bVerbose,t_inputrec *ir,
 		 nsb,nrnb,vir,fr->ewaldcoeff,0,&dvdl,FALSE);
   vcorr = ewald_LRcorrection(fp,nsb,cr,fr,qbuf,qbuf,excl,xbuf,box,mu_tot,
 			     ir->ewald_geometry,ir->epsilon_surface,
-			     0,&dvdl);
+			     0,&dvdl,&vdip,&vcharge);
   gmx_sum(1,&ener,cr);
   gmx_sum(1,&vcorr,cr);
   fprintf(fp,"Time: %10.3f Energy: %12.5e  Correction: %12.5e  Total: %12.5e\n",
 	  tm,ener,vcorr,ener+vcorr);
   if (fp_xvg) 
-    fprintf(fp_xvg,"%10.3f %12.5e\n",tm,ener+vcorr);
+    fprintf(fp_xvg,"%10.3f %12.5e %12.5e %12.5e\n",tm,ener+vcorr,vdip,vcharge);
   if (bVerbose) {
     m_add(vir,vir_corr,vir_tot);
     gmx_sum(9,vir_tot[0],cr);

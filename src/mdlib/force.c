@@ -891,7 +891,7 @@ void force(FILE       *fplog,   int        step,
   int     i,nit;
   bool    bDoEpot,bSepDVDL;
   rvec    box_size;
-  real    dvdlambda,Vlr,Vcorr=0;
+  real    dvdlambda,Vlr,Vcorr=0,vdip,vcharge;
   t_pbc   pbc;
 #define PRINT_SEPDVDL(s,v,dvdl) if (bSepDVDL) fprintf(fplog,"  %-30s V %12.5e  dVdl %12.5e\n",s,v,dvdl);
 
@@ -973,7 +973,7 @@ void force(FILE       *fplog,   int        step,
       Vcorr = ewald_LRcorrection(fplog,nsb,cr,fr,md->chargeA,md->chargeB,excl,
 				 x,box,mu_tot,
 				 ir->ewald_geometry,ir->epsilon_surface,
-				 lambda,&dvdlambda);
+				 lambda,&dvdlambda,&vdip,&vcharge);
       PRINT_SEPDVDL("Ewald excl./charge/dip. corr.",Vcorr,dvdlambda);
       epot[F_DVDL] += dvdlambda;
     } else {
