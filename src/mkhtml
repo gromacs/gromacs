@@ -5,7 +5,7 @@ setenv HTML	$GMXHOME/html
 if ( ! -d $HTML ) mkdir $HTML
 setenv GIFDIR   $HTML/gif
 if ( -f $GIFDIR/rainbow.gif ) then
-  setenv HR	'<IMG SRC="gif/rainbowsmall.gif" WIDTH=100% HEIGTH=7 >'
+  setenv HR	'<IMG SRC="gif/rainbow.gif" WIDTH=100% HEIGTH=7 >'
 else
   setenv HR	'<HR>'
 endif
