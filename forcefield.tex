@@ -85,17 +85,20 @@ V_{LJ}(\rvij) = 4\epsilon_{ij}\left(\left(\frac{\sigma_{ij}} {\rij}\right)^{12}
 
 In constructing the parameter matrix for the non-bonded LJ-parameters,
 two types of combination rules can be used within {\gromacs}: 
-\bea
+\beq
+\begin{array}{rcl}
 C_{ij}^{(6)}	&=& \left({C_{ii}^{(6)} * C_{jj}^{(6)}}\right)^{1/2}	\\
 C_{ij}^{(12)}	&=& \left({C_{ii}^{(12)} * C_{jj}^{(12)}}\right)^{1/2}
 \label{eqn:comb}
-\eea
+\end{array}
+\eeq
 or, alternatively,
-
-\bea
+\beq
+\begin{array}{rcl}
  \sigma_{ij}   &=& \frac{1}{ 2}(\sigma_{ii}+\sigma_{jj})	\\
  \epsilon_{ij} &=& \left({\epsilon_{ii} \epsilon_{jj}}\right)^{1/2}
-\eea
+\end{array}
+\eeq
 
 \subsection{Buckingham potential}
 The \normindex{Buckingham} 
@@ -220,11 +223,15 @@ acting on particle $i$ by particle $j$ as
 \eeq
 For pure Coulombic interaction $F(r)=F_c(r)=\frac{1}{r^2}$. The
 shifted force $F_s(r)$ can generally be written as:
-\bea
-F_s(r)~=&~F_c(r)		& r < r_1	\\
+\beq
+\begin{array}{rcl}
+\vspace{2mm}
+F_s(r)~=&~F_c(r)	& r < r_1		\\
+\vspace{2mm}
 F_s(r)~=&~F_c(r)+S(r)	& r_1 \le r < r_c	\\
 F_s(r)~=&~0		& r_c \le r	
-\eea
+\end{array}
+\eeq
 When $r_1=0$ this is a traditional shift function, otherwise it acts as a 
 switch function. The corresponding shifted coulomb potential then reads:
 \beq
@@ -237,22 +244,27 @@ where $\Phi(r)$ is the potential function
 
 The {\gromacs} shift function should be smooth at the boundaries, therefore
 the following boundary conditions are imposed on the shift function:
-\bea
+\beq
+\begin{array}{rcl}
 S(r_1)		&=&0		\\
 S'(r_1)		&=&0		\\
 S(r_c)		&=&-F_c(r_c)	\\
 S'(r_c)		&=&-F_c'(r_c)
-\eea
+\end{array}
+\eeq
 A 3$^{rd}$ degree polynomial of the form
 \beq
 S(r) = A(r-r_1)^2 + B(r-r_1)^3
 \eeq
 fulfils these requirements. The constants A and B are given by the
 boundary condition at $r_c$: 
-\bea
-A	&~=~&	-\frac{5r_c~-~2r_1} {r_c^3~(r_c-r_1)^2} \\
-B	&~=~&	\frac{4r_c~-~2r_1}{r_c^3~(r_c-r_1)^3}
-\eea
+\beq
+\begin{array}{rcl}
+\vspace{2mm}
+A	&~=~&	-\displaystyle\frac{5r_c~-~2r_1} {r_c^3~(r_c-r_1)^2} \\
+B	&~=~&	\displaystyle\frac{4r_c~-~2r_1}{r_c^3~(r_c-r_1)^3}
+\end{array}
+\eeq
 Thus the total force function is
 \beq
 F_s(r) = \frac{1}{r^2} + A(r-r_1)^2 + B(r-r_1)^3
@@ -378,13 +390,13 @@ As the bond-angle vibration is represented by a harmonic potential the
 form is the same as the bond stretching (Figure~\ref{fig:bstretch1}).
 
 The force equations are given by the chain rule:
-\bea
-\Fvi	&~=~& -\frac{d V_a(\theta_{ijk})}{d \rvi}	\\
-\Fvk	&~=~& -\frac{d V_a(\theta_{ijk})}{d \rvk}	\\
-\Fvj	&~=~& -\Fvi-\Fvk
-\eea
-where 
 \beq
+\begin{array}{l}
+\Fvi	~=~ -\displaystyle\frac{d V_a(\theta_{ijk})}{d \rvi}	\\
+\Fvk	~=~ -\displaystyle\frac{d V_a(\theta_{ijk})}{d \rvk}	\\
+\Fvj	~=~ -\Fvi-\Fvk
+\end{array}
+~ \mbox{ ~ where ~ } ~
  \theta_{ijk} = \arccos \frac{(\ve{r}_{ij} \cdot \ve{r}_{kj})}{r_{ij}r_{kj}}
 \eeq
 The numbering $i,j,k$ is in sequence of covalently bonded atoms, with $j$ denoting the middle atom (see figure~\ref{fig:angle}).
@@ -544,11 +556,13 @@ V_{pr}(\ve{r}_i) = \halfje{1} \left[ k_{pr}^x (x_i-X_i)^2 ~\unitv{x} + k_{pr}^y 
 \eeq
 
 Now the forces are:
-\bea
+\beq
+\begin{array}{rcl}
 F_i^x &=& -k_{pr}^x~(x_i - X_i)	\\
 F_i^y &=& -k_{pr}^y~(y_i - Y_i)	\\
 F_i^z &=& -k_{pr}^z~(z_i - Z_i)
-\eea
+\end{array}
+\eeq
 Using three different force constants the position 
 restraints can be turned on or off
 in each spatial dimension; this means that atoms can be harmonically
@@ -568,23 +582,27 @@ system. Thus MD can be used for \normindex{structure refinement}  using
 \normindex{NMR} data. The
 potential form is quadratic between two specified distances and linear
 beyond the largest distance (see figure~\ref{fig:dist}).
-\bea
+\beq
+\begin{array}{rcl}
 V_{dr}(r_{ij})~=~&~0 \hspace{4cm}                  & r_{ij} < r_0         \\
-	       =~&~\half k_{dr}(r_{ij}-r_0)^2	           & r_0 \le r_{ij} < r_1 \\
-	       =~&~\half k_{dr}(r_1-r_0)(2r_{ij}-r_1-r_0) & r_{ij} \ge r_1
+	\:     =~&~\half k_{dr}(r_{ij}-r_0)^2	   & r_0 \le r_{ij} < r_1 \\
+	\:     =~&~\half k_{dr}(r_1-r_0)(2r_{ij}-r_1-r_0) & r_{ij} \ge r_1
 \label{eqn:disre}
-\eea
+\end{array}
+\eeq
 \begin {figure}[H]
 \centerline{\psfig {figure=plots/f_dr.eps,angle=270,width=8cm}}
 \caption {Distance Restraint potential}
 \label{fig:dist}
 \end {figure}
 The forces are
-\bea
+\beq
+\begin{array}{rcl}
 \ve{F}_i~=~&~0 \hspace{4cm}  & r_{ij} < r_0         \\
-  = ~&-~k_{dr}(r_{ij}-r_0)\frac{\ve{r}_{ij}}{r_{ij}} & r_0 \le r_{ij} < r_1 \\
-  = ~&-~k_{dr}(r_1-r_0)\frac{\ve{r}_{ij}}{r_{ij}}    & r_{ij} \ge r_1	
-\eea
+ \: = ~&-~k_{dr}(r_{ij}-r_0)\frac{\ve{r}_{ij}}{r_{ij}} & r_0 \le r_{ij} < r_1\\
+ \: = ~&-~k_{dr}(r_1-r_0)\frac{\ve{r}_{ij}}{r_{ij}}    & r_{ij} \ge r_1	
+\end{array}
+\eeq
 The above formulae have been improved by introducing the
 {\em time averaged} distance restraint~\cite{Torda89} where the distance
 $r_{ij}$ is replaced by a time average:
@@ -602,11 +620,13 @@ experimental restraints.
 
 The computation of the time
 averaged distance in the {\tt mdrun} program is done in the following fashion:
-\bea
+\beq
+\begin{array}{rcl}
 \bar{r}_{ij}(0)^{-3} 	&=& r_{ij}(0)^{-3}	\\
 \bar{r}_{ij}(t)^{-3}	&=& \bar{r}_{ij}(t-\Delta t)^{-3}~\exp{\left(-\frac{\Delta t}{\tau}\right)} + r_{ij}(t)^{-3}\left[1-\exp{\left(-\frac{\Delta t}{\tau}\right)}\right]
 \label{eqn:ravdisre}
-\eea
+\end{array}
+\eeq
 Sometimes it is unclear from experimental data which atom pair
 gives rise to a single NOE, in other occasions it can be assumed that
 more than one pair contributes due to the symmetry of the system, e.g. a
@@ -630,19 +650,23 @@ will increase, and the summed ``distance'' will be shorter than any of
 its components due to the reciprocal summation. 
 It is also possible to use {\em ensemble averaging} using multiple
 (protein)  molecules. In this case the bounds should be lowered as in:
-\bea
+\beq
+\begin{array}{rcl}
 r_0	&~=~&	r_0 * M^{-1/6}	\\
 r_1	&~=~&	r_1 * M^{-1/6}
-\eea
+\end{array}
+\eeq
 where $M$ is the number of molecules. The {\gromacs} preprocessor {\tt grompp}
 can do this automatically when the appropriate option is given.
 The resulting ``distance'' is 
 then used to calculate the scalar force according to:
-\bea
+\beq
+\begin{array}{rcl}
 \ve{F}_i~=~&~0 \hspace{4cm}  & r_{N} < r_0         \\
   = ~&-~ k_{dr}(r_{N}-r_0)\frac{\ve{r}_{ij}}{r_{ij}} & r_0 \le r_{N} < r_1 \\
   = ~&-~ k_{dr}(r_1-r_0)\frac{\ve{r}_{ij}}{r_{ij}}    & r_{N} \ge r_1	
-\eea
+\end{array}
+\eeq
 where $i$ and $j$ denote the atoms  of all the 
 pairs that contribute to the NOE signal.
 
@@ -671,11 +695,11 @@ K(p)	&=&	\sum_i^N \frac{p_i^2}{2 m_i}
 where $N$ is the number of particles in the system and $m_i$ are the masses
 of the particles.
 \beq
-G	~=~	-1/\beta \ln \left[\int \exp(-\beta V(q)) dq \int \exp(-\beta K(p)) dp  \right]
-\eeq
-or
-\beq
-G	~=~	\left< K(p) \right>	-1/\beta \ln 
+\begin{array}{rcl}
+G	&~=~&	-1/\beta \ln \left[\int \exp(-\beta V(q)) dq \int \exp(-\beta K(p)) dp  \right] \\
+\mbox{or} \\
+G	&~=~&	\left< K(p) \right>	-1/\beta \ln 
+\end{array}
 \eeq
 
 Here are the modified equations used to calculate the free energy
@@ -866,63 +890,129 @@ can be conveniently rewritten in tensor notation:
 where \ve{F} is the force on the dummy particle. In this way the total
 force and the total torque are conserved~\cite{Berendsen84b}.
 
-There are three ways to construct dummies from surrounding atoms in {\gromacs}:
-\begin{enumerate}
-\item	As a linear combination of two atoms:
-\beq
-	\ve{r} ~=~ a \ve{r}_i + (1-a)\ve{r}_j
-\eeq
-	in this case the dummy is on the line connecting atoms $i$ and $j$.
-	The force on particles $i$ and $j$ due to the force on the dummy
-	can be computed as:
-\bea
-	\ve{F}_i &=&	a\ve{F}	\\
-	\ve{F}_j &=&	(1-a)\ve{F} 
-\eea
+There are three ways to construct dummies from surrounding atoms in
+{\gromacs}. Notethat all possible dummies could be constructed from
+types 2$''$ (normalized, in-plane) and 3 (non-normalized, out of
+plane). However, the amount of computation involved increases sharply
+along this list, so it is strongly recommended to always use the first
+dummy type that will be sufficient.
 
-\item	As a linear combination of three atoms:
+\begin{itemize}
+\item[1.]As a linear combination of two atoms:
 \beq
-	\ve{r} ~=~ a \ve{r}_i + b \ve{r}_j + (1-a-b) \ve{r}_k
+	\ve{r} ~=~ \ve{r}_i + a \ve{r}_{ij}
+\eeq
+	in this case the dummy is on the line through atoms $i$ and
+	$j$. The force on particles $i$ and $j$ due to the force on
+	the dummy can be computed as:
+\beq
+	\begin{array}{l}
+	\ve{F}_i ~=~	(1-a)\ve{F}	\\
+	\ve{F}_j ~=~	a\ve{F}		\\
+	\end{array}
+\eeq
+
+\item[2.]As a linear combination of three atoms:
+\beq
+	\ve{r} ~=~ \ve{r}_i + a \ve{r}_{ij} + b \ve{r}_{ik}
 \eeq
 	in this case the dummy is always in the plane of the other three
 	particles.
-	The force on particles $i,j$ and $k$ due to the force on the dummy
+	The force on particles $i$, $j$ and $k$ due to the force on the dummy
 	can be computed as:
-\bea
-	\ve{F}_i &=&	a\ve{F}	\\
-	\ve{F}_j &=&	b\ve{F} \\
-	\ve{F}_k &=&	(1-a-b)\ve{F} 
-\eea
+\beq
+	\begin{array}{l}
+	\ve{F}_i ~=~	(1-a-b)\ve{F}	\\
+	\ve{F}_j ~=~	a\ve{F} 	\\
+	\ve{F}_k ~=~	b\ve{F} 	\\
+	\end{array}
+\eeq
 
-\item	As a non-linear combination of three atoms:
+\item[2$'$.]In the plane of three atoms, with a fixed distance:
+\beq
+	\ve{r} ~=~ \ve{r}_i + b \frac{  \ve{r}_{ij} + a \ve{r}_{jk}  }
+				     {| \ve{r}_{ij} + a \ve{r}_{jk} |}	
+\eeq
+	in this case the dummy is in the plane of the other three
+	particles at a distance of $b$ from $i$.
+	The force on particles $i$, $j$ and $k$ due to the force on the dummy
+	can be computed as:
+\beq
+	\begin{array}{l}
+\displaystyle	\ve{F}_i ~=~	(1-(1+a)\frac{b}{\ell}) \ve{F}		\\
+\displaystyle	\ve{F}_j ~=~	\frac{b}{\ell} \ve{F}	\\ 
+\displaystyle	\ve{F}_k ~=~	a \frac{b}{\ell} \ve{F} 		\\
+	\end{array}
+	~\mbox{~ where~ }~
+	\ell = | \ve{r}_{ij} + a \ve{r}_{jk} |
+\eeq
+
+\item[2$''$.]In the plane of three atoms, with a fixed angle and distance:
+\beq
+	 \ve{r} ~=~ \ve{r}_i +
+	 	    d \cos \theta \frac{\ve{r}_{ij}}{|\ve{r}_{ij}|} +
+		    d \sin \theta \frac{\ve{r}_\perp}{|\ve{r}_\perp|}
+	~\mbox{~ where~ }~
+	\ve{r}_\perp ~=~ \ve{r}_{jk} - 
+			\frac{ \ve{r}_{ij} \cdot \ve{r}_{jk} }
+			     { \ve{r}_{ij} \cdot \ve{r}_{ij} }
+			 \ve{r}_{ij}
+\eeq
+	in this case the dummy is in the plane of the other three
+	particles at a distance of $d$ from $i$ at an angle of
+	$\theta$ with $\ve{r}_{ij}$. Note that in this case $d$ and
+	$\theta$ must be specified in stead of $a$ and $b$ (see also
+	~\secref{dummytop}). The force on particles $i$, $j$ and $k$
+	due to the force on the dummy can be computed as:
+\beq
+	\begin{array}{l}
+\vspace{4mm}
+\displaystyle	\ve{F}_i ~=~ \left( 1 -
+			\frac{d \cos \theta}{|\ve{r}_{ij}|} +
+			\frac{d \sin \theta}{|\ve{r}_\perp|}
+			\frac{ \ve{r}_{ij} \cdot \ve{r}_{jk} }
+			     { \ve{r}_{ij} \cdot \ve{r}_{ij} } 
+			     \right) \ve{F}	\\
+\vspace{4mm}
+\displaystyle	\ve{F}_j ~=~ \left(
+				\frac{d \cos \theta}{|\ve{r}_{ij}|} -
+			\left( 1 + \frac{ \ve{r}_{ij} \cdot \ve{r}_{jk} }
+				        { \ve{r}_{ij} \cdot \ve{r}_{ij} }
+			\right)
+			\frac{d \sin \theta}{|\ve{r}_\perp|} 
+			     \right) \ve{F}	\\
+\displaystyle	\ve{F}_k ~=~ \frac{d \sin \theta}{|\ve{r}_\perp|} \ve{F}\\
+	\end{array}
+\eeq
+
+\item[3.]As a non-linear combination of three atoms, out of plane:
 \beq
 	\ve{r} ~=~ \ve{r}_i + a \ve{r}_{ij} + b \ve{r}_{ik} +
-		c (\ve{r}_{ij} ~\times~ \ve{r}_{ik})
+		c (\ve{r}_{ij} \times \ve{r}_{ik})
 \eeq
 	this enables the construction of dummies out of the plane of the
 	other atoms.
 	The force on particles $i,j$ and $k$ due to the force on the dummy
 	can be computed as:
 \beq
+\begin{array}{l}
+\vspace{4mm}
 \ve{F}_j^{distr} = \left[\begin{array}{ccc}
- a 		&  -c\,z_{ik}	& c\,y_{ik}	\\[4mm]
- c\,z_{ik} 	&   a 		& -c\,x_{ik}	\\[4mm]
+ a 		&  -c\,z_{ik}	& c\,y_{ik}	\\[2mm]
+ c\,z_{ik} 	&   a 		& -c\,x_{ik}	\\[2mm]
 -c\,y_{ik} 	&   c\,x_{ik} 	& a
-\end{array}\right]\ve{F}
-\eeq
-
-\beq
+\end{array}\right]\ve{F}					\\
+\vspace{4mm}
 \ve{F}_k^{distr} = \left[\begin{array}{ccc}
- b 		&   c\,z_{ij}	& -c\,y_{ij}	\\[4mm]
--c\,z_{ij} 	&   b 		& c\,x_{ij}	\\[4mm]
+ b 		&   c\,z_{ij}	& -c\,y_{ij}	\\[2mm]
+-c\,z_{ij} 	&   b 		& c\,x_{ij}	\\[2mm]
  c\,y_{ij} 	&  -c\,x_{ij} 	& b
-\end{array}\right]\ve{F}
+\end{array}\right]\ve{F}					\\
+\ve{F}_i^{distr} = \ve{F} - \ve{F}_j^{distr} - \ve{F}_k^{distr}
+\end{array}
 \eeq
 
-\beq
-\ve{F}_i^{distr} = \ve{F} - \ve{F}_j^{distr} - \ve{F}_k^{distr}
-\eeq
-\end{enumerate}
+\end{itemize}
 
 
 \section{Future Improvements.}
