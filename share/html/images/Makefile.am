@@ -5,9 +5,9 @@
 imagedir = ${datadir}/html/images
 
 image_DATA = \
-	annealdn.gif		features.gif		\
+	features.gif					\
 	flow_leftrightup.gif	flow_vrule.gif 		\
-	annealup.gif     	flow_down.gif           \
+	flow_down.gif           			\
 	flow_leftup.gif         links.gif		\
 	articles.gif     	flow_downleft.gif       \
 	flow_right+left.gif     mail.gif		\
