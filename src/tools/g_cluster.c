@@ -763,8 +763,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
       sprintf(buf1,"%5s","");
       sprintf(buf2,"%5s","");
     }
-    fprintf(logf,"%3d | %3d%s | %6g%s |",
-	    cl,nstr,buf1,time[midstr],buf2);
+    fprintf(logf,"%3d | %3d%s | %6g%s |",cl,nstr,buf1,time[midstr],buf2);
     for(i=0; i<nstr; i++) {
       if ((i % 7 == 0) && i)
 	sprintf(buf,"\n%3s | %3s %4s | %6s %4s |","","","","","");
@@ -980,7 +979,7 @@ int main(int argc,char *argv[])
   if ( opt2parg_bSet("-av",asize(pa),pa) ||
        opt2parg_bSet("-wcl",asize(pa),pa) ||
        opt2parg_bSet("-nst",asize(pa),pa) ||
-       opt2parg_bSet("-minrms",asize(pa),pa) ||
+       opt2parg_bSet("-rmsmin",asize(pa),pa) ||
        opt2bSet("-cl",NFILE,fnm) )
     trx_out_fn = opt2fn("-cl",NFILE,fnm);
   else
