@@ -38,6 +38,7 @@ static char *SRCID_symtab_c = "$Id$";
 #include "smalloc.h"
 #include "txtdump.h"
 #include "symtab.h"
+#include "macros.h"
 
 #define	BUFSIZE			1024
 #define	TABLESIZE		5
@@ -68,17 +69,15 @@ int lookup_symtab(t_symtab *symtab,char **name)
   base=0;
   index=0;
   symbuf=symtab->symbuf;
-  while (symbuf!=NULL)
-    {
-      index=name-symbuf->buf;
-      if ((index>=0)&&(index<symbuf->bufsize))
-        return index+base;
-      else
-        {
-          base+=symbuf->bufsize;
-          symbuf=symbuf->next;
-        }
+  while (symbuf!=NULL) {
+    index=name-symbuf->buf;
+    if ( ( index >= 0 ) && ( index < symbuf->bufsize ) )
+      return index+base;
+    else {
+      base+=symbuf->bufsize;
+      symbuf=symbuf->next;
     }
+  }
   fatal_error(0,"symtab lookup \"%s\" not found",*name);
   return -1;
 }
@@ -88,66 +87,63 @@ char **get_symtab_handle(t_symtab *symtab,int name)
   t_symbuf *symbuf;
   
   symbuf=symtab->symbuf;
-  while (symbuf!=NULL)
-    {
-      if (name<symbuf->bufsize)
-        return &(symbuf->buf[name]);
-      else
-        {
-          name-=symbuf->bufsize;
-          symbuf=symbuf->next;
-        }
+  while (symbuf!=NULL) {
+    if (name<symbuf->bufsize)
+      return &(symbuf->buf[name]);
+    else {
+      name-=symbuf->bufsize;
+      symbuf=symbuf->next;
     }
+  }
   fatal_error(0,"symtab get_symtab_handle %d not found",name);
   return NULL;
 }
 
 static t_symbuf *new_symbuf(void)
 {
-  t_symbuf *dummy;
+  t_symbuf *symbuf;
 
-  snew(dummy,1);
-  dummy->bufsize=TABLESIZE;
-  snew(dummy->buf,dummy->bufsize); /* buf[i]==NULL ! */
-  dummy->next=NULL;
+  snew(symbuf,1);
+  symbuf->bufsize=TABLESIZE;
+  snew(symbuf->buf,symbuf->bufsize);
+  symbuf->next=NULL;
 
-  return dummy;
+  return symbuf;
 }
 
 static char **enter_buf(t_symtab *symtab,char *name)
 {
   int      i;
-  t_symbuf *dummy;
+  t_symbuf *symbuf;
   bool     bCont;
   
   if (symtab->symbuf == NULL)
     symtab->symbuf=new_symbuf();
 
-  dummy=symtab->symbuf;
+  symbuf=symtab->symbuf;
   do {
-    for(i=0; (i<dummy->bufsize); i++) {
-      if (dummy->buf[i]==NULL) {
+    for(i=0; (i < symbuf->bufsize); i++) {
+      if (symbuf->buf[i]==NULL) {
 	symtab->nr++;
-	dummy->buf[i]=strdup(name);
-	return &(dummy->buf[i]);
-      }
-      else if (strcmp(dummy->buf[i],name)==0)
-	return &(dummy->buf[i]);
+	symbuf->buf[i]=strdup(name);
+	return &(symbuf->buf[i]);
+      } else if (strcmp(symbuf->buf[i],name)==0)
+	return &(symbuf->buf[i]);
     }
-    if (dummy->next != NULL) {
-      dummy=dummy->next;
+    if (symbuf->next != NULL) {
+      symbuf=symbuf->next;
       bCont = TRUE;
     }
     else
       bCont = FALSE;
   } while (bCont);
 
-  dummy->next=new_symbuf();
-  dummy=dummy->next;
+  symbuf->next=new_symbuf();
+  symbuf=symbuf->next;
 
   symtab->nr++;
-  dummy->buf[0]=strdup(name);
-  return &(dummy->buf[0]);
+  symbuf->buf[0]=strdup(name);
+  return &(symbuf->buf[0]);
 }
 
 char **put_symtab(t_symtab *symtab,char *name)
@@ -165,6 +161,42 @@ void close_symtab(t_symtab *symtab)
 {
 }
 
+void done_symtab(t_symtab *symtab)
+{
+  int i;
+  t_symbuf *symbuf,*freeptr;
+  
+  close_symtab(symtab);
+  symbuf=symtab->symbuf;
+  while (symbuf!=NULL) {
+    for (i=0; (i < symbuf->bufsize) && (i < symtab->nr); i++)
+      sfree(symbuf->buf[i]);
+    symtab->nr-=i;
+    sfree(symbuf->buf);
+    freeptr=symbuf;
+    symbuf=symbuf->next;
+    sfree(freeptr);
+  }
+  symtab->symbuf=NULL;
+  assert(symtab->nr==0);
+}
+
+void free_symtab(t_symtab *symtab)
+{
+  t_symbuf *symbuf,*freeptr;
+  
+  close_symtab(symtab);
+  symbuf=symtab->symbuf;
+  while (symbuf!=NULL) {
+    symtab->nr-=min(symbuf->bufsize,symtab->nr);
+    freeptr=symbuf;
+    symbuf=symbuf->next;
+    sfree(freeptr);
+  }
+  symtab->symbuf=NULL;
+  assert(symtab->nr==0);
+}
+
 void pr_symtab(FILE *fp,int indent,char *title,t_symtab *symtab)
 {
   int i,j,nr;
@@ -178,7 +210,7 @@ void pr_symtab(FILE *fp,int indent,char *title,t_symtab *symtab)
       symbuf=symtab->symbuf;
       while (symbuf!=NULL)
         {
-          for (j=0; (j<symbuf->bufsize)&&(j<nr); j++)
+          for (j=0; (j < symbuf->bufsize) && (j < nr); j++)
             {
               pr_indent(fp,indent);
               (void) fprintf(fp,"%s[%d]=\"%s\"\n",title,i++,symbuf->buf[j]);
@@ -189,51 +221,3 @@ void pr_symtab(FILE *fp,int indent,char *title,t_symtab *symtab)
       assert(nr==0);
     }
 }
-
-/* OLD STUFF
-long wr_symtab(FILE *fp,t_symtab *symtab)
-{
-  int i,nr,len;
-  long fpos;
-  t_symbuf *symbuf;
-
-  fpos=ftell(fp);
-  blockwrite(fp,symtab->nr);
-  nr=symtab->nr;
-  symbuf=symtab->symbuf;
-  while (symbuf!=NULL)
-    {
-      for (i=0; (i<symbuf->bufsize)&&(i<nr); i++)
-        {
-          len=strlen(symbuf->buf[i])+1;
-          blockwrite(fp,len);
-          nblockwrite(fp,len,symbuf->buf[i]);
-        }
-      nr-=i;
-      symbuf=symbuf->next;
-    }
-  assert(nr==0);
-  return (ftell(fp)-fpos);
-}
-
-long rd_symtab(FILE *fp,t_symtab *symtab)
-{
-  int i,nr,len;
-  long fpos;
-
-  fpos=ftell(fp);
-  blockread(fp,symtab->nr);
-  nr=symtab->nr;
-  snew(symtab->symbuf,1);
-  symtab->symbuf->bufsize=nr;
-  snew(symtab->symbuf->buf,nr);
-  for (i=0; i<nr; i++)
-    {
-      blockread(fp,len);
-      snew(symtab->symbuf->buf[i],len);
-      nblockread(fp,len,symtab->symbuf->buf[i]);
-    }
-  return (ftell(fp)-fpos);
-}
-
-*/

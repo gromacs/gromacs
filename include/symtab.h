@@ -51,61 +51,55 @@ static char *SRCID_symtab_h = "$Id$";
  */
 
 extern void open_symtab(t_symtab *symtab);
-     /*
-      * Initialises the symbol table symtab.
+     /* Initialises the symbol table symtab.
       */
 
 extern void close_symtab(t_symtab *symtab);
-     /*
-      * Undoes the effect of open_symtab(), after invoking this function, 
+     /* Undoes the effect of open_symtab(), after invoking this function, 
       * no value can be added to the symbol table, only values can be 
       * retrieved using get_symtab().
       */
 
-extern void rm_symtab(t_symtab *symtab);
-     /*
-      * Frees the space allocated by the symbol table, this includes
-      * invoking close_symtab().
-      */
+extern void free_symtab(t_symtab *symtab);
+     /* Frees the space allocated by the symbol table itself */
+
+extern void done_symtab(t_symtab *symtab);
+     /* Frees the space allocated by the symbol table, including all
+      * entries in it */
 
 extern char **put_symtab(t_symtab *symtab,char *name);
-     /*
-      * Enters a string into the symbol table symtab, if it was not
+     /* Enters a string into the symbol table symtab, if it was not
       * available, a reference to a copy is returned else a reference 
-      * to the earlier entered value is returned.
+      * to the earlier entered value is returned. Strings are trimmed
+      * of spaces.
       */
 
 extern int lookup_symtab(t_symtab *symtab,char **name);
-     /*
-      * Returns a unique handle for **name, without a memory reference.
+     /* Returns a unique handle for **name, without a memory reference.
       * It is a failure when name cannot be found in the symbol table,
       * it should be entered before with put_symtab().
       */
 
 extern char **get_symtab_handle(t_symtab *symtab,int name);
-     /*
-      * Returns a text string handle for name. Name should be a value
+     /* Returns a text string handle for name. Name should be a value
       * returned from lookup_symtab(). So get_symtab_handle() and 
       * lookup_symtab() are inverse functions.
       */
 
 extern long wr_symtab(FILE *fp,t_symtab *symtab);
-     /*
-      * Writes the symbol table symtab to the file, specified by fp.
+     /* Writes the symbol table symtab to the file, specified by fp.
       * The function returns the number of bytes written.
       */
 
 extern long rd_symtab(FILE *fp,t_symtab *symtab);
-     /*
-      * Reads the symbol table symtab from the file, specified by fp.
+     /* Reads the symbol table symtab from the file, specified by fp.
       * This will include allocating the needed space. The function 
       * returns the number of bytes read. The symtab is in the closed
       * state afterwards, so no strings can be added to it.
       */
 
 extern void pr_symtab(FILE *fp,int indent,char *title,t_symtab *symtab);
-     /*
-      * This routine prints out a (human) readable representation of 
+     /* This routine prints out a (human) readable representation of 
       * the symbol table symtab to the file fp. Ident specifies the
       * number of spaces the text should be indented. Title is used
       * to print a header text.
