@@ -47,6 +47,7 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
   int  src_natoms,dest_natoms;
   int  index,max_index;
   real fac,type;
+  bool bDisres;
   
   nrfp        = NRFP(ftype);
   nral        = NRAL(ftype);
@@ -61,11 +62,14 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
   /* First new entry. */
   l=dest->nr;
  
-  if (src->nr)
-    max_index = src->param[0].c[0];
-  for(i=0; i<src->nr; i++)
-    max_index = max(src->param[i].c[0],max_index);
-      
+  bDisres = ftype == F_DISRES;
+  if (bDisres) {
+    if (src->nr)
+      max_index = src->param[0].c[0];
+    for(i=0; i<src->nr; i++)
+      max_index = max(src->param[i].c[0],max_index);
+  }
+
   /* If we have to do ensemble averaging we interchange the loops! */
   if (bEnsemble) {
     if (src->nr > 0) {
@@ -102,7 +106,7 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
 	       (char *)&(src->param[i]),(size_t)sizeof(src->param[i]));
 	for (m=0; (m<nral); m++)
 	  dest->param[l].a[m] += n0;
-	if (j>0) {
+	if (bDisres && (j>0)) {
 	  max_index++;
 	  dest->param[l].c[0] = max_index;
 	}
