@@ -681,6 +681,7 @@ static void clean_dum_bonds(t_params *plist, t_pindex pindex[],
 			    int cftype, int dummy_type[])
 {
   int      ftype,i,j,parnr,k,l,m,n,ndum,nOut,kept_i,dumnral,dumtype;
+  int      nconverted,nremoved;
   atom_id  atom,oatom,constr,at1,at2;
   atom_id  dumatoms[MAXATOMLIST];
   bool     bKeep,bRemove,bUsed,bPresent,bThisFD,bThisOUT,bAllFD,bFirstTwo;
@@ -689,6 +690,8 @@ static void clean_dum_bonds(t_params *plist, t_pindex pindex[],
   ps = &(plist[cftype]);
   dumnral=0;
   kept_i=0;
+  nconverted=0;
+  nremoved=0;
   nOut=0;
   for(i=0; (i<ps->nr); i++) { /* for all bonds in the plist */
     bKeep=FALSE;
@@ -814,13 +817,23 @@ static void clean_dum_bonds(t_params *plist, t_pindex pindex[],
       memcpy(&(ps->param[kept_i]),
 	     &(ps->param[i]),(size_t)sizeof(ps->param[0]));
       kept_i++;
-    }
+    } else if (IS_CHEMBOND(cftype)) {
+      srenew(plist[F_CONNBONDS].param,plist[F_CONNBONDS].nr+1);
+      memcpy(&(plist[F_CONNBONDS].param[plist[F_CONNBONDS].nr]),
+	     &(ps->param[i]),(size_t)sizeof(plist[F_CONNBONDS].param[0]));
+      plist[F_CONNBONDS].nr++;
+      nconverted++;
+    } else
+      nremoved++;
     if(debug)fprintf(debug,"\n");
   }
   
-  if (ps->nr != kept_i)
-    fprintf(stderr,"Removed %4d %15ss with dummy atoms, %5d left\n",
-	    ps->nr-kept_i, interaction_function[cftype].longname, kept_i);
+  if (nremoved)
+    fprintf(stderr,"Removed   %4d %15ss with dummy atoms, %5d left\n",
+	    nremoved, interaction_function[cftype].longname, kept_i);
+  if (nconverted)
+    fprintf(stderr,"Converted %4d %15ss with dummy atoms to connections, %5d left\n",
+	    nconverted, interaction_function[cftype].longname, kept_i);
   if (nOut)
     fprintf(stderr,"Warning: removed %d %ss with dummy with %s construction\n"
 	    "         This dummy construction does not guarantee constant "
@@ -926,7 +939,7 @@ static void clean_dum_angles(t_params *plist, t_pindex pindex[],
   }
   
   if (ps->nr != kept_i)
-    fprintf(stderr,"Removed %4d %15ss with dummy atoms, %5d left\n",
+    fprintf(stderr,"Removed   %4d %15ss with dummy atoms, %5d left\n",
 	    ps->nr-kept_i, interaction_function[cftype].longname, kept_i);
   ps->nr=kept_i;
 }
@@ -1009,7 +1022,7 @@ static void clean_dum_dihs(t_params *plist, t_pindex pindex[],
   }
 
   if (ps->nr != kept_i)
-    fprintf(stderr,"Removed %4d %15ss with dummy atoms, %5d left\n", 
+    fprintf(stderr,"Removed   %4d %15ss with dummy atoms, %5d left\n", 
 	    ps->nr-kept_i, interaction_function[cftype].longname, kept_i);
   ps->nr=kept_i;
 }
