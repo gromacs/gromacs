@@ -596,7 +596,7 @@ int main (int argc,char *argv[])
 		  delta,0.0,delta_max,rlo,rhi,&nlevels);
       }
       if (opt2bSet("-bin",NFILE,fnm)) {
-	fp=ftp2FILE(efDAT,NFILE,fnm,"w");
+	fp=ftp2FILE(efDAT,NFILE,fnm,"wb");
 	for(i=0;i<tel_mat;i++) 
 	  fwrite(rmsd_mat[i],sizeof(**rmsd_mat),tel_mat,fp);
 	fclose(fp);
