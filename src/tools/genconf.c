@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
       "Maximum random rotation" }
   };
   
-  CopyRight(stdout,argv[0]);
+  CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,asize(bugs),bugs);
 

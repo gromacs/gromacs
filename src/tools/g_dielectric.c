@@ -60,7 +60,7 @@ int calc_nbegin(int nx,real x[],real tbegin)
   if (fabs(x[nbegin]-tbegin) > fabs(x[nbegin-1]-tbegin))
     nbegin--;
 
-  fprintf(stderr,"nbegin = %d, x[nbegin] = %g, tbegin = %g\n",
+  printf("nbegin = %d, x[nbegin] = %g, tbegin = %g\n",
 	  nbegin,x[nbegin],tbegin);
       
   return nbegin;
@@ -78,14 +78,14 @@ real numerical_deriv(int nx,real x[],real y[],real fity[],real combined[],real d
     for(i=0; (i<nbegin); i++)
       combined[i]=y[i];
     fac = y[nbegin]/fity[nbegin];
-    fprintf(stderr,"scaling fitted curve by %g\n",fac);
+    printf("scaling fitted curve by %g\n",fac);
     for(i=nbegin; (i<nx); i++)
       combined[i]=fity[i]*fac;
   }
   else {
     i0 = max(0,nbegin);
     i1 = min(nx-1,nbegin+nsmooth);
-    fprintf(stderr,"Making smooth transition from %d thru %d\n",i0,i1);
+    printf("Making smooth transition from %d thru %d\n",i0,i1);
     for(i=0; (i<i0); i++)
       combined[i]=y[i];
     for(i=i0; (i<=i1); i++) {
@@ -101,7 +101,7 @@ real numerical_deriv(int nx,real x[],real y[],real fity[],real combined[],real d
   
   tmpfp = ffopen("integral_smth.xvg","w");
   integralSmth=print_and_integrate(tmpfp,nx,x[1]-x[0],combined,1);
-  fprintf(stderr,"SMOOTH integral = %10.5e\n",integralSmth);
+  printf("SMOOTH integral = %10.5e\n",integralSmth);
 
   dy[0] = (combined[1]-combined[0])/(x[1]-x[0]);
   for(i=1; (i<nx-1); i++) {
@@ -125,16 +125,15 @@ void do_four(char *fn,char *cn,int nx,real x[],real dy[],real eps0,real epsRF)
   nxsav = nx;
   /*while ((dy[nx-1] == 0.0) && (nx > 0))
     nx--;*/
-  if (nx == 0) {
-    fprintf(stderr,"Empty dataset!\n");
-    return;
-  }
+  if (nx == 0) 
+    fatal_error(0,"Empty dataset in %s, line %d!",__FILE__,__LINE__);
+
   nnx=1;
   while (nnx < 2*nx) {
     nnx*=2;
   }
   snew(tmp,2*nnx);
-  fprintf(stderr,"Doing FFT of %d points\n",nnx);
+  printf("Doing FFT of %d points\n",nnx);
   for(i=0; (i<nx); i++)
     tmp[i].re = dy[i];
   ptr=&tmp[0].re;
@@ -173,7 +172,7 @@ void do_four(char *fn,char *cn,int nx,real x[],real dy[],real eps0,real epsRF)
     fprintf(fp,"%10.5e  %10.5e  %10.5e\n",nu,kw.re,kw.im);
     fprintf(cp,"%10.5e  %10.5e\n",kw.re,kw.im);
   }
-  fprintf(stderr,"MAXEPS = %10.5e at frequency %10.5e GHz (tauD = %8.1f ps)\n",
+  printf("MAXEPS = %10.5e at frequency %10.5e GHz (tauD = %8.1f ps)\n",
 	  maxeps,numax,1000/(2*M_PI*numax));
   fclose(fp);
   fclose(cp);
@@ -261,8 +260,8 @@ int main(int argc,char *argv[])
   dt     = y[0][1]-y[0][0];
   nxtail = min(tail/dt,nx);
   
-  fprintf(stderr,"Read data set containing %d colums and %d rows\n",ny,nx);
-  fprintf(stderr,"Assuming (from data) that timestep is %g, nxtail = %d\n",
+  printf("Read data set containing %d colums and %d rows\n",ny,nx);
+  printf("Assuming (from data) that timestep is %g, nxtail = %d\n",
 	  dt,nxtail);
   if (nxtail > nx) {
     for(i=0; (i<ny); i++)
@@ -277,7 +276,7 @@ int main(int argc,char *argv[])
   
   /* We have read a file WITHOUT standard deviations, so we make our own... */
   if (ny==2) {
-    fprintf(stderr,"Creating standard deviation numbers ...\n");
+    printf("Creating standard deviation numbers ...\n");
     srenew(y,3);
     snew(y[2],nx);
 
@@ -312,16 +311,16 @@ int main(int argc,char *argv[])
     lambda = (eps0 - 1.0)/(2*epsRF - 1.0);
     rffac  = (2*epsRF+eps0)/(2*epsRF+1);
   }
-  fprintf(stderr,"DATA INTEGRAL: %5.1f, tauD(old) = %5.1f ps, "
+  printf("DATA INTEGRAL: %5.1f, tauD(old) = %5.1f ps, "
 	  "tau_slope = %5.1f, tau_slope,D = %5.1f ps\n",
 	  integral,integral*rffac,fitparms[0],fitparms[0]*rffac);
 
-  fprintf(stderr,"tau_D from tau1 = %8.3g , eps(Infty) = %8.3f\n",
+  printf("tau_D from tau1 = %8.3g , eps(Infty) = %8.3f\n",
 	  fitparms[0]*(1 + fitparms[1]*lambda),
 	  1 + ((1 - fitparms[1])*(eps0 - 1))/(1 + fitparms[1]*lambda));
 
   fitintegral=numerical_deriv(nx,y[0],y[1],y[3],y[4],y[5],tendInt,nsmooth);
-  fprintf(stderr,"FIT INTEGRAL (tau_M): %5.1f, tau_D = %5.1f\n",
+  printf("FIT INTEGRAL (tau_M): %5.1f, tau_D = %5.1f\n",
 	  fitintegral,fitintegral*rffac);
 	  
   /* Now we have the negative gradient of <Phi(0) Phi(t)> */

@@ -370,7 +370,8 @@ real calc_eps(real M_diff,real volume,real epsRF,real temp)
 }
 
 
-static void do_dip(char *fn,char *topf,char *outf,char *outfa, 
+static void do_dip(char *fn,char *topf,
+		   char *out_mtot,char *out_eps,char *out_aver, 
 		   char *dipdist,bool bAverCorr,
 		   bool bCorr,   char *corf,
 		   bool bGkr,    char *gkrfn,
@@ -381,23 +382,28 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 		   real epsilonRF,real temp,
 		   int gkatom,int skip)
 {
-  FILE       *out,*outaver;
-  static char *legoutf[] = { 
+  static char *leg_mtot[] = { 
     "< M\\sx \\N>", 
     "< M\\sy \\N>",
     "< M\\sz \\N>",
     "< |M\\stot \\N| >"
   };
-  static char *leg_aver[] = { 
+#define NLEGMTOT asize(leg_mtot)
+  static char *leg_eps[] = { 
     "epsilon",
-    "< |M|\\S2\\N >", 
-    "< |M| >\\S2\\N",
-    "< |M|\\S2\\N > - < |M| >\\S2\\N",
     "G\\sk",
     "g\\sk"
   };
+#define NLEGEPS asize(leg_eps)
+  static char *leg_aver[] = { 
+    "< |M|\\S2\\N >", 
+    "< |M| >\\S2\\N",
+    "< |M|\\S2\\N > - < |M| >\\S2\\N",
+    "< |M| >\\S2\\N / < |M|\\S2\\N >"
+  };
 #define NLEGAVER asize(leg_aver)
 
+  FILE  *outdd,*outmtot,*outaver,*outeps;
   rvec       *x,*dipole=NULL,mu_t,M_av,M_av2,Q_av,Q_av2,*quadrupole=NULL;
   t_gkrbin   *gkrbin;
   int        nframes=1000,fmu=0,nre,timecheck=0;
@@ -487,19 +493,24 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
     snew(dipole,gnx);
   if (bQuad)
     snew(quadrupole,gnx);
-  out=xvgropen(outf,"Total dipole moment of the simulation box vs. time",
-	       "Time (ps)","Total Dipole Moment (Debye)");
-  xvgr_legend(out,asize(legoutf),legoutf);
-  xvgr_line_props(out, 0, elDashed, ecFrank);
-  xvgr_line_props(out, 1, elDotDashed, ecFrank);
-  xvgr_line_props(out, 2, elLongDashed, ecFrank);
-  xvgr_line_props(out, 3, elSolid, ecFrank);
-  outaver=xvgropen(outfa,"Epsilon and other properties",
-		   "Time (ps)","");
+    
+  /* Open all the files */
+  outmtot = xvgropen(out_mtot,
+		     "Total dipole moment of the simulation box vs. time",
+		     "Time (ps)","Total Dipole Moment (Debye)");
+  outeps  = xvgropen(out_eps,"Epsilon and Kirkwood factors",
+		     "Time (ps)","");
+  outaver = xvgropen(out_aver,"Total dipole moment",
+		     "Time (ps)","D");
+		     
+  /* Write legends to all the files */
+  xvgr_legend(outmtot,NLEGMTOT,leg_mtot);
+  xvgr_legend(outaver,NLEGAVER,leg_aver);
+  
   if (bMU && (mu_aver == -1))
-    xvgr_legend(outaver,NLEGAVER-2,leg_aver);
+    xvgr_legend(outeps,NLEGEPS-2,leg_eps);
   else
-    xvgr_legend(outaver,NLEGAVER,leg_aver);
+    xvgr_legend(outeps,NLEGEPS,leg_eps);
     
   teller = 0;
   /* Read the first frame from energy or traj file */
@@ -514,7 +525,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 	  fprintf(stderr,"\r Skipping Frame %6d, time: %8.3f", teller, t);
       }
       else {
-	fprintf(stderr,"End of %s reached\n",mufn);
+	printf("End of %s reached\n",mufn);
 	break;
       }
     } while (bCont && (timecheck < 0));
@@ -643,8 +654,8 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
      * for this frame.
      */
     if ((skip == 0) || ((teller % skip) == 0))
-      fprintf(out,"%10g  %12.8e %12.8e %12.8e %12.8e\n",
-	      t, M_av[XX], M_av[YY], M_av[ZZ], norm(M_av));
+      fprintf(outmtot,"%10g  %12.8e %12.8e %12.8e %12.8e\n",
+	      t,M_av[XX],M_av[YY],M_av[ZZ],norm(M_av));
 
     M_XX      += M_av[XX];
     M_XX2     += M_av2[XX];
@@ -679,6 +690,9 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
        * the two. Here M is sum mu_i. Further write the finite system
        * Kirkwood G factor and epsilon.
        */
+      fprintf(outaver,"%10g  %10.3e %10.3e %10.3e %10.3e\n",
+	      t,M2_ave,M_ave2,M_diff,M_ave2/M2_ave);
+	      
       if (!bMU || (mu_aver != -1)) {
 	/* Finite system Kirkwood G-factor */
 	Gk = M_diff/(gnx*mu_aver*mu_aver);
@@ -689,12 +703,10 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 	  g_k = ((2*epsilonRF+epsilon)*(2*epsilon+1)*
 		 Gk/(3*epsilon*(2*epsilonRF+1)));
 	
-	fprintf(outaver,"%10g  %10.3e %12.5e %12.5e %12.5e %10.3e  %10.3e\n",
-		t,epsilon,M2_ave,M_ave2,M_diff,Gk,g_k);
+	fprintf(outeps,"%10g  %10.3e %10.3e %10.3e\n",t,epsilon,Gk,g_k);
       }
       else 
-	fprintf(outaver,"%10g  %12.8e %12.8e %12.8e %12.8e\n",
-		t,epsilon,M2_ave,M_ave2,M_diff);
+	fprintf(outeps,"%10g  %12.8e\n",t,epsilon);
     }
     
     if (bMU)
@@ -706,22 +718,23 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   if (!bMU)
     close_trj(status);
     
-  fclose(out);
+  fclose(outmtot);
   fclose(outaver);
+  fclose(outeps);
 
   vol_aver /= teller;
-  fprintf(stderr,"Average volume over run is %g\n",vol_aver);
+  printf("Average volume over run is %g\n",vol_aver);
   if (bGkr) 
     print_gkrbin(gkrfn,gkrbin,gnx,teller,vol_aver);
 
   /* Autocorrelation function */  
   if (bCorr) {
     if (teller < 2) {
-      fprintf(stderr,"Not enough frames for autocorrelation\n");
+      printf("Not enough frames for autocorrelation\n");
     }
     else {
       dt=(t1 - t0)/(teller-1);
-      fprintf(stderr,"to %g, t %g, teller %d\n", t0,t,teller);
+      printf("t0 %g, t %g, teller %d\n", t0,t,teller);
       
       mode = eacVector;
 
@@ -734,11 +747,11 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
     }
   }
   if (!bMU) {
-    fprintf(stderr,"\n\nAverage dipole moment (Debye)\n");
-    fprintf(stderr," Tot= %g\n",  (mu_ave/gnx)/teller);
+    printf("\n\nAverage dipole moment (Debye)\n");
+    printf(" Tot= %g\n",  (mu_ave/gnx)/teller);
     if (bQuad) {
-      fprintf(stderr,"Average quadrupole moment (Debye-Ang)\n");
-      fprintf(stderr," XX=  %g  YY=  %g ZZ=  %g norm= %g asymm= %g\n\n",  
+      printf("Average quadrupole moment (Debye-Ang)\n");
+      printf(" XX=  %g  YY=  %g ZZ=  %g norm= %g asymm= %g\n\n",  
 	      quad_ave[XX]/(gnx*teller),
 	      quad_ave[YY]/(gnx*teller),
 	      quad_ave[ZZ]/(gnx*teller),
@@ -746,32 +759,32 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 	      (quad_ave[ZZ] - quad_ave[XX])/ quad_ave[YY]);
     }
   }
-  fprintf(stderr,"The following averages for the complete trajectory have been calculated:\n\n");
-  fprintf(stderr," Total < M_x > = %g Debye\n", M_XX/teller);
-  fprintf(stderr," Total < M_y > = %g Debye\n", M_YY/teller);
-  fprintf(stderr," Total < M_z > = %g Debye\n\n", M_ZZ/teller);
+  printf("The following averages for the complete trajectory have been calculated:\n\n");
+  printf(" Total < M_x > = %g Debye\n", M_XX/teller);
+  printf(" Total < M_y > = %g Debye\n", M_YY/teller);
+  printf(" Total < M_z > = %g Debye\n\n", M_ZZ/teller);
 
-  fprintf(stderr," Total < M_x^2 > = %g Debye^2\n", M_XX2/teller);
-  fprintf(stderr," Total < M_y^2 > = %g Debye^2\n", M_YY2/teller);
-  fprintf(stderr," Total < M_z^2 > = %g Debye^2\n\n", M_ZZ2/teller);
+  printf(" Total < M_x^2 > = %g Debye^2\n", M_XX2/teller);
+  printf(" Total < M_y^2 > = %g Debye^2\n", M_YY2/teller);
+  printf(" Total < M_z^2 > = %g Debye^2\n\n", M_ZZ2/teller);
 
-  fprintf(stderr," Total < |M|^2 > = %g Debye^2\n", M2_ave);
-  fprintf(stderr," Total < |M| >^2 = %g Debye^2\n\n", M_ave2);
+  printf(" Total < |M|^2 > = %g Debye^2\n", M2_ave);
+  printf(" Total < |M| >^2 = %g Debye^2\n\n", M_ave2);
 
-  fprintf(stderr," < |M|^2 > - < |M| >^2 = %g Debye^2\n\n", M_diff);
+  printf(" < |M|^2 > - < |M| >^2 = %g Debye^2\n\n", M_diff);
   if (!bMU || (mu_aver != -1)) {
-    fprintf(stderr,"Finite system Kirkwood g factor G_k = %g\n", Gk);
-    fprintf(stderr,"Infinite system Kirkwood g factor g_k = %g\n\n", g_k);
+    printf("Finite system Kirkwood g factor G_k = %g\n", Gk);
+    printf("Infinite system Kirkwood g factor g_k = %g\n\n", g_k);
   }
-  fprintf(stderr,"Epsilon = %g\n", epsilon);
+  printf("Epsilon = %g\n", epsilon);
 
   if (!bMU) {
     /* Write to file the dipole moment distibution during the simulation.
      */
-    out=xvgropen(dipdist,"Dipole Moment Distribution","mu (Debye)","");
+    outdd=xvgropen(dipdist,"Dipole Moment Distribution","mu (Debye)","");
     for(i=0; (i<ndipbin); i++)
-      fprintf(out,"%10g  %d\n",(i*mu_max)/ndipbin,dipole_bin[i]);
-    fclose(out);
+      fprintf(outdd,"%10g  %d\n",(i*mu_max)/ndipbin,dipole_bin[i]);
+    fclose(outdd);
     sfree(dipole_bin);
   }
   if (bGkr) 
@@ -843,6 +856,7 @@ int main(int argc,char *argv[])
     { efTPX, NULL, NULL,      ffREAD },
     { efNDX, NULL, NULL,      ffOPTRD },
     { efXVG, "-o", "Mtot",    ffWRITE },
+    { efXVG, "-e", "epsilon", ffWRITE },
     { efXVG, "-a", "aver",    ffWRITE },
     { efXVG, "-d", "dipdist", ffWRITE },
     { efXVG, "-c", "dipcorr", ffOPTWR },
@@ -861,10 +875,10 @@ int main(int argc,char *argv[])
 
   init_lookup_table(stdout);
   
-  fprintf(stderr,"Using %g as mu_max and %g as the dipole moment.\n", 
+  printf("Using %g as mu_max and %g as the dipole moment.\n", 
 	  mu_max,mu_aver);
   if (epsilonRF == 0.0)
-    fprintf(stderr,"WARNING: EpsilonRF = 0.0, this really means EpsilonRF = infinity\n");
+    printf("WARNING: EpsilonRF = 0.0, this really means EpsilonRF = infinity\n");
 
   bMU   = opt2bSet("-enx",NFILE,fnm);
   bQuad = opt2bSet("-q",NFILE,fnm);
@@ -872,18 +886,16 @@ int main(int argc,char *argv[])
   if (bMU) {
     bAverCorr = TRUE;
     if (bQuad) {
-      fprintf(stderr,"WARNING: "
-	      "Can not determine quadrupoles from energy file\n");
+      printf("WARNING: Can not determine quadrupoles from energy file\n");
       bQuad = FALSE;
     }
     if (bGkr) {
-      fprintf(stderr,"WARNING: Can not determine Gk(r) from energy file\n");
+      printf("WARNING: Can not determine Gk(r) from energy file\n");
       bGkr  = FALSE;
     }
     if (mu_aver == -1) 
-      fprintf(stderr,
-	      "WARNING: Can not calculate Gk and gk, since you did\n"
-	      "         not enter a valid dipole for the molecules\n");
+      printf("WARNING: Can not calculate Gk and gk, since you did\n"
+	     "         not enter a valid dipole for the molecules\n");
   }
   
   if (ftp2bSet(efNDX,NFILE,fnm))
@@ -894,7 +906,7 @@ int main(int argc,char *argv[])
   }
   bCorr   = (bAverCorr || opt2bSet("-c",NFILE,fnm));
   do_dip(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
-	 ftp2fn(efXVG,NFILE,fnm),
+	 opt2fn("-o",NFILE,fnm),opt2fn("-e",NFILE,fnm),
 	 opt2fn("-a",NFILE,fnm),opt2fn("-d",NFILE,fnm),
 	 bAverCorr,bCorr,
 	 opt2fn("-c",NFILE,fnm),
@@ -904,6 +916,7 @@ int main(int argc,char *argv[])
 	 gnx,grpindex,mu_max,mu_aver,epsilonRF,temp,nFA,skip);
   
   do_view(opt2fn("-o",NFILE,fnm),"-autoscale xy -nxy");
+  do_view(opt2fn("-e",NFILE,fnm),"-autoscale xy -nxy");
   do_view(opt2fn("-a",NFILE,fnm),"-autoscale xy -nxy");
   do_view(opt2fn("-d",NFILE,fnm),"-autoscale xy");
   do_view(opt2fn("-c",NFILE,fnm),"-autoscale xy");

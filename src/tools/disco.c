@@ -306,7 +306,7 @@ int main(int argc,char *argv[])
   bVerbose = bVerbose && MASTER(cr);
   
   if (MASTER(cr)) {
-    CopyRight(stdout,argv[0]);
+    CopyRight(stderr,argv[0]);
 
     parse_common_args(&argc,argv,0,TRUE,
 		      NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);

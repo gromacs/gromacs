@@ -114,6 +114,9 @@ g_angle:	g_angle.o  	anadih.o	$(ACOBJ)
 g_dipoles:	g_dipoles.o  	$(ACOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS)
 
+g_dip2:		g_dip2.o  	$(ACOBJ)
+		$(LD) -o $@ $^ $(SYSLIBS)
+
 g_rotacf:	g_rotacf.o 	$(ACOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS)
 
@@ -133,9 +136,6 @@ g_rms:	 	g_rms.o cmat.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_rmsf:	 	g_rmsf.o ql77.o
-		$(LD) -o $@ $^ $(SYSLIBS)
-
-g_diffuse:	g_diffuse.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 average:	average.o

@@ -390,7 +390,7 @@ int main(int argc,char *argv[])
   };
 #define NFILE asize(fnm)
 
-  CopyRight(stdout,argv[0]);
+  CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
 	 	    NFILE,fnm,asize(pa),pa,asize(desc),desc,
 #ifdef MY_DSSP

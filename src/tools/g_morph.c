@@ -75,7 +75,7 @@ int main(int argc,char *argv[])
   char     title[STRLEN],*grpname;
   bool     bRMS;
   
-  CopyRight(stdout,argv[0]);
+  CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW,
 		    FALSE,NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    0,NULL);

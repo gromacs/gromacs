@@ -94,7 +94,7 @@ int main(int argc,char *argv[])
   /* If we want to read all frames nskip must be greater than zero */
   nskip += 1;
 
-  CopyRight(stdout,argv[0]);
+  CopyRight(stderr,argv[0]);
   
   parse_common_args(&argc,argv,0,TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    0,NULL);
