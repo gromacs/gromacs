@@ -313,7 +313,7 @@ static int select_chainnames(t_atoms *atoms,int n_names,char **names,
 }
 
 static int select_atomnames(t_atoms *atoms,int n_names,char **names,
-			    atom_id *nr,atom_id *index)
+			    atom_id *nr,atom_id *index,bool bType)
 {
   char *name;
   int j;
@@ -321,7 +321,10 @@ static int select_atomnames(t_atoms *atoms,int n_names,char **names,
   
   *nr=0;
   for(i=0; i<atoms->nr; i++) {
-    name=*(atoms->atomname[i]);
+    if (bType)
+      name=*(atoms->atomtype[i]);
+    else
+      name=*(atoms->atomname[i]);
     j=0; 
     while (j<n_names && comp_name(name,names[j])) 
       j++;
@@ -330,7 +333,8 @@ static int select_atomnames(t_atoms *atoms,int n_names,char **names,
       (*nr)++;
     }
   }
-  printf("Found %u atoms with name%s",*nr,(n_names==1)?"":"s");
+  printf("Found %u atoms with %s%s",
+	 *nr,bType ? "type" : "name",(n_names==1)?"":"s");
   for(j=0; (j<n_names); j++)
     printf(" %s",names[j]);
   printf("\n");
@@ -594,10 +598,21 @@ static bool parse_entry(char **string,t_atoms *atoms,
       bRet=select_atomnumbers(string,atoms,sel_nr1,nr,index,gname);
     } 
     else if (parse_names(string,&n_names,names)) {
-      bRet=select_atomnames(atoms,n_names,names,nr,index);
+      bRet=select_atomnames(atoms,n_names,names,nr,index,FALSE);
       make_gname(n_names,names,gname);
       }
     }
+  else if ((*string)[0]=='t') {
+    (*string)++;
+    if (parse_names(string,&n_names,names)) {
+      if (atoms->atomtype == NULL)
+	printf("Need a run input file to select atom types\n");
+      else {
+	bRet=select_atomnames(atoms,n_names,names,nr,index,TRUE);
+	make_gname(n_names,names,gname);
+      }
+    }
+  }
   else if ((*string)[0]=='r') {
     (*string)++;
     if (parse_int(string,&sel_nr1)) {
@@ -709,10 +724,11 @@ static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
 	     block->index[i+1]-block->index[i]);
 
     printf("\n");
-    printf(" nr : group     !   'name' nr name   'splitch' nr    'l': list residues\n");
-    printf(" 'a': atom      &   'del' nr         'splitres' nr   'h': help\n");
-    printf(" 'r': residue   |   'keep' nr        'splitat' nr\n");
-    printf(" 'chain' char       'case': %s         'q': save and quit\n",
+    printf(" nr : group       !   'name' nr name   'splitch' nr    'l': list residues\n");
+    printf(" 'a': atom        &   'del' nr         'splitres' nr\n");
+    printf(" 't': atom type   |   'keep' nr        'splitat' nr    'h': help\n");
+    printf(" 'r': residue\n");
+    printf(" 'chain' char         'case': %s         'q': save and quit\n",
 	   bCase ? "case insensitive" : "case sensitive  "); 
     printf("\n> ");
     fgets(inp_string,STRLEN,stdin);
@@ -729,6 +745,9 @@ static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
       printf(" 'a' nr1 - nr2     : selects atoms in the range from nr1 to nr2.\n"); 
       printf(" 'a' name1[*] [name2[*] ...] : selects atoms by name(s), wildcard allowed\n"); 
       printf("                               at the end of a name.\n");
+      printf(" 't' type1[*] [type2[*] ...] : selects atoms by type(s), wildcard allowed\n"); 
+      printf("                               at the end of a type,\n");
+      printf("                               this requires a run input file.\n");
       printf(" 'r'               : analogous to 'a', but for residues.\n");
       printf(" 'chain' ch1 [ch2 ...] : selects atoms by chain identifier(s),\n");
       printf("                         not available with a .gro file as input.\n");
