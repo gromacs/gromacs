@@ -134,13 +134,13 @@ static void print5(FILE *fp)
 static void check_viol(FILE *log,t_commrec *mcr,
 		       t_ilist *disres,t_iparams forceparams[],
 		       t_functype functype[],rvec x[],rvec f[],
-		       t_forcerec *fr,t_pbc *pbc,t_graph *g,t_dr_result *dr,
-		       int isize,atom_id index[],real vvindex[],
+		       t_forcerec *fr,t_pbc *pbc,t_graph *g,t_dr_result dr[],
+		       int clust_id,int isize,atom_id index[],real vvindex[],
 		       t_fcdata *fcd)
 {
   t_iatom *forceatoms;
   int     i,j,nat,n,type,nviol,ndr,label;
-  real    ener,rt,mviol,tviol,viol,lam,dvdl;
+  real    ener,rt,mviol,tviol,viol,lam,dvdl,drt;
   static  bool bFirst=TRUE;
   
   lam  =0;
@@ -174,15 +174,16 @@ static void check_viol(FILE *log,t_commrec *mcr,
 		    (const rvec*)x,pbc,fcd);
 
     rt = pow(fcd->disres.Rt_6[0],-1.0/6.0);
-    dr->aver1[ndr]  += rt;
-    dr->aver2[ndr]  += sqr(rt);
-    dr->aver_3[ndr] += pow(rt,-3.0);
+    dr[clust_id].aver1[ndr]  += rt;
+    dr[clust_id].aver2[ndr]  += sqr(rt);
+    drt = pow(rt,-3.0);
+    if ((rt <=0) || (drt <= 0))
+      gmx_fatal(FARGS,"ndr = %d, rt = %8.3f, drt = %8.3f",ndr,rt,drt);
+    dr[clust_id].aver_3[ndr] += drt;
     
-    ener=interaction_function[F_DISRES].ifunc(n,&forceatoms[i],
-					      forceparams,
+    ener=interaction_function[F_DISRES].ifunc(n,&forceatoms[i],forceparams,
 					      (const rvec*)x,f,fr->fshift,
-					      pbc,g,lam,&dvdl,
-					      NULL,fcd);
+					      pbc,g,lam,&dvdl,NULL,fcd);
     viol = fcd->disres.sumviol;
     
     
@@ -201,14 +202,15 @@ static void check_viol(FILE *log,t_commrec *mcr,
     ndr ++;
     i   += n;
   }
-  dr->nv   = nviol;
-  dr->maxv = mviol;
-  dr->sumv = tviol;
-  dr->averv= tviol/ndr;
-  dr->nframes++;
+  dr[clust_id].nv   = nviol;
+  dr[clust_id].maxv = mviol;
+  dr[clust_id].sumv = tviol;
+  dr[clust_id].averv= tviol/ndr;
+  dr[clust_id].nframes++;
   
   if (bFirst) {
-    fprintf(stderr,"\nThere are %d restraints and %d pairs\n",ndr,disres->nr/nat);
+    fprintf(stderr,"\nThere are %d restraints and %d pairs\n",
+	    ndr,disres->nr/nat);
     bFirst = FALSE;
   }
   if (ntop)
@@ -347,23 +349,26 @@ static void dump_clust_stats(FILE *fp,int ndr,t_ilist *disres,
 			     t_iparams ip[],t_block *clust,t_dr_result dr[],
 			     char *clust_name[],int isize,atom_id index[])
 {
-  int    i,j,k,nra;
+  int    i,j,k,nra,mmm=0;
   double sumV,maxV,sumVT,maxVT;
   t_dr_stats *drs;
 
   fprintf(fp,"\n");
   fprintf(fp,"++++++++++++++ STATISTICS ++++++++++++++++++++++\n");  
   fprintf(fp,"Cluster  NFrames    SumV      MaxV     SumVT     MaxVT\n");
+
+  snew(drs,ndr);
   
   for(k=0; (k<clust->nr); k++) {
-    if (dr[k].nframes <= 0)
+    if (dr[k].nframes == 0)
       continue;
     if (dr[k].nframes != (clust->index[k+1]-clust->index[k])) 
       gmx_fatal(FARGS,"Inconsistency in cluster %s.\n"
 		"Found %d frames in trajectory rather than the expected %d\n",
 		clust_name[k],dr[k].nframes,
 		clust->index[k+1]-clust->index[k]);
-    snew(drs,ndr);
+    if (!clust_name[k])
+      gmx_fatal(FARGS,"Inconsistency with cluster %d. Invalid name",k);
     j         = 0;
     nra       = interaction_function[F_DISRES].nratoms+1;
     sumV = sumVT = maxV = maxVT = 0;
@@ -387,18 +392,22 @@ static void dump_clust_stats(FILE *fp,int ndr,t_ilist *disres,
       maxV   = max(maxV,drs[i].viol);
       maxVT  = max(maxVT,drs[i].violT);
     }
+    if (strcmp(clust_name[k],"1000") == 0) {
+      mmm ++;
+    }
     fprintf(fp,"%-10s%6d%8.3f  %8.3f  %8.3f  %8.3f\n",clust_name[k],
 	    dr[k].nframes,sumV,maxV,sumVT,maxVT);
   
-    sfree(drs);
   }
+  fflush(fp);
+  sfree(drs);
 }
 
 static void init_dr_res(t_dr_result *dr,int ndr)
 {
-  snew(dr->aver1,ndr);
-  snew(dr->aver2,ndr);
-  snew(dr->aver_3,ndr);
+  snew(dr->aver1,ndr+1);
+  snew(dr->aver2,ndr+1);
+  snew(dr->aver_3,ndr+1);
   dr->nv      = 0;
   dr->nframes = 0;
   dr->sumv    = 0;
@@ -440,7 +449,7 @@ int gmx_disre(int argc,char *argv[])
   rvec        *xtop;
   t_atoms     *atoms=NULL;
   t_forcerec  *fr;
-  t_fcdata    *fcd;
+  t_fcdata    fcd;
   t_nrnb      nrnb;
   t_nsborder  *nsb;
   t_commrec   *cr;
@@ -525,20 +534,19 @@ int gmx_disre(int argc,char *argv[])
   else 
     isize=0;
 
-  snew(fcd,1);
   ir.dr_tau=0.0;
   init_disres(stdlog,top.idef.il[F_DISRES].nr,top.idef.il[F_DISRES].iatoms,
-	      top.idef.iparams,&ir,NULL,fcd);
+	      top.idef.iparams,&ir,NULL,&fcd);
 
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   snew(f,5*natoms);
   
-  init_dr_res(&dr,fcd->disres.nr);
+  init_dr_res(&dr,fcd.disres.nr);
   if (opt2bSet("-c",NFILE,fnm)) {
     clust = cluster_index(opt2fn("-c",NFILE,fnm));
-    snew(dr_clust,clust->clust->nr);
-    for(i=0; (i<clust->clust->nr); i++)
-      init_dr_res(&dr_clust[i],fcd->disres.nr);
+    snew(dr_clust,clust->clust->nr+1);
+    for(i=0; (i<=clust->clust->nr); i++)
+      init_dr_res(&dr_clust[i],fcd.disres.nr);
   }
   else {	
     out =xvgropen(opt2fn("-ds",NFILE,fnm),
@@ -578,21 +586,21 @@ int gmx_disre(int argc,char *argv[])
       set_pbc(&pbc,box);
     
     if (clust) {
-      if (j >= clust->clust->nra)
-	gmx_fatal(FARGS,"There are more frames in the trajectory than in the cluster index file\n");
+      /*      if (j >= clust->clust->nra)*/
+      if (j > clust->maxframe)
+	gmx_fatal(FARGS,"There are more frames in the trajectory than in the cluster index file. t = %8f\n",t);
       int my_clust = clust->inv_clust[j];
       range_check(my_clust,0,clust->clust->nr);
       check_viol(stdlog,cr,&(top.idef.il[F_DISRES]),
 		 top.idef.iparams,top.idef.functype,
 		 x,f,fr,ir.ePBC==epbcFULL ? &pbc : NULL,g,
-		 &(dr_clust[my_clust]),
-		 isize,index,vvindex,fcd);
+		 dr_clust,my_clust,isize,index,vvindex,&fcd);
     }
     else
       check_viol(stdlog,cr,&(top.idef.il[F_DISRES]),
 		 top.idef.iparams,top.idef.functype,
-		 x,f,fr,ir.ePBC==epbcFULL ? &pbc : NULL,g,&dr,
-		 isize,index,vvindex,fcd);
+		 x,f,fr,ir.ePBC==epbcFULL ? &pbc : NULL,g,&dr,0,
+		 isize,index,vvindex,&fcd);
     if (bPDB) {
       reset_x(top.atoms.nr,ind_fit,top.atoms.nr,NULL,x,w_rls);
       do_fit(top.atoms.nr,w_rls,x,x);
@@ -618,15 +626,15 @@ int gmx_disre(int argc,char *argv[])
     }
     j++;
   } while (read_next_x(status,&t,natoms,x,box));
-  
   close_trj(status);
+
   if (clust) {
-    dump_clust_stats(stdlog,fcd->disres.nr,&(top.idef.il[F_DISRES]),
+    dump_clust_stats(stdlog,fcd.disres.nr,&(top.idef.il[F_DISRES]),
 		     top.idef.iparams,clust->clust,dr_clust,
 		     clust->grpname,isize,index);
   }
   else {
-    dump_stats(stdlog,j,fcd->disres.nr,&(top.idef.il[F_DISRES]),
+    dump_stats(stdlog,j,fcd.disres.nr,&(top.idef.il[F_DISRES]),
 	       top.idef.iparams,&dr,isize,index,
 	       bPDB ? (&top.atoms) : NULL);
     if (bPDB) {
@@ -647,7 +655,7 @@ int gmx_disre(int argc,char *argv[])
     do_view(opt2fn("-ds",NFILE,fnm),"-nxy");
     do_view(opt2fn("-dm",NFILE,fnm),"-nxy");
   }
-  thanx(stderr);
+  /*thanx(stderr);*/
 
   fclose(stdlog);
   
