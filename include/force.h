@@ -76,7 +76,8 @@ extern void init_forcerec(FILE       *log,
 			  t_nsborder *nsb,
 			  matrix     box,
 			  bool       bMolEpot,
-			  char       *tabfn);
+			  char       *tabfn,
+			  bool       bNoSolvOpt);
 /* The Force rec struct must be created with mk_forcerec 
  * The booleans have the following meaning:
  * bSetQ:    Copy the charges [ only necessary when they change ]

@@ -314,7 +314,7 @@ int main (int argc,char *argv[])
   fr      = mk_forcerec();
   fprintf(stdlog,"Made forcerec...\n");
   calc_nsb(stdlog,&(top.blocks[ebCGS]),1,nsb,0);
-  init_forcerec(stdlog,fr,&ir,&top,cr,mdatoms,nsb,box,FALSE,NULL);
+  init_forcerec(stdlog,fr,&ir,&top,cr,mdatoms,nsb,box,FALSE,NULL,FALSE);
   init_nrnb(&nrnb);
   j=0;
   do {
