@@ -44,6 +44,7 @@ static char *SRCID_do_dssp_c = "$Id$";
 #include "rdgroup.h"
 #include "gstat.h"
 #include "tpxio.h"
+#include "viewit.h"
 
 #ifdef MY_DSSP
 extern void dssp_main(bool bDoAcc, bool bVerbose);
@@ -532,10 +533,11 @@ int main(int argc,char *argv[])
       ffclose(acc);
     }
   }
-      
-  if (fnTArea)  xvgr_file(fnTArea ,NULL);
-  if (fnAArea)  xvgr_file(fnAArea ,NULL);
-  if (fnSCount) xvgr_file(fnSCount,NULL);
+
+  do_view(opt2fn("-o",NFILE,fnm),NULL);
+  do_view(fnSCount,NULL);
+  do_view(fnTArea ,NULL);
+  do_view(fnAArea ,NULL);
 
   thanx(stderr);
   
