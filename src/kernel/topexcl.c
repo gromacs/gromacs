@@ -164,8 +164,10 @@ void nnb2excl (t_nextnb *nnb, t_block *excl)
       }
     assert(nrs==nr_of_sortables);
     prints("nnb2excl before qsort",nr_of_sortables,s);
-    qsort ((void *)s,nr_of_sortables,(size_t)sizeof(s[0]),bond_sort);
-    prints("nnb2excl after qsort",nr_of_sortables,s);
+    if (nr_of_sortables > 1) {
+      qsort ((void *)s,nr_of_sortables,(size_t)sizeof(s[0]),bond_sort);
+      prints("nnb2excl after qsort",nr_of_sortables,s);
+    }
 
     /* remove duplicate entries from the list */
     j_index=0;
@@ -272,7 +274,7 @@ void gen_nnb(t_nextnb *nnb,t_params plist[])
 
   /* now sort the bonds */
   prints("gen_excl before qsort",nrbonds,s);
-  if (nrbonds > 0) {
+  if (nrbonds > 1) {
     qsort((void *) s,nrbonds,(size_t)sizeof(sortable),bond_sort);
     prints("gen_excl after qsort",nrbonds,s);
   }

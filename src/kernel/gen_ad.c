@@ -313,7 +313,8 @@ static void sort_id(int nr,t_param ps[])
     }
   }
   /* Now sort it */
-  qsort(ps,nr,(size_t)sizeof(ps[0]),idcomp);
+  if (nr > 1)
+    qsort(ps,nr,(size_t)sizeof(ps[0]),idcomp);
 }
 
 static void dump_param(FILE *fp,char *title,int n,t_param ps[])
@@ -832,12 +833,14 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
    * and even more for each dihedral. We will remove these now.
    */
   /* Sort angles with respect to j-i-k (middle atom first) */
-  qsort(ang,nang,(size_t)sizeof(ang[0]),acomp);
+  if (nang > 1)
+    qsort(ang,nang,(size_t)sizeof(ang[0]),acomp);
   rm2par(ang,&nang,aeq);
 
   /* Sort dihedrals with respect to j-k-i-l (middle atoms first) */
   fprintf(stderr,"before sorting: %d dihedrals\n",ndih);
-  qsort(dih,ndih,(size_t)sizeof(dih[0]),dcomp);
+  if (ndih > 1)
+    qsort(dih,ndih,(size_t)sizeof(dih[0]),dcomp);
   pdih2idih(dih,&ndih,idih,&nidih,atoms,hb,bAlldih);
   fprintf(stderr,"after sorting: %d dihedrals\n",ndih);
   
@@ -852,7 +855,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
   
   /* And for the pairs */
   fprintf(stderr,"There are %d pairs before sorting\n",npai);
-  qsort(pai,npai,(size_t)sizeof(pai[0]),pcomp);
+  if (npai > 1)
+    qsort(pai,npai,(size_t)sizeof(pai[0]),pcomp);
   rm2par(pai,&npai,preq);
 
   /* Now we have unique lists of angles and dihedrals 
