@@ -6193,7 +6193,7 @@ inl1020_sse:
 .equ		_ii3,           596
 .equ		_innerjjnr,     600
 .equ		_innerk,        604
-.equ		_salign,        608								
+.equ		_salign,        608				
 	push ebp
 	mov ebp,esp	
         push eax
@@ -6686,6 +6686,11 @@ i1020_odd_loop:
 	subps xmm1, xmm5	/* 30-rsq*lu*lu */
 	mulps xmm1, xmm2	
 	mulps xmm0, xmm1	/* xmm0=rinv */
+	/* a little trick to avoid NaNs: */
+	/* positions 0,2,and 3 are valid, but not 1. */
+	/* If it contains NaN it doesnt help to mult by 0, */
+	/* So we shuffle it and copy pos 0 to pos1! */
+	shufps xmm0, xmm0, 0b11100000	
 	movaps xmm4, xmm0
 	mulps  xmm4, xmm4	/* xmm4=rinvsq */
 	movaps xmm3, [esp + _qqO]
@@ -12975,6 +12980,12 @@ i1120_odd_loop:
 	subps xmm1, xmm5	/* 30-rsq*lu*lu */
 	mulps xmm1, xmm2	
 	mulps xmm0, xmm1	/* xmm0=rinv */
+	/* a little trick to avoid NaNs: */
+	/* positions 0,2,and 3 are valid, but not 1. */
+	/* If it contains NaN it doesnt help to mult by 0, */
+	/* So we shuffle it and copy pos 0 to pos1! */
+	shufps xmm0, xmm0, 0b11100000
+
 	movaps xmm4, xmm0
 	mulps  xmm4, xmm4	/* xmm4=rinvsq */
 	movaps xmm1, xmm4
@@ -15345,6 +15356,12 @@ inl2120_sse:
 	subps xmm1, xmm5	/* 30-rsq*lu*lu */
 	mulps xmm1, xmm2	
 	mulps xmm0, xmm1	/* xmm0=rinv */
+	/* a little trick to avoid NaNs: */
+	/* positions 0,2,and 3 are valid, but not 1. */
+	/* If it contains NaN it doesnt help to mult by 0, */
+	/* So we shuffle it and copy pos 0 to pos1! */
+	shufps xmm0, xmm0, 0b11100000
+		
 	movaps xmm4, xmm0
 	mulps  xmm4, xmm4	/* xmm4=rinvsq */
 	movaps xmm1, xmm4
@@ -17771,6 +17788,12 @@ inl2020_sse:
 	subps xmm1, xmm5	/* 30-rsq*lu*lu */
 	mulps xmm1, xmm2	
 	mulps xmm0, xmm1	/* xmm0=rinv */
+	/* a little trick to avoid NaNs: */
+	/* positions 0,2,and 3 are valid, but not 1. */
+	/* If it contains NaN it doesnt help to mult by 0, */
+	/* So we shuffle it and copy pos 0 to pos1! */
+	shufps xmm0, xmm0, 0b11100000
+
 	movaps xmm4, xmm0
 	mulps  xmm4, xmm4	/* xmm4=rinvsq */
 
@@ -21826,6 +21849,12 @@ inl3020_sse:
 	subps xmm1, xmm5	/* 30-rsq*lu*lu */
 	mulps xmm1, xmm2	
 	mulps xmm0, xmm1	/* xmm0=rinv */
+	/* a little trick to avoid NaNs: */
+	/* positions 0,2,and 3 are valid, but not 1. */
+	/* If it contains NaN it doesnt help to mult by 0, */
+	/* So we shuffle it and copy pos 0 to pos1! */
+	shufps xmm0, xmm0, 0b11100000	
+	
 	mulps xmm4, xmm0	/* xmm4=r */
 	movaps [esp + _rinvO], xmm0
 	
@@ -27365,7 +27394,7 @@ inl3120_sse:
 .equ		_ntia,		808	
 .equ		_innerjjnr,	812
 .equ		_innerk,	816
-.equ		_salign,	820								
+.equ		_salign,	820
 	push ebp
 	mov ebp,esp	
         push eax
@@ -28060,7 +28089,7 @@ inl3120_sse:
 	shufps xmm3, xmm3, 0
 	mulps xmm3, xmm4
 	movaps [esp + _qqO], xmm3	/* use oxygen qq for storage */
-
+	
 	xorps xmm6, xmm6
 	mov esi, [ebp + _type]
 	mov ebx, [esi + eax*4]
@@ -28073,9 +28102,9 @@ inl3120_sse:
 	shufps xmm7, xmm7, 0b11111101
 	movaps [esp + _c6], xmm6
 	movaps [esp + _c12], xmm7
-
+	
 	mov esi, [ebp + _pos]
-	lea   eax, [eax + eax*2]  
+	lea eax, [eax + eax*2]  
 	
 	/* move j coords to xmm0-xmm2 */
 	movss xmm0, [esi + eax*4]
@@ -28127,6 +28156,11 @@ inl3120_sse:
 	subps xmm1, xmm5	/* 30-rsq*lu*lu */
 	mulps xmm1, xmm2	
 	mulps xmm0, xmm1	/* xmm0=rinv */
+	/* a little trick to avoid NaNs: */
+	/* positions 0,2,and 3 are valid, but not 1. */
+	/* If it contains NaN it doesnt help to mult by 0, */
+	/* So we shuffle it and copy pos 0 to pos1! */
+	shufps xmm0, xmm0, 0b11100000
 	mulps xmm4, xmm0	/* xmm4=r */
 	movaps [esp + _rinvO], xmm0
 	
@@ -28154,7 +28188,7 @@ inl3120_sse:
         movd ecx, mm7
         psrlq mm7, 32
         movd edx, mm7
-
+	
         movlps xmm5, [esi + eax*4]
         movlps xmm7, [esi + ecx*4]
         movhps xmm7, [esi + edx*4] /* got half coulomb table */
@@ -28186,7 +28220,7 @@ inl3120_sse:
         /* increment vcoul - then we can get rid of mm5 */
         addps  xmm5, [esp + _vctot]
         movaps [esp + _vctot], xmm5
-
+	
 	/* do nontable L-J */
 	movaps xmm2, [esp + _rinvO]
 	mulps  xmm2, xmm2
@@ -35135,6 +35169,13 @@ inl3320_sse:
 	subps xmm1, xmm5	/* 30-rsq*lu*lu */
 	mulps xmm1, xmm2	
 	mulps xmm0, xmm1	/* xmm0=rinv */
+
+	/* a little trick to avoid NaNs: */
+	/* positions 0,2,and 3 are valid, but not 1. */
+	/* If it contains NaN it doesnt help to mult by 0, */
+	/* So we shuffle it and copy pos 0 to pos1! */
+	shufps xmm0, xmm0, 0b11100000	
+	
 	mulps xmm4, xmm0	/* xmm4=r */
 	movaps [esp + _rinvO], xmm0
 	
@@ -42104,6 +42145,12 @@ mcinl1020_sse:
 	subps xmm1, xmm5	/* 30-rsq*lu*lu */
 	mulps xmm1, xmm2	
 	mulps xmm0, xmm1	/* xmm0=rinv */
+	/* a little trick to avoid NaNs: */
+	/* positions 0,2,and 3 are valid, but not 1. */
+	/* If it contains NaN it doesnt help to mult by 0, */
+	/* So we shuffle it and copy pos 0 to pos1! */
+	shufps xmm0, xmm0, 0b11100000	
+	
 	movaps xmm3, [esp + _qqO]
 
 	mulps  xmm3, xmm0	/* xmm3=vcoul */
@@ -45942,6 +45989,13 @@ mcinl1120_sse:
 	subps xmm1, xmm5	/* 30-rsq*lu*lu */
 	mulps xmm1, xmm2	
 	mulps xmm0, xmm1	/* xmm0=rinv */
+
+	/* a little trick to avoid NaNs: */
+	/* positions 0,2,and 3 are valid, but not 1. */
+	/* If it contains NaN it doesnt help to mult by 0, */
+	/* So we shuffle it and copy pos 0 to pos1! */
+	shufps xmm0, xmm0, 0b11100000	
+	
 	movaps xmm4, xmm0
 	mulps  xmm4, xmm4	/* xmm4=rinvsq */
 	movaps xmm1, xmm4
@@ -47253,6 +47307,13 @@ mcinl2120_sse:
 	subps xmm1, xmm5	/* 30-rsq*lu*lu */
 	mulps xmm1, xmm2	
 	mulps xmm0, xmm1	/* xmm0=rinv */
+
+	/* a little trick to avoid NaNs: */
+	/* positions 0,2,and 3 are valid, but not 1. */
+	/* If it contains NaN it doesnt help to mult by 0, */
+	/* So we shuffle it and copy pos 0 to pos1! */
+	shufps xmm0, xmm0, 0b11100000	
+
 	movaps xmm4, xmm0
 	mulps  xmm4, xmm4	/* xmm4=rinvsq */
 	movaps xmm1, xmm4
@@ -48618,6 +48679,12 @@ mcinl2020_sse:
 	mulps xmm1, xmm2	
 	mulps xmm0, xmm1	/* xmm0=rinv */
 
+	/* a little trick to avoid NaNs: */
+	/* positions 0,2,and 3 are valid, but not 1. */
+	/* If it contains NaN it doesnt help to mult by 0, */
+	/* So we shuffle it and copy pos 0 to pos1! */
+	shufps xmm0, xmm0, 0b11100000	
+	
 	movaps xmm3, [esp + _krsqO]
 	addps  xmm0, xmm3	/* xmm0=rinv+ krsq */
 	subps  xmm0, [esp + _crf] /* xmm0=rinv+ krsq-crf */
@@ -51052,6 +51119,13 @@ mcinl3020_sse:
 	subps xmm1, xmm5	/* 30-rsq*lu*lu */
 	mulps xmm1, xmm2	
 	mulps xmm0, xmm1	/* xmm0=rinv */
+
+	/* a little trick to avoid NaNs: */
+	/* positions 0,2,and 3 are valid, but not 1. */
+	/* If it contains NaN it doesnt help to mult by 0, */
+	/* So we shuffle it and copy pos 0 to pos1! */
+	shufps xmm0, xmm0, 0b11100000	
+	
 	mulps xmm4, xmm0	/* xmm4=r */
 	movaps [esp + _rinvO], xmm0
 	
@@ -55250,6 +55324,13 @@ mcinl3120_sse:
 	subps xmm1, xmm5	/* 30-rsq*lu*lu */
 	mulps xmm1, xmm2	
 	mulps xmm0, xmm1	/* xmm0=rinv */
+
+	/* a little trick to avoid NaNs: */
+	/* positions 0,2,and 3 are valid, but not 1. */
+	/* If it contains NaN it doesnt help to mult by 0, */
+	/* So we shuffle it and copy pos 0 to pos1! */
+	shufps xmm0, xmm0, 0b11100000	
+	
 	mulps xmm4, xmm0	/* xmm4=r */
 	movaps [esp + _rinvO], xmm0
 	
@@ -60051,6 +60132,12 @@ mcinl3320_sse:
 	subps xmm1, xmm5	/* 30-rsq*lu*lu */
 	mulps xmm1, xmm2	
 	mulps xmm0, xmm1	/* xmm0=rinv */
+	/* a little trick to avoid NaNs: */
+	/* positions 0,2,and 3 are valid, but not 1. */
+	/* If it contains NaN it doesnt help to mult by 0, */
+	/* So we shuffle it and copy pos 0 to pos1! */
+	shufps xmm0, xmm0, 0b11100000	
+	
 	mulps xmm4, xmm0	/* xmm4=r */
 	movaps [esp + _rinvO], xmm0
 	

@@ -22,7 +22,7 @@ topol_DATA = \
 	flexwat-ferguson.itp		h2p4o13.itp	h2p8o25.itp	\
 	h2po4.itp	ions.itp	methanol.itp	spc.itp		\
 	spce.itp	tfe.itp		tip3pgmx.itp	tip4pgmx.itp	\
-	urea.itp							\
+	urea.itp	dgsolv.dat					\
 	dec50.gro	dmso.gro	spc216.gro	tip4p.gro	\
 	urea+h2o.gro							\
 	aminoacids.dat	atommass.dat	bromacs.dat	ca-shift.dat	\
