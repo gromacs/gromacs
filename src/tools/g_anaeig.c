@@ -437,23 +437,31 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
   if (threedplotfile) {
     t_atoms atoms;
     rvec    *x;
+    real    *b=NULL;
     matrix  box;
-    char    *resnm,*atnm;
-    bool    bPDB;
+    char    *resnm,*atnm, pdbform[STRLEN];
+    bool    bPDB, b4D;
     FILE    *out;
     
     if (noutvec < 3)
       fatal_error(0,"You have selected less than 3 eigenvectors");  
-
+      
     /* initialize */
     bPDB = fn2ftp(threedplotfile)==efPDB;
     clear_mat(box);
     box[XX][XX] = box[YY][YY] = box[ZZ][ZZ] = 1;
     
+    b4D = bPDB && (noutvec >= 4);
+    if (b4D)
+      fprintf(stderr, "You have selected four or more eigenvectors:\n"
+	      "fourth eigenvector will be plotted "
+	      "in bfactor field of pdb file\n");
+
     sprintf(str,"3D proj. of traj. on eigenv. %d, %d and %d",
 	    eignr[outvec[0]]+1,eignr[outvec[1]]+1,eignr[outvec[2]]+1);
     init_t_atoms(&atoms,nframes,FALSE);
     snew(x,nframes);
+    snew(b,nframes);
     atnm=strdup("C");
     resnm=strdup("PRJ");
     for(i=0; i<nframes; i++) {
@@ -463,8 +471,13 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
       x[i][XX]=inprod[0][i];
       x[i][YY]=inprod[1][i];
       x[i][ZZ]=inprod[2][i];
+      if (b4D)
+	b[i]  =inprod[3][i];
     }
-    if ( bSplit && bPDB ) {
+    if ( ( b4D || bSplit ) && bPDB ) {
+      strcpy(pdbform,pdbformat);
+      strcat(pdbform,"%8.4f%8.4f\n");
+      
       out=ffopen(threedplotfile,"w");
       fprintf(out,"HEADER    %s\n",str);
       j=0;
@@ -473,8 +486,8 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
 	  fprintf(out,"TER\n");
 	  j=0;
 	}
-	fprintf(out,pdbformat,"ATOM",i+1,"C","PRJ",' ',j+1,
-		PR_VEC(10*x[i]));
+	fprintf(out,pdbform,"ATOM",i+1,"C","PRJ",' ',j+1,
+		PR_VEC(10*x[i]), 1.0, 10*b[i]);
 	fprintf(out,"\n");
 	if (j>0)
 	  fprintf(out,"CONECT%5d%5d\n", i, i+1);
@@ -682,7 +695,7 @@ int main(int argc,char *argv[])
   char       *FilterFile,*ExtremeFile;
   char       *OverlapFile,*InpMatFile;
   bool       bFit1,bFit2,bM,bIndex,bTPS,bTop,bVec2,bProj;
-  bool       bFirstToLast,bFirstLastSet,bTraj,bCompare;
+  bool       bFirstToLast,bFirstLastSet,bTraj,bCompare,bPDB3D;
 
   t_filenm fnm[] = { 
     { efTRN, "-v",    "eigenvec",    ffREAD  },
@@ -736,6 +749,7 @@ int main(int argc,char *argv[])
   bTPS   = ftp2bSet(efTPS,NFILE,fnm) || bM || bTraj ||
     FilterFile  || (bIndex && indexfile);
   bCompare = Vec2File && Eig1File && Eig2File;
+  bPDB3D = fn2ftp(ThreeDPlotFile)==efPDB;
 
   read_eigenvectors(opt2fn("-v",NFILE,fnm),&natoms,&bFit1,
 		    &xref1,&bDMR1,&xav1,&bDMA1,&nvec1,&eignr1,&eigvec1);
@@ -843,12 +857,15 @@ int main(int argc,char *argv[])
       for(i=0; i<nout; i++)
 	iout[i]=first-1+i;
     } else if (ThreeDPlotFile) {
-      /* make an index of first, first+1 and last */
-      nout=3;
+      /* make an index of first+(0,1,2) and last */
+      nout = bPDB3D ? 4 : 3;
+      nout = min(last-first+1, nout);
       snew(iout,nout);
       iout[0]=first-1;
       iout[1]=first;
-      iout[2]=last-1;
+      if (nout>3)
+	iout[2]=first+1;
+      iout[nout-1]=last-1;
     } else {
       /* make an index of first and last */
       nout=2;
