@@ -250,7 +250,7 @@ case "${host_cpu}" in
     with_mpi_environment=no
     ;;
 esac
-  
+fi  
 
 case "${host_cpu}" in
  alpha*)  
@@ -737,7 +737,6 @@ AC_SUBST(libdir)
 AC_OUTPUT([Makefile
                  src/Makefile
                  src/gmxlib/Makefile
-                 src/local/Makefile
                  src/mdlib/Makefile
                  src/kernel/Makefile
                  src/tools/Makefile

@@ -1270,7 +1270,7 @@ case "${host_cpu}" in
     with_mpi_environment=no
     ;;
 esac
-  
+fi  
 
 case "${host_cpu}" in
  alpha*)  
@@ -6919,7 +6919,6 @@ ac_given_INSTALL="$INSTALL"
 trap 'rm -fr `echo "Makefile
                  src/Makefile
                  src/gmxlib/Makefile
-                 src/local/Makefile
                  src/mdlib/Makefile
                  src/kernel/Makefile
                  src/tools/Makefile
@@ -7074,7 +7073,6 @@ cat >> $CONFIG_STATUS <<EOF
 CONFIG_FILES=\${CONFIG_FILES-"Makefile
                  src/Makefile
                  src/gmxlib/Makefile
-                 src/local/Makefile
                  src/mdlib/Makefile
                  src/kernel/Makefile
                  src/tools/Makefile
