@@ -14,6 +14,11 @@ SOL		1
      2	    H 	   1	SOL    HW1      1       0.41    1.00800
      3	    H 	   1	SOL    HW2	1       0.41    1.00800
 #endif
+#ifdef _FF_OPLS  
+     1	opls_116   1	SOL     OW      1      -0.82 
+     2	opls_117   1	SOL    HW1      1       0.41   
+     3	opls_117   1	SOL    HW2	1       0.41  
+#endif
 
 [ settles ]
 ; OW	funct	doh	dhh
