@@ -52,23 +52,39 @@ static char *SRCID_g_velacc_c = "$Id$";
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "g_velacc computes the velocity autocorrelation function"
+    "g_velacc computes the velocity autocorrelation function.",
+    "When the [TT]-s[tt] option is used, the momentum autocorrelation",
+    "function is calculated.[PAR]",
+    "With option [TT]-mol[tt] the momentum autocorrelation function of",
+    "molecules is calculated. In this case the index group should consist",
+    "of molecule numbers instead of atom numbers."
+  };
+  
+  static bool bMol=FALSE;
+  t_pargs pa[] = {
+    { "-mol", FALSE, etBOOL, {&bMol},
+      "Calculate vac of molecules" }
   };
 
+  t_topology top;
   t_trxframe fr;
+  matrix     box;
+  bool       bTPS,bTop;
   int        gnx;
-  atom_id    *index;
+  atom_id    *index,*a,*atndx,at;
   char       *grpname;
   char       title[256];
-  real       t0,t1;
-  int        status,teller,n_alloc,i,tel3;
+  real       t0,t1,m;
+  int        status,teller,n_alloc,i,j,tel3;
+  rvec       mv_mol;
   real       **c1;
   
 #define NHISTO 360
     
   t_filenm  fnm[] = {
-    { efTRN, "-f",    NULL,   ffREAD },
-    { efNDX, NULL,    NULL,   ffREAD },
+    { efTRN, "-f",    NULL,   ffREAD  },
+    { efTPS, NULL,    NULL,   ffOPTRD }, 
+    { efNDX, NULL,    NULL,   ffOPTRD },
     { efXVG, "-o",    "vac",  ffWRITE }
   };
 #define NFILE asize(fnm)
@@ -76,12 +92,26 @@ int main(int argc,char *argv[])
   t_pargs *ppa;
 
   CopyRight(stderr,argv[0]);
-  npargs = 0;
-  ppa    = add_acf_pargs(&npargs,NULL);
+  npargs = asize(pa);
+  ppa    = add_acf_pargs(&npargs,pa);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
 
-  rd_index(ftp2fn(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
+  bTPS = bMol || ftp2bSet(efTPS,NFILE,fnm) || !ftp2bSet(efNDX,NFILE,fnm);
+
+  if (bTPS) {
+    bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,NULL,NULL,box,TRUE);
+    get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
+  } else
+    rd_index(ftp2fn(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
+
+  if (bMol) {
+    if (!bTop)
+      fatal_error(0,"Need a topology to determine the molecules");
+    a     = top.blocks[ebMOLS].a;
+    atndx = top.blocks[ebMOLS].index;
+  }
+  
   sprintf(title,"Velocity Autocorrelation Function for %s",grpname);
   
   /* Correlation stuff */
@@ -97,15 +127,34 @@ int main(int argc,char *argv[])
   do {
     if (teller >= n_alloc) {
       n_alloc+=100;
-      for(i=0; (i<gnx); i++)
+      for(i=0; i<gnx; i++)
 	srenew(c1[i],DIM*n_alloc);
     }
     tel3=3*teller;
-    for(i=0; (i<gnx); i++) {
-      c1[i][tel3+XX]=fr.v[index[i]][XX];
-      c1[i][tel3+YY]=fr.v[index[i]][YY];
-      c1[i][tel3+ZZ]=fr.v[index[i]][ZZ];
-    }
+    if (bMol)
+      for(i=0; i<gnx; i++) {
+	clear_rvec(mv_mol);
+	for(j=0; j<atndx[index[i]+1] - atndx[index[i]]; j++) {
+	  at = a[atndx[index[i]]+j];
+	  m  = top.atoms.atom[at].m;
+	  mv_mol[XX] += m*fr.v[at][XX];
+	  mv_mol[XX] += m*fr.v[at][YY];
+	  mv_mol[XX] += m*fr.v[at][ZZ];
+	}
+	c1[i][tel3+XX]=mv_mol[XX];
+	c1[i][tel3+YY]=mv_mol[YY];
+	c1[i][tel3+ZZ]=mv_mol[ZZ];
+      }
+    else
+      for(i=0; i<gnx; i++) {
+	if (bTPS)
+	  m = top.atoms.atom[index[i]].m;
+	else
+	  m = 1;
+	c1[i][tel3+XX]=m*fr.v[index[i]][XX];
+	c1[i][tel3+YY]=m*fr.v[index[i]][YY];
+	c1[i][tel3+ZZ]=m*fr.v[index[i]][ZZ];
+      }
     
     teller ++;
   } while (read_next_frame(status,&fr));
