@@ -565,7 +565,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     "%lf%lf%lf%lf%lf",
     "%lf%lf%lf%lf%lf%lf"
   };
-  int      nr,j,nrfp,nrfpA,nral,nread,ftype;
+  int      nr,i,j,nrfp,nrfpA,nral,nread,ftype;
   char     format[STRLEN];
   double   cc[MAXFORCEPARAM];
   int      aa[MAXATOMLIST+1];
@@ -584,6 +584,14 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   else
     ftype = ifunc_index(d,aa[nral]);
 
+  /* Check for double atoms */
+  for(i=0; (i<nral); i++)
+    for(j=i+1; (j<nral); j++)
+      if (aa[i] == aa[j]) {
+	sprintf(errbuf,"Double atoms in %s (%d)",dir2str(d),aa[i]);
+	warning(errbuf);
+      }
+  
   /* default force parameters  */
   for(j=0; (j<MAXATOMLIST); j++)
     param.a[j] = aa[j]-1;
