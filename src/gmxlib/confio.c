@@ -114,6 +114,7 @@ static void get_w_conf(FILE *in, char *infile, char *title,
       if (prec>30)
 	prec=30;
       sprintf(format,"%%%dlf%%%dlf%%%dlf",prec,prec,prec);
+      /* this will be something like "%8lf%8lf%8lf" */
     }
     
     /* residue number*/
@@ -394,20 +395,21 @@ void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
 			   rvec *x,rvec *v,matrix box)
 {
   char resnm[6],nm[6],format[100];
-  int  ai,i,resnr,l;
+  int  ai,i,resnr,l,vpr;
 
   fprintf (out,"%s\n",title);
   fprintf (out,"%5d\n",nx);
   /* build format string for printing, 
-     something like "%8.3f%8.3f%8.3f\n" */
+     something like "%8.3f" for x and "%8.4f" for v */
   if (pr<0)
     pr=0;
   if (pr>30)
     pr=30;
   l=pr+5;
+  vpr=pr+1;
   if (v)
     sprintf(format,"%%%d.%df%%%d.%df%%%d.%df%%%d.%df%%%d.%df%%%d.%df\n",
-	    l,pr,l,pr,l,pr,l,pr,l,pr,l,pr);
+	    l,pr,l,pr,l,pr,l,vpr,l,vpr,l,vpr);
   else
     sprintf(format,"%%%d.%df%%%d.%df%%%d.%df\n",l,pr,l,pr,l,pr);
   
