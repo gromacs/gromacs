@@ -243,38 +243,45 @@ void please_cite(FILE *fp,char *key)
    "GROMACS: A message-passing parallel molecular dynamics implementation",
    "Comp. Phys. Comm.",
    "91 1995 43 56",
+   
    "Berendsen84a",
    "H. J. C. Berendsen, J. P. M. Postma, A. DiNola and J. R. Haak",
    "Molecular dynamics with coupling to an external bath",
    "J. Chem. Phys.",
    "81 1984 3684 3690",
+   
    "Ryckaert77a",
    "J. P. Ryckaert and G. Ciccotti and H. J. C. Berendsen",
    "Numerical Integration of the Cartesian Equations of Motion of a "
    "System with Constraints; Molecular Dynamics of n-Alkanes",
    "J. Comp. Phys.",
    "23 1977 327 341",
+   
    "Miyamoto92a",
    "S. Miyamoto and P. A. Kollman",
    "SETTLE: An Analytical Version of the SHAKE and RATTLE Algorithms "
    "for Rigid Water Models",
    "J. Comp. Chem.",
    "13 1992 952 962",
+   
    "Barth95a",
    "E. Barth and K. Kuczera and B. Leimkuhler and R. D. Skeel",
    "Algorithms for Constrained Molecular Dynamics",
    "J. Comp. Chem.",
    "16 1995 1192 1209",
+   
    "Torda89a",
    "A. E. Torda and R. M. Scheek and W. F. van Gunsteren",
    "Time-dependent distance restraints in molecular dynamics simulations",
    "Chem. Phys. Lett.",
    "157 1989 289 294",
+   
    "Tironi95a",
    "I. G. Tironi and R. Sperb and P. E. Smith and W. F. van Gunsteren",
    "Generalized reaction field method for molecular dynamics simulations",
    "J. Chem. Phys",
    "102 1995 5451 5459",
+   
    "Hess97a",
    "B. Hess and H. Bekker and H. J. C. Berendsen and J. G. E. M. Fraaije",
    "LINCS: A Linear Constraint Solver for molecular simulations",
