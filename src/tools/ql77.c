@@ -63,7 +63,7 @@ void ql77 (int n,real *x,real *d)
   real *e,h,g,f,b,s,p,r,c,absp;
   real totwork,work;
 
-#define pr_pr(a,b,c) fprintf(stderr,"\rreduction: %g%% accumulation: %g%% accumulation: %g%%",a,b,c)
+#define pr_pr(a,b,c) fprintf(stderr,"\rreduction: %g%%  accumulation:  %g%%  accumulation: %g%%",a,b,c)
 
   const real eps=7.e-14,tol=1.e-30;
 
@@ -123,7 +123,8 @@ void ql77 (int n,real *x,real *d)
     e[i-1]=g;
 
     work += pow(n-ni,3);
-    pr_pr(floor(100*work/totwork+0.5),0.,0.);
+    if (ni % 5 == 0)
+      pr_pr(floor(100*work/totwork+0.5),0.,0.);
   }
 
   /*
@@ -152,7 +153,8 @@ void ql77 (int n,real *x,real *d)
       x[j+n*i]=0.0;
     }
     work += pow(i,3);
-    pr_pr(100.,floor(100*work/totwork+0.5),0.);
+    if (i % 5 == 0)
+      pr_pr(100.,floor(100*work/totwork+0.5),0.);
   }
 
   /*
@@ -222,7 +224,8 @@ void ql77 (int n,real *x,real *d)
     d[l]=d[l]+f;
 
     work += pow(n-l,3);
-    pr_pr(100.,100.,floor(100*work/totwork+0.5));
+    if (l % 5 == 0)
+      pr_pr(100.,100.,floor(100*work/totwork+0.5));
   }
   fprintf(stderr,"\n");
 
