@@ -77,7 +77,7 @@ char *eshake_names[estNR+1] = {
 };
 
 char *egrp_nm[egNR+1] = { 
-  "Coul-SR","LJ","Buck", "Coul-LR", "Coul-14", "LJ-14", NULL
+  "Coul-SR","LJ","Buck", "Coul-LR", "LJ-LR", "Coul-14", "LJ-14", NULL
 };
 
 char *epcoupl_names[epcNR+1] = {
