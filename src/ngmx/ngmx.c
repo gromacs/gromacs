@@ -181,6 +181,18 @@ static bool HandleClient(t_x11 *x11,int ID,t_gmx *gmx)
   case IDBALLS:
     set_bond_type(x11,gmx->man->molw,eBSpheres);
     break;
+  case IDNOBOX:
+    set_box_type(x11,gmx->man->molw,esbNone);
+    break;
+  case IDRECTBOX:
+    set_box_type(x11,gmx->man->molw,esbRect);
+    break;
+  case IDTRIBOX:
+    set_box_type(x11,gmx->man->molw,esbTri);
+    break;
+  case IDTOBOX:
+    set_box_type(x11,gmx->man->molw,esbTrunc);
+    break;
     
     /* Analysis Menu */
   case IDBOND: 
@@ -326,10 +338,14 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
   int                  step,natom,nre;
   real                 t,lambda;
   t_topology           top;
-
+  matrix               box;
+  
   snew(gmx,1);
   snew(gmx->wd,1);
 
+  read_tpx(ftp2fn(efTPX,nfile,fnm),&step,&t,&lambda,NULL,box,
+	   &natom,NULL,NULL,NULL,&top);
+	   
   /* Creates a simple window */
   w0=DisplayWidth(x11->disp,x11->screen)-132;
   h0=DisplayHeight(x11->disp,x11->screen)-140;
@@ -356,7 +372,7 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
 
   /* The order of creating windows is important here! */
   /* Manager */
-  gmx->man=init_man(x11,gmx->wd->self,0,0,1,1,WHITE,BLACK);
+  gmx->man=init_man(x11,gmx->wd->self,0,0,1,1,WHITE,BLACK,box);
   gmx->logo=init_logo(x11,gmx->wd->self);
 
   /* Now put all windows in the proper place */
@@ -371,8 +387,6 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
 		  MSIZE,gmx_pd_size,gmx_pd,MenuTitle);
 
   /* Dialogs & Filters */
-  read_tpx(ftp2fn(efTPX,nfile,fnm),&step,&t,&lambda,NULL,NULL,
-	   &natom,NULL,NULL,NULL,&top);
 
   gmx->filter=init_filter(&(top.atoms),ftp2fn_null(efNDX,nfile,fnm));
   

@@ -52,11 +52,13 @@ typedef enum { eVNormal, eVSpecial, eVHidden, evNR } eVisible;
 
 enum { eBThin, eBFat, eBVeryFat, eBSpheres, eBNR };
 
+enum { esbNone, esbRect, esbTri, esbTrunc, esbNR };
+
 typedef struct {
   t_windata wd;			/* Mol window structure			*/
   bool      bShowHydrogen;	/* Show Hydrogens?			*/
   int       bond_type;		/* Show one of the above bondtypes      */
-  bool      bBoxSelect;		/* Show Box?				*/
+  int       boxtype;            /* Rectangular, Triclinic, TruncOct     */
 } t_molwin;
 
 typedef struct {
@@ -121,7 +123,7 @@ typedef struct {
 
 extern t_manager *init_man(t_x11 *x11,Window Parent,
 			   int x,int y,int width,int height,
-			   unsigned long fg,unsigned long bg);
+			   unsigned long fg,unsigned long bg,matrix box);
 /* Initiate the display manager */
 
 extern void move_man(t_x11 *x11,t_manager *man,int width,int height);

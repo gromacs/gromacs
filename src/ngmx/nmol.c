@@ -41,6 +41,7 @@ static char *SRCID_nmol_c = "$Id$";
 #include "nmol.h"
 #include "vec.h"
 #include "txtdump.h"
+#include "pbc.h"
 
 #define MSIZE 4
 
@@ -86,21 +87,22 @@ static bool MWCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
   return FALSE;
 }
 
-void set_def (t_molwin *mw)
+void set_def (t_molwin *mw,matrix box)
 {
   mw->bShowHydrogen=TRUE;
   mw->bond_type=eBFat;
-  mw->bBoxSelect=TRUE;
+  mw->boxtype=TRICLINIC(box) ? esbTri : esbRect;
 }
 
 t_molwin *init_mw(t_x11 *x11,Window Parent,
 		  int x,int y,int width,int height,
-		  unsigned long fg,unsigned long bg)
+		  unsigned long fg,unsigned long bg,
+		  matrix box)
 {
   t_molwin *mw;
 
   snew(mw,1);
-  set_def(mw);
+  set_def(mw,box);
   
   InitWin(&mw->wd,x,y,width,height,1,"Mol Window");
 
@@ -134,12 +136,13 @@ void set_bond_type(t_x11 *x11,t_molwin *mw,int bt)
   }
 }
 
-bool toggle_box (t_x11 *x11,t_molwin *mw)
+void set_box_type (t_x11 *x11,t_molwin *mw,int bt)
 { 
-  mw->bBoxSelect =! mw->bBoxSelect;
-  ExposeWin(x11->disp,mw->wd.self);
-
-  return mw->bBoxSelect;
+  fprintf(stderr,"mw->boxtype = %d, bt = %d\n",mw->boxtype,bt);
+  if (bt != mw->boxtype) {
+    mw->boxtype = bt;
+    ExposeWin(x11->disp,mw->wd.self);
+  }
 }
 
 void done_mw(t_x11 *x11,t_molwin *mw)
@@ -176,7 +179,7 @@ static void draw_atom(Display *disp,Window w,GC gc,
 /* Global variables */
 static rvec gl_fbox,gl_hbox,gl_mhbox;
 
-static void init_pbc(matrix box)
+static void my_init_pbc(matrix box)
 {
   int i;
 
@@ -385,40 +388,125 @@ static void v4_to_iv2(vec4 x4,iv2 v2,int x0,int y0,real sx,real sy)
 }
 
 static void draw_box(t_x11 *x11,Window w,t_3dview *view,matrix box,
-		     int x0,int y0,real sx,real sy)
+		     int x0,int y0,real sx,real sy,int boxtype)
 {
-  int  ivec[8][4] =  { 
+  int  rect_tri[8][4] =  { 
     { 0,0,0,1 }, { 1,0,0,1 }, { 1,1,0,1 }, { 0,1,0,1 },
     { 0,0,1,1 }, { 1,0,1,1 }, { 1,1,1,1 }, { 0,1,1,1 }
   };
-  int  bonds[12][2] = {
+  int  tr_bonds[12][2] = {
     { 0,1 }, { 1,2 }, { 2,3 }, { 3,0 }, 
     { 4,5 }, { 5,6 }, { 6,7 }, { 7,4 },
     { 0,4 }, { 1,5 }, { 2,6 }, { 3,7 }
   };
-  int  i,j,k;
-  rvec corner[8];
+#define A  0.25
+#define A0 0.5
+  real to_floor[4][4] = {
+    { A0-A, A0, 0, 1 }, { A0, A0+A, 0, 1 }, { A0+A, A0, 0, 1}, { A0, A0-A, 0, 1}
+  };
+  real to_left[4][4] = {
+    { 0, A0, A0-A, 1 }, { 0, A0+A, A0, 1 }, { 0, A0, A0+A, 1}, { 0, A0-A, A0, 1}
+  };
+  real to_front[4][4] = {
+    { A0, 0, A0-A, 1}, { A0+A, 0, A0, 1 }, { A0, 0, A0+A, 1},{ A0-A,0,A0,1}
+  };
+  /* This can be used six times in the respective arrays (twice each) */
+  int  to_bonds[4][2] = {
+    { 0,1 }, { 1,2 }, { 2,3 }, { 3,0 }
+  };
+  int  to_bonds2[12][2] = {
+    { 0,  8 }, { 1, 20 }, { 2, 12 }, { 3, 16 }, 
+    { 4, 10 }, { 5, 22 }, { 6, 14 }, { 7, 18 }, 
+    {11, 19 }, { 15,17 } ,{ 9, 23 }, {13, 21 }
+  };
+#define NDRAW 12
+  int  i,j,k,i0,i1,i4;
+  real fac;
+  rvec corner[24];
   vec4 x4;
-  iv2  vec2[12];
+  iv2  vec2[24];
 
-  for (i=0; (i<8); i++) {
-    clear_rvec(corner[i]);
-    for (j=0; (j<DIM); j++) {
-      for (k=0; (k<DIM); k++)
-	corner[i][k] += ivec[i][j]*box[j][k];
+  if (boxtype == esbTrunc) {
+    /* Knot index */
+    k   = 0;
+    /* Edge of the box */
+    fac = pow(2*det(box),1.0/3.0);
+    /* Reset */
+    for (i=0; (i<24); i++)
+      clear_rvec(corner[i]);
+    /* Floor and top */
+    for (i=0; (i<4); i++,k++) 
+      for (j=0; (j<DIM); j++) 
+	corner[k][j] = to_floor[i][j]*fac;
+    for (i=0; (i<4); i++,k++) {
+      for (j=0; (j<DIM); j++) 
+	corner[k][j] = to_floor[i][j]*fac;
+      corner[k][ZZ] += fac;
     }
-    m4_op(view->proj,corner[i],x4);
-    v4_to_iv2(x4,vec2[i],x0,y0,sx,sy);
+    /* Left and right */
+    for (i=0; (i<4); i++,k++) 
+      for (j=0; (j<DIM); j++) 
+	corner[k][j] = to_left[i][j]*fac;
+    for (i=0; (i<4); i++,k++) { 
+      for (j=0; (j<DIM); j++) 
+	corner[k][j] = to_left[i][j]*fac;
+      corner[k][XX] += fac;
+    }
+    /* Front and back */
+    for (i=0; (i<4); i++,k++) 
+      for (j=0; (j<DIM); j++) 
+	corner[k][j] = to_front[i][j]*fac;
+    for (i=0; (i<4); i++,k++) {
+      for (j=0; (j<DIM); j++) 
+	corner[k][j] = to_front[i][j]*fac;
+      corner[k][YY] += fac;
+    }
+    
+    for(i=0; (i<24); i++) {
+      m4_op(view->proj,corner[i],x4);
+      v4_to_iv2(x4,vec2[i],x0,y0,sx,sy);
+    }
+    if (debug) {
+      pr_rvecs(debug,0,"box",box,DIM);
+      pr_rvecs(debug,0,"corner",corner,8);
+    }
+    XSetForeground(x11->disp,x11->gc,YELLOW);
+    for (i=0; (i<24); i++) {
+      i4 = i % 4;
+      i0 = i - i4 + to_bonds[i4][0];
+      i1 = i - i4 + to_bonds[i4][1];
+      XDrawLine(x11->disp,w,x11->gc,
+		vec2[i0][XX],vec2[i0][YY],
+		vec2[i1][XX],vec2[i1][YY]);
+    }
+    for (i=0; (i<NDRAW); i++) {
+      i0 = to_bonds2[i][0];
+      i1 = to_bonds2[i][1];
+      XDrawLine(x11->disp,w,x11->gc,
+		vec2[i0][XX],vec2[i0][YY],
+		vec2[i1][XX],vec2[i1][YY]);
+    }
   }
-  if (debug) {
-    pr_rvecs(debug,0,"box",box,DIM);
-    pr_rvecs(debug,0,"corner",corner,8);
+  else {
+    for (i=0; (i<8); i++) {
+      clear_rvec(corner[i]);
+      for (j=0; (j<DIM); j++) {
+	for (k=0; (k<DIM); k++)
+	  corner[i][k] += rect_tri[i][j]*box[j][k];
+      }
+      m4_op(view->proj,corner[i],x4);
+      v4_to_iv2(x4,vec2[i],x0,y0,sx,sy);
+    }
+    if (debug) {
+      pr_rvecs(debug,0,"box",box,DIM);
+      pr_rvecs(debug,0,"corner",corner,8);
+    }
+    XSetForeground(x11->disp,x11->gc,YELLOW);
+    for (i=0; (i<12); i++)
+      XDrawLine(x11->disp,w,x11->gc,
+		vec2[tr_bonds[i][0]][XX],vec2[tr_bonds[i][0]][YY],
+		vec2[tr_bonds[i][1]][XX],vec2[tr_bonds[i][1]][YY]);
   }
-  XSetForeground(x11->disp,x11->gc,YELLOW);
-  for (i=0; (i<12); i++)
-    XDrawLine(x11->disp,w,x11->gc,
-	      vec2[bonds[i][0]][XX],vec2[bonds[i][0]][YY],
-	      vec2[bonds[i][1]][XX],vec2[bonds[i][1]][YY]);
 }
 
 void set_sizes(t_manager *man,real sx,real sy)
@@ -456,7 +544,7 @@ void draw_mol(t_x11 *x11,t_manager *man)
   sx=win->width/2*view->sc_x;
   sy=win->height/2*view->sc_y;
 
-  init_pbc(man->box);
+  my_init_pbc(man->box);
 
   /* create_visibility(man); */
 
@@ -481,8 +569,8 @@ void draw_mol(t_x11 *x11,t_manager *man)
     ntime=1-ntime;
   }
 
-  if (mw->bBoxSelect)
-    draw_box(x11,win->self,view,man->box,x0,y0,sx,sy);
+  if (mw->boxtype != esbNone)
+    draw_box(x11,win->self,view,man->box,x0,y0,sx,sy,mw->boxtype);
 
   /* Should sort on Z-Coordinates here! */
   nvis=filter_vis(man);

@@ -41,15 +41,16 @@ static char *SRCID_nmol_h = "$Id$";
 
 extern t_molwin *init_mw(t_x11 *x11,Window Parent,
 			 int x,int y,int width,int height,
-			 unsigned long fg,unsigned long bg);
+			 unsigned long fg,unsigned long bg,
+			 matrix box);
 /* Create the molecule window using the x,y etc. */
 
 extern void map_mw(t_x11 *x11,t_molwin *mw);
 
 extern void z_fill(t_manager *man, real *zz);
 extern void create_visibility(t_manager *man);
-extern int compare_obj(const void *a,const void *b);
-extern int filter_vis(t_manager *man);
+extern int  compare_obj(const void *a,const void *b);
+extern int  filter_vis(t_manager *man);
 extern void set_sizes(t_manager *man,real sx,real sy);
 
 extern bool toggle_hydrogen(t_x11 *x11,t_molwin *mw);
@@ -60,9 +61,8 @@ extern bool toggle_hydrogen(t_x11 *x11,t_molwin *mw);
 extern void set_bond_type(t_x11 *x11,t_molwin *mw,int bt);
 /* Set the state of the atoms drawing. */
 
-extern bool toggle_box (t_x11 *x11,t_molwin *mw);
-/* Toggle the state of the box drawing,
- * return the current state
+extern void set_box_type (t_x11 *x11,t_molwin *mw,int bt);
+/* Set the type of box or none (bt = 0)
  */
 
 extern void done_mw(t_x11 *x11,t_molwin *mw);

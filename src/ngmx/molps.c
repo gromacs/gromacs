@@ -240,7 +240,7 @@ void ps_draw_mol(FILE *ps,t_manager *man)
     ntime=1-ntime;
   }*/
 
-  if (mw->bBoxSelect)
+  if (mw->boxtype != esbNone)
     draw_box(ps,view,man->box,x0,y0,sx,sy);
 
   /* Should sort on Z-Coordinates here! */

@@ -110,7 +110,7 @@ static t_dlg *about_mb(t_x11 *x11,t_gmx *gmx)
   static char *lines[]={
     "         G R O M A C S",
     " Machine for Simulating Chemistry",
-    "       Copyright (c) 1992",
+    "       Copyright (c) 1992-2000",
     "  Dept. of Biophysical Chemistry",
     "    University of Groningen"
     };
@@ -218,24 +218,32 @@ static void Extract(t_dlg *dlg,int ID,char *buf)
     strcpy(buf,et);
 }
 
-enum bond_set { ebShowH=6, ebDPlus, ebSBox, ebRMPBC, ebCue, ebSkip };
+enum bond_set { ebShowH=6, ebDPlus, ebRMPBC, ebCue, ebSkip };
 
 static void BondsCB(t_x11 *x11,int dlg_mess,int item_id,
 		    char *set,void *data)
 {
-  static int eb=-1;
-  bool   bOk;
+  static int ebond=-1;
+  static int ebox=-1;
+  bool   bOk,bBond=FALSE;
   int    nskip;
   t_gmx  *gmx;
 
   gmx=(t_gmx *)data;
-  if (eb==-1)
-    eb=gmx->man->molw->bond_type;
-  
+  if (ebond==-1) {
+    ebond = gmx->man->molw->bond_type;
+    ebox  = gmx->man->molw->boxtype;
+  }
   switch (dlg_mess) {
   case DLG_SET:
-    if (item_id <= eBNR)
-      eb=item_id-1;
+    if (item_id <= eBNR) {
+      ebond=item_id-1;
+      bBond=FALSE;
+    }
+    else if (item_id <= eBNR+esbNR+1) {
+      ebox = item_id-eBNR-2;
+      bBond=TRUE;
+    }
     else {
 
 #define DO_NOT(b) (b) = (!(b))
@@ -250,9 +258,9 @@ static void BondsCB(t_x11 *x11,int dlg_mess,int item_id,
 	fprintf(stderr,"gmx->man->bPlus=%s\n",bool_names[gmx->man->bPlus]);
 #endif
 	break;
-      case ebSBox:
-	toggle_box(x11,gmx->man->molw);
-	break;
+	/*case ebSBox:
+	set_box_type(x11,gmx->man->molw,ebond);
+	break;*/
       case ebRMPBC:
 	toggle_pbc(gmx->man);
 	break;
@@ -281,22 +289,46 @@ static void BondsCB(t_x11 *x11,int dlg_mess,int item_id,
   case DLG_EXIT:
     bOk=(strcasecmp("ok",set)==0);
     HideDlg(gmx->dlgs[edBonds]);
-    if (bOk)
-      switch (eb) {
-      case eBThin:
-	write_gmx(x11,gmx,IDTHIN);
-	break;
-      case eBFat:
-	write_gmx(x11,gmx,IDFAT);
-	break;
-      case eBVeryFat:
-	write_gmx(x11,gmx,IDVERYFAT);
-	break;
-      case eBSpheres:
-	write_gmx(x11,gmx,IDBALLS);
-	break;
+    if (bOk) {
+      if (bBond) {
+	switch (ebond) {
+	case eBThin:
+	  write_gmx(x11,gmx,IDTHIN);
+	  break;
+	case eBFat:
+	  write_gmx(x11,gmx,IDFAT);
+	  break;
+	case eBVeryFat:
+	  write_gmx(x11,gmx,IDVERYFAT);
+	  break;
+	case eBSpheres:
+	  write_gmx(x11,gmx,IDBALLS);
+	  break;
+	default:
+	  fatal_error(0,"Invalid bond type %d at %s, %d",
+		      ebond,__FILE__,__LINE__);
+	}
       }
-    
+      else {
+	switch(ebox) {
+	case esbNone:
+	  write_gmx(x11,gmx,IDNOBOX);
+	  break;
+	case esbRect:
+	  write_gmx(x11,gmx,IDRECTBOX);
+	  break;
+	case esbTri:
+	  write_gmx(x11,gmx,IDTRIBOX);
+	  break;
+	case esbTrunc:
+	  write_gmx(x11,gmx,IDTOBOX);
+	  break;
+	default:
+	  fatal_error(0,"Invalid box type %d at %s, %d",
+		      ebox,__FILE__,__LINE__);
+	}
+      }
+    }
     break;
   }
 }
