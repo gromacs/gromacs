@@ -531,7 +531,9 @@ void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef)
   t_iparams *ip;
   
   ip     = idef->iparams;
-  
+
+  /* this loop goes backwards to be able to build *
+   * higher type dummies from lower types         */
   for(ftype=F_NRE-1; (ftype>=0); ftype--) {
     if (interaction_function[ftype].flags & IF_DUMMY) {
       nra    = interaction_function[ftype].nratoms;
