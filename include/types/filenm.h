@@ -41,7 +41,7 @@ enum {
   efDAT, efDLG, 
   efMAP, efEPS, efMAT, efM2P,
   efVDW,
-  efMTX, efVEC,
+  efMTX,
   efEDI, efEDO, 
   efHAT,
   efXPM,
