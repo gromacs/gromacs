@@ -556,10 +556,10 @@ with respect to a reference structure can be calculated with the program
 {\tt \normindex{g\_rms}} by least-square fitting the structure to the reference structure
 ($t_2 = 0$) and subsequently calculating the $RMSD$ (\eqnref{rmsd}).
 \beq
-RMSD(t_1,t_2) ~=~ \left[\frac{1}{N} \sum_{i=1}^N \|{\bf r}_i(t_1)-{\bf r}_i(t_2)\|^2 \right]^{\frac{1}{2}}
+RMSD(t_1,t_2) ~=~ \left[\frac{1}{M} \sum_{i=1}^N m_i \|{\bf r}_i(t_1)-{\bf r}_i(t_2)\|^2 \right]^{\frac{1}{2}}
 \label{eqn:rmsd}
 \eeq
-where ${\bf r}_i(t)$ is the position of atom $i$ at time $t$.
+where $M = \sum_{i=1}^N m_i$ and ${\bf r}_i(t)$ is the position of atom $i$ at time $t$.
 {\bf NOTE} that fitting does not have to use the same atoms as the calculation
 of the $RMSD$; {\eg}: a protein is usually fitted on the backbone atoms
 (N,C$_{\alpha}$,C), but the $RMSD$ can be computed of the backbone
@@ -582,16 +582,6 @@ RMSD(t) ~=~     \left[\frac{1}{N^2}\sum_{i=1}^N \sum_{j=1}^N    \|{\bf r}_{ij}(t
 \eeq
 where the {\em distance} {\bf r}$_{ij}$ between atoms at time $t$ 
 is compared with the distance between the same atoms at time $0$.
-
-In stead of comparing the structures to the initial structure at time $t=0$ 
-(so for example a crystal structure), one can also calculate \eqnref{rmsd} 
-using a time shift $\tau$:
-\beq
-RMSD(t;\tau) ~=~ \left[\frac{1}{N} \sum_{i=1}^N \|{\bf r}_i(t)-{\bf r}_i(t-\tau)\|^2 \right]^{\frac{1}{2}}
-\label{eqn:rmdstau}
-\eeq
-so comparing to a least-square structure at $t-\tau$. This gives some insight 
-in the mobility as a function of $\tau$. Use the program {\tt \normindex{g\_run\_rms}}.
 
 \section{\normindex{Covariance analysis}}
 \label{sec:covanal}
