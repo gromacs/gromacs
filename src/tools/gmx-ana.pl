@@ -37,7 +37,6 @@ int main(int argc,char *argv[])
   t_ana_func af[] = {
 EOF
 
-mkdir("tmp");
 $argc = 0;
 foreach $p ( @ARGV ) {
     $oldprog = $p;
