@@ -724,10 +724,11 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
     i += 3;
   }
   ia=idef->il[F_SETTLE].iatoms;
-  for(i=0; (i<idef->il[F_SETTLE].nr); ) {
-    ai=ia[1];
-    opts->nrdf[atoms->atom[ai].grpnr[egcTC]] -= 3;
-    nrdf_vcm[atoms->atom[ai].grpnr[egcVCM]] -= 3;
+  for(i=0; i<idef->il[F_SETTLE].nr; ) {
+    for(ai=ia[1]; ai<ia[1]+3; ai++) {
+      opts->nrdf[atoms->atom[ai].grpnr[egcTC]] -= 1;
+      nrdf_vcm[atoms->atom[ai].grpnr[egcVCM]] -= 1;
+    }
     ia+=2;
     i+=2;
   }
