@@ -179,7 +179,7 @@ void print_perf(FILE *out,double cputime,double realtime,real runtime,
     fprintf(out,"\tBased on real time for parallel computer.\n");
   }
   fprintf(out,"%15s  %12s  %12s  %8s\n",
-	  "Computing:","M-Number","M-Flops","% Time");
+	  "Computing:","M-Number","M-Flop's","% Flop's");
   mflop=0.0;
   tfrac=0.0;
   for(i=0; (i<eNRNB); i++) {
