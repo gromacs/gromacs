@@ -1,0 +1,57 @@
+So, you want to build the manual?
+
+It's not terribly difficult, but before you just run 'make' and let
+LaTeX do the job, we need to create a couple of files from the Gromacs 
+source. 
+
+Over the years we have learnt that the only way we will keep documentation
+up to date is if most of it is generated automatically from the same source.
+
+Before you start you need both the Gromacs source and a set of working
+executables.
+
+These are the items that need to be generated:
+
+1. A LaTeX version of all the options in the mdp file.
+   This is generated from the HTML version in the Gromacs source.
+   Run the script mkmdp in this directory, with the HTML directory as
+   the first argument, e.g.:
+
+   ./mkmdp /home/lindahl/gromacs-3.2.1/share/html
+
+   NOTE: We do a pretty complicated parsing of the mdp_opt.html file, so even
+   if the file displays correctly in a browser it is quite possible that minor
+   errors will screw up the TeX parsing completely. If you get inexplicable
+   warnings/errors, this file is the first place to look...
+
+
+2. The help information and command line options for all Gromacs executables.
+   This is generated from the compiled executables. Run the script mkman with
+   the binary directory as the first argument, e.g.:
+
+   ./mkman /usr/local/gromacs/powerpc-apple-darwin7.2.0/bin/
+
+
+3. Generate the list of programs, proglist.tex.
+   This is done in two steps. First, copy the list of programs from the
+   admin directory in the gromacs source, .e.g:
+
+   cp /home/lindahl/gromacs-3.2.1/admin/proglist.txt .
+
+   And then generate proglist.tex:
+
+   ./mk_proglist
+
+
+4. Generate the list of standard options. 
+   This is done by compiling the program 'options' in the src/contrib directory
+   of Gromacs. Go there and type 'make options', and copy the executable to this
+   directory. Then create options.tex in this directory with
+
+   make options.tex
+
+
+That should be it. Now try 'make pdf' if you have pdflatex installed, or
+just 'make' to create a postscript file with classical latex and dvips.
+
+
