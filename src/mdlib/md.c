@@ -268,10 +268,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       /* Calculate partial Kinetic Energy (for this processor) 
        * per group! Parallelized
        */
-      calc_ke_part(FALSE,START(nsb),HOMENR(nsb),
-		   vold,v,vt,&(parm->ir.opts),
-		   mdatoms,grps,&mynrnb,
-		   lambda,&ener[F_DVDL]);
+      calc_ke_part(FALSE,START(nsb),HOMENR(nsb),vold,v,vt,&(parm->ir.opts),
+		   mdatoms,grps,&mynrnb,lambda,&ener[F_DVDL]);
       debug_gmx();
       /* Calculate center of mass velocity if necessary, also parallellized */
       if (bStopCM)
@@ -301,7 +299,14 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
     else
       cp_nrnb(&(nrnb[0]),&mynrnb);
-
+    
+    /* This is just for testing. Nothing is actually done to Ekin
+     * since that would require extra communication.
+     */
+    if (!bNEMD && debug)
+      correct_ekin(debug,START(nsb),START(nsb)+HOMENR(nsb),v,vcm,
+		   mdatoms->massT,mdatoms->tmass,parm->ekin);
+    
     if ((terminate > 0) && (step < parm->ir.nsteps)) {
       parm->ir.nsteps = step+1;
       fprintf(log,"\nSetting nsteps to %d\n\n",parm->ir.nsteps);
@@ -319,9 +324,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       }
       
       /* Do fit to remove overall rotation */
-      if (bStopRot)
+      if (bStopRot) {
+	if (PAR(cr))
+	  fatal_error(0,"Can not stop rototion about com on a "
+		      "parallel machine\n");
 	do_stoprot(log,top->atoms.nr,box_size,x,mdatoms->massT);
-    
+      }
       /* Add force and shake contribution to the virial */
       m_add(force_vir,shake_vir,parm->vir);
     }

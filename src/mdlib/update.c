@@ -566,3 +566,36 @@ void update(int          natoms, 	/* number of atoms in simulation */
     where();
   }
 }
+
+void correct_ekin(FILE *log,int start,int end,rvec v[],rvec vcm,real mass[],
+		  real tmass,tensor ekin)
+{
+  /* The kinetic energy should calculated according to:
+   *   Ekin = 1/2 m (v-vcm)^2
+   * However the correction is not always applied, since vcm may not be
+   * known in time and we compute
+   *   Ekin' = 1/2 m v^2 instead
+   * This can be corrected afterwards by computing
+   *   Ekin = Ekin' + 1/2 m ( -2 v vcm + vcm^2)
+   * or in hsorthand:
+   *   Ekin = Ekin' - m v vcm + 1/2 m vcm^2
+   */
+  int    i,j,k;
+  real   m;
+  rvec   hvcm;
+  tensor dekin;
+  
+  /* Shortcut */  
+  svmul(0.5,vcm,hvcm);
+  
+  clear_mat(dekin);
+  
+  /* Processor dependent part. */
+  for(i=start; (i<end); i++) {
+    m      = mass[i];
+    for(j=0; (j<DIM); j++)
+      for(k=0; (k<DIM); k++)
+	dekin[j][k] += m*vcm[k]*(hvcm[j]-v[i][j]);
+  }
+  fprintf(log,"dekin = %g, ekin = %g\n",trace(dekin),trace(ekin));
+}
