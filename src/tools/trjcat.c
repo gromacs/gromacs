@@ -27,7 +27,7 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * Glycine aRginine prOline Methionine Alanine Cystine Serine
  */
 static char *SRCID_trjcat_c = "$Id$";
 #include <string.h>
@@ -72,15 +72,20 @@ static real get_timestep(char *fnm)
   t_trxframe fr;
   bool ok;
   
+  dt = NOTSET;
+  
   ok=read_first_frame(&status,fnm,&fr,TRX_NEED_X);
   if(!ok || !fr.bTime)
-    fatal_error(0,"\nCouldn't read time from first frame.");
+    fprintf(stderr,"\nWARNING: Couldn't read time from first frame.\n");
+  else {
   t0=fr.time;
     
   ok=read_next_frame(status,&fr);
   if(!ok || !fr.bTime) 
-    fatal_error(0,"\nCouldn't read time from second frame.");
+      fprintf(stderr,"\nWARNING: Couldn't read time from second frame.\n");
+    else
   dt=fr.time-t0;
+  }
 
   close_trj(status);
   
@@ -102,9 +107,12 @@ static void scan_trj_files(char **fnms,int nfiles,real *readtime,atom_id imax)
     
     if(!ok) 
       fatal_error(0,"\nCouldn't read frame from file.");
-    if(!fr.bTime)
-      fatal_error(0,"\nCouldn't find a time in the frame.");
+    if(fr.bTime)
     readtime[i]=fr.time;
+    else {
+      readtime[i]=0;
+      fprintf(stderr,"\nWARNING: Couldn't find a time in the frame.\n");
+    }
     
     if(i==0) {
       natoms=fr.natoms;
@@ -345,7 +353,6 @@ int main(int argc,char *argv[])
   if(!nfile)
       fatal_error(0,"No input files!");
   
-  timestep = get_timestep(fnms[0]);
   snew(readtime,nfile+1);
   scan_trj_files(fnms,nfile,readtime,imax);
   
@@ -368,13 +375,22 @@ int main(int argc,char *argv[])
    */
   t_corr=0;
      
+  timestep=NOTSET;
+     
   /* Lets stitch up some files */
   for(i=0;i<nfile;i++) {
       /* Open next file */
   
+    /* we might not be able to read a timestep from the first file,
+       so until we get a timestep, it is NOTSET */
+    if ( timestep==NOTSET )
+      timestep = get_timestep(fnms[i]);
+    
       read_first_frame(&status,fnms[i],&fr,flags);
-      if(!fr.bTime)
-	fatal_error(0,"Couldn't find a time in the frame.");
+    if(!fr.bTime) {
+      fr.time=0;
+      fprintf(stderr,"\nWARNING: Couldn't find a time in the frame.\n");
+    }
       
       if(cont_type[i]==TIME_EXPLICIT)
 	t_corr=settime[i]-fr.time;
@@ -413,7 +429,7 @@ int main(int argc,char *argv[])
 	  break;
 	}
 	/* determine if we should write this frame */
-	if( ( bCat || 
+      if( ( bCat || timestep==NOTSET ||
 	      ( !bCat && frout.time < settime[i+1]-0.5*timestep ) ) && 
 	    frout.time >= begin) {
 	  frame++;
@@ -455,12 +471,16 @@ int main(int argc,char *argv[])
       
       /* set the next time from the last frame in previous file */
       if(cont_type[i+1]==TIME_CONTINUE) {
-	begin=frout.time+0.5*timestep;
+      begin=frout.time;
+      if (timestep!=NOTSET)
+	begin += 0.5*timestep;
 	settime[i+1]=frout.time;
 	cont_type[i+1]=TIME_EXPLICIT;	  
       }
       else if(cont_type[i+1]==TIME_LAST)
-	begin=frout.time+0.5*timestep;
+      begin=frout.time;
+      if (timestep!=NOTSET)
+	begin += 0.5*timestep;
       /* Or, if the time in the next part should be changed by the
        * same amount, start at half a timestep from the last time
        * so we dont repeat frames.
