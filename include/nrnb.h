@@ -48,7 +48,7 @@ extern void print_nrnb(FILE *out, t_nrnb *nrnb);
 extern void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line);
 #define inc_nrnb(nrnb,enr,inc) _inc_nrnb(nrnb,enr,inc,__FILE__,__LINE__)
 
-extern void print_perf(FILE *out,double cputime,double realtime,
+extern void print_perf(FILE *out,double cputime,double realtime,real runtime,
 		       t_nrnb *nrnb,int nprocs);
 
 extern void pr_load(FILE *log,int nprocs,t_nrnb nrnb[]);

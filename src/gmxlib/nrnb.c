@@ -136,7 +136,7 @@ void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line)
 #endif
 }
 
-void print_perf(FILE *out,double cputime,double realtime,
+void print_perf(FILE *out,double cputime,double realtime,real runtime,
 		t_nrnb *nrnb,int nprocs)
 {
   int    nbfs_ind[] = { eNR_LJC, eNR_QQ, eNR_LJCRF, eNR_QQRF, 
@@ -185,15 +185,25 @@ void print_perf(FILE *out,double cputime,double realtime,
   }
   fprintf(out,"%15s  %12s  %12.5f  %12.5f  %6.1f\n\n",
 	  "Total","",mflop,tni,tfrac);
-  fprintf(out,"CPU time:    %10.3f s.\n",cputime);
-  fprintf(out,"Real time:   %10.3f s. [%.1f%%]\n",
-	  realtime,100.0*cputime/realtime);
+  fprintf(out,"%12s %10s %10s %8s\n","","CPU (s)","Real (s)","(%)");
+  fprintf(out,"%12s %10.3f %10.3f %8.1f\n","Time:",
+	  cputime, realtime, 100.0*cputime/realtime);
   if (cputime > 60) {
-    fprintf(out,"             ");
+    fprintf(out,"%12s %10s","","");
     pr_difftime(out,cputime);
   }
-  fprintf(out,"Performance: %10.3f Mnbf/s\n",nbfs/cputime);
-  fprintf(out,"             %10.3f MFlops\n",mflop/cputime);
+  fprintf(out,"%12s %10s %10s %10s %10s\n",
+	  "","(Mnbf/s)","(MFlops)","(ps/CPU hour)","(ps/Real hour)");
+  fprintf(out,"%12s %10.3f %10.3f %10.3f %10.3f\n","Performance:",
+	  nbfs/cputime,mflop/cputime,
+	  runtime*3600/cputime,runtime*3600/realtime);
+  /* 
+   *                  CPU (s)   Real (s)     %     
+   * time:            13.690    15.000     91.3    
+   *                                               
+   *                  Mnbf/s    MFlops     ps/hour 
+   * Performance:     12.797   704.518     ?.???   
+   */
 }
 
 int cost_nrnb(int enr)

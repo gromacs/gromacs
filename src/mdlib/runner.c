@@ -97,6 +97,7 @@ void finish_run(FILE *log,t_commrec *cr,
 {
   int    i,j;
   t_nrnb ntot;
+  real   runtime;
   
   for(i=0; (i<eNRNB); i++)
     ntot.n[i]=0;
@@ -104,17 +105,19 @@ void finish_run(FILE *log,t_commrec *cr,
     for(j=0; (j<eNRNB); j++)
       ntot.n[j]+=nrnb[i].n[j];
   
+  runtime=0;
   if (bWriteStat) {
+    runtime=parm->ir.nsteps*parm->ir.delta_t;
     if (MASTER(cr)) {
       fprintf(stderr,"\n\n");
-      print_perf(stderr,cputime,realtime,&ntot,nsb->nprocs);
+      print_perf(stderr,cputime,realtime,runtime,&ntot,nsb->nprocs);
     }
     else
       print_nrnb(log,&(nrnb[nsb->pid]));
   }
 
   if (MASTER(cr)) {
-    print_perf(log,cputime,realtime,&ntot,nsb->nprocs);
+    print_perf(log,cputime,realtime,runtime,&ntot,nsb->nprocs);
     if (nsb->nprocs > 1)
       pr_load(log,nsb->nprocs,nrnb);
   }
