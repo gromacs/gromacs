@@ -233,7 +233,17 @@ int main(int argc,char *argv[])
   fprintf(stderr,"\nTrace of the covariance matrix: %g (%snm^2)\n",
 	  trace,bM ? "amu " : "");
 
-  /* call diagonalization routine. Tested only fortran double precision */
+  if (debug) {
+    fprintf(stderr,"Dumping the covariance matrix to covmat.dat\n"); 
+    out = ffopen("covmat.dat","w");
+    for (j=0; j<ndim; j++) {
+      for (i=0; i<ndim; i++)
+	fprintf(out," %g",mat[ndim*j+i]);
+      fprintf(out,"\n");
+    }
+  }
+
+  /* call diagonalization routine */
 
   fprintf(stderr,"\nDiagonalizing...\n");
   fflush(stderr);
