@@ -728,8 +728,8 @@ static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
     printf(" 'a': atom        &   'del' nr         'splitres' nr\n");
     printf(" 't': atom type   |   'keep' nr        'splitat' nr    'h': help\n");
     printf(" 'r': residue\n");
-    printf(" 'chain' char         'case': %s         'q': save and quit\n",
-	   bCase ? "case insensitive" : "case sensitive  "); 
+    printf(" 'chain' char     'case': switch to case %s   'q': save and quit\n",
+	   bCase ? "insensitive" : "sensitive  "); 
     printf("\n> ");
     fgets(inp_string,STRLEN,stdin);
     inp_string[strlen(inp_string)-1]=0;
@@ -891,7 +891,9 @@ int main(int argc,char *argv[])
     "When no index file is supplied, also make_ndx will generate the",
     "default groups.",
     "With the index editor you can select on atom, residue and chain names",
-    "and numbers, you can use NOT, AND and OR, you can split groups",
+    "and numbers.",
+    "When a run input file is supplied you can also select on atom type.",
+    "You can use NOT, AND and OR, you can split groups",
     "into chains, residues or atoms. You can delete and rename groups.[PAR]",
     "The atom numbering in the editor and the index file starts at 1."
   };
