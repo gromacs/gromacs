@@ -685,13 +685,20 @@ Here follows the explanatory text.
 
 {\bf \verb'[ defaults ]' :}
 \begin{itemize}
-\item non-bond type = 1 (Lennard-Jones) or 2 (Buckingham)
-\item combination rule = 1 (based on Van der Waals) or 2 (based on
-$\sigma$ and $\epsilon$)
-\end{itemize}
+\item non-bond type = 1 (Lennard-Jones) or 2 (Buckingham)\\
 {\bf note:} when using the buckingham potential no combination rule can
 be used, and a full interaction matrix must be provided under the 
 {\tt nonbond\_params} section.
+\item combination rule = 1 (based on Van der Waals) or 2 (based on
+$\sigma$ and $\epsilon$)
+\item generate pairs = no (get 1-4 interactions from pairlist) or yes
+(generate 1-4 interactions from normal Lennard-Jones parameters using
+FudgeLJ and FudgeQQ)
+\item FudgeLJ = factor to change Lennard-Jones 1-4 interactions
+\item FudgeQQ = factor to change electrostatic 1-4 interactions
+\end{itemize}
+{\bf note:} FudgeLJ and FudgeQQ only need to be specified when
+generate pairs is set to 'yes'.
 
 {\bf \verb'#include "ffgmx.itp"' :} this includes the bonded and
 non-bonded {\gromacs} parameters
