@@ -61,7 +61,7 @@ bool bDebugMode(void)
   return bDebug;
 }
 
-void _where(char *file,int line)
+void _where(const char *file,int line)
 {
   static bool bFirst = TRUE;
   static int  nskip  = -1;
@@ -93,7 +93,7 @@ static void bputc(char *msg,int *len,char ch)
   msg[(*len)++]=ch;
 }
 
-static void bputs(char *msg,int *len,char *s,int fld)
+static void bputs(char *msg,int *len,const char *s,int fld)
 {
   for (fld-=(int)strlen(s); fld>0; fld--) 
     bputc(msg,len,' ');
@@ -130,7 +130,7 @@ static void bputi(char *msg,int *len,int val,int radix,int fld,bool bNeg)
     }
 }
 
-static int getfld(char **p)
+static int getfld(const char **p)
 {
   int fld;
 
@@ -149,7 +149,7 @@ static int getfld(char **p)
 
 static int fatal_errno = 0;
 
-static void quit_gmx(char *msg)
+static void quit_gmx(const char *msg)
 {
   if (!fatal_errno) {
     if (stdlog) 
@@ -186,7 +186,7 @@ static void quit_gmx(char *msg)
   exit(-1);
 }
 
-void _set_fatal_tmp_file(char *fn, char *file, int line)
+void _set_fatal_tmp_file(const char *fn, const char *file, int line)
 {
   if (fatal_tmp_file == NULL)
     fatal_tmp_file = strdup(fn);
@@ -195,7 +195,7 @@ void _set_fatal_tmp_file(char *fn, char *file, int line)
 	    file,line);
 }
 
-void _unset_fatal_tmp_file(char *fn, char *file, int line)
+void _unset_fatal_tmp_file(const char *fn, const char *file, int line)
 {
   if (strcmp(fn,fatal_tmp_file) == 0) {
     sfree(fatal_tmp_file);
@@ -216,10 +216,11 @@ static void clean_fatal_tmp_file()
 }
 
 /* Old function do not use */
-static void fatal_error(int f_errno,char *fmt,...)
+static void fatal_error(int f_errno,const char *fmt,...)
 {
   va_list ap;
-  char    *p,cval,*sval,msg[STRLEN];
+  const char    *p;
+  char    cval,*sval,msg[STRLEN];
   char    ibuf[64],ifmt[64];
   int     index,ival,fld,len;
   double  dval;
@@ -285,10 +286,12 @@ static void fatal_error(int f_errno,char *fmt,...)
   gmx_error("fatal",msg);
 }
 
-void gmx_fatal(int f_errno,char *file,int line,char *fmt,...)
+void gmx_fatal(int f_errno,const char *file,
+	       int line,const char *fmt,...)
 {
   va_list ap;
-  char    *p,cval,*sval,msg[STRLEN];
+  const char  *p;
+  char    cval,*sval,msg[STRLEN];
   char    ibuf[64],ifmt[64];
   int     index,ival,fld,len;
   double  dval;
@@ -387,7 +390,11 @@ char *get_warning_file()
   return filenm;
 }
 
+<<<<<<< fatal.c
+void warning(const char *s)
+=======
 static void low_warning(char *warn_err,char *s)
+>>>>>>> 1.48
 {
 #define indent 2 
   char linenobuf[32], *temp, *temp2;
@@ -440,20 +447,20 @@ void print_warn_num(void)
 	    (nwarn==1) ? "was" : "were", nwarn, (nwarn==1) ? "" : "s");
 }
 
-void _too_few(char *fn,int line)
+void _too_few(const char *fn,int line)
 {
   sprintf(warn_buf,"Too few parameters on line (source file %s, line %d)",
 	  fn,line);
   warning(NULL);
 }
 
-void _invalid_case(char *fn,int line)
+void _invalid_case(const char *fn,int line)
 {
   gmx_fatal(FARGS,"Invalid case in switch statement, file %s, line %d",
 	      fn,line);
 }
 
-void _unexpected_eof(char *fn,int line,char *srcfn,int srcline)
+void _unexpected_eof(const char *fn,int line,const char *srcfn,int srcline)
 {
   gmx_fatal(FARGS,"Unexpected end of file in file %s at line %d\n"
 	      "(Source file %s, line %d)",fn,line,srcfn,srcline);
@@ -468,7 +475,7 @@ void _unexpected_eof(char *fn,int line,char *srcfn,int srcline)
  */
 FILE *debug=NULL;
 
-void init_debug (char *dbgfile)
+void init_debug (const char *dbgfile)
 {
   no_buffers();
   debug=ffopen(dbgfile,"w");
@@ -518,14 +525,14 @@ void doexceptions(void)
 
 static char *gmxuser = "Please report this to the mailing list (gmx-users@gromacs.org)";
 
-static void (*gmx_error_handler)(char *msg) = quit_gmx;
+static void (*gmx_error_handler)(const char *msg) = quit_gmx;
 
-void set_gmx_error_handler(void (*func)(char *msg))
+void set_gmx_error_handler(void (*func)(const char *msg))
 {
   gmx_error_handler = func;
 }
 
-char *gmx_strerror(char *key)
+char *gmx_strerror(const char *key)
 {
   typedef struct {
     char *key,*msg;
@@ -563,7 +570,7 @@ char *gmx_strerror(char *key)
   }
 }
 
-void _gmx_error(char *key,char *msg,char *file,int line)
+void _gmx_error(const char *key,const char *msg,const char *file,int line)
 {
   char buf[10240],tmpbuf[1024];
   int  cqnum;
@@ -581,7 +588,8 @@ void _gmx_error(char *key,char *msg,char *file,int line)
   gmx_error_handler(buf);
 }
 
-void _range_check(int n,int n_min,int n_max,char *var,char *file,int line)
+void _range_check(int n,int n_min,int n_max,
+		  const char *var,const char *file,int line)
 {
   char buf[1024];
   
