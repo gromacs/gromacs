@@ -72,4 +72,4 @@ man:
 		mkman
 
 clean:
-		$(RM) *.log *.lof *.lot *.bbl *.blg *.toc *.dvi *.aux *~ #*# *.idx *.ilg *.ind progman.tex ; $(RMDIR) progman ; $(TOUCH) progman.tex
+		$(RM) *.log *.lof *.lot *.bbl *.blg *.toc *.dvi *.aux *.ps *~ #*# *.idx *.ilg *.ind progman.tex ; $(RMDIR) progman ; $(TOUCH) progman.tex
