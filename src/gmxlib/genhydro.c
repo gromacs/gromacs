@@ -69,8 +69,9 @@ static int hack_residue(int resnr,t_atoms *pdba,t_add_block *ab[],
 			t_hackblock *tb,
 			int type,int HT[], int nTH[],bool *bDel)
 {
-  int i,j,dadd=0,natom;
- 
+  int i,j,nadd,natom;
+  
+  nadd=0;
   if (debug)
     if (tb)
       fprintf(debug,"Hacking %d atoms of %s into residue %d\n",
@@ -94,20 +95,20 @@ static int hack_residue(int resnr,t_atoms *pdba,t_add_block *ab[],
 	nTH[i]=j+1;
 	HT[i]=type;
 	if (ab[i] != NULL)
-	  dadd-=ab[i]->nh;
+	  nadd-=ab[i]->nh;
 	ab[i]=&(tb->ab[j]);
-	dadd+=ab[i]->nh;
+	nadd+=ab[i]->nh;
 	break;
       }
     }
     for(j=0; (j<tb->ndel); j++)
       if (strcmp(*pdba->atomname[i],tb->nm_del[j]) == 0) {
 	bDel[i]=TRUE;
-	dadd--;
+	nadd--;
       }
   }
   
-  return dadd;
+  return nadd;
 }
 
 static char *Hnum[] = { "1", "2", "3", "4", "5", "6" };
@@ -193,11 +194,11 @@ int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
   t_add_block **ab;      /* Array of pointer to add blocks */
   int         *nTH,*HT;
   bool        *bDel;
-  int         tadd=0;
-  int         rnr=NOTSET;
+  int         nadd;
+  int         rnr;
   int         i,j,j0,k,l,m,ncntl,natom;
   int         na[4],nh[3];
-  t_addh      *ahptr=NULL;
+  t_addh      *ahptr;
   rvec        *xn;
   char        buf[STRLEN];
 
@@ -208,7 +209,9 @@ int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
   snew(nTH,natom);
   snew(bDel,natom);
   pdba=*pdbaptr;
-  rnr=-83;
+  rnr=NOTSET;
+  nadd=0;
+  ahptr=NULL;
   for(i=0; (i<natom); i++) {
     if (rnr != pdba->atom[i].resnr) {
       rnr=pdba->atom[i].resnr;
@@ -220,7 +223,7 @@ int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
 	  /* Check whether this atom has already been set */
 	  assert(ab[i] == NULL);
 	  ab[i]=&(ahptr->ab[j]);
-	  tadd+=ab[i]->nh;
+	  nadd+=ab[i]->nh;
 	  break;
 	}
       }
@@ -229,16 +232,17 @@ int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
   
   /* set flags for adding atoms to termini (according to tdb) */
   if (rN>=0)
-    tadd+=hack_residue(rN,pdba,ab,ntdb,ehtNTER,HT,nTH,bDel);
+    nadd+=hack_residue(rN,pdba,ab,ntdb,ehtNTER,HT,nTH,bDel);
   if (rC>=0)
-    tadd+=hack_residue(rC,pdba,ab,ctdb,ehtCTER,HT,nTH,bDel);
+    nadd+=hack_residue(rC,pdba,ab,ctdb,ehtCTER,HT,nTH,bDel);
   
   /* Copy old atoms, making space for new ones */
   snew(newpdba,1);
-  init_t_atoms(newpdba,natom+tadd,FALSE);
-  newpdba->nres   =pdba->nres;   
-  newpdba->resname=pdba->resname;
-  snew(xn,natom+tadd);
+  init_t_atoms(newpdba,natom+nadd,FALSE);
+  newpdba->nres    = pdba->nres;   
+  sfree(newpdba->resname);
+  newpdba->resname = pdba->resname;
+  snew(xn,natom+nadd);
   j=0;
   for(i=0; (i<natom); i++) {
     if (!bDel[i]) {
@@ -272,11 +276,11 @@ int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
 	  for(k=j0; (k<j0+ab[i]->nh); k++) {
 	    for(l=0; (l<ntdb->nadd); l++) {
 	      if (strcmp(*newpdba->atomname[k],ntdb->ab[l].na[0]) == 0) {
-		tadd+=ntdb->ab[l].nh;
-		newpdba->nr=natom+tadd;
-		srenew(newpdba->atom,natom+tadd);
-		srenew(newpdba->atomname,natom+tadd);
-		srenew(xn,natom+tadd);
+		nadd+=ntdb->ab[l].nh;
+		newpdba->nr=natom+nadd;
+		srenew(newpdba->atom,natom+nadd);
+		srenew(newpdba->atomname,natom+nadd);
+		srenew(xn,natom+nadd);
 		for(m=0; (m<ntdb->ab[l].nh); m++)
 		  copy_atom(pdba,newpdba,*xptr,xn,i,j+m);
 		hack_atoms(ntdb,l,j,ntdb->ab[l].nh,newpdba);
@@ -286,11 +290,11 @@ int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
 	    }
 	    for(l=0; (l<ctdb->nadd); l++) {
 	      if (strcmp(*newpdba->atomname[k],ctdb->ab[l].na[0]) == 0) {
-		tadd+=ctdb->ab[l].nh;
-		newpdba->nr=natom+tadd;
-		srenew(newpdba->atom,natom+tadd);
-		srenew(newpdba->atomname,natom+tadd);
-		srenew(xn,natom+tadd);
+		nadd+=ctdb->ab[l].nh;
+		newpdba->nr=natom+nadd;
+		srenew(newpdba->atom,natom+nadd);
+		srenew(newpdba->atomname,natom+nadd);
+		srenew(xn,natom+nadd);
 		for(m=0; (m<ctdb->ab[l].nh); m++)
 		  copy_atom(pdba,newpdba,*xptr,xn,i,j+m);
 		hack_atoms(ctdb,l,j,ctdb->ab[l].nh,newpdba);
@@ -312,10 +316,9 @@ int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
   
   /* Now calc the positions */
   j=0;
-  for(i=0; (i<pdba->nr); i++,j++) {
+  for(i=0; (i < pdba->nr); i++,j++) {
     if (ab[i] != NULL) {
-      rnr   = /*newpdba->atom[j].resnr;*/
-	pdba->atom[i].resnr;
+      rnr   = pdba->atom[i].resnr; /*newpdba->atom[j].resnr;*/
       ncntl = ncontrol[ab[i]->tp];
       for(m=0; (m<ncntl); m++) {
 	na[m]=pdbasearch_atom(ab[i]->na[m],rnr,newpdba);
@@ -339,12 +342,22 @@ int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
   sfree(HT);
   sfree(nTH);
   sfree(bDel);
-  sfree(*pdbaptr);
 
+  for(i=0; i < pdba->nr; i++) {
+    sfree(*(pdba->atomname[i]));
+    sfree(pdba->atomname[i]);
+  }
+  sfree(pdba->atomname);
+  sfree(pdba->atom);
+  sfree(pdba->pdbinfo);
+  done_block(&(pdba->excl));
+  sfree(pdba);
+  
+  sfree(*xptr);
   *xptr=xn;
   *pdbaptr=newpdba;
   
-  return natom+tadd;
+  return natom+nadd;
 }
 
 void deprotonate(t_atoms *atoms,rvec *x)
