@@ -395,9 +395,12 @@ static inline real distance2(rvec v1, rvec v2)
 
 static inline void clear_rvec(rvec a)
 {
-  const real nul=0.0;
-  
-  a[XX]=a[YY]=a[ZZ]=nul;
+  /* The ibm compiler has problems with inlining this 
+   * when we use a const real variable
+   */
+  a[XX]=0.0;
+  a[YY]=0.0;
+  a[ZZ]=0.0;
 }
 
 static inline void clear_rvecs(int n,rvec v[])

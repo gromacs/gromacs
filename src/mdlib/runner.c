@@ -57,6 +57,7 @@ static char *SRCID_runner_c = "$Id$";
 #include "pppm.h"
 #include "pme.h"
 #include "xvgr.h"
+#include "dummies.h"
 
 void get_cmparm(t_inputrec *ir,int step,bool *bStopCM,bool *bStopRot)
 {
@@ -80,6 +81,9 @@ void set_pot_bools(t_inputrec *ir,t_topology *top,
   *bBHAM = (top->idef.functype[0]==F_BHAM);
   *b14   = (top->idef.il[F_LJ14].nr > 0);
 }
+
+
+
 
 void finish_run(FILE *log,t_commrec *cr,
 		char *confout,
@@ -133,7 +137,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   t_mdatoms  *mdatoms;
   t_forcerec *fr;
   time_t     start_t=0;
-  bool       bDummies;
+  bool       bDummies,bParDummies;
+  t_comm_dummies dummycomm;
   int        i,m;
     
   /* Initiate everything (snew sets to zero!) */
@@ -143,8 +148,6 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   snew(grps,1);
   snew(parm,1);
   snew(nrnb,cr->nnodes);
-
-  /* Initiate invsqrt routines */
   
   if (bVerbose && MASTER(cr)) 
     fprintf(stderr,"Getting Loaded...\n");
@@ -160,10 +163,12 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     /* Every node (including the master) reads the data from the ring */
     init_parts(stdlog,cr,
 	       parm,top,&x,&v,&mdatoms,nsb,
-	       MASTER(cr) ? LIST_SCALARS | LIST_PARM : 0);
+	       MASTER(cr) ? LIST_SCALARS | LIST_PARM : 0, 
+	       &bParDummies,&dummycomm);
   } else {
     /* Read it up... */
     init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),top,&x,&v,&mdatoms,nsb);
+    bParDummies=FALSE;
   }
   snew(buf,nsb->natoms);
   snew(f,nsb->natoms);
@@ -223,19 +228,24 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     case eiSD:
     case eiBD:
       start_t=do_md(stdlog,cr,nfile,fnm,
-		    bVerbose,bCompact,bDummies,nstepout,parm,grps,
-		    top,ener,x,vold,v,vt,f,buf,
+		    bVerbose,bCompact,bDummies,
+		    bParDummies ? &dummycomm : NULL,
+		    nstepout,parm,grps,top,ener,x,vold,v,vt,f,buf,
 		    mdatoms,nsb,nrnb,graph,edyn,fr,box_size,Flags);
       break;
     case eiCG:
       start_t=do_cg(stdlog,nfile,fnm,parm,top,grps,nsb,
 		    x,f,buf,mdatoms,parm->ekin,ener,
-		    nrnb,bVerbose,bDummies,cr,graph,fr,box_size);
+		    nrnb,bVerbose,bDummies,
+		    bParDummies ? &dummycomm : NULL,
+		    cr,graph,fr,box_size);
       break;
     case eiSteep:
       start_t=do_steep(stdlog,nfile,fnm,parm,top,grps,nsb,
 		       x,f,buf,mdatoms,parm->ekin,ener,
-		       nrnb,bVerbose,bDummies,cr,graph,fr,box_size);
+		       nrnb,bVerbose,bDummies,
+		       bParDummies ? &dummycomm : NULL,
+		       cr,graph,fr,box_size);
       break;
     default:
       fatal_error(0,"Invalid integrator (%d)...\n",parm->ir.eI);
@@ -266,6 +276,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     thanx(stderr);
   }
 }
+
 
 void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 	     real *lambda,real *lam0,real *SAfactor,
@@ -339,6 +350,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 
   if (ir->eI == eiSD)
     init_sd_consts(ir->opts.ngtc,ir->opts.tau_t,ir->delta_t);
+
 }
 
 void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,

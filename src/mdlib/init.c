@@ -177,7 +177,8 @@ static void count_ones(FILE *log,t_commrec *cr)
 void init_parts(FILE *log,t_commrec *cr,
 		t_parm *parm,t_topology *top,
 		rvec **x,rvec **v,t_mdatoms **mdatoms,
-		t_nsborder *nsb,int list)
+		t_nsborder *nsb,int list, bool *bParallelDummies,
+		t_comm_dummies *dummycomm)
 {
   ld_data(cr->left,cr->right,parm,nsb,top,x,v);
   if (cr->nodeid != 0)
@@ -186,7 +187,7 @@ void init_parts(FILE *log,t_commrec *cr,
   count_ones(log,cr);
 #endif
 
-  mdsplit_top(log,top,cr);
+  mdsplit_top(log,top,cr,nsb,bParallelDummies,dummycomm);
 
   if (list) {
     if (list&LIST_SCALARS) 

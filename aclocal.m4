@@ -11,7 +11,7 @@
 # even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE.
 
-
+ 
 # ACX_CHECK_FFTW()
 # ----------------
 # This macro checks for fftw header files and libraries,
@@ -544,290 +544,316 @@ AC_REQUIRE([AC_PROG_F77])
 AC_REQUIRE([AC_CANONICAL_HOST])
 
 # Try to determine "good" native compiler flags if none specified on command
-# line
-if test "$ac_test_CFLAGS" != "set" -o "$ac_test_FFLAGS" != "set"; then
+# line. To avoid repeating the entire procedure for fortran flags, we first
+# determine our suggested choices for both C and fortran, and then possibly
+# override them with user choices.
 
-  case "${host_cpu}-${host_os}" in
+case "${host_cpu}-${host_os}" in
 
   *-solaris2*) 
-	case "${gmxcpu}" in
-   	ultrasparc3*)
-		CFLAGS="-fast -xO5 -xtarget=ultra3 -fsimple=2 -fnonstd -dalign"
-                FFLAGS=$CFLAGS
-		;;
-	ultrasparc2i*)
-                CFLAGS="-fast -xO5 -xtarget=ultra2i -fsimple=2 -fnonstd -dalign"
-                FFLAGS=$CFLAGS
-		;;
-	ultrasparc2*)
-                CFLAGS="-fast -xO5 -xtarget=ultra2 -fsimple=2 -fnonstd -dalign"
-                FFLAGS=$CFLAGS
-		;;
-	ultrasparc*)
-                CFLAGS="-fast -xO5 -xtarget=ultra -fsimple=2 -fnonstd -dalign"
-                FFLAGS=$CFLAGS
-		;;
-	*)
-                CFLAGS="-native -fast -xO5 -fsimple=2 -fnonstd -dalign"
-                FFLAGS=$CFLAGS
-		;;
-	esac
-	;;
+    case "${gmxcpu}" in
+      ultrasparc3*)
+        xCFLAGS="-fast -xO5 -xtarget=ultra3 -fsimple=2 -fnonstd -dalign"
+        xFFLAGS=$xCFLAGS
+        ;;
+      ultrasparc2i*)
+        xCFLAGS="-fast -xO5 -xtarget=ultra2i -fsimple=2 -fnonstd -dalign"
+        xFFLAGS=$xCFLAGS
+        ;;
+      ultrasparc2*)
+        xCFLAGS="-fast -xO5 -xtarget=ultra2 -fsimple=2 -fnonstd -dalign"
+        xFFLAGS=$xCFLAGS
+        ;;
+      ultrasparc*)
+        xCFLAGS="-fast -xO5 -xtarget=ultra -fsimple=2 -fnonstd -dalign"
+        xFFLAGS=$xCFLAGS
+        ;;
+      *)
+        xCFLAGS="-native -fast -xO5 -fsimple=2 -fnonstd -dalign"
+        xFFLAGS=$xCFLAGS
+        ;;
+    esac
+    ;;
 
   *-hpux*)  
-	CFLAGS="-Ae +O3 +Oall"
-	FFLAGS=$CFLAGS
-	# If you haven't noticed, we don't like hp very much :-)
-	;;
+    xCFLAGS="-Ae +O3 +Oall"
+    xFFLAGS=$xCFLAGS
+    # If you haven't noticed, we don't like hp very much...
+    # but perhaps that will change if they make something nice out of ia64.
+    ;;
 
   rs6000*-aix*)
-	# dont use inter-procedure analysis for the innerloops - they take
-        # forever to compile with it, and it doesnt help at all.
-	case "${gmxcpu}" in
-	power4*)
-		CFLAGS="-O3 -qarch=pwr4 -qtune=pwr4 -qlanglvl=ansi -qmaxmem=16384"
-		FFLAGS="-O3 -Q -qarch=pwr4 -qtune=pwr4 -qmaxmem=16384 -qhot -qnoipa"
-		;;
-	power3*)
-		CFLAGS="-O3 -qarch=pwr3 -qtune=pwr3 -qlanglvl=ansi -qmaxmem=16384"
-		FFLAGS="-O3 -Q -qarch=pwr3 -qtune=pwr3 -qmaxmem=16384 -qhot -qnoipa"
-		;;
-	power2*)
-		CFLAGS="-O3 -qarch=pwr2 -qtune=pwr2 -qlanglvl=ansi -qmaxmem=16384"
-		FFLAGS="-O3 -Q -qarch=pwr2 -qtune=pwr2 -qmaxmem=16384 -qhot -qnoipa"
-		;;
-	power)
-		CFLAGS="-O3 -qarch=pwr -qtune=pwr -qlanglvl=ansi -qmaxmem=16384"
-		FFLAGS="-O3 -Q -qarch=pwr -qtune=pwr -qmaxmem=16384 -qhot -qnoipa"
-		;;
-	*)
-		# I don't think people are using anything older than power2, so we tune for
-                # pwr, but dont set the arch since it is nice to have common binaries 
-                # that run also on powerpc.
-		CFLAGS="-O3 -qlanglvl=ansi -qtune=pwr -qmaxmem=16384"
-		FFLAGS="-O3 -Q -qtune=pwr -qmaxmem=16384 -qhot"
-		;;
-        esac
-        ;;
+    # dont use inter-procedure analysis for the innerloops - they take
+    # forever to compile with it, and it doesnt help at all.
+    case "${gmxcpu}" in
+      power4*)
+	xCFLAGS="-O3 -qarch=pwr4 -qtune=pwr4 -qlanglvl=ansi -qmaxmem=16384"
+	xFFLAGS="-O3 -Q -qarch=pwr4 -qtune=pwr4 -qmaxmem=16384 -qhot -qnoipa"
+	;;
+      power3*)
+	xCFLAGS="-O3 -qarch=pwr3 -qtune=pwr3 -qlanglvl=ansi -qmaxmem=16384"
+	xFFLAGS="-O3 -Q -qarch=pwr3 -qtune=pwr3 -qmaxmem=16384 -qhot -qnoipa"
+	;;
+      power2*)
+	xCFLAGS="-O3 -qarch=pwr2 -qtune=pwr2 -qlanglvl=ansi -qmaxmem=16384"
+	xFFLAGS="-O3 -Q -qarch=pwr2 -qtune=pwr2 -qmaxmem=16384 -qhot -qnoipa"
+	;;
+      power)
+	xCFLAGS="-O3 -qarch=pwr -qtune=pwr -qlanglvl=ansi -qmaxmem=16384"
+	xFFLAGS="-O3 -Q -qarch=pwr -qtune=pwr -qmaxmem=16384 -qhot -qnoipa"
+	;;
+      *)
+	# I don't think people are using anything older than power2, so we tune for
+        # pwr, but dont set the arch since it is nice to have common binaries 
+        # that run also on powerpc.
+	xCFLAGS="-O3 -qlanglvl=ansi -qtune=pwr -qmaxmem=16384"
+	xFFLAGS="-O3 -Q -qtune=pwr -qmaxmem=16384 -qhot"
+	;;
+    esac
+    ;;
 
   powerpc*-aix*)
-	case "${gmxcpu}" in
-
-	ppc604)
-		CFLAGS="-O3 -qarch=604 -qtune=604 -qlanglvl=ansi -qmaxmem=16384"
-		FFLAGS="-O3 -Q -qarch=604 -qtune=604 -qmaxmem=16384 -qhot"
-		;;
-	ppc603)
-		CFLAGS="-O3 -qarch=603 -qtune=603 -qlanglvl=ansi -qmaxmem=16384"
-		FFLAGS="-O3 -Q -qarch=603 -qtune=603 -qmaxmem=16384 -qhot"
-		;;
-	rs64a)
-		CFLAGS="-O3 -qarch=rs64a -qtune=rs64a -qlanglvl=ansi -qmaxmem=16384"
-		FFLAGS="-O3 -Q -qarch=rs64a -qtune=rs64a -qmaxmem=16384 -qhot"
-		;;
-	rs64b)
-		CFLAGS="-O3 -qarch=rs64b -qtune=rs64b -qlanglvl=ansi -qmaxmem=16384"
-		FFLAGS="-O3 -Q -qarch=rs64b -qtune=rs64b -qmaxmem=16384 -qhot"
-		;;
-	rs64c)
-		CFLAGS="-O3 -qarch=rs64c -qtune=rs64c -qlanglvl=ansi -qmaxmem=16384"
-		FFLAGS="-O3 -Q -qarch=rs64c -qtune=rs64c -qmaxmem=16384 -qhot"
-		;;
-	*)
-		CFLAGS="-O3 -qlanglvl=ansi -qmaxmem=16384"
-		FFLAGS="-O3 -Q -qmaxmem=16384 -qhot"
-		;;
-	esac
+    case "${gmxcpu}" in
+      ppc604)
+	xCFLAGS="-O3 -qarch=604 -qtune=604 -qlanglvl=ansi -qmaxmem=16384"
+	xFFLAGS="-O3 -Q -qarch=604 -qtune=604 -qmaxmem=16384 -qhot"
 	;;
+      ppc603)
+	xCFLAGS="-O3 -qarch=603 -qtune=603 -qlanglvl=ansi -qmaxmem=16384"
+	xFFLAGS="-O3 -Q -qarch=603 -qtune=603 -qmaxmem=16384 -qhot"
+	;;
+      rs64a)
+	xCFLAGS="-O3 -qarch=rs64a -qtune=rs64a -qlanglvl=ansi -qmaxmem=16384"
+	xFFLAGS="-O3 -Q -qarch=rs64a -qtune=rs64a -qmaxmem=16384 -qhot"
+	;;
+      rs64b)
+	xCFLAGS="-O3 -qarch=rs64b -qtune=rs64b -qlanglvl=ansi -qmaxmem=16384"
+	xFFLAGS="-O3 -Q -qarch=rs64b -qtune=rs64b -qmaxmem=16384 -qhot"
+	;;
+      rs64c)
+	xCFLAGS="-O3 -qarch=rs64c -qtune=rs64c -qlanglvl=ansi -qmaxmem=16384"
+	xFFLAGS="-O3 -Q -qarch=rs64c -qtune=rs64c -qmaxmem=16384 -qhot"
+	;;
+      *)
+	xCFLAGS="-O3 -qlanglvl=ansi -qmaxmem=16384"
+	xFFLAGS="-O3 -Q -qmaxmem=16384 -qhot"
+	;;
+    esac
+    ;;
 
   mips*-irix*)
-	CFLAGS="-O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -LNO:opt=1 -LNO:ou_further=3 -OPT:Olimit=0:roundoff=3:alias=typed -fullwarn -woff 1174 -D__INLINE_INTRINSICS"
-	FFLAGS="-O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -LNO:opt=1 -LNO:ou_further=3 -OPT:Olimit=0:roundoff=3:alias=typed -OPT:cray_ivdep=TRUE"
+    xCFLAGS="-O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -LNO:opt=1 -LNO:ou_further=3 -OPT:Olimit=0:roundoff=3:alias=typed -fullwarn -woff 1174 -D__INLINE_INTRINSICS"
+    xFFLAGS="-O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -LNO:opt=1 -LNO:ou_further=3 -OPT:Olimit=0:roundoff=3:alias=typed -OPT:cray_ivdep=TRUE"
 
-	if $CC -version | grep "Version 7.1" > /dev/null 2>&1; then
-	  CFLAGS="$CFLAGS -GCM:aggressive_speculation -GCM:array_speculation" 
-	  FFLAGS="$FFLAGS -GCM:aggressive_speculation -GCM:array_speculation" 
-	fi
+    if $CC -version | grep "Version 7.1" > /dev/null 2>&1; then
+      xCFLAGS="$xCFLAGS -GCM:aggressive_speculation -GCM:array_speculation" 
+      xFFLAGS="$xFFLAGS -GCM:aggressive_speculation -GCM:array_speculation" 
+    fi
 
-	if $CC -version | grep "Version 7.3" > /dev/null 2>&1; then
-	  CFLAGS="$CFLAGS -SWP:heur=fdms,nhms,fdnms" 
-	  FFLAGS="$FFLAGS -SWP:heur=fdms,nhms,fdnms" 
-	fi
+    if $CC -version | grep "Version 7.3" > /dev/null 2>&1; then
+      xCFLAGS="$xCFLAGS -SWP:heur=fdms,nhms,fdnms" 
+      xFFLAGS="$xFFLAGS -SWP:heur=fdms,nhms,fdnms" 
+    fi
 
-	case "${gmxcpu}" in
-	r12000*)
-		CFLAGS="-n32 -r12000 -mips4 $CFLAGS"
-		FFLAGS="-n32 -r12000 -mips4 $FFLAGS"
-		LDFLAGS="$LDFLAGS -n32 -r12000 -mips4"
-		;;
-	r10000*)
-		CFLAGS="-n32 -r10000 -mips4 $CFLAGS"
-		FFLAGS="-n32 -r10000 -mips4 $FFLAGS"
-		LDFLAGS="$LDFLAGS -n32 -r10000 -mips4"
-		;;
-	r8000*)
-		CFLAGS="-n32 -r8000 -mips4 $CFLAGS"
-		FFLAGS="-n32 -r8000 -mips4 $FFLAGS"
-		LDFLAGS="$LDFLAGS -n32 -r8000 -mips4"
-		;;
-	r5000*)
-		CFLAGS="-n32 -r5000 -mips4 $CFLAGS"
-		FFLAGS="-n32 -r5000 -mips4 $FFLAGS"
-		LDFLAGS="$LDFLAGS -n32 -r5000 -mips4"
-		;;
-	*)		
-		CFLAGS="-n32 $CFLAGS"
-		FFLAGS="-n32 $FFLAGS"
-		LDFLAGS="$LDFLAGS -n32"
-		;;
-	esac
+    case "${gmxcpu}" in
+      r12000*)
+	xCFLAGS="-n32 -r12000 -mips4 $xCFLAGS"
+	xFFLAGS="-n32 -r12000 -mips4 $xFFLAGS"
+	xLDFLAGS="-n32 -r12000 -mips4"
 	;;
+      r10000*)
+	xCFLAGS="-n32 -r10000 -mips4 $xCFLAGS"
+	xFFLAGS="-n32 -r10000 -mips4 $xFFLAGS"
+	xLDFLAGS="-n32 -r10000 -mips4"
+	;;
+      r8000*)
+	xCFLAGS="-n32 -r8000 -mips4 $xCFLAGS"
+	xFFLAGS="-n32 -r8000 -mips4 $xFFLAGS"
+	xLDFLAGS="-n32 -r8000 -mips4"
+	;;
+      r5000*)
+	xCFLAGS="-n32 -r5000 -mips4 $xCFLAGS"
+	xFFLAGS="-n32 -r5000 -mips4 $xFFLAGS"
+	xLDFLAGS="-n32 -r5000 -mips4"
+	;;
+      *)		
+	xCFLAGS="-n32 $xCFLAGS"
+	xFFLAGS="-n32 $xFFLAGS"
+	xLDFLAGS="-n32"
+	;;
+    esac
+    ;;
 
   alpha*-osf*)
-	case "${host_cpu}" in
-	alphaev*)
-		# extract the processor from cpu type (e.g. alphaev56 -> ev56)
-		evtype=`echo ${host_cpu} | sed 's/alpha//'`
-		CFLAGS="-O5 -arch $evtype -tune $evtype -fast -unroll 2 -fp_reorder"
-		FFLAGS="$CFLAGS -assume noaccuracy_sensitive"
-		LDFLAGS="$LDFLAGS -O4"
-		;;
-	*)
-		CFLAGS="-O5 -arch host -tune host -fast -unroll 2 -fp_reorder"
-		FFLAGS="$CFLAGS -assume noaccuracy_sensitive"
-		LDFLAGS="$LDFLAGS -O4"
-		;;
-	esac
+    case "${host_cpu}" in
+      alphaev*)
+        # extract the processor from cpu type (e.g. alphaev56 -> ev56)
+        evtype=`echo ${host_cpu} | sed 's/alpha//'`
+        xCFLAGS="-O5 -arch $evtype -tune $evtype -fast -unroll 2 -fp_reorder"
+        xFFLAGS="$xCFLAGS -assume noaccuracy_sensitive"
+        xLDFLAGS="-O4"
+        ;;
+      *)
+	xCFLAGS="-O5 -arch host -tune host -fast -unroll 2 -fp_reorder"
+	xFFLAGS="$xCFLAGS -assume noaccuracy_sensitive"
+	xLDFLAGS="-O4"
 	;;
+    esac
+    ;;
 
   alpha*-linux*)
-        case "${host_cpu}" in
-	alphaev*)
-		# extract the processor from cpu type (e.g. alphaev56 -> ev56)
-		evtype=`echo ${host_cpu} | sed 's/alpha//'`
-		tmpCFLAGS="-O5 -arch $evtype -tune $evtype -fast -unroll 2 -fp_reorder"
-		tmpFFLAGS="$CFLAGS -assume noaccuracy_sensitive"
-		tmpLDFLAGS="$LDFLAGS -O4"
-		;;
-	*)
-		tmpCFLAGS="-O5 -arch host -tune host -fast -unroll 2 -fp_reorder"
-		tmpFFLAGS="$CFLAGS -assume noaccuracy_sensitive"
-		tmpLDFLAGS="$LDFLAGS -O4"
-		;;
-	esac
-	if $CC -V 2>  /dev/null | grep Compaq > /dev/null 2>&1; then
-		CFLAGS="$tmpCFLAGS"
-	fi
-	if test "$enable_fortran" = "yes"; then
-  	  if $F77 -V 2>  /dev/null | grep Compaq > /dev/null 2>&1; then
-	    FFLAGS="$tmpFFLAGS"
-	  fi
-        fi
+    case "${host_cpu}" in
+      alphaev*)
+	# extract the processor from cpu type (e.g. alphaev56 -> ev56)
+	evtype=`echo ${host_cpu} | sed 's/alpha//'`
+	tmpCFLAGS="-O5 -arch $evtype -tune $evtype -fast -unroll 2 -fp_reorder"
+	tmpFFLAGS="$tmpCFLAGS -assume noaccuracy_sensitive"
+	tmpLDFLAGS="-O4"
 	;;
+      *)
+	tmpCFLAGS="-O5 -arch host -tune host -fast -unroll 2 -fp_reorder"
+	tmpFFLAGS="$tmpCFLAGS -assume noaccuracy_sensitive"
+	tmpLDFLAGS="-O4"
+	;;
+    esac
+    if $CC -V 2>  /dev/null | grep Compaq > /dev/null 2>&1; then
+      xCFLAGS="$tmpCFLAGS"
+    fi
+    if test "$enable_fortran" = "yes"; then
+      if $F77 -V 2>  /dev/null | grep Compaq > /dev/null 2>&1; then
+        xFFLAGS="$tmpFFLAGS"
+      fi
+    fi
+    ;;
 
   *-*)
-	# most of these systems (e.g. linux, FreeBSD) use gcc which is treated
-        # further down, but we can at least check if the Portland compilers are used:
-	if $CC -V 2>  /dev/null | grep Portland > /dev/null 2>&1; then
-  		case "${host_cpu}" in
-		i586)
-			pgiopt="-tp p5" ;;
-		i686)
-			pgiopt="-tp p6" ;;
-		esac
-		CFLAGS="$pgiopt -fast -Minfo=loop -pc 32"
-	fi
-	if test "$enable_fortran" = "yes"; then
-		if $F77 -V 2>  /dev/null | grep Portland /dev/null 2>&1; then
-		FFLAGS="$CFLAGS -Mneginfo=loop"
-		fi	
-	fi
-	;;
-  esac
-	
-  # Phew, end of all those operating systems and processors!			
-  # use default flags for gcc/g77 on all systems
-  if test $ac_cv_prog_gcc = yes; then
-     CFLAGS="-O6 -fomit-frame-pointer -finline-functions -funroll-all-loops -Wall -Wno-unused"
-    # -malign-double for x86 systems
-    ACX_CHECK_CC_FLAGS(-malign-double,align_double,
-	CFLAGS="$CFLAGS -malign-double")
-  fi
-  if test $enable_fortran = yes; then
-    if test $ac_cv_prog_g77 = yes; then
-       FFLAGS="-O3 -ffast-math -fomit-frame-pointer -finline-functions -funroll-all-loops -Wall -Wno-unused"
-      # -malign-double for x86 systems - haven't checked that this works yet.
-      #ACX_CHECK_F77_FLAGS(-malign-double,align_double,FFLAGS="$FFLAGS -malign-double")
+    # most of these systems (e.g. linux, FreeBSD) use gcc which is treated
+    # further down, but we can at least check if the Portland compilers are used:
+    if $CC -V 2>  /dev/null | grep Portland > /dev/null 2>&1; then
+      case "${host_cpu}" in
+	i586)
+	  pgiopt="-tp p5" 
+          ;;
+	i686)
+	  pgiopt="-tp p6" 
+ 	  ;;
+      esac
+      xCFLAGS="$pgiopt -fast -Minfo=loop -pc 32"
     fi
-  fi
-  CPU_FLAGS=""
-  if test "$GCC" = "yes"; then
-	  # try to guess correct CPU flags, at least for linux
-	  case "${host_cpu}" in
-		# i586/i686 cpu flags don't improve speed, thus no need to use them.
-		# don't check f77 separately - we assume f77 and gcc are similar
-		  
-	  powerpc*)
-		cputype=`(grep cpu /proc/cpuinfo | head -1 | cut -d: -f2 | sed 's/ //g') 2> /dev/null`
-		is60x=`echo $cputype | egrep "^60[0-9]e?$"`
-		if test -n "$is60x"; then
-			ACX_CHECK_CC_FLAGS(-mcpu=$cputype,m_cpu_60x,
-				CPU_FLAGS=-mcpu=$cputype)
-		elif test "$cputype" = 750; then
-                        ACX_CHECK_CC_FLAGS(-mcpu=750,m_cpu_750,
-				CPU_FLAGS=-mcpu=750)
-		fi
-		if test -z "$CPU_FLAGS"; then
-		        ACX_CHECK_CC_FLAGS(-mcpu=powerpc,m_cpu_powerpc,
-				CPU_FLAGS=-mcpu=powerpc)
-		fi
-		if test -z "$CPU_FLAGS"; then
-			ACX_CHECK_CC_FLAGS(-mpowerpc,m_powerpc,
-				CPU_FLAGS=-mpowerpc)
-		fi
-	  esac
-  fi
+    if test "$enable_fortran" = "yes"; then
+      if $F77 -V 2>  /dev/null | grep Portland /dev/null 2>&1; then
+	xFFLAGS="$xCFLAGS -Mneginfo=loop"
+      fi	
+    fi
+    ;;
+esac	
+# Phew, end of all those operating systems and processors!			
 
-  if test -n "$CPU_FLAGS"; then
-        CFLAGS="$CFLAGS $CPU_FLAGS"
-        FFLAGS="$FFLAGS $CPU_FLAGS"
+# use default flags for gcc/g77 on all systems
+if test $ac_cv_prog_gcc = yes; then
+  xCFLAGS="-O6 -fomit-frame-pointer -finline-functions -funroll-all-loops -Wall -Wno-unused"
+  # -malign-double for x86 systems
+  ACX_CHECK_CC_FLAGS(-malign-double,align_double,xCFLAGS="$xCFLAGS -malign-double")
+fi
+  
+if test $enable_fortran = yes; then
+  if test $ac_cv_prog_g77 = yes; then
+    xFFLAGS="-O3 -ffast-math -fomit-frame-pointer -finline-functions -funroll-all-loops -Wall -Wno-unused"
+    # -malign-double for f77 on x86 systems - haven't checked that this works yet.
+    #ACX_CHECK_F77_FLAGS(-malign-double,align_double,xFFLAGS="$xFFLAGS -malign-double")
   fi
+fi
 
+CPU_FLAGS=""
+if test "$GCC" = "yes"; then
+  # try to guess correct CPU flags, at least for linux
+  case "${host_cpu}" in
+    # i586/i686 cpu flags don't improve speed, thus no need to use them.
+    # don't check f77 separately - we assume f77 and gcc are similar
+	  
+    powerpc*)
+      cputype=`(grep cpu /proc/cpuinfo | head -1 | cut -d: -f2 | sed 's/ //g') 2> /dev/null`
+      is60x=`echo $cputype | egrep "^60[0-9]e?$"`
+      if test -n "$is60x"; then
+	ACX_CHECK_CC_FLAGS(-mcpu=$cputype,m_cpu_60x,CPU_FLAGS=-mcpu=$cputype)
+      elif test "$cputype" = 750; then
+        ACX_CHECK_CC_FLAGS(-mcpu=750,m_cpu_750,CPU_FLAGS=-mcpu=750)
+      fi
+      if test -z "$CPU_FLAGS"; then
+        ACX_CHECK_CC_FLAGS(-mcpu=powerpc,m_cpu_powerpc,CPU_FLAGS=-mcpu=powerpc)
+      fi
+      if test -z "$CPU_FLAGS"; then
+	ACX_CHECK_CC_FLAGS(-mpowerpc,m_powerpc,CPU_FLAGS=-mpowerpc)
+      fi
+   esac
+fi
+
+if test -n "$CPU_FLAGS"; then
+  xCFLAGS="$xCFLAGS $CPU_FLAGS"
+  xFFLAGS="$xFFLAGS $CPU_FLAGS"
+fi
+
+# Now check if the user provided anything special for C or fortran...
+# Not nice to have checked everything then, but otherwise we would have
+# to use entirely separate checks for C and fortran flags, doubling the code.
+if test "$ac_test_CFLAGS" != "set"; then
+  CFLAGS="$xCFLAGS"
+  # Use the extra link optimization flags on e.g. irix only when
+  # we are using our own C compiler flags
+  LDFLAGS="$LDFLAGS $xLDFLAGS"
+  
   if test -z "$CFLAGS"; then
-	echo "*******************************************************************"
-        echo "* WARNING: No special optimization settings found for the C       *"
-        echo "* compiler. Use  make CFLAGS=..., or edit the top level Makefile. *"
-	echo "* Reverting to the default setting CFLAGS=-O3. (mail us about it)  *"
-	echo "*******************************************************************"
-       CFLAGS="-O3"
+    echo "*******************************************************************"
+    echo "* WARNING: No special optimization settings found for the C       *"
+    echo "* compiler. Use  make CFLAGS=..., or edit the top level Makefile. *"
+    echo "* Reverting to the default setting CFLAGS=-O3. (mail us about it)  *"
+    echo "*******************************************************************"
+    CFLAGS="-O3"
   fi
   ACX_CHECK_CC_FLAGS(${CFLAGS}, guessed_cflags, , [
-	echo "*******************************************************************"
-        echo "* Sorry, the guessed optimization settings don't seem to work for *"
-        echo "* your C compiler. Use make CFLAGS=..., or edit the top Makefile. *"
-	echo "*******************************************************************"
-        CFLAGS=""
+    echo "*******************************************************************"
+    echo "* Sorry, these optimization settings don't seem to work for       *"
+    echo "* your C compiler. Use make CFLAGS=..., or edit the top Makefile. *"
+    echo "*******************************************************************"
+    CFLAGS=""
   ])
+else
+  echo "******************************************"
+  echo "* Using CFLAGS from environment variable *"
+  echo "******************************************"
+fi
 
-  if test "$enable_fortran" = "yes"; then	
+if test "$enable_fortran" = "yes"; then	
+  if test "$ac_test_FFLAGS" != "set"; then
+    FFLAGS="$xFFLAGS"
+    
     if test -z "$FFLAGS"; then
-	  echo "*******************************************************************"
-          echo "* WARNING: No special optimization settings found for the fortran *"
-          echo "* compiler. Use  make FFLAGS=..., or edit the top level Makefile. *"
-	  echo "* Reverting to the default setting FFLAGS=-O3. (mail us about it) *"
-	  echo "*******************************************************************"
-         FFLAGS="-O3"
+      echo "*******************************************************************"
+      echo "* WARNING: No special optimization settings found for the fortran *"
+      echo "* compiler. Use  make FFLAGS=..., or edit the top level Makefile. *"
+      echo "* Reverting to the default setting FFLAGS=-O3. (mail us about it) *"
+      echo "*******************************************************************"
+      FFLAGS="-O3"
     fi
     ACX_CHECK_F77_FLAGS(${FFLAGS}, guessed_fflags, , [
-	  echo "*******************************************************************"
-          echo "* Sorry, the guessed optimization settings don't seem to work for *"
-          echo "* your f77 compiler. Use make FFLAGS=.., or edit the top Makefile.*"
-  	  echo "*******************************************************************"
-          FFLAGS=""
+      echo "*******************************************************************"
+      echo "* Sorry, these optimization settings don't seem to work for       *"
+      echo "* your f77 compiler. Use make FFLAGS=.., or edit the top Makefile.*"
+      echo "*******************************************************************"
+      FFLAGS=""
     ])
+  else
+    echo "******************************************"
+    echo "* Using FFLAGS from environment variable *"
+    echo "******************************************"
   fi
 fi
 ])
+
+
+
+
+
 
 
 # Do all the work for Automake.  This macro actually does too much --

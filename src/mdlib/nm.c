@@ -230,9 +230,17 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   }
   
   /* Construct dummy particles, for last output frame */
+  /* NB: I have not included the communication for parallel
+   * dummies here, since the rest of nm doesn't seem to
+   * be parallelized. Be sure to copy the correct code from
+   * e.g. md.c or steep.c if you make nm parallel!
+   */
   construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef);
     
   /*free_nslist(log);*/
   
   return start_t;
 }
+
+
+

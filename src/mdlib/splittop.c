@@ -34,6 +34,171 @@ static char *SRCID_splittop_c = "$Id$";
 #include "smalloc.h"
 #include "fatal.h"
 #include "main.h"
+#include "dummies.h"
+
+void create_dummylist(int nindex, int *list,
+		      int *targetn, int **listptr)
+{
+  int i,j,k,inr;
+  int minidx;
+  int *newlist;
+
+  /* remove duplicates */
+  for(i=0;i<nindex;i++) {
+    inr=list[i];
+    for(j=i+1;j<nindex;j++) {
+      if(list[j]==inr) {
+	for(k=j;k<nindex-1;k++)
+	  list[k]=list[k+1];
+	nindex--;
+      }
+    }
+  }
+
+  *targetn=nindex;
+  snew(newlist,nindex);
+  
+  /* sort into the new array */
+  for(i=0;i<nindex;i++) {
+    inr=-1;
+    for(j=0;j<nindex;j++)
+      if(list[j]>0 && (inr==-1 || list[j]<list[inr])) 
+	inr=j; /* smallest so far */
+    newlist[i]=list[inr];
+    list[inr]=-1;
+  }
+  *listptr=newlist;
+}
+  
+
+bool setup_parallel_dummies(t_idef *idef,t_commrec *cr,t_nsborder *nsb,
+			    t_comm_dummies *dummycomm)
+{
+  int i,inr,j,k,ftype;
+  int minidx,minhome,ihome;
+  int nra,nrd,nconstr;
+  bool found=FALSE;
+  t_iatom   *ia;
+  int *idxprevdum;
+  int *idxnextdum;
+  int *idxprevconstr;
+  int *idxnextconstr;
+  int  nprevdum=0,nnextdum=0;
+  int  nprevconstr=0,nnextconstr=0;
+
+#define BUFLEN 100
+  
+  snew(idxprevdum,BUFLEN);
+  snew(idxnextdum,BUFLEN);
+  snew(idxprevconstr,BUFLEN);
+  snew(idxnextconstr,BUFLEN);  
+
+  for(ftype=0; (ftype<F_NRE); ftype++) {
+    if (interaction_function[ftype].flags & IF_DUMMY) {
+      nra    = interaction_function[ftype].nratoms;
+      nrd    = idef->il[ftype].nr;
+      ia     = idef->il[ftype].iatoms;
+      
+      for(i=0; (i<nrd); ) {
+	
+	/* The dummy and constructing atoms */
+	if (ftype==F_DUMMY2)
+	  nconstr=2;
+	else if(ftype==F_DUMMY4FD)
+	  nconstr=4;
+	else
+	  nconstr=3;
+	
+	minidx=ia[1];
+	for(j=2;j<nconstr+2;j++) 
+	  if(ia[j]<minidx)
+	    minidx=ia[j];
+
+	minhome=0;
+	while(minidx>=(nsb->index[minhome]+nsb->homenr[minhome]))
+          minhome++;
+
+	if(minhome==cr->nodeid) {
+	  /* This is my dummy interaction - but is the dummy local?
+	   * If not, he must be on the next node (error otherwise)
+	   * (but we do account for the cyclic ring structure)
+	   */
+	  if(ia[1]<nsb->index[cr->nodeid] ||
+	     ia[1]>=(nsb->index[cr->nodeid]+nsb->homenr[cr->nodeid])) {
+	    if((nnextdum%BUFLEN)==0 && nnextdum>0)
+	      srenew(idxnextdum,nnextdum+BUFLEN);
+	    idxnextdum[nnextdum++]=ia[1];
+	    found=TRUE;
+	  }
+	  for(j=2;j<nconstr+2;j++) {
+	    inr=ia[j];
+	    ihome=0;
+	    while(inr>=(nsb->index[ihome]+nsb->homenr[ihome]))
+	      ihome++;
+	    if( ihome>(cr->nodeid+1))
+	      fatal_error(0,"Dummy particle %d and its constructing"
+			  " atoms are not on the same or adjacent\n" 
+			  " nodes. This is necessary to avoid a lot\n"
+			  " of extra communication. The easiest way"
+			  " to ensure this is to place dummies\n"
+			  " close to the constructing atoms.\n"
+			  " Sorry, but you will have to rework your topology!\n",
+			  ia[1]);
+	    else if(ihome==((cr->nodeid+1)%cr->nnodes)) {
+	      if((nnextconstr%BUFLEN)==0 && nnextconstr>0)
+		srenew(idxnextconstr,nnextconstr+BUFLEN);
+	      idxnextconstr[nnextconstr++]=ia[j];
+	      found=TRUE;
+	    }
+	  }
+	} else if(minhome==((cr->nodeid-1+cr->nnodes)%cr->nnodes)) {
+	  /* Not our dummy, but we might be involved */
+	  if(ia[1]>=nsb->index[cr->nodeid] &&
+	     (ia[1]<(nsb->index[cr->nodeid]+nsb->homenr[cr->nodeid]))) {
+	    if((nprevdum%BUFLEN)==0 && nprevdum>0)
+	      srenew(idxprevdum,nprevdum+BUFLEN);
+	    idxprevdum[nprevdum++]=ia[1];
+	    found=TRUE;
+	  }
+	  for(j=2;j<nconstr+2;j++) {
+	    inr=ia[j];
+	    if(ia[j]>=nsb->index[cr->nodeid] &&
+	       (ia[1]<(nsb->index[cr->nodeid]+nsb->homenr[cr->nodeid]))) {
+	      if((nprevconstr%BUFLEN)==0 && nprevconstr>0)
+		srenew(idxprevconstr,nprevconstr+BUFLEN);
+	      idxprevconstr[nprevconstr++]=ia[j];
+	      found=TRUE;
+	    }
+	  }
+	}
+	/* Increment loop variables */
+	i  += nra+1;
+	ia += nra+1;
+      }
+    }
+  }
+
+  create_dummylist(nprevdum,idxprevdum,
+		   &(dummycomm->nprevdum),&(dummycomm->idxprevdum));
+  create_dummylist(nnextdum,idxnextdum,
+		   &(dummycomm->nnextdum),&(dummycomm->idxnextdum));
+  create_dummylist(nprevconstr,idxprevconstr,
+		   &(dummycomm->nprevconstr),&(dummycomm->idxprevconstr));
+  create_dummylist(nnextconstr,idxnextconstr,
+		   &(dummycomm->nnextconstr),&(dummycomm->idxnextconstr));
+
+  sfree(idxprevdum);
+  sfree(idxnextdum);
+  sfree(idxprevconstr);
+  sfree(idxnextconstr);
+
+  return found;
+#undef BUFLEN
+}
+
+
+
+  
 
 static void split_ilist(FILE *log,t_ilist *il,t_commrec *cr)
 {
@@ -73,11 +238,15 @@ static void split_idef(FILE *log,t_idef *idef,t_commrec *cr)
     split_ilist(log,&idef->il[i],cr);
 }
 	
-void mdsplit_top(FILE *log,t_topology *top,t_commrec *cr)
+void mdsplit_top(FILE *log,t_topology *top,t_commrec *cr,
+		 t_nsborder *nsb, bool *bParallelDummies,
+		 t_comm_dummies *dummycomm)
 {
   if (cr->nnodes < 2)
     return;
-    
+
+  *bParallelDummies=setup_parallel_dummies(&(top->idef),cr,nsb,dummycomm);
+  
   split_idef(log,&top->idef,cr);
 #ifdef DEBUG
   pr_idef(log,0,"After Split",&(top->idef));

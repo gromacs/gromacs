@@ -44,6 +44,7 @@ static char *SRCID_init_h = "$Id$";
 #include "typedefs.h"
 #include "mvdata.h"
 #include "nsb.h"
+#include "dummies.h"
 
 typedef enum
 {
@@ -89,7 +90,9 @@ extern void distribute_parts(int left,int right,int pid,int nprocs,
 extern void init_parts(FILE *log,t_commrec *cr,
 		       t_parm *parm,t_topology *top,
 		       rvec **x,rvec **v,t_mdatoms **mdatoms,
-		       t_nsborder *nsb,int list);
+		       t_nsborder *nsb,int list,
+		       bool *bParallelDummies,
+		       t_comm_dummies *dummycomm);
      /*
       * Loads the data for a simulation from the ring. Parameters, topology
       * coordinates, velocities, and masses are initialised equal to using

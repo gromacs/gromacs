@@ -39,9 +39,9 @@ EXTRA_libgmxXXX_SUFFIX_XXX_a_SOURCES = \
 	mpiio.c		libnet.c	x86_3dnow.asm	f77_wrappers.c  \
 	libxdrf.c	ftocstr.c	dumxdrf.c	mgmx.c		\
 	widget.c	widget.h	x86_cpuid.asm	axp_asm.S	\
-	x86_sse.asm	innerf.f	innerc.c
+	x86_sse.asm
 
-if USE_F77
+if USE_FORTRAN
 BUILT_SOURCES = innerf.f
 else
 BUILT_SOURCES = innerc.c
@@ -59,26 +59,28 @@ sse_obj         = x86_sse.o
 tdn_obj         = x86_3dnow.o 
 axp_asm_obj     = axp_asm.o
 
-
 libgmxXXX_SUFFIX_XXX_a_LIBADD = \
 	@PAR_OBJ@ 	@INNER_F77_OBJ@	@INNER_C_OBJ@	\
 	@AXP_ASM_OBJ@	@X86_ASM_OBJ@	@SSE_OBJ@	\
 	@TDN_OBJ@	@MOTIF_OBJ@	@XDR_OBJ@	
-
 
 libgmxXXX_SUFFIX_XXX_a_DEPENDENCIES = \
 	@PAR_OBJ@ 	@INNER_F77_OBJ@	@INNER_C_OBJ@	\
 	@AXP_ASM_OBJ@	@X86_ASM_OBJ@	@SSE_OBJ@	\
 	@TDN_OBJ@	@MOTIF_OBJ@	@XDR_OBJ@	
 
-
 # The inner loops
 innerf.f:	mkinl 
 		./mkinl	fortran	
-
 innerc.c:	mkinl
 		./mkinl c
 
+# The innerloop source files will be built in the object directory,
+# so we need special rules to find them there if we are using VPATH
+innerc.o:	innerc.c
+		$(COMPILE) -c -o $@ $<
+innerf.o:	innerf.f
+		$(F77) -c $(AM_FFLAGS) $(FFLAGS) -o $@ $<
 
 noinst_PROGRAMS  = mkinl
 
@@ -114,7 +116,6 @@ MKINL_OBJ	= \
 
 mkinl:		$(MKINL_OBJ)
 		$(BUILD_COMPILE) -o $@ $(MKINL_OBJ)
-
 
 # clean things explicitly, since the target names might have changed
 CLEANFILES     = ${lib_LIBRARIES} *_d.a *_mpi.a *~ \\\#* innerc.c innerf.f

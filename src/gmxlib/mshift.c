@@ -88,6 +88,7 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,
 
   end=il->nr;
   ia=il->iatoms;
+  
   for(i=0; (i < end); ) {
     tp=ftype[ia[0]];
     np=interaction_function[tp].nratoms;
@@ -263,9 +264,11 @@ t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
       /* Then add all the other interactions in fixed lists, but first
        * check to see what's there already.
        */
-      for(i=0; (i<F_NRE); i++)
-	if (interaction_function[i].flags & ~IF_CONNECT)
+      for(i=0; (i<F_NRE); i++) {
+	if (!(interaction_function[i].flags & IF_CONNECT)) {
 	  mk_igraph(g,idef->functype,&(idef->il[i]),natoms,FALSE);
+	}
+      }
     }
     else {
       /* This is a special thing used in grompp to generate shake-blocks */

@@ -140,7 +140,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
  		t_groups *grps,t_nsborder *nsb, 
  		rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms, 
  		tensor ekin,real ener[],t_nrnb nrnb[], 
- 		bool bVerbose,bool bDummies,t_commrec *cr,t_graph *graph,
+ 		bool bVerbose,bool bDummies, t_comm_dummies *dummycomm,
+		t_commrec *cr,t_graph *graph,
 		t_forcerec *fr,rvec box_size) 
 { 
   static char *SD="STEEPEST DESCENTS",sbuf[STRLEN]; 
@@ -279,8 +280,27 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		TRUE);
     }
 
-    if (bDummies)
+    if (bDummies) {
+      /* Molecules always whole, but I'm not sure whether
+       * the periodicity and shift are guaranteed to be consistent
+       * between different nodes when running e.g. polymers in
+       * parallel. In this special case we thus unshift/shift, but
+       * only when necessary. This is to make sure the coordinates
+       * we move don't end up a box away...
+       */
+      if(dummycomm) {
+	unshift_self(graph,parm->box,pos[TRY]);
+	move_construct_x(dummycomm,pos[TRY],cr);
+	shift_self(graph,parm->box,pos[TRY]);
+      }
       construct_dummies(log,pos[TRY],&(nrnb[cr->nodeid]),1,NULL,&top->idef);
+
+      if(dummycomm) {
+        unshift_self(graph,parm->box,pos[TRY]);
+        move_dummy_xv(dummycomm,pos[TRY],NULL,cr);
+	shift_self(graph,parm->box,pos[TRY]); /* maybe not necessary */
+      }
+    }
 
     /* Calc force & energy on new positions  */
     /* do_force always puts the charge groups in the box and shifts again
@@ -292,8 +312,17 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
  	     lambda,graph,parm->ir.nstlist>0 || count==0,FALSE,fr,mu_tot,FALSE); 
 
     /* Spread the force on dummy particle to the other particles... */
-    spread_dummy_f(log,pos[TRY],force[TRY],&(nrnb[cr->nodeid]),&top->idef);
-    
+    if(bDummies) {
+      /* We only move forces here, and they are independent of shifts */
+      if(dummycomm)
+        move_dummy_f(dummycomm,force[TRY],cr);
+      
+      spread_dummy_f(log,pos[TRY],force[TRY],buf,&(nrnb[cr->nodeid]),
+		     &top->idef);
+      if(dummycomm)
+        move_construct_f(dummycomm,force[TRY],cr);
+    }
+
     /* Sum the potential energy terms from group contributions  */
     sum_epot(&(ir->opts),grps,ener); 
 

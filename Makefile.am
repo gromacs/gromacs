@@ -5,10 +5,22 @@
 AUTOMAKE_OPTIONS = foreign
 
 #
-# The real work is done in our subdirs
+# The real work is done in our subdirs - automake iterates through these
 #
 SUBDIRS = src top html tutor
 
+#
+# Most files in the config subdir is included automatically when
+# we issue "make dist", but not depcomp. This just includes that file...
+#
+EXTRA_DIST = config/depcomp
+
+
+#
+# This is a shortcut to construct the mdrun executable by first
+# building the two libraries and then only mdrun in kernel.
+# The second one installs it.
+#
 mdrun:		
 	(cd ${top_builddir}/src/gmxlib && $(MAKE))
 	(cd ${top_builddir}/src/mdlib && $(MAKE))
@@ -17,6 +29,9 @@ mdrun:
 install-mdrun:
 	(cd ${top_builddir}/src/kernel && $(MAKE) install-mdrun)
 
+#
+# Apart from normal things like .o, things matching this are removed
+# (The second one removes files beginning with a #)
 CLEANFILES = *~ \\\#*
 
 

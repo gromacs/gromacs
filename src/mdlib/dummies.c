@@ -36,6 +36,183 @@ static char *SRCID_dummies_c = "$Id$";
 #include "smalloc.h"
 #include "nrnb.h"
 #include "vec.h"
+#include "mvdata.h"
+#include "network.h"
+
+
+/* Communication buffers */
+
+static rvec *prevbuf=NULL,*nextbuf=NULL;
+
+/* Routines to send/recieve coordinates and force
+ * of constructing atoms and dummies. This is necessary
+ * when dummy constructs cross node borders (unavoidable
+ * for e.g. polymers using anisotropic united atoms).
+ */
+
+void move_construct_x(t_comm_dummies *dummycomm, rvec x[], t_commrec *cr)
+{
+  static bool bFirst=TRUE;
+  int i;
+   
+  if (bFirst) {
+    /* Make the larger than necessary to avoid cache sharing */
+    snew(nextbuf,2*(dummycomm->nnextdum+dummycomm->nnextconstr)+100);
+    snew(prevbuf,2*(dummycomm->nprevdum+dummycomm->nprevconstr)+100);
+    bFirst=FALSE;
+  }
+   
+  /* package coords to send left. Dummy coords are needed to create v */
+  for(i=0;i<dummycomm->nprevconstr;i++)
+    copy_rvec(x[dummycomm->idxprevconstr[i]],prevbuf[i]);
+  for(i=0;i<dummycomm->nprevdum;i++)
+    copy_rvec(x[dummycomm->idxprevdum[i]],prevbuf[dummycomm->nprevconstr+i]);
+  
+  /* send them off, and recieve from the right */
+  if(dummycomm->nprevconstr>0 || dummycomm->nprevdum>0)
+    gmx_tx(cr->left,prevbuf,
+	   sizeof(rvec)*(dummycomm->nprevconstr+dummycomm->nprevdum));
+  
+  if(dummycomm->nnextconstr>0 || dummycomm->nnextdum>0)
+    gmx_rx(cr->right,nextbuf,
+	   sizeof(rvec)*(dummycomm->nnextconstr+dummycomm->nnextdum));
+  
+  if(dummycomm->nprevconstr>0 || dummycomm->nprevdum>0)
+    gmx_tx_wait(cr->left);
+  
+  if(dummycomm->nnextconstr>0 || dummycomm->nnextdum>0)
+    gmx_rx_wait(cr->right);
+  
+  /* Put them where they belong */
+  for(i=0;i<dummycomm->nnextconstr;i++)
+    copy_rvec(nextbuf[i],x[dummycomm->idxnextconstr[i]]);
+  for(i=0;i<dummycomm->nnextdum;i++)
+    copy_rvec(nextbuf[dummycomm->nnextconstr+i],
+	      x[dummycomm->idxnextdum[i]]);
+
+  /* Now we are ready to do the constructing business ! */
+}
+
+
+void move_dummy_xv(t_comm_dummies *dummycomm, rvec x[], rvec v[],t_commrec *cr)
+{
+  int i;
+  int sendsize,recvsize;
+
+  sendsize=sizeof(rvec)*dummycomm->nnextdum;
+  recvsize=sizeof(rvec)*dummycomm->nprevdum;
+
+  if(v!=NULL) {
+    sendsize=sendsize*2;
+    recvsize=recvsize*2;
+  }
+
+  /* Package nonlocal constructed dummies */
+  for(i=0;i<dummycomm->nnextdum;i++)
+    copy_rvec(x[dummycomm->idxnextdum[i]],nextbuf[i]);
+
+  if(v!=NULL)
+    for(i=0;i<dummycomm->nnextdum;i++)
+      copy_rvec(v[dummycomm->idxnextdum[i]],nextbuf[dummycomm->nnextdum+i]);
+  
+  /* send them off, and recieve from the right */
+  if(dummycomm->nnextdum>0)
+    gmx_tx(cr->right,nextbuf,sendsize);
+  
+  if(dummycomm->nprevdum>0)
+    gmx_rx(cr->left,prevbuf,recvsize);
+  
+  if(dummycomm->nnextdum>0)
+    gmx_tx_wait(cr->right);
+  
+  if(dummycomm->nprevdum>0)
+    gmx_rx_wait(cr->left);
+  
+  /* Put them where they belong */
+  for(i=0;i<dummycomm->nprevdum;i++)
+    copy_rvec(prevbuf[i],x[dummycomm->idxprevdum[i]]);
+
+  if(v!=NULL)
+    for(i=0;i<dummycomm->nprevdum;i++)
+      copy_rvec(prevbuf[dummycomm->nprevdum+i],v[dummycomm->idxprevdum[i]]);
+
+  /* All coordinates are in place on the respective home node now */
+}
+
+
+void move_dummy_f(t_comm_dummies *dummycomm, rvec f[], t_commrec *cr)
+{
+  int i;
+
+  /* package dummy particle forces to send left */
+  for(i=0;i<dummycomm->nprevdum;i++)
+    copy_rvec(f[dummycomm->idxprevdum[i]],prevbuf[i]);
+
+  /* off they go! - but only if there is something to send! */
+  if(dummycomm->nprevdum>0)
+    gmx_tx(cr->left,prevbuf,sizeof(rvec)*dummycomm->nprevdum);
+
+  /* Get our share from the right, if there is anything to have */
+  if(dummycomm->nnextdum>0)
+    gmx_rx(cr->right,nextbuf,sizeof(rvec)*dummycomm->nnextdum);
+  
+  if(dummycomm->nprevdum>0)
+    gmx_tx_wait(cr->left);
+  
+  if(dummycomm->nnextdum>0)
+    gmx_rx_wait(cr->right);
+
+  /* Put them where they belong */
+  for(i=0;i<dummycomm->nnextdum;i++)
+    copy_rvec(nextbuf[i],f[dummycomm->idxnextdum[i]]);
+  
+  /* Zero forces on nonlocal constructing atoms.
+   * This is necessary since dummy force spreading is done
+   * after the normal force addition, and we don't want
+   * to include them twice.
+   * (They have already been added on the home node).
+   */
+  for(i=0;i<dummycomm->nnextconstr;i++)
+    clear_rvec(f[dummycomm->idxnextconstr[i]]);
+}
+
+
+void move_construct_f(t_comm_dummies *dummycomm, rvec f[], t_commrec *cr)
+{
+  int i;
+
+  /* Spread forces to nonlocal constructing atoms.
+   */
+  /* package forces to send right */
+  for(i=0;i<dummycomm->nnextconstr;i++)
+    copy_rvec(f[dummycomm->idxnextconstr[i]],nextbuf[i]);
+  
+  /* send them off, and recieve from the right */
+  if(dummycomm->nnextconstr>0)
+    gmx_tx(cr->right,nextbuf,sizeof(rvec)*dummycomm->nnextconstr);
+  
+  if(dummycomm->nprevconstr>0)
+    gmx_rx(cr->left,prevbuf,sizeof(rvec)*dummycomm->nprevconstr);
+  
+  if(dummycomm->nnextconstr>0)
+    gmx_tx_wait(cr->right);
+
+  if(dummycomm->nprevconstr>0)
+    gmx_rx_wait(cr->left);
+  
+  /* Add them where they belong */
+  for(i=0;i<dummycomm->nprevconstr;i++)
+    rvec_inc(f[dummycomm->idxprevconstr[i]],prevbuf[i]);
+  
+  /* Zero nonlocal dummies */
+  for(i=0;i<dummycomm->nprevdum;i++)
+    clear_rvec(f[dummycomm->idxprevdum[i]]);
+  
+  /* All forces are on the home processor now */  
+}
+
+
+/* Dummy construction routines */
 
 static void constr_dum2(rvec xi,rvec xj,rvec x,real a)
 {
@@ -164,22 +341,23 @@ static void constr_dum4FD(rvec xi,rvec xj,rvec xk,rvec xl,rvec x,
   /* TOTAL: 43 flops */
 }
 
+
 void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt, 
 		       rvec *v,t_idef *idef)
 {
   rvec      xd,vv;
   real      a1,b1,c1,inv_dt;
-  int       i,nra,nrd,tp,ftype;
+  int       i,ii,nra,nrd,tp,ftype;
   t_iatom   adum,ai,aj,ak,al;
   t_iatom   *ia;
   t_iparams *ip;
-  
+
   ip     = idef->iparams;
   if (v)
     inv_dt = 1.0/dt;
   else
     inv_dt = 1.0;
-    
+
   for(ftype=0; (ftype<F_NRE); ftype++) {
     if (interaction_function[ftype].flags & IF_DUMMY) {
       nra    = interaction_function[ftype].nratoms;
@@ -194,7 +372,7 @@ void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
 	adum = ia[1];
 	ai   = ia[2];
 	aj   = ia[3];
-	
+
 	/* Constants for constructing dummies */
 	a1   = ip[tp].dummy.a;
 	
@@ -489,10 +667,10 @@ static void spread_dum4FD(rvec xi,rvec xj,rvec xk,rvec xl,
   /* TOTAL: 77 flops */
 }
 
-void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef)
+void spread_dummy_f(FILE *log,rvec x[],rvec f[],rvec fbuf[],t_nrnb *nrnb,t_idef *idef)
 {
   real      a1,b1,c1;
-  int       i,nra,nrd,tp,ftype;
+  int       i,m,nra,nrd,tp,ftype;
   int       nd2,nd3,nd3FD,nd3FAD,nd3OUT,nd4FD;
   t_iatom   adum,ai,aj,ak,al;
   t_iatom   *ia;
@@ -506,6 +684,7 @@ void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef)
   nd3FAD = 0;
   nd3OUT = 0;
   nd4FD  = 0;
+   
   /* this loop goes backwards to be able to build *
    * higher type dummies from lower types         */
   for(ftype=F_NRE-1; (ftype>=0); ftype--) {
@@ -522,10 +701,10 @@ void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef)
 	adum = ia[1];
 	ai   = ia[2];
 	aj   = ia[3];
-	
+		
 	/* Constants for constructing */
-	a1   = ip[tp].dummy.a;
-	
+	a1   = ip[tp].dummy.a; 
+      
 	/* Construct the dummy depending on type */
 	switch (ftype) {
 	case F_DUMMY2:
@@ -578,6 +757,7 @@ void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef)
       }
     }
   }
+  
   inc_nrnb(nrnb,eNR_DUM2,   nd2   );
   inc_nrnb(nrnb,eNR_DUM3,   nd3   );
   inc_nrnb(nrnb,eNR_DUM3FD, nd3FD );

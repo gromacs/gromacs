@@ -55,8 +55,8 @@ extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		       rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		       tensor ekin,real ener[],
 		       t_nrnb nrnb[],
-		       bool bVerbose,t_commrec *cr,
-		       t_graph *graph);
+		       bool bVerbose,bool bDummies,
+		       bool bParallelDummies,t_commrec *cr,t_graph *graph);
 /* Do steepest descents EM or something like that! */
 
 #endif	/* _steep_h */

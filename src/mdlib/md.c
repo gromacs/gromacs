@@ -64,8 +64,8 @@ static void signal_handler(int n)
 }
 
 time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
-	     bool bVerbose,bool bCompact,bool bDummies,int stepout,
-	     t_parm *parm,t_groups *grps,t_topology *top,real ener[],
+	     bool bVerbose,bool bCompact,bool bDummies, t_comm_dummies *dummycomm,
+	     int stepout,t_parm *parm,t_groups *grps,t_topology *top,real ener[],
 	     rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
 	     rvec buf[],t_mdatoms *mdatoms,t_nsborder *nsb,t_nrnb nrnb[],
 	     t_graph *graph,t_edsamyn *edyn,t_forcerec *fr,rvec box_size,
@@ -90,7 +90,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   t_pull     pulldata; /* for pull code */
   /* A boolean (disguised as a real) to terminate mdrun */  
   real       terminate=0;
-
+ 
 #ifdef XMDRUN
   /* Shell stuff */
   int         nshell,count,nconverged=0;
@@ -260,7 +260,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	if (bRerunWarnNoV) {
 	  fprintf(stderr,"\nWARNING: Some frames do not contain velocities.\n"
 		  "         Ekin, temperature and pressure are incorrect,\n"
-		  "         the virial will be incorrect when contraints are present.\n"
+		  "         the virial will be incorrect when constraints are present.\n"
 		  "\n");
 	  bRerunWarnNoV = FALSE;
 	}
@@ -279,13 +279,28 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     /* Stop Center of Mass motion */
     get_cmparm(&parm->ir,step,&bStopCM,&bStopRot);
-    
+
     if (bDummies) {
-      /* Construct dummy particles. This is parallellized */
+      /* Construct dummy particles. This is parallellized.
+       * If the atoms constructing a dummy are not present
+       * on the local processor we start by fetching them,
+       * and afterwards distribute possible nonlocal 
+       * constructed dummies. (This is checked for during
+       * setup to avoid unnecessary communication).
+       */
+      if(dummycomm) 
+	move_construct_x(dummycomm,x,cr);
+
       shift_self(graph,parm->box,x);
+    
       construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef);
+
       unshift_self(graph,parm->box,x);
+      
+      if(dummycomm)
+	move_dummy_xv(dummycomm,x,v,cr);
     }
+     
     debug_gmx();
     
     /* Set values for invmass etc. This routine not parallellized, but hardly
@@ -327,9 +342,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     do_force(log,cr,parm,nsb,force_vir,pme_vir,step,&mynrnb,
 	     top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
 	     lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
-    
-    debug_gmx();
-    
+ 
 #endif
     /* HACK */
     if (bTweak)
@@ -379,11 +392,19 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (MASTER(cr) && do_log)
       print_ebin_header(log,step,t,lambda,SAfactor);
     
-    if (bDummies) 
+    if (bDummies) { 
       /* Spread the force on dummy particle to the other particles... 
-       * This is parallellized
+       * This is parallellized. MPI communication is performed
+       * if the constructing atoms aren't local.
        */
-      spread_dummy_f(log,x,f,&mynrnb,&top->idef);
+      if(dummycomm)
+	move_dummy_f(dummycomm,f,cr);
+
+      spread_dummy_f(log,x,f,buf,&mynrnb,&top->idef);
+
+      if(dummycomm)
+        move_construct_f(dummycomm,f,cr);
+    }    
     
     if (bLateVir)
       calc_virial(log,START(nsb),HOMENR(nsb),x,f,
@@ -391,6 +412,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     xx = (do_per_step(step,parm->ir.nstxout) || bLastStep) ? x : NULL;
     vv = (do_per_step(step,parm->ir.nstvout) || bLastStep) ? v : NULL;
     ff = (do_per_step(step,parm->ir.nstfout)) ? f : NULL;
+
     fp_trn = write_traj(log,cr,traj,nsb,step,t,lambda,
 			nrnb,nsb->natoms,xx,vv,ff,parm->box);
     debug_gmx();
@@ -514,14 +536,14 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       /* erase the terminate signal */
       terminate = 0;
     }
-    
+
     /* Do center of mass motion removal */
     if (bStopCM) {
       check_cm_grp(log,vcm);
       do_stopcm_grp(log,HOMENR(nsb),START(nsb),v,vcm,mdatoms->invmass);
       inc_nrnb(&mynrnb,eNR_STOPCM,HOMENR(nsb));
     }
-    
+        
     /* Do fit to remove overall rotation */
     if (bStopRot) {
       /* this check is also in grompp.c, if it becomes obsolete here,
@@ -678,3 +700,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   return start_t;
 }
+
+
+
+

@@ -492,10 +492,10 @@ fi
 if test "$enable_fortran" = "yes"; then
 	AC_DEFINE(USE_FORTRAN,,[Use Fortran for innerloops and some other core stuff])
 	INNER_F77_OBJ='${inner_f77_obj}'
-	AM_CONDITIONAL(USE_F77,true)
+	AM_CONDITIONAL(USE_FORTRAN,true)
 else
 	INNER_C_OBJ='${inner_c_obj}'
-	AM_CONDITIONAL(USE_F77,false)
+	AM_CONDITIONAL(USE_FORTRAN,false)
 fi
 
 if test "$enable_double" = "yes"; then

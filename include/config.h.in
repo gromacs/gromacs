@@ -198,3 +198,6 @@
 /* Default topology file location */
 #undef GMXLIBDIR
 
+/* Default topology file location */
+#undef GMXLIBDIR
+

@@ -28,6 +28,10 @@
  */
 static char *SRCID_splittop_h = "$Id$";
 
-extern void mdsplit_top(FILE *log,t_topology *top,t_commrec *cr);
+#include "dummies.h"
+
+extern void mdsplit_top(FILE *log,t_topology *top,t_commrec *cr,
+			t_nsborder *nsb, bool *bParallelDummies,
+			t_comm_dummies *dummycomm);
 
 

@@ -51,6 +51,7 @@ static char *SRCID_mdrun_h = "$Id$";
 #include "edsam.h"
 #include "mdebin.h"
 #include "vcm.h"
+#include "dummies.h"
 
 #define MD_MULTISIM  1
 #define MD_GLAS      2
@@ -62,7 +63,8 @@ static char *SRCID_mdrun_h = "$Id$";
 
 /* ROUTINES from md.c */
 extern time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
-		    bool bVerbose,bool bCompact,bool bDummies,int stepout,
+		    bool bVerbose,bool bCompact,bool bDummies,
+		    t_comm_dummies *dummycomm,int stepout,
 		    t_parm *parm,t_groups *grps,
 		    t_topology *top,real ener[],
 		    rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
@@ -97,7 +99,7 @@ extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		       t_groups *grps,t_nsborder *nsb,
 		       rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		       tensor ekin,real ener[],t_nrnb nrnb[],
-		       bool bVerbose,bool bDummies,t_commrec *cr,
+		       bool bVerbose,bool bDummies,t_comm_dummies *dummycomm,t_commrec *cr,
 		       t_graph *graph,t_forcerec *fr,rvec box_size);
 /* Do steepest descents EM or something like that! */
 
@@ -107,7 +109,7 @@ extern time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		    t_groups *grps,t_nsborder *nsb,
 		    rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		    tensor ekin,real ener[],t_nrnb nrnb[],
-		    bool bVerbose,bool bDummies,
+		    bool bVerbose,bool bDummies,t_comm_dummies *dummycomm,
 		    t_commrec *cr,t_graph *graph,t_forcerec *fr,
 		    rvec box_size);
 /* Do conjugate gradients EM! */
@@ -248,7 +250,9 @@ extern void distribute_parts(int left,int right,int pid,int nprocs,
 extern void init_parts(FILE *log,t_commrec *cr,
 		       t_parm *parm,t_topology *top,
 		       rvec **x,rvec **v,t_mdatoms **mdatoms,
-		       t_nsborder *nsb,int list);
+		       t_nsborder *nsb,int list,
+		       bool *bParallelDummies,
+		       t_comm_dummies *dummycomm);
      /*
       * Loads the data for a simulation from the ring. Parameters, topology
       * coordinates, velocities, and masses are initialised equal to using

@@ -25,4 +25,12 @@ SUFFIXES = .asm .S .F
 # for cross-compilation. We also need it on parallel machines 
 # where the MPI executables cannot be run outside a batch queue.
 
+# This might be bad - but I don't know any other way to enable
+# us to type make <progname> in subdirs right now
+#AM_CPPFLAGS = -DHAVE_CONFIG_H
+
 BUILD_COMPILE = $(BUILD_CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+
+
+
+

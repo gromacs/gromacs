@@ -90,7 +90,8 @@ static int min_nodeid(int nr,atom_id list[],int hid[])
 
 static void split_force2(int nnodes,int hid[],t_idef *idef,t_ilist *ilist)
 {
-  int     i,type,ftype,nodeid,nratoms,tnr;
+  int     i,j,k,type,ftype,nodeid,nratoms,tnr;
+  int     ndum_constr,tmpid;
   t_iatom ai;
   t_sf    sf[MAXNODES];
   
@@ -121,12 +122,37 @@ static void split_force2(int nnodes,int hid[],t_idef *idef,t_ilist *ilist)
 	fatal_error(0,"Settle block crossing node boundaries\n"
 		    "constraint between atoms (%d-%d)",ai,ai+2);
     }
-    else 
+    else if(interaction_function[ftype].flags & IF_DUMMY) {
+      /* Dummies should be constructed on the home node */
+  
+      if (ftype==F_DUMMY2)
+	ndum_constr=2;
+      else if(ftype==F_DUMMY4FD)
+	ndum_constr=4;
+      else
+	ndum_constr=3;
+      
+      tmpid=hid[ilist->iatoms[i+1]];
+      
+      for(k=2;k<ndum_constr+2;k++) {
+	if(hid[ilist->iatoms[i+k]]<(tmpid-1) ||
+	   hid[ilist->iatoms[i+k]]>(tmpid+1))
+	  fatal_error(0,"Dummy particle %d and its constructing"
+		      " atoms are not on the same or adjacent\n" 
+		      " nodes. This is necessary to avoid a lot\n"
+		      " of extra communication. The easiest way"
+		      " to ensure this is to place dummies\n"
+		      " close to the constructing atoms.\n"
+		      " Sorry, but you will have to rework your topology!\n",
+		      ilist->iatoms[i+1]);
+      }
+      nodeid=min_nodeid(nratoms,&ilist->iatoms[i+1],hid);
+    } else
       nodeid=min_nodeid(nratoms,&ilist->iatoms[i+1],hid);
 
     /* Add it to the list */
     push_sf(&(sf[nodeid]),nratoms+1,&(ilist->iatoms[i]));
-  }
+    }
   tnr=0;
   for(nodeid=0; (nodeid<MAXNODES); nodeid++) {
     for (i=0; (i<sf[nodeid].nr); i++) 
@@ -574,12 +600,16 @@ void gen_sblocks(bool bVerbose,int natoms,t_idef *idef,t_block *sblock,
   sfree(g);
 }
 
-void split_top(bool bVerbose,int nnodes,t_topology *top,real *capacity)
+void split_top(bool bVerbose,int nnodes,t_topology *top,real
+	       *capacity)
 {
-  int     j,k,mj,atom,maxatom;
+  int     i,j,k,mj,atom,maxatom;
   t_block sblock;
   int     *homeind;
   atom_id *sblinv;
+  int ftype,ndum_constr,nra,nrd;
+  t_iatom   *ia;
+  int minhome,ihome,minidx;
   
   if ((bVerbose) && (nnodes>1))
     fprintf(stderr,"splitting topology...\n");
@@ -614,6 +644,7 @@ void split_top(bool bVerbose,int nnodes,t_topology *top,real *capacity)
     sfree(sblinv);
     
     homeind=home_index(nnodes,&(top->blocks[ebCGS]));
+    
     for(j=0; (j<F_NRE); j++)
       split_force2(nnodes,homeind,&top->idef,&top->idef.il[j]);
     sfree(homeind);

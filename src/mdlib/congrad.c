@@ -69,7 +69,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     t_groups *grps,t_nsborder *nsb,
 	     rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 	     tensor ekin,real ener[],t_nrnb nrnb[],
-	     bool bVerbose,bool bDummies,t_commrec *cr,t_graph *graph,
+	     bool bVerbose,bool bDummies,t_comm_dummies *dummycomm,
+	     t_commrec *cr,t_graph *graph,
 	     t_forcerec *fr,rvec box_size)
 {
   static char *CG="Conjugate Gradients";
@@ -146,8 +147,28 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     /* Remove periodicity */
     do_pbc_first(log,parm,box_size,fr,graph,x);
   
-  if (bDummies)
+  if (bDummies) {
+    /* Molecules always whole, but I'm not sure whether
+     * the periodicity and shift are guaranteed to be consistent
+     * between different nodes when running e.g. polymers in
+     * parallel. In this special case we thus unshift/shift, but
+     * only when necessary. This is to make sure the coordinates
+     * we move don't end up a box away...
+     */
+    if(dummycomm) {
+      unshift_self(graph,parm->box,x);
+      move_construct_x(dummycomm,x,cr);
+      shift_self(graph,parm->box,x);
+    }
+
     construct_dummies(log,x,&(nrnb[cr->nodeid]),1,NULL,&top->idef);
+
+    if(dummycomm) {
+      unshift_self(graph,parm->box,x);
+      move_dummy_xv(dummycomm,x,NULL,cr);
+      shift_self(graph,parm->box,x); /* maybe not necessary */
+    }
+  }
 
   /* Call the force routine and some auxiliary (neighboursearching etc.) */
   /* do_force always puts the charge groups in the box and shifts again
@@ -159,8 +180,17 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   where();
 
   /* Spread the force on dummy particle to the other particles... */
-  spread_dummy_f(log,x,f,&(nrnb[cr->nodeid]),&top->idef);
+  if(bDummies) {
+    /* We only move forces here, and they are independent of shifts */
+    if(dummycomm)
+      move_dummy_f(dummycomm,f,cr);
+
+    spread_dummy_f(log,x,f,buf,&(nrnb[cr->nodeid]),&top->idef);
   
+    if(dummycomm)
+      move_construct_f(dummycomm,f,cr);
+  }
+
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(parm->ir.opts),grps,ener);
   where();
@@ -242,8 +272,28 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       }
       bNS = ((parm->ir.nstlist > 0) || (count==0));
       /*((parm->ir.nstlist && ((count % parm->ir.nstlist)==0)) || (count==0));*/
-      if (bDummies)
+      if (bDummies) {
+	/* Molecules always whole, but I'm not sure whether
+	 * the periodicity and shift are guaranteed to be consistent
+	 * between different nodes when running e.g. polymers in
+	 * parallel. In this special case we thus unshift/shift, but
+	 * only when necessary. This is to make sure the coordinates
+	 * we move don't end up a box away...
+	 */
+	if(dummycomm) {
+	  unshift_self(graph,parm->box,xprime);
+	  move_construct_x(dummycomm,xprime,cr);
+	  shift_self(graph,parm->box,xprime);
+	}
+ 
 	construct_dummies(log,xprime,&(nrnb[cr->nodeid]),1,NULL,&top->idef);
+
+	if(dummycomm) {
+	  unshift_self(graph,parm->box,xprime);
+	  move_dummy_xv(dummycomm,xprime,NULL,cr);
+	  shift_self(graph,parm->box,xprime); /* maybe not necessary */
+	}
+      }
       
       /* Calc force & energy on new trial position  */
       /* do_force always puts the charge groups in the box and shifts again
@@ -255,7 +305,16 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
       
       /* Spread the force on dummy particle to the other particles... */
-      spread_dummy_f(log,xprime,f,&(nrnb[cr->nodeid]),&top->idef); 
+      if(bDummies) {
+	/* We only move forces here, and they are independent of shifts */
+	if(dummycomm)
+	  move_dummy_f(dummycomm,f,cr);
+
+	spread_dummy_f(log,xprime,f,buf,&(nrnb[cr->nodeid]),&top->idef); 
+
+	if(dummycomm)
+	  move_construct_f(dummycomm,f,cr);
+      }
 
       bNS = (parm->ir.nstlist > 0);
       /*bNS=FALSE;*/
@@ -315,8 +374,28 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       }
     }
 
-    if (bDummies)
+    if (bDummies) {
+      /* Molecules always whole, but I'm not sure whether
+       * the periodicity and shift are guaranteed to be consistent
+       * between different nodes when running e.g. polymers in
+       * parallel. In this special case we thus unshift/shift, but
+       * only when necessary. This is to make sure the coordinates
+       * we move don't end up a box away...
+       */
+      if(dummycomm) {
+        unshift_self(graph,parm->box,xprime);
+        move_construct_x(dummycomm,xprime,cr);
+        shift_self(graph,parm->box,xprime);
+      }
+
       construct_dummies(log,xprime,&(nrnb[cr->nodeid]),1,NULL,&top->idef);
+
+      if(dummycomm) {
+        unshift_self(graph,parm->box,xprime);
+        move_dummy_xv(dummycomm,xprime,NULL,cr);
+        shift_self(graph,parm->box,xprime); /* maybe not necessary */
+      }
+    }
     
     /* new energy, forces */
     /* do_force always puts the charge groups in the box and shifts again
@@ -328,7 +407,17 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
     
     /* Spread the force on dummy particle to the other particles... */
-    spread_dummy_f(log,xprime,f,&(nrnb[cr->nodeid]),&top->idef); 
+    if(bDummies) {
+      /* We only move forces here, and they are independent of shifts */
+      if(dummycomm)
+        move_dummy_f(dummycomm,f,cr);
+
+      spread_dummy_f(log,xprime,f,buf,&(nrnb[cr->nodeid]),&top->idef); 
+
+      if(dummycomm)
+        move_construct_f(dummycomm,f,cr);
+    }
+
 
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(parm->ir.opts),grps,ener); 
