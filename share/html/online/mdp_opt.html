@@ -196,8 +196,7 @@ The dielectric constant is set with <b>epsilon_r</b>.
 <dd>Particle-Particle Particle-Mesh algorithm for long range
 electrostatic interactions. See <b>shift</b> for the details of the 
 particle-particle potentials. 
-Use for example <b>rshort</b> <tt>=0.0</TT> and <b>rlong</b> <tt>= 0.8</TT>.
-<a href="hat.html"><tt>.hat</tt></a> file). 
+Use for example <b>rshort</b><tt>=0.0</TT> and <b>rlong</b><tt>=0.85</TT>.
 <dt><b>reaction-field</b>
 <dd>Reaction field with LJ and Coulomb cut-off <b>rshort</b> [nm].
 The dielectric constant beyond the cut-off is <b>epsilon_r</b>.
@@ -225,7 +224,7 @@ will now expect to find three files with user-defined functions:
 <tt>ctab.xvg</tt> for Coulomb. These files should contain 5 colums:
 the <tt>x</tt> value, and the function value with its 1<sup>st</sup>
 to 3<sup>rd</sup> derivative. The <tt>x</tt> should run from 0 [nm] to
-<b>rlong</b><tt> + 0.5</tt> [nm], with a spacing of <tt>0.002</tt>
+<b>rlong</b><tt>+0.5</tt> [nm], with a spacing of <tt>0.002</tt>
 [nm] when you run in single precision, or <tt>0.0005</tt> [nm] when
 you run in double precision (note that <b>rshort</b> and <b>rlong</b>
 should be the same). The function value at <tt>x=0</tt> is not
