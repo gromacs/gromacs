@@ -316,7 +316,7 @@ void plot_density(real *slDensity[], char *afile, int nslices,
   else if (bCount)
     den = xvgropen(afile, buf, "Slice","Absolute numbers");
   else
-    den = xvgropen(afile, buf, "Box (nm)","Density (g/cm\\S3\\N)");
+    den = xvgropen(afile, buf, "Box (nm)","Density (kg/m\\S3\\N)");
 
   xvgr_legend(den,nr_grps,grpname);
 
