@@ -517,14 +517,14 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)
   }
   
   /* Check versions! */
-  do_int (file_version);
+  do_int(file_version);
   if (file_version == 1) 
-    fatal_error(0,"Reading tpx file version %d with version %d program.\n",
-		file_version,tpx_version);
+    fatal_error(0,"Reading tpx file (%s) version %d with version %d program.\n",
+		fio_getname(fp),file_version,tpx_version);
   else if (file_version != tpx_version) 
-    fprintf(stderr,"WARNING: reading tpx file version %d with version %d program."
-	    "Some options may not work.\n",
-	    file_version,tpx_version);
+    fprintf(stderr,"WARNING: reading tpx file (%s) version %d with version %d"
+	    " program. Some options may not work.\n",
+	    fio_getname(fp),file_version,tpx_version);
     
   do_section(eitemHEADER,bRead);
   do_int (tpx->natoms);

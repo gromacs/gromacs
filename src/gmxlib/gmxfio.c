@@ -431,18 +431,18 @@ static bool do_xdr(void *item,int nitem,int eio,
   switch (eio) {
   case eioREAL:
     if (curfio->bDouble) {
-      if (item) d = *((real *)item);
+      if (item && !curfio->bRead) d = *((real *)item);
       res = xdr_double(curfio->xdr,&d);
       if (item) *((real *)item) = d;
     }
     else {
-      if (item) f = *((real *)item);
+      if (item && !curfio->bRead) f = *((real *)item);
       res = xdr_float(curfio->xdr,&f);
       if (item) *((real *)item) = f;
     }
     break;
   case eioINT:
-    if (item) idum = *(int *)item;
+    if (item && !curfio->bRead) idum = *(int *)item;
     res = xdr_int(curfio->xdr,&idum);
     if (item) *(int *)item = idum;
     break;
@@ -455,13 +455,13 @@ static bool do_xdr(void *item,int nitem,int eio,
     
     break;
   case eioUSHORT:
-    if (item) us = *(unsigned short *)item;
+    if (item && !curfio->bRead) us = *(unsigned short *)item;
     res = xdr_u_short(curfio->xdr,(u_short *)&us);
     if (item) *(unsigned short *)item = us;
     break;
   case eioRVEC:
     if (curfio->bDouble) {
-      if (item)
+      if (item && !curfio->bRead)
 	for(m=0; (m<DIM); m++) 
 	  dvec[m] = ((real *)item)[m];
       res=xdr_vector(curfio->xdr,(char *)dvec,DIM,(u_int)sizeof(double),
@@ -471,7 +471,7 @@ static bool do_xdr(void *item,int nitem,int eio,
 	  ((real *)item)[m] = dvec[m];
     }
     else {
-      if (item)
+      if (item && !curfio->bRead)
 	for(m=0; (m<DIM); m++) 
 	  fvec[m] = ((real *)item)[m];
       res=xdr_vector(curfio->xdr,(char *)fvec,DIM,(u_int)sizeof(float),
@@ -494,7 +494,7 @@ static bool do_xdr(void *item,int nitem,int eio,
     iptr = (int *)item;
     res  = 1;
     for(m=0; (m<DIM) && res; m++) {
-      if (item) idum = iptr[m];
+      if (item && !curfio->bRead) idum = iptr[m];
       res = xdr_int(curfio->xdr,&idum);
       if (item) iptr[m] = idum;
     }
