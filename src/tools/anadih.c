@@ -334,7 +334,7 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
 		  real *dih[])
 {
   t_topology *top;
-  int        i,angind,status,natoms,nat,total,teller,nangles,nat2,n_alloc;
+  int        i,angind,status,natoms,nat,total,teller,nangles,nat_trj,n_alloc;
   real       t,fraction,pifac,aa,angle;
   real       *angles[2];
   matrix     box;
@@ -346,18 +346,15 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
   init_lookup_table(stdout);
 
   /* Read topology */    
-  top    = read_top(tpb_fn);
-  natoms = top->atoms.nr;
-  nat2   = read_first_x(&status,trj_fn,&t,&x,box);
+  top     = read_top(tpb_fn);
+  natoms  = top->atoms.nr;
+  nat_trj = read_first_x(&status,trj_fn,&t,&x,box);
   
   /* Check for consistency of topology and trajectory */
-  if (natoms > nat2) 
-    fatal_error(0,"Trajectory does not match topology !\n");
-  else if (natoms < nat2)
+  if (natoms < nat_trj)
     fprintf(stderr,"WARNING! Topology has fewer atoms than trajectory\n");
-  /* No message means same nuber of atoms */
     
-  snew(x_s,natoms);
+  snew(x_s,nat_trj);
   
   if (bAngles) {
     nangles=isize/3;
@@ -391,7 +388,7 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
 
     (*time)[teller] = t;
 
-    rm_pbc(&(top->idef),natoms,box,x,x_s);
+    rm_pbc(&(top->idef),nat_trj,box,x,x_s);
     
     if (bAngles)
       calc_angles(stdout,box,isize,index,angles[cur],x_s);
@@ -470,7 +467,7 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
     
     /* Increment loop counter */
     teller++;
-  } while (read_next_x(status,&t,natoms,x,box));  
+  } while (read_next_x(status,&t,nat_trj,x,box));  
   close_trj(status); 
   
   sfree(x);
