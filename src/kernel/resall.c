@@ -753,7 +753,7 @@ int neq_str(char *a1,char *a2)
   int j,l;
   
   l=min((int)strlen(a1),(int)strlen(a2));
-  for(j=0; (j<l) && (a1[j] == a2[j]); j++)
+  for(j=0; (j<l) && (toupper(a1[j]) == toupper(a2[j])); j++)
     ;
   
   return j;
