@@ -73,6 +73,27 @@ static void cmp_uc(FILE *fp,char *s,int index,unsigned char i1,unsigned char i2)
   }
 }
 
+static bool cmp_bool(FILE *fp, char *s, int index, bool b1, bool b2)
+{
+  if (b1 != b2) {
+    if (index != -1)
+      fprintf(fp,"%s[%d] (%s - %s)\n",s,index,bool_names[b1],bool_names[b2]);
+    else
+      fprintf(fp,"%s (%s - %s)\n",s,bool_names[b1],bool_names[b2]);
+  }
+  return b1 && b2;
+}
+
+static void cmp_str(FILE *fp, char *s, int index, char *s1, char *s2)
+{
+  if (strcmp(s1,s2) != 0) {
+    if (index != -1)
+      fprintf(fp,"%s[%d] (%s - %s)\n",s,index,s1,s2);
+    else
+      fprintf(fp,"%s (%s - %s)\n",s,s1,s2);
+  }
+}
+
 static void cmp_real(FILE *fp,char *s,int index,real i1,real i2,real ftol)
 {
   if (fabs(i1 - i2) > ftol) {
@@ -125,7 +146,7 @@ static void cmp_ilist(FILE *fp,int ftype,t_ilist *il1,t_ilist *il2)
     cmp_int(fp,buf,i,il1->iatoms[i],il2->iatoms[i]);
 }
 
-void cmp_iparm(FILE *fp,char *s,int index,t_functype ft,
+void cmp_iparm(FILE *fp,char *s,t_functype ft,
 	       t_iparams ip1,t_iparams ip2,real ftol) 
 {
   int i;
@@ -152,7 +173,7 @@ static void cmp_idef(FILE *fp,t_idef *id1,t_idef *id2,real ftol)
   cmp_int(fp,"idef->atnr",  -1,id1->atnr,id2->atnr);
   for(i=0; (i<id1->ntypes); i++) {
     cmp_int(fp,"idef->functype",i,(int)id1->functype[i],(int)id2->functype[i]);
-    cmp_iparm(fp,"idef->iparam",i,id1->functype[i],
+    cmp_iparm(fp,"idef->iparam",id1->functype[i],
 	      id1->iparams[i],id2->iparams[i],ftol);
   }
   for(i=0; (i<F_NRE); i++)
@@ -219,7 +240,6 @@ static void cmp_rvecs(FILE *fp,char *title,int n,rvec x1[],rvec x2[],real ftol)
 {
   int i;
   
-  fprintf(fp,"comparing %s\n",title);
   for(i=0; (i<n); i++)
     cmp_rvec(fp,title,i,x1[i],x2[i],ftol);
 }
@@ -373,9 +393,74 @@ void comp_tpx(char *fn1,char *fn2,real ftol)
   }
   cmp_inputrec(stdout,&ir[0],&ir[1],ftol);
   cmp_top(stdout,&top[0],&top[1],ftol);
+  fprintf(stdout,"comparing box\n");
   cmp_rvecs(stdout,"box",DIM,box[0],box[1],ftol);
+  fprintf(stdout,"comparing x\n");
   cmp_rvecs(stdout,"x",natoms,xx[0],xx[1],ftol);
+  fprintf(stdout,"comparing v\n");
   cmp_rvecs(stdout,"v",natoms,vv[0],vv[1],ftol);
+}
+
+void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2, real ftol)
+{
+  cmp_int(fp,"flags",-1,fr1->flags,fr2->flags);
+  cmp_int(fp,"not_ok",-1,fr1->not_ok,fr2->not_ok);
+  cmp_int(fp,"natoms",-1,fr1->natoms,fr2->natoms);
+  cmp_real(fp,"t0",-1,fr1->t0,fr2->t0,ftol);
+  if (cmp_bool(fp,"bTitle",-1,fr1->bTitle,fr2->bTitle))
+    cmp_str(fp,"title", -1, fr1->title, fr2->title);
+  if (cmp_bool(fp,"bStep",-1,fr1->bStep,fr2->bStep))
+    cmp_int(fp,"step",-1,fr1->step,fr2->step);
+  cmp_int(fp,"step",-1,fr1->step,fr2->step);
+  if (cmp_bool(fp,"bTime",-1,fr1->bTime,fr2->bTime))   
+    cmp_real(fp,"time",-1,fr1->time,fr2->time,ftol);
+  if (cmp_bool(fp,"bLambda",-1,fr1->bLambda,fr2->bLambda)) 
+    cmp_real(fp,"lambda",-1,fr1->lambda,fr2->lambda,ftol);
+  if (cmp_bool(fp,"bAtoms",-1,fr1->bAtoms,fr2->bAtoms))
+    cmp_atoms(fp,fr1->atoms,fr2->atoms,ftol);
+  if (cmp_bool(fp,"bPrec",-1,fr1->bPrec,fr2->bPrec))
+    cmp_real(fp,"prec",-1,fr1->prec,fr2->prec,ftol);
+  if (cmp_bool(fp,"bX",-1,fr1->bX,fr2->bX))
+    cmp_rvecs(fp,"x",min(fr1->natoms,fr2->natoms),fr1->x,fr2->x,ftol);
+  if (cmp_bool(fp,"bV",-1,fr1->bV,fr2->bV))
+    cmp_rvecs(fp,"v",min(fr1->natoms,fr2->natoms),fr1->v,fr2->v,ftol);
+  if (cmp_bool(fp,"bF",-1,fr1->bF,fr2->bF))
+    cmp_rvecs(fp,"f",min(fr1->natoms,fr2->natoms),fr1->f,fr2->f,ftol);
+  if (cmp_bool(fp,"bBox",-1,fr1->bBox,fr2->bBox))
+    cmp_rvecs(fp,"box",3,fr1->box,fr2->box,ftol);
+}
+
+void comp_trx(char *fn1, char *fn2, real ftol)
+{
+#define THIS   i
+#define DOBOTH for(i=0; i<2; i++)
+#define OTHER  (1-i)
+  
+  int i;
+  char *fn[2];
+  t_trxframe fr[2];
+  int status[2];
+  bool b[2];
+  
+  fn[0]=fn1;
+  fn[1]=fn2;
+  for (i=0; i<2; i++)
+    read_first_frame(&status[i],fn[i],&fr[i],TRX_READ_X|TRX_READ_V|TRX_READ_F);
+  
+  do {
+    comp_frame(stdout, &(fr[0]), &(fr[1]), ftol);
+    
+    for (i=0; i<2; i++)
+      b[i] = read_next_frame(status[i],&fr[i]);
+  } while (b[0] && b[1]);
+  
+  for (i=0; i<2; i++) {
+    if (b[i] && !b[1-i])
+      fprintf(stdout,"\nEnd of file on %s but not on %s\n",fn[i],fn[1-i]);
+    close_trj(status[i]);
+  }
+  if (!b[0] && !b[1])
+    fprintf(stdout,"\nBoth files read correctly\n");
 }
 
 static void cmp_energies(FILE *fp,int frame1,int frame2,int nre,
@@ -386,8 +471,9 @@ static void cmp_energies(FILE *fp,int frame1,int frame2,int nre,
   
   for(i=0; (i<nre); i++)
     if (fabs(e1[i].e - e2[i].e) > ftol)
-      fprintf(fp,"%-15s  frame %3d:  %12g,  frame %3d: %12g\n",
-	      enm1[i],frame1,e1[i].e,frame2,e2[i].e);
+      fprintf(fp,"%-15s  frame %3d:  %12g, %s frame %3d: %12g\n",
+	      enm1[i],frame1,e1[i].e,
+	      strcmp(enm1[i],enm2[i])!=0 ? enm2[i]:"",frame2,e2[i].e);
 }
 
 void comp_enx(char *fn1,char *fn2,real ftol)
@@ -414,8 +500,7 @@ void comp_enx(char *fn1,char *fn2,real ftol)
   fprintf(stdout,"There are %d terms in the energy files\n\n",nre);
   
   for(i=0; (i<nre); i++) {
-    if (strcmp(enm1[i],enm2[i]) != 0)
-      fprintf(stdout,"%s: %16s - %s: %16s\n",fn1,enm1[i],fn2,enm2[i]);
+    cmp_str(stdout,"enm",i,enm1[i],enm2[i]);
   }
   
   snew(ee1,nre);
