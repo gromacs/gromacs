@@ -5,9 +5,9 @@ if ($?GMXLIB) then
     unsetenv LD_LIBRARY_PATH
   endif
   if ($?LD_LIBRARY_PATH) then
-    echo "You might want to remove the gmx path from "\$"LD_LIBRARY_PATH"
+    if ( "$1" != "-quiet" ) echo "You might want to remove the gmx path from "\$"LD_LIBRARY_PATH"
   endif
-  echo "unsetenv GMXLIB ($GMXLIB)"
+  if ( "$1" != "-quiet" ) echo "unsetenv GMXLIB ($GMXLIB)"
   unsetenv GMXLIB 
 endif
 
@@ -16,26 +16,26 @@ if ($?GMXMAN) then
     unsetenv MANPATH
   endif
   if ($?MANPATH) then
-    echo "You might want to remove $GMXMAN ("\$"GMXMAN) from "\$"MANPATH"
+    if ( "$1" != "-quiet" ) echo "You might want to remove $GMXMAN ("\$"GMXMAN) from "\$"MANPATH"
   endif
-  echo "unsetenv GMXMAN ($GMXMAN)"
+  if ( "$1" != "-quiet" ) echo "unsetenv GMXMAN ($GMXMAN)"
   unsetenv GMXMAN
 endif
 
 if ($?GMXHOME) then
-  echo "unsetenv GMXHOME ($GMXHOME)"
+  if ( "$1" != "-quiet" ) echo "unsetenv GMXHOME ($GMXHOME)"
   unsetenv GMXHOME
 endif
 if ($?VER) then
-  echo "unsetenv VER ($VER)"
+  if ( "$1" != "-quiet" ) echo "unsetenv VER ($VER)"
   unsetenv VER
 endif
 if ($?CPUGMX) then
-  echo "unsetenv CPU ($CPU)"
+  if ( "$1" != "-quiet" ) echo "unsetenv CPU ($CPU)"
   unsetenv CPU
 endif
 if ($?GMXROOT) then
-  echo "unsetenv GMXROOT ($GMXROOT)"
+  if ( "$1" != "-quiet" ) echo "unsetenv GMXROOT ($GMXROOT)"
   unsetenv GMXROOT
 endif
 if ($?GMXBIN) then
@@ -50,20 +50,20 @@ if ($?GMXBIN) then
   end
   setenv PATH $TEMPPATH
   unsetenv TEMPPATH
-  echo Removed $GMXBIN from path
-  echo "unsetenv GMXBIN ($GMXBIN)"
+  if ( "$1" != "-quiet" ) echo Removed $GMXBIN from path
+  if ( "$1" != "-quiet" ) echo "unsetenv GMXBIN ($GMXBIN)"
   unsetenv GMXBIN
 endif
 if ($?GMXFONT) then
-  echo "unsetenv GMXFONT ($GMXFONT)"
+  if ( "$1" != "-quiet" ) echo "unsetenv GMXFONT ($GMXFONT)"
   unsetenv GMXFONT
 endif
 if ($?AMBBIN) then
-  echo "unsetenv AMBBIN ($AMBBIN)"
+  if ( "$1" != "-quiet" ) echo "unsetenv AMBBIN ($AMBBIN)"
   unsetenv AMBBIN
 endif
 if ($?IAMCOOL) then
-  echo "unsetenv IAMCOOL ($IAMCOOL)"
+  if ( "$1" != "-quiet" ) echo "unsetenv IAMCOOL ($IAMCOOL)"
   unsetenv IAMCOOL
 endif
 
