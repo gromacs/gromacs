@@ -73,7 +73,7 @@ int main (int argc,char *argv[])
   };
   static bool bPBC=TRUE,bFit=TRUE,bFitAll=FALSE;
   static bool bNano=FALSE,bDeltaLog=FALSE;
-  static int  prev=0,freq=1,freq2=1,nlevels=40,avl=0;
+  static int  prev=0,freq=1,freq2=1,nlevels=80,avl=0;
   static real rmsd_user_max=-1,rmsd_user_min=-1, 
               bond_user_max=-1,bond_user_min=-1,
               delta_maxy=0.0;
@@ -598,7 +598,7 @@ int main (int argc,char *argv[])
     else
       sprintf(buf,"RMSD with frame %g ps ago",time[prev*freq]-time[0]);
   }
-  fp=xvgropen(opt2fn("-o",NFILE,fnm),buf,tstr,"nm");
+  fp=xvgropen(opt2fn("-o",NFILE,fnm),buf,tstr,"RMS (nm)");
   if (nrms == 1)
     fprintf(fp,"@ subtitle \"of %s after lsq fit to %s\"\n",gn_rms[0],gn_fit);
   else {
@@ -616,14 +616,14 @@ int main (int argc,char *argv[])
   }
 
   if (bAv) {
-    fp = xvgropen(opt2fn("-a",NFILE,fnm),"Average RMS","Residue","nm");
+    fp = xvgropen(opt2fn("-a",NFILE,fnm),"Average RMS","Residue","RMS (nm)");
     for(j=0; (j<nrms); j++)
       fprintf(fp,"%10d  %10g\n",j,rlstot/teller);
     fclose(fp);
   }
 
   if (bNorm) {
-    fp = xvgropen("aver.xvg",gn_rms[0],"Residue","nm");
+    fp = xvgropen("aver.xvg",gn_rms[0],"Residue","RMS (nm)");
     for(j=0; (j<irms[0]); j++)
       fprintf(fp,"%10d  %10g\n",j,rlsnorm[j]/teller);
     fclose(fp);
