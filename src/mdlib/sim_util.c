@@ -475,7 +475,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real ener[],
     dt_1=1.0/dt;
     for(i=start; (i<end); i++) {
       /*for(i=0; (i<nsb->natoms); i++) {*/
-      mass = md->massA[i];
+      mass = md->massT[i];
       for(m=0; (m<DIM); m++) {
 	state->v[i][m] = (state->x[i][m] - buf[i][m])*dt_1;
 	vcm[m] += state->v[i][m]*mass;

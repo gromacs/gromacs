@@ -549,8 +549,8 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
       real mO,mH,dOH,dHH;
       
       ow1  = owptr[0];
-      mO   = md->massA[ow1];
-      mH   = md->massA[ow1+1];
+      mO   = md->massT[ow1];
+      mH   = md->massT[ow1+1];
       dOH  = top->idef.iparams[settle_type].settle.doh;
       dHH  = top->idef.iparams[settle_type].settle.dhh;
 #ifdef USE_FORTRAN
