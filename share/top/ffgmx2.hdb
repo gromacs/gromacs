@@ -3,7 +3,7 @@ ALA 	3
 	1	5	CA	N	C	CB
 	3	4	CB	CA	N
 ARG 	8
-	1	2	N	-C	-O
+	1	1	N	-C	CA
 	1	5	CA	N	C	CB
 	2	6	CB	CG	CA
 	2	6	CG	CD	CB
@@ -12,70 +12,70 @@ ARG 	8
 	2	3	NH1	CZ	NE
 	2	3	NH2	CZ	NE
 ASN 	4
-	1	2	N	-C	-O
+        1       1       N       -C      CA
 	1	5	CA	N	C	CB
 	2	6	CB	CG	CA
 	2	3	ND2	CG	CB
 ASP 	3
-	1	2	N	-C	-O 
+        1       1       N       -C      CA 
 	1	5	CA	N	C	CB
 	2	6	CB	CG	CA
 ASPH 	4
-	1	2	N	-C	-O 
+        1       1       N       -C      CA 
 	1	5	CA	N	C	CB
 	2	6	CB	CG	CA
-	1	1	OD1	CG	CB
+	1	2	OD1	CG	CB
 CYS2	3
-	1	2	N	-C	-O
+        1       1       N       -C      CA
 	1	5	CA	N	C	CB
 	2	6	CB	SG	CA
 CYSH 	4
-	1	2	N	-C	-O
+        1       1       N       -C      CA
 	1	5	CA	N	C	CB
 	2	6	CB	SG	CA
-	1 	1	SG 	CB	CA
+	1 	2	SG 	CB	CA
 GLN 	5
-	1	2	N	-C	-O
+        1       1       N       -C      CA
 	1	5	CA	N	C	CB
 	2	6	CB	CG	CA
 	2	6	CG	CD	CB
 	2 	3	NE2	CD	CG
 GLU 	4
-	1	2	N	-C	-O 
+        1       1       N       -C      CA 
 	1	5	CA	N	C	CB
 	2	6	CB	CG	CA
 	2	6	CG	CD	CB
 GLUH 	5
-	1	2	N	-C	-O 
+        1       1       N       -C      CA 
 	1	5	CA	N	C	CB
 	2	6	CB	CG	CA
 	2	6	CG	CD	CB
-	1	1	OE1	CD	CG
+	1	2	OE1	CD	CG
 GLY 	2
-	1	2	N	-C	-O 
+        1       1       N       -C      CA 
 	2	6	CA	N	C
 HIS1	5
-	1	2	N	-C	-O 
+        1       1       N       -C      CA 
 	1	5	CA	N	C	CB
 	2	6	CB	CG	CA
 	1	1	CD2	CG	NE2
 	1	1	CE1	ND1	NE2
 HISA	6
-	1	2	N	-C	-O
+        1       1       N       -C      CA
 	1	5	CA	N	C	CB
 	2	6	CB	CG	CA
 	1 	1	ND1 	CG	CE1
 	1	1	CD2	CG	NE2
 	1	1	CE1	ND1	NE2
 HISB	6
-	1	2	N	-C	-O
+        1       1       N       -C      CA
 	2	6	CB	CG	CA
 	1	5	CA	N	C	CB
 	1 	1	NE2 	CE1	CD2
 	1	1	CD2	CG	NE2
 	1	1	CE1	ND1	NE2
 HISH	7
-	1	2	N	-C	-O
+        1       1       N       -C      CA
 	1	5	CA	N	C	CB
 	2	6	CB	CG	CA
 	1	1	CD2	CG	NE2
@@ -84,24 +84,24 @@ HISH	7
 	1	1	NE2 	CE1	CD2
 HYP	3
 	1	5	CA	N	C	CB
-	1	1	OD1	CG	CB
+	1	2	OD1	CG	CB
 	1	5	CG	CB	OD1	CD2
 ILE 	6
-	1	2	N	-C	-O
+        1       1       N       -C      CA
 	1	5	CA	N	C	CB
 	1	5	CB	CA	CG1	CG2
 	2	6	CG1	CD	CB
 	3	4	CG2	CB	CA
 	3	4	CD	CG1	CB
 LEU 	6
-	1	2	N	-C	-O 
+        1       1       N       -C      CA 
 	1	5	CA	N	C	CB
 	2	6	CB	CG	CA
 	1	5	CG	CB	CD1	CD2
 	3	4	CD1	CG	CB
 	3	4	CD2	CG	CB
 LYS 	7
-	1	2	N	-C	-O
+        1       1       N       -C      CA
 	1	5	CA	N	C	CB
 	2	6	CB	CG	CA
 	2	6	CG	CD	CB
@@ -109,7 +109,7 @@ LYS 	7
 	2	6	CE	NZ	CD
 	2	4	NZ	CE	CD
 LYSH	7
-	1	2	N	-C	-O
+        1       1       N       -C      CA
 	1	5	CA	N	C	CB
 	2	6	CB	CG	CA
 	2	6	CG	CD	CB
@@ -117,13 +117,13 @@ LYSH	7
 	2	6	CE	NZ	CD
 	3	4	NZ	CE	CD
 MET 	5
-	1	2	N	-C	-O 
+        1       1       N       -C      CA 
 	1	5	CA	N	C	CB
 	2	6	CB	CG	CA
 	2	6	CG	SD	CB
 	3	4	CE	SD	CG
 PHE 	8
-	1	2	N	-C	-O 
+        1       1       N       -C      CA 
 	1	5	CA	N	C	CB
 	2	6	CB	CG	CA
 	1	1	CD1	CG	CE1	
@@ -137,18 +137,18 @@ PRO	4
 	2	6	CG	CD	CB
 	2	6	CD	CG	N
 SER 	4
-	1	2	N	-C	-O	
+        1       1       N       -C      CA	
 	1	5	CA	N	C	CB
 	2	6	CB	OG	CA
-	1	1	OG 	CB	CA
+	1	2	OG 	CB	CA
 THR 	5
-	1	2	N	-C	-O
+        1       1       N       -C      CA
 	1	5	CA	N	C	CB
 	1	5	CB	CA	OG1	CG2
-	1	1	OG1 	CB	CA
+	1	2	OG1 	CB	CA
 	3	4	CG2	CB	CA
 TRP 	9
-	1	2	N	-C	-O
+        1       1       N       -C      CA
 	1	5	CA	N	C	CB
 	2	6	CB	CG	CA
 	1	1	CD1	NE1	CG
@@ -158,16 +158,16 @@ TRP 	9
 	1	1	CH2	CZ3	CZ2
 	1	1	CZ2	CE2	CH2	
 TYR 	8
-	1	2	N	-C	-O
+        1       1       N       -C      CA
 	1	5	CA	N	C	CB
 	2	6	CB	CG	CA
 	1	1	CD1	CG	CE1
 	1	1	CD2	CG	CE2
 	1	1	CE1	CD1	OH
 	1	1	CE2	CD2	OH	
-	1	1	OH 	CZ	CE1
+	1	2	OH 	CZ	CE1
 VAL 	5
-	1	2	N	-C	-O 
+        1       1       N       -C      CA 
 	1	5	CA	N	C	CB
 	1	5	CB	CA	CG1	CG2
 	3	4	CG1	CB	CA
@@ -180,12 +180,12 @@ FAD	7
 	2	3	AN6	AC6	AC5
 	1	1	AO2*	AC2*	AC1*
 	1	1	AO3*	AC3*	AC2*
-	1	1	O4*	C4*	C5*
-	1	1	O3*	C3*	C4*
-	1	1	O2*	C2*	C3*
+	1	2	O4*	C4*	C5*
+	1	2	O3*	C3*	C4*
+	1	2	O2*	C2*	C3*
 	1	2	N3	C4	C4A
 NAC 	2
-	1	2	N	-C	-O 
+        1       1       N       -C      CA 
 	3	4	CA	N	-C
 ACE	1
 	3	4	CA	C	O
