@@ -17,6 +17,8 @@ int prec   = 8;
 int prec   = 4;
 #endif
 
+#define REAL_FORMAT "%.16f"
+
 int IND=F77IND;
 
 char header[10000]; /* Should be enough for a few comment lines
@@ -255,7 +257,7 @@ void code(char *fmt, ...)
 	break;
       case 'f':
 	f = va_arg(ap, double);
-	sprintf(tmpbuf,"%f",f);
+	sprintf(tmpbuf,REAL_FORMAT,f);
 	strcat(outbuf,tmpbuf);
 	break;
       case 's':
@@ -380,7 +382,7 @@ void declare_const_real(char *name,double val)
   decl_list[ndecl].breferenced=TRUE;
   decl_list[ndecl].bvector=FALSE; /* cant have const vectors */
   decl_list[ndecl].bconst=TRUE;
-  sprintf(decl_list[ndecl].constval,"%f",val);
+  sprintf(decl_list[ndecl].constval,REAL_FORMAT,val);
   ndecl++;
 }
 
@@ -638,7 +640,7 @@ void assign(char *left,char *right, ...)
 	break;
       case 'f':
 	f = va_arg(ap, double);
-	sprintf(tmp,"%f",f);		
+	sprintf(tmp,REAL_FORMAT,f);		
 	break;
       case 's':
 	s = va_arg(ap, char *);
@@ -668,7 +670,7 @@ void assign(char *left,char *right, ...)
 	break;
       case 'f':
 	f = va_arg(ap, double);
-	sprintf(tmp,"%f",f);		
+	sprintf(tmp,REAL_FORMAT,f);		
 	break;
       case 's':
 	s = va_arg(ap, char *);
@@ -715,7 +717,7 @@ void increment(char *left,char *right, ...)
 	break;
       case 'f':
 	f = va_arg(ap, double);
-	sprintf(tmp,"%f",f);		
+	sprintf(tmp,REAL_FORMAT,f);		
 	break;
       case 's':
 	s = va_arg(ap, char *);
@@ -748,7 +750,7 @@ void increment(char *left,char *right, ...)
 	break;
       case 'f':
 	f = va_arg(ap, double);
-	sprintf(tmp,"%f",f);		
+	sprintf(tmp,REAL_FORMAT,f);		
 	break;
       case 's':
 	s = va_arg(ap, char *);
@@ -796,7 +798,7 @@ void decrement(char *left,char *right, ...)
 	break;
       case 'f':
 	f = va_arg(ap, double);
-	sprintf(tmp,"%f",f);		
+	sprintf(tmp,REAL_FORMAT,f);		
 	break;
       case 's':
 	s = va_arg(ap, char *);
@@ -829,7 +831,7 @@ void decrement(char *left,char *right, ...)
 	break;
       case 'f':
 	f = va_arg(ap, double);
-	sprintf(tmp,"%f",f);		
+	sprintf(tmp,REAL_FORMAT,f);		
 	break;
       case 's':
 	s = va_arg(ap, char *);
@@ -877,7 +879,7 @@ void add(char *left,char *r1,char *r2, ...)
 	break;
       case 'f':
 	f = va_arg(ap, double);
-	sprintf(tmp,"%f",f);		
+	sprintf(tmp,REAL_FORMAT,f);		
 	break;
       case 's':
 	s = va_arg(ap, char *);
@@ -907,7 +909,7 @@ void add(char *left,char *r1,char *r2, ...)
 	break;
       case 'f':
 	f = va_arg(ap, double);
-	sprintf(tmp,"%f",f);		
+	sprintf(tmp,REAL_FORMAT,f);		
 	break;
       case 's':
 	s = va_arg(ap, char *);
@@ -938,7 +940,7 @@ void add(char *left,char *r1,char *r2, ...)
 	break;
       case 'f':
 	f = va_arg(ap, double);
-	sprintf(tmp,"%f",f);		
+	sprintf(tmp,REAL_FORMAT,f);		
 	break;
       case 's':
 	s = va_arg(ap, char *);
@@ -985,7 +987,7 @@ void subtract(char *left,char *r1,char *r2, ...)
 	break;
       case 'f':
 	f = va_arg(ap, double);
-	sprintf(tmp,"%f",f);		
+	sprintf(tmp,REAL_FORMAT,f);		
 	break;
       case 's':
 	s = va_arg(ap, char *);
@@ -1015,7 +1017,7 @@ void subtract(char *left,char *r1,char *r2, ...)
 	break;
       case 'f':
 	f = va_arg(ap, double);
-	sprintf(tmp,"%f",f);		
+	sprintf(tmp,REAL_FORMAT,f);		
 	break;
       case 's':
 	s = va_arg(ap, char *);
@@ -1046,7 +1048,7 @@ void subtract(char *left,char *r1,char *r2, ...)
 	break;
       case 'f':
 	f = va_arg(ap, double);
-	sprintf(tmp,"%f",f);		
+	sprintf(tmp,REAL_FORMAT,f);		
 	break;
       case 's':
 	s = va_arg(ap, char *);
@@ -1094,7 +1096,7 @@ void multiply(char *left,char *r1,char *r2, ...)
 	break;
       case 'f':
 	f = va_arg(ap, double);
-	sprintf(tmp,"%f",f);		
+	sprintf(tmp,REAL_FORMAT,f);		
 	break;
       case 's':
 	s = va_arg(ap, char *);
@@ -1124,7 +1126,7 @@ void multiply(char *left,char *r1,char *r2, ...)
 	break;
       case 'f':
 	f = va_arg(ap, double);
-	sprintf(tmp,"%f",f);		
+	sprintf(tmp,REAL_FORMAT,f);		
 	break;
       case 's':
 	s = va_arg(ap, char *);
@@ -1155,7 +1157,7 @@ void multiply(char *left,char *r1,char *r2, ...)
 	break;
       case 'f':
 	f = va_arg(ap, double);
-	sprintf(tmp,"%f",f);		
+	sprintf(tmp,REAL_FORMAT,f);		
 	break;
       case 's':
 	s = va_arg(ap, char *);
