@@ -317,7 +317,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
     fprintf(stderr,"%-24s %10s %10s %10s %10s %10s",
 	    "Energy","Average","RMS","Fluct.","Drift","Tot-Drift");
     if (bGibbs)
-      fprintf(stderr,"  %10s  %10s\n","-ln<e^(E/kT)>*kT");
+      fprintf(stderr,"  %10s\n","-ln<e^(E/kT)>*kT");
     else
       fprintf(stderr,"\n");
     fprintf(stderr,"-------------------------------------------------------------------------------\n");
