@@ -149,7 +149,7 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
     case epcSURFACETENSION:
       /* ir->ref_p[0/1] is the reference surface-tension times *
        * the number of surfaces                                */
-      if (ir->compress[ZZ])
+      if (ir->compress[ZZ][ZZ])
 	p_corr_z = ir->delta_t/ir->tau_p*(ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ]);
       else
 	/* when the compressibity is zero, set the pressure correction   *
@@ -200,7 +200,7 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
     /* compute final boxlengths */
     for (d=0; d<DIM; d++) {
       box[d][XX] = mu[XX][XX]*box[d][XX]+mu[XX][YY]*box[d][YY]
-	+mu[XX][ZZ]*box[n][ZZ];
+	+mu[XX][ZZ]*box[d][ZZ];
       box[d][YY] = mu[YY][YY]*box[d][YY]+mu[YY][ZZ]*box[d][ZZ];
       box[d][ZZ] = mu[ZZ][ZZ]*box[d][ZZ];
     }
