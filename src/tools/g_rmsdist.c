@@ -189,12 +189,12 @@ void main (int argc,char *argv[])
   bool bRMS, bScale, bMean, bNMR3, bNMR6;
   
   static bool bAll=FALSE;
-  static int  nlevels=15;
+  static int  nlevels=20;
   static real scalemax=-1.0, truncate=1.0;
   t_pargs pa[] = { 
     { "-t",   FALSE, etREAL, &truncate,
       "Trunc distance (not implemented yet)." },
-    { "-nl",   FALSE, etINT,  &nlevels,
+    { "-nlevels",   FALSE, etINT,  &nlevels,
       "Discretize rms in # levels." },
     { "-sc",   FALSE, etREAL, &scalemax,
       "Max to scale rms to (default: scale to maximum)." },

@@ -90,7 +90,7 @@ int main(int argc,char *argv[])
     { "-mean", FALSE, etBOOL, &bMeanEmtx,
       "with -groups calculates matrix of mean energies in stead of "
       "matrix for each timestep" },
-    { "-nl",   FALSE, etINT,  &nlevels,"number of levels for matrix colors"},
+    { "-nlevels", FALSE, etINT, &nlevels,"number of levels for matrix colors"},
     { "-max",FALSE, etREAL, &cutmax,"max value for energies"},
     { "-min",FALSE, etREAL, &cutmin,"min value for energies"},
     { "-coul", FALSE, etBOOL, &bCoul,"calculate Coulomb SR energies"},

@@ -159,11 +159,11 @@ int main(int argc,char *argv[])
   };
   static real truncate=1.5,dt=0.0;
   static bool bAtom=FALSE;
-  static int  r0=1,nlevels=15;
+  static int  r0=1,nlevels=20;
   t_pargs pa[] = { 
     { "-t",   FALSE, etREAL, &truncate,
       "trunc distance" },
-    { "-nl",   FALSE, etINT,  &nlevels,
+    { "-nlevels",   FALSE, etINT,  &nlevels,
       "Discretize distance in # levels" },
     { "-dt",  FALSE, etREAL, &dt,
       "Time interval between frames from the trajectory" },
