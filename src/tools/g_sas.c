@@ -123,7 +123,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,real defvdw,int ndots,
   int          i,j,natoms,flag,nsurfacedots;
   rvec         *x;
   matrix       box;
-  t_vdw        *vdw;
+  /*  t_vdw        *vdw; */
   t_topology   *top;
   bool         *bPhobic;
   bool         bConnelly;
@@ -134,10 +134,12 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,real defvdw,int ndots,
 			   &t,&x,box))==0)
     fatal_error(0,"Could not read coordinates from statusfile\n");
   top=read_top(ftp2fn(efTPX,nfile,fnm));
-  
+
+  /*
   nvdw = read_vdw(ftp2fn(efVDW,nfile,fnm),&vdw);
   fprintf(stderr,"There are %d VanderWaals radii\n",nvdw);
-  
+  */
+
   /* Now comput atomic readii including solvent probe size */
   snew(radius,natoms);
   snew(bPhobic,natoms);
@@ -213,7 +215,7 @@ int main(int argc,char *argv[])
   t_filenm  fnm[] = {
     { efTRX, "-f",   NULL,       ffREAD },
     { efTPX, "-s",   NULL,       ffREAD },
-    { efVDW, "-vdw", NULL,       ffREAD },
+    /*    { efVDW, "-vdw", NULL,       ffREAD }, */
     { efXVG, "-o",   "area",     ffWRITE },
     { efPDB, "-q",   "connelly", ffOPTWR }
   };
