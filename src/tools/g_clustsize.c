@@ -144,7 +144,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,
 	mid = cs_dist[i][j];
       
   fp = ffopen(xpm,"w");
-  write_xpm3(fp,"Cluster size distribution","Fraction (%)","Time (ps)","Size",
+  write_xpm3(fp,"Cluster size distribution","Fraction","Time (ps)","Size",
 	     n_x,max_size-1,t_x,t_y,cs_dist,0,mid,100.0,
 	     rlo,rmid,rhi,&nlevels);
   fclose(fp);
