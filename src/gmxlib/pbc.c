@@ -107,9 +107,9 @@ real max_cutoff2(matrix box)
 
 void set_pbc(t_pbc *pbc,matrix box)
 {
-  int  i,j,k,d;
-  real d2old,d2new,x;
-  rvec try;
+  int  i,j,k,d,jc,kc;
+  real d2old,d2new,d2new_c;
+  rvec try,pos;
   char *ptr;
 
   copy_mat(box,pbc->box);
@@ -156,26 +156,39 @@ void set_pbc(t_pbc *pbc,matrix box)
 		 * will become the shortest due to shift try.
 		 */
 		if (try[d] < 0)
-		  x = min( pbc->hbox_diag[d],-try[d]);
+		  pos[d] = min( pbc->hbox_diag[d],-try[d]);
 		else
-		  x = max(-pbc->hbox_diag[d],-try[d]);
-		d2old += sqr(x);
-		d2new += sqr(x + try[d]);
+		  pos[d] = max(-pbc->hbox_diag[d],-try[d]);
+		d2old += sqr(pos[d]);
+		d2new += sqr(pos[d] + try[d]);
 	      }
 	      if (d2new < 0.999*d2old) {
-		/* The shift vector has decreased a distance. */
-		if (d2new > 1.001*pbc->max_cutoff2) {
-		  /* The resulting distance is larger than the maximum cutoff,
-		   * reject this shift vector, as there is no a priori limit
-		   * to the number of shifts that decrease distances.
+		if (j < -1 || j > 1 || k < -1 || k > 1) {
+		  /* Check if there is a single shift vector
+		   * that decreases this distance even more.
 		   */
-		  if (!pbc->bLimitDistance || d2new <  pbc->limit_distance2)
-		    pbc->limit_distance2 = d2new;
-		  pbc->bLimitDistance = TRUE;
+		  jc = 0;
+		  kc = 0;
+		  if (j < -1 || j > 1)
+		    jc = j/2;
+		  if (k < -1 || k > 1)
+		    kc = k/2;
+		  d2new_c = 0;
+		  for(d=0; d<DIM; d++)
+		    d2new_c += sqr(pos[d] + try[d] 
+				   - jc*box[YY][d] - kc*box[ZZ][d]);
+		  if (d2new_c > d2new) {
+		    /* Reject this shift vector, as there is no a priori limit
+		     * to the number of shifts that decrease distances.
+		     */
+		    if (!pbc->bLimitDistance || d2new <  pbc->limit_distance2)
+		      pbc->limit_distance2 = d2new;
+		    pbc->bLimitDistance = TRUE;
+		  }
 		} else {
 		  /* Accept this shift vector. */
 		  if (pbc->ntric_vec >= MAX_NTRICVEC) {
-		    fprintf(stderr,"\nWARNING: Found more than %d triclinic correcion vectors, ignoring some.\n"
+		    fprintf(stderr,"\nWARNING: Found more than %d triclinic correction vectors, ignoring some.\n"
 			    "  There is probably something wrong with your box.\n",MAX_NTRICVEC);
 		    pr_rvecs(stderr,0,"         Box",box,DIM);
 		  } else {
