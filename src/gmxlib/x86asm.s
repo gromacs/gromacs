@@ -76,11 +76,11 @@ vecrecip_3dnow
 	punpckldq mm1,mm2
 	pfrcp mm6,mm4
 	pswapd mm4,mm4
-	pfrsqit1 mm0,mm1
+	pfrcpit1 mm0,mm1
 	punpckldq mm5,mm6	
 	pfrcpit2 mm0,mm1
         movq [ebx],mm0
-	pfrsqit1 mm4,mm5
+	pfrcpit1 mm4,mm5
 	add ebx, byte 8
 	pfrcpit2 mm4,mm5	
         movq [ebx],mm4
@@ -96,7 +96,7 @@ vecrecip_3dnow
         movd mm0,[eax]
 	add eax, byte 4
         pfrcp mm1,mm0
-        pfrsqit1 mm0,mm1
+        pfrcpit1 mm0,mm1
         pfrcpit2 mm0,mm1
         movd [ebx],mm0	
 	add ebx, byte 4

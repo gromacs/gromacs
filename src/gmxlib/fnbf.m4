@@ -55,7 +55,9 @@ static char *SRCID_fnbf_c = "$Id$";
 #include "nrnb.h"
 #include "smalloc.h"
 #include "x86cpu.h"
-
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+#include "inner_3dnow.h"
+#endif
 
 #ifdef USE_VECTOR
 static real *fbuf=NULL;
@@ -71,8 +73,9 @@ void do_fnbf(FILE *log,t_commrec *cr,t_forcerec *fr,
 {
   t_nblist *nlist;
   real     *fshift;
-  int      i,i0,i1,nrnb_ind,sz;
+  int      i,i0,i1,nrnb_ind,sz,ii;
   bool     bWater;
+	FILE *fp;
 #if (defined VECTORIZE_INVSQRT || defined VECTORIZE_RECIP)
 static int buflen=0;
 static real *drbuf=NULL;
@@ -175,12 +178,23 @@ define(`FREE_CHARGEB',`,mdatoms->chargeB')
 define(`FREE_TYPEB',`,mdatoms->typeB')
 define(`SOFTCORE_ARGS',`,SCAL(fr->sc_alpha),SCAL(fr->sc_sigma6)')
 define(`SOLMN_ARGS',`,nlist->nsatoms')
+
       switch (nrnb_ind) { 
 	case eNR_INL0100:
-	  FUNC(inl0100)(COMMON_ARGS REC_BUF LJ_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl0100_3dnow(COMMON_ARGS LJ_ARGS);	
+	  else
+#endif
+  	    FUNC(inl0100)(COMMON_ARGS REC_BUF LJ_ARGS);
 	break;
         case eNR_INL0110:
-          FUNC(inl0110)(COMMON_ARGS REC_BUF LJ_ARGS SOLMN_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl0110_3dnow(COMMON_ARGS LJ_ARGS SOLMN_ARGS);
+	  else
+#endif
+            FUNC(inl0110)(COMMON_ARGS REC_BUF LJ_ARGS SOLMN_ARGS);
         break;
 	case eNR_INL0200: 
 	  FUNC(inl0200)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 LJ_ARGS);
@@ -189,10 +203,20 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
           FUNC(inl0210)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 LJ_ARGS SOLMN_ARGS);
         break;
 	case eNR_INL0300:
-	  FUNC(inl0300)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 LJ_ARGS LJTAB_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl0300_3dnow(COMMON_ARGS LJ_ARGS LJTAB_ARGS);	
+	  else
+#endif
+	    FUNC(inl0300)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 LJ_ARGS LJTAB_ARGS);
 	break;
 	case eNR_INL0310:
-          FUNC(inl0310)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 LJ_ARGS LJTAB_ARGS SOLMN_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+            inl0310_3dnow(COMMON_ARGS LJ_ARGS LJTAB_ARGS SOLMN_ARGS);
+	  else
+#endif
+            FUNC(inl0310)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 LJ_ARGS LJTAB_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL0301:
 	  FUNC(inl0301)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 LJ_ARGS LJTAB_ARGS FREE_ARGS FREE_TYPEB);
@@ -213,28 +237,68 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl0402)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 LJ_ARGS LJTAB_ARGS BHTAB_ARGS FREE_ARGS FREE_TYPEB SOFTCORE_ARGS);
 	break;
 	case eNR_INL1000:
-	  FUNC(inl1000)(COMMON_ARGS INVSQRT_BUF1 COUL_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl1000_3dnow(COMMON_ARGS COUL_ARGS);	
+	  else
+#endif
+            FUNC(inl1000)(COMMON_ARGS INVSQRT_BUF1 COUL_ARGS);
 	break;
 	case eNR_INL1010:
-	  FUNC(inl1010)(COMMON_ARGS INVSQRT_BUF1 COUL_ARGS SOLMN_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl1010_3dnow(COMMON_ARGS COUL_ARGS SOLMN_ARGS);	
+	  else
+#endif
+	    FUNC(inl1010)(COMMON_ARGS INVSQRT_BUF1 COUL_ARGS SOLMN_ARGS);
  	break;
 	case eNR_INL1020:
-	  FUNC(inl1020)(COMMON_ARGS INVSQRT_W_BUF1 COUL_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl1020_3dnow(COMMON_ARGS COUL_ARGS);
+	  else
+#endif
+	    FUNC(inl1020)(COMMON_ARGS INVSQRT_W_BUF1 COUL_ARGS);
 	break;
 	case eNR_INL1030:
-	  FUNC(inl1030)(COMMON_ARGS INVSQRT_WW_BUF1 COUL_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl1030_3dnow(COMMON_ARGS COUL_ARGS);
+	  else
+#endif
+	    FUNC(inl1030)(COMMON_ARGS INVSQRT_WW_BUF1 COUL_ARGS);
 	break;
 	case eNR_INL1100:
-	  FUNC(inl1100)(COMMON_ARGS INVSQRT_BUF1 COUL_ARGS LJ_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl1100_3dnow(COMMON_ARGS COUL_ARGS LJ_ARGS);
+	  else
+#endif
+            FUNC(inl1100)(COMMON_ARGS INVSQRT_BUF1 COUL_ARGS LJ_ARGS);
 	break;
 	case eNR_INL1110:
-	  FUNC(inl1110)(COMMON_ARGS INVSQRT_BUF1 COUL_ARGS LJ_ARGS SOLMN_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl1110_3dnow(COMMON_ARGS COUL_ARGS LJ_ARGS SOLMN_ARGS);
+	  else
+#endif
+    	    FUNC(inl1110)(COMMON_ARGS INVSQRT_BUF1 COUL_ARGS LJ_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL1120:
-	  FUNC(inl1120)(COMMON_ARGS INVSQRT_W_BUF1 COUL_ARGS LJ_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl1120_3dnow(COMMON_ARGS COUL_ARGS LJ_ARGS);
+	  else
+#endif
+    	    FUNC(inl1120)(COMMON_ARGS INVSQRT_W_BUF1 COUL_ARGS LJ_ARGS);
 	break;
 	case eNR_INL1130:
-	  FUNC(inl1130)(COMMON_ARGS INVSQRT_WW_BUF1 COUL_ARGS LJ_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl1130_3dnow(COMMON_ARGS COUL_ARGS LJ_ARGS);		
+	  else
+#endif
+    	    FUNC(inl1130)(COMMON_ARGS INVSQRT_WW_BUF1 COUL_ARGS LJ_ARGS);
 	break;
 	case eNR_INL1200:
 	  FUNC(inl1200)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS);
@@ -333,7 +397,12 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl2430)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS RF_ARGS LJ_ARGS LJTAB_ARGS BHTAB_ARGS);
 	break;
 	case eNR_INL3000:
-	  FUNC(inl3000)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS COULTAB_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl3000_3dnow(COMMON_ARGS COUL_ARGS COULTAB_ARGS);
+	  else
+#endif
+    	    FUNC(inl3000)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS COULTAB_ARGS);
 	break;
 	case eNR_INL3001:
 	  FUNC(inl3001)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS COULTAB_ARGS FREE_ARGS FREE_CHARGEB);
@@ -342,25 +411,60 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl3002)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS SOFTCORE_LJARGS COULTAB_ARGS FREE_ARGS FREE_CHARGEB FREE_TYPEB SOFTCORE_ARGS);
 	break;
 	case eNR_INL3010:
-	  FUNC(inl3010)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS COULTAB_ARGS SOLMN_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl3010_3dnow(COMMON_ARGS COUL_ARGS COULTAB_ARGS SOLMN_ARGS);		
+	  else
+#endif
+    	    FUNC(inl3010)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS COULTAB_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL3020:
-	  FUNC(inl3020)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS COULTAB_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl3020_3dnow(COMMON_ARGS COUL_ARGS COULTAB_ARGS);		
+	  else
+#endif
+    	    FUNC(inl3020)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS COULTAB_ARGS);
 	break;
 	case eNR_INL3030:
-	  FUNC(inl3030)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS COULTAB_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl3030_3dnow(COMMON_ARGS COUL_ARGS COULTAB_ARGS);		
+	  else
+#endif
+    	    FUNC(inl3030)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS COULTAB_ARGS);
 	break;
 	case eNR_INL3100:
-	  FUNC(inl3100)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl3100_3dnow(COMMON_ARGS COUL_ARGS LJ_ARGS COULTAB_ARGS);
+	  else
+#endif
+    	    FUNC(inl3100)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
 	break;
 	case eNR_INL3110:
-	  FUNC(inl3110)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS SOLMN_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl3110_3dnow(COMMON_ARGS COUL_ARGS LJ_ARGS COULTAB_ARGS SOLMN_ARGS);		
+	  else
+#endif
+    	    FUNC(inl3110)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL3120:
-	  FUNC(inl3120)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl3120_3dnow(COMMON_ARGS COUL_ARGS LJ_ARGS COULTAB_ARGS);		
+	  else
+#endif
+    	    FUNC(inl3120)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
 	break;
 	case eNR_INL3130:
-	  FUNC(inl3130)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl3130_3dnow(COMMON_ARGS COUL_ARGS LJ_ARGS COULTAB_ARGS);	
+	  else
+#endif
+    	    FUNC(inl3130)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
 	break;
 	case eNR_INL3200:
 	  FUNC(inl3200)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
@@ -375,7 +479,12 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl3230)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
 	break;
 	case eNR_INL3300:
-	  FUNC(inl3300)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl3300_3dnow(COMMON_ARGS COUL_ARGS LJ_ARGS LJCTAB_ARGS);
+	  else
+#endif
+    	    FUNC(inl3300)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS);
 	break;
 	case eNR_INL3301:
 	  FUNC(inl3301)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS FREE_ARGS FREE_CHARGEB FREE_TYPEB);
@@ -384,13 +493,28 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl3302)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS FREE_ARGS FREE_CHARGEB FREE_TYPEB SOFTCORE_ARGS);
 	break;
 	case eNR_INL3310:
-	  FUNC(inl3310)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS SOLMN_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl3310_3dnow(COMMON_ARGS COUL_ARGS LJ_ARGS LJCTAB_ARGS SOLMN_ARGS);		
+	  else
+#endif
+    	    FUNC(inl3310)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL3320:
-	  FUNC(inl3320)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl3320_3dnow(COMMON_ARGS COUL_ARGS LJ_ARGS LJCTAB_ARGS);		
+	  else
+#endif
+    	    FUNC(inl3320)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS);
 	break;
 	case eNR_INL3330:
-	  FUNC(inl3330)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	  if(x86cpu==X86_3DNOW)
+	    inl3330_3dnow(COMMON_ARGS COUL_ARGS LJ_ARGS LJCTAB_ARGS);		
+	  else
+#endif
+    	    FUNC(inl3330)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS);
 	break;
 	case eNR_INL3400:
 	  FUNC(inl3400)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS BHTAB_ARGS);
@@ -531,7 +655,10 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
     snew(fbuf,md->nr*3);
 #endif  
 
-
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+ if(x86cpu==X86_NOTCHECKED) 
+	x86cpu=check_x86cpu(NULL);
+#endif
 
   if (nbfp14 == NULL) {
     nbfp14 = mk_14parm(fr->ntype,nbonds,iatoms,iparams,md->typeA);
@@ -641,7 +768,13 @@ define(`LJ_ARGS',`,md->typeA,SCAL(fr->ntype),nbfp14,egnb')
 #if (defined VECTORIZE_INVSQRT || defined USE_THREADS)
 	FUNC(inl3300n)(COMMON_ARGS /* special version without some optimizations */
 #else	
- 	 FUNC(inl3300)(COMMON_ARGS  /* use normal innerloop */
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+	if(x86cpu==X86_3DNOW)
+          inl3300_3dnow(COMMON_ARGS ,md->chargeA,SCAL(eps),egcoul,md->typeA,SCAL(fr->ntype),
+		     nbfp14,egnb,SCAL(fr->tabscale),fr->coulvdw14tab);
+        else
+#endif /* 3dnow */
+ 	  FUNC(inl3300)(COMMON_ARGS  /* use normal innerloop */
 #endif
                      ,md->chargeA,SCAL(eps),egcoul,md->typeA,SCAL(fr->ntype),
 		     nbfp14,egnb,SCAL(fr->tabscale),fr->coulvdw14tab);

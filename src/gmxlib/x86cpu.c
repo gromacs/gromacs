@@ -23,8 +23,9 @@ int check_x86cpu(FILE *log)
   int do3DNow;
 
   cpuSSE=cpu3DNow=doSSE=do3DNow=0;
-  
-  fprintf(log,"\nTesting x86 processor and OS capabilities:\n");
+
+  if(log)
+    fprintf(log,"\nTesting x86 processor and OS capabilities:\n");
   /* start by trying to issue the cpuid instruction */
   success=1;
   signal(SIGILL,sigill_handler);
@@ -32,7 +33,7 @@ int check_x86cpu(FILE *log)
 
   if(success) 
     gmxcpuid(0,&eax,&ebx,&ecx,&edx);
-  else 
+  else if(log)
     fprintf(log,"This CPU doesn't support CPUID.\n");
 
   if(eax>0) {
@@ -68,14 +69,16 @@ int check_x86cpu(FILE *log)
     }
   }
   if(doSSE) {
-    fprintf(log,"CPU and OS support SSE.\n"
-	    "Using Gromacs SSE assembly innerloops.\n\n");
+    if(log)
+      fprintf(log,"CPU and OS support SSE.\n"
+	      "Using Gromacs SSE assembly innerloops.\n\n");
     return X86_SSE;
   } else if(do3DNow) {
-    fprintf(log,"CPU and OS support extended 3DNow.\n"
-	    "Using Gromacs 3DNow assembly innerloops.\n\n");
+    if(log)
+      fprintf(log,"CPU and OS support extended 3DNow.\n"
+	      "Using Gromacs 3DNow assembly innerloops.\n\n");
     return X86_3DNOW;
-  } else {
+  } else if(log) {
     if(!cpuSSE && !cpu3DNow)
       fprintf(log,"No SSE or 3DNow support found.\n");
     else if(cpuSSE)

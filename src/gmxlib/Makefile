@@ -42,7 +42,7 @@ OBJ		= \
 	strdb.o		string2.o	symtab.o	tpxio.o		\
 	trnio.o		trxio.o		txtdump.o	typedefs.o	\
 	viewit.o	wgms.o		wman.o		writeps.o	\
-	xdrd.o		xtcio.o		xvgr.o
+	xdrd.o		xtcio.o		xvgr.o         
 
 MKINL_OBJ = \
 	mkinl.o	        	mkinl_declarations.o	mkinl_outerloop.o \
@@ -70,7 +70,7 @@ endif
 
 ifneq (,$(findstring USE_SSE_AND_3DNOW,$(SYSDEFS)))
 ifeq ($(GMXCPU),lnx)
-OBJ 		+= x86cpu.o x86asm.o
+OBJ 		+= x86cpu.o x86asm.o inner_3dnow.o
 endif
 endif
 
@@ -175,6 +175,12 @@ ifeq ($(GMXCPU),win)
 			nasm -f win32 -o x86asm.o x86asm.s
 else
 			nasm -f elf -o x86asm.o x86asm.s
+endif
+inner_3dnow.o:		inner_3dnow.s
+ifeq ($(GMXCPU),win)
+			nasm -f win32 -o inner_3dnow.o inner_3dnow.s
+else
+			nasm -f elf -o inner_3dnow.o inner_3dnow.s
 endif
 
 axp_asm.o:		axp_asm.S
