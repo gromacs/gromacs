@@ -234,10 +234,6 @@ static void write_texman(FILE *out,char *program,
 	      fileopt(fnm[i].flag),check_tex(ftp2desc(fnm[i].ftp)));
     fprintf(out,"\\end{tabularx}\n");
     fprintf(out,"\\end{table}\n");
-    /*
-    fprintf(out,"Remember that filenames are not fixed, but \n");
-    fprintf(out,"file extensions are.\n");
-    */
   }
   if (npargs > 0) {
     fprintf(out,"\\subsubsection*{Other options.}\n");
