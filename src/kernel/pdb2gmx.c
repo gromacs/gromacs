@@ -73,9 +73,21 @@ static char *select_res(int nr,int resnr,char *name[],char *expl[],char *title)
   printf("\nType a number:"); fflush(stdout);
 
   if (scanf("%d",&sel) != 1)
-    fatal_error(0,"Answer me for res %s %d!",title,resnr+1);
+    fatal_error(0,"nswer me for res %s %d!",title,resnr+1);
   
   return name[sel];
+}
+
+static char *get_asptp(int resnr)
+{
+  enum { easp, easpH, easpNR };
+  static char *lh[easpNR] = { "ASP", "ASPH" };
+  static char *expl[easpNR] = {
+    "Not protonated",
+    "Protonated"
+  };
+
+  return select_res(easpNR,resnr,lh,expl,"ASPARTIC ACID");
 }
 
 static char *get_lystp(int resnr)
@@ -100,6 +112,7 @@ static char *get_cystp(int resnr)
   };
 
   return select_res(ecysNR,resnr,lh,expl,"CYSTEINE");
+
 }
 
 static char *get_histp(int resnr)
@@ -215,20 +228,22 @@ int read_pdball(char *inf, char *outf,char *title,
 
 void process_chain(t_atoms *pdba, rvec *x, 
 		   bool bTrpU,bool bPheU,bool bTyrU,
-		   bool bLysH,bool bHisMan,bool bCysMan,
+		   bool bLysMan,bool bAspMan,bool bHisMan,bool bCysMan,
 		   int *nssbonds,t_ssbond **ssbonds,
 		   real angle,real distance)
 {
   int i;
 
-  /* Rename aromatics, lys and histidine */
+  /* Rename aromatics, lys, asp and histidine */
   if (bTyrU) rename_pdbres(pdba,"TYR","TYRU",FALSE);
   if (bTrpU) rename_pdbres(pdba,"TRP","TRPU",FALSE);
   if (bPheU) rename_pdbres(pdba,"PHE","PHEU",FALSE);
-  if (bLysH) 
-    rename_pdbres(pdba,"LYS","LYSH",FALSE);
-  else
+  if (bLysMan) 
     rename_pdbresint(pdba,"LYS",get_lystp,FALSE);
+  else
+    rename_pdbres(pdba,"LYS","LYSH",FALSE);
+  if (bAspMan) 
+    rename_pdbresint(pdba,"ASP",get_asptp,FALSE);
 
   *nssbonds=mk_specbonds(pdba,x,bCysMan,ssbonds);
   rename_pdbres(pdba,"CYS","CYSH",FALSE);
@@ -524,9 +539,7 @@ int main(int argc, char *argv[])
     "Generation of N-terminal hydrogen atoms on OPLS files does not work.",
     "Deuterium (D) is not recognized as a hydrogen and will crash the "
     "program.",
-    "It is assumed that atomic coordinates in pdb files are in Angstrom.",
-    "The program should be able to select the protonation on pH, and also "
-    "should allow for selection of ASPH instead of ASP.",
+    "It is assumed that atomic coordinates in pdb files are in Angstrom."
   };
   typedef struct {
     char chain;
@@ -591,28 +604,30 @@ int main(int argc, char *argv[])
   
   /* Command line arguments msut be static */
   static bool bNewRTP=FALSE;
-  static bool bInter=FALSE, bLysH=TRUE, bFFMan=FALSE, bCysMan=FALSE; 
+  static bool bInter=FALSE, bFFMan=FALSE, bCysMan=FALSE; 
+  static bool bLysMan=FALSE, bAspMan=FALSE, bHisMan = FALSE;
   static bool bTerMan=FALSE, bUnA=FALSE;
   static bool bH14= FALSE,bSort=TRUE, bRetainH=FALSE;
-  static bool bAlldih=FALSE,bHisMan = FALSE;
+  static bool bAlldih=FALSE;
   static real angle=135.0,distance=0.3;
   static char *dumstr[] = { NULL, "normal", "dummy", "heavy", "both", NULL };
   t_pargs pa[] = {
     { "-newrtp", FALSE, etBOOL, &bNewRTP,
       "HIDDENWrite the residue database in new format to 'new.rtp'"},
     { "-inter",  FALSE, etBOOL, &bInter,
-      "Set the next 5 options to interactive"},
+      "Set the next 6 options to interactive"},
     { "-ff",     FALSE, etBOOL, &bFFMan, 
-      "Interactive Force Field selection, instead of the first one" },
+      "Interactive Force Field selection, iso the first one" },
     { "-ss",     FALSE, etBOOL, &bCysMan, 
       "Interactive SS bridge selection" },
     { "-ter",    FALSE, etBOOL, &bTerMan, 
-      "Interactive termini selection, instead of charged" },
-    { "-lysh",   FALSE, etBOOL, &bLysH, 
-      "Select the LysH (charge +1) residue type, "
-      "instead of interactive selection" },
+      "Interactive termini selection, iso charged" },
+    { "-lys",   FALSE, etBOOL, &bLysMan, 
+      "Interactive Lysine selection, iso charged (+1)" },
+    { "-asp",   FALSE, etBOOL, &bAspMan, 
+      "Interactive Aspartic Acid selection, iso charged (-1)" },
     { "-his",    FALSE, etBOOL, &bHisMan,
-      "Interactive Histidine selection, instead of checking H-bonds" },
+      "Interactive Histidine selection, iso checking H-bonds" },
     { "-angle",  FALSE, etREAL, &angle, 
       "Minimum hydrogen-donor-acceptor angle for a H-bond (degrees)" },
     { "-dist",   FALSE, etREAL, &distance,
@@ -638,11 +653,12 @@ int main(int argc, char *argv[])
 		    asize(bugs),bugs);
   if (bInter) {
     /* if anything changes here, also change description of -inter */
-    bFFMan=TRUE;
-    bCysMan=TRUE;
-    bTerMan=TRUE;
-    bLysH=FALSE;
-    bHisMan=TRUE;
+    bFFMan  = TRUE;
+    bCysMan = TRUE;
+    bTerMan = TRUE;
+    bLysMan = TRUE;
+    bAspMan = TRUE;
+    bHisMan = TRUE;
   }
   
   switch(dumstr[0][0]) {
@@ -841,7 +857,7 @@ int main(int argc, char *argv[])
       printf("Processing chain %d (%d atoms, %d residues)\n",
 	      chain+1,natom,nres);
 
-    process_chain(pdba,x,bUnA,bUnA,bUnA,bLysH,bHisMan,bCysMan,
+    process_chain(pdba,x,bUnA,bUnA,bUnA,bLysMan,bAspMan,bHisMan,bCysMan,
 		  &nssbonds,&ssbonds,angle,distance);
 		  
     if (bSort) {
