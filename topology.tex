@@ -405,6 +405,10 @@ for this ``strange'' residue, otherwise you will not obtain a
 coordinate file like phosphate or sulphate ions.
 The residue database is constructed in the following way:
 {\small\begin{verbatim}
+[ bondedtypes ]  ; mandatory
+; bonds  angles  dihedrals  impropers
+     1       1          1          2  ; mandatory
+
 [ GLY ]  ; mandatory
 
  [ atoms ]  ; mandatory 
@@ -441,14 +445,24 @@ The residue database is constructed in the following way:
 \end{verbatim}}
 
 The file is free format, the only restriction is that there can be at most
-one entry on a line. 
+one entry on a line.
+The first field in the file is the {\tt [bondedtypes]} field, which is
+followed by four numbers, that indicate the interaction type for bonds,
+angles, dihedrals and improper dihedrals.
 The file contains residue entries, which consist of atoms and optionally 
 bonds, angles dihedrals and impropers.
 The charge group codes denote the charge group numbers.
 Atoms in the same charge group should always be below each other.
+The atom names in the bonded interaction can be preceded by a minus
+or a plus, indicating that the atom is in the preceding or following
+residue respectively.
 Parameters can be added to bonds, angles, dihedrals and impropers,
 these parameters override the standard parameters in the {\tt .itp} files.
-This should only be used in special cases. 
+This should only be used in special cases. Instead of parameters, a
+string can be added for each bonded interaction, this is used in
+GROMOS96 {\tt .rtp} files. These strings are copied to the topolgy file
+and can be replaced by force field parameters by the C-preprocessor in
+{\tt grompp} using {\tt \#define} statements.
 
 {\tt pdb2gmx} automatically generates all angles, this means that the
 {\tt [angles]} field is only useful for overriding {\tt .itp} parameters. 
@@ -829,11 +843,11 @@ Urea         3
 [ distance_restraints ]
 ; This you wouldn't use normally for a molecule like Urea,
 ; but it's here for didactical purposes
-;     ai      aj     type    index   rt-aver  rx0     rx1     rx2     rx3
-       1       6        1        0         1  0.3     0.4     0.0     0.0 
+;     ai      aj     type    index     type'  low     up1     up2     fac
+       1       6        1        0         1  0.0     0.4     0.5     1.0 
 ; The following two restraints are taken together (index both 1)
-       1       7        1        1         1  0.3     0.4     0.0     0.0 
-       1       8        1        1         1  0.3     0.4     0.0     0.0 
+       1       7        1        1         1  0.0     0.3     0.4     1.0 
+       1       8        1        1         1  0.0     0.3     0.4     1.0 
 
 ; Include SPC water topology
 #include "spc.itp"
