@@ -292,7 +292,7 @@ int main(int argc,char *argv[])
   FILE         *out=NULL;
   int          trjout;
   int          status,ftp,ftpout,file_nr;
-  rvec         *x,*xn,*xout,*v;
+  rvec         *x,*xn,*xout,*v,*vn,*vout;
   rvec         *xp,shift;
   real         xtcpr, lambda,*w_rls;
   matrix       box;
@@ -489,9 +489,12 @@ int main(int argc,char *argv[])
       if (bSelect) {
 	snew(xn,isize);
 	xout=xn;
+	snew(vn,isize);
+	vout=vn;
 	nout=isize;
       } else {
 	xout=x;
+	vout=v;
 	nout=natoms;
       }
     }
@@ -611,8 +614,10 @@ int main(int argc,char *argv[])
 	  } 
 	  
 	  if (bSelect) {
-	    for(i=0; (i<isize); i++)
+	    for(i=0; (i<isize); i++) {
 	      copy_rvec(x[index[i]],xout[i]);
+	      copy_rvec(v[index[i]],vout[i]);
+	    }
 	  }
 	  
 	  /* this should make sure all atoms in output are really inside
@@ -644,7 +649,7 @@ int main(int argc,char *argv[])
 	    fwrite_trn(trjout,frame,t,0,box,
 		       nout,
 		       bHaveX ? xout : NULL,
-		       bHaveV ? v    : NULL,
+		       bHaveV ? vout : NULL,
 		       NULL);
 	    
 	    break;
@@ -668,7 +673,7 @@ int main(int argc,char *argv[])
 		sprintf(out_file2,"%d_%s\0",file_nr,out_file);
 	      fp=ffopen(out_file2,"w");
 	    }
-	    write_hconf_p(fp,title,&useatoms,prec,xout,bHaveV ? v : NULL,box);
+	    write_hconf_p(fp,title,&useatoms,prec,xout,bHaveV?vout:NULL,box);
 	    ffclose(fp);
 	    file_nr++;
 	    break;
