@@ -112,7 +112,6 @@ t_block *init_index(char *gfile, char ***grpname)
 	fscanf(in,"%d",&a);
 	b->a[b->index[i]+j]=a;
       }
-      /* while (fgetc(in)!='\n'); */
     }
   }
   ffclose(in);
@@ -126,8 +125,11 @@ static int qgroup(int *a, int ngrps, char **grpname)
   int  i, aa;
   
   fprintf(stderr,"Select a group: ");
-  fgets2(s,STRLEN,stdin);
+  do {
+    if ( scanf("%s",s)!=1 ) 
+      fatal_error(0,"Cannot read from input");
   trim(s); /* remove spaces */
+  } while (strlen(s)==0);
   aa = atoi(s);
   if (aa==0 && strcmp(s,"0")!=0 ) { /* string entered */
     for(i=0, aa=NOTSET; i<ngrps && aa==NOTSET; i++) {
@@ -140,44 +142,6 @@ static int qgroup(int *a, int ngrps, char **grpname)
   printf("Selected %d: '%s'\n", aa, grpname[aa]);
   *a = aa;
   return aa;
-}
-
-static int rd_pascal_set(int **set)
-{
-  char buf[STRLEN+1];
-  char *bb[STRLEN],*ptr;
-  int   i,j,nb,ns,ne;
-  
-  fprintf(stderr,"Give a set of numbers (eg.: 1..8,13,17..21)\n");
-  fgets(buf,STRLEN,stdin);
-  
-  nb=0;
-  bb[nb++]=buf;
-  for(i=0; (i<(int)strlen(buf)); i++)
-    if (buf[i] == ',') {
-      buf[i] = '\0';
-      if (buf[i+1] != '\0')
-	bb[nb++] = &(buf[i+1]);
-    }
-  ns=0;
-  for(i=0; (i<nb); i++) {
-    if ((ptr=strstr(bb[i],"..")) != NULL) {
-      ptr[0]=' ', ptr[1]=' ';
-      sscanf(bb[i],"%d %d",&nb,&ne);
-      for(j=nb; (j<=ne); j++)
-	(*set)[ns++]=j;
-    }
-    else {
-      sscanf(bb[i],"%d",&nb);
-      (*set)[ns++]=nb;
-    }
-  }
-  fprintf(stderr,"\nI found the following set:\n");
-  for(i=0; (i<ns); i++)
-    fprintf(stderr,"%4d ",(*set)[i]);
-  fprintf(stderr,"\n\n");
-  
-  return ns;
 }
 
 static void rd_groups(t_block *grps,char **grpname,char *gnames[],
