@@ -177,7 +177,7 @@ static gmx_inline real recip(float x)
   bit_pattern.fval=x;
   exp   = EXP_ADDR(bit_pattern.bval);
   fract = FRACT_ADDR(bit_pattern.bval);
-  result.bval=cinvsqrtexptab[exp] | cinvsqrtfracttab[fract];
+  result.bval=crecipexptab[exp] | crecipfracttab[fract];
   lu    = result.fval;
   
   y=lu*(two-x*lu);
@@ -218,7 +218,7 @@ static gmx_inline void vecrecip(real in[],real out[],int n)
       bit_pattern.fval=x;
       exp   = EXP_ADDR(bit_pattern.bval);
       fract = FRACT_ADDR(bit_pattern.bval);
-      result.bval=cinvsqrtexptab[exp] | cinvsqrtfracttab[fract];
+      result.bval=crecipexptab[exp] | crecipfracttab[fract];
       lu    = result.fval;
       
 #ifdef DOUBLE
