@@ -238,9 +238,12 @@ static void split_blocks(bool bVerbose,int nprocs,
     bSHK = ((i == 0) || 
 	    ((shknum[ai] == NO_ATID) || (shknum[ai] != shknum[ai-1])));
     
-    if (shknum[ai] != NO_ATID) 
+    if (ai > 0)
+      if (shknum[ai] != shknum[ai-1])
+	sbl++;
+    /*if (shknum[ai] != NO_ATID) 
       sbl=max(sbl,shknum[ai]);
-    
+    */
     if (bSHK && (cgs->a[cgs->index[i+1]] >= tload)) {
       if (debug) 
 	fprintf(debug,"%s %d: tload = %g, ai = %d, i = %d, sbl = %d\n",
