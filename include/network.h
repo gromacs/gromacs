@@ -58,7 +58,9 @@ static char *SRCID_network_h = "$Id$";
 #define LEFT     0          /* channel to the left processor  */
 #define RIGHT    1          /* channel to the right processor */
 
+#define record(rec)     &((rec)),sizeof(rec)
 #define array(arr,nr)   (arr),((nr)*sizeof((arr)[0]))
+#define arrayp(el,nr)   &((el)),((nr)*sizeof(el))
 /* 
  * These macro's can be used as shown in the following examples:
  *
@@ -67,12 +69,11 @@ static char *SRCID_network_h = "$Id$";
  * struct {float x,y} coordinate;
  * int arr[10];
  *
- * gmx_rxs(chan,&nr,sizeof(nr));		receive data in nr
- * gmx_txs(chan,&coordinate,sizeof(coordinate));   sends data from coordinate
- * gmx_rxs(chan,arr,10*sizeof(<list element>)); sends list w. 10 elements
- * gmx_rxs(chan,arr+3,4*sizeof(<list element>)); 
- * ; receives an array of 4 elements
- * ; and stores it starting at element 3
+ * gmx_rxs(chan,record(nr));		receive data in nr
+ * gmx_txs(chan,record(coordinate));	sends data from coordinate
+ * gmx_rxs(chan,array(arr,10));	sends an array of 10 elements
+ * gmx_rxs(chan,arrayp(arr[3],4)); 	receives an array of 4 elements
+ *					and stores it starting at element 3
  */
 
 /****************************************************** 
