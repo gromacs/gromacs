@@ -177,8 +177,13 @@ void preprocess(char *infile,char *outfile,
    * Mac OS X doesn't support a second output filename
    * (although the docs say so), so we use redirection instead
    */
+#ifdef __APPLE__
   sprintf(command,"%s %s -I%s %s %s > %s",
+	  cpp,include,libdir,define,infile,outfile);
+#else
+  sprintf(command,"%s %s -I%s %s %s %s",
 	    cpp,include,libdir,define,infile,outfile);
+#endif
 
   if (debug)
     fprintf(debug,"Command line for cpp:\n\t%s\n",command);
