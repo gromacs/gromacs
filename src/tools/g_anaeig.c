@@ -43,7 +43,7 @@ static char *SRCID_g_nmeig_c = "$Id$";
 #include "statutil.h"
 #include "rdgroup.h"
 #include "pdbio.h"
-#include "confio.h"
+#include "tpxio.h"
 #include "trnio.h"
 #include "matio.h"
 #include "mshift.h"
@@ -465,7 +465,7 @@ int main(int argc,char *argv[])
     "[TT]-inpr[tt]: calculate a matrix of inner-products between two sets",
     "of eigenvectors."
   };
-  static int  first=1,last=10,skip=1,nextr=2;
+  static int  first=1,last=8,skip=1,nextr=2;
   static real max=0.0;
   t_pargs pa[] = {
     { "-first", FALSE, etINT, &first,     
@@ -521,7 +521,7 @@ int main(int argc,char *argv[])
   indexfile=ftp2fn_null(efNDX,NFILE,fnm);
 
   Vec2File        = opt2fn_null("-v2",NFILE,fnm);
-  topfile         = ftp2fn(efSTX,NFILE,fnm); 
+  topfile         = ftp2fn(efTPS,NFILE,fnm); 
   CompFile        = opt2fn_null("-comp",NFILE,fnm);
   ProjOnVecFile   = opt2fn_null("-proj",NFILE,fnm);
   TwoDPlotFile    = opt2fn_null("-2d",NFILE,fnm);
@@ -537,7 +537,7 @@ int main(int argc,char *argv[])
   bTraj  = ProjOnVecFile || FilterFile || (ExtremeFile && (max==0))
     || TwoDPlotFile;
   bIndex = bM || bProj;
-  bTPS   = ftp2bSet(efSTX,NFILE,fnm) || bM || bTraj ||
+  bTPS   = ftp2bSet(efTPS,NFILE,fnm) || bM || bTraj ||
     FilterFile  || (bIndex && indexfile);
 
   read_eigenvectors(opt2fn("-v",NFILE,fnm),&natoms,&xref1,&bDMR1,&xav1,&bDMA1,
