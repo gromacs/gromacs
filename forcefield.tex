@@ -918,11 +918,11 @@ Some parameters for NMR refinement can be specified in the
 
 \section{Free energy calculations}
 \label{sec:fep}
-\newcommand{\LAM}{\mu}
-\newcommand{\LL}{(1-\mu)}
+\newcommand{\LAM}{\lambda}
+\newcommand{\LL}{(1-\LAM)}
 \newcommand{\dvdl}[1]{\frac{\partial #1}{\partial \LAM}}
-Free energy perturbation calculations can be performed in {\gromacs} using
-either the ``slow-growth'' method, or using umbrella sampling.
+\normindex{Free energy perturbation} calculations can be performed in
+{\gromacs} using either the ``slow-growth'' method, or using umbrella sampling.
 This requires modification of the Hamiltonian $H$, which can be derived
 using the partition function $Z$.
 If we write the Gibbs free energy $G$ using $Z$:
@@ -942,9 +942,9 @@ where $N$ is the number of particles in the system and $m_i$ are the masses
 of the particles.
 \beq
 \begin{array}{rcl}
-G       &~=~&   -1/\beta \ln \left[\int \exp(-\beta V(q)) dq \int \exp(-\beta K(p)) dp  \right] \\
+G &~=~& -1/\beta \ln \left[\int \exp(-\beta V(q)) dq \int \exp(-\beta K(p)) {\rm d}p  \right] \\
 & \mbox{or} \\
-G       &~=~&   \left< K(p) \right>     -1/\beta \ln 
+G &~=~&   \left< K(p) \right> -1/\beta \ln \int \exp(-\beta V(q)) {\rm d}q
 \end{array}
 \eeq
 
@@ -1045,7 +1045,7 @@ Resat and Mezei have tested which exponents to $\LAM$ resp. $\LL$ are best and f
 that 4 for the repulsion, 3 for the dispersion and 2 for the Coulomb interaction to
 give good results~\cite{Resat93}.
 
-Although this method is an improvement over linear scaling, for small $\mu$ there
+Although this method is an improvement over linear scaling, for small $\LAM$ there
 still can be large forces and/or energies, and therefore careful equilibration 
 should be done.
 
