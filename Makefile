@@ -36,6 +36,8 @@ TEXFILES = $(foreach FILE,$(TEXFS), $(FILE).tex)
 all:		ps
 
 ps:		gromacs.ps
+pdf:		gromacs.ps
+		ps2pdf gromacs.ps gromacs.pdf
 
 full:		man all
 

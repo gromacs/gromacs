@@ -28,7 +28,7 @@
 %
 
 \documentclass[11pt,dvips]{book}
-\usepackage{here,picins,fancy,epsfig,array,tabularx,makeidx,a4,citesort,multicol,dcolumn}
+\usepackage{here,picins,fancy,epsfig,array,tabularx,makeidx,a4,citesort,multicol,dcolumn,times}
 \makeindex
 \input{macros}
 \sloppy
@@ -40,7 +40,7 @@
 \newcommand{\ttw}{4.33cm}  % 1/3 of the textwidth
 \newcommand{\htw}{7.5cm}  % 1/2 of the textwidth
 \newcommand{\ntw}{13cm} % 0.9 of the textwidth
-\newcommand{\gmxver}{2.1}
+\newcommand{\gmxver}{3.0}
 \newcommand{\figref}[1]{Fig.~\ref{fig:#1}}
 \newcommand{\figsref}[2]{Figs.~\ref{fig:#1} and ~\ref{fig:#2}}
 \newcommand{\tabref}[1]{Table~\ref{tab:#1}}
@@ -50,7 +50,8 @@
 \newcommand{\ssecref}[1]{\ref{subsec:#1}}
 \newcommand{\chref}[1]{chapter~\ref{ch:#1}}
 \newcommand{\appref}[1]{Appendix~\ref{app:#1}}
-\newcommand{\wwwpage}{http://md.chem.rug.nl/\raisebox{-0.8ex}{\~{ }}gmx}
+%\newcommand{\wwwpage}{http://md.chem.rug.nl/\raisebox{-0.8ex}{\~{ }}gmx}
+\newcommand{\wwwpage}{http://www.gromacs.org}
 % NOTE: \wwwpage is explicitly included in the 'verbatim' citing instructions!
 \newcommand{\email}{{\tt gromacs@chem.rug.nl}}
 \newcommand{\mcc}[2]{\multicolumn{#1}{c|}{#2}}
@@ -180,24 +181,25 @@ Tieleman, A.~L.~T.~M. Sij\-bers, B. Hess, K.~A. Feenstra, E. Lindahl,
 R. van Drunen and H.~J.~C. Berendsen
 \hspace{0.6em} Gromacs {U}ser {M}anual version \gmxver
 \hspace{0.6em} Nij\-enborgh 4, 9747 AG Groningen, The Netherlands.
-Internet: {\wwwpage} 1999
+Internet: {\wwwpage} 2001
 \end{quote}
 
 or, if you use BibTeX, you can directly copy the following:
 \begin{verbatim}
-@Manual{gmx20,
-  title =        "Gromacs {U}ser {M}anual version 2.0",
+@Manual{gmx30,
+  title =        "Gromacs {U}ser {M}anual version 3.0",
   author =       "David van der Spoel and Aldert R. van Buuren and Emile
-                 Apol and Pieter J. Meulenhoff and D. Peter Tieleman and
+                 Apol and Pieter J. Meulen\-hoff and D. Peter Tieleman and
                  Alfons L. T. M. Sij\-bers and Berk Hess and K. Anton
-                 Feenstra and Erik Lindahl and Rudi van Drunen 
-                 and Herman J. C. Berendsen",
+                 Feenstra and Erik Lindahl and Rudi van Drunen and 
+		 Herman J. C. Berendsen",
   address =      "Nij\-enborgh 4, 9747 AG Groningen, The Netherlands.
-                 Internet: http://md.chem.rug.nl/\~{ }gmx",
-  year =         "1999"
+                 Internet: http://www.gromacs.org",
+  year =         "2001"
 }
 \end{verbatim}
-Please do also cite the original {\gromacs} paper~\cite{Berendsen95a}.
+
+Please do also cite the {\gromacs} papers~\cite{Berendsen95a,Lindahl2001a}.
 
 
 Any comment is welcome, please send it by e-mail to {\email}
@@ -215,9 +217,7 @@ Fax: 31-50-634800
 
 \newpage
 \subsection*{Online Manual}
-If you  have access to a WWW browser such as NCSA mosaic
-or Netscape please look up our HTML page: \\
-{\bf \wwwpage}.
+The {\gromacs} homepage is available at {\bf \wwwpage}.
 
 \subsection*{Violated Copyrights}
 The following commercial thingies may be mentioned here and there in the
