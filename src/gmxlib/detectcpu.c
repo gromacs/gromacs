@@ -105,30 +105,34 @@ static int detect_altivec(FILE *log)
    * to perform the extensive tests like for x86 to recommend
    * users to upgrade. Just check if an instruction works!
    */
-  int cpuAltivec=0;
-  int cpuflags=0;
-  
-  /* if we got here, its ppc! */
-  cpuflags |= PPC_CPU;
+  int cpuflags;
 
+  /* BUG warning: Due to problems in the Apple gcc compiler,
+   * the cpuflags variable MUST be assigned inside the
+   * if-statement below, and returned inside the same
+   * statement.
+   */
   if(log)
     fprintf(log,"\nTesting PPC Altivec support...\n");
-  success=1;
   signal(SIGILL,sigill_handler);
-  setjmp(mainloop); /* return to this point if we get SIGILL */
-  if(success) {
-    check_altivec();
-
-    cpuflags |= PPC_ALTIVEC_SUPPORT;
-    if(log)
-      fprintf(log,"CPU supports Altivec.\n"
-	      "Using Gromacs Altivec innerloops.\n\n");
-  } else {
+  if(sigsetjmp(mainloop,0)) { /* return here with val=1 if we get SIGILL */
     if(log)
       fprintf(log,"No Altivec support found.\n");
-  }
+    cpuflags = PPC_CPU;
+    return cpuflags;
+  } else {
+    check_altivec();
 
-  return cpuflags;
+    cpuflags = PPC_CPU | PPC_ALTIVEC_SUPPORT;
+    if(log)
+      fprintf(log,"CPU supports Altivec.\n"
+              "Using Gromacs Altivec innerloops.\n\n");
+    return cpuflags;
+  }
+  /* We used to return here, outside the if-statement, but
+   * that exposed a bug in Apple gcc-3.x, so be VERY
+   * careful and test it if you ever change this code...
+   */
 }
 #endif /* PPC_ALTIVEC */
 
