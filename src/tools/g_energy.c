@@ -168,7 +168,7 @@ int get_bounds(char *topnm,real **bounds,int **index,int **dr_pair,int *npairs,
 }
 
 void calc_violations(real rt[],real rav3[],int nb,int index[],
-		     real bounds[],real viol[],double *st,double *sa)
+		     real bounds[],real *viol,double *st,double *sa)
 {
   const   real sixth=1.0/6.0;
   int     i,j;
@@ -492,8 +492,10 @@ int main(int argc,char *argv[])
     "from an energy file.",
     "The user is prompted to interactively select the energy terms",
     "she wants.[PAR]",
-    "In the case of distance rstraints it is also possible to calculate",
-    "the sum of violations as a time average and instantaneous.[PAR]",
+    "In the case of distance restraints it is also possible to calculate",
+    "the (sum of) violations as a running time average and instantaneous.",
+    "Pairs can be selected from a (huge) list to calculate",
+    "running averaged and instantaneous pair distances.[PAR]",
     "Average and RMS are calculated with full precision from",
     "the simulation (see printed manual). Drift is calculated",
     "by performing a LSQ fit of the data to a straight line.",
@@ -505,10 +507,10 @@ int main(int argc,char *argv[])
   static int  skip=0,nmol=1,ndf=3;
   static real reftemp=300.0,ezero=0;
   t_pargs pa[] = {
-    { "-rall", FALSE, etBOOL, &bDRAll,
-      "Extract individual distance restraint data rather than energy terms" },
     { "-rsum", FALSE, etBOOL, &bDisRe,
-      "Extract sum of violations (instantaneous and time-averaged)" },
+      "Recalculate sum of violations (running average and instantaneous) and ensemble av. violations" },
+    { "-rall", FALSE, etBOOL, &bDRAll,
+      "Extract pair distances and ensemble av. violations" },
     { "-dg",   FALSE, etBOOL, &bDG,
       "Do a free energy estimate" },
     { "-temp", FALSE, etREAL, &reftemp,
@@ -759,7 +761,7 @@ int main(int argc,char *argv[])
 	  /*******************************************
 	   * D I S T A N C E   R E S T R A I N T S  
 	   *******************************************/
-	  if (ndr >0) {
+	  if (ndr > 0) {
 	    print_one(out,bDp,t[cur]);
 	    if (violaver == NULL)
 	      snew(violaver,dr.ndr);
@@ -768,18 +770,16 @@ int main(int argc,char *argv[])
 	    calc_violations(dr.rt,dr.rav,
 			    nbounds,pair,bounds,violaver,&sumt,&sumaver);
 	    
-	    if (bDRAll) {
+	    if (bDRAll)
 	      for(i=0; (i<nset); i++) {
 		sss=set[i];
 		fprintf(out,"  %8.4f",mypow(dr.rav[sss],minthird));
 		fprintf(out,"  %8.4f",dr.rt[sss]);
 	      }
-	      teller_disre++;
-	    }
-	    else {
+	    else
 	      fprintf(out,"  %8.4f  %8.4f",sumaver,sumt);
-	    }
 	    fprintf(out,"\n");
+	    teller_disre++;
 	  }
 	}
 	/*******************************************
