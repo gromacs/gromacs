@@ -114,8 +114,10 @@ void free_t_atoms(t_atoms *atoms)
 {
   int i;
 
-  for(i=0; i<atoms->nr; i++)
+  for(i=0; i<atoms->nr; i++) {
     sfree(*atoms->atomname[i]);
+    *atoms->atomname[i]=NULL;
+  }
   sfree(atoms->atomname);
   for(i=0; i<atoms->nres; i++)
     sfree(*atoms->resname[i]);
