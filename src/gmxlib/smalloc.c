@@ -42,11 +42,11 @@ static char *SRCID_smalloc_c = "$Id$";
 #include "main.h"
 
 #ifdef DEBUG
-#define NN "NULL"
 static void log_action(int bMal,char *what,char *file,int line,
                        int nelem,int size,void *ptr)
 {
   static int btot=0;
+  char *NN = "NULL";
   int        bytes;
   
   bytes=size*nelem;
@@ -55,25 +55,11 @@ static void log_action(int bMal,char *what,char *file,int line,
   btot+=bytes;
     
   bytes/=1024;
-#ifdef _amb_
-  if ((stdlog != NULL) && ((bytes != 0) || ((unsigned long) ptr == 0x5490) )) {
-    long mm=0,mx=0;
-    
-    mm=memavail();
-    mx=maxavail();
-    
-    fprintf(stdlog,"%30s:%4d b (mm:%4d, mx:%4d) [%s, line %d, nelem %d, size %d, ptr: %x]\n",
-	    what ? what : NN,bytes,mm/1024,mx/1024,
-	    file ? file : NN,line,nelem,size,ptr);
-  }
-#else
   if ((stdlog != NULL) && (bytes != 0))
     fprintf(stdlog,"%30s:%6d kb (%7d kb) [%s, line %d, nelem %d, size %d]\n",
 	    what ? what : NN,bytes,btot/1024,
 	    file ? file : NN,line,nelem,size);
-#endif
 }
-#undef NN
 #endif
 
 void *save_malloc(char *name,char *file,int line,int size)
@@ -145,16 +131,8 @@ void save_free(char *name,char *file,int line,void *ptr)
 #ifdef DEBUG
   log_action(0,name,file,line,0,0,ptr);
 #endif
-  if (ptr!=NULL)
-    {
-#ifdef _sun_
-     if (free(ptr)==-1)
-       fatal_error(errno,"free for %s (file %s, line %d, %s=0x%8x)",
-                   name,file,line,name,ptr);
-#else
-     free(ptr);
-#endif
-   }
+  if (ptr != NULL)
+    free(ptr);
 }
 
 unsigned maxavail(void)
@@ -164,17 +142,15 @@ unsigned maxavail(void)
   
   low=0;
   high=256e6;
-  while ((high-low)>4)
-    {
-      size=(high+low)/2;
-      if ((ptr=malloc((size_t)size))==NULL)
-        high=size;
-      else
-        {
-          free(ptr);
-          low=size;
-        }
+  while ((high-low) > 4) {
+    size=(high+low)/2;
+    if ((ptr=malloc((size_t)size))==NULL)
+      high=size;
+    else {
+      free(ptr);
+      low=size;
     }
+  }
   return low;
 }
 
@@ -183,14 +159,12 @@ unsigned memavail(void)
   char *ptr;
   unsigned size;
   
-  size=maxavail();
-  if (size!=0)
-    {
-      if ((ptr=malloc((size_t)size))!=NULL)
-        {
-          size+=memavail();
-          free(ptr);
-        }
+  size = maxavail(); 
+  if (size != 0) { 
+    if ((ptr=malloc((size_t)size)) != NULL) {
+      size += memavail();
+      free(ptr);
     }
+  }
   return size;
 }
