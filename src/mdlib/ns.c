@@ -375,7 +375,7 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
   nicg   = index[icg+1]-i0;
   bWater = (((type[a[i0]] == nWater) && (nicg == 3)) && 
 	    (!bPert[a[i0]]) && (!bPert[a[i0+1]]) && (!bPert[a[i0+2]]));
-  if (bWater)
+  if (bWater && !fr->bPert)
     nicg = 1;
     
   if (bLR) {
@@ -457,19 +457,24 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
 	for(jj=jj0; (jj<jj1); jj++) {
 	  j_atom = a[jj];
 	  bFreeJ = bFree || bPert[j_atom];
-	  bNotEx = NOTEXCL(bExcl,i,j_atom);
-	
-	  if (bNotEx) {
-	    if (bFreeJ) 
-	      add_j_to_nblist(free,j_atom);
-	    else if (bCoulOnly) 
-	      /* This is done whether or  not bWater is set */
+	  /* Complicated if, because the water H's should also
+           * see perturbed j-particles
+	   */
+	  if (!bWater || i==0 || bFreeJ) {
+	    bNotEx = NOTEXCL(bExcl,i,j_atom);
+	    
+	    if (bNotEx) {
+	      if (bFreeJ) 
+		add_j_to_nblist(free,j_atom);
+	      else if (bCoulOnly) 
+		/* This is done whether or  not bWater is set */
 	      add_j_to_nblist(coul,j_atom);
-	    else {
-	      if (bHaveLJ[type[j_atom]])
+	      else {
+		if (bHaveLJ[type[j_atom]])
 		add_j_to_nblist(vdw,j_atom);
-	      else if (qi*charge[j_atom] != 0)
-		add_j_to_nblist(coul,j_atom);
+		else if (qi*charge[j_atom] != 0)
+		  add_j_to_nblist(coul,j_atom);
+	      }
 	    }
 	  }
 	}
