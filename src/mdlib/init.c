@@ -193,6 +193,9 @@ void init_parts(FILE *log,t_commrec *cr,
   count_ones(log,cr);
 #endif
 
+  /* Make sure the random seeds are different on each node */
+  parm->ir.ld_seed += cr->nodeid;
+
   mdsplit_top(log,top,cr,nsb,bParallelDummies,dummycomm);
 
   if (list) {
