@@ -56,6 +56,31 @@
 #include "pdbio.h"
 #include "matio.h"
 
+static int index2(int *ibox,int x,int y) 
+{
+  return (ibox[1]*x+y);
+}
+
+static int index3(int *ibox,int x,int y,int z) 
+{
+  return (ibox[2]*(ibox[1]*x+y)+z);
+}
+
+static int indexn(int ndim,int *ibox,int *nxyz) 
+{
+  int d,dd,k,kk;
+  
+  /* Compute index in 1-D array */
+  d = 0;
+  for(k=0; (k<ndim); k++) {
+    dd = nxyz[k];
+    for(kk=k+1; (kk<ndim); kk++)
+      dd = dd*ibox[kk];
+    d += dd;
+  }
+  return d;
+}
+
 typedef struct{
   int Nx; /* x grid points in unit cell */
   int Ny; /* y grid points in unit cell */
@@ -66,15 +91,15 @@ typedef struct{
   real * ed; /* data */
 } XplorMap;
 
-static int lo_write_xplor(XplorMap * map,char * file)
+static void lo_write_xplor(XplorMap * map,char * file)
 {
   FILE * fp;
   int z,i,j,n;
-  fp = fopen(file,"w");
-  if(!fp)
-    gmx_file(file);
+  
+  fp = ffopen(file,"w");
   /* The REMARKS part is the worst part of the XPLOR format
-     and may cause problems with some programs */
+   * and may cause problems with some programs 
+   */
   fprintf(fp,"\n       2 !NTITLE\n") ;
   fprintf(fp," REMARKS Energy Landscape from GROMACS\n") ;
   fprintf(fp," REMARKS DATE: 2004-12-21 \n") ;
@@ -83,7 +108,8 @@ static int lo_write_xplor(XplorMap * map,char * file)
 	  map->Ny, map->dmin[1], map->dmax[1],
 	  map->Nz, map->dmin[2], map->dmax[2]);
   fprintf(fp,"%12.5E%12.5E%12.5E%12.5E%12.5E%12.5E\n",
-	  map->cell[0],map->cell[1],map->cell[2],map->cell[3],map->cell[4],map->cell[5]);
+	  map->cell[0],map->cell[1],map->cell[2],
+	  map->cell[3],map->cell[4],map->cell[5]);
   fprintf(fp, "ZYX\n") ;
   
   z = map->dmin[2];
@@ -98,40 +124,37 @@ static int lo_write_xplor(XplorMap * map,char * file)
   }
   fprintf(fp, "   -9999\n") ;
   fclose(fp) ;
-  return 0;
 }
 
-static int write_xplor(char *file,real *data,int nx,int ny,int nz,
-		       real dmin[],real dmax[])
+static void write_xplor(char *file,real *data,int *ibox,real dmin[],real dmax[])
 {
   XplorMap *xm;
-  
+  int i,j,k,n;
+    
   snew(xm,1);
-  xm->Nx = nx;
-  xm->Ny = ny;
-  xm->Nz = nz;
-  xm->ed = data;
+  xm->Nx = ibox[XX];
+  xm->Ny = ibox[YY];
+  xm->Nz = ibox[ZZ];
+  snew(xm->ed,xm->Nx*xm->Ny*xm->Nz);
+  n=0;
+  for(k=0; (k<xm->Nz); k++)
+    for(j=0; (j<xm->Ny); j++)
+      for(i=0; (i<xm->Nx); i++)
+	xm->ed[n++] = data[index3(ibox,i,j,k)];
   xm->cell[0] = dmax[XX]-dmin[XX];
   xm->cell[1] = dmax[YY]-dmin[YY];
   xm->cell[2] = dmax[ZZ]-dmin[ZZ];
   xm->cell[3] = xm->cell[4] = xm->cell[5] = 90;
-  clear_ivec(xm->dmin);
-  xm->dmax[XX] = nx-1;
-  xm->dmax[YY] = ny-1;
 
   clear_ivec(xm->dmin);
-  xm->dmax[XX] = nx-1;
-  xm->dmax[YY] = ny-1;
-
-  clear_ivec(xm->dmin);
-  xm->dmax[XX] = nx-1;
-  xm->dmax[YY] = ny-1;
-
-  clear_ivec(xm->dmin);
-  xm->dmax[XX] = nx-1;
-  xm->dmax[YY] = ny-1;
-  xm->dmax[ZZ] = nz-1;
-  return lo_write_xplor(xm,file);
+  xm->dmax[XX] = ibox[XX]-1;
+  xm->dmax[YY] = ibox[YY]-1;
+  xm->dmax[ZZ] = ibox[ZZ]-1;
+  
+  lo_write_xplor(xm,file);
+  
+  sfree(xm->ed);
+  sfree(xm);
 }
 
 static void normalize_p_e(int len,double *P,int *nbin,real *E,real pmin)
@@ -173,35 +196,33 @@ static int comp_minima(const void *a,const void *b)
     return 0;
 }
 
-static void pick_minima(char *logfile,int nbins,int ndim,real W[])
+static void pick_minima(char *logfile,int *ibox,int ndim,int len,real W[])
 {
   FILE *fp;
   int  i,j,k,ijk,nmin;
   bool bMin;
   t_minimum *mm;
   
-  snew(mm,gmx_nint(pow(nbins,ndim))+1);
+  snew(mm,len);
   nmin = 0;
   fp = fopen(logfile,"w");
-#define index2(x,y) (nbins*x+y)
-#define index3(x,y,z) (nbins*(nbins*x+y)+z)
-  for(i=0; (i<nbins); i++) {
-    for(j=0; (j<nbins); j++) {
+  for(i=0; (i<ibox[0]); i++) {
+    for(j=0; (j<ibox[1]); j++) {
       if (ndim == 3) {
-	for(k=0; (k<nbins); k++) {
-	  ijk    = index3(i,j,k);
+	for(k=0; (k<ibox[2]); k++) {
+	  ijk    = index3(ibox,i,j,k);
 	  bMin   = (((i == 0)       || ((i > 0)       && 
-					(W[ijk] < W[index3(i-1,j,k)]))) &&
-		    ((i == nbins-1) || ((i < nbins-1) && 
-					(W[ijk] < W[index3(i+1,j,k)]))) &&
+					(W[ijk] < W[index3(ibox,i-1,j,k)]))) &&
+		    ((i == ibox[0]-1) || ((i < ibox[0]-1) && 
+					(W[ijk] < W[index3(ibox,i+1,j,k)]))) &&
 		    ((j == 0)       || ((j > 0)       && 
-					(W[ijk] < W[index3(i,j-1,k)]))) &&
-		    ((j == nbins-1) || ((j < nbins-1) && 
-					(W[ijk] < W[index3(i,j+1,k)]))) &&
+					(W[ijk] < W[index3(ibox,i,j-1,k)]))) &&
+		    ((j == ibox[1]-1) || ((j < ibox[1]-1) && 
+					(W[ijk] < W[index3(ibox,i,j+1,k)]))) &&
 		    ((k == 0)       || ((k > 0)       && 
-					(W[ijk] < W[index3(i,j,k-1)]))) &&
-		    ((k == nbins-1) || ((k < nbins-1) && 
-					(W[ijk] < W[index3(i,j,k+1)]))));
+					(W[ijk] < W[index3(ibox,i,j,k-1)]))) &&
+		    ((k == ibox[2]-1) || ((k < ibox[2]-1) && 
+					(W[ijk] < W[index3(ibox,i,j,k+1)]))));
 	  if (bMin) {
 	    fprintf(fp,"Minimum %d at index %6d energy %10.3f\n",
 		    nmin,ijk,W[ijk]);
@@ -212,15 +233,15 @@ static void pick_minima(char *logfile,int nbins,int ndim,real W[])
 	}
       }
       else {
-	ijk    = index2(i,j);
+	ijk    = index2(ibox,i,j);
 	bMin   = (((i == 0)       || ((i > 0)       && 
-				      (W[ijk] < W[index2(i-1,j)]))) &&
-		  ((i == nbins-1) || ((i < nbins-1) && 
-				      (W[ijk] < W[index2(i+1,j)]))) &&
+				      (W[ijk] < W[index2(ibox,i-1,j)]))) &&
+		  ((i == ibox[0]-1) || ((i < ibox[0]-1) && 
+				      (W[ijk] < W[index2(ibox,i+1,j)]))) &&
 		  ((j == 0)       || ((j > 0)       && 
-				      (W[ijk] < W[index2(i,j-1)]))) &&
-		  ((j == nbins-1) || ((j < nbins-1) && 
-				      (W[ijk] < W[index2(i,j+1)]))));
+				      (W[ijk] < W[index2(ibox,i,j-1)]))) &&
+		  ((j == ibox[1]-1) || ((j < ibox[1]-1) && 
+				      (W[ijk] < W[index2(ibox,i,j+1)]))));
 	if (bMin) {
 	  fprintf(fp,"Minimum %d at index %6d energy %10.3f\n",
 		  nmin,ijk,W[ijk]);
@@ -238,16 +259,16 @@ static void pick_minima(char *logfile,int nbins,int ndim,real W[])
 	    i,mm[i].index,mm[i].ener);
   }
   fclose(fp);
+  sfree(mm);
 }
 
 static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
 		    char *xpm3,char *xpm4,char *pdb,char *logf,
 		    int n,int neig,real **eig,real **enerT,
 		    int nmap,real *mapindex,real **map,
-		    real Tref,int nbins,int nlevels,real pmin,
-		    char *mname,bool bSham,
-		    bool bXmin,real xmin,bool bXmax,real xmax,
-		    bool bYmin,real ymin,bool bYmax,real ymax)
+		    real Tref,int nlevels,real pmin,
+		    char *mname,bool bSham,int *ibox,
+		    bool bXmin,real *xmin,bool bXmax,real *xmax)
 {
   FILE    *fp;
   real    *min_eig,*max_eig;
@@ -258,7 +279,7 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
   double  *P,*bfac,efac,bref,Wmin,Wmax,Winf,Emin,Emax,Einf,Smin,Smax,Sinf,Mmin,Mmax,Minf;
   real    *delta;
   int     i,j,k,imin,len,index,d,*nbin,*bindex,bi;
-  int     *nxyz;
+  int     *nxyz,maxbox;
   t_block *b;
   t_rgb   rlo  = { 0, 0, 0 };
   t_rgb   rhi  = { 1, 1, 1 };
@@ -269,27 +290,38 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
   snew(nxyz,neig);
   snew(bfac,neig);
   snew(delta,neig);
+  
   for(i=0; (i<neig); i++) {
+    /* Check for input constraints */
+    min_eig[i] = max_eig[i] = eig[i][0];
     for(j=0; (j<n); j++) {
       min_eig[i] = min(min_eig[i],eig[i][j]);
       max_eig[i] = max(max_eig[i],eig[i][j]);
-      delta[i]  = (max_eig[i]-min_eig[i])/(2.0*nbins);
+      delta[i]   = (max_eig[i]-min_eig[i])/(2.0*ibox[i]);
     }
-  }
-  /* Check for input constraints */
-  if (neig == 2) {
-    min_eig[0] = bXmin ? xmin : min_eig[0] - delta[0];
-    max_eig[0] = bXmax ? xmax : max_eig[0] + delta[0];
-    min_eig[1] = bYmin ? ymin : min_eig[1] - delta[1];
-    max_eig[1] = bYmax ? ymax : max_eig[1] + delta[1];
-    bfac[0]    = nbins/(max_eig[0]-min_eig[0]);
-    bfac[1]    = nbins/(max_eig[1]-min_eig[1]);
-  }
-  else for(i=0; (i<neig); i++) {
-    /* Add some extra space, half a bin on each side */
-    max_eig[i] += delta[i];
-    min_eig[i] -= delta[i];
-    bfac[i]     = nbins/(max_eig[i]-min_eig[i]);
+    /* Add some extra space, half a bin on each side, unless the
+     * user has set the limits.
+     */
+    if (bXmax) {
+      if (max_eig[i] > xmax[i]) {
+	sprintf(warn_buf,"Your xmax[%d] value %f is smaller than the largest data point %f",i,xmax[i],max_eig[i]);
+	warning(NULL);
+      }
+      max_eig[i] = xmax[i];
+    }
+    else
+      max_eig[i] += delta[i];
+    
+    if (bXmin) {
+      if (min_eig[i] < xmin[i]) {
+	sprintf(warn_buf,"Your xmin[%d] value %f is larger than the smallest data point %f",i,xmin[i],min_eig[i]);
+	warning(NULL);
+      }
+      min_eig[i] = xmin[i];
+    }
+    else
+      min_eig[i] -= delta[i];
+    bfac[i]     = ibox[i]/(max_eig[i]-min_eig[i]);
   }
   /* Do the binning */ 
   bref = 1/(BOLTZ*Tref);
@@ -305,28 +337,24 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
     Emin = 0;
   len=1;
   for(i=0; (i<neig); i++) 
-    len=len*nbins;
+    len=len*ibox[i];
   printf("There are %d bins in the %d-dimensional histogram. Beta-Emin = %g\n",
 	 len,neig,Emin);
   snew(P,len);
   snew(W,len);
   snew(E,len);
   snew(S,len);
+  snew(M,len);
   snew(nbin,len);
   snew(bindex,n);
+
   
   /* Loop over projections */
   for(j=0; (j<n); j++) {
-    index = 0;
     /* Loop over dimensions */
-    for(i=0; (i<neig); i++) {
+    for(i=0; (i<neig); i++) 
       nxyz[i] = bfac[i]*(eig[i][j]-min_eig[i]);
-      /* Compute index in 1-D array */
-      d = 1;
-      for(k=i; (k<neig-1); k++)
-	d = d*nbins;
-      index += nxyz[i]*d;
-    }
+    index = indexn(neig,ibox,nxyz); 
     range_check(index,0,len);
     /* Compute the exponential factor */
     if (enerT)
@@ -412,75 +440,76 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
     }
   }  
   fclose(fp);
-  snew(axis_x,nbins);
-  snew(axis_y,nbins);
-  snew(axis_z,nbins);
-  snew(WW,nbins);
-  snew(EE,nbins);
-  snew(SS,nbins);
-  for(i=0; (i<nbins); i++) {
+  snew(axis_x,ibox[0]);
+  snew(axis_y,ibox[1]);
+  snew(axis_z,ibox[2]);
+  maxbox = max(ibox[0],max(ibox[1],ibox[2]));
+  snew(WW,maxbox*maxbox);
+  snew(EE,maxbox*maxbox);
+  snew(SS,maxbox*maxbox);
+  for(i=0; (i<neig); i++) {
     axis_x[i] = min_eig[XX]+i/bfac[XX];
     axis_y[i] = min_eig[YY]+i/bfac[YY];
     axis_z[i] = min_eig[ZZ]+i/bfac[ZZ];
   }
-  if (neig == 2) {
-    pick_minima(logf,nbins,2,W);
-    /* Dump to XPM file */
-    for(i=0; (i<nbins); i++) {
-      WW[i] = &(W[i*nbins]);
-      EE[i] = &(E[i*nbins]);
-      SS[i] = &(S[i*nbins]);
+  if (map) {
+    snew(M,len);
+    snew(MM,maxbox*maxbox);
+    for(i=0; (i<ibox[0]); i++) 
+      MM[i] = &(M[i*ibox[1]]);
+    Mmin = 1e8;
+    Mmax = -1e8;
+    for(i=0; (i<nmap); i++) {
+      Mmin = min(Mmin,map[0][i]);
+      Mmax = max(Mmax,map[0][i]);
     }
-    fp = fopen(xpm,"w");
-    write_xpm(fp,0,"Gibbs Energy Landscape","G (kJ/mol)","PC1","PC2",nbins,nbins,
-	      axis_x,axis_y,WW,0,Winf,rlo,rhi,&nlevels);
-    fclose(fp);
-    fp = fopen(xpm2,"w");
-    write_xpm(fp,0,"Enthalpy Landscape","H (kJ/mol)","PC1","PC2",nbins,nbins,
-	      axis_x,axis_y,EE,Emin,Einf,rlo,rhi,&nlevels);
-    fclose(fp);
-    fp = fopen(xpm3,"w");
-    write_xpm(fp,0,"Entropy Landscape","TDS (kJ/mol)","PC1","PC2",nbins,nbins,
-	      axis_x,axis_y,SS,0,Sinf,rlo,rhi,&nlevels);
-    fclose(fp);
-    if (map) {
-      snew(M,len);
-      snew(MM,nbins);
-      for(i=0; (i<nbins); i++) 
-	MM[i] = &(M[i*nbins]);
-      Mmin = 1e8;
-      Mmax = -1e8;
-      for(i=0; (i<nmap); i++) {
-	Mmin = min(Mmin,map[0][i]);
-	Mmax = max(Mmax,map[0][i]);
-      }
-      Minf = Mmax*1.05;
-      for(i=0; (i<len); i++) 
-	M[i] = Minf;
-      for(i=0; (i<nmap); i++) {
-	index = gmx_nint(mapindex[i]);
-	if (P[index] != 0)
-	  M[index] = map[0][i];
-      }
-      fp = fopen(xpm4,"w");
-      write_xpm(fp,0,"Custom Landscape",mname,"PC1","PC2",nbins,nbins,
-		axis_x,axis_y,MM,0,Minf,rlo,rhi,&nlevels);
-      fclose(fp);
-      sfree(MM);
-      sfree(M);
+    Minf = Mmax*1.05;
+    for(i=0; (i<len); i++) 
+      M[i] = Minf;
+    for(i=0; (i<nmap); i++) {
+      index = gmx_nint(mapindex[i]);
+      if (index >= len)
+	gmx_fatal(FARGS,"Number of bins in file from -mdata option does not correspond to current analysis");
+      
+      if (P[index] != 0)
+	M[index] = map[0][i];
     }
   }
+  pick_minima(logf,ibox,neig,len,W);
+  if (neig == 2) {
+    /* Dump to XPM file */
+    for(i=0; (i<ibox[0]); i++) {
+      WW[i] = &(W[i*ibox[1]]);
+      EE[i] = &(E[i*ibox[1]]);
+      SS[i] = &(S[i*ibox[1]]);
+    }
+    fp = fopen(xpm,"w");
+    write_xpm(fp,0,"Gibbs Energy Landscape","G (kJ/mol)","PC1","PC2",
+	      ibox[0],ibox[1],axis_x,axis_y,WW,0,Winf,rlo,rhi,&nlevels);
+    fclose(fp);
+    fp = fopen(xpm2,"w");
+    write_xpm(fp,0,"Enthalpy Landscape","H (kJ/mol)","PC1","PC2",
+	      ibox[0],ibox[1],axis_x,axis_y,EE,Emin,Einf,rlo,rhi,&nlevels);
+    fclose(fp);
+    fp = fopen(xpm3,"w");
+    write_xpm(fp,0,"Entropy Landscape","TDS (kJ/mol)","PC1","PC2",
+	      ibox[0],ibox[1],axis_x,axis_y,SS,0,Sinf,rlo,rhi,&nlevels);
+    fclose(fp);
+    fp = fopen(xpm4,"w");
+    write_xpm(fp,0,"Custom Landscape",mname,"PC1","PC2",
+	      ibox[0],ibox[1],axis_x,axis_y,MM,0,Minf,rlo,rhi,&nlevels);
+    fclose(fp);
+  }
   else if (neig == 3) {
-    pick_minima(logf,nbins,3,W);
     /* Dump to PDB file */
     fp = fopen(pdb,"w");
-    index = 0;
-    for(i=0; (i<nbins); i++) {
-      xxx[XX] = 3*(i+0.5-nbins/2);
-      for(j=0; (j<nbins); j++) {
-	xxx[YY] = 3*(j+0.5-nbins/2);
-	for(k=0; (k<nbins); k++,index++) {
-	  xxx[ZZ] = 3*(k+0.5-nbins/2);
+    for(i=0; (i<ibox[0]); i++) {
+      xxx[XX] = 3*(i+0.5-ibox[0]/2);
+      for(j=0; (j<ibox[1]); j++) {
+	xxx[YY] = 3*(j+0.5-ibox[1]/2);
+	for(k=0; (k<ibox[2]); k++) {
+	  xxx[ZZ] = 3*(k+0.5-ibox[2]/2);
+	  index = index3(ibox,i,j,k);
 	  if (P[index] > 0)
 	    fprintf(fp,"%-6s%5u  %-4.4s%3.3s  %4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
 		    "ATOM",(index+1) %10000,"H","H",(index+1)%10000,
@@ -489,44 +518,48 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
       }
     }
     fclose(fp);
-    write_xplor("out.xplor",W,nbins,nbins,nbins,min_eig,max_eig);
-#define index3(x,y,z) (nbins*(nbins*x+y)+z)
-    nxyz[XX] = imin/(nbins*nbins);
-    nxyz[YY] = (imin-nxyz[XX]*nbins*nbins)/nbins;
-    nxyz[ZZ] = imin % nbins;
-    for(i=0; (i<nbins); i++) {
-      snew(WW[i],nbins);
-      for(j=0; (j<nbins); j++)
-	WW[i][j] = W[index3(i,j,nxyz[ZZ])];
+    write_xplor("out.xplor",W,ibox,min_eig,max_eig);
+    if (map)
+      write_xplor("user.xplor",M,ibox,min_eig,max_eig);
+    nxyz[XX] = imin/(ibox[1]*ibox[2]);
+    nxyz[YY] = (imin-nxyz[XX]*ibox[1]*ibox[2])/ibox[2];
+    nxyz[ZZ] = imin % ibox[2];
+    for(i=0; (i<ibox[0]); i++) {
+      snew(WW[i],maxbox);
+      for(j=0; (j<ibox[1]); j++)
+	WW[i][j] = W[index3(ibox,i,j,nxyz[ZZ])];
     }
     snew(buf,strlen(xpm)+4);
     sprintf(buf,"%s",xpm);
     sprintf(&buf[strlen(xpm)-4],"12.xpm");
     fp = fopen(buf,"w");
-    write_xpm(fp,0,"Gibbs Energy Landscape","W (kJ/mol)","PC1","PC2",nbins,nbins,
-	      axis_x,axis_y,WW,0,Winf,rlo,rhi,&nlevels);
+    write_xpm(fp,0,"Gibbs Energy Landscape","W (kJ/mol)","PC1","PC2",
+	      ibox[0],ibox[1],axis_x,axis_y,WW,0,Winf,rlo,rhi,&nlevels);
     fclose(fp);
-    for(i=0; (i<nbins); i++) {
-      for(j=0; (j<nbins); j++)
-	WW[i][j] = W[index3(i,nxyz[YY],j)];
+    for(i=0; (i<ibox[0]); i++) {
+      for(j=0; (j<ibox[2]); j++)
+	WW[i][j] = W[index3(ibox,i,nxyz[YY],j)];
     }
     sprintf(&buf[strlen(xpm)-4],"13.xpm");
     fp = fopen(buf,"w");
-    write_xpm(fp,0,"SHAM Energy Landscape","kJ/mol","PC1","PC3",nbins,nbins,
-	      axis_x,axis_z,WW,0,Winf,rlo,rhi,&nlevels);
+    write_xpm(fp,0,"SHAM Energy Landscape","kJ/mol","PC1","PC3",
+	      ibox[0],ibox[2],axis_x,axis_z,WW,0,Winf,rlo,rhi,&nlevels);
     fclose(fp);
-    for(i=0; (i<nbins); i++) {
-      for(j=0; (j<nbins); j++)
-	WW[i][j] = W[index3(nxyz[XX],i,j)];
+    for(i=0; (i<ibox[1]); i++) {
+      for(j=0; (j<ibox[2]); j++)
+	WW[i][j] = W[index3(ibox,nxyz[XX],i,j)];
     }
     sprintf(&buf[strlen(xpm)-4],"23.xpm");
     fp = fopen(buf,"w");
-    write_xpm(fp,0,"SHAM Energy Landscape","kJ/mol","PC2","PC3",nbins,nbins,
-	      axis_y,axis_z,WW,0,Winf,rlo,rhi,&nlevels);
+    write_xpm(fp,0,"SHAM Energy Landscape","kJ/mol","PC2","PC3",
+	      ibox[1],ibox[2],axis_y,axis_z,WW,0,Winf,rlo,rhi,&nlevels);
     fclose(fp);
     sfree(buf);
   }
-  sfree(WW);
+  if (map) {
+    sfree(MM);
+    sfree(M);
+  }
 }
 
 static void ehisto(char *fh,int n,real **enerT)
@@ -556,7 +589,7 @@ static void ehisto(char *fh,int n,real **enerT)
     }
     bmin = min(enerT[0][j],bmin);
     bmax = max(enerT[0][j],bmax);
-  }
+}
   bwidth  = 1.0;
   blength = (bmax - bmin)/bwidth + 2;
   snew(histo,nbin);
@@ -593,9 +626,10 @@ int gmx_sham(int argc,char *argv[])
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE,bXYdy=FALSE;
   static bool bEESEF=FALSE,bEENLC=FALSE,bEeFitAc=FALSE,bPower=FALSE;
   static bool bShamEner=TRUE,bSham=TRUE; 
-  static real Tref=298.15,pmin=0;
-  static int  linelen=4096,nsets_in=1,nb_min=4,resol=10,nbin=32,nlevels=25;
-  static real xmin=0,ymin=0,xmax=1,ymax=1,ttol=0;
+  static real Tref=298.15,pmin=0,ttol=0;
+  static rvec nrbox = {32,32,32};
+  static rvec xmin  = {0,0,0}, xmax={1,1,1};
+  static int  linelen=4096,nsets_in=1,nb_min=4,resol=10,nlevels=25;
   static char *mname="";
   t_pargs pa[] = {
     { "-linelen", FALSE, etINT, {&linelen},
@@ -620,26 +654,23 @@ int gmx_sham(int argc,char *argv[])
       "Temperature for single histogram analysis" },
     { "-pmin",    FALSE, etREAL, {&pmin},
       "Minimum probability. Anything lower than this will be set to zero" },
-    { "-nbins",   FALSE, etINT,  {&nbin},
-      "Number of bins for single histogram analysis" },
+    { "-ngrid",   FALSE, etRVEC, {nrbox},   
+      "Number of bins for energy landscapes (max 3 values, dimensions > 3 will get the same value as the last" },
+    { "-xmin",    FALSE, etRVEC, {xmin},
+      "Minimum for the axes in energy landscape (see above for > 3 dimensions)" },
+    { "-xmax",    FALSE, etRVEC, {xmax},
+      "Maximum for the axes in energy landscape (see above for > 3 dimensions)" },
     { "-nlevels", FALSE, etINT,  {&nlevels},
       "Number of levels for energy landscape from single histogram analysis" },
     { "-mname",   FALSE, etSTR,  {&mname},
       "Legend label for the custom landscape" },
-    { "-xmin",    FALSE, etREAL, {&xmin},
-      "Minimum for the X-axis in 2D landscape" },
-    { "-xmax",    FALSE, etREAL, {&xmax},
-      "Maximum for the X-axis in 2D landscape" },
-    { "-ymin",    FALSE, etREAL, {&ymin},
-      "Minimum for the Y-axis in 2D landscape" },
-    { "-ymax",    FALSE, etREAL, {&ymax},
-      "Maximum for the Y-axis in 2D landscape" }
   };
 #define NPA asize(pa)
 
   FILE     *out;
-  int      n,e_n,d_n,nlast,s,nset,e_nset,d_nset,i,j=0;
+  int      n,e_n,d_n,nlast,s,nset,e_nset,d_nset,i,j=0,*ibox;
   real     **val,**et_val,**dt_val,*t,*e_t,e_dt,d_dt,*d_t,dt,tot,error;
+  real     *rmin,*rmax;
   double   *av,*sig,cum1,cum2,cum3,cum4,db;
     
   t_filenm fnm[] = { 
@@ -699,17 +730,29 @@ int gmx_sham(int argc,char *argv[])
 
   if (et_val)
     ehisto(opt2fn("-histo",NFILE,fnm),e_n,et_val);
-  
+
+  snew(ibox,nset);
+  snew(rmin,nset);
+  snew(rmax,nset);
+  for(i=0; (i<min(3,nset)); i++) {
+    ibox[i] = nrbox[i];
+    rmin[i] = xmin[i];
+    rmax[i] = xmax[i];
+  }
+  for(; (i<nset); i++) {
+    ibox[i] = nrbox[ZZ];
+    rmin[i] = xmin[ZZ];
+    rmax[i] = xmax[ZZ];
+  }
+      
   do_sham(opt2fn("-dist",NFILE,fnm),opt2fn("-bin",NFILE,fnm),
 	  opt2fn("-ls",NFILE,fnm),opt2fn("-lsh",NFILE,fnm),
 	  opt2fn("-lss",NFILE,fnm),opt2fn("-map",NFILE,fnm),
 	  opt2fn("-ls3",NFILE,fnm),opt2fn("-g",NFILE,fnm),
-	  n,nset,val,et_val,d_n,d_t,dt_val,Tref,nbin,nlevels,pmin,
-	  mname,bSham,
-	  opt2parg_bSet("-xmin",NPA,pa),xmin,
-	  opt2parg_bSet("-xmax",NPA,pa),xmax,
-	  opt2parg_bSet("-ymin",NPA,pa),ymin,
-	  opt2parg_bSet("-ymax",NPA,pa),ymax);
+	  n,nset,val,et_val,d_n,d_t,dt_val,Tref,nlevels,pmin,
+	  mname,bSham,ibox,
+	  opt2parg_bSet("-xmin",NPA,pa),rmin,
+	  opt2parg_bSet("-xmax",NPA,pa),rmax);
   
   thanx(stderr);
 
