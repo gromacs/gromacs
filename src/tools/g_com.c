@@ -47,6 +47,7 @@ int
 main(int argc, char *argv[])
 {
   gmx_com(argc,argv);
+  return 0;
 }
 
 

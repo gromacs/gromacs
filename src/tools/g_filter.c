@@ -48,6 +48,7 @@ int
 main(int argc, char *argv[])
 {
   gmx_filter(argc,argv);
+  return 0;
 }
 
 

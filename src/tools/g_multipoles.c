@@ -47,6 +47,7 @@ int
 main(int argc, char *argv[])
 {
   gmx_multipoles(argc,argv);
+  return 0;
 }
 
 
