@@ -780,7 +780,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
     
     /* solve in k-space for our local cells */
     vol = det(box);
-    energy=solve_pme(grid,ewaldcoeff,vol,bsp_mod,box,vir,cr);
+    energy=solve_pme(grid,ewaldcoeff,vol,bsp_mod,recipbox,vir,cr);
     inc_nrnb(nrnb,eNR_SOLVEPME,nx*ny*nz*0.5);
     
     /* do 3d-invfft */
