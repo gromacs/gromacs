@@ -387,13 +387,16 @@ void init_forcerec(FILE *log,
   /* Van der Waals stuff */
   fr->vdwtype  = ir->vdwtype;
   fr->rvdw     = ir->rvdw;
-  fr->rvdw_switch = ir->rvdw_switch;
-  fr->bLJshift = (fr->rvdw_switch < fr->rvdw);
-  
-  if (fr->rvdw_switch < fr->rvdw)
+  if ((fr->vdwtype != evdwCUT) && !fr->bBHAM) {
+    fr->rvdw_switch = ir->rvdw_switch;
+    if (fr->rvdw_switch >= fr->rvdw)
+      fatal_error(0,"rvdw_switch (%g) must be < rvdw (%g)",
+		  fr->rvdw_switch,fr->rvdw);
     fprintf(log,"Using %s Lennard-Jones, switch between %g and %g nm\n",
 	    (fr->eeltype==eelSWITCH) ? "switched":"shifted",
 	    fr->rvdw_switch,fr->rvdw);
+  }
+
   fprintf(log,"Cut-off's:   NS: %g   Coulomb: %g   %s: %g\n",
 	  fr->rlist,fr->rcoulomb,fr->bBHAM ? "BHAM":"LJ",fr->rvdw);
   
@@ -401,7 +404,7 @@ void init_forcerec(FILE *log,
     set_avcsix(log,fr,idef,mdatoms);
   if (fr->bBHAM)
     set_bham_b_max(log,fr,idef,mdatoms);
-
+  
   /* Now update the rest of the vars */
   update_forcerec(log,fr,box);
   make_tables(fr,MASTER(cr));
