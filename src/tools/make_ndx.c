@@ -714,6 +714,7 @@ static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
 	   bCase ? "case insensitive" : "case sensitive  "); 
     printf("\n> ");
     fgets(inp_string,STRLEN,stdin);
+    inp_string[strlen(inp_string)-1]=0;
     printf("\n");
     string=inp_string;
     while (string[0]==' ')
