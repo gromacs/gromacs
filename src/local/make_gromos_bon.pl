@@ -39,18 +39,32 @@ while (<>) {
 
 # add stuff for the termina for now. Can be removed later if we have
 # a working termini database
-print "\n[ bondtypes ]\n"; 
-print "NL  H    2    gb_2\n";
-print "C   OM   2    gb_5\n";
-print "OA  H    2    gb_1\n";
-print "C   OA   2    gb_12\n";
-print "C   O    2    gb_4\n";
 
-print "\n[ angletypes ]\n"; 
-print "H   NL   H   2   ga_9\n";
-print "H   NL   CH1 2   ga_10\n";
-print "CH1 C    OM  2   ga_21\n";
-print "OM  C    OM  2   ga_37\n";
-print "O   C    OA  2   ga_32\n";
-print "C   OA   H   2   ga_11\n";
-print "CH1 C    O   2   ga_29\n";
+print "\n[ bondtypes ]\n";
+print "NL     H       2    gb_2\n";
+print "C      OM      2    gb_5\n";
+print "OA     H       2    gb_1\n";
+print "C      OA      2    gb_12\n";
+print "C      O       2    gb_4\n";
+print "S      S       2    gb_33\n";
+print "NR     FE      2    gb_32\n";
+
+print "\n[ angletypes ]\n";
+print "H      NL     H     2   ga_9\n";
+print "H      NL     CH1   2   ga_10\n";
+print "CH1    C      OM    2   ga_21\n";
+print "OM     C      OM    2   ga_37\n";
+print "O      C      OA    2   ga_32\n";
+print "C      OA     H     2   ga_11\n";
+print "CH1    C      O     2   ga_29\n";
+print "CH1    CH2    S     2   ga_15\n";
+print "CH2    S      S     2   ga_5\n";
+print "CH2    C     OM     2   ga_21\n";
+print "CR1    NR    FE     2	ga_33\n";
+print "NR     FE    NR     2   ga_16\n";
+
+print "\n[ dihedraltypes ]\n";
+print "S      S      1   gd_10\n";
+print "NR     FE     1   gd_18\n";
+print "CH2    S      1   gd_13\n";
+
