@@ -133,13 +133,14 @@ int main(int argc, char *argv[])
     { efTRX, "-trj",NULL,  ffOPTRD }
   };
 #define NFILE asize(fnm)
-  static rvec nrbox={1,1,1};
-  static int  seed=0;               /* seed for random number generator */
-  static int  nmolat=3;
+  static rvec nrbox    = {1,1,1};
+  static int  seed     = 0;          /* seed for random number generator */
+  static int  nmolat   = 3;
   static bool bShuffle = FALSE;
-  static bool bRandom = FALSE;    /* False: no random rotations */
-  static rvec dist={0,0,0};       /* space added between molecules ? */
-  static rvec max_rot={90,90,90}; /* maximum rotation */
+  static bool bSort    = FALSE;
+  static bool bRandom  = FALSE;      /* False: no random rotations */
+  static rvec dist     = {0,0,0};    /* space added between molecules ? */
+  static rvec max_rot  = {90,90,90}; /* maximum rotation */
   t_pargs pa[] = {
     { "-nbox",   FALSE, etRVEC, {&nrbox},  
       "Number of boxes" },
@@ -151,8 +152,10 @@ int main(int argc, char *argv[])
       "Randomly rotate conformations" },
     { "-shuffle",FALSE, etBOOL, {&bShuffle},
       "Random shuffling of molecules" },
+    { "-sort",   FALSE, etBOOL, {&bSort},
+      "Sort molecules on X coord" },
     { "-nmolat", FALSE, etINT,  {&nmolat}, 
-      "Number of atoms per molecule, assumed to start from 0. If you set this wrong, it will screw up you system!" },
+      "Number of atoms per molecule, assumed to start from 0. If you set this wrong, it will screw up your system!" },
     { "-maxrot", FALSE, etRVEC, {&max_rot},
       "Maximum random rotation" }
   };
@@ -252,7 +255,9 @@ int main(int argc, char *argv[])
   
   if (bShuffle)
     randwater(0,atoms->nr/nmolat,nmolat,x,v,&seed);
-  
+  else if (bSort)
+    sortwater(0,atoms->nr/nmolat,nmolat,x,v);
+    
   write_sto_conf(opt2fn("-o",NFILE,fnm),title,atoms,x,v,box);
   
   thanx(stdout);

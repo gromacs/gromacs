@@ -11,9 +11,9 @@ extern void randwater(int astart,int nwater,int nwatom,
  */
 
 
-extern void sortwater(int nwater,int nwatom,rvec x[]);
+extern void sortwater(int astart,int nwater,int nwatom,rvec x[],rvec v[]);
 /* Sort the order of nwater molecules of length nwatom on X coordinate
- * v not supported yet.
+ * If v is not NULL it will be shuffled along
  */
 
 #endif
