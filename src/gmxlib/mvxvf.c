@@ -83,25 +83,25 @@ void move_rvecs(FILE *log,bool bForward,bool bSum,
     /* Forward pulse around the ring, to increasing NODE number */
     if (bForward) {
       if (bSum)
-	mpiio_tx_rx_real(right,vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
-			 left,buf [nsb->index[prev]],nsb->homenr[prev]*DIM);
+	gmx_tx_rx_real(right,vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
+		       left,buf [nsb->index[prev]],nsb->homenr[prev]*DIM);
       else
-	mpiio_tx_rx_real(right,vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
-			 left, vecs[nsb->index[prev]],nsb->homenr[prev]*DIM);
+	gmx_tx_rx_real(right,vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
+		       left, vecs[nsb->index[prev]],nsb->homenr[prev]*DIM);
       /* Wait for communication to end */
-      mpiio_wait(right,left);
+      gmx_wait(right,left);
     }
     
     /* Backward pulse around the ring, to decreasing NODE number */
     else {
       if (bSum)
-	mpiio_tx_rx_real(left, vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
-			 right,buf [nsb->index[next]],nsb->homenr[next]*DIM);
+	gmx_tx_rx_real(left, vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
+		       right,buf [nsb->index[next]],nsb->homenr[next]*DIM);
       else
-	mpiio_tx_rx_real(left, vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
-			 right,vecs[nsb->index[next]],nsb->homenr[next]*DIM);
+	gmx_tx_rx_real(left, vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
+		       right,vecs[nsb->index[next]],nsb->homenr[next]*DIM);
       /* Wait for communication to end */
-      mpiio_wait(left,right);
+      gmx_wait(left,right);
     }
 
     /* Actual summation */
