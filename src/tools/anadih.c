@@ -40,6 +40,7 @@ static char *SRCID_anadih_c = "$Id$";
 #include "bondf.h"
 #include "xvgr.h"
 #include "typedefs.h"
+#include "vec.h"
 #include "gstat.h"
 #include "confio.h"
 #include "pp2shift.h" 
@@ -447,7 +448,7 @@ void calc_distribution_props(int nh,int histo[],real start,
 			     real *S2)
 {
   real d,dc,ds,c1,c2,tdc,tds;
-  real fac,ang,invth;
+  real fac,ang,invth,Jc;
   int  i,j,th;
   
   if (nh == 0)
@@ -460,9 +461,10 @@ void calc_distribution_props(int nh,int histo[],real start,
     th+=histo[j];
   invth=1.0/th;
   
-  for(i=0; (i<nkkk); i++) 
-    kkk[i].Jc = 0;
-  
+  for(i=0; (i<nkkk); i++) {
+    kkk[i].Jc    = 0;
+    kkk[i].Jcsig = 0;
+  }  
   tdc=0,tds=0;
   for(j=0; (j<nh); j++) {
     d    = invth*histo[j];
@@ -476,8 +478,14 @@ void calc_distribution_props(int nh,int histo[],real start,
     for(i=0; (i<nkkk); i++) {
       c1   = cos(ang+kkk[i].offset);
       c2   = c1*c1;
-      kkk[i].Jc += d*(kkk[i].A*c2 + kkk[i].B*c1 + kkk[i].C);
+      Jc   = (kkk[i].A*c2 + kkk[i].B*c1 + kkk[i].C);
+      kkk[i].Jc    += histo[j]*Jc; 
+      kkk[i].Jcsig += histo[j]*sqr(Jc); 
     }
+  }
+  for(i=0; (i<nkkk); i++) {
+    kkk[i].Jc    /= th;
+    kkk[i].Jcsig  = sqrt(kkk[i].Jcsig/th-sqr(kkk[i].Jc));
   }
   *S2 = tdc*tdc+tds*tds;
 }

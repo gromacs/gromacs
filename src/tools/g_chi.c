@@ -355,17 +355,17 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
 {
   /* also gets 3J couplings and order parameters S2 */ 
   t_karplus kkkphi[] = {
-    { "J_NHa",     6.51, -1.76,  1.6, -M_PI/3,   0.0 },
-    { "J_HaC'",    4.0,   1.1,   0.1,  0.0,      0.0 },
-    { "J_NHCb",    4.7,  -1.5,  -0.2,  M_PI/3,   0.0 },
-    { "J_Ci-1Hai", 4.5,  -1.3,  -1.2,  2*M_PI/3, 0.0 }
+    { "J_NHa",     6.51, -1.76,  1.6, -M_PI/3,   0.0,  0.0 },
+    { "J_HaC'",    4.0,   1.1,   0.1,  0.0,      0.0,  0.0 },
+    { "J_NHCb",    4.7,  -1.5,  -0.2,  M_PI/3,   0.0,  0.0 },
+    { "J_Ci-1Hai", 4.5,  -1.3,  -1.2,  2*M_PI/3, 0.0,  0.0 }
   };
   t_karplus kkkpsi[] = {
-    { "J_HaN",   -0.88, -0.61,-0.27,M_PI/3,  0.0 }
+    { "J_HaN",   -0.88, -0.61,-0.27,M_PI/3,  0.0,  0.0 }
   };
   t_karplus kkkchi1[] = {
-    { "JHaHb2",       9.5, -1.6, 1.8, -M_PI/3, 0 },
-    { "JHaHb3",       9.5, -1.6, 1.8, 0, 0 }
+    { "JHaHb2",       9.5, -1.6, 1.8, -M_PI/3, 0,  0.0 },
+    { "JHaHb3",       9.5, -1.6, 1.8, 0, 0,  0.0 }
   };
 #define NKKKPHI asize(kkkphi)
 #define NKKKPSI asize(kkkpsi)
@@ -376,7 +376,7 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
   char    *sss[3] = { "sheet", "helix", "coil" };
   real    S2;
   real    *normhisto;
-  real    **Jc;
+  real    **Jc,**Jcsig;
   int     ****his_aa_ss=NULL;
   int     ***his_aa,**his_aa1,*histmp;
   int     i,j,k,m,n,nn,Dih,nres,hindex,angle;
@@ -411,8 +411,11 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
   snew(histmp,nbin);
   
   snew(Jc,nlist);
-  for(i=0; (i<nlist); i++)
+  snew(Jcsig,nlist);
+  for(i=0; (i<nlist); i++) {
     snew(Jc[i],NJC);
+    snew(Jcsig[i],NJC);
+  }
   
   j=0;
   n=0;
@@ -465,20 +468,25 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
 	case edPhi:
 	  calc_distribution_props(nbin,histmp,-M_PI,NKKKPHI,kkkphi,&S2);
 	  
-	  for(m=0; (m<NKKKPHI); m++) 
-	    Jc[i][m] = kkkphi[m].Jc;
+	  for(m=0; (m<NKKKPHI); m++) {
+	    Jc[i][m]    = kkkphi[m].Jc;
+	    Jcsig[i][m] = kkkphi[m].Jcsig;
+	  }
 	  break;
 	case edPsi:
 	  calc_distribution_props(nbin,histmp,-M_PI,NKKKPSI,kkkpsi,&S2);
 	  
-	  for(m=0; (m<NKKKPSI); m++)
-	    Jc[i][NKKKPHI+m] = kkkpsi[m].Jc;
+	  for(m=0; (m<NKKKPSI); m++) {
+	    Jc[i][NKKKPHI+m]    = kkkpsi[m].Jc;
+	    Jcsig[i][NKKKPHI+m] = kkkpsi[m].Jcsig;
+	  }
 	  break;
 	case edChi1:
 	  calc_distribution_props(nbin,histmp,-M_PI,NKKKCHI,kkkchi1,&S2);
-
-	  for(m=0; (m<NKKKCHI); m++)
-	    Jc[i][NKKKPHI+NKKKPSI+m] = kkkchi1[m].Jc;
+	  for(m=0; (m<NKKKCHI); m++) {
+	    Jc[i][NKKKPHI+NKKKPSI+m]    = kkkchi1[m].Jc;
+	    Jcsig[i][NKKKPHI+NKKKPSI+m] = kkkchi1[m].Jcsig;
+	  }
 	  break;
 	default: /* covers edOmega and higher Chis than Chi1 */ 
 	  calc_distribution_props(nbin,histmp,-M_PI,0,NULL,&S2);
@@ -500,22 +508,22 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
   sfree(histmp);
   
   /* Print out Jcouplings */
-  fprintf(log,"\n *** J-Couplings from simulation ***\n\n");
+  fprintf(log,"\n *** J-Couplings from simulation (plus std. dev.) ***\n\n");
   fprintf(log,"Residue   ");
   for(i=0; (i<NKKKPHI); i++)
-    fprintf(log,"%10s",kkkphi[i].name);
+    fprintf(log,"%7s   SD",kkkphi[i].name);
   for(i=0; (i<NKKKPSI); i++)
-    fprintf(log,"%10s",kkkpsi[i].name);
+    fprintf(log,"%7s   SD",kkkpsi[i].name);
   for(i=0; (i<NKKKCHI); i++)
-    fprintf(log,"%10s",kkkchi1[i].name);
+    fprintf(log,"%7s   SD",kkkchi1[i].name);
   fprintf(log,"\n");
   for(i=0; (i<NJC+1); i++)
-    fprintf(log,"----------");
+    fprintf(log,"------------");
   fprintf(log,"\n");
   for(i=0; (i<nlist); i++) {
     fprintf(log,"%-10s",dlist[i].name);
     for(j=0; (j<NJC); j++)
-      fprintf(log,"  %8.3f",Jc[i][j]);
+      fprintf(log,"  %5.2f %4.2f",Jc[i][j],Jcsig[i][j]);
     fprintf(log,"\n");
   }
   fprintf(log,"\n");

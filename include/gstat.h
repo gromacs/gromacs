@@ -154,6 +154,7 @@ typedef struct {
   real A,B,C;   /* Karplus coefficients */
   real offset;  /* Offset for dihedral angle in histogram (e.g. -M_PI/3) */
   real Jc;      /* Resulting Jcoupling */
+  real Jcsig;   /* Standard deviation in Jc */
 } t_karplus;
 
 extern void calc_distribution_props(int nh,int histo[],
