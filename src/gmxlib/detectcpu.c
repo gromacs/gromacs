@@ -219,11 +219,6 @@ static int detect_3dnow(FILE *log)
     if(log)
       fprintf(log,"\nTesting x86 3DNow capabilities...\n");
     if(ebx==VENDOR_AMD) {
-      /* Newer athlons support SSE which might be faster (or at least IEEE=better),
-       * but I havent been able to test one yet, so it is not turned on yet.
-       * In theory it should be easy - just insert a test for bit 25 of edx in
-       * the same way we do for intel above. 
-       */
       /* amd - start by checking for extended functions */
       x86_cpuid(0x80000000,&eax,&ebx,&ecx,&edx);
       if(eax>=0x80000001) {
