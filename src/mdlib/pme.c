@@ -133,9 +133,7 @@ void calc_idx(int natoms,matrix recipbox,
 
   for(i=0; (i<natoms); i++) {
     xptr   = x[i];
-#ifdef DEBUG
     idxptr = idx[i];
-#endif
     
     /* Fractional coordinates along box vectors */
     tx = nx + nx * ( xptr[XX] * rxx + xptr[YY] * ryx + xptr[ZZ] * rzx );
@@ -156,10 +154,10 @@ void calc_idx(int natoms,matrix recipbox,
     fractx[i][YY] = ty - tiy;
     fractx[i][ZZ] = tz - tiz;   
     
-#ifdef DEBUG
     idxptr[XX] = nnx[tix];
     idxptr[YY] = nny[tiy];
     idxptr[ZZ] = nnz[tiz];
+#ifdef DEBUG
     range_check(idxptr[XX],nx);
     range_check(idxptr[YY],ny);
     range_check(idxptr[ZZ],nz);
