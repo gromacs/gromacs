@@ -67,7 +67,9 @@ extern "C" {
 #include "types/matrix.h"
 #include "types/edsams.h"
 
-/* Functions to initiate and delete structures */
+/* Functions to initiate and delete structures *
+ * These functions are defined in gmxlib/typedefs.c 
+ */
 extern void init_block(t_block *block);
 extern void init_atom (t_atoms *at);
 extern void init_top (t_topology *top);
@@ -77,7 +79,8 @@ extern void done_atom (t_atoms *at);
 extern void done_symtab(t_symtab *symtab);
 extern void done_top(t_topology *top);
 extern void done_inputrec(t_inputrec *ir);
-/* These functions defined in gmxlib/typedefs.c */
+extern t_atoms *new_atoms(int natoms);
+  /* Allocate memory for natoms atoms */
 
 #ifdef CPLUSPLUS
 }
