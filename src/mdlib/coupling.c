@@ -99,7 +99,7 @@ real calc_temp(real ekin,real nrdf)
     return 0;
 }
 
-void parinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
+void parrinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
 			    tensor box,tensor boxv,tensor M)
 {
   /* This doesn't do any coordinate updating. It just
@@ -194,7 +194,7 @@ void parinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
       t1[ZZ][n]*=winv[d][n]*fac;
     break;
   default:
-    fatal_error(0,"Parinello-Rahman pressure coupling type %s "
+    fatal_error(0,"Parrinello-Rahman pressure coupling type %s "
 		"not supported yet\n",EPCOUPLTYPETYPE(ir->epct));
     break;
   }

@@ -3,6 +3,10 @@ Makefile
 include
 config.log
 config.cache
+config.status
 libtool
 config.status
 stamp-h
+configure
+aclocal.m4
+

@@ -13,7 +13,7 @@ EXTRA_DIST              = README
 # issue "make <program>" and copy the binary to the correct location yourself! 
 # Add new entries in Makefile.am!
 
-EXTRA_PROGRAMS 		= sigeps mk6_n copyrgt mkyaw prfn options hrefify mkice \
+EXTRA_PROGRAMS 	= 	sigeps mk6_n copyrgt mkyaw prfn options hrefify mkice \
                           total hexamer optwat addquote do_shift g_anavel my_dssp anaf 
 
 # Note: you don't have to list sources for "prog" if it is the single file prog.c

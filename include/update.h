@@ -139,7 +139,7 @@ extern void calc_pres(int ePBC,matrix box,
  * a long range correction based on Ewald/PPPM is made (see c-code)
  */
 
-extern void parinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
+extern void parrinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
 				   tensor box,tensor boxv,tensor M);
   
 extern void berendsen_pcoupl(t_inputrec *ir,int step,tensor pres,

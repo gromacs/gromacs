@@ -30,6 +30,7 @@ if [ "$shtst" = A ]; then
     export GMXBIN=@bindir@          #####
     export GMXLDLIB=@libdir@        #####
     export GMXMAN=@mandir@          #####
+    export GMXDATA=@datadir@        #####
     export export PATH=${PATH}:${GMXBIN} 
     if [ "$MANPATH" = "" ]; then
       export MANPATH=/usr/man:${GMXMAN}
@@ -126,9 +127,10 @@ if ($?PATHSET) then
   unsetenv PATHSET
 endif  
 
-setenv GMXBIN @bindir@   #####
-setenv GMXLDLIB @libdir@   ######
-setenv GMXMAN @mandir@   #####
+setenv GMXBIN @bindir@     #####
+setenv GMXLDLIB @libdir@   #####
+setenv GMXMAN @mandir@     #####
+setenv GMXDATA @datadir@   #####
 setenv PATH ${PATH}:${GMXBIN}
 if ( $?LD_LIBRARY_PATH ) then
   setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${GMXLDLIB}

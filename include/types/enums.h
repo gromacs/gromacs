@@ -52,7 +52,7 @@ enum {
 }; /* yes is an alias for berendsen */
 
 enum {
-  epcNO, epcBERENDSEN, epcPARINELLORAHMAN, epcISOTROPIC, epcNR
+  epcNO, epcBERENDSEN, epcPARRINELLORAHMAN, epcISOTROPIC, epcNR
 }; /* isotropic is an alias for berendsen */
 
 enum {

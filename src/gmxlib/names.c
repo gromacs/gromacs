@@ -95,7 +95,7 @@ char *etcoupl_names[etcNR+1] = {
 }; /* yes is alias for berendsen */
 
 char *epcoupl_names[epcNR+1] = {
-  "No", "Berendsen", "Parinello-Rahman", "Isotropic", NULL
+  "No", "Berendsen", "Parrinello-Rahman", "Isotropic", NULL
 }; /* isotropic is alias for berendsen */
 
 char *epcoupltype_names[epctNR+1] = {

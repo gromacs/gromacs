@@ -19,6 +19,9 @@ EXTRA_DIST = GMXRC.in completion.csh completion.bash completion.zsh \
 GMXRC:	GMXRC.in
 	cat $(srcdir)/GMXRC.in | sed 's,@libdir\@,$(libdir),' | \
 	sed 's,@bindir\@,$(bindir),' | \
+        sed 's,@datadir\@,$(datadir),' | \
 	sed 's,@mandir\@,$(mandir),'  > GMXRC
 
 CLEANFILES = GMXRC \\\#* *~
+
+

@@ -97,7 +97,7 @@ static void do_update_md(int start,int homenr,double dt,
 
   if(bExtended) {
     /* Update with coupling to extended ensembles, used for
-     * Nose-Hoover and Parinello-Rahman coupling
+     * Nose-Hoover and Parrinello-Rahman coupling
      */
     for (n=start; n<start+homenr; n++) {  
       imass = invmass[n];
@@ -174,7 +174,7 @@ static void do_update_visc(int start,int homenr,double dt,
 
   if(bExtended) {
     /* Update with coupling to extended ensembles, used for
-     * Nose-Hoover and Parinello-Rahman coupling
+     * Nose-Hoover and Parrinello-Rahman coupling
      */
     for (n=start; n<start+homenr; n++) {  
       imass = invmass[n];
@@ -640,7 +640,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
     bHaveConstr = init_constraints(stdlog,top,&(parm->ir),md,start,homenr,
 				    ir->eI!=eiSteep,cr);
     bHaveConstr = bHaveConstr || pulldata->bPull;
-    bExtended   = (ir->etc==etcNOSEHOOVER) || (ir->epc==epcPARINELLORAHMAN);
+    bExtended   = (ir->etc==etcNOSEHOOVER) || (ir->epc==epcPARRINELLORAHMAN);
     
     if (edyn->bEdsam) 
       init_edsam(stdlog,top,md,start,homenr,x,parm->box,
@@ -683,8 +683,8 @@ void update(int          natoms, 	/* number of atoms in simulation */
     }
     clear_mat(M);
 
-    if(ir->epc == epcPARINELLORAHMAN)
-      parinellorahman_pcoupl(&(parm->ir),step,parm->pres,parm->box,parm->boxv,M);
+    if(ir->epc == epcPARRINELLORAHMAN)
+      parrinellorahman_pcoupl(&(parm->ir),step,parm->pres,parm->box,parm->boxv,M);
     /* Now do the actual update of velocities and positions */
     where();
     dump_it_all(stdlog,"Before update",natoms,x,xprime,v,vold,force);
@@ -845,7 +845,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
     if (ir->epc == epcBERENDSEN)
       berendsen_pcoupl(ir,step,parm->pres,parm->box,start,homenr,x,md->cFREEZE,nrnb,
 		       ir->opts.nFreeze);
-    else if (ir->epc == epcPARINELLORAHMAN) {
+    else if (ir->epc == epcPARRINELLORAHMAN) {
       /* The box velocities were updated in do_pr_pcoupl in the update
        * iteration, but we dont change the box vectors until we get here
        * since we need to be able to shift/unshift above.

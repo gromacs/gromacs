@@ -1,4 +1,4 @@
-# Makefile.in generated automatically by automake 1.4h from Makefile.am.
+# Makefile.in generated automatically by automake 1.4j from Makefile.am.
 
 # Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001
 # Free Software Foundation, Inc.
@@ -27,14 +27,14 @@ exec_prefix = ${prefix}/i686-pc-linux-gnu
 
 bindir = ${exec_prefix}/bin
 sbindir = ${exec_prefix}/sbin
-libexecdir = ${exec_prefix}/libexec
+libexecdir = ${exec_prefix}/lib
 datadir = ${prefix}/share
 sysconfdir = ${prefix}/etc
 sharedstatedir = ${prefix}/com
-localstatedir = ${prefix}/var
+localstatedir = /var/lib
 libdir = ${exec_prefix}/lib
-infodir = ${prefix}/info
-mandir = ${prefix}/man
+infodir = ${prefix}/share/info
+mandir = ${prefix}/share/man
 includedir = ${prefix}/include
 oldincludedir = /usr/include
 pkgdatadir = $(datadir)/gromacs
@@ -64,7 +64,7 @@ host_triplet = i686-pc-linux-gnu
 AMTAR = ${SHELL} /tmp_mnt/etc/gromacs/cvs/gmx/config/missing --run tar
 AS = cc
 ASFLAGS = -O6 -fomit-frame-pointer -finline-functions -funroll-all-loops -Wall -Wno-unused -x assembler-with-cpp
-AWK = gawk
+AWK = awk
 CC = cc
 CC_FOR_BUILD = cc
 CPP = cc -E
@@ -91,6 +91,7 @@ OBJDUMP = @OBJDUMP@
 OBJEXT = o
 PACKAGE = gromacs
 RANLIB = ranlib
+RPM = rpm
 SHARED_VERSION_INFO = 1:0:0
 STRIP = strip
 VERSION = 3.0
@@ -98,8 +99,8 @@ X_CFLAGS =  -I/usr/X11R6/include
 X_EXTRA_LIBS = 
 X_LIBS =  -L/usr/X11R6/lib
 X_PRE_LIBS =  -lSM -lICE
-_am_include = include
-_am_quote = 
+am__include = include
+am__quote = 
 install_sh = config/install-sh
 
 EXTRA_SCRIPTS = mkcompl  mkhtml  mknroff  mktex 

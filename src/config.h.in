@@ -15,6 +15,10 @@
 /* Compile in double precision */
 #undef DOUBLE
 
+/* Define to dummy `main' function (if any) required to link to the Fortran 77
+   libraries. */
+#undef F77_DUMMY_MAIN
+
 /* Define to a macro mangling the given C identifier (in lower and upper
    case), which must not contain underscores, for linking with Fortran. */
 #undef F77_FUNC
@@ -76,6 +80,9 @@
 /* Define if you have the <rpc/xdr.h> header file. */
 #undef HAVE_RPC_XDR_H
 
+/* Define if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
 /* Define if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
 
@@ -90,6 +97,12 @@
 
 /* Define if you have the <string.h> header file. */
 #undef HAVE_STRING_H
+
+/* Define if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
 
 /* Define if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H

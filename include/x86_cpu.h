@@ -42,6 +42,8 @@ static char *SRCID_x86_cpu_h = "$Id$";
 #include <config.h>
 #endif
 
+#include <stdio.h>
+
 extern int cpu_capabilities;
 #define UNKNOWN_CPU           0
 

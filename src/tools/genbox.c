@@ -582,8 +582,8 @@ int main(int argc,char *argv[])
     "program tries for [TT]-nmol[tt] * [TT]-try[tt] times before giving up. ",
     "Increase -try if you have several small holes to fill.[PAR]",
     
-    "The default solvent is Simple Point Charge water (SPC). The coordinates ",
-    "for this are read from [TT]$GMXLIB/spc216.gro[tt]. Other",
+    "The default solvent is Simple Point Charge water (SPC), with coordinates ",
+    "from [TT]$GMXLIB/spc216.gro[tt]. Other",
     "solvents are also supported, as well as mixed solvents. The",
     "only restriction to solvent types is that a solvent molecule consists",
     "of exactly one residue. The residue information in the coordinate",

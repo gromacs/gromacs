@@ -77,12 +77,19 @@ extern "C" {
 typedef int     	atom_id;	/* To indicate an atoms id         */
 #define NO_ATID		(atom_id)(~0)	/* Use this to indicate invalid atid */
 
+  /* Check whether we already have a real type! */
 #ifdef DOUBLE
+#ifndef HAVE_REAL
 typedef double   	real;
+#define HAVE_REAL
+#endif
 #define GMX_MPI_REAL    MPI_DOUBLE
 #define GMX_REAL_EPS    2.2e-16
 #else
+#ifndef HAVE_REAL
 typedef float           real;
+#define HAVE_REAL
+#endif
 #define GMX_MPI_REAL    MPI_FLOAT
 #define GMX_REAL_EPS    1.2e-07
 #endif

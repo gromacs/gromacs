@@ -30,7 +30,7 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	trnio.c		trxio.c		txtdump.c	typedefs.c	\
 	viewit.c	wgms.c		wman.c		writeps.c	\
 	xdrd.c		xtcio.c		xvgr.c   	replace.h	\
-	x86_cpu.c	libxdrf.c	
+	x86_cpu.c	libxdrf.c	vec.c
 
 EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = \
 	mpiio.c		libnet.c	x86_sse.s	x86_3dnow.s  	\

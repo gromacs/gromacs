@@ -40,11 +40,12 @@
 static char *SRCID_vec_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+#define gmx_inline inline
+#elif define __GNUC__
+#define gmx_inline __inline
+#else
+#define inline
 #endif
-
-#ifdef HAVE_IDENT
-#ident	"@(#) vec.h 1.8 12/16/92"
-#endif /* HAVE_IDENT */
 
 /*
   collection of in-line ready operations:
@@ -95,15 +96,11 @@ static char *SRCID_vec_h = "$Id$";
   real trace(matrix m)                             = trace(m)
 */
 
-#ifdef USE_AXP_ASM
-#include "axp_asm.h"
-#endif
 #include "maths.h"
 #include "typedefs.h"
 #include "sysstuff.h"
 #include "macros.h"
 #include "fatal.h"
-#include "x86_cpu.h"
 
 #define EXP_LSB         0x00800000
 #define EXP_MASK        0x7f800000
@@ -170,49 +167,6 @@ static inline real invsqrt(float x)
 
 
 
-static inline void vecinvsqrt(real in[],real out[],int n)
-{
-#ifdef INVSQRT_DONE  
-  const real  half=0.5;
-  const real  three=3.0;
-  t_convert   result,bit_pattern;
-  unsigned int exp,fract;
-  float       lu,x;
-#ifdef DOUBLE
-  real        y;
-#endif
-#endif /* INVSQRT_DONE */
-  int i;
-  
-#if (defined USE_X86_ASM && !defined DOUBLE)
-  if((cpu_capabilities & X86_SSE_SUPPORT) && !((unsigned long int)in & 0x1f) && !((unsigned long int)out & 0x1f)) /* SSE data must be cache aligned */
-    vecinvsqrt_sse(in,out,n);
-  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
-    vecinvsqrt_3dnow(in,out,n);
-  else
-#endif /* no x86 optimizations */
-#ifdef INVSQRT_DONE
-    for(i=0;i<n;i++) {
-      x=in[i];
-      bit_pattern.fval=x;
-      exp   = EXP_ADDR(bit_pattern.bval);
-      fract = FRACT_ADDR(bit_pattern.bval);
-      result.bval=cinvsqrtexptab[exp] | cinvsqrtfracttab[fract];
-      lu    = result.fval;
-      
-#ifdef DOUBLE
-      y=(half*lu*(three-((x*lu)*lu)));
-      out[i]=(half*y*(three-((x*y)*y)));
-#else
-      out[i]=(half*lu*(three-((x*lu)*lu)));
-#endif
-    }
-#else  /* no gmx invsqrt */
-    for(i=0;i<n;i++)
-      out[i]=1.0f/sqrt(in[i]);
-#endif /* INVSQRT_DONE */
-}
-
 #ifdef SOFTWARE_RECIP
 static inline real recip(float x)
 {
@@ -243,52 +197,26 @@ static inline real recip(float x)
 #endif
 
 
-static inline void vecrecip(real in[],real out[],int n)
-{
-#ifdef SOFTWARE_RECIP
-  const real  two=2.0;
-  t_convert   result,bit_pattern;
-  unsigned int exp,fract;
-  float       lu,x;
-#ifdef DOUBLE
-  real        y;
-#endif
-#endif /* SOFTWARE_RECIP */
-  int i;
-
-#if (defined USE_X86_ASM && !defined DOUBLE)
-  if((cpu_capabilities & X86_SSE_SUPPORT) && !((unsigned long int)in & 0x1f) && !((unsigned long int)out & 0x1f)) /* SSE data must be cache aligned */
-    vecrecip_sse(in,out,n);
-  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
-    vecrecip_3dnow(in,out,n);
-  else
-#endif /* no x86 optimizations */
-#ifdef SOFTWARE_RECIP
-    for(i=0;i<n;i++) {
-      x=in[i];
-      bit_pattern.fval=x;
-      exp   = EXP_ADDR(bit_pattern.bval);
-      fract = FRACT_ADDR(bit_pattern.bval);
-      result.bval=crecipexptab[exp] | crecipfracttab[fract];
-      lu    = result.fval;
-      
-#ifdef DOUBLE
-      y=lu*(two-x*lu);
-      out[i]=y*(two-x*y);
-#else
-      out[i]=lu*(two-x*lu);
-#endif
-    }
-#else /* No gmx recip */ 
-    for(i=0;i<n;i++)
-      out[i]=1.0f/(in[i]);
-#endif /* SOFTWARE_RECIP */
-}
-
 static inline real sqr(real x)
 {
   return (x*x);
 }
+
+extern void vecinvsqrt(real in[],real out[],int n);
+/* Perform out[i]=1.0/sqrt(in[i]) for n elements */
+
+
+
+extern void vecrecip(real in[],real out[],int n);
+/* Perform out[i]=1.0/(in[i]) for n elements 
+ * Note that this function can be much faster than writing
+ * the loop yourself, even if the recip(x) is slow on your machine.
+ * Not only do we get better cache usage in vecrecip, but it
+ * might be possible to use optimized vector libraries.
+ */
+
+
+
 
 static inline void rvec_add(const rvec a,const rvec b,rvec c)
 {

@@ -17,10 +17,6 @@ SHARED_VERSION_INFO="1:0:0"
 AC_SUBST(SHARED_VERSION_INFO)
 
 
-
-
-
-
 #######################################################################
 # Simple options and makefile variables
 #######################################################################
@@ -312,7 +308,11 @@ case "${host_cpu}" in
 	 .rdata
 #endif	
 EOF
-    AM_CONDITIONAL(AXP_ASM_CAPITAL_S,!(AC_TRY_COMMAND($CC -c conftest.s)))
+    if AC_TRY_COMMAND($CC -c conftest.s); then
+      AM_CONDITIONAL(AXP_ASM_CAPITAL_S,FALSE)
+    else
+      AM_CONDITIONAL(AXP_ASM_CAPITAL_S,TRUE)
+    fi
     GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} axp_asm.lo"
      ;;
   *) ;;
@@ -640,7 +640,8 @@ else
   name_transform_provided=yes;
 fi
 
-# Set exec-prefix from the architecture and cpu.
+# Set exec-prefix from the architecture and cpu, unless it was 
+# explicitly given by the user.
 if test "$exec_prefix" = "NONE"; then
   arch_exec_prefix=yes;	
   if test -n "$gmxcpu"; then
@@ -650,20 +651,43 @@ if test "$exec_prefix" = "NONE"; then
   fi
 fi
 AC_SUBST(exec_prefix)
+
+
+
+#If the prefix doesn't contain "gromacs" or "gmx" and the datadir
+#wasn't explicitly specified we add gromacs to the end of datadir:
+if test "$datadir" = "\${prefix}/share" -a -z "`echo ${prefix} | grep gromacs`"; then
+  if test "${prefix}" != "NONE" -a -z "`echo ${prefix} | grep gromacs`" -a -z "`echo ${prefix} | grep gmx`"; then
+    datadir="\${prefix}/share/gromacs"
+  fi
+fi
+AC_SUBST(datadir)
+
+#If the prefix doesn't contain "gromacs" or "gmx" and the includedir
+#wasn't explicitly specified we add gromacs to the end of includedir:
+if test "$includedir" = "\${prefix}/include" -a -z "`echo ${prefix} | grep gromacs`"; then
+  if test "${prefix}" != "NONE" -a -z "`echo ${prefix} | grep gromacs`" -a -z "`echo ${prefix} | grep gmx`"; then
+    includedir="\${prefix}/include/gromacs"
+  fi
+fi
+AC_SUBST(includedir)
+
+
 # Use a variable for RPM - this way it can be 
 # overridden with make RPM=rpm3 rpm
 RPM=rpm
 AC_SUBST(RPM)
 
-AC_CONFIG_FILES([Makefile include/Makefile include/types/Makefile 
-src/Makefile src/gmxlib/Makefile src/mdlib/Makefile src/kernel/Makefile
-src/tools/Makefile src/ngmx/Makefile src/contrib/Makefile
-scripts/Makefile admin/Makefile share/Makefile share/tutor/Makefile
-share/tutor/gmxdemo/Makefile share/tutor/nmr1/Makefile 
-share/tutor/nmr2/Makefile share/tutor/water/Makefile
-share/tutor/speptide/Makefile share/template/Makefile 
-share/top/Makefile share/html/Makefile share/html/images/Makefile 
-share/html/online/Makefile man/Makefile man/man1/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile src/gmxlib/Makefile 
+include/Makefile include/types/Makefile
+src/mdlib/Makefile src/kernel/Makefile src/tools/Makefile 
+src/ngmx/Makefile src/contrib/Makefile scripts/Makefile admin/Makefile 
+share/Makefile share/tutor/Makefile share/tutor/gmxdemo/Makefile 
+share/tutor/nmr1/Makefile share/tutor/nmr2/Makefile 
+share/tutor/water/Makefile share/tutor/speptide/Makefile 
+share/template/Makefile share/top/Makefile share/html/Makefile 
+share/html/images/Makefile share/html/online/Makefile man/Makefile 
+man/man1/Makefile])
 
 AC_OUTPUT 
 
@@ -681,10 +705,15 @@ echo ""
 echo "GROMACS is ready to compile."
 
 eval "show_path=`echo ${exec_prefix} | sed -e s,NONE,${ac_default_prefix},`"
+eval "show_datadir=`echo ${datadir} | sed -e s,NONE,${ac_default_prefix},`"
 echo ""
-echo "* Binaries and libraries for this host will be installed under"
-echo "  ${show_path}" 
-echo "  (You can set it with the --prefix and --exec-prefix options.)"
+echo "* Binaries and libraries for this host will be installed in"
+echo "    ${show_path}/bin" 
+echo "    ${show_path}/lib" 
+echo "  and shared data will placed in"
+echo "    ${show_datadir}"
+echo "  (You can set this with --prefix, --exec-prefix and --datadir)"
+
 
 if test "$enable_float" = "no" -a "$name_transform_provided" = "no"; then
   echo ""

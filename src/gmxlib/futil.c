@@ -235,10 +235,6 @@ FILE *ffopen(char *file,char *mode)
   bool bRead;
   int  bs;
   
-#ifdef _amb_
-  fprintf(stderr,"Going to open %s on NODE %d with mode %s\n",
-	  file,gmx_node_id(),mode);
-#endif
   if ((mode[0]=='w') && fexist(file)) {
     bf=backup_fn(file);
     if (rename(file,bf) == 0) {
@@ -288,10 +284,6 @@ FILE *ffopen(char *file,char *mode)
 	fatal_error(0,"%s does not exist",file);
     }
   }
-#ifdef _amb_
-  fprintf(stderr,"Opened %s on NODE %d with mode %s\n",
-	  file,gmx_node_id(),mode);
-#endif
   return ff;
 }
 
@@ -405,17 +397,20 @@ bool get_libdir(char *libdir)
 char *low_libfn(char *file, bool bFatal)
 {
   char *ret=NULL;
-  char *lib;
+  char *lib,*dir;
   static char buf[1024];
   static char libdir[1024];
+  static char libpath[4096],tmppath[4096];
   static int  bFirst=1;
   static bool env_is_set;
-
+  bool found;
+  
   if(bFirst) {
+    /* GMXLIB can be a path now */
     lib=getenv("GMXLIB");
     if(lib!=NULL) {
       env_is_set=TRUE;
-      strcpy(libdir,lib);
+      strcpy(libpath,lib);
     } else {
       if(!get_libdir(libdir))
 	strcpy(libdir,GMXLIBDIR);
@@ -426,12 +421,20 @@ char *low_libfn(char *file, bool bFatal)
   if (fexist(file))
     ret=file;
   else {
-    sprintf(buf,"%s/%s",libdir,file);
+    found=FALSE;
+    strcpy(tmppath,libpath);
+    while(!found && (dir=strtok(tmppath,":"))!=NULL) {
+      sprintf(buf,"%s/%s",dir,file);
+      found=fexist(buf);
+    }
     ret=buf;
-    if (bFatal && !fexist(ret))
-      fatal_error(0,"Library file %s not found in current dir nor the default libdirs.\n"
-		  "%s\n",file, 
-		  env_is_set ? "" : "(You can override libdir with the GMXLIB environment variable.)");
+    if (bFatal && !found) {
+      if(env_is_set) 
+	fatal_error(0,"Library file %s not found in current dir nor in your GMXLIB path.\n",file);
+      else
+	fatal_error(0,"Library file %s not found in current dir nor in default directories.\n"
+		    "(You can set the directories to search with the GMXLIB path variable.)\n",file);
+    }
   }
     
   return ret;
@@ -467,4 +470,17 @@ FILE *libopen(char *file)
 {
   return low_libopen(file,TRUE);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 

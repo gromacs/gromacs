@@ -331,7 +331,7 @@ int main(int argc,char *argv[])
     "absolute values (A^2) and in fractions of the maximal accessible",
     "surface of a residue. The maximal accessible surface is defined as",
     "the accessible surface of a residue in a chain of glycines.",
-    "[B]Note[b] that the program [TT]g_sas[tt] can also compute SAS",
+    "[BB]Note[bb] that the program [TT]g_sas[tt] can also compute SAS",
     "and that is more efficient.[PAR]",
     "Finally, this program can dump the secondary structure in a special file",
     "[TT]ssdump.dat[tt] for usage in the program [TT]g_chi[tt]. Together",
