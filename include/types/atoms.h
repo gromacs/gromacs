@@ -48,8 +48,8 @@ enum {
 typedef struct {
   real 		m,q;		/* Mass and charge			*/
   real 		mB,qB;		/* Mass and charge for Free Energy calc */
-  unsigned short	type;		/* Atom type				*/
-  unsigned short	typeB;		/* Atom type for Free Energy calc	*/
+  unsigned short type;		/* Atom type				*/
+  unsigned short typeB;		/* Atom type for Free Energy calc	*/
   int           ptype;		/* Particle type			*/
   int 		resnr;		/* Residue number			*/
   unsigned char grpnr[egcNR];   /* Group numbers			*/
