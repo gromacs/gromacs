@@ -40,7 +40,7 @@ enum {
 };
 
 enum {
-  eelTWIN, eelRF, eelGRF, eelPME, eelPPPM, eelSWITCH, eelSHIFT, eelNR
+  eelTWIN, eelRF, eelGRF, eelPME, eelPPPM, eelSWITCH, eelSHIFT, eelUSER, eelNR
 };
 
 enum { 

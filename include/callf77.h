@@ -55,6 +55,9 @@ extern void f77coultab(real *ix,real *iy,real *iz,real *qi,
 		       real *Vc,real *Vnb,
 		       int  *ntab,real *tabscale,
 		       real VFtab[]);
+		       
+/* Initiate invsqrt calculations in fortran */
+extern void fillbuf(void);
 
 /* Fortran versions of shake and settle */
 extern void fsettle(int *nshake,int owptr[],

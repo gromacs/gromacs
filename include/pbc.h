@@ -106,6 +106,9 @@ extern void put_atoms_in_box (FILE *log,int cg0,int cg1,bool bTruncOct,
  * When any atom can is more than one box-length out in any direction,
  * the program is terminated with an error message to log.
  */
+ 
+extern void put_all_atoms_in_box(int natoms,matrix box,rvec x[]);
+/* This puts ALL atoms in the box, not caring about charge gorups! */
 
 #ifdef CPLUSPLUS
 }
