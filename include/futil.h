@@ -72,8 +72,8 @@ extern void frewind(FILE *fp);
 
 bool is_pipe(FILE *fp);
 
-extern FILE *uncompress(char *fn);
-extern FILE *gunzip(char *fn);
+extern FILE *uncompress(char *fn,char *mode);
+extern FILE *gunzip(char *fn,char *mode);
 /* Open a pipe to uncompress or unzip files. Must be closed with pclose */
 
 extern char *libfn(char *file);
