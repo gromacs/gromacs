@@ -48,7 +48,7 @@ static char *SRCID_g_mindist_c = "$Id$";
 static void periodic_dist(matrix box,rvec x[],int n,atom_id index[],
 			  real *rmin,real *rmax)
 {
-#define NSHIFT 7
+#define NSHIFT 26
   int  sx,sy,sz,i,j,s;
   real sqr_box,r2min,r2max,r2;
   rvec shift[NSHIFT],d0,d;
@@ -56,17 +56,12 @@ static void periodic_dist(matrix box,rvec x[],int n,atom_id index[],
   sqr_box = sqr(min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ])));
 
   s = 0;
-  for(sz=0; sz<=1; sz++)
-    for(sy=0; sy<=1; sy++)
-      for(sx=0; sx<=1; sx++)
+  for(sz=-1; sz<=1; sz++)
+    for(sy=-1; sy<=1; sy++)
+      for(sx=-1; sx<=1; sx++)
 	if (sx!=0 || sy!=0 || sz!=0) {
-	  clear_rvec(shift[s]);
-	  if (sz)
-	    rvec_inc(shift[s],box[ZZ]);
-	  if (sy)
-	    rvec_inc(shift[s],box[YY]);
-	  if (sx)
-	    rvec_inc(shift[s],box[XX]);
+	  for(i=0; i<DIM; i++)
+	    shift[s][i] = sx*box[XX][i]+sy*box[YY][i]+sz*box[ZZ][i];
 	  s++;
 	}
   
@@ -74,7 +69,7 @@ static void periodic_dist(matrix box,rvec x[],int n,atom_id index[],
   r2max = 0;
 
   for(i=0; i<n; i++)
-    for(j=0; j<n; j++) {
+    for(j=i+1; j<n; j++) {
       rvec_sub(x[index[i]],x[index[j]],d0);
       r2 = norm2(d0);
       if (r2 > r2max)
