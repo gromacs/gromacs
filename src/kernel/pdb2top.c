@@ -554,18 +554,19 @@ void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
   print_nnb(&nnb,"NNB");
   gen_pad(&nnb,atoms,bH14,plist,nrtp,rtp,nra,ra,nrd,rd,nid,idi,bAlldih);
   done_nnb(&nnb);
+
+  /* Initiate the exclusion block, must also be done when no dummies are
+   * generated!
+   */
+  init_block(&excl);
   
   if (bDummies) {
     /* generate exclusions for dummy masses and atoms */ 
     init_nnb(&nnb,atoms->nr,nrexcl);
     gen_nnb(&nnb,plist);
-    excl.nr=atoms->nr;
-    excl.index=NULL;
-    excl.nra=0;
-    excl.a=NULL;
     nnb2excl(&nnb,&excl);
     done_nnb(&nnb);
-  
+    
     /* only keep exclusions for dummies: */
     do_dum_excl(&excl,is_dummy);
     

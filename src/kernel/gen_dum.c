@@ -30,6 +30,7 @@ static char *SRCID_gen_dum_c = "$Id$";
 
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include "gen_dum.h"
 #include "smalloc.h"
 #include "resall.h"

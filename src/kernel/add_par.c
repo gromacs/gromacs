@@ -28,6 +28,7 @@
  */
 static char *SRCID_add_par_c = "$Id$";
 
+#include <string.h>
 #include "typedefs.h"
 #include "smalloc.h"
 #include "grompp.h"
