@@ -35,8 +35,8 @@ static char *SRCID_hackblock_c = "$Id$";
 #include "string2.h"
 
 /* these MUST correspond to the enum in hackblock.h */
-char *btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers" };
-int btsNiatoms[ebtsNR] = { 2,       3,        4,           4           };
+char *btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers", "exclusions" };
+int btsNiatoms[ebtsNR] = { 2,       3,        4,           4,          2 };
 
 static void free_t_bonded(t_rbonded *rb)
 {

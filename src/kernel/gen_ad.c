@@ -255,6 +255,11 @@ static int int_comp(const void *a,const void *b)
   return (*(int *)a) - (*(int *)b);
 }
 
+static int atom_id_comp(const void *a,const void *b)
+{
+  return (*(atom_id *)a) - (*(atom_id *)b);
+}
+
 static int eq_imp(atom_id a1[],atom_id a2[])
 {
   int b1[4],b2[4];
@@ -529,18 +534,114 @@ static void get_atomnames_min(int n,char anm[4][12],
   }
 }
 
-void gen_pad(t_nextnb *nnb, t_atoms *atoms, bool bH14,
-	     t_params plist[], t_hackblock hb[], bool bAlldih)
+static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[])
+{
+  int        r,rp;
+  atom_id    a,ap,i1,i2,itmp;
+  t_rbondeds *hbexcl;
+  int        e;
+  char       *anm;
+
+  ap = 0;
+  rp  = atoms->atom[ap].resnr;
+  for(a=0; a<atoms->nr; a++) {
+    r = atoms->atom[a].resnr;
+    if (r!=rp || a==atoms->nr-1) {
+      hbexcl = &hb[rp].rb[ebtsEXCLS];
+      
+      for(e=0; e<hbexcl->nb; e++) {
+	anm = hbexcl->b[e].a[0];
+	i1 = search_atom(anm,ap,atoms->nr,atoms->atom,atoms->atomname);
+	if (i1 == NO_ATID)
+	  fatal_error(0,"atom name %s not found in residue %s %d while generating exclusions",anm,*atoms->resname[r],r+1);
+	anm = hbexcl->b[e].a[1];
+	i2 = search_atom(anm,ap,atoms->nr,atoms->atom,atoms->atomname);
+	if (i2 == NO_ATID)
+	  fatal_error(0,"atom name %s not found in residue %s %d while generating exclusions",anm,*atoms->resname[r],r+1);
+	srenew(excls[i1].e,excls[i1].nr+1);
+	if (i1 > i2) {
+	  itmp = i1;
+	  i1 = i2;
+	  i2 = itmp;
+	}
+	srenew(excls[i1].e,excls[i1].nr+1);
+	excls[i1].e[excls[i1].nr] = i2;
+	excls[i1].nr++;
+      }
+      
+      ap = a;
+      rp = r;
+    }
+  }
+
+  for(a=0; a<atoms->nr; a++)
+    qsort(excls[a].e,excls[a].nr,(size_t)sizeof(atom_id),atom_id_comp);
+}
+
+static void remove_excl(t_excls *excls, int remove)
+{
+  int i;
+
+  for(i=remove+1; i<excls->nr; i++)
+    excls->e[i-1] = excls->e[i];
+  
+  excls->nr--;
+}
+
+static void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
+{
+  int i,j,j1,k,k1,l,l1,m,n,e;
+  t_excls *excl;
+
+  if (nrexcl >= 1)
+    /* extract all i-j-k-l neighbours from nnb struct */
+    for(i=0; (i<nnb->nr); i++) {
+      /* For all particles */
+      excl = &excls[i];
+      
+      for(j=0; (j<nnb->nrexcl[i][1]); j++) {
+	/* For all first neighbours */
+	j1=nnb->a[i][1][j];
+	
+	for(e=0; e<excl->nr; e++)
+	  if (excl->e[e] == j1)
+	    remove_excl(excl,e);
+	
+	if (nrexcl >= 2)
+	  for(k=0; (k<nnb->nrexcl[j1][1]); k++) {
+	    /* For all first neighbours of j1 */
+	    k1=nnb->a[j1][1][k];
+	  
+	    for(e=0; e<excl->nr; e++)
+	      if (excl->e[e] == k1)
+		remove_excl(excl,e);
+	    
+	    if (nrexcl >= 3)
+	      for(l=0; (l<nnb->nrexcl[k1][1]); l++) {
+		/* For all first neighbours of k1 */
+		l1=nnb->a[k1][1][l];
+
+		for(e=0; e<excl->nr; e++)
+		  if (excl->e[e] == l1)
+		    remove_excl(excl,e);
+	      }
+	  }
+      }
+    }
+}
+
+void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
+	     t_params plist[], t_excls excls[], t_hackblock hb[], bool bAlldih)
 {
   t_param *ang,*dih,*pai,*idih;
   t_rbondeds *hbang, *hbdih;
   char    anm[4][12];
   int     res,minres,maxres;
-  int     i,j,j1,k,k1,l,l1,m,n;
+  int     i,j,j1,k,k1,l,l1,m,n,i1,i2;
   int     maxang,maxdih,maxidih,maxpai;
   int     nang,ndih,npai,nidih,nbd;
   int     dang,ddih;
-  bool    bFound;
+  bool    bFound,bExcl;
   
   /* These are the angles, pairs, impropers and dihedrals that we generate
    * from the bonds. The ones that are already there from the rtp file
@@ -558,6 +659,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, bool bH14,
   snew(dih, maxdih);
   snew(pai, maxpai);
   snew(idih,maxidih);
+
+  gen_excls(atoms,excls,hb);
   
   /* extract all i-j-k-l neighbours from nnb struct */
   for(i=0; (i<nnb->nr); i++) 
@@ -675,14 +778,21 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, bool bH14,
 	      if (debug)
 		fprintf(debug,"Distance (%d-%d) = %d\n",i+1,l1+1,nbd);
 	      if (nbd == 3) {
-		pai[npai].AI=min(i,l1);
-		pai[npai].AJ=max(i,l1);
-		pai[npai].C0=NOTSET;
-		pai[npai].C1=NOTSET;
-		set_p_string(&(pai[npai]),"");
-		if (bH14 || !(is_hydro(atoms,pai[npai].AI) &&
-			      is_hydro(atoms,pai[npai].AJ)))
-		  npai++;
+		i1 = min(i,l1);
+		i2 = max(i,l1);
+		bExcl = FALSE;
+		for(m=0; m<excls[i1].nr; m++)
+		  bExcl = bExcl || excls[i1].e[m]==i2;
+		if (!bExcl) {
+		  if (bH14 || !(is_hydro(atoms,i1) && is_hydro(atoms,i2))) {
+		    pai[npai].AI=i1;
+		    pai[npai].AJ=i2;
+		    pai[npai].C0=NOTSET;
+		    pai[npai].C1=NOTSET;
+		    set_p_string(&(pai[npai]),"");
+		    npai++;
+		  }
+		}
 	      }
 	      
 	      ndih++;
@@ -723,6 +833,9 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, bool bH14,
   cppar(dih, ndih, plist,F_PDIHS);
   cppar(idih,nidih,plist,F_IDIHS);
   cppar(pai, npai, plist,F_LJ14);
+
+  /* Remove all exclusions which are within nrexcl */
+  clean_excls(nnb,nrexcl,excls);
 
   sfree(ang);
   sfree(dih);

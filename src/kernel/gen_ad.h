@@ -41,7 +41,8 @@ static char *SRCID_gen_ad_h = "$Id$";
 #include "topexcl.h"
 #include "resall.h"
 
-extern void gen_pad(t_nextnb *nnb, t_atoms *atoms, bool bH14, 
-		    t_params plist[], t_hackblock hb[], bool bAlldih);
+extern void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14, 
+		    t_params plist[], t_excls excls[], t_hackblock hb[], 
+		    bool bAlldih);
 
 #endif	/* _gen_ad_h */

@@ -55,6 +55,11 @@ typedef struct {
 } t_params;
 
 typedef struct {
+  int           nr;             /* The number of exclusions             */
+  atom_id       *e;             /* The excluded atoms                   */
+} t_excls;
+
+typedef struct {
   char          **name;
   int		nrexcl;		/* Number of exclusions per atom	*/
   bool		excl_set;	/* Have exclusions been generated?	*/

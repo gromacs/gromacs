@@ -258,7 +258,7 @@ int read_resall(char *ff, int bts[], t_restp **rtp,
     fatal_error(0,"in .rtp file at line:\n%s\n",line);
   if (strncasecmp("bondedtypes",header,5)==0) {
     get_a_line(in,line,STRLEN);
-    if (sscanf(line,"%d %d %d %d",&bts[0],&bts[1],&bts[2],&bts[3]) != ebtsNR)
+    if (sscanf(line,"%d %d %d %d",&bts[0],&bts[1],&bts[2],&bts[3]) != ebtsNR-1)
       fatal_error(0,"need %d parameters in .rtp file at line:\n%s\n",
 		  ebtsNR,line);
     get_a_line(in,line,STRLEN);

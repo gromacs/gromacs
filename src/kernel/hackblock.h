@@ -39,7 +39,7 @@ static char *SRCID_hackblock_h = "$Id$";
 /* Used for reading .rtp/.tdb */
 /* ebtsBONDS must be the first, new types can be added to the end */
 /* these *MUST* correspond to the arrays in hackblock.c */
-enum { ebtsBONDS, ebtsANGLES, ebtsPDIHS, ebtsIDIHS, ebtsNR };
+enum { ebtsBONDS, ebtsANGLES, ebtsPDIHS, ebtsIDIHS, ebtsEXCLS, ebtsNR };
 extern char *btsNames[ebtsNR];
 extern int btsNiatoms[ebtsNR];
 

@@ -293,7 +293,7 @@ void print_top_mols(FILE *out, char *title,
 }
 
 void write_top(FILE *out, char *pr,char *molname,
-	       t_atoms *at,int bts[],t_params plist[],t_block *excl,
+	       t_atoms *at,int bts[],t_params plist[],t_excls excls[],
 	       t_atomtype *atype,int *cgnr, int nrexcl)
      /* NOTE: nrexcl is not the size of *excl! */
 {
@@ -307,6 +307,7 @@ void write_top(FILE *out, char *pr,char *molname,
     print_bondeds(out,at->nr,d_constraints,F_SHAKE,    0,              plist);
     print_bondeds(out,at->nr,d_constraints,F_SHAKENC,  0,              plist);
     print_bondeds(out,at->nr,d_pairs,      F_LJ14,     0,              plist);
+    print_excl(out,at->nr,excls);
     print_bondeds(out,at->nr,d_angles,     F_ANGLES,   bts[ebtsANGLES],plist);
     print_bondeds(out,at->nr,d_dihedrals,  F_PDIHS,    bts[ebtsPDIHS], plist);
     print_bondeds(out,at->nr,d_dihedrals,  F_IDIHS,    bts[ebtsIDIHS], plist);
@@ -315,9 +316,6 @@ void write_top(FILE *out, char *pr,char *molname,
     print_bondeds(out,at->nr,d_dum3,       F_DUMMY3FAD,0,              plist);
     print_bondeds(out,at->nr,d_dum3,       F_DUMMY3OUT,0,              plist);
     print_bondeds(out,at->nr,d_dum4,       F_DUMMY4FD, 0,              plist);
-    
-    if ( excl && excl->nr > 0 )
-	print_excl(out,excl);
     
     if (pr)
       print_top_posre(out,pr);
@@ -626,13 +624,15 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   t_hackblock *hb;
   t_restp  *restp;
   t_params plist[F_NRE];
+  t_excls  *excls;
   t_nextnb nnb;
   int      *cgnr;
   int      *dummy_type;
   int      i;
   
   init_plist(plist);
-  
+  snew(excls,atoms->nr);
+
   /* lookup hackblocks and rtp for all residues */
   get_hackblocks_rtp(&hb, &restp, nrtp, rtp, atoms->nres, atoms->resname, 
 		     ntdb, ctdb, nterpairs, rn, rc);
@@ -674,7 +674,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   init_nnb(&nnb,atoms->nr,4);
   gen_nnb(&nnb,plist);
   print_nnb(&nnb,"NNB");
-  gen_pad(&nnb,atoms,bH14,plist,hb,bAlldih);
+  gen_pad(&nnb,atoms,nrexcl,bH14,plist,excls,hb,bAlldih);
   done_nnb(&nnb);
   
   /* set mass of all remaining hydrogen atoms */
@@ -702,7 +702,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   if (top_file) {
     fprintf(stderr,"Writing topology\n");
     write_top(top_file, posre_fn, molname,
-	      atoms, bts, plist, NULL, atype, cgnr, nrexcl);
+	      atoms, bts, plist, excls, atype, cgnr, nrexcl);
   }
   
   /* cleaning up */
@@ -711,6 +711,9 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     
   /* we should clean up hb and restp here, but that is a *L*O*T* of work! */
   sfree(cgnr);
-  for (i=0; (i<F_NRE); i++)
+  for (i=0; i<F_NRE; i++)
     sfree(plist[i].param);
+  for (i=0; i<atoms->nr; i++)
+    sfree(excls[i].e);
+  sfree(excls);
 }

@@ -26,6 +26,15 @@ When the <tt>[dihedrals]</tt> field is used, no other dihedrals will
 be generated for the bonds corresponding to the specified dihedrals. 
 It is possible to put more than one dihedral on a rotatable bond.
 <p>
+<a href="pdb2gmx.html">pdb2gmx</a> sets the number exclusions to 3, which
+means that interactions between atoms connected by at most 3 bonds are
+excluded. Pair interactions are generated for all pairs of atoms which are
+seperated by 3 bonds (except pairs of hydrogens).
+When more interactions need to be excluded, or some pair interactions should
+not be generated, an <tt>[exclusions]</tt> field can be added, followed by
+pairs of atom names on seperate lines. All non-bonded and pair interactions
+between these atoms will be excluded.
+<p>
 A sample is included below.
 
 

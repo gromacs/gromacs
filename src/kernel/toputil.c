@@ -328,26 +328,24 @@ void print_block (FILE *out, char *szName,
   }
 }
 
-void print_excl(FILE *out, t_block *excl)
+void print_excl(FILE *out, int natoms, t_excls excls[])
 {
-  int     i;
+  atom_id i;
   bool    have_excl;
-  atom_id j;
+  int     j;
   
   have_excl=FALSE;
-  if (excl->nr)
-    for (i=0; (i < excl->nr) && !have_excl; i++)
-      if (excl->index[i] != excl->index[i+1])
-	have_excl=TRUE;
+  for(i=0; i<natoms && !have_excl; i++)
+    have_excl = (excls[i].nr > 0);
   
   if (have_excl) {
     fprintf (out,"[ %s ]\n",dir2str(d_exclusions));
     fprintf (out,"; %4s    %s\n","i","excluded from i");
-    for (i=0; (i < excl->nr); i++)
-      if (excl->index[i] != excl->index[i+1]) {
-	fprintf (out,"%6d",i+1);
-	for (j=excl->index[i]; (j < excl->index[i+1]); j++)
-	  fprintf (out,"%5u",excl->a[j]+1);
+    for(i=0; i<natoms; i++)
+      if (excls[i].nr > 0) {
+	fprintf (out,"%6u ",i+1);
+	for(j=0; j<excls[i].nr; j++)
+	  fprintf (out," %5u",excls[i].e[j]+1);
 	fprintf (out,"\n");
       }
     fprintf (out,"\n");
