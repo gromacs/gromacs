@@ -200,7 +200,7 @@ int main(int argc,char *argv[])
   static real t0=-1, timestep=-1, delta_t=0.0, toffset=0;
   t_pargs pa[] = {
     { "-dt",       FALSE,  etREAL, &delta_t,
-      "only write out frame when (t MOD delta_t) == offset" },
+      "only write out frame when t MOD delta_t = offset" },
     { "-offset",   FALSE, etREAL, &toffset,
       "time offset for -dt option" },
     { "-t0",       FALSE, etREAL, &t0, 
@@ -313,7 +313,7 @@ int main(int argc,char *argv[])
 	t=t0+j*timestep;
       else if (t0>=0) 
 	t += (t0-tstart);
-      if ( bRmod(t-toffset,delta_t) || (delta_t==0) ) {
+      if (  (delta_t==0) || bRmod(t-toffset,delta_t) ) {
 	if ((j%10) == 0)
 	  fprintf(stderr,"  ->  write %d, time %g",i,t);
 	do_enx(out,&t,&j,&nre,ee,dr);
