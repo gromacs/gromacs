@@ -834,7 +834,7 @@ int gmx_analyze(int argc,char *argv[])
   ppa    = add_acf_pargs(&npargs,pa);
   
   CopyRight(stderr,argv[0]); 
-  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_BE_NICE ,
+  parse_common_args(&argc,argv,PCA_CAN_VIEW,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL); 
 
   acfile   = opt2fn_null("-ac",NFILE,fnm);
