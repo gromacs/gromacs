@@ -50,11 +50,9 @@ static int frame=-666;
 #define SKIP 10
 #define INITCOUNT frame=-1
 
-/* a frame for read_first/next_x, can only read ONE trajectory
- * at a time using these routines.
- * read_first/next_frame does not have this restriction.
- */
-static t_trxframe xframe;
+/* frames for read_first/next_x */
+static t_trxframe *xframe=NULL;
+static int nxframe=0;
 
 int nframes_read(void)
 {
@@ -702,12 +700,19 @@ int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
 int read_first_x(int *status,char *fn,
 		 real *t,rvec **x,matrix box)
 {
-  read_first_frame(status,fn,&xframe,TRX_NEED_X);
-  *t = xframe.time;
-  *x = xframe.x;
-  copy_mat(xframe.box,box);
+  t_trxframe fr;
+
+  read_first_frame(status,fn,&fr,TRX_NEED_X);
+  if (*status >= nxframe) {
+    nxframe = *status+1;
+    srenew(xframe,nxframe);
+  }
+  xframe[*status] = fr;
+  *t = xframe[*status].time;
+  *x = xframe[*status].x;
+  copy_mat(xframe[*status].box,box);
   
-  return xframe.natoms;
+  return xframe[*status].natoms;
 }
 
 bool read_next_x(int status,real *t, int natoms, rvec x[], matrix box)
@@ -715,12 +720,12 @@ bool read_next_x(int status,real *t, int natoms, rvec x[], matrix box)
   int step,ct;
   real prec,pt;
   bool bOK,bRet;
-
-  xframe.x = x;
-  bRet = read_next_frame(status,&xframe);
-  *t = xframe.time;
-  copy_mat(xframe.box,box);
-
+  
+  xframe[status].x = x;
+  bRet = read_next_frame(status,&xframe[status]);
+  *t = xframe[status].time;
+  copy_mat(xframe[status].box,box);
+  
   return bRet;
 }
 
