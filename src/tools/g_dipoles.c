@@ -222,7 +222,7 @@ void do_gkr(int ngrp,atom_id grpindex[],
   rc_2 = 1.0/rc2;
   for(i=0; (i<ngrp); i++) {
     /* Calculate center of mass of molecule */
-    gi = grpindex[i];
+    gi = grpindex ? grpindex[i] : i;
     j0 = mindex[gi];
     
     if (bFirstAtom)
@@ -360,7 +360,9 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   read_tpx(topf,&step,&t,&lambda,NULL,box,
 	   &natoms,NULL,NULL,NULL,top);
   volume = det(box);
-  
+  if (!grpindex)
+    gnx = top->blocks[ebMOLS].nr;
+    
   if (bMU) {
     fmu = open_enx(mufn,"r");
     do_enxnms(fmu,&nre,&enm);
@@ -497,7 +499,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
     } else {
       /* Begin loop of all molecules in frame */
       for(i=0; (i<gnx); i++) {
-	int gi = grpindex[i];
+	int gi = grpindex ? grpindex[i] : i;
 	mol_dip(mols->index[gi],mols->index[gi+1],mols->a,x,atom,dipole[i]);
 	if (bQuad)
 	  mol_quad(mols->index[gi],mols->index[gi+1],
@@ -746,7 +748,7 @@ int main(int argc,char *argv[])
     { efENX, "-enx", NULL,    ffOPTRD },
     { efTRX, "-f", NULL,      ffREAD },
     { efTPX, NULL, NULL,      ffREAD },
-    { efNDX, NULL, NULL,      ffREAD },
+    { efNDX, NULL, NULL,      ffOPTRD },
     { efXVG, "-o", "Mtot",    ffWRITE },
     { efXVG, "-a", "aver",    ffWRITE },
     { efXVG, "-d", "dipdist", ffWRITE },
@@ -783,7 +785,12 @@ int main(int argc,char *argv[])
     bQuad   = opt2bSet("-q",NFILE,fnm);
     bGkr    = opt2bSet("-g",NFILE,fnm);
   }
-  rd_index(ftp2fn(efNDX,NFILE,fnm),1,&gnx,&grpindex,&grpname);
+  if (ftp2bSet(efNDX,NFILE,fnm))
+    rd_index(ftp2fn(efNDX,NFILE,fnm),1,&gnx,&grpindex,&grpname);
+  else {
+    gnx=1;
+    grpindex=NULL;
+  }
   bCorr   = (bAverCorr || opt2bSet("-c",NFILE,fnm));
   bFitACF = opt2bSet("-fa",NFILE,fnm);
   do_dip(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
