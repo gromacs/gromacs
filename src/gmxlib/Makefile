@@ -11,7 +11,8 @@ include		$(GMXHOME)/src/makef/Makefile.def
 #
 M4 		= m4
 M4FILE		= $(GMXCPU).m4
-LIB		= $(GMXHOME)/lib/$(GMXCPU)/libgmx.$(GMXCPU).a
+LIB		= $(LIBDIR)/libgmx.$(GMXCPU).a
+SONAME		= $(LIBDIR)/libgmx.$(GMXCPU).so
 OBJ		= 	\
 		3dview.o	block_tx.o	bondfree.o	\
 		buffer.o	calch.o		calcmu.o	\

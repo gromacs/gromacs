@@ -167,7 +167,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 t_graph *graph,t_groups *grps,tensor vir_part,
 		 int nshell,t_shell shells[],t_forcerec *fr,
 		 char *traj,real t,real lambda,
-		 int natoms,matrix box,t_mdebin *mdebin)
+		 int natoms,matrix box,t_mdebin *mdebin,bool *bConverged)
 {
   static bool bFirst=TRUE;
   static rvec *pos[2],*force[2];
@@ -197,7 +197,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   step0        = 1.0;
 
   /* Do a prediction of the shell positions */
-  /*predict_shells(log,x,v,parm->ir.delta_t,nshell,shells,md->massT,(mdstep == 0));*/
+  predict_shells(log,x,v,parm->ir.delta_t,nshell,shells,md->massT,(mdstep == 0));
     
   /* Calculate the forces first time around */
   clear_mat(my_vir[Min]);
@@ -206,11 +206,11 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 	   lambda,graph,bDoNS,FALSE,fr);
   df[Min]=rms_force(force[Min],nshell,shells);
   
-  if (debug)
+  if (debug) {
     pr_rvecs(debug,0,"force0",force[Min],md->nr);
-  calc_f_dev(md->nr,md->chargeA,x,force[Min],&top->idef,&xiH,&xiS);
-  fprintf(log,"xiH = %e, xiS = %e\n",xiH,xiS);
-  
+    calc_f_dev(md->nr,md->chargeA,x,force[Min],&top->idef,&xiH,&xiS);
+    fprintf(debug,"xiH = %e, xiS = %e\n",xiH,xiS);
+  }
   /* Copy x to pos[Min] & pos[Try]: during minimization only the
    * shell positions are updated, therefore the other particles must
    * be set here.
@@ -239,11 +239,14 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 
   if (debug)
     fprintf(debug,"SHELLSTEP %d\n",mdstep);
-    
-  bDone=((nshell == 0) || (df[Min] < ftol));
-  bMinSet=FALSE;
-  for(count=1; (step > 0.5) &&
-      !(bDone || ((number_steps > 0) && (count>=number_steps))); count++) {
+
+  /* First check whether we should do shells, or whether the force is low enough
+   * even without minimization.
+   */
+  *bConverged = bDone = (df[Min] < ftol) || (nshell == 0);
+  bMinSet     = FALSE;
+  
+  for(count=1; (!bDone && (count < number_steps)); count++) {
     
     /* New positions, Steepest descent */
     shell_pos_sd(log,step,pos[Min],pos[Try],force[Min],nshell,shells); 
@@ -277,9 +280,10 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     if (bVerbose && MASTER(cr))
       print_epot("",mdstep,count,step,Epot[Try],df[Try]);
 
-    bDone=(df[Try] < ftol);
+    *bConverged = (df[Try] < ftol);
+    bDone       = *bConverged || (step < 0.5);
     
-    if ((Epot[Try] < Epot[Min]) /* || (df[Try] < df[Min])*/) {
+    if ((Epot[Try] < Epot[Min])/*  || (df[Try] < df[Min])*/) {
       Min  = Try;
       step = step0;
     }

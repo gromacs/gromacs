@@ -34,9 +34,13 @@ static char *SRCID_bfunc_h = "$Id$";
  *	Bcopy/Memcpy patch.
  *
 $Log$
-Revision 1.3  1997/12/23 11:52:07  anton
-Edited by Copyright -> 2.0
+Revision 1.4  1998/12/10 07:43:44  spoel
+Trying to get everything in synch again, Makefiles remain problematic.
+For instance the shared libraries do not work any longer...
 
+ * Revision 1.3  1997/12/23  11:52:07  anton
+ * Edited by Copyright -> 2.0
+ *
  * Revision 1.2  1997/11/27  16:29:42  anton
  * Edited by copyrgt -> v1.6; fixed loads of inconsistent formatting of .h files
  *

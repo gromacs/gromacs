@@ -59,7 +59,7 @@ CCFLAGS		= $(CFLAGS)
 FFLAGS		= -fPIC
 
 # Generic linking stuff
-LDFLAGS		= -L$(LIBDIR) 
+LDFLAGS		= -L$(LIBDIR)
 LD		= $(CC) $(LDFLAGS) 
 FLD		= $(F77) $(LDFLAGS) 
 CCLD		= $(CCC) $(LDFLAGS)
@@ -69,13 +69,17 @@ endif
 
 ifeq ($(HAVE_MOTIF),yes)
 SYSDEFS		+= -DHAVE_MOTIF
-XLIBS		= -lgmx.$(GMXCPU) -L/usr/X11R6/lib -lXm -lXt -lX11  -lm
+XLIBS		= $(ALLLIBS) -L/usr/X11R6/lib -lXm -lXt -lX11  -lm
 SYSLIBS		= $(XLIBS)
 else
-SYSLIBS		= -lgmx.$(GMXCPU) -lm
-XLIBS		= -L/usr/X11R6/lib -lX11 $(SYSLIBS)
+SYSLIBS		= $(ALLLIBS) -lm
+XLIBS		= $(ALLLIBS) -L/usr/X11R6/lib -lX11 -lm
 endif
-SHAREIT		= #(cd $(LIBDIR); ar x $(LIBRARY).$(GMXCPU).a; $(CC) $(LDFLAGS) -shared -Wl,-soname,$(LIBRARY).$(GMXCPU).so -o $(LIBDIR)/$(LIBRARY).$(GMXCPU).so *.o; $(RM) *.o)
+SHAREIT		= #(cd $(LIBDIR); ar x $(LIB); $(CC) $(LDFLAGS) -shared -Wl,-soname,$(SONAME) -o $(LIBDIR)/$(SONAME) *.o; $(RM) *.o)
 RANLIB		= ranlib
 X11INC		= -I/usr/X11R6/include
+
+
+
+
 

@@ -64,10 +64,10 @@ FLD		= $(F77) $(LDFLAGS)
 USE_SGI_FPE	= no
 ifeq ($(HAVE_MOTIF),yes)
 SYSDEFS		+= -DHAVE_MOTIF
-SYSLIBS		= $(LINKLIB) -lm -lXm -lXt -lX11
+SYSLIBS		= $(ALLLIBS) -lm -lXm -lXt -lX11
 XLIBS		= $(SYSLIB)
 else
-SYSLIBS		= $(LINKLIB) -lm
+SYSLIBS		= $(ALLLIBS) -lm
 XLIBS		= -lX11
 endif
 

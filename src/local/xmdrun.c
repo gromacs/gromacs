@@ -70,9 +70,10 @@ static char *SRCID_xmdrun_c = "$Id$";
 #include "calcmu.h"
 #include "ionize.h" 
 
-static bool      bMultiSim = FALSE;
-static bool      bGlas     = FALSE;
-static bool      bIonize   = FALSE;
+static bool      bMultiSim    = FALSE;
+static bool      bGlas        = FALSE;
+static bool      bIonize      = FALSE;
+static bool      bInteractive = FALSE;
 static t_commrec *cr_msim;
 
 char *par_fn(char *base,int ftp,t_commrec *cr)
@@ -193,7 +194,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   rvec       vcm,mu_tot;
   t_coupl_rec *tcr;
   rvec       *xx,*vv,*ff;  
-  bool       bTCR;
+  bool       bTCR,bConverged;
   real       mu_aver,mu_aver2;
   int        gnx;
   atom_id    *grpindex;
@@ -304,7 +305,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Now is the time to relax the shells */
     count=relax_shells(log,cr,bVerbose,step,parm,bNS,bStopCM,top,ener,
 		       x,vold,v,vt,f,buf,mdatoms,nsb,&mynrnb,graph,grps,force_vir,
-		       nshell,shells,fr,traj,t,lambda,nsb->natoms,parm->box,mdebin);
+		       nshell,shells,fr,traj,t,lambda,nsb->natoms,parm->box,mdebin,
+		       &bConverged);
     tcount+=count;
 
     /* Calculate total dipole moment if necessary */
@@ -317,9 +319,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       do_glas(log,START(nsb),HOMENR(nsb),x,f,fr,mdatoms,top->idef.atnr,
 	      &parm->ir,ener);
 	         
-    if (bTCR && MASTER(cr) && (step == 0)) 
-      tcr=init_coupling(log,nfile,fnm,cr,fr,mdatoms,&(top->idef));
-
+    if (bTCR && MASTER(cr) && (step == 0)) {
+      if (bInteractive)
+	;/* Do it */
+      else
+	tcr=init_coupling(log,nfile,fnm,cr,fr,mdatoms,&(top->idef));
+    }
     /* Now we have the energies and forces corresponding to the 
      * coordinates at time t. 
      * We must output all of this before the update.
@@ -425,7 +430,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     calc_ljcorr(log,parm->ir.bLJcorr,
 		fr,mdatoms->nr,parm->box,parm->pres,parm->vir,ener);
     
-    if (bTCR)
+    /* Only do GCT when the relaxation of shells (minimization) has converged,
+     * otherwise we might be coupling agains bogus energies. 
+     */
+    if (bTCR && bConverged)
       do_coupling(log,nfile,fnm,tcr,t,step,ener,fr,
 		  &(parm->ir),MASTER(cr) || bMultiSim,mdatoms,&(top->idef),mu_aver,
 		  top->blocks[ebMOLS].nr,bMultiSim ? cr_msim : cr,
@@ -506,7 +514,9 @@ int main(int argc,char *argv[])
     { "-glas",    FALSE, etBOOL,&bGlas,
       "Do glass simulation with special long range corrections" },
     { "-ionize",  FALSE, etBOOL,&bIonize,
-      "Do a simulation including the effect of an X-Ray bombardment on your system" }
+      "Do a simulation including the effect of an X-Ray bombardment on your system" },
+    { "-interactive", FALSE, etBOOL, &bInteractive,
+      "Do an interactive simulation. Experts only" }
   };
 
   int          i;

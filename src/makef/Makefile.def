@@ -15,13 +15,14 @@ OBJDIR		:=$(ROOT)/obj/$(GMXCPU)
 LIBDIR		:=$(ROOT)/lib/$(GMXCPU)
 BINDIR		:=$(ROOT)/bin/$(GMXCPU)
 INCDIR		:=include
-LIB		:=$(LIBDIR)/libgmx.$(GMXCPU).a
-SONAME		:=libgmx.$(GMXCPU).so
-SOLIB		:=$(LIBDIR)/$(SONAME)
+#LIB		:=$(LIBDIR)/libgmx.$(GMXCPU).a
+#SONAME		:=libgmx.$(GMXCPU).so
+#SOLIB		:=$(LIBDIR)/$(SONAME)
 LINKLIB		:=-lgmx.$(GMXCPU)
 STDTARGET	:=$(MKDIR)/Makefile.std
 SHAREIT		:=echo
 MKDEP		:= $(CC) -M
+ALLLIBS		:= -lmd.$(GMXCPU) -lgmx.$(GMXCPU) -lfftw.$(GMXCPU) 
 #
 # Machine dependent stuff
 #

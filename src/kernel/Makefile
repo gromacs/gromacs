@@ -9,8 +9,9 @@
 #
 include		$(GMXHOME)/src/makef/Makefile.def
 #
-# Empty library
+# MD library
 LIB		= $(LIBDIR)/libmd.$(GMXCPU).a
+SONAME		= $(LIBDIR)/libmd.$(GMXCPU).so
 # Objects for mdrun and nmrun
 RUNOBJ		= runner.o 	md.o		steep.o 	\
 		  congrad.o	nm.o	

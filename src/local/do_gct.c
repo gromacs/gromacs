@@ -484,7 +484,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   deviation[eoFx]     = calc_deviation(tcr->fx,   fmol[0][XX], tcr->fx0);
   deviation[eoFy]     = calc_deviation(tcr->fy,   fmol[0][YY], tcr->fy0);
   deviation[eoFz]     = calc_deviation(tcr->fz,   fmol[0][ZZ], tcr->fz0);
-  calc_f_dev(md->nr,md->chargeA,x,f,idef,&xiH,&xiS);
+  /*calc_f_dev(md->nr,md->chargeA,x,f,idef,&xiH,&xiS);*/
   
   prdev[eoPres]   = tcr->pres0 - ener[F_PRES];
   prdev[eoEpot]   = epot0      - Eintern;
@@ -513,6 +513,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
       ff6 = ff12 = 1.0;	
       
       if (tclj->eObs == eoForce) {
+	fatal_error(0,"Hack code for this to work again ");
 	if (debug)
 	  fprintf(debug,"Have computed derivatives: xiH = %g, xiS = %g\n",xiH,xiS);
 	if (ati == 1) {
