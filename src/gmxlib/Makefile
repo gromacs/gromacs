@@ -15,8 +15,8 @@ OBJ		= 	\
 		3dview.o	block_tx.o	bondfree.o	\
 		buffer.o	calch.o		calcmu.o	\
 		calcvir.o	callf77.o	clincs.o	\
-		clincsld.o	\
-		confio.o	congrad.o	copyrite.o	\
+		clincsld.o	confio.o	congrad.o	\
+		copyrite.o	coupling.o	\
 		csettle.o	cshake.o	disre.o		\
 		do_fit.o	dummies.o	ebin.o		\
 		edsam.o		enxio.o		fatal.o		\
