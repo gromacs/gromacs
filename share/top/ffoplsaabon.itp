@@ -307,19 +307,17 @@
 #ifdef HEAVY_H
 ; constraints for the rigid NH3 groups
  MNH3     CT 2    0.188929
+ MNH3   CT_2 2    0.188929
  MNH3   MNH3 2    0.160473
 ; constraints for 1st type rigid CH3 (angle *-CT-HC is 109.5)
  MCH3A     C 2    0.203533
  MCH3A   C_2 2    0.203533
- MCH3A   C_3 2    0.203533
  MCH3A    CW 2    0.201930
  MCH3A    CV 2    0.201930
- MCH3A    CX 2    0.201930
  MCH3A    CS 2    0.201129
  MCH3A    CA 2    0.202464
  MCH3A    CB 2    0.202464
  MCH3A     N 2    0.197052
- MCH3A    NT 2    0.196964
  MCH3A MCH3A 2    0.184320   
 ; constraints for 2nd type rigid CH3 (angle *-CT-HC is 110.7)
  MCH3B    CT 2    0.205384
@@ -331,19 +329,17 @@
 ; no heavy hydrogens.
 ; constraints for the rigid NH3 groups
  MNH3     CT 2    0.158255
+ MNH3   CT_2 2    0.158255
  MNH3   MNH3 2    0.080236
 ; constraints for 1st type rigid CH3 (angle *-CT-HC is 109.5)
  MCH3A     C 2    0.166040
  MCH3A   C_2 2    0.166040
- MCH3A   C_3 2    0.166040
  MCH3A    CW 2    0.164312
  MCH3A    CV 2    0.164312
- MCH3A    CX 2    0.164312
  MCH3A    CS 2    0.163448
  MCH3A    CA 2    0.164888
  MCH3A    CB 2    0.164888
  MCH3A     N 2    0.159040
- MCH3A    NT 2    0.158944
  MCH3A MCH3A 2    0.092160
 ; constraints for 2nd type rigid CH3 (angle *-CT-HC is 110.7)
  MCH3B    CT 2    0.167031

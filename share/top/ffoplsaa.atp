@@ -688,3 +688,7 @@
  opls_963   12.01100  ; CF perfluoroalkanes
  opls_964   12.01100  ; CF4
  opls_965   18.99840  ; F: perfluoroalkanes
+ MNH3        0.0      ; Dummy mass in rigid tetraedrical NH3 group
+ MCH3A       0.0      ; Dummy mass in rigid tetraedrical CH3 group
+ MCH3B       0.0      ; Dummy mass in rigid tetraedrical CH3 group
+ MW          0.0      ; Dummy mass in rigid tyrosine rings
