@@ -10,7 +10,7 @@
 \label{ch:algorithms}
 \section{Introduction}
 In this chapter we first give describe two general concepts used in
-\gromacs:  {\em periodic boundary conditions} (\secref{pbc})
+{\gromacs}:  {\em periodic boundary conditions} (\secref{pbc})
 and the {\em group concept} (\secref{group}). The MD algorithm is
 described in \secref{MD}: first a global form of the algorithm is
 given, which is refined in subsequent subsections. The (simple) EM
@@ -68,12 +68,12 @@ future versions be based on the triclinic unit and will not contain
 other unit cell shapes. However, in the present version
 only rectangular boxes are allowed.
   
-\gromacs uses periodic boundary conditions, combined
-with the {\em minimum image convention:} only one - the nearest -
-image of each particle is considered for short-range non-bonded
-interaction terms.  For long-range electrostatic interactions this is
-not always accurate enough, and \gromacs therefore also incorporates
-lattice sum methods like Ewald Sum, PME and PPPM.
+{\gromacs} uses periodic boundary conditions, combined with the {\em
+minimum image convention:} only one - the nearest - image of each
+particle is considered for short-range non-bonded interaction terms.
+For long-range electrostatic interactions this is not always accurate
+enough, and {\gromacs} therefore also incorporates lattice sum methods
+like Ewald Sum, PME and PPPM.
   
 The box can be of arbitrary dimensions, but must be rectangular. An
 isolated cluster of molecules can of course be simulated as well
@@ -97,7 +97,7 @@ It is common to compromise in this respect, and make the solvent layer
 somewhat smaller in order to reduce the computational cost.
 
 Each unit cell (cubic, rectangular or triclinic, the latter not being
-implemented in \gromacs) is surrounded by 26 translated images. Thus a
+implemented in {\gromacs}) is surrounded by 26 translated images. Thus a
 particular image can always be identified by an index pointing to one
 of 27 {\em translation vectors} and constructed by applying a
 translation with the indexed vector (see \ssecref{forces}).
@@ -127,17 +127,17 @@ potential on the atoms that must be protected. The freeze option can be
 used on one or two coordinates of an atom, thereby freezing the atoms
 in a plane or on a line. Many freeze groups can be defined.
 \item[Accelerate group]
-On each atom in an '\normindex{accelerate group}' an acceleration $\ve{a}^g$ will
-be imposed. This is equivalent to an external force. This feature
-makes it possible to drive the system into a non-equilibrium state and
-enables to perform NEMD (non-equilibrium MD) to obtain transport
-properties. 
+On each atom in an '\normindex{accelerate group}' an acceleration
+$\ve{a}^g$ will be imposed. This is equivalent to an external
+force. This feature makes it possible to drive the system into a
+non-equilibrium state and enables to perform
+\normindex{non-equilibrium MD} to obtain transport properties.
 \item[\normindex{Energy monitor group}]
-Mutual interactions between all energy monitor
-groups are compiled during
-the simulation. This is done for Lennard Jones and Coulomb terms separately.
-In principle up to 256 groups could be defined, but that would lead to
-256$\times$256 items! Better use this concept sparingly.  
+Mutual interactions between all energy monitor groups are compiled
+during the simulation. This is done for Lennard Jones and Coulomb
+terms separately.  In principle up to 256 groups could be defined, but
+that would lead to 256$\times$256 items! Better use this concept
+sparingly.
 \end{description}
 The use of groups in analysis programs is described in
 \chref{analysis}.
@@ -201,7 +201,7 @@ Then, before a run starts, the box size and the coordinates and
 velocities of  all particles are required. The box size is determined
 by three vectors (nine numbers) $\ve{b}_1, \ve{b}_2, \ve{b}_3$, which
 represent the three basis vectors of the periodic box. While in the
-present version of \gromacs only rectangular boxes are allowed, three
+present version of {\gromacs} only rectangular boxes are allowed, three
 numbers  suffice, but the use of three vectors already
 prepares for arbitrary triclinic boxes to be implemented in a later
 version. 
@@ -232,18 +232,18 @@ is removed and then all velocities are scaled such that the total
 energy corresponds exactly to $T$ (see \eqnref{E-T}).
 
 \subsubsection*{Center-of-mass motion}
-The \normindex{center-of-mass velocity} (c.o.m.)is normally set to zero at every step. 
-Normally there is no net external force acting on the system and the c.o.m.
-velocity should remain constant. In practice, however, the update
-algorithm develops a very slow change in the c.o.m. velocity, and thus
-in the total kinetic energy of the system, 
-specially when temperature coupling is used. If such changes are not
-quenched, an appreciable c.o.m. motion develops eventually in long
-runs, and the temperature will be significantly misinterpreted. The
-same may happen due to overall rotational motion, but only when an
-isolated cluster is simulated. In periodic systems with filled boxes,
-the overall rotational motion is coupled to other degrees of freedom
-and does not give any problems.
+The \normindex{center-of-mass velocity} is normally set to zero at
+every step.  Normally there is no net external force acting on the
+system and the center-of-mass velocity should remain constant. In
+practice, however, the update algorithm develops a very slow change in
+the center-of-mass velocity, and thus in the total kinetic energy of
+the system, specially when temperature coupling is used. If such
+changes are not quenched, an appreciable center-of-mass motion
+develops eventually in long runs, and the temperature will be
+significantly misinterpreted. The same may happen due to overall
+rotational motion, but only when an isolated cluster is simulated. In
+periodic systems with filled boxes, the overall rotational motion is
+coupled to other degrees of freedom and does not give any problems.
 
 \subsection{Compute forces}
 \label{subsec:forces}
@@ -296,30 +296,28 @@ z_i & = & z_i - c*\verb'round'([z_i-z_0-c/2]/c)
 
 \subsubsection{Image calculation on a grid.}
 \label{sec:nsgrid}
-{\gromacs} uses an \normindex{interaction list} for non-bonded interactions,
-usually called the {\em \normindex{neighbor list}}.
+{\gromacs} uses an \normindex{interaction list} for non-bonded
+interactions, usually called the {\em \normindex{neighbor list}}.
 This list is made every {\tt nstlist} MD steps, where {\tt nstlist} is
-typically 10 MD steps. 
-To make the neighbor list all particles that are close 
-({\ie} within the cut-off) to a given particle must be found.
-This searching, usually called neighbor searching (NS), 
-involves periodic boundary conditions and 
-determining the {\em image} (see \secref{pbc}).
-When the cut-off is large compared to the box edge $l$ ($>$ 0.4$l$)
-searching is done using an $O({\natom}^2)$ algorithm that computes
-all distances and compares them to the cut-off $r_c$.
-When the cut-off is smaller than 0.4$l$ in all directions (x,y and z)
-searching is done using a grid, the {\nsgrid}. All particles are put on 
-the {\nsgrid},
-with the smallest spacing  $\ge$ $r_c/2$ in each of the directions
-\footnote{In fact the cut-off is divided into sub-blocks, the number of which
-can be chosen by the user. The default for this number (\dgrid) is 2, 
-such that the {\nsgrid} spacing must be $\ge r_c/2$. For 
-simplicity we will just use this particular choice
-in the remainder of the text. However, it can be easily understood that 
-if {\dgrid} = 3, we need at least 2{\dgrid} = 7 grid-cells, 
-each of which has size $\ge r_c/3$}.
-We have depicted the computational box, divided into {\nsgrid} cells in 
+typically 10 MD steps.  To make the neighbor list all particles that
+are close ({\ie} within the cut-off) to a given particle must be
+found.  This searching, usually called neighbor searching (NS),
+involves periodic boundary conditions and determining the {\em image}
+(see \secref{pbc}).  When the cut-off is large compared to the box
+edge $l$ ($>$ 0.4$l$) searching is done using an $O({\natom}^2)$
+algorithm that computes all distances and compares them to the cut-off
+$r_c$.  When the cut-off is smaller than 0.4$l$ in all directions (x,y
+and z) searching is done using a grid, the {\nsgrid}. All particles
+are put on the {\nsgrid}, with the smallest spacing $\ge$ $r_c/2$ in
+each of the
+directions~\footnote{In fact the cut-off is divided into sub-blocks,
+the number of which can be chosen by the user. The default for this
+number (\dgrid) is 2, such that the {\nsgrid} spacing must be $\ge
+r_c/2$. For simplicity we will just use this particular choice in the
+remainder of the text. However, it can be easily understood that if
+{\dgrid} = 3, we need at least 2{\dgrid} = 7 grid-cells, each of which
+has size $\ge r_c/3$}.  We have depicted the computational box,
+divided into {\nsgrid} cells in
 \figref{nsgrid}.
 \begin{figure}
 \centerline{\psfig{figure=plots/nsgrid.eps,width=6cm}}
@@ -466,7 +464,7 @@ like  frogs over each others back.}
 For several reasons (drift during equilibration, drift as a result of
 force truncation and integration errors, heating due to external or
 frictional forces), it is necessary to control the temperature of the
-system. \gromacs uses the {\em weak coupling} scheme~\cite{Berendsen84}
+system. {\gromacs} uses the {\em weak coupling} scheme~\cite{Berendsen84}
 that mimics weak coupling with first-order kinetics to an external
 heat bath with given temperature $T_0$. See ref~\cite{Berendsen91} for
 a comparison of this temperature control method with the
@@ -545,7 +543,7 @@ $\beta = 4.5 \times 10^{-10}$ Pa$^{-1} = 4.5 \times 10^{-5}$ Bar$^{-1}$,
 which is $7.5 \times 10^{-4}$ MD units (see \chref{defunits}).
 Most other liquids have similar values.
 
-In the present version of \gromacs the pressure coupling can be done
+In the present version of {\gromacs} the pressure coupling can be done
 anisotropically: the $x,y,z$ dimensions are scaled separately, based
 on the diagonal elements of the pressure tensor. This allows {\eg}  to couple
 one dimension to an external pressure, while keeping a fixed surface
@@ -640,7 +638,7 @@ $\Downarrow$ \\
 \end{center}
 \end{figure}
 
-\gromacs has a provision to ''freeze''  (prevent motion of) selected
+{\gromacs} has a provision to ''freeze''  (prevent motion of) selected
 particles, which must be defined as a 'freeze group'. This is implemented
 using a {\em freeze factor $\ve{f}_g$}, which is a vector, and differs for each
 {\em freezegroup} (see \secref{group}). This vector contains only
@@ -868,43 +866,6 @@ may suffice. Be aware of the distortion of high-frequency motions by
 the {\em stroboscopic effect}, called {\em aliasing}: higher frequencies
 are  mirrored with respect to the sampling frequency and appear as
 lower frequencies. 
-
-A more detailed flow sheet of the MD algorithm is given in
-\figref{flowdetail}. 
-
-\begin{figure}
-\begin{center}
-\addtolength{\fboxsep}{0.5cm}
-\begin{shadowenv}[12cm]
-{\large \bf THE MD ALGORITHM}
-\rule{\textwidth}{2pt} \\
-{\bf Input initial conditions} \\[2ex]
-Potential interaction $V$ as a function of atom positions \\
-Positions $\ve{r}$ of all atoms at time $t$ \\
-(Velocities $\ve{v}$ of all atoms at time $t-\hDt$) \\
-$\Downarrow$ \\
-(if required:) Generate initial velocities; reset c.o.m. velocity to
-zero; correct velocities for exact temperature \\
-$\Downarrow$ \\
-{\bf repeat} required number of blocks of $n$ steps:
-\begin{shadowenv}[10cm]
-reset particles into primary box \\
-$\Downarrow$ \\
-generate pair list and compute shell forces\\
-$\Downarrow$ \\
-{\bf repeat} $n$ times:
-\begin{shadowenv}[8cm]
-reset c.o.m. velocities \\
-$\Downarrow$ \\
-update configuration \\
-(if required:) output step
-\end{shadowenv}
-\end{shadowenv}
-\end{shadowenv}
-\caption{the MD algorithm}
-\label{fig:flowdetail}
-\end{center}  
-\end{figure}
 
 \section{Simulated Annealing}
 \label{sec:SA}
@@ -1238,7 +1199,8 @@ time a number of particles to do the update on, the {\em home}
 particles. The number of interactions per particle is dependent on the
 {\em total number} $N$ of particles (see \figref{decomp}) and on the
 {\em particle number} $i$.  The exact formulae are given in
-\tabref{decomp}
+\tabref{decomp}.
+
 \begin{table}
 \caption[The number of $j$ particles per $i$ particle is a function of
 the total number of particles $N$ and particle number $i$.]{The number
@@ -1248,7 +1210,7 @@ implies integer division, {\ie} with truncation.}
 \captspace
 \label{tab:decomp}
 \centerline{
-\begin{tabular}{l|c|c|c|c}
+\begin{tabular}{|l|c|c|c|c|}
 \dline
            & i mod 2 = 0 & i mod 2 = 0  & i mod 2 = 1   & i mod 2 = 1 \T \\
            & i $<$ N/2& i $\ge$ N/2     & i $<$ N/2     & i $\ge$ N/2 \B \\
@@ -1322,12 +1284,4 @@ gets the proper particles to interact with.
 \label{fig:ring}
 \end {figure}
 
-%\section {Shake}
-
-%\begin {figure}
-%\centerline{\psfig {figure=plots/shake.eps,height=15cm,width=8cm}}
-%\caption {The Parallel Shake algorithm.}
-%\label{fig:pshake}
-%\end {figure}
-
-
+\input{par-md}
