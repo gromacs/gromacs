@@ -160,7 +160,6 @@ void chk_trj(char *fn)
     fprintf(stderr," Timestep (ps)");
   fprintf(stderr,"\n");
 #define PRINTITEM(label,item) fprintf(stderr,"%-10s  %6d",label,count.item); if ((bShowTimestep) && (count.item > 1)) fprintf(stderr,"    %g\n",(t-t0)/(count.item-1)); else fprintf(stderr,"\n")
-  PRINTITEM ( "Energies",   e_size );
   PRINTITEM ( "Box",        box_size );
   PRINTITEM ( "Virial",     vir_size );
   PRINTITEM ( "Pressure",   pres_size );
@@ -270,9 +269,9 @@ void chk_stx(char *fn)
     for (j=0; (j<DIM) && !bB; j++)
       bB=bB || (box[i][j]!=0);
   
-  fprintf(stderr,"%scoordinates found\n",bX?"":"No ");
-  fprintf(stderr,"%sbox         found\n",bB?"":"No ");
-  fprintf(stderr,"%svelocities  found\n",bV?"":"No ");
+  fprintf(stderr,"coordinates %s\n",bX?"found":"absent");
+  fprintf(stderr,"box         %s\n",bB?"found":"absent");
+  fprintf(stderr,"velocities  %s\n",bV?"found":"absent");
   fprintf(stderr,"\n");
   
   /* check velocities */
@@ -292,10 +291,11 @@ void chk_stx(char *fn)
 	ekin+=0.5*atoms.atom[i].m*v[i][j]*v[i][j];
     temp1=(2.0*ekin)/(natom*DIM*BOLTZ); 
     temp2=(2.0*ekin)/(natom*(DIM-1)*BOLTZ); 
+    fprintf(stderr,"Kinetic energy: %g (kJ/mol)\n",ekin);
     fprintf(stderr,"Assuming the number of degrees of freedom to be "
-	    "Natoms * 3 or Natoms * 2,\n"
+	    "Natoms * %d or Natoms * %d,\n"
 	    "the velocities correspond to a temperature of the system\n"
-	    "of %g K or %g K respectively.\n\n",temp1,temp2);
+	    "of %g K or %g K respectively.\n\n",DIM,DIM-1,temp1,temp2);
   }
   
   /* check coordinates */
