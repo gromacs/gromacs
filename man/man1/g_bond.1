@@ -1,7 +1,7 @@
-.TH g_bond 1 "Thu 28 Feb 2002"
+.TH g_bond 1 "Sun 25 Jan 2004"
 .SH NAME
 g_bond
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_bond\fP
 .BI "-f" " traj.xtc "
@@ -11,7 +11,6 @@ g_bond
 .BI "-l" " bonds.log "
 .BI "-d" " distance.xvg "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -20,6 +19,7 @@ g_bond
 .BI "-blen" " real "
 .BI "-tol" " real "
 .BI "-[no]aver" ""
+.BI "-[no]averdist" ""
 .SH DESCRIPTION
 g_bond makes a distribution of bond lengths. If all is well a
 gaussian distribution should be made when using a harmonic potential.
@@ -40,7 +40,10 @@ Option
 .B -d
 plots all the distances as a function of time.
 This requires a structure file for the atom and residue names in
-the output.
+the output. If however the option 
+.B -averdist
+is given (as well
+or separately) the average bond length is plotted instead.
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input
@@ -52,7 +55,7 @@ the output.
 
 .BI "-s" " topol.tpr" 
 .B Input, Opt.
- Structure+mass(db): tpr tpb tpa gro g96 pdb 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
 
 .BI "-o" " bonds.xvg" 
 .B Output
@@ -69,9 +72,6 @@ the output.
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
@@ -95,7 +95,10 @@ the output.
  Half width of distribution as fraction of blen
 
 .BI "-[no]aver"  "   yes"
- Sum up distributions
+ Average bond length distributions
+
+.BI "-[no]averdist"  "   yes"
+ Average distances (turns on -d)
 
 \- It should be possible to get bond information from the topology.
 

@@ -1,7 +1,7 @@
-.TH pdb2gmx 1 "Thu 28 Feb 2002"
+.TH pdb2gmx 1 "Sun 25 Jan 2004"
 .SH NAME
 pdb2gmx
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3pdb2gmx\fP
 .BI "-f" " eiwit.pdb "
@@ -11,9 +11,10 @@ pdb2gmx
 .BI "-n" " clean.ndx "
 .BI "-q" " clean.pdb "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-[no]merge" ""
+.BI "-ff" " string "
+.BI "-water" " enum "
 .BI "-[no]inter" ""
 .BI "-[no]ss" ""
 .BI "-[no]ter" ""
@@ -23,21 +24,42 @@ pdb2gmx
 .BI "-[no]his" ""
 .BI "-angle" " real "
 .BI "-dist" " real "
-.BI "-posrefc" " real "
 .BI "-[no]una" ""
-.BI "-[no]sort" ""
-.BI "-[no]H14" ""
 .BI "-[no]ignh" ""
-.BI "-[no]alldih" ""
+.BI "-[no]missing" ""
+.BI "-posrefc" " real "
 .BI "-dummy" " enum "
 .BI "-[no]heavyh" ""
 .BI "-[no]deuterate" ""
 .SH DESCRIPTION
-This program reads a pdb file, lets you choose a forcefield, reads
+This program reads a pdb file, reads
 some database files, adds hydrogens to the molecules and generates
 coordinates in Gromacs (Gromos) format and a topology in Gromacs format.
 These files can subsequently be processed to generate a run input file.
 
+
+
+The force fields supported currently are:
+
+
+G43a1  GROMOS96 43a1 Forcefield (official distribution)
+
+
+oplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)
+
+
+G43b1  GROMOS96 43b1 Vacuum Forcefield (official distribution)
+
+
+gmx    Gromacs Forcefield (a modified GROMOS87, see manual)
+
+
+G43a2  GROMOS96 43a2 Forcefield (development) (improved alkane dihedrals)
+
+
+The corresponding data files can be found in the library directory
+with names like ffXXXX.YYY. Check chapter 5 of the manual for more
+information about file formats.
 
 
 Note that a pdb file is nothing more than a file format, and it
@@ -105,20 +127,6 @@ option when you want to convert a multichain pdb file.
 
 
 
-
-.B -sort
-will sort all residues according to the order in the
-database, sometimes this is necessary to get charge groups
-together.
-
-
-
-.B -alldih
-will generate all proper dihedrals instead of only
-those with as few hydrogens as possible, this is useful for use with
-the Charmm forcefield.
-
-
 The option 
 .B -dummy
 removes hydrogen and fast improper dihedral
@@ -139,15 +147,14 @@ done by increasing the hydrogen-mass by a factor of 4. This is also
 done for water hydrogens to slow down the rotational motion of water.
 The increase in mass of the hydrogens is subtracted from the bonded
 (heavy) atom so that the total mass of the system remains the same.
-Reference Feenstra et al., J. Comput. Chem. 20, 786 (1999).
 .SH FILES
 .BI "-f" " eiwit.pdb" 
 .B Input
- Generic structure: gro g96 pdb tpr tpb tpa 
+ Generic structure: gro g96 pdb tpr tpb tpa xml 
 
 .BI "-o" " conf.gro" 
 .B Output
- Generic structure: gro g96 pdb 
+ Generic structure: gro g96 pdb xml 
 
 .BI "-p" " topol.top" 
 .B Output
@@ -163,20 +170,33 @@ Reference Feenstra et al., J. Comput. Chem. 20, 786 (1999).
 
 .BI "-q" " clean.pdb" 
 .B Output, Opt.
- Generic structure: gro g96 pdb 
+ Generic structure: gro g96 pdb xml 
 
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 0" 
  Set the nicelevel
 
 .BI "-[no]merge"  "    no"
  Merge multiple chains into one molecule
+
+.BI "-ff"  " string" " G43a1" 
+ Select the force field, supported are: G43a1, oplsaa, gmx, G43a2, G43b1. Run pdb2gmx -h for more information.
+
+.BI "-water"  " enum" " spc" 
+ Water model to use: with GROMOS we recommend SPC, with OPLS, TIP4P: 
+.B spc
+, 
+.B spce
+, 
+.B tip3p
+, 
+.B tip4p
+or 
+.B tip5p
+
 
 .BI "-[no]inter"  "    no"
  Set the next 6 options to interactive
@@ -205,23 +225,17 @@ Reference Feenstra et al., J. Comput. Chem. 20, 786 (1999).
 .BI "-dist"  " real" "    0.3" 
  Maximum donor-acceptor distance for a H-bond (nm)
 
-.BI "-posrefc"  " real" "   1000" 
- Force constant for position restraints
-
 .BI "-[no]una"  "    no"
  Select aromatic rings with united CH atoms on Phenylalanine, Tryptophane and Tyrosine
-
-.BI "-[no]sort"  "   yes"
- Sort the residues according to database
-
-.BI "-[no]H14"  "    no"
- Use 1-4 interactions between hydrogen atoms
 
 .BI "-[no]ignh"  "    no"
  Ignore hydrogen atoms that are in the pdb file
 
-.BI "-[no]alldih"  "    no"
- Generate all proper dihedrals
+.BI "-[no]missing"  "    no"
+ Continue when atoms are missing, dangerous
+
+.BI "-posrefc"  " real" "   1000" 
+ Force constant for position restraints
 
 .BI "-dummy"  " enum" " none" 
  Convert atoms to dummy atoms: 

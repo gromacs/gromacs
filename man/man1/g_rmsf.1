@@ -1,7 +1,7 @@
-.TH g_rmsf 1 "Thu 28 Feb 2002"
+.TH g_rmsf 1 "Sun 25 Jan 2004"
 .SH NAME
 g_rmsf
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_rmsf\fP
 .BI "-f" " traj.xtc "
@@ -15,7 +15,6 @@ g_rmsf
 .BI "-oc" " correl.xvg "
 .BI "-dir" " rmsf.log "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -82,7 +81,7 @@ the least.
 
 .BI "-s" " topol.tpr" 
 .B Input
- Structure+mass(db): tpr tpb tpa gro g96 pdb 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -119,9 +118,6 @@ the least.
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel

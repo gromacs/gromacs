@@ -1,13 +1,12 @@
-.TH g_saltbr 1 "Thu 28 Feb 2002"
+.TH g_saltbr 1 "Sun 25 Jan 2004"
 .SH NAME
 g_saltbr
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_saltbr\fP
 .BI "-f" " traj.xtc "
 .BI "-s" " topol.tpr "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -28,14 +27,11 @@ and plus-plus.xvg, or files for every individual ion-pair if selected
 
 .BI "-s" " topol.tpr" 
 .B Input
- Generic run input: tpr tpb tpa 
+ Generic run input: tpr tpb tpa xml 
 
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel

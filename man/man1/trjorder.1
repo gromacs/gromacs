@@ -1,7 +1,7 @@
-.TH trjorder 1 "Thu 28 Feb 2002"
+.TH trjorder 1 "Sun 25 Jan 2004"
 .SH NAME
 trjorder
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3trjorder\fP
 .BI "-f" " traj.xtc "
@@ -9,7 +9,6 @@ trjorder
 .BI "-n" " index.ndx "
 .BI "-o" " ordered.xtc "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -34,6 +33,10 @@ In that case the reference group would be the protein and the group
 of molecules would consist of all the water atoms. When an index group
 of the first n waters is made, the ordered trajectory can be used
 with any Gromacs program to analyze the n closest waters.
+
+
+If the output file is a pdb file, the distance to the reference target
+will be stored in the B-factor field in order to color with e.g. rasmol.
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input
@@ -41,7 +44,7 @@ with any Gromacs program to analyze the n closest waters.
 
 .BI "-s" " topol.tpr" 
 .B Input
- Structure+mass(db): tpr tpb tpa gro g96 pdb 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -54,9 +57,6 @@ with any Gromacs program to analyze the n closest waters.
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel

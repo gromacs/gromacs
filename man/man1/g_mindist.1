@@ -1,7 +1,7 @@
-.TH g_mindist 1 "Thu 28 Feb 2002"
+.TH g_mindist 1 "Sun 25 Jan 2004"
 .SH NAME
 g_mindist
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_mindist\fP
 .BI "-f" " traj.xtc "
@@ -10,21 +10,29 @@ g_mindist
 .BI "-od" " mindist.xvg "
 .BI "-on" " numcont.xvg "
 .BI "-o" " atm-pair.out "
+.BI "-ox" " mindist.xtc "
+.BI "-or" " mindistres.xvg "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
 .BI "-dt" " time "
+.BI "-tu" " enum "
 .BI "-[no]w" ""
 .BI "-[no]matrix" ""
+.BI "-[no]max" ""
 .BI "-d" " real "
 .BI "-[no]pi" ""
+.BI "-[no]split" ""
 .SH DESCRIPTION
 g_mindist computes the distance between one group and a number of
 other groups.
 Both the minimum distance and the number of contacts within a given
 distance are written to two separate output files.
+With 
+.B -or
+, minimum distances to each residue in the first
+group are determined and plotted as a function of reisdue number.
 
 
 With option 
@@ -34,7 +42,7 @@ periodic image is plotted. This is useful for checking if a protein
 has seen its periodic image during a simulation. Only one shift in
 each direction is considered, giving a total of 26 shifts.
 It also plots the maximum distance within the group and the lengths
-of the three box vectors. This option is very slow.
+of the three box vectors.
 
 
 Other programs that calculate distances are 
@@ -50,7 +58,7 @@ and
 
 .BI "-s" " topol.tpr" 
 .B Input, Opt.
- Structure+mass(db): tpr tpb tpa gro g96 pdb 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -61,19 +69,24 @@ and
  xvgr/xmgr file 
 
 .BI "-on" " numcont.xvg" 
-.B Output
+.B Output, Opt.
  xvgr/xmgr file 
 
 .BI "-o" " atm-pair.out" 
-.B Output
+.B Output, Opt.
  Generic output file 
+
+.BI "-ox" " mindist.xtc" 
+.B Output, Opt.
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-or" " mindistres.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
 
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
@@ -87,15 +100,40 @@ and
 .BI "-dt"  " time" "     -1" 
  Only use frame when t MOD dt = first time (ps)
 
+.BI "-tu"  " enum" " ps" 
+ Time unit: 
+.B ps
+, 
+.B fs
+, 
+.B ns
+, 
+.B us
+, 
+.B ms
+, 
+.B s
+, 
+.B m
+or 
+.B h
+
+
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
 
 .BI "-[no]matrix"  "    no"
  Calculate half a matrix of group-group distances
 
+.BI "-[no]max"  "    no"
+ Calculate *maximum* distance instead of minimum
+
 .BI "-d"  " real" "    0.6" 
  Distance for contacts
 
 .BI "-[no]pi"  "    no"
  Calculate minimum distance with periodic images
+
+.BI "-[no]split"  "    no"
+ Split graph where time is zero
 

@@ -1,7 +1,7 @@
-.TH g_velacc 1 "Thu 28 Feb 2002"
+.TH g_velacc 1 "Sun 25 Jan 2004"
 .SH NAME
 g_velacc
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_velacc\fP
 .BI "-f" " traj.trr "
@@ -9,7 +9,6 @@ g_velacc
 .BI "-n" " index.ndx "
 .BI "-o" " vac.xvg "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -43,7 +42,7 @@ of molecule numbers instead of atom numbers.
 
 .BI "-s" " topol.tpr" 
 .B Input, Opt.
- Structure+mass(db): tpr tpb tpa gro g96 pdb 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -56,9 +55,6 @@ of molecule numbers instead of atom numbers.
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
@@ -108,8 +104,10 @@ or
 .B vac
 , 
 .B exp5
-or 
+, 
 .B exp7
+or 
+.B exp9
 
 
 .BI "-ncskip"  " int" " 0" 

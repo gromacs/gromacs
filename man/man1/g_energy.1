@@ -1,7 +1,7 @@
-.TH g_energy 1 "Thu 28 Feb 2002"
+.TH g_energy 1 "Sun 25 Jan 2004"
 .SH NAME
 g_energy
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_energy\fP
 .BI "-f" " ener.edr "
@@ -19,7 +19,6 @@ g_energy
 .BI "-vis" " visco.xvg "
 .BI "-ravg" " runavgdf.xvg "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -97,16 +96,25 @@ the time and ensemble averages.
 
 With 
 .B -fee
-a free energy estimate is calculated using
-the formula: G = -ln  e  (E/kT)  * kT, where k is Boltzmann's
-constant, T is set by 
+an estimate is calculated for the free-energy
+difference with an ideal gas state: 
+
+  Delta A = A(N,V,T) - A_idgas(N,V,T) = kT ln  e(Upot/kT) 
+
+  Delta G = G(N,p,T) - G_idgas(N,p,T) = kT ln  e(Upot/kT) 
+
+where k is Boltzmann's constant, T is set by 
 .B -fetemp
-and the average is over the
-ensemble (or time in a trajectory). Note that this is in principle
+andthe average is over the ensemble (or time in a trajectory).
+Note that this is in principle
 only correct when averaging over the whole (Boltzmann) ensemble
 and using the potential energy. This also allows for an entropy
-estimate using G = H - T S, where H is the enthalpy (H = U + p V)
-and S entropy.
+estimate using:
+
+  Delta S(N,V,T) = S(N,V,T) - S_idgas(N,V,T) = (Upot - Delta A)/T
+
+  Delta S(N,p,T) = S(N,p,T) - S_idgas(N,p,T) = (Upot + pV - Delta G)/T
+
 
 
 When a second energy file is specified (
@@ -129,7 +137,7 @@ the energies must both be calculated from the same trajectory.
 
 .BI "-s" " topol.tpr" 
 .B Input, Opt.
- Generic run input: tpr tpb tpa 
+ Generic run input: tpr tpb tpa xml 
 
 .BI "-o" " energy.xvg" 
 .B Output
@@ -178,9 +186,6 @@ the energies must both be calculated from the same trajectory.
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
@@ -260,8 +265,10 @@ or
 .B vac
 , 
 .B exp5
-or 
+, 
 .B exp7
+or 
+.B exp9
 
 
 .BI "-ncskip"  " int" " 0" 

@@ -1,16 +1,16 @@
-.TH genion 1 "Thu 28 Feb 2002"
+.TH genion 1 "Sun 25 Jan 2004"
 .SH NAME
 genion
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3genion\fP
 .BI "-s" " topol.tpr "
+.BI "-table" " table.xvg "
 .BI "-n" " index.ndx "
 .BI "-o" " out.gro "
 .BI "-g" " genion.log "
 .BI "-pot" " pot.pdb "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-np" " int "
 .BI "-pname" " string "
@@ -21,6 +21,7 @@ genion
 .BI "-rmin" " real "
 .BI "-[no]random" ""
 .BI "-seed" " int "
+.BI "-scale" " real "
 .SH DESCRIPTION
 genion replaces solvent molecules by monoatomic ions at
 the position of the first atoms with the most favorable electrostatic
@@ -28,8 +29,11 @@ potential or at random. The potential is calculated on all atoms, using
 normal GROMACS particle based methods (in contrast to other methods
 based on solving the Poisson-Boltzmann equation).
 The potential is recalculated after every ion insertion.
-If specified in the run input file, a reaction field or shift function
-can be used.
+If specified in the run input file, a reaction field, shift function
+or user function can be used. For the user function a table file
+can be specified with the option 
+.B -table
+.
 The group of solvent molecules should be continuous and all molecules
 should have the same number of atoms.
 The user should add the ion molecules to the topology file and include
@@ -39,16 +43,25 @@ the file
 Ion names for Gromos96 should include the charge.
 
 
-The potential can be written as B-factors
+With the option 
+.B -pot
+the potential can be written as B-factors
 in a pdb file (for visualisation using e.g. rasmol).
-The unit of the potential is 0.001 kJ/(mol e).
+The unit of the potential is 1000 kJ/(mol e), the scaling be changed
+with the 
+.B -scale
+option.
 
 
 For larger ions, e.g. sulfate we recommended to use genbox.
 .SH FILES
 .BI "-s" " topol.tpr" 
 .B Input
- Generic run input: tpr tpb tpa 
+ Generic run input: tpr tpb tpa xml 
+
+.BI "-table" " table.xvg" 
+.B Input, Opt.
+ xvgr/xmgr file 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -56,7 +69,7 @@ For larger ions, e.g. sulfate we recommended to use genbox.
 
 .BI "-o" " out.gro" 
 .B Output
- Generic structure: gro g96 pdb 
+ Generic structure: gro g96 pdb xml 
 
 .BI "-g" " genion.log" 
 .B Output
@@ -69,9 +82,6 @@ For larger ions, e.g. sulfate we recommended to use genbox.
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
@@ -102,4 +112,7 @@ For larger ions, e.g. sulfate we recommended to use genbox.
 
 .BI "-seed"  " int" " 1993" 
  Seed for random number generator
+
+.BI "-scale"  " real" "  0.001" 
+ Scaling factor for the potential for -pot
 

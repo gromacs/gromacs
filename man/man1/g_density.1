@@ -1,7 +1,7 @@
-.TH g_density 1 "Thu 28 Feb 2002"
+.TH g_density 1 "Sun 25 Jan 2004"
 .SH NAME
 g_density
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_density\fP
 .BI "-f" " traj.xtc "
@@ -10,7 +10,6 @@ g_density
 .BI "-ei" " electrons.dat "
 .BI "-o" " density.xvg "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -51,7 +50,7 @@ partial charge.
 
 .BI "-s" " topol.tpr" 
 .B Input
- Generic run input: tpr tpb tpa 
+ Generic run input: tpr tpb tpa xml 
 
 .BI "-ei" " electrons.dat" 
 .B Input, Opt.
@@ -64,9 +63,6 @@ partial charge.
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel

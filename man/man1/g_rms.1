@@ -1,7 +1,7 @@
-.TH g_rms 1 "Thu 28 Feb 2002"
+.TH g_rms 1 "Sun 25 Jan 2004"
 .SH NAME
 g_rms
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_rms\fP
 .BI "-s" " topol.tpr "
@@ -16,7 +16,6 @@ g_rms
 .BI "-bin" " rmsd.dat "
 .BI "-bm" " bond.xpm "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -25,7 +24,7 @@ g_rms
 .BI "-[no]w" ""
 .BI "-what" " enum "
 .BI "-[no]pbc" ""
-.BI "-[no]fit" ""
+.BI "-fit" " enum "
 .BI "-prev" " int "
 .BI "-[no]split" ""
 .BI "-skip" " int "
@@ -39,7 +38,9 @@ g_rms
 g_rms compares two structures by computing the root mean square
 deviation (RMSD), the size-independent 'rho' similarity parameter
 (rho) or the scaled rho (rhosc), 
-reference Maiorov & Crippen, PROTEINS 22, 273 (1995).
+see Maiorov & Crippen, PROTEINS 
+.B 22
+, 273 (1995).
 This is selected by 
 .B -what
 .
@@ -47,9 +48,8 @@ This is selected by
 Each structure from a trajectory (
 .B -f
 ) is compared to a
-reference structure from a run input file by least-squares fitting
-the structures on top of each other. The reference structure is taken
-from the structure file (
+reference structure. The reference structure
+is taken from the structure file (
 .B -s
 ).
 
@@ -58,11 +58,16 @@ With option
 .B -mir
 also a comparison with the mirror image of
 the reference structure is calculated.
+This is useful as a reference for 'significant' values, see
+Maiorov & Crippen, PROTEINS 
+.B 22
+, 273 (1995).
 
 
 Option 
 .B -prev
-produces the comparison with a previous frame.
+produces the comparison with a previous frame
+the specified number of frames ago.
 
 
 Option 
@@ -79,13 +84,18 @@ and can be converted to postscript with
 .
 
 
-All the structures are fitted pairwise.
+Option 
+.B -fit
+controls the least-squares fitting of
+the structures on top of each other: complete fit (rotation and
+translation), translation only, or no fitting at all.
 
 
 With 
 .B -f2
 , the 'other structures' are taken from a second
-trajectory.
+trajectory, this generates a comparison matrix of one trajectory
+versus the other.
 
 
 Option 
@@ -103,7 +113,7 @@ comparison group are considered.
 .SH FILES
 .BI "-s" " topol.tpr" 
 .B Input
- Structure+mass(db): tpr tpb tpa gro g96 pdb 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
 
 .BI "-f" " traj.xtc" 
 .B Input
@@ -148,9 +158,6 @@ comparison group are considered.
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
@@ -198,8 +205,14 @@ or
 .BI "-[no]pbc"  "   yes"
  PBC check
 
-.BI "-[no]fit"  "   yes"
- Fit to reference structure
+.BI "-fit"  " enum" " rot+trans" 
+ Fit to reference structure: 
+.B rot+trans
+, 
+.B translation
+or 
+.B none
+
 
 .BI "-prev"  " int" " 0" 
  Compare with previous frame

@@ -1,7 +1,7 @@
-.TH g_nmeig 1 "Thu 28 Feb 2002"
+.TH g_nmeig 1 "Sun 25 Jan 2004"
 .SH NAME
 g_nmeig
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_nmeig\fP
 .BI "-f" " hessian.mtx "
@@ -9,7 +9,6 @@ g_nmeig
 .BI "-o" " eigenval.xvg "
 .BI "-v" " eigenvec.trr "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-[no]m" ""
 .BI "-first" " int "
@@ -17,7 +16,7 @@ g_nmeig
 .SH DESCRIPTION
 g_nmeig calculates the eigenvectors/values of a (Hessian) matrix,
 which can be calculated with 
-.B nmrun
+.B mdrun
 .
 The eigenvectors are written to a trajectory file (
 .B -v
@@ -38,7 +37,7 @@ An ensemble of structures can be generated from the eigenvectors with
 
 .BI "-s" " topol.tpr" 
 .B Input
- Structure+mass(db): tpr tpb tpa gro g96 pdb 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
 
 .BI "-o" " eigenval.xvg" 
 .B Output
@@ -51,9 +50,6 @@ An ensemble of structures can be generated from the eigenvectors with
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel

@@ -1,7 +1,7 @@
-.TH genbox 1 "Thu 28 Feb 2002"
+.TH genbox 1 "Sun 25 Jan 2004"
 .SH NAME
 genbox
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3genbox\fP
 .BI "-cp" " protein.gro "
@@ -10,7 +10,6 @@ genbox
 .BI "-o" " out.gro "
 .BI "-p" " topol.top "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-box" " vector "
 .BI "-nmol" " int "
@@ -112,19 +111,19 @@ line with the total number of solvent molecules in your coordinate file.
 .SH FILES
 .BI "-cp" " protein.gro" 
 .B Input, Opt.
- Generic structure: gro g96 pdb tpr tpb tpa 
+ Generic structure: gro g96 pdb tpr tpb tpa xml 
 
 .BI "-cs" " spc216.gro" 
 .B Input, Opt., Lib.
- Generic structure: gro g96 pdb tpr tpb tpa 
+ Generic structure: gro g96 pdb tpr tpb tpa xml 
 
 .BI "-ci" " insert.gro" 
 .B Input, Opt.
- Generic structure: gro g96 pdb tpr tpb tpa 
+ Generic structure: gro g96 pdb tpr tpb tpa xml 
 
 .BI "-o" " out.gro" 
 .B Output
- Generic structure: gro g96 pdb 
+ Generic structure: gro g96 pdb xml 
 
 .BI "-p" " topol.top" 
 .B In/Out, Opt.
@@ -133,9 +132,6 @@ line with the total number of solvent molecules in your coordinate file.
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel

@@ -1,10 +1,10 @@
-.TH g_chi 1 "Thu 28 Feb 2002"
+.TH g_chi 1 "Sun 25 Jan 2004"
 .SH NAME
 g_chi
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_chi\fP
-.BI "-c" " conf.gro "
+.BI "-s" " conf.gro "
 .BI "-f" " traj.xtc "
 .BI "-o" " order.xvg "
 .BI "-p" " order.pdb "
@@ -12,8 +12,11 @@ g_chi
 .BI "-jc" " Jcoupling.xvg "
 .BI "-corr" " dihcorr.xvg "
 .BI "-g" " chi.log "
+.BI "-ot" " dihtrans.xvg "
+.BI "-oh" " trhisto.xvg "
+.BI "-rt" " restrans.xvg "
+.BI "-cp" " chiprodhisto.xvg "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -26,12 +29,16 @@ g_chi
 .BI "-[no]rama" ""
 .BI "-[no]viol" ""
 .BI "-[no]all" ""
+.BI "-[no]rad" ""
 .BI "-[no]shift" ""
-.BI "-run" " int "
+.BI "-binwidth" " int "
+.BI "-core_rotamer" " real "
 .BI "-maxchi" " enum "
 .BI "-[no]normhisto" ""
 .BI "-[no]ramomega" ""
 .BI "-bfact" " real "
+.BI "-[no]chi_prod" ""
+.BI "-[no]HChi" ""
 .BI "-bmax" " real "
 .BI "-acflen" " int "
 .BI "-[no]normalize" ""
@@ -45,17 +52,11 @@ g_chi computes phi, psi, omega and chi dihedrals for all your
 amino acid backbone and sidechains.
 It can compute dihedral angle as a function of time, and as
 histogram distributions.
-Output is in form of xvgr files, as well as a LaTeX table of the
-number of transitions per nanosecond.
-
-
-Order parameters S2 for each of the dihedrals are calculated and
-output as xvgr file and optionally as a pdb file with the S2
-values as B-factor.
+The distributions (histo-(dihedral)(RESIDUE).xvg) are cumulative over all residues of each type.
 
 
 If option 
-.B -c
+.B -corr
 is given, the program will
 calculate dihedral autocorrelation functions. The function used
 is C(t) =  cos(chi(tau)) cos(chi(tau+t)) . The use of cosines
@@ -63,6 +64,77 @@ rather than angles themselves, resolves the problem of periodicity.
 (Van der Spoel & Berendsen (1997), 
 .B Biophys. J. 72
 , 2032-2041).
+Separate files for each dihedral of each residue
+(corr(dihedral)(RESIDUE)(nresnr).xvg) are output, as well as a
+file containing the information for all residues (argument of 
+.B -corr
+).
+
+
+With option 
+.B -all
+, the angles themselves as a function of time for
+each residue are printed to separate files (dihedral)(RESIDUE)(nresnr).xvg.
+These can be in radians or degrees.
+
+
+A log file (argument 
+.B -g
+) is also written. This contains 
+
+(a) information about the number of residues of each type.
+
+(b) The NMR 3J coupling constants from the Karplus equation.
+
+(c) a table for each residue of the number of transitions between 
+rotamers per nanosecond,  and the order parameter S2 of each dihedral.
+
+(d) a table for each residue of the rotamer occupancy.
+
+All rotamers are taken as 3-fold, except for omegas and chi-dihedrals
+to planar groups (i.e. chi2 of aromatics asp and asn, chi3 of glu
+and gln, and chi4 of arg), which are 2-fold. "rotamer 0" means 
+that the dihedral was not in the core region of each rotamer. 
+The width of the core region can be set with 
+.B -core_rotamer
+
+
+
+The S2 order parameters are also output to an xvg file
+(argument 
+.B -o
+) and optionally as a pdb file with
+the S2 values as B-factor (argument 
+.B -p
+). 
+The total number of rotamer transitions per timestep
+(argument 
+.B -ot
+), the number of transitions per rotamer
+(argument 
+.B -rt
+), and the 3J couplings (argument 
+.B -jc
+), 
+can also be written to .xvg files.
+
+
+If 
+.B -chi_prod
+is set (and maxchi  0), cumulative rotamers, e.g.
+1+9(chi1-1)+3(chi2-1)+(chi3-1) (if the residue has three 3-fold 
+dihedrals and maxchi = 3)
+are calculated. As before, if any dihedral is not in the core region,
+the rotamer is taken to be 0. The occupancies of these cumulative 
+rotamers (starting with rotamer 0) are written to the file
+that is the argument of 
+.B -cp
+, and if the 
+.B -all
+flag
+is given, the rotamers as functions of time
+are written to chiproduct(RESIDUE)(nresnr).xvg 
+and their occupancies to histo-chiproduct(RESIDUE)(nresnr).xvg.
 
 
 The option 
@@ -71,9 +143,9 @@ generates a contour plot of the average omega angle
 as a function of the phi and psi angles, that is, in a Ramachandran plot
 the average omega angle is plotted using color coding.
 .SH FILES
-.BI "-c" " conf.gro" 
+.BI "-s" " conf.gro" 
 .B Input
- Generic structure: gro g96 pdb tpr tpb tpa 
+ Generic structure: gro g96 pdb tpr tpb tpa xml 
 
 .BI "-f" " traj.xtc" 
 .B Input
@@ -103,12 +175,25 @@ the average omega angle is plotted using color coding.
 .B Output
  Log file 
 
+.BI "-ot" " dihtrans.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-oh" " trhisto.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-rt" " restrans.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-cp" " chiprodhisto.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
@@ -146,11 +231,17 @@ the average omega angle is plotted using color coding.
 .BI "-[no]all"  "    no"
  Output separate files for every dihedral.
 
+.BI "-[no]rad"  "    no"
+ in angle vs time files, use radians rather than degrees.
+
 .BI "-[no]shift"  "    no"
  Compute chemical shifts from Phi/Psi angles
 
-.BI "-run"  " int" " 1" 
- perform running average over ndeg degrees for histograms
+.BI "-binwidth"  " int" " 1" 
+ bin width for histograms (degrees)
+
+.BI "-core_rotamer"  " real" "    0.5" 
+ only the central -core_rotamer*(360/multiplicity) belongs to each rotamer (the rest is assigned to rotamer 0)
 
 .BI "-maxchi"  " enum" " 0" 
  calculate first ndih Chi dihedrals: 
@@ -177,6 +268,12 @@ or
 
 .BI "-bfact"  " real" "     -1" 
  B-factor value for pdb file for atoms with no calculated dihedral order parameter
+
+.BI "-[no]chi_prod"  "    no"
+ compute a single cumulative rotamer for each residue
+
+.BI "-[no]HChi"  "    no"
+ Include dihedrals to sidechain hydrogens
 
 .BI "-bmax"  " real" "      0" 
  Maximum B-factor on any of the atoms that make up a dihedral, for the dihedral angle to be considere in the statistics. Applies to database work where a number of X-Ray structures is analyzed. -bmax = 0 means no limit.
@@ -211,8 +308,10 @@ or
 .B vac
 , 
 .B exp5
-or 
+, 
 .B exp7
+or 
+.B exp9
 
 
 .BI "-ncskip"  " int" " 0" 
@@ -225,4 +324,10 @@ or
  Time where to end the exponential fit of the correlation function, -1 is till the end
 
 \- Produces MANY output files (up to about 4 times the number of residues in the protein, twice that if autocorrelation functions are calculated). Typically several hundred files are output.
+
+\- Phi and psi dihedrals are calculated in a non-standard way, using H-N-CA-C for phi instead of C(-)-N-CA-C, and N-CA-C-O for psi instead of N-CA-C-N(+). This causes (usually small) discrepancies with the output of other tools like g_rama.
+
+\- -r0 option does not work properly
+
+\- Rotamers with multiplicity 2 are printed in chi.log as if they had multiplicity 3, with the 3rd (g(+)) always having probability 0
 

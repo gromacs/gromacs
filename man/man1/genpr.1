@@ -1,16 +1,17 @@
-.TH genpr 1 "Thu 28 Feb 2002"
+.TH genpr 1 "Sun 25 Jan 2004"
 .SH NAME
 genpr
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3genpr\fP
 .BI "-f" " conf.gro "
 .BI "-n" " index.ndx "
 .BI "-o" " posre.itp "
+.BI "-of" " freeze.ndx "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-fc" " vector "
+.BI "-freeze" " real "
 .SH DESCRIPTION
 genpr produces an include file for a topology containing
 a list of atom numbers and three force constants for the
@@ -27,10 +28,14 @@ block in the topology. Since the atom numbers in every moleculetype
 in the topology start at 1 and the numbers in the input file for
 genpr number consecutively from 1, genpr will only produce a useful
 file for the first molecule.
+
+
+The -of option produces an index file that can be used for
+freezing atoms. In this case the input file must be a pdb file.
 .SH FILES
 .BI "-f" " conf.gro" 
 .B Input
- Generic structure: gro g96 pdb tpr tpb tpa 
+ Generic structure: gro g96 pdb tpr tpb tpa xml 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -40,16 +45,20 @@ file for the first molecule.
 .B Output
  Include file for topology 
 
+.BI "-of" " freeze.ndx" 
+.B Output, Opt.
+ Index file 
+
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 0" 
  Set the nicelevel
 
 .BI "-fc"  " vector" " 1000 1000 1000" 
  force constants (kJ mol-1 nm-2)
+
+.BI "-freeze"  " real" "      0" 
+ if the -of option or this one is given an index file will be written containing atom numbers of all atoms that have a B-factor less than the level given here
 

@@ -1,7 +1,7 @@
-.TH g_enemat 1 "Thu 28 Feb 2002"
+.TH g_enemat 1 "Sun 25 Jan 2004"
 .SH NAME
 g_enemat
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_enemat\fP
 .BI "-f" " ener.edr "
@@ -10,7 +10,6 @@ g_enemat
 .BI "-emat" " emat.xpm "
 .BI "-etot" " energy.xvg "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -31,25 +30,71 @@ g_enemat
 .BI "-[no]free" ""
 .BI "-temp" " real "
 .SH DESCRIPTION
-g_enemat extracts an energy matrix from an energy file.
+g_enemat extracts an energy matrix from the energy file (
+.B -f
+).
 With 
 .B -groups
 a file must be supplied with on each
-line a group to be used. For these groups a matrices of
-interaction energies will be calculated. Also the total
-interaction energy energy per group is calculated.
+line a group of atoms to be used. For these groups matrix of
+interaction energies will be extracted from the energy file
+by looking for energy groups with names corresponding to pairs
+of groups of atoms. E.g. if your 
+.B -groups
+file contains:
 
 
-An approximation of the free energy is calculated using:
+.B 2
+
+
+
+.B Protein
+
+
+
+.B SOL
+
+
+then energy groups with names like 'Coul-SR:Protein-SOL' and 
+'LJ:Protein-SOL' are expected in the energy file (although
+
+.B g_enemat
+is most useful if many groups are analyzed
+simultaneously). Matrices for different energy types are written
+out separately, as controlled by the
+
+.B -[no]coul
+, 
+.B -[no]coulr
+, 
+.B -[no]coul14
+, 
+
+.B -[no]lj
+, 
+.B -[no]lj14
+, 
+
+.B -[no]bham
+and 
+.B -[no]free
+options.
+Finally, the total interaction energy energy per group can be 
+calculated (
+.B -etot
+).
+
+
+An approximation of the free energy can be calculated using:
 E(free) = E0 + kT log( exp((E-E0)/kT) ), where ''
 stands for time-average. A file with reference free energies
 can be supplied to calculate the free energy difference
-with some reference state. Group names (e.g. residue names
+with some reference state. Group names (e.g. residue names)
 in the reference file should correspond to the group names
 as used in the 
 .B -groups
 file, but a appended number
-(e.g. residue number)in the 
+(e.g. residue number) in the 
 .B -groups
 will be ignored
 in the comparison.
@@ -78,9 +123,6 @@ in the comparison.
 .BI "-[no]h"  "    no"
  Print help info and quit
 
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
-
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
@@ -103,7 +145,7 @@ in the comparison.
  Skip number of frames between data points
 
 .BI "-[no]mean"  "   yes"
- with -groups calculates matrix of mean energies in stead of matrix for each timestep
+ with -groups extracts matrix of mean energies in stead of matrix for each timestep
 
 .BI "-nlevels"  " int" " 20" 
  number of levels for matrix colors
@@ -115,22 +157,22 @@ in the comparison.
  min value for energies
 
 .BI "-[no]coul"  "   yes"
- calculate Coulomb SR energies
+ extract Coulomb SR energies
 
 .BI "-[no]coulr"  "    no"
- calculate Coulomb LR energies
+ extract Coulomb LR energies
 
 .BI "-[no]coul14"  "    no"
- calculate Coulomb 1-4 energies
+ extract Coulomb 1-4 energies
 
 .BI "-[no]lj"  "   yes"
- calculate Lennard-Jones SR energies
+ extract Lennard-Jones SR energies
 
 .BI "-[no]lj14"  "    no"
- calculate Lennard-Jones 1-4 energies
+ extract Lennard-Jones 1-4 energies
 
 .BI "-[no]bham"  "    no"
- calculate Buckingham energies
+ extract Buckingham energies
 
 .BI "-[no]free"  "   yes"
  calculate free energy

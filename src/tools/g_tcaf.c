@@ -37,6 +37,7 @@
 #include <config.h>
 #endif
 
+#include <gmx_ana.h>
 
 
 /* This is just a wrapper binary.

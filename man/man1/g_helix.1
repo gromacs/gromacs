@@ -1,7 +1,7 @@
-.TH g_helix 1 "Thu 28 Feb 2002"
+.TH g_helix 1 "Sun 25 Jan 2004"
 .SH NAME
 g_helix
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_helix\fP
 .BI "-s" " topol.tpr "
@@ -11,7 +11,6 @@ g_helix
 .BI "-cz" " zconf.gro "
 .BI "-co" " waver.gro "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -93,7 +92,7 @@ Ellipticity at 222 nm according to
 .SH FILES
 .BI "-s" " topol.tpr" 
 .B Input
- Generic run input: tpr tpb tpa 
+ Generic run input: tpr tpb tpa xml 
 
 .BI "-n" " index.ndx" 
 .B Input
@@ -109,18 +108,15 @@ Ellipticity at 222 nm according to
 
 .BI "-cz" " zconf.gro" 
 .B Output
- Generic structure: gro g96 pdb 
+ Generic structure: gro g96 pdb xml 
 
 .BI "-co" " waver.gro" 
 .B Output
- Generic structure: gro g96 pdb 
+ Generic structure: gro g96 pdb xml 
 
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel

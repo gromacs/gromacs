@@ -1,21 +1,22 @@
-.TH grompp 1 "Thu 28 Feb 2002"
+.TH grompp 1 "Sun 25 Jan 2004"
 .SH NAME
 grompp
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3grompp\fP
 .BI "-f" " grompp.mdp "
 .BI "-po" " mdout.mdp "
 .BI "-c" " conf.gro "
 .BI "-r" " conf.gro "
+.BI "-rb" " conf.gro "
 .BI "-n" " index.ndx "
 .BI "-deshuf" " deshuf.ndx "
 .BI "-p" " topol.top "
 .BI "-pp" " processed.top "
 .BI "-o" " topol.tpr "
 .BI "-t" " traj.trr "
+.BI "-e" " ener.edr "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-[no]v" ""
 .BI "-time" " real "
@@ -26,6 +27,7 @@ grompp
 .BI "-load" " string "
 .BI "-maxwarn" " int "
 .BI "-[no]check14" ""
+.BI "-[no]renum" ""
 .SH DESCRIPTION
 The gromacs preprocessor
 reads a molecular topology file, checks the validity of the
@@ -76,10 +78,15 @@ file. See your local manual (man cpp).
 When using position restraints a file with restraint coordinates
 can be supplied with 
 .B -r
-, otherwise constraining will be done
-relative to the conformation from the 
+, otherwise restraining will be done
+with respect to the conformation from the 
 .B -c
 option.
+For free energy calculation the the coordinates for the B topology
+can be supplied with 
+.B -rb
+, otherwise they will be equal to
+those of the A topology.
 
 
 Starting coordinates can be read from trajectory with 
@@ -94,7 +101,14 @@ Note that these velocities will not be used when
 
 in your 
 .B .mdp
-file. If you want to continue a crashed run, it is
+file. An energy file can be supplied with
+
+.B -e
+to have exact restarts when using pressure and/or
+temperature coupling. For an exact restart do not forget to turn off
+velocity generation and turn on unconstrained starting when constraints
+are present in the system.
+If you want to continue a crashed run, it is
 easier to use 
 .B tpbconv
 .
@@ -109,6 +123,15 @@ work. The -shuffle option does just that. For a single protein
 in water this does not make a difference, however for a system where
 you have many copies of different molecules  (e.g. liquid mixture
 or membrane/water system) the option is definitely a must.
+The output trajectories will also be shuffled. 
+.B grompp
+writes
+an index file (option 
+.B -deshuf
+) which can be used with
+
+.B trjconv
+to deshuffle the trajectories.
 
 
 A further optimization for parallel systems is the 
@@ -168,11 +191,15 @@ program.
 
 .BI "-c" " conf.gro" 
 .B Input
- Generic structure: gro g96 pdb tpr tpb tpa 
+ Generic structure: gro g96 pdb tpr tpb tpa xml 
 
 .BI "-r" " conf.gro" 
 .B Input, Opt.
- Generic structure: gro g96 pdb tpr tpb tpa 
+ Generic structure: gro g96 pdb tpr tpb tpa xml 
+
+.BI "-rb" " conf.gro" 
+.B Input, Opt.
+ Generic structure: gro g96 pdb tpr tpb tpa xml 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -192,18 +219,19 @@ program.
 
 .BI "-o" " topol.tpr" 
 .B Output
- Generic run input: tpr tpb tpa 
+ Generic run input: tpr tpb tpa xml 
 
 .BI "-t" " traj.trr" 
 .B Input, Opt.
  Full precision trajectory: trr trj 
 
+.BI "-e" " ener.edr" 
+.B Input, Opt.
+ Generic energy: edr ene 
+
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 0" 
  Set the nicelevel
@@ -234,4 +262,7 @@ program.
 
 .BI "-[no]check14"  "    no"
  Remove 1-4 interactions without Van der Waals
+
+.BI "-[no]renum"  "   yes"
+ Renumber atomtypes and minimize number of atomtypes
 

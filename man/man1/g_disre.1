@@ -1,7 +1,7 @@
-.TH g_disre 1 "Thu 28 Feb 2002"
+.TH g_disre 1 "Sun 25 Jan 2004"
 .SH NAME
 g_disre
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_disre\fP
 .BI "-s" " topol.tpr "
@@ -13,8 +13,8 @@ g_disre
 .BI "-dr" " restr.xvg "
 .BI "-l" " disres.log "
 .BI "-n" " viol.ndx "
+.BI "-q" " viol.pdb "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -22,19 +22,30 @@ g_disre
 .BI "-[no]w" ""
 .BI "-ntop" " int "
 .SH DESCRIPTION
-g_disre computes violations of distance restraints. If necessary
-all protons can be added to a protein molecule. The program allways
+g_disre computes violations of distance restraints.
+If necessary all protons can be added to a protein molecule 
+using the protonate program.
+
+
+The program allways
 computes the instantaneous violations rather than time-averaged,
 because this analysis is done from a trajectory file afterwards
-it does not make sense to use time averaging.
+it does not make sense to use time averaging. However,
+the time averaged values per restraint are given in the log file.
 
 
 An index file may be used to select specific restraints for
 printing.
+
+
+When the optional
+.B -q
+flag is given a pdb file coloured by the
+amount of average violations.
 .SH FILES
 .BI "-s" " topol.tpr" 
 .B Input
- Generic run input: tpr tpb tpa 
+ Generic run input: tpr tpb tpa xml 
 
 .BI "-f" " traj.xtc" 
 .B Input
@@ -68,12 +79,13 @@ printing.
 .B Input, Opt.
  Index file 
 
+.BI "-q" " viol.pdb" 
+.B Output, Opt.
+ Protein data bank file 
+
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
@@ -90,6 +102,6 @@ printing.
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
 
-.BI "-ntop"  " int" " 6" 
+.BI "-ntop"  " int" " 0" 
  Number of large violations that are stored in the log file every step
 

@@ -1,7 +1,7 @@
-.TH g_msd 1 "Thu 28 Feb 2002"
+.TH g_msd 1 "Sun 25 Jan 2004"
 .SH NAME
 g_msd
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_msd\fP
 .BI "-f" " traj.xtc "
@@ -10,7 +10,6 @@ g_msd
 .BI "-o" " msd.xvg "
 .BI "-mol" " diff_mol.xvg "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -60,7 +59,7 @@ the most useful number.
 
 .BI "-s" " topol.tpr" 
 .B Input
- Structure+mass(db): tpr tpb tpa gro g96 pdb 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -77,9 +76,6 @@ the most useful number.
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel

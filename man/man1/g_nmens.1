@@ -1,7 +1,7 @@
-.TH g_nmens 1 "Thu 28 Feb 2002"
+.TH g_nmens 1 "Sun 25 Jan 2004"
 .SH NAME
 g_nmens
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_nmens\fP
 .BI "-v" " eigenvec.trr "
@@ -10,7 +10,6 @@ g_nmens
 .BI "-n" " index.ndx "
 .BI "-o" " ensemble.xtc "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-temp" " real "
 .BI "-seed" " int "
@@ -40,7 +39,7 @@ normal modes are the translational and rotational degrees of freedom.
 
 .BI "-s" " topol.tpr" 
 .B Input
- Structure+mass(db): tpr tpb tpa gro g96 pdb 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -53,9 +52,6 @@ normal modes are the translational and rotational degrees of freedom.
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel

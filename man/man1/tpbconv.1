@@ -1,15 +1,15 @@
-.TH tpbconv 1 "Thu 28 Feb 2002"
+.TH tpbconv 1 "Sun 25 Jan 2004"
 .SH NAME
 tpbconv
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3tpbconv\fP
 .BI "-s" " topol.tpr "
 .BI "-f" " traj.trr "
+.BI "-e" " ener.edr "
 .BI "-n" " index.ndx "
 .BI "-o" " tpxout.tpr "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-time" " real "
 .BI "-extend" " real "
@@ -27,6 +27,8 @@ a full disk, or by making a continuation run input file.
 Note that a frame with coordinates and velocities is needed,
 which means that when you never write velocities, you can not use
 tpbconv and you have to start the run again from the beginning.
+When pressure and/or temperature coupling is used an energy file
+can be supplied to get an exact continuation of the original run.
 
 
 
@@ -45,11 +47,15 @@ using the LIE (Linear Interactio Energy) method.
 .SH FILES
 .BI "-s" " topol.tpr" 
 .B Input
- Generic run input: tpr tpb tpa 
+ Generic run input: tpr tpb tpa xml 
 
 .BI "-f" " traj.trr" 
 .B Input, Opt.
  Full precision trajectory: trr trj 
+
+.BI "-e" " ener.edr" 
+.B Input, Opt.
+ Generic energy: edr ene 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -57,14 +63,11 @@ using the LIE (Linear Interactio Energy) method.
 
 .BI "-o" " tpxout.tpr" 
 .B Output
- Generic run input: tpr tpb tpa 
+ Generic run input: tpr tpb tpa xml 
 
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 0" 
  Set the nicelevel

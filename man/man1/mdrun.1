@@ -1,7 +1,7 @@
-.TH mdrun 1 "Thu 28 Feb 2002"
+.TH mdrun 1 "Sun 25 Jan 2004"
 .SH NAME
 mdrun
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3mdrun\fP
 .BI "-s" " topol.tpr "
@@ -11,6 +11,7 @@ mdrun
 .BI "-e" " ener.edr "
 .BI "-g" " md.log "
 .BI "-dgdl" " dgdl.xvg "
+.BI "-field" " field.xvg "
 .BI "-table" " table.xvg "
 .BI "-rerun" " rerun.xtc "
 .BI "-ei" " sam.edi "
@@ -25,11 +26,12 @@ mdrun
 .BI "-pd" " pull.pdo "
 .BI "-pn" " pull.ndx "
 .BI "-mtx" " nm.mtx "
+.BI "-dn" " dipole.ndx "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-deffnm" " string "
 .BI "-np" " int "
+.BI "-nt" " int "
 .BI "-[no]v" ""
 .BI "-[no]compact" ""
 .BI "-[no]multi" ""
@@ -143,6 +145,13 @@ for potential of mean force calculations and umbrella sampling.
 See manual.
 
 
+Finally some experimental algorithms can be tested when the
+appropriate options have been given. Currently under
+investigation are: polarizibility, glass simulations, 
+Free energy perturbation, X-Ray bombardments
+and parallel independent simulations.
+
+
 When mdrun receives a TERM signal, it will set nsteps to the current
 step plus one. When mdrun receives a USR1 signal, it will set nsteps
 to the next multiple of nstxout after the current step.
@@ -150,15 +159,10 @@ In both cases all the usual output will be written to file.
 When running with MPI, a signal to one of the mdrun processes
 is sufficient, this signal should not be sent to mpirun or
 the mdrun process that is the parent of the others.
-Finally some experimental algorithms can be tested when the
-appropriate options have been given. Currently under
-investigation are: polarizibility, glass simulations, 
-Free energy perturbation, X-Ray bombardments
-and parallel independent simulations.
 .SH FILES
 .BI "-s" " topol.tpr" 
 .B Input
- Generic run input: tpr tpb tpa 
+ Generic run input: tpr tpb tpa xml 
 
 .BI "-o" " traj.trr" 
 .B Output
@@ -170,7 +174,7 @@ and parallel independent simulations.
 
 .BI "-c" " confout.gro" 
 .B Output
- Generic structure: gro g96 pdb 
+ Generic structure: gro g96 pdb xml 
 
 .BI "-e" " ener.edr" 
 .B Output
@@ -181,6 +185,10 @@ and parallel independent simulations.
  Log file 
 
 .BI "-dgdl" " dgdl.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-field" " field.xvg" 
 .B Output, Opt.
  xvgr/xmgr file 
 
@@ -240,12 +248,13 @@ and parallel independent simulations.
 .B Output, Opt.
  Hessian matrix 
 
+.BI "-dn" " dipole.ndx" 
+.B Output, Opt.
+ Index file 
+
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
@@ -255,6 +264,9 @@ and parallel independent simulations.
 
 .BI "-np"  " int" " 1" 
  Number of nodes, must be the same as used for grompp
+
+.BI "-nt"  " int" " 1" 
+ Number of threads to start on each node
 
 .BI "-[no]v"  "    no"
  Be loud and noisy

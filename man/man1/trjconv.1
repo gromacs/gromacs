@@ -1,7 +1,7 @@
-.TH trjconv 1 "Thu 28 Feb 2002"
+.TH trjconv 1 "Sun 25 Jan 2004"
 .SH NAME
 trjconv
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3trjconv\fP
 .BI "-f" " traj.xtc "
@@ -10,7 +10,6 @@ trjconv
 .BI "-n" " index.ndx "
 .BI "-fr" " frames.ndx "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -26,8 +25,7 @@ trjconv
 .BI "-[no]center" ""
 .BI "-box" " vector "
 .BI "-shift" " vector "
-.BI "-[no]fit" ""
-.BI "-[no]pfit" ""
+.BI "-fit" " enum "
 .BI "-ndec" " int "
 .BI "-[no]vel" ""
 .BI "-[no]force" ""
@@ -36,6 +34,7 @@ trjconv
 .BI "-[no]app" ""
 .BI "-split" " time "
 .BI "-[no]sep" ""
+.BI "-[no]ter" ""
 .SH DESCRIPTION
 trjconv can convert trajectory files in many ways:
 
@@ -186,14 +185,27 @@ conformational transitions.
 Option 
 .B -pbc
 sets the type of periodic boundary condition
-treatment. 
+treatment:
+
+* 
 .B whole
 puts the atoms in the box and then makes
 broken molecules whole (a run input file is required).
+Atom number 1 of each molecule will be inside the box.
 
+* 
+.B com
+puts the center of mass of all 
+.I residues
+
+in the box. Not that this can break molecules that consist of
+more than one residue (e.g. proteins).
+
+* 
 .B inbox
 puts all the atoms in the box.
 
+* 
 .B nojump
 checks if atoms jump across the box and then puts
 them back. This has the effect that all molecules
@@ -203,10 +215,19 @@ molecules may diffuse out of the box. The starting configuration
 for this procedure is taken from the structure file, if one is
 supplied, otherwise it is the first frame.
 
+* 
+.B cluster
+clusters all the atoms in the selected index
+such that they are all closest to the center of mass of the cluster
+which is iteratively updated. Note that this will only give meaningful
+results if you in fact have a cluster. Luckily that can be checked
+afterwards using a trajectory viewer.
+
+
 .B -pbc
 is ignored when 
 .B -fit
-of 
+or 
 .B -pfit
 is set,
 in that case molecules will be made whole.
@@ -256,8 +277,12 @@ frames in the output. This option relies on the accuracy of the times
 in your input trajectory, so if these are inaccurate use the
 
 .B -timestep
+option to modify the time (this can be done
+simultaneously). For making smooth movies the program 
+.B g_filter
 
-option to modify the time (this can be done simultaneously).
+can reduce the number of frames while using low-pass frequency
+filtering, this reduces aliasing of high frequency motions.
 
 
 Using 
@@ -290,7 +315,7 @@ one specific time from your trajectory.
 
 .BI "-s" " topol.tpr" 
 .B Input, Opt.
- Structure+mass(db): tpr tpb tpa gro g96 pdb 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -303,9 +328,6 @@ one specific time from your trajectory.
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
@@ -354,14 +376,18 @@ or
  Change time step between input frames (ps)
 
 .BI "-pbc"  " enum" " none" 
- PBC treatment: 
+ PBC treatment (see help text for full description): 
 .B none
 , 
 .B whole
 , 
 .B inbox
-or 
+, 
 .B nojump
+, 
+.B cluster
+or 
+.B com
 
 
 .BI "-ur"  " enum" " rect" 
@@ -382,11 +408,16 @@ or
 .BI "-shift"  " vector" " 0 0 0" 
  All coordinates will be shifted by framenr*shift
 
-.BI "-[no]fit"  "    no"
- Fit molecule to ref structure in the structure file
+.BI "-fit"  " enum" " none" 
+ Fit molecule to ref structure in the structure file: 
+.B none
+, 
+.B rot+trans
+, 
+.B translation
+or 
+.B progressive
 
-.BI "-[no]pfit"  "    no"
- Progressive fit, to the previous fitted structure
 
 .BI "-ndec"  " int" " 3" 
  Precision for .xtc and .gro writing in number of decimal places
@@ -411,4 +442,7 @@ or
 
 .BI "-[no]sep"  "    no"
  Write each frame to a separate .gro, .g96 or .pdb file
+
+.BI "-[no]ter"  "    no"
+ Use 'TER' in pdb file as end of frame in stead of default 'ENDMDL'
 

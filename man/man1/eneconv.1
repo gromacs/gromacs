@@ -1,13 +1,12 @@
-.TH eneconv 1 "Thu 28 Feb 2002"
+.TH eneconv 1 "Sun 25 Jan 2004"
 .SH NAME
 eneconv
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3eneconv\fP
 .BI "-f" " ener.edr "
 .BI "-o" " fixed.edr "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " real "
 .BI "-e" " real "
@@ -18,11 +17,11 @@ eneconv
 .BI "-scalefac" " real "
 .BI "-[no]error" ""
 .SH DESCRIPTION
-When 
+With 
+.I multiple files
+specified for the 
 .B -f
-is 
-.I not
-specified:
+option:
 
 Concatenates several energy files in sorted order.
 In case of double time frames the one
@@ -38,8 +37,10 @@ the trick.
 
 
 With 
+.I one file
+specified for 
 .B -f
-specified:
+:
 
 Reads one energy file and writes another, applying the 
 .B -dt
@@ -69,19 +70,16 @@ and
 to select which frames to write.
 .SH FILES
 .BI "-f" " ener.edr" 
-.B Input
+.B Input, Mult.
  Generic energy: edr ene 
 
 .BI "-o" " fixed.edr" 
-.B Output, Opt.
+.B Output
  Generic energy: edr ene 
 
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel

@@ -1,7 +1,7 @@
-.TH g_hbond 1 "Thu 28 Feb 2002"
+.TH g_hbond 1 "Sun 25 Jan 2004"
 .SH NAME
 g_hbond
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_hbond\fP
 .BI "-f" " traj.xtc "
@@ -16,9 +16,8 @@ g_hbond
 .BI "-hx" " hbhelix.xvg "
 .BI "-hbn" " hbond.ndx "
 .BI "-hbm" " hbmap.xpm "
-.BI "-da" " danum.xvg "
+.BI "-dan" " danum.xvg "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -26,10 +25,15 @@ g_hbond
 .BI "-[no]ins" ""
 .BI "-a" " real "
 .BI "-r" " real "
+.BI "-[no]da" ""
 .BI "-abin" " real "
 .BI "-rbin" " real "
 .BI "-[no]nitacc" ""
+.BI "-[no]contact" ""
 .BI "-shell" " real "
+.BI "-[no]dump" ""
+.BI "-max_hb" " real "
+.BI "-[no]merge" ""
 .SH DESCRIPTION
 g_hbond computes and analyzes hydrogen bonds. Hydrogen bonds are
 determined based on cutoffs for the angle Donor - Hydrogen - Acceptor
@@ -128,7 +132,7 @@ into hydrogen bonds. Ordering is identical to that in
 index file.
 
 
-.B -da
+.B -dan
 : write out the number of donors and acceptors analyzed for
 each timeframe. This is especially usefull when using 
 .B -shell
@@ -140,7 +144,7 @@ each timeframe. This is especially usefull when using
 
 .BI "-s" " topol.tpr" 
 .B Input
- Generic run input: tpr tpb tpa 
+ Generic run input: tpr tpb tpa xml 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -182,16 +186,13 @@ each timeframe. This is especially usefull when using
 .B Output, Opt.
  X PixMap compatible matrix file 
 
-.BI "-da" " danum.xvg" 
+.BI "-dan" " danum.xvg" 
 .B Output, Opt.
  xvgr/xmgr file 
 
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
@@ -208,11 +209,14 @@ each timeframe. This is especially usefull when using
 .BI "-[no]ins"  "    no"
  Analyze solvent insertion
 
-.BI "-a"  " real" "     60" 
+.BI "-a"  " real" "     30" 
  Cutoff angle (degrees, Donor - Hydrogen - Acceptor)
 
-.BI "-r"  " real" "   0.25" 
- Cutoff radius (nm, Hydrogen - Acceptor)
+.BI "-r"  " real" "   0.35" 
+ Cutoff radius (nm, X - Acceptor, see next option)
+
+.BI "-[no]da"  "   yes"
+ Use distance Donor-Acceptor (if TRUE) or Hydrogen-Acceptor (FALSE)
 
 .BI "-abin"  " real" "      1" 
  Binwidth angle distribution (degrees)
@@ -223,6 +227,18 @@ each timeframe. This is especially usefull when using
 .BI "-[no]nitacc"  "   yes"
  Regard nitrogen atoms as acceptors
 
+.BI "-[no]contact"  "    no"
+ Do not look for hydrogen bonds, but merely for contacts within the cut-off distance
+
 .BI "-shell"  " real" "     -1" 
  when  0, only calculate hydrogen bonds within  nm shell around one particle
+
+.BI "-[no]dump"  "    no"
+ Dump all hydrogen bond ACFs (maximum 1000) in a single xvg file for debugging
+
+.BI "-max_hb"  " real" "      0" 
+ Theoretical maximum number of hydrogen bonds used for normalizing HB autocorrelation function. Can be useful in case the program estimates it wrongly
+
+.BI "-[no]merge"  "   yes"
+ H-bonds between the same donor and accepter, but with different hydrogen are treated as a single H-bond. Mainly important for the ACF.
 

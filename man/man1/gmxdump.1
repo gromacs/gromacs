@@ -1,14 +1,13 @@
-.TH gmxdump 1 "Thu 28 Feb 2002"
+.TH gmxdump 1 "Sun 25 Jan 2004"
 .SH NAME
 gmxdump
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3gmxdump\fP
 .BI "-s" " topol.tpr "
 .BI "-f" " traj.xtc "
 .BI "-e" " ener.edr "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-[no]nr" ""
 .SH DESCRIPTION
@@ -38,7 +37,7 @@ checking your run input file in case of problems.
 .SH FILES
 .BI "-s" " topol.tpr" 
 .B Input, Opt.
- Generic run input: tpr tpb tpa 
+ Generic run input: tpr tpb tpa xml 
 
 .BI "-f" " traj.xtc" 
 .B Input, Opt.
@@ -51,9 +50,6 @@ checking your run input file in case of problems.
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 0" 
  Set the nicelevel

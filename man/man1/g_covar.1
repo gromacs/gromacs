@@ -1,7 +1,7 @@
-.TH g_covar 1 "Thu 28 Feb 2002"
+.TH g_covar 1 "Sun 25 Jan 2004"
 .SH NAME
 g_covar
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_covar\fP
 .BI "-f" " traj.xtc "
@@ -11,10 +11,10 @@ g_covar
 .BI "-v" " eigenvec.trr "
 .BI "-av" " average.pdb "
 .BI "-l" " covar.log "
+.BI "-ascii" " covar.dat "
 .BI "-xpm" " covar.xpm "
 .BI "-xpma" " covara.xpm "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -33,6 +33,7 @@ All structures are fitted to the structure in the structure file.
 When this is not a run input file periodicity will not be taken into
 account. When the fit and analysis groups are identical and the analysis
 is non mass-weighted, the fit will also be non mass-weighted.
+
 
 
 The eigenvectors are written to a trajectory file (
@@ -55,6 +56,13 @@ The eigenvectors can be analyzed with
 
 
 Option 
+.B -ascii
+writes the whole covariance matrix to
+an ASCII file. The order of the elements is: x1x1, x1y1, x1z1, x1x2, ...
+
+
+
+Option 
 .B -xpm
 writes the whole covariance matrix to an xpm file.
 
@@ -72,7 +80,7 @@ written.
 
 .BI "-s" " topol.tpr" 
 .B Input
- Structure+mass(db): tpr tpb tpa gro g96 pdb 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -88,11 +96,15 @@ written.
 
 .BI "-av" " average.pdb" 
 .B Output
- Generic structure: gro g96 pdb 
+ Generic structure: gro g96 pdb xml 
 
 .BI "-l" " covar.log" 
 .B Output
  Log file 
+
+.BI "-ascii" " covar.dat" 
+.B Output, Opt.
+ Generic data file 
 
 .BI "-xpm" " covar.xpm" 
 .B Output, Opt.
@@ -105,9 +117,6 @@ written.
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel

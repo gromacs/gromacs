@@ -1,13 +1,12 @@
-.TH mk_angndx 1 "Thu 28 Feb 2002"
+.TH mk_angndx 1 "Sun 25 Jan 2004"
 .SH NAME
 mk_angndx
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3mk_angndx\fP
 .BI "-s" " topol.tpr "
 .BI "-n" " angle.ndx "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-type" " enum "
 .SH DESCRIPTION
@@ -19,7 +18,7 @@ definitions of the angles, dihedrals etc.
 .SH FILES
 .BI "-s" " topol.tpr" 
 .B Input
- Generic run input: tpr tpb tpa 
+ Generic run input: tpr tpb tpa xml 
 
 .BI "-n" " angle.ndx" 
 .B Output
@@ -28,9 +27,6 @@ definitions of the angles, dihedrals etc.
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 0" 
  Set the nicelevel

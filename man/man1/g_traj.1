@@ -1,7 +1,7 @@
-.TH g_traj 1 "Thu 28 Feb 2002"
+.TH g_traj 1 "Sun 25 Jan 2004"
 .SH NAME
 g_traj
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_traj\fP
 .BI "-f" " traj.xtc "
@@ -17,7 +17,6 @@ g_traj
 .BI "-cv" " veloc.pdb "
 .BI "-cf" " force.pdb "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -31,6 +30,7 @@ g_traj
 .BI "-[no]y" ""
 .BI "-[no]z" ""
 .BI "-[no]len" ""
+.BI "-scale" " real "
 .SH DESCRIPTION
 g_traj plots coordinates, velocities, forces and/or the box.
 With 
@@ -75,7 +75,10 @@ and
 write the average velocities
 and average forces as temperature factors to a pdb file with
 the average coordinates. The temperature factors are scaled such
-that the maximum is 10. To get the velocities or forces of one
+that the maximum is 10. The scaling can be changed with the option
+
+.B -scale
+. To get the velocities or forces of one
 frame set both 
 .B -b
 and 
@@ -92,7 +95,7 @@ option to obtain the correct average coordinates.
 
 .BI "-s" " topol.tpr" 
 .B Input
- Structure+mass(db): tpr tpb tpa gro g96 pdb 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -137,9 +140,6 @@ option to obtain the correct average coordinates.
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
@@ -195,4 +195,7 @@ or
 
 .BI "-[no]len"  "    no"
  Plot vector length
+
+.BI "-scale"  " real" "      0" 
+ Scale factor for pdb output, 0 is autoscale
 

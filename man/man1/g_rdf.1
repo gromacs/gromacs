@@ -1,7 +1,7 @@
-.TH g_rdf 1 "Thu 28 Feb 2002"
+.TH g_rdf 1 "Sun 25 Jan 2004"
 .SH NAME
 g_rdf
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_rdf\fP
 .BI "-f" " traj.xtc "
@@ -11,9 +11,7 @@ g_rdf
 .BI "-sq" " sq.xvg "
 .BI "-cn" " rdf_cn.xvg "
 .BI "-hq" " hq.xvg "
-.BI "-image" " sq.xpm "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -23,9 +21,10 @@ g_rdf
 .BI "-[no]com" ""
 .BI "-cut" " real "
 .BI "-fade" " real "
-.BI "-grid" " real "
 .BI "-nlevel" " int "
-.BI "-wave" " real "
+.BI "-startq" " real "
+.BI "-endq" " real "
+.BI "-energy" " real "
 .SH DESCRIPTION
 The structure of liquids can be studied by either neutron or X-ray
 scattering. The most common way to describe liquid structure is by a
@@ -70,7 +69,7 @@ be computed (option
 
 .BI "-s" " topol.tpr" 
 .B Input, Opt.
- Structure+mass(db): tpr tpb tpa gro g96 pdb 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -92,16 +91,9 @@ be computed (option
 .B Output, Opt.
  xvgr/xmgr file 
 
-.BI "-image" " sq.xpm" 
-.B Output, Opt.
- X PixMap compatible matrix file 
-
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
@@ -130,12 +122,15 @@ be computed (option
 .BI "-fade"  " real" "      0" 
  From this distance onwards the RDF is tranformed by g'(r) = 1 + [g(r)-1] exp(-(r/fade-1)2 to make it go to 1 smoothly. If fade is 0.0 nothing is done.
 
-.BI "-grid"  " real" "   0.05" 
- Grid spacing (in nm) for FFTs when computing structure factors
-
 .BI "-nlevel"  " int" " 20" 
  Number of different colors in the diffraction image
 
-.BI "-wave"  " real" "    0.1" 
- Wavelength for X-rays/Neutrons for scattering. 0.1 nm corresponds to roughly 12 keV
+.BI "-startq"  " real" "      0" 
+ Starting q (1/nm) 
+
+.BI "-endq"  " real" "     60" 
+ Ending q (1/nm)
+
+.BI "-energy"  " real" "     12" 
+ Energy of the incoming X-ray (keV) 
 

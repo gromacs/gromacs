@@ -1,7 +1,7 @@
-.TH g_confrms 1 "Thu 28 Feb 2002"
+.TH g_confrms 1 "Sun 25 Jan 2004"
 .SH NAME
 g_confrms
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_confrms\fP
 .BI "-f1" " conf1.gro "
@@ -9,17 +9,25 @@ g_confrms
 .BI "-o" " fit.pdb "
 .BI "-n1" " fit1.ndx "
 .BI "-n2" " fit2.ndx "
+.BI "-no" " match.ndx "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
+.BI "-[no]w" ""
 .BI "-[no]one" ""
 .BI "-[no]pbc" ""
+.BI "-[no]fit" ""
+.BI "-[no]name" ""
+.BI "-[no]bfac" ""
 .SH DESCRIPTION
 g_confrms computes the root mean square deviation (RMSD) of two
 structures after LSQ fitting the second structure on the first one.
 The two structures do NOT need to have the same number of atoms,
 only the two index groups used for the fit need to be identical.
-
+With 
+.B -name
+only matching atom names from the selected groups
+will be used for the fit and RMSD calculation. This can be useful 
+when comparing mutants of a protein.
 
 
 The superimposed structures are written to file. In a 
@@ -28,19 +36,24 @@ file
 the two structures will be written as separate models
 (use 
 .B rasmol -nmrpdb
-).
+). Also in a 
+.B .pdb
+file, B-factors
+calculated from the atomic MSD values can be written with 
+.B -bfac
+.
 .SH FILES
 .BI "-f1" " conf1.gro" 
 .B Input
- Structure+mass(db): tpr tpb tpa gro g96 pdb 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
 
 .BI "-f2" " conf2.gro" 
 .B Input
- Generic structure: gro g96 pdb tpr tpb tpa 
+ Generic structure: gro g96 pdb tpr tpb tpa xml 
 
 .BI "-o" " fit.pdb" 
 .B Output
- Generic structure: gro g96 pdb 
+ Generic structure: gro g96 pdb xml 
 
 .BI "-n1" " fit1.ndx" 
 .B Input, Opt.
@@ -50,19 +63,32 @@ the two structures will be written as separate models
 .B Input, Opt.
  Index file 
 
+.BI "-no" " match.ndx" 
+.B Output, Opt.
+ Index file 
+
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
 
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
-
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
 
 .BI "-[no]one"  "    no"
  Only write the fitted structure to file
 
 .BI "-[no]pbc"  "    no"
  Try to make molecules whole again
+
+.BI "-[no]fit"  "   yes"
+ Do least squares superposition of the target structure to the reference
+
+.BI "-[no]name"  "    no"
+ Only compare matching atom names
+
+.BI "-[no]bfac"  "    no"
+ Output B-factors from atomic MSD values
 

@@ -1,7 +1,7 @@
-.TH g_sgangle 1 "Thu 28 Feb 2002"
+.TH g_sgangle 1 "Sun 25 Jan 2004"
 .SH NAME
 g_sgangle
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_sgangle\fP
 .BI "-f" " traj.xtc "
@@ -12,7 +12,6 @@ g_sgangle
 .BI "-od1" " sg_dist1.xvg "
 .BI "-od2" " sg_dist2.xvg "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -53,7 +52,7 @@ Here is what some of the file options do:
 
 .BI "-s" " topol.tpr" 
 .B Input
- Generic run input: tpr tpb tpa 
+ Generic run input: tpr tpb tpa xml 
 
 .BI "-oa" " sg_angle.xvg" 
 .B Output
@@ -74,9 +73,6 @@ Here is what some of the file options do:
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel

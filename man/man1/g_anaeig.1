@@ -1,7 +1,7 @@
-.TH g_anaeig 1 "Thu 28 Feb 2002"
+.TH g_anaeig 1 "Sun 25 Jan 2004"
 .SH NAME
 g_anaeig
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_anaeig\fP
 .BI "-v" " eigenvec.trr "
@@ -9,9 +9,10 @@ g_anaeig
 .BI "-f" " traj.xtc "
 .BI "-s" " topol.tpr "
 .BI "-n" " index.ndx "
-.BI "-eig1" " eigenval1.xvg "
+.BI "-eig" " eigenval.xvg "
 .BI "-eig2" " eigenval2.xvg "
-.BI "-disp" " eigdisp.xvg "
+.BI "-comp" " eigcomp.xvg "
+.BI "-rmsf" " eigrmsf.xvg "
 .BI "-proj" " proj.xvg "
 .BI "-2d" " 2dproj.xvg "
 .BI "-3d" " 3dproj.pdb "
@@ -20,7 +21,6 @@ g_anaeig
 .BI "-over" " overlap.xvg "
 .BI "-inpr" " inprod.xpm "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -60,13 +60,25 @@ is set to -1 you will be prompted for a selection.
 
 
 
-.B -disp
-: plot all atom displacements of eigenvectors
+.B -comp
+: plot the vector components per atom of eigenvectors
 
 .B -first
 to 
 .B -last
 .
+
+
+
+.B -rmsf
+: plot the RMS fluctuation per atom of eigenvectors
+
+.B -first
+to 
+.B -last
+(requires 
+.B -eig
+).
 
 
 
@@ -179,7 +191,7 @@ have been set explicitly.
 When 
 .B -v
 , 
-.B -eig1
+.B -eig
 , 
 .B -v2
 and 
@@ -214,13 +226,13 @@ subspaces are orthogonal.
 
 .BI "-s" " topol.tpr" 
 .B Input, Opt.
- Structure+mass(db): tpr tpb tpa gro g96 pdb 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
  Index file 
 
-.BI "-eig1" " eigenval1.xvg" 
+.BI "-eig" " eigenval.xvg" 
 .B Input, Opt.
  xvgr/xmgr file 
 
@@ -228,7 +240,11 @@ subspaces are orthogonal.
 .B Input, Opt.
  xvgr/xmgr file 
 
-.BI "-disp" " eigdisp.xvg" 
+.BI "-comp" " eigcomp.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-rmsf" " eigrmsf.xvg" 
 .B Output, Opt.
  xvgr/xmgr file 
 
@@ -242,7 +258,7 @@ subspaces are orthogonal.
 
 .BI "-3d" " 3dproj.pdb" 
 .B Output, Opt.
- Generic structure: gro g96 pdb 
+ Generic structure: gro g96 pdb xml 
 
 .BI "-filt" " filtered.xtc" 
 .B Output, Opt.
@@ -263,9 +279,6 @@ subspaces are orthogonal.
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
-
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel

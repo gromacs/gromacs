@@ -1,7 +1,7 @@
-.TH g_dielectric 1 "Thu 28 Feb 2002"
+.TH g_dielectric 1 "Sun 25 Jan 2004"
 .SH NAME
 g_dielectric
-.B VERSION 3.1
+.B VERSION 3.2.0
 .SH SYNOPSIS
 \f3g_dielectric\fP
 .BI "-f" " Mtot.xvg "
@@ -9,7 +9,6 @@ g_dielectric
 .BI "-o" " epsw.xvg "
 .BI "-c" " cole.xvg "
 .BI "-[no]h" ""
-.BI "-[no]X" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
@@ -77,9 +76,6 @@ plot should be one half of a circle
 .BI "-[no]h"  "    no"
  Print help info and quit
 
-.BI "-[no]X"  "    no"
- Use dialog box GUI to edit command line options
-
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
@@ -144,8 +140,10 @@ plot should be one half of a circle
 .B vac
 , 
 .B exp5
-or 
+, 
 .B exp7
+or 
+.B exp9
 
 
 .BI "-nsmooth"  " int" " 3" 
