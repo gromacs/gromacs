@@ -50,6 +50,8 @@ extern void add_dum2_atoms(t_params *ps, int ai, int aj, int ak);
 extern void add_dum3_atoms(t_params *ps, int ai, int aj, int ak, int al, 
 			   bool bSwapParity);
 
+extern void add_dum2_param(t_params *ps, int ai, int aj, int ak, real c0);
+
 extern void add_dum3_param(t_params *ps, int ai, int aj, int ak, int al, 
 			   real c0, real c1);
 
