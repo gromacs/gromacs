@@ -94,7 +94,7 @@ void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
 	    /* only check ptr against beginning of pa[j].u.c[k] */
 	    if (strncasecmp(ptr,pa[j].u.c[k],strlen(ptr)) == 0)
 	      if ( ( match == NOTSET ) || 
-		   ( strlen(pa[j].u.c[k] ) > strlen(pa[j].u.c[match]) ) )
+		   ( strlen(pa[j].u.c[k]) < strlen(pa[j].u.c[match]) ) )
 		     match = k;
 	  if (match!=NOTSET)
 	    pa[j].u.c[0] = pa[j].u.c[match];
