@@ -331,6 +331,7 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
   snew(*xnew,natoms);
   pdbnew->nr=pdba->nr;
   pdbnew->nres=pdba->nres;
+  sfree(pdbnew->resname);
   pdbnew->resname=pdba->resname;
   for (i=0; (i<natoms); i++) {
     pdbnew->atom[i]     = pdba->atom[pdbi[i].index];
@@ -340,29 +341,33 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
      /* make indexgroup in block */
     a[i]=pdbi[i].index;
   }
+  /* clean up */
+  sfree(pdba->atomname);
+  sfree(pdba->atom);
+  sfree(pdba->pdbinfo);
+  done_block(&pdba->excl);
   sfree(pdba);
   sfree(*x);
   /* copy the sorted pdbnew back to pdba */
   *pdbaptr=pdbnew;
   *x=*xnew;
   add_grp(block, gnames, natoms, a, "prot_sort");
+  sfree(xnew);
   sfree(a);
   sfree(pdbi);
 }
 
 static int remove_double_atoms(t_atoms *pdba,rvec x[])
 {
-  int     i,j,natoms,oldnatoms;
+  int     i,j,oldnatoms;
   
   printf("Checking for double atoms....\n");
-  natoms    = pdba->nr;
-  oldnatoms = natoms;
+  oldnatoms    = pdba->nr;
   
-  /* NOTE: natoms is modified inside the loop */
-  for(i=1; (i<natoms); i++) {
+  /* NOTE: pdba->nr is modified inside the loop */
+  for(i=1; (i < pdba->nr); i++) {
     if ( (pdba->atom[i-1].resnr == pdba->atom[i].resnr) &&
-	 (strcmp(*pdba->atomname[i-1],*pdba->atomname[i])==0) 
-	 ) {
+	 (strcmp(*pdba->atomname[i-1],*pdba->atomname[i])==0) ) {
       printf("deleting double atom %4s  %s%4d",
 	     *pdba->atomname[i], *pdba->resname[pdba->atom[i].resnr], 
 	     pdba->atom[i].resnr+1);
@@ -375,20 +380,24 @@ static int remove_double_atoms(t_atoms *pdba,rvec x[])
 	  printf("  altloc %c",pdba->pdbinfo[i].altloc);
       }
       printf("\n");
-      natoms--;
-      for (j=i; (j<natoms); j++) {
+      pdba->nr--;
+      for (j=i; j < pdba->nr; j++) {
 	pdba->atom[j]     = pdba->atom[j+1];
 	pdba->atomname[j] = pdba->atomname[j+1];
 	pdba->pdbinfo[j]  = pdba->pdbinfo[j+1];
 	copy_rvec(x[j+1],x[j]);
       }
+      srenew(pdba->atom,     pdba->nr);
+      sfree(*(pdba->atomname[pdba->nr]));
+      sfree(pdba->atomname[pdba->nr]);
+      srenew(pdba->atomname, pdba->nr);
+      srenew(pdba->pdbinfo,  pdba->nr);
     }
   }
-  pdba->nr=natoms;
-  if (natoms != oldnatoms)
-    printf("Now there are %d atoms\n",natoms);
+  if (pdba->nr != oldnatoms)
+    printf("Now there are %d atoms\n",pdba->nr);
   
-  return natoms;
+  return pdba->nr;
 }
 
 static char *choose_ff(bool bFFMan)
@@ -566,8 +575,6 @@ int main(int argc, char *argv[])
   char       *c;
   int        nah,nNtdb,nCtdb;
   t_hackblock *ntdb,*ctdb,*sel_ntdb,*sel_ctdb;
-  int        nddb;
-  t_dumblock *ddb;
   int        nssbonds;
   t_ssbond   *ssbonds;
   rvec       *pdbx,*x;
@@ -753,9 +760,9 @@ int main(int argc, char *argv[])
     k    = chains[i].pdba->atom[0].resnr;
     nres = chains[i].pdba->atom[chains[i].pdba->nr-1].resnr - k + 1;
     chains[i].pdba->nres = nres;
-    for(j=0; j<chains[i].pdba->nr; j++)
+    for(j=0; j < chains[i].pdba->nr; j++)
       chains[i].pdba->atom[j].resnr -= k;
-    snew(chains[i].pdba->resname,nres);
+    srenew(chains[i].pdba->resname,nres);
     for(j=0; j<nres; j++) {
       snew(chains[i].pdba->resname[j],1);
       *chains[i].pdba->resname[j] = strdup(*pdba_all.resname[k+j]);
@@ -811,13 +818,6 @@ int main(int argc, char *argv[])
   sprintf(fn,"%s-c.tdb",ff);
   nCtdb=read_ter_db(fn,&ctdb,atype);
   
-  /* Read dummies database */
-  nddb=0;
-  ddb=NULL;
-  if (bDummies)
-    nddb=read_dum_db(ff,&ddb);
-  if (debug) print_dum_db(stderr,nddb,ddb);
-
   top_fn=ftp2fn(efTOP,NFILE,fnm);
   top_file=ffopen(top_fn,"w");
   print_top_header(top_file,title,FALSE,ff,mHmult);
@@ -857,8 +857,10 @@ int main(int argc, char *argv[])
 		  ftp2fn(efNDX,NFILE,fnm));
 	write_index(ftp2fn(efNDX,NFILE,fnm),block,gnames);
       }
-      done_block(block);
+      for(i=0; i < block->nr; i++)
+	sfree(gnames[i]);
       sfree(gnames);
+      done_block(block);
     } else 
       fprintf(stderr,"WARNING: "
 	      "without sorting no check for double atoms can be done\n");
@@ -969,7 +971,7 @@ int main(int argc, char *argv[])
     pdb2top(ff,top_file2,posre_fn,molname,nincl,incls,nmol,mols,pdba,nah,ah,
 	    &x,atype,&tab,nrtp,rb,nrtp,restp,nrtp,ra,nrtp,rd,nrtp,idih,
 	    sel_ntdb,sel_ctdb,bH14,rN,rC,bAlldih,
-	    nddb,ddb,bDummies,mHmult,nssbonds,ssbonds,NREXCL);
+	    bDummies,mHmult,nssbonds,ssbonds,NREXCL);
     
     if (bITP)
       fclose(itp_file);
@@ -1004,6 +1006,9 @@ int main(int argc, char *argv[])
   }
   snew(atoms,1);
   init_t_atoms(atoms,natom,FALSE);
+  for(i=0; i < atoms->nres; i++)
+    sfree(atoms->resname[i]);
+  sfree(atoms->resname);
   atoms->nres=nres;
   snew(atoms->resname,nres);
   snew(x,natom);
