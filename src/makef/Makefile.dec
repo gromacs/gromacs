@@ -1,14 +1,19 @@
-# Alpha/Dec UNIX
+# Dec/Alpha with Dec Compilers
 #	@(#) Makefile.dec 1.2 5/15/97
 #
 #
 #	GROMACS - Groningen Machine for Chemical Simulation
 #	Copyright (c) 1990, 1991, 1992, Groningen University
 #
-#	Makefile for gromacs on DEC alpha machines (running OSF1)
+#	Makefile for gromacs on DEC alpha machines with DEC C and Fortran
+#       compilers.
 #
 # 	See README file for info
 #
+# Use CPU type lnx for a Dec running Linux with gnu compilers.
+# Uncomment the following line if you are running Linux with Dec compilers:
+#LINUX_OS = yes
+
 SYSDEFS		= -DHAVE_ULONG -DCINVSQRT -DFINVSQRT -DHAVE_STRCASECMP -DHAVE_STRDUP
 
 #
@@ -34,8 +39,8 @@ USE_MPI		= no
 USE_XDR		= yes
 #
 # If you want to use the GMX/Motif user interface (and if you have Motif
-# or lesstif (www.lesstif.org) installed), uncomment this one.
-HAVE_MOTIF	= yes
+# or lesstif (www.lesstif.org) installed) set HAVE_MOTIF to yes.
+HAVE_MOTIF	= no
 #
 # Note that these variables are also used in Makefile.std
 # If something does not work, please check out the link command line
@@ -45,32 +50,32 @@ HAVE_MOTIF	= yes
 # Dec C compilers
 ALLOPT		= -O5 -tune host -fast -math_library fast  -unroll 2 -arch host -pipeline -fp_reorder #-inline all 
 #ALLOPT		= -g
+
+ifeq ($(LINUX_OS),yes)
+# For Linux: your DEC C and Fortran compiler commands:
+CC 		= ccc
+F77 		= fort
+else
 # If you have cc.alt installed you can use it, it gives faster code
 # but is not guaranteed by DEC (let alone by the GROMACS crew)
 #CC		= cc.alt
 CC		= cc
-CCC		= cxx
 F77		= f77
+endif
 CFLAGS		= -std1 $(ALLOPT) -w0 -warnprotos #-trapuv
-CCFLAGS		= -O
 FFLAGS		= $(ALLOPT) -speculate all -assume noaccuracy_sensitive
-
-# Gnu compilers
-#OPT		= -O3 -funroll-loops -ffast-math -fschedule-insns -fschedule-insns2
-#CC		= gcc
-#CCC		= gcc
-#F77		= g77
-#CFLAGS		= $(OPT)
-#FFLAGS		= $(OPT)
-#CCFLAGS		= $(OPT)
 
 LDFLAGS		= -L$(LIBDIR) 
 LD		= $(CC)  $(LDFLAGS) 
 RUNLDOPT	= -O4 -non_shared
 FLD		= $(F77) $(LDFLAGS)
-CCLD		= -$(CCC) $(LDFLAGS)
 
 # Generic linking stuff
+ifeq ($(LINUX_OS),yes)
+# The Compaq math lib instead of -lm 
+SYSLIBS		= -lcpml
+XLIBS		= $(SYSLIBS) -lX11 
+else
 ifeq ($(HAVE_MOTIF),yes)
 SYSDEFS		+= -DHAVE_MOTIF
 SYSLIBS		= -lm -lXm -lXt -lSM -lICE -lX11 -ldnet_stub #-lefence
@@ -78,6 +83,7 @@ XLIBS		= $(SYSLIBS)
 else
 SYSLIBS		= -ldnet_stub -lm
 XLIBS		= $(SYSLIBS) -lX11 
+endif
 endif
 
 ARFLAGS		= ruv

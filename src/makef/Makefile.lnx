@@ -1,4 +1,4 @@
-# Linux/x86
+# Linux/x86/Dec
 #	@(#) Makefile.lnx 1.8 27 Jun 1996
 #
 #
@@ -60,7 +60,7 @@ CC		= $(LAMHOME)/bin/hcc
 F77		= $(LAMHOME)/bin/hf77
 LAMHF77		= g77
 endif
-CFLAGS		= -O3 -ffast-math -finline-functions -Winline -fPIC -funroll-all-loops  -Wall -Wno-unused -mcpu=i486 -march=i486 #-fomit-frame-pointer
+CFLAGS		= -O3 -ffast-math -finline-functions -Winline -fPIC -funroll-all-loops  -Wall -Wno-unused #-fomit-frame-pointer
 # -mcpu=pentiumpro -march=pentiumpro
 #
 # Assume Intel 486 for now. Tested with egcs 1.1.2: -mpentium or -mpentiumpro
