@@ -310,37 +310,22 @@ void visualize_images(char *fn,matrix box)
 }
 
 
-void visualize_box(char *fn,matrix box,rvec gridsize)
+void visualize_box(FILE *out,int a0,int r0,matrix box,rvec gridsize)
 {
-  FILE    *out;
   int     *edge;
-  t_atoms atoms;
   rvec    *vert,shift;
-  char    *c,*ala;
   int     nx,ny,nz,nbox,nat;
   int     i,j,x,y,z;
+
+  a0++;
+  r0++;
   
   nx = (int)(gridsize[XX]+0.5);
   ny = (int)(gridsize[YY]+0.5);
   nz = (int)(gridsize[ZZ]+0.5);
-  nbox=nx*ny*nz;
-  nat = NCUCVERT*nbox;
-  init_t_atoms(&atoms,nat,FALSE);
-  atoms.nr = nat;
+  nbox = nx*ny*nz;
+  nat = nbox*NCUCVERT;
   snew(vert,nat);
-  c = "C";
-  ala = "ALA";
-  for(i=0; i<nat; i++) {
-    atoms.atomname[i] = &c;
-    atoms.atom[i].resnr = i;
-    atoms.resname[i] = &ala;
-    atoms.atom[i].chain = 'A'+i/NCUCVERT;
-  }
-  /*
-    calc_box_images(box,x);
-    atoms.nr = NBOXIMG;
-    write_sto_conf("img.pdb",title,&atoms,x,NULL,box);
-    */
   calc_compact_unitcell_vertices(box,vert);
   j = 0;
   for(z=0; z<nz; z++)
@@ -353,20 +338,19 @@ void visualize_box(char *fn,matrix box,rvec gridsize)
 	  j++;
 	}
       }
-	
-  out=ffopen(fn,"w");
-  write_pdbfile(out,"Box",&atoms,vert,box,0,FALSE);
+  
+  for(i=0; i<nat; i++)
+    fprintf(out,"%-6s%5u  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f\n",
+	    "ATOM",a0+i,"C","BOX",'K'+i/NCUCVERT,r0+i,
+	    10*vert[i][XX],10*vert[i][YY],10*vert[i][ZZ]);
   
   edge = compact_unitcell_edges();
   for(j=0; j<nbox; j++)
     for(i=0; i<NCUCEDGE; i++)
       fprintf(out,"CONECT%5d%5d\n",
-	      j*NCUCVERT + edge[2*i]+1,
-	      j*NCUCVERT + edge[2*i+1]+1);
+	      a0 + j*NCUCVERT + edge[2*i],
+	      a0 + j*NCUCVERT + edge[2*i+1]);
   
-  fclose(out);
-  
-  free_t_atoms(&atoms);
   sfree(vert);
 }
 
@@ -381,17 +365,18 @@ int main(int argc, char *argv[])
     "rectangular box, [TT]cubic[tt] is a cubic box and",
     "[TT]truncoct[tt] is a truncated octahedron, which is a special case of",
     "a triclinic box.",
-    "The size of the truncated octahedron is the shortest distance between",
-    "two opposite hexagons. The volume of a truncated octahedron is 0.77 of",
-    "that of a cubic box of the same size. Option [TT]-box[tt] requires only",
+    "The length of the three box vectors of the truncated octahedron is the",
+    "shortest distance between two opposite hexagons.",
+    "The volume of a truncated octahedron is 0.77 of that of a cubic box",
+    "with the same box vector length. Option [TT]-box[tt] requires only",
     "one value for a cubic box or a truncated octahedron.",
     "With [TT]-d[tt] and [TT]rect[tt] the size of the system in the x, y",
     "and z directions is used. With [TT]-d[tt] and [TT]cubic[tt] or",
     "[TT]truncoct[tt] the diameter of the system is used, which is the",
     "largest distance between two atoms.[PAR]",
-    "When an index file is supplied ([TT]-n[tt]) a group can be selected",
-    "for calculating the size and the geometric center, otherwise the whole",
-    "system is used.[PAR]",
+    "When [TT]-n[tt] or [TT]-ndef[tt] is set, a group",
+    "can be selected for calculating the size and the geometric center,",
+    "otherwise the whole system is used.[PAR]",
     "[TT]-rotate[tt] rotates the coordinates and velocities.",
     "[TT]-princ[tt] aligns the principal axes of the system along the",
     "coordinate axes, this may allow you to decrease the box volume,",
@@ -437,10 +422,10 @@ int main(int argc, char *argv[])
     { "-ndef",   FALSE, etBOOL, {&bNDEF}, 
       "Choose output from default index groups" },
     { "-visbox",    FALSE, etRVEC, {visbox}, 
-      "Visualize a grid of boxes" },
+      "HIDDENVisualize a grid of boxes, -1 visualizes the 14 box images" },
     { "-bt",   FALSE, etENUM, {btype}, 
       "Box type for -box and -d" },
-    { "-box",    FALSE, etRVEC, {&newbox}, "Size of the box" },
+    { "-box",    FALSE, etRVEC, {&newbox}, "Box vector lengths" },
     { "-d",      FALSE, etREAL, {&dist}, 
       "Distance between the solute and the box" },
     { "-c",      FALSE, etBOOL, {&bCenter},
@@ -471,7 +456,7 @@ int main(int argc, char *argv[])
   atom_id   *index,*sindex;
   rvec      *x,*v,gc,min,max,size;
   matrix    box;
-  bool      bSetSize,bCubic,bDist,bSetCenter;
+  bool      bIndex,bSetSize,bCubic,bDist,bSetCenter;
   bool      bHaveV,bScale,bRho,bRotate,bCalcGeom,bCalcDiam;
   real      xs,ys,zs,xcent,ycent,zcent,diam,d;
   t_filenm fnm[] = {
@@ -486,6 +471,7 @@ int main(int argc, char *argv[])
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,NPA,pa,
 		    asize(desc),desc,asize(bugs),bugs);
 
+  bIndex    = opt2bSet("-n",NFILE,fnm) || bNDEF;
   bSetSize  = opt2parg_bSet("-box" ,NPA,pa);
   bSetCenter= opt2parg_bSet("-center" ,NPA,pa);
   bDist     = opt2parg_bSet("-d" ,NPA,pa);
@@ -516,9 +502,12 @@ int main(int argc, char *argv[])
       bHaveV=bHaveV || (v[i][j]!=0);
   printf("%selocities found\n",bHaveV?"V":"No v");
 
-  if (visbox[0] > 0)
-    visualize_box("visbox.pdb",box,visbox);
-  else if (visbox[0] == -1)
+  if (visbox[0] > 0) {
+    if (bIndex)
+      fatal_error(0,"Sorry, can not visualize box with index groups");
+    if (outftp != efPDB)
+      fatal_error(0,"Sorry, can only visualize box with a pdb file");
+  } else if (visbox[0] == -1)
     visualize_images("images.pdb",box);
 
   /* remove pbc */
@@ -526,7 +515,7 @@ int main(int argc, char *argv[])
     rm_gropbc(&atoms,x,box);
 
   if (bCalcGeom) {
-    if (opt2bSet("-n",NFILE,fnm) || bNDEF) {
+    if (bIndex) {
       fprintf(stderr,"\nSelect a group for determining the system size:\n");
       get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),
 		1,&ssize,&sindex,&sgrpname);
@@ -650,7 +639,7 @@ int main(int argc, char *argv[])
     printf("new box volume  :%7.2f               (nm^3)\n",det(box));
   }  
 
-  if (opt2bSet("-n",NFILE,fnm) || bNDEF) {
+  if (bIndex) {
     fprintf(stderr,"\nSelect a group for output:\n");
     get_index(&atoms,opt2fn_null("-n",NFILE,fnm),
 	      1,&isize,&index,&grpname);
@@ -674,9 +663,12 @@ int main(int argc, char *argv[])
 	for(i=0; (i<atoms.nr); i++) 
 	  atoms.atom[i].chain=label[0];
       }
-      write_pdbfile(out,title,&atoms,x,box,0,!bLegend);
+      write_pdbfile(out,title,&atoms,x,box,0,!bLegend && visbox[0]<=0);
       if (bLegend)
 	pdb_legend(out,atoms.nr,atoms.nres,&atoms,x);
+      if (visbox[0] > 0)
+	visualize_box(out,bLegend ? atoms.nr+12 : atoms.nr,
+		      bLegend? atoms.nres=12 : atoms.nres,box,visbox);
       fclose(out);
     }  
   }
