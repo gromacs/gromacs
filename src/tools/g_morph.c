@@ -40,6 +40,7 @@
 #include "statutil.h"
 #include "smalloc.h"
 #include "macros.h"
+#include "confio.h"
 #include "copyrite.h"
 #include "xvgr.h"
 #include "index.h"

@@ -1,4 +1,4 @@
-\/*
+/*
  * $Id$
  * 
  *                This source code is part of
