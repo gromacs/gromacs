@@ -256,6 +256,9 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CII(nkx);
   CII(nky);
   CII(nkz);
+  CII(pme_order);
+  CIR(ewald_rtol);
+  CIB(bOptFFT);
   CII(eBox);
   CIB(bUncStart);
   CIB(btc);
