@@ -112,7 +112,8 @@ static int *shuffle_xv(char *ndx,
   rvec *xbuf,*vbuf;
   int  *nindex,**index,xind,*done,*forward,*backward;
   int  i,j,j0,k,mi,nnat;
-  
+
+
   /* Determine order in old x array! 
    * the index array holds for each molecule type
    * a pointer to the position at which the coordinates start
@@ -153,7 +154,6 @@ static int *shuffle_xv(char *ndx,
   /* Buffers for x and v */  
   snew(xbuf,natoms);
   snew(vbuf,natoms);
-  
   /* Make a forward shuffle array, i.e. the old numbers of
    * the current order: this makes a shuffled order from the
    * original.
@@ -228,25 +228,30 @@ int rm_disre(int nrmols,t_molinfo mols[])
   return n;
 }
 
-static int check_atom_names(char *fn1, char *fn2, t_atoms *at1, t_atoms *at2)
+static int check_atom_names(char *fn1, char *fn2, t_atoms *at1, t_atoms *at2,
+			    int *forward)
 {
-  int i,nmismatch;
+  int i,nmismatch,idx;
 #define MAXMISMATCH 20
 
   assert(at1->nr==at2->nr);
   
   nmismatch=0;
-  for(i=0; i < at1->nr; i++)
-    if (strcmp( *(at1->atomname[i]) , *(at2->atomname[i]) ) != 0) {
+  for(i=0; i < at1->nr; i++) {
+    if(forward)
+      idx=forward[i];
+    else
+      idx=i;
+    if (strcmp( *(at1->atomname[i]) , *(at2->atomname[idx]) ) != 0) {
       if (nmismatch < MAXMISMATCH)
 	fprintf(stderr,
 		"Warning: atom names in %s and %s don't match (%s - %s)\n",
-		fn1, fn2, *(at1->atomname[i]), *(at2->atomname[i]));
+		fn1, fn2, *(at1->atomname[i]), *(at2->atomname[idx]));
       else if (nmismatch == MAXMISMATCH)
 	fprintf(stderr,"(more than %d non-matching atom names)\n",MAXMISMATCH);
       nmismatch++;
     }
-  
+  }
   return nmismatch;
 }
 
@@ -318,15 +323,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
     snew(*x,*natoms);
     snew(*v,*natoms);
     read_stx_conf(confin,opts->title,confat,*x,*v,box);
-    nmismatch=check_atom_names(topfile, confin, &(sys->atoms), confat);
-    free_t_atoms(confat);
-    sfree(confat);
-    
-    if (nmismatch) {
-      sprintf(buf,"%d non-matching atom name%s\n",nmismatch,
-	      (nmismatch == 1) ? "" : "s");
-      warning(buf);
-    }
+
     if (ntab > 0) {
       if (bVerbose)
 	fprintf(stderr,"Shuffling coordinates...\n");
@@ -334,6 +331,15 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
 			 *natoms,*x,*v,Nsim,Sims);
     }
     
+    nmismatch=check_atom_names(topfile, confin, &(sys->atoms), confat,forward);
+    free_t_atoms(confat);
+    sfree(confat);
+    
+    if (nmismatch) {
+      sprintf(buf,"%d non-matching atom name%s\n",nmismatch,
+	      (nmismatch == 1) ? "" : "s");
+      warning(buf);
+    }    
     if (bVerbose) 
       fprintf(stderr,"double-checking input for internal consistency...\n");
     double_check(ir,box,msys,nerror);

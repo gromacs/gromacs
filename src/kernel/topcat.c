@@ -339,7 +339,6 @@ int *mk_shuffle_tab(int nmol,t_molinfo mol[],int nprocs,int *ntab,
 	assert(*ntab < nm);
 	tab[(*ntab)++] = k;
       }
-
   return tab;
 }
 

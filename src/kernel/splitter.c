@@ -37,6 +37,7 @@ static char *SRCID_splitter_c = "$Id$";
 #include "mshift.h"
 #include "invblock.h"
 #include "txtdump.h"
+#include "math.h"
 
 typedef struct {
   int     nr;
@@ -241,7 +242,7 @@ t_border *mk_border(bool bVerbose,int nprocs,t_block *cgs,
     as0 = (is == 0) ? 0 : (shakes->a[shakes->index[is]-1]); 
     if (debug)
       fprintf(debug,"mk_border: is=%6d ic=%6d as0=%6d as=%6d ac=%6d\n",
-	      is,ic,as0,as,ac);
+ 	      is,ic,as0,as,ac);
     if (ac == as) {
       set_bor(&border[nbor],ac,ic,is);
       nbor++;
@@ -295,20 +296,25 @@ static void split_blocks(bool bVerbose,int nprocs,
     pr_block(debug,0,"cgs",cgs);
     pr_block(debug,0,"shakes",shakes);
   }
-  
+
   shknum = make_invblock(shakes,cgs->nra+1);
   cgsnum = make_invblock(cgs,cgs->nra+1);
   border = mk_border(bVerbose,nprocs,cgs,shakes,&nbor);
-  
+
   load  = (double)cgs->nra / (double)nprocs;  
   tload = load;
-  
+
   pid      = 0;
   sbl      = 0;
   for(i=0; (i<nbor) && (tload < cgs->nra); i++) {
+    if(i<(nbor-1)) 
+      b1=border[i+1].atom;
+    else
+      b1=cgs->nra;
+
     b0 = border[i].atom;
     
-    if (b0 >= tload) {
+    if (fabs(b0-tload)<fabs(b1-tload)) {
       /* New pid time */
       cgs->multinr[pid]    = border[i].ic;
       shakes->multinr[pid] = border[i].is;
@@ -317,7 +323,6 @@ static void split_blocks(bool bVerbose,int nprocs,
       tload += load;
     } 
   }
-  
   /* Now the last one... */
   while (pid < nprocs) {
     cgs->multinr[pid]=cgs->nr;
