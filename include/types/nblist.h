@@ -27,7 +27,7 @@
  * Gyas ROwers Mature At Cryogenic Speed
  */
 
-#define MAXSHIFT 6
+#define MAXSHIFT 7
  
 typedef struct {
   int     il_code;              /* Code that determines the innerloop   */
