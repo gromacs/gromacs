@@ -33,8 +33,8 @@ static char *SRCID_addconf_h = "$Id$";
 extern void add_conf(t_atoms *atoms_1,rvec *x_1,rvec *v_1,real *r_1,
 		     int NTB,matrix box_1,
 		     t_atoms *atoms_2,rvec *x_2,rvec *v_2,real *r_2,
-		     bool bVerbose,int maxmol);
-/* Add two conformations together */
+		     bool bVerbose);
+/* Add two conformations together, without generating overlap */
 
 extern void orient_mol(t_atoms *atoms,char *indexnm,rvec x[],rvec *v);
 /* Orient a molecule along its principal component axes. 
