@@ -184,7 +184,9 @@ int main(int argc,char *argv[])
     "Option [TT]-app[tt] can be used to",
     "append output to an existing trajectory file.",
     "No checks are performed to ensure integrity",
-    "of the resulting combined trajectory file.",
+    "of the resulting combined trajectory file.[PAR]",
+    "Option [TT]-sep[tt] can be used to write every frame to a seperate",
+    ".gro, .g96 or .pdb file, default all frames all written to one file.",
     "[TT].pdb[tt] files with all frames concatenated can be viewed with",
     "[TT]rasmol -nmrpdb[tt].[PAR]",
     "It is possible to select part of your trajectory and write it out",
@@ -297,7 +299,7 @@ int main(int argc,char *argv[])
     { "-split",FALSE, etTIME, {&split_t},
       "Start writing new file when t MOD split = first time (%t)" },
     { "-sep", FALSE,  etBOOL, {&bSeparate},
-      "Write each frame to a separate .gro or .pdb file"}
+      "Write each frame to a separate .gro, .g96 or .pdb file"}
   };
       
   FILE         *out=NULL;
