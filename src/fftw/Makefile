@@ -14,75 +14,45 @@ include		$(GMXHOME)/src/makef/Makefile.def
 #
 LIB	= $(LIBDIR)/libfftw.$(GMXCPU).a
 SONAME	= libfftw.$(GMXCPU).so
-# Or, on primitive systems with 8.3 filenames:
-FCR_PREFIX=fcr_
-FHB_PREFIX=fhb_
-FRC_PREFIX=frc_
-FHF_PREFIX=fhf_
-NOTW_PREFIX=fn_
-TWID_PREFIX=ftw_
-NOTWI_PREFIX=fni_
-TWIDI_PREFIX=ftwi_
 
-FCR_BLOCKS=$(FCR_PREFIX)1.o $(FCR_PREFIX)2.o $(FCR_PREFIX)3.o     \
-	$(FCR_PREFIX)4.o $(FCR_PREFIX)5.o $(FCR_PREFIX)6.o         \
-	$(FCR_PREFIX)7.o $(FCR_PREFIX)8.o $(FCR_PREFIX)9.o         \
-	$(FCR_PREFIX)10.o $(FCR_PREFIX)11.o $(FCR_PREFIX)12.o      \
-	$(FCR_PREFIX)13.o $(FCR_PREFIX)14.o $(FCR_PREFIX)15.o      \
-	$(FCR_PREFIX)16.o $(FCR_PREFIX)32.o $(FCR_PREFIX)64.o      \
-	$(FCR_PREFIX)128.o      
+FCR_BLOCKS= fcr_1.o fcr_2.o fcr_3.o fcr_4.o fcr_5.o fcr_6.o       \
+            fcr_7.o fcr_8.o fcr_9.o fcr_10.o fcr_11.o fcr_12.o    \
+	    fcr_13.o fcr_14.o fcr_15.o fcr_16.o fcr_32.o fcr_64.o \
+	    fcr_128.o      	
 
-FHB_BLOCKS=$(FHB_PREFIX)2.o $(FHB_PREFIX)3.o $(FHB_PREFIX)4.o     \
-	$(FHB_PREFIX)5.o $(FHB_PREFIX)6.o $(FHB_PREFIX)7.o         \
-	$(FHB_PREFIX)8.o $(FHB_PREFIX)9.o $(FHB_PREFIX)10.o        \
-	$(FHB_PREFIX)16.o $(FHB_PREFIX)32.o 
+FHB_BLOCKS= fhb_2.o fhb_3.o fhb_4.o fhb_5.o fhb_6.o fhb_7.o       \
+	    fhb_8.o fhb_9.o fhb_10.o fhb_16.o fhb_32.o 
 
-FRC_BLOCKS=$(FRC_PREFIX)1.o $(FRC_PREFIX)2.o $(FRC_PREFIX)3.o \
-	$(FRC_PREFIX)4.o $(FRC_PREFIX)5.o $(FRC_PREFIX)6.o      \
-	$(FRC_PREFIX)7.o $(FRC_PREFIX)8.o $(FRC_PREFIX)9.o      \
-	$(FRC_PREFIX)10.o $(FRC_PREFIX)11.o $(FRC_PREFIX)12.o   \
-	$(FRC_PREFIX)13.o $(FRC_PREFIX)14.o $(FRC_PREFIX)15.o   \
-	$(FRC_PREFIX)16.o $(FRC_PREFIX)32.o $(FRC_PREFIX)64.o	\
-	$(FRC_PREFIX)128.o
+FRC_BLOCKS= frc_1.o frc_2.o frc_3.o frc_4.o frc_5.o frc_6.o       \
+	    frc_7.o frc_8.o frc_9.o frc_10.o frc_11.o frc_12.o    \
+	    frc_13.o frc_14.o frc_15.o frc_16.o frc_32.o frc_64.o \
+	    frc_128.o
 
-FHF_BLOCKS=$(FHF_PREFIX)2.o $(FHF_PREFIX)3.o                   \
-	$(FHF_PREFIX)4.o $(FHF_PREFIX)5.o $(FHF_PREFIX)6.o    \
-	$(FHF_PREFIX)7.o $(FHF_PREFIX)8.o $(FHF_PREFIX)9.o    \
-	$(FHF_PREFIX)10.o $(FHF_PREFIX)16.o $(FHF_PREFIX)32.o
+FHF_BLOCKS= fhf_2.o fhf_3.o fhf_4.o fhf_5.o fhf_6.o fhf_7.o       \
+	    fhf_8.o fhf_9.o fhf_10.o fhf_16.o fhf_32.o
 
-NOTW_BLOCKS=$(NOTW_PREFIX)1.o $(NOTW_PREFIX)2.o $(NOTW_PREFIX)3.o     \
-	$(NOTW_PREFIX)4.o $(NOTW_PREFIX)5.o $(NOTW_PREFIX)6.o         \
-	$(NOTW_PREFIX)7.o $(NOTW_PREFIX)8.o $(NOTW_PREFIX)9.o         \
-	$(NOTW_PREFIX)10.o $(NOTW_PREFIX)11.o $(NOTW_PREFIX)12.o      \
-	$(NOTW_PREFIX)13.o $(NOTW_PREFIX)14.o $(NOTW_PREFIX)15.o      \
-	$(NOTW_PREFIX)16.o $(NOTW_PREFIX)32.o $(NOTW_PREFIX)64.o      
+FN_BLOCKS=  fn_1.o fn_2.o fn_3.o fn_4.o fn_5.o fn_6.o fn_7.o      \
+	    fn_8.o fn_9.o fn_10.o fn_11.o fn_12.o fn_13.o fn_14.o \
+            fn_15.o fn_16.o fn_32.o fn_64.o      
 
-TWID_BLOCKS=$(TWID_PREFIX)2.o $(TWID_PREFIX)3.o $(TWID_PREFIX)4.o     \
-	$(TWID_PREFIX)5.o $(TWID_PREFIX)6.o $(TWID_PREFIX)7.o         \
-	$(TWID_PREFIX)8.o $(TWID_PREFIX)9.o $(TWID_PREFIX)10.o        \
-	$(TWID_PREFIX)16.o $(TWID_PREFIX)32.o $(TWID_PREFIX)64.o
+TWID_BLOCKS= ftw_2.o ftw_3.o ftw_4.o ftw_5.o ftw_6.o ftw_7.o      \
+	     ftw_8.o ftw_9.o ftw_10.o ftw_16.o ftw_32.o ftw_64.o
 
-NOTWI_BLOCKS=$(NOTWI_PREFIX)1.o $(NOTWI_PREFIX)2.o $(NOTWI_PREFIX)3.o \
-	$(NOTWI_PREFIX)4.o $(NOTWI_PREFIX)5.o $(NOTWI_PREFIX)6.o      \
-	$(NOTWI_PREFIX)7.o $(NOTWI_PREFIX)8.o $(NOTWI_PREFIX)9.o      \
-	$(NOTWI_PREFIX)10.o $(NOTWI_PREFIX)11.o $(NOTWI_PREFIX)12.o   \
-	$(NOTWI_PREFIX)13.o $(NOTWI_PREFIX)14.o $(NOTWI_PREFIX)15.o   \
-	$(NOTWI_PREFIX)16.o $(NOTWI_PREFIX)32.o $(NOTWI_PREFIX)64.o
+NOTWI_BLOCKS= fni_1.o fni_2.o fni_3.o fni_4.o fni_5.o fni_6.o     \
+	      fni_7.o fni_8.o fni_9.o fni_10.o fni_11.o fni_12.o  \
+	      fni_13.o fni_14.o fni_15.o fni_16.o fni_32.o fni_64.o
 
-TWIDI_BLOCKS=$(TWIDI_PREFIX)2.o $(TWIDI_PREFIX)3.o                   \
-	$(TWIDI_PREFIX)4.o $(TWIDI_PREFIX)5.o $(TWIDI_PREFIX)6.o    \
-	$(TWIDI_PREFIX)7.o $(TWIDI_PREFIX)8.o $(TWIDI_PREFIX)9.o    \
-	$(TWIDI_PREFIX)10.o $(TWIDI_PREFIX)16.o $(TWIDI_PREFIX)32.o \
-        $(TWIDI_PREFIX)64.o
-
+TWIDI_BLOCKS= ftwi_2.o ftwi_3.o ftwi_4.o ftwi_5.o ftwi_6.o        \
+	      ftwi_7.o ftwi_8.o ftwi_9.o ftwi_10.o ftwi_16.o      \
+              ftwi_32.o ftwi_64.o
 
 OTHEROBJ = 	rconfig.o       rexec.o         rexec2.o        rfftwnd.o \
 		rgeneric.o	rplanner.o	fftwnd.o	malloc.o  \
 		putils.o	twiddle.o	wisdom.o	planner.o \
-		config.o	generic.o	executor.o	timer.o	\
+		config.o	generic.o	executor.o	timer.o	  \
 		rader.o		wisdomio.o	
 
-MPIOBJ	=	rfftwnd_mpi.o	transpose_mpi.o	TOMS_transpose.o sched.o \
+MPIOBJ	=	rfftwnd_mpi.o	transpose_mpi.o	TOMS_transpose.o sched.o  \
 		fftwnd_mpi.o
 
 THREADOBJ =     executor_threads.o  rexec_threads.o   rfftwnd_threads.o   \
@@ -93,7 +63,7 @@ MPI_THREADOBJ = rfftwnd_mpi_threads.o
 # this should be useful e.g. on SMP nodes on IBM SP2
 
 BLOCKS = $(FCR_BLOCKS) $(FHF_BLOCKS) $(FHB_BLOCKS) $(FRC_BLOCKS) \
-	$(NOTW_BLOCKS) $(NOTWI_BLOCKS) $(TWID_BLOCKS) $(TWIDI_BLOCKS)
+	 $(FN_BLOCKS) $(NOTWI_BLOCKS) $(TWID_BLOCKS) $(TWIDI_BLOCKS)
 
 OBJ = $(BLOCKS) $(OTHEROBJ)
 
@@ -112,25 +82,21 @@ endif
 include		$(STDTARGET)
 #
 
-ifeq ($(USE_MPI),yes)
-test_transpose_mpi:	test_transpose_mpi.o     test_main.o	$(OBJ)
-			$(LD) -o $@ $^ $(SYSLIBS)
+#ifeq ($(USE_MPI),yes)
+#test_transpose_mpi:	test_transpose_mpi.o     test_main.o	$(OBJ)
+#			$(LD) -o $@ $^ $(SYSLIBS)
+#
+#rfftwnd_mpi_test:	rfftwnd_mpi_test.o     test_main.o	$(OBJ)			
+#			$(LD) -o $@ $^ $(SYSLIBS)
+#endif
+#
+#ifeq ($(USE_THREADS),yes)
+#rfftw_threads_test:	rfftw_threads_test.o     test_main.o	$(OBJ)
+#			$(LD) -o $@ $^ $(SYSLIBS)
+#
+#fftw_threads_test:	fftw_threads_test.o	     test_main.o $(OBJ)			
+#			$(LD) -o $@ $^ $(SYSLIBS)
+#endif
 
-rfftwnd_mpi_test:	rfftwnd_mpi_test.o     test_main.o	$(OBJ)			
-			$(LD) -o $@ $^ $(SYSLIBS)
-endif
-
-ifeq ($(USE_THREADS),yes)
-rfftw_threads_test:	rfftw_threads_test.o     test_main.o	$(OBJ)
-			$(LD) -o $@ $^ $(SYSLIBS)
-
-fftw_threads_test:	fftw_threads_test.o	     test_main.o $(OBJ)			
-			$(LD) -o $@ $^ $(SYSLIBS)
-endif
-
-testprog:		testprog.o $(OBJ)
-			mpcc_r -o $@ $^ -lm
-rfftw_mpi_threads_test: rfftw_mpi_threads_test.o test_main.o   $(OBJ)
-			mpcc_r -o $@ $^ -lm
 include Make.dep
 endif
