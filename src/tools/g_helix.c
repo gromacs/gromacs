@@ -225,7 +225,7 @@ int main(int argc,char *argv[])
   int        natoms,nre,nres,step;
   t_bb       *bb;
   int        i,j,ai,m,nall,nbb,nca,teller,nSel=0;
-  atom_id    *bbindex,*caindex,*allindex;
+  atom_id    *bbindex,*caindex,*nindex,*allindex;
   t_topology *top;
   rvec       *x,*xref,*xav;
   real       t,lambda;
@@ -285,7 +285,7 @@ int main(int argc,char *argv[])
   }
 
   /* Read reference frame from tpx file to compute helix length */
-  snew(xref,natoms);
+  snew(xref,top->atoms.nr);
   read_tpx(ftp2fn(efTPX,NFILE,fnm),
 	   &step,&t,&lambda,NULL,NULL,
 	   &natoms,xref,NULL,NULL,NULL);
@@ -312,8 +312,12 @@ int main(int argc,char *argv[])
       rms=fit_ahx(nres,bb,natoms,nall,allindex,x,nca,caindex,box,bFit);
       
       if (teller == 1) {
-	write_sto_conf(opt2fn("-cz",NFILE,fnm),"Helix fitted to Z-Axis",
-		       &(top->atoms),x,NULL,box);
+	snew(nindex,natoms);
+	for(i=0; i<natoms; i++)
+	  nindex[i] = i;
+	write_sto_conf_indexed(opt2fn("-cz",NFILE,fnm),
+			       "Helix fitted to Z-Axis",
+			       &(top->atoms),x,NULL,box,natoms,nindex);
       }
             
       xf[efhRAD].val   = radius(xf[efhRAD].fp2,nca,caindex,x);
