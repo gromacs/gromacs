@@ -8,10 +8,11 @@ all:
 else
 include		$(GMXHOME)/src/makef/Makefile.def
 #
+BASIC	=	include	gmxlib mdlib	fftw	kernel	
 ifneq ($(USE_XWIN),no)
-SRCDIRS	=	include	gmxlib mdlib	fftw	kernel	tools	ngmx
+SRCDIRS	=	$(BASIC)	tools	ngmx
 else
-SRCDIRS	=	include	gmxlib mdlib	fftw	kernel	tools
+SRCDIRS	=	$(BASIC)	tools
 endif
 LOCALDIRS =	local
 ALLDIRS	=	$(SRCDIRS)	$(LOCALDIRS)
@@ -44,7 +45,8 @@ dist:	oclean
 # rule to make dirs where binaries and libary go:
 dirs:
 	\mkdir -p $(BINDIR) $(LIBDIR); 
-
+basic:
+	$(foreach dir,$(BASIC),cd $(dir); $(MAKE); cd ..;)
 man:
 	./mknroff
 html:
@@ -61,3 +63,4 @@ copyrgt:
 oclean:
 	$(foreach dir,$(SRCDIRS),cd $(dir); $(MAKE) oclean; cd ..;)
 endif
+
