@@ -1001,7 +1001,7 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
   t_iatom   *ia0,*iatom;
   int       gid,shift_vir,shift_f;
   int       j_index[] = { 0, 1 };
-  int       i1=1,i3=3,i0;
+  int       i1=1,i2=2,i0;
   ivec      dt;
 #ifdef USE_VECTOR
   if (fbuf == NULL)
@@ -1078,9 +1078,12 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	      md->cENER[ai],md->cENER[aj],ngrp,gid);
 #endif
       
-      if (md->bPerturbed[ai] || md->bPerturbed[aj]) {
+      if (fr->efep != efepNO &&
+	  (md->bPerturbed[ai] || md->bPerturbed[aj] ||
+	   iparams[itype].lj14.c6A != iparams[itype].lj14.c6B ||
+	   iparams[itype].lj14.c12A != iparams[itype].lj14.c12B)) {
 	int  tiA,tiB,tjA,tjB;
-	real nbfp[18];
+	real nbfp[8];
 	
 	/* Save old types */
 	tiA = md->typeA[ai];
@@ -1089,14 +1092,14 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	tjB = md->typeB[aj];
 	md->typeA[ai] = 0;
 	md->typeB[ai] = 1;
-	md->typeA[aj] = 2;
-	md->typeB[aj] = 3;
+	md->typeA[aj] = 0;
+	md->typeB[aj] = 1;
 	
 	/* Set nonbonded params */
-	C6(nbfp,4,0,2)  = iparams[itype].lj14.c6A;
-	C6(nbfp,4,1,2)  = iparams[itype].lj14.c6B;
-	C12(nbfp,4,0,2) = iparams[itype].lj14.c12A;
-	C12(nbfp,4,1,2) = iparams[itype].lj14.c12B;
+	C6(nbfp,2,0,0)  = iparams[itype].lj14.c6A;
+	C6(nbfp,2,1,1)  = iparams[itype].lj14.c6B;
+	C12(nbfp,2,0,0) = iparams[itype].lj14.c12A;
+	C12(nbfp,2,1,1) = iparams[itype].lj14.c12B;
      	
 #undef COMMON_ARGS
 #define COMMON_ARGS SCAL(i1),&ai,j_index,&aj,&shift_f,fr->shift_vec[0],fr->fshift[0],&gid,x[0],f[0]
@@ -1106,7 +1109,7 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	  /* special version without some optimizations */
 	  FUNC(inl3302n,INL3302N)(COMMON_ARGS FBUF_ARG, 
 				  md->chargeA,SCAL(eps),egcoul,
-				  md->typeA,SCAL(i3),nbfp,egnb,
+				  md->typeA,SCAL(i2),nbfp,egnb,
 				  SCAL(fr->tab14.scale),fr->tab14.tab,
 				  SCAL(lambda),dvdlambda,md->chargeB,
 				  md->typeB,SCAL(fr->sc_alpha),
@@ -1115,7 +1118,7 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	  /* use normal innerloop */
 	  FUNC(inl3302,INL3302)(COMMON_ARGS FBUF_ARG, 
 				md->chargeA,SCAL(eps),egcoul,
-				md->typeA,SCAL(i3),nbfp,egnb,
+				md->typeA,SCAL(i2),nbfp,egnb,
 				SCAL(fr->tab14.scale),fr->tab14.tab,
 				SCAL(lambda),dvdlambda,md->chargeB,
 				md->typeB,SCAL(fr->sc_alpha),
@@ -1127,7 +1130,7 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	  /* special version without some optimizations */
 	  FUNC(inl3301n,INL3301N)(COMMON_ARGS FBUF_ARG, 
 				  md->chargeA,SCAL(eps),egcoul,
-				  md->typeA,SCAL(i3),nbfp,egnb,
+				  md->typeA,SCAL(i2),nbfp,egnb,
 				  SCAL(fr->tab14.scale),fr->tab14.tab,
 				  SCAL(lambda),dvdlambda,md->chargeB,
 				  md->typeB);
@@ -1135,7 +1138,7 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	  /* use normal innerloop */
 	  FUNC(inl3301,INL3301)(COMMON_ARGS FBUF_ARG, 
 				md->chargeA,SCAL(eps),egcoul,
-				md->typeA,SCAL(i3),nbfp,egnb,
+				md->typeA,SCAL(i2),nbfp,egnb,
 				SCAL(fr->tab14.scale),fr->tab14.tab,
 				SCAL(lambda),dvdlambda,md->chargeB,md->typeB);
 #endif
