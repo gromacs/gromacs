@@ -38,6 +38,7 @@ static char *SRCID_anadih_c = "$Id$";
 #include "xvgr.h"
 #include "typedefs.h"
 #include "gstat.h"
+#include "confio.h"
 #include "lutab.h"
 
 static int calc_RBbin(real phi)
@@ -324,7 +325,7 @@ void normalize_histo(int npoints,int histo[],real dx,real normhisto[])
     normhisto[i]=fac*histo[i];
 }
 
-void read_ang_dih(char *trj_fn,char *tpb_fn,
+void read_ang_dih(char *trj_fn,char *stx_fn,
 		  bool bAngles,bool bSaveAll,bool bRb,
 		  int maxangstat,int angstat[],
 		  int *nframes,real **time,
@@ -334,7 +335,8 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
 		  real *dih[])
 {
   t_topology *top;
-  int        i,angind,status,natoms,nat,total,teller,nangles,nat_trj,n_alloc;
+  int        ftp,i,angind,status,natoms,nat,total,teller;
+  int        nangles,nat_trj,n_alloc;
   real       t,fraction,pifac,aa,angle;
   real       *angles[2];
   matrix     box;
@@ -346,16 +348,27 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
   init_lookup_table(stdout);
 
   /* Read topology */    
-  top     = read_top(tpb_fn);
-  natoms  = top->atoms.nr;
+  ftp     = fn2ftp(stx_fn);
+  if ((ftp == efTPR) || (ftp == efTPB) || (ftp == efTPA)) { 
+    top     = read_top(stx_fn);
+    natoms  = top->atoms.nr;
+  }
+  else {
+    top = NULL;
+    get_stx_coordnum(stx_fn,&natoms);
+    fprintf(stderr,"Can not remove periodicity since %s is not a GROMACS topology\n",stx_fn);
+  }
   nat_trj = read_first_x(&status,trj_fn,&t,&x,box);
   
   /* Check for consistency of topology and trajectory */
   if (natoms < nat_trj)
     fprintf(stderr,"WARNING! Topology has fewer atoms than trajectory\n");
-    
-  snew(x_s,nat_trj);
   
+  if (top)
+    snew(x_s,nat_trj);
+  else
+    x_s = x;
+    
   if (bAngles) {
     nangles=isize/3;
     pifac=M_PI;
@@ -388,7 +401,8 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
 
     (*time)[teller] = t;
 
-    rm_pbc(&(top->idef),nat_trj,box,x,x_s);
+    if (top)
+      rm_pbc(&(top->idef),nat_trj,box,x,x_s);
     
     if (bAngles)
       calc_angles(stdout,box,isize,index,angles[cur],x_s);
@@ -405,7 +419,7 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
        * calculated from polymer above, but we change the intervall
        * from [-180,180] to [0,360].
        */
-         if (bRb) {
+      if (bRb) {
        	for(i=0; (i<nangles); i++)
        	  if (angles[cur][i] <= 0.0) 
        	    angles[cur][i] += 2*M_PI;
