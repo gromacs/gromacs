@@ -42,10 +42,6 @@ endif
 #
 include		$(STDTARGET)
 #
-ifeq ($(COMPAQ_COMPILERS),yes)
-.f.o:
-		$(F77) $(FFLAGS) -c -O5 $<
-endif
 
 # This is to force rebuild when the Makefile.CPU has changed
 $(LIB)(update.o):	$(CPUMAKEF)
