@@ -142,42 +142,67 @@ void do_gkr(t_gkrbin *gb,int ngrp,atom_id grpindex[],
       pbc_dx(xcm[i],xcm[j],dx);
       r2  = iprod(dx,dx);
       if (r2 < gb->r2) {
-	mu2 = iprod(mu[i],mu[j]);
+	mu2 = cos_angle(mu[i],mu[j]);
 	add_gkrelem(gb,sqrt(r2),mu2);
       }
     }
   }
 }
 
-void print_gkrbin(char *fn,t_gkrbin *gb,real mu,int ngrp,int nframes)
+void print_gkrbin(char *fn,t_gkrbin *gb,
+		  int ngrp,int nframes,real volume)
 {
+  /* We compute Gk(r), gOO and hOO according to
+   * Nymand & Linse, JCP 112 (2000) pp 6386-6395.
+   * In this implementation the angle between dipoles is stored
+   * rather than their inner product. This allows to take polarizible
+   * models into account. The RDF is calculated as well, almost for free!
+   */
   FILE   *fp;
-  char   *leg[] = { "G\\sk\\N(r)", "<mu\\si\\N mu\\sj\\N> (r\\sij\\N = r)" };
+  char   *leg[] = { "G\\sk\\N(r)", "h\\sOO\\N", "g\\sOO\\N" };
   int    i;
-  real   x,y,ytot;
+  real   x0,x1,ggg,Gkr,vol_s,rho,gOO,hOO;
   double fac;
     
-  if (mu == 0)
-    fatal_error(0,"Trying to print Gk(r) but average dipole is zero!");
   fp=xvgropen(fn,"Distance dependent Gk","r (nm)","G\\sk\\N(r)");
   xvgr_legend(fp,asize(leg),leg);
-  ytot = 1;
+  
+  Gkr = 1;  /* Self-dipole inproduct = 1 */
+  rho = ngrp/volume;
+  
+  if (debug) {
+    fprintf(debug,"Number density is %g molecules / nm^3\n",rho);
+    fprintf(debug,"ngrp = %d, nframes = %d\n",ngrp,nframes);
+  }
   
   /* Divide by dipole squared, by number of frames, by number of origins.
    * Multiply by 2 because we only take half the matrix of interactions
    * into account.
    */
-  fac  = 2.0/(ngrp*nframes);
+  fac  = 2.0/((double) ngrp * (double) nframes);
 
-  for(i=0; (i<gb->nelem); i++) {
+  x0 = 0;
+  for(i=0; (i<gb->nelem-1); i++) {
     /* Centre of the coordinate in the spherical layer */
-    x     = (i+0.5)*gb->spacing;
-
-    y     = gb->elem[i]/(mu*mu);
-
-    ytot += y*fac;
-
-    fprintf(fp,"%10.5e  %12.7e  %12.7e\n",x,ytot,y/gb->count[i]);
+    x1    = x0+gb->spacing;
+    
+    /* Volume of the layer */
+    vol_s = (4.0/3.0)*M_PI*(x1*x1*x1-x0*x0*x0);
+    
+    /* gOO */
+    gOO   = gb->count[i]*fac/(rho*vol_s);
+    
+    /* Dipole correlation hOO, normalized by the relative number density, like
+     * in a Radial distribution function.
+     */
+    ggg  = gb->elem[i]*fac;
+    hOO  = 3.0*ggg/(rho*vol_s);
+    Gkr += ggg;
+    
+    fprintf(fp,"%10.5e  %12.5e  %12.5e  %12.5e\n",x1,Gkr,hOO,gOO);
+    
+    /* Swap x0 and x1 */
+    x0 = x1;
   }
   ffclose(fp);
 }
@@ -694,7 +719,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   vol_aver /= teller;
   fprintf(stderr,"Average volume over run is %g\n",vol_aver);
   if (bGkr) 
-    print_gkrbin(gkrfn,gkrbin,mu_aver,gnx,teller);
+    print_gkrbin(gkrfn,gkrbin,gnx,teller,vol_aver);
 
   /* Autocorrelation function */  
   if (bCorr) {
@@ -836,12 +861,14 @@ int main(int argc,char *argv[])
   ppa    = add_acf_pargs(&npargs,pa);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
-		    
+
+  init_lookup_table(stdout);
+  
   fprintf(stderr,"Using %g as mu_max and %g as the dipole moment.\n", 
 	  mu_max,mu_aver);
   if (epsilonRF == 0.0)
     fprintf(stderr,"WARNING: EpsilonRF = 0.0, this really means EpsilonRF = infinity\n");
-  
+
   bMU   = opt2bSet("-enx",NFILE,fnm);
   bQuad = opt2bSet("-q",NFILE,fnm);
   bGkr  = opt2bSet("-g",NFILE,fnm);
