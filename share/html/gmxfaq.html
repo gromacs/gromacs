@@ -37,6 +37,7 @@ missing atoms.</A>
 the year 2000.</A>
 <LI><A HREF="#1-4cut"><TT>mdrun</TT> says: "1-4 (#,#) interaction not within cut-off".</A>
 <LI><A HREF="#output">My run seems to be running, but no output is produced.</A>
+<LI><A HREF="#temp">I get very strange temperatures.</A>
 <LI><A HREF="#simann">I get very strange temperatures during my simulated annealing run.</A>
 <LI><A HREF="#multPDB">I have a PDB file with multiple entries which I want 
 to analyze.</A>
@@ -379,6 +380,19 @@ logfile). Either way, there is nothing to worry about because GROMACS
 is <FONT COLOR="#AA00CC"><B>fully 2000 compliant</B></FONT>.
 <P>
 
+<A NAME="temp">
+<DT><B><FONT COLOR="#FF0000">I get very strange temperatures. Now what?</FONT></B>
+
+<P> <DD> If you are using simulated annealing (see 
+<A HREF=online/mdp_opt.html#sa><TT>.mdp</TT> options</A>), check out
+``<A HREF="#simann">I get very strange temperatures during my
+simulated annealing run</A>''. If you are not using simulated
+annealing, you might have very close contacts or a too large time
+step. This causes inaccurate integration which will usually result in
+a large positive temperature drift. Try some more energy minimization
+to get rid of the close contacts, or if that still doesn't help, try a
+short equilibration run with a smal(ler) time step.  <P>
+
 <A NAME="simann">
 <DT><B><FONT COLOR="#FF0000">I get very strange temperatures during my simulated annealing run. Now what?</FONT></B>
 
@@ -395,11 +409,9 @@ simulation is larger than that, the temperature in your simulation
 will be zero. If your <TT>zero_temp_time</TT> is negative, temperature
 will rise indefenitely with increasing time. Below two schematic
 graphs are included to clarify things a bit.
-<BR>
+<P>
 <TABLE>
-<TR>
 <TH ALIGN=CENTER COLSPAN=3>System temperature v.s. Time in simulated annealing:
-<TR><TD COLSPAN=3>&nbsp;
 <TR>
 <TH ALIGN=CENTER><TT>zero_temp_time < 0</TT> :
 <TD>
@@ -408,7 +420,6 @@ graphs are included to clarify things a bit.
 <TH ALIGN=CENTER>Heating to inf.
 <TD>
 <TH ALIGN=CENTER>Cooling to zero
-<TR><TD COLSPAN=3>&nbsp;
 <TR>
 <TD ALIGN=CENTER><IMG SRC="gif/annealup.gif">
 <TD>&nbsp;&nbsp;&nbsp;
