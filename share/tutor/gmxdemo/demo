@@ -310,7 +310,7 @@ ref_t               =  300	300
 ; Pressure coupling is not on
 Pcoupl              =  no
 tau_p               =  0.5
-compressibility     =  4.6e-3
+compressibility     =  4.5e-5
 ref_p               =  1.0
 ; Generate velocites is on at 300 K.
 gen_vel             =  yes
@@ -415,7 +415,7 @@ ref_t               =  300	300
 ; Pressure coupling is not on
 Pcoupl              =  no
 tau_p               =  0.5
-compressibility     =  4.6e-3
+compressibility     =  4.5e-5
 ref_p               =  1.0
 ; Generate velocites is on at 300 K.
 gen_vel             =  yes
