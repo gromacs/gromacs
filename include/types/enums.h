@@ -32,7 +32,11 @@ enum {
 };
 
 enum {
-  ebtCUBIC, ebtRECT, ebtNR
+  ebtCUBIC, ebtRECT, ebtTRICLINIC, ebtNONE, ebtNR
+};
+
+enum {
+  epcNO, epcISOTROPIC, epcANISOTROPIC, epcTRICLINIC, epcNR
 };
 
 enum {

@@ -71,7 +71,7 @@ typedef struct {
   bool bShakeFirst;     /* Perform shake before first step ?		*/
   bool btc;		/* temperature coupling         		*/
   int  ntcmemory;       /* Memory (steps) for T coupling                */
-  bool bpc;		/* pressure coupling 				*/
+  int  epc;		/* pressure coupling type			*/
   int  npcmemory;       /* Memory (steps) for P coupling                */
   real tau_p;		/* pressure coupling time (ps)			*/
   rvec ref_p;		/* reference pressure (kJ/(mol nm^3))		*/
