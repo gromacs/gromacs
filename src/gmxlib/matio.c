@@ -140,10 +140,11 @@ void do_wmap(FILE *out,int i0,int imax,
 
 char *fgetline(char **line, FILE *in)
 {
-  static char line0[2048];
+#define MAX_XPM_LINELENGTH 4096
+  static char line0[MAX_XPM_LINELENGTH];
   char *fg;
 
-  fg=fgets(line0,2048,in);
+  fg=fgets(line0,MAX_XPM_LINELENGTH,in);
   *line=line0;
   trim(*line);
 
@@ -196,7 +197,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
 {
   t_mapping *map;
   char *line=NULL,*str,buf[256];
-  int i,m,col_len,nch;
+  int i,m,col_len,nch,n_axis_x,n_axis_y;
   unsigned int r,g,b;
   double u;
   char *fg;
@@ -291,7 +292,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
     }
   }
   if  ( m != mm->nmap ) 
-    fatal_error(0,"Number read colors (%d) does not match the number of color map entries (%d)",m,mm->nmap);
+    fatal_error(0,"Number of read colors map entries (%d) does not match the number in the header (%d)",m,mm->nmap);
   mm->map = map;
   if (debug)
     for(m=0;m<mm->nmap;m++) 
@@ -299,6 +300,8 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
 	     map[m].rgb.b,map[m].desc);
 
   /* Read axes, if the are any */ 
+  n_axis_x=0;
+  n_axis_y=0;
   bGetOnWithIt=FALSE;
   do {
     if (strstr(line,"x-axis")) {
@@ -306,10 +309,13 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
       skipstr(&line);
       if (debug)
 	printf("%s\n",line);
-      snew(mm->axis_x,mm->nx);
-      for(i=0;i<mm->nx;i++) {
-	sscanf(line,"%lf",&u);
-	mm->axis_x[i] = u;
+      if (mm->axis_x==NULL)
+	snew(mm->axis_x,mm->nx);
+      while (sscanf(line,"%lf",&u)==1) {
+	if (n_axis_x >= mm->nx)
+	  fatal_error(0,"To many x-axis labels in xpm");
+	mm->axis_x[n_axis_x] = u;
+	n_axis_x++;
 	skipstr(&line);
       }
     }
@@ -318,11 +324,14 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
       skipstr(&line);
       if (debug)
 	printf("%s\n",line);
-      snew(mm->axis_y,mm->ny);
-      for(i=0;i<mm->ny;i++) {
-	sscanf(line,"%lf",&u);
-	   mm->axis_y[i] = u;
-	   skipstr(&line);
+      if (mm->axis_y==NULL)
+	snew(mm->axis_y,mm->ny);
+      while (sscanf(line,"%lf",&u)==1) {
+	if (n_axis_y >= mm->ny)
+	  fatal_error(0,"To many y-axis labels in xpm");
+	mm->axis_y[n_axis_y] = u;
+	n_axis_y++;
+	skipstr(&line);
       }
     }
   } while ((line[0] != '\"') && fgetline(&line,in));
@@ -524,8 +533,12 @@ void write_xpm_axis(FILE *out, char *axis, int n, real *label)
   int i;
 
   if (label) {
-    fprintf(out,"/* %s-axis:  ",axis);
     for(i=0;i<n;i++) {
+      if (i % 80 == 0) {
+	if (i) 
+	  fprintf(out,"*/\n",axis);
+	fprintf(out,"/* %s-axis:  ",axis);
+      }
       fprintf(out,"%g ",label[i]);
     }
     fprintf(out,"*/\n");
