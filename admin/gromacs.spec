@@ -12,7 +12,6 @@ Version: 3.0
 Release: 1
 Copyright: GPL
 Group: Applications/Science
-Prefix: /usr/local/gromacs
 Requires: fftw >= 2.1.3 
 Source: ftp://ftp.gromacs.org/pub/gromacs/source/gromacs-%{version}.tar.gz
 URL: http://www.gromacs.org
@@ -36,8 +35,7 @@ GROMACS then can use assembly loops with SSE instructions.
 %package devel
 Summary: Header files and static libraries for GROMACS
 Group: Applications/Science
-Prefix: %{prefix}
-Requires: fftw-devel >=2.1.3, gromacs = %{version}-%{release}
+Requires: fftw-devel >= 2.1.3, gromacs = 3.0-1
 %description devel
 This package contains header files, static libraries,
 and a program example for the GROMACS molecular
@@ -56,13 +54,14 @@ the default prefix!
 # but since the development package puts a lot of include files in {prefix}/include we
 # default to /usr/local/gromacs. Will try to fix that in gromacs 4.0 :-)
 
-./configure --enable-shared
+./configure --enable-shared 
 make 
 
 %install
 make DESTDIR=${RPM_BUILD_ROOT} install
 # Move mdrun to mdrun_nompi - we make a link at post-install script time!
-(cd ${RPM_BUILD_ROOT}%{prefix}/%{_target}/bin && mv mdrun mdrun_nompi)
+# If we don't do this we'd get a conflict with the gromacs-mpi package.
+(cd ${RPM_BUILD_ROOT}/usr/local/gromacs/%{_host}/bin && mv mdrun mdrun_nompi)
 
 %clean
 rm -rf ${RPM_BUILD_ROOT}
@@ -71,11 +70,11 @@ rm -rf ${RPM_BUILD_ROOT}
 #
 # Add our (final) library directory to /etc/ld.so.conf if it is not already there
 #
-if test -z `grep ${RPM_INSTALL_PREFIX}/%{_target}/lib /etc/ld.so.conf`; then
-     cat >> /etc/ld.so.conf < ${RPM_INSTALL_PREFIX}/%{_target}/lib
+if test -z `grep ${RPM_INSTALL_PREFIX}/%{_host}/lib /etc/ld.so.conf`; then
+     cat >> /etc/ld.so.conf < ${RPM_INSTALL_PREFIX}/%{_host}/lib
 fi
 # Make a link from mdrun_nompi to mdrun - if it doesn't already exist!
-(cd ${RPM_INSTALL_PREFIX}/%{_target}/bin && test ! -e mdrun && ln -s mdrun_nompi mdrun)
+(cd ${RPM_INSTALL_PREFIX}/%{_host}/bin && test ! -e mdrun && ln -s mdrun_nompi mdrun)
 
 # run ldconfig to update the runtime linker database with the new libraries
 # (make sure /sbin is in the $PATH)
@@ -85,29 +84,28 @@ PATH="/sbin:$PATH" ldconfig
 # after uninstall, run ldconfig to remove the libs from the linker database
 PATH="/sbin:$PATH" ldconfig
 # and remove the link from mdrun_nompi to mdrun
-(cd ${RPM_INSTALL_PREFIX}/%{_target}/bin && rm -f mdrun)
+(cd ${RPM_INSTALL_PREFIX}/%{_host}/bin && rm -f mdrun)
 
 %files
 %defattr(-,root,root)
-%doc /usr/local/gromacs/README
-/usr/local/gromacs/%{_target}/bin/*
+/usr/local/gromacs/%{_host}/bin/*
 /usr/local/gromacs/share/top/*
 /usr/local/gromacs/share/tutor/*
 %docdir /usr/local/gromacs/share/html
-/usr/local/share/gromacs/html/
+/usr/local/gromacs/share/html/
 %docdir /usr/local/gromacs/man
 /usr/local/gromacs/man/*
-/usr/local/gromacs/%{_target}/lib/libgmx.so.1.0.0
-/usr/local/gromacs/%{_target}/lib/libgmx.so.1
-/usr/local/gromacs/%{_target}/lib/libmd.so.1.0.0
-/usr/local/gromacs/%{_target}/lib/libmd.so.1
+/usr/local/gromacs/%{_host}/lib/libgmx.so.1.0.0
+/usr/local/gromacs/%{_host}/lib/libgmx.so.1
+/usr/local/gromacs/%{_host}/lib/libmd.so.1.0.0
+/usr/local/gromacs/%{_host}/lib/libmd.so.1
 %files devel
 %defattr(-,root,root)
 /usr/local/gromacs/share/template/*
-/usr/local/gromacs/%{_target}/lib/libgmx.so
-/usr/local/gromacs/%{_target}/lib/libgmx.a
-/usr/local/gromacs/%{_target}/lib/libgmx.la
-/usr/local/gromacs/%{_target}/lib/libmd.so
-/usr/local/gromacs/%{_target}/lib/libmd.a
-/usr/local/gromacs/%{_target}/lib/libmd.la
+/usr/local/gromacs/%{_host}/lib/libgmx.so
+/usr/local/gromacs/%{_host}/lib/libgmx.a
+/usr/local/gromacs/%{_host}/lib/libgmx.la
+/usr/local/gromacs/%{_host}/lib/libmd.so
+/usr/local/gromacs/%{_host}/lib/libmd.a
+/usr/local/gromacs/%{_host}/lib/libmd.la
 /usr/local/gromacs/include/*

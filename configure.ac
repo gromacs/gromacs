@@ -650,6 +650,10 @@ if test "$exec_prefix" = "NONE"; then
   fi
 fi
 AC_SUBST(exec_prefix)
+# Use a variable for RPM - this way it can be 
+# overridden with make RPM=rpm3 rpm
+RPM=rpm
+AC_SUBST(RPM)
 
 AC_CONFIG_FILES([Makefile include/Makefile include/types/Makefile 
 src/Makefile src/gmxlib/Makefile src/mdlib/Makefile src/kernel/Makefile

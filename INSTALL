@@ -4,8 +4,15 @@
 Note: Detailed, step-by-step installation instructions
 are available on the website http://www.gromacs.org .
 
-From version 3.0, the compile and install procedure has been 
-changed to simplify things for you. We now use a standard 
+You will probably have to download and install FFTW the first
+time you install GROMACS - our configuration script will check it!
+
+
+
+* SHORT INSTRUCTIONS FOR THE IMPATIENT:
+
+From version 3.0, the GROMACS compile and install procedure has 
+been changed to simplify things for you. We now use a standard 
 autoconf script and makefiles created by automake, like most 
 GNU programs. This means your normal installation actions are 
 limited to:
@@ -19,15 +26,46 @@ automatically by configure, and it will tell you if something is
 missing. The default installation location is /usr/local/gromacs
 (change it with --prefix).  
 
+
+
+* INSTALLING FFTW:
+
 The FFTW library has been removed from the distribution since it 
 is not part of our package, but it is very easy to install separately
-if it is not already present (However, the default FFTW setup is
-double precision. For Gromacs you probably want to change this to 
-single with --enable-float. It is a good idea to install both single
-and double precision FFTW.). You can find links to the software you 
-need through the GROMACS homepage at http://md.chem.rug.nl/~gmx/  
+if it is not already present. Download the source code from 
+http://www.fftw.org , or get it from http://www.gromacs.org .
+
+Read the FFTW installation instructions for details. In short, to
+install the single precision library under /usr/local type
+
+./configure --enable-float
+
+and then type
+
+make
+make install
+
+Note that in contrast to GROMACS, FFTW defaults to double. Even
+if you don't think you'll need it's a good idea to install the
+double precision libraries too, once and for all. Clean your
+build by issuing 
+
+make distclean
+
+and then type
+
+./configure --enable-type-prefix
+make
+make install
+
+Your double precision FFTW files will have a "d" prefix.
+
 (It is possible to compile a crippled GROMACS without FFTW, but we
- don't recommend it - check the configure options for details)
+strongly discourage it - check the configure options for details)
+
+
+
+* FFTW OR OTHER LIBRARIES IN NON-STANDARD LOCATIONS:
 
 If you install FFTW in your homedirectory or some other place where
 it isn't found automatically (not all systems search /usr/local)
@@ -50,11 +88,21 @@ the variables CC and/or F77 (MPICC for an MPI compiler).
 Once installed, you can link the Gromacs executables to e.g.
 /usr/local/bin if you want all users to have them in their path.
 
+
+
+* SPECIAL OPTIONS; FORTRAN, ASSEMBLY AND PARALLEL GROMACS WITH MPI:
+
 Typing ./configure --help will give you some options like compiling
 for parallel runs using MPI. Not all architecture use the fast
 fortran loops per default, so if you know you have a fast fortan
 compiler you should check that option. It won't have much effect
 for modern x86 boxes though, since these use assembly innerloops.
+
+To compile the assembly loops you need a reasonably recent version
+of binutils. The configuration script checks it - pick up a later
+version at www.gromacs.org if yours is too old. Don't disable
+the assembly loops unless you absolutely have to...
+
 
 For instance, if you want to compile only the mdrun executable
 with parallel MPI support:
@@ -76,8 +124,16 @@ You can find more installation information on the GROMACS homepage
 if you have any problems, and don't hesitate to contact us if you 
 find any bugs in the configuration. The architecture names have 
 been expanded and are almost identical to the GNU ones, but where 
-it is possible we have added a more detailed processor 
-specification to enable higher optimization.
+it is possible we have added an extra level with more detailed 
+processor specifications to enable higher optimization. If you 
+have a very heterogeneous environment it might be a good idea
+to compile a full non-optimized version in the main directory,
+and then just optimized versions of mdrun in the processor
+subdirectories!
+
+
+
+* VPATH BUILDS:
 
 If you want to do development on several architectures, you should
 use a version of make that support VPATH (we suggest GNU make)
@@ -86,6 +142,16 @@ architecture (e.g. i686-pc-linux-gnu/obj). Then run configure from this
 new directory (../../configure) - you might have to make distclean first.
 This way you keep all your object files (speeds up compiles) and 
 change architecture by switching to a different object directory.
+
+
+
+* ARE YOU STILL HAVING PROBLEMS?
+
+Post it to the GROMACS mailing lists. We read these on a regular basis,
+and in many cases another user might already be familiar with the
+task you're trying to perform!
+
+
 
                 Good luck compiling and running! 
 

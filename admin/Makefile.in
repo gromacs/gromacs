@@ -11,96 +11,96 @@
 # even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE.
 
-
+@SET_MAKE@
 
 #
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
-SHELL = /bin/sh
+SHELL = @SHELL@
 
-srcdir = .
-top_srcdir = ..
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+VPATH = @srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
 
-prefix = /usr/local/gromacs
-exec_prefix = ${prefix}/i686-pc-linux-gnu
-
-bindir = ${exec_prefix}/bin
-sbindir = ${exec_prefix}/sbin
-libexecdir = ${exec_prefix}/libexec
-datadir = ${prefix}/share
-sysconfdir = ${prefix}/etc
-sharedstatedir = ${prefix}/com
-localstatedir = ${prefix}/var
-libdir = ${exec_prefix}/lib
-infodir = ${prefix}/info
-mandir = ${prefix}/man
-includedir = ${prefix}/include
+bindir = @bindir@
+sbindir = @sbindir@
+libexecdir = @libexecdir@
+datadir = @datadir@
+sysconfdir = @sysconfdir@
+sharedstatedir = @sharedstatedir@
+localstatedir = @localstatedir@
+libdir = @libdir@
+infodir = @infodir@
+mandir = @mandir@
+includedir = @includedir@
 oldincludedir = /usr/include
-pkgdatadir = $(datadir)/gromacs
-pkglibdir = $(libdir)/gromacs
-pkgincludedir = $(includedir)/gromacs
+pkgdatadir = $(datadir)/@PACKAGE@
+pkglibdir = $(libdir)/@PACKAGE@
+pkgincludedir = $(includedir)/@PACKAGE@
 top_builddir = ..
 
-ACLOCAL = ${SHELL} /tmp_mnt/etc/gromacs/cvs/gmx/config/missing --run aclocal
-AUTOCONF = ${SHELL} /tmp_mnt/etc/gromacs/cvs/gmx/config/missing --run autoconf
-AUTOMAKE = ${SHELL} /tmp_mnt/etc/gromacs/cvs/gmx/config/missing --run automake
-AUTOHEADER = ${SHELL} /tmp_mnt/etc/gromacs/cvs/gmx/config/missing --run autoheader
+ACLOCAL = @ACLOCAL@
+AUTOCONF = @AUTOCONF@
+AUTOMAKE = @AUTOMAKE@
+AUTOHEADER = @AUTOHEADER@
 
-INSTALL = /usr/bin/install -c
-INSTALL_PROGRAM = ${INSTALL}
-INSTALL_DATA = ${INSTALL} -m 644
-INSTALL_SCRIPT = ${INSTALL}
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_HEADER = $(INSTALL_DATA)
-transform = s,x,x,
+transform = @program_transform_name@
 NORMAL_INSTALL = :
 PRE_INSTALL = :
 POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-host_alias = 
-host_triplet = i686-pc-linux-gnu
-AMTAR = ${SHELL} /tmp_mnt/etc/gromacs/cvs/gmx/config/missing --run tar
-AS = cc
-ASFLAGS = -O6 -fomit-frame-pointer -finline-functions -funroll-all-loops -Wall -Wno-unused -x assembler-with-cpp
-AWK = gawk
-CC = cc
-CC_FOR_BUILD = cc
-CPP = cc -E
-CXX = 
-CXXCPP = 
-DEPDIR = .deps
+host_alias = @host_alias@
+host_triplet = @host@
+AMTAR = @AMTAR@
+AS = @AS@
+ASFLAGS = @ASFLAGS@
+AWK = @AWK@
+CC = @CC@
+CC_FOR_BUILD = @CC_FOR_BUILD@
+CPP = @CPP@
+CXX = @CXX@
+CXXCPP = @CXXCPP@
+DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
-ECHO = echo
-EXEEXT = 
-F77 = 
-FLIBS = 
+ECHO = @ECHO@
+EXEEXT = @EXEEXT@
+F77 = @F77@
+FLIBS = @FLIBS@
 GCJ = @GCJ@
 GCJFLAGS = @GCJFLAGS@
-GMXLIB_LIBOBJS =  innerc.lo libnet.lo x86_cpuid.lo x86_sse.lo x86_3dnow.lo mgmx.lo widget.lo
-IDENT = /usr/bin/ident
-INCLUDES =    -I/usr/X11R6/include 
-INSTALL_STRIP_PROGRAM = ${SHELL} `CDPATH=: && cd config && pwd`/install-sh -c -s
-LIBSUFFIX = 
-LIBTOOL = $(SHELL) $(top_builddir)/libtool
-LN_S = ln -s
-MDLIB_LIBOBJS =  clincs.lo csettle.lo cshake.lo
-MPICC = 
+GMXLIB_LIBOBJS = @GMXLIB_LIBOBJS@
+IDENT = @IDENT@
+INCLUDES = @INCLUDES@
+INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+LIBSUFFIX = @LIBSUFFIX@
+LIBTOOL = @LIBTOOL@
+LN_S = @LN_S@
+MDLIB_LIBOBJS = @MDLIB_LIBOBJS@
+MPICC = @MPICC@
 OBJDUMP = @OBJDUMP@
-OBJEXT = o
-PACKAGE = gromacs
-RANLIB = ranlib
-SHARED_VERSION_INFO = 1:0:0
-STRIP = strip
-VERSION = 3.0
-X_CFLAGS =  -I/usr/X11R6/include
-X_EXTRA_LIBS = 
-X_LIBS =  -L/usr/X11R6/lib
-X_PRE_LIBS =  -lSM -lICE
-_am_include = include
-_am_quote = 
-install_sh = config/install-sh
+OBJEXT = @OBJEXT@
+PACKAGE = @PACKAGE@
+RANLIB = @RANLIB@
+SHARED_VERSION_INFO = @SHARED_VERSION_INFO@
+STRIP = @STRIP@
+VERSION = @VERSION@
+X_CFLAGS = @X_CFLAGS@
+X_EXTRA_LIBS = @X_EXTRA_LIBS@
+X_LIBS = @X_LIBS@
+X_PRE_LIBS = @X_PRE_LIBS@
+_am_include = @_am_include@
+_am_quote = @_am_quote@
+install_sh = @install_sh@
 
 EXTRA_SCRIPTS = mkcompl  mkhtml  mknroff  mktex 
 

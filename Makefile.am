@@ -50,11 +50,11 @@ rpm:
 	  rpmdir/SPECS \
 	  rpmdir/SOURCES \
 	  rpmdir/SRPMS \
-	  rpmdir/RPMS/i386
+	  rpmdir/RPMS/i386 rpmdir/RPMS/i686
 	cp -f $(PACKAGE)-$(VERSION).tar.gz rpmdir/SOURCES
-	rpm --buildroot $$PWD/rpmdir/buildroot --clean -bb $(top_srcdir)/admin/$(PACKAGE).spec --define "_topdir $$PWD/rpmdir" 
+	$(RPM) --buildroot $$PWD/rpmdir/buildroot --clean -ba $(top_srcdir)/admin/$(PACKAGE).spec --define "_topdir $$PWD/rpmdir" 
 	@echo "========================================================"
-	@echo "Finished - packages are located under rpmdir/RPMS/i386 !"
+	@echo "Finished - packages are located under rpmdir/RPMS !"
 
 
 # Dont try to make rpm and mpi-rpm in parallel.
@@ -64,11 +64,11 @@ mpi-rpm:
 	  rpmdir/SPECS \
 	  rpmdir/SOURCES \
 	  rpmdir/SRPMS \
-	  rpmdir/RPMS/i386
+	  rpmdir/RPMS/i386 rpmdir/RPMS/i686
 	cp -f $(PACKAGE)-$(VERSION).tar.gz rpmdir/SOURCES/$(PACKAGE)-mpi-$(VERSION).tar.gz
-	rpm --buildroot $$PWD/rpmdir/buildroot-mpi --clean -bb rpm_build/SPECS/$(PACKAGE)-mpi.spec --define "_topdir $$PWD/rpmdir"
+	$(RPM) --buildroot $$PWD/rpmdir/buildroot-mpi --clean -ba rpm_build/SPECS/$(PACKAGE)-mpi.spec --define "_topdir $$PWD/rpmdir"
 	@echo "========================================================"
-	@echo "Finished - packages are located under rpmdir/RPMS/i386 !"
+	@echo "Finished - packages are located under rpmdir/RPMS/ !"
 
 CLEANFILES = *~ \\\#* 
 
