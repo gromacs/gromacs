@@ -1,4 +1,4 @@
-\subsection{ General}
+\subsection{General}
 
 Default values are given in parentheses. The first option is
 always the default option. Units are given in square brackets The
@@ -8,7 +8,7 @@ A sample {\tt .mdp} file is
 available. This should be appropriate to start a normal
 simulation. Edit it to suit your specific needs and desires. 
 
-\subsection{ Preprocessing}
+\subsection{Preprocessing}
 \begin{description}
 \item[{\bf title:}]\mbox{}\\
 this is reduntant, so you can type anything you want
@@ -33,7 +33,7 @@ position restraints.
 \end{description}
 \end{description}
 
-\subsection{ Run control}
+\subsection{Run control}
 \begin{description}
 \item[{\bf integrator:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
@@ -70,7 +70,7 @@ if negative: frequency for center of mass motion and rotational
 motion removal (should only be used for vacuum simulations)
 \end{description}
 
-\subsection{ Langevin dynamics}
+\subsection{Langevin dynamics}
 \begin{description}
 \item[{\bf ld\_temp: }(300) {[K]}]\mbox{}\\
 temperature in ld run (controls thermal noise level)
@@ -82,30 +82,34 @@ when {\bf ld\_seed} is set to -1, the seed is calculated as
 {\tt (time() + getpid()) \% 65536}
 \end{description}
 
-\subsection{ Energy minimization}
+\subsection{Energy minimization}
 \begin{description}
-\item[{\bf emtol: }(1.0) {[kJ mol$^{-1}$ nm$^{-1}$]}]\mbox{}\\
+\item[{\bf emtol: }(100.0) {[kJ mol$^{-1}$ nm$^{-1}$]}]\mbox{}\\
 the minimization is converged when the maximum force is smaller than 
 this value
-\item[{\bf emstep: }(0.1) {[nm]}]\mbox{}\\
+\item[{\bf emstep: }(0.01) {[nm]}]\mbox{}\\
 initial step-size
 \item[{\bf nstcgsteep: }(1000) {[steps]}]\mbox{}\\
 frequency of performing 1 steepest descent step while doing
 conjugate gradient energy minimization.
 \end{description}
 
-\subsection{ Output control}
+\subsection{Output control}
 \begin{description}
 \item[{\bf nstxout: }(100) {[steps]}]\mbox{}\\
-frequency to write coordinates to output trajectory
+frequency to write coordinates to output trajectory,
+the last coordinates are always written
 \item[{\bf nstvout: }(100) {[steps]}]\mbox{}\\
-frequency  to write velocities to output trajectory
+frequency  to write velocities to output trajectory,
+the last velocities are always written
 \item[{\bf nstfout: }(0) {[steps]}]\mbox{}\\
-frequency to write forces to output trajectory
+frequency to write forces to output trajectory.
 \item[{\bf nstlog: }(100) {[steps]}]\mbox{}\\
-frequency to write energies to log file
+frequency to write energies to log file,
+the last energies are always written
 \item[{\bf nstenergy: }(100) {[steps]}]\mbox{}\\
-frequency to write energies to energy file
+frequency to write energies to energy file,
+the last energies are always written
 \item[{\bf nstxtcout: }(0) {[steps]}]\mbox{}\\
 frequency to write coordinates to xtc trajectory
 \item[{\bf xtc\_precision: }(1000) {[real]}]\mbox{}\\
@@ -117,7 +121,7 @@ group(s) to write to xtc trajectory, default the whole system is written
 group(s) to write to energy file
 \end{description}
 
-\subsection{ Neighborsearching}
+\subsection{Neighborsearching}
 \begin{description}
 \item[{\bf nstlist: }(10) {[steps]}]\mbox{}\\
 frequency to update neighborlist
@@ -149,7 +153,7 @@ Selects no box, for use in vacuum simulations.
 cut-off distance for making the neighbor list
 \end{description}
 
-\subsection{ Electrostatics and VdW}
+\subsection{Electrostatics and VdW}
 \begin{description}
 \item[{\bf coulombtype:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
@@ -158,6 +162,24 @@ Twin range cut-off's with neighborlist cut-off {\bf rlist} and
 Coulomb cut-off {\bf rcoulomb},
 where {\bf rlist} {\tt $<$} {\bf rvdw} {\tt $<$} {\bf rcoulomb}.
 The dielectric constant is set with {\bf epsilon\_r}.
+\item[{\bf Ewald}]\mbox{}\\
+Classical Ewald sum electrostatics. Use e.g. {\bf rlist}=0.9,
+{\bf rvdw}=0.9, {\bf rcoulomb}=0.9. The highest magnitude of
+wavevectors used in reciprocal space is controlled by {\bf fourierspacing}.
+The relative accuracy of direct/reciprocal space
+is controlled by {\bf ewald\_rtol}. NOTE: Ewald scales as O(N$^{3/2}$)) and
+is thus extremely slow for large systems. It is included mainly for
+reference - in most cases PME will perform much better.
+\item[{\bf PME} ]\mbox{}\\
+Fast Particle-Mesh Ewald electrostatics. Direct space is similar
+to the Ewald sum, while the reciprocal part is performed with
+FFTs. Grid dimensions are controlled with {\bf fourierspacing} and the
+interpolation order with {\bf pme\_order}. With a grid spacing of 0.1
+nm and cubic interpolation the electrostatic forces have an accuracy
+of 2-3e-4. Since the error from the vdw-cutoff is larger than this you
+might try 0.15 nm. When running in parallel the interpolation
+parallelizes better than the FFT, so try decreasing grid dimensions
+while increasing interpolation.
 \item[{\bf PPPM}]\mbox{}\\
 Particle-Particle Particle-Mesh algorithm for long range
 electrostatic interactions.
@@ -167,26 +189,7 @@ and {\bf rvdw}{\tt =1.0}. The grid
 dimensions are controlled by {\bf fourierspacing}.
 Reasonable grid spacing for PPPM is 0.05-0.1 nm.
 See {\tt Shift} for the details of the particle-particle potential.
-NOTE: Pressure scaling is not possible with PPPM.
-\item[{\bf Ewald}]\mbox{}\\
-Classical Ewald sum electrostatics. Use e.g. {\bf rlist}=0.9,
-{\bf rvdw}=0.9, {\bf rcoulomb}=0.9. The highest magnitude of
-wavevectors used in reciprocal space is controlled by
-{\bf fourier\_nx}, {\bf fourier\_ny}, {\bf fourier\_nz}. Reasonable
-values are about 2 for each nm of box size. The relative accuracy of direct/reciprocal space
-is controlled by {\bf ewald\_rtol}. NOTE: Ewald scales as O(N$^{3/2}$) and
-is thus extremely slow for large systems. It is included mainly for
-reference - in most cases PME will perform much better.
-\item[{\bf PME} ]\mbox{}\\
-Fast Particle-Mesh Ewald electrostatics. Direct space is similar
-to the Ewald sum, while the reciprocal part is performed with
-FFTs. Grid dimensions are controlled as for PPPM, and the
-interpolation order with {\bf pme\_order}. With a grid spacing of 0.1
-nm and (cubic interpolation) the electrostatic forces have an accuracy
-of 2-3e-4. Since the error from the vdw-cutoff is larger than this you
-might try 0.15 nm. When running in parallel the interpolation
-parallelizes better than the FFT, so try decreasing grid dimensions
-while increasing interpolation.
+NOTE: the pressure in incorrect when using PPPM.
 \item[{\bf Reaction-Field}]\mbox{}\\
 Reaction field with Coulomb cut-off {\bf rcoulomb},
 where {\bf rcoulomb} {\tt $>$} {\bf rvdw} {\tt $>$} {\bf rlist}.
@@ -260,12 +263,12 @@ don't apply any correction
 \item[{\bf yes}]\mbox{}\\
 apply long range dispersion corrections for Energy and Pressure
 \end{description}
-\item[{\bf gauss\_width }(0.1)]\mbox{}\\
-for future use
 \item[{\bf fourierspacing: }(0.12) {[nm]}]\mbox{}\\
 The maximum grid spacing for the FFT grid when using PPPM or PME.
-Each direction can be overriden by entering a non-zero value for
-{\bf fourier\_n*}.
+For ordinary Ewald the spacing times the box dimensions determines the
+highest magnitude to use in each direction. In all cases
+each direction can be overriden by entering a non-zero value for
+{\bf fourier\_n*}. 
 \item[{\bf fourier\_nx }(0){\bf  ; fourier\_ny }(0){\bf  ; fourier\_nz: }(0)]\mbox{}\\
 Highest magnitude of wavevectors in reciprocal space when using Ewald.
 Grid size when using PPPM or PME. These values override
@@ -289,7 +292,7 @@ at start.
 \end{description}
 \end{description}
 
-\subsection{ Temperature coupling}
+\subsection{Temperature coupling}
 \begin{description}
 \item[{\bf tcoupl:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
@@ -311,7 +314,7 @@ time constant for coupling (one for each group in tc\_grps)
 reference temperature for coupling (one for each group in tc\_grps)
 \end{description}
 
-\subsection{ Pressure coupling}
+\subsection{Pressure coupling}
 \begin{description}
 \item[{\bf pcoupl:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
@@ -352,11 +355,12 @@ memory for running average to couple
 time constant for coupling
 \item[{\bf compressibility: }[bar$^{-1}$]]\mbox{}\\
 compressibility (NOTE: this is now really in bar$^{-1}$)
+For water at 1 atm and 300 K the compressibility is 4.5e-5 [bar$^{-1}$].
 \item[{\bf ref\_p: }[bar]]\mbox{}\\
 reference pressure for coupling
 \end{description}
 
-\subsection{ Simulated annealing}
+\subsection{Simulated annealing}
 \begin{description}
 \item[{\bf annealing:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
@@ -380,7 +384,7 @@ FAQ for a schematic
 graph of temperature vs. time.
 \end{description}
 
-\subsection{ Velocity generation}
+\subsection{Velocity generation}
 \begin{description}
 \item[{\bf gen\_vel:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
@@ -398,7 +402,7 @@ temperature for Maxwell distribution
 used to initialize random generator for random velocities
 \end{description}
 
-\subsection{ Solvent optimization}
+\subsection{Solvent optimization}
 \begin{description}
 \item[{\bf solvent\_optimization:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
@@ -414,7 +418,7 @@ Number of atoms in solvent model.
 (Not implemented for non-three atom models)
 \end{description}
 
-\subsection{ Bonds}
+\subsection{Bonds}
 \begin{description}
 \item[{\bf constraints:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
@@ -474,7 +478,7 @@ bonds are represented by a morse potential
 \end{description}
 \end{description}
 
-\subsection{ NMR refinement}
+\subsection{NMR refinement}
 \begin{description}
 \item[{\bf disre:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
@@ -514,7 +518,7 @@ of all atom pairs involved in restraints to the energy file
 (can make the energy file very large)
 \end{description}
 
-\subsection{ Free energy}
+\subsection{Free energy}
 \begin{description}
 \item[{\bf free\_energy:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
@@ -532,7 +536,7 @@ starting value for lambda
 increase per timestep for lambda
 \end{description}
 
-\subsection{ Non-equilibrium MD}
+\subsection{Non-equilibrium MD}
 \begin{description}
 \item[{\bf acc\_grps: }]\mbox{}\\
 groups for constant acceleration (e.g.: {\tt Protein Sol})
@@ -555,15 +559,21 @@ can move only in Z direction. The particles in the second group can
 move in any direction).
 \end{description}
 
-\subsection{ Electric fields}
+\subsection{Electric fields}
 \begin{description}
-\item[{\bf E\_x }(0) [V nm$^{-1}$]{\bf  ; E\_y }(0) [V nm$^{-1}$]{\bf  ; E\_z: }(0) {[V nm$^{-1}$]}]\mbox{}\\
-strength of constant electric field in resp. X, Y and Z direction
-\item[{\bf E\_xt }{\bf  ; E\_yt }{\bf  ; E\_zt: }]\mbox{}\\
+\item[{\bf E\_x ; E\_y ; E\_z:}]\mbox{}\\
+If you want to use an electric field in a direction, enter 3 numbers
+after the appropriate E\_*, the first number: the number of cosines,
+only 1 is implemented (with frequency 0) so enter 1,
+the second number: the strength of the electric field in
+V nm$^{-1}$,
+the third number: the phase of the cosine, you can enter any number here
+since a cosine of frequency zero has no phase.
+\item[{\bf E\_xt }{\bf  ;  E\_yt }{\bf  ;  E\_zt: }]\mbox{}\\
 not implemented yet
 \end{description}
 
-\subsection{ User defined thingies}
+\subsection{User defined thingies}
 \begin{description}
 \item[{\bf user1\_grps }{\bf  ; user2\_grps }{\bf  ; user3\_grps: }]\mbox{}\\
 \item[{\bf userint1 }(0){\bf  ; userint2 }(0){\bf  ; userint3 }(0){\bf  ; userint4: }(0)]\mbox{}\\
