@@ -92,10 +92,9 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   char err_buf[256];
 
   /* SHAKE / LINCS */
-  if ( (opts->nshake > 0) && (ir->eI != eiMD) && (ir->eI != eiLD) ) {
-    fprintf(stderr,"Turning off constraints for %s simulation\n",EI(ir->eI));
-    opts->nshake=0;
-  }
+  sprintf(err_buf,"constraints with Conjugate Gradients not implemented");
+  CHECK((opts->nshake > 0) && (ir->eI == eiCG));
+
   if ( (opts->nshake > 0) && (opts->bMorse) ) {
     sprintf(warn_buf,
 	    "Using morse bond-potentials while constraining bonds is useless");
