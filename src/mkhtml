@@ -3,40 +3,38 @@
 setenv VER 	2.0
 setenv HTML	$GMXHOME/html
 if ( ! -d $HTML ) mkdir $HTML
-setenv GIFDIR   $HTML/gif
-if ( -f $GIFDIR/rainbow.gif ) then
-  setenv HR	'<IMG SRC="gif/rainbowsmall.gif" WIDTH=100% HEIGTH=7 >'
-else
-  setenv HR	'<HR>'
-endif
-setenv HTMLOL   $HTML/online$VER
+setenv MANDIR   online$VER
+setenv HTMLOL   $HTML/$MANDIR
 if ( ! -d $HTMLOL ) mkdir $HTMLOL
-setenv	INDEX	$HTML/online_index$VER.html
+setenv	INDEX	$HTML/online$VER.html
 if ( -f $INDEX ) \rm $INDEX
 
 cat > $INDEX << EOD
-<html>
-<h1>Index</h1>
-$HR
+<HTML>
+<TITLE>GROMACS $VER manual </TITLE>
+<BODY>
+<H1>GROMACS $VER manual</H1>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=10>
+<TR>
+<TD VALIGN=top WIDTH="25%">
 <h3>General</h3>
-<p>
-<li><A HREF="changes$VER.html" TARGET="bottom" >New features</a>
-<p>
-<li><A HREF="online$VER/getting_started.html" TARGET="bottom" >Getting Started</a>
-<p>
-<li><A HREF="online$VER/flow.html" TARGET="right" >Flow chart</a>
-<p>
-<li><A HREF="online$VER/files.html" TARGET="right" >File formats</a>
-<p>
-<li><A HREF="online$VER/mdp_opt.html" TARGET="right" >mdp options</a>
-<p>
-<li><A HREF="online$VER/count.html" TARGET="right" >Top of the pops</a>
-</ul>
-$HR
+<A HREF="changes$VER.html">New features</a>
+<br>
+<br><A HREF="$MANDIR/getting_started.html">Getting Started</a>
+<br>
+<br><A HREF="$MANDIR/flow.html" >Flow chart</a>
+<br>
+<br><A HREF="$MANDIR/files.html" >File formats</a>
+<br>
+<br><A HREF="$MANDIR/mdp_opt.html" >mdp options</a>
+<br>
+<br><A HREF="$MANDIR/count.html" >Top of the pops</a>
+</TD>
+<TD VALIGN=top WIDTH="75%">
 <h3>Programs</h3>
-<p>
-<li><A HREF="online$VER/general.html" TARGET="right" >General</a>
-<p>
+<multicol cols=5> 
+<A HREF="$MANDIR/options.html" >Options</a>
+<br>
 EOD
 
 cd 	$GMXHOME/bin/$CPU
@@ -46,7 +44,7 @@ foreach i ( * )
     cd $HTMLOL
     $GMXHOME/bin/$CPU/$i -quiet -man 2 >& /dev/null
       cat >> $INDEX << EOK
-<li><a href="online$VER/$i.html" TARGET="right">$i</a>
+<br><a href="$MANDIR/$i.html">$i</a>
 EOK
     endif
     cd 	$GMXHOME/bin/$CPU
@@ -54,11 +52,15 @@ EOK
 end
 
 cat >> $INDEX << EOM
-<p>
-$HR
+</multicol>
+</TD>
+</TR>
+</TABLE>
+</BODY>
 </HTML>
 EOM
 
+echo ""
 echo "New html pages in $HTML (file:/$INDEX)"
 
 #last line
