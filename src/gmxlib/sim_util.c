@@ -222,9 +222,9 @@ void do_force(FILE *log,t_commrec *cr,
     where();    
     if (PAR(cr))
       move_cgcm(log,cr,fr->cg_cm,nsb->cgload);
-#ifdef DEBUG
-    pr_rvecs(log,0,"cgcm",fr->cg_cm,nsb->cgtotal);
-#endif
+    if (debug)
+      pr_rvecs(debug,0,"cgcm",fr->cg_cm,nsb->cgtotal);
+
   }
   where();
   if (PAR(cr)) 

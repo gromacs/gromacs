@@ -59,29 +59,31 @@ static void init_grpstat(FILE *log,
   int i,j,grp;
 
   /* First reset and count the number of atoms... */
-  for(j=0; (j<md->nr); j++) {
-    grp=md->cACC[j];
-    assert((grp >= 0) && (grp < ngacc));
-    gstat[grp].nat++;
-    gstat[grp].M+=md->massT[j];
-  }
-
-  for(i=0; (i<ngacc); i++) {
-    /* Now allocate memory and fill the groups */
+  if (ngacc > 0) {
+    for(j=0; (j<md->nr); j++) {
+      grp=md->cACC[j];
+      assert((grp >= 0) && (grp < ngacc));
+      gstat[grp].nat++;
+      gstat[grp].M+=md->massT[j];
+    }
+    
+    for(i=0; (i<ngacc); i++) {
+      /* Now allocate memory and fill the groups */
 #ifdef DEBUG
-    fprintf(log,"gstat[%d] has %d atoms\n",i,gstat[i].nat);
+      fprintf(log,"gstat[%d] has %d atoms\n",i,gstat[i].nat);
 #endif
-    snew(gstat[i].aid,gstat[i].nat);
-    gstat[i].nat=0;
-  }
-  for(j=0; (j<md->nr); j++) {
-    grp=md->cACC[j];
-    gstat[grp].aid[gstat[grp].nat++]=j;
-  }
+      snew(gstat[i].aid,gstat[i].nat);
+      gstat[i].nat=0;
+    }
+    for(j=0; (j<md->nr); j++) {
+      grp=md->cACC[j];
+      gstat[grp].aid[gstat[grp].nat++]=j;
+    }
 #ifdef DEBUG
-  for(i=0; (i<ngacc); i++) 
-    fprintf(log,"gstat[%d] has %d atoms\n",i,gstat[i].nat);
+    for(i=0; (i<ngacc); i++) 
+      fprintf(log,"gstat[%d] has %d atoms\n",i,gstat[i].nat);
 #endif
+  }
 }
 
 static void init_grpener(FILE *log,int ngener,t_grp_ener *estat)

@@ -43,7 +43,7 @@ HAVE_MOTIF	= yes
 #
 
 # Dec C compilers
-ALLOPT		= -O5 -tune host -fast -math_library fast  -unroll 2 -arch host -pipeline -fp_reorder -inline all 
+ALLOPT		= -O5 -tune host -fast -math_library fast  -unroll 2 -arch host -pipeline -fp_reorder #-inline all 
 #ALLOPT		= -g
 # If you have cc.alt installed you can use it, it gives faster code
 # but is not guaranteed by DEC (let alone by the GROMACS crew)

@@ -705,7 +705,7 @@ bool fn2bTPX(char *file)
 }
 
 bool read_tps_conf(char *infile,char *title,t_topology *top, 
-		   t_atoms **atoms,rvec **x,rvec **v,matrix box,bool bMass)
+		   rvec **x,rvec **v,matrix box,bool bMass)
 {
   t_tpxheader  header;
   real         t,lambda;

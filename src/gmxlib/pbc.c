@@ -244,7 +244,7 @@ void put_atoms_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
     cgx=cgy=cgz=0;
     for(k=k0; (k<k1); k++)  {
       ai=cga[k];
-
+      
       cgx += inv_ncg*pos[ai][XX];
       cgy += inv_ncg*pos[ai][YY];
       cgz += inv_ncg*pos[ai][ZZ];

@@ -45,7 +45,7 @@ static char *pdbtp[epdbNR]={
   "COMPND", "ENDMDL", "TER", "HEADER", "TITLE", "REMARK" 
 };
 
-static char *pdbformat="%6s%5d  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n";
+static char *pdbformat ="%6s%5d  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n";
 static char *pdbformat4="%6s%5d %-4.4s %3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n";
 /* This is THE format */
 static char *anisouformat="%6s%5d %-4.4s %3.3s %c%4d  %-6d%-6d%-6d%-6d%-6d%-6d  %3s%-2s%2s\n";

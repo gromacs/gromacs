@@ -189,7 +189,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 		(top->idef.il[i].nr > 0));
 
   /* Initiate forcerecord */
-  fr=mk_forcerec();
+  fr = mk_forcerec();
   init_forcerec(stdlog,fr,&(parm->ir),&(top->blocks[ebMOLS]),cr,
 		&(top->blocks[ebCGS]),&(top->idef),mdatoms,parm->box,FALSE);
   /* Initiate box */
@@ -279,12 +279,12 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   }
 }
 
-void init_md(t_commrec *cr,
-	     t_inputrec *ir,real *t,real *t0,real *lambda,real *lam0,real *SAfactor,
+void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
+	     real *lambda,real *lam0,real *SAfactor,
 	     t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
 	     int nfile,t_filenm fnm[],char **traj,char **xtc_traj,int *fp_ene,
-	     t_mdebin **mdebin,t_groups *grps,rvec vcm,tensor force_vir,tensor shake_vir,
-	     t_mdatoms *mdatoms)
+	     t_mdebin **mdebin,t_groups *grps,rvec vcm,
+	     tensor force_vir,tensor shake_vir,t_mdatoms *mdatoms)
 {
   bool bBHAM,b14,bLR;
   
@@ -336,8 +336,8 @@ void init_md(t_commrec *cr,
   where();
 }
 
-void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,t_graph *graph,
-		  rvec x[])
+void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,
+		  t_graph *graph,rvec x[])
 {
   fprintf(log,"Removing pbc first time\n");
   calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);

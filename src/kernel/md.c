@@ -64,8 +64,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   /* Initial values */
   init_md(cr,&parm->ir,&t,&t0,&lambda,&lam0,&SAfactor,&mynrnb,&bTYZ,top,
-	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&mdebin,grps,vcm,force_vir,shake_vir,
-	  mdatoms);
+	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&mdebin,grps,vcm,
+	  force_vir,shake_vir,mdatoms);
   
   /* Remove periodicity */  
   do_pbc_first(log,parm,box_size,fr,graph,x);
@@ -149,7 +149,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
 
     /* Set values for invmass etc. */
-    init_mdatoms(mdatoms,lambda,FALSE);
+    init_mdatoms(mdatoms,lambda,(step==0));
 
     /* Calculate total dipole moment if necessary */    
     calc_mu(nsb,x,mdatoms->chargeT,mu_tot);
