@@ -42,7 +42,6 @@ static char *SRCID_wman_c = "$Id$";
 #include "strdb.h"
 #include "time.h"
 #include "readinp.h"
-#include "javaio.h"
 
 typedef struct {
   char *search,*replace;
@@ -658,8 +657,6 @@ void write_man(FILE *out,char *mantp,
     write_ttyman(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs,FALSE);
   if (strcmp(mantp,"html")==0)
     write_htmlman(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs);
-  if (strcmp(mantp,"java")==0)
-    write_java(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs);
   if (strcmp(mantp,"completion-zsh")==0)
     write_zshcompl(out,nfile,fnm,npar,par);
   if (strcmp(mantp,"completion-bash")==0)
