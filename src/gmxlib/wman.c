@@ -439,7 +439,7 @@ static void write_htmlman(FILE *out,
       fprintf(out,
 	      "<TR>"
 	      "<TD ALIGN=RIGHT> <b><tt>%s</tt></b> </TD>"
-	      "<TD ALIGN=RIGHT> <a href=\"%s.html\">%12s</a> </TD>"
+	      "<TD ALIGN=RIGHT> <tt><a href=\"%s.html\">%12s</a></tt> </TD>"
 	      "<TD> %s </TD>"
 	      "<TD> %s </TD>"
 	      "</TR>\n",
