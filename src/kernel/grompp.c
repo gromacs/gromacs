@@ -68,14 +68,61 @@ static char *SRCID_grompp_c = "$Id$";
 #include "calcgrid.h"
 #include "add_par.h"
 
-static int *shuffle_xv(char *ndx,bool bSort,bool bVerbose,
+static void write_deshufndx(char *ndx,int *forward,t_atoms *atoms)
+{
+  FILE *out;
+  int  *backward;
+  int  i,j,natoms;
+  bool bXTC;
+
+  natoms = atoms->nr;
+
+  /* Now make an inverse shuffle index:
+   * this transforms the new order into the original one...
+   */
+  snew(backward,natoms);
+  for(i=0; i<natoms; i++)
+    backward[forward[i]] = i;
+    
+  /* Make an index file for deshuffling the atoms */
+  out=ffopen(ndx,"w");
+  fprintf(out,"[ DeShuffle ]\n");
+  bXTC = FALSE;
+  j = 0;
+  for(i=0; i<natoms; i++) {
+    fprintf(out,"  %d",backward[i]);
+    j++;
+    if (j % 10 == 0)
+      fprintf(out,"\n");
+    bXTC = bXTC || (atoms->atom[i].grpnr[egcXTC] > 0);
+  }
+  if (j % 10)
+    fprintf(out,"\n");
+  if (bXTC) {
+    fprintf(out,"[ DeShuffle_xtc ]\n");
+    j = 0;
+    for(i=0; i<natoms; i++)
+      if (atoms->atom[backward[i]].grpnr[egcXTC] == 0) {
+	fprintf(out,"  %d",backward[i]);
+	j++;
+	if (j % 10 == 0)
+	  fprintf(out,"\n");
+      }
+    if (j % 10)
+      fprintf(out,"\n");
+  }
+  ffclose(out);
+  
+  sfree(backward);
+}
+
+static int *shuffle_xv(bool bSort,bool bVerbose,
 		       int ntab,int *tab,int nmol,t_molinfo *mol,
 		       int natoms,rvec *x,rvec *v,
 		       int Nsim,t_simsystem Sims[])
 {
-  FILE *out;
   rvec *xbuf,*vbuf;
-  int  *nindex,**index,xind,*done,*forward,*backward;
+  int  *nindex,**index,xind,*done,*forward;
   int  i,j,j0,k,n,mi,nnat;
 
   fprintf(stderr,"Entering shuffle_xv\n");
@@ -183,22 +230,6 @@ static int *shuffle_xv(char *ndx,bool bSort,bool bVerbose,
   sfree(xbuf);
   sfree(vbuf);
   
-  /* Now make an inverse shuffle index:
-   * this transforms the new order into the original one...
-   */
-  snew(backward,natoms);
-  for(i=0; (i<natoms); i++)
-    backward[forward[i]] = i;
-    
-  /* Make an index file for deshuffling the atoms */
-  out=ffopen(ndx,"w");
-  fprintf(out,"1  %d\nDeShuffle  %d\n",natoms,natoms);
-  for(i=0; (i<natoms); i++)
-    fprintf(out,"  %d",backward[i]);
-  fprintf(out,"\n");
-  ffclose(out);
-  
-  sfree(backward);
   for(i=0; (i<nmol); i++)
     sfree(index[i]);
   sfree(index);
@@ -315,7 +346,6 @@ static void check_vel(t_atoms *atoms,rvec v[])
 }
 
 static int *new_status(char *topfile,char *topppfile,char *confin,
-		       char *ndxout,
 		       t_gromppopts *opts,t_inputrec *ir,
 		       bool bGenVel,bool bVerbose,
 		       bool bSort,int *natoms,
@@ -394,7 +424,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
     if (ntab > 0) {
       if (bVerbose)
 	fprintf(stderr,"Shuffling coordinates...\n");
-      forward=shuffle_xv(ndxout,bSort,bVerbose,
+      forward=shuffle_xv(bSort,bVerbose,
 			 ntab,tab,nrmols,molinfo,
 			 *natoms,*x,*v,Nsim,Sims);
     }
@@ -701,7 +731,10 @@ int main (int argc, char *argv[])
     "work. The -shuffle option does just that. For a single protein",
     "in water this does not make a difference, however for a system where",
     "you have many copies of different molecules  (e.g. liquid mixture",
-    "or membrane/water system) the option is definitely a must.[PAR]",
+    "or membrane/water system) the option is definitely a must.",
+    "The output trajectories will also be shuffled. [TT]grompp[tt] writes",
+    "an index file (option [TT]-deshuf[tt]) which can be used with",
+    "[TT]trjconv[tt] to deshuffle the trajectories.[PAR]",
     
     "A further optimization for parallel systems is the [TT]-sort[tt]",
     "option which sorts molecules according to coordinates. This must",
@@ -851,7 +884,6 @@ int main (int argc, char *argv[])
   if (!fexist(fn)) 
     fatal_error(0,"%s does not exist",fn);
   forward=new_status(fn,opt2fn_null("-pp",NFILE,fnm),opt2fn("-c",NFILE,fnm),
-		     opt2fn("-deshuf",NFILE,fnm),
 		     opts,ir,bGenVel,bVerbose,bSort,&natoms,&x,&v,box,
 		     &atype,sys,&msys,plist,bShuffle ? nnodes : 1,
 		     (opts->eDisre==edrEnsemble),opts->bMorse,
@@ -940,6 +972,8 @@ int main (int argc, char *argv[])
   
   if (debug)
     pr_symtab(debug,0,"After index",&sys->symtab);
+  if (forward)
+    write_deshufndx(opt2fn("-deshuf",NFILE,fnm),forward,&(sys->atoms));
   triple_check(mdparin,ir,sys,&nerror);
   close_symtab(&sys->symtab);
   if (debug)
