@@ -104,3 +104,8 @@ char *enbf_names[eNBF_NR+1] = {
 char *ecomb_names[eCOMB_NR+1] = {
   "", "Arithmetic", "Geometric", "ArithSigEps", NULL
 };
+
+char *gtypes[egcNR+1] = {
+  "T-Coupling", "Energy Mon.", "Acceleration", "Freeze",
+  "User1", "User2", "User3", "XTC", NULL
+};
