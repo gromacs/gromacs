@@ -237,7 +237,7 @@ t_border *mk_border(bool bVerbose,int nprocs,t_block *cgs,
   ic   = 0;
   is   = 0;
   while ((ic < cgs->nr) || (is < shakes->nr)) {
-    ac  = cgs->a[cgs->index[ic]];
+    ac  = (ic == cgs->nr) ? cgs->nra : cgs->a[cgs->index[ic]];
     as  = (is == shakes->nr) ? shakes->nra : shakes->a[shakes->index[is]];
     as0 = (is == 0) ? 0 : (shakes->a[shakes->index[is]-1]); 
     if (debug)
