@@ -1017,6 +1017,6 @@ void force(FILE       *fp,     int        step,
     pr_rvecs(debug,0,"fshift after bondeds",fr->fshift,SHIFTS);
   
   for(i=0; (i<F_EPOT); i++)
-    if (i != F_DISRES)
+    if (i != F_DISRESVIOL && i != F_ORIRESDEV && i != F_DIHRESVIOL)
       epot[F_EPOT]+=epot[i];
 }
