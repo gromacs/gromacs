@@ -62,6 +62,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 {
   t_mdebin   *mdebin;
   int        fp_ene=0,fp_trn=0,step;
+  FILE       *fp_dvdl;
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
   bool       bNS,bStopCM,bStopRot,bTYZ,bRerunMD,bNotLastFrame=FALSE,bLastStep;
@@ -84,7 +85,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   /* Initial values */
   init_md(cr,&parm->ir,&t,&t0,&lambda,&lam0,&SAfactor,&mynrnb,&bTYZ,top,
-	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&mdebin,grps,vcm,
+	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dvdl,&mdebin,grps,vcm,
 	  force_vir,shake_vir,mdatoms);
   debug_gmx();
   
@@ -151,7 +152,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	       (bRerunMD && bNotLastFrame)); step++) {
 	       
     bLastStep=(step==parm->ir.nsteps);
-    
+
     /* for rerun MD always do Neighbour Searching */
     if (bRerunMD) 
       bNS = TRUE;
@@ -329,7 +330,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		  fr,mdatoms->nr,parm->box,parm->pres,parm->vir,ener);
     
     if (MASTER(cr))
-      upd_mdebin(mdebin,mdatoms->tmass,step,ener,parm->box,shake_vir,
+      upd_mdebin(mdebin,fp_dvdl,mdatoms->tmass,step,t,ener,parm->box,shake_vir,
 		 force_vir,parm->vir,parm->pres,grps,mu_tot);
     debug_gmx();
     

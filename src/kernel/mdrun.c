@@ -66,6 +66,8 @@ int main(int argc,char *argv[])
     "When running in parallel with PVM or an old version of MPI the",
     "[TT]-np[tt] option must be given to indicate the number of",
     "processors.[PAR]",
+    "The option [TT]-dvdl[tt] is only used when free energy perturbation is",
+    "turned on.[PAR]",
     "With [TT]-rerun[tt] an input trajectory can be given for which ",
     "forces and energies will be (re)calculated.[PAR]",
     "ED (essential dynamics) sampling is switched on by using the [TT]-ei[tt]",
@@ -93,6 +95,7 @@ int main(int argc,char *argv[])
     { efSTO, "-c", "confout", ffWRITE },
     { efENX, "-e", "ener",    ffWRITE },
     { efLOG, "-g", "md",      ffWRITE },
+    { efXVG, "-dvdl", "dvdl", ffOPTWR },
     { efTRX, "-rerun", "rerun", ffOPTRD },
     /* function "optRerunMDset" (in runner.c) checks if -rerun is specified */
     /* { efHAT, "-hat","ghat",   ffOPTRD }, currently useless */

@@ -330,7 +330,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	      count,ustep,Epot[TRY],Fmax[TRY],(Epot[TRY]<Epot[Min])?'\n':'\r');
       if (Epot[TRY] < Epot[Min]) {
 	/* Store the new (lower) energies  */
-	upd_mdebin(mdebin,mdatoms->tmass,count,ener,parm->box,shake_vir, 
+	upd_mdebin(mdebin,NULL,mdatoms->tmass,count,(real)count,
+		   ener,parm->box,shake_vir, 
 		   force_vir,parm->vir,parm->pres,grps,mu_tot); 
 	/* Print the energies allways when we should be verbose  */
 	if (MASTER(cr)) 
