@@ -71,7 +71,7 @@ void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
     } else
       if (bFirst) {
 	fprintf(stderr,
-		"\nWarning: can not check PBC without a run input file\n");
+		"\nWarning: can not make broken molecules whole without a run input file\n");
 	bFirst=FALSE;
       }
   }
