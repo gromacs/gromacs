@@ -2,10 +2,10 @@
 
 [ COO- ]
 [ replace ]
-C	C	A"	12.011	  0.840
+C	C	Abis	12.011	  0.840
 [ add ]
 2    8    C	  CA   N
-	 O   O"	  15.9994	 -0.920
+	 O   Obis	  15.9994	 -0.920
 [ delete ]
 O
 [ dihedrals ]
@@ -17,7 +17,7 @@ N   C   CA   CB        improper_X_X_C_X
 
 [ COOH ]
 [ replace ]
-C	C	A'	12.011	 0.380
+C	C	Aprime	12.011	 0.380
 O	O	OH	15.9994	-0.380
 [ add ]
 1	2	C	CA	N

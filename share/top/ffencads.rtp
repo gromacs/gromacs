@@ -15,7 +15,7 @@
   HH31     H    0.119     1
   HH32     H    0.119     1
   HH33     H    0.119     1
-     C    A'    0.380     2
+     C    Aprime    0.380     2
      O     O   -0.380     2
  [ bonds ]
    CH3   HH31
@@ -42,7 +42,7 @@
    HB1    H     0.119     2 
    HB2    H     0.119     2 
    HB3    H     0.119     2 
-     C    A'    0.380     3
+     C    Aprime    0.380     3
      O    O    -0.380     3
  [ bonds ]
      N     H
@@ -94,7 +94,7 @@
    NH2    M2   -0.666     8
   HH21    HN    0.533     8
   HH22    HN    0.533     8
-     C    A'    0.380     9
+     C    Aprime    0.380     9
      O    O    -0.380     9
  [ bonds ]
      N     H
@@ -172,7 +172,7 @@
    NH2    M2   -0.666     8
   HH21    HN    0.333     8
   HH22    HN    0.333     8
-     C    A'    0.380     9
+     C    Aprime    0.380     9
      O    O    -0.380     9
  [ bonds ]
      N     H
@@ -234,12 +234,12 @@
     CB    C2   -0.238     2
    HB1    H     0.119     2
    HB2    H     0.119     2
-    CG    A'    0.380     3
+    CG    Aprime    0.380     3
    OD1    O    -0.380     3
    ND2    N2   -0.666     4
   HD21    HN    0.333     4
   HD22    HN    0.333     4
-     C    A'    0.380     5
+     C    Aprime    0.380     5
      O    O    -0.380     5
  [ bonds ]
      N     H
@@ -283,10 +283,10 @@
     CB    C2   -0.238     2
    HB1    H     0.119     2
    HB2    H     0.119     2
-    CG    A"    0.840     3
-   OD1    O"   -0.920     3
-   OD2    O"   -0.920     3
-     C    A'    0.380     4
+    CG    Abis    0.840     3
+   OD1    Obis   -0.920     3
+   OD2    Obis   -0.920     3
+     C    Aprime    0.380     4
      O    O    -0.380     4
  [ bonds ]
      N     H
@@ -326,11 +326,11 @@
     CB    C2   -0.238     2
    HB1    H     0.119     2
    HB2    H     0.119     2
-    CG    A'    0.380     3
+    CG    Aprime    0.380     3
    OD1    O    -0.380     3
    OD2   OH    -0.433     4
    HD2   HO     0.433     4
-     C    A'    0.380     5
+     C    Aprime    0.380     5
      O    O    -0.380     5
  [ bonds ]
      N     H
@@ -374,7 +374,7 @@
    HB1    H     0.119     2
    HB2    H     0.119     2
     SG    S     0.000     3
-     C    A'    0.380     4
+     C    Aprime    0.380     4
      O    O    -0.380     4
  [ bonds ]
      N     H
@@ -412,7 +412,7 @@
    HB2    H     0.119     2
     SG    SH   -0.200     3
     HG    H     0.200     3
-     C    A'    0.380     4
+     C    Aprime    0.380     4
      O    O    -0.380     4
  [ bonds ]
      N     H
@@ -452,7 +452,7 @@
    HB2    H     0.119     2
     SG    SH   -0.200     3
     HG    H     0.200     3
-     C    A'    0.380     4
+     C    Aprime    0.380     4
      O    O    -0.380     4
  [ bonds ]
      N     H
@@ -494,12 +494,12 @@
     CG    C2   -0.238     3
    HG1    H     0.119     3
    HG2    H     0.119     3
-    CD    A'    0.380     4
+    CD    Aprime    0.380     4
    OE1    O    -0.380     4
    NE2    N2   -0.666     5
   HE21    HN    0.333     5
   HE22    HN    0.333     5
-     C    A'    0.380     6
+     C    Aprime    0.380     6
      O    O    -0.380     6
  [ bonds ]
      N     H
@@ -552,10 +552,10 @@
     CG    C2   -0.238     3
    HG1    H     0.119     3
    HG2    H     0.119     3
-    CD    A"    0.840     4
-   OE1    O"   -0.920     4
-   OE2    O"   -0.920     4
-     C    A'    0.380     5
+    CD    Abis    0.840     4
+   OE1    Obis   -0.920     4
+   OE2    Obis   -0.920     4
+     C    Aprime    0.380     5
      O    O    -0.380     5
  [ bonds ]
      N     H
@@ -604,11 +604,11 @@
     CG    C2   -0.238     3
    HG1    H     0.119     3
    HG2    H     0.119     3
-    CD    A'    0.380     4
+    CD    Aprime    0.380     4
    OE1    O    -0.380     4
    OE2    OH   -0.433     5
    HE2    HO    0.433     5
-     C    A'    0.380     6
+     C    Aprime    0.380     6
      O    O    -0.380     6
  [ bonds ]
      N     H
@@ -654,7 +654,7 @@
     CA    C2   -0.238     1
    HA1    H     0.119     1
    HA2    H     0.119     1
-     C    A'    0.380     2
+     C    Aprime    0.380     2
      O    O    -0.380     2
  [ bonds ]
      N     H
@@ -693,7 +693,7 @@
    NE2    L5   -0.400     5
    CD2    A5    0.081     5
    HD2    H     0.119     5
-     C    A'    0.380     6
+     C    Aprime    0.380     6
      O    O    -0.380     6
  [ bonds ]
      N     H
@@ -755,7 +755,7 @@
    NE2    L5   -0.400     5
    CD2    A5    0.081     5
    HD2    H     0.119     5
-     C    A'    0.380     6
+     C    Aprime    0.380     6
      O    O    -0.380     6
  [ bonds ]
      N     H
@@ -817,7 +817,7 @@
    NE2    L5   -0.400     5
    CD2    A5    0.081     5
    HD2    H     0.119     5
-     C    A'    0.380     6
+     C    Aprime    0.380     6
      O    O    -0.380     6
  [ bonds ]
      N     H
@@ -878,7 +878,7 @@
    HE2    HN    0.333     4
    CD2    A5   -0.119     5
    HD2    H     0.119     5 
-     C    A'    0.380     6
+     C    Aprime    0.380     6
      O    O    -0.380     6
  [ bonds ]
      N     H
@@ -939,7 +939,7 @@
    HE2    HN    0.333     4
    CD2    A5   -0.119     5
    HD2    H     0.119     5 
-     C    A'    0.380     6
+     C    Aprime    0.380     6
      O    O    -0.380     6
  [ bonds ]
      N     H
@@ -1002,7 +1002,7 @@
    HE2    HN    0.375     3 
    CD2    A5    0.206     3 
    HD2    H     0.119     3
-     C    A'    0.380     4
+     C    Aprime    0.380     4
      O    O    -0.380     4
  [ bonds ]
      N     H
@@ -1081,7 +1081,7 @@
    HD1    H     0.119     5
    HD2    H     0.119     5
    HD3    H     0.119     5
-     C    A'    0.380     6
+     C    Aprime    0.380     6
      O    O    -0.380     6
  [ bonds ]
      N     H
@@ -1146,7 +1146,7 @@
   HD21    H     0.119     5
   HD22    H     0.119     5
   HD23    H     0.119     5
-     C    A'    0.380     6
+     C    Aprime    0.380     6
      O    O    -0.380     6
  [ bonds ]
      N     H
@@ -1212,7 +1212,7 @@
     NZ    N2   -0.666     6 
    HZ1    HN    0.333     6 
    HZ2    HN    0.333     6 
-     C    A'    0.380     7
+     C    Aprime    0.380     7
      O    O    -0.380     7
  [ bonds ]
      N     H
@@ -1284,7 +1284,7 @@
    HZ1    HN    0.570     6
    HZ2    HN    0.570     6
    HZ3    HN    0.570     6
-     C    A'    0.380     7
+     C    Aprime    0.380     7
      O    O    -0.380     7
  [ bonds ]
      N     H
@@ -1352,7 +1352,7 @@
    HE1    H     0.119     5
    HE2    H     0.119     5
    HE3    H     0.119     5
-     C    A'    0.380     6
+     C    Aprime    0.380     6
      O    O    -0.380     6
  [ bonds ]
      N     H
@@ -1468,7 +1468,7 @@
    HE2    H     0.119     7
    CD2    A6   -0.119     8
    HD2    H     0.119     8
-     C    A'    0.380     9
+     C    Aprime    0.380     9
      O    O    -0.380     9
  [ bonds ]
      N     H
@@ -1533,7 +1533,7 @@
     CD    CP   -0.238     4
    HD1    H     0.119     4
    HD2    H     0.119     4
-     C    A'    0.380     5
+     C    Aprime    0.380     5
      O    O    -0.380     5
  [ bonds ]
      N    CA
@@ -1584,7 +1584,7 @@
    HB2    H     0.119     2
     OG    OH   -0.433     3
     HG    HO    0.433     3
-     C    A'    0.380     4
+     C    Aprime    0.380     4
      O    O    -0.380     4
  [ bonds ]
      N     H
@@ -1627,7 +1627,7 @@
   HG21    H     0.119     4
   HG22    H     0.119     4
   HG23    H     0.119     4
-     C    A'    0.380     5
+     C    Aprime    0.380     5
      O    O    -0.380     5
  [ bonds ]
      N     H
@@ -1686,7 +1686,7 @@
    CE3    A6   -0.119     10
    HE3    H     0.119     10
    CD2    A7    0.000     11
-     C    A'    0.380     12
+     C    Aprime    0.380     12
      O    O    -0.380     12
  [ bonds ]
      N     H
@@ -1770,7 +1770,7 @@
    HE2    H     0.119     8
    CD2    A6   -0.119     9
    HD2    H     0.119     9
-     C    A'    0.380     10
+     C    Aprime    0.380     10
      O    O    -0.380     10
  [ bonds ]
      N     H
@@ -1841,7 +1841,7 @@
   HG21    H     0.119     4
   HG22    H     0.119     4
   HG23    H     0.119     4
-     C    A'    0.380     5
+     C    Aprime    0.380     5
      O    O    -0.380     5
  [ bonds ]
      N     H
