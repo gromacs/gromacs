@@ -36,7 +36,7 @@ static char *SRCID_do_fit_c = "$Id$";
 #include "txtdump.h"
 #include "smalloc.h"
 
-#define EPS  1.0e-09
+#define EPS 1.0e-09
 
 real calc_similar_ind(bool bRho,int nind,atom_id *index,real mass[],
 		      rvec x[],rvec xp[])
@@ -56,15 +56,15 @@ real calc_similar_ind(bool bRho,int nind,atom_id *index,real mass[],
     tm += m;
     for(d=0 ; d<DIM; d++) {
       xd = x[i][d] - xp[i][d];
-      rd += m * xd * xd;
+      rd += m * sqr(xd);
       if (bRho) {
 	xs = x[i][d] + xp[i][d];
-	rs += m * xs * xs;
+	rs += m * sqr(xs);
       }
     }
   }
   if (bRho)
-    return sqrt(rd/rs);
+    return 2*sqrt(rd/rs);
   else
     return sqrt(rd/tm);
 }
@@ -119,11 +119,11 @@ void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
       om[i][j]=0;
     }
   }
-
+  
   /*calculate the matrix U*/
   clear_mat(u);
-  for(n=0;(n<natoms);n++) {
-    if ((mn = w_rls[n]) != 0.0) {
+  for(n=0;(n<natoms);n++)
+    if ((mn = w_rls[n]) != 0.0)
       for(c=0; (c<DIM); c++) {
 	xpc=xp[n][c];
 	for(r=0; (r<DIM); r++) {
@@ -131,8 +131,6 @@ void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
 	  u[c][r]+=mn*xnr*xpc;
 	}
       }
-    }
-  }
   
   /*construct omega*/
   /*omega is symmetric -> omega==omega' */
@@ -141,12 +139,11 @@ void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
       if (r>=DIM && c<DIM) {
         omega[r][c]=u[r-DIM][c];
         omega[c][r]=u[r-DIM][c];
-      }
-      else {
+      } else {
         omega[r][c]=0;
         omega[c][r]=0;
       }
-
+  
   /*determine h and k*/
   jacobi(omega,2*DIM,d,om,&irot);
   /*real   **omega = input matrix a[0..n-1][0..n-1] must be symmetric
@@ -155,11 +152,9 @@ void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
    *real       **v = v[0..n-1][0..n-1] contains the vectors in columns
    *int      *irot = number of jacobi rotations
    */
-
-  if (irot==0) {
-    fprintf(stderr,"IROT=0\n");
-  }
-
+  
+  if (debug && irot==0) fprintf(debug,"IROT=0\n");
+  
   index=0; /* For the compiler only */
 
   /* Copy only the first two eigenvectors */  
