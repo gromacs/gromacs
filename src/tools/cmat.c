@@ -141,7 +141,7 @@ void swap_mat(t_mat *m)
   done_mat(&tmp);
 }
 
-void rms_dist(char *fn,t_mat *rms)
+void rms_distribution(char *fn,t_mat *rms)
 {
   FILE   *fp;
   int    i,j,*histo;
