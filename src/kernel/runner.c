@@ -114,7 +114,7 @@ void finish_run(FILE *log,t_commrec *cr,
 void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 	      bool bCompact,int nDlb,bool bNM,int nstepout,t_edsamyn *edyn)
 {
-  double     cputime,realtime;
+  double     cputime=0,realtime;
   t_parm     *parm;
   rvec       *buf,*f,*vold,*v,*vt,*x,box_size;
   real       *ener;

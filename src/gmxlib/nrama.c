@@ -143,7 +143,7 @@ static void get_dih(t_xrama *xr,t_atoms *atoms)
 static int search_ff(int thisff[NPP],int ndih,int **ff)
 {
   int  j,k;
-  bool bFound;
+  bool bFound=FALSE;
   
   for(j=0; (j<ndih); j++) {
     bFound=TRUE;

@@ -635,7 +635,7 @@ void do_edsam(FILE *log,t_topology *top,t_inputrec *ir,int step,
 	      t_edsamyn *edyn,t_edpar *edi,bool bHave_force)
 {
   int i,j,ned=edi->ned,edstep=step,iupdate=500;
-  rvec *transvec,*vdum,*fdum;
+  rvec *transvec,*vdum=NULL,*fdum=NULL;
   matrix rotmat;
   real rmsd,mas,rad;
   static real oldrad;

@@ -528,7 +528,7 @@ void c_ljcfree(real ix,real iy,real iz,int inr,
   real   tx,ty,tz,vnb6,vnb12;
   real   L1,dvdl;
   real   lam2,lam3,lam4,lam1_2,lam1_3,lam1_4;
-  real   qiA,qiB,qqA,qqB,c6,c12,c6a,c6b,c12a,c12b;
+  real   qiA,qiB,qqA=0,qqB=0,c6,c12,c6a,c6b,c12a,c12b;
   real   rffac2,qqq;
   
   fX     = 0.0;
@@ -996,9 +996,9 @@ void c_free(real ix,real iy,real iz,int inr,
   real   tx,ty,tz,vnb6,vnb12;
   real   L1,dvdl;
   real   lam2,lam3,lam4,lam1_2,lam1_3,lam1_4;
-  real   qiA,qiB,qqA,qqB,c6,c12,c6a,c6b,c12a,c12b;
+  real   qiA,qiB,qqA=0,qqB=0,c6,c12,c6a,c6b,c12a,c12b;
   real   qqq,fijC,fijD,fijR;
-  real   eps,eps2,Y,F,Fp,Geps,Heps2,two=2.0,VV,FF;
+  real   eps=0,eps2,Y,F,Fp,Geps,Heps2,two=2.0,VV,FF;
   real   r1,r1t,h_1;
   int    n0,n1,nnn;
 

@@ -248,7 +248,7 @@ int main (int argc, char *argv[])
   real         run_t,run_lambda;
   bool         bMDP,bOK,bFrame;
   t_topology   top;
-  t_inputrec   *ir,*irnew;
+  t_inputrec   *ir,*irnew=NULL;
   t_gromppopts *gopts;
   rvec         *x=NULL,*v=NULL,*newx,*newv,*tmpx,*tmpv;
   matrix       box,newbox;

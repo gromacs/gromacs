@@ -223,7 +223,7 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
   static int dihp[2][2] = { { 1,2 }, { 0,3 } };
   t_params *bt;
   int      i,j,f,nral,nrfp;
-  bool     bDih,bSwapParity;
+  bool     bDih=FALSE,bSwapParity;
   
   bt=&(plist[ftype]);
   

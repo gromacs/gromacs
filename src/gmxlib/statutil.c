@@ -486,8 +486,12 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   /* Open the debug file */
   if (bDebug) {
     char buf[256];
-    
-    sprintf(buf,"%s.log",ShortProgram());
+
+    if (gmx_cpu_num() > 1)
+      sprintf(buf,"%s%d.log",ShortProgram(),gmx_cpu_id());
+    else
+      sprintf(buf,"%s.log",ShortProgram());
+      
     init_debug(buf);
     fprintf(debug,"%s (this file) opened in file %s, line %d\n",
 	    buf,__FILE__,__LINE__);

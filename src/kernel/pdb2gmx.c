@@ -575,7 +575,7 @@ int main(int argc, char *argv[])
     rvec *x;
   } t_chain;
   
-  FILE       *fp,*top_file,*top_file2,*itp_file;
+  FILE       *fp,*top_file,*top_file2,*itp_file=NULL;
   int        natom,nres;
   t_atoms    pdba_all,*pdba;
   t_atoms    *atoms;
@@ -605,12 +605,12 @@ int main(int argc, char *argv[])
   char       molname[STRLEN],title[STRLEN];
   char       *c;
   int        nah,nNtdb,nCtdb;
-  t_hackblock *ntdb,*ctdb,*sel_ntdb,*sel_ctdb;
+  t_hackblock *ntdb,*ctdb,*sel_ntdb=NULL,*sel_ctdb=NULL;
   int        nssbonds;
   t_ssbond   *ssbonds;
   rvec       *pdbx,*x;
-  bool       bUsed,bDummies,bWat,bPrevWat,bITP;
-  real       mHmult;
+  bool       bUsed,bDummies=FALSE,bWat,bPrevWat=FALSE,bITP;
+  real       mHmult=0;
   
   t_filenm   fnm[] = { 
     { efSTX, "-f", "eiwit.pdb", ffREAD  },

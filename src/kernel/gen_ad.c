@@ -546,8 +546,8 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 	  }
 	  ang[nang].C0=NOTSET;
 	  ang[nang].C1=NOTSET;
-	  if (i_ra=search_rang(*(atoms->resname[atoms->atom[j1].resnr]),
-			    nra,ra)) {
+	  if ((i_ra=search_rang(*(atoms->resname[atoms->atom[j1].resnr]),
+			       nra,ra))) {
 	    for(l=0; (l<i_ra->na); l++) {
 	      if (strcmp(*(atoms->atomname[ang[nang].a[1]]),
 			 i_ra->rang[l].aj)==0) {
@@ -585,8 +585,8 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 	      }
 	      for (m=0; m<MAXFORCEPARAM; m++)
 		dih[ndih].c[m]=NOTSET;
-	      if (i_rd=search_rdih(*(atoms->resname[atoms->atom[j1].resnr]),
-			    nrd,rd)) {
+	      if ((i_rd=search_rdih(*(atoms->resname[atoms->atom[j1].resnr]),
+				    nrd,rd))) {
 		for(n=0; (n<i_rd->nd); n++) {
 		  bFound=FALSE;
 		  for (m=0; m<2; m++)

@@ -56,9 +56,9 @@ static char *SRCID_gmxcheck_c = "$Id$";
 void chk_trj(char *fn)
 {
   t_trnheader  sh,count;
-  int          idum,j,new_natoms,natoms,step;
+  int          idum,j=-1,new_natoms,natoms,step;
   real         rdum,t,tt,t0,old_t1,old_t2,prec;
-  bool         bShowTimestep=TRUE,bOK,newline;
+  bool         bShowTimestep=TRUE,bOK,newline=FALSE;
   rvec         *x;
   matrix       box;
   size_t       fpos;

@@ -10,7 +10,7 @@
 #ifdef USE_MPI
 static void print_parfft(FILE *fp,char *title,t_parfft *pfft)
 {
-  fprintf(fp,"PARALLEL FFT DATA (%s):\n"
+  fprintf(fp,"PARALLEL FFT DATA:\n"
 	  "   local_nx:                 %3d  local_x_start:                 %3d\n"
 	  "   local_ny_after_transpose: %3d  local_y_start_after_transpose  %3d\n"
 	  "   total_local_size:         %3d\n",

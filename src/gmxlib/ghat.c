@@ -114,7 +114,7 @@ void wr_ghat(char *fn,int n1max,int n2max,int n3max,real h1,real h2,real h3,
 {
   FILE *fp;
   int  N1MAX,N2MAX,N3MAX;
-  bool bNL;
+  bool bNL=FALSE;
   real rx,ry,rz;
   int  ii,jj,kk,nn;
   

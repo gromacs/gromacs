@@ -134,5 +134,7 @@ libdump.a:	dumpargs.o
 		$(AR) rv libdump.a $^		
 testcomp:	testcomp.o libdump.a
 		$(LD) -L. -o $@ testcomp.o -ldump $(SYSLIBS)
+#topcat.o:	topcat.c
+#		$(CC) CFLAGS=$(LOWOPT) -c topcat.c
 
 include	Make.dep

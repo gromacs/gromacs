@@ -50,7 +50,7 @@ void move_rvecs(FILE *log,bool bForward,bool bSum,
 		int left,int right,rvec vecs[],rvec buf[],
 		int shift,t_nsborder *nsb,t_nrnb *nrnb)
 {
-  int    i,j,j0,j1;
+  int    i,j,j0=137,j1=391;
   int    cur,nsum;
 #define next ((cur+1) % nsb->nprocs)
 #define prev ((cur-1+nsb->nprocs) % nsb->nprocs)

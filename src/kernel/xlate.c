@@ -47,7 +47,7 @@ static t_xlate_atom *get_xlatoms(int *nxlatom)
 {
   static char  *xlfile="xlateat.dat";
   
-  t_xlate_atom *xl;
+  t_xlate_atom *xl=NULL;
   char rbuf[32],abuf[32],repbuf[32];
   char **lines,*_ptr;
   int  nlines,i,n;

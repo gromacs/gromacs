@@ -106,7 +106,7 @@ int write_trx(int fnum,int nind,atom_id *ind,t_atoms *atoms,
 	      int step,real time,matrix box,rvec x[],rvec *v)
 {
   char title[STRLEN];
-  rvec *xout,*vout;
+  rvec *xout=NULL,*vout=NULL;
   int i;
 
   switch (trx_out[fnum].ftp) {
@@ -814,7 +814,7 @@ bool read_next_v(int status,real *t,int natoms,rvec v[],matrix box)
 int read_first_x_v(int *status,char *fn,
 		   real *t,rvec **x,rvec **v,matrix box)
 {
-  int  fp,natoms;
+  int  fp,natoms=0;
   
   INITCOUNT;
 
@@ -863,7 +863,7 @@ bool read_next_x_v(int status,real *t, int natoms,
 int read_first_x_or_v(int *status,char *fn,
 		   real *t,rvec **x,rvec **v,matrix box)
 {
-  int  fp,natoms;
+  int  fp,natoms=0;
   
   INITCOUNT;
 

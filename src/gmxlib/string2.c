@@ -182,7 +182,7 @@ char *gmx_strdup(const char *src)
 char *wrap_lines(char *buf,int line_width, int indent)
 {
   char *b2;
-  int i,i0,i2,j,b2len,lspace,l2space;
+  int i,i0,i2,j,b2len,lspace=0,l2space=0;
   bool bFirst;
 
   b2=NULL;

@@ -250,8 +250,8 @@ static char **read_topol(char        *infile,
   DirStack   *DS;
   directive  d,newd;
   t_block2   *block2;
-  real       fudgeLJ;    /* Multiplication factor to generate 1-4 from LJ */
-  bool       bGenPairs;
+  real       fudgeLJ=-1;    /* Multiplication factor to generate 1-4 from LJ */
+  bool       bGenPairs=FALSE;
   real       qt=0; /* total charge */
 
   /* open input and output file */

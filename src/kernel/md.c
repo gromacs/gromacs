@@ -40,6 +40,7 @@ static char *SRCID_md_c = "$Id$";
 #include "trnio.h"
 #include "mdrun.h"
 #include "confio.h"
+#include "network.h"
 
 time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,bool bDummies,int stepout,
@@ -49,17 +50,17 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     t_graph *graph,t_edsamyn *edyn,t_forcerec *fr,rvec box_size)
 {
   t_mdebin   *mdebin;
-  int        fp_ene,fp_trn,step;
+  int        fp_ene=0,fp_trn=0,step;
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
-  bool       bNS,bStopCM,bStopRot,bTYZ,bRerunMD,bNotLastFrame,bLastStep;
+  bool       bNS,bStopCM,bStopRot,bTYZ,bRerunMD,bNotLastFrame=FALSE,bLastStep;
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
   char       *traj,*xtc_traj; /* normal and compressed trajectory filename */
   int        i,m;
   rvec       vcm,mu_tot;
   rvec       *xx,*vv,*ff;
-  int        natoms,status;
+  int        natoms=0,status;
   
   /* check if "-rerun" is used. */
   bRerunMD = optRerunMDset(nfile,fnm);
@@ -68,10 +69,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   init_md(cr,&parm->ir,&t,&t0,&lambda,&lam0,&SAfactor,&mynrnb,&bTYZ,top,
 	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&mdebin,grps,vcm,
 	  force_vir,shake_vir,mdatoms);
+  debug_par();
   
   /* Remove periodicity */  
   if (parm->ir.eBox != ebtNONE)
     do_pbc_first(log,parm,box_size,fr,graph,x);
+  debug_par();
   
   if (!parm->ir.bUncStart) 
     do_shakefirst(log,bTYZ,lambda,ener,parm,nsb,mdatoms,x,vold,buf,f,v,
@@ -85,13 +88,14 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     global_stat(log,cr,ener,force_vir,shake_vir,
 		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
   clear_rvec(vcm);
+  debug_par();
   
   /* Calculate Temperature coupling parameters lambda */
   ener[F_TEMP] = sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
   tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor,0,
 	 parm->ir.ntcmemory);
-  where();
-  
+  debug_par();
+
   /* Write start time and temperature */
   start_t=print_date_and_time(log,cr->pid,"Started mdrun");
   if (MASTER(cr)) {
@@ -102,6 +106,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       fprintf(stderr,"starting mdrun '%s'\n%d steps, %8.1f ps.\n\n",
 	      *(top->name),parm->ir.nsteps,parm->ir.nsteps*parm->ir.delta_t);
   }
+  debug_par();
   
   /***********************************************************
    *
@@ -144,7 +149,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef);
       unshift_self(graph,fr->shift_vec,x);
     }
-
+    debug_par();
+    
     /* Set values for invmass etc. */
     init_mdatoms(mdatoms,lambda,(step==0));
 
@@ -156,6 +162,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     do_force(log,cr,parm,nsb,force_vir,step,&mynrnb,
 	     top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
 	     lambda,graph,bNS,FALSE,fr);
+    debug_par();
 #ifdef DEBUG
     pr_rvecs(log,0,"force_vir",force_vir,DIM);
 #endif     
@@ -184,7 +191,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (do_per_step(step,parm->ir.nstfout)) ff=f; else ff=NULL;
     fp_trn = write_traj(log,cr,traj,nsb,step,t,lambda,
 			nrnb,nsb->natoms,xx,vv,ff,parm->box);
-    where();
+    debug_par();
     
     /* for rerunMD, certain things don't have to be done */
     if (!bRerunMD) {
@@ -196,8 +203,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		       *top->name, &(top->atoms),x,v,parm->box);
       }
-      
-      where();
+      debug_par();
       
       clear_mat(shake_vir);
       update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
@@ -210,7 +216,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       if (PAR(cr)) 
 	accumulate_u(cr,&(parm->ir.opts),grps);
       
-      where();
+      debug_par();
       /* Calculate partial Kinetic Energy (for this processor) 
        * per group!
        */
@@ -218,7 +224,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		   vold,v,vt,&(parm->ir.opts),
 		   mdatoms,grps,&mynrnb,
 		   lambda,&ener[F_DVDL]);
-      where();
+      debug_par();
       if (bStopCM)
 	calc_vcm(log,HOMENR(nsb),START(nsb),mdatoms->massT,v,vcm);
     }
@@ -276,7 +282,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (MASTER(cr))
       upd_mdebin(mdebin,mdatoms->tmass,step,ener,parm->box,shake_vir,
 		 force_vir,parm->vir,parm->pres,grps,mu_tot);
-    where();
+    debug_par();
     
     if ( MASTER(cr) ) {
       bool do_ene,do_log,do_dr;
@@ -303,6 +309,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       bNotLastFrame = read_next_x(status,&t,natoms,x,parm->box);
   }
   /* End of main MD loop */
+  debug_par();
   
   if (MASTER(cr)) {
     print_ebin(fp_ene,FALSE,FALSE,log,step,t,lambda,SAfactor,
@@ -314,6 +321,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       close_xtc_traj();
     close_trn(fp_trn);
   }
-  
+  debug_par();
+
   return start_t;
 }

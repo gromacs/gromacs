@@ -349,8 +349,7 @@ static bool calc_dum3_param(t_params ptype[], t_atomtype *atype,
    */
   
   bool bXH3,bError;
-  real bij,bjk,bjl,aijk,aijl,akjl,pijk,pijl,a,b,c;
-  
+  real bij,bjk,bjl,aijk,aijl,akjl,pijk,pijl,a=-1,b=-1,c;
   /* check if this is part of a NH3 or CH3 group,
    * i.e. if atom k and l are dummy masses (MNH3 or MCH3) */
   if (debug) {
@@ -645,7 +644,7 @@ void set_dummies(bool bVerbose, t_atoms *atoms, t_atomtype atype,
 {
   int i,j,ftype;
   int nrbond,nrang,nridih,nrset;
-  bool bSet,bERROR;
+  bool bSet,bERROR=TRUE;
   t_mybond *bonds;
   t_myang  *angles;
   t_myidih *idihs;

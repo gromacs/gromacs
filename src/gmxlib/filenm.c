@@ -209,7 +209,9 @@ void pr_def(FILE *fp,int ftp)
     break;
   case eftGEN: c=' ';
     break;
-  default: fatal_error(0,"Some error, some ints %d %d",ftp,efNR);
+  default: 
+    c = ' ';
+    fatal_error(0,"Some error, some ints %d %d",ftp,efNR);
     break;
   }
   fprintf(fp,"%8s & %5s & %c & %5s & ",

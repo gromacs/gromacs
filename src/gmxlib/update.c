@@ -501,7 +501,7 @@ void init_project(FILE *log,t_topology *top,t_inputrec *ir,
   int         i,j,k,n,b1,b,cen;
   int         ncons;
   int         type,a1,a2,b2,nr,n1,n2,nc4;
-  real        len,len1,sign;
+  real        len=0,len1,sign;
   real        im1,im2,imcen;
   
   ncons=idef->il[F_SHAKE].nr/3;

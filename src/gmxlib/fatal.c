@@ -313,6 +313,7 @@ FILE *debug=NULL;
 
 void init_debug (char *dbgfile)
 {
+  no_buffers();
   debug=ffopen(dbgfile,"w");
   bDebug = TRUE;
 }

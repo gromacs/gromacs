@@ -231,9 +231,9 @@ int read_xvg(char *fn,real ***y,int *ny)
 {
   FILE   *fp;
   char   *ptr;
-  char   *base;
-  char   *fmt;
-  int    k,line,nny,nx,maxx,rval;
+  char   *base=NULL;
+  char   *fmt=NULL;
+  int    k,line=0,nny,nx,maxx,rval;
   double lf;
   real   **yy=NULL;
   

@@ -54,7 +54,7 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
 {
   int      i,itpA,itpB,gid,m,nj,inr,iinr,nri,k;
   rvec     r_i,f_ip,fw[3],xw[3];
-  real     qi,Vnb,Vc,eps;
+  real     qi=0,Vnb,Vc,eps;
   t_nblist *nlist;
   t_nl_i   *nl_i;
   t_nl_j   *nl_j;

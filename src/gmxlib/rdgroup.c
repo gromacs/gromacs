@@ -67,7 +67,7 @@ t_block *init_index(char *gfile, char ***grpname)
 	(*grpname)[b->nr-1]=strdup(str);
       } else {
 	pt=line;
-	while (i=sscanf(pt,"%s",str)==1) {
+	while ((i=sscanf(pt,"%s",str)) == 1) {
 	  i=b->index[b->nr];
 	  if (i>=maxentries) {
 	    maxentries+=100;

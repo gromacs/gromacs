@@ -553,7 +553,7 @@ real analyse_diff(FILE *log,char *label,
 		  char *fcorr,char *pcorr,char *ftotcorr,char *ptotcorr)
 {
   int  i,m;
-  FILE *fp,*gp;
+  FILE *fp=NULL,*gp=NULL;
   real f2sum=0,p2sum=0;
   real df,fmax,dp,pmax,rmsf;
   

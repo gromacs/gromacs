@@ -70,7 +70,7 @@ void symmetrize_PSgrid(FILE *fp,t_PSgrid *grid,real sum)
   int  i,j,k;
   int  nx,ny,nz;
   real ***ptr;
-  real ming,maxg;
+  real ming=0,maxg=0;
   ivec imin={-1,-1,-1},imax={-1,-1,-1};
   
   unpack_PSgrid(grid,&nx,&ny,&nz,&ptr);

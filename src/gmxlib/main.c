@@ -210,7 +210,7 @@ void open_log(char *lognm,t_commrec *cr)
 static void comm_args(t_commrec *cr,int *argc,char ***argv)
 {
   int i,len;
-  char **argv_tmp,*buf;
+  char **argv_tmp=NULL,*buf;
   
   if (!MASTER(cr))
     *argc=0;

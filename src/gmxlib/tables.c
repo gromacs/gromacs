@@ -170,7 +170,7 @@ void fill_table(int n0,int n,real x[],
   real r,r2,r6;
   real k_rf,c_rf,rffac2;
   /* Parameters for David's function */
-  real A,B,C,A_3,B_4;
+  real A=0,B=0,C=0,A_3=0,B_4=0;
   /* Parameters for the switching function */
   real ksw,swi,swi1,swi2,swi3;
   /* Temporary parameters */
@@ -353,7 +353,7 @@ void make_tables(t_forcerec *fr,bool bVerbose)
   FILE     *fp;
   real     x0,y0,yp;
   int      i,j,k,n0,n,tabsel,ntabs;
-  real     *x,*xnormal,*xexp,*Vtab,*Vtab2,*Ftab,*Ftab2;
+  real     *x,*xnormal,*xexp=NULL,*Vtab,*Vtab2,*Ftab,*Ftab2;
   
 #ifdef DOUBLE
   fr->tabscale = 2000.0;

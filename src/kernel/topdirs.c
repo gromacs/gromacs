@@ -104,16 +104,10 @@ int ifunc_index(directive d,int type)
       fatal_error(0,"Invalid position restraint type %d",type);
   case d_distance_restraints:
     return F_DISRES;
-  case d_maxdir:
-  case d_blocktype:
-  case d_moleculetype:
-  case d_atoms:
-  case d_defaults:
-  case d_atomtypes:
-  case d_invalid:
-  case d_none:
+  default:
     fprintf(stderr,"DON'T ever call 'ifunc_index' again with directive %s\n",
 	    dir2str(d));
+    exit(1);
   }
   return -1;
 }

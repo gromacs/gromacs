@@ -50,7 +50,7 @@ static char  errbuf[256];
 
 void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype)
 {
-  int   i,j,k,nf;
+  int   i,j,k=-1,nf;
   int   nr,nrfp;
   real  c,sig6,sigma_ij,eps_ij,bi,bj;
 
@@ -142,7 +142,7 @@ void push_at (t_symtab *symtab, t_atomtype *at, char *line,int nb_funct)
     { "D",   eptDummy }, 
   };
   
-  int    nr,i,j,pt,nfp0;
+  int    nr,i,j,pt,nfp0=-1;
   char   type[STRLEN],ptype[STRLEN];
   double m,q;
   double c[MAXFORCEPARAM];
@@ -593,7 +593,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   double   cc[MAXFORCEPARAM];
   int      aa[MAXATOMLIST+1];
   t_param  param,paramB;
-  bool     bFoundA,bFoundB,bDef,bPert,bSwapParity;
+  bool     bFoundA,bFoundB,bDef,bPert,bSwapParity=FALSE;
   
   ftype = ifunc_index(d,1);
   nral  = NRAL(ftype);

@@ -42,7 +42,7 @@
 
 static int nFloatSize(t_trnheader *sh)
 {
-  int nflsize;
+  int nflsize=0;
   
   if (sh->box_size)
     nflsize = sh->box_size/(DIM*DIM);

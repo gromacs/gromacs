@@ -85,7 +85,7 @@ static void get_w_conf(FILE *in, char *infile, char *title,
   
   newres=0;
   oldres=0;
-  
+  prec=0;
   open_symtab(&symtab);
   name[5]=0;
 
@@ -266,7 +266,7 @@ bool gro_next_x_or_v(FILE *status,real *t,int natoms,
   sfree(atoms.resname);
   sfree(atoms.atomname);
 
-  if (p=strstr(title,"t=")) {
+  if ((p=strstr(title,"t=")) != NULL) {
     p+=2;
     if (sscanf(p,"%lf",&tt)==1)
       *t=tt;

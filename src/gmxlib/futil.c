@@ -43,6 +43,12 @@ typedef struct t_pstack {
 } t_pstack;
 
 static t_pstack *pstack=NULL;
+static bool     bUnbuffered=FALSE;
+
+void no_buffers(void)
+{
+  bUnbuffered=TRUE;
+}
 
 void push_ps(FILE *fp)
 {
@@ -219,7 +225,7 @@ char *backup_fn(char *file)
 
 FILE *ffopen(char *file,char *mode)
 {
-  FILE *ff;
+  FILE *ff=NULL;
   char buf[256],*bf,*bufsize,*ptr;
   bool bRead;
   int  bs;
@@ -246,8 +252,15 @@ FILE *ffopen(char *file,char *mode)
       exit(1);
     }
     where();
-    if ((bufsize=getenv("LOG_BUFS")) != NULL) {
-      bs=atoi(bufsize);
+    /* Check whether we should be using buffering (default) or not
+     * (for debugging)
+     */
+    if (bUnbuffered || ((bufsize=getenv("LOG_BUFS")) != NULL)) {
+      /* Check whether to use completely unbuffered */
+      if (bUnbuffered)
+	bs = 0;
+      else
+	bs=atoi(bufsize);
       if (bs <= 0)
 	setbuf(ff,NULL); 
       else {
@@ -284,7 +297,7 @@ FILE *ffopen(char *file,char *mode)
 char *low_libfn(char *file,bool bFatal)
 {
   static char *libdir="GMXLIB";
-  char *ret,*lib;
+  char *ret=NULL,*lib;
   static char buf[1024];
   
   if (fexist(file))

@@ -177,7 +177,9 @@ void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
   ip     = idef->iparams;
   if (v)
     inv_dt = 1.0/dt;
-  
+  else
+    inv_dt = 1.0;
+    
   for(ftype=0; (ftype<F_NRE); ftype++) {
     if (interaction_function[ftype].flags & IF_DUMMY) {
       nra    = interaction_function[ftype].nratoms;

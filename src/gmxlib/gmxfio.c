@@ -129,7 +129,7 @@ static bool do_ascwrite(void *item,int nitem,int eio,
 			char *desc,char *srcfile,int line)
 {
   int  i;
-  int  res,*iptr;
+  int  res=0,*iptr;
   real *ptr;
   unsigned char *ucptr;
   
@@ -248,7 +248,7 @@ static bool do_ascread(void *item,int nitem,int eio,
 		       char *desc,char *srcfile,int line)
 {
   FILE   *fp = curfio->fp;
-  int    i,m,res,*iptr,ix;
+  int    i,m,res=0,*iptr,ix;
   double d,x;
   real   *ptr;
   unsigned char *ucptr;
@@ -315,7 +315,7 @@ static bool do_ascread(void *item,int nitem,int eio,
 static bool do_binwrite(void *item,int nitem,int eio,
 			char *desc,char *srcfile,int line)
 {
-  size_t size,wsize;
+  size_t size=0,wsize;
   int    ssize;
   
   check_nitem();
@@ -362,7 +362,7 @@ static bool do_binwrite(void *item,int nitem,int eio,
 static bool do_binread(void *item,int nitem,int eio,
 		       char *desc,char *srcfile,int line)
 {
-  size_t size,rsize;
+  size_t size=0,rsize;
   int    ssize;
   
   check_nitem();
@@ -418,7 +418,7 @@ static bool do_xdr(void *item,int nitem,int eio,
 		   char *desc,char *srcfile,int line)
 {
   unsigned char *ucptr;
-  bool_t res;
+  bool_t res=0;
   float  fvec[DIM];
   double dvec[DIM];
   int    j,m,*iptr,idum;
@@ -552,8 +552,8 @@ static void _fio_check(int fio,char *file,int line)
  *****************************************************************/
 int fio_open(char *fn,char *mode)
 {
-  t_fileio *fio;
-  int      i,nfio;
+  t_fileio *fio=NULL;
+  int      i,nfio=0;
   char     *bf,*m;
   bool     bRead;
 
