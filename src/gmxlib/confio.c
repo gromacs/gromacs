@@ -363,7 +363,7 @@ static bool get_w_conf(FILE *in, char *infile, char *title,
   char   *p1,*p2;
   
   newres  = 0;
-  oldres  = -666; /* Unlikely number for the first residue! */
+  oldres  = NOTSET; /* Unlikely number for the first residue! */
   prec    = 0;
   
   if (!symtab) {
