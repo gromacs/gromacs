@@ -739,6 +739,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   static   t_excl      *bexcl;
   static   t_ns_buf    *ns_buf=NULL;
   static   int         *cg_index=NULL,*slab_index=NULL;
+  static   bool        bSwitched=FALSE;
   
   t_block  *cgs=&(top->blocks[ebCGS]);
   rvec     box_size;
@@ -796,7 +797,9 @@ int search_neighbours(FILE *log,t_forcerec *fr,
       fr->cg0 = slab_index[cr->pid];
       fr->hcg = slab_index[cr->pid+1] - fr->cg0;
       if (debug)
-	fprintf(debug,"Will use DOMAIN DECOMPOSITION, from charge group index %d to %d on cpu %d\n",fr->cg0,fr->cg0+fr->hcg,cr->pid);
+	fprintf(debug,"Will use DOMAIN DECOMPOSITION, "
+		"from charge group index %d to %d on cpu %d\n",
+		fr->cg0,fr->cg0+fr->hcg,cr->pid);
     }
     snew(cg_index,cgs->nr+1);
     for(i=0; (i<=cgs->nr);  i++)
@@ -816,9 +819,23 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   if (bGrid) {
     grid_first(log,grid,box,fr->rlong);
     /* Check if box is big enough to do grid searching... */
-    bGrid=((grid->nrx >= 2*grid->delta+1) && 
-	   (grid->nry >= 2*grid->delta+1) && 
-	   (grid->nrz >= 2*grid->delta+1));
+    if ( !( (grid->nrx >= 2*grid->delta+1) && 
+	    (grid->nry >= 2*grid->delta+1) && 
+	    (grid->nrz >= 2*grid->delta+1) ) ) {
+      if (!bSwitched)
+	fprintf(log,"WARNING: Box too small for grid-search, "
+		"switching to simple neighboursearch.\n");
+      if (fr->bTwinRange)
+	fatal_error(0,"TWIN-RANGE cut-off with Simple "
+		    "neighboursearching not implemented.\n"
+		    "Use grid neighboursearching, and make (rlong < 0.4 box)");
+      bGrid=FALSE;
+      bSwitched=TRUE;
+    } else {
+      if (bSwitched)
+	fprintf(log,"WARNING: Box large enough again for grid-search\n");
+      bSwitched=FALSE;
+    }
   }
   where();
   
@@ -844,12 +861,6 @@ int search_neighbours(FILE *log,t_forcerec *fr,
       check_grid(debug,grid);
       print_grid(debug,grid,fr->bDomDecomp,cg_index);
     }
-  }
-  else {
-    if (fr->bTwinRange)
-      fatal_error(0,"Can't have TWIN-RANGE cut-off with Simple "
-		  "neighboursearching.\n"
-		  "Use grid neighboursearching, and make (rlong < 0.4 box)");
   }
   where();
   
