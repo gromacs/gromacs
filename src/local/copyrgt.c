@@ -69,7 +69,7 @@ void head(FILE *out, char *fn)
   ts=ctime(&now);
   printf("%s",ts);
   /* ts = "Fri Sep 13 00:00:00 1986\n\0" */
-  sscanf(ts,"%*s %s %d %*s %d",&month,&day,&year);
+  sscanf(ts,"%*s %s %d %*s %d",month,&day,&year);
   printf("%d\n",day);
   printf("%s\n",month);
   printf("%d\n",year);
