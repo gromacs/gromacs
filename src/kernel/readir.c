@@ -252,8 +252,10 @@ void get_ir(char *mdparin,char *mdparout,
   
   /* Em stuff */
   CCTYPE ("ENERGY MINIMIZATION OPTIONS");
-  RTYPE ("emtol",       ir->em_tol,     0.001);
+  CTYPE ("Force tolerance and initial step-size");
+  RTYPE ("emtol",       ir->em_tol,     1.0);
   RTYPE ("emstep",      ir->em_stepsize,0.1);
+  CTYPE ("Frequency of steepest descents steps when doing CG");
   ITYPE ("nstcgsteep",	ir->nstcgsteep,	1000);
   
   /* Output options */

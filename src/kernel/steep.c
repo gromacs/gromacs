@@ -196,7 +196,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		t_forcerec *fr,rvec box_size) 
 { 
   static char *SD="STEEPEST DESCENTS"; 
-  real   step,lambda,ftol,fmax,testf; 
+  real   step,lambda,ftol,fmax; 
   rvec   *pos[2],*force[2]; 
   rvec   *xx,*ff; 
 #ifdef FORCE_CRIT 
@@ -391,18 +391,12 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       
       /* Test whether the convergence criterion is met...  */
 #ifdef FORCE_CRIT 
-      testf=fabs(Fsqrt[Min]-Fsqrt[TRY]); 
+      bDone=(Fsqrt[TRY] < ftol);
 #else 
-      testf=fabs(Epot[Min]-Epot[TRY]); 
-#endif 
-      
       /* Stop when the difference between two tries is less than 
        * the tolerance times the energy. 
        */
-#ifdef FORCE_CRIT 
-      bDone=(testf < ftol*fabs(Fsqrt[Min])); /* || (fabs(Epot[TRY]) < ftol));  */
-#else 
-      bDone=(testf < ftol*fabs(Epot[Min])); /* || (fabs(Epot[TRY]) < ftol));  */
+      bDone=(fabs(Epot[Min]-Epot[TRY]) < ftol*fabs(Epot[Min])); 
 #endif 
       
       /* Copy the arrays for force, positions and energy  */
