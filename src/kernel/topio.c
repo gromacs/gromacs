@@ -103,16 +103,16 @@ static int copy_nbparams(t_nbparam **param,int ftype,t_params *plist,int nr)
   return ncopy;
 }
 
-static void gen_pairs(t_params *nbs,t_params *pairs,real fudge, bool bVerbose)
+static void gen_pairs(t_params *nbs,t_params *pairs,real fudge, int comb, bool bVerbose)
 {
-  int     i,j,ntp,nrfp,nrfpA,nrfpB,nnn;
-
-  ntp       = nbs->nr;
-  nnn       = sqrt(ntp);
-  nrfp      = NRFP(F_LJ);
-  nrfpA     = interaction_function[F_LJ14].nrfpA;
-  nrfpB     = interaction_function[F_LJ14].nrfpB;
-  pairs->nr = ntp;
+    int     i,j,ntp,nrfp,nrfpA,nrfpB,nnn;
+    real    scaling;
+    ntp       = nbs->nr;
+    nnn       = sqrt(ntp);
+    nrfp      = NRFP(F_LJ);
+    nrfpA     = interaction_function[F_LJ14].nrfpA;
+    nrfpB     = interaction_function[F_LJ14].nrfpB;
+    pairs->nr = ntp;
   
   if ((nrfp  != nrfpA) || (nrfpA != nrfpB))
     gmx_incons("Number of force parameters in gen_pairs wrong");
@@ -128,9 +128,21 @@ static void gen_pairs(t_params *nbs,t_params *pairs,real fudge, bool bVerbose)
     pairs->param[i].a[0] = i / nnn;
     pairs->param[i].a[1] = i % nnn;
     /* Copy normal and FEP parameters and multiply by fudge factor */
+
+    
+    
     for(j=0; (j<nrfp); j++) {
-      pairs->param[i].c[j]=fudge*nbs->param[i].c[j];
-      pairs->param[i].c[nrfp+j]=fudge*nbs->param[i].c[j];
+        /* If we are using sigma/epsilon values, only the epsilon values 
+         * should be scaled, but not sigma. 
+         * The sigma values have even indices 0,2, etc.
+         */
+        if ((comb == eCOMB_ARITHMETIC || comb == eCOMB_GEOM_SIG_EPS) && (j%2==0))
+            scaling = 1.0;
+        else
+            scaling = fudge;
+        
+        pairs->param[i].c[j]=scaling*nbs->param[i].c[j];
+        pairs->param[i].c[nrfp+j]=scaling*nbs->param[i].c[j];
     }
   }
 }
@@ -463,7 +475,7 @@ static char **read_topol(char        *infile,
 	    fprintf(stderr,"Generated %d of the %d non-bonded parameter combinations\n",ncombs-ncopy,ncombs);
 	    free_nbparam(nbparam,atype->nr);
    	    if (bGenPairs) {
-	      gen_pairs(&(plist[nb_funct]),&(plist[F_LJ14]),fudgeLJ,bVerbose);
+	      gen_pairs(&(plist[nb_funct]),&(plist[F_LJ14]),fudgeLJ,comb,bVerbose);
 	      ncopy = copy_nbparams(pair,nb_funct,&(plist[F_LJ14]),
 				    atype->nr);
 	      fprintf(stderr,"Generated %d of the %d 1-4 parameter combinations\n",ncombs-ncopy,ncombs);
