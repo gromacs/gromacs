@@ -107,7 +107,7 @@ void add_grp(t_block *b,char ***gnames,int nra,atom_id a[],char *name)
   b->index[b->nr]=b->nra;
 }
 
-static void p_status(int nres,eRestp restp[],int natres[],bool bVerb)
+static void p_status(int nres,eRestp restp[],bool bVerb)
 {
   int i,j,ntp[erestNR];
 
@@ -139,7 +139,7 @@ atom_id *mk_aid(t_atoms *atoms,eRestp restp[],eRestp res,int *nra,
   return a;
 }
 
-static void analyse_other(int nres,eRestp Restp[],int natres[],t_atoms *atoms,
+static void analyse_other(int nres,eRestp Restp[],t_atoms *atoms,
 			  t_block *gb,char ***gn,bool bASK,bool bVerb)
 {
   char **restp=NULL;
@@ -151,72 +151,72 @@ static void analyse_other(int nres,eRestp Restp[],int natres[],t_atoms *atoms,
   for(i=0; (i<nres); i++)
     if (Restp[i] == etOther)
       break;
-  if (i==gb->nr)
-    return; /* No Others */
-  
-  if (bVerb)
-    printf("Analysing Other...\n");
-  snew(other_ndx,atoms->nr);
-  for(k=0; (k<atoms->nr); k++) {
-    resnr=atoms->atom[k].resnr;
-    rname=*atoms->resname[resnr];
-    if (Restp[resnr] ==  etOther) {
-      for(l=0; (l<nrestp); l++)
-        if (strcmp(restp[l],rname) == 0)
-          break;
-      if (l==nrestp) {
-        srenew(restp,++nrestp);
-        restp[nrestp-1]=strdup(rname);
+  if (i < nres) {
+    /* we have others */
+    if (bVerb)
+      printf("Analysing Other...\n");
+    snew(other_ndx,atoms->nr);
+    for(k=0; (k<atoms->nr); k++) {
+      resnr=atoms->atom[k].resnr;
+      rname=*atoms->resname[resnr];
+      if (Restp[resnr] ==  etOther) {
+	for(l=0; (l<nrestp); l++)
+	  if (strcmp(restp[l],rname) == 0)
+	    break;
+	if (l==nrestp) {
+	  srenew(restp,++nrestp);
+	  restp[nrestp-1]=strdup(rname);
+	}
       }
     }
-  }
-  for(i=0; (i<nrestp); i++) {
-    snew(aid,atoms->nr);
-    naid=0;
-    for(j=0; (j<atoms->nr); j++) {
-      rname=*atoms->resname[atoms->atom[j].resnr];
-      if (strcmp(restp[i],rname) == 0) 
-        aid[naid++] = j;
-    }
-    add_grp(gb,gn,naid,aid,restp[i]);
-    if (bASK) {
-      printf("split %s into atoms (y/n) ? ",restp[i]);
-      fflush(stdout);
-      if (yn(bASK)) {
-	natp=0;
-	for(k=0; (k<naid); k++) {
-	  aname=*atoms->atomname[aid[k]];
-	  for(l=0; (l<natp); l++)
-	    if (strcmp(aname,attp[l]) == 0)
-	      break;
-	  if (l == natp) {
-	    srenew(attp,++natp);
-	    attp[natp-1]=aname;
-	  }
-	}
-	if (natp > 1) {
-	  for(l=0; (l<natp); l++) {
-	    snew(aaid,naid);
-	    naaid=0;
-	    for(k=0; (k<naid); k++) {
-	      aname=*atoms->atomname[aid[k]];
-	      if (strcmp(aname,attp[l])==0) 
-		aaid[naaid++]=aid[k];
+    for(i=0; (i<nrestp); i++) {
+      snew(aid,atoms->nr);
+      naid=0;
+      for(j=0; (j<atoms->nr); j++) {
+	rname=*atoms->resname[atoms->atom[j].resnr];
+	if (strcmp(restp[i],rname) == 0) 
+	  aid[naid++] = j;
+      }
+      add_grp(gb,gn,naid,aid,restp[i]);
+      if (bASK) {
+	printf("split %s into atoms (y/n) ? ",restp[i]);
+	fflush(stdout);
+	if (yn(bASK)) {
+	  natp=0;
+	  for(k=0; (k<naid); k++) {
+	    aname=*atoms->atomname[aid[k]];
+	    for(l=0; (l<natp); l++)
+	      if (strcmp(aname,attp[l]) == 0)
+		break;
+	    if (l == natp) {
+	      srenew(attp,++natp);
+	      attp[natp-1]=aname;
 	    }
-	    add_grp(gb,gn,naaid,aaid,attp[l]);
-	    sfree(aaid);
 	  }
+	  if (natp > 1) {
+	    for(l=0; (l<natp); l++) {
+	      snew(aaid,naid);
+	      naaid=0;
+	      for(k=0; (k<naid); k++) {
+		aname=*atoms->atomname[aid[k]];
+		if (strcmp(aname,attp[l])==0) 
+		  aaid[naaid++]=aid[k];
+	      }
+	      add_grp(gb,gn,naaid,aaid,attp[l]);
+	      sfree(aaid);
+	    }
+	  }
+	  sfree(attp);
+	  attp=NULL;
 	}
-	sfree(attp);
-	attp=NULL;
+	sfree(aid);
       }
-      sfree(aid);
     }
+    sfree(other_ndx);
   }
-  sfree(other_ndx);
 }
 
-static void analyse_prot(int nres,eRestp restp[],int natres[],t_atoms *atoms,
+static void analyse_prot(int nres,eRestp restp[],t_atoms *atoms,
 			 t_block *gb,char ***gn,bool bASK,bool bVerb)
 {
   static char *pnoh[]    = { "H" };
@@ -231,10 +231,10 @@ static void analyse_prot(int nres,eRestp restp[],int natres[],t_atoms *atoms,
 
   static int       sizes[NCH] = { 0, asize(pnoh), asize(calpha), asize(bb), asize(mc), asize(mcb), asize(mch), asize(mch), asize(mch)};
   static char   *ch_name[NCH] = { "Protein", "Protein-H", "C-Alpha", "Backbone", "MainChain", "MainChain+Cb", "MainChain+H", "SideChain", "SideChain-H" };
-  static bool complement[NCH] = { 1, 1, 0, 0, 0, 0, 0, 1, 1};
+  static bool complement[NCH] = { TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE};
   static int  wholename[NCH]  = {-1, 0,-1,-1,-1,-1,-1,-1, 11};
   /* the index in wholename gives the first item in the arrays of 
-   * atomtypes that should be tested with 'strncmp' in stead of
+   * atomtypes that should be tested with 'strncasecmp' in stead of
    * strcasecmp, or -1 if all items should be tested with strcasecmp
    */
 
@@ -259,17 +259,18 @@ static void analyse_prot(int nres,eRestp restp[],int natres[],t_atoms *atoms,
     nra=0;
     for(n=0; (n<atoms->nr); n++) {
       if (restp[atoms->atom[n].resnr] == etProt) {
-	for(j=0,match=0;(j<sizes[i]); j++) {
+	match=FALSE;
+	for(j=0; (j<sizes[i]); j++) {
 	  /* skip digits at beginning of atomname, e.g. 1H */
 	  atnm=*atoms->atomname[n];
 	  while (isdigit(atnm[0]))
 	    atnm++;
 	  if ( (wholename[i]==-1) || (j<wholename[i]) ) {
 	    if (strcasecmp(chains[i][j],atnm) == 0)
-	      match=1;
+	      match=TRUE;
 	  } else {
 	    if (strncasecmp(chains[i][j],atnm,strlen(chains[i][j])) == 0)
-	      match=1;
+	      match=TRUE;
 	  }
 	}
 	if (match != complement[i])
@@ -289,10 +290,11 @@ static void analyse_prot(int nres,eRestp restp[],int natres[],t_atoms *atoms,
 	for(n=0;((atoms->atom[n].resnr<npres) && (n<atoms->nr));) {
 	  resnr = atoms->atom[n].resnr;
 	  for(;((atoms->atom[n].resnr==resnr) && (n<atoms->nr));n++) {
-	    for(j=0,match=0;(j<sizes[i]); j++) 
+	    match=FALSE;
+	    for(j=0;(j<sizes[i]); j++) 
 	      if (strcasecmp(chains[i][j],*atoms->atomname[n]) == 0)
-		match=1;
-	    if (match!=complement[i])
+		match=TRUE;
+	    if (match != complement[i])
 	      aid[nra++]=n;
 	  }
 	  /* copy the residuename to the tail of the groupname */
@@ -347,7 +349,7 @@ static void analyse_prot(int nres,eRestp restp[],int natres[],t_atoms *atoms,
   sfree(aid);
 }
 
-static void analyse_dna(int nres,eRestp restp[],int natres[],t_atoms *atoms,
+static void analyse_dna(int nres,eRestp restp[],t_atoms *atoms,
 			t_block *gb,char ***gn,bool bASK,bool bVerb)
 {
   if (bVerb)
@@ -376,7 +378,6 @@ bool is_protein(char *resnm)
 void analyse(t_atoms *atoms,t_block *gb,char ***gn,bool bASK,bool bVerb)
 {
   eRestp  *restp;
-  int     *natres;
   char    *resnm;
   atom_id *aid;
   int     nra;
@@ -399,15 +400,12 @@ void analyse(t_atoms *atoms,t_block *gb,char ***gn,bool bASK,bool bVerb)
 	  restp[i] = etDNA;
       }
   }
-  snew(natres,atoms->nres);
-  for(i=0; (i<atoms->nr); i++)
-    natres[atoms->atom[i].resnr]++;
-  p_status(atoms->nres,restp,natres,bVerb);
+  p_status(atoms->nres,restp,bVerb);
 
   /* Protein */
   aid=mk_aid(atoms,restp,etProt,&nra,TRUE);
   if (nra > 0) 
-    analyse_prot(atoms->nres,restp,natres,atoms,gb,gn,bASK,bVerb);
+    analyse_prot(atoms->nres,restp,atoms,gb,gn,bASK,bVerb);
   
   sfree(aid);
 
@@ -421,16 +419,15 @@ void analyse(t_atoms *atoms,t_block *gb,char ***gn,bool bASK,bool bVerb)
   aid=mk_aid(atoms,restp,etDNA,&nra,TRUE);
   if (nra > 0) {
     add_grp(gb,gn,nra,aid,"DNA"); 
-    analyse_dna(atoms->nres,restp,natres,atoms,gb,gn,bASK,bVerb);
+    analyse_dna(atoms->nres,restp,atoms,gb,gn,bASK,bVerb);
   }
   sfree(aid);
 
   /* Other */
-  analyse_other(atoms->nres,restp,natres,atoms,gb,gn,bASK,bVerb);
+  analyse_other(atoms->nres,restp,atoms,gb,gn,bASK,bVerb);
   aid=mk_aid(atoms,restp,etOther,&nra,TRUE);
   if ((nra > 0) && (nra < atoms->nr))
     add_grp(gb,gn,nra,aid,"Other"); 
   sfree(aid);
-  sfree(natres);
   sfree(restp);
 }
