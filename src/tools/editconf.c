@@ -357,7 +357,7 @@ int main(int argc, char *argv[])
   bSetCenter= opt2parg_bSet("-center" ,NPA,pa);
   bCubic    = opt2parg_bSet("-dc",NPA,pa);
   bDist     = opt2parg_bSet("-d" ,NPA,pa) || bCubic;
-  bCenter   = bCenter || bDist || bSetCenter;
+  bCenter   = bCenter || bDist || bSetCenter || bSetSize;
   bScale    = opt2parg_bSet("-scale" ,NPA,pa);
   bRho      = opt2parg_bSet("-density",NPA,pa);
   if (bScale && bRho)
