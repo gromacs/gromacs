@@ -1,8 +1,9 @@
 ## Process this file with automake to produce Makefile.in
 # Note: Makefile is automatically generated from Makefile.in by the configure
 # script, and Makefile.in is generated from Makefile.am by automake.
-INCLUDES = -I$(top_srcdir)/include
-AM_CPPFLAGS = -DGMXLIBDIR=\"$(datadir)/top\"
+
+AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
+
 LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 
 # Ngmx requires X11 - nothing is built if it doesn't exist

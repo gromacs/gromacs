@@ -42,6 +42,8 @@ static char *SRCID_fftw_wrapper_h = "$Id$";
 #include <config.h>
 #endif
 
+#ifndef WITHOUT_FFTW
+
 #ifdef FFTW_NAME_FFTW
 #  include<fftw.h>
 #  include<rfftw.h>
@@ -66,3 +68,18 @@ static char *SRCID_fftw_wrapper_h = "$Id$";
 #endif
 
 #endif			
+
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+

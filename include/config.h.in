@@ -111,6 +111,9 @@
 /* Try to get table data to cache before using it */
 #undef DECREASE_LOOKUP_LATENCY
 
+/* Disable all FFTW (and thus PME/PPPM) support */
+#undef WITHOUT_FFTW
+
 /* Make a parallel version of GROMACS using MPI */
 #undef USE_MPI
 
@@ -143,6 +146,9 @@
 
 /* Dont use any prefix on fftw includes */
 #undef FFTW_NAME_FFTW
+
+/* Use portable trajectory routines */
+#undef USE_XDR
 
 /* Define if using the dmalloc debugging malloc package */
 #undef WITH_DMALLOC

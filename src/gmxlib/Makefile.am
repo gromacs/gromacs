@@ -2,8 +2,7 @@
 # Note: Makefile is automatically generated from Makefile.in by the configure
 # script, and Makefile.in is generated from Makefile.am by automake.
 
-INCLUDES = -I$(top_srcdir)/include
-AM_CPPFLAGS = -DGMXLIBDIR=\"$(datadir)/top\"
+AM_CPPFLAGS= -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
 lib_LTLIBRARIES = libgmx@LIBSUFFIX@.la
 
@@ -37,11 +36,7 @@ EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = \
 	mgmx.c		widget.c	widget.h	x86_cpuid.S	\
 	axp_asm.s	f77_wrappers.c	
 
-#if FORTRAN
-#BUILT_SOURCES = innerf.f
-#else
-#BUILT_SOURCES = innerc.c
-#endif
+nodist_EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = innerf.f innerc.c
 
 
 # The inner loops

@@ -50,11 +50,20 @@ static char *SRCID_fftgrid_h = "$Id$";
 
 /* Use FFTW */
 
+#ifndef WITHOUT_FFTW
 typedef t_complex t_fft_c;
 typedef real      t_fft_r;
+#else /* NO FFTW PRESENT! */
+typedef struct {
+  real re, im;
+} t_fft_c;
+typedef real t_fft_r;
+typedef enum {
+  FFTW_FORWARD = -1, FFTW_BACKWARD = 1
+} fftw_direction;
+#endif
 
 #define INDEX(i,j,k)             ((i)*la12+(j)*la2+(k))      
-
 
 typedef struct {
   int local_nx,local_x_start,local_ny_after_transpose;
@@ -67,12 +76,14 @@ typedef struct {
     t_fft_r *workspace;    
     int      nx,ny,nz,la2r,la2c,la12r,la12c;
   int      nptr,nxyz;
+#ifndef WITHOUT_FFTW
     rfftwnd_plan     plan_fw;
     rfftwnd_plan     plan_bw;
 #ifdef USE_MPI
     rfftwnd_mpi_plan plan_mpi_fw;
     rfftwnd_mpi_plan plan_mpi_bw;
     t_parfft         pfft;
+#endif
 #endif
 } t_fftgrid;
 
@@ -131,3 +142,9 @@ extern void clear_cgrid(int nx,int ny,int nz,t_complex ***grid);
 extern void clear_rgrid(int nx,int ny,int nz,real ***grid);
 
 #endif
+
+
+
+
+
+

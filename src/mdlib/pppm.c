@@ -479,6 +479,10 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
   const real tol = 1e-5;
   rvec  spacing;
 
+#ifdef WITHOUT_FFTW
+  fatal_error(0,"PPPM used, but GROMACS was compiled without FFTW support!\n");
+#endif
+
   if (cr != NULL) {
     if (cr->nnodes > 1)
 	fprintf(log,"Initializing parallel PPPM.\n");

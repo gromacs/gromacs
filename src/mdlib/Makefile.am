@@ -1,8 +1,8 @@
 ## Process this file with automake to produce Makefile.in
 # Note: Makefile is automatically generated from Makefile.in by the configure
 # script, and Makefile.in is generated from Makefile.am by automake.
-INCLUDES = -I$(top_srcdir)/include
-AM_CPPFLAGS = -DGMXLIBDIR=\"$(datadir)/top\"
+
+AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
 libmd@LIBSUFFIX@_la_LIBADD         = @MDLIB_LIBOBJS@	
 libmd@LIBSUFFIX@_la_DEPENDENCIES   = @MDLIB_LIBOBJS@	

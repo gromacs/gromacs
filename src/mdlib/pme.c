@@ -682,6 +682,9 @@ void init_pme(FILE *log,t_commrec *cr,
   int i;
   bool bPar;
 
+#ifdef WITHOUT_FFTW
+  fatal_error(0,"PME used, but GROMACS was compiled without FFTW support!\n");
+#endif
   fprintf(log,"Will do PME sum in reciprocal space.\n");
 
   bPar = cr && (cr->nnodes>1);

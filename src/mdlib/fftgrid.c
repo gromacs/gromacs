@@ -41,6 +41,8 @@ static char *SRCID_fftgrid_c = "$Id$";
 #include "futil.h"
 #include "network.h"
 #include "fftgrid.h"
+
+
 #define FFT_WORKSPACE
 
 #ifdef USE_MPI
@@ -83,7 +85,8 @@ t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,int nz,
   else
     grid->la12c = ny*grid->la2c;
   grid->nptr = nx*ny*grid->la2c*2;
-  
+
+#ifndef WITHOUT_FFTW  
   if (fp)
     fprintf(fp,"Using the FFTW library (Fastest Fourier Transform in the West)\n");
 
@@ -141,6 +144,9 @@ t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,int nz,
 #ifndef FFT_WORKSPACE
   grid->workspace=NULL;
 #endif
+#else /* no fftw */
+  snew(grid->ptr,grid->nptr);
+#endif /* without_fftw conditional */  
   return grid;
 }
 
@@ -161,6 +167,9 @@ void done_fftgrid(t_fftgrid *grid)
 
 void gmxfft3D(t_fftgrid *grid,int dir,t_commrec *cr)
 {
+#ifdef WITHOUT_FFTW
+  fatal_error(0,"gmxfft3D called, but GROMACS was compiled without FFTW!\n");
+#else /* have fftw */
   if (cr && PAR(cr) && grid->localptr) {
 #ifdef USE_MPI
     if (dir == FFTW_FORWARD)
@@ -195,6 +204,7 @@ void gmxfft3D(t_fftgrid *grid,int dir,t_commrec *cr)
       grid->workspace=tmp;
 #endif
   }
+#endif
 }
 
 void clear_fftgrid(t_fftgrid *grid)
@@ -411,4 +421,11 @@ void print_cgrid_pdb(char *fn,int nx,int ny,int nz,t_complex ***grid)
   }
   fclose(fp);
 }
+
+
+
+
+
+
+
 

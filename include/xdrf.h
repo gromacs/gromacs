@@ -78,4 +78,21 @@ extern int xdr_real(XDR *xdrs,real *r);
 extern int xdr3drcoord(XDR *xdrs,real *fp,int *size,real *precision);
 /* Read or write reduced precision *real* coordinates */
 
+#ifndef USE_XDR
+/* Gromacs stubs, to avoid compile-time warnings when we dont use xdr */
+int xdropen(XDR *xdrs, const char *filename, const char *type);
+int xdrclose(XDR *xdrs);
+int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision);
+bool_t xdr_int(XDR *xdr, int *i);
+bool_t xdr_float(XDR *xdr, float *f);
+bool_t xdr_double(XDR *xdr, double *d);
+bool_t xdr_string(XDR *xdr,char **s,int size);
 #endif
+
+#endif
+
+
+
+
+
+

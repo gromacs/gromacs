@@ -783,7 +783,7 @@ fi
 CPU_FLAGS=""
 
 if test "$GCC" = "yes"; then
-  ASFLAGS="$(ASFLAGS) -x assembler-with-cpp"
+  ASFLAGS="$ASFLAGS -x assembler-with-cpp"
   # try to guess correct CPU flags, at least for linux
   case "${host_cpu}" in
     # i586/i686 cpu flags don't improve speed, thus no need to use them.
