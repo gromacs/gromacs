@@ -247,7 +247,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   clear_mat(my_vir[Min]);
   do_force(log,cr,parm,nsb,my_vir[Min],mdstep,nrnb,
 	   top,grps,x,v,force[Min],buf,md,ener,bVerbose && !PAR(cr),
-	   lambda,graph,bDoNS,FALSE,fr,mu_tot);
+	   lambda,graph,bDoNS,FALSE,fr,mu_tot,FALSE);
   df[Min]=rms_force(cr,force[Min],nshell,shells);
   df[Try]=0;
   if (debug) {
@@ -309,7 +309,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     clear_mat(my_vir[Try]);
     do_force(log,cr,parm,nsb,my_vir[Try],1,nrnb,
 	     top,grps,pos[Try],v,force[Try],buf,md,ener,bVerbose && !PAR(cr),
-	     lambda,graph,FALSE,FALSE,fr,mu_tot);
+	     lambda,graph,FALSE,FALSE,fr,mu_tot,FALSE);
     df[Try]=rms_force(cr,force[Try],nshell,shells);
     if (debug)
       fprintf(debug,"df = %g  %g\n",df[Min],df[Try]);
