@@ -426,7 +426,8 @@ bool get_libdir(char *libdir)
        */
       getcwd(buf,sizeof(buf)-1);
       strcpy(full_path,buf);
-      strcat(full_path,bin_name+1);
+      strcat(full_path,"/");
+      strcat(full_path,bin_name);
     } else {
       strcpy(full_path,bin_name);
     }
