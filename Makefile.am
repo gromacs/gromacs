@@ -48,6 +48,8 @@ links:
 
 RPMARCH=`rpm --showrc | awk '/^build arch/ {print $$4}'`
 
+#
+# Use --buildroot ???
 rpm:
 	mkdir -p rpmdir/BUILD \
 	  rpmdir/SPECS \
@@ -55,7 +57,7 @@ rpm:
 	  rpmdir/SRPMS \
 	  rpmdir/RPMS/$(RPMARCH)
 	cp -f $(PACKAGE)-$(VERSION).tar.gz rpmdir/SOURCES
-	$(RPM) --clean -ba $(top_srcdir)/admin/$(PACKAGE).spec --define "_topdir $$PWD/rpmdir" 
+	rpmbuild --clean -ba $(top_srcdir)/admin/$(PACKAGE).spec --define "_topdir $$PWD/rpmdir" 
 	@echo "============================================================"
 	@echo "Finished - the packages are in rpmdir/RPMS and rpmdir/SRPMS!"
 
@@ -67,7 +69,7 @@ mpi-rpm:
 	  rpmdir/SRPMS \
 	  rpmdir/RPMS/$(RPMARCH)
 	cp -f $(PACKAGE)-$(VERSION).tar.gz rpmdir/SOURCES/$(PACKAGE)-$(VERSION).tar.gz
-	$(RPM) --clean -bb $(top_srcdir)/admin/$(PACKAGE)-mpi.spec --define "_topdir $$PWD/rpmdir"
+	rpmbuild --clean -bb $(top_srcdir)/admin/$(PACKAGE)-mpi.spec --define "_topdir $$PWD/rpmdir"
 	@echo "============================================"
 	@echo "Finished - the packages are in rpmdir/RPMS!"
 
