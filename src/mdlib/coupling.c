@@ -409,7 +409,7 @@ void update_annealing_target_temp(t_grpopts *opts,real t)
       thist = t;
       break;
     default:
-      fatal_error(0,"Death horror in update_annealing_target_temp");
+      fatal_error(0,"Death horror in update_annealing_target_temp (i=%d/%d npoints=%d)",i,opts->ngtc,npoints);
     }
     /* We are doing annealing for this group if we got here, 
      * and we have the (relative) time as thist.

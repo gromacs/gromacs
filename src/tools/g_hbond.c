@@ -569,9 +569,9 @@ static void do_hbac(char *fn,unsigned int **hbexist,int nrhb,int nframes,
   sfree(rhbex);
 
   /* Normalize */
-  /*for(j=0; ((j<nframes/2) && (nct[j] > 0)); j++)
+  for(j=0; ((j<nframes/2) && (nct[j] > 0)); j++)
     ct[j] /= nct[j];
-    nframes = j;*/
+  nframes = j;
   ct0 = ct[0];
   for(j=0; (j<nframes); j++)
     ct[j] /= ct0;

@@ -219,7 +219,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 			     "Total", "D Gsolv" };
   real         t;
   void         *atomprop=NULL;
-  int          status;
+  int          status,ndefault;
   int          i,j,ii,nfr,natoms,flag,nsurfacedots,res;
   rvec         *x;
   matrix       box;
@@ -276,9 +276,17 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     snew(dgs_factor,nx);
 
   /* Get a Van der Waals radius for each atom */
-  for(i=0; (i<natoms); i++)
-    radius[i]     = calc_radius(*(top->atoms.atomname[i])) + solsize;
-  
+  ndefault = 0;
+  for(i=0; (i<natoms); i++) {
+    if (!query_atomprop(atomprop,epropVDW,
+			*(top->atoms.resname[top->atoms.atom[i].resnr]),
+			*(top->atoms.atomname[i]),&radius[i]))
+      ndefault++;
+    /* radius[i] = calc_radius(*(top->atoms.atomname[i])); */
+    radius[i] += solsize;
+  }
+  if (ndefault > 0)
+    fprintf(stderr,"WARNING: could not find a Van der Waals radius for %d atoms\n",ndefault);
   /* Determine which atom is counted as hydrophobic */
   if (bFindex) {
     npcheck = 0;
@@ -381,10 +389,14 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     else
       fprintf(fp,"\n");
     
-    if (area) 
+    if (area) {
       sfree(area);
-    if (surfacedots)
+      area = NULL;
+    }
+    if (surfacedots) {
       sfree(surfacedots);
+      surfacedots = NULL;
+    }
     nfr++;
   } while (read_next_x(status,&t,natoms,x,box));
   
