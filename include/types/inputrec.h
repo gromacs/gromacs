@@ -54,13 +54,12 @@ typedef struct {
   int  decomp_dir;      /* Direction of decomposition (may not be opt.) */
   int  nstcomm;		/* number of steps after which center of mass	*/
                         /* motion is removed				*/
-  int  nstlog;		/* number of steps after which print to logfile	*/
-  int  nstxout;		/* number of steps after which X is output	*/
-  int  nstvout;		/* id. for V					*/
-  int  nstfout;		/* id. for F					*/
-  int  nstenergy;	/* number of steps after which energies printed */
-  int  nstdisreout;     /* Number of steps after which disres are saved */
-  int  nstxtcout;	/* id. for compressed trj (.xtc)		*/
+  int nstlog;		/* number of steps after which print to logfile	*/
+  int nstxout;		/* number of steps after which X is output	*/
+  int nstvout;		/* id. for V					*/
+  int nstfout;		/* id. for F					*/
+  int nstenergy;	/* number of steps after which energies printed */
+  int nstxtcout;	/* id. for compressed trj (.xtc)		*/
   real init_t;		/* initial time (ps) 				*/
   real delta_t;		/* time step (ps)				*/
   real xtcprec;         /* precision of xtc file                        */
@@ -98,6 +97,7 @@ typedef struct {
   int  eDisre;          /* distance restraining type                    */
   int  eDisreWeighting; /* type of weighting of pairs in one restraints	*/
   bool bDisreMixed;     /* Use comb of time averaged and instan. viol's	*/
+  int  nstdisreout;     /* frequency of writing pair distances to enx   */ 
   real dr_tau;		/* time constant for memory function in disres 	*/
   real em_stepsize;	/* The stepsize for updating			*/
   real em_tol;		/* The tolerance				*/
