@@ -374,7 +374,7 @@ static void do_update_bd(int start,int homenr,double dt,
                          real invmass[],unsigned short ptype[],
                          unsigned short cFREEZE[],unsigned short cTC[],
                          rvec x[],rvec xprime[],rvec v[],rvec vold[],
-                         rvec f[],real fr,
+                         rvec f[],real friction_coefficient,
                          int ngtc,real tau_t[],real ref_t[],
                          gmx_rng_t gaussrand)
 {
@@ -385,13 +385,13 @@ static void do_update_bd(int start,int homenr,double dt,
   int    n,d;
   unsigned long  jran;
 
-  if(rf == NULL)
+  if (rf == NULL)
     snew(rf,ngtc);
 
-  if(fr) {
+  if (friction_coefficient != 0) {
+    invfr = 1.0/friction_coefficient;
     for(n=0; n<ngtc; n++)
-      rf[n] = sqrt(2.0*BOLTZ*ref_t[n]/(fr*dt));
-    invfr = 1.0/fr;
+      rf[n] = sqrt(2.0*BOLTZ*ref_t[n]/(friction_coefficient*dt));
   } else
     for(n=0; n<ngtc; n++)
       rf[n] = sqrt(2.0*BOLTZ*ref_t[n]);
@@ -402,12 +402,12 @@ static void do_update_bd(int start,int homenr,double dt,
     for(d=0; (d<DIM); d++) {
       vold[n][d]     = v[n][d];
       if((ptype[n]!=eptDummy) && (ptype[n]!=eptShell) && !nFreeze[gf][d]) {
-        if(fr)
-          vn         = invfr*f[n][d] + rf[n]*gmx_rng_gaussian_table(gaussrand);
+        if (friction_coefficient != 0)
+          vn = invfr*f[n][d] + rf[gt]*gmx_rng_gaussian_table(gaussrand);
         else
-          /* NOTE: invmass = 1/(mass*fric_const*dt) */
-          vn         = invmass[n]*f[n][d]*dt 
-                       + sqrt(invmass[n])*rf[gt]*gmx_rng_gaussian_table(gaussrand);
+          /* NOTE: invmass = 1/(mass*friction_constant*dt) */
+          vn = invmass[n]*f[n][d]*dt 
+	    + sqrt(invmass[n])*rf[gt]*gmx_rng_gaussian_table(gaussrand);
 
         v[n][d]      = vn;
         xprime[n][d] = x[n][d]+vn*dt;
