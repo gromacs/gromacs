@@ -148,15 +148,22 @@ $(LIB)(fnbf.o):		fnbf.m4 inner.m4 $(M4MAC) $(M4FILE) $(CPUMAKEF)
 			$(AR) $(ARFLAGS) $(LIB) fnbf.o
 			$(RM) fnbf.c inner.h fnbf.o
 
+ifeq ($(CC_MKINL),)
+CC_MKINL	= $(CC) $(C-FLAGS)
+endif
+ifeq ($(LD_MKINL),)
+LD_MKINL	= $(LD)
+endif
+
 mkinl.o:		mkinl.c $(CPUMAKEF)
-			$(CC) $(C-FLAGS) -g -c $(SYSDEFS) mkinl.c 
+			$(CC_MKINL) -g -c $(SYSDEFS) mkinl.c 
 
 mkinl:			mkinl.o
-			$(LD) -o mkinl mkinl.o
+			$(LD_MKINL) -o mkinl mkinl.o
 
 $(LIB)(innerf.o):	mkinl.c $(CPUMAKEF)
-			$(CC) $(C-FLAGS) -g -c $(SYSDEFS) mkinl.c 
-			$(LD) -o mkinl mkinl.o
+			$(CC_MKINL) -g -c $(SYSDEFS) mkinl.c 
+			$(LD_MKINL) -o mkinl mkinl.o
 			$(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) inner.m4 > inner.h
 			./mkinl 0 1
 			$(F77) $(FFLAGS) -c innerf.f
@@ -164,8 +171,8 @@ $(LIB)(innerf.o):	mkinl.c $(CPUMAKEF)
 			$(RM) innerf.f innerf.o mkinl.o mkinl
 
 $(LIB)(innerc.o):	mkinl.c inner.m4 $(CPUMAKEF)
-			$(CC) $(C-FLAGS) -g -c $(SYSDEFS) mkinl.c 
-			$(LD) -o mkinl mkinl.o
+			$(CC_MKINL) -g -c $(SYSDEFS) mkinl.c 
+			$(LD_MKINL) -o mkinl mkinl.o
 			$(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) inner.m4 > inner.h
 			./mkinl 1 1
 			$(RM) mkinl
