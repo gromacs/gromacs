@@ -65,7 +65,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 32;
+static const int tpx_version = 33;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -182,7 +182,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
 {
   int  i,j,k,*tmp,idum=0; 
   bool bDum=TRUE;
-  real rdum;
+  real rdum,bd_temp;
   rvec vdum;
   bool bSimAnn;
   real zerotemptime,finish_t,init_temp,finish_temp;
@@ -426,9 +426,17 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
       fprintf(stderr,"Note: nLincsIter not in run input file, setting it to %d\n",
 	      ir->nLincsIter);
     }
-    do_real(ir->bd_temp);
+    if (file_version < 33)
+      do_real(bd_temp);
     do_real(ir->bd_fric);
     do_int(ir->ld_seed);
+    if (file_version >= 33) {
+      for(i=0; i<DIM; i++)
+	do_rvec(ir->deform[i]);
+    } else {
+      for(i=0; i<DIM; i++)
+	clear_rvec(ir->deform[i]);
+    }
     if (file_version >= 14)
       do_real(ir->cos_accel);
     else if (bRead)
@@ -472,6 +480,10 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
       }
       ndo_real(ir->opts.ref_t,ir->opts.ngtc,bDum); 
       ndo_real(ir->opts.tau_t,ir->opts.ngtc,bDum); 
+      if (file_version<33 && ir->eI==eiBD) {
+	for(i=0; i<ir->opts.ngtc; i++)
+	  ir->opts.tau_t[i] = bd_temp;
+      }
     }
     if (ir->opts.ngfrz > 0) 
       ndo_ivec(ir->opts.nFreeze,ir->opts.ngfrz,bDum);

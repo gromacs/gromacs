@@ -240,8 +240,10 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 	  mu,mu+DIM);
 
   if (fr->ePBC != epbcNONE) { 
-    /* Compute shift vectors every step, because of pressure coupling! */
-    if (parm->ir.epc != epcNO)
+    /* Compute shift vectors every step,
+     * because of pressure coupling or box deformation!
+     */
+    if (DYNAMIC_BOX(parm->ir))
       calc_shifts(box,box_size,fr->shift_vec);
     
     if (bNS) { 
@@ -264,7 +266,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
       pr_rvecs(debug,0,"cgcm",fr->cg_cm,nsb->cgtotal);
   }
   
-  /* Communicate coordinates and sum dipole and net charge if necessary */
+  /* Communicate coordinates and sum dipole if necessary */
   if (PAR(cr)) {
     move_x(log,cr->left,cr->right,x,nsb,nrnb);
     gmx_sum(2*DIM,mu,cr);
@@ -733,7 +735,8 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 	     char **xtc_traj,int *fp_ene,
 	     FILE **fp_dgdl,FILE **fp_field,t_mdebin **mdebin,t_groups *grps,
 	     tensor force_vir,tensor shake_vir,t_mdatoms *mdatoms,rvec mu_tot,
-	     bool *bNEMD,bool *bSimAnn,t_vcm **vcm,t_nsborder *nsb)
+	     bool *bNEMD,bool *bSimAnn,t_vcm **vcm,
+	     t_nsborder *nsb)
 {
   int  i,j,n;
   real tmpt,mod;

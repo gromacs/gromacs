@@ -374,14 +374,14 @@ static void do_update_bd(int start,int homenr,double dt,
                          real invmass[],unsigned short ptype[],
                          unsigned short cFREEZE[],unsigned short cTC[],
                          rvec x[],rvec xprime[],rvec v[],rvec vold[],
-                         rvec f[],real temp,real fr,
+                         rvec f[],real fr,
                          int ngtc,real tau_t[],real ref_t[],
                          gmx_rng_t gaussrand)
 {
   int    gf,gt;
   real   vn;
   static real *rf=NULL;
-  real   rfac=0,invfr=0;
+  real   invfr=0;
   int    n,d;
   unsigned long  jran;
 
@@ -389,11 +389,12 @@ static void do_update_bd(int start,int homenr,double dt,
     snew(rf,ngtc);
 
   if(fr) {
-    rfac  = sqrt(2.0*BOLTZ*temp/(fr*dt));
+    for(n=0; n<ngtc; n++)
+      rf[n] = sqrt(2.0*BOLTZ*ref_t[n]/(fr*dt));
     invfr = 1.0/fr;
   } else
     for(n=0; n<ngtc; n++)
-      rf[n]  = sqrt(2.0*BOLTZ*ref_t[n]);
+      rf[n] = sqrt(2.0*BOLTZ*ref_t[n]);
 
   for(n=start; (n<start+homenr); n++) {
     gf = cFREEZE[n];
@@ -402,7 +403,7 @@ static void do_update_bd(int start,int homenr,double dt,
       vold[n][d]     = v[n][d];
       if((ptype[n]!=eptDummy) && (ptype[n]!=eptShell) && !nFreeze[gf][d]) {
         if(fr)
-          vn         = invfr*f[n][d] + rfac*gmx_rng_gaussian_table(gaussrand);
+          vn         = invfr*f[n][d] + rf[n]*gmx_rng_gaussian_table(gaussrand);
         else
           /* NOTE: invmass = 1/(mass*fric_const*dt) */
           vn         = invmass[n]*f[n][d]*dt 
@@ -567,6 +568,50 @@ void calc_ke_part_visc(bool bFirstStep,int start,int homenr,
   inc_nrnb(nrnb,eNR_EKIN,homenr);
 }
 
+static void deform(int start,int homenr,rvec x[],matrix box,
+		   t_inputrec *ir,int step,bool bFirstStep)
+{
+  static matrix box_first;
+  matrix new,invbox,mu;
+  real   elapsed_time;
+  int    i,j;  
+
+  if (bFirstStep) {
+    /* Save the first structure, so we can avoid rounding problems
+     * during slow deformation.
+     */
+    copy_mat(box,box_first);
+  } else {
+    elapsed_time = (step - ir->init_step)*ir->delta_t;
+    copy_mat(box,new);
+    for(i=0; i<DIM; i++)
+      for(j=0; j<DIM; j++)
+	if (ir->deform[i][j] != 0) {
+	  new[i][j] = box_first[i][j] + elapsed_time*ir->deform[i][j];
+	}
+    /* We correct the off-diagonal elements,
+     * which can grow indefinitely during shearing,
+     * so the shifts do not get messed up.
+     */
+    for(i=1; i<DIM; i++) {
+      for(j=i-1; j>=0; j--) {
+	while (new[i][j] - box[i][j] > 0.5*new[j][j])
+	  rvec_dec(new[i],new[j]);
+	while (new[i][j] - box[i][j] < -0.5*new[j][j])
+	  rvec_inc(new[i],new[j]);
+      }
+    }
+    m_inv(box,invbox);
+    copy_mat(new,box);
+    mmul(box,invbox,mu);
+    
+    for(i=start; i<start+homenr; i++) {
+      x[i][XX] = mu[XX][XX]*x[i][XX]+mu[YY][XX]*x[i][YY]+mu[ZZ][XX]*x[i][ZZ];
+      x[i][YY] = mu[YY][YY]*x[i][YY]+mu[ZZ][YY]*x[i][ZZ];
+      x[i][ZZ] = mu[ZZ][ZZ]*x[i][ZZ];
+    }
+  }	
+}
 
 
 void update(int          natoms,  /* number of atoms in simulation */
@@ -725,7 +770,7 @@ void update(int          natoms,  /* number of atoms in simulation */
                    ir->opts.nFreeze,md->invmass,md->ptype,
                    md->cFREEZE,md->cTC,
                    state->x,xprime,state->v,vold,force,
-                   ir->bd_temp,ir->bd_fric,
+                   ir->bd_fric,
                    ir->opts.ngtc,ir->opts.tau_t,ir->opts.ref_t,
                    sd_gaussrand);
     else
@@ -849,6 +894,8 @@ void update(int          natoms,  /* number of atoms in simulation */
         for(m=0;m<=i;m++)
           state->box[i][m] += dt*state->boxv[i][m];
     }
+    if (DEFORM(*ir))
+      deform(start,homenr,state->x,state->box,ir,step,bFirstStep);
     where();
   }
 }

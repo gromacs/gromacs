@@ -30,7 +30,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <p> </p>
 <li><A HREF="#pp"><b>preprocessing</b></A> (title, warnings, cpp, include, define)
 <li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, init_step, comm_mode, nstcomm, comm_grps)
-<li><A HREF="#ld"><b>langevin dynamics</b></A> (bd_temp, bd_fric, ld_seed)
+<li><A HREF="#ld"><b>langevin dynamics</b></A> (bd_fric, ld_seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
 <li><a HREF="#xmdrun"><b>shell molecular dynamics</b></a>(emtol,niter,fcstep)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
@@ -44,7 +44,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#egexcl"><b>Energy group exclusions</b></A> (energygrp_excl)
 <li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre_weighting, disre_mixed, disre_fc, disre_tau, nstdisreout, orire, orire_fc, orire_tau, orire_fitgrp, nstorireout)
 <li><A HREF="#free"><b>Free Energy Perturbation</b></A> (free_energy, init_lambda, delta_lambda, sc_alpha, sc_sigma)
-<li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc_grps, accelerate, freezegrps, freezedim, cos_acceleration)
+<li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc_grps, accelerate, freezegrps, freezedim, cos_acceleration, deform)
 <li><A HREF="#ef"><b>Electric fields</b></A> (E_x, E_xt, E_y, E_yt, E_z, E_zt )
 <li><A HREF="#user"><b>User defined thingies</b></A> (user1_grps, user2_grps, userint1, userint2, userint3, userint4, userreal1, userreal2, userreal3, userreal4)
 <li><A HREF="#idx"><b>Index</b></A>
@@ -120,7 +120,7 @@ a Berendsen thermostat with the same <b>tau_t</b>.</dd>
 <dd>An Euler integrator for Brownian or position Langevin dynamics, the
 velocity is the force divided by a friction coefficient 
 (<b><A HREF="#ld">bd_fric</A></b> [amu ps<sup>-1</sup>])
-plus random thermal noise (<b><A HREF="#ld">bd_temp</A></b> [K]).
+plus random thermal noise (<b><A HREF="#tc">ref_t</A></b>).
 When <b><A HREF="#ld">bd_fric</A></b>=0, the friction coefficient for each
 particle is calculated as mass/<b><A HREF="#tc">tau_t</A></b>, as for the
 integrator <tt>sd</tt>.
@@ -191,9 +191,6 @@ set <tt>init_step</tt> to the step number of the restart frame.
 <h3><!--Idx-->Langevin dynamics<!--EIdx--></h3>
 
 <dl>
-<dt><h4>bd_temp: (300) [K]</h4></dt>
-<dd>temperature in Brownian dynamics run (controls thermal noise level).
-When <b>bd_fric</b>=0, <b><A HREF="#tc">ref_t</A></b> is used instead.</dd>
 <dt><h4>bd_fric: (0) [amu ps<sup>-1</sup>]</h4></dt>
 <dd>Brownian dynamics friction coefficient.
 When <b>bd_fric</b>=0, the friction coefficient for each
@@ -631,11 +628,8 @@ the second value is the reference z-pressure [bar].
 The two <b>compressibility</b> [bar<sup>-1</sup>] values are the compressibility
 in the x/y and z direction respectively.
 The value for the z-compressibility should be reasonably accurate since it
-influences the converge of the surface-tension, it can also be set to zero
+influences the convergence of the surface-tension, it can also be set to zero
 to have a box with constant height.</dd>
-<dt><b>triclinic</b></dt>
-<dd>Fully dynamic box - supported, but experimental. You should
-provide six values for the compressibility and reference pressure.</dd>
 </dl></dd>
 
 <dt><h4>tau_p: (1) [ps]</h4></dt>
@@ -929,6 +923,18 @@ The acceleration is in the X-direction and the magnitude is
 <b>cos_acceleration</b> cos(2 pi z/boxheight).
 Two terms are added to the energy file:
 the amplitude of the velocity profile and 1/viscosity.</dd>
+<dt><h4>deform: (0 0 0 0 0 0) [nm ps<sup>-1</sup>]</h4></dt>
+<dd>The velocities of deformation for the box elements:
+a(x) b(y) c(z) b(x) c(x) c(y). Each step the box elements
+for which <b>deform</b> is non-zero are calculated as:
+box(t0)+(t-t0)*deform, off-diagonal elements are corrected
+for periodicity. The coordinates are transformed accordingly.
+Frozen degrees of freedom are (purposely) also transformed.
+Deformation can be used together with semiisotropic or anisotropic
+pressure coupling when the appropriate compressibilities are set to zero.
+The diagonal elements can be used to <!--Idx-->strain<!--EIdx--> a solid.
+The off-diagonal elements can be used to <!--Idx-->shear<!--EIdx--> a solid
+or a liquid.</dd>
 </dl>
 
 <A NAME="ef"><br>
@@ -976,7 +982,6 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#sa">annealing_time</A><br>
 <A HREF="#sa">annealing_temp</A><br>
 <A HREF="#ld">bd_fric</A><br>
-<A HREF="#ld">bd_temp</A><br>
 <A HREF="#vdw">bDispCorr</A><br>
 <A HREF="#run">comm_mode</A><br>
 <A HREF="#run">comm_grps</A><br>
@@ -987,6 +992,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#el">coulombtype</A><br>
 <A HREF="#pp">cpp</A><br>
 <A HREF="#pp">define</A><br>
+<A HREF="#neq">deform</A><br>
 <A HREF="#free">delta_lambda</A><br>
 <A HREF="#nmr">disre</A><br>
 <A HREF="#nmr">disre_weighting</A><br>

@@ -155,10 +155,10 @@ typedef struct {
   real LincsWarnAngle;  /* If bond rotates more than %g degrees, warn   */
   int  nLincsIter;      /* Number of iterations in the final Lincs step */
   bool bShakeSOR;       /* Use successive overrelaxation for shake      */
-  real bd_temp;         /* Temperature for Brownian Dynamics (BD)       */
-  real bd_fric;         /* Friction coefficient for BD (amu / ps)       */
+  real bd_fric;         /* Friction coefficient for BD (amu/ps)         */
   int  ld_seed;         /* Random seed for SD and BD                    */
   real cos_accel;       /* Acceleration for viscosity calculation       */
+  tensor deform;        /* Triclinic deformation velocities (nm/ps)     */
   int  userint1;        /* User determined parameters                   */
   int  userint2;
   int  userint3;
@@ -172,4 +172,6 @@ typedef struct {
   t_cosines et[DIM];	/* Electric field stuff	(time part)		*/
 } t_inputrec;
 
-#define FULLPBC(ir) (ir.ePBC == epbcFULL)
+#define FULLPBC(ir) ((ir).ePBC == epbcFULL)
+#define DEFORM(ir) ((ir).deform[XX][XX]!=0 || (ir).deform[YY][YY]!=0 || (ir).deform[ZZ][ZZ]!=0 || (ir).deform[YY][XX]!=0 || (ir).deform[ZZ][XX]!=0 || (ir).deform[ZZ][YY]!=0)
+#define DYNAMIC_BOX(ir) ((ir).epc != epcNO || DEFORM(ir))

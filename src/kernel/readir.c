@@ -71,7 +71,7 @@
 static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   acc[STRLEN],accgrps[STRLEN],freeze[STRLEN],frdim[STRLEN],
   energy[STRLEN],user1[STRLEN],user2[STRLEN],vcm[STRLEN],xtc_grps[STRLEN],
-  orirefitgrp[STRLEN],egexcl[STRLEN];
+  orirefitgrp[STRLEN],egexcl[STRLEN],deform[STRLEN];
 static char anneal[STRLEN],anneal_npoints[STRLEN],
   anneal_time[STRLEN],anneal_temp[STRLEN];
 static char efield_x[STRLEN],efield_xt[STRLEN],efield_y[STRLEN],
@@ -192,7 +192,9 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     sprintf(err_buf,"compressibility must be > 0 when using pressure" 
 	    " coupling %s\n",EPCOUPLTYPE(ir->epc));
     CHECK(ir->compress[XX][XX] < 0 || ir->compress[YY][YY] < 0 || 
-	  ir->compress[ZZ][ZZ] < 0 || trace(ir->compress) == 0);
+	  ir->compress[ZZ][ZZ] < 0 || 
+	  (trace(ir->compress) == 0 && ir->compress[YY][XX] <= 0 &&
+	   ir->compress[ZZ][XX] <= 0 && ir->compress[ZZ][YY] <= 0));
     
     sprintf(err_buf,"pressure coupling with PPPM not implemented, use PME");
     CHECK(ir->coulombtype == eelPPPM);
@@ -332,7 +334,7 @@ void get_ir(char *mdparin,char *mdparout,
   char      epsbuf[STRLEN];
   t_inpfile *inp;
   char      *tmp;
-  int       i,m,ninp,ecm_mode;
+  int       i,j,m,ninp,ecm_mode;
   char      dummy[STRLEN];
   double    epsje;
   
@@ -364,7 +366,6 @@ void get_ir(char *mdparin,char *mdparout,
   
   CCTYPE ("LANGEVIN DYNAMICS OPTIONS");
   CTYPE ("Temperature, friction coefficient (amu/ps) and random seed");
-  RTYPE ("bd-temp",     ir->bd_temp,    300.0);
   RTYPE ("bd-fric",     ir->bd_fric,    0.0);
   ITYPE ("ld-seed",     ir->ld_seed,    1993);
   
@@ -568,7 +569,8 @@ void get_ir(char *mdparin,char *mdparout,
   STYPE ("freezegrps",  freeze,         NULL);
   STYPE ("freezedim",   frdim,          NULL);
   RTYPE ("cos-acceleration", ir->cos_accel, 0);
-  
+  STYPE ("deform",      deform,         NULL);
+
   /* Electric fields */
   CCTYPE("Electric fields");
   CTYPE ("Format is number of terms (int) and for all terms an amplitude (real)");
@@ -695,7 +697,35 @@ void get_ir(char *mdparin,char *mdparout,
     fprintf(stderr,"ERROR: Need one orientation restraint fit group\n");
     (*nerror)++;
   }
-  
+
+  clear_mat(ir->deform);
+  for(i=0; i<6; i++)
+    dumdub[0][i] = 0;
+  m = sscanf(deform,"%lf %lf %lf %lf %lf %lf",
+	     &(dumdub[0][0]),&(dumdub[0][1]),&(dumdub[0][2]),
+	     &(dumdub[0][3]),&(dumdub[0][4]),&(dumdub[0][5]));
+  for(i=0; i<3; i++)
+    ir->deform[i][i] = dumdub[0][i];
+  ir->deform[YY][XX] = dumdub[0][3];
+  ir->deform[ZZ][XX] = dumdub[0][4];
+  ir->deform[ZZ][YY] = dumdub[0][5];
+  if (ir->epc != epcNO) {
+    for(i=0; i<3; i++)
+      for(j=0; j<=i; j++)
+	if (ir->deform[i][j]!=0 && ir->compress[i][j]!=0) {
+	  fprintf(stderr,"ERROR: A box element has deform set and compressibility > 0\n");
+	  (*nerror)++;
+	}
+    for(i=0; i<3; i++)
+      for(j=0; j<i; j++)
+	if (ir->deform[i][j]!=0) {
+	  for(m=j; m<DIM; m++)
+	    if (ir->compress[m][j]!=0) {
+	      sprintf(warn_buf,"An off-diagonal box element has deform set while compressibility > 0 for the same component of another box vector, this might lead to spurious periodicity effects.");
+	      warning(NULL);
+	    }
+	}
+  }
 
   sfree(dumstr[0]);
   sfree(dumstr[1]);

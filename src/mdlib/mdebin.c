@@ -78,7 +78,7 @@ static char *pcouplmu_nm[] = {
 #define NBOXS asize(boxs_nm)
 #define NTRICLBOXS asize(tricl_boxs_nm)
 
-static bool bShake,bTricl;
+static bool bShake,bTricl,bDynBox;
 static int  f_nre=0,epc,etc;
 
 t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
@@ -180,14 +180,15 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
   if (bShake) 
     bShake = (getenv("SHAKEVIR") != NULL);
   epc = ir->epc;
-  bTricl = TRICLINIC(ir->compress);
+  bTricl = TRICLINIC(ir->compress) || TRICLINIC(ir->deform);
+  bDynBox = DYNAMIC_BOX(*ir);
   etc = ir->etc;
   
   /* Energy monitoring */
   snew(md,1);
   md->ebin  = mk_ebin();
   md->ie    = get_ebin_space(md->ebin,f_nre,ener_nm);
-  if (epc != epcNO)
+  if (bDynBox)
     md->ib    = get_ebin_space(md->ebin, bTricl ? NTRICLBOXS :
 			       NBOXS, bTricl ? tricl_boxs_nm : boxs_nm);
   if (bShake) {
@@ -346,7 +347,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
    */
   copy_energy(ener,ecopy);
   add_ebin(md->ebin,md->ie,f_nre,ecopy,step);
-  if (epc != epcNO || grps->cosacc.cos_accel != 0) {
+  if (bDynBox || grps->cosacc.cos_accel != 0) {
     if(bTricl) {
       tricl_bs[0]=box[XX][XX];
       tricl_bs[1]=box[YY][XX];
@@ -367,7 +368,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
       bs[4] = (tmass*AMU)/(bs[3]*NANO*NANO*NANO);
     }
   }  
-  if (epc != epcNO) {
+  if (bDynBox) {
     /* This is pV (in kJ/mol) */  
     if(bTricl) {
       tricl_bs[8] = tricl_bs[6]*ener[F_PRES]/PRESFAC;
@@ -549,7 +550,7 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
     fprintf(log,"\n");
 
     if (!bCompact) {
-      if (epc != epcNO) {
+      if (bDynBox) {
 	pr_ebin(log,md->ebin,md->ib, bTricl ? NTRICLBOXS : NBOXS,5,mode,steps,TRUE);      
 	fprintf(log,"\n");
       }

@@ -400,10 +400,12 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_int(fp,"inputrec->nProjOrder",-1,ir1->nProjOrder,ir2->nProjOrder);
   cmp_real(fp,"inputrec->LincsWarnAngle",-1,ir1->LincsWarnAngle,ir2->LincsWarnAngle,ftol);
   cmp_int(fp,"inputrec->nLincsIter",-1,ir1->nLincsIter,ir2->nLincsIter);
-  cmp_real(fp,"inputrec->bd_temp",-1,ir1->bd_temp,ir2->bd_temp,ftol);
   cmp_real(fp,"inputrec->bd_fric",-1,ir1->bd_fric,ir2->bd_fric,ftol);
   cmp_int(fp,"inputrec->ld_seed",-1,ir1->ld_seed,ir2->ld_seed);
   cmp_real(fp,"inputrec->cos_accel",-1,ir1->cos_accel,ir2->cos_accel,ftol);
+  cmp_rvec(fp,"inputrec->deform(a)",-1,ir1->deform[XX],ir2->deform[XX],ftol);
+  cmp_rvec(fp,"inputrec->deform(b)",-1,ir1->deform[YY],ir2->deform[YY],ftol);
+  cmp_rvec(fp,"inputrec->deform(c)",-1,ir1->deform[ZZ],ir2->deform[ZZ],ftol);
   cmp_int(fp,"inputrec->userint1",-1,ir1->userint1,ir2->userint1);
   cmp_int(fp,"inputrec->userint2",-1,ir1->userint2,ir2->userint2);
   cmp_int(fp,"inputrec->userint3",-1,ir1->userint3,ir2->userint3);

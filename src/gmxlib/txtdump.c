@@ -435,10 +435,10 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir)
     PI("lincs_order",ir->nProjOrder);
     PR("lincs_warnangle",ir->LincsWarnAngle);
     PI("lincs_iter",ir->nLincsIter);
-    PR("bd_temp",ir->bd_temp);
     PR("bd_fric",ir->bd_fric);
     PI("ld_seed",ir->ld_seed);
     PR("cos_accel",ir->cos_accel);
+    pr_rvecs(fp,indent,"deform",ir->deform,DIM);
     PI("userint1",ir->userint1);
     PI("userint2",ir->userint2);
     PI("userint3",ir->userint3);
