@@ -468,15 +468,24 @@ void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
   t_corr       *msd;
   int          *gnx;
   atom_id      **index;
-  char         **grpname;
+  char         *ndx,**grpname;
   int          i,i0,i1,j,N;
   real         *DD,*SigmaD,a,a2,b;
   
-  gnx     = (int *)calloc(nrgrp,sizeof(int));
-  index   = (atom_id **)calloc(nrgrp,sizeof(atom_id *));
-  grpname = (char **)calloc(nrgrp,sizeof(char *));
+  snew(gnx,nrgrp);
+  snew(index,nrgrp);
+  snew(grpname,nrgrp);
     
-  get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),nrgrp,gnx,index,grpname);
+  ndx = ftp2fn_null(efNDX,NFILE,fnm);
+  if (bMol && !ndx) {
+    gnx[0] = top->blocks[ebMOLS].nr;
+    snew(index[0],gnx[0]);
+    grpname[0] = "Molecules";
+    for(i=0; (i<gnx[0]); i++)
+      index[0][i] = i;
+  }
+  else
+    get_index(&top->atoms,ndx,nrgrp,gnx,index,grpname);
 
   msd = init_corr(nrgrp,type,dim_factor,bMW,bMol,top);
   
@@ -497,8 +506,8 @@ void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
   for(i0=0; i0<msd->nframes && msd->time[i0]<beginfit; i0++) 
     ;
   if (endfit == -1) {
-      i1 = msd->nframes;
-      endfit = msd->time[i1-1];
+    i1 = msd->nframes;
+    endfit = msd->time[i1-1];
   } else
     for(i1=i0; i1<msd->nframes && msd->time[i1]<=endfit; i1++)
 		      ;
@@ -520,7 +529,7 @@ void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
       DD[j]     *= FACTOR/msd->dim_factor;
       SigmaD[j] *= FACTOR/msd->dim_factor;
       fprintf(stdout,"D[%10s] %.3f (+/- %.3f) 1e-5 cm^2/s\n",
-		grpname[j],DD[j],SigmaD[j]);
+	      grpname[j],DD[j],SigmaD[j]);
     }
   }
   /* Print and show mean square displacement */
