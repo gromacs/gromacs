@@ -51,11 +51,15 @@ static char *SRCID_fnbf_c = "$Id$";
 #include "force.h"
 #include "inner.h"
 #include "nrnb.h"
-#ifdef USEVECTOR
 #include "smalloc.h"
 
+#ifdef USEVECTOR
 static real *fbuf=NULL;
 #endif	
+
+#ifdef SUPERARRAY
+static real *super=NULL;
+#endif
 
 void do_fnbf(FILE *log,t_forcerec *fr,
 	     rvec x[],rvec f[],t_mdatoms *mdatoms,
@@ -68,10 +72,29 @@ void do_fnbf(FILE *log,t_forcerec *fr,
   int      i,i0,i1,nrnb_ind;
   bool     bWater;
   
+#ifdef USEF77
+#ifdef FINVSQRT
+  fillbuf();
+#endif
+#endif
 #ifdef USEVECTOR
   if (fbuf == NULL)
     snew(fbuf,mdatoms->nr*3);
 #endif  
+#ifdef SUPERARRAY
+  /* Allocate and fill the super array */
+  if (super == NULL) {
+    snew(super,mdatoms->nr*8);
+  }
+  for(i=0; (i<mdatoms->nr); i++) {
+    for(i0=0; (i0<DIM); i0++) {
+      super[8*i+i0] = x[i][i0];
+      super[8*i+i0+DIM] = f[i][i0];
+    }
+    super[8*i+6] = md->chargeA[i];
+    super[8*i+7] = md->typeA[i]+0.01;
+  }
+#endif
   if (eNL >= 0) {
     i0 = eNL;
     i1 = i0+1;
@@ -176,6 +199,12 @@ ifdef(`USEVECTOR',`define(`ALL_ARGS',`fbuf,SCAL(nlist->nri),nlist->iinr,nlist->`
       inc_nrnb(nrnb,nrnb_ind,nlist->nrj);
     }
   }
+#ifdef SUPERARRAY
+  /* Copy back the forces from the superarray */
+  for(i=0; (i<mdatoms->nr); i++) 
+    for(i0=0; (i0<DIM); i0++) 
+      f[i][i0] = super[8*i+i0+DIM];
+#endif
 }
 
 static real dist2(rvec x,rvec y)
@@ -226,11 +255,12 @@ real do_14(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
   static    real *nbfp14=NULL;
   real      eps;
   real      r2,rtab2;
+  rvec      fi,fj;
   int       ai,aj,itype;
   t_iatom   *ia0,*iatom;
   int       gid,shift14;
   int       j_index[] = { 0, 1 };
-  int       i1=1,i3=3;
+  int       i1=1,i3=3,si,sj;
 
 #ifdef USEVECTOR
   if (fbuf == NULL)
@@ -256,6 +286,9 @@ real do_14(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
     aj    = iatom[2];
     
     r2    = distance2(x[ai],x[aj]);
+    
+    copy_rvec(f[ai],fi);
+    copy_rvec(f[aj],fj);
     
     if (r2 >= rtab2) {
       fprintf(log,"%d %8.3f %8.3f %8.3f\n",(int)ai+1,
@@ -297,7 +330,6 @@ define(`ARG1',`egnb,SCAL(fr->tabscale),fr->VFtab')
 define(`ARG2',`SCAL(i1),&ai,&shift14,&gid,j_index,&aj,x[0],fr->fshift[0],SCAL(eps),md->chargeA,f[0],egcoul,fr->shift_vec[0]')
 ifdef(`USEVECTOR',`define(`ARG3',`fbuf,'`ARG2')',`define(`ARG3',`ARG2')')
 
-	     
       FUNC(ljctabfree)(SCAL(i3),md->typeA,nbfp,ARG1,
 		       md->chargeB,md->typeB,SCAL(lambda),dvdlambda,ARG3);
 		 
@@ -309,6 +341,18 @@ ifdef(`USEVECTOR',`define(`ARG3',`fbuf,'`ARG2')',`define(`ARG3',`ARG2')')
     }
     else 
       FUNC(ljctab)(SCAL(fr->ntype),md->typeA,nbfp14,ARG1,ARG3);
+      
+    /* Now determine the 1-4 force in order to add it to the fshift array 
+     * Actually we are first computing minus the force.
+     */
+    
+    rvec_sub(f[ai],fi,fi);
+    /*rvec_sub(f[aj],fj,fj);  */
+    si = SHIFT_INDEX(g,ai);
+    rvec_inc(fr->fshift[si],fi);
+    sj = SHIFT_INDEX(g,aj);
+    rvec_dec(fr->fshift[sj],fi);
+
   }
   return 0.0;
 }
