@@ -66,7 +66,7 @@ static void dump_confs(int step,t_atoms *atoms,
 static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 		       t_mdatoms *md,int start,int homenr,
 		       int *nbl,int **sbl,
-		       int *ncm,int *cmax,
+		       int *ncm,int *cmax,int *nrtot,
 		       rvec **r,int **bla1,int **bla2,int **blnr,int **blbnb,
 		       real **bllen,real **blc,real **blcc,real **blm,
 		       real **tmp1,real **tmp2,real **tmp3,
@@ -80,8 +80,9 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
   real        len=0,len1,sign;
   real        im1,im2,imcen;
   
-  ncons=idef->il[F_SHAKE].nr/3;
-
+  ncons  = idef->il[F_SHAKE].nr/3;
+  *nrtot = 0;
+  
   if (ncons > 0) {
 
     /* Make constraint-neighbour list */
@@ -127,6 +128,7 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 	if ((a1==b1 || a1==b2) || (a2==b1 || a2==b2)) 
 	  if (i != k) nr++;
       }
+      *nrtot += nr;
       if (nr > *cmax) *cmax=nr;
       type=iatom[j];
       len =idef->iparams[type].shake.dA;
@@ -225,9 +227,10 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 			    int step,t_mdatoms *md,int start,int homenr,
 			    int *nbl,int **sbl,
 			    rvec *x,rvec *xprime,matrix box,
-			    real lambda,real *dvdlambda,bool bInit)
+			    real lambda,real *dvdlambda,bool bInit,
+			    t_nrnb *nrnb)
 {
-  static int       *bla1,*bla2,*blnr,*blbnb;
+  static int       *bla1,*bla2,*blnr,*blbnb,nrtot=0;
   static rvec      *r;
   static real      *bllen,*blc,*blcc,*blm,*tmp1,*tmp2,*tmp3,*lincslam,
                    *bllen0,*ddist;
@@ -243,11 +246,13 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
     init_lincs(stdlog,top,ir,md,
 	       start,homenr,
 	       nbl,sbl,
-	       &ncm,&cmax,
+	       &ncm,&cmax,&nrtot,
 	       &r,&bla1,&bla2,&blnr,&blbnb,
 	       &bllen,&blc,&blcc,&blm,&tmp1,&tmp2,&tmp3,&lincslam,
 	       &bllen0,&ddist);
   } else {
+    if (nc == 0)
+      return;
     dt   = ir->delta_t;
     dt_2 = 1.0/(dt*dt);
     
@@ -278,6 +283,7 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 	     bllen,blc,blcc,blm,nit,ir->nProjOrder,
 	     md->invmass,r,tmp1,tmp2,tmp3,wang,&warn,lincslam);
 #endif
+      inc_nrnb(nrnb,eNR_LINCS,nc);
       if (ir->bPert) {
 	real dvdl=0;
 	
@@ -297,6 +303,7 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 	       blbnb,bllen,blcc,blm,nit,ir->nProjOrder,
 	       r,tmp1,tmp2,tmp3,wang,&warn);
 #endif
+      inc_nrnb(nrnb,eNR_LINCSLD,nc);
     }
     
     if (do_per_step(step,ir->nstLincsout)) {
@@ -464,7 +471,7 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
 	constrain_lincs(stdlog,top,ir,0,md,
 			start,homenr,
 			&nblocks,&sblock,
-			NULL,NULL,NULL,0,NULL,TRUE);
+			NULL,NULL,NULL,0,NULL,TRUE,nrnb);
       } else
 	please_cite(stdlog,"Ryckaert77a");
     }
@@ -486,7 +493,7 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
 	constrain_lincs(stdlog,top,ir,step,md,
 			start,homenr,
 			&nblocks,&sblock,
-			x,xprime,box,lambda,dvdlambda,FALSE);
+			x,xprime,box,lambda,dvdlambda,FALSE,nrnb);
     }
     if (nsettle > 0) {
       int  ow1;

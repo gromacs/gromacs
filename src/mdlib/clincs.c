@@ -236,8 +236,13 @@ void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
     } /* 17 ncons flops */
   } /* nit*ncons*(35+9*nrec) flops */
   /* Total: 
-   * ncons * (16 + (6<nr>+10) + 9 nrec + 16 + nit*(35+9nrec) =
-   * ncons * (42 + 9 nrec * (nit+1) + 6<nr> + 35 nit)
+   * 6 * nrtot + ncons * (16 + 10 + 9 nrec + 16 + nit*(35+9nrec) =
+   * 6 * nrtot + ncons * (42 + 9 nrec * (nit+1) + 35 nit) or alternatively
+   * ncons * (6 <nr> + 42 + 9 nrec * (nit+1) + 35 nit) and according to
+   * Berk <nr> =~ 3, such that we get (with nit = nrec = 4)
+   * ncons * (60 + 180 + 140) = 380 * ncons
+   * For Lincs-LD this would be (nrec = 8, nit = 4)
+   * 560 ncons 
    */
 }
 

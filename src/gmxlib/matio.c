@@ -446,8 +446,8 @@ void write_xpm_map3(FILE *out,int n_x,int n_y,int *nlevels,
   real   r,g,b,clevels;
 
   if (*nlevels > NMAP*NMAP) {
-    fprintf(stderr,"Warning, too many levels (%d) in matrix, using %u only\n",
-	    *nlevels,NMAP*NMAP);
+    fprintf(stderr,"Warning, too many levels (%d) in matrix, using %d only\n",
+	    *nlevels,(int) (NMAP*NMAP));
     *nlevels=NMAP*NMAP;
   }
   else if (*nlevels < 2) {
@@ -503,8 +503,8 @@ void write_xpm_map(FILE *out,int n_x, int n_y,int *nlevels,real lo,real hi,
   real   invlevel,r,g,b;
 
   if (*nlevels > NMAP*NMAP) {
-    fprintf(stderr,"Warning, too many levels (%d) in matrix, using %u only\n",
-	    *nlevels,NMAP*NMAP);
+    fprintf(stderr,"Warning, too many levels (%d) in matrix, using %d only\n",
+	    *nlevels,(int) NMAP*NMAP);
     *nlevels=NMAP*NMAP;
   }
   else if (*nlevels < 2) {

@@ -103,6 +103,8 @@ static t_nrnb_data nbdata[eNRNB] = {
   { "Stop-CM",         10 },
   { "P-Coupling",      24 },
   { "Calc-Ekin",       27 },
+  { "Lincs",          380 },
+  { "Lincs-LD",       560 },
   { "Shake",           30 },
   { "Shake-V",         15 },
   { "Shake-Init",      10 },

@@ -146,7 +146,7 @@ void p_int(char *name)
   if (bC)
     fprintf(fp,"%sint  %s;\n",indent(),name);
   else {
-    fprintf(fp,"%sinteger*%d %s\n",indent(),sizeof(int),name);
+    fprintf(fp,"%sinteger*%d %s\n",indent(),(int)sizeof(int),name);
   }
 }
 

@@ -393,7 +393,7 @@ static bool do_binwrite(void *item,int nitem,int eio,
     fprintf(stderr,"Error writing %s %s to file %s (source %s, line %d)\n",
 	    eioNames[eio],desc,curfio->fn,srcfile,line);
     fprintf(stderr,"written size %u bytes, source size %u bytes\n",
-	    wsize,size);
+	    (int)wsize,(int)size);
   }
   return (wsize == nitem);
 }
