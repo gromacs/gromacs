@@ -89,6 +89,9 @@ int main(int argc,char *argv[])
   };
 #define NFILE asize(fnm)
 
+  /* If we want to read all frames nskip must be greater than zero */
+  nskip += 1;
+
   CopyRight(stdout,argv[0]);
   
   parse_common_args(&argc,argv,0,TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,
@@ -135,13 +138,15 @@ int main(int argc,char *argv[])
   if (ssmax == -1)
     ssmax=hi;
   
-  hi=ssmax-ssmin;
-  for(j=0; (j<nres); j++) {
+  /*
+    hi=ssmax-ssmin;
+    for(j=0; (j<nres); j++) {
     for(i=0; (i<nframes); i++) 
-      ss[j][i]-=ssmin;
-  }
-  
-  ihi=hi;
+    ss[j][i]-=ssmin;
+    }
+    */
+
+  /* ihi=hi; */
   rhi.r=0,rhi.g=0,rhi.b=0;
   rlo.r=1,rlo.g=1,rlo.b=1;
   if (bCol) {
@@ -154,7 +159,7 @@ int main(int argc,char *argv[])
 
   for(i=0;i<nres;i++)
     resnr[i]=i+1;
-  out=ftp2FILE(efMAT,NFILE,fnm,"w");
+  out=ftp2FILE(efXPM,NFILE,fnm,"w");
   /*
   write_matrix(out,nres,nframes,resnr,t,ss,NULL,title,0,hi,nlevels);
   */
