@@ -115,8 +115,7 @@ real do_ewald(FILE *log,       bool bVerbose,
 	      t_inputrec *ir,
 	      rvec x[],        rvec f[],
 		  real charge[],   rvec box,
-		  real phi[],      t_commrec *cr,
-	      t_nsborder *nsb, t_nrnb *nrnb,
+	      t_commrec *cr,	      t_nsborder *nsb,
 	      matrix lrvir, real ewaldcoeff)
 {
   static    bool bFirst = TRUE;
@@ -129,7 +128,8 @@ real do_ewald(FILE *log,       bool bVerbose,
   int  lowiy,lowiz,ix,iy,iz,n;
   real tmp,cs,ss,ak,akv,mx,my,mz,m2;
   
-  if (bFirst) {  
+  if (bFirst) {
+      if (bVerbose)
     fprintf(log,"Will do ordinary reciprocal space Ewald sum.\n");
 
     if (cr != NULL) {
