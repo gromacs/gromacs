@@ -58,6 +58,7 @@
    HC     1.00800       0.000       A   0.0           0.0
  MNH3     0             0.000       A   0.0           0.0
  MCH3     0             0.000       A   0.0           0.0
+ MTYR     0             0.000       A   0.0           0.0
    
 [ nonbond_params ]
   ; i    j func          c6           c12

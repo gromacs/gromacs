@@ -101,50 +101,37 @@
     C  CP2    1   0.15300     334720.
    OS    C    1   0.14350     251040.
    C1   OS    1   0.14350     251040.
-; now the bonds for the rigid NH3 groups
-#ifdef HEAVY_H
- MNH3    C    1   0.175695    500000.
- MNH3   C1    1   0.188288    500000.
- MNH3   C2    1   0.188288    500000.
- MNH3 MNH3    1   0.158884    500000.
-#else
- MNH3    C    1   0.144494    500000.
- MNH3   C1    1   0.158002    500000.
- MNH3   C2    1   0.158002    500000.
- MNH3 MNH3    1   0.079442    500000.
-#endif
-; now the bonds for the rigid CH3 groups
-#ifdef HEAVY_H
- MCH3    N    1   0.198911    500000.
- MCH3    S    1   0.226838    500000.
- MCH3    C    1   0.204247    500000.
- MCH3   CB    1   0.204247    500000.
- MCH3   C1    1   0.204247    500000.
- MCH3   C2    1   0.204247    500000.
- MCH3 NR6*    1   0.199798    500000.
- MCH3 MCH3    1   0.184320    500000.
-#else
- MCH3    N    1   0.161051    500000.
- MCH3    S    1   0.190961    500000.
- MCH3    C    1   0.166809    500000.
- MCH3   CB    1   0.166809    500000.
- MCH3   C1    1   0.166809    500000.
- MCH3   C2    1   0.166809    500000.
- MCH3 NR6*    1   0.162009    500000.
- MCH3 MCH3    1   0.092160    500000.
-#endif
-; and the angle-constraining bonds for OH and SH groups in proteins:
-   C2   HS    1   0.23721     500000.
-   C2   HO    1   0.19849     500000.
-   C1   HO    1   0.19849     500000.
-   CB   HO    1   0.19849     500000.
-   C    HO    1   0.19849     500000.
-   P    HO    1   0.21603     500000.
 ; Added by RMS & EAB, Oct 95
   CR5   HC    1   0.10900     292880.
    C1   HC    1   0.10900     292880.
    C2   HC    1   0.10900     292880.
    C3   HC    1   0.10900     292880.
+
+; get the constraint distances
+#include "ff_dum.itp"
+
+[ constrainttypes ]
+; now the constraints for the rigid NH3 groups
+ MNH3    C    2   DC_MNC1
+ MNH3   C1    2   DC_MNC2
+ MNH3   C2    2   DC_MNC2
+ MNH3 MNH3    2   DC_MNMN
+; now the constraints for the rigid CH3 groups
+ MCH3    N    2   DC_MCN
+ MCH3    S    2   DC_MCS
+ MCH3    C    2   DC_MCC
+ MCH3   CB    2   DC_MCC
+ MCH3   C1    2   DC_MCC
+ MCH3   C2    2   DC_MCC
+ MCH3 NR6*    2   DC_MCNR
+ MCH3 MCH3    2   DC_MCMC
+; and the angle-constraining bonds for OH and SH groups in proteins:
+   C2   HS    2   DC_CS
+   C2   HO    2   DC_CO
+   C1   HO    2   DC_CO
+   CB   HO    2   DC_CO
+   C    HO    2   DC_CO
+   P    HO    2   DC_PO
 
 [ angletypes ]
   ; i    j    k func       tHC         cth

@@ -409,6 +409,21 @@ C      O       2    gb_4
 S      S       2    gb_33
 NR     FE      2    gb_32
 
+; get the constraint distances
+#include "ff_dum.itp"
+
+[ constrainttypes ]
+; now the constraints for the rigid NH3 groups
+ MNH3    C    2   DC_MNC1
+ MNH3  CH1    2   DC_MNC2
+ MNH3  CH2    2   DC_MNC2
+ MNH3 MNH3    2   DC_MNMN
+; and the angle-constraints for OH and SH groups in proteins:
+  CH2    H    2   DC_CO
+  CH1    H    2   DC_CO
+    C    H    2   DC_CO
+    P    H    2   DC_PO
+
 [ angletypes ]
 H      NL     H     2   ga_9
 H      NL     CH1   2   ga_10
