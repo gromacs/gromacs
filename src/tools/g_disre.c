@@ -32,11 +32,13 @@
 static char *SRCID_g_disre_c = "$Id$";
 #include <math.h>
 #include <string.h>
+#include <assert.h>
 #include "typedefs.h"
 #include "macros.h"
 #include "copyrite.h"
 #include "mshift.h"
 #include "xvgr.h"
+#include "vec.h"
 #include "smalloc.h"
 #include "nrnb.h"
 #include "disre.h"
@@ -114,18 +116,19 @@ static void print5(FILE *fp)
   fprintf(fp,"\n");
 }
 
-void check_viol(FILE *log,
-		t_ilist *bonds,t_iparams forceparams[],
-		t_functype functype[],
-		rvec x[],rvec f[],
-		t_forcerec *fr,matrix box,t_graph *g,
-		real *sumv,real *averv,
-		real *maxv,int *nv,
-		int isize,atom_id index[],real vvindex[])
+static void check_viol(FILE *log,t_commrec *mcr,
+		       t_ilist *disres,t_iparams forceparams[],
+		       t_functype functype[],
+		       rvec x[],rvec f[],
+		       t_forcerec *fr,matrix box,t_graph *g,
+		       real *sumv,real *averv,
+		       real *maxv,int *nv,
+		       int isize,atom_id index[],real vvindex[],
+		       t_fcdata *fcd,real aver1[],real aver2[],real aver_3[])
 {
   t_iatom *forceatoms;
-  int     i,j,nat,n,type,ftype,nviol,ndr;
-  real    mviol,tviol,viol,lam,dvdl;
+  int     i,j,nat,n,type,nviol,ndr,label;
+  real    ener,rt,mviol,tviol,viol,lam,dvdl;
   static  bool bFirst=TRUE;
   
   lam  =0;
@@ -134,35 +137,48 @@ void check_viol(FILE *log,
   nviol=0;
   mviol=0;
   ndr=0;
-  reset5();
-  forceatoms=bonds->iatoms;
+  if (ntop)
+    reset5();
+  forceatoms=disres->iatoms;
   for(j=0; (j<isize); j++) {
     vvindex[j]=0;
   }
-  for(i=0; (i<bonds->nr); ) {
-    type=forceatoms[i];
-    ftype=functype[type];
-    nat=interaction_function[ftype].nratoms; 
-    n=0;
-    do
-      n += 1+nat;
-    while ((i+n < bonds->nr) && 
-	   (forceparams[forceatoms[i+n]].disres.label ==
-	    forceparams[forceatoms[i]].disres.label));
+  nat = interaction_function[F_DISRES].nratoms+1; 
+  for(i=0; (i<disres->nr); ) {
+    type  = forceatoms[i];
+    n     = 0;
+    label = forceparams[type].disres.label;
+    if (ndr != label) 
+      fatal_error(0,"ndr = %d, label = %d\n",ndr,label);
+    do {
+      n += nat;
+    } while (((i+n) < disres->nr) && 
+	     (forceparams[forceatoms[i+n]].disres.label == label));
+    
+    calc_disres_R_6(mcr,n,&forceatoms[i],forceparams,x,fcd);
 
-    viol=interaction_function[ftype].ifunc(n,&forceatoms[i],
+    rt = pow(fcd->disres.Rt_6[0],-1.0/6.0);
+    aver1[ndr]  += rt;
+    aver2[ndr]  += sqr(rt);
+    aver_3[ndr] += pow(rt,-3.0);
+    
+    ener=interaction_function[F_DISRES].ifunc(n,&forceatoms[i],
 					   forceparams,
 					   x,f,fr,g,box,lam,&dvdl,
-					   NULL,0,NULL,NULL,NULL);
+					   NULL,0,NULL,NULL,fcd);
+    viol = fcd->disres.sumviol;
+    
+    
     if (viol > 0) {
       nviol++;
-      add5(forceparams[type].disres.label,viol);
+      if (ntop)
+	add5(forceparams[type].disres.label,viol);
       if (viol > mviol) 
-	mviol=viol;
-      tviol+=viol;
+	mviol = viol;
+      tviol += viol;
       for(j=0; (j<isize); j++) {
 	if (index[j] == forceparams[type].disres.label)
-	  vvindex[j]=viol;
+	  vvindex[j]=pow(fcd->disres.Rt_6[index[j]],-6.0);
 	}
     }
     ndr ++;
@@ -174,28 +190,101 @@ void check_viol(FILE *log,
   *averv= tviol/ndr;
   
   if (bFirst) {
-    fprintf(stderr,"\nThere are %d restraints and %d pairs\n",ndr,bonds->nr/3);
+    fprintf(stderr,"\nThere are %d restraints and %d pairs\n",ndr,disres->nr/nat);
     bFirst = FALSE;
   }
-
-  print5(log);
+  if (ntop)
+    print5(log);
 }
 
-void patch_viol(t_ilist *bonds,t_iparams forceparams[],
-		t_functype functype[])
+typedef struct {
+  int index;
+  real up1,r,rT,viol,violT;
+} t_dr_stats;
+
+static int drs_comp(const void *a,const void *b)
 {
-  t_iatom *forceatoms;
-  int     i,j,type,ftype,nat;
+  t_dr_stats *da,*db;
   
-  forceatoms=bonds->iatoms;
-  for(i=j=0; (i<bonds->nr); ) {
-    type=forceatoms[i++];
-    ftype=functype[type];
-    if (ftype == F_DISRES)
-      forceparams[ftype].disres.label=j++;
-    nat=interaction_function[ftype].nratoms;
-    i+=nat;
+  da = (t_dr_stats *)a;
+  db = (t_dr_stats *)b;
+  
+  if (da->viol > db->viol)
+    return -1;
+  else if (da->viol < db->viol)
+    return 1;
+  else
+    return 0;
+}
+
+static void dump_dump(FILE *log,char *title,
+		      real viol_tot,int ndr,int nviol,real viol_max)
+{
+  fprintf(log,"\n");
+  fprintf(log,"+++++++ Using %s averaging: ++++++++\n",title);
+  fprintf(log,"Sum of violations: %8.3f nm\n",viol_tot);
+  fprintf(log,"Average violation: %8.3f nm\n",viol_tot/ndr);
+  fprintf(log,"Largest violation: %8.3f nm\n",viol_max);
+  fprintf(log,"Number of violated restraints: %d/%d\n",nviol,ndr);
+}
+
+static void dump_stats(FILE *log,int nsteps,int ndr,t_ilist *disres,
+		       t_iparams ip[],real aver1[],real aver2[],
+		       real aver_3[])
+{
+  int  i,j,nra,nviol,nviolT;
+  real viol_tot,violT_tot,viol_max,violT_max;
+  t_dr_stats *drs;
+
+  fprintf(log,"\n");
+  fprintf(log,"++++++++++++++ STATISTICS ++++++++++++++++++++++++\n");  
+  fprintf(log," Restraint     Up1     <r>    <rT>  <viol> <violT>\n");
+  snew(drs,ndr);
+  j         = 0;
+  nra       = interaction_function[F_DISRES].nratoms+1;
+  viol_tot  = 0;
+  violT_tot = 0;
+  viol_max  = 0;
+  violT_max = 0;
+  nviol     = 0;
+  nviolT    = 0;
+  for(i=0; (i<ndr); i++) {
+    /* Search for the appropriate restraint */
+    for( ; (j<disres->nr); j+=nra) {
+      if (ip[disres->iatoms[j]].disres.label == i)
+	break;
+    }
+    drs[i].index = i;
+    drs[i].up1   = ip[disres->iatoms[j]].disres.up1;
+    drs[i].r     = aver1[i]/nsteps;
+    drs[i].rT    = pow(aver_3[i]/nsteps,-1.0/3.0);
+    drs[i].viol  = max(0,drs[i].r-drs[i].up1);
+    drs[i].violT = max(0,drs[i].rT-drs[i].up1);
+    viol_max     = max(viol_max,drs[i].viol);
+    violT_max    = max(violT_max,drs[i].violT);
+    if (drs[i].viol > 0)
+      nviol++;
+    if (drs[i].violT > 0)
+      nviolT++;
+    fprintf(log,"%10d%8.3f%8.3f%8.3f%8.3f%8.3f\n",
+	    drs[i].index,drs[i].up1,drs[i].r,drs[i].rT,drs[i].viol,drs[i].violT);
+    viol_tot  += drs[i].viol;
+    violT_tot += drs[i].violT;
   }
+  dump_dump(log,"linear",viol_tot,ndr,nviol,viol_max);
+  dump_dump(log,"third power",violT_tot,ndr,nviolT,violT_max);
+  
+  fprintf(log,"+++ Sorted by linear averaged violations: +++\n");
+  qsort(drs,ndr,sizeof(drs[0]),drs_comp);
+  for(i=0; (i<ndr); i++)
+    if ((drs[i].viol > 0) || (drs[i].violT > 0))
+      fprintf(log,"%10d%8.3f%8.3f%8.3f%8.3f%8.3f\n",
+	      drs[i].index,drs[i].up1,drs[i].r,drs[i].rT,
+	      drs[i].viol,drs[i].violT);
+  
+  fprintf(log,"++++++++++++++ STATISTICS ++++++++++++++++++++++++\n");  
+  fprintf(log,"\n");
+  sfree(drs);
 }
 
 int main (int argc,char *argv[])
@@ -205,11 +294,12 @@ int main (int argc,char *argv[])
     "all protons can be added to a protein molecule. The program allways",
     "computes the instantaneous violations rather than time-averaged,",
     "because this analysis is done from a trajectory file afterwards",
-    "it does not make sense to use time averaging.[PAR]",
+    "it does not make sense to use time averaging. However,",
+    "the time averaged values per restraint are given in the log file.[PAR]",
     "An index file may be used to select specific restraints for",
     "printing."
   };
-  static int  ntop = 6;
+  static int  ntop      = 0;
   t_pargs pa[] = {
     { "-ntop", FALSE, etINT,  {&ntop},
       "Number of large violations that are stored in the log file every step" }
@@ -229,6 +319,7 @@ int main (int argc,char *argv[])
   t_graph     *g;
   int         status,ntopatoms,natoms,i,j,nv,step;
   real        t,sumv,averv,maxv,lambda;
+  real        *aver1,*aver2,*aver_3;
   rvec        *x,*f;
   matrix      box;
   int         isize;
@@ -254,7 +345,8 @@ int main (int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
-  init5(ntop);
+  if (ntop)
+    init5(ntop);
   
   read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header);
   snew(xtop,header.natoms);
@@ -288,6 +380,10 @@ int main (int argc,char *argv[])
   init_disres(stdlog,top.idef.il[F_DISRES].nr,top.idef.il[F_DISRES].iatoms,
 	      top.idef.iparams,&ir,NULL,fcd);
 
+  snew(aver1,fcd->disres.nr);
+  snew(aver2,fcd->disres.nr);
+  snew(aver_3,fcd->disres.nr);
+	      
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   snew(f,5*natoms);
 		
@@ -315,16 +411,15 @@ int main (int argc,char *argv[])
   calc_nsb(stdlog,&(top.blocks[ebCGS]),1,nsb,0);
   init_forcerec(stdlog,fr,&ir,&top,cr,mdatoms,nsb,box,FALSE,NULL,FALSE);
   init_nrnb(&nrnb);
-  snew(fcd,1);
   j=0;
   do {
     rm_pbc(&top.idef,natoms,box,x,x);
 
-    check_viol(stdlog,
+    check_viol(stdlog,cr,
 	       &(top.idef.il[F_DISRES]),
 	       top.idef.iparams,top.idef.functype,
 	       x,f,fr,box,g,&sumv,&averv,&maxv,&nv,
-	       isize,index,vvindex);
+	       isize,index,vvindex,fcd,aver1,aver2,aver_3);
     if (isize > 0) {
       fprintf(xvg,"%10g",t);
       for(i=0; (i<isize); i++)
@@ -340,6 +435,8 @@ int main (int argc,char *argv[])
   } while (read_next_x(status,&t,natoms,x,box));
   
   close_trj(status);
+  dump_stats(stdlog,j,fcd->disres.nr,&(top.idef.il[F_DISRES]),
+	     top.idef.iparams,aver1,aver2,aver_3);
   fclose(out);
   fclose(aver);
   fclose(numv);
@@ -360,5 +457,3 @@ int main (int argc,char *argv[])
   
   return 0;
 }
-
-

@@ -271,7 +271,7 @@ int write_trxframe(int fnum,t_trxframe *fr)
     break;
   case efTRJ:
   case efTRR:  
-    fwrite_trn(fnum,nframes_read(),fr->time,fr->step,fr->box,fr->natoms,
+    fwrite_trn(fnum,fr->step,fr->time,fr->lambda,fr->box,fr->natoms,
 	       fr->bX ? fr->x:NULL,fr->bV ? fr->v:NULL ,fr->bF ? fr->f:NULL);
     break;
   case efGRO:

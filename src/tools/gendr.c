@@ -41,7 +41,7 @@ static char *SRCID_gendr_c = "$Id$";
 #include "smalloc.h"
 #include "statutil.h"
 #include "confio.h"
-#include "genhydro.h"
+#include "calch.h"
 
 typedef struct {
   char *key;
@@ -56,7 +56,7 @@ t_expansion *read_expansion_map(char *fn,int *nexpand)
   t_expansion *exp;
   int         i,k,nexp,nn;
   
-  nexp=get_lines(fn,&ptr);
+  nexp=get_file(fn,&ptr);
   
   snew(exp,nexp);
   for(i=0; (i<nexp); i++) {
@@ -100,7 +100,7 @@ char **get_exp(int NEXP,t_expansion expansion[],char **ai,int *nexp)
 int find_atom(char *ai,char *ri,
 	      int resi,int r0,
 	      int natoms,char ***aname,t_atom atom[],
-	      int linec)
+	      int linec,bool bVerbose)
 {
   int i;
 
@@ -116,20 +116,24 @@ int find_atom(char *ai,char *ri,
       return i;
       
   /* Not found?! */
-  fprintf(stderr,"Warning: atom %s not found in res %s%d (line %d)\n",
-	  ai,ri,resi+r0,linec);
+  if (bVerbose)
+    fprintf(stderr,"Warning: atom %s not found in res %s%d (line %d)\n",
+	    ai,ri ? ri : "",resi+r0,linec);
   
   return -1;
 }
 
-void conv_dr(FILE *in,FILE *out,char *map,t_atoms *atoms,int r0)
+void conv_dr(FILE *in,FILE *out,char *map,t_atoms *atoms,int r0,bool bXplor,
+	     bool bVerbose)
 {
   static char *format="%s%d%s%s%d%s%lf%lf";
+  static char *xplorformat="%d%s%d%s";
+  bool   bOK;
   int    i,j,nc,nindex,ni,nj,nunres;
   int    atomi,atomj,resi,resj;
   char   **aiexp,**ajexp;
   char   *ai,*aj;
-  char   ri[10],rj[10];
+  char   *ri,*rj;
   char   buf[1024];
   double ub,lb;
   int    linec;
@@ -146,6 +150,13 @@ void conv_dr(FILE *in,FILE *out,char *map,t_atoms *atoms,int r0)
   fprintf(out,"[ distance_restraints ]\n");
   linec=1;
   
+  if (bXplor) {
+    ri = rj = NULL;
+  }
+  else {
+    snew(ri,16);
+    snew(rj,16);
+  }
   while (fgets2(buf,1023,in) != NULL) {
     /* Parse the input string. If your file format is different,
      * modify it here...
@@ -153,57 +164,78 @@ void conv_dr(FILE *in,FILE *out,char *map,t_atoms *atoms,int r0)
      * it may be easier to just replace those by a space using a
      * text editor.
      */
-    sscanf(buf,format,ri,&resi,ai,rj,&resj,aj,&lb,&ub);
-    aiexp=get_exp(NEXP,exp,&ai,&ni);
-    ajexp=get_exp(NEXP,exp,&aj,&nj);
-    
-    /* Turn bounds into nm */
-    ub*=0.1;
-    lb*=0.1;
-    
-    /* Subtract starting residue to match topology */
-    resi-=r0;
-    resj-=r0;
-    
-    /* Test whether residue names match 
-     * Again, if there is a mismatch between GROMACS names
-     * and your file (eg. HIS vs. HISH) it may be easiest to
-     * use your text editor...
-     */
-    if (strcmp(*atoms->resname[resi],ri) != 0) {
-      fprintf(stderr,"Warning resname in disres file %s%d, in tpx file %s%d\n",
-	      ri,resi+r0,*atoms->resname[resi],resi+r0);
-      nunres++;
-    }
-    /* Residue j */
-    else if (strcmp(*atoms->resname[resj],rj) != 0) {
-      fprintf(stderr,"Warning resname in disres file %s%d, in tpx file %s%d\n",
-	      rj,resj+r0,*atoms->resname[resj],resj+r0);
-      nunres++;
+    if (bXplor) {
+      bOK = (sscanf(buf,xplorformat,&resi,ai,&resj,aj) == 4);
+      /* Cut atomnames at 4 characters */
+      if (strlen(ai) >= 4)
+	ai[4] = '\0';
+      if (strlen(aj) >= 4)
+	aj[4] = '\0';
+      ub = 5.0;
+      lb = 2.0;
     }
     else {
-      /* Here, both residue names match ! */
-      for(i=0; (i<ni); i++) {
-	if ((atomi=find_atom(aiexp[i],ri,resi,r0,atoms->nr,
-			     atoms->atomname,atoms->atom,linec)) == -1)
+      bOK = (sscanf(buf,format,ri,&resi,ai,rj,&resj,aj,&lb,&ub) == 8);
+    }
+    if (bOK) {
+      aiexp=get_exp(NEXP,exp,&ai,&ni);
+      ajexp=get_exp(NEXP,exp,&aj,&nj);
+      
+      /* Turn bounds into nm */
+      ub*=0.1;
+      lb*=0.1;
+      
+      /* Subtract starting residue to match topology */
+      resi-=r0;
+      resj-=r0;
+      
+      /* Test whether residue names match 
+       * Again, if there is a mismatch between GROMACS names
+       * and your file (eg. HIS vs. HISH) it may be easiest to
+       * use your text editor...
+       */
+       
+      if (!bXplor) {
+	bOK = (strcmp(*atoms->resname[resi],ri) == 0);
+	if (!bOK) {
+	  fprintf(stderr,"Warning resname in disres file %s%d, in tpx file %s%d\n",
+		  ri,resi+r0,*atoms->resname[resi],resi+r0);
 	  nunres++;
+	}
 	else {
-	  /* First atom is found now... */
-	  for(j=0; (j<nj); j++) {
-	    if ((atomj=find_atom(ajexp[j],ri,resj,r0,atoms->nr,
-				 atoms->atomname,atoms->atom,linec)) == -1)
-	      nunres++;
-	    else {
-	      /* BOTH atoms are found now! */
-	      fprintf(out,"%5d  %5d  1  %5d  1  %8.3f  %8.3f  %8.3f  %8.3f\n",
-		      1+atomi,1+atomj,nindex,ub,ub+0.1,0.0,0.0);
-	      nc++;
+	  /* Residue j */
+	  bOK = (strcmp(*atoms->resname[resj],rj) != 0);
+	  if (!bOK) {
+	    fprintf(stderr,"Warning resname in disres file %s%d, in tpx file %s%d\n",
+		    rj,resj+r0,*atoms->resname[resj],resj+r0);
+	    nunres++;
+	  }
+	}
+      }
+      if (bOK) {
+	/* Here, both residue names match ! */
+	for(i=0; (i<ni); i++) {
+	  if ((atomi=find_atom(aiexp[i],ri,resi,r0,atoms->nr,
+			       atoms->atomname,atoms->atom,linec,bVerbose)) == -1)
+	    nunres++;
+	  else {
+	    /* First atom is found now... */
+	    for(j=0; (j<nj); j++) {
+	      if ((atomj=find_atom(ajexp[j],rj,resj,r0,atoms->nr,
+				   atoms->atomname,atoms->atom,linec,bVerbose)) == -1)
+		nunres++;
+	      else {
+		/* BOTH atoms are found now! */
+		fprintf(out,"%5d  %5d  1  %5d  1  %8.3f  %8.3f  %8.3f  %8.3f\n",
+			1+atomi,1+atomj,nindex,lb,ub,0.0,0.0);
+		nc++;
+	      }
 	    }
 	  }
 	}
       }
+      nindex++;
     }
-    nindex++;
     linec++;
   }
   fprintf(stderr,"Total number of NOES: %d\n",nindex);
@@ -224,10 +256,17 @@ int main (int argc,char *argv[])
     "free format. Some expansion of templates like MB -> HB1, HB2 is done",
     "but this is not really well tested."
   };
+  static char *bugs[] = {
+    "This program is not well tested. Use at your own risk."
+  };
   
-  static int r0=1;
+  static int  r0       = 1;
+  static bool bXplor   = FALSE;
+  static bool bVerbose = FALSE;
   t_pargs pa[] = {
-    { "-r", FALSE, etINT, {&r0}, "starting residue number" }
+    { "-r",     FALSE, etINT,  {&r0},       "starting residue number" },
+    { "-xplor", FALSE, etBOOL, {&bXplor},   "Use xplor format for input" },
+    { "-v",     FALSE, etBOOL, {&bVerbose}, "Be loud and noisy" }
   };
 
   FILE        *in,*out;
@@ -243,16 +282,21 @@ int main (int argc,char *argv[])
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,asize(desc),desc,
-		    0,NULL);
+		    asize(bugs),bugs);
 
+  fprintf(stderr,"******************* WARNING *****************************\n");
+  fprintf(stderr,"*** Use at your own risk. When in doubt check the source.\n");
+  fprintf(stderr,"*** Hang on: check the source anyway.\n");
+  fprintf(stderr,"******************* WARNING *****************************\n");
+		    
   fprintf(stderr,"Will subtract %d from res numbers in %s\n",
 	  r0,ftp2fn(efDAT,NFILE,fnm));
     
   top=read_top(ftp2fn(efTPX,NFILE,fnm));
 
-  in=opt2FILE("-d",NFILE,fnm,"r");
-  out=ftp2FILE(efITP,NFILE,fnm,"w");
-  conv_dr(in,out,opt2fn("-m",NFILE,fnm),&(top->atoms),r0);
+  in  = opt2FILE("-d",NFILE,fnm,"r");
+  out = ftp2FILE(efITP,NFILE,fnm,"w");
+  conv_dr(in,out,opt2fn("-m",NFILE,fnm),&(top->atoms),r0,bXplor,bVerbose);
   fclose(in);
   fclose(out);
   
