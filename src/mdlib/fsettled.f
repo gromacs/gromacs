@@ -81,8 +81,8 @@ c*****************************************************************
       wh   = mH
       wohh = mO+2.0*mH
       rc   = dHH/2.0
-      ra   = 2.0*wh*sqrt(dOH*dOH-rc*rc)/wohh
-      rb   = sqrt(dOH*dOH-rc*rc)-ra
+      ra   = 2.0*wh*dsqrt(dOH*dOH-rc*rc)/wohh
+      rb   = dsqrt(dOH*dOH-rc*rc)-ra
       rc2  = dHH
       wo   = wo/wohh
       wh   = wh/wohh
@@ -129,11 +129,11 @@ c
          yaksYd = zaksZd*xaksXd - xaksZd*zaksXd
          zaksYd = xaksZd*yaksXd - yaksZd*xaksXd
 c
-         axlng = 1.0/sqrt ( xaksXd * xaksXd + yaksXd * yaksXd
+         axlng = 1.0/dsqrt ( xaksXd * xaksXd + yaksXd * yaksXd
      &                                  + zaksXd * zaksXd )
-         aylng = 1.0/sqrt ( xaksYd * xaksYd + yaksYd * yaksYd
+         aylng = 1.0/dsqrt ( xaksYd * xaksYd + yaksYd * yaksYd
      &                                  + zaksYd * zaksYd )
-         azlng = 1.0/sqrt ( xaksZd * xaksZd + yaksZd * yaksZd
+         azlng = 1.0/dsqrt ( xaksZd * xaksZd + yaksZd * yaksZd
      &                                  + zaksZd * zaksZd )
          trns11 = xaksXd * axlng
          trns21 = yaksXd * axlng
@@ -165,7 +165,7 @@ c
             error = i-1
             cosphi = 0
          else
-            cosphi = sqrt (tmp)
+            cosphi = dsqrt (tmp)
          endif
          sinpsi = ( zb1d - zc1d ) / (rc2 * cosphi)
          tmp2   = 1.0 - sinpsi*sinpsi
@@ -173,7 +173,7 @@ c
             error = i-1
             cospsi = 0
          else
-            cospsi = sqrt (tmp2)
+            cospsi = dsqrt (tmp2)
          endif
 c 
          ya2d =   ra * cosphi
@@ -184,7 +184,7 @@ c        xc2d =   rc * cospsi
 c        xb2d2 = xb2d * xb2d
 c        hh2 = 4.d0 * xb2d2 + (yb2d-yc2d) * (yb2d-yc2d)
 c    &                      + (zb1d-zc1d) * (zb1d-zc1d)
-c        deltx = 2.d0 * xb2d + sqrt ( 4.d0 * xb2d2 - hh2 + hhhh )
+c        deltx = 2.d0 * xb2d + dsqrt ( 4.d0 * xb2d2 - hh2 + hhhh )
 c        xb2d = xb2d - deltx * 0.5d0
 c        xc2d = xc2d + deltx * 0.5d0
 c
@@ -195,12 +195,12 @@ c
          gama = xb0d * yb1d - xb1d * yb0d + xc0d * yc1d - xc1d * yc0d
 c
          al2be2 = alpa * alpa + beta * beta
-         sinthe = ( alpa*gama - beta * sqrt ( al2be2 - gama * gama ) )
+         sinthe = ( alpa*gama - beta * dsqrt ( al2be2 - gama * gama ) )
      &            / al2be2
 c
 c                                                --- Step4  A3' ---
 c
-         costhe = sqrt (1.d0 - sinthe * sinthe )
+         costhe = dsqrt (1.d0 - sinthe * sinthe )
          xa3d = - ya2d * sinthe
          ya3d =   ya2d * costhe
          za3d = za1d

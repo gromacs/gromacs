@@ -34,7 +34,10 @@
  * Good ROcking Metal Altar for Chronical Sinners
  */
 static char *SRCID_axp_asm_h = "$Id$";
+
+#ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
 
 /* Function definitions for alpha AXP assembly routines */
 

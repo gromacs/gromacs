@@ -34,6 +34,7 @@
  * S  C  A  M  O  R  G
  */
 static char *SRCID_f77_wrappers_c = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

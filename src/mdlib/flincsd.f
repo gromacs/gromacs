@@ -67,7 +67,7 @@ c      to change to other similarly!
          tmp0=x(i+1)-x(j+1)
          tmp1=x(i+2)-x(j+2)
          tmp2=x(i+3)-x(j+3)
-         rlen=1.0/sqrt(tmp0*tmp0+tmp1*tmp1+tmp2*tmp2)
+         rlen=1.0/dsqrt(tmp0*tmp0+tmp1*tmp1+tmp2*tmp2)
          r(b3+1)=rlen*tmp0
          r(b3+2)=rlen*tmp1
          r(b3+3)=rlen*tmp2
@@ -152,10 +152,10 @@ c      to change to other similarly!
 
       implicit none
 
-      real*4  x(*),xp(*),bllen(*),blc(*),blcc(*),blm(*),invmass(*)
-      real*4  r(*),rhs1(*),rhs2(*),sol(*),wangle,lambda(*)
-      real*4  tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,wfac,lam 
-      real*4  u0,u1,u2,v0,v1,v2
+      real*8  x(*),xp(*),bllen(*),blc(*),blcc(*),blm(*),invmass(*)
+      real*8  r(*),rhs1(*),rhs2(*),sol(*),wangle,lambda(*)
+      real*8  tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,wfac,lam 
+      real*8  u0,u1,u2,v0,v1,v2
 
       integer*4 ncons,nit,nrec,bla1(*),bla2(*),blnr(*),blbnb(*)
       integer*4 warn
@@ -171,7 +171,7 @@ c      to change to other similarly!
          tmp0=x(i+1)-x(j+1)
          tmp1=x(i+2)-x(j+2)
          tmp2=x(i+3)-x(j+3)
-         rlen=1.0/sqrt(tmp0*tmp0+tmp1*tmp1+tmp2*tmp2)
+         rlen=1.0/dsqrt(tmp0*tmp0+tmp1*tmp1+tmp2*tmp2)
          r(b3+1)=rlen*tmp0
          r(b3+2)=rlen*tmp1
          r(b3+3)=rlen*tmp2
@@ -268,7 +268,7 @@ c     ********  Correction for centripetal effects  ********
             u0=2.*u1-(tmp0*tmp0+tmp1*tmp1+tmp2*tmp2)
             if (u0 .lt. wfac*u1) warn=b  
             if (u0 .lt. 0.) u0=0.
-            mvb=blc(b)*(len-sqrt(u0))
+            mvb=blc(b)*(len-dsqrt(u0))
             rhs1(b)=mvb
             sol(b)=mvb
          enddo
