@@ -12,6 +12,7 @@ set TEXMDPOPT	= $TEXDIR/mdp_opt.tex
 echo "Will convert $HTMLMDPOPT (html format)"
 echo "to $TEXMDPOPT (latex format)"
 
+echo -n "parsing."
 sed \
 -e 's/<[aA] [^>]*>//g' \
 -e 's/<\/[aA]>//g' \
@@ -20,6 +21,7 @@ sed \
 -e 's/<[hH][rR]>//g' \
 $HTMLMDPOPT >! temp1
 
+echo -n "."
 awk '{\
   if (NF) {\
     if ( ($1 == "<P>") || ($1 == "<p>") || ($1 == "<BR>") || ($1 == "<br>") )\
@@ -29,6 +31,7 @@ awk '{\
     }\
   }' temp1 >! temp2
   
+echo -n "."
 sed \
 -e 's/&gt[=;]/$gt$/g' \
 -e 's/&lt[=;]/$lt$/g' \
@@ -48,6 +51,7 @@ sed \
 -e 's/<\/[bB]>//g' \
 temp2 >! temp3
 
+echo -n "."
 sed \
 -e 's/<\/[hH]4>//g' \
 -e 's/<[uU][lL]>/\\begin{itemize}/g' \
@@ -63,6 +67,7 @@ sed \
 -e 's/\$gt\$/$>$/g' \
 temp3 >! temp4
 
+echo -n "."
 awk '{\
   if ( index($0,"subsection") ) {\
     if ( index($0,"General") )\
@@ -71,7 +76,15 @@ awk '{\
       output=0;\
   }\
   if (output) print;\
-}' temp4 >! $TEXMDPOPT
+}' temp4 >! temp5
+
+echo ""
+echo "adding index links"
+foreach i ( "charge group" "conjugate gradient" "constraints" "coulomb" "cut-off" "dielectric constant" "dispersion" "distance restraints" "electrostatic force" "energy file" "grompp" "leap-frog" "lincs" "log file" "mdrun" "neighborlist" "particles" "performance" "PPPM" "PME" "Ewald" "position restraints" "pressure" "pressure coupling" "shake" "simulated annealing" "steepest descent" "temperature" "temperature coupling" "topology" "topology file" )
+  sed -e "s/$i/\\normindex{$i}/g" temp5 >! temp6
+  mv temp6 temp5
+end
+mv temp5 $TEXMDPOPT
 
 \rm temp1 temp2 temp3 temp4
 

@@ -204,20 +204,21 @@ eqns.~\ref{eqn:kgrf} and ~\ref{eqn:cgrf} reduce to the simple forms
 of eqns.~\ref{eqn:krf} and ~\ref{eqn:crf} respectively.
 
 \subsection{Modified non-bonded interactions}
-In the {\gromacs} force field the non-bonded potentials can be modified by
-a shift function. The purpose of this is to replace the truncated
-forces by forces that are continuous and have continuous derivatives
-at the \normindex{cut-off} radius. With such forces the time-step integration
-produces much smaller errors and there are no such complications as
-creating charges from dipoles by the truncation procedure. In fact, by
-using shifted forces there is no need for charge groups in the
-construction of neighbour lists. However, the shift function produces
-a considerable modification of the Coulomb potential. Unless the
-'missing' long-range potential is properly calculated and added
-(through the use of PPPM, Ewald, or PME), the effect of such 
-modifications must be carefully evaluated. 
-The modification of the Lennard-Jones dispersion and repulsion is only
-minor, but it does remove the noise caused by cut-off effects.
+In the {\gromacs} force field the non-bonded potentials can be
+modified by a shift function. The purpose of this is to replace the
+truncated forces by forces that are continuous and have continuous
+derivatives at the \normindex{cut-off} radius. With such forces the
+time-step integration produces much smaller errors and there are no
+such complications as creating charges from dipoles by the truncation
+procedure. In fact, by using shifted forces there is no need for
+charge groups in the construction of neighbour lists. However, the
+shift function produces a considerable modification of the Coulomb
+potential. Unless the 'missing' long-range potential is properly
+calculated and added (through the use of \normindex{PPPM},
+\normindex{Ewald}, or \normindex{PME}), the effect of such
+modifications must be carefully evaluated.  The modification of the
+Lennard-Jones dispersion and repulsion is only minor, but it does
+remove the noise caused by cut-off effects.
  
 There is {\em no} fundamental difference between a switch function
 (which multiplies the potential with a function) and a shift function
@@ -308,11 +309,12 @@ see also fig~\ref{fig:shift}.
 \label{fig:shift}
 \end{figure}
 
-\subsection{Modified short-range interactions with Ewald summation}
-When Ewald summation or particle-mesh Ewald is used to calculate
-the long-range interactions, the short-range coulomb potential must also
-be modified, similar to the switch function above. In this case the 
-short range potential is given by
+\subsection{Modified short-range interactions with \normindex{Ewald} summation}
+When \normindex{Ewald summation} or \seeindex{particle-mesh
+Ewald}{PME} is used to calculate the long-range interactions, the
+short-range coulomb potential must also be modified, similar to the
+switch function above. In this case the short range potential is given
+by
 \beq
 V(r) = f \frac{\mbox{erfc}(\beta r_{ij})}{r_{ij}} q_i q_j,
 \eeq

@@ -1,6 +1,6 @@
 \section{Longe Range Electrostatics}
 \label{sec:lr_elstat}
-\subsection{Ewald summation}
+\subsection{\normindex{Ewald summation}}
 \label{sec:ewald}
 The total electrostatic energy of $N$ particles and the periodic
 images are given by
@@ -42,10 +42,11 @@ part of the sum increases as $N^2$
 realistic to use for any large systems.
 
 \subsubsection{Using Ewald}
-Don't use Ewald unless you are absolutely sure this is what you want - 
-for almost all cases the PME method below will perform much better. 
-If you still want to employ classical Ewald summation enter this in
-your {\tt .mdp} file, if the side of your box is about $3$~nm:
+Don't use \normindex{Ewald} unless you are absolutely sure this is
+what you want - for almost all cases the \normindex{PME} method below
+will perform much better.  If you still want to employ classical Ewald
+summation enter this in your {\tt .mdp} file, if the side of your box
+is about $3$~nm:
 \begin{verbatim}
 eeltype         = Ewald
 rvdw            = 0.9
@@ -63,14 +64,15 @@ strength of the electrostatic interaction at the cut-off. Decreasing
 this gives you a more accurate direct sum, but a less accurate
 reciprocal sum. 
  
-\subsection{PME}
+\subsection{\normindex{PME}}
 \label{sec:pme}
 Particle-mesh Ewald is a method proposed by Tom
 Darden~\cite{Darden93,Essmann95} to improve the performance of the
 reciprocal sum. Instead of directly summing wavevectors, the charges
 are assigned to a grid using cardinal B-spline interpolation. This
-grid is then fourier transformed with a 3D FFT algorithm and 
-the reciprocal energy term obtained by a single sum over the grid in k-space.
+grid is then fourier transformed with a 3D FFT algorithm and the
+reciprocal energy term obtained by a single sum over the grid in
+k-space.
 
 The potential at the grid points is calculated by inverse
 transformation, and by using the interpolation factors we get the
@@ -103,7 +105,7 @@ to increase this spacing slightly.
 Pressure scaling works with PME, but be aware of the fact that
 anisotropic scaling can introduce artificial ordering in some systems.
 
-\subsection{PPPM}
+\subsection{\normindex{PPPM}}
 \label{sec:pppm}
 The Particle-Particle Particle-Mesh methods of Hockney \& Eastwood
 can also be applied in {\gromacs} for the treatment of longe range 
@@ -142,11 +144,12 @@ Finally the potential and forces are retrieved using interpolation~\cite{Luty95a
 % note - this accuracy is just a rough estimate...
 %
 It is not easy to calculate the full long-range virial tensor with
-PPPM, but it is possible to obtain the trace. This means that the sum
-of the pressure components is correct (and therefore the isotropic
-pressure) but not necessarily the individual pressure components! 
+\normindex{PPPM}, but it is possible to obtain the trace. This means
+that the sum of the pressure components is correct (and therefore the
+isotropic pressure) but not necessarily the individual pressure
+components!
 
-\subsubsection{Using PPPM}
+\subsubsection{Using \normindex{PPPM}}
 To use the PPPM algorithm in {\gromacs}, specify the
 following lines in your {\tt .mdp} file:
 \begin{verbatim}
@@ -158,10 +161,11 @@ rvdw            = 1.0
 fourierspacing  = 0.075
 \end{verbatim}
 For details on the switch parameters see the section on modified
-long-range interactions in this manual. When using pppm we 
-recommend to take at most 0.075 nm per gridpoint (e.g. 20 gridpoints for 1.5 nm).
-PPPM does not provide the same accuracy as PME but is faster in most
-cases. PPPM can not be used with pressure coupling.
+long-range interactions in this manual. When using PPPM we recommend
+to take at most 0.075 nm per gridpoint (e.g. 20 gridpoints for 1.5
+nm).  PPPM does not provide the same accuracy as
+\normindex{PME} but is faster in most cases. PPPM
+can not be used with pressure coupling.
 
 \subsection{Optimizing fourier transforms}
 To get the best possible performance you should try to avoid large

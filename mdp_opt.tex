@@ -15,21 +15,21 @@ this is reduntant, so you can type anything you want
 \item[{\bf cpp: }(/lib/cpp)]\mbox{}\\
 your preprocessor
 \item[{\bf include:}]\mbox{}\\
-directories to include in your topology. format: 
+directories to include in your \normindex{topology}. format: 
 \\{\tt-I/home/john/my\_lib -I../more\_lib}\\
 \item[{\bf define: }()]\mbox{}\\
 defines to pass to the preprocessor, default is no defines. You can use
-any defines to control options in your customized topology files. Options
+any defines to control options in your customized \normindex{topology} files. Options
 that are already available by default are:
 \vspace{-2ex}\begin{description}
 \item[{\bf -DFLEX\_SPC}]\mbox{}\\
-Will tell grompp to include FLEX\_SPC in stead of SPC into your
-topology, this is necessary to make 
-{\bf conjugate gradient} work and will allow 
-{\bf steepest descent} to minimize further.
+Will tell \normindex{grompp} to include FLEX\_SPC in stead of SPC into your
+\normindex{topology}, this is necessary to make 
+{\bf \normindex{conjugate gradient}} work and will allow 
+{\bf \normindex{steepest descent}} to minimize further.
 \item[{\bf -DPOSRE}]\mbox{}\\
-Will tell grompp to include posre.itp into your topology, used for
-position restraints.
+Will tell \normindex{grompp} to include posre.itp into your \normindex{topology}, used for
+\normindex{position restraints}.
 \end{description}
 \end{description}
 
@@ -38,16 +38,16 @@ position restraints.
 \item[{\bf integrator:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
 \item[{\bf md} ]\mbox{}\\
-A leap-frog algorithm for integrating Newtons equations.
+A \normindex{leap-frog} algorithm for integrating Newtons equations.
 \item[{\bf steep}]\mbox{}\\
-A steepest descent algorithm for energy minimization.
+A \normindex{steepest descent} algorithm for energy minimization.
 The maximum stepsize is {\bf emstep} [nm], the tolerance is 
 {\bf emtol} [kJ mol$^{-1}$ nm$^{-1}$].
 \item[{\bf cg}]\mbox{}\\
- A conjugate gradient algorithm for energy minimization,
+ A \normindex{conjugate gradient} algorithm for energy minimization,
 the tolerance is {\bf emtol} [kJ mol$^{-1}$ nm$^{-1}$]. 
 CG is more efficient
-when a steepest descent step is done every once in a while,
+when a \normindex{steepest descent} step is done every once in a while,
 this is determined by {\bf nstcgsteep}.
 \item[{\bf ld}]\mbox{}\\
  An Euler integrator for position Langevin dynamics, the
@@ -73,7 +73,7 @@ motion removal (should only be used for vacuum simulations)
 \subsection{Langevin dynamics}
 \begin{description}
 \item[{\bf ld\_temp: }(300) {[K]}]\mbox{}\\
-temperature in ld run (controls thermal noise level)
+\normindex{temperature} in ld run (controls thermal noise level)
 \item[{\bf ld\_fric: }(0) {[amu ps$^{-1}$]}]\mbox{}\\
 ld friction coefficient
 \item[{\bf ld\_seed: }(1993) {[integer]}]\mbox{}\\
@@ -90,8 +90,8 @@ this value
 \item[{\bf emstep: }(0.01) {[nm]}]\mbox{}\\
 initial step-size
 \item[{\bf nstcgsteep: }(1000) {[steps]}]\mbox{}\\
-frequency of performing 1 steepest descent step while doing
-conjugate gradient energy minimization.
+frequency of performing 1 \normindex{steepest descent} step while doing
+\normindex{conjugate gradient} energy minimization.
 \end{description}
 
 \subsection{Output control}
@@ -105,10 +105,10 @@ the last velocities are always written
 \item[{\bf nstfout: }(0) {[steps]}]\mbox{}\\
 frequency to write forces to output trajectory.
 \item[{\bf nstlog: }(100) {[steps]}]\mbox{}\\
-frequency to write energies to log file,
+frequency to write energies to \normindex{log file},
 the last energies are always written
 \item[{\bf nstenergy: }(100) {[steps]}]\mbox{}\\
-frequency to write energies to energy file,
+frequency to write energies to \normindex{energy file},
 the last energies are always written
 \item[{\bf nstxtcout: }(0) {[steps]}]\mbox{}\\
 frequency to write coordinates to xtc trajectory
@@ -118,100 +118,98 @@ precision to write to xtc trajectory
 group(s) to write to xtc trajectory, default the whole system is written
 (if {\bf nstxtcout} is larger than zero)  
 \item[{\bf energygrps:}]\mbox{}\\
-group(s) to write to energy file
+group(s) to write to \normindex{energy file}
 \end{description}
 
 \subsection{Neighborsearching}
 \begin{description}
 \item[{\bf nstlist: }(10) {[steps]}]\mbox{}\\
-frequency to update neighborlist
+frequency to update \normindex{neighborlist}
 \item[{\bf ns\_type:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
 \item[{\bf grid}]\mbox{}\\
 Make a grid in the box and only check atoms in neighboring 
-grid cells when constructing a new neighborlist every {\bf nstlist} steps. 
-The number of grid cells per Coulomb cut-off length is set with 
+grid cells when constructing a new \normindex{neighborlist} every {\bf nstlist} steps. 
+The number of grid cells per Coulomb \normindex{cut-off} length is set with 
 {\bf deltagrid},
-this number should be 2 for optimal performance.
+this number should be 2 for optimal \normindex{performance}.
 In large systems grid search is much faster than simple search. 
 \item[{\bf simple}]\mbox{}\\
-Check every atom in the box when constructing a new neighborlist
+Check every atom in the box when constructing a new \normindex{neighborlist}
 every {\bf nstlist} steps.
 \end{description}
 \item[{\bf deltagrid: }(2)]\mbox{}\\
-number of grid cells per Coulomb cut-off length
+number of grid cells per Coulomb \normindex{cut-off} length
 \item[{\bf box:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
 \item[{\bf rectangular}]\mbox{}\\
 Selects a rectangular box shape.
-\item[{\bf triclinic}]\mbox{}\\
-(NOTE: not fully implemented) Selects a triclinic box shape.
 \item[{\bf none}]\mbox{}\\
 Selects no box, for use in vacuum simulations.
 \end{description}
 \item[{\bf rlist: }(1) {[nm]}]\mbox{}\\
-cut-off distance for making the neighbor list
+\normindex{cut-off} distance for making the neighbor list
 \end{description}
 
 \subsection{Electrostatics and VdW}
 \begin{description}
-\item[{\bf coulombtype:}]\mbox{}\\
+\item[{\bf \normindex{coulomb}type:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
 \item[{\bf Cut-off}]\mbox{}\\
-Twin range cut-off's with neighborlist cut-off {\bf rlist} and 
-Coulomb cut-off {\bf rcoulomb},
-where {\bf rlist} {\tt $<$} {\bf rvdw} {\tt $<$} {\bf rcoulomb}.
-The dielectric constant is set with {\bf epsilon\_r}.
-\item[{\bf Ewald}]\mbox{}\\
-Classical Ewald sum electrostatics. Use e.g. {\bf rlist}=0.9,
-{\bf rvdw}=0.9, {\bf rcoulomb}=0.9. The highest magnitude of
+Twin range \normindex{cut-off}'s with \normindex{neighborlist} \normindex{cut-off} {\bf rlist} and 
+Coulomb \normindex{cut-off} {\bf r\normindex{coulomb}},
+where {\bf rlist} {\tt $<$} {\bf rvdw} {\tt $<$} {\bf r\normindex{coulomb}}.
+The \normindex{dielectric constant} is set with {\bf epsilon\_r}.
+\item[{\bf \normindex{Ewald}}]\mbox{}\\
+Classical \normindex{Ewald} sum electrostatics. Use e.g. {\bf rlist}=0.9,
+{\bf rvdw}=0.9, {\bf r\normindex{coulomb}}=0.9. The highest magnitude of
 wavevectors used in reciprocal space is controlled by {\bf fourierspacing}.
 The relative accuracy of direct/reciprocal space
-is controlled by {\bf ewald\_rtol}. NOTE: Ewald scales as O(N$^{3/2}$)) and
+is controlled by {\bf ewald\_rtol}. NOTE: \normindex{Ewald} scales as O(N$^{3/2}$)) and
 is thus extremely slow for large systems. It is included mainly for
-reference - in most cases PME will perform much better.
-\item[{\bf PME} ]\mbox{}\\
-Fast Particle-Mesh Ewald electrostatics. Direct space is similar
-to the Ewald sum, while the reciprocal part is performed with
+reference - in most cases \normindex{PME} will perform much better.
+\item[{\bf \normindex{PME}} ]\mbox{}\\
+Fast Particle-Mesh \normindex{Ewald} electrostatics. Direct space is similar
+to the \normindex{Ewald} sum, while the reciprocal part is performed with
 FFTs. Grid dimensions are controlled with {\bf fourierspacing} and the
 interpolation order with {\bf pme\_order}. With a grid spacing of 0.1
-nm and cubic interpolation the electrostatic forces have an accuracy
+nm and cubic interpolation the \normindex{electrostatic force}s have an accuracy
 of 2-3e-4. Since the error from the vdw-cutoff is larger than this you
 might try 0.15 nm. When running in parallel the interpolation
 parallelizes better than the FFT, so try decreasing grid dimensions
 while increasing interpolation.
-\item[{\bf PPPM}]\mbox{}\\
+\item[{\bf \normindex{PPPM}}]\mbox{}\\
 Particle-Particle Particle-Mesh algorithm for long range
 electrostatic interactions.
-Use for example {\bf rlist}{\tt =1.0}, {\bf rcoulomb\_switch}{\tt =0.0},
-{\bf rcoulomb}{\tt =0.85}, {\bf rvdw\_switch}{\tt =1.0}
+Use for example {\bf rlist}{\tt =1.0}, {\bf r\normindex{coulomb}\_switch}{\tt =0.0},
+{\bf r\normindex{coulomb}}{\tt =0.85}, {\bf rvdw\_switch}{\tt =1.0}
 and {\bf rvdw}{\tt =1.0}. The grid
 dimensions are controlled by {\bf fourierspacing}.
-Reasonable grid spacing for PPPM is 0.05-0.1 nm.
+Reasonable grid spacing for \normindex{PPPM} is 0.05-0.1 nm.
 See {\tt Shift} for the details of the particle-particle potential.
-NOTE: the pressure in incorrect when using PPPM.
+NOTE: the \normindex{pressure} in incorrect when using \normindex{PPPM}.
 \item[{\bf Reaction-Field}]\mbox{}\\
-Reaction field with Coulomb cut-off {\bf rcoulomb},
-where {\bf rcoulomb} {\tt $>$} {\bf rvdw} {\tt $>$} {\bf rlist}.
-The dielectric constant beyond the cut-off is {\bf epsilon\_r}.
-The dielectric constant can be set to infinity by setting {\bf epsilon\_r}=0.
+Reaction field with Coulomb \normindex{cut-off} {\bf r\normindex{coulomb}},
+where {\bf r\normindex{coulomb}} {\tt $>$} {\bf rvdw} {\tt $>$} {\bf rlist}.
+The \normindex{dielectric constant} beyond the \normindex{cut-off} is {\bf epsilon\_r}.
+The \normindex{dielectric constant} can be set to infinity by setting {\bf epsilon\_r}=0.
 \item[{\bf Generalized-Reaction-Field}]\mbox{}\\
-Generalized reaction field with Coulomb cut-off {\bf rcoulomb},
-where {\bf rcoulomb} {\tt $>$} {\bf rvdw} {\tt $>$} {\bf rlist}.
-The dielectric constant beyond the cut-off is {\bf epsilon\_r}.
+Generalized reaction field with Coulomb \normindex{cut-off} {\bf r\normindex{coulomb}},
+where {\bf r\normindex{coulomb}} {\tt $>$} {\bf rvdw} {\tt $>$} {\bf rlist}.
+The \normindex{dielectric constant} beyond the \normindex{cut-off} is {\bf epsilon\_r}.
 The ionic strength is computed from the number of charged 
-(i.e. with non zero charge) charge groups.
-The temperature for the GRF potential is set with 
+(i.e. with non zero charge) \normindex{charge group}s.
+The \normindex{temperature} for the GRF potential is set with 
 {\bf ref\_t} [K].
 \item[{\bf Shift}]\mbox{}\\
 The Coulomb
 potential is decreased over the whole range and the forces decay smoothly
-to zero between {\bf rcoulomb\_switch} and {\bf rcoulomb}.
-The neighborsearch cut-off {\bf rlist} should be 0.1 to 0.3 nm larger than
-{\bf rcoulomb} to accommodate for the size of charge groups and diffusion
-between neighborlist updates.
+to zero between {\bf r\normindex{coulomb}\_switch} and {\bf r\normindex{coulomb}}.
+The neighborsearch \normindex{cut-off} {\bf rlist} should be 0.1 to 0.3 nm larger than
+{\bf r\normindex{coulomb}} to accommodate for the size of \normindex{charge group}s and diffusion
+between \normindex{neighborlist} updates.
 \item[{\bf User}]\mbox{}\\
-Specify {\bf rshort} and {\bf rlong} to the same value, {\tt mdrun}
+Specify {\bf rshort} and {\bf rlong} to the same value, {\tt \normindex{mdrun}}
 will now expect to find a file {\tt ctab.xvg} with user-defined functions.
 This files should contain 5 columns:
 the {\tt x} value, and the function value with its 1$^{st}$
@@ -221,27 +219,27 @@ to 3$^{rd}$ derivative. The {\tt x} should run from 0 [nm] to
 you run in double precision. The function value at {\tt x=0} is not
 important.
 \end{description}
-\item[{\bf rcoulomb\_switch: }(0) {[nm]}]\mbox{}\\
+\item[{\bf r\normindex{coulomb}\_switch: }(0) {[nm]}]\mbox{}\\
 where to start switching the Coulomb potential
-\item[{\bf rcoulomb: }(1) {[nm]}]\mbox{}\\
-distance for the Coulomb cut-off
+\item[{\bf r\normindex{coulomb}: }(1) {[nm]}]\mbox{}\\
+distance for the Coulomb \normindex{cut-off}
 \item[{\bf epsilon\_r: }(1)]\mbox{}\\
-dielectric constant
+\normindex{dielectric constant}
 \item[{\bf vdwtype:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
 \item[{\bf Cut-off}]\mbox{}\\
-Twin range cut-off's with neighborlist cut-off {\bf rlist} and 
-VdW cut-off {\bf rvdw},
+Twin range \normindex{cut-off}'s with \normindex{neighborlist} \normindex{cut-off} {\bf rlist} and 
+VdW \normindex{cut-off} {\bf rvdw},
 where {\bf rvdw} {\tt $>$} {\bf rlist}.
 \item[{\bf Shift}]\mbox{}\\
 The LJ (not Buckingham)
 potential is decreased over the whole range and the forces decay smoothly
 to zero between {\bf rvdw\_switch} and {\bf rvdw}.
-The neighborsearch cut-off {\bf rlist} should be 0.1 to 0.3 nm larger than
-{\bf rvdw} to accommodate for the size of charge groups and diffusion
-between neighborlist updates.
+The neighborsearch \normindex{cut-off} {\bf rlist} should be 0.1 to 0.3 nm larger than
+{\bf rvdw} to accommodate for the size of \normindex{charge group}s and diffusion
+between \normindex{neighborlist} updates.
 \item[{\bf User}]\mbox{}\\
-{\tt mdrun} will now expect to find two files with user-defined
+{\tt \normindex{mdrun}} will now expect to find two files with user-defined
 functions: {\tt rtab.xvg} for Repulsion, {\tt dtab.xvg} for Dispersion.
 These files should contain 5 columns:
 the {\tt x} value, and the function value with its 1$^{st}$
@@ -250,35 +248,35 @@ to 3$^{rd}$ derivative. The {\tt x} should run from 0 [nm] to
 [nm] when you run in single precision, or {\tt 0.0005} [nm] when
 you run in double precision. The function value at {\tt x=0} is not
 important. When you want to use LJ correction, make sure that {\bf rvdw}
-corresponds to the cut-off in the user-defined function.
+corresponds to the \normindex{cut-off} in the user-defined function.
 \end{description}
 \item[{\bf rvdw\_switch: }(0) {[nm]}]\mbox{}\\
 where to start switching the LJ potential
 \item[{\bf rvdw: }(1) {[nm]}]\mbox{}\\
-distance for the LJ or Buckingham cut-off
+distance for the LJ or Buckingham \normindex{cut-off}
 \item[{\bf bDispCorr:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
 \item[{\bf no}]\mbox{}\\
 don't apply any correction
 \item[{\bf yes}]\mbox{}\\
-apply long range dispersion corrections for Energy and Pressure
+apply long range \normindex{dispersion} corrections for Energy and Pressure
 \end{description}
 \item[{\bf fourierspacing: }(0.12) {[nm]}]\mbox{}\\
-The maximum grid spacing for the FFT grid when using PPPM or PME.
-For ordinary Ewald the spacing times the box dimensions determines the
+The maximum grid spacing for the FFT grid when using \normindex{PPPM} or \normindex{PME}.
+For ordinary \normindex{Ewald} the spacing times the box dimensions determines the
 highest magnitude to use in each direction. In all cases
 each direction can be overriden by entering a non-zero value for
 {\bf fourier\_n*}. 
 \item[{\bf fourier\_nx }(0){\bf  ; fourier\_ny }(0){\bf  ; fourier\_nz: }(0)]\mbox{}\\
-Highest magnitude of wavevectors in reciprocal space when using Ewald.
-Grid size when using PPPM or PME. These values override
+Highest magnitude of wavevectors in reciprocal space when using \normindex{Ewald}.
+Grid size when using \normindex{PPPM} or \normindex{PME}. These values override
 {\bf fourierspacing} per direction. The best choice is powers of
 2, 3, 5 and 7. Avoid large primes.
 \item[{\bf pme\_order }(4)]\mbox{}\\
-Interpolation order for PME. 4 equals cubic interpolation. You might try
+Interpolation order for \normindex{PME}. 4 equals cubic interpolation. You might try
 6/8/10 when running in parallel and simultaneously decrease grid dimension.
 \item[{\bf ewald\_rtol }(1e-5)]\mbox{}\\
-The relative strength of the Ewald-shifted direct potential at the cutoff
+The relative strength of the \normindex{Ewald}-shifted direct potential at the cutoff
 is given by {\bf ewald\_rtol}. Decreasing this will give a more accurate
 direct sum, but then you need more wavevectors for the reciprocal sum.
 \item[{\bf optimize\_fft:}]\mbox{}\\
@@ -297,21 +295,19 @@ at start.
 \item[{\bf tcoupl:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
 \item[{\bf no}]\mbox{}\\
-No temperature coupling. 
+No \normindex{temperature} coupling. 
 \item[{\bf yes}]\mbox{}\\
 Temperature coupling with a Berendsen-thermostat to a bath with
-temperature {\bf ref\_t} [K], with time constant {\bf tau\_t} [ps].
+\normindex{temperature} {\bf ref\_t} [K], with time constant {\bf tau\_t} [ps].
 Several groups can be coupled seperately, these are specified in the
 {\bf tc\_grps} field seperated by spaces.
 \end{description}
-\item[{\bf ntcmemory: }(1) {[steps]}]\mbox{}\\
-memory for running average to couple to bath
 \item[{\bf tc\_grps:}]\mbox{}\\
-groups to couple separately to temperature bath
+groups to couple separately to \normindex{temperature} bath
 \item[{\bf tau\_t: }[ps]]\mbox{}\\
 time constant for coupling (one for each group in tc\_grps)
 \item[{\bf ref\_t: }[K]]\mbox{}\\
-reference temperature for coupling (one for each group in tc\_grps)
+reference \normindex{temperature} for coupling (one for each group in tc\_grps)
 \end{description}
 
 \subsection{Pressure coupling}
@@ -319,10 +315,10 @@ reference temperature for coupling (one for each group in tc\_grps)
 \item[{\bf pcoupl:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
 \item[{\bf no}]\mbox{}\\
-No pressure coupling. This means a fixed box size.
+No \normindex{pressure} coupling. This means a fixed box size.
 \item[{\bf isotropic}]\mbox{}\\
 Pressure coupling with time constant {\bf tau\_p} [ps].
-The compressibility and reference pressure are set with
+The compressibility and reference \normindex{pressure} are set with
 {\bf compressibility} [bar$^{-1}$] and {\bf ref\_p} [bar], one
 value is needed.
 \item[{\bf semiisotropic}]\mbox{}\\
@@ -336,11 +332,11 @@ Beware that isotropic scaling can lead to extreme deformation
 of the simulation box.
 \item[{\bf surface-tension}]\mbox{}\\
 Surface tension couling for surfaces parallel to the xy-plane.
-Uses normal pressure coupling for the z-direction, while the surface tension
+Uses normal \normindex{pressure} coupling for the z-direction, while the surface tension
 is coupled to the x/y dimensions of the box.
 The first {\bf ref\_p} value is the reference surface tension times
 the number of surfaces [bar nm], 
-the second value is the reference z-pressure [bar].
+the second value is the reference z-\normindex{pressure} [bar].
 The two {\bf compressibility} [bar$^{-1}$] values are the compressibility
 in the x/y and z direction respectively.
 The value for the z-compressibility should be reasonably accurate since it
@@ -349,15 +345,13 @@ to have a box with constant height.
 \item[{\bf triclinic}]\mbox{}\\
 Not supported yet.
 \end{description}
-\item[{\bf npcmemory: }(1) {[steps]}]\mbox{}\\
-memory for running average to couple
 \item[{\bf tau\_p: }(1) {[ps]}]\mbox{}\\
 time constant for coupling
 \item[{\bf compressibility: }[bar$^{-1}$]]\mbox{}\\
 compressibility (NOTE: this is now really in bar$^{-1}$)
 For water at 1 atm and 300 K the compressibility is 4.5e-5 [bar$^{-1}$].
 \item[{\bf ref\_p: }[bar]]\mbox{}\\
-reference pressure for coupling
+reference \normindex{pressure} for coupling
 \end{description}
 
 \subsection{Simulated annealing}
@@ -365,23 +359,23 @@ reference pressure for coupling
 \item[{\bf annealing:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
 \item[{\bf no}]\mbox{}\\
-No simulated annealing. 
+No \normindex{simulated annealing}. 
 \item[{\bf yes}]\mbox{}\\
 Simulated annealing to 0 [K] at time {\bf zero\_temp\_time} (ps).
-Reference temperature for the Berendsen-thermostat is
+Reference \normindex{temperature} for the Berendsen-thermostat is
 {\bf ref\_t} x (1 - time / {\bf zero\_temp\_time}),
-time constant is {\bf tau\_t} [ps]. Note that the reference temperature
+time constant is {\bf tau\_t} [ps]. Note that the reference \normindex{temperature}
 will not go below 0 [K], i.e. after {\bf zero\_temp\_time} (if it is positive) 
-the reference temperature will be 0 [K]. Negative {\bf zero\_temp\_time} 
+the reference \normindex{temperature} will be 0 [K]. Negative {\bf zero\_temp\_time} 
 results in heating, which will go on indefenitely.
 \end{description}
 \item[{\bf zero\_temp\_time: }(0) {[ps]}]\mbox{}\\
-time at which temperature will be zero (can be negative). Temperature
+time at which \normindex{temperature} will be zero (can be negative). Temperature
 during the run can be seen as a straight line going through 
 T={\bf ref\_t} [K] at t=0 [ps], and 
 T=0 [K] at t={\bf zero\_temp\_time} [ps]. Look in our 
 FAQ for a schematic 
-graph of temperature vs. time.
+graph of \normindex{temperature} vs. time.
 \end{description}
 
 \subsection{Velocity generation}
@@ -393,11 +387,11 @@ graph of temperature vs. time.
 when there are no velocities in the input structure file.
 \item[{\bf yes}]\mbox{}\\
 Generate velocities according to a Maxwell distribution at
-temperature {\bf gen\_temp} [K], with random seed {\bf gen\_seed}. 
+\normindex{temperature} {\bf gen\_temp} [K], with random seed {\bf gen\_seed}. 
 This is only meaningful with integrator {\bf md}.
 \end{description}
 \item[{\bf gen\_temp: }(300) {[K]}]\mbox{}\\
-temperature for Maxwell distribution
+\normindex{temperature} for Maxwell distribution
 \item[{\bf gen\_seed: }(173529) {[integer]}]\mbox{}\\
 used to initialize random generator for random velocities
 \end{description}
@@ -410,20 +404,17 @@ used to initialize random generator for random velocities
 Do not use water specific non-bonded optimizations
 \item[{\bf $<$solvent molecule name$>$}]\mbox{}\\
 Use water specific non-bonded optimizations. This string should match the
-solvent molecule name in your topology. Check your run time to see 
+solvent molecule name in your \normindex{topology}. Check your run time to see 
 if it is faster. 
 \end{description}
-\item[{\bf nsatoms: }(3)]\mbox{}\\
-Number of atoms in solvent model.
-(Not implemented for non-three atom models)
 \end{description}
 
 \subsection{Bonds}
 \begin{description}
-\item[{\bf constraints:}]\mbox{}\\
+\item[{\bf \normindex{constraints}:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
 \item[{\bf none}]\mbox{}\\
-No constraints, i.e. bonds are represented by a harmonic or a
+No \normindex{constraints}, i.e. bonds are represented by a harmonic or a
 morse potential (depending on the setting of {\bf morse}) and angles
 by a harmonic potential.
 \item[{\bf hbonds}]\mbox{}\\
@@ -432,43 +423,43 @@ Only constrain the bonds with H-atoms.
 Constrain all bonds.
 \item[{\bf h-angles}]\mbox{}\\
 Constrain all bonds and constrain the angles that involve H-atoms
-by adding bond-constraints.
+by adding bond-\normindex{constraints}.
 \item[{\bf all-angles}]\mbox{}\\
-Constrain all bonds and constrain all angles by adding bond-constraints.
+Constrain all bonds and constrain all angles by adding bond-\normindex{constraints}.
 \end{description}
 \item[{\bf constraint\_alg:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
-\item[{\bf lincs}]\mbox{}\\
+\item[{\bf \normindex{lincs}}]\mbox{}\\
 LINear Constraint Solver. The accuracy in set with
-{\bf lincs\_order}, which sets the number of matrices in the expansion
+{\bf \normindex{lincs}\_order}, which sets the number of matrices in the expansion
 for the matrix inversion, 4 is enough for a "normal" MD simulation, 8 is
 needed for LD with large timesteps. If a bond rotates more than
-{\bf lincs\_warnangle} [degrees] in one step, 
-a warning will be printed both to the log file and to {\tt stderr}. 
-Lincs should not be used with coupled angle constraints.
-\item[{\bf shake}]\mbox{}\\
+{\bf \normindex{lincs}\_warnangle} [degrees] in one step, 
+a warning will be printed both to the \normindex{log file} and to {\tt stderr}. 
+Lincs should not be used with coupled angle \normindex{constraints}.
+\item[{\bf \normindex{shake}}]\mbox{}\\
 Shake is slower and less stable than Lincs, but does work with 
-angle constraints. 
-The relative tolerance is set with {\bf shake\_tol}, 0.0001 is a good value
+angle \normindex{constraints}. 
+The relative tolerance is set with {\bf \normindex{shake}\_tol}, 0.0001 is a good value
 for "normal" MD. 
 \end{description}
 \item[{\bf unconstrained\_start:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
 \item[{\bf no}]\mbox{}\\
-apply constraints to the start configuration
+apply \normindex{constraints} to the start configuration
 \item[{\bf yes}]\mbox{}\\
-do not apply constraints to the start configuration
+do not apply \normindex{constraints} to the start configuration
 \end{description}
-\item[{\bf shake\_tol: }(0.0001)]\mbox{}\\
-relative tolerance for shake
-\item[{\bf lincs\_order: }(4)]\mbox{}\\
+\item[{\bf \normindex{shake}\_tol: }(0.0001)]\mbox{}\\
+relative tolerance for \normindex{shake}
+\item[{\bf \normindex{lincs}\_order: }(4)]\mbox{}\\
 Highest order in the expansion of the constraint coupling matrix.
-{\bf lincs\_order} is also used for the number of Lincs iterations
+{\bf \normindex{lincs}\_order} is also used for the number of Lincs iterations
 during energy minimization, only one iteration is used in MD.
-\item[{\bf lincs\_warnangle: }(30) {[degrees]}]\mbox{}\\
+\item[{\bf \normindex{lincs}\_warnangle: }(30) {[degrees]}]\mbox{}\\
 maximum angle that a bond can rotate before Lincs will complain
-\item[{\bf nstlincsout: }(1000) {[steps]}]\mbox{}\\
-frequency to output constraint accuracy in log file
+\item[{\bf nst\normindex{lincs}out: }(1000) {[steps]}]\mbox{}\\
+frequency to output constraint accuracy in \normindex{log file}
 \item[{\bf morse:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
 \item[{\bf no}]\mbox{}\\
@@ -483,12 +474,12 @@ bonds are represented by a morse potential
 \item[{\bf disre:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
 \item[{\bf none}]\mbox{}\\
-no distance restraints (ignore distance restraints information in
-topology file)
+no \normindex{distance restraints} (ignore \normindex{distance restraints} information in
+\normindex{topology} file)
 \item[{\bf simple}]\mbox{}\\
-simple (per-molecule) distance restraints
+simple (per-molecule) \normindex{distance restraints}
 \item[{\bf ensemble}]\mbox{}\\
-distance restraints over an ensemble of molecules
+\normindex{distance restraints} over an ensemble of molecules
 \end{description}
 \item[{\bf disre\_weighting:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
@@ -508,14 +499,14 @@ the violation used in the calculation of the restraint force is the
 square root of the time averaged violation times the instantaneous violation 
 \end{description}
 \item[{\bf disre\_fc: }(1000) {[kJ mol$^{-1}$ nm$^{-2}$]}]\mbox{}\\
-force constant for distance restraints, which is multiplied by a
+force constant for \normindex{distance restraints}, which is multiplied by a
 (possibly) different factor for each restraint
 \item[{\bf disre\_tau: }(10) {[ps]}]\mbox{}\\
-time constant for distance restraints running average
+time constant for \normindex{distance restraints} running average
 \item[{\bf nstdisreout: }(100) {[steps]}]\mbox{}\\
 frequency to write the running time averaged and instantaneous distances
-of all atom pairs involved in restraints to the energy file
-(can make the energy file very large)
+of all atom pairs involved in restraints to the \normindex{energy file}
+(can make the \normindex{energy file} very large)
 \end{description}
 
 \subsection{Free energy}
@@ -523,9 +514,9 @@ of all atom pairs involved in restraints to the energy file
 \item[{\bf free\_energy:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
 \item[{\bf no}]\mbox{}\\
-Only use topology A. 
+Only use \normindex{topology} A. 
 \item[{\bf yes}]\mbox{}\\
-Change the system from topology A (lambda=0) to topology B (lambda=1)
+Change the system from \normindex{topology} A (lambda=0) to \normindex{topology} B (lambda=1)
 and calculate the free energy difference.
 The starting value of lambda is {\bf init\_lambda} the increase
 per time step is {\bf delta\_lambda}.
@@ -554,8 +545,8 @@ which dimension the freezing applies.
 \item[{\bf freezedim: }]\mbox{}\\
 dimensions for which groups in {\bf freezegrps} should be frozen, 
 specify {\tt Y} or {\tt N} for X, Y and Z and for each group
-(e.g. {\tt Y Y N N N N} means that particles in the first group 
-can move only in Z direction. The particles in the second group can 
+(e.g. {\tt Y Y N N N N} means that \normindex{particles} in the first group 
+can move only in Z direction. The \normindex{particles} in the second group can 
 move in any direction).
 \end{description}
 

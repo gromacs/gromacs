@@ -115,11 +115,12 @@ rather than half the array over half the ring).
 However, for large numbers of processors the improved load balancing 
 compensates this easily.
 
-\subsection{Parallel PPPM}
-A further reason for domain decomposition is the PPPM algorithm. This algorithm
-works with a 3D Fast Fourier Transform. It employs a discrete grid of dimensions
-(\nx,\ny,\nz), the {\fftgrid}. The algorithm consist of three steps,
-each of which have to be parallelized:
+\subsection{Parallel \normindex{PPPM}}
+A further reason for domain decomposition is the PPPM algorithm. This
+algorithm works with a 3D Fast Fourier Transform. It employs a
+discrete grid of dimensions (\nx,\ny,\nz), the {\fftgrid}. The
+algorithm consist of three steps, each of which have to be
+parallelized:
 \begin{enumerate}
 \item	Spreading charges on the {\fftgrid} to obtain the charge 
 	distribution $\rho(\ve{r})$.

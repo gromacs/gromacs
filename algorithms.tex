@@ -75,7 +75,7 @@ with the {\em minimum image convention:} only one - the nearest -
 image of each particle is considered for short-range non-bonded interaction terms.
 For long-range electrostatic interactions this is not always accurate
 enough, and \gromacs therefore also incorporates lattice sum methods
-like Ewald, PME and PPPM.
+like \normindex{Ewald}, \normindex{PME} and \normindex{PPPM}.
   
 The box can be of arbitrary dimensions, but must be rectangular. An
 isolated cluster of molecules can of course be simulated as well within these
@@ -1186,15 +1186,16 @@ decided to use a standard language (Ansi-C) with as little non-standard
 routines as possible. We only use 5 communication routines that are
 non-standard. It is therefore very easy to port our code to other machines.
 
-For an $O(N^2)$ problem like MD, one of the best schemes for the 
-interprocessor connections is a ring, so our software demands that
-a ring is present in the interprocessor connections. A ring can 
-almost always be mapped onto another network like a \normindex{hypercube}, a bus
-interface (ethernet eg. using Parallel Virtual Machines PVM~\cite{pvm3})
-or a \normindex{tree} (CM-5). Some hardware vendors
-have very luxurious connection schemes that connect every processor
-to every other processor, but we do not really need it and so do not use
-it even though it might come in handy at times.
+For an $O(N^2)$ problem like MD, one of the best schemes for the
+interprocessor connections is a ring, so our software demands that a
+ring is present in the interprocessor connections. A ring can almost
+always be mapped onto another network like a \normindex{hypercube}, a
+bus interface (ethernet eg. using \seeindex{Parallel Virtual
+Machines}{PVM} \normindex{PVM}~\cite{pvm3}) or a \normindex{tree}
+(CM-5). Some hardware vendors have very luxurious connection schemes
+that connect every processor to every other processor, but we do not
+really need it and so do not use it even though it might come in handy
+at times.
 
 When using a message passing scheme one has to divide the particles 
 over processors, which can be done in two ways:
