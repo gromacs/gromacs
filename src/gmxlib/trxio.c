@@ -550,7 +550,7 @@ static bool pdb_next_x(FILE *status,real *t,int natoms,rvec x[],matrix box)
     sscanf(time+4,"%g",t);
   else
     *t=0.0;
-  free_t_atoms(&atoms);
+  /* free_t_atoms(&atoms); */
   if (na==0) {
     return FALSE;
   }
