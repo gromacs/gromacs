@@ -123,6 +123,7 @@ END
 HEAD|Interfaces
 g_potential|calculates the electrostatic potential across the box
 g_density|calculates the density of the system
+g_densmap|calculates 2D planar or axial-radial density maps
 g_order|computes the order parameter per atom for carbon tails
 g_h2order|computes the orientation of water molecules
 g_bundle|analyzes bundles of axes, e.g. transmembrane helices

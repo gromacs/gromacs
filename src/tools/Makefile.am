@@ -19,7 +19,8 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	hxprops.c 	hxprops.h 	fitahx.c 	fitahx.h	\
 	gmx_analyze.c	gmx_anaeig.c	gmx_angle.c	gmx_bond.c	\
 	gmx_bundle.c	gmx_chi.c	gmx_cluster.c	gmx_confrms.c	\
-	gmx_covar.c	gmx_density.c	gmx_dih.c	gmx_dielectric.c \
+	gmx_covar.c	gmx_density.c	gmx_densmap.c   gmx_dih.c	\
+	gmx_dielectric.c \
 	gmx_dipoles.c	gmx_disre.c	gmx_dist.c	gmx_dyndom.c	\
 	gmx_enemat.c	gmx_energy.c	gmx_lie.c	gmx_filter.c	\
 	gmx_gyrate.c	gmx_h2order.c	gmx_hbond.c	gmx_helix.c	\
@@ -40,7 +41,8 @@ bin_PROGRAMS = \
 	anadock		cdist		disco           make_edi	\
 	g_analyze   	g_anaeig    	g_angle     	g_bond      	\
 	g_bundle    	g_chi       	g_cluster   	g_confrms   	\
-	g_covar     	g_density   	g_dih       	g_dielectric 	\
+	g_covar     	g_density   	g_densmap       g_dih       	\
+	g_dielectric 	\
 	g_dipoles   	g_disre     	g_dist      	g_dyndom    	\
 	g_enemat    	g_energy    	g_lie       	g_filter    	\
 	g_gyrate    	g_h2order   	g_hbond     	g_helix     	\
@@ -49,7 +51,7 @@ bin_PROGRAMS = \
 	g_rdf       	g_rms       	g_rmsdist   	g_rmsf      	\
 	g_rotacf    	g_saltbr    	g_sas       	g_sgangle   	\
 	g_sorient   	g_tcaf      	g_traj      	g_velacc    	\
-	g_clustsize 	g_mdmat     	g_wham          
+	g_clustsize 	g_mdmat     	g_wham
 
 
 
