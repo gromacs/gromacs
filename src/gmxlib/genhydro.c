@@ -47,6 +47,13 @@ static char *SRCID_genhydro_c = "$Id$";
 #include "genhydro.h"
 #include "h_db.h"
 
+/* types of hack to be made */
+enum {
+  ehtNONE, ehtNTER, ehtCTER, ehtDUM
+};
+
+char *HackName[] = { "Nothing", "N-terminus", "C-terminus" };
+
 #define MAXHH 3
 
 static void copy_atom(t_atoms *atoms1,t_atoms *atoms2,rvec *x1,rvec *x2,
@@ -59,11 +66,20 @@ static void copy_atom(t_atoms *atoms1,t_atoms *atoms2,rvec *x1,rvec *x2,
 }
 
 static int hack_residue(int resnr,t_atoms *pdba,t_add_block *ab[],
-			t_terblock *tb,int fac,int nTH[],bool *bDel)
+			t_hackblock *tb,
+			int type,int HT[], int nTH[],bool *bDel)
 {
   int i,j,dadd=0,natom;
  
+  if (debug)
+    if (tb)
+      fprintf(debug,"Hacking %d atoms of %s into residue %d\n",
+	      tb->nadd,HackName[type],resnr);
+    else
+      fprintf(debug,"Not hacking %s into residue %d\n",HackName[type],resnr);
+  
   natom=pdba->nr;
+  
   if (tb == NULL)
     return 0;
     
@@ -75,7 +91,8 @@ static int hack_residue(int resnr,t_atoms *pdba,t_add_block *ab[],
     for(j=0; (j<tb->nadd); j++) {
       if (strcmp(*pdba->atomname[i],tb->ab[j].na[0]) == 0) {
 	/* Check whether this atom has already been set */
-	nTH[i]=fac*(j+1);
+	nTH[i]=j+1;
+	HT[i]=type;
 	if (ab[i] != NULL)
 	  dadd-=ab[i]->nh;
 	ab[i]=&(tb->ab[j]);
@@ -89,19 +106,29 @@ static int hack_residue(int resnr,t_atoms *pdba,t_add_block *ab[],
 	dadd--;
       }
   }
+  
   return dadd;
 }
 
 static char *Hnum[] = { "1", "2", "3", "4", "5", "6" };
 
-static void hack_atoms(t_terblock *tdb,int index,
+static void hack_atoms(t_hackblock *tdb,int index,
 		       int j0,int nadd,t_atoms *pdba)
 {
   int j;
   char buf[STRLEN];
 
+  if (debug)
+    if (tdb)
+      printf("Replacing atoms %d-%d (addition %d)\n",
+	     j0,j0+nadd-1,index);
+    else
+      printf("Not replacing atoms (%d-%d addition %d)\n",
+	     j0,j0+nadd-1,index);
+  
   if (tdb == NULL)
     return;
+  
   for(j=j0; (j<j0+nadd); j++) {
     assert(j<pdba->nr);
     strcpy(buf,tdb->add_nm[index]);
@@ -115,7 +142,7 @@ static void hack_atoms(t_terblock *tdb,int index,
   }
 }
 
-static void replace_atoms(t_terblock *tdb,t_atoms *pdba,int resnr)
+static void replace_atoms(t_hackblock *tdb,t_atoms *pdba,int resnr)
 {
   int i,j,natom;
   
@@ -156,7 +183,7 @@ int pdbasearch_atom(char *name,int resnr,t_atoms *pdba)
 }
 
 int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
-	  t_terblock *ntdb,t_terblock *ctdb,
+	  t_hackblock *ntdb,t_hackblock *ctdb,
 	  int rN,int rC)
 {
   /* Global variable from h_db.c */
@@ -164,7 +191,7 @@ int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
   
   t_atoms     *newpdba,*pdba;
   t_add_block **ab;      /* Array of pointer to add blocks */
-  int         *nTH;
+  int         *nTH,*HT;
   bool        *bDel;
   int         tadd=0;
   int         rnr=NOTSET;
@@ -174,11 +201,14 @@ int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
   rvec        *xn;
   char        buf[STRLEN];
 
+  /* set flags for adding hydrogens (accoring to hdb) */
   natom=(*pdbaptr)->nr;
   snew(ab,natom);
+  snew(HT,natom);
   snew(nTH,natom);
   snew(bDel,natom);
   pdba=*pdbaptr;
+  rnr=-83;
   for(i=0; (i<natom); i++) {
     if (rnr != pdba->atom[i].resnr) {
       rnr=pdba->atom[i].resnr;
@@ -197,12 +227,12 @@ int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
     }
   }
   
-  /* Modify for termini HERE */
+  /* set flags for adding atoms to termini (according to tdb) */
   if (rN>=0)
-    tadd+=hack_residue(rN,pdba,ab,ntdb,1,nTH,bDel);
+    tadd+=hack_residue(rN,pdba,ab,ntdb,ehtNTER,HT,nTH,bDel);
   if (rC>=0)
-    tadd+=hack_residue(rC,pdba,ab,ctdb,-1,nTH,bDel);
-
+    tadd+=hack_residue(rC,pdba,ab,ctdb,ehtCTER,HT,nTH,bDel);
+  
   /* Copy old atoms, making space for new ones */
   snew(newpdba,1);
   init_t_atoms(newpdba,natom+tadd,FALSE);
@@ -226,10 +256,18 @@ int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
 	  newpdba->atom[j].resnr=pdba->atom[i].resnr;
 	}
 	if (nTH[i]!=0) {
-	  if (nTH[i] > 0)
+	  switch(HT[i]) {
+	  case ehtNTER :
 	    hack_atoms(ntdb,nTH[i]-1,j0,ab[i]->nh,newpdba);
-	  else if (nTH[i] < 0)
-	    hack_atoms(ctdb,-nTH[i]-1,j0,ab[i]->nh,newpdba);
+	    break;
+	  case ehtCTER :
+	    hack_atoms(ctdb,nTH[i]-1,j0,ab[i]->nh,newpdba);
+	    break;
+	  default:
+	    fatal_error(0,"Death horror error in genhydro (nTH=%d, HT=%d)\n",
+			nTH[i],HT[i]);
+	    break;
+	  }
 	  /* check if atoms should be added to added atoms */
 	  for(k=j0; (k<j0+ab[i]->nh); k++) {
 	    for(l=0; (l<ntdb->nadd); l++) {
@@ -266,7 +304,7 @@ int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
     }
   }
   
-  /* Now let me do this... */
+  /* atoms in termini should be replaced (new name/type/mass/charge) */
   if (rN>=0)
     replace_atoms(ntdb,newpdba,rN);
   if (rC>=0)
@@ -309,6 +347,7 @@ int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
 
   /* Clean up */
   sfree(ab);
+  sfree(HT);
   sfree(nTH);
   sfree(bDel);
   sfree(*pdbaptr);
