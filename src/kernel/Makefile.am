@@ -59,9 +59,9 @@ x2top_SOURCES = \
 
 mdrun_SOURCES = \
 	glaasje.c 	glaasje.h 	gctio.c 	init_sh.c 	\
-	ionize.c 	ionize.h 	ion_data.h 	\
+	ionize.c 	ionize.h 	ion_data.h 	xmdrun.h	\
 	do_gct.c 	relax_sh.c	xutils.c	\
-	md.c		mdrun.c		genalg.c
+	md.c		mdrun.c		genalg.c	genalg.h
 
 ffscan_SOURCES = \
 	ffscan.c	\
