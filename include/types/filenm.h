@@ -65,7 +65,7 @@ typedef struct {
   char *opt;		/* Command line option			*/
   char *fn;		/* File name (as set in source code)	*/
   unsigned long flag;	/* Flag for all kinds of info (see defs)*/
-  int  nf;		/* number of files			*/
+  int  nfiles;		/* number of files			*/
   char **fns;		/* File names				*/
 } t_filenm;
 

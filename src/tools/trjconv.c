@@ -1035,10 +1035,11 @@ int main(int argc,char *argv[])
 	      case efG96:
 		frout.title = title;
 		if (bSeparate || bTDump) {
-		  fr.bTitle = TRUE;
-		  fr.bAtoms = TRUE;
-		  fr.bStep = FALSE;
-		  fr.bTime = FALSE;
+		  frout.bTitle = TRUE;
+		  frout.bAtoms = TRUE;
+		  frout.atoms  = &useatoms;
+		  frout.bStep  = FALSE;
+		  frout.bTime  = FALSE;
 		} else {
 		  frout.bTitle = (outframe == 0);
 		  frout.bAtoms = FALSE;

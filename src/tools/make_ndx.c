@@ -1095,7 +1095,7 @@ int main(int argc,char *argv[])
 		    0,NULL);
   
   stxfile = ftp2fn_null(efSTX,NFILE,fnm);
-  nndxin = opt2fns(&ndxinfiles,"-n",NFILE,fnm);
+  nndxin  = opt2fns(&ndxinfiles,"-n",NFILE,fnm);
   ndxoutfile = opt2fn("-o",NFILE,fnm);
   bNatoms = opt2parg_bSet("-natoms",NPA,pa);
   
@@ -1108,7 +1108,7 @@ int main(int argc,char *argv[])
     init_t_atoms(atoms,atoms->nr,TRUE);
     snew(x,atoms->nr);
     snew(v,atoms->nr);
-  fprintf(stderr,"\nReading structure file\n");
+    fprintf(stderr,"\nReading structure file\n");
     read_stx_conf(stxfile,title,atoms,x,v,box);
     natoms = atoms->nr;
     bNatoms=TRUE;
@@ -1118,8 +1118,9 @@ int main(int argc,char *argv[])
   }
 
   /* read input file(s) */
-    block = new_block();
+  block = new_block();
   gnames = NULL;
+  printf("Going to read %d old index file(s)\n",nndxin);
   if (nndxin) {
     for(i=0; i<nndxin; i++) {
       block2 = init_index(ndxinfiles[i],&gnames2);
@@ -1133,7 +1134,8 @@ int main(int argc,char *argv[])
 /*       done_block(block2); */
       sfree(block2);
     }
-  } else {
+  } 
+  else {
     snew(gnames,1);
     analyse(atoms,block,&gnames,FALSE,TRUE);
   }

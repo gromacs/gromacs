@@ -305,18 +305,18 @@ void pr_fns(FILE *fp,int nf,t_filenm tfn[])
 	  "Option","Filename","Type","Description");
   fprintf(fp,"------------------------------------------------------------\n");
   for(i=0; (i<nf); i++) {
-    for(f=0; (f<tfn[i].nf); f++) {
+    for(f=0; (f<tfn[i].nfiles); f++) {
       sprintf(buf, "%4s %14s  %-12s",
 	      (f==0) ? tfn[i].opt : "",tfn[i].fns[f],
 	      (f==0) ? fileopt(tfn[i].flag,opt_buf,32) : "");
-      if ( f < tfn[i].nf-1 )
+      if ( f < tfn[i].nfiles-1 )
 	fprintf(fp, "%s\n", buf);
     }
-    if (tfn[i].nf > 0) {
+    if (tfn[i].nfiles > 0) {
       strcat(buf, deffile[tfn[i].ftp].descr);
       if ( (strlen(tfn[i].opt)>OPTLEN) && 
 	   (strlen(tfn[i].opt)<=
-	    ((OPTLEN+NAMELEN)-strlen(tfn[i].fns[tfn[i].nf-1]))) ) {
+	    ((OPTLEN+NAMELEN)-strlen(tfn[i].fns[tfn[i].nfiles-1]))) ) {
 	for(j=strlen(tfn[i].opt); 
 	    j<strlen(buf)-(strlen(tfn[i].opt)-OPTLEN)+1; j++)
 	  buf[j]=buf[j+strlen(tfn[i].opt)-OPTLEN];
@@ -452,9 +452,9 @@ static void set_extension(char *buf,int ftp)
 
 static void add_filenm(t_filenm *fnm, char *filenm)
 {
-  srenew(fnm->fns, fnm->nf+1);
-  fnm->fns[fnm->nf] = strdup(filenm);
-  fnm->nf++;
+  srenew(fnm->fns, fnm->nfiles+1);
+  fnm->fns[fnm->nfiles] = strdup(filenm);
+  fnm->nfiles++;
 }
 
 static void set_grpfnm(t_filenm *fnm,char *name,bool bCanNotOverride)
@@ -610,7 +610,11 @@ char *opt2fn(char *opt,int nfile,t_filenm fnm[])
   
   for(i=0; (i<nfile); i++)
     if (strcmp(opt,fnm[i].opt)==0) {
-      return fnm[i].fns[0];
+      if (!IS_OPT(fnm[i]) || IS_SET(fnm[i])) {
+	return fnm[i].fns[0];
+      }
+      else
+	return NULL;
     }
 
   fprintf(stderr,"No option %s\n",opt);
@@ -624,8 +628,12 @@ int opt2fns(char **fns[], char *opt,int nfile,t_filenm fnm[])
   
   for(i=0; (i<nfile); i++)
     if (strcmp(opt,fnm[i].opt)==0) {
-      *fns = fnm[i].fns;
-      return fnm[i].nf;
+      if (!IS_OPT(fnm[i]) || IS_SET(fnm[i])) {
+	*fns = fnm[i].fns;
+	return fnm[i].nfiles;
+      }
+      else
+	return 0;
     }
   
   fprintf(stderr,"No option %s\n",opt);
@@ -651,7 +659,7 @@ int ftp2fns(char **fns[], int ftp,int nfile,t_filenm fnm[])
   for(i=0; (i<nfile); i++)
     if (ftp == fnm[i].ftp) {
       *fns = fnm[i].fns;
-      return fnm[i].nf;
+      return fnm[i].nfiles;
     }
   
   fprintf(stderr,"ftp2fn: No filetype %s\n",deffile[ftp].ext);
