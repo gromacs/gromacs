@@ -136,7 +136,7 @@ void do_dummies(t_atoms *at,t_atomtype *atype,t_symtab *symtab,
 		break;
 	    if (tpM == atype->nr)
 	      fatal_error(0,"Atom type %s not found in database "
-			  "while adding dummy masses\n",ddb[n].bname);
+			  "while adding dummy masses\n",ddb[n].mass[m].mtype);
 	    nadd = ddb[n].mass[m].nm;
 	    add+=nadd;
 	    at->nr+=nadd;
