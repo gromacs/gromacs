@@ -1,0 +1,195 @@
+[ CH3 ]
+   C3        N    MCH3
+   C3        S    MCH3
+   C3        C    MCH3
+   C3       CB    MCH3
+   C3       C1    MCH3
+   C3       C2    MCH3
+   C3     NR6*    MCH3
+
+[ NH3 ]
+   NL        C    MNH3
+   NL       C1    MNH3
+   NL       C2    MNH3
+[ NH2 ]
+   NT      planar
+   NZ      planar
+   NL        C    MNH3
+   NL       C1    MNH3
+   NL       C2    MNH3
+
+; Data for generating dummy aromatic rings.
+; Actually we dont need all these bonds and angles,
+; but by specifying them here it is easier to improve
+; the dummy generation code later.  
+[ PHE ]
+  CG	CD1		0.139	
+  CG	CD2		0.139
+  CD1   CE1		0.139
+  CD2	CE2		0.139
+  CE1   CZ		0.139
+  CE2	CZ		0.139
+  CD1	HD1		0.108
+  CD2	HD2		0.108
+  CE1	HE1		0.108
+  CE2   HE2		0.108
+  CZ    HZ		0.108
+  CG    CD1   CE1	120.0
+  CD1   CE1   CZ	120.0
+  CE1   CZ    CE2	120.0
+  CZ    CE2   CD2	120.0
+  CE2   CD2   CG	120.0
+  CD2   CG    CD1	120.0
+  CG    CD1   HD1	120.0
+  CG    CD2   HD2	120.0
+  HD1   CD1   CE1	120.0
+  CD1   CE1   HE1	120.0
+  HE1   CE1   CZ	120.0
+  CE1   CZ    HZ	120.0
+  HZ    CZ    CE2	120.0
+  CZ    CE2   HE2	120.0
+  HE2   CE2   CD2	120.0
+  HD2   CD2   CG	120.0
+
+[ TYR ]
+  CG	CD1		0.139	
+  CG	CD2		0.139	
+  CD1   CE1		0.139	
+  CD2	CE2		0.139	
+  CE1   CZ		0.139	
+  CE2	CZ		0.139	
+  CD1	HD1		0.108
+  CD2	HD2		0.108
+  CE1	HE1		0.108
+  CE2   HE2		0.108
+  CZ    OH		0.136
+  OH    HH		0.100
+  CG    CD1   CE1	120.0
+  CD1   CE1   CZ	120.0
+  CE1   CZ    CE2	120.0
+  CZ    CE2   CD2	120.0
+  CE2   CD2   CG	120.0
+  CD2   CG    CD1	120.0
+  CG    CD1   HD1	120.0
+  CG    CD2   HD2	120.0
+  HD1   CD1   CE1	120.0
+  CD1   CE1   HE1	120.0
+  HE1   CE1   CZ	120.0
+  CE1   CZ    OH	120.0
+  CZ    OH    HH	109.5
+  OH    CZ    CE2	120.0
+  CZ    CE2   HE2	120.0
+  HE2   CE2   CD2	120.0
+  HD2   CD2   CG	120.0
+
+[ TRP ]
+  CB    CG              0.153
+  CG	CD1   		0.139
+  CD1   NE1		0.133
+  NE1	CE2		0.133
+  CE2   CD2		0.139
+  CD2   CG		0.139
+  CE2   CZ2		0.139
+  CZ2   CH2		0.139
+  CH2   CZ3		0.139
+  CZ3   CE3		0.139
+  CE3   CD2		0.139
+  CD1   HD1		0.108
+  NE1   HE1		0.100
+  CE3   HE3		0.108
+  CZ2   HZ2		0.108
+  CZ3   HZ3		0.108
+  CH2   HH2		0.108
+  CB    CG    CD1       126.0
+  CB    CG    CD2       126.0
+  CG    CD1   NE1	108.0
+  CD1   NE1   CE2	108.0
+  NE1   CE2   CD2	108.0
+  CE2   CD2   CG	108.0
+  CD2   CG    CD1	108.0
+  NE1   CE2   CZ2	132.0
+  CE2   CD2   CE3       120.0
+  CD2   CE2   CZ2       120.0
+  CE2   CZ2   CH2	120.0
+  CZ2   CH2   CZ3	120.0
+  CH2   CZ3   CE3	120.0
+  CZ3   CE3   CD2	120.0
+  CE3   CD2   CG	132.0
+  CG    CD1   HD1	126.0	
+  HD1   CD1   NE1	126.0
+  CD1   NE1   HE1	126.0
+  HE1   NE1   CE2	126.0
+  CZ3   CE3   HE3	120.0
+  HE3   CE3   CD2 	120.0
+  CE2   CZ2   HZ2	120.0
+  HZ2   CZ2   CH2	120.0
+  CH2   CZ3   HZ3	120.0
+  HZ3   CZ3   CE3	120.0
+  CZ2   CH2   HH2	120.0
+  HH2   CH2   CZ3	120.0
+
+[ HISA ]
+  CG    ND1		0.133
+  ND1   CE1		0.133
+  CE1   NE2		0.133
+  NE2	CD2		0.133
+  CD2   CG		0.133
+  ND1   HD1		0.100
+  CE1   HE1		0.109
+  CD2   HD2		0.109
+  CG    ND1   CE1	108.0		
+  ND1   CE1   NE2	108.0	
+  CE1   NE2   CD2	108.0	
+  NE2   CD2   CG	108.0	
+  CD2   CG    ND1	108.0	
+  CG    ND1   HD1	126.0
+  HD1   ND1   CE1  	126.0
+  ND1   CE1   HE1	126.0
+  HE1   CE1   NE2       126.0
+  CG    CD2   HD2       126.0
+  HD2   CD2   NE2       126.0
+
+[ HISB ]
+  CG    ND1		0.133
+  ND1   CE1		0.133
+  CE1   NE2		0.133
+  NE2	CD2		0.133
+  CD2   CG 		0.133
+  CD2   HD2		0.109
+  CE1   HE1		0.109
+  NE2   HE2		0.100	
+  CG    ND1   CE1	108.0
+  ND1   CE1   NE2 	108.0
+  CE1   NE2   CD2	108.0
+  NE2   CD2   CG	108.0
+  CD2   CG    ND1	108.0
+  NE2   CD2   HD2	126.0
+  HD2   CD2   CG	126.0
+  ND1   CE1   HE1	126.0
+  HE1   CE1   NE2	126.0
+  CE1   NE2   HE2	126.0
+  HE2   NE2   CD2	126.0
+  
+[ HISH ]
+  CG    ND1		0.133
+  ND1   CE1		0.133
+  CE1   NE2		0.133
+  NE2	CD2		0.133
+  CD2   CG		0.133
+  ND1   HD1		0.100
+  CE1   HE1		0.109
+  CD2   HD2		0.109
+  NE2   HE2		0.100
+  CG    ND1   CE1	108.0	
+  ND1   CE1   NE2	108.0	
+  CE1   NE2   CD2	108.0	
+  NE2   CD2   CG	108.0	
+  CD2   CG    ND1	108.0	
+  CG    ND1   HD1	126.0
+  HD1   ND1   CE1	126.0
+  ND1   CE1   HE1	126.0
+  HE1   CE1   NE2	126.0
+  CE1   NE2   HE2	126.0
+  HE2   NE2   CD2 	126.0
+  NE2   CD2   HD2	126.0
+  HD2   CD2   CG	126.0
