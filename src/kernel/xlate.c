@@ -31,12 +31,11 @@ static char *SRCID_xlate_c = "$Id$";
 #include <ctype.h>
 #include <string.h>
 #include "typedefs.h"
-#include "pdbio.h"
 #include "strdb.h"
 #include "string2.h"
 #include "smalloc.h"
+#include "symtab.h"
 #include "index.h"
-#include "xlate.h"
 
 typedef struct {
   char *res;
@@ -88,39 +87,39 @@ static t_xlate_atom *get_xlatoms(int *nxlatom)
   return xl;
 }
 
-void xlate_atom(char *res,char **atom)
-{
-  static int          nxlate=0;
-  static t_xlate_atom *xlatom;
-  int  i;
-  char c;
-  
-  if (nxlate == 0) {
-    xlatom = get_xlatoms(&nxlate);
-  }
-  if (isdigit(*atom[0])) {
-    c=*atom[0];
-    for (i=0; (i<strlen(*atom)-1); i++)
-      *atom[i]=*atom[i+1];
-    srenew(*atom,strlen(*atom)+2);
-    *atom[i]=c;
-  }
-  for(i=0; (i<nxlate); i++) {
-    if ((xlatom[i].res == NULL) || (strcasecmp(res,xlatom[i].res) == 0) ||
-	((strcasecmp("protein",xlatom[i].res) == 0) && is_protein(res)))
-      if (strcasecmp(*atom,xlatom[i].atom) == 0) {
-	sfree(*atom);
-	*atom=strdup(xlatom[i].replace);
-	return;
-      }
-  }
-}
-
 void rename_atoms(t_atoms *atoms)
 {
-  int i;
+  t_symtab symtab;
+  int nxlate,a,i;
+  t_xlate_atom *xlatom;
+  char c,*ptr,*res,**atom;
+  bool bRenamed;
+
+  xlatom = get_xlatoms(&nxlate);
   
-  for(i=0; (i<atoms->nr); i++) 
-    xlate_atom(*atoms->resname[atoms->atom[i].resnr],atoms->atomname[i]);
+  open_symtab(&symtab);
+
+  for(a=0; (a<atoms->nr); a++) {
+    res=*atoms->resname[atoms->atom[a].resnr];
+    atom=atoms->atomname[a];
+    if (isdigit(*atom[0])) {
+      c=*atom[0];
+      for (i=0; (i<strlen(*atom)-1); i++)
+	*atom[i]=*atom[i+1];
+      srenew(*atom,strlen(*atom)+2);
+      *atom[i]=c;
+    }
+    bRenamed=FALSE;
+    for(i=0; (i<nxlate) && !bRenamed; i++) {
+      if ((xlatom[i].res == NULL) || (strcasecmp(res,xlatom[i].res) == 0) ||
+	  ((strcasecmp("protein",xlatom[i].res) == 0) && is_protein(res)))
+	if (strcasecmp(*atom,xlatom[i].atom) == 0) {
+	  /* don't free the old atomname, since it might be in the symtab */
+	  atoms->atomname[a]=put_symtab(&symtab,xlatom[i].replace);
+	  bRenamed=TRUE;
+	}
+    }
+  }
+  close_symtab(&symtab);
 }
 

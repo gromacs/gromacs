@@ -32,11 +32,6 @@
 
 static char *SRCID_xlate_h = "$Id$";
 
-	
-#include "pdbio.h"
-	
-extern void xlate_atom(char *res,char **atom);
-
 extern void rename_atoms(t_atoms *atoms);
 
 #endif
