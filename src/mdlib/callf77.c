@@ -52,6 +52,7 @@ extern void F77_FUNC(forshake,FORSHAKE)(atom_id iatom[],int *ncon,
 					int *nit, int *maxnit,
 					real dist2[],real xp[],
 					real rij[],real m2[],
+					real *omega,
 					real invmass[],real tt[],
 					real lambda[],int *error);
 extern void F77_FUNC(forlincs,FORLINCS)(real *x,real *xp,int *nc,
@@ -73,10 +74,11 @@ void fsettle(int *nshake,int owptr[],real b4[],real after[],real *dOH,real *dHH,
 #endif
 }
 
-void fshake(atom_id iatom[],int *ncon,int *nit,int *maxnit,real dist2[],real xp[],real rij[],real m2[],real invmass[],real tt[],real lambda[],int *error)
+void fshake(atom_id iatom[],int *ncon,int *nit,int *maxnit,real dist2[],real xp[],real rij[],real m2[],real *omega,real invmass[],real tt[],real lambda[],int *error)
 {
 #ifdef USE_FORTRAN
-  F77_FUNC(forshake,FORSHAKE)(iatom,ncon,nit,maxnit,dist2,xp,rij,m2,invmass,tt,lambda,error);
+  F77_FUNC(forshake,FORSHAKE)(iatom,ncon,nit,maxnit,dist2,xp,rij,m2,omega,
+			      invmass,tt,lambda,error);
 #else
   fatal_error(0,"fshake called (Fortran routine from %s %d)",__FILE__,__LINE__);
 #endif
