@@ -135,7 +135,10 @@ void do_four(char *fn,char *cn,int nx,real x[],real dy[],real eps0,real epsRF)
   four1(ptr-1,nnx,-1);
   
   dt=x[1]-x[0];
-  fac=((eps0-1)/(2*epsRF+eps0))/tmp[0].re;  
+  if (epsRF == 0)
+    fac = 0;
+  else
+    fac=((eps0-1)/(2*epsRF+eps0))/tmp[0].re;  
   fp=xvgropen(fn,"Epsilon(\\8w\\4)","Freq. (GHz)","eps");
   cp=xvgropen(cn,"Cole-Cole plot","Eps'","Eps''");
   maxeps = 0;
@@ -199,12 +202,12 @@ int main(int argc,char *argv[])
   };
 #define NFILE asize(fnm)
   int  i,j,nx,ny,nxtail;
-  real **y,dt,integral,fitintegral,*fitparms,fac;
+  real **y,dt,integral,fitintegral,*fitparms,fac,rffac;
 
   static char *fix=NULL;
   static int bFour = 0,bX = 1,nfitparm=2,nsmooth=3;
   static real tendInt=5.0,tbegin=5.0,tend=500.0;
-  static real A=0.0,tau1=0.0,tau2=0.0,eps0=80,epsRF=78.5,tail=500.0;
+  static real A=0.5,tau1=10.0,tau2=1.0,eps0=80,epsRF=78.5,tail=500.0;
   real   lambda;
   t_pargs pa[] = {
     { "-fft", FALSE, etBOOL, {&bFour},
@@ -228,7 +231,7 @@ int main(int argc,char *argv[])
     { "-eps0", FALSE, etREAL, {&eps0},
       "Epsilon 0 of your liquid" },
     { "-epsRF", FALSE, etREAL, {&epsRF},
-      "Epsilon of the reaction field used in your simulation" },
+      "Epsilon of the reaction field used in your simulation. A value of 0 means infinity." },
     { "-fix", FALSE, etSTR,  {&fix},
       "Fix this parameter at its start value, e.g. A, tau1 or tau2" },
     { "-nparm", FALSE, etINT,  {&nfitparm},
@@ -241,9 +244,9 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
 
-  nx = read_xvg(opt2fn("-f",NFILE,fnm),&y,&ny);
-  dt = y[0][1]-y[0][0];
-  nxtail = max(tail/dt,nx);
+  nx     = read_xvg(opt2fn("-f",NFILE,fnm),&y,&ny);
+  dt     = y[0][1]-y[0][0];
+  nxtail = min(tail/dt,nx);
   
   fprintf(stderr,"Read data set containing %d colums and %d rows\n",ny,nx);
   fprintf(stderr,"Assuming (from data) that timestep is %g, nxtail = %d\n",
@@ -284,12 +287,20 @@ int main(int argc,char *argv[])
   } 
   integral = print_and_integrate(NULL,calc_nbegin(nx,y[0],tbegin),
 				 y[0][1]-y[0][0],y[1]);
-  integral += do_lmfit(nx,y[1],y[2],y[0][1]-y[0][0],tbegin,tend,
+  integral += do_lmfit(nx,y[1],y[2],y[0][1]-y[0][0],y[0],tbegin,tend,
 			TRUE,nfitparm,y[3],fitparms,fix);
-  lambda = (eps0 - 1.0)/(2*epsRF - 1.0);
-  fprintf(stderr,"DATA INTEGRAL: %5.1f, tauD(old) = %5.1f ps, tau_slope = %5.1f, tau_slope,D = %5.1f ps\n",
-	  integral,integral*(2*epsRF+eps0)/(2*epsRF+1),fitparms[0],
-	  fitparms[0]*(2*epsRF+eps0)/(2*epsRF+1));
+  if (epsRF == 0) {
+    /* This means infinity! */
+    lambda = 0;
+    rffac  = 1;
+  }
+  else {
+    lambda = (eps0 - 1.0)/(2*epsRF - 1.0);
+    rffac  = (2*epsRF+eps0)/(2*epsRF+1);
+  }
+  fprintf(stderr,"DATA INTEGRAL: %5.1f, tauD(old) = %5.1f ps, "
+	  "tau_slope = %5.1f, tau_slope,D = %5.1f ps\n",
+	  integral,integral*rffac,fitparms[0],fitparms[0]*rffac);
 
   fprintf(stderr,"tau_D from tau1 = %8.3g , eps(Infty) = %8.3f\n",
 	  fitparms[0]*(1 + fitparms[1]*lambda),
@@ -297,7 +308,7 @@ int main(int argc,char *argv[])
 
   fitintegral=numerical_deriv(nx,y[0],y[1],y[3],y[4],tendInt,nsmooth);
   fprintf(stderr,"FIT INTEGRAL (tau_M): %5.1f, tau_D = %5.1f\n",
-	  fitintegral,fitintegral*(2*epsRF+eps0)/(2*epsRF+1));
+	  fitintegral,fitintegral*rffac);
   /* Now we have the negative gradient of <Phi(0) Phi(t)> */
 
   dump_xvg(opt2fn("-d",NFILE,fnm),"Corr, Std Dev, Fit & Deriv",nx,5,y);

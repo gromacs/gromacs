@@ -209,7 +209,7 @@ static void lmfit_exp(int nframes,real x[],real y[],real dy[],real ftol,
   sfree(lista);
 }
 
-real do_lmfit(int ndata,real c1[],real sig[],real dt,
+real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
 	      real begintimefit,real endtimefit,bool bVerbose,int nfitparm,
 	      real fit[],real fitparms[],char *fix)
 {
@@ -217,7 +217,7 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,
   char buf[32];
 
   int  i,j,nfitpnts;
-  real integral,fittedfunc;
+  real integral,fittedfunc,ttt;
   real *parm,*dparm;
   real AA=0,tau1=0,tau2=0,srAA=0,srtau1,srtau2=0;  
   real *x,*y,*dy;
@@ -227,16 +227,20 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,
 	  ndata,nfitparm);
   fprintf(stderr,"Fit from %g thru %g, dt=%g\n",
 	  begintimefit,endtimefit,dt);
-  
-  snew(x,ndata);
+
+  if (x0)
+    x=x0;
+  else
+    snew(x,ndata);
   snew(y,ndata);
   snew(dy,ndata);
 
   j=0;
   for(i=0; (i<ndata); i++) {
-    if ( ((dt*i) >= begintimefit) && ((dt*i) <= endtimefit) ) {
-      x[j]=dt*i;
-      y[j]=c1[i];
+    ttt = x0 ? x0[j] : dt*j;
+    if ( (ttt >= begintimefit) && (ttt <= endtimefit) ) {
+      x[j] = ttt;
+      y[j] = c1[i];
 
       /* mrqmin does not like sig to be zero */
       if (sig[i]<1.0e-7)
@@ -308,8 +312,9 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,
       fp = xvgropen(buf,"C(t) + Fit to C(t)","Time (ps)","C(t)");
       fprintf(fp,"# AA = %g, tau1 = %g, tau2 = %g\n",AA,tau1,tau2);
       for(j=0; (j<ndata); j++) {
-	fittedfunc = myexp(dt*j,AA,tau1) + myexp(dt*j,1-AA,tau2);
-	fprintf(fp,"%10.5e  %10.5e  %10.5e\n",dt*j,c1[j],fittedfunc);
+	ttt = x0 ? x0[j] : dt*j;
+	fittedfunc = myexp(ttt,AA,tau1) + myexp(ttt,1-AA,tau2);
+	fprintf(fp,"%10.5e  %10.5e  %10.5e\n",ttt,c1[j],fittedfunc);
       }
       fclose(fp);
     }
@@ -323,7 +328,8 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,
   fitparms[1]=AA;
   fitparms[2]=tau2; 
 
-  sfree(x);
+  if (!x0)
+    sfree(x);
   sfree(y);
   sfree(dy);
   

@@ -408,7 +408,8 @@ real print_and_integrate(FILE *fp,int n,real dt,real c[])
     if (j > 0)
       sum+=dt*(c0+c[j-1]);
   }
-  fprintf(fp,"&\n");
+  if (fp)
+    fprintf(fp,"&\n");
   return sum*0.5;
 }
 
@@ -599,7 +600,7 @@ void fit_acf(int ncorr,int nfitparm,bool bVerbose,
     fitparm[0]=fitparm[1]=fitparm[2] = 1.0;
     nf_int = min(ncorr,(int)((tStart+1e-4)/dt));
     sum    = print_and_integrate(debug,nf_int,dt,c1);
-    tail_corr = do_lmfit(ncorr,c1,sig,dt,tStart,tendfit,
+    tail_corr = do_lmfit(ncorr,c1,sig,dt,NULL,tStart,tendfit,
 			 bVerbose,nfitparm,NULL,fitparm,NULL);
     sumtot = sum+tail_corr;
     fprintf(stderr,"CORR:%12.5e%12.5e%12.5e%12.5e%12.5e\n",
