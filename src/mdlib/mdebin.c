@@ -46,7 +46,7 @@ static bool bEInd[egNR] = { TRUE, TRUE, FALSE, FALSE, FALSE, FALSE };
 
 static bool bEner[F_NRE];
 static char *boxs_nm[] = {
-  "Box-X (nm)", "Box-Y (nm)", "Box-Z (nm)","Volume (nm^3)","Density (kg/l)",
+  "Box-X", "Box-Y", "Box-Z","Volume","Density [SI]",
   "pV"
 };
 #define NBOXS asize(boxs_nm)
@@ -75,9 +75,9 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
     "ForceVir-ZX", "ForceVir-ZY", "ForceVir-ZZ"
   };
   static char *pres_nm[] = {
-    "Pres-XX","Pres-XY","Pres-XZ",
-    "Pres-YX","Pres-YY","Pres-YZ",
-    "Pres-ZX","Pres-ZY","Pres-ZZ"
+    "Pres-XX [bar]","Pres-XY [bar]","Pres-XZ [bar]",
+    "Pres-YX [bar]","Pres-YY [bar]","Pres-YZ [bar]",
+    "Pres-ZX [bar]","Pres-ZY [bar]","Pres-ZZ [bar]"
   };
   static char *surft_nm[] = {
     "#Surf*SurfTen"
@@ -89,7 +89,7 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
     "2CosZ*Vel-X"
   };
   static char *visc_nm[] = {
-    "1/Viscosity"
+    "1/Viscosity [SI]"
   };
   static   char   **grpnms;
   char     **gnm;
