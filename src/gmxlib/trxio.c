@@ -596,11 +596,13 @@ bool read_next_frame(int status,t_trxframe *fr)
       break;
     case efG87:
       bRet = xyz_next_x(fio_getfp(status),&fr->time,fr->natoms,fr->x,fr->box);
+      fr->bTime = bRet;
       fr->bX = bRet;
       break;
     case efXTC:
       bRet = read_next_xtc(status,&fr->natoms,&fr->step,&fr->time,fr->box,
 			   fr->x,&prec,&bOK);
+      fr->bTime = bRet;
       fr->bX = bRet;
       break;
     case efPDB:
