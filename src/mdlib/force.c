@@ -860,7 +860,7 @@ void ns(FILE *fp,
     dump_nblist(fp,fr,nDNL);
 }
 
-void force(FILE       *fp,     int        step,
+void force(FILE       *fplog,   int        step,
 	   t_forcerec *fr,      t_inputrec *ir,
 	   t_idef     *idef,    t_nsborder *nsb,
 	   t_commrec  *cr,      t_commrec *mcr,
@@ -879,7 +879,8 @@ void force(FILE       *fp,     int        step,
   bool    bDoEpot,bSepDVDL;
   rvec    box_size;
   real    dvdlambda,Vlr,Vcorr=0;
-#define PRINT_SEPDVDL(s,v,dvdl) if (bSepDVDL) fprintf(fp,"  %-30s V %12.5e  dVdl %12.5e\n",s,v,dvdl);
+  t_pbc   pbc;
+#define PRINT_SEPDVDL(s,v,dvdl) if (bSepDVDL) fprintf(fplog,"  %-30s V %12.5e  dVdl %12.5e\n",s,v,dvdl);
 
   /* Reset box */
   for(i=0; (i<DIM); i++)
@@ -894,12 +895,12 @@ void force(FILE       *fp,     int        step,
   debug_gmx();
 
   if (bSepDVDL)
-    fprintf(fp,"Step %d: non-bonded V and dVdl for node %d:\n",
+    fprintf(fplog,"Step %d: non-bonded V and dVdl for node %d:\n",
 	    step,cr->nodeid);
   
   /* Call the short range functions all in one go. */
   dvdlambda = 0;
-  do_fnbf(fp,cr,fr,x,f,md,
+  do_fnbf(fplog,cr,fr,x,f,md,
 	  fr->bBHAM ? grps->estat.ee[egBHAMSR] : grps->estat.ee[egLJSR],
 	  grps->estat.ee[egCOULSR],box_size,nrnb,
 	  lambda,&dvdlambda,FALSE,-1);
@@ -915,8 +916,8 @@ void force(FILE       *fp,     int        step,
    * go when no bonded forces have to be evaluated.
    */
   
-  /* Check whether we need to do bondeds */
-  if (!bNBFonly) {
+  /* Check whether we need to do bondeds or correct for exclusions */
+  if (!bNBFonly || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype)) {
     if (graph) {
       shift_self(graph,box,x);
       if (TRICLINIC(box))
@@ -928,24 +929,22 @@ void force(FILE       *fp,     int        step,
   }
   
   if (EEL_FULL(fr->eeltype)) {
+    dvdlambda = 0;
     switch (fr->eeltype) {
     case eelPPPM:
-      Vlr = do_pppm(fp,FALSE,x,fr->f_el_recip,md->chargeA,
+      Vlr = do_pppm(fplog,FALSE,x,fr->f_el_recip,md->chargeA,
 		    box_size,fr->phi,cr,nsb,nrnb);
       break;
     case eelPME:
-      dvdlambda = 0;
-      Vlr = do_pme(fp,FALSE,ir,x,fr->f_el_recip,md->chargeA,
+      Vlr = do_pme(fplog,FALSE,ir,x,fr->f_el_recip,md->chargeA,
 		   box,cr,nsb,nrnb,fr->vir_el_recip,fr->ewaldcoeff,
-		   bGatherOnly);
-      epot[F_DVDL] += dvdlambda;
+		   lambda,&dvdlambda,bGatherOnly);
       PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
       break;
     case eelEWALD:
-      dvdlambda = 0;
-      Vlr = do_ewald(fp,FALSE,ir,x,fr->f_el_recip,md->chargeA,
-		     box_size,cr,nsb,fr->vir_el_recip,fr->ewaldcoeff);
-      epot[F_DVDL] += dvdlambda;
+      Vlr = do_ewald(fplog,FALSE,ir,x,fr->f_el_recip,md->chargeA,
+		     box_size,cr,nsb,fr->vir_el_recip,fr->ewaldcoeff,
+		     lambda,&dvdlambda);
       PRINT_SEPDVDL("Ewald long-range",Vlr,dvdlambda);
       break;
     default:
@@ -953,17 +952,17 @@ void force(FILE       *fp,     int        step,
       fatal_error(0,"No such electrostatics method implemented %s",
 		  eel_names[fr->eeltype]);
     }
+    epot[F_DVDL] += dvdlambda;
     if(fr->bEwald) {
       dvdlambda = 0;
-      Vcorr =
-	ewald_LRcorrection(fp,nsb,cr,fr,md->chargeA,excl,
-			   x,box,mu_tot[0],fr->qsum[0],
-			   ir->ewald_geometry,ir->epsilon_surface,
-			   fr->vir_el_recip);
-      epot[F_DVDL] += dvdlambda;
+      Vcorr = ewald_LRcorrection(fplog,nsb,cr,fr,md->chargeA,excl,
+				 x,box,mu_tot[0],fr->qsum[0],
+				 ir->ewald_geometry,ir->epsilon_surface,
+				 fr->vir_el_recip);
       PRINT_SEPDVDL("Ewald excl./charge/dip. corr.",Vcorr,dvdlambda);
+      epot[F_DVDL] += dvdlambda;
     } else {
-      Vcorr = shift_LRcorrection(fp,nsb,cr,fr,md->chargeA,excl,x,TRUE,box,
+      Vcorr = shift_LRcorrection(fplog,nsb,cr,fr,md->chargeA,excl,x,TRUE,box,
 				 fr->vir_el_recip);
     }
     epot[F_COUL_RECIP] = Vlr + Vcorr;
@@ -977,7 +976,7 @@ void force(FILE       *fp,     int        step,
   } else if (EEL_RF(fr->eeltype)) {
     dvdlambda = 0;
     if (fr->eeltype != eelRF_OLD)
-      epot[F_RF_EXCL] = RF_excl_correction(fp,nsb,fr,graph,md,excl,x,f,
+      epot[F_RF_EXCL] = RF_excl_correction(fplog,nsb,fr,graph,md,excl,x,f,
 					   fr->fshift,lambda,&dvdlambda);
     epot[F_DVDL] += dvdlambda;
     PRINT_SEPDVDL("RF exclusion correction",epot[F_RF_EXCL],dvdlambda);
