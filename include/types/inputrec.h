@@ -124,6 +124,7 @@ typedef struct {
   int  eConstrAlg;      /* Type of constraint algorithm                 */
   int  nProjOrder;      /* Order of the LINCS Projection Algorithm      */
   real LincsWarnAngle;  /* If bond rotates more than %g degrees, warn   */
+  bool bShakeSOR;       /* Use successive overrelaxation for shake      */
   real bd_temp;         /* Temperature for Brownian Dynamics (BD)       */
   real bd_fric;         /* Friction coefficient for BD (amu / ps)       */
   int  ld_seed;         /* Random seed for SD and BD                    */

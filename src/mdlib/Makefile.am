@@ -28,7 +28,7 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	splittop.h	wnblist.h
 
 EXTRA_libmd@LIBSUFFIX@_la_SOURCES = \
-	cshake.c	csettle.c	clincs.c	\
+	csettle.c	clincs.c	\
 	fshake.f	fsettle.f	flincs.f	\
 	fshaked.f	fsettled.f	flincsd.f
 

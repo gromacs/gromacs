@@ -521,7 +521,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       if(dummycomm)
         move_construct_f(dummycomm,fr->f_pme,cr);
     }    
-    
+    sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
+
     xx = (do_per_step(step,parm->ir.nstxout) || bLastStep) ? x : NULL;
     vv = (do_per_step(step,parm->ir.nstvout) || bLastStep) ? v : NULL;
     ff = (do_per_step(step,parm->ir.nstfout)) ? f : NULL;

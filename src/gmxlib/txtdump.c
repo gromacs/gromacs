@@ -334,6 +334,7 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PS("optimize_fft",BOOL(ir->bOptFFT));
     PS("ePBC",EPBC(ir->ePBC));
     PS("bUncStart",BOOL(ir->bUncStart));
+    PS("bShakeSOR",BOOL(ir->bShakeSOR));
     PS("etc",ETCOUPLTYPE(ir->etc));
     PS("epc",EPCOUPLTYPE(ir->epc));
     PS("epctype",EPCOUPLTYPETYPE(ir->epct));

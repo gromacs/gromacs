@@ -40,6 +40,7 @@ static char *SRCID_fnbf_c = "$Id$";
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "typedefs.h"
 #include "txtdump.h"
 #include "smalloc.h"
@@ -212,8 +213,15 @@ static real *_buf2=NULL;
 #endif
 
 #if (defined USE_X86_ASM || defined USE_PPC_ALTIVEC)
-  if(cpu_capabilities==UNKNOWN_CPU) 
-    cpu_capabilities=detect_cpu(log);
+  if (cpu_capabilities == UNKNOWN_CPU) {
+    cpu_capabilities = detect_cpu(log);
+    if (getenv("NOASSEMBLYLOOPS") != NULL) {
+      if ((cpu_capabilities & X86_CPU) == X86_CPU)
+	cpu_capabilities = X86_CPU;
+      else if ((cpu_capabilities & PPC_CPU) == PPC_CPU)
+	cpu_capabilities = PPC_CPU;
+    }
+  }
 #endif
   
   if (eNL >= 0) {

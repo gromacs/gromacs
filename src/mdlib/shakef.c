@@ -57,196 +57,97 @@ static void pv(FILE *log,char *s,rvec x)
   fflush(log);
 }
 
-int shakef(FILE *log,
-	   int natoms,real invmass[],int ncon,
-	   t_iparams ip[],t_iatom *iatom,
-	   real tol,rvec x[],rvec xp[],
-	   real omega,bool bFEP,real lambda,real lagr[])
+void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
+	    real dist2[],real xp[],real rij[],real m2[],real omega,
+	    real invmass[],real tt[],real lagr[],int *nerror)
 {
   /*
-   *
-   *
    *     r.c. van schaik and w.f. van gunsteren
    *     eth zuerich
    *     june 1992
-   *     Adapted for use with Gromacs by David van der Spoel november 92.
-   *
-   *     This version of shake is adapted to conformational search in
-   *     hyper-space (more than three dimensions). shake will supply
-   *     corrections to given coordinates xp, such that for xp a list of
-   *     constraints will be satisfied, each geometrically within a specified
-   *     tolerance tol. the corrections are made along vectors derived from x.
-   *     when xp = xp(t+dt) results from non-constrained dynamics time step
-   *     dt, starting at x=x(t), the corrections are dynamically correct up
-   *     to order dt**2. so the dynamical accuracy of shake depends on both
-   *     tol and dt, whereas the geometrical accuracy only on tol.
-   *
-   *     Assume that either PBC has been taken into account already,
-   *     or no PBC is used, ie.: no PBC calculations in shake
-   *
-   *     tol            = relative geometrical tolerance
-   *     x[natoms][DIM]
-   *                    = reference atom cartesian coordinates
-   *     xp[natoms][DIM]
-   *                    = atom cartesian coordinates that will be shaken
-   *
-   *     niter          = delivered with number of iterations
-   *     DIM            = dimensionality of the problem
-   *
-   *     if 1000 or more iterations appear necessary, or if xp deviates too
-   *     much from x (dt too large?), the subr. is returned with a message
-   *     and niter = 0.
-   *
+   *     Adapted for use with Gromacs by David van der Spoel november 92 and later.
    */
+  const   real mytol=1e-6;
   
-  static  bool *skip=NULL;
-  static  atom_id *index=NULL;
-  static  rvec *rij=NULL;
-  static  int maxcon=0;
+  int     ll,i,j,i3,j3,l3;
+  int     ix,iy,iz,jx,jy,jz;
+  real    toler,rpij2,rrpr,tx,ty,tz,diff,acor,im,jm;
+  real    xh,yh,zh,rijx,rijy,rijz;
+  real    tix,tiy,tiz;
+  real    tjx,tjy,tjz;
+  int     nit,error,iconv,nconv;
   
-  
-  int     nit,ll,i,j,k,k0,m,type,nindex;
-  t_iatom *ia;
-  rvec    xpij;
-  real    *xpi,*xpj,*xij;
-  real    L1,tol2,toler,diff,rpij2,rrpr,acor,xh;
-  bool    ready;
-  
-  if (!skip) {
-    snew(skip,2*natoms);
-    snew(index,natoms);
-  }
-  if (ncon > maxcon) {
-    srenew(rij,ncon);
-    maxcon=ncon;
-#ifdef DEBUG
-    fprintf(log,"shake: maxcon = %d\n",maxcon);
-#endif
-  }
-
-  L1    = 1.0-lambda;
-  tol2  = 2.0*tol;
-  nit   = 0;
-  ready = FALSE;
-
-  nindex=0;
-  ia=iatom;
-  for(ll=0; (ll<ncon); ll++,ia+=3) {
-    for(m=1; (m<=2); m++) {
-      i=ia[m];
-      for(k=0; (k<nindex); k++)
-	if (index[k]==i)
-	  break;
-      if (k==nindex) {
-#ifdef DEBUG
-	if (nindex >= natoms)
-	  fatal_error(0,"Range check error in shake\n"
-		      "nindex=%d, natoms=%d\n",nindex,natoms);
-#endif
-	index[nindex]=i;
-	nindex++;
+  error=0;
+  nconv=1;
+  for (nit=0; (nit<maxnit) && (nconv != 0) && (error == 0); nit++) {
+    nconv=0;
+    for(ll=0; (ll<ncon) && (error == 0); ll++) {
+      l3    = 3*ll;
+      rijx  = rij[l3+XX];
+      rijy  = rij[l3+YY];
+      rijz  = rij[l3+ZZ];
+      i     = iatom[l3+1];
+      j     = iatom[l3+2];
+      i3    = 3*i;
+      j3    = 3*j;
+      ix    = i3+XX;
+      iy    = i3+YY;
+      iz    = i3+ZZ;
+      jx    = j3+XX;
+      jy    = j3+YY;
+      jz    = j3+ZZ;
+      
+      tx      = xp[ix]-xp[jx];
+      ty      = xp[iy]-xp[jy];
+      tz      = xp[iz]-xp[jz];
+      rpij2   = tx*tx+ty*ty+tz*tz;
+      toler   = dist2[ll];
+      diff    = toler-rpij2;
+      
+      /* iconv is zero when the error is smaller than a bound */
+      iconv   = fabs(diff)*tt[ll];
+      
+      if (iconv != 0) {
+	nconv   = nconv + iconv;
+	rrpr    = rijx*tx+rijy*ty+rijz*tz;
+	
+	if (rrpr < toler*mytol) 
+	  error=ll;
+	else {
+	  acor      = omega*diff*m2[ll]/rrpr;
+	  lagr[ll] += acor;
+	  xh        = rijx*acor;
+	  yh        = rijy*acor;
+	  zh        = rijz*acor;
+	  im        = invmass[i];
+	  jm        = invmass[j];
+	  if ((im != 0) && (jm != 0)) {
+	    xp[ix] += xh*im;
+	    xp[iy] += yh*im;
+	    xp[iz] += zh*im;
+	    xp[jx] -= xh*jm;
+	    xp[jy] -= yh*jm;
+	    xp[jz] -= zh*jm;
+	  }
+	  else if ((im == 0) && (jm != 0)) {
+	    xp[ix] += xh*jm;
+	    xp[iy] += yh*jm;
+	    xp[iz] += zh*jm;
+	  }
+	  else if ((jm == 0) && (im != 0)) {
+	    xp[jx] -= xh*im;
+	    xp[jy] -= yh*im;
+	    xp[jz] -= zh*im;
+	  }
+	  else 
+	    fatal_error(0,"Constraint between two massless particles %d and %",
+			im,jm);
+	}
       }
     }
-    i=ia[1];
-    j=ia[2];
-    rvec_sub(x[i],x[j],rij[ll]);
   }
-
-  for(k=0; (k<nindex); k++) {
-    k0=index[k];
-#ifdef DEBUG
-    if ((k0 < 0) || (k0 >= natoms))
-      fatal_error(0,"Range check error in shake\n"
-		  "k0=%d, natoms=%d\n",k0,natoms);
-#endif
-    skip[k0]        = TRUE;
-    skip[natoms+k0] = FALSE;
-  }
-  
-  while (! ready) {
-    /*       too many iterations? */
-    if (nit > 1000) {
-      fprintf(log,
-	      " coordinate resetting (shake) was not"
-	      " accomplished within 1000 iterations\n\n");
-      return 0;
-    }
-    
-    ready=TRUE;
-    
-    /* loop over all the constraints */
-    ia=iatom;
-    for(ll=0; (ll<ncon); ll++,ia+=3) {
-      i    = ia[1];
-      j    = ia[2];
-
-      if ((skip[natoms+i]) && (skip[natoms+j]))
-	continue;
-
-#ifdef DEBUGSHAKE
-      fprintf(log,"ll: %d\n",ll);
-      pv(log,"xij    ",xij);
-      pv(log,"rij[ll]",rij[ll]);
-#endif
-      xij   = rij[ll];
-#ifdef DEBUGSHAKE
-      fprintf(log,"ll: %d\n",ll);
-      pv(log,"xij    ",xij);
-      pv(log,"rij[ll]",rij[ll]);
-#endif
-      type  = ia[0];
-      xpi   = xp[i];
-      xpj   = xp[j];
-      if (bFEP) 
-	toler = sqr(L1*ip[type].shake.dA + lambda*ip[type].shake.dB);
-      else
-	toler = sqr(ip[type].shake.dA);
-      diff  = toler;
-      rpij2 = 0.0;
-      
-      rvec_sub(xpi,xpj,xpij);
-      rpij2=iprod(xpij,xpij);
-      
-      diff -= rpij2;
-      if (fabs(diff) < toler*tol2)
-	continue;
-      
-      rrpr=iprod(xij,xpij);
-      
-      if (rrpr < toler*1.e-6) {
-	fprintf(log," oops, coordinate resetting cannot be"
-		" accomplished, deviation is too large\n"
-		" nit = %5d  ll    = %5d\n"
-		" i   = %5d  j     = %5d\n"
-		" rrpr= %10f\n",
-		nit,ll,i+1,j+1,rrpr);
-	pv(log,"xij",xij);
-	pv(log,"xpij",xpij);
-	return 0;
-      }
-      
-      acor=(omega*diff)/(rrpr*(invmass[i]+invmass[j])*2.0);
-      lagr[ll] += acor;
-      for(m=0; (m<DIM); m++) {
-	xh      = xij[m]*acor;
-	xpi[m] += xh*invmass[i];
-	xpj[m] -= xh*invmass[j];
-      }
-      
-      skip[i] = FALSE;
-      skip[j] = FALSE;
-      ready   = FALSE;
-    }
-    
-    nit=nit+1;
-    for(k=0; (k<nindex); k++) {
-      k0=index[k];
-      skip[natoms+k0] = skip[k0];
-      skip[k0]        = TRUE;
-    }
-  }
-  
-  return nit;
+  *nnit=nit;
+  *nerror=error;
 }
 
 int vec_shakef(FILE *log,
@@ -350,14 +251,11 @@ bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
 	     t_nrnb *nrnb,real lambda,real *dvdlambda,bool bDumpOnError)
 {
   static  bool bFirst=TRUE;
-  static  bool bSafe;
-
-  /* SOR Stuff from Barth et al. JCC 16 (1996) 1192-1209 */
-  static  bool bSOR=FALSE;
+  static  real *lagr;
+  /* Stuff for successive overrelaxation */
   static  real delta=0.1;
   static  real omega=1.0;
   static  int  gamma=1000000;
-  static  real *lagr;
   
   t_iatom *iatoms;
   real    *lam,dt_2,dvdl;
@@ -369,9 +267,7 @@ bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
 #endif
   ncons=idef->il[F_SHAKE].nr/3;
   if (bFirst) {
-    bSafe=(getenv("NOVECSHAKE") != NULL);
-    bSOR=(getenv("NOSOR") == NULL);
-    if (bSOR) 
+    if (ir->bShakeSOR) 
       please_cite(log,"Barth95a");
     snew(lagr,ncons);
     bFirst=FALSE;
@@ -382,18 +278,11 @@ bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
   iatoms = &(idef->il[F_SHAKE].iatoms[sblock[0]]);
   lam    = lagr;
   for(i=0; (i<nblocks); ) {
-    blen=(sblock[i+1]-sblock[i]);
-    blen/=3;
-    
-    if (bSafe)
-      n0=shakef(log,natoms,invmass,blen,idef->iparams,
-		iatoms,ir->shake_tol,x_s,xp,omega,
-		ir->efep!=efepNO,lambda,lam);
-    else
-      n0=vec_shakef(log,natoms,invmass,blen,idef->iparams,
+    blen  = (sblock[i+1]-sblock[i]);
+    blen /= 3;
+    n0 = vec_shakef(log,natoms,invmass,blen,idef->iparams,
 		    iatoms,ir->shake_tol,x_s,xp,omega,
 		    ir->efep!=efepNO,lambda,lam);
-    
 #ifdef DEBUGSHAKE
     check_cons(log,blen,x_s,xp,idef->iparams,iatoms,invmass);
 #endif
@@ -422,7 +311,7 @@ bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
 #ifdef DEBUG
   fprintf(log,"tnit: %5d  omega: %10.5f\n",tnit,omega);
 #endif
-  if (bSOR) {
+  if (ir->bShakeSOR) {
     if (tnit > gamma) {
       delta = -0.5*delta;
     }

@@ -54,7 +54,7 @@ static char *SRCID_tpxio_c = "$Id$";
 #include "vec.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version = 21;
+static int tpx_version = 22;
 /* This number should be the most recent incompatible version */
 static int tpx_incompatible_version = 9;
 /* This is the version of the file we are reading */
@@ -155,11 +155,12 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_int(ir->pme_order);
     do_real(ir->ewald_rtol);
 
-    if(file_version <=17) {
+    if (file_version <=17) {
       ir->epsilon_surface=0;
-      if(file_version==17)
+      if (file_version==17)
 	do_int(idum);
-    } else
+    } 
+    else
       do_real(ir->epsilon_surface);
     
     do_int(ir->bOptFFT);
@@ -171,7 +172,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
      */
     if (file_version <= 15)
       do_int(idum);
-    if(file_version <=17) {
+    if (file_version <=17) {
       do_int(ir->epct); 
       if (file_version <= 15) {
 	if (ir->epct == 5)
@@ -183,9 +184,11 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
       if(ir->epct==-1) {
 	ir->epc=epcNO;
 	ir->epct=epctISOTROPIC;
-      } else
+      } 
+      else
 	ir->epc=epcBERENDSEN;
-    } else {
+    } 
+    else {
       do_int(ir->epc);
       do_int(ir->epct);
     }
@@ -205,7 +208,8 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
       clear_mat(ir->compress);
       for(i=0; i<DIM; i++)
 	ir->compress[i][i] = vdum[i];
-    } else {
+    } 
+    else {
       do_rvec(ir->compress[XX]);
       do_rvec(ir->compress[YY]);
       do_rvec(ir->compress[ZZ]);
@@ -235,6 +239,10 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_int(ir->nstdisreout);
     do_real(ir->em_stepsize); 
     do_real(ir->em_tol); 
+    if (file_version >= 22) 
+      do_int(ir->bShakeSOR);
+    else if (bRead)
+      ir->bShakeSOR = TRUE;
     if (file_version >= 11)
       do_int(ir->niter);
     else if (bRead) {
@@ -316,13 +324,6 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
       ndo_real(ir->et[j].phi,ir->et[j].n,bDum);
     }
   }
-  /* set things which are in tpx_version but not in a previous version */
-
-  /*
-  if (file_version < tpx_version) {
-  } else {
-  }
-  */
 }
 
 static void do_harm(t_iparams *iparams,bool bRead)
@@ -578,7 +579,7 @@ static void do_atoms(t_atoms *atoms,bool bRead,t_symtab *symtab)
   for(i=0; (i<atoms->nr); i++)
     do_atom(&atoms->atom[i],bRead);
   do_strstr(atoms->nr,atoms->atomname,bRead,symtab);
-  if (bRead && file_version<=20) {
+  if (bRead && (file_version <= 20)) {
     for(i=0; i<atoms->nr; i++) {
       atoms->atomtype[i]  = put_symtab(symtab,"?");
       atoms->atomtypeB[i] = put_symtab(symtab,"?");

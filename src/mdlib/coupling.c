@@ -357,10 +357,10 @@ void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,
     }
     else
       grps->tcstat[i].lambda = 1.0;
-#ifdef DEBUGTC
-    fprintf(stdlog,"group %d: T: %g, Lambda: %g\n",
-	    i,T,grps->tcstat[i].lambda);
-#endif
+
+    if (debug)
+      fprintf(debug,"TC: group %d: T: %g, Lambda: %g\n",
+	      i,T,grps->tcstat[i].lambda);
   }
 }
 

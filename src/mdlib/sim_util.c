@@ -52,6 +52,10 @@ static char *SRCID_sim_util_c = "$Id$";
 #include "update.h"
 #include "physics.h"
 #include "main.h"
+#include "mdatoms.h"
+#include "pme.h"
+#include "pppm.h"
+#include "disre.h"
 #include "network.h"
 #include "calcmu.h"
 #include "constr.h"
@@ -116,6 +120,10 @@ static void sum_forces(int start,int end,rvec f[],rvec flr[])
 {
   int i;
   
+  if (debug) {
+    pr_rvecs(debug,0,"fsr",f+start,end-start);
+    pr_rvecs(debug,0,"flr",flr+start,end-start);
+  }
   for(i=start; (i<end); i++)
     rvec_inc(f[i],flr[i]);
 }

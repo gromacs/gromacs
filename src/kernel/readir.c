@@ -407,6 +407,8 @@ void get_ir(char *mdparin,char *mdparout,
   EETYPE("constraint-algorithm",  ir->eConstrAlg, eshake_names, nerror, TRUE);
   CTYPE ("Do not constrain the start configuration");
   EETYPE("unconstrained-start", ir->bUncStart, yesno_names, nerror, TRUE);
+  CTYPE ("Use successive overrelaxation to reduce the number of shake iterations");
+  EETYPE("Shake-SOR", ir->bShakeSOR, yesno_names, nerror, TRUE);
   CTYPE ("Relative tolerance of shake");
   RTYPE ("shake-tol", ir->shake_tol, 0.0001);
   CTYPE ("Highest order in the expansion of the constraint coupling matrix");
@@ -794,7 +796,7 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
 	  (nrdf_vcm[j] - n_sub)/nrdf_vcm[j];
     }
   }
-  for(i=0; i<atoms->grps[egcTC].nr; i++) {
+  for(i=0; (i<atoms->grps[egcTC].nr); i++) {
     if (opts->nrdf[i] < 0)
       opts->nrdf[i] = 0;
     fprintf(stderr,
@@ -979,15 +981,17 @@ void do_index(char *ndx,
 
   /* Now we have filled the freeze struct, so we can calculate NRDF */ 
   calc_nrdf(atoms,idef,&(ir->opts),gnames,ir->nstcomm);
-  if (v) {
+  if (v && NULL) {
     real fac,ntot=0;
     
-    for(i=0; (i<ir->opts.ngtc); i++)
+    /* Must check per group! */
+    for(i=0; (i<ir->opts.ngtc); i++) 
       ntot += ir->opts.nrdf[i];
     if (ntot != (DIM*atoms->nr)) {
       fac = sqrt(ntot/(DIM*atoms->nr));
       if (bVerbose)
-	fprintf(stderr,"Scaling velocities by a factor of %.3f to account for constraints.\n",fac);
+	fprintf(stderr,"Scaling velocities by a factor of %.3f to account for constraints\n"
+		"and removal of center of mass motion\n",fac);
       for(i=0; (i<atoms->nr); i++)
 	svmul(fac,v[i],v[i]);
     }
@@ -1054,7 +1058,7 @@ void do_index(char *ndx,
   sfree(grps);
 }
 
-static void check_disre(t_topology *sys)
+  static void check_disre(t_topology *sys)
 {
   t_functype *functype;
   t_iparams  *ip;

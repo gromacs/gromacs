@@ -334,6 +334,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_real(fp,"inputrec->epsilon_surface",0,ir1->epsilon_surface,ir2->epsilon_surface,ftol);
   cmp_int(fp,"inputrec->bOptFFT",0,ir1->bOptFFT,ir2->bOptFFT);
   cmp_int(fp,"inputrec->bUncStart",0,ir1->bUncStart,ir2->bUncStart);
+  cmp_int(fp,"inputrec->bShakeSOR",0,ir1->bShakeSOR,ir2->bShakeSOR);
   cmp_int(fp,"inputrec->etc",0,ir1->etc,ir2->etc);
   cmp_int(fp,"inputrec->epc",0,ir1->epc,ir2->epc);
   cmp_int(fp,"inputrec->epct",0,ir1->epct,ir2->epct);
