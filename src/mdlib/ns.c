@@ -86,19 +86,26 @@ static bool NOTEXCL_(t_excl e[],atom_id i,atom_id j)
 static int NLI_INC = 1000;
 static int NLJ_INC = 16384;
 
-static void reallocate_nblist(t_nblist *nl)
+static void reallocate_nblist(t_nblist *nl,int maxnri)
 {
+  int i;
+
   if (debug)
     fprintf(debug,"reallocating neigborlist il_code=%d, maxnri=%d\n",
-	    nl->il_code,nl->maxnri); 
-  srenew(nl->iinr,   nl->maxnri+4);
-  srenew(nl->gid,    nl->maxnri+4);
-  srenew(nl->shift,  nl->maxnri+4);
-  srenew(nl->jindex, nl->maxnri+4);
+	    nl->il_code,maxnri); 
+  srenew(nl->iinr,   maxnri+2);
+  srenew(nl->gid,    maxnri+2);
+  srenew(nl->shift,  maxnri+2);
+  srenew(nl->jindex, maxnri+2);
+  for(i=nl->maxnri+2; i<maxnri+2; i++)
+    nl->jindex[i] = 0;
+  nl->maxnri = maxnri;
 }
 
 static void init_nblist(t_nblist *nl,int homenr,int il_code)
 {
+  int maxnri;
+
   nl->il_code = il_code;
   /* maxnri is influenced by the number of shifts (maximum is 8)
    * and the number of energy groups.
@@ -106,7 +113,8 @@ static void init_nblist(t_nblist *nl,int homenr,int il_code)
    * 4 seems to be a reasonable factor, which only causes reallocation
    * during runs with tiny and many energygroups.
    */
-  nl->maxnri  = homenr*4;
+  maxnri      = homenr*4;
+  nl->maxnri  = 0;
   nl->maxnrj  = 0;
   nl->nri     = 0;
   nl->nrj     = 0;
@@ -114,8 +122,10 @@ static void init_nblist(t_nblist *nl,int homenr,int il_code)
   nl->gid     = NULL;
   nl->shift   = NULL;
   nl->jindex  = NULL;
-  if (nl->maxnri > 0) {
-    reallocate_nblist(nl);
+  if (maxnri > 0) {
+    reallocate_nblist(nl,maxnri);
+    nl->jindex[0] = 0;
+    nl->jindex[1] = 0;
     nl->iinr[0] = -1;
   }
 }
@@ -255,10 +265,8 @@ static gmx_inline void new_i_nblist(t_nblist *nlist,
 	(nlist->iinr[nri] != -1)) {
       
       /* If so increase the counter */
-      if (nlist->nri >= nlist->maxnri) {
-	nlist->maxnri += NLI_INC;
-	reallocate_nblist(nlist);
-      }
+      if (nlist->nri >= nlist->maxnri)
+	reallocate_nblist(nlist,nlist->maxnri+NLI_INC);
       nlist->nri++;
       nri++;
     }
