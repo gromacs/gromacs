@@ -79,7 +79,7 @@ static void get_w_conf(FILE *in, char *infile, char *title,
   char   format[30];
   double x1,y1,z1,x2,y2,z2;
   rvec   xmin,xmax;
-  int    i,m,resnr,newres,oldres,prec;
+  int    natoms,i,m,resnr,newres,oldres,prec;
   bool   bFirst;
   char   *p1,*p2;
   
@@ -93,8 +93,14 @@ static void get_w_conf(FILE *in, char *infile, char *title,
 
   /* read the number of atoms */
   fgets2(line,STRLEN,in);
-  sscanf(line,"%d",&(atoms->nr));
-
+  sscanf(line,"%d",&natoms);
+  if (natoms > atoms->nr)
+    fatal_error(0,"gro file contains more atoms (%d) than expected (%d)",
+		natoms,atoms->nr);
+  else if (natoms <  atoms->nr)
+    fprintf(stderr,"Warning: gro file contains less atoms (%d) than expected (%d)\n",natoms,atoms->nr);
+  
+  atoms->nr=natoms;
   atoms->nres=0;
 
   bFirst=TRUE;
@@ -241,13 +247,24 @@ static void get_conf(FILE *in, char *title, int *natoms,
 bool gro_next_x_or_v(FILE *status,real *t,int natoms,
 		     rvec x[],rvec *v,matrix box)
 {
+  t_atoms  atoms;
   char   title[STRLEN],*p;
   double tt;
 
   if (eof(status))
     return FALSE;
-    
-  get_conf(status, title, &natoms, x, v, box);
+
+  atoms.nr=natoms;
+  snew(atoms.atom,natoms);
+  atoms.nres=natoms;
+  snew(atoms.resname,natoms);
+  snew(atoms.atomname,natoms);
+  
+  get_w_conf(status,title,title,&atoms,x,v,box);
+  
+  sfree(atoms.atom);
+  sfree(atoms.resname);
+  sfree(atoms.atomname);
 
   if (p=strstr(title,"t=")) {
     p+=2;
@@ -256,6 +273,10 @@ bool gro_next_x_or_v(FILE *status,real *t,int natoms,
     else
       *t=0.0;
   }
+  
+  if (atoms.nr != natoms)
+    fatal_error(0,"Number of atoms in gro frame (%d) doesn't match the number in the previous frame (%d)",atoms.nr,natoms);
+  
   return TRUE;
 }
 
