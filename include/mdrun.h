@@ -66,6 +66,7 @@ static char *SRCID_mdrun_h = "$Id$";
 #define MD_RERUN    16
 #define MD_LATEVIR  32
 #define MD_TWEAK    64
+#define MD_SEPDVDL 128
 
 /* ROUTINES from md.c */
 extern time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],

@@ -88,6 +88,7 @@ typedef struct {
   int  efep;
   real sc_alpha;
   real sc_sigma6;
+  bool bSepDVDL;
 
   /* NS Stuff */
   int  eeltype;

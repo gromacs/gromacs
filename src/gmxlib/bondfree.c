@@ -67,10 +67,15 @@ void calc_bonds(FILE *log,t_commrec *cr,t_idef *idef,
 		t_forcerec *fr,t_graph *g,
 		real epot[],t_nrnb *nrnb,
 		matrix box,real lambda,
-		t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
+		t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+		int step,bool bSepDVDL)
 {
   static bool bFirst=TRUE;
   int    ftype,nbonds,ind,nat;
+  real   v,dvdl;
+
+  if (bSepDVDL)
+    fprintf(log,"Step %d: bonded V and dVdl for node %d:\n",step,cr->nodeid);
 
   if (bFirst) {
     bPBC   = (getenv("GMXFULLPBC") != NULL);
@@ -85,15 +90,20 @@ void calc_bonds(FILE *log,t_commrec *cr,t_idef *idef,
     if (interaction_function[ftype].flags & IF_BOND && ftype!=F_CONNBONDS) {
       nbonds=idef->il[ftype].nr;
       if (nbonds > 0) {
-	epot[ftype]+=
-	  interaction_function[ftype].ifunc(nbonds,idef->il[ftype].iatoms,
-					    idef->iparams,x_s,f,fr,g,box,
-					    lambda,&epot[F_DVDL],
-					    md,ngrp,egnb,egcoul);
+	dvdl = 0;
+	v = interaction_function[ftype].ifunc(nbonds,idef->il[ftype].iatoms,
+					      idef->iparams,x_s,f,fr,g,box,
+					      lambda,&dvdl,
+					      md,ngrp,egnb,egcoul);
 	ind = interaction_function[ftype].nrnb_ind;
 	nat = interaction_function[ftype].nratoms+1;
 	if (ind != -1)
 	  inc_nrnb(nrnb,ind,nbonds/nat);
+	epot[ftype]  += v;
+	epot[F_DVDL] += dvdl;
+	if (bSepDVDL)
+	  fprintf(log,"  %-15s #%4d  V %12.5e  dVdl %12.5e\n",
+		  interaction_function[ftype].longname,nbonds/nat,v,dvdl);
       }
     }
   }

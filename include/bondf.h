@@ -58,7 +58,8 @@ extern "C" {
 extern void calc_bonds(FILE *log,t_commrec *cr,t_idef *idef,
                        rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
                        real epot[],t_nrnb *nrnb,matrix box,real lambda,
-		       t_mdatoms *md,int ngrp,real egnb[],real egcoul[]);
+		       t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+		       int step,bool bSepDVDL);
 /* 
  * The function calc_bonds() caluclates all bonded force interactions.
  * The "bonds" are specified as follows:

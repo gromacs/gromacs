@@ -211,6 +211,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   fr = mk_forcerec();
   init_forcerec(stdlog,fr,&(parm->ir),top,cr,mdatoms,nsb,parm->box,FALSE,
 		opt2fn("-table",nfile,fnm));
+  fr->bSepDVDL = ((Flags & MD_SEPDVDL) == MD_SEPDVDL);
   /* Initiate box */
   for(m=0; (m<DIM); m++)
     box_size[m]=parm->box[m][m];

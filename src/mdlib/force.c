@@ -62,6 +62,7 @@ static char *SRCID_force_c = "$Id$";
 #include "poisson.h"
 #include "ewald.h"
 #include "pme.h"
+#include "mdrun.h"
 #include "copyrite.h"
 
 t_forcerec *mk_forcerec(void)
@@ -940,7 +941,8 @@ void force(FILE       *fp,     int        step,
   
   if (!bNBFonly) {
     calc_bonds(fp,cr,idef,x,f,fr,graph,epot,nrnb,box,lambda,md,
-	       opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14]);    
+	       opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14],
+	       step,fr->bSepDVDL && do_per_step(step,ir->nstlog));    
     debug_gmx();
   }
   if (debug) 

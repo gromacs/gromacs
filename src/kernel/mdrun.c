@@ -140,6 +140,7 @@ int main(int argc,char *argv[])
   static bool bCompact     = TRUE;
   static bool bLateVir     = TRUE;
   static bool bTweak       = FALSE;
+  static bool bSepDVDL     = FALSE;
 #ifdef XMDRUN
   static bool bMultiSim    = FALSE;
   static bool bGlas        = FALSE;
@@ -163,6 +164,8 @@ int main(int argc,char *argv[])
     { "-ionize",  FALSE, etBOOL,{&bIonize},
       "Do a simulation including the effect of an X-Ray bombardment on your system" },
 #endif
+    { "-sepdvdl", FALSE, etBOOL,{&bSepDVDL},
+      "HIDDENWrite separate V and dVdl terms for each interaction type and each node(!) to log file(s)" },
     { "-latevir", FALSE, etBOOL,{&bLateVir},
       "HIDDENCalculate virial late in the algorithm" },
     { "-tweak",   FALSE, etBOOL,{&bTweak},
@@ -206,6 +209,7 @@ int main(int argc,char *argv[])
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
   Flags = Flags | (bLateVir ? MD_LATEVIR : 0);
   Flags = Flags | (bTweak ? MD_TWEAK : 0);
+  Flags = Flags | (bSepDVDL ? MD_SEPDVDL : 0);
   
 #ifdef XMDRUN
   Flags = (Flags | 
