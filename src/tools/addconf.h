@@ -33,16 +33,14 @@ static char *SRCID_addconf_h = "$Id$";
 extern void add_conf(t_atoms *atoms, rvec **x, real **r, bool bSrenew,
 		     matrix box,
 		     t_atoms *atoms_solvt, rvec *x_solvt, real *r_solvt, 
-		     bool bVerbose,bool bForceInside);
-/* Add two conformations together, without generating overlap */
+		     bool bVerbose,real rshell);
+/* Add two conformations together, without generating overlap
+ * If rshell > 0, keep all the residues around the protein (0..natoms_prot-1)
+ * that are within rshell distance.
+ */
 
 extern void orient_mol(t_atoms *atoms,char *indexnm,rvec x[],rvec *v);
 /* Orient a molecule along its principal component axes. 
  * indexnm may be the name of an index file or null.
  */
  
-extern void make_shell(t_atoms *atoms,int natoms_prot,
-		       real radius[],rvec x[],matrix box,real r_shell);
-/* Keep all the residues around the protein (0..natoms_prot-1)
- * that are within r_shell distance.
- */
