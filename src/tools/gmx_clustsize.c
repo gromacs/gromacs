@@ -88,7 +88,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   real    ttt,lll;
   /* Cluster size distribution (matrix) */
   real    **cs_dist=NULL;
-  real    t,tf,dx2,cut2,*t_x=NULL,*t_y,cmid,cmax,cav;
+  real    tf,dx2,cut2,*t_x=NULL,*t_y,cmid,cmax,cav;
   int     i,j,k,ai,aj,ak,ci,cj,nframe,nclust,n_x,n_y,max_size=0;
   int     *clust_index,*clust_size,max_clust_size,nav,nhisto;
   t_rgb   rlo = { 1.0, 1.0, 1.0 };
@@ -99,12 +99,16 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   fp     = xvgropen(ncl,"Number of clusters",timebuf,"N");
   gp     = xvgropen(acl,"Average cluster size",timebuf,"#molecules");
   hp     = xvgropen(mcl,"Max cluster size",timebuf,"#molecules");
-  natoms = read_first_frame(&status,trx,&fr,TRX_NEED_X | TRX_READ_V);
+  if (!read_first_frame(&status,trx,&fr,TRX_NEED_X | TRX_READ_V))
+    gmx_file(trx);
+    
+  natoms = fr.natoms;
   x      = fr.x;
   if (bMol) {
     read_tpxheader(tpr,&tpxh,TRUE,&version,&generation);
     if (tpxh.natoms != natoms) 
-      gmx_fatal(FARGS,"tpr and xtc do not match!");
+      gmx_fatal(FARGS,"tpr (%d atoms) and xtc (%d atoms) do not match!",
+		tpxh.natoms,natoms);
     
     read_tpx(tpr,&sss,&ttt,&lll,NULL,NULL,&natoms,NULL,NULL,NULL,&top);
     mols = &(top.blocks[ebMOLS]);
@@ -193,7 +197,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
       }
       n_x++;
       srenew(t_x,n_x);
-      t_x[n_x-1] = t*tf;
+      t_x[n_x-1] = fr.time*tf;
       srenew(cs_dist,n_x);
       snew(cs_dist[n_x-1],nindex);
       nclust = 0;
@@ -213,10 +217,10 @@ static void clust_size(char *ndx,char *trx,char *xpm,
 	  }
 	}
       }
-      fprintf(fp,"%10.3e  %10d\n",t,nclust);
+      fprintf(fp,"%10.3e  %10d\n",fr.time,nclust);
       if (nav > 0)
-	fprintf(gp,"%10.3e  %10.3f\n",t,cav/nav);
-      fprintf(hp, "%10.3e  %10d\n", t, max_clust_size);
+	fprintf(gp,"%10.3e  %10.3f\n",fr.time,cav/nav);
+      fprintf(hp, "%10.3e  %10d\n",fr.time,max_clust_size);
     }
     /* Analyse velocities, if present */
     if (fr.bV) {
