@@ -90,6 +90,18 @@ static char *get_asptp(int resnr)
   return select_res(easpNR,resnr,lh,expl,"ASPARTIC ACID");
 }
 
+static char *get_glutp(int resnr)
+{
+  enum { eglu, egluH, egluNR };
+  static char *lh[egluNR] = { "GLU", "GLUH" };
+  static char *expl[egluNR] = {
+    "Not protonated (charge -1)",
+    "Protonated (charge 0)"
+  };
+
+  return select_res(egluNR,resnr,lh,expl,"GLUTAMIC ACID");
+}
+
 static char *get_lystp(int resnr)
 {
   enum { elys, elysH, elysNR };
@@ -228,7 +240,8 @@ int read_pdball(char *inf, char *outf,char *title,
 
 void process_chain(t_atoms *pdba, rvec *x, 
 		   bool bTrpU,bool bPheU,bool bTyrU,
-		   bool bLysMan,bool bAspMan,bool bHisMan,bool bCysMan,
+		   bool bLysMan,bool bAspMan,bool bGluMan,
+		   bool bHisMan,bool bCysMan,
 		   int *nssbonds,t_ssbond **ssbonds,
 		   real angle,real distance)
 {
@@ -244,6 +257,8 @@ void process_chain(t_atoms *pdba, rvec *x,
     rename_pdbres(pdba,"LYS","LYSH",FALSE);
   if (bAspMan) 
     rename_pdbresint(pdba,"ASP",get_asptp,FALSE);
+  if (bGluMan) 
+    rename_pdbresint(pdba,"GLU",get_glutp,FALSE);
 
   *nssbonds=mk_specbonds(pdba,x,bCysMan,ssbonds);
   rename_pdbres(pdba,"CYS","CYSH",FALSE);
@@ -605,7 +620,7 @@ int main(int argc, char *argv[])
   /* Command line arguments msut be static */
   static bool bNewRTP=FALSE;
   static bool bInter=FALSE, bFFMan=FALSE, bCysMan=FALSE; 
-  static bool bLysMan=FALSE, bAspMan=FALSE, bHisMan = FALSE;
+  static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan = FALSE;
   static bool bTerMan=FALSE, bUnA=FALSE;
   static bool bH14= FALSE,bSort=TRUE, bRetainH=FALSE;
   static bool bAlldih=FALSE;
@@ -615,7 +630,7 @@ int main(int argc, char *argv[])
     { "-newrtp", FALSE, etBOOL, &bNewRTP,
       "HIDDENWrite the residue database in new format to 'new.rtp'"},
     { "-inter",  FALSE, etBOOL, &bInter,
-      "Set the next 6 options to interactive"},
+      "Set the next 7 options to interactive"},
     { "-ff",     FALSE, etBOOL, &bFFMan, 
       "Interactive Force Field selection, iso the first one" },
     { "-ss",     FALSE, etBOOL, &bCysMan, 
@@ -626,6 +641,8 @@ int main(int argc, char *argv[])
       "Interactive Lysine selection, iso charged" },
     { "-asp",   FALSE, etBOOL, &bAspMan, 
       "Interactive Aspartic Acid selection, iso charged" },
+    { "-glu",   FALSE, etBOOL, &bGluMan, 
+      "Interactive Glutamic Acid selection, iso charged" },
     { "-his",    FALSE, etBOOL, &bHisMan,
       "Interactive Histidine selection, iso checking H-bonds" },
     { "-angle",  FALSE, etREAL, &angle, 
@@ -658,6 +675,7 @@ int main(int argc, char *argv[])
     bTerMan = TRUE;
     bLysMan = TRUE;
     bAspMan = TRUE;
+    bGluMan = TRUE;
     bHisMan = TRUE;
   }
   
@@ -857,8 +875,8 @@ int main(int argc, char *argv[])
       printf("Processing chain %d (%d atoms, %d residues)\n",
 	      chain+1,natom,nres);
 
-    process_chain(pdba,x,bUnA,bUnA,bUnA,bLysMan,bAspMan,bHisMan,bCysMan,
-		  &nssbonds,&ssbonds,angle,distance);
+    process_chain(pdba,x,bUnA,bUnA,bUnA,bLysMan,bAspMan,bGluMan,
+		  bHisMan,bCysMan,&nssbonds,&ssbonds,angle,distance);
 		  
     if (bSort) {
       block = new_block();
