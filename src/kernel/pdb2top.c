@@ -71,58 +71,14 @@ static bool missing_atoms(t_restp *rp, int resnr,
 	bFound=(bFound || !strcasecmp(*(at->atomname[k]),name));
       if (!bFound) {
 	bRet=TRUE;
-	fprintf(stderr,
-		"\nWARNING: atom %s is missing in residue %s %d in the pdb file\n\n",
+	fprintf(stderr,"\nWARNING: "
+		"atom %s is missing in residue %s %d in the pdb file\n\n",
 		name,*(at->resname[resnr]),resnr+1);
       }
     }
   }
 
   return bRet;
-}
-
-static void name2type(t_atoms *at,t_atomtype *atype,int nrtp,t_restp rtp[])
-{
-  int     i,j,resnr,i0;
-  char    *name;
-  t_restp *rp=NULL;
-  bool    bFirst, bProt, bNterm;
-
-  bFirst=TRUE;
-  resnr=-1;
-  bProt=FALSE;
-  i0=0;
-  for(i=0; (i<at->nr); i++) {
-    if (bFirst || (at->atom[i].resnr != resnr)) {
-      if (bFirst) {
-	bFirst=FALSE;
-      } else {
-	rp=search_rtp(*(at->resname[resnr]),nrtp,rtp);
-	missing_atoms(rp,resnr,at,i0,i,(!bProt || is_protein(rp->resname)));
-	bProt=is_protein(*(at->resname[resnr]));
-	bNterm=bProt && (resnr == 0);
-	i0=i;
-      }
-      resnr=at->atom[i].resnr;
-      if ((rp=search_rtp(*(at->resname[resnr]),nrtp,rtp)) == NULL)
-	fatal_error(0,"Residue type %s not found, bummer...",
-		    *(at->resname[resnr]));
-      if (strcasecmp(rp->resname,*(at->resname[resnr])) != 0)
-	fatal_error(0,"Residue type %s not found",
-		    *(at->resname[resnr]));
-    }
-    if (at->atom[i].m == 0) {
-      name=*(at->atomname[i]);
-      j=search_jtype(rp,name,bNterm);
-      at->atom[i].type  = rp->atom[j].type;
-      at->atom[i].q     = rp->atom[j].q;
-      at->atom[i].m     = atype->atom[rp->atom[j].type].m;
-    }
-    at->atom[i].typeB = at->atom[i].type;
-    at->atom[i].qB    = at->atom[i].q;
-    at->atom[i].mB    = at->atom[i].m;
-  }
-  missing_atoms(rp,resnr,at,i0,i,(!bProt || is_protein(rp->resname)));
 }
 
 bool is_int(double x)
@@ -137,56 +93,60 @@ bool is_int(double x)
   return (fabs(x-ix) < tol);
 }
 
-static t_block *make_cgs(t_atoms *at,int nrtp,t_restp rtp[])
+static void name2type(t_atoms *at,int **cgnr,
+		      t_atomtype *atype,int nrtp,t_restp rtp[])
 {
-  int     *cgnr;
-  t_block *cgs;
-  int     i,j,prevresnr,resnr,prevcg,cg,curcg;
-  bool    bNterm;
-  t_restp *rp;
-  
-  fprintf(stderr,"Making charge groups...\n");
-  snew(cgnr,at->nr);
-  
-  curcg=-1;
+  int     i,j,prevresnr,resnr,i0,prevcg,cg,curcg;
+  char    *name;
+  t_restp *rp=NULL,*prevrp=NULL;
+  bool    bProt, bNterm;
+  double  qt,qq;
+
   resnr=-1;
+  bProt=FALSE;
+  i0=0;
+  snew(*cgnr,at->nr);
+  qt=0;
+  curcg=0;
   cg=-1;
   for(i=0; (i<at->nr); i++) {
     prevresnr=resnr;
     if (at->atom[i].resnr != resnr) {
       resnr=at->atom[i].resnr;
+      bProt=is_protein(*(at->resname[resnr]));
+      bNterm=bProt && (resnr == 0);
+      prevrp=rp;
       rp=search_rtp(*(at->resname[resnr]),nrtp,rtp);
-      bNterm=is_protein(*(at->resname[resnr])) && (resnr == 0);
+      if (prevrp)
+	missing_atoms(prevrp,resnr,at,i0,i,
+		      (!bProt && is_protein(prevrp->resname)));
+      i0=i;
     }
-    prevcg=cg;
-    j=search_jtype(rp,*(at->atomname[i]),bNterm);
-    cg = rp->cgnr[j];
-    if ( (cg != prevcg) || (resnr != prevresnr) )
-      curcg++;
-    cgnr[i]=curcg;
-  }
-  
-  snew(cgs,1);
-  snew(cgs->index,curcg+1);
-  snew(cgs->a,at->nr);
-  for(i=0; (i<at->nr); i++)
-    cgs->a[i]=i;
-  
-  cgs->index[0]=0;
-  cgs->nr=0;
-  for(i=1; (i<at->nr); i++) {
-    if (cgnr[i] != cgnr[i-1]) {
-      cgs->nr++;
-      cgs->index[cgs->nr]=i;
+    if (at->atom[i].m == 0) {
+      qt=0;
+      prevcg=cg;
+      name=*(at->atomname[i]);
+      j=search_jtype(rp,name,bNterm);
+      at->atom[i].type  = rp->atom[j].type;
+      at->atom[i].q     = rp->atom[j].q;
+      at->atom[i].m     = atype->atom[rp->atom[j].type].m;
+      cg = rp->cgnr[j];
+      if ( (cg != prevcg) || (resnr != prevresnr) )
+	curcg++;
+    } else {
+      cg=-1;
+      if (is_int(qt)) {
+	qt=0;
+	curcg++;
+      }
+      qt+=at->atom[i].q;
     }
+    (*cgnr)[i]=curcg;
+    at->atom[i].typeB = at->atom[i].type;
+    at->atom[i].qB    = at->atom[i].q;
+    at->atom[i].mB    = at->atom[i].m;
   }
-  cgs->nr++;
-  cgs->index[cgs->nr]=at->nr;
-  cgs->nra=at->nr;
-  
-  sfree(cgnr);
-  
-  return cgs;
+  missing_atoms(rp,resnr,at,i0,i,(!bProt || is_protein(rp->resname)));
 }
 
 static void print_top_heavy_H(FILE *out, real mHmult)
@@ -264,7 +224,7 @@ static void print_top_mols(FILE *out, int nmol, char **mols)
 void write_top(char *ff,char *fn, char *pr,char *title, char *molname,
 	       int nincl, char **incls, int nmol, char **mols,
 	       t_atoms *at,t_params plist[],t_block *excl,
-	       t_atomtype *atype,t_block *cgs, int nrexcl, real mHmult)
+	       t_atomtype *atype,int *cgnr, int nrexcl, real mHmult)
      /* NOTE: nrexcl is not the size of *excl! */
 {
   FILE *out;
@@ -275,12 +235,12 @@ void write_top(char *ff,char *fn, char *pr,char *title, char *molname,
   
   print_top_header(out,title,bITP,ff,nincl,incls,mHmult);
   
-  if (at && atype && cgs) {
+  if (at && atype && cgnr) {
     fprintf(out,"[ %s ]\n",dir2str(d_moleculetype));
     fprintf(out,"; %-15s %5s\n","Name","nrexcl");
     fprintf(out,"%-15s %5d\n\n",molname?molname:"Protein",nrexcl);
     
-    print_atoms(out,atype,at,cgs);
+    print_atoms(out,atype,at,cgnr);
     print_bonds(out,at->nr,d_bonds,F_BONDS,plist,FALSE);
     print_bonds(out,at->nr,d_pairs,F_LJ14,plist,FALSE);
     print_bonds(out,at->nr,d_angles,F_ANGLES,plist,FALSE);
@@ -538,7 +498,7 @@ void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
 {
   t_params plist[F_NRE];
   t_nextnb nnb;
-  t_block  *cgs;
+  int      *cgnr;
   t_block  excl;
   bool     *is_dummy;
   int      i;
@@ -573,7 +533,7 @@ void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
     atoms->nres,atoms->resname,x);
   */
   
-  name2type(atoms,atype,nrtp,rtp);
+  name2type(atoms,&cgnr,atype,nrtp,rtp);
   
   /* Cleanup bonds (sort and rm doubles) */ 
   clean_bonds(&(plist[F_BONDS]));
@@ -624,15 +584,12 @@ void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
 	  plist[F_DUMMY1].nr+plist[F_DUMMY2].nr+plist[F_DUMMY2FD].nr+
 	  plist[F_DUMMY2FAD].nr+plist[F_DUMMY3].nr);
   
-  cgs=make_cgs(atoms,nrtp,rtp);
   print_mass(atoms);
   
   fprintf(stderr,"Writing topology file\n");
   write_top(ff,fn,pr,title,molname,nincl,incls,nmol,mols,
-	    atoms,plist,&excl,atype,cgs,nrexcl,mHmult);
+	    atoms,plist,&excl,atype,cgnr,nrexcl,mHmult);
   
   for (i=0; (i<F_NRE); i++)
     sfree(plist[i].param);
-  done_block(cgs);
-  sfree(cgs);
 }
