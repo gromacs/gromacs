@@ -62,7 +62,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 {
   t_mdebin   *mdebin;
   int        fp_ene=0,fp_trn=0,step;
-  FILE       *fp_dgdl;
+  FILE       *fp_dgdl=NULL;
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
   bool       bNS,bStopCM,bStopRot,bTYZ,bRerunMD,bNotLastFrame=FALSE,bLastStep;
