@@ -274,6 +274,21 @@ void pdb_legend(FILE *out,int natoms,int nres,t_atoms *atoms,rvec x[])
   }
 }
 
+void mirror_coords(int natom,rvec x[],rvec xcm,char mm)
+{
+  int i,m;
+  
+  m = mm - 'X';
+  
+  for(i=0; (i<natom); i++) {
+    if (mm == 'P') 
+      for(m=0; (m<DIM); m++)
+	x[i][m] = 2*xcm[m] - x[i][m];
+    else 
+      x[i][m] = 2*xcm[m]-x[i][m];
+  }
+}
+
 int main(int argc, char *argv[])
 {
   static char *desc[] = {
@@ -320,6 +335,7 @@ int main(int argc, char *argv[])
   static rvec scale={1.0,1.0,1.0},newbox={0.0,0.0,0.0};
   static real rho=1000.0;
   static rvec center={0.0,0.0,0.0},rotangles={0.0,0.0,0.0};
+  static char *mirror[] = { NULL, "X", "Y", "Z", "Point", NULL };
   static char *label="A";
   t_pargs pa[] = {
     { "-ndef",   FALSE, etBOOL, &bNDEF, 
@@ -334,6 +350,8 @@ int main(int argc, char *argv[])
     { "-center", FALSE, etRVEC, &center, "Coordinates of geometrical center"},
     { "-rotate", FALSE, etRVEC, rotangles,
       "Rotation around the X, Y and Z axes in degrees" },
+    { "-mirror", FALSE, etENUM, mirror,
+      "Mirror all coordinates about x, y, or z plain, or about then center of mass point" },
     { "-princ",  FALSE, etBOOL, &bOrient, "Orient molecule(s) along their principal axes" },
     { "-scale",  FALSE, etRVEC, &scale, "Scaling factor" },
     { "-density",FALSE, etREAL, &rho, 
@@ -357,7 +375,7 @@ int main(int argc, char *argv[])
   atom_id   *index;
   rvec      *x,*v,gc,min,max,size;
   matrix    box;
-  bool      bSetSize,bCubic,bDist,bSetCenter;
+  bool      bSetSize,bCubic,bDist,bSetCenter,bMirror;
   bool      bHaveV,bScale,bRho,bRotate,bCalcGeom;
   real      xs,ys,zs,xcent,ycent,zcent,d;
   t_filenm fnm[] = {
@@ -380,10 +398,11 @@ int main(int argc, char *argv[])
   bScale    = opt2parg_bSet("-scale" ,NPA,pa);
   bRho      = opt2parg_bSet("-density",NPA,pa);
   bRotate   = opt2parg_bSet("-rotate",NPA,pa);
+  bMirror   = opt2parg_bSet("-mirror",NPA,pa);
   if (bScale && bRho)
     fprintf(stderr,"WARNING: setting -density overrides -scale");
   bScale    = bScale || bRho;
-  bCalcGeom = bCenter || bRotate || bOrient || bScale;
+  bCalcGeom = bCenter || bRotate || bOrient || bScale || bMirror;
   
   infile  = ftp2fn(efSTX,NFILE,fnm);
   outfile = ftp2fn(efSTO,NFILE,fnm);
@@ -449,7 +468,10 @@ int main(int argc, char *argv[])
       rotangles[i] *= DEG2RAD;
     rotate_conf(natom,x,v,rotangles[XX],rotangles[YY],rotangles[ZZ]);
   }
-  
+
+  if (bMirror) 
+    mirror_coords(atoms.nr,x,gc,mirror[0][0]);
+    
   if (bCalcGeom) {
     /* recalc geometrical center and max and min coordinates and size */
     calc_geom(ftp2fn_null(efNDX,NFILE,fnm),&atoms,x, gc, min, max);
