@@ -132,7 +132,7 @@
          i3=3*i
          j3=3*j
          mvb=blc(b)*sol(b)
-         lambda(b)=mvb
+         lambda(b)=-mvb
          im1=invmass(i+1)
          im2=invmass(j+1)
          tmp0=r(b3+1)*mvb
@@ -234,7 +234,7 @@ c     ********  Correction for centripetal effects  ********
             j3=3*j
             lam=lambda(b)
             mvb=blc(b)*sol(b)
-            lambda(b)=lam+mvb
+            lambda(b)=lam-mvb
             im1=invmass(i+1)
             im2=invmass(j+1)
             tmp0=r(b3+1)*mvb

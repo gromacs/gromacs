@@ -135,7 +135,7 @@ void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
     i=bla1[b];
     j=bla2[b];
     mvb=blc[b]*sol[b];
-    lambda[b]=mvb;
+    lambda[b]=-mvb;
     im1=invmass[i];
     im2=invmass[j];
     tmp0=r[b][0]*mvb;
@@ -214,7 +214,7 @@ void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
       j=bla2[b];
       lam=lambda[b];
       mvb=blc[b]*sol[b];
-      lambda[b]=lam+mvb;
+      lambda[b]=lam-mvb;
       im1=invmass[i];
       im2=invmass[j];
       tmp0=r[b][0]*mvb;
