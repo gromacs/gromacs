@@ -1,9 +1,9 @@
 # ACE/gr parameter file
 #
-@page layout free
+@page layout fixed
 @ps linewidth begin 1
 @ps linewidth increment 2
-@hardcopy device 1
+@hardcopy device 2
 @page 5
 @page inout 5
 @link page off
@@ -21,7 +21,40 @@
 @timestamp rot 0
 @timestamp font 4
 @timestamp char size 1.000000
-@timestamp def "Thu Aug 12 10:31:39 1999"
+@timestamp def "Mon Nov  1 10:03:41 1999"
+@with string
+@    string on
+@    string loctype view
+@    string 0.373278236915, 0.6135986733
+@    string linewidth 1
+@    string color 1
+@    string rot 0
+@    string font 4
+@    string just 0
+@    string char size 1.200000
+@    string def "r\s0"
+@with string
+@    string on
+@    string loctype view
+@    string 0.584022038567, 0.615257048093
+@    string linewidth 1
+@    string color 1
+@    string rot 0
+@    string font 4
+@    string just 0
+@    string char size 1.200000
+@    string def "r\s1"
+@with string
+@    string on
+@    string loctype view
+@    string 0.724517906336, 0.615257048093
+@    string linewidth 1
+@    string color 1
+@    string rot 0
+@    string font 4
+@    string just 0
+@    string char size 1.200000
+@    string def "r\s2"
 @with g0
 @g0 on
 @g0 label off
@@ -127,6 +160,81 @@
 @    s2 errorbar riser linestyle 1
 @    s2 xyz 0.000000, 0.000000
 @    s2 comment "X=x, Y=500*(x-0.15)^2"
+@    s3 symbol 0
+@    s3 symbol size 1.000000
+@    s3 symbol fill 0
+@    s3 symbol color 1
+@    s3 symbol linewidth 1
+@    s3 symbol linestyle 1
+@    s3 symbol center false
+@    s3 symbol char 0
+@    s3 skip 0
+@    s3 linestyle 3
+@    s3 linewidth 1
+@    s3 color 1
+@    s3 fill 0
+@    s3 fill with color
+@    s3 fill color 1
+@    s3 fill pattern 0
+@    s3 errorbar type BOTH
+@    s3 errorbar length 1.000000
+@    s3 errorbar linewidth 1
+@    s3 errorbar linestyle 1
+@    s3 errorbar riser on
+@    s3 errorbar riser linewidth 1
+@    s3 errorbar riser linestyle 1
+@    s3 xyz 0.000000, 0.000000
+@    s3 comment "X=0.15, Y=y"
+@    s4 symbol 0
+@    s4 symbol size 1.000000
+@    s4 symbol fill 0
+@    s4 symbol color 1
+@    s4 symbol linewidth 1
+@    s4 symbol linestyle 1
+@    s4 symbol center false
+@    s4 symbol char 0
+@    s4 skip 0
+@    s4 linestyle 3
+@    s4 linewidth 1
+@    s4 color 1
+@    s4 fill 0
+@    s4 fill with color
+@    s4 fill color 1
+@    s4 fill pattern 0
+@    s4 errorbar type BOTH
+@    s4 errorbar length 1.000000
+@    s4 errorbar linewidth 1
+@    s4 errorbar linestyle 1
+@    s4 errorbar riser on
+@    s4 errorbar riser linewidth 1
+@    s4 errorbar riser linestyle 1
+@    s4 xyz 0.000000, 0.000000
+@    s4 comment "X=0.3, Y=y"
+@    s5 symbol 0
+@    s5 symbol size 1.000000
+@    s5 symbol fill 0
+@    s5 symbol color 1
+@    s5 symbol linewidth 1
+@    s5 symbol linestyle 1
+@    s5 symbol center false
+@    s5 symbol char 0
+@    s5 skip 0
+@    s5 linestyle 3
+@    s5 linewidth 1
+@    s5 color 1
+@    s5 fill 0
+@    s5 fill with color
+@    s5 fill color 1
+@    s5 fill pattern 0
+@    s5 errorbar type BOTH
+@    s5 errorbar length 1.000000
+@    s5 errorbar linewidth 1
+@    s5 errorbar linestyle 1
+@    s5 errorbar riser on
+@    s5 errorbar riser linewidth 1
+@    s5 errorbar riser linestyle 1
+@    s5 xyz 0.000000, 0.000000
+@    s5 comment "X=0.4, Y=y"
 @    xaxis  tick on
 @    xaxis  tick major 0.1
 @    xaxis  tick minor 0.05
@@ -559,4 +667,19 @@
            0.146            0.008
            0.148            0.002
             0.15                0
+&
+@TARGET S3
+@TYPE xy
+            0.15                0
+            0.15               15
+&
+@TARGET S4
+@TYPE xy
+             0.3                0
+             0.3               15
+&
+@TARGET S5
+@TYPE xy
+             0.4                0
+             0.4               15
 &
