@@ -84,7 +84,7 @@ static void add_bonds(t_manager *man,t_functype func[],
       add_object(man,eOHBond,ai,aj);
       add_object(man,eOHBond,ai,ak);
     }
-    else if ((ftype == F_BONDS) || (ftype == F_G96BONDS) || (ftype == F_SHAKE)  || (ftype == F_MORSE)) {
+    else if ( interaction_function[ftype].flags & IF_CONNECT ) {
       aj=ia[2];
 #ifdef DEBUG
       fprintf(stderr,"Adding bond from %d to %d\n",ai,aj);
