@@ -30,6 +30,7 @@ static char *SRCID_md_c = "$Id$";
 
 #include <signal.h>
 #include "typedefs.h"
+#include "smalloc.h"
 #include "vec.h"
 #include "statutil.h"
 #include "vcm.h"
@@ -86,7 +87,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Initial values */
   init_md(cr,&parm->ir,&t,&t0,&lambda,&lam0,&SAfactor,&mynrnb,&bTYZ,top,
 	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&mdebin,grps,vcm,
-	  force_vir,shake_vir,mdatoms,&bNEMD);
+	  force_vir,shake_vir,mdatoms,mu_tot,&bNEMD);
   debug_gmx();
 
   /* Remove periodicity */  
@@ -100,10 +101,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   if (!parm->ir.bUncStart) 
     do_shakefirst(log,bTYZ,lambda,ener,parm,nsb,mdatoms,x,vold,buf,f,v,
 		  graph,cr,&mynrnb,grps,fr,top,edyn,&pulldata);
+  debug_gmx();
     
   /* Compute initial EKin for all.. */
   calc_ke_part(TRUE,START(nsb),HOMENR(nsb),vold,v,vt,&(parm->ir.opts),
 	       mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
+  debug_gmx();
 	
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,
@@ -127,6 +130,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       fprintf(stderr,"starting mdrun '%s'\n%d steps, %8.1f ps.\n\n",
 	      *(top->name),parm->ir.nsteps,parm->ir.nsteps*parm->ir.delta_t);
   }
+  /* Set the cpu time counter to 0 after initialisation */
+  start_time();
   debug_gmx();
   
   /***********************************************************
@@ -248,7 +253,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
 	     &(parm->ir),mdatoms,x,graph,
 	     fr->shift_vec,f,buf,vold,v,vt,parm->pres,parm->box,
-	     top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata);
+	     top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata,bNEMD);
       /* The coordinates (x) were unshifted in update */
 #ifdef DEBUG
       pr_rvecs(log,0,"shake_vir",shake_vir,DIM);
@@ -282,9 +287,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
 
     if (PAR(cr)) {
-      /* Globally (over all CPUs) sum energy, virial etc. This is communication */
+      /* Globally (over all CPUs) sum energy, virial etc. 
+       * This includes communication 
+       */
       global_stat(log,cr,ener,force_vir,shake_vir,
 		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot,&terminate);
+      /* Correct for double counting energies */
       if (fr->bTwinRange && !bNS) 
 	for(i=0; (i<grps->estat.nn); i++) {
 	  grps->estat.ee[egLR][i]   /= cr->nprocs;
@@ -374,7 +382,25 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   }
   /* End of main MD loop */
   debug_gmx();
-  
+
+  /* Dump the CPU time to the log file on each processor */
+  if (PAR(cr)) {
+    double *ct,ctmax,ctsum;
+    
+    snew(ct,cr->nprocs);
+    ct[cr->pid] = cpu_time();
+    gmx_sumd(cr->nprocs,ct,cr);
+    ctmax = ct[0];
+    ctsum = ct[0];
+    for(i=1; (i<cr->pid); i++) {
+      ctmax = max(ctmax,ct[i]);
+      ctsum += ct[i];
+    }
+    fprintf(log,"\nTotal CPU time on processor %d: %g\n",cr->pid,ct[cr->pid]);
+    fprintf(log,"Load imbalance reduced performance to %3d%% of max\n",
+	    (int) (100 * ctmax * cr->nprocs / ctsum));
+    sfree(ct);
+  }
   if (MASTER(cr)) {
     print_ebin(fp_ene,FALSE,FALSE,log,step,t,lambda,SAfactor,
 	       eprAVER,FALSE,mdebin,grps,&(top->atoms));

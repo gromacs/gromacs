@@ -165,7 +165,7 @@ static void accumulate_ekin(t_commrec *cr,t_grpopts *opts,t_groups *grps)
 }       
 
 void update_grps(int start,int homenr,t_groups *grps,
-		 t_grpopts *opts,rvec v[],t_mdatoms *md)
+		 t_grpopts *opts,rvec v[],t_mdatoms *md,bool bNEMD)
 {
   int  d,g,n;
   real mv;
@@ -175,20 +175,21 @@ void update_grps(int start,int homenr,t_groups *grps,
     grps->tcstat[g].T=0;
   }
 
-  for(n=start; (n<start+homenr); n++) {
-    g=md->cACC[n];
-    for(d=0; (d<DIM);d++) {
-      mv=md->massT[n]*v[n][d];
-      grps->grpstat[g].u[d] += mv;
+  if (bNEMD) {
+    for(n=start; (n<start+homenr); n++) {
+      g=md->cACC[n];
+      for(d=0; (d<DIM);d++) {
+	mv=md->massT[n]*v[n][d];
+	grps->grpstat[g].u[d] += mv;
+      }
+    }
+
+    for (g=0; (g < opts->ngacc); g++) {
+      for(d=0; (d<DIM);d++) {
+	grps->grpstat[g].u[d] /= grps->grpstat[g].M;
+      }
     }
   }
-
-  for (g=0; (g < opts->ngacc); g++) {
-    for(d=0; (d<DIM);d++) {
-      grps->grpstat[g].u[d] /= grps->grpstat[g].M;
-    }
-  }
-
 }
 
 real sum_ekin(t_grpopts *opts,t_groups *grps,tensor ekin,bool bTYZ)

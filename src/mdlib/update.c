@@ -381,7 +381,8 @@ void update(int          natoms, 	/* number of atoms in simulation */
 	    bool         bTYZ,
 	    bool         bDoUpdate,
 	    t_edsamyn    *edyn,
-	    t_pull       *pulldata)
+	    t_pull       *pulldata,
+	    bool         bNEMD)
 {
   static char      buf[256];
   static bool      bFirst=TRUE;
@@ -557,8 +558,8 @@ void update(int          natoms, 	/* number of atoms in simulation */
   dump_it_all(stdlog,"After unshift",natoms,x,xprime,v,vold,force);
   where();
   
-  if (bDoUpdate) {  
-    update_grps(start,homenr,grps,&(ir->opts),v,md);
+  if (bDoUpdate) {
+    update_grps(start,homenr,grps,&(ir->opts),v,md,bNEMD);
     if (ir->epc != epcNO)
       do_pcoupl(ir,step,pressure,box,start,homenr,x,md->cFREEZE,nrnb,
 		ir->opts.nFreeze);
