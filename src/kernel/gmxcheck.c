@@ -426,7 +426,7 @@ int main(int argc,char *argv[])
     { "-bonhi",  FALSE, etREAL, {&bon_hi},
       "Max. fract. of sum of VdW radii for bonded atoms" },
     { "-tol",    FALSE, etREAL, {&ftol},
-      "Tolerance for difference between energy terms when comparing energy files" }
+      "Tolerance for comparing energy terms between different energy files" }
   };
 
   CopyRight(stdout,argv[0]);

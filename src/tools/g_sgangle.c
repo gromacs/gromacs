@@ -245,9 +245,9 @@ int main(int argc,char *argv[])
     { efNDX, NULL, NULL,  ffREAD },    		/* index file 		*/
     { efTPX, NULL, NULL,  ffREAD },    		/* topology file 	*/
     { efXVG,"-oa","sg_angle",ffWRITE },		/* xvgr output file 	*/
-    { efXVG, "-od","sg_distance",ffWRITE }, 	/* xvgr output file 	*/
-    { efXVG, "-od1", "sg_distance1",ffWRITE }, 	/* xvgr output file 	*/
-    { efXVG, "-od2", "sg_distance2",ffWRITE } 	/* xvgr output file 	*/
+    { efXVG, "-od","sg_dist",ffWRITE }, 	/* xvgr output file 	*/
+    { efXVG, "-od1", "sg_dist1",ffWRITE }, 	/* xvgr output file 	*/
+    { efXVG, "-od2", "sg_dist2",ffWRITE } 	/* xvgr output file 	*/
   };
 
 #define NFILE asize(fnm)

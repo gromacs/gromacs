@@ -1,8 +1,8 @@
-HEAD|Generating topogies and coordinates
+HEAD|Generating topologies and coordinates
 pdb2gmx|converts pdb files to topology and coordinate files 
 editconf|edits the box and writes subgroups 
 genbox|solvates a system
-genion|generates monoatomic ions on energetically favorable positions
+genion|generates mono atomic ions on energetically favorable positions
 genconf|multiplies a conformation in 'random' orientations
 genpr|generates position restraints for index groups
 protonate|protonates structures
@@ -58,7 +58,7 @@ END
 HEAD|Mass distribution properties over time
 g_com|calculates the center of mass
 g_gyrate|calculates the radius of gyration
-g_msd|calcates mean square displacements
+g_msd|calculates mean square displacements
 g_rotacf|calculates the rotational correlation function for molecules
 g_rdf|calculates RDF's
 g_rdens|calculates radial densities
@@ -85,7 +85,7 @@ g_velacc|calculates velocity autocorrelation functions
 END
 
 HEAD|Electrostatic properties
-genion|generates monoatomic ions on energetically favorable positions
+genion|generates mono atomic ions on energetically favorable positions
 g_potential|calculates the electrostatic potential across the box
 g_dipoles|computes the total dipole plus fluctuations
 g_dielectric|calculates frequency dependent dielectric constants

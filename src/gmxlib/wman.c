@@ -227,10 +227,10 @@ static void write_texman(FILE *out,char *program,
       fprintf(out,"%s\n",check_tex(desc[i]));
 
   if (nfile > 0) {
-    fprintf(out,"\n{\\normalsize \\bf Files}\n");
     fprintf(out,"\\vspace{-2ex}\\begin{tabbing}\n");
+    fprintf(out,"\n{\\normalsize \\bf Files}\\nopagebreak\\\\\n");
     fprintf(out,"{\\tt ~~~~~~~} \\= {\\tt ~~~~~~~~~~~~~~} \\= "
-	    "~~~~~~~~~~~~~~~~~~~~~~ \\= \\kill\n");
+	    "~~~~~~~~~~~~~~~~~~~~~~ \\= \\nopagebreak\\kill\n");
     for(i=0; (i<nfile); i++)
       fprintf(out,"\\>{\\tt %s} \\'\\> {\\tt %s} \\' %s \\> "
 	      "\\parbox[t]{0.55\\linewidth}{%s} \\\\\n",
@@ -240,16 +240,24 @@ static void write_texman(FILE *out,char *program,
     fprintf(out,"\\end{tabbing}\\vspace{-4ex}\n");
   }
   if (npargs > 0) {
-    fprintf(out,"\n{\\normalsize \\bf Other options}\n");
     fprintf(out,"\\vspace{-2ex}\\begin{tabbing}\n");
+    fprintf(out,"\n{\\normalsize \\bf Other options}\\nopagebreak\\\\\n");
     fprintf(out,"{\\tt ~~~~~~~~~} \\= vector \\= "
-	    "{\\tt ~~~~~~~~} \\= \\kill\n");
+	    "{\\tt ~~~~~~~~} \\= \\nopagebreak\\kill\n");
     for(i=0; (i<npargs); i++) {
-      fprintf(out,"\\> {\\tt %s} \\'\\> %s \\'\\> {\\tt %s} \\' "
-	      "\\parbox[t]{0.7\\linewidth}{%s}\\\\\n",
-	      check_tex(pa[i].option),argtp[pa[i].type],
-	      check_tex(pa_val(&(pa[i]))),
-	      check_tex(pa[i].desc));
+      if (strlen(check_tex(pa_val(&(pa[i])))) <= 8)
+	fprintf(out,"\\> {\\tt %s} \\'\\> %s \\'\\> {\\tt %s} \\' "
+		"\\parbox[t]{0.7\\linewidth}{%s}\\\\\n",
+		check_tex(pa[i].option),argtp[pa[i].type],
+		check_tex(pa_val(&(pa[i]))),
+		check_tex(pa[i].desc));
+      else
+      	fprintf(out,"\\> {\\tt %s} \\'\\> %s \\'\\>\\\\\n"
+		"\\> \\'\\> \\'\\> {\\tt %s} \\' "
+		"\\parbox[t]{0.7\\linewidth}{%s}\\\\\n",
+		check_tex(pa[i].option),argtp[pa[i].type],
+		check_tex(pa_val(&(pa[i]))),
+		check_tex(pa[i].desc));
     }
     fprintf(out,"\\end{tabbing}\\vspace{-4ex}\n");
   }

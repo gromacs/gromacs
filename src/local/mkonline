@@ -114,7 +114,7 @@ awk -F '|' -v mandir=$MANDIR -v longest="mk\\_angndx" '{\
       printf("{\\bf %s} \\> %s \\\\\n",$1,$2);\
     }\
   }\
-}' $PROGFILE >> $TEXIDX
+}' $PROGFILE | sed -e 's/e\.g\./{\\eg}/g' >> $TEXIDX
 echo "\end{description}" >> $TEXIDX
 
 #last line
