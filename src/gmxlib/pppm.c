@@ -57,8 +57,8 @@ static void calc_invh(rvec box,int nx,int ny,int nz,rvec invh)
   invh[ZZ] = nz/box[ZZ];
 }
 
-static void calc_weights(int nx,int ny,int nz,
-			 rvec x,rvec box,rvec invh,ivec ixyz,real WXYZ[])
+void calc_weights(int nx,int ny,int nz,
+		  rvec x,rvec box,rvec invh,ivec ixyz,real WXYZ[])
 {
   const  real half=0.5;
   tensor wxyz;
