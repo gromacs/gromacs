@@ -166,7 +166,6 @@ int main(int argc, char *argv[])
   snew(vrot,natoms); 
   read_stx_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,v,box);
 
-  atoms->nr/=vol;
   nres=atoms->nres;                /* nr of residues in one element? */
 
   for(i=0; (i<nx); i++) {          /* loop over all gridpositions    */
@@ -214,7 +213,7 @@ int main(int argc, char *argv[])
   box[ZZ][ZZ] = nz*(box[ZZ][ZZ]+dist[ZZ]);
 
   move_x(natoms*vol,x,box);          /* put atoms in box? */
-    
+
   atoms->nr*=vol;
   atoms->nres*=vol;
   write_sto_conf(opt2fn("-o",NFILE,fnm),title,atoms,x,v,box);
