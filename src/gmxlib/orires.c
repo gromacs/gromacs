@@ -241,6 +241,7 @@ real calc_orires_dev(t_commrec *mcr,
   else
     invn = 1.0;
 
+  clear_rvec(com);
   j=0;
   for(i=0; i<md->nr; i++)
     if (md->cORF[i] == 0) {
