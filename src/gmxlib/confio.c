@@ -185,8 +185,8 @@ int read_g96_conf(FILE *fp,char *infile,t_trxframe *fr)
   static char line[STRLEN+1]; /* VERY DIRTY, you can not read two       *
 		               * Gromos96 trajectories at the same time */  
   bool   bAtStart,bTime,bAtoms,bPos,bVel,bBox,bEnd,bFinished;
-  int    natoms;
-  double db1,db2,db3;
+  int    natoms,nbp;
+  double db1,db2,db3,db4,db5,db6,db7,db8,db9;
 
   bAtStart = (ftell(fp) == 0);
 
@@ -252,11 +252,21 @@ int read_g96_conf(FILE *fp,char *infile,t_trxframe *fr)
       while (!bEnd && fgets2(line,STRLEN,fp)) {
 	bEnd = (strncmp(line,"END",3) == 0);
 	if (!bEnd && (line[0] != '#')) {
-	  if (sscanf(line,"%15lf%15lf%15lf",&db1,&db2,&db3) != 3)
+	  nbp = sscanf(line,"%15lf%15lf%15lf%15lf%15lf%15lf%15lf%15lf%15lf",
+		       &db1,&db2,&db3,&db4,&db5,&db6,&db7,&db8,&db9);
+	  if (nbp < 3)
 	    fatal_error(0,"Found a BOX line, but no box in %s",infile);
 	  fr->box[XX][XX] = db1;
 	  fr->box[YY][YY] = db2;
 	  fr->box[ZZ][ZZ] = db3;
+	  if (nbp == 9) {
+	    fr->box[XX][YY] = db4;
+	    fr->box[XX][ZZ] = db5;
+	    fr->box[YY][XX] = db6;
+	    fr->box[YY][ZZ] = db7;
+	    fr->box[ZZ][XX] = db8;
+	    fr->box[ZZ][YY] = db9; 
+	  }
 	}
       }
       bFinished = TRUE;
@@ -330,8 +340,14 @@ void write_g96_conf(FILE *out,t_trxframe *fr,
   }
   if (fr->bBox) {
     fprintf(out,"BOX\n");
-    fprintf(out,"%15.9f%15.9f%15.9f\n",
+    fprintf(out,"%15.9f%15.9f%15.9f",
 	    fr->box[XX][XX],fr->box[YY][YY],fr->box[ZZ][ZZ]);
+    if (fr->box[XX][YY] || fr->box[XX][ZZ] || fr->box[YY][XX] ||
+	fr->box[YY][ZZ] || fr->box[ZZ][XX] ||fr->box[ZZ][YY])
+      fprintf(out,"%15.9f%15.9f%15.9f%15.9f%15.9f%15.9f",
+	      fr->box[XX][YY],fr->box[XX][ZZ],fr->box[YY][XX],
+	      fr->box[YY][ZZ],fr->box[ZZ][XX],fr->box[ZZ][YY]);
+    fprintf(out,"\n");
     fprintf(out,"END\n");
   }
 }
