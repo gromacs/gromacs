@@ -82,7 +82,7 @@ static void do_my_pme(FILE *fp,real tm,bool bVerbose,t_inputrec *ir,
 		      real ewaldcoeff,t_block *excl,real qtot,
 		      int index[],FILE *fp_xvg)
 {
-  real   ener,vcorr,q;
+  real   ener,vcorr,q,xx;
   tensor vir,vir_corr,vir_tot;
   rvec   mu_tot;
   int    i,m,ii;
@@ -95,38 +95,41 @@ static void do_my_pme(FILE *fp,real tm,bool bVerbose,t_inputrec *ir,
   clear_mat(vir);
   clear_mat(vir_corr);
   
-  /* Assume x is in the box */
-  clear_rvec(mu_tot);
-  for(i=START(nsb); (i<START(nsb)+HOMENR(nsb)); i++) {
-    q = charge[i];
-    for(m=0; (m<DIM); m++) 
-      mu_tot[m] += q*x[i][m];
-    clear_rvec(f[i]);
-    index[i] = i;
-  }
+  /* Put x is in the box, this part needs to be parallellized properly */
+  put_atoms_in_box(box,nsb->natoms,x);
   /* Here sorting of X (and q) is done.
    * Alternatively, one could just put the atoms in one of the
    * cr->nnodes slabs. That is much cheaper than sorting.
    */
+  for(i=0; (i<nsb->natoms); i++)
+    index[i] = i;
   if (bSort) {
     xptr = x;
     qsort(index,sizeof(index[0]),nsb->natoms,comp_xptr);
   }
+  /* After sortimg we only need the part that is to be computed on 
+   * this processor. We also compute the mu_tot here (system dipole)
+   */
+  clear_rvec(mu_tot);
   for(i=START(nsb); (i<START(nsb)+HOMENR(nsb)); i++) {
-    ii = index[i];
-    qbuf[i] = charge[ii];
-    copy_rvec(x[ii],xbuf[i]);
+    ii      = index[i];
+    q       = charge[ii];
+    qbuf[i] = q;
+    for(m=0; (m<DIM); m++) {
+      xx         = x[ii][m];
+      xbuf[i][m] = xx;
+      mu_tot[m] += q*xx;
+    }
+    clear_rvec(f[ii]);
   }
   if (debug) {
     pr_rvec(debug,0,"qbuf",qbuf,nsb->natoms,TRUE);
     pr_rvecs(debug,0,"xbuf",xbuf,nsb->natoms);
     pr_rvecs(debug,0,"box",box,DIM);
   }  
-  put_atoms_in_box(box,HOMENR(nsb),xbuf+START(nsb));      
   ener  = do_pme(fp,bVerbose,ir,xbuf,f,qbuf,box,cr,
 		 nsb,nrnb,vir,ewaldcoeff,FALSE);
-  vcorr = ewald_LRcorrection(fp,nsb,cr,fr,qbuf,excl,
-			     xbuf,box,mu_tot,qtot,
+  vcorr = ewald_LRcorrection(fp,nsb,cr,fr,qbuf,excl,xbuf,box,mu_tot,qtot,
 			     ir->ewald_geometry,ir->epsilon_surface,
 			     vir_corr);
   gmx_sum(1,&ener,cr);
