@@ -62,8 +62,6 @@ static char *SRCID_pdb2gmx_c = "$Id$";
 #include "index.h"
 #include "hizzie.h"
 
-#define NREXCL 3
-
 static char *select_res(int nr,int resnr,char *name[],char *expl[],char *title)
 {
   int sel=0;
@@ -533,11 +531,7 @@ int main(int argc, char *argv[])
     "identifiers. Therefore it is useful to enter a pdb file name at",
     "the [TT]-o[tt] option when you want to convert a multichain pdb file.",
     "[PAR]",
-    
-    "[TT]-alldih[tt] will generate all proper dihedrals instead of only",
-    "those with as few hydrogens as possible, this is useful for use with",
-    "the Charmm forcefield.[PAR]",
-    
+   
     "The option [TT]-dummy[tt] removes hydrogen and fast improper dihedral",
     "motions. Angular and out-of-plane motions can be removed by changing",
     "hydrogens into dummy atoms and fixing angles, which fixes their",
@@ -610,7 +604,9 @@ int main(int argc, char *argv[])
   rvec       *pdbx,*x;
   bool       bUsed,bDummies=FALSE,bWat,bPrevWat=FALSE,bITP,bDummyAromatics=FALSE;
   real       mHmult=0;
-  
+  int        nrexcl;
+  bool       bAlldih;
+
   t_filenm   fnm[] = { 
     { efSTX, "-f", "eiwit.pdb", ffREAD  },
     { efSTO, "-o", "conf",      ffWRITE },
@@ -627,7 +623,6 @@ int main(int argc, char *argv[])
   static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan=FALSE;
   static bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
   static bool bH14=FALSE, bSort=TRUE, bMissing=FALSE, bRemoveH=FALSE;
-  static bool bAlldih=FALSE;
   static bool bDeuterate=FALSE;
   static real angle=135.0, distance=0.3,posre_fc=1000;
   static real long_bond_dist=0.25, short_bond_dist=0.05;
@@ -666,8 +661,6 @@ int main(int argc, char *argv[])
       "HIDDENSort the residues according to database, turning this off is dangerous as charge groups might be broken in parts" },
     { "-H14",    FALSE, etBOOL, {&bH14}, 
       "Use 1-4 interactions between hydrogen atoms" },
-    { "-alldih", FALSE, etBOOL, {&bAlldih}, 
-      "Generate all proper dihedrals" },
     { "-ignh",   FALSE, etBOOL, {&bRemoveH}, 
       "Ignore hydrogen atoms that are in the pdb file" },
     { "-missing",   FALSE, etBOOL, {&bMissing}, 
@@ -887,10 +880,10 @@ int main(int argc, char *argv[])
     
   /* read residue database */
   printf("Reading residue database... (%s)\n",ff);
-  nrtp=read_resall(ff,bts,&restp,atype,&symtab);
+  nrtp=read_resall(ff,bts,&restp,atype,&symtab,&bAlldih,&nrexcl);
   if (bNewRTP) {
     fp=ffopen("new.rtp","w");
-    print_resall(fp,bts,nrtp,restp,atype);
+    print_resall(fp,bts,nrtp,restp,atype,bAlldih,nrexcl);
     fclose(fp);
   }
     
@@ -1062,7 +1055,7 @@ int main(int argc, char *argv[])
     pdb2top(top_file2,posre_fn,molname,pdba,&x,atype,&symtab,bts,nrtp,restp,
 	    cc->nterpairs,cc->ntdb,cc->ctdb,cc->rN,cc->rC,bMissing,
 	    bH14,bAlldih,bDummies,bDummyAromatics,
-	    mHmult,nssbonds,ssbonds,NREXCL, 
+	    mHmult,nssbonds,ssbonds,nrexcl, 
 	    long_bond_dist, short_bond_dist,bDeuterate);
     
     if (!cc->bAllWat)

@@ -431,7 +431,8 @@ static char **read_topol(char        *infile,
 	  PUSHBT(3);
 	  break;
 	case d_dihedraltypes:
-	  PUSHBT(2);
+	  /* Special routine that can read both 2 and 4 atom dihedral definitions. */
+	  push_dihedraltype(d,plist,atype,pline);
 	  break;
 #undef PUSHBT
 

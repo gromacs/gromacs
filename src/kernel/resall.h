@@ -49,11 +49,11 @@ extern t_atomtype *read_atype(char *adb,t_symtab *tab);
 /* read atom type database */
 
 extern int read_resall(char *resdb, int bts[], t_restp **rtp, 
-		       t_atomtype *atype, t_symtab *tab);
+		       t_atomtype *atype, t_symtab *tab, bool *bAlldih, int *nrexcl);
 /* read rtp database */
 
 extern void print_resall(FILE *out, int bts[], int nrtp, t_restp rtp[], 
-			 t_atomtype *atype);
+			 t_atomtype *atype, bool bAlldih, int nrexcl);
 /* write rtp database */
 
 #endif	/* _resall_h */

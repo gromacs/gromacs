@@ -644,7 +644,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
      do now :( AF 26-7-99 */
   
   if (debug) {
-    print_resall(debug, bts, atoms->nres, restp, atype);
+    print_resall(debug, bts, atoms->nres, restp, atype,bAlldih,nrexcl);
     dump_hb(debug, atoms->nres, hb);
   }
   
