@@ -90,7 +90,7 @@ void write_pdbfile_indexed(FILE *out,char *title,
   
   fprintf(out,"HEADER    %s\n",(title && title[0])?title:bromacs());
   if (bWideFormat) {
-    fprintf(out,"REMARK    This file does not adhear to the PDB standard\n");
+    fprintf(out,"REMARK    This file does not adhere to the PDB standard\n");
     fprintf(out,"REMARK    As a result of, some programs may not like it\n");
   }
   if (box && ( norm2(box[XX]) || norm2(box[YY]) || norm2(box[ZZ]) ) ) {
@@ -155,10 +155,13 @@ void write_pdbfile_indexed(FILE *out,char *title,
       occup = 1.0;
       bfac  = 0.0;
     }
-    if (strlen(nm)==4)
-      strcpy(pdbform,pdbformat4);
-    else
+    if (strlen(nm)<4)
       strcpy(pdbform,pdbformat);
+    else {
+      strcpy(pdbform,pdbformat4);
+      if (strlen(nm)>4)
+	fprintf(stderr,"WARNING: Writing out atom name (%s) longer than 4 characters to .pdb file\n",nm);
+    }
 
     if (bWideFormat)
       strcat(pdbform,"%8.4f%8.4f\n");
