@@ -512,6 +512,8 @@ int xdrclose(XDR *xdrs) {
     fprintf(stderr, "xdrclose: no such open xdr file\n");
     exit(1);
     
+    /* to make some compilers happy: */
+    return 0;    
 }
 
 /*____________________________________________________________________________
