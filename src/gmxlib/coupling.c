@@ -95,7 +95,6 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
   }
   
   /* Pressure is now in bar, everywhere. */
-   */
   if ((ir->epc != epcNO) && (scalar_pressure != 0.0)) {
     for(m=0; m<DIM; m++)
       factor[m] = ir->compress[m]*ir->delta_t/ir->tau_p;
