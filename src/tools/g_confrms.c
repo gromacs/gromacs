@@ -235,7 +235,7 @@ int main (int argc,char *argv[])
   static bool bRmpbc=FALSE;
   
   t_pargs pa[] = {
-    { "-x", FALSE, etBOOL, &bRmpbc, "Remove periodic boundary conditions" }
+    { "-pbc", FALSE, etBOOL, &bRmpbc, "Remove periodic boundary conditions" }
   };
   t_filenm fnm[] = {
     { efSTX, "-f1",  "conf1", ffREAD  },
