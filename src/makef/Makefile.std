@@ -60,7 +60,7 @@ dep:
 #	$(CC) -M -I. -I$(GMXHOME)/src/include *.c *.cc  |  grep -v usr  |  sed sx./xx | sed sx$(GMXHOME)/src/includex\\\$$\(GMXHOME\)/src/includex > Make.dep
 
 clean:
-		$(RM) $(PROGRAMS) *.s *.o *.l *~ *.bak \#*\# 
+		$(RM) $(PROGRAMS) *.o *.l *~ *.bak \#*\# 
 
 ifneq ($(CPU),cvx)
 %.f:		$(ROOT)/src/$(CUR)/SCCS/s.%.f
@@ -108,6 +108,9 @@ endif
 
 .f.s:
 		$(F77) $(FFLAGS) -s $<
+
+.f.o:
+		$(F77) $(FFLAGS) -c $<
 
 .c.s:
 		$(CC) $(C-FLAGS) -s $<
