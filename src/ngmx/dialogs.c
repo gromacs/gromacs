@@ -218,7 +218,7 @@ static void Extract(t_dlg *dlg,int ID,char *buf)
     strcpy(buf,et);
 }
 
-enum bond_set { ebShowH=6, ebDPlus, ebRMPBC, ebCue, ebSkip };
+enum bond_set { ebShowH=11, ebDPlus, ebRMPBC, ebCue, ebSkip };
 
 static void BondsCB(t_x11 *x11,int dlg_mess,int item_id,
 		    char *set,void *data)
