@@ -74,13 +74,10 @@ void do_view(char *fn, char *opts)
       sprintf(env, "GMX_VIEW_%s", ext);
       switch(ftp) {
       case efXVG:
-	if (!(cmd=getenv(env))) {
-	  if (getenv("GMX_XMGR") == NULL) {
-	    cmd = "xmgrace";
-	    defopts = "-nxy";
-	  } else
-	    cmd = "xmgr";
-	}
+	if (!(cmd=getenv(env)))
+	  cmd = "xmgrace";
+	if (strcmp(cmd,"xmgrace") == 0)
+	  defopts = "-nxy";
 	break;
       default:
 	if ( (n=can_view(ftp)) ) {

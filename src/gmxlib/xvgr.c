@@ -46,6 +46,16 @@ static char *SRCID_xvgr_c = "$Id$";
 #include "viewit.h"
 #include "vec.h"
 
+static bool use_xmgr()
+{
+  char *env;
+  bool bXMGR;
+
+  env = getenv("GMX_VIEW_XVG");
+
+  return (env!=NULL && strcmp(env,"xmgr")==0);
+} 
+
 FILE *xvgropen(char *fn,char *title,char *xaxis,char *yaxis)
 {
   FILE *xvgr;
@@ -61,10 +71,10 @@ FILE *xvgropen(char *fn,char *title,char *xaxis,char *yaxis)
   fprintf(xvgr,"@    title \"%s\"\n",title);
   fprintf(xvgr,"@    xaxis  label \"%s\"\n",xaxis);
   fprintf(xvgr,"@    yaxis  label \"%s\"\n",yaxis);
-  if (getenv("GMX_XMGR") == NULL)
-    fprintf(xvgr,"@TYPE xy\n");
-  else
+  if (use_xmgr())
     fprintf(xvgr,"@TYPE nxy\n");
+  else
+    fprintf(xvgr,"@TYPE xy\n");
   
   return xvgr;
 }
@@ -94,10 +104,10 @@ void xvgr_legend(FILE *out,int nsets,char *setname[])
   fprintf(out,"@ legend length %d\n",2);
   for(i=0; (i<nsets); i++)
     if (setname[i]) {
-      if (getenv("GMX_XMGR") == NULL)
-	fprintf(out,"@ s%d legend \"%s\"\n",i,setname[i]);
-      else
+      if (use_xmgr())
 	fprintf(out,"@ legend string %d \"%s\"\n",i,setname[i]);
+      else
+	fprintf(out,"@ s%d legend \"%s\"\n",i,setname[i]);
     }
 }
 
