@@ -493,10 +493,9 @@ void write_xpm_header(FILE *out,
 
 static int calc_nmid(int nlevels,real lo,real mid,real hi)
 {
-  /* Take care that we have at least 1 entry in the low to mid range
-   * and at least 1 entry in themid to low range
+  /* Take care that we have at least 1 entry in the mid to hi range
    */
-  return min(max(1,((mid-lo)/(hi-lo))*(nlevels-1)),nlevels-1);
+  return min(max(0,((mid-lo)/(hi-lo))*(nlevels-1)),nlevels-1);
 }
 
 void write_xpm_map3(FILE *out,int n_x,int n_y,int *nlevels,
@@ -516,7 +515,7 @@ void write_xpm_map3(FILE *out,int n_x,int n_y,int *nlevels,
 	    *nlevels);
     *nlevels=2;
   }   
-  if (!((mid > lo) && (mid < hi)))
+  if (!((mid >= lo) && (mid < hi)))
     fatal_error(0,"Lo: %f, Mid: %f, Hi: %f\n",lo,mid,hi);
 
   fprintf(out,"static char *gromacs_xpm[] = {\n");
@@ -734,7 +733,7 @@ void write_xpm_data3(FILE *out,int n_x,int n_y,real **matrix,
     fprintf(out,"\"");
     for(i=0; (i<n_x); i++) {
       if (c >= mid)
-	c=round((matrix[i][j]-mid)*invlev_hi);
+	c=nmid+round((matrix[i][j]-mid)*invlev_hi);
       else if (c >= lo)
 	c=round((matrix[i][j]-lo)*invlev_lo);
 	
