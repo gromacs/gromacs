@@ -455,7 +455,7 @@ static inline real cos_angle(const rvec a,const rvec b)
   int    m;
   double aa,bb,ip,ipa,ipb; /* For accuracy these must be double! */
   
-  ip=ipa=ipb=0;
+  ip=ipa=ipb=0.0;
   for(m=0; (m<DIM); m++) {		/* 18		*/
     aa   = a[m];
     bb   = b[m];
@@ -480,7 +480,7 @@ static inline real cos_angle_no_table(const rvec a,const rvec b)
   int    m;
   double aa,bb,ip,ipa,ipb; /* For accuracy these must be double! */
   
-  ip=ipa=ipb=0;
+  ip=ipa=ipb=0.0;
   for(m=0; (m<DIM); m++) {		/* 18		*/
     aa   = a[m];
     bb   = b[m];
@@ -508,11 +508,11 @@ static inline void oprod(const rvec a,const rvec b,rvec c)
 static inline void mmul_lowerleft0(matrix a,matrix b,matrix dest)
 {
   dest[XX][XX]=a[XX][XX]*b[XX][XX];
-  dest[XX][YY]=0;
-  dest[XX][ZZ]=0;
+  dest[XX][YY]=0.0;
+  dest[XX][ZZ]=0.0;
   dest[YY][XX]=a[YY][XX]*b[XX][XX]+a[YY][YY]*b[YY][XX];
   dest[YY][YY]=                    a[YY][YY]*b[YY][YY];
-  dest[YY][ZZ]=0;
+  dest[YY][ZZ]=0.0;
   dest[ZZ][XX]=a[ZZ][XX]*b[XX][XX]+a[ZZ][YY]*b[YY][XX]+a[ZZ][ZZ]*b[ZZ][XX];
   dest[ZZ][YY]=                    a[ZZ][YY]*b[YY][YY]+a[ZZ][ZZ]*b[ZZ][YY];
   dest[ZZ][ZZ]=                                        a[ZZ][ZZ]*b[ZZ][ZZ];
@@ -620,7 +620,7 @@ static inline void msmul(matrix m1,real r1,matrix dest)
 
 static inline void m_inv_lowerleft0(matrix src,matrix dest)
 {
-  if (src[XX][XX]==0 || src[YY][YY]==0 || src[ZZ][ZZ]==0)
+  if ((src[XX][XX]==0.0) || (src[YY][YY]==0.0) || (src[ZZ][ZZ]==0.0))
     gmx_fatal(FARGS,"Can not invert matrix, determinant is zero");
 
   dest[XX][XX] = 1/src[XX][XX];
@@ -630,9 +630,9 @@ static inline void m_inv_lowerleft0(matrix src,matrix dest)
 		  - src[ZZ][XX])*dest[XX][XX]*dest[ZZ][ZZ];
   dest[YY][XX] = -src[YY][XX]*dest[XX][XX]*dest[YY][YY];
   dest[ZZ][YY] = -src[ZZ][YY]*dest[YY][YY]*dest[YY][YY];
-  dest[XX][YY] = 0;
-  dest[XX][ZZ] = 0;
-  dest[YY][ZZ] = 0;
+  dest[XX][YY] = 0.0;
+  dest[XX][ZZ] = 0.0;
+  dest[YY][ZZ] = 0.0;
 }
 
 static inline void m_inv(matrix src,matrix dest)
@@ -700,7 +700,7 @@ static inline real _divide(real a,real b,char *file,int line)
 
 static inline int _mod(int a,int b,char *file,int line)
 {
-  if (b == 0)
+  if (b == 0.0)
     gmx_fatal(FARGS,"Modulo zero, file %s, line %d",file,line);
   return a % b;
 }
