@@ -1,4 +1,4 @@
-#
+# Sun/SOLARIS
 #	@(#) Makefile.sol 1.47 4/16/97
 #
 #	GROMACS - Groningen Machine for Chemical Simulation
