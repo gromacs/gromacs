@@ -40,8 +40,11 @@ static char *SRCID_gctio_c = "$Id$";
 #include "string2.h"
 #include "readinp.h"
 #include "filenm.h"
+#include "names.h"
 
-char *eoNames[eoNR] = { "Pres", "Epot", "Polarizability", "Dipole" };
+char *eoNames[eoNR] = { 
+  "Pres", "Epot", "Polarizability", "Dipole", "Memory", "UseEinter"
+};
 
 static int Name2eo(char *s)
 {
@@ -108,33 +111,40 @@ void comm_tcr(FILE *log,t_commrec *cr,t_coupl_rec **tcr)
 
 static void clear_lj(t_coupl_LJ *tc)
 {
-  tc->at_i=tc->at_j=0;
-  tc->eObs=-1;
-  tc->bPrint=TRUE;
-  tc->c6=tc->c12=0.0;
-  tc->xi_6=tc->xi_12=0.0;
+  tc->at_i   = 0;
+  tc->at_j   = 0;
+  tc->eObs   = -1;
+  tc->bPrint = TRUE;
+  tc->c6     = 0.0;
+  tc->c12    = 0.0;
+  tc->xi_6   = 0.0;
+  tc->xi_12  = 0.0;
 }
 
 static void clear_bu(t_coupl_BU *tc)
 {
-  tc->at_i=tc->at_j=0;
-  tc->eObs=-1;
-  tc->bPrint=TRUE;
-  tc->a=tc->b=tc->c=0.0;
-  tc->xi_a=tc->xi_b=tc->xi_c=0.0;
+  tc->at_i   = 0;
+  tc->at_j   = 0;
+  tc->eObs   = -1;
+  tc->bPrint = TRUE;
+  tc->a      = 0.0;
+  tc->b      = 0.0;
+  tc->c      = 0.0;
+  tc->xi_a   = 0.0;
+  tc->xi_b   = 0.0;
+  tc->xi_c   = 0.0;
 }
 
 static void clear_q(t_coupl_Q *tc)
 {
-  tc->at_i=0;
-  tc->eObs=-1;
-  tc->bPrint=TRUE;
-  tc->Q=0.0;
-  tc->xi_Q=0.0;
+  tc->at_i   = 0;
+  tc->eObs   = -1;
+  tc->bPrint = TRUE;
+  tc->Q      = 0.0;
+  tc->xi_Q   = 0.0;
 }
 
-void copy_ff(t_coupl_rec *tcr,t_forcerec *fr,t_mdatoms *md,
-	     t_idef *idef)
+void copy_ff(t_coupl_rec *tcr,t_forcerec *fr,t_mdatoms *md,t_idef *idef)
 {
   int        i,j,ati,atj,type;
   t_coupl_LJ *tclj;
@@ -143,40 +153,40 @@ void copy_ff(t_coupl_rec *tcr,t_forcerec *fr,t_mdatoms *md,
   
   /* Save values for printing */
   for(i=0; (i<tcr->nLJ); i++) {
-    tclj=&(tcr->tcLJ[i]);
+    tclj = &(tcr->tcLJ[i]);
     
-    ati=tclj->at_i;
-    atj=tclj->at_j;
+    ati  = tclj->at_i;
+    atj  = tclj->at_j;
     if (atj == -1)
-      atj=ati;
+      atj = ati;
     tclj->c6  = C6(fr->nbfp,ati,atj);
     tclj->c12 = C12(fr->nbfp,ati,atj);
   }
   
   for(i=0; (i<tcr->nBU); i++) {
-    tcbu=&(tcr->tcBU[i]);
+    tcbu = &(tcr->tcBU[i]);
     
-    ati=tcbu->at_i;
-    atj=tcbu->at_j;
+    ati  = tcbu->at_i;
+    atj  = tcbu->at_j;
     if (atj == -1)
-      atj=ati;
+      atj = ati;
     tcbu->a = (fr->nbfp)[(ati)][3*(atj)];
     tcbu->b = (fr->nbfp)[(ati)][3*(atj)+1];
     tcbu->c = (fr->nbfp)[(ati)][3*(atj)+2];
   }
   
   for(i=0; (i<tcr->nQ); i++) {
-    tcq=&(tcr->tcQ[i]);
+    tcq = &(tcr->tcQ[i]);
     for(j=0; (j<md->nr); j++) {
       if (md->typeA[j] == tcq->at_i) {
-	tcr->tcQ[i].Q=md->chargeA[j];
+	tcr->tcQ[i].Q = md->chargeA[j];
 	break;
       }
     }
   }
   for(i=0; (i<tcr->nIP); i++) {
     /* Let's just copy the whole struct !*/
-    type=tcr->tIP[i].type;
+    type = tcr->tIP[i].type;
     tcr->tIP[i].iprint=idef->iparams[type];
   }
 }
@@ -188,13 +198,19 @@ void write_gct(char *fn,t_coupl_rec *tcr,t_idef *idef)
   
   fp=ffopen(fn,"w");
   nice_header(fp,fn);
-  fprintf(fp,"%-12s = %12g  ; Reference pressure for coupling\n",
+  fprintf(fp,"%-15s = %12g  ; Reference pressure for coupling\n",
 	  eoNames[eoPres],tcr->pres0);
-  fprintf(fp,"%-12s = %12g  ; Reference potential energy\n",
+  fprintf(fp,"%-15s = %12g  ; Reference potential energy\n",
 	  eoNames[eoEpot],tcr->epot0);
-  fprintf(fp,"%-12s = %12g  ; Polarizability used for the Epot correction\n",
+  fprintf(fp,"%-15s = %12g  ; Polarizability used for the Epot correction\n",
 	  eoNames[eoPolarizability],tcr->polarizability);
-  fprintf(fp,"%-12s = %12g  ; Gas phase dipole moment used for the Epot correction\n", eoNames[eoDipole],tcr->dipole);
+  fprintf(fp,"%-15s = %12g  ; Gas phase dipole moment used for Epot correction\n", 
+	  eoNames[eoDipole],tcr->dipole);
+  fprintf(fp,"%-15s = %12d  ; Memory for coupling. Makes it converge faster.\n",
+	  eoNames[eoMemory],tcr->nmemory);
+  fprintf(fp,"%-15s = %12s  ; Use intermolecular Epot only (LJ+Coul)\n",
+	  eoNames[eoInter],yesno_names[tcr->bInter]);
+	  
   fprintf(fp,"\n; Q-Coupling   %6s  %12s\n","type","xi");
   for(i=0; (i<tcr->nQ); i++) {
     fprintf(fp,"%-8s = %8s  %6d  %12g\n",
@@ -226,7 +242,7 @@ void write_gct(char *fn,t_coupl_rec *tcr,t_idef *idef)
     ftype=idef->functype[tcr->tIP[i].type];
     switch (ftype) {
     case F_BONDS:
-      fprintf(fp,"%-12s = %-8s  %4d  %12g  %12g\n",
+      fprintf(fp,"%-15s = %-8s  %4d  %12g  %12g\n",
 	      "Bonds",eoNames[tcr->tIP[i].eObs],tcr->tIP[i].type,
 	      tcr->tIP[i].xi.harmonic.krA,
 	      tcr->tIP[i].xi.harmonic.rA);
@@ -396,6 +412,8 @@ void read_gct(char *fn,t_coupl_rec *tcr)
   RTYPE (eoNames[eoEpot],	tcr->epot0,	0.0);
   RTYPE (eoNames[eoPolarizability],	tcr->polarizability,	0.0);
   RTYPE (eoNames[eoDipole],	tcr->dipole,	0.0);
+  ITYPE (eoNames[eoMemory],     tcr->nmemory,   1);
+  ETYPE (eoNames[eoInter],      tcr->bInter,    yesno_names);
   
   tcr->tcLJ=NULL;
   tcr->tcBU=NULL;

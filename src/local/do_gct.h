@@ -36,7 +36,7 @@ static char *SRCID_do_gct_h = "$Id$";
 #include "typedefs.h"
 #include "filenm.h"
 
-enum { eoPres, eoEpot, eoPolarizability, eoDipole, eoNR };
+enum { eoPres, eoEpot, eoPolarizability, eoDipole, eoMemory, eoInter, eoNR };
 extern char *eoNames[eoNR];
 
 typedef struct {
@@ -80,6 +80,8 @@ typedef struct {
   t_coupl_iparams *tIP;
   real       polarizability;
   real       dipole;
+  int        nmemory;
+  bool       bInter;
 } t_coupl_rec;
 
 extern void write_gct(char *fn,t_coupl_rec *tcr,t_idef *idef);
@@ -97,8 +99,6 @@ extern t_coupl_rec *init_coupling(FILE *log,int nfile,t_filenm fnm[],
 
 extern void do_coupling(FILE *log,t_coupl_rec *tcr,real t,int step,real ener[],
 			t_forcerec *fr,t_inputrec *ir,bool bMaster,
-			t_mdatoms *md,t_idef *idef,real mu_aver);
+			t_mdatoms *md,t_idef *idef,real mu_aver,int nmols);
 		     
-extern real run_aver(real old,real cur,int step,int nmem);
-
 #endif

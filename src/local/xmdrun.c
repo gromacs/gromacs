@@ -109,13 +109,17 @@ real calc_mu_aver(t_commrec *cr,t_nsborder *nsb,rvec x[],real q[],rvec mu,
   */
   /* I guess we have to parallelise this one! */
 
-  mu_ave = 0.0;
-  for(i=0; (i<gnx); i++) {
-    int gi = grpindex[i];
-    mu_ave += mol_dipole(mols->index[gi],mols->index[gi+1],mols->a,x,q);
+  if (gnx > 0) {
+    mu_ave = 0.0;
+    for(i=0; (i<gnx); i++) {
+      int gi = grpindex[i];
+      mu_ave += mol_dipole(mols->index[gi],mols->index[gi+1],mols->a,x,q);
+    }
+    
+    return(mu_ave/gnx);
   }
-
-  return(mu_ave/gnx);
+  else
+    return 0;
 }
 
 static void do_1pos(rvec xnew,rvec xold,rvec f,real k_1,real step)

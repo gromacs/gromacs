@@ -1,4 +1,5 @@
 #include <math.h>
+#include <string.h>
 #include "smalloc.h"
 #include "typedefs.h"
 #include "macros.h"

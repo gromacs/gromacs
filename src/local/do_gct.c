@@ -41,6 +41,7 @@ static char *SRCID_do_gct_c = "$Id$";
 #include "readinp.h"
 #include "filenm.h"
 #include "mdrun.h"
+#include "update.h"
 
 t_coupl_rec *init_coupling(FILE *log,int nfile,t_filenm fnm[],
 			   t_commrec *cr,t_forcerec *fr,
@@ -49,12 +50,9 @@ t_coupl_rec *init_coupling(FILE *log,int nfile,t_filenm fnm[],
   int         i,nc,index,j;
   int         ati,atj;
   t_coupl_rec *tcr;
-  t_coupl_LJ  *tclj;
-  t_coupl_BU  *tcbu;
-  t_coupl_Q   *tcq;
-  
+
   snew(tcr,1);
-  read_gct(opt2fn("-j",nfile,fnm),tcr);
+  read_gct (opt2fn("-j",nfile,fnm), tcr);
   write_gct(opt2fn("-jo",nfile,fnm),tcr,idef);
 
   copy_ff(tcr,fr,md,idef);
@@ -66,9 +64,12 @@ t_coupl_rec *init_coupling(FILE *log,int nfile,t_filenm fnm[],
   return tcr;
 }
 
-real Uintern(real ener[])
+real Ecouple(t_coupl_rec *tcr,real ener[])
 {
-  return ener[F_SR]+ener[F_LJ]+ener[F_LR]+ener[F_LJLR];
+  if (tcr->bInter)
+    return ener[F_SR]+ener[F_LJ]+ener[F_LR]+ener[F_LJLR];
+  else
+    return ener[F_EPOT];
 }
 
 static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,real ener[])
@@ -139,7 +140,7 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,real ener[])
     }
   }
   fprintf(prop,"%10g  %12.5e  %12.5e  %12.5e  %12.5e\n",
-	  time,tcr->pres,ener[F_PRES],tcr->epot,Uintern(ener));
+	  time,tcr->pres,ener[F_PRES],tcr->epot,Ecouple(tcr,ener));
   fflush(prop);
   for(i=0; (i<tcr->nLJ); i++) {
     tclj=&(tcr->tcLJ[i]);
@@ -214,9 +215,10 @@ static void upd_nbfplj(FILE *log,t_coupl_LJ *tclj,
      */
     f6  = sqrt(f6);
     f12 = sqrt(f12);
-    /* 
-       fprintf(log,"Updating FF for %d entries, f6=%g, f12=%g\n",atnr,f6,f12);
-       */
+    
+    if (debug)
+      fprintf(debug,"Updating LJ-FF for %d entries, f6=%g, f12=%g\n",atnr,f6,f12);
+    
     for(n=0; (n<atnr); n++) {
       C6 (nbfp,ati,n) *= f6;
       C12(nbfp,ati,n) *= f12;
@@ -257,9 +259,10 @@ static void upd_nbfpbu(FILE *log,t_coupl_BU *tcbu,
     fa  = sqrt(fa);
     fb  = sqrt(fb);
     fc  = sqrt(fc);
-    /* 
-       fprintf(log,"Updating FF for %d entries, f6=%g, f12=%g\n",atnr,f6,f12);
-       */
+    if (debug)
+      fprintf(debug,"Updating Buck-FF for %d entries, fa=%g, fb=%g, fc=%g\n",
+	      atnr,fa,fb,fc);
+    
     for(n=0; (n<atnr); n++) {
       (nbfp)[(ati)][3*(n)]   *= fa;
       (nbfp)[(ati)][3*(n)+1] *= fb;
@@ -277,7 +280,7 @@ static void upd_nbfpbu(FILE *log,t_coupl_BU *tcbu,
 
 void do_coupling(FILE *log,t_coupl_rec *tcr,real t,int step,real ener[],
 		 t_forcerec *fr,t_inputrec *ir,bool bMaster,
-		 t_mdatoms *md,t_idef *idef,real mu_aver)
+		 t_mdatoms *md,t_idef *idef,real mu_aver,int nmols)
 {
 #define FMIN 0.95
 #define FMAX 1.05
@@ -286,7 +289,7 @@ void do_coupling(FILE *log,t_coupl_rec *tcr,real t,int step,real ener[],
 #define d2e(x) (x)/enm2Debye
 #define enm2kjmol(x) (x)*0.0143952 /* = 2.0*4.0*M_PI*EPSILON0 */
 
-  int        i,j,ati,atj,type,ftype,nmem,nmol;
+  int        i,j,ati,atj,type,ftype;
   real       deviation[eoNR];
   real       f6,f12,fa,fb,fc,fq,factor,dt,mu_ind,Epol,Eintern;
   bool       bTest,bPrint;
@@ -297,25 +300,24 @@ void do_coupling(FILE *log,t_coupl_rec *tcr,real t,int step,real ener[],
   
   bPrint = do_per_step(step,ir->nstprint);
   dt     = ir->delta_t;
-  nmol   = ir->userint3; /* Should contain the number of molecules */
-
-  /* Use a memory of nmem steps, so we actually couple to the
-   * average observable over the last nmem steps. This may help
-   * in avoiding local minima in parameter space.
-   */
-  nmem=ir->userint2;
 
   /* We want to optimize the LJ params, usually to the Vaporization energy 
-   * therefore we only count intermolecular degrees of freedom
+   * therefore we only count intermolecular degrees of freedom.
+   * Note that this is now optional. switch UseEinter to yes in your gct file
+   * if you want this.
    */
-  Eintern = Uintern(ener);
+  Eintern = Ecouple(tcr,ener);
   if (step == 0) {
-    tcr->pres=ener[F_PRES];
-    tcr->epot=Eintern;
+    tcr->pres = ener[F_PRES];
+    tcr->epot = Eintern;
   }
 
-  tcr->pres=run_aver(tcr->pres,ener[F_PRES],step,nmem);
-  tcr->epot=run_aver(tcr->epot,Eintern,step,nmem);
+  /* Use a memory of tcr->nmemory steps, so we actually couple to the
+   * average observable over the last tcr->nmemory steps. This may help
+   * in avoiding local minima in parameter space.
+   */
+  tcr->pres = run_aver(tcr->pres,ener[F_PRES],step,tcr->nmemory);
+  tcr->epot = run_aver(tcr->epot,Eintern,     step,tcr->nmemory);
   
   if (bMaster && bPrint)
     pr_ff(tcr,t,idef,ener);
@@ -329,106 +331,104 @@ void do_coupling(FILE *log,t_coupl_rec *tcr,real t,int step,real ener[],
     /* Epol = mu_ind*mu_ind/(2.0*(tcr->polarizability)*4.0*M_PI*EPSILON0); */
     Epol = mu_ind*mu_ind/(enm2kjmol(tcr->polarizability));
 
-    deviation[eoEpot] = (tcr->epot0)*nmol - Epol*nmol - tcr->epot;
-    /*
-    fprintf(stderr,":  %g %g %g %g %g \n",mu_ind,mu_aver, d2e(tcr->dipole),
-	    d2e((2.27 - tcr->dipole)),(2.27 - tcr->dipole)
-	   );
-    fprintf(stderr,"Eref %g Epol %g Erunav %g Dev %g Eact %g\n",
-	    (tcr->epot0)*nmol, Epol*nmol, tcr->epot,
-	    deviation[eoEpot],ener[F_EPOT]);
-	    */
+    deviation[eoEpot] = (tcr->epot0 - Epol)*nmols - tcr->epot;
+    if (debug) {
+      fprintf(debug,":  %g %g %g %g %g \n",mu_ind,mu_aver, d2e(tcr->dipole),
+	      d2e((2.27 - tcr->dipole)),(2.27 - tcr->dipole));
+      fprintf(debug,"Eref %g Epol %g Erunav %g Dev %g Eact %g\n",
+	      (tcr->epot0)*nmols, Epol*nmols, tcr->epot,
+	      deviation[eoEpot],ener[F_EPOT]);
+    }
   }
   else 
-    deviation[eoEpot] = (tcr->epot0)*nmol - tcr->epot;
+    deviation[eoEpot] = tcr->epot0*nmols - tcr->epot;
   
   /* Start coupling only after we have the correct average over 
-   * nmem points.
+   * tcr->nmemory points.
    */
-  if (step < nmem) 
-    return;
+  if (step >= tcr->nmemory) {
 
-  if (bPrint)
-    pr_dev(t,deviation);
+    if (bPrint)
+      pr_dev(t,deviation);
+    
+    for(i=0; (i<tcr->nLJ); i++) {
+      tclj=&(tcr->tcLJ[i]);
       
-  for(i=0; (i<tcr->nLJ); i++) {
-    tclj=&(tcr->tcLJ[i]);
-
-    factor=deviation[tclj->eObs];
-    
-    f6=f12=1.0;
-    if (tclj->xi_6)      
-      f6  += (dt/tclj->xi_6)  * factor;
-    if (tclj->xi_12)     
-      f12 += (dt/tclj->xi_12) * factor;
+      factor=deviation[tclj->eObs];
       
-    ati=tclj->at_i;
-    atj=tclj->at_j;
-    
-    f6  = min(max(f6, FMIN),FMAX);
-    f12 = min(max(f12,FMIN),FMAX);
-    
-    upd_nbfplj(log,tclj,fr->nbfp,ati,atj,idef->atnr,f6,f12);
-  }
-  
-  for(i=0; (i<tcr->nBU); i++) {
-    tcbu=&(tcr->tcBU[i]);
-
-    factor=deviation[tcbu->eObs];
-    
-    fa=fb=fc=1.0;
-    if (tcbu->xi_a)      
-      fa  += (dt/tcbu->xi_a)  * factor;
-    if (tcbu->xi_b)      
-      fb  += (dt/tcbu->xi_b)  * factor;
-    if (tcbu->xi_c)      
-      fc  += (dt/tcbu->xi_c)  * factor;
+      f6=f12=1.0;
+      if (tclj->xi_6)      
+	f6  += (dt/tclj->xi_6)  * factor;
+      if (tclj->xi_12)     
+	f12 += (dt/tclj->xi_12) * factor;
       
-    ati=tcbu->at_i;
-    atj=tcbu->at_j;
-    
-    fa  = min(max(fa, FMIN),FMAX);
-    fb  = min(max(fb, FMIN),FMAX);
-    fc  = min(max(fc, FMIN),FMAX);
-    
-    upd_nbfpbu(log,tcbu,fr->nbfp,ati,atj,idef->atnr,fa,fb,fc);
-  }
-  
-  for(i=0; (i<tcr->nQ); i++) {
-    tcq=&(tcr->tcQ[i]);
-
-    if (tcq->xi_Q)     
-      fq = 1.0 + (dt/tcq->xi_Q) * deviation[tcq->eObs];
-    else
-      fq=1.0;
-    fq  = min(max(fq, FMIN),FMAX);
-    
-    for(j=0; (j<md->nr); j++) 
-      if (md->typeA[j] == tcq->at_i) {
-	md->chargeA[j] *= fq;
-	tcq->Q=md->chargeA[j];
-      }
-  }
-  for(i=0; (i<tcr->nIP); i++) {
-    tip    = &(tcr->tIP[i]);
-    type   = tip->type;
-    ftype  = idef->functype[type];
-    factor = dt*deviation[tip->eObs];
-    
-    /* Time for a killer macro */
-#define DOIP(ip) if (tip->xi.##ip) idef->iparams[type].##ip *= (1+factor/tip->xi.##ip)
-
-    switch(ftype) {
-    case F_BONDS:
-      DOIP(harmonic.krA);
-      DOIP(harmonic.rA);
-      break;
-    default:
-      break;
+      ati=tclj->at_i;
+      atj=tclj->at_j;
+      
+      f6  = min(max(f6, FMIN),FMAX);
+      f12 = min(max(f12,FMIN),FMAX);
+      
+      upd_nbfplj(log,tclj,fr->nbfp,ati,atj,idef->atnr,f6,f12);
     }
+    
+    for(i=0; (i<tcr->nBU); i++) {
+      tcbu=&(tcr->tcBU[i]);
+      
+      factor=deviation[tcbu->eObs];
+      
+      fa=fb=fc=1.0;
+      if (tcbu->xi_a)      
+	fa  += (dt/tcbu->xi_a)  * factor;
+      if (tcbu->xi_b)      
+	fb  += (dt/tcbu->xi_b)  * factor;
+      if (tcbu->xi_c)      
+	fc  += (dt/tcbu->xi_c)  * factor;
+      
+      ati=tcbu->at_i;
+      atj=tcbu->at_j;
+      
+      fa  = min(max(fa, FMIN),FMAX);
+      fb  = min(max(fb, FMIN),FMAX);
+      fc  = min(max(fc, FMIN),FMAX);
+      
+      upd_nbfpbu(log,tcbu,fr->nbfp,ati,atj,idef->atnr,fa,fb,fc);
+    }
+    
+    for(i=0; (i<tcr->nQ); i++) {
+      tcq=&(tcr->tcQ[i]);
+      
+      if (tcq->xi_Q)     
+	fq = 1.0 + (dt/tcq->xi_Q) * deviation[tcq->eObs];
+      else
+	fq=1.0;
+      fq  = min(max(fq, FMIN),FMAX);
+      
+      for(j=0; (j<md->nr); j++) 
+	if (md->typeA[j] == tcq->at_i) {
+	  md->chargeA[j] *= fq;
+	  tcq->Q=md->chargeA[j];
+	}
+    }
+    for(i=0; (i<tcr->nIP); i++) {
+      tip    = &(tcr->tIP[i]);
+      type   = tip->type;
+      ftype  = idef->functype[type];
+      factor = dt*deviation[tip->eObs];
+    
+      /* Time for a killer macro */
+#define DOIP(ip) if (tip->xi.##ip) idef->iparams[type].##ip *= (1+factor/tip->xi.##ip)
+      
+      switch(ftype) {
+      case F_BONDS:
+	DOIP(harmonic.krA);
+	DOIP(harmonic.rA);
+	break;
+      default:
+	break;
+      }
 #undef DOIP
-    tip->iprint=idef->iparams[type];
+      tip->iprint=idef->iparams[type];
+    }
   }
 }
-
 
