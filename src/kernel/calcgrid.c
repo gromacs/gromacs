@@ -39,11 +39,12 @@ static int list_comp(const void *a,const void *b)
   return (*((int *)a) - *((int *)b));
 }
 
-void calc_grid(matrix box,real gr_sp,int *nx,int *ny,int *nz,int nprocs)
+real calc_grid(matrix box,real gr_sp,int *nx,int *ny,int *nz,int nprocs)
 {
   int  d,n[DIM];
   int  i,nmin[DIM];
-  rvec box_size;
+  rvec box_size,spacing;
+  real max_spacing;
   
   if (gr_sp <= 0)
     fatal_error(0,"invalid fourier grid spacing: %g",gr_sp);
@@ -91,12 +92,19 @@ void calc_grid(matrix box,real gr_sp,int *nx,int *ny,int *nz,int nprocs)
       fatal_error(0 ,"could not find a grid spacing with nx and ny divisible by the number of processors (%d)",nprocs);
   }
   
+  max_spacing = 0;
+  for(d=0; d<DIM; d++) {
+    spacing[d] = box_size[d]/n[d];
+    if (spacing[d] > max_spacing)
+      max_spacing = spacing[d];
+  }
   *nx = n[XX];
   *ny = n[YY];
   *nz = n[ZZ];
   fprintf(stderr,"Using a fourier grid of %dx%dx%d, spacing %.3f %.3f %.3f\n",
-	  *nx,*ny,*nz,
-	  box_size[XX]/(*nx),box_size[YY]/(*ny),box_size[ZZ]/(*nz));
+	  *nx,*ny,*nz,spacing[XX],spacing[YY],spacing[ZZ]);
+
+  return max_spacing;
 }
 
 

@@ -593,6 +593,7 @@ int main (int argc, char *argv[])
   t_params     *plist;
   rvec         *x=NULL,*v=NULL;
   matrix       box;
+  real         max_spacing;
   char         fn[STRLEN];
   int          nerror;
   bool         bNeedVel,bGenVel;
@@ -781,10 +782,9 @@ int main (int argc, char *argv[])
   
   if ((ir->coulombtype == eelPPPM) || (ir->coulombtype == eelPME)) {
     /* Calculate the optimal grid dimensions */
-    calc_grid(box,opts->fourierspacing,
-	      &(ir->nkx),&(ir->nky),&(ir->nkz),nprocs);
-    if ((ir->coulombtype == eelPPPM) && 
-	((ir->nkx>0.1) || (ir->nky>0.1) || (ir->nkz>0.1))) {
+    max_spacing = calc_grid(box,opts->fourierspacing,
+			    &(ir->nkx),&(ir->nky),&(ir->nkz),nprocs);
+    if ((ir->coulombtype == eelPPPM) && (max_spacing > 0.1)) {
       set_warning_line(ftp2fn(efMDP,NFILE,fnm),-1);
       sprintf(warn_buf,"Grid spacing larger then 0.1 while using PPPM.");
       warning(NULL);
