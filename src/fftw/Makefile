@@ -70,3 +70,6 @@ test_fftwnd_mpi:	test_fftwnd_mpi.o	$(OBJ)
 time_fftwnd_mpi:	time_fftwnd_mpi.o	$(OBJ)
 			$(LD) -o $@ $^ $(SYSLIBS)
 endif
+
+include Make.dep
+
