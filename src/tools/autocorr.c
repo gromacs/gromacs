@@ -597,7 +597,7 @@ void fit_acf(int ncorr,int nfitparm,bool bVerbose,
 	  "Integral to","Value","Tail Value","Sum (ps)","Tau (ps)",
 	  (nfitparm > 1) ? "A" : "");
   if (tbeginfit > 0)
-    jmax = 5;
+    jmax = 3;
   else
     jmax = 1;
   if (sum > 0)
