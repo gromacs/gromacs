@@ -168,16 +168,19 @@ static void reset_energies(t_grpopts *opts,t_groups *grp,
 
 static real calc_f_el(int start,int homenr,real charge[],rvec f[],t_cosines Ex[])
 {
-  real Emu,fmu;
+  real Emu,fmu,strength;
   int  i,m;
   
   Emu = 0;
   for(m=0; (m<DIM); m++)
-    if (Ex[m].n)
+    if (Ex[m].n) {
+      /* Convert the field strength from V/nm to MD-units */
+      strength = Ex[m].a[0]*FIELDFAC;
       for(i=start; (i<start+homenr); i++) {
-	fmu      = charge[i]*Ex[m].a[0];
+	fmu      = charge[i]*strength;
 	f[i][m] += fmu;
       } 
+    }
   
   return Emu;
 }
