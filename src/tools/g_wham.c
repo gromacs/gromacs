@@ -34,9 +34,11 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 /* This line is only for CVS version info */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
-static float Temperature=298.0;
-#include "config.h"
+
 #include "statutil.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -45,6 +47,9 @@ static float Temperature=298.0;
 #include "statutil.h"
 #include "tpxio.h"
 #include <string.h>
+
+
+static float Temperature=298.0;
 
 bool FlipProf;
 static real Tolerance;

@@ -33,8 +33,11 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <typedefs.h>
-#include "config.h"
+
 #include "smalloc.h"
 #include "macros.h"
 #include "math.h"

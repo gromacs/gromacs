@@ -33,9 +33,12 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdio.h>
 #include <math.h>
-#include "config.h"
+
 #include "confio.h"
 #include "pdbio.h"
 #include "copyrite.h"

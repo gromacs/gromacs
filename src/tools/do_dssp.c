@@ -33,7 +33,10 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "string2.h"
