@@ -498,7 +498,8 @@ int main(int argc,char *argv[])
   mdrunner(cr,NFILE,fnm,bVerbose,bCompact,nDLB,FALSE,nstepout,&edyn);
 
 #ifdef USE_MPI
-  MPI_Finalize();
+  if (nprocs > 1)
+    MPI_Finalize();
 #endif  
 
   exit(0);
