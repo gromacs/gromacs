@@ -231,10 +231,7 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
 	    begintimefit,endtimefit,dt);
   }
 
-  if (x0)
-    x=x0;
-  else
-    snew(x,ndata);
+  snew(x,ndata);
   snew(y,ndata);
   snew(dy,ndata);
 
@@ -329,8 +326,7 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
   fitparms[1]=AA;
   fitparms[2]=tau2; 
 
-  if (!x0)
-    sfree(x);
+  sfree(x);
   sfree(y);
   sfree(dy);
   

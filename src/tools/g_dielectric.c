@@ -46,14 +46,23 @@ static char *SRCID_g_dielectric_c = "$Id$";
 /* Determines at which point in the array the fit should start */
 int calc_nbegin(int nx,real x[],real tbegin)
 {
-  int nbegin;
+  int  nbegin;
+  real dt,dtt;
   
-  for(nbegin=0; (nbegin<nx); nbegin++) {
-    if (x[nbegin] == tbegin) 
-      break;
-  }
-  fprintf(stderr,"nbegin = %d\n",nbegin);
-  
+  /* Assume input x is sorted */  
+  for(nbegin=0; (nbegin < nx) && (x[nbegin] < tbegin); nbegin++)
+    ;
+  if ((nbegin == nx) || (nbegin == 0))
+    fatal_error(0,"Begin time %f not in x-domain [%f through %f]\n",
+		tbegin,x[0],x[nx-1]);
+
+  /* Take the one closest to tbegin */
+  if (fabs(x[nbegin]-tbegin) > fabs(x[nbegin-1]-tbegin))
+    nbegin--;
+
+  fprintf(stderr,"nbegin = %d, x[nbegin] = %g, tbegin = %g\n",
+	  nbegin,x[nbegin],tbegin);
+      
   return nbegin;
 }
 
@@ -311,13 +320,13 @@ int main(int argc,char *argv[])
 	  fitintegral,fitintegral*rffac);
   /* Now we have the negative gradient of <Phi(0) Phi(t)> */
 
-  dump_xvg(opt2fn("-d",NFILE,fnm),"Corr, Std Dev, Fit & Deriv",nx,5,y);
+  dump_xvg(opt2fn("-d",NFILE,fnm),"Corr, Std Dev, Fit & Deriv",nx-1,5,y);
   
   /* Do FFT and analysis */  
   do_four(opt2fn("-o",NFILE,fnm),opt2fn("-c",NFILE,fnm),
-	  nx,y[0],y[4],eps0,epsRF);
+	  nx-1,y[0],y[4],eps0,epsRF);
 
-  do_view(opt2fn("-o",NFILE,fnm),"-nxy -log x");
+  do_view(opt2fn("-o",NFILE,fnm),"-nxy");
   do_view(opt2fn("-c",NFILE,fnm),NULL);
   do_view(opt2fn("-d",NFILE,fnm),"-nxy");
 	    
