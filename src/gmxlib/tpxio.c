@@ -91,7 +91,8 @@ void _do_section(int fp,int key,bool bRead,char *src,int line)
  **************************************************************/
 static void do_inputrec(t_inputrec *ir,bool bRead)
 {
-  int i,j; 
+  int  i,j; 
+  real rdum;
   bool bDum=TRUE;
 
   if (file_version >= 1) {  
@@ -141,8 +142,9 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_real(ir->rvdw); 
     do_int(ir->bDispCorr); 
     do_real(ir->epsilon_r); 
-    do_real(ir->shake_tol); 
-    do_real(ir->fudgeLJ); 
+    do_real(ir->shake_tol);
+    rdum = 0; 
+    do_real(rdum);         /* Used to be fudgeLJ */
     do_real(ir->fudgeQQ); 
     do_int(ir->bPert); 
     do_real(ir->init_lambda); 

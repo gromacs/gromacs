@@ -90,7 +90,6 @@ typedef struct {
   real epsilon_r;       /* relative dielectric constant                 */
   bool bDispCorr;       /* Perform Long range dispersion corrections    */
   real shake_tol;	/* tolerance for shake				*/
-  real fudgeLJ;		/* Fudge factor for 1-4 interactions		*/
   real fudgeQQ;		/* Id. for 1-4 coulomb interactions		*/
   bool bPert;		/* is perturbation turned on			*/
   real init_lambda;	/* initial value for perturbation variable	*/

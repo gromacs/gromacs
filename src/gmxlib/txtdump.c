@@ -314,7 +314,6 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     else
       PS("epsilon_r",infbuf);
     PS("bDispCorr",BOOL(ir->bDispCorr));
-    PR("fudgeLJ",ir->fudgeLJ);
     PR("fudgeQQ",ir->fudgeQQ);
     PS("free_energy",BOOL(ir->bPert));
     PR("init_lambda",ir->init_lambda);
