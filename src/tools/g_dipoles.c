@@ -149,35 +149,42 @@ void do_gkr(t_gkrbin *gb,int ngrp,atom_id grpindex[],
   }
 }
 
-void print_gkrbin(char *fn,t_gkrbin *gb,real mu,int ngrp,int nframes)
+void print_gkrbin(char *fn,t_gkrbin *gb,real mu,
+		  int ngrp,int nframes,real volume)
 {
   FILE   *fp;
   char   *leg[] = { "G\\sk\\N(r)", "<mu\\si\\N mu\\sj\\N> (r\\sij\\N = r)" };
   int    i;
-  real   x,y,ytot,area;
-  double ctot,fac;
+  real   x,y,ytot,vol_s,rho;
+  double fac;
     
   if (mu == 0)
     fatal_error(0,"Trying to print Gk(r) but average dipole is zero!");
   fp=xvgropen(fn,"Distance dependent Gk","r (nm)","G\\sk\\N(r)");
   xvgr_legend(fp,asize(leg),leg);
   ytot = 0;
-  ctot = 0;
-  fac  = 1.0/((mu*ngrp)*(mu*nframes));
-  /*fac  = 1.0/(mu*mu);*/
+  rho  = ngrp/volume;
+  fprintf(stderr,"Number density is %g molecules / nm^3\n",rho);
+  
+  /* Divide by dipole squared, by number of frames, by number of origins.
+   * Multiply by 2 because we only take half the matrix of interactions
+   * into account.
+   */
+  fac  = 2.0/((mu*ngrp)*(mu*nframes));
+
   for(i=0; (i<gb->nelem); i++) {
+    /* Centre of the coordinate in the spherical layer */
     x     = (i+0.5)*gb->spacing;
-    ctot += gb->count[i];
-    area   = 4.0*M_PI*x*x;
-    if (gb->count[i] > 0) 
-      /*y = gb->elem[i]*fac;*/
-      y = gb->elem[i]/(mu*mu*gb->count[i]);
-    else
-      y = 0.0;
+    /* Volume of the layer */
+    vol_s = 4.0*M_PI*sqr(x)*gb->spacing;
+    /* Dipole correlation, normalized by the relative number density, like
+     * in a Radial ditribution function.
+     */
+    y     = gb->elem[i]*fac/(rho*vol_s);
       
-    ytot += gb->spacing*y;
+    ytot += y*gb->spacing*rho;
     
-    fprintf(fp,"%10.5e  %12.7e  %12.7e\n",x,100*ytot,y);
+    fprintf(fp,"%10.5e  %12.7e  %12.7e\n",x,ytot,y);
   }
   ffclose(fp);
 }
@@ -393,7 +400,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   double     mu_ave,mu_mol,M2_ave=0,M_ave2=0;
   rvec       quad_ave,quad_mol;
   ivec       iMu;
-  int        Vol=0;
+  int        iVol;
   real       M_XX,M_YY,M_ZZ,M_XX2,M_YY2,M_ZZ2,Gk=0,g_k=0;
   real       **muall=NULL,**quadall=NULL;
   t_topology *top;
@@ -401,7 +408,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   t_block    *mols=NULL;
   int        i,j,k,m,natom=0,nmol,status,teller,tel3;
   int        *dipole_bin,ndipbin,ibin;
-  real       volume;
+  real       volume,vol_aver;
   unsigned long mode;
   /* PvM, I need these to be able to call read_tpx */
   int        natoms,step;
@@ -410,19 +417,21 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   snew(top,1);
   read_tpx(topf,&step,&t,&lambda,NULL,box,
 	   &natoms,NULL,NULL,NULL,top);
-  volume = det(box);
+  volume   = det(box);
+  vol_aver = 0.0;
+  
   if (!grpindex)
     gnx = top->blocks[ebMOLS].nr;
     
+  iVol=-1;
   if (bMU) {
     fmu = open_enx(mufn,"r");
     do_enxnms(fmu,&nre,&enm);
 
-    Vol=-1;
     /* Determine the indexes of the energy grps we need */
     for (i=0; (i<nre); i++) {
       if (strstr(enm[i],"Volume"))
-	Vol=i;
+	iVol=i;
       else if (strstr(enm[i],"Mu-X"))
 	iMu[XX]=i;
       else if (strstr(enm[i],"Mu-Y"))
@@ -436,7 +445,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
     mols = &(top->blocks[ebMOLS]);
   }
   
-  if (Vol == -1)
+  if (iVol == -1)
     printf("Using Volume from topology: %g nm^3\n",volume);
 
   /* Correlation stuff */ 
@@ -486,7 +495,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   /* Read the first frame from energy or traj file */
   if (bMU)
     do {
-      bCont = read_mu_from_enx(fmu,Vol,iMu,mu_t,&volume,&t,teller,nre); 
+      bCont = read_mu_from_enx(fmu,iVol,iMu,mu_t,&volume,&t,teller,nre); 
       if (bCont) {  
 	timecheck=check_times(t,t);
 	if (timecheck < 0)
@@ -646,13 +655,13 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
     /* Compute volume from box in traj, else we use the one from above */
     if (!bMU)
       volume  = det(box);
-
+    vol_aver += volume;
+    
     epsilon = calc_eps(M_diff,volume,epsilonRF,temp);
 
     /* Calculate running average for dipole */
     if (mu_ave != 0) 
       mu_aver = (mu_ave/gnx)/teller;
-    
     
     if ((skip == 0) || ((teller % skip) == 0)) {
       /* Write to file < |M|^2 >, < |M| >^2. And the difference between 
@@ -678,7 +687,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
     }
     
     if (bMU)
-      bCont = read_mu_from_enx(fmu,Vol,iMu,mu_t,&volume,&t,teller,nre); 
+      bCont = read_mu_from_enx(fmu,iVol,iMu,mu_t,&volume,&t,teller,nre); 
     else
       bCont = read_next_x(status,&t,natom,x,box);
   } while(bCont);
@@ -689,8 +698,10 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   fclose(out);
   fclose(outaver);
 
+  vol_aver /= teller;
+  fprintf(stderr,"Average volume over run is %g\n",vol_aver);
   if (bGkr) 
-    print_gkrbin(gkrfn,gkrbin,mu_aver,gnx,teller);
+    print_gkrbin(gkrfn,gkrbin,mu_aver,gnx,teller,vol_aver);
 
   /* Autocorrelation function */  
   if (bCorr) {
