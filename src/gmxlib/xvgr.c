@@ -61,7 +61,10 @@ FILE *xvgropen(char *fn,char *title,char *xaxis,char *yaxis)
   fprintf(xvgr,"@    title \"%s\"\n",title);
   fprintf(xvgr,"@    xaxis  label \"%s\"\n",xaxis);
   fprintf(xvgr,"@    yaxis  label \"%s\"\n",yaxis);
-  fprintf(xvgr,"@TYPE xy\n");
+  if (getenv("GMX_XMGR") == NULL)
+    fprintf(xvgr,"@TYPE xy\n");
+  else
+    fprintf(xvgr,"@TYPE nxy\n");
   
   return xvgr;
 }
@@ -91,7 +94,7 @@ void xvgr_legend(FILE *out,int nsets,char *setname[])
   fprintf(out,"@ legend length %d\n",2);
   for(i=0; (i<nsets); i++)
     if (setname[i]) {
-      if (getenv("XMGR") == NULL)
+      if (getenv("GMX_XMGR") == NULL)
 	fprintf(out,"@ s%d legend \"%s\"\n",i,setname[i]);
       else
 	fprintf(out,"@ legend string %d \"%s\"\n",i,setname[i]);

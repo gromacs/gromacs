@@ -61,7 +61,7 @@ int can_view(int ftp)
 void do_view(char *fn, char *opts)
 {
 #define N_EXT 3
-  char buf[STRLEN], env[20], ext[N_EXT], *cmd;
+  char buf[STRLEN], env[20], ext[N_EXT], *cmd, *defopts=NULL;
   int ftp, n;
   
   if (bDoView() && fn) {
@@ -75,10 +75,11 @@ void do_view(char *fn, char *opts)
       switch(ftp) {
       case efXVG:
 	if (!(cmd=getenv(env))) {
-	  if (getenv("XMGR") == NULL)
-	    cmd="xmgrace";
-	  else
-	    cmd="xmgr";
+	  if (getenv("GMX_XMGR") == NULL) {
+	    cmd = "xmgrace";
+	    defopts = "-nxy";
+	  } else
+	    cmd = "xmgr";
 	}
 	break;
       default:
@@ -91,7 +92,11 @@ void do_view(char *fn, char *opts)
 	}
       }
       if ( strlen(cmd) ) {
-	sprintf(buf,"%s %s %s &",cmd,opts ? opts : "",fn);
+	sprintf(buf,"%s %s%s%s%s%s &",
+		cmd,
+		opts ? opts : "",opts ? " " : "",
+		defopts ? defopts : "",defopts ? " " : "",
+		fn);
 	fprintf(stderr,"Executing '%s'\n",buf);
 	system(buf);
       }
