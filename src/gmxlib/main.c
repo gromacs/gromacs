@@ -159,7 +159,7 @@ void check_multi_int(FILE *log,const t_commrec *mcr,int val,char *name)
   int  *ibuf,p;
   bool bCompatible;
 
-  fprintf(log,"Multi-checking %s... ",name);
+  fprintf(log,"Multi-checking %s ... ",name);
   
   snew(ibuf,mcr->nnodes);
   ibuf[mcr->nodeid] = val;
