@@ -501,15 +501,18 @@ int main(int argc, char *argv[])
     "coordinates in Gromacs (Gromos) format and a topology in Gromacs format.",
     "These files can subsequently be processed to generate a run input file.",
     "[PAR]",
-    "The force fields supported currently are:[PAR]",
-    "G43a1  GROMOS96 43a1 Forcefield (official distribution)[PAR]",
-    "oplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)[PAR]",
-    "G43b1  GROMOS96 43b1 Vacuum Forcefield (official distribution)[PAR]",
-    "gmx    Gromacs Forcefield (a modified GROMOS87, see manual)[PAR]",
+    "The force fields in the distribution are currently:[PAR]",
+    "G43a1  GROMOS96 43a1 Forcefield (official distribution)[BR]",
+    "oplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)[BR]",
+    "G43b1  GROMOS96 43b1 Vacuum Forcefield (official distribution)[BR]",
+    "gmx    Gromacs Forcefield (a modified GROMOS87, see manual)[BR]",
     "G43a2  GROMOS96 43a2 Forcefield (development) (improved alkane dihedrals)[PAR]",
     "The corresponding data files can be found in the library directory",
     "with names like ffXXXX.YYY. Check chapter 5 of the manual for more",
-    "information about file formats.[PAR]",
+    "information about file formats. By default the forcefield selection",
+    "is interactive, but you can use the [TT]-ff[tt] option to specify",
+    "one of the short names above on the command line instead. In that",
+    "case pdb2gmx just looks for the corresponding file.[PAR]",
     
     "Note that a pdb file is nothing more than a file format, and it",
     "need not necessarily contain a protein structure. Every kind of",
@@ -649,7 +652,7 @@ int main(int argc, char *argv[])
   static real long_bond_dist=0.25, short_bond_dist=0.05;
   static char *dumstr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
   static char *watstr[] = { NULL, "spc", "spce", "tip3p", "tip4p", "tip5p", NULL };
-  static char *ff = "G43a1";
+  static char *ff = "select";
   t_pargs pa[] = {
     { "-newrtp", FALSE, etBOOL, {&bNewRTP},
       "HIDDENWrite the residue database in new format to 'new.rtp'"},
@@ -660,7 +663,7 @@ int main(int argc, char *argv[])
     { "-merge",  FALSE, etBOOL, {&bMerge},
       "Merge multiple chains into one molecule"},
     { "-ff",     FALSE, etSTR,  {&ff},
-      "Select the force field, supported are: G43a1, oplsaa, gmx, G43a2, G43b1. Run pdb2gmx -h for more information." },
+      "Force field, interactive by default. Use -h for information." },
     { "-water",  FALSE, etENUM, {watstr},
       "Water model to use: with GROMOS we recommend SPC, with OPLS, TIP4P" },
     { "-inter",  FALSE, etBOOL, {&bInter},
@@ -704,7 +707,12 @@ int main(int argc, char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    0,NULL);
-  sprintf(forcefield,"ff%s",ff);
+  if(!strncmp(ff,"select",6)) {
+    /* Interactive forcefield selection */
+    choose_ff(forcefield,sizeof(forcefield));
+  } else {
+    sprintf(forcefield,"ff%s",ff);
+  }
   { 
     char rtp[STRLEN];
    
