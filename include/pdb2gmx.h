@@ -59,12 +59,27 @@ typedef struct {
   real c[MAXFORCEPARAM];
 } t_rang;
 
+typedef struct {
+  char *ai;
+  char *aj;
+  char *ak;
+  char *al;
+  real c[MAXFORCEPARAM];
+} t_rdih;
+
 /* ANGLES */
 typedef struct {
   char    *resname;	/* Residue name					*/
-  int      na;		/* Number of angles			        */
+  int     na;		/* Number of angles			        */
   t_rang  *rang; 	/* The atom names of the atoms in the angles    */
 } t_resang;
+
+/* DIHEDRALS */
+typedef struct {
+  char    *resname;	/* Residue name					*/
+  int     nd;		/* Number of dihedrals			        */
+  t_rdih  *rdih; 	/* The atom names of the atoms in the dihedrals */
+} t_resdih;
 
 /* RESIDUES */
 typedef struct {

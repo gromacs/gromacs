@@ -338,6 +338,56 @@ static bool read_angles(FILE *in,char *line,t_resang *ra)
   return TRUE ;
 }
 
+static void print_resdihs(FILE *out,t_resdih *rd)
+{
+  int i,j;
+
+  fprintf(out," [ dihedrals ]\n");
+  fprintf(out,";   ai    aj    ak    al            c0            c1            c2\n");
+  for(j=0; (j<rd->nd); j++) {
+    fprintf(out,"%6s%6s%6s%6s",rd->rdih[j].ai,rd->rdih[j].aj,
+	                       rd->rdih[j].ak,rd->rdih[j].al);
+    for(i=0; (i<MAXFORCEPARAM && (rd->rdih[j].c[i] != NOTSET)); i++)
+      fprintf(out,"%14g",rd->rdih[j].c[i]);
+    fprintf(out,"\n");
+  }
+  
+}
+
+static bool read_dihedrals(FILE *in,char *line,t_resdih *rd)
+{
+  int       i,j,n,maxentries;
+  double    c[MAXFORCEPARAM];
+  char      ai[4][12];
+
+  maxentries=0;
+  rd->rdih=NULL;
+  i=0;
+  while (get_a_line(line,STRLEN,in) && (strchr(line,'[')==NULL)) {
+    if ((n=sscanf(line,"%s%s%s%s%lf%lf%lf%lf",
+		 ai[0],ai[1],ai[2],ai[3],&c[0],&c[1],&c[2],&c[3])) < 4)
+      return FALSE;     
+    if (i>=maxentries) {
+      maxentries+=100;
+      srenew(rd->rdih,maxentries);
+    }
+    rd->rdih[i].ai=strdup(ai[0]);
+    rd->rdih[i].aj=strdup(ai[1]);
+    rd->rdih[i].ak=strdup(ai[2]);
+    rd->rdih[i].al=strdup(ai[3]);
+    for (j=0; j<MAXFORCEPARAM; j++)
+      if (j<n-4)
+	rd->rdih[i].c[j]=c[j];
+      else
+	rd->rdih[i].c[j]=NOTSET;
+    i++;
+  }
+  rd->nd=i;
+  srenew(rd->rdih,i);
+
+  return TRUE;
+}
+
 static void print_idihs(FILE *out,t_idihres *ires)
 {
   int  j,k;
@@ -426,6 +476,7 @@ int read_resall(char       *ff,
 		t_restp    **rtp,
 		t_resbond  **rb,
 		t_resang   **ra,
+		t_resdih   **rd,
 		t_idihres  **ires,
 		t_atomtype *atype,
 		t_symtab   *tab)
@@ -437,6 +488,7 @@ int read_resall(char       *ff,
   t_restp   *rrtp;
   t_resbond *rrbd;
   t_resang  *rran;
+  t_resdih  *rrdi;
   t_idihres *rrid;
   bool      bNextResidue,bError;
   
@@ -446,6 +498,7 @@ int read_resall(char       *ff,
   snew(rrtp,MAXRTP);
   snew(rrbd,MAXRTP);
   snew(rran,MAXRTP);
+  snew(rrdi,MAXRTP);
   snew(rrid,MAXRTP);
 
   get_a_line(line,STRLEN,in);
@@ -466,6 +519,7 @@ int read_resall(char       *ff,
 		    rrtp[nrtp].resname,line);
       rrbd[nrtp].resname=rrtp[nrtp].resname;
       rran[nrtp].resname=rrtp[nrtp].resname;
+      rrdi[nrtp].resname=rrtp[nrtp].resname;
       if (!read_idihs_old(in,line,&(rrid[nrtp])))
 	fatal_error(0,"in .rtp file in impropers of residue %s:\n%s\n",
 		    rrtp[nrtp].resname,line);
@@ -476,6 +530,7 @@ int read_resall(char       *ff,
 	fprintf(stderr,"(%s): %d atoms,",rrtp[nrtp].resname,rrtp[nrtp].natom);
 	fprintf(stderr," %d bonds and",rrbd[nrtp].nb);
 	fprintf(stderr," %d angles and",rran[nrtp].na);
+	fprintf(stderr," %d dihedrals and",rrdi[nrtp].nd);
 	fprintf(stderr," %d impropers\n",rrid[nrtp].nidih);
       }
       fprintf(stderr,"\rResidue %d",nrtp+1);
@@ -493,6 +548,7 @@ int read_resall(char       *ff,
       get_a_line(line,STRLEN,in);
       rrbd[nrtp].resname=rrtp[nrtp].resname;
       rran[nrtp].resname=rrtp[nrtp].resname;
+      rrdi[nrtp].resname=rrtp[nrtp].resname;
       rrid[nrtp].resname=rrtp[nrtp].resname;
       bError=FALSE;
       bNextResidue=FALSE;
@@ -509,6 +565,8 @@ int read_resall(char       *ff,
 	    bError=!read_bonds(in,line,&(rrbd[nrtp]));
 	  else if (strncasecmp("angles",header,6)==0) 
 	    bError=!read_angles(in,line,&(rran[nrtp]));
+	  else if (strncasecmp("dihedrals",header,6)==0) 
+	    bError=!read_dihedrals(in,line,&(rrdi[nrtp]));
 	  else if (strncasecmp("impropers",header,9)==0)
 	    bError=!read_idihs(in,line,&(rrid[nrtp]));
 	  else {
@@ -526,9 +584,10 @@ int read_resall(char       *ff,
 		    rrtp[nrtp].resname);
 
       if (debug) {
-	fprintf(stderr,"Residue %d(%s): %d atoms, %d bonds and %d angles "
-		"and %d impropers\n",nrtp+1,rrtp[nrtp].resname,
-		rrtp[nrtp].natom,rrbd[nrtp].nb,rran[nrtp].na,rrid[nrtp].nidih);
+	fprintf(stderr,"Residue %d(%s): %d atoms, %d bonds, %d angles "
+		"%d dihedrals and %d impropers\n",nrtp+1,rrtp[nrtp].resname,
+		rrtp[nrtp].natom,rrbd[nrtp].nb,rran[nrtp].na,rrdi[nrtp].nd,
+		rrid[nrtp].nidih);
       }
       nrtp++;
       fprintf(stderr,"\rResidue %d",nrtp);
@@ -540,6 +599,7 @@ int read_resall(char       *ff,
   qsort(rrtp,nrtp,(size_t)sizeof(rrtp[0]),comprtp);
   qsort(rrbd,nrtp,(size_t)sizeof(rrbd[0]),comprb);
   qsort(rran,nrtp,(size_t)sizeof(rran[0]),comprang);
+  qsort(rrdi,nrtp,(size_t)sizeof(rrdi[0]),comprdih);
   qsort(rrid,nrtp,(size_t)sizeof(rrid[0]),icomp);
   
   /* Check for consistency and doubles */
@@ -548,6 +608,7 @@ int read_resall(char       *ff,
   *rtp  = rrtp;
   *rb   = rrbd;
   *ra   = rran;
+  *rd   = rrdi;
   *ires = rrid;
   
   return nrtp;
@@ -558,6 +619,7 @@ void print_resall(FILE *out,
 		  t_restp rtp[],
 		  t_resbond rb[],
 		  t_resang ra[],
+		  t_resdih rd[],
 		  t_idihres ires[],
 		  t_atomtype *atype)
 {
@@ -570,6 +632,8 @@ void print_resall(FILE *out,
 	print_resbonds(out,&rb[i]);
       if (ra[i].na)
 	print_resangs(out,&ra[i]);
+      if (rd[i].nd)
+	print_resdihs(out,&rd[i]);
       if (ires[i].nidih)
 	print_idihs(out,&(ires[i]));
       fprintf(out,"\n");
@@ -618,6 +682,25 @@ t_resang *search_rang(char *key,int nrang,t_resang rang[])
   rangkey.resname=key;
   return (t_resang *)bsearch((void *)&rangkey,rang,nrang,
 			      (size_t)sizeof(rangkey),comprang);
+}
+
+int comprdih(const void *a,const void *b)
+{
+  t_resdih *r1,*r2;
+
+  r1=(t_resdih *)a;
+  r2=(t_resdih *)b;
+
+  return strcasecmp(r1->resname,r2->resname);
+}
+
+t_resdih *search_rdih(char *key,int ndih,t_resdih rdih[])
+{
+  t_resdih rdihkey;
+  
+  rdihkey.resname=key;
+  return (t_resdih *)bsearch((void *)&rdihkey,rdih,ndih,
+			      (size_t)sizeof(rdihkey),comprdih);
 }
 
 int comprtp(const void *a,const void *b)
@@ -690,7 +773,7 @@ t_idihres *search_idih(char *key,int nrdh,t_idihres ires[])
  ***********************************************************/
 static bool read_mass(FILE *in,char *line,t_dumblock *db)
 {
-  char name[12],type[12],ai[12],aj[12],ak[12],al[12];
+  char name[12],type[12],ai[12];
   real c[MAXFORCEPARAM];
   int  i,j,n,maxentries,tp,nm;
   

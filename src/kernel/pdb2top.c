@@ -529,6 +529,7 @@ void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
 	     int nrb, t_resbond rb[],
 	     int nrtp,t_restp rtp[],
 	     int nra, t_resang ra[],
+	     int nrd, t_resdih rd[],
 	     int nid, t_idihres idi[],
 	     t_hackblock *ntdb,t_hackblock *ctdb,
 	     bool bH14, int rn,int rc,bool bAlldih,
@@ -581,7 +582,7 @@ void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
   init_nnb(&nnb,atoms->nr,4);
   gen_nnb(&nnb,plist);
   print_nnb(&nnb,"NNB");
-  gen_pad(&nnb,atoms,bH14,plist,nrtp,rtp,nra,ra,nid,idi,bAlldih);
+  gen_pad(&nnb,atoms,bH14,plist,nrtp,rtp,nra,ra,nrd,rd,nid,idi,bAlldih);
   done_nnb(&nnb);
   
   if (bDummies) {

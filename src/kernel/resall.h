@@ -47,11 +47,17 @@ extern int comprb(const void *a,const void *b);
 extern int comprang(const void *a,const void *b);
 /* Compare resangle shit */
 
+extern int comprdih(const void *a,const void *b);
+/* Compare resdihedral shit */
+
 extern t_resbond *search_rb(char *key,int nrb,t_resbond rb[]);
 /* Search in the bond database */
 
 extern t_resang *search_rang(char *key,int nra,t_resang ra[]);
 /* Search in the angle database */
+
+extern t_resdih *search_rdih(char *key,int nrd,t_resdih rd[]);
+/* Search in the dihedral database */
 
 extern int comprtp(const void *a,const void *b);
 /* Compare routine for sorting and searching for t_restp */
@@ -68,11 +74,13 @@ extern t_idihres *search_idih(char *key,int nrdh,t_idihres ires[]);
 extern t_atomtype *read_atype(char *adb,t_symtab *tab);
 
 extern int read_resall(char *resdb, t_restp **rtp, t_resbond **rb, 
-		       t_resang **ra, t_idihres **ires, t_atomtype *atype,
+		       t_resang **ra, t_resdih **rd,
+		       t_idihres **ires, t_atomtype *atype,
 		       t_symtab *tab);
 
 extern void print_resall(FILE *out, int nrtp, t_restp rtp[], t_resbond rb[],
-			 t_resang ra[], t_idihres ires[], t_atomtype *atype);
+			 t_resang ra[], t_resdih rd[],
+			 t_idihres ires[], t_atomtype *atype);
 
 /* Stuff for dummies: */
 

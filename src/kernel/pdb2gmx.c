@@ -516,6 +516,7 @@ int main(int argc, char *argv[])
   t_restp    *restp;
   t_resbond  *rb;
   t_resang   *ra;
+  t_resdih   *rd;
   t_idihres  *idih;
   t_addh     *ah;
   t_symtab   tab;
@@ -741,15 +742,15 @@ int main(int argc, char *argv[])
     
   /* read residue database */
   printf("Reading residue database... (%s)\n",ff);
-  nrtp=read_resall(ff,&restp,&rb,&ra,&idih,atype,&tab);
+  nrtp=read_resall(ff,&restp,&rb,&ra,&rd,&idih,atype,&tab);
   if (debug) {
     fprintf(debug,"\nResidue database with %d residues:\n\n\n",nrtp);
-    print_resall(debug,nrtp,restp,rb,ra,idih,atype);
+    print_resall(debug,nrtp,restp,rb,ra,rd,idih,atype);
     fprintf(debug,"\n");
   }
   if (bNewRTP) {
     fp=ffopen("new.rtp","w");
-    print_resall(fp,nrtp,restp,rb,ra,idih,atype);
+    print_resall(fp,nrtp,restp,rb,ra,rd,idih,atype);
     fclose(fp);
   }
     
@@ -902,7 +903,7 @@ int main(int argc, char *argv[])
     write_posres(itp_fn,pdba);
     
     pdb2top(ff,top_fn,itp_fn,title,molname,nincl,incls,nmol,mols,pdba,nah,ah,
-	    &x,atype,&tab,nrtp,rb,nrtp,restp,nrtp,ra,nrtp,idih,
+	    &x,atype,&tab,nrtp,rb,nrtp,restp,nrtp,ra,nrtp,rd,nrtp,idih,
 	    sel_ntdb,sel_ctdb,bH14,rN,rC,bAlldih,
 	    nddb,ddb,bDummies,mHmult,nssbonds,ssbonds,NREXCL);
     

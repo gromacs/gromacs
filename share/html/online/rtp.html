@@ -4,14 +4,23 @@
 The rtp file extension stands for residue toplogy. 
 Such a file is needed by <a href="pdb2gmx.html">pdb2gmx</a>
 to make a Gromacs topology for a protein contained in a <tt>.pdb</tt>
-file. The file contains residues entries, which consist of atoms and
-optionally bonds and impropers. Parameters can be added to bonds,
-angles and impropers, these parameters override the standard parameters
+file. The file contains residue entries, which consist of atoms and
+optionally bonds, angles dihedrals and impropers.
+Parameters can be added to bonds, angles, dihedrals and impropers, 
+these parameters override the standard parameters
 in the <a href="itp.html"><tt>.itp</tt></a> files.
 This should only be used in special cases.
-<a href="pdb2gmx.html">pdb2gmx</a> automatically generates all angles
-and proper dihedrals, this means that the <tt>[angles]</tt> field is only
-useful for overriding <a href="itp.html"><tt>.itp</tt></a> parameters.  
+<p>
+<a href="pdb2gmx.html">pdb2gmx</a> automatically generates all angles,
+this means that the <tt>[angles]</tt> field is only
+useful for overriding <a href="itp.html"><tt>.itp</tt></a> parameters.
+<p>
+<a href="pdb2gmx.html">pdb2gmx</a> automatically generates one proper
+dihedral for every rotatable bond, preferably on heavy atoms.
+When the <tt>[dihedrals]</tt> field is used, no other dihedrals will
+be generated for the bonds corresponding to the specified dihedrals. 
+It is possible to put more than one dihedral on a rotatable bond.
+<p>
 A sample is included below.
 
 
@@ -36,6 +45,9 @@ A sample is included below.
 
  [ angles ]  ; optional
 ;atom1 atom2 atom3     c0     c1
+
+ [ dihedrals ]  ; optional
+;atom1 atom2 atom3 atom4     c0     c1
 
  [ impropers ]  ; optional
 ;atom1 atom2 atom3 atom4     c0     c1

@@ -127,6 +127,29 @@ static bool deq(t_param *p1, t_param *p2)
     return FALSE;
 }
 
+static bool remove_dih(t_param *p, int i, int np)
+     /* check if dihedral p[i] should be removed */
+{
+  bool bMidEq,bRem;
+  int j;
+  
+  bMidEq = deq(&p[i],&p[i-1]);
+  if (p[i].c[MAXFORCEPARAM-1]==NOTSET) {
+    /* also remove p[i] if there is a dihedral on the same bond
+       which has parameters set */
+    bRem = bMidEq;
+    j=i+1;
+    while (!bRem && (j<np) && deq(&p[i],&p[j])) {
+      if (p[j].c[MAXFORCEPARAM-1] != NOTSET)
+	bRem = TRUE; 
+      j++;
+    }
+  } else
+    bRem = bMidEq && (((p[i].AI==p[i-1].AI) && (p[i].AL==p[i-1].AL)) ||
+		      ((p[i].AI==p[i-1].AL) && (p[i].AL==p[i-1].AI)));
+  return bRem;
+}
+
 static bool preq(t_param *p1, t_param *p2)
 {
   if ((p1->AI==p2->AI) && (p1->AJ==p2->AJ))
@@ -383,15 +406,16 @@ static void pdih2idih(t_param dih[],int *ndih,t_param idih[],int *nidih,
   snew(index,*ndih);
   nind=0;
   index[nind++]=0;
-  for(i=1; (i<(*ndih)); i++) 
-    if (bAlldih) {
-      fprintf(stderr,"bAlldih = true\n");
+  if (bAlldih) {
+    fprintf(stderr,"bAlldih = true\n");
+    for(i=1; (i<(*ndih)); i++) 
       if (!deq2(&dih[i],&dih[i-1]))
 	index[nind++]=i;
-    } else {
-      if (!deq(&dih[i],&dih[i-1]))
+  } else {
+    for(i=1; (i<(*ndih)); i++) 
+      if (!remove_dih(dih,i,*ndih))
 	index[nind++]=i;
-    }
+  }
   /* Index now holds pointers to all the non-equal params,
    * this only works when dih is sorted of course
    */
@@ -468,12 +492,14 @@ bool is_hydro(t_atoms *atoms,int ai)
 }
 
 void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
-	     int nrtp,t_restp rtp[],int nra,t_resang ra[],
+	     int nrtp,t_restp rtp[],
+	     int nra,t_resang ra[],int nrd,t_resdih rd[], 
 	     int nid,t_idihres idihs[],bool bAlldih)
 {
   t_param *ang,*dih,*pai,*idih;
-  t_resang *i0;
-  int     i,j,j1,k,k1,l,l1,m;
+  t_resang *i_ra;
+  t_resdih *i_rd;
+  int     i,j,j1,k,k1,l,l1,m,n;
   int     maxang,maxdih,maxidih,maxpai;
   int     nang,ndih,npai,nidih,nbd;
   bool    bFound;
@@ -514,21 +540,21 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 	  }
 	  ang[nang].C0=NOTSET;
 	  ang[nang].C1=NOTSET;
-	  if (i0=search_rang(*(atoms->resname[atoms->atom[j1].resnr]),
+	  if (i_ra=search_rang(*(atoms->resname[atoms->atom[j1].resnr]),
 			    nra,ra)) {
-	    for(l=0; (l<i0->na); l++) {
+	    for(l=0; (l<i_ra->na); l++) {
 	      if (strcmp(*(atoms->atomname[ang[nang].a[1]]),
-			 i0->rang[l].aj)==0) {
+			 i_ra->rang[l].aj)==0) {
 		bFound=FALSE;
 		for (m=0; m<3; m+=2)
 		  bFound=(bFound ||
 			  ((strcmp(*(atoms->atomname[ang[nang].a[m]]),
-				   i0->rang[l].ai)==0) &&
+				   i_ra->rang[l].ai)==0) &&
 			   (strcmp(*(atoms->atomname[ang[nang].a[2-m]]),
-				   i0->rang[l].ak)==0)));
+				   i_ra->rang[l].ak)==0)));
 		if (bFound) 
 		  for (m=0; m<MAXFORCEPARAM; m++)
-		    ang[nang].c[m]=i0->rang[l].c[m];
+		    ang[nang].c[m]=i_ra->rang[l].c[m];
 	      }
 	    }
 	  }
@@ -551,9 +577,31 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 		dih[ndih].AK=j1;
 		dih[ndih].AL=i;
 	      }
-	      dih[ndih].C0=NOTSET;
-	      dih[ndih].C1=NOTSET;
-	      dih[ndih].C2=NOTSET;
+	      for (m=0; m<MAXFORCEPARAM; m++)
+		dih[ndih].c[m]=NOTSET;
+	      if (i_rd=search_rdih(*(atoms->resname[atoms->atom[j1].resnr]),
+			    nrd,rd)) {
+		for(n=0; (n<i_rd->nd); n++) {
+		  bFound=FALSE;
+		  for (m=0; m<2; m++)
+		    bFound=(bFound ||
+			    ((strcmp(*(atoms->atomname[dih[ndih].a[3*m]]),
+				     i_rd->rdih[n].ai)==0) &&
+			     (strcmp(*(atoms->atomname[dih[ndih].a[1+m]]),
+				     i_rd->rdih[n].aj)==0) &&
+			     (strcmp(*(atoms->atomname[dih[ndih].a[2-m]]),
+				     i_rd->rdih[n].ak)==0) &&
+			     (strcmp(*(atoms->atomname[dih[ndih].a[3-3*m]]),
+				     i_rd->rdih[n].al)==0)));
+		  if (bFound) {
+		    for (m=0; m<MAXFORCEPARAM-1; m++)
+		      dih[ndih].c[m]=i_rd->rdih[n].c[m];
+		    /* Set the last parameter to be able to see
+		       if the dihedral was in the rtp list */
+		    dih[ndih].c[MAXFORCEPARAM-1]=0;
+		  }
+		}
+	      }
 	      nbd=nb_dist(nnb,i,l1);
 	      if (debug)
 		fprintf(debug,"Distance (%d-%d) = %d\n",i+1,l1+1,nbd);
