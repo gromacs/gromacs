@@ -68,6 +68,7 @@ static bool gmx_next_x(int status,real *t,int natoms,rvec x[],matrix box)
   int  ct;
   bool bB,bX;
   
+  pt=*t;
   while (fread_trnheader(status,&sh)) {
     bX = sh.x_size;
     bB = sh.box_size;
@@ -103,6 +104,7 @@ static bool gmx_next_x_or_v(int status,real *t,int natoms,
   int  i,d,ct;
   bool bB,bX,bV;
     
+  pt=*t;
   while (fread_trnheader(status,&sh)) {
     bX=sh.x_size;
     bV=sh.v_size;
@@ -149,6 +151,7 @@ static bool gmx_next_x_v(int status,real *t,int natoms,
   int  ct;
   bool bB,bX,bV;
     
+  pt=*t;
   while (fread_trnheader(status,&sh)) {
     bX=sh.x_size;
     bV=sh.v_size;
@@ -325,6 +328,7 @@ static bool xyz_next_x(FILE *status, real *t, int natoms, rvec x[], matrix box)
   extern real tbegin,tend;
   real pt;
   
+  pt=*t;
   while ((tbegin >= 0) && (*t < tbegin)) {
     if (!do_read_xyz(status,natoms,x,box))
       return FALSE;
@@ -550,6 +554,7 @@ int read_first_v(int *status,char *fn,real *t,rvec **v,matrix box)
     snew(*v,sh.natoms);
     *t = sh.t;
     fread_htrn(fp,&sh,NULL,NULL,*v,NULL);
+    PRINTREAD(*t);
     return sh.natoms;
   case efGRO:
     return gro_first_v(fio_getfp(fp),t,v,box);
@@ -565,15 +570,15 @@ bool read_next_v(int status,real *t,int natoms,rvec v[],matrix box)
   t_trnheader sh;
   real pt;
   bool bV;
-
+  
+  pt=*t;
   switch (fio_getftp(status)) {
   case efTRJ:
   case efTRR:
     while (fread_trnheader(status,&sh)) {
-      pt=*t;
       bV=sh.v_size;
-      fread_htrn(status,&sh,NULL,NULL,bV ? v : NULL,NULL);
       *t = sh.t;
+      fread_htrn(status,&sh,NULL,NULL,bV ? v : NULL,NULL);
       if ((check_times(*t)==0) && (bV)) {
 	PRINTREAD(*t)
 	return TRUE;
@@ -586,7 +591,6 @@ bool read_next_v(int status,real *t,int natoms,rvec v[],matrix box)
     PRINTLAST(pt)
     break;
   case efGRO: 
-    pt=*t;
     if (gro_next_v(fio_getfp(status),t,natoms,v,box)) {
       PRINTREAD(*t)
       return TRUE;
