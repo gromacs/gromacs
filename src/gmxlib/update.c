@@ -920,9 +920,10 @@ void update(int          natoms, 	/* number of atoms in simulation */
       inc_nrnb(nrnb,eNR_SETTLE,nsettle);
       if (error>=0) {
 	dump_confs(step,&(top->atoms),x,xprime,box);
-	sprintf(buf,"Molecule starting at atomnr. %d can not be settled,\n"
-		    "             step %d, time %g (ps)",
+	sprintf(buf,"\nMolecule starting at atomnr. %d can not be settled, "
+		"step %d, time %g (ps)",
 		owptr[error]+1,step,ir->init_t+step*dt);
+	fprintf(stdlog,buf);
 	fatal_error(0,buf);
       }
       where();
