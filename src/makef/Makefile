@@ -12,7 +12,7 @@ ifeq ($(GMXHOME),)
 all:
 	echo "No GROMACS environment, Please source your GMXRC file"
 else
-include		$(GMXHOME)/src/Makefile.def
+include		$(GMXHOME)/src/makef/Makefile.def
 #
 SHELL		=/bin/csh
 CPUMAKEF	=Makefile.$(GMXCPU)
@@ -21,6 +21,9 @@ GROMTAZ		=gromacs.taz
 SRCDIRS		= $(GROMLIB) $(notdir $(INCDIR))
 EXCLUDE		=core ',*' '*log*' '*~' '\#*\#' '*.o'
 IGNORE		=\( $(foreach EXCL,$(EXCLUDE),\( \! -name $(EXCL) \) )
+
+$(GMXHOME)/src/makef/Makefile.def:
+	echo "Wrong GROMACS environment, Please source GMXRC in this source tree"
 
 obj:	$(ROOT)/obj/Makefile
 

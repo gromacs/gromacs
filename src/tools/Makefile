@@ -38,6 +38,9 @@ ACOBJ	=	autocorr.o	expfit.o	polynomials.o	\
 
 include		$(STDTARGET)
 
+$(GMXHOME)/src/makef/Makefile.def:
+	echo "Wrong GROMACS environment, Please source GMXRC in this source tree"
+
 movebin:
 	mv $(EXECUTABLES) $(BINDIR)
 

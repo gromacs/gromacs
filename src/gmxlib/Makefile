@@ -78,6 +78,9 @@ endif
 include		$(STDTARGET)
 #
 
+$(GMXHOME)/src/makef/Makefile.def:
+	echo "Wrong GROMACS environment, Please source GMXRC in this source tree"
+
 $(XTCLIB)(libxdrf.o):	libxdrf.m4 $(M4FILE)
 		$(M4) $(M4FILE) libxdrf.m4 > libxdrf.c
 		$(CC) $(C-FLAGS) -c libxdrf.c

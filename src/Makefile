@@ -29,6 +29,9 @@ TARCMD  =	tar cvf
 COPYRGT	=	$(GMXHOME)/src/local/copyrgt
 PROGRAMS =	(cd bin/s10; ls; cd ../..)
 
+$(GMXHOME)/src/makef/Makefile.def:
+	echo "Wrong GROMACS environment, Please source GMXRC in this source tree"
+
 all:	dirs oclean
 	$(foreach dir,$(SRCDIRS),cd $(dir); $(MAKE); cd ..;)
 ifneq ($(PARALLEL_ONLY_MDRUN),yes)

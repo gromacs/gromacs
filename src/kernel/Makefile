@@ -70,6 +70,9 @@ endif
 
 include		$(STDTARGET)
 
+$(GMXHOME)/src/makef/Makefile.def:
+	echo "Wrong GROMACS environment, Please source GMXRC in this source tree"
+
 all:		bin
 
 grompp:		grompp.o $(GOBJ)

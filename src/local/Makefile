@@ -25,6 +25,9 @@ endif
 include		$(STDTARGET)
 #
 
+$(GMXHOME)/src/makef/Makefile.def:
+	echo "Wrong GROMACS environment, Please source GMXRC in this source tree"
+
 all:		bin
 
 david:		all	xmdrun	total	do_shift
