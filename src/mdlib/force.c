@@ -746,8 +746,8 @@ void init_forcerec(FILE *fp,
    * tables too, to improve cache performance.
    */
   tabelemsize=fr->bBHAM ? 16 : 12;
-  snew(fr->coultab,4*(fr->ntab+1)*sizeof(real));
-  snew(fr->vdwtab,(tabelemsize-4)*(fr->ntab+1)*sizeof(real));  
+  snew(fr->coultab,4*(fr->ntab+1));
+  snew(fr->vdwtab,(tabelemsize-4)*(fr->ntab+1));  
   for(i=0; i<=fr->ntab; i++) {
     for(j=0; j<4; j++) 
       fr->coultab[4*i+j]=fr->coulvdwtab[tabelemsize*i+j];
