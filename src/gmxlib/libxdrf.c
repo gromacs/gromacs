@@ -152,7 +152,7 @@ F77_FUNC(xdrfulong,XDRFULONG)(int *xdrid, unsigned long *ulp, int *ret)
 void
 F77_FUNC(xdrfushort,XDRFUSHORT)(int *xdrid, unsigned short *usp, int *ret)
 {
-	*ret = xdr_u_short(xdridptr[*xdrid], (u_short *)usp);
+	*ret = xdr_u_short(xdridptr[*xdrid], (unsigned short *)usp);
 	cnt += sizeof(unsigned short);
 }
 
