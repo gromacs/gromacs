@@ -126,7 +126,7 @@ typedef union
   struct {real rbc[NR_RBDIHS];			} rbdihs;
   struct {real a,b,c,d,e,f;                     } dummy;   
   struct {real low,up1,up2,kfac;int type,label; } disres; 
-  struct {int  ex,pow,label; real c,obs,kfac;   } orires;
+  struct {int  ex,power,label; real c,obs,kfac; } orires;
   struct {real buf[MAXFORCEPARAM];		} generic; /* Conversion */
 } t_iparams;
 

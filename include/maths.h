@@ -71,6 +71,7 @@ extern  real            sign(real x,real y);
 extern  real            gmx_erf(real x);
 extern  real            gmx_erfc(real x);
 
+
 #ifdef CPLUSPLUS
 }
 #endif

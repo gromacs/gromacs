@@ -544,7 +544,7 @@ case "${host_cpu}-${host_os}" in
      xASFLAGS=$xCFLAGS
    fi  
    if $F77 -V 2>&1 | grep 'Intel' > /dev/null 2>&1; then
-     xFFLAGS="-O3"
+     xFFLAGS="-O3 -w90 -w95"
    fi  
    # PORTME 2. Check for intel compilers when we get our hands on one!
    ;;	
@@ -737,7 +737,7 @@ case "${host_cpu}-${host_os}" in
     fi
     if test "$enable_fortran" = "yes"; then
       if $F77 -V 2>&1 | grep 'Intel' > /dev/null 2>&1; then
-	xFFLAGS="$xCFLAGS -w95"
+	xFFLAGS="$xCFLAGS -w90 -w95"
       fi	
     fi
 	
@@ -5261,7 +5261,7 @@ AC_MSG_CHECKING([for $compiler option to produce PIC])
 
       i?86)
 	# Intel icc compiler
-	if $CC -V 2>&1 | grep 'Intel Corporation' > /dev/null 2>&1; then
+	if $CC -V 2>&1 | grep 'Intel' > /dev/null 2>&1; then
           _LT_AC_TAGVAR(lt_prog_compiler_wl, $1)='-Qoption,link,'
           _LT_AC_TAGVAR(lt_prog_compiler_static, $1)='-static'
         else
@@ -5271,7 +5271,7 @@ AC_MSG_CHECKING([for $compiler option to produce PIC])
 	
       ia64)
 	# Intel icc compiler
-	if $CC -V 2>&1 | grep 'Intel Corporation' > /dev/null 2>&1; then
+	if $CC -V 2>&1 | grep 'Intel' > /dev/null 2>&1; then
           _LT_AC_TAGVAR(lt_prog_compiler_wl, $1)='-Qoption,link,'
           _LT_AC_TAGVAR(lt_prog_compiler_static, $1)='-static'
         else

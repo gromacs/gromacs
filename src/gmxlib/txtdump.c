@@ -467,8 +467,8 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 	    iparams->disres.up2,iparams->disres.kfac);
     break;
   case F_ORIRES:
-    fprintf(fp,"ex=%4d, label=%d, pow=%4d, c=%15.8e, obs=%15.8e, kfac=%15.8e)\n",
-	    iparams->orires.ex,iparams->orires.label,iparams->orires.pow,
+    fprintf(fp,"ex=%4d, label=%d, power=%4d, c=%15.8e, obs=%15.8e, kfac=%15.8e)\n",
+	    iparams->orires.ex,iparams->orires.label,iparams->orires.power,
 	    iparams->orires.c,iparams->orires.obs,iparams->orires.kfac);
     break;
   case F_POSRES:

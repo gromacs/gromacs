@@ -3,12 +3,12 @@
 #######################################################################
 
 AC_PREREQ(2.50)
-AC_INIT(GROMACS, 3.1.2, gmx-users@gromacs.org)
+AC_INIT(GROMACS, 3.1.3, gmx-users@gromacs.org)
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(gromacs, 3.1.2)
+AM_INIT_AUTOMAKE(gromacs, 3.1.3)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 AM_CONFIG_HEADER(src/config.h)
 dnl This is the version info according to the libtool versioning system.
@@ -140,9 +140,9 @@ fi
 
 ### Do software 1/sqrt(x)
 AC_ARG_ENABLE(software-sqrt,     
- [  --disable-software-sqrt       no software 1/sqrt (disabled on sgi,ibm)],,
+ [  --disable-software-sqrt       no software 1/sqrt (disabled on sgi,ibm,ia64)],,
 [case "${host_cpu}-${host_os}" in
-  mips*-irix* | rs6000*-aix* | powerpc*-aix) enable_software_sqrt=no ;;
+  mips*-irix* | rs6000*-aix* | powerpc*-aix | ia64*-*) enable_software_sqrt=no ;;
   *) enable_software_sqrt=yes ;;
 esac])
 if test "$enable_software_sqrt" = "yes"; then
