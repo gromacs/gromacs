@@ -28,12 +28,12 @@ TMPFILES        = mkinl   callf77.c libxdrf.c axp_asm.s \
 		  inner.h innerf.f innerc.c fnbf.c callf77A.c 
 OBJ		= \
 	3dview.o	atomprop.o	block_tx.o	bondfree.o	\
-	buffer.o	calch.o		callf77A.o	confio.o	\
-	copyrite.o	disre.o		do_fit.o	enxio.o		\
-	ewald_util.o	fatal.o		ffscanf.o	filenm.o	\
-	futil.o		gbutil.o	fnbf.o		gmxfio.o	\
-	ifunc.o		index.o		cinvsqrtdata.o	crecipdata.o    \
-	invblock.o	javaio.o	macros.o	                \
+	buffer.o	calcgrid.o	calch.o		callf77A.o	\
+	confio.o	copyrite.o	disre.o		do_fit.o	\
+	enxio.o		ewald_util.o	fatal.o		ffscanf.o	\
+	filenm.o	futil.o		gbutil.o	fnbf.o		\
+	gmxfio.o	ifunc.o		index.o		cinvsqrtdata.o	\
+	crecipdata.o    invblock.o	javaio.o	macros.o	\
 	main.o		maths.o		matio.o		memdump.o	\
 	mshift.o	mvdata.o	mvxvf.o		names.o		\
 	network.o	nrama.o		nrjac.o		nrnb.o		\

@@ -43,7 +43,7 @@ GTOBJ	= readir.o	$(PGTROBJ)	$(PGTXOBJ)
 GOBJ	= \
 	topio.o 	toppush.o 	topcat.o 	topshake.o 	\
 	convparm.o 	tomorse.o	sorting.o 	splitter.o	\
-	dum_parm.o	calcgrid.o	$(GTOBJ)
+	dum_parm.o	$(GTOBJ)
 
 # Objects for pdb2gmx
 POBJ	= \
