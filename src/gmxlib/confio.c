@@ -387,7 +387,7 @@ void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
   char resnm[6],nm[6],anr[8],format[100];
   int  ai,i,resnr,l,vpr;
 
-  if (nx >= 10000)
+  if (nx >= 100000)
     fprintf(stderr,"\n"
 	           "WARNING: Writing a .gro file with more than 99999 atoms\n"
 	           "         with only 5 digits for the atom numbers.\n"
