@@ -562,7 +562,7 @@ int main(int argc,char *argv[])
   int        *index,*pair;
   int        nbounds=0,npairs;
   bool       bDisRe,bDRAll,bStarted,bCont,bEDR,bVisco;
-  double     sum,sumaver,sumt;
+  double     sum,sumaver,sumt,dbl;
   real       **eneset=NULL,*time=NULL,Vaver;
   int        *set=NULL,i,j,k,nset,sss,nenergy;
   char       **enm=NULL,**leg=NULL,**pairleg;
@@ -618,7 +618,8 @@ int main(int argc,char *argv[])
 	if (i == nre)
 	  if (strcmp(setnm[j],"Volume")==0) {
 	    printf("Enter the box volume (nm^3): ");
-	    scanf("%f",&Vaver);
+	    scanf("%lf",&dbl);
+	    Vaver = dbl;
 	  } else
 	    fatal_error(0,"Could not find term %s for viscosity calculation",
 			setnm[j]);
