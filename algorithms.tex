@@ -1322,10 +1322,19 @@ The kinetic energy is computed at the whole time step, this is done by
 averaging the velocities at minus and plus a half time step,
 with a correction for the friction:
 \beq
-\ve{v}(t) = \frac{1}{2} \left( \ve{v} \left(t-\frac{\Delta t}{2} \right) 
-                + \ve{v}\left(t+\frac{\Delta t}{2}\right)\right)
-\left( e^{-\xi\Delta t} + \sqrt{2}\left(1 - e^{-\xi\Delta t}\right) \right)
+\begin{array}{c}
+\displaystyle 
+{\bf E}_{kin}(t) = \half \sum_{i=1}^n 
+  \left(m_i \vvi(t) \otimes \vvi(t)
+    + \half k_B T \left(1 - e^{-\xi\Delta t}\right){\bf I} \right)
+\\[2mm] \displaystyle
+\vvi(t) =
+  \half\left(\vvi(t-\frac{\Delta t}{2}) + \vvi(t+\frac{\Delta t}{2})\right)
+\end{array}
 \eeq
+When the friction is low the correction is negligible.
+In the limit of high friction the velocities at subsequent steps
+become uncorrelated and the correction is equal to half the kinetic energy.
 Exact continuation of a stochastic dynamics simulation is not possible,
 since apart from the coordinates and the velocities one random term of the
 previous step in required, however, the error will be very small.
