@@ -338,7 +338,7 @@ static void add_j_to_nblist(t_nblist *nlist,int j_atom)
 }
 
 static gmx_inline void put_in_list(bool bHaveLJ[],
-				   int nWater,int ngid,t_mdatoms *md,
+				   int ngid,t_mdatoms *md,
 				   int icg,int jgid,int nj,atom_id jjcg[],
 				   atom_id index[],atom_id a[],
 				   t_excl bExcl[],int shift,
@@ -373,7 +373,7 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
   /* Check whether this molecule is a water molecule */
   i0     = index[icg];
   nicg   = index[icg+1]-i0;
-  bWater = (((type[a[i0]] == nWater) && (nicg == 3)) && 
+  bWater = (((type[a[i0]] == fr->nWater) && (nicg == 3)) && 
 	    (!bPert[a[i0]]) && (!bPert[a[i0+1]]) && (!bPert[a[i0+2]]));
   if (bWater && fr->efep==efepNO)
     nicg = 1;
@@ -640,10 +640,27 @@ static real calc_image_rect(rvec xi,rvec xj,rvec box_size,
   return r2;
 }
 
+static void add_simple(t_ns_buf *nsbuf,int nrj,atom_id cg_j,
+		       bool bHaveLJ[],int ngid,t_mdatoms *md,
+		       int icg,int jgid,t_block *cgs,t_excl bexcl[],
+		       int shift,t_forcerec *fr)
+{
+  if (nsbuf->ncg >= MAX_CG) {
+    put_in_list(bHaveLJ,ngid,md,icg,jgid,nsbuf->ncg,nsbuf->jcg,
+		cgs->index,cgs->a,bexcl,shift,fr,FALSE,FALSE);
+    /* Reset buffer contents */
+    nsbuf->ncg = nsbuf->nj = 0;
+  }
+  nsbuf->jcg[nsbuf->ncg++]=cg_j;
+  nsbuf->nj += nrj;
+}
+
 static void ns_inner_tric(rvec x[],int icg,bool *i_eg_excl,
 			  int njcg,atom_id jcg[],
 			  matrix box,rvec b_inv,real rcut2,
-			  t_block *cgs,t_ns_buf **ns_buf,ushort gid[])
+			  t_block *cgs,t_ns_buf **ns_buf,ushort gid[],
+			  bool bHaveLJ[],int ngid,t_mdatoms *md,
+			  t_excl bexcl[],t_forcerec *fr)
 {
   int      shift;
   int      j,nrj,jgid;
@@ -652,18 +669,15 @@ static void ns_inner_tric(rvec x[],int icg,bool *i_eg_excl,
   
   cgindex = cgs->index;
   cga     = cgs->a;
-  shift = CENTRAL;
+  shift   = CENTRAL;
   for(j=0; (j<njcg); j++) {
     cg_j   = jcg[j];
     nrj    = cgindex[cg_j+1]-cgindex[cg_j];
     if (calc_image_tric(x[icg],x[cg_j],box,b_inv,&shift) < rcut2) {
       jgid  = gid[cga[cgindex[cg_j]]];
       if (!i_eg_excl[jgid]) {
-	nsbuf = &ns_buf[jgid][shift];
-	if (nsbuf->ncg >= MAX_CG) 
-	  fatal_error(0,"Too many charge groups (%d) in buffer",nsbuf->ncg);
-	nsbuf->jcg[nsbuf->ncg++]=cg_j;
-	nsbuf->nj += nrj;
+	add_simple(&ns_buf[jgid][shift],nrj,cg_j,
+		   bHaveLJ,ngid,md,icg,jgid,cgs,bexcl,shift,fr);
       }
     }
   }
@@ -672,7 +686,9 @@ static void ns_inner_tric(rvec x[],int icg,bool *i_eg_excl,
 static void ns_inner_rect(rvec x[],int icg,bool *i_eg_excl,
 			  int njcg,atom_id jcg[],
 			  bool bBox,rvec box_size,rvec b_inv,real rcut2,
-			  t_block *cgs,t_ns_buf **ns_buf,unsigned short gid[])
+			  t_block *cgs,t_ns_buf **ns_buf,unsigned short gid[],
+			  bool bHaveLJ[],int ngid,t_mdatoms *md,
+			  t_excl bexcl[],t_forcerec *fr)
 {
   int      shift;
   int      j,nrj,jgid;
@@ -689,26 +705,21 @@ static void ns_inner_rect(rvec x[],int icg,bool *i_eg_excl,
       if (calc_image_rect(x[icg],x[cg_j],box_size,b_inv,&shift) < rcut2) {
 	jgid  = gid[cga[cgindex[cg_j]]];
 	if (!i_eg_excl[jgid]) {
-	  nsbuf = &ns_buf[jgid][shift];
-	  if (nsbuf->ncg >= MAX_CG) 
-	    fatal_error(0,"Too many charge groups (%d) in buffer",nsbuf->ncg);
-	  nsbuf->jcg[nsbuf->ncg++]=cg_j;
-	  nsbuf->nj += nrj;
+	  add_simple(&ns_buf[jgid][shift],nrj,cg_j,
+		     bHaveLJ,ngid,md,icg,jgid,cgs,bexcl,shift,fr);
 	}
       }
     }
-  } else {
+  } 
+  else {
     for(j=0; (j<njcg); j++) {
       cg_j   = jcg[j];
       nrj    = cgindex[cg_j+1]-cgindex[cg_j];
       if ((rcut2 == 0) || (distance2(x[icg],x[cg_j]) < rcut2)) {
 	jgid  = gid[cga[cgindex[cg_j]]];
 	if (!i_eg_excl[jgid]) {
-	  nsbuf = &ns_buf[jgid][CENTRAL];
-	  if (nsbuf->ncg >= MAX_CG) 
-	    fatal_error(0,"Too many charge groups (%d) in buffer",nsbuf->ncg);
-	  nsbuf->jcg[nsbuf->ncg++]=cg_j;
-	  nsbuf->nj += nrj;
+	  add_simple(&ns_buf[jgid][CENTRAL],nrj,cg_j,
+		     bHaveLJ,ngid,md,icg,jgid,cgs,bexcl,CENTRAL,fr);
 	}
       }
     }
@@ -761,18 +772,19 @@ static int ns_simple_core(t_forcerec *fr,
     naaj=calc_naaj(icg,cgs->nr);
     if (bTriclinic)
       ns_inner_tric(fr->cg_cm,icg,i_eg_excl,naaj,&(aaj[icg]),
-		    box,b_inv,rlist2,cgs,ns_buf,md->cENER);
+		    box,b_inv,rlist2,cgs,ns_buf,md->cENER,
+		    bHaveLJ,ngid,md,bexcl,fr);
     else
       ns_inner_rect(fr->cg_cm,icg,i_eg_excl,naaj,&(aaj[icg]),
-		    bBox,box_size,b_inv,rlist2,cgs,ns_buf,md->cENER);
+		    bBox,box_size,b_inv,rlist2,cgs,ns_buf,md->cENER,
+		    bHaveLJ,ngid,md,bexcl,fr);
     nsearch += naaj;
     
     for(nn=0; (nn<ngid); nn++) {
       for(k=0; (k<SHIFTS); k++) {
 	nsbuf = &(ns_buf[nn][k]);
 	if (nsbuf->ncg > 0) {
-	  put_in_list(bHaveLJ,fr->nWater,
-		      ngid,md,icg,nn,nsbuf->ncg,nsbuf->jcg,
+	  put_in_list(bHaveLJ,ngid,md,icg,nn,nsbuf->ncg,nsbuf->jcg,
 		      cgs->index,cgs->a,bexcl,k,fr,FALSE,FALSE);
 	  nsbuf->ncg=nsbuf->nj=0;
 	}
@@ -872,8 +884,7 @@ static void do_longrange(FILE *log,t_topology *top,t_forcerec *fr,
 
   if (!bDoForces) {  
     /* Put the long range particles in a list */
-    put_in_list(bHaveLJ,fr->nWater,
-		ngid,md,icg,jgid,nlr,lr,top->blocks[ebCGS].index,
+    put_in_list(bHaveLJ,ngid,md,icg,jgid,nlr,lr,top->blocks[ebCGS].index,
 		top->blocks[ebCGS].a,bexcl,shift,fr,TRUE,bCoulOnly);
   }
 }
@@ -1067,8 +1078,7 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 			  if (!i_eg_excl[jgid]) {
 			    if (r2 < rs2) {
 			      if (nsr[jgid] >= MAX_CG) {
-				put_in_list(bHaveLJ,fr->nWater,
-					    ngid,md,icg,jgid,
+				put_in_list(bHaveLJ,ngid,md,icg,jgid,
 					    nsr[jgid],nl_sr[jgid],
 					    cgsindex,cgsatoms,bexcl,
 					    shift,fr,FALSE,FALSE);
@@ -1112,8 +1122,7 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 	  /* CHECK whether there is anything left in the buffers */
 	  for(nn=0; (nn<ngid); nn++) {
 	    if (nsr[nn] > 0)
-	      put_in_list(bHaveLJ,fr->nWater,
-			  ngid,md,icg,nn,nsr[nn],nl_sr[nn],
+	      put_in_list(bHaveLJ,ngid,md,icg,nn,nsr[nn],nl_sr[nn],
 			  cgsindex,cgsatoms,bexcl,shift,fr,FALSE,FALSE);
 	    
 	    if (nlr_ljc[nn] > 0) 
