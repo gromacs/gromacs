@@ -41,16 +41,6 @@ implemented through some extra files for {\tt mdrun}.
 Four different types of calculation are supported:
 
 \begin{enumerate}
-\item{\textbf{Constraint forces}} The distance between the centers of
-mass of two groups of atoms can be constrained and the 
-\swapindex{constraint}{force} monitored.
-The distance can be in 1, 2, or 3 dimensions. This method
-uses the SHAKE algorithm but only needs 1 iteration to be
-exact if only two groups are constrained. 
-\item{\textbf{Umbrella sampling}} A simple
-\swapindex{umbrella}{sampling} with an
-harmonic umbrella potential that acts on the center of mass of a group
-of atoms.
 \item{\textbf{\swapindex{AFM}{pulling}}} A spring is connected to an atom and
 slowly retracted. This has the effect of pulling an atom or group of
 atoms away from its initial location. The rate constant and spring
@@ -63,15 +53,17 @@ with AFM pulling. $V_{rup}$ is the velocity at which the spring is
 retracted, $Z_{link}$ is the atom to which the spring is attached and
 $Z_{spring}$ is the location of the spring.}
 \label{fi:pull} 
-\end{figure}   
-\item{\textbf{Starting structures}} This option creates a number of
-starting structures for potential of mean force calculations, moving 1
-or 2 groups of atoms at a specified rate towards or away from a
-reference group, writing out a coordinate file at specified intervals.
-Note that the groups given in the index file are translated a
-specified distance each step, but in addition also undergo the normal
-MD, subject to definitions of \emph{e.g.} temperature coupling groups, freeze
-groups and the like.
+\end{figure}
+\item{\textbf{Constraint forces}} The distance between the centers of
+mass of two groups of atoms can be constrained and the 
+\swapindex{constraint}{force} monitored.
+The distance can be in 1, 2, or 3 dimensions. This method
+uses the SHAKE algorithm but only needs 1 iteration to be
+exact if only two groups are constrained. 
+\item{\textbf{Umbrella sampling}} A simple
+\swapindex{umbrella}{sampling} with an
+harmonic umbrella potential that acts on the center of mass of a group
+of atoms.
 \end{enumerate}
 
 In the calculations, there has to be 1 reference group and 1 or 2
@@ -155,6 +147,30 @@ instead of the instanteneous distance. This is defined by setting {\tt
 reflag} to the number of steps to average over. However, using this
 option is not strictly correct for calculating potentials of mean
 force from the average constraint force. 
+
+When relative weights $w_i$ are used during the calculations, either
+due to a dynamic reference group or by supplying weights in the input,
+the weights need to be scaled correctly:
+\beq
+w'_i = w_i
+\left. \sum_{j=1}^N w_j \, m_j \right/ \sum_{j=1}^N w_j^2 \, m_j
+\eeq
+where $m_j$ is the mass of atom $j$ of the group.
+The mass of the group, required for calculating the constraint force, is:
+\beq
+M = \sum_{i=1}^N w'_i \, m_i
+\eeq
+The definition of the weighted center of mass is:
+\beq
+\ve{r}_{com} = \left. \sum_{i=1}^N w'_i \, m_i \, \ve{r}_i \right/ M
+\eeq
+From the centers of mass the AFM, constraint or umbrella force $\ve{F}_{\!com}$
+on each group can be calculated.
+The force on the center of mass of a group is redistributed to the atoms
+as follows:
+\beq
+\ve{F}_{\!i} = \left. \sum_{i=1}^N w'_i \, m_i \, \ve{F}_{\!com} \right/ M
+\eeq
 
 \subsection{The parameter file}
 
