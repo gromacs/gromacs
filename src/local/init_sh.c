@@ -110,9 +110,10 @@ t_shell *init_shells(FILE *log,int start,int homenr,
 	a1 = ia[2];
 	a2 = ia[1];
       }
-      else
+      else {
+	i += nra+1;
 	continue;
-    
+      }
       /* Check whether one of the particles is a shell... */
       nsi = shell_index[a1-start];
       if ((nsi < 0) || (nsi >= *nshell))
