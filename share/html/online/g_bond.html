@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_bond</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.1<br>
-Thu 28 Feb 2002</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.2.0<br>
+Sun 25 Jan 2004</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -23,14 +23,15 @@ of the bondlength (<tt>-blen</tt>). That means, for a bond of 0.2
 a tol of 0.1 gives a distribution from 0.18 to 0.22.<p>
 Option <tt>-d</tt> plots all the distances as a function of time.
 This requires a structure file for the atom and residue names in
-the output.
+the output. If however the option <tt>-averdist</tt> is given (as well
+or separately) the average bond length is plotted instead.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.xtc</a></tt> </TD><TD> Input </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input </TD><TD> Index file </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input, Opt. </TD><TD> Structure+mass(db): <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input, Opt. </TD><TD> Structure+mass(db): <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> xml </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   bonds.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-l</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="log.html">   bonds.log</a></tt> </TD><TD> Output, Opt. </TD><TD> Log file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-d</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">distance.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
@@ -40,7 +41,6 @@ the output.
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]X</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use dialog box GUI to edit command line options </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
@@ -48,7 +48,8 @@ the output.
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-blen</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Bond length. By default length of first bond </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-tol</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   0.1</tt> </TD><TD> Half width of distribution as fraction of blen </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]aver</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Sum up distributions </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]aver</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Average bond length distributions </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]averdist</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Average distances (turns on -d) </TD></TD>
 </TABLE>
 <P>
 <UL>
@@ -58,5 +59,6 @@ the output.
 <hr>
 <div ALIGN=RIGHT>
 <font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
 </div>
 </BODY>

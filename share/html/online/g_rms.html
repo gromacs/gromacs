@@ -9,29 +9,34 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_rms</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.1<br>
-Thu 28 Feb 2002</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.2.0<br>
+Sun 25 Jan 2004</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
 g_rms compares two structures by computing the root mean square
 deviation (RMSD), the size-independent 'rho' similarity parameter
 (rho) or the scaled rho (rhosc), 
-reference Maiorov & Crippen, PROTEINS 22, 273 (1995).
+see Maiorov & Crippen, PROTEINS <b>22</b>, 273 (1995).
 This is selected by <tt>-what</tt>.<p>Each structure from a trajectory (<tt>-f</tt>) is compared to a
-reference structure from a run input file by least-squares fitting
-the structures on <a href="top.html">top</a> of each other. The reference structure is taken
-from the structure file (<tt>-s</tt>).<p>
+reference structure. The reference structure
+is taken from the structure file (<tt>-s</tt>).<p>
 With option <tt>-mir</tt> also a comparison with the mirror image of
-the reference structure is calculated.<p>
-Option <tt>-prev</tt> produces the comparison with a previous frame.<p>
+the reference structure is calculated.
+This is useful as a reference for 'significant' values, see
+Maiorov & Crippen, PROTEINS <b>22</b>, 273 (1995).<p>
+Option <tt>-prev</tt> produces the comparison with a previous frame
+the specified number of frames ago.<p>
 Option <tt>-m</tt> produces a matrix in <tt>.<a href="xpm.html">xpm</a></tt> format of
 comparison values of each structure in the trajectory with respect to
 each other structure. This file can be visualized with for instance
 <tt>xv</tt> and can be converted to postscript with <tt><a href="xpm2ps.html">xpm2ps</a></tt>.<p>
-All the structures are fitted pairwise.<p>
+Option <tt>-fit</tt> controls the least-squares fitting of
+the structures on <a href="top.html">top</a> of each other: complete fit (rotation and
+translation), translation only, or no fitting at all.<p>
 With <tt>-f2</tt>, the 'other structures' are taken from a second
-trajectory.<p>
+trajectory, this generates a comparison matrix of one trajectory
+versus the other.<p>
 Option <tt>-bin</tt> does a binary dump of the comparison matrix.<p>
 Option <tt>-bm</tt> produces a matrix of average bond angle deviations
 analogously to the <tt>-m</tt> option. Only bonds between atoms in the
@@ -40,7 +45,7 @@ comparison group are considered.
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input </TD><TD> Structure+mass(db): <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input </TD><TD> Structure+mass(db): <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> xml </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.xtc</a></tt> </TD><TD> Input </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-f2</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.xtc</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
@@ -57,7 +62,6 @@ comparison group are considered.
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]X</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use dialog box GUI to edit command line options </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
@@ -66,7 +70,7 @@ comparison group are considered.
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-what</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>rmsd</tt> </TD><TD> Structural difference measure: <tt>rmsd</tt>, <tt>rho</tt> or <tt>rhosc</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> PBC check </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]fit</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Fit to reference structure </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-fit</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>rot+trans</tt> </TD><TD> Fit to reference structure: <tt>rot+trans</tt>, <tt>translation</tt> or <tt>none</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-prev</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Compare with previous frame </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]split</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Split graph where time is zero </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-skip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Only write every nr-th frame to matrix </TD></TD>
@@ -81,5 +85,6 @@ comparison group are considered.
 <hr>
 <div ALIGN=RIGHT>
 <font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
 </div>
 </BODY>

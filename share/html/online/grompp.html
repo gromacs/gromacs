@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>grompp</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.1<br>
-Thu 28 Feb 2002</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.2.0<br>
+Sun 25 Jan 2004</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -47,13 +47,21 @@ use grompp, but you do not have access to the features
 from the cpp. Command line options to the c-preprocessor can be given
 in the <tt>.<a href="mdp.html">mdp</a></tt> file. See your local manual (man cpp).<p>
 When using position restraints a file with restraint coordinates
-can be supplied with <tt>-r</tt>, otherwise constraining will be done
-relative to the conformation from the <tt>-c</tt> option.<p>
+can be supplied with <tt>-r</tt>, otherwise restraining will be done
+with respect to the conformation from the <tt>-c</tt> option.
+For free energy calculation the the coordinates for the B topology
+can be supplied with <tt>-rb</tt>, otherwise they will be equal to
+those of the A topology.<p>
 Starting coordinates can be read from trajectory with <tt>-t</tt>.
 The last frame with coordinates and velocities will be read,
 unless the <tt>-time</tt> option is used.
 Note that these velocities will not be used when <tt>gen_vel = yes</tt>
-in your <tt>.<a href="mdp.html">mdp</a></tt> file. If you want to continue a crashed run, it is
+in your <tt>.<a href="mdp.html">mdp</a></tt> file. An energy file can be supplied with
+<tt>-e</tt> to have exact restarts when using pressure and/or
+temperature coupling. For an exact restart do not forget to turn off
+velocity generation and turn on unconstrained starting when constraints
+are present in the system.
+If you want to continue a crashed run, it is
 easier to use <tt><a href="tpbconv.html">tpbconv</a></tt>.<p>
 When preparing an input file for parallel <tt><a href="mdrun.html">mdrun</a></tt> it may
 be advantageous to partition the simulation system over the
@@ -61,7 +69,10 @@ nodes in a way in which each node has a similar amount of
 work. The -shuffle option does just that. For a single protein
 in water this does not make a difference, however for a system where
 you have many copies of different molecules  (e.g. liquid mixture
-or membrane/water system) the option is definitely a must.<p>
+or membrane/water system) the option is definitely a must.
+The output trajectories will also be shuffled. <tt>grompp</tt> writes
+an index file (option <tt>-deshuf</tt>) which can be used with
+<tt><a href="trjconv.html">trjconv</a></tt> to deshuffle the trajectories.<p>
 A further optimization for parallel systems is the <tt>-sort</tt>
 option which sorts molecules according to coordinates. This must
 always be used in conjunction with <tt>-shuffle</tt>, however
@@ -92,21 +103,22 @@ program.
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="mdp.html">  grompp.mdp</a></tt> </TD><TD> Input, Opt. </TD><TD> grompp input file with MD parameters </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-po</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="mdp.html">   mdout.mdp</a></tt> </TD><TD> Output </TD><TD> grompp input file with MD parameters </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-c</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Input </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-r</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-c</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Input </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> xml </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-r</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> xml </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-rb</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> xml </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-deshuf</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">  deshuf.ndx</a></tt> </TD><TD> Output, Opt. </TD><TD> Index file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-p</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="top.html">   topol.top</a></tt> </TD><TD> Input </TD><TD> Topology file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-pp</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="top.html">processed.top</a></tt> </TD><TD> Output, Opt. </TD><TD> Topology file </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Output </TD><TD> Generic run input: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Output </TD><TD> Generic run input: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> xml </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-t</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.trr</a></tt> </TD><TD> Input, Opt. </TD><TD> Full precision trajectory: <a href="trr.html">trr</a> <a href="trj.html">trj</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    ener.edr</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic energy: <a href="edr.html">edr</a> <a href="ene.html">ene</a> </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]X</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use dialog box GUI to edit command line options </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]v</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Be loud and noisy </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-time</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Take frame at or first after this time. </TD></TD>
@@ -117,10 +129,12 @@ program.
 <TR><TD ALIGN=RIGHT> <b><tt>-load</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Releative load capacity of each node on a parallel machine. Be sure to use quotes around the string, which should contain a number for each node </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-maxwarn</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>10</tt> </TD><TD> Number of warnings after which input processing stops </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]check14</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Remove 1-4 interactions without Van der Waals </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]renum</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Renumber atomtypes and minimize number of atomtypes </TD></TD>
 </TABLE>
 <P>
 <hr>
 <div ALIGN=RIGHT>
 <font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
 </div>
 </BODY>

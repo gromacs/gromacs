@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_anaeig</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.1<br>
-Thu 28 Feb 2002</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.2.0<br>
+Sun 25 Jan 2004</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -23,8 +23,10 @@ to the structure in the structure file. When no run input file is
 supplied, periodicity will not be taken into account. Most analyses
 are performed on eigenvectors <tt>-first</tt> to <tt>-last</tt>, but when
 <tt>-first</tt> is set to -1 you will be prompted for a selection.<p>
-<tt>-disp</tt>: plot all atom displacements of eigenvectors
+<tt>-comp</tt>: plot the vector components per atom of eigenvectors
 <tt>-first</tt> to <tt>-last</tt>.<p>
+<tt>-rmsf</tt>: plot the RMS fluctuation per atom of eigenvectors
+<tt>-first</tt> to <tt>-last</tt> (requires <tt>-eig</tt>).<p>
 <tt>-proj</tt>: calculate projections of a trajectory on eigenvectors
 <tt>-first</tt> to <tt>-last</tt>.
 The projections of a trajectory on the eigenvectors of its
@@ -57,7 +59,7 @@ in file <tt>-v</tt>.<p>
 eigenvectors in files <tt>-v</tt> and <tt>-v2</tt>. All eigenvectors
 of both files will be used unless <tt>-first</tt> and <tt>-last</tt>
 have been set explicitly.<p>
-When <tt>-v</tt>, <tt>-eig1</tt>, <tt>-v2</tt> and <tt>-eig2</tt> are given,
+When <tt>-v</tt>, <tt>-eig</tt>, <tt>-v2</tt> and <tt>-eig2</tt> are given,
 a single number for the overlap between the covariance matrices is
 generated. The formulas are:<br>
         difference = sqrt(tr((sqrt(M1) - sqrt(M2))^2))<br>
@@ -75,14 +77,15 @@ subspaces are orthogonal.
 <TR><TD ALIGN=RIGHT> <b><tt>-v</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">eigenvec.trr</a></tt> </TD><TD> Input </TD><TD> Full precision trajectory: <a href="trr.html">trr</a> <a href="trj.html">trj</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-v2</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">eigenvec2.trr</a></tt> </TD><TD> Input, Opt. </TD><TD> Full precision trajectory: <a href="trr.html">trr</a> <a href="trj.html">trj</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.xtc</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input, Opt. </TD><TD> Structure+mass(db): <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input, Opt. </TD><TD> Structure+mass(db): <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> xml </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-eig1</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">eigenval1.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-eig</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">eigenval.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-eig2</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">eigenval2.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-disp</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> eigdisp.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-comp</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> eigcomp.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-rmsf</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> eigrmsf.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-proj</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    proj.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-2d</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  2dproj.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-3d</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">  3dproj.pdb</a></tt> </TD><TD> Output, Opt. </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-3d</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">  3dproj.pdb</a></tt> </TD><TD> Output, Opt. </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> xml </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-filt</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">filtered.xtc</a></tt> </TD><TD> Output, Opt. </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-extr</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html"> extreme.pdb</a></tt> </TD><TD> Output, Opt. </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-over</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> overlap.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
@@ -93,7 +96,6 @@ subspaces are orthogonal.
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]X</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use dialog box GUI to edit command line options </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
@@ -111,5 +113,6 @@ subspaces are orthogonal.
 <hr>
 <div ALIGN=RIGHT>
 <font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
 </div>
 </BODY>

@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_chi</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.1<br>
-Thu 28 Feb 2002</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.2.0<br>
+Sun 25 Jan 2004</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -18,16 +18,46 @@ g_chi computes phi, psi, omega and chi dihedrals for all your
 amino acid backbone and sidechains.
 It can compute dihedral angle as a function of time, and as
 histogram distributions.
-Output is in form of xvgr files, as well as a LaTeX table of the
-number of transitions per nanosecond.<p>
-Order parameters S2 for each of the dihedrals are calculated and
-output as xvgr file and optionally as a <a href="pdb.html">pdb</a> file with the S2
-values as B-factor.<p>
-If option <tt>-c</tt> is given, the program will
+The distributions (histo-(dihedral)(RESIDUE).<a href="xvg.html">xvg</a>) are cumulative over all residues of each type.<p>
+If option <tt>-corr</tt> is given, the program will
 calculate dihedral autocorrelation functions. The function used
 is C(t) = &lt; cos(chi(tau)) cos(chi(tau+t)) &gt;. The use of cosines
 rather than angles themselves, resolves the problem of periodicity.
-(Van der Spoel & Berendsen (1997), <b>Biophys. J. 72</b>, 2032-2041).<p>
+(Van der Spoel & Berendsen (1997), <b>Biophys. J. 72</b>, 2032-2041).
+Separate files for each dihedral of each residue
+(corr(dihedral)(RESIDUE)(nresnr).<a href="xvg.html">xvg</a>) are output, as well as a
+file containing the information for all residues (argument of <tt>-corr</tt>).<p>
+With option <tt>-all</tt>, the angles themselves as a function of time for
+each residue are printed to separate files (dihedral)(RESIDUE)(nresnr).<a href="xvg.html">xvg</a>.
+These can be in radians or degrees.<p>
+A log file (argument <tt>-g</tt>) is also written. This contains <br>
+(a) information about the number of residues of each type.<br>
+(b) The NMR 3J coupling constants from the Karplus equation.<br>
+(c) a table for each residue of the number of transitions between 
+rotamers per nanosecond,  and the order parameter S2 of each dihedral.<br>
+(d) a table for each residue of the rotamer occupancy.<br>
+All rotamers are taken as 3-fold, except for omegas and chi-dihedrals
+to planar groups (i.e. chi2 of aromatics asp and asn, chi3 of glu
+and gln, and chi4 of arg), which are 2-fold. "rotamer 0" means 
+that the dihedral was not in the core region of each rotamer. 
+The width of the core region can be set with <tt>-core_rotamer</tt><p>
+The S2 order parameters are also output to an <a href="xvg.html">xvg</a> file
+(argument <tt>-o</tt> ) and optionally as a <a href="pdb.html">pdb</a> file with
+the S2 values as B-factor (argument <tt>-p</tt>). 
+The total number of rotamer transitions per timestep
+(argument <tt>-ot</tt>), the number of transitions per rotamer
+(argument <tt>-rt</tt>), and the 3J couplings (argument <tt>-jc</tt>), 
+can also be written to .<a href="xvg.html">xvg</a> files.<p>
+If <tt>-chi_prod</tt> is set (and maxchi &gt; 0), cumulative rotamers, e.g.
+1+9(chi1-1)+3(chi2-1)+(chi3-1) (if the residue has three 3-fold 
+dihedrals and maxchi &gt;= 3)
+are calculated. As before, if any dihedral is not in the core region,
+the rotamer is taken to be 0. The occupancies of these cumulative 
+rotamers (starting with rotamer 0) are written to the file
+that is the argument of <tt>-cp</tt>, and if the <tt>-all</tt> flag
+is given, the rotamers as functions of time
+are written to chiproduct(RESIDUE)(nresnr).<a href="xvg.html">xvg</a> 
+and their occupancies to histo-chiproduct(RESIDUE)(nresnr).<a href="xvg.html">xvg</a>.<p>
 The option <tt>-r</tt> generates a contour plot of the average omega angle
 as a function of the phi and psi angles, that is, in a Ramachandran plot
 the average omega angle is plotted using color coding.
@@ -35,7 +65,7 @@ the average omega angle is plotted using color coding.
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-c</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Input </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Input </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> xml </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.xtc</a></tt> </TD><TD> Input </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   order.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-p</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="pdb.html">   order.pdb</a></tt> </TD><TD> Output, Opt. </TD><TD> Protein data bank file </TD></TR>
@@ -43,13 +73,16 @@ the average omega angle is plotted using color coding.
 <TR><TD ALIGN=RIGHT> <b><tt>-jc</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">Jcoupling.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-corr</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> dihcorr.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-g</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="log.html">     chi.log</a></tt> </TD><TD> Output </TD><TD> Log file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ot</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">dihtrans.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-oh</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> trhisto.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-rt</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">restrans.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-cp</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">chiprodhisto.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]X</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use dialog box GUI to edit command line options </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
@@ -62,17 +95,21 @@ the average omega angle is plotted using color coding.
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]rama</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Generate Phi/Psi and Chi1/Chi2 ramachandran plots </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]viol</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Write a file that gives 0 or 1 for violated Ramachandran angles </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]all</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Output separate files for every dihedral. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]rad</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> in angle vs time files, use radians rather than degrees. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]shift</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Compute chemical shifts from Phi/Psi angles </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-run</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> perform running average over ndeg degrees for histograms </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-binwidth</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> bin width for histograms (degrees) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-core_rotamer</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   0.5</tt> </TD><TD> only the central -core_rotamer*(360/multiplicity) belongs to each rotamer (the rest is assigned to rotamer 0) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-maxchi</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> calculate first ndih Chi dihedrals: <tt>0</tt>, <tt>1</tt>, <tt>2</tt>, <tt>3</tt>, <tt>4</tt>, <tt>5</tt> or <tt>6</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]normhisto</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Normalize histograms </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]ramomega</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> compute average omega as a function of phi/psi and plot it in an <a href="xpm.html">xpm</a> plot </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-bfact</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> B-factor value for <a href="pdb.html">pdb</a> file for atoms with no calculated dihedral order parameter </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]chi_prod</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> compute a single cumulative rotamer for each residue </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]HChi</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Include dihedrals to sidechain hydrogens </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-bmax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Maximum B-factor on any of the atoms that make up a dihedral, for the dihedral angle to be considere in the statistics. Applies to database work where a number of X-Ray structures is analyzed. -bmax &lt;= 0 means no limit. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-acflen</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Length of the ACF, default is half the number of frames </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]normalize</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Normalize ACF </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-P</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Order of Legendre polynomial for ACF (0 indicates none): <tt>0</tt>, <tt>1</tt>, <tt>2</tt> or <tt>3</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-fitfn</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Fit function: <tt>none</tt>, <tt>exp</tt>, <tt>aexp</tt>, <tt>exp_exp</tt>, <tt>vac</tt>, <tt>exp5</tt> or <tt>exp7</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-fitfn</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Fit function: <tt>none</tt>, <tt>exp</tt>, <tt>aexp</tt>, <tt>exp_exp</tt>, <tt>vac</tt>, <tt>exp5</tt>, <tt>exp7</tt> or <tt>exp9</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-ncskip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Skip N points in the output file of correlation functions </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-beginfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Time where to begin the exponential fit of the correlation function </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-endfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Time where to end the exponential fit of the correlation function, -1 is till the end </TD></TD>
@@ -80,10 +117,14 @@ the average omega angle is plotted using color coding.
 <P>
 <UL>
 <LI>Produces MANY output files (up to about 4 times the number of residues in the protein, twice that if autocorrelation functions are calculated). Typically several hundred files are output.
+<LI>Phi and psi dihedrals are calculated in a non-standard way, using H-N-CA-C for phi instead of C(-)-N-CA-C, and N-CA-C-O for psi instead of N-CA-C-N(+). This causes (usually small) discrepancies with the output of other tools like <a href="g_rama.html">g_rama</a>.
+<LI>-r0 option does not work properly
+<LI>Rotamers with multiplicity 2 are printed in chi.log as if they had multiplicity 3, with the 3rd (g(+)) always having probability 0
 </UL>
 <P>
 <hr>
 <div ALIGN=RIGHT>
 <font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
 </div>
 </BODY>

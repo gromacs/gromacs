@@ -9,16 +9,25 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>pdb2gmx</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.1<br>
-Thu 28 Feb 2002</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.2.0<br>
+Sun 25 Jan 2004</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-This program reads a <a href="pdb.html">pdb</a> file, lets you choose a forcefield, reads
+This program reads a <a href="pdb.html">pdb</a> file, reads
 some database files, adds hydrogens to the molecules and generates
 coordinates in Gromacs (Gromos) format and a topology in Gromacs format.
 These files can subsequently be processed to generate a run input file.
 <p>
+The force fields supported currently are:<p>
+G43a1  GROMOS96 43a1 Forcefield (official distribution)<p>
+oplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)<p>
+G43b1  GROMOS96 43b1 Vacuum Forcefield (official distribution)<p>
+gmx    Gromacs Forcefield (a modified GROMOS87, see manual)<p>
+G43a2  GROMOS96 43a2 Forcefield (development) (improved alkane dihedrals)<p>
+The corresponding data files can be found in the library directory
+with names like ffXXXX.YYY. Check chapter 5 of the manual for more
+information about file formats.<p>
 Note that a <a href="pdb.html">pdb</a> file is nothing more than a file format, and it
 need not necessarily contain a protein structure. Every kind of
 molecule for which there is support in the database can be converted.
@@ -56,12 +65,6 @@ The <tt>.<a href="gro.html">gro</a></tt> and <tt>.<a href="g96.html">g96</a></tt
 identifiers. Therefore it is useful to enter a <a href="pdb.html">pdb</a> file name at
 the <tt>-o</tt> option when you want to convert a multichain <a href="pdb.html">pdb</a> file.
 <p>
-<tt>-sort</tt> will sort all residues according to the order in the
-database, sometimes this is necessary to get charge groups
-together.<p>
-<tt>-alldih</tt> will generate all proper dihedrals instead of only
-those with as few hydrogens as possible, this is useful for use with
-the Charmm forcefield.<p>
 The option <tt>-dummy</tt> removes hydrogen and fast improper dihedral
 motions. Angular and out-of-plane motions can be removed by changing
 hydrogens into dummy atoms and fixing angles, which fixes their
@@ -76,26 +79,26 @@ done by increasing the hydrogen-mass by a factor of 4. This is also
 done for water hydrogens to slow down the rotational motion of water.
 The increase in mass of the hydrogens is subtracted from the bonded
 (heavy) atom so that the total mass of the system remains the same.
-Reference Feenstra et al., J. Comput. Chem. 20, 786 (1999).
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   eiwit.pdb</a></tt> </TD><TD> Input </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Output </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   eiwit.pdb</a></tt> </TD><TD> Input </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> xml </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Output </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> xml </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-p</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="top.html">   topol.top</a></tt> </TD><TD> Output </TD><TD> Topology file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-i</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="itp.html">   posre.itp</a></tt> </TD><TD> Output </TD><TD> Include file for topology </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   clean.ndx</a></tt> </TD><TD> Output, Opt. </TD><TD> Index file </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-q</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   clean.pdb</a></tt> </TD><TD> Output, Opt. </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-q</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   clean.pdb</a></tt> </TD><TD> Output, Opt. </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> xml </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]X</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use dialog box GUI to edit command line options </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]merge</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Merge multiple chains into one molecule </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ff</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt>G43a1</tt> </TD><TD> Select the force field, supported are: G43a1, oplsaa, gmx, G43a2, G43b1. Run pdb2gmx -h for more information. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-water</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>spc</tt> </TD><TD> Water model to use: with GROMOS we recommend SPC, with OPLS, TIP4P: <tt>spc</tt>, <tt>spce</tt>, <tt>tip3p</tt>, <tt>tip4p</tt> or <tt>tip5p</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]inter</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Set the next 6 options to interactive </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]ss</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Interactive SS bridge selection </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]ter</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Interactive termini selection, iso charged </TD></TD>
@@ -105,12 +108,10 @@ Reference Feenstra et al., J. Comput. Chem. 20, 786 (1999).
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]his</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Interactive Histidine selection, iso checking H-bonds </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-angle</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   135</tt> </TD><TD> Minimum hydrogen-donor-acceptor angle for a H-bond (degrees) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dist</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   0.3</tt> </TD><TD> Maximum donor-acceptor distance for a H-bond (nm) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-posrefc</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>  1000</tt> </TD><TD> Force constant for position restraints </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]una</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Select aromatic rings with united CH atoms on Phenylalanine, Tryptophane and Tyrosine </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]sort</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Sort the residues according to database </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]H14</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use 1-4 interactions between hydrogen atoms </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]ignh</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Ignore hydrogen atoms that are in the <a href="pdb.html">pdb</a> file </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]alldih</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Generate all proper dihedrals </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]missing</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Continue when atoms are missing, dangerous </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-posrefc</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>  1000</tt> </TD><TD> Force constant for position restraints </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dummy</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Convert atoms to dummy atoms: <tt>none</tt>, <tt>hydrogens</tt> or <tt>aromatics</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]heavyh</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Make hydrogen atoms heavy </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]deuterate</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Change the mass of hydrogens to 2 amu </TD></TD>
@@ -119,5 +120,6 @@ Reference Feenstra et al., J. Comput. Chem. 20, 786 (1999).
 <hr>
 <div ALIGN=RIGHT>
 <font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
 </div>
 </BODY>

@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_analyze</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.1<br>
-Thu 28 Feb 2002</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.2.0<br>
+Sun 25 Jan 2004</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -58,6 +58,12 @@ a, tau1 and tau2 are obtained by fitting BA(t) to the calculated block
 average.
 When the actual block average is very close to the analytical curve,
 the error is sigma*sqrt(2/T (a tau1 + (1-a) tau2)).<p>
+Option <tt>-filter</tt> prints the RMS high-frequency fluctuation
+of each set and over all sets with respect to a filtered average.
+The filter is proportional to cos(pi t/len) where t goes from -len/2
+to len/2. len is supplied with the option <tt>-filter</tt>.
+This filter reduces oscillations with period len/2 and len by a factor
+of 0.79 and 0.33 respectively.<p>
 Option <tt>-power</tt> fits the data to b t^a, which is accomplished
 by fitting to a t + b on log-log scale. All points after the first
 zero or negative value are ignored.
@@ -79,7 +85,6 @@ zero or negative value are ignored.
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]X</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use dialog box GUI to edit command line options </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]time</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Expect a time in the input </TD></TD>
@@ -89,13 +94,14 @@ zero or negative value are ignored.
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]d</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use the derivative </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-bw</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   0.1</tt> </TD><TD> Binwidth for the distribution </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-errbar</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Error bars for -av: <tt>none</tt>, <tt>stddev</tt>, <tt>error</tt> or <tt>90</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-filter</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Print the high-frequency fluctuation after filtering with a cosine filter of length # </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]power</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Fit data to: b t^a </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]subav</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Subtract the average before autocorrelating </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]oneacf</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Calculate one ACF over all sets </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-acflen</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Length of the ACF, default is half the number of frames </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]normalize</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Normalize ACF </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-P</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Order of Legendre polynomial for ACF (0 indicates none): <tt>0</tt>, <tt>1</tt>, <tt>2</tt> or <tt>3</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-fitfn</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Fit function: <tt>none</tt>, <tt>exp</tt>, <tt>aexp</tt>, <tt>exp_exp</tt>, <tt>vac</tt>, <tt>exp5</tt> or <tt>exp7</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-fitfn</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Fit function: <tt>none</tt>, <tt>exp</tt>, <tt>aexp</tt>, <tt>exp_exp</tt>, <tt>vac</tt>, <tt>exp5</tt>, <tt>exp7</tt> or <tt>exp9</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-ncskip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Skip N points in the output file of correlation functions </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-beginfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Time where to begin the exponential fit of the correlation function </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-endfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Time where to end the exponential fit of the correlation function, -1 is till the end </TD></TD>
@@ -104,5 +110,6 @@ zero or negative value are ignored.
 <hr>
 <div ALIGN=RIGHT>
 <font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
 </div>
 </BODY>

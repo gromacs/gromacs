@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>editconf</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.1<br>
-Thu 28 Feb 2002</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.2.0<br>
+Sun 25 Jan 2004</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -92,9 +92,9 @@ where <tt>veclen</tt> is the size of the cubic box times sqrt(3)/2.
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Input </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Input </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> xml </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">     out.gro</a></tt> </TD><TD> Output </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">     out.gro</a></tt> </TD><TD> Output </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> xml </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-bf</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="dat.html">   bfact.dat</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic data file </TD></TR>
 </TABLE>
 <P>
@@ -102,7 +102,6 @@ where <tt>veclen</tt> is the size of the cubic box times sqrt(3)/2.
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]X</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use dialog box GUI to edit command line options </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]ndef</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Choose output from default index groups </TD></TD>
@@ -112,10 +111,12 @@ where <tt>veclen</tt> is the size of the cubic box times sqrt(3)/2.
 <TR><TD ALIGN=RIGHT> <b><tt>-d</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Distance between the solute and the box </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]c</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Center molecule in box (implied by -box and -d) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-center</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Coordinates of geometrical center </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-translate</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Translation </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-rotate</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Rotation around the X, Y and Z axes in degrees </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]princ</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Orient molecule(s) along their principal axes </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-scale</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>1 1 1</tt> </TD><TD> Scaling factor </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-density</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>  1000</tt> </TD><TD> Density (g/l) of the output box achieved by scaling </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]vol</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Compute and print volume of the box </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Remove the periodicity (make molecule whole again) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]mead</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Store the charge of the atom in the occupancy field and the radius of the atom in the B-factor field </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]grasp</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Store the charge of the atom in the B-factor field and the radius of the atom in the occupancy field </TD></TD>
@@ -132,5 +133,6 @@ where <tt>veclen</tt> is the size of the cubic box times sqrt(3)/2.
 <hr>
 <div ALIGN=RIGHT>
 <font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
 </div>
 </BODY>

@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>mdrun</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.1<br>
-Thu 28 Feb 2002</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.2.0<br>
+Sun 25 Jan 2004</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -65,6 +65,11 @@ Lennard Jones potentials with normal Coulomb.<p>
 The options <tt>-pi</tt>, <tt>-po</tt>, <tt>-pd</tt>, <tt>-pn</tt> are used
 for potential of mean force calculations and umbrella sampling.
 See manual.<p>
+Finally some experimental algorithms can be tested when the
+appropriate options have been given. Currently under
+investigation are: polarizibility, glass simulations, 
+Free energy perturbation, X-Ray bombardments
+and parallel independent simulations.<p>
 When mdrun receives a TERM signal, it will set nsteps to the current
 step plus one. When mdrun receives a USR1 signal, it will set nsteps
 to the next multiple of nstxout after the current step.
@@ -72,22 +77,18 @@ In both cases all the usual output will be written to file.
 When running with MPI, a signal to one of the mdrun processes
 is sufficient, this signal should not be sent to mpirun or
 the mdrun process that is the parent of the others.
-Finally some experimental algorithms can be tested when the
-appropriate options have been given. Currently under
-investigation are: polarizibility, glass simulations, 
-Free energy perturbation, X-Ray bombardments
-and parallel independent simulations.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input </TD><TD> Generic run input: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input </TD><TD> Generic run input: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> xml </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.trr</a></tt> </TD><TD> Output </TD><TD> Full precision trajectory: <a href="trr.html">trr</a> <a href="trj.html">trj</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-x</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xtc.html">    traj.xtc</a></tt> </TD><TD> Output, Opt. </TD><TD> Compressed trajectory (portable xdr format) </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-c</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html"> confout.gro</a></tt> </TD><TD> Output </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-c</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html"> confout.gro</a></tt> </TD><TD> Output </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> xml </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    ener.edr</a></tt> </TD><TD> Output </TD><TD> Generic energy: <a href="edr.html">edr</a> <a href="ene.html">ene</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-g</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="log.html">      md.log</a></tt> </TD><TD> Output </TD><TD> Log file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-dgdl</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    dgdl.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-field</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   field.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-table</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   table.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-rerun</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   rerun.xtc</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-ei</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edi.html">     sam.edi</a></tt> </TD><TD> Input, Opt. </TD><TD> ED sampling input </TD></TR>
@@ -102,16 +103,17 @@ and parallel independent simulations.
 <TR><TD ALIGN=RIGHT> <b><tt>-pd</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="pdo.html">    pull.pdo</a></tt> </TD><TD> Output, Opt. </TD><TD> Pull data output </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-pn</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">    pull.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-mtx</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="mtx.html">      nm.mtx</a></tt> </TD><TD> Output, Opt. </TD><TD> Hessian matrix </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-dn</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">  dipole.ndx</a></tt> </TD><TD> Output, Opt. </TD><TD> Index file </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]X</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use dialog box GUI to edit command line options </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-deffnm</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Set the default filename for all file options </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-np</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Number of nodes, must be the same as used for <a href="grompp.html">grompp</a> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nt</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Number of threads to start on each node </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]v</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Be loud and noisy </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]compact</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Write a compact log file </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]multi</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Do multiple simulations in parallel (only with -np &gt; 1) </TD></TD>
@@ -122,5 +124,6 @@ and parallel independent simulations.
 <hr>
 <div ALIGN=RIGHT>
 <font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
 </div>
 </BODY>
