@@ -336,9 +336,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   
   debug_gmx();
 
-  *bNEMD = FALSE;
-  for(i=0; (i<ir->opts.ngacc); i++)
-    (*bNEMD) = (*bNEMD) || (norm(ir->opts.acc[i]) > 0);
+  *bNEMD = (ir->opts.ngacc > 1) || (norm(ir->opts.acc[0]) > 0);
 }
 
 void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,
