@@ -68,11 +68,12 @@ void file_header(void)
     fprintf(output,"\n\n#define x86trunc(a,b) asm(\"fld %%1 ; fistpl %%0\" : \"=m\" (*&b) : \"f\" (a));\n\n");
 #endif
 #ifdef USE_IBM_MASS
-   fprintf(output,
- 	  "void vsrec(float *, float *, int *);\n"
- 	  "void vsrsqrt(float *, float *, int *);\n"
- 	  "void vrec(double *, double *, int *);\n"
- 	  "void vrsqrt(double *, double *, int *);\n");
+  if(bC)
+    fprintf(output,
+	    "void vsrec(float *, float *, int *);\n"
+	    "void vsrsqrt(float *, float *, int *);\n"
+	    "void vrec(double *, double *, int *);\n"
+	    "void vrsqrt(double *, double *, int *);\n");
 #endif
   
 }
