@@ -287,7 +287,8 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   static char *npristr[]     = { NULL, "128", "250", "200", "100", "0", NULL };
   static int  nicelevel=0,mantp=0,npri=0;
   static bool bExcept=FALSE,bGUI=FALSE,bDebug=FALSE;
-  
+  static char *deffnm=NULL;
+
   FILE *fp;  
   bool bPrint;
   int  i,j,k,npall;
@@ -295,23 +296,25 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   
   t_pargs *all_pa=NULL;
   
-  t_pargs motif_pa = { "-X",    FALSE, etBOOL, &bGUI,
+  t_pargs motif_pa  = { "-X",    FALSE, etBOOL, &bGUI,
 		       "Use dialog box GUI to edit command line options" };
-  t_pargs fpe_pa   = { "-exception", FALSE, etBOOL, &bExcept,
+  t_pargs fpe_pa    = { "-exception", FALSE, etBOOL, &bExcept,
 		       "HIDDENTurn on exception handling" };
-  t_pargs npri_paX = { "-npri", FALSE, etENUM,  not_npristr,
+  t_pargs npri_paX  = { "-npri", FALSE, etENUM,  not_npristr,
 		       "Set non blocking priority" };
-  t_pargs npri_pa  = { "-npri", FALSE, etINT,  &npri,
+  t_pargs npri_pa   = { "-npri", FALSE, etINT,  &npri,
 		       "Set non blocking priority (try 128)" };
-  t_pargs nice_paX = { "-nice", FALSE, etENUM, not_nicestr, 
+  t_pargs nice_paX  = { "-nice", FALSE, etENUM, not_nicestr, 
 		       "Set the nicelevel" };
-  t_pargs nice_pa  = { "-nice", FALSE, etINT,  &nicelevel, 
+  t_pargs nice_pa   = { "-nice", FALSE, etINT,  &nicelevel, 
 		       "Set the nicelevel" };
-  t_pargs begin_pa = { "-b",    FALSE, etREAL, &tbegin,        
+  t_pargs deffnm_pa = { "-deffnm", FALSE, etSTR,  &deffnm, 
+		       "Set the default filename for all file options" };
+  t_pargs begin_pa  = { "-b",    FALSE, etREAL, &tbegin,        
 		       "First frame (ps) to read from trajectory" };
-  t_pargs end_pa   = { "-e",    FALSE, etREAL, &tend,        
+  t_pargs end_pa    = { "-e",    FALSE, etREAL, &tend,        
 		       "Last frame (ps) to read from trajectory" };
-  t_pargs view_pa  = { "-w",    FALSE, etBOOL, &bView,     
+  t_pargs view_pa   = { "-w",    FALSE, etBOOL, &bView,     
 		       "View output using xvgr or ghostview" };
   
   t_pargs pca_pa[] = {
@@ -370,12 +373,11 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
     bQuiet = TRUE;
 #endif
   
-  /* First do file stuff */
   if (!program)
     program  = strdup(argv[0]);
 
   /* Parse the file args */
-  parse_file_args(argc,argv,nfile,fnm,FF(PCA_KEEP_ARGS));
+  /* parse_file_args(argc,argv,nfile,fnm,FF(PCA_KEEP_ARGS)); */
   
   /* Check ALL the flags ... */
   snew(all_pa,NPCA_PA+npargs);
@@ -422,6 +424,8 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   }
 #endif
 
+  if (FF(PCA_CAN_SET_DEFFNM)) 
+    npall = add_parg(npall,&(all_pa),&deffnm_pa);   
   if (FF(PCA_CAN_BEGIN)) 
     npall = add_parg(npall,&(all_pa),&begin_pa);
   if (FF(PCA_CAN_END))
@@ -440,6 +444,12 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   
   /* Now parse all the command-line options */
   get_pargs(argc,argv,npall,all_pa,FF(PCA_KEEP_ARGS));
+
+  if (FF(PCA_CAN_SET_DEFFNM) && (deffnm!=NULL))
+    set_default_file_name(deffnm);
+
+  /* Parse the file args */
+  parse_file_args(argc,argv,nfile,fnm,FF(PCA_KEEP_ARGS));
 
   /* Open the debug file */
   if (bDebug) {

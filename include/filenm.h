@@ -42,6 +42,9 @@ extern "C" {
 
 #include "futil.h"
 
+void set_default_file_name(char *name);
+/* Set the default file name for all file types to name */
+
 extern char *ftp2ext(int ftp);
 /* Return extension for filetype */
 

@@ -129,7 +129,7 @@ int main(int argc,char *argv[])
 
   parse_common_args(&argc,argv,
 		    PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_SET_NPRI |
-		    (MASTER(cr) ? 0 : PCA_QUIET),
+		    PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET),
 		    TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
     
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);

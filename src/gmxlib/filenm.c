@@ -153,6 +153,18 @@ static t_deffile deffile[efNR] = {
   { eftASC, ".xpm", "root",   NULL, "X PixMap compatible matrix file"        }
 };
 
+static char *default_file_name=NULL;
+
+void set_default_file_name(char *name)
+{
+  int i;
+
+  default_file_name = strdup(name);
+
+  for(i=0; i<efNR; i++)
+    deffile[i].defnm = default_file_name;
+}
+
 char *ftp2ext(int ftp)
 {
   if ((0 <= ftp) && (ftp < efNR))
@@ -192,8 +204,7 @@ char *ftp2defnm(int ftp)
   if ((0 <= ftp) && (ftp < efNR)) {
     sprintf(buf,"%s",deffile[ftp].defnm);
     return buf;
-  }
-  else
+  } else
     return NULL;
 }
 
@@ -335,7 +346,7 @@ static void set_extension(char *buf,int ftp)
   strcat(buf,df->ext);
 }
 
-static void set_grpfnm(t_filenm *fnm,char *name)
+static void set_grpfnm(t_filenm *fnm,char *name,bool bCanNotOverride)
 {
   char buf[256],buf2[256];
   int  i,type;
@@ -349,7 +360,7 @@ static void set_grpfnm(t_filenm *fnm,char *name)
     fatal_error(0,"DEATH HORROR ERROR in %s:%d",__FILE__,__LINE__);
 
   bValidExt = FALSE;
-  if (name) {
+  if (name && (bCanNotOverride || (default_file_name == NULL))) {
     strcpy(buf,name);
     /* First check whether we have a valid filename already */
     type = fn2ftp(name);
@@ -380,7 +391,7 @@ static void set_grpfnm(t_filenm *fnm,char *name)
   fnm->fn = strdup(buf);
 }
 
-static void set_filenm(t_filenm *fnm,char *name)
+static void set_filenm(t_filenm *fnm,char *name,bool bCanNotOverride)
 {
   /* Set the default filename, extension and option for those fields that 
    * are not already set. An extension is added if not present, if fn = NULL
@@ -392,14 +403,12 @@ static void set_filenm(t_filenm *fnm,char *name)
     fatal_error(0,"file type out of range (%d)",fnm->ftp);
 
   if (deffile[fnm->ftp].ntps)
-    set_grpfnm(fnm,name);
+    set_grpfnm(fnm,name,bCanNotOverride);
   else {
-    if (name != NULL) {
+    if ((name != NULL) && (bCanNotOverride || (default_file_name == NULL)))
       strcpy(buf,name);
-    }
-    else {
+    else
       strcpy(buf,deffile[fnm->ftp].defnm);
-    }
     set_extension(buf,fnm->ftp);
     
     fnm->fn=strdup(buf);
@@ -412,7 +421,7 @@ static void set_filenms(int nf,t_filenm fnm[])
 
   for(i=0; (i<nf); i++)
     if (!is_set(fnm[i]))
-      set_filenm(&(fnm[i]),fnm[i].fn);
+      set_filenm(&(fnm[i]),fnm[i].fn,FALSE);
 }
 
 void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
@@ -436,12 +445,12 @@ void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
 	  bRemove[i]=TRUE;
 	  i++;
 	  if ((i < *argc) && (argv[i][0] != '-')) {
-	    set_filenm(&fnm[j],argv[i]);
+	    set_filenm(&fnm[j],argv[i],TRUE);
 	    bRemove[i]=TRUE;
 	    i++;
 	  }
 	  else
-	    set_filenm(&fnm[j],fnm[j].fn);
+	    set_filenm(&fnm[j],fnm[j].fn,FALSE);
 
 	  break;
 	}
