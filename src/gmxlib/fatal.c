@@ -358,7 +358,7 @@ void init_debug (char *dbgfile)
 #ifdef _SGI_
 static void user_routine(unsigned us[5], int ii[2])
 {
-  fprintf(stderr,"User routine us=(%d,%d,%d,%d,%d) ii=(%d,%d)\n",
+  fprintf(stderr,"User routine us=(%u,%u,%u,%u,%u) ii=(%d,%d)\n",
 	  us[0],us[1],us[2],us[3],us[4],ii[0],ii[1]);
   fprintf(stderr,"Exception encountered! Dumping core\n");
   abort();
