@@ -467,7 +467,7 @@ int main(int argc,char *argv[])
       useatoms.resname=atoms->resname;
       for(i=0;(i<nout);i++) {
 	useatoms.atomname[i]=atoms->atomname[index[i]];
-	useatoms.atom[i].resnr=atoms->atom[index[i]].resnr;
+	useatoms.atom[i]=atoms->atom[index[i]];
 	useatoms.nres=max(useatoms.nres,useatoms.atom[i].resnr+1);
       }
       useatoms.nr=nout;
