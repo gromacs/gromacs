@@ -220,7 +220,7 @@ proptim:	proptim.o	hxprops.o	readev.o	\
 wheel:		wheel.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-g_rdf:		g_rdf.o
+g_rdf:		g_rdf.o $(ACOBJ)
 		$(LD) -o $@ $^ $(RUNSYSLIBS)
 
 g_com:		g_com.o

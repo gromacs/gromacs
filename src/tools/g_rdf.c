@@ -49,10 +49,11 @@ static char *SRCID_g_rdf_c = "$Id$";
 #include "nrnb.h"
 #include "shift_util.h"
 #include "pppm.h"
+#include "gstat.h"
 
 static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
-		   char *fnRDF,char *fnCNRDF,
-		   bool bCM,real cutoff,real binwidth)
+		   char *fnRDF,char *fnCNRDF, char *fnHQ,
+		   bool bCM,real cutoff,real binwidth,real fade)
 {
   FILE       *fp;
   int        status;
@@ -61,11 +62,11 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   int        natoms,i,j,k,nbin,j0,j1,n,nframes;
   int        *count;
   char       **grpname;
-  int        isize[3];
+  int        isize[3],nrdf;
   atom_id    *index[3];
   unsigned long int sum;
   real       t,boxmin,hbox,hbox2,cut2,r,r2,invbinw,normfac;
-  real       segvol,spherevol,prev_spherevol;
+  real       segvol,spherevol,prev_spherevol,*rdf;
   rvec       *x,xcom,dx,*x_i1,xi;
   real       *inv_segvol;
   bool       *bExcl,bTop,bNonSelfExcl;
@@ -84,6 +85,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
       excl=&(top.atoms.excl);
   }
   snew(grpname,2);
+  fprintf(stderr,"Select groups for RDF computation:\n");
   if (fnTPS)
     get_index(&top.atoms,fnNDX,2,isize,index,grpname);
   else
@@ -227,26 +229,73 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   
   /* Calculate normalization factor and totals */
   sum = 0;
-  for(i=0; i<nbin; i++)
+  for(i=0; (i<nbin-1); i++)
     sum += count[i];
   r = nbin*binwidth;
   normfac = (4.0/3.0)*M_PI * r*r*r / sum;
-  
+
+  /* Do the normalization */
+  nrdf = max(nbin-1,1+(2*fade/binwidth));
+  snew(rdf,nrdf);
+  for(i=0; (i<nbin-1); i++) {
+    r = (i+0.5)*binwidth;
+    if ((fade > 0) && (r >= fade))
+      rdf[i] = 1+(count[i]*inv_segvol[i]*normfac-1)*exp(-16*sqr(r/fade-1));
+    else
+      rdf[i] = count[i]*inv_segvol[i]*normfac;
+  }
+  for( ; (i<nrdf); i++)
+    rdf[i] = 1.0;
+    
   fp=xvgropen(fnRDF,"Radial Distribution","r","");
   fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
-  for(i=0; i<nbin; i++)
-    fprintf(fp,"%10g %10g\n", (i+0.5)*binwidth,count[i]*inv_segvol[i]*normfac);
+  for(i=0; (i<nrdf); i++)
+    fprintf(fp,"%10g %10g\n", (i+0.5)*binwidth,rdf[i]);
   ffclose(fp);
-
-  normfac = 1.0/(isize[0]*nframes);
-  fp=xvgropen(fnCNRDF,"Cumulative Number RDF","r","number");
-  fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
-  sum = 0;
-  for(i=0; i<nbin; i++) {
-    fprintf(fp,"%10g %10g\n",i*binwidth,(real)((double)sum*normfac));
-    sum += count[i];
+  
+  do_view(fnRDF,NULL);
+  
+  if (fnHQ) {
+    int nhq = 201;
+    real *hq,*integrand,Q,rho;
+    
+    /* Get a better number density later! */
+    rho = isize[1]/det(box);
+    snew(hq,nhq);
+    snew(integrand,nrdf);
+    for(i=0; (i<nhq); i++) {
+      Q = i*0.5;
+      integrand[0] = 0;
+      for(j=1; (j<nrdf); j++) {
+	r = (j+0.5)*binwidth;
+	integrand[j]  = (Q == 0) ? 1.0 : sin(Q*r)/(Q*r);
+	integrand[j] *= 4.0*M_PI*rho*r*r*(rdf[j]-1.0);
+      }
+      hq[i] = print_and_integrate(debug,nrdf,binwidth,integrand,0);
+    }
+    fp=xvgropen(fnHQ,"h(Q)","Q(/nm)","h(Q)");
+    for(i=0; (i<nhq); i++) 
+      fprintf(fp,"%10g %10g\n",i*0.5,hq[i]);
+    ffclose(fp);
+    do_view(fnHQ,NULL);
+    sfree(hq);
+    sfree(integrand);
   }
-  ffclose(fp);
+    
+  if (fnCNRDF) {  
+    normfac = 1.0/(isize[0]*nframes);
+    fp=xvgropen(fnCNRDF,"Cumulative Number RDF","r","number");
+    fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
+    sum = 0;
+    for(i=0; (i<nbin-1); i++) {
+      fprintf(fp,"%10g %10g\n",i*binwidth,(real)((double)sum*normfac));
+      sum += count[i];
+    }
+    ffclose(fp);
+    
+    do_view(fnCNRDF,NULL);
+  }
+  sfree(rdf);
 }
 
 static void extract_sq(t_fftgrid *fftgrid,int nbin,real factor,
@@ -298,7 +347,7 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
   real       t,k_max,factor,yfactor;
   rvec       *x,*xndx,box_size,kk,lll;
   real       *inv_segvol,*fj,max_spacing;
-  bool       *bExcl,bTop,bNonSelfExcl;
+  bool       *bExcl,bTop;
   matrix     box;
   int        nx,ny,nz,nelectron;
   atom_id    ix,jx,**pairs;
@@ -308,6 +357,7 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
   
   bTop=read_tps_conf(fnTPS,title,&top,&x,NULL,box,TRUE);
 
+  fprintf(stderr,"Select group for structure factor computation:\n");
   get_index(&top.atoms,fnNDX,1,&isize,&index,&grpname);
   if (isize < top.atoms.nr)
     snew(xndx,isize);
@@ -413,6 +463,8 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
   for(i=0; i<nbin; i++)
     fprintf(fp,"%10g %10g\n", (i+0.5)*factor,count[i]*yfactor);
   ffclose(fp);
+
+  do_view(fnSQ,NULL);
 }
 
 int main(int argc,char *argv[])
@@ -436,7 +488,7 @@ int main(int argc,char *argv[])
     "spacing of which is determined by option [TT]-grid[tt]."
   };
   static bool bCM=FALSE;
-  static real cutoff=0, binwidth=0.005, grid = 0.1;
+  static real cutoff=0, binwidth=0.005, grid = 0.1, fade=0.0;
   t_pargs pa[] = {
     { "-bin",      FALSE, etREAL, {&binwidth},
       "Binwidth (nm)" },
@@ -444,6 +496,8 @@ int main(int argc,char *argv[])
       "RDF with respect to the center of mass of first group" },
     { "-cut",      FALSE, etREAL, {&cutoff},
       "Shortest distance (nm) to be considered"},
+    { "-fade",     FALSE, etREAL, {&fade},
+      "From this distance onwards the RDF is tranformed by g'(r) = 1 + [g(r)-1] exp(-(r/fade-1)^2 to make it go to 1 smoothly. If fade is 0.0 nothing is done." },
     { "-grid",     FALSE, etREAL, {&grid},
       "Grid spacing (in nm) for FFTs when computing structure factors" }
   };
@@ -455,9 +509,10 @@ int main(int argc,char *argv[])
     { efTRX, "-f",  NULL,     ffREAD },
     { efTPS, NULL,  NULL,     ffOPTRD },
     { efNDX, NULL,  NULL,     ffOPTRD },
-    { efXVG, "-o",  "rdf",    ffWRITE },
+    { efXVG, "-o",  "rdf",    ffOPTWR },
     { efXVG, "-sq", "sq",     ffOPTWR },
-    { efXVG, "-cn", "rdf_cn", ffWRITE }
+    { efXVG, "-cn", "rdf_cn", ffOPTWR },
+    { efXVG, "-hq", "hq",     ffOPTWR },
   };
 #define NFILE asize(fnm)
   
@@ -486,15 +541,9 @@ int main(int argc,char *argv[])
   
   if (bRDF) 
     do_rdf(fnNDX,fnTPS,ftp2fn(efTRX,NFILE,fnm),
-	   opt2fn("-o",NFILE,fnm),opt2fn("-cn",NFILE,fnm),
-	   bCM,cutoff,binwidth);
- 
-  if (bRDF) { 
-    do_view(opt2fn("-o",NFILE,fnm),NULL);
-    do_view(opt2fn("-cn",NFILE,fnm),NULL);
-  }
-  if (bSQ)
-    do_view(opt2fn("-sq",NFILE,fnm),NULL);
+	   opt2fn("-o",NFILE,fnm),opt2fn_null("-cn",NFILE,fnm),
+	   opt2fn_null("-hq",NFILE,fnm),
+	   bCM,cutoff,binwidth,fade);
 
   thanx(stderr);
   
