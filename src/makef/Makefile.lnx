@@ -85,7 +85,7 @@ else
 XLIBS		= -L/usr/X11R6/lib -lX11 
 SYSLIBS		= -lm
 endif
-SHAREIT		= (cd $(LIBDIR); ar x $(LIB); $(CC) $(LDFLAGS) -shared -Wl,-soname,$(SONAME) -o $(LIBDIR)/$(SONAME) *.o; $(RM) *.o)
+#SHAREIT		= (cd $(LIBDIR); ar x $(LIB); $(CC) $(LDFLAGS) -shared -Wl,-soname,$(SONAME) -o $(LIBDIR)/$(SONAME) *.o; $(RM) *.o)
 RANLIB		= ranlib
 X11INC		= -I/usr/X11R6/include
 
