@@ -144,6 +144,9 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
   int maxsr,maxsr_wat,maxlr,maxlr_wat;
   
   maxsr     = homenr-fr->nWatMol*3;
+  if (maxsr <= 0)
+    fatal_error(0,"%s, %d: Negative number of short range atoms.\n"
+		"Call your Gromacs dealer for assistance.",__FILE__,__LINE__);
   maxsr_wat = fr->nWatMol; 
   maxlr     = max(maxsr/10,50);
   maxlr_wat = max(maxsr_wat/10,50);
