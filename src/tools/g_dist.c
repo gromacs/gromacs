@@ -91,7 +91,7 @@ void main(int argc,char *argv[])
 
   /* open output file */
   fp = xvgropen(ftp2fn(efXVG,NFILE,fnm),
-		"Distance","Distance (nm)","Time (ps)");
+		"Distance","Time (ps)","Distance (nm)");
   
   /* read index files */
   ngrps = 2;
