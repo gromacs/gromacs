@@ -276,11 +276,11 @@ real potential(real r1,real rc,real R)
 
 real calc_LRcorrections(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 			real charge[],t_block *excl,rvec x[],
-			rvec f[],bool bOld,rvec box_size,matrix lrvir)
+			bool bOld,rvec box_size,matrix lr_vir)
 {
   static bool bFirst=TRUE;
   static real Vself;
-  int    i,i1,i2,j,k,m;
+  int    i,i1,i2,j,k,m,iv,jv;
   unsigned int *AA;
   real   qi,qq,dr,ddd,dr2,dr_1,dr_3,fscal,Vexcl,qtot=0;
   rvec   df,dx;
@@ -338,12 +338,9 @@ real calc_LRcorrections(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 	    ddd = x[i][m] - x[k][m];
 	      if(ddd>box_size[m]/2) {  /* ugly hack,   */
 		ddd-=box_size[m];      /* to fix pbc.. */ 
-		shift[m]=-1;
-	      } else if (ddd<-box_size[m]/2) {
-		ddd+=box_size[m];
-		shift[m]=+1;
-	      } else
-		shift[m]=0;
+	      } else if (ddd<-box_size[m]/2)
+		  ddd+=box_size[m];
+	      
 	    dx[m] = ddd;
 	    dr2  += ddd*ddd;
 	  }
@@ -367,16 +364,18 @@ real calc_LRcorrections(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 	   * distance vector 
 	   */
 	  svmul(fscal,dx,df);
-	  rvec_inc(f[k],df);
-	  rvec_dec(f[i],df);
-	  rvec_dec(fr->fshift[XYZ2IS(shift[0],shift[1],shift[2])],df);
+	  rvec_inc(fr->flr[k],df);
+	  rvec_dec(fr->flr[i],df);
+	  for(iv=0;iv<DIM;iv++)
+	      for(jv=0;jv<DIM;jv++)
+		  lr_vir[iv][jv]+=0.5*dx[iv]*df[jv];
 	}
       }
     }
   }
   return (Vself+Vexcl);
 }
-
+  
 
 void calc_ener(FILE *fp,char *title,bool bHeader,int nmol,
 	       int natoms,real phi[],real charge[],t_block *excl)
