@@ -144,7 +144,7 @@ static bool ButtonCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
     letter.xclient.message_type=0;
     letter.xclient.format=32;
     letter.xclient.data.l[0]=but->ID;
-    letter.xclient.data.l[1]=event->xbutton.button;
+    letter.xclient.data.l[1]=(long)event->xbutton.button;
     XSendEvent(x11->disp,wd->Parent,True,0,&letter);
     break;
   default:
@@ -156,7 +156,6 @@ static bool ButtonCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 t_butbox *init_vbox(t_x11 *x11,Window Parent,Window SendTo,ulong fg,ulong bg)
 {
   Pixmap   pm;
-  ulong    mask;
   unsigned char     *data;
   t_butbox *vb;
   int      i,ID,x,y0;
@@ -176,7 +175,7 @@ t_butbox *init_vbox(t_x11 *x11,Window Parent,Window SendTo,ulong fg,ulong bg)
   x11->SetInputMask(x11,vb->wd.self,ExposureMask);
   
   x=AIR;
-  mask=CWBackPixmap;
+  (void)CWBackPixmap;
   for(i=0; (i<vb->nbut); i++) {
     ID=IDBUTNR+i+1;
     switch (ID) {

@@ -133,11 +133,15 @@ int QueryDlgItemH(t_dlg *dlg, t_id id)
 bool SetDlgItemSize(t_dlg *dlg,t_id id,int w,int h)
 {
   t_dlgitem *dlgitem;
+#ifdef DEBUG
   int old_w, old_h;
+#endif
 
   if ((dlgitem=FindItem(dlg,id)) != NULL) {
+#ifdef DEBUG
     old_w=dlgitem->win.width;
     old_h=dlgitem->win.height;
+#endif
     if (w)
       dlgitem->win.width=w;
     if (h)

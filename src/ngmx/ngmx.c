@@ -49,7 +49,7 @@ static char *SRCID_ngmx_c = "$Id$";
 #include "tpxio.h"
 
 /* Forward declarations: I Don't want all that init shit here */
-t_gmx *init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[]);
+void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[]);
 
 int EventSignaller(t_manager *man);
 
@@ -211,7 +211,9 @@ static bool MainCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 {
   t_gmx *gmx;
   int   nsel,width,height;
+  bool  result;
 
+  result = FALSE;
   gmx=(t_gmx *)data;
   switch(event->type) {
   case ButtonRelease:
@@ -227,12 +229,12 @@ static bool MainCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
   case ClientMessage:
     hide_pd(x11,gmx->pd);
     nsel=event->xclient.data.l[0];
-    return HandleClient(x11,nsel,gmx);
+    result = HandleClient(x11,nsel,gmx);
     break;
   default:
     break;
   }
-  return FALSE;
+  return result;
 }
 
 int main(int argc, char *argv[])
@@ -259,7 +261,6 @@ int main(int argc, char *argv[])
   };
 
   t_x11 *x11;
-  t_gmx *gmx;
   t_filenm fnm[] = {
     { efTRX, "-f", NULL, ffREAD },
     { efTPX, NULL, NULL, ffREAD },
@@ -276,7 +277,7 @@ int main(int argc, char *argv[])
 	    "Check your DISPLAY environment variable\n");
     exit(1);
   }
-  gmx=init_gmx(x11,argv[0],NFILE,fnm);
+  init_gmx(x11,argv[0],NFILE,fnm);
 
   x11->MainLoop(x11);
   x11->CleanUp(x11);
@@ -317,7 +318,7 @@ static char *MenuTitle[MSIZE] = {
   "File", "Display", "Help"
 };
 
-t_gmx *init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
+void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
 {
   Pixmap               pm;
   t_gmx                *gmx;
@@ -384,7 +385,5 @@ t_gmx *init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
   /*show_logo(x11,gmx->logo);*/
   
   ShowDlg(gmx->dlgs[edFilter]);
-
-  return gmx;
 }
 

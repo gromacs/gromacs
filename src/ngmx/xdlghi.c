@@ -103,7 +103,7 @@ t_dlgitem **CreateDlgitemGroup(t_x11 *x11, char *szTitle,
   y=dlgitem[0]->win.y+dlgitem[0]->win.height;
   w=0;
   for (i=0; (i<nitem); i++) {
-    edlg=va_arg(ap,int);
+    edlg=(edlgitem)va_arg(ap,int);
     ids[i]=va_arg(ap,int);
     switch (edlg) {
     case edlgBN:

@@ -266,9 +266,8 @@ bool HelpPressed(XEvent *event)
   char           buf[BUFSIZE+1];
   XComposeStatus compose;
   KeySym         keysym;
-  int            count;
 
-  count=XLookupString(&(event->xkey),buf,BUFSIZE,&keysym,&compose);
+  (void)XLookupString(&(event->xkey),buf,BUFSIZE,&keysym,&compose);
 
   return (keysym == XK_F1);
 }

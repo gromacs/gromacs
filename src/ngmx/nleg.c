@@ -104,7 +104,8 @@ void DrawLegend(t_x11 *x11,t_windata *Win)
 #define NLAB 6
 #define COLS 3
   static char *lab[NLAB] = { "C", "O", "H", "S", "N", "P" };
-  int  i,i0,dh,dw,w,cind,y,x1,x0;
+  int  i,i0,dh,dw,w,y,x1,x0;
+  unsigned long cind;
   real h_2;
   
   XClearWindow(x11->disp, Win->self);

@@ -137,7 +137,6 @@ static void MainLoop(t_x11 *x11)
 {
   bool    bReturn;
   XEvent  event;
-  t_peek  tp;
   t_wlist *curs;
   Window  w;
 
@@ -145,8 +144,6 @@ static void MainLoop(t_x11 *x11)
     if (x11->wlist) {
       XNextEvent(x11->disp,&event);
       w=event.xany.window;
-      tp.w=w;
-      tp.b=FALSE;
       curs=GetWList(x11,w);
       if (!curs)
 	bReturn=TRUE;
@@ -225,7 +222,7 @@ static void SetInputMask(t_x11 *x11, Window w, ulong mask)
   curs=GetWList(x11,w);
   if (curs) {
     curs->mask=mask;
-    XSelectInput(x11->disp,w,mask);
+    XSelectInput(x11->disp,w,(long)mask);
   }
   else 
     fprintf(x11->console,"No such window (%d)\n",(int)w);

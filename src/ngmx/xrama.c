@@ -105,9 +105,9 @@ static bool xrCallBack(struct t_x11 *x11,XEvent *event, Window w, void *data)
   t_app   *app;
   t_xrama *xr;
   char    buf[256];
-  int     i,th;
+  int     i;
   
-  th=XTextHeight(x11->font)+6;
+  (void)XTextHeight(x11->font);
   app=(t_app *)data;
   xr=app->xr;
   scx=app->xrwd.width/(2.0*M_PI);

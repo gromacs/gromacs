@@ -69,7 +69,7 @@ static bool MWCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
     printf("Molwindow: Buttonpress\n");
 #endif
     letter.xclient.data.l[0]=IDLABEL;
-    letter.xclient.data.l[1]=event->xbutton.button;
+    letter.xclient.data.l[1]=(long)event->xbutton.button;
     letter.xclient.data.l[2]=event->xbutton.x;
     letter.xclient.data.l[3]=event->xbutton.y;
     XSendEvent(x11->disp,To,True,0,&letter);

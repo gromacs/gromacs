@@ -120,12 +120,10 @@ static int DefWndProc(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
 
 static int WndProcBN(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
 {
-  t_button *bn;
   t_windata *win;
   int x,w,th;
 
   assert(dlgitem->type==edlgBN);
-  bn=&(dlgitem->u.button);
   win=&(dlgitem->win);
   w=XTextWidth(x11->font,win->text,strlen(win->text));
   x=(win->width-w)/2;
@@ -191,12 +189,10 @@ static int WndProcRB(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
 
 static int WndProcGB(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
 {
-  t_groupbox *gb;
   t_windata *win;
   int x,y;
 
   assert(dlgitem->type==edlgGB);
-  gb=&(dlgitem->u.groupbox);
   win=&(dlgitem->win);
   
   x=XTextWidth(x11->font,win->text,strlen(win->text));

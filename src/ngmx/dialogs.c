@@ -321,7 +321,7 @@ typedef struct {
 } t_dlginit;
 
 typedef struct {
-  eDialogs    ed;
+  eMBoxes     ed;
   t_mmb       *mmb;
   DlgCallback *cb;
 } t_mbinit;
