@@ -227,7 +227,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   real         *radius,*dgs_factor=NULL,*area=NULL,*surfacedots=NULL;
   real         at_area,*atom_area=NULL,*atom_area2=NULL;
   real         *res_a=NULL,*res_area=NULL,*res_area2=NULL;
-  real         totarea,totvolume,harea,tarea;
+  real         totarea,totvolume,harea,tarea,fluc2;
   atom_id      *index;
   int          nx,nphobic;
   char         *grpname;
@@ -379,11 +379,16 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     for(i=0; i<nx; i++) {
       ii = index[i];
       res = atoms->atom[ii].resnr;
-      if (i==nx-1 || res!=atoms->atom[index[i+1]].resnr)
-	fprintf(fp,"%10d  %10g %10g\n",res+1,res_area[res],
-		sqrt(res_area2[res]-sqr(res_area[res])));
-      fprintf(fp2,"%d %g %g\n",index[i]+1,atom_area[i],
-	      sqrt(atom_area2[i]-sqr(atom_area[i])));
+      if (i==nx-1 || res!=atoms->atom[index[i+1]].resnr) {
+	fluc2 = res_area2[res]-sqr(res_area[res]);
+	if (fluc2 < 0)
+	  fluc2 = 0;
+	fprintf(fp,"%10d  %10g %10g\n",res+1,res_area[res],sqrt(fluc2));
+      }
+      fluc2 = atom_area2[i]-sqr(atom_area[i]);
+      if (fluc2 < 0)
+	fluc2 = 0;
+      fprintf(fp2,"%d %g %g\n",index[i]+1,atom_area[i],sqrt(fluc2));
       if (bITP && (atom_area[i] > minarea))
 	fprintf(fp3,"%5d   1     FCX  FCX  FCZ\n",ii+1);
     }
