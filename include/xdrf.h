@@ -67,7 +67,11 @@ extern int xdr_real(XDR *xdrs,real *r);
 extern int xdr3drcoord(XDR *xdrs,real *fp,int *size,real *precision);
 /* Read or write reduced precision *real* coordinates */
 
+extern int xdr_seek_time(real time, int fp, int natoms);
+
+extern int xdr_seek_frame(int frame, int fp, int natoms);
 #endif
+
 
 
 

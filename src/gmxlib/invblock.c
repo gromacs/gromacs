@@ -41,6 +41,7 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "invblock.h"
+#include "fatal.h"
 
 atom_id *make_invblock(const t_block *block,int nr)
 {

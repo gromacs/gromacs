@@ -138,7 +138,7 @@ void
 F77_FUNC(xdrfshort,XDRFSHORT)(int *xdrid, short *sp, int *ret)
 {
 	*ret = xdr_short(xdridptr[*xdrid], sp);
-	cnt += sizeof(sp);
+  	cnt += sizeof(sp);
 }
 
 void
@@ -1117,3 +1117,170 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
     return 1;
 }
 
+
+/* Must match definition in xtcio.c */
+#ifndef XTC_MAGIC
+#define XTC_MAGIC 1995
+#endif
+
+static const int header_size = 16;
+
+static unsigned long get_next_frame_number(int fp,int natoms){
+  unsigned int inp;  
+  while(xdr_int(xdridptr[fp+1],&inp)){
+    if(inp == XTC_MAGIC){
+      if(xdr_int(xdridptr[fp+1],&inp) && inp == natoms){
+	if(xdr_int(xdridptr[fp+1],&inp)){
+	  return inp;
+	}
+      }
+    }
+  }
+  return -1;
+}
+
+
+static float get_next_frame_time(int fp,int natoms){
+  unsigned int inp;  
+  float time;
+  while(xdr_int(xdridptr[fp+1],&inp)){
+    if(inp == XTC_MAGIC){
+      if(xdr_int(xdridptr[fp+1],&inp) && inp == natoms){
+	if(xdr_int(xdridptr[fp+1],&inp) && xdr_real(xdridptr[fp+1],&time)){
+	  return time;
+	}
+      }
+    }
+  }
+  return -1;
+}
+
+static off_t get_next_frame_start(int fp, int natoms){
+  unsigned int inp;
+  while(xdr_int(xdridptr[fp+1],&inp)){
+    if(inp == XTC_MAGIC){
+      if(xdr_int(xdridptr[fp+1],&inp) && inp == natoms){
+	return ftello(xdrfiles[fp+1])-sizeof(int)*2;
+      }
+    }
+  }
+  return -1;
+}
+
+static float estimate_xtc_dt(int fp, int natoms){
+  off_t off = ftello(xdrfiles[fp+1]);
+  float tinit = get_next_frame_time(fp,natoms);
+  float res = get_next_frame_time(fp,natoms);
+  if(tinit < 0 || res < 0){
+    return -1;
+  }
+  res -= tinit;
+  fseeko(xdrfiles[fp+1],off,SEEK_SET);
+  return res;
+}
+
+int xdr_seek_frame(int frame, int fp, int natoms){
+  off_t low = 0;
+  off_t high;
+  
+  /* round to 4 bytes */
+  unsigned long fr;
+  fseeko(xdrfiles[fp+1],0,SEEK_END);
+  /* round to 4 bytes  */
+  high = ftello(xdrfiles[fp+1]);
+  high /= sizeof(int);
+  high *= sizeof(int);
+  off_t  offset = ((high/2)/sizeof(int))*sizeof(int);
+
+  fseeko(xdrfiles[fp+1],offset,SEEK_SET);
+  while(1){
+    fr = get_next_frame_number(fp,natoms);
+    if(fr < 0){
+      return fr;
+    }
+    if(fr != frame && abs(low-high) > header_size){
+      if(fr < frame){
+	low = offset;      
+      }else{
+	high = offset;      
+      }
+      /* round to 4 bytes */
+      offset = (((high+low)/2)/4)*4;
+      fseeko(xdrfiles[fp+1],offset,SEEK_SET);
+    }else{
+      break;
+    }
+  }
+  if(offset <= header_size){
+    offset = low;
+  }
+
+  fseeko(xdrfiles[fp+1],offset,SEEK_SET);
+  off_t pos = get_next_frame_start(fp,natoms);
+  /* we probably hit an end of file */
+  if(pos < 0){
+    return pos;
+  }
+  fseeko(xdrfiles[fp+1],pos,SEEK_SET);
+  return 0;
+}
+
+     
+
+int xdr_seek_time(real time, int fp, int natoms){
+  off_t low = 0;
+  off_t high;
+  off_t  offset;
+  float t;
+  float dt;
+
+  fseeko(xdrfiles[fp+1],0,SEEK_END);
+  /* round to int  */
+  high = ftello(xdrfiles[fp+1]);
+  high /= sizeof(int);
+  high *= sizeof(int);
+  offset = ((high/2)/sizeof(int))*sizeof(int);
+  fseeko(xdrfiles[fp+1],offset,SEEK_SET);
+  dt = estimate_xtc_dt(fp,natoms);
+  if(dt < 0){
+    dt = 1;
+  }
+  while(1){
+    t = get_next_frame_time(fp,natoms);
+    if(t < 0){
+      return -1;
+    }
+    if(fabs(t-time) > dt/2.0  && abs(low-high) > header_size){
+      if(t < time){
+	low = offset;      
+      }else{
+	high = offset;      
+      }
+      /* round to 4 bytes and subtract header*/
+      offset = (((high+low)/2)/sizeof(int))*sizeof(int);
+      fseeko(xdrfiles[fp+1],offset,SEEK_SET);
+    }else{
+      if(abs(low-high) <= header_size){
+	break;
+      }
+      /* reestimate dt */
+      if(estimate_xtc_dt(fp,natoms) > 0){
+	dt = estimate_xtc_dt(fp,natoms);
+      }
+      if(fabs(t-time) < dt/2.0){
+	break;
+      }
+    }
+
+  }
+  if(offset <= header_size){
+    offset = low;
+  }
+  fseeko(xdrfiles[fp+1],offset,SEEK_SET);
+  off_t pos = get_next_frame_start(fp,natoms);
+  if(pos < 0){
+    return pos;
+  }
+  fseeko(xdrfiles[fp+1],pos,SEEK_SET);
+  return 0;
+}

@@ -55,6 +55,8 @@
 #include "wgms.h"
 #include <math.h>
 
+extern real tbegin;
+
 /* defines for frame counter output */
 static int __frame=NOTSET;
 #define SKIP 10
@@ -621,6 +623,11 @@ bool read_next_frame(int status,t_trxframe *fr)
       fr->bBox  = bRet;
       break;
     case efXTC:
+      if(fr->time < tbegin){
+	if(xdr_seek_time(tbegin,status,fr->natoms)){
+	  gmx_fatal(FARGS,"Specified frame doesn't exist or file not seekable");
+	}
+      }
       bRet = read_next_xtc(status,fr->natoms,&fr->step,&fr->time,fr->box,
 			   fr->x,&fr->prec,&bOK);
       fr->bPrec = bRet;
