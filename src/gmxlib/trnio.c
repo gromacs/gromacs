@@ -102,7 +102,8 @@ static bool do_trnheader(int fp,bool bRead,t_trnheader *sh, bool *bOK)
   *bOK = *bOK && do_int(sh->x_size); 
   *bOK = *bOK && do_int(sh->v_size); 
   *bOK = *bOK && do_int(sh->f_size); 
-  
+  *bOK = *bOK && do_int(sh->natoms);
+
   if (!*bOK) return *bOK; 
   bDouble = (nFloatSize(sh) == sizeof(double));
   fio_setprecision(fp,bDouble);
@@ -112,7 +113,6 @@ static bool do_trnheader(int fp,bool bRead,t_trnheader *sh, bool *bOK)
     bFirst = FALSE;
   }
   
-  *bOK = *bOK && do_int(sh->natoms); 
   *bOK = *bOK && do_int(sh->step); 
   *bOK = *bOK && do_int(sh->nre); 
   *bOK = *bOK && do_real(sh->t); 
