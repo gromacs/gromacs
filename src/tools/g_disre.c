@@ -47,6 +47,7 @@ static char *SRCID_g_disre_c = "$Id$";
 #include "rdgroup.h"
 #include "mdatoms.h"
 #include "nsb.h"
+#include "tpxio.h"
 
 typedef struct {
   int n;
@@ -121,8 +122,9 @@ void check_viol(FILE *log,
 		int isize,atom_id index[],real vvindex[])
 {
   t_iatom *forceatoms;
-  int     i,j,type,ftype,nat,nviol,ndr;
+  int     i,j,nat,n,type,ftype,nviol,ndr;
   real    mviol,tviol,viol,lam,dvdl;
+  static  bool bFirst=TRUE;
   
   lam  =0;
   dvdl =0;
@@ -138,11 +140,18 @@ void check_viol(FILE *log,
   for(i=0; (i<bonds->nr); ) {
     type=forceatoms[i];
     ftype=functype[type];
-    viol=interaction_function[ftype].ifunc(bonds->nr,&forceatoms[i],
-					   &forceparams[type],
+    nat=interaction_function[ftype].nratoms; 
+    n=0;
+    do
+      n += 1+nat;
+    while ((i+n < bonds->nr) && 
+	   (forceparams[forceatoms[i+n]].disres.index ==
+	    forceparams[forceatoms[i]].disres.index));
+
+    viol=interaction_function[ftype].ifunc(n,&forceatoms[i],
+					   forceparams,
 					   x,f,fr,g,box,lam,&dvdl,
 					   NULL,0,NULL,NULL);
-    i++;
     if (viol > 0) {
       nviol++;
       add5(forceparams[type].disres.index,viol);
@@ -155,14 +164,18 @@ void check_viol(FILE *log,
 	}
     }
     ndr ++;
-    nat  = interaction_function[ftype].nratoms;
-    i   += nat;
+    i   += n;
   }
   *nv   = nviol;
   *maxv = mviol;
   *sumv = tviol;
   *averv= tviol/ndr;
   
+  if (bFirst) {
+    fprintf(stderr,"\nThere are %d restraints and %d pairs\n",ndr,bonds->nr/3);
+    bFirst = FALSE;
+  }
+
   print5(log);
 }
 
@@ -204,16 +217,18 @@ int main (int argc,char *argv[])
   };
   
   FILE        *out,*aver,*numv,*maxxv,*xvg=NULL;
-  t_inputrec  *ir;
-  t_topology  *top;
+  t_tpxheader header;
+  t_inputrec  ir;
+  t_topology  top;
+  rvec        *xtop;
   t_atoms     *atoms=NULL;
   t_forcerec  *fr;
   t_nrnb      nrnb;
   t_nsborder  *nsb;
   t_commrec   *cr;
   t_graph     *g;
-  int         status,natoms,i,j,nv;
-  real        t,sumv,averv,maxv;
+  int         status,ntopatoms,natoms,i,j,nv,step;
+  real        t,sumv,averv,maxv,lambda;
   rvec        *x,*f;
   matrix      box;
   int         isize;
@@ -221,7 +236,6 @@ int main (int argc,char *argv[])
   char        *grpname;
   char        **leg;
   real        *vvindex=NULL;
-  ivec        *nFreeze;
   t_mdatoms   *mdatoms;
   
   t_filenm fnm[] = {
@@ -241,9 +255,13 @@ int main (int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   init5(ntop);
-		    
-  top = read_top(ftp2fn(efTPX,NFILE,fnm));
-  g   = mk_graph(&top->idef,top->atoms.nr,0);  
+  
+  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header);
+  snew(xtop,header.natoms);
+  read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
+	   box,&ntopatoms,xtop,NULL,NULL,&top);
+
+  g   = mk_graph(&top.idef,top.atoms.nr,0);  
   cr  = init_par(&argc,&argv);
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
   
@@ -262,9 +280,8 @@ int main (int argc,char *argv[])
   else 
     isize=0;
   
-  snew(ir,1);
-  ir->dr_tau=0.0;
-  init_disres(stdlog,top->idef.il[F_DISRES].nr,ir);
+  ir.dr_tau=0.0;
+  init_disres(stdlog,top.idef.il[F_DISRES].nr,&ir);
 
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   snew(f,5*natoms);
@@ -276,37 +293,34 @@ int main (int argc,char *argv[])
 
   snew(nsb,1);
   snew(atoms,1);
-  atoms->nr=top->atoms.nr;
-  atoms->nres=top->atoms.nres;
+  atoms->nr=top.atoms.nr;
+  atoms->nres=top.atoms.nres;
   snew(atoms->atomname,atoms->nr);
   snew(atoms->resname,atoms->nres);
   snew(atoms->atom,atoms->nr);
-  memcpy(atoms->atom,top->atoms.atom,atoms->nr*sizeof(atoms->atom[0]));
-  memcpy(atoms->atomname,top->atoms.atomname,
+  memcpy(atoms->atom,top.atoms.atom,atoms->nr*sizeof(atoms->atom[0]));
+  memcpy(atoms->atomname,top.atoms.atomname,
 	 atoms->nr*sizeof(atoms->atomname[0]));
-  memcpy(atoms->resname,top->atoms.resname,
+  memcpy(atoms->resname,top.atoms.resname,
 	 atoms->nres*sizeof(atoms->resname[0]));
-  snew(nFreeze,1);
-  mdatoms = atoms2md(&top->atoms,nFreeze,FALSE,FALSE,FALSE);  
+  mdatoms = atoms2md(&top.atoms,ir.opts.nFreeze,FALSE,FALSE,FALSE);  
   fr      = mk_forcerec();
   fprintf(stdlog,"Made forcerec...\n");
-  calc_nsb(&(top->blocks[ebCGS]),1,nsb,0);
-  init_forcerec(stdlog,fr,ir,&(top->blocks[ebMOLS]),cr,
-		&(top->blocks[ebCGS]),&(top->idef),mdatoms,nsb,box,FALSE);
+  calc_nsb(&(top.blocks[ebCGS]),1,nsb,0);
+  init_forcerec(stdlog,fr,&ir,&(top.blocks[ebMOLS]),cr,
+		&(top.blocks[ebCGS]),&(top.idef),mdatoms,nsb,box,FALSE);
   init_nrnb(&nrnb);
   j=0;
   do {
-    if ((j % 10) == 0)
-      fprintf(stderr,"\rFrame: %d",j);
-    rm_pbc(&top->idef,natoms,box,x,x);
+    rm_pbc(&top.idef,natoms,box,x,x);
 
     if (bProt) {
       protonate(&atoms,&x);
     }
     
     check_viol(stdlog,
-	       &(top->idef.il[F_DISRES]),
-	       top->idef.iparams,top->idef.functype,
+	       &(top.idef.il[F_DISRES]),
+	       top.idef.iparams,top.idef.functype,
 	       x,f,fr,box,g,&sumv,&averv,&maxv,&nv,
 	       isize,index,vvindex);
     if (isize > 0) {
