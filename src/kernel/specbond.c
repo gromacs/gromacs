@@ -156,7 +156,7 @@ static bool is_bond(int nsb,t_specbond sb[],t_atoms *pdba,int a1,int a2,
       *bSwap = FALSE;
       if ((0.9*sb[i].length < d) && (1.1*sb[i].length > d))
 	return TRUE;
-    }
+      }
     if (((strcasecmp(sb[i].res1,res2) == 0)  && 
 	 (strcasecmp(sb[i].atom1,at2) == 0) &&
 	 (strcasecmp(sb[i].res2,res1) == 0)  && 
@@ -164,15 +164,18 @@ static bool is_bond(int nsb,t_specbond sb[],t_atoms *pdba,int a1,int a2,
       *bSwap = TRUE;
       if ((0.9*sb[i].length < d) && (1.1*sb[i].length > d))
 	return TRUE;
+      }
     }
-  }
   return FALSE;
 }
 
-static void rename_1res(t_atoms *pdba,int resnr,char *nres)
+static void rename_1res(t_atoms *pdba,int resnr,char *newres)
 {
-  sfree(*pdba->resname[resnr]);
-  *pdba->resname[resnr]=strdup(nres);
+  if(debug) fprintf(stderr,"Renaming %s-%d to %s\n", 
+		    *pdba->resname[resnr], resnr+1, newres);
+  /* this used to free *resname, which fucks up the symtab! */
+  snew(pdba->resname[resnr],1);
+  *pdba->resname[resnr]=strdup(newres);
 }
 
 int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
@@ -238,7 +241,7 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
 	  fprintf(stderr,"%8s",buf);
 	  e2=min(i,e);
 	  for(j=b; (j<e2); j++)
-	  fprintf(stderr," %7.3f",d[i][j]);
+	    fprintf(stderr," %7.3f",d[i][j]);
 	  fprintf(stderr,"\n");
 	}
       }
@@ -246,7 +249,7 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
     i=j=0;
     
     snew(bonds,nspec);
-  
+
     for(i=0; (i<nspec); i++) {
       ai = sgp[i];
       for(j=i+1; (j<nspec); j++) {
