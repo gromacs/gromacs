@@ -35,7 +35,7 @@ PROGRAMS	= average	do_dssp		editconf	\
 		g_velacc	genbox		genconf		\
 		gendr		genion		genpr		\
 		make_ndx	mk_angndx	protonate	\
-		trjconv		          trjorder	\
+		trjcat		trjconv         trjorder	\
 		wheel		xpm2ps
 endif
 
