@@ -20,7 +20,7 @@ typedef struct {
 /* Garbage bin with flags and data for the correct routine */
 typedef struct {
   int         maxnit,nbcheck,nstprint,nstranlist;
-  bool        bExplicit,bChiral,bDump;
+  bool        bExplicit,bChiral,bPep,bDump;
   real        lodev;
   int         maxdist,ndist;
   int         *ip,*tag;
@@ -32,7 +32,8 @@ typedef struct {
 } t_correct;
 
 extern t_correct *init_corr(int maxnit,int nstprint,int nbcheck,int nstranlist,
-			    bool bExplicit,bool bChiral,bool bDump,real lowdev);
+			    bool bExplicit,bool bChiral,bool bPep,
+			    bool bDump,real lowdev);
 /* Initiate the data structure and set some of the parameters */
 
 extern void make_tags(t_correct *c,int natom);
@@ -42,6 +43,9 @@ extern bool shake_coords(FILE *log,bool bVerbose,int nstruct,
 			 int natom,rvec xref[],rvec x[],int *seed,
 			 matrix box,t_correct *c,int *niter);
 /* Do the actual shaking. Return TRUE when converged */
+
+extern int quick_check(FILE *log,int natom,rvec x[],matrix box,t_correct *c);
+/* Check a structure once for the number of violations (return value) */
 
 extern real *read_weights(char *fn,int natom);
 /* Read the weights from the occupancy field in the pdb file */  

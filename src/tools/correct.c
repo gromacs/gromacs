@@ -109,14 +109,14 @@ int update_list(t_dist d[],int tag[],int natom,bool bViol[],int ip[])
   return nchk;
 }
 
-bool mirror_xx(int n1,int n2,int n3,int n4,rvec x[],bool bViol[])
+bool mirror_xx(int n1,int n2,int n3,int n4,rvec x[],bool bViol[],real xi)
 {
   /* Check the impropers, and fix if necessary */
   /* adapt the coordinates of atom n4 such that it is mirrorred
    * with respect to the plane defined by n1,n2,n3 (n1 origin)
    */
   rvec v1,v2,x4old,n,d14;
-  real lambda,nsq;
+  real lambda,nsq,dn;
   int  m;
   
   copy_rvec(x[n4],x4old);
@@ -141,14 +141,28 @@ bool mirror_xx(int n1,int n2,int n3,int n4,rvec x[],bool bViol[])
    */
   lambda = iprod(d14,n)/nsq;
 
-  if (lambda < 0) {
+  /* Check on the improper: If it is really far off than we should not
+   * try to correct if, as this may only make it worse. The limits below
+   * indicate a range that when mirrored will become a normal improper
+   * again.
+   */
+  if ((xi < -10) && (xi > -60)) {
     /* The fourth atom is at the wrong side of the plane, fix it. */
   
-    /* The new x is now found by adding two lambda n to x[n4] */
-    for(m=0; (m<DIM); m++)
-      x[n4][m] += 2*lambda*n[m];
+    /* Mirror all four atoms around the plane parallel to 123, going thru
+     * the center of mass of the four atoms. It is easy to see that there
+     * is no center-of-mass displacement this way.
+     */
+    for(m=0; (m<DIM); m++) {
+      dn = 0.5*lambda*n[m];
+      x[n1][m] -= dn;
+      x[n2][m] -= dn;
+      x[n3][m] -= dn;
+      x[n4][m] += 3*dn;
+    }
     if (debug) {
-      fprintf(debug,"improper: %d %d %d %d\n",n1+1,n2+1,n3+1,n4+1);
+      fprintf(debug,"improper: %d %d %d %d, xi = %g deg.\n",
+	      n1+1,n2+1,n3+1,n4+1,xi);
       fprintf(debug,"lambda = %g, n = (%g,%g,%g)\n",lambda,n[XX],n[YY],n[ZZ]);
       fprintf(debug,"x4old = (%g,%g,%g) new = (%g,%g,%g)\n",
 	      x4old[XX],x4old[YY],x4old[ZZ],x[n4][XX],x[n4][YY],x[n4][ZZ]);
@@ -178,13 +192,24 @@ void compute_dihs(FILE *log,int nq,t_quadruple q[],rvec x[],real phi[],
 int check_impropers(FILE *log,t_correct *c,int natom,rvec x[],matrix box)
 		    
 {
-  int i,nmirror;
+  int i,nmirror,nwrong;
   
   nmirror = 0;
   if (c->bChiral) {
+    compute_dihs(log,c->nimp,c->imp,x,c->idih,box);
+    nwrong = 0;
+    for(i=0; (i<c->nimp); i++)
+      if (c->idih[i] < 0)
+	nwrong++;
+    if (nwrong > c->nimp/2) {
+      if (debug)
+	fprintf(debug,"Flipping entire molecule\n");
+      for(i=0; (i<natom); i++)
+	svmul(-1.0,x[i],x[i]);
+    }
     for(i=0; (i<c->nimp); i++)
       if (mirror_xx(c->imp[i].ai,c->imp[i].aj,c->imp[i].ak,c->imp[i].al,
-		    x,c->bViol))
+		    x,c->bViol,c->idih[i]))
 	nmirror++;
     if (debug && (nmirror > 0))
       fprintf(debug,"mirrored %d improper dihedrals\n",nmirror);
@@ -197,23 +222,24 @@ int check_cis_trans(FILE *log,t_correct *c,rvec x[],matrix box)
   int  i,nswap;
   rvec temp;
   
-  compute_dihs(log,c->npep,c->pepbond,x,c->omega,box);
   nswap = 0;
-  for(i=0; (i<c->npep); i++) {
-    /* If one of the peptide bonds is cis, then swap H and Ca */
-    if ((c->omega[i] < -90) || (c->omega[i] > 90)) {
-      copy_rvec(x[c->pepbond[i].al],temp);
-      copy_rvec(x[c->pepbond[i].am],x[c->pepbond[i].al]);
-      copy_rvec(temp,x[c->pepbond[i].am]);
-      /* These are now violated! */
-      c->bViol[c->pepbond[i].al] = TRUE;
-      c->bViol[c->pepbond[i].am] = TRUE;
-      nswap++;
+  if (c->bPep) {
+    compute_dihs(log,c->npep,c->pepbond,x,c->omega,box);
+    for(i=0; (i<c->npep); i++) {
+      /* If one of the peptide bonds is cis, then swap H and Ca */
+      if ((c->omega[i] < -90) || (c->omega[i] > 90)) {
+	copy_rvec(x[c->pepbond[i].al],temp);
+	copy_rvec(x[c->pepbond[i].am],x[c->pepbond[i].al]);
+	copy_rvec(temp,x[c->pepbond[i].am]);
+	/* These are now violated! */
+	c->bViol[c->pepbond[i].al] = TRUE;
+	c->bViol[c->pepbond[i].am] = TRUE;
+	nswap++;
+      }
     }
+    if (debug && (nswap > 0))
+      fprintf(debug,"swapped %d peptide bonds\n",nswap);
   }
-  if (debug && (nswap > 0))
-    fprintf(debug,"swapped %d peptide bonds\n",nswap);
-    
   return nswap;
 }
 
@@ -521,3 +547,40 @@ bool shake_coords(FILE *log,bool bVerbose,
   return bConverged;
 }
     
+int quick_check(FILE *log,int natom,rvec x[],matrix box,t_correct *c)
+{
+  int  i,j,k,m,ai,aj,nviol;
+  real lb,ub,len,len2,dx;
+
+  if (log) 
+    fprintf(log,"Double checking final structure\n");
+  nviol = 0;
+  for(k=0; (k<c->ndist); k++) {
+    /* Unpack lists */
+    ai    = c->d[k].ai;
+    aj    = c->d[k].aj;
+    lb    = c->d[k].lb;
+    ub    = c->d[k].ub;
+
+    /* Compute distance */
+    len2 = 0.0;
+    for(m=0; (m<DIM); m++) {
+      dx    = x[aj][m] - x[ai][m];
+      len2 += dx*dx;
+    }
+    len = sqrt(len2);
+    if ((len < lb) || (len > ub)) {
+      if (debug)
+	fprintf(debug,"VIOL: ai=%4d aj=%4d lb=%8.4f len=%8.4f ub=%8.4f\n",
+		ai,aj,lb,len,ub);
+      nviol++;
+    }
+  }
+  /* Check Impropers */
+  /* nmirror = check_impropers(log,c,natom,x,box);*/
+  
+  /* Check peptide bonds */
+  /* nswap   = check_cis_trans(log,c,x,box);*/
+  
+  return nviol;
+}

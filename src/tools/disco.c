@@ -13,6 +13,7 @@
 #include "tpxio.h"
 #include "copyrite.h"
 #include "disco.h"
+#include "xvgr.h"
 
 void rand_box(bool bUserBox,
 	      matrix box,rvec boxsize,int nres,bool bCubic,int *seed)
@@ -87,7 +88,8 @@ void do_disco(FILE *log,char *outfn,t_correct *c,
 	      bool bBox,rvec boxsize)
 {
   FILE    *fp,*gp;
-  int     k,kk,nconv,ntry,status,natom,nres,nit;
+  int     *nconvdist;
+  int     i,k,kk,nconv,ntry,status,natom,nres,nit,nvtest;
   double  tnit;
   rvec    *x,xcm;
   matrix  box,wrbox;
@@ -107,6 +109,7 @@ void do_disco(FILE *log,char *outfn,t_correct *c,
   for(k=0; (k<nfit); k++)
     w_rls[fit_ind[k]] = 1;
 
+  snew(nconvdist,c->maxnit+1);
   /* Now loop over structures */
   tnit = 0;
   for(k=nconv=ntry=0; (k<nstruct); ntry++) {
@@ -122,7 +125,13 @@ void do_disco(FILE *log,char *outfn,t_correct *c,
     /* Now correct the random coords */
     bConverged = shake_coords(log,bVerbose,k,natom,xref,x,seed,box,c,&nit);
     tnit += nit;
+
+    if (bConverged)
+      nconvdist[nit]++;
     
+    nvtest = quick_check(bVerbose ? log : NULL,natom,x,box,c);
+    fprintf(stderr,"Double checking: %d violations\n",nvtest);
+
     if (bConverged || bKeepAll) {
       center_in_box(natom,x,wrbox,x);
       if (bFit)
@@ -147,9 +156,15 @@ void do_disco(FILE *log,char *outfn,t_correct *c,
     }
   }
   close_trx(status);
+  gp = xvgropen("conv_stat.xvg","Iterations per converged structure",
+		"nit","N");
+  for(i=0; (i<c->maxnit); i++)
+    fprintf(gp,"%10d  %10d\n",i,nconvdist[i]);
+  ffclose(gp);
   sfree(x);
   sfree(w_rls);
   sfree(wr_ind);
+  sfree(nconvdist);
   
   pr_conv_stat(log,ntry,nconv,tnit);
   pr_conv_stat(stderr,ntry,nconv,tnit);
@@ -179,9 +194,9 @@ int main(int argc,char *argv[])
   
   static int  nstruct=10,maxnit=1000,seed=1997,nbcheck=1;
   static int  nstprint=1,nstranlist=1;
-  static bool bVerbose=TRUE,bKeepAll=TRUE,bCubic=FALSE,bWeight=FALSE;
+  static bool bVerbose=TRUE,bKeepAll=FALSE,bCubic=FALSE,bWeight=FALSE;
   static real lowdev=0.05,cutoff=0;
-  static bool bExplicit=FALSE,bChiral=TRUE,bFit=FALSE,bDump=FALSE;
+  static bool bExplicit=FALSE,bChiral=TRUE,bFit=FALSE,bDump=FALSE,bPep=TRUE;
   static rvec boxsize={ 2, 2, 2 };
   t_pargs pa[] = {
     { "-nf",    FALSE, etINT,     &nstruct,
@@ -192,6 +207,8 @@ int main(int argc,char *argv[])
       "Be verbosive" },
     { "-chiral",   FALSE, etBOOL, &bChiral,
       "Check chirality during disco-ing" },
+    { "-pep",   FALSE,  etBOOL,   &bPep,
+      "Flip all cis-peptide bonds automatically to trans" },
     { "-weighted", FALSE, etBOOL, &bWeight,
       "Use weighted disco. The STX file must be a pdb file in this case and weights are read from the occupancy field" },
     { "-cutoff",   FALSE, etREAL, &cutoff,
@@ -240,7 +257,7 @@ int main(int argc,char *argv[])
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
   /* Copy arguments to correct structure */
   corr = init_corr(maxnit,nstprint,nbcheck,nstranlist,bExplicit,
-		   bChiral,bDump,lowdev);
+		   bChiral,bPep,bDump,lowdev);
   
   /* Open the log file */
   fp = ftp2FILE(efLOG,NFILE,fnm,"w");
