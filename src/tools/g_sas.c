@@ -222,7 +222,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   t_topology   *top;
   bool         *bPhobic;
   bool         bConnelly;
-  bool         bAtom,bITP,bDGsol;
+  bool         bResAt,bITP,bDGsol;
   real         *radius,*dgs_factor,*area=NULL,*surfacedots=NULL;
   real         *atom_area,*atom_area2;
   real         totarea,totvolume,harea,tarea,resarea;
@@ -231,12 +231,9 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   char         *grpname;
   real         stddev,dgsolv;
 
-  bAtom  = opt2bSet("-ao",nfile,fnm);
   bITP   = opt2bSet("-i",nfile,fnm);
-  if (bITP && !bAtom)
-    fprintf(stderr,"WARNING: "
-	    "Can not generate position restraints from surface atoms\n"
-	    "without -ao option\n");
+  bResAt = opt2bSet("-or",nfile,fnm) || opt2bSet("-oa",nfile,fnm) || bITP;
+
   if ((natoms=read_first_x(&status,ftp2fn(efTRX,nfile,fnm),
 			   &t,&x,box))==0)
     fatal_error(0,"Could not read coordinates from statusfile\n");
@@ -332,16 +329,16 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   fclose(fp);
   
   /* if necessary, print areas per atom to file too: */
-  if (bAtom) {
+  if (bResAt) {
     fprintf(stderr,"Printing out areas per atom\n");
-    fp2=xvgropen(opt2fn("-ao",nfile,fnm),"Area per atom","Atom #",
+    fp2=xvgropen(opt2fn("-oa",nfile,fnm),"Area per atom","Atom #",
 		 "Area (nm\\S2\\N)");
     for (i=0; (i<nx); i++) 
       fprintf(fp2,"%d %g %g\n",i+1,atom_area[index[i]]/j,
 	      atom_area2[index[i]]/j);
     fclose(fp2);
 
-    fp = xvgropen(opt2fn("-r",nfile,fnm),"Area per residue","Residue",
+    fp = xvgropen(opt2fn("-or",nfile,fnm),"Area per residue","Residue",
 		  "Area (nm\\S2\\N)");
     if (bITP) {
       fp3 = ftp2FILE(efITP,nfile,fnm,"w");
@@ -385,11 +382,12 @@ int main(int argc,char *argv[])
     "As a side effect the Connolly surface can be generated as well in",
     "a pdb file where the nodes are represented as atoms and the vertices",
     "connecting the nearest nodes as CONECT records. The area can be plotted",
-    "per atom and per residue as well (option -ao). In combination with",
-    "the latter option an [TT]itp[tt] file can be generated (option -i)",
+    "per residue and atom as well (options [TT]-or[tt] and [TT]-oa[tt]).",
+    "In combination with the latter option an [TT]itp[tt] file can be",
+    "generated (option [TT]-i[tt])",
     "which can be used to restrain surface atoms.[PAR]",
     "By default, periodic boundary conditions are taken into account,",
-    "this can be turned off using the -pbc option."
+    "this can be turned off using the [TT]-pbc[tt] option."
   };
 
   static real solsize = 0.14;
@@ -419,9 +417,9 @@ int main(int argc,char *argv[])
     { efTRX, "-f",   NULL,       ffREAD },
     { efTPX, "-s",   NULL,       ffREAD },
     { efXVG, "-o",   "area",     ffWRITE },
-    { efXVG, "-r",   "resarea",  ffWRITE },
+    { efXVG, "-or",  "resarea",  ffOPTWR },
+    { efXVG, "-oa",  "atomarea", ffOPTWR },
     { efPDB, "-q",   "connelly", ffOPTWR },
-    { efXVG, "-ao",  "atomarea", ffOPTWR },
     { efNDX, "-n",   "index",    ffOPTRD },
     { efITP, "-i",   "surfat",   ffOPTWR }
   };
@@ -438,11 +436,14 @@ int main(int argc,char *argv[])
     ndots = 20;
     fprintf(stderr,"Ndots too small, setting it to %d\n",ndots);
   }
-  
+
+  please_cite(stderr,"Eisenhaber95");
+    
   sas_plot(NFILE,fnm,solsize,ndots,qcut,nskip,bSave,minarea,bPBC,dgs_default);
   
   do_view(opt2fn("-o",NFILE,fnm),"-nxy");
-  do_view(opt2fn("-ao",NFILE,fnm),"-xydy");
+  do_view(opt2fn_null("-or",NFILE,fnm),"-xydy");
+  do_view(opt2fn_null("-oa",NFILE,fnm),"-xydy");
 
   thanx(stderr);
   
