@@ -345,8 +345,8 @@ static bool analyze_electrons(FILE *fp,t_electron_db *edb,
   int  i,etp;
   char *cc;
  
-  cc = getenv("GENERATE_ELECTRONS");
-  if (sscanf(cc,"%d",&etp) == 1) {
+  if (((cc = getenv("GENERATE_ELECTRONS")) != NULL) &&
+      (sscanf(cc,"%d",&etp) == 1)) {
     for(i=0; (i<natom); i++) {
       if (strcmp(*atomname[i],"EL") == 0)
 	break;
@@ -548,6 +548,8 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     xvg   = xvgropen("ionize.xvg","Ionization Events","Time (ps)","()");
     xvgr_legend(xvg,asize(leg),leg);
     ion   = ffopen("ionize.log","w");
+
+    bElectron = analyze_electrons(fp,&edb,md->nr,atomname);
     
     fprintf(fp,PREFIX"Parameters for ionization events:\n");
     fprintf(fp,PREFIX"Imax = %g, t0 = %g, width = %g, seed = %d\n"
@@ -559,8 +561,6 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     fprintf(fp,PREFIX"Interval between shots: %g ps\n",interval);
     fprintf(fp,PREFIX"Eindex = %d\n",Eindex);
     fprintf(fp,PREFIX"Doing ionizations for atoms %d - %d\n",start,end);
-    
-    bElectron = analyze_electrons(fp,&edb,md->nr,atomname);
     
     fflush(fp);
 
@@ -678,7 +678,8 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	  for(m=0; (m<DIM); m++)
 	    dv[m] -= factor*ddv[m];
 	
-	  add_electron(fp,md,&edb,i,x,v,dv,ir->delta_t);
+	  if (bElectron)
+	    add_electron(fp,md,&edb,i,x,v,dv,ir->delta_t);
 	  
 	  if (debug)
 	    pr_rvec(debug,0,"ELL",dv,DIM);
