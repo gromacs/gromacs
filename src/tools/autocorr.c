@@ -43,6 +43,7 @@ static char *SRCID_autocorr_c = "$Id$";
 #include "string2.h"
 
 #define SWAP(a,b) tempr=(a);(a)=(b);(b)=tempr
+#define MODE(x) ((mode & (x)) == (x))
 
 typedef struct {
   unsigned long mode;
@@ -275,19 +276,14 @@ static void do_ac_core(int nframes,int nout,
        * It might be more efficient to put the loops inside the switch,
        * but this is more clear, and save development time!
        */      
-      switch (mode) {
-      case eacNormal:
+      if (MODE(eacNormal)) {
 	corr[k] += c1[j]*c1[j+k];
-	break;
-    
-      case eacCos:
+      }
+      else if (MODE(eacCos)) {
 	/* Compute the cos (phi(t)-phi(t+dt)) */
 	corr[k] += cos(c1[j]-c1[j+k]);
-	break;
-    
-      case eacP1:
-      case eacP2:
-      case eacP3:
+      }
+      else if (MODE(eacP1) || MODE(eacP2) || MODE(eacP3)) {
 	for(m=0; (m<DIM); m++) {
 	  xj[m] = c1[j3+m];
 	  xk[m] = c1[jk3+m];
@@ -300,9 +296,8 @@ static void do_ac_core(int nframes,int nout,
 	}
 	
 	corr[k] += LegendreP(cth,mode);  /* 1.5*cth*cth-0.5; */
-	break;
-    
-      case eacRcross:
+      }
+      else if (MODE(eacRcross)) {
 	for(m=0; (m<DIM); m++) {
 	  xj[m] = c1[j3+m];
 	  xk[m] = c1[jk3+m];
@@ -310,10 +305,8 @@ static void do_ac_core(int nframes,int nout,
 	oprod(xj,xk,rr);
 	
 	corr[k] += iprod(rr,rr);
-	
-	break;
-    
-      case eacVector:
+      }
+      else if (MODE(eacVector)) {
 	for(m=0; (m<DIM); m++) {
 	  xj[m] = c1[j3+m];
 	  xk[m] = c1[jk3+m];
@@ -321,11 +314,9 @@ static void do_ac_core(int nframes,int nout,
 	ccc = iprod(xj,xk);
 	
 	corr[k] += ccc;
-      
-	break;
-      default:
-	fatal_error(0,"\nInvalid mode (%d) in do_ac_core",mode);
       }
+      else
+	fatal_error(0,"\nInvalid mode (%d) in do_ac_core",mode);
     }
   }
   /* Correct for the number of points and copy results to the data array */
@@ -437,19 +428,16 @@ void do_four_core(unsigned long mode,int nfour,int nf2,int nframes,
   
   snew(cfour,nfour);
   
-  switch (mode) {
+  if (MODE(eacNormal)) {
     /********************************************
      *  N O R M A L
      ********************************************/
-  case eacNormal:
-    /********** F F T ********/
     low_do_four_core(nfour,nf2,c1,csum,enNorm,FALSE);
-    break;
-    
+  }
+  else if (MODE(eacCos)) {
     /***************************************************
      * C O S I N E
      ***************************************************/
-  case eacCos:
     /* Copy the data to temp array. Since we need it twice
      * we can't overwrite original.
      */
@@ -467,13 +455,11 @@ void do_four_core(unsigned long mode,int nfour,int nf2,int nframes,
       c1[j] += cfour[j];
       csum[j] = c1[j];
     }
-    
-    break;
-    
+  }
+  else if (MODE(eacP2)) {
     /***************************************************
      * Legendre polynomials
      ***************************************************/
-  case eacP2: 
     /* First normalize the vectors */
     norm_and_scale_vectors(nframes,c1,1.0);
     
@@ -554,17 +540,16 @@ void do_four_core(unsigned long mode,int nfour,int nf2,int nframes,
 	csum[j] += fac*cfour[j];
       }
     }
-    break;
-    
+  }
+  else if (MODE(eacP1) || MODE(eacVector)) {    
     /***************************************************
      * V E C T O R & P1
      ***************************************************/
-  case eacP1:
-    /* First normalize the vectors */
-    norm_and_scale_vectors(nframes,c1,1.0);
-    /* Fall thru, don't break */
+    if (MODE(eacP1)) {
+      /* First normalize the vectors */
+      norm_and_scale_vectors(nframes,c1,1.0);
+    }
     
-  case eacVector:
     /* For vector thingies we have to do three FFT based correls 
      * First for XX, then for YY, then for ZZ
      * After that we sum them and normalise
@@ -580,10 +565,10 @@ void do_four_core(unsigned long mode,int nfour,int nf2,int nframes,
       for(j=0; (j<nf2); j++) 
 	csum[j] += cfour[j];
     }
-    break;
-  default:
-    fatal_error(0,"\nUnknown mode in do_autocorr (%d)",mode);
   }
+  else
+    fatal_error(0,"\nUnknown mode in do_autocorr (%d)",mode);
+  
   sfree(cfour);
   for(j=0; (j<nf2); j++)
     c1[j] = csum[j];
@@ -656,13 +641,15 @@ void low_do_autocorr(char *fn,char *title,
   else if (nout > nframes)
     nout=nframes;
   
-  if ((mode & eacCos) && (mode & eacVector))
+  if (MODE(eacCos) && MODE(eacVector))
     fatal_error(0,"Incompatible options bCos && bVector (%s, %d)",
 		__FILE__,__LINE__);
-  if (((mode == eacP3) || (mode == eacRcross)) && bFour) {
+  if ((MODE(eacP3) || MODE(eacRcross)) && bFour) {
     fprintf(stderr,"Cant combine mode %d with FFT, turning off FFT\n",mode);
     bFour = FALSE;
   }
+  if (MODE(eacNormal) && MODE(eacVector)) 
+    fatal_error(0,"Incompatible mode bits: normal and vector (or Legendre)");
     
   /* Print flags and parameters */
   fprintf(stderr,"Will calculate %s of %d thingies for %d frames\n",
