@@ -98,6 +98,38 @@ void test_pppm(FILE *log,       bool bVerbose,
   write_pqr(buf,atoms,x,phi,0);
 }
 
+void test_poisson(FILE *log,       bool bVerbose,
+		  t_atoms *atoms,  t_inputrec *ir,
+		  rvec x[],        rvec f[],
+		  real charge[],   rvec box,
+		  real phi[],      real phi_s[],
+		  int nmol,        t_commrec *cr)
+{
+  char buf[256];
+  real ener;
+  int  i;
+  t_nrnb nrnb;
+  
+  init_nrnb(&nrnb);
+  
+  ener = do_poisson(log,bVerbose,NULL,atoms->nr,x,f,charge,box,phi,cr,&nrnb);
+  fprintf(log,"Vpoisson = %g\n",ener);
+  
+  sprintf(buf,"POISSON-%d.pdb",ir->nkx);
+  write_pqr(buf,atoms,x,phi,0);
+  
+  pr_f("poisson-force",atoms->nr,f);
+  
+  calc_ener(log,buf,FALSE,nmol,atoms->nr,phi,charge,&atoms->excl);
+  
+  for(i=0; (i<atoms->nr); i++) 
+    phi[i]+=phi_s[i];
+  sprintf(buf,"POISSON-%d+SR",ir->nkx);
+  calc_ener(log,buf,FALSE,nmol,atoms->nr,phi,charge,&atoms->excl);
+  strcat(buf,".pdb");
+  write_pqr(buf,atoms,x,phi,0);
+}
+
 void test_four(FILE *log,int NFILE,t_filenm fnm[],t_atoms *atoms,
 	       t_inputrec *ir,rvec x[],rvec f[],rvec box,real charge[],
 	       real phi_f[],real phi_s[],int nmol,t_commrec *cr)
@@ -221,16 +253,18 @@ int main(int argc,char *argv[])
   t_forcerec   *fr;
   t_commrec    *cr;
   int          i,step,nre,natoms,nmol;
-  rvec         *x,*f_four,*f_pppm,box_size,hbox;
+  rvec         *x,*f_four,*f_pppm,*f_pois,box_size,hbox;
   matrix       box;
-  real         t,lambda,vsr,*charge,*phi_f,*phi_s,*phi_p3m,*rho;
+  real         t,lambda,vsr,*charge,*phi_f,*phi_pois,*phi_s,*phi_p3m,*rho;
   
-  static bool bFour=FALSE,bVerbose=FALSE,bGGhat=FALSE,bPPPM=TRUE;
+  static bool bFour=FALSE,bVerbose=FALSE,bGGhat=FALSE,bPPPM=TRUE,
+    bPoisson=FALSE;
   static int nprocs = 1;
   static t_pargs pa[] = {
     { "-np",     FALSE, etINT,  &nprocs,  "Do it in parallel" },
     { "-ewald",  FALSE, etBOOL, &bFour,   "Do an Ewald solution"},
     { "-pppm",   FALSE, etBOOL, &bPPPM,   "Do a PPPM solution" },
+    { "-poisson",FALSE, etBOOL, &bPoisson,"Do a Poisson solution" },
     {    "-v",   FALSE, etBOOL, &bVerbose,"Verbose on"},
     { "-ghat",   FALSE, etBOOL, &bGGhat,  "Generate Ghat function"}
   };
@@ -257,6 +291,7 @@ int main(int argc,char *argv[])
   snew(x,stath.natoms);
   snew(f_four,stath.natoms);
   snew(f_pppm,stath.natoms);
+  snew(f_pois,stath.natoms);
   read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
 	   box,&natoms,x,NULL,NULL,&top);
   excl=&(top.atoms.excl);
@@ -266,6 +301,7 @@ int main(int argc,char *argv[])
   snew(charge,stath.natoms);
   snew(phi_f,stath.natoms);
   snew(phi_p3m,stath.natoms);
+  snew(phi_pois,stath.natoms);
   snew(phi_s,stath.natoms);
   snew(rho,stath.natoms);
   
@@ -295,7 +331,17 @@ int main(int argc,char *argv[])
     test_pppm(log,bVerbose,bGGhat,opt2fn("-g",NFILE,fnm),
 	      &(top.atoms),&ir,x,f_pppm,charge,box_size,phi_p3m,phi_s,nmol,cr);
   
+  if (bPoisson)
+    test_poisson(log,bVerbose,
+		 &(top.atoms),&ir,x,f_pois,charge,box_size,phi_pois,
+		 phi_s,nmol,cr);
+	        
   if (bPPPM && bFour) 
+    analyse_diff(log,top.atoms.nr,f_four,f_pppm,phi_f,phi_p3m,
+		 opt2fn("-fcorr",NFILE,fnm),
+		 opt2fn("-pcorr",NFILE,fnm));
+  
+  if (bPoisson && bFour) 
     analyse_diff(log,top.atoms.nr,f_four,f_pppm,phi_f,phi_p3m,
 		 opt2fn("-fcorr",NFILE,fnm),
 		 opt2fn("-pcorr",NFILE,fnm));

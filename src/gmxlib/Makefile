@@ -132,10 +132,12 @@ repfirst:	repfirst.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 testlr:		testlr.o	ewald.o		pppm.o	\
-		ghat.o		lrutil.o	fftgrid.o
+		ghat.o		lrutil.o	fftgrid.o	poisson.o
 		$(LD) -o $@ $^  $(SYSLIBS) $(FFTLIBS)
+
 gentab:		gentab.o
 		$(LD) -o $@ $^  $(SYSLIBS) 
+
 lfft:		lfft.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 

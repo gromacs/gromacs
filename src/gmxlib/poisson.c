@@ -135,7 +135,6 @@ void solve_poisson(FILE *log,t_fftgrid *grid,bool bVerbose,t_nrnb *nrnb)
 }
 
 real do_poisson(FILE *log,       bool bVerbose,
-		bool bGenerGhat, char *ghatfn,
 		t_inputrec *ir,  int natoms,
 		rvec x[],        rvec f[],
 		real charge[],   rvec box,
