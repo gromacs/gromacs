@@ -378,6 +378,9 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 #ifndef NO_NICE
   /* Set the nice level */
 #ifdef _SGI_
+  if (FF(PCA_SET_NPRI) && !opt2parg_bSet("-npri",npall,all_pa))
+    npri=atoi(getenv("GMXNPRI"));
+    
   if (npri != 0) {
     (void) schedctl(MPTS_RTPRI,0,npri);
   }
@@ -398,7 +401,8 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   
   if (!(FF(PCA_QUIET) || bQuiet )) {
     if (bHelp)
-      write_man(stdout,eotHelp,program,ndesc,desc,nfile,fnm,npall,all_pa,nbugs,bugs,bHidden);
+      write_man(stdout,eotHelp,program,ndesc,desc,nfile,fnm,npall,all_pa,
+		nbugs,bugs,bHidden);
     else if (bPrint) {
       pr_fns(stdout,nfile,fnm);
       print_pargs(stdout,npall,all_pa);
