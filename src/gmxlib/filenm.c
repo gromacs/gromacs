@@ -175,7 +175,7 @@ char *ftp2ext(int ftp)
   if ((0 <= ftp) && (ftp < efNR))
     return deffile[ftp].ext+1;
   else
-    return NULL;
+    return "unknown";
 }
 
 char *ftp2desc(int ftp)
@@ -183,7 +183,7 @@ char *ftp2desc(int ftp)
   if ((0 <= ftp) && (ftp < efNR))
     return deffile[ftp].descr;
   else
-    return NULL;
+    return "unknown filetype";
 }
 
 char *ftp2ftype(int ftp)
@@ -199,7 +199,7 @@ char *ftp2ftype(int ftp)
       break;
     }
   }
-  return NULL;
+  return "unknown";
 }
 
 char *ftp2defnm(int ftp)
@@ -278,7 +278,7 @@ void pr_fns(FILE *fp,int nf,t_filenm tfn[])
 	buf[j]=buf[j+strlen(tfn[i].opt)-OPTLEN];
     }
     wbuf=wrap_lines(buf,80,35);
-    fprintf(fp,wbuf);
+    fprintf(fp,"%s",wbuf);
     sfree(wbuf);
   }
   fprintf(fp,"\n");
