@@ -10,6 +10,6 @@ gmxdemo_SCRIPTS = demo
 
 EXTRA_DIST = ${gmxdemo_DATA} ${gmxdemo_SCRIPTS}
 
-CLEANFILES = *~ \\\#* *.ene *.hat *.tr? *.xtc *.edr *.ene *.xvg core *.log mdout.mdp *.tp? mon.out confout.gro deshuf.ndx output.* *.gz *.ps *.dat *.g87 *~ \\\#*
+CLEANFILES = *~ \\\#* *top *mdp *itp *gro *.ene *.hat *.tr? *.xtc *.edr *.ene *.xvg core *.log mdout.mdp *.tp? mon.out confout.gro deshuf.ndx output.* *.gz *.ps *.dat *.g87 *~ \\\#*
 
 
