@@ -88,7 +88,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   debug_gmx();
   
   /* Remove periodicity */  
-  if (parm->ir.eBox != ebtNONE)
+  if (fr->eBox != ebtNONE)
     do_pbc_first(log,parm,box_size,fr,graph,x);
   debug_gmx();
 
@@ -237,7 +237,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     natoms,mdatoms); 
 
       update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
-	     &(parm->ir),FALSE,mdatoms,x,graph,
+	     &(parm->ir),mdatoms,x,graph,
 	     fr->shift_vec,f,buf,vold,v,vt,parm->pres,parm->box,
 	     top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata);
       /* The coordinates (x) were unshifted in update */
@@ -319,7 +319,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     step,parm->ir.ntcmemory);
     
       /* Calculate pressure ! */
-      calc_pres(parm->box,parm->ekin,parm->vir,parm->pres,
+      calc_pres(fr->eBox,parm->box,parm->ekin,parm->vir,parm->pres,
 		EEL_LR(fr->eeltype) ? ener[F_LR] : 0.0);
     }
     

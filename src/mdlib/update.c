@@ -283,7 +283,6 @@ void update(int          natoms, 	/* number of atoms in simulation */
 	    real         lambda,
 	    real         *dvdlambda, /* FEP stuff */
 	    t_inputrec   *ir,           /* input record with constants 	*/
-	    bool         bFirstStep,   
 	    t_mdatoms    *md,
 	    rvec         x[],	/* coordinates of home particles */
 	    t_graph      *graph,

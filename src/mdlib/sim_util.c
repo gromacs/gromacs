@@ -355,7 +355,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
     clear_mat(shake_vir);
     update(nsb->natoms,START(nsb),HOMENR(nsb),
 	   -1,lambda,&ener[F_DVDL],
-	   &(parm->ir),FALSE,md,x,graph,
+	   &(parm->ir),md,x,graph,
 	   fr->shift_vec,NULL,NULL,vold,x,NULL,parm->pres,parm->box,
 	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,pulldata);
     /* Compute coordinates at t=-dt, store them in buf */
@@ -371,7 +371,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
      */
     clear_mat(shake_vir);
     update(nsb->natoms,START(nsb),HOMENR(nsb),
-	   0,lambda,&ener[F_DVDL],&(parm->ir),FALSE,md,f,graph,
+	   0,lambda,&ener[F_DVDL],&(parm->ir),md,f,graph,
 	   fr->shift_vec,NULL,NULL,vold,buf,NULL,parm->pres,parm->box,
 	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,pulldata);
     
@@ -389,8 +389,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
      */
     clear_mat(shake_vir);
     update(nsb->natoms,START(nsb),HOMENR(nsb),
-	   0,lambda,&ener[F_DVDL],&(parm->ir),FALSE,
-	   md,f,graph,
+	   0,lambda,&ener[F_DVDL],&(parm->ir),md,f,graph,
 	   fr->shift_vec,NULL,NULL,vold,buf,NULL,parm->pres,parm->box,
 	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,pulldata);
     

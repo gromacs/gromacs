@@ -50,7 +50,6 @@ extern void update(int          natoms,	/* number of atoms in simulation */
 		   real         lambda, /* FEP scaling parameter */
 		   real         *dvdlambda, /* FEP stuff */
 		   t_inputrec   *ir,    /* input record with constants 	*/
-		   bool         bFirstStep,   
 		   t_mdatoms    *md,
 		   rvec         x[],	/* coordinates of home particles */
 		   t_graph      *graph,
@@ -105,7 +104,8 @@ extern void tcoupl(bool bTC,t_grpopts *opts,t_groups *grps,
 extern real calc_temp(real ekin,int nrdf);
 /* Calculate the temperature */
 
-extern void calc_pres(matrix box,tensor ekin,tensor vir,tensor pres,real Elr);
+extern void calc_pres(int eBox,matrix box,
+		      tensor ekin,tensor vir,tensor pres,real Elr);
 /* Calculate the pressure. Unit of pressure is bar, If Elr != 0
  * a long range correction based on Ewald/PPPM is made (see c-code)
  */
