@@ -25,7 +25,6 @@ PROGRAMS=	(cd bin/s10; ls; cd ../..)
 
 all:	oclean dirs
 	$(foreach DIR,$(DIRS),cd $(DIR); $(MAKE); cd ..;)
-	./mkcompl
 
 etags:
 	find . -name "*.[chCHm4]" -print | etags -
