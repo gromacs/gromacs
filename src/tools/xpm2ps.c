@@ -304,12 +304,6 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,
   xx00=x0-1;
   yy00=y0-1;
   for (i=0; (i<nmat); i++) {
-    if (mat[i].axis_x==NULL) {
-      snew(mat[i].axis_x,mat[i].nx);
-      for(j=0; (j<mat[i].nx); j++)
-	mat[i].axis_x[j]=j;
-    }
-    /* Make labels for x axis */
     snew(xtick,mat[i].nx);
     for(j=0; (j<mat[i].nx); j++) {
       sprintf(buf,"%g",mat[i].axis_x[j]);
@@ -338,12 +332,6 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,
       }
     }
     ps_strfont(out,psr->Y.tickfont,psr->Y.tickfontsize);
-    /* Make labels for Y axis */
-    if (mat[i].axis_y==NULL) {
-      snew(mat[i].axis_y,mat[i].ny);
-      for(j=0; (j<mat[i].ny); j++)
-	mat[i].axis_y[j]=j;
-    }
     snew(ytick,mat[i].ny);
     for(j=0; (j<mat[i].ny); j++) {
       sprintf(buf,"%g",mat[i].axis_y[j]);
@@ -589,7 +577,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   FILE   *out;
   t_psrec  psrec,*psr;
   int    W,H;
-  int    i,x,y,col,leg=0;
+  int    i,j,x,y,col,leg=0;
   real   x0,y0,xx;
   real   w,h,dw,dh;
   int       nmap1=0,nmap2=0,leg_nmap;
@@ -763,6 +751,26 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   ps_close(out);
 }
 
+void make_axis_labels(int nmat, t_matrix *mat)
+{
+  int i,j;
+  
+  for (i=0; (i<nmat); i++) {
+    /* Make labels for x axis */
+    if (mat[i].axis_x==NULL) {
+      snew(mat[i].axis_x,mat[i].nx);
+      for(j=0; (j<mat[i].nx); j++)
+	mat[i].axis_x[j]=j;
+    }
+    /* Make labels for y axis */
+    if (mat[i].axis_y==NULL) {
+      snew(mat[i].axis_y,mat[i].ny);
+      for(j=0; (j<mat[i].ny); j++)
+	mat[i].axis_y[j]=j;
+    }
+  }
+}  
+
 void prune_mat(int nmat, t_matrix *mat,t_matrix *mat2, int skip)
 {
   int i,x,y,xs,ys;
@@ -831,6 +839,8 @@ void do_mat(int nmat,t_matrix *mat,t_matrix *mat2,
   for(i=0; (i<nmat); i++) 
     fprintf(stderr,"Matrix %d is %d x %d\n",i,mat[i].nx,mat[i].ny);
 
+  make_axis_labels(nmat, mat);
+  
   if (skip > 1)
     prune_mat(nmat,mat,mat2,skip);
   
