@@ -13,7 +13,8 @@ bin_PROGRAMS = \
 	g_bundle	g_chi		g_cluster	g_confrms	\
 	g_covar		g_density	g_dielectric	g_dih		\
 	g_dipoles	g_disre		g_dist		g_dyndom	\
-	g_enemat	g_energy	g_lie		g_gyrate	\
+	g_enemat	g_energy	g_lie		g_filter	\
+	g_gyrate	\
 	g_h2order	g_hbond		g_helix		g_mdmat		\
 	g_mindist	g_msd		g_morph		g_nmeig		\
 	g_nmens		g_order		g_potential	g_rama		\
