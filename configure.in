@@ -98,12 +98,6 @@ esac
 AC_ARG_ENABLE(cpu-optimization,     
  [  --disable-cpu-optimization    no detection or tuning flags for cpu version],, enable_cpu_optimization=yes)
 
-
-### Use prefix/architecture/cpu as exec-prefix
-AC_ARG_ENABLE(arch-exec-prefix,     
- [  --disable-arch-exec-prefix    don't use arch/cpu to set --exec-prefix],, enable_arch_exec_prefix=yes)
-
-
 ### Vector machine inner loops
 AC_ARG_ENABLE(vector,     
  [  --enable-vector               create inner loops for a vector machine],, enable_vector=no)
@@ -628,11 +622,12 @@ else
 fi
 
 # Set exec-prefix from the architecture and cpu.
-if test "$enable_arch_exec_prefix" = "yes" -a "$exec_prefix" = "NONE"; then
+if test "$exec_prefix" = "NONE"; then
+  arch_exec_prefix=yes;	
   if test -n "$gmxcpu"; then
-    exec_prefix="${prefix}/${host}/${gmxcpu}"
+    exec_prefix="\${prefix}/${host}/${gmxcpu}"
   else
-    exec_prefix="${prefix}/${host}"
+    exec_prefix="\${prefix}/${host}"
   fi
 fi
 
@@ -663,13 +658,11 @@ AC_OUTPUT([Makefile include/Makefile include/types/Makefile src/Makefile
 echo ""
 echo "GROMACS is ready to compile."
 echo ""
-if test "$enable_arch_exec_prefix" = "yes"; then
 eval "show_path=`echo ${exec_prefix} | sed -e s,NONE,${ac_default_prefix},`"
-  echo ""
-  echo "* Binaries and libraries for this host will be placed under"
-  echo "  ${show_path}" 
-  echo "  (You can change it with --disable-arch-exec-prefix or --exec-prefix)"
-fi
+echo ""
+echo "* Binaries and libraries for this host will be installed under"
+echo "  ${show_path}" 
+echo "  (You can change it with the --exec-prefix option)"
 
 if test "$enable_float" = "no" -a "$name_transform_provided" = "no"; then
   echo ""
