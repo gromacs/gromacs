@@ -10,10 +10,11 @@
 include		$(GMXHOME)/src/makef/Makefile.def
 #
 # Empty library
-LIB		= 
+LIB		= $(LIBDIR)/libmd.$(CPU).a
 # Objects for mdrun and nmrun
 RUNOBJ		= runner.o 	md.o		steep.o 	\
 		  congrad.o	nm.o	
+OBJ		= $(RUNOBJ)
 # Common object files
 PGOBJ		= toputil.o 	topdirs.o 	topexcl.o	
 # Objects for grompp
@@ -54,7 +55,7 @@ mdrun:		mdrun.o $(RUNOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS) -lm
 
 mk_ghat:	mk_ghat.o
-		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS) -lm
+		$(OPTLD) -o $@ $^ $(SYSLIBS) $(FFTLIBS) -lm
 
 nmrun:		nmrun.o $(RUNOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS) -lm

@@ -21,7 +21,7 @@ include		$(STDTARGET)
 all:		bin
 
 xmdrun:		xmdrun.o $(XOBJ)
-		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS)
+		$(LD) -o $@ $^ -lmd.$(CPU) $(SYSLIBS) $(FFTLIBS)
 shell_md:	shell_md.o $(XOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS)
 copyrgt:	copyrgt.o
