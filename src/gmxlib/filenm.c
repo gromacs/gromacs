@@ -277,7 +277,10 @@ void pr_fopts(FILE *fp,int nf,t_filenm tfn[])
       fprintf(fp,"}");
     } else
       fprintf(fp,"%s",deffile[tfn[i].ftp].ext+1);
-    fprintf(fp,"{,.gz,.Z}/\"");
+    fprintf(fp,"{");
+    for(i=0; i<NZEXT; i++)
+      fprintf(fp,",%s",z_ext[i]);
+    fprintf(fp,"}/\"");
   }
 }
 
