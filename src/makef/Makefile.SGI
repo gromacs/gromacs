@@ -20,6 +20,10 @@ OPT		= -O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -
 CFLAGS		= $(ABI) $(OPT) -woff 1174
 CCFLAGS		= $(ABI) $(OPT) -woff 1174 -DHAVE_BOOL 
 FFLAGS		= $(ABI) $(OPT) -OPT:cray_ivdep=TRUE
+#       Add the two GCM options to the FFLAGS for a 7% performance
+#       increase, if your compiler supports these options. As far
+#       as we know the 7.1 compiler does support these options and
+#       the 7.2 does not.
 #FFLAGS		+= -GCM:aggressive_speculation -GCM:array_speculation
 
 LDFLAGS		= -L$(LIBDIR) $(ABI) 
