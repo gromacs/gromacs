@@ -104,8 +104,8 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
 
 	a = 0;
 	bTimeInRange = TRUE;
-	while ((a<narg || (nsets_in==1 && n==0)) && line[0]!='\n' && 
-	       sscanf(line,"%lf%n",&dbl,&nchar) && bTimeInRange) {
+	while ((a<narg || (nsets_in==1 && n==0)) && 
+	       sscanf(line,"%lf%n",&dbl,&nchar)==1 && bTimeInRange) {
 	  /* Use set=-1 as the time "set" */
 	  if (sin) {
 	    if (!bHaveT || (a>0))
