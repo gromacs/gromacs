@@ -193,7 +193,11 @@ are essential for running and compiling {\gromacs}. Other variables are:
 	automatically view resp.\@ {\tt .xvg}, {\tt .xpm}, {\tt .eps}
 	and {\tt .pdb} file types. Default to {\tt xv}, {\tt xmgr},
 	{\tt ghostview} and {\tt rasmol}. Set to empty to disable
-	automatic viewing of a particular file type.
+	automatic viewing of a particular file type. The command will
+	be forked off and run in the background at the same priority
+	as the {\gromacs} tool (which might not be what you want).
+	Be careful not to use a command which blocks the terminal
+	(e.g. {\tt vi}), since multiple instances might be run.
 \end{enumerate}
 
 Some other environment variables are specific to one program, such as
