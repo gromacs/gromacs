@@ -330,7 +330,7 @@
  [ dihedrals ] ; override some with residue-specific ones
      N    CA    CB    CG    dih_ASP_chi1_N_C_C_C
     CG    CB    CA     C    dih_ASP_chi1_C_C_C_CO
-    CG    CG   OD2   HD2    dih_sidechain_COOH_C_C_O_H
+    CB    CG   OD2   HD2    dih_sidechain_COOH_C_C_O_H
    OD1    CG   OD2   HD2    dih_sidechain_COOH_O_C_O_H
  [ impropers ]
     -C    CA     N     H    improper_Z_N_X_Y 
