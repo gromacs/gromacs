@@ -94,9 +94,9 @@ extern real d_lb(t_dist *d,int natoms,int ai,int aj);
 /* FUNCTIONS cdist.c calls */
 
 void do_smooth (t_dist *d,t_atoms *atoms,real tol);
-int do_triangle (t_dist *d,t_atoms *atoms,real tol);
-int triangle_upper_bound (t_dist *d,int natoms,real tol);
-int triangle_lower_bound (t_dist *d,int natoms,real tol);
+double do_triangle (t_dist *d,t_atoms *atoms,real tol);
+double triangle_upper_bound (t_dist *d,int natoms,real tol);
+double triangle_lower_bound (t_dist *d,int natoms,real tol);
 /* Return the number of smoothing operations */
 
 /* OTHER FUNCTIONS */

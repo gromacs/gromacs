@@ -185,6 +185,10 @@ static t_dist *read_dist(FILE *log,char *fn,int natom,real weight[])
   fprintf(stderr,
 	  "Read %d distances from %s (discarded %d due to zero weight)\n",
 	  ndist,fn,www);
+  fprintf(log,
+	  "Read %d distances from %s (discarded %d due to zero weight)\n",
+	  ndist,fn,www);
+  fflush(log);
   
   return d;
 }
@@ -204,6 +208,7 @@ static void measure_report(FILE *fp,int nm,int natom,int nover,int nnotideal,
 	  nnotideal,rmsd);
   fprintf(fp,"For %d hydrogen bonds out of %d in the index file the margins " 
 	  "were reduced\n",nhb_rep/2,nhb/3);
+  fflush(fp);
 }
 
 static void measure_dist(FILE *log,t_dist *d,t_atoms *atoms,rvec x[],
@@ -624,16 +629,16 @@ static bool notexcl(t_block *excl,int ai,int aj)
 
 static void dump_nonbonds(t_dist *d,t_idef *idef,t_atoms *atoms,
 			  real hblen,real weight[],
-			  real nb_margin,bool bAddR)
+			  real nb_margin,bool bAddR,
+			  real maxdist)
 {
   int  i,j,k,natoms,ntype,tpi,tpj,ndist,odist;
-  real **dmat,len,lb,maxdist;
+  real **dmat,len,lb;
   bool *bDA;
   char element,ati,atj;
   
   ntype   = idef->atnr;
   natoms  = atoms->nr;
-  maxdist = (atoms->nres+3)*3.5; /* Ca-Ca distance + some buffer */
   
   /* Determine which atoms are capable of H bonding or not */
   snew(bDA,ntype);
@@ -692,29 +697,31 @@ static void dump_nonbonds(t_dist *d,t_idef *idef,t_atoms *atoms,
 	  ndist,odist);
 }
 
-static void release_domains(FILE *fp,char *ndx,t_dist dist[],t_atoms *atoms)
+static void release_domains(FILE *fp,char *ndx,t_dist dist[],t_atoms *atoms,
+			    real maxdist)
 {
   t_block *doms;
   char    **grpname=NULL;
   int     i,j,k,ii,jj,ai,aj,natoms;
-  real    lb,maxdist;
+  real    lb;
   
-  maxdist = (atoms->nres+3)*3.5; /* Ca-Ca distance + some buffer */
   natoms  = atoms->nr;
   doms    = init_index(ndx,&grpname);
   if (doms->nr > 1) {
     fprintf(fp,"Found %d domains, named:\n",doms->nr);
     for(i=0; (i<doms->nr); i++)
       fprintf(fp,"%3d  %s\n",i,grpname[i]);
-    
+    fflush(fp);
     for(i=0; (i<doms->nr); i++) {
       for(ii=doms->index[i]; (ii<doms->index[i+1]); ii++) {
 	ai = doms->a[ii];
 	for(j=i+1; (j<doms->nr); j++) {
 	  for(jj=doms->index[j]; (jj<doms->index[j+1]); jj++) {
 	    aj    = doms->a[jj];
-	    lb    = vdwlen(atoms,ai,aj);
-	    set_dist(dist,natoms,ai,aj,lb,maxdist,0.0);
+	    if (dist_set(dist,natoms,ai,aj)) {
+	      lb    = vdwlen(atoms,ai,aj);
+	      set_dist(dist,natoms,ai,aj,lb,maxdist,0.0);
+	    }
 	  }
 	}
       }
@@ -810,6 +817,7 @@ int main(int argc,char *argv[])
   static real hb_margin    = 0.02;
   static real hblen        = 2.3;
   static real rcut         = 0.0;
+  static real maxdist      = 0.0;
   static bool bNB=TRUE,bBON=TRUE,bAddR=FALSE;
   static bool bVir=FALSE,bEnghHuber=TRUE;
   static char *smth_str[]  = { NULL, "none", "tri", "tetra", NULL };
@@ -852,6 +860,8 @@ int main(int argc,char *argv[])
       "Make nonbonded distance constraints (lower bound only) " },
     { "-measure", FALSE, etREAL, {&rcut},
       "Add (nonbonded) distances by examining all atoms within the distance given (in Angstrom), and using the margin given by the -nm option." },
+    { "-maxdist", FALSE, etREAL, {&maxdist},
+      "Maximum distance between any pair of atoms" },
     { "-add",FALSE, etBOOL,  {&bAddR},
       "Write restraints in format of additional restraints for disco" },
     { "-vir",FALSE, etBOOL,  {&bVir},
@@ -879,7 +889,10 @@ int main(int argc,char *argv[])
     if (!read_tps_conf(topfn,title,top,&x,NULL,box,FALSE))
       fatal_error(0,"No topology in %s",topfn);
     fprintf(stderr,"Successfully read %s (%s)\n",topfn,title);
-		  
+    
+    if (!opt2parg_bSet("-maxdist",asize(pa),pa))
+      maxdist = (top->atoms.nres+3)*3.5; /* Ca-Ca distance + some buffer */
+	  
     if (opt2bSet("-q",NFILE,fnm)) {
       weight = read_weights(opt2fn("-q",NFILE,fnm),top->atoms.nr);
     }
@@ -926,6 +939,7 @@ int main(int argc,char *argv[])
 	ile(fp,dist,&top->idef,&top->atoms,weight,ile_margin,
 	    top->idef.il,top->idef.iparams);
       }
+      fflush(fp);
       fprintf(stderr,"Done residues...\n");
       dump_bonds(&top->atoms,dist,
 		 top->idef.il,top->idef.functype,top->idef.iparams,
@@ -945,17 +959,17 @@ int main(int argc,char *argv[])
       measure_dist(fp,dist,&top->atoms,x,rcut,nb_margin,hb_margin,nhb,hb);
     }
     if (opt2bSet("-dom",NFILE,fnm)) {
-      release_domains(fp,opt2fn("-dom",NFILE,fnm),dist,&top->atoms);
+      release_domains(fp,opt2fn("-dom",NFILE,fnm),dist,&top->atoms,maxdist);
     }
     if (bNB)
       dump_nonbonds(dist,&top->idef,&top->atoms,hblen,weight,
-		    nb_margin,bAddR);
+		    nb_margin,bAddR,maxdist);
     
     if (strcmp(smth_str[0],smth_str[1]) == 0)
       fprintf(stderr,"No smoothing\n");
     else if (strcmp(smth_str[0],smth_str[2]) == 0) {
       fprintf(stderr,"Triangle smoothing only\n");
-      do_triangle (dist,&top->atoms,tol);
+      (void) do_triangle (dist,&top->atoms,tol);
     }
     else if (strcmp(smth_str[0],smth_str[3]) == 0) {
       fprintf(stderr,"Partial tetrangle + triangle smoothing\n");

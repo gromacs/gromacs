@@ -610,7 +610,7 @@ int quick_check(FILE *log,int natom,rvec x[],matrix box,t_correct *c)
       len2 += dx*dx;
     }
     len = sqrt(len2);
-    if ((len < lb) || (len > ub)) {
+    if ((len < lb) || ((ub > 0) && (len > ub))) {
       if (debug)
 	fprintf(debug,"VIOL: ai=%4d aj=%4d lb=%8.4f len=%8.4f ub=%8.4f\n",
 		ai,aj,lb,len,ub);

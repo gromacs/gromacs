@@ -445,7 +445,7 @@ void check_dist(FILE *log,t_correct *c)
   
   fprintf(log,"Checking distances for internal consistency\n");
   for(i=0; (i<c->ndist); i++) {
-    if ((c->d[i].ub - c->d[i].lb) < tol) {
+    if ((c->d[i].ub != 0) && ((c->d[i].ub - c->d[i].lb) < tol)) {
       pr_dist(log,TRUE,c,i);
     }
   }

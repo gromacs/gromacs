@@ -48,6 +48,9 @@ enum { epdbATOM, epdbHETATM, epdbANISOU, epdbCRYST1, epdbCOMPND,
 /* Enumerated value for indexing an uij entry (anisotropic temperature factors) */
 enum { U11, U22, U33, U12, U13, U23 };
        
+extern void set_pdb_wide_format(bool bSet);
+/* If bSet, use wider format for occupancy and bfactor */
+
 extern void pdb_use_ter(bool bSet);
 /* set read_pdbatoms to read upto 'TER' of 'ENDMDL' (default, bSet=FALSE) */
 
