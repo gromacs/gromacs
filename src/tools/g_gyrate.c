@@ -151,7 +151,7 @@ int main(int argc,char *argv[])
     fprintf(out,"@ subtitle \"Axes are principal component axes\"\n");
   xvgr_legend(out,NLEG,leg);
   do {
-    rm_pbc(&(top->idef),top->atoms.nr,box,x,x_s);
+    rm_pbc(&(top->idef),natoms,box,x,x_s);
     tm=sub_xcm(x_s,gnx,index,top->atoms.atom,xcm,bQ);
     gyro=calc_gyro(x_s,gnx,index,top->atoms.atom,tm,gvec,d,bQ,bRot);    
 
