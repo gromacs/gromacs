@@ -45,10 +45,10 @@ static char *SRCID_filenm_c = "$Id$";
 #define un_set(fn) (fn.flag = (fn.flag & ~ffSET))
 #define do_set(fn) (fn.flag = (fn.flag |  ffSET))
 
-enum { eftASCII, eftBINARY, eftXDR, eftGENERIC, eftNR };
+enum { eftASC, eftBIN, eftXDR, eftGEN, eftNR };
 
 typedef struct {
-  int  type;
+  int  ftype;
   char *ext;
   char *defnm;
   char *defopt;
@@ -57,52 +57,52 @@ typedef struct {
 
 /* this array should correspond to the enum in include/types/filenm.h */
 static t_deffile deffile[efNR] = {
-  { 0, ".mdp", "grompp", "-f", "grompp input file with MD parameters"    },
-  { 0, ".gip", "genion", "-f", "genion input file with parameters etc."  },
-  { 0, ".gct", "gct",    "-f", "general coupling stuff"                  },
-  { 0, ".gpp", "group",  "-g", "group related input for grompp"          },
-  { 3, ".???", "traj",   "-f", "Generic trajectory: xtc trr trj gro pdb g87"},
-  { 3, ".???", "traj",   NULL, "Full precision trajectory: trr trj"      },
-  { 2, ".trr", "traj",   NULL, "Trajectory in portable xdr format"       },
-  { 1, ".trj", "traj",   NULL, "Trajectory file (cpu specific)"          },
-  { 2, ".xtc", "traj",   NULL, "Compressed trajectory (portable xdr format)"},
-  { 0, ".g87", "gtraj",  NULL, "Gromos-87 ASCII trajectory format"       },
-  { 3, ".???", "ener",   NULL, "Generic energy: edr ene"                 },
-  { 2, ".edr", "ener",   NULL, "Energy file in portable XDR format"      },
-  { 1, ".ene", "ener",   NULL, "Energy file"                             },
-  { 3, ".???", "conf",   "-c", "Generic structure: gro pdb tpr tpb tpa"  },
-  { 3, ".???", "out",    "-o", "Generic structure: gro pdb"              },
-  { 0, ".gro", "conf",   "-c", "Coordinate file in Gromos-87 format"     },
-  { 0, ".pdb", "eiwit",  "-f", "Protein data bank file"                  },
-  { 0, ".brk", "eiwit",  "-f", "Brookhaven data bank file"               },
-  { 0, ".ent", "eiwit",  "-f", "Entry in the protein date bank"          },
-  { 0, ".log", "run",    "-l", "Log file from MD/LD/EM/NM run"           },
-  { 0, ".xvg", "graph",  "-o", "xvgr file as produced by analysis tools" },
-  { 0, ".out", "hello",  "-o", "Generic output file"                     },
-  { 0, ".ndx", "index",  "-n", "Index file",                             },
-  { 0, ".top", "topol",  "-p", "Topology file"                           },
-  { 0, ".itp", "topinc", NULL, "Include file for topology"               },
-  { 3, ".???", "topol",  "-s", "Generic run input: tpr tpb tpa"          },
-  { 2, ".tpr", "topol",  "-s", "portable xdr run input file"             },
-  { 0, ".tpa", "topol",  "-s", "Ascii run input file"                    },
-  { 1, ".tpb", "topol",  "-s", "Binary run input file"                   },
-  { 0, ".tex", "doc",    "-o", "LaTeX file"                              },
-  { 0, ".rtp", "residue",NULL, "Residue Type file used by pdb2gmx"       },
-  { 0, ".atp", "atomtp", NULL, "Atomtype file used by pdb2gmx"           },
-  { 0, ".hdb", "polar",  NULL, "Hydrogen data base"                      },
-  { 0, ".dat", "nnnice", NULL, "Generic data file"                       },
-  { 0, ".dlg", "user",   NULL, "Dialog Box data for ngmx"                },
-  { 0, ".map", "ss",     NULL, "File that maps matrix data to colors"    },
-  { 0, ".eps", "plot",   NULL, "Encapsulated PostScript (tm) file"       },
-  { 0, ".mat", "ss",     NULL, "Matrix Data file"			 },
-  { 0, ".m2p", "ps",     NULL, "Input file for mat2ps"                   },
-  { 0, ".vdw", "radii",  NULL, "Database containing Van der Waals radii" },
-  { 1, ".mtx", "hessian","-m", "Hessian matrix"                          },
-  { 0, ".vec", "eigvec", NULL, "(Eigen)Vectors"                          },
-  { 0, ".edi", "sam",    NULL, "ED sampling input"                       },
-  { 0, ".edo", "sam",    NULL, "ED sampling output"                      },
-  { 0, ".hat", "gk",     NULL, "Fourier transform of spread function"    },
-  { 0, ".xpm", "root",   NULL, "X PixMap compatible matrix file"         }
+  { eftASC, ".mdp", "grompp", "-f", "grompp input file with MD parameters"   },
+  { eftASC, ".gip", "genion", "-f", "genion input file with parameters etc." },
+  { eftASC, ".gct", "gct",    "-f", "general coupling stuff"                 },
+  { eftASC, ".gpp", "group",  "-g", "group related input for grompp"         },
+  { eftGEN, ".???", "traj",   "-f", "Generic trajectory: xtc trr trj gro pdb g87"},
+  { eftGEN, ".???", "traj",   NULL, "Full precision trajectory: trr trj"     },
+  { eftXDR, ".trr", "traj",   NULL, "Trajectory in portable xdr format"      },
+  { eftBIN, ".trj", "traj",   NULL, "Trajectory file (cpu specific)"         },
+  { eftXDR, ".xtc", "traj",   NULL, "Compressed trajectory (portable xdr format)"},
+  { eftASC, ".g87", "gtraj",  NULL, "Gromos-87 ASCII trajectory format"      },
+  { eftGEN, ".???", "ener",   NULL, "Generic energy: edr ene"                },
+  { eftXDR, ".edr", "ener",   NULL, "Energy file in portable XDR format"     },
+  { eftBIN, ".ene", "ener",   NULL, "Energy file"                            },
+  { eftGEN, ".???", "conf",   "-c", "Generic structure: gro pdb tpr tpb tpa" },
+  { eftGEN, ".???", "out",    "-o", "Generic structure: gro pdb"             },
+  { eftASC, ".gro", "conf",   "-c", "Coordinate file in Gromos-87 format"    },
+  { eftASC, ".pdb", "eiwit",  "-f", "Protein data bank file"                 },
+  { eftASC, ".brk", "eiwit",  "-f", "Brookhaven data bank file"              },
+  { eftASC, ".ent", "eiwit",  "-f", "Entry in the protein date bank"         },
+  { eftASC, ".log", "run",    "-l", "Log file from MD/LD/EM/NM run"          },
+  { eftASC, ".xvg", "graph",  "-o", "xvgr file as produced by analysis tools"},
+  { eftASC, ".out", "hello",  "-o", "Generic output file"                    },
+  { eftASC, ".ndx", "index",  "-n", "Index file",                            },
+  { eftASC, ".top", "topol",  "-p", "Topology file"                          },
+  { eftASC, ".itp", "topinc", NULL, "Include file for topology"              },
+  { eftGEN, ".???", "topol",  "-s", "Generic run input: tpr tpb tpa"         },
+  { eftXDR, ".tpr", "topol",  "-s", "portable xdr run input file"            },
+  { eftASC, ".tpa", "topol",  "-s", "Ascii run input file"                   },
+  { eftBIN, ".tpb", "topol",  "-s", "Binary run input file"                  },
+  { eftASC, ".tex", "doc",    "-o", "LaTeX file"                             },
+  { eftASC, ".rtp", "residue",NULL, "Residue Type file used by pdb2gmx"      },
+  { eftASC, ".atp", "atomtp", NULL, "Atomtype file used by pdb2gmx"          },
+  { eftASC, ".hdb", "polar",  NULL, "Hydrogen data base"                     },
+  { eftASC, ".dat", "nnnice", NULL, "Generic data file"                      },
+  { eftASC, ".dlg", "user",   NULL, "Dialog Box data for ngmx"               },
+  { eftASC, ".map", "ss",     NULL, "File that maps matrix data to colors"   },
+  { eftASC, ".eps", "plot",   NULL, "Encapsulated PostScript (tm) file"      },
+  { eftASC, ".mat", "ss",     NULL, "Matrix Data file"			     },
+  { eftASC, ".m2p", "ps",     NULL, "Input file for mat2ps"                  },
+  { eftASC, ".vdw", "radii",  NULL, "Database containing Van der Waals radii"},
+  { eftBIN, ".mtx", "hessian","-m", "Hessian matrix"                         },
+  { eftASC, ".vec", "eigvec", NULL, "(Eigen)Vectors"                         },
+  { eftASC, ".edi", "sam",    NULL, "ED sampling input"                      },
+  { eftASC, ".edo", "sam",    NULL, "ED sampling output"                     },
+  { eftASC, ".hat", "gk",     NULL, "Fourier transform of spread function"   },
+  { eftASC, ".xpm", "root",   NULL, "X PixMap compatible matrix file"        }
 };
 
 char *ftp2ext(int ftp)
@@ -124,11 +124,11 @@ char *ftp2desc(int ftp)
 char *ftp2ftype(int ftp)
 {
   if ((ftp >= 0) && (ftp < efNR)) {
-    switch (deffile[ftp].type) {
-    case eftASCII: return "ASCII";
-    case eftBINARY: return "Binary";
+    switch (deffile[ftp].ftype) {
+    case eftASC: return "ASCII";
+    case eftBIN: return "Binary";
     case eftXDR: return "XDR portable";
-    case eftGENERIC: return "";
+    case eftGEN: return "";
     default: fatal_error(0,"Some error");
       break;
     }
@@ -154,14 +154,14 @@ void pr_def(FILE *fp,int ftp)
   char c;
   
   df=&(deffile[ftp]);
-  switch (df->type) {
-  case eftASCII: c='A';
+  switch (df->ftype) {
+  case eftASC: c='A';
     break;
-  case eftBINARY: c='B';
+  case eftBIN: c='B';
     break;
   case eftXDR: c='P';
     break;
-  case eftGENERIC: c=' ';
+  case eftGEN: c=' ';
     break;
   default: fatal_error(0,"Some error, some ints %d %d",ftp,efNR);
     break;
