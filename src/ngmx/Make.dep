@@ -140,7 +140,7 @@ logo.o: logo.c $(GMXHOME)/src/include/sysstuff.h Xstuff.h xutil.h \
  $(GMXHOME)/src/include/copyrite.h logo.h\
  $(GMXHOME)/src/include/writeps.h \
  $(GMXHOME)/src/include/3dview.h nleg.h buttons.h \
- $(GMXHOME)/src/include/futil.h /home/spoel/gmx/src/include/pbc.h \
+ $(GMXHOME)/src/include/futil.h $(GMXHOME)/src/include/pbc.h \
  nmol.h $(GMXHOME)/src/include/copyrite.h \
  $(GMXHOME)/src/include/gstat.h \
  $(GMXHOME)/src/include/statutil.h \
@@ -148,7 +148,7 @@ logo.o: logo.c $(GMXHOME)/src/include/sysstuff.h Xstuff.h xutil.h \
  $(GMXHOME)/src/include/readinp.h \
  $(GMXHOME)/src/include/wman.h \
  $(GMXHOME)/src/include/mshift.h \
- $(GMXHOME)/src/include/rmpbc.h /home/spoel/gmx/src/include/vec.h \
+ $(GMXHOME)/src/include/rmpbc.h $(GMXHOME)/src/include/vec.h \
  $(GMXHOME)/src/include/lutab.h
 molps.o: molps.c $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/smalloc.h \
@@ -267,7 +267,7 @@ nmol.o: nmol.c $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/assert.h \
  $(GMXHOME)/src/include/txtdump.h \
  $(GMXHOME)/src/include/tpxio.h \
- $(GMXHOME)/src/include/xdrf.h /home/spoel/gmx/src/include/pbc.h\
+ $(GMXHOME)/src/include/xdrf.h $(GMXHOME)/src/include/pbc.h\
  $(GMXHOME)/src/include/writeps.h pulldown.h
 showcol.o: showcol.c xutil.h $(GMXHOME)/src/include/writeps.h
 vbox.o: vbox.c x11.h $(GMXHOME)/src/include/typedefs.h \
