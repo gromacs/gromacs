@@ -22,7 +22,8 @@ static void make_list(int start_fac)
     nlist++;
 
     for(i=start_fac; i<facNR; i++) {
-      if (i<4 || (factor[4]+factor[5]==0)) {
+      /* allow any power of 2, 3, 5 and 7, but only one of 11 or 13 */
+      if (i<4 || (decomp[4]+decomp[5]==0)) {
 	ng*=factor[i];
 	decomp[i]++;
 	make_list(i);
@@ -35,16 +36,14 @@ static void make_list(int start_fac)
 
 static int list_comp(const void *a,const void *b)
 {
-  return (list[*((int *)a)] - list[*((int *)b)]);
+  return (*((int *)a) - *((int *)b));
 }
 
 void calc_grid(matrix box,real gr_sp,int *nx,int *ny,int *nz,int nprocs)
 {
   int  d,n[DIM];
-  int  i,j=0,x,y,z,nmin[DIM],*list_index;
-  rvec box_size,spac;
-  real spac_av;
-  bool bDone;
+  int  i,nmin[DIM];
+  rvec box_size;
   
   if (gr_sp <= 0)
     fatal_error(0,"invalid fourier grid spacing: %g",gr_sp);
@@ -66,36 +65,30 @@ void calc_grid(matrix box,real gr_sp,int *nx,int *ny,int *nz,int nprocs)
   nlist=0;
   nlist_alloc=0;
   list=NULL;
+  for(i=0; i<facNR; i++)
+    decomp[i]=0;
   make_list(0);
 
   if ((*nx<=0) || (*ny<=0) || (*nz<=0))
     fprintf(stderr,"Calculating fourier grid dimensions for%s%s%s\n",
 	    *nx > 0 ? "":" X",*ny > 0 ? "":" Y",*nz > 0 ? "":" Z");
 
-  snew(list_index,nlist);
-  for(i=0; i<nlist; i++)
-    list_index[i] = i;
-  qsort(list_index,nlist,sizeof(list_index[0]),list_comp);
+  qsort(list,nlist,sizeof(list[0]),list_comp);
   if (debug)
     for(i=0; i<nlist; i++)
-      fprintf(debug,"grid: %d\n",list[list_index[i]]);
+      fprintf(debug,"grid: %d\n",list[i]);
   
   if (((*nx>0) && (*nx != nprocs*(*nx/nprocs))) ||
       ((*ny>0) && (*ny != nprocs*(*ny/nprocs))))
     fatal_error(0,"the x or y grid spacing (nx %d, ny %d) is not divisible by the number of processors (%d)",*nx,*ny,nprocs);
   
   for(d=0; d<DIM; d++) {
-    if (n[d] <= 0) {
-      bDone = FALSE;
-      for(i=0; (i<nlist) && !bDone; i++) {
-	j = list_index[i];
-	bDone = ((list[j] >= nmin[d]) && 
-		 ((d == ZZ) || (list[j] == nprocs*(list[j]/nprocs))));
-      }
-      if (!bDone)
-	fatal_error(0,"could not find a grid spacing with nx and ny divisible by the number of processors (%d)",nprocs);
-      n[d] = list[j];
-    }
+    for(i=0; (i<nlist) && (n[d]<=0); i++)
+      if ((list[i] >= nmin[d]) && 
+	  ((d == ZZ) || (list[i] == nprocs*(list[i]/nprocs))))
+	n[d] = list[i];
+    if (n[d] <= 0)
+      fatal_error(0 ,"could not find a grid spacing with nx and ny divisible by the number of processors (%d)",nprocs);
   }
   
   *nx = n[XX];
@@ -104,8 +97,6 @@ void calc_grid(matrix box,real gr_sp,int *nx,int *ny,int *nz,int nprocs)
   fprintf(stderr,"Using a fourier grid of %dx%dx%d, spacing %.3f %.3f %.3f\n",
 	  *nx,*ny,*nz,
 	  box_size[XX]/(*nx),box_size[YY]/(*ny),box_size[ZZ]/(*nz));
-
-  sfree(list_index);
 }
 
 
