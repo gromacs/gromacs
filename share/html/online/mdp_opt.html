@@ -26,9 +26,10 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, nstcomm, comm_grps)
 <li><A HREF="#ld"><b>langevin dynamics</b></A> (bd_temp, bd_fric, ld_seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
+<li><a HREF="#xmdrun"><b>shell molecular dynamics</a></a>(niter)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
 <li><A HREF="#nl"><b>neighbor searching</b></A> (nstlist, ns_type, pbc, rlist)
-<li><A HREF="#el"><b>electrostatics and VdW</b></A> (coulombtype, rcoulomb_switch, rcoulomb, vdwtype, rvdw_switch, rvdw, epsilon_r, bDispCorr, fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, optimize_fft)
+<li><A HREF="#el"><b>electrostatics and VdW</b></A> (coulombtype, rcoulomb_switch, rcoulomb, vdwtype, rvdw_switch, rvdw, epsilon_r, DispCorr, fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, optimize_fft)
 <li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, tc_grps, tau_t, ref_t)
 <li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, pcoupltype, tau_p, compressibility, ref_p)
 <li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, zero_temp_time)
@@ -174,6 +175,18 @@ this value
 <dt><h4>nstcgsteep: </b>(1000) [steps]</h4>
 <dd>frequency of performing 1 steepest descent step while doing
 conjugate gradient energy minimization.
+</dl>
+
+<A NAME="xmdrun"><br>
+<hr>
+<h3><!--Idx-->Shell Molecular Dynamics<!--EIdx--></h3>
+<dl>
+<dt><h4>emtol: </b>(100.0) [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</h4>
+<dd>the minimization is converged when the maximum force is smaller than 
+this value. For shell MD this value should be 1.0 at most, but since the
+variable is used for energy minimization as well the default is 100.0.
+<dt><h4>niter: </b>(20)</h4>
+<dd>maximum number of iterations for optimizing the shell positions.
 </dl>
 
 <A NAME="out"><br>
@@ -361,13 +374,16 @@ corresponds to the cut-off in the user-defined function.
 <dt><h4>rvdw: </b>(1) [nm]</h4>
 <dd>distance for the LJ or Buckingham <!--Idx-->cut-off<!--EIdx-->
 
-<dt><h4>bDispCorr:</h4>
+<dt><h4>DispCorr:</h4>
 <dd><dl compact>
 <dt><b>no</b>
 <dd>don't apply any correction
-<dt><b>yes</b>
+<dt><b>EnerPres</b>
 <dd>apply long range <!--Idx-->dispersion correction<!--EIdx-->s for Energy
 and Pressure
+<dt><b>Ener</b>
+<dd>apply long range dispersion corrections for Energy
+only
 </dl>
 
 <dt><h4>fourierspacing: </b>(0.12) [nm]</h4>
