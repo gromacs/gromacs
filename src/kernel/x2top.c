@@ -236,7 +236,8 @@ t_atomtype *set_atom_type(t_atoms *atoms,int nbonds[],
   return atype;
 }
 
-void lo_set_force_const(t_params *plist,real c[],int nrfp,bool bRound)
+void lo_set_force_const(t_params *plist,real c[],int nrfp,bool bRound,
+			bool bDih)
 {
   int    i,j;
   double cc;
@@ -250,7 +251,12 @@ void lo_set_force_const(t_params *plist,real c[],int nrfp,bool bRound)
     }
     else 
       c[0] = plist->param[i].c[0];
-    
+    if (bDih) {
+      c[0] *= c[2];
+      c[0] = ((int)(c[0] + 3600)) % 360;
+      if (c[0] > 180)
+	c[0] -= 360;
+    }
     for(j=0; (j<nrfp); j++) {
       plist->param[i].c[j]      = c[j];
       plist->param[i].c[nrfp+j] = c[j];
@@ -266,12 +272,12 @@ void set_force_const(t_params plist[],real kb,real kt,real kp,bool bRound)
   
   c[0] = 0;
   c[1] = kb;
-  lo_set_force_const(&plist[F_BONDS],c,2,bRound);
+  lo_set_force_const(&plist[F_BONDS],c,2,bRound,FALSE);
   c[1] = kt;
-  lo_set_force_const(&plist[F_ANGLES],c,2,bRound);
+  lo_set_force_const(&plist[F_ANGLES],c,2,bRound,FALSE);
   c[1] = kp;
   c[2] = 3;
-  lo_set_force_const(&plist[F_PDIHS],c,3,bRound);
+  lo_set_force_const(&plist[F_PDIHS],c,3,bRound,TRUE);
 }
 
 void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[])
@@ -387,7 +393,7 @@ int main(int argc, char *argv[])
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,asize(bugs),bugs);
   bRTP = opt2bSet("-r",NFILE,fnm);
-  bTOP = opt2bSet("-r",NFILE,fnm);
+  bTOP = opt2bSet("-o",NFILE,fnm);
   if (!bRTP && !bTOP)
     fatal_error(0,"Specify at least one output file");
 		    

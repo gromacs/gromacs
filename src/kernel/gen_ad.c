@@ -693,7 +693,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
   snew(pai, maxpai);
   snew(idih,maxidih);
 
-  gen_excls(atoms,excls,hb);
+  if (hb)
+    gen_excls(atoms,excls,hb);
   
   /* extract all i-j-k-l neighbours from nnb struct */
   for(i=0; (i<nnb->nr); i++) 
