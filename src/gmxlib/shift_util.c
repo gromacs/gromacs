@@ -380,8 +380,8 @@ real shift_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
     fprintf(fp,"Long Range correction: Vexcl=%g\n",Vexcl);
   
   bFirst = FALSE;
-  
-  return (Vself+Vexcl);
+  /* Return the correction to the energy */
+  return (-(Vself+Vexcl));
 }
   
 

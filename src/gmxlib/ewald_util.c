@@ -72,7 +72,8 @@ real calc_ewaldcoeff(real rc,real dtol)
 
 real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 			real charge[],t_block *excl,rvec x[],
-			rvec box_size,matrix lr_vir)
+			rvec box_size,rvec mu_tot,real qsum,
+			bool bDipoleCorr,matrix lr_vir)
 {
   static  bool bFirst=TRUE;
   static  real Vself;
@@ -80,9 +81,11 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   int     i,i1,i2,j,k,m,iv,jv;
   atom_id *AA;
   double  qq; /* Necessary for precision */
-  real    vc,qi,dr,ddd,dr2,rinv,fscal,Vexcl,rinv2,ewc=fr->ewaldcoeff;
+  real    vc,qi,dr,ddd,dr2,rinv,fscal,Vexcl,Vcharge,Vdipole,rinv2,ewc=fr->ewaldcoeff;
   rvec    df,dx;
   rvec    *flr=fr->flr;
+  real    vol = box_size[XX]*box_size[YY]*box_size[ZZ];
+  real    dipole_coeff;
   /*#define TABLES*/
 #ifdef TABLES
   real    tabscale=fr->tabscale;
@@ -95,29 +98,21 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   int     start = START(nsb);
   int     end   = start+HOMENR(nsb);
   
-  if (bFirst) {
-    qq =0;  
-    for(i=start; (i<end); i++) 
-      qq  += charge[i]*charge[i];
-    
-    /* Charge and dipole correction remain to be implemented... */
-
-    Vself=ewc*ONE_4PI_EPS0*qq/sqrt(M_PI);
-    if (debug) {
-      fprintf(fp,"Long Range corrections for Ewald interactions:\n");
-      fprintf(fp,"start=%d,natoms=%d\n",start,end-start);
-      fprintf(fp,"qq = %g, Vself=%g\n",qq,Vself);
-    }
-  }
-  
   AA    = excl->a;
   Vexcl = 0;
- 
+  qq =0; 
+  Vdipole=0;
+  Vcharge=0;
+  
+  dipole_coeff=M_PI/(1.5*ONE_4PI_EPS0*vol);
+
   for(i=start; (i<end); i++) {
       /* Initiate local variables (for this i-particle) to 0 */
       qi  = charge[i]*ONE_4PI_EPS0;
       i1  = excl->index[i];
       i2  = excl->index[i+1];
+      qq  += charge[i]*charge[i];
+      
       /* Loop over excluded neighbours */
       for(j=i1; (j<i2); j++) {
 	k = AA[j];
@@ -203,13 +198,40 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 	      lr_vir[iv][jv]+=0.5*dx[iv]*df[jv];
 	}
       }
+      }
+      /* Dipole correction on force  */
+      if(bDipoleCorr) 
+	for(j=0;j<DIM;j++)
+	  flr[i][j]+=dipole_coeff*mu_tot[j]*charge[i];
+  }
+
+  /* Global corrections only on master process */
+  if(MASTER(cr)) {
+    /* Apply charge correction */
+    /* use vc as a dummy variable */
+    vc=qsum*qsum*M_PI/(4.0*ONE_4PI_EPS0*vol*vol*ewc*ewc);
+    for(iv=0;iv<DIM;iv++)
+      lr_vir[iv][iv]+=vc;
+    Vcharge=-2.0*vol*vc;
+    /* Apply surface dipole correction */
+    if(bDipoleCorr)
+      Vdipole=dipole_coeff*(mu_tot[XX]*mu_tot[XX]+mu_tot[YY]*mu_tot[YY]+mu_tot[ZZ]*mu_tot[ZZ]);
+  }
+  
+  Vself=ewc*ONE_4PI_EPS0*qq/sqrt(M_PI);
+  
+  if (debug) {
+    fprintf(debug,"Long Range corrections for Ewald interactions:\n");
+    fprintf(debug,"start=%d,natoms=%d\n",start,end-start);
+    fprintf(debug,"qq = %g, Vself=%g\n",qq,Vself);
+    fprintf(debug,"Long Range correction: Vexcl=%g\n",Vexcl);
+    if(MASTER(cr)) {
+      fprintf(debug,"Total charge correction: Vcharge=%g\n",Vcharge);
+      if(bDipoleCorr)
+      fprintf(debug,"Total dipole correction: Vdipole=%g\n",Vdipole);
     }
   }
-  if (bFirst && debug)
-    fprintf(fp,"Long Range correction: Vexcl=%g\n",Vexcl);
-
-  bFirst = FALSE;
-  
-  return (Vself+Vexcl);
+  /* Return the correction to the energy */
+  return (Vdipole+Vcharge-Vself-Vexcl);
 }
   
