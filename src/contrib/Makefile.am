@@ -19,7 +19,7 @@ LDADD = -lmdXXX_SUFFIX_XXX -lgmxXXX_SUFFIX_XXX
 # issue "make <program>" and copy the binary to the correct location yourself! 
 # Add new entries in Makefile.am!
 
-EXTRA_PROGRAMS 		= sigeps mk6_n copyrgt mkyaw prfn hrefify mkice \
+EXTRA_PROGRAMS 		= sigeps mk6_n copyrgt mkyaw prfn options hrefify mkice \
                           total hexamer optwat addquote do_shift g_anavel my_dssp anaf 
 
 copyrgt_SOURCES 	= copyrgt.c
@@ -47,6 +47,8 @@ mkyaw_SOURCES 		= mkyaw.c
 mkice_SOURCES 		= mkice.c
 
 prfn_SOURCES 		= prfn.c
+
+options_SOURCES		= options.c
 
 g_anavel_SOURCES 	= g_anavel.c
 
