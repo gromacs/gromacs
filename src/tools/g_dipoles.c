@@ -199,7 +199,7 @@ void print_gkrbin(char *fn,t_gkrbin *gb,
       cosav = gb->elem[i]/gb->count[i];
     else
       cosav = 0;
-    ener = -cosav*ONE_4PI_EPS0/(x1*x1*x1);
+    ener = -0.5*cosav*ONE_4PI_EPS0/(x1*x1*x1);
     
     fprintf(fp,"%10.5e %12.5e %12.5e %12.5e %12.5e  %12.5e\n",
 	    x1,Gkr,cosav,hOO,gOO,ener);
@@ -788,7 +788,9 @@ int main(int argc,char *argv[])
     "Option [TT]-g[tt] produces a plot of the distance dependent Kirkwood",
     "G-factor, as well as the average cosine of the angle between the dipoles",
     "as a function of the distance. The plot also includes gOO and hOO",
-    "according to Nymand & Linse, JCP 112 (2000) pp 6386-6395.[PAR]",
+    "according to Nymand & Linse, JCP 112 (2000) pp 6386-6395. In the same plot",
+    "we also include the energy per scale computed by taking the inner product of",
+    "the dipoles divided by the distance to the third power.[PAR]",
     "[PAR]",
     "EXAMPLES[PAR]",
     "g_dipoles -P1 -n mols -o dip_sqr -mu 2.273 -mumax 5.0",
