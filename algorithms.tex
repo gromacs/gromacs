@@ -737,6 +737,21 @@ the time constant normally should be 4--5 times larger
 than the relaxation time used with weak coupling, but your 
 mileage may vary.
 
+\subsubsection{\swapindex{Group}{temperature coupling}}
+In {\gromacs} temperature coupling can be performed on groups of
+atoms, typically a protein and solvent. The reason such algorithmes
+were introduced is that energy exchange between different components
+is not perfect, due to different effects including cut-offs etc. If
+now the whole system is coupled to one heat bath, water (which
+experiences the largest cut-off noise) will tend to heat up and the
+protein will cool down. Typically 100 K differences can be obtained.
+With the use of proper electrostatic methods (PME) these difference
+are much smaller but still not negligable. The parameters for
+temperature coupling in groups are given in the {\tt mdp} file. One
+special case should be mentioned: it is possible to T-couple only part
+of the system (or nothing at all obviously). This is done by
+specifying zero for the time constant $\tau_T$ for the group of interest.
+
 
 \subsection{\swapindex{Pressure}{coupling}}
 In the same spirit as the temperature coupling, the system can also be
