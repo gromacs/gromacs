@@ -394,6 +394,7 @@ int read_xpm_matrix(char *fnm,t_matrix **matrix)
 bool matrix2real(t_matrix *matrix, real ***mat)
 {
   t_mapping *map;
+  double tmp;
   real *rmap;
   int i,j,nmap;
   
@@ -401,13 +402,15 @@ bool matrix2real(t_matrix *matrix, real ***mat)
   map=matrix->map;
   snew(rmap,nmap);
   
-  for(i=0; i<nmap; i++)
-    if ((map[i].desc==NULL) || (sscanf(map[i].desc,"%g",&(rmap[i]))!=1)) {
+  for(i=0; i<nmap; i++) {
+    if ((map[i].desc==NULL) || (sscanf(map[i].desc,"%lf",&tmp)!=1)) {
       fprintf(stderr,"Could not convert matrix to reals,\n"
 	      "color map entry %d has a non-real description: \"%s\"\n",
 	      i,map[i].desc);
       return FALSE;
-    }
+    } 
+    rmap[i]=tmp;
+  }
   
   snew(*mat,matrix->nx);
   for(i=0; i<matrix->nx; i++) {
