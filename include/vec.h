@@ -42,9 +42,15 @@ static char *SRCID_vec_h = "$Id$";
 #include "macros.h"
 #include "fatal.h"
 
+#ifdef _lnx_
+#define gmx_inline inline
+#else
+#define gmx_inline
+#endif
+
 #ifdef CINVSQRT
 #include "lutab.h"
-static real invsqrt(float x)
+static gmx_inline real invsqrt(float x)
 {
   const real  half=0.5;
   const real  three=3.0;
@@ -75,12 +81,12 @@ static real invsqrt(float x)
 #define invsqrt(x) (1.0f/sqrt(x))
 #endif
 
-static real sqr(real x)
+static gmx_inline real sqr(real x)
 {
   return (x*x);
 }
 
-static void rvec_add(rvec a,rvec b,rvec c)
+static gmx_inline void rvec_add(rvec a,rvec b,rvec c)
 {
   real x,y,z;
   
@@ -93,7 +99,7 @@ static void rvec_add(rvec a,rvec b,rvec c)
   c[ZZ]=z;
 }
 
-static void rvec_inc(rvec a,rvec b)
+static gmx_inline void rvec_inc(rvec a,rvec b)
 {
   real x,y,z;
   
@@ -106,7 +112,7 @@ static void rvec_inc(rvec a,rvec b)
   a[ZZ]=z;
 }
 
-static void rvec_sub(rvec a,rvec b,rvec c)
+static gmx_inline void rvec_sub(rvec a,rvec b,rvec c)
 {
   real x,y,z;
   
@@ -119,7 +125,7 @@ static void rvec_sub(rvec a,rvec b,rvec c)
   c[ZZ]=z;
 }
 
-static void rvec_dec(rvec a,rvec b)
+static gmx_inline void rvec_dec(rvec a,rvec b)
 {
   real x,y,z;
   
@@ -132,40 +138,40 @@ static void rvec_dec(rvec a,rvec b)
   a[ZZ]=z;
 }
 
-static void copy_rvec(rvec a,rvec b)
+static gmx_inline void copy_rvec(rvec a,rvec b)
 {
   b[XX]=a[XX];
   b[YY]=a[YY];
   b[ZZ]=a[ZZ];
 }
 
-static void copy_mat(matrix a,matrix b)
+static gmx_inline void copy_mat(matrix a,matrix b)
 {
   copy_rvec(a[XX],b[XX]);
   copy_rvec(a[YY],b[YY]);
   copy_rvec(a[ZZ],b[ZZ]);
 }
 
-static void svmul(real a,rvec v1,rvec v2)
+static gmx_inline void svmul(real a,rvec v1,rvec v2)
 {
   v2[XX]=a*v1[XX];
   v2[YY]=a*v1[YY];
   v2[ZZ]=a*v1[ZZ];
 }
 
-static real distance2(rvec v1, rvec v2)
+static gmx_inline real distance2(rvec v1, rvec v2)
 {
   return sqr(v2[XX]-v1[XX]) + sqr(v2[YY]-v1[YY]) + sqr(v2[ZZ]-v1[ZZ]);
 }
 
-static void clear_rvec(rvec a)
+static gmx_inline void clear_rvec(rvec a)
 {
   const real nul=0.0;
   
   a[XX]=a[YY]=a[ZZ]=nul;
 }
 
-static void clear_rvecs(int n,rvec v[])
+static gmx_inline void clear_rvecs(int n,rvec v[])
 {
   int i;
   
@@ -173,7 +179,7 @@ static void clear_rvecs(int n,rvec v[])
     clear_rvec(v[i]);
 }
 
-static void clear_mat(matrix a)
+static gmx_inline void clear_mat(matrix a)
 {
   const real nul=0.0;
   
@@ -182,22 +188,22 @@ static void clear_mat(matrix a)
   a[ZZ][XX]=a[ZZ][YY]=a[ZZ][ZZ]=nul;
 }
 
-static real iprod(rvec a,rvec b)
+static gmx_inline real iprod(rvec a,rvec b)
 {
   return (a[XX]*b[XX]+a[YY]*b[YY]+a[ZZ]*b[ZZ]);
 }
 
-static real norm2(rvec a)
+static gmx_inline real norm2(rvec a)
 {
   return a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ];
 }
 
-static real norm(rvec a)
+static gmx_inline real norm(rvec a)
 {
   return sqrt(a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ]);
 }
 
-static real cos_angle(rvec a,rvec b)
+static gmx_inline real cos_angle(rvec a,rvec b)
 {
   /* 
    *                  ax*bx + ay*by + az*bz
@@ -226,14 +232,14 @@ static real cos_angle(rvec a,rvec b)
   return cos;
 }
 
-static void oprod(rvec a,rvec b,rvec c)
+static gmx_inline void oprod(rvec a,rvec b,rvec c)
 {
   c[XX]=a[YY]*b[ZZ]-a[ZZ]*b[YY];
   c[YY]=a[ZZ]*b[XX]-a[XX]*b[ZZ];
   c[ZZ]=a[XX]*b[YY]-a[YY]*b[XX];
 }
 
-static void mmul(matrix a,matrix b,matrix dest)
+static gmx_inline void mmul(matrix a,matrix b,matrix dest)
 {
   dest[XX][XX]=a[XX][XX]*b[XX][XX]+a[XX][YY]*b[YY][XX]+a[XX][ZZ]*b[ZZ][XX];
   dest[YY][XX]=a[YY][XX]*b[XX][XX]+a[YY][YY]*b[YY][XX]+a[YY][ZZ]*b[ZZ][XX];
@@ -246,14 +252,14 @@ static void mmul(matrix a,matrix b,matrix dest)
   dest[ZZ][ZZ]=a[ZZ][XX]*b[XX][ZZ]+a[ZZ][YY]*b[YY][ZZ]+a[ZZ][ZZ]*b[ZZ][ZZ];
 }
 
-static real det(matrix a)
+static gmx_inline real det(matrix a)
 {
   return ( a[XX][XX]*(a[YY][YY]*a[ZZ][ZZ]-a[ZZ][YY]*a[YY][ZZ])
 	  -a[YY][XX]*(a[XX][YY]*a[ZZ][ZZ]-a[ZZ][YY]*a[XX][ZZ])
 	  +a[ZZ][XX]*(a[XX][YY]*a[YY][ZZ]-a[YY][YY]*a[XX][ZZ]));
 }
 
-static void m_add(matrix a,matrix b,matrix dest)
+static gmx_inline void m_add(matrix a,matrix b,matrix dest)
 {
   dest[XX][XX]=a[XX][XX]+b[XX][XX];
   dest[XX][YY]=a[XX][YY]+b[XX][YY];
@@ -266,7 +272,7 @@ static void m_add(matrix a,matrix b,matrix dest)
   dest[ZZ][ZZ]=a[ZZ][ZZ]+b[ZZ][ZZ];
 }
 
-static void m_sub(matrix a,matrix b,matrix dest)
+static gmx_inline void m_sub(matrix a,matrix b,matrix dest)
 {
   dest[XX][XX]=a[XX][XX]-b[XX][XX];
   dest[XX][YY]=a[XX][YY]-b[XX][YY];
@@ -279,7 +285,7 @@ static void m_sub(matrix a,matrix b,matrix dest)
   dest[ZZ][ZZ]=a[ZZ][ZZ]-b[ZZ][ZZ];
 }
 
-static void msmul(matrix m1,real r1,matrix dest)
+static gmx_inline void msmul(matrix m1,real r1,matrix dest)
 {
   dest[XX][XX]=r1*m1[XX][XX];
   dest[XX][YY]=r1*m1[XX][YY];
@@ -292,7 +298,7 @@ static void msmul(matrix m1,real r1,matrix dest)
   dest[ZZ][ZZ]=r1*m1[ZZ][ZZ];
 }
 
-static void m_inv(matrix src,matrix dest)
+static gmx_inline void m_inv(matrix src,matrix dest)
 {
   const real smallreal = 1.0e-18;
   const real largereal = 1.0e18;
@@ -316,14 +322,14 @@ static void m_inv(matrix src,matrix dest)
   dest[ZZ][ZZ]= c*(src[XX][XX]*src[YY][YY]-src[YY][XX]*src[XX][YY]);
 }
 
-static void mvmul(matrix a,rvec src,rvec dest)
+static gmx_inline void mvmul(matrix a,rvec src,rvec dest)
 {
   dest[XX]=a[XX][XX]*src[XX]+a[XX][YY]*src[YY]+a[XX][ZZ]*src[ZZ];
   dest[YY]=a[YY][XX]*src[XX]+a[YY][YY]*src[YY]+a[YY][ZZ]*src[ZZ];
   dest[ZZ]=a[ZZ][XX]*src[XX]+a[ZZ][YY]*src[YY]+a[ZZ][ZZ]*src[ZZ];
 }
 
-static void unitv(rvec src,rvec dest)
+static gmx_inline void unitv(rvec src,rvec dest)
 {
   real linv;
   
@@ -333,19 +339,19 @@ static void unitv(rvec src,rvec dest)
   dest[ZZ]=linv*src[ZZ];
 }
 
-static real trace(matrix m)
+static gmx_inline real trace(matrix m)
 {
   return (m[XX][XX]+m[YY][YY]+m[ZZ][ZZ]);
 }
 
-static real _divide(real a,real b,char *file,int line)
+static gmx_inline real _divide(real a,real b,char *file,int line)
 {
   if (b == 0.0) 
     fatal_error(0,"Dividing by zero, file %s, line %d",file,line);
   return a/b;
 }
 
-static int _mod(int a,int b,char *file,int line)
+static gmx_inline int _mod(int a,int b,char *file,int line)
 {
   if (b == 0)
     fatal_error(0,"Modulo zero, file %s, line %d",file,line);

@@ -50,7 +50,6 @@ static char *SRCID_force_c = "$Id$";
 #include "nrnb.h"
 #include "bondf.h"
 #include "mshift.h"
-#include "fnbf.h"
 #include "txtdump.h"
 #include "lrutil.h"
 #include "pppm.h"
@@ -67,7 +66,7 @@ t_forcerec *mk_forcerec(void)
 }
 
 #ifdef DEBUG
-static void pr_nbfp(FILE *fp,real **nbfp,bool bBHAM,int atnr)
+static void pr_nbfp(FILE *fp,real *nbfp,bool bBHAM,int atnr)
 {
   int i,j;
   
@@ -75,38 +74,38 @@ static void pr_nbfp(FILE *fp,real **nbfp,bool bBHAM,int atnr)
     for(j=0; (j<atnr); j++) {
       fprintf(fp,"%2d - %2d",i,j);
       if (bBHAM)
-	fprintf(fp,"  a=%10g, b=%10g, c=%10g\n",
-		nbfp[i][3*j],nbfp[i][3*j+1],nbfp[i][3*j+2]);
+	fprintf(fp,"  a=%10g, b=%10g, c=%10g\n",BHAMA(nbfp,atnr,i,j),
+		BHAMB(nbfp,atnr,i,j),BHAMC(nbfp,atnr,i,j));
       else
-	fprintf(fp,"  c6=%10g, c12=%10g\n",
-		nbfp[i][2*j],nbfp[i][2*j+1]);
+	fprintf(fp,"  c6=%10g, c12=%10g\n",C6(nbfp,atnr,i,j),
+		C12(nbfp,atnr,i,j));
     }
   }
 }
 #endif
 
-static real **mk_nbfp(t_idef *idef,bool bBHAM)
+static real *mk_nbfp(t_idef *idef,bool bBHAM)
 {
-  real **nbfp;
-  int  i,j,k;
+  real *nbfp;
+  int  i,j,k,atnr;
   
-  snew(nbfp,idef->atnr);
+  atnr=idef->atnr;
   if (bBHAM) {
-    for(i=k=0; (i<idef->atnr); i++) {
-      snew(nbfp[i],3*idef->atnr);
+    snew(nbfp,3*atnr*atnr);
+    for(i=k=0; (i<atnr*atnr); i++) {
       for(j=0; (j<idef->atnr); j++,k++) {
-	nbfp[i][3*j]   = idef->iparams[k].bham.a;
-	nbfp[i][3*j+1] = idef->iparams[k].bham.b;
-	nbfp[i][3*j+2] = idef->iparams[k].bham.c;
+	BHAMA(nbfp,atnr,i,j) = idef->iparams[k].bham.a;
+	BHAMB(nbfp,atnr,i,j) = idef->iparams[k].bham.b;
+	BHAMC(nbfp,atnr,i,j) = idef->iparams[k].bham.c;
       }
     }
   }
   else {
-    for(i=k=0; (i<idef->atnr); i++) {
-      snew(nbfp[i],2*idef->atnr);
-      for(j=0; (j<idef->atnr); j++,k++) {
-	nbfp[i][2*j]   = idef->iparams[k].lj.c6;
-	nbfp[i][2*j+1] = idef->iparams[k].lj.c12;
+    snew(nbfp,2*atnr*atnr);
+    for(i=k=0; (i<atnr); i++) {
+      for(j=0; (j<atnr); j++,k++) {
+	C6(nbfp,atnr,i,j)   = idef->iparams[k].lj.c6;
+	C12(nbfp,atnr,i,j)  = idef->iparams[k].lj.c12;
       }
     }
   }
@@ -182,7 +181,7 @@ void update_forcerec(FILE *log,t_forcerec *fr,matrix box)
 	     &fr->kappa,&fr->epsfac,&fr->k_rf,&fr->c_rf);
 }
 
-static double calc_avcsix(FILE *log,real **nbfp,int ntypes,
+static double calc_avcsix(FILE *log,real *nbfp,int atnr,
 			  int natoms,int type[],bool bBHAM)
 {
   int    i,j,tpi,tpj;
@@ -192,17 +191,20 @@ static double calc_avcsix(FILE *log,real **nbfp,int ntypes,
   csix = 0;
   for(i=0; (i<natoms); i++) {
     tpi = type[i];
-    if (tpi >= ntypes)
-      fatal_error(0,"Atomtype[%d] = %d, maximum = %d",i,tpi,ntypes);
-
+#ifdef DEBUG
+    if (tpi >= atnr)
+      fatal_error(0,"Atomtype[%d] = %d, maximum = %d",i,tpi,atnr);
+#endif
     for(j=0; (j<natoms); j++) {
       tpj   = type[j];
-      if (tpj >= ntypes)
-	fatal_error(0,"Atomtype[%d] = %d, maximum = %d",j,tpj,ntypes);
+#ifdef DEBUG
+      if (tpj >= atnr)
+	fatal_error(0,"Atomtype[%d] = %d, maximum = %d",j,tpj,atnr);
+#endif
       if (bBHAM)
-	csix += (nbfp)[(tpi)][3*(tpj)+2];
+	csix += BHAMC(nbfp,atnr,tpi,tpj);
       else
-	csix += C6(nbfp,tpi,tpj);
+	csix += C6(nbfp,atnr,tpi,tpj);
     }
   }
   csix /= (natoms*natoms);
@@ -212,22 +214,21 @@ static double calc_avcsix(FILE *log,real **nbfp,int ntypes,
   return csix;
 }
 
-void set_avcsix(FILE *log,t_forcerec *fr,t_idef *idef,t_mdatoms *mdatoms)
+void set_avcsix(FILE *log,t_forcerec *fr,t_mdatoms *mdatoms)
 {
-  fr->avcsix=calc_avcsix(log,fr->nbfp,idef->atnr,mdatoms->nr,
+  fr->avcsix=calc_avcsix(log,fr->nbfp,fr->ntype,mdatoms->nr,
 			 mdatoms->typeA,fr->bBHAM);
 }
 
-static void set_bham_b_max(FILE *log,t_forcerec *fr,
-			   t_idef *idef,t_mdatoms *mdatoms)
+static void set_bham_b_max(FILE *log,t_forcerec *fr,t_mdatoms *mdatoms)
 {
   int  i,j,tpi,tpj,ntypes,natoms,*type;
   real b,bmin;
-  real **nbfp;
+  real *nbfp;
 
   fprintf(log,"Determining largest Buckingham b parameter for table\n");
   nbfp   = fr->nbfp;
-  ntypes = idef->atnr;
+  ntypes = fr->ntype;
   type   = mdatoms->typeA;
   natoms = mdatoms->nr;
 
@@ -242,7 +243,7 @@ static void set_bham_b_max(FILE *log,t_forcerec *fr,
       tpj   = type[j];
       if (tpj >= ntypes)
 	fatal_error(0,"Atomtype[%d] = %d, maximum = %d",j,tpj,ntypes);
-      b = (nbfp)[(tpi)][3*(tpj)+1];
+      b = BHAMB(nbfp,ntypes,tpi,tpj);
       if (b > fr->bham_b_max)
 	fr->bham_b_max = b;
       if ((b < bmin) || (bmin==-1))
@@ -269,7 +270,10 @@ void init_forcerec(FILE *log,
   rvec box_size;
   
   natoms         = mdatoms->nr;
-  
+
+  /* Free energy */
+  fr->bPert      = ir->bPert;
+    
   /* Neighbour searching stuff */
   fr->bGrid      = (ir->ns_type == ensGRID);
   fr->ndelta     = ir->ndelta;
@@ -279,6 +283,10 @@ void init_forcerec(FILE *log,
   fr->vdwtype    = ir->vdwtype;
   fr->bTwinRange = (fr->rlistlong > fr->rlist);
   fr->bTab       = ((fr->eeltype != eelCUT) || (fr->vdwtype != evdwCUT));
+  fr->bRF        = (((fr->eeltype == eelRF) || (fr->eeltype == eelGRF)) &&
+		    (fr->vdwtype == evdwCUT));
+  if ((fr->bRF) && (fr->vdwtype == evdwCUT))
+    fr->bTab = FALSE;
   fprintf(log,"Table routines are used: %s\n",bool_names[fr->bTab]);
   
 #define MAX_14_DIST 1.0
@@ -364,13 +372,13 @@ void init_forcerec(FILE *log,
     snew(fr->fshift_lr,SHIFTS);
   }
   /* Mask that says whether or not this NBF list should be computed */
-  if (fr->bMask == NULL) {
+  /*  if (fr->bMask == NULL) {
     ngrp = ir->opts.ngener*ir->opts.ngener;
-    snew(fr->bMask,ngrp);
+    snew(fr->bMask,ngrp);*/
     /* Defaults to always */
-    for(i=0; (i<ngrp); i++)
+  /*    for(i=0; (i<ngrp); i++)
       fr->bMask[i] = TRUE;
-  }
+      }*/
 
   if (fr->cg_cm == NULL)
     snew(fr->cg_cm,cgs->nr);
@@ -389,6 +397,7 @@ void init_forcerec(FILE *log,
   }
   
   if (fr->nbfp == NULL) {
+    fr->ntype = idef->atnr;
     fr->bBHAM = (idef->functype[0] == F_BHAM);
     fr->nbfp  = mk_nbfp(idef,fr->bBHAM);
   }
@@ -409,9 +418,9 @@ void init_forcerec(FILE *log,
 	  fr->rlist,fr->rcoulomb,fr->bBHAM ? "BHAM":"LJ",fr->rvdw);
   
   if (ir->bDispCorr)
-    set_avcsix(log,fr,idef,mdatoms);
+    set_avcsix(log,fr,mdatoms);
   if (fr->bBHAM)
-    set_bham_b_max(log,fr,idef,mdatoms);
+    set_bham_b_max(log,fr,mdatoms);
   
   /* Now update the rest of the vars */
   update_forcerec(log,fr,box);
@@ -473,7 +482,7 @@ void ns(FILE *log,
       nDNL=0;
       
     /* Allocate memory for the neighbor lists */
-    init_neighbor_list(log,fr,grps->estat.nn);
+    init_neighbor_list(log,fr,HOMENR(nsb));
       
     bFirst=FALSE;
   }
@@ -542,30 +551,14 @@ void force(FILE       *log,     int        step,
   if (bDoEpot) 
     for(i=0; (i<fr->nmol); i++)
       fr->mol_epot[i]=0.0;
-  where();
-  
-  do_fnbf(log,F_SR,fr,x,f,md,
-	  grps->estat.ee[egLJ],grps->estat.ee[egCOUL],box_size,nrnb,
-	  lambda,&epot[F_DVDL],FALSE);
-  where();
-  
-  if (fr->bBHAM) {
-    do_fnbf(log,F_BHAM,fr,x,f,md,
-	    grps->estat.ee[egBHAM],grps->estat.ee[egCOUL],box_size,nrnb,
-	    lambda,&epot[F_DVDL],FALSE);
-  }
-  else {
-    /* Normal LJ interactions */
-    do_fnbf(log,F_LJ,fr,x,f,md,
-	    grps->estat.ee[egLJ],grps->estat.ee[egCOUL],box_size,nrnb,
-	    lambda,&epot[F_DVDL],FALSE);
-    /* Free energy stuff is extra */
-    do_fnbf(log,F_DVDL,fr,x,f,md,
-	    grps->estat.ee[egLJ],grps->estat.ee[egCOUL],box_size,nrnb,
-	    lambda,&epot[F_DVDL],FALSE);
-  }
-  where();
+  debug_gmx();
 
+  /* Call the short range functions all in one go. */
+  do_fnbf(log,fr,x,f,md,
+	  grps->estat.ee[egLJ],grps->estat.ee[egCOUL],box_size,nrnb,
+	  lambda,&epot[F_DVDL],FALSE,-1);
+  debug_gmx();
+  
   /* Shift the coordinates. Must be done before bonded forces and PPPM, 
    * but is also necessary for SHAKE and update, therefore it can NOT 
    * go when no bonded forces have to be evaluated.
@@ -582,10 +575,11 @@ void force(FILE       *log,     int        step,
       for(i=graph->start; (i<=graph->end); i++)
 	fprintf(debug,"%5d%5s%5s%5d%8.3f%8.3f%8.3f\n",
 		i,"A","B",i,x[i][XX],x[i][YY],x[i][ZZ]);
-      fprintf(debug,"%10.5f%10.5f%10.5f\n",box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
+      fprintf(debug,"%10.5f%10.5f%10.5f\n",
+	      box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
     }
     inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
-    where();
+    debug_gmx();
   }
   
   if (EEL_LR(fr->eeltype)) {
@@ -611,16 +605,16 @@ void force(FILE       *log,     int        step,
       fprintf(debug,"Vpppm = %g, Vself = %g, Vlr = %g\n",
 	      Vlr,Vself,epot[F_LR]);
   }
-  where();
+  debug_gmx();
   
   if (debug)    
     print_nrnb(debug,nrnb);
-  where();
+  debug_gmx();
   
   if (!bNBFonly) {
     calc_bonds(log,idef,x,f,fr,graph,epot,nrnb,box,lambda,md,
 	       opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14]);
-    where();
+    debug_gmx();
   }
   
   for(i=0; (i<F_EPOT); i++)

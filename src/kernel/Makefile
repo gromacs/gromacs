@@ -51,7 +51,7 @@ tpbconv:	$(PGOBJ)	tpbconv.o	readir.o
 pdb2gmx:	$(POBJ) 
 		$(LD) -o $@ $^ $(SYSLIBS) 
 
-mdrun:		mdrun.o
+mdrun:		mdrun.o $(GMXHOME)/lib/$(GMXCPU)/libgmx.$(GMXCPU).a
 		$(LD) $(RUNLDOPT) -o $@ mdrun.o $(RUNSYSLIBS)
 
 mk_ghat:	mk_ghat.o

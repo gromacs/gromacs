@@ -49,14 +49,16 @@ static char *SRCID_ns_h = "$Id$";
  *    U T I L I T I E S May be found in ns.c
  *
  ****************************************************/
-extern void init_neighbor_list(FILE *log,t_forcerec *fr,int nn);
+extern void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr);
 /* 
  * nn is the number of energy terms in the energy matrix
  * (ngener*(ngener-1))/2
+ * start is the first atom on this processor
+ * homenr is the number of atoms on this processor
  */
  
 extern real calc_image_rect(rvec xi,rvec xj,rvec box_size,
-			    rvec b_inv,t_ishift *shift);
+			    rvec b_inv,int *shift);
 /* Calculate the image for a rectangular box, return the distance squared */
 
 extern int calc_naaj(FILE *log,int icg,int cgtot);

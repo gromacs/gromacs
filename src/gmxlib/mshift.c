@@ -297,7 +297,7 @@ void done_graph(t_graph *g)
  *
  ************************************************************/
 
-static int mk_1shift(rvec hbox,rvec xi,t_ishift mi,rvec xj)
+static int mk_1shift(rvec hbox,rvec xi,int mi,rvec xj)
 {
   /* Calculate periodicity for rectangular box... */
   int  m;
@@ -480,7 +480,7 @@ void unshift_atom(t_graph *g,rvec sv[],rvec x[],rvec x_s[],atom_id ai)
 
 void shift_x(t_graph *g,rvec sv[],rvec x[],rvec x_s[])
 {
-  t_ishift *is;
+  int *is;
   int      g0,gn;
   int      i,j,isd;
 
@@ -501,7 +501,7 @@ void shift_x(t_graph *g,rvec sv[],rvec x[],rvec x_s[])
 
 void shift_self(t_graph *g,rvec sv[],rvec x[])
 {
-  t_ishift *is;
+  int *is;
   int      g0,gn;
   int      i,j,isd;
 
@@ -525,7 +525,7 @@ void shift_self(t_graph *g,rvec sv[],rvec x[])
 
 void unshift_x(t_graph *g,rvec sv[],rvec x[],rvec x_s[])
 {
-  t_ishift *is;
+  int *is;
   int      g0,gn;
   int      i,j,isd;
 
@@ -546,9 +546,9 @@ void unshift_x(t_graph *g,rvec sv[],rvec x[],rvec x_s[])
 
 void unshift_self(t_graph *g,rvec sv[],rvec x[])
 {
-  t_ishift *is;
-  int      g0,gn;
-  int      i,j,isd;
+  int *is;
+  int g0,gn;
+  int i,j,isd;
 
   g0=g->start;
   gn=g->nnodes;

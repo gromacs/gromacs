@@ -6,147 +6,6 @@
  * independent way.
  */
 
-define(`fc_args',`(real *ix,real *iy,real *iz,real *qi,real pos[],int *nj,int jjnr[],real charge[],real faction[],real fip[3],real egcoul[])')
- 
-extern void FUNCTION(forcoul) fc_args ;
-
-void f77coul fc_args
-{
-#ifdef USEF77
-  FUNCTION(forcoul)(ix,iy,iz,qi,pos,nj,jjnr,charge,faction,fip,egcoul);
-#else
-  fatal_error(0,"f77coul called (Fortran routine from %s %d)",__FILE__,__LINE__);
-#endif
-}
-  
-define(`flj_args',`(real *ix,real *iy,real *iz,real *qi,real pos[],int *nj,int type[],int jjnr[],real charge[],real nbfp[],real faction[],real fip[],real *egcoul,real *egnb)')
-extern void FUNCTION(forljc) flj_args;
-	    
-void f77ljc flj_args
-{
-#ifdef USEF77
-  FUNCTION(forljc)(ix,iy,iz,qi,pos,nj,type,jjnr,
-		   charge,nbfp,faction,fip,egcoul,egnb);
-#else
-  fatal_error(0,"f77ljc called (Fortran routine from %s %d)",__FILE__,__LINE__);
-#endif
-}
-
-define(`fbham_args',`(real *ix,real *iy,real *iz,real *qi,real pos[],int *nj,int type[],int jjnr[],real charge[],real nbfp[],real faction[],real fip[],real *egcoul,real *egnb)')
-extern void FUNCTION(forbhm) fbham_args;
-	    
-void f77bham fbham_args
-{
-#ifdef USEF77
-  FUNCTION(forbhm)(ix,iy,iz,qi,pos,nj,type,jjnr,
-		   charge,nbfp,faction,fip,egcoul,egnb);
-#else
-  fatal_error(0,"f77bhm called (Fortran routine from %s %d)",__FILE__,__LINE__);
-#endif
-}
-
-define(`fw_args',`(int  *i0,real xw[],real *eps,real pos[],int *nj,int type[],int jjnr[],real charge[],real nbfp[],real faction[],real fw[],real *egcoul,real *egnb)')
-
-extern void FUNCTION(forwater) fw_args;
-
-void f77water fw_args
-{
-#ifdef USEF77
-  FUNCTION(forwater)(i0,xw,eps,pos,nj,type,jjnr,charge,nbfp,faction,fw,
-		     egcoul,egnb);
-#else
-  fatal_error(0,"f77water called (Fortran routine from %s %d)",__FILE__,__LINE__);
-#endif
-}
-
-define(`fwtab_args',`(int  *i0,real xw[],real *eps,real pos[],int *nj,int type[],int jjnr[],real charge[],real nbfp[],real faction[],real fw[],real *egcoul,real *egnb,int *ntab,real *tabscale,real VFtab[])')
-
-extern void FUNCTION(forwatertab) fwtab_args;
-
-void f77watertab fwtab_args
-{
-#ifdef USEF77
-  FUNCTION(forwatertab)(i0,xw,eps,pos,nj,type,jjnr,charge,nbfp,faction,fw,
-		     egcoul,egnb,ntab,tabscale,VFtab);
-#else
-  fatal_error(0,"f77watertab called (Fortran routine from %s %d)",__FILE__,__LINE__);
-#endif
-}
-
-define(`fwc_args',`(int *i0,real xw[],real *eps,
-	      real pos[],int *nj,int jjnr[],
-	      real charge[],real faction[],real fw[],
-	      real egcoul[])')
-			
-extern void FUNCTION(forwcoul) fwc_args;
-
-void f77wcoul fwc_args
-{
-#ifdef USEF77
-  FUNCTION(forwcoul)(i0,xw,eps,pos,nj,jjnr,charge,faction,fw,egcoul);
-#else
-  fatal_error(0,"f77wcoul called (Fortran routine from %s %d)",__FILE__,__LINE__);
-#endif
-}
-
-define(`fwcoultab_args',`(int  *i0,real xw[],real *eps,real pos[],int *nj,int jjnr[],real charge[],real faction[],real fw[],real *egcoul,int *ntab,real *tabscale,real VFtab[])')
-
-extern void FUNCTION(forwcoultab) fwcoultab_args;
-
-void f77wcoultab fwcoultab_args
-{
-#ifdef USEF77
-  FUNCTION(forwcoultab)(i0,xw,eps,pos,nj,jjnr,charge,faction,fw,
-		     egcoul,ntab,tabscale,VFtab);
-#else
-  fatal_error(0,"f77wcoultab called (Fortran routine from %s %d)",__FILE__,__LINE__);
-#endif
-}
-
-define(`ff_args',`(real *ix,real *iy,real *iz,int *inr,real pos[],int *nj,int jjnr[],int  typeA[],  int typeB[], real *eps,real chargeA[],real chargeB[],real nbfpA[],  real nbfpB[],real faction[],real fip[],real *Vc,      real *Vnb,real *lambda,  real *dvdlambda,real *krf,     real *crf,real *tfac,    real trunctab[])')  
-   
-extern void FUNCTION(forfree) ff_args;
-
-void f77free ff_args
-{
-#ifdef USEF77
-  FUNCTION(forfree)(ix,iy,iz,inr,pos,nj,jjnr,typeA,typeB,eps,
-		    chargeA,chargeB,nbfpA,nbfpB,faction,fip,
-		    Vc,Vnb,lambda,dvdlambda,krf,crf,tfac,trunctab);
-#else
-  fatal_error(0,"f77free called (Fortran routine from %s %d)",__FILE__,__LINE__);
-#endif
-}
-
-define(`ft_args',`(real *ix,real *iy,real *iz,real *qi,real pos[],int *nj,int type[],t_nl_j jjnr[],real charge[],real nbfp[],real faction[],real fip[],real *Vc,real *Vnb,int  *ntab,real *tabscale,real VFtab[])')
-
-extern void FUNCTION(fortab) ft_args;
-
-void f77tab ft_args
-{
-#ifdef USEF77
-  FUNCTION(fortab)(ix,iy,iz,qi,
-		   pos,nj,type,jjnr,charge,nbfp,
-		   faction,fip,Vc,Vnb,ntab,tabscale,VFtab);
-#else
-  fatal_error(0,"f77tab called (Fortran routine from %s %d)",__FILE__,__LINE__);
-#endif
-}
-
-define(`fct_args',`(real *ix,real *iy,real *iz,real *qi,real pos[],int *nj,t_nl_j jjnr[],real charge[],real faction[],real fip[],real *Vc,int  *ntab,real *tabscale,real VFtab[])')
-
-extern void FUNCTION(forcoultab) fct_args;
-
-void f77coultab fct_args
-{
-#ifdef USEF77
-  FUNCTION(forcoultab)(ix,iy,iz,qi,pos,nj,jjnr,charge,
-		       faction,fip,Vc,ntab,tabscale,VFtab);
-#else
-  fatal_error(0,"f77coultab called (Fortran routine from %s %d)",__FILE__,__LINE__);
-#endif
-}
-
 /* Fortran versions of shake and settle */
 define(`fsettle_args',`(int *nshake,int owptr[],real b4[],real after[],real *dOH,real *dHH,real *mO,real *mH,int *error)')
 
@@ -228,3 +87,17 @@ void fillbuf(void)
   fatal_error(0,"fillbuf called (Fortran routine from %s %d)",__FILE__,__LINE__);
 #endif
 }
+
+/* Matrix diagonalization routine in FORTRAN */ 
+define(`fql77_args',`(int *n,real *x, real *d, real *e, int *nmax)')
+extern void FUNCTION(forql77) fql77_args;
+
+void fql77 fql77_args
+{
+#ifdef USEF77
+  FUNCTION(forql77)(n,x,d,e,nmax);
+#else
+  fatal_error(0,"fql77 called (Fortran routine from %s %d)",__FILE__,__LINE__);
+#endif
+}
+

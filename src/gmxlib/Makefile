@@ -14,8 +14,11 @@ all:
 else
 include		$(GMXHOME)/src/makef/Makefile.def
 #
+CPUMAKEF	= ../makef/Makefile.$(GMXCPU)
 M4 		= m4
-M4FILE		= $(GMXCPU).m4
+M4DIR		= .
+M4FILE		= $(M4DIR)/$(GMXCPU).m4
+M4MAC		= $(M4DIR)/gmxmac.m4
 LIB		= $(LIBDIR)/libgmx.$(GMXCPU).a
 SONAME		= libgmx.$(GMXCPU).so
 OBJ		= \
@@ -25,11 +28,11 @@ OBJ		= \
 		disre.o		do_fit.o	enxio.o		\
 		fatal.o		ffscanf.o	filenm.o	\
 		futil.o		gbutil.o	genhydro.o	\
-		gmxfio.o	h_db.o		\
-		ifunc.o		index.o		\
-		inloopc.o	invblock.o	javaio.o	\
+		fnbf.o		gmxfio.o	h_db.o		\
+		ifunc.o		index.o		ghat.o		\
+		invblock.o	javaio.o	lincsutl.o	\
 		lutab.o		macros.o	main.o		\
-		maths.o		matio.o		\
+		maths.o		matio.o		lrutil.o	\
 		memdump.o	mshift.o	mvdata.o	\
 		mvxvf.o		names.o		network.o	\
 		nrama.o		nrjac.o		nrnb.o		\
@@ -46,7 +49,9 @@ OBJ		= \
 		xdrd.o		xtcio.o		xvgr.o
 
 ifeq ($(USEF77),yes)
-OBJ		+= inloopf.o
+OBJ		+= innerf.o
+else
+OBJ		+= innerc.o
 endif
 ifeq ($(HAVE_MOTIF),yes)
 OBJ		+= mgmx.o widget.o
@@ -106,20 +111,12 @@ testfft:	testfft.o
 		$(LD) -o $@ $^ $(SYSLIBS) -lcomplib.sgimath
 testtab:	testtab.o
 		$(LD) -o $@ $^ $(SYSLIBS)
-tstsqrtc:	tstsqrtc.o
-		$(LD) -o $@ $^ $(SYSLIBS)
-tstsqrtf:	tstsqrtf.o inloopf.o
-		$(F77) -o $@ $^ -lm
+
 $(LIB)(libxdrf.o):	libxdrf.m4 $(M4FILE)
 		$(M4) $(M4FILE) libxdrf.m4 > libxdrf.c
 		$(CC) $(C-FLAGS) -c libxdrf.c
 		$(AR) $(ARFLAGS) $(LIB) libxdrf.o
 		$(RM) libxdrf.c libxdrf.o
-$(LIB)(inloopf.o):	inloopf.m4 
-		/lib/cpp $(SYSDEFS) inloopf.m4 | grep -v '#' > inloopf.f
-		$(F77) $(FFLAGS) -c inloopf.f
-		$(AR) $(ARFLAGS) $(LIB) inloopf.o
-		$(RM) inloopf.f inloopf.o
 
 prfn:		prfn.o
 		$(LD) -o $@ $^ $(SYSLIBS)
@@ -149,5 +146,23 @@ compnl:		compnl.o
 calcrf:		calcrf.o
 		$(LD) -o $@ $^  $(SYSLIBS) 
 
+# Innerloop related stuff
+$(LIB)(lutab.o):	$(CPUMAKEF)
+$(LIB)(shakef.o):	$(CPUMAKEF)
+fnbf.c:		fnbf.m4 $(M4MAC) $(M4FILE) $(CPUMAKEF)
+		m4 $(SYSDEFS) $(M4FILE) $(M4MAC) fnbf.m4 > $@
+$(LIB)(fnbf.o):		fnbf.c inner.h $(CPUMAKEF)
+mkinl.o:	$(CPUMAKEF)
+mkinl:		mkinl.o 
+		$(LD) -o $@ mkinl.o
+inner.h:	inner.m4 $(M4MAC) $(CPUMAKEF)
+		$(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) inner.m4 > inner.h
+innerc.c:	mkinl inner.h Makefile $(CPUMAKEF)
+		./mkinl 1 1
+innerf.f:	mkinl inner.h Makefile $(CPUMAKEF)
+		./mkinl 0 1
+
 include	Make.dep
 endif
+
+

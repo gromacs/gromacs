@@ -36,13 +36,14 @@ static char *SRCID_bondfree_c = "$Id$";
 #include "maths.h"
 #include "txtdump.h"
 #include "bondf.h"
+#include "smalloc.h"
 #include "pbc.h"
 #include "ns.h"
 #include "macros.h"
 #include "names.h"
 #include "fatal.h"
 #include "mshift.h"
-#include "inloop.h"
+#include "inner.h"
 #include "main.h"
 #include "disre.h"
 #include "led.h"
@@ -730,115 +731,6 @@ real rbdihs(FILE *log,int nbonds,
     vtot += v;
   }  
   return vtot;
-}
-
-static void do_one14(rvec x[],int ai,int aj,rvec f[],int gid,
-		     rvec shift,real egcoul[],real egnb[],
-		     real chargeA[],real chargeB[],
-		     int  typeA[],int typeB[],bool bPerturbed[],
-		     real c6A,real c12A,real c6B,real c12B,
-		     real r2,t_graph *g,rvec fshift[],
-		     real lambda,real *dvdlambda,
-		     real eps,matrix box,
-		     int ntab,real tabscale,real VFtab[])
-{
-  real      nbfpA[100],nbfpB[100];
-  rvec      f_ip,r_i;
-  real      vnb,vijcoul;
-  int       tA,tB;
-  int       m,si,sj;
-  
-  clear_rvec(f_ip);
-
-  tA = 2*typeA[aj];
-  nbfpA[tA]   = c6A;
-  nbfpA[tA+1] = c12A;
-  
-  for(m=0; (m<DIM); m++)
-    r_i[m]=x[ai][m]+shift[m];
-  
-  vijcoul = 0.0;
-  vnb     = 0.0;
-  if (bPerturbed[ai] || bPerturbed[aj]) {
-    tB = 2*typeB[aj];
-    nbfpB[tB]   = c6B;
-    nbfpB[tB+1] = c12B;
-  
-    c_free(r_i[XX],r_i[YY],r_i[ZZ],ai,
-	   x[0],1,&aj,typeA,typeB,eps,chargeA,chargeB,
-	   nbfpA,nbfpB,f[0],f_ip,&vijcoul,&vnb,
-	   lambda,dvdlambda,ntab,tabscale,VFtab);
-  }
-  else {
-    c_tab(r_i[XX],r_i[YY],r_i[ZZ],(real)(eps*chargeA[ai]),
-	  x[0],1,typeA,&aj,chargeA,nbfpA,f[0],f_ip,
-	  &vijcoul,&vnb,ntab,tabscale,VFtab);
-  }
-
-  egcoul[gid]    = egcoul[gid]+vijcoul;
-  egnb[gid]      = egnb[gid]+vnb;
-
-  rvec_inc(f[ai],f_ip);  
-  si = SHIFT_INDEX(g,ai);
-  rvec_inc(fshift[si],f_ip);
-  sj = SHIFT_INDEX(g,aj);
-  rvec_dec(fshift[sj],f_ip);
-}
-
-real do_14(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
-	   rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-	   matrix box,real lambda,real *dvdlambda,
-	   t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
-{
-  real      eps;
-  real      r2,rtab2;
-  atom_id   ai,aj,itype;
-  t_iatom   *ia0,*iatom;
-  int       gid;
-  t_ishift  shift;
-  real      c6A,c12A,c6B,c12B;
-
-  shift = CENTRAL;
-  
-  /* Reaction field stuff */  
-  eps    = fr->epsfac*fr->fudgeQQ;
-  
-  rtab2 = sqr(fr->rtab);
-    
-  ia0=iatoms;
-
-  for(iatom=ia0; (iatom<ia0+nbonds); iatom+=3) {
-    itype = iatom[0];
-    ai    = iatom[1];
-    aj    = iatom[2];
-    
-    r2    = distance2(x[ai],x[aj]);
-    
-    if (r2 >= rtab2) {
-      fprintf(log,"%d %8.3f %8.3f %8.3f\n",(int)ai+1,
-	      x[ai][XX],x[ai][YY],x[ai][ZZ]);
-      fprintf(log,"%d %8.3f %8.3f %8.3f\n",(int)aj+1,
-	      x[aj][XX],x[aj][YY],x[aj][ZZ]);
-      fprintf(log,"1-4 (%d,%d) interaction not within cut-off! r=%g\n",
-	      (int)ai+1,(int)aj+1,sqrt(r2));
-    }
-    
-    gid  = GID(md->cENER[ai],md->cENER[aj],ngrp);
-#ifdef DEBUG
-    fprintf(log,"LJ14: grp-i=%2d, grp-j=%2d, ngrp=%2d, GID=%d\n",
-	    md->cENER[ai],md->cENER[aj],ngrp,gid);
-#endif
-    c6A  = iparams[itype].lj14.c6A;
-    c12A = iparams[itype].lj14.c12A;
-    c6B  = iparams[itype].lj14.c6B;
-    c12B = iparams[itype].lj14.c12B;
-    
-    do_one14(x,ai,aj,f,gid,fr->shift_vec[shift],egcoul,egnb,
-	     md->chargeA,md->chargeB,md->typeA,md->typeB,md->bPerturbed,
-	     c6A,c12A,c6B,c12B,r2,g,fr->fshift,lambda,dvdlambda,
-	     eps,box,fr->ntab,fr->tabscale,fr->VFtab);
-  }
-  return 0.0;
 }
 
 /***********************************************************

@@ -36,7 +36,7 @@ typedef struct {
   int      end;		/* The last atom in this graph			*/
   int      *nedge;	/* For each node the number of edges		*/
   atom_id  **edge;	/* For each node, the actual edges (bidirect.)	*/
-  t_ishift *ishift;	/* The actual shift codes			*/
+  int      *ishift;	/* The actual shift codes			*/
 } t_graph;
 
 

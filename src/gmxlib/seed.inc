@@ -12,7 +12,7 @@ C     #define	NOT_INITIALISED	~0
 C     #define	EXP_ADDR(val)	(((val)&EXP_MASK)>>EXP_SHIFT)
 C     #define	FRACT_ADDR(val)	(((val)&(FRACT_MASK|EXP_LSB))>>FRACT_SHIFT)
       
-      implicit none
+C      implicit none
       integer*4 nexp,nfract,maxfract
       integer*4 fractshift,fractmask,fractf
       integer*4 expshift,expmask,explsb

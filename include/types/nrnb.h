@@ -26,16 +26,24 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-enum { eNR_LJC, eNR_QQ, eNR_LJCRF, eNR_QQRF, eNR_FREE, eNR_COULTAB,
-       eNR_TAB, eNR_WEIGHTS, eNR_SPREADQ, eNR_GATHERF, eNR_FFT, eNR_CONV,
-       eNR_LR, eNR_BHAM, eNR_BHAMRF, eNR_NS, eNR_RESETX, eNR_SHIFTX,
-       eNR_CGCM, eNR_FSUM,
-       eNR_BONDS, eNR_ANGLES,  eNR_PROPER, eNR_IMPROPER, eNR_RB,
-       eNR_DISRES, eNR_POSRES, eNR_MORSE, eNR_WPOL,
-       eNR_VIRIAL, eNR_UPDATE, eNR_STOPCM, eNR_PCOUPL, eNR_EKIN,
-       eNR_SHAKE, eNR_SHAKE_V, eNR_SHAKE_RIJ, eNR_SHAKE_VIR, 
-       eNR_SETTLE, eNR_PSHAKEINITLD, eNR_PSHAKEINITMD, eNR_PSHAKE,
-       eNR_DUM2, eNR_DUM3, eNR_DUM3FD, eNR_DUM3FAD, eNR_DUM3OUT, eNR_DUM4FD, 
+enum { eNR_LJC,      eNR_QQ,           eNR_LJCRF,       eNR_QQRF, 
+       eNR_BHAM,     eNR_BHAMRF,       eNR_COULTAB,     eNR_TAB, 
+       eNR_BHAMTAB,  eNR_BHAMTAB_WAT,
+       eNR_LJC_WAT,  eNR_QQ_WAT,       eNR_LJCRF_WAT,   eNR_QQRF_WAT, 
+       eNR_BHAM_WAT, eNR_BHAMRF_WAT,   eNR_COULTAB_WAT, eNR_TAB_WAT, 
+       eNR_LJC_FREE, eNR_BHAM_FREE,    eNR_INLOOP,       
+       eNR_INL_IATOM=eNR_INLOOP,
+       eNR_WEIGHTS,  eNR_SPREADQ,      eNR_GATHERF,     eNR_FFT, 
+       eNR_CONV,
+       eNR_NS,       eNR_RESETX,       eNR_SHIFTX,
+       eNR_CGCM,     eNR_FSUM,
+       eNR_BONDS,    eNR_ANGLES,       eNR_PROPER,      eNR_IMPROPER, eNR_RB,
+       eNR_DISRES,   eNR_POSRES,       eNR_MORSE,       eNR_WPOL,
+       eNR_VIRIAL,   eNR_UPDATE,       eNR_STOPCM,      eNR_PCOUPL, eNR_EKIN,
+       eNR_SHAKE,    eNR_SHAKE_V,      eNR_SHAKE_RIJ,   eNR_SHAKE_VIR, 
+       eNR_SETTLE,   eNR_PSHAKEINITLD, eNR_PSHAKEINITMD, eNR_PSHAKE,
+       eNR_DUM2,     eNR_DUM3,         eNR_DUM3FD,      eNR_DUM3FAD, 
+       eNR_DUM3OUT,  eNR_DUM4FD, 
        eNRNB };
 
 typedef struct {

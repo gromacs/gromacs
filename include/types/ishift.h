@@ -26,8 +26,6 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-typedef unsigned short   t_ishift;
-
 #define D_BOX   1
 #define N_BOX   (2*D_BOX+1)
 #define N_BOX2  (N_BOX*N_BOX)

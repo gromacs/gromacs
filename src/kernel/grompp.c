@@ -61,111 +61,6 @@ static char *SRCID_grompp_c = "$Id$";
 #include "tpxio.h"
 #include "dum_parm.h"
 
-void check_disre(t_topology *sys)
-{
-  t_functype *functype;
-  t_iparams  *ip;
-  int i,ndouble,ftype;
-  int index,old_index;
-  
-  if (sys->idef.il[F_DISRES].nr) {
-    functype  = sys->idef.functype;
-    ip        = sys->idef.iparams;
-    ndouble   = 0;
-    old_index = -1;
-    for(i=0; i<sys->idef.ntypes; i++) {
-      ftype = functype[i];
-      if (ftype == F_DISRES) {
-	index = ip[i].disres.index;
-	if (index == old_index) {
-	  fprintf(stderr,"Distance restraint index %d occurs twice\n",index);
-	  ndouble++;
-	}
-	old_index = index;
-      }
-    }
-    if (ndouble>0)
-      fatal_error(0,"Found %d double distance restraint indices,\n"
-		  "probably the parameters for multiple pairs in one restraint "
-		  "are not identical\n",ndouble);
-  }
-}
-
-static void triple_check(t_inputrec *ir,t_topology *sys)
-{
-  int  i,m;
-  real *mgrp,mt;
-  rvec acc;
-
-  clear_rvec(acc);
-  snew(mgrp,sys->atoms.grps[egcACC].nr);
-  for(i=0; (i<sys->atoms.nr); i++) 
-    mgrp[sys->atoms.atom[i].grpnr[egcACC]] += sys->atoms.atom[i].m;
-  mt=0.0;
-  for(i=0; (i<sys->atoms.grps[egcACC].nr); i++) {
-    for(m=0; (m<DIM); m++)
-      acc[m]+=ir->opts.acc[i][m]*mgrp[i];
-    mt+=mgrp[i];
-  }
-  for(m=0; (m<DIM); m++) {
-    if (fabs(acc[m]) > 1e-6) {
-      char *dim[DIM] = { "X", "Y", "Z" };
-      fprintf(stderr,"Net Acceleration in %s direction, will be corrected\n",
-	      dim[m]);
-      acc[m]/=mt;
-      for (i=0; (i<sys->atoms.grps[egcACC].nr); i++)
-	ir->opts.acc[i][m]-=acc[m];
-    }
-  }
-  sfree(mgrp);
-
-  check_disre(sys);
-}
-
-static void double_check(t_inputrec *ir, matrix box, t_molinfo *mol,
-			 int *nerror)
-{
-  real bmin;
-
-  if( (ir->eConstrAlg==estSHAKE) && 
-      (mol->plist[F_SHAKE].nr > 0) && 
-      (ir->shake_tol <= 0.0) ) {
-    fprintf(stderr,"ERROR: shake_tol must be > 0 instead of %g\n",
-	    ir->shake_tol);
-    (*nerror)++;
-  }
-  bmin=(min(min(box[XX][XX],box[YY][YY]),box[ZZ][ZZ]));
-  if (ir->eBox != ebtNONE) {
-    /* rlist must be less than half the box */
-    if (max(ir->rlist,ir->rcoulomb) > 0.5*bmin) {
-      fprintf(stderr,
-	      "ERROR: rlist (%g) must be < half a box (%g,%g,%g)\n",
-	      ir->rlist,box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
-      (*nerror)++;
-    }
-    /* box must be large enough for gridsearch */
-    if (ir->ns_type==ensGRID) {
-      int  k;
-      ivec cx;
-      real rlong;
-      bool bTWIN;
-
-      rlong = max(ir->rlist,max(ir->rcoulomb,ir->rvdw));
-      bTWIN = (rlong > ir->rlist);
-      for(k=0; (k<DIM); k++)
-	cx[k]=ir->ndelta*box[k][k]/rlong;
-      if ( !( (cx[XX] >= 2*ir->ndelta+1) && 
-	      (cx[YY] >= 2*ir->ndelta+1) && 
-	      (cx[ZZ] >= 2*ir->ndelta+1) ) ) {
-	fprintf(stderr,"ERROR: box too small for grid-search,\n"
-		"  increase the boxsize or decrease %s or use simple "
-		"neighboursearch.\n",bTWIN ? "rcoulomb":"rlist");
-	(*nerror)++;
-      }
-    }
-  }
-}
-
 void check_solvent(bool bVerbose,int nmol,t_molinfo msys[],
 		   int Nsim,t_simsystem Sims[],t_inputrec *ir,char *SolventOpt)
 {
@@ -358,7 +253,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
 		       rvec **x,rvec **v,matrix box,
 		       t_atomtype *atype,t_topology *sys,
 		       t_molinfo *msys,t_params plist[],
-		       int nprocs,bool bEnsemble,bool bMorse,int nerror)
+		       int nprocs,bool bEnsemble,bool bMorse,int *nerror)
 {
   t_molinfo   *molinfo=NULL;
   t_simsystem *Sims=NULL;
@@ -408,7 +303,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
     fprintf(stderr,
 	    "ERROR: number of coordinates in confin (%d) "
 	    "does not match topology (%d)\n",*natoms,sys->atoms.nr);
-    nerror++;
+    (*nerror)++;
   } else {
     /* make space for coordinates and velocities */
     snew(confat,1);
@@ -437,11 +332,8 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
     
     if (bVerbose) 
       fprintf(stderr,"double-checking input for internal consistency...\n");
-    double_check(ir,box,msys,&nerror);
+    double_check(ir,box,msys,nerror);
   }
-  if (nerror)
-    fatal_error(0,"%d error%s, program terminated",
-		nerror,nerror==1 ? "" : "s");
 
   if (bGenVel) {
     real *mass;
@@ -772,7 +664,7 @@ int main (int argc, char *argv[])
   forward=new_status(fn,opt2fn_null("-pp",NFILE,fnm),opt2fn("-c",NFILE,fnm),
 		     opts,ir,bGenVel,bVerbose,&natoms,&x,&v,box,
 		     &atype,&sys,&msys,plist,bShuffle ? nprocs : 1,
-		     (opts->eDisre==edrEnsemble),opts->bMorse,nerror);
+		     (opts->eDisre==edrEnsemble),opts->bMorse,&nerror);
   
   if (opt2bSet("-r",NFILE,fnm))
     sprintf(fn,opt2fn("-r",NFILE,fnm));
@@ -809,7 +701,7 @@ int main (int argc, char *argv[])
   do_index(ftp2fn_null(efNDX,NFILE,fnm),
 	   &sys.symtab,&(sys.atoms),bVerbose,ir,&sys.idef,
 	   forward);
-  triple_check(ir,&sys);
+  triple_check(ir,&sys,&nerror);
   close_symtab(&sys.symtab);
   
   if (ftp2bSet(efTRN,NFILE,fnm)) {
@@ -820,6 +712,12 @@ int main (int argc, char *argv[])
   }
   /* This is also necessary for setting the multinr arrays */
   split_top(bVerbose,nprocs,&sys);
+
+  if (nerror) {
+    fprintf(stderr,"%d error%s, program terminated\n",
+	    nerror,nerror==1 ? "" : "s");
+    exit(1);
+  }
   
   if (bVerbose) 
     fprintf(stderr,"writing run input file...\n");

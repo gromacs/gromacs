@@ -35,6 +35,7 @@ static char *SRCID_lutab_c = "$Id$";
  */
 #include <math.h>
 #include "lutab.h"
+#include "callf77.h"
 
 /* Global variable that is exported */
 t_lutab lookup_table;
@@ -72,6 +73,12 @@ void init_lookup_table(FILE *log)
 #ifdef CINVSQRT
   fprintf(log,"Generating lookup table for invsqrt calculation in C\n");
   init_table(&lookup_table);
-#endif  
+#endif
+#ifdef USEF77
+#ifdef FINVSQRT
+  fprintf(log,"Generating lookup table for invsqrt calculation in Fortran\n");
+  fillbuf();
+#endif
+#endif
 }
 

@@ -38,6 +38,7 @@ static char *SRCID_readir_h = "$Id$";
 
 #include "typedefs.h"
 #include "string2.h"
+#include "grompp.h"
 
 enum { eshNONE, eshHBONDS, eshALLBONDS, eshHANGLES, eshALLANGLES, eshNR };
 
@@ -72,6 +73,11 @@ extern void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror);
  * Fatal errors will be added to nerror.
  */
  
+extern void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror);
+/* Do more checks */
+
+extern void triple_check(t_inputrec *ir,t_topology *sys,int *nerror);
+/* Do even more checks */
 
 extern void get_ir(char *mdparin,char *mdparout,
 		   t_inputrec *ir,t_gromppopts *opts,int *nerror);

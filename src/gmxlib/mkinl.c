@@ -14,7 +14,7 @@
  * Currently the program is called from the Makefile with the inline option
  * on always.
  *
- * There are two more defines that influence the behaviour of mkinl:
+ * There are a few more defines that influence the behaviour of mkinl:
  * if compiled with -DUSEVECTOR code which can be vectorized will be generated
  * if compiled with -DHAVE_PRAGMA a Cray compatible pragma will be inserted
  *    before all inner loops that instruct the compiler to ignore dependencies
@@ -25,14 +25,20 @@
  * (c) David van der Spoel, May 1999
  */
 
-#ifndef USEVECTOR
-#define PREFETCH 1
-#endif
-
 typedef int bool;
 
 #define FALSE 0
 #define TRUE  1
+
+#ifndef USEVECTOR
+#define PREFETCH 1
+#endif
+
+#ifdef _SGI_
+static bool bDelayInvsqrt = TRUE;
+#else
+static bool bDelayInvsqrt = FALSE;
+#endif
 
 int CIND = 2;
 int FIND = 6;
@@ -44,14 +50,10 @@ static FILE *fp    = NULL;
 static bool bC     = TRUE;
 static bool bLJC   = FALSE;
 static bool bEquiv = TRUE; /* Don't make false: generates type errors */
-static bool bCoul,bBHAM,bRF,bTab,bWater,bFREE,bInline,bUnroll;
-static bool bDelayInvsqrt;
+static bool bCoul,bBHAM,bRF,bTab,bWater,bFREE,bInline;
 static int  prec = 4;
 static char buf[256];
 static char buf2[256];
-
-/*#define ARR(a,n) bC ? #a"["#n"]" : #a"("#n")"*/
-/*#define IARR(a,n) bC ? #a"["#n"]" : #a"("#n")+1"*/
 
 char *_arr(char *a,char *n,int one)
 {
@@ -1254,12 +1256,10 @@ void finnerloop(char *loopname)
   end_loop();
 }
 
-
-void fouterloop(char *loopname)
+int fouter1(void)
 {
-  int nflop;
+  int nflop = 0;
   
-  nflop = 0;
   comment("Outer loop (over i particles) starts here");
   start_loop("n",bC ? "0" : "1","nri");
 
@@ -1298,18 +1298,36 @@ void fouterloop(char *loopname)
     p_state("qB",buf);
   }
   nflop++;
+  
   if (bWater) {
     sprintf(buf,"facel*%s",ARR(charge,ii+1));
     p_state("qH",buf);
     nflop++;
   }
   
+  comment("Bounds for the innerloop");
+  p_state("nj0",IARR(jindex,n));
+  p_state("nj1",ARR(jindex,n+1));
+  
   comment("Compute shifted i position");
   p_add("ixO","shX",ARR(pos,ii3));
   p_add("iyO","shY",ARR(pos,ii3+1));
   p_add("izO","shZ",ARR(pos,ii3+2));
   
+  p_state("fxO","nul");
+  p_state("fyO","nul");
+  p_state("fzO","nul");
+  
   nflop += 3;
+  
+  return nflop;
+}
+
+void fouterloop(char *loopname)
+{
+  int nflop;
+  
+  nflop = fouter1();
   
   if (bWater) {
     p_add("ixH1","shX",ARR(pos,ii3+3));
@@ -1319,11 +1337,7 @@ void fouterloop(char *loopname)
     p_add("iyH2","shY",ARR(pos,ii3+7));
     p_add("izH2","shZ",ARR(pos,ii3+8));
     nflop += 6;
-  }
-  p_state("fxO","nul");
-  p_state("fyO","nul");
-  p_state("fzO","nul");
-  if (bWater) {
+    
     p_state("fxH1","nul");
     p_state("fyH1","nul");
     p_state("fzH1","nul");
@@ -1331,11 +1345,6 @@ void fouterloop(char *loopname)
     p_state("fyH2","nul");
     p_state("fzH2","nul");
   }
-  comment("Bounds for the innerloop");
-  sprintf(buf,"%s",IARR(jindex,n));
-  p_state("nj0",buf);
-  sprintf(buf,"%s",ARR(jindex,n+1));
-  p_state("nj1",buf);
   
   finnerloop(loopname);
 
@@ -1390,6 +1399,103 @@ void fouterloop(char *loopname)
   }
 }
 
+void fouterloop2(char *loopname)
+{
+  int  nflop;
+  bool bBSave,bCSave,bLJCSave;
+  
+  if (!bWater) {
+    fprintf(stderr,"fouterloop2 called without water\n");
+    exit(1);
+  }
+
+  comment("Silly expanded water loop because of broken SGI compiler");    
+  nflop = fouter1();
+
+  /* Oxygen loop */  
+  bWater = FALSE;
+  finnerloop(loopname);
+  comment("Update forces on oxygen");
+  p_incr(ARR(faction,ii3),"fxO");
+  p_incr(ARR(faction,ii3+1),"fyO");
+  p_incr(ARR(faction,ii3+2),"fzO");
+  p_incr(ARR(fshift,is3),"fxO");
+  p_incr(ARR(fshift,is3+1),"fyO");
+  p_incr(ARR(fshift,is3+2),"fzO");
+  nflop += 6;
+
+  comment("Now starts first hydrogen");
+  p_add("ixO","shX",ARR(pos,ii3+3));
+  p_add("iyO","shY",ARR(pos,ii3+4));
+  p_add("izO","shZ",ARR(pos,ii3+5));
+  nflop += 3;
+  
+  comment("Copy the hydrogen charge to the oxygen");
+  p_state("qO","qH");
+  bBSave   = bBHAM;
+  bLJCSave = bLJC;
+  bCSave   = bCoul;
+  
+  /* Change options for the hydrogen */
+  bCoul = TRUE;
+  bBHAM = FALSE;
+  bLJC  = FALSE;
+  
+  p_state("fxO","nul");
+  p_state("fyO","nul");
+  p_state("fzO","nul");
+  finnerloop(loopname);
+  comment("Update forces on hydrogen 1");
+  p_incr(ARR(faction,ii3+3),"fxO");
+  p_incr(ARR(faction,ii3+4),"fyO");
+  p_incr(ARR(faction,ii3+5),"fzO");
+  p_incr(ARR(fshift,is3),"fxO");
+  p_incr(ARR(fshift,is3+1),"fyO");
+  p_incr(ARR(fshift,is3+2),"fzO");
+  nflop += 6;
+  
+  comment("Now starts second hydrogen");
+  p_add("ixO","shX",ARR(pos,ii3+6));
+  p_add("iyO","shY",ARR(pos,ii3+7));
+  p_add("izO","shZ",ARR(pos,ii3+8));
+  nflop += 3;
+  
+  p_state("fxO","nul");
+  p_state("fyO","nul");
+  p_state("fzO","nul");
+  finnerloop(loopname);
+  comment("Update forces on hydrogen 2");
+  p_incr(ARR(faction,ii3+6),"fxO");
+  p_incr(ARR(faction,ii3+7),"fyO");
+  p_incr(ARR(faction,ii3+8),"fzO");
+  p_incr(ARR(fshift,is3),"fxO");
+  p_incr(ARR(fshift,is3+1),"fyO");
+  p_incr(ARR(fshift,is3+2),"fzO");
+  nflop += 6;
+  
+  comment("Update energies");
+  sprintf(buf,"%s",IARR(gid,n));
+  p_state("ggid",buf);
+  sprintf(buf,"%s",ARR(Vc,ggid));
+  p_incr(buf,"vctot");
+  nflop++;
+  
+  bBHAM = bBSave;
+  bLJC  = bLJCSave;
+  bCoul = bCSave;
+  
+  if (bLJC || bBHAM) {
+    sprintf(buf,"%s",ARR(Vnb,ggid));
+    p_incr(buf,"vnbtot");
+    nflop++;
+  }
+  
+  sprintf(buf,"Outer loop costs %d flops",nflop);
+  comment(buf);
+  end_loop();
+
+}
+
 void closeit(void)
 {
   fwarning();
@@ -1397,33 +1503,6 @@ void closeit(void)
     fprintf(fp,"}\n\n");
   else
     fprintf(fp,"%sreturn\n%send\n\n",indent(),indent());
-}
-
-void fcall(char *func_nm)
-{
-  if (bC)
-    fprintf(fp,"%s%s(\n",indent(),func_nm);
-  else
-    fprintf(fp,"%scall %s(\n",indent(),func_nm);
-}
-
-void doit_simple(char *simple,char *simple_coul)
-{
-  if (bCoul) {
-    p_int("m");
-    start_loop("m",bC ? "0" : "1","3");
-    fcall(simple_coul);
-    fcall_args();
-    end_loop();
-  }
-  else {
-    fcall(simple);
-    fcall_args();
-    fcall(simple_coul);
-    fcall_args();
-    fcall(simple_coul);
-    fcall_args();
-  }
 }
 
 void make_funcnm(char *buf)
@@ -1443,8 +1522,7 @@ void make_funcnm(char *buf)
 
 void doit(void)
 {
-  bool bSimpleWater,bCSave;
-  char simple[256],simple_coul[256];
+  char loopname[256];
   
   bLJC = (!bCoul && !bBHAM);
   
@@ -1452,32 +1530,25 @@ void doit(void)
     fprintf(stderr,"Unsupported combination of options to doit\n");
     return;
   }
-  make_funcnm(buf);
-  strcpy(simple,buf);
+  make_funcnm(loopname);
   if (bWater)
-    strcat(buf,"water");
+    strcat(loopname,"water");
   if (bFREE)
-    strcat(buf,"free");
-  fname(buf);
+    strcat(loopname,"free");
+  fname(loopname);
   fargs();
+  flocal();
+  flocal_init();
+  
 #ifdef SIMPLEWATER
-  bSimpleWater = bWater;
+  if (bWater)
+    fouterloop2(loopname);
+  else
+    fouterloop(loopname);
 #else
-  bSimpleWater = FALSE;
+  fouterloop(loopname);
 #endif
-  if (bSimpleWater) {
-    bCSave = bCoul;
-    bCoul = TRUE;
-    make_funcnm(buf);
-    strcpy(simple_coul,buf);
-    bCoul = bCSave;
-    doit_simple(simple,simple_coul);
-  }
-  else {
-    flocal();
-    flocal_init();
-    fouterloop(buf);
-  }
+
   closeit();
 }
 
@@ -1487,6 +1558,23 @@ void error(int argc,char *argv[])
   fprintf(stderr,"\tbC      = 0: F77 code,            1: C code\n");
   fprintf(stderr,"\tbInline = 0: Don't inline invsqrt 1: Do inline\n");
   exit(-1);
+}
+
+int count_lines(char *fn)
+{
+  FILE *fp;
+  int nl=0;
+  
+  if ((fp = fopen(fn,"r")) == NULL) {
+    perror(fn);
+    exit(1);
+  }
+
+  while (fgets(buf,255,fp) != NULL)
+    nl++;
+  fclose(fp);
+  
+  return nl;
 }
 
 int main(int argc,char *argv[])
@@ -1502,7 +1590,7 @@ int main(int argc,char *argv[])
     { 0, 0, 0, 1 },
     { 0, 1, 0, 1 }
   };
-  int i,j;
+  int i,j,nfunc,nlines;
   char fn[256];
   
   if (argc != 3) 
@@ -1510,6 +1598,7 @@ int main(int argc,char *argv[])
   
   bC      = atoi(argv[1]);
   bInline = FALSE;
+
 #ifdef CINVSQRT
   if (bC) 
     bInline = atoi(argv[2]);
@@ -1525,6 +1614,18 @@ int main(int argc,char *argv[])
   prec   = 4;
 #endif
   sprintf(fn,"%s",bC ? "innerc.c" : "innerf.f");
+  fprintf(stderr,">>> %s is the GROMACS innerloop code generator\n",argv[0]);
+  fprintf(stderr,">>> It will generate %s precision %s code in file %s\n",
+	  (prec == 8) ? "double" : "single",
+	  bC ? "C" : "Fortran",fn);
+  if (bInline)
+    fprintf(stderr,">>> The software 1.0/sqrt routine will be inlined\n");
+#ifdef SIMPLEWATER
+  fprintf(stderr,">>> Will expand the water loops to have 3 inner loops\n");
+#endif
+#ifdef USEVECTOR
+  fprintf(stderr,">>> Will generate vectorizable code (hopefully)\n");
+#endif
   if ((fp = fopen(fn,"w")) == NULL) {
     perror(fn);
     exit(1);
@@ -1541,12 +1642,9 @@ int main(int argc,char *argv[])
   bBHAM  = TRUE;
   doit();
   bFREE  = FALSE;
-#ifdef SGI
-  bDelayInvsqrt = TRUE;
-#else
-  bDelayInvsqrt = FALSE;
-#endif
-  for(i=0; (i<2); i++) 
+  nfunc  = 2;
+   
+  for(i=0; (i<2); i++) {
     for(j=0; (j<9); j++) {
       bCoul  = bbb[j][0];
       bBHAM  = bbb[j][1];
@@ -1554,9 +1652,13 @@ int main(int argc,char *argv[])
       bTab   = bbb[j][3];
       bWater = i;
       doit();
+      nfunc++;
     }
-  
+  }
   fclose(fp);
+  nlines = count_lines(fn);
+  fprintf(stderr,">>> Generated %d lines of code in %d functions\n",
+	  nlines,nfunc);
     
   return 0;
 }

@@ -1,3 +1,8 @@
+
+
+
+
+
 /*
  *       $Id$
  *
@@ -94,77 +99,77 @@ void do_fnbf(FILE *log,t_forcerec *fr,
       nrnb_ind = nlist->il_code;
       bWater   = (nrnb_ind & (1<<4)) != 0;
       
-define(`LJC_ARGS',`SCAL(fr->ntype),mdatoms->typeA,fr->nbfp,egnb')
-define(`BHAM_ARGS',`LJC_ARGS')
-define(`FEP_ARGS',`mdatoms->chargeB,mdatoms->typeB,SCAL(lambda),dvdlambda')
-define(`RF_ARGS',`SCAL(fr->k_rf)')
-define(`TAB_ARGS',`SCAL(fr->tabscale),fr->VFtab')
-define(`BHTAB_ARGS',`SCAL(fr->tabscale_exp)')
-ifdef(`USEVECTOR',`define(`ALL_ARGS',`fbuf,SCAL(nlist->nri),nlist->iinr,nlist->`shift',nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,SCAL(fr->epsfac),mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]')',`define(`ALL_ARGS',`SCAL(nlist->nri),nlist->iinr,nlist->`shift',nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,SCAL(fr->epsfac),mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]')')
+
+
+
+
+
+
+
 			
       switch (nrnb_ind) {
       case eNR_LJC:
-	FUNC(ljc)(LJC_ARGS,ALL_ARGS);
+	c_ljc(fr->ntype,mdatoms->typeA,fr->nbfp,egnb,nlist->nri,nlist->iinr,nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,fr->epsfac,mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]);
 	break;
       case eNR_QQ:
-	FUNC(coul)(ALL_ARGS);
+	c_coul(nlist->nri,nlist->iinr,nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,fr->epsfac,mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]);
 	break;
       case eNR_BHAM:
-	FUNC(bham)(BHAM_ARGS,ALL_ARGS);
+	c_bham(fr->ntype,mdatoms->typeA,fr->nbfp,egnb,nlist->nri,nlist->iinr,nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,fr->epsfac,mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]);
 	break;
       case eNR_LJCRF:
-	FUNC(ljcrf)(LJC_ARGS,RF_ARGS,ALL_ARGS);
+	c_ljcrf(fr->ntype,mdatoms->typeA,fr->nbfp,egnb,fr->k_rf,nlist->nri,nlist->iinr,nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,fr->epsfac,mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]);
 	break;
       case eNR_QQRF:
-	FUNC(coulrf)(RF_ARGS,ALL_ARGS);
+	c_coulrf(fr->k_rf,nlist->nri,nlist->iinr,nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,fr->epsfac,mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]);
 	break;
       case eNR_BHAMRF:
-	FUNC(bhamrf)(BHAM_ARGS,RF_ARGS,ALL_ARGS);
+	c_bhamrf(fr->ntype,mdatoms->typeA,fr->nbfp,egnb,fr->k_rf,nlist->nri,nlist->iinr,nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,fr->epsfac,mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]);
 	break;
       case eNR_TAB:
-	FUNC(ljctab)(LJC_ARGS,TAB_ARGS,ALL_ARGS);
+	c_ljctab(fr->ntype,mdatoms->typeA,fr->nbfp,egnb,fr->tabscale,fr->VFtab,nlist->nri,nlist->iinr,nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,fr->epsfac,mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]);
 	break;
       case eNR_COULTAB:
-	FUNC(coultab)(TAB_ARGS,ALL_ARGS);
+	c_coultab(fr->tabscale,fr->VFtab,nlist->nri,nlist->iinr,nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,fr->epsfac,mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]);
 	break;
       case eNR_LJC_WAT:
-	FUNC(ljcwater)(LJC_ARGS,ALL_ARGS);
+	c_ljcwater(fr->ntype,mdatoms->typeA,fr->nbfp,egnb,nlist->nri,nlist->iinr,nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,fr->epsfac,mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]);
 	break;
       case eNR_BHAMTAB:
-	FUNC(bhamtab)(BHAM_ARGS,TAB_ARGS,BHTAB_ARGS,ALL_ARGS);
+	c_bhamtab(fr->ntype,mdatoms->typeA,fr->nbfp,egnb,fr->tabscale,fr->VFtab,fr->tabscale_exp,nlist->nri,nlist->iinr,nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,fr->epsfac,mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]);
 	break;
       case eNR_QQ_WAT:
-	FUNC(coulwater)(ALL_ARGS);
+	c_coulwater(nlist->nri,nlist->iinr,nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,fr->epsfac,mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]);
 	break;
       case eNR_BHAM_WAT:
-	FUNC(bhamwater)(BHAM_ARGS,ALL_ARGS);
+	c_bhamwater(fr->ntype,mdatoms->typeA,fr->nbfp,egnb,nlist->nri,nlist->iinr,nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,fr->epsfac,mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]);
 	break;
       case eNR_LJCRF_WAT: 
-	FUNC(ljcrfwater)(LJC_ARGS,RF_ARGS,ALL_ARGS);
+	c_ljcrfwater(fr->ntype,mdatoms->typeA,fr->nbfp,egnb,fr->k_rf,nlist->nri,nlist->iinr,nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,fr->epsfac,mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]);
 	break;
       case eNR_QQRF_WAT:
-	FUNC(coulrfwater)(RF_ARGS,ALL_ARGS);
+	c_coulrfwater(fr->k_rf,nlist->nri,nlist->iinr,nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,fr->epsfac,mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]);
 	break;
       case eNR_BHAMRF_WAT:
-	FUNC(bhamrfwater)(BHAM_ARGS,RF_ARGS,ALL_ARGS);
+	c_bhamrfwater(fr->ntype,mdatoms->typeA,fr->nbfp,egnb,fr->k_rf,nlist->nri,nlist->iinr,nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,fr->epsfac,mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]);
 	break;
       case eNR_TAB_WAT:
-	FUNC(ljctabwater)(LJC_ARGS,TAB_ARGS,ALL_ARGS);
+	c_ljctabwater(fr->ntype,mdatoms->typeA,fr->nbfp,egnb,fr->tabscale,fr->VFtab,nlist->nri,nlist->iinr,nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,fr->epsfac,mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]);
 	break;
       case eNR_COULTAB_WAT:
-	FUNC(coultabwater)(TAB_ARGS,ALL_ARGS);
+	c_coultabwater(fr->tabscale,fr->VFtab,nlist->nri,nlist->iinr,nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,fr->epsfac,mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]);
 	break;
       case eNR_BHAMTAB_WAT:
-	FUNC(bhamtabwater)(BHAM_ARGS,TAB_ARGS,BHTAB_ARGS,ALL_ARGS);
+	c_bhamtabwater(fr->ntype,mdatoms->typeA,fr->nbfp,egnb,fr->tabscale,fr->VFtab,fr->tabscale_exp,nlist->nri,nlist->iinr,nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,fr->epsfac,mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]);
 	break;
       case eNR_BHAM_FREE:
-	FUNC(bhamtabfree)(BHAM_ARGS,TAB_ARGS,BHTAB_ARGS,FEP_ARGS,ALL_ARGS);
+	c_bhamtabfree(fr->ntype,mdatoms->typeA,fr->nbfp,egnb,fr->tabscale,fr->VFtab,fr->tabscale_exp,mdatoms->chargeB,mdatoms->typeB,lambda,dvdlambda,nlist->nri,nlist->iinr,nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,fr->epsfac,mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]);
 	break;
       case eNR_LJC_FREE:
-	FUNC(ljctabfree)(LJC_ARGS,TAB_ARGS,FEP_ARGS,ALL_ARGS);
+	c_ljctabfree(fr->ntype,mdatoms->typeA,fr->nbfp,egnb,fr->tabscale,fr->VFtab,mdatoms->chargeB,mdatoms->typeB,lambda,dvdlambda,nlist->nri,nlist->iinr,nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,fr->epsfac,mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]);
 	break;
       default:
-	fatal_error(0,"No function corresponding to %s in %s `line' %d",
+	fatal_error(0,"No function corresponding to %s in %s line %d",
 		    nrnb_str(nrnb_ind),__FILE__,__LINE__);
       }
     
@@ -293,13 +298,13 @@ real do_14(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
       C12(nbfp,4,0,2) = iparams[itype].lj14.c12A;
       C12(nbfp,4,1,2) = iparams[itype].lj14.c12B;
       
-define(`ARG1',`egnb,SCAL(fr->tabscale),fr->VFtab')
-define(`ARG2',`SCAL(i1),&ai,&shift14,&gid,j_index,&aj,x[0],fr->fshift[0],SCAL(eps),md->chargeA,f[0],egcoul,fr->shift_vec[0]')
-ifdef(`USEVECTOR',`define(`ARG3',`fbuf,'`ARG2')',`define(`ARG3',`ARG2')')
+
+
+
 
 	     
-      FUNC(ljctabfree)(SCAL(i3),md->typeA,nbfp,ARG1,
-		       md->chargeB,md->typeB,SCAL(lambda),dvdlambda,ARG3);
+      c_ljctabfree(i3,md->typeA,nbfp,egnb,fr->tabscale,fr->VFtab,
+		       md->chargeB,md->typeB,lambda,dvdlambda,i1,&ai,&shift14,&gid,j_index,&aj,x[0],fr->fshift[0],eps,md->chargeA,f[0],egcoul,fr->shift_vec[0]);
 		 
       /* Restore old types */
       md->typeA[ai] = tiA;
@@ -308,7 +313,7 @@ ifdef(`USEVECTOR',`define(`ARG3',`fbuf,'`ARG2')',`define(`ARG3',`ARG2')')
       md->typeB[aj] = tjB;
     }
     else 
-      FUNC(ljctab)(SCAL(fr->ntype),md->typeA,nbfp14,ARG1,ARG3);
+      c_ljctab(fr->ntype,md->typeA,nbfp14,egnb,fr->tabscale,fr->VFtab,i1,&ai,&shift14,&gid,j_index,&aj,x[0],fr->fshift[0],eps,md->chargeA,f[0],egcoul,fr->shift_vec[0]);
   }
   return 0.0;
 }

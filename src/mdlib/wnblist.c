@@ -45,10 +45,10 @@ static void write_nblist(FILE *out,t_nblist *nblist,rvec sv[SHIFTS],
 {
   int j,j0,k,i_atom,jid;
   
-
+  fatal_error(0,"write_nblist temporarily out of order");
   fprintf(out,"nri=%8u\n",nblist->nri);
   for(j=0; j<(int)nblist->nri; j++) {
-    i_atom=nblist->nl_i[j].i_atom;
+    /*  i_atom=nblist->nl_i[j].i_atom;
     fprintf(out,"i_atom=%5d  nj=%8u  shift=%4d\n",
 	    i_atom,nblist->nl_i[j].nj,nblist->nl_i[j].shift);
     fprintf(out,"%5s  %4s\n","jid","grp");
@@ -57,6 +57,7 @@ static void write_nblist(FILE *out,t_nblist *nblist,rvec sv[SHIFTS],
       jid=nblist->nl_j[j0+k];
       fprintf(out,"%5d\n",jid);
     }
+    */
   }
   fflush(out);
 }
@@ -106,12 +107,12 @@ void dump_nblist(FILE *out,t_forcerec *fr,int nDNL)
   rvec *sv;
   
   fprintf(out,"%s\n",header);
-  fprintf(out,"%d\n",fr->nn*2);
+  /*  fprintf(out,"%d\n",fr->nn*2);*/
 
   sv=fr->shift_vec;
-  for(i=0; (i<fr->nn); i++) {
+  /*for(i=0; (i<fr->nn); i++) {
     write_nblist(out,&fr->coul[i],sv,(nDNL > 1));
     write_nblist(out,&fr->vdw[i],sv,(nDNL > 1));
-  }
+    }*/
 }
 

@@ -47,7 +47,7 @@ extern void f77free(real *ix,real *iy,real *iz,int *inr,
 		    real *tfac,    real trunctab[]);
 
 extern void f77tab(real *ix,real *iy,real *iz,real *qi,
-		   real pos[],int *nj,int type[],t_nl_j jjnr[],
+		   real pos[],int *nj,int type[],int jjnr[],
 		   real charge[],real nbfp[],
 		   real faction[],real fip[],
 		   real *Vc,real *Vnb,
@@ -55,7 +55,7 @@ extern void f77tab(real *ix,real *iy,real *iz,real *qi,
 		   real VFtab[]);
 
 extern void f77coultab(real *ix,real *iy,real *iz,real *qi,
-		       real pos[],int *nj,t_nl_j jjnr[],
+		       real pos[],int *nj,int jjnr[],
 		       real charge[],real faction[],real fip[],
 		       real *Vc,int  *ntab,real *tabscale,real VFtab[]);
 		       

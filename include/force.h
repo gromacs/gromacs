@@ -77,7 +77,7 @@ extern void init_forcerec(FILE       *log,
 extern void update_forcerec(FILE *log,t_forcerec *fr,matrix box);
 /* Updates parameters in the forcerec that are time dependent */
 
-extern void set_avcsix(FILE *log,t_forcerec *fr,t_idef *idef,t_mdatoms *mdatoms);
+extern void set_avcsix(FILE *log,t_forcerec *fr,t_mdatoms *mdatoms);
 /* Compute the average C6 param for LJ corrections */
 
 extern void ns(FILE *log,
@@ -118,5 +118,12 @@ extern void force(FILE *log,
 		  t_block      *excl,
 		  bool         bNBonly);
 /* Call all the force routines */
+
+/* Routine from fnbf.m4 */
+extern void do_fnbf(FILE *log,t_forcerec *fr,
+		    rvec x[],rvec f[],t_mdatoms *md,
+		    real egnb[],real egcoul[],rvec box_size,
+		    t_nrnb *nrnb,real lambda,real *dvdlambda,
+		    bool bLR,int eNL);
 
 #endif	/* _force_h */

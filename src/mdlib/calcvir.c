@@ -77,7 +77,7 @@ void calc_vir(FILE *log,int nxf,rvec x[],rvec f[],tensor vir,
 
 static void lo_fcv(int i0,int i1,int g0,
 		   real x[],real f[],tensor vir,
-		   t_ishift is[],real shift_vec[])
+		   int is[],real shift_vec[])
 {
   int      i,i3,gg,t,t3;
   real     xx,yy,zz;
@@ -111,7 +111,7 @@ static void lo_fcv(int i0,int i1,int g0,
 
 static void lo_fcv2(int i0,int i1,
 		    rvec x[],rvec f[],tensor vir,
-		    t_ishift is[],rvec shift_vec[])
+		    int is[],rvec shift_vec[])
 {
   int      i,gg,t;
   real     xx,yy,zz;

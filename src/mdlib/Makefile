@@ -20,19 +20,16 @@ LIB		= $(LIBDIR)/libmd.$(GMXCPU).a
 SONAME		= libmd.$(GMXCPU).so
 OBJ		= \
 		calcmu.o	calcvir.o	callf77.o	\
-		clincs.o	clincsld.o	\
-		congrad.o	coupling.o	csettle.o	\
-		cshake.o	dummies.o	ebin.o		\
-		edsam.o		\
-		fftgrid.o	fnbf.o		force.o		\
-		ghat.o		init.o		lrutil.o	\
-		md.o		mdatom.o	mdebin.o	\
-		nm.o		\
+		clincs.o	clincsld.o	congrad.o	\
+		coupling.o	csettle.o	cshake.o	\
+		dummies.o	ebin.o		edsam.o		\
+		fftgrid.o	force.o				\
+		init.o		md.o		\
+		mdatom.o	mdebin.o	nm.o		\
 		ns.o		nsb.o		nsgrid.o	\
-		poisson.o	pppm.o		\
-		psgather.o	pssolve.o	psspread.o	\
-		runner.o	shakef.o	sim_util.o	\
-		splittop.o	\
+		poisson.o	pppm.o		psgather.o	\
+		pssolve.o	psspread.o	runner.o	\
+		shakef.o	sim_util.o	splittop.o	\
 		steep.o		tables.o	tgroup.o	\
 		update.o	vcm.o		wnblist.o
 
@@ -44,6 +41,10 @@ endif
 #
 include		$(STDTARGET)
 #
+
+# This is to force rebuild when the Makefile.CPU has changed
+$(LIB)(update.o):	$(CPUMAKEF)
+$(LIB)(ns.o):		$(CPUMAKEF)
 
 $(LIB)(callf77.o):	callf77.m4 $(M4FILE)
 		$(M4) $(M4FILE) callf77.m4  > callf77.c

@@ -45,6 +45,7 @@ static char *SRCID_readir_c = "$Id$";
 #include "toputil.h"
 #include "index.h"
 #include "network.h"
+#include "vec.h"
 
 #define MAXPTR 254
 #define NOGID  255
@@ -158,6 +159,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   }
   
   /* ELECTROSTATICS */
+  /* More checks are in triple check (grompp.c) */
   sprintf(err_buf,"epsilon_r must be >= 0 instead of %g\n",ir->epsilon_r);
   CHECK(ir->epsilon_r < 0);
   
@@ -197,11 +199,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
       warning(NULL);
     }
   }
-  
-  sprintf(err_buf,"When using coulombtype = %s"
-	  " ref_t for temperature coupling should be > 0",
-	  eel_names[eelGRF]);
-  CHECK((ir->coulombtype == eelGRF) && (ir->opts.ref_t[0] <= 0));
+
   
   if (ir->vdwtype == evdwCUT) {
     sprintf(err_buf,"With vdwtype = %s rvdw must be >= rlist",
@@ -847,3 +845,122 @@ void do_index(char *ndx,
   done_block(grps);
   sfree(grps);
 }
+
+static void check_disre(t_topology *sys)
+{
+  t_functype *functype;
+  t_iparams  *ip;
+  int i,ndouble,ftype;
+  int index,old_index;
+  
+  if (sys->idef.il[F_DISRES].nr) {
+    functype  = sys->idef.functype;
+    ip        = sys->idef.iparams;
+    ndouble   = 0;
+    old_index = -1;
+    for(i=0; i<sys->idef.ntypes; i++) {
+      ftype = functype[i];
+      if (ftype == F_DISRES) {
+	index = ip[i].disres.index;
+	if (index == old_index) {
+	  fprintf(stderr,"Distance restraint index %d occurs twice\n",index);
+	  ndouble++;
+	}
+	old_index = index;
+      }
+    }
+    if (ndouble>0)
+      fatal_error(0,"Found %d double distance restraint indices,\n"
+		  "probably the parameters for multiple pairs in one restraint "
+		  "are not identical\n",ndouble);
+  }
+}
+
+void triple_check(t_inputrec *ir,t_topology *sys,int *nerror)
+{
+  char err_buf[256];
+  int  i,m;
+  real *mgrp,mt;
+  rvec acc;
+
+  /* Generalized reaction field */  
+  if (ir->opts.ngtc == 0) {
+    sprintf(err_buf,"No temperature coupling while using coulombtype %s",
+	    eel_names[eelGRF]);
+    CHECK(ir->coulombtype == eelGRF);
+  }
+  else {
+    sprintf(err_buf,"When using coulombtype = %s"
+	    " ref_t for temperature coupling should be > 0",
+	    eel_names[eelGRF]);
+    CHECK((ir->coulombtype == eelGRF) && (ir->opts.ref_t[0] <= 0));
+  }
+  
+  clear_rvec(acc);
+  snew(mgrp,sys->atoms.grps[egcACC].nr);
+  for(i=0; (i<sys->atoms.nr); i++) 
+    mgrp[sys->atoms.atom[i].grpnr[egcACC]] += sys->atoms.atom[i].m;
+  mt=0.0;
+  for(i=0; (i<sys->atoms.grps[egcACC].nr); i++) {
+    for(m=0; (m<DIM); m++)
+      acc[m]+=ir->opts.acc[i][m]*mgrp[i];
+    mt+=mgrp[i];
+  }
+  for(m=0; (m<DIM); m++) {
+    if (fabs(acc[m]) > 1e-6) {
+      char *dim[DIM] = { "X", "Y", "Z" };
+      fprintf(stderr,"Net Acceleration in %s direction, will be corrected\n",
+	      dim[m]);
+      acc[m]/=mt;
+      for (i=0; (i<sys->atoms.grps[egcACC].nr); i++)
+	ir->opts.acc[i][m]-=acc[m];
+    }
+  }
+  sfree(mgrp);
+
+  check_disre(sys);
+}
+
+void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
+{
+  real bmin;
+
+  if( (ir->eConstrAlg==estSHAKE) && 
+      (mol->plist[F_SHAKE].nr > 0) && 
+      (ir->shake_tol <= 0.0) ) {
+    fprintf(stderr,"ERROR: shake_tol must be > 0 instead of %g\n",
+	    ir->shake_tol);
+    (*nerror)++;
+  }
+  bmin=(min(min(box[XX][XX],box[YY][YY]),box[ZZ][ZZ]));
+  if (ir->eBox != ebtNONE) {
+    /* rlist must be less than half the box */
+    if (max(ir->rlist,ir->rcoulomb) > 0.5*bmin) {
+      fprintf(stderr,
+	      "ERROR: rlist (%g) must be < half a box (%g,%g,%g)\n",
+	      ir->rlist,box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
+      (*nerror)++;
+    }
+    /* box must be large enough for gridsearch */
+    if (ir->ns_type==ensGRID) {
+      int  k;
+      ivec cx;
+      real rlong;
+      bool bTWIN;
+
+      rlong = max(ir->rlist,max(ir->rcoulomb,ir->rvdw));
+      bTWIN = (rlong > ir->rlist);
+      for(k=0; (k<DIM); k++)
+	cx[k]=ir->ndelta*box[k][k]/rlong;
+      if ( !( (cx[XX] >= 2*ir->ndelta+1) && 
+	      (cx[YY] >= 2*ir->ndelta+1) && 
+	      (cx[ZZ] >= 2*ir->ndelta+1) ) ) {
+	fprintf(stderr,"ERROR: box too small for grid-search,\n"
+		"  increase the boxsize or decrease %s or use simple "
+		"neighboursearch.\n",bTWIN ? "rcoulomb":"rlist");
+	(*nerror)++;
+      }
+    }
+  }
+}
+
