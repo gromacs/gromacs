@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
   snew(bSet,nw);
   snew(top,1);
   init_calcpot(NFILE,fnm,top,&x,&parm,&cr,
-	       &graph,&mdatoms,&nsb,&grps,&fr,&pot);
+	       &graph,&mdatoms,&nsb,&grps,&fr,&pot,box);
   snew(nSubs,top->atoms.nr);
   snew(v,top->atoms.nr);
   snew(top->atoms.pdbinfo,top->atoms.nr);

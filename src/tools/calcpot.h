@@ -4,7 +4,8 @@ extern void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
 			 rvec **x,t_parm *parm,t_commrec *cr,
 			 t_graph **graph,t_mdatoms **mdatoms,
 			 t_nsborder *nsb,t_groups *grps,
-			 t_forcerec **fr,real **coulomb);
+			 t_forcerec **fr,real **coulomb,
+			 matrix box);
 
 extern void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
 		     t_parm *parm,t_topology *top,rvec x[],t_forcerec *fr,

@@ -169,7 +169,8 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
 		  rvec **x,t_parm *parm,t_commrec *cr,
 		  t_graph **graph,t_mdatoms **mdatoms,
 		  t_nsborder *nsb,t_groups *grps,
-		  t_forcerec **fr,real **pot)
+		  t_forcerec **fr,real **pot,
+		  matrix box)
 {
   real     t,t0,lam,lam0,SAfac;
   bool     bTYZ;
@@ -215,7 +216,9 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
     box_size[m] = parm->box[m][m];
   if (parm->ir.eBox != ebtNONE)
     do_pbc_first(stdlog,parm,box_size,*fr,*graph,*x);
-  
+
+  copy_mat(parm->box,box);
+      
   snew(*pot,nsb->natoms);
   
   sfree(v);

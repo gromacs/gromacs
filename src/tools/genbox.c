@@ -35,18 +35,21 @@ static char *SRCID_genbox_c = "$Id$";
 #include "physics.h"
 #include "confio.h"
 #include "copyrite.h"
+#include "txtdump.h"
 #include "math.h"
 #include "macros.h"
 #include "random.h"
 #include "futil.h"
 #include "vdw.h"
 #include "names.h"
+#include "vec.h"
 #include "pbc.h"
 #include "fatal.h"
 #include "statutil.h"
 #include "vec.h"
 #include "gstat.h"
 #include "addconf.h"
+#include "princ.h"
 
 typedef struct {
   char **name;
@@ -66,6 +69,7 @@ void center_conf(int natom, rvec *x, matrix box)
   int  i;
   rvec geom_center,center,shift;
 
+  clear_rvec(geom_center);
   for (i=0; i<natom; i++)
     rvec_inc(geom_center,x[i]);
   svmul(1./natom,geom_center,geom_center);
@@ -416,9 +420,15 @@ char *read_prot(char *confin_1,int ntb,bool bRotate,
 		t_atoms *atoms_1,
 		rvec **x_1,rvec **v_1,real **r_1,
 		matrix box_1,rvec angle,
-		t_vdw **vdw,int *max_vdw,real r_distance)
+		t_vdw **vdw,int *max_vdw,real r_distance,
+		real prot_wall)
 {
-  char *title;
+  char    *title;
+  atom_id *indexje;
+  real    tm;
+  int     i,m;
+  rvec    xcm,xmin,xmax;
+  matrix  trans;
   
   snew(title,STRLEN);
   get_stx_coordnum(confin_1,&(atoms_1->nr));
@@ -443,10 +453,45 @@ char *read_prot(char *confin_1,int ntb,bool bRotate,
   
   /*orient configuration along z-axis*/
   if (bRotate) {
-    init_pbc(box_1,ntb);
-    orient(atoms_1->nr,*x_1,*v_1,angle,box_1); 
+    snew(indexje,atoms_1->nr);
+    for(i=0; (i<atoms_1->nr); i++) {
+      indexje[i] =i ;
+      if (atoms_1->atom[i].m == 0)
+	atoms_1->atom[i].m = 1;
+    }
+    principal_comp(atoms_1->nr,indexje,atoms_1->atom,*x_1,trans,angle);
+    rotate_atoms(atoms_1->nr,indexje,*x_1,trans);
+    pr_rvecs(stderr,0,"Rot Matrix",trans,DIM);
+    
+    /* Compute new box size */
+    copy_rvec((*x_1)[0],xmin);
+    copy_rvec((*x_1)[0],xmax);
+    for(i=1; (i<atoms_1->nr); i++) {
+      for(m=0; (m<DIM); m++) {
+	xmin[m] = min((*x_1)[i][m],xmin[m]);
+	xmax[m] = max((*x_1)[i][m],xmax[m]);
+      }
+    }
+    for(m=0; (m<DIM); m++) {
+      box_1[m][m] = 2*prot_wall+xmax[m]-xmin[m];
+    }
+    fprintf(stderr,"xmin           = %8.3f  %8.3f  %8.3f\n",
+	    xmin[XX],xmin[YY],xmin[ZZ]);
+    fprintf(stderr,"xmax           = %8.3f  %8.3f  %8.3f\n",
+	    xmax[XX],xmax[YY],xmax[ZZ]);
+    fprintf(stderr,"New box size   = %8.3f  %8.3f  %8.3f, volume = %g\n",
+	    box_1[XX][XX],box_1[YY][YY],box_1[ZZ][ZZ],det(box_1));
+
+    center_conf(atoms_1->nr,*x_1,box_1);
+    
+    /* Compute center of mass */
+    /* Center the molecule in the box */
+    /*for(m=0; (m<DIM); m++)
+      xcm[m] = 0.5*box_1[m][m]-xmin[m];
+    add_xcm(*x_1,atoms_1->nr,indexje,xcm);
+    sfree(indexje);*/
   }
-  
+    
   return title;
 }
 
@@ -531,7 +576,7 @@ int main(int argc,char *argv[])
   char *title_3;
   
   /* protein configuration data */
-  char    *title;
+  char    *title=NULL;
   t_atoms atoms_1;
   rvec    *x_1,*v_1;
   matrix  box_1;
@@ -557,7 +602,7 @@ int main(int argc,char *argv[])
   
   static int nmol_3=0,maxsol=0,seed=1997,ntb=0;
   static bool bRotate=FALSE;
-  static real r_distance=0.105;
+  static real r_distance=0.105,prot_wall=0.0;
   static rvec new_box={0.0,0.0,0.0};
   t_pargs pa[] = {
     { "-box",   FALSE,etRVEC,&new_box,   "box size" },
@@ -566,6 +611,7 @@ int main(int argc,char *argv[])
     { "-rot",   FALSE,etBOOL,&bRotate,   "rotate solute to fit box best"},
     { "-seed",  FALSE,etINT ,&seed,      "random generator seed"},
     { "-vdwd",  FALSE,etREAL,&r_distance,"default vdwaals distance"},
+    { "-wall",  FALSE,etREAL,&prot_wall, "distance between protein and wall (nly useful with option -rot)" },
     { "-boxtype",FALSE,etINT,&ntb, "HIDDENbox type 0=rectangular; "
       "1=truncated octahedron (only rectangular boxes are fully implemented)"}
   };
@@ -596,7 +642,7 @@ int main(int argc,char *argv[])
   if (bProt) {
     /*generate a solute configuration*/
     title=read_prot(confin_1,ntb,bRotate,&atoms_1,&x_1,&v_1,&r_1,box_1,angle,
-		    &vdw,&max_vdw,r_distance);
+		    &vdw,&max_vdw,r_distance,prot_wall);
     if (atoms_1.nr == 0) {
       fprintf(stderr,"No protein in %s, check your input\n",confin_1);
       exit(1);
@@ -695,12 +741,12 @@ int main(int argc,char *argv[])
 	bSkip=FALSE;
 	line++;
 	strcpy(buf2,buf);
-	if (temp=strchr(buf2,'\n'))
+	if ((temp=strchr(buf2,'\n')) != NULL)
 	  temp[0]='\0';
 	ltrim(buf2);
 	if (buf2[0]=='[') {
 	  buf2[0]=' ';
-	  if (temp=strchr(buf2,'\n'))
+	  if ((temp=strchr(buf2,'\n')) != NULL)
 	    temp[0]='\0';
 	  rtrim(buf2);
 	  if (buf2[strlen(buf2)-1]==']') {
@@ -730,7 +776,7 @@ int main(int argc,char *argv[])
 	  }
 	}
 	if (bSkip) {
-	  if (temp=strchr(buf,'\n'))
+	  if ((temp=strchr(buf,'\n')) != NULL)
 	    temp[0]='\0';
 	  fprintf(stdout,"Removing line #%d '%s' from topology file (%s)\n",
 		  line,buf,topinout);
