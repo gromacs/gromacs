@@ -76,6 +76,7 @@ extern time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,
 		    t_nsborder *nsb,t_nrnb nrnb[],
 		    t_graph *graph,t_edsamyn *edyn,
 		    t_forcerec *fr,rvec box_size,
+		    int repl_ex_nst,int repl_ex_seed,
 		    unsigned long Flags);
 
 /* ROUTINES from minimize.c */
@@ -291,7 +292,8 @@ extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
 				   
 extern void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		     bool bVerbose,bool bCompact,
-		     int nDlb,int nstepout,t_edsamyn *edyn,
+		     int nDlb,int nstepout,
+		     t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,
 		     unsigned long Flags);
 /* Driver routine, that calls the different methods */
 

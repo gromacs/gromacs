@@ -67,6 +67,7 @@
 #include "pppm.h"
 #include "pme.h"
 #include "mdatoms.h"
+#include "repl_ex.h"
 
 volatile bool bGotTermSignal = FALSE, bGotUsr1Signal = FALSE;
 
@@ -86,7 +87,8 @@ static RETSIGTYPE signal_handler(int n)
 
 void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	      bool bVerbose,bool bCompact,
-	      int nDlb,int nstepout,t_edsamyn *edyn,
+	      int nDlb,int nstepout,
+	      t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,
 	      unsigned long Flags)
 {
   double     nodetime=0,realtime;
@@ -215,7 +217,8 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		  bVerbose,bCompact,bDummies,
 		  bParDummies ? &dummycomm : NULL,
 		  nstepout,parm,grps,top,ener,fcd,state,vold,vt,f,buf,
-		  mdatoms,nsb,nrnb,graph,edyn,fr,box_size,Flags);
+		  mdatoms,nsb,nrnb,graph,edyn,fr,box_size,
+		  repl_ex_nst,repl_ex_seed,Flags);
     break;
   case eiCG:
     start_t=do_cg(stdlog,nfile,fnm,parm,top,grps,nsb,
@@ -279,7 +282,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	     t_state *state,rvec vold[],rvec vt[],rvec f[],
 	     rvec buf[],t_mdatoms *mdatoms,t_nsborder *nsb,t_nrnb nrnb[],
 	     t_graph *graph,t_edsamyn *edyn,t_forcerec *fr,rvec box_size,
-	     unsigned long Flags)
+	     int repl_ex_nst,int repl_ex_seed,unsigned long Flags)
 {
   t_mdebin   *mdebin;
   int        fp_ene=0,fp_trn=0,step,step_rel;
@@ -298,6 +301,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   t_vcm      *vcm;
   t_trxframe rerun_fr;
   t_pull     pulldata; /* for pull code */
+  gmx_repl_ex_t *repl_ex=NULL;
   /* A boolean (disguised as a real) to terminate mdrun */  
   real       terminate=0;
  
@@ -308,7 +312,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   real        timestep=0;
   double      tcount=0;
   bool        bShell_FlexCon,bIonize=FALSE,bGlas=FALSE;
-  bool        bTCR=FALSE,bConverged=TRUE,bOK;
+  bool        bTCR=FALSE,bConverged=TRUE,bOK,bExchanged;
   real        mu_aver=0,fmax;
   int         gnx,ii;
   atom_id     *grpindex;
@@ -368,7 +372,11 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   /* Initialize pull code */
   init_pull(log,nfile,fnm,&pulldata,state->x,mdatoms,parm->ir.opts.nFreeze,
 	    state->box,START(nsb),HOMENR(nsb),cr);
-    
+  
+  if (repl_ex_nst > 0)
+    repl_ex = init_replica_exchange(log,mcr,state,&parm->ir,
+				    repl_ex_nst,repl_ex_seed);
+  
   if (!parm->ir.bUncStart && !bRerunMD) 
     do_shakefirst(log,bTYZ,ener,parm,nsb,mdatoms,state,vold,buf,f,
 		  graph,cr,&mynrnb,grps,fr,top,edyn,&pulldata);
@@ -454,6 +462,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   /* loop over MD steps or if rerunMD to end of input trajectory */
   bFirstStep = TRUE;
   bLastStep = FALSE;
+  bExchanged = FALSE;
   step = parm->ir.init_step;
   step_rel = 0;
   while ((!bRerunMD && (step_rel <= parm->ir.nsteps)) ||  
@@ -511,7 +520,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       bNS = ((parm->ir.nstlist!=0) || bFirstStep);
     } else {
       /* Determine whether or not to do Neighbour Searching */
-      bNS = ((parm->ir.nstlist && (step % parm->ir.nstlist==0)) || bFirstStep);
+      bNS = ((parm->ir.nstlist && (step % parm->ir.nstlist==0 || bExchanged))
+	     || bFirstStep);
     }
     
     /* Stop Center of Mass motion */
@@ -531,7 +541,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	/* Following is necessary because the graph may get out of sync
 	 * with the coordinates if we only have every N'th coordinate set
 	 */
-	if (bRerunMD)
+	if (bRerunMD || bExchanged)
 	  mk_mshift(log,graph,state->box,state->x);
 	shift_self(graph,state->box,state->x);
       }
@@ -882,6 +892,11 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	fprintf(stderr,"\n");
       print_time(stderr,start_t,step,&parm->ir);
     }
+
+    bExchanged = FALSE;
+    if (repl_ex_nst > 0 && step > 0 && !bLastStep &&
+	do_per_step(step,repl_ex_nst))
+      bExchanged = replica_exchange(log,mcr,repl_ex,state,ener[F_EPOT],step,t);
     
     bFirstStep = FALSE;
 

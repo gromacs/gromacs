@@ -111,6 +111,12 @@ int main(int argc,char *argv[])
     "The main use of this option is for NMR refinement: when distance",
     "or orientation restraints are present these can be ensemble averaged",
     "over all the systems.[PAR]",
+    "With [TT]-replex[tt] replica exchange is attempted every given number",
+    "of steps. This option implies [TT]-multi[tt], see above.",
+    "All run input files should use a different coupling temperature,",
+    "the order of the files is not important. The random seed is set with",
+    "[TT]-reseed[tt]. The velocities are scaled and neighbor searching",
+    "is performed after every exchange.[PAR]",
     "Finally some experimental algorithms can be tested when the",
     "appropriate options have been given. Currently under",
     "investigation are: polarizibility, glass simulations",
@@ -161,6 +167,8 @@ int main(int argc,char *argv[])
   
   static int  nDLB=0; 
   static int  nnodes=1;
+  static int  repl_ex_nst=0;
+  static int  repl_ex_seed=-1;
   static int  nstepout=10;
   static int  nthreads=1;
 
@@ -175,6 +183,10 @@ int main(int argc,char *argv[])
       "Write a compact log file" },
     { "-multi",   FALSE, etBOOL,{&bMultiSim}, 
       "Do multiple simulations in parallel (only with -np > 1)" },
+    { "-replex",   FALSE, etINT,{&repl_ex_nst}, 
+      "Attempt replica exchange every # steps" },
+    { "-reseed",   FALSE, etINT,{&repl_ex_seed}, 
+      "Seed for replica exchange, -1 is generate a seed" },
     { "-glas",    FALSE, etBOOL,{&bGlas},
       "Do glass simulation with special long range corrections" },
     { "-ionize",  FALSE, etBOOL,{&bIonize},
@@ -210,6 +222,8 @@ int main(int argc,char *argv[])
 
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
 
+  if (repl_ex_nst > 0)
+    bMultiSim = TRUE;
   if (bMultiSim && PAR(cr))
     mcr = init_multisystem(cr,NFILE,fnm);
   else
@@ -232,7 +246,8 @@ int main(int argc,char *argv[])
 	   (bMultiSim ? MD_MULTISIM : 0) |
 	   (bGlas     ? MD_GLAS     : 0));
 
-  mdrunner(cr,mcr,NFILE,fnm,bVerbose,bCompact,nDLB,nstepout,&edyn,Flags);
+  mdrunner(cr,mcr,NFILE,fnm,bVerbose,bCompact,nDLB,nstepout,
+	   &edyn,repl_ex_nst,repl_ex_seed,Flags);
   
   if (gmx_parallel_env)
     gmx_finalize();
