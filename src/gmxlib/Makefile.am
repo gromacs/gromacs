@@ -18,7 +18,7 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	enxio.c		ewald_util.c	fatal.c		ffscanf.c	\
 	filenm.c	futil.c		gbutil.c	fnbf.c		\
 	gmxfio.c	ifunc.c		index.c		cinvsqrtdata.c	\
-	crecipdata.c    invblock.c	javaio.c	macros.c	\
+	crecipdata.c    invblock.c	macros.c	\
 	main.c		maths.c		matio.c		memdump.c	\
 	mshift.c	mvdata.c	mvxvf.c		names.c		\
 	network.c	nrama.c		nrjac.c		nrnb.c		\
@@ -30,10 +30,10 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	trnio.c		trxio.c		txtdump.c	typedefs.c	\
 	viewit.c	wgms.c		wman.c		writeps.c	\
 	xdrd.c		xtcio.c		xvgr.c   	replace.h	\
-	x86_cpu.c	libxdrf.c	vec.c
+	x86_cpu.c	libxdrf.c	vec.c		
 
 EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = \
-	mpiio.c		libnet.c	x86_sse.s	x86_3dnow.s  	\
+	x86_sse.s	x86_3dnow.s  	\
 	mgmx.c		widget.c	widget.h	x86_cpuid.s	\
 	axp_asm.s	f77_wrappers.c	
 
