@@ -393,7 +393,10 @@ static void clean_bonds(t_params *ps)
     for(i=j=1; (i<ps->nr); i++) {
       if ( ps->param[i].AI != ps->param[j-1].AI ||
 	   ps->param[i].AJ != ps->param[j-1].AJ ) {
+	/* This sfree causes a lot of trouble
+	   Anton should look at this.
 	sfree(ps->param[j].s);
+	*/
 	ps->param[j] =  ps->param[i];
 	j++;
       }
