@@ -125,12 +125,45 @@ static void fe(int eio,char *desc,char *srcfile,int line)
 
 #define FE() fe(eio,desc,__FILE__,__LINE__)
 
+
+static void encode_string(int maxlen,char dst[],char src[])
+{
+  int i;
+  
+  for(i=0; (src[i] != '\0') && (i < maxlen-1); i++)
+    if ((src[i] == ' ') || (src[i] == '\t'))
+      dst[i] = '_';
+    else
+      dst[i] = src[i];
+  dst[i] = '\0';
+  
+  if (i == maxlen)
+    fprintf(stderr,"String '%s' truncated to '%s'\n",src,dst);
+}
+
+static void decode_string(int maxlen,char dst[],char src[])
+{
+  int i;
+  
+  for(i=0; (src[i] != '\0') && (i < maxlen-1); i++)
+    if (src[i] == '_')
+      dst[i] = ' ';
+    else
+      dst[i] = src[i];
+  dst[i] = '\0';
+  
+  if (i == maxlen)
+    fprintf(stderr,"String '%s' truncated to '%s'\n",src,dst);
+}
+
+
 static bool do_ascwrite(void *item,int nitem,int eio,
 			char *desc,char *srcfile,int line)
 {
   int  i;
   int  res=0,*iptr;
   real *ptr;
+  char strbuf[256];
   unsigned char *ucptr;
   
   check_nitem();
@@ -169,7 +202,8 @@ static bool do_ascwrite(void *item,int nitem,int eio,
 		  iptr[XX],iptr[YY],iptr[ZZ],dbgstr(desc));
     break;
   case eioSTRING:
-    res = fprintf(curfio->fp,"%-18s%s\n",(char *)item,dbgstr(desc));
+    encode_string(256,strbuf,(char *)item);
+    res = fprintf(curfio->fp,"%-18s%s\n",strbuf,dbgstr(desc));
     break;
   default:
     FE();
@@ -253,6 +287,7 @@ static bool do_ascread(void *item,int nitem,int eio,
   real   *ptr;
   unsigned char *ucptr;
   char   *cptr;
+  char   strbuf[256];
   
   check_nitem();  
   switch (eio) {
@@ -300,7 +335,11 @@ static bool do_ascread(void *item,int nitem,int eio,
     break;
   case eioSTRING:
     cptr = next_item(fp);
-    if (item) res = sscanf(cptr,"%s",(char *)item);
+    if (item) {
+      decode_string(strlen(cptr)+1,(char *)item,cptr);
+      /* res = sscanf(cptr,"%s",(char *)item);*/
+      res = 1;
+    }
     break;
   default:
     FE();
