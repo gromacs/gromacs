@@ -55,6 +55,7 @@ static char *SRCID_force_c = "$Id$";
 #include "lrutil.h"
 #include "pppm.h"
 #include "poisson.h"
+#include "copyrite.h"
 
 t_forcerec *mk_forcerec(void)
 {
@@ -116,34 +117,56 @@ static void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
 		       real zsq,matrix box,
 		       real *kappa,real *epsfac,real *krf,real *crf)
 {
+  /* Compute constants for Generalized reaction field */
   static bool bFirst=TRUE;
-  real   k1,k2,I,vol,krf0;
+  real   k1,k2,I,vol,krf0,rmin,rrc,kkrf;
   
-  I   = 0.0;
-  *kappa = 0.0;
-  vol = det(box);
   if ((eel == eelRF) || (eel == eelGRF)) {
+    vol     = det(box);
+    I       = zsq/vol;
     if (eel == eelGRF) {
-      I       = zsq/vol;
+      /* Consistency check */
       if (Temp <= 0.0)
-	fatal_error(0,"Temperature is 0 while using Generalized Reaction Field\n");
+	fatal_error(0,"Temperature is %f while using"
+		    " Generalized Reaction Field\n",Temp);
+      /* Ionic strength (only needed for eelGRF */
       *kappa  = sqrt(2*I/(EPSILON0*eps*BOLTZ*Temp));
     }
+    else
+      *kappa = 0;
+      
     k1      = (1+*kappa*Rc);
     k2      = eps*sqr((real)(*kappa*Rc));
     krf0    = (eps-1)/((2*eps+1)*(Rc*Rc*Rc));
-    *krf    = (((eps-1)*k1+k2)/((2*eps+1)*k1+k2)/
-	       (Rc*Rc*Rc));
-    *crf    = 1/Rc + *krf*Rc*Rc;
-    if (getenv("NOCRF"))
-      *crf=0;
+    
     *epsfac = ONE_4PI_EPS0;
+    *krf    = (((eps-1)*k1+k2)/((2*eps+1)*k1+k2)/(Rc*Rc*Rc));
+    *crf    = 1/Rc + *krf*Rc*Rc;
+    rmin    = pow(*krf*2.0,-1.0/3.0);
+    
+    if (getenv("NOCRF")) {
+      if (bFirst)
+	fprintf(log,"Warning: environment variable NOCRF set:\n"
+		"\tno energy correction for reaction fields\n");
+      *crf=0;
+    }
     if (bFirst) {
+      if (eel == eelGRF)
+	please_cite(log,"Tironi95a");
       fprintf(log,"%s:\n"
 	      "epsRF = %10g, I   = %10g, volume = %10g, kappa = %10g\n"
 	      "rc    = %10g, krf = %10g, krf0   = %10g, crf   = %10g\n"
 	      "epsfac= %10g\n",
 	      eel_names[eel],eps,I,vol,*kappa,Rc,*krf,krf0,*crf,*epsfac);
+      fprintf(log,
+	      "The electrostatics potential has its minimum at rc = %g\n",
+	      rmin);
+      rrc  = Rc*Rc/rmin;
+      kkrf = (((eps-1)*k1+k2)/((2*eps+1)*k1+k2)/(rrc*rrc*rrc));
+      rmin = pow(kkrf*2.0,-1.0/3.0);
+      fprintf(log,"Double testing: rrc = %g, kkrf = %g, rmin = %g\n",
+	      rrc,kkrf,rmin);
+	      
       bFirst=FALSE;
     }
   }
@@ -162,7 +185,7 @@ static void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
 void update_forcerec(FILE *log,t_forcerec *fr,matrix box)
 {
   calc_rffac(log,fr->eeltype,
-	     fr->epsilon_r,fr->rc,fr->temp,fr->zsquare,box,
+	     fr->epsilon_r,fr->rcoulomb,fr->temp,fr->zsquare,box,
 	     &fr->kappa,&fr->epsfac,&fr->k_rf,&fr->c_rf);
 }
 
@@ -171,7 +194,8 @@ static double calc_avcsix(FILE *log,real **nbfp,int ntypes,
 {
   int    i,j,tpi,tpj;
   double csix;
-  
+
+  /* Check this code: do we really need a double loop? */  
   csix = 0;
   for(i=0; (i<natoms); i++) {
     tpi = type[i];
@@ -252,30 +276,37 @@ void init_forcerec(FILE *log,
   rvec box_size;
   
   natoms         = mdatoms->nr;
+  
+  /* Neighbour searching stuff */
+  fr->bGrid      = (ir->ns_type == ensGRID);
+  fr->ndelta     = ir->ndelta;
+  
+  /* Domain decomposition parallellism... */
+  fr->bDomDecomp = ir->bDomDecomp;
+  fr->Dimension  = ir->decomp_dir;
+  
+  /* Electrostatics */
+  fr->eeltype    = ir->eeltype;
   fr->epsilon_r  = ir->epsilon_r;
   fr->fudgeQQ    = ir->fudgeQQ;
-  fr->ndelta     = ir->ndelta;
-  fr->eeltype    = ir->eeltype;
+  
   if (fr->eeltype == eelTWIN) {
     fr->rshort     = ir->rlist;
     fr->rlong      = ir->rcoulomb;
     fr->nWater     = ir->solvent_opt;
     fr->bTwinRange = (fr->rlong > fr->rshort);
   } else {
-    fr->nWater   = -1;
+    fr->nWater     = -1;
     fr->bTwinRange = FALSE;
   }
-  fr->bGrid      = (ir->ns_type == ensGRID);
   
-  fr->bDomDecomp = ir->bDomDecomp;
-  fr->Dimension  = ir->decomp_dir;
-  
+  /* Parameters for generalized RF */
   fr->zsquare = 0.0;
   fr->temp    = 0.0;
   
   /* Electrostatics stuff */
-  fr->rc_switch = ir->rcoulomb_switch;
-  fr->rc        = ir->rcoulomb;
+  fr->rcoulomb_switch = ir->rcoulomb_switch;
+  fr->rcoulomb        = ir->rcoulomb;
   if (fr->eeltype == eelGRF) {
     zsq = 0.0;
     for (i=0; (i<cgs->nr); i++) {
@@ -283,7 +314,11 @@ void init_forcerec(FILE *log,
       for(j=cgs->index[i]; (j<cgs->index[i+1]); j++)
 	q+=mdatoms->chargeA[cgs->a[j]];
       if (q != 0.0)
-	zsq += sqr(q);
+	/* Changed from square to fabs 990314 DvdS 
+	 * Does not make a difference for monovalent ions, but doe for 
+	 * divalent ions (Ca2+!!)
+	 */
+	zsq += fabs(q);
     }
     fr->zsquare = zsq;
     
@@ -328,8 +363,8 @@ void init_forcerec(FILE *log,
       snew(fr->phi,mdatoms->nr);
     
     if (EEL_LR(fr->eeltype) || 
-	(fr->eeltype == eelSHIFT && fr->rc > fr->rc_switch))
-      set_LRconsts(log,fr->rc_switch,fr->rc,box_size,fr);
+	(fr->eeltype == eelSHIFT && fr->rcoulomb > fr->rcoulomb_switch))
+      set_LRconsts(log,fr->rcoulomb_switch,fr->rcoulomb,box_size,fr);
   }
 
   /* Initiate arrays */
@@ -386,7 +421,7 @@ void init_forcerec(FILE *log,
 	    (fr->eeltype==eelSWITCH) ? "switched":"shifted",
 	    fr->rvdw_switch,fr->rvdw);
   fprintf(log,"Cut-off's:   NS: %g   Coulomb: %g   %s: %g\n",
-	  fr->rshort,fr->rc,fr->bBHAM ? "BHAM":"LJ",fr->rvdw);
+	  fr->rshort,fr->rcoulomb,fr->bBHAM ? "BHAM":"LJ",fr->rvdw);
   
   if (ir->bDispCorr)
     set_avcsix(log,fr,idef,mdatoms);
@@ -414,8 +449,8 @@ void pr_forcerec(FILE *log,t_forcerec *fr,t_commrec *cr)
   pr_int(log,fr->hcg);
   pr_int(log,fr->ntab);
   if (fr->ntab > 0) {
-    pr_real(log,fr->rc_switch);
-    pr_real(log,fr->rc);
+    pr_real(log,fr->rcoulomb_switch);
+    pr_real(log,fr->rcoulomb);
   }
   
   pr_int(log,fr->nmol);
@@ -584,7 +619,7 @@ void force(FILE       *log,     int        step,
 		  eel_names[fr->eeltype]);
     }
     
-    Vself = calc_LRcorrections(log,0,md->nr,fr->rc_switch,fr->rc,
+    Vself = calc_LRcorrections(log,0,md->nr,fr->rcoulomb_switch,fr->rcoulomb,
 			       md->chargeA,excl,x,f,TRUE);
     epot[F_LR] = Vlr - Vself;
     if (debug)

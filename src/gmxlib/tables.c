@@ -171,13 +171,13 @@ void fill_table(int n0,int n,real x[],
   int  i,p;
   real r1,rc,r12,r13;
   real r,r2,r6;
-  real k_rf,c_rf,rffac2;
+  real k_rf,c_rf,rffac2,rmin,Vrmin;
   /* Parameters for David's function */
   real A=0,B=0,C=0,A_3=0,B_4=0;
   /* Parameters for the switching function */
   real ksw,swi,swi1,swi2,swi3;
   /* Temporary parameters */
-  bool bSwitch,bDavid;
+  bool bSwitch,bDavid,bTabTest;
   real VtabT;  
   real VtabT1;  
   real VtabT2; 
@@ -186,8 +186,8 @@ void fill_table(int n0,int n,real x[],
   bSwitch= ((tp == etabLJ6sw) || (tp == etabLJ12sw) || (tp == etabCOULsw));
   bDavid= ((tp == etabLJ6David) || (tp == etabLJ12David) || (tp == etabDavid));
   if (bCoulomb[tp]) {
-    r1 = fr->rc_switch;
-    rc = fr->rc;
+    r1 = fr->rcoulomb_switch;
+    rc = fr->rcoulomb;
   } else {
     r1 = fr->rvdw_switch;
     rc = fr->rvdw;
@@ -195,6 +195,16 @@ void fill_table(int n0,int n,real x[],
   k_rf   = fr->k_rf;
   c_rf   = fr->c_rf;
   rffac2 = k_rf*2.0;
+  bTabTest = (getenv("TABTEST") != NULL);
+  if (bTabTest) {
+    rmin  = pow(2*k_rf,-1.0/3.0);
+    Vrmin = 1/rmin+k_rf*rmin*rmin;
+    c_rf  = 0.0;
+  }
+  else {
+    rmin  = rc;
+    Vrmin = 0.0;
+  }
   if (bSwitch)
     ksw  = 1.0/pow((rc-r1),3.0);
   else
@@ -294,10 +304,18 @@ void fill_table(int n0,int n,real x[],
       }
       break;
     case etabRF:
-      Vtab[i]  = 1.0/r      + k_rf*r2  - c_rf;
-      Ftab[i]  = 1.0/r2     - rffac2*r;
-      Vtab2[i] = 2.0/(r2*r) + rffac2;
-      Ftab2[i] = 6.0/(r2*r2);
+      if (bTabTest && (r > rmin)) {
+	Vtab[i]  = Vrmin;
+	Ftab[i]  = 0.0;
+	Vtab2[i] = 0.0;
+	Ftab2[i] = 0.0;
+      }
+      else {
+	Vtab[i]  = 1.0/r      + k_rf*r2  - c_rf;
+	Ftab[i]  = 1.0/r2     - rffac2*r;
+	Vtab2[i] = 2.0/(r2*r) + rffac2;
+	Ftab2[i] = 6.0/(r2*r2);
+      }
       break;
     case etabEXPMIN:
       Vtab[i]  = exp(-r);
@@ -368,7 +386,7 @@ void make_tables(t_forcerec *fr,bool bVerbose)
 #else
   fr->tabscale = 500.0;
 #endif
-  n = fr->ntab = (fr->rc+0.5)*fr->tabscale;
+  n = fr->ntab = (fr->rcoulomb+0.5)*fr->tabscale;
 
   snew(fr->VFtab,12*n+1);
   snew(xnormal,n+1);
@@ -402,7 +420,7 @@ void make_tables(t_forcerec *fr,bool bVerbose)
       case eelPPPM:
       case eelPOISSON:
       case eelSHIFT:
-	if (fr->rc > fr->rc_switch)
+	if (fr->rcoulomb > fr->rcoulomb_switch)
 	  tabsel = etabDavid;
 	else
 	  tabsel = etabCOUL;
@@ -446,7 +464,7 @@ void make_tables(t_forcerec *fr,bool bVerbose)
       fill_table(n0,n,x,Vtab,Vtab2,Ftab,Ftab2,tabsel,fr);
     /*
       if (tabsel == etabRF)
-      copy2table(n,k*4,12,x,Vtab,Vtab2,fr->VFtab,fr->rc);
+      copy2table(n,k*4,12,x,Vtab,Vtab2,fr->VFtab,fr->rcoulomb);
       else
       */
     copy2table(n,k*4,12,x,Vtab,Vtab2,fr->VFtab,-1);
