@@ -47,11 +47,11 @@ void main(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_dist calculates the distances between the center of masses of two",
-    " groups defined by the index file"
+    "groups defined by the index file"
   };
   
   t_topology *top=NULL;
-  real t;
+  real t,dx,dy,dz;
   rvec *x=NULL,*v=NULL;
   matrix box;
   int status;
@@ -73,7 +73,7 @@ void main(int argc,char *argv[])
     { efTPX, NULL, NULL, ffREAD },
     { efTRX, "-f", NULL, ffREAD },
     { efNDX, NULL, NULL, ffREAD },
-    { efOUT, NULL, NULL, ffOPT  },
+    { efXVG, NULL, NULL, ffOPTWR },
   };
 #define NFILE asize(fnm)
 
@@ -90,7 +90,8 @@ void main(int argc,char *argv[])
   
 
   /* open output file */
-  fp = ffopen(ftp2fn(efOUT,NFILE,fnm),"w");
+  fp = xvgropen(ftp2fn(efXVG,NFILE,fnm),
+		"Distance","Distance (nm)","Time (ps)");
   
   /* read index files */
   ngrps = 2;
@@ -110,9 +111,6 @@ void main(int argc,char *argv[])
   }
 
   do {
-    if ((teller % 10) == 0)
-      fprintf(stderr,"\rFrame %d",teller);
-    
     /* calculate center of masses */
     for(g=0;(g<ngrps);g++) {
       for(d=0;(d<DIM);d++) {
@@ -121,20 +119,24 @@ void main(int argc,char *argv[])
 	  com[g][d] += x[index[g][i]][d] * top->atoms.atom[index[g][i]].m;
 	}
 	com[g][d] /= mass[g];
-	 
       }
     }
     
     /* write to output */
     fprintf(fp,"%8.3f ",t);
-    for(g=0;(g<ngrps/2);g++)
-      fprintf(fp,"%8.3f %8.3f %8.3f",com[2 * g][XX] - com[2 * g + 1][XX],com[2 * g][YY] - com[2 * g + 1][YY],com[2 * g][ZZ] - com[2 * g + 1][ZZ]);
-      
+    for(g=0;(g<ngrps/2);g++) {
+      dx=com[2 * g][XX] - com[2 * g + 1][XX];
+      dy=com[2 * g][YY] - com[2 * g + 1][YY];
+      dz=com[2 * g][ZZ] - com[2 * g + 1][ZZ];
+      fprintf(fp,"%10.5f %10.5f %10.5f %10.5f",
+	      sqrt(sqr(dx)+sqr(dy)+sqr(dz)),dx,dy,dz);
+    }
     fprintf(fp,"\n");
     teller++;
   } while (read_next_x(status,&t,natoms,x,box));
   fclose(fp);
   fprintf(stderr,"\n");
   close_trj(status);
-
+  
+  thanx(stdout);
 }
