@@ -130,7 +130,8 @@ static void init_restart(t_corr *this,int nrestart,real dt)
   this->delta_t  = (nrestart > 1) ? dt : 0;
   
   printf("\nThe number of starting points you requested takes %lu"
-	 " bytes memory\n\n",this->natoms*this->nrestart*sizeof(rvec));
+	 " bytes memory\n\n",
+	 (ulong) this->natoms*this->nrestart*sizeof(rvec));
 
   snew(this->x0,this->nrestart);
   for(i=0; (i<this->nrestart); i++)

@@ -280,12 +280,13 @@ int main (int argc,char *argv[])
   snew(atoms->resname,atoms->nres);
   snew(atoms->atom,atoms->nr);
   memcpy(atoms->atom,top->atoms.atom,atoms->nr*sizeof(atoms->atom[0]));
-  memcpy(atoms->atomname,top->atoms.atomname,atoms->nr*sizeof(atoms->atomname[0]));
-  memcpy(atoms->resname,top->atoms.resname,atoms->nres*sizeof(atoms->resname[0]));
+  memcpy(atoms->atomname,top->atoms.atomname,
+	 atoms->nr*sizeof(atoms->atomname[0]));
+  memcpy(atoms->resname,top->atoms.resname,
+	 atoms->nres*sizeof(atoms->resname[0]));
 
-  mdatoms=atoms2md(&top->atoms,ir->opts.nFreeze,
-		   parm->ir.eI==eiLD,FALSE,FALSE);  
-  fr=mk_forcerec();
+  mdatoms = atoms2md(&top->atoms,ir->opts.nFreeze,FALSE,FALSE,FALSE);  
+  fr      = mk_forcerec();
   fprintf(stdlog,"Made forcerec...\n");
   calc_nsb(&(top->blocks[ebCGS]),1,nsb,0);
   init_forcerec(stdlog,fr,ir,&(top->blocks[ebMOLS]),cr,
