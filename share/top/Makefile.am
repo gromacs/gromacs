@@ -30,7 +30,7 @@ topol_DATA = \
 	dec50.gro	dmso.gro	spc216.gro	tip4p.gro	\
 	urea+h2o.gro							\
 	aminoacids.dat	atommass.dat	bromacs.dat	ca-shift.dat	\
-	cb-shift.dat	co-shift.dat	edissoc.dat	\
+	cb-shift.dat	co-shift.dat	edissoc.dat	FF.dat		\
 	gurgle.dat	ha-shift.dat	links.dat	phbres.dat	\
 	random.dat	refi_aa.dat	specbond.dat	surface.dat	\
 	vdwradii.dat	xlateat.dat					\
