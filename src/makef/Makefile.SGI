@@ -19,8 +19,8 @@ OPT		= -O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -
 #OPT		= -g -fullwarn -woff 1134 -woff 1174 -woff 1552
 CFLAGS		= $(ABI) $(OPT)
 CCFLAGS		= $(ABI) $(OPT) -DHAVE_BOOL 
-FFLAGS		= $(ABI) $(OPT) -OPT:cray_ivdep=TRUE  -TENV:X=4 \
--GCM:aggressive_speculation -GCM:array_speculation
+FFLAGS		= $(ABI) $(OPT) -OPT:cray_ivdep=TRUE  -TENV:X=4
+#FFLAGS		+= -GCM:aggressive_speculation -GCM:array_speculation
 
 #-n32 -mips4 -Ofast -LIST:options
 #$(OPT) -OPT:cray_ivdep=TRUE  -TENV:X=4
