@@ -165,8 +165,9 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
       warning("Flying ice-cubes: We are not removing center of mass motion in a non-periodic system. You should set nstcomm = -1 (will also stop rotation).");
   }
   
-  sprintf(err_buf,"Free-energy not implemented for PPPM");
-  CHECK((ir->coulombtype==eelPPPM) && (ir->efep!=efepNO));
+  sprintf(err_buf,"Free-energy not implemented for Ewald and PPPM");
+  CHECK((ir->coulombtype==eelEWALD || ir->coulombtype==eelPPPM)
+	&& (ir->efep!=efepNO));
   
   sprintf(err_buf,"Domain decomposition can only be used with grid NS");
   CHECK(ir->bDomDecomp && (ir->ns_type == ensSIMPLE));
@@ -1410,6 +1411,9 @@ void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
   }
 
   if (ir->ePBC != epbcNONE) {
+    if (ir->nstlist == 0) {
+      warning("With nstlist=0 atoms are only put into the box at step 0, therefore drifting atoms might cause the simulation to crash.");
+    }
     rlong = max(ir->rlist,max(ir->rcoulomb,ir->rvdw));
     bTWIN = (rlong > ir->rlist);
     if (ir->ns_type==ensGRID) {
