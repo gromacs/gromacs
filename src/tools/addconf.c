@@ -143,7 +143,7 @@ static void combine_atoms(t_atoms *ap,t_atoms *as,rvec xp[],rvec xs[],
   snew(ac,1);
   init_t_atoms(ac,natot,FALSE);
   stupid_fill(&(ac->excl),natot,FALSE);
-
+  
   snew(xc,natot);
     
   /* Fill the new structures */
@@ -213,6 +213,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     init_top(top);
     stupid_fill(&(top->blocks[ebCGS]),natoms,FALSE);
     memcpy(&(top->atoms),atoms,sizeof(*atoms));
+    stupid_fill(&(top->atoms.excl),natoms,FALSE);
     top->atoms.grps[egcENER].nr = 1;
     
     /* Some nasty shortcuts */
@@ -245,7 +246,6 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     ir->vdwtype     = evdwCUT;
     ir->ndelta      = 2;
     ir->ns_type     = ensGRID;
-    ir->solvent_opt = -1;
     snew(ir->opts.eg_excl,1);
     
     /* forcerec structure */
@@ -256,8 +256,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     cr->nthreads = 1;
     
     ir->rlist       = ir->rcoulomb = ir->rvdw = rlong;
-    init_forcerec(debug,fr,ir,&(top->blocks[ebMOLS]),cr,
-		  &(top->blocks[ebCGS]),&(top->idef),md,nsb,box,FALSE);
+    init_forcerec(stdout,fr,ir,top,cr,md,nsb,box,FALSE);
     fr->cg0 = 0;
     fr->hcg = top->blocks[ebCGS].nr;
     fr->nWatMol = 0;
@@ -275,8 +274,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
 
   /* Init things dependent on parameters */  
   ir->rlist       = ir->rcoulomb = ir->rvdw = rlong;
-  init_forcerec(debug,fr,ir,&(top->blocks[ebMOLS]),cr,
-		&(top->blocks[ebCGS]),&(top->idef),md,nsb,box,FALSE);
+  init_forcerec(debug,fr,ir,top,cr,md,nsb,box,FALSE);
 		
   /* Calculate new stuff dependent on coords and box */
   for(m=0; (m<DIM); m++)

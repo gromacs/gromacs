@@ -170,28 +170,21 @@ void lsq_y_ax_b2(int n, real x[], real y[], real *a, real *b,
   *sb=(*sa)*sqrt(xx/n);
 }
 
-static void subtitle(FILE *out,t_corr *this)
-{
-  int i;
-  real aa,bb,da,db,D;
-  
-  for(i=0; (i<this->ngrp); i++) {
-    lsq_y_ax_b2(this->nframes,this->time,this->data[i],&aa,&bb,&da,&db);
-    D=aa*FACTOR/this->dim_factor;
-    fprintf(out,"# D[%d] = %.4f (1e-5 cm^2 s^-1)\n",i,D);
-  }
-}
-
 static void corr_print(t_corr *this,char *fn,char *title,char *yaxis,
-		       bool bXvgr,bool bDiff)
+		       bool bDiff,real beginfit,
+		       real *DD,real *SigmaD,char *grpname[])
 {
   FILE *out;
   int  i,j,imin;
   real t,aa,bb,da,db;
   
   out=xvgropen(fn,title,"Time (ps)",yaxis);
-  if (bXvgr)
-    subtitle(out,this);
+  if (DD) {
+    fprintf(out,"# Diffusion constants fitted from time %.3f to end of trajectory\n",beginfit);
+    for(j=0; (j<this->ngrp); j++) 
+      fprintf(out,"# D[%10s] = %.3f (+/- %.3f) (1e-5 cm^2/s)\n",
+	      grpname[j],DD[j],SigmaD[j]);
+  }
     
   lsq_y_ax_b2(this->nframes,this->time,this->data[0],&aa,&bb,&da,&db);
   if (bDiff) 
@@ -523,7 +516,7 @@ void printdist(t_corr *this,char *fn,char *difn)
 void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
 	     t_topology *top,bool bMol,bool bMW,
 	     int type,real dim_factor,int axis,
-	     int nrestart,real dt)
+	     int nrestart,real dt,real beginfit)
 {
   t_corr       *msd;
   t_first_x    *fx;
@@ -531,8 +524,10 @@ void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
   int          *gnx;
   atom_id      **index;
   char         **grpname;
-  int          i,j;
-
+  int          i,i0,j,N;
+  real         DeltaT,D,Dav,D2av,Dav2;
+  real         *DD,*SigmaD;
+  
   fx=read_first_x;
   nx=read_next_x;
 
@@ -554,20 +549,54 @@ void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
     for(i=0; (i<msd->nframes); i++)
       msd->data[j][i] /= msd->ndata[j][i];
 
-  /* Print and show diffusion constant */
-  if (opt2bSet("-d",NFILE,fnm)) {
-    corr_print(msd,opt2fn("-d",NFILE,fnm),"Diffusion constant",
-	       "D (10\\S-5\\Ncm\\S2\\Ns\\S-1\\N)",TRUE,TRUE);
-    do_view(opt2fn("-d",NFILE,fnm),"-nxy");
-  }
-  /* Print and show mean square displacement */
-  corr_print(msd,opt2fn("-o",NFILE,fnm),
-	     "Mean Square Displacement",
-	     "MSD (nm\\S2\\N)",TRUE,FALSE);
-  do_view(opt2fn("-o",NFILE,fnm),"-nxy");
-  
   if (bMol) 
     printdist(msd,opt2fn("-m",NFILE,fnm),opt2fn("-d",NFILE,fnm));
+  else {
+    DD = SigmaD = NULL;
+    for(i0=0; (i0<msd->nframes) && (msd->time[i0] < beginfit); i0++) 
+      ;
+    if (i0 < msd->nframes) {
+      snew(DD,msd->ngrp);
+      snew(SigmaD,msd->ngrp);
+      for(j=0; (j<msd->ngrp); j++) {
+	Dav = D2av = 0;
+	for(i=i0; (i<msd->nframes); i++) { 
+	  DeltaT  = msd->time[i] - msd->time[0];
+	  if (DeltaT > 0) {
+	    D     = msd->data[j][i]/(msd->dim_factor*DeltaT);
+	    Dav  += D;
+	    D2av += D*D;
+	  }
+	}
+	N         = (msd->nframes-i0);
+	Dav      /= N;
+	D2av     /= N;
+	Dav2      = Dav*Dav;
+	DD[j]     = FACTOR*Dav;
+	SigmaD[j] = FACTOR*sqrt(D2av-Dav2);
+	fprintf(stderr,"D[%10s] %.3f (+/- %.3f) 1e-5 cm^2/s\n",
+		grpname[j],DD[j],SigmaD[j]);
+      }
+    }
+    else {
+      fprintf(stderr,"beginfit %g is larger than trajectory length %g. "
+	      "Can not determine Diffusion constant\n");
+    }
+  
+    /* Print and show diffusion constant */
+    if (opt2bSet("-d",NFILE,fnm)) {
+      corr_print(msd,opt2fn("-d",NFILE,fnm),"Diffusion constant",
+		 "D (10\\S-5\\Ncm\\S2\\Ns\\S-1\\N)",TRUE,
+		 beginfit,DD,SigmaD,grpname);
+      do_view(opt2fn("-d",NFILE,fnm),"-nxy");
+    }
+    /* Print and show mean square displacement */
+    corr_print(msd,opt2fn("-o",NFILE,fnm),
+	       "Mean Square Displacement",
+	       "MSD (nm\\S2\\N)",FALSE,
+	       beginfit,DD,SigmaD,grpname);
+    do_view(opt2fn("-o",NFILE,fnm),"-nxy");
+  }
 }
 
 int main(int argc,char *argv[])
@@ -589,6 +618,7 @@ int main(int argc,char *argv[])
   static int  ngroup     = 1;
   static int  nrestart   = 1;
   static real dt         = 0; 
+  static real beginfit   = 0; 
   static bool bMW        = TRUE;
   t_pargs pa[] = {
     { "-type",    FALSE, etENUM, {normtype},
@@ -601,8 +631,10 @@ int main(int argc,char *argv[])
       "Mass weighted MSD" },
     { "-nrestart",FALSE, etINT,  {&nrestart},
       "Number of restarting points in trajectory" },
-    { "-trestart",      FALSE, etREAL, {&dt},
-      "Time between restarting points in trajectory (only with -nrestart > 1)" }
+    { "-trestart",FALSE, etREAL, {&dt},
+      "Time between restarting points in trajectory (only with -nrestart > 1)" },
+    { "-beginfit",FALSE, etREAL, {&beginfit},
+      "Time at which to start fitting to obtain the diffusion constant" }
   };
 
   t_filenm fnm[] = { 
@@ -659,7 +691,9 @@ int main(int argc,char *argv[])
     fatal_error(0,"Could not read a topology from %s. Try a tpr file instead.",
 		ftp2fn(efTPS,NFILE,fnm));
     
-  do_corr(NFILE,fnm,ngroup,&top,bMol,bMW,type,dim_factor,axis,nrestart,dt);
+  do_corr(NFILE,fnm,ngroup,
+	  &top,bMol,bMW,type,dim_factor,axis,
+	  nrestart,dt,beginfit);
 
   thanx(stderr);
   

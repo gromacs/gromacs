@@ -873,8 +873,6 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
 
-  init_lookup_table(stdout);
-  
   printf("Using %g as mu_max and %g as the dipole moment.\n", 
 	  mu_max,mu_aver);
   if (epsilonRF == 0.0)

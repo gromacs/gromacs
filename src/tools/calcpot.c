@@ -215,8 +215,9 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   rvec     *v,mutot;
   t_nrnb   nrnb;
   t_mdebin *mdebin;
+  t_vcm    *vcm=NULL;
   int      fp_ene,m;
-  rvec     vcm,box_size;
+  rvec     box_size;
   tensor   force_vir,shake_vir;
   
   /* Initiate */
@@ -228,16 +229,13 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),top,x,&v,mdatoms,nsb);
   init_md(cr,&(parm->ir),parm->box,&t,&t0,&lam,&lam0,&SAfac,
 	  &nrnb,&bTYZ,top,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,
-	  &mdebin,grps,vcm,force_vir,shake_vir,*mdatoms,mutot,&bNEMD);
+	  &mdebin,grps,force_vir,shake_vir,*mdatoms,mutot,&bNEMD,&vcm);
   init_groups(stdlog,*mdatoms,&(parm->ir.opts),grps);  
 
   /* Calculate intramolecular shift vectors to make molecules whole again */
   *graph = mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
   mk_mshift(stdlog,*graph,parm->box,*x);
   
-  /* Turn off watertype optimizations, to ease coding above. */
-  parm->ir.solvent_opt = -1;
-
   /* Turn off twin range if appropriate */
   parm->ir.rvdw  = parm->ir.rcoulomb;
   parm->ir.rlist = parm->ir.rcoulomb;
@@ -252,8 +250,7 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
     
   /* Initiate forcerecord */
   *fr = mk_forcerec();
-  init_forcerec(stdlog,*fr,&(parm->ir),&(top->blocks[ebMOLS]),cr,
-		&(top->blocks[ebCGS]),&(top->idef),*mdatoms,
+  init_forcerec(stdlog,*fr,&(parm->ir),top,cr,*mdatoms,
 		nsb,parm->box,FALSE);
 
   /* Remove periodicity */  

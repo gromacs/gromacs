@@ -91,13 +91,13 @@ void stupid_fill(t_block *grp,int natom,bool bOneIndexGroup)
   grp->nra=natom;
   
   if (bOneIndexGroup) {
-    srenew(grp->index,2);
+    snew(grp->index,2);
     grp->index[0]=0;
     grp->index[1]=natom;
     grp->nr=1;
   }
   else {
-    srenew(grp->index,natom+1);
+    snew(grp->index,natom+1);
     for(i=0; (i<=natom); i++)
       grp->index[i]=i;
     grp->nr=natom;

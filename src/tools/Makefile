@@ -218,6 +218,9 @@ wheel:		wheel.o
 g_rdf:		g_rdf.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
+g_com:		g_com.o
+		$(LD) -o $@ $^ $(SYSLIBS)
+
 g_msd:		g_msd.o	lsq.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 

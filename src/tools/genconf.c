@@ -249,6 +249,8 @@ int main(int argc, char *argv[])
     close_trj(status);
 
   /* make box bigger */
+  for(m=0; (m<DIM); m++)
+    box[m][m] += dist[m];
   svmul(nx,box[XX],box[XX]);
   svmul(ny,box[YY],box[YY]);
   svmul(nz,box[ZZ],box[ZZ]);
