@@ -1,0 +1,32 @@
+#!/bin/csh -f
+
+if ( $#argv < 2 ) then
+    set in = grompp.log
+    set out = topolout.top
+    set program = $0
+    echo "usage $program:t $in $out"
+    echo "Parses grompp debug logfile into original processed topology file"
+else
+    set in = $1
+    set out = $2
+endif
+
+if ( -f $out ) then
+    if ( $out:h == $out:t ) then
+	set backup = \#$out:t\#
+    else
+	set backup = $out:h/\#$out:t\#
+    endif
+    echo "Back Off! I just backed up $out to $backup"
+    \mv $out $backup
+endif
+if ( ! -f $in ) then
+    echo "FATAL ERROR: input file $in does not exist"
+    exit 1
+endif
+
+echo -n "Processing..."
+grep -E '(\".*\" : .* :)|(found directive)' $in | sed 's/found directive '\''\(.*\)'\''/[ \1 ]/' | sed 's/\".*\" : .* ://' >! $out
+echo "."
+
+#last line
