@@ -40,6 +40,7 @@
 #include "mdrun.h"
 #include "xmdrun.h"
 #include "mdatoms.h"
+#include "dummies.h"
 #include "network.h"
 #include "names.h"
 #include "constr.h"
@@ -79,10 +80,11 @@ static void shell_pos_sd(FILE *log,real step,rvec xold[],rvec xnew[],rvec f[],
 {
   int  i,shell;
   real k_1;
+  real fudge=1.0;
   
   for(i=0; (i<ns); i++) {
     shell = s[i].shell;
-    k_1   = s[i].k_1;
+    k_1   = fudge*s[i].k_1;
     do_1pos(xnew[shell],xold[shell],f[shell],k_1,step);
     if (debug && 0) {
       pr_rvec(debug,0,"fshell",f[shell],DIM,TRUE);
@@ -296,9 +298,10 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 		 tensor pme_vir_part,bool bShell,
 		 int nshell,t_shell shells[],t_forcerec *fr,
 		 char *traj,real t,real lambda,rvec mu_tot,
-		 int natoms,matrix box,bool *bConverged)
+		 int natoms,matrix box,bool *bConverged,
+		 bool bDummies,t_comm_dummies *dummycomm)
 {
-  static bool bFirst=TRUE,bInit;
+  static bool bFirst=TRUE,bForceInit=FALSE,bNoPredict=FALSE;
   static rvec *pos[2],*force[2];
   static rvec *acc_dir=NULL,*x_old=NULL;
   static int  ndir;
@@ -309,7 +312,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 #define NEPOT asize(Epot)
   real   ftol,step,step0,xiH,xiS,dum=0;
   char   cbuf[56];
-  bool   bDone;
+  bool   bDone,bInit;
   int    i,start=START(nsb),homenr=HOMENR(nsb),end=START(nsb)+HOMENR(nsb);
   int    g,number_steps,d,Min=0,count=0;
 #define  Try (1-Min)             /* At start Try = 1 */
@@ -332,10 +335,18 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
       pos[Min]   = x;
       force[Min] = f;
     }
-    bInit  = getenv("FORCEINIT") != NULL;
+    bNoPredict = getenv("NOPREDICT") != NULL;
+    if (bNoPredict)
+      fprintf(log,"Will never predict shell positions");
+    else {
+      bForceInit = getenv("FORCEINIT") != NULL;
+      if (bForceInit)
+	fprintf(log,"Will always initiate shell positions");
+    }
     bFirst = FALSE;
   }
-  
+
+  bInit        = bForceInit || (mdstep == 0);
   ftol         = parm->ir.em_tol;
   number_steps = parm->ir.niter;
   step0        = 1.0;
@@ -353,8 +364,9 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   }
   
   /* Do a prediction of the shell positions */
-  predict_shells(log,x,v,parm->ir.delta_t,nshell,shells,
-		 md->massT,bInit || (mdstep == 0));
+  if (!bNoPredict)
+    predict_shells(log,x,v,parm->ir.delta_t,nshell,shells,
+		   md->massT,bInit);
    
   /* Calculate the forces first time around */
   clear_mat(my_vir[Min]);
@@ -430,6 +442,15 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   
   for(count=1; (!bDone && (count < number_steps)); count++) {
 
+    if (bDummies) {
+      shift_self(graph,parm->box,pos[Try]);
+      
+      construct_dummies(log,pos[Try],nrnb,parm->ir.delta_t,v,&top->idef,
+			graph,cr,parm->box,dummycomm);
+      
+      unshift_self(graph,parm->box,pos[Try]);
+    }
+     
     if (ndir) {
       init_adir(log,top,&(parm->ir),mdstep,md,start,end,
 		x_old-start,x,pos[Min],force[Min],acc_dir-start,
@@ -443,8 +464,8 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     shell_pos_sd(log,step,pos[Min],pos[Try],force[Min],nshell,shells); 
 
     if (debug) {
-      pr_rvecs(debug,0,"pos[Try] b4 do_force",pos[Try] + start,homenr);
-      pr_rvecs(debug,0,"pos[Min] b4 do_force",pos[Min] + start,homenr);
+      pr_rvecs(debug,0,"RELAX: pos[Min]  ",pos[Min] + start,homenr);
+      pr_rvecs(debug,0,"RELAX: pos[Try]  ",pos[Try] + start,homenr);
     }
     /* Try the new positions */
     clear_mat(my_vir[Try]);
@@ -453,7 +474,27 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 	     top,grps,pos[Try],v,force[Try],buf,md,ener,fcd,
 	     bVerbose && !PAR(cr),
 	     lambda,graph,FALSE,FALSE,fr,mu_tot,FALSE,t);
+    if (bDummies) 
+      spread_dummy_f(log,pos[Try],force[Try],nrnb,&top->idef,dummycomm,cr);
+      
+    /* Calculation of the virial must be done after dummies!    */
+    /* Question: Is it correct to do the PME forces after this? */
+    calc_virial(log,START(nsb),HOMENR(nsb),pos[Try],force[Try],
+		my_vir[Try],pme_vir[Try],graph,parm->box,nrnb,fr,FALSE);
+		  
+    /* Spread the LR force on dummy particle to the other particles... 
+     * This is parallellized. MPI communication is performed
+     * if the constructing atoms aren't local.
+     */
+    if (bDummies && fr->bEwald) 
+      spread_dummy_f(log,pos[Try],fr->f_pme,nrnb,&top->idef,dummycomm,cr);
+    
     sum_lrforces(force[Try],fr,start,homenr);
+    
+    if (debug) {
+      pr_rvecs(debug,0,"RELAX: force[Min]",force[Min] + start,homenr);
+      pr_rvecs(debug,0,"RELAX: force[Try]",force[Try] + start,homenr);
+    }
     sf_dir = 0;
     if (ndir) {
       init_adir(log,top,&(parm->ir),mdstep,md,start,end,

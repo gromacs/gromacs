@@ -875,7 +875,7 @@ int main (int argc, char *argv[])
     { "-check14", FALSE, etBOOL, {&bCheckPairs},
       "Remove 1-4 interactions without Van der Waals" },
     { "-renum",   FALSE, etBOOL, {&bRenum},
-      "HIDDENRenumber atomtypes and minimize number of atomtypes" },
+      "Renumber atomtypes and minimize number of atomtypes" },
   };
   
   CopyRight(stdout,argv[0]);

@@ -292,6 +292,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   char        *grpname;
   t_coupl_rec *tcr=NULL;
   rvec        *xcopy=NULL,*vcopy=NULL;
+  matrix      boxcopy;
   /* End of XMDRUN stuff */
 
   /* Turn on signal handling */
@@ -383,6 +384,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       copy_rvec(x[ii],xcopy[ii]);
       copy_rvec(v[ii],vcopy[ii]);
     }
+    copy_mat(parm->box,boxcopy);
   } 
   /* Write start time and temperature */
   start_t=print_date_and_time(log,cr->nodeid,"Started mdrun");
@@ -473,6 +475,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	copy_rvec(xcopy[ii],x[ii]);
 	copy_rvec(vcopy[ii],v[ii]);
       }
+      copy_mat(boxcopy,parm->box);
     }
     
     if (bDummies) {
@@ -503,15 +506,16 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       
     /* Update force field in ffscan program */
     if (bFFscan) 
-      update_forcefield(nfile,fnm,fr);
+      update_forcefield(nfile,fnm,fr,mdatoms->nr,x,parm->box);
     
     if (bShell) {
       /* Now is the time to relax the shells */
-      count=relax_shells(log,cr,mcr,bVerbose,step,parm,bNS,bStopCM,top,
+      count=relax_shells(log,cr,mcr,bVerbose,bFFscan ? step+1 : step,
+			 parm,bNS,bStopCM,top,
 			 ener,fcd,x,vold,v,vt,f,buf,mdatoms,nsb,&mynrnb,graph,
 			 grps,force_vir,pme_vir,bShell,
 			 nshell,shells,fr,traj,t,lambda,mu_tot,
-			 nsb->natoms,parm->box,&bConverged);
+			 nsb->natoms,parm->box,&bConverged,bDummies,dummycomm);
       tcount+=count;
       
       if (bConverged)
@@ -753,7 +757,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	      (fr->eeltype==eelPPPM) ? ener[F_LR] : 0.0);
     
     /* Calculate long range corrections to pressure and energy */
-    if (bTCR)
+    if (bTCR || bFFscan)
       set_avcsix(log,fr,mdatoms);
     
     /* Calculate long range corrections to pressure and energy */
@@ -763,7 +767,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     /* The coordinates (x) were unshifted in update */
     if (bFFscan && (!bShell || bConverged))
       print_forcefield(log,ener,HOMENR(nsb),f,buf,xcopy,
-		       &(top->blocks[ebMOLS]),mdatoms->massT); 
+		       &(top->blocks[ebMOLS]),mdatoms->massT,
+		       parm->pres); 
     
     if (bTCR) {
       /* Only do GCT when the relaxation of shells (minimization) has converged,
@@ -785,7 +790,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       update_time();
 
     /* Output stuff */
-    if (MASTER(cr) && !bFFscan) {
+    if (MASTER(cr)) {
       bool do_ene,do_dr,do_or,do_dihr;
       
       upd_mdebin(mdebin,fp_dgdl,mdatoms->tmass,step,t,ener,parm->box,shake_vir,

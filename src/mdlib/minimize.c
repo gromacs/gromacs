@@ -155,10 +155,10 @@ static real f_norm(t_commrec *cr,
   return sqrt(fnorm2); 
 } 
 
-static void init_em(FILE *log,const char *title,
-		    t_parm *parm,real *lambda,t_nrnb *mynrnb,rvec mu_tot,rvec box_size,
-		    t_forcerec *fr,t_mdatoms *mdatoms,t_topology *top,t_nsborder *nsb,
-		    t_commrec *cr,t_vcm **vcm,int *start,int *end)
+void init_em(FILE *log,const char *title,t_parm *parm,
+	     real *lambda,t_nrnb *mynrnb,rvec mu_tot,rvec box_size,
+	     t_forcerec *fr,t_mdatoms *mdatoms,t_topology *top,t_nsborder *nsb,
+	     t_commrec *cr,t_vcm **vcm,int *start,int *end)
 {
   fprintf(log,"Initiating %s\n",title);
 
@@ -531,21 +531,20 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 } /* That's all folks */
 
 time_t do_steep(FILE *log,int nfile,t_filenm fnm[], 
- 		t_parm *parm,t_topology *top, 
- 		t_groups *grps,t_nsborder *nsb, 
- 		rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms, 
- 		tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[], 
- 		bool bVerbose,bool bDummies, t_comm_dummies *dummycomm,
-		t_commrec *cr,t_commrec *mcr,t_graph *graph,
-		t_forcerec *fr,rvec box_size) 
+		    t_parm *parm,t_topology *top, 
+		    t_groups *grps,t_nsborder *nsb, 
+		    rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms, 
+		    tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[], 
+		    bool bVerbose,bool bDummies, t_comm_dummies *dummycomm,
+		    t_commrec *cr,t_commrec *mcr,t_graph *graph,
+		    t_forcerec *fr,rvec box_size) 
 { 
   const char *SD="Steepest Descents"; 
-  real   stepsize,constepsize,lambda,fmax; 
+  real   constepsize,lambda,fmax; 
   rvec   *pos[2],*force[2],*xcf=NULL; 
   rvec   *xx,*ff; 
-  real   Fmax[2]; 
-  real   Epot[2]; 
-  real   ustep,dvdlambda;
+  real   Fmax[2],Epot[2]; 
+  real   ustep,k_1,k_ref,dvdlambda;
   t_vcm      *vcm;
   int        fp_ene; 
   t_mdebin   *mdebin; 
@@ -554,6 +553,11 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   time_t start_t; 
   tensor force_vir,shake_vir,pme_vir; 
   rvec   mu_tot;
+#ifdef DOUBLE 
+  real   min_k = 1e-24;
+#else
+  real   min_k = 1e-16;
+#endif
   int    nfmax,nsteps;
   int    count=0; 
   int    i,m,start,end,gf; 
@@ -615,11 +619,12 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   /* Set variables for stepsize (in nm). This is the largest  
    * step that we are going to make in any direction. 
    */
-  ustep    = parm->ir.em_stepsize; 
-  stepsize = 0;
-
+  ustep = parm->ir.em_stepsize; 
+  k_ref = 2e-6;
+  k_1   = k_ref;
+  
   /* Max number of steps  */
-  nsteps=parm->ir.nsteps; 
+  nsteps = parm->ir.nsteps; 
   
   if (MASTER(cr)) 
     /* Print to the screen  */
@@ -632,12 +637,12 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
    * bAbort will be TRUE when nsteps steps have been performed or when
    * the stepsize becomes smaller than is reasonable for machine precision
    */
-  count=0;
-  bDone=FALSE;
-  bAbort=FALSE;
+  count  = 0;
+  bDone  = FALSE;
+  bAbort = FALSE;
   while( !bDone && !bAbort ) {
     bAbort = (nsteps > 0) && (count==nsteps);
-
+    
     /* set new coordinates, except for first step */
     if (count>0)
       for(i=start; i<end; i++) {
@@ -646,20 +651,20 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	  if (parm->ir.opts.nFreeze[gf][m])
 	    pos[TRY][i][m] = pos[Min][i][m];
 	  else
-	    pos[TRY][i][m] = pos[Min][i][m] + stepsize * force[Min][i][m]; 
+	    pos[TRY][i][m] = pos[Min][i][m] + min(ustep,k_1*force[Min][i][m]);
       }
-
+    
     if (bConstrain) {
       dvdlambda=0;
       constrain(stdlog,top,&(parm->ir),count,mdatoms,start,end,
 		pos[Min],pos[TRY],NULL,parm->box,lambda,&dvdlambda,nrnb,
 		TRUE);
     }
-
+    
     if (bDummies)
       construct_dummies(log,pos[TRY],&(nrnb[cr->nodeid]),1,NULL,&top->idef,
 			graph,cr,parm->box,dummycomm);
-
+    
     /* Calc force & energy on new positions
      * do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in steep.c
@@ -669,7 +674,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	     mdatoms,ener,fcd,bVerbose && !(PAR(cr)), 
  	     lambda,graph,parm->ir.nstlist>0 || count==0,FALSE,fr,mu_tot,
 	     FALSE,0.0); 
-
+    
     /* Spread the force on dummy particle to the other particles... */
     if (bDummies) 
       spread_dummy_f(log,pos[TRY],force[TRY],&(nrnb[cr->nodeid]),
@@ -677,14 +682,15 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     /* Sum the potential energy terms from group contributions  */
     sum_epot(&(parm->ir.opts),grps,ener); 
-
+    
     if (MASTER(cr))
       print_ebin_header(log,count,count,lambda);
-
+    
     if (bConstrain) {
-      fmax=f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,start,end,
-		 force[TRY],&nfmax);
-      constepsize=ustep/fmax;
+      /* May be fucked up (but didn't work well anyway) */
+      fmax = f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),
+		   mdatoms,start,end,force[TRY],&nfmax);
+      constepsize=min(ustep,fmax*k_1);
       for(i=start; (i<end); i++)  
 	for(m=0;(m<DIM);m++) 
 	  xcf[i][m] = pos[TRY][i][m] + constepsize*force[TRY][i][m];
@@ -713,15 +719,15 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     Epot[TRY]=ener[F_EPOT];
     if (count == 0)
       Epot[Min] = Epot[TRY]+1;
-      
+    
     /* Print it if necessary  */
-    if (MASTER(cr)) { 
+    if (MASTER(cr)) {
       if (bVerbose) {
 	fprintf(stderr,"Step=%5d, Dmax= %6.1e nm, Epot= %12.5e Fmax= %11.5e, atom= %d%c",
-		count,ustep,Epot[TRY],Fmax[TRY],nfmax+1,
+		count,k_1,Epot[TRY],Fmax[TRY],nfmax+1,
 		(Epot[TRY]<Epot[Min])?'\n':'\r');
       }
-
+      
       if (Epot[TRY] < Epot[Min]) {
 	/* Store the new (lower) energies  */
 	upd_mdebin(mdebin,NULL,mdatoms->tmass,count,(real)count,
@@ -762,35 +768,23 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       /* The 'Min' array always holds the coords and forces of the minimal 
 	 sampled energy  */
       Min = TRY; 
-      
-      /* increase step size  */
-      if (count>0)
-	ustep *= 1.2; 
-      
-    } else
+      k_1 = k_ref;
+    } 
+    else
       /* If energy is not smaller make the step smaller...  */
-      ustep *= 0.5;
-    
-    /* Determine new step  */
-    fmax = f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,start,end,
-		 force[Min],&nfmax);
-    stepsize=ustep/fmax;
+      k_1 *= 0.5;
     
     /* Check if stepsize is too small, with 1 nm as a characteristic length */
-#ifdef DOUBLE
-    if (ustep < 1e-12) {
-#else
-    if (ustep < 1e-6) {
-#endif
-      warn_step(stderr,ustep,parm->ir.em_tol,bConstrain);
-      warn_step(log,ustep,parm->ir.em_tol,bConstrain);
+    if (k_1 < min_k) {
+      warn_step(stderr,k_1,parm->ir.em_tol,bConstrain);
+      warn_step(log,k_1,parm->ir.em_tol,bConstrain);
       bAbort=TRUE;
     }
     
     count++;
   } /* End of the loop  */
-    
-  /* Print some shit...  */
+  
+    /* Print some shit...  */
   if (MASTER(cr)) 
     fprintf(stderr,"\nwriting lowest energy coordinates.\n"); 
   xx=pos[Min]; 
@@ -806,7 +800,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     print_converged(log,SD,parm->ir.em_tol,count,bDone,nsteps,Epot[Min],Fmax[Min]);
     close_enx(fp_ene);
   }
-      
+  
   /* Put the coordinates back in the x array (otherwise the whole
    * minimization would be in vain)
    */

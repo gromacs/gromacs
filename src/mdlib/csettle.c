@@ -115,7 +115,6 @@ static int xshake(real b4[], real after[], real dOH, real dHH, real mO, real mH)
       } else {
 	rp = rijx*tx+rijy*ty+rijz*tz;
 	if(rp<1e-8) {
-	  printf("SHITSHITSHIT\n");
 	  return -1;
 	}
 	acor = diff*M2[ll]/rp;

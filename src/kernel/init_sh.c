@@ -148,6 +148,55 @@ t_shell *init_shells(FILE *log,int start,int homenr,
       ia += nra+1;
       i  += nra+1;
     }
+    ia=idef->il[F_CUBICBONDS].iatoms;
+    for(i=0; (i<idef->il[F_CUBICBONDS].nr); ) {
+      type  = ia[0];
+      ftype = idef->functype[type];
+      nra   = interaction_function[ftype].nratoms;
+      
+      /* Check whether we have a bond */
+      
+      if (md->ptype[ia[1]] == eptShell) {
+	a1 = ia[1];
+	a2 = ia[2];
+      }
+      else if (md->ptype[ia[2]] == eptShell) {
+	a1 = ia[2];
+	a2 = ia[1];
+      }
+      else {
+	i  += nra+1;
+	ia += nra+1;
+	continue;
+      }
+      /* Check whether one of the particles is a shell... */
+      nsi = shell_index[a1-start];
+      if ((nsi < 0) || (nsi >= *nshell))
+	fatal_error(0,"nsi is %d should be within 0 - %d. a1 = %d",
+		    nsi,*nshell,a1);
+      if (shell[nsi].shell == NO_ATID) {
+	shell[nsi].shell = a1;
+	ns ++;
+      }
+      else if (shell[nsi].shell != a1)
+	fatal_error(0,"What is this?");
+      
+      if      (shell[nsi].nucl1 == NO_ATID)
+	shell[nsi].nucl1 = a2;
+      else if (shell[nsi].nucl2 == NO_ATID)
+	shell[nsi].nucl2 = a2;
+      else if (shell[nsi].nucl3 == NO_ATID)
+	shell[nsi].nucl3 = a2;
+      else {
+	pr_shell(log,ns,shell);
+	fatal_error(0,"Can not handle more than three bonds per shell\n");
+      }
+      shell[nsi].k    += idef->iparams[type].cubic.kb;
+      shell[nsi].nnucl++;
+      
+      ia += nra+1;
+      i  += nra+1;
+    }
     ia = idef->il[F_WPOL].iatoms;
     for(i=0; (i<idef->il[F_WPOL].nr); ) {
       type  = ia[0];

@@ -294,5 +294,12 @@ extern void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 		    tensor shake_vir,t_mdatoms *mdatoms,rvec mu_tot,
 		    bool *bNEMD,bool *bSimAnn,t_vcm **vcm,t_nsborder *nsb);
 /* Routine in sim_util.c */
-		     
+
+extern void init_em(FILE *log,const char *title,t_parm *parm,
+		    real *lambda,t_nrnb *mynrnb,rvec mu_tot,rvec box_size,
+		    t_forcerec *fr,t_mdatoms *mdatoms,t_topology *top,
+		    t_nsborder *nsb,
+		    t_commrec *cr,t_vcm **vcm,int *start,int *end);
+/* Routine in minimize.c */
+     
 #endif	/* _mdrun_h */

@@ -92,39 +92,28 @@ real calc_mu_aver(t_commrec *cr,t_nsborder *nsb,rvec x[],real q[],rvec mu,
 }
 
 /* Lots of global variables! Yummy... */
-static real tol     = 0.1;
-static real epot    = 0.0;
-static real f_max   = 100;
-static real npow    = 12.0;
-static bool bComb   = TRUE;
-static bool bLogEps = FALSE;
-static bool bPres   = FALSE;
-static real ratio   = 0.01;
+static t_ffscan ff;
 
-void set_ffvars(real ff_tol,real ff_epot,real ff_npow,bool ff_bComb,
-		real ff_fmax,bool ff_bLogEps,real ff_ratio,bool bPressure)
+void set_ffvars(t_ffscan *fff)
 {
-  tol     = ff_tol;
-  epot    = ff_epot;
-  npow    = ff_npow;
-  bComb   = ff_bComb;
-  f_max   = ff_fmax;
-  ratio   = ff_ratio;
-  bLogEps = ff_bLogEps;
-  bPres   = bPressure;
+  ff = *fff;
 }
 
-real cost(real xxx,real energy)
+real cost(tensor P,real MSF,real E)
 {
-  return ratio*sqr(xxx)+sqr(energy-epot);
+  return (ff.fac_msf*MSF+ff.fac_epot*sqr(E-ff.epot)+ff.fac_pres*
+	  (sqr(P[XX][XX]-ff.pres)+sqr(P[YY][YY]-ff.pres)+sqr(P[ZZ][ZZ]-ff.pres)));
+  
 }
 
-static char     *esenm[eseNR] = { "SIG", "EPS", "BHAMA", "BHAMB", "BHAMC" };
+static char     *esenm[eseNR] = { "SIG", "EPS", "BHAMA", "BHAMB", "BHAMC", "CELlX", "CELLY", "CELLZ" };
 static int      nparm=0,*param_val=NULL;
 static t_range  *range=NULL;
 static t_genalg *ga=NULL;
+static rvec     scale = { 1,1,1 };
 
-static void init_range(t_range *r,int np,int atype,int ptype,real rmin,real rmax)
+static void init_range(t_range *r,int np,int atype,int ptype,
+		       real rmin,real rmax)
 {
   if (rmin > rmax)
     fatal_error(0,"rmin (%f) > rmax (%f)",rmin,rmax);
@@ -158,7 +147,7 @@ static t_range *read_range(char *db,int *nrange)
   for(i=0; (i < nlines); i++) {
     strip_comment(lines[i]);
     if (sscanf(lines[i],"%d%d%d%lf%lf",&np,&atype,&ptype,&rmin,&rmax) == 5) {
-      if (bLogEps && (ptype == eseEPSILON) && (rmin <= 0))
+      if (ff.bLogEps && (ptype == eseEPSILON) && (rmin <= 0))
 	fatal_error(0,"When using logarithmic epsilon increments the minimum"
 		    "value must be > 0");
       init_range(&range[nr],np,atype,ptype,rmin,rmax);
@@ -186,7 +175,7 @@ static real value_range(t_range *r,int n)
   if (r->np == 1)
     r->rval = r->rmin;
   else {
-    if ((r->ptype == eseEPSILON) && bLogEps) {
+    if ((r->ptype == eseEPSILON) && ff.bLogEps) {
       logrmin = log(r->rmin);
       logrmax = log(r->rmax);
       r->rval = exp(logrmin + (n*(logrmax-logrmin))/(r->np-1));
@@ -206,7 +195,7 @@ real value_rand(t_range *r,int *seed)
     r->rval = r->rmin;
   else {
     mr = rando(seed);
-    if ((r->ptype == eseEPSILON) && bLogEps) {
+    if ((r->ptype == eseEPSILON) && ff.bLogEps) {
       logrmin = log(r->rmin);
       logrmax = log(r->rmax);
       r->rval = exp(logrmin + mr*(logrmax-logrmin));
@@ -267,6 +256,15 @@ static void update_ff(t_forcerec *fr,int nparm,t_range range[],int param_val[])
     case eseBHAMC:
       bhamc[range[i].atype] = val;
       break;
+    case eseCELLX:
+      scale[XX] = val;
+      break;
+    case eseCELLY:
+      scale[YY] = val;
+      break;
+    case eseCELLZ:
+      scale[ZZ] = val;
+      break;
     default:
       fatal_error(0,"Unknown ptype");
     }
@@ -284,7 +282,7 @@ static void update_ff(t_forcerec *fr,int nparm,t_range range[],int param_val[])
     /* Now build a new matrix */
     for(i=0; (i<atnr); i++) {
       c6[i] = 4*eps[i]*pow(sigma[i],6.0);
-      cn[i] = 4*eps[i]*pow(sigma[i],npow);
+      cn[i] = 4*eps[i]*pow(sigma[i],ff.npow);
     }
     for(i=0; (i<atnr); i++) {
       for(j=0; (j<=i); j++) {
@@ -306,13 +304,30 @@ static void update_ff(t_forcerec *fr,int nparm,t_range range[],int param_val[])
 	else
 	  fprintf(debug,"i: %2d  j: %2d  c6:  %10.5e  cn:  %10.5e\n",i,j,
 		  C6(nbfp,atnr,i,j),C12(nbfp,atnr,i,j));
-	
       }
     }
   }
 }
 
-void update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr)
+static void scale_box(int natoms,rvec x[],matrix box)
+{
+  int i,m;
+  
+  if ((scale[XX] != 1.0) ||   (scale[YY] != 1.0) ||   (scale[ZZ] != 1.0)) {
+    if (debug)
+      fprintf(debug,"scale = %8.4f  %8.4f  %8.4f\n",
+	      scale[XX],scale[YY],scale[ZZ]);
+    for(m=0; (m<DIM); m++)
+      box[m][m] *= scale[m];
+    for(i=0; (i<natoms); i++) 
+      for(m=0; (m<DIM); m++)
+	x[i][m] *= scale[m];
+  }
+}
+
+
+void update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr,
+		       int natoms,rvec x[],matrix box)
 {
   static int ntry,ntried;
   int    i,j;
@@ -340,7 +355,7 @@ void update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr)
 	      ntry,nparm);
     }
   }
-  else if (ga) {
+  if (ga) {
     update_ga(stdlog,range,ga);
   }
   else {
@@ -366,32 +381,44 @@ void update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr)
 
   /* Now do the real updating */
   update_ff(fr,nparm,range,param_val);
+  
+  /* Update box and coordinates if necessary */
+  scale_box(natoms,x,box);
 }
 
-static void print_range(FILE *fp,real xxx,real energy)
+static void print_range(FILE *fp,tensor P,real MSF,real energy)
 {
   int  i;
   
-  fprintf(fp,"%8.3f  %8.3f  %8.3f",cost(xxx,energy),xxx,energy);
+  fprintf(fp,"%8.3f  %8.3f  %8.3f  %8.3f",
+	  cost(P,MSF,energy),trace(P)/3,MSF,energy);
   for(i=0; (i<nparm); i++)
     fprintf(fp," %s %10g",esenm[range[i].ptype],range[i].rval);
   fprintf(fp," FF\n");
   fflush(fp);
 }
 
-static real msf(int n,rvec f[])
+static real msf(int n,rvec f1[],rvec f2[])
 {
-  int i;
+  int  i,j;
+  rvec ff2;
+  real msf1=0;
   
-  real msf=0;
-  for(i=0; (i<n); i++)
-    msf += iprod(f[i],f[i]);
-
-  return msf/n;
+  for(i=0; (i<n); ) {
+    clear_rvec(ff2);
+    for(j=0; ((j<ff.molsize) && (i<n)); j++,i++) {
+      rvec_inc(ff2,f1[i]);
+      if (f2)
+	rvec_inc(ff2,f2[i]);
+    }
+    msf1 += iprod(ff2,ff2);
+  }
+  
+  return msf1/n;
 }
 
 static void print_grid(FILE *fp,real ener[],int natoms,rvec f[],rvec fshake[],
-		       rvec x[],t_block *mols,real mass[])
+		       rvec x[],t_block *mols,real mass[],tensor pres)
 {
   static bool bFirst = TRUE;
   static char *desc[] = {
@@ -401,7 +428,7 @@ static void print_grid(FILE *fp,real ener[],int natoms,rvec f[],rvec fshake[],
     "in the order they appear in the input file.",
     "------------------------------------------------------------------------" 
   };
-  real xxx;
+  real msf1;
   int  i;
   
   if (bFirst) {
@@ -410,31 +437,25 @@ static void print_grid(FILE *fp,real ener[],int natoms,rvec f[],rvec fshake[],
     fflush(fp);
     bFirst = FALSE;
   }
-  if ((tol == 0) || (fabs(ener[F_EPOT]-epot) < tol)) {
-    if (bPres)
-      xxx = ener[F_PRES];
-    else
-      xxx = sqrt(msf(natoms,f));
-    if ((f_max == 0) || (xxx < f_max)) 
-      print_range(fp,xxx,ener[F_EPOT]);
+  if ((ff.tol == 0) || (fabs(ener[F_EPOT]/ff.nmol-ff.epot) < ff.tol)) {
+    msf1 = msf(natoms,f,fshake);
+    if ((ff.fmax == 0) || (msf1 < sqr(ff.fmax))) 
+      print_range(fp,pres,msf1,ener[F_EPOT]/ff.nmol);
   }
 }
 
 void print_forcefield(FILE *fp,real ener[],int natoms,rvec f[],rvec fshake[],
-		      rvec x[],t_block *mols,real mass[])
+		      rvec x[],t_block *mols,real mass[],tensor pres)
 {
-  real xxx;
+  real msf1;
   
   if (ga) {
-    if (bPres) 
-      xxx = ener[F_PRES];
-    else
-      xxx = sqrt(msf(natoms,f));
+    msf1 = msf(natoms,f,fshake);
     if (debug)
-      fprintf(fp,"%s: %12g, Energy-Epot: %12g, cost: %12g\n",
-	      bPres ? "Pressure" : "RMSF",
-	      xxx,ener[F_EPOT]-epot,cost(xxx,ener[F_EPOT]));
-    if (print_ga(fp,ga,xxx,ener[F_EPOT],range,tol)) {
+      fprintf(fp,"Pressure: %12g, RMSF: %12g, Energy-Epot: %12g, cost: %12g\n",
+	      ener[F_PRES],sqrt(msf1),ener[F_EPOT]/ff.nmol-ff.epot,
+	      cost(pres,msf1,ener[F_EPOT]/ff.nmol));
+    if (print_ga(fp,ga,msf1,pres,scale,(ener[F_EPOT]/ff.nmol),range,ff.tol)) {
       if (gmx_parallel)
 	gmx_finalize();
       fprintf(stderr,"\n");
@@ -443,6 +464,6 @@ void print_forcefield(FILE *fp,real ener[],int natoms,rvec f[],rvec fshake[],
     fflush(fp);
   }
   else
-    print_grid(fp,ener,natoms,f,fshake,x,mols,mass);
+    print_grid(fp,ener,natoms,f,fshake,x,mols,mass,pres);
 }
  

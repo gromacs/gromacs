@@ -78,7 +78,8 @@ extern int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 			tensor pme_vir_part,bool bShell,
 			int nshell,t_shell shells[],t_forcerec *fr,
 			char *traj,real t,real lambda,rvec mu_tot,
-			int natoms,matrix box,bool *bConverged);
+			int natoms,matrix box,bool *bConverged,
+			bool bDummies,t_comm_dummies *dummycomm);
 
 /* GENERAL COUPLING THEORY (GCT) STUFF */
 enum { eoPres, eoEpot, eoVir, eoDist, eoMu, eoForce, eoFx, eoFy, eoFz,
@@ -178,16 +179,23 @@ extern real calc_mu_aver(t_commrec *cr,t_nsborder *nsb,rvec x[],real q[],rvec mu
 
 /********************************************************************/
 /* Force field scanning stuff */
-extern void update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr);
+typedef struct {
+  real tol,fmax,npow,epot,fac_epot,fac_pres,fac_msf,pres;
+  int  molsize,nmol;
+  bool bComb,bVerbose,bLogEps;
+} t_ffscan;
+
+
+extern void update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr,
+			      int natoms,rvec x[],matrix box);
 /* Modify the parameters */
 
 extern void print_forcefield(FILE *fp,real ener[],int natoms,rvec f[],
-			     rvec fshake[],
-			     rvec x[],t_block *mols,real mass[]);
+			     rvec fshake[],rvec x[],t_block *mols,real mass[],
+			     tensor pres);
 /* Print results */
 
-extern void set_ffvars(real ff_tol,real ff_epot,real ff_npow,bool ff_bComb,
-		       real ff_fmax,bool ff_bLogEps,real ratio,bool bPressure);
+extern void set_ffvars(t_ffscan *ff);
 /* Set variables for force scanning */
 
 #endif	/* _xmdrun_h */

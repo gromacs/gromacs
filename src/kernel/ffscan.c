@@ -75,43 +75,56 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options !                         */
-  static real tol       = 0.1;
-  static real fmax      = 100;
-  static real epot      = 0.0;
-  static real npow      = 12.0;
-  static real ratio     = 0.01;
-  static bool bComb     = TRUE;
-  static bool bVerbose  = TRUE;
-  static bool bLogEps   = FALSE;
-  static bool bPressure = FALSE;
-  static t_pargs pa[] = {
-    { "-tol",   FALSE, etREAL, {&tol},   "Energy tolerance (kJ/mol) (zero means everything is printed)" },
-    { "-fmax",  FALSE, etREAL, {&fmax},  "Force tolerance (zero means everything is printed)" },
-    { "-epot",  FALSE, etREAL, {&epot},  "Target energy (kJ/mol)" },
-    { "-comb",  FALSE, etBOOL, {&bComb}, "Use combination rules" },
-    { "-npow",  FALSE, etREAL, {&npow},  "Power for LJ in case of table use" },
-    { "-ratio", FALSE, etREAL, {&ratio}, "Ratio for weighing RMS Force and Energy Deviation. Cost is ratio * RMS Force + abs(Energy Deviation). This probably should depend on your system." },
-    { "-logeps",FALSE, etBOOL, {&bLogEps},  "Use a logarithmic scale for epsilon" },
-    { "-v",     FALSE, etBOOL, {&bVerbose}, "Be loud and noisy" },
-    { "-pres",  FALSE, etBOOL, {&bPressure}, "Use pressure and energy to fit paramters rather than RMS force and energy" }
+  static t_ffscan ff = {
+    /* tol      */   0.1,
+    /* fmax     */ 100.0,
+    /* npow     */  12.0,
+    /* epot     */   0.0,
+    /* fac_epot */   1.0,
+    /* fac_pres */   0.1,
+    /* fac_msf  */   0.1,
+    /* pres     */   1.0,
+    /* molsize  */   1,
+    /* nmol     */   1,
+    /* bComb    */   TRUE,
+    /* bVerbose */   FALSE,
+    /* bLogEps  */   FALSE
   };
+  static t_pargs pa[] = {
+    { "-tol",   FALSE, etREAL, {&ff.tol},   "Energy tolerance (kJ/mol) (zero means everything is printed)" },
+    { "-fmax",  FALSE, etREAL, {&ff.fmax},  "Force tolerance (zero means everything is printed)" },
+    { "-comb",  FALSE, etBOOL, {&ff.bComb},    "Use combination rules" },
+    { "-npow",  FALSE, etREAL, {&ff.npow},     "Power for LJ in case of table use" },
+    { "-logeps",FALSE, etBOOL, {&ff.bLogEps},  "Use a logarithmic scale for epsilon" },
+    { "-v",     FALSE, etBOOL, {&ff.bVerbose}, "Be loud and noisy" },
+    { "-epot",  FALSE, etREAL, {&ff.epot},     "Target energy (kJ/mol)" },
+    { "-fepot", FALSE, etREAL, {&ff.fac_epot}, "Factor for scaling energy violations (0 turns energy contribution off)" },
+    { "-pres",  FALSE, etREAL, {&ff.pres},     "Value for reference pressure" },
+    { "-fpres", FALSE, etREAL, {&ff.fac_pres}, "Factor for scaling pressure violations (0 turns pressure contribution off)" },
+    { "-fmsf",  FALSE, etREAL, {&ff.fac_msf},  "Factor for scaling mean square force violations (0 turns MSF contribution off)" },
+    { "-molsize",FALSE,etINT,  {&ff.molsize},  "Number of atoms per molecule" },
+    { "-nmol",  FALSE, etINT,  {&ff.nmol},     "Number of molecules (Epot is divided by this value!)" }
+  };
+#define NPA asize(pa)
   unsigned  long Flags = 0;
   t_edsamyn edyn;
   
   cr = init_par(&argc,&argv);
   
-  bVerbose = bVerbose && MASTER(cr);
+  ff.bVerbose = ff.bVerbose && MASTER(cr);
   edyn.bEdsam=FALSE;
   
   if (MASTER(cr))
     CopyRight(stderr,argv[0]);
 
   parse_common_args(&argc,argv,PCA_BE_NICE,NFILE,fnm,
-		    asize(pa),pa,asize(desc),desc,0,NULL);
+		    NPA,pa,asize(desc),desc,0,NULL);
 
-  if (npow <= 6.0)
+  if (ff.npow <= 6.0)
     fatal_error(0,"Can not have repulsion with smaller exponent than 6");
-
+  if (ff.nmol < 1)
+    fatal_error(0,"Can not fit %d molecules",ff.nmol);
+    
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
 
   if (MASTER(cr)) {
@@ -120,11 +133,11 @@ int main(int argc,char *argv[])
     please_cite(stdlog,"Berendsen95a");
   }
   
-  set_ffvars(tol,epot,npow,bComb,fmax,bLogEps,ratio,bPressure);
+  set_ffvars(&ff);
   
   Flags = (Flags | MD_FFSCAN);
 
-  mdrunner(cr,NULL,NFILE,fnm,bVerbose,TRUE,0,1,&edyn,Flags);
+  mdrunner(cr,NULL,NFILE,fnm,ff.bVerbose,FALSE,0,1,&edyn,Flags);
 
   if (gmx_parallel)
     gmx_finalize();

@@ -1059,7 +1059,7 @@ void do_index(char *ndx,
 	for(k=0,i=0;i<nr;i++) {
 	  ir->opts.anneal_npoints[i]=strtol(ptr1[i],NULL,10);
 	  if(ir->opts.anneal_npoints[i]==1)
-	    fatal_error(0,"It doesn't make sense to use only one point for annealing!\n");
+	    fatal_error(0,"Please specify at least a start and an end point for annealing\n");
 	  snew(ir->opts.anneal_time[i],ir->opts.anneal_npoints[i]);
 	  snew(ir->opts.anneal_temp[i],ir->opts.anneal_npoints[i]);
 	  k += ir->opts.anneal_npoints[i];

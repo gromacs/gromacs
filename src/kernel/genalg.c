@@ -65,6 +65,7 @@ static char *SRCID_genalg_c = "$Id$";
 #include "genalg.h"
 #include "fatal.h"
 #include "random.h"
+#include "txtdump.h"
 #include "vec.h"
 #include "main.h"
 
@@ -77,8 +78,13 @@ static char  *strat[] = {
 };
 
 /*------------------------Macros----------------------------------------*/
-#define assignd(D,a,b) memcpy((a),(b),sizeof(a[0])*D)   
-/* quick copy by Claudio, works only for small arrays, but is faster */
+static void assignd(int D,real a[],real b[])
+{
+  int i;
+  
+  for(i=0; (i<D); i++)
+    a[i] = b[i];
+}
 
 static real **make2d(int n,int m)
 {
@@ -121,11 +127,11 @@ t_genalg *init_ga(char *infile,int D,t_range range[])
   snew(ga,1);
   /*-----Read input data------------------------------------------------*/
   fpin_ptr   = ffopen(infile,"r");
-  fscanf(fpin_ptr,"%d",&ga->NP);             /*---choice of strategy-----------------*/
-  fscanf(fpin_ptr,"%d",&ga->strategy);       /*---choice of strategy-----------------*/
-  fscanf(fpin_ptr,"%lf",&ff);            /*---weight factor----------------------*/
-  fscanf(fpin_ptr,"%lf",&cr);            /*---crossing over factor---------------*/
-  fscanf(fpin_ptr,"%d",&ga->seed);           /*---random seed------------------------*/
+  fscanf(fpin_ptr,"%d",&ga->NP);             /*---choice of strategy---*/
+  fscanf(fpin_ptr,"%d",&ga->strategy);       /*---choice of strategy---*/
+  fscanf(fpin_ptr,"%lf",&ff);            /*---weight factor------------*/
+  fscanf(fpin_ptr,"%lf",&cr);            /*---crossing over factor-----*/
+  fscanf(fpin_ptr,"%d",&ga->seed);           /*---random seed----------*/
   fclose(fpin_ptr);
   
   ga->FF   = ff;
@@ -141,7 +147,9 @@ t_genalg *init_ga(char *infile,int D,t_range range[])
   snew(ga->best,ga->D);
   snew(ga->bestit,ga->D);
   snew(ga->cost,ga->NP);
-  snew(ga->rmsf,ga->NP);
+  snew(ga->msf,ga->NP);
+  snew(ga->pres,ga->NP);
+  snew(ga->scale,ga->NP);
   snew(ga->energy,ga->NP);
     
   /*-----Checking input variables for proper range--------------*/
@@ -162,6 +170,7 @@ t_genalg *init_ga(char *infile,int D,t_range range[])
   fprintf(stdlog,"-----------------------------------------------\n");  
   fprintf(stdlog,"Genetic algorithm parameters\n");
   fprintf(stdlog,"-----------------------------------------------\n");  
+  fprintf(stdlog,"Number of variables:   %d\n",ga->D);
   fprintf(stdlog,"Population size:       %d\n",ga->NP);   
   fprintf(stdlog,"Strategy:              %s\n",strat[ga->strategy]);
   fprintf(stdlog,"Weight factor:         %g\n",ga->FF);
@@ -380,8 +389,8 @@ void update_ga(FILE *fpout_ptr,t_range range[],t_genalg *ga)
   }     
 }
 
-bool print_ga(FILE *fp,t_genalg *ga,real rmsf,real energy,t_range range[],
-	      real tol)
+bool print_ga(FILE *fp,t_genalg *ga,real msf,tensor pres,rvec scale,
+	      real energy,t_range range[],real tol)
 {
   static int nfeval=0;          /* number of function evaluations     */
   static bool bImproved;
@@ -391,17 +400,23 @@ bool print_ga(FILE *fp,t_genalg *ga,real rmsf,real energy,t_range range[],
   int  i,j;
   real **pswap;
   
-  /* When we get here we have done an initial evaluation for all
-   * animals in the population
-   */
-  trial_cost = cost(rmsf,energy);
+  trial_cost = cost(pres,msf,energy);
   if (nfeval < ga->NP) {
     ga->cost[nfeval]   = trial_cost;
-    ga->rmsf[nfeval]   = rmsf;
+    ga->msf[nfeval]    = msf;
     ga->energy[nfeval] = energy;
+    copy_mat(pres,ga->pres[nfeval]);
+    copy_rvec(scale,ga->scale[nfeval]);
+    if (debug) {
+      pr_rvec(debug,0,"scale",scale,DIM,TRUE);
+      pr_rvec(debug,0,"pold ",ga->pold[nfeval]+4,DIM,TRUE);
+    }
     nfeval++;
     return FALSE;
   }
+  /* When we get here we have done an initial evaluation for all
+   * animals in the population
+   */
   if (ga->ipop == 0)
     bImproved = FALSE;
     
@@ -413,16 +428,13 @@ bool print_ga(FILE *fp,t_genalg *ga,real rmsf,real energy,t_range range[],
       if (ga->cost[j] < ga->cost[ga->imin]) 
 	ga->imin = j;
     }
-    assignd(ga->D,ga->best,ga->pold[ga->imin]);   /* save best member ever          */
-    assignd(ga->D,ga->bestit,ga->pold[ga->imin]); /* save best member of generation */
+    assignd(ga->D,ga->best,ga->pold[ga->imin]);   
+    /* save best member ever          */
+    assignd(ga->D,ga->bestit,ga->pold[ga->imin]); 
+    /* save best member of generation */
   }
-
-  if (trial_cost <= ga->cost[ga->ipop]) {
-    /* improved objective function value ? */
-    ga->cost[ga->ipop]   = trial_cost;         
-    ga->rmsf[ga->ipop]   = rmsf;         
-    ga->energy[ga->ipop] = energy;         
-    assignd(ga->D,ga->pnew[ga->ipop],ga->tmp);
+  
+  if (trial_cost < ga->cost[ga->ipop]) {
     if (trial_cost < ga->cost[ga->imin]) {
       /* Was this a new minimum? */
       /* if so, reset cmin to new low...*/
@@ -430,50 +442,80 @@ bool print_ga(FILE *fp,t_genalg *ga,real rmsf,real energy,t_range range[],
       assignd(ga->D,ga->best,ga->tmp);
       bImproved = TRUE;
     }                           
+    /* improved objective function value ? */
+    ga->cost[ga->ipop]   = trial_cost;         
+    
+    ga->msf[ga->ipop]    = msf;
+    ga->energy[ga->ipop] = energy;         
+    copy_mat(pres,ga->pres[ga->ipop]);
+    copy_rvec(scale,ga->scale[ga->ipop]);
+    
+    assignd(ga->D,ga->pnew[ga->ipop],ga->tmp);
+    
   }                            
   else {
-    assignd(ga->D,ga->pnew[ga->ipop],ga->pold[ga->ipop]); 
     /* replace target with old value */
+    assignd(ga->D,ga->pnew[ga->ipop],ga->pold[ga->ipop]); 
   }
+  /* #define SCALE_DEBUG*/
+#ifdef SCALE_DEBUG
+  if (ga->D > 5) {
+    rvec dscale;
+    rvec_sub(ga->scale[ga->imin],&(ga->best[ga->D-3]),dscale);
+    if (norm(dscale) > 0) {
+      pr_rvec(fp,0,"scale",scale,DIM,TRUE);
+      pr_rvec(fp,0,"best ",&(ga->best[ga->D-3]),DIM,TRUE);
+      fprintf(fp,"imin = %d, ipop = %d, nfeval = %d\n",ga->imin,
+	      ga->ipop,nfeval);
+      fatal_error(0,"Scale inconsistency");
+    }
+  }
+#endif	
+  
   /* Increase population member count */
   ga->ipop++;
   
+  /* End mutation loop through population? */
   if (ga->ipop == ga->NP) {
-    /* End mutation loop through pop. */
-    assignd(ga->D,ga->bestit,ga->best);  
     /* Save ga->best population member of current iteration */
+    assignd(ga->D,ga->bestit,ga->best);  
     
     /* swap population arrays. New generation becomes old one */
-    pswap = ga->pold;
+    pswap     = ga->pold;
     ga->pold  = ga->pnew;
     ga->pnew  = pswap;
     
     /*----Compute the energy variance (just for monitoring purposes)-----------*/
     /* compute the mean value first */
-    cmean = 0.;          
+    cmean = 0.0;          
     for (j=0; (j<ga->NP); j++) 
       cmean += ga->cost[j];
     cmean = cmean/ga->NP;
     
     /* now the variance              */
-    cvar = 0.;   
+    cvar = 0.0;
     for (j=0; (j<ga->NP); j++) 
       cvar += sqr(ga->cost[j] - cmean);
     cvar = cvar/(ga->NP-1);
     
     /*----Output part----------------------------------------------------------*/
     if (1 || bImproved || (nfeval == ga->NP)) {
-      fprintf(fp,"\nGen: %5d Cost:%8e  Ener: %8e RMSF: %8e  <Cost>: %8e\n",
-	      ga->gen,ga->cost[ga->imin],
-	      ga->energy[ga->imin],ga->rmsf[ga->imin],cmean);
+      fprintf(fp,"\nGen: %5d\n  Cost: %12.3e  <Cost>: %12.3e\n"
+	      "  Ener: %8.4f RMSF: %8.3f Pres: %8.1f %8.1f  %8.1f (%8.1f)\n"
+	      "  Box-Scale: %15.10f  %15.10f  %15.10f\n",
+	      ga->gen,ga->cost[ga->imin],cmean,ga->energy[ga->imin],
+	      sqrt(ga->msf[ga->imin]),ga->pres[ga->imin][XX][XX],
+	      ga->pres[ga->imin][YY][YY],ga->pres[ga->imin][ZZ][ZZ],
+	      trace(ga->pres[ga->imin])/3.0,
+	      ga->scale[ga->imin][XX],ga->scale[ga->imin][YY],
+	      ga->scale[ga->imin][ZZ]);
       
       for (j=0; (j<ga->D); j++)
-	fprintf(fp,"\tbest[%d]=%-15.10g\n",j,ga->best[j]);
-
+	fprintf(fp,"\tbest[%d]=%-15.10f\n",j,ga->best[j]);
       if (ga->cost[ga->imin] < tol) {
 	for (i=0; (i<ga->NP); i++) {
 	  fprintf(fp,"Animal: %3d Cost:%8.3f  Ener: %8.3f RMSF: %8.3f%s\n",
-		  i,ga->cost[i],ga->energy[i],ga->rmsf[i],
+		  i,ga->cost[i],ga->energy[i],sqrt(ga->msf[i]),
 		  (i == ga->imin) ? " ***" : "");
 	  for (j=0; (j<ga->D); j++)
 	    fprintf(fp,"\tParam[%d][%d]=%15.10g\n",i,j,ga->pold[i][j]);
