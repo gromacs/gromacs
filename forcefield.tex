@@ -679,16 +679,19 @@ normally used to impose experimental restraints, as from \normindex{NOE}
 experiments in nuclear magnetic resonance (NMR), on the motion of the
 system. Thus MD can be used for \normindex{structure refinement}  using 
 \normindex{NMR} data. The
-potential form is quadratic between two specified distances and linear
-beyond the largest distance (see figure~\ref{fig:dist}).
+potential form is quadratic below a specfied lower bound and between
+two specified upper bounds and linear beyond the largest bound
+(see figure~\ref{fig:dist}).
 \beq
 V_{dr}(r_{ij}) ~=~ \left\{
 \begin{array}{lcllllll}
-0               &\mbox{for}&     &     & r_{ij} & < & r_1       \\[1.5ex]
-\half k_{dr}(r_{ij}-r_1)^2      
-                &\mbox{for}& r_1 & \le & r_{ij} & < & r_2       \\[1.5ex]
-\half k_{dr}(r_2-r_1)(2r_{ij}-r_2-r_1)  
-                &\mbox{for}& r_2 & \le & r_{ij} &   &
+\half k_{dr}(r_{ij}-r_0)^2	
+		&\mbox{for}&     &     & r_{ij} & < & r_0	\\[1.5ex]
+0		&\mbox{for}& r_0 & \le & r_{ij} & < & r_1	\\[1.5ex]
+\half k_{dr}(r_{ij}-r_1)^2	
+		&\mbox{for}& r_1 & \le & r_{ij} & < & r_2	\\[1.5ex]
+\half k_{dr}(r_2-r_1)(2r_{ij}-r_2-r_1)	
+		&\mbox{for}& r_2 & \le & r_{ij} &   &
 \end{array}\right.
 \label{eqn:disre}
 \eeq
@@ -703,13 +706,18 @@ The forces are
 \beq
 \ve{F}_i~=~ \left\{
 \begin{array}{lcllllll}
-0               &\mbox{for}&     &     & r_{ij} & < & r_1       \\[1.5ex]
--k_{dr}(r_{ij}-r_1)\frac{\rvij}{r_{ij}} 
-                &\mbox{for}& r_1 & \le & r_{ij} & < & r_2       \\[1.5ex]
--k_{dr}(r_2-r_1)\frac{\rvij}{r_{ij}}    
-                &\mbox{for}& r_2 & \le & r_{ij} &   &
+-k_{dr}(r_{ij}-r_0)\frac{\rvij}{r_{ij}}	
+		&\mbox{for}&     &     & r_{ij} & < & r_0	\\[1.5ex]
+0		&\mbox{for}& r_0 & \le & r_{ij} & < & r_1	\\[1.5ex]
+-k_{dr}(r_{ij}-r_1)\frac{\rvij}{r_{ij}}	
+		&\mbox{for}& r_1 & \le & r_{ij} & < & r_2	\\[1.5ex]
+-k_{dr}(r_2-r_1)\frac{\rvij}{r_{ij}}	
+		&\mbox{for}& r_2 & \le & r_{ij} &   &
 \end{array} \right.
 \eeq
+
+\subsubsection{Time averaging}
+
 The above formulae have been improved by introducing the
 {\em time averaged} distance restraint~\cite{Torda89} where the distance
 $r_{ij}$ is replaced by a time average:
@@ -729,11 +737,23 @@ The computation of the time
 averaged distance in the {\tt mdrun} program is done in the following fashion:
 \beq
 \begin{array}{rcl}
-\bar{r}_{ij}(0)^{-3}    &=& r_{ij}(0)^{-3}      \\
-\bar{r}_{ij}(t)^{-3}    &=& \bar{r}_{ij}(t-\Delta t)^{-3}~\exp{\left(-\frac{\Delta t}{\tau}\right)} + r_{ij}(t)^{-3}\left[1-\exp{\left(-\frac{\Delta t}{\tau}\right)}\right]
+\overline{r^{-3}}_{ij}(0) 	&=& r_{ij}(0)^{-3}	\\
+\overline{r^{-3}}_{ij}(t)	&=& \overline{r^{-3}}_{ij}(t-\Delta t)~\exp{\left(-\frac{\Delta t}{\tau}\right)} + r_{ij}(t)^{-3}\left[1-\exp{\left(-\frac{\Delta t}{\tau}\right)}\right]
 \label{eqn:ravdisre}
 \end{array}
 \eeq
+Note that the potential is not conservative when using time averaging.
+
+When a pair is within the bounds it can still feel a force,
+because the time averaged distance can still be beyond a bound.
+To prevent the protons from being pulled to close together a mixed
+approach can be used. In this approach the penalty is zero when the
+instantaneous distance is within the bounds, otherwise the violation is
+the sqaure root of the product of the instantaneous violation and the 
+time averaged violation.
+
+\subsubsection{Averaging over multiple pairs} 
+
 Sometimes it is unclear from experimental data which atom pair
 gives rise to a single NOE, in other occasions it can be assumed that
 more than one pair contributes due to the symmetry of the system, e.g. a
@@ -747,14 +767,29 @@ Thus, when combining atom pairs,
 a fixed list of $N$ restraints may be taken together, 
 where the net ``distance'' is given by:
 \beq
-r_{N}(t) = \left [\sum_{n=1}^{N} \bar{r}_{n}(t)^{-6} \right]^{-1/6}
+r_N(t) = \left [\sum_{n=1}^{N} \bar{r}_{n}(t)^{-6} \right]^{-1/6}
 \label{eqn:rsix}
 \eeq
-where we use eqn.\ref{eqn:rav} for the $\bar{r}_{n}$.
-
+where we use $r_{ij}$ or eqn. \ref{eqn:rav} for the $\bar{r}_{n}$.
+The $r_N$ of the instantaneous and time-averaged distances
+can be combined to do a mixed restraining as indicated above.
 As more pairs of protons contribute to the same NOE signal, the intensity
 will increase, and the summed ``distance'' will be shorter than any of
 its components due to the reciprocal summation. 
+
+There are two options for distributing the forces over the atom pairs.
+In the conservative option the force is defined as the derivate of the
+restraint potential with respect to the coordinates. This results in
+a conservative potential when no time averaging is used.
+The force distribution over the pairs is proportional with $r^{-6}$.
+This means that a close pair feels a much larger force than a distant pair,
+which might lead to a 'too rigid' molecule.
+The other option is an equal force distribution. In this case each pair
+feels $1/N$ of the derivative of the restraint potential with respect to 
+$r_N$. The advantage of this method is that more conformations might be
+sampled, but the non-conservative nature of the forces can lead to
+local heating of the protons.
+
 It is also possible to use {\em ensemble averaging} using multiple
 (protein)  molecules. In this case the bounds should be lowered as in:
 \beq
