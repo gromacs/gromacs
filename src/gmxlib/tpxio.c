@@ -570,7 +570,8 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)
   
   /* Check versions! */
   do_int(file_version);
-  if (file_version <= tpx_incompatible_version) 
+  if ((file_version <= tpx_incompatible_version) ||
+      (file_version > tpx_version))
     fatal_error(0,"reading tpx file (%s) version %d with version %d program",
 		fio_getname(fp),file_version,tpx_version);
     
