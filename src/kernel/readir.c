@@ -655,7 +655,7 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
 }
 
 static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
-		      int nstcomm)
+		      int nstcomm,int ngvcm)
 {
   int     ai,aj,i,n,d,g,gi,gj,imin,jmin;
   t_iatom *ia;
@@ -730,9 +730,9 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
     for(i=0; (i<atoms->grps[egcTC].nr); i++)
       nrdf_tot += opts->nrdf[i];
     if (nstcomm > 0)
-      fac = (nrdf_tot-3)/nrdf_tot;
+      fac = (nrdf_tot-3*ngvcm)/nrdf_tot;
     else
-      fac = (nrdf_tot-6)/nrdf_tot;
+      fac = (nrdf_tot-6*ngvcm)/nrdf_tot;
     for(i=0; (i<atoms->grps[egcTC].nr); i++)
       opts->nrdf[i] *= fac;
   }
@@ -902,18 +902,18 @@ void do_index(char *ndx,
   do_numbering(atoms,nenergy,ptr1,grps,gnames,egcENER,"Energy",
 	       restnm,forward,FALSE,bVerbose);
   ir->opts.ngener=atoms->grps[egcENER].nr;
+  nuser=str_nelem(vcm,MAXPTR,ptr1);
+  do_numbering(atoms,nuser,ptr1,grps,gnames,egcVCM,"VCM",
+	       restnm,forward,FALSE,bVerbose);
 
   /* Now we have filled the freeze struct, so we can calculate NRDF */ 
-  calc_nrdf(atoms,idef,&(ir->opts),ir->nstcomm);
+  calc_nrdf(atoms,idef,&(ir->opts),ir->nstcomm,nuser);
   
   nuser=str_nelem(user1,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser1,"User1",
 	       restnm,forward,FALSE,bVerbose);
   nuser=str_nelem(user2,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser2,"User2",
-	       restnm,forward,FALSE,bVerbose);
-  nuser=str_nelem(vcm,MAXPTR,ptr1);
-  do_numbering(atoms,nuser,ptr1,grps,gnames,egcVCM,"VCM",
 	       restnm,forward,FALSE,bVerbose);
   nuser=str_nelem(xtc_grps,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcXTC,"xtc_grps",
