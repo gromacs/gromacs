@@ -504,6 +504,10 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)
     do_string(buf);
     do_int(precision);
     bDouble = (precision == sizeof(double));
+    if ((precision != sizeof(float)) && !bDouble)
+      fatal_error(0,"Unknown precision in file %s: real is %d bytes "
+		  "instead of %d or %d",
+		  fio_getname(fp),precision,sizeof(float),sizeof(double));
     fio_setprecision(fp,bDouble);
     fprintf(stderr,"Reading file %s, %s (%s precision)\n",
 	    fio_getname(fp),buf,bDouble ? "double" : "single");
