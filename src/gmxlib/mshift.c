@@ -520,7 +520,7 @@ void shift_x(t_graph *g,matrix box,rvec x[],rvec x_s[])
 {
   ivec *is;
   int      g0,gn;
-  int      i,j,isd,tx,ty,tz;
+  int      i,j,tx,ty,tz;
 
   g0=g->start;
   gn=g->nnodes;
@@ -554,7 +554,7 @@ void shift_self(t_graph *g,matrix box,rvec x[])
 {
   ivec *is;
   int      g0,gn;
-  int      i,j,isd,tx,ty,tz;
+  int      i,j,tx,ty,tz;
 
   g0=g->start;
   gn=g->nnodes;
@@ -591,7 +591,7 @@ void unshift_x(t_graph *g,matrix box,rvec x[],rvec x_s[])
 {
   ivec *is;
   int      g0,gn;
-  int      i,j,isd,tx,ty,tz;
+  int      i,j,tx,ty,tz;
 
   g0=g->start;
   gn=g->nnodes;
@@ -623,7 +623,7 @@ void unshift_self(t_graph *g,matrix box,rvec x[])
 {
   ivec *is;
   int g0,gn;
-  int i,j,isd,tx,ty,tz;
+  int i,j,tx,ty,tz;
 
   g0=g->start;
   gn=g->nnodes;

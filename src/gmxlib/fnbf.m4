@@ -74,7 +74,11 @@ void do_fnbf(FILE *log,t_forcerec *fr,
 	     t_nrnb *nrnb,real lambda,real *dvdlambda,
 	     bool bLR,int eNL)
 {
+#ifdef USEF77
+#ifdef FINVSQRT
   static   bool bFirst=TRUE;
+#endif
+#endif
   t_nblist *nlist;
   real     *fshift;
   int      i,i0,i1,nrnb_ind;
@@ -291,7 +295,7 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
   t_iatom   *ia0,*iatom;
   int       gid,shift14;
   int       j_index[] = { 0, 1 };
-  int       i1=1,i3=3,si,sj;
+  int       i1=1,i3=3,si;
   ivec      dt;
 
 #ifdef USEVECTOR

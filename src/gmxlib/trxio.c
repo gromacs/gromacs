@@ -529,8 +529,6 @@ static bool pdb_next_x(FILE *status,t_trxframe *fr)
 
 static int pdb_first_x(FILE *status, t_trxframe *fr)
 {
-  int   natoms;
-  
   INITCOUNT;
   
   fprintf(stderr,"Reading frames from pdb file");
@@ -720,9 +718,7 @@ int read_first_x(int *status,char *fn,
 
 bool read_next_x(int status,real *t, int natoms, rvec x[], matrix box)
 {
-  int step,ct;
-  real prec,pt;
-  bool bOK,bRet;
+  bool bRet;
   
   xframe[status].x = x;
   bRet = read_next_frame(status,&xframe[status]);
@@ -771,9 +767,7 @@ int read_first_v(int *status,char *fn,real *t,rvec **v,matrix box)
 bool read_next_v(int status,real *t,int natoms,rvec v[],matrix box)
 {
   t_trxframe fr;
-  int step,ct;
-  real prec,pt;
-  bool bOK,bRet;
+  bool bRet;
 
   clear_trxframe(&fr,TRUE);
   fr.flags = TRX_NEED_V;

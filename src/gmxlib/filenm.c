@@ -349,7 +349,7 @@ int fn2ftp(char *fn)
 
 static void set_extension(char *buf,int ftp)
 {
-  int i,len,extlen;
+  int len,extlen;
   t_deffile *df;
 
   /* check if extension is already at end of filename */

@@ -89,7 +89,7 @@ static int blockcomp(const void *a,const void *b)
 static void lo_sortwater(int astart,int nwater,int nwatom,rvec x[],rvec v[],
 			 bool bBlock)
 {
-  int  i,j,i0,size,rvi;
+  int  i,j,i0,rvi;
   int  *rvindex;
   rvec *tmp;
   
@@ -184,8 +184,6 @@ static int iv_comp(const void *a,const void *b)
 
 static int add_bb(ivec BB[],int n,ivec b)
 {
-  int i,m;
-  
 #define SWPX(vv,xx,yy) { int tmp; tmp=vv[xx]; vv[xx] = vv[yy]; vv[yy] = tmp; }
   copy_ivec(b,BB[n++]); /* x y z */
   SWPX(b,XX,YY);
@@ -293,14 +291,14 @@ void mkcompact(int astart,int nwater,int nwatom,rvec x[],rvec v[],
    * Divide the computational box in near cubic boxes and spread them
    * evenly over processors.
    */
-  ivec nbox;
+/*   ivec nbox; */
   int  m;
   
   if (ncpu <= 1)
     return;
   
   buildbox(ncpu,NBOX,box);
-  /*copy_ivec(nbox,NBOX);*/
+  /* copy_ivec(nbox,NBOX); */
   for(m=0; (m<DIM); m++)
     box_1[m] = 1.0/box[m][m];
     

@@ -284,7 +284,7 @@ static void write_nroffman(FILE *out,
 			   int nbug,char **bugs)
 
 {
-  int i,slen; /* counter */
+  int i;
   
   fprintf(out,".TH %s 1 \"%s\"\n",program,mydate());
   fprintf(out,".SH NAME\n");

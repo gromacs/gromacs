@@ -116,8 +116,8 @@ real morsebonds(int nbonds,
   const real two=2.0;
   real  dr,dr2,temp,omtemp,cbomtemp,fbond,vbond,fij,b0,be,cb,vtot;
   rvec  dx;
-  int   i,m,ki,kj,type,ai,aj;
-  ivec it,jt,dt;
+  int   i,m,ki,type,ai,aj;
+  ivec  dt;
 
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
@@ -168,8 +168,8 @@ real cubicbonds(int nbonds,
   real  kb,b0,kcub;
   real  dr,dr2,dist,kdist,kdist2,fbond,vbond,fij,vtot;
   rvec  dx;
-  int   i,m,ki,kj,type,ai,aj;
-  ivec it,jt,dt;
+  int   i,m,ki,type,ai,aj;
+  ivec  dt;
 
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
@@ -243,10 +243,10 @@ real bonds(int nbonds,
 	   matrix box,real lambda,real *dvdlambda,
 	   t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
 {
-  int  i,m,ki,kj,ai,aj,type;
+  int  i,m,ki,ai,aj,type;
   real dr,dr2,fbond,vbond,fij,vtot;
   rvec dx;
-  ivec it,jt,dt;
+  ivec dt;
 
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
@@ -434,7 +434,7 @@ real angles(int nbonds,
   int  i,ai,aj,ak,t1,t2,type;
   rvec r_ij,r_kj;
   real cos_theta,theta,dVdt,va,vtot;
-  ivec it,jt,kt,dt_ij,dt_kj;
+  ivec jt,dt_ij,dt_kj;
   
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
@@ -533,7 +533,7 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
   real ipr,nrkj,nrkj2;
   real a,p,q;
   int  t1,t2,t3;
-  ivec it,jt,kt,lt,dt_ij,dt_kj,dt_lj;  
+  ivec jt,dt_ij,dt_kj,dt_lj;  
   
   ipr   = iprod(m,m);		/*  5 	*/
   nrkj2 = iprod(r_kj,r_kj);	/*  5	*/
@@ -742,7 +742,7 @@ static real low_angres(int nbonds,
 		       bool bZAxis)
 {
   int  i,m,type,ai,aj,ak,al,t;
-  real phi,cos_phi,sign,vid,vtot,dVdphi;
+  real phi,cos_phi,vid,vtot,dVdphi;
   rvec r_ij,r_kl,f_i,f_k;
   real st,sth,sin_phi,nrij2,nrkl2,c,cij,ckl;
 
@@ -966,10 +966,10 @@ real g96bonds(int nbonds,
 	      matrix box,real lambda,real *dvdlambda,
 	      t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
 {
-  int  i,m,ki,kj,ai,aj,type;
+  int  i,m,ki,ai,aj,type;
   real dr2,fbond,vbond,fij,vtot;
   rvec dx;
-  ivec it,jt,dt;
+  ivec dt;
   
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
@@ -1027,12 +1027,12 @@ real g96angles(int nbonds,
 	       matrix box,real lambda,real *dvdlambda,
 	       t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
 {
-  int  i,ai,aj,ak,t,type,m,t1,t2;
+  int  i,ai,aj,ak,type,m,t1,t2;
   rvec r_ij,r_kj;
   real cos_theta,dVdt,va,vtot;
   real rij_1,rij_2,rkj_1,rkj_2,rijrkj_1;
   rvec f_i,f_j,f_k;
-  ivec it,jt,kt,dt_ij,dt_kj;
+  ivec jt,dt_ij,dt_kj;
   
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {

@@ -581,7 +581,6 @@ bool gro_next_x_or_v(FILE *status,t_trxframe *fr)
 
 int gro_first_x_or_v(FILE *status,t_trxframe *fr)
 {
-  int natoms;
   char title[STRLEN];
   
   frewind(status);
@@ -923,7 +922,6 @@ void get_stx_coordnum(char *infile,int *natoms)
   FILE *in;
   int ftp;
   t_trxframe fr;
-  matrix dumbox;
 
   ftp=fn2ftp(infile);
   switch (ftp) {

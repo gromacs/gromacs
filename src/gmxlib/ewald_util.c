@@ -91,7 +91,6 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   int     n0,n1,nnn;
 #else
   double  isp=0.564189583547756;
-  real    dr_3;
 #endif
   int     start = START(nsb);
   int     end   = start+HOMENR(nsb);
@@ -185,7 +184,6 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 	  /* This is the code you would want instead if not using
 	   * tables: 
 	   */
-	  dr_3    = rinv*rinv2;
 	  vc      = qq*erf(ewc*dr)*rinv;
 	  Vexcl  += vc;
 	  fscal   = rinv2*(vc-2.0*qq*ewc*isp*exp(-ewc*ewc*dr2));

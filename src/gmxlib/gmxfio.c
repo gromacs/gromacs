@@ -317,7 +317,6 @@ static bool do_ascread(void *item,int nitem,int eio,
   real   *ptr;
   unsigned char *ucptr;
   char   *cptr;
-  char   strbuf[256];
   
   check_nitem();  
   switch (eio) {
@@ -423,7 +422,7 @@ static bool do_binwrite(void *item,int nitem,int eio,
     fprintf(stderr,"Error writing %s %s to file %s (source %s, line %d)\n",
 	    eioNames[eio],desc,curfio->fn,srcfile,line);
     fprintf(stderr,"written size %u bytes, source size %u bytes\n",
-	    (int)wsize,(int)size);
+	    (uint)wsize,(uint)size);
   }
   return (wsize == nitem);
 }
