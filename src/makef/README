@@ -8,13 +8,12 @@ Variable=	Value			Meaning
 SYSDEFS	=	-DHAVE_ULONG		System dependent defines, which
 					usually must not be changed
 CC	= 	cc			This is the Ansi-C compiler
-CCC	= 	CC			This is the C++ Compiler
 CFLAGS	=	-O2			C Compiler Flags (optimize)
-CCFLAGS	= 	-O2			C++ Compiler Flags (optimize)
 LDFLAGS	= 	-g -L$(LIBDIR)		Linker options
 LD	= 	$(CC) $(LDFLAGS)	The link command
-CCLD	=	$(CCC) $(LDFLAGS)	The link command for c++
-SYSLIBS = 	-lm -lsocket		System dependent default
+F77     =       f77                     Fortran compiler (optional)
+FFLAGS  =       -O3                     Fortran compiler options
+SYSLIBS = 	-lm             	System dependent default
 					libraries
 XLIBS	= 	$(SYSLIBS) -lX11	System libraries for X-Windows
 ARFLAGS	= 	q			The options for the archiver (to make
@@ -24,6 +23,28 @@ RANLIB	= 	echo			Some systems use ranlib to postprocess
 X11INC	= 	-I/usr1/local/include	Include directory for X Windows 
 					header files
 
+SHAREIT	  Optional, here you can enter the compile line to make a static
+	  library shared, Gromacs will then use shared libraries
+
+CC_MKINL  Optional, special compile command for mkinl 
+LD_MKINL  Optional, special link command for mkinl 
+          These options are needed for machines which produce code which only
+	  runs in parallel, such as IBM SP2. mkinl is needed at compile time
+	  to make the innerloops and does not run in parallel.
+#
+#       MDRUN STUFF
+#
+#
+RUNLDOPT     Special link options for mdrun
+LINKSTATIC   Option to link the gromacs libraries static
+LINKDYNAMIC  Option to link the system libraries dynamic
+#
+PARALLEL_MDRUN_ONLY  Useful only when compiling parallel code on machines
+		     which can not execute non-parallel programs linked
+		     with the mpi (or pvm) library, such as IBM SP2.
+		     When set to yes only mdrun is made and placed
+		     in a directory ending in _mpi or _pvm,
+		     the libraries are also in seperate diretories.
 
 #
 #	USER MODIFIABLE SECTION
@@ -33,10 +54,12 @@ X11INC	= 	-I/usr1/local/include	Include directory for X Windows
 #WARNING				
 # 	If you want to use fortran innerloops set this to yes
 USEF77		= yes
-#	If you don't have PVM (parallel virtual machines) set this to no
-#	else set the path and CPU variable accordingly, below
+#
+#       If you want to use MPI to run in parallel set this to yes
+USE_MPI         = no
+#	If you want to use PVM to run in parallel set this to yes
 USE_PVM3	= no
-#	If you want to use compressed data files set this to yes
+#	If you want to use portable binary files set this to yes
 USE_XDR		= yes
 
 # Note that these variables are also used in Makefile.std
