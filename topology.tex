@@ -541,6 +541,157 @@ are fixed (as specified above). Note however that only the termini
 database supports type specification for the atoms, the hydrogen
 database will (naturally) always add hydrogens.
 
+\newcommand{\amine}{-NH$_2$}
+\newcommand{\amines}{-NH-}
+\newcommand{\aminep}{-NH$_3^+$}
+\subsection{Dummy database}
+The dummy database is stored in \verb'ffgmx.ddb'. This information is
+used by \verb'pdb2gmx' to determine which atoms should be turned into
+dummy atoms. An example is given here:
+
+{\small\begin{verbatim}
+[ NL ]
+ [ masses ]
+; name  type      nr      type  dCN       dNH       aCNH
+  M     MNH3      2       1     0.147     0.1       109.5
+ [ dummies ]
+; atom  from              type  a         b         c
+  N     *     M     M     2     0.481     0.4810
+  H     *     M     M     3    -0.00505   1.1857    6.749
+  H     *     M     M     3    -0.00505   1.1857   -6.749
+  H     *     M     M     2     1.781    -0.6004
+
+[ NT ]
+ [ dummies ]
+; atom  from              type  theta     b
+  H     N     *     O     5     120       0.1
+  H     N     *     O     5     240       0.1
+
+[ NE ]
+ [ dummies ]
+; atom  from              type  a         b
+  H     *     *     *     4     0.5324   -0.1
+
+[ OA ]
+ [ angles ]
+; atoms             d        fc
+  H     O     *     0.19849  500000.0
+\end{verbatim}}
+
+Dummy constructions are grouped by atom type, which are specified by
+the block name (e.g.\@ \verb'[ NL ]'). The atom which corresponds to
+this atom type is called the 'main atom'. The last entry in the dummy
+database can have a wildcard (\verb'*') for the atom type, which will
+be processed for all remaining atoms. Three entries are possible per
+atom type, \verb'[ dummies ]', \verb'[ angles ]' and \verb'[ masses ]'.
+\begin{description}
+\item[\mbox{\tt[ dummies ]}:]
+The first column specifies which atoms should be 'dummyfied', based on
+atom names. Atom name comparison is done only for the specified
+characters (i.e.\@ \verb'H' means any atom beginning with an 'H') and
+\verb'*' stands for any atom name. Searching for matching atoms is
+done along bonds, in the order of first-bonded, second-bonded
+etc. Next three colomns specify the constructing atoms for the dummy
+atom. Column 5 specifies the dummy type, 1, 2 and 3 corresponding to
+dummy types 1, 2 and 3 (see \secref{dummy}) resp.\@ and 4 and 5
+corresponding to types 2$'$ and 2$''$ resp. The remaining columns
+specify the parameters for the dummy atom construction, as described
+in \secref{dummy}.
+\item[\mbox{\tt[ angles ]}:]
+Specifies which atoms should be angle constrained by defining a bond
+between the outer atoms of the angle. First three columns specify
+three atoms which define the angle, last two columns specify distance
+and force constant. The force constant is only relevant for energy
+minimization, since for MD all bonds will be constrained.
+\item[\mbox{\tt[ masses ]}:]
+Specifies the addition of dummy masses bonded to the 'main atom' and,
+in a circular fashion, to each other, as in: main-M1-...-M2-main. The
+first 2 columns specify dummy mass name and atom type, next 2 the
+number of dummy masses to add and the type (only implemented is adding
+2 atoms of type 1). Next are parameters which depend on the type of dummy
+masses:
+\begin{itemize}
+\item[1.] dummy masses for {\aminep} group: two dummy masses are generated
+with each a mass equal to half the mass of the {\aminep} group and placed
+such that center of mass and moment of inertia for rotation around the
+C-N bond are conserved. Parameters are: C-N and N-H bond length and
+C-N-H bond angle. Works also for umbrella {\amine} group.
+\end{itemize}
+\end{description}
+Additionally, all bonds, angles and dihedrals that are defined on one
+of the degrees of freedom that are removed by the introduction of
+dummy atoms or angle constraints, are also removed. This boils down to
+removing all bonds to dummy atoms, all angles that involve two or
+three dummy atoms and all dihedrals that involve at least one dummy
+atom and for which all other atoms are used in constructing the dummy
+atom(s). Note that this leaves the force field itself unchanged.
+
+Ideally all dummy parameters should be calculated from the topology
+information of the groups involved, this might one day be implemented.
+
+\begin{figure}
+\centerline{\psfig{figure=plots/dumtypes.eps,width=12cm}}
+\caption[Schematic view of the different types of dummy atom
+constructions used.]{Schematic view of the different types of dummy
+atom constructions used. The atoms used in the construction of the
+dummy atom(s) are depicted as black circles, dummy atoms as grey
+ones. Hydrogens are smaller than heavy atoms. {\sf A}: fixed bond
+angle, note that here the hydrogen is not a dummy atom; {\sf B}:
+linear combination of bond vectors; {\sf C}: in the plane of three
+atoms, with fixed distance; {\sf D}: in the plane of three atoms, with
+fixed angle and distance; {\sf E}: construction for amine groups
+({\amine} or {\aminep}), see text for details.}
+\label{fig:dumtypes}
+\end{figure}
+
+The dummy database in \verb'ffgmx.ddb' is written to convert all
+hydrogen atoms in proteins into dummy atoms, except for hydroxyl and
+sulfhydryl group hydrogens which are angle-constraint and amine group
+(umbrella -NH$_2$ or -NH$^+_3$) hydrogens which are constructed from
+dummy masses, or in more detail~\cite{feenstra98}:
+\begin{itemize}
+\item{\em hydroxyl (-OH) or sulfhydryl (-SH)
+hydrogen:\/} The only internal degree of freedom in a hydroxyl group
+that can be constrained is the bending of the C-O-H
+angle. This angle is fixed by defining an additional bond of
+appropriate length, see \figref{dumtypes}A. This removes the high
+frequency angle bending, but leaves the dihedral rotational
+freedom. The same goes for a sulfhydryl group. Note that in these
+cases the hydrogen is not treated as a dummy atom.
+\item{\em aromatic hydrogens (-CH-):\/} The positions of
+aromatic hydrogens (which are explicit) are constructed from a linear
+combination of two C-C bond vectors, see \figref{dumtypes}B.
+\item{\em single amine or amide ({\amines}) hydrogen:\/} The position
+of a single amine hydrogen cannot be constructed from a linear
+combination of C-N bond vectors, because of the flexibility of
+the C-N-C angle. In stead, the hydrogen atom is positioned at
+a fixed distance from the nitrogen atom on a line going through the
+nitrogen and a point on the line through the C and C{$_\alpha$}
+atoms, see \figref{dumtypes}C. The arginine single amine hydrogen is
+treated in the same way.
+\item{\em planar amine ({\amine}) hydrogens:\/} The method used for
+the single amide hydrogen is not well suited for planar amine groups,
+because no suitable two heavy atoms can be found to define the
+direction of the hydrogen atoms. In stead, the hydrogen is constructed
+at a fixed distance from the nitrogen atom, with a fixed angle to the
+carbon atom, in the plane defined by one of the other heavy atoms, see
+\figref{dumtypes}D.
+\item{\em amine group (umbrella {\amine} or {\aminep}) hydrogens:\/}
+Amine hydrogens with rotational freedom cannot be constructed as dummy
+atoms from the heavy atoms they are connected to, since this would
+result in loss of the rotational freedom of the amine group. To
+preserve the rotational freedom, two ``dummy masses'' are constructed
+with the same moment of inertia (for rotation around the C-N
+bond) and center of mass as the amine group. These dummy masses have
+no interaction with any other atom, except for the fact that they are
+connected to the carbon and to each other, resulting in a rigid
+triangle. From these three particles the positions of the nitrogen and
+hydrogen atoms are constructed as a linear combination of two bond
+vectors and their outer product, resulting in an amine group with
+rotational freedom intact, but without other internal degrees of
+freedom. See \figref{dumtypes}E.
+\end{itemize}
+
 \section{File formats}
 \subsection{Topology file}
 \label{subsec:topfile}
@@ -553,11 +704,13 @@ Description of the file layout:
 \item semicolon (;) and newline surround comments
 \item on a line ending with $\backslash$ the newline character is ignored.
 \item directives are surrounded by \verb'[' and \verb']'
-\item the following directives are recognized for atom level:
+\item \raggedright
+      the following directives are recognized for atom level:
       \verb'[ defaults ]', \verb'[ atomtypes ]', \verb'[ bondtypes ]',
       \verb'[ pairtypes ]', \verb'[ angletypes ]', 
       \verb'[ dihedraltypes ]', \verb'[ nonbond-params ]'
-\item for molecule level: \verb'[ moleculetype ]', \verb'[ atoms ]', 
+\item \raggedright
+      for molecule level: \verb'[ moleculetype ]', \verb'[ atoms ]', 
       \verb'[ bonds ]', \verb'[ exclusions ]', \verb'[ pairs ]', 
       \verb'[ angles ]', \verb'[ dihedrals ]', 
       \verb'[ position_restraints ]', 
@@ -838,14 +991,12 @@ different parameters for one molecule can be used in the same {\tt
 use different charges on the atoms: charges derived by De Loof
 {\etal}~\cite{Loof92} or by Van Buuren and
 Berendsen~\cite{Buuren93a}. In fact you can use all the options of the
-{\tt C-Preprocessor}, cpp, because this is used to scan the file.  The
+C-Preprocessor, {\tt cpp}, because this is used to scan the file.  The
 way to make use of the \verb'#ifdef' option is as follows:
 \begin{itemize}
-\item {\tt grompp} (the {\gromacs} preprocessor) \verb'-DDeLoof', or 
-      \verb'-DVanBuuren'
 \item in {\tt grompp.mdp} (the {\gromacs} preprocessor input
-      parameters)  use the option \\
-      \verb'define   =  -DDeloof' or \verb'define   = -DVanBuuren'
+      parameters) use the option \verb'define = -DDeloof' or
+      \verb'define = -DVanBuuren'
 \item put the {\tt \#ifdef} statements in your {\tt *.top}, as
       shown below: 
 \end{itemize}
@@ -891,34 +1042,6 @@ way to make use of the \verb'#ifdef' option is as follows:
     1     5     1 1.530000e-01
     5     6     1 1.430000e-01
 #endif
-
-[ angles ]
-;  ai    aj    ak funct           c0           c1
-    5     6     7     1 1.095000e+02 3.975000e+02 
-    2     1     3     1 1.076000e+02 4.602000e+02 
-    2     1     4     1 1.076000e+02 4.602000e+02 
-    3     1     4     1 1.076000e+02 4.602000e+02 
-    2     1     5     1 1.114000e+02 4.602000e+02 
-    3     1     5     1 1.114000e+02 4.602000e+02 
-    4     1     5     1 1.114000e+02 4.602000e+02 
-    1     5     6     1 1.109000e+02 4.602000e+02 
-
-[ dihedrals ]
-;  ai    aj    ak    al funct           c0           c1           c2
-    1     5     6     7     1 0.000000e+00 1.255200e+00 3.000000e+00 
-    2     1     5     6     1 0.000000e+00 4.184000e-01 6.000000e+00 
-    3     1     5     6     1 0.000000e+00 4.184000e-01 6.000000e+00 
-    4     1     5     6     1 0.000000e+00 4.184000e-01 6.000000e+00 
-
-[ exclusions ]
-;    i    excluded from i
-     1    2    3    4    5    6
-     2    1    3    4    5
-     3    1    2    4    5
-     4    1    2    3    5
-     5    1    2    3    4    6    7
-     6    1    5    7
-     7    5    6
 \end{verbatim}
 }
 Also in this example is the option {\tt \#ifdef BONDS}, which results
@@ -943,27 +1066,24 @@ This format is fixed, ie. all columns are in a fixed position. If you
 want to read such a file in your own program without using the
 {\gromacs} libraries you can use the following formats:
 
-\underline{C-format:}
-\begin{verbatim}"%5i%5s%5s%5i%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f"\end{verbatim}
+{\bf C-format:} \verb'"%5i%5s%5s%5i%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f"'
 
-\underline{Fortran format:} 
-
-\centerline{(i5,2a5,i5,3f8.3,3f8.4)}
-
-Or to be more precise, with title etc., it looks like this (in C-format):
+Or to be more precise, with title etc., it looks like this:
 \begin{verbatim}
-"%s\n", Title
-"%5d\n", natoms
+  "%s\n", Title
+  "%5d\n", natoms
   for (i=0; (i<natoms); i++) {
-  "%5d%5s%5s%5d%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f\n",
-  residuenr,residuename,atomname,atomnr,x,y,z,vx,vy,vz
+    "%5d%5s%5s%5d%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f\n",
+      residuenr,residuename,atomname,atomnr,x,y,z,vx,vy,vz
   }
-"%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f\n",
-box[X][X],box[Y][Y],box[Z][Z],box[X][Y],box[X][Z],
-box[Y][X],box[Y][Z],box[Z][X],box[Z][Y]
+  "%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f\n",
+    box[X][X],box[Y][Y],box[Z][Z],
+    box[X][Y],box[X][Z],box[Y][X],box[Y][Z],box[Z][X],box[Z][Y]
 \end{verbatim}
 
-So \verb'confin.gro' is the gromacs coordinate file and is almost  the
+{\bf Fortran format:} \verb'(i5,2a5,i5,3f8.3,3f8.4)'
+
+So \verb'confin.gro' is the gromacs coordinate file and is almost the
 same as the GROMOS87 file (for GROMOS users: when used with
 ntx=7). The only difference is the box for which gromacs uses a
 tensor, not a vector.
