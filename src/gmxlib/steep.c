@@ -47,7 +47,6 @@ static char *SRCID_steep_c = "$Id$";
 #include "macros.h"
 #include "random.h"
 #include "names.h"
-#include "stat.h"
 #include "fatal.h"
 #include "txtdump.h"
 #include "typedefs.h"
@@ -213,6 +212,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   bool   bNS=TRUE,bDone,bLR,bBHAM,b14; 
   time_t start_t; 
   tensor force_vir,shake_vir; 
+  rvec   mu_tot;
   int    number_steps;
   int    count=0; 
   int    i,m,start,end; 
@@ -230,6 +230,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
  		&(top->blocks[ebCGS]),&(top->idef),mdatoms,parm->box,FALSE); 
   for(m=0; (m<DIM); m++) 
     box_size[m]=parm->box[m][m]; 
+  clear_rvec(mu_tot);
   calc_shifts(parm->box,box_size,fr->shift_vec,FALSE); 
   
   vcm[0]=vcm[1]=vcm[2]=vcm[3]=0.0; 
@@ -314,12 +315,12 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   /* Communicat energies etc.  */
   if (PAR(cr))  
     global_stat(log,cr,ener,force_vir,shake_vir, 
- 		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm); 
+ 		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot); 
   where(); 
   
   /* Copy stuff to the energy bin for easy printing etc.  */
   upd_mdebin(mdebin,mdatoms->tmass,count,ener,parm->box,shake_vir, 
- 	     force_vir,parm->vir,parm->pres,grps); 
+ 	     force_vir,parm->vir,parm->pres,grps,mu_tot); 
   where(); 
   
   /* Print only if we are the moster processor  */
@@ -390,7 +391,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     /* Communicat stuff when parallel  */
     if (PAR(cr))  
       global_stat(log,cr,ener,force_vir,shake_vir, 
- 		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm); 
+ 		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot); 
     
     /* This is the new energy  */
 #ifdef FORCE_CRIT 
@@ -405,7 +406,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
  	      count,step,Epot[Try],Fsqrt[Try]); 
       /* Store the new (lower) energies  */
       upd_mdebin(mdebin,mdatoms->tmass,count,ener,parm->box,shake_vir, 
- 		 force_vir,parm->vir,parm->pres,grps); 
+ 		 force_vir,parm->vir,parm->pres,grps,mu_tot); 
       /* Print the energies allways when we should be verbose  */
       if (MASTER(cr)) 
  	print_ebin(fp_ene,log,count,count,lambda,0.0,eprNORMAL,TRUE, 

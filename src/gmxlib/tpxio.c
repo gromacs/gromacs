@@ -195,10 +195,10 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
   if (file_version >= 2) {
     /* Do version 2 specific things */
   }  
-  else {
+  if (file_version != tpx_version) {
     /* Give a warning about features that are not accessible */
-    fprintf(stderr,"WARNING: can not read version %d (and above) things "
-	    "in tpxfile\n",tpx_version+1);
+    fprintf(stderr,"WARNING: tpx file_version %d, software version %d\n",
+	    tpx_version,file_version);
   }
 }
 
@@ -511,7 +511,8 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,real *lambda,
   t_tpxheader tpx;
   t_inputrec  dum_ir;
   t_topology  dum_top;
-  
+  rvec        dum_x;
+   
   if (!bRead) {
     tpx.natoms = *natoms;
     tpx.step   = *step;
@@ -535,7 +536,7 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,real *lambda,
   }
     
 #define do_test(b,p) if (bRead && (p!=NULL) && !b) fatal_error(0,"No %s in %s",#p,fio_getname(fp)) 
-  
+
   do_test(tpx.bBox,box);
   do_section(eitemBOX,bRead);
   if (tpx.bBox) ndo_rvec(box,DIM);

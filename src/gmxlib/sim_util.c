@@ -34,7 +34,6 @@ static char *SRCID_sim_util_c = "$Id$";
 #include "string2.h"
 #include "smalloc.h"
 #include "names.h"
-#include "stat.h"
 #include "confio.h"
 #include "mvdata.h"
 #include "pdebug.h"

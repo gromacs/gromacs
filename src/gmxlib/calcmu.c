@@ -34,9 +34,10 @@ static char *SRCID_calcmu_c = "$Id$";
 #include "network.h"
 #include "vec.h"
 #include "fatal.h"
+#include "physics.h"
 #include "nsb.h"
 
-void calc_mu(t_commrec *cr,t_nsborder *nsb,rvec x[],real q[],rvec mu)
+void calc_mu(t_nsborder *nsb,rvec x[],real q[],rvec mu)
 {
   int i,start,end,m;
   
@@ -47,23 +48,13 @@ void calc_mu(t_commrec *cr,t_nsborder *nsb,rvec x[],real q[],rvec mu)
   for(i=start; (i<end); i++)
     for(m=0; (m<DIM); m++)
       mu[m] += q[i]*x[i][m];
-  if (PAR(cr)) {
-    gmx_sum(DIM,mu,cr);
-  }
-}
-
-void write_mu(FILE *fp,rvec mu,matrix box)
-{
-  real mmm[4];
-  
-  copy_rvec(mu,mmm);
-  mmm[3] = det(box);
-  if (fwrite(mmm,4*sizeof(mmm[0]),1,fp) != 1)
-    fatal_error(0,"Writing mu!");
+  for(m=0; (m<DIM); m++)
+    mu[m] *= ENM2DEBYE;
 }
 
 bool read_mu(FILE *fp,rvec mu,real *vol)
 {
+  /* For backward compatibility */
   real mmm[4];
   
   if (fread(mmm,4*sizeof(mmm),1,fp) != 1)
@@ -74,3 +65,4 @@ bool read_mu(FILE *fp,rvec mu,real *vol)
   
   return TRUE;
 }
+

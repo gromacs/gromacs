@@ -43,7 +43,6 @@ static char *SRCID_stat_c = "$Id$";
 #include "main.h"
 #include "force.h"
 #include "nrnb.h"
-#include "stat.h"
 #include "smalloc.h"
 #include "futil.h"
 #include "network.h"
@@ -59,11 +58,11 @@ void global_stat(FILE *log,
 		 tensor fvir,tensor svir,
 		 t_grpopts *opts,t_groups *grps,
 		 t_nrnb *mynrnb,t_nrnb nrnb[],
-		 rvec vcm)
+		 rvec vcm,rvec mu_tot)
 {
   static t_bin *rb=NULL; 
   static int   *itc;
-  int    ie,ifv,isv,icm,in[MAXPROC],inn[egNR];
+  int    imu,ie,ifv,isv,icm,in[MAXPROC],inn[egNR];
   int    j;
   
   if (rb==NULL) {
@@ -99,7 +98,8 @@ void global_stat(FILE *log,
   where();
   icm = add_binr(log,rb,DIM,vcm);
   where();
-    
+  imu = add_binr(log,rb,DIM,mu_tot);
+  
   /* Global sum it all */
   sum_bin(rb,cr);
   where();
@@ -115,6 +115,8 @@ void global_stat(FILE *log,
   for(j=0; (j<egNR); j++)
     extract_binr(rb,inn[j],grps->estat.nn,grps->estat.ee[j]);
   extract_binr(rb,icm,DIM,vcm);
+  where();
+  extract_binr(rb,imu,DIM,mu_tot);
   where();
   
   /* Small hack for temp only */
