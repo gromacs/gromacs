@@ -34,7 +34,6 @@ static char *SRCID_grid_c = "$Id$";
 #include "macros.h"
 #include "smalloc.h"
 #include "grid.h"
-#include "pdebug.h"
 #include "fatal.h"
 #include "vec.h"
 
@@ -43,10 +42,6 @@ static char *SRCID_grid_c = "$Id$";
 /***********************************
  *         Grid Routines
  ***********************************/
-
-#ifdef DEBUG1
-#define DEBUG
-#endif
 
 static void _range_check(char *s,int i,int nr,char *file,int line)
 {
@@ -80,7 +75,7 @@ void init_grid(FILE *log,t_grid *grid,int delta,matrix box,real rlong,int ncg)
   fprintf(log,"Grid: %d x %d x %d cells\n",
 	  grid->nrx,grid->nry,grid->nrz);
     
-  PDEBUG("Succesfully allocated memory for grid pointers.");
+  if (debug) fprintf(log,"Succesfully allocated memory for grid pointers.");
 }
 
 int xyz2ci_(int nry,int nrz,int x,int y,int z)

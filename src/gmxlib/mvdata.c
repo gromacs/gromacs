@@ -41,7 +41,6 @@ static char *SRCID_mvdata_c = "$Id$";
 #include "symtab.h"
 #include "vec.h"
 #include "tgroup.h"
-#include "pdebug.h"
 #include "block_tx.h"
 
 static void ld_nsb(int src,t_nsborder *nsb)
@@ -210,24 +209,24 @@ void ld_data(int left,int right,t_parm *parm,t_nsborder *nsb,
   
   put_led(COMM_LED,TRUE);
   ld_parm(left,parm);
-  PDEBUG("after ld_parm");
+  if (debug) fprintf(stdlog,"after ld_parm");
   ld_nsb(left,nsb);
-  PDEBUG("after ld_nsb");
+  if (debug) fprintf(stdlog,"after ld_nsb");
   ld_symtab(left,&top->symtab);
-  PDEBUG("after ld_symtab");
+  if (debug) fprintf(stdlog,"after ld_symtab");
   top->name=ld_string(left,&top->symtab);
-  PDEBUG("after ld_name");
+  if (debug) fprintf(stdlog,"after ld_name");
   ld_atoms(left,&top->symtab,&top->atoms);
-  PDEBUG("after ld_atoms");
+  if (debug) fprintf(stdlog,"after ld_atoms");
   ld_idef(left,&top->idef);
-  PDEBUG("after ld_idef");
+  if (debug) fprintf(stdlog,"after ld_idef");
   for (i=0; (i<ebNR); i++) 
     ld_block(left,&top->blocks[i]);
-  PDEBUG("after ld_block");
+  if (debug) fprintf(stdlog,"after ld_block");
   snew(*x,top->atoms.nr);
   snew(*v,top->atoms.nr);
   ld_vectors(left,*x,*v);
-  PDEBUG("after ld_vectors");
+  if (debug) fprintf(stdlog,"after ld_vectors");
   put_led(COMM_LED,FALSE);
 }
 

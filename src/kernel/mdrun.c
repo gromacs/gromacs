@@ -54,7 +54,6 @@ static char *SRCID_mdrun_c = "$Id$";
 #include "filenm.h"
 #include "statutil.h"
 #include "tgroup.h"
-#include "pdebug.h"
 #include "mdrun.h"
 #include "vcm.h"
 #include "ebin.h"

@@ -54,7 +54,7 @@ static void free_vector(double *v,int nl,int nh)
 static double *vector(int nl,int nh)
 {
   double *v;
-  v=(double*)malloc((unsigned)(nh-nl+1)*sizeof(double));
+  v=(double*)malloc((size_t)((nh-nl+1)*sizeof(double)));
   if (!v) nrerror("allocation failure in vector()");
   return v-nl;
 }

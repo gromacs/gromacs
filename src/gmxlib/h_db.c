@@ -58,7 +58,8 @@ t_addh *search_hb(char *key,int nh,t_addh ah[])
   t_addh ahkey;
 
   ahkey.resname=key;
-  return (t_addh *)bsearch((void *)&ahkey,ah,nh,sizeof(ahkey),compaddh);
+  return (t_addh *)bsearch((void *)&ahkey,ah,nh,
+			   (size_t)sizeof(ahkey),compaddh);
 }
 
 t_addh *search_ter_hb(char *key,int nh,t_addh ah[])
@@ -66,7 +67,8 @@ t_addh *search_ter_hb(char *key,int nh,t_addh ah[])
   t_addh ahkey;
 
   ahkey.resname=key;
-  return (t_addh *)bsearch((void *)&ahkey,ah,nh,sizeof(ahkey),compaddh);
+  return (t_addh *)bsearch((void *)&ahkey,ah,nh,
+			   (size_t)sizeof(ahkey),compaddh);
 }
 
 void read_ab(FILE *in,t_add_block *ab)
@@ -109,7 +111,7 @@ int read_h_db(char *fn,t_addh **ah)
   fclose(in);
   
   /* Sort the list (necessary to be able to use bsearch */
-  qsort(aah,nah,sizeof(**ah),compaddh);
+  qsort(aah,nah,(size_t)sizeof(**ah),compaddh);
 
   *ah=aah;
   return nah;
@@ -146,7 +148,7 @@ t_addh *search_h_db(int nh,t_addh ah[],char *key)
     
   ahkey.resname=key;
 
-  result=(t_addh *)bsearch(&ahkey,ah,nh,sizeof(ah[0]),compaddh);
+  result=(t_addh *)bsearch(&ahkey,ah,nh,(size_t)sizeof(ah[0]),compaddh);
   
   return result;
 }

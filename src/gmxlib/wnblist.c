@@ -43,11 +43,11 @@ static void write_nblist(FILE *out,t_nblist *nblist,rvec sv[SHIFTS],
   int j,j0,k,i_atom,jid;
   
 
-  fprintf(out,"nri=%8d\n",nblist->nri);
+  fprintf(out,"nri=%8u\n",nblist->nri);
   for(j=0; j<(int)nblist->nri; j++) {
     i_atom=nblist->nl_i[j].i_atom;
-    fprintf(out,"i_atom=%5d  nj=%8d  shift=%4d\n",i_atom,
-	    nblist->nl_i[j].nj,nblist->nl_i[j].shift);
+    fprintf(out,"i_atom=%5d  nj=%8u  shift=%4d\n",
+	    i_atom,nblist->nl_i[j].nj,nblist->nl_i[j].shift);
     fprintf(out,"%5s  %4s\n","jid","grp");
     j0=nblist->nl_i[j].j_index;
     for (k=0; k<(int)nblist->nl_i[j].nj; k++) {

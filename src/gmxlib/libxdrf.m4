@@ -236,7 +236,7 @@ FUNCTION(xdrfuchar) ARGS(`xdrid, ucp, ret')
 int *xdrid, *ret;
 unsigned char *ucp;
 {
-	*ret = xdr_u_char(xdridptr[*xdrid], ucp);
+	*ret = xdr_u_char(xdridptr[*xdrid], (u_char *)ucp);
 	cnt += sizeof(char);
 }
 
@@ -245,7 +245,7 @@ FUNCTION(xdrfulong) ARGS(`xdrid, ulp, ret')
 int *xdrid, *ret;
 unsigned long *ulp;
 {
-	*ret = xdr_u_long(xdridptr[*xdrid], ulp);
+	*ret = xdr_u_long(xdridptr[*xdrid], (u_long *)ulp);
 	cnt += sizeof(unsigned long);
 }
 
@@ -254,7 +254,7 @@ FUNCTION(xdrfushort) ARGS(`xdrid, usp, ret')
 int *xdrid, *ret;
 unsigned short *usp;
 {
-	*ret = xdr_u_short(xdridptr[*xdrid], usp);
+	*ret = xdr_u_short(xdridptr[*xdrid], (u_short *)usp);
 	cnt += sizeof(unsigned short);
 }
 
@@ -276,7 +276,7 @@ int *maxsize;
 {
 	char *tsp;
 
-	tsp = (char*) malloc(((STRING_LEN(sp)) + 1) * sizeof(char));
+	tsp = (char*) malloc((size_t)(((STRING_LEN(sp)) + 1) * sizeof(char)));
 	if (tsp == NULL) {
 	    *ret = -1;
 	    return;
@@ -300,7 +300,7 @@ STRING_ARG_DECL(sp);
 	char *tsp;
 	int maxsize;
 	maxsize = (STRING_LEN(sp)) + 1;
-	tsp = (char*) malloc(maxsize * sizeof(char));
+	tsp = (char*) malloc((size_t)(maxsize * sizeof(char)));
 	if (tsp == NULL) {
 	    *ret = -1;
 	    return;
@@ -474,7 +474,7 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
      * XDR staructure)
      */
     if (xdrs == NULL) {
-	xdridptr[xdrid] = (XDR *) malloc(sizeof(XDR));
+	xdridptr[xdrid] = (XDR *) malloc((size_t)sizeof(XDR));
 	xdrstdio_create(xdridptr[xdrid], xdrfiles[xdrid], lmode);
     } else {
 	xdridptr[xdrid] = xdrs;
@@ -648,8 +648,8 @@ static void sendints(int buf[], const int num_of_ints, const int num_of_bits,
 
     for (i = 1; i < num_of_ints; i++) {
 	if (nums[i] >= sizes[i]) {
-	    fprintf(stderr,"major breakdown in sendints num %d doesn't "
-		    "match size %d\n", nums[i], sizes[i]);
+	    fprintf(stderr,"major breakdown in sendints num %u doesn't "
+		    "match size %u\n", nums[i], sizes[i]);
 	    exit(1);
 	}
 	/* use one step multiply */    
@@ -828,33 +828,33 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	 * write them as floats using xdr_vector
 	 */
 	if (*size <= 9 ) {
-	    return (xdr_vector(xdrs, (char *) fp, size3, sizeof(*fp),
-		(xdrproc_t)xdr_float));
+	    return (xdr_vector(xdrs, (char *) fp, (u_int)size3, 
+	            (u_int)sizeof(*fp), (xdrproc_t)xdr_float));
 	}
 	
 	xdr_float(xdrs, precision);
 	if (ip == NULL) {
-	    ip = (int *)malloc(size3 * sizeof(*ip));
+	    ip = (int *)malloc((size_t)(size3 * sizeof(*ip)));
 	    if (ip == NULL) {
 		fprintf(stderr,"malloc failed\n");
 		exit(1);
 	    }
 	    bufsize = size3 * 1.2;
-	    buf = (int *)malloc(bufsize * sizeof(*buf));
+	    buf = (int *)malloc((size_t)(bufsize * sizeof(*buf)));
 	    if (buf == NULL) {
 		fprintf(stderr,"malloc failed\n");
 		exit(1);
 	    }
 	    oldsize = *size;
 	} else if (*size > oldsize) {
-	    ip = (int *)realloc(ip, size3 * sizeof(*ip));
+	    ip = (int *)realloc(ip, (size_t)(size3 * sizeof(*ip)));
 	    if (ip == NULL) {
 		fprintf(stderr,"malloc failed\n");
 		exit(1);
 	    }
 	    bufsize = size3 * 1.2;
-	    buf = (int *)realloc(buf, bufsize * sizeof(*buf));
-	    buf = (int *)malloc(bufsize * sizeof(*buf));
+	    buf = (int *)realloc(buf, (size_t)(bufsize * sizeof(*buf)));
+	    buf = (int *)malloc((size_t)(bufsize * sizeof(*buf)));
 	    if (buf == NULL) {
 		fprintf(stderr,"malloc failed\n");
 		exit(1);
@@ -1058,7 +1058,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 		sizesmall[0] = sizesmall[1] = sizesmall[2] = magicints[smallidx];
 	    }
 	}
-	if (buf[1] != 0) buf[0]++;;
+	if (buf[1] != 0) buf[0]++;
 	xdr_int(xdrs, &(buf[0])); /* buf[0] holds the length in bytes */
 	return errval * (xdr_opaque(xdrs, (caddr_t)&(buf[3]), (u_int)buf[0]));
     } else {
@@ -1074,31 +1074,31 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	*size = lsize;
 	size3 = *size * 3;
 	if (*size <= 9) {
-	    return (xdr_vector(xdrs, (char *) fp, size3, sizeof(*fp),
-		(xdrproc_t)xdr_float));
+	    return (xdr_vector(xdrs, (char *) fp, (u_int)size3, 
+	            (u_int)sizeof(*fp), (xdrproc_t)xdr_float));
 	}
 	xdr_float(xdrs, precision);
 	if (ip == NULL) {
-	    ip = (int *)malloc(size3 * sizeof(*ip));
+	    ip = (int *)malloc((size_t)(size3 * sizeof(*ip)));
 	    if (ip == NULL) {
 		fprintf(stderr,"malloc failed\n");
 		exit(1);
 	    }
 	    bufsize = size3 * 1.2;
-	    buf = (int *)malloc(bufsize * sizeof(*buf));
+	    buf = (int *)malloc((size_t)(bufsize * sizeof(*buf)));
 	    if (buf == NULL) {
 		fprintf(stderr,"malloc failed\n");
 		exit(1);
 	    }
 	    oldsize = *size;
 	} else if (*size > oldsize) {
-	    ip = (int *)realloc(ip, size3 * sizeof(*ip));
+	    ip = (int *)realloc(ip, (size_t)(size3 * sizeof(*ip)));
 	    if (ip == NULL) {
 		fprintf(stderr,"malloc failed\n");
 		exit(1);
 	    }
 	    bufsize = size3 * 1.2;
-	    buf = (int *)realloc(buf, bufsize * sizeof(*buf));
+	    buf = (int *)realloc(buf, (size_t)(bufsize * sizeof(*buf)));
 	    if (buf == NULL) {
 		fprintf(stderr,"malloc failed\n");
 		exit(1);

@@ -134,12 +134,12 @@ void dump_estat(FILE *log,t_grp_ener *estat)
 
 static void reset_acc(int ngacc,t_grp_acc gstat[])
 {
-  ;
+
 }
 
 static void reset_grptcstat(int ngtc,t_grp_tcstat tcstat[])
 {
-  ;
+
 }
 
 void reset_grps(t_grpopts *opts,t_groups *grp)

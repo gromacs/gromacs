@@ -43,7 +43,6 @@ static char *SRCID_mvxvf_c = "$Id$";
 #include "typedefs.h"
 #include "vec.h"
 #include "tgroup.h"
-#include "pdebug.h"
 #include "block_tx.h"
 #include "nrnb.h"
 

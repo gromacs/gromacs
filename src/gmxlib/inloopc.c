@@ -710,7 +710,7 @@ void c_tab(real ix,real iy,real iz,real qi,
 #define EXTRACT(nn) { nnn = nn; Y=VFtab[nnn]; F=VFtab[nnn+1]; Geps=VFtab[nnn+2]*eps; Heps2=VFtab[nnn+3]*eps2; Fp=F+Geps+Heps2; VV=Y+eps*Fp; FF=Fp+Geps+two*Heps2; }
 
     /* Coulomb */
-    EXTRACT(n1);
+    EXTRACT(n1)
     qq             = qi*charge[jnr];
     vijcoul        = qq*VV;
     fijC           = qq*FF;
@@ -719,13 +719,13 @@ void c_tab(real ix,real iy,real iz,real qi,
     /* Dispersion */
     tj             = 2*type[jnr];
     c6             = nbfp[tj];
-    EXTRACT(n1+4);
+    EXTRACT(n1+4)
     vnb6           = c6*VV;
     fijD           = c6*FF;
 			 
     /* Repulsion */
     c12            = nbfp[tj+1];
-    EXTRACT(n1+8);
+    EXTRACT(n1+8)
     vnb12          = c12*VV;
     fijR           = c12*FF;
     vnbtot         = vnbtot + vnb12 + vnb6;
@@ -837,7 +837,7 @@ void c_coultab(real ix,real iy,real iz,real qi,
 #define EXTRACT(nn) { nnn = nn; Y=VFtab[nnn]; F=VFtab[nnn+1]; Geps=VFtab[nnn+2]*eps; Heps2=VFtab[nnn+3]*eps2; Fp=F+Geps+Heps2; VV=Y+eps*Fp; FF=Fp+Geps+two*Heps2; }
 
     /* Coulomb */
-    EXTRACT(n1);
+    EXTRACT(n1)
     qq             = qi*charge[jnr];
     vijcoul        = qq*VV;
     fijC           = qq*FF;
@@ -946,20 +946,20 @@ void c_free(real ix,real iy,real iz,int inr,
     /* Exact shape of these functions  is not important
      * for dV/dL, therefore we continue calling it rinv6 and rinv12
      */
-    EXTRACT(n1);
+    EXTRACT(n1)
     vijcoul        = qqq*VV;
     fijC           = qqq*FF;
     dvdl          += 2.0*(lambda*qqB - L1*qqA)*VV;
     vctot          = vctot  + vijcoul;
     
     /* Dispersion */
-    EXTRACT(n1+4);
+    EXTRACT(n1+4)
     vnb6           = c6*VV;
     fijD           = c6*FF;
     dvdl          += 3.0*(lam2*c6b  - lam1_2*c6a)*VV;
 			 
     /* Repulsion */
-    EXTRACT(n1+8);
+    EXTRACT(n1+8)
     vnb12          = c12*VV;
     fijR           = c12*FF;
     dvdl          += (4.0*(lam3*c12b - lam1_3*c12a)*VV);

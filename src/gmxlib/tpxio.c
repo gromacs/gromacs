@@ -210,7 +210,7 @@ static void do_harm(t_iparams *iparams,bool bRead)
   do_real(iparams->harmonic.krB);
 }
 
-void do_iparams(int ftype,t_iparams *iparams,bool bRead)
+void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
 {
   int i;
   
@@ -411,7 +411,7 @@ static void do_atoms(t_atoms *atoms,bool bRead,t_symtab *symtab)
 
 static void do_symtab(t_symtab *symtab,bool bRead)
 {
-  int i,nr,len;
+  int i,nr;
   t_symbuf *symbuf;
   char buf[STRLEN];
   
@@ -507,7 +507,6 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,real *lambda,
 		   t_inputrec *ir,rvec *box,int *natoms,
 		   rvec *x,rvec *v,rvec *f,t_topology *top)
 {
-  int         i;
   t_tpxheader tpx;
   t_inputrec  dum_ir;
   t_topology  dum_top;

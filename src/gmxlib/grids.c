@@ -58,7 +58,7 @@ real ***mk_rgrid(int nx,int ny,int nz)
 
 void free_rgrid(real ***grid,int nx,int ny)
 {
-  int i,j;
+  int i;
 
   sfree(grid[0][0]);  
   for(i=0; (i<nx); i++) {
@@ -156,7 +156,7 @@ t_complex ***mk_cgrid(int nx,int ny,int nz)
 
 void free_cgrid(t_complex ***grid,int nx,int ny)
 {
-  int i,j;
+  int i;
 
   sfree(grid[0][0]);
   for(i=0; (i<nx); i++) 

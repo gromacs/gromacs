@@ -137,7 +137,9 @@ void fill_table(int n0,int n,real x[],
   /* Calculate potential and 2nd derivative and Force and
    * second derivative!
    */
+#ifdef DEBSW
   FILE *fp;
+#endif
   int  i;
   real r1,rc,r12,r13;
   real r,r2,r6;

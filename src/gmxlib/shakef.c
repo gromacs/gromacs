@@ -250,9 +250,9 @@ int vec_shakef(FILE *log,
   static  real *M2=NULL,*tt=NULL,*dist2=NULL;
   static  int  maxcon=0;
   int     maxnit=1000;
-  int     nit,ll,i,j,m,type;
+  int     nit,ll,i,j,type;
   t_iatom *ia;
-  real    tol2,toler,diff,rpij2,rrpr,acor;
+  real    tol2,toler;
   real    mm;
   int     error;
     

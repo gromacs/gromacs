@@ -46,7 +46,7 @@ void init_top (t_topology *top)
 
 void init_inputrec(t_inputrec *ir)
 {
-  memset(ir,0,sizeof(*ir));
+  memset(ir,0,(size_t)sizeof(*ir));
 }
 
 void done_block(t_block *block)

@@ -138,7 +138,7 @@ static char *pukeit(char *db,char *defstring)
 {
   static char hulp[STRLEN];
   FILE *fp;
-  char **help,*c;
+  char **help;
   int  i,nhlp;
   int  seed;
   

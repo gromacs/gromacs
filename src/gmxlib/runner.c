@@ -56,11 +56,6 @@ static char *SRCID_runner_c = "$Id$";
 #include "mdrun.h"
 #include "congrad.h"
 
-#ifndef DEBUGHARD
-#undef DEBUG
-#endif
-#include "pdebug.h"
-
 bool optRerunMDset (int nfile, t_filenm fnm[])
 {
   return opt2bSet("-rerun",nfile,fnm);
@@ -108,7 +103,6 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 	      bool bCompact,int nDlb,bool bNM,int nstepout,t_edsamyn *edyn)
 {
   double     cputime,realtime;
-  int        i;
   t_parm     *parm;
   rvec       *buf,*f,*vold,*v,*vt,*x;
   real       *ener;

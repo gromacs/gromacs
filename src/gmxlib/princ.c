@@ -135,9 +135,9 @@ static void m_op(matrix mat,rvec x)
 
 static void ptrans(char *s,real **inten,real d[],real e[])
 {
+#ifdef DEBUG  
   int  m;
   real n,x,y,z;
-#ifdef DEBUG  
   for(m=1; (m<NDIM); m++) {
     x=inten[m][1];
     y=inten[m][2];
@@ -152,9 +152,9 @@ static void ptrans(char *s,real **inten,real d[],real e[])
 
 void t_trans(matrix trans,real d[],real **ev)
 {
+#ifdef DEBUG  
   rvec x;
   int  j;
-#ifdef DEBUG  
   for(j=0; (j<DIM); j++) {
     x[XX]=ev[1][j+1];
     x[YY]=ev[2][j+1];
@@ -221,9 +221,9 @@ void principal_comp(int n,atom_id index[],t_atom atom[],rvec x[],
     dd[i+1]=temp;			\
     for(j=0; (j<NDIM); j++) ev[j][i+1]=tvec[j];			\
   }
-  SWAPPER(1);
-  SWAPPER(2);
-  SWAPPER(1);
+  SWAPPER(1)
+  SWAPPER(2)
+  SWAPPER(1)
   ptrans("swap",ev,dd,e);
   
   t_trans(trans,dd,ev);

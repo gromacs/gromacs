@@ -71,7 +71,6 @@ void mk_ghat(FILE *fp,int nx,int ny,int nz,real ***ghat,
 {
   int  ix,iy,iz;
   int  ixmax,iymax,izmax;
-  int  m;
   real k2,ggg;
   rvec k,lll;
   
@@ -114,7 +113,7 @@ real ***rd_ghat(FILE *log,char *fn,ivec igrid,rvec gridspace,
   double gx,gy,gz,alpha,ddd;
   double acut,r1,pval,zval,eref,qopt;
   int    nalias,niter,bSym;
-  int    ix,iy,iz,jx,jy,jz,m,ixmax,iymax,izmax;
+  int    ix,iy,iz,ixmax,iymax,izmax;
   
   in=ffopen(fn,"r");
   fscanf(in,"%d%d%d%lf%lf%lf",&ix,&iy,&iz,&gx,&gy,&gz);

@@ -82,8 +82,8 @@ int check_buff(FILE *fp,char *title,int data[],int items,int verbose)
           comp=mask(i);
           if (check!=comp)
             {
-              (void) fprintf(fp,"error: (%s) data: 0x%.8x, "
-                             "expected: 0x%.8x\n",title,check,comp);
+              fprintf(fp,"error: (%s) data: 0x%.8x, expected: 0x%.8x\n",
+		      title,(unsigned int)check,(unsigned int)comp);
               errs++; 
             }
         }

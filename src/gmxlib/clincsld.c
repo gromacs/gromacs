@@ -30,6 +30,7 @@ static char *SRCID_clincsld_c = "$Id$";
 
 #include "update.h"
 #include "math.h"
+#include "vec.h"
 
 void clincsld(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
               int *bla1,int *bla2,int *blnr,int *blbnb,real *bllen,
@@ -52,7 +53,7 @@ void clincsld(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
     tmp0=x[i][0]-x[j][0];
     tmp1=x[i][1]-x[j][1];
     tmp2=x[i][2]-x[j][2];
-    rlen=1.0/sqrt(tmp0*tmp0+tmp1*tmp1+tmp2*tmp2);
+    rlen=invsqrt(tmp0*tmp0+tmp1*tmp1+tmp2*tmp2);
     r[b][0]=rlen*tmp0;
     r[b][1]=rlen*tmp1;
     r[b][2]=rlen*tmp2;

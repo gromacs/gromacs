@@ -177,7 +177,7 @@ void open_log(char *lognm,t_commrec *cr)
 t_commrec *init_par(char *argv[])
 {
   t_commrec *cr;
-  int       i,info;
+  int       i;
   
   snew(cr,1);
   

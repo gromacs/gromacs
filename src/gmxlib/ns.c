@@ -43,7 +43,6 @@ static char *SRCID_ns_c = "$Id$";
 #include "pbc.h"
 #include "names.h"
 #include "fatal.h"
-#include "pdebug.h"
 #include "nrnb.h"
 #include "ns.h"
 #include "fnbf.h"

@@ -81,8 +81,6 @@ static bool do_eheader(int fp,t_eheader *eh)
 
 void do_enxnms(int fp,int *nre,char ***nms)
 {
-  int  i;
-  char buf[64];
   bool bRead;
   
   bRead = fio_getread(fp);
@@ -151,7 +149,7 @@ int open_enx(char *fn,char *mode)
 bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
 	    t_drblock *drblock)
 {
-  int       i,nre_dum;
+  int       i;
   t_eheader eh;
   bool      bRead;
 

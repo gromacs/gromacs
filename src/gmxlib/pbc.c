@@ -38,7 +38,6 @@ static char *SRCID_pbc_c = "$Id$";
 #include "smalloc.h"
 #include "txtdump.h"
 #include "fatal.h"
-#include "pdebug.h"
 
 /*****************************************
  *     PERIODIC BOUNDARY CONDITIONS

@@ -338,7 +338,7 @@ static bool do_binwrite(void *item,int nitem,int eio,
   if ((wsize != nitem) && curfio->bDebug) {
     fprintf(stderr,"Error writing %s %s to file %s (source %s, line %d)\n",
 	    eioNames[eio],desc,curfio->fn,srcfile,line);
-    fprintf(stderr,"written size %d bytes, source size %d bytes\n",
+    fprintf(stderr,"written size %u bytes, source size %u bytes\n",
 	    wsize,size);
   }
   return (wsize == nitem);
@@ -444,7 +444,7 @@ static bool do_xdr(void *item,int nitem,int eio,
     break;
   case eioUSHORT:
     if (item) us = *(unsigned short *)item;
-    res = xdr_u_short(curfio->xdr,&us);
+    res = xdr_u_short(curfio->xdr,&(u_short)us);
     if (item) *(unsigned short *)item = us;
     break;
   case eioRVEC:
@@ -452,7 +452,7 @@ static bool do_xdr(void *item,int nitem,int eio,
       if (item)
 	for(m=0; (m<DIM); m++) 
 	  dvec[m] = ((real *)item)[m];
-      res=xdr_vector(curfio->xdr,(char *)dvec,DIM,sizeof(double),
+      res=xdr_vector(curfio->xdr,(char *)dvec,DIM,(u_int)sizeof(double),
 		     (xdrproc_t)xdr_double);
       if (item)
 	for(m=0; (m<DIM); m++) 
@@ -462,7 +462,7 @@ static bool do_xdr(void *item,int nitem,int eio,
       if (item)
 	for(m=0; (m<DIM); m++) 
 	  fvec[m] = ((real *)item)[m];
-      res=xdr_vector(curfio->xdr,(char *)fvec,DIM,sizeof(float),
+      res=xdr_vector(curfio->xdr,(char *)fvec,DIM,(u_int)sizeof(float),
 		     (xdrproc_t)xdr_float);
       if (item)
 	for(m=0; (m<DIM); m++) 
@@ -630,8 +630,6 @@ void fio_close(int fio)
 
 void fio_select(int fio)
 {
-  int i;
-  
   fio_check(fio);
 #ifdef DEBUG
   fprintf(stderr,"Select fio called with type %d for file %s\n",

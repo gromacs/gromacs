@@ -181,7 +181,7 @@ real phi_sr(int nj,rvec x[],real charge[],real rc,real r1,rvec box,
 
 real shiftfunction(real r1,real rc,real R)
 {
-  real r,dr;
+  real dr;
 
   if (R <= r1)
     return 0.0;
@@ -222,7 +222,7 @@ real calc_selfenergy(FILE *fp,int natoms,real charge[],t_block *excl)
   static bool bFirst=TRUE;
   static real Vself;
   int  i,i1,i2,j,k;
-  real qq,qi,vv,V,Vex,Vc,Vt;
+  real qq,qi,Vex,Vc;
   
   if (bFirst) {
     qq   = 0;

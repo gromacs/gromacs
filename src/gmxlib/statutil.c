@@ -43,6 +43,12 @@ static char *SRCID_statutil_c = "$Id$";
 #include "assert.h"
 #include "fatal.h"
 
+/* used for npri */
+#ifdef _SGI_
+#include <sys/schedctl.h>
+#include <sys/sysmp.h>
+#endif
+
 /******************************************************************
  *
  *             T R A J E C T O R Y   S T U F F
@@ -214,22 +220,6 @@ char *sscan(int argc,char *argv[],int *i)
   return NULL; /* For the compiler! */
 }
 
-char *common_args(void)
-{
-  static char ca[1024];
-
-  ca[0]='\0';  
-#define CAT(s) { strcat(ca,s); strcat(ca," "); }
-
-  if (FF(PCA_CAN_VIEW))  CAT("[-w (view it) ]");
-  if (FF(PCA_CAN_BEGIN)) CAT("[-b begin time ]");
-  if (FF(PCA_CAN_END))   CAT("[-e end time ]");
-  CAT("[ -h (this message) ]");
-#undef CAT    
-
-  return ca;
-}
-
 static void pdesc(char *desc)
 {
   char *ptr,*nptr;
@@ -288,7 +278,9 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   static bool bHelp=FALSE,bHidden=FALSE;
   static int  nicelevel=0;
   static int  mantp=0;
+#ifdef _SGI_
   static int  npri=0;
+#endif
   static bool bDebug=FALSE;
   
   FILE *fp;  
@@ -385,8 +377,6 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   /* Set the nice level */
 #ifdef _SGI_
   if (npri != 0) {
-#include <sys/schedctl.h>
-#include <sys/sysmp.h>
     (void) schedctl(MPTS_RTPRI,0,npri);
   }
   else

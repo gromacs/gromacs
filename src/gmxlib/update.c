@@ -608,7 +608,7 @@ void init_update(FILE *log,t_topology *top,t_inputrec *ir,
     fprintf(log,"Going to sort constraints\n");
 #endif
 
-    qsort(sb,ncons,sizeof(*sb),pcomp);
+    qsort(sb,ncons,(size_t)sizeof(*sb),pcomp);
     
 #ifdef DEBUG
     fprintf(log,"I used %d calls to pcomp\n",pcount);
@@ -640,7 +640,7 @@ void init_update(FILE *log,t_topology *top,t_inputrec *ir,
       fprintf(log,"j: %d, nblocks: %d, ncons: %d\n",
 	      j,nblocks,ncons);
       for(i=0; (i<ncons); i++)
-	fprintf(log,"i: %5d  sb[i].blocknr: %5d\n",i,sb[i].blocknr);
+	fprintf(log,"i: %5d  sb[i].blocknr: %5u\n",i,sb[i].blocknr);
       for(j=0; (j<=nblocks); j++)
 	fprintf(log,"sblock[%3d]=%5d\n",j,(int) sblock[j]);
       exit(1);

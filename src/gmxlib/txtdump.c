@@ -328,7 +328,7 @@ static void pr_harm(FILE *fp,t_iparams *iparams,char *r,char *kr)
 	  r,iparams->harmonic.rB,kr,iparams->harmonic.krB);
 }
 
-void pr_iparams(FILE *fp,int ftype,t_iparams *iparams)
+void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 {
   int i;
   

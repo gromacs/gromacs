@@ -45,7 +45,7 @@ int xdr_real(XDR *xdrs,real *r)
 
   return ret;
 #else
-  return xdr_float(xdrs,r);
+  return xdr_float(xdrs,(float *)r);
 #endif
 }
 
@@ -76,6 +76,6 @@ int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision)
   
   return ret;
 #else
-  return xdr3dfcoord(xdrs,fp,size,precision);
+  return xdr3dfcoord(xdrs,(float *)fp,size,(float *)precision);
 #endif
 }

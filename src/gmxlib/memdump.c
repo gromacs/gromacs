@@ -68,10 +68,10 @@ void mem_dump(FILE *log,char *title,void *mem,int len)
       if ((index==0)||(index==LINE_WIDTH))
         {
           print_chars(log,s,index); 
-          fprintf(log,"%.8X :",i);
+          fprintf(log,"%.8X :",(unsigned int)i);
           index=0;
         }
-      (void) fprintf(log," %.2X",b);
+      (void) fprintf(log," %.2X",(unsigned int)b);
       s[index++]=ascii(b);
     }
   print_chars(log,s,index);

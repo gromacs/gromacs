@@ -173,12 +173,12 @@ int add_h(int natom,t_pdbatom **pdbaptr,int nah,t_addh ah[],rvec **xptr,
   j=0;
   for(i=0; (i<natom); i++) {
     if (!bDel[i]) {
-      memcpy(&(newpdba[j]),&(pdba[i]),sizeof(pdba[i]));
+      memcpy(&(newpdba[j]),&(pdba[i]),(size_t)sizeof(pdba[i]));
       j++;
       if (ab[i] != NULL) {
 	j0=j;
 	for(k=0; (k<ab[i]->nh); k++,j++) {
-	  memcpy(&(newpdba[j]),&(pdba[i]),sizeof(pdba[i]));
+	  memcpy(&(newpdba[j]),&(pdba[i]),(size_t)sizeof(pdba[i]));
 	  newpdba[j].atomnm[0]='H';
 	  if (ab[i]->nh > 1)
 	    strcat(newpdba[j].atomnm,Hnum[k]);
@@ -196,7 +196,7 @@ int add_h(int natom,t_pdbatom **pdbaptr,int nah,t_addh ah[],rvec **xptr,
 		srenew(newpdba,natom+tadd);
 		srenew(x,natom+tadd);
 		for(m=0; (m<ntdb->ab[l].nh); m++)
-		  memcpy(&(newpdba[j+m]),&(pdba[i]),sizeof(pdba[i]));
+		  memcpy(&(newpdba[j+m]),&(pdba[i]),(size_t)sizeof(pdba[i]));
 		hack_atoms(ntdb,l,j,ntdb->ab[l].nh,natom+tadd,newpdba);
 		j+=ab[i]->nh;
 		break;
@@ -208,7 +208,7 @@ int add_h(int natom,t_pdbatom **pdbaptr,int nah,t_addh ah[],rvec **xptr,
 		srenew(newpdba,natom+tadd);
 		srenew(x,natom+tadd);
 		for(m=0; (m<ctdb->ab[l].nh); m++)
-		  memcpy(&(newpdba[j+m]),&(pdba[i]),sizeof(pdba[i]));
+		  memcpy(&(newpdba[j+m]),&(pdba[i]),(size_t)sizeof(pdba[i]));
 		hack_atoms(ctdb,l,j,ctdb->ab[l].nh,natom+tadd,newpdba);
 		j+=ab[i]->nh;
 		break;
