@@ -282,7 +282,7 @@ static void remove_jump(matrix box,int natoms,rvec xp[],rvec x[])
 
 static void write_pdb_bfac(char *fname,char *title,t_atoms *atoms,matrix box,
 			   int isize,atom_id *index,int nfr,rvec *x,rvec *sum,
-			   bool bDim[])
+			   bool bDim[],real scale_factor)
 {
   FILE    *fp;
   real    max,len2,scale;
@@ -320,10 +320,14 @@ static void write_pdb_bfac(char *fname,char *title,t_atoms *atoms,matrix box,
 	maxi = index[i];
       }
     }
-    if (max == 0)
-      scale = 1;
-    else
-      scale = 10.0/sqrt(max);
+    if (scale_factor != 0) {
+      scale = scale_factor;
+    } else {
+      if (max == 0)
+	scale = 1;
+      else
+	scale = 10.0/sqrt(max);
+    }
     
     fprintf(stdout,"Maximum %s is %g on atom %d %s, res. %s %d\n",
 	    title,sqrt(max)/nfr,maxi+1,*(atoms->atomname[maxi]),
@@ -368,13 +372,15 @@ int gmx_traj(int argc,char *argv[])
     "Options [TT]-cv[tt] and [TT]-cf[tt] write the average velocities",
     "and average forces as temperature factors to a pdb file with",
     "the average coordinates. The temperature factors are scaled such",
-    "that the maximum is 10. To get the velocities or forces of one",
+    "that the maximum is 10. The scaling can be changed with the option",
+    "[TT]-scale[tt]. To get the velocities or forces of one",
     "frame set both [TT]-b[tt] and [TT]-e[tt] to the time of",
     "desired frame. When averaging over frames you might need to use",
     "the [TT]-nojump[tt] option to obtain the correct average coordinates."
   };
   static bool bMol=FALSE,bCom=FALSE,bNoJump=FALSE;
   static bool bX=TRUE,bY=TRUE,bZ=TRUE,bNorm=FALSE;
+  static real scale=0;
   t_pargs pa[] = {
     { "-com", FALSE, etBOOL, {&bCom},
       "Plot data for the com of each group" },
@@ -389,7 +395,9 @@ int gmx_traj(int argc,char *argv[])
     { "-z", FALSE, etBOOL, {&bZ},
       "Plot Z-component" },
     { "-len", FALSE, etBOOL, {&bNorm},
-      "Plot vector length" }
+      "Plot vector length" },
+    { "-scale", FALSE, etREAL, {&scale},
+      "Scale factor for pdb output, 0 is autoscale" }
     
   };
   FILE       *outx=NULL,*outv=NULL,*outf=NULL,*outb=NULL,*outt=NULL;
@@ -657,10 +665,10 @@ int gmx_traj(int argc,char *argv[])
 
   if (bCV)
     write_pdb_bfac(opt2fn("-cv",NFILE,fnm),"average velocity",&(top.atoms),
-		   topbox,isize[0],index[0],nr_vfr,sumxv,sumv,bDim);
+		   topbox,isize[0],index[0],nr_vfr,sumxv,sumv,bDim,scale);
   if (bCF)
     write_pdb_bfac(opt2fn("-cf",NFILE,fnm),"average force",&(top.atoms),
-		   topbox,isize[0],index[0],nr_ffr,sumxf,sumf,bDim);
+		   topbox,isize[0],index[0],nr_ffr,sumxf,sumf,bDim,scale);
 
   /* view it */
   view_all(NFILE, fnm);
