@@ -367,7 +367,7 @@ static void cont_status(char *slog,bool bNeedVel,bool bGenVel, real fr_time,
   int         fp;
   real        tt;
 
-  tt      = ir->init_t;
+  tt      = -1;
   fprintf(stderr,
 	  "Reading Coordinates%s and Box size from old trajectory\n",
 	  (!bNeedVel || bGenVel) ? "" : ", Velocities");
@@ -399,10 +399,8 @@ static void cont_status(char *slog,bool bNeedVel,bool bGenVel, real fr_time,
   }
   close_trj(fp);
   
-  /*change the input record to the actual data*/
-  ir->init_t = tt;
-  
-  fprintf(stderr,"Read frame from t = %g\n",tt);
+  fprintf(stderr,"Using frame at t = %g ps\n",tt);
+  fprintf(stderr,"Starting time for run is %g ps\n",ir->init_t); 
 }
 
 static void gen_posres(t_params *pr,char *fn)
