@@ -75,7 +75,7 @@ int main(int argc,char *argv[])
 #define NHISTO 360
     
   t_filenm  fnm[] = {
-    { efTRJ, "-f",    NULL,   ffREAD },
+    { efTRN, "-f",    NULL,   ffREAD },
     { efXVG, "-o",    "vac",  ffWRITE },
     { efNDX, NULL,    NULL,   ffREAD }
   };
@@ -100,14 +100,11 @@ int main(int argc,char *argv[])
   for(i=0; (i<gnx); i++)
     snew(c1[i],DIM*nf);
   
-  natoms=read_first_v(&status,opt2fn("-f",NFILE,fnm),&t,&v,box);
+  natoms=read_first_v(&status,ftp2fn(efTRN,NFILE,fnm),&t,&v,box);
   t0=t;
       
   teller=0;
   do {
-    if ((teller % 10) == 0)
-      fprintf(stderr,"\rt=%.2f",t);
-    
     if (teller >= nf)
       break;
     tel3=3*teller;
