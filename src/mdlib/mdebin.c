@@ -240,7 +240,7 @@ static void copy_energy(real e[],real ecpy[])
   assert(j == f_nre);
 }
 
-void upd_mdebin(t_mdebin *md,FILE *fp_dvdl,
+void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 		real tmass,int step,real time,
 		real ener[],
 		matrix box,
@@ -314,8 +314,8 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dvdl,
       copy_rvec(grps->grpstat[i].u,uuu[i]);
     add_ebin(md->ebin,md->iu,3*md->nU,uuu[0],step);
   }
-  if (fp_dvdl)
-    fprintf(fp_dvdl,"%g %g\n",time,ener[F_DVDL]+ener[F_DVDLKIN]);
+  if (fp_dgdl)
+    fprintf(fp_dgdl,"%g %g\n",time,ener[F_DVDL]+ener[F_DVDLKIN]);
 }
 
 static void npr(FILE *log,int n,char c)

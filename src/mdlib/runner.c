@@ -276,7 +276,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 	     real *lambda,real *lam0,real *SAfactor,
 	     t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
 	     int nfile,t_filenm fnm[],char **traj,char **xtc_traj,int *fp_ene,
-	     FILE **fp_dvdl,t_mdebin **mdebin,t_groups *grps,rvec vcm,
+	     FILE **fp_dgdl,t_mdebin **mdebin,t_groups *grps,rvec vcm,
 	     tensor force_vir,tensor shake_vir,t_mdatoms *mdatoms)
 {
   bool bBHAM,b14,bLR,bLJLR;
@@ -309,9 +309,9 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 
     if (MASTER(cr)) {
       *fp_ene = open_enx(ftp2fn(efENX,nfile,fnm),"w");
-      if (ir->bPert)
-	*fp_dvdl =
-	  xvgropen(opt2fn("-dvdl",nfile,fnm),
+      if ((fp_dgdl != NULL) && ir->bPert)
+	*fp_dgdl =
+	  xvgropen(opt2fn("-dgdl",nfile,fnm),
 		   "dG/d\\8l\\4","Time (ps)",
 		   "dG/d\\8l\\4 (kJ mol\\S-1\\N nm\\S-2\\N \\8l\\4\\S-1\\N)");
       *mdebin = init_mdebin(*fp_ene,grps,&(top->atoms),&(top->idef),

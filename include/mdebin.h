@@ -52,7 +52,7 @@ extern t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,
 			     bool b14,bool bFEP,bool bPcoupl,bool bDispCorr);
 /* Initiate MD energy bin and write header to energy file. */
 
-extern void upd_mdebin(t_mdebin *md,FILE *fp_dvdl,
+extern void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 		       real tmass,int step,real time,
 		       real ener[],
 		       matrix box,
