@@ -63,8 +63,7 @@ g_traj|plots x, v, f, box, temperature and rotational energy
 g_gyrate|calculates the radius of gyration
 g_msd|calculates mean square displacements
 g_rotacf|calculates the rotational correlation function for molecules
-g_rdf|calculates RDF's
-g_rdens|calculates radial densities
+g_rdf|calculates radial distribution functions
 END
 
 HEAD|Analyzing bonded interactions

@@ -29,7 +29,7 @@ bin_PROGRAMS = \
 	g_msdXXX_SUFFIX_XXX		g_morphXXX_SUFFIX_XXX		\
 	g_nmeigXXX_SUFFIX_XXX		g_nmensXXX_SUFFIX_XXX		\
 	g_orderXXX_SUFFIX_XXX		g_potentialXXX_SUFFIX_XXX	\
-	g_ramaXXX_SUFFIX_XXX		g_rdensXXX_SUFFIX_XXX		\
+	g_ramaXXX_SUFFIX_XXX				s		\
 	g_rdfXXX_SUFFIX_XXX		g_rmsXXX_SUFFIX_XXX		\
 	g_rmsdistXXX_SUFFIX_XXX		g_rmsfXXX_SUFFIX_XXX		\
 	g_rotacfXXX_SUFFIX_XXX		g_saltbrXXX_SUFFIX_XXX		\
@@ -123,8 +123,6 @@ g_orderXXX_SUFFIX_XXX_SOURCES      = 	g_order.c
 g_potentialXXX_SUFFIX_XXX_SOURCES  = 	g_potential.c
 
 g_ramaXXX_SUFFIX_XXX_SOURCES       = 	g_rama.c
-
-g_rdensXXX_SUFFIX_XXX_SOURCES      = 	g_rdens.c
 
 g_rdfXXX_SUFFIX_XXX_SOURCES        = 	g_rdf.c		$(AUTOCORR_SRC)
 
