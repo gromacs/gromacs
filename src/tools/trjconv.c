@@ -366,7 +366,8 @@ int main(int argc,char *argv[])
       ftpin=fn2ftp(in_file);
       bVels= ((ftp==efTRR) ||(ftp==efTRJ) || (ftp==efGRO)) 
 	&& ((ftpin==efTRR) ||(ftpin==efTRJ) || (ftpin==efGRO));
-    } else {
+    }
+     if (!bVels) {
       bHaveX=TRUE;
       bHaveV=FALSE;
     }
