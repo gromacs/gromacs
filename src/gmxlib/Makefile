@@ -83,6 +83,12 @@ endif
 ifeq ($(GMXCPU),ded)
 OBJ 		+= axp_asm.o
 endif
+ifeq ($(GMXCPU),alx)
+OBJ 		+= axp_asm.o
+endif
+ifeq ($(GMXCPU),ald)
+OBJ 		+= axp_asm.o
+endif
 endif
 
 # Some CPU dependencies...
