@@ -299,6 +299,18 @@ static bool step_man(t_manager *man,int *nat)
   bEof=read_next_x(man->status,&man->time,man->natom,man->x,man->box);
   *nat=man->natom;
   if (ncount == man->nSkip) {
+    switch (man->molw->boxtype) {
+    case esbTri:
+      put_atoms_in_triclinic_unitcell(man->natom,man->box,man->x);
+      break;
+    case esbTrunc:
+      put_atoms_in_compact_unitcell(man->natom,man->box,man->x);
+      break;
+    case esbRect:
+    case esbNone:
+    default:
+      break;
+    }
     if (man->bPbc) {
       rm_pbc(&(man->top.idef),man->natom,man->box,man->x,man->x);
       reset_mols(&(man->top.blocks[ebMOLS]),man->box,man->x);
