@@ -1,4 +1,12 @@
 [ moleculetype ]
+; molname       nrexcl
+K               1
+
+[ atoms ]
+; id    at type res nr  residu name     at name         cg nr   charge
+1       K       1       K               K               1       1
+
+[ moleculetype ]
 ; molname	nrexcl
 Na		1
 
