@@ -446,7 +446,8 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	  
 	  /* Subtract momentum of recoiling electron */
 	  polar2cart(phi,theta,ddv);
-	  rvec_dec(dv,ddv);
+	  for(m=0; (m<DIM); m++)
+	    dv[m] -= factor*ddv[m];
 	  
 	  if (debug)
 	    pr_rvec(debug,0,"ELL",dv,DIM);
@@ -533,7 +534,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   delta_ekin = 0;
   if (bExtraKinetic && (dq > 0)) {
     for(i=0; (i<dq); i++) {
-      delta_ekin += FACEL*ztot/protein_radius;
+      delta_ekin += ONE_4PI_EPS0*ztot/protein_radius;
       ztot+=1;
     }
     delta_ekin=fabs(delta_ekin);
