@@ -67,11 +67,6 @@ FILE *xvgropen(char *fn,char *title,char *xaxis,char *yaxis)
   time(&t);
   fprintf(xvgr,"# All this happened at: %s",ctime(&t));
   fprintf(xvgr,"#\n");
-  fprintf(xvgr,"# title was: %s\n",title);
-  fprintf(xvgr,"# xaxis was: %s\n",xaxis);
-  fprintf(xvgr,"# yaxis was: %s\n",yaxis);
-  fprintf(xvgr,"#\n");
-  fprintf(xvgr,"#\n"); 
   fprintf(xvgr,"@    title \"%s\"\n",title);
   fprintf(xvgr,"@    xaxis  label \"%s\"\n",xaxis);
   fprintf(xvgr,"@    yaxis  label \"%s\"\n",yaxis);
