@@ -38,6 +38,7 @@ static char *SRCID_string2_c = "$Id$";
 #include <time.h>
 
 #include "typedefs.h"
+#include "smalloc.h"
 #include "fatal.h"
 #include "macros.h"
 #include "string2.h"
@@ -182,3 +183,36 @@ char *gmx_strdup(const char *src)
     strcpy(dest,src);
   return dest;
 }
+
+char *wrap_lines(char *buf,int line_width, int indent)
+{
+  char *b2;
+  int i,i0,j,lspace;
+
+  b2=NULL;
+  snew(b2,strlen(buf)+1);
+  i0 = 0;
+  do {
+    i=i0;
+    for( ; (i<i0+line_width) && (buf[i]); i++) {
+      b2[i] = buf[i];
+      if (buf[i] == ' ')
+        lspace = i;
+    }
+    if (buf[i]) {
+      b2[lspace] = '\n';
+      i0 = lspace+1;
+      if (indent) {
+	srenew(b2, strlen(b2)+indent+1);
+	for (j=strlen(b2); (j>lspace); j--)
+	  b2[j+indent]=b2[j];
+	for (j=0; (j<indent); j++)
+	  b2[lspace+indent]=' ';
+      }
+    }
+  } while (buf[i]);
+  b2[i] = '\0';
+  
+  return b2;
+}
+

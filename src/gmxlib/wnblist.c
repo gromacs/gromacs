@@ -129,12 +129,12 @@ void read_nblist(FILE *in,bool **matje)
 
 void read_nblistshift(FILE *in,int **matje,int maxatom)
 {
-  char     buf[256];
-  int      nnbl,full,
+  char buf[256];
+  int  nnbl,full;
+  int  ntw=0;
 /*   int      t,li,ia,ja,tempi,ii,jj,swap,gid,nrI,nrJ; */
 /*   t_nblist nbl[3],*list; */
 /*   t_nl_i   *nli; */
-/*   int  ntw=0; */
   
   do {
     fscanf(in,"%s",buf);

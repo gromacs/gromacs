@@ -457,10 +457,10 @@ void force(FILE *log,
 	   tensor     virial,
 	   real       epot[], 
 	   bool       bVerbose,
-	   matrix     ox,
-	   real       ambda,
-	   t_graph    graph,
-	   t_block    excl)
+	   matrix     box,
+	   real       lambda,
+	   t_graph    *graph,
+	   t_block    *excl)
 {
   bool    bBHAM;
   const   real zero=0.0;
