@@ -154,15 +154,16 @@ void write_posres(char *fn,t_atoms *pdba)
   
   fp=ffopen(fn,"w");
   fprintf(fp,
-	  "; In this topology include file, you will find position\n"
-	  "; restraint entries for all the heavy atoms in your original pdb file.\n"
-	  "; This means that all the protons which were added by pdb2gmx\n"
-	  "; are not restraint. This is especially useful for crystal waters.\n\n"
+	  "; In this topology include file, you will find position restraint\n"
+	  "; entries for all the heavy atoms in your original pdb file.\n"
+	  "; This means that all the protons which were added by pdb2gmx are\n"
+	  "; not restraint. This is especially useful for crystal waters.\n"
+	  "\n"
 	  "[ position_restraints ]\n"
 	  "; %6s%6s%8s%8s%8s\n","atom","type","fx","fy","fz"
 	  );
   for(i=0; (i<pdba->nr); i++) {
-    if ((*pdba->atomname[i])[0] != 'H') 
+    if (!is_hydrogen(*pdba->atomname[i])) 
       fprintf(fp,"%6d%6d%8.1f%8.1f%8.1f\n",i+1,1,1000.0,1000.0,1000.0);
   }
   ffclose(fp);
@@ -183,7 +184,7 @@ int read_pdball(char *inf, char *outf,char *title,
   if (!bRetainH) {
     new_natom=0;
     for(i=0; i<atoms->nr; i++)
-      if ((*atoms->atomname[i])[0]!='H') {
+      if (!is_hydrogen(*atoms->atomname[i])) {
 	atoms->atom[new_natom]=atoms->atom[i];
 	atoms->atomname[new_natom]=atoms->atomname[i];
 	atoms->pdbinfo[new_natom]=atoms->pdbinfo[i];
@@ -432,7 +433,7 @@ static char *choose_ff(bool bFFMan)
     sfree(fff[i].fn);
   }
   sfree(fff);
-          
+  
   return fnsel;
 }
 
@@ -454,35 +455,34 @@ void find_nc_ter(int natom,t_atoms *pdba,int *rn,int *rc/*,int ter_type[]*/)
 int main(int argc, char *argv[])
 {
   static char *desc[] = {
-    "This program reads a pdb file, reads up some database files,",
-    "adds hydrogens to the molecules if requested",
-    "and generates coordinates in Gromacs (Gromos) format and a topology",
-    "in Gromacs format. These files can subsequently be processed to generate",
-    "a status file.[PAR]",
+    "This program reads a pdb file, reads up some database files, adds",
+    "hydrogens to the molecules if requested and generates coordinates",
+    "in Gromacs (Gromos) format and a topology in Gromacs format. These",
+    "files can subsequently be processed to generate a status file.[PAR]",
     
-    "Note that a pdb file is nothing more than a file format, and it need",
-    "not necessarily contain a protein structure. Every kind of molecule",
-    "for which there is support in the database can be converted. If there",
-    "is no support in the database, you can add it yourself.[PAR]",
+    "Note that a pdb file is nothing more than a file format, and it",
+    "need not necessarily contain a protein structure. Every kind of",
+    "molecule for which there is support in the database can be converted.",
+    "If there is no support in the database, you can add it yourself.[PAR]",
     
-    "The program has limited intelligence, it reads a number of",
-    "database files, that allow it to make special bonds",
-    "(Cys-Cys, Heme-His, etc.), if necessary this can be done manually.",
-    "The program can prompt the user to select which kind of LYS, CYS or HIS", 
-    "residue she wants. For LYS the choice is between LYS (two protons on",
-    "NZ) or LYSH (three protons), for HIS the proton can be either on ND1",
-    "(HISA), on NE2 (HISB) or on both (HISH). By default these selections",
-    "are done automatically. For His, this is based on an optimal hydrogen",
-    "bonding conformation. With [TT]-angle[tt] and [TT]-dist[tt] respectively",
-    "the maximum hydrogen-donor-acceptor angle and donor-acceptor distance",
-    "for a hydrogen bond can be specified.[PAR]",
+    "The program has limited intelligence, it reads a number of database",
+    "files, that allow it to make special bonds (Cys-Cys, Heme-His, etc.),",
+    "if necessary this can be done manually. The program can prompt the",
+    "user to select which kind of LYS, CYS or HIS residue she wants. For",
+    "LYS the choice is between LYS (two protons on NZ) or LYSH (three",
+    "protons), for HIS the proton can be either on ND1 (HISA), on NE2",
+    "(HISB) or on both (HISH). By default these selections are done",
+    "automatically. For His, this is based on an optimal hydrogen bonding",
+    "conformation. Hydrogen bonds are defined based on a simple geometric",
+    "criterium, specified by the maximum hydrogen-donor-acceptor angle",
+    "and donor-acceptor distance, which are set by [TT]-angle[tt] and",
+    "[TT]-dist[tt] respectively.[PAR]",
     
     "During processing the atoms will be reordered according to Gromacs",
-    "conventions.",
-    "With [TT]-n[tt] an index file can be generated that contains",
-    "one group reordered in the same way. This allows you to convert a",
-    "Gromos trajectory and coordinate file to Gromos. There is one",
-    "limitation: reordering is done after the hydrogens are stripped",
+    "conventions. With [TT]-n[tt] an index file can be generated that",
+    "contains one group reordered in the same way. This allows you to",
+    "convert a Gromos trajectory and coordinate file to Gromos. There is",
+    "one limitation: reordering is done after the hydrogens are stripped",
     "from the input and before new hydrogens are added. This means that",
     "if you have hydrogens in your input file, you [BB]must[bb] select",
     "the [TT]-reth[tt] option to obtain a useful index file.[PAR]",
@@ -490,28 +490,28 @@ int main(int argc, char *argv[])
     "When using [TT]-reth[tt] to keep all hydrogens from the [TT].pdb[tt]",
     "file, the names of the hydrogens in the [TT].pdb[tt] file [IT]must[it]",
     "match names in the database files used by pdb2gmx. Except for residues",
-    "Tyr, Trp, Phe, Lys and His, no additional hydrogen atoms will be added.",
-    "[PAR]",
+    "Tyr, Trp, Phe, Lys and His, no additional hydrogen atoms will be",
+    "added.[PAR]",
     
     "[TT]-sort[tt] will sort all residues according to the order in the",
-    "database, sometimes this is necessary to get charge groups together.[PAR]",
+    "database, sometimes this is necessary to get charge groups",
+    "together.[PAR]",
     
     "[TT]-alldih[tt] will generate all proper dihedrals instead of only",
     "those with as few hydrogens as possible, this is useful for use with",
     "the Charmm forcefield.[PAR]",
     
-    "The option -convert removes or slows down hydrogen motions.",
-    "Angular and out-of-plane motions can be removed by changing",
-    "hydrogens into dummy atoms and fixing angles,",
-    "which fixes their position relative to",
-    "neighboring atoms. Slowing down of dihedral motion is done by",
+    "The option -convert removes or slows down hydrogen motions. Angular",
+    "and out-of-plane motions can be removed by changing hydrogens into",
+    "dummy atoms and fixing angles, which fixes their position relative",
+    "to neighboring atoms. Slowing down of dihedral motion is done by",
     "increasing the hydrogen-mass by a factor of 4. This is also done",
     "for water hydrogens to slow down the rotational motion of water.",
     "The increase in mass of the hydrogens is subtracted from the bonded",
     "(heavy) atom so that the total mass of the system remains the same.",
-    "Three options are available: normal topology; dummy hydrogens",
-    "and fixed angles; increase mass of hydrogens (heavy); both dummies",
-    "and increased mass."
+    "Three options are available: normal topology; dummy hydrogens and",
+    "fixed angles; increase mass of hydrogens (heavy); both dummies and",
+    "increased mass."
   };
   static char *bugs[] = {
     "Generation of N-terminal hydrogen atoms on OPLS files does not work.",
@@ -521,7 +521,7 @@ int main(int argc, char *argv[])
     "The program should be able to select the protonation on pH, and also "
     "should allow for selection of ASPH instead of ASP.",
   };
-
+  
   typedef struct {
     char chain;
     int  start;
@@ -578,7 +578,7 @@ int main(int argc, char *argv[])
     { efSTO, "-q", "clean.pdb", ffOPTWR }
   };
 #define NFILE asize(fnm)
-
+  
   /* Command line arguments msut be static */
   static bool bNewRTP=FALSE;
   static bool bInter=FALSE, bLysH=TRUE, bFFMan=FALSE, bCysMan=FALSE; 
@@ -622,7 +622,7 @@ int main(int argc, char *argv[])
       "Convert atoms" }
   };
 #define NPARGS asize(pa)
-
+  
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    asize(bugs),bugs);
