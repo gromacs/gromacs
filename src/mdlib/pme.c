@@ -177,8 +177,8 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForward)
 		 tmp,localsize,      
 		 GMX_MPI_REAL,MPI_SUM,i,MPI_COMM_WORLD);
     }
-    if(cr->pid<maxproc)
-      memcpy(grid->ptr+cr->pid*localsize,tmp,localsize*sizeof(t_fft_r));
+    if(cr->nodeid<maxproc)
+      memcpy(grid->ptr+cr->nodeid*localsize,tmp,localsize*sizeof(t_fft_r));
   }
   else { /* distribute local grid to all processors */
     for(i=0;i<maxproc;i++)
