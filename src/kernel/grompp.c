@@ -448,7 +448,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
     if (nmismatch) {
       sprintf(buf,"%d non-matching atom name%s\n"
 	      "atom names from %s will be used\n"
-	      "atom names from %s will be ingnored\n",
+	      "atom names from %s will be ignored\n",
 	      nmismatch,(nmismatch == 1) ? "" : "s",topfile,confin);
       warning(buf);
     }    
