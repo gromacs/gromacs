@@ -58,10 +58,17 @@ static void norm_princ(t_atoms *atoms, int isize, atom_id *index,
   /* equalize principal components: */
   /* orient principal axes, get principal components */
   orient_princ(atoms, isize, index, natoms, x, NULL, &princ);
-  /* calculate scaling constants */
-  unitv(princ,vec);
-  for(m=0; m<DIM; m++)
-    vec[m] = 1/vec[m];
+  
+  /* calc our own principal components */
+  clear_rvec(vec);
+  for(m=0; m<DIM; m++) {
+    for(i=0; i<isize; i++)
+      vec[m] += sqr(x[index[i]][m]);
+    vec[m] = sqrt(vec[m]/isize);
+    /* calculate scaling constants */
+    vec[m] = 1/(sqrt(3)*vec[m]);
+  }
+    
   /* scale coordinates */
   for(i=0; i<natoms; i++)
     for(m=0; m<DIM; m++)
@@ -72,9 +79,10 @@ int main (int argc,char *argv[])
 {
   static char *desc[] = {
     "g_rms compares two structures by computing the root mean square",
-    "deviation (RMSD) or when [TT]-rho[tt] is specified the size-independent",
-    "'rho' similarity parameter, reference Maiorov & Crippen, PROTEINS 22,",
-    "273 (1995).[PAR]"
+    "deviation (RMSD), the size-independent 'rho' similarity parameter",
+    "(rho) or the scaled rho (rhosc), ",
+    "reference Maiorov & Crippen, PROTEINS 22, 273 (1995).",
+    "This is selected by [TT]-what[tt].[PAR]"
     "Each structure from a trajectory ([TT]-f[tt]) is compared to a",
     "reference structure from a run input file by least-squares fitting",
     "the structures on top of each other. The reference structure is taken",
@@ -94,17 +102,28 @@ int main (int argc,char *argv[])
     "analogously to the [TT]-m[tt] option. Only bonds between atoms in the",
     "comparison group are considered."
   };
-  static bool bPBC=TRUE,bFit=TRUE,bFitAll=TRUE,bRho=FALSE,bSplit=FALSE;
-  static bool bNano=FALSE,bDeltaLog=FALSE;
+  static bool bPBC=TRUE,bFit=TRUE,bFitAll=TRUE,bSplit=FALSE;
+  static bool bDeltaLog=FALSE;
   static int  prev=0,freq=1,freq2=1,nlevels=80,avl=0;
   static real rmsd_user_max=-1,rmsd_user_min=-1, 
               bond_user_max=-1,bond_user_min=-1,
               delta_maxy=0.0;
+  /* strings and things for selecting difference method */
+  enum                      {ewSel,ewRMSD,      ewRho,     ewRhoSc, ewNR };
+  int ewhat;
+  static char *what[ewNR+1]={NULL, "rmsd",      "rho",     "rhosc", NULL};
+  char *whatname[ewNR]     ={NULL, "RMSD",      "Rho",     "Rho sc"};
+  char *whatlabel[ewNR]    ={NULL, "RMSD (nm)", "Rho",     "Rho sc"};
+  char *whatxvgname[ewNR]  ={NULL, "RMSD",      "\\8r\\4", "\\8r\\4\\ssc\\N"};
+  char *whatxvglabel[ewNR] ={NULL, "RMSD (nm)", "\\8r\\4", "\\8r\\4\\ssc\\N"};
+  /* select axis timings */
+  static char *timename[] =  {NULL, "ps", "fs", "ns", "us", NULL};
+  real timefactor[] = {0, 1, 1e3, 1e-3, 1e-6, 0};
   t_pargs pa[] = {
-    { "-rho",   FALSE, etBOOL, {&bRho}, "Calculate Rho in stead of RMSD" },
+    { "-what",  FALSE, etENUM, {what},  "Structural difference measure" },
     { "-pbc",   FALSE, etBOOL, {&bPBC}, "PBC check" },
     { "-fit",   FALSE, etBOOL, {&bFit}, "Fit to reference structure" },
-    { "-ns",    FALSE, etBOOL, {&bNano},"ns on axis instead of ps"},
+    { "-time",  FALSE, etENUM, {timename},"time unit on axis"},
     { "-prev",  FALSE, etINT,  {&prev}, "Compare with previous frame" },
     { "-split", FALSE, etBOOL, {&bSplit},"Split graph where time is zero" },
     { "-fitall",FALSE, etBOOL, {&bFitAll},
@@ -144,7 +163,7 @@ int main (int argc,char *argv[])
   rvec       *x,*xp,*xm=NULL,**mat_x=NULL,**mat_x2,*mat_x2_j=NULL,**mat_b=NULL,
              **mat_b2=NULL,vec;
   int        status;
-  char       buf[256],*timelabel;
+  char       buf[256],buf2[256],timelabel[256];
   
   int        nrms,ncons=0;
   FILE       *fp;
@@ -178,7 +197,9 @@ int main (int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
-  if (bRho) please_cite(stdout,"Maiorov95");
+  ewhat=nenum(what);
+  if (ewhat==ewRho || ewhat==ewRhoSc)
+    please_cite(stdout,"Maiorov95");
   
   bMirror= opt2bSet("-mir",NFILE,fnm); /* calc RMSD vs mirror of ref. */
   bFile2 = opt2bSet("-f2",NFILE,fnm);
@@ -195,8 +216,9 @@ int main (int argc,char *argv[])
       fprintf(stderr,"WARNING: option -skip also applies to -prev\n");
   }
   
+  
   if (bFile2 && !bMat && !bBond) {
-    fprintf(stderr,
+    fprintf(stderr, 
 	    "WARNING: second trajectory (-f2) useless when not calculating matrix (-m/-bm),\n"
 	    "         will not read from %s\n",opt2fn("-f2",NFILE,fnm));
     bFile2=FALSE;
@@ -227,7 +249,7 @@ int main (int argc,char *argv[])
   /*set box type*/
   init_pbc(box,FALSE);
 
-  timelabel = bNano ? "Time (ns)" : "Time (ps)";
+  sprintf(timelabel, "Time (%s)", timename[0]);
   
   if (bFit)
     fprintf(stderr,"Select group for least squares fit\n");
@@ -287,8 +309,7 @@ int main (int argc,char *argv[])
       xm[i][XX] = -xm[i][XX];
     }
   }
-  if (bRho)
-    /* equalize principal components */
+  if (ewhat==ewRhoSc)
     norm_princ(&top.atoms, ifit, ind_fit, top.atoms.nr, xp);
   
   /* read first frame */
@@ -367,8 +388,7 @@ int main (int argc,char *argv[])
       rm_pbc(&(top.idef),natoms,box,x,x);
     
     reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
-    if (bRho)
-      /* equalize principal components */
+    if (ewhat==ewRhoSc)
       norm_princ(&top.atoms, ifit, ind_fit, natoms, x);
     
     if (bFit)
@@ -408,10 +428,12 @@ int main (int argc,char *argv[])
 	do_fit(natoms,w_rls,x,xp);
     }    
     for(j=0; (j<nrms); j++) 
-      rls[j][teller] = calc_similar_ind(bRho,irms[j],ind_rms[j],w_rms,x,xp);
+      rls[j][teller] = 
+	calc_similar_ind(ewhat!=ewRMSD,irms[j],ind_rms[j],w_rms,x,xp);
     if (bNorm) {
       for(j=0; (j<irms[0]); j++)
-	rlsnorm[j] += calc_similar_ind(bRho,1,&(ind_rms[0][j]),w_rms,x,xp);
+	rlsnorm[j] += 
+	  calc_similar_ind(ewhat!=ewRMSD,1,&(ind_rms[0][j]),w_rms,x,xp);
     } 
     
     if (bMirror) {
@@ -420,10 +442,12 @@ int main (int argc,char *argv[])
 	do_fit(natoms,w_rls,xm,x);
       
       for(j=0; j<nrms; j++)
-	rlsm[j][teller] = calc_similar_ind(bRho,irms[j],ind_rms[j],w_rms,x,xm);
+	rlsm[j][teller] = 
+	  calc_similar_ind(ewhat!=ewRMSD,irms[j],ind_rms[j],w_rms,x,xm);
     }
     time[teller]=t;
-    if (bNano) time[teller] *= 0.001;
+    if (timefactor[nenum(timename)]!=1)
+      time[teller] *= timefactor[nenum(timename)];
 
     teller++;
     if (teller >= maxframe) {
@@ -455,8 +479,7 @@ int main (int argc,char *argv[])
 	rm_pbc(&(top.idef),natoms,box,x,x);
 
       reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
-      if (bRho)
-	/* equalize principal components */
+      if (ewhat==ewRhoSc)
 	norm_princ(&top.atoms, ifit, ind_fit, natoms, x);
       
       if (bFit)
@@ -485,7 +508,8 @@ int main (int argc,char *argv[])
       }
       
       time2[teller2]=t;
-      if (bNano) time2[teller2] *= 0.001;
+      if (timefactor[nenum(timename)]!=1)
+	time2[teller2] *= timefactor[nenum(timename)];
 
       teller2++;
       if (teller2 >= maxframe2) {
@@ -561,7 +585,7 @@ int main (int argc,char *argv[])
 	if (bMat) {
 	  if (bFile2 || (i<=j)) {
 	    rmsd_mat[i][j] =
-	      calc_similar_ind(bRho,irms[0],ind_rms_m,
+	      calc_similar_ind(ewhat!=ewRMSD,irms[0],ind_rms_m,
 			       w_rms_m,mat_x[i],mat_x2_j);
 	    if (rmsd_mat[i][j] > rmsd_max) rmsd_max=rmsd_mat[i][j];
 	    if (rmsd_mat[i][j] < rmsd_min) rmsd_min=rmsd_mat[i][j];
@@ -627,8 +651,8 @@ int main (int argc,char *argv[])
       if ((rmsd_user_max !=  -1) || (rmsd_user_min != -1))
 	fprintf(stderr,"Min and Max value set to resp. %f and %f\n",
 		rmsd_min,rmsd_max);
-      sprintf(buf,"%s %s matrix",gn_rms[0],bRho ? "Rho" : "RMSD");
-      write_xpm(opt2FILE("-m",NFILE,fnm,"w"),buf,bRho ? "Rho" : "RMSD (nm)",
+      sprintf(buf,"%s %s matrix",gn_rms[0],whatname[ewhat]);
+      write_xpm(opt2FILE("-m",NFILE,fnm,"w"),buf,whatlabel[ewhat],
 		timelabel,timelabel,tel_mat,tel_mat2,axis,axis2,
 		rmsd_mat,rmsd_min,rmsd_max,rlo,rhi,&nlevels);
       /* Print the distribution of RMSD values */
@@ -668,9 +692,9 @@ int main (int argc,char *argv[])
 	  del_xaxis[i]=axis[i]-axis[0];
 	for (i=0; i<del_lev+1; i++)
 	  del_yaxis[i]=delta_maxy*i/del_lev;
-	sprintf(buf,"%s %s vs. delta t",gn_rms[0],bRho ? "Rho" : "RMSD");
+	sprintf(buf,"%s %s vs. delta t",gn_rms[0],whatname[ewhat]);
 	fp = ffopen("delta.xpm","w");
-	write_xpm(fp,buf,"density",timelabel,bRho ? "Rho" : "RMSD (nm)",
+	write_xpm(fp,buf,"density",timelabel,whatlabel[ewhat],
 		  delta_xsize,del_lev+1,del_xaxis,del_yaxis,
 		  delta,0.0,delta_max,rlo,rhi,&nlevels);
 	fclose(fp);
@@ -702,14 +726,11 @@ int main (int argc,char *argv[])
 
   /* Write the RMSD's to file */
   if (!bPrev)
-    if (bRho)
-      sprintf(buf,"Rho Difference");
-    else
-      sprintf(buf,"RMS Deviation");
+    sprintf(buf,"%s Difference",whatxvgname[ewhat]);
   else
-    sprintf(buf,"%s with frame %g %s ago",bRho ? "Rho" : "RMSD",
-	    time[prev*freq]-time[0], bNano ? "ns" : "ps");
-  fp=xvgropen(opt2fn("-o",NFILE,fnm),buf,timelabel,bRho ? "Rho" : "RMS (nm)");
+    sprintf(buf,"%s with frame %g %s ago",whatxvgname[ewhat],
+	    time[prev*freq]-time[0], timename[0]);
+  fp=xvgropen(opt2fn("-o",NFILE,fnm),buf,timelabel,whatxvglabel[ewhat]);
   if (nrms == 1)
     fprintf(fp,"@ subtitle \"of %s after lsq fit to %s\"\n",gn_rms[0],gn_fit);
   else {
@@ -730,10 +751,9 @@ int main (int argc,char *argv[])
   
   if (bMirror) {
     /* Write the mirror RMSD's to file */
-    fp=xvgropen(opt2fn("-mir",NFILE,fnm),
-		bRho ? "Mirror Rho Difference" : "Mirror RMS Deviation",
-		timelabel,
-		bRho ? "Mirror Rho" : "Mirror RMS (nm)");
+    sprintf(buf,"Mirror %s Difference",whatxvgname[ewhat]);
+    sprintf(buf2,"Mirror %s",whatxvglabel[ewhat]);
+    fp=xvgropen(opt2fn("-mir",NFILE,fnm), buf, timelabel, buf2);
     if (nrms == 1)
       fprintf(fp,"@ subtitle \"of %s after lsq fit to mirror of %s\"\n",
 	      gn_rms[0],gn_fit);
@@ -752,16 +772,16 @@ int main (int argc,char *argv[])
   }
 
   if (bAv) {
-    fp = xvgropen(opt2fn("-a",NFILE,fnm),
-		  bRho ? "Average Rho" : "Average RMS","Residue",
-		  bRho ? "Rho" : "RMS (nm)");
+    sprintf(buf,"Average %s",whatxvgname[ewhat]);
+    sprintf(buf2,"Average %s",whatxvglabel[ewhat]);
+    fp = xvgropen(opt2fn("-a",NFILE,fnm), buf, "Residue", buf2);
     for(j=0; (j<nrms); j++)
       fprintf(fp,"%10d  %10g\n",j,rlstot/teller);
     fclose(fp);
   }
 
   if (bNorm) {
-    fp = xvgropen("aver.xvg",gn_rms[0],"Residue",bRho ? "Rho" : "RMS (nm)");
+    fp = xvgropen("aver.xvg",gn_rms[0],"Residue",whatxvglabel[ewhat]);
     for(j=0; (j<irms[0]); j++)
       fprintf(fp,"%10d  %10g\n",j,rlsnorm[j]/teller);
     fclose(fp);
