@@ -152,7 +152,7 @@ real morsebonds(FILE *log,int nbonds,
       fr->fshift[kj][m]-=fij;
     }
   }                                           /*  58 TOTAL    */
-  return vbond;
+  return vtot;
 }
 
 real harmonic(real kA,real kB,real xA,real xB,real x,real lambda,
