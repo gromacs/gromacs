@@ -150,20 +150,19 @@ int main(int argc,char *argv[])
     "between residue pairs. With -frames these distance matrices can be",
     "stored as a function",
     "of time, to be able to see differences in tertiary structure as a",
-    "funcion of time. Default only an averaged matrix over the whole",
+    "funcion of time. If you choose your options unwise, this may generate",
+    "a large output file. Default only an averaged matrix over the whole",
     "trajectory is output.",
     "Also a count of the number of different atomic contacts between",
     "residues over the whole trajectory can be made.",
     "The output can be processed with xpm2ps to make a PostScript (tm) plot."
   };
   static real truncate=1.5,dt=0.0;
-  static bool bAVS=FALSE,bAtom=FALSE;
+  static bool bAtom=FALSE;
   static int  r0=1,nlevels=15;
   t_pargs pa[] = { 
     { "-t",   FALSE, etREAL, &truncate,
       "trunc distance" },
-    { "-avs", FALSE, etBOOL, &bAVS,
-      "Produce avs output" },
     { "-nl",   FALSE, etINT,  &nlevels,
       "Discretize distance in # levels" },
     { "-dt",  FALSE, etREAL, &dt,
@@ -178,11 +177,10 @@ int main(int argc,char *argv[])
     { efXPM, "-mean", "dm", ffWRITE },
     { efXPM, "-frames", "dmf", ffOPTWR },
     { efXVG, "-no", "num",ffOPTWR },
-    { efOUT, "-ao", NULL, ffWRITE }
   };
 #define NFILE asize(fnm)
 
-  FILE       *avsout=NULL,*out=NULL,*fp;
+  FILE       *out=NULL,*fp;
   t_topology *top;
   t_atoms    useatoms;
   int        isize;
@@ -213,8 +211,6 @@ int main(int argc,char *argv[])
   bFrames= opt2bSet("-frames",NFILE,fnm);
   if ( bCalcN ) 
     fprintf(stderr,"Will calculate number of different contacts\n");
-  if (bAVS)
-    fprintf(stderr,"Will produce AVS compatible output too\n");
   fprintf(stderr,"Time interval between frames is %g ps\n",dt);
     
   top=read_top(ftp2fn(efTPB,NFILE,fnm));
@@ -267,8 +263,6 @@ int main(int argc,char *argv[])
   rhi.r=1.0, rhi.g=1.0, rhi.b=1.0;
   if (bFrames)
     out=opt2FILE("-frames",NFILE,fnm,"w");
-  if (bAVS)
-    avsout=ftp2FILE(efOUT,NFILE,fnm,"w");
   t0=0;
   do {
     if (t >= t0) {
@@ -286,8 +280,6 @@ int main(int argc,char *argv[])
 	write_xpm(out,label,"Distance (nm)","Residue Index","Residue Index",
 		  nres,nres,resnr,resnr,mdmat,0,truncate,rlo,rhi,&nlevels);
       }
-      if (bAVS)
-	pr_mat(avsout,it,nres,mdmat,truncate);
       t0+=dt;
     }
   } while (read_next_x(status,&t,dumnat,x,box));
@@ -331,8 +323,6 @@ int main(int argc,char *argv[])
     fclose(fp);
   }
   fclose(out);
-  if (bAVS)
-    fclose(avsout);
     
   thanx(stdout);
     
