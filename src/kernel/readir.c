@@ -188,7 +188,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	      ir->rcoulomb,ir->rvdw,ir->rlist,eel_names[eelTWIN]);
       (*nerror)++;
     }
-    if (ir->rcoulomb > ir->rlist-0.1) {
+    if (ir->rcoulomb > ir->rlist-0.099) {
       sprintf(warn_buf,
 	      "To prevent cut-off effects rlist (%g) should be 0.1 to 0.3 "
 	      "nm larger than rcoulomb (%g)",ir->rlist,ir->rcoulomb);
