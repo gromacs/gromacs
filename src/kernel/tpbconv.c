@@ -256,7 +256,7 @@ int main (int argc, char *argv[])
   int          fp;
   t_trnheader head;
   int          i,frame,run_step,nsteps_org;
-  real         run_t;
+  real         run_t,state_t;
   bool         bOK,bFrame,bTime,bSel;
   t_topology   top;
   t_inputrec   *ir,*irnew=NULL;
@@ -415,7 +415,7 @@ int main (int argc, char *argv[])
       else
 	bSel = FALSE;
       if (bSel) {
-	fprintf(stderr,"Will write subset %s of original tpx containg %d "
+	fprintf(stderr,"Will write subset %s of original tpx containing %d "
 		"atoms\n",grpname,gnx);
 	reduce_topology_x(gnx,index,&top,state.x,state.v);
 	state.natoms = gnx;
@@ -427,12 +427,13 @@ int main (int argc, char *argv[])
       else
 	fprintf(stderr,"Will write full tpx file (no selection)\n");
     }    
-    
+
+    state_t = ir->init_t + ir->init_step*ir->delta_t;
     fprintf(stderr,"Writing statusfile with starting step %10d and length %10d steps...\n",
 	    ir->init_step,ir->nsteps);
     fprintf(stderr,"                                 time %10.3f and length %10.3f ps\n",
-	    ir->init_step*ir->delta_t,ir->nsteps*ir->delta_t);
-    write_tpx_state(opt2fn("-o",NFILE,fnm),0,ir->init_t,ir,&state,&top);
+	    state_t,ir->nsteps*ir->delta_t);
+    write_tpx_state(opt2fn("-o",NFILE,fnm),0,state_t,ir,&state,&top);
   }
   else
     printf("You've simulated long enough. Not writing tpr file\n");
