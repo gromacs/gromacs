@@ -324,7 +324,7 @@ int main (int argc,char *argv[])
   teller = 0;
   do {
     /* Remove periodic boundary */
-    rm_pbc(&(top.idef),top.atoms.nr,box,x,x);
+    rm_pbc(&(top.idef),natom,box,x,x);
     
     /* Set center of mass to zero */
     sub_xcm(x,isize,index,top.atoms.atom,xcm,FALSE);
