@@ -206,14 +206,14 @@ static int select_atomnumbers(char **string,t_atoms *atoms,atom_id n1,
     i=n1;
     sprintf(gname,"a");
     do {
-      if ((i>=1) && (i<=atoms->nr)) {
-	index[*nr]=i;
+      if ((i-1>=0) && (i-1<atoms->nr)) {
+	index[*nr] = i-1;
 	(*nr)++;
 	sprintf(buf,"_%d",i);
 	strcat(gname,buf);
       } else {
 	printf("Invalid atom number %d\n",i);
-	*nr=0;
+	*nr = 0;
       }
     } while ((*nr!=0) && (parse_int(string,&i)));
   }
