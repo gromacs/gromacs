@@ -1402,8 +1402,11 @@ $f=7.7$ kJ~mol$^{-1}$~nm$^{-1}$. A value for $\epsilon$ between 1 and
 Conjugate gradient is slower than steepest descent in the early stages of
 the minimization, but becomes more efficient closer to the energy minimum.
 The parameters and stop criterion are the same as for steepest descent.
-Conjugate gradient can not be used with constraints or freeze groups.
-
+In {\gromacs} conjugate gradient can not be used with constraints,
+as this has not been implemented. This is not really a restriction,
+since the accuracy of conjugate gradient is only required for minimization
+prior to a normal mode analysis, which can not be performed with constraints.
+For most other purposes steepest descent is efficient enough.
 
 \section{Normal Mode Analysis}
 \normindex{Normal mode analysis}~\cite{Levitt83,Go83,BBrooks83b} 
