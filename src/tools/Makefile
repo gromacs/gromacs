@@ -55,7 +55,7 @@ cdist:		cdist.o bondlist.o smooth.o residues.o virtual.o
 genbox:		genbox.o	addconf.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
-genconf:	genconf.o
+genconf:	genconf.o	sortwater.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
 gendr:		gendr.o

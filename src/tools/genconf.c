@@ -42,6 +42,7 @@ static char *SRCID_genconf_c = "$Id$";
 #include "txtdump.h"
 #include "readinp.h"
 #include "names.h"
+#include "sortwater.h"
 
 static void rand_rot(int natoms,rvec x[],rvec v[],vec4 xrot[],vec4 vrot[],
                      int *seed,rvec max_rot)
@@ -133,20 +134,27 @@ int main(int argc, char *argv[])
   };
 #define NFILE asize(fnm)
   static rvec nrbox={1,1,1};
-  static int  seed;               /* seed for random number generator */
+  static int  seed=0;               /* seed for random number generator */
+  static int  nmolat=3;
+  static bool bShuffle = FALSE;
   static bool bRandom = FALSE;    /* False: no random rotations */
   static rvec dist={0,0,0};       /* space added between molecules ? */
   static rvec max_rot={90,90,90}; /* maximum rotation */
-/*  static rvec max_tr={0,0,0}; */    /* maximum translation */
   t_pargs pa[] = {
-    { "-nbox",  FALSE, etRVEC, {&nrbox},  "Number of boxes" },
-    { "-dist",  FALSE, etRVEC, {&dist},   "Distance between boxes" },
-    { "-seed",  FALSE, etINT,  {&seed},   "Random generator seed" },
-    { "-rot",   FALSE, etBOOL, {&bRandom},"Randomly rotate conformations" },
-    { "-maxrot",FALSE, etRVEC, {&max_rot},"Maximum random rotation" },
-    /*
-    { "-maxtrans",FALSE, etRVEC, &max_tr),  "Max translation" },
-    */
+    { "-nbox",   FALSE, etRVEC, {&nrbox},  
+      "Number of boxes" },
+    { "-dist",   FALSE, etRVEC, {&dist},   
+      "Distance between boxes" },
+    { "-seed",   FALSE, etINT,  {&seed},   
+      "Random generator seed, if 0 generated from the time" },
+    { "-rot",    FALSE, etBOOL, {&bRandom},
+      "Randomly rotate conformations" },
+    { "-shuffle",FALSE, etBOOL, {&bShuffle},
+      "Random shuffling of molecules" },
+    { "-nmolat", FALSE, etINT,  {&nmolat}, 
+      "Number of atoms per molecule, assumed to start from 0. If you set this wrong, it will screw up you system!" },
+    { "-maxrot", FALSE, etRVEC, {&max_rot},
+      "Maximum random rotation" }
   };
   
   CopyRight(stdout,argv[0]);
@@ -160,7 +168,10 @@ int main(int argc, char *argv[])
   
   if ((nx <= 0) || (ny <= 0) || (nz <= 0))
     fatal_error(0,"Number of boxes (-nbox) should be positive");
-  
+  if ((nmolat <= 0) && bShuffle)
+    fatal_error(0,"Can not shuffle if tha molecules have only %d atoms",
+		nmolat);
+    
   vol=nx*ny*nz;     /* calculate volume in grid points (= nr. molecules) */
 
   get_stx_coordnum(opt2fn("-f",NFILE,fnm),&natoms); 
@@ -238,6 +249,10 @@ int main(int argc, char *argv[])
 
   atoms->nr*=vol;
   atoms->nres*=vol;
+  
+  if (bShuffle)
+    randwater(0,atoms->nr/nmolat,nmolat,x,v,&seed);
+  
   write_sto_conf(opt2fn("-o",NFILE,fnm),title,atoms,x,v,box);
   
   thanx(stdout);
