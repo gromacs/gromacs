@@ -209,13 +209,18 @@ static void edit_files(char **fnms,int nfiles,real *readtime, real
     for(i=0;i<nfiles;i++)
 	switch(cont_type[i]) {
 	case TIME_EXPLICIT:
-	    fprintf(stderr,"%25s   %10.3f\n",fnms[i],settime[i]);
+	    fprintf(stderr,"%25s   %10.3f",fnms[i],settime[i]);
+	    if ( i>0 && 
+		 cont_type[i-1]==TIME_EXPLICIT && settime[i]==settime[i-1] )
+	      fprintf(stderr," WARNING: same Start time as previous");
+	    fprintf(stderr,"\n");
 	    break;
 	case TIME_CONTINUE:
 	    fprintf(stderr,"%25s        Continue from last file\n",fnms[i]);
 	    break;	      
 	case TIME_LAST:
-	    fprintf(stderr,"%25s        Change by same amount as last file\n",fnms[i]);
+	    fprintf(stderr,"%25s        Change by same amount as last file\n",
+		    fnms[i]);
 	    break;
 	}
     fprintf(stderr,"\n");
