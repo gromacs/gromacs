@@ -711,9 +711,18 @@ void low_do_autocorr(char *fn,char *title,
   }
   else {
     /* Not averaging. Normalize individual ACFs */
-    for(i=0; (i<nitem); i++) 
+    for(i=0; (i<nitem); i++) {
       normalize_acf(nframes,nout,c1[i],bFour,bNormalize);
-      
+      if (tbeginfit < tendfit)
+	fit_acf(nout,nfitparm,fitfn,fittitle,bVerbose,
+		tbeginfit,tendfit,dt,c1[i]);
+      else {
+	sum = print_and_integrate(fp,nout,dt,c1[i]);
+	fprintf(stderr,"CORRelation time (integral over corrfn %d): %g (ps)\n",
+		i,sum);
+      }
+    }
+
     /* Now dump them all */
     for(j=0; (j<nout); j++) {
       fprintf(fp,"%10f",j*dt);
