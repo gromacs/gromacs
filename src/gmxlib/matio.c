@@ -640,7 +640,7 @@ void write_xpm(FILE *out,
    */
 
   if (hi <= lo) 
-    fatal_error(0,"hi (%g) <= lo (%g)",hi,lo);
+    fatal_error(0,"hi (%f) <= lo (%f)",hi,lo);
 
   write_xpm_header(out,title,legend,label_x,label_y,FALSE);
   write_xpm_map(out,n_x,n_y,nlevels,lo,hi,rlo,rhi);
