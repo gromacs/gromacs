@@ -56,6 +56,7 @@ gmxcheck
 gmxdump
 gro
 grompp
+hdb
 highway
 itp
 m2p
@@ -72,7 +73,6 @@ pdb
 pdb2gmx
 protonate
 rtp
-sas2mat
 tex
 top
 tpa
