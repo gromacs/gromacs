@@ -17,7 +17,8 @@ include		$(GMXHOME)/src/makef/Makefile.def
 LIB		=
 PROGRAMS	= average	do_dssp		editconf	\
 		eneconv		g_anaeig	g_angle		\
-		g_bond		g_chi		g_com		\
+		g_bond		g_chi		g_cluster	\
+		g_com		\
 		g_confrms	g_covar		g_density	\
 		g_dielectric	g_dih		g_dipoles	\
 		g_disre		g_dist		g_enemat	\

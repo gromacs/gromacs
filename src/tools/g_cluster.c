@@ -490,7 +490,7 @@ int main(int argc,char *argv[])
   
   static int  nlevels=40,nframes=100,skip=0;
   static real scalemax=-1.0,rmscut=0.1;
-  static bool bEigen=FALSE,bMem=TRUE,bLink=FALSE,bMC=TRUE;
+  static bool bEigen=FALSE,bMem=TRUE,bLink=FALSE,bMC=TRUE,bBinary=FALSE;
   static int  niter=10000,seed=1993;
   static real kT=1e-3;
   static int  M=10,P=3;
@@ -511,6 +511,8 @@ int main(int argc,char *argv[])
       "Use linkage algorithm for clustering" },
     { "-mem",   FALSE, etBOOL, &bMem,
       "Read the whole trajectory in memory (can be large...)" },
+    { "-binary",FALSE, etBOOL, &bBinary,
+      "Treat the RMS matrix as consisting of 0 and 1, where the cut-off is given by the value you put in for rms-cut" },
     { "-M",     FALSE, etINT,  &M,
       "Number of neirest neighbours considered for Jarvis-Patrick algorithm" },
     { "-P",     FALSE, etINT,  &P,
@@ -663,13 +665,22 @@ int main(int argc,char *argv[])
   rlo.r=1.0, rlo.g=1.0, rlo.b=0.0;
   rhi.r=0.0, rhi.g=0.0, rhi.b=1.0;
   
+  if (bBinary) {
+    for(i1=0; (i1 < nf); i1++) 
+      for(i2=0; (i2 < nf); i2++)
+	if (rms->mat[i1][i2] < rmscut)
+	  rms->mat[i1][i2] = 0;
+	else
+	  rms->mat[i1][i2] = 1;
+  }
   /* Write out plot file with RMS matrix */
   fp = opt2FILE("-o",NFILE,fnm,"w");
   write_xpm(fp,"RMS","RMS (nm)","Confs 1","Confs 2",
 	    nf,nf,resnr,resnr,rms->mat,0.0,rms->maxrms,rlo,rhi,&nlevels);
   ffclose(fp);
   xv_file(opt2fn("-o",NFILE,fnm),NULL);
-  
+
+    
   if (bLink) 
     /* Now sort the matrix and write it out again */
     gather(rms,rmscut);
