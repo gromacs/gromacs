@@ -99,6 +99,8 @@ void close_enx(int fp)
   fio_close(fp);
 }
 
+static int framenr;
+
 int open_enx(char *fn,char *mode)
 {
   int       i,fp;
@@ -143,6 +145,8 @@ int open_enx(char *fn,char *mode)
   else 
     fp = fio_open(fn,mode);
     
+  framenr=0;
+    
   return fp;
 }
 
@@ -161,14 +165,17 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
     eh.ndisre = drblock ? (drblock->ndr) : 0;
     eh.nuser  = 0;
     eh.e_size = (*nre)*sizeof(ener[0]);
-    eh.d_size = eh.ndisre ? (drblock->ndr*
-		(sizeof(drblock->rav[0])+sizeof(drblock->rt[0]))) : 0;
+    eh.d_size = eh.ndisre ? 
+      (drblock->ndr*(sizeof(drblock->rav[0])+sizeof(drblock->rt[0]))) : 0;
     eh.u_size = 0;
   }
   fio_select(fp);
 
-  if (!do_eheader(fp,&eh))
+  if (!do_eheader(fp,&eh)) {
+    if (bRead)
+      fprintf(stderr,"\rLast frame %d         ",framenr);
     return FALSE;
+  }
   *t    = eh.t;
   *step = eh.step;
   *nre  = eh.nre;
@@ -186,6 +193,11 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
     }
     ndo_real(drblock->rav,drblock->ndr);
     ndo_real(drblock->rt,drblock->ndr);
+  }
+  if (bRead) {
+    if ( ( framenr<10 ) || ( framenr%10 == 0) ) 
+      fprintf(stderr,"\rReading frame %6d time %8.3f   ",framenr,*t);
+    framenr++;
   }
   if (eh.u_size) {
     fatal_error(0,"Can't handle user blocks");
