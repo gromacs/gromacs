@@ -417,7 +417,7 @@ static void do_update_bd(int start,int homenr,double dt,
 	if (fr)
 	  vn         = invfr*f[n][d] + rfac*fgauss(&jran);
 	else
-	  /* NOTE: invmass = 1/(mass*fric_const) */
+	  /* NOTE: invmass = 1/(mass*fric_const*dt) */
 	  vn         = invmass[n]*f[n][d]*dt 
 	               + sqrt(invmass[n])*rf[gt]*fgauss(&jran);
 
