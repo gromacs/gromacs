@@ -68,7 +68,8 @@ extern "C" {
   extern int pbc_dx(const rvec x1, const rvec x2, rvec dx);
   /* Calculate the correct distance vector from x2 to x1 and put it in dx.
    * Returns the ishift required to shift x1 at closest distance to x2;
-   * i.e. if 0<=ishift<SHIFTS then dx=shift_vec[ishift] (see calc_shifts below)
+   * i.e. if 0<=ishift<SHIFTS then x1 - x2 + shift_vec[ishift] = dx
+   * (see calc_shifts below on how to obtain shift_vec)
    * init_pbc must be called before ever calling this routine
    * (this is done by put_charge_groups_in_box).
    */
