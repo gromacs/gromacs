@@ -554,7 +554,7 @@ void update_forcerec(FILE *log,t_forcerec *fr,matrix box)
 void set_avcsixtwelve(FILE *log,t_forcerec *fr,
 		      const t_mdatoms *mdatoms,const t_block *excl)
 {
-  int    i,j,tpi,tpj,j1,j2,k,nexcl;
+  int    i,j,tpi,tpj,j1,j2,k,n,npair,nexcl;
   double csix,ctwelve;
   int    natoms,ntp,*type;
   bool   bBHAM;
@@ -570,50 +570,69 @@ void set_avcsixtwelve(FILE *log,t_forcerec *fr,
 
   csix = 0;
   ctwelve = 0;
-  /* We loop over all the atom pairs and subtract the excluded pairs.
-   * The main reason for substracting exclusions is that in some cases some
-   * combinations might never occur and the parameters could have any value.
-   * These unused values should not influence the dispersion correction.
-   */
+  npair = 0;
   nexcl = 0;
-  for(i=0; (i<natoms); i++) {
-    tpi = type[i];
+  if (!fr->bTPI) {
+    /* We loop over all the atom pairs and subtract the excluded pairs.
+     * The main reason for substracting exclusions is that in some cases some
+     * combinations might never occur and the parameters could have any value.
+     * These unused values should not influence the dispersion correction.
+     */
+    for(i=0; (i<natoms); i++) {
+      tpi = type[i];
 #ifdef DEBUG
-    if (tpi >= ntp)
-      gmx_fatal(FARGS,"Atomtype[%d] = %d, maximum = %d",i,tpi,ntp);
+      if (tpi >= ntp)
+	gmx_fatal(FARGS,"Atomtype[%d] = %d, maximum = %d",i,tpi,ntp);
 #endif
-    for(j=i+1; (j<natoms); j++) {
+      for(j=i+1; (j<natoms); j++) {
+	tpj   = type[j];
+#ifdef DEBUG
+	if (tpj >= ntp)
+	  gmx_fatal(FARGS,"Atomtype[%d] = %d, maximum = %d",j,tpj,ntp);
+#endif
+	if (bBHAM) {
+	  csix += BHAMC(nbfp,ntp,tpi,tpj);
+	} else {
+	  csix    += C6 (nbfp,ntp,tpi,tpj);
+	  ctwelve += C12(nbfp,ntp,tpi,tpj);
+	}
+	npair++;
+      }
+      /* Subtract the exclusions */
+      j1  = excl->index[i];
+      j2  = excl->index[i+1];
+      for(j=j1; j<j2; j++) {
+	k = AA[j];
+	if (k > i) {
+	  tpj   = type[k];
+	  if (bBHAM) {
+	    csix -= BHAMC(nbfp,ntp,tpi,tpj);
+	  } else {
+	    csix    -= C6 (nbfp,ntp,tpi,tpj);
+	    ctwelve -= C12(nbfp,ntp,tpi,tpj);
+	  }
+	  nexcl++;
+	}
+      }
+    }
+  } else {
+    /* Only correct for the interaction of the test particle
+     * with the rest of the system.
+     */
+    tpi = type[natoms - 1];
+    for(j=0; (j<natoms-1); j++) {
       tpj   = type[j];
-#ifdef DEBUG
-      if (tpj >= ntp)
-	gmx_fatal(FARGS,"Atomtype[%d] = %d, maximum = %d",j,tpj,ntp);
-#endif
       if (bBHAM) {
 	csix += BHAMC(nbfp,ntp,tpi,tpj);
       } else {
 	csix    += C6 (nbfp,ntp,tpi,tpj);
 	ctwelve += C12(nbfp,ntp,tpi,tpj);
       }
-    }
-    /* Subtract the exclusions */
-    j1  = excl->index[i];
-    j2  = excl->index[i+1];
-    for(j=j1; j<j2; j++) {
-      k = AA[j];
-      if (k > i) {
-	tpj   = type[k];
-	if (bBHAM) {
-	  csix -= BHAMC(nbfp,ntp,tpi,tpj);
-	} else {
-	  csix    -= C6 (nbfp,ntp,tpi,tpj);
-	  ctwelve -= C12(nbfp,ntp,tpi,tpj);
-	}
-	nexcl++;
-      }
+      npair++;
     }
   }
-  csix    /= 0.5*natoms*(natoms - 1) - nexcl;
-  ctwelve /= 0.5*natoms*(natoms - 1) - nexcl;
+  csix    /= npair - nexcl;
+  ctwelve /= npair - nexcl;
   if (debug) {
     fprintf(debug,"Counted %d exclusions\n",nexcl);
     fprintf(debug,"Average C6 parameter is: %10g\n",csix);
@@ -684,6 +703,9 @@ void init_forcerec(FILE *fp,
   idef           = &(top->idef);
   
   natoms         = mdatoms->nr;
+
+  /* Test particle insertion ? */
+  fr->bTPI = (ir->eI == eiTPI);
 
   /* Copy the user determined parameters */
   fr->userint1 = ir->userint1;
@@ -914,7 +936,7 @@ void init_forcerec(FILE *fp,
 
   bTab = fr->bcoultab || fr->bvdwtab || (fr->efep != efepNO);
   bSep14tab = !bTab || EEL_FULL(fr->eeltype) || (EEL_RF(fr->eeltype) &&
-						 fr->eeltype != eelRF_OLD);
+						 fr->eeltype != eelRF_NEC);
   if (bTab) {
     rtab = fr->rlistlong + ir->tabext;
     if (fr->rlistlong == 0 && fr->efep != efepNO && rtab < 5) {
@@ -995,7 +1017,9 @@ void ns(FILE *fp,
 	t_nsborder *nsb,
 	int        step,
 	real       lambda,
-	real       *dvdlambda)
+	real       *dvdlambda,
+	bool       bFillGrid,
+	bool       bDoForces)
 {
   static bool bFirst=TRUE;
   static int  nDNL;
@@ -1029,7 +1053,7 @@ void ns(FILE *fp,
   fr->hcg=nsb->workload[cr->nodeid];
 
   nsearch = search_neighbours(fp,fr,x,box,top,grps,cr,nsb,nrnb,md,
-			      lambda,dvdlambda);
+			      lambda,dvdlambda,bFillGrid,bDoForces);
   if (debug)
     fprintf(debug,"nsearch = %d\n",nsearch);
     
@@ -1053,14 +1077,15 @@ void force(FILE       *fplog,   int        step,
 	   real       epot[],   t_fcdata   *fcd,
 	   bool       bVerbose, matrix     box,
 	   real       lambda,   t_graph    *graph,
-	   t_block    *excl,    bool       bNBFonly,
+	   t_block    *excl,    
+	   bool       bNBFonly, bool bDoForces,
 	   rvec       mu_tot[],
 	   bool       bGatherOnly)
 {
   int     i,nit;
   bool    bDoEpot,bSepDVDL;
   rvec    box_size;
-  real    dvdlambda,Vlr,Vcorr=0,vdip,vcharge;
+  real    dvdlambda,Vsr,Vlr,Vcorr=0,vdip,vcharge;
   t_pbc   pbc;
 #define PRINT_SEPDVDL(s,v,dvdl) if (bSepDVDL) fprintf(fplog,"  %-30s V %12.5e  dVdl %12.5e\n",s,v,dvdl);
 
@@ -1086,10 +1111,16 @@ void force(FILE       *fplog,   int        step,
   do_nonbonded(fplog,cr,fr,x,f,md,
 	  fr->bBHAM ? grps->estat.ee[egBHAMSR] : grps->estat.ee[egLJSR],
 	  grps->estat.ee[egCOULSR],box_size,nrnb,
-	  lambda,&dvdlambda,FALSE,-1);
+	  lambda,&dvdlambda,FALSE,-1,bDoForces);
   
   epot[F_DVDL] += dvdlambda;
-  PRINT_SEPDVDL("VdW and Coulomb particle-p.",0.0,dvdlambda);
+  Vsr = 0;
+  if (bSepDVDL)
+    for(i=0; i<grps->estat.nn; i++)
+      Vsr +=
+	(fr->bBHAM ? grps->estat.ee[egBHAMSR][i] : grps->estat.ee[egLJSR][i])
+	+ grps->estat.ee[egCOULSR][i];
+  PRINT_SEPDVDL("VdW and Coulomb SR particle-p.",Vsr,dvdlambda);
   debug_gmx();
 
   if (debug) 
@@ -1163,7 +1194,7 @@ void force(FILE       *fplog,   int        step,
   } else if (EEL_RF(fr->eeltype)) {
     dvdlambda = 0;
 
-      if (fr->eeltype != eelRF_OLD)
+      if (fr->eeltype != eelRF_NEC)
       epot[F_RF_EXCL] = RF_excl_correction(fplog,nsb,fr,graph,md,excl,x,f,
 					   fr->fshift,&pbc,lambda,&dvdlambda);
 

@@ -611,9 +611,9 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
       tabsel[etiLJ12] = etabLJ12;
       break;
     case evdwENCADSHIFT:
-        tabsel[etiLJ6]  = etabLJ6Encad;
-        tabsel[etiLJ12] = etabLJ12Encad;
-        break;
+      tabsel[etiLJ6]  = etabLJ6Encad;
+      tabsel[etiLJ12] = etabLJ12Encad;
+      break;
     default:
       gmx_fatal(FARGS,"Invalid vdwtype %d in %s line %d",fr->vdwtype,
 		  __FILE__,__LINE__);

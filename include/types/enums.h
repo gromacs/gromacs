@@ -62,7 +62,7 @@ enum {
 
 enum {
   eelCUT,     eelRF,     eelGRF,   eelPME,  eelEWALD,  eelPPPM, 
-  eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB, eelRF_OLD, eelENCADSHIFT, 
+  eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB, eelRF_NEC, eelENCADSHIFT, 
   eelPMEUSER, eelNR
 };
 
@@ -71,7 +71,7 @@ enum {
   eewg3D, eewg3DC, eewgNR
 };
 
-#define EEL_RF(e) ((e == eelRF) || (e == eelGRF) || (e == eelRF_OLD))
+#define EEL_RF(e) ((e == eelRF) || (e == eelGRF) || (e == eelRF_NEC))
 
 #define EEL_FULL(e) ((e == eelPPPM) || (e == eelPOISSON) || (e ==  eelPME) || (e ==  eelPMEUSER) || (e == eelEWALD))
 
@@ -84,7 +84,7 @@ enum {
 };
 
 enum {
-  eiMD, eiSteep, eiCG, eiBD, eiSD, eiNM, eiLBFGS, eiNR
+  eiMD, eiSteep, eiCG, eiBD, eiSD, eiNM, eiLBFGS, eiTPI, eiNR
 };
 
 enum {

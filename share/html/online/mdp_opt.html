@@ -149,8 +149,29 @@ to the correction steps necessary it is not (yet) parallelized.
 </dd>
 <dt><b>nm</b></dt>
 <dd><!--Idx-->Normal mode analysis<!--EIdx--> is performed
-on the structure in the <tt>tpr</tt> file</dd>. GROMACS should be
-compiled in double precision.
+on the structure in the <tt>tpr</tt> file. GROMACS should be
+compiled in double precision.</dd>
+<dt><b>tpi</b></dt>
+<dd> Test particle insertion. The last atom in the topology
+is the test particle. A trajectory should be provided with
+the <tt>-rerun</tt> option of <tt>mdrun</tt>. This trajectory
+should contain one atom less than the topology. Insertions
+are performed <b>nsteps</b> times in each frame. When <b>nstlist</b>
+is larger than one, after a first 'normal' insertion <b>nstlist</b>-1
+insertions are performed in a sphere with radius 0.05*<b>rlist</b>
+around the 'first' location using the same neighborlist
+(and the same long-range energy when <b>rvdw</b> or <b>rcoulomb</b>
+&gt <b>rlist</b>).
+Since neighborlist construction is expensive one can perform several
+extra insertions with the same list almost for free.
+The random seed is set with <b><A HREF="#ld">ld_seed</A></b>.
+The temperature for the Boltzmann weighting is set with
+<b><A HREF="#tc">ref_t</A></b>, this should match the temperature
+of the simulation of the original trajectory.
+Dispersion correction is implemented correctly for tpi.
+All relevant quantities are written using the <tt>-tpi</tt> option
+of <tt>mdrun</tt>. No trajectory or energy file is written.
+</dd>
 </dl>
 
 <dt><h4>tinit: (0) [ps]</h4></dt>
@@ -372,7 +393,7 @@ The ionic strength is computed from the number of charged
 The temperature for the GRF potential is set with 
 <b><A HREF="#tc">ref_t</A></b> [K].</dd>
 
-<dt><b>Reaction-Field-old</b></dt>
+<dt><b>Reaction-Field-nec</b></dt>
 <dd>The same as <b>Reaction-Field</b>, but implemented as in
 GROMACS versions before 3.3. No reaction-field correction is applied
 to excluded atom pairs and self pairs.

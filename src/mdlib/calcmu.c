@@ -67,8 +67,8 @@ void calc_mu(t_nsborder *nsb,rvec x[],real q[],real qB[],
   for(m=0; (m<DIM); m++)
     mu[m] = tmpmu[m] * ENM2DEBYE;
   
-  clear_dvec(tmpmu);
   if (bFreeEnergy) {
+    clear_dvec(tmpmu);
     for(i=start; (i<end); i++)
       for(m=0; (m<DIM); m++)
 	tmpmu[m] += qB[i]*x[i][m];

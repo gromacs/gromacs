@@ -242,7 +242,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
     do_real(ir->rlist); 
     do_int(ir->coulombtype); 
     if (file_version < 32 && ir->coulombtype == eelRF)
-      ir->coulombtype = eelRF_OLD;      
+      ir->coulombtype = eelRF_NEC;      
     do_real(ir->rcoulomb_switch); 
     do_real(ir->rcoulomb); 
     do_int(ir->vdwtype);

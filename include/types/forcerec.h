@@ -181,6 +181,12 @@ typedef struct {
   /* Implicit solvent - surface tension for each atomtype */
   real *atype_surftens;
 
+  /* Test particle insertion.
+   * Only the energy difference due to the addition of the last atmo
+   * should be calculated.
+   */
+  bool bTPI;
+
   /* User determined parameters, copied from the inputrec */
   int  userint1;
   int  userint2;

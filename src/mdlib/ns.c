@@ -161,58 +161,56 @@ nbf_index(t_forcerec *      fr,
           int               nltype)
 {
   /* Table or not is selected from the forcerec, as is bham or RF */
-    
+  
   /* solopt is 0 for none, 1 for general M:N solvent, 2 for water
    * and 3 for water-water loops.
    */
-    int inloop[20] =
+  int inloop[20] =
     { 
-        eNR_NBKERNEL_NONE,
-        eNR_NBKERNEL010,
-        eNR_NBKERNEL020,
-        eNR_NBKERNEL030,
-        eNR_NBKERNEL100,
-        eNR_NBKERNEL110,
-        eNR_NBKERNEL120,
-        eNR_NBKERNEL130,
-        eNR_NBKERNEL200,
-        eNR_NBKERNEL210,
-        eNR_NBKERNEL220,
-        eNR_NBKERNEL230,
-        eNR_NBKERNEL300,
-        eNR_NBKERNEL310,
-        eNR_NBKERNEL320,
-        eNR_NBKERNEL330,
-        eNR_NBKERNEL400,
-        eNR_NBKERNEL410,
-        eNR_NBKERNEL_NONE,
-        eNR_NBKERNEL430
+      eNR_NBKERNEL_NONE,
+      eNR_NBKERNEL010,
+      eNR_NBKERNEL020,
+      eNR_NBKERNEL030,
+      eNR_NBKERNEL100,
+      eNR_NBKERNEL110,
+      eNR_NBKERNEL120,
+      eNR_NBKERNEL130,
+      eNR_NBKERNEL200,
+      eNR_NBKERNEL210,
+      eNR_NBKERNEL220,
+      eNR_NBKERNEL230,
+      eNR_NBKERNEL300,
+      eNR_NBKERNEL310,
+      eNR_NBKERNEL320,
+      eNR_NBKERNEL330,
+      eNR_NBKERNEL400,
+      eNR_NBKERNEL410,
+      eNR_NBKERNEL_NONE,
+      eNR_NBKERNEL430
     };
   
-    unsigned int nn,icoul,ivdw;
+  unsigned int nn,icoul,ivdw;
   
-    if(!bcoul) 
-        icoul = 0;
-    else if(fr->bcoultab)
-        icoul = 3;
-    else if(EEL_RF(fr->eeltype))
-        icoul = 2;
-    else 
-        icoul = 1;
-  
-
+  if(!bcoul) 
+    icoul = 0;
+  else if(fr->bcoultab)
+    icoul = 3;
+  else if(EEL_RF(fr->eeltype))
+    icoul = 2;
+  else 
+    icoul = 1;
   
   if(!bvdw)
-      ivdw = 0;
+    ivdw = 0;
   else if(fr->bvdwtab)
-      ivdw = 3;
+    ivdw = 3;
   else if(fr->bBHAM)
-      ivdw = 2;
+    ivdw = 2;
   else 
-      ivdw = 1;
-
+    ivdw = 1;
+  
   nn = inloop[4*icoul + ivdw];
-
+  
   /* solvent loops follow directly after the corresponding
    * ordinary loops, in the order:
    *
@@ -1386,23 +1384,23 @@ static void do_longrange(FILE *log,t_commrec *cr,t_topology *top,t_forcerec *fr,
 			 rvec x[],rvec box_size,t_nrnb *nrnb,
 			 real lambda,real *dvdlambda,
 			 t_groups *grps,bool bDoVdW,bool bDoCoul,
-			 bool bDoForces,bool bHaveVdW[])
+			 bool bEvaluateNow,bool bHaveVdW[],bool bDoForces)
 {
   int i;
   for(i=0; (i<eNL_NR); i++) {
-    if ((fr->nlist_lr[i].nri > fr->nlist_lr[i].maxnri-32) || bDoForces) {
+    if ((fr->nlist_lr[i].nri > fr->nlist_lr[i].maxnri-32) || bEvaluateNow) {
       close_neighbor_list(fr,TRUE,i);
-      /* Evaluate the forces */
-        do_nonbonded(log,cr,fr,x,fr->f_twin,md,
-                     grps->estat.ee[fr->bBHAM ? egBHAMLR : egLJLR],
-                     grps->estat.ee[egCOULLR],box_size,
-                     nrnb,lambda,dvdlambda,TRUE,i);
+      /* Evaluate the energies and forces */
+      do_nonbonded(log,cr,fr,x,fr->f_twin,md,
+		   grps->estat.ee[fr->bBHAM ? egBHAMLR : egLJLR],
+		   grps->estat.ee[egCOULLR],box_size,
+		   nrnb,lambda,dvdlambda,TRUE,i,bDoForces);
         
       reset_neighbor_list(fr,TRUE,i);
     }
   }
 
-  if (!bDoForces) {  
+  if (!bEvaluateNow) {  
     /* Put the long range particles in a list */
     put_in_list(bHaveVdW,ngid,md,icg,jgid,nlr,lr,top->blocks[ebCGS].index,
 		/* top->blocks[ebCGS].a, */ bexcl,shift,fr,
@@ -1416,7 +1414,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 		    t_grid *grid,rvec x[],t_excl bexcl[],bool *bExcludeAlleg,
 		    t_nrnb *nrnb,t_mdatoms *md,
 		    real lambda,real *dvdlambda,
-		    bool bHaveVdW[])
+		    bool bHaveVdW[],bool bDoForces)
 {
   static atom_id **nl_lr_ljc,**nl_lr_one,**nl_sr=NULL;
   static int     *nlr_ljc,*nlr_one,*nsr;
@@ -1433,7 +1431,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
   int     Nx,Ny,Nz,shift=-1,j,nrj,nns,nn=-1;
   real    gridx,gridy,gridz,grid_x,grid_y,grid_z;
   real    margin_x,margin_y;
-  int     icg=-1,iicg,cgsnr,i0,nri,naaj,min_icg,icg_naaj,jjcg,cgj0,jgid;
+  int     cg0,icg=-1,iicg,cgsnr,i0,nri,naaj,min_icg,icg_naaj,jjcg,cgj0,jgid;
   int     *grida,*gridnra,*gridind;
   bool    rvdw_lt_rcoul,rcoul_lt_rvdw;
   rvec    xi,*cgcm;
@@ -1517,9 +1515,15 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 #endif
 
   debug_gmx();
-  
+
+  if (fr->bTPI)
+    /* We only want a list for the test particle */
+    cg0 = cgsnr - 1;
+  else
+    cg0 = fr->cg0;
+
   /* Loop over charge groups */
-  for(iicg=fr->cg0; (iicg < fr->hcg); iicg++) {
+  for(iicg=cg0; (iicg < fr->hcg); iicg++) {
     icg      = cg_index[iicg];
     /* Consistency check */
     if (icg != iicg)
@@ -1549,8 +1553,14 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
      */
     naaj     = calc_naaj(icg,cgsnr);
     icg_naaj = icg+naaj;
-    min_icg  = icg_naaj-cgsnr;
-    
+    if (fr->bTPI)
+      /* The i-particle is awlways the test particle,
+       * so we want all j-particles
+       */
+      min_icg = cgsnr - 1;
+    else
+      min_icg  = icg_naaj - cgsnr;
+
     /* Changed iicg to icg, DvdS 990115 
      * (but see consistency check above, DvdS 990330) 
      */
@@ -1647,7 +1657,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 					     box_size,nrnb,
 					     lambda,dvdlambda,grps,
 					     TRUE,TRUE,FALSE,
-					     bHaveVdW);
+					     bHaveVdW,bDoForces);
 				nlr_ljc[jgid]=0;
 			      }
 			      nl_lr_ljc[jgid][nlr_ljc[jgid]++]=jjcg;
@@ -1659,7 +1669,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 					     box_size,nrnb,
 					     lambda,dvdlambda,grps,
 					     rvdw_lt_rcoul,rcoul_lt_rvdw,FALSE,
-					     bHaveVdW);
+					     bHaveVdW,bDoForces);
 				nlr_one[jgid]=0;
 			      }
 			      nl_lr_one[jgid][nlr_one[jgid]++]=jjcg;
@@ -1683,13 +1693,15 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 	    if (nlr_ljc[nn] > 0) 
 	      do_longrange(log,cr,top,fr,ngid,md,icg,nn,nlr_ljc[nn],
 			   nl_lr_ljc[nn],bexcl,shift,x,box_size,nrnb,
-			   lambda,dvdlambda,grps,TRUE,TRUE,FALSE,bHaveVdW);
+			   lambda,dvdlambda,grps,TRUE,TRUE,FALSE,
+			   bHaveVdW,bDoForces);
 	    
 	    if (nlr_one[nn] > 0) 
 	      do_longrange(log,cr,top,fr,ngid,md,icg,nn,nlr_one[nn],
 			   nl_lr_one[nn],bexcl,shift,x,box_size,nrnb,
 			   lambda,dvdlambda,grps,
-			   rvdw_lt_rcoul,rcoul_lt_rvdw,FALSE,bHaveVdW);
+			   rvdw_lt_rcoul,rcoul_lt_rvdw,FALSE,
+			   bHaveVdW,bDoForces);
 	  }
 	}
       }
@@ -1702,12 +1714,12 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
     if (rm2 > rs2)
       do_longrange(log,cr,top,fr,0,md,icg,nn,nlr_ljc[nn],
 		   nl_lr_ljc[nn],bexcl,shift,x,box_size,nrnb,
-		   lambda,dvdlambda,grps,TRUE,TRUE,TRUE,bHaveVdW);
+		   lambda,dvdlambda,grps,TRUE,TRUE,TRUE,bHaveVdW,bDoForces);
     if (rl2 > rm2)
       do_longrange(log,cr,top,fr,0,md,icg,nn,nlr_one[nn],
 		   nl_lr_one[nn],bexcl,shift,x,box_size,nrnb,
 		   lambda,dvdlambda,grps,rvdw_lt_rcoul,rcoul_lt_rvdw,
-		   TRUE,bHaveVdW);
+		   TRUE,bHaveVdW,bDoForces);
   }
   debug_gmx();
   
@@ -1762,7 +1774,8 @@ int search_neighbours(FILE *log,t_forcerec *fr,
 		      t_topology *top,t_groups *grps,
 		      t_commrec *cr,t_nsborder *nsb,
 		      t_nrnb *nrnb,t_mdatoms *md,
-		      real lambda,real *dvdlambda)
+		      real lambda,real *dvdlambda,
+		      bool bFillGrid,bool bDoForces)
 {
   static   bool        bFirst=TRUE;
   static   t_grid      *grid=NULL;
@@ -1893,12 +1906,11 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   
   /* Reset the neighbourlists */
   reset_neighbor_list(fr,FALSE,-1);
-  
-  if (bGrid)
+
+  if (bGrid && bFillGrid) {
     grid_first(log,grid,box,fr->rlistlong);
-  debug_gmx();
-  
-  if (bGrid) {
+    debug_gmx();
+
     /* Don't know why this all is... (DvdS 3/99) */
 #ifndef SEGV
     int start = 0;
@@ -1934,7 +1946,8 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   /* Do the core! */
   if (bGrid)
     nsearch = ns5_core(log,cr,fr,cg_index,box,box_size,ngid,top,grps,
-		       grid,x,bexcl,bExcludeAlleg,nrnb,md,lambda,dvdlambda,bHaveVdW);
+		       grid,x,bexcl,bExcludeAlleg,nrnb,md,lambda,dvdlambda,
+		       bHaveVdW,bDoForces);
   else {
     /* Only allocate this when necessary, saves 100 kb */
     if (ns_buf == NULL) {

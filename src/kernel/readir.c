@@ -104,6 +104,18 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 #define CHECK(b) _low_check(b,err_buf,nerror)
   char err_buf[256];
 
+  /* TPI STUFF */
+  if (ir->eI == eiTPI) {
+    sprintf(err_buf,"TPI does not work with pbc = %s",epbc_names[epbcNONE]);
+    CHECK(ir->ePBC == epbcNONE);
+    sprintf(err_buf,"TPI only works with ns = %s",ens_names[ensGRID]);
+    CHECK(ir->ns_type != ensGRID);
+    sprintf(err_buf,"with TPI nstlist should be larger than zero");
+    CHECK(ir->nstlist <= 0);
+    sprintf(err_buf,"TPI does not work with full electrostatics");
+    CHECK(EEL_FULL(ir->coulombtype));
+  }
+
   /* SHAKE / LINCS */
   sprintf(err_buf,"constraints with Conjugate Gradients not implemented");
   CHECK((opts->nshake > 0) && (ir->eI == eiCG));
@@ -1043,10 +1055,9 @@ void do_index(char *ndx,
   snew(ir->opts.nrdf,nr);
   snew(ir->opts.tau_t,nr);
   snew(ir->opts.ref_t,nr);
-  bSetTCpar = ir->etc || ir->eI==eiSD;
+  bSetTCpar = ir->etc || ir->eI==eiSD || ir->eI==eiBD || ir->eI==eiTPI;
   if (ir->eI==eiBD && ir->bd_fric==0) {
     fprintf(stderr,"bd_fric=0, so tau_t will be used as the inverse friction constant(s)\n"); 
-    bSetTCpar = TRUE;
   }
   if (bSetTCpar) {
     if (nr != nref_t)

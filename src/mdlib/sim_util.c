@@ -216,7 +216,8 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 	      matrix box,rvec x[],rvec f[],rvec buf[],
 	      t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,bool bVerbose,
 	      real lambda,t_graph *graph,
-	      bool bNS,bool bNBFonly,t_forcerec *fr,rvec mu_tot,
+	      bool bNS,bool bNBFonly,bool bDoForces,
+	      t_forcerec *fr,rvec mu_tot,
 	      bool bGatherOnly,real t,FILE *field)
 {
   static rvec box_size;
@@ -225,40 +226,52 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   int    start,homenr;
   static real mu[2*DIM]; 
   rvec   mu_tot_AB[2];
+  bool   bStateChanged,bCalcCGCM;
   
   start  = START(nsb);
   homenr = HOMENR(nsb);
   cg0    = CG0(nsb);
   cg1    = CG1(nsb);
-  
-  update_forcerec(log,fr,box);
 
-  /* Calculate total (local) dipole moment in a temporary common array. 
-   * This makes it possible to sum them over nodes faster.
-   */
-  calc_mu(nsb,x,mdatoms->chargeA,mdatoms->chargeB,mdatoms->bChargePerturbed,
-	  mu,mu+DIM);
+  /* The state has always changed, except when doing test particle insertion */
+  bStateChanged = (!fr->bTPI || step==0);
+  bCalcCGCM     = (bNS && bStateChanged);
+
+  if (bStateChanged) {
+    update_forcerec(log,fr,box);
+    
+    /* Calculate total (local) dipole moment in a temporary common array. 
+     * This makes it possible to sum them over nodes faster.
+     */
+    calc_mu(nsb,x,mdatoms->chargeA,mdatoms->chargeB,mdatoms->bChargePerturbed,
+	    mu,mu+DIM);
+  }
 
   if (fr->ePBC != epbcNONE) { 
     /* Compute shift vectors every step,
      * because of pressure coupling or box deformation!
      */
-    if (DYNAMIC_BOX(parm->ir))
+    if (DYNAMIC_BOX(parm->ir) && bStateChanged)
       calc_shifts(box,box_size,fr->shift_vec);
     
-    if (bNS) { 
+    if (bCalcCGCM) { 
       put_charge_groups_in_box(log,cg0,cg1,box,box_size,
 			       &(top->blocks[ebCGS]),x,fr->cg_cm);
       inc_nrnb(nrnb,eNR_RESETX,homenr);
     } 
-    else if ((parm->ir.eI==eiSteep || parm->ir.eI==eiCG) && graph)
+    else if ((parm->ir.eI==eiSteep || parm->ir.eI==eiCG) && graph) {
       unshift_self(graph,box,x);
-    
+    }
+    else if (fr->bTPI) {
+      /* Set the charge group center of mass of the test particle */
+      /* TPI does not work in parallel */
+      copy_rvec(x[mdatoms->nr-1],fr->cg_cm[top->blocks[ebCGS].nr-1]);
+    }
   }
-  else if (bNS)
+  else if (bCalcCGCM)
     calc_cgcm(log,cg0,cg1,&(top->blocks[ebCGS]),x,fr->cg_cm);
  
-  if (bNS) {
+  if (bCalcCGCM) {
     inc_nrnb(nrnb,eNR_CGCM,cg1-cg0);
     if (PAR(cr))
       move_cgcm(log,cr,fr->cg_cm,nsb->workload);
@@ -283,7 +296,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   /* Reset energies */
   reset_energies(&(parm->ir.opts),grps,fr,bNS,ener);    
   if (bNS) {
-    if (fr->ePBC == epbcXYZ)
+    if (fr->ePBC == epbcXYZ && bStateChanged)
       /* Calculate intramolecular shift vectors to make molecules whole */
       mk_mshift(log,graph,box,x);
 	       
@@ -298,29 +311,31 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
     dvdl_lr = 0; 
 
     ns(log,fr,x,f,box,grps,&(parm->ir.opts),top,mdatoms,
-       cr,nrnb,nsb,step,lambda,&dvdl_lr);
+       cr,nrnb,nsb,step,lambda,&dvdl_lr,bCalcCGCM,bDoForces);
   }
-  /* Reset PME/Ewald forces if necessary */
-  if (EEL_FULL(fr->eeltype)) 
-    clear_rvecs(homenr,fr->f_el_recip+start);
+  if (bDoForces) {
+    /* Reset PME/Ewald forces if necessary */
+    if (EEL_FULL(fr->eeltype)) 
+      clear_rvecs(homenr,fr->f_el_recip+start);
     
-  /* Copy long range forces into normal buffers */
-  if (fr->bTwinRange) {
-    for(i=0; i<nsb->natoms; i++)
-      copy_rvec(fr->f_twin[i],f[i]);
-    for(i=0; i<SHIFTS; i++)
-      copy_rvec(fr->fshift_twin[i],fr->fshift[i]);
-  } 
-  else {
-    clear_rvecs(nsb->natoms,f);
-    clear_rvecs(SHIFTS,fr->fshift);
+    /* Copy long range forces into normal buffers */
+    if (fr->bTwinRange) {
+      for(i=0; i<nsb->natoms; i++)
+	copy_rvec(fr->f_twin[i],f[i]);
+      for(i=0; i<SHIFTS; i++)
+	copy_rvec(fr->fshift_twin[i],fr->fshift[i]);
+    } 
+    else {
+      clear_rvecs(nsb->natoms,f);
+      clear_rvecs(SHIFTS,fr->fshift);
+    }
   }
-  
+
   /* Compute the forces */    
   force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,mcr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(parm->ir.opts),
 	x,f,ener,fcd,bVerbose,box,lambda,graph,&(top->atoms.excl),
-	bNBFonly,mu_tot_AB,bGatherOnly);
+	bNBFonly,bDoForces,mu_tot_AB,bGatherOnly);
 	
   /* Take long range contribution to free energy into account */
   ener[F_DVDL] += dvdl_lr;
@@ -330,26 +345,28 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
     print_nrnb(log,nrnb);
 #endif
 
-  /* The short-range virial from surrounding boxes */
-  clear_mat(vir_part);
-  calc_vir(log,SHIFTS,fr->shift_vec,fr->fshift,vir_part);
-  inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
+  if (bDoForces) {
+    /* The short-range virial from surrounding boxes */
+    clear_mat(vir_part);
+    calc_vir(log,SHIFTS,fr->shift_vec,fr->fshift,vir_part);
+    inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
 
-  if (debug) 
-    pr_rvecs(debug,0,"vir_shifts",vir_part,DIM);
-
-  /* Compute forces due to electric field */
-  calc_f_el(MASTER(cr) ? field : NULL,
-	    start,homenr,mdatoms->chargeA,x,f,parm->ir.ex,parm->ir.et,t);
-
-  /* When using PME/Ewald we compute the long range virial there.
-   * otherwise we do it based on long range forces from twin range
-   * cut-off based calculation (or not at all).
-   */
-  
-  /* Communicate the forces */
-  if (PAR(cr))
-    move_f(log,cr->left,cr->right,f,buf,nsb,nrnb);
+    if (debug) 
+      pr_rvecs(debug,0,"vir_shifts",vir_part,DIM);
+    
+    /* Compute forces due to electric field */
+    calc_f_el(MASTER(cr) ? field : NULL,
+	      start,homenr,mdatoms->chargeA,x,f,parm->ir.ex,parm->ir.et,t);
+    
+    /* When using PME/Ewald we compute the long range virial there.
+     * otherwise we do it based on long range forces from twin range
+     * cut-off based calculation (or not at all).
+     */
+    
+    /* Communicate the forces */
+    if (PAR(cr))
+      move_f(log,cr->left,cr->right,f,buf,nsb,nrnb);
+  }
 }
 
 void sum_lrforces(rvec f[],t_forcerec *fr,int start,int homenr)
@@ -629,7 +646,7 @@ void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
 {
   /* modified for switched VdW corrections Michael R. Shirts 2/21/03 */
   static bool bFirst=TRUE;
-  real invvol,dens,svir,spres;
+  real invvol,dens,ninter,svir,spres;
   int  m;
   
   ener[F_DISPCORR] = 0.0;
@@ -640,18 +657,25 @@ void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
       calc_enervirdiff(log,eDispCorr,fr);
     
     invvol = 1/det(box);
-    dens = natoms*invvol;
-    
-    ener[F_DISPCORR] = 0.5*natoms*fr->avcsix*(dens*fr->enerdiffsix
-					      - fr->enershiftsix);
+    if (fr->bTPI) {
+      /* Only correct for the interactions with the inserted particle */
+      dens = (natoms - 1)*invvol;
+      ninter = 1;
+    } else {
+      dens = natoms*invvol;
+      ninter = 0.5*natoms;
+    }
+
+    ener[F_DISPCORR] = ninter*fr->avcsix*(dens*fr->enerdiffsix
+					  - fr->enershiftsix);
     if (eDispCorr == edispcAllEner || eDispCorr == edispcAllEnerPres)
-      ener[F_DISPCORR] += 0.5*natoms*fr->avctwelve*(dens*fr->enerdifftwelve
-						    - fr->enershifttwelve);
+      ener[F_DISPCORR] += ninter*fr->avctwelve*(dens*fr->enerdifftwelve
+						- fr->enershifttwelve);
     svir = 0;
     if (eDispCorr == edispcEnerPres || eDispCorr == edispcAllEnerPres) {
-      svir += 0.5*natoms*dens*fr->avcsix*fr->virdiffsix/3.0;
+      svir += ninter*dens*fr->avcsix*fr->virdiffsix/3.0;
       if (eDispCorr == edispcAllEnerPres)
-	svir += 0.5*natoms*dens*fr->avctwelve*fr->virdifftwelve/3.0;
+	svir += ninter*dens*fr->avctwelve*fr->virdifftwelve/3.0;
     }
     /* The factor 2 is because of the Gromacs virial definition */
     spres = -2.0*invvol*svir*PRESFAC;

@@ -252,7 +252,7 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
                   rvec x[],rvec f[],t_mdatoms *mdatoms,
                   real egnb[],real egcoul[],rvec box_size,
                   t_nrnb *nrnb,real lambda,real *dvdlambda,
-                  bool bLR,int eNL)
+                  bool bLR,int eNL,bool bDoForces)
 {
     t_nblist *      nlist;
     real *          fshift;
@@ -304,6 +304,8 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
         if (nlist->nri > 0) 
         {
             nrnb_ind = nlist->il_code;
+	    if (!bDoForces)
+	      nrnb_ind += eNR_NBKERNEL_NR/2;
 
             tabletype = nb_kernel_table[nrnb_ind];
 

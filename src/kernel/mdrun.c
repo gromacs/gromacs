@@ -141,6 +141,7 @@ int main(int argc,char *argv[])
     { efXVG, "-field",  "field",    ffOPTWR },
     { efXVG, "-table",  "table",    ffOPTRD },
     { efTRX, "-rerun",  "rerun",    ffOPTRD },
+    { efXVG, "-tpi",    "tpi",      ffOPTWR },
     { efEDI, "-ei",     "sam",      ffOPTRD },
     { efEDO, "-eo",     "sam",      ffOPTWR },
     { efGCT, "-j",      "wham",     ffOPTRD },

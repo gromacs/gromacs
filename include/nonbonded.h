@@ -49,7 +49,7 @@ do_nonbonded(FILE *log,t_commrec *cr,t_forcerec *fr,
              rvec x[],rvec f[],t_mdatoms *md,
              real egnb[],real egcoul[],rvec box_size,
              t_nrnb *nrnb,real lambda,real *dvdlambda,
-             bool bLR,int eNL);
+             bool bLR,int eNL,bool bDoForces);
 
 real
 do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],

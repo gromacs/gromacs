@@ -69,6 +69,9 @@
 #include "trnio.h"
 #include "sparsematrix.h"
 #include "mtxio.h"
+#include "gmx_random.h"
+#include "physics.h"
+#include "xvgr.h"
 
 static void sp_header(FILE *out,const char *minimizer,real ftol,int nsteps)
 {
@@ -240,7 +243,7 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_parm *parm,
   do_force(log,cr,mcr,parm,nsb,force_vir,
 	   count,&(nrnb[cr->nodeid]),top,grps,box,x,f,
 	   buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
-	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
+	   lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
      
   /* Spread the force on vsite particle to the other particles... */
   if(bVsites) 
@@ -350,7 +353,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   do_force(log,cr,mcr,parm,nsb,force_vir,0,&(nrnb[cr->nodeid]),
 	   top,grps,state->box,
 	   state->x,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
-	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
+	   lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
   where();
 
   /* Spread the force on vsite particle to the other particles... */
@@ -959,7 +962,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   do_force(log,cr,mcr,parm,nsb,force_vir,0,&(nrnb[cr->nodeid]),
 	   top,grps,state->box,
 	   state->x,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
-	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
+	   lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
   where();
   
   /* Spread the force on vsite particle to the other particles... */
@@ -1602,7 +1605,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
  	     count,&(nrnb[cr->nodeid]),top,grps,state->box,pos[TRY],
 	     force[TRY],buf,
 	     mdatoms,ener,fcd,bVerbose && !(PAR(cr)), 
- 	     lambda,graph,parm->ir.nstlist>0 || count==0,FALSE,fr,mu_tot,
+ 	     lambda,graph,parm->ir.nstlist>0 || count==0,FALSE,TRUE,fr,mu_tot,
 	     FALSE,0.0,NULL); 
     
     /* Spread the force on vsite particle to the other particles... */
@@ -1875,7 +1878,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     bNS=TRUE;
     do_force(log,cr,NULL,parm,nsb,force_vir,0,&mynrnb,top,grps,
              state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
-             lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
+             lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
     bNS=FALSE;
     
     /* Shift back the coordinates, since we're not calling update */
@@ -1922,7 +1925,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
             do_force(log,cr,NULL,parm,nsb,force_vir,2*(step*DIM+idum),
                      &mynrnb,top,grps,
                      state->box,state->x,fneg,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
-                     lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
+                     lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
             if (graph)
             {
                 /* Shift back the coordinates, since we're not calling update */
@@ -1936,7 +1939,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
             do_force(log,cr,NULL,parm,nsb,force_vir,2*(step*DIM+idum)+1,
                      &mynrnb,top,grps,
                      state->box,state->x,fpos,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
-                     lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
+                     lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
             if (graph)
             {
                 /* Shift back the coordinates, since we're not calling update */
@@ -2000,4 +2003,257 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     
     return start_t;
+}
+
+
+time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[], 
+	      t_parm *parm,t_topology *top, 
+	      t_groups *grps,t_nsborder *nsb, 
+	      t_state *state,rvec f[],rvec buf[],t_mdatoms *mdatoms, 
+	      real ener[],t_fcdata *fcd,t_nrnb nrnb[], 
+	      bool bVerbose,
+	      t_commrec *cr,t_commrec *mcr,t_graph *graph,
+	      t_forcerec *fr,rvec box_size)
+{
+  const char *TPI="Test Particle Insertion"; 
+  real   lambda,dvdlambda,t,temp,beta,drmax;
+  double embU,sum_embU,*sum_UljembU,V,V_all,VembU_all,*VUljembU_all;
+  t_vcm  *vcm;
+  int    status;
+  t_trxframe rerun_fr;
+  bool   bCharge,bNotLastFrame,bNS;
+  time_t start_t; 
+  tensor force_vir,shake_vir;
+  int    i_tp,ngid,gid_tp;
+  rvec   mu_tot,*x_tp,x_init,dx;
+  int    frame,nsteps,step;
+  int    i,m,start,end,gf;
+  static gmx_rng_t tpi_rand;
+  FILE   *fp_tpi;
+  char   *dump_pdb,**leg,str[STRLEN],str2[STRLEN];
+  double dump_ener;
+  /* Maybe this should be an mdp parameter */
+  const real drrel = 0.05;
+
+  if (PAR(cr))
+    gmx_fatal(FARGS,"Test particle insertion does not work in parallel");
+
+  init_em(fplog,TPI,parm,&lambda,&(nrnb[cr->nodeid]),mu_tot,
+	  state->box,box_size,
+	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end);
+     temp = parm->ir.opts.ref_t[0];
+  for(i=1; (i<parm->ir.opts.ngtc); i++) {
+    if (parm->ir.opts.ref_t[i] != temp) {
+      fprintf(fplog,"\nWARNING: The temperatures of the different temperature coupling groups are not identical\n\n");
+      fprintf(stderr,"\nWARNING: The temperatures of the different temperature coupling groups are not identical\n\n");
+    }
+  }
+  fprintf(fplog,
+	  "\n  The temperature for test particle insertion is %.3f K\n\n",
+	  temp);
+  beta = 1.0/(BOLTZ*temp);
+
+  /* Number of insertions per frame */
+  nsteps = parm->ir.nsteps; 
+
+  /* Use the same neighborlist with more insertions points
+   * in a sphere of radius drmax around the initial point
+   */
+  drmax = drrel*parm->ir.rlist;
+
+  /* An environment variable can be set to dump all configurations
+   * to pdb with an insertion energy <= this value.
+   */
+  dump_pdb = getenv("GMX_TPI_DUMP");
+  dump_ener = 0;
+  if (dump_pdb)
+    sscanf(dump_pdb,"%lf",&dump_ener);
+
+  /* Print to log file  */
+  start_t=print_date_and_time(fplog,cr->nodeid,
+			      "Started Test Particle Insertion"); 
+
+  i_tp = mdatoms->nr - 1;
+  bCharge = (mdatoms->chargeA!=0 || mdatoms->chargeB!=0);
+  x_tp = &(state->x[i_tp]);
+  ngid =top->atoms.grps[egcENER].nr;
+  gid_tp = mdatoms->cENER[i_tp];
+  snew(sum_UljembU,ngid);
+  snew(VUljembU_all,ngid);
+
+  /* Initialize random generator */
+  tpi_rand = gmx_rng_init(parm->ir.ld_seed);
+
+  fp_tpi = xvgropen(opt2fn("-tpi",nfile,fnm),
+		    "TPI energies","Time (ps)",
+		    "(kJ mol\\S-1\\N) / (nm\\S3\\N)");
+  fprintf(fp_tpi,"@ subtitle \"fr are averages over one frame\"\n");
+  snew(leg,4+ngid);
+  sprintf(str,"-\\8b\\4log(<Ve\\S-\\8b\\4U\\N>/<V>)");
+  leg[0] = strdup(str);
+  sprintf(str,"fr -\\8b\\4log<e\\S-\\8b\\4U\\N>");
+  leg[1] = strdup(str);
+  sprintf(str,"fr V<e\\S-\\8b\\4U\\N>");
+  leg[2] = strdup(str);
+  sprintf(str,"fr V");
+  leg[3] = strdup(str);
+  for(i=0; i<ngid; i++) {
+    sprintf(str,"fr U\\s%s\\N<e\\S-\\8b\\4U\\N>",
+	    *(top->atoms.grpname[top->atoms.grps[egcENER].nm_ind[i]]));
+    leg[4+i] = strdup(str);
+  }
+  xvgr_legend(fp_tpi,4+ngid,leg);
+  for(i=0; i<4+ngid; i++)
+    sfree(leg[i]);
+  sfree(leg);
+
+  V_all = 0;
+  VembU_all = 0;
+
+  start_time();
+
+  bNotLastFrame = read_first_frame(&status,opt2fn("-rerun",nfile,fnm),
+				   &rerun_fr,TRX_NEED_X);
+  frame = 0;
+
+  if (rerun_fr.natoms != mdatoms->nr-1)
+    gmx_fatal(FARGS,"Number of atoms in trajectory (%d) is not one less than "
+	      "in the run input file (%d)\n",rerun_fr.natoms,mdatoms->nr);
+
+  while(bNotLastFrame) {
+    lambda = rerun_fr.lambda;
+    t = rerun_fr.time;
+    
+    sum_embU = 0;
+    for(i=0; i<ngid; i++)
+      sum_UljembU[i] = 0;
+
+    box_size[XX] = state->box[XX][XX];
+    box_size[YY] = state->box[YY][YY];
+    box_size[ZZ] = state->box[ZZ][ZZ];
+    if (fr->ePBC != epbcNONE)
+      /* Remove periodicity */
+      do_pbc_first(fplog,state->box,box_size,fr,graph,state->x);
+
+    /* Copy the coordinates from the input trajectory */
+    for(i=0; i<rerun_fr.natoms; i++)
+      copy_rvec(rerun_fr.x[i],state->x[i]);
+
+    step = 0;
+    for(step=0; step<nsteps; step++) {
+      bNS = (step % parm->ir.nstlist == 0);
+      if (bNS) {
+	/* Randomize the coordinates for the last atom */
+	x_init[XX] = gmx_rng_uniform_real(tpi_rand)*state->box[XX][XX];
+	x_init[YY] = gmx_rng_uniform_real(tpi_rand)*state->box[YY][YY];
+	x_init[ZZ] = gmx_rng_uniform_real(tpi_rand)*state->box[ZZ][ZZ];
+	copy_rvec(x_init,*x_tp);
+      } else {
+	/* Generate coordinates within |dx|=drmax of x_init */
+	do {
+	  dx[XX] = (2*gmx_rng_uniform_real(tpi_rand) - 1)*drmax;
+	  dx[YY] = (2*gmx_rng_uniform_real(tpi_rand) - 1)*drmax;
+	  dx[ZZ] = (2*gmx_rng_uniform_real(tpi_rand) - 1)*drmax;
+	} while (norm2(dx) > drmax*drmax);
+	rvec_add(x_init,dx,*x_tp);
+      }
+
+      /* Clear some matrix variables  */
+      clear_mat(force_vir); 
+      clear_mat(shake_vir);
+      
+      /* Calc energy (no forces) on new positions
+       * do_force always puts the charge groups in the box and shifts again
+       * We do not unshift, so molecules are always whole in tpi.c
+       */
+      do_force(fplog,cr,mcr,parm,nsb,force_vir,
+	       step,&(nrnb[cr->nodeid]),top,grps,rerun_fr.box,state->x,f,
+	       buf,mdatoms,ener,fcd,bVerbose, 
+	       lambda,graph,bNS,TRUE,FALSE,fr,mu_tot,
+	       FALSE,t,NULL); 
+      
+      /* Calculate long range corrections to pressure and energy */
+      calc_dispcorr(fplog,parm->ir.eDispCorr,
+		    fr,mdatoms->nr,rerun_fr.box,parm->pres,parm->vir,ener);
+
+      /* Sum the potential energy terms from group contributions  */
+      sum_epot(&(parm->ir.opts),grps,ener);
+
+      /* If the compiler doesn't optimize this check away
+       * we catch the NAN energies.
+       */
+      if (ener[F_EPOT] != ener[F_EPOT]) {
+	fprintf(stderr,"\n  time %.3f, step %d: non-finite energy %f, using exp(-bU)=0\n",t,step,ener[F_EPOT]);
+	fprintf(fplog,"\n  time %.3f, step %d: non-finite energy %f, using exp(-bU)=0\n",t,step,ener[F_EPOT]);
+	embU = 0;
+      } else {
+	embU = exp(-beta*ener[F_EPOT]);
+      }
+      sum_embU += embU;
+      if (fr->bBHAM) {
+	for(i=0; i<ngid; i++)
+	  sum_UljembU[i] +=
+	    (grps->estat.ee[egBHAMSR][GID(i,gid_tp,ngid)] +
+	     grps->estat.ee[egBHAMLR][GID(i,gid_tp,ngid)])*embU;
+      } else {
+	for(i=0; i<ngid; i++)
+	  sum_UljembU[i] +=
+	    (grps->estat.ee[egLJSR][GID(i,gid_tp,ngid)] +
+	     grps->estat.ee[egLJLR][GID(i,gid_tp,ngid)])*embU;
+      }
+      if (bCharge) {
+	for(i=0; i<ngid; i++)
+	  sum_UljembU[i] +=
+	    (grps->estat.ee[egCOULSR][GID(i,gid_tp,ngid)] +
+	     grps->estat.ee[egCOULLR][GID(i,gid_tp,ngid)])*embU;
+      }
+
+      if (debug)
+	fprintf(debug,"%7d %12.5e %12.5f %12.5f %12.5f\n",
+		step,ener[F_EPOT],(*x_tp)[XX],(*x_tp)[YY],(*x_tp)[ZZ]);
+
+      if (dump_pdb && ener[F_EPOT] <= dump_ener) {
+	sprintf(str,"t%g_step%d.pdb",t,step);
+	sprintf(str2,"t: %f step %d ener: %f",t,step,ener[F_EPOT]);
+	write_sto_conf(str,str2,&(top->atoms),state->x,state->v,state->box);
+      }
+    }
+
+    V = det(rerun_fr.box);
+
+    frame++;
+    V_all += V;
+    VembU_all += V*sum_embU/nsteps;
+    for(i=0; i<ngid; i++)
+      VUljembU_all[i] += sum_UljembU[i]/nsteps;
+    
+    if (bVerbose || frame%10==0 || frame<10)
+      fprintf(stderr,"mu %10.3e <mu> %10.3e\n",
+	      -log(sum_embU/nsteps)/beta,-log(VembU_all/V_all)/beta);
+
+    fprintf(fp_tpi,"%10.3f %12.5e %12.5e %12.5e %12.5e",
+	    t,
+	    -log(VembU_all/V_all)/beta,-log(sum_embU/nsteps)/beta,
+	    V*sum_embU/nsteps,V);
+    for(i=0; i<ngid; i++)
+      fprintf(fp_tpi," %12.5e",sum_UljembU[i]/nsteps);
+    fprintf(fp_tpi,"\n");
+    
+    bNotLastFrame = read_next_frame(status,&rerun_fr);
+  } /* End of the loop  */
+
+  update_time();
+
+  close_trj(status);
+
+  fclose(fp_tpi);
+
+  fprintf(stdlog,"\n");
+  fprintf(stdlog,"  <V>  = %12.5e nm^3\n",V_all/frame);
+  fprintf(stdlog,"  <mu> = %12.5e kJ/mol\n",-log(VembU_all/V_all)/beta);
+  
+  sfree(VUljembU_all);
+  sfree(sum_UljembU);
+
+  return start_t;
 }

@@ -122,6 +122,16 @@ extern time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		    t_forcerec *fr,rvec box_size);
 /* Do normal mode analysis */
 
+extern time_t do_tpi(FILE *log,int nfile,t_filenm fnm[], 
+		     t_parm *parm,t_topology *top, 
+		     t_groups *grps,t_nsborder *nsb, 
+		     t_state *state,rvec f[],rvec buf[],t_mdatoms *mdatoms, 
+		     real ener[],t_fcdata *fcd,t_nrnb nrnb[], 
+		     bool bVerbose,
+		     t_commrec *cr,t_commrec *mcr,t_graph *graph,
+		     t_forcerec *fr,rvec box_size);
+/* Do test particle insertion */
+
 /* ROUTINES from runner.c */
 extern bool optRerunMDset (int nfile, t_filenm fnm[]);
 
@@ -179,7 +189,8 @@ extern void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 		     matrix box,rvec x[],rvec f[],rvec buf[],
 		     t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,
 		     bool bVerbose,real lambda,t_graph *graph,
-		     bool bNS,bool bNBFonly,t_forcerec *fr, rvec mu_tot,
+		     bool bNS,bool bNBFonly,bool bDoForces,
+		     t_forcerec *fr, rvec mu_tot,
 		     bool bGatherOnly,real t,FILE *field);
 extern void sum_lrforces(rvec f[],t_forcerec *fr,int start,int homenr);
 		     

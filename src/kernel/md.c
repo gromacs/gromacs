@@ -247,6 +247,12 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		  top,ener,fcd,state,vold,vt,f,buf,
 		  mdatoms,nsb,nrnb,graph,edyn,fr,box_size);
     break;
+  case eiTPI:
+    start_t=do_tpi(stdlog,nfile,fnm,parm,top,grps,nsb,
+		   state,f,buf,mdatoms,ener,fcd,
+		   nrnb,bVerbose,
+		   cr,mcr,graph,fr,box_size);
+    break;
   default:
     gmx_fatal(FARGS,"Invalid integrator (%d)...\n",parm->ir.eI);
   }
@@ -268,7 +274,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
    */
   finish_run(stdlog,cr,ftp2fn(efSTO,nfile,fnm),
 	     nsb,top,parm,nrnb,nodetime,realtime,parm->ir.nsteps,
-	     parm->ir.eI==eiMD || parm->ir.eI==eiSD || parm->ir.eI==eiBD);
+	     parm->ir.eI==eiMD || parm->ir.eI==eiSD || parm->ir.eI==eiBD); 
   
   /* Does what it says */  
   print_date_and_time(stdlog,cr->nodeid,"Finished mdrun");
@@ -597,7 +603,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
        */
       do_force(log,cr,mcr,parm,nsb,force_vir,step,&mynrnb,top,grps,
 	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
-	       state->lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,t,fp_field);
+	       state->lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field);
     }
    
     if (bTCR)
@@ -942,6 +948,10 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	    (int) (100.0*ctmax/ctsum));
     sfree(ct);
   }
+      
+  if (bRerunMD)
+    close_trj(status);
+	  
   if (MASTER(cr)) {
     print_ebin(fp_ene,FALSE,FALSE,FALSE,FALSE,log,step,t,
 	       eprAVER,FALSE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));

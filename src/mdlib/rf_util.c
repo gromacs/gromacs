@@ -67,6 +67,10 @@ real RF_excl_correction(FILE *log,const t_nsborder *nsb,
   int    end   = start+HOMENR(nsb);
   bool   bFullPBC;
 
+  if (fr->bTPI)
+    /* For test particle insertion we only correct for the test particle */
+    start = mdatoms->nr - 1;
+
   ek = fr->epsfac*fr->k_rf;
   ec = fr->epsfac*fr->c_rf;
   chargeA = mdatoms->chargeA;

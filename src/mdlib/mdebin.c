@@ -140,7 +140,7 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
     else if (i == F_BHAM_LR)
       bEner[i] = (bBHAM && ir->rvdw > ir->rlist);
     else if (i == F_RF_EXCL)
-      bEner[i] = (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_OLD);
+      bEner[i] = (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_NEC);
     else if (i == F_COUL_RECIP)
       bEner[i] = EEL_FULL(ir->coulombtype);
     else if (i == F_LJ14)

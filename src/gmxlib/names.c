@@ -59,7 +59,7 @@ const char *ens_names[ensNR+1]=
 
 const char *ei_names[eiNR+1]=
 {
-  "md", "steep", "cg", "bd", "sd", "nm", "l-bfgs", NULL 
+  "md", "steep", "cg", "bd", "sd", "nm", "l-bfgs", "tpi", NULL 
 };
 
 const char *bool_names[BOOL_NR+1]=
@@ -79,7 +79,7 @@ const char *ptype_str[eptNR+1] = {
 const char *eel_names[eelNR+1] = {
   "Cut-off", "Reaction-Field", "Generalized-Reaction-Field",
   "PME", "Ewald", "PPPM", "Poisson", "Switch", "Shift", "User", 
-  "Generalized-Born", "Reaction-Field-old", "Encad-shift", 
+  "Generalized-Born", "Reaction-Field-nec", "Encad-shift", 
   "PME-User", NULL
 };
 
