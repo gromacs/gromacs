@@ -171,7 +171,7 @@ extern void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 		     t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,
 		     bool bVerbose,real lambda,t_graph *graph,
 		     bool bNS,bool bNBFonly,t_forcerec *fr, rvec mu_tot,
-		     bool bGatherOnly);
+		     bool bGatherOnly,real t);
 extern void sum_lrforces(rvec f[],t_forcerec *fr,int start,int homenr);
 		     
 extern void calc_virial(FILE *log,int start,int homenr,rvec x[],rvec f[],
@@ -181,6 +181,15 @@ extern void calc_virial(FILE *log,int start,int homenr,rvec x[],rvec f[],
 			
 extern void nstop_cm(FILE *log,t_commrec *cr,
 		     int start,int nr_atoms,real mass[],rvec x[],rvec v[]);
+
+extern void finish_run(FILE *log,t_commrec *cr,char *confout, t_nsborder *nsb,
+		       t_topology *top, t_parm *parm,t_nrnb nrnb[],
+		       double nodetime,double realtime,int step,
+		       bool bWriteStat);
+
+extern void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
+			  matrix box,tensor pres,tensor virial,real ener[]);
+     
 
 /* STUFF from init.c */
 extern void write_parm(FILE *log,char *title,int pid,t_parm *parm);
