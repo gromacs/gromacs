@@ -80,7 +80,7 @@ static bool in_data(t_corr *this,int nx00)
 }
 
 t_corr *init_corr(int nrgrp,int type,int axis,real dim_factor,
-		  bool bMass,bool bMol,t_topology *top)
+		  bool bMass,bool bMol,real dt,t_topology *top)
 {
   t_corr  *this;
   t_atoms *atoms;
@@ -90,6 +90,10 @@ t_corr *init_corr(int nrgrp,int type,int axis,real dim_factor,
   this->type      = type;
   this->axis      = axis;
   this->ngrp      = nrgrp;
+  this->nrestart  = 0;
+  this->delta_t   = dt;
+  this->x0        = NULL;
+  this->n_offs    = NULL;
   this->nframes   = 0;
   this->nlast     = 0;
   this->dim_factor = dim_factor;
@@ -125,21 +129,15 @@ static void done_corr(t_corr *this)
   sfree(this->x0);
 }
 
-static void init_restart(t_corr *this,int nrestart,real dt)
+static void init_restart(t_corr *this)
 {
   int i;
   
-  this->nrestart = max(1,nrestart);
-  this->delta_t  = (nrestart > 1) ? dt : 0;
+  this->nrestart++;
   
-  printf("\nThe number of starting points you requested takes %lu"
-	 " bytes memory\n\n",
-	 (unsigned long) this->natoms*this->nrestart*sizeof(rvec));
-
-  snew(this->x0,this->nrestart);
-  for(i=0; (i<this->nrestart); i++)
-    snew(this->x0[i],this->natoms);
-  snew(this->n_offs,this->nrestart);
+  srenew(this->x0,this->nrestart);
+  snew(this->x0[this->nrestart-1],this->natoms);
+  srenew(this->n_offs,this->nrestart);
 }
 
 static void corr_print(t_corr *this,char *fn,char *title,char *yaxis,
@@ -241,8 +239,7 @@ static real calc1_norm(t_corr *this,int nx,atom_id index[],int nx0,rvec xc[])
  * read_next_x
  */
 void corr_loop(t_corr *this,char *fn,int gnx[],atom_id *index[],
-	       t_calc_func *calc1,t_prep_data_func *prep1,
-	       int nrestart,real dt)
+	       t_calc_func *calc1,t_prep_data_func *prep1,real dt)
 {
   rvec         *x[2];
   real         t;
@@ -257,10 +254,12 @@ void corr_loop(t_corr *this,char *fn,int gnx[],atom_id *index[],
 
   snew(x[cur],this->natoms);
 
-  init_restart(this,nrestart,dt);
+  /* init_restart(this,nrestart,dt); */
   memcpy(x[cur],x[prev],this->natoms*sizeof(x[prev][0]));
   t=this->t0;
   do {
+    if (bRmod(t-this->t0,dt))
+      init_restart(this);
     if (this->nframes >= maxframes-1) {
       if (maxframes==0) {
 	for(i=0; (i<this->ngrp); i++) {
@@ -464,7 +463,7 @@ void printmol(t_corr *this,char *fn)
 void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
 	     t_topology *top,bool bMol,bool bMW,
 	     int type,real dim_factor,int axis,
-	     int nrestart,real dt,real beginfit,real endfit)
+	     real dt,real beginfit,real endfit)
 {
   t_corr       *msd;
   int          *gnx;
@@ -488,11 +487,11 @@ void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
   else
     get_index(&top->atoms,ndx,nrgrp,gnx,index,grpname);
 
-  msd = init_corr(nrgrp,type,axis,dim_factor,bMW,bMol,top);
+  msd = init_corr(nrgrp,type,axis,dim_factor,bMW,bMol,dt,top);
   
   corr_loop(msd,ftp2fn(efTRX,NFILE,fnm),gnx,index,
 	    bMol ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
-	    bMol ? prep_data_mol : prep_data_norm,nrestart,dt);
+	    bMol ? prep_data_mol : prep_data_norm,dt);
   
   /* Correct for the number of points */
   for(j=0; (j<msd->ngrp); j++)
@@ -562,7 +561,6 @@ int main(int argc,char *argv[])
   static char *normtype[]= { NULL,"no","x","y","z",NULL };
   static char *axtitle[] = { NULL,"no","x","y","z",NULL };
   static int  ngroup     = 1;
-  static int  nrestart   = 1;
   static real dt         = 0; 
   static real beginfit   = 0; 
   static real endfit     = -1; 
@@ -576,8 +574,6 @@ int main(int argc,char *argv[])
       "Number of groups to calculate MSD for" },
     { "-mw",      FALSE, etBOOL, {&bMW},
       "Mass weighted MSD" },
-    { "-nrestart",FALSE, etINT,  {&nrestart},
-      "[HIDDEN]Number of restarting points in trajectory" },
     { "-trestart",FALSE, etREAL, {&dt},
       "Time between restarting points in trajectory" },
     { "-beginfit",FALSE, etREAL, {&beginfit},
@@ -641,7 +637,7 @@ int main(int argc,char *argv[])
     
   do_corr(NFILE,fnm,ngroup,
 	  &top,bMol,bMW,type,dim_factor,axis,
-	  nrestart,dt,beginfit,endfit);
+	  dt,beginfit,endfit);
 
   thanx(stderr);
   
