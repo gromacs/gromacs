@@ -87,21 +87,20 @@ static void add_gbond(t_graph *g,t_iatom ia[],int np)
 static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,
 		      int natoms,bool bAll)
 {
-  t_iatom *ia,waterh[3];
+  t_iatom *ia,waterh[3],*iap;
   t_iatom tp;
   int     i,j,np,nbonded;
   int     end;
 
   end=il->nr;
   ia=il->iatoms;
-  
-  for(i=0; (i < end); ) {
+
+  i = 0;
+  while (i < end) {
     tp=ftype[ia[0]];
     np=interaction_function[tp].nratoms;
-
-    if ((ia[1] < natoms) &&
-	(interaction_function[tp].flags & 
-	 (IF_BOND | IF_CONSTRAINT | IF_DUMMY))) {
+    
+    if ((ia[1] < natoms) && (interaction_function[tp].flags & IF_CONNECT)) {
       if (ia[np] >= natoms)
 	fatal_error(0,"Molecule in topology has atom numbers below and "
 		    "above natoms (%d).\n"
@@ -109,28 +108,30 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,
 		    "not match the first %d atoms of the run input file.\n"
 		    "You can make a matching run input file with tpbconv.",
 		    natoms,natoms);
-      if (interaction_function[tp].flags & IF_DUMMY)
-	/* Bond a dummy only to the first constructing atom */
-	nbonded = 2;
-      else
-	nbonded = np;
-      if (bAll) {
-	add_gbond(g,&(ia[1]),nbonded);
-	if (tp == F_SETTLE) {
-	  if (debug)
-	    fprintf(debug,"Adding settles to graph");
-	  waterh[0] = ia[1];
-	  waterh[1] = ia[1]+1;
-	  waterh[2] = ia[1]+2;
-	  add_gbond(g,waterh,3);
-	}
+      if (tp == F_SETTLE) {
+	/* Bond all the atoms in the settle */
+	nbonded = 3;
+	waterh[0] = ia[1];
+	waterh[1] = ia[1]+1;
+	waterh[2] = ia[1]+2;
+	iap = waterh;
       } else {
+	if (interaction_function[tp].flags & IF_DUMMY)
+	  /* Bond a dummy only to the first constructing atom */
+	  nbonded = 2;
+	else
+	  nbonded = np;
+	iap = &(ia[1]);
+      }
+      if (bAll)
+	add_gbond(g,iap,nbonded);
+      else {
 	/* Check whether all atoms are bonded now! */
-	for(j=0; (j<np); j++)
-	  if (g->nedge[ia[1+j]-g->start] == 0)
+	for(j=0; j<nbonded; j++)
+	  if (g->nedge[iap[j]-g->start] == 0)
 	    break;
 	if (j < nbonded)
-	  add_gbond(g,&(ia[1]),nbonded);
+	  add_gbond(g,iap,nbonded);
       }
     }
     ia+=np+1;
@@ -193,11 +194,7 @@ static void calc_1se(t_graph *g,t_ilist *il,t_functype ftype[],
 	if (iaa<natoms) {
 	  g->start=min(g->start,iaa);
 	  g->end  =max(g->end,  iaa);
-	  if ((tp == F_BONDS) || (tp == F_G96BONDS) || 
-	      (tp == F_MORSE) || (tp == F_SHAKE) ||
-	      (tp == F_CUBICBONDS) || (tp == F_CONNBONDS) ||
-	      (tp == F_HARMONIC) ||
-	      (interaction_function[tp].flags & IF_DUMMY))
+	  if (interaction_function[tp].flags & IF_CONNECT)
 	    nbond[iaa]++;
 	}
       }
@@ -215,7 +212,7 @@ static void calc_start_end(t_graph *g,t_idef *idef,int natoms)
 
   snew(nbond,natoms);
   for(i=0; (i<F_NRE); i++) {
-    if (interaction_function[i].flags & (IF_BOND | IF_CONSTRAINT | IF_DUMMY))
+    if (interaction_function[i].flags & IF_CONNECT)
       calc_1se(g,&idef->il[i],idef->functype,nbond,natoms);
   }
   

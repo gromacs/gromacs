@@ -98,7 +98,7 @@ t_interaction_function interaction_function[F_NRE]=
   def_bonded ("ANGRESZ",  "Angle Rest. Z",   2, 3, 3,  eNR_ANGRESZ,angresz  ),
   def_shkcon ("CONSTR",   "Constraint",      2, 1, 1   ),
   def_shk    ("CONSTRNC", "Constr. No Conn.",2, 1, 1   ),
-  def_shk    ("SETTLE",   "Settle",          1, 2, 0   ),
+  def_shkcon ("SETTLE",   "Settle",          1, 2, 0   ),
   def_dummy  ("DUMMY2",   "Dummy2",          3, 1      ),
   def_dummy  ("DUMMY3",   "Dummy3",          4, 2      ),
   def_dummy  ("DUMMY3FD", "Dummy3fd",        4, 2      ),
