@@ -36,7 +36,7 @@ static char *SRCID_mdatom_c = "$Id$";
 #define ALMOST_ZERO 1e-30
 
 t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
-		    bool bLD,bool bPert,bool bFree)
+		    bool bMass1,bool bPert,bool bFree)
 {
   int       i,np,g;
   double    tm;
@@ -69,7 +69,7 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
   np=0;
   tm=0.0;
   for(i=0; (i<md->nr); i++) {
-    if (bLD) {
+    if (bMass1) {
       md->massA[i]	= 1;
       md->massB[i]	= 1;
       md->massT[i]	= 1;

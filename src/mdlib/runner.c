@@ -334,6 +334,9 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
   debug_gmx();
 
   *bNEMD = (ir->opts.ngacc > 1) || (norm(ir->opts.acc[0]) > 0);
+
+  if (ir->eI == eiSD)
+    init_sd_consts(ir->opts.ngtc,ir->opts.tau_t,ir->delta_t);
 }
 
 void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,

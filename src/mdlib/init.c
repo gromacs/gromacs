@@ -118,7 +118,8 @@ void init_single(FILE *log,t_parm *parm,
   check_nnodes_top(tpxfile,top,1);
 
   *mdatoms=atoms2md(log,&top->atoms,parm->ir.opts.nFreeze,
-		    parm->ir.eI==eiBD,parm->ir.efep!=efepNO,FALSE);
+		    parm->ir.eI==eiBD && parm->ir.bd_fric!=0,
+		    parm->ir.efep!=efepNO,FALSE);
   
   pr_inputrec(log,0,"Input Parameters",&parm->ir);
   calc_nsb(log,&(top->blocks[ebCGS]),1,nsb,0);
@@ -200,7 +201,8 @@ void init_parts(FILE *log,t_commrec *cr,
     fflush(log);
   }
   *mdatoms=atoms2md(log,&(top->atoms),parm->ir.opts.nFreeze,
-		    parm->ir.eI==eiBD,parm->ir.efep!=efepNO,FALSE);
+		    parm->ir.eI==eiBD && parm->ir.bd_fric!=0,
+		    parm->ir.efep!=efepNO,FALSE);
 }
 
 void write_parm(FILE *log,char *title,int nodeid,t_parm *parm)

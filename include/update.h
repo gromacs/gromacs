@@ -106,6 +106,9 @@ extern void calc_ke_part_visc(bool bFirstStep,int start,int homenr,
  * node and stored in grps->cosacc.mvcos.
  */
 
+extern void init_sd_consts(int ngtc,real tau_t[],real dt);
+/* Initialization of the SD constants (obviously). */
+
 /* Routines from coupling.c to do with Temperature, Pressure and coupling
  * algorithms.
  */

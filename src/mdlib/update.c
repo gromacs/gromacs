@@ -248,7 +248,7 @@ static real fgauss(unsigned long *jran)
   return sqrt3*(jr*inv_im-2);
 }
 
-static void init_sd_consts(int ngtc,real tau_t[],real dt)
+void init_sd_consts(int ngtc,real tau_t[],real dt)
 {
   int  n;
   real y;
@@ -375,46 +375,51 @@ static void do_update_sd(int start,int homenr,
 }
 
 static void do_update_bd(int start,int homenr,double dt,
-			 ivec nFreeze[],unsigned short ptype[],unsigned short cFREEZE[],
+			 ivec nFreeze[],
+			 real invmass[],unsigned short ptype[],
+			 unsigned short cFREEZE[],unsigned short cTC[],
 			 rvec x[],rvec xprime[],rvec v[],rvec vold[],
-			 rvec f[],real temp, real fr, int *seed)
+			 rvec f[],real temp,real fr,
+			 int ngtc,real tau_t[],real ref_t[],
+			 int *seed)
 {
-  int    gf;
+  int    gf,gt;
   real   vn,vv;
-  real   rfac,invfr,rhalf,jr;
+  static real *rf=NULL;
+  real   rfac,invfr;
   int    n,d;
   unsigned long  jran;
   
-  /* Approximate a Gaussian with 4 uniform (-0.5,0.5) distributions.
-   * The factor 3 corrects the variance.
-   */
-  rfac  = sqrt(3.0 * 2.0*BOLTZ*temp/(fr*dt));
-  rhalf = 2.0*rfac; 
-  rfac  = rfac/(real)im;
-  invfr = 1.0/fr;
+  if (rf == NULL)
+    snew(rf,ngtc);
+
+  if (fr) {
+    rfac  = sqrt(2.0*BOLTZ*temp/(fr*dt));
+    invfr = 1.0/fr;
+  } else
+    for(n=0; n<ngtc; n++)
+      rf[n]  = sqrt(2.0*BOLTZ*ref_t[n]*tau_t[n]/dt);
   
   jran = (unsigned long)((real)im*rando(seed));
 
   for (n=start; (n<start+homenr); n++) {  
-    gf   = cFREEZE[n];
+    gf = cFREEZE[n];
+    gt = cTC[n];
     for (d=0; (d<DIM); d++) {
       vn             = v[n][d];
       vold[n][d]     = vn;
       if ((ptype[n]!=eptDummy) && (ptype[n]!=eptShell) && !nFreeze[gf][d]) {
-	jran = (jran*ia+ic) & im;
-	jr = (real)jran;
-	jran = (jran*ia+ic) & im;
-	jr += (real)jran;
-	jran = (jran*ia+ic) & im;
-	jr += (real)jran;
-	jran = (jran*ia+ic) & im;
-	jr += (real)jran;
-	vv             = invfr*f[n][d] + rfac * jr - rhalf;
-	v[n][d]        = vv;
-	xprime[n][d]   = x[n][d]+v[n][d]*dt;
+	if (fr)
+	  vv         = invfr*f[n][d] + rfac*fgauss(&jran);
+	else
+	  vv         = invmass[n]*tau_t[gt]*f[n][d] 
+	    + sqrt(invmass[n])*rf[gt]*fgauss(&jran);
+
+	v[n][d]      = vv;
+	xprime[n][d] = x[n][d]+v[n][d]*dt;
       } else {
-	v[n][d]        = 0.0;
-	xprime[n][d]   = x[n][d];
+	v[n][d]      = 0.0;
+	xprime[n][d] = x[n][d];
       }
     }
   }
@@ -647,9 +652,6 @@ void update(int          natoms, 	/* number of atoms in simulation */
        
     snew(lamb,ngtc);
 
-    if (ir->eI == eiSD)
-      init_sd_consts(ir->opts.ngtc,ir->opts.tau_t,ir->delta_t);
-    
     /* done with initializing */
     bFirst=FALSE;
   }
@@ -726,9 +728,12 @@ void update(int          natoms, 	/* number of atoms in simulation */
 		   &ir->ld_seed,FALSE);
     } else if (ir->eI==eiBD) 
       do_update_bd(start,homenr,dt,
-		   ir->opts.nFreeze,md->ptype,md->cFREEZE,
+		   ir->opts.nFreeze,md->invmass,md->ptype,
+		   md->cFREEZE,md->cTC,
 		   x,xprime,v,vold,force,
-		   ir->bd_temp,ir->bd_fric,&ir->ld_seed);
+		   ir->bd_temp,ir->bd_fric,
+		   ir->opts.ngtc,ir->opts.tau_t,ir->opts.ref_t,
+		   &ir->ld_seed);
     else
       fatal_error(0,"Don't know how to update coordinates");
     

@@ -818,7 +818,7 @@ void do_index(char *ndx,
   int     nr,ntcg,ntau_t,nref_t,nacc,nacg,nfreeze,nfrdim,nenergy,nuser,negexcl;
   char    *ptr1[MAXPTR],*ptr2[MAXPTR],*ptr3[MAXPTR];
   int     i,j,k,restnm;
-  bool    bExcl;
+  bool    bExcl,bSetTCpar;
   
   if (bVerbose)
     fprintf(stderr,"processing index file...\n");
@@ -848,7 +848,7 @@ void do_index(char *ndx,
       atoms->atom[i].grpnr[j]=NOGID;
   
   if (ir->bSimAnn) {
-    if(ir->etc==etcNO)
+    if (ir->eI==eiMD && ir->etc==etcNO)
       fatal_error(0,"You must select a temperature coupling algorithm "
 		  "for simulated annealing");
     if (ir->zero_temp_time == 0)
@@ -862,7 +862,7 @@ void do_index(char *ndx,
     fatal_error(0,"Invalid T coupling input: %d groups, %d ref_t values and "
 		"%d tau_t values",ntcg,nref_t,ntau_t);  
 
-  if (ir->eI == eiSD)
+  if (ir->eI != eiMD)
     ir->etc = etcNO;
   do_numbering(atoms,ntcg,ptr3,grps,gnames,egcTC,"T-Coupling",
 	       restnm,forward,FALSE,bVerbose);
@@ -871,7 +871,12 @@ void do_index(char *ndx,
   snew(ir->opts.nrdf,nr);
   snew(ir->opts.tau_t,nr);
   snew(ir->opts.ref_t,nr);
-  if (ir->etc || ir->eI==eiSD) {
+  bSetTCpar = ir->etc || ir->eI==eiSD;
+  if (ir->eI==eiBD && ir->bd_fric==0) {
+    fprintf(stderr,"bd_fric=0, so tau_t will be used as the inverse friction constant(s)\n"); 
+    bSetTCpar = TRUE;
+  }
+  if (bSetTCpar) {
     if (nr != nref_t)
       fatal_error(0,"Not enough ref_t and tau_t values!");
     for(i=0; (i<nr); i++) {
