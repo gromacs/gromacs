@@ -99,8 +99,6 @@ void main(int argc,char *argv[])
   
   top=read_top(ftp2fn(efTPX,NFILE,fnm));
   
-  natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
-  
   /* read index files */
   ngrps = 2;
   snew(com,ngrps);
@@ -122,6 +120,8 @@ void main(int argc,char *argv[])
       mass[g]+=top->atoms.atom[index[g][i]].m;
     }
   }
+
+  natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
 
   if (max>=natoms)
     fatal_error(0,"Atom number %d in an index group is larger than number of atoms in the trajectory (%d)\n",(int)max+1,natoms);
@@ -166,9 +166,9 @@ void main(int argc,char *argv[])
 	dist2 = norm2(dx);
 	if (dist2<cut2) {
 	  res=top->atoms.atom[j].resnr;
-	  printf("\rt: %g  %d %s %d %s  %g (nm)\n",
-		 t,res+1,*top->atoms.resname[res],
-		 j+1,*top->atoms.atomname[j],sqrt(dist2));     
+	  fprintf(stdout,"\rt: %g  %d %s %d %s  %g (nm)\n",
+		  t,res+1,*top->atoms.resname[res],
+		  j+1,*top->atoms.atomname[j],sqrt(dist2));     
 	} 
       }
     }
@@ -179,7 +179,6 @@ void main(int argc,char *argv[])
   if (!bCutoff)
     fclose(fp);
 
-  fprintf(stderr,"\n");
   close_trj(status);
   
   thanx(stdout);
