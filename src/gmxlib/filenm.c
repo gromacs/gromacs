@@ -329,13 +329,12 @@ void pr_fns(FILE *fp,int nf,t_filenm tfn[])
   char buf[256],*wbuf,opt_buf[32];
 #define OPTLEN 4
 #define NAMELEN 14
-#define FN_OPT_FORMAT "%4s %14s  %-12s"
-  fprintf(fp,"%6s %12s  %-12s  %s\n",
+  fprintf(fp,"%6s %12s  %-12s %s\n",
 	  "Option","Filename","Type","Description");
   fprintf(fp,"------------------------------------------------------------\n");
   for(i=0; (i<nf); i++) {
     for(f=0; (f<tfn[i].nfiles); f++) {
-      sprintf(buf, "%4s %14s  %-12s",
+      sprintf(buf, "%4s %14s  %-12s ",
 	      (f==0) ? tfn[i].opt : "",tfn[i].fns[f],
 	      (f==0) ? fileopt(tfn[i].flag,opt_buf,32) : "");
       if ( f < tfn[i].nfiles-1 )
