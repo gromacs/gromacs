@@ -116,11 +116,13 @@ a_x>0,~~~~b_y>0,~~~~c_z>0
 \eeq
 \beq
 \label{box_shift2}
-a_x \geq |b_x| + |c_x|,~~~~b_y \geq |c_y|
+|b_x| \leq \frac{1}{2} \, a_x,~~~~
+|c_x| \leq \frac{1}{2} \, a_x,~~~~
+|c_y| \leq \frac{1}{2} \, b_y
 \eeq
 Equations (\ref{box_rot}) can always be statisfied by rotating the box.
 Equations (\ref{box_shift1}) and (\ref{box_shift2}) can always be
-statisfied by subtracting and adding box vectors.
+statisfied by adding and subtracting box vectors.
 
 Even when simulating using a triclinic box, {\gromacs} always puts the
 particles in a brick shaped volume, because of efficiency reasons.
