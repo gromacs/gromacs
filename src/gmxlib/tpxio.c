@@ -130,7 +130,8 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_real(ir->xtcprec); 
     do_int(ir->solvent_opt); 
     do_int(ir->nsatoms);
-    do_int(idum); 
+    if(file_version < 18)
+      do_int(idum); 
     do_real(ir->rlist); 
     do_int(ir->coulombtype); 
     do_real(ir->rcoulomb_switch); 
