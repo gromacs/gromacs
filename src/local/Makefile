@@ -47,6 +47,8 @@ total:		total.o
 		$(FLD) -o $@ $^ $(SYSLIBS)
 optwat:		optwat.o
 		$(LD) -o $@ $^ $(SYSLIBS) -lm
+hexamer:	hexamer.o
+		$(LD) -o $@ $^ $(SYSLIBS) -lm
 sigeps:		sigeps.o
 		$(LD) -o $@ $^ $(SYSLIBS) -lm
 do_shift:	do_shift.o
