@@ -713,7 +713,7 @@ int main (int argc, char *argv[])
     bShuffle=FALSE;
   }
   
-  bNeedVel = (ir->eI == eiMD);
+  bNeedVel = (ir->eI == eiMD || ir->eI == eiSD);
   bGenVel  = (bNeedVel && opts->bGenVel);
 
   snew(plist,F_NRE);

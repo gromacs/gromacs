@@ -92,7 +92,8 @@ static void do_update(int start,int homenr,double dt,
 		      rvec lamb[],t_grp_acc gstat[],
 		      rvec accel[],ivec nFreeze[],
 		      real invmass[],unsigned short ptype[],
-		      unsigned short cFREEZE[],unsigned short cACC[],unsigned short cTC[],
+		      unsigned short cFREEZE[],unsigned short cACC[],
+		      unsigned short cTC[],
 		      rvec x[],rvec xprime[],rvec v[],rvec vold[],rvec f[])
 {
   double w_dt;
@@ -127,10 +128,90 @@ static void do_update(int start,int homenr,double dt,
   }
 }
 
-static void do_update_lang(int start,int homenr,double dt,
-			   ivec nFreeze[],unsigned short ptype[],unsigned short cFREEZE[],
-			   rvec x[],rvec xprime[],rvec v[],rvec vold[],
-			   rvec f[],real temp, real fr, int *seed)
+static void do_update_sd(int start,int homenr,double dt,
+			 rvec accel[],ivec nFreeze[],
+			 real mass[],real invmass[],unsigned short ptype[],
+			 unsigned short cFREEZE[],unsigned short cACC[],
+			 unsigned short cTC[],
+			 rvec x[],rvec xprime[],rvec v[],rvec vold[],rvec f[],
+			 int ngtc,real tau_t[],real ref_t[],
+			 int *seed)
+{
+  const unsigned long im = 0xffff;
+  const unsigned long ia = 1093;
+  const unsigned long ic = 18257;
+  unsigned long  jran;
+  static real *v_fac=NULL,*f_fac,*r_fac,*rhalf;
+  real gamma_dt;
+  double w_dt;
+  int    gf,ga,gt;
+  real   vn,vv;
+  real   sqrtm,frand;
+  int    n,d;
+  real   jr;
+  
+  if (v_fac == NULL) {
+    snew(v_fac,ngtc);
+    snew(f_fac,ngtc);
+    snew(r_fac,ngtc);
+    snew(rhalf,ngtc);
+  }
+  
+  for(n=0; n<ngtc; n++) {
+    /* The friction coefficient gammma = 1/opts->tau_t[n] */
+    gamma_dt = dt/tau_t[n];
+    v_fac[n] = exp(-gamma_dt);
+    f_fac[n] = (1-v_fac[n])/gamma_dt;
+    /* The variance of the stochastic force in one step is:
+     * 2 k_b T m gamma/dt 
+     * The mass is encounted for later, since this differs per atom.
+     * Approximate a Gaussian with 4 uniform (-0.5,0.5) distributions.
+     * The factor 3 corrects the variance.
+     */
+    r_fac[n] = sqrt(3.0 * 2.0*BOLTZ*ref_t[n]/(tau_t[n]*dt));
+    rhalf[n] = 2*r_fac[n];
+    r_fac[n] /= (real)im;
+  }
+
+  jran = (unsigned long)((real)im*rando(seed));
+
+  for (n=start; n<start+homenr; n++) {  
+    w_dt  = invmass[n]*dt;
+    sqrtm = sqrt(mass[n]);
+    gf    = cFREEZE[n];
+    ga    = cACC[n];
+    gt    = cTC[n];
+    
+    for (d=0; d<DIM; d++) {
+      vn             = v[n][d];
+      vold[n][d]     = vn;
+      
+      if ((ptype[n] != eptDummy) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
+	jran = (jran*ia+ic) & im;
+	jr = (real)jran;
+	jran = (jran*ia+ic) & im;
+	jr += (real)jran;
+	jran = (jran*ia+ic) & im;
+	jr += (real)jran;
+	jran = (jran*ia+ic) & im;
+	jr += (real)jran;
+	
+	frand          = sqrtm*(r_fac[gt]*jr - rhalf[gt]);
+	
+	vv             = v_fac[gt]*vn + f_fac[gt]*(f[n][d] + frand)*w_dt;
+	
+	v[n][d]        = vv + accel[ga][d]*dt;
+	xprime[n][d]   = x[n][d]+v[n][d]*dt;
+      } else
+	xprime[n][d]   = x[n][d];
+    }
+  }
+}
+
+static void do_update_ld(int start,int homenr,double dt,
+			 ivec nFreeze[],unsigned short ptype[],unsigned short cFREEZE[],
+			 rvec x[],rvec xprime[],rvec v[],rvec vold[],
+			 rvec f[],real temp, real fr, int *seed)
 {
   const unsigned long im = 0xffff;
   const unsigned long ia = 1093;
@@ -140,10 +221,10 @@ static void do_update_lang(int start,int homenr,double dt,
   real   rfac,invfr,rhalf,jr;
   int    n,d;
   unsigned long  jran;
-
-  /* (r-0.5) n times:  var_n = n * var_1 = n/12
-     n=4:  var_n = 1/3, so multiply with 3 */
   
+  /* Approximate a Gaussian with 4 uniform (-0.5,0.5) distributions.
+   * The factor 3 corrects the variance.
+   */
   rfac  = sqrt(3.0 * 2.0*BOLTZ*temp/(fr*dt));
   rhalf = 2.0*rfac; 
   rfac  = rfac/(real)im;
@@ -373,11 +454,20 @@ void update(int          natoms, 	/* number of atoms in simulation */
 		md->invmass,md->ptype,
 		md->cFREEZE,md->cACC,md->cTC,
 		x,xprime,v,vold,force);
-    else if (ir->eI==eiLD) 
-      do_update_lang(start,homenr,dt,
-		     ir->opts.nFreeze,md->ptype,md->cFREEZE,
-		     x,xprime,v,vold,force,
-		     ir->ld_temp,ir->ld_fric,&ir->ld_seed);
+    else if (ir->eI==eiSD)
+      do_update_sd(start,homenr,dt,
+		   ir->opts.acc,ir->opts.nFreeze,
+		   md->massT,md->invmass,md->ptype,
+		   md->cFREEZE,md->cACC,md->cTC,
+		   x,xprime,v,vold,force,
+		   ir->opts.ngtc,ir->opts.tau_t,ir->opts.ref_t,
+		   &ir->ld_seed);
+    else
+      if (ir->eI==eiLD) 
+      do_update_ld(start,homenr,dt,
+		   ir->opts.nFreeze,md->ptype,md->cFREEZE,
+		   x,xprime,v,vold,force,
+		   ir->ld_temp,ir->ld_fric,&ir->ld_seed);
     else
       fatal_error(0,"Don't know how to update coordinates");
 
