@@ -60,6 +60,7 @@
 #include "smalloc.h"
 #include "confio.h"
 #include "enxio.h"
+#include "tpxio.h"
 
 typedef struct {
   int bStep;
@@ -81,7 +82,51 @@ typedef struct {
   float bBox;
 } t_fr_time;
 
-void chk_trj(char *fn)
+void chk_bonds(t_topology *top,rvec *x,matrix box,real tol)
+{
+  int  ftype,i,k,ai,aj,type;
+  real b0,blen,deviation,devtot;
+  rvec dx;
+
+  devtot = 0;
+  init_pbc(box);  
+  for(ftype=0; (ftype<F_NRE); ftype++) 
+    if ((interaction_function[ftype].flags & IF_CHEMBOND) == IF_CHEMBOND) {
+      for(k=0; (k<top->idef.il[ftype].nr); ) {
+	type = top->idef.il[ftype].iatoms[k++];
+	ai   = top->idef.il[ftype].iatoms[k++];
+	aj   = top->idef.il[ftype].iatoms[k++]; 
+	b0   = 0;    
+	switch (ftype) {
+	case F_BONDS:
+	case F_G96BONDS:
+	  b0 = top->idef.iparams[type].harmonic.rA;
+	  break;
+	case F_MORSE:
+	  b0 = top->idef.iparams[type].morse.b0;
+	  break;
+	case F_CUBICBONDS:
+	  b0 = top->idef.iparams[type].cubic.b0;
+	  break;
+	case F_SHAKE:
+	  b0 = top->idef.iparams[type].shake.dA;
+	  break;
+	default:
+	  break;
+	}
+	if (b0 != 0) {
+	  pbc_dx(x[ai],x[aj],dx);
+	  blen = norm(dx);
+	  deviation = sqr(blen-b0);
+	  if (sqrt(deviation/sqr(b0) > tol)) {
+	    fprintf(stderr,"Distance between atoms %d and %d is %.3f, should be %.3f\n",ai+1,aj+1,blen,b0);
+	  }
+	}
+      }
+    }
+}
+
+void chk_trj(char *fn,char *tpr,real tol)
 {
   t_trxframe   fr;
   t_count      count;
@@ -90,8 +135,14 @@ void chk_trj(char *fn)
   off_t        fpos;
   real         rdum,t,tt,old_t1,old_t2,prec;
   bool         bShowTimestep=TRUE,bOK,newline=FALSE;
-  int          status;
+  int          status,step;
+  t_topology   top;
+  t_state      state;
+  t_inputrec   ir;
   
+  if (tpr) {
+    read_tpx_state(tpr,&step,&t,&ir,&state,NULL,&top);
+  }
   new_natoms = -1;
   natoms = -1;  
   t      = 0;
@@ -151,6 +202,9 @@ void chk_trj(char *fn)
       }
     }
     natoms=new_natoms;
+    if (tpr) 
+      chk_bonds(&top,fr.x,fr.box,tol);
+    
     old_t2=old_t1;
     old_t1=fr.time;
     if (fpos && (j<10 || j%10==0))
@@ -385,7 +439,6 @@ void chk_enx(char *fn)
   sfree(fr);
 }
 
-
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -420,7 +473,7 @@ int main(int argc,char *argv[])
   static real vdw_fac=0.8;
   static real bon_lo=0.4;
   static real bon_hi=0.7;
-  static real ftol=0;
+  static real ftol=0.01;
   static char *lastener=NULL;
   static t_pargs pa[] = {
     { "-vdwfac", FALSE, etREAL, {&vdw_fac},
@@ -444,7 +497,7 @@ int main(int argc,char *argv[])
   if (fn1 && fn2)
     comp_trx(fn1,fn2,ftol);
   else if (fn1)
-    chk_trj(fn1);
+    chk_trj(fn1,opt2fn_null("-s1",NFILE,fnm),ftol);
   else if (fn2)
     fprintf(stderr,"Please give me TWO trajectory (.xtc/.trr/.trj) files!\n");
   
@@ -452,9 +505,9 @@ int main(int argc,char *argv[])
   fn2 = opt2fn_null("-s2",NFILE,fnm);
   if (fn1 && fn2)
     comp_tpx(fn1,fn2,ftol);
-  else if (fn1 || fn2)
+  else if ((fn1 && !opt2fn_null("-f",NFILE,fnm)) || (!fn1 && fn2))
     fprintf(stderr,"Please give me TWO run input (.tpr/.tpa/.tpb) files!\n");
-
+  
   fn1 = opt2fn_null("-e",NFILE,fnm);
   fn2 = opt2fn_null("-e2",NFILE,fnm);
   if (fn1 && fn2)
@@ -466,8 +519,6 @@ int main(int argc,char *argv[])
   
   if (ftp2bSet(efTPS,NFILE,fnm))
     chk_tps(ftp2fn(efTPS,NFILE,fnm), vdw_fac, bon_lo, bon_hi);
-  
-  if (ftp2bSet(efENX,NFILE,fnm))
   
   thanx(stderr);
   
