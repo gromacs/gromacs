@@ -29,6 +29,7 @@
 static char *SRCID_specbond_c = "$Id$";
 
 #include <ctype.h>
+#include <math.h>
 #include "typedefs.h"
 #include "pdbio.h"
 #include "strdb.h"
@@ -36,6 +37,7 @@ static char *SRCID_specbond_c = "$Id$";
 #include "smalloc.h"
 #include "specbond.h"
 #include "pdb2top.h"
+#include "vec.h"
 
 bool yesno(void)
 {
@@ -212,7 +214,7 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
       for(j=0; (j<ncys); j++) {
 	ai=sgp[i];
 	aj=sgp[j];
-	d[i][j]=distance(x[ai],x[aj]);
+	d[i][j]=sqrt(distance2(x[ai],x[aj]));
       }
     if (ncys > 1) {
 #define MAXCOL 8
@@ -237,17 +239,6 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
 	  fprintf(stderr,"\n");
 	}
       }
-      /*     for(i=1; (i<ncys); i++)  */
-      /*       fprintf(stderr," %3s%4d",pdba[sgp[i]].resnm,cysp[i]+1); */
-      /*     fprintf(stderr,"\n"); */
-      /*     for(i=0; (i<ncys-1); i++) { */
-      /*       fprintf(stderr," %3s%4d",pdba[sgp[i]].resnm,cysp[i]+1); */
-      /*       for(j=1; (j<i+1); j++) */
-      /* 	fprintf(stderr,"%8s",""); */
-      /*       for( ; (j<ncys); j++) */
-      /* 	fprintf(stderr,"%6.3f  ",d[i][j]); */
-      /*       fprintf(stderr,"\n"); */
-      /*     } */
     }
     i=j=0;
     

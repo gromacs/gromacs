@@ -114,12 +114,13 @@ static bool chk_hbonds(int i,t_atoms *pdba, rvec x[],
 {
   bool bHB;
   int  j,aj,ri,natom;
-  real d,a;
+  real d2,dist2,a;
   rvec nh,oh;
   
   natom=pdba->nr;
   bHB = FALSE;
   ri = pdba->atom[i].resnr;
+  dist2=sqr(dist);
   for(j=0; (j<natom); j++) {
     /* Check whether the other atom is a donor/acceptor and not i */
     if ((ad[j]) && (j != i)) {
@@ -128,17 +129,18 @@ static bool chk_hbonds(int i,t_atoms *pdba, rvec x[],
 	  ((strcmp(*pdba->atomname[j],"ND1") != 0) &&
 	   (strcmp(*pdba->atomname[j],"NE2") != 0))) {
 	aj = j;
-	d  = distance(x[i],x[j]);
+	d2  = distance2(x[i],x[j]);
 	rvec_sub(x[i],xh,nh);
 	rvec_sub(x[aj],xh,oh);
 	a  = RAD2DEG * acos(cos_angle(nh,oh));
-	if ((d < dist) && (a > angle)) {
+	if ((d2 < dist2) && (a > angle)) {
 	  if (debug)
-	    fprintf(debug,"HBOND between %s%d-%s and %s%d-%s is %g nm, %g deg\n",
+	    fprintf(debug,
+		    "HBOND between %s%d-%s and %s%d-%s is %g nm, %g deg\n",
 		    *pdba->resname[pdba->atom[i].resnr], 
 		    pdba->atom[i].resnr+1, *pdba->atomname[i],
 		    *pdba->resname[pdba->atom[aj].resnr],
-		    pdba->atom[aj].resnr+1,*pdba->atomname[aj],d,a);
+		    pdba->atom[aj].resnr+1,*pdba->atomname[aj],sqrt(d2),a);
 	  hbond[i] = TRUE;
 	  bHB      = TRUE;
 	}
