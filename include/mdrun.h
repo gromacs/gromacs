@@ -208,7 +208,7 @@ extern void sum_lrforces(rvec f[],t_forcerec *fr,int start,int homenr);
 		     
 extern void calc_virial(FILE *log,int start,int homenr,rvec x[],rvec f[],
 			tensor vir_part,tensor pme_vir,
-			t_commrec *cr,t_graph *graph,matrix box,
+			t_graph *graph,matrix box,
 			t_nrnb *nrnb,t_forcerec *fr,bool bTweak);
 			
 extern void nstop_cm(FILE *log,t_commrec *cr,
