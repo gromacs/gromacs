@@ -48,7 +48,7 @@ static char *SRCID_g_analyze_c = "$Id$";
 enum { avbarSEL, avbarNONE, avbarSTDDEV, avbarERROR, avbar90, avbarNR };
 
 static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
-		       int nsets_in,int *nset,int *nval,real *t0,real *dt,
+		       int nsets_in,int *nset,int *nval,real *dt,real **t,
 		       int linelen)
 {
   FILE   *fp;
@@ -66,7 +66,7 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
   }
 
   val = NULL;
-  *t0 = 0;
+  *t  = NULL;
   *dt = 0;
   fp  = ffopen(fn,"r");
   for(sin=0; sin<nsets_in; sin++) {
@@ -119,19 +119,22 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
 	    if (n==0) {
 	      if (nsets_in == 1)
 		narg++;
-	      if (set == -1)
-		*t0 = dbl;
-	      else {
+	      if (set >= 0) {
 		*nset = set+1;
 		srenew(val,*nset);
 		val[set] = NULL;
 	      }
 	    }
-	    if (set == -1)
-	      tend = dbl;
-	    else {
-	      if (n % 100 == 0)
-	      srenew(val[set],n+100);
+	    if (set == -1) {
+	      if (sin == 0) {
+		if (n % 100 == 0) 
+		  srenew(*t,n+100);
+		(*t)[n] = dbl;
+	      }
+	      /* else we should check the time of the next sets with set 0 */
+	    } else {
+	      if (n % 100 == 0) 
+		srenew(val[set],n+100);
 	      val[set][n] = (real)dbl;
 	    }
 	  }
@@ -148,11 +151,15 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
     }
     if (sin==0) {
       *nval = n;
-      if (!bHaveT)
+      if (!bHaveT) {
+	snew(*t,n);
+	for(a=0; a<n; a++)
+	  (*t)[a] = a;
+      }
+      if (n > 1)
+	*dt = (real)((*t)[n-1]-(*t)[0])/(n-1.0);
+      else
 	*dt = 1;
-      else 
-	if (n > 1)
-	  *dt = (real)(tend-*t0)/(n-1.0);
     } else {
       if (n < *nval) {
 	fprintf(stderr,"Set %d is shorter (%d) than the previous set (%d)\n",
@@ -168,7 +175,7 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
   return val;
 }
 
-static void power_fit(int n,int nset,real **val,real t0,real dt)
+static void power_fit(int n,int nset,real **val,real *t)
 {
   real *x,*y,quality,a,b;
   int  s,i;
@@ -176,10 +183,10 @@ static void power_fit(int n,int nset,real **val,real t0,real dt)
   snew(x,n);
   snew(y,n);
   
-  if (t0>0) {
+  if (t[0]>0) {
     for(i=0; i<n; i++)
-      if (t0>0)
-	x[i] = log(t0+dt*i);
+      if (t[0]>0)
+	x[i] = log(t[i]);
   } else {
     fprintf(stdout,"First time is not larger than 0, using index number as time for power fit\n");
     for(i=0; i<n; i++)
@@ -290,7 +297,7 @@ static int real_comp(const void *a,const void *b)
 }
 
 static void average(char *avfile,int avbar_opt,
-		    int n, int nset,real **val,real t0,real dt)
+		    int n, int nset,real **val,real *t)
 {
   FILE   *fp;
   int    i,s,edge=0;
@@ -316,7 +323,7 @@ static void average(char *avfile,int avbar_opt,
     for(s=0; s<nset; s++)
       av += val[s][i];
     av /= nset;
-    fprintf(fp," %g %g",t0+dt*i,av);
+    fprintf(fp," %g %g",t[i],av);
     var = 0;
     if (avbar_opt != avbarNONE) {
       if (avbar_opt == avbar90) {
@@ -515,12 +522,15 @@ int main(int argc,char *argv[])
     "All lines starting with # and @ are skipped.",
     "All analyses can also be done for the derivative of a set",
     "(option [TT]-d[tt]).[PAR]",
-    
+
+    "All options, except for [TT]-av[tt] and [TT]-power[tt] assume that the",
+    "points are equidistant in time.[PAR]",
+
     "g_analyze always shows the average and standard deviation of each",
     "set. For each set it also shows the relative deviation of the third",
     "and forth cumulant from those of a Gaussian distribution with the same",
     "standard deviation.[PAR]",
-    
+
     "Option [TT]-ac[tt] produces the autocorrelation function(s).[PAR]",
     
     "Option [TT]-cc[tt] plots the resemblance of set i with a cosine of",
@@ -610,8 +620,8 @@ int main(int argc,char *argv[])
 #define NPA asize(pa)
 
   FILE     *out;
-  int      n,nlast,s,nset,i,t=0;
-  real     **val,t0,dt,tot,error;
+  int      n,nlast,s,nset,i,j=0;
+  real     **val,*t,dt,tot,error;
   double   *av,*sig,cum1,cum2,cum3,cum4,db;
   char     *acfile,*msdfile,*ccfile,*distfile,*avfile,*eefile;
   
@@ -646,7 +656,7 @@ int main(int argc,char *argv[])
   val=read_val(opt2fn("-f",NFILE,fnm),bHaveT,
 	       opt2parg_bSet("-b",npargs,ppa),tb,
 	       opt2parg_bSet("-e",npargs,ppa),te,
-	       nsets_in,&nset,&n,&t0,&dt,linelen);
+	       nsets_in,&nset,&n,&dt,&t,linelen);
   fprintf(stdout,"Read %d sets of %d points, dt = %g\n\n",nset,n,dt);
   if (bDer) {
     fprintf(stdout,"Calculating the derivative as (f[i+%d]-f[i])/(%d*dt)\n\n",
@@ -698,20 +708,20 @@ int main(int argc,char *argv[])
 		 "time","MSD (nm\\S2\\N)");
     nlast = (int)(n*frac);
     for(s=0; s<nset; s++) {
-      for(t=0; t<=nlast; t++) {
-	if (t % 100 == 0)
-	  fprintf(stderr,"\r%d",t);
+      for(j=0; j<=nlast; j++) {
+	if (j % 100 == 0)
+	  fprintf(stderr,"\r%d",j);
 	tot=0;
-	for(i=0; i<n-t; i++)
-	  tot += sqr(val[s][i]-val[s][i+t]); 
-	tot /= (real)(n-t);
-	fprintf(out," %g %8g\n",dt*t,tot);
+	for(i=0; i<n-j; i++)
+	  tot += sqr(val[s][i]-val[s][i+j]); 
+	tot /= (real)(n-j);
+	fprintf(out," %g %8g\n",dt*j,tot);
       }
       if (s<nset-1)
 	fprintf(out,"&\n");
     }
     fclose(out);
-    fprintf(stderr,"\r%d, time=%g\n",t-1,(t-1)*dt);
+    fprintf(stderr,"\r%d, time=%g\n",j-1,(j-1)*dt);
   }
   if (ccfile)
     plot_coscont(ccfile,n,nset,val);
@@ -719,11 +729,11 @@ int main(int argc,char *argv[])
   if (distfile)
     histogram(distfile,binwidth,n,nset,val);
   if (avfile)
-    average(avfile,nenum(avbar_opt),n,nset,val,t0,dt);
+    average(avfile,nenum(avbar_opt),n,nset,val,t);
   if (eefile)
     estimate_error(eefile,nb_min,resol,n,nset,av,sig,val,dt,bEeFitAc,bEESEF);
   if (bPower)
-    power_fit(n,nset,val,t0,dt);
+    power_fit(n,nset,val,t);
   if (acfile) {
     if (bSubAv) 
       for(s=0; s<nset; s++)
