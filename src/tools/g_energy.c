@@ -542,7 +542,7 @@ int main(int argc,char *argv[])
   FILE       *out;
   FILE       **drout;
   int        fp;
-  int        ndrout;
+  int        ndr;
   int        timecheck;
   t_topology top;
   t_inputrec ir;
@@ -657,7 +657,7 @@ int main(int argc,char *argv[])
      * or when this has been found it reads just one energy frame
      */
     do {
-      bCont = do_enx(fp,&(t[NEXT]),&(step[NEXT]),&nre,ee[NEXT],&dr);
+      bCont = do_enx(fp,&(t[NEXT]),&(step[NEXT]),&nre,ee[NEXT],&ndr,&dr);
       
       if (bCont)
 	timecheck = check_times(t[NEXT]);
@@ -696,7 +696,7 @@ int main(int argc,char *argv[])
        * Define distance restraint legends. Can only be done after
        * the first frame has been read... (Then we know how many there are)
        */
-      if (bDisRe && bDRAll && !leg) {
+      if (bDisRe && bDRAll && !leg && (ndr > 0)) {
 	t_iatom *fa;
 	
 	fa = top.idef.il[F_DISRES].iatoms; 
@@ -749,21 +749,19 @@ int main(int argc,char *argv[])
 	/*******************************************
 	 * D I S T A N C E   R E S T R A I N T S  
 	 *******************************************/
-	if (bDisRe) {
-	  if (eh.ndisre>0) {
-	    if (violaver == NULL)
-	      snew(violaver,dr.ndr);
-	    
-	    /* Subtract bounds from distances, to calculate violations */
-	    calc_violations(dr.rt,dr.rav,
-			    nbounds,index,bounds,violaver,&sumt,&sumaver);
-	    
-	    if (bDRAll) {
-	      for(i=0; (i<nset); i++) {
-		sss=set[i];
-		fprintf(out,"  %8.4f",mypow(dr.rav[sss],minthird));
-		fprintf(out,"  %8.4f",dr.rt[sss]);
-	      }
+	if (bDisRe && (ndr >0)) {
+	  if (violaver == NULL)
+	    snew(violaver,dr.ndr);
+	  
+	  /* Subtract bounds from distances, to calculate violations */
+	  calc_violations(dr.rt,dr.rav,
+			  nbounds,index,bounds,violaver,&sumt,&sumaver);
+	  
+	  if (bDRAll) {
+	    for(i=0; (i<nset); i++) {
+	      sss=set[i];
+	      fprintf(out,"  %8.4f",mypow(dr.rav[sss],minthird));
+	      fprintf(out,"  %8.4f",dr.rt[sss]);
 	    }
 	    teller_disre++;
 	  }
@@ -773,7 +771,7 @@ int main(int argc,char *argv[])
 	}
 	/*******************************************
 	 * E N E R G I E S
-	   *******************************************/
+	 *******************************************/
 	else {
 	  if (bSum) 
 	    print_one(out,bDp,(eneset[nset][nenergy-1]-ezero)/nmol);

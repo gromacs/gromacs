@@ -128,4 +128,9 @@ hallo:		hallo.o
 testf:		testf.o
 		$(LD) -o $@ $^ -lm
 
+libdump.a:	dumpargs.o
+		$(AR) rv libdump.a $^		
+testcomp:	testcomp.o libdump.a
+		$(LD) -L. -o $@ testcomp.o -ldump $(SYSLIBS)
+
 include	Make.dep

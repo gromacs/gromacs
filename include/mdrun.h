@@ -144,6 +144,8 @@ extern int write_traj(FILE *log,t_commrec *cr,char *traj,t_nsborder *nsb,
 extern int do_per_step(int step,int nstep);
 /* Return TRUE if io should be done */
 
+extern int do_any_io(int step, t_inputrec *ir);
+
 extern void write_xtc_traj(FILE *log,t_commrec *cr,
 			   char *xtc_traj,t_nsborder *nsb,t_mdatoms *md,
 			   int step,real t,rvec *xx,
@@ -257,5 +259,8 @@ extern void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
 			  
 extern void calc_ljcorr(FILE *log,bool bLJcorr,t_forcerec *fr,int natoms,
 			matrix box,tensor pres,tensor virial,real ener[]);
+
+extern void get_cmparm(t_inputrec *ir,int step,bool *bStopCM,bool *bStopRot);
+/* Determine from the input whether or not to stop center of mass motion */
 
 #endif	/* _mdrun_h */

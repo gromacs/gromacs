@@ -166,7 +166,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   	
   /* Print only if we are the master processor */
   if (MASTER(cr))
-    print_ebin(fp_ene,log,count,count,lambda,0.0,eprNORMAL,TRUE,
+    print_ebin(fp_ene,TRUE,FALSE,log,count,count,lambda,0.0,eprNORMAL,TRUE,
 	       mdebin,grps,&(top->atoms));
   where();
   
@@ -332,7 +332,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       upd_mdebin(mdebin,mdatoms->tmass,count,ener,parm->box,shake_vir,
 		 force_vir,parm->vir,parm->pres,grps,mu_tot);
       /* Print the energies allways when we should be verbose */
-      print_ebin(fp_ene,log,count,count,lambda,0.0,eprNORMAL,TRUE,
+      print_ebin(fp_ene,TRUE,FALSE,log,count,count,lambda,0.0,eprNORMAL,TRUE,
 		 mdebin,grps,&(top->atoms));
     }
     

@@ -61,13 +61,13 @@ void pr_jacobi(real **a,int n,real d[],real **v,int *nrot);
 bool read_mu_from_enx(int fmu,int Vol,ivec iMu,rvec mu,real *vol,
 		      real *t,int step,int nre)
 {
-  int      i;
+  int      i,ndr;
   bool     eof;
   t_energy *ee;  
 
   snew(ee,nre);
 
-  eof = do_enx(fmu,t,&step,&nre,ee,NULL);
+  eof = do_enx(fmu,t,&step,&nre,ee,&ndr,NULL);
 
   if (eof) {
     if (Vol != -1)          /* we've got Volume in the energy file */

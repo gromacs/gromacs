@@ -62,7 +62,8 @@ extern void upd_mdebin(t_mdebin *md,real tmass,int step,
 		       t_groups *grps,
 		       rvec mu_tot);
      
-extern void print_ebin(int fp_ene,FILE *log,int steps,real time,real lamb,
+extern void print_ebin(int fp_ene,bool bEne,bool bDR,
+		       FILE *log,int steps,real time,real lamb,
 		       real SAfactor,int mode,bool bCompact,
 		       t_mdebin *md,t_groups *grps,t_atoms *atoms);
 

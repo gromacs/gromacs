@@ -296,8 +296,10 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 
 #ifdef DEBUG
     if (debug) {
-      pr_rvecs(debug,0,"pos[Try] b4 do_force",&(pos[Try][start]),homenr);
-      pr_rvecs(debug,0,"pos[Min] b4 do_force",&(pos[Min][start]),homenr);
+      pr_rvecs(debug,0,"pos[Try] b4 do_force",(rvec *)(pos[Try][start]),
+	       homenr);
+      pr_rvecs(debug,0,"pos[Min] b4 do_force",(rvec *)(pos[Min][start]),
+	       homenr);
     }
 #endif
     /* Try the new positions */
@@ -308,7 +310,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     df[Try]=rms_force(force[Try],nshell,shells);
 
     if (debug) 
-      pr_rvecs(debug,0,"F na do_force",&(force[Try][start]),homenr);
+      pr_rvecs(debug,0,"F na do_force",(rvec *)(force[Try][start]),homenr);
 
     if (debug) {
       fprintf(debug,"SHELL ITER %d\n",count);

@@ -225,8 +225,10 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   lambda=lam0+step*parm->ir.delta_lambda;
   
   if (MASTER(cr)) {
-    print_ebin(-1,log,step,t,lambda,0.0,eprAVER,FALSE,mdebin,grps,&(top->atoms));
-    print_ebin(-1,log,step,t,lambda,0.0,eprRMS,FALSE,mdebin,grps,&(top->atoms));
+    print_ebin(-1,FALSE,FALSE,log,step,t,lambda,0.0,eprAVER,
+	       FALSE,mdebin,grps,&(top->atoms));
+    print_ebin(-1,FALSE,FALSE,log,step,t,lambda,0.0,eprRMS,
+	       FALSE,mdebin,grps,&(top->atoms));
   }
   
   /* Construct dummy particles, for last output frame */

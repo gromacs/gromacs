@@ -42,11 +42,14 @@ static MPI_Request mpi_req_tx=MPI_REQUEST_NULL,mpi_req_rx;
 
 /*#define DEBUG*/
 
+#ifdef _SGI_
 #define MPI_TEST
+#endif
 
 void mpiio_tx(int pid,void *buf,int bufsize)
 {
-  int tag;
+  int        tag,flag;
+  MPI_Status status;
   
 #ifdef DEBUG
   fprintf(stderr,"mpiio_tx: pid=%d, buf=%x, bufsize=%d\n",pid,buf,bufsize);

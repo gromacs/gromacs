@@ -73,30 +73,26 @@ static void set_fixe(t_fixe *fixe, real t, real tstart,
   fixe->dr=dr;
 }
 
+static bool same_time(real t1,real t2)
+{
+  const real tol=1e-5;
+
+  return (fabs(t1-t2) < tol);
+}
+
 int cmpfix(const void *a,const void *b)
 {
-  real ts,tt;
+  real ta,tb;
 
-  /* First sort on starting time of the simulation */  
-  ts = ((t_fixe *) a)->tstart - ((t_fixe *) b)->tstart;
-  tt = ((t_fixe *) a)->t      - ((t_fixe *) b)->t;
+  ta = ((t_fixe *) a)->t;
+  tb = ((t_fixe *) b)->t;
   
-  if (ts == 0) {
-    if (tt < 0.0)
-      return -1;
-    else if (tt > 0.0)
-      return 1;
-    else
-      return 0;
-  }
-  else {
-    if (ts < 0.0)
-      return -1;
-    else if (ts > 0.0)
-      return 1;
-    else
-      return 0;
-  }
+  if (same_time(ta,tb))
+    return 0;
+  else if (ta < tb)
+    return -1;
+  else 
+    return 1;
 }
 
 bool bRgt(double a,double b)
@@ -113,32 +109,24 @@ void analyse_energies(int nre,int nrf,t_fixe f[])
 {
   real     t;
   t_energy *e0,*elast;
-  int      sim_start,i,j,nrkill;
+  int      i,i0,j,nrkill;
   
   if (!nrf)
     return;
     
-  sim_start = f[0].sim_nr;
-  
-  /* First throw out redundant (double) energies */
+  /* First throw out redundant (double) energies. 
+   * They are sorted on time, so that is pretty easy.
+   */
   nrkill=0;
-  for(i=0; (i<nrf); i++) {
-    t = f[i].t;
-    if (t != -1) {
-      /* Check whether this is data from the same simulation  */
-      if (f[i].sim_nr != sim_start) {
-	sim_start = f[i].sim_nr;
-	/* Walk back until we have the same time */
-	while ((i > 0) && bRgt(f[i-1].t,t) ) {
-	  /* Set time to -1 to indicate that this should not be stored */
-	  f[i-1].bSave = FALSE;
-	  f[i-1].t     = -1;
-	  nrkill ++;
-	  i--;
-	}
-	/* Now either i == 0, or f[i-1].t <= t */
-      }
+  for(i=0; (i<nrf-1); ) {
+    i0 = i;
+    while (((i+1) < nrf) && same_time(f[i0].t,f[i+1].t)) {
+      f[i+1].bSave = FALSE;
+      nrkill ++;
+      i++;
     }
+    if (i0 == i)
+      i++;
   }
   fprintf(stderr,"There are %d double energy entries out of %d\n",
 	  nrkill,nrf);
@@ -192,7 +180,7 @@ int main(int argc,char *argv[])
   char      **fnms,fn[STRLEN];
   int       nfile;
   t_fixe    *fixe=NULL;
-  int       *set,i,j;
+  int       *set,i,j,ndr;
   char      **enm=NULL;
   t_drblock *dr=NULL;
 
@@ -258,8 +246,10 @@ int main(int argc,char *argv[])
       else if (nre != nresav)
 	fatal_error(0,"Energy files don't match, different number"
 		    " of energies (%s)",fnms[i]);
+		    
+      /* Now really start reading */
       step = 0;
-      while (do_enx(in,&t,&step,&nre,ee,dr)) {
+      while (do_enx(in,&t,&step,&nre,ee,&ndr,dr)) {
 	fprintf(stderr,"\rRead frame %d, time %g",nrt,t);
 	/* Set the starting time for this energy file */
 	if (tstart == -1)
@@ -292,7 +282,7 @@ int main(int argc,char *argv[])
 	  else if (t0>=0) 
 	    fixe[i].t += (t0-tstart);
 	}
-	do_enx(out,&(fixe[i].t),&i,&nre,fixe[i].e,fixe[i].dr);
+	do_enx(out,&(fixe[i].t),&i,&nre,fixe[i].e,&ndr,fixe[i].dr);
 	fprintf(stderr,"\rWrite frame %d, t %f",j,fixe[i].t);
 	j++;
       }
@@ -311,7 +301,7 @@ int main(int argc,char *argv[])
     
     tstart=-1;
     i=0;
-    while (do_enx(in,&t,&j,&nre,ee,dr))  {
+    while (do_enx(in,&t,&j,&nre,ee,&ndr,dr))  {
       if (tstart==-1) {
 	tstart=t;
 	if ((t0==-1) && (timestep>0))
@@ -326,7 +316,7 @@ int main(int argc,char *argv[])
       if ((delta_t == 0) || (bRmod(t-toffset,delta_t))) {
 	if ((j%10) == 0)
 	  fprintf(stderr,"  ->  write %d, time %g",i,t);
-	do_enx(out,&t,&j,&nre,ee,dr);
+	do_enx(out,&t,&j,&nre,ee,&ndr,dr);
 	i++;
       }
       j++;

@@ -439,15 +439,16 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
                
     where();
     if ( MASTER(cr) ) {
-      bool do_ene,do_log;
+      bool do_ene,do_dr,do_log;
       
-      do_ene=do_per_step(step,parm->ir.nstenergy) || bLastStep;
-      do_log=do_per_step(step,parm->ir.nstlog) || bLastStep;
-      print_ebin(do_ene ? fp_ene : -1,do_log ? log : NULL,step,t,lambda,SAfactor,
+      do_ene = do_per_step(step,parm->ir.nstenergy) || bLastStep;
+      do_dr  = do_per_step(step,parm->ir.nstdisreout) || bLastStep;
+      do_log = do_per_step(step,parm->ir.nstlog) || bLastStep;
+      print_ebin(fp_ene,do_ene,do_dr,do_log?log:NULL,step,t,lambda,SAfactor,
 		 eprNORMAL,bCompact,mdebin,grps,&(top->atoms));
+      if (bVerbose)
+	fflush(log);
     }
-    if (bVerbose)
-      fflush(log);
       
     if (MASTER(cr) && bVerbose && ((step % stepout)==0)) {
       if (nshell > 0)
@@ -457,9 +458,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   }
   
   if (MASTER(cr)) {
-    print_ebin(-1,log,step,t,lambda,SAfactor,
+    print_ebin(fp_ene,FALSE,FALSE,log,step,t,lambda,SAfactor,
 	       eprAVER,FALSE,mdebin,grps,&(top->atoms));
-    print_ebin(-1,log,step,t,lambda,SAfactor,
+    print_ebin(fp_ene,FALSE,FALSE,log,step,t,lambda,SAfactor,
 	       eprRMS,FALSE,mdebin,grps,&(top->atoms));
     if (fp_ene != -1)
       close_enx(fp_ene);

@@ -207,17 +207,22 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
 	    file_version,tpx_version);
   }
   /* set things which are in 5 but not in 4 */
-  if (file_version == 4) {
-    ir->ns_dr = 0.2;
+  if (file_version < 5) {
+    ir->ns_dr    = 0.2;
     fprintf(stderr,"Set ns_dr to %g\n",ir->ns_dr);
     ir->bLJshift = FALSE;
     fprintf(stderr,"Set bLJshift to %s\n",bool_names[ir->bLJshift]);
     ir->nstdisreout = ir->nstenergy;
     fprintf(stderr,"Set nstdisreout to nstenergy (%d)\n",ir->nstdisreout);
-  } else {
+    ir->bDomDecomp = FALSE;
+    ir->decomp_dir = XX;
+  } 
+  else {
     do_real(ir->ns_dr);
     do_int(ir->bLJshift);
     do_int(ir->nstdisreout);
+    do_int(ir->bDomDecomp);
+    do_int(ir->decomp_dir);
   }
 }
 

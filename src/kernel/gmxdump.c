@@ -216,7 +216,7 @@ void list_trx(char *fn,bool bAltLayout)
 
 void list_ene(char *fn,bool bEDR)
 {
-  int       in;
+  int       in,ndr;
   bool      bCont;
   t_energy  *ener;
   t_drblock drblock;
@@ -236,7 +236,7 @@ void list_ene(char *fn,bool bEDR)
   minthird=-1.0/3.0;
   snew(ener,nre);
   do {
-    bCont=do_enx(in,&t,&step,&nre2,ener,&drblock);
+    bCont=do_enx(in,&t,&step,&nre2,ener,&ndr,&drblock);
     assert(nre2==nre);
     
     if (bCont) {
@@ -246,11 +246,12 @@ void list_ene(char *fn,bool bEDR)
       for(i=0; (i<nre); i++) 
 	printf("%24s  %12.5e  %12.5e  %12.5e\n",
 	       enm[i],ener[i].e,ener[i].eav,ener[i].esum);
-      if (drblock.ndr)
+      if (ndr > 0) {
 	printf("Restraint %8s  %8s\n","r(t)","< r >");
-      for(i=0; (i<drblock.ndr); i++) {
-	rav=pow(drblock.rav[i],minthird);
-	printf("%8d  %8.4f  %8.4f\n",i,drblock.rt[i],rav);
+	for(i=0; (i<drblock.ndr); i++) {
+	  rav=pow(drblock.rav[i],minthird);
+	  printf("%8d  %8.4f  %8.4f\n",i,drblock.rt[i],rav);
+	}
       }
     }
   } while (bCont);

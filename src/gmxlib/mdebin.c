@@ -320,7 +320,8 @@ static void pprint(FILE *log,char *s)
   fprintf(log,"  ======>\n\n");
 }
 
-void print_ebin(int fp_ene,FILE *log,int steps,real time,real lamb,
+void print_ebin(int fp_ene,bool bEne,bool bDR,
+		FILE *log,int steps,real time,real lamb,
 		real SAfactor,int mode,bool bCompact,
 		t_mdebin *md,t_groups *grps,t_atoms *atoms)
 {
@@ -335,8 +336,9 @@ void print_ebin(int fp_ene,FILE *log,int steps,real time,real lamb,
     drblock=NULL;
   switch (mode) {
   case eprNORMAL:
-    if (fp_ene != -1)
-      do_enx(fp_ene,&time,&steps,&md->ebin->nener,md->ebin->e,drblock);
+    if (bEne || bDR)
+      do_enx(fp_ene,&time,&steps,(bEne) ? &md->ebin->nener : 0,
+	     md->ebin->e,&drblock->ndr,bDR ? drblock : NULL);
     if (log)
       fprintf(log,"   %12s   %12s   %12s   %12s\n"
 	      "   %12d   %12.5f   %12.5f   %12.5f\n\n",

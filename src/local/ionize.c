@@ -269,13 +269,14 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   static char  *leg[] = { "Probability", "Number/Atom", "Total" };
   static bool  bFirst = TRUE;
   static bool  bImpulse = TRUE;
-  static real  pt,t0,imax,width,inv_nratoms,rho,nphot,nkdecay,nkd_tot;
+  static real  t0,imax,width,inv_nratoms,rho,nphot,nkdecay,nkd_tot;
   static int   seed,total,ephot;
   static t_cross_atom *ca;
   static int   Eindex=-1;
   static int   Energies[] = { 6, 8, 10, 15, 20 };
 #define NENER asize(Energies)
   real r,factor,ndv,E_lost,cross_atom,dvz,rrc;
+  real pt,ptot,pphot,pcoll[ecollNR];
   real incoh,incoh_abs,sigmaPincoh;
   rvec dv;
   bool bIonize,bKHole,bL;
@@ -292,10 +293,12 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     seed  = ir->userint1;   /* Random seed for stochastic ionization */
     ephot = ir->userint2;   /* Energy of the photons                 */
     
+    if ((width <= 0) || (nphot <= 0))
+      fatal_error(0,"Your parameters for ionization are not set properly\n"
+		  "width = %f,  nphot = %f",width,nphot);
+    
     imax  = (nphot/(M_PI*rho*rho))*1e-10*sqrt(1.0/M_PI)*(2.0/width);
 
-    if ((width <= 0) || (imax <= 0))
-      fatal_error(0,"Your parameters for ionization are not set properly");
     
     if (seed == 0)
       seed = 1993;
@@ -342,7 +345,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   sigmaPincoh = 1/sqrt(44.0);
   
   /* Print time to the file that holds ionization events per atom */
-  fprintf(ion,"%12.5f",t);
+  fprintf(ion,"%12.8f",t);
   where();
   /* Loop over atoms */
   for(i=0; (i<md->nr); i++) {
@@ -351,133 +354,146 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     for(k=0; (k<ecollNR); k++) {
       /* Determine cross section */
       cross_atom = cross(k,&(ca[i]));
-      where();
-      /* Check whether to ionize this guy */
-      r = rando(&seed);
-      if ((r < pt*cross_atom) && (ca[i].n < ca[i].z)) {
-	where();
-	clear_rvec(dv);
+      pcoll[k] = pt*cross_atom;
+    }
+    /* Total probability of ionisation */
+    ptot = 1 - (1-pcoll[ecollPHOTO])*(1-pcoll[ecollINELASTIC]);
+    
+    /* Check whether to ionize this guy */
+    if ((rando(&seed) < ptot) && (ca[i].n < ca[i].z)) {
+      clear_rvec(dv);
+      
+      /* The relative probability for a photoellastic event is given by: */
+      pphot = pcoll[ecollPHOTO]/(pcoll[ecollPHOTO]+pcoll[ecollINELASTIC]);
+      
+      if (rando(&seed) < pphot) 
+	k = ecollPHOTO;
+      else
+	k = ecollINELASTIC;
+      
+      /* If a random number is smaller than the probability for 
+       * an L ionization than do that. Note that the probability
+       * may be zero (H, He), but the < instead of <= covers that.
+       */
+      nK = number_K(&ca[i]);
+      nL = number_L(&ca[i]);
+      bL = ((rando(&seed) < prob_L(k,&(ca[i]))) && (nL > 0)) || (nK == 0);
+      
+      switch (k) {
+      case ecollPHOTO: {
+	/* Select which one to take by yet another random numer */
+	real theta,phi;
 	
-	/* If a random number is smaller than the probability for 
-	 * an L ionization than do that. Note that the probability
-	 * may be zero (H, He), but the < instead of <= covers that.
-	 */
-	nK = number_K(&ca[i]);
-	nL = number_L(&ca[i]);
-	bL = ((rando(&seed) < prob_L(k,&(ca[i]))) && (nL > 0)) || (nK == 0);
+	/* Get parameters for photoelestic effect */
+	/* Note that in the article this is called 2 theta */
+	theta = DEG2RAD*gauss(70.0,26.0,&seed);
+	phi   = 2*M_PI*rando(&seed);
 	
-	switch (k) {
-	case ecollPHOTO: {
-	  real theta,phi;
-	  
-	  /* Get parameters for photoelestic effect */
-	  /* Note that in the article this is called 2 theta */
-	  theta = DEG2RAD*gauss(70.0,26.0,&seed);
-	  phi   = 2*M_PI*rando(&seed);
-	  
-	  if (bL)
-	    E_lost = ephot-recoil[ca[i].z-ca[i].n].E_L;
-	  else {
-	    E_lost = ephot-recoil[ca[i].z-ca[i].n].E_K;
-	    if ((ca[i].z > 2) && (nL > 0))
-	      bKHole = TRUE;
-	  }
-	  if (debug)
-	    fprintf(debug,"i = %d, nK = %d, nL = %d, bL = %s, bKHole = %s\n",
-		    i,nK,nL,BOOL(bL),BOOL(bKHole));
-	  if (E_lost < 0) {
-	    E_lost  = 0.0;
-	    bIonize = FALSE;
-	    bKHole  = FALSE;
-	  }
-	  else {
-	    /* Compute the components of the velocity vector */
-	    factor = ((ELECTRONMASS_keV/(ATOMICMASS_keV*md->massT[i]))*
-		      (SPEEDOFLIGHT*sqrt(2*E_lost/ELECTRONMASS_keV)));
-	    
-	    /* Subtract momentum of recoiling electron */
-	    dv[XX] -= factor*cos(phi)*sin(theta);
-	    dv[YY] -= factor*sin(phi)*sin(theta);
-	    dv[ZZ] -= factor*cos(theta);
-	    
-	    if (debug)
-	      pr_rvec(debug,0,"ELL",dv,DIM);
-	    
-	    bIonize = TRUE;
-	  }
-	  
-	  break;
+	if (bL)
+	  E_lost = ephot-recoil[ca[i].z-ca[i].n].E_L;
+	else {
+	  E_lost = ephot-recoil[ca[i].z-ca[i].n].E_K;
+	  if ((ca[i].z > 2) && (nL > 0))
+	    bKHole = TRUE;
 	}
-	case ecollINELASTIC: {
-	  real theta,phi,Ebind,Eelec;
-
-	  if (bL)
-	    Ebind = ca[i].n*recoil[ca[i].z].E_L;
-	  else {
-	    Ebind  = recoil[ca[i].z].E_K;
-	    if ((ca[i].z > 2) && (nL > 0))
-	      bKHole = TRUE;
-	  }
-	  theta      = DEG2RAD*rand_theta_incoh(Eindex,&seed);
-	  Eelec      = (sqr(ephot)/512)*(1-cos(2*theta));
-	  bIonize    = (Ebind <= Eelec);
-	  bKHole     = bKHole && bIonize;
+	if (debug)
+	  fprintf(debug,"i = %d, nK = %d, nL = %d, bL = %s, bKHole = %s\n",
+		  i,nK,nL,BOOL(bL),BOOL(bKHole));
+	if (E_lost < 0) {
+	  E_lost  = 0.0;
+	  bIonize = FALSE;
+	  bKHole  = FALSE;
+	}
+	else {
+	  /* Compute the components of the velocity vector */
+	  factor = ((ELECTRONMASS_keV/(ATOMICMASS_keV*md->massT[i]))*
+		    (SPEEDOFLIGHT*sqrt(2*E_lost/ELECTRONMASS_keV)));
+	  
+	  /* Subtract momentum of recoiling electron */
+	  dv[XX] -= factor*cos(phi)*sin(theta);
+	  dv[YY] -= factor*sin(phi)*sin(theta);
+	  dv[ZZ] -= factor*cos(theta);
+	  
 	  if (debug)
-	    fprintf(debug,PREFIX"Ebind: %g, Eelectron: %g\n",Ebind,Eelec);
-	  if (!bIonize) {
-	    /* Subtract momentum of recoiling photon */
-	    /*phi     = 2*M_PI*rando(&seed);
+	    pr_rvec(debug,0,"ELL",dv,DIM);
+	  
+	  bIonize = TRUE;
+	}
+	break;
+      }
+      case ecollINELASTIC: {
+	real theta,phi,Ebind,Eelec;
+	
+	if (bL)
+	  Ebind = ca[i].n*recoil[ca[i].z].E_L;
+	else {
+	  Ebind  = recoil[ca[i].z].E_K;
+	  if ((ca[i].z > 2) && (nL > 0))
+	    bKHole = TRUE;
+	}
+	theta      = DEG2RAD*rand_theta_incoh(Eindex,&seed);
+	Eelec      = (sqr(ephot)/512)*(1-cos(2*theta));
+	bIonize    = (Ebind <= Eelec);
+	bKHole     = bKHole && bIonize;
+	if (debug)
+	  fprintf(debug,PREFIX"Ebind: %g, Eelectron: %g\n",Ebind,Eelec);
+	if (!bIonize) {
+	  /* Subtract momentum of recoiling photon */
+	  /*phi     = 2*M_PI*rando(&seed);
  	    bKHole  = FALSE;  
 	    factor  = ephot*438;  
 	    dv[XX] -= factor*cos(phi)*sin(theta);
 	    dv[YY] -= factor*sin(phi)*sin(theta);
 	    dv[ZZ] -= factor*cos(theta);
-	    */
-	    if (debug)
-	      pr_rvec(debug,0,"INELL",dv,DIM);
-	  }
-	  
-	  break;
+	  */
+	  if (debug)
+	    pr_rvec(debug,0,"INELL",dv,DIM);
 	}
-	}
-	
-	if (bIonize) {
-	  /* First increase the charge */
-	  if (ca[i].n < ca[i].z) {
-	    fprintf(ion,"  %d",i);
-	    md->chargeA[i] += 1.0;
-	    md->chargeB[i] += 1.0;
-	    ca[i].n++;
-	    dq ++;
-	    total ++;
-	  }
-	  if (debug) {
-	    fprintf(debug,"Random-dv[%3d] = %10.3e,%10.3e,%10.3e,"
-		    " ephot = %d, Elost=%10.3e\n",
-		    i,dv[XX],dv[YY],dv[ZZ],ephot,E_lost);
-	  }
-	}
-	/* Now actually add the impulse to the velocities */
-	for(m=0; (m<DIM); m++)
-	  v[i][m] += dv[m];
+	break;
       }
+      default:
+	fatal_error(0,"Ga direct naar de gevangenis. Ga  niet langs start");
+      }
+      if (bIonize) {
+	/* First increase the charge */
+	if (ca[i].n < ca[i].z) {
+	  md->chargeA[i] += 1.0;
+	  md->chargeB[i] += 1.0;
+	  ca[i].n++;
+	  dq ++;
+	  total ++;
+	}
+	if (debug) {
+	  fprintf(debug,"Random-dv[%3d] = %10.3e,%10.3e,%10.3e,"
+		  " ephot = %d, Elost=%10.3e\n",
+		  i,dv[XX],dv[YY],dv[ZZ],ephot,E_lost);
+	}
+      }
+      /* Now actually add the impulse to the velocities */
+      for(m=0; (m<DIM); m++)
+	v[i][m] += dv[m];
+      if (bKHole) {
+	ca[i].k ++;
+	fprintf(ion,"  K:%d",i+1);
+      }
+      else if (bIonize)
+	fprintf(ion,"  I:%d",i+1);
     }
-    if (bKHole)
-      ca[i].k ++;
     
-    /* Loop over k holes! */
+    /* Now check old event: Loop over k holes! */
     nkhole = ca[i].k;
     for (kk = 0; (kk < nkhole); kk++) 
       if (khole_decay(log,&(ca[i]),v[i],&seed,ir->delta_t,i)) {
 	nkdecay ++;
 	nkd_tot ++;
+	fprintf(ion,"  D:%d",i+1);
       }
     
     if (debug && (ca[i].n > 0))
       dump_ca(debug,&(ca[i]),i,__FILE__,__LINE__);
   }
   where();
-
+  
   fprintf(ion,"\n");
   fprintf(xvg,"%10.5f  %10.3e  %6d  %6d  %6d  %6d\n",
 	  t,pt,(int)dq,(int)total,(int)nkdecay,(int)nkd_tot);

@@ -121,7 +121,7 @@ int main(int argc,char *argv[])
   bool       bCont,bRef;
   bool       bCutmax,bCutmin;
   real       **eneset,*time=NULL;
-  int        *set,i,j,k,prevk,m,n,nset,nenergy;
+  int        *set,i,j,k,prevk,m,n,nset,nenergy,ndr;
   char       **enm,**groups;
   char       groupname[255],fn[255];
   int        ngroups;
@@ -210,7 +210,7 @@ int main(int argc,char *argv[])
   t        = 0;
   do {
     do {
-      bCont=do_enx(in,&t,&step,&nre,ee,&dr);
+      bCont=do_enx(in,&t,&step,&nre,ee,&ndr,&dr);
       if (bCont) {
 	timecheck=check_times(t);
 	

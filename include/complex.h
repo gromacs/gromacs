@@ -39,6 +39,8 @@ typedef struct {
   real re,im;
 } t_complex;
 
+typedef t_complex cvec[DIM];
+
 static t_complex cnul = { 0.0, 0.0 };
 
 static t_complex rcmul(real r,t_complex c)

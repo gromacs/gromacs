@@ -59,7 +59,7 @@ external "C" {
   extern void do_enxnms(int fp_ene,int *nre,char ***nms);
   
   extern bool do_enx(int fp_ene,real *t,int *step,int *nre,
-		     t_energy ener[],t_drblock *drblock);
+		     t_energy ener[],int *ndr,t_drblock *drblock);
   
   
 

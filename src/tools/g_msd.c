@@ -575,9 +575,8 @@ int main(int argc,char *argv[])
     "their initial positions. This provides an easy way to compute",
     "the diffusion constant using the Einstein relation."
   };
-  static char *normtype[]= { NULL,"no","x","y","z",NULL };
-  static char *axtitle[] = { NULL,"no","x","y","z",NULL };
-  static char *msdtype[] = { NULL,"normal","mass_weighted","molecular",NULL };
+  static char *normtype[]= { "no","x","y","z",NULL };
+  static char *axtitle[] = { "no","x","y","z",NULL };
   static int  ngroup     = 1;
   static bool bMW        = TRUE;
   t_pargs pa[] = {
@@ -622,10 +621,14 @@ int main(int argc,char *argv[])
     fatal_error(0,"Must have at least 1 group (now %d)",ngroup);
 
   bMol = opt2bSet("-m",NFILE,fnm);
-        
+          
   if (normtype[0][0]!='n') {
     type = normtype[0][0] - 'x'+1; /* See defines above */
     dim_factor = 2.0;
+  }
+  else {
+    type       = NORMAL;
+    dim_factor = 6.0;
   }
   if ((type==NORMAL) && (axtitle[0][0]!='n')) {
     type=LATERAL;

@@ -345,8 +345,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
  		 force_vir,parm->vir,parm->pres,grps,mu_tot); 
       /* Print the energies allways when we should be verbose  */
       if (MASTER(cr)) 
- 	print_ebin(fp_ene,log,count,count,lambda,0.0,eprNORMAL,TRUE, 
- 		   mdebin,grps,&(top->atoms)); 
+ 	print_ebin(fp_ene,TRUE,FALSE,log,count,count,lambda,
+		   0.0,eprNORMAL,TRUE,mdebin,grps,&(top->atoms)); 
     } 
 #else 
     if ((bVerbose || (Epot[TRY] < Epot[Min])) && MASTER(cr)) { 

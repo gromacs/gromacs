@@ -348,7 +348,7 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
 
 void chk_enx(char *fn)
 {
-  int      in,nre,frame,fnr;
+  int      in,nre,frame,fnr,ndr;
   char     **enm=NULL;
   t_energy *ee=NULL;
   bool     bShowTStep;
@@ -365,7 +365,7 @@ void chk_enx(char *fn)
   t0=NOTSET;
   bShowTStep=TRUE;
   snew(ee,nre);
-  while (do_enx(in,&t,&frame,&nre,ee,NULL)) {
+  while (do_enx(in,&t,&frame,&nre,ee,&ndr,NULL)) {
     if (fnr>=2) {
       if ( fabs((t-old_t1)-(old_t1-old_t2)) > 
 	   0.1*(fabs(t-old_t1)+fabs(old_t1-old_t2)) ) {

@@ -235,10 +235,9 @@ void init_forcerec(FILE *log,
   }
   fr->bGrid      = (ir->ns_type == ensGRID);
   
-  if (getenv("DOMDECOMP") != NULL) {
-    fr->bDomDecomp = TRUE;
-    fr->Dimension  = ir->userint4;
-  }
+  fr->bDomDecomp = ir->bDomDecomp;
+  fr->Dimension  = ir->decomp_dir;
+  
   fr->zsquare = 0.0;
   fr->temp    = 0.0;
   
