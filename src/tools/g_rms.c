@@ -522,7 +522,7 @@ int main (int argc,char *argv[])
 		   rmsd_mat,rmsd_min,rmsd_max,rlo,rhi,&nlevels);
       /* Print the distribution of RMSD values */
       if (opt2bSet("-dist",NFILE,fnm)) 
-	low_rmsd_dist(opt2fn("-dist",NFILE,fnm),tel_mat,rmsd_max,rmsd_mat);
+	low_rmsd_dist(opt2fn("-dist",NFILE,fnm),rmsd_max,tel_mat,rmsd_mat);
 		     
       if (bDelta) {
 	snew(delta_tot,delta_xsize);
