@@ -188,6 +188,13 @@ static const t_nrnb_data nbdata[eNRNB] = {
   { "Dummy4fd",                  "-",           110 } 
 };
 
+char *innerloop_name(int n)
+{
+  range_check(n,0,eNR_INLOOP);
+  
+  return nbdata[n].loop;
+}
+
 void init_nrnb(t_nrnb *nrnb)
 {
   int i;

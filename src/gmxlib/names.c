@@ -137,7 +137,7 @@ const char *efep_names[efepNR+1] = {
 };
 
 const char *esolv_names[esolNR+1] = {
-  "General", "MNO Solvent", "Water", "Water-Water", NULL
+  "No", "MNO-Solvent", "Water", "Water-Water", NULL
 };
 
 const char *edispc_names[edispcNR+1] = {

@@ -59,6 +59,11 @@ extern void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line);
 #define inc_nrnb(nrnb,enr,inc) (nrnb)->n[enr] += inc
 #endif
 
+extern char *innerloop_name(int n);
+/* Return a innerloop name corresponding to an index from 0 to
+ * eNR_INLOOP (see include/types/nrnb.h
+ */
+ 
 extern void print_perf(FILE *out,double nodetime,double realtime,real runtime,
 		       t_nrnb *nrnb,int nprocs);
 

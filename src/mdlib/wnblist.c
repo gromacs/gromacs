@@ -44,6 +44,7 @@
 #include "force.h"
 #include "smalloc.h"
 #include "wnblist.h"
+#include "nrnb.h"
 #include "fatal.h"
 #include "macros.h"
 #include "futil.h"
@@ -54,25 +55,45 @@
 static void write_nblist(FILE *out,t_nblist *nblist)
 {
   int i,j,j0,k,i_atom,jid,nj;
-  fprintf(out,"il_code: %d solvent: %s\n",nblist->il_code,
-	  esolv_names[nblist->solvent]);
-  
-  fprintf(out,"nri: %d  nrj: %d\n",nblist->nri,nblist->nrj);
-  for(i=0; i<nblist->nri; i++) {
-    nj = nblist->jindex[i+1] - nblist->jindex[i];
-    fprintf(out,"i: %d shift: %d gid: %d nj: %d\n",
-	    nblist->iinr[i],nblist->shift[i],nblist->gid[i],nj);
-    for(j=nblist->jindex[i]; (j<nblist->jindex[i+1]); j++)
-      fprintf(out,"  j: %d\n",nblist->jjnr[j]);
+
+  if (nblist->nri > 0) {  
+    fprintf(out,"il_code: %s solvent: %s\n",
+	    innerloop_name(nblist->il_code),
+	    esolv_names[nblist->solvent]);
+    fprintf(out,"nri: %d  nrj: %d\n",nblist->nri,nblist->nrj);
+    for(i=0; i<nblist->nri; i++) {
+      nj = nblist->jindex[i+1] - nblist->jindex[i];
+      fprintf(out,"i: %d shift: %d gid: %d nj: %d\n",
+	      nblist->iinr[i],nblist->shift[i],nblist->gid[i],nj);
+      for(j=nblist->jindex[i]; (j<nblist->jindex[i+1]); j++)
+	fprintf(out,"  j: %d\n",nblist->jjnr[j]);
+    }
+    fflush(out);
   }
-  fflush(out);
 }
 
-int read_nblist(FILE *in,FILE *log,int **mat,int natoms,bool bSymm)
+static void set_mat(FILE *fp,int **mat,int i0,int ni,int j0,int nj,
+		    bool bSymm,int shift)
+{
+  int i,j;
+  
+  for(i=i0; (i<i0+ni); i++) {
+    for(j=j0; (j<j0+nj); j++) {
+      if (mat[i][j] != 0)
+	fprintf(fp,"mat[%d][%d] changing from %d to %d\n",
+		i,j,mat[i][j],shift+1);
+      mat[i][j] = shift+1;
+      if (bSymm)
+	mat[j][i] = 27-shift;
+    }
+  }
+}
+
+int read_nblist(FILE *in,FILE *fp,int **mat,int natoms,bool bSymm,int nmno)
 {
   bool bNL;
-  char buf[256],b1[32],b2[32],solv[256];
-  int  i,ii,j,nnbl,full,icmp,nri,il_code;
+  char buf[256],b1[32],b2[32],solv[256],il_code[256];
+  int  i,ii,j,nnbl,full,icmp,nri,isolv;
   int  iatom,nrj,nj,shift,gid,nargs,njtot=0;
   
   do {
@@ -81,8 +102,14 @@ int read_nblist(FILE *in,FILE *log,int **mat,int natoms,bool bSymm)
   } while (strstr(buf,header) == NULL);
   
   do {
-    if ((nargs = fscanf(in,"%*s%d%*s%s",&il_code,solv)) != 2)
+    if ((nargs = fscanf(in,"%*s%s%*s%s",il_code,solv)) != 2)
       return njtot;
+    for(isolv=0; (isolv<esolNR); isolv++)
+      if (strstr(esolv_names[isolv],solv) != NULL)
+	break;
+    if (isolv == esolNR)
+      return njtot;
+      
     /* gmx_fatal(FARGS,"Can not read il_code or solv (nargs=%d)",nargs);*/
     if ((nargs = fscanf(in,"%*s%d%*s%d",&nri,&nrj)) != 2)
       gmx_fatal(FARGS,"Can not read nri or nrj (nargs=%d)",nargs);
@@ -94,21 +121,33 @@ int read_nblist(FILE *in,FILE *log,int **mat,int natoms,bool bSymm)
        * matrix elements.
        */
       range_check(iatom,0,natoms);
-      nrj+=nj;
       for(i=0; (i<nj); i++) {
 	if ((nargs = fscanf(in,"%*s%d",&j)) != 1)
 	  gmx_fatal(FARGS,"Can not read j");
 	range_check(j,0,natoms);
-	if (mat[iatom][j] != 0)
-	  fprintf(log,"mat[%d][%d] changing from %d to %d\n",
-		  i,j,mat[iatom][j],shift+1);
-	mat[iatom][j] = shift+1;
-	if (bSymm)
-	  mat[j][iatom] = 27-shift;
-	njtot++;
+	switch (isolv) {
+	case esolNO:
+	  set_mat(fp,mat,iatom,1,j,1,bSymm,shift);
+	  njtot++;
+	  break;
+	case esolMNO:
+	  set_mat(fp,mat,iatom,nmno,j,1,bSymm,shift);
+	  njtot+=nmno;
+	  break;
+	case esolWATER:
+	  set_mat(fp,mat,iatom,3,j,1,bSymm,shift);
+	  njtot+=3;
+	  break;
+	case esolWATERWATER:
+	  set_mat(fp,mat,iatom,3,j,3,bSymm,shift);
+	  njtot+=9;
+	  break;
+	default:
+	  gmx_incons("non-existing solvent type");
+	}
       }
     }
-    fprintf(log,"nri = %d  nrj = %d\n",nri,nrj);
+    fprintf(fp,"nri = %d  nrj = %d\n",nri,nrj);
   } while (TRUE);
   return -1;
 }
