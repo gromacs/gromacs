@@ -27,9 +27,12 @@ foreach file ( $FILES )
       awk '{ printf "<\!--I-->%s\n", $0 }' $BOTFILE >> tmp
       echo "</BODY>" >> tmp
     else
-      awk '{ printf "%s\n", $0;\
-             if (($1=="<body>")||($1=="<BODY>")||\
-	         ($1=="<body" )||($1=="<BODY" )) exit; }' tmp1 >! tmp 
+      awk '{ if (($1=="<body>")||($1=="<BODY>")||\
+	         ($1=="<body" )||($1=="<BODY" )) {\
+	        printf "<BODY text=\"#243b4a\" BGCOLOR=\"#FFFFFF\">\n";\
+		exit;\
+	     } else\
+   	       printf "%s\n", $0; }' tmp1 >! tmp 
 
       awk '{ printf "<\!--I-->%s\n", $0 }' $TOPFILE >> tmp
 
