@@ -197,7 +197,7 @@ static void corr_print(t_corr *this,char *fn,char *title,char *yaxis,
     fprintf(out,"%10g",t);
     for(j=0; (j<this->ngrp); j++)
       fprintf(out,"  %10g",
-	      bDiff ? 1000*this->data[j][i]/(6*t) : this->data[j][i]);
+	      bDiff ? FACTOR*this->data[j][i]/(6*t) : this->data[j][i]);
     fprintf(out,"\n");
   }
   fclose(out);
@@ -550,7 +550,7 @@ void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
 
   if (opt2bSet("-d",NFILE,fnm))
     corr_print(msd,opt2fn("-d",NFILE,fnm),"Diffusion constant",
-	       "D (10\\S5\\Ncm\\S2\\Ns\\S-1\\N)",TRUE,TRUE);
+	       "D (10\\S-5\\Ncm\\S2\\Ns\\S-1\\N)",TRUE,TRUE);
   corr_print(msd,opt2fn("-o",NFILE,fnm),
 	     "Mean Square Displacement",
 	     "MSD (nm\\S2\\N)",TRUE,FALSE);
