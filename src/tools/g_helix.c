@@ -309,11 +309,6 @@ int main(int argc,char *argv[])
       do_start_end(nres,bb,x,&nbb,bbindex,&nca,caindex,FALSE,0,0);
     
     if (nca >= 5) {
-/*#define DEBUG*/
-#ifdef DEBUG
-      fprintf(stderr,"nca=%d, nbb=%d\n",nca,nbb);
-      dump_ahx(nres,bb,x,box,3);
-#endif
       rms=fit_ahx(nres,bb,natoms,nall,allindex,x,nca,caindex,box,bFit);
       
       if (teller == 1) {
@@ -321,11 +316,6 @@ int main(int argc,char *argv[])
 		       &(top->atoms),x,NULL,box);
       }
             
-#ifdef DEBUG
-      dump_ahx(nres,bb,x,box,4);
-      exit(1);
-#endif
-
       xf[efhRAD].val   = radius(xf[efhRAD].fp2,nca,caindex,x);
       xf[efhTWIST].val = twist(xf[efhTWIST].fp2,nca,caindex,x);
       xf[efhRISE].val  = rise(nca,caindex,x);
