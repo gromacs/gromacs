@@ -30,6 +30,7 @@ static char *SRCID_calcpot_c = "$Id$";
 
 #include "vec.h"
 #include "calcpot.h"
+#include "nrnb.h"
 #include "mdebin.h"
 #include "mshift.h"
 #include "smalloc.h"
