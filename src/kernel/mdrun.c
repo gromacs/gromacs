@@ -97,7 +97,7 @@ int main(int argc,char *argv[])
     { "-np",      FALSE, etINT, &nprocs,
       "Number of processors, must be the same as used for grompp" },
 #endif
-    { "-v",       FALSE, etBOOL,&bVerbose, "Print remaining runtime" },
+    { "-v",       FALSE, etBOOL,&bVerbose, "Be load and noisy" },
     { "-compact", FALSE, etBOOL,&bCompact, "Write a compact log file" },
     { "-dlb",     FALSE, etINT, &nDLB,
       "HIDDENUse dynamic load balancing every ... step. BUGGY do not use" },
