@@ -413,15 +413,15 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
         inc_nrnb(nrnb,eNR_INL_IATOM,3*nlist->nri);
       else if(nlist->solvent==esolWATERWATER)
         inc_nrnb(nrnb,eNR_INL_IATOM,9*nlist->nri);
-      else if(nlist->solvent==esolMNO) 
-        inc_nrnb(nrnb,eNR_INL_IATOM,nlist->nsatoms[0]*nlist->nri);
-	/* use size of first solvent as approximation for all molecules */
+      else if(nlist->solvent==esolMNO)
+	/* should be different for vdwc, coul and vdw loops */
+        inc_nrnb(nrnb,eNR_INL_IATOM,fr->nMNOav[0]*nlist->nri);
       else		
         inc_nrnb(nrnb,eNR_INL_IATOM,nlist->nri);	
       	
-      if(nlist->solvent==esolMNO) 
-        inc_nrnb(nrnb,nrnb_ind,nlist->nsatoms[0]*nlist->nrj);
-	/* use size of first solvent as approximation for all molecules */
+      if(nlist->solvent==esolMNO)
+	/* should be different for vdwc, coul and vdw loops */ 
+        inc_nrnb(nrnb,nrnb_ind,fr->nMNOav[0]*nlist->nrj);
       else		
         inc_nrnb(nrnb,nrnb_ind,nlist->nrj);
     }

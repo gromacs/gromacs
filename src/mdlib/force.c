@@ -685,21 +685,32 @@ void init_forcerec(FILE *fp,
     
     cgid = make_invblock(&(top->blocks[ebCGS]),top->blocks[ebCGS].nra);
 
+    for(m=0; m<3; m++)
+      fr->nMNOav[m] = 0;
     for(i=0; i<mols->nr; i++) {
       j = mols->a[mols->index[i]];
       if (j>=START(nsb) && j<START(nsb)+HOMENR(nsb)) {
-	if (fr->solvent_type[cgid[j]] == esolMNO)
+	if (fr->solvent_type[cgid[j]] == esolMNO) {
 	  fr->nMNOMol++;
+	  for(m=0; m<3; m++)
+	    fr->nMNOav[m] += fr->mno_index[3*cgid[j]+m];
+	}
 	else if (fr->solvent_type[cgid[j]] == esolWATER)
 	  fr->nWatMol++;
       }
     }
+    if (fr->nMNOMol > 0)
+      for(m=0; m<3; m++)
+	fr->nMNOav[m] /= fr->nMNOMol;
+
     sfree(cgid);
   }
 
   if (fp) {
     fprintf(fp,"There are %d optimized solvent molecules on node %d\n",
 	    fr->nMNOMol,nsb->nodeid);
+    if (fr->nMNOMol > 0)
+      fprintf(fp,"  av. nr. of atoms per molecule: vdwc %.1f coul %.1f vdw %.1f\n",fr->nMNOav[1],fr->nMNOav[2]-fr->nMNOav[1],fr->nMNOav[0]-fr->nMNOav[2]);
     fprintf(fp,"There are %d optimized water molecules on node %d\n",
 	    fr->nWatMol,nsb->nodeid);
   }

@@ -86,6 +86,7 @@ typedef struct {
   int  ndelta;
   bool bSolvOpt;
   int  nMNOMol;
+  real nMNOav[3];
   int  nWatMol;
   int  Dimension;
   bool bGrid,bDomDecomp;
