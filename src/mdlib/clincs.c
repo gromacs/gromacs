@@ -61,7 +61,7 @@ void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
     r[b][0]=rlen*tmp0;
     r[b][1]=rlen*tmp1;
     r[b][2]=rlen*tmp2;
-  }
+  } /* 16 ncons flops */
   
   for(b=0;b<n1;b++) {
     b4=4*b;
@@ -75,13 +75,13 @@ void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
     for(n=0;n<nr;n++) {
       k=blbnb[b4+n];
       blm[b4+n]=blcc[b4+n]*(tmp0*r[k][0]+tmp1*r[k][1]+tmp2*r[k][2]);
-    }
+    } /* 6 nr flops */
     mvb=blc[b]*(tmp0*(xp[i][0]-xp[j][0])+
 		tmp1*(xp[i][1]-xp[j][1])+    
 		tmp2*(xp[i][2]-xp[j][2])-len);
     rhs1[b]=mvb;
     sol[b]=mvb;
-  }
+  } /* (6 nr + 10) * n1 flops */
   
   for(b=n1;b<ncons;b++) {
     b4=cmax*b-nc4;
@@ -95,15 +95,16 @@ void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
     for(n=0;n<nr;n++) {
       k=blbnb[b4+n];
       blm[b4+n]=blcc[b4+n]*(tmp0*r[k][0]+tmp1*r[k][1]+tmp2*r[k][2]); 
-    }
+    } /* 6 nr flops */
     mvb=blc[b]*(tmp0*(xp[i][0]-xp[j][0])+
 		tmp1*(xp[i][1]-xp[j][1])+    
 		tmp2*(xp[i][2]-xp[j][2])-len);
     rhs1[b]=mvb;
     sol[b]=mvb;
-  }
+  } /* (6 nr + 10) * (ncons - n1) flops */
+  /* Together: (6 <nr> +10) * ncons flops */
   
-  
+    
   for(rec=0;rec<nrec;rec++) {
     for(b=0;b<n1;b++) {
       b4=4*b;
@@ -111,10 +112,10 @@ void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
       for(n=0;n<4;n++) {
 	j=blbnb[b4+n];
 	mvb=mvb+blm[b4+n]*rhs1[j];
-      }
+      } /* 8 flops */
       rhs2[b]=mvb;
       sol[b]=sol[b]+mvb;
-    }
+    } /* 9 * n1 flops */
     for(b=n1;b<ncons;b++) {
       b4=cmax*b-nc4;
       mvb=0;
@@ -125,11 +126,11 @@ void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
       }
       rhs2[b]=mvb;
       sol[b]=sol[b]+mvb;
-    }
+    } /* 9 * (ncons-n1) flops */
     tmp=rhs1;
     rhs1=rhs2;
     rhs2=tmp;
-  }
+  } /* 9*nrec*ncons flops */
   
   for(b=0;b<ncons;b++) {
     i=bla1[b];
@@ -153,7 +154,7 @@ void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
     xp[j][0]=v0;
     xp[j][1]=v1;
     xp[j][2]=v2;
-  }
+  } /* 16 ncons flops */
   
   
   
@@ -180,7 +181,7 @@ void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
       mvb=blc[b]*(len-sqrt(u0));
       rhs1[b]=mvb;
       sol[b]=mvb;
-    }
+    } /* 18 ncons flops */
     
     for(rec=0;rec<nrec;rec++) {
       for(b=0;b<n1;b++) {
@@ -207,7 +208,7 @@ void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
       tmp=rhs1;
       rhs1=rhs2;
       rhs2=tmp;
-    }
+    } /* 9*ncons*nrec flops */ 
     
     for(b=0;b<ncons;b++) {
       i=bla1[b];
@@ -232,8 +233,12 @@ void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
       xp[j][0]=v0;
       xp[j][1]=v1;
       xp[j][2]=v2;
-    }
-  }
+    } /* 17 ncons flops */
+  } /* nit*ncons*(35+9*nrec) flops */
+  /* Total: 
+   * ncons * (16 + (6<nr>+10) + 9 nrec + 16 + nit*(35+9nrec) =
+   * ncons * (42 + 9 nrec * (nit+1) + 6<nr> + 35 nit)
+   */
 }
 
 void cconerr(real *max,real *rms,int *imax,rvec *xprime,
