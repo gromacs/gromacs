@@ -85,6 +85,7 @@ void check_trn(char *fn)
     fatal_error(0,"%s is not a trj file, exiting\n",fn);
 }
 
+#ifndef _win_
 void do_trunc(char *fn, real t0)
 {
   int          in;
@@ -109,7 +110,8 @@ void do_trunc(char *fn, real t0)
   bStop= FALSE;
   while (!bStop && fread_trnheader(in,&sh)) {
     fread_htrn(in,&sh,NULL,NULL,NULL,NULL);
-    
+    fpos=ftell(fp);
+    t=sh.t;
     if (t>=t0) {
       fseek(fp,fpos,SEEK_SET);
       bStop=TRUE;
@@ -134,6 +136,7 @@ void do_trunc(char *fn, real t0)
     close_trn(in);
   }
 }
+#endif
 
 bool bRmod(double a,double b)
 {
@@ -266,8 +269,10 @@ int main(int argc,char *argv[])
     { "-t0", FALSE,  etREAL, &tzero,
       "starting time for trajectory"
       "(default: don't change)"},
+#ifndef _win_
     { "-trunc", FALSE, etREAL, &ttrunc,
       "truncate input trj file after this amount of ps" },
+#endif
     { "-dump", FALSE, etREAL, &tdump,
       "dump frame nearest specified time" },
     { "-g87box", FALSE,  etBOOL, &bBox,
@@ -325,7 +330,9 @@ int main(int argc,char *argv[])
   /* Check command line */
   strcpy(in_file,opt2fn("-f",NFILE,fnm));
   if (ttrunc != -1) {
+#ifndef _win_
     do_trunc(in_file,ttrunc);
+#endif
   }
   else {
     if (bIFit) {
