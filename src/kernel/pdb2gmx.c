@@ -474,10 +474,10 @@ int main(int argc, char *argv[])
     "increasing the hydrogen-mass by a factor of 4. This is also done",
     "for water hydrogens to slow down the rotational motion of water.",
     "The increase in mass of the hydrogens is subtracted from the bonded",
-    "(heavy) atom.",
+    "(heavy) atom so that the total mass of the system remains the same.",
     "Three options are available: 0: normal topology, 1: dummy hydrogens",
-    "and fixed angles, 2: same as 1 and also heavy hydrogens in water",
-    "and OH and SH groups."
+    "and fixed angles, 2: same as 1 and also increase mass of hydrogens",
+    "with remaining degrees of freedom."
   };
   static char *bugs[] = {
     "Generation of N-terminal hydrogen atoms on OPLS files does not work.",
