@@ -198,10 +198,10 @@ int search_jtype(t_restp *rtp,char *name,bool bNterm)
     }
   }
   if (jmax == -1)
-    fatal_error(0,"Atom %s not found in database in residue %s",
+    fatal_error(0,"Atom %s not found in rtp database in residue %s",
 		searchname,rtp->resname);
   if (kmax != strlen(searchname))
-    fatal_error(0,"Atom %s not found in database in residue %s, "
+    fatal_error(0,"Atom %s not found in rtp database in residue %s, "
 		"it looks a bit like %s",
 		searchname,rtp->resname,*(rtp->atomname[jmax]));
   return jmax;

@@ -376,7 +376,7 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
       else {
 	char buf[STRLEN];
 	
-	sprintf(buf,"Atom %s in residue %s %d not found in database\n"
+	sprintf(buf,"Atom %s in residue %s %d not found in rtp database\n"
 		"             while sorting atoms%s",atomnm,
 		rptr->resname,pdba->atom[i].resnr+1,
 		is_hydrogen(atomnm) ? ". Maybe different protonation state.\n"
