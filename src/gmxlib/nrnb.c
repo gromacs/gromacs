@@ -228,7 +228,9 @@ void print_perf(FILE *out,double nodetime,double realtime,real runtime,
   
   nbfs=0.0;
   for(i=0; (i<eNR_INLOOP); i++) {
-    if (strstr(nbdata[i].name,"H2O") != NULL)
+    if (strstr(nbdata[i].name,"(WW)") != NULL)
+      nbfs += 9e-6*nrnb->n[i];
+    else if (strstr(nbdata[i].name,"(W)") != NULL)
       nbfs += 3e-6*nrnb->n[i];
     else
       nbfs += 1e-6*nrnb->n[i];
