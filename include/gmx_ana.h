@@ -128,6 +128,9 @@ int
 gmx_sgangle(int argc,char *argv[]);
 
 int 
+gmx_sham(int argc,char *argv[]);
+
+int 
 gmx_sorient(int argc,char *argv[]);
 
 int 
