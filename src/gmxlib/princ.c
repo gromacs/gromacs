@@ -263,8 +263,6 @@ void orient_princ(t_atoms *atoms,int isize,atom_id *index,
   
   /* Check whether this trans matrix mirrors the molecule */
   if (det(trans) < 0) {
-    if (debug)
-      fprintf(stderr,"Mirroring rotation matrix in Z direction\n");
     for(m=0; (m<DIM); m++)
       trans[ZZ][m] = -trans[ZZ][m];
   }  
@@ -272,7 +270,5 @@ void orient_princ(t_atoms *atoms,int isize,atom_id *index,
   if (v) rotate_atoms(natoms,NULL,v,trans);
   
   add_xcm(x,natoms,NULL,xcm);
-
-  if (debug) dump_shit(stderr,trans,prcomp,totmass);
 }
 
