@@ -734,10 +734,11 @@ void do_index(char *ndx,
     snew(grps->index,1);
     snew(gnames,1);
     analyse(atoms,grps,&gnames,FALSE,TRUE);
-  }
-  else {
-    grps=init_index(ndx,&gnames);
-  }
+    /* Do not shuffle the index when it is based on atoms */
+    forward = NULL;
+  } else
+    grps = init_index(ndx,&gnames);
+
   snew(atoms->grpname,grps->nr+1);
 
   for(i=0; (i<grps->nr); i++)
