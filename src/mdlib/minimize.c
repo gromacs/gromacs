@@ -1488,11 +1488,11 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		    t_forcerec *fr,rvec box_size) 
 { 
   const char *SD="Steepest Descents"; 
-  real   constepsize,lambda,fmax; 
+  real   stepsize,constepsize,lambda,fmax; 
   rvec   *pos[2],*force[2],*xcf=NULL; 
   rvec   *xx,*ff; 
   real   Fmax[2],Epot[2]; 
-  real   ustep,k_1,k_ref,dvdlambda,fnorm;
+  real   ustep,dvdlambda,fnorm;
   t_vcm      *vcm;
   int        fp_ene; 
   t_mdebin   *mdebin; 
@@ -1568,8 +1568,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
    * step that we are going to make in any direction. 
    */
   ustep = parm->ir.em_stepsize; 
-  k_ref = 2e-6;
-  k_1   = k_ref;
+  stepsize = 0;
   
   /* Max number of steps  */
   nsteps = parm->ir.nsteps; 
@@ -1599,7 +1598,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	  if (parm->ir.opts.nFreeze[gf][m])
 	    pos[TRY][i][m] = pos[Min][i][m];
 	  else
-	    pos[TRY][i][m] = pos[Min][i][m] + min(ustep,k_1*force[Min][i][m]);
+	    pos[TRY][i][m] = pos[Min][i][m] + stepsize*force[Min][i][m];
       }
     
     if (bConstrain) {
@@ -1636,10 +1635,10 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       print_ebin_header(log,count,count,lambda);
     
     if (bConstrain) {
-      /* May be fucked up (but didn't work well anyway) */
+      /* Determine the forces working on the constraints */
       fmax = f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),
 		   mdatoms,start,end,force[TRY],&(nfmax[TRY]));
-      constepsize=min(ustep,fmax*k_1);
+      constepsize = ustep/fmax;
       for(i=start; (i<end); i++)  
 	for(m=0;(m<DIM);m++) 
 	  xcf[i][m] = pos[TRY][i][m] + constepsize*force[TRY][i][m];
@@ -1648,6 +1647,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       constrain(stdlog,top,&(parm->ir),count,mdatoms,start,end,
 		pos[TRY],xcf,NULL,state->box,lambda,&dvdlambda,nrnb,TRUE);
       
+      /* Remove the forces working on the constraints */
       for(i=start; (i<end); i++)  
 	for(m=0;(m<DIM);m++) 
 	  force[TRY][i][m] = (xcf[i][m] - pos[TRY][i][m])/constepsize;
@@ -1673,7 +1673,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     if (MASTER(cr)) {
       if (bVerbose) {
 	fprintf(stderr,"Step=%5d, Dmax= %6.1e nm, Epot= %12.5e Fmax= %11.5e, atom= %d%c",
-		count,k_1,Epot[TRY],Fmax[TRY],nfmax[TRY]+1,
+		count,ustep,Epot[TRY],Fmax[TRY],nfmax[TRY]+1,
 		(Epot[TRY]<Epot[Min])?'\n':'\r');
       }
       
@@ -1717,14 +1717,22 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       /* The 'Min' array always holds the coords and forces of the minimal 
 	 sampled energy  */
       Min = TRY; 
-      k_1 = k_ref;
+      if (count > 0)
+	ustep *= 1.2;
     } 
     else
       /* If energy is not smaller make the step smaller...  */
-      k_1 *= 0.5;
+      ustep *= 0.5;
+    
+    /* Determine new step  */
+    stepsize=ustep/Fmax[Min];
     
     /* Check if stepsize is too small, with 1 nm as a characteristic length */
-    if (k_1 < min_k) {
+#ifdef DOUBLE
+    if (ustep < 1e-12) {
+#else
+    if (ustep < 1e-6) {
+#endif
       warn_step(stderr,parm->ir.em_tol,bConstrain);
       warn_step(log,parm->ir.em_tol,bConstrain);
       bAbort=TRUE;
