@@ -938,10 +938,8 @@ void force(FILE       *fplog,   int        step,
       else
 	inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
     }
-    /* We may need the pbc structure for e.g. position restraints
-     * or when pbc=full
-     */
-    set_pbc(&pbc,box);
+    if (fr->ePBC==epbcFULL || idef->il[F_POSRES].nr>0)
+      set_pbc(&pbc,box);
     debug_gmx();
   }
   
