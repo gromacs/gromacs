@@ -1,6 +1,6 @@
 /* -*- C -*- */
 /*
- * Copyright (c) 1997,1998 Massachusetts Institute of Technology
+ * Copyright (c) 1997-1999 Massachusetts Institute of Technology
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@
 extern "C" {
 #endif				/* __cplusplus */
 
+#define FFTW_VERSION "2.1.2"
 /* Define for using single precision */
 /*
  * If you can, use configure --enable-float instead of changing this
