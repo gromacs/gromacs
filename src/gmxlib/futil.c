@@ -333,7 +333,7 @@ bool get_libdir(char *libdir)
   char full_path[512];
   char test_file[512];
   char *system_path;
-  char *dir,*ptr;
+  char *dir,*ptr,*s;
   bool found=FALSE;
   int i;
 
@@ -346,10 +346,12 @@ bool get_libdir(char *libdir)
     if (!index(bin_name,'/')) {
       /* No "/" in name means it must be in the path - search it! */
       system_path=getenv("PATH");
+      s=system_path;
       found=FALSE;
-      while(!found && (dir=strsep(&system_path,":"))!=NULL) {
+      while(!found && (dir=strtok(s,":"))!=NULL) {
 	sprintf(full_path,"%s/%s",dir,bin_name);
 	found=fexist(full_path);
+	s=NULL; /* pointer should be null for subseq. calls to strtok */
       }
       if(!found)
 	return FALSE;
