@@ -402,7 +402,7 @@ real water_pol(int nbonds,
   vtot = 0.0;
   if (nbonds > 0) {
     type0  = forceatoms[0];
-    aS     = forceatoms[i+5];
+    aS     = forceatoms[5];
     qS     = md->chargeT[aS];
     kk[XX] = sqr(qS)*ONE_4PI_EPS0/forceparams[type0].wpol.al_x;
     kk[YY] = sqr(qS)*ONE_4PI_EPS0/forceparams[type0].wpol.al_y;
@@ -410,12 +410,13 @@ real water_pol(int nbonds,
     r_HH   = 1.0/forceparams[type0].wpol.rHH;
     r_OD   = 1.0/forceparams[type0].wpol.rOD;
     if (debug) {
+      fprintf(debug,"WPOL: qS  = %10.5f aS = %5d\n",qS,aS);
       fprintf(debug,"WPOL: kk  = %10.3f        %10.3f        %10.3f\n",
 	      kk[XX],kk[YY],kk[ZZ]);
       fprintf(debug,"WPOL: rOH = %10.3f  rHH = %10.3f  rOD = %10.3f\n",
-	      forceparams[type].wpol.rOH,
-	      forceparams[type].wpol.rHH,
-	      forceparams[type].wpol.rOD);
+	      forceparams[type0].wpol.rOH,
+	      forceparams[type0].wpol.rHH,
+	      forceparams[type0].wpol.rOD);
     }
     for(i=0; (i<nbonds); i+=6) {
       type = forceatoms[i];
