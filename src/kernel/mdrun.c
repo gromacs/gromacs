@@ -444,7 +444,7 @@ int main(int argc,char *argv[])
   t_commrec    *cr;
   static t_filenm fnm[] = {
     { efTPX, NULL, NULL,      ffREAD },
-    { efTRJ, "-o", NULL,      ffWRITE },
+    { efTRR, "-o", NULL,      ffWRITE },
     { efXTC, "-x", NULL,      ffOPTWR },
     { efGRO, "-c", "confout", ffWRITE },
     { efENX, "-e", "ener",    ffWRITE },
