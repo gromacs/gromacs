@@ -315,7 +315,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_real(fp,"inputrec->rvdw_switch",0,ir1->rvdw_switch,ir2->rvdw_switch,ftol);
   cmp_real(fp,"inputrec->rvdw",0,ir1->rvdw,ir2->rvdw,ftol);
   cmp_real(fp,"inputrec->epsilon_r",0,ir1->epsilon_r,ir2->epsilon_r,ftol);
-  cmp_int(fp,"inputrec->bDispCorr",0,ir1->bDispCorr,ir2->bDispCorr);
+  cmp_int(fp,"inputrec->eDispCorr",0,ir1->eDispCorr,ir2->eDispCorr);
   cmp_real(fp,"inputrec->shake_tol",0,ir1->shake_tol,ir2->shake_tol,ftol);
   cmp_real(fp,"inputrec->fudgeQQ",0,ir1->fudgeQQ,ir2->fudgeQQ,ftol);
   cmp_int(fp,"inputrec->efep",0,ir1->efep,ir2->efep);
