@@ -47,7 +47,13 @@ int main(int argc,char *argv[])
     "a list of atom numbers and three force constants for the",
     "X, Y and Z direction. A single isotropic force constant may",
     "be given on the command line instead of three components.[PAR]",
-    "This list is used as the position restraint list"
+    "WARNING: genpr only works for the first molecule.",
+    "Position restraints are interactions within molecules, therefore",
+    "they should be included within the correct [TT][ moleculetype ][tt]",
+    "block in the topology. Since the atom numbers in every moleculetype",
+    "in the topology start at 1 and the numbers in the input file for",
+    "genpr number consecutively from 1, genpr will only produce a useful",
+    "file for the first molecule."
   };
   static rvec    fc={1000.0,1000.0,1000.0};
   t_pargs pa[] = {
