@@ -331,7 +331,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
   t_pargs dt_pa     = { "-dt",    FALSE, etREAL, {&tdelta},        
 		       "Only use frame when t MOD dt = first time" };
   t_pargs view_pa   = { "-w",    FALSE, etBOOL, {&bView},     
-		       "View output using xvgr or ghostview" };
+		       "View output xvg, xpm, eps and pdb files" };
   
   t_pargs pca_pa[] = {
     { "-h",    FALSE, etBOOL, {&bHelp},     
