@@ -320,7 +320,7 @@ bool search_subdirs(char *parent, char *libdir)
   
   /* Remove the FF.dat part from libdir if we found something */
   if(found) {
-    ptr=rindex(libdir,'/'); /* slash always present, no check necessary */
+    ptr=strrchr(libdir,'/'); /* slash always present, no check necessary */
     *ptr='\0';
   }
   return found;
@@ -367,19 +367,19 @@ bool get_libdir(char *libdir)
       buf[i]='\0';
       /* If it doesn't start with "/" it is relative */
       if(buf[0]!='/') {
-	strcpy(rindex(full_path,'/')+1,buf);
+	strcpy(strrchr(full_path,'/')+1,buf);
       } else
 	strcpy(full_path,buf);
     }
     
     /* Remove the executable name - it always contains at least one slash */
-    *(rindex(full_path,'/')+1)='\0';
+    *(strrchr(full_path,'/')+1)='\0';
     
     /* Now we have the full path to the gromacs executable.
      * Use it to find the library dir. 
      */
     found=FALSE;
-    while(!found && ( (ptr=rindex(full_path,'/')) != NULL ) ) {
+    while(!found && ( (ptr=strrchr(full_path,'/')) != NULL ) ) {
       *ptr='\0';
       found=search_subdirs(full_path,libdir);
     }
