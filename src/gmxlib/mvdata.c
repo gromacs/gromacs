@@ -166,16 +166,19 @@ static void ld_grpopts(int src,t_grpopts *g)
   blockrx(src,g->ngtc);
   blockrx(src,g->ngacc);
   blockrx(src,g->ngfrz);
+  blockrx(src,g->ngener);
   snew(g->nrdf,g->ngtc);
   snew(g->tau_t,g->ngtc);
   snew(g->ref_t,g->ngtc);
   snew(g->acc,g->ngacc);
   snew(g->nFreeze,g->ngfrz);
+  snew(g->eg_excl,g->ngener*g->ngener);
   nblockrx(src,g->ngtc,g->nrdf);
   nblockrx(src,g->ngtc,g->tau_t);
   nblockrx(src,g->ngtc,g->ref_t);
   nblockrx(src,g->ngacc,g->acc);
   nblockrx(src,g->ngfrz,g->nFreeze);
+  nblockrx(src,g->ngener*g->ngener,g->eg_excl);
 }
 
 static void ld_cosines(int src,t_cosines *cs)
@@ -232,11 +235,13 @@ static void mv_grpopts(int dest,t_grpopts *g)
   blocktx(dest,g->ngtc);
   blocktx(dest,g->ngacc);
   blocktx(dest,g->ngfrz);
+  blocktx(dest,g->ngener);
   nblocktx(dest,g->ngtc,g->nrdf);
   nblocktx(dest,g->ngtc,g->tau_t);
   nblocktx(dest,g->ngtc,g->ref_t);
   nblocktx(dest,g->ngacc,g->acc);
   nblocktx(dest,g->ngfrz,g->nFreeze);
+  nblocktx(dest,g->ngener*g->ngener,g->eg_excl);
 }
 
 static void mv_cosines(int dest,t_cosines *cs)
