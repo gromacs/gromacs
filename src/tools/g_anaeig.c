@@ -355,8 +355,8 @@ void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
 	strcpy(str2,extremefile);
       else
 	sprintf(str2,str,eignr[outvec[v]]+1);
-      fprintf(stderr,"Writing %d frames between the extremes to %s\n",
-	      nextr,str2);
+      fprintf(stderr,"Writing %d frames along eigenvector %d to %s\n",
+	      nextr,outvec[v]+1,str2);
       out=open_trx(str2,"w");
       for(frame=0; frame<nextr; frame++) {
 	if ((extreme==0) && (nextr<=3))
@@ -478,9 +478,11 @@ void read_eigenvectors(char *file,int *natoms,bool *bFit,
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "[TT]g_anaeig[tt] analyzes eigenvectors of a covariance matrix which",
-    "can be calculated with [TT]g_covar[tt].",
-    "All structures are fitted to the structure in the eigenvector file,",
+    "[TT]g_anaeig[tt] analyzes eigenvectors.",
+    "The eigenvectors can be of a covariance matrix ([TT]g_covar[tt])",
+    "or of a Nomal Modes anaysis ([TT]g_nmeig[tt]).[PAR]",
+    "When a trajectory is projected on eigenvectors,",
+    "all structures are fitted to the structure in the eigenvector file,",
     "if present, otherwise to the structure in the structure file.",
     "When no run input file is supplied, periodicity will not be taken into",
     "account.",  
@@ -610,51 +612,54 @@ int main(int argc,char *argv[])
   nfit=0;
   ifit=NULL;
   w_rls=NULL;
-  if (bTPS) {
+  if (!bTPS)
+    bTop=FALSE;
+  else {
     bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),
 		       title,&top,&xtop,NULL,topbox,bM);
     atoms=&top.atoms;
     rm_pbc(&(top.idef),atoms->nr,topbox,xtop,xtop);
-    if (xref1==NULL || (bM && bDMR1)) {
-      if (bFit1) {
-	printf("\nNote: the structure in %s should be the same\n"
-	       "      as the one used for the fit in g_covar\n",topfile);
-	printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
-	get_index(atoms,indexfile,1,&nfit,&ifit,&grpname);
-	if (xref1==NULL) {
-	  snew(w_rls,atoms->nr);
-	  for(i=0; (i<nfit); i++)
-	    if (bM)
-	      w_rls[ifit[i]]=atoms->atom[ifit[i]].m;
-	    else
-	      w_rls[ifit[i]]=1.0;
-	} else {
-	  nfit=0;
-	  ifit=NULL;
+    /* Fitting is only needed when we need to read a trajectory */ 
+    if (bTraj) {
+      if (xref1==NULL || (bM && bDMR1)) {
+	if (bFit1) {
+	  printf("\nNote: the structure in %s should be the same\n"
+		 "      as the one used for the fit in g_covar\n",topfile);
+	  printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
+	  get_index(atoms,indexfile,1,&nfit,&ifit,&grpname);
+	  if (xref1==NULL) {
+	    snew(w_rls,atoms->nr);
+	    for(i=0; (i<nfit); i++)
+	      if (bM)
+		w_rls[ifit[i]]=atoms->atom[ifit[i]].m;
+	      else
+		w_rls[ifit[i]]=1.0;
+	  } else {
+	    nfit=0;
+	    ifit=NULL;
+	  }
+	}
+	else {
+	  /* make the fit index in xref instead of xtop */
+	  snew(w_rls,nfit);
+	  for(i=0; (i<nfit); i++) {
+	    w_rls[i]=atoms->atom[ifit[i]].m;
+	    ifit[i]=i;
+	  }
 	}
       }
       else {
-	/* make the fit index in xref instead of xtop */
+	/* make the fit non mass weighted on xref */
+	nfit=natoms;
+	snew(ifit,nfit);
 	snew(w_rls,nfit);
-	for(i=0; (i<nfit); i++) {
-	  w_rls[i]=atoms->atom[ifit[i]].m;
+	for(i=0; i<nfit; i++) {
 	  ifit[i]=i;
+	  w_rls[i]=1.0;
 	}
       }
     }
-    else {
-      /* make the fit non mass weighted on xref */
-      nfit=natoms;
-      snew(ifit,nfit);
-      snew(w_rls,nfit);
-      for(i=0; i<nfit; i++) {
-	ifit[i]=i;
-	w_rls[i]=1.0;
-      }
-    }
   }
-  else
-    bTop=FALSE;
 
   if (bIndex) {
     printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n",natoms);
