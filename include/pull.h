@@ -78,10 +78,7 @@ typedef struct {
   rvec       coor;      /* reaction coordinate */
   real       r;         /* radius of cylinder for dynamic COM */
   real       rc;        /* radius of cylinder including switch length */
-  int        bRot[3];   /* rotation around x, y, z? */
-  real       rot_rate;  /* rate of rotation, for startstructure run */
   real       xlt_rate;  /* rate of translation, for startstructure run */
-  int        rot_incr;  /* write out structure every rot_incr degrees */
   real       xlt_incr;  /* write out structure every xlt_incr nm */
   real       tolerance; /* tolerance for reaching desired coordinates (nm) */
   real       constr_tol;/* absolute tolerance for constraints in (nm) */
@@ -91,10 +88,13 @@ typedef struct {
   FILE       *out;      /* output file for pull data */
   real       k;         /* force constant for atoms */
   real       rate;      /* pull rate, in nm/timestep */
-  real       um_width;  /* width umbrella potential */  
   int        update;    /* update frequency for dynamic grps */
   int        reflag;    /* running average over reflag steps for com */
   bool       bVerbose;  /* be loud and noise */
+  rvec       UmbPos[4]; /* center of umbrella potentials */
+  real       UmbCons[4];/* force constant of umbrella potential */
+  int        nSkip;     /* only write output every nSkip steps */
+  bool       bCompress; /* compress output */
 } t_pull;
 
 /* main pull routine that controls all the action */

@@ -7,8 +7,12 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.1
- * Copyright (c) 1991-2001, University of Groningen, The Netherlands
+ *                        VERSION 3.0
+ * 
+ * Copyright (c) 1991-2001
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry
+ * University of Groningen, The Netherlands
+ * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -24,10 +28,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
  * 
- * For more info, check our website at http://www.gromacs.org
+ * Do check out http://www.gromacs.org , or mail us at gromacs@gromacs.org .
  * 
  * And Hey:
- * GROup of MAchos and Cynical Suckers
+ * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 static char *SRCID_pullinit_c = "$Id$";
 #include <string.h>
@@ -47,6 +51,7 @@ static char *SRCID_pullinit_c = "$Id$";
 #include "symtab.h"
 #include "index.h"
 #include "confio.h"
+#include "pull.h"
 #include "pull_internal.h"
 #include "string.h"
 #include "pbc.h"
@@ -211,12 +216,24 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
   atom_id **index;
   int *ngx;
   int totalgrps;    /* total number of groups in the index file */
+  char buf[256];
   
   /* do we have to do any pulling at all? If not return */
   pull->bPull = opt2bSet("-pi",nfile,fnm);
   if (!pull->bPull) return;
-
+  
+  /* Modified 08/11/01 JM
   pull->out = ffopen(opt2fn("-pd",nfile,fnm),"w");
+  */
+
+  /* Set pdo file to be gzipped */
+  sprintf(buf,"/bin/gzip -f -c > %s",opt2fn("-pd",nfile,fnm));
+  if((pull->out = popen(buf,"w"))==NULL)
+    fatal_error(0,"Could not execute %s.",buf);
+
+
+  /* done modification */
+
   read_pullparams(pull, opt2fn("-pi",nfile,fnm), opt2fn("-po",nfile,fnm));
   ngrps = pull->pull.n;
 
@@ -345,6 +362,7 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
   fprintf(log,"**************************************************\n"
 	  "                      END   PULL INFO                    \n"
 	  "**************************************************\n\n");
+  print_pull_header(pull);
 }
 
 

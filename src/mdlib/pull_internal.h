@@ -122,4 +122,7 @@ extern void dump_conf(t_pull *pull,
 		      int nout,        /* sequence number of this file */
 		      real time);      /* time in simulation */
 
+/* Print header at top of pdo file */
+extern void print_pull_header(t_pull * pull);
+
 #endif

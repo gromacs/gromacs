@@ -22,7 +22,8 @@ bin_PROGRAMS = \
 	g_sorient 	g_tcaf		g_traj		g_velacc	\
 	g_clustsize	genbox		genconf		genpr		\
 	make_ndx	mk_angndx	trjcat		trjconv        	\
-	trjorder	wheel		xpm2ps		genion
+	trjorder	wheel		xpm2ps		genion		\
+	g_wham
 
 
 AUTOCORR_SRC         = 	autocorr.c expfit.c polynomials.c levenmar.c

@@ -7,8 +7,12 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.1
- * Copyright (c) 1991-2001, University of Groningen, The Netherlands
+ *                        VERSION 3.0
+ * 
+ * Copyright (c) 1991-2001
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry
+ * University of Groningen, The Netherlands
+ * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -24,10 +28,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
  * 
- * For more info, check our website at http://www.gromacs.org
+ * Do check out http://www.gromacs.org , or mail us at gromacs@gromacs.org .
  * 
  * And Hey:
- * GROup of MAchos and Cynical Suckers
+ * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 static char *SRCID_pull_c = "$Id$";
 #include "futil.h"
@@ -42,6 +46,7 @@ static char *SRCID_pull_c = "$Id$";
 #include "filenm.h"
 #include "string.h"
 #include "smalloc.h"
+#include "pull.h"
 #include "pull_internal.h"
 
 /* check if we're close enough to the target position */
@@ -150,43 +155,38 @@ static void do_umbrella(t_pull *pull, rvec *x,rvec *f,matrix box,
   /* loop over the groups that are being umbrella sampled */
   for (i=0;i<pull->pull.n;i++) {
 
-    /* get distance between center of umbrella and current center of mass */
-    rvec_sub(pull->pull.x_ref[i],pull->pull.x_unc[i],dr); 
+    /* Fix distance stuff
+       pull->ref.x_unc[0] has position of reference group
+       pull->x_ref is the coordinate that we would like to be at
+       pull->spring has the corrected position of the pulled group
+    */
 
-    for(m=DIM-1; m>=0; m--) {
-      if (dr[m] >  0.5*box[m][m]) rvec_dec(dr,box[m]);
-      if (dr[m] < -0.5*box[m][m]) rvec_inc(dr,box[m]);
-      /* pull->dims selects which components (x,y,z) we want */
+    /* Set desired position in x_ref[i] */
+    rvec_add(pull->ref.x_unc[0],pull->UmbPos[i],pull->pull.x_ref[i]);
+    
+    /* Find vector between current and desired positions */
+    rvec_sub(pull->pull.x_ref[i],pull->pull.x_unc[i],dr);
+
+    /* Select the components we want */
+    for(m=DIM-1;m>=0;m--) {
+      if(dr[m] > 0.5 * box[m][m]) rvec_dec(dr,box[m]);
+      if(dr[m] <-0.5 * box[m][m]) rvec_inc(dr,box[m]);
       dr[m] *= pull->dims[m];
     }
+    copy_rvec(dr,pull->pull.spring[i]);
 
     /* f = um_width*dx */
-    svmul(pull->um_width,dr,pull->pull.f[i]);
-
-    if (pull->bVerbose) {   
-      fprintf(stderr,"Group %d - DR: %f %f %f\n",i,dr[0],dr[1],dr[2]); 
-      fprintf(stderr,"force: %f %f %f\n",pull->pull.f[i][0],pull->pull.f[i][1],
-	      pull->pull.f[i][2]);
-      fprintf(stderr,"curr pos: %f %f %f\n",pull->pull.x_unc[i][0],
-	      pull->pull.x_unc[i][1],pull->pull.x_unc[i][2]);
-      fprintf(stderr,"ref pos: %f %f %f\n",pull->pull.x_ref[i][0],
-	      pull->pull.x_ref[i][1],pull->pull.x_ref[i][2]);
-    }
+    svmul(pull->UmbCons[i],dr,pull->pull.f[i]);
 
     /* distribute the force over all atoms in the group */
-    for (j=0;j<pull->pull.ngx[i];j++) 
+    for (j=0;j<pull->pull.ngx[i];j++) {
       ii=pull->pull.idx[i][j];
       for (m=0;m<DIM;m++) {
 	mi = md->massT[ii];
 	f[ii][m] +=  mi*(pull->pull.f[i][m])/(pull->pull.tmass[i]);
       }
+    }
   }
-  
-  /* reset center of mass of the reference group to its starting value */
-  /*  rvec_sub(pull->ref.x_unc[0],pull->ref.x_con[0],cm);
-  for (i=0;i<pull->ref.ngx[0];i++)
-    rvec_sub(x[pull->ref.idx[0][i]],cm,x[pull->ref.idx[0][i]]);
-  */
 }
 
 /* this implements a constraint run like SHAKE does. */
@@ -195,12 +195,12 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
 {
   
   rvec r_ij, /* x_con[i] com of i in prev. step. Obeys constr. -> r_ij   */
-    unc_ij,  /* x_unc[i] com of i this step, before constr.    -> unc_ij */
-    ref_ij;  /* x_ref[i] com of i at t0, not updated           -> ref_ij */
+  unc_ij,    /* x_unc[i] com of i this step, before constr.    -> unc_ij */
+  ref_ij;    /* x_ref[i] com of i at t0, not updated           -> ref_ij */
 
   rvec *rinew;           /* current 'new' position of group i */
   rvec *rjnew;           /* current 'new' position of group j */
-  real *direction;       /* direction of dr relative to r_ij */
+  real *direction;       /* direction of dr relative to r_ij  */
   double lambda, rm, mass;
   bool bConverged = FALSE;
   int n=0,i,ii,j,m,max_iter=1000;
@@ -658,12 +658,32 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top,
     
   case eUmbrella:
     if (!bShakeFirst) {
-      
       /* get centers of mass for the pull groups, and put them in x_unc. Does 
 	 this work correctly with pbc? */
-      for (i=0;i<pull->pull.n;i++) 
+      for (i=0;i<pull->pull.n;i++) {
+	int m;
+	rvec dr;
+
+	/* Calculate center of mass of pulled group */
 	(void)calc_com(x_s,pull->pull.ngx[i],pull->pull.idx[i],md,
 		       pull->pull.x_unc[i],box);
+	
+	/* Correct for pulled group jumping across box */
+	/* TOOK THIS OUT
+	rvec_sub(pull->pull.spring[i],pull->pull.x_unc[i],dr);
+	for(m=DIM-1;m>=0;m--) {
+	  if(dr[m] > 0.5 * box[m][m]) pull->pull.spring[i][m]=pull->pull.x_unc[i][m]-box[m][m];
+	  else if(dr[m] <-0.5 * box[m][m]) pull->pull.spring[i][m]=pull->pull.x_unc[i][m]+box[m][m];
+	  else pull->pull.spring[i][m]=pull->pull.x_unc[i][m];
+	}
+	*/
+	/* If we're using comT0 we need to fix PBC and then get COM */
+	if(pull->reftype==eComT0) correct_t0_pbc(pull,x_s,md,box);
+
+	(void)calc_com2(pull->ref.x0[0],pull->ref.ngx[0],pull->ref.idx[0],
+		  md,pull->ref.x_unc[0],box);
+      }
+
       do_umbrella(pull,x,f,box,md);
       print_umbrella(pull,step);
     }
