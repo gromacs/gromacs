@@ -688,12 +688,12 @@ void force(FILE       *fp,     int        step,
   debug_gmx();
   
   if (debug)    
-    print_nrnb(debug,nrnb);
+    print_nrnb(debug,nrnb); 
   debug_gmx();
 
   if (!bNBFonly) {
     calc_bonds(fp,idef,x,f,fr,graph,epot,nrnb,box,lambda,md,
-	       opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14]);
+	       opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14]);    
     debug_gmx();
   }
   if (debug) 

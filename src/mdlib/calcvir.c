@@ -77,31 +77,58 @@ void calc_vir(FILE *log,int nxf,rvec x[],rvec f[],tensor vir,
 
 static void lo_fcv(int i0,int i1,int g0,
 		   real x[],real f[],tensor vir,
-		   int is[],real shift_vec[])
+		   int is[],real box[], bool bTriclinic)
 {
-  int      i,i3,gg,t,t3;
+  int      i,i3,gg,g3,tx,ty,tz;
   real     xx,yy,zz;
   real     dvxx=0,dvxy=0,dvxz=0,dvyx=0,dvyy=0,dvyz=0,dvzx=0,dvzy=0,dvzz=0;
 
-  for(i=i0,gg=g0; (i<i1); i++,gg++) {
-    i3=DIM*i;
-    t=is[gg];
-    t3=DIM*t;
-    
-    xx=x[i3+XX]-shift_vec[t3+XX];
-    dvxx+=xx*f[i3+XX];
-    dvxy+=xx*f[i3+YY];
-    dvxz+=xx*f[i3+ZZ];
-    
-    yy=x[i3+YY]-shift_vec[t3+YY];
-    dvyx+=yy*f[i3+XX];
-    dvyy+=yy*f[i3+YY];
-    dvyz+=yy*f[i3+ZZ];
-    
-    zz=x[i3+ZZ]-shift_vec[t3+ZZ];
-    dvzx+=zz*f[i3+XX];
-    dvzy+=zz*f[i3+YY];
-    dvzz+=zz*f[i3+ZZ];
+  if(bTriclinic) {
+      for(i=i0,gg=g0; (i<i1); i++,gg++) {
+	  i3=DIM*i;
+	  g3=DIM*gg;
+	  tx=is[g3+XX];
+	  ty=is[g3+YY];
+	  tz=is[g3+ZZ];
+	  
+	  xx=x[i3+XX]-tx*box[XXXX]-ty*box[YYXX]-tz*box[ZZXX];
+	  dvxx+=xx*f[i3+XX];
+	  dvxy+=xx*f[i3+YY];
+	  dvxz+=xx*f[i3+ZZ];
+	  
+	  yy=x[i3+YY]-ty*box[YYYY]-tz*box[ZZYY];
+	  dvyx+=yy*f[i3+XX];
+	  dvyy+=yy*f[i3+YY];
+	  dvyz+=yy*f[i3+ZZ];
+	  
+	  zz=x[i3+ZZ]-tz*box[ZZZZ]; 
+	  dvzx+=zz*f[i3+XX];
+	  dvzy+=zz*f[i3+YY];
+	  dvzz+=zz*f[i3+ZZ];
+      }
+  } else {
+      for(i=i0,gg=g0; (i<i1); i++,gg++) {
+	  i3=DIM*i;
+	  g3=DIM*gg;
+	  tx=is[g3+XX];
+	  ty=is[g3+YY];
+	  tz=is[g3+ZZ];
+	  
+	  xx=x[i3+XX]-tx*box[XXXX];
+	  dvxx+=xx*f[i3+XX];
+	  dvxy+=xx*f[i3+YY];
+	  dvxz+=xx*f[i3+ZZ];
+	  
+	  yy=x[i3+YY]-ty*box[YYYY];
+	  dvyx+=yy*f[i3+XX];
+	  dvyy+=yy*f[i3+YY];
+	  dvyz+=yy*f[i3+ZZ];
+	  
+	  zz=x[i3+ZZ]-tz*box[ZZZZ]; 
+	  dvzx+=zz*f[i3+XX];
+	  dvzy+=zz*f[i3+YY];
+	  dvzz+=zz*f[i3+ZZ];
+      }
   }
   
   upd_vir(vir[XX],dvxx,dvxy,dvxz);
@@ -111,29 +138,54 @@ static void lo_fcv(int i0,int i1,int g0,
 
 static void lo_fcv2(int i0,int i1,
 		    rvec x[],rvec f[],tensor vir,
-		    int is[],rvec shift_vec[])
+		    ivec is[],matrix box, bool bTriclinic)
 {
-  int      i,gg,t;
+  int      i,gg,tx,ty,tz;
   real     xx,yy,zz;
   real     dvxx=0,dvxy=0,dvxz=0,dvyx=0,dvyy=0,dvyz=0,dvzx=0,dvzy=0,dvzz=0;
 
-  for(i=i0,gg=0; (i<i1); i++,gg++) {
-    t=is[gg];
-    
-    xx=x[i][XX]-shift_vec[t][XX];
-    dvxx+=xx*f[i][XX];
-    dvxy+=xx*f[i][YY];
-    dvxz+=xx*f[i][ZZ];
-    
-    yy=x[i][YY]-shift_vec[t][YY];
-    dvyx+=yy*f[i][XX];
-    dvyy+=yy*f[i][YY];
-    dvyz+=yy*f[i][ZZ];
-    
-    zz=x[i][ZZ]-shift_vec[t][ZZ];
-    dvzx+=zz*f[i][XX];
-    dvzy+=zz*f[i][YY];
-    dvzz+=zz*f[i][ZZ];
+  if(bTriclinic) {
+      for(i=i0,gg=0; (i<i1); i++,gg++) {
+	  tx=is[gg][XX];
+	  ty=is[gg][YY];
+	  tz=is[gg][ZZ];
+	  
+	  xx=x[i][XX]-tx*box[XX][XX]-ty*box[YY][XX]-tz*box[ZZ][XX];
+	  dvxx+=xx*f[i][XX];
+	  dvxy+=xx*f[i][YY];
+	  dvxz+=xx*f[i][ZZ];
+	  
+	  yy=x[i][YY]-ty*box[YY][YY]-tz*box[ZZ][YY];
+	  dvyx+=yy*f[i][XX];
+	  dvyy+=yy*f[i][YY];
+	  dvyz+=yy*f[i][ZZ];
+	  
+	  zz=x[i][ZZ]-tz*box[ZZ][ZZ];
+	  dvzx+=zz*f[i][XX];
+	  dvzy+=zz*f[i][YY];
+	  dvzz+=zz*f[i][ZZ];
+      }
+  } else {
+      for(i=i0,gg=0; (i<i1); i++,gg++) {
+	  tx=is[gg][XX];
+	  ty=is[gg][YY];
+	  tz=is[gg][ZZ];
+	  
+	  xx=x[i][XX]-tx*box[XX][XX];
+	  dvxx+=xx*f[i][XX];
+	  dvxy+=xx*f[i][YY];
+	  dvxz+=xx*f[i][ZZ];
+	  
+	  yy=x[i][YY]-ty*box[YY][YY];
+	  dvyx+=yy*f[i][XX];
+	  dvyy+=yy*f[i][YY];
+	  dvyz+=yy*f[i][ZZ];
+	  
+	  zz=x[i][ZZ]-tz*box[ZZ][ZZ];
+	  dvzx+=zz*f[i][XX];
+	  dvzy+=zz*f[i][YY];
+	  dvzz+=zz*f[i][ZZ];
+      }
   }
   
   upd_vir(vir[XX],dvxx,dvxy,dvxz);
@@ -142,7 +194,7 @@ static void lo_fcv2(int i0,int i1,
 }
 
 void f_calc_vir(FILE *log,int i0,int i1,rvec x[],rvec f[],tensor vir,
-		t_commrec *cr,t_graph *g,rvec shift_vec[])
+		t_commrec *cr,t_graph *g,matrix box)
 {
   int start,end;
   
@@ -153,9 +205,9 @@ void f_calc_vir(FILE *log,int i0,int i1,rvec x[],rvec f[],tensor vir,
     start = max(i0,g->start);
     end   = min(i1,g->end+1);
 #ifdef SAFE
-    lo_fcv2(start,end,x,f,vir,g->ishift,shift_vec);
+    lo_fcv2(start,end,x,f,vir,g->ishift,box,TRICLINIC(box));
 #else
-    lo_fcv(start,end,0,x[0],f[0],vir,g->ishift,shift_vec[0]);
+    lo_fcv(start,end,0,x[0],f[0],vir,g->ishift[0],box[0],TRICLINIC(box));
 #endif
     
     /* If not all atoms are bonded, calculate their virial contribution 
