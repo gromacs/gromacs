@@ -538,7 +538,7 @@ int main(int argc, char *argv[])
     fprintf(stderr,"WARNING: setting -density overrides -scale");
   bScale    = bScale || bRho;
   bCalcGeom = bCenter || bRotate || bOrient || bScale;
-  bCalcDiam = btype[0][0]=='c' || btype[0][0]=='d' || btype[0][0]=='t';
+  bCalcDiam = btype[0][0]=='c' || btype[0][0]=='d' || btype[0][0]=='o';
   
   infile  = ftp2fn(efSTX,NFILE,fnm);
   outfile = ftp2fn(efSTO,NFILE,fnm);
