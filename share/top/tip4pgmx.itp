@@ -13,7 +13,6 @@ SOL		1
 ; i	funct	doh	dhh
 1	1	0.09572	0.15139
 
-[ dummies3 ]
 ; The position of the dummy is computed as follows:
 ;
 ;		O
@@ -25,10 +24,11 @@ SOL		1
 ; const = distance (OD) / [ cos (angle(DOH)) 	* distance (OH) ]
 ;	  0.015 nm	/ [ cos (52.26 deg)	* 0.09572 nm	]
 
-; Dummy pos x4 = a*x1 + b*x2 + c*x3
+; Dummy pos x4 = x1 + a*(x2-x1) + b*(x3-x1)
 
-; Dummy from			funct	a		b		c
-4	1	2	3	1	0.743975870	0.128012065	0.128012065
+[ dummies2 ]
+; Dummy from			funct	a		b
+4	1	2	3	1	0.128012065	0.128012065
 
 [ exclusions ]
 1	2	3	4
