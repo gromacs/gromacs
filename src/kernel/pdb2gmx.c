@@ -946,6 +946,7 @@ int main(int argc, char *argv[])
       if ( (cc->rN[i]<0) || (cc->rC[i]<0) ) {
 	printf("No N- or C-terminus found: "
 	       "this chain appears to contain no protein\n");
+	cc->nterpairs = 0;
       } else {
 	/* set termini */
 	if ( (cc->rN[i]>=0) && (bTerMan || (nNtdb<4)) )
