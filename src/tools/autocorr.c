@@ -63,7 +63,7 @@ int sffn2effn(char **sffn)
   
   eFitFn = 0;
   for(i=0; i<effnNR; i++)
-    if (strcmp(sffn[0],sffn[i+1])==0)
+    if (sffn[i+1] && strcmp(sffn[0],sffn[i+1])==0)
       eFitFn = i;
 
   return eFitFn;
@@ -600,7 +600,7 @@ static real fit_acf(int ncorr,int fitfn,bool bVerbose,
 
   if (bPrint) printf("COR:\n");    
   
-  if (tendfit == -1)
+  if (tendfit <= 0)
     tendfit = ncorr*dt;
   nf_int = min(ncorr,(int)(tendfit/dt));
   sum    = print_and_integrate(debug,nf_int,dt,c1,NULL,1);
@@ -621,9 +621,9 @@ static real fit_acf(int ncorr,int fitfn,bool bVerbose,
   else
     jmax = 1;
   if (fitfn == effnEXP3) {
-    fitparm[0] = 0.1;
-    fitparm[1] = 0.9;
-    fitparm[2] = 100*fitparm[0];
+    fitparm[0] = 0.002*ncorr*dt;
+    fitparm[1] = 0.95;
+    fitparm[2] = 0.2*ncorr*dt;
   } else {
     if (sum > 0)
     /* Good initial guess, this increases the probability of convergence */
@@ -633,13 +633,16 @@ static real fit_acf(int ncorr,int fitfn,bool bVerbose,
     fitparm[1] = 1.0;
     fitparm[2] = 1.0;
   }
+  snew(sig,ncorr);
+  sig[0] = 1;
+  for(i=1; i<ncorr; i++)
+    sig[i] = sqrt(i);
   for(j=0; ((j<jmax) && (tStart < tendfit)); j++) {
     /* Use the previous fitparm as starting values for the next fit */
-    snew(sig,ncorr);
     nf_int = min(ncorr,(int)((tStart+1e-4)/dt));
     sum    = print_and_integrate(debug,nf_int,dt,c1,NULL,1);
     tail_corr = do_lmfit(ncorr,c1,sig,dt,NULL,tStart,tendfit,
-			 bDebugMode(),fitfn,fitparm,NULL);
+			 bDebugMode(),fitfn,fitparm,0);
     sumtot = sum+tail_corr;
     if (fit && (jmax==1 || j==1))
       for(i=0; i<ncorr; i++)
@@ -651,8 +654,9 @@ static real fit_acf(int ncorr,int fitfn,bool bVerbose,
       printf("\n");
     }
     tStart += tbeginfit;
-    sfree(sig);
   }
+  sfree(sig);
+
   return sumtot;
 }
 
@@ -661,7 +665,7 @@ void low_do_autocorr(char *fn,char *title,
 		     real dt,unsigned long mode,int nrestart,
 		     bool bAver,bool bFour,bool bNormalize,
 		     bool bVerbose,real tbeginfit,real tendfit,
-		     int fitfn,int nskip)
+		     int eFitFn,int nskip)
 {
   FILE    *fp,*gp=NULL;
   int     i,k,nfour;
@@ -688,7 +692,7 @@ void low_do_autocorr(char *fn,char *title,
     
   /* Print flags and parameters */
   printf("Will calculate %s of %d thingies for %d frames\n",
-	  title,nitem,nframes);
+	  title ? title : "autocorrelation",nitem,nframes);
   printf("bAver = %s, bFour = %s bNormalize= %s\n",
 	  bool_names[bAver],bool_names[bFour],bool_names[bNormalize]);
   printf("mode = %lu, dt = %g, nrestart = %d\n",mode,dt,nrestart);
@@ -744,24 +748,23 @@ void low_do_autocorr(char *fn,char *title,
     if (bNormalize)
       normalize_acf(nout,c1[0]);
     
-    if ((tbeginfit < tendfit) || (tendfit == -1)) {
-      fit_acf(nout,fitfn,fn!=NULL,tbeginfit,tendfit,dt,c1[0],fit);
+    if (eFitFn != effnNONE) {
+      fit_acf(nout,eFitFn,fn!=NULL,tbeginfit,tendfit,dt,c1[0],fit);
       sum = print_and_integrate(fp,nout,dt,c1[0],fit,1);
     } else {
       sum = print_and_integrate(fp,nout,dt,c1[0],NULL,1);
       printf("Correlation time (integral over corrfn): %g (ps)\n",sum);
     }
-  }
-  else {
+  } else {
     /* Not averaging. Normalize individual ACFs */
     Ctav = Ct2av = 0;
     if (debug)
       gp = xvgropen("ct-distr.xvg","Correlation times","item","time (ps)");
-    for(i=0; (i<nitem); i++) {
+    for(i=0; i<nitem; i++) {
       if (bNormalize)
 	normalize_acf(nout,c1[i]);
-      if ((tbeginfit < tendfit) || (tendfit == -1)) {
-	fit_acf(nout,fitfn,fn!=NULL,tbeginfit,tendfit,dt,c1[i],fit);
+      if (eFitFn != effnNONE) {
+	fit_acf(nout,eFitFn,fn!=NULL,tbeginfit,tendfit,dt,c1[i],fit);
 	sum = print_and_integrate(fp,nout,dt,c1[i],fit,1);
       } else {
 	sum = print_and_integrate(fp,nout,dt,c1[i],NULL,1);
@@ -777,10 +780,13 @@ void low_do_autocorr(char *fn,char *title,
     }
     if (debug)
       ffclose(gp);
-    Ctav  /= nitem;
-    Ct2av /= nitem;
-    printf("Average correlation time %.3f Std. Dev. %.3f Error %.3f (ps)\n",
-	   Ctav,sqrt((Ct2av - sqr(Ctav))),sqrt((Ct2av - sqr(Ctav))/nitem));
+    if (nitem > 1) {
+      Ctav  /= nitem;
+      Ct2av /= nitem;
+      printf("Average correlation time %.3f Std. Dev. %.3f Error %.3f (ps)\n",
+	     Ctav,sqrt((Ct2av - sqr(Ctav))),
+	     sqrt((Ct2av - sqr(Ctav))/(nitem-1)));
+    }
   }
   if (fp)
     ffclose(fp);
@@ -831,7 +837,7 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
   acf.bFour      = TRUE;
   acf.bNormalize = TRUE;
   acf.tbeginfit  = 0.0;
-  acf.tendfit    = 0.0;
+  acf.tendfit    = -1;
   
   bACFinit = TRUE;
     

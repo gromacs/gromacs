@@ -250,125 +250,150 @@ static void average(char *avfile,char **avbar_opt,
   if (c == '9')
     sfree(tmp);
 }
+static real anal_ee_inf(real *parm,real T)
+{
+  return sqrt(parm[1]*2*parm[0]/T+parm[3]*2*parm[2]/T);
+}
 
 static real anal_ee(real *parm,real T,real t)
 {
-  return sqrt(parm[1]*2*parm[0]/T*((exp(-t/parm[0])-1)*parm[0]/t+1)+
-	      parm[3]*2*parm[2]/T*((exp(-t/parm[2])-1)*parm[2]/t+1));
+  real e1,e2;
+
+  if (parm[0])
+    e1 = exp(-t/parm[0]);
+  else
+    e1 = 1;
+  if (parm[2])
+    e2 = exp(-t/parm[2]);
+  else
+    e2 = 1;
+
+  return sqrt(parm[1]*2*parm[0]/T*((e1 - 1)*parm[0]/t + 1) +
+	      parm[3]*2*parm[2]/T*((e2 - 1)*parm[2]/t + 1));
 }
 
 static void estimate_error(char *eefile,int resol,int n,int nset,
-			   double *av,double *sig,real **val,real dt)
+			   double *av,double *sig,real **val,real dt,
+			   bool bFitAc)
 {
   FILE   *fp;
-  int    log2max,rlog2,bs,prev_bs,nb,eFitFn;
-  int    nleg,s,i,j;
+  int    bs,prev_bs,nbs,nb;
+  real   spacing,nbr;
+  int    s,i,j;
   double blav,var;
   char   **leg;
-  real   *ac,*fitsig,**ac_tau;
-  bool   bAnalEE;
-
-  eFitFn = sffn2effn(s_ffn);
-  bAnalEE = eFitFn!=effnVAC;
-
-  snew(ac_tau,nset);
-  for(s=0; s<nset; s++)
-    snew(ac_tau[s],4);
-
-  log2max = (int)(log(n)/log(2));
-
-  if (bAnalEE) {
-    snew(ac,n);
-    snew(fitsig,n);
-    for(i=0; i<n; i++)
-      fitsig[i]=0;
-    for(s=0; s<nset; s++) {
-      for(i=0; i<n; i++)
-	ac[i] = val[s][i] - av[s];
-      low_do_autocorr(NULL,NULL,n,1,-1,&ac,
-		      dt,eacNormal,1,FALSE,TRUE,TRUE,
-		      FALSE,0,0,
-		      eFitFn,0);
-      
-      ac_tau[s][0] = 0.1;
-      if (eFitFn == effnEXP3)
-	ac_tau[s][1] = 0.9;
-      else
-	ac_tau[s][1] = 1;
-      ac_tau[s][2] = 100*ac_tau[s][0];
-      do_lmfit((n+1)/2,ac,fitsig,dt,0,0,dt*(n+1)*0.5,
-	       bDebugMode(),eFitFn,ac_tau[s],NULL);
-      
-      if (eFitFn == effnEXP3)
-	ac_tau[s][3] = 1-ac_tau[s][1];
-      else
-	ac_tau[s][3] = 0;
-
-      fprintf(stdout,"Set %3d: ac. tau %g  err. est. %g\n",
-	      s+1,ac_tau[s][0],sig[s]*anal_ee(ac_tau[s],n*dt,n*dt));
-    }
-    sfree(fitsig);
-    sfree(ac);
-  }
-  
-  if (bAnalEE)
-    nleg = 2*nset;
-  else
-    nleg = nset;
-  snew(leg,nleg);
-  for(s=0; s<nset; s++) {
-    if (TRUE) {
-      snew(leg[2*s],STRLEN);
-      sprintf(leg[2*s],"av %f",av[s]);
-      snew(leg[2*s+1],STRLEN);
-      sprintf(leg[2*s+1],"ee %6g",sig[s]*anal_ee(ac_tau[s],n*dt,n*dt));
-    } else {
-      snew(leg[s],STRLEN);
-      sprintf(leg[s],"av %f",av[s]);
-    }
-  }
+  real   *tbs,*ybs,rtmp,*fitsig,fitparm[4];
 
   fp = xvgropen(eefile,"Error estimates","Block size (time)","Error estimate");
   fprintf(fp,
 	  "@ subtitle \"using block averaging, total time %g (%d points)\"\n",
 	  n*dt,n);
-  xvgr_legend(fp,nleg,leg);
-  for(s=0; s<nleg; s++)
-    sfree(leg[s]);
+  snew(leg,2*nset);
+  xvgr_legend(fp,2*nset,leg);
   sfree(leg);
 
+  spacing = pow(2,1.0/resol);
+  snew(tbs,n);
+  snew(ybs,n);
+  snew(fitsig,n);
   for(s=0; s<nset; s++) {
+    nbs = 0;
     prev_bs = 0;
-    for(rlog2=resol*log2max; rlog2>=2*resol; rlog2--) {
-      bs = n*pow(0.5,(real)rlog2/(real)resol);
+    nbr = 4;
+    while (nbr <= n) {
+      bs = n/(int)nbr;
       if (bs != prev_bs) {
-	nb = 0;
-	i = 0;
+	nb = n/bs;
 	var = 0;
-	while (i+bs <= n) {
+	for(i=0; i<nb; i++) {
 	  blav=0;
-	  for (j=0; j<bs; j++) {
-	    blav += val[s][i];
-	  i++;
-	  }
+	  for (j=0; j<bs; j++)
+	    blav += val[s][bs*i+j];
 	  var += sqr(av[s] - blav/bs);
-	  nb++;
 	}
-	fprintf(fp," %g %g",bs*dt,sqrt(var/(nb*(nb-1.0))));
-	if (bAnalEE)
-	  fprintf(fp," %g",sig[s]*anal_ee(ac_tau[s],n*dt,bs*dt));
-	fprintf(fp,"\n");
+	tbs[nbs] = bs*dt;
+	ybs[nbs] = sqrt(var/(nb*(nb-1.0))*(n*dt))/sig[s];
+	nbs++;
       }
+      nbr *= spacing;
+      nb = (int)(nbr+0.5);
       prev_bs = bs;
+    }
+
+    for(i=0; i<nbs/2; i++) {
+      rtmp         = tbs[i];
+      tbs[i]       = tbs[nbs-1-i];
+      tbs[nbs-1-i] = rtmp;
+      rtmp         = ybs[i];
+      ybs[i]       = ybs[nbs-1-i];
+      ybs[nbs-1-i] = rtmp;
+    }
+    for(i=0; i<nbs; i++)
+      fitsig[i] = sqrt(tbs[i]);
+
+    fitparm[0] = 0.002*n*dt;
+    fitparm[1] = 0.95;
+    fitparm[2] = 0.2*n*dt;
+    do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,0);
+    if (fitparm[0]<0 || fitparm[2]<0 || fitparm[1]<0 || fitparm[1]>1) {
+      fprintf(stderr,"Will use a single exponential fit for set %d\n",s+1);
+      fitparm[0] = n*dt*0.002;
+      fitparm[1] = 1;
+      fitparm[2] = 0;
+      do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,6);
+    }
+    fitparm[3] = 1-fitparm[1];
+    fprintf(stdout,"Set %3d:  err.est. %g  a %g  tau1 %g  tau2 %g\n",
+	    s+1,sig[s]*anal_ee_inf(fitparm,n*dt),
+	    fitparm[1],fitparm[0],fitparm[2]);
+    fprintf(fp,"@ legend string %d \"av %f\"\n",2*s,av[s]);
+    fprintf(fp,"@ legend string %d \"ee %6g\"\n",
+	    2*s+1,sig[s]*anal_ee_inf(fitparm,n*dt));
+    for(i=0; i<nbs; i++)
+      fprintf(fp,"%g %g %g\n",tbs[i],sig[s]/sqrt(n*dt)*ybs[i],
+	      sig[s]/sqrt(n*dt)*fit_function(effnERREST,fitparm,tbs[i]));
+
+    if (bFitAc) {
+      real *ac,ac_fit[4];
+      
+      snew(ac,n);
+      for(i=0; i<n; i++) {
+	ac[i] = val[s][i] - av[s];
+	if (i > 0)
+	  fitsig[i] = sqrt(i);
+	else
+	  fitsig[i] = 1;
+      }
+      low_do_autocorr(NULL,NULL,n,1,-1,&ac,
+		      dt,eacNormal,1,FALSE,TRUE,TRUE,
+		      FALSE,0,0,
+		      effnEXP3,0);
+      
+      ac_fit[0] = 0.002*n*dt;
+      ac_fit[1] = 0.95;
+      ac_fit[2] = 0.2*n*dt;
+      do_lmfit((n+1)/4,ac,fitsig,dt,0,0,dt*(n+1)*0.25,
+              bDebugMode(),effnEXP3,ac_fit,0);
+      ac_fit[3] = 1 - ac_fit[1];
+
+      fprintf(stdout,"Set %3d:  ac erest %g  a %g  tau1 %g  tau2 %g\n",
+	    s+1,sig[s]*anal_ee_inf(ac_fit,n*dt),
+	    ac_fit[1],ac_fit[0],ac_fit[2]);
+
+      fprintf(fp,"&\n");
+      for(i=0; i<nbs; i++)
+	fprintf(fp,"%g %g\n",tbs[i],
+		sig[s]/sqrt(n*dt)*fit_function(effnERREST,ac_fit,tbs[i]));
+
+      sfree(ac);
     }
     if (s < nset-1)
       fprintf(fp,"&\n");
   }
-    
+  sfree(fitsig);
+  sfree(ybs);
+  sfree(tbs);
   fclose(fp);
-  for(s=0; s<nset; s++)
-    sfree(ac_tau[s]);
-  sfree(ac_tau);
 }
 
 int main(int argc,char *argv[])
@@ -402,21 +427,21 @@ int main(int argc,char *argv[])
     "the variance between averages of the m blocks B_i as follows:",
     "error^2 = Sum (B_i - <B>)^2 / (m*(m-1)).",
     "These errors are plotted as a function of the block size.",
-    "For a good error estimate the block size should be at least as large",
-    "as the correlation time, but possibly much larger.",
     "Also an analytical block average curve is plotted, assuming",
-    "that the autocorrelation is a pure exponential.",
-    "The expontential decay time tau is obtained by fitting the",
-    "autocorrelation using the function specified by [TT]-fitfn[tt].",
-    "The analytical curve for a single exponential is:[BR]",
-    "sigma*sqrt(2 tau/T ((exp(-t/tau) - 1) tau/t + 1)),[BR]",
-    "where T is the total time."
-    "When the actual block average is very close to the analytical curve,"
-    "the error is sigma*sqrt(2 tau/T)."
+    "that the autocorrelation is a sum of two exponentials.",
+    "The analytical curve for the block average BA is:[BR]",
+    "BA(t) = sigma sqrt(2/T (  a   (tau1 ((exp(-t/tau1) - 1) tau1/t + 1)) +[BR]",
+    "                        (1-a) (tau2 ((exp(-t/tau2) - 1) tau2/t + 1)))),[BR]"
+    "where T is the total time.",
+    "a, tau1 and tau2 are obtained by fitting BA(t) to the calculated block",
+    "average.",
+    "When the actual block average is very close to the analytical curve,",
+    "the error is sigma*sqrt(2/T (a tau1 + (1-a) tau2))."
   };
   static real tb=-1,te=-1,frac=0.5,binwidth=0.1;
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=FALSE,bAverCorr=FALSE;
-  static int  linelen=4096,nsets_in=1,d=1,resol=8;
+  static bool bEeFitAc=FALSE;
+  static int  linelen=4096,nsets_in=1,d=1,resol=10;
 
   static char *avbar_opt[] = { NULL, "none", "stddev", "error", "90", NULL };
 
@@ -442,6 +467,8 @@ int main(int argc,char *argv[])
     { "-resol", FALSE, etINT, {&resol},
       "HIDDENResolution for the block averaging, block size increases with"
     " a factor 2^(1/#)" },
+    { "-eefitac", FALSE, etBOOL, {&bEeFitAc},
+      "HIDDENAlso plot analytical block average using a autocorrelation fit" },
     { "-subav", FALSE, etBOOL, {&bSubAv},
       "Subtract the average before autocorrelating" },
     { "-oneacf", FALSE, etBOOL, {&bAverCorr},
@@ -560,7 +587,7 @@ int main(int argc,char *argv[])
     do_view(avfile, NULL);
   }
   if (eefile) {
-    estimate_error(eefile,resol,n,nset,av,sig,val,dt);
+    estimate_error(eefile,resol,n,nset,av,sig,val,dt,bEeFitAc);
     do_view(eefile, NULL);
   }
   if (acfile) {

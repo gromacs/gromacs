@@ -62,7 +62,7 @@ rvec v1[NK]={{0,1,0},{0,0,1},{1,0,0}, {0, 0,1},{0, 0,1},{0,1,0}, {0,1, 0},{1,0, 
 rvec v2[NK]={{0,0,1},{1,0,0},{0,1,0}, {1,-1,0},{1, 1,0},{1,0,-1},{1,0, 1},{0,1,-1},{0,1, 1}, {1, 1,-2},{1, 1, 2},{1, 2, 1},{ 2,1, 1}, {0,0,1},{1,0,0},{0,1,0}, {0,0,1},{1,0,0},{0,1,0}, {0,0,1},{1,0,0},{0,1,0}};
 
 static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
-			 real rho,real wt,char *fn_trans,
+			 real rho,real endfit,char *fn_trans,
 			 char *fn_tca,char *fn_tc,char *fn_tcf,char *fn_cub,
 			 char *fn_vk)
 {
@@ -88,9 +88,9 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
     do_view(fn_trans,NULL);
   }
   
-  ncorr = (nframes+1)/2;
-  if (ncorr > (int)(4*wt/dt+0.5))
-    ncorr = (int)(4*wt/dt+0.5)+1;
+  ncorr = (int)(endfit/dt+0.5)+1;
+  if (ncorr > (nframes+1)/2)
+    ncorr = (nframes+1)/2;
   snew(tcaf,nk);
   for(k=0; k<nk; k++)
     snew(tcaf[k],ncorr);
@@ -101,8 +101,9 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
   }
   snew(sig,ncorr);
   snew(fit,ncorr);
-  for(i=0; i<ncorr; i++)
-    sig[i]=exp(i*dt/wt);
+  sig[0] = 1;
+  for(i=1; i<ncorr; i++)
+    sig[i]=sqrt(i);
   
   low_do_autocorr(fn_tca,"Transverse Current Autocorrelation Functions",
 		  nframes,ntc,-1,tc,dt,eacNormal,
@@ -162,8 +163,8 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
     tcaf[k][0] = 1.0;
     fitparms[0]  = 1;
     fitparms[1]  = 1;
-    do_lmfit(ncorr,tcaf[k],sig,dt,0,0,ncorr*dt,
-	     bDebugMode(),effnVAC,fitparms,NULL);
+    do_lmfit(ncorr,tcaf[k],sig,dt,0,0,endfit,
+	     bDebugMode(),effnVAC,fitparms,0);
     eta = 1000*fitparms[1]*rho/
       (4*fitparms[0]*PICO*norm2(kfac[k])/(NANO*NANO));
     fprintf(stdout,"k %6.3f  tau %6.3f  eta %8.5f 10^-3 kg/(m s)\n",
@@ -183,8 +184,8 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
       tcafc[k][0] = 1.0;
       fitparms[0]  = 1;
       fitparms[1]  = 1;
-      do_lmfit(ncorr,tcafc[k],sig,dt,0,0,ncorr*dt,
-	       bDebugMode(),effnVAC,fitparms,NULL);
+      do_lmfit(ncorr,tcafc[k],sig,dt,0,0,endfit,
+	       bDebugMode(),effnVAC,fitparms,0);
       eta = 1000*fitparms[1]*rho/
 	(4*fitparms[0]*PICO*norm2(kfac[kset_c[k]])/(NANO*NANO));
       fprintf(stdout,"k %6.3f  tau %6.3f  eta %8.5f 10^-3 kg/(m s)\n",
@@ -220,8 +221,7 @@ int main(int argc,char *argv[])
     "calculated fitted for each k-vector, which gives 16 tcaf's. Each of",
     "these tcaf's is fitted to f(t) = exp(-v)(cosh(wv) + 1/w sinh(wv)),",
     "v = -t/(2 tau), w = sqrt(1 - 4 tau eta/rho k^2), which gives 16 tau's",
-    "and eta's. The fit weights decay with time as exp(-t/wt), the tcaf and",
-    "fit are calculated up to time 4*wt.",
+    "and eta's. The fit weights decay with time as 1/t.",
     "The eta's should be fitted to 1 - a eta(k) k^2, from which",
     "one can estimate the shear viscosity at k=0.[PAR]",
     "When the box is cubic, one can use the option [TT]-oc[tt], which",
@@ -235,14 +235,14 @@ int main(int argc,char *argv[])
   };
   
   static bool bMol=FALSE,bK34=FALSE;
-  static real wt=5;
+  static real endfit=50;
   t_pargs pa[] = {
     { "-mol", FALSE, etBOOL, {&bMol},
       "Calculate tcaf of molecules" },
     { "-k34", FALSE, etBOOL, {&bK34},
       "Also use k=(3,0,0) and k=(4,0,0)" },
-    { "-wt", FALSE, etREAL, {&wt},
-      "Exponential decay time for the TCAF fit weights" }
+    { "-endfit", FALSE, etREAL, {&endfit},
+      "Time where to end the tcaf plots and fits" }
   };
 
   t_topology top;
@@ -389,7 +389,7 @@ int main(int argc,char *argv[])
 
   rho *= sysmass/nframes*AMU/(NANO*NANO*NANO);
   fprintf(stdout,"Density = %g (kg/m^3)\n",rho);
-  process_tcaf(nframes,dt,nkc,tc,kfac,rho,wt,
+  process_tcaf(nframes,dt,nkc,tc,kfac,rho,endfit,
 	       opt2fn_null("-ot",NFILE,fnm),
 	       opt2fn("-oa",NFILE,fnm),opt2fn("-o",NFILE,fnm),
 	       opt2fn("-of",NFILE,fnm),opt2fn_null("-oc",NFILE,fnm),

@@ -60,7 +60,7 @@ extern real LegendreP(real x,unsigned long m);
 #define eacP4     (1<<8  | eacVector)
 
 enum {
-  effnEXP1, effnEXP2, effnEXP3, effnVAC, effnNR
+  effnNONE, effnEXP1, effnEXP2, effnEXP3, effnVAC, effnERREST, effnNR
 };
 
 extern int  nfp_ffn[effnNR];
@@ -281,9 +281,11 @@ extern real fit_function(int eFitFn,real *parm,real x);
 /* Or: "There is no KILL like OVERKILL", Dr. Ir. D. van der Spoel */
 extern real do_lmfit(int ndata,real c1[],real sig[],real dt,real *x,
 		     real begintimefit,real endtimefit,bool bVerbose,
-		     int eFitFn,real fitparms[],char *fix);
+		     int eFitFn,real fitparms[],int fix);
 /* Returns integral.
  * If x == NULL, the timestep dt will be used to create a time axis.
+ * fix fixes fit parameter i at it's starting value, when the i'th bit
+ * of fix is set. 
  */
 
 extern real print_and_integrate(FILE *fp,int n,real dt,

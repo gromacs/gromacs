@@ -192,7 +192,7 @@ int main(int argc,char *argv[])
     "Two parmeters : y = a2 Exp[-a1 x]",
     "Three parmeter: y = a2 Exp[-a1 x] + (1 - a2) Exp[-a3 x]",
     "Startvalues for the fit procedure can be given on the commandline.",
-    "It is also possible to fix parameters at their start value, use -nfix",
+    "It is also possible to fix parameters at their start value, use -fix",
     "with the number of the parameter you want to fix.",
     "[PAR]",
     "Three output files are generated, the first contains the ACF,",
@@ -215,8 +215,7 @@ int main(int argc,char *argv[])
   int  i,j,nx,ny,nxtail,eFitFn,nfitparm;
   real **y,dt,integral,fitintegral,*fitparms,fac,rffac;
   char *legend[] = { "Correlation", "Std. Dev.", "Fit", "Combined", "Derivative" };
-  static char *fix=NULL;
-  static int bFour = 0,bX = 1,nsmooth=3;
+  static int fix=0,bFour = 0,bX = 1,nsmooth=3;
   static real tendInt=5.0,tbegin=5.0,tend=500.0;
   static real A=0.5,tau1=10.0,tau2=1.0,eps0=80,epsRF=78.5,tail=500.0;
   real   lambda;
@@ -243,8 +242,8 @@ int main(int argc,char *argv[])
       "Epsilon 0 of your liquid" },
     { "-epsRF", FALSE, etREAL, {&epsRF},
       "Epsilon of the reaction field used in your simulation. A value of 0 means infinity." },
-    { "-fix", FALSE, etSTR,  {&fix},
-      "Fix this parameter at its start value, e.g. A, tau1 or tau2" },
+    { "-fix", FALSE, etINT,  {&fix},
+      "Fix parameters at their start values, A (2), tau1 (1), or tau2 (4)" },
     { "-ffn",    FALSE, etENUM, {s_ffn},
       "Fit function" },
     { "-nsmooth", FALSE, etINT, {&nsmooth},

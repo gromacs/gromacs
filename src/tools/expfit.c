@@ -40,15 +40,18 @@ static char *SRCID_expfit_c = "$Id$";
 #include "statutil.h"
 #include "rdgroup.h"
 
-int  nfp_ffn[effnNR] = { 1, 2, 3, 2 };
+int  nfp_ffn[effnNR] = { 0, 1, 2, 3, 2, 3 };
 
-char *s_ffn[effnNR+2] = { NULL, "exp", "aexp", "exp_exp", "vac", NULL };
+char *s_ffn[effnNR+2] = { NULL, "none", "exp", "aexp", "exp_exp", "vac", NULL, NULL };
+/* We don't allow errest as a choice on the command line */
 
 char *longs_ffn[effnNR] = {
+  "no fit",
   "y = exp(-a1 x)",
   "y = a2 exp(-x/a1)",
   "y = a2 exp(-x/a1) + (1-a2) exp(-x/a3)",
-  "y = exp(-v) (cosh(wv) + 1/w sinh(wv)), v = x/(2 a1), w = sqrt(1 - a2)"
+  "y = exp(-v) (cosh(wv) + 1/w sinh(wv)), v = x/(2 a1), w = sqrt(1 - a2)",
+  "y = sqrt(a2*ee(a1,x) + (1-a2)*ee(a2,x))"
 };
 
 extern void mrqmin(real x[],real y[],real sig[],int ndata,real a[],
@@ -162,9 +165,38 @@ static void vac_2_parm(real x,real a[],real *y,real dyda[])
   }
 }
 
+static void errest_3_parm(real x,real a[],real *y,real dyda[])
+{
+  real e1,e2,v1,v2;  
+
+  if (a[1])
+    e1 = exp(-x/a[1]) - 1;
+  else
+    e1 = 0;
+  if (a[3])
+    e2 = exp(-x/a[3]) - 1;
+  else
+    e2 = 0;
+
+  if (x > 0) {
+    v1 = 2*a[1]*(e1*a[1]/x + 1);
+    v2 = 2*a[3]*(e2*a[3]/x + 1);
+    *y      = sqrt(a[2]*v1 + (1-a[2])*v2);
+    dyda[1] = (v1/a[1] + e1)/(*y);
+    dyda[3] = (v2/a[3] + e2)/(*y);
+    dyda[2] = (v1 - v2)/(2*(*y));
+  } else {
+    *y      = 0;
+    dyda[1] = 0;
+    dyda[3] = 0;
+    dyda[2] = 0;
+  }
+}
+
 typedef void (*myfitfn)(real x,real a[],real *y,real dyda[]);
 myfitfn mfitfn[effnNR] = 
-{ exp_one_parm, exp_two_parm, exp_3_parm, vac_2_parm };
+{ exp_one_parm, 
+  exp_one_parm, exp_two_parm, exp_3_parm, vac_2_parm, errest_3_parm };
 
 real fit_function(int eFitFn,real *parm,real x)
 {
@@ -178,7 +210,7 @@ real fit_function(int eFitFn,real *parm,real x)
 /* lmfit_exp supports up to 3 parameter fitting of exponential functions */
 static void lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
 		      real parm[],real dparm[],bool bVerbose,
-		      int eFitFn,char *fix)
+		      int eFitFn,int fix)
 {
   real chisq,ochisq,alamda;
   real *a,**covar,**alpha,*dum;
@@ -202,14 +234,13 @@ static void lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
     snew(covar[i],ma+1);
     snew(alpha[i],ma+1);
   }
-  if (fix != NULL) {
-    fprintf(stderr,"Will keep %s fixed during fit procedure\n",fix);
-    if (strcmp(fix,"tau1") == 0) 
-      ia[1]=0;
-    else if (strcmp(fix,"A") == 0) 
-      ia[2]=0;
-    else if (strcmp(fix,"tau2") == 0) 
-      ia[3]=0;
+  if (fix) {
+    if (bVerbose)
+      fprintf(stderr,"Will keep parameters fixed during fit procedure: %d\n",
+	      fix);
+    for(i=0; i<ma; i++)
+      if (fix & 1<<i)
+	ia[i+1] = 0;
   }
   if (debug)
     fprintf(debug,"%d parameter fit\n",mfit);
@@ -278,7 +309,7 @@ static void lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
 
 real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
 	      real begintimefit,real endtimefit,bool bVerbose,
-	      int eFitFn,real fitparms[],char *fix)
+	      int eFitFn,real fitparms[],int fix)
 {
   FILE *fp;
   char buf[32];
