@@ -375,6 +375,8 @@ static void get_w_conf(FILE *in, char *infile, char *title,
     if (bFirst) {
       bFirst=FALSE;
       p1=strchr(line,'.');
+      if (p1 == NULL)
+	fatal_error(0,"A coordinate in file %s does not contain a '.'",infile);
       p2=strchr(&p1[1],'.');
       if (p1 || p2)
 	prec=p2-p1;
