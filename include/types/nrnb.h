@@ -74,7 +74,7 @@ enum
     eNR_GATHERF,              eNR_GATHERFBSP,           eNR_FFT,
     eNR_CONV,                 eNR_SOLVEPME,eNR_NS,      eNR_RESETX,
     eNR_SHIFTX,               eNR_CGCM,                 eNR_FSUM,
-    eNR_BONDS,                eNR_G96BONDS,             eNR_ANGLES,
+    eNR_BONDS,                eNR_G96BONDS,             
 	eNR_ANGLES,               eNR_G96ANGLES,            eNR_QANGLES,
     eNR_PROPER,               eNR_IMPROPER,
     eNR_RB,                   eNR_FOURDIH,              eNR_DISRES,               
