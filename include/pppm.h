@@ -43,7 +43,7 @@ extern real do_pppm(FILE *log,       bool bVerbose,
 		    rvec x[],        rvec f[],
 		    real charge[],   rvec box,
 		    real phi[],      t_commrec *cr,
-		    t_nrnb *nrnb);
+		    t_nrnb *nrnb,    bool bNew);
 /* Do a PPPM calculation for the long range electrostatics.
  */
  
@@ -53,7 +53,7 @@ extern real do_opt_pppm(FILE *log,       bool bVerbose,
 			real charge[],   rvec box,
 			real phi[],      t_commrec *cr,
 			t_nrnb *nrnb,    rvec beta,
-			t_fftgrid *grid);
+			t_fftgrid *grid, bool bNew);
 /* Do a PPPM setup (generate grid etc.) and a calculation as well 
  * the grid should be initiated beforehand.
  */
@@ -62,19 +62,12 @@ extern real do_opt_pppm(FILE *log,       bool bVerbose,
 extern real do_ewald(FILE *log,       t_inputrec *ir,
 		     int natoms,      rvec x[],rvec f[],
 		     real charge[],   rvec box,
-		     real phi[],      t_commrec *cr);
+		     real phi[],      t_commrec *cr,
+		     bool bNew);
 /* Do an Ewald summation on a fixed grid as given in inputrec.
  * The spread function is David's function, rather than a gaussian.
  */
  
-extern real do_poisson(FILE *log,       bool bVerbose,
-		       t_inputrec *ir,  int natoms,
-		       rvec x[],        rvec f[],
-		       real charge[],   rvec box,
-		       real phi[],      t_commrec *cr,
-		       t_nrnb *nrnb);
-/* Calculate potentials etc. using a poisson solver */
-
 extern real gather_f(FILE *log,bool bVerbose,
 		     int natoms,rvec x[],rvec f[],real charge[],rvec box,
 		     real pot[],t_fftgrid *grid,rvec beta,t_nrnb *nrnb);
