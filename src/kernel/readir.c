@@ -119,6 +119,10 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     warning(NULL);
     ir->epc = epcISOTROPIC;
   }
+  if ((ir->eBox == ebtNONE) && (ir->bLJcorr)) {
+    warning("Can not have long-range dispersion correction without PBC, turned off.");
+    ir->bLJcorr = FALSE;
+  }
   if ((ir->eeltype == eelPPPM) && (ir->epc != epcNO)) {
     fprintf(stderr,"ERROR: pressure coupling with PPPM not implemented\n");
     (*nerror)++;
