@@ -793,7 +793,7 @@ int main(int argc,char *argv[])
 	    break;
 	  }
 	}
-	if (i == nre)
+        if (i == nre) {
 	  if (strcmp(setnm[j],"Volume")==0) {
 	    printf("Enter the box volume (nm^3): ");
 	    scanf("%lf",&dbl);
@@ -801,6 +801,7 @@ int main(int argc,char *argv[])
 	  } else
 	    fatal_error(0,"Could not find term %s for viscosity calculation",
 			setnm[j]);
+        }
       }
     }
     else {
