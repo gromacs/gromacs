@@ -784,28 +784,33 @@ if test "$GCC" = "yes"; then
     powerpc*)
         # don't use the separate apple cpp on OS X
         ACX_CHECK_CC_FLAGS(-no-cpp-precomp,no_cpp_precomp,xCFLAGS="$xCFLAGS -no-cpp-precomp")
+        ACX_CHECK_CC_FLAGS(-finline-limit=6000,finline_limit_6000,xCFLAGS="$xCFLAGS -finline-limit=6000")
+        ACX_CHECK_CC_FLAGS(-fstrict-aliasing,fstrict_aliasing,xCFLAGS="$xCFLAGS -fstrict-aliasing")
         if test "$enable_ppc_altivec" = "yes"; then
           # And try to add -fvec or -faltivec to get altivec extensions!
           ACX_CHECK_CC_FLAGS(-fvec,fvec,xCFLAGS="$xCFLAGS -fvec",
  	        ACX_CHECK_CC_FLAGS(-faltivec,faltivec,xCFLAGS="$xCFLAGS -faltivec"))
         fi
-      cputype=`(grep cpu /proc/cpuinfo | head -1 | cut -d: -f2 | sed 's/ //g') 2> /dev/null`
-      is60x=`echo $cputype | egrep "^60[0-9]e?$"`
-      if test -n "$is60x"; then
-	ACX_CHECK_CC_FLAGS(-mcpu=$cputype,m_cpu_60x,CPU_FLAGS=-mcpu=$cputype)
-      elif test "$cputype" = 750; then
-        ACX_CHECK_CC_FLAGS(-mcpu=750,m_cpu_750,CPU_FLAGS=-mcpu=750)
-      fi
-      if test -z "$CPU_FLAGS"; then
-        ACX_CHECK_CC_FLAGS(-mcpu=powerpc,m_cpu_powerpc,CPU_FLAGS=-mcpu=powerpc)
-      fi
-      if test -z "$CPU_FLAGS"; then
-	ACX_CHECK_CC_FLAGS(-mpowerpc,m_powerpc,CPU_FLAGS=-mpowerpc)
-      fi
+        # -funroll-all-loops exposes a bug in altivec-enabled gcc-2.95.3
+        # on powerpc, so we only enable it on other platforms or gcc3.    
+        # The gcc 2.95 instruction scheduler also destroys our handcoded altivec,
+        # so disable instruction scheduling on 2.95
+        if $CC --version 2>&1 | grep '2.95' > /dev/null 2>&1; then
+	  echo "*****************************************************************************"
+          echo "* IMPORTANT INFO: You are using gcc-2.95.x on PowerPC. This compiler works, *"
+          echo "* but you will get better performance with gcc-3.1 or later. If you are     *"
+          echo "* running OS X, download the latest devtools from http://developer.apple.com*"
+	  echo "*****************************************************************************"
+          ACX_CHECK_CC_FLAGS(-fno-schedule-insns,fno_schedule_insns,xCFLAGS="$xCFLAGS -fno-schedule-insns")
+        else
+          ACX_CHECK_CC_FLAGS(-funroll-all-loops,funroll_all_loops,xCFLAGS="$xCFLAGS -funroll-all-loops")
+        fi
+	ACX_CHECK_CC_FLAGS(-mcpu=7450,m_cpu_7450,CPU_FLAGS="-mcpu=7450")
+	if test -z "$CPU_FLAGS"; then
+  	  ACX_CHECK_CC_FLAGS(-mcpu=powerpc,m_cpu_powerpc,CPU_FLAGS="-mcpu=powerpc")
+        fi	
       ;;
    *)
-        # -funroll-all-loops exposes a bug in altivec-enabled gcc-2.95.3
-        # on powerpc, so we only enable it on other platforms.
         ACX_CHECK_CC_FLAGS(-funroll-all-loops,funroll_all_loops,xCFLAGS="$xCFLAGS -funroll-all-loops")
       ;;
    esac
