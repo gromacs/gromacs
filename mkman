@@ -6,6 +6,8 @@ set TEXMAN	= $THISDIR/$MANDIR
 set INDEX	= $TEXMAN/all.tex
 
 cd $GMXHOME/bin/$GMXCPU
+echo -n "Generating manpage from gromacs binaries in "
+pwd
 set PROGRAMS    = 
 foreach program ( `\ls -1 | grep -v "#"` )
   if ( ( $program != average ) && ( $program != luck ) && ( $program != my_dssp ) ) then
