@@ -43,11 +43,11 @@
 #include "smalloc.h"
 #include "network.h"
 #include "copyrite.h"
-#ifdef USE_MPI
+#ifdef GMX_MPI
 #include <mpi.h>
 #endif
 
-#ifdef USE_MPI
+#ifdef GMX_MPI
 static MPI_Request mpi_req_tx=MPI_REQUEST_NULL,mpi_req_rx;
 #endif
 
@@ -57,7 +57,7 @@ static MPI_Request mpi_req_tx=MPI_REQUEST_NULL,mpi_req_rx;
 
 void gmx_tx(int nodeid,void *buf,int bufsize)
 {
-#ifndef USE_MPI
+#ifndef GMX_MPI
   gmx_call("gmx_tx"); 
 #else
   int        tag,flag;
@@ -86,7 +86,7 @@ void gmx_tx(int nodeid,void *buf,int bufsize)
 
 void gmx_tx_wait(int nodeid)
 {
-#ifndef USE_MPI
+#ifndef GMX_MPI
   gmx_call("gmx_tx_wait");
 #else
   MPI_Status  status;
@@ -99,7 +99,7 @@ void gmx_tx_wait(int nodeid)
 
 void gmx_txs(int nodeid,void *buf,int bufsize)
 {
-#ifndef USE_MPI
+#ifndef GMX_MPI
   gmx_call("gmx_txs");
 #else
   int tag;
@@ -116,7 +116,7 @@ void gmx_txs(int nodeid,void *buf,int bufsize)
 
 void gmx_rx(int nodeid,void *buf,int bufsize)
 {
-#ifndef USE_MPI
+#ifndef GMX_MPI
   gmx_call("gmx_rx");
 #else
   int        tag;
@@ -133,7 +133,7 @@ void gmx_rx(int nodeid,void *buf,int bufsize)
 
 void gmx_rx_wait(int nodeid)
 {
-#ifndef USE_MPI
+#ifndef GMX_MPI
   gmx_call("gmx_rx_wait");
 #else
   MPI_Status  status;
@@ -146,7 +146,7 @@ void gmx_rx_wait(int nodeid)
 
 int gmx_rx_probe(int nodeid)
 {
-#ifndef USE_MPI
+#ifndef GMX_MPI
   gmx_call("gmx_rx_probe");
   return 0;
 #else
@@ -162,7 +162,7 @@ int gmx_rx_probe(int nodeid)
 
 void gmx_rxs(int nodeid,void *buf,int bufsize)
 {
-#ifndef USE_MPI
+#ifndef GMX_MPI
   gmx_call("gmx_rxs");
 #else
   MPI_Status stat;
@@ -180,7 +180,7 @@ void gmx_rxs(int nodeid,void *buf,int bufsize)
 
 int gmx_setup(int *argc,char **argv,int *nnodes)
 {
-#ifndef USE_MPI
+#ifndef GMX_MPI
   gmx_call("gmx_setup");
   return 0;
 #else
@@ -208,7 +208,7 @@ int gmx_setup(int *argc,char **argv,int *nnodes)
 
 int  gmx_node_num(void)
 {
-#ifndef USE_MPI
+#ifndef GMX_MPI
   return 1;
 #else
   int i;
@@ -219,7 +219,7 @@ int  gmx_node_num(void)
 
 int gmx_node_id(void)
 {
-#ifndef USE_MPI
+#ifndef GMX_MPI
   return 0;
 #else
   int i;
@@ -247,7 +247,7 @@ void gmx_left_right(int nnodes,int nodeid,int *left,int *right)
 void gmx_tx_rx(int send_nodeid,void *send_buf,int send_bufsize,
 		 int rec_nodeid,void *rec_buf,int rec_bufsize)
 {
-#ifndef USE_MPI
+#ifndef GMX_MPI
   gmx_call("gmx_tx_rx");
 #else
   int tx_tag = 0,rx_tag = 0;
@@ -262,7 +262,7 @@ void gmx_tx_rx(int send_nodeid,void *send_buf,int send_bufsize,
 void gmx_tx_rx_real(int send_nodeid,real *send_buf,int send_bufsize,
 		      int rec_nodeid,real *rec_buf,int rec_bufsize)
 {
-#ifndef USE_MPI
+#ifndef GMX_MPI
   gmx_call("gmx_tx_rx_real");
 #else
   int tx_tag = 0,rx_tag = 0;
@@ -282,7 +282,7 @@ void gmx_tx_rx_real(int send_nodeid,real *send_buf,int send_bufsize,
 		 
 void gmx_wait(int left,int right)
 {
-#ifndef USE_MPI
+#ifndef GMX_MPI
   gmx_call("gmx_wait");
 #else
   gmx_tx_wait(left);
@@ -292,7 +292,7 @@ void gmx_wait(int left,int right)
 
 void gmx_sync_ring(int nodeid,int nnodes,int left,int right)
 {
-#ifndef USE_MPI
+#ifndef GMX_MPI
   gmx_call("gmx_sync_ring");
 #else
   int i;
@@ -323,7 +323,7 @@ void gmx_reset_idle(void)
 
 void gmx_abort(int nodeid,int nnodes,int errorno)
 {
-#ifndef USE_MPI
+#ifndef GMX_MPI
   gmx_call("gmx_abort");
 #else
   if (nnodes > 1)
@@ -341,7 +341,7 @@ void gmx_abort(int nodeid,int nnodes,int errorno)
 
 void gmx_sumd(int nr,double r[],const t_commrec *cr)
 {
-#ifndef USE_MPI
+#ifndef GMX_MPI
   gmx_call("gmx_sumd");
 #else
   /*#define TEST_MPI_SUM*/
@@ -388,7 +388,7 @@ void gmx_sumd(int nr,double r[],const t_commrec *cr)
 
 void gmx_sumf(int nr,float r[],const t_commrec *cr)
 {
-#ifndef USE_MPI
+#ifndef GMX_MPI
   gmx_call("gmx_sumf");
 #else
   float *buf[2];
@@ -419,7 +419,7 @@ void gmx_sumf(int nr,float r[],const t_commrec *cr)
 
 void gmx_sumi(int nr,int r[],const t_commrec *cr)
 {
-#ifndef USE_MPI
+#ifndef GMX_MPI
   gmx_call("gmx_sumi");
 #else
   int *buf[2];
@@ -451,7 +451,7 @@ void gmx_sumi(int nr,int r[],const t_commrec *cr)
 void gmx_finalize(t_commrec *cr)
 {
   int ret;
-#ifndef USE_MPI
+#ifndef GMX_MPI
   gmx_call("gmx_finalize");
 #else
 #ifdef MPICH_NAME

@@ -78,7 +78,7 @@ typedef struct {
 #ifndef GMX_WITHOUT_FFTW
     rfftwnd_plan     plan_fw;
     rfftwnd_plan     plan_bw;
-#ifdef USE_MPI
+#ifdef GMX_MPI
     rfftwnd_mpi_plan plan_mpi_fw;
     rfftwnd_mpi_plan plan_mpi_bw;
     t_parfft         pfft;

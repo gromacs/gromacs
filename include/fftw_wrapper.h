@@ -46,21 +46,21 @@
 #ifdef FFTW_NAME_FFTW
 #  include<fftw.h>
 #  include<rfftw.h>
-#  ifdef USE_MPI
+#  ifdef GMX_MPI
 #    include<fftw_mpi.h>
 #    include<rfftw_mpi.h>
 #  endif
 #elif defined FFTW_NAME_SFFTW
 #  include<sfftw.h>
 #  include<srfftw.h>
-#  ifdef USE_MPI
+#  ifdef GMX_MPI
 #    include<sfftw_mpi.h>
 #    include<srfftw_mpi.h>
 #  endif
 #elif defined FFTW_NAME_DFFTW
 #  include<dfftw.h>
 #  include<drfftw.h>
-#  ifdef USE_MPI
+#  ifdef GMX_MPI
 #    include<dfftw_mpi.h>
 #    include<drfftw_mpi.h>
 #  endif

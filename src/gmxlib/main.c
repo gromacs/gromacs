@@ -318,7 +318,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
 	cr->nnodes=atoi(argv[i+1]);
   }
   
-#ifdef USE_MPI
+#ifdef GMX_MPI
   gmx_parallel_env = 1;
 #ifdef CHECK_MPI_ENV
   /* Do not use MPI calls when env.var. CHECK_MPI_ENV is not set */
