@@ -120,9 +120,6 @@ typedef struct {
 /*extern real min_dist(int ncys,real **d,int *ii,int *jj,bool bCheckID);*/
 /* Find the lowest number in a distance matrix d */
 
-extern real distance(rvec a,rvec b);
-/* calcluate distance between atoms without taking PBC into account */
-
 extern void set_histp(t_atoms *pdba,rvec *x,real angle,real distance);
 /* calculate HIStidine protonation state */
 
