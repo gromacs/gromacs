@@ -98,7 +98,7 @@ static void do_update_md(int start,int homenr,double dt,
       gf   = cFREEZE[n];
       ga   = cACC[n];
       gt   = cTC[n];
-      xi  = tcstat[gt].xi;
+      xi   = tcstat[gt].xi;
       
       rvec_sub(v[n],gstat[ga].uold,vrel);
 
@@ -248,7 +248,7 @@ static real fgauss(unsigned long *jran)
   return sqrt3*(jr*inv_im-2);
 }
 
-static void calc_sd_consts(int ngtc,real tau_t[],real dt)
+static void init_sd_consts(int ngtc,real tau_t[],real dt)
 {
   int  n;
   real y;
@@ -266,10 +266,10 @@ static void calc_sd_consts(int ngtc,real tau_t[],real dt)
       sdc[n].d = 2 - sdc[n].eph - sdc[n].emh;
     } else {
       y = sdc[n].gdt/2;
-      /* Sixth order expansions for small y */
-      sdc[n].b = y*y*y*y*(1.0/3.0+y*(1.0/3.0+y*17.0/90.0));
-      sdc[n].c = y*y*y*(2.0/3.0+y*(-1.0/2.0+y*(7.0/30.0-y/12.0)));
-      sdc[n].d = y*y*(-1.0+y*y*(-1.0/12.0-y*y/360.0));
+      /* Seventh order expansions for small y */
+      sdc[n].b = y*y*y*y*(1/3.0+y*(1/3.0+y*(17/90.0+y*7/9.0)));
+      sdc[n].c = y*y*y*(2/3.0+y*(-1/2.0+y*(7/30.0+y*(-1/12.0+y*31/1260.0))));
+      sdc[n].d = y*y*(-1+y*y*(-1/12.0-y*y/360.0));
     }
     if (debug)
       fprintf(debug,"SD const tc-grp %d: b %g  c %g  d %g\n",
@@ -277,7 +277,7 @@ static void calc_sd_consts(int ngtc,real tau_t[],real dt)
   }
 }
 
-static void do_update_sd(int start,int homenr,double dt,
+static void do_update_sd(int start,int homenr,
 			 rvec accel[],ivec nFreeze[],
 			 real invmass[],unsigned short ptype[],
 			 unsigned short cFREEZE[],unsigned short cACC[],
@@ -648,7 +648,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
     snew(lamb,ngtc);
 
     if (ir->eI == eiSD)
-      calc_sd_consts(ir->opts.ngtc,ir->opts.tau_t,ir->delta_t);
+      init_sd_consts(ir->opts.ngtc,ir->opts.tau_t,ir->delta_t);
     
     /* done with initializing */
     bFirst=FALSE;
@@ -659,7 +659,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
   dt_2 = 1.0/(dt*dt);
   vol  = det(parm->box);
 
-  for(i=0; (i<ngtc); i++) {
+  for(i=0; i<ngtc; i++) {
     real l=grps->tcstat[i].lambda;
     
     if (bTYZ)
@@ -671,7 +671,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
   }
   if (bDoUpdate) {
     /* update mean velocities */
-    for (g=0; (g<ngacc); g++) {
+    for (g=0; g<ngacc; g++) {
       copy_rvec(grps->grpstat[g].u,grps->grpstat[g].uold);
       clear_rvec(grps->grpstat[g].u);
     }
@@ -697,7 +697,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
       /* The SD update is done in 2 parts, because an extra constraint step
        * is needed 
        */
-      do_update_sd(start,homenr,dt,
+      do_update_sd(start,homenr,
 		   ir->opts.acc,ir->opts.nFreeze,
 		   md->invmass,md->ptype,
 		   md->cFREEZE,md->cACC,md->cTC,SAfactor,
@@ -711,12 +711,13 @@ void update(int          natoms, 	/* number of atoms in simulation */
 	constrain(stdlog,top,ir,step,md,start,homenr,x,xprime,parm->box,
 		  lambda,dvdlambda,nrnb);
 	for(n=start; n<start+homenr; n++) {
-	  mdt_2 = dt_2*md->massT[n];
+	  /* A correction factor eph is needed for the SD constraint force */
+	  mdt_2 = dt_2*md->massT[n]*sdc[md->cTC[n]].eph;
 	  for(i=0; i<DIM; i++)
 	    delta_f[n][i] = (xprime[n][i] - x_unc[n-start][i])*mdt_2;
 	}
       }
-      do_update_sd(start,homenr,dt,
+      do_update_sd(start,homenr,
 		   ir->opts.acc,ir->opts.nFreeze,
 		   md->invmass,md->ptype,
 		   md->cFREEZE,md->cACC,md->cTC,SAfactor,
@@ -756,9 +757,10 @@ void update(int          natoms, 	/* number of atoms in simulation */
    * after this will be normal to the bond vector
    */
   if (bConstraints) {
-    /* Copy Unconstrained X to temp array */
-    for(n=start; n<start+homenr; n++)
-      copy_rvec(xprime[n],x_unc[n-start]);
+    if (ir->eI != eiSD)
+      /* Copy Unconstrained X to temp array */
+      for(n=start; n<start+homenr; n++)
+	copy_rvec(xprime[n],x_unc[n-start]);
     
     /* Constrain the coordinates xprime */
     constrain(stdlog,top,ir,step,md,start,homenr,x,xprime,parm->box,
@@ -794,23 +796,12 @@ void update(int          natoms, 	/* number of atoms in simulation */
 	  }
 	}
 	where();
-      } else
-	/* SD, so increase delta_f with the second constraint contribution */
-	for(n=start; n<start+homenr; n++) {
-	  mdt_2 = dt_2*md->massT[n];
-	  for(i=0; i<DIM; i++)
-	    delta_f[n][i] += (xprime[n][i] - x_unc[n-start][i])*mdt_2;
-	}
+      }
       
       inc_nrnb(nrnb,eNR_SHAKE_V,homenr);
       dump_it_all(stdlog,"After Shake-V",natoms,x,xprime,v,vold,force);
       where();
       
-      /*
-      for(n=start; n<start+homenr; n++)
-	printf("%d %g %g %g\n",n,delta_f[n][0],delta_f[n][1],delta_f[n][2]);
-	*/
-
       /* Calculate virial due to constraints (for this node) */
       calc_vir(stdlog,homenr,&(x[start]),&(delta_f[start]),vir_part,cr);
       inc_nrnb(nrnb,eNR_SHAKE_VIR,homenr);
