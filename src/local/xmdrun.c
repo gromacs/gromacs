@@ -374,7 +374,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	   parm->box,top,parm->ir.delta_t,step,mdatoms->nr); 
 
     /* Check magnitude of the forces */
-    fmax = f_max(log,cr->left,cr->right,cr->nprocs,START(nsb),
+    fmax = f_max(cr->left,cr->right,cr->nprocs,START(nsb),
 		 START(nsb)+HOMENR(nsb),fbuf[next]);
     if (bDynamicStep && (step > 0) && (fmax > 5000)) {
       /* Force very big: reduce timestep */
