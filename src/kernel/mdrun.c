@@ -467,7 +467,7 @@ int main(int argc,char *argv[])
     { "-compact", FALSE, etBOOL,&bCompact,
       "Write a compact log file, i.e. do not write full virial and energy group matrix (these are also in the energy file, so this is redundant) " },
     { "-dlb",     FALSE, etINT, &nDLB,
-      "Use dynamic load balancing every ... step. BUGGY do not use" },
+      "HIDDENUse dynamic load balancing every ... step. BUGGY do not use" },
     { "-stepout", FALSE, etINT, &nstepout,
       "Frequency of writing the remaining runtime" }
   };
@@ -481,7 +481,7 @@ int main(int argc,char *argv[])
     CopyRight(stderr,argv[0]);
 
   parse_common_args(&argc,argv,
-		    PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS |
+		    PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_SET_NPRI |
 		    (MASTER(cr) ? 0 : PCA_QUIET),
 		    TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
     
