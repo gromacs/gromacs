@@ -173,7 +173,7 @@ void list_xtc(char *fn)
     pr_rvecs(stdout,0,"x",x,natoms);
   } while (read_next_xtc(xd,&natoms,&step,&time,box,x,&prec,&bOK));
   if (!bOK)
-    fprintf(stderr,"\nWARNING: Incomplete frame header at time %g\n",time);
+    fprintf(stderr,"\nWARNING: Incomplete frame at time %g\n",time);
   close_xtc(xd);
 }
 
