@@ -147,7 +147,7 @@ directive str2dir (char *dstr)
   directive d;
   
   for (d=(directive)0; (d<d_maxdir); d++)
-    if (gmx_strcasecmp(dstr,dir2str(d)) == 0)
+    if (strcasecmp_min(dstr,dir2str(d)) == 0)
       return d;
 
   return d_invalid;

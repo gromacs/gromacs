@@ -74,10 +74,12 @@ extern void trim (char *str);
 
 extern void nice_header (FILE *out,char *fn);
 
-extern int gmx_strcasecmp(const char *str1, const char *str2);
+extern int strcasecmp_min(const char *str1, const char *str2);
 /* This funny version of strcasecmp, is not only case-insensitive,
  * but also ignores '-' and '_'.
  */
+
+extern int gmx_strcasecmp(const char *str1, const char *str2);
 
 extern char *gmx_strdup(const char *src);
 

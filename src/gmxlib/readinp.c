@@ -154,7 +154,7 @@ static int get_einp(int *ninp,t_inpfile **inp,char *name)
   int    i;
   
   for(i=0; (i<(*ninp)); i++)
-    if (gmx_strcasecmp(name,(*inp)[i].name) == 0)
+    if (strcasecmp_min(name,(*inp)[i].name) == 0)
       break;
   if (i == (*ninp)) {
     (*ninp)++;
@@ -242,7 +242,7 @@ int get_eeenum(int *ninp,t_inpfile **inp,char *name,char **defs,
   }
   
   for(i=0; (defs[i] != NULL); i++)
-    if (gmx_strcasecmp(defs[i],(*inp)[ii].value) == 0)
+    if (strcasecmp_min(defs[i],(*inp)[ii].value) == 0)
       break;
   
   if (defs[i] == NULL) {
