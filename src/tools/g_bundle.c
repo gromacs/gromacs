@@ -171,7 +171,8 @@ int main(int argc,char *argv[])
     "center of all axes, the total tilt, the radial tilt and the lateral",
     "tilt with respect to the average axis.",
     "[PAR]",
-    "With option [TT]-ok[tt] the kink of the axes is plotted. An extra index",
+    "With options [TT]-ok[tt], [TT]-okr[tt] and [TT]-okl[tt] the total,",
+    "radial and lateral kinks of the axes are plotted. An extra index",
     "group of kink atoms is required, which is also divided into [TT]-na[tt]",
     "parts. The kink angle is defined as the angle between the kink-top and",
     "the bottom-kink vectors.",
@@ -191,7 +192,7 @@ int main(int argc,char *argv[])
     { "-z", FALSE, etBOOL, {&bZ},
 	"Use the Z-axis as reference iso the average axis" }
   };
-  FILE       *out,*flen,*fdist,*ftilt,*ftiltr,*ftiltl,*fkink;
+  FILE       *out,*flen,*fdist,*ftilt,*ftiltr,*ftiltl,*fkink,*fkinkr,*fkinkl;
   int        status,fpdb;
   t_topology top;
   rvec       *xtop;
@@ -205,7 +206,7 @@ int main(int argc,char *argv[])
   atom_id    *index[MAX_ENDS];
   t_bundle   bun;
   bool       bKink;
-  rvec       va,vb;
+  rvec       va,vb,vc,vr,vl;
 #define NLEG asize(leg) 
   t_filenm fnm[] = { 
     { efTRX, "-f", NULL, ffREAD }, 
@@ -217,6 +218,8 @@ int main(int argc,char *argv[])
     { efXVG, "-otr", "bun_tiltr", ffWRITE },
     { efXVG, "-otl", "bun_tiltl", ffWRITE },
     { efXVG, "-ok", "bun_kink", ffOPTWR },
+    { efXVG, "-okr", "bun_kinkr", ffOPTWR },
+    { efXVG, "-okl", "bun_kinkl", ffOPTWR },
     { efPDB, "-oa", "axes", ffOPTWR }
   }; 
 #define NFILE asize(fnm) 
@@ -227,7 +230,8 @@ int main(int argc,char *argv[])
 
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,box,TRUE);
 
-  bKink = opt2bSet("-ok",NFILE,fnm);
+  bKink = opt2bSet("-ok",NFILE,fnm) || opt2bSet("-okr",NFILE,fnm) 
+    || opt2bSet("-okl",NFILE,fnm);
   if (bKink)
     bun.nend = 3;
   else
@@ -263,9 +267,14 @@ int main(int argc,char *argv[])
   ftiltl = xvgropen(opt2fn("-otl",NFILE,fnm),"Lateral axis tilts",
 		   "Time (ps)","(degrees)");
 
-  if (bKink)
+  if (bKink) {
     fkink = xvgropen(opt2fn("-ok",NFILE,fnm),"Kink angles",
 		     "Time (ps)","(degrees)");
+    fkinkr = xvgropen(opt2fn("-okr",NFILE,fnm),"Radial kink angles",
+		      "Time (ps)","(degrees)");
+    fkinkl = xvgropen(opt2fn("-okl",NFILE,fnm),"Lateral kink angles",
+		      "Time (ps)","(degrees)");
+  }
 
   if (opt2bSet("-oa",NFILE,fnm)) {
     init_t_atoms(&outatoms,3*n,FALSE);
@@ -289,8 +298,11 @@ int main(int argc,char *argv[])
     fprintf(ftilt," %10g",fr.time);
     fprintf(ftiltr," %10g",fr.time);
     fprintf(ftiltl," %10g",fr.time);
-    if (bKink)
+    if (bKink) {
       fprintf(fkink," %10g",fr.time);
+      fprintf(fkinkr," %10g",fr.time);
+      fprintf(fkinkl," %10g",fr.time);
+    }
 
     for(i=0; i<bun.n; i++) {
       fprintf(flen," %6g",bun.len[i]);
@@ -305,7 +317,18 @@ int main(int argc,char *argv[])
       if (bKink) {
 	rvec_sub(bun.end[0][i],bun.end[2][i],va);
 	rvec_sub(bun.end[2][i],bun.end[1][i],vb);
-	fprintf(fkink," %6g",RAD2DEG*acos(cos_angle_no_table(va,vb)));
+	unitv_no_table(va,va);
+	unitv_no_table(vb,vb);
+	fprintf(fkink," %6g",RAD2DEG*acos(iprod(va,vb)));
+	oprod(va,vb,vc);
+	copy_rvec(bun.mid[i],vr);
+	vr[ZZ] = 0;
+	unitv_no_table(vr,vr);
+	fprintf(fkinkr," %6g",RAD2DEG*asin(iprod(vc,vr)));
+	vl[XX] = vr[YY];
+	vl[YY] = -vr[XX];
+	vl[ZZ] = 0;
+	fprintf(fkinkl," %6g",RAD2DEG*asin(iprod(vc,vl)));
       }
     }
     fprintf(flen,"\n");
@@ -313,8 +336,11 @@ int main(int argc,char *argv[])
     fprintf(ftilt,"\n");
     fprintf(ftiltr,"\n");
     fprintf(ftiltl,"\n");
-    if (bKink)
+    if (bKink) {
       fprintf(fkink,"\n");
+      fprintf(fkinkr,"\n");
+      fprintf(fkinkl,"\n");
+    }
     if (fpdb >= 0)
       dump_axes(fpdb,&fr,&outatoms,&bun);
   } while(read_next_frame(status,&fr));
@@ -328,8 +354,11 @@ int main(int argc,char *argv[])
   fclose(ftilt);
   fclose(ftiltr);
   fclose(ftiltl);
-  if (bKink)
+  if (bKink) {
     fclose(fkink);
+    fclose(fkinkr);
+    fclose(fkinkl);
+  }
   
   thanx(stderr);
   
