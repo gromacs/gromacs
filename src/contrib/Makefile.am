@@ -2,6 +2,8 @@
 #
 # Don't edit - this file is generated automatically from Makefile.am
 #
+SUBDIRS = scripts
+
 include $(srcdir)/../Makefile.inc
 
 # This is necessary for VPATH to work, 
@@ -17,9 +19,8 @@ LDADD = -lmdXXX_SUFFIX_XXX -lgmxXXX_SUFFIX_XXX
 # issue "make <program>" and copy the binary to the correct location yourself! 
 # Add new entries in Makefile.am!
 
-EXTRA_PROGRAMS 		= xmdrun sigeps mk6_n copyrgt mkyaw prfn eanal hrefify mkice \
-                          total hexamer optwat addquote do_shift g_anavel my_dssp anaf \
-                          listquotes
+EXTRA_PROGRAMS 		= xmdrun sigeps mk6_n copyrgt mkyaw prfn hrefify mkice \
+                          total hexamer optwat addquote do_shift g_anavel my_dssp anaf 
 
 xmdrun_SOURCES  	= xmdrun.c do_gct.c init_sh.c gctio.c glaasje.c ionize.c relax_sh.c
 
@@ -52,10 +53,6 @@ prfn_SOURCES 		= prfn.c
 g_anavel_SOURCES 	= g_anavel.c
 
 addquote_SOURCES 	= addquote.c
-
-listquotes_SOURCES 	= listquotes.c
-
-eanal_SOURCES 		= eanal.o 
 
 # clean things explicitly, since the target names might have changed
 CLEANFILES   = 	${bin_PROGRAMS}	${EXTRA_PROGRAMS}	\

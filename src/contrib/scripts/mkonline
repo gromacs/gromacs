@@ -1,9 +1,13 @@
 #!/bin/csh -f
 
-if ( $#argv >= 1 ) set GMXHOME = $1
-if ( $#argv >= 2 ) set GMXCPU = $2
+if ( $#argv < 1 ) then
+  echo "Error: provide the binary directory as first argument."
+  exit
+endif
 
-set VER		= 2.0
+set GMXBINDIR = $1
+
+set VER		= 3.0
 set MANDIR	= online
 set HTML	= $GMXHOME/html
 set HTMLOL	= $HTML/$MANDIR

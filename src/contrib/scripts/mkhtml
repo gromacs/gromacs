@@ -1,10 +1,25 @@
 #!/bin/csh -f
 
+#
+# This script creates the html manual pages in
+# the html subdirectory below the current working
+# directory.
+#
+
 echo "Generating html manual for GROMACS programs"
 echo "-------------------------------------------"
 
-setenv VER 	2.0
-setenv HTML	$GMXHOME/html
+if ( $#argv < 1 ) then
+  echo "Error: provide the binary directory as first argument."
+  exit
+endif
+
+set GMXBINDIR = $1
+
+set 	dir = $cwd
+
+setenv VER 	3.0
+setenv HTML     $cwd/html
 if ( ! -d $HTML ) mkdir $HTML
 setenv MANDIR   online
 setenv HTMLOL   $HTML/$MANDIR
@@ -15,7 +30,7 @@ if ( -f $INDEX ) \rm $INDEX
 cat > $INDEX << EOD
 <HTML>
 <TITLE>GROMACS $VER Manual </TITLE>
-<BODY>
+<BODY text="#000000" bgcolor="#FFFFFF">
 <H1>GROMACS $VER manual</H1>
 <TABLE BORDER=0 CELLSPACING=0 CELLPADDING=10>
 <TR>
@@ -30,8 +45,6 @@ cat > $INDEX << EOD
 <br><A HREF="$MANDIR/files.html" >File formats</a>
 <br>
 <br><A HREF="$MANDIR/mdp_opt.html" >mdp options</a>
-<br>
-<br><A HREF="$MANDIR/count.html" >Top of the pops</a>
 </TD>
 <TD VALIGN=top WIDTH="75%">
 <h3>Programs</h3>
@@ -40,17 +53,20 @@ cat > $INDEX << EOD
 <br>
 EOD
 
-cd 	$GMXHOME/bin/$GMXCPU
-foreach i ( * )
-  if ( ( -x $i ) && ( $i != "my_dssp" ) && ( $i != "luck" ) ) then
-    echo -n "$i "
+
+cd $GMXBINDIR
+set PROGRAMS = [a-z]*
+cd $dir
+
+foreach program ( $PROGRAMS )
+  if ( ( -x $GMXBINDIR/$program ) && ( $program != "my_dssp" ) && ( $program != "luck" ) ) then
+    echo -n "$program "
     cd $HTMLOL
-    $GMXHOME/bin/$GMXCPU/$i -quiet -man html >& /dev/null
+    $GMXBINDIR/$program -quiet -man html >& /dev/null
       cat >> $INDEX << EOK
-<br><a href="$MANDIR/$i.html">$i</a>
+<br><a href="$MANDIR/$program.html">$program</a>
 EOK
     endif
-    cd 	$GMXHOME/bin/$GMXCPU
   endif
 end
 

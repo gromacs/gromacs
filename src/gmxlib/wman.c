@@ -449,7 +449,8 @@ static void write_htmlman(FILE *out,
 #define NSR(s) check_html(s,program)
   
   fprintf(out,"<TITLE>%s</TITLE>\n",program);
-  fprintf(out,"<BODY>\n");
+  fprintf(out,"<LINK rel=stylesheet href=\"style.css\" type=\"text/css\">");
+  fprintf(out,"<BODY text=\"#000000\" bgcolor=\"#FFFFFF\" link=\"#0000EF\" vlink=\"#006500\" alink=\"#FF0000\">\n");
   fprintf(out,"<H2>%s</H2>\n",program);
   fprintf(out,"<B>%s</B><BR>\n<B>%s</B><P>",GromacsVersion(),mydate());
   

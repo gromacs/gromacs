@@ -17,7 +17,7 @@ online_DATA = \
 	trr.html	dlg.html      	flow.html   	\
 	mtx.html      	tex.html      	include_top.html 	\
 	xpm.html	edi.html      	g87.html    	\
-	itp.html	ndx.html      	
+	itp.html	ndx.html      	style.css
 
 EXTRA_DIST = ${online_DATA}
 

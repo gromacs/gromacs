@@ -7,7 +7,7 @@ AUTOMAKE_OPTIONS = foreign
 #
 # The real work is done in our subdirs - automake iterates through these
 #
-SUBDIRS = src top html tutor
+SUBDIRS = src top html tutor man
 
 #
 # Most files in the config subdir is included automatically when

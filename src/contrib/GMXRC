@@ -1,0 +1,63 @@
+# This is a template to create a GMXRC file for your site, 
+# to make GROMACS 3.0 behave like previous versions.
+# You can put it either in the central GROMACS directory,
+# or in your own homedirectory.
+#
+# It still requires a C shell environment, and you will
+# probably need to change the next few lines to fit
+# your installation:
+
+# First we remove previous GROMACS environment if present.
+source /usr/local/gromacs/NOGMX -quiet
+
+# Set the GROMACS home directory
+setenv GMXHOME	/usr/local/gromacs
+
+# If you support multiple machines then it's useful to 
+# have a switch statement here, which, depending on hostname
+# point to the proper directories, and sets the GMXCPU variable
+# 
+# For easy updating, it is also recommended to put you local
+# stuff in the GMXRC.local file
+# Don't forget the GMXARCH variable
+#
+setenv	LOCAL_RC	$GMXHOME/GMXRC.local
+if ( -f $LOCAL_RC ) then
+	source	$LOCAL_RC
+else
+# Here are some defaults, if you have one machine, edit these
+	setenv	GMXARCH i686-pc-linux-gnu
+endif
+
+# Some directories that live below the root
+setenv GMXBIN 	$GMXHOME/bin/$GMXARCH
+setenv GMXLIB	$GMXHOME/top
+
+# 
+# Default Graphics Font
+#
+setenv GMXFONT	10x20
+
+#
+# Set the path #
+setenv 	PATH 	"$PATH":"$GMXBIN"
+#
+
+if ( $?LD_LIBRARY_PATH ) then
+	 setenv LD_LIBRARY_PATH	"$LD_LIBRARY_PATH":$GMXHOME/lib/$GMXARCH
+else
+	 setenv LD_LIBRARY_PATH	$GMXHOME/lib/$GMXARCH
+endif
+if ( $?MANPATH ) then
+	setenv 	MANPATH		"$MANPATH":$GMXHOME/man
+else
+	setenv  MANPATH         /usr/man:$GMXHOME/man  
+endif
+
+# Now finally, if you consider our Cool Quotes to be offensive
+# you might considering including this command:
+# setenv	IAMCOOL	NO
+
+if ( -f $GMXHOME/complete ) source $GMXHOME/complete
+
+# end of script

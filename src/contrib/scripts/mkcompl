@@ -1,17 +1,24 @@
 #!/bin/csh -f
 
-set out = $GMXHOME/complete
+if ( $#argv < 1 ) then
+  echo "Error: provide the binary directory as first argument."
+  exit
+endif
+
+set GMXBINDIR = $1
+
+set out = complete
 set dir = $cwd
 
 echo Generating tcsh completions
 
 if ( -f $out) then
-  cd $GMXHOME
   mv complete \#complete\#
 endif
+
 touch $out
 
-cd $GMXHOME/bin/$GMXCPU 
+cd $GMXBINDIR
 set PROGRAMS = [a-z]*
 cd $dir
 
@@ -19,7 +26,7 @@ echo "if ( "'$shell'" == /bin/tcsh ) then" >> $out
 
 foreach program ( $PROGRAMS )
   if ( ( $program != "average" ) && ( $program != "luck" ) && ( $program != mdrun ) && ( $program != nmrun ) && ( $program != xmdrun )) then
-    $GMXHOME/bin/$GMXCPU/$program -man completion >& /dev/null
+    $GMXBINDIR/$program -man completion >& /dev/null
     cat $program.completion >> $out
     \rm $program.completion
   endif

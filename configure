@@ -6926,6 +6926,7 @@ trap 'rm -fr `echo "Makefile
 		 src/include/Makefile
 		 src/include/types/Makefile
                  src/contrib/Makefile
+                 src/contrib/scripts/Makefile
 		 tutor/Makefile
 		 tutor/gmxdemo/Makefile
 		 tutor/nmr1/Makefile
@@ -6937,7 +6938,8 @@ trap 'rm -fr `echo "Makefile
 		 top/Makefile
 		 html/Makefile
                  html/gif/Makefile
-                 html/online/Makefile src/include/config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
+                 html/online/Makefile
+                 man/Makefile src/include/config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
 EOF
 cat >> $CONFIG_STATUS <<EOF
 
@@ -7081,6 +7083,7 @@ CONFIG_FILES=\${CONFIG_FILES-"Makefile
 		 src/include/Makefile
 		 src/include/types/Makefile
                  src/contrib/Makefile
+                 src/contrib/scripts/Makefile
 		 tutor/Makefile
 		 tutor/gmxdemo/Makefile
 		 tutor/nmr1/Makefile
@@ -7092,7 +7095,8 @@ CONFIG_FILES=\${CONFIG_FILES-"Makefile
 		 top/Makefile
 		 html/Makefile
                  html/gif/Makefile
-                 html/online/Makefile"}
+                 html/online/Makefile
+                 man/Makefile"}
 EOF
 cat >> $CONFIG_STATUS <<\EOF
 for ac_file in .. $CONFIG_FILES; do if test "x$ac_file" != x..; then
@@ -7360,3 +7364,7 @@ echo "Hide table lookup latency     : $enable_hide_table_latency"
 echo "Using X11                     : $use_x11"
 echo "Motif support                 : $use_motif"
 echo ""
+echo "GROMACS will be installed under $prefix"
+echo "Make sure to update your PATH and MANPATH to find the"
+echo "programs and unix manual pages."
+
