@@ -34,37 +34,6 @@ add_par.o: add_par.c $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/pdbio.h \
  $(GMXHOME)/src/include/symtab.h \
  $(GMXHOME)/src/include/string2.h
-calcgrid.o: calcgrid.c $(GMXHOME)/src/include/typedefs.h \
- $(GMXHOME)/src/include/sysstuff.h \
- $(GMXHOME)/src/include/types/simple.h \
- $(GMXHOME)/src/include/types/enums.h \
- $(GMXHOME)/src/include/types/block.h \
- $(GMXHOME)/src/include/types/symtab.h \
- $(GMXHOME)/src/include/types/idef.h \
- $(GMXHOME)/src/include/types/atoms.h \
- $(GMXHOME)/src/include/types/trx.h \
- $(GMXHOME)/src/include/types/topology.h \
- $(GMXHOME)/src/include/types/energy.h \
- $(GMXHOME)/src/include/types/inputrec.h \
- $(GMXHOME)/src/include/types/nsborder.h \
- $(GMXHOME)/src/include/types/ishift.h \
- $(GMXHOME)/src/include/types/graph.h \
- $(GMXHOME)/src/include/fatal.h \
- $(GMXHOME)/src/include/types/nrnb.h \
- $(GMXHOME)/src/include/types/nblist.h \
- $(GMXHOME)/src/include/types/nsgrid.h \
- $(GMXHOME)/src/include/types/commrec.h \
- $(GMXHOME)/src/include/types/forcerec.h \
- $(GMXHOME)/src/include/types/mdatom.h \
- $(GMXHOME)/src/include/types/ifunc.h \
- $(GMXHOME)/src/include/types/filenm.h \
- $(GMXHOME)/src/include/types/group.h \
- $(GMXHOME)/src/include/types/drblock.h \
- $(GMXHOME)/src/include/types/parm.h \
- $(GMXHOME)/src/include/types/matrix.h \
- $(GMXHOME)/src/include/types/edsams.h \
- $(GMXHOME)/src/include/types/pulls.h \
- $(GMXHOME)/src/include/smalloc.h calcgrid.h
 convparm.o: convparm.c $(GMXHOME)/src/include/sysstuff.h \
  $(GMXHOME)/src/include/physics.h \
  $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
@@ -419,8 +388,7 @@ grompp.o: grompp.c $(GMXHOME)/src/include/smalloc.h \
  $(GMXHOME)/src/include/gmxfio.h \
  $(GMXHOME)/src/include/xdrf.h \
  $(GMXHOME)/src/include/trnio.h \
- $(GMXHOME)/src/include/tpxio.h dum_parm.h \
- $(GMXHOME)/src/include/txtdump.h calcgrid.h
+ $(GMXHOME)/src/include/tpxio.h dum_parm.h 
 h_db.o: h_db.c $(GMXHOME)/src/include/string2.h \
  $(GMXHOME)/src/include/typedefs.h \
  $(GMXHOME)/src/include/sysstuff.h \
