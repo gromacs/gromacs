@@ -431,7 +431,7 @@ extern real do_lmfit(int ndata,real c1[],real sig[],real dt,
  * into the original data array 
  */
 
-extern real integrate(FILE *fp,int n,real dt,real c[]);
+extern real print_and_integrate(FILE *fp,int n,real dt,real c[]);
 /* Integrate the data in c[] from 0 to n using trapezium rule.
  * If fp != NULL output is written to it
  */

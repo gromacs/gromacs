@@ -92,7 +92,7 @@ real numerical_deriv(int nx,real x[],real y[],real fity[],real dy[],
   }
   
   tmpfp = ffopen("integral_smth.xvg","w");
-  integralSmth=integrate(tmpfp,nx,x[1]-x[0],tmp);
+  integralSmth=print_and_integrate(tmpfp,nx,x[1]-x[0],tmp);
   fprintf(stderr,"SMOOTH integral = %10.5e\n",integralSmth);
 
   dy[0] = (tmp[1]-tmp[0])/(x[1]-x[0]);
@@ -282,8 +282,8 @@ int main(int argc,char *argv[])
     snew(y[3],nx);
     snew(y[4],nx);
   } 
-  integral = integrate(NULL,calc_nbegin(nx,y[0],tbegin),
-			y[0][1]-y[0][0],y[1]);
+  integral = print_and_integrate(NULL,calc_nbegin(nx,y[0],tbegin),
+				 y[0][1]-y[0][0],y[1]);
   integral += do_lmfit(nx,y[1],y[2],y[0][1]-y[0][0],tbegin,tend,
 			"Dipje1","DipTitle",TRUE,nfitparm,y[3],fitparms,fix);
   lambda = (eps0 - 1.0)/(2*epsRF - 1.0);
