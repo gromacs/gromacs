@@ -44,14 +44,14 @@ static char *SRCID_g_analyze_c = "$Id$";
 #include "gstat.h"
 #include "xvgr.h"
 
-real **read_val(char *fn,bool bHaveT,int nsets_in,
-		int *nset,int *nval,real *t0,real *dt)
+static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
+		       int nsets_in,int *nset,int *nval,real *t0,real *dt)
 {
   FILE   *fp;
-  char   line0[4096],*line,*format;
+  char   line0[4096],*line;
   int    a,narg,n,sin,set,nchar;
   double dbl,tend;
-  bool   bEndOfSet;
+  bool   bEndOfSet,bTimeInRange;
   real   **val;
 
   val = NULL;
@@ -68,8 +68,11 @@ real **read_val(char *fn,bool bHaveT,int nsets_in,
       bEndOfSet = (line[0] == '&');
       if ((line[0] != '#') && (line[0] != '@') && !bEndOfSet) {
 	a = 0;
-	while (((a<narg) || ((nsets_in==1) && (n==0))) && 
-	       (line[0] != '\n') && sscanf(line,"%lf%n",&dbl,&nchar)) {
+	bTimeInRange = TRUE;
+	while ((a<narg || (nsets_in==1 && n==0)) && 
+	       line[0]!='\n' && sscanf(line,"%lf%n",&dbl,&nchar)
+	       && bTimeInRange) {
+	  /* Use set=-1 as the time "set" */
 	  if (sin) {
 	    if (!bHaveT || (a>0))
 	      set = sin;
@@ -81,30 +84,37 @@ real **read_val(char *fn,bool bHaveT,int nsets_in,
 	    else
 	      set = a-1;
 	  }
-	  if (n==0) {
-	    if (nsets_in == 1)
-	      narg++;
-	    if (set == -1)
-	      *t0 = dbl;
-	    else {
-	      *nset = set+1;
-	      srenew(val,*nset);
-	      val[set] = NULL;
+	  if (set==-1 && ((bTB && dbl<tb) || (bTE && dbl>te)))
+	    bTimeInRange = FALSE;
+	    
+	  if (bTimeInRange) {
+	    if (n==0) {
+	      if (nsets_in == 1)
+		narg++;
+	      if (set == -1)
+		*t0 = dbl;
+	      else {
+		*nset = set+1;
+		srenew(val,*nset);
+		val[set] = NULL;
+	      }
 	    }
-	  }
-	  if (set == -1)
-	    tend = dbl;
-	  else {
-	    if (n % 100 == 0)
+	    if (set == -1)
+	      tend = dbl;
+	    else {
+	      if (n % 100 == 0)
 	      srenew(val[set],n+100);
-	    val[set][n] = (real)dbl;
+	      val[set][n] = (real)dbl;
+	    }
 	  }
 	  a++;
 	  line += nchar;
 	}
-	n++;
-	if (a != narg)
-	  fprintf(stderr,"Invalid line in %s: '%s'\n",fn,line0);
+	if (bTimeInRange) {
+	  n++;
+	  if (a != narg)
+	    fprintf(stderr,"Invalid line in %s: '%s'\n",fn,line0);
+	}
       }
     }
     if (sin==0) {
@@ -169,8 +179,8 @@ int real_comp(const void *a,const void *b)
   return (*(real *)a < *(real *)b);
 }
 
-void average(char *avfile,char **avbar_opt,
-	     int n, int nset,real **val,real t0,real dt)
+static void average(char *avfile,char **avbar_opt,
+		    int n, int nset,real **val,real t0,real dt)
 {
   FILE   *fp;
   int    i,s,edge;
@@ -224,8 +234,8 @@ void average(char *avfile,char **avbar_opt,
     sfree(tmp);
 }
 
-void estimate_error(char *eefile,int resol,int n,int nset,
-		    double *av,real **val,real dt)
+static void estimate_error(char *eefile,int resol,int n,int nset,
+			   double *av,real **val,real dt)
 {
   FILE *fp;
   int log2max,rlog2,bs,prev_bs,nb;
@@ -308,7 +318,7 @@ int main(int argc,char *argv[])
     "For a good error estimate the block size should be at least as large",
     "as the correlation time, but possibly much larger.[PAR]"
   };
-  static real frac=0.5,binwidth=0.1;
+  static real tb=-1,te=-1,frac=0.5,binwidth=0.1;
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=FALSE,bAverCorr=FALSE;
   static int  nsets_in=1,d=1,resol=8;
 
@@ -317,6 +327,10 @@ int main(int argc,char *argv[])
   t_pargs pa[] = {
     { "-time", FALSE, etBOOL, {&bHaveT},
       "Expect a time in the input" },
+    { "-b", FALSE, etREAL, {&tb},
+      "First time to read from set" },
+    { "-e", FALSE, etREAL, {&te},
+      "Last time to read from set" },
     { "-n", FALSE, etINT, {&nsets_in},
       "Read # sets seperated by &" },
     { "-d", FALSE, etBOOL, {&bDer},
@@ -373,10 +387,13 @@ int main(int argc,char *argv[])
     exit(0);
   }
 
-  val=read_val(opt2fn("-f",NFILE,fnm),bHaveT,nsets_in,&nset,&n,&t0,&dt);
-  fprintf(stdout,"Read %d sets of %d points, dt = %g\n",nset,n,dt);
+  val=read_val(opt2fn("-f",NFILE,fnm),bHaveT,
+	       opt2parg_bSet("-b",npargs,ppa),tb,
+	       opt2parg_bSet("-e",npargs,ppa),te,
+	       nsets_in,&nset,&n,&t0,&dt);
+  fprintf(stdout,"Read %d sets of %d points, dt = %g\n\n",nset,n,dt);
   if (bDer) {
-    fprintf(stdout,"Calculating the derivative as (f[i+%d]-f[i])/(%d*dt)\n",
+    fprintf(stdout,"Calculating the derivative as (f[i+%d]-f[i])/(%d*dt)\n\n",
 	    d,d);
     n -= d;
     for(s=0; s<nset; s++)
@@ -391,6 +408,7 @@ int main(int argc,char *argv[])
     av[s] /= n;
     fprintf(stdout,"Average of set %d: %g\n",s+1,av[s]); 
   }
+  fprintf(stdout,"\n");
 
   if (msdfile) {
     out=xvgropen(msdfile,"Mean square displacement",
@@ -435,6 +453,8 @@ int main(int argc,char *argv[])
 		eacNormal,bAverCorr);
     xvgr_file(acfile, NULL);
   }
+
+  thanx(stderr);
 
   return 0;
 }
