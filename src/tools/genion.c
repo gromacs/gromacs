@@ -298,7 +298,8 @@ int main(int argc, char *argv[])
       fprintf(stderr,"No ions to add and no potential to calculate.\n");
       exit(0);
     }
-    nw = 0;
+    nw  = 0;
+    nsa = 0; /* too keep gcc happy */
   } else {
     printf("Select a continuous group of solvent molecules\n");
     get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&nwa,&index,&grpname);
