@@ -98,14 +98,6 @@ static void pr_commrec(FILE *log,t_commrec *cr)
 	  cr->pid,cr->nprocs,cr->left,cr->right);
 }
 
-static void sum_forces(int start,int end,rvec f[],rvec flr[])
-{
-  int i;
-  
-  for(i=start; (i<end); i++)
-    rvec_inc(f[i],flr[i]);
-}
-
 static void reset_forces(bool bNS,rvec f[],t_forcerec *fr,int natoms)
 {
   int i;
@@ -225,9 +217,6 @@ void do_force(FILE *log,t_commrec *cr,
 #endif
 
   if (fr->eeltype != eelPPPM) {
-    /* This summing need actually not be done for all coordinates... */
-    if (fr->bTwinRange)
-      sum_forces(0,nsb->natoms,f,fr->flr);
     if (PAR(cr)) 
       move_f(log,cr->left,cr->right,f,buf,nsb,nrnb);
   
