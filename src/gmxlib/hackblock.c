@@ -134,7 +134,7 @@ void clear_t_hack(t_hack *hack)
     hack->newx[i] = NOTSET;
 }
 
-#define safe_strdup(str) (str) ? strdup(str) : NULL
+#define safe_strdup(str) ((str != NULL) ? strdup(str) : NULL)
 
 static void copy_t_rbonded(t_rbonded *s, t_rbonded *d)
 {
