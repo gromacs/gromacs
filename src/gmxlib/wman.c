@@ -202,9 +202,9 @@ char *fileopt(ulong flag)
   else
     strcpy(buf,"Dunno");
   if ((flag & ffOPT) == ffOPT)
-    strcat(buf,", Optional");
+    strcat(buf,", Opt.");
   if ((flag & ffLIB) == ffLIB)
-    strcat(buf,", Library");
+    strcat(buf,", Lib.");
     
   return buf;
 }
