@@ -156,4 +156,4 @@ fitter:		fitter.o
 mgmxtest:	mgmxtest.o
 		$(LD) -o $@ $^  $(SYSLIBS) 
 
-#include	Make.dep
+include	Make.dep

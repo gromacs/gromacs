@@ -64,8 +64,18 @@ endif
 
 GMXINS	= \$$\(GMXHOME\)
 dep:
-	$(MKDEP) -I. -I$(GMXHOME)/src/include  *.c  |  sed  s~$(GMXHOME)~$(GMXINS)~ > Make.dep
-	
+	$(RM) sedscr Make.dep
+ifeq ($(OBJ),)
+		touch sedscr
+else
+	( $(foreach OB,$(OBJ),echo s~^$(OB):~\$$\(LIB\)\($(OB)\):~ ; ) ) > sedscr 
+endif
+	$(MKDEP) -I. -I$(GMXHOME)/src/include  *.c  |  sed  s~$(GMXHOME)~$(GMXINS)~ | grep GMXHOME | sed -f sedscr > Make.dep
+	$(RM) sedscr
+
+Make.dep:
+	touch Make.dep
+
 clean:
 		$(RM) $(EXECUTABLES) *.o *.l *~ *.bak \#*\# 
 
@@ -95,4 +105,12 @@ clean:
 
 .c.s:
 		$(CC) $(C-FLAGS) -s $<
+
+:		
+		$(LD) -o $@ $^ $(SYSLIBS)
+
+
+
+
+
 
