@@ -382,8 +382,7 @@ int main (int argc,char *argv[])
     snew(ind_bond2,ncons);
     ibond=0;
     for(k=0; k<F_NRE; k++)
-      if (interaction_function[k].nratoms==2 && 
-	  interaction_function[k].flags & IF_CONNECT) {
+      if (IS_CHEMBOND(k)) {
 	iatom = top.idef.il[k].iatoms;
 	ncons = top.idef.il[k].nr/3;
 	for (i=0; i<ncons; i++) {
