@@ -53,9 +53,10 @@ dist_bin_SCRIPTS = \
 
 genbox_SOURCES       = 	genbox.c addconf.c addconf.h
 genion_SOURCES       = 	genion.c calcpot.c calcpot.h edittop.c
-cdist_SOURCES        =  cdist.c smooth.c bondlist.c residues.c 
-disco_SOURCES        =  disco.c correct.c discopar.c dtools.c 
+cdist_SOURCES        =  cdist.c smooth.c bondlist.c residues.c cdist.h
+disco_SOURCES        =  disco.c correct.c discopar.c dtools.c disco.h
 anadock_SOURCES	     =  anadock.c  
+gmx_ana_SOURCES      =  gmx-ana.c gmx-ana.h
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 	../gmxlib/libgmx@LIBSUFFIX@.la

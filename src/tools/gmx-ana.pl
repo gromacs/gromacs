@@ -46,7 +46,7 @@ foreach $p ( @ARGV ) {
 	@kkk = split ("g_",$p);
 	$ppp = "gmx_" . $kkk[1];
 	    
-	open(PPP,">$p") || die ("Can not open $p for writing");
+	open(PPP,">../../scripts/$p") || die ("Can not open $p for writing");
 	print PPP "#!/bin/sh\n";
 	print PPP "# Select which mode of gmx-ana to use in this script\n";
 	print PPP "type=$kkk[1]\n";
@@ -67,7 +67,7 @@ foreach $p ( @ARGV ) {
 	chmod(0755,$oldprog);
 
 	# Dos batch file (actually, WINNT and later...)
-	open(BAT,">${p}.bat") || die ("Can not open $p for writing");
+	open(BAT,">../../scripts/${p}.bat") || die ("Can not open $p for writing");
 	print BAT "\@echo off\n";
 	print BAT "set DIRNAME=%~dp0%\n";
 	print BAT "REM BAT files only see args 1-9. We use shift to get all.\n";
