@@ -61,7 +61,7 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
   static bool bFirst=TRUE;
   static rvec PPP;
   int    n,d,m,g,ncoupl=0;
-  real   scalar_pressure;
+  real   scalar_pressure, xy_pressure;
   real   X,Y,Z,dx,dy,dz;
   rvec   factor;
   tensor mu;
@@ -79,9 +79,12 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
     bFirst=FALSE;
   }
   scalar_pressure=0;
+  xy_pressure=0;
   for(m=0; (m<DIM); m++) {
     PPP[m]           = run_aver(PPP[m],pres[m][m],step,ir->npcmemory);
-    scalar_pressure += PPP[m]/3.0;
+    scalar_pressure += PPP[m]/DIM;
+    if (m != ZZ)
+      xy_pressure += PPP[m]/(DIM-1);
   }
   
   /* Pressure is now in bar, everywhere. To use it for pressure coupling we 
@@ -94,12 +97,16 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
     switch (ir->epc) {
     case epcISOTROPIC:
       for(m=0; (m<DIM); m++)
-	mu[m][m] = 
-	  pow(1.0-factor[m]*(ir->ref_p[m]-scalar_pressure),1.0/3.0);
+	mu[m][m] = pow(1.0-factor[m]*(ir->ref_p[m]-scalar_pressure),1.0/DIM);
+      break;
+    case epcSEMIISOTROPIC:
+      for(m=0; (m<ZZ); m++)
+	mu[m][m] = pow(1.0-factor[m]*(ir->ref_p[m]-xy_pressure),1.0/DIM);
+      mu[ZZ][ZZ] = pow(1.0-factor[ZZ]*(ir->ref_p[ZZ] - PPP[ZZ]),1.0/DIM);
       break;
     case epcANISOTROPIC:
       for (m=0; (m<DIM); m++)
-	mu[m][m] = pow(1.0-factor[m]*(ir->ref_p[m] - PPP[m]),1.0/3.0);
+	mu[m][m] = pow(1.0-factor[m]*(ir->ref_p[m] - PPP[m]),1.0/DIM);
       break;
     case epcTRICLINIC:
     default:

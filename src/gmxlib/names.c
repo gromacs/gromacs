@@ -81,7 +81,7 @@ char *egrp_nm[egNR+1] = {
 };
 
 char *epcoupl_names[epcNR+1] = {
-  "No", "Isotropic", "Anisotropic", "Triclinic", NULL
+  "No", "Isotropic", "Semiisotropic", "Anisotropic", "Triclinic", NULL
 };
 
 char *edisre_names[edrNR+1] = {
