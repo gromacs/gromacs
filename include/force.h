@@ -118,7 +118,9 @@ extern void force(FILE *log,
 		  t_graph      *graph,
 		  t_block      *excl,
 		  bool         bNBonly,
-		  matrix       lr_vir);
+		  matrix       lr_vir,
+		  rvec         mu_tot,
+		  real         qsum);
 /* Call all the force routines */
 
 /* Routine from fnbf.m4 */

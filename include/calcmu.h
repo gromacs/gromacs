@@ -35,7 +35,8 @@ static char *SRCID_calcmu_h = "$Id$";
 #include "typedefs.h"
 #include "network.h"
 
-extern void calc_mu(t_nsborder *nsb,rvec x[],real q[],rvec mu);
+extern void calc_mu_and_q(t_nsborder *nsb,rvec x[],real q[],rvec
+			  mu,real *qsum);
 
 extern bool read_mu(FILE *fp,rvec mu,real *vol);
 /* Return true on succes */

@@ -72,6 +72,7 @@ typedef struct {
   int  pme_order;       /* interpolation order for PME                  */
   real ewald_rtol;      /* Real space tolerance for Ewald, determines   */
                         /* the real/reciprocal space relative weight    */
+  bool surface_dipole;  /* Apply surface dipole correction to Ewald sum */
   bool bOptFFT;         /* optimize the fft plan at start               */
   int  ePBC;		/* Type of periodic boundary conditions		*/
   bool bUncStart;       /* Do not constrain the start configuration	*/
