@@ -59,7 +59,7 @@
 #include "pbc.h"
 #include "viewit.h"
 
-static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],atom_id index[],
+static void calc_pbc_cluster(int nrefat,t_topology *top,rvec x[],atom_id index[],
 			 rvec xref,matrix box)
 {
   const real tol=1e-4;
@@ -125,6 +125,48 @@ static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],atom_id index[],
 	       xref[XX],xref[YY],xref[ZZ],iter);
       iter++;
     } while (bChanged);
+  }
+}
+
+static void calc_pbc_com(t_atom atom[],int natoms,matrix box,rvec x[])
+{
+  atom_id i, j, res_start, res_end, res_nat;
+  int     m, presnr;
+  rvec    com, shift;
+  
+  presnr = NOTSET;
+  res_start = 0;
+  clear_rvec(com);
+  for(i=0; i<natoms; i++) {
+    if (presnr != atom[i].resnr && presnr != NOTSET) {
+      /* calculate final COM */
+      res_end = i;
+      res_nat = res_end - res_start;
+      svmul(1.0/(float)res_nat, com, com);
+      
+      /* check if COM is outside box */
+      clear_rvec(shift);
+      for(m=0; m<DIM; m++) {
+	while (com[m]+shift[m]< 0        ) shift[m]+=box[m][m];
+	while (com[m]+shift[m]>=box[m][m]) shift[m]-=box[m][m];
+      }
+      clear_rvec(com);
+      if (norm2(shift)) {
+	if (debug)
+	  fprintf (debug,"\nShifting position of residue %d (atoms %u-%u) "
+		   "by %g,%g,%g\n", atom[res_start].resnr+1, 
+		   res_start+1, res_end+1, PR_VEC(shift));
+	for(j=res_start; j<res_end; j++)
+	  rvec_inc(x[j],shift);
+      }
+      
+      /* remember start of new residue */
+      res_start = i;
+    }
+    /* calc COM */
+    rvec_inc(com, x[i]);
+    
+    presnr = atom[i].resnr;
   }
 }
 
@@ -279,7 +321,9 @@ int main(int argc,char *argv[])
     "Option [TT]-pbc[tt] sets the type of periodic boundary condition",
     "treatment. [TT]whole[tt] puts the atoms in the box and then makes",
     "broken molecules whole (a run input file is required).",
-    "[TT]inbox[tt] puts all the atoms in the box.",
+    "[TT]com[tt] does the same as [TT]whole[tt], but keeps the center of",
+    "mass of all [IT]residues[tt] in the box, in stead of atom # 1 of each",
+    "molecule. [TT]inbox[tt] puts all the atoms in the box.",
     "[TT]nojump[tt] checks if atoms jump across the box and then puts",
     "them back. This has the effect that all molecules",
     "will remain whole (provided they were whole in the initial",
@@ -321,9 +365,12 @@ int main(int argc,char *argv[])
     "one specific time from your trajectory."
   };
   
-  static char *pbc_opt[] = { NULL, "none", "whole", "inbox", "nojump", "cluster", NULL };
-  static char *unitcell_opt[] = { NULL, "rect", "tric", "compact",
-				  NULL };
+  static char *pbc_opt[] = { 
+    NULL, "none", "whole", "inbox", "nojump", "cluster", "com", NULL 
+  };
+  static char *unitcell_opt[] = { 
+    NULL, "rect", "tric", "compact", NULL 
+  };
 
   static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE;
   static bool  bCenter=FALSE,bFit=FALSE,bPFit=FALSE,bTer=FALSE;
@@ -376,7 +423,7 @@ int main(int argc,char *argv[])
       "Start writing new file when t MOD split = first time (%t)" },
     { "-sep", FALSE,  etBOOL, {&bSeparate},
       "Write each frame to a separate .gro, .g96 or .pdb file"},
-    { "-ter", FALSE, etBOOL, {&bTer},
+    { "-ter", FALSE, etBOOL, &bTer,
       "Use 'TER' in pdb file as end of frame in stead of default 'ENDMDL'" }
   };
       
@@ -401,7 +448,7 @@ int main(int argc,char *argv[])
   atom_id      *ind_fit,*ind_rms;
   char         *gn_fit,*gn_rms;
   real         tshift=0,t0=-1,dt=0.001,prec;
-  bool         bPBC,bInBox,bNoJump,bRect,bTric,bComp,bCluster;
+  bool         bPBC,bPBCcom,bInBox,bNoJump,bRect,bTric,bComp,bCluster;
   bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
   bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSplit;
@@ -443,13 +490,14 @@ int main(int argc,char *argv[])
     bTimeStep = opt2parg_bSet("-timestep", asize(pa), pa);
     bTDump    = opt2parg_bSet("-dump", asize(pa), pa);
     bPBC      = (strcmp(pbc_opt[0],"whole") == 0);
+    bPBCcom   = (strcmp(pbc_opt[0],"com") == 0);
     bInBox    = (strcmp(pbc_opt[0],"inbox") == 0);
     bNoJump   = (strcmp(pbc_opt[0],"nojump") == 0);
     bCluster  = (strcmp(pbc_opt[0],"cluster") == 0);
     bRect     = (strcmp(unitcell_opt[0],"rect") == 0);
     bTric     = (strcmp(unitcell_opt[0],"tric") == 0);
     bComp     = (strcmp(unitcell_opt[0],"compact") == 0);
-    if (bFit && (strcmp(pbc_opt[0],"none") == 0))
+    if (bPBCcom || (bFit && (strcmp(pbc_opt[0],"none") == 0)) )
       bPBC = TRUE;
     if (bPBC && !bFit)
       bInBox = TRUE;
@@ -705,7 +753,7 @@ int main(int argc,char *argv[])
 	else if (bCluster && bTPS) {
 	  rvec com;
 	  
-	  calc_com_pbc(ifit,&top,fr.x,ind_fit,com,fr.box);
+	  calc_pbc_cluster(ifit,&top,fr.x,ind_fit,com,fr.box);
 	}
       
 	if (bPFit) {
@@ -783,6 +831,10 @@ int main(int argc,char *argv[])
 		for(i=0; i<natoms; i++)
 		  rvec_inc(fr.x[i],x_shift);
 	      }
+	    }
+	    /* put COM of molecules inside box */
+	    if (bPBCcom) {
+	      calc_pbc_com(atoms->atom, natoms, fr.box, fr.x);
 	    }
 	    /* Copy the input trxframe struct to the output trxframe struct */
 	    frout = fr;
