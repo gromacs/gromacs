@@ -727,9 +727,9 @@ int main(int argc,char *argv[])
   
   if (MASTER(cr)) {
     CopyRight(stderr,argv[0]);
-    parse_common_args(&argc,argv,PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS,TRUE,
-		      NFILE,fnm,0,NULL,asize(desc),desc,0,NULL);
-    print_pargs(stderr,asize(pa),pa);
+    parse_common_args(&argc,argv,
+		      PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_NOGET_PARGS,
+		      TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   }	      
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
   
