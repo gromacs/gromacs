@@ -27,7 +27,7 @@ void calc_pres(int eBox,matrix box,tensor ekin,tensor vir,tensor pres,real Elr)
     clear_mat(pres);
   else {
     /* Uitzoeken welke ekin hier van toepassing is, zie Evans & Morris - E. */ 
-    /* Wrs. moet de druktensor gecorrigeerd worden voor de netto stroom in  *
+    /* Wrs. moet de druktensor gecorrigeerd worden voor de netto stroom in  */
     /* het systeem...       */
     
     /* Long range correction for periodic systems, see
