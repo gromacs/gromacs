@@ -656,9 +656,10 @@ From this we can calculate the derivative in order to determine the forces:
 \frac{{\rm d}y(x)}{{\rm d}x}~=~\frac{{\rm d}y(x)}{{\rm d}\epsilon}\frac{{\rm d}\epsilon}{{\rm d}x}~=~(F_i + 2\epsilon G_i + 3\epsilon^2 H_i)/h
 \eeq
 If we store in the table $y_i$, $F_i$, $G_i$ and $H_i$ we need 
-a table of length 4n. The number of points per nanometer should be on the
-order of 500 to 1000, for accurate representation (relative 
-error $<$ 10$^{-4}$ when n = 500 points/nm). The force routines get a 
+a table of length 4n. The number of points per nanometer is 500 and 2000
+for single and double precision compiled versions of {\gromacs}, respectively.
+The relative error is less then $10^{-4}$ when n = 500 points/nm.
+The force routines get a 
 scaling factor $s$ as a parameter that is equal to the number of points per
 nm. (Note that $h$ is $s^{-1}$).
 
@@ -713,15 +714,18 @@ rvdw            = 1.0
 \end{verbatim}
 the MD program will read a single file (the name can be changed with
 option {\tt -table}) with seven columns of table lookup data in the
-order: x, f(x), f''(x), g(x), g''(x), h(x), h''(x).  The x should run
-from 0 to r$_c$+0.5, with a spacing of 0.002 nm when you run in single
-precision, or 0.0005 when you run in double precision.  In this
-context r$_c$ denotes the maximum of the two cut-offs {\tt rvdw} and
+order: $x$, $f(x)$, $f''(x)$, $g(x)$, $g''(x)$, $h(x)$, $h''(x)$.
+ The $x$ should run from 0 to $r_c+1$ (the value table extension can be
+changed in the {\tt mdp} file).
+You can choose the spacing you like; for the standard tables {\gromacs}
+using a spacing of 0.002 and 0.0005 nm when you run in single
+and double precision, respectively.  In this
+context $r_c$ denotes the maximum of the two cut-offs {\tt rvdw} and
 {\tt rcoulomb} (see above). These variables need not be the same (and
 need not be 1.0 either).  Some functions used for potentials contain a
 singularity at x = 0, but since atoms are normally not closer to each
-other than 0.1 nm, the function value at x = 0 is not important and
-the tables can be started at e.g. 0.02 nm.  Finally, it is also
+other than 0.1 nm, the function value at x = 0 is not important.
+Finally, it is also
 possible to combine a standard Coulomb with a modified LJ potential
 (or vice versa). One then specifies e.g. coulombtype = Cut-off or
 coulombtype = PME, combined with vdwtype = User.  The table file must
