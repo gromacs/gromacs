@@ -211,23 +211,14 @@ void put_atoms_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
 		      matrix box,rvec box_size,t_block *cgs,
 		      rvec pos[],rvec shift_vec[],rvec cg_cm[])
 {
-  int  icg,ai,k,k0,k1,m;
-  real dx,dy,dz,cgx,cgy,cgz,nrcg,inv_ncg;
-  real bx,by,bz,tx,ty,tz;
-  real binv_x,binv_y,binv_z;
+  int  icg,ai,k,k0,k1,d;
+  rvec b,cg;
+  real nrcg,inv_ncg;
   atom_id *cga,*cgindex;
-  
-#define nint(x) ((x >= 0) ? ((int)(x+0.5)) : ((int)(x-0.5)))
   
 #ifdef DEBUG
   fprintf(log,"Putting cgs %d to %d in box\n",cg0,cg1);
 #endif
-  bx      = box[XX][XX];
-  by      = box[YY][YY];
-  bz      = box[ZZ][ZZ];
-  binv_x  = 1.0/bx;
-  binv_y  = 1.0/by;
-  binv_z  = 1.0/bz;
   cga     = cgs->a;
   cgindex = cgs->index;
   
@@ -238,41 +229,35 @@ void put_atoms_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
     nrcg    = k1-k0;
     inv_ncg = 1.0/nrcg;
     
-    cgx=cgy=cgz=0;
+    clear_rvec(cg);
     for(k=k0; (k<k1); k++)  {
       ai=cga[k];
-      
-      cgx += inv_ncg*pos[ai][XX];
-      cgy += inv_ncg*pos[ai][YY];
-      cgz += inv_ncg*pos[ai][ZZ];
+      for(d=0; d<DIM; d++)
+	cg[d] += inv_ncg*pos[ai][d];
     }
     /* Now check pbc for this cg */
-    tx = cgx*binv_x;
-    ty = cgy*binv_y;
-    tz = cgz*binv_z;
-    dx = -bx*floor(tx);
-    dy = -by*floor(ty);
-    dz = -bz*floor(tz);
-
-    /* We now have a shift vector for this CG 
-     * let's add it to all the atoms and to the
-     * cg_center of geometry
-     */
-    for(k=k0; (k<k1); k++) {
-      ai=cga[k];
-      
-      pos[ai][XX] += dx;
-      pos[ai][YY] += dy;
-      pos[ai][ZZ] += dz;
+    for(d=0; d<DIM; d++) {
+      if (cg[d] < 0) 
+	while(cg[d] < 0) {
+	  cg[d] += box[d][d];
+	  for(k=k0; (k<k1); k++) 
+	    pos[cga[k]][d] += box[d][d];
+	}
+      else 
+	while(cg[d] >= box[d][d]) {
+	  cg[d] -= box[d][d];
+	  for(k=k0; (k<k1); k++) 
+	    pos[cga[k]][d] -= box[d][d];
+	}
+      cg_cm[icg][d] = cg[d];
     }
-    cg_cm[icg][XX] = cgx+dx;
-    cg_cm[icg][YY] = cgy+dy;
-    cg_cm[icg][ZZ] = cgz+dz;
 #ifdef DEBUG_PBC
-    for(k=0; (k<DIM); k++) {
-      if ((cg_cm[icg][k] < 0) || (cg_cm[icg][k] >= box[k][k]))
-	fatal_error(0,"cg_cm[%d] = %8.3f  %8.3f  %8.3f",icg,cg_cm[icg][XX],
-		    cg_cm[icg][YY],cg_cm[icg][ZZ]);
+    for(d=0; (d<DIM); d++) {
+      if ((cg_cm[icg][d] < 0) || (cg_cm[icg][d] >= box[d][d]))
+	fatal_error(0,"cg_cm[%d] = %15f  %15f  %15f\n"
+		    "box = %15f  %15f  %15f\n",
+		    icg,cg_cm[icg][XX],cg_cm[icg][YY],cg_cm[icg][ZZ],
+		    box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
     }
 #endif
   }
