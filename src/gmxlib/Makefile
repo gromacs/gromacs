@@ -27,6 +27,7 @@ OBJ		= \
 		bondfree.o	buffer.o	calch.o		\
 		callf77A.o	confio.o	copyrite.o	\
 		disre.o		do_fit.o	enxio.o		\
+		ewald_util.o					\
 		fatal.o		ffscanf.o	filenm.o	\
 		futil.o		gbutil.o	genhydro.o	\
 		fnbf.o		gmxfio.o	h_db.o		\
@@ -34,7 +35,6 @@ OBJ		= \
 		ifunc.o		index.o		invblock.o	\
 		javaio.o	lutab.o		macros.o	\
 		main.o		maths.o		matio.o		\
-		shift_util.o	ewald_util.o			\
 		memdump.o	mshift.o			\
 		mvdata.o	mvxvf.o		names.o		\
 		network.o	nrama.o		nrjac.o		\
@@ -42,6 +42,7 @@ OBJ		= \
 		pdbio.o		princ.o		rando.o		\
 		random.o	rbin.o		rdgroup.o	\
 		readinp.o	replace.o	rmpbc.o		\
+		shift_util.o	sortwater.o			\
 		smalloc.o	stat.o		statutil.o	\
 		strdb.o		string2.o	symtab.o	\
 		tpxio.o		trnio.o		trxio.o		\

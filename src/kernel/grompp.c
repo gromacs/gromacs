@@ -54,6 +54,7 @@ static char *SRCID_grompp_c = "$Id$";
 #include "futil.h"
 #include "statutil.h"
 #include "splitter.h"
+#include "sortwater.h"
 #include "convparm.h"
 #include "fatal.h"
 #include "rdgroup.h"
@@ -110,7 +111,7 @@ void check_solvent(bool bVerbose,t_molinfo msys[],
   }
 }
 
-static int *shuffle_xv(char *ndx,
+static int *shuffle_xv(char *ndx,bool bSort,bool bVerbose,
 		       int ntab,int *tab,int nmol,t_molinfo *mol,
 		       int natoms,rvec *x,rvec *v,
 		       int Nsim,t_simsystem Sims[])
@@ -118,9 +119,9 @@ static int *shuffle_xv(char *ndx,
   FILE *out;
   rvec *xbuf,*vbuf;
   int  *nindex,**index,xind,*done,*forward,*backward;
-  int  i,j,j0,k,mi,nnat;
+  int  i,j,j0,k,n,mi,nnat;
 
-
+  fprintf(stderr,"Entering shuffle_xv\n");
   /* Determine order in old x array! 
    * the index array holds for each molecule type
    * a pointer to the position at which the coordinates start
@@ -161,6 +162,33 @@ static int *shuffle_xv(char *ndx,
   /* Buffers for x and v */  
   snew(xbuf,natoms);
   snew(vbuf,natoms);
+  
+  /* Sort the coordinates if necessary */
+  if (bSort) {
+    for(i=0; (i<nmol); i++) {
+      if (bVerbose)
+	fprintf(stderr,"Sorting coordinates for %5d copies of molecule %s\n",
+		nindex[i],*mol[i].name);
+      nnat = mol[i].atoms.nr;
+      /* Copy molecules into buffer arrays */
+      for(j=n=0; (j<nindex[i]); j++) {
+	for(k=0; (k<nnat); k++,n++) {
+	  copy_rvec(x[index[i][j]+k],xbuf[n]);
+	  copy_rvec(v[index[i][j]+k],vbuf[n]);
+	}
+      }
+      /* Sort the coords */
+      sortwater(0,j,nnat,xbuf,vbuf);
+      /* Copy molecules back from buffer arrays */
+      for(j=n=0; (j<nindex[i]); j++) {
+	for(k=0; (k<nnat); k++,n++) {
+	  copy_rvec(xbuf[n],x[index[i][j]+k]);
+	  copy_rvec(vbuf[n],v[index[i][j]+k]);
+	}
+      }
+    }
+  }
+  
   /* Make a forward shuffle array, i.e. the old numbers of
    * the current order: this makes a shuffled order from the
    * original.
@@ -264,7 +292,8 @@ static int check_atom_names(char *fn1, char *fn2, t_atoms *at1, t_atoms *at2,
 
 static int *new_status(char *topfile,char *topppfile,char *confin,
 		       t_gromppopts *opts,t_inputrec *ir,
-		       bool bGenVel,bool bVerbose,int *natoms,
+		       bool bGenVel,bool bVerbose,
+		       bool bSort,int *natoms,
 		       rvec **x,rvec **v,matrix box,
 		       t_atomtype *atype,t_topology *sys,
 		       t_molinfo *msys,t_params plist[],
@@ -333,7 +362,8 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
     if (ntab > 0) {
       if (bVerbose)
 	fprintf(stderr,"Shuffling coordinates...\n");
-      forward=shuffle_xv("deshuf.ndx",ntab,tab,nrmols,molinfo,
+      forward=shuffle_xv("deshuf.ndx",bSort,bVerbose,
+			 ntab,tab,nrmols,molinfo,
 			 *natoms,*x,*v,Nsim,Sims);
     }
     
@@ -657,7 +687,8 @@ int main (int argc, char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
-  static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=FALSE,bRmDumBds=TRUE;
+  static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=FALSE;
+  static bool bRmDumBds=TRUE,bSort=FALSE;
   static int  nprocs=1,maxwarn=10;
   static real fr_time=-1;
   t_pargs pa[] = {
@@ -669,6 +700,8 @@ int main (int argc, char *argv[])
       "Generate statusfile for # processors" },
     { "-shuffle", FALSE, etBOOL, {&bShuffle},
       "Shuffle molecules over processors" },
+    { "-sort",    FALSE, etBOOL, {&bSort},
+      "Sort molecules according to X coordinate" },
     { "-rmdumbds",FALSE, etBOOL, {&bRmDumBds},
       "Remove constant bonded interactions with dummies" },
     { "-maxwarn", FALSE, etINT,  {&maxwarn},
@@ -722,7 +755,9 @@ int main (int argc, char *argv[])
 	    "turning off shuffle\n");
     bShuffle=FALSE;
   }
-  
+  if (bSort && !bShuffle) 
+    warning("Can not do sorting without shuffling. Sorting turned off.");
+    
   if ( (nprocs > 1) && (ir->nstcomm < 0) ) {
     /* this check is also in md.c, if it becomes obsolete here,
        also remove it there */
@@ -731,7 +766,7 @@ int main (int argc, char *argv[])
 	    "in a parallel run (np=%d) not implemented\n",ir->nstcomm,nprocs);
     nerror++;
   }
-  
+    
   bNeedVel = (ir->eI == eiMD || ir->eI == eiSD);
   bGenVel  = (bNeedVel && opts->bGenVel);
 
@@ -745,7 +780,7 @@ int main (int argc, char *argv[])
   if (!fexist(fn)) 
     fatal_error(0,"%s does not exist",fn);
   forward=new_status(fn,opt2fn_null("-pp",NFILE,fnm),opt2fn("-c",NFILE,fnm),
-		     opts,ir,bGenVel,bVerbose,&natoms,&x,&v,box,
+		     opts,ir,bGenVel,bVerbose,bSort,&natoms,&x,&v,box,
 		     &atype,sys,&msys,plist,bShuffle ? nprocs : 1,
 		     (opts->eDisre==edrEnsemble),opts->bMorse,&nerror);
   
