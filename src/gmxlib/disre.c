@@ -58,14 +58,16 @@ static t_drblock   drblock;
 void init_disres(FILE *log,int nrestraints,t_inputrec *ir)
 {
   dr_weighting = ir->eDisreWeighting;
-  dr_fc  = ir->dr_fc;
-  dr_tau = ir->dr_tau;
-  if (dr_tau == 0.0)
-    ETerm=0.0;
-  else
-    ETerm=exp(-(ir->delta_t/dr_tau));
-
-  ETerm1=1.0-ETerm;
+  dr_fc        = ir->dr_fc;
+  dr_tau       = ir->dr_tau;
+  if (dr_tau == 0.0) {
+    dr_bMixed = FALSE;
+    ETerm = 0.0;
+  } else {
+    dr_bMixed = ir->bDisreMixed;
+    ETerm = exp(-(ir->delta_t/dr_tau));
+  }
+  ETerm1 = 1.0 - ETerm;
   
   drblock.ndr    = nrestraints/(interaction_function[F_DISRES].nratoms+1);
   snew(drblock.rav, drblock.ndr);
@@ -82,23 +84,27 @@ t_drblock *get_drblock(void)
   return &drblock;
 }
 
-real ta_disres(FILE *log,int nrestraints,t_iatom forceatoms[],t_iparams ip[],
+real ta_disres(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
 	       rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
 	       matrix box,real lambda,real *dvdlambda,
 	       t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
 {
 #define MAX_DRPAIRS 100
   static real sixth=1.0/6.0;
+  static real seven_three=7.0/3.0;
   
   atom_id     ai,aj;
-  int         i,k,ki,kj,m,restraint,index,rindex,i0,npairs;
+  int         fa,fa_start,i,pair,ki,kj,m;
+  int         restraint,pair_nr,pair_nr_start,rindex,npairs;
   rvec        dx[MAX_DRPAIRS];
   real        weight_rt_1[MAX_DRPAIRS];
   rvec        *fshift;
-  real        smooth_fc,rt,rav,rav_3,rt_1,rt_3,rav_6,rt_6,rt2;
-  real        k0,f_scal,fmax_scal,fk_scal,fij,viol,pseudo_viol,violtot;
+  real        smooth_fc,rt,Rt,Rav,rav_3,rt_1,rt_3,Rav_6,Rt_6,rt2;
+  real        k0,f_scal,fmax_scal,fk_scal,fij;
+  real        tav_viol,instant_viol,mixed_viol,violtot;
+  real        tav_viol_Rav7,instant_viol_Rav7;
   real        up1,up2;
-  bool        bConservative;
+  bool        bConservative,bViolation;
   static real exp_min_t_tau=1.0;
 
   /* scaling factor to smoothly turn on the restraint forces *
@@ -106,52 +112,53 @@ real ta_disres(FILE *log,int nrestraints,t_iatom forceatoms[],t_iparams ip[],
   exp_min_t_tau *= ETerm;
   smooth_fc      = dr_fc * (1.0 - exp_min_t_tau); 
 
-  bConservative = (dr_weighting == edrwConservative);
   fshift  = fr->fshift; 
   violtot = 0;
-  index   = 0;
+  pair_nr = 0;
   
-  for(i=0; (i<nrestraints); ) {  
-    i0        = i;
-    restraint = forceatoms[i];
+  /* 'loop' over all atom pairs (pair_nr) involved in restraint, *
+   * the total number of atoms pairs is nfa/3          */  
+  fa=0;
+  while (fa < nfa) {
+    restraint = forceatoms[fa];
     rindex    = ip[restraint].disres.index;
 
-    rav_6  = 0.0;
-    rt_6   = 0.0;
-    k      = 0;
+    fa_start      = fa;
+    pair_nr_start = pair_nr;
+
+    Rav_6  = 0.0;
+    Rt_6   = 0.0;
   
-    /* Loop over the distance restraints that should be treated 
-     * simultaneously
-     */
-    for(k=0; (ip[forceatoms[i]].disres.index == rindex) && (i<nrestraints); 
-	k++,index++,i+=3) {
-      if (k >= MAX_DRPAIRS)
+    /* Loop over the atom pairs of 'this' restraint */
+    for(pair=0; (ip[forceatoms[fa]].disres.index == rindex) && (fa<nfa); 
+	pair++,pair_nr++,fa+=3) {
+      if (pair >= MAX_DRPAIRS)
 	fatal_error(0,"Too many distance restraint pairs");
       
-      ai   = forceatoms[i+1];
-      aj   = forceatoms[i+2];
+      ai   = forceatoms[fa+1];
+      aj   = forceatoms[fa+2];
       
-      rvec_sub(x[ai],x[aj],dx[k]);
-      rt2  = iprod(dx[k],dx[k]);
+      rvec_sub(x[ai],x[aj],dx[pair]);
+      rt2  = iprod(dx[pair],dx[pair]);
       rt   = sqrt(rt2);
       rt_1 = invsqrt(rt2);
       rt_3 = rt_1*rt_1*rt_1;
-      if (bConservative)
-	weight_rt_1[k] = rt_3*rt_3*rt_1*rt_1;
-      else
-	weight_rt_1[k] = rt_1;
-      if (drblock.rav[index] == 0)
+      if (drblock.rav[pair_nr] == 0)
 	rav_3 = rt_3;
       else
-	rav_3 = ETerm*drblock.rav[index] + ETerm1*rt_3;
-      
-      drblock.rt[index]  = rt;
-      drblock.rav[index] = rav_3;
+	rav_3 = ETerm*drblock.rav[pair_nr] + ETerm1*rt_3;
+
+      weight_rt_1[pair] = rt_1;
+
+      drblock.rt[pair_nr]  = rt;
+      drblock.rav[pair_nr] = rav_3;
 	
-      rav_6  += rav_3*rav_3;
-      rt_6   += rt_3*rt_3;
+      Rav_6  += rav_3*rav_3;
+      Rt_6   += rt_3*rt_3;
     }
-    npairs=k;
+    npairs=pair;
+    /* save some flops when there is only one pair */
+    bConservative = (dr_weighting == edrwConservative) && (npairs>1);
     
     /* Take action depending on restraint, calculate scalar force */
     up1       = ip[restraint].disres.up1;
@@ -161,52 +168,73 @@ real ta_disres(FILE *log,int nrestraints,t_iatom forceatoms[],t_iparams ip[],
     fmax_scal = -k0*(up2-up1); 
 
     /* Compute rav from ensemble / restraint averaging */
-    rav  = pow(rav_6,-sixth);
-    rt   = pow(rt_6,-sixth);
+    Rav  = pow(Rav_6,-sixth);
+    Rt   = pow(Rt_6,-sixth);
 
-    if (rav > up1)
-      viol = rav-up1;
-    else
-      viol = 0.0;
-
-    if (!dr_bMixed) {
-      f_scal = -k0*viol;
-    } else
-      if (rt > up1) {
-	pseudo_viol = sqrt(viol*(rt - up1));
-	f_scal      = -k0*pseudo_viol;
+    bViolation = (Rav > up1);
+    if (bViolation) {
+      tav_viol = Rav-up1;
+      if (!dr_bMixed) {
+	f_scal   = -k0*tav_viol;
+	violtot += tav_viol;
       } else
-	f_scal = 0.0;
-    violtot += viol;
+	if (Rt > up1) {
+	  instant_viol = Rt - up1;
+	  mixed_viol   = sqrt(tav_viol*instant_viol);
+	  f_scal       = -k0*mixed_viol;
+	  violtot     += mixed_viol;
+	} else
+	  bViolation = FALSE;
+    }
     
-    /* Correct the force for the number of restraints */
-    if (bConservative) {
-      f_scal  = max(f_scal,fmax_scal);
-      f_scal *= pow(rav,7);
-    } else {
-      f_scal /= (real)npairs;
-      f_scal  = max(f_scal,fmax_scal);
-    }    
-
-    /* Exert the force ... */
-    i    = i0;
-
-    for(k=0; (k<npairs); k++) {
-      restraint= forceatoms[i++];
-      ai       = forceatoms[i++];
-      aj       = forceatoms[i++];
-      ki       = SHIFT_INDEX(g,ai);
-      kj       = SHIFT_INDEX(g,aj);
+    /* save some flops and don't use variables when they are not calculated */
+    if (bViolation) {
+      /* Correct the force for the number of restraints */
+      if (bConservative) {
+	f_scal  = max(f_scal,fmax_scal);
+	if (!dr_bMixed)
+	  f_scal *= Rav/Rav_6;
+	else {
+	  f_scal /= 2*mixed_viol;
+	  tav_viol_Rav7     = tav_viol*Rav/Rav_6;
+	  instant_viol_Rav7 = instant_viol*Rt/Rt_6;
+	}
+      } else {
+	f_scal /= (real)npairs;
+	f_scal  = max(f_scal,fmax_scal);
+      }    
       
-      fk_scal  = f_scal*weight_rt_1[k];
+      /* Exert the force ... */
+      i = fa_start;
       
-      for(m=0; (m<DIM); m++) {
-	fij            = fk_scal*dx[k][m];
+      for(pair=0; (pair<npairs); pair++) {
+	restraint= forceatoms[i++];
+	ai       = forceatoms[i++];
+	aj       = forceatoms[i++];
+	ki       = SHIFT_INDEX(g,ai);
+	kj       = SHIFT_INDEX(g,aj);
 	
-	f[ai][m]      += fij;
-	f[aj][m]      -= fij;
-	fshift[ki][m] += fij;
-	fshift[kj][m] -= fij;
+	if (bConservative) {
+	  rav_3 = drblock.rav[pair_nr_start+pair];
+	  if (!dr_bMixed)
+	    weight_rt_1[pair] *= pow(rav_3,seven_three);
+	  else {
+	    rt = drblock.rt[pair_nr_start+pair];
+	    weight_rt_1[pair] *= tav_viol_Rav7*pow(rav_3,seven_three)+
+	      instant_viol_Rav7*pow(rt,-7);
+	  }
+	}
+	
+	fk_scal  = f_scal*weight_rt_1[pair];
+	
+	for(m=0; (m<DIM); m++) {
+	  fij            = fk_scal*dx[pair][m];
+	  
+	  f[ai][m]      += fij;
+	  f[aj][m]      -= fij;
+	  fshift[ki][m] += fij;
+	  fshift[kj][m] -= fij;
+	}
       }
     }
   }
