@@ -17,7 +17,7 @@
  * GROMACS: A message-passing parallel molecular dynamics implementation
  * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
  * Comp. Phys. Comm. 91, 43-56 (1995)
- * 
+ *  
  * Also check out our WWW page:
  * http://md.chem.rug.nl/~gmx
  * or e-mail to:
@@ -43,6 +43,7 @@ static char *SRCID_vec_h = "$Id$";
 #include "sysstuff.h"
 #include "macros.h"
 #include "fatal.h"
+#include "x86cpu.h"
 
 #ifdef _lnx_
 #define gmx_inline inline
@@ -50,252 +51,187 @@ static char *SRCID_vec_h = "$Id$";
 #define gmx_inline
 #endif
 
-/* The tables - use separate singe/double names to avoid mistakes. */
-#ifdef GMX_REC
-#ifdef DOUBLE
-extern const unsigned int crecdoubletab[];
-#else
-extern const unsigned int crecsingletab[];
-#endif
-#endif
+#define EXP_LSB         0x00800000
+#define EXP_MASK        0x7f800000
+#define EXP_SHIFT       23
+#define FRACT_MASK      0x007fffff
+#define FRACT_SIZE      11              /* significant part of fraction */
+#define FRACT_SHIFT     (EXP_SHIFT-FRACT_SIZE)
+#define EXP_ADDR(val)   (((val)&EXP_MASK)>>EXP_SHIFT)
+#define FRACT_ADDR(val) (((val)&(FRACT_MASK|EXP_LSB))>>FRACT_SHIFT)
+
+
+
 
 #ifdef GMX_INVSQRT
-#ifdef DOUBLE
-extern const unsigned int cinvsqrtdoubletab[];
-#else
-extern const unsigned int cinvsqrtsingletab[];
+extern const unsigned int cinvsqrtexptab[];
+extern const unsigned int cinvsqrtfracttab[];
 #endif
+
+#ifdef GMX_RECIP
+extern const unsigned int crecipexptab[];
+extern const unsigned int crecipfracttab[];
 #endif
 
 typedef union 
 {
-#ifdef DOUBLE
-    unsigned long long bval;
-#else
-    unsigned int bval;
-#endif
+  unsigned int bval;
   real fval;
 } t_convert;
 
 
-#ifdef GMX_REC
-static gmx_inline real rec(real x)
-{
-  const real  two = 2.0;
-  real y;
-#ifdef DOUBLE
-  real y2;
-  const unsigned long long tt = 0x7fe0000000000000L;
-  unsigned long long t0,t1,t2,t3;
-#else
-  const unsigned int tt = 0x3f800000;
-  unsigned int t0,t1,t2,t3;
-#endif
-  t_convert conv;
-
-  conv.fval = x;
-  t0 = conv.bval;
-  t1 = tt - t0;
-#ifdef DOUBLE
-  t2 = (t1 >> 40);
-#else
-  t2 = (t1 >> 11);
-#endif
-  t2 &= ((1<<12)-1);
-#ifdef DOUBLE
-  t3 = crecdoubletab[t2];
-#else
-  t3 = crecsingletab[t2];
-#endif
-#ifdef DOUBLE
-  t3= t3 << 26;
-#endif
-  conv.bval = t1 - t3;
-  y=conv.fval;
-  y   = y * (two - x * y);
-#ifdef DOUBLE
-  y2   = y * (two - x * y);
-  return y2;   /* 6 flops */
-#else
-  return y;    /* 3 flops */
-#endif
-}
-#define REC_DONE
-#endif
-
-
 #ifdef GMX_INVSQRT
-static gmx_inline real invsqrt(real x)
+static gmx_inline real invsqrt(float x)
 {
-  const real  half = 0.5;
-  const real  onehalf = 1.5;
-  real f1,y;
+  const real  half=0.5;
+  const real  three=3.0;
+  t_convert   result,bit_pattern;
+  unsigned int exp,fract;
+  float       lu;
+  real        y;
 #ifdef DOUBLE
-  real y2;
-  const unsigned long long tt = 0x5fe8000000000000L;
-  unsigned long long t0,t1,t2,t3;
-#else
-  const unsigned int tt = 0x1fc00000;
-  unsigned int t0,t1,t2,t3;
+  real        y2;
 #endif
-
-  t_convert conv;
-
-  conv.fval = x;
-  t0 = (conv.bval >> 1 );
-  t1 = tt - t0;
+ 
+  bit_pattern.fval=x;
+  exp   = EXP_ADDR(bit_pattern.bval);
+  fract = FRACT_ADDR(bit_pattern.bval);
+  result.bval=cinvsqrtexptab[exp] | cinvsqrtfracttab[fract];
+  lu    = result.fval;
+  
+  y=(half*lu*(three-((x*lu)*lu)));
 #ifdef DOUBLE
-  t2 = (t1 >> 40);
+  y2=(half*y*(three-((x*y)*y)));
+  
+  return y2;                    /* 10 Flops */
 #else
-  t2 = (t1 >> 11);
-#endif
-  t2 &= ((1<<12)-1);
-#ifdef DOUBLE
-  t3 = cinvsqrtdoubletab[t2];
-#else
-  t3 = cinvsqrtsingletab[t2];
-#endif
-  f1 = x*half;
-#ifdef DOUBLE
-  t3= t3 << 26;
-#endif
-  conv.bval = t1 - t3;
-  y=conv.fval;
-  y   = y * (onehalf - f1 * y * y);  
-#ifdef DOUBLE
-  y2   = y * (onehalf - f1 * y * y);
-  return y2;   /* 9 flops */
-#else
-  return y;    /* 5 flops */
+  return y;                     /* 5  Flops */
 #endif
 }
-#define INVSQRT_DONE
-#endif
-
-
-
+#define INVSQRT_DONE 
+#endif /* gmx_invsqrt */
 
 #ifndef INVSQRT_DONE
 #define invsqrt(x) (1.0f/sqrt(x))
 #endif
 
-#ifndef REC_DONE
-#define rec(x) (1.0f/(x))
-#endif
 
 
-static gmx_inline void vecinvsqrt(real *in,real *out,int n)
+static gmx_inline void vecinvsqrt(real in[],real out[],int n)
 {
-#ifdef USE_AXP_ASM
+#ifdef INVSQRT_DONE  
+  const real  half=0.5;
+  const real  three=3.0;
+  t_convert   result,bit_pattern;
+  unsigned int exp,fract;
+  float       lu,x;
 #ifdef DOUBLE
-  sqrtiv_(in,out,&n);
-#else
-  ssqrtiv_(in,out,&n);
-#endif  
-#else /* no axp asm, normal function instead */
-#ifdef GMX_INVSQRT
-  t_convert conv;
-    
-  real y;
-  int i,*iin=(int *)in;
-  real f1;
-  const real half=0.5;
-  const real onehalf=1.5;
-#ifdef DOUBLE
-  real y2;
-  const unsigned long long tt = 0x5fe8000000000000L;
-  unsigned long long t0,t1,t2,t3;
-#else
-  const unsigned int tt = 0x1fc00000;
-  unsigned int t0,t1,t2,t3; 
+  real        y;
 #endif
-
-  for(i=0;i<n;i++) {
-    t0 = (iin[i] >> 1);
-    t1 = tt - t0;
-#ifdef DOUBLE
-    t2 = (t1 >> 40);
-#else
-    t2 = (t1 >> 11);
-#endif
-    f1 = in[i]*half;
-    t2 &= ((1<<12)-1);
-#ifdef DOUBLE
-    t3 = cinvsqrtdoubletab[t2];
-#else
-    t3 = cinvsqrtsingletab[t2];
-#endif
-#ifdef DOUBLE
-    t3= t3 << 26;
-#endif
-    conv.bval = t1 - t3;
-    y=conv.fval;
-#ifdef DOUBLE
-    y2   = y * (onehalf - f1 * y * y);
-    out[i]   = y2 * (onehalf - f1 * y2 * y2);
-#else
-    out[i]   = y * (onehalf - f1 * y * y);
-#endif
-  }
-#else
+#endif /* INVSQRT_DONE */
   int i;
-  for(i=0;i<n;i++)
-    out[i]=invsqrt(in[i]); /* will be replaced by define above */
+
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE) 
+  if(x86cpu==X86_3DNOW)
+    vecinvsqrt_3dnow(in,out,n);
+  else if(x86cpu==X86_SSE && !((unsigned long int)in & 0x1f) && !((unsigned long int)out & 0x1f)) /* SSE data must be cache aligned */
+    vecinvsqrt_sse(in,out,n);
+  else
+#endif /* no x86 optimizations */
+#ifdef INVSQRT_DONE
+    for(i=0;i<n;i++) {
+      x=in[i];
+      bit_pattern.fval=x;
+      exp   = EXP_ADDR(bit_pattern.bval);
+      fract = FRACT_ADDR(bit_pattern.bval);
+      result.bval=cinvsqrtexptab[exp] | cinvsqrtfracttab[fract];
+      lu    = result.fval;
+      
+#ifdef DOUBLE
+      y=(half*lu*(three-((x*lu)*lu)));
+      out[i]=(half*y*(three-((x*y)*y)));
+#else
+      out[i]=(half*lu*(three-((x*lu)*lu)));
 #endif
-#endif  
+    }
+#else  /* no gmx invsqrt */
+    for(i=0;i<n;i++)
+      out[i]=1.0f/sqrt(in[i]);
+#endif /* INVSQRT_DONE */
 }
 
 
-static gmx_inline void vecrec(real *in,real *out,int n)
+
+#ifdef GMX_RECIP
+static gmx_inline real recip(float x)
 {
-#ifdef REC_DONE  
-  t_convert conv;
-    
-  real y,x;
-  int i,*iin=(int *)in;
-  const real two=2.0;
+  const real  two=2.0;
+  t_convert   result,bit_pattern;
+  unsigned int exp,fract;
+  float       lu;
+  real        y;
 #ifdef DOUBLE
-  real y2;
-  const unsigned long long tt = 0x7fe0000000000000L;
-  unsigned long long t0,t1,t2,t3;
+  real        y2;
+#endif
+ 
+  bit_pattern.fval=x;
+  exp   = EXP_ADDR(bit_pattern.bval);
+  fract = FRACT_ADDR(bit_pattern.bval);
+  result.bval=cinvsqrtexptab[exp] | cinvsqrtfracttab[fract];
+  lu    = result.fval;
+  
+  y=lu*(two-x*lu);
+#ifdef DOUBLE
+  y2=y*(two-x*y);
+  
+  return y2;                    /* 6 Flops */
 #else
-  const unsigned int tt = 0x3f800000;
-  unsigned int t0,t1,t2,t3;  
+  return y;                     /* 3  Flops */
+#endif
+}
 #endif
 
-  for(i=0;i<n;i++) {
-    t0 = iin[i];
-    t1 = tt - t0;
+
+static gmx_inline void vecrecip(real in[],real out[],int n)
+{
+#ifdef GMX_RECIP
+  const real  two=2.0;
+  t_convert   result,bit_pattern;
+  unsigned int exp,fract;
+  float       lu,x;
 #ifdef DOUBLE
-    t2 = (t1 >> 40);
-#else
-    t2 = (t1 >> 11);    
+  real        y;
 #endif
-    x = in[i];
-    t2 &= ((1<<12)-1);
-#ifdef DOUBLE
-    t3 = crecdoubletab[t2];
-#else
-    t3 = crecsingletab[t2];
-#endif
-#ifdef DOUBLE
-  t3= t3 << 26;
-#endif
-    conv.bval = t1 - t3;
-    y=conv.fval;
-#ifdef DOUBLE
-    y2   = y * (two - x * y);
-    out[i]   = y2 * (two - x * y2);
-#else
-    out[i]   = y * (two - x * y);
-#endif
-  }
-#else
+#endif /* GMX_RECIP */
   int i;
 
-  for(i=0;i<n;i++)
-    out[i]=rec(in[i]); /* will be replaced by define above */
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE) 
+  if(x86cpu==X86_3DNOW)
+    vecrecip_3dnow(in,out,n);
+  else if(x86cpu==X86_SSE && !((unsigned long int)in & 0x1f) && !((unsigned long int)out & 0x1f)) /* SSE data must be cache aligned */
+    vecrecip_sse(in,out,n);
+  else
+#endif /* no x86 optimizations */
+#ifdef GMX_RECIP
+    for(i=0;i<n;i++) {
+      x=in[i];
+      bit_pattern.fval=x;
+      exp   = EXP_ADDR(bit_pattern.bval);
+      fract = FRACT_ADDR(bit_pattern.bval);
+      result.bval=cinvsqrtexptab[exp] | cinvsqrtfracttab[fract];
+      lu    = result.fval;
+      
+#ifdef DOUBLE
+      y=lu*(two-x*lu);
+      out[i]=y*(two-x*y);
+#else
+      out[i]=lu*(two-x*lu);
 #endif
+    }
+#else /* No gmx recip */ 
+    for(i=0;i<n;i++)
+      out[i]=1.0f/(in[i]);
+#endif /* GMX_RECIP */
 }
 
 
