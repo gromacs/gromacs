@@ -548,9 +548,9 @@ int main(int argc,char *argv[])
   bool         bPBC,bPBCcom,bInBox,bNoJump,bRect,bTric,bComp,bCluster;
   bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
-  bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSetUR,bSplit;
+  bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSetUR,bSplit=FALSE;
   char         *top_file,*in_file,*out_file=NULL,out_file2[256],*charpt;
-  char         *outf_base,*outf_ext;
+  char         *outf_base=NULL,*outf_ext=NULL;
   char         top_title[256],title[256],command[256],filemode[5];
   int          xdr=0;
 
@@ -649,7 +649,7 @@ int main(int argc,char *argv[])
       bVels= (ftp==efTRR || ftp==efTRJ || ftp==efGRO || ftp==efG96) 
 	&& (ftpin==efTRR || ftpin==efTRJ || ftpin==efGRO || ftp==efG96);
     }
-    if (bSeparate) {
+    if (bSeparate || bSplit) {
       outf_ext = strrchr(out_file,'.');
       if (outf_ext == NULL)
 	fatal_error(0,"Output file name '%s' does not contain a '.'",out_file);
