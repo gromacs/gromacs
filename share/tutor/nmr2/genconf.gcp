@@ -1,0 +1,18 @@
+;
+;	User spoel (20016)
+;	Thu Sep 12 14:12:41 1996
+;	Input file
+;
+nx                  =  2
+ny                  =  1
+nz                  =  1
+dx                  =  0.0000
+dy                  =  0.0000
+dz                  =  0.0000
+seed                =  1993
+max_x_rotation      =  0.000000
+max_y_rotation      =  0.000000
+max_z_rotation      =  0.000000
+max_x_translation   =  0.000000
+max_y_translation   =  0.000000
+max_z_translation   =  0.000000

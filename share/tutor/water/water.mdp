@@ -1,0 +1,40 @@
+;
+;	Input file
+;
+title               =  Yo			; a string
+warnings            =  10			; stop after x warnings
+cpp                 =  /lib/cpp			; c-preprocessor
+constraints         =  -1
+tinit               =  0.0			; start time of run(ps)
+dt                  =  0.002			; time step
+nsteps              =  5000			; number of steps
+nstcomm             =  1			; reset c.o.m. motion
+nstxout             =  500			; write coords
+nstvout             =  10000			; write velocities
+nstfout             =  0			; write forces
+nstgrp		    =  0
+nstprint            =  10			; print energies
+nsthf               =  0			; not used
+nstlist             =  10			; update pairlist
+ns_type             =  grid			; pairlist method (simple,grid)
+deltagrid           =  2			; number of cells per rlong
+rshort              =  0.85			; short range cut-off
+rlong               =  0.85			; long ..
+box                 =  cubic	 		; box type (cubic,rect,...)
+Tcoupl              =  yes			; temperature bath (yes,no)
+ref_t		    =  300
+tc-grps		    =  System
+tau_t		    =  0.1
+Pcoupl              =  yes			; pressure bath (yes,no)
+tau_p               =  0.5			; p-coupoling time
+; below: the compressibility and reference pressure
+; for rectangular box 3 values may be given...
+; for triclinic (not implemented yet) 9 values
+compress            =  0.001 
+ref_p               =  1.0
+gen_vel             =  yes		; generate veloc (yes,no)
+gen_temp            =  300.000000		; initial temperature
+gen_seed            =  1993			; random seed
+
+
+

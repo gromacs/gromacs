@@ -1,0 +1,44 @@
+;
+;	User spoel (236)
+;	Wed Nov  3 17:12:44 1993
+;	Input file
+;
+title               =  Yo
+warnings            =  10
+cpp                 =  /lib/cpp
+constraints         =  -1
+integrator          =  md
+tinit               =  0.0
+dt                  =  0.002	; ps !
+nsteps              =  5000	; total 10 ps.
+nstcomm             =  1
+nstxout             =  250
+nstvout             =  1000
+nstgrp              =  0
+nstfout             =  0
+nstprint            =  100
+nsthf               =  0
+nstlist             =  10
+ns_type             =  grid
+deltagrid           =  2
+shift               =  no
+rshort              =  1.0
+rlong               =  1.0
+box                 =  cubic
+; Temperature coupling is on in two groups
+Tcoupl              =  yes
+tc-grps		    =  Protein	SOL
+tau_t               =  0.1	0.1
+ref_t               =  300	300
+; Energy monitoring
+energygrps          =  Protein  SOL
+; Pressure coupling is now on
+Pcoupl              =  yes
+tau_p               =  0.5
+compress            =  1e-3
+ref_p               =  1.0
+; Generate velocites is off at 300 K.
+gen_vel             =  no
+gen_temp            =  300.0
+gen_seed            =  173529
+

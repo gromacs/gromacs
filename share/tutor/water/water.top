@@ -1,0 +1,12 @@
+[ defaults ]
+1	1
+
+#include "ffgmx.itp"
+#include "spc.itp"
+
+[ system ]
+Pure Water
+
+[ molecules ]
+SOL	216
+

@@ -1,0 +1,28 @@
+;
+;	User spoel (236)
+;	Wed Nov  3 17:12:44 1993
+;	Input file
+;
+warnings            =  10
+cpp                 =  /lib/cpp
+define              =  -DFLEX_SPC
+constraints         =  0
+integrator          =  steep
+nsteps              =  100
+;
+;	Energy minimizing stuff
+;
+emtol               =  0.001
+emstep              =  0.01
+
+nstcomm             =  1
+ns_type             =  grid
+deltagrid           =  2
+rshort              =  1.0
+rlong               =  1.0
+box                 =  cubic
+shift               =  no
+Tcoupl              =  no
+Pcoupl              =  no
+gen_vel             =  no
+perturb             =  no
