@@ -44,7 +44,6 @@ static char *SRCID_nmrun_c = "$Id$";
 #include "force.h"
 #include "macros.h"
 #include "names.h"
-#include "stat.h"
 #include "fatal.h"
 #include "txtdump.h"
 #include "futil.h"

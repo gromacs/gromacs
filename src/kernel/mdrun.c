@@ -44,7 +44,6 @@ static char *SRCID_mdrun_c = "$Id$";
 #include "force.h"
 #include "macros.h"
 #include "names.h"
-#include "stat.h"
 #include "fatal.h"
 #include "txtdump.h"
 #include "futil.h"
@@ -78,11 +77,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 {
   t_forcerec *fr;
   t_mdebin   *mdebin;
-  FILE       *fmu;
   int        fp_ene,step;
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
-  bool       bNS,bStopCM,bStopRot,bTYZ,bLR,bBHAM,b14,bRerunMD,bNotLastFrame,bMU;
+  bool       bNS,bStopCM,bStopRot,bTYZ,bLR,bBHAM,b14,bRerunMD,bNotLastFrame;
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
   char       *traj,*enerfile;
@@ -94,11 +92,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   /* check if "-rerun" is used. */
   bRerunMD = optRerunMDset(nfile,fnm);
-  
-  /* check if "-mu" is used */
-  bMU = opt2bSet("-mu",nfile,fnm);
-  if ((bMU) && MASTER(cr))
-    fmu = opt2FILE("-mu",nfile,fnm,"w");
   
   /* Initial values */
   t0           = parm->ir.init_t;
@@ -142,14 +135,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   bBHAM    = (top->idef.functype[0]==F_BHAM);
   b14      = (top->idef.il[F_LJ14].nr > 0);
   
-  if (MASTER(cr)) {
+  if (MASTER(cr)) 
     fp_ene=open_enx(ftp2fn(efENX,nfile,fnm),"w");
-    mdebin=init_mdebin(fp_ene,grps,&(top->atoms),bLR,bBHAM,b14);
-  }
-  else {
+  else 
     fp_ene = -1;
-    mdebin = NULL;
-  }
+  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),bLR,bBHAM,b14);
   where();
   
   clear_rvec(vcm);
@@ -172,7 +162,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	       lambda,&ener[F_DVDLKIN]);
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,
-		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm);
+		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
   clear_rvec(vcm);
   
   /* Calculate Temperature coupling parameters lambda */
@@ -251,11 +241,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     init_mdatoms(mdatoms,lambda,FALSE);
 
     /* Calculate total dipole moment if necessary */    
-    if (bMU) {
-      calc_mu(cr,nsb,x,mdatoms->chargeT,mu_tot);
-      if (MASTER(cr))
-	write_mu(fmu,mu_tot,parm->box);
-    }
+    calc_mu(nsb,x,mdatoms->chargeT,mu_tot);
     
     /* Calc forces and virial */
     clear_mat(force_vir);
@@ -329,7 +315,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (PAR(cr)) {
       /* Globally (over all CPUs) sum energy, virial etc. */
       global_stat(log,cr,ener,force_vir,shake_vir,
-		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm);
+		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
       if (!bNS) 
 	for(i=0; (i<grps->estat.nn); i++)
 	  grps->estat.ee[egLR][i] /= cr->nprocs;
@@ -374,7 +360,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		fr,mdatoms->nr,parm->box,parm->pres,ener);
     
     upd_mdebin(mdebin,mdatoms->tmass,step,ener,parm->box,shake_vir,
-	       force_vir,parm->vir,parm->pres,grps);
+	       force_vir,parm->vir,parm->pres,grps,mu_tot);
     
     where();
     
@@ -399,18 +385,15 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   }
   /* End of main MD loop */
   
-  if (bMU && MASTER(cr))
-    fclose(fmu);
-    
   if (MASTER(cr)) {
     /* if RerunMD don't print energies of last frame again */
     if ( (parm->ir.nstprint > 1) && !bRerunMD )
       print_ebin(fp_ene,log,step-1,t,lambda,SAfactor,
 		 eprNORMAL,bCompact,mdebin,grps,&(top->atoms));
     
-    print_ebin(NULL,log,step,t,lambda,SAfactor,
+    print_ebin(-1,log,step,t,lambda,SAfactor,
 	       eprAVER,FALSE,mdebin,grps,&(top->atoms));
-    print_ebin(NULL,log,step,t,lambda,SAfactor,
+    print_ebin(-1,log,step,t,lambda,SAfactor,
 	       eprRMS,FALSE,mdebin,grps,&(top->atoms));
     close_enx(fp_ene);
   }
@@ -457,9 +440,6 @@ int main(int argc,char *argv[])
     "eigenvectors.[PAR]",
     "With [BB]-rerun[bb] an input trajectory can be given for which ",
     "forces and energies will be (re)calculated.[PAR]",
-    "When the [BB]-mu[bb] option is given the total dipole of the simulation",
-    "box will be written to a file at every step of the simulation.",
-    "This file is in binary and can only be read by [TT]g_dipoles[tt]."
   };
   char         *lognm=NULL;
   t_commrec    *cr;
@@ -475,7 +455,6 @@ int main(int argc,char *argv[])
     { efHAT, "-hat","ghat",   ffOPTRD },
     { efEDI, "-ei", "sam",    ffOPTRD },
     { efEDO, "-eo", "sam",    ffOPTWR },
-    { efDAT, "-mu", "dipole", ffOPTWR }
   };
 #define NFILE asize(fnm)
 
