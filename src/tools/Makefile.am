@@ -29,20 +29,6 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	g_sorient.c 	g_tcaf.c	g_traj.c	g_velacc.c	\
 	g_clustsize.c	g_mdmat.c	g_wham.c	eigio.h
 
-#xxx     = \
-#	g_wham		\
-#	g_analyze	g_anaeig	g_angle	      	g_bond	 	\
-#	g_bundle	g_chi	     	g_cluster	g_confrms	\
-#	g_covar	     	g_density	g_dielectric	g_dih	  	\
-#	g_dipoles	g_disre	   	g_dist	       	g_dyndom	\
-#	g_enemat	g_energy	g_lie	        g_filter	\
-#	g_gyrate	g_h2order	g_hbond	      	g_helix		\
-#	g_mindist	g_msd	     	g_morph	      	g_nmeig	 	\
-#	g_nmens	     	g_order	   	g_potential	g_rama	 	\
-#	g_rdf	       	g_rms	     	g_rmsdist	g_rmsf	 	\
-#	g_rotacf	g_saltbr	g_sas	        g_sgangle	\
-#	g_sorient	g_tcaf	    	g_traj	       	g_velacc	\
-#	g_clustsize	g_mdmat
 
 bin_PROGRAMS = \
 	average		do_dssp		editconf	eneconv		\
@@ -51,17 +37,33 @@ bin_PROGRAMS = \
 	trjorder	wheel		xpm2ps		genion		\
 	anadock		cdist		disco           
 
+dist_bin_SCRIPTS = \
+	g_energy	g_wham		g_velacc	g_traj		\
+	g_tcaf		g_sorient	g_sgangle	g_sas		\
+	g_saltbr	g_rotacf	g_rmsf		g_rmsdist	\
+	g_rms		g_rdf		g_rama		g_potential	\
+	g_order		g_nmens		g_nmeig		g_msd		\
+	g_morph		g_mindist	g_mdmat		g_lie		\
+	g_helix		g_hbond		g_h2order	g_gyrate	\
+	g_filter	g_enemat	g_dyndom	g_dist		\
+	g_disre		g_dipoles	g_dih		g_dielectric	\
+	g_density	g_covar		g_confrms	g_clustsize	\
+	g_cluster	g_chi		g_bundle	g_bond		\
+	g_angle		g_analyze	g_anaeig	
 
 genbox_SOURCES       = 	genbox.c addconf.c addconf.h
 genion_SOURCES       = 	genion.c calcpot.c calcpot.h edittop.c
-cdist_SOURCES        =  cdist.c smooth.c bondlist.c residues.c cdist.h
-disco_SOURCES        =  disco.c correct.c discopar.c dtools.c disco.h
+cdist_SOURCES        =  cdist.c smooth.c bondlist.c residues.c 
+disco_SOURCES        =  disco.c correct.c discopar.c dtools.c 
 anadock_SOURCES	     =  anadock.c  
-gmx_ana_SOURCES      =  gmx-ana.c gmx-ana.h
-
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 	../gmxlib/libgmx@LIBSUFFIX@.la
+
+# Create scripts. This is never done in a normal build - the script files
+# should be in CVS, so we can do it in the source directory.
+scripts:	
+	./gmx-ana.pl $(dist_bin_SCRIPTS)
 
 # link the mpi library to non-mpi names if the latter are not present
 install-exec-hook:
@@ -72,6 +74,7 @@ install-exec-hook:
 	  (cd $$libdir && test -e $$libname.a -a ! -e $$nompi.a && $(LN_S) $$libname.a $$nompi.a ; exit 0); \
 	  (cd $$libdir && test -e $$libname.so -a ! -e $$nompi.so && $(LN_S) $$libname.so $$nompi.so ; exit 0); \
 	fi; 
+	/bin/cp $(xxx) $(bindir)
 
 CLEANFILES   = *.la *~ \\\#*
 

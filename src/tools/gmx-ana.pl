@@ -3,9 +3,11 @@
 # This script installs front-ends corresponding to the *old*
 # program names, that in reality call gmx-ana
 
+
 if ($#ARGV < 0) {
     die ("Usage: gmx-ana.pl programs\n");
 }
+
 
 $incfile = "gmx-ana.h";
 open(INC,">$incfile") || die ("Can not open $incfile for writing");
@@ -45,10 +47,40 @@ foreach $p ( @ARGV ) {
 	$ppp = "gmx_" . $kkk[1];
 	    
 	open(PPP,">$p") || die ("Can not open $p for writing");
-	printf (PPP "#!/bin/csh -f\n");
-	printf (PPP "\$0:h/gmx-ana -type $kkk[1] \$argv\n");
+	print PPP "#!/bin/sh\n";
+	print PPP "# Select which mode of gmx-ana to use in this script\n";
+	print PPP "type=$kkk[1]\n";
+	print PPP "# Create gmx-ana path from our name. Two cases:\n";
+	print PPP "# 1. \$0 contains slash = a full or relative path\n";
+	print PPP "# 2. \$0 without slash = gmx-ana must be in our path\n";
+	print PPP "case \$0 in\n";
+	print PPP "  */*) gmxana=\${0%/*}/gmx-ana ;;\n";
+        print PPP "  *)   gmxana=gmx-ana ;;\n";
+	print PPP "esac\n";
+	print PPP "# Check that the file is there\n";
+	print PPP "if [ ! -x \$gmxana ]; then\n";
+        print PPP "  echo Cannot find executable \$gmxana\n";
+        print PPP "    exit\n";
+        print PPP "fi\n";
+	print PPP "\$gmxana -type \$type \$*\n";
 	close(PPP);
 	chmod(0755,$oldprog);
+
+	# Dos batch file (actually, WINNT and later...)
+	open(BAT,">${p}.bat") || die ("Can not open $p for writing");
+	print BAT "\@echo off\n";
+	print BAT "set DIRNAME=%~dp0%\n";
+	print BAT "REM BAT files only see args 1-9. We use shift to get all.\n";
+	print BAT "set ARGS=\n";
+	print BAT ":loop\n";
+	print BAT "if [%1] == [] goto endloop\n";
+	print BAT "set ARGS=%ARGS% %1\n";
+	print BAT "shift\n";
+	print BAT "goto loop\n";
+	print BAT ":endloop\n";
+	print BAT "%DIRNAME%gmx-ana.exe -type $kkk[1] %ARGS%\n";
+	close(BAT);
+
 	printf (INC "extern int $ppp(int argc,char *argv[]);\n\n");
 	printf (ANA "    { \"$kkk[1]\", $ppp }");
 	if ($argc < $#ARGV) {
