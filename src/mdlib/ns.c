@@ -99,36 +99,49 @@ static void reallocate_nblist(t_nblist *nl)
     srenew(nl->nsatoms,(nl->maxnri+1)*3);
 }
 
-static void init_nblist(t_nblist *nl,int homenr,int solvent,int il_code)
+static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
+			int maxsr,int maxlr,int solvent,int il_code)
 {
-  nl->il_code = il_code;
-  /* maxnri is influenced by the number of shifts (maximum is 8)
-   * and the number of energy groups.
-   * If it is not enough, nl memory will be reallocated during the run.
-   * 4 seems to be a reasonable factor, which only causes reallocation
-   * during runs with tiny and many energygroups.
-   */
-  nl->maxnri  = homenr*4;
-  nl->maxnrj  = 0;
-  nl->maxlen  = 0;
-  nl->nri     = 0;
-  nl->nrj     = 0;
-  nl->iinr    = NULL;
-  nl->gid     = NULL;
-  nl->shift   = NULL;
-  nl->jindex  = NULL;
-  nl->nsatoms = NULL;
-  nl->solvent = solvent;
-  reallocate_nblist(nl);
-  nl->jindex[0] = 0;
-  nl->jindex[1] = 0;
-  if (nl->maxnri > 0)
-    nl->iinr[0] = -1;
+  t_nblist *nl;
+  int      homenr;
+  int      i;
+  
+  if (debug)
+    fprintf(debug,"Initiating neighbourlist type %d for %s with %d SR, %d LR atoms\n",
+	    il_code,ESOLVTYPE(solvent),maxsr,maxlr);
+  for(i=0; (i<2); i++) {
+    nl     = (i == 0) ? nl_sr : nl_lr;
+    homenr = (i == 0) ? maxsr : maxlr;
+    
+    nl->il_code = il_code;
+    /* maxnri is influenced by the number of shifts (maximum is 8)
+     * and the number of energy groups.
+     * If it is not enough, nl memory will be reallocated during the run.
+     * 4 seems to be a reasonable factor, which only causes reallocation
+     * during runs with tiny and many energygroups.
+     */
+    nl->maxnri  = homenr*4;
+    nl->maxnrj  = 0;
+    nl->maxlen  = 0;
+    nl->nri     = 0;
+    nl->nrj     = 0;
+    nl->iinr    = NULL;
+    nl->gid     = NULL;
+    nl->shift   = NULL;
+    nl->jindex  = NULL;
+    nl->nsatoms = NULL;
+    nl->solvent = solvent;
+    reallocate_nblist(nl);
+    nl->jindex[0] = 0;
+    nl->jindex[1] = 0;
+    if (nl->maxnri > 0)
+      nl->iinr[0] = -1;
 #ifdef USE_THREADS
-  nl->counter = 0;
-  snew(nl->mtx,1);
-  pthread_mutex_init(nl->mtx,NULL);
+    nl->counter = 0;
+    snew(nl->mtx,1);
+    pthread_mutex_init(nl->mtx,NULL);
 #endif
+  }
 }
 
 static unsigned int nbf_index(t_forcerec *fr, bool bvdw, bool bcoul, bool bFree, int solopt)
@@ -204,73 +217,43 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
 		"Call your Gromacs dealer for assistance.",__FILE__,__LINE__);
   maxsr_mno = fr->nMNOMol;
   maxsr_wat = fr->nWatMol; 
-  maxlr     = 50;
-  maxlr_mno = min(fr->nMNOMol,50);
-  maxlr_wat = min(fr->nWatMol,50);
-
-  init_nblist(&fr->nlist_sr[eNL_VDWQQ],maxsr,esolNO,
-	      nbf_index(fr,TRUE, TRUE, FALSE,esolNO));
-  init_nblist(&fr->nlist_sr[eNL_VDW],maxsr,esolNO,
-	      nbf_index(fr,TRUE, FALSE,FALSE,esolNO));
-  init_nblist(&fr->nlist_sr[eNL_QQ],maxsr,esolNO,
-	      nbf_index(fr,FALSE,TRUE, FALSE,esolNO));
-  init_nblist(&fr->nlist_sr[eNL_VDWQQ_SOLMNO],maxsr_mno,esolMNO,
-	      nbf_index(fr,TRUE, TRUE, FALSE,esolMNO));
-  init_nblist(&fr->nlist_sr[eNL_VDW_SOLMNO],maxsr_mno,esolMNO,
-	      nbf_index(fr,TRUE, FALSE, FALSE,esolMNO));
-  init_nblist(&fr->nlist_sr[eNL_QQ_SOLMNO],maxsr_mno,esolMNO,
-	      nbf_index(fr,FALSE,TRUE, FALSE,esolMNO));
-  init_nblist(&fr->nlist_sr[eNL_VDWQQ_WATER],maxsr_wat,esolWATER,
-	      nbf_index(fr,TRUE, TRUE, FALSE,esolWATER));
-  init_nblist(&fr->nlist_sr[eNL_QQ_WATER],maxsr_wat,esolWATER,
-	      nbf_index(fr,FALSE,TRUE, FALSE,esolWATER));
-  init_nblist(&fr->nlist_sr[eNL_VDWQQ_WATERWATER],maxsr_wat,esolWATERWATER,
-	      nbf_index(fr,TRUE, TRUE, FALSE,esolWATERWATER));
-  init_nblist(&fr->nlist_sr[eNL_QQ_WATERWATER],maxsr_wat,esolWATERWATER,
-	      nbf_index(fr,FALSE,TRUE, FALSE,esolWATERWATER));
+  if (fr->bTwinRange) {
+    maxlr     = 50;
+    maxlr_mno = min(fr->nMNOMol,maxlr);
+    maxlr_wat = min(fr->nWatMol,maxlr);
+  }
+  else {
+    maxlr = maxlr_mno = maxlr_wat = 0;
+  }  
+  init_nblist(&fr->nlist_sr[eNL_VDWQQ],&fr->nlist_lr[eNL_VDWQQ],
+	      maxsr,maxlr,esolNO,nbf_index(fr,TRUE, TRUE, FALSE,esolNO));
+  init_nblist(&fr->nlist_sr[eNL_VDW],&fr->nlist_lr[eNL_VDW],
+	      maxsr,maxlr,esolNO,nbf_index(fr,TRUE, FALSE,FALSE,esolNO));
+  init_nblist(&fr->nlist_sr[eNL_QQ],&fr->nlist_lr[eNL_QQ],
+	      maxsr,maxlr,esolNO,nbf_index(fr,FALSE,TRUE, FALSE,esolNO));
+  init_nblist(&fr->nlist_sr[eNL_VDWQQ_SOLMNO],&fr->nlist_lr[eNL_VDWQQ_SOLMNO],
+	      maxsr_mno,maxlr_mno,esolMNO,nbf_index(fr,TRUE, TRUE, FALSE,esolMNO));
+  init_nblist(&fr->nlist_sr[eNL_VDW_SOLMNO],&fr->nlist_lr[eNL_VDW_SOLMNO],
+	      maxsr_mno,maxlr_mno,esolMNO,nbf_index(fr,TRUE, FALSE, FALSE,esolMNO));
+  init_nblist(&fr->nlist_sr[eNL_QQ_SOLMNO],&fr->nlist_lr[eNL_QQ_SOLMNO],
+	      maxsr_mno,maxlr_mno,esolMNO,nbf_index(fr,FALSE,TRUE, FALSE,esolMNO));
+  init_nblist(&fr->nlist_sr[eNL_VDWQQ_WATER],&fr->nlist_lr[eNL_VDWQQ_WATER],
+	      maxsr_wat,maxlr_wat,esolWATER,nbf_index(fr,TRUE, TRUE, FALSE,esolWATER));
+  init_nblist(&fr->nlist_sr[eNL_QQ_WATER],&fr->nlist_lr[eNL_QQ_WATER],
+	      maxsr_wat,maxlr_wat,esolWATER,nbf_index(fr,FALSE,TRUE, FALSE,esolWATER));
+  init_nblist(&fr->nlist_sr[eNL_VDWQQ_WATERWATER],&fr->nlist_lr[eNL_VDWQQ_WATERWATER],
+	      maxsr_wat,maxlr_wat,esolWATERWATER,nbf_index(fr,TRUE, TRUE, FALSE,esolWATERWATER));
+  init_nblist(&fr->nlist_sr[eNL_QQ_WATERWATER],&fr->nlist_lr[eNL_QQ_WATERWATER],
+	      maxsr_wat,maxlr_wat,esolWATERWATER,nbf_index(fr,FALSE,TRUE, FALSE,esolWATERWATER));
 	  
   if (fr->efep != efepNO) {
-    init_nblist(&fr->nlist_sr[eNL_VDWQQ_FREE],maxsr,esolNO,
-		nbf_index(fr,TRUE, TRUE, TRUE,esolNO));
-    init_nblist(&fr->nlist_sr[eNL_VDW_FREE],maxsr,esolNO,
-		nbf_index(fr,TRUE, FALSE,TRUE,esolNO));
-    init_nblist(&fr->nlist_sr[eNL_QQ_FREE],maxsr,esolNO,
-		nbf_index(fr,FALSE,TRUE, TRUE,esolNO));
+    init_nblist(&fr->nlist_sr[eNL_VDWQQ_FREE],&fr->nlist_lr[eNL_VDWQQ_FREE],
+		maxsr,maxlr,esolNO,nbf_index(fr,TRUE, TRUE, TRUE,esolNO));
+    init_nblist(&fr->nlist_sr[eNL_VDW_FREE],&fr->nlist_lr[eNL_VDW_FREE],
+		maxsr,maxlr,esolNO,nbf_index(fr,TRUE, FALSE,TRUE,esolNO));
+    init_nblist(&fr->nlist_sr[eNL_QQ_FREE],&fr->nlist_lr[eNL_QQ_FREE],
+		maxsr,maxlr,esolNO,nbf_index(fr,FALSE,TRUE, TRUE,esolNO));
   }  
-
-  if (fr->bTwinRange) {
-    fprintf(log,"Allocating space for long range neighbour list of %d atoms\n",
-	    maxlr);
-    init_nblist(&fr->nlist_lr[eNL_VDWQQ],maxlr,esolNO,
-		nbf_index(fr,TRUE, TRUE, FALSE,esolNO));
-    init_nblist(&fr->nlist_lr[eNL_VDW],maxlr,esolNO,
-		nbf_index(fr,TRUE, FALSE,FALSE,esolNO));
-    init_nblist(&fr->nlist_lr[eNL_QQ],maxlr,esolNO,
-		nbf_index(fr,FALSE,TRUE, FALSE,esolNO));
-    init_nblist(&fr->nlist_lr[eNL_VDWQQ_SOLMNO],maxlr_mno,esolMNO,
-		nbf_index(fr,TRUE, TRUE, FALSE,esolMNO));
-    init_nblist(&fr->nlist_lr[eNL_VDW_SOLMNO],maxlr_mno,esolMNO,
-		nbf_index(fr,TRUE, FALSE, FALSE,esolMNO));
-    init_nblist(&fr->nlist_lr[eNL_QQ_SOLMNO],maxlr_mno,esolMNO,
-		nbf_index(fr,FALSE,TRUE, FALSE,esolMNO));
-    init_nblist(&fr->nlist_lr[eNL_VDWQQ_WATER],maxlr_wat,esolWATER,
-		nbf_index(fr,TRUE, TRUE, FALSE,esolWATER));
-    init_nblist(&fr->nlist_lr[eNL_QQ_WATER],maxlr_wat,esolWATER,
-		nbf_index(fr,FALSE,TRUE, FALSE,esolWATER));
-    init_nblist(&fr->nlist_lr[eNL_VDWQQ_WATERWATER],maxlr_wat,esolWATERWATER,
-		nbf_index(fr,TRUE, TRUE, FALSE,esolWATERWATER));
-    init_nblist(&fr->nlist_lr[eNL_QQ_WATERWATER],maxlr_wat,esolWATERWATER,
-		nbf_index(fr,FALSE,TRUE, FALSE,esolWATERWATER));
-  
-    if (fr->efep != efepNO) {
-      init_nblist(&fr->nlist_lr[eNL_VDWQQ_FREE],maxlr,esolNO,
-		  nbf_index(fr,TRUE, TRUE, TRUE,esolNO));
-      init_nblist(&fr->nlist_lr[eNL_VDW_FREE],maxlr,esolNO,
-		  nbf_index(fr,TRUE, FALSE,TRUE,esolNO));
-      init_nblist(&fr->nlist_lr[eNL_QQ_FREE],maxlr,esolNO,
-		  nbf_index(fr,FALSE,TRUE, TRUE,esolNO));
-    }
-  }
 }
 
 static void reset_nblist(t_nblist *nl)
@@ -1229,13 +1212,12 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
   }
   rm2 = min(rvdw2,rcoul2);
   rl2 = max(rvdw2,rcoul2);
-  if (rvdw2 > rcoul2) {
-    bVDWOnly  = TRUE;
-    bCoulOnly = FALSE;
-  } else {
-    bVDWOnly  = FALSE;
-    bCoulOnly = TRUE;
-  }
+  /* Check which cutoff is largest, set booleans 
+   * Since both options exclude each other, we can write it simple.
+   */
+  bVDWOnly  = (rvdw2 > rcoul2);
+  bCoulOnly = !bVDWOnly;
+  
   if (nl_sr == NULL) {
     /* Short range buffers */
     snew(nl_sr,ngid);

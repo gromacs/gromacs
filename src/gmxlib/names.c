@@ -120,3 +120,7 @@ char *gtypes[egcNR+1] = {
 char *efep_names[efepNR+1] = {
   "no", "yes", NULL
 };
+
+char *esolv_names[esolNR+1] = {
+  "General", "MNO Solvent", "Water", "Water-Water", NULL
+};
