@@ -1429,7 +1429,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
     for (tz=-1; tz<=1; tz++) {
       ZI = cgcm[icg][ZZ]+tz*box[ZZ][ZZ];
       /* Calculate range of cells in Z direction that have the shift tz */
-      get_dx(Nz,gridz,grid_z,rcoul2,ZI,&dz0,&dz1,dcz2);
+      get_dx(Nz,gridz,grid_z,rl2,ZI,&dz0,&dz1,dcz2);
       if (dz0 > dz1)
 	continue;
 #ifdef ALLOW_OFFDIAG_LT_HALFDIAG
@@ -1439,7 +1439,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 #endif
 	YI = cgcm[icg][YY]+ty*box[YY][YY]+tz*box[ZZ][YY];
 	/* Calculate range of cells in Y direction that have the shift ty */
-	get_dx(Ny,gridy,grid_y,rcoul2,YI,&dy0,&dy1,dcy2);
+	get_dx(Ny,gridy,grid_y,rl2,YI,&dy0,&dy1,dcy2);
 	if (dy0 > dy1)
 	  continue;
 #ifdef ALLOW_OFFDIAG_LT_HALFDIAG
@@ -1449,7 +1449,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 #endif
 	  XI = cgcm[icg][XX]+tx*box[XX][XX]+ty*box[YY][XX]+tz*box[ZZ][XX];
 	  /* Calculate range of cells in X direction that have the shift tx */
-	  get_dx(Nx,gridx,grid_x,rcoul2,XI,&dx0,&dx1,dcx2);
+	  get_dx(Nx,gridx,grid_x,rl2,XI,&dx0,&dx1,dcx2);
 	  if (dx0 > dx1)
 	    continue;
 	  /* Get shift vector */	  
@@ -1471,7 +1471,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 	  fprintf(log,"xi:   %8.3f  %8.3f  %8.3f\n",XI,YI,ZI);
 #endif
 	  for (dx=dx0; (dx<=dx1); dx++) {
-	    tmp1 = rcoul2 - dcx2[dx];
+	    tmp1 = rl2 - dcx2[dx];
 	    for (dy=dy0; (dy<=dy1); dy++) {
 	      tmp2 = tmp1 - dcy2[dy];
 	      if (tmp2 > 0)
