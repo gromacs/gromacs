@@ -87,7 +87,7 @@ g_mdmat:	g_mdmat.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_disre:	g_disre.o
-		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS) $(SYSLIBS)
+		$(LD) -o $@ $^ $(RUNSYSLIBS)
 
 g_gyrate:	g_gyrate.o  
 		$(LD) -o $@ $^ $(SYSLIBS)

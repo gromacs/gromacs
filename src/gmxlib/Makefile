@@ -19,40 +19,34 @@ M4FILE		= $(GMXCPU).m4
 LIB		= $(LIBDIR)/libgmx.$(GMXCPU).a
 SONAME		= libgmx.$(GMXCPU).so
 OBJ		= \
-		3dview.o	atomprop.o	\
-		block_tx.o	bondfree.o	\
-		buffer.o	calch.o		calcmu.o	\
-		calcvir.o	callf77.o	clincs.o	\
+		3dview.o	atomprop.o	block_tx.o	\
+		bondfree.o	buffer.o	calch.o		\
+		callf77.o	clincs.o	\
 		clincsld.o	confio.o	copyrite.o	\
-		coupling.o	csettle.o	cshake.o	\
+		csettle.o	cshake.o	\
 		disre.o		do_fit.o	dummies.o	\
-		ebin.o		edsam.o		enxio.o		\
-		fatal.o		ffscanf.o	fftgrid.o	\
-		filenm.o	fnbf.o		force.o		\
+		ebin.o		enxio.o		\
+		fatal.o		ffscanf.o	filenm.o	\
 		futil.o		gbutil.o	genhydro.o	\
 		ghat.o		gmxfio.o	h_db.o		\
-		ifunc.o		index.o		init.o		\
+		ifunc.o		index.o		\
 		inloopc.o	invblock.o	javaio.o	\
-		lrutil.o	lutab.o		macros.o	\
-		main.o		maths.o		\
-		matio.o		mdatom.o	mdebin.o	\
+		lutab.o		macros.o	main.o		\
+		maths.o		matio.o		mdebin.o	\
 		memdump.o	mshift.o	mvdata.o	\
 		mvxvf.o		names.o		network.o	\
 		nrama.o		nrjac.o		nrnb.o		\
-		ns.o		nsb.o		nsgrid.o	\
 		pargs.o		pbc.o		pdbio.o		\
-		poisson.o	pppm.o		princ.o		\
-		psgather.o	pssolve.o	psspread.o	\
+		princ.o		\
 		rando.o		random.o	rbin.o		\
 		rdgroup.o	readinp.o	replace.o	\
-		rmpbc.o		shakef.o	sim_util.o	\
-		smalloc.o	splittop.o	stat.o		\
+		rmpbc.o		shakef.o	\
+		smalloc.o	stat.o		\
 		statutil.o	strdb.o		string2.o	\
-		symtab.o	tables.o	tgroup.o	\
+		symtab.o	\
 		tpxio.o		trnio.o		trxio.o		\
-		txtdump.o	typedefs.o	update.o	\
-		vcm.o		wgms.o		\
-		wman.o		wnblist.o	writeps.o	\
+		txtdump.o	typedefs.o	wgms.o		\
+		wman.o		writeps.o	\
 		xdrd.o		xtcio.o		xvgr.o
 
 ifeq ($(USEF77),yes)
