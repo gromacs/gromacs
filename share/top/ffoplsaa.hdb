@@ -185,8 +185,8 @@ VAL	5
 NH2	1
 	2	3	N	-C	-CA
 NAC	2
-	1	1	N	-C	CA
-	3	4	CA	N	-C
+	1	1	N	-C	CH3
+	3	4	CH3	N	-C
 HOH	1
 	2	7	OW
 HO4	1
