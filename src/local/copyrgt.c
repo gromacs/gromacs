@@ -13,7 +13,7 @@
  * BIOSON Research Institute, Dept. of Biophysical Chemistry
  * University of Groningen, The Netherlands
  * 
- * Please refer to:
+ * Please cite this reference in all publication using GROMACS:
  * GROMACS: A message-passing parallel molecular dynamics implementation
  * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
  * Comp. Phys. Comm. 91, 43-56 (1995)
@@ -45,10 +45,14 @@ static char *head1[]= {
   ""
 };
 static char *head2[] = {
-  "Please refer to:",
+  "Please use these references in all publications using GROMACS:",
   "GROMACS: A message-passing parallel molecular dynamics implementation",
   "H.J.C. Berendsen, D. van der Spoel and R. van Drunen",
   "Comp. Phys. Comm. 91, 43-56 (1995)",
+  "",
+  "GROMACS 3.0: A package for molecular simulation and trajectory analysis",
+  "Erik Lindahl, Berk Hess and David van der Spoel",
+  "(in preparation, hey it's a beta version anyway)",
   "",
   "Also check out our WWW page:",
   "http://md.chem.rug.nl/~gmx",
@@ -89,7 +93,7 @@ void head(FILE *out, char *fn_, bool bH, bool bSRCID,
   if (bSRCID)
     fprintf(out,"static char *SRCID_%s = \"$""Id""$\";\n",fn_);
   /* NOTE: the "" are to mislead CVS so it will not replace by version info */
-  fprintf(out,"\n");
+  /*fprintf(out,"\n");*/
 }
 
 void cr_c(char *fn)
@@ -153,6 +157,72 @@ void cr_c(char *fn)
   fclose(out);
 }
 
+void cr_other(char *fn)
+{
+  FILE *in,*out;
+  char ofn[1024],line[MAXS+1],line2[MAXS+1],cwd[1024];
+  char *p,*fn_,*ptr;
+  bool bH,bSRCID;
+  
+  sprintf(ofn,"%s.bak",fn);
+  
+  fprintf(stderr,"Processing %s (backed up to %s)\n",
+	  fn,ofn);
+  
+  if (rename(fn,ofn) != 0) {
+    perror(ofn);
+    exit(1);
+  }
+  in=ffopen(ofn,"r");
+  out=ffopen(fn,"w");
+  
+  /* Skip over empty lines in the beginning only */
+  do { 
+    if (fgets2(line,MAXS,in))
+      rtrim(line);
+  } while ((strlen(line) == 0) && (!feof(in)));
+  
+  /* Now we are at end of file, or we have a non-empty string */
+  if (strlen(line) != 0) {  
+    strcpy(line2,line);
+    trim(line2);
+    while ((line2[0] == ';') && (!feof(in))) {
+      fgets2(line,MAXS,in);
+      strcpy(line2,line);
+      trim(line2);
+    }
+    /*
+    fn_=strdup(fn);
+    p=strchr(fn_,'.');
+    if (p)
+      p[0]='_';
+    bH=FALSE;
+    do {
+      fgets2(line,MAXS,in);
+      if ( (strstr(line,fn_) != NULL) && 
+	   (strstr(line,"#define") != NULL) )
+	bH=TRUE;
+    } while ( ( (strstr(line,fn_) != NULL)  ||
+		(strstr(line,"static char *SRCID") != NULL) ||
+		(strlen(line)==0) ) && (!feof(in) ) );
+    getcwd(cwd,STRLEN);
+    bSRCID = TRUE;
+    */
+    /* Do not put source id's in include/types since some filenames are
+     * be equal to those in include */
+    /*if ((strlen(cwd)>strlen("types")) &&
+	(strcmp(cwd+strlen(cwd)-strlen("types"),"types") == NULL))
+    */
+    bSRCID = FALSE;
+    head(out,fn_,bH,bSRCID,";",";",";");
+    do {
+      fprintf(out,"%s\n",line);
+    } while (!feof(in) && fgets2(line,MAXS,in));
+  }
+  fclose(in);
+  fclose(out);
+}
+
 void cr_tex(char *fn)
 {
   FILE *in,*out;
@@ -205,8 +275,10 @@ int main(int argc,char *argv[])
     p=strrchr(fn,'.');
     if ( strcmp(p,".tex")==0 )
       cr_tex(fn);
-    else
+    else if ((strcmp(p,".c") == 0) || (strcmp(p,".h") == 0))
       cr_c(fn);
+    else
+      cr_other(fn);
   }
   return 0;
 }
