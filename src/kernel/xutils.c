@@ -7,20 +7,20 @@
 #include "genalg.h"
 #include "random.h"
 
-t_commrec *cr_msim;
-
 t_commrec *init_msim(t_commrec *cr,int nfile,t_filenm fnm[])
 {
-  t_commrec *cr_new;
+  t_commrec *mcr;
   int  i,ftp;
   char *buf;
   
-  cr_msim = cr;
-  snew(cr_new,1);
-  cr_new->nodeid = 0;
-  cr_new->nnodes = 1;
-  cr_new->left   = cr->left;
-  cr_new->right  = cr->right;
+  snew(mcr,1);
+
+  mcr->nodeid = cr->nodeid;
+  mcr->nnodes = cr->nnodes;
+  mcr->left   = cr->left;
+  mcr->right  = cr->right;
+  cr->nodeid  = 0;
+  cr->nnodes  = 1;
   
   /* Patch file names (except log which has been done already) */
   for(i=0; (i<nfile); i++) {
@@ -32,7 +32,7 @@ t_commrec *init_msim(t_commrec *cr,int nfile,t_filenm fnm[])
 #ifdef DEBUGPAR
       fprintf(stderr,"Old file name: %s",fnm[i].fn);
 #endif
-      buf = par_fn(fnm[i].fn,ftp,cr);
+      buf = par_fn(fnm[i].fn,ftp,mcr);
       sfree(fnm[i].fn);
       fnm[i].fn = strdup(buf);
 #ifdef DEBUGPAR
@@ -40,8 +40,8 @@ t_commrec *init_msim(t_commrec *cr,int nfile,t_filenm fnm[])
 #endif
     }
   }
-  
-  return cr_new;
+
+  return mcr;
 }
 
 real mol_dipole(int k0,int k1,atom_id ma[],rvec x[],real q[])

@@ -69,8 +69,8 @@ external "C" {
    * compatibility of the energy files.
    */
   enum {
-    enxOR,   /* Time averaged data for orientation restraints      */
-    enxORI,  /* Instantaneous data for orientation restraints      */
+    enxOR,   /* Time and ensemble averaged data for orientation restraints */
+    enxORI,  /* Instantaneous data for orientation restraints              */
     enxNR    /* Total number of extra blocks in the current code,
               * note that the enxio code can read files written by
 	      * future code which contain more blocks.

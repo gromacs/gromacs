@@ -64,12 +64,12 @@ static char *SRCID_mdrun_h = "$Id$";
 #define MD_POLARISE  (1<<2)
 #define MD_IONIZE    (1<<3)
 #define MD_RERUN     (1<<4)
-#define MD_XMDRUN    (1<<5)
 #define MD_FFSCAN    (1<<6)
 #define MD_SEPDVDL   (1<<7)
 
 /* ROUTINES from md.c */
-extern time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
+extern time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,
+		    int nfile,t_filenm fnm[],
 		    bool bVerbose,bool bCompact,bool bDummies,
 		    t_comm_dummies *dummycomm,int stepout,
 		    t_parm *parm,t_groups *grps,
@@ -108,7 +108,8 @@ extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		       t_groups *grps,t_nsborder *nsb,
 		       rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		       tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
-		       bool bVerbose,bool bDummies,t_comm_dummies *dummycomm,t_commrec *cr,
+		       bool bVerbose,bool bDummies,t_comm_dummies *dummycomm,
+		       t_commrec *cr,t_commrec *mcr,
 		       t_graph *graph,t_forcerec *fr,rvec box_size);
 /* Do steepest descents EM or something like that! */
 
@@ -119,8 +120,8 @@ extern time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		    rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		    tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
 		    bool bVerbose,bool bDummies,t_comm_dummies *dummycomm,
-		    t_commrec *cr,t_graph *graph,t_forcerec *fr,
-		    rvec box_size);
+		    t_commrec *cr,t_commrec *mcr,
+		    t_graph *graph,t_forcerec *fr,rvec box_size);
 /* Do conjugate gradients EM! */
 
 /* ROUTINES from runner.c */
@@ -176,7 +177,7 @@ extern void print_time(FILE *out,time_t start,int step,t_inputrec *ir);
 
 extern time_t print_date_and_time(FILE *log,int pid,char *title);
 
-extern void do_force(FILE *log,t_commrec *cr,
+extern void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 		     t_parm *parm,t_nsborder *nsb,
 		     tensor vir_part,tensor pme_vir,
 		     int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
@@ -285,8 +286,9 @@ extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
  * based on their coordinates in the "dimension" direction.
  */
 				   
-extern void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
-		     bool bCompact,int nDlb,int nstepout,t_edsamyn *edyn,
+extern void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
+		     bool bVerbose,bool bCompact,
+		     int nDlb,int nstepout,t_edsamyn *edyn,
 		     unsigned long Flags);
 /* Driver routine, that calls the different methods */
 		     

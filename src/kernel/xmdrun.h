@@ -74,7 +74,7 @@ extern t_shell *init_shells(FILE *log,int start,int homenr,
 			    t_idef *idef,t_mdatoms *md,int *nshell);
 
 /* Optimize shell positions */
-extern int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
+extern int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 			int mdstep,t_parm *parm,bool bDoNS,bool bStopCM,
 			t_topology *top,real ener[],t_fcdata *fcd,
 			rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
@@ -174,11 +174,8 @@ extern void do_glas(FILE *log,int start,int homenr,rvec x[],rvec f[],
 		    t_forcerec *fr,t_mdatoms *md,int atnr,t_inputrec *ir,
 		    real ener[]);
 
-/* GENERAL XMDRUN STUFF */
-extern t_commrec *cr_msim;
-
 extern t_commrec *init_msim(t_commrec *cr,int nfile,t_filenm fnm[]);
-/* For running multiple independent simulations */
+/* For running multiple (almost) independent simulations */
 
 extern real mol_dipole(int k0,int k1,atom_id ma[],rvec x[],real q[]);
 /* Calculate total dipole for group of atoms */

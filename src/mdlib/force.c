@@ -509,6 +509,9 @@ void init_forcerec(FILE *fp,
   
   natoms         = mdatoms->nr;
 
+  /* Shell stuff */
+  fr->fc_stepsize = ir->fc_stepsize;
+
   /* Free energy */
   fr->efep       = ir->efep;
   fr->sc_alpha   = ir->sc_alpha;
@@ -849,7 +852,8 @@ void ns(FILE *fp,
 void force(FILE       *fp,     int        step,
 	   t_forcerec *fr,      t_inputrec *ir,
 	   t_idef     *idef,    t_nsborder *nsb,
-	   t_commrec  *cr,      t_nrnb     *nrnb,
+	   t_commrec  *cr,      t_commrec *mcr,
+	   t_nrnb     *nrnb,
 	   t_groups   *grps,    t_mdatoms  *md,
 	   int        ngener,   t_grpopts  *opts,
 	   rvec       x[],      rvec       f[],
@@ -957,7 +961,7 @@ void force(FILE       *fp,     int        step,
   debug_gmx();
   
   if (!bNBFonly) {
-    calc_bonds(fp,cr,
+    calc_bonds(fp,cr,mcr,
 	       idef,x,f,fr,graph,epot,nrnb,box,lambda,md,
 	       opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14],
 	       fcd,step,fr->bSepDVDL && do_per_step(step,ir->nstlog));    

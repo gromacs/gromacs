@@ -125,7 +125,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   clear_mat(force_vir);
     
   bNS=TRUE;
-  do_force(log,cr,parm,nsb,force_vir,pme_vir,0,&mynrnb,
+  do_force(log,cr,NULL,parm,nsb,force_vir,pme_vir,0,&mynrnb,
 	   top,grps,x,v,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
   bNS=FALSE;
@@ -166,7 +166,8 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       
       clear_mat(force_vir);
 
-      do_force(log,cr,parm,nsb,force_vir,pme_vir,2*(step*DIM+idum),&mynrnb,
+      do_force(log,cr,NULL,parm,nsb,force_vir,pme_vir,2*(step*DIM+idum),
+	       &mynrnb,
 	       top,grps,x,v,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
       if (bBox)
@@ -183,7 +184,8 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       
       clear_mat(force_vir);
       
-      do_force(log,cr,parm,nsb,force_vir,pme_vir,2*(step*DIM+idum)+1,&mynrnb,
+      do_force(log,cr,NULL,parm,nsb,force_vir,pme_vir,2*(step*DIM+idum)+1,
+	       &mynrnb,
 	       top,grps,x,v,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
       if (bBox)

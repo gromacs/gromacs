@@ -3,10 +3,11 @@
 #include "smalloc.h"
 #include "vec.h"
 #include "nrjac.h"
+#include "network.h"
 #include "orires.h"
 
 void init_orires(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
-		 t_inputrec *ir,t_fcdata *fcd)
+		 t_inputrec *ir,t_commrec *mcr,t_fcdata *fcd)
 {
   int i,j,ex,nr,*nr_ex;
   t_oriresdata *od;
@@ -40,16 +41,28 @@ void init_orires(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
     nr_ex[ex]++;
   }
   snew(od->S,od->nex);
+  /* When not doing time averaging, the instaneous and time averaged data
+   * are indentical and the pointers can point to the same memory.
+   */
   snew(od->Dins,od->nr);
   if (ir->orires_tau == 0)
     od->Dtav = od->Dins;
   else
     snew(od->Dtav,od->nr);
-  snew(od->oins,od->nr);
-  if (ir->orires_tau == 0)
+  if (ir->orires_tau == 0) {
+    snew(od->oins,od->nr);
     od->otav = od->oins;
+  } else {
+    snew(od->oins,2*od->nr);
+    od->otav = &(od->oins[od->nr]);
+  }
+  /* When not ensemble averaging the local orientations are identical to
+   * the ensemble averaged ones and the pointer can point to the same memory.
+   */
+  if (mcr)
+    snew(od->oinsl,od->nr);
   else
-    snew(od->otav,od->nr);
+    od->oinsl = od->oins;
   snew(od->tmp,od->nex);
   snew(od->TMP,od->nex);
   for(ex=0; ex<od->nex; ex++) {
@@ -60,7 +73,9 @@ void init_orires(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
 
   fprintf(log,"Found %d orientation experiments\n",od->nex);
   for(i=0; i<od->nex; i++)
-    fprintf(log,"  experiment %d has %d restraints\n",i,nr_ex[i]);
+    fprintf(log,"  experiment %d has %d restraints\n",i+1,nr_ex[i]);
+  if (mcr)
+    fprintf(log,"The orientation restraints are ensemble averaged over %d systems\n",mcr->nnodes);
 
   sfree(nr_ex);
 }
@@ -109,21 +124,23 @@ void print_orires_log(FILE *log,t_fcdata *fcd)
   }
 }
 
-real calc_orires_viol(t_commrec *cr,
+real calc_orires_viol(t_commrec *mcr,
 		      int nfa,t_iatom forceatoms[],t_iparams ip[],
 		      rvec x[],t_forcerec *fr,t_fcdata *fcd)
 {
   int          fa,d,i,j,type,ex;
-  real         edt,edt1,pfac,r2,invr,corrfac,weight,calc,wsv2,sw,viol;
+  real         edt,edt1,pfac,r2,invr,corrfac,weight,wsv2,sw,viol;
+  real         two_thn;
   tensor       *S;
   rvec5        *Dins,*Dtav,*rhs;
   real         ***T;
   rvec         r;
   t_oriresdata *od;
-  static real  two_three=2.0/3.0;
+  bool         bTAV;
 
   od = &(fcd->orires);
 
+  bTAV = (od->edt != 0);
   edt  = od->edt;
   edt1 = od->edt1;
   S    = od->S;
@@ -149,7 +166,7 @@ real calc_orires_viol(t_commrec *cr,
     Dins[d][2] = pfac*(2*r[0]*r[2]);
     Dins[d][3] = pfac*(2*r[1]*r[1] + r[0]*r[0] - r2);
     Dins[d][4] = pfac*(2*r[1]*r[2]);
-    if (edt != 0)
+    if (bTAV)
       for(i=0; i<5; i++)
 	Dtav[d][i] = edt*Dtav[d][i] + edt1*Dins[d][i];
     d++;
@@ -208,35 +225,59 @@ real calc_orires_viol(t_commrec *cr,
     S[ex][2][1] = S[ex][1][2];
     S[ex][2][2] = -S[ex][0][0] - S[ex][1][1];
   }
-  
-  wsv2 = 0;
-  sw   = 0;
 
+  if (mcr)
+    two_thn = 2.0/(3.0*mcr->nnodes);
+  else
+    two_thn = 2.0/3.0;
+  
   d = 0;
   for(fa=0; fa<nfa; fa+=3) {
     type = forceatoms[fa];
     ex = ip[type].orires.ex;
 
-    calc = two_three*corrfac*(S[ex][0][0]*Dtav[d][0] + S[ex][0][1]*Dtav[d][1] +
-			      S[ex][0][2]*Dtav[d][2] + S[ex][1][1]*Dtav[d][3] +
-			      S[ex][1][2]*Dtav[d][4]);
-
-    viol = calc - ip[type].orires.obs;
- 
-    od->otav[d] = calc;
-   
-    wsv2 += ip[type].orires.kfac*sqr(viol);
-    sw   += ip[type].orires.kfac;
-
-    if (edt != 0)
-      od->oins[d] = two_three*(S[ex][0][0]*Dins[d][0] + S[ex][0][1]*Dins[d][1]+
-			       S[ex][0][2]*Dins[d][2] + S[ex][1][1]*Dins[d][3]+
-			       S[ex][1][2]*Dins[d][4]);
+    od->otav[d] = two_thn*
+      corrfac*(S[ex][0][0]*Dtav[d][0] + S[ex][0][1]*Dtav[d][1] +
+	       S[ex][0][2]*Dtav[d][2] + S[ex][1][1]*Dtav[d][3] +
+	       S[ex][1][2]*Dtav[d][4]);
+    if (bTAV)
+      od->oins[d] = two_thn*(S[ex][0][0]*Dins[d][0] + S[ex][0][1]*Dins[d][1] +
+			     S[ex][0][2]*Dins[d][2] + S[ex][1][1]*Dins[d][3] +
+			     S[ex][1][2]*Dins[d][4]);
+    if (mcr)
+      /* When ensemble averaging is used recalculate the local orientation
+       * for output to the energy file.
+       */
+      od->oinsl[d] = mcr->nnodes*od->oins[d];
 
     d++;
   }
-  od->rmsviol = sqrt(wsv2/sw);
 
+  if (mcr)
+    /* Parallel call to ensemble average the orientations by summing them
+     * over the processors.
+     * To minimize communication when using time averaging the time averages
+     * are stored in memory behind the instantaneous values:
+     * od->otav = &(od->oins[od->nr])
+     */
+    gmx_sum(bTAV ? 2*od->nr : od->nr,od->oins,mcr);
+  
+  wsv2 = 0;
+  sw   = 0;
+  
+  d = 0;
+  for(fa=0; fa<nfa; fa+=3) {
+    type = forceatoms[fa];
+    
+    viol = od->otav[d] - ip[type].orires.obs;
+    
+    wsv2 += ip[type].orires.kfac*sqr(viol);
+    sw   += ip[type].orires.kfac;
+    
+    d++;
+  }
+  od->rmsviol = sqrt(wsv2/sw);
+  
   return od->rmsviol;
   
   /* Approx. 120*nfa/3 flops */

@@ -114,7 +114,7 @@ int main(int argc,char *argv[])
     "Free energy perturbation, X-Ray bombardments",
     "and parallel independent simulations."
   };
-  t_commrec    *cr;
+  t_commrec    *cr,*mcr;
   static t_filenm fnm[] = {
     { efTPX, NULL,      NULL,       ffREAD },
     { efTRN, "-o",      NULL,       ffWRITE },
@@ -192,7 +192,9 @@ int main(int argc,char *argv[])
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
 
   if (bMultiSim && PAR(cr))
-    cr = init_msim(cr,NFILE,fnm);
+    mcr = init_msim(cr,NFILE,fnm);
+  else
+    mcr = cr;
 
   if (MASTER(cr)) {
     CopyRight(stdlog,argv[0]);
@@ -211,10 +213,7 @@ int main(int argc,char *argv[])
 	   (bMultiSim ? MD_MULTISIM : 0) |
 	   (bGlas     ? MD_GLAS     : 0));
   
-  if (bIonize || bMultiSim || bGlas)
-     Flags = Flags | MD_XMDRUN;
-  
-  mdrunner(cr,NFILE,fnm,bVerbose,bCompact,nDLB,nstepout,&edyn,Flags);
+  mdrunner(cr,mcr,NFILE,fnm,bVerbose,bCompact,nDLB,nstepout,&edyn,Flags);
   
   if (gmx_parallel)
     gmx_finalize();

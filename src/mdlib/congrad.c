@@ -76,8 +76,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 	     tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
 	     bool bVerbose,bool bDummies,t_comm_dummies *dummycomm,
-	     t_commrec *cr,t_graph *graph,
-	     t_forcerec *fr,rvec box_size)
+	     t_commrec *cr,t_commrec *mcr,
+	     t_graph *graph,t_forcerec *fr,rvec box_size)
 {
   static char *CG="Conjugate Gradients";
   double gpa,gpb;
@@ -187,8 +187,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   /* do_force always puts the charge groups in the box and shifts again
    * We do not unshift, so molecules are always whole in congrad.c
    */
-  do_force(log,cr,parm,nsb,force_vir,pme_vir,0,&(nrnb[cr->nodeid]),top,grps,
-	   x,buf,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
+  do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,0,&(nrnb[cr->nodeid]),
+	   top,grps,x,buf,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
   where();
 
@@ -311,7 +311,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       /* do_force always puts the charge groups in the box and shifts again
        * We do not unshift, so molecules are always whole in congrad.c
        */
-      do_force(log,cr,parm,nsb,force_vir,pme_vir,
+      do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,
 	       count,&(nrnb[cr->nodeid]),top,grps,xprime,buf,f,
 	       buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
@@ -415,7 +415,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     /* do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in congrad.c
      */
-    do_force(log,cr,parm,nsb,force_vir,pme_vir,
+    do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,
 	     count,&(nrnb[cr->nodeid]),top,grps,xprime,buf,f,
 	     buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	     lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);

@@ -55,7 +55,7 @@ extern "C" {
 #include "nrnb.h"
 #include "pbc.h"
 
-extern void calc_bonds(FILE *log,t_commrec *cr,t_idef *idef,
+extern void calc_bonds(FILE *log,t_commrec *cr,t_commrec *mcr,t_idef *idef,
                        rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
                        real epot[],t_nrnb *nrnb,matrix box,real lambda,
 		       t_mdatoms *md,int ngrp,real egnb[],real egcoul[],

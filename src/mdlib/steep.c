@@ -160,8 +160,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
  		rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms, 
  		tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[], 
  		bool bVerbose,bool bDummies, t_comm_dummies *dummycomm,
-		t_commrec *cr,t_graph *graph,
-		t_forcerec *fr,rvec box_size) 
+		t_commrec *cr,t_commrec *mcr,
+		t_graph *graph,t_forcerec *fr,rvec box_size) 
 { 
   static char *SD="STEEPEST DESCENTS",sbuf[STRLEN]; 
   real   stepsize,constepsize,lambda,ftol,fmax; 
@@ -326,7 +326,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     /* do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in steep.c
      */
-    do_force(log,cr,parm,nsb,force_vir,pme_vir,
+    do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,
  	     count,&(nrnb[cr->nodeid]),top,grps,pos[TRY],buf,force[TRY],buf,
 	     mdatoms,ener,fcd,bVerbose && !(PAR(cr)), 
  	     lambda,graph,parm->ir.nstlist>0 || count==0,FALSE,fr,mu_tot,FALSE); 

@@ -71,7 +71,7 @@ void set_gmx_full_pbc(FILE *fp)
     fprintf(fp,"Full PBC calculation = %s\n",bool_names[bPBC]);
 }
 
-void calc_bonds(FILE *log,t_commrec *cr,t_idef *idef,
+void calc_bonds(FILE *log,t_commrec *cr,t_commrec *mcr,t_idef *idef,
 		rvec x_s[],rvec f[],
 		t_forcerec *fr,t_graph *g,
 		real epot[],t_nrnb *nrnb,
@@ -96,7 +96,7 @@ void calc_bonds(FILE *log,t_commrec *cr,t_idef *idef,
   }
   /* Do pre force calculation stuff which might require communication */
   if (idef->il[F_ORIRES].nr)
-    epot[F_ORIRESVIOL] = calc_orires_viol(cr,
+    epot[F_ORIRESVIOL] = calc_orires_viol(mcr,
 					  idef->il[F_ORIRES].nr,
 					  idef->il[F_ORIRES].iatoms,
 					  idef->iparams,x_s,fr,fcd);

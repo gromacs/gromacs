@@ -164,8 +164,9 @@ static void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 
 }
 
-time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
-	     bool bVerbose,bool bCompact,bool bDummies, t_comm_dummies *dummycomm,
+time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
+	     bool bVerbose,bool bCompact,
+	     bool bDummies, t_comm_dummies *dummycomm,
 	     int stepout,t_parm *parm,t_groups *grps,t_topology *top,
 	     real ener[],t_fcdata *fcd,
 	     rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
@@ -193,12 +194,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   real       terminate=0;
  
   /* XMDRUN stuff: shell, general coupling etc. */
-  bool        bXmdrun,bFFscan,bDynamicStep;
+  bool        bFFscan;
   int         nshell,nshell_tot,count,nconverged=0;
   t_shell     *shells=NULL;
   real        timestep=0;
   double      tcount=0;
-  bool        bIonize=FALSE,bMultiSim=FALSE,bGlas=FALSE;
+  bool        bShell,bIonize=FALSE,bGlas=FALSE;
   bool        bTCR=FALSE,bConverged=FALSE,bOK;
   real        mu_aver=0,fmax;
   int         gnx,ii;
@@ -212,10 +213,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   signal(SIGTERM,signal_handler);
   signal(SIGUSR1,signal_handler);
 
-  /* check if "-rerun" is used. */
-  bRerunMD = ((Flags & MD_RERUN) == MD_RERUN);
-  bXmdrun  = ((Flags & MD_XMDRUN) == MD_XMDRUN);
-  bFFscan  = ((Flags & MD_FFSCAN) == MD_FFSCAN);
+  /* Check for special mdrun options */
+  bRerunMD = (Flags & MD_RERUN)  == MD_RERUN;
+  bIonize  = (Flags & MD_IONIZE) == MD_IONIZE;
+  bGlas    = (Flags & MD_GLAS)   == MD_GLAS;
+  bFFscan  = (Flags & MD_FFSCAN) == MD_FFSCAN;
   
   /* Initial values */
   init_md(cr,&parm->ir,parm->box,&t,&t0,&lambda,&lam0,&SAfactor,
@@ -230,16 +232,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   nshell_tot = nshell;
   if (PAR(cr))
     gmx_sumi(1,&nshell_tot,cr);
-  bXmdrun = bXmdrun || (nshell_tot > 0);
+  bShell = nshell_tot > 0;
   
-  if (bXmdrun) {
-    bDynamicStep = FALSE;
-    bIonize      = (Flags & MD_IONIZE)   == MD_IONIZE;
-    bMultiSim    = (Flags & MD_MULTISIM) == MD_MULTISIM;
-    bGlas        = (Flags & MD_GLAS)     == MD_GLAS;
-    timestep = parm->ir.delta_t;
-  }
-
   /* Check whether we have to do dipole stuff */
   if (ftp2bSet(efNDX,nfile,fnm))
     rd_index(ftp2fn(efNDX,nfile,fnm),1,&gnx,&grpindex,&grpname);
@@ -249,14 +243,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     for(i=0; (i<gnx); i++)
       grpindex[i] = i;
   }
-  if (bXmdrun) {
-    /* Check whether we have to GCT stuff */
-    bTCR = ftp2bSet(efGCT,nfile,fnm);
-    if (MASTER(cr) && bTCR)
-      fprintf(stderr,"Will do General Coupling Theory!\n");
-    
-    fr->fc_stepsize = parm->ir.fc_stepsize;
-  }
+
+  /* Check whether we have to GCT stuff */
+  bTCR = ftp2bSet(efGCT,nfile,fnm);
+  if (MASTER(cr) && bTCR)
+    fprintf(stderr,"Will do General Coupling Theory!\n");
 
   /* Remove periodicity */  
   if (fr->ePBC != epbcNONE)
@@ -307,7 +298,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   }
       
   /* Write start time and temperature */
-  start_t=print_date_and_time(log,cr->nodeid,bXmdrun ? "Started Xmdrun" : "Started mdrun");
+  start_t=print_date_and_time(log,cr->nodeid,"Started mdrun");
   
   if (MASTER(cr)) {
     fprintf(log,"Initial temperature: %g K\n",ener[F_TEMP]);
@@ -421,20 +412,20 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     clear_mat(force_vir);
     
-    if (bXmdrun) {
-      /* Ionize the atoms if necessary */
-      if (bIonize)
-	ionize(log,mdatoms,top->atoms.atomname,t,&parm->ir,x,v,
-	       START(nsb),START(nsb)+HOMENR(nsb),parm->box,cr);
+    /* Ionize the atoms if necessary */
+    if (bIonize)
+      ionize(log,mdatoms,top->atoms.atomname,t,&parm->ir,x,v,
+	     START(nsb),START(nsb)+HOMENR(nsb),parm->box,cr);
       
-      /* Update force field in ffscan program */
-      if (bFFscan) 
-	update_forcefield(nfile,fnm,fr);
-      
+    /* Update force field in ffscan program */
+    if (bFFscan) 
+      update_forcefield(nfile,fnm,fr);
+    
+    if (bShell) {
       /* Now is the time to relax the shells */
-      count=relax_shells(log,cr,bVerbose,step,parm,bNS,bStopCM,top,ener,fcd,
-			 x,vold,v,vt,f,buf,mdatoms,nsb,&mynrnb,graph,
-			 grps,force_vir,pme_vir,(nshell_tot > 0),
+      count=relax_shells(log,cr,mcr,bVerbose,step,parm,bNS,bStopCM,top,
+			 ener,fcd,x,vold,v,vt,f,buf,mdatoms,nsb,&mynrnb,graph,
+			 grps,force_vir,pme_vir,bShell,
 			 nshell,shells,fr,traj,t,lambda,mu_tot,
 			 nsb->natoms,parm->box,&bConverged);
       tcount+=count;
@@ -447,25 +438,23 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
        * This is parallellized as well, and does communication too. 
        * Check comments in sim_util.c
        */
-      do_force(log,cr,parm,nsb,force_vir,pme_vir,step,&mynrnb,
+      do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,step,&mynrnb,
 	       top,grps,x,v,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
     }
    
-    if (bXmdrun) {
-      if (bTCR)
-	mu_aver=calc_mu_aver(cr,nsb,x,mdatoms->chargeA,mu_tot,top,mdatoms,
-			     gnx,grpindex);
-      
-      if (bGlas)
-	do_glas(log,START(nsb),HOMENR(nsb),x,f,
-		fr,mdatoms,top->idef.atnr,&parm->ir,ener);
-      
-      if (bTCR && (step == 0)) {
-	tcr=init_coupling(log,nfile,fnm,cr,fr,mdatoms,&(top->idef));
-	fprintf(log,"Done init_coupling\n"); 
-	fflush(log);
-      }
+    if (bTCR)
+      mu_aver=calc_mu_aver(cr,nsb,x,mdatoms->chargeA,mu_tot,top,mdatoms,
+			   gnx,grpindex);
+    
+    if (bGlas)
+      do_glas(log,START(nsb),HOMENR(nsb),x,f,
+	      fr,mdatoms,top->idef.atnr,&parm->ir,ener);
+    
+    if (bTCR && (step == 0)) {
+      tcr=init_coupling(log,nfile,fnm,cr,fr,mdatoms,&(top->idef));
+      fprintf(log,"Done init_coupling\n"); 
+      fflush(log);
     }
     
     /* Now we have the energies and forces corresponding to the 
@@ -555,14 +544,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       pull(&pulldata,x,f,parm->box,top,parm->ir.delta_t,step,
 	   mdatoms->nr,mdatoms); 
     
-    if (bXmdrun) {
-      /* Check magnitude of the forces */
-      /* fmax = f_max(cr->left,cr->right,cr->nnodes,&(parm->ir.opts),mdatoms,
-	 START(nsb),START(nsb)+HOMENR(nsb),f); */
-      debug_gmx();
-      parm->ir.delta_t = timestep;
-    }
-    
     if (bFFscan)
       clear_rvecs(nsb->natoms,buf);
       
@@ -576,7 +557,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       fatal_error(0,"Constraint error: Shake, Lincs or Settle could not solve the constrains");
     
     /* The coordinates (x) were unshifted in update */
-    if (bFFscan && ((nshell == 0) || bConverged))
+    if (bFFscan && (!bShell || bConverged))
       print_forcefield(log,ener[F_EPOT],HOMENR(nsb),f,buf,xcopy,
 		       &(top->blocks[ebMOLS]),mdatoms->massT); 
     
@@ -698,12 +679,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     ener[F_EKIN]=trace(parm->ekin);
     ener[F_ETOT]=ener[F_EPOT]+ener[F_EKIN];
     
-    if (bXmdrun){
-      /* Check for excessively large energies */
-      if (fabs(ener[F_ETOT]) > 1e18) {
-	fprintf(stderr,"Energy too large (%g), giving up\n",ener[F_ETOT]);
-	break;
-      }
+    /* Check for excessively large energies */
+    if (bIonize && fabs(ener[F_ETOT]) > 1e18) {
+      fprintf(stderr,"Energy too large (%g), giving up\n",ener[F_ETOT]);
+      break;
     }
       
     /* Calculate Temperature coupling parameters lambda and adjust
@@ -719,23 +698,23 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	      (fr->eeltype==eelPPPM) ? ener[F_LR] : 0.0);
     
     /* Calculate long range corrections to pressure and energy */
-    if (bXmdrun && bTCR)
+    if (bTCR)
       set_avcsix(log,fr,mdatoms);
     
     /* Calculate long range corrections to pressure and energy */
     calc_dispcorr(log,parm->ir.eDispCorr,
 		  fr,mdatoms->nr,parm->box,parm->pres,parm->vir,ener);
 
-    if (bXmdrun && bTCR) {
+    if (bTCR) {
       /* Only do GCT when the relaxation of shells (minimization) has converged,
        * otherwise we might be coupling to bogus energies. 
        * In parallel we must always do this, because the other sims might
        * update the FF.
        */
       do_coupling(log,nfile,fnm,tcr,t,step,ener,fr,
-		  &(parm->ir),MASTER(cr) || bMultiSim,
+		  &(parm->ir),MASTER(cr),
 		  mdatoms,&(top->idef),mu_aver,
-		  top->blocks[ebMOLS].nr,bMultiSim ? cr_msim : cr,
+		  top->blocks[ebMOLS].nr,(mcr!=NULL) ? mcr : cr,
 		  parm->box,parm->vir,parm->pres,
 		  mu_tot,x,f,bConverged);
       debug_gmx();
@@ -763,7 +742,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     /* Remaining runtime */
     if (MASTER(cr) && bVerbose && ( ((step % stepout)==0) || bLastStep)) {
-      if (bXmdrun && (nshell > 0))
+      if (bShell)
 	fprintf(stderr,"\n");
       print_time(stderr,start_t,step,&parm->ir);
     }
@@ -815,7 +794,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   }
   debug_gmx();
 
-  if (bXmdrun) {
+  if (bShell) {
     fprintf(log,"Fraction of iterations that converged:           %.2f %%\n",
 	    (nconverged*100.0)/(parm->ir.nsteps+1));
     fprintf(log,"Average number of force evaluations per MD step: %.2f\n",

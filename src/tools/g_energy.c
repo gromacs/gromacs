@@ -657,9 +657,10 @@ int main(int argc,char *argv[])
     "end on a t prompt the user for restraint label numbers and plot",
     "the data as a function of time. Option [TT]-ovr[tt] plots the RMS",
     "violation as a function of restraint.",
-    "When the run used time averaged orientation restraints,",
-    "option [TT]-orinst[tt] can be used to analyse the instantaneous",
-    "orientations and violations instead of the time averages.[PAR]",
+    "When the run used time or ensemble averaged orientation restraints,",
+    "option [TT]-orinst[tt] can be used to analyse the instantaneous,",
+    "not ensemble-averaged orientations and violations instead of",
+    "the time and ensemble averages.[PAR]",
 
     "With [TT]-fee[tt] a free energy estimate is calculated using",
     "the formula: G = -ln < e ^ (E/kT) > * kT, where k is Boltzmann's",

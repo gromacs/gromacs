@@ -434,10 +434,11 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
     fr.rav        = fcd->disres.rav;
     fr.rt         = fcd->disres.rt;
     nr[enxOR]     = bOR ? fcd->orires.nr : 0;
-    nr[enxORI]    = (bOR && fcd->orires.edt>0) ? fcd->orires.nr : 0;
+    nr[enxORI]    = (bOR && (fcd->orires.oinsl != fcd->orires.otav)) ? 
+      fcd->orires.nr : 0;
     fr.nr         = nr;
     block[enxOR]  = fcd->orires.otav;
-    block[enxORI] = fcd->orires.oins;
+    block[enxORI] = fcd->orires.oinsl;
     fr.block      = block;
     if (fr.nr[enxOR])
       fr.nblock   = 2;

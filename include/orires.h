@@ -54,10 +54,10 @@ extern "C" {
 #include "typedefs.h"
 
 extern void init_orires(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
-			t_inputrec *ir,t_fcdata *fcd);
+			t_inputrec *ir,t_commrec *mcr,t_fcdata *fcd);
 /* Initializes all the orientation restraint stuff in *fcd */
 
-extern real calc_orires_viol(t_commrec *cr,
+extern real calc_orires_viol(t_commrec *mcr,
 			     int nfa,t_iatom forceatoms[],t_iparams ip[],
 			     rvec x[],t_forcerec *fr,t_fcdata *fcd);
 /* 

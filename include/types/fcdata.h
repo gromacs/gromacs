@@ -68,8 +68,9 @@ typedef struct {
   tensor *S;          /* Array of order tensors for each expiriment (nexp) */
   rvec5  *Dins;       /* The order matrix for all restraints (nr x 5)      */
   rvec5  *Dtav;       /* The order matrix for all restraints (nr x 5) tav. */
-  real   *oins ;      /* The calculated instantaneous orientations         */
-  real   *otav;       /* The calculated time averaged orientations         */
+  real   *oinsl;      /* The calculated instantaneous orientations         */
+  real   *oins;       /* The calculated emsemble averaged orientations     */
+  real   *otav;       /* The calculated time and ensemble averaged orient. */
   real   rmsviol;     /* The weighted (using kfac) RMS violation           */
   rvec5  *tmp;        /* An array of temporary 5-vectors (nex);            */ 
   real   ***TMP;      /* An array of temporary 5x5 matrices (nex);         */

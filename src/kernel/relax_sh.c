@@ -291,7 +291,7 @@ static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,int step,
 	    lambda,dvdlambda,nrnb,FALSE); 
 }
 
-int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
+int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 		 int mdstep,t_parm *parm,bool bDoNS,bool bStopCM,
 		 t_topology *top,real ener[],t_fcdata *fcd,
 		 rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
@@ -363,7 +363,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   /* Calculate the forces first time around */
   clear_mat(my_vir[Min]);
   clear_mat(pme_vir[Min]);
-  do_force(log,cr,parm,nsb,my_vir[Min],pme_vir[Min],mdstep,nrnb,
+  do_force(log,cr,mcr,parm,nsb,my_vir[Min],pme_vir[Min],mdstep,nrnb,
 	   top,grps,x,v,force[Min],buf,md,ener,fcd,bVerbose && !PAR(cr),
 	   lambda,graph,bDoNS,FALSE,fr,mu_tot,FALSE);
   sum_lrforces(force[Min],fr,start,homenr);
@@ -450,7 +450,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     /* Try the new positions */
     clear_mat(my_vir[Try]);
     clear_mat(pme_vir[Try]);
-    do_force(log,cr,parm,nsb,my_vir[Try],pme_vir[Try],1,nrnb,
+    do_force(log,cr,mcr,parm,nsb,my_vir[Try],pme_vir[Try],1,nrnb,
 	     top,grps,pos[Try],v,force[Try],buf,md,ener,fcd,
 	     bVerbose && !PAR(cr),
 	     lambda,graph,FALSE,FALSE,fr,mu_tot,FALSE);

@@ -184,7 +184,7 @@ static real calc_f_el(int start,int homenr,real charge[],rvec f[],t_cosines Ex[]
   return Emu;
 }
 
-void do_force(FILE *log,t_commrec *cr,
+void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 	      t_parm *parm,t_nsborder *nsb,tensor vir_part,tensor pme_vir,
 	      int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
 	      rvec x[],rvec v[],rvec f[],rvec buf[],
@@ -283,7 +283,7 @@ void do_force(FILE *log,t_commrec *cr,
   }
   
   /* Compute the forces */    
-  force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,nrnb,grps,mdatoms,
+  force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,mcr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(parm->ir.opts),
 	x,f,ener,fcd,bVerbose,parm->box,lambda,graph,&(top->atoms.excl),
 	bNBFonly,pme_vir,mu_tot,qsum,bGatherOnly);
@@ -570,8 +570,9 @@ static void finish_run(FILE *log,t_commrec *cr,char *confout,
   }
 }
 
-void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
-	      bool bCompact,int nDlb,int nstepout,t_edsamyn *edyn,
+void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
+	      bool bVerbose,bool bCompact,
+	      int nDlb,int nstepout,t_edsamyn *edyn,
 	      unsigned long Flags)
 {
   double     nodetime=0,realtime;
@@ -650,7 +651,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 
   /* Orientation restraints */
   init_orires(stdlog,top->idef.il[F_ORIRES].nr,top->idef.il[F_ORIRES].iatoms,
-	      top->idef.iparams,&(parm->ir),fcd);
+	      top->idef.iparams,&(parm->ir),mcr,fcd);
 
   /* check if there are dummies */
   bDummies=FALSE;
@@ -679,7 +680,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   case eiMD:
   case eiSD:
   case eiBD:
-    start_t=do_md(stdlog,cr,nfile,fnm,
+    start_t=do_md(stdlog,cr,mcr,nfile,fnm,
 		  bVerbose,bCompact,bDummies,
 		  bParDummies ? &dummycomm : NULL,
 		  nstepout,parm,grps,top,ener,fcd,x,vold,v,vt,f,buf,
@@ -690,14 +691,14 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 		  x,f,buf,mdatoms,parm->ekin,ener,fcd,
 		  nrnb,bVerbose,bDummies,
 		  bParDummies ? &dummycomm : NULL,
-		  cr,graph,fr,box_size);
+		  cr,mcr,graph,fr,box_size);
     break;
   case eiSteep:
     start_t=do_steep(stdlog,nfile,fnm,parm,top,grps,nsb,
 		     x,f,buf,mdatoms,parm->ekin,ener,fcd,
 		     nrnb,bVerbose,bDummies,
 		     bParDummies ? &dummycomm : NULL,
-		     cr,graph,fr,box_size);
+		     cr,mcr,graph,fr,box_size);
     break;
   case eiNM:
     start_t=do_nm(stdlog,cr,nfile,fnm,
