@@ -334,7 +334,7 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
   snew(xnew,1);
   snew(pdbi, natoms);
   
-  for(i=0; (i<natoms); i++) {
+  for(i=0; i<natoms; i++) {
     atomnm=*pdba->atomname[i];
     resnm=*pdba->resname[pdba->atom[i].resnr];
     if ((rptr=search_rtp(resnm,nrtp,restp)) == NULL)
@@ -342,7 +342,7 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
     for(j=0; (j<rptr->natom); j++)
       if (strcasecmp(atomnm,*(rptr->atomname[j])) == 0)
 	break;
-    if (j==rptr->natom)
+    if (j==rptr->natom) {
       if ( ( ( pdba->atom[i].resnr == 0) && (atomnm[0] == 'H') &&
 	     ( (atomnm[1] == '1') || (atomnm[1] == '2') || 
 	       (atomnm[1] == '3') ) ) ||
@@ -352,6 +352,7 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
 	fatal_error(0,"Atom %s in residue %s %d not found in database"
 		    " while sorting atoms",atomnm,
 		    rptr->resname,pdba->atom[i].resnr+1);
+    }
     /* make shadow array to be sorted into indexgroup */
     pdbi[i].resnr  = pdba->atom[i].resnr;
     pdbi[i].j      = j;
@@ -370,7 +371,7 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
   pdbnew->nres=pdba->nres;
   sfree(pdbnew->resname);
   pdbnew->resname=pdba->resname;
-  for (i=0; (i<natoms); i++) {
+  for (i=0; i<natoms; i++) {
     pdbnew->atom[i]     = pdba->atom[pdbi[i].index];
     pdbnew->atomname[i] = pdba->atomname[pdbi[i].index];
     pdbnew->pdbinfo[i]  = pdba->pdbinfo[pdbi[i].index];
