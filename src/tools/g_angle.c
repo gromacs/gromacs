@@ -37,6 +37,7 @@ static char *SRCID_g_angle_c = "$Id$";
 #include "futil.h"
 #include "statutil.h"
 #include "copyrite.h"
+#include "vec.h"
 #include "rdgroup.h"
 #include "macros.h"
 #include "fatal.h"
@@ -91,7 +92,7 @@ int main(int argc,char *argv[])
     bFrac,          /* calculate fraction too?  */
     bTrans,         /* worry about transtions too? */
     bCorr;          /* correlation function ? */    
-  real       t,aa,aver,fraction;       /* fraction trans dihedrals */
+  real       t,aa,aver,aver2,aversig,fraction;       /* fraction trans dihedrals */
   double     tfrac=0;
   char       title[256];
   real       **dih=NULL;          /* mega array with all dih. angles at all times*/
@@ -255,14 +256,19 @@ int main(int argc,char *argv[])
   for(last=maxangstat-1; (last > 0) && (angstat[last-1] == 0) ; last--)
     ;
 
-  aver=0;
-  for(i=0; (i<nframes); i++)
-    aver+=aver_angle[i];
-  aver/=nframes;
-  
-  fprintf(stderr,"Found points in the range from %d to %d (max %d), "
-	  "average %g\n",
-	  first,last,maxangstat,aver*RAD2DEG);
+  aver=aver2=0;
+  for(i=0; (i<nframes); i++) {
+    aver  += RAD2DEG*aver_angle[i];
+    aver2 += sqr(RAD2DEG*aver_angle[i]);
+  }
+  aver   /= (real) nframes;
+  aver2  /= (real) nframes;
+  aversig = sqrt(aver2-sqr(aver));
+  printf("Found points in the range from %d to %d (max %d)\n",
+	 first,last,maxangstat);
+  printf(" < angle >  = %g\n",aver);
+  printf("< angle^2 > = %g\n",aver2);
+  printf("Std. Dev.   = %g\n",aversig);
     
   if (mult == 3)
     sprintf(title,"Angle Distribution: %s",grpname);

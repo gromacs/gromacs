@@ -122,14 +122,14 @@ void do_bonds(FILE *log,char *fn,char *outf,int gnx,atom_id index[],
   */
   /* For definitions see "Weet wat je meet" */
   if (bAver) {
-    fprintf(stderr,"\n");
-    fprintf(stderr,"Total number of samples               : %d\n",
+    printf("\n");
+    printf("Total number of samples               : %d\n",
 	    npoints_lsq(&b_one));
-    fprintf(stderr,"Mean                                  : %g\n",
+    printf("Mean                                  : %g\n",
 	    aver_lsq(&b_one));
-    fprintf(stderr,"Standard deviation of the distribution: %g\n",
+    printf("Standard deviation of the distribution: %g\n",
 	    sigma_lsq(&b_one));
-    fprintf(stderr,"Standard deviation of the mean        : %g\n",
+    printf("Standard deviation of the mean        : %g\n",
 	    error_lsq(&b_one));
 	    
     out=xvgropen(outf,"Bond Stretching Distribution",
