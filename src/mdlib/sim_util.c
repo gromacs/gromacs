@@ -493,40 +493,69 @@ void do_shakefirst(FILE *log,bool bTYZ,real ener[],
   }
 }
 
-void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
-		   matrix box,tensor pres,tensor virial,real ener[])
+static void calc_enervirdiff(FILE *log,int eDispCorr,t_forcerec *fr)
 {
-  /* modified for switched VdW corrections Michael R. Shirts 2/21/03 */
-  static bool bFirst=TRUE;
-  double dnatoms;
-  real vol,rc3,rc9,spres=0,svir=0;
-  int  m,offset;
-  
-  /*    variables for switched VdW correction */
-  double r;
-  double eners,press,enersum,pressum,y0,f,g,h;
-  double rswitch,roff,ea,eb,ec,pa,pb,pc,pd;
+  double eners[2],virs[2],enersum,virsum,y0,f,g,h;
+  double r0,r1,r,rc3,rc9,ea,eb,ec,pa,pb,pc,pd;
   double scale,scale2,scale3;
-  int i, offstart=0;
-  real multf=0;
-  real *vdwtab; 
-  
-  ener[F_DISPCORR] = 0.0;
-  ener[F_PRES]     = trace(pres)/3.0;
-  
+  real   pot,vir;
+  int    ri0,ri1,ri,i,offstart,offset;
+  real   *vdwtab; 
+
+  fr->enerdiffsix = 0;
+  fr->enerdifftwelve = 0;
+  fr->virdiffsix = 0;
+  fr->virdifftwelve = 0;
+
   if (eDispCorr != edispcNO) {
-    vol           = det(box);
-    if (fr->vdwtype == evdwSWITCH) {
-      rc3  = fr->rvdw_switch*fr->rvdw_switch*fr->rvdw_switch;
-      rc9  = rc3*rc3*rc3;
-      eners = 0.0; press=0.0;
-      rswitch = fr->rvdw_switch;
-      roff =  fr->rvdw; 
+    for(i=0; i<2; i++) {
+      eners[i] = 0;
+      virs[i]  = 0;
+    }
+    if (fr->vdwtype == evdwSWITCH || fr->vdwtype == evdwSHIFT
+	|| fr->vdwtype == evdwUSER) {
+      if (fr->rvdw_switch == 0)
+	fatal_error(0,"With dispersion correction rvdw-switch can not be zero "
+		    "for vdw-type = %s",evdw_names[fr->vdwtype]);
+
+      /* Round the cut-offs to exact table values for precision */
+      ri0 = floor(fr->rvdw_switch*fr->tabscale);
+      ri1 = ceil(fr->rvdw*fr->tabscale);
+      r0  = ri0/fr->tabscale;
+      r1  = ri1/fr->tabscale;
+
+      vdwtab = fr->vdwtab;
+
+      if (fr->vdwtype == evdwSHIFT || fr->vdwtype == evdwUSER) {
+	/* Add the constant part from 0 to rvdw_switch */
+	rc3  = r0*r0*r0;
+	rc9  = rc3*rc3*rc3;
+	for(i=0; i<2; i++) {
+	  offset = 8*ri0 + (i==0 ? 0 : 4);
+          y0 = vdwtab[offset];
+          f  = vdwtab[offset+1];
+	  if (i == 0) {
+	    pot = -1.0/(rc3*rc3);
+	    vir =  6.0/(rc3*rc3);
+	    if (fr->vdwtype == evdwUSER)
+	      fprintf(log,
+		      "WARNING: using dispersion correction with user tables\n"
+		      "         assuming that the missing dispersion from 0\n"
+		      "         to rvdw-switch = %f is constant at %f nm^-6\n",
+		      fr->rvdw_switch,pot-y0);
+	  } else {
+	    pot =   1.0/(rc9*rc3);
+	    vir = -12.0/(rc9*rc3);
+	  }
+	  eners[i] += 4.0*M_PI*(pot - y0)*rc3/3.0;
+	  virs[i]  += 4.0*M_PI*(vir - f )*rc3/3.0;
+	}
+      }
+
       scale = 1.0/(fr->tabscale);  
       scale2 = scale*scale;
       scale3 = scale*scale2;
-      vdwtab = fr->vdwtab;
-      
+
       /* following summation derived from cubic spline definition,
 	Numerical Recipies in C, second edition, p. 113-116.  Exact
 	for the cubic spline.  We first calculate the negative of
@@ -537,18 +566,14 @@ void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
 	loops at the same time for simplicity, as the computational
 	cost is low. */
       
-      eners = 0.0; press = 0.0;
-      
-      
       for (i=0;i<2;i++) {
-        enersum = 0.0; pressum = 0.0;
-        if (i==0) {offstart = 0; multf = fr->avcsix;}
-        if (i==1) {offstart = 4; multf = fr->avctwelve;}
-        /* the second time through, we are doing the r12 correction,which we only need to do
-         * if the user selects the "All" variants.
-	 */
-        if ((i==1) && (!((eDispCorr == edispcAllEner) || (eDispCorr == edispcAllEnerPres)))) {break;}
-        for (r=rswitch;r<roff;r+=scale) {
+        enersum = 0.0; virsum = 0.0;
+        if (i==0)
+	  offstart = 0;
+	else
+	  offstart = 4;
+	for (ri=ri0; ri<ri1; ri++) {
+          r = ri*scale;
           ea = scale3;
           eb = 2.0*scale2*r;
           ec = scale*r*r;
@@ -560,7 +585,7 @@ void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
           
           /* this "8" is from the packing in the vdwtab array - perhaps
 	    should be #define'ed? */
-          offset = (int)(8*(floor(r/scale)+1)) + offstart;
+          offset = 8*ri + offstart;
           y0 = vdwtab[offset];
           f = vdwtab[offset+1];
           g = vdwtab[offset+2];
@@ -568,80 +593,86 @@ void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
 	  
           enersum += y0*(ea/3 + eb/2 + ec) + f*(ea/4 + eb/3 + ec/2)+
             g*(ea/5 + eb/4 + ec/3) + h*(ea/6 + eb/5 + ec/4);  
-          pressum +=  f*(pa/4 + pb/3 + pc/2 + pd) + 
+          virsum  +=  f*(pa/4 + pb/3 + pc/2 + pd) + 
             2*g*(pa/5 + pb/4 + pc/3 + pd/2) + 3*h*(pa/6 + pb/5 + pc/4 + pd/3);
 	  
         }
-        enersum *= -2.0*multf;
-        pressum *= (2.0/3.0)*multf; 
-        eners += enersum;
-        press += pressum;
+        enersum *= 4.0*M_PI;
+        virsum  *= 4.0*M_PI; 
+        eners[i] -= enersum;
+        virs[i]  -= virsum;
       }
-      
-      /* now add the correction for vdw_switch to infinity */
-      
-      eners += -2.0*(fr->avcsix/(3.0*rc3)); 
-      if ((eDispCorr == edispcAllEner) || (eDispCorr == edispcAllEnerPres)) {
-        eners += 2.0*(fr->avctwelve/(9.0*rc9)); 
-      }
-      
-      eners *= natoms*natoms*M_PI*(1/vol); 
-      ener[F_DISPCORR] = (real)eners;
-      
-      if ((eDispCorr == edispcEnerPres) || (eDispCorr == edispcAllEnerPres)) {
-        press += -4.0*(fr->avcsix/(3.0*rc3)); 
-	
-        if ((eDispCorr == edispcAllEnerPres)) {
-          press += 8.0*(fr->avctwelve/(9.0*rc9)); 
-        }
-        press *= natoms*natoms*M_PI*(1/vol)*PRESFAC/vol;
-        
-        spres            = (real)press;
-        svir             = -3*(vol/PRESFAC)*spres;
-        ener[F_PRES]    += spres;
-        for(m=0; (m<DIM); m++) {
-          pres[m][m]    += spres;
-          virial[m][m]  += svir;
-        }
-      } else {
-        spres = 0;
-        svir  = 0;
-      }
+
+      /* now add the correction for rvdw_switch to infinity */
+      rc3  = r0*r0*r0;
+      rc9  = rc3*rc3*rc3;
+      eners[0] += -4.0*M_PI/(3.0*rc3);
+      eners[1] +=  4.0*M_PI/(9.0*rc9);
+      virs[0]  +=  8.0*M_PI/rc3;
+      virs[1]  += -16.0*M_PI/(3.0*rc9);
     } else if (fr->vdwtype == evdwCUT) {
       rc3  = fr->rvdw*fr->rvdw*fr->rvdw;
       rc9  = rc3*rc3*rc3;
-      
-      eners = -2.0*fr->avcsix/(3.0*rc3); 
-      if ((eDispCorr == edispcAllEner) || (eDispCorr == edispcAllEnerPres)) {
-        eners += 2.0* fr->avctwelve/(9.0*rc9); 
-      }
-      eners *= natoms*natoms*M_PI*(1/vol); 
-      ener[F_DISPCORR] = (real)eners;
-      
-      if ((eDispCorr == edispcEnerPres) || (eDispCorr == edispcAllEnerPres)) {
-        spres = -4.0*fr->avcsix/(3.0*rc3); 
-        if (eDispCorr == edispcAllEnerPres) {
-          spres += 8.0*fr->avctwelve/(9.0*rc9); 
-        }
-	
-        spres *= natoms*natoms*M_PI*(1/vol)*PRESFAC/vol;
-        svir             = -3*(vol/PRESFAC)*spres;
-        ener[F_PRES]    += spres;
-        for(m=0; (m<DIM); m++) {
-          pres[m][m]    += spres;
-          virial[m][m]  += svir;
-        }
-      } else {
-        spres = 0;
-        svir  = 0;
-      }
+      eners[0] += -4.0*M_PI/(3.0*rc3);
+      eners[1] +=  4.0*M_PI/(9.0*rc9);
+      virs[0]  +=  8.0*M_PI/rc3;
+      virs[1]  += -16.0*M_PI/(3.0*rc9);
+    } else {
+      fatal_error(0,
+		  "Dispersion correction is not implemented for vdw-type = %s",
+		  evdw_names[fr->vdwtype]);
     }
+    fr->enerdiffsix    = eners[0];
+    fr->enerdifftwelve = eners[1];
+    /* The 0.5 is due to the Gromacs definition of the virial */
+    fr->virdiffsix     = 0.5*virs[0];
+    fr->virdifftwelve  = 0.5*virs[1];
+  }
+}
+
+void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
+		   matrix box,tensor pres,tensor virial,real ener[])
+{
+  /* modified for switched VdW corrections Michael R. Shirts 2/21/03 */
+  static bool bFirst=TRUE;
+  real invvol,dens,svir,spres;
+  int  m;
+  
+  ener[F_DISPCORR] = 0.0;
+  ener[F_PRES]     = trace(pres)/3.0;
+  
+  if (eDispCorr != edispcNO) {
+    if (bFirst)
+      calc_enervirdiff(log,eDispCorr,fr);
     
+    invvol = 1/det(box);
+    dens = natoms*invvol;
+    
+    ener[F_DISPCORR] = 0.5*natoms*dens*fr->avcsix*fr->enerdiffsix;
+    if (eDispCorr == edispcAllEner || eDispCorr == edispcAllEnerPres)
+      ener[F_DISPCORR] += 0.5*natoms*dens*fr->avctwelve*fr->enerdifftwelve;
+    
+    svir = 0;
+    if (eDispCorr == edispcEnerPres || eDispCorr == edispcAllEnerPres) {
+      svir += 0.5*natoms*dens*fr->avcsix*fr->virdiffsix/3.0;
+      if (eDispCorr == edispcAllEnerPres)
+	svir += 0.5*natoms*dens*fr->avctwelve*fr->virdifftwelve/3.0;
+    }
+    /* The factor 2 is because of the Gromacs virial definition */
+    spres = -2.0*invvol*svir*PRESFAC;
+    
+    for(m=0; m<DIM; m++) {
+      virial[m][m] += svir;
+      pres[m][m] += spres;
+    }
+    ener[F_PRES] += spres;
+
     if (bFirst) {
-      if ((eDispCorr == edispcEner)  || (eDispCorr == edispcAllEner))
+      if (eDispCorr == edispcEner || eDispCorr == edispcAllEner)
         fprintf(log,"Long Range LJ corr. to Epot: %10g\n",ener[F_DISPCORR]);
-      else if ((eDispCorr == edispcEnerPres) || (eDispCorr == edispcAllEnerPres))
-        fprintf(log,"Long Range LJ corr. to Epot: %10g, Pres: %10g, Vir: %10g\n",
+      else if (eDispCorr == edispcEnerPres || eDispCorr == edispcAllEnerPres)
+        fprintf(log,
+		"Long Range LJ corr. to Epot: %10g, Pres: %10g, Vir: %10g\n",
                 ener[F_DISPCORR],spres,svir);
       bFirst = FALSE;
     }
