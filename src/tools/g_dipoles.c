@@ -70,7 +70,8 @@ bool read_mu_from_enx(int fmu,int Vol,ivec iMu,rvec mu,real *vol,
   eof = do_enx(fmu,t,&step,&nre,ee,NULL);
 
   if (eof) {
-    *vol = ee[Vol].e;
+    if (Vol != -1)          /* we've got Volume in the energy file */
+      *vol = ee[Vol].e;
     for (i=0;(i<DIM);i++)
       mu[i]=ee[iMu[i]].e;
   }
@@ -78,18 +79,6 @@ bool read_mu_from_enx(int fmu,int Vol,ivec iMu,rvec mu,real *vol,
   free(ee);
  
   return eof;
-
-/* For backward compatibility 
-  real mmm[4];
-  
-  if (fread(mmm,(size_t)(4*sizeof(mmm)),1,fp) != 1)
-    return FALSE;
-    
-  copy_rvec(mmm,mu);
-  *vol = mmm[3];
-  
-  return TRUE;
-  */
 }
 
 
@@ -395,11 +384,22 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   int        *bin,ibin;
   real       volume;
   unsigned long mode;
+  /* PvM, I need these to be able to call read_tpx */
+  int        natoms,step;
+  real       lambda;
+
+  snew(top,1);
+  read_tpx(topf,&step,&t,&lambda,NULL,box,
+	   &natoms,NULL,NULL,NULL,top);
+  volume = det(box);
+  
+  /* top  = read_top(topf); */
 
   if (bMU) {
     fmu = open_enx(mufn,"r");
     do_enxnms(fmu,&nre,&enm);
 
+    Vol=-1;
     /* Determine the indexes of the energy grps we need */
     for (i=0; (i<nre); i++) {
       if (strstr(enm[i],"Volume"))
@@ -413,10 +413,13 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
     }
   }
   else {
-    top  = read_top(topf);
     atom = top->atoms.atom;
     mols = &(top->blocks[ebMOLS]);
   }
+  
+  if (Vol == -1)
+    printf("Couldn't find the Volume in the energy file, so I will use the box from\n the topology file instead: %g nm^3\n",volume);
+
   /* Correlation stuff */ 
   if (bCorr) {
     if (bAverCorr) {
@@ -614,8 +617,11 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
     /* Strange construction because teller*teller may go beyond INT_MAX */
     M_ave2  = (M_ave_sqr/teller)/teller;
     M_diff  = M2_ave - M_ave2;
+
+    /* Compute volume from box in traj, else we use the one from above */
     if (!bMU)
       volume  = det(box);
+
     epsilon = calc_eps(M_diff,volume,epsilonRF,temp);
 
     /* Finite system Kirkwood G-factor */
@@ -626,7 +632,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 
     /* Write to file < |M|^2 >, < |M| >^2. And the difference between 
      * the two. Here M is sum mu_i. Further write the finite system
-     * Kirkwood G factor.
+     * Kirkwood G factor and epsilon.
      */
     fprintf(outaver,"%10g  %12.8e %12.8e %12.8e %12.8e %12.8e\n",
 	    t, M2_ave, M_ave2, M_diff, Gk, epsilon);
