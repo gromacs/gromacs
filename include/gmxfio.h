@@ -90,6 +90,13 @@ extern FILE *fio_getfp(int fio);
 extern XDR *fio_getxdr(int fio);
 /* Return the file pointer itself */
 
+extern void set_comment(char *comment);
+/* Add this to the comment string for debugging */
+
+extern void unset_comment(void);
+/* Remove previously set comment */
+
+
 /********************************************************
  * Dirty C macros... Try this in FORTRAN 
  * (Oh, and you can do structured programming in C too) 

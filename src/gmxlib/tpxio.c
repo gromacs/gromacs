@@ -215,6 +215,8 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
 {
   int i;
   
+  if (!bRead)
+    set_comment(interaction_function[ftype].name);
   switch (ftype) {
   case F_ANGLES:
     do_harm(iparams,bRead);
@@ -289,17 +291,23 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
     fatal_error(0,"unknown function type %d (%s) in %s line %d",
 		ftype,interaction_function[ftype].name,__FILE__,__LINE__);
   }
+  if (!bRead)
+    unset_comment();
 }
 
-static void do_ilist(t_ilist *ilist,bool bRead)
+static void do_ilist(t_ilist *ilist,bool bRead,char *name)
 {
   int i;
   
+  if (!bRead)
+    set_comment(name);
   ndo_int(ilist->multinr,MAXPROC);
   do_int (ilist->nr);
   if (bRead)
     snew(ilist->iatoms,ilist->nr);
   ndo_int(ilist->iatoms,ilist->nr);
+  if (!bRead)
+    unset_comment();
 }
 
 static void do_idef(t_idef *idef,bool bRead)
@@ -319,7 +327,7 @@ static void do_idef(t_idef *idef,bool bRead)
     do_iparams(idef->functype[i],&idef->iparams[i],bRead);
   
   for(j=0; (j<F_NRE); j++)
-    do_ilist(&idef->il[j],bRead);
+    do_ilist(&idef->il[j],bRead,interaction_function[j].name);
 }
 
 static void do_block(t_block *block,bool bRead)

@@ -76,6 +76,7 @@ static t_fileio *curfio = NULL;
 static int  nFIO = 0;
 static char *eioNames[eioNR] = { "REAL", "INT", "NUCHAR", "USHORT", 
 				 "RVEC", "NRVEC", "IVEC", "STRING" };
+static char *add_comment = NULL;
 
 static char *dbgstr(char *desc)
 {
@@ -85,10 +86,24 @@ static char *dbgstr(char *desc)
   if (!curfio->bDebug)
     return null_str;
   else {
-    sprintf(buf,"  ;  %s",desc);
+    sprintf(buf,"  ; %s %s",add_comment ? add_comment : "",desc);
     return buf;
   }
 }
+
+void set_comment(char *comment)
+{
+  if (comment)
+    add_comment = strdup(comment);
+}
+
+void unset_comment(void)
+{
+  if (add_comment)
+    sfree(add_comment);
+  add_comment = NULL;
+}
+
 
 static void _check_nitem(int eio,int nitem,char *file,int line)
 {
