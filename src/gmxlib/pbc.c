@@ -402,9 +402,10 @@ void calc_box_center(matrix box,rvec box_center)
 {
   int d,m;
 
+  clear_rvec(box_center);
   for(m=0; (m<DIM); m++)  
     for(d=0; d<DIM; d++)
-      box_center[d] = 0.5*box[m][d];
+      box_center[d] += 0.5*box[m][d];
 }
 
 void calc_triclinic_images(matrix box,rvec img[])
