@@ -36,13 +36,14 @@ static char *SRCID_h_db_c = "$Id$";
 #include "symtab.h"
 #include "h_db.h"
 
-/* There are 10 types of adding hydrogens, numbered from
- * 1 thru 7. Each of these has a specific number of
+/* There are 9 types of adding hydrogens, numbered from
+ * 1 thru 9. Each of these has a specific number of
  * control atoms, that determine how the hydrogens are added.
  * Here these number are given. Because arrays start at 0 an
  * extra dummy for index 0 is added 
  */
-int ncontrol[11] = { -1, 3, 3, 3, 3, 4, 3, 1, 3, 3, 3 };
+/*                       1  2  3  4  5  6  7  8  9 */
+int ncontrol[12] = { -1, 3, 3, 3, 3, 4, 3, 1, 3, 3 };
 
 int compaddh(const void *a,const void *b)
 {
@@ -152,12 +153,3 @@ t_addh *search_h_db(int nh,t_addh ah[],char *key)
   
   return result;
 }
-
-
-
-
-
-
-
-
-
