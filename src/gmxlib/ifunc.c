@@ -62,7 +62,9 @@ t_interaction_function interaction_function[F_NRE]=
   def_bond   ("BONDS",    "Bond",            2, 2, 2,  eNR_BONDS,  bonds    ),
   def_bond   ("G96BONDS", "G96Bond",         2, 2, 2,  eNR_BONDS,  g96bonds ),
   def_bond   ("MORSE",    "Morse",           2, 3, 0,  eNR_MORSE, morsebonds),
+#ifdef USE_CUBICBONDS
   def_bond   ("CUBICBONDS","Cubic Bonds",    2, 3, 0,  eNR_CUBICBONDS, cubicbonds),
+#endif
   def_angle  ("ANGLES",   "Angle",           3, 2, 2,  eNR_ANGLES, angles   ),
   def_angle  ("G96ANGLES","G96Angle",        3, 2, 2,  eNR_ANGLES, g96angles),
   def_bonded ("PDIHS",    "Proper Dih.",     4, 3, 3,  eNR_PROPER, pdihs    ),

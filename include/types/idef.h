@@ -44,7 +44,9 @@ enum {
   F_BONDS,
   F_G96BONDS,
   F_MORSE,
+#ifdef USE_CUBICBONDS
   F_CUBICBONDS,
+#endif
   F_ANGLES, 
   F_G96ANGLES, 
   F_PDIHS,

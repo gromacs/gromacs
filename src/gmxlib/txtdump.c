@@ -404,10 +404,12 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     fprintf(fp,"b0=%15.8e, cb=%15.8e, beta=%15.8e\n",
 	    iparams->morse.b0,iparams->morse.cb,iparams->morse.beta);
     break;
+#ifdef USE_CUBICBONDS
   case F_CUBICBONDS:
     fprintf(fp,"b0=%15.8e, kb=%15.8e, kcub=%15.8e\n",
 	    iparams->cubic.b0,iparams->cubic.kb,iparams->cubic.kcub);
     break;
+#endif
   case F_WPOL:
     fprintf(fp,"kx=%15.8e, ky=%15.8e, kz=%15.8e, rOH=%9.6f, rHH=%9.6f, rOD=%9.6f\n",
 	    iparams->wpol.kx,iparams->wpol.ky,iparams->wpol.kz,

@@ -47,9 +47,9 @@ static char *SRCID_tpxio_c = "$Id$";
 #include "copyrite.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version = 15;
+static int tpx_version = 14;
 /* This number should be the most recent incompatible version */
-static int tpx_incompatible_version = 14;
+static int tpx_incompatible_version = 9;
 /* This is the version of the file we are reading */
 static int file_version = 0;
 
@@ -287,11 +287,13 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
     do_real(iparams->morse.cb);
     do_real(iparams->morse.beta);
     break;
+#ifdef USE_CUBICBONDS
   case F_CUBICBONDS:
     do_real(iparams->cubic.b0);
     do_real(iparams->cubic.kb);
     do_real(iparams->cubic.kcub);
     break;
+#endif
   case F_WPOL:
     do_real(iparams->wpol.kx);
     do_real(iparams->wpol.ky);
