@@ -295,15 +295,17 @@ bool khole_decay(FILE *log,t_cross_atom *ca,rvec v,int *seed,real dt,int atom)
     exit(1);
   }
   if (rando(seed) < dt/recoil[ca->z].tau) {
-    fprintf(log,"DECAY: Going to decay a k hole\n");
+    if (debug)
+      fprintf(debug,"DECAY: Going to decay a k hole\n");
     ca->n++;
     ca->k--;
     /* Generate random vector */
     rand_vector(dv,seed);
 
     factor = ca->vAuger;
-    fprintf(log,"DECAY: factor=%10g, dv = (%8.3f, %8.3f, %8.3f)\n",
-	    factor,dv[XX],dv[YY],dv[ZZ]);
+    if (debug)
+      fprintf(debug,"DECAY: factor=%10g, dv = (%8.3f, %8.3f, %8.3f)\n",
+	      factor,dv[XX],dv[YY],dv[ZZ]);
     for(m=0; (m<DIM); m++)
       v[m] += dv[m]*factor;
     return TRUE;
@@ -318,8 +320,9 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   static FILE  *xvg,*ion;
   static char  *leg[] = { "Probability", "Primary Ionization", "Integral over PI", "KHole-Decay", "Integral over KD" };
   static bool  bFirst = TRUE,bImpulse = TRUE,bExtraKinetic=FALSE;
-  static real  t0,imax,width,inv_nratoms,rho,nphot,ztot,protein_radius;
-  static int   seed,dq_tot,nkd_tot,ephot,mode,interval;
+  static real  t0,imax,width,inv_nratoms,rho,nphot,ztot;
+  static real  protein_radius,interval;
+  static int   seed,dq_tot,nkd_tot,ephot,mode;
   static t_cross_atom *ca;
   static int   Eindex=-1;
   
@@ -330,7 +333,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   bool bIonize=FALSE,bKHole,bL,bDOIT;
   char *cc;
   int  i,j,k,kk,m,nK,nL,dq,nkh,nkdecay;
-  int  *nionize,*nkhole,*ndecay,nbuf[4];
+  int  *nionize,*nkhole,*ndecay,nbuf[2];
   
   if (bFirst) {
     /* Get parameters for gaussian photon pulse from inputrec */
@@ -341,7 +344,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     seed     = ir->userint1;   /* Random seed for stochastic ionization */
     ephot    = ir->userint2;   /* Energy of the photons                 */
     mode     = ir->userint3;   /* Mode of ionizing                      */
-    interval = ir->userint4;   /* Interval between pulses (fs)          */
+    interval = 0.001*ir->userint4;   /* Interval between pulses (ps)    */
      
     if ((width <= 0) || (nphot <= 0))
       fatal_error(0,"Your parameters for ionization are not set properly\n"
@@ -361,8 +364,14 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
       break;
     }
     if (seed == 0)
-      seed = 1993;
-    
+      seed = make_seed();
+    if (PAR(cr)) {
+      for(i=0; (i<cr->pid); i++)
+	seed = INT_MAX*rando(&seed);
+      fprintf(log,PREFIX"Modifying seed on parallel processor to %d\n",
+	      seed);
+    }
+          
     for(Eindex=0; (Eindex < NENER) && (Energies[Eindex] != ephot); Eindex++)
       ;
     if (Eindex == NENER)
@@ -396,9 +405,9 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	    PREFIX"# Photons = %g, rho = %g, ephot = %d (keV), Impulse = %s\n",
 	    imax,t0,width,seed,nphot,rho,ephot,yesno_names[bImpulse]);
     fprintf(log,PREFIX"Electron_mass: %10.3e(keV) Atomic_mass: %10.3e(keV)\n"
-	    "Speed_of_light: %10.3e(nm/ps)\n",
+	    PREFIX"Speed_of_light: %10.3e(nm/ps)\n",
 	    ELECTRONMASS_keV,ATOMICMASS_keV,SPEEDOFLIGHT);
-    fprintf(log,PREFIX"Interval between shots: %d fs\n",interval);
+    fprintf(log,PREFIX"Interval between shots: %g ps\n",interval);
     fprintf(log,PREFIX"Eindex = %d\n",Eindex);
     fprintf(log,PREFIX"Total charge on system: %g e. Total mass: %g u\n",
 	    ztot,mtot);
@@ -406,6 +415,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     fprintf(log,PREFIX
 	    "Adding extra kinetic energy because of leaving electrons: %s\n",
 	    bool_names[bExtraKinetic]);
+    fprintf(log,PREFIX"Doing ionizations for atoms %d - %d\n",start,end);
     fflush(log);
     if (bExtraKinetic)
       fatal_error(0,"Extra kinetic energy is not implemented as it should...");
@@ -422,6 +432,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   tmax        = t0;
   while (t > (tmax+interval*0.5))
     tmax += interval;
+  /*  End when t <= t0 + (N+0.5) interval */
   pt          = imax*ir->delta_t*exp(-0.5*sqr((t-tmax)/width));
   dq          = 0;
   nkdecay     = 0;
@@ -567,7 +578,6 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	  md->chargeB[i] += 1.0;
 	  ca[i].n++;
 	  dq ++;
-	  dq_tot ++;
 	}
 	if (debug) {
 	  fprintf(debug,"Random-dv[%3d] = %10.3e,%10.3e,%10.3e,"
@@ -592,7 +602,6 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     for (kk = 0; (kk < nkh); kk++) 
       if (khole_decay(log,&(ca[i]),v[i],&seed,ir->delta_t,i)) {
 	nkdecay ++;
-	nkd_tot ++;
 	ndecay[i]++;
       }
     
@@ -625,10 +634,15 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     gmx_sumi(md->nr,nionize,cr);
     gmx_sumi(md->nr,nkhole,cr);
     gmx_sumi(md->nr,ndecay,cr);
-    nbuf[0] = dq; nbuf[1] = dq_tot; nbuf[2] = nkdecay; nbuf[3] = nkd_tot;
-    gmx_sumi(4,nbuf,cr);
-    dq = nbuf[0]; dq_tot = nbuf[1]; nkdecay = nbuf[2]; nkd_tot = nbuf[3];
+    nbuf[0] = dq; nbuf[1] = nkdecay;
+    gmx_sumi(2,nbuf,cr);
+    dq = nbuf[0]; nkdecay = nbuf[1];
   }
+  /* Now sum global events on this timestep to cumulative numbers */
+  dq_tot  += dq;
+  nkd_tot += nkdecay;
+  
+  /* Printing time */
   if (MASTER(cr)) {
     /* Print data to the file that holds ionization events per atom */
     fprintf(ion,"%12.8f",t);
@@ -641,7 +655,8 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	fprintf(ion,"  D:%d",i+1);
     }
     fprintf(ion,"\n");
-    fflush(ion);
+    if (debug)
+      fflush(ion);
   
     /* Print statictics to file */
     fprintf(xvg,"%10.5f  %10.3e  %6d  %6d  %6d  %6d",
@@ -650,7 +665,8 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
       fprintf(xvg,"%10g\n",delta_ekin);
     else
       fprintf(xvg,"\n");
-    fflush(xvg);
+    if (debug)
+      fflush(xvg);
   }
   sfree(nionize);
   sfree(nkhole);
