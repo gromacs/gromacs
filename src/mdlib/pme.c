@@ -220,10 +220,7 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
 	    if(kz>0 && kz<(nz+1)/2)
 	      struct2*=2;
 	    energy+=eterm*struct2;
-	    /* the sign of the virial terms here are as
-	     * in Dardens code, but this is the opposite
-	     * of the sign in the article in jcp 103:1995
-	     */	    
+	    	    
 	    vfactor=(factor*m2+1)*2.0/m2;
 	    vir[XX][XX]+=eterm*struct2*(vfactor*mx*mx-1.0);
 	    vir[XX][YY]+=eterm*struct2*(vfactor*mx*my);   
@@ -268,10 +265,7 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
 	    if(kz>0 && kz<(nz+1)/2)
 	      struct2*=2;
 	    energy+=eterm*struct2;
-	    /* the sign of the virial terms here are as
-	     * in Dardens code, but this is the opposite
-	     * of the sign in the article in jcp 103:1995
-	     */
+	    
 	    vfactor=(factor*m2+1)*2.0/m2;
 	    vir[XX][XX]+=eterm*struct2*(vfactor*mx*mx-1.0);
 	    vir[XX][YY]+=eterm*struct2*(vfactor*mx*my);   
@@ -583,7 +577,6 @@ real do_pme(FILE *logfile,       bool bVerbose,
   ntot  = grid->nxyz;  
   npme  = ntot*log((real)ntot)/log(2.0);
   inc_nrnb(nrnb,eNR_FFT,2*npme);
-
   return energy;  
 }
 

@@ -610,7 +610,7 @@ void force(FILE       *log,     int        step,
     }
     
     Vself = calc_LRcorrections(log,nsb,cr,fr,
-			       md->chargeA,excl,x,f,TRUE,box_size,lr_vir);
+			       md->chargeA,excl,x,TRUE,box_size,lr_vir);
     epot[F_LR] = Vlr - Vself;
     if (debug)
       fprintf(debug,"Vlr = %g, Vself = %g, Vlr_corr = %g\n",
