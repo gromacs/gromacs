@@ -8,20 +8,20 @@ Often the output files are in {\tt xmgr}-format.
 
 First in section~\ref{sec:groups} the group concept in analysis is explained. 
 Then the different analysis tools are presented.
-%
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Groups in Analysis
-%
+
 \section{Groups in Analysis.}
 \label{sec:groups}
 \begin{verbatim}
 make_ndx
 mk_angndx
 \end{verbatim}
-In chapter~\ref{ch:algorithms} it was explained how {\em groups of atoms} can 
-be used in the MD-program. 
-In most analysis programs an index file is necessary too to select groups to
-work on. Let's consider a simulation of a binary mixture of components A and
-B. When we want to calculate the radial distribution function (rdf) 
+In chapter~\ref{ch:algorithms} it was explained how {\em groups of
+atoms} can be used in the MD-program.  In most analysis programs an
+index file is necessary too to select groups to work on. Let's
+consider a simulation of a binary mixture of components A and B. When
+we want to calculate the radial distribution function (rdf)
 $g_{AB}(r)$ of A with respect to B, we have to calculate
 \beq
 4\pi r^2 g_{AB}(r)	~=~	V~\sum_{i \in A}^{N_A} \sum_{j \in B}^{N_B} P(r)
@@ -59,78 +59,82 @@ make them by hand. The general format is presented here:
 First the group name is written between square brackets.
 The following atom numbers may be spread out over as many lines as you like.
 The atom numbering starts at 1. 
-%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Looking at your trajectory
-%
+
 \section{Looking at your trajectory}
 \label{sec:lookwhostalking}
 \begin{verbatim}
 ngmx
 \end{verbatim}
-%
+
 \begin{figure}
 \centerline{
 {\psfig {figure=plots/ngmxdump.eps,width=8cm,angle=90}}}
 \caption{A hard-copy of {\tt ngmx} showing a box of water.}
 \label{fig:ngmxdump}
 \end{figure}
-%
-Before analysing your trajectory it is often informative to look at your 
-trajectory first. There is a special graphics program {\tt ngmx} to show your 
-binary trajectory. Within the program you can also monitor energies, 
-temperature etc. It is also possible to generate a hard-copy in Encapsulated 
-Postscript format, see fig.~\ref{fig:ngmxdump}.
-%
+
+Before analysing your trajectory it is often informative to look at
+your trajectory first. There is a special graphics program {\tt ngmx}
+to show your binary trajectory. It is also possible to generate a
+hard-copy in Encapsulated Postscript format, see
+fig.~\ref{fig:ngmxdump}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% General properties
-%
+
 \section{General properties}
 \label{sec:genprop}
 \begin{verbatim}
-g_ener
+g_energy
 g_com
 \end{verbatim}
-To analyse {\em energies} or other properties, such as {\em total pressure,
-pressure tensor, density, box-volume} and {\em box-sizes}
-in your simulation in time, use the program {\tt g\_ener}.
-You can choose interactively from a list a set 
-of energies, like potential, kinetic or total energy. Individual 
-contributions, like Lennard-Jones or dihedral energies, can be printed as well.
+To analyse some or all {\em energies} and other properties, such as
+{\em total pressure}, {\em pressure tensor}, {\em density}, {\em
+box-volume} and {\em box-sizes}, use the program {\tt g\_energy}.  A
+choice can be made from a list a set of energies, like potential,
+kinetic or total energy, or individual contributions, like
+Lennard-Jones or dihedral energies.
 
 The {\em centre-of-mass velocity}, defined as
 \beq
 {\bf v}_{com} = {1 \over M} \sum_{i=1}^N m_i {\bf v}_i
 \eeq
-with $M = \sum_{i=1}^N m_i$ the total mass of the system, can be monitored 
-in time by the program {\tt g\_com}. It is however recommended to remove the 
-centre-of-mass velecity every step (see chapter~\ref{ch:algorithms})!
-%
+with $M = \sum_{i=1}^N m_i$ the total mass of the system, can be
+monitored in time by the program {\tt g\_com}. It is however
+recommended to remove the centre-of-mass velecity every step (see
+chapter~\ref{ch:algorithms})!
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Radial distribution functions 
-%
+
 \section{Radial distribution functions}
 \label{sec:rdf}
 \begin{verbatim}
 g_rdf
 \end{verbatim}
-The {\em radial distribution function} (rdf) or pair correlation function 
-$g_{AB}(r)$ between particles of type $A$ and $B$ is defined in the 
-following way:
-\bea
-g_{AB}(r) &=& { < \rho_B(r)> \over <\rho_B>_{local}}\nonumber\\
-&=& {1 \over <\rho_B>_{local} } {1 \over N_A} \sum_{i \in A}^{N_A} \sum_{j \in B}^{N_B} {\delta( r_{ij} - r ) \over 4 \pi r^2}
-\eea
-with $< \rho_B(r)>$ the particle density of type $B$ at a distance $r$ around 
-particles $A$, and 
-$<\rho_B>_{local}$ the particle density of type $B$ averaged over all 
-spheres around particles $A$ with radius $r_{max}$ 
-(see fig.~\ref{fig:rdfex}C). 
-%
+The {\em radial distribution function} (rdf) or pair correlation
+function $g_{AB}(r)$ between particles of type $A$ and $B$ is defined
+in the following way:
+\newcommand{\dfrac}[2]{\displaystyle \frac{#1}{#2}}
+\beq
+\begin{array}{rcl}
+g_{AB}(r)&=&	\dfrac{< \rho_B(r)>}{<\rho_B>_{local}}		\\
+	 &=&	\dfrac{1}{<\rho_B>_{local}}\dfrac{1}{N_A}
+	 	\sum_{i \in A}^{N_A} \sum_{j \in B}^{N_B} 
+		\dfrac{\delta( r_{ij} - r )}{4 \pi r^2}		\\
+\end{array}
+\eeq
+with $< \rho_B(r)>$ the particle density of type $B$ at a distance $r$
+around particles $A$, and $<\rho_B>_{local}$ the particle density of
+type $B$ averaged over all spheres around particles $A$ with radius
+$r_{max}$ (see fig.~\ref{fig:rdfex}C).
+
 \begin{figure}
 \centerline{
 {\psfig {figure=plots/rdf.eps,width=7cm,angle=270}}}
 \caption[Definition of slices in {\tt g\_rdf}.]{Definition of slices in {\tt g\_rdf}: A. $g_{AB}(r)$. B. $g_{AB}(r,\theta)$. The slices are coloured grey. C. Normalization $<\rho_B>_{local}$. D. Normalization $<\rho_B>_{local,\:\theta }$. Normalization volumes are coloured grey.}
 \label{fig:rdfex}
 \end{figure}
-%
+
 Usually the value of $r_{max}$ is half of the boxlength. 
 The averaging is also performed in time. 
 In practice the analysis program {\tt g\_rdf} divides 
@@ -138,14 +142,13 @@ the system into spherical slices (from $r$ to $r+dr$,
 see fig.~\ref{fig:rdfex}A) and makes a histogram in stead of the 
 $\delta$-function. An example of the rdf of Oxygen-Oxygen 
 in SPC-water~\cite{Berendsen81} is given in fig.~\ref{fig:rdf}.
-%
+
 \begin{figure}
 \centerline{
 {\psfig {figure=plots/rdfO_O.eps,width=7cm,angle=270}}}
 \caption{$g_{OO}(r)$ for Oxygen-Oxygen of SPC-water.}
 \label{fig:rdf}
 \end{figure}
-%
 
 With {\tt g\_rdf} it is also possible to calculate an angle dependent rdf 
 $g_{AB}(r,\theta)$, where the angle $\theta$ is defined with respect to a 
@@ -158,9 +161,9 @@ This $g_{AB}(r,\theta)$ is useful for analysing anisotropic systems.
 Note that in this case the normalization $<\rho_B>_{local,\:\theta}$ is 
 the average density in all angle slices from $\theta$ to $\theta + d\theta$ 
 up to $r_{max}$, so angle dependent, see fig.~\ref{fig:rdfex}D.
-%
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Correlation functions 
-%
+
 \section{Correlation functions}
 \label{sec:corr}
 
@@ -309,14 +312,13 @@ studying lateral diffusion on interfaces.
 
 An example of the mean square displacement of SPC-water is given in
 fig.~\ref{fig:msdwater}.
-%
+
 \begin{figure}
 \centerline{
 {\psfig {figure=plots/msdwater.eps,width=6.5cm,angle=270}}}
 \caption{Mean Square Displacement of SPC-water.}
 \label{fig:msdwater}
 \end{figure}
-%
 
 % 
 %%%%%%%%%%%%%%%%%%%%% Bonds, angles and dihedral %%%%%%%%%%%%%%%%%%%
@@ -340,7 +342,6 @@ The index file consists of pairs of atom numbers, for example
 [ bonds_2 ]
 12    13
 \end{verbatim}
-}
 
 The program {\tt g\_angle} calculates the distribution of {\em angles} and 
 {\em dihedrals} in time. It also gives the average angle or dihedral. 
@@ -355,40 +356,39 @@ The index file consists of triplets or quadruplets of atom numbers:
  1     2     3     4
  2     3     5     5
 \end{verbatim}
-}
 For the dihedral angles you can use eighter the ``biochemical convention'' 
 ($\phi = 0 \equiv cis$) or ``polymer convention'' ($\phi = 0 \equiv trans$), 
 see fig~\ref{fig:dih_def}.
-%
+
 \begin{figure}
 \centerline{
 {\psfig {figure=plots/dih_def.eps,width=3.5cm,angle=270}}}
-\caption{Dihedral conventions: A. ``Biochemical convention''. B. ``Polymer convention''.}
+\caption{Dihedral conventions: A. ``Biochemical
+convention''. B. ``Polymer convention''.}
 \label{fig:dih_def}
 \end{figure}
-%
 
-To follow specific {\em angles} in time between two vectors, a vector and 
-a plane or 
-two planes (defined by 2, resp. 3 atoms inside your molecule, see 
-fig.~\ref{fig:sgangle}A, B, C), use the program {\tt g\_sgangle}. 
-%
+To follow specific {\em angles} in time between two vectors, a vector
+and a plane or two planes (defined by 2, resp. 3 atoms inside your
+molecule, see fig.~\ref{fig:sgangle}A, B, C), use the program {\tt
+g\_sgangle}.
+
 \begin{figure}
 \centerline{
 {\psfig {figure=plots/sgangle.eps,width=6.5cm,angle=270}}}
 \caption[Options of {\tt g\_sgangle}.]{Options of {\tt g\_sgangle}: A. Angle between 2 vectors. B. Angle between a vector and the normal of a plane. C. Angle between two planes. D. Distance between the geometrical centres of 2 planes. E. Distances between a vector and the centre of a plane.}
 \label{fig:sgangle}
 \end{figure}
-%
-For planes it uses the normal vector perpendicular to the plane. 
-It can also calculate the {\em distance} $d$ between the geometrical centre 
-of two planes (see fig.~\ref{fig:sgangle}D), and the distances 
-$d_1$ and $d_2$ between 2 atoms (of a vector) and the centre of a plane 
-defined by 3 atoms (see fig.~\ref{fig:sgangle}D). It further calculates the 
-distance $d$ between the centre of the plane and the middle of this vector. 
-Depending on the input groups (i.e. groups of 2 or 3 atom numbers), the 
-program decides what angles and distances to calculate. For example, the index
-file could look like this:
+
+For planes it uses the normal vector perpendicular to the plane.  It
+can also calculate the {\em distance} $d$ between the geometrical
+centre of two planes (see fig.~\ref{fig:sgangle}D), and the distances
+$d_1$ and $d_2$ between 2 atoms (of a vector) and the centre of a
+plane defined by 3 atoms (see fig.~\ref{fig:sgangle}D). It further
+calculates the distance $d$ between the centre of the plane and the
+middle of this vector.  Depending on the input groups (i.e. groups of
+2 or 3 atom numbers), the program decides what angles and distances to
+calculate. For example, the index-file could look like this:
 {\samepage
 \begin{verbatim}
 [ a_plane ]
@@ -397,9 +397,8 @@ file could look like this:
  3     4     5
 \end{verbatim}
 }
-%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Radius of gyration and distances
-%
+
 \section{Radius of gyration and distances}
 \label{sec:rg}
 \begin{verbatim}
@@ -445,20 +444,19 @@ To visualize this matrix, you can use a program such as {\tt xv}.
 If you want to view the axes and legend or if you want to print
 the matrix, you can convert it with 
 {\tt xpm2ps} into a Postscript picture, see fig.~\ref{fig:mdmat}.
-%
 \begin{figure}
 \centerline{
 \psfig {figure=plots/distm.eps,width=6.5cm}}
 \caption{A minimum distance matrix for a peptide~\protect\cite{Spoel96b}.}
 \label{fig:mdmat}
 \end{figure}
-%
+
 Plotting these matrices for different timeframes, one can analyse changes 
 in the structure, and e.g. forming of salt bridges.
 \end{description}
-%
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Root mean square deviations 
-%
+
 \section{Root mean square deviations in structure}
 \label{sec:rmsd}
 \begin{verbatim}
@@ -497,171 +495,109 @@ RMSD(t)	~=~	\left[\frac{1}{N^2}\sum_{i=1}^N	\sum_{j=1}^N	({\bf r}_{ij}(t)-{\bf r
 where the {\em distance} {\bf r}$_{ij}$ between atoms at time $t$ 
 is compared with the distance between the same atoms at time $0$.
 
-%
+In stead of comparing the structures to the initial structure at time $t=0$ 
+(so for example a cristal structure), one can also calculate eq.~\ref{eq:rmsd} 
+using a timeshift $\tau$:
+\beq
+RMSD(t;\tau) ~=~ \left[\frac{1}{N} \sum_{i=1}^N ({\bf r}_i(t)-{\bf r}_i(t-\tau))^2 \right]^{\frac{1}{2}}
+\label{eq:rmdstau}
+\eeq
+so comparing to a least-square structure at $t-\tau$. This gives some insight 
+in the mobility as a function of $\tau$. Use the program {\tt g\_run\_rms}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Hydrogen bonds
-%
+
 \section{Hydrogen bonds}
 \begin{verbatim}
 g_hbond
-g_lifetime
 \end{verbatim}
-The program {\tt g\_hbond} analyses the {\em hydrogen bonds} (H-bonds) 
-between all possible donors D and acceptors A. 
-To determine if a H-bond is formed, a 
-geometrical criterion is used, see fig.~\ref{fig:hbond}. A H-bond is said to 
-exist if the distance between donor and acceptor $r$ is smaller then a certain 
-maximum value $r_{HB}$. Further the angle $\alpha$ must be smaller then a 
-certain maximum angle $\alpha_{HB}$. Default values of $r_{HB}$ and 
-$\alpha_{HB}$ are
-\bea
-r &\leq& 3.5 \AA \nonumber\\
-\alpha &\leq& 60^o \nonumber
-\eea
-%
+The program {\tt g\_hbond} analyses the {\em hydrogen bonds} (H-bonds)
+between all possible donors D and acceptors A. To determine if an
+H-bond exists, a geometrical criterion is used, see also
+fig.~\ref{fig:hbond}:
+\beq
+\begin{array}{rclcl}
+r	& \leq	& r_{HB}	& = & 0.35 \mbox{nm}	\\
+\alpha	& \leq	& \alpha_{HB}	& = & 60^o 		\\
+\end{array}
+\eeq
+
 \begin{figure}
 \centerline{\psfig{figure=plots/hbond.eps,width=2.5cm,angle=270}}
 \caption{Geometrical Hydrogen bond criterion.}
 \label{fig:hbond}
 \end{figure}
-%
+
 The value of $r_{HB} = 3.5 \AA$ corresponds to the first minimum of the rdf of 
 SPC-water (see also fig.~\ref{fig:rdf}).
 
-The program {\tt g\_hbond} analyses for one or more selected groups of atoms 
-the following things:
-\begin{description}
-\item[$\bullet$]
-The existence of H-bonds fulfilling the geometrical criterion. The program 
-prints a file containing all H-bonds which occurred during the simulation. 
-\item[$\bullet$]
-The distribution of the distances $r$ between Donor and Acceptor of the 
-H-bonds found during the whole simulation.
-\item[$\bullet$]
-The distribution of the angles $\alpha$ (H-D-A) of the 
-H-bonds found during the whole simulation.
-\item[$\bullet$]
-The number of H-bonds in time. This is divided into 
-{\em intra molecular}, {\em inter molecular} and {\em all} H-bonds. 
-\item[$\bullet$]
-The number of H-bonds in time between (protein) backbone residues. 
-For residue number $n$ this is divided into interactions with 
-residues $n+3$, $n+4$ and $n+5$. This provides a measure of forming of 
-$\alpha$-helices or $\beta$-turns or strands.
-\item[$\bullet$]
-The lifetime of the H-bonds can be calculated as follows. The program writes 
-a matrix containing either ``1'' or ``0'', meaning that in that timeframe a 
-specific H-bond is or is not present. Now you can calculate the following 
-correlation function with {\tt g\_lifetime}, using this matrix
+The program {\tt g\_hbond} analyses all hydrogen bonds existing
+between two groups of atoms (which must be either identical or
+non-overlapping) or in specified Donor Hydrogen Acceptor triplets, in
+the following ways:
+
+\begin{figure}
+\centerline{
+{\psfig {figure=plots/hbond_insert.eps,width=5cm,angle=270}}}
+\caption{Insertion of water into an H-bond. (1) Normal H-bond between
+two residues. (2) H-bonding bridge via a water molecule.}
+\label{fig:insert}
+\end{figure}
+
+\begin{itemize}
+\item
+Donor-Acceptor distance ($r$) distribution of all H-bonds
+\item
+Hydrogen-Donor-Acceptor angle ($\alpha$) distribution of all H-bonds 
+\item
+The total number of H-bonds in each timeframe
+\item
+\newcommand{\nn}[1]{$n$-$n$+$#1$}
+The number of H-bonds in time between residues, devided into groups
+\nn{i} where $n$ and $n$+$i$ stand for residue numbers and $i$ goes
+from 0 to 6. The group for $i=6$ also includes all H-bonds for
+$i>6$. These groups include the \nn{3}, \nn{4} and \nn{5} H-bonds
+which provide a measure for the formation of $\alpha$-helices or
+$\beta$-turns or strands.
+\item
+The lifetime of the H-bonds is calculated from the average over all
+autocorrelation functions of the existence functions (either 0 or 1)
+of all H-bonds:
 \beq
-C(\tau) ~=~ < s_i(t)\; s_i(t\:+\:\tau) >
+C(\tau) ~=~ < s_i(t)~s_i (t + \tau) >
 \label{eq:hbcorr}
 \eeq
-with $s_i(t) = \{0,1\}$ for H-bond $i$ at time $t$. The integral of $C(\tau)$ 
-gives the estimated lifetime $\tau_{HB}$ of the H-bonds
+with $s_i(t) = \{0,1\}$ for H-bond $i$ at time $t$. The integral of
+$C(\tau)$ gives a rough estimate of the average H-bond lifetime
+$\tau_{HB}$:
 \beq
 \tau_{HB} ~=~ \int_{0}^{\infty} C(\tau) d\tau
 \label{eq:hblife}
 \eeq
-\end{description}
+Both the integral and the complete autocorrelaten function $C(\tau)$
+will be output, so that more sophisticated analysis (e.g.\@ using
+multi-exponential fits) can be used to get better estimates for
+$\tau_{HB}$.
+\item
+An H-bond existence map can be generated of dimensions {\em
+\#~H-bonds}$\times${\em \#~frames}.
+\item
+Index groups are output containing the analyzed groups, all
+donor-hydrogen atom pairs and acceptor atoms in these groups,
+donor-hydrogen-acceptor triplets involved in hydrogen bonds between
+the analyzed groups and all solvent atoms involved in insertion.
+\item
+Solvent insertion into H-bonds can be analyzed, see
+fig.~\ref{fig:insert}. In this case an additional group identifying
+the solvent must be selected. The occurrence of insertion will be
+indicated in the existence map. Note that insertion into and existence
+of a specific H-bond can occur simultaneously and will also be
+indicated as such in the existence map.
+\end{itemize}
 
-For the analysis you can specify {\em one} group of atoms. Then only the 
-H-bonds {\em inside} this group are monitored. You can also specify {\em two} 
-or {\em more} groups. In that case the program only analyses the H-bonds 
-{\em between} those groups. 
-
-It is also possible to analyse specific H-bonds. To do so, your index file has 
-to contain a {\em group of H-bonds}, in the following way:
-{\samepage
-\begin{verbatim}
-[ internal ]
-    21    22    25
-    26    27    30
-     1     4     7
-    48    49    53
-[ intermolecular ]   
-[ all_bonds ] 
-    21    22    25
-    26    27    30
-     1     4     7
-    48    49    53
-\end{verbatim}
-}
-So after the usual definitions of the groups each group consists of 
-{\em triples} of atom numbers, i.e. Donor, Hydrogen and Acceptor. 
-You can for example use the index file which is generated by the program when 
-analysing one or more groups. The output, besides the normal output, is a 
-``matrix'' in time. For every specified H-bond is indicated whether or not 
-this H-bond is formed at that timeframe. An existing H-bond is indicated by 
-a ``|''. A typical example is given here for an $\alpha$-helix with 15 
-possible H-bonds:
-{\small 
-\begin{verbatim} 
- 0.00  (|||||          )
- 0.50  (||||||         )
- 1.00  (||||||         )
- 1.50  (| || |         )
- 2.00  (|||| ||        )
- 2.50  (||||||         )
- 3.00  ( |||||         )
- 3.50  ( ||| ||        )
- 4.00  ( |||||         )
- 4.50  ( ||            )
- 5.00  ( ||  | |       )
- 5.50  ( ||  ||        )
- 6.00  ( |||  |        )
- 6.50  ( ||| || |      )
- 7.00  ( ||| ||        )
- 7.50  ( ||| |         )
- 8.00  (  || ||        )
- 8.50  ( |||||         )
- 9.00  ( ||| ||        )
- 9.50  ( | |  | ||     )
-10.00  ( |||||         )
-\end{verbatim} }
-
-It is also possible to analyse the insertion of solvent molecules (eg. water) 
-in specific hydrogen bonds (eg. $\alpha$-helices), see fig.~\ref{fig:insert}
- %
-\begin{figure}
-\centerline{
-{\psfig {figure=plots/hbond_insert.eps,width=5cm,angle=270}}}
-\caption[Insertion of water in $\alpha$-helix.]{Insertion of water in $\alpha$-helix. (1) Normal H-bond between two residues. (2) H-bonding bridge via a water molecule.}
-\label{fig:insert}
-\end{figure}
-The program analyses the forming of H-bond bridges between two helix residues 
-via any solvent molecule (water) of a specified group of solvent molecules. 
-Besides the normal output (angle and distance distributions etc.) the program 
-will produce also a matrix, now ``|'' means the existance of a usual H-bond 
-between D and A of the helix (fig.~\ref{fig:insert},(1)), ``-'' means that a bridging H-bond as 
-in fig.~\ref{fig:insert},(2) is formed, and ``+'' means that both exist.
-{\small 
-\begin{verbatim}
- 0.00  (|||||   --     )
- 0.50  (||||+|- --     )
- 1.00  (||||||  -      )
- 1.50  (| || +- - -    )
- 2.00  (||||-|+ --     )
- 2.50  (|||+||-        )
- 3.00  ( +||++    --  -)
- 3.50  ( ||+-|+ --  -  )
- 4.00  ( |||||- --     )
- 4.50  ( || ---   -    )
- 5.00  ( || -|-|-      )
- 5.50  ( ||--|+ --  -  )
- 6.00  ( ||| -+ - -    )
- 6.50  ( ||+-+| | - -  )
- 7.00  ( |||-+|   -    )
- 7.50  (-||+ + -- - -  )
- 8.00  (  ||-||        )
- 8.50  ( |||++ -  -    )
- 9.00  ( ||+-++   - -  )
- 9.50  ( | |--+ +|-    )
-10.00  ( |||++- ---    )
-\end{verbatim} } 
-%
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Protein related items 
-%
+
 \section{Protein related items}
 \begin{verbatim}
 do_dssp
@@ -678,58 +614,54 @@ during your run. For this you can use the program {\tt do\_dssp}, which is
 an interface for the commercial program {\tt dssp}~\cite{Kabsch83}. For 
 further information, see the {\tt dssp}-manual. A tyical output plot of 
 {\tt do\_dssp} is given in fig.~\ref{fig:dssp}.
-%
+
 \begin{figure}
 \centerline{
 \psfig {figure=plots/dssp.eps,width=12cm}}
 \caption{Analysis of the secondary structure elements of a peptide in time.}
 \label{fig:dssp}
 \end{figure}
-%
 
 One other important analysis of proteins is the so called 
 {\em Ramachandran plot}. 
 This is the projection of the structure on the two dihedral angles $\phi$ and 
 $\psi$ of the protein backbone, see fig.~\ref{fig:phipsi}.
-%
+
 \begin{figure}
 \centerline{
 \psfig {figure=plots/phipsi.eps,width=5cm}}
 \caption{Definition of the dihedral angles $\phi$ and $\psi$ of the protein backbone.}
 \label{fig:phipsi}
 \end{figure}
-%
+
 To evaluate this Ramachandran plot you can use the program {\tt g\_rama}. 
 A typical output is given in fig.~\ref{fig:rama}.
-%
+
 \begin{figure}
 \centerline{
 {\psfig {figure=plots/rama.eps,width=9cm,angle=270}}}
 \caption{Ramachandran plot of a small protein.}
 \label{fig:rama}
 \end{figure}
-%
 
 It is also possible to generate an {\em animation of the Ramachandran plot} 
 in time. This can be of help for analysing certain dihedral transitions 
 in your protein. You can use the program {\tt xrama} for this.
 
-%
 When studying $\alpha$-helices 
 it is useful to have a {\em helical wheel} projection
 of your peptide, to see whether a peptide is amphipatic. This can be done
 using the {\tt wheel} program. Two examples are 
 plotted in fig.~\ref{fig:wheel}.
-%
+
 \begin{figure}
 \centerline{\psfig{figure=plots/hpr-wheel.eps,width=\htw}}
 \caption{Helical wheel projection of the N-terminal helix of HPr.}
 \label{fig:wheel}
 \end{figure}
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Membrane Related Items
-%
+
 \section{Interface related items}
 \begin{verbatim}
 g_order
@@ -791,24 +723,20 @@ The program {\tt g\_pvd} calculates a lot of properties, among which
 the density of a group in particles per unit of volume, but not a
 density that takes the mass of the atoms into account. The program
 {\tt g\_density} also calculates the density of a group, but takes the
-masses into account and gives a plot of the density (in g/cm$^3$)
-against a box axis. This is useful for looking at the distribution of
-groups or atoms across the interface. 
+masses into account and gives a plot of the density against a box
+axis. This is useful for looking at the distribution of groups or
+atoms across the interface.
 
-%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Chemical shifts
-%
+
 \section{Chemical shifts}
 \begin{verbatim}
 total
+do_shift
 \end{verbatim}
-You can compute the NMR chemical shifts of protons with the program 
-{\tt do\_shift}. This is just an \gromacs~interface to the public domain 
-program 
-{\tt total}~\cite{Williamson93a}. For further information, read the article.
+You can compute the NMR chemical shifts of protons with the program
+{\tt do\_shift}. This is just an \gromacs~interface to the public
+domain program {\tt total}~\cite{Williamson93a}. For further
+information, read the article.
 
-%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-
-
