@@ -11,42 +11,41 @@ include		$(GMXHOME)/src/makef/Makefile.def
 #
 M4 		= m4
 M4FILE		= $(CPU).m4
-OBJ		= force.o 	ns.o 		nsgrid.o     	\
-		  lutab.o	calch.o		calcvir.o 	\
-		  random.o 	pbc.o  		wnblist.o 	\
-		  bondfree.o 	nrnb.o 		maths.o   	\
-		  nsb.o		mshift.o	ifunc.o		\
-		  fnbf.o	inloopc.o	typedefs.o	\
-		  disre.o	init.o 		stat.o 		\
-		  mvdata.o	steep.o		sim_util.o	\
-		  update.o 	tgroup.o	dummies.o	\
-                  block_tx.o	mvxvf.o		runner.o	\
-		  ebin.o	rbin.o		vcm.o		\
-		  mdebin.o	splittop.o	mdatom.o	\
-		  shakef.o	cshake.o	csettle.o	\
-		  clincs.o	clincsld.o	calcmu.o	\
-		  filenm.o 	txtdump.o 	\
-		  confio.o 	rdgroup.o 	\
-		  names.o 	statutil.o	vdw.o		\
-		  xvgr.o	readinp.o	\
-		  wman.o	replace.o	pdbio.o  	\
-		  xtcio.o	trxio.o		xdrd.o		\
-		  h_db.o	genhydro.o	pargs.o		\
-		  fatal.o 	copyrite.o 	memdump.o 	\
-		  smalloc.o 	string2.o 	gbutil.o	\
-		  macros.o 	ffscanf.o 	futil.o 	\
-		  symtab.o 	invblock.o 	fftgrid.o	\
-		  strdb.o 	3dview.o 	rando.o		\
-		  buffer.o	main.o		network.o 	\
-		  nrama.o	do_fit.o	writeps.o	\
-		  rmpbc.o	matio.o 	nrjac.o   	\
-		  wgms.o 	princ.o		pppm.o		\
-		  lrutil.o	ghat.o		tables.o	\
-		  edsam.o	congrad.o	javaio.o        \
-		  index.o       \
-		  gmxfio.o	trnio.o		tpxio.o		\
-		  enxio.o
-		  
+OBJ		= 	\
+		3dview.o	block_tx.o	bondfree.o	\
+		buffer.o	calch.o		calcmu.o	\
+		calcvir.o	clincs.o	clincsld.o	\
+		confio.o	congrad.o	copyrite.o	\
+		csettle.o	cshake.o	disre.o		\
+		do_fit.o	dummies.o	ebin.o		\
+		edsam.o		enxio.o		fatal.o		\
+		ffscanf.o	fftgrid.o	filenm.o	\
+		fnbf.o		force.o		futil.o		\
+		gbutil.o	genhydro.o	ghat.o		\
+		gmxfio.o	h_db.o		ifunc.o		\
+		index.o		init.o		inloopc.o	\
+		invblock.o	javaio.o	lrutil.o	\
+		lutab.o		macros.o	main.o		\
+		maths.o		matio.o		mdatom.o	\
+		mdebin.o	memdump.o	mshift.o	\
+		mvdata.o	mvxvf.o		names.o		\
+		network.o	nrama.o		nrjac.o		\
+		nrnb.o		ns.o		nsb.o		\
+		nsgrid.o	pargs.o		pbc.o		\
+		pdbio.o		pppm.o		princ.o		\
+		rando.o		random.o	rbin.o		\
+		rdgroup.o	readinp.o	replace.o	\
+		rmpbc.o		runner.o	shakef.o	\
+		sim_util.o	smalloc.o	splittop.o	\
+		stat.o		statutil.o	steep.o		\
+		strdb.o		string2.o	symtab.o	\
+		tables.o	tgroup.o	tpxio.o		\
+		trnio.o		trxio.o		txtdump.o	\
+		typedefs.o	update.o	vcm.o		\
+		vdw.o		wgms.o		wman.o		\
+		wnblist.o	writeps.o	xdrd.o		\
+		xtcio.o		xvgr.o
+
 ifeq ($(USEF77),yes)
 OBJ		+= inloopf.o	fshake.o	fsettle.o	\
 		   flincs.o	flincsld.o	doconv.o
