@@ -272,9 +272,8 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("Output frequency and precision for xtc file");
   ITYPE ("nstxtcout",   ir->nstxtcout,  0);
   RTYPE ("xtc_precision",ir->xtcprec,   1000.0);
-  CTYPE ("This selects the subset of atoms for the xtc file.");
-  CTYPE ("Only the first group gets written out, it does not make sense");
-  CTYPE ("to have multiple groups. By default all atoms will be written");
+  CTYPE ("This selects the subset of atoms for the xtc file. You can");
+  CTYPE ("select multiple groups. By default all atoms will be written.");
   STYPE ("xtc_grps",    xtc_grps,       NULL);
   CTYPE ("Selection of energy groups");
   STYPE ("energygrps",  energy,         NULL);
