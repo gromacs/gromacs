@@ -151,6 +151,7 @@ void grid_first(FILE *log,t_grid *grid,matrix box,real rlistlong)
       grid->maxcells = ncells;
     }
     grid->ncells = ncells;
+    nra = grid->nra;
   }
   
   for(i=0; (i<ncells); i++)
