@@ -434,7 +434,9 @@ static void gen_posres(t_params *pr,char *fn)
   
   for(i=0; (i<pr->nr); i++) {
     ai=pr->param[i].AI;
-    assert(ai < natoms);
+    if (ai >= natoms)
+      fatal_error(0,"Position restraint atom index (%d) is larger than natoms (%d)\n",
+		  ai+1,natoms);
     for(j=0; (j<DIM); j++)
       pr->param[i].c[j+DIM]=x[ai][j];
   }
