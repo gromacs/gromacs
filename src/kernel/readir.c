@@ -773,7 +773,7 @@ void do_index(char *ndx,
   snew(ir->opts.nrdf,nr);
   snew(ir->opts.tau_t,nr);
   snew(ir->opts.ref_t,nr);
-  if (ir->btc) {
+  if (ir->btc || ir->eI==eiSD) {
     if (nr != nref_t)
       fatal_error(0,"Not enough ref_t and tau_t values!");
     for(i=0; (i<nr); i++) {
