@@ -70,7 +70,7 @@ static void get_coordnum (char *infile,int *natoms)
 }
 
 static void get_w_conf(FILE *in, char *infile, char *title,
-		       t_atoms *atoms, rvec x[],rvec v[], matrix box)
+		       t_atoms *atoms, rvec x[],rvec *v, matrix box)
 {
   static t_symtab symtab;
   char   name[6];
@@ -150,21 +150,22 @@ static void get_w_conf(FILE *in, char *infile, char *title,
     else {
       x[i][XX]=x1;
       x[i][YY]=y1;
-
-            x[i][ZZ]=z1;
+      x[i][ZZ]=z1;
     }
 
     /* velocities (start after residues and coordinates) */
     /* 'format' was built previously */
-    if (sscanf (line+20+(3*prec),format,&x1,&y1,&z1) != 3) {
-      v[i][XX] = 0.0;
-      v[i][YY] = 0.0;
-      v[i][ZZ] = 0.0;
-    }
-    else {
-      v[i][XX]=x1;
-      v[i][YY]=y1;
-      v[i][ZZ]=z1;
+    if (v) {
+      if (sscanf (line+20+(3*prec),format,&x1,&y1,&z1) != 3) {
+	v[i][XX] = 0.0;
+	v[i][YY] = 0.0;
+	v[i][ZZ] = 0.0;
+      }
+      else {
+	v[i][XX]=x1;
+	v[i][YY]=y1;
+	v[i][ZZ]=z1;
+      }
     }
   }
 
@@ -207,7 +208,7 @@ static void get_w_conf(FILE *in, char *infile, char *title,
 }
 
 static void read_whole_conf(char *infile, char *title,
-			    t_atoms *atoms, rvec x[],rvec v[], matrix box)
+			    t_atoms *atoms, rvec x[],rvec *v, matrix box)
 {
   FILE   *in;
   
@@ -220,7 +221,7 @@ static void read_whole_conf(char *infile, char *title,
 }
 
 static void get_conf(FILE *in, char *title, int *natoms, 
-		     rvec x[],rvec v[],matrix box)
+		     rvec x[],rvec *v,matrix box)
 {
   t_atoms  atoms;
 
@@ -238,7 +239,7 @@ static void get_conf(FILE *in, char *title, int *natoms,
 }
 
 bool gro_next_x_or_v(FILE *status,real *t,int natoms,
-		     rvec x[],rvec v[],matrix box)
+		     rvec x[],rvec *v,matrix box)
 {
   char title[STRLEN],*p;
   
@@ -277,7 +278,7 @@ int gro_first_x_or_v(FILE *status, real *t,
   return natoms;
 }
 
-bool gro_next_v(FILE *status,real *t,int natoms,rvec v[],matrix box)
+bool gro_next_v(FILE *status,real *t,int natoms,rvec *v,matrix box)
 {
   int i,d;
   bool result,vel;
@@ -342,7 +343,7 @@ int gro_first_x(FILE *status, real *t, rvec **x, matrix box)
   return result;
 }
 
-bool gro_next_x_v(FILE *status,real *t,int natoms,rvec x[],rvec v[],matrix box)
+bool gro_next_x_v(FILE *status,real *t,int natoms,rvec x[],rvec *v,matrix box)
 {
   bool result,vel;
   int i,d;
@@ -497,7 +498,7 @@ static void write_conf(char *outfile, char *title, t_atoms *atoms,
 }
 
 void write_xdr_conf(char *outfile,char *title,t_atoms *atoms,
-		    rvec x[],rvec v[],matrix box)
+		    rvec x[],rvec *v,matrix box)
 {
   XDR xd;
   int i;
@@ -547,7 +548,7 @@ void read_xdr_coordnum(char *infile,int *natoms)
   xdrclose(&xd);
 }
 
-void read_xdr_conf(char *infile,char *title,t_atoms *atoms,rvec x[],rvec v[],matrix box)
+void read_xdr_conf(char *infile,char *title,t_atoms *atoms,rvec x[],rvec *v,matrix box)
 {
   XDR xd;
   int n;
@@ -607,7 +608,7 @@ void read_xdr_conf(char *infile,char *title,t_atoms *atoms,rvec x[],rvec v[],mat
 }
 
 void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms, 
-			    rvec x[],rvec v[],matrix box,
+			    rvec x[],rvec *v,matrix box,
 			    atom_id nindex,atom_id index[])
 {
   FILE       *out;
@@ -638,7 +639,7 @@ void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms,
 }
 
 void write_sto_conf(char *outfile, char *title,t_atoms *atoms, 
-		   rvec x[],rvec v[], matrix box)
+		   rvec x[],rvec *v, matrix box)
 {
   FILE       *out;
   int        ftp;
@@ -697,7 +698,7 @@ void get_stx_coordnum(char *infile,int *natoms)
 }
 
 void read_stx_conf(char *infile, char *title,t_atoms *atoms, 
-		   rvec x[],rvec v[], matrix box)
+		   rvec x[],rvec *v, matrix box)
 {
   t_topology *top;
   int        ftp,natoms,i1;

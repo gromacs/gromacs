@@ -57,17 +57,17 @@ extern int gro_first_x(FILE *status, real *t, rvec **x, matrix box);
 /* read first/next x frame from gro file */
 
 extern bool gro_next_x_or_v(FILE *status,real *t,int natoms,
-			    rvec x[],rvec v[],matrix box);
+			    rvec x[],rvec *v,matrix box);
 extern int gro_first_x_or_v(FILE *status, real *t, 
 			    rvec **x, rvec **v, matrix box);
 /* read first/next x and/or v frame from gro file */
 
-extern bool gro_next_v(FILE *status,real *t,int natoms,rvec v[],matrix box);
+extern bool gro_next_v(FILE *status,real *t,int natoms,rvec *v,matrix box);
 extern int gro_first_v(FILE *status, real *t, rvec **v, matrix box);
 /* read first/next v frame from gro file */
 
 extern bool gro_next_x_v(FILE *status,real *t,int natoms,
-			 rvec x[],rvec v[],matrix box);
+			 rvec x[],rvec *v,matrix box);
 extern int gro_first_x_v(FILE *status, real *t, 
 			 rvec **x, rvec **v, matrix box);
 /* read first/next x and v frame from gro file */
@@ -86,20 +86,20 @@ extern void write_hconf_p(FILE *out,char *title,t_atoms *atoms, int pr,
  * v has one place more. */ 
 
 extern void write_xdr_conf(char *outfile,char *title,t_atoms *atoms,
-			   rvec x[],rvec v[],matrix box);
+			   rvec x[],rvec *v,matrix box);
 
 extern void read_xdr_coordnum(char *infile,int *natoms);
 
 extern void read_xdr_conf(char *infile,char *title,t_atoms *atoms,
-			  rvec x[],rvec v[],matrix box);
+			  rvec x[],rvec *v,matrix box);
 
 void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms, 
-			    rvec x[],rvec v[],matrix box,
+			    rvec x[],rvec *v,matrix box,
 			    atom_id nindex,atom_id index[]);
 /* like write_sto_conf, but indexed */ 
 
 extern void write_sto_conf(char *outfile, char *title,t_atoms *atoms, 
-			   rvec x[],rvec v[], matrix box);
+			   rvec x[],rvec *v, matrix box);
 /* write atoms, x, v (if .gro and not NULL) and box (if not NULL) 
  * to an STO (.gro or .pdb) file */ 
 
@@ -107,7 +107,7 @@ extern void get_stx_coordnum (char *infile,int *natoms);
 /* read the number of atoms from an STX file */
 
 extern void read_stx_conf(char *infile, char *title,t_atoms *atoms, 
-			  rvec x[],rvec v[], matrix box);
+			  rvec x[],rvec *v, matrix box);
 /* read atoms, x, v and box from an STX file */
 
 #ifdef CPLUSPLUS
