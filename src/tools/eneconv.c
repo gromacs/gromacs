@@ -450,7 +450,6 @@ int main(int argc,char *argv[])
   snew(fnms,argc);
   nfile=0;
   laststep=startstep=0;
-  dr.ndr = 0;
   
   nfile = opt2fns(&fnms,"-f",NFILE,fnm);
   
