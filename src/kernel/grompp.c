@@ -67,7 +67,8 @@ static char *SRCID_grompp_c = "$Id$";
 void check_solvent(bool bVerbose,t_molinfo msys[],
 		   int Nsim,t_simsystem Sims[],t_inputrec *ir,char *SolventOpt)
 {
-  int i,wmol,nwt;
+  int  i,wmol,nwt;
+  char buf[128];
   
   ir->solvent_opt=-1;
   if (!SolventOpt || strlen(SolventOpt)==0) {
@@ -82,8 +83,14 @@ void check_solvent(bool bVerbose,t_molinfo msys[],
       if ((strcmp(SolventOpt,*(msys[wmol].name)) == 0) && 
 	  (Sims[i].nrcopies > 0)) {
 	nwt = msys[wmol].atoms.atom[0].type;
-	if (ir->solvent_opt == -1) 
-	  ir->solvent_opt=nwt;
+	if (ir->solvent_opt == -1) {
+	  if (msys[wmol].atoms.nr == 3)
+	    ir->solvent_opt=nwt;
+	  else {
+	    sprintf(buf,"Sorry, can only do solvent optimization with SPC-like models\n");
+	    warning(buf);
+	  }
+	}
 	else if (ir->solvent_opt == nwt) {
 	  if (debug)
 	    fprintf(debug,"Remark: Multiple topology entries for %s\n",
