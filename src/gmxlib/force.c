@@ -273,7 +273,7 @@ void init_forcerec(FILE *log,
   else if (fr->eeltype == eelSWITCH) {
     fr->rshort     = fr->rlong;
   }
-  else if (EEL_LR(fr->eeltype)) {
+  else if (EEL_LR(fr->eeltype) || (fr->eeltype == eelSHIFT) ) {
     /* We must use the long range cut-off for neighboursearching...
      * An extra range of e.g. 0.1 nm (half the size of a charge group)
      * is necessary for neighboursearching. This allows diffusion 
@@ -289,6 +289,7 @@ void init_forcerec(FILE *log,
     if (dr == 0.0)
       dr = 0.15;
     fr->rshort = fr->rlong = fr->rc+dr;
+    
     for(m=0; (m<DIM); m++)
       box_size[m]=box[m][m];
     if (fr->phi == NULL)
