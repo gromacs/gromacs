@@ -240,43 +240,43 @@ _vecinvsqrt_3dnow:
 .globl _inl0100_3dnow
 inl0100_3dnow:	
 _inl0100_3dnow:	
-.equiv		i0100_nri,			8
-.equiv		i0100_iinr,			12
+.equiv		i0100_nri,		8
+.equiv		i0100_iinr,		12
 .equiv		i0100_jindex,		16
-.equiv		i0100_jjnr,			20
+.equiv		i0100_jjnr,		20
 .equiv		i0100_shift,		24
 .equiv		i0100_shiftvec,		28
 .equiv		i0100_fshift,		32
-.equiv		i0100_gid,			36
-.equiv		i0100_pos,			40
+.equiv		i0100_gid,		36
+.equiv		i0100_pos,		40
 .equiv		i0100_faction,		44
-.equiv		i0100_type,			48
+.equiv		i0100_type,		48
 .equiv		i0100_ntype,		52
-.equiv		i0100_nbfp,			56
-.equiv		i0100_Vnb,			60
+.equiv		i0100_nbfp,		56
+.equiv		i0100_Vnb,		60
 	;# stack offsets for local variables 
-.equiv		i0100_is3,			0
-.equiv		i0100_ii3,			4
-.equiv		i0100_ix,			8
-.equiv		i0100_iy,			12
-.equiv		i0100_iz,			16
+.equiv		i0100_is3,		0
+.equiv		i0100_ii3,		4
+.equiv		i0100_ix,		8
+.equiv		i0100_iy,		12
+.equiv		i0100_iz,		16
 .equiv		i0100_vnbtot,		20  
-.equiv		i0100_c6,			28  
-.equiv		i0100_c12,			36  
-.equiv		i0100_six,			44  
+.equiv		i0100_c6,		28  
+.equiv		i0100_c12,		36  
+.equiv		i0100_six,		44  
 .equiv		i0100_twelve,		52  
-.equiv		i0100_ntia,			60
+.equiv		i0100_ntia,		60
 .equiv		i0100_innerjjnr,	64
 .equiv		i0100_innerk,		68		
-.equiv		i0100_fix,			72
-.equiv		i0100_fiy,			76
-.equiv		i0100_fiz,			80
-.equiv		i0100_dx1,			84
-.equiv		i0100_dy1,			88
-.equiv		i0100_dz1,			92
-.equiv		i0100_dx2,			96
-.equiv		i0100_dy2,			100
-.equiv		i0100_dz2,			104						
+.equiv		i0100_fix,		72
+.equiv		i0100_fiy,		76
+.equiv		i0100_fiz,		80
+.equiv		i0100_dx1,		84
+.equiv		i0100_dy1,		88
+.equiv		i0100_dz1,		92
+.equiv		i0100_dx2,		96
+.equiv		i0100_dy2,		100
+.equiv		i0100_dz2,		104						
 	push ebp
 	mov ebp,esp	
     push eax
@@ -417,44 +417,44 @@ _inl0100_3dnow:
 	 
 	movq  mm0, mm4
 	pfmul mm4, mm0
-	pfmul mm4, mm0             			;# mm4=rinvsix 
+	pfmul mm4, mm0             		;# mm4=rinvsix 
 	movq  mm5, mm4	
-	pfmul mm5, mm5						;# mm5=rinvtwelve 
+	pfmul mm5, mm5				;# mm5=rinvtwelve 
 
 	pfmul mm5, [esp + i0100_c12]
 	pfmul mm4, [esp + i0100_c6]	
-	movq mm6, mm5						;# mm6 is vnb12-vnb6  
+	movq mm6, mm5				;# mm6 is vnb12-vnb6  
 	pfsub mm6, mm4
 
 	pfmul mm4, [esp + i0100_six]
 
 	pfmul mm5, [esp + i0100_twelve]
 	pfsub mm5,mm4
- 	pfmul mm0, mm5						;# mm0 is total fscal now 	
+ 	pfmul mm0, mm5				;# mm0 is total fscal now 	
 
-	prefetchw [esp + i0100_dx1]			;# prefetch i forces to cache 
+	prefetchw [esp + i0100_dx1]		;# prefetch i forces to cache 
 
-										;# spread fscalar to both positions 
+						;# spread fscalar to both positions 
 	movq mm1,mm0
 	punpckldq mm0,mm0
 	punpckhdq mm1,mm1
 
 	;# calc vector force 
-	prefetchw [edi + eax*4]				;# prefetch the 1st faction to cache 
-	movq mm2,  [esp + i0100_dx1]		;# fetch dr 
+	prefetchw [edi + eax*4]		;# prefetch the 1st faction to cache 
+	movq mm2,  [esp + i0100_dx1]	;# fetch dr 
 	movd mm3,  [esp + i0100_dz1]
 
 	;# update vnbtot  
 	pfadd mm6, [esp + i0100_vnbtot]     ;# add the earlier value 
 	movq [esp + i0100_vnbtot], mm6      ;# store the sum 
 
-	prefetchw [edi + ebx*4]				;# prefetch the 2nd faction to cache 
-	pfmul mm2, mm0						;# mult by fs  
+	prefetchw [edi + ebx*4]		;# prefetch the 2nd faction to cache 
+	pfmul mm2, mm0				;# mult by fs  
 	pfmul mm3, mm0
 
 	movq mm4,  [esp + i0100_dx2] 		;# fetch dr 
 	movd mm5,  [esp + i0100_dz2]
-	pfmul mm4, mm1   					;# mult by fs  
+	pfmul mm4, mm1   			;# mult by fs  
 	pfmul mm5, mm1
 	;# update i forces 
 
@@ -634,49 +634,49 @@ _inl0100_3dnow:
 .globl _inl0110_3dnow
 inl0110_3dnow:	 
 _inl0110_3dnow:	 
-.equiv		i0110_nri,			8
-.equiv		i0110_iinr,			12
+.equiv		i0110_nri,		8
+.equiv		i0110_iinr,		12
 .equiv		i0110_jindex,		16
-.equiv		i0110_jjnr,			20
+.equiv		i0110_jjnr,		20
 .equiv		i0110_shift,		24
 .equiv		i0110_shiftvec,		28
 .equiv		i0110_fshift,		32
-.equiv		i0110_gid,			36
-.equiv		i0110_pos,			40		
+.equiv		i0110_gid,		36
+.equiv		i0110_pos,		40		
 .equiv		i0110_faction,		44
-.equiv		i0110_type,			48
+.equiv		i0110_type,		48
 .equiv		i0110_ntype,		52
-.equiv		i0110_nbfp,			56	
-.equiv		i0110_Vnb,			60				
+.equiv		i0110_nbfp,		56	
+.equiv		i0110_Vnb,		60				
 .equiv		i0110_nsatoms,		64		
 	;# stack offsets for local variables 
-.equiv		i0110_is3,			0
-.equiv		i0110_ii3,			4
-.equiv		i0110_shX,			8
-.equiv		i0110_shY,			12 
-.equiv		i0110_shZ,			16	
-.equiv		i0110_ix,			20
-.equiv		i0110_iy,			24
-.equiv		i0110_iz,			28	
+.equiv		i0110_is3,		0
+.equiv		i0110_ii3,		4
+.equiv		i0110_shX,		8
+.equiv		i0110_shY,		12 
+.equiv		i0110_shZ,		16	
+.equiv		i0110_ix,		20
+.equiv		i0110_iy,		24
+.equiv		i0110_iz,		28	
 .equiv		i0110_vnbtot,		32 
-.equiv		i0110_c6,			40 
-.equiv		i0110_c12,			48 
-.equiv		i0110_six,			56 
+.equiv		i0110_c6,		40 
+.equiv		i0110_c12,		48 
+.equiv		i0110_six,		56 
 .equiv		i0110_twelve,		64 
-.equiv		i0110_ntia,			72	
+.equiv		i0110_ntia,		72	
 .equiv		i0110_innerjjnr0,	76
 .equiv		i0110_innerk0,		80		
 .equiv		i0110_innerjjnr,	84
 .equiv		i0110_innerk,		88	
-.equiv		i0110_fix,			92
-.equiv		i0110_fiy,			96
-.equiv		i0110_fiz,			100
-.equiv		i0110_dx1,			104
-.equiv		i0110_dy1,			108
-.equiv		i0110_dz1,			112
-.equiv		i0110_dx2,			116
-.equiv		i0110_dy2,			120
-.equiv		i0110_dz2,			124					
+.equiv		i0110_fix,		92
+.equiv		i0110_fiy,		96
+.equiv		i0110_fiz,		100
+.equiv		i0110_dx1,		104
+.equiv		i0110_dy1,		108
+.equiv		i0110_dz1,		112
+.equiv		i0110_dx2,		116
+.equiv		i0110_dy2,		120
+.equiv		i0110_dz2,		124					
 .equiv		i0110_nsvdwc,		128
 .equiv		i0110_nscoul,		132
 .equiv		i0110_nsvdw,		136
@@ -1361,46 +1361,46 @@ _inl0110_3dnow:
 .globl _inl0300_3dnow
 inl0300_3dnow:	
 _inl0300_3dnow:	
-.equiv		i0300_nri,			8
-.equiv		i0300_iinr,			12
+.equiv		i0300_nri,		8
+.equiv		i0300_iinr,		12
 .equiv		i0300_jindex,		16
-.equiv		i0300_jjnr,			20
+.equiv		i0300_jjnr,		20
 .equiv		i0300_shift,		24
 .equiv		i0300_shiftvec,		28
 .equiv		i0300_fshift,		32
-.equiv		i0300_gid,			36
-.equiv		i0300_pos,			40		
+.equiv		i0300_gid,		36
+.equiv		i0300_pos,		40		
 .equiv		i0300_faction,		44
-.equiv		i0300_type,			48
+.equiv		i0300_type,		48
 .equiv		i0300_ntype,		52
-.equiv		i0300_nbfp,			56	
-.equiv		i0300_Vnb,			60
+.equiv		i0300_nbfp,		56	
+.equiv		i0300_Vnb,		60
 .equiv		i0300_tabscale,		64
 .equiv		i0300_VFtab,		68
 	;# stack offsets for local variables 
-.equiv		i0300_is3,			0
-.equiv		i0300_ii3,			4
-.equiv		i0300_ix,			8
-.equiv		i0300_iy,			12
-.equiv		i0300_iz,			16
+.equiv		i0300_is3,		0
+.equiv		i0300_ii3,		4
+.equiv		i0300_ix,		8
+.equiv		i0300_iy,		12
+.equiv		i0300_iz,		16
 .equiv		i0300_vnbtot,		20 
-.equiv		i0300_c6,			28 
-.equiv		i0300_c12,			36 
-.equiv		i0300_two,			44 
-.equiv		i0300_n1,			52 
-.equiv		i0300_tsc,			60 
-.equiv		i0300_ntia,			68
+.equiv		i0300_c6,		28 
+.equiv		i0300_c12,		36 
+.equiv		i0300_two,		44 
+.equiv		i0300_n1,		52 
+.equiv		i0300_tsc,		60 
+.equiv		i0300_ntia,		68
 .equiv		i0300_innerjjnr,	72
 .equiv		i0300_innerk,		76		
-.equiv		i0300_fix,			80
-.equiv		i0300_fiy,			84
-.equiv		i0300_fiz,			88
-.equiv		i0300_dx1,			92
-.equiv		i0300_dy1,			96
-.equiv		i0300_dz1,			100
-.equiv		i0300_dx2,			104
-.equiv		i0300_dy2,			108
-.equiv		i0300_dz2,			112						
+.equiv		i0300_fix,		80
+.equiv		i0300_fiy,		84
+.equiv		i0300_fiz,		88
+.equiv		i0300_dx1,		92
+.equiv		i0300_dy1,		96
+.equiv		i0300_dz1,		100
+.equiv		i0300_dx2,		104
+.equiv		i0300_dy2,		108
+.equiv		i0300_dz2,		112
     push ebp
     mov ebp,esp
     push eax
@@ -1875,52 +1875,52 @@ _inl0300_3dnow:
 .globl _inl0310_3dnow
 inl0310_3dnow:	
 _inl0310_3dnow:	
-.equiv		i0310_nri,			8
-.equiv		i0310_iinr,			12
+.equiv		i0310_nri,		8
+.equiv		i0310_iinr,		12
 .equiv		i0310_jindex,		16
-.equiv		i0310_jjnr,			20
+.equiv		i0310_jjnr,		20
 .equiv		i0310_shift,		24
 .equiv		i0310_shiftvec,		28
 .equiv		i0310_fshift,		32
-.equiv		i0310_gid,			36
-.equiv		i0310_pos,			40		
+.equiv		i0310_gid,		36
+.equiv		i0310_pos,		40		
 .equiv		i0310_faction,		44
-.equiv		i0310_type,			48
+.equiv		i0310_type,		48
 .equiv		i0310_ntype,		52
-.equiv		i0310_nbfp,			56	
-.equiv		i0310_Vnb,			60
+.equiv		i0310_nbfp,		56	
+.equiv		i0310_Vnb,		60
 .equiv		i0310_tabscale,		64
 .equiv		i0310_VFtab,		68
 .equiv		i0310_nsatoms,		72		
 	;# stack offsets for local variables 
-.equiv		i0310_is3,			0
-.equiv		i0310_ii3,			4
-.equiv		i0310_shX,			8
-.equiv		i0310_shY,			12 
-.equiv		i0310_shZ,			16	
-.equiv		i0310_ix,			20
-.equiv		i0310_iy,			24
-.equiv		i0310_iz,			28	
+.equiv		i0310_is3,		0
+.equiv		i0310_ii3,		4
+.equiv		i0310_shX,		8
+.equiv		i0310_shY,		12 
+.equiv		i0310_shZ,		16	
+.equiv		i0310_ix,		20
+.equiv		i0310_iy,		24
+.equiv		i0310_iz,		28	
 .equiv		i0310_vnbtot,		32 
-.equiv		i0310_c6,			40	 
-.equiv		i0310_c12,			48 
-.equiv		i0310_two,			56 
-.equiv		i0310_n1,			64 
-.equiv		i0310_tsc,			72 
-.equiv		i0310_ntia,			80	
+.equiv		i0310_c6,		40	 
+.equiv		i0310_c12,		48 
+.equiv		i0310_two,		56 
+.equiv		i0310_n1,		64 
+.equiv		i0310_tsc,		72 
+.equiv		i0310_ntia,		80	
 .equiv		i0310_innerjjnr0,	84
 .equiv		i0310_innerk0,		88		
 .equiv		i0310_innerjjnr,	92
 .equiv		i0310_innerk,		96	
-.equiv		i0310_fix,			100
-.equiv		i0310_fiy,			104
-.equiv		i0310_fiz,			108
-.equiv		i0310_dx1,			112
-.equiv		i0310_dy1,			116
-.equiv		i0310_dz1,			120
-.equiv		i0310_dx2,			124
-.equiv		i0310_dy2,			128
-.equiv		i0310_dz2,			132
+.equiv		i0310_fix,		100
+.equiv		i0310_fiy,		104
+.equiv		i0310_fiz,		108
+.equiv		i0310_dx1,		112
+.equiv		i0310_dy1,		116
+.equiv		i0310_dz1,		120
+.equiv		i0310_dx2,		124
+.equiv		i0310_dy2,		128
+.equiv		i0310_dz2,		132
 .equiv		i0310_nsvdwc,		136
 .equiv		i0310_nscoul,		140
 .equiv		i0310_nsvdw,		144
@@ -2339,7 +2339,7 @@ _inl0310_3dnow:
 	pfadd mm3, mm7	;# total fscal fijC+ fijD+ fijR 
 
 	;# change sign of mm3 
-    pxor mm1,mm1
+	pxor mm1,mm1
 	pfsub mm1, mm3	
 	pfmul mm0, [esp + i0310_tsc]
  	pfmul mm0, mm1    ;# mm0 is total fscal now 	
@@ -2582,7 +2582,7 @@ _inl0310_3dnow:
 	pfadd mm3, mm7	;# total fscal fijD+ fijR 
 
 	;# change sign of mm3 
-    pxor mm1,mm1
+	pxor mm1,mm1
 	pfsub mm1, mm3	
 	pfmul mm1, [esp + i0310_tsc]
  	pfmul mm0, mm1    ;# mm0 is total fscal now 	
@@ -2748,7 +2748,7 @@ _inl0310_3dnow:
 	pfadd mm3, mm7	;# total fscal fijC+ fijD+ fijR 
 
 	;# change sign of mm3 
-    pxor mm1,mm1
+	pxor mm1,mm1
 	pfsub mm1, mm3	
 	pfmul mm0, [esp + i0310_tsc]
  	pfmul mm0, mm1    ;# mm0 is total fscal now 	
@@ -2843,38 +2843,38 @@ _inl0310_3dnow:
 .globl _inl1000_3dnow
 inl1000_3dnow:	
 _inl1000_3dnow:	
-.equiv		i1000_nri,			8
-.equiv		i1000_iinr,			12
+.equiv		i1000_nri,		8
+.equiv		i1000_iinr,		12
 .equiv		i1000_jindex,		16
-.equiv		i1000_jjnr,			20
+.equiv		i1000_jjnr,		20
 .equiv		i1000_shift,		24
 .equiv		i1000_shiftvec,		28
 .equiv		i1000_fshift,		32
-.equiv		i1000_gid,			36
-.equiv		i1000_pos,			40		
+.equiv		i1000_gid,		36
+.equiv		i1000_pos,		40		
 .equiv		i1000_faction,		44
 .equiv		i1000_charge,		48
 .equiv		i1000_facel,		52
-.equiv		i1000_Vc,			56			
+.equiv		i1000_Vc,		56			
 	;# stack offsets for local variables 
-.equiv		i1000_is3,			0
-.equiv		i1000_ii3,			4
-.equiv		i1000_ix,			8
-.equiv		i1000_iy,			12
-.equiv		i1000_iz,			16
-.equiv		i1000_iq,			20		
+.equiv		i1000_is3,		0
+.equiv		i1000_ii3,		4
+.equiv		i1000_ix,		8
+.equiv		i1000_iy,		12
+.equiv		i1000_iz,		16
+.equiv		i1000_iq,		20		
 .equiv		i1000_vctot,		28 
 .equiv		i1000_innerjjnr,	36
 .equiv		i1000_innerk,		40		
-.equiv		i1000_fix,			44
-.equiv		i1000_fiy,			48
-.equiv		i1000_fiz,			52
-.equiv		i1000_dx1,			56
-.equiv		i1000_dy1,			60
-.equiv		i1000_dz1,			64
-.equiv		i1000_dx2,			68
-.equiv		i1000_dy2,			72
-.equiv		i1000_dz2,			76									
+.equiv		i1000_fix,		44
+.equiv		i1000_fiy,		48
+.equiv		i1000_fiz,		52
+.equiv		i1000_dx1,		56
+.equiv		i1000_dy1,		60
+.equiv		i1000_dz1,		64
+.equiv		i1000_dx2,		68
+.equiv		i1000_dy2,		72
+.equiv		i1000_dz2,		76			
 	push ebp
 	mov ebp,esp	
     push eax
@@ -3000,7 +3000,7 @@ _inl1000_3dnow:
 	 
 	prefetchw [esp + i1000_dx1]	;# prefetch i forces to cache 
 	
-	pfmul mm3,mm1		;# 6 has both vcoul 
+	pfmul mm3,mm1		;# 3 has both vcoul 
 	pfmul mm0,mm3		;# 0 has both fscal 
 
 	;# update vctot 
@@ -3084,19 +3084,19 @@ _inl1000_3dnow:
 	pfacc mm0, mm1
 	pfacc mm0, mm1		;# mm0=rsq 
 	
-    pfrsqrt mm1,mm0
-    movq mm2,mm1
-    pfmul mm1,mm1
-    pfrsqit1 mm1,mm0				
-    pfrcpit2 mm1,mm2	;# mm1=invsqrt 
+	pfrsqrt mm1,mm0
+	movq mm2,mm1
+	pfmul mm1,mm1
+	pfrsqit1 mm1,mm0				
+	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
 	movq  mm4, mm1
 	pfmul mm4, mm4		;# mm4=invsq 
 	;# calculate potential and scalar force 
 	pfmul mm6, mm1		;# mm6=vcoul 
 	pfmul mm4, mm6		;# mm4=fscalar  
 	;# update vctot 
-	pfadd mm5, [esp + i1000_vctot]
-	movq [esp + i1000_vctot], mm5
+	pfadd mm6, [esp + i1000_vctot]
+	movq [esp + i1000_vctot], mm6
 	;# spread fscalar to both positions 
 	punpckldq mm4,mm4
 	;# calc vectorial force 
@@ -3175,44 +3175,44 @@ _inl1000_3dnow:
 .globl _inl1010_3dnow
 inl1010_3dnow:	
 _inl1010_3dnow:	
-.equiv		i1010_nri,			8
-.equiv		i1010_iinr,			12
+.equiv		i1010_nri,		8
+.equiv		i1010_iinr,		12
 .equiv		i1010_jindex,		16
-.equiv		i1010_jjnr,			20
+.equiv		i1010_jjnr,		20
 .equiv		i1010_shift,		24
 .equiv		i1010_shiftvec,		28
 .equiv		i1010_fshift,		32
-.equiv		i1010_gid,			36
-.equiv		i1010_pos,			40		
+.equiv		i1010_gid,		36
+.equiv		i1010_pos,		40		
 .equiv		i1010_faction,		44
 .equiv		i1010_charge,		48
 .equiv		i1010_facel,		52
-.equiv		i1010_Vc,			56
+.equiv		i1010_Vc,		56
 .equiv		i1010_nsatoms,		60		
 	;# stack offsets for local variables 
-.equiv		i1010_is3,			0
-.equiv		i1010_ii3,			4
-.equiv		i1010_shX,			8
-.equiv		i1010_shY,			12 
-.equiv		i1010_shZ,			16	
-.equiv		i1010_ix,			20
-.equiv		i1010_iy,			24
-.equiv		i1010_iz,			28	
-.equiv		i1010_iq,			32 
+.equiv		i1010_is3,		0
+.equiv		i1010_ii3,		4
+.equiv		i1010_shX,		8
+.equiv		i1010_shY,		12 
+.equiv		i1010_shZ,		16	
+.equiv		i1010_ix,		20
+.equiv		i1010_iy,		24
+.equiv		i1010_iz,		28	
+.equiv		i1010_iq,		32 
 .equiv		i1010_vctot,		40 
 .equiv		i1010_innerjjnr0,	48
 .equiv		i1010_innerk0,		52		
 .equiv		i1010_innerjjnr,	56
 .equiv		i1010_innerk,		60		
-.equiv		i1010_fix,			64
-.equiv		i1010_fiy,			68
-.equiv		i1010_fiz,			72
-.equiv		i1010_dx1,			76
-.equiv		i1010_dy1,			80
-.equiv		i1010_dz1,			84
-.equiv		i1010_dx2,			88
-.equiv		i1010_dy2,			92
-.equiv		i1010_dz2,			96
+.equiv		i1010_fix,		64
+.equiv		i1010_fiy,		68
+.equiv		i1010_fiz,		72
+.equiv		i1010_dx1,		76
+.equiv		i1010_dy1,		80
+.equiv		i1010_dz1,		84
+.equiv		i1010_dx2,		88
+.equiv		i1010_dy2,		92
+.equiv		i1010_dz2,		96
 .equiv		i1010_nscoul,		100
 .equiv		i1010_solnr,		104		
 	push ebp
@@ -3251,21 +3251,21 @@ _inl1010_3dnow:
 	mov   ecx, [eax]
 	add dword ptr [ebp + i1010_nsatoms],  12
 	mov   [esp + i1010_nscoul], ecx
-		
-	;# clear potential 
+
+	;# clear potential
 	pxor  mm7,mm7
 	movq  [esp + i1010_vctot], mm7
 	mov   [esp + i1010_solnr], ebx
 	
-	mov   eax, [ebp + i1010_jindex]
+	mov   eax, [ebp + i1010_jindex]	;# current pointer to jindex list
 	mov   ecx, [eax]	     ;# jindex[n] 
 	mov   edx, [eax + 4]	     ;# jindex[n+1] 
-	add dword ptr [ebp + i1010_jindex],  4
+	add dword ptr [ebp + i1010_jindex],  4 ;# advance pointer
 	sub   edx, ecx               ;# number of innerloop atoms 
 	mov   eax, [ebp + i1010_jjnr]
 	shl   ecx, 2
-	add   eax, ecx
-	mov   [esp + i1010_innerjjnr0], eax     ;# pointer to jjnr[nj0] 
+	add   eax, ecx          ;# pointer to index of the first j atom
+	mov   [esp + i1010_innerjjnr0], eax     ;# save pointer to jjnr[nj0] 
 
 	mov   [esp + i1010_innerk0], edx    ;# number of innerloop atoms 
 	mov   esi, [ebp + i1010_pos]
@@ -3285,14 +3285,14 @@ _inl1010_3dnow:
 	movq  [esp + i1010_iq], mm2	    ;# iq =facel*charge[ii] 
 
 	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
-	mov   eax, [ebp + i1010_pos]    ;# eax = base of pos[] 
-	mov   [esp + i1010_ii3], ebx
+	mov   eax, [ebp + i1010_pos]    ;# eax = base pointer of pos[] 
+	mov   [esp + i1010_ii3], ebx    ;# store ii3 
 	
-	movq  mm0, [eax + ebx*4]
-	movd  mm1, [eax + ebx*4 + 8]
-	pfadd mm0, [esp + i1010_shX]
+	movq  mm0, [eax + ebx*4]        ;# load x and y coords to mm0 
+	movd  mm1, [eax + ebx*4 + 8]    ;# load z coord to mm1
+	pfadd mm0, [esp + i1010_shX]    ;# add shift vector
 	pfadd mm1, [esp + i1010_shZ]
-	movq  [esp + i1010_ix], mm0	
+	movq  [esp + i1010_ix], mm0     ;# store shifted coords
 	movd  [esp + i1010_iz], mm1	
 
 	;# clear forces 
@@ -3303,8 +3303,8 @@ _inl1010_3dnow:
 	mov   ecx, [esp + i1010_innerjjnr0]
 	mov   [esp + i1010_innerjjnr], ecx
 	mov   edx, [esp + i1010_innerk0]
-    sub   edx,  2
-    mov   [esp + i1010_innerk], edx    ;# number of innerloop atoms 
+        sub   edx,  2
+        mov   [esp + i1010_innerk], edx    ;# number of innerloop atoms 
 	jge   .i1010_unroll_coul_loop
 	jmp   .i1010_finish_coul_inner
 .i1010_unroll_coul_loop:	
@@ -3365,7 +3365,7 @@ _inl1010_3dnow:
 	;# do potential and fscal 
 	prefetchw [esp + i1010_dx1]	;# prefetch i forces to cache 
 	
-	pfmul mm3,mm1		;# 6 has both vcoul 
+	pfmul mm3,mm1		;# 3 has both vcoul 
 	pfmul mm0,mm3		;# 0 has both fscal 
 
 	;# update vctot 
@@ -3460,8 +3460,8 @@ _inl1010_3dnow:
 	pfmul mm6, mm1		;# mm6=vcoul 
 	pfmul mm4, mm6		;# mm4=fscalar  
 	;# update vctot 
-	pfadd mm5, [esp + i1010_vctot]
-	movq [esp + i1010_vctot], mm5
+	pfadd mm6, [esp + i1010_vctot]
+	movq [esp + i1010_vctot], mm6
 	;# spread fscalar to both positions 
 	punpckldq mm4,mm4
 	;# calc vectorial force 
@@ -3539,51 +3539,52 @@ _inl1010_3dnow:
     pop eax
 	leave
 	ret
+	
 
 			
 .globl inl1020_3dnow
 .globl _inl1020_3dnow
 inl1020_3dnow:	
 _inl1020_3dnow:	
-.equiv		i1020_nri,			8
-.equiv		i1020_iinr,			12
+.equiv		i1020_nri,		8
+.equiv		i1020_iinr,		12
 .equiv		i1020_jindex,		16
-.equiv		i1020_jjnr,			20
+.equiv		i1020_jjnr,		20
 .equiv		i1020_shift,		24
 .equiv		i1020_shiftvec,		28
 .equiv		i1020_fshift,		32
-.equiv		i1020_gid,			36
-.equiv		i1020_pos,			40		
+.equiv		i1020_gid,		36
+.equiv		i1020_pos,		40		
 .equiv		i1020_faction,		44
 .equiv		i1020_charge,		48
 .equiv		i1020_facel,		52
-.equiv		i1020_Vc,			56			
+.equiv		i1020_Vc,		56			
 			;# stack offsets for local variables 
-.equiv		i1020_is3,			0
-.equiv		i1020_ii3,			4
-.equiv		i1020_ixO,			8
-.equiv		i1020_iyO,			12
-.equiv		i1020_izO,			16	
-.equiv		i1020_ixH,			20 
-.equiv		i1020_iyH,			28 
-.equiv		i1020_izH,			36 
-.equiv		i1020_iqO,			44	
-.equiv		i1020_iqH,			52		
+.equiv		i1020_is3,		0
+.equiv		i1020_ii3,		4
+.equiv		i1020_ixO,		8
+.equiv		i1020_iyO,		12
+.equiv		i1020_izO,		16	
+.equiv		i1020_ixH,		20 
+.equiv		i1020_iyH,		28 
+.equiv		i1020_izH,		36 
+.equiv		i1020_iqO,		44	
+.equiv		i1020_iqH,		52		
 .equiv		i1020_vctot,		60 
 .equiv		i1020_innerjjnr,	68
 .equiv		i1020_innerk,		72		
-.equiv		i1020_fixO,			76 
-.equiv		i1020_fiyO,			80
-.equiv		i1020_fizO,			84
-.equiv		i1020_fixH,			88
-.equiv		i1020_fiyH,			96
-.equiv		i1020_fizH,			104         
-.equiv		i1020_dxO,			112
-.equiv		i1020_dyO,			116
-.equiv		i1020_dzO,			120
-.equiv		i1020_dxH,			124         
-.equiv		i1020_dyH,			132         
-.equiv		i1020_dzH,			140         
+.equiv		i1020_fixO,		76 
+.equiv		i1020_fiyO,		80
+.equiv		i1020_fizO,		84
+.equiv		i1020_fixH,		88
+.equiv		i1020_fiyH,		96
+.equiv		i1020_fizH,		104         
+.equiv		i1020_dxO,		112
+.equiv		i1020_dyO,		116
+.equiv		i1020_dzO,		120
+.equiv		i1020_dxH,		124         
+.equiv		i1020_dyH,		132         
+.equiv		i1020_dzH,		140         
 	push ebp
 	mov ebp,esp	
     push eax
@@ -3731,12 +3732,12 @@ _inl1020_3dnow:
 	pfadd mm3,mm2
 	pfadd mm3,mm4		;# mm3=rsqH 
 
-    pfrsqrt mm1,mm0
+	pfrsqrt mm1,mm0
 
-    movq mm2,mm1
-    pfmul mm1,mm1
-    pfrsqit1 mm1,mm0				
-    pfrcpit2 mm1,mm2	;# mm1=invsqrt 
+	movq mm2,mm1
+	pfmul mm1,mm1
+	pfrsqit1 mm1,mm0				
+	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
 	movq  mm4, mm1
 	pfmul mm4, mm4		;# mm4=invsq 
 	;# calculate potential and scalar force 
@@ -3751,8 +3752,8 @@ _inl1020_3dnow:
 
 	movq mm2, mm5
 	pfmul mm5,mm5
-    pfrsqit1 mm5,mm3				
-    pfrcpit2 mm5,mm2	;# mm5=invsqrt 
+	pfrsqit1 mm5,mm3				
+	pfrcpit2 mm5,mm2	;# mm5=invsqrt 
 	movq mm3,mm5
 	pfmul mm3,mm3		;# mm3=invsq 
 	pfmul mm7, mm5		;# mm7=vcoul 
@@ -3902,46 +3903,46 @@ _inl1020_3dnow:
 .globl _inl1030_3dnow
 inl1030_3dnow:	
 _inl1030_3dnow:	
-.equiv		i1030_nri,			8
-.equiv		i1030_iinr,			12
+.equiv		i1030_nri,		8
+.equiv		i1030_iinr,		12
 .equiv		i1030_jindex,		16
-.equiv		i1030_jjnr,			20
+.equiv		i1030_jjnr,		20
 .equiv		i1030_shift,		24
 .equiv		i1030_shiftvec,		28
 .equiv		i1030_fshift,		32
-.equiv		i1030_gid,			36
-.equiv		i1030_pos,			40		
+.equiv		i1030_gid,		36
+.equiv		i1030_pos,		40		
 .equiv		i1030_faction,		44
 .equiv		i1030_charge,		48
 .equiv		i1030_facel,		52
-.equiv		i1030_Vc,			56
+.equiv		i1030_Vc,		56
 			;# stack offsets for local variables 
-.equiv		i1030_is3,			0
-.equiv		i1030_ii3,			4
-.equiv		i1030_ixO,			8
-.equiv		i1030_iyO,			12
-.equiv		i1030_izO,			16	
-.equiv		i1030_ixH,			20
-.equiv		i1030_iyH,			28
-.equiv		i1030_izH,			36
-.equiv		i1030_qqOO,			44		
-.equiv		i1030_qqOH,			52		
-.equiv		i1030_qqHH,			60     	
+.equiv		i1030_is3,		0
+.equiv		i1030_ii3,		4
+.equiv		i1030_ixO,		8
+.equiv		i1030_iyO,		12
+.equiv		i1030_izO,		16	
+.equiv		i1030_ixH,		20
+.equiv		i1030_iyH,		28
+.equiv		i1030_izH,		36
+.equiv		i1030_qqOO,		44		
+.equiv		i1030_qqOH,		52		
+.equiv		i1030_qqHH,		60     	
 .equiv		i1030_vctot,		68
 .equiv		i1030_innerjjnr,	76
 .equiv		i1030_innerk,		80		
-.equiv		i1030_fixO,			84 
-.equiv		i1030_fiyO,			88
-.equiv		i1030_fizO,			92
-.equiv		i1030_fixH,			96
-.equiv		i1030_fiyH,			104         
-.equiv		i1030_fizH,			112         
-.equiv		i1030_dxO,			120
-.equiv		i1030_dyO,			124
-.equiv		i1030_dzO,			128
-.equiv		i1030_dxH,			132         
-.equiv		i1030_dyH,			140         
-.equiv		i1030_dzH,			148         
+.equiv		i1030_fixO,		84 
+.equiv		i1030_fiyO,		88
+.equiv		i1030_fizO,		92
+.equiv		i1030_fixH,		96
+.equiv		i1030_fiyH,		104         
+.equiv		i1030_fizH,		112         
+.equiv		i1030_dxO,		120
+.equiv		i1030_dyO,		124
+.equiv		i1030_dzO,		128
+.equiv		i1030_dxH,		132         
+.equiv		i1030_dyH,		140         
+.equiv		i1030_dzH,		148         
 	push ebp
 	mov ebp,esp	
     push eax
@@ -4213,12 +4214,12 @@ _inl1030_3dnow:
 	pfadd mm3,mm2
 	pfadd mm3,mm4		;# mm3=rsqH 
 
-    pfrsqrt mm1,mm0
+	pfrsqrt mm1,mm0
 
-    movq mm2,mm1
-    pfmul mm1,mm1
-    pfrsqit1 mm1,mm0				
-    pfrcpit2 mm1,mm2	;# mm1=invsqrt 
+	movq mm2,mm1
+	pfmul mm1,mm1
+	pfrsqit1 mm1,mm0				
+	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
 	movq  mm4, mm1
 	pfmul mm4, mm4		;# mm4=invsq 
 	;# calculate potential and scalar force 
@@ -4233,8 +4234,8 @@ _inl1030_3dnow:
 
 	movq mm2, mm5
 	pfmul mm5,mm5
-    pfrsqit1 mm5,mm3				
-    pfrcpit2 mm5,mm2	;# mm5=invsqrt 
+	pfrsqit1 mm5,mm3				
+	pfrcpit2 mm5,mm2	;# mm5=invsqrt 
 	movq mm3,mm5
 	pfmul mm3,mm3		;# mm3=invsq 
 	pfmul mm7, mm5		;# mm7=vcoul 
@@ -4336,12 +4337,12 @@ _inl1030_3dnow:
 	pfadd mm3,mm2
 	pfadd mm3,mm4		;# mm3=rsqH 
 
-    pfrsqrt mm1,mm0
+	pfrsqrt mm1,mm0
 
-    movq mm2,mm1
-    pfmul mm1,mm1
-    pfrsqit1 mm1,mm0				
-    pfrcpit2 mm1,mm2	;# mm1=invsqrt 
+	movq mm2,mm1
+	pfmul mm1,mm1
+	pfrsqit1 mm1,mm0				
+	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
 	movq  mm4, mm1
 	pfmul mm4, mm4		;# mm4=invsq 
 	;# calculate potential and scalar force 
@@ -4356,8 +4357,8 @@ _inl1030_3dnow:
 
 	movq mm2, mm5
 	pfmul mm5,mm5
-    pfrsqit1 mm5,mm3				
-    pfrcpit2 mm5,mm2	;# mm5=invsqrt 
+	pfrsqit1 mm5,mm3				
+	pfrcpit2 mm5,mm2	;# mm5=invsqrt 
 	movq mm3,mm5
 	pfmul mm3,mm3		;# mm3=invsq 
 	pfmul mm7, mm5		;# mm7=vcoul 
@@ -4505,48 +4506,48 @@ _inl1030_3dnow:
 .globl _inl1100_3dnow
 inl1100_3dnow:	
 _inl1100_3dnow:	
-.equiv		i1100_nri,			8
-.equiv		i1100_iinr,			12
+.equiv		i1100_nri,		8
+.equiv		i1100_iinr,		12
 .equiv		i1100_jindex,		16
-.equiv		i1100_jjnr,			20
+.equiv		i1100_jjnr,		20
 .equiv		i1100_shift,		24
 .equiv		i1100_shiftvec,		28
 .equiv		i1100_fshift,		32
-.equiv		i1100_gid,			36
-.equiv		i1100_pos,			40		
+.equiv		i1100_gid,		36
+.equiv		i1100_pos,		40		
 .equiv		i1100_faction,		44
 .equiv		i1100_charge,		48
 .equiv		i1100_facel,		52
-.equiv		i1100_Vc,			56			
-.equiv		i1100_type,			60
+.equiv		i1100_Vc,		56			
+.equiv		i1100_type,		60
 .equiv		i1100_ntype,		64
-.equiv		i1100_nbfp,			68	
-.equiv		i1100_Vnb,			72	
+.equiv		i1100_nbfp,		68	
+.equiv		i1100_Vnb,		72	
 	;# stack offsets for local variables 
-.equiv		i1100_is3,			0
-.equiv		i1100_ii3,			4
-.equiv		i1100_ix,			8
-.equiv		i1100_iy,			12
-.equiv		i1100_iz,			16
-.equiv		i1100_iq,			20 
+.equiv		i1100_is3,		0
+.equiv		i1100_ii3,		4
+.equiv		i1100_ix,		8
+.equiv		i1100_iy,		12
+.equiv		i1100_iz,		16
+.equiv		i1100_iq,		20 
 .equiv		i1100_vctot,		28 
 .equiv		i1100_vnbtot,		36 
-.equiv		i1100_c6,			44 
-.equiv		i1100_c12,			52 
-.equiv		i1100_six,			60 
+.equiv		i1100_c6,		44 
+.equiv		i1100_c12,		52 
+.equiv		i1100_six,		60 
 .equiv		i1100_twelve,		68 
-.equiv		i1100_ntia,			76
+.equiv		i1100_ntia,		76
 .equiv		i1100_innerjjnr,	80
 .equiv		i1100_innerk,		84		
-.equiv		i1100_fix,			88
-.equiv		i1100_fiy,			92
-.equiv		i1100_fiz,			96
-.equiv		i1100_dx1,			100
-.equiv		i1100_dy1,			104
-.equiv		i1100_dz1,			108
-.equiv		i1100_dx2,			112
-.equiv		i1100_dy2,			116
-.equiv		i1100_dz2,			120						
+.equiv		i1100_fix,		88
+.equiv		i1100_fiy,		92
+.equiv		i1100_fiz,		96
+.equiv		i1100_dx1,		100
+.equiv		i1100_dy1,		104
+.equiv		i1100_dz1,		108
+.equiv		i1100_dx2,		112
+.equiv		i1100_dy2,		116
+.equiv		i1100_dz2,		120			
 	push ebp
 	mov ebp,esp
 	
@@ -4953,54 +4954,54 @@ _inl1100_3dnow:
 .globl _inl1110_3dnow
 inl1110_3dnow:	
 _inl1110_3dnow:	
-.equiv		i1110_nri,			8
-.equiv		i1110_iinr,			12
+.equiv		i1110_nri,		8
+.equiv		i1110_iinr,		12
 .equiv		i1110_jindex,		16
-.equiv		i1110_jjnr,			20
+.equiv		i1110_jjnr,		20
 .equiv		i1110_shift,		24
 .equiv		i1110_shiftvec,		28
 .equiv		i1110_fshift,		32
-.equiv		i1110_gid,			36
-.equiv		i1110_pos,			40		
+.equiv		i1110_gid,		36
+.equiv		i1110_pos,		40		
 .equiv		i1110_faction,		44
 .equiv		i1110_charge,		48
 .equiv		i1110_facel,		52
-.equiv		i1110_Vc,			56	
-.equiv		i1110_type,			60
+.equiv		i1110_Vc,		56	
+.equiv		i1110_type,		60
 .equiv		i1110_ntype,		64
-.equiv		i1110_nbfp,			68	
-.equiv		i1110_Vnb,			72				
+.equiv		i1110_nbfp,		68	
+.equiv		i1110_Vnb,		72				
 .equiv		i1110_nsatoms,		76		
 	;# stack offsets for local variables 
-.equiv		i1110_is3,			0
-.equiv		i1110_ii3,			4
-.equiv		i1110_shX,			8
-.equiv		i1110_shY,			12 
-.equiv		i1110_shZ,			16	
-.equiv		i1110_ix,			20
-.equiv		i1110_iy,			24
-.equiv		i1110_iz,			28	
-.equiv		i1110_iq,			32		 
+.equiv		i1110_is3,		0
+.equiv		i1110_ii3,		4
+.equiv		i1110_shX,		8
+.equiv		i1110_shY,		12 
+.equiv		i1110_shZ,		16	
+.equiv		i1110_ix,		20
+.equiv		i1110_iy,		24
+.equiv		i1110_iz,		28	
+.equiv		i1110_iq,		32		 
 .equiv		i1110_vctot,		40 
 .equiv		i1110_vnbtot,		48 
-.equiv		i1110_c6,			56 
-.equiv		i1110_c12,			64 
-.equiv		i1110_six,			72 
+.equiv		i1110_c6,		56 
+.equiv		i1110_c12,		64 
+.equiv		i1110_six,		72 
 .equiv		i1110_twelve,		80 
-.equiv		i1110_ntia,			88	
+.equiv		i1110_ntia,		88	
 .equiv		i1110_innerjjnr0,	92
 .equiv		i1110_innerk0,		96		
 .equiv		i1110_innerjjnr,	100
 .equiv		i1110_innerk,		104	
-.equiv		i1110_fix,			108
-.equiv		i1110_fiy,			112
-.equiv		i1110_fiz,			116
-.equiv		i1110_dx1,			120
-.equiv		i1110_dy1,			124
-.equiv		i1110_dz1,			128
-.equiv		i1110_dx2,			132
-.equiv		i1110_dy2,			136
-.equiv		i1110_dz2,			140
+.equiv		i1110_fix,		108
+.equiv		i1110_fiy,		112
+.equiv		i1110_fiz,		116
+.equiv		i1110_dx1,		120
+.equiv		i1110_dy1,		124
+.equiv		i1110_dz1,		128
+.equiv		i1110_dx2,		132
+.equiv		i1110_dy2,		136
+.equiv		i1110_dz2,		140
 .equiv		i1110_nsvdwc,		144
 .equiv		i1110_nscoul,		148
 .equiv		i1110_nsvdw,		152
@@ -5310,11 +5311,11 @@ _inl1110_3dnow:
 	pfacc mm4, mm5
 	pfacc mm4, mm5		;# mm0=rsq 
 	
-    pfrsqrt mm0,mm4
-    movq mm2,mm0
-    pfmul mm0,mm0
-    pfrsqit1 mm0,mm4				
-    pfrcpit2 mm0,mm2	;# mm1=invsqrt 
+	pfrsqrt mm0,mm4
+	movq mm2,mm0
+	pfmul mm0,mm0
+	pfrsqit1 mm0,mm4				
+	pfrcpit2 mm0,mm2	;# mm1=invsqrt 
 	movq  mm1, mm0
 	pfmul mm0, mm0		;# mm0=invsq 
 	;# calculate potentials and scalar force 
@@ -5477,25 +5478,25 @@ _inl1110_3dnow:
 	pfacc mm6, mm7		     ;# accumulate to get dx*dx+ dy*dy+ dz*dz 
 	pfacc mm6, mm7	             ;# second rsq in lower mm6 
 
-    pfrsqrt mm0, mm4	     ;# lookup inverse square root seed 
-    pfrsqrt mm1, mm6
+	pfrsqrt mm0, mm4	     ;# lookup inverse square root seed 
+	pfrsqrt mm1, mm6
  
 	punpckldq mm0,mm1
 	punpckldq mm4,mm6        	;# now 4 has rsq and 0 the seed for both pairs 
-    movq mm2,mm0	        	;# amd 3dnow N-R iteration to get full precision 
+	movq mm2,mm0	        	;# amd 3dnow N-R iteration to get full precision 
 	pfmul mm0,mm0
-    pfrsqit1 mm0,mm4				
-    pfrcpit2 mm0,mm2	
+	pfrsqit1 mm0,mm4				
+	pfrcpit2 mm0,mm2	
 	movq mm1,mm0
 	pfmul mm0,mm0
 	;# mm0 now contains invsq, and mm1 invsqrt 
 	;# do potential and fscal 
 	prefetchw [esp + i1110_dx1]	;# prefetch i forces to cache 
 	
-	pfmul mm3,mm1		;# 6 has both vcoul 
+	pfmul mm3,mm1		;# 3 has both vcoul 
 	pfmul mm0,mm3		;# 0 has both fscal 
 
-	;# update vctot 
+	;# update vctot
 
 	pfadd mm3, [esp + i1110_vctot]      ;# add the earlier value  
 	movq [esp + i1110_vctot], mm3       ;# store the sum 
@@ -5587,8 +5588,8 @@ _inl1110_3dnow:
 	pfmul mm6, mm1		;# mm6=vcoul 
 	pfmul mm4, mm6		;# mm4=fscalar  
 	;# update vctot 
-	pfadd mm5, [esp + i1110_vctot]
-	movq [esp + i1110_vctot], mm5
+	pfadd mm6, [esp + i1110_vctot]
+	movq [esp + i1110_vctot], mm6
 	;# spread fscalar to both positions 
 	punpckldq mm4,mm4
 	;# calc vectorial force 
@@ -5853,11 +5854,11 @@ _inl1110_3dnow:
 	pfacc mm4, mm5
 	pfacc mm4, mm5		;# mm0=rsq 
 	
-    pfrsqrt mm0,mm4
-    movq mm2,mm0
-    pfmul mm0,mm0
-    pfrsqit1 mm0,mm4				
-    pfrcpit2 mm0,mm2	;# mm1=invsqrt 
+	pfrsqrt mm0,mm4
+	movq mm2,mm0
+	pfmul mm0,mm0
+	pfrsqit1 mm0,mm4				
+	pfrcpit2 mm0,mm2	;# mm1=invsqrt 
 	movq  mm1, mm0
 	pfmul mm0, mm0		;# mm0=invsq 
 	;# calculate potentials and scalar force 
@@ -5979,55 +5980,55 @@ _inl1110_3dnow:
 .globl _inl1120_3dnow
 inl1120_3dnow:	
 _inl1120_3dnow:	
-.equiv		i1120_nri,			8
-.equiv		i1120_iinr,			12
+.equiv		i1120_nri,		8
+.equiv		i1120_iinr,		12
 .equiv		i1120_jindex,		16
-.equiv		i1120_jjnr,			20
+.equiv		i1120_jjnr,		20
 .equiv		i1120_shift,		24
 .equiv		i1120_shiftvec,		28
 .equiv		i1120_fshift,		32
-.equiv		i1120_gid,			36
-.equiv		i1120_pos,			40		
+.equiv		i1120_gid,		36
+.equiv		i1120_pos,		40		
 .equiv		i1120_faction,		44
 .equiv		i1120_charge,		48
 .equiv		i1120_facel,		52
-.equiv		i1120_Vc,			56	
-.equiv		i1120_type,			60
+.equiv		i1120_Vc,		56	
+.equiv		i1120_type,		60
 .equiv		i1120_ntype,		64
-.equiv		i1120_nbfp,			68	
-.equiv		i1120_Vnb,			72				
+.equiv		i1120_nbfp,		68	
+.equiv		i1120_Vnb,		72				
 			;# stack offsets for local variables 
-.equiv		i1120_is3,			0
-.equiv		i1120_ii3,			4
-.equiv		i1120_ixO,			8
-.equiv		i1120_iyO,			12
-.equiv		i1120_izO,			16	
-.equiv		i1120_ixH,			20  
-.equiv		i1120_iyH,			28  
-.equiv		i1120_izH,			36  
-.equiv		i1120_iqO,			44  
-.equiv		i1120_iqH,			52  
+.equiv		i1120_is3,		0
+.equiv		i1120_ii3,		4
+.equiv		i1120_ixO,		8
+.equiv		i1120_iyO,		12
+.equiv		i1120_izO,		16	
+.equiv		i1120_ixH,		20  
+.equiv		i1120_iyH,		28  
+.equiv		i1120_izH,		36  
+.equiv		i1120_iqO,		44  
+.equiv		i1120_iqH,		52  
 .equiv		i1120_vctot,		60  
 .equiv		i1120_vnbtot,		68  
-.equiv		i1120_c6,			76  
-.equiv		i1120_c12,			84  
-.equiv		i1120_six,			92  
+.equiv		i1120_c6,		76  
+.equiv		i1120_c12,		84  
+.equiv		i1120_six,		92  
 .equiv		i1120_twelve,		100 
-.equiv		i1120_ntia,			108 
+.equiv		i1120_ntia,		108 
 .equiv		i1120_innerjjnr,	116
 .equiv		i1120_innerk,		120	
-.equiv		i1120_fixO,			124
-.equiv		i1120_fiyO,			128
-.equiv		i1120_fizO,			132
-.equiv		i1120_fixH,			136  
-.equiv		i1120_fiyH,			144  
-.equiv		i1120_fizH,			152  
-.equiv		i1120_dxO,			160
-.equiv		i1120_dyO,			164
-.equiv		i1120_dzO,			168
-.equiv		i1120_dxH,			172  
-.equiv		i1120_dyH,			180  
-.equiv		i1120_dzH,			188  
+.equiv		i1120_fixO,		124
+.equiv		i1120_fiyO,		128
+.equiv		i1120_fizO,		132
+.equiv		i1120_fixH,		136  
+.equiv		i1120_fiyH,		144  
+.equiv		i1120_fizH,		152  
+.equiv		i1120_dxO,		160
+.equiv		i1120_dyO,		164
+.equiv		i1120_dzO,		168
+.equiv		i1120_dxH,		172  
+.equiv		i1120_dyH,		180  
+.equiv		i1120_dzH,		188  
 	push ebp
 	mov ebp,esp	
     push eax
@@ -6245,8 +6246,8 @@ _inl1120_3dnow:
 
 	movq mm2, mm5
 	pfmul mm5,mm5
-    pfrsqit1 mm5,mm3				
-    pfrcpit2 mm5,mm2	;# mm5=invsqrt 
+	pfrsqit1 mm5,mm3				
+	pfrcpit2 mm5,mm2	;# mm5=invsqrt 
 	movq mm3,mm5
 	pfmul mm3,mm3		;# mm3=invsq 
 	pfmul mm7, mm5		;# mm7=vcoul 
@@ -6404,55 +6405,55 @@ _inl1120_3dnow:
 .globl _inl1130_3dnow
 inl1130_3dnow:	
 _inl1130_3dnow:	
-.equiv		i1130_nri,			8
-.equiv		i1130_iinr,			12
+.equiv		i1130_nri,		8
+.equiv		i1130_iinr,		12
 .equiv		i1130_jindex,		16
-.equiv		i1130_jjnr,			20
+.equiv		i1130_jjnr,		20
 .equiv		i1130_shift,		24
 .equiv		i1130_shiftvec,		28
 .equiv		i1130_fshift,		32
-.equiv		i1130_gid,			36
-.equiv		i1130_pos,			40		
+.equiv		i1130_gid,		36
+.equiv		i1130_pos,		40		
 .equiv		i1130_faction,		44
 .equiv		i1130_charge,		48
 .equiv		i1130_facel,		52
-.equiv		i1130_Vc,			56						
-.equiv		i1130_type,			60
+.equiv		i1130_Vc,		56						
+.equiv		i1130_type,		60
 .equiv		i1130_ntype,		64
-.equiv		i1130_nbfp,			68	
-.equiv		i1130_Vnb,			72			
+.equiv		i1130_nbfp,		68	
+.equiv		i1130_Vnb,		72			
 			;# stack offsets for local variables 
-.equiv		i1130_is3,			0
-.equiv		i1130_ii3,			4
-.equiv		i1130_ixO,			8
-.equiv		i1130_iyO,			12
-.equiv		i1130_izO,			16	
-.equiv		i1130_ixH,			20  
-.equiv		i1130_iyH,			28  
-.equiv		i1130_izH,			36  
-.equiv		i1130_qqOO,			44  
-.equiv		i1130_qqOH,			52  
-.equiv		i1130_qqHH,			60  
-.equiv		i1130_c6,			68  
-.equiv		i1130_c12,			76  
-.equiv		i1130_six,			84  
+.equiv		i1130_is3,		0
+.equiv		i1130_ii3,		4
+.equiv		i1130_ixO,		8
+.equiv		i1130_iyO,		12
+.equiv		i1130_izO,		16	
+.equiv		i1130_ixH,		20  
+.equiv		i1130_iyH,		28  
+.equiv		i1130_izH,		36  
+.equiv		i1130_qqOO,		44  
+.equiv		i1130_qqOH,		52  
+.equiv		i1130_qqHH,		60  
+.equiv		i1130_c6,		68  
+.equiv		i1130_c12,		76  
+.equiv		i1130_six,		84  
 .equiv		i1130_twelve,		92  
 .equiv		i1130_vctot,		100 
 .equiv		i1130_vnbtot,		108 
 .equiv		i1130_innerjjnr,	116
 .equiv		i1130_innerk,		120	
-.equiv		i1130_fixO,			124
-.equiv		i1130_fiyO,			128
-.equiv		i1130_fizO,			132
-.equiv		i1130_fixH,			136 
-.equiv		i1130_fiyH,			144 
-.equiv		i1130_fizH,			152 
-.equiv		i1130_dxO,			160
-.equiv		i1130_dyO,			164
-.equiv		i1130_dzO,			168
-.equiv		i1130_dxH,			172 
-.equiv		i1130_dyH,			180 
-.equiv		i1130_dzH,			188 
+.equiv		i1130_fixO,		124
+.equiv		i1130_fiyO,		128
+.equiv		i1130_fizO,		132
+.equiv		i1130_fixH,		136 
+.equiv		i1130_fiyH,		144 
+.equiv		i1130_fizH,		152 
+.equiv		i1130_dxO,		160
+.equiv		i1130_dyO,		164
+.equiv		i1130_dzO,		168
+.equiv		i1130_dxH,		172 
+.equiv		i1130_dyH,		180 
+.equiv		i1130_dzH,		188 
 	push ebp
 	mov ebp,esp	
     push eax
@@ -6647,8 +6648,8 @@ _inl1130_3dnow:
 	pfmul mm4, mm0		;# mm4=fscalar  
 
 	;# update nb potential 
-	pfadd mm5, [esp + i1130_vnbtot]
-	movq [esp + i1130_vnbtot], mm5
+	pfadd mm6, [esp + i1130_vnbtot]
+	movq [esp + i1130_vnbtot], mm6
 
 	pfrsqrt mm5, mm3
 	pswapd mm3,mm3
@@ -6658,8 +6659,8 @@ _inl1130_3dnow:
 
 	movq mm2, mm5
 	pfmul mm5,mm5
-    pfrsqit1 mm5,mm3				
-    pfrcpit2 mm5,mm2	;# mm5=invsqrt 
+	pfrsqit1 mm5,mm3				
+	pfrcpit2 mm5,mm2	;# mm5=invsqrt 
 	movq mm3,mm5
 	pfmul mm3,mm3		;# mm3=invsq 
 	pfmul mm7, mm5		;# mm7=vcoul 
@@ -6761,12 +6762,12 @@ _inl1130_3dnow:
 	pfadd mm3,mm2
 	pfadd mm3,mm4		;# mm3=rsqH 
 
-    pfrsqrt mm1,mm0
+	pfrsqrt mm1,mm0
 
-    movq mm2,mm1
-    pfmul mm1,mm1
-    pfrsqit1 mm1,mm0				
-    pfrcpit2 mm1,mm2	;# mm1=invsqrt 
+	movq mm2,mm1
+	pfmul mm1,mm1
+	pfrsqit1 mm1,mm0				
+	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
 	movq  mm4, mm1
 	pfmul mm4, mm4		;# mm4=invsq 
 	;# calculate potential and scalar force 
@@ -6781,8 +6782,8 @@ _inl1130_3dnow:
 
 	movq mm2, mm5
 	pfmul mm5,mm5
-    pfrsqit1 mm5,mm3				
-    pfrcpit2 mm5,mm2	;# mm5=invsqrt 
+	pfrsqit1 mm5,mm3				
+	pfrcpit2 mm5,mm2	;# mm5=invsqrt 
 	movq mm3,mm5
 	pfmul mm3,mm3		;# mm3=invsq 
 	pfmul mm7, mm5		;# mm7=vcoul 
@@ -6884,12 +6885,12 @@ _inl1130_3dnow:
 	pfadd mm3,mm2
 	pfadd mm3,mm4		;# mm3=rsqH 
 
-    pfrsqrt mm1,mm0
+	pfrsqrt mm1,mm0
 
-    movq mm2,mm1
-    pfmul mm1,mm1
-    pfrsqit1 mm1,mm0				
-    pfrcpit2 mm1,mm2	;# mm1=invsqrt 
+	movq mm2,mm1
+	pfmul mm1,mm1
+	pfrsqit1 mm1,mm0				
+	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
 	movq  mm4, mm1
 	pfmul mm4, mm4		;# mm4=invsq 
 	;# calculate potential and scalar force 
@@ -6904,8 +6905,8 @@ _inl1130_3dnow:
 
 	movq mm2, mm5
 	pfmul mm5,mm5
-    pfrsqit1 mm5,mm3				
-    pfrcpit2 mm5,mm2	;# mm5=invsqrt 
+	pfrsqit1 mm5,mm3				
+	pfrcpit2 mm5,mm2	;# mm5=invsqrt 
 	movq mm3,mm5
 	pfmul mm3,mm3		;# mm3=invsq 
 	pfmul mm7, mm5		;# mm7=vcoul 
@@ -7063,44 +7064,44 @@ _inl1130_3dnow:
 .globl _inl3000_3dnow
 inl3000_3dnow:	
 _inl3000_3dnow:	
-.equiv		i3000_nri,			8
-.equiv		i3000_iinr,			12
+.equiv		i3000_nri,		8
+.equiv		i3000_iinr,		12
 .equiv		i3000_jindex,		16
-.equiv		i3000_jjnr,			20
+.equiv		i3000_jjnr,		20
 .equiv		i3000_shift,		24
 .equiv		i3000_shiftvec,		28
 .equiv		i3000_fshift,		32
-.equiv		i3000_gid,			36
-.equiv		i3000_pos,			40		
+.equiv		i3000_gid,		36
+.equiv		i3000_pos,		40		
 .equiv		i3000_faction,		44
 .equiv		i3000_charge,		48
 .equiv		i3000_facel,		52
-.equiv		i3000_Vc,			56			
+.equiv		i3000_Vc,		56			
 .equiv		i3000_tabscale,		60
 .equiv		i3000_VFtab,		64
 	;# stack offsets for local variables 
-.equiv		i3000_is3,			0
-.equiv		i3000_ii3,			4
-.equiv		i3000_ix,			8
-.equiv		i3000_iy,			12
-.equiv		i3000_iz,			16
-.equiv		i3000_iq,			20 
+.equiv		i3000_is3,		0
+.equiv		i3000_ii3,		4
+.equiv		i3000_ix,		8
+.equiv		i3000_iy,		12
+.equiv		i3000_iz,		16
+.equiv		i3000_iq,		20 
 .equiv		i3000_vctot,		28 
-.equiv		i3000_two,			36 
-.equiv		i3000_n1,			44 
-.equiv		i3000_tsc,			52 
-.equiv		i3000_ntia,			60
+.equiv		i3000_two,		36 
+.equiv		i3000_n1,		44 
+.equiv		i3000_tsc,		52 
+.equiv		i3000_ntia,		60
 .equiv		i3000_innerjjnr,	64
 .equiv		i3000_innerk,		68		
-.equiv		i3000_fix,			72
-.equiv		i3000_fiy,			76
-.equiv		i3000_fiz,			80
-.equiv		i3000_dx1,			84
-.equiv		i3000_dy1,			88
-.equiv		i3000_dz1,			92
-.equiv		i3000_dx2,			96
-.equiv		i3000_dy2,			100
-.equiv		i3000_dz2,			104						
+.equiv		i3000_fix,		72
+.equiv		i3000_fiy,		76
+.equiv		i3000_fiz,		80
+.equiv		i3000_dx1,		84
+.equiv		i3000_dy1,		88
+.equiv		i3000_dz1,		92
+.equiv		i3000_dx2,		96
+.equiv		i3000_dy2,		100
+.equiv		i3000_dz2,		104
 	push ebp
 	mov ebp,esp	
     push eax
@@ -7279,7 +7280,7 @@ _inl3000_3dnow:
 	movq [esp + i3000_vctot], mm5       ;# store the sum       
 
 	;# change sign of mm3 
-    pxor mm1,mm1
+	pxor mm1,mm1
 	pfsub mm1, mm3
 	pfmul mm1, [esp + i3000_tsc]	
  	pfmul mm0, mm1    ;# mm0 is total fscal now 	
@@ -7418,7 +7419,7 @@ _inl3000_3dnow:
 	movq [esp + i3000_vctot], mm5       ;# store the sum       
 	
 	;# change sign of mm3 
-    pxor mm1,mm1
+	pxor mm1,mm1
 	pfsub mm1, mm3	
 	pfmul mm0, [esp + i3000_tsc]
  	pfmul mm0, mm1    ;# mm0 is total fscal now 	
@@ -7507,49 +7508,49 @@ _inl3000_3dnow:
 .globl _inl3010_3dnow
 inl3010_3dnow:	
 _inl3010_3dnow:	
-.equiv		i3010_nri,			8
-.equiv		i3010_iinr,			12
+.equiv		i3010_nri,		8
+.equiv		i3010_iinr,		12
 .equiv		i3010_jindex,		16
-.equiv		i3010_jjnr,			20
+.equiv		i3010_jjnr,		20
 .equiv		i3010_shift,		24
 .equiv		i3010_shiftvec,		28
 .equiv		i3010_fshift,		32
-.equiv		i3010_gid,			36
-.equiv		i3010_pos,			40		
+.equiv		i3010_gid,		36
+.equiv		i3010_pos,		40		
 .equiv		i3010_faction,		44
 .equiv		i3010_charge,		48
 .equiv		i3010_facel,		52
-.equiv		i3010_Vc,			56
+.equiv		i3010_Vc,		56
 .equiv		i3010_tabscale,		60		
 .equiv		i3010_VFtab,		64
 .equiv		i3010_nsatoms,		68		
 	;# stack offsets for local variables 
-.equiv		i3010_is3,			0
-.equiv		i3010_ii3,			4
-.equiv		i3010_shX,			8
-.equiv		i3010_shY,			12 
-.equiv		i3010_shZ,			16	
-.equiv		i3010_ix,			20
-.equiv		i3010_iy,			24
-.equiv		i3010_iz,			28	
-.equiv		i3010_iq,			32 
+.equiv		i3010_is3,		0
+.equiv		i3010_ii3,		4
+.equiv		i3010_shX,		8
+.equiv		i3010_shY,		12 
+.equiv		i3010_shZ,		16	
+.equiv		i3010_ix,		20
+.equiv		i3010_iy,		24
+.equiv		i3010_iz,		28	
+.equiv		i3010_iq,		32 
 .equiv		i3010_vctot,		40 
-.equiv		i3010_two,			48 
-.equiv		i3010_n1,			56 
-.equiv		i3010_tsc,			64 			
+.equiv		i3010_two,		48 
+.equiv		i3010_n1,		56 
+.equiv		i3010_tsc,		64 			
 .equiv		i3010_innerjjnr0,	72
 .equiv		i3010_innerk0,		76		
 .equiv		i3010_innerjjnr,	80
 .equiv		i3010_innerk,		84		
-.equiv		i3010_fix,			88
-.equiv		i3010_fiy,			92
-.equiv		i3010_fiz,			96
-.equiv		i3010_dx1,			100
-.equiv		i3010_dy1,			104
-.equiv		i3010_dz1,			108
-.equiv		i3010_dx2,			112
-.equiv		i3010_dy2,			116
-.equiv		i3010_dz2,			120
+.equiv		i3010_fix,		88
+.equiv		i3010_fiy,		92
+.equiv		i3010_fiz,		96
+.equiv		i3010_dx1,		100
+.equiv		i3010_dy1,		104
+.equiv		i3010_dz1,		108
+.equiv		i3010_dx2,		112
+.equiv		i3010_dy2,		116
+.equiv		i3010_dz2,		120
 .equiv		i3010_nscoul,		124
 .equiv		i3010_solnr,		128		
 	push ebp
@@ -7755,7 +7756,7 @@ _inl3010_3dnow:
 	movq [esp + i3010_vctot], mm5       ;# store the sum       
 
 	;# change sign of mm3 
-    pxor mm1,mm1
+	pxor mm1,mm1
 	pfsub mm1, mm3
 	pfmul mm1, [esp + i3010_tsc]	
  	pfmul mm0, mm1    ;# mm0 is total fscal now 	
@@ -7894,7 +7895,7 @@ _inl3010_3dnow:
 	movq [esp + i3010_vctot], mm5       ;# store the sum       
 	
 	;# change sign of mm3 
-    pxor mm1,mm1
+	pxor mm1,mm1
 	pfsub mm1, mm3	
 	pfmul mm0, [esp + i3010_tsc]
  	pfmul mm0, mm1    ;# mm0 is total fscal now 	
@@ -7973,10 +7974,10 @@ _inl3010_3dnow:
 	add esp, 132
 	pop edi
 	pop esi
-    pop edx
-    pop ecx
-    pop ebx
-    pop eax
+	pop edx
+	pop ecx
+	pop ebx
+	pop eax
 	leave
 	ret
 
@@ -7987,52 +7988,52 @@ _inl3010_3dnow:
 .globl _inl3020_3dnow
 inl3020_3dnow:	
 _inl3020_3dnow:	
-.equiv		i3020_nri,			8
-.equiv		i3020_iinr,			12
+.equiv		i3020_nri,		8
+.equiv		i3020_iinr,		12
 .equiv		i3020_jindex,		16
-.equiv		i3020_jjnr,			20
+.equiv		i3020_jjnr,		20
 .equiv		i3020_shift,		24
 .equiv		i3020_shiftvec,		28
 .equiv		i3020_fshift,		32
-.equiv		i3020_gid,			36
-.equiv		i3020_pos,			40		
+.equiv		i3020_gid,		36
+.equiv		i3020_pos,		40		
 .equiv		i3020_faction,		44
 .equiv		i3020_charge,		48
 .equiv		i3020_facel,		52
-.equiv		i3020_Vc,			56			
+.equiv		i3020_Vc,		56			
 .equiv		i3020_tabscale,		60
 .equiv		i3020_VFtab,		64
 			;# stack offsets for local variables 
-.equiv		i3020_is3,			0
-.equiv		i3020_ii3,			4
-.equiv		i3020_ixO,			8
-.equiv		i3020_iyO,			12
-.equiv		i3020_izO,			16	
-.equiv		i3020_ixH,			20  
-.equiv		i3020_iyH,			28  
-.equiv		i3020_izH,			36  
-.equiv		i3020_iqO,			44  
-.equiv		i3020_iqH,			52  
-.equiv		i3020_qqO,			60  
-.equiv		i3020_qqH,			68  
+.equiv		i3020_is3,		0
+.equiv		i3020_ii3,		4
+.equiv		i3020_ixO,		8
+.equiv		i3020_iyO,		12
+.equiv		i3020_izO,		16	
+.equiv		i3020_ixH,		20  
+.equiv		i3020_iyH,		28  
+.equiv		i3020_izH,		36  
+.equiv		i3020_iqO,		44  
+.equiv		i3020_iqH,		52  
+.equiv		i3020_qqO,		60  
+.equiv		i3020_qqH,		68  
 .equiv		i3020_vctot,		76  
-.equiv		i3020_two,			84  
-.equiv		i3020_n1,			92  
-.equiv		i3020_tsc,			100 
+.equiv		i3020_two,		84  
+.equiv		i3020_n1,		92  
+.equiv		i3020_tsc,		100 
 .equiv		i3020_innerjjnr,	108
 .equiv		i3020_innerk,		112	
-.equiv		i3020_fixO,			116
-.equiv		i3020_fiyO,			120
-.equiv		i3020_fizO,			124
-.equiv		i3020_fixH,			128 
-.equiv		i3020_fiyH,			136 
-.equiv		i3020_fizH,			144 
-.equiv		i3020_dxO,			152
-.equiv		i3020_dyO,			156
-.equiv		i3020_dzO,			160
-.equiv		i3020_dxH,			164 
-.equiv		i3020_dyH,			172 
-.equiv		i3020_dzH,			180 
+.equiv		i3020_fixO,		116
+.equiv		i3020_fiyO,		120
+.equiv		i3020_fizO,		124
+.equiv		i3020_fixH,		128 
+.equiv		i3020_fiyH,		136 
+.equiv		i3020_fizH,		144 
+.equiv		i3020_dxO,		152
+.equiv		i3020_dyO,		156
+.equiv		i3020_dzO,		160
+.equiv		i3020_dxH,		164 
+.equiv		i3020_dyH,		172 
+.equiv		i3020_dzH,		180 
 .equiv		i3020_tmprsqH,		188 
 	push ebp
 	mov ebp,esp	
@@ -8238,7 +8239,7 @@ _inl3020_3dnow:
 	movq mm3, mm7	
 
 	;# change sign of fscal and multiply with rinv  
-    pxor mm0,mm0
+	pxor mm0,mm0
 	pfsubr mm3, mm0	
 	pfmul mm3, [esp + i3020_tsc]
  	pfmul mm3, mm1    ;# mm3 is total fscal (for the oxygen) now 	
@@ -8256,8 +8257,8 @@ _inl3020_3dnow:
 
 	movq mm2, mm1
 	pfmul mm1,mm1
-    pfrsqit1 mm1,mm0				
-    pfrcpit2 mm1,mm2	;# mm1=invsqrt 
+	pfrsqit1 mm1,mm0				
+	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
 	
 	pfmul mm0,mm1		;# mm0=r 
 	pfmul mm0, [esp + i3020_tsc]
@@ -8305,7 +8306,7 @@ _inl3020_3dnow:
 	movq [esp + i3020_vctot], mm5
 	
 	;# change sign of fijC and multiply by rinv 
-    pxor mm4,mm4
+	pxor mm4,mm4
 	pfsub mm4, mm7	
 	pfmul mm4, [esp + i3020_tsc]
  	pfmul mm4, mm1    ;# mm4 is total fscal (for the hydrogens) now 	
@@ -8450,51 +8451,51 @@ _inl3020_3dnow:
 .globl _inl3030_3dnow
 inl3030_3dnow:	
 _inl3030_3dnow:	
-.equiv		i3030_nri,			8
-.equiv		i3030_iinr,			12
+.equiv		i3030_nri,		8
+.equiv		i3030_iinr,		12
 .equiv		i3030_jindex,		16
-.equiv		i3030_jjnr,			20
+.equiv		i3030_jjnr,		20
 .equiv		i3030_shift,		24
 .equiv		i3030_shiftvec,		28
 .equiv		i3030_fshift,		32
-.equiv		i3030_gid,			36
-.equiv		i3030_pos,			40		
+.equiv		i3030_gid,		36
+.equiv		i3030_pos,		40		
 .equiv		i3030_faction,		44
 .equiv		i3030_charge,		48
 .equiv		i3030_facel,		52
-.equiv		i3030_Vc,			56			
+.equiv		i3030_Vc,		56			
 .equiv		i3030_tabscale,		60
 .equiv		i3030_VFtab,		64
 			;# stack offsets for local variables 
-.equiv		i3030_is3,			0
-.equiv		i3030_ii3,			4
-.equiv		i3030_ixO,			8
-.equiv		i3030_iyO,			12
-.equiv		i3030_izO,			16	
-.equiv		i3030_ixH,			20  
-.equiv		i3030_iyH,			28  
-.equiv		i3030_izH,			36  
-.equiv		i3030_qqOO,			44  
-.equiv		i3030_qqOH,			52  
-.equiv		i3030_qqHH,			60  
-.equiv		i3030_two,			68  
-.equiv		i3030_n1,			76  
-.equiv		i3030_tsc,			84  
+.equiv		i3030_is3,		0
+.equiv		i3030_ii3,		4
+.equiv		i3030_ixO,		8
+.equiv		i3030_iyO,		12
+.equiv		i3030_izO,		16	
+.equiv		i3030_ixH,		20  
+.equiv		i3030_iyH,		28  
+.equiv		i3030_izH,		36  
+.equiv		i3030_qqOO,		44  
+.equiv		i3030_qqOH,		52  
+.equiv		i3030_qqHH,		60  
+.equiv		i3030_two,		68  
+.equiv		i3030_n1,		76  
+.equiv		i3030_tsc,		84  
 .equiv		i3030_vctot,		92  
 .equiv		i3030_innerjjnr,	100
 .equiv		i3030_innerk,		104	
-.equiv		i3030_fixO,			108
-.equiv		i3030_fiyO,			112
-.equiv		i3030_fizO,			116
-.equiv		i3030_fixH,			120 
-.equiv		i3030_fiyH,			128 
-.equiv		i3030_fizH,			136 
-.equiv		i3030_dxO,			144
-.equiv		i3030_dyO,			148
-.equiv		i3030_dzO,			152
-.equiv		i3030_dxH,			156 
-.equiv		i3030_dyH,			164 
-.equiv		i3030_dzH,			172 
+.equiv		i3030_fixO,		108
+.equiv		i3030_fiyO,		112
+.equiv		i3030_fizO,		116
+.equiv		i3030_fixH,		120 
+.equiv		i3030_fiyH,		128 
+.equiv		i3030_fizH,		136 
+.equiv		i3030_dxO,		144
+.equiv		i3030_dyO,		148
+.equiv		i3030_dzO,		152
+.equiv		i3030_dxH,		156 
+.equiv		i3030_dyH,		164 
+.equiv		i3030_dzH,		172 
 .equiv		i3030_tmprsqH,		180 
 	push ebp
 	mov ebp,esp	
@@ -8697,7 +8698,7 @@ _inl3030_3dnow:
 	movq mm3, mm7
 
 	;# change sign of fscal and multiply with rinv  
-    pxor mm0,mm0
+	pxor mm0,mm0
 	pfsubr mm3, mm0	
 	pfmul mm3, [esp + i3030_tsc]
  	pfmul mm3, mm1    ;# mm3 is total fscal (for the oxygen) now 
@@ -8715,8 +8716,8 @@ _inl3030_3dnow:
 
 	movq mm2, mm1
 	pfmul mm1,mm1
-    pfrsqit1 mm1,mm0				
-    pfrcpit2 mm1,mm2	;# mm1=invsqrt 
+	pfrsqit1 mm1,mm0				
+	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
 	
 	pfmul mm0,mm1		;# mm0=r 
 	pfmul mm0, [esp + i3030_tsc]
@@ -8763,7 +8764,7 @@ _inl3030_3dnow:
 	movq [esp + i3030_vctot], mm5
 	
 	;# change sign of fijC and multiply by rinv 
-    pxor mm4,mm4
+	pxor mm4,mm4
 	pfsub mm4, mm7	
 	pfmul mm4, [esp + i3030_tsc]
  	pfmul mm4, mm1    ;# mm4 is total fscal (for the hydrogens) now 	
@@ -8919,8 +8920,8 @@ _inl3030_3dnow:
 
 	movq mm2, mm1
 	pfmul mm1,mm1
-    pfrsqit1 mm1,mm0				
-    pfrcpit2 mm1,mm2	;# mm1=invsqrt 
+	pfrsqit1 mm1,mm0				
+	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
 	
 	pfmul mm0,mm1		;# mm0=r 
 	pfmul mm0, [esp + i3030_tsc]
@@ -8968,7 +8969,7 @@ _inl3030_3dnow:
 	movq [esp + i3030_vctot], mm5
 	
 	;# change sign of fijC and multiply by rinv 
-    pxor mm4,mm4
+	pxor mm4,mm4
 	pfsub mm4, mm7	
 	pfmul mm4, [esp + i3030_tsc]
  	pfmul mm4, mm1    ;# mm4 is total fscal (for the hydrogens) now 		
@@ -9123,8 +9124,8 @@ _inl3030_3dnow:
 
 	movq mm2, mm1
 	pfmul mm1,mm1
-    pfrsqit1 mm1,mm0				
-    pfrcpit2 mm1,mm2	;# mm1=invsqrt 
+	pfrsqit1 mm1,mm0				
+	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
 	
 	pfmul mm0,mm1		;# mm0=r 
 	pfmul mm0, [esp + i3030_tsc]
@@ -9172,7 +9173,7 @@ _inl3030_3dnow:
 	movq [esp + i3030_vctot], mm5
 	
 	;# change sign of fijC and multiply by rinv 
-    pxor mm4,mm4
+	pxor mm4,mm4
 	pfsub mm4, mm7	
 	pfmul mm4, [esp + i3030_tsc]
  	pfmul mm4, mm1    ;# mm4 is total fscal (for the hydrogens) now 	
@@ -9317,53 +9318,53 @@ _inl3030_3dnow:
 .globl _inl3100_3dnow
 inl3100_3dnow:	
 _inl3100_3dnow:	
-.equiv		i3100_nri,			8
-.equiv		i3100_iinr,			12
+.equiv		i3100_nri,		8
+.equiv		i3100_iinr,		12
 .equiv		i3100_jindex,		16
-.equiv		i3100_jjnr,			20
+.equiv		i3100_jjnr,		20
 .equiv		i3100_shift,		24
 .equiv		i3100_shiftvec,		28
 .equiv		i3100_fshift,		32
-.equiv		i3100_gid,			36
-.equiv		i3100_pos,			40		
+.equiv		i3100_gid,		36
+.equiv		i3100_pos,		40		
 .equiv		i3100_faction,		44
 .equiv		i3100_charge,		48
 .equiv		i3100_facel,		52
-.equiv		i3100_Vc,			56			
-.equiv		i3100_type,			60
+.equiv		i3100_Vc,		56			
+.equiv		i3100_type,		60
 .equiv		i3100_ntype,		64
-.equiv		i3100_nbfp,			68	
-.equiv		i3100_Vnb,			72
+.equiv		i3100_nbfp,		68	
+.equiv		i3100_Vnb,		72
 .equiv		i3100_tabscale,		76
 .equiv		i3100_VFtab,		80
 	;# stack offsets for local variables 
-.equiv		i3100_is3,			0 
-.equiv		i3100_ii3,			4
-.equiv		i3100_ix,			8
-.equiv		i3100_iy,			12
-.equiv		i3100_iz,			16
-.equiv		i3100_iq,			20 
+.equiv		i3100_is3,		0 
+.equiv		i3100_ii3,		4
+.equiv		i3100_ix,		8
+.equiv		i3100_iy,		12
+.equiv		i3100_iz,		16
+.equiv		i3100_iq,		20 
 .equiv		i3100_vctot,		28 
 .equiv		i3100_vnbtot,		36 
-.equiv		i3100_c6,			44 
-.equiv		i3100_c12,			52 
-.equiv		i3100_six,			60 
+.equiv		i3100_c6,		44 
+.equiv		i3100_c12,		52 
+.equiv		i3100_six,		60 
 .equiv		i3100_twelve,		68 
-.equiv		i3100_two,			76 
-.equiv		i3100_n1,			84 
-.equiv		i3100_tsc,			92 
-.equiv		i3100_ntia,			100
+.equiv		i3100_two,		76 
+.equiv		i3100_n1,		84 
+.equiv		i3100_tsc,		92 
+.equiv		i3100_ntia,		100
 .equiv		i3100_innerjjnr,	104
 .equiv		i3100_innerk,		108	
-.equiv		i3100_fix,			112
-.equiv		i3100_fiy,			116
-.equiv		i3100_fiz,			120
-.equiv		i3100_dx1,			124
-.equiv		i3100_dy1,			128
-.equiv		i3100_dz1,			132
-.equiv		i3100_dx2,			136
-.equiv		i3100_dy2,			140
-.equiv		i3100_dz2,			144
+.equiv		i3100_fix,		112
+.equiv		i3100_fiy,		116
+.equiv		i3100_fiz,		120
+.equiv		i3100_dx1,		124
+.equiv		i3100_dy1,		128
+.equiv		i3100_dz1,		132
+.equiv		i3100_dx2,		136
+.equiv		i3100_dy2,		140
+.equiv		i3100_dz2,		144
 	push ebp
 	mov ebp,esp	
     push eax
@@ -9867,59 +9868,59 @@ _inl3100_3dnow:
 .globl _inl3110_3dnow
 inl3110_3dnow:	
 _inl3110_3dnow:	
-.equiv		i3110_nri,			8
-.equiv		i3110_iinr,			12
+.equiv		i3110_nri,		8
+.equiv		i3110_iinr,		12
 .equiv		i3110_jindex,		16
-.equiv		i3110_jjnr,			20
+.equiv		i3110_jjnr,		20
 .equiv		i3110_shift,		24
 .equiv		i3110_shiftvec,		28
 .equiv		i3110_fshift,		32
-.equiv		i3110_gid,			36
-.equiv		i3110_pos,			40		
+.equiv		i3110_gid,		36
+.equiv		i3110_pos,		40		
 .equiv		i3110_faction,		44
 .equiv		i3110_charge,		48
 .equiv		i3110_facel,		52
-.equiv		i3110_Vc,			56			
-.equiv		i3110_type,			60
+.equiv		i3110_Vc,		56			
+.equiv		i3110_type,		60
 .equiv		i3110_ntype,		64
-.equiv		i3110_nbfp,			68	
-.equiv		i3110_Vnb,			72
+.equiv		i3110_nbfp,		68	
+.equiv		i3110_Vnb,		72
 .equiv		i3110_tabscale,		76
 .equiv		i3110_VFtab,		80
 .equiv		i3110_nsatoms,		84	
 	;# stack offsets for local variables 
-.equiv		i3110_is3,			0
-.equiv		i3110_ii3,			4
-.equiv		i3110_shX,			8
-.equiv		i3110_shY,			12 
-.equiv		i3110_shZ,			16	
-.equiv		i3110_ix,			20
-.equiv		i3110_iy,			24
-.equiv		i3110_iz,			28	
-.equiv		i3110_iq,			32  
+.equiv		i3110_is3,		0
+.equiv		i3110_ii3,		4
+.equiv		i3110_shX,		8
+.equiv		i3110_shY,		12 
+.equiv		i3110_shZ,		16	
+.equiv		i3110_ix,		20
+.equiv		i3110_iy,		24
+.equiv		i3110_iz,		28	
+.equiv		i3110_iq,		32  
 .equiv		i3110_vctot,		40  
 .equiv		i3110_vnbtot,		48  
-.equiv		i3110_c6,			56  
-.equiv		i3110_c12,			64  
-.equiv		i3110_six,			72  
+.equiv		i3110_c6,		56  
+.equiv		i3110_c12,		64  
+.equiv		i3110_six,		72  
 .equiv		i3110_twelve,		80  
-.equiv		i3110_two,			88  
-.equiv		i3110_n1,			96  
-.equiv		i3110_tsc,			104 
-.equiv		i3110_ntia,			112
+.equiv		i3110_two,		88  
+.equiv		i3110_n1,		96  
+.equiv		i3110_tsc,		104 
+.equiv		i3110_ntia,		112
 .equiv		i3110_innerjjnr0,	116
 .equiv		i3110_innerk0,		120	
 .equiv		i3110_innerjjnr,	124
 .equiv		i3110_innerk,		128	
-.equiv		i3110_fix,			132
-.equiv		i3110_fiy,			136
-.equiv		i3110_fiz,			140
-.equiv		i3110_dx1,			144
-.equiv		i3110_dy1,			148
-.equiv		i3110_dz1,			152
-.equiv		i3110_dx2,			156
-.equiv		i3110_dy2,			160
-.equiv		i3110_dz2,			164								
+.equiv		i3110_fix,		132
+.equiv		i3110_fiy,		136
+.equiv		i3110_fiz,		140
+.equiv		i3110_dx1,		144
+.equiv		i3110_dy1,		148
+.equiv		i3110_dz1,		152
+.equiv		i3110_dx2,		156
+.equiv		i3110_dy2,		160
+.equiv		i3110_dz2,		164
 .equiv		i3110_nsvdwc,		168
 .equiv		i3110_nscoul,		172
 .equiv		i3110_nsvdw,		176
@@ -10553,7 +10554,7 @@ _inl3110_3dnow:
 	movq [esp + i3110_vctot], mm5       ;# store the sum       
 
 	;# change sign of mm3 
-    pxor mm1,mm1
+	pxor mm1,mm1
 	pfsub mm1, mm3
 	pfmul mm1, [esp + i3110_tsc]	
  	pfmul mm0, mm1    ;# mm0 is total fscal now 	
@@ -10692,7 +10693,7 @@ _inl3110_3dnow:
 	movq [esp + i3110_vctot], mm5       ;# store the sum       
 	
 	;# change sign of mm3 
-    pxor mm1,mm1
+	pxor mm1,mm1
 	pfsub mm1, mm3	
 	pfmul mm0, [esp + i3110_tsc]
  	pfmul mm0, mm1    ;# mm0 is total fscal now 	
@@ -10960,9 +10961,9 @@ _inl3110_3dnow:
 	pfacc mm4, mm5
 	pfacc mm4, mm5		;# mm4=rsq 
 	
-    pfrcp mm0,mm4
-    pfrcpit1 mm4,mm0				
-    pfrcpit2 mm4,mm0	;# mm4=invsq  
+	pfrcp mm0,mm4
+	pfrcpit1 mm4,mm0				
+	pfrcpit2 mm4,mm0	;# mm4=invsq  
 	;# calculate potentials and scalar force 
 	movq  mm0, mm4
 
@@ -11068,10 +11069,10 @@ _inl3110_3dnow:
 	add esp, 184
 	pop edi
 	pop esi
-    pop edx
-    pop ecx
-    pop ebx
-    pop eax
+	pop edx
+	pop ecx
+	pop ebx
+	pop eax
 	leave
 	ret
 
@@ -11082,62 +11083,62 @@ _inl3110_3dnow:
 .globl _inl3120_3dnow
 inl3120_3dnow:	
 _inl3120_3dnow:	
-.equiv		i3120_nri,			8
-.equiv		i3120_iinr,			12
+.equiv		i3120_nri,		8
+.equiv		i3120_iinr,		12
 .equiv		i3120_jindex,		16
-.equiv		i3120_jjnr,			20
+.equiv		i3120_jjnr,		20
 .equiv		i3120_shift,		24
 .equiv		i3120_shiftvec,		28
 .equiv		i3120_fshift,		32
-.equiv		i3120_gid,			36
-.equiv		i3120_pos,			40		
+.equiv		i3120_gid,		36
+.equiv		i3120_pos,		40		
 .equiv		i3120_faction,		44
 .equiv		i3120_charge,		48
 .equiv		i3120_facel,		52
-.equiv		i3120_Vc,			56			
-.equiv		i3120_type,			60
+.equiv		i3120_Vc,		56			
+.equiv		i3120_type,		60
 .equiv		i3120_ntype,		64
-.equiv		i3120_nbfp,			68	
-.equiv		i3120_Vnb,			72
+.equiv		i3120_nbfp,		68	
+.equiv		i3120_Vnb,		72
 .equiv		i3120_tabscale,		76
 .equiv		i3120_VFtab,		80
 			;# stack offsets for local variables 
-.equiv		i3120_is3,			0
-.equiv		i3120_ii3,			4
-.equiv		i3120_ixO,			8
-.equiv		i3120_iyO,			12
-.equiv		i3120_izO,			16	
-.equiv		i3120_ixH,			20  
-.equiv		i3120_iyH,			28  
-.equiv		i3120_izH,			36  
-.equiv		i3120_iqO,			44  
-.equiv		i3120_iqH,			52  
-.equiv		i3120_qqO,			60  
-.equiv		i3120_qqH,			68  
+.equiv		i3120_is3,		0
+.equiv		i3120_ii3,		4
+.equiv		i3120_ixO,		8
+.equiv		i3120_iyO,		12
+.equiv		i3120_izO,		16	
+.equiv		i3120_ixH,		20  
+.equiv		i3120_iyH,		28  
+.equiv		i3120_izH,		36  
+.equiv		i3120_iqO,		44  
+.equiv		i3120_iqH,		52  
+.equiv		i3120_qqO,		60  
+.equiv		i3120_qqH,		68  
 .equiv		i3120_vctot,		76  
 .equiv		i3120_vnbtot,		84  
-.equiv		i3120_c6,			92  
-.equiv		i3120_c12,			100 
-.equiv		i3120_six,			108 
+.equiv		i3120_c6,		92  
+.equiv		i3120_c12,		100 
+.equiv		i3120_six,		108 
 .equiv		i3120_twelve,		116 
-.equiv		i3120_two,			124 
-.equiv		i3120_n1,			132 
-.equiv		i3120_tsc,			140 
-.equiv		i3120_ntia,			148 
+.equiv		i3120_two,		124 
+.equiv		i3120_n1,		132 
+.equiv		i3120_tsc,		140 
+.equiv		i3120_ntia,		148 
 .equiv		i3120_innerjjnr,	156
 .equiv		i3120_innerk,		160	
-.equiv		i3120_fixO,			164
-.equiv		i3120_fiyO,			168
-.equiv		i3120_fizO,			172
-.equiv		i3120_fixH,			176 
-.equiv		i3120_fiyH,			184 
-.equiv		i3120_fizH,			192 
-.equiv		i3120_dxO,			200
-.equiv		i3120_dyO,			204
-.equiv		i3120_dzO,			208
-.equiv		i3120_dxH,			212 
-.equiv		i3120_dyH,			220 
-.equiv		i3120_dzH,			228 
+.equiv		i3120_fixO,		164
+.equiv		i3120_fiyO,		168
+.equiv		i3120_fizO,		172
+.equiv		i3120_fixH,		176 
+.equiv		i3120_fiyH,		184 
+.equiv		i3120_fizH,		192 
+.equiv		i3120_dxO,		200
+.equiv		i3120_dyO,		204
+.equiv		i3120_dzO,		208
+.equiv		i3120_dxH,		212 
+.equiv		i3120_dyH,		220 
+.equiv		i3120_dzH,		228 
 .equiv		i3120_tmprsqH,		236 
 	push ebp
 	mov ebp,esp	
@@ -11404,8 +11405,8 @@ _inl3120_3dnow:
 
 	movq mm2, mm1
 	pfmul mm1,mm1
-    pfrsqit1 mm1,mm0				
-    pfrcpit2 mm1,mm2	;# mm1=invsqrt 
+	pfrsqit1 mm1,mm0				
+	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
 	
 	pfmul mm0,mm1		;# mm0=r 
 	pfmul mm0, [esp + i3120_tsc]
@@ -11452,7 +11453,7 @@ _inl3120_3dnow:
 	movq [esp + i3120_vctot], mm5
 	
 	;# change sign of fijC and multiply by rinv 
-    pxor mm4,mm4
+	pxor mm4,mm4
 	pfsub mm4, mm7
 	pfmul mm4, [esp + i3120_tsc]	
  	pfmul mm4, mm1    ;# mm4 is total fscal (for the hydrogens) now 	
@@ -11606,60 +11607,60 @@ _inl3120_3dnow:
 .globl _inl3130_3dnow
 inl3130_3dnow:	
 _inl3130_3dnow:	
-.equiv		i3130_nri,			8
-.equiv		i3130_iinr,			12
+.equiv		i3130_nri,		8
+.equiv		i3130_iinr,		12
 .equiv		i3130_jindex,		16
-.equiv		i3130_jjnr,			20
+.equiv		i3130_jjnr,		20
 .equiv		i3130_shift,		24
 .equiv		i3130_shiftvec,		28
 .equiv		i3130_fshift,		32
-.equiv		i3130_gid,			36
-.equiv		i3130_pos,			40		
+.equiv		i3130_gid,		36
+.equiv		i3130_pos,		40		
 .equiv		i3130_faction,		44
 .equiv		i3130_charge,		48
 .equiv		i3130_facel,		52
-.equiv		i3130_Vc,			56			
-.equiv		i3130_type,			60
+.equiv		i3130_Vc,		56			
+.equiv		i3130_type,		60
 .equiv		i3130_ntype,		64
-.equiv		i3130_nbfp,			68	
-.equiv		i3130_Vnb,			72
+.equiv		i3130_nbfp,		68	
+.equiv		i3130_Vnb,		72
 .equiv		i3130_tabscale,		76
 .equiv		i3130_VFtab,		80
 			;# stack offsets for local variables 
-.equiv		i3130_is3,			0
-.equiv		i3130_ii3,			4
-.equiv		i3130_ixO,			8
-.equiv		i3130_iyO,			12
-.equiv		i3130_izO,			16	
-.equiv		i3130_ixH,			20  
-.equiv		i3130_iyH,			28  
-.equiv		i3130_izH,			36  
-.equiv		i3130_qqOO,			44  
-.equiv		i3130_qqOH,			52  
-.equiv		i3130_qqHH,			60  
-.equiv		i3130_c6,			68  
-.equiv		i3130_c12,			76  
-.equiv		i3130_six,			84  
+.equiv		i3130_is3,		0
+.equiv		i3130_ii3,		4
+.equiv		i3130_ixO,		8
+.equiv		i3130_iyO,		12
+.equiv		i3130_izO,		16	
+.equiv		i3130_ixH,		20  
+.equiv		i3130_iyH,		28  
+.equiv		i3130_izH,		36  
+.equiv		i3130_qqOO,		44  
+.equiv		i3130_qqOH,		52  
+.equiv		i3130_qqHH,		60  
+.equiv		i3130_c6,		68  
+.equiv		i3130_c12,		76  
+.equiv		i3130_six,		84  
 .equiv		i3130_twelve,		92  
-.equiv		i3130_two,			100 
-.equiv		i3130_n1,			108 
-.equiv		i3130_tsc,			116 
+.equiv		i3130_two,		100 
+.equiv		i3130_n1,		108 
+.equiv		i3130_tsc,		116 
 .equiv		i3130_vctot,		124 
 .equiv		i3130_vnbtot,		132 
 .equiv		i3130_innerjjnr,	140
 .equiv		i3130_innerk,		144	
-.equiv		i3130_fixO,			148
-.equiv		i3130_fiyO,			152
-.equiv		i3130_fizO,			156
-.equiv		i3130_fixH,			160 
-.equiv		i3130_fiyH,			168 
-.equiv		i3130_fizH,			176 
-.equiv		i3130_dxO,			184
-.equiv		i3130_dyO,			188
-.equiv		i3130_dzO,			192
-.equiv		i3130_dxH,			200 
-.equiv		i3130_dyH,			208 
-.equiv		i3130_dzH,			216 
+.equiv		i3130_fixO,		148
+.equiv		i3130_fiyO,		152
+.equiv		i3130_fizO,		156
+.equiv		i3130_fixH,		160 
+.equiv		i3130_fiyH,		168 
+.equiv		i3130_fizH,		176 
+.equiv		i3130_dxO,		184
+.equiv		i3130_dyO,		188
+.equiv		i3130_dzO,		192
+.equiv		i3130_dxH,		200 
+.equiv		i3130_dyH,		208 
+.equiv		i3130_dzH,		216 
 .equiv		i3130_tmprsqH,		224 
 	push ebp
 	mov ebp,esp	
@@ -11916,8 +11917,8 @@ _inl3130_3dnow:
 
 	movq mm2, mm1
 	pfmul mm1,mm1
-    pfrsqit1 mm1,mm0				
-    pfrcpit2 mm1,mm2	;# mm1=invsqrt 
+	pfrsqit1 mm1,mm0				
+	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
 	
 	pfmul mm0,mm1		;# mm0=r 
 	pfmul mm0, [esp + i3130_tsc]
@@ -11964,7 +11965,7 @@ _inl3130_3dnow:
 	movq [esp + i3130_vctot], mm5
 	
 	;# change sign of fijC and multiply by rinv 
-    pxor mm4,mm4
+	pxor mm4,mm4
 	pfsub mm4, mm7	
 	pfmul mm4, [esp + i3130_tsc]
  	pfmul mm4, mm1    ;# mm4 is total fscal (for the hydrogens) now 	
@@ -12120,8 +12121,8 @@ _inl3130_3dnow:
 
 	movq mm2, mm1
 	pfmul mm1,mm1
-    pfrsqit1 mm1,mm0				
-    pfrcpit2 mm1,mm2	;# mm1=invsqrt 
+	pfrsqit1 mm1,mm0				
+	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
 	
 	pfmul mm0,mm1		;# mm0=r 
 	pfmul mm0, [esp + i3130_tsc]
@@ -12169,7 +12170,7 @@ _inl3130_3dnow:
 	movq [esp + i3130_vctot], mm5
 	
 	;# change sign of fijC and multiply by rinv 
-    pxor mm4,mm4
+	pxor mm4,mm4
 	pfsub mm4, mm7	
 	pfmul mm4, [esp + i3130_tsc]
  	pfmul mm4, mm1    ;# mm4 is total fscal (for the hydrogens) now 		
@@ -12324,8 +12325,8 @@ _inl3130_3dnow:
 
 	movq mm2, mm1
 	pfmul mm1,mm1
-    pfrsqit1 mm1,mm0				
-    pfrcpit2 mm1,mm2	;# mm1=invsqrt 
+	pfrsqit1 mm1,mm0				
+	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
 	
 	pfmul mm0,mm1		;# mm0=r 
 	pfmul mm0, [esp + i3130_tsc]
@@ -12373,7 +12374,7 @@ _inl3130_3dnow:
 	movq [esp + i3130_vctot], mm5
 	
 	;# change sign of fijC and multiply by rinv 
-    pxor mm4,mm4
+	pxor mm4,mm4
 	pfsub mm4, mm7	
 	pfmul mm4, [esp + i3130_tsc]
  	pfmul mm4, mm1    ;# mm4 is total fscal (for the hydrogens) now 	
@@ -12511,10 +12512,10 @@ _inl3130_3dnow:
 	add esp, 232
 	pop edi
 	pop esi
-    pop edx
-    pop ecx
-    pop ebx
-    pop eax
+	pop edx
+	pop ecx
+	pop ebx
+	pop eax
 	leave
 	ret
 
@@ -12523,51 +12524,51 @@ _inl3130_3dnow:
 .globl _inl3300_3dnow
 inl3300_3dnow:	
 _inl3300_3dnow:	
-.equiv		i3300_nri,			8
-.equiv		i3300_iinr,			12
+.equiv		i3300_nri,		8
+.equiv		i3300_iinr,		12
 .equiv		i3300_jindex,		16
-.equiv		i3300_jjnr,			20
+.equiv		i3300_jjnr,		20
 .equiv		i3300_shift,		24
 .equiv		i3300_shiftvec,		28
 .equiv		i3300_fshift,		32
-.equiv		i3300_gid,			36
-.equiv		i3300_pos,			40		
+.equiv		i3300_gid,		36
+.equiv		i3300_pos,		40		
 .equiv		i3300_faction,		44
 .equiv		i3300_charge,		48
 .equiv		i3300_facel,		52
-.equiv		i3300_Vc,			56			
-.equiv		i3300_type,			60
+.equiv		i3300_Vc,		56			
+.equiv		i3300_type,		60
 .equiv		i3300_ntype,		64
-.equiv		i3300_nbfp,			68	
-.equiv		i3300_Vnb,			72
+.equiv		i3300_nbfp,		68	
+.equiv		i3300_Vnb,		72
 .equiv		i3300_tabscale,		76
 .equiv		i3300_VFtab,		80
 	;# stack offsets for local variables 
-.equiv		i3300_is3,			0
-.equiv		i3300_ii3,			4
-.equiv		i3300_ix,			8
-.equiv		i3300_iy,			12
-.equiv		i3300_iz,			16
-.equiv		i3300_iq,			20  
+.equiv		i3300_is3,		0
+.equiv		i3300_ii3,		4
+.equiv		i3300_ix,		8
+.equiv		i3300_iy,		12
+.equiv		i3300_iz,		16
+.equiv		i3300_iq,		20  
 .equiv		i3300_vctot,		28  
 .equiv		i3300_vnbtot,		36  
-.equiv		i3300_c6,			44  
-.equiv		i3300_c12,			52  
-.equiv		i3300_two,			60  
-.equiv		i3300_n1,			68  
-.equiv		i3300_tsc,			76  
-.equiv		i3300_ntia,			84
+.equiv		i3300_c6,		44  
+.equiv		i3300_c12,		52  
+.equiv		i3300_two,		60  
+.equiv		i3300_n1,		68  
+.equiv		i3300_tsc,		76  
+.equiv		i3300_ntia,		84
 .equiv		i3300_innerjjnr,	88
 .equiv		i3300_innerk,		92		
-.equiv		i3300_fix,			96
-.equiv		i3300_fiy,			100
-.equiv		i3300_fiz,			104
-.equiv		i3300_dx1,			108
-.equiv		i3300_dy1,			112
-.equiv		i3300_dz1,			116
-.equiv		i3300_dx2,			120
-.equiv		i3300_dy2,			124
-.equiv		i3300_dz2,			128						
+.equiv		i3300_fix,		96
+.equiv		i3300_fiy,		100
+.equiv		i3300_fiz,		104
+.equiv		i3300_dx1,		108
+.equiv		i3300_dy1,		112
+.equiv		i3300_dz1,		116
+.equiv		i3300_dx2,		120
+.equiv		i3300_dy2,		124
+.equiv		i3300_dz2,		128						
 	push ebp
 	mov ebp,esp	
     push eax
@@ -12839,7 +12840,7 @@ _inl3300_3dnow:
 	pfadd mm3, mm7	;# total fscal fijC+ fijD+ fijR 
 
 	;# change sign of mm3 
-    pxor mm1,mm1
+	pxor mm1,mm1
 	pfsub mm1, mm3	
 	pfmul mm0, [esp + i3300_tsc]
  	pfmul mm0, mm1    ;# mm0 is total fscal now 	
@@ -13040,7 +13041,7 @@ _inl3300_3dnow:
 	pfadd mm3, mm7	;# total fscal fijC+ fijD+ fijR 
 
 	;# change sign of mm3 
-    pxor mm1,mm1
+	pxor mm1,mm1
 	pfsub mm1, mm3	
 	pfmul mm0, [esp + i3300_tsc]
  	pfmul mm0, mm1    ;# mm0 is total fscal now 	
@@ -13127,10 +13128,10 @@ _inl3300_3dnow:
 	add esp, 132
 	pop edi
 	pop esi
-    pop edx
-    pop ecx
-    pop ebx
-    pop eax
+	pop edx
+	pop ecx
+	pop ebx
+	pop eax
 	leave
 	ret
 
@@ -13142,57 +13143,57 @@ _inl3300_3dnow:
 .globl _inl3310_3dnow
 inl3310_3dnow:	
 _inl3310_3dnow:	
-.equiv		i3310_nri,			8
-.equiv		i3310_iinr,			12
+.equiv		i3310_nri,		8
+.equiv		i3310_iinr,		12
 .equiv		i3310_jindex,		16
-.equiv		i3310_jjnr,			20
+.equiv		i3310_jjnr,		20
 .equiv		i3310_shift,		24
 .equiv		i3310_shiftvec,		28
 .equiv		i3310_fshift,		32
-.equiv		i3310_gid,			36
-.equiv		i3310_pos,			40		
+.equiv		i3310_gid,		36
+.equiv		i3310_pos,		40		
 .equiv		i3310_faction,		44
 .equiv		i3310_charge,		48
 .equiv		i3310_facel,		52
-.equiv		i3310_Vc,			56			
-.equiv		i3310_type,			60
+.equiv		i3310_Vc,		56			
+.equiv		i3310_type,		60
 .equiv		i3310_ntype,		64
-.equiv		i3310_nbfp,			68	
-.equiv		i3310_Vnb,			72
+.equiv		i3310_nbfp,		68	
+.equiv		i3310_Vnb,		72
 .equiv		i3310_tabscale,		76
 .equiv		i3310_VFtab,		80
 .equiv		i3310_nsatoms,		84		
 	;# stack offsets for local variables 
-.equiv		i3310_is3,			0
-.equiv		i3310_ii3,			4
-.equiv		i3310_shX,			8
-.equiv		i3310_shY,			12 
-.equiv		i3310_shZ,			16	
-.equiv		i3310_ix,			20
-.equiv		i3310_iy,			24
-.equiv		i3310_iz,			28	
-.equiv		i3310_iq,			32  
+.equiv		i3310_is3,		0
+.equiv		i3310_ii3,		4
+.equiv		i3310_shX,		8
+.equiv		i3310_shY,		12 
+.equiv		i3310_shZ,		16	
+.equiv		i3310_ix,		20
+.equiv		i3310_iy,		24
+.equiv		i3310_iz,		28	
+.equiv		i3310_iq,		32  
 .equiv		i3310_vctot,		40  
 .equiv		i3310_vnbtot,		48  
-.equiv		i3310_c6,			56  
-.equiv		i3310_c12,			64  
-.equiv		i3310_two,			72  
-.equiv		i3310_n1,			80  
-.equiv		i3310_tsc,			88  
-.equiv		i3310_ntia,			96	
+.equiv		i3310_c6,		56  
+.equiv		i3310_c12,		64  
+.equiv		i3310_two,		72  
+.equiv		i3310_n1,		80  
+.equiv		i3310_tsc,		88  
+.equiv		i3310_ntia,		96	
 .equiv		i3310_innerjjnr0,	100
 .equiv		i3310_innerk0,		104	
 .equiv		i3310_innerjjnr,	108
 .equiv		i3310_innerk,		112	
-.equiv		i3310_fix,			116
-.equiv		i3310_fiy,			120
-.equiv		i3310_fiz,			124
-.equiv		i3310_dx1,			128
-.equiv		i3310_dy1,			132
-.equiv		i3310_dz1,			136
-.equiv		i3310_dx2,			140
-.equiv		i3310_dy2,			144
-.equiv		i3310_dz2,			148								
+.equiv		i3310_fix,		116
+.equiv		i3310_fiy,		120
+.equiv		i3310_fiz,		124
+.equiv		i3310_dx1,		128
+.equiv		i3310_dy1,		132
+.equiv		i3310_dz1,		136
+.equiv		i3310_dx2,		140
+.equiv		i3310_dy2,		144
+.equiv		i3310_dz2,		148
 .equiv		i3310_nsvdwc,		152
 .equiv		i3310_nscoul,		156
 .equiv		i3310_nsvdw,		160
@@ -13839,16 +13840,16 @@ _inl3310_3dnow:
 	pfacc mm6, mm7		     ;# accumulate to get dx*dx+ dy*dy+ dz*dz 
 	pfacc mm6, mm7	             ;# second rsq in lower mm6 
 
-    pfrsqrt mm0, mm4	     ;# lookup inverse square root seed 
-    pfrsqrt mm1, mm6
+	pfrsqrt mm0, mm4	     ;# lookup inverse square root seed 
+	pfrsqrt mm1, mm6
  
 
 	punpckldq mm0,mm1
 	punpckldq mm4,mm6        	;# now 4 has rsq and 0 the seed for both pairs. 
-    movq mm2,mm0	        	;# amd 3dnow N-R iteration to get full precision. 
+	movq mm2,mm0	        	;# amd 3dnow N-R iteration to get full precision. 
 	pfmul mm0,mm0
-    pfrsqit1 mm0,mm4				
-    pfrcpit2 mm0,mm2	
+	pfrsqit1 mm0,mm4				
+	pfrcpit2 mm0,mm2	
 	pfmul mm4, mm0
 	movq mm1, mm4
 	;# mm0 is invsqrt, and mm1 r. 
@@ -13903,7 +13904,7 @@ _inl3310_3dnow:
 	movq [esp + i3310_vctot], mm5       ;# store the sum       
 
 	;# change sign of mm3 
-    pxor mm1,mm1
+	pxor mm1,mm1
 	pfsub mm1, mm3
 	pfmul mm1, [esp + i3310_tsc]	
  	pfmul mm0, mm1    ;# mm0 is total fscal now 	
@@ -14043,7 +14044,7 @@ _inl3310_3dnow:
 	movq [esp + i3310_vctot], mm5       ;# store the sum       
 	
 	;# change sign of mm3 
-    pxor mm1,mm1
+	pxor mm1,mm1
 	pfsub mm1, mm3	
 	pfmul mm0, [esp + i3310_tsc]
  	pfmul mm0, mm1    ;# mm0 is total fscal now 	
@@ -14284,7 +14285,7 @@ _inl3310_3dnow:
 	pfadd mm3, mm7	;# total fscal fijD+ fijR 
 
 	;# change sign of mm3 
-    pxor mm1,mm1
+	pxor mm1,mm1
 	pfsub mm1, mm3	
 	pfmul mm1, [esp + i3310_tsc]
  	pfmul mm0, mm1    ;# mm0 is total fscal now 	
@@ -14453,7 +14454,7 @@ _inl3310_3dnow:
 	pfadd mm3, mm7	;# total fscal fijC+ fijD+ fijR 
 
 	;# change sign of mm3 
-    pxor mm1,mm1
+	pxor mm1,mm1
 	pfsub mm1, mm3	
 	pfmul mm0, [esp + i3310_tsc]
  	pfmul mm0, mm1    ;# mm0 is total fscal now 	
@@ -14544,10 +14545,10 @@ _inl3310_3dnow:
 	add esp, 168
 	pop edi
 	pop esi
-    pop edx
-    pop ecx
-    pop ebx
-    pop eax
+	pop edx
+	pop ecx
+	pop ebx
+	pop eax
 	leave
 	ret
 
@@ -14556,60 +14557,60 @@ _inl3310_3dnow:
 .globl _inl3320_3dnow
 inl3320_3dnow:	
 _inl3320_3dnow:	
-.equiv		i3320_nri,			8
-.equiv		i3320_iinr,			12
+.equiv		i3320_nri,		8
+.equiv		i3320_iinr,		12
 .equiv		i3320_jindex,		16
-.equiv		i3320_jjnr,			20
+.equiv		i3320_jjnr,		20
 .equiv		i3320_shift,		24
 .equiv		i3320_shiftvec,		28
 .equiv		i3320_fshift,		32
-.equiv		i3320_gid,			36
-.equiv		i3320_pos,			40		
+.equiv		i3320_gid,		36
+.equiv		i3320_pos,		40		
 .equiv		i3320_faction,		44
 .equiv		i3320_charge,		48
 .equiv		i3320_facel,		52
-.equiv		i3320_Vc,			56			
-.equiv		i3320_type,			60
+.equiv		i3320_Vc,		56			
+.equiv		i3320_type,		60
 .equiv		i3320_ntype,		64
-.equiv		i3320_nbfp,			68	
-.equiv		i3320_Vnb,			72
+.equiv		i3320_nbfp,		68	
+.equiv		i3320_Vnb,		72
 .equiv		i3320_tabscale,		76
 .equiv		i3320_VFtab,		80
 			;# stack offsets for local variables 
-.equiv		i3320_is3,			0
-.equiv		i3320_ii3,			4
-.equiv		i3320_ixO,			8
-.equiv		i3320_iyO,			12
-.equiv		i3320_izO,			16	
-.equiv		i3320_ixH,			20  
-.equiv		i3320_iyH,			28  
-.equiv		i3320_izH,			36  
-.equiv		i3320_iqO,			44  
-.equiv		i3320_iqH,			52  
-.equiv		i3320_qqO,			60  
-.equiv		i3320_qqH,			68  
+.equiv		i3320_is3,		0
+.equiv		i3320_ii3,		4
+.equiv		i3320_ixO,		8
+.equiv		i3320_iyO,		12
+.equiv		i3320_izO,		16	
+.equiv		i3320_ixH,		20  
+.equiv		i3320_iyH,		28  
+.equiv		i3320_izH,		36  
+.equiv		i3320_iqO,		44  
+.equiv		i3320_iqH,		52  
+.equiv		i3320_qqO,		60  
+.equiv		i3320_qqH,		68  
 .equiv		i3320_vctot,		76  
 .equiv		i3320_vnbtot,		84  
-.equiv		i3320_c6,			92  
-.equiv		i3320_c12,			100 
-.equiv		i3320_two,			108 
-.equiv		i3320_n1,			116 
-.equiv		i3320_tsc,			124 
-.equiv		i3320_ntia,			132 
+.equiv		i3320_c6,		92  
+.equiv		i3320_c12,		100 
+.equiv		i3320_two,		108 
+.equiv		i3320_n1,		116 
+.equiv		i3320_tsc,		124 
+.equiv		i3320_ntia,		132 
 .equiv		i3320_innerjjnr,	140
 .equiv		i3320_innerk,		144	
-.equiv		i3320_fixO,			148
-.equiv		i3320_fiyO,			152
-.equiv		i3320_fizO,			156
-.equiv		i3320_fixH,			160 
-.equiv		i3320_fiyH,			168 
-.equiv		i3320_fizH,			176 
-.equiv		i3320_dxO,			184
-.equiv		i3320_dyO,			188
-.equiv		i3320_dzO,			192
-.equiv		i3320_dxH,			196 
-.equiv		i3320_dyH,			204 
-.equiv		i3320_dzH,			212 
+.equiv		i3320_fixO,		148
+.equiv		i3320_fiyO,		152
+.equiv		i3320_fizO,		156
+.equiv		i3320_fixH,		160 
+.equiv		i3320_fiyH,		168 
+.equiv		i3320_fizH,		176 
+.equiv		i3320_dxO,		184
+.equiv		i3320_dyO,		188
+.equiv		i3320_dzO,		192
+.equiv		i3320_dxH,		196 
+.equiv		i3320_dyH,		204 
+.equiv		i3320_dzH,		212 
 .equiv		i3320_tmprsqH,		220 
 	push ebp
 	mov ebp,esp	
@@ -14881,7 +14882,7 @@ _inl3320_3dnow:
 	pfadd mm3, mm7	;# total fscal fijC+ fijD+ fijR 
 
 	;# change sign of fscal and multiply with rinv  
-    pxor mm0,mm0
+	pxor mm0,mm0
 	pfsubr mm3, mm0	
 	pfmul mm3, [esp + i3320_tsc]
  	pfmul mm3, mm1    ;# mm3 is total fscal (for the oxygen) now 
@@ -14902,8 +14903,8 @@ _inl3320_3dnow:
 
 	movq mm2, mm1
 	pfmul mm1,mm1
-    pfrsqit1 mm1,mm0				
-    pfrcpit2 mm1,mm2	;# mm1=invsqrt 
+	pfrsqit1 mm1,mm0				
+	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
 	
 	pfmul mm0,mm1		;# mm0=r 
 	pfmul mm0, [esp + i3320_tsc]
@@ -14953,7 +14954,7 @@ _inl3320_3dnow:
 	movq [esp + i3320_vctot], mm5
 	
 	;# change sign of fijC and multiply by rinv 
-    pxor mm4,mm4
+	pxor mm4,mm4
 	pfsub mm4, mm7	
 	pfmul mm4, [esp + i3320_tsc]
  	pfmul mm4, mm1    ;# mm4 is total fscal (for the hydrogens) now 	
@@ -15092,10 +15093,10 @@ _inl3320_3dnow:
 	add esp, 228
 	pop edi
 	pop esi
-    pop edx
-    pop ecx
-    pop ebx
-    pop eax
+	pop edx
+	pop ecx
+	pop ebx
+	pop eax
 	leave
 	ret
 
@@ -15105,58 +15106,58 @@ _inl3320_3dnow:
 .globl _inl3330_3dnow
 inl3330_3dnow:	
 _inl3330_3dnow:	
-.equiv		i3330_nri,			8
-.equiv		i3330_iinr,			12
+.equiv		i3330_nri,		8
+.equiv		i3330_iinr,		12
 .equiv		i3330_jindex,		16
-.equiv		i3330_jjnr,			20
+.equiv		i3330_jjnr,		20
 .equiv		i3330_shift,		24
 .equiv		i3330_shiftvec,		28
 .equiv		i3330_fshift,		32
-.equiv		i3330_gid,			36
-.equiv		i3330_pos,			40		
+.equiv		i3330_gid,		36
+.equiv		i3330_pos,		40		
 .equiv		i3330_faction,		44
 .equiv		i3330_charge,		48
 .equiv		i3330_facel,		52
-.equiv		i3330_Vc,			56			
-.equiv		i3330_type,			60
+.equiv		i3330_Vc,		56			
+.equiv		i3330_type,		60
 .equiv		i3330_ntype,		64
-.equiv		i3330_nbfp,			68	
-.equiv		i3330_Vnb,			72
+.equiv		i3330_nbfp,		68	
+.equiv		i3330_Vnb,		72
 .equiv		i3330_tabscale,		76
 .equiv		i3330_VFtab,		80
 			;# stack offsets for local variables 
-.equiv		i3330_is3,			0
-.equiv		i3330_ii3,			4
-.equiv		i3330_ixO,			8
-.equiv		i3330_iyO,			12
-.equiv		i3330_izO,			16	
-.equiv		i3330_ixH,			20  
-.equiv		i3330_iyH,			28  
-.equiv		i3330_izH,			36  
-.equiv		i3330_qqOO,			44  
-.equiv		i3330_qqOH,			52  
-.equiv		i3330_qqHH,			60  
-.equiv		i3330_c6,			68  
-.equiv		i3330_c12,			76  
-.equiv		i3330_two,			84  
-.equiv		i3330_n1,			92  
-.equiv		i3330_tsc,			100 
+.equiv		i3330_is3,		0
+.equiv		i3330_ii3,		4
+.equiv		i3330_ixO,		8
+.equiv		i3330_iyO,		12
+.equiv		i3330_izO,		16	
+.equiv		i3330_ixH,		20  
+.equiv		i3330_iyH,		28  
+.equiv		i3330_izH,		36  
+.equiv		i3330_qqOO,		44  
+.equiv		i3330_qqOH,		52  
+.equiv		i3330_qqHH,		60  
+.equiv		i3330_c6,		68  
+.equiv		i3330_c12,		76  
+.equiv		i3330_two,		84  
+.equiv		i3330_n1,		92  
+.equiv		i3330_tsc,		100 
 .equiv		i3330_vctot,		108 
 .equiv		i3330_vnbtot,		116 
 .equiv		i3330_innerjjnr,	124
 .equiv		i3330_innerk,		128	
-.equiv		i3330_fixO,			132
-.equiv		i3330_fiyO,			136
-.equiv		i3330_fizO,			140
-.equiv		i3330_fixH,			144 
-.equiv		i3330_fiyH,			152 
-.equiv		i3330_fizH,			160 
-.equiv		i3330_dxO,			168
-.equiv		i3330_dyO,			172
-.equiv		i3330_dzO,			176
-.equiv		i3330_dxH,			180  
-.equiv		i3330_dyH,			188  
-.equiv		i3330_dzH,			196  
+.equiv		i3330_fixO,		132
+.equiv		i3330_fiyO,		136
+.equiv		i3330_fizO,		140
+.equiv		i3330_fixH,		144 
+.equiv		i3330_fiyH,		152 
+.equiv		i3330_fizH,		160 
+.equiv		i3330_dxO,		168
+.equiv		i3330_dyO,		172
+.equiv		i3330_dzO,		176
+.equiv		i3330_dxH,		180  
+.equiv		i3330_dyH,		188  
+.equiv		i3330_dzH,		196  
 .equiv		i3330_tmprsqH,		204  
 	push ebp
 	mov ebp,esp	
@@ -16076,11 +16077,11 @@ _mcinl0100_3dnow:
 	;# stack offsets for local variables 
 .equiv		mci0100_is3,		0
 .equiv		mci0100_ii3,		4
-.equiv		mci0100_ix,			8
-.equiv		mci0100_iy,			12
-.equiv		mci0100_iz,			16
+.equiv		mci0100_ix,		8
+.equiv		mci0100_iy,		12
+.equiv		mci0100_iz,		16
 .equiv		mci0100_vnbtot,		20  
-.equiv		mci0100_c6,			28  
+.equiv		mci0100_c6,		28  
 .equiv		mci0100_c12,		36  
 .equiv		mci0100_ntia,		44
 .equiv		mci0100_innerjjnr,	48
@@ -17183,13 +17184,13 @@ _mcinl0310_3dnow:
 .equiv		mci0310_shX,		8
 .equiv		mci0310_shY,		12 
 .equiv		mci0310_shZ,		16	
-.equiv		mci0310_ix,			20
-.equiv		mci0310_iy,			24
-.equiv		mci0310_iz,			28	
+.equiv		mci0310_ix,		20
+.equiv		mci0310_iy,		24
+.equiv		mci0310_iz,		28	
 .equiv		mci0310_vnbtot,		32 
-.equiv		mci0310_c6,			40 
+.equiv		mci0310_c6,		40 
 .equiv		mci0310_c12,		48
-.equiv		mci0310_n1,			56 
+.equiv		mci0310_n1,		56 
 .equiv		mci0310_tsc,		64 
 .equiv		mci0310_ntia,		72	
 .equiv		mci0310_innerjjnr0,	76
@@ -17846,14 +17847,14 @@ _mcinl1000_3dnow:
 .equiv		mci1000_pos,		36		
 .equiv		mci1000_charge,		40
 .equiv		mci1000_facel,		44
-.equiv		mci1000_Vc,			48			
+.equiv		mci1000_Vc,		48			
 	;# stack offsets for local variables 
 .equiv		mci1000_is3,		0
 .equiv		mci1000_ii3,		4
-.equiv		mci1000_ix,			8
-.equiv		mci1000_iy,			12
-.equiv		mci1000_iz,			16
-.equiv		mci1000_iq,			20		
+.equiv		mci1000_ix,		8
+.equiv		mci1000_iy,		12
+.equiv		mci1000_iz,		16
+.equiv		mci1000_iq,		20		
 .equiv		mci1000_vctot,		28 
 .equiv		mci1000_innerjjnr,	36
 .equiv		mci1000_innerk,		40
@@ -18015,8 +18016,8 @@ _mcinl1000_3dnow:
     pfrcpit2 mm1,mm2	;# mm1=invsqrt 
 	;# calculate potential and scalar force 
 	pfmul mm6, mm1		;# mm6=vcoul 
-	pfadd mm5, [esp + mci1000_vctot]
-	movq [esp + mci1000_vctot], mm5
+	pfadd mm6, [esp + mci1000_vctot]
+	movq [esp + mci1000_vctot], mm6
 	
 .mci1000_updateouterdata:	
 	mov   edx, [ebp + mci1000_gid]      ;# get group index for this i particle 
@@ -18064,7 +18065,7 @@ _mcinl1010_3dnow:
 .equiv		mci1010_pos,		36		
 .equiv		mci1010_charge,		40
 .equiv		mci1010_facel,		44
-.equiv		mci1010_Vc,			48
+.equiv		mci1010_Vc,		48
 .equiv		mci1010_nsatoms,	52		
 	;# stack offsets for local variables 
 .equiv		mci1010_is3,		0
@@ -18072,10 +18073,10 @@ _mcinl1010_3dnow:
 .equiv		mci1010_shX,		8
 .equiv		mci1010_shY,		12 
 .equiv		mci1010_shZ,		16	
-.equiv		mci1010_ix,			20
-.equiv		mci1010_iy,			24
-.equiv		mci1010_iz,			28	
-.equiv		mci1010_iq,			32 
+.equiv		mci1010_ix,		20
+.equiv		mci1010_iy,		24
+.equiv		mci1010_iz,		28	
+.equiv		mci1010_iq,		32 
 .equiv		mci1010_vctot,		40 
 .equiv		mci1010_innerjjnr0,	48
 .equiv		mci1010_innerk0,	52		
@@ -19570,7 +19571,7 @@ _mcinl1110_3dnow:
 	movq mm1,mm0
 	;# mm1 is invsqrt 
 	;# do potential and fscal 
-	pfmul mm3,mm1		;# 6 has both vcoul 
+	pfmul mm3,mm1		;# 3 has both vcoul 
 	pfadd mm3, [esp + mci1110_vctot]      ;# add the earlier value  
 	movq [esp + mci1110_vctot], mm3       ;# store the sum 
 	
@@ -19854,7 +19855,7 @@ _mcinl1120_3dnow:
 .equiv		mci1120_pos,		36		
 .equiv		mci1120_charge,		40
 .equiv		mci1120_facel,		44
-.equiv		mci1120_Vc,			48	
+.equiv		mci1120_Vc,		48	
 .equiv		mci1120_type,		52
 .equiv		mci1120_ntype,		56
 .equiv		mci1120_nbfp,		60	
@@ -19872,7 +19873,7 @@ _mcinl1120_3dnow:
 .equiv		mci1120_iqH,		52  
 .equiv		mci1120_vctot,		60  
 .equiv		mci1120_vnbtot,		68  
-.equiv		mci1120_c6,			76  
+.equiv		mci1120_c6,		76  
 .equiv		mci1120_c12,		84  
 .equiv		mci1120_ntia,		92
 .equiv		mci1120_innerjjnr,	96
@@ -20068,8 +20069,8 @@ _mcinl1120_3dnow:
 
 	movq mm2, mm5
 	pfmul mm5,mm5
-    pfrsqit1 mm5,mm3				
-    pfrcpit2 mm5,mm2	;# mm5=invsqrt 
+	pfrsqit1 mm5,mm3				
+	pfrcpit2 mm5,mm2	;# mm5=invsqrt 
 	pfmul mm7, mm5		;# mm7=vcoul 
 	;# update vctot 
 	pfadd mm7, mm6
@@ -20133,7 +20134,7 @@ _mcinl1130_3dnow:
 .equiv		mci1130_pos,		36		
 .equiv		mci1130_charge,		40
 .equiv		mci1130_facel,		44
-.equiv		mci1130_Vc,			48					
+.equiv		mci1130_Vc,		48					
 .equiv		mci1130_type,		52
 .equiv		mci1130_ntype,		56
 .equiv		mci1130_nbfp,		60	
@@ -20150,7 +20151,7 @@ _mcinl1130_3dnow:
 .equiv		mci1130_qqOO,		44  
 .equiv		mci1130_qqOH,		52  
 .equiv		mci1130_qqHH,		60  
-.equiv		mci1130_c6,			68  
+.equiv		mci1130_c6,		68  
 .equiv		mci1130_c12,		76 
 .equiv		mci1130_vctot,		84 
 .equiv		mci1130_vnbtot,		92 
@@ -20383,12 +20384,12 @@ _mcinl1130_3dnow:
 	pfadd mm3,mm2
 	pfadd mm3,mm4		;# mm3=rsqH 
 
-    pfrsqrt mm1,mm0
+	pfrsqrt mm1,mm0
 
-    movq mm2,mm1
-    pfmul mm1,mm1
-    pfrsqit1 mm1,mm0				
-    pfrcpit2 mm1,mm2	;# mm1=invsqrt 
+	movq mm2,mm1
+	pfmul mm1,mm1
+	pfrsqit1 mm1,mm0				
+	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
 	;# calculate potential and scalar force 
 	pfmul mm6, mm1		;# mm6=vcoul 
 
@@ -20400,8 +20401,8 @@ _mcinl1130_3dnow:
 
 	movq mm2, mm5
 	pfmul mm5,mm5
-    pfrsqit1 mm5,mm3				
-    pfrcpit2 mm5,mm2	;# mm5=invsqrt 
+	pfrsqit1 mm5,mm3				
+	pfrcpit2 mm5,mm2	;# mm5=invsqrt 
 	pfmul mm7, mm5		;# mm7=vcoul 
 	;# update vctot 
 	pfadd mm7, mm6
@@ -20444,12 +20445,12 @@ _mcinl1130_3dnow:
 	pfadd mm3,mm2
 	pfadd mm3,mm4		;# mm3=rsqH 
 
-    pfrsqrt mm1,mm0
+	pfrsqrt mm1,mm0
 
-    movq mm2,mm1
-    pfmul mm1,mm1
-    pfrsqit1 mm1,mm0				
-    pfrcpit2 mm1,mm2	;# mm1=invsqrt 
+	movq mm2,mm1
+	pfmul mm1,mm1
+	pfrsqit1 mm1,mm0				
+	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
 	;# calculate potential and scalar force 
 	pfmul mm6, mm1		;# mm6=vcoul 
 
@@ -20461,8 +20462,8 @@ _mcinl1130_3dnow:
 
 	movq mm2, mm5
 	pfmul mm5,mm5
-    pfrsqit1 mm5,mm3				
-    pfrcpit2 mm5,mm2	;# mm5=invsqrt 
+	pfrsqit1 mm5,mm3				
+	pfrcpit2 mm5,mm2	;# mm5=invsqrt 
 	pfmul mm7, mm5		;# mm7=vcoul 
 
 	;# update vctot 
@@ -20528,18 +20529,18 @@ _mcinl3000_3dnow:
 .equiv		mci3000_pos,		36		
 .equiv		mci3000_charge,		40
 .equiv		mci3000_facel,		44
-.equiv		mci3000_Vc,			48			
+.equiv		mci3000_Vc,		48			
 .equiv		mci3000_tabscale,	52
 .equiv		mci3000_VFtab,		56
 	;# stack offsets for local variables 
 .equiv		mci3000_is3,		0
 .equiv		mci3000_ii3,		4
-.equiv		mci3000_ix,			8
-.equiv		mci3000_iy,			12
-.equiv		mci3000_iz,			16
-.equiv		mci3000_iq,			20 
+.equiv		mci3000_ix,		8
+.equiv		mci3000_iy,		12
+.equiv		mci3000_iz,		16
+.equiv		mci3000_iq,		20 
 .equiv		mci3000_vctot,		28 
-.equiv		mci3000_n1,			36
+.equiv		mci3000_n1,		36
 .equiv		mci3000_tsc,		44 
 .equiv		mci3000_ntia,		52
 .equiv		mci3000_innerjjnr,	56
@@ -20833,7 +20834,7 @@ _mcinl3010_3dnow:
 .equiv		mci3010_pos,		36	
 .equiv		mci3010_charge,		40
 .equiv		mci3010_facel,		44
-.equiv		mci3010_Vc,			48
+.equiv		mci3010_Vc,		48
 .equiv		mci3010_tabscale,	52		
 .equiv		mci3010_VFtab,		56
 .equiv		mci3010_nsatoms,	60		
@@ -20843,12 +20844,12 @@ _mcinl3010_3dnow:
 .equiv		mci3010_shX,		8
 .equiv		mci3010_shY,		12 
 .equiv		mci3010_shZ,		16	
-.equiv		mci3010_ix,			20
-.equiv		mci3010_iy,			24
-.equiv		mci3010_iz,			28	
-.equiv		mci3010_iq,			32 
+.equiv		mci3010_ix,		20
+.equiv		mci3010_iy,		24
+.equiv		mci3010_iz,		28	
+.equiv		mci3010_iq,		32 
 .equiv		mci3010_vctot,		40 
-.equiv		mci3010_n1,			48
+.equiv		mci3010_n1,		48
 .equiv		mci3010_tsc,		56 			
 .equiv		mci3010_innerjjnr0,	64
 .equiv		mci3010_innerk0,	68		
@@ -21172,7 +21173,7 @@ _mcinl3020_3dnow:
 .equiv		mci3020_pos,		36		
 .equiv		mci3020_charge,		40
 .equiv		mci3020_facel,		44
-.equiv		mci3020_Vc,			48			
+.equiv		mci3020_Vc,		48			
 .equiv		mci3020_tabscale,	52
 .equiv		mci3020_VFtab,		56
 			;# stack offsets for local variables 
@@ -21189,7 +21190,7 @@ _mcinl3020_3dnow:
 .equiv		mci3020_qqO,		60  
 .equiv		mci3020_qqH,		68  
 .equiv		mci3020_vctot,		76  
-.equiv		mci3020_n1,			84  
+.equiv		mci3020_n1,		84  
 .equiv		mci3020_tsc,		92 
 .equiv		mci3020_innerjjnr,	100
 .equiv		mci3020_innerk,		104
