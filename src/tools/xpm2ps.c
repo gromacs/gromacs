@@ -90,9 +90,12 @@ void get_params(char *mpin,char *mpout,t_psrec *psr)
   char      *tmp;
   int       ninp;
   
-  inp=read_inpfile(mpin,&ninp);
+  if (mpin)
+    inp = read_inpfile(mpin,&ninp);
+  else
+    inp = NULL;
   ETYPE("black&white",    psr->bw,             bools);
-  RTYPE("linewidth",      psr->linewidth,      2.0);
+  RTYPE("linewidth",      psr->linewidth,      1.0);
   STYPE("titlefont",      psr->titfont,        "Helvetica");
   RTYPE("titlefontsize",  psr->titfontsize,    20.0);
   ETYPE("legend",         psr->legend,         bools);
@@ -109,8 +112,8 @@ void get_params(char *mpin,char *mpout,t_psrec *psr)
   RTYPE("ticklinewidth",  psr->ticklinewidth,  psr->linewidth);
   RTYPE("zerolinewidth",  psr->zerolinewidth,  psr->ticklinewidth);
   ETYPE("x-lineat0value", psr->X.lineatzero,   colors);
-  RTYPE("x-major",        psr->X.major,        20.0);
-  RTYPE("x-minor",        psr->X.minor,        5.0);
+  RTYPE("x-major",        psr->X.major,        NOTSET);
+  RTYPE("x-minor",        psr->X.minor,        NOTSET);
   RTYPE("x-firstmajor",   psr->X.offset,       0.0);
   ETYPE("x-majorat0",     psr->X.first,        bools);
   RTYPE("x-majorticklen", psr->X.majorticklen, 8.0);
@@ -537,12 +540,45 @@ void xpm_mat(char *outf,
    fclose(out);
 }
 
+static real tick_spacing(int n, real axis[], real offset)
+{
+  real space;
+  bool bTryAgain,bFive;
+  int  i,j;
+  
+  /* start with interval between 10 matrix points: */
+  space = max(10*axis[1]-axis[0], axis[min(10,n-1)]-axis[0]);
+  /* round up to power of 10 */
+  space = pow(10,ceil(log(space)/log(10)));
+  bTryAgain = TRUE;
+  bFive = TRUE;
+  while ( bTryAgain ) {
+    /* count how many ticks we would get: */
+    i = 0;
+    for(j=0; j<n; j++)
+      if ( bRmod(axis[j] - offset, space) )
+	i++;
+    /* do we have a reasonable number of ticks ? */
+    if ( i < 10 ) {
+      /* need more ticks -> smaller interval */
+      space *= bFive ? 0.5 : 0.2;
+    } else if ( i > 20 ) {
+      /* need more ticks -> larger interval */
+      space *= bFive ? 5 : 2;
+    } else
+      /* it's OK, get on with it! */
+      bTryAgain = FALSE;
+    bFive = !bFive;
+  }
+  return space;
+}
+
 void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
 	    bool bFrame,
 	    bool bDiag,bool bFirstDiag,bool bTitle,char w_legend,
 	    real boxx,real boxy,char *m2p,char *m2pout)
 {
-  char   buf[256],*legend;
+  char   *libm2p,buf[256],*legend;
   FILE   *out;
   t_psrec  psrec,*psr;
   int    W,H;
@@ -553,10 +589,24 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   t_mapping *map1=NULL,*map2=NULL,*leg_map;
   bool   bMap1,bNextMap1,bDiscrete;
   
-  get_params(libfn(m2p),m2pout,&psrec);
+  libm2p = m2p ? libfn(m2p) : m2p;
+  get_params(libm2p,m2pout,&psrec);
 
   psr=&psrec;
 
+  if (psr->X.major == NOTSET) {
+    psr->X.major = tick_spacing(mat[0].nx, mat[0].axis_x, psr->X.offset);
+    psr->X.minor = psr->X.major / 2;
+  }
+  if (psr->X.minor == NOTSET)
+    psr->X.minor = psr->X.major / 2;
+  if (psr->Y.major == NOTSET) {
+    psr->Y.major = tick_spacing(mat[0].ny, mat[0].axis_y, psr->Y.offset);
+    psr->Y.minor = psr->Y.major / 2;
+  }
+  if (psr->Y.minor == NOTSET)
+    psr->Y.minor = psr->Y.major / 2;
+  
   if (boxx>0) {
     psr->xboxsize=boxx;
     psr->yboxsize=boxx;
@@ -884,7 +934,7 @@ int main(int argc,char *argv[])
   t_filenm  fnm[] = {
     { efXPM, "-f",  NULL,      ffREAD },
     { efXPM, "-f2", "root2",   ffOPTRD },
-    { efM2P, "-di", NULL,      ffLIBRD },
+    { efM2P, "-di", NULL,      ffLIBOPTRD },
     { efM2P, "-do", "out",     ffOPTWR },
     { efEPS, "-o",  NULL,      ffOPTWR },
     { efXPM, "-xpm",NULL,      ffOPTWR }
