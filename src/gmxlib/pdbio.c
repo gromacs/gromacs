@@ -47,8 +47,6 @@ static char *pdbtp[epdbNR]={
   "COMPND", "MODEL", "ENDMDL", "TER", "HEADER", "TITLE", "REMARK" 
 };
 
-static char *pdbformat ="%-6s%5u  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f";
-static char *pdbformat4="%-6s%5u %-4.4s %3.3s %c%4d    %8.3f%8.3f%8.3f";
 static bool bTER=FALSE;
 static bool bWideFormat=FALSE;
 #define REMARK_SIM_BOX "REMARK    THIS IS A SIMULATION BOX"

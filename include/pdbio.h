@@ -39,6 +39,10 @@ static char *SRCID_pdbio_h = "$Id$";
 #include "typedefs.h"
 #include "symtab.h"
 
+/* THE pdb format (for ATOM/HETATOM lines) */
+static char *pdbformat ="%-6s%5u  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f";
+static char *pdbformat4="%-6s%5u %-4.4s %3.3s %c%4d    %8.3f%8.3f%8.3f";
+
 /* Enumerated type for pdb records. The other entries are ignored
  * when reading a pdb file 
  */
