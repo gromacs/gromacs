@@ -65,12 +65,11 @@ static void sp_header(FILE *out,real epot,real ftol)
 }
 
 time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
-		t_parm *parm,t_topology *top,
-		t_groups *grps,t_nsborder *nsb,
-		rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
-		tensor ekin,real ener[],
-		t_nrnb nrnb[],
-		bool bVerbose,t_commrec *cr,t_graph *graph)
+	     t_parm *parm,t_topology *top,
+	     t_groups *grps,t_nsborder *nsb,
+	     rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
+	     tensor ekin,real ener[],t_nrnb nrnb[],
+	     bool bVerbose,t_commrec *cr,t_graph *graph)
 {
   t_forcerec *fr;
   static char *CG="Conjugate Gradients";
@@ -112,20 +111,20 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   snew(f,nsb->natoms);
   snew(xprime,nsb->natoms);
 
-  start=nsb->index[cr->pid];
-  end=nsb->homenr[cr->pid]-start;
+  start = nsb->index[cr->pid];
+  end   = nsb->homenr[cr->pid]-start;
+
+  /* Set some booleans for the epot routines */
+  bLR   = (parm->ir.rlong > parm->ir.rshort);   /* Long Range Coulomb   ? */
+  bBHAM = (top->idef.functype[0]==F_BHAM);      /* Use buckingham       ? */
+  b14   = (top->idef.il[F_LJ14].nr > 0);        /* Use 1-4 interactions ? */
 
   /* Open the energy file */  
   if (MASTER(cr))
-    fp_ene=open_enx(ftp2fn(efENE,nfile,fnm),"w");
+    fp_ene=open_enx(ftp2fn(efENX,nfile,fnm),"w");
   else
     fp_ene=-1;
     
-  /* Set some booleans for the epot routines */
-  bLR=(parm->ir.rlong > parm->ir.rshort);   /* Long Range Coulomb   ? */
-  bBHAM=(top->idef.functype[0]==F_BHAM);    /* Use buckingham       ? */
-  b14=(top->idef.il[F_LJ14].nr > 0);        /* Use 1-4 interactions ? */
-
   /* Init bin for energy stuff */
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),bLR,bBHAM,b14);
   
@@ -145,15 +144,12 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   number_steps=parm->ir.nsteps;
 
   /* Call the force routine and some auxiliary (neighboursearching etc.) */
-  do_force(log,cr,
-	   parm,nsb,force_vir,
-	   0,&(nrnb[cr->pid]),top,grps,
-	   x,buf,f,buf,
-	   mdatoms,ener,bVerbose && !(PAR(cr)),
+  do_force(log,cr,parm,nsb,force_vir,0,&(nrnb[cr->pid]),top,grps,
+	   x,buf,f,buf,mdatoms,ener,bVerbose && !(PAR(cr)),
 	   lambda,graph,bNS,FALSE,fr);
   unshift_self(graph,fr->shift_vec,x);
   where();
-
+  
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(parm->ir.opts),grps,ener);
   where();
@@ -212,15 +208,15 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     gpa=0.0;
     for(i=start; i<end; i++) {
       for(m=0;m<DIM;m++){
-	p[i][m]=f[i][m]+ beta*p[i][m];
-	gpa=gpa-p[i][m]*f[i][m];
+	p[i][m] = f[i][m] + beta*p[i][m];
+	gpa     = gpa - p[i][m]*f[i][m];
       }
     }
     pnorm=f_norm(log,cr->left,cr->right,nsb->nprocs,start,end,p);
 
-    a=0.0;
-    b=step0/pnorm;
-    niti=0;
+    a    = 0.0;
+    b    = step0/pnorm;
+    niti = 0;
 
     /* search a,b iteratively, if necessary */
     brerun=TRUE;
@@ -230,7 +226,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	  xprime[i][m]=x[i][m] + b*p[i][m];
 	}
       }
-      bNS=((parm->ir.nstlist && ((count % parm->ir.nstlist)==0)) || (count==0)); 
+      bNS=TRUE;
+      /*((parm->ir.nstlist && ((count % parm->ir.nstlist)==0)) || (count==0));*/
       
       /* Calc force & energy on new trial position  */
       do_force(log,cr,parm,nsb,force_vir,
@@ -238,7 +235,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	       buf,mdatoms,ener,bVerbose && !(PAR(cr)),
 	       lambda,graph,bNS,FALSE,fr);
       unshift_self(graph,fr->shift_vec,xprime);
-      bNS=FALSE;
+      /*bNS=FALSE;*/
       gpb=0.0;
       for(i=start;i<end;i++) {
 	for(m=0;m<DIM;m++) {
@@ -263,17 +260,18 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       if ((gpb >= 0.0) || (EpotB >= EpotA))
 	brerun=FALSE;
       else {
-	a=b;
-	EpotA=EpotB;
-	gpa=gpb;
-	b+=b;
+	a     = b;
+	EpotA = EpotB;
+	gpa   = gpb;
+	b    += b;
       }
-     niti++;
+      niti++;
     }
-
+    /* End of while loop searching for a and b */
+    
     /* find stepsize smin in interval a-b */
     zet = 3.0 * (EpotA-EpotB) / (b-a) + gpa + gpb;
-    w = zet*zet - gpa*gpb;
+    w   = zet*zet - gpa*gpb;
     if (w < 0.0) {
       fprintf(stderr,"Negative w: %20.12e\n",w);
       fprintf(stderr,"z= %20.12e\n",zet);
@@ -282,7 +280,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       fprintf(stderr,"EpotA= %20.12e, EpotB= %20.12e\n",EpotA,EpotB);
       fatal_error(0,"Negative number for sqrt encountered (%f)",w);
     }      
-    w = sqrt(w);
+    w    = sqrt(w);
     smin = b - ((gpb+w-zet)*(b-a))/((gpb-gpa)+2.0*w);
 
     /* new positions */
@@ -300,16 +298,16 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(parm->ir.opts),grps,ener); 
-    fnorm=f_norm(log,cr->left,cr->right,nsb->nprocs,start,end,f);
-
+    fnorm = f_norm(log,cr->left,cr->right,nsb->nprocs,start,end,f);
+    
     /* Clear stuff again */
-      clear_mat(force_vir);
-      clear_mat(shake_vir);
+    clear_mat(force_vir);
+    clear_mat(shake_vir);
       
-      /* Communicate stuff when parallel */
-      if (PAR(cr)) 
-	global_stat(log,cr,ener,force_vir,shake_vir,
-		    &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
+    /* Communicate stuff when parallel */
+    if (PAR(cr)) 
+      global_stat(log,cr,ener,force_vir,shake_vir,
+		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
 
     EpotA=ener[F_EPOT];
 
@@ -336,9 +334,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       upd_mdebin(mdebin,mdatoms->tmass,count,ener,parm->box,shake_vir,
 		 force_vir,parm->vir,parm->pres,grps,mu_tot);
       /* Print the energies allways when we should be verbose */
-      if (MASTER(cr))
-	print_ebin(fp_ene,log,count,count,lambda,0.0,eprNORMAL,TRUE,
-		   mdebin,grps,&(top->atoms));
+      print_ebin(fp_ene,log,count,count,lambda,0.0,eprNORMAL,TRUE,
+		 mdebin,grps,&(top->atoms));
     }
     
     /* Stop when the maximum force lies below tolerance */
