@@ -459,7 +459,7 @@ bool khole_decay(FILE *fp,t_cross_atom *ca,rvec x[],rvec v[],int ion,
     dump_ca(stderr,ca,ion,__FILE__,__LINE__);
     exit(1);
   }
-  if (rando(seed) < dt/recoil[ca->z].tau) {
+  if ((rando(seed) < dt/recoil[ca->z].tau) && (number_L(ca)>1)) {
     if (debug)
       fprintf(debug,"DECAY: Going to decay a k hole\n");
     ca->n++;
@@ -600,6 +600,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   for(i=start; (i<end); i++) {
     /* Loop over collision types */
     bKHole = FALSE;
+    bIonize = FALSE;
     for(k=0; (k<ecollNR); k++) 
       /* Determine cross section for this collision type */
       pcoll[k]= pt*xray_cross_section(k,&(ca[i]));
