@@ -54,8 +54,8 @@ static char *SRCID_g_dipoles_c = "$Id$";
 #define CM2D  SPEED_OF_LIGHT*1.0e+24    /* Coulomb meter to Debye */
 
 typedef struct {
-  int  nelem,totcount;
-  real spacing,radius,r2;
+  int  nelem;
+  real spacing,radius;
   real *elem;
   int  *count;
 } t_gkrbin;
@@ -77,10 +77,8 @@ static t_gkrbin *mk_gkrbin(real radius)
     gb->spacing = 0.01; /* nm */
   gb->nelem   = 1 + radius/gb->spacing;
   gb->radius  = radius;
-  gb->r2      = sqr(radius);
   snew(gb->elem,gb->nelem);
   snew(gb->count,gb->nelem);
-  gb->totcount = 0;
   
   return gb;
 }
@@ -93,25 +91,13 @@ static void done_gkrbin(t_gkrbin **gb)
   *gb = NULL;
 }
 
-static void add_gkrelem(t_gkrbin *gb,real r,real value)
-{
-  int index;
-  
-  index = r/gb->spacing;
-  if (index < gb->nelem) {
-    gb->elem[index]  += value;
-    gb->count[index] ++;
-    gb->totcount ++;
-  }
-}
-
 void do_gkr(t_gkrbin *gb,int ngrp,atom_id grpindex[],
 	    atom_id mindex[],atom_id ma[],rvec x[],rvec mu[],
 	    matrix box,int nAtom)
 {
   static rvec *xcm=NULL;
   int  gi,aj,j0,j1,i,j,k,index;
-  real fac,r2,mu2;
+  real fac,r2;
   rvec dx;
   
   if (!xcm)
@@ -136,15 +122,13 @@ void do_gkr(t_gkrbin *gb,int ngrp,atom_id grpindex[],
     }
   }
   
-  for(i=0; (i<ngrp); i++) {
-    for(j=i+1; (j<ngrp); j++) {
+  for(i=0; i<ngrp; i++) {
+    for(j=i+1; j<ngrp; j++) {
       /* Compute distance between molecules including PBC */
       pbc_dx(xcm[i],xcm[j],dx);
-      r2  = iprod(dx,dx);
-      if (r2 < gb->r2) {
-	mu2 = cos_angle(mu[i],mu[j]);
-	add_gkrelem(gb,sqrt(r2),mu2);
-      }
+      index = (int)(norm(dx)/gb->spacing);
+      gb->elem[index]  += cos_angle(mu[i],mu[j]);
+      gb->count[index] ++;
     }
   }
 }
@@ -159,9 +143,9 @@ void print_gkrbin(char *fn,t_gkrbin *gb,
    * models into account. The RDF is calculated as well, almost for free!
    */
   FILE   *fp;
-  char   *leg[] = { "G\\sk\\N(r)", "h\\sOO\\N", "g\\sOO\\N" };
-  int    i;
-  real   x0,x1,ggg,Gkr,vol_s,rho,gOO,hOO;
+  char   *leg[] = { "G\\sk\\N(r)", "< cos >", "h\\sOO\\N", "g\\sOO\\N" };
+  int    i,last;
+  real   x0,x1,ggg,Gkr,vol_s,rho,gOO,hOO,cosav;
   double fac;
     
   fp=xvgropen(fn,"Distance dependent Gk","r (nm)","G\\sk\\N(r)");
@@ -175,6 +159,10 @@ void print_gkrbin(char *fn,t_gkrbin *gb,
     fprintf(debug,"ngrp = %d, nframes = %d\n",ngrp,nframes);
   }
   
+  last = gb->nelem-1;
+  while(last>1 && gb->elem[last-1]==0)
+    last--;
+
   /* Divide by dipole squared, by number of frames, by number of origins.
    * Multiply by 2 because we only take half the matrix of interactions
    * into account.
@@ -182,7 +170,7 @@ void print_gkrbin(char *fn,t_gkrbin *gb,
   fac  = 2.0/((double) ngrp * (double) nframes);
 
   x0 = 0;
-  for(i=0; (i<gb->nelem-1); i++) {
+  for(i=0; i<last; i++) {
     /* Centre of the coordinate in the spherical layer */
     x1    = x0+gb->spacing;
     
@@ -198,8 +186,12 @@ void print_gkrbin(char *fn,t_gkrbin *gb,
     ggg  = gb->elem[i]*fac;
     hOO  = 3.0*ggg/(rho*vol_s);
     Gkr += ggg;
+    if (gb->count[i])
+      cosav = ggg/gb->count[i];
+    else
+      cosav = 0;
     
-    fprintf(fp,"%10.5e  %12.5e  %12.5e  %12.5e\n",x1,Gkr,hOO,gOO);
+    fprintf(fp,"%10.5e %12.5e %12.5e %12.5e %12.5e\n",x1,Gkr,cosav,hOO,gOO);
     
     /* Swap x0 and x1 */
     x0 = x1;
@@ -542,7 +534,8 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
     clear_rvec(quad_ave);
 
   if (bGkr) {
-    rcut   = 0.475*min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ]));
+    /* Use 0.7 iso 0.5 to account for pressure scaling */
+    rcut   = 0.7*sqrt(sqr(box[XX][XX])+sqr(box[YY][YY])+sqr(box[ZZ][ZZ]));
     gkrbin = mk_gkrbin(rcut); 
   }
 
