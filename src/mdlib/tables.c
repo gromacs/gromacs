@@ -317,10 +317,10 @@ static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
       swi2     = -6*(r1+rc-2*r)*ksw;
     }
     else {
-      swi = swi1 = swi2 = swi3 = 1.0;
+      swi = swi1 = swi2 = 1.0;
     }
 #ifdef DEBSW
-    fprintf(fp,"%10g  %10g  %10g  %10g  %10g\n",r,swi,swi1,swi2,swi3);
+    fprintf(fp,"%10g  %10g  %10g  %10g\n",r,swi,swi1,swi2);
 #endif
     switch (tp) {
     case etabLJ6:

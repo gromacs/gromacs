@@ -657,9 +657,9 @@ case "${host_cpu}-${host_os}" in
     ;;
 
   mips*-irix*)
-    xCFLAGS="-O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -LNO:opt=1 -LNO:ou_further=3 -OPT:Olimit=0:roundoff=3:alias=typed -woff 1174,84 -D__INLINE_INTRINSICS"
+    xCFLAGS="-O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -LNO:opt=1 -LNO:ou_further=3 -OPT:Olimit=0:roundoff=3:alias=typed -woff 1174 -D__INLINE_INTRINSICS"
     xFFLAGS="-O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -LNO:opt=1 -LNO:ou_further=3 -OPT:Olimit=0:roundoff=3:alias=typed -OPT:cray_ivdep=TRUE"
-
+    
     if $CC -version | grep "Version 7.1" > /dev/null 2>&1; then
       xCFLAGS="$xCFLAGS -GCM:aggressive_speculation -GCM:array_speculation" 
       xFFLAGS="$xFFLAGS -GCM:aggressive_speculation -GCM:array_speculation" 
@@ -669,6 +669,7 @@ case "${host_cpu}-${host_os}" in
       xCFLAGS="$xCFLAGS -SWP:heur=fdms,nhms,fdnms" 
       xFFLAGS="$xFFLAGS -SWP:heur=fdms,nhms,fdnms" 
     fi
+    LDFLAGS="$LDFLAGS -woff 84"
 
     case "${gmxcpu}" in
       r12000*)
@@ -699,17 +700,20 @@ case "${host_cpu}-${host_os}" in
     esac
     ;;
 
-  alpha*-osf*)
+  alpha*-osf*) 
+     # NB: -arch implies -tune according to the cc manual.
+     # We dont use -ifo since it conflicts with dependency
+     # generation on old versions of the compiler.
     case "${host_cpu}" in
       alphaev*)
         # extract the processor from cpu type (e.g. alphaev56 -> ev56)
         evtype=`echo ${host_cpu} | sed 's/alpha//'`
-        xCFLAGS="-O5 -arch $evtype -tune $evtype -fast -unroll 2 -fp_reorder"
+        xCFLAGS="-fast -O4 -no_ifo -arch $evtype -unroll 2 -fp_reorder"
         xFFLAGS="$xCFLAGS -assume noaccuracy_sensitive"
         xLDFLAGS="-O4"
         ;;
       *)
-	xCFLAGS="-O5 -arch host -tune host -fast -unroll 2 -fp_reorder"
+	xCFLAGS="-fast -O4 -no_ifo -arch host -unroll 2 -fp_reorder"
 	xFFLAGS="$xCFLAGS -assume noaccuracy_sensitive"
 	xLDFLAGS="-O4"
 	;;
@@ -721,12 +725,12 @@ case "${host_cpu}-${host_os}" in
       alphaev*)
 	# extract the processor from cpu type (e.g. alphaev56 -> ev56)
 	evtype=`echo ${host_cpu} | sed 's/alpha//'`
-	tmpCFLAGS="-O5 -arch $evtype -tune $evtype -fast -unroll 2 -fp_reorder"
+	tmpCFLAGS="-fast -O4 -no_ifo -arch $evtype -unroll 2 -fp_reorder"
 	tmpFFLAGS="$tmpCFLAGS -assume noaccuracy_sensitive"
 	tmpLDFLAGS="-O4"
 	;;
       *)
-	tmpCFLAGS="-O5 -arch host -tune host -fast -unroll 2 -fp_reorder"
+	tmpCFLAGS="-fast -O4 -no_ifo -arch host -unroll 2 -fp_reorder"
 	tmpFFLAGS="$tmpCFLAGS -assume noaccuracy_sensitive"
 	tmpLDFLAGS="-O4"
 	;;

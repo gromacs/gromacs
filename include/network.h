@@ -58,9 +58,9 @@ static char *SRCID_network_h = "$Id$";
 #define LEFT     0          /* channel to the left processor  */
 #define RIGHT    1          /* channel to the right processor */
 
-#define record(rec)     &(rec),sizeof(rec)
+#define record(rec)     &((rec)),sizeof(rec)
 #define array(arr,nr)   (arr),((nr)*sizeof((arr)[0]))
-#define arrayp(el,nr)   &(el),((nr)*sizeof(el))
+#define arrayp(el,nr)   &((el)),((nr)*sizeof(el))
 /* 
  * These macro's can be used as shown in the following examples:
  *

@@ -689,17 +689,20 @@ case "${host_cpu}-${host_os}" in
     esac
     ;;
 
-  alpha*-osf*)
+  alpha*-osf*) 
+     # NB: -arch implies -tune according to the cc manual.
+     # We dont use -ifo since it conflicts with dependency
+     # generation on old versions of the compiler.
     case "${host_cpu}" in
       alphaev*)
         # extract the processor from cpu type (e.g. alphaev56 -> ev56)
         evtype=`echo ${host_cpu} | sed 's/alpha//'`
-        xCFLAGS="-O5 -arch $evtype -tune $evtype -fast -unroll 2 -fp_reorder"
+        xCFLAGS="-fast -O4 -no_ifo -arch $evtype -unroll 2 -fp_reorder"
         xFFLAGS="$xCFLAGS -assume noaccuracy_sensitive"
         xLDFLAGS="-O4"
         ;;
       *)
-	xCFLAGS="-O5 -arch host -tune host -fast -unroll 2 -fp_reorder"
+	xCFLAGS="-fast -O4 -no_ifo -arch host -unroll 2 -fp_reorder"
 	xFFLAGS="$xCFLAGS -assume noaccuracy_sensitive"
 	xLDFLAGS="-O4"
 	;;
@@ -711,12 +714,12 @@ case "${host_cpu}-${host_os}" in
       alphaev*)
 	# extract the processor from cpu type (e.g. alphaev56 -> ev56)
 	evtype=`echo ${host_cpu} | sed 's/alpha//'`
-	tmpCFLAGS="-O5 -arch $evtype -tune $evtype -fast -unroll 2 -fp_reorder"
+	tmpCFLAGS="-fast -O4 -no_ifo -arch $evtype -unroll 2 -fp_reorder"
 	tmpFFLAGS="$tmpCFLAGS -assume noaccuracy_sensitive"
 	tmpLDFLAGS="-O4"
 	;;
       *)
-	tmpCFLAGS="-O5 -arch host -tune host -fast -unroll 2 -fp_reorder"
+	tmpCFLAGS="-fast -O4 -no_ifo -arch host -unroll 2 -fp_reorder"
 	tmpFFLAGS="$tmpCFLAGS -assume noaccuracy_sensitive"
 	tmpLDFLAGS="-O4"
 	;;
