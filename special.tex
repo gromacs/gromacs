@@ -66,7 +66,7 @@ harmonic umbrella potential that acts on the center of mass of a group
 of atoms.
 \end{enumerate}
 
-In the calculations, there has to be 1 reference group and 1 to 4
+In the calculations, there has to be 1 reference group and 1 to 20
 other groups of atoms. For constrained runs, the distance between the
 reference group and the other groups is kept constant at the distance
 they have in the input coordinate file ({\tt .tpr}) file.
@@ -137,8 +137,7 @@ cylinder (which causes jumps in the constraint forces).
 The same as {\tt dynamic}, but the coordinates are corrected for
 boxcrossings like in {\tt com\_t0}. Note that strictly speaking this is
 not correct if the reference group is not the whole system, including
-the groups defined with {\tt group\_1}, {\tt group\_2}, {\tt group\_3}
-and {\tt group\_4}.
+the groups defined with {\tt group\_1}, \ldots.
 \end{description}
 
 To further smooth rapidly fluctuating distances between the reference
@@ -189,12 +188,11 @@ Options are {\tt afm, constraint, umbrella}. This selects
 the type of calculation: AFM pulling, constraint force calculation
 or umbrella sampling.
 
+\item[\tt ngroups                   = 2]
 \item[\tt group\_1                  = MB21\_1]
-\item[\tt group\_2                  = MB21\_2]
-\item[\tt group\_3                  = ]
-\item[\tt group\_4                  = ]\mbox{}\\      
-The groups with the atoms to act on. The first group is mandatory, the
-second optional.
+\item[\tt group\_2                  = MB21\_2]\mbox{}\\
+The groups with the atoms to act on. {\tt ngroups} should be between
+1 and 20.
 
 \item[\tt reference\_group          = OCTA]\mbox{}\\
 The reference group. Distances are calculated betweeen {\tt group\_1}
@@ -206,8 +204,6 @@ can be performed in absolute coordinates.
 
 \item[\tt weights\_1                  = ]
 \item[\tt weights\_2                  = ]
-\item[\tt weights\_3                  = ]
-\item[\tt weights\_4                  = ]
 \item[\tt reference\_weights          = ]\mbox{}\\
 The relative weights for all atoms in each group.
 The center of mass and the force calculation are peformed using
@@ -286,28 +282,20 @@ taken to be [0 0 0].
 \begin{description}
 
 \item[\tt afm\_rate1                  = ]
-\item[\tt afm\_rate2                  = ]
-\item[\tt afm\_rate3                  = ]
-\item[\tt afm\_rate4                  = ]\mbox{}\\
+\item[\tt afm\_rate2                  = ]\mbox{}\\
 The rate at which the spring moves in nm/ps for each group.
 
 \item[\tt afm\_k1                  = ]
-\item[\tt afm\_k2                  = ]
-\item[\tt afm\_k3                  = ]
-\item[\tt afm\_k4                  = ]\mbox{}\\
+\item[\tt afm\_k2                  = ]\mbox{}\\
 The force constant of the spring for each pulled group in
 kJ~mol$^{-1}$~nm$^{-2}$.
 
 \item[\tt afm\_dir1                  = ]
-\item[\tt afm\_dir2                  = ]
-\item[\tt afm\_dir3                  = ]
-\item[\tt afm\_dir4                  = ]\mbox{}\\
+\item[\tt afm\_dir2                  = ]\mbox{}\\
 Unit vector describing the direction of pulling.
 
 \item[\tt afm\_init1                  = ]
-\item[\tt afm\_init2                  = ]
-\item[\tt afm\_init3                  = ]
-\item[\tt afm\_init4                  = ]\mbox{}\\
+\item[\tt afm\_init2                  = ]\mbox{}\\
 Vector describing the initial position of the spring
 relative to the reference group. To start a simulation with zero 
 initial force on the pulled group, the initial position should be set
@@ -328,17 +316,13 @@ taken to be [0 0 0].
 \begin{description}
 
 \item[\tt k1                          = ]
-\item[\tt k2                          = ]
-\item[\tt k3                          = ]
-\item[\tt k4                          = ]\mbox{}\\
+\item[\tt k2                          = ]\mbox{}\\
 This option specifies the force constant for each pulled group in 
 kJ~mol$^{-1}$~nm$^{-2}$.
 
 
 \item[\tt pos1                        = ]
-\item[\tt pos2                        = ]
-\item[\tt pos3                        = ]
-\item[\tt pos4                       = ]\mbox{}\\
+\item[\tt pos2                        = ]\mbox{}\\
 This option specifies the position that the pulled group will be restrained to, relative
 to the reference group.
 \end{description}
