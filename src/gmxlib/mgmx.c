@@ -48,7 +48,7 @@ typedef struct {
 #define  NARGS  20
 static Arg      args[NARGS];
 static Widget   FdlgCaller;
-static int      helpw=-1,descw=-1,fdlgw=-1,gmxDialog;
+static int      helpw=-1,aboutw=-1,descw=-1,fdlgw=-1,gmxDialog;
 static int      *pa_index,*pa_set_index,*fnm_index;
 static bool     bFdlgUp=FALSE,bDone=FALSE,bDescSet=FALSE;
 extern XmString empty_str;
@@ -117,6 +117,16 @@ static void help_callback(Widget w,caddr_t client_data,caddr_t call_data)
 static void help_ok_callback(Widget w,caddr_t client_data,caddr_t call_data)
 {
   XtUnmanageChild(get_widget(helpw));
+}
+
+static void about_callback(Widget w,caddr_t client_data,caddr_t call_data)
+{
+  XtManageChild(get_widget(aboutw));
+}
+
+static void about_ok_callback(Widget w,caddr_t client_data,caddr_t call_data)
+{
+  XtUnmanageChild(get_widget(aboutw));
 }
 
 static void file_callback(Widget www,caddr_t client_data,caddr_t call_data)
@@ -375,14 +385,15 @@ static void mk_enumerated(int parent,int top,int left,
 
 static void mk_buttons(int parent,int top,int nb,t_button bbb[])
 {
-  int   i,narg,nw,left,right,bw;
-  float dx;
+  int  i,narg,nw,left,right,bw;
+  real dx;
 
   nw      = 1;
-  dx      = (100-(nb+1)*nw)/nb;
+  dx      = (100-(nb+1)*nw)/(real)nb;
+  right   = nw;
   for(i=0; (i<nb); i++) {
     left  = nw*(i+1)+i*dx;
-    right = i*nw+(i+1)*(dx+nw);
+    right = left+dx;
     narg  = 0;
     XtSetArg(args[narg],XmNtopAttachment,   XmATTACH_WIDGET);      narg++;
     XtSetArg(args[narg],XmNtopWidget,       get_widget(top));      narg++;
@@ -722,13 +733,20 @@ static void append_str(char **buf,int *blen,int *maxlen,char *str,
 #undef DELTA
 }
 
-static char *concat_str(int ndesc,char *desc[],int nbugs,char *bugs[])
+static char *concat_str(char *dtitle,int ndesc,char *desc[],
+			char *btitle,int nbugs,char *bugs[])
 {
   char *descer;
   char *ptr  = NULL;
+  char *buf;
   int  i,blen=0,maxlen=0,dlen,slen;
 
-  append_str(&ptr,&blen,&maxlen,"DESCRIPTION:",0);
+  append_str(&ptr,&blen,&maxlen,dtitle,0);
+  buf=strdup(dtitle);
+  for(i=0; (buf[i] != '\0'); i++)
+    buf[i] = '-';
+  append_str(&ptr,&blen,&maxlen,buf,0);
+  sfree(buf);
   if (ndesc == 0) 
     append_str(&ptr,&blen,&maxlen,"none?",0);
     
@@ -746,8 +764,12 @@ static char *concat_str(int ndesc,char *desc[],int nbugs,char *bugs[])
   append_str(&ptr,&blen,&maxlen,descer,0);
   sfree(descer);
   if (nbugs > 0) {
-    append_str(&ptr,&blen,&maxlen," ",0);
-    append_str(&ptr,&blen,&maxlen,"DIAGNOSTICS:",0);
+    append_str(&ptr,&blen,&maxlen,btitle,0);
+    buf=strdup(btitle);
+    for(i=0; (buf[i] != '\0'); i++)
+      buf[i] = '-';
+    append_str(&ptr,&blen,&maxlen,buf,0);
+    sfree(buf);
   }
   for(i=0; (i<nbugs); i++) {
     append_str(&ptr,&blen,&maxlen,bugs[i],2);
@@ -755,20 +777,22 @@ static char *concat_str(int ndesc,char *desc[],int nbugs,char *bugs[])
   return ptr;
 }
 
-static void mk_help(Widget parent,int ndesc,char *desc[],
-		    int nbugs,char *bugs[])
+static int low_mk_help(Widget parent,
+		       char *dtitle,int ndesc,char *desc[],
+		       char *btitle,int nbugs,char *bugs[],
+		       XtCallbackProc ok_callback)
 {
   windex   text,sep,ok,sw;
   char     buf[256],*ptr;
-  int      narg;
+  int      narg,awin;
 
   /* Create the mother of all help windows */
   sprintf(buf,"Gromacs Help - %s",ShortProgram());
   narg = 0;
   XtSetArg(args[narg],XmNdialogTitle,char2xms(buf)); narg++;
-  helpw  = add_widget(XmCreateFormDialog(parent,GMXHELP,args,narg),buf);
+  awin  = add_widget(XmCreateFormDialog(parent,GMXHELP,args,narg),buf);
   
-  ptr = concat_str(ndesc,desc,nbugs,bugs);
+  ptr = concat_str(dtitle,ndesc,desc,btitle,nbugs,bugs);
   
   /* Now create the contents */
   narg   = 0; 
@@ -782,11 +806,11 @@ static void mk_help(Widget parent,int ndesc,char *desc[],
   XtSetArg(args[narg],XmNrightAttachment, XmATTACH_FORM);     narg++;
   XtSetArg(args[narg],XmNscrollingPolicy, XmAUTOMATIC);       narg++;
   XtSetArg(args[narg],XmNscrollBarDisplayPolicy,XmAUTOMATIC); narg++;
-  text   = add_widget(XmCreateScrolledText(get_widget(helpw),GMXHELP,
+  text   = add_widget(XmCreateScrolledText(get_widget(awin),GMXHELP,
 					   args,narg),
 		      "There is supposed to be useful information in the help window");
   sw     = add_widget(XtParent(get_widget(text)),NULL);
-  sep    = mk_separator(helpw,sw);
+  sep    = mk_separator(awin,sw);
   
   narg   = 0;
   XtSetArg(args[narg],XmNtopAttachment,   XmATTACH_WIDGET);    narg++;
@@ -796,17 +820,72 @@ static void mk_help(Widget parent,int ndesc,char *desc[],
   XtSetArg(args[narg],XmNalignment,       XmALIGNMENT_CENTER); narg++;
   XtSetArg(args[narg],XmNbottomAttachment,XmATTACH_FORM);      narg++;
   XtSetArg(args[narg],XmNlabelString,     char2xms("OK"));     narg++;
-  ok     = add_widget(XmCreatePushButton(get_widget(helpw),
+  ok     = add_widget(XmCreatePushButton(get_widget(awin),
 					 GMXBUTTON,args,narg),
 		      "Press OK to close the helpwindow");
-  XtAddCallback(get_widget(ok),XmNactivateCallback,
-		(XtCallbackProc) help_ok_callback,NULL);
+  XtAddCallback(get_widget(ok),XmNactivateCallback,ok_callback,NULL);
 		
   /* Now manage all except the mother of all help windows */
   XtManageChild(get_widget(ok));
   XtManageChild(get_widget(sw));
   XtManageChild(get_widget(text));
   XtManageChild(get_widget(sep));
+  
+  return awin;
+}
+
+static int mk_help(Widget base,int ndesc,char *desc[],int nbugs,char *bugs[])
+{
+  return low_mk_help(base,"DESCRIPTION:",ndesc,desc,
+		     "DIAGNOSTICS:",nbugs,bugs,(XtCallbackProc) help_ok_callback);
+}
+
+static int mk_about(Widget base)
+{
+  char *about[] = {
+    "Starting with version 2.0 GROMACS has an X/Motif graphical user interface (GUI) to all",
+    "programs. The command line interface is translated automatically into",
+    "a dialog box which should make life a bit easier for those new to the",
+    "programs. A drawback of this approach is that the options are usually",
+    "short, and therefore not very desriptive. In the GUI there is a line with",
+    "extra information at the button, which informs you about the option under",
+    "the mouse cursor.[PAR]",
+    "Note that in the following description all possible elements of the GUI",
+    "are described, but your program need not have all these option types.[PAR]",
+    "In the upper pane of the dialog box you find the file options. These can",
+    "be manually edited or using a File selector box under the [BB]Browse[bb]",
+    "button. Note that some files are optional, only if you tick the box before the",
+    "option the program will actually use the file. If you use the File selector",
+    "box to select a file the option will be used automatically. If you change your",
+    "mind about the option you can turn it off again using the tick box.[PAR]",
+    "In the second pane of the dialog box you will find a number of Toggle buttons",
+    "with which you can turn flags on and off.[PAR]",
+    "In the third pane of the dialog box there are options which can take",
+    "a limited set of values (enumerated in programmers jargon). This is implemented",
+    "in the GUI using a popup menu.[PAR]",
+    "In the fourth pane you find the options which require you to type (yuckie!)",
+    "an numeric or textual argument (note that the description window indicates",
+    "which kind of argument). The validity of what you type is *not* checked",
+    "by the GUI as this does not know what the options mean. Instead the program",
+    "using the GUI will (hopefully) verify that your input is meaningful.[PAR]",
+    "The GUI was written by David van der Spoel (comments to spoel@xray.bmc.uu.se)[PAR]",
+    "And hey:[BR]",
+    NULL
+  };
+#define NABOUT asize(about)
+
+  static char *mbugs[] = {
+    "The file selector box generates a core dump under Linux/lesstif0.86",
+    "The file selector box does not work with multiple file selections yet",
+    "It took about 1500 lines of pretty ugly C code to get this dialog box working"
+  };
+
+  about[NABOUT-1] = cool_quote();
+
+  return low_mk_help(base,
+		     "ABOUT THE GROMACS MOTIF USER INTERFACE",asize(about),about,
+		     "PROBLEMS IN THE GUI",asize(mbugs),mbugs,
+		     (XtCallbackProc) about_ok_callback);
 }
 
 static void mk_fdlg(Widget base)
@@ -847,15 +926,20 @@ static void mk_gui(Widget gmxBase,
     { "Cancel", "Press Cancel to quit the program",
       &cancel_callback },
     { "Help",   "Press Help for more information about the program",
-      &help_callback }
+      &help_callback },
+    { "About",  "Press About for information about using this dialog box",
+      &about_callback },
   };
 #define NBUT asize(bbb)
   int  sep1,sep2,widg0;
   int  i,narg;
   
   /* Create the help window */
-  mk_help(gmxBase,ndesc,desc,nbugs,bugs);
+  helpw  = mk_help(gmxBase,ndesc,desc,nbugs,bugs); 
 
+  /* Create the about window */
+  aboutw = mk_about(gmxBase);
+		   
   /* Create the file selector box */
   mk_fdlg(gmxBase);
   
@@ -1038,7 +1122,7 @@ void gmx_gui(int *argc,char *argv[],
   Widget           gmxBase;
   XtAppContext     appcontext;
   String           Fallbacks[] = {
-    /*"*gmx*background:           lightgrey",*/
+    "*gmxdlg.background:        lightgrey",
     "*gmxbutton.background:     lightskyblue",
     "*gmxtoggle.background:     lightgrey",
     "*gmxedit.background:       lightgoldenrod1",

@@ -750,6 +750,9 @@ void low_do_autocorr(char *fn,char *title,
   
 }
 
+static char *Leg[]   = { "1", "2", "3", NULL };
+static char *Nparm[] = { "1", "2", NULL };
+
 t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
 {
   t_pargs acfpa[] = {
@@ -763,10 +766,10 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
       "Number of frames between time origins for ACF when no FFT is used" },
     { "-acflen",     FALSE, etINT,  &acf.nlag,
       "Length of the ACF when no FFT is used, default is half the number of frames" },
-    { "-P",        FALSE, etINT,  &acf.P,
-      "Order of Legendre polynomial for ACF (1,2 or 3)" },
-    { "-nparm",    FALSE, etINT,  &acf.nfitparm,
-      "Number of parameters in exponential fit (1 or 2)" },
+    { "-P",        FALSE, etENUM, &Leg,
+      "Order of Legendre polynomial for ACF" },
+    { "-nparm",    FALSE, etENUM, &Nparm,
+      "Number of parameters in exponential fit" },
     { "-beginfit", FALSE, etREAL, &acf.tbeginfit,
       "Time where to begin the exponential fit of the correlation function" },
     { "-endfit",   FALSE, etREAL, &acf.tendfit,
@@ -807,6 +810,10 @@ void do_autocorr(char *fn,char *title,int nframes,int nitem,real **c1,
     fprintf(stderr,"ACF data structures have not been initialised. Call add_acf_pargs\n");
   }
 
+  /* Handle enumerated types */
+  sscanf(Leg[0],"%d",&acf.P);
+  sscanf(Nparm[0],"%d",&acf.nfitparm);
+  
   switch (acf.P) {
   case 1:
     mode = mode | eacP1;

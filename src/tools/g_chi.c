@@ -820,13 +820,15 @@ int main(int argc,char *argv[])
     "rather than angles themselves, resolves the problem of periodicity.",
     "(Van der Spoel & Berendsen (1997), [BB]Biophys. J. 72[bb], 2032-2041)."
   };
+  
   static char *bugs[] = {
     "Produces MANY output files (up to about 4 times the number of residues in the protein, twice that if autocorrelation functions are calculated). Typically several hundred files are output."
   };
   static int  r0=1,ndeg=1,maxchi=2;
   static bool bAll=FALSE;
-  static bool bPhi=FALSE,bPsi=FALSE,bChi=FALSE,bOmega=FALSE;
+  static bool bPhi=FALSE,bPsi=FALSE,bOmega=FALSE;
   static real bfac_init=-1.0;
+  static char *maxchistr[] = { "0", "1", "2", "3",  "4", "5", "6", NULL };
   static bool bRama=FALSE,bShift=FALSE;
   t_pargs pa[] = {
     { "-r0",  FALSE, etINT, &r0,
@@ -835,8 +837,6 @@ int main(int argc,char *argv[])
       "Output for Phi dihedral angles" },
     { "-psi",  FALSE, etBOOL, &bPsi,
       "Output for Psi dihedral angles" },
-    { "-chi",  FALSE, etBOOL, &bChi,
-      "Output for Chi dihedral angles" },
     { "-omega",FALSE, etBOOL, &bOmega,  
       "Output for Omega dihedrals (peptide bonds)" },
     { "-rama", FALSE, etBOOL, &bRama,
@@ -847,8 +847,8 @@ int main(int argc,char *argv[])
 	"Compute chemical shifts from Phi/Psi angles" },
     { "-run", FALSE, etINT, &ndeg,
       "perform running average over ndeg degrees for histograms" },
-    { "-maxchi", FALSE, etINT, &maxchi,
-      "calculate first ndih Chi dihedrals (max 6)" },
+    { "-maxchi", FALSE, etENUM, &maxchistr,
+      "calculate first ndih Chi dihedrals" },
     { "-bfact", FALSE, etREAL, &bfac_init,
       "bfactor value for pdb file for atoms with no calculated dihedral order parameter"}
   };
@@ -856,6 +856,7 @@ int main(int argc,char *argv[])
   FILE       *fp,*log;
   char       title[256];
   int        status,natoms,i,j,k,l;
+  bool       bChi;
   t_topology top;
   rvec       *x,*xref,*xav;
   real       t,t0,t1,lambda;
@@ -890,6 +891,10 @@ int main(int argc,char *argv[])
   ppa    = add_acf_pargs(&npargs,pa);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,asize(bugs),bugs);
+
+  /* Handle result from enumerated type */
+  sscanf(maxchistr[0],"%d",&maxchi);
+  bChi = (maxchi > 0);
   
   log=ffopen(ftp2fn(efLOG,NFILE,fnm),"w");
   

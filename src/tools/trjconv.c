@@ -232,7 +232,8 @@ int main(int argc,char *argv[])
   static bool  bCenter=FALSE,bCompress=FALSE;
   static bool  bFit=FALSE,bIFit=FALSE,bBox=TRUE;
   static bool  bCheckDouble=FALSE;
-  static int   skip_nr=1,prec=3;
+  static int   skip_nr=1;
+  static char  *prec_str[] = { "3", "1", "2", "4", "5", NULL };
   static real  tzero=0.0,delta_t=0.0,timestep=0.0,ttrunc=-1,tdump=-1,toffset=0;
   static rvec  newbox = {0,0,0};
   static real  xshift=0.0;
@@ -257,8 +258,8 @@ int main(int argc,char *argv[])
       "fit molecule to ref structure in .tpx file" },
     { "-pfit", FALSE,  etBOOL, &bIFit,
       "progressive fit, to the previous fitted structure" },
-    { "-prec", FALSE,  etINT, &prec,
-      "precision for .gro and .xtc writing" },
+    { "-prec", FALSE,  etENUM, prec_str,
+      "precision for .gro and .xtc writing in number of decimal places" },
     { "-vel", FALSE, etBOOL, &bVels,
       "read and write velocities if possible" },
     { "-skip", FALSE,  etINT, &skip_nr,
@@ -290,7 +291,7 @@ int main(int argc,char *argv[])
   };
       
   FILE         *out=NULL;
-  int          trjout;
+  int          trjout,prec;
   int          status,ftp,ftpin,file_nr;
   rvec         *x,*xn,*xout,*v,*vn,*vout;
   rvec         *xp,shift;
@@ -358,6 +359,7 @@ int main(int argc,char *argv[])
       bPBC=FALSE;
     }
     /* prec is in nr of decimal places, xtcprec is a multiplication factor: */
+    sscanf(prec_str[0],"%d",&prec);
     xtcpr=1;
     for (i=0; i<prec; i++)
       xtcpr*=10;
