@@ -55,12 +55,9 @@ extern void f77tab(real *ix,real *iy,real *iz,real *qi,
 		   real VFtab[]);
 
 extern void f77coultab(real *ix,real *iy,real *iz,real *qi,
-		       real pos[],int *nj,int type[],t_nl_j jjnr[],
-		       real charge[],real nbfp[],
-		       real faction[],real fip[],
-		       real *Vc,real *Vnb,
-		       int  *ntab,real *tabscale,
-		       real VFtab[]);
+		       real pos[],int *nj,t_nl_j jjnr[],
+		       real charge[],real faction[],real fip[],
+		       real *Vc,int  *ntab,real *tabscale,real VFtab[]);
 		       
 /* Initiate invsqrt calculations in fortran */
 extern void fillbuf(void);
