@@ -1,0 +1,52 @@
+[ None ]
+
+
+[ NH3+ ]
+[ replace ]
+N	N	M3	14.0067	-0.710
+[ add ]
+3	4	N	CA	C
+	H	HN	1.008	0.570
+[ delete ]
+H
+[ dihedrals ]
+H1  N   CA   C
+[ impropers ]
+H1  CA  N    H2 	 improper_X_X_M3_X
+H1  CA  N    H3 	 improper_X_X_M3_X
+
+
+[ NH2 ]
+[ replace ]
+N	N	N2	14.0067	-0.666
+[ add ]
+2	4	N	CA	C
+	H	HN	1.008	0.333
+[ delete ]
+H
+[ dihedrals ]
+H1  N   CA   C
+[ impropers ]
+H1  CA  N    H2 	 improper_X_X_M_X
+
+
+[ PRO-NH2+ ]
+[ replace ]
+N	N	N2	14.0067	-0.140
+[ add ]
+2	4	N	CA	C
+	H	HN	1.008	0.570
+[ dihedrals ]
+H1  N   CA   C
+[ impropers ]
+H1  CA  N    H2 	 improper_X_X_M_X
+
+
+[ PRO-NH ]
+[ replace ]
+N	N	N1	14.0067	-0.333
+[ add ]
+1	4	N	CA	C
+	H	HN	1.008	0.333
+[ dihedrals ]
+H1  N   CA   C
