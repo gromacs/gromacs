@@ -90,7 +90,8 @@ t_corr *init_corr(int nrgrp,int type,int axis,real dim_factor,
   this->ngrp      = nrgrp;
   this->nframes   = 0;
   this->nlast     = 0;
-
+  this->dim_factor = dim_factor;
+  
   snew(this->ndata,nrgrp);
   snew(this->data,nrgrp);
   for(i=0; (i<nrgrp); i++) {
