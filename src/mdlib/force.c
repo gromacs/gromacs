@@ -145,6 +145,12 @@ static void check_solvent(FILE *fp,const t_topology *top,t_forcerec *fr,
   
   /* Generate charge group number for all atoms */
   cgid = make_invblock(cgs,cgs->nra);
+
+  /* Statistics for MFlops counting */  
+  fr->nMNOMol = 0;
+  fr->nWatMol = 0;
+  for(m=0; m<3; m++)
+    fr->nMNOav[m] = 0;
   
   warncount=0;
 
@@ -230,8 +236,10 @@ static void check_solvent(FILE *fp,const t_topology *top,t_forcerec *fr,
 	aj=mols->a[j0];
 	if((nj==3) && bHaveCoul[0] && bHaveLJ[0] &&
 	   !bHaveLJ[1] && !bHaveLJ[2] &&
-	   (top->atoms.atom[aj+1].q == top->atoms.atom[aj+2].q))
+	   (top->atoms.atom[aj+1].q == top->atoms.atom[aj+2].q)) {
 	  fr->solvent_type[cgid[aj]] = esolWATER;
+	  fr->nWatMol++;
+	}
 	else {
 #ifdef USE_PPC_ALTIVEC
           fr->solvent_type[cgid[aj]] = esolNO;
@@ -269,9 +277,23 @@ static void check_solvent(FILE *fp,const t_topology *top,t_forcerec *fr,
 	  fr->mno_index[cgid[aj]*3+1] = nl_n;
 	  fr->mno_index[cgid[aj]*3+2] = nl_o;
 	  fr->solvent_type[cgid[aj]]  = esolMNO;
+	  /* Now compute the number of solvent molecules for MFlops accounting.
+	   * The base for this counting is not determined by the order in the
+	   * algorithm but by the number of actual interactions.
+	   */
+	
+	  fr->nMNOMol++;
+	  for(k=0; (k<nj); k++)
+	    if (bHaveLJ[k] || bHaveCoul[k])
+	      fr->nMNOav[0]++;
+	  for(k=0; (k<nj); k++)
+	    if (!bHaveLJ[k] && bHaveCoul[k])
+	      fr->nMNOav[1]++;
+	  for(k=nl_m=0; (k<nj); k++)
+	    if (bHaveLJ[k] && !bHaveCoul[k])
+	      fr->nMNOav[2]++;
 #endif /* MNO solvent if not using altivec */
-	}
-
+	}    
 	/* Last check for perturbed atoms */
 	for(j=j0; (j<j1); j++)
 	  if (md->bPerturbed[mols->a[j]])
@@ -300,24 +322,7 @@ static void check_solvent(FILE *fp,const t_topology *top,t_forcerec *fr,
       fprintf(debug,"MNO: cg = %5d, m = %2d, n = %2d, o = %2d\n",
 	      i,fr->mno_index[3*i],fr->mno_index[3*i+1],fr->mno_index[3*i+2]);
   }
-
-  /* Now compute the number of solvent molecules, could be merged with code above */
-  fr->nMNOMol = 0;
-  fr->nWatMol = 0;
-  for(m=0; m<3; m++)
-    fr->nMNOav[m] = 0;
-  for(i=0; i<mols->nr; i++) {
-    j = mols->a[mols->index[i]];
-    if (j>=START(nsb) && j<START(nsb)+HOMENR(nsb)) {
-	if (fr->solvent_type[cgid[j]] == esolMNO) {
-	  fr->nMNOMol++;
-	  for(m=0; m<3; m++)
-	    fr->nMNOav[m] += fr->mno_index[3*cgid[j]+m];
-	}
-	else if (fr->solvent_type[cgid[j]] == esolWATER)
-	  fr->nWatMol++;
-    }
-  }
+  
   if (fr->nMNOMol > 0)
     for(m=0; (m<3); m++)
       fr->nMNOav[m] /= fr->nMNOMol;
@@ -329,7 +334,7 @@ static void check_solvent(FILE *fp,const t_topology *top,t_forcerec *fr,
 	    fr->nMNOMol,nsb->nodeid);
     if (fr->nMNOMol > 0)
       fprintf(fp,"  aver. nr. of atoms per molecule: vdwc %.1f coul %.1f vdw %.1f\n",
-	      fr->nMNOav[1],fr->nMNOav[2]-fr->nMNOav[1],fr->nMNOav[0]-fr->nMNOav[2]);
+	      fr->nMNOav[0],fr->nMNOav[1],fr->nMNOav[2]);
     fprintf(fp,"There are %d optimized water molecules on node %d\n",
 	    fr->nWatMol,nsb->nodeid);
   }
