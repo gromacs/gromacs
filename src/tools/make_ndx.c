@@ -46,6 +46,8 @@ static char *SRCID_make_ndx_c = "$Id$";
 
 #define MAXNAMES 20
 
+bool bCase=FALSE;
+
 static int or_groups(atom_id nr1,atom_id *at1,atom_id nr2,atom_id *at2,
 		     atom_id *nr,atom_id *at)
 {
@@ -137,6 +139,8 @@ static int parse_names(char **string,int *n_names,char **names)
 	}
       }
       names[*n_names][i]='\0';
+      if (!bCase)
+	upstring(names[*n_names]);
       *string += i;
       (*n_names)++;
     }
@@ -235,7 +239,7 @@ static int select_residuenumbers(char **string,t_atoms *atoms,atom_id n1,
     for(i=0; i<atoms->nr; i++) {
       resnr=atoms->atom[i].resnr;
       for(j=n1; (j<=up); j++) {
-	if (j==resnr+1) {
+	if (resnr==j-1) {
 	  index[*nr]=i;
 	  (*nr)++;
 	}
@@ -254,7 +258,7 @@ static int select_residuenumbers(char **string,t_atoms *atoms,atom_id n1,
     sprintf(gname,"r");
     do {
       for(i=0; i<atoms->nr; i++) {
-	if (atoms->atom[i].resnr==j) {
+	if (atoms->atom[i].resnr==j-1) {
 	index[*nr]=i;
 	(*nr)++;
 	}
@@ -273,8 +277,10 @@ static bool comp_name(char *name,char *search)
 
   n=strlen(search)-1;
 
-  return (((search[n]!='*') && strcmp(name,search)) ||
-	  ((search[n]=='*') && strncmp(name,search,n)));
+  return (((search[n]!='*') && 
+	   (bCase ? strcmp(name,search) : strcasecmp(name,search))) ||
+	  ((search[n]=='*') && 
+	   (bCase ? strncmp(name,search,n) : strncasecmp(name,search,n))));
 }
 
 static int select_chainnames(t_atoms *atoms,int n_names,char **names,
@@ -664,9 +670,10 @@ static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
 
     printf("\n");
     printf(" nr : group     !   'name' nr name   'splitch' nr    'l': list residues\n");
-    printf(" 'a': atom      &                    'splitres' nr   'h': help\n");
-    printf(" 'r': residue   |   'del' nr         'splitat' nr\n");
-    printf(" 'chain' char       'keep' nr                        'q': save and quit\n"); 
+    printf(" 'a': atom      &   'del' nr         'splitres' nr   'h': help\n");
+    printf(" 'r': residue   |   'keep' nr        'splitat' nr\n");
+    printf(" 'chain' char       'case': %s         'q': save and quit\n",
+	   bCase ? "case insensitive" : "case sensitive  "); 
     printf("\n> ");
     gets(inp_string);
     printf("\n");
@@ -691,6 +698,7 @@ static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
       printf(" 'name' nr name    : rename group nr to name.\n");
       printf(" 'del' nr1 [- nr2] : deletes one group or groups in the range from nr1 to nr2.\n");
       printf(" 'keep' nr         : deletes all groups except nr.\n");
+      printf(" 'case'            : make all name compares case (in)sensitive.\n"); 
       printf(" 'splitch' nr      : split group into chains using CA distances.\n");
       printf(" 'splitres' nr     : split group into residues.\n");
       printf(" 'splitat' nr      : split group into atoms.\n");
@@ -738,6 +746,8 @@ static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
 	  (*gn)[sel_nr]=strdup(gname);
 	}
       }
+    } else if (!strncmp(string,"case",4)) {
+      bCase=!bCase;
     } else if (string[0] == 'l') {
       for(i=0; i<atoms->nr; i++)
 	if ((i==0) || ((atoms->atom[i-1].resnr!=atoms->atom[i].resnr)
