@@ -133,7 +133,7 @@ repfirst:	repfirst.o
 
 testlr:		testlr.o	ewald.o		pppm.o	\
 		ghat.o		lrutil.o	fftgrid.o
-		$(LD) -o $@ $^  $(SYSLIBS) 
+		$(LD) -o $@ $^  $(SYSLIBS) $(FFTLIBS)
 gentab:		gentab.o
 		$(LD) -o $@ $^  $(SYSLIBS) 
 lfft:		lfft.o

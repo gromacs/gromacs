@@ -249,7 +249,9 @@ void init_forcerec(FILE *log,
     
   fr->bGrid      = (ir->ns_type == ensGRID);
   fr->bLongRange = (fr->rlong > fr->rshort);
-
+  fr->bDomDecomp = (ir->userint3 != 0);
+  fr->Dimension  = ir->userint4;
+  
   fr->zsquare = 0.0;
   fr->temp    = 0.0;
   

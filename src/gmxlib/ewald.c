@@ -35,7 +35,7 @@ static char *SRCID_ewald_c = "$Id$";
 #include "complex.h"
 #include "futil.h"
 #include "lrutil.h"
-#include "grids.h"
+#include "fftgrid.h"
 #include "pppm.h"
 #include "fatal.h"
 #include "ghat.h"

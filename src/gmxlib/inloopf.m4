@@ -52,7 +52,27 @@ C     convert integer to float (when an integer is passed to this routine)
       fractaddr = rshift(and(val,or(fractmask,explsb)),fractshift)
       return
       end
-              
+      
+#ifdef DOUBLE        
+      function invsqrt(x)
+      include 'seed.inc'
+      real*8    invsqrt,x,y,y2
+      real*4    lu,xin
+      integer*4 exp,addr,bval,result
+
+      xin    = x
+      bval   = fl2i(xin)
+      exp    = expaddr(bval)
+      addr   = fractaddr(bval)
+      result = or(expseed(exp+1),fracseed(addr+1))
+      lu     = i2fl(result)
+
+      y      = (0.5*lu*(3.0-((x*lu)*lu)))
+      invsqrt = (0.5*y*(3.0-((x*y)*y)))
+
+      return
+      end
+#else
       function invsqrt(x)
       include 'seed.inc'
       real*4    invsqrt,x,y,lu
@@ -68,7 +88,8 @@ C     convert integer to float (when an integer is passed to this routine)
 
       return
       end
-      
+#endif
+
       subroutine fillbuf
       include 'seed.inc'
       integer*4 i,exp,newexp,bval,addr,indx

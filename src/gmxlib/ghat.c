@@ -102,7 +102,7 @@ void mk_ghat(FILE *fp,int nx,int ny,int nz,real ***ghat,
     }
   }
   if (bSym)
-    symmetrize_ghat(nx,ny,ny,ghat);
+    symmetrize_ghat(nx,ny,nz,ghat);
 }
 
 real ***rd_ghat(FILE *log,char *fn,ivec igrid,rvec gridspace,

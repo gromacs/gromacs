@@ -254,7 +254,7 @@ int main(int argc)
   init_table(&lookup_table);
   if (argc>1)
     done=table_test(stdout);
-  done=write_table("lutab.i","lutab",&lookup_table,write_asm_table);
+  /*done=write_table("lutab.i","lutab",&lookup_table,write_asm_table);*/
   done=write_table("sqrtab.c","lookup_table",&lookup_table,write_c_table);
   return 0;
 }  
