@@ -466,7 +466,8 @@ void init_forcerec(FILE *fp,
 		   t_mdatoms  *mdatoms,
 		   t_nsborder *nsb,
 		   matrix     box,
-		   bool bMolEpot)
+		   bool       bMolEpot,
+		   char       *tabfn)
 {
   int     i,j,m,natoms,ngrp,tabelemsize;
   real    q,zsq,nrdf,T;
@@ -602,13 +603,13 @@ void init_forcerec(FILE *fp,
   
   /* Mask that says whether or not this NBF list should be computed */
   /*  if (fr->bMask == NULL) {
-    ngrp = ir->opts.ngener*ir->opts.ngener;
-    snew(fr->bMask,ngrp);*/
-    /* Defaults to always */
+      ngrp = ir->opts.ngener*ir->opts.ngener;
+      snew(fr->bMask,ngrp);*/
+  /* Defaults to always */
   /*    for(i=0; (i<ngrp); i++)
-      fr->bMask[i] = TRUE;
-      }*/
-
+	fr->bMask[i] = TRUE;
+	}*/
+  
   if (fr->cg_cm == NULL)
     snew(fr->cg_cm,cgs->nr);
   if (fr->shift_vec == NULL)
@@ -635,7 +636,7 @@ void init_forcerec(FILE *fp,
   /* Van der Waals stuff */
   fr->rvdw        = ir->rvdw;
   fr->rvdw_switch = ir->rvdw_switch;
-  if ((fr->vdwtype != evdwCUT) && !fr->bBHAM) {
+  if ((fr->vdwtype != evdwCUT) && (fr->vdwtype != evdwUSER) && !fr->bBHAM) {
     if (fr->rvdw_switch >= fr->rvdw)
       fatal_error(0,"rvdw_switch (%g) must be < rvdw (%g)",
 		  fr->rvdw_switch,fr->rvdw);
@@ -685,7 +686,7 @@ void init_forcerec(FILE *fp,
       fr->bcoultab=FALSE;
       fr->bvdwtab=FALSE;
       fr->rtab=MAX_14_DIST;
-      make_tables(fp,fr,MASTER(cr));
+      make_tables(fp,fr,MASTER(cr),tabfn);
       fr->bcoultab=bcoulsave;
       fr->bvdwtab=bvdwsave;
       fr->coulvdw14tab=fr->coulvdwtab;
@@ -714,7 +715,7 @@ void init_forcerec(FILE *fp,
     fr->rtab = MAX_14_DIST;
   
   /* make tables for ordinary interactions */
-  make_tables(fp,fr,MASTER(cr));
+  make_tables(fp,fr,MASTER(cr),tabfn);
   if(!(EEL_LR(fr->eeltype) && (fr->bcoultab || fr->bvdwtab)))
     fr->coulvdw14tab=fr->coulvdwtab;
 

@@ -128,11 +128,13 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 
   if (ir->rlist == 0.0) {
     sprintf(err_buf,"can only have neighborlist cut-off zero (=infinite)\n"
-	    "with coulombtype = %s and simple neighborsearch\n"
+	    "with coulombtype = %s or coulombtype = %s"
+	    "and simple neighborsearch\n"
 	    "without periodic boundary conditions (pbc = %s) and\n"
 	    "rcoulomb and rvdw set to zero",
-	    eel_names[eelCUT],epbc_names[epbcNONE]);
-    CHECK((ir->coulombtype  != eelCUT)  || (ir->ns_type != ensSIMPLE) || 
+	    eel_names[eelCUT],eel_names[eelUSER],epbc_names[epbcNONE]);
+    CHECK(((ir->coulombtype != eelCUT) && (ir->coulombtype != eelUSER))
+	  || (ir->ns_type != ensSIMPLE) || 
 	  (ir->ePBC     != epbcNONE) || 
 	  (ir->rcoulomb != 0.0)      || (ir->rvdw != 0.0));
   }

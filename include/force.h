@@ -56,7 +56,7 @@ extern void f_calc_vir(FILE *log,int i0,int i1,rvec x[],rvec f[],tensor vir,
 
 extern t_forcerec *mk_forcerec(void);
 
-extern void make_tables(FILE *fp,t_forcerec *fr,bool bVerbose);
+extern void make_tables(FILE *fp,t_forcerec *fr,bool bVerbose,char *fn);
 /* Make tables for inner loops. When bVerbose the tables are printed
  * to .xvg files
  */
@@ -71,7 +71,8 @@ extern void init_forcerec(FILE       *log,
 			  t_mdatoms  *mdatoms,
 			  t_nsborder *nsb,
 			  matrix     box,
-			  bool       bMolEpot);
+			  bool       bMolEpot,
+			  char       *tabfn);
 /* The Force rec struct must be created with mk_forcerec 
  * The booleans have the following meaning:
  * bSetQ:    Copy the charges [ only necessary when they change ]

@@ -59,9 +59,9 @@ bool bCoulomb[etabNR] = { FALSE, FALSE, FALSE, FALSE, TRUE,
 enum { etiCOUL, etiLJ6, etiLJ12, etiNR };
 
 typedef struct {
-  int  nx,nx0,ny;
+  int  nx,nx0;
   real tabscale;
-  real **y;
+  real *x,*v,*v2;
 } t_tabledata;
 
 #define pow2(x) ((x)*(x))
@@ -159,63 +159,59 @@ static void copy2table(int n,int n0,int stride,
   }
 }
 
-static void user_table(t_tabledata *td,real x[],
-		       real Vtab[],real Vtab2[],
-		       real Ftab[],real Ftab2[])
+static void init_table(FILE *fp,int n,int nx0,int tabsel,
+		       real tabscale,t_tabledata *td,bool bAlloc)
 {
-  int  i;
-  
-  for(i=0; (i<td->nx); i++) {
-    x[i]     = td->y[0][i];
-    Vtab[i]  = td->y[1][i];
-    Ftab[i]  = td->y[2][i];
-    Vtab2[i] = td->y[3][i];
-    Ftab2[i] = td->y[4][i];
-  }
-}
-
-static t_tabledata *read_table(FILE *fp,char *fn)
-{
-  t_tabledata *td;
-  
-  snew(td,1);
-  td->nx = read_xvg(fn,&td->y,&td->ny);
-  if (td->ny != 5)
-    fatal_error(0,"Trying to read file %s, but no colums = %d, should be 5",
-		fn,td->ny);
-  for(td->nx0=0; (td->nx0 < td->nx); td->nx0++)
-    if (td->y[0][td->nx0] != 0)
-      break;
-  if (td->nx0 == td->nx)
-    fatal_error(0,"All elements in table %s are zero!\n",fn);
-  td->tabscale = (td->nx-1)/(td->y[0][td->nx-1] - td->y[0][0]);
-  if (fp) 
-    fprintf(fp,"Read user table %s with %d data points. tabscale = %g points/nm\n",
-	    fn,td->nx,td->tabscale);
-		      
-  return td;
-}
-
-static t_tabledata *init_table(FILE *fp,int n,int nx0,int tabsel,real tabscale)
-{
-  t_tabledata *td;
   int i;
   
-  snew(td,1);
   td->nx  = n;
   td->nx0 = nx0;
-  td->ny  = 5;
   td->tabscale = tabscale;
-  snew(td->y,td->ny);
-  for(i=0; (i<td->ny); i++)
-    snew(td->y[i],td->nx);
+  if (bAlloc) {
+    snew(td->x,td->nx);
+    snew(td->v,td->nx);
+    snew(td->v2,td->nx);
+  }
   for(i=td->nx0; (i<td->nx); i++)
-    td->y[0][i] = i/tabscale;
+    td->x[i] = i/tabscale;
+}
+
+static void read_tables(FILE *fp,char *fn,t_tabledata td[])
+{
+  real **yy=NULL;
+  int  k,i,nx,nx0,ny,nny;
+  bool bCont;
+  real tabscale;
+
+  nny = 2*etiNR+1;  
+  nx  = read_xvg(fn,&yy,&ny);
+  if (ny != nny)
+    fatal_error(0,"Trying to read file %s, but no colums = %d, should be %d",
+		fn,ny,nny);
+  bCont = TRUE;
+  for(nx0=0; bCont && (nx0 < nx); nx0++)
+    for(k=1; (k<ny); k++)
+      if (yy[k][nx0] != 0)
+	bCont = FALSE;
+  if (nx0 == nx)
+    fatal_error(0,"All elements in table %s are zero!\n",fn);
+    
+  tabscale = (nx-1)/(yy[0][nx-1] - yy[0][0]);
+  for(k=0; (k<etiNR); k++) {
+    init_table(fp,nx,nx0,etabUSER,tabscale,&(td[k]),TRUE);
+    for(i=0; (i<nx); i++) {
+      td[k].x[i]  = yy[0][i];
+      td[k].v[i]  = yy[2*k+1][i];
+      td[k].v2[i] = yy[2*k+2][i];
+    }
+  }
+  for(i=0; (i<ny); i++)
+    sfree(yy[i]);
+  sfree(yy);
+  
   if (fp) 
-    fprintf(fp,"Generated table with %d data points for %s. tabscale = %g points/nm\n",
-	    td->nx,tabnm[tabsel],td->tabscale);
-		      
-  return td;
+    fprintf(fp,"Read user tables from %s with %d data points."
+	    " tabscale = %g points/nm\n",fn,nx,tabscale);
 }
 
 static void done_tabledata(t_tabledata *td)
@@ -224,9 +220,10 @@ static void done_tabledata(t_tabledata *td)
   
   if (!td)
     return;
-  for(i=0; (i<td->ny); i++)
-    sfree(td->y[i]);
-  sfree(td->y);
+    
+  sfree(td->x);
+  sfree(td->v);
+  sfree(td->v2);
 }
 
 static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
@@ -296,7 +293,7 @@ static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
   fp=xvgropen("switch.xvg","switch","r","s");
 #endif
   for(i=td->nx0; (i<=td->nx); i++) {
-    r     = td->y[0][i];
+    r     = td->x[i];
     r2    = r*r;
     r6    = 1.0/(r2*r2*r2);
     r12   = r6*r6;
@@ -415,19 +412,18 @@ static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
       VtabT2    = Vtab2;
       VtabT3    = -Ftab2;
       Vtab   = VtabT*swi;
-      Ftab   = -(VtabT1*swi+ VtabT*swi1);
       Vtab2  = VtabT2*swi + VtabT1*swi1 + VtabT1*swi1 + VtabT*swi2;
-      Ftab2  = -(VtabT3*swi + VtabT2*swi1 + VtabT1*swi2 + VtabT2*swi1 +
-		    VtabT2*swi1 + VtabT1*swi2 + VtabT1*swi2 + VtabT*swi3);
+      /* Ftab   = -(VtabT1*swi+ VtabT*swi1);
+	 Ftab2  = -(VtabT3*swi + VtabT2*swi1 + VtabT1*swi2 + VtabT2*swi1 +
+	 VtabT2*swi1 + VtabT1*swi2 + VtabT1*swi2 + VtabT*swi3);
+      */
     }  
-
-    Ftab  /= r;
-    Ftab2 /= r;
     
-    td->y[1][i] = Vtab;
-    td->y[2][i] = Ftab;
-    td->y[3][i] = Vtab2;
-    td->y[4][i] = Ftab2;
+    /* Ftab  /= r;
+       Ftab2 /= r;
+    */
+    td->v[i]  = Vtab;
+    td->v2[i] = Vtab2;
   }
 
 #ifdef DEBSW
@@ -510,75 +506,79 @@ static void set_table_type(int tabsel[],t_forcerec *fr)
   }
 }
 
-void make_tables(FILE *out,t_forcerec *fr,bool bVerbose)
+void make_tables(FILE *out,t_forcerec *fr,bool bVerbose,char *fn)
 {
-  static      char *fns[etiNR] = { "ctab.xvg", "dtab.xvg", "rtab.xvg" };
+  static char *fns[3] = { "ctab.xvg", "dtab.xvg", "rtab.xvg" };
   FILE        *fp;
-  t_tabledata *td[etiNR];
+  t_tabledata td[etiNR];
+  bool        bReadTab,bGenTab;
   real        x0,y0,yp;
-  int         i,j,k,nx0,n,tabsel[etiNR],ntabread;
+  int         i,j,k,nx,nx0,tabsel[etiNR];
  
   set_table_type(tabsel,fr);
   
   fr->tabscale = 0;
   fr->rtab     = 0;
-  ntabread     = 0;
   nx0          = 10;
+  nx           = 0;
+  
+  /* Check whether we have to read or generate */
+  bReadTab = FALSE;
+  bGenTab  = FALSE;
   for(i=0; (i<etiNR); i++) {
-    if (tabsel[i] == etabUSER) {
-      td[i] = read_table(out,fns[i]);
-      ntabread++;
-      if (fr->tabscale == 0) {
-	fr->tabscale = td[i]->tabscale;
-	fr->rtab     = td[i]->y[0][td[i]->nx-1];
-	nx0          = td[i]->nx0;
-      }
-      else if (fr->tabscale != td[i]->tabscale)
-	fatal_error(0,"Tabscale not the same in all tables\n");
-      else if (fr->rtab != td[i]->y[0][td[i]->nx-1])
-	fatal_error(0,"Number of points not the same in all tables\n");
-      else if (td[i]->nx0 != nx0)
-	fatal_error(0,"Starting point not the same in all tables\n");
-    }
+    if (tabsel[i] == etabUSER) 
+      bReadTab = TRUE;
+    else
+      bGenTab  = TRUE;
   }
-  if (ntabread > 0) {
-    n = fr->ntab = fr->rtab*fr->tabscale;
+  if (bReadTab) {
+    read_tables(out,fn,td);
+    fr->tabscale = td[0].tabscale;
+    fr->rtab     = td[0].x[td[0].nx-1];
+    nx0          = td[0].nx0;
+    nx           = fr->ntab = fr->rtab*fr->tabscale;
   }
-  else {
+  if (bGenTab) {
+    if (!bReadTab) {
 #ifdef DOUBLE
-    fr->tabscale = 2000.0;
+      fr->tabscale = 2000.0;
 #else
-    fr->tabscale = 500.0;
+      fr->tabscale = 500.0;
 #endif
-    n   = fr->ntab = fr->rtab*fr->tabscale;
+      nx = fr->ntab = fr->rtab*fr->tabscale;
+    }
     if (out)
       fprintf(out,"Making tables%s of %g(nm)*%g = %d points\n",
 	      (fr->bcoultab || fr->bvdwtab) ? "" : 
 	      (fr->efep != efepNO) ? " for 1-4 and FEP int.":" for 1-4 int.",
 	      fr->rtab,fr->tabscale,fr->ntab);
   }
-  snew(fr->coulvdwtab,12*n+1);
+  snew(fr->coulvdwtab,12*nx+1);
   for(k=0; (k<etiNR); k++) {
     if (tabsel[k] != etabUSER) {
-      td[k] = init_table(out,n,nx0,tabsel[k],
-			 (tabsel[k] == etabEXPMIN) ? fr->tabscale_exp : fr->tabscale);
-      fill_table(td[k],tabsel[k],fr);
+      init_table(out,nx,nx0,tabsel[k],
+		 (tabsel[k] == etabEXPMIN) ? fr->tabscale_exp : fr->tabscale,
+		 &(td[k]),!bReadTab);
+      fill_table(&(td[k]),tabsel[k],fr);
+      if (out) 
+	fprintf(out,"Generated table with %d data points for %s. tabscale = %g points/nm\n",
+		td[k].nx,tabnm[tabsel[k]],td[k].tabscale);
+
     }
-    copy2table(td[k]->nx,k*4,12,td[k]->y[0],td[k]->y[1],td[k]->y[3],fr->coulvdwtab,-1);
+    copy2table(td[k].nx,k*4,12,td[k].x,td[k].v,td[k].v2,fr->coulvdwtab,-1);
   
     if (bDebugMode() && bVerbose) {
       fp=xvgropen(fns[k],fns[k],"r","V"); 
-      for(i=td[k]->nx0; (i<td[k]->nx); i++) {
+      for(i=td[k].nx0; (i<td[k].nx); i++) {
 	for(j=0; (j<4); j++) {
-	  x0=td[k]->y[0][i]+0.25*j*(td[k]->y[0][i+1]-td[k]->y[0][i]);
-	  splint(td[k]->y[0],td[k]->y[1],td[k]->y[3],n-3,x0,&y0,&yp);
+	  x0=td[k].x[i]+0.25*j*(td[k].x[i+1]-td[k].x[i]);
+	  splint(td[k].x,td[k].v,td[k].v2,nx-3,x0,&y0,&yp);
 	  fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
 	}
       }
       ffclose(fp);
     }
-    done_tabledata(td[k]);
-    sfree(td[k]);
+    done_tabledata(&(td[k]));
   }
 }
 

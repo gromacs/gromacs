@@ -203,7 +203,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 
   /* Initiate forcerecord */
   fr = mk_forcerec();
-  init_forcerec(stdlog,fr,&(parm->ir),top,cr,mdatoms,nsb,parm->box,FALSE);
+  init_forcerec(stdlog,fr,&(parm->ir),top,cr,mdatoms,nsb,parm->box,FALSE,
+		opt2fn("-table",nfile,fnm));
   /* Initiate box */
   for(m=0; (m<DIM); m++)
     box_size[m]=parm->box[m][m];
