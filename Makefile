@@ -22,13 +22,13 @@ OPTIONS =       options
 TEXFS = algorithms	analyse		averages	\
 	defunits	files		forcefield	\
 	implement	install		intro		\
-	lr-corr		macros		mdp_opt		\
+	macros		mdp_opt		\
 	proglist	progman		programs	\
 	special		topology	
 
 AUXFS = algorithms	analyse		averages	\
 	defunits	forcefield	implement	\
-	install		intro		lr-corr		\
+	install		intro		\
 	progman		programs	special		\
 	topology	
 

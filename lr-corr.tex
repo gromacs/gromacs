@@ -32,8 +32,10 @@
 \chapter{Long range corrections}
 \label{ch:lrcorr}
 \section{Dispersion}
+\index{dispersion correction}
 In this section we derive long range corrections due to the use of a
-cut-off for Lennard Jones interactions.  We assume that the cut-off is
+cut-off for Lennard Jones or Buckingham interactions.
+We assume that the cut-off is
 so long that the repulsion term can safely be neglected, and therefore
 only the dispersion term is taken into account. Due to the nature of
 the dispersion interaction, energy and pressure corrections both are
@@ -59,35 +61,36 @@ V(\rij)	~=~	- C_6 \rij^{-6}
 \eeq
 and the corresponding force is
 \beq
-\Fvij	~=~	- 6 C_6 \rij^{-8}\rvij
+\Fvij	~=~	- 6\,C_6 \rij^{-8}\rvij
 \eeq
+In a periodic system it is not easy to calculate the full potentials,
+so usually a cut-off is applied, which can be abrupt or smooth.
+We will call the potential and force with cut-off $V_c$ and $\ve{F}_c$/
 The long range contribution to the dispersion energy
-in a system with $N$ particles and particle density
-$\rho$ = $N/V$, where $V$ is the volume, is~\cite{Allen87}:
+in a system with $N$ particles and particle density $\rho$ = $N/V$ is:
 \beq
-V_{lr}  ~=~ \half N \rho\int_{r_c}^{\infty}   4\pi r^2 g(r) V(r) {\dr}
+V_{lr}  ~=~ \half N \rho\int_0^{\infty}   4\pi r^2 g(r) \left( V(r) -V_c(r) \right) {\dr}
 \eeq
 which we can integrate assuming that the radial distribution function $g(r)$ 
-is 1 beyond the cut-off $r_c$
+is 1 beyond the cut-off:
 \beq
-V_{lr}	~=~ -\frac{2}{3} N \rho\pi C_6 r_c^{-3}
+V_{lr}  ~=~ \half N \rho\int_0^{\infty}   4\pi r^2 \left( V(r) -V_c(r) \right) {\dr}
 \eeq
+For a plain cut-off at $r_c$ the integration can be performed analytically~\cite{Allen87}:
+\bea
+V_{lr} & = & \half N \rho\int_{r_c}^{\infty}   4\pi r^2 C_6 r^{-6} {\dr} \\
+       & = & -\frac{2}{3} \pi N \rho\, C_6 r_c^{-3}
+\eea
 If we consider for example a box of pure water, simulated with a cut-off
 of 0.9 nm and a density of 1 g cm$^{-3}$ this correction is 
 -0.25 kJ mol$^{-1}$.
 
-For a homogeneous mixture of $M$ components $j$ with $N_j$ particles
-each, we can write the long range contribution to the energy as:
+For a homogeneous mixture we need to define 
+n {\em average dispersion constant}:
 \beq
-V_{lr}	~=~ \sum_{i\ne j}^M -\frac{2 N_i N_j}{3 V}\pi C_6(ij) r_c^{-3}
-\eeq
-This can be rewritten if we define an {\em average dispersion constant}
-$\avcsix$:
-\bea
 \label{eqn:avcsix}
-\avcsix	&=&	\sum_{i\ne j}\frac{N_i N_j}{N^2} C_6(ij)\\
-V_{lr}	&=&	-\frac{2}{3}N\rho\pi \avcsix r_c^{-3}
-\eea
+\avcsix	= \frac{2}{N(N-1)}\sum_i^N\sum_{j>i}^N C_6(i,j)\\
+\eeq
 A special form of a non-homogeneous system in this respect,
 is a pure liquid in which the atoms have different $C_6$ values.
 In practice this definition encompasses almost every molecule,
@@ -103,18 +106,22 @@ $\avcsix$ for both components is comparable.
 The scalar virial of the system due to the dispersion interaction between
 two particles $i$ and $j$ is given by:
 \beq
-\Xi	~=~	-\rvij \cdot \Fvij ~=~	6 C_6 \rij^{-6}
+\Xi	~=~	-\rvij \cdot \Fvij ~=~	6\,C_6 \rij^{-6}
 \eeq
 The pressure is given by:
 \beq
 P	~=~	\frac{2}{3\,V}\left(E_{kin} - \Xi\right)
 \eeq
+The long-range correction to the virial is given by:
+\beq
+\Xi_{lr} ~=~ \half N \rho \int_0^{\infty} 4\pi r^2 \, (\Xi -\Xi_c) \dr
+\eeq
 We can again integrate the long range contribution to the 
-virial~\cite{Allen87}:
+virial for a plain cut-off~\cite{Allen87}:
 \bea
-\Xi_{lr}&=&	\half N \rho \int_{r_c}^{\infty} 4\pi r^2 \, \Xi \dr	\nonumber\\
-	&=&	12 N \pi \rho C_6  \int_{r_c}^{\infty} \rij^{-4}\dr \nonumber\\
-	&=&	4 \pi C_6 N \rho r_c^{-3}
+\Xi_{lr}&=&	\half N \rho \int_{r_c}^{\infty} 4\pi r^2 6\,C_6 \rij^{-6}\,  \dr	\nonumber\\
+	&=&	12 \pi N \rho\,C_6  \int_{r_c}^{\infty} \rij^{-4}\dr \nonumber\\
+	&=&	4 \pi N C_6 \rho r_c^{-3}
 \eea
 The corresponding correction to the pressure is
 \beq

@@ -1874,6 +1874,118 @@ dummy type that will be sufficient for a certain purpose.
 
 \end{itemize}
 
+\newcommand{\dr}{{\rm d}r}
+\newcommand{\avcsix}{\left< C_6 \right>}
+
+\section{Dispersion correction}
+\index{dispersion correction}
+In this section we derive long range corrections due to the use of a
+cut-off for Lennard Jones or Buckingham interactions.
+We assume that the cut-off is
+so long that the repulsion term can safely be neglected, and therefore
+only the dispersion term is taken into account. Due to the nature of
+the dispersion interaction, energy and pressure corrections both are
+negative. While the energy correction is usually small, it may be
+important for free energy calculations. The pressure correction in
+contrast is very large and can not be neglected. Although it is in
+principle possible to parameterize a force field such that the pressure
+is close to 1 bar even without correction, such a method makes the
+parameterization dependent on the cut-off and is therefore
+undesirable. Please note that it is not consistent to use the long
+range correction to the dispersion without using either a
+\normindex{reaction field} method or a proper long range
+electrostatics method such as Ewald summation or PPPM.
+
+\subsection{Energy}
+\label{sec:ecorr}
+The long range contribution of the dispersion interaction to the
+virial can be derived analytically, if we assume a homogeneous
+system beyond the cut-off distance $r_c$. The dispersion energy
+between two particles is written as:
+\beq
+V(\rij)	~=~	- C_6 \rij^{-6}
+\eeq
+and the corresponding force is
+\beq
+\Fvij	~=~	- 6\,C_6 \rij^{-8}\rvij
+\eeq
+In a periodic system it is not easy to calculate the full potentials,
+so usually a cut-off is applied, which can be abrupt or smooth.
+We will call the potential and force with cut-off $V_c$ and $\ve{F}_c$.
+The long-range contribution to the dispersion energy
+in a system with $N$ particles and particle density $\rho$ = $N/V$ is:
+\beq
+V_{lr}  ~=~ \half N \rho\int_0^{\infty}   4\pi r^2 g(r) \left( V(r) -V_c(r) \right) {\dr}
+\eeq
+which we can integrate assuming that the radial distribution function $g(r)$ 
+is 1 beyond the cut-off:
+\beq
+V_{lr}  ~=~ \half N \rho\int_0^{\infty}   4\pi r^2 \left( V(r) -V_c(r) \right) {\dr}
+\eeq
+For a shifted function we need to start the integration at 0.
+This introduces a (relatively small) error,
+because at short range $g(r)$ is not 1.
+
+For a plain cut-off at $r_c$ the integration can be performed analytically~\cite{Allen87}:
+\bea
+V_{lr} & = & \half N \rho\int_{r_c}^{\infty}   4\pi r^2 C_6 r^{-6} {\dr} \\
+       & = & -\frac{2}{3} \pi N \rho\, C_6 r_c^{-3}
+\eea
+If we consider for example a box of pure water, simulated with a cut-off
+of 0.9 nm and a density of 1 g cm$^{-3}$ this correction is 
+-0.25 kJ mol$^{-1}$.
+
+For a homogeneous mixture we need to define 
+an {\em average dispersion constant}:
+\beq
+\label{eqn:avcsix}
+\avcsix	= \frac{2}{N(N-1)}\sum_i^N\sum_{j>i}^N C_6(i,j)\\
+\eeq
+In {\gromacs} excluded pairs of atoms do not contribute to the average.
+
+In the case of inhomogeneous simulation systems, {\eg} a system with a
+lipid interface, the energy correction can be applied if 
+$\avcsix$ for both components is comparable.
+
+\subsection{Virial and pressure}
+The scalar virial of the system due to the dispersion interaction between
+two particles $i$ and $j$ is given by:
+\beq
+\Xi	~=~	-\half \rvij \cdot \Fvij ~=~	3\,C_6 \rij^{-6}
+\eeq
+The pressure is given by:
+\beq
+P	~=~	\frac{2}{3\,V}\left(E_{kin} - \Xi\right)
+\eeq
+The long-range correction to the virial is given by:
+\beq
+\Xi_{lr} ~=~ \half N \rho \int_0^{\infty} 4\pi r^2 \, (\Xi -\Xi_c) \dr
+\eeq
+We can again integrate the long range contribution to the 
+virial for a plain cut-off~\cite{Allen87}:
+\bea
+\Xi_{lr}&=&	\half N \rho \int_{r_c}^{\infty} 4\pi r^2 3\,C_6 \rij^{-6}\,  \dr	\nonumber\\
+	&=&	6 \pi N \rho\,C_6  \int_{r_c}^{\infty} \rij^{-4}\dr \nonumber\\
+	&=&	2 \pi N C_6 \rho r_c^{-3}
+\eea
+The corresponding correction to the pressure is
+\beq
+P_{lr}	~=~	-\frac{4}{3} \pi C_6 \rho^2 r_c^{-3}
+\eeq
+Using the same example of a water box, the correction to the virial is
+3 kJ mol$^{-1}$ the corresponding correction to the pressure for 
+SPC water at liquid density is approx. -280 bar.
+
+For homogeneous mixtures we can again use the average dispersion constant
+$\avcsix$ (\eqnref{avcsix}):
+\beq
+P_{lr}	~=~	-\frac{4}{3} \pi \avcsix \rho^2 r_c^{-3}
+\label{eqn:pcorr}
+\eeq
+For inhomogeneous systems \eqnref{pcorr} can be applied under the same
+restriction as holds for the energy (see \secref{ecorr}).
+
+
 \section{Long Range Electrostatics}
 \label{sec:lr_elstat}
 \subsection{\normindex{Ewald sum}mation}
