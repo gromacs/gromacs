@@ -52,6 +52,7 @@ static char *SRCID_trjorder_c = "$Id$";
 
 typedef struct {
   atom_id i;
+  atom_id ref;
   real    d;
 } t_order;
 
@@ -104,8 +105,9 @@ int main(int argc,char *argv[])
   int        natoms,nwat;
   char       **grpname,title[256];
   int        i,j,*isize;
-  atom_id    sa,*swi,**index;
-#define NLEG asize(leg) 
+  atom_id    sa,sr,*swi,**index;
+#define REF 0
+#define SOL 1
   t_filenm fnm[] = { 
     { efTRX, "-f", NULL, ffREAD  }, 
     { efTPS, NULL, NULL, ffREAD  }, 
@@ -131,20 +133,22 @@ int main(int argc,char *argv[])
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
   if (natoms > top.atoms.nr)
     fatal_error(0,"Number of atoms in the run input file is larger than in the trjactory");
-  for(i=0; i<2; i++)
-    for(j=0; j<isize[i]; j++)
+  for(i=0; (i<2); i++)
+    for(j=0; (j<isize[i]); j++)
       if (index[i][j] > natoms)
 	fatal_error(0,"An atom number in group %s is larger than the number of atoms in the trajectory");
   
-  if (isize[1] % na)
-    fatal_error(0,"Number of atoms in the molecule group (%d) is not a multiple of na (%d)",isize[1],na);
-  nwat = isize[1]/na;
+  if ((isize[SOL] % na) != 0)
+    fatal_error(0,"Number of atoms in the molecule group (%d) is not a multiple of na (%d)",
+		isize[1],na);
+		
+  nwat = isize[SOL]/na;
   if (ref_a > na)
     fatal_error(0,"The reference atom can not be larger than the number of atoms in a molecule");
   ref_a--;
   snew(order,nwat);
   snew(swi,natoms);
-  for(i=0; i<natoms; i++)
+  for(i=0; (i<natoms); i++)
     swi[i] = i;
 
   if (!top.atoms.pdbinfo) {
@@ -156,30 +160,36 @@ int main(int argc,char *argv[])
     rm_pbc(&top.idef,natoms,box,x,x);
     init_pbc(box);
     
-    for(i=0; i<nwat; i++) {
-      sa = index[1][na*i];
-      pbc_dx(x[index[0][0]],x[sa+ref_a],dx);
-      order[i].i = sa;
-      order[i].d = norm2(dx); 
+    /* Set distance to first atom */
+    for(i=0; (i<nwat); i++) {
+      sa = index[SOL][na*i];
+      pbc_dx(x[index[REF][0]],x[sa+ref_a],dx);
+      order[i].i   = sa;
+      order[i].ref = 0;
+      order[i].d   = norm2(dx); 
     }
-    for(j=1; j<isize[0]; j++)
-      for(i=0; i<nwat; i++) {
-	sa = index[1][na*i];
-	pbc_dx(x[index[0][j]],x[sa+ref_a],dx);
-	if (norm2(dx) < order[i].d)
-	  order[i].d = norm2(dx);
+    for(j=1; (j<isize[REF]); j++) {
+      sr = index[REF][j];
+      for(i=0; (i<nwat); i++) {
+	sa = index[SOL][na*i];
+	pbc_dx(x[sr],x[sa+ref_a],dx);
+	if (norm2(dx) < order[i].d) {
+	  order[i].d   = norm2(dx);
+	  order[i].ref = sr;
+	}
       }
+    }
 
     qsort(order,nwat,sizeof(*order),ocomp);
-    for(i=0; i<nwat; i++)
-      for(j=0; j<na; j++)
-	swi[index[1][na*i]+j] = order[i].i+j;
+    for(i=0; (i<nwat); i++)
+      for(j=0; (j<na); j++) 
+	swi[index[SOL][na*i]+j] = order[i].i+j;
     
     /* Store the distance as the B-factor */
     if (top.atoms.pdbinfo) {
       for(i=0; (i<nwat); i++) {
-	for(j=0; j<na; j++) {
-	  pbc_dx(x[index[0][0]],x[order[i].i+j],dx);
+	for(j=0; (j<na); j++) {
+	  pbc_dx(x[order[i].ref],x[order[i].i+j],dx);
 	  top.atoms.pdbinfo[order[i].i+j].bfac = norm(dx);
 	}
       }
