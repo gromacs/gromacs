@@ -148,17 +148,19 @@ void scale_conf(int natom,rvec x[],matrix box,rvec scale)
 void rm_gropbc(t_atoms *atoms,rvec x[],matrix box)
 {
   real dist;
-  int  n,d;
+  int  n,m,d;
   
   /* check periodic boundary */
-  for(d=0;(d<DIM);d++) {
-    for(n=1;(n<atoms->nr);n++) {
-      dist = x[n][d]-x[n-1][d];
-      if ( fabs(dist) > 0.9 * box[d][d]  ) {
+  for(n=1;(n<atoms->nr);n++) {
+    for(m=DIM-1; m>=0; m--) {
+      dist = x[n][m]-x[n-1][m];
+      if (fabs(dist) > 0.9*box[m][m]) { 
 	if ( dist >  0 )
-	  x[n][d]-=box[d][d];
+	  for(d=0; d<=m; d++)
+	    x[n][d] -= box[m][d];
 	else
-	  x[n][d]+=box[d][d];
+	  for(d=0; d<=m; d++)
+	    x[n][d] += box[m][d];
       } 	
     }
   }

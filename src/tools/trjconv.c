@@ -307,7 +307,7 @@ int main(int argc,char *argv[])
   int          trjout=0;
   int          status,ftp,ftpin,file_nr;
   rvec         *x,*xn,*xout,*v,*vn,*vout;
-  rvec         *xp,x_shift,box_center,dx;
+  rvec         *xp,x_shift,hbox,box_center,dx;
   real         xtcpr, lambda,*w_rls=NULL;
   matrix       box;
   int          m,i,d,frame,outframe,natoms=0,nout,nre,step;
@@ -558,17 +558,22 @@ int main(int argc,char *argv[])
 	    bDTset=TRUE;
 	  }
 	}
-	bDumpFrame = (t >= tdump-(0.5*dt) ) && (t <= tdump+(0.5*dt) );
+	bDumpFrame = (t >= tdump-0.5*dt) && (t <= tdump+0.5*dt);
       }
       
       /* determine if an atom jumped across the box and reset it if so */
       if (bNoJump && (bTPS || frame!=0)) {
-	for(i=0; (i<natoms); i++)
-	  for(d=0; (d<DIM); d++)
-	    if ( x[i][d]-xp[i][d] > 0.5*box[d][d] )
-	      x[i][d] -= box[d][d];
-	    else if ( x[i][d]-xp[i][d] < -0.5*box[d][d] )
-	      x[i][d] += box[d][d];
+	for(d=0; d<DIM; d++)
+	  hbox[d] = 0.5*box[d][d];
+	for(i=0; i<natoms; i++)
+	  for(m=DIM-1; m>=0; m--) {
+	    while (x[i][m]-xp[i][m] <= -hbox[m])
+	      for(d=0; d<=m; d++)
+		x[i][d] += box[m][d];
+	    while (x[i][m]-xp[i][m] > hbox[m])
+	      for(d=0; d<=m; d++)
+		x[i][d] -= box[m][d];
+	  }
       }
       
       if (bPFit) {

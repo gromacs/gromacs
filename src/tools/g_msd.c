@@ -44,6 +44,7 @@ static char *SRCID_g_msd_c = "$Id$";
 #include "xvgr.h"
 #include "gstat.h"
 #include "tpxio.h"
+#include "pbc.h"
 
 #define FACTOR  1000.0	/* Convert nm^2/ps to 10e-5 cm^2/s */
 /* NORMAL = total diffusion coefficient (default). X,Y,Z is diffusion 
@@ -339,21 +340,23 @@ void corr_loop(t_corr *this,char *fn,int gnx[],atom_id *index[],
 static void prep_data_mol(t_corr *this,int gnx,atom_id index[],
 			  rvec xcur[],rvec xprev[],matrix box)
 {
-  int  i,j,k,m,ind;
+  int  i,j,k,m,d,ind;
   rvec hbox;
 
   /* Remove periodicity */
   for(m=0; (m<DIM); m++)
     hbox[m]=0.5*box[m][m];
-  for(i=0; (i<gnx); i++) {
+  for(i=0; i<gnx; i++) {
     ind=index[i];
-    for(j=this->mols->index[ind]; (j<this->mols->index[ind+1]); j++) {
+    for(j=this->mols->index[ind]; j<this->mols->index[ind+1]; j++) {
       k=this->mols->a[j];
-      for(m=0; (m<DIM); m++) {
-	while(xcur[k][m]-xprev[k][m] <= hbox[m])
-	  xcur[k][m] += box[m][m];
-	while(xcur[k][m]-xprev[k][m] >  hbox[m])
-	  xcur[k][m] -= box[m][m];
+      for(m=DIM-1; m>=0; m--) {
+	while (xcur[k][m]-xprev[k][m] <= -hbox[m])
+	  for(d=0; d<=m; d++)
+	    xcur[k][d] += box[m][d];
+	while (xcur[k][m]-xprev[k][m] >  hbox[m])
+	  for(d=0; d<=m; d++)
+	    xcur[k][d] -= box[m][d];
       }      
     }
   }
