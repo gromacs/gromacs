@@ -183,7 +183,7 @@ static void do_update_sd(int start,int homenr,double dt,
 			 rvec accel[],ivec nFreeze[],
 			 real mass[],real invmass[],unsigned short ptype[],
 			 unsigned short cFREEZE[],unsigned short cACC[],
-			 unsigned short cTC[],
+			 unsigned short cTC[],real SAfactor,
 			 rvec x[],rvec xprime[],rvec v[],rvec vold[],rvec f[],
 			 int ngtc,real tau_t[],real ref_t[],
 			 int *seed)
@@ -193,7 +193,7 @@ static void do_update_sd(int start,int homenr,double dt,
   const unsigned long ic = 18257;
   unsigned long  jran;
   static real *v_fac=NULL,*f_fac,*r_fac,*rhalf;
-  real gamma_dt;
+  real   gamma_dt;
   double w_dt;
   int    gf,ga,gt;
   real   vn,vv;
@@ -207,7 +207,7 @@ static void do_update_sd(int start,int homenr,double dt,
     snew(r_fac,ngtc);
     snew(rhalf,ngtc);
   }
-  
+
   for(n=0; n<ngtc; n++) {
     /* The friction coefficient gammma = 1/opts->tau_t[n] */
     gamma_dt = dt/tau_t[n];
@@ -219,7 +219,7 @@ static void do_update_sd(int start,int homenr,double dt,
      * Approximate a Gaussian with 4 uniform (-0.5,0.5) distributions.
      * The factor 3 corrects the variance.
      */
-    r_fac[n] = sqrt(3.0 * 2.0*BOLTZ*ref_t[n]/(tau_t[n]*dt));
+    r_fac[n] = sqrt(3.0 * 2.0*BOLTZ*SAfactor*ref_t[n]/(tau_t[n]*dt));
     rhalf[n] = 2*r_fac[n];
     r_fac[n] /= (real)im;
   }
@@ -471,6 +471,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
 	    real         lambda,
 	    real         *dvdlambda, /* FEP stuff */
 	    t_inputrec   *ir,           /* input record with constants 	*/
+	    real         SAfactor,      /* simulated annealing factor   */
 	    t_mdatoms    *md,
 	    rvec         x[],	/* coordinates of home particles */
 	    t_graph      *graph,	
@@ -575,7 +576,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
       do_update_sd(start,homenr,dt,
 		   ir->opts.acc,ir->opts.nFreeze,
 		   md->massT,md->invmass,md->ptype,
-		   md->cFREEZE,md->cACC,md->cTC,
+		   md->cFREEZE,md->cACC,md->cTC,SAfactor,
 		   x,xprime,v,vold,force,
 		   ir->opts.ngtc,ir->opts.tau_t,ir->opts.ref_t,
 		   &ir->ld_seed);

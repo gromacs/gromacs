@@ -50,6 +50,7 @@ extern void update(int          natoms,	/* number of atoms in simulation */
 		   real         lambda, /* FEP scaling parameter */
 		   real         *dvdlambda, /* FEP stuff */
 		   t_inputrec   *ir,    /* input record with constants 	*/
+		   real         SAfactor, /* simulated annealing factor   */
 		   t_mdatoms    *md,
 		   rvec         x[],	/* coordinates of home particles */
 		   t_graph      *graph,	

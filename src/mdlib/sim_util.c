@@ -368,7 +368,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
     /* Do a first SHAKE to reset particles... */
     clear_mat(shake_vir);
     update(nsb->natoms,start,homenr,-1,lambda,&ener[F_DVDL],
-	   &(parm->ir),md,x,graph,
+	   &(parm->ir),1.0,md,x,graph,
 	   NULL,NULL,vold,x,NULL,parm->pres,parm->box,
 	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,pulldata,FALSE);
     /* Compute coordinates at t=-dt, store them in buf */
@@ -385,7 +385,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
      */
     clear_mat(shake_vir);
     update(nsb->natoms,start,homenr,
-	   0,lambda,&ener[F_DVDL],&(parm->ir),md,f,graph,
+	   0,lambda,&ener[F_DVDL],&(parm->ir),1.0,md,f,graph,
 	   NULL,NULL,vold,buf,NULL,parm->pres,parm->box,
 	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,pulldata,FALSE);
     
@@ -404,7 +404,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
      */
     clear_mat(shake_vir);
     update(nsb->natoms,start,homenr,
-	   0,lambda,&ener[F_DVDL],&(parm->ir),md,f,graph,
+	   0,lambda,&ener[F_DVDL],&(parm->ir),1.0,md,f,graph,
 	   NULL,NULL,vold,buf,NULL,parm->pres,parm->box,
 	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,pulldata,FALSE);
     

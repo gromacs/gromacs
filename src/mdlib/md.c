@@ -393,7 +393,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     /* This is also parallellized, but check code in update.c */
     update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
-	   &(parm->ir),mdatoms,x,graph,f,buf,vold,v,vt,parm->pres,parm->box,
+	   &(parm->ir),SAfactor,mdatoms,
+           x,graph,f,buf,vold,v,vt,parm->pres,parm->box,
            top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata,bNEMD);
     /* The coordinates (x) were unshifted in update */
     
