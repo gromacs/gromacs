@@ -222,7 +222,7 @@ char *add_mol3(char *mol3,int nmol_3,int seed,int ntb,
   int     try;
   
   /*read number of atoms of configuration 3*/
-  get_coordnum(mol3,&atoms_3.nr);
+  get_stx_coordnum(mol3,&atoms_3.nr);
   if (atoms_3.nr == 0) {
     fprintf(stderr,"No molecule in %s, please check your input\n",mol3);
     exit(1);
@@ -240,7 +240,7 @@ char *add_mol3(char *mol3,int nmol_3,int seed,int ntb,
   
   /*read residue number, residue names, atomnames, coordinates etc.*/
   fprintf(stderr,"Reading molecule configuration \n");
-  read_whole_conf(mol3,title_3,&atoms_3,x_3,v_3,box_3);
+  read_stx_conf(mol3,title_3,&atoms_3,x_3,v_3,box_3);
   fprintf(stderr,"%s\nContaining %d atoms in %d residue\n",
 	  title_3,atoms_3.nr,atoms_3.nres);
   srenew(atoms_3.resname,atoms_3.nres);  
@@ -314,7 +314,7 @@ void add_solv(char *solv,int ntb,
   rvec    xmin;
 
   strncpy(filename,libfn(solv),STRLEN);
-  get_coordnum(filename,&atoms_2.nr); 
+  get_stx_coordnum(filename,&atoms_2.nr); 
   if (atoms_2.nr == 0) {
     fprintf(stderr,"No solvent in %s, please check your input\n",filename);
     exit(1);
@@ -326,7 +326,7 @@ void add_solv(char *solv,int ntb,
   snew(atoms_2.atomname,atoms_2.nr);
   snew(atoms_2.atom,atoms_2.nr);
   fprintf(stderr,"Reading solvent configuration \n");
-  read_whole_conf(filename,title_2,&atoms_2,x_2,v_2,box_2);
+  read_stx_conf(filename,title_2,&atoms_2,x_2,v_2,box_2);
   fprintf(stderr,"%s\nContaining %d atoms in %d residues\n",
 	  title_2,atoms_2.nr,atoms_2.nres);
 /*   srenew(atoms_2.resname,atoms_2.nres); */
@@ -402,7 +402,7 @@ char *read_prot(char *confin_1,int ntb,bool bRotate,
   char *title;
   
   snew(title,STRLEN);
-  get_coordnum(confin_1,&(atoms_1->nr));
+  get_stx_coordnum(confin_1,&(atoms_1->nr));
   
   /*allocate memory for atom coordinates of configuration 1*/
   snew(*x_1,atoms_1->nr);
@@ -414,7 +414,7 @@ char *read_prot(char *confin_1,int ntb,bool bRotate,
   
   /*read residue number, residue names, atomnames, coordinates etc.*/
   fprintf(stderr,"Reading solute configuration \n");
-  read_whole_conf(confin_1,title,atoms_1,*x_1,*v_1,box_1);
+  read_stx_conf(confin_1,title,atoms_1,*x_1,*v_1,box_1);
   fprintf(stderr,"%s\nContaining %d atoms in %d residues\n",
 	  title,atoms_1->nr,atoms_1->nres);
   /*srenew(atoms_1->resname,atoms_1->nres);*/
@@ -523,11 +523,11 @@ int main(int argc,char *argv[])
   /*angle variables*/
   rvec angle;
   t_filenm fnm[] = {
-    { efGRO, "-cp", "protein", ffOPTRD },
-    { efGRO, "-cs", "spc216",  ffLIBOPTRD},
-    { efGRO, "-ci", "insert",  ffOPTRD},
+    { efSTX, "-cp", "protein", ffOPTRD },
+    { efSTX, "-cs", "spc216",  ffLIBOPTRD},
+    { efSTX, "-ci", "insert",  ffOPTRD},
     { efVDW, "-w",  NULL,      ffLIBRD},
-    { efGRO, "-o",  "out",     ffWRITE},
+    { efSTO, NULL,  NULL,      ffWRITE},
     { efTOP, NULL,  NULL,      ffOPTRW},
   };
 #define NFILE asize(fnm)
@@ -556,7 +556,7 @@ int main(int argc,char *argv[])
   confin_1=opt2fn("-cp",NFILE,fnm);
   confin_2=opt2fn("-cs",NFILE,fnm);
   confin_3=opt2fn("-ci",NFILE,fnm);
-  confout =opt2fn("-o", NFILE,fnm);
+  confout =ftp2fn(efSTO,NFILE,fnm);
   topinout=ftp2fn(efTOP,NFILE,fnm);
   
   bInsert = opt2bSet("-ci",NFILE,fnm);
@@ -619,14 +619,14 @@ int main(int argc,char *argv[])
   fprintf(stderr,"Writing generated configuration to disk\n");
  
   if (bProt) {
-    write_conf(confout,title,&atoms_1,x_1,v_1,box_1);
+    write_sto_conf(confout,title,&atoms_1,x_1,v_1,box_1);
     /*print box sizes and box type to stderr*/
     fprintf(stderr,"%s\n",title);  
     fprintf(stderr,"Generated a %s box sizes: %f %f %f\n",
 	    eboxtype_names[ntb],box_1[XX][XX],box_1[YY][YY],box_1[ZZ][ZZ]);
   }
   else 
-    write_conf(confout,title_3,&atoms_1,x_1,v_1,box_1);
+    write_sto_conf(confout,title_3,&atoms_1,x_1,v_1,box_1);
 
   if (debug)
     write_vdw("out.vdw",vdw,max_vdw);
