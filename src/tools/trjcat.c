@@ -64,25 +64,36 @@ static char *SRCID_trjcat_c = "$Id$";
 static void scan_trj_files(char **fnms,int nfiles,real *readtime, real *timestep)
 {
     /* Check start time of all files */
-    int i,status,oldnatoms=0,natoms,step;
-    real t,t2;
-    rvec *x;
-    matrix box;
+    int i,flags,status,natoms=0;
+    real t;
+    t_trxframe fr;
+    bool ok;
 
-    
+    flags = TRX_NEED_X | TRX_READ_V | TRX_READ_F;
+
     for(i=0;i<nfiles;i++) {
-      natoms=read_first_x(&status,fnms[i],&t,&x,box);
+      ok=read_first_frame(&status,fnms[i],&fr,flags);
+
+      if(!ok) 
+	fatal_error(0,"Couldn't read frame from file.");
+      if(!fr.bTime)
+	fatal_error(0,"Couldn't find a time in the frame.");
+      readtime[i]=fr.time;
+ 
       if(i==0) {
-	oldnatoms=natoms;
-	read_next_x(status,&t2,natoms,x,  box);
-        *timestep=t2-t;
-	sfree(x);
+	natoms=fr.natoms;
+	t=fr.time;
+	
+	ok=read_next_frame(status,&fr);
+	if(!ok || !fr.bTime) 
+	  fatal_error(0,"Couldn't read time from second frame.");
+	
+        *timestep=fr.time-t;
       }
       else {
-	if(natoms!=oldnatoms) 
+	if(natoms!=fr.natoms) 
 	  fatal_error(0,"Different number of atoms in files");
       }
-      readtime[i]=t;
       close_trj(status);
     }
     fprintf(stderr,"\n");  
@@ -255,12 +266,12 @@ int main(int argc,char *argv[])
   int          status,ftp,ftpin,i,frame,natoms=0,step,trjout=0;
   rvec         *x,*v;
   real         xtcpr,t,t0=-1,t1;
-  matrix       box;
-  t_topology   top;
+  t_trxframe   fr;
   char         **fnms;
-  bool         bNewFile,bHaveX=FALSE,bHaveV=FALSE;
+  int          trxout=-1;
+  bool         bNewFile;
   char         *in_file,*out_file;
-  int          xdr=0,earliersteps,nfile,*cont_type,last_ok_step;
+  int          flags,earliersteps,nfile,*cont_type,last_ok_step;
   real         *readtime,*settime,tstart,last_ok_t=-1,timestep;
 
   t_filenm fnm[] = {
@@ -300,52 +311,43 @@ int main(int argc,char *argv[])
   out_file=opt2fn("-o",NFILE,fnm);
   ftp=fn2ftp(out_file);
 
-  bVels= ((ftp==efTRR) ||(ftp==efTRJ) || (ftp==efGRO));
   /* Not checking input format, could be dangerous :-) */
-  if (!bVels) {
-    bHaveX=TRUE;
-    bHaveV=FALSE;
-    v=NULL;
-  }
-  
+ 
+  flags = TRX_READ_X | TRX_READ_V | TRX_READ_F;
  
   frame=-1;
   /* Lets stitch up some files */
   for(i=0;i<nfile;i++) {
       /* Open next file */
-      if(bVels)
-	  natoms=read_first_x_or_v(&status,fnms[i],&tstart,&x,&v,box);
-      else
-	  natoms=read_first_x(&status,fnms[i],&tstart,&x,box);
+  
+      natoms=read_first_frame(&status,fnms[i],&fr,flags);
+      if(!fr.bTime)
+	fatal_error(0,"Couldn't find a time in the frame.");
+      
       if(cont_type[i]==TIME_EXPLICIT)
-	  t0=settime[i]-tstart;
-      t1=tstart;
+	  t0=settime[i]-fr.time;
+      t1=fr.time;
    
       bNewFile=TRUE;
       if(i==0) {
-	  switch(ftp) {
-	  case efXTC:
-	      xdr = open_xtc(out_file,"w");
-	      break;
-	  case efG87:
-	      out=ffopen(out_file,"w");
-	      break;
-	  case efTRR:
-	  case efTRJ:
-	      out=NULL;
-	      trjout = open_tpx(out_file,"w");
-	      break;
-	  case efGRO:
-	  case efG96:
-	  case efPDB:
-		  out=ffopen(out_file,"w");
-	      break;
-	  }
+	switch(ftp) {
+	case efXTC:
+	case efTRR:
+	case efTRJ:
+	  out=NULL;
+	  trxout = open_trx(out_file,"w");
+	  break;
+	default:
+	  fatal_error(0,"This fileformat doesn't work here yet.");
+	  
+	  break;
+	}
       }
       
       do {
 	  /* set the new time */
 	  t=t0+t1;
+	  fr.time=t;
 	  if((end>0) && (t>(end+GMX_REAL_EPS))) {
 	      i=nfile;
 	      break;
@@ -362,22 +364,17 @@ int main(int argc,char *argv[])
 	      switch(ftp) {
 	      case efTRJ:
 	      case efTRR:
-		  fwrite_trn(trjout,frame,t,0,box,
-			     natoms,x,v,NULL);
-		  break;
 	      case efXTC:
-		  write_xtc(xdr,natoms,frame,t,box,x,xtcpr);
-		  break;
+		write_trxframe(trxout,&fr);
+		break;
 	      default:
-		  fatal_error(0,"DHE, ftp=%d\n",ftp);
+		fatal_error(0,"This fileformat doesn't work here yet.");
 	      }
-	      
 	      if ( ((frame % 10) == 0) || (frame < 10) )
 		fprintf(stderr," ->  frame %6d time %8.3f      \r",frame,t);
 	  }
       } while((t<settime[i+1]) &&
-	      ((bVels && read_next_x_or_v(status,&t1,natoms,x,v,box)) ||
-	       (read_next_x(status,&t1,natoms,x,  box))));
+	      read_next_frame(status,&fr));
       
       close_trj(status);
       
@@ -399,11 +396,9 @@ int main(int argc,char *argv[])
 		  "WARNING: Frames around t=%f have a different spacing than the rest,\n"
 		  "might be a gap or overlap that couldn't be corrected automatically.\n",t);   
   }
-  
-  if (ftp == efXTC)
-      close_xtc(xdr);
-  else if (out != NULL)
-      fclose(out);
+  if (trxout >= 0)
+    close_trx(trxout);
+     
   fprintf(stderr,"\nLast frame written was %d, time %f\n",frame,last_ok_t); 
 
   thanx(stdout);
