@@ -54,14 +54,14 @@ static    int trxs[]={
 #ifdef USE_XDR 
   efXTC, efTRR, 
 #endif
-  efTRJ, efGRO, efPDB, efG87 };
+  efTRJ, efGRO, efG96, efPDB, efG87 };
 #define NTRXS asize(trxs)
 
 static    int trns[]={ 
 #ifdef USE_XDR
   efTRR, 
 #endif
-  efTRJ };
+  efTRJ, efG96 };
 #define NTRNS asize(trns)
 
 static    int stos[]={ efGRO, efG96, efPDB, efBRK, efENT};
@@ -107,8 +107,8 @@ typedef struct {
 static t_deffile deffile[efNR] = {
   { eftASC, ".mdp", "grompp", "-f", "grompp input file with MD parameters"   },
   { eftASC, ".gct", "gct",    "-f", "general coupling stuff"                 },
-  { eftGEN, ".???", "traj",   "-f", "Generic trajectory: xtc trr trj gro pdb g87"},
-  { eftGEN, ".???", "traj",   NULL, "Full precision trajectory: trr trj"     },
+  { eftGEN, ".???", "traj",   "-f", "Generic trajectory: xtc trr trj gro g96 pdb"},
+  { eftGEN, ".???", "traj",   NULL, "Full precision trajectory: trr trj g96" },
   { eftXDR, ".trr", "traj",   NULL, "Trajectory in portable xdr format"      },
   { eftBIN, ".trj", "traj",   NULL, "Trajectory file (cpu specific)"         },
   { eftXDR, ".xtc", "traj",   NULL, "Compressed trajectory (portable xdr format)"},

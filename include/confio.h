@@ -44,13 +44,37 @@ static char *SRCID_confio_h = "$Id$";
 #ifdef CPLUSPLUS
 extern "C" {
 #endif
-
+  
+  typedef struct {
+    bool bTitle;
+    bool bTime;
+    bool bAtoms;
+    bool bPos;
+    bool bVel;
+    bool bBox;
+    int  step;
+    real time;
+  } t_g96info;
+  
 extern void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo);
 /* allocate memory for the arrays, set nr to natoms and nres to 0
  * set pdbinfo to NULL or allocate memory for it */  
 
 extern void free_t_atoms(t_atoms *atoms);
 /* free all the arrays and set the nr and nres to 0 */
+
+void clear_g96info(t_g96info *info);
+/* set all bools in the info struct to FALSE */
+
+int read_g96_conf(FILE *fp,char *infile,int nwanted,t_g96info *info,
+		  char *title,t_atoms *atoms,rvec *x, rvec *v,matrix box);
+/* read a Gromos96 coordinate or trajectory file,                       *
+ * returns the number of atoms                                          *
+ * sets what's in the frame in info                                     *  
+ * read from fp, infile is only needed for error messages               *   
+ * nwanted is the number of wanted coordinates,                         *
+ * set this to -1 if you want to know the number of atoms in the file   *
+ * title, atoms, x, v can all be NULL, in which case they won't be read */
 
 extern bool gro_next_x(FILE *status,real *t,int natoms,rvec x[],matrix box);
 extern int gro_first_x(FILE *status, real *t, rvec **x, matrix box);

@@ -50,49 +50,52 @@ static char *SRCID_confio_c = "$Id$";
 #include "filenm.h"
 /*#include "statusio.h"*/
 
-static int read_g96_conf(char *infile,char *title,
-			 t_atoms *atoms,rvec *x, rvec *v,matrix box)
+void clear_g96info(t_g96info *info)
 {
-  static t_symtab *symtab=NULL;
-  FILE   *fp;
-  char   line[STRLEN+1],anm[STRLEN],resnm[STRLEN],c1,c2;
-  bool   bPos,bBox,bVel,bEnd;
-  int    natoms,atnr,resnr,oldres,newres;
+  info->bTitle = FALSE;
+  info->bTime  = FALSE;
+  info->bAtoms = FALSE;
+  info->bPos   = FALSE;
+  info->bVel   = FALSE;
+  info->bBox   = FALSE;
+}
+
+#define CHAR_SHIFT 24
+
+static int read_g96_pos(char line[],t_symtab *symtab,FILE *fp,char *infile,
+			int nwanted,t_g96info *info,
+			t_atoms *atoms,rvec *x)
+{
+  bool   bEnd;
+  int    natoms,atnr,resnr,oldres,newres,shift;
+  char   anm[STRLEN],resnm[STRLEN];
+  char   c1,c2;
   double db1,db2,db3;
-  
-  fp = ffopen(infile,"r");
-  
-  if (!symtab) {
-    snew(symtab,1);
-    open_symtab(symtab);
-  }
-  
-  natoms=0;
 
-  if (title)
-    title[0] = '\0';
+  natoms = 0;
 
-  bPos = FALSE;
-    while (fgets2(line,STRLEN,fp) && !bPos)
-      bPos = (strncmp(line,"POSITION",8) == 0);
-  
-  if (bPos) {
+  if (info->bPos) {
+    if (info->bAtoms)
+      shift = CHAR_SHIFT;
+    else
+      shift = 0;
     newres  = 0;
     oldres  = -666; /* Unlikely number for the first residue! */
     bEnd    = FALSE;
     while (!bEnd && fgets2(line,STRLEN,fp)) {
       bEnd = (strncmp(line,"END",3) == 0);
       if (!bEnd  && (line[0] != '#')) {
-	if (sscanf(line+24,"%15lf%15lf%15lf",&db1,&db2,&db3) != 3)
+	if (sscanf(line+shift,"%15lf%15lf%15lf",&db1,&db2,&db3) != 3)
 	  fatal_error(0,"Did not find 3 coordinates for atom %d in %s\n",
 		      natoms+1,infile);
+	if ((nwanted != -1) && (natoms >= nwanted))
+	  fatal_error(0,
+		      "Found more coordinates (%d) in %s than expected %d\n",
+		      natoms,infile,nwanted);
 	if (atoms) {
-	  if (natoms >= atoms->nr)
-	    fatal_error(0,
-			"Found more coordinates (%d) in %s than expected %d\n",
-			natoms,infile,atoms->nr);
-	  if (sscanf(line,"%5d%c%5s%c%5s%7d",&resnr,&c1,resnm,&c2,anm,&atnr) 
-		     != 6) {
+	  if (atoms && info->bAtoms &&
+	      (sscanf(line,"%5d%c%5s%c%5s%7d",&resnr,&c1,resnm,&c2,anm,&atnr) 
+	       != 6)) {
 	    if (oldres>=0)
 	      resnr = oldres;
 	    else {
@@ -123,31 +126,38 @@ static int read_g96_conf(char *infile,char *title,
 	natoms++;
       }
     }
-    if (atoms && (natoms != atoms->nr))
+    if ((nwanted != -1) && natoms != nwanted)
       fprintf(stderr,
 	      "Warning: found less coordinates (%d) in %s than expected %d\n",
-	      natoms,infile,atoms->nr);
+	      natoms,infile,nwanted);
   }
 
-  bVel = FALSE;
-  bBox = FALSE;
-  while (!bVel && !bBox && fgets2(line,STRLEN,fp)) {
-    bVel = (strncmp(line,"VELOCITY",8) == 0);
-    bBox = (strncmp(line,"BOX",3) == 0);
-  }
-  
-  if (v && bVel) {
+  return natoms;
+}
+
+static int read_g96_vel(char line[],FILE *fp,char *infile,
+			int nwanted,t_g96info *info,rvec *v)
+{
+  bool   bEnd;
+  int    natoms,shift;
+  double db1,db2,db3;
+
+  if (v && info->bVel) {
+    if (strcmp(line,"VELOCITYRED") == 0)
+      shift = 0;
+    else
+      shift = CHAR_SHIFT;
     natoms = 0;
     bEnd = FALSE;
     while (!bEnd && fgets2(line,STRLEN,fp)) {
       bEnd = (strncmp(line,"END",3) == 0);
       if (!bEnd && (line[0] != '#')) {
-	if (sscanf(line+24,"%15lf%15lf%15lf",&db1,&db2,&db3) != 3)
+	if (sscanf(line+shift,"%15lf%15lf%15lf",&db1,&db2,&db3) != 3)
 	  fatal_error(0,"Did not find 3 velocities for atom %d in %s",
 			natoms+1,infile);
-	if (atoms && (natoms >= atoms->nr))
+	if ((nwanted != -1) && (natoms >= nwanted))
 	  fatal_error(0,"Found more velocities (%d) in %s than expected %d\n",
-		      natoms,infile,atoms->nr);
+		      natoms,infile,nwanted);
 	if (v) {
 	  v[natoms][0] = db1;
 	  v[natoms][1] = db2;
@@ -156,31 +166,102 @@ static int read_g96_conf(char *infile,char *title,
 	natoms++;
       }
     }
-    if (atoms && (natoms != atoms->nr))
+    if ((nwanted != -1) && (natoms != nwanted))
       fprintf(stderr,
 	      "Warning: found less velocities (%d) in %s than expected %d\n",
-	      natoms,infile,atoms->nr);
+	      natoms,infile,nwanted);
   }
+  
+  return natoms;
+}
 
-  while (!bBox && fgets2(line,STRLEN,fp))
-    bBox = (strncmp(line,"BOX",3) == 0);
+int read_g96_conf(FILE *fp,char *infile,int nwanted,t_g96info *info,
+		  char *title,t_atoms *atoms,rvec *x, rvec *v,matrix box)
+{
+  static t_symtab *symtab=NULL;
+  static char line[STRLEN+1]; /* VERY DIRTY, you can not read two       *
+		               * Gromos96 trajectories at the same time */  
+  bool   bAtStart,bTime,bAtoms,bPos,bVel,bBox,bEnd,bFinished;
+  int    natoms,ntime,npos;
+  double db1,db2,db3;
+
+  bAtStart = (ftell(fp) == 0);
+
+  clear_g96info(info);
   
-  clear_mat(box);
-  if (bBox) {
-    bEnd = FALSE;
-    while (!bEnd && fgets2(line,STRLEN,fp)) {
-      bEnd = (strncmp(line,"END",3) == 0);
-      if (!bEnd && (line[0] != '#')) {
-	if (sscanf(line,"%15lf%15lf%15lf",&db1,&db2,&db3) != 3)
-	  fatal_error(0,"Found a BOX line, but no box in %s",infile);
-	box[XX][XX] = db1;
-	box[YY][YY] = db2;
-	box[ZZ][ZZ] = db3;
-      }
-    }
+  if (!symtab) {
+    snew(symtab,1);
+    open_symtab(symtab);
   }
   
-  fclose(fp);
+  natoms=0;
+
+  if (bAtStart) {
+    while ( !info->bTitle && fgets2(line,STRLEN,fp))
+      info->bTitle = (strcmp(line,"TITLE") == 0);
+    if (title)
+      fgets2(title,STRLEN,fp);
+    bEnd = FALSE;
+    while (!bEnd && fgets2(line,STRLEN,fp))
+      bEnd = (strcmp(line,"END") == 0);
+    fgets2(line,STRLEN,fp);
+  }
+  
+  /* Do not get a line if we are not at the start of the file, *
+   * because without a parameter file we don't know what is in *
+   * the trajectory and we have already read the line in the   *
+   * previous call (VERY DIRTY).                               */
+  ntime = 0;
+  npos  = 0;
+  bFinished = FALSE;
+  do {
+    bTime  = (strcmp(line,"TIMESTEP") == 0);
+    bAtoms = (strcmp(line,"POSITION") == 0);
+    bPos   = (bAtoms || (strcmp(line,"POSITIONRED") == 0));
+    bVel   = (strncmp(line,"VELOCITY",8) == 0);
+    bBox   = (strcmp(line,"BOX") == 0);
+    if (bTime) {
+      ntime++;
+      info->bTime = bTime;
+      if (ntime == 1) {
+	do 
+	  bFinished = (fgets2(line,STRLEN,fp) == NULL);
+	while (!bFinished && (line[0] == '#'));
+	sscanf(line,"%15d%15lf",&(info->step),&db1);
+	info->time = db1;
+      } else
+	bFinished = TRUE;
+    }
+    if (bPos) {
+      npos++;
+      if (npos == 1) {
+	info->bAtoms = bAtoms;
+	info->bPos   = bPos;
+	natoms = read_g96_pos(line,symtab,fp,infile,nwanted,info,atoms,x);
+      } else
+	bFinished = TRUE;
+    }
+    if (v && bVel) {
+      info->bVel = bVel;
+      natoms = read_g96_vel(line,fp,infile,nwanted,info,v);
+    }
+    if (bBox) {
+      info->bBox = bBox;
+      clear_mat(box);
+      bEnd = FALSE;
+      while (!bEnd && fgets2(line,STRLEN,fp)) {
+	bEnd = (strncmp(line,"END",3) == 0);
+	if (!bEnd && (line[0] != '#')) {
+	  if (sscanf(line,"%15lf%15lf%15lf",&db1,&db2,&db3) != 3)
+	    fatal_error(0,"Found a BOX line, but no box in %s",infile);
+	  box[XX][XX] = db1;
+	  box[YY][YY] = db2;
+	  box[ZZ][ZZ] = db3;
+	}
+      }
+      bFinished = TRUE;
+    }
+  } while (!bFinished && fgets2(line,STRLEN,fp));
   
   close_symtab(symtab);
   
@@ -882,6 +963,7 @@ void get_stx_coordnum(char *infile,int *natoms)
 {
   FILE *in;
   int ftp;
+  t_g96info g96info;
   matrix dumbox;
 
   ftp=fn2ftp(infile);
@@ -890,7 +972,9 @@ void get_stx_coordnum(char *infile,int *natoms)
     get_coordnum(infile, natoms);
     break;
   case efG96:
-    *natoms=read_g96_conf(infile, NULL, NULL, NULL, NULL, dumbox);
+    in=ffopen(infile,"r");
+    *natoms=read_g96_conf(in,infile,-1,&g96info,NULL,NULL,NULL,NULL,dumbox);
+    fclose(in);
     break;
   case efPDB:
   case efBRK:
@@ -916,7 +1000,9 @@ void get_stx_coordnum(char *infile,int *natoms)
 void read_stx_conf(char *infile, char *title,t_atoms *atoms, 
 		   rvec x[],rvec *v, matrix box)
 {
+  FILE *in;
   t_topology *top;
+  t_g96info  g96info;
   int        ftp,natoms,i1;
   real       r1,r2;
 
@@ -926,7 +1012,10 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
     read_whole_conf(infile, title, atoms, x, v, box);
     break;
   case efG96:
-    read_g96_conf(infile, title, atoms, x, v, box);
+    clear_mat(box);
+    in = ffopen(infile,"r");
+    read_g96_conf(in, infile, atoms->nr, &g96info, title, atoms, x, v, box);
+    fclose(in);
     break;
   case efPDB:
   case efBRK:

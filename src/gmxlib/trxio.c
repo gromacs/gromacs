@@ -563,6 +563,31 @@ static int xyz_first_x(FILE *status, real *t, rvec **x, matrix box)
   return NATOMS;
 }
 
+static bool g96_next_x(FILE *status,char *infile,
+		       int *step,real *t,int natoms,rvec x[],matrix box)
+{
+  t_g96info info;
+  int       na;
+  char      title[STRLEN],*time;
+  double    dbl;
+
+  na = read_g96_conf(status, infile ? infile : "g96 file",
+		     natoms, &info, NULL, NULL, x, NULL, box);
+  if (info.bTime) {
+    *step = info.step;
+    *t    = info.time;
+  } else
+    *t    = 0.0;
+  if (na==0) {
+    return FALSE;
+  } else { 
+    if (na != natoms)
+      fatal_error(0,"Number of atoms in g96 frame %d is %d instead of %d",
+		  frame,na,natoms);
+    return TRUE;
+  }
+}
+
 static bool pdb_next_x(FILE *status,real *t,int natoms,rvec x[],matrix box)
 {
   t_atoms   atoms;
@@ -619,6 +644,7 @@ int read_first_x(int *status,char *fn,
   int  fp;
   int  natoms,step;
   real prec;
+  t_g96info info;
   bool bOK;
 
   INITCOUNT;
@@ -646,6 +672,15 @@ int read_first_x(int *status,char *fn,
     natoms=pdb_first_x(fio_getfp(fp),t,x,box);
     if (natoms)
       printread(*t);
+    break;
+  case efG96:
+    /* Can not rewind a compressed file, so open it twice */
+    natoms = read_g96_conf(fio_getfp(fp),fn,-1,&info,NULL,NULL,NULL,NULL,box);
+    fio_close(fp);
+    snew(*x,natoms);
+    clear_mat(box);
+    fp = *status =fio_open(fn,"r");
+    g96_next_x(fio_getfp(fp),fn,&step,t,natoms,*x,box);
     break;
   case efGRO:
     natoms=gro_first_x(fio_getfp(fp),t,x,box);
@@ -698,6 +733,15 @@ bool read_next_x(int status,real *t, int natoms, rvec x[], matrix box)
       printlast(pt);
       return FALSE;
     }
+  case efG96:
+    pt=*t;
+    if (g96_next_x(fio_getfp(status),NULL,&step,t,natoms,x,box)) {
+      printread(*t);
+      return TRUE;
+    } else {
+      printlast(pt);
+      return FALSE;
+    }  
   case efGRO:
     pt=*t;
     if (gro_next_x(fio_getfp(status),t,natoms,x,box)) {
