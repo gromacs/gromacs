@@ -226,7 +226,7 @@ int main(int argc,char *argv[])
   }
 
   write_sto_conf_indexed(opt2fn("-av",NFILE,fnm),"Average structure",
-			 atoms,xread,NULL,NULL,natoms,index);
+			 atoms,xread,NULL,zerobox,natoms,index);
   
   for (j=0; j<natoms; j++) 
     for (dj=0; dj<DIM; dj++) 
