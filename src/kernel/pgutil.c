@@ -33,7 +33,7 @@ static char *SRCID_pgutil_c = "$Id$";
 	
 int search_atom(char *type,int start,int natoms,t_atom at[],char **anm[])
 {
-  int  i,resnr;
+  int  i,resnr=-1;
   bool bPrevious,bNext;
 
   bPrevious = (strchr(type,'-') != NULL);

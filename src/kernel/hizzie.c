@@ -179,7 +179,7 @@ void set_histp(t_atoms *pdba,rvec *x,real angle,real dist){
   bool bHDd,bHEd;
   rvec xh1,xh2;
   int  natom;
-  int  i,j,nd,na,aj,hisnr,his0,type;
+  int  i,j,nd,na,aj,hisnr,his0,type=-1;
   int  nd1,ne2,cg,cd2,ce1;
   t_block *hb;
   real d;

@@ -67,8 +67,6 @@ static int count_hydrogens (char ***atomname, int nra, atom_id a[])
 
 void make_shake (t_params plist[],t_atoms *atoms,t_atomtype *at,int nshake)
 {
-  int          bondtypes[] = { F_BONDS, F_G96BONDS, F_MORSE };
-#define NBONDTYPES asize(bondtypes)
   char         ***info=atoms->atomname;
   t_params     *pr,*shake;
   t_params     *bonds;
@@ -101,63 +99,65 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype *at,int nshake)
    */
   shake=&(plist[F_SHAKE]);
 
-  for(bb = 0; (bb < NBONDTYPES); bb++) {
-    bonds=&(plist[bondtypes[bb]]);
-  
-    if ((nshake == eshHANGLES) || (nshake == eshALLANGLES)) {
-      /* horrible shortcut */
-      pr = &(plist[F_ANGLES]);
-      for (i=0; (i < pr->nr); ) {
-	ang=&(pr->param[i]);
+  for(bb = 0; (bb < F_NRE); bb++) {
+    if (interaction_function[bb].flags & IF_BTYPE) {
+      bonds=&(plist[bb]);
+      
+      if ((nshake == eshHANGLES) || (nshake == eshALLANGLES)) {
+	/* horrible shortcut */
+	pr = &(plist[F_ANGLES]);
+	for (i=0; (i < pr->nr); ) {
+	  ang=&(pr->param[i]);
 #ifdef DEBUG
-	printf("Angle: %d-%d-%d\n",ang->AI,ang->AJ,ang->AK); fflush(stdout);
+	  printf("Angle: %d-%d-%d\n",ang->AI,ang->AJ,ang->AK); fflush(stdout);
 #endif
-	if ((nshake == eshALLANGLES) || 
-	    (count_hydrogens(info,3,ang->a) > 0)) {
+	  if ((nshake == eshALLANGLES) || 
+	      (count_hydrogens(info,3,ang->a) > 0)) {
 	  /* Can only add hydrogen angle shake, if the two bonds
 	   * are constrained.
 	   * append this angle to the shake list 
 	   */
-	  p.AI = ang->AI;
-	  p.AJ = ang->AK;
-	  
-	  /* Calculate length of constraint */
-	  bFound=FALSE;
-	  b_ij=b_jk=0.0;
-	  for (j=0; !bFound && (j<bonds->nr); j++) {
-	    bond=&(bonds->param[j]);
-	    if (((bond->AI==ang->AI) && 
-		 (bond->AJ==ang->AJ)) ||
+	    p.AI = ang->AI;
+	    p.AJ = ang->AK;
+	    
+	    /* Calculate length of constraint */
+	    bFound=FALSE;
+	    b_ij=b_jk=0.0;
+	    for (j=0; !bFound && (j<bonds->nr); j++) {
+	      bond=&(bonds->param[j]);
+	      if (((bond->AI==ang->AI) && 
+		   (bond->AJ==ang->AJ)) ||
 		((bond->AI==ang->AJ) && 
 		 (bond->AJ==ang->AI)))
-	      b_ij=bond->C0;
-	    if (((bond->AI==ang->AK) && 
-		 (bond->AJ==ang->AJ)) ||
-		((bond->AI==ang->AJ) && 
-		 (bond->AJ==ang->AK)))
+		b_ij=bond->C0;
+	      if (((bond->AI==ang->AK) && 
+		   (bond->AJ==ang->AJ)) ||
+		  ((bond->AI==ang->AJ) && 
+		   (bond->AJ==ang->AK)))
 	      b_jk=bond->C0;
-	    bFound = (b_ij!=0.0) && (b_jk!=0.0);
-	  }
+	      bFound = (b_ij!=0.0) && (b_jk!=0.0);
+	    }
 	  /* apply law of cosines */
-	  if (!bFound) {
-	    fprintf(stderr,"No bond information for bond %s-%s or %s-%s\n",
-		    *info[ang->AI],*info[ang->AJ],
-		    *info[ang->AJ],*info[ang->AK]);
-	    exit(1);
-	  }
-	  p.C0 = sqrt(b_ij*b_ij+b_jk*b_jk-2.0*b_ij*b_jk*cos(DEG2RAD*ang->C0));
-	  p.C1 = p.C0;
+	    if (!bFound) {
+	      fprintf(stderr,"No bond information for bond %s-%s or %s-%s\n",
+		      *info[ang->AI],*info[ang->AJ],
+		      *info[ang->AJ],*info[ang->AK]);
+	      exit(1);
+	    }
+	    p.C0 = sqrt(b_ij*b_ij+b_jk*b_jk-2.0*b_ij*b_jk*cos(DEG2RAD*ang->C0));
+	    p.C1 = p.C0;
 #ifdef DEBUG
-	  printf("p: %d, q: %d, dist: %12.5e\n",p.AI,p.AJ,p.C0);
+	    printf("p: %d, q: %d, dist: %12.5e\n",p.AI,p.AJ,p.C0);
 #endif
-	  push_bondnow (shake,&p);
+	    push_bondnow (shake,&p);
 	  /* move the last bond to this position */
-	  copy_bond (pr,i,pr->nr-1);
-	  /* should free memory here!! */
-	  pr->nr--;
+	    copy_bond (pr,i,pr->nr-1);
+	    /* should free memory here!! */
+	    pr->nr--;
+	  }
+	  else
+	    i++;
 	}
-	else
-	  i++;
       }
     }
   }
@@ -169,26 +169,28 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype *at,int nshake)
    */
   if ((nshake == eshHBONDS) || (nshake == eshALLBONDS)) {
     /* horrible shortcut */
-    for (bb=0; (bb < NBONDTYPES); bb++) {
-      pr = &(plist[bondtypes[bb]]);
-      for (i=0; (i < pr->nr); ) {
-	if ((nshake == eshALLBONDS) || 
-	    (count_hydrogens (info,2,pr->param[i].a) > 0)) {
-	  /* append this bond to the shake list */
-	  p.AI = pr->param[i].AI;
-	  p.AJ = pr->param[i].AJ;
-	  p.C0 = pr->param[i].C0;
-	  p.C1 = pr->param[i].C2;
-	  push_bondnow (shake,&p);
-	  
-	  /* move the last bond to this position */
-	  copy_bond (pr,i,pr->nr-1);
-	  
-	  /* should free memory here!! */
-	  pr->nr--;
+    for (bb=0; (bb < F_NRE); bb++) {
+      if (interaction_function[bb].flags & IF_BTYPE) {
+	pr = &(plist[bb]);
+	for (i=0; (i < pr->nr); ) {
+	  if ((nshake == eshALLBONDS) || 
+	      (count_hydrogens (info,2,pr->param[i].a) > 0)) {
+	    /* append this bond to the shake list */
+	    p.AI = pr->param[i].AI;
+	    p.AJ = pr->param[i].AJ;
+	    p.C0 = pr->param[i].C0;
+	    p.C1 = pr->param[i].C2;
+	    push_bondnow (shake,&p);
+	    
+	    /* move the last bond to this position */
+	    copy_bond (pr,i,pr->nr-1);
+	    
+	    /* should free memory here!! */
+	    pr->nr--;
+	  }
+	  else
+	    i++;
 	}
-	else
-	  i++;
       }
     }
   }

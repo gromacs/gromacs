@@ -363,7 +363,7 @@ static void push_atom_now(t_symtab *symtab,t_atoms *at,int atomnr,
 			  char *resname,char *name,real m0,real q0,
 			  int typeB,real mB,real qB)
 {
-  int j,resnr_diff;
+  int j,resnr_diff=-1;
   int nr = at->nr;
 
   if (((nr==0) && (atomnr != 1)) || (nr && (atomnr != at->nr+1)))

@@ -32,6 +32,7 @@ static char *SRCID_add_par_c = "$Id$";
 #include "typedefs.h"
 #include "smalloc.h"
 #include "grompp.h"
+#include "toputil.h"
 #include "pdb2gmx.h"
 
 static void clear_atom_list(int i0, atom_id a[])

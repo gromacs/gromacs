@@ -76,7 +76,7 @@ void pr_alloc (int extra, t_params *pr)
   if (extra == 0)
     return;
   if ((pr->nr == 0) && (pr->param != NULL)) {
-    fprintf(stderr,"Warning: dangling pointer at %x\n",pr->param);
+    fprintf(stderr,"Warning: dangling pointer at %x\n",(unsigned int)pr->param);
     pr->param = NULL;
   }
   srenew(pr->param,pr->nr+extra);

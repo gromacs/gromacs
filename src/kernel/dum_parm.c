@@ -269,20 +269,20 @@ static void print_param(FILE *fp, int ftype, int i, t_param *param)
 static real get_def_bond_length(t_params plist[], t_atoms *at,
 				t_iatom ai, t_iatom aj)
 {
-  int  bondtypes[] = { F_BONDS, F_G96BONDS, F_MORSE };
-#define NBONDTYPES asize(bondtypes)
   int      i,bb;
   t_params *bt;
   real     bondlen;
 
   bondlen=NOTSET;
-  for(bb=0; (bb<NBONDTYPES) && (bondlen==NOTSET); bb++) {
-    bt = &(plist[bondtypes[bb]]);
-    for (i=0; i < bt->nr && (bondlen==NOTSET); i++) {
-      /* check one way only, bt is filled with both */
-      if ( (at->atom[ai].type == bt->param[i].AI) &&
-	   (at->atom[aj].type == bt->param[i].AJ) )
-	bondlen = bt->param[i].C0;
+  for(bb=0; (bb < F_NRE) && (bondlen==NOTSET); bb++) {
+    if (interaction_function[bb].flags & IF_BTYPE) {
+      bt = &(plist[bb]);
+      for (i=0; i < bt->nr && (bondlen==NOTSET); i++) {
+	/* check one way only, bt is filled with both */
+	if ( (at->atom[ai].type == bt->param[i].AI) &&
+	     (at->atom[aj].type == bt->param[i].AJ) )
+	  bondlen = bt->param[i].C0;
+      }
     }
   }
   if (bondlen == NOTSET)
@@ -294,21 +294,21 @@ static real get_def_bond_length(t_params plist[], t_atoms *at,
 static real get_def_angle(t_params plist[], t_atoms *at,
 			  t_iatom ai, t_iatom aj, t_iatom ak)
 {
-  int  angtypes[] = { F_ANGLES, F_G96ANGLES };
-#define NANGTYPES asize(angtypes)
   int      i,aa;
   t_params *bt;
   real     angle;
   
   angle=NOTSET;
-  for(aa=0; (aa<NANGTYPES) && (angle==NOTSET); aa++) {
-    bt = &(plist[angtypes[aa]]);
-    for (i=0; i < bt->nr && (angle==NOTSET); i++) {
-      /* check one way only, bt is filled with both */
-      if ( (at->atom[ai].type == bt->param[i].AI) &&
-	   (at->atom[aj].type == bt->param[i].AJ) &&
-	 (at->atom[ak].type == bt->param[i].AK) )
-	angle = DEG2RAD*bt->param[i].C0;
+  for(aa=0; (aa<F_NRE) && (angle==NOTSET); aa++) {
+    if (interaction_function[aa].flags & IF_ATYPE) {
+      bt = &(plist[aa]);
+      for (i=0; i < bt->nr && (angle==NOTSET); i++) {
+	/* check one way only, bt is filled with both */
+	if ( (at->atom[ai].type == bt->param[i].AI) &&
+	     (at->atom[aj].type == bt->param[i].AJ) &&
+	     (at->atom[ak].type == bt->param[i].AK) )
+	  angle = DEG2RAD*bt->param[i].C0;
+      }
     }
   }
   if (angle==NOTSET)
