@@ -96,8 +96,8 @@ static void write_xvgr_graphs(char *file,int ngraphs,
     max=max+0.1*(max-min);
     xsp=tick_spacing((x[n-1]-x[0])*scale_x,4);
     ysp=tick_spacing(max-min,3);
-    fprintf(out,"@ with g%d\n@ g%d on\n",ngraphs-1-g,ngraphs-1-g);
-    fprintf(out,"@ g%d autoscale type AUTO\n",ngraphs-1-g);
+    fprintf(out,"@ with g%d\n@ g%d on\n",g,g);
+    fprintf(out,"@ g%d autoscale type AUTO\n",g);
     if (g==0)
       fprintf(out,"@ title \"%s\"\n",title);
     if (g==ngraphs-1)
