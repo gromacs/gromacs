@@ -44,6 +44,7 @@ static char *SRCID_g_filter_c = "$Id$";
 #include "princ.h"
 #include "do_fit.h"
 #include "copyrite.h"
+#include "pbc.h"
 #include "rmpbc.h"
 
 int gmx_filter(int argc,char *argv[])
@@ -73,12 +74,14 @@ int gmx_filter(int argc,char *argv[])
   };
   
   static int nf=10;
-  static bool bFit = FALSE,bLowAll = FALSE;
+  static bool bNoJump = TRUE,bFit = FALSE,bLowAll = FALSE;
   t_pargs pa[] = {
     { "-nf", FALSE, etINT, {&nf},
       "Sets the filter length as well as the output interval for low-pass filtering" },
     { "-all", FALSE, etBOOL, {&bLowAll},
       "Write all low-pass filtered frames" },
+    { "-nojump", FALSE, etBOOL, {&bNoJump},
+      "Remove jumps of atoms across the box" },
     { "-fit", FALSE, etBOOL, {&bFit},
       "Fit all frames to a reference structure" }
   };
@@ -92,10 +95,10 @@ int gmx_filter(int argc,char *argv[])
   atom_id    *index;
   real       *w_rls=NULL;
   int        in,outl,outh;
-  int        nffr,i,fr,nat,j,d;
+  int        nffr,i,fr,nat,j,d,m;
   atom_id    *ind;
   real       flen,*filt,sum,*t;
-  rvec       xcmtop,xcm,**x,*ptr,*xf;
+  rvec       xcmtop,xcm,**x,*ptr,*xf,*xn,*xp,hbox;
 
 #define NLEG asize(leg)
   t_filenm fnm[] = { 
@@ -183,17 +186,34 @@ int gmx_filter(int argc,char *argv[])
 
   fr = 0;
   do {
+    xn = x[nffr - 1];
+    if (bNoJump && fr > 0) {
+      xp = x[nffr - 2];
+      for(j=0; j<nat; j++)
+	for(d=0; d<DIM; d++)
+	  hbox[d] = 0.5*box[nffr - 1][d][d];
+      for(i=0; i<nat; i++)
+	for(m=DIM-1; m>=0; m--)
+	  if (hbox[m] > 0) {
+	    while (xn[i][m] - xp[i][m] <= -hbox[m])
+	      for(d=0; d<=m; d++)
+		xn[i][d] += box[nffr - 1][m][d];
+	    while (xn[i][m] - xp[i][m] > hbox[m])
+	      for(d=0; d<=m; d++)
+		xn[i][d] -= box[nffr - 1][m][d];
+	  }
+    }
     if (bTop) {
       init_pbc(box[nffr - 1]);
-      rm_pbc(&(top.idef),nat,box[nffr - 1],x[nffr - 1],x[nffr - 1]);
+      rm_pbc(&(top.idef),nat,box[nffr - 1],xn,xn);
     }
     if (bFit) {
-      calc_xcm(x[nffr - 1],isize,index,top.atoms.atom,xcm,FALSE);
+      calc_xcm(xn,isize,index,top.atoms.atom,xcm,FALSE);
       for(j=0; j<nat; j++)
-	rvec_dec(x[nffr - 1][j],xcm);
-      do_fit(nat,w_rls,xtop,x[nffr - 1]);
+	rvec_dec(xn[j],xcm);
+      do_fit(nat,w_rls,xtop,xn);
       for(j=0; j<nat; j++)
-	rvec_inc(x[nffr - 1][j],xcmtop);
+	rvec_inc(xn[j],xcmtop);
     }
     if (fr >= nffr && (outh || bLowAll || fr % nf == nf - 1)) {
       /* Lowpass filtering */
@@ -226,6 +246,7 @@ int gmx_filter(int argc,char *argv[])
 		  0,t[nf - 1],bFit ? topbox : boxf,xf,NULL);
       }
     }
+    /* Cycle all the pointer and the box by one */
     ptr = x[0];
     for(i=0; i<nffr-1; i++) {
       t[i] = t[i+1];
