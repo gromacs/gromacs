@@ -711,18 +711,19 @@ when <b>gen_seed</b> is set to -1, the seed is calculated as
 <dt><h4><!--Idx-->constraints<!--EIdx-->:</h4></dt>
 <dd><dl compact>
 <dt><b>none</b></dt>
-<dd>No constraints, i.e. bonds are represented by a harmonic or a
-Morse potential (depending on the setting of <b>morse</b>) and angles
-by a harmonic potential.
+<dd>No constraints except for those defined explicitly in the topology,
+i.e. bonds are represented by a harmonic (or other) potential
+or a Morse potential (depending on the setting of <b>morse</b>)
+and angles by a harmonic (or other) potential.
 <dt><b>hbonds</b></dt>
-<dd>Only constrain the bonds with H-atoms.</dd>
+<dd>Convert the bonds with H-atoms to constraints.</dd>
 <dt><b>all-bonds</b></dt>
-<dd>Constrain all bonds.</dd>
+<dd>Convert all bonds to constraints.</dd>
 <dt><b>h-angles</b></dt>
-<dd>Constrain all bonds and constrain the angles that involve H-atoms
-by adding bond-constraints.</dd>
+<dd>Convert all bonds and additionally the angles that involve H-atoms
+to bond-constraints.</dd>
 <dt><b>all-angles</b></dt>
-<dd>Constrain all bonds and constrain all angles by adding bond-constraints.</dd>
+<dd>Convert all bonds and angles to bond-constraints.</dd>
 </dl>
 
 <dt><h4>constraint_algorithm:</h4></dt>
