@@ -216,8 +216,6 @@ void CopyRight(FILE *out,char *szProgram)
   fprintf(out,"\n");
 
   fprintf(out,"\n");
-  sp_print(out,"PLEASE NOTE: THIS IS A BETA VERSION\n");
-  fprintf(out,"\n");
 
   for(i=0; (i<NCR); i++) 
     sp_print(out,CopyrightText[i]);
