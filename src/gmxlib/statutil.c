@@ -405,12 +405,13 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 	    buf,__FILE__,__LINE__);
   }
   
-  if (bHelp)
-     write_man(stdout,eotHelp,program,
-	       ndesc,desc,nfile,fnm,npall,all_pa,nbugs,bugs,bHidden);
-  else if (bPrint) {
-    pr_fns(stdout,nfile,fnm);
-    print_pargs(stdout,npall,all_pa);
+  if (!FF(PCA_QUIET)) {
+    if (bHelp)
+      write_man(stdout,eotHelp,program,ndesc,desc,nfile,fnm,npall,all_pa,nbugs,bugs,bHidden);
+    else if (bPrint) {
+      pr_fns(stdout,nfile,fnm);
+      print_pargs(stdout,npall,all_pa);
+    }
   }
 
   if (mantp != 0) {

@@ -46,7 +46,7 @@ extern void open_log(char *fn,t_commrec *cr);
  * communicated around the ring.
  */
 
-extern t_commrec *init_par(int nprocs,char *argv[]);
+extern t_commrec *init_par(char *argv[]);
 /* Initiate the parallel computer. Return the communication record
  * (see network.h). As a side effect the stdlog file is opened.
  */

@@ -115,8 +115,6 @@ int mpiio_setup(char **argv,int *nprocs)
   /* Count the arguments */
   for(argc=0; (argv[argc] != NULL); argc++)
     ;
-  fprintf(stderr,"Going to start %s on %d processors with %d arguments\n",
-	  argv[0],*nprocs,argc);
   /* Call the MPI routines */
   (void) MPI_Init(&argc,&argv);
   (void) MPI_Comm_size( MPI_COMM_WORLD, &mpi_num_procs );

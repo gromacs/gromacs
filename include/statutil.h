@@ -127,6 +127,7 @@ extern char *common_args(void);
 #define PCA_SILENT         (1<<9)
 #define PCA_NOGET_PARGS    (1<<10)
 #define PCA_NOEXIT_ON_ARGS (1<<11)
+#define PCA_QUIET          (1<<12)
 
 extern int iscan(int argc,char *argv[],int *i);
 /* Scan an int from the argument at *i. If the argument length

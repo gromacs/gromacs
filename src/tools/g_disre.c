@@ -241,10 +241,9 @@ int main (int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   init5(ntop);
-		
+		    
   top = read_top(ftp2fn(efTPX,NFILE,fnm));
-  g=mk_graph(&top->idef,top->atoms.nr,0);
-  cr=init_par(1,NULL);
+  g=mk_graph(&top->idef,top->atoms.nr,0);  cr=init_par(NULL);
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
   
   if (ftp2bSet(efNDX,NFILE,fnm)) {
@@ -333,6 +332,10 @@ int main (int argc,char *argv[])
   xvgr_file(opt2fn("-dm",NFILE,fnm),NULL);
   
   thanx(stdout);
+
+#ifdef USE_MPI
+  MPI_Finalize();
+#endif
   
   return 0;
 }

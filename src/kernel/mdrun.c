@@ -484,7 +484,7 @@ int main(int argc,char *argv[])
   static int  nprocs=1,nDLB=0,nstepout=10;
   static t_pargs pa[] = {
     { "-np",      FALSE, etINT, &nprocs,
-      "Number of processors, must be the same as used for grompp. THIS SHOULD BE THE FIRST ARGUMENT ON THE COMMAND LINE FOR MPI" },
+      "Number of processors, must be the same as used for grompp." },
     { "-v",       FALSE, etBOOL,&bVerbose, "Verbose mode" },
     { "-compact", FALSE, etBOOL,&bCompact,
       "Write a compact log file, i.e. do not write full virial and energy group matrix (these are also in the energy file, so this is redundant) " },
@@ -495,17 +495,18 @@ int main(int argc,char *argv[])
   };
   t_edsamyn edyn;
   
-  get_pargs(&argc,argv,asize(pa),pa,TRUE);
-  cr = init_par(nprocs,argv);
+  cr = init_par(argv);
   bVerbose = bVerbose && MASTER(cr);
   edyn.bEdsam=FALSE;
   
-  if (MASTER(cr)) {
+  if (MASTER(cr))
     CopyRight(stderr,argv[0]);
-    parse_common_args(&argc,argv,
-		      PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_NOGET_PARGS,
-		      TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
-  }	      
+
+  parse_common_args(&argc,argv,
+		    PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS |
+		    (MASTER(cr) ? 0 : PCA_QUIET),
+		    TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+    
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
   
   if (MASTER(cr)) {
@@ -517,7 +518,11 @@ int main(int argc,char *argv[])
     ed_open(NFILE,fnm,&edyn);
     
   mdrunner(cr,NFILE,fnm,bVerbose,bCompact,nDLB,FALSE,nstepout,&edyn);
-  
+
+#ifdef USE_MPI
+  MPI_Finalize();
+#endif  
+
   exit(0);
   
   return 0;
