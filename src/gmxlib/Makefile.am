@@ -93,7 +93,6 @@ install-exec-hook:
 	  (cd $(libdir) && test -e $$libname.so -a ! -e $$nompi.so && $(LN_S) $$libname.so $$nompi.so ; exit 0);\
 	fi;
 
-
 # clean all libtool libraries, since the target names might have changed
 CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl
 

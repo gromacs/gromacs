@@ -9,7 +9,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = src admin scripts share include man 
+SUBDIRS = src admin scripts share include man
 
 #
 # Most files in the config subdir is included automatically when
@@ -47,7 +47,7 @@ links:
 	   (test ! -e $$i && $(LN_S) $$i . ; exit 0); \
 	done)
 
-rpm:	
+rpm:
 	mkdir -p rpmdir/BUILD \
 	  rpmdir/SPECS \
 	  rpmdir/SOURCES \
@@ -60,6 +60,7 @@ rpm:
 
 
 # Dont try to make rpm and mpi-rpm in parallel.
+
 mpi-rpm:	
 	mkdir -p rpmdir/BUILD \
 	  rpmdir/SPECS \

@@ -4,7 +4,7 @@
 #
 
 EXTRA_SCRIPTS = grompplog2top       make_gromos_nb.pl   make_gromos_rtp.py \
-		make_gromos_bon.pl make_gromos_rtp.pl  
+		make_gromos_bon.pl make_gromos_rtp.pl 
 
 bin_SCRIPTS = GMXRC completion.csh completion.bash completion.zsh
 
@@ -18,9 +18,4 @@ GMXRC:	GMXRC.in
 	sed 's,@mandir\@,$(mandir),'  >$@
 
 CLEANFILES = GMXRC \\\#* *~
-
-
-
-
-
 

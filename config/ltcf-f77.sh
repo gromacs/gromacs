@@ -42,10 +42,17 @@ ac_pre_ext=F
 objext=o
 
 # Code to be used in simple compile tests
-lt_simple_compile_test_code="      subroutine t\n      return\n      end\n"
+lt_simple_compile_test_code="      
+      subroutine t
+      return
+      end
+"
 
 # Code to be used in simple link tests
-lt_simple_link_test_code="      program t\n      end\n"
+lt_simple_link_test_code="
+      program t
+      end
+"
 
 # fortran compiler
 F77=${F77-f77}
