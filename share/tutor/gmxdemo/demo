@@ -117,7 +117,7 @@ echo "Starting editconf and genbox..."
 if ( $?DISPLAY ) then 
 	xterm -title genbox -sb -e tail +0f output.genbox &
 endif
-editconf -f ${MOL}.gro -o ${MOL}.gro -dc 0.6 >& output.genbox 
+editconf -f ${MOL}.gro -o ${MOL}.gro -dc 0.5 >& output.genbox 
 
 echo "editconf finished"
 echo -n "Press <enter>"
@@ -151,9 +151,9 @@ coordinates of our system to remove high energies from our system.
 Before we can start the Energy Minimisation we have to preprocess all
 the input files with the GROMACS preprocessor named grompp. grompp
 preprocesses the topology file (.top), the structure file (.gro) and a
-parameter file (.mdp) resulting in a binary topology file (.tpb
+parameter file (.mdp) resulting in a binary topology file (.tpb/.tpr
 extension). This binary topology file contains all information for a 
-simulation ( in this case an energy minimisation ).
+simulation (in this case an energy minimisation).
 -----------------------------------------------------------------
 -----------------------------------------------------------------
 _EOF_
@@ -169,7 +169,6 @@ set  ans = $<
 echo generating energy minimisation parameter file...
 cat > em.mdp << _EOF_
 title               =  ${MOL}
-warnings            =  10
 cpp                 =  /lib/cpp
 define              =  -DFLEX_SPC
 constraints         =  none
@@ -177,10 +176,16 @@ integrator          =  steep
 tinit               =  0.0
 dt                  =  0.002    ; ps !
 nsteps              =  100
+nstlist             =  10
+ns_type             =  grid
+deltagrid           =  2
+rlist               =  1.0
+rcoulomb            =  1.0
+rvdw                =  1.0
 ;
 ;       Energy minimizing stuff
 ;
-emtol               =  0.001
+emtol               =  3.0
 emstep              =  0.01
 _EOF_
 
@@ -290,7 +295,6 @@ nstvout             =  1000
 nstfout             =  0
 nstlog              =  10
 nstenergy           =  10
-nsthf               =  0
 nstlist             =  10
 ns_type             =  grid
 deltagrid           =  2
@@ -368,8 +372,8 @@ cat << _EOF_
 -----------------------------------------------------------------
 Now our complete system is finally ready for the actual Molecular
 Dynamics simulation. We start again by preprocessing the input files
-by the grompp program to generate the binary topology file ( .tpb
-extension ).
+by the grompp program to generate the binary topology file (.tpb/.tpr
+extension).
 
 -----------------------------------------------------------------
 -----------------------------------------------------------------
@@ -386,9 +390,8 @@ set  ans = $<
 echo "generating parameter file..."
 cat > md.mdp << _EOF_
 title               =  ${MOL} MD
-warnings            =  10
 cpp                 =  /lib/cpp
-constraints         =  -1
+constraints         =  all-bonds
 integrator          =  md
 tinit               =  0.0
 dt                  =  0.002	; ps !
@@ -396,17 +399,14 @@ nsteps              =  250	; total 0.5 ps.
 nstcomm             =  1
 nstxout             =  1
 nstvout             =  0
-nstgrp              =  0
 nstfout             =  0
-nstprint            =  0
-nsthf               =  0
 nstlist             =  10
 ns_type             =  grid
 deltagrid           =  2
-shift               =  no
-rshort              =  1.0
-rlong               =  1.0
-box                 =  cubic
+rlist               =  1.0
+rcoulomb            =  1.0
+rvdw                =  1.0
+box                 =  rectangular
 ; Temperature coupling is on in two groups
 Tcoupl              =  yes
 tau_t               =  0.1	0.1
@@ -415,7 +415,7 @@ ref_t               =  300	300
 ; Pressure coupling is not on
 Pcoupl              =  no
 tau_p               =  0.5
-compress            =  1e-3
+compressibility     =  4.6e-3
 ref_p               =  1.0
 ; Generate velocites is on at 300 K.
 gen_vel             =  yes
@@ -493,14 +493,14 @@ we just simulated.
 dialog box at the bottom of the screen appears. This dialog box is
 used to move through your trajectory. 
 
-4. Click on the FastForward button ( two triangles pointing to the
-right ) and watch the peptide moving.
+4. Click on the FastForward button (two triangles pointing to the
+right) and watch the peptide moving.
 -----------------------------------------------------------------
 -----------------------------------------------------------------
 _EOF_
 
 if ( $?DISPLAY ) then
 	echo Starting Trajectory viewer...
-	ngmx -f ${MOL}_md.trj -s ${MOL}_md.tpb  &
+	ngmx -f ${MOL}_md -s ${MOL}_md  &
 endif
 #last line 
