@@ -146,7 +146,8 @@ static void lmfit_exp(int nframes,real x[],real y[],real dy[],real ftol,
     else if (strcmp(fix,"tau2") == 0) 
       ia[3]=0;
   }
-  fprintf(stderr,"%d parameter fit\n",mfit);
+  if (debug)
+    fprintf(debug,"%d parameter fit\n",mfit);
 
   /* Initial params */
   alamda = -1;    /* Starting value   */
@@ -223,10 +224,12 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
   real *x,*y,*dy;
   real ftol = 1e-4;
 
-  fprintf(stderr,"There are %d points to fit %d vars!\n",
-	  ndata,nfitparm);
-  fprintf(stderr,"Fit from %g thru %g, dt=%g\n",
-	  begintimefit,endtimefit,dt);
+  if (debug) {
+    fprintf(debug,"There are %d points to fit %d vars!\n",
+	    ndata,nfitparm);
+    fprintf(debug,"Fit from %g thru %g, dt=%g\n",
+	    begintimefit,endtimefit,dt);
+  }
 
   if (x0)
     x=x0;
@@ -237,7 +240,7 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
 
   j=0;
   for(i=0; (i<ndata); i++) {
-    ttt = x0 ? x0[j] : dt*j;
+    ttt = x0 ? x0[i] : dt*i;
     if ( (ttt >= begintimefit) && (ttt <= endtimefit) ) {
       x[j] = ttt;
       y[j] = c1[i];
