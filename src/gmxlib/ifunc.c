@@ -36,9 +36,6 @@ static char *SRCID_ifunc_c = "$Id$";
 #include "orires.h"
 
 #define  def_bonded(str,lstr,nra,nrpa,nrpb,ind,func)\
-   {str,lstr,(nra),(nrpa),(nrpb),IF_BOND,                        (ind),(func)}
-
-#define def_bondedg(str,lstr,nra,nrpa,nrpb,ind,func)\
    {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_GRAPH,             (ind),(func)}
    
 #define   def_angle(str,lstr,nra,nrpa,nrpb,ind,func)\
@@ -73,7 +70,7 @@ t_interaction_function interaction_function[F_NRE]=
   def_bond   ("MORSE",    "Morse",           2, 3, 0,  eNR_MORSE, morsebonds),
   def_bond   ("CUBICBONDS","Cubic Bonds",    2, 3, 0,  eNR_CUBICBONDS, cubicbonds),
   def_bondnb ("CONNBONDS","Connect Bonds",   2, 0, 0,  0,      unimplemented),
-  def_bondedg("HARMONIC", "Harmonic Pot.",   2, 2, 2,  eNR_BONDS,  bonds    ),
+  def_bonded ("HARMONIC", "Harmonic Pot.",   2, 2, 2,  eNR_BONDS,  bonds    ),
   def_angle  ("ANGLES",   "Angle",           3, 2, 2,  eNR_ANGLES, angles   ),
   def_angle  ("G96ANGLES","G96Angle",        3, 2, 2,  eNR_ANGLES, g96angles),
   def_bonded ("PDIHS",    "Proper Dih.",     4, 3, 3,  eNR_PROPER, pdihs    ),
@@ -89,12 +86,12 @@ t_interaction_function interaction_function[F_NRE]=
   def_nofc   ("LR",       "Coulomb (LR)"     ),
   def_bonded ("WATERPOL", "Water Pol.",      1, 6, 0,  eNR_WPOL,   water_pol),
   def_bonded ("POSRES",   "Position Rest.",  1, 3, 0,  eNR_POSRES, posres   ),
-  def_bondedg("DISRES",   "Dis. Rest.",      2, 6, 0,  eNR_DISRES, ta_disres),
+  def_bonded ("DISRES",   "Dis. Rest.",      2, 6, 0,  eNR_DISRES, ta_disres),
   def_nofc   ("DRVIOL",   "D. R. Viol. (nm)" ),    
-  def_bondedg("ORIRES",   "Orient. Rest.",   2, 6, 0,  eNR_ORIRES, orires   ),
+  def_bonded ("ORIRES",   "Orient. Rest.",   2, 6, 0,  eNR_ORIRES, orires   ),
   def_nofc   ("ORDEV",    "Ori. R. RMSD"     ),  
-  def_bondedg("ANGRES",   "Angle Rest.",     4, 3, 3,  eNR_ANGRES, angres   ),
-  def_bondedg("ANGRESZ",  "Angle Rest. Z",   2, 3, 3,  eNR_ANGRESZ,angresz  ),
+  def_bonded ("ANGRES",   "Angle Rest.",     4, 3, 3,  eNR_ANGRES, angres   ),
+  def_bonded ("ANGRESZ",  "Angle Rest. Z",   2, 3, 3,  eNR_ANGRESZ,angresz  ),
   def_shkcb  ("CONSTR",   "Constraint",      2, 1, 1   ),
   def_shk    ("CONSTRNC", "Constr. No Conn.",2, 1, 1   ),
   def_shkcb  ("SETTLE",   "Settle",          1, 2, 0   ),
