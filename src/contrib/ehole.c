@@ -24,6 +24,10 @@ typedef struct {
   int  nsave;
   int  nana;
   int  seed;
+  int  nevent;
+  bool bForce;
+  bool bScatter;
+  bool bHole;
   real dt;
   real deltax;
   real epsr;
@@ -33,6 +37,7 @@ typedef struct {
   real Eband;
   real rho;
   real matom;
+  real evdist;
 } t_eh_params;
 
 #define ELECTRONMASS 5.447e-4
@@ -43,8 +48,7 @@ typedef struct {
 /* Planck's constant */
 #define HBAR (PLANCK/2*M_PI)
 
-static void calc_forces(int n,rvec x[],rvec f[],real q[],real ener[],
-			real Alj)
+static void calc_forces(int n,rvec x[],rvec f[],real q[],real ener[],real Alj)
 {
   const real facel = FACEL;
   int  i,j,m;
@@ -198,15 +202,15 @@ static void rotate_theta(rvec v,real nv,real dth,int *seed,FILE *fp)
   }
 }
 
-static int create_auger(int index,rvec x[],rvec v[],rvec vold[],
-			real m[],real q[],
-			rvec center,real e0,int *seed)
+static int create_electron(int index,rvec x[],rvec v[],rvec vold[],rvec vv,
+			   real m[],real q[],
+			   rvec center,real e0,int *seed)
 {
   m[index] = ELECTRONMASS;
   q[index] = -1;
 
   clear_rvec(v[index]);
-  v[index][ZZ] = sqrt(2*e0/m[index]);
+  svmul(sqrt(2*e0/m[index]),vv,v[index]);
   copy_rvec(v[index],vold[index]);
   copy_rvec(center,x[index]);
   
@@ -250,7 +254,7 @@ static int scatter_all(FILE *fp,int nparticle,int nstep,
 {
   int  i,m,np;
   real p_el,p_inel,ptot,nv,ekin,omega,theta,costheta,Q,e0,ekprime;
-  rvec dq;
+  rvec dq,center,vv;
   
   np = nparticle;  
   for(i=0; (i<nparticle); i++) {
@@ -259,11 +263,11 @@ static int scatter_all(FILE *fp,int nparticle,int nstep,
      */
     nv   = norm(v[i]);
     ekin = eparticle[i];
-    p_el = cross_el(ekin,ehp->rho)*nv*ehp->dt;
+    p_el = cross_el(ekin,ehp->rho,NULL)*nv*ehp->dt;
    
     /* Only electrons can scatter inelasticlly */
     if (charge[i] < 0)
-      p_inel = cross_inel(ekin,ehp->rho)*nv*ehp->dt;
+      p_inel = cross_inel(ekin,ehp->rho,NULL)*nv*ehp->dt;
     else
       p_inel = 0;
       
@@ -278,19 +282,19 @@ static int scatter_all(FILE *fp,int nparticle,int nstep,
       if (rando(&ehp->seed) < ptot) {
 	add_scatter_event(&(s[i]),x[i],TRUE,ehp->dt*nstep,ekin);
 	/* Energy loss in inelastic collision is omega */
-	omega = get_omega(ekin,&ehp->seed,debug);
+	omega = get_omega(ekin,&ehp->seed,debug,NULL);
 	/* Scattering angle depends on energy and energy loss */
-	Q = get_q_inel(ekin,omega,&ehp->seed,debug);
+	Q = get_q_inel(ekin,omega,&ehp->seed,debug,NULL);
 	costheta = -0.5*(Q+omega-2*ekin)/sqrt(ekin*(ekin-omega));
 
 	/* See whether we have gained enough energy to liberate another 
 	 * hole-electron pair
 	 */
-	e0      = band_ener(&ehp->seed,debug);
+	e0      = band_ener(&ehp->seed,debug,NULL);
 	ekprime = e0 + omega - (ehp->Efermi+0.5*ehp->Eband);
 	/* Ouput */
-	fprintf(fp,"REMARK Inelastic %d: omega = %.2f q = %.2f costheta = %.3f E0 = %.1f\n",
-		i+1,omega,Q,costheta,e0);
+	fprintf(fp,"REMARK Inelastic %d: Ekin=%.2f Omega=%.2f Q=%.2f Eband=%.2f costheta=%.3f\n",
+		i+1,omega,Q,costheta,e0,ekin);
 	if ((costheta < -1) || (costheta > 1)) {
 	  fprintf(fp,"REMARK Electron/hole creation not possible due to momentum constraints\n");
 	  ener[eLATTICE] += omega*ELECTRONVOLT;
@@ -309,10 +313,19 @@ static int scatter_all(FILE *fp,int nparticle,int nstep,
 	    if (np >= ehp->maxparticle-2)
 	      fatal_error(0,"Increase -maxparticle flag to more than %d",
 			  ehp->maxparticle);
-	    np = create_pair(np,x,v,vold,mass,charge,x[i],
-			     ekprime*ELECTRONVOLT,ehp,dq);
+	    if (ehp->bHole) {
+	      np = create_pair(np,x,v,vold,mass,charge,x[i],
+			       ekprime*ELECTRONVOLT,ehp,dq);
+	      (*nhole)++;
+	    }
+	    else {
+	      copy_rvec(x[i],center);
+	      center[ZZ] += ehp->deltax;
+	      rand_vector(1,vv,&ehp->seed);
+	      np = create_electron(np,x,v,vold,vv,mass,charge,
+				   x[i],ekprime*ELECTRONVOLT,&ehp->seed);
+	    }
 	    ener[eLATTICE] += (omega-ekprime)*ELECTRONVOLT;
-	    (*nhole)++;
 	    (*nelec)++;
 	  }
 	  else
@@ -325,7 +338,7 @@ static int scatter_all(FILE *fp,int nparticle,int nstep,
 	  fprintf(debug,"REMARK Elastic scattering event\n");
 	
 	/* Scattering angle depends on energy only */
-	theta = get_theta_el(ekin,&ehp->seed,debug);
+	theta = get_theta_el(ekin,&ehp->seed,debug,NULL);
 	/* Rotate around theta with random delta phi */
 	rotate_theta(v[i],nv,theta,&ehp->seed,debug);
       }
@@ -353,21 +366,8 @@ static void integrate_positions(int nparticle,rvec x[],rvec v[],real dt)
       x[i][k] += v[i][k]*dt;
 }
 
-static void do_sim(char *pdbfn,t_eh_params *ehp,bool bForce,bool bScatter,
-		   int *nelec,int *nhole,t_ana_struct *total,
-		   t_histo *hmfp,t_ana_ener *ae)
+static void print_header(FILE *fp,t_eh_params *ehp)
 {
-  FILE         *fp,*efp;
-  int          nparticle[2];
-  rvec         *x,*v[2],*f,center;
-  real         *charge,*mass,*ener,*eparticle;
-  t_ana_struct *ana_struct;
-  t_ana_scat   *ana_scat;
-  int          step,i,cur = 0;
-#define next (1-cur)
-
-  /* Open output file */
-  fp = ffopen(pdbfn,"w");
   fprintf(fp,"REMARK Welcome to the electron-hole simulation!\n");
   fprintf(fp,"REMARK The energies printed in this file are in eV\n");
   fprintf(fp,"REMARK Coordinates are in nm because of fixed width format\n");
@@ -376,11 +376,30 @@ static void do_sim(char *pdbfn,t_eh_params *ehp,bool bForce,bool bScatter,
   fprintf(fp,"REMARK Parametes for this simulation\n");
   fprintf(fp,"REMARK seed = %d maxstep = %d dt = %g\n",
 	  ehp->seed,ehp->maxstep,ehp->dt);
-  fprintf(fp,"REMARK nsave = %d nana = %d Force = %s Scatter = %s\n",
-	  ehp->nsave,ehp->nana,bool_names[bForce],bool_names[bScatter]);
-  if (bForce)
+  fprintf(fp,"REMARK nsave = %d nana = %d Force = %s Scatter = %s Hole = %s\n",
+	  ehp->nsave,ehp->nana,bool_names[ehp->bForce],
+	  bool_names[ehp->bScatter],bool_names[ehp->bHole]);
+  if (ehp->bForce)
     fprintf(fp,"REMARK Force constant for repulsion Alj = %g\n",ehp->Alj);
+}
 
+static void do_sim(char *pdbfn,t_eh_params *ehp,
+		   int *nelec,int *nhole,t_ana_struct *total,
+		   t_histo *hmfp,t_ana_ener *ae)
+{
+  FILE         *fp,*efp;
+  int          nparticle[2];
+  rvec         *x,*v[2],*f,center,vv;
+  real         *charge,*mass,*ener,*eparticle;
+  t_ana_struct *ana_struct;
+  t_ana_scat   *ana_scat;
+  int          step,i,cur = 0;
+#define next (1-cur)
+
+  /* Open output file */
+  fp = ffopen(pdbfn,"w");
+  print_header(fp,ehp);
+  
   ana_struct = init_ana_struct(ehp->maxstep,ehp->nana,ehp->dt);
   /* Initiate arrays. The charge array determines whether a particle is 
    * a hole (+1) or an electron (-1)
@@ -397,12 +416,24 @@ static void do_sim(char *pdbfn,t_eh_params *ehp,bool bForce,bool bScatter,
   
   clear_rvec(center);
   /* Use first atom as center, it has coordinate 0,0,0 */
-  if (bScatter) {
-    /* Start with a single Auger electron */
-    nparticle[cur]  = create_auger(0,x,v[cur],v[next],mass,charge,center,
-				   ehp->Eauger*ELECTRONVOLT,&ehp->seed);
+  if (ehp->bScatter) {
+    /* Start with a Auger electrons */
+    nparticle[cur]=0;
+    for(i=0; (i<ehp->nevent); i++) {
+      if (ehp->nevent == 1) {
+	clear_rvec(vv);
+	vv[ZZ] = 1;
+      }
+      else
+	rand_vector(1,vv,&ehp->seed);
+      nparticle[cur]  = create_electron(nparticle[cur],x,v[cur],v[next],
+					vv,mass,charge,center,
+					ehp->Eauger*ELECTRONVOLT,&ehp->seed);
+      rand_vector(ehp->evdist*0.1,vv,&ehp->seed);
+      rvec_inc(center,vv);
+    }
   }
-  else if (bForce) {
+  else if (ehp->bForce) {
     /* Start with two electron and hole pairs */
     nparticle[cur]  = create_pair(0,x,v[cur],v[next],mass,charge,center,
 				  0.2*ehp->Eauger*ELECTRONVOLT,ehp,center);
@@ -416,12 +447,12 @@ static void do_sim(char *pdbfn,t_eh_params *ehp,bool bForce,bool bScatter,
   }
   nparticle[next] = nparticle[cur];
   for(step=0; (step<=ehp->maxstep); step++) {
-    if (bScatter)
+    if (ehp->bScatter)
       nparticle[next] = scatter_all(fp,nparticle[cur],step,x,v[cur],v[next],
 				    mass,charge,ener,eparticle,ehp,
 				    nelec,nhole,ana_scat);
     
-    if (bForce)
+    if (ehp->bForce)
       calc_forces(nparticle[cur],x,f,charge,ener,ehp->Alj);
     
     integrate_velocities(nparticle[next],v[cur],v[next],f,mass,ehp->dt);
@@ -466,10 +497,7 @@ static void do_sim(char *pdbfn,t_eh_params *ehp,bool bForce,bool bScatter,
   fclose(fp);
 }
 
-void do_sims(char *ptr,char *ndist,char *rmax,char *nion,
-	     char *gyr,char *mfp,  char *ener,
-	     t_eh_params *ehp,
-	     bool bForce,bool bScatter)
+void do_sims(int NFILE,t_filenm fnm[],t_eh_params *ehp)
 {
   t_ana_struct *total;
   t_ana_ener   *ae;
@@ -478,28 +506,35 @@ void do_sims(char *ptr,char *ndist,char *rmax,char *nion,
   int          i,imax,ne,nh;
   real         aver;
   FILE         *fp;
-  char         *buf;
+  char         *buf,*ptr,*rptr;
+
+  ptr  = ftp2fn(efPDB,NFILE,fnm);
+  rptr = strdup(ptr);
+  if ((ptr  = strstr(rptr,".pdb")) != NULL)
+    *ptr = '\0';
+  snew(buf,strlen(ptr)+10);
 
   total = init_ana_struct(ehp->maxstep,ehp->nana,ehp->dt);
   hmfp  = init_histo((int)ehp->Eauger,0,(int)ehp->Eauger);
   helec = init_histo(50,0,50);
   snew(ae,1);
   
-  snew(buf,strlen(ptr)+10);
   for(i=0; (i<ehp->nsim); i++) {
     nh = ne = 0;
-    sprintf(buf,"%s-%d.pdb",ptr,i+1);
-    do_sim(buf,ehp,bForce,bScatter,&ne,&nh,total,hmfp,ae);
+    sprintf(buf,"%s-%d.pdb",rptr,i+1);
+    do_sim(buf,ehp,&ne,&nh,total,hmfp,ae);
     add_histo(helec,ne,1);
   }
   sfree(buf);
-  dump_ana_struct(rmax,nion,gyr,total,ehp->nsim);
-  dump_ana_ener(ae,ehp->nsim,ehp->dt*ehp->nana,ener,total);
+  dump_ana_struct(opt2fn("-r",NFILE,fnm),opt2fn("-n",NFILE,fnm),
+		  opt2fn("-g",NFILE,fnm),total,ehp->nsim);
+  dump_ana_ener(ae,ehp->nsim,ehp->dt*ehp->nana,opt2fn("-e",NFILE,fnm),total);
   done_ana_struct(total);
 
-  dump_histo(helec,ndist,"Number of cascade electrons","N","",
-	     enormFAC,1.0/ehp->nsim);
-  dump_histo(hmfp,mfp,"Mean Free Path","Ekin (eV)","MFP (nm)",enormNP,1.0);
+  dump_histo(helec,opt2fn("-h",NFILE,fnm),
+	     "Number of cascade electrons","N","",enormFAC,1.0/ehp->nsim);
+  dump_histo(hmfp,opt2fn("-m",NFILE,fnm),
+	     "Mean Free Path","Ekin (eV)","MFP (nm)",enormNP,1.0);
 }
 
 int main(int argc,char *argv[])
@@ -514,6 +549,10 @@ int main(int argc,char *argv[])
     1,      /* nana */
     1,      /* nsim */
     1993,   /* Random seed */
+    1,      /* Number of events */
+    FALSE,  /* Use forces */
+    TRUE,   /* Use scattering */
+    FALSE,  /* Creat holes */
     1e-5,   /* Time step */
     0.05,   /* Distance (nm) between electron and hole when creating them */
     1.0,    /* Dielectric constant */
@@ -522,12 +561,10 @@ int main(int argc,char *argv[])
     28.7,   /* Fermi level (eV) of diamond. */
     5.46,   /* Band gap energy (eV) of diamond */
     3.51,   /* Density of the solid */
-    12.011  /* (Average) mass of the atom */
+    12.011, /* (Average) mass of the atom */
+    10000.0 /* Distance between events */
   };
   static bool bTest    = FALSE;
-  static bool bForce   = TRUE;
-  static bool bScatter = TRUE;
-  static bool bSMP     = FALSE;
   t_pargs pa[] = {
     { "-maxparticle", FALSE, etINT,  {&ehp.maxparticle},
       "Maximum number of particles" },
@@ -557,13 +594,25 @@ int main(int argc,char *argv[])
       "Distance between electron and hole when creating a pair" },
     { "-test",        FALSE, etBOOL, {&bTest},
       "Test table aspects of the program rather than running it for real" },
-    { "-force",       FALSE, etBOOL, {&bForce},
+    { "-force",       FALSE, etBOOL, {&ehp.bForce},
       "Apply Coulomb/Repulsion forces" },
-    { "-scatter",     FALSE, etBOOL, {&bScatter},
+    { "-hole",        FALSE, etBOOL, {&ehp.bHole},
+      "Create electron-hole pairs rather than electrons only" },
+    { "-scatter",     FALSE, etBOOL, {&ehp.bScatter},
       "Do the scattering events" },
+    { "-nevent",      FALSE, etINT,  {&ehp.nevent},
+      "Number of initial Auger electrons" },
+    { "-evdist",      FALSE, etREAL, {&ehp.evdist},
+      "Average distance (A) between initial electronss" }
   };
 #define NPA asize(pa)
   t_filenm fnm[] = {
+    { efDAT, "-sigel",    "sigel",     ffREAD },
+    { efDAT, "-sigin",    "siginel",   ffREAD },
+    { efDAT, "-eloss",    "eloss",     ffREAD },
+    { efDAT, "-qtrans",   "qtrans",    ffREAD },
+    { efDAT, "-band",     "band-ener", ffREAD },
+    { efDAT, "-thetael",  "theta-el",  ffREAD },
     { efPDB, "-o", "ehole",  ffWRITE },
     { efXVG, "-h", "histo",  ffWRITE },
     { efXVG, "-r", "radius", ffWRITE },
@@ -573,8 +622,6 @@ int main(int argc,char *argv[])
     { efXVG, "-e", "ener",   ffWRITE }
   };
 #define NFILE asize(fnm)
-  char *buf,*ptr,*rptr;
-  int  i;
   
   CopyRight(stdout,argv[0]);
   parse_common_args(&argc,argv,0,NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
@@ -583,21 +630,14 @@ int main(int argc,char *argv[])
     fatal_error(0,"Delta X should be > 0");
   ehp.Alj = FACEL*pow(ehp.deltax,5);
   ehp.rho = (ehp.rho/ehp.matom)*AVOGADRO*1e-21;
-  
+
+  init_tables(NFILE,fnm);
+
   if (bTest) 
     test_tables(&ehp.seed,ftp2fn(efPDB,NFILE,fnm),ehp.rho);  
-  else {
-    ptr  = ftp2fn(efPDB,NFILE,fnm);
-    snew(buf,strlen(ptr)+10);
-    rptr = strdup(ptr);
-    if ((ptr  = strstr(rptr,".pdb")) != NULL)
-      *ptr = '\0';
-    do_sims(rptr,
-	    opt2fn("-h",NFILE,fnm),opt2fn("-r",NFILE,fnm),
-	    opt2fn("-n",NFILE,fnm),opt2fn("-g",NFILE,fnm),
-	    opt2fn("-m",NFILE,fnm),opt2fn("-e",NFILE,fnm),
-	    &ehp,bForce,bScatter);
-  }
+  else 
+    do_sims(NFILE,fnm,&ehp);
+  
   thanx(stdout);
   
   return 0;

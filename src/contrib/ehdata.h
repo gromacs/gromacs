@@ -1,20 +1,27 @@
 /*******************************************************************
  *
  * Functions to read the tables
+ * The functions must the very first time be called with the file
+ * name containing the table. After that, the routines may be called
+ * with NULL for a filename. The init_tables routine basically
+ * does all the initiation.
  *
  *******************************************************************/	
 	
-extern real get_omega(real ekin,int *seed,FILE *fp);
+extern real get_omega(real ekin,int *seed,FILE *fp,char *fn);
 
-extern real get_q_inel(real ekin,real omega,int *seed,FILE *fp);
+extern real get_q_inel(real ekin,real omega,int *seed,FILE *fp,char *fn);
 
-extern real get_theta_el(real ekin,int *seed,FILE *fp);
+extern real get_theta_el(real ekin,int *seed,FILE *fp,char *fn);
 
-extern real cross_inel(real ekin,real rho);
+extern real cross_inel(real ekin,real rho,char *fn);
 
-extern real cross_el(real ekin,real rho);
+extern real cross_el(real ekin,real rho,char *fn);
 
-extern real band_ener(int *seed,FILE *fp);
+extern real band_ener(int *seed,FILE *fp,char *fn);
+
+extern void init_tables(int nfile,t_filenm fnm[]);
+/* Must be called before any of the table lookup thingies */
 
 extern void test_tables(int *seed,char *fn,real rho);
 

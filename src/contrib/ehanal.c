@@ -243,7 +243,7 @@ void dump_ana_struct(char *rmax,char *nion,char *gyr,
   for(i=0; (i<anal->index); i++) {
     t = 1000*anal->t[i];
     fprintf(fp,"%12g  %12.3f\n",t,anal->maxdist[i]/nsim);
-    fprintf(gp,"%12g  %12.3f\n",t,(1.0*anal->nion[i])/nsim);
+    fprintf(gp,"%12g  %12.3f\n",t,(1.0*anal->nion[i])/nsim-1);
     if (anal->nion[i] > 0)
       fprintf(hp,"%12g  %12.3f\n",t,sqrt(anal->ad2[i]/anal->nion[i]));
   }

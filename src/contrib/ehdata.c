@@ -39,7 +39,7 @@ static int realcomp(const void *a,const void *b)
     return 0;
 }
 
-static t_p2Ddata *read_p2Ddata(char *fn,int nener,int n2Ddata)
+static t_p2Ddata *read_p2Ddata(char *fn)
 {
   FILE    *fp;
   t_p2Ddata *p2Ddata;
@@ -51,8 +51,9 @@ static t_p2Ddata *read_p2Ddata(char *fn,int nener,int n2Ddata)
 
   /* Allocate memory and set constants */
   snew(p2Ddata,1);
-  p2Ddata->nener  = nener;
-  p2Ddata->n2Ddata = n2Ddata;
+  if (fscanf(fp,"%d%d",&p2Ddata->nener,&p2Ddata->n2Ddata) != 2)
+    fatal_error(0,"I need two integers: nener, n in file %s",fn);
+  
   snew(p2Ddata->ener,p2Ddata->nener);
   snew(p2Ddata->prob,p2Ddata->nener);
   snew(p2Ddata->data,p2Ddata->nener);
@@ -79,7 +80,8 @@ static t_p2Ddata *read_p2Ddata(char *fn,int nener,int n2Ddata)
      * This is equivalent to shifting in the data slightly along the X-axis
      * but better than linear search with the "real" data.
      */
-    qsort(p2Ddata->data[i],p2Ddata->n2Ddata,sizeof(p2Ddata->data[0][0]),realcomp);
+    qsort(p2Ddata->data[i],p2Ddata->n2Ddata,sizeof(p2Ddata->data[0][0]),
+	  realcomp);
   }
   fprintf(stderr,"\n");
   
@@ -97,12 +99,12 @@ static t_pq_inel *read_pq(char *fn)
   
   fprintf(stdout,"Going to read %s\n",fn);
   fp = ffopen(fn,"r");
-  
+
   /* Allocate memory and set constants */
   snew(pq,1);
-  pq->nener  = 420;
-  pq->nomega = 49;
-  pq->nq = 101;
+  if (fscanf(fp,"%d%d%d",&pq->nener,&pq->nomega,&pq->nq) != 3)
+    fatal_error(0,"I need three integers: nener, nomega, nq in file %s",fn);
+  
   snew(pq->ener,pq->nener);
   snew(pq->omega,pq->nener);
   snew(pq->prob,pq->nener);
@@ -149,6 +151,8 @@ static int my_bsearch(real val,int ndata,real data[])
 {
   int ilo,ihi,imed;
 
+  if (val < data[0])
+    return -1;
   ilo = 0; 
   ihi = ndata-1;
   while ((ihi - ilo) > 1) {
@@ -166,162 +170,182 @@ static int my_bsearch(real val,int ndata,real data[])
     return ilo;
 }
 
-real get_omega(real ekin,int *seed,FILE *fp)
+real get_omega(real ekin,int *seed,FILE *fp,char *fn)
 {
   static t_p2Ddata *p2Ddata = NULL;
   real r,ome;
   int  eindex,oindex;
   
   if (p2Ddata == NULL) 
-    p2Ddata = read_p2Ddata("respd.dat",1019,100);
+    p2Ddata = read_p2Ddata(fn);
   
   /* Get energy index by binary search */
-  eindex = my_bsearch(ekin,p2Ddata->nener,p2Ddata->ener);
+  if ((eindex = my_bsearch(ekin,p2Ddata->nener,p2Ddata->ener)) >= 0) {
   
-  /* Start with random number */
-  r = rando(seed);
-  
-  /* Do binary search in the energy table */
-  oindex = my_bsearch(r,p2Ddata->n2Ddata,p2Ddata->prob[eindex]);
-  
-  ome = p2Ddata->data[eindex][oindex];
-  
-  if (fp) 
-    fprintf(fp,"%8.3f  %8.3f\n",ome,r);
-  
-  return ome;
+    /* Start with random number */
+    r = rando(seed);
+    
+    /* Do binary search in the energy table */
+    if ((oindex = my_bsearch(r,p2Ddata->n2Ddata,p2Ddata->prob[eindex])) >= 0) {
+    
+      ome = p2Ddata->data[eindex][oindex];
+      
+      if (fp) 
+	fprintf(fp,"%8.3f  %8.3f\n",ome,r);
+      
+      return ome;
+    }
+  }
+  return 0;
 }
 
-real get_theta_el(real ekin,int *seed,FILE *fp)
+real get_theta_el(real ekin,int *seed,FILE *fp,char *fn)
 {
   static t_p2Ddata *p2Ddata = NULL;
   real r,theta;
   int  eindex,tindex;
   
   if (p2Ddata == NULL) 
-    p2Ddata = read_p2Ddata("proeldds.dat",1200,101);
+    p2Ddata = read_p2Ddata(fn);
   
   /* Start with random number */
   r = rando(seed);
     
   /* Get energy index by binary search */
-  eindex = my_bsearch(ekin,p2Ddata->nener,p2Ddata->ener);
+  if ((eindex = my_bsearch(ekin,p2Ddata->nener,p2Ddata->ener)) >= 0) {
   
-  /* Do binary search in the energy table */
-  tindex = my_bsearch(r,p2Ddata->n2Ddata,p2Ddata->prob[eindex]);
+    /* Do binary search in the energy table */
+    if ((tindex = my_bsearch(r,p2Ddata->n2Ddata,p2Ddata->prob[eindex])) >= 0) {
   
-  theta = p2Ddata->data[eindex][tindex];
-  
-  if (fp) 
-    fprintf(fp,"%8.3f  %8.3f\n",theta,r);
-  
-  return theta;
+      theta = p2Ddata->data[eindex][tindex];
+      
+      if (fp) 
+	fprintf(fp,"%8.3f  %8.3f\n",theta,r);
+      
+      return theta;
+    }
+  }
+  return 0;
 }
 
-real get_q_inel(real ekin,real omega,int *seed,FILE *fp)
+real get_q_inel(real ekin,real omega,int *seed,FILE *fp,char *fn)
 {
   static t_pq_inel *pq = NULL;
   int    eindex,oindex,tindex;
   real   r,the;
   
   if (pq == NULL)
-    pq = read_pq("spresp-all.dat");
+    pq = read_pq(fn);
 
   /* Get energy index by binary search */
-  eindex = my_bsearch(ekin,pq->nener,pq->ener);
+  if ((eindex = my_bsearch(ekin,pq->nener,pq->ener)) >= 0) {
   
-  /* Do binary search in the energy table */
-  oindex = my_bsearch(omega,pq->nomega,pq->omega[eindex]);
+    /* Do binary search in the energy table */
+    if ((oindex = my_bsearch(omega,pq->nomega,pq->omega[eindex])) >= 0) {
+      
+      /* Start with random number */
+      r = rando(seed);
+      
+      if ((tindex = my_bsearch(r,pq->nq,pq->prob[eindex][oindex])) >= 0) {
+	
+	the = pq->q[eindex][oindex][tindex];
   
-  /* Start with random number */
-  r = rando(seed);
-  
-  tindex = my_bsearch(r,pq->nq,pq->prob[eindex][oindex]);
-  
-  the = pq->q[eindex][oindex][tindex];
-  
-  if (fp)
-    fprintf(fp,"%8.3f  %8.3f\n",the,r);
-    
-  return the;
+	if (fp)
+	  fprintf(fp,"%8.3f  %8.3f\n",the,r);
+	
+	return the;
+      }
+    }
+  }
+  return 0;
 }
 
 
-static void read_cross(char *fn,int n,real **ener,real **cross,real factor)
+static int read_cross(char *fn,real **ener,real **cross,real factor)
 {
-  FILE   *fp;
+  char   **data=NULL;
   double e,c;
-  int    i;
+  int    i,j,n;
   
   fprintf(stdout,"Going to read %s\n",fn);
-  fp = ffopen(fn,"r");
+  n = get_file(fn,&data);
 
   /* Allocate memory */
   snew(*cross,n);
   snew(*ener,n);
-  for(i=0; (i<n); i++) {
-    fscanf(fp,"%lf%lf",&e,&c);
-    (*ener)[i] = e;
-    (*cross)[i] = c*factor;
+  for(i=j=0; (i<n); i++) {
+    if (sscanf(data[i],"%lf%lf",&e,&c) == 2) {
+      (*ener)[j] = e;
+      (*cross)[j] = c*factor;
+      j++;
+    }
+    sfree(data[i]);
   }
-  fclose(fp);
+  sfree(data);
+  if (j != n)
+    fprintf(stderr,"There were %d empty lines in file %s\n",n-j,fn);
   
+  return j;
 }
 
-real cross_inel(real ekin,real rho)
+real cross_inel(real ekin,real rho,char *fn)
 {
   static real *ener  = NULL;
   static real *cross = NULL;
-  static int  ninel = 520;
+  static int  ninel;
   int eindex;
   
   /* Read data at first call, convert A^2 to nm^2 */
   if (cross == NULL)
-    read_cross("totpineld.dat",ninel,&ener,&cross,rho*0.01);
+    ninel = read_cross(fn,&ener,&cross,rho*0.01);
   
   /* Compute index with binary search */
-  eindex = my_bsearch(ekin,ninel,ener);
-  
-  return cross[eindex];
+  if ((eindex = my_bsearch(ekin,ninel,ener)) >= 0)
+    return cross[eindex];
+    
+  return 0;
 }
 
-real cross_el(real ekin,real rho)
+real cross_el(real ekin,real rho,char *fn)
 {
   static real *ener  = NULL;
   static real *cross = NULL;
-  static int  nel = 1200;
+  static int  nel;
   int eindex;
   
   /* Read data at first call, convert A^2 to nm^2  */
   if (cross == NULL) 
-    read_cross("totpeldds.dat",nel,&ener,&cross,rho*0.01);
+    nel = read_cross(fn,&ener,&cross,rho*0.01);
   
   /* Compute index with binary search */
-  eindex = my_bsearch(ekin,nel,ener);
-  
-  return cross[eindex];
+  if ((eindex = my_bsearch(ekin,nel,ener)) >= 0)
+    return cross[eindex];
+    
+  return 0;
 }
 
-real band_ener(int *seed,FILE *fp)
+real band_ener(int *seed,FILE *fp,char *fn)
 {
   static real *ener  = NULL;
   static real *prob  = NULL;
-  static int  nener = 500;
+  static int  nener;
   int  eindex;
   real r;
   
   /* Read data at first call, misuse read_cross function */
-  if (prob == NULL) 
-    read_cross("realbd.dat",nener,&ener,&prob,1.0);
+  if (prob == NULL)
+    nener = read_cross(fn,&ener,&prob,1.0);
   
   r = rando(seed);
   
-  eindex = my_bsearch(r,nener,prob);
-  
-  if (fp)
-    fprintf(fp,"%8.3f  %8.3f\n",ener[eindex],r);
-  
-  return ener[eindex];
+  if ((eindex = my_bsearch(r,nener,prob)) >= 0) {
+    
+    if (fp)
+      fprintf(fp,"%8.3f  %8.3f\n",ener[eindex],r);
+    
+    return ener[eindex];
+  }
+  return 0;
 }
 
 static void test_omega(FILE *fp,int *seed)
@@ -330,7 +354,7 @@ static void test_omega(FILE *fp,int *seed)
 
   fprintf(fp,"Testing the energy loss tables\n");
   for(i=0; (i<1000); i++) {
-    (void) get_omega(500*rando(seed),seed,fp);
+    (void) get_omega(500*rando(seed),seed,fp,NULL);
   }
 }
 
@@ -340,7 +364,7 @@ static void test_q_inel(FILE *fp,int *seed)
   
   fprintf(fp,"Testing the energy/omega dependent inelastic scattering q tables\n");
   for(i=0; (i<1000); i++) {
-    (void) get_q_inel(500*rando(seed),400*rando(seed),seed,fp);
+    (void) get_q_inel(500*rando(seed),400*rando(seed),seed,fp,NULL);
   }
 }
 
@@ -350,7 +374,7 @@ static void test_theta_el(FILE *fp,int *seed)
   
   fprintf(fp,"Testing the energy dependent elastic scattering theta tables\n");
   for(i=0; (i<1000); i++) {
-    (void) get_theta_el(500*rando(seed),seed,fp);
+    (void) get_theta_el(500*rando(seed),seed,fp,NULL);
   }
 }
 
@@ -360,7 +384,7 @@ static void test_sigma_el(FILE *fp,real rho)
 
   fprintf(fp,"Testing the elastic cross sections table\n");
   for(i=0; (i<500); i++) {
-    fprintf(fp,"%3d  %8.3f\n",i,cross_el(i,rho));
+    fprintf(fp,"%3d  %8.3f\n",i,cross_el(i,rho,NULL));
   }
 }
 
@@ -370,7 +394,7 @@ static void test_sigma_inel(FILE *fp,real rho)
 
   fprintf(fp,"Testing the inelastic cross sections table\n");
   for(i=0; (i<500); i++) {
-    fprintf(fp,"%3d  %8.3f\n",i,cross_inel(i,rho));
+    fprintf(fp,"%3d  %8.3f\n",i,cross_inel(i,rho,NULL));
   }
 }
 
@@ -379,8 +403,23 @@ static void test_band_ener(int *seed,FILE *fp)
   int i;
   
   for(i=0; (i<500); i++) {
-    band_ener(seed,fp);
+    band_ener(seed,fp,NULL);
   }
+}
+
+void init_tables(int nfile,t_filenm fnm[])
+{
+  int  seed  = 13;
+  real ekin  = 20;
+  real rho   = 1;
+  real omega = 10;
+  
+  (void) band_ener(&seed,NULL,opt2fn("-band",nfile,fnm));
+  (void) cross_el(ekin,rho,opt2fn("-sigel",nfile,fnm));
+  (void) cross_inel(ekin,rho,opt2fn("-sigel",nfile,fnm));
+  (void) get_theta_el(ekin,&seed,NULL,opt2fn("-thetael",nfile,fnm));
+  (void) get_omega(ekin,&seed,NULL,opt2fn("-eloss",nfile,fnm));
+  (void) get_q_inel(ekin,omega,&seed,NULL,opt2fn("-qtrans",nfile,fnm));
 }
 
 void test_tables(int *seed,char *fn,real rho)
