@@ -15,7 +15,7 @@ cd $GMXHOME/bin/$GMXCPU
 set PROGRAMS = [a-z]*
 cd $dir
 
-printf 'if ( \$shell == \"/bin/tcsh\" ) then\n' >> $out
+printf "if ( "'\$shell'" == /bin/tcsh ) then\n" >> $out
 
 foreach i ( $PROGRAMS )
   if ( ( $i != "average" ) && ( $i != "luck" ) ) then
