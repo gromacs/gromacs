@@ -42,7 +42,7 @@
 #include "tpxio.h"
 
 static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],atom_id index[],
-			 rvec xref,matrix box)
+			 rvec xref,bool bPBC,matrix box)
 {
   const real tol=1e-4;
   bool  bChanged;
@@ -62,7 +62,7 @@ static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],atom_id index[],
   }
   svmul(1/mtot,xref,xref);
   /* Now check if any atom is more than half the box from the COM */
-  if (box) {
+  if (bPBC) {
     iter = 0;
     do {
       bChanged = FALSE;
@@ -123,12 +123,12 @@ int gmx_sorient(int argc,char *argv[])
     "the center of mass of a set of atoms. The group of solvent atoms should",
     "consist of 3 atoms per solvent molecule.",
     "Only solvent molecules between [TT]-rmin[tt] and [TT]-rmax[tt] are",
-    "considered each frame.[PAR]",
+    "considered for [TT]-o[tt] and [TT]-no[tt] each frame.[PAR]",
     "[TT]-o[tt]: angle distribution of theta1.[PAR]",
     "[TT]-no[tt]: angle distribution of theta2.[PAR]",
     "[TT]-ro[tt]: <cos(theta1)> and <3cos^2(theta2)-1> as a function of the",
     "distance.[PAR]",
-    "[TT]-ro[tt]: the sum over all solvent molecules within distance r",
+    "[TT]-co[tt]: the sum over all solvent molecules within distance r",
     "of cos(theta1) and 3cos^2(theta2)-1 as a function of r.[PAR]"
   };
   
@@ -188,6 +188,8 @@ int gmx_sorient(int argc,char *argv[])
   rmin2 = sqr(rmin);
   rmax2 = sqr(rmax);
   rcut  = 0.45*min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ]));
+  if (rcut == 0)
+    rcut = 10*rmax;
   rcut2 = sqr(rcut);
   rbinw = 0.02;
   invbw = 1/rbinw;
@@ -197,7 +199,9 @@ int gmx_sorient(int argc,char *argv[])
   
   snew(hist1,nbin);
   snew(hist2,nbin);
-  nrbin = rcut/rbinw+1;
+  nrbin = rcut/rbinw;
+  if (nrbin == 0)
+    nrbin = 1;
   snew(histi1,nrbin);
   snew(histi2,nrbin);
   snew(histn,nrbin);
@@ -212,8 +216,11 @@ int gmx_sorient(int argc,char *argv[])
     inp  = 0;
     outp = 0;
     for(p=0; (p<nrefgrp); p++) {
-      calc_com_pbc(nrefat,&top,x,index[0],xref,bPBC ? box : NULL);
-      
+      if (bCom)
+	calc_com_pbc(nrefat,&top,x,index[0],xref,bPBC,box);
+      else
+	copy_rvec(x[index[0][p]],xref);
+
       for(m=0; m<isize[1]; m+=3) {
 	sa0 = index[1][m];
 	sa1 = index[1][m+1];
@@ -236,7 +243,7 @@ int gmx_sorient(int argc,char *argv[])
 	  (histn[(int)(invbw*r)])++;
 	  if (r2>=rmin2 && r2<rmax2) {
 	    n++;
-	    (hist1[(int)(nbin*0.5*two_pi*acos(inp)+1)])++;
+	    (hist1[(int)(nbin*0.5*two_pi*acos(inp))])++;
 	    (hist2[(int)(nbin*two_pi*acos(fabs(outp)))])++;
 	  }
 	}
@@ -295,10 +302,11 @@ int gmx_sorient(int argc,char *argv[])
   normfac = 1.0/(nrefgrp*nf);
   c1 = 0;
   c2 = 0;
+  fprintf(fp,"%g %g %g\n",0,c1,c2);
   for(i=0; i<nrbin; i++) {
-    fprintf(fp,"%g %g %g\n",i*rbinw,c1,c2);
     c1 += histi1[i]*normfac;
     c2 += histi2[i]*normfac;
+    fprintf(fp,"%g %g %g\n",(i+1)*rbinw,c1,c2);
   }
   fclose(fp);
 
