@@ -65,12 +65,12 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
   double dbl,tend=0;
   bool   bEndOfSet,bTimeInRange,bFirstLine=TRUE;
   real   **val;
-
+  
   if (linelen > llmax) {
     llmax = linelen;
     srenew(line0,llmax);
   }
-
+  
   val = NULL;
   *t  = NULL;
   *dt = 0;

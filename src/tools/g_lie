@@ -1,0 +1,2 @@
+#!/bin/csh -f
+$0:h/gmx-ana -type lie $argv
