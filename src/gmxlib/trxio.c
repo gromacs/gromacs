@@ -711,14 +711,24 @@ int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
     break;
   case efXTC:
     if (read_first_xtc(fp,&fr->natoms,&fr->step,&fr->time,fr->box,&fr->x,
-		       &fr->prec,&bOK) == 0)
-      fatal_error(0,"No XTC!\n");
-    fr->bPrec = TRUE;
-    fr->bStep = TRUE;
-    fr->bTime = TRUE;
-    fr->bX    = TRUE;
-    fr->bBox  = TRUE;
-    printcount(fr->time);
+		       &fr->prec,&bOK) == 0) {
+      if (bOK) {
+	fatal_error(0,"No XTC!\n");
+      } else {
+	fr->not_ok = DATA_NOT_OK;
+      }
+    }
+    if (fr->not_ok) {
+      fr->natoms = 0;
+      printincomp(fr);
+    } else {
+      fr->bPrec = TRUE;
+      fr->bStep = TRUE;
+      fr->bTime = TRUE;
+      fr->bX    = TRUE;
+      fr->bBox  = TRUE;
+      printcount(fr->time);
+    }
     bFirst = FALSE;
     break;
   case efPDB:
