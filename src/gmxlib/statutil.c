@@ -271,6 +271,14 @@ static FILE *man_file(char *program,int mantp)
   return fp;
 }
 
+static int add_parg(int npargs,t_pargs **pa,t_pargs *pa_add)
+{
+  srenew((*pa),npargs+1);
+  memcpy(&((*pa)[npargs]),pa_add,sizeof(*pa_add));
+  
+  return npargs+1;
+}
+
 void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 		       int nfile,t_filenm fnm[],int npargs,t_pargs pa[],
 		       int ndesc,char *desc[],int nbugs,char *bugs[])
@@ -279,23 +287,34 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   static char *not_nicestr[] = { "0", "4", "10", "19", NULL };
   static char *nicestr[]     = { "19", "10", "4", "0", NULL };
   static char *npri_str[]    = { "0", "100", "200", "250", NULL };
-  static int  nicelevel=0;
-  static int  mantp=0;
-#ifdef _SGI_
-  static int  npri=0;
-#ifdef USE_SGI_FPE
-  static bool bExcept=FALSE;
-#endif
-#endif
-#ifdef HAVE_MOTIF
-  static bool bGUI;  
-#endif
-  static bool bDebug=FALSE;
+  static int  nicelevel=0,mantp=0,npri=0;
+  static bool bExcept=FALSE,bGUI=FALSE,bDebug=FALSE;
   
   FILE *fp;  
-  bool bPrint,bNo_get_pargs;
+  bool bPrint,bNo_get_pargs,bAddNice;
   int  i,j,k,npall;
-  t_pargs *all_pa;
+  
+  t_pargs *all_pa=NULL;
+  
+  t_pargs motif_pa = { "-X",    FALSE, etBOOL, &bGUI,
+		       "Use dialog box GUI to edit command line options" };
+  t_pargs fpe_pa   = { "-exception", FALSE, etBOOL, &bExcept,
+		       "HIDDENTurn on exception handling" };
+  t_pargs npri_paX = { "-npri", FALSE, etENUM,  npri_str,
+		       "Set non blocking priority." };
+  t_pargs npri_pa  = { "-npri", FALSE, etINT,  &npri,
+		       "Set non blocking priority." };
+  t_pargs nice_paX = { "-nice", FALSE, etENUM, NULL, 
+		       "Set the nicelevel" };
+  t_pargs nice_pa  = { "-nice", FALSE, etINT,  &nicelevel, 
+		       "Set the nicelevel" };
+  t_pargs begin_pa = { "-b",    FALSE, etREAL, &tbegin,        
+		       "First frame (ps) to read from trajectory" };
+  t_pargs end_pa   = { "-e",    FALSE, etREAL, &tend,        
+		       "Last frame (ps) to read from trajectory" };
+  t_pargs view_pa  = { "-w",    FALSE, etBOOL, &bView,     
+		       "View output using xvgr or ghostview" };
+  
   t_pargs pca_pa[] = {
     { "-h",    FALSE, etBOOL, &bHelp,     
       "Print help info and quit" }, 
@@ -307,50 +326,8 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
       "HIDDENManual type: 0=none, 1=tex, 2=html, 3=nroff, 4=ascii, 5=java" },
     { "-debug",FALSE, etBOOL, &bDebug,
       "HIDDENwrite file with debug information" },
-    { "-nice", FALSE, etENUM, NULL, 
-      "Set the nicelevel" },
-#ifdef _SGI_
-    { "-npri", FALSE, etENUM,  npri_str,
-      "Set non blocking priority (SGI only) try 250" },
-#ifdef USE_SGI_FPE
-    { "-exception", FALSE, etBOOL, &bExcept,
-      "HIDDENTurn on exception handling" },
-#endif
-#endif
-#ifdef HAVE_MOTIF
-    { "-X",    FALSE, etBOOL, &bGUI,
-      "Use dialog box GUI to edit command line options" },
-#endif
-    { "-b",    FALSE, etREAL, &tbegin,        
-      "First frame (ps) to read from trajectory" },
-    { "-e",    FALSE, etREAL, &tend,        
-      "Last frame (ps) to read from trajectory" },
-    { "-w",    FALSE, etBOOL, &bView,     
-      "View output using xvgr or ghostview" }
   };
 #define NPCA_PA asize(pca_pa)
-  bool bFlags[NPCA_PA] = 
-#ifdef HAVE_MOTIF
-#ifdef _SGI_
-#ifdef USE_SGI_FPE
-  { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0 };
-#else
-  { 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0 };
-#endif
-#else
-  { 1, 1, 1, 1, 1, 1, 1, 0, 0, 0 };
-#endif
-#else
-#ifdef _SGI_
-#ifdef USE_SGI_FPE
-  { 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0 };
-#else
-  { 1, 1, 1, 1, 1, 1, 1, 0, 0, 0 };
-#endif
-#else
-  { 1, 1, 1, 1, 1, 1, 0, 0, 0 };
-#endif
-#endif
 
   /* Check for double arguments */
   for (i=1; (i<*argc); i++)
@@ -359,47 +336,88 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
            (strcmp(argv[i],argv[j])==0) )
 	fatal_error(0,"Double command line argument %s\n",argv[i]);
   
+  /* Handle the flags argument, which is a bit field 
+   * The FF macro returns whether or not the bit is set
+   */
+  uFlags        = Flags;
+  bPrint        = !FF(PCA_SILENT);
+  bNo_get_pargs = !FF(PCA_NOGET_PARGS);
+  
+  /* Check whether we should have GUI or not */
+#ifdef HAVE_MOTIF
+  bGUI = (getenv("GMXMOTIF") != NULL);
+  for(i=1; (i<*argc); i++) {
+    if (strcmp(argv[i],"-X") == 0)
+      bGUI = TRUE;
+    else if (strcmp(argv[i],"-noX") == 0)
+      bGUI = FALSE;
+  }
+  if (bGUI)
+    bQuiet = TRUE;
+#endif
+  
   /* First do file stuff */
   if (!program)
     program  = strdup(argv[0]);
-  
-  /* Now other options */
-  uFlags  = Flags;
-  bPrint  = (Flags & PCA_SILENT)   != PCA_SILENT;
-  bNo_get_pargs = (Flags & PCA_NOGET_PARGS) != PCA_NOGET_PARGS;
-  
-  /* Check ALL the flags ... */
-  /* Please note this 5, which indicates the index in the pca_pa array 
-   * for the -nice option.
-   */
-  if (bNice) 
-    pca_pa[5].u.c = nicestr;
-  else
-    pca_pa[5].u.c = not_nicestr;
-    
-  /* Check whether we have to add -b -e or -w options */
-  bFlags[NPCA_PA-3] = (bool) (Flags & PCA_CAN_BEGIN);
-  bFlags[NPCA_PA-2] = (bool) (Flags & PCA_CAN_END);
-  bFlags[NPCA_PA-1] = (bool) (Flags & PCA_CAN_VIEW);
-    
-  snew(all_pa,NPCA_PA+npargs);
-  for(i=npall=0; (i<NPCA_PA); i++)
-    if (bFlags[i]) {
-      memcpy(&(all_pa[npall]),&(pca_pa[i]),(size_t)sizeof(pca_pa[i]));
-      npall++;
-    }
-  for(i=0; (i<npargs); i++,npall++)
-    memcpy(&(all_pa[npall]),&(pa[i]),(size_t)sizeof(pa[i]));
-  
+
   /* Parse the file args */
   parse_file_args(argc,argv,nfile,fnm,FF(PCA_KEEP_ARGS));
-
-#ifdef HAVE_MOTIF
-  /* Default value for GUI can be set with environment variable */
-  bGUI = (getenv("GMXMOTIF") != NULL);
-#endif
   
-  /* Now parse the other options */
+  /* Check ALL the flags ... */
+  snew(all_pa,NPCA_PA+npargs);
+  for(i=npall=0; (i<NPCA_PA); i++)
+    npall = add_parg(npall,&(all_pa),&(pca_pa[i]));
+
+  if (FF(PCA_CAN_BEGIN)) 
+    npall = add_parg(npall,&(all_pa),&begin_pa);
+  if (FF(PCA_CAN_END))
+    npall = add_parg(npall,&(all_pa),&end_pa);
+  if (FF(PCA_CAN_END))
+    npall = add_parg(npall,&(all_pa),&view_pa);
+    
+
+  bAddNice = TRUE;    
+#ifdef _SGI_
+#ifndef NO_NICE
+  if (FF(PCA_SET_NPRI)) {
+    if (bGUI)
+      npall = add_parg(npall,&(all_pa),&npri_paX);
+    else
+      npall = add_parg(npall,&(all_pa),&npri_pa);
+    bAddNice = FALSE;
+  }
+#endif
+#ifdef USE_SGI_FPE
+  npall = add_parg(npall,&(all_pa),&fpe_pa);
+#endif
+#endif
+
+#ifndef NO_NICE
+  if (bAddNice) {
+    if (bGUI) {
+      /* Automatic nice or scheduling options */
+      if (bNice) 
+	nice_paX.u.c = nicestr;
+      else
+	nice_paX.u.c = not_nicestr;
+      npall = add_parg(npall,&(all_pa),&nice_paX);
+    }
+    else
+      npall = add_parg(npall,&(all_pa),&nice_pa);
+  }
+#endif
+
+  /* Motif options */
+#ifdef HAVE_MOTIF
+  npall = add_parg(npall,&(all_pa),&motif_pa);
+  
+#endif
+
+  /* Now append the program specific arguments */
+  for(i=0; (i<npargs); i++)
+    npall = add_parg(npall,&(all_pa),&(pa[i]));
+  
+  /* Now parse all the command-line options */
   get_pargs(argc,argv,npall,all_pa,FF(PCA_KEEP_ARGS));
 
   /* Open the debug file */
@@ -413,14 +431,13 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   }
 
 #ifdef HAVE_MOTIF
-  /* Now we have parsed the command line arguments. If the use wants it
+  /* Now we have parsed the command line arguments. If the user wants it
    * we can now plop up a GUI dialog box to edit options.
    */
-  if (bGUI)
+  if (bGUI) {
     gmx_gui(argc,argv,nfile,fnm,npall,all_pa,ndesc,desc,nbugs,bugs);
+  }
 #endif
-  
-  
   
   if (bNo_get_pargs) {  
     /* Now copy the results back... */
@@ -436,25 +453,28 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 #endif
 #endif
   
-#ifndef NO_NICE
   /* Set the nice level */
 #ifdef _SGI_
-  if (FF(PCA_SET_NPRI) && !opt2parg_bSet("-npri",npall,all_pa))
-    npri=atoi(getenv("GMXNPRI"));
-    
+  /* if (FF(PCA_SET_NPRI) && !opt2parg_bSet("-npri",npall,all_pa))
+     npri=atoi(getenv("GMXNPRI"));
+  */
+  if (bGUI)
+    sscanf(npri_str[0],"%d",&npri);
   if (npri != 0) {
     (void) schedctl(MPTS_RTPRI,0,npri);
   }
   else
 #endif
-    {
+#ifndef NO_NICE
+    if (bGUI) {
       if (bNice)
 	sscanf(nicestr[0],"%d",&nicelevel);
       else
 	sscanf(not_nicestr[0],"%d",&nicelevel);
-      if (nicelevel != 0)
-	nice(nicelevel);
     }
+  if (nicelevel != 0)
+    nice(nicelevel);
+  
 #endif
 
   if (!(FF(PCA_QUIET) || bQuiet )) {
@@ -469,7 +489,8 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 
   if (mantp != 0) {
     fp=man_file(program,mantp);
-    write_man(fp,mantp,program,ndesc,desc,nfile,fnm,npall,all_pa,nbugs,bugs,bHidden);
+    write_man(fp,mantp,program,ndesc,desc,nfile,fnm,npall,all_pa,
+	      nbugs,bugs,bHidden);
     fclose(fp);
     exit(0);
   }
