@@ -707,7 +707,11 @@ if test $ac_cv_prog_gcc = yes; then
     xCFLAGS="-O3 -Ofast"
     xASFLAGS="$xCFLAGS"
   else  
-    xCFLAGS="-O6 -fomit-frame-pointer -finline-functions -funroll-all-loops -Wall -Wno-unused"
+    # mac os x only goes to -O4, so check -O6 first, then -O4 and finally -O3.
+    ACX_CHECK_CC_FLAGS(-O6,o6,xCFLAGS="$xCFLAGS -O6",[
+	ACX_CHECK_CC_FLAGS(-O4,o4,xCFLAGS="$xCFLAGS -O4",[
+	    ACX_CHECK_CC_FLAGS(-O3,o3,xCFLAGS="$xCFLAGS -O3")])])
+    xCFLAGS="$xCFLAGS -fomit-frame-pointer -finline-functions -funroll-all-loops -Wall -Wno-unused"
     # the portland compiler only knows .s files, and always runs them
     # through cpp. We support this by telling gcc to preprocess .s files.
     xASFLAGS="$xCFLAGS -x assembler-with-cpp"
