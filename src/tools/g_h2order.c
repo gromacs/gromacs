@@ -72,10 +72,8 @@ void calc_order(char *fn, atom_id index[], int ngx, rvec **slDipole,
       slice=0,           /* current slice number */
       *count;            /* nr. of atoms in one slice */
 
-  if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0) {
-    fprintf(stderr,"Could not read coordinates from statusfile\n");
-    exit(1);
-  }
+  if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0)
+    fatal_error(0,"Could not read coordinates from statusfile\n");
 
   if (! *nslices)
     *nslices = (int)(box[axis][axis] * 10); /* default value */
@@ -92,8 +90,7 @@ void calc_order(char *fn, atom_id index[], int ngx, rvec **slDipole,
     normal[0] = 0; normal[1] = 0; normal[2] = 1;
     break;
   default:
-    fprintf(stderr,"No valid value for -axis-. Exiting.\n");
-    exit(1);
+    fatal_error(0,"No valid value for -axis-. Exiting.\n");
   }
 
   clear_rvec(dipole);

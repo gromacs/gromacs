@@ -87,11 +87,8 @@ void rdf_calc(char *fn,char *pdens, char *rdens, char *ndens,
   rvec         *x0,xcm;
   matrix       box;
   
-  if ((natoms=read_first_x(&status,fn,&t,&x0,box))==0) {
-    fprintf(stderr,"Could not read coordinates from statusfile\n");
-    exit(1);
-  }
-  /*init_box(box);*/
+  if ((natoms=read_first_x(&status,fn,&t,&x0,box))==0)
+    fatal_error(0,"Could not read coordinates from statusfile\n");
   
   hb2=min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ]))/2;
   maxbin=(hb2/width)+2;

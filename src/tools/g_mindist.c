@@ -116,10 +116,8 @@ void mindist_plot(char *fn,FILE *atm,real mind,
   rvec         *x0;
   matrix       box;
   
-  if ((natoms=read_first_x(&status,fn,&t,&x0,box))==0) {
-    fprintf(stderr,"Could not read coordinates from statusfile\n");
-    exit(1);
-  }
+  if ((natoms=read_first_x(&status,fn,&t,&x0,box))==0)
+    fatal_error(0,"Could not read coordinates from statusfile\n");
 
   sprintf(buf,"Number of Contacts < %g nm",mind);
   dist=xvgropen(dfile,"Minimum Distance","Time (ps)","Distance (nm)");

@@ -289,8 +289,7 @@ static real calc1_norm(t_corr *this,int nx,atom_id index[],int nx0,rvec xc[])
       }
       break;
     default:
-      fprintf(stderr,"Error: did not expect option value %d",this->type);
-      exit(1);
+      fatal_error(0,"Error: did not expect option value %d",this->type);
     }
     g+=r2;
   }
@@ -417,9 +416,7 @@ static real calc_one_mw(t_corr *this,int ix,int nx0,rvec xc[],real *tm)
     }
     break;
   default:
-    fprintf(stderr,"Error: options got screwed. ");
-    fprintf(stderr,"Did not expect value %d\n",this->type);
-    exit(1);
+    fatal_error(0,"Options got screwed. Did not expect value %d\n",this->type);
   } /* end switch */
   return r2;
 }

@@ -131,10 +131,8 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,real defvdw,int ndots,
   real         totarea,totvolume,harea;
     
   if ((natoms=read_first_x(&status,ftp2fn(efTRX,nfile,fnm),
-			   &t,&x,box))==0) {
-    fprintf(stderr,"Could not read coordinates from statusfile\n");
-    exit(1);
-  }
+			   &t,&x,box))==0)
+    fatal_error(0,"Could not read coordinates from statusfile\n");
   top=read_top(ftp2fn(efTPX,nfile,fnm));
   
   nvdw = read_vdw(ftp2fn(efVDW,nfile,fnm),&vdw);

@@ -113,10 +113,8 @@ int get_bounds(char *topnm,real **bounds,int **index,int **dr_pair,int *npairs,
   
   /* Count how many distance restraint there are... */
   nb=top->idef.il[F_DISRES].nr;
-  if (nb == 0) {
-    fprintf(stderr,"No distance restraints in topology!\n");
-    exit(1);
-  }
+  if (nb == 0)
+    fatal_error(0,"No distance restraints in topology!\n");
   
   /* Allocate memory */
   snew(b,nb);

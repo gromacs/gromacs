@@ -106,10 +106,7 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
         sdbangle = 0;/* sum of these angles */
 
   if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0) 
-  {
-    fprintf(stderr,"Could not read coordinates from statusfile\n");
-    exit(1);
-  }
+    fatal_error(0,"Could not read coordinates from statusfile\n");
 
   snew(slCount, nslices);
   snew(*slOrder, nslices);
@@ -156,11 +153,8 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
       
       size = index[i+1] - index[i];
       if (size != nr_tails)
-      {
-	fprintf(stderr,"ERROR: grp %d does not have same number of"
+	fatal_error(0,"grp %d does not have same number of"
 		" elements as grp 1\n",i); 
-	exit(1);
-      }
 
       for (j = 0; j < size; j++)
       {

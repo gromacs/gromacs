@@ -159,10 +159,8 @@ int main(int argc,char *argv[])
   in=open_enx(ftp2fn(efENE,NFILE,fnm),"r");
   do_enxnms(in,&nre,&enm);
   
-  if (nre == 0) {
-    fprintf(stderr,"No energies!\n");
-    exit(1);
-  }
+  if (nre == 0)
+    fatal_error(0,"No energies!\n");
   
   bCutmax=opt2parg_bSet("-max",asize(pa),pa);
   bCutmin=opt2parg_bSet("-min",asize(pa),pa);

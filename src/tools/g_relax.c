@@ -509,10 +509,8 @@ int main(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
-  if (taum <= 0) {
-    fprintf(stderr,"Please give me a sensible taum!\n");
-    exit(1);
-  }
+  if (taum <= 0)
+    fatal_error(0,"Please give me a sensible taum!\n");
   if (nlevels > 50) {
     nlevels = 50;
     fprintf(stderr,"Warning: too many levels, setting to %d\n",nlevels);
