@@ -43,6 +43,9 @@ int read_mass(char *massdata,t_mass **mass)
   char   line[STRLEN],name[6];
   int    i;
 
+  fprintf(stderr,
+	  "WARNING: masses will be determined based on atom name,\n"
+	  "         this can deviate from the real mass of the atom type\n");
   fp=libopen(massdata);
   *mass=NULL;
   for (i=0; fgets(line,STRLEN,fp); i++) {
@@ -91,7 +94,8 @@ real get_mass(int nmass,t_mass mass[],char *atom)
   }
 
   if (best == -1) {
-    fprintf(stderr,"Could not find atom %s\n",atom);
+    if (debug)
+      fprintf(stderr,"Could not find atom %s\n",atom);
     return 0.0;
   }
   else
