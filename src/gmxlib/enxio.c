@@ -207,10 +207,12 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
     bOK = bOK && bOK1;
     ndo_real(drblock->rt,drblock->ndr,bOK1);
     bOK = bOK && bOK1;
-    *ndr = eh.ndisre;
+    if (bRead)
+      *ndr = eh.ndisre;
   }
   else
-    *ndr = 0;
+    if (bRead)
+      *ndr = 0;
     
   if (eh.u_size) {
     fatal_error(0,"Can't handle user blocks");
