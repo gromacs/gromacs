@@ -279,7 +279,8 @@ int main (int argc,char *argv[])
   snew(ind_rms,nrms);
   snew(irms,nrms);
   
-  fprintf(stderr,"Select group%s for comparison\n",(nrms>1) ? "s" : "");
+  fprintf(stderr,"Select group%s for %s\n",
+	  (nrms>1) ? "s" : "",whatname[ewhat]);
   get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
 	    nrms,irms,ind_rms,gn_rms);
   
@@ -528,8 +529,8 @@ int main (int argc,char *argv[])
     /* calculate RMS matrix */
     fprintf(stderr,"\n");
     if (bMat) {
-      fprintf(stderr,"Building comparison matrix, %dx%d elements\n",
-	      tel_mat,tel_mat2);
+      fprintf(stderr,"Building %s matrix, %dx%d elements\n",
+	      whatname[ewhat],tel_mat,tel_mat2);
       snew(rmsd_mat,tel_mat);
     }
     if (bBond) {
@@ -640,8 +641,8 @@ int main (int argc,char *argv[])
     }
 
     if (bMat) {
-      fprintf(stderr,"\nMin. value: %f, Max. value: %f, Avg. value: %f\n",
-	      rmsd_min,rmsd_max,rmsd_avg);
+      fprintf(stderr,"\n%s: Min %f, Max %f, Avg %f\n",
+	      whatname[ewhat],rmsd_min,rmsd_max,rmsd_avg);
       rlo.r = 1; rlo.g = 1; rlo.b = 1;
       rhi.r = 0; rhi.g = 0; rhi.b = 0;
       if (rmsd_user_max != -1) rmsd_max=rmsd_user_max;
