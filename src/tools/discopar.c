@@ -42,13 +42,6 @@ static char *SRCID_discopar_c = "$Id$";
 #include "pdbio.h"
 #include "disco.h"
 
-#ifdef debug_gmx
-#undef debug_gmx
-#endif
-
-#define debug_gmx() do { FILE *fp=debug ? debug : (stdlog ? stdlog : stderr);\
-fprintf(fp,"NODEID=%d, %s  %d\n",gmx_cpu_id(),__FILE__,__LINE__); fflush(fp); } while (0)
-	
 static t_correct *recv_init(FILE *fp,
 			    t_commrec *cr,int *seed,int *natom,int *nres,
 			    rvec **xref,rvec **xcenter,bool *bKeep)
@@ -195,10 +188,12 @@ static int recv_coords(t_commrec *cr,int *nviol,int *nit,int *k,
   
   /* Check whether there is something from anyone */
   debug_gmx();
+#ifdef HAVE_MPI
   gmx_rx(MPI_ANY_SOURCE,record(nodeid));
   do {
     usleep(1000);
   } while (!mpiio_rx_probe(MPI_ANY_SOURCE));
+#endif
   
   debug_gmx();
   if ((nodeid >= cr->nnodes) || (nodeid <= 0))
@@ -310,7 +305,8 @@ void disco_master(t_commrec *cr,FILE *fp,char *outfn,char *keepfn,t_correct *c,
   tnit  = 0;
   debug_gmx();
   for(k=0; (k<nstruct); ) {
-    nodeid        = recv_coords(cr,&nviol,&nit,&knodeid,x,box,keepfn,FALSE);
+    nodeid        = recv_coords(cr,&nviol,&nit,&knodeid,x,box,
+				(keepfn != NULL),FALSE);
     bConverged = (nviol == 0);
     tnit      += nit;
     ntry++;
@@ -348,7 +344,7 @@ void disco_master(t_commrec *cr,FILE *fp,char *outfn,char *keepfn,t_correct *c,
     }
   }
   for(k=1; (k<cr->nnodes); k++)
-    nodeid = recv_coords(cr,&nviol,&nit,&knodeid,x,box,keepfn,TRUE);
+    nodeid = recv_coords(cr,&nviol,&nit,&knodeid,x,box,(keepfn != NULL),TRUE);
 
   close_trx(status);
   if (keepfn)

@@ -23,13 +23,14 @@ bin_PROGRAMS = \
 	g_clustsize	genbox		genconf		genpr		\
 	make_ndx	mk_angndx	trjcat		trjconv        	\
 	trjorder	wheel		xpm2ps		genion		\
-	g_wham		gendr
-
+	g_wham		cdist		disco		gendr
 
 AUTOCORR_SRC         = 	autocorr.c expfit.c polynomials.c levenmar.c
 
 # Note: you don't have to list sources for "prog" if it is the single file prog.c
 
+cdist_SOURCES	     =  cdist.c residues.c smooth.c bondlist.c
+disco_SOURCES	     =  disco.c dtools.c dlist.c discopar.c correct.c
 g_analyze_SOURCES    = 	g_analyze.c $(AUTOCORR_SRC)
 g_anaeig_SOURCES     = 	g_anaeig.c eigio.c
 g_angle_SOURCES      = 	g_angle.c anadih.c $(AUTOCORR_SRC)

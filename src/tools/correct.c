@@ -44,13 +44,6 @@ static char *SRCID_correct_c = "$Id$";
 #include "names.h"
 #include "physics.h"
 
-#ifdef debug_gmx
-#undef debug_gmx
-#endif
-
-#define debug_gmx() do { FILE *fp=debug ? debug : (stdlog ? stdlog : stderr);\
-fprintf(fp,"PID=%d, %s  %d\n",gmx_cpu_id(),__FILE__,__LINE__); fflush(fp); } while (0)
-
 #define NOT32
 #ifdef NOT32
 #define myrand(seed) rando(seed)

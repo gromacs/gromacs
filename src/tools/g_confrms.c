@@ -80,11 +80,13 @@ int main (int argc,char *argv[])
     "the two structures will be written as separate models",
     "(use [TT]rasmol -nmrpdb[tt]).",
   };
-  static bool bOne=FALSE,bRmpbc=FALSE;
+  static bool bOne=FALSE,bRmpbc=FALSE,bFit=TRUE;
   
   t_pargs pa[] = {
-    { "-one",FALSE,etBOOL,{&bOne},"Only write the fitted structure to file" },
-    { "-pbc",FALSE,etBOOL,{&bRmpbc},"Try to make molecules whole again" }
+    { "-one", FALSE, etBOOL, {&bOne},   "Only write the fitted structure to file" },
+    { "-pbc", FALSE, etBOOL, {&bRmpbc}, "Try to make molecules whole again" },
+    { "-fit", FALSE, etBOOL, {&bFit},   
+      "Do least squares superposition of the target structure to the reference" },
   };
   t_filenm fnm[] = {
     { efTPS, "-f1",  "conf1.gro", ffREAD  },
@@ -134,11 +136,12 @@ int main (int argc,char *argv[])
   
   if ( bRmpbc ) 
     rm_gropbc(&atoms1,x1,box1);
-  
+
+  fprintf(stderr,"Select group from first structure\n");
   get_index(&atoms1,opt2fn_null("-n1",NFILE,fnm),
 	    1,&isize1,&index1,&groupnames1);
   
-  if (isize1 < 3) 
+  if (bFit && (isize1 < 3))
     fatal_error(0,"Need >= 3 points to fit!\n");
   
   /* reading second structure file */
@@ -157,21 +160,19 @@ int main (int argc,char *argv[])
   if ( bRmpbc ) 
     rm_gropbc(&atoms2,x2,box2);
   
+  fprintf(stderr,"Select group from second structure\n");
   get_index(&atoms2,opt2fn_null("-n2",NFILE,fnm),
 	    1,&isize2,&index2,&groupnames2);
   
   /* check isizes, must be equal */
   if ( isize2 != isize1 )
-    fatal_error(0,"isize2 != isize2\n");
-  
-  if (isize2 < 3) 
-    fatal_error(0,"Need >= 3 points to fit!\n");
+    fatal_error(0,"You selected groups with differen number of atoms.\n");
   
   for(i=0; i<isize1; i++) {
     name1=*atoms1.atomname[index1[i]];
     name2=*atoms2.atomname[index2[i]];
     if (strcmp(name1,name2)) {
-      if (warn<20)
+      if (warn < 20)
 	fprintf(stderr,
 		"Warning: atomnames at index %d don't match: %u %s, %u %s\n",
 		i+1,index1[i]+1,name1,index2[i]+1,name2);
@@ -181,57 +182,64 @@ int main (int argc,char *argv[])
   if (warn)
     fprintf(stderr,"%d atomname%s did not match\n",warn,(warn==1) ? "":"s");
   
-  /* calculate center of mass of reference structure */
-  for(m=0; m<DIM; m++) {
-    xcm1[m]=0;
-    for(i=0; i<isize1; i++)
-      xcm1[m]+=x1[index1[i]][m];
-    xcm1[m]/=isize1;
-    for(i=0; i<atoms1.nr; i++)
-      x1[i][m]-=xcm1[m];
+  if (bFit) {  
+    /* calculate center of geometry of reference structure */
+    for(m=0; m<DIM; m++) {
+      xcm1[m]=0;
+      for(i=0; i<isize1; i++)
+	xcm1[m]+=x1[index1[i]][m];
+      xcm1[m]/=isize1;
+      for(i=0; i<atoms1.nr; i++)
+	x1[i][m]-=xcm1[m];
+    }
+    
+    /* calculate center of geometry of structure to be fitted */
+    for(m=0; m<DIM; m++) {
+      xcm2[m]=0;
+      for(i=0; i<isize2; i++)
+	xcm2[m]+=x2[index2[i]][m];
+      xcm2[m]/=isize2;
+      for(i=0; i<atoms2.nr; i++)
+	x2[i][m]-=xcm2[m];
+    }
+    
+    snew(w_rls,atoms2.nr);
+    snew(fit_x,atoms2.nr);
+    for(at=0; at<isize1; at++) {
+      w_rls[index2[at]] = 1.0;
+      copy_rvec(x1[index1[at]],fit_x[index2[at]]);
+    }
+    
+    /* do the least squares fit to the reference structure */
+    do_fit(atoms2.nr,w_rls,fit_x,x2);
+    
+    sfree(fit_x);
+    sfree(w_rls);
   }
-  
-  /* calculate center of mass of structure to be fitted */
-  for(m=0; m<DIM; m++) {
-    xcm2[m]=0;
-    for(i=0; i<isize2; i++)
-      xcm2[m]+=x2[index2[i]][m];
-    xcm2[m]/=isize2;
-    for(i=0; i<atoms2.nr; i++)
-      x2[i][m]-=xcm2[m];
+  else {
+    clear_rvec(xcm1);
+    clear_rvec(xcm2);
   }
-  
-  snew(w_rls,atoms2.nr);
-  snew(fit_x,atoms2.nr);
-  for(at=0; at<isize1; at++) {
-    w_rls[index2[at]] = 1.0;
-    copy_rvec(x1[index1[at]],fit_x[index2[at]]);
-  }
-  
-  /* do the least squares fit to the reference structure */
-  do_fit(atoms2.nr,w_rls,fit_x,x2);
   
   /* calculate the rms deviation */
   rms     = 0;
-  totmass = 0;
   for(at=0; at<isize1; at++) {
-    mass = w_rls[index2[at]];
     for(m=0; m<DIM; m++)
-      rms += sqr(x1[index1[at]][m] - x2[index2[at]][m])*mass;
-    totmass += mass;
+      rms += sqr(x1[index1[at]][m] - x2[index2[at]][m]);
   }
-  rms = sqrt(rms/totmass);
+  rms = sqrt(rms/isize1);
   
   fprintf(stderr,"Root mean square deviation after lsq fit = %g\n",rms);
   
-  /* reset coordinates of reference and fitted structure */
-  for(i=0; i<atoms1.nr; i++)
-    for(m=0; m<DIM; m++)
-      x1[i][m]+=xcm1[m];
-  for(i=0; i<atoms2.nr; i++)
-    for(m=0; m<DIM; m++)
-      x2[i][m]+=xcm1[m];
-  
+  if (bFit) {
+    /* reset coordinates of reference and fitted structure */
+    for(i=0; i<atoms1.nr; i++)
+      for(m=0; m<DIM; m++)
+	x1[i][m]+=xcm1[m];
+    for(i=0; i<atoms2.nr; i++)
+      for(m=0; m<DIM; m++)
+	x2[i][m]+=xcm1[m];
+  }
   /* write gromos file of fitted structure(s) */
   fp=ffopen(opt2fn("-o",NFILE,fnm),"w");
   if (fn2ftp(opt2fn("-o",NFILE,fnm))==efGRO) {

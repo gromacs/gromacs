@@ -34,6 +34,18 @@ static char *SRCID_disco_h = "$Id$";
 
 #include <stdio.h>
 #include "typedefs.h"
+#include "network.h"
+
+#ifdef debug_gmx
+#undef debug_gmx
+#endif
+
+#ifdef HAVE_MPI
+#define debug_gmx() do { FILE *fp=debug ? debug : (stdlog ? stdlog : stderr);\
+fprintf(fp,"NODEID=%d, %s  %d\n",gmx_cpu_id(),__FILE__,__LINE__); fflush(fp); } while (0)
+#else
+#define debug_gmx()
+#endif
 
 enum { edcNONBOND, edcBOND, edcDISRE, edcNR }; 
 
