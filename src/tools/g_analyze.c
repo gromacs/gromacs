@@ -378,7 +378,7 @@ static real anal_ee(real *parm,real T,real t)
 
 static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
 			   double *av,double *sig,real **val,real dt,
-			   bool bFitAc,bool bSingleExpFit)
+			   bool bFitAc,bool bSingleExpFit,bool bAllowNegLTCorr)
 {
   FILE   *fp;
   int    bs,prev_bs,nbs,nb;
@@ -443,7 +443,7 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
       fitparm[3] = 1-fitparm[1];
     }
     if (bSingleExpFit || fitparm[0]<0 || fitparm[2]<0 || fitparm[1]<0
-	|| fitparm[1]>1 || fitparm[2]>(n-1)*dt) {
+	|| (fitparm[1]>1 && !bAllowNegLTCorr) || fitparm[2]>(n-1)*dt) {
       if (!bSingleExpFit) {
 	if (fitparm[2]>(n-1)*dt)
 	  fprintf(stdout,
@@ -580,7 +580,7 @@ int main(int argc,char *argv[])
   };
   static real tb=-1,te=-1,frac=0.5,binwidth=0.1;
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE;
-  static bool bEESEF=FALSE,bEeFitAc=FALSE,bPower=FALSE; 
+  static bool bEESEF=FALSE,bEENLC=FALSE,bEeFitAc=FALSE,bPower=FALSE; 
   static int  linelen=4096,nsets_in=1,d=1,nb_min=4,resol=10;
 
   /* must correspond to enum avbar* declared at beginning of file */
@@ -614,6 +614,8 @@ int main(int argc,char *argv[])
     " a factor 2^(1/#)" },
     { "-eeexpfit", FALSE, etBOOL, {&bEESEF},
       "HIDDENAlways use a single exponential fit for the error estimate" },
+    { "-eenlc", FALSE, etBOOL, {&bEENLC},
+      "HIDDENAllow a negative long-time correlation" },
     { "-eefitac", FALSE, etBOOL, {&bEeFitAc},
       "HIDDENAlso plot analytical block average using a autocorrelation fit" },
     { "-power", FALSE, etBOOL, {&bPower},
@@ -737,7 +739,8 @@ int main(int argc,char *argv[])
   if (avfile)
     average(avfile,nenum(avbar_opt),n,nset,val,t);
   if (eefile)
-    estimate_error(eefile,nb_min,resol,n,nset,av,sig,val,dt,bEeFitAc,bEESEF);
+    estimate_error(eefile,nb_min,resol,n,nset,av,sig,val,dt,
+		   bEeFitAc,bEESEF,bEENLC);
   if (bPower)
     power_fit(n,nset,val,t);
   if (acfile) {
