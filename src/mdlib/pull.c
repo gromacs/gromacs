@@ -531,7 +531,7 @@ static void do_afm(t_pull *pull, rvec *f, matrix box, t_mdatoms *md,
 }
 
 void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top, 
-          real dt, int step, int natoms, t_mdatoms *md, int start, int homenr,
+          real dt, int step, real time, t_mdatoms *md, int start, int homenr,
           t_commrec * cr) 
 {
   int i,niter;
@@ -556,14 +556,14 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top,
       do_afm(pull,f,box,md,start,homenr, dt, step);
       
       if(MASTER(cr))
-        print_afm(pull,step,step*dt);
+        print_afm(pull,step,time);
     }
     break;
 
   case eConstraint:
     /* do the actual constraint calculation */
     do_constraint(pull,x,box,md,dt,step,&niter);
-    print_constraint(pull,step,step*dt); 
+    print_constraint(pull,step,time); 
     break;
 
   case eUmbrella:
@@ -571,7 +571,7 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top,
       do_umbrella(pull,x,f,box,md,start,homenr);
 
       if(MASTER(cr))
-        print_umbrella(pull,step,step*dt);
+        print_umbrella(pull,step,time);
     }
     break;
 
@@ -581,9 +581,3 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top,
 
   sfree(x_s);
 }
-
-
-
-
-
-

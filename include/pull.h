@@ -113,7 +113,7 @@ extern void pull(t_pull *pull,    /* all pull data */
                  t_topology *top, /* needed to write out coordinate files */   
                  real dt,         /* time step */
                  int step,        /* step number in simulation */
-                 int natoms,      /* total number of atoms on this processor */
+                 real time,       /* time, only used for printing output */
                  t_mdatoms *md,   /* masses and charges of all atoms */
                  int start,       /* number of first atom belonging to this node */
                  int homenr,      /* number of atoms that belong to this node */

@@ -645,8 +645,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
      */
     if (pulldata.bPull && 
 	(pulldata.runtype == eAfm || pulldata.runtype == eUmbrella))
-      pull(&pulldata,state->x,f,state->box,top,parm->ir.delta_t,step,
-	   mdatoms->nr,mdatoms,START(nsb),HOMENR(nsb),cr); 
+      pull(&pulldata,state->x,f,state->box,top,parm->ir.delta_t,step,t,
+	   mdatoms,START(nsb),HOMENR(nsb),cr); 
     
     if (bFFscan)
       clear_rvecs(nsb->natoms,buf);
