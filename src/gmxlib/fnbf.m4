@@ -74,6 +74,7 @@ void do_fnbf(FILE *log,t_forcerec *fr,
 	     t_nrnb *nrnb,real lambda,real *dvdlambda,
 	     bool bLR,int eNL)
 {
+  static   bool bFirst=TRUE;
   t_nblist *nlist;
   real     *fshift;
   int      i,i0,i1,nrnb_ind;
@@ -81,7 +82,10 @@ void do_fnbf(FILE *log,t_forcerec *fr,
   
 #ifdef USEF77
 #ifdef FINVSQRT
-  fillbuf();
+  if (bFirst) {
+    fillbuf();
+    bFirst = FALSE;
+  }
 #endif
 #endif
 #ifdef USEVECTOR
