@@ -508,14 +508,16 @@ an Einstein relation:
 \right\rangle_{t_0}
 \eeq
 This can be done with {\tt g\_energy}.
-This method converges very slowly. A nanosecond simulation might not
+This method converges very slowly~\cite{Hess2002a}.
+A nanosecond simulation might not
 be long enough for an accurate determinination of the viscoity.
 The result is very dependent on the treatment of the electrostatics.
 Using a (short) cut-off results in large noise on the off-diagonal
 pressure elements, which can increase the calculated viscosity by an order
 of magnitude.
 
-{\gromacs} also has a non-equilibrium method for determining the viscosity.
+{\gromacs} also has a non-equilibrium method for determining
+the viscosity~\cite{Hess2002a}.
 This makes use of the fact that energy, which is fed into system by
 external forces, is dissipated through viscous friction. The generated heat
 is removed by coupling to a heat bath. For a Newtonian liquid adding a 

@@ -379,8 +379,9 @@ For some applications see~\cite{Spoel98a}.
 
 The \normindex{viscosity} of a liquid can be related to the correlation 
 time of the Pressure tensor $\ve{P}$~\cite{PSmith93c,Balasubramanian96}.
-{\tt \normindex{g\_energy}} can compute the viscosity, but in our experience this is not very
-accurate (actually the values do not converge...).
+{\tt \normindex{g\_energy}} can compute the viscosity,
+but this is not very accurate~\cite{Hess2002a}
+(actually the values do not converge...).
 
 \subsection{Mean Square Displacement}
 \label{sec:msd}
@@ -628,15 +629,17 @@ only. This can be achieved by least square fitting to a reference structure.
 Care has to be taken that the reference structure is representative for the
 ensemble, since the choice of reference structure influences the covariance
 matrix.
+
 One should always check if the principal modes are well defined.
 If the first principal component resembles a half cosine and
-the second resembles a full cosine, you might be filtering noise.
+the second resembles a full cosine, you might be filtering noise (see below).
 A good way to check the relevance of the first few principal
 modes is to calculate the overlap of the sampling between
 the first and second half of the simulation.
 Note that this can only be done when the same reference structure is
 used for the two halves.
 
+A good measure for the overlap has been defined in~\cite{Hess2002b}.
 The elements of the covariance matrix are proportional to the square
 of the displacement, so we need to take the square root of the matrix
 to examine the extent of sampling. The square root can be
@@ -688,8 +691,8 @@ degenerate subspaces are present (equal eigenvalues) the calculated overlap
 will be too low.
 
 Another useful check is the cosine content. It has been proven the
-the principal components of random diffusion are cosines with the
-number of periods equal to half the principal component index\cite{Hess2000}.
+the principal components of random diffusion are cosines with the number of
+periods equal to half the principal component index\cite{Hess2000,Hess2002b}.
 The eigenvalues are proportional to the index to the power $-2$.
 The cosine content is defined as:
 \beq
