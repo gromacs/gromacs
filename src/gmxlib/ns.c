@@ -411,12 +411,13 @@ static void ns_inner_rect(FILE *log,rvec x[],int icg,int njcg,atom_id jcg[],
   int      j,nrj;
   atom_id  cg_j;
 
+  shift = CENTRAL;
   for(j=0; (j<njcg); j++) {
     cg_j   = jcg[j];
     nrj    = cgs->index[cg_j+1]-cgs->index[cg_j];
-    rij2   = calc_image_rect(x[icg],x[cg_j],box_size,b_inv,&shift);
     
-    if (rij2 < rcut2) {
+    if ((rcut2 == 0) || 
+	(calc_image_rect(x[icg],x[cg_j],box_size,b_inv,&shift) < rcut2)) {
       if (ns_buf[shift].ncg >= MAX_CG) 
 	fatal_error(0,"Too many charge groups (%d) in buffer",
 		    ns_buf[shift].ncg);
