@@ -48,7 +48,9 @@ int
 main(int argc, char *argv[])
 {
   gmx_hbond(argc,argv);
+  return 0;
 }
+
 
 
   

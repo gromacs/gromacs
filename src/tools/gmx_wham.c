@@ -90,8 +90,12 @@ void read_umbrella_header(FILE * file,t_UmbrellaHeader * header)
     fatal_error(0,"This does not appear to be a valid pdo file");
   if(strcmp(Buffer2,"3.0"))
     fatal_error(0,"This does not appear to be a version 3.0 pdo file");
-
+#ifdef DOUBLE
+  fscanf(file,"%lf%lf%lf",&(header->Dims[0]),&(header->Dims[1]),&(header->Dims[2]));
+#else
   fscanf(file,"%f%f%f",&(header->Dims[0]),&(header->Dims[1]),&(header->Dims[2]));
+#endif
+
   fscanf(file,"%d",&(header->nSkip));
   fscanf(file,"%s",header->Reference);
   fscanf(file,"%d%d",&(header->nPull),&(header->nDim));

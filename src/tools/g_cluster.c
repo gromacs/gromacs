@@ -48,7 +48,9 @@ int
 main(int argc, char *argv[])
 {
   gmx_cluster(argc,argv);
+  return 0;
 }
+
 
 
   

@@ -49,6 +49,7 @@ int
 main(int argc, char *argv[])
 {
   gmx_chi(argc,argv);
+  return 0;
 }
 
 

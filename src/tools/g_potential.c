@@ -49,6 +49,7 @@ int
 main(int argc, char *argv[])
 {
   gmx_potential(argc,argv);
+  return 0;
 }
 
 
