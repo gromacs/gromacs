@@ -280,7 +280,7 @@ int main(int argc,char *argv[])
 	else if (t0>=0) 
 	  fixe[i].t += (t0-tstart);
       }
-      if ( ( bRmod(fixe[i].t-toffset,delta_t) || (delta_t==0) ) && 
+      if ( (delta_t==0) || ( bRmod(fixe[i].t-toffset,delta_t)  ) && 
 	   ( bSetTime || ( fixe[i].t != tsav ) ) ) {
 	do_enx(out,&(fixe[i].t),&i,&nre,fixe[i].e,fixe[i].dr);
 	fprintf(stderr,"\rWrite frame %d, t %f",j,fixe[i].t);
