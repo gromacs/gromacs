@@ -57,18 +57,16 @@ static void predict_shells(FILE *log,rvec x[],rvec v[],real dt,int ns,t_shell s[
   /* We introduce a fudge factor for performance reasons: with this choice
    * the initial force on the shells is about a factor of two lower than without
    */
-  fudge = 1.0; /*/sqrt(3.0);*/
-  dt_1 = dt*fudge;
-  /*dt_2 = (dt/2.0)*fudge;
-    dt_3 = (dt/3.0)*fudge;*/
+  fudge = 1.0;
     
   if (bInit) {
+    fprintf(log,"RELAX: Using prediction for initial shell placement\n");
     ptr  = x;
     dt_1 = 1;
   }
   else {
     ptr  = v;
-    dt_1 = fudge/dt;
+    dt_1 = fudge*dt;
   }
     
   for(i=0; (i<ns); i++) {
@@ -198,7 +196,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 
   /* Do a prediction of the shell positions */
   predict_shells(log,x,v,parm->ir.delta_t,nshell,shells,md->massT,(mdstep == 0));
-    
+   
   /* Calculate the forces first time around */
   clear_mat(my_vir[Min]);
   do_force(log,cr,parm,nsb,my_vir[Min],mdstep,nrnb,
