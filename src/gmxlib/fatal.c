@@ -309,16 +309,4 @@ static void abort_routine(unsigned int **ii)
   fprintf(stderr,"Abort routine\n");
   exit(1);
 }
-
-void doexceptions()
-{
-#include <sigfpe.h>
-  int onoff,en_mask,abort_action;
-  
-  onoff   = _DEBUG;
-  en_mask = _EN_UNDERFL | _EN_OVERFL | _EN_DIVZERO | 
-    _EN_INVALID | _EN_INT_OVERFL;
-  abort_action = _ABORT_ON_ERROR;
-  handle_sigfpes(onoff,en_mask,user_routine,abort_action,abort_routine);
-}
 #endif

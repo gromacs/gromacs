@@ -325,7 +325,7 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 		       int nfile,t_filenm fnm[],int npargs,t_pargs pa[],
 		       int ndesc,char *desc[],int nbugs,char *bugs[])
 {
-  static bool bHelp=FALSE,bExcept=FALSE,bHidden=FALSE;
+  static bool bHelp=FALSE,bHidden=FALSE;
   static int  nicelevel=0;
   static int  mantp=0;
   static int  npri=0;
@@ -355,8 +355,6 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
       "HIDDENManual type: 0=none, 1=tex, 2=html, 3=nroff, 4=ascii, 5=java" }
 #ifdef _SGI_
     ,
-    { "-exception", FALSE, etBOOL, &bExcept,
-      "HIDDENTurn on exception handling for debugging purposes" },
     { "-npri", FALSE, etINT,  &npri,
       "Set non blocking priority (SGI only) try 250" }
 #endif
@@ -364,7 +362,7 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 #define NPCA_PA asize(pca_pa)
   bool bFlags[NPCA_PA] = 
 #ifdef _SGI_
-  { 0, 0, 0, 1, 1, 1, 1, 1, 1, 1 };
+  { 0, 0, 0, 1, 1, 1, 1, 1, 1 };
 #else
   { 0, 0, 0, 1, 1, 1, 1, 1 };
 #endif
@@ -407,11 +405,6 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
     for(i=0,k=npall-npargs; (i<npargs); i++,k++) 
       memcpy(&(pa[i]),&(all_pa[k]),sizeof(pa[i]));
   }
-#ifdef _SGI_
-  /* Install exception handler if necessary */
-  if (bExcept)
-    doexceptions();
-#endif
   
 #ifndef NO_NICE
   /* Set the nice level */
