@@ -301,11 +301,12 @@ int main(int argc,char *argv[])
     "the bottom.[PAR]",
     "Option [TT]-ee[tt] produces error estimates using block averaging.",
     "A set is divided in a number of blocks and averages are calculated for",
-    "each block. The error for the total average is calculated from the",
-    "variance between the block averages. These errors are plotted as a",
-    "function of the block size. For a good error estimate the block size",
-    "should be at least as large as the correlation time, but possibly much",
-    "larger.[PAR]"
+    "each block. The error for the total average is calculated from",
+    "the variance between averages of the m blocks B_i as follows:",
+    "error^2 = Sum (B_i - <B>)^2 / (m*(m-1)).",
+    "These errors are plotted as a function of the block size.",
+    "For a good error estimate the block size should be at least as large",
+    "as the correlation time, but possibly much larger.[PAR]"
   };
   static real frac=0.5,binwidth=0.1;
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=FALSE,bAverCorr=FALSE;
