@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
   static bool bShuffle = FALSE;
   static bool bSort    = FALSE;
   static bool bRandom  = FALSE;      /* False: no random rotations */
-  static bool bRenum   = FALSE;      /* renumber residues */
+  static bool bRenum   = TRUE;       /* renumber residues */
   static rvec dist     = {0,0,0};    /* space added between molecules ? */
   static rvec max_rot  = {90,90,90}; /* maximum rotation */
   t_pargs pa[] = {
