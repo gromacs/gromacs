@@ -957,7 +957,7 @@ int main(int argc,char *argv[])
     fec(opt2fn("-f2",NFILE,fnm), opt2fn("-ravg",NFILE,fnm), 
 	reftemp, nset, set, leg, nenergy, eneset, time );
   
-  do_view(opt2fn("-o",NFILE,fnm),NULL);
+  do_view(opt2fn("-o",NFILE,fnm),"-nxy");
   do_view(opt2fn_null("-ravg",NFILE,fnm),NULL);
     
   thanx(stderr);

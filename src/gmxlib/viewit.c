@@ -67,8 +67,8 @@ void do_view(char *fn, char *opts)
 	return;
       }
       if ( strlen(cmd) ) {
-	sprintf(buf,"%s %s %s &",cmd,fn,opts ? opts : "");
-	fprintf(stderr,"executing '%s'\n",buf);
+	sprintf(buf,"%s %s %s &",cmd,opts ? opts : "",fn);
+	fprintf(stderr,"Executing '%s'\n",buf);
 	system(buf);
       }
     }
