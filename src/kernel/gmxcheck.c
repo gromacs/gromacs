@@ -452,7 +452,12 @@ int main(int argc,char *argv[])
     "radii) and atoms outside the box (these may occur often and are",
     "no problem). If velocities are present, an estimated temperature",
     "will be calculated from them.[PAR]",
-    "The program will compare run input ([TT].tpr[tt], [TT].tpb[tt] or",
+    "If both a trajectory and a tpr file are given (with [TT]-s1[tt])",
+    "the program will check whether the bond lengths defined in the tpr",
+    "file are indeed correct in the trajectory. If not you may have",
+    "non-matching files due to e.g. deshuffling or due to problems with",
+    "dummies. With these flags, gmxcheck provides a quick check for such problems.[PAR]"
+    "The program can compare run two input ([TT].tpr[tt], [TT].tpb[tt] or",
     "[TT].tpa[tt]) files",
     "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied.",
     "Similarly a pair of trajectory files can be compared (using the [TT]-f2[tt]",
