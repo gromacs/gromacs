@@ -734,6 +734,14 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
       }
     }
   }
+
+  if (ftype==F_PDIHS && param.c[2]!=param.c[5])
+    fatal_error(0,"[ file %s, line %d ]:\n"
+		"             %s multiplicity can not be perturbed %f!=%f",
+		get_warning_file(),get_warning_line(),
+		interaction_function[ftype].longname,
+		param.c[2],param.c[5]);
+
   /* Put the values in the appropriate arrays */
   push_bondnow (&bond[ftype],&param);
 }
