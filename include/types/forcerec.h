@@ -97,6 +97,10 @@ typedef struct {
   rvec *flr;
   rvec *fshift_lr;
   
+  /* PME/Ewald stuff */
+  bool bEwald;
+  real ewaldcoeff;
+
   /* Virial Stuff */
   rvec *fshift;
   

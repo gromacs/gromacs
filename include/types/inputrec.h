@@ -69,6 +69,10 @@ typedef struct {
   real gausswidth;      /* width of gaussian function for Ewald sum     */
   int  nkx,nky,nkz;     /* number of k vectors in each spatial dimension*/
                         /* for fourier methods for long range electrost.*/
+  int  pme_order;       /* interpolation order for PME                  */
+  real ewald_rtol;      /* Real space tolerance for Ewald, determines   */
+                        /* the real/reciprocal space relative weight    */
+  bool bOptFFT;         /* optimize the fft plan at start               */
   int  eBox;		/* The box type					*/
   bool bUncStart;       /* Do not constrain the start configuration	*/
   bool btc;		/* temperature coupling         		*/
