@@ -80,7 +80,7 @@ ifeq ($(USE_SGI_FPE),yes)
 endif
 
 ifeq ($(USE_MPI),yes)
-	PARALLEL_ONLY = yes
+	PARALLEL_ONLY_MDRUN = yes
 endif
 
 CCSHAREIT       = $(CC) $(LDFLAGS) -shared -all \

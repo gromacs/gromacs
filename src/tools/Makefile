@@ -15,7 +15,7 @@ else
 include		$(GMXHOME)/src/makef/Makefile.def
 
 LIB		=
-ifneq ($(PARALLEL_ONLY),yes)
+ifneq ($(PARALLEL_ONLY_MDRUN),yes)
 PROGRAMS	= average	do_dssp		editconf	\
 		eneconv		g_analyze	g_anaeig	\
 		g_angle		g_bond		g_chi		\

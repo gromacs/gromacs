@@ -76,5 +76,5 @@ CCC             = mpCC
 F77		= mpxlf
 CC_MKINL	= xlc # no mpi for the program we run during compile
 LD_MKINL	= xlc
-PARALLEL_ONLY = yes
+PARALLEL_ONLY_MDRUN = yes
 endif
