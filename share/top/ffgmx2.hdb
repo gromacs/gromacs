@@ -53,7 +53,7 @@ GLUH	5
 	1	2	OE1	CD	CG
 GLY	2
 	1	1	N	-C	CA
-	2	6	CA	N	C
+	2	6	CA	C	N
 HIS1	5
 	1	1	N	-C	CA
 	1	5	CA	N	C	CB
