@@ -48,6 +48,7 @@ static char *ds[d_maxdir+1] = {
   "blocktype",
   "moleculetype",
   "atoms",
+  "dummies1",
   "dummies2",
   "dummies3",
   "bonds",
@@ -97,13 +98,22 @@ int ifunc_index(directive d,int type)
       return F_LJ;
     else
       return F_BHAM;
-  case d_dum2:
+  case d_dum1:
     return F_DUMMY1;
-  case d_dum3:
-    if (type == 1)
+  case d_dum2:
+    switch (type) {
+    case 1:
       return F_DUMMY2;
-    else
-      return F_DUMMY3;
+    case 2: 
+      return F_DUMMY2FD;
+    case 3:
+      return F_DUMMY2FAD;
+    default:
+      fatal_error(0,"Invalid dummy2 type %d",type);
+    }
+    break;
+  case d_dum3:
+    return F_DUMMY3;
   case d_constraints:
     return F_SHAKE;
   case d_settles:
