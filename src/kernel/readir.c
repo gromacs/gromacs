@@ -804,6 +804,7 @@ void do_index(char *ndx,
     atoms->grpname[i]=put_symtab(symtab,gnames[i]);
   atoms->grpname[i]=put_symtab(symtab,"rest");
   restnm=i;
+  gnames[restnm]=*(atoms->grpname[i]);
   atoms->ngrpname=grps->nr+1;
   
   for(i=0; (i<atoms->nr); i++)
@@ -891,41 +892,11 @@ void do_index(char *ndx,
   nenergy=str_nelem(energy,MAXPTR,ptr1);
   do_numbering(atoms,nenergy,ptr1,grps,gnames,egcENER,"Energy",
 	       restnm,forward,FALSE,bVerbose);
-  nr=atoms->grps[egcENER].nr;
-  ir->opts.ngener=nr;
+  ir->opts.ngener=atoms->grps[egcENER].nr;
 
   /* Now we have filled the freeze struct, so we can calculate NRDF */ 
   calc_nrdf(atoms,idef,&(ir->opts),ir->nstcomm);
   
-  negexcl=str_nelem(egexcl,MAXPTR,ptr1);
-  if (negexcl % 2 != 0)
-    fatal_error(0,"The number of groups for energygrp_excl is odd");
-  snew(ir->opts.eg_excl,nr*nr);
-  bExcl=FALSE;
-  for(i=0; i<negexcl/2; i++) {
-    j=0;
-    while ((j < nr) &&
-	   strcasecmp(ptr1[2*i],gnames[atoms->grps[egcENER].nm_ind[j]]))
-      j++;
-    if (j==nr)
-      fatal_error(0,"%s in energygrp_excl is not an energy group\n",
-		  ptr1[2*i]);
-    k=0;
-    while ((k < nr) &&
-	   strcasecmp(ptr1[2*i+1],gnames[atoms->grps[egcENER].nm_ind[k]]))
-      k++;
-    if (k==nr)
-      fatal_error(0,"%s in energygrp_excl is not an energy group\n",
-	      ptr1[2*i+1]);
-    if ((j < nr) && (k < nr)) {
-      ir->opts.eg_excl[nr*j+k] = TRUE;
-      ir->opts.eg_excl[nr*k+j] = TRUE;
-      bExcl = TRUE;
-    }
-  }
-  if (bExcl && EEL_LR(ir->coulombtype))
-    warning("Can not exclude the lattice Coulomb energy between energy groups");
-
   nuser=str_nelem(user1,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser1,"User1",
 	       restnm,forward,FALSE,bVerbose);
@@ -945,6 +916,36 @@ void do_index(char *ndx,
 	fprintf(stderr," %s",*(atoms->grpname[atoms->grps[i].nm_ind[j]]));
       fprintf(stderr,"\n");
     }
+
+  negexcl=str_nelem(egexcl,MAXPTR,ptr1);
+  if (negexcl % 2 != 0)
+    fatal_error(0,"The number of groups for energygrp_excl is odd");
+  snew(ir->opts.eg_excl,nr*nr);
+  bExcl=FALSE;
+  nr=atoms->grps[egcENER].nr;
+  for(i=0; i<negexcl/2; i++) {
+    j=0;
+    while ((j < nr) &&
+	   strcasecmp(ptr1[2*i],gnames[atoms->grps[egcENER].nm_ind[j]]))
+      j++;
+    if (j==nr)
+      fatal_error(0,"%s in energygrp_excl is not an energy group\n",
+		  ptr1[2*i]);
+    k=0;
+    while ((k < nr) &&
+	   strcasecmp(ptr1[i+1],gnames[atoms->grps[egcENER].nm_ind[k]]))
+      k++;
+    if (k==nr)
+      fatal_error(0,"%s in energygrp_excl is not an energy group\n",
+	      ptr1[2*i+1]);
+    if ((j < nr) && (k < nr)) {
+      ir->opts.eg_excl[nr*j+k] = TRUE;
+      ir->opts.eg_excl[nr*k+j] = TRUE;
+      bExcl = TRUE;
+    }
+  }
+  if (bExcl && EEL_LR(ir->coulombtype))
+    warning("Can not exclude the lattice Coulomb energy between energy groups");
   
   decode_cos(efield_x,&(ir->ex[XX]));
   decode_cos(efield_xt,&(ir->et[XX]));
