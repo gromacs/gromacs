@@ -27,6 +27,11 @@ USEF77		= yes
 USE_PVM3	= no
 USE_MPI		= no
 #
+# When at runtime the environment variable refered to by CHECK_MPI_ENV
+# is not set, Gromacs will assume no MPI environment is present.
+#
+CHECK_MPI_ENV   = MPI_ENVIRONMENT
+#
 # If you want to use compressed data files set this to yes
 # This uses the xdr libraries of your UNIX system, which is virtually
 # Allways present, because it is necessary for NFS (network file system)

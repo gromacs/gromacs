@@ -15,6 +15,9 @@ endif
 
 ifeq ($(USE_MPI),yes)
 SYSDEFS         += -DUSE_MPI -DPARALLEL
+ifneq ($(CHECK_MPI_ENV),)
+SYSDEFS         += -DCHECK_MPI_ENV=$(CHECK_MPI_ENV)
+endif
 ifneq ($(MPIR_HOME),)
 INCDIR		+= -I$(MPIR_HOME)/include
 endif
