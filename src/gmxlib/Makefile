@@ -19,7 +19,8 @@ M4FILE		= $(GMXCPU).m4
 LIB		= $(LIBDIR)/libgmx.$(GMXCPU).a
 SONAME		= libgmx.$(GMXCPU).so
 OBJ		= \
-		3dview.o	block_tx.o	bondfree.o	\
+		3dview.o	atomprop.o	\
+		block_tx.o	bondfree.o	\
 		buffer.o	calch.o		calcmu.o	\
 		calcvir.o	callf77.o	clincs.o	\
 		clincsld.o	confio.o	copyrite.o	\
@@ -33,7 +34,7 @@ OBJ		= \
 		ifunc.o		index.o		init.o		\
 		inloopc.o	invblock.o	javaio.o	\
 		lrutil.o	lutab.o		macros.o	\
-		main.o		mass.o		maths.o		\
+		main.o		maths.o		\
 		matio.o		mdatom.o	mdebin.o	\
 		memdump.o	mshift.o	mvdata.o	\
 		mvxvf.o		names.o		network.o	\
@@ -50,7 +51,7 @@ OBJ		= \
 		symtab.o	tables.o	tgroup.o	\
 		tpxio.o		trnio.o		trxio.o		\
 		txtdump.o	typedefs.o	update.o	\
-		vcm.o		vdw.o		wgms.o		\
+		vcm.o		wgms.o		\
 		wman.o		wnblist.o	writeps.o	\
 		xdrd.o		xtcio.o		xvgr.o
 

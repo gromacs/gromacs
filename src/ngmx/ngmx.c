@@ -263,8 +263,7 @@ int main(int argc, char *argv[])
   t_filenm fnm[] = {
     { efTRX, "-f", NULL, ffREAD },
     { efTPX, NULL, NULL, ffREAD },
-    { efNDX, NULL, NULL, ffOPTRD },
-    { efVDW, "-r", NULL, ffLIBRD }
+    { efNDX, NULL, NULL, ffOPTRD }
   };
 #define NFILE asize(fnm)
   
@@ -380,8 +379,7 @@ t_gmx *init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
   init_dlgs(x11,gmx);
 
   /* Now do file shit */
-  set_file(x11,gmx->man,ftp2fn(efTRX,nfile,fnm),ftp2fn(efTPX,nfile,fnm),
-	   ftp2fn(efVDW,nfile,fnm));
+  set_file(x11,gmx->man,ftp2fn(efTRX,nfile,fnm),ftp2fn(efTPX,nfile,fnm));
 
   /*show_logo(x11,gmx->logo);*/
   

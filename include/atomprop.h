@@ -26,7 +26,12 @@
  * And Hey:
  * GROwing Monsters And Cloning Shrimps
  */
-static char *SRCID_mass_h = "$Id$";
+static char *SRCID_atomprop_h = "$Id$";
 
 extern real get_mass(char *resnm, char *atomnm);
-/* search the mass belonging to atom */
+/* search the mass belonging to residue and atom,
+   note that the longest match is returned */
+
+extern real get_vdw(char *resnm, char *atomnm, real default_r);
+/* search the vdw radius belonging to residue and atom ,
+   note that the longest match is returned */

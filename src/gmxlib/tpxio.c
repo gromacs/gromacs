@@ -41,7 +41,7 @@
 #include "gmxfio.h"
 #include "tpxio.h"
 #include "confio.h"
-#include "mass.h"
+#include "atomprop.h"
 #include "copyrite.h"
 
 /* This number should be increased whenever the file format changes! */

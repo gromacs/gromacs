@@ -47,7 +47,7 @@ static char *SRCID_editconf_c = "$Id$";
 #include "strdb.h"
 #include "rdgroup.h"
 #include "physics.h"
-#include "mass.h"
+#include "atomprop.h"
 #include "addconf.h"
 
 typedef struct {

@@ -44,8 +44,7 @@ static char *SRCID_gmxcheck_c = "$Id$";
 #include "trnio.h"
 #include "xtcio.h"
 #include "tpbcmp.h"
-#include "vdw.h"
-#include "mass.h"
+#include "atomprop.h"
 #include "vec.h"
 #include "pbc.h"
 #include "physics.h"
@@ -197,7 +196,7 @@ void chk_trj(char *fn)
 
 void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
 {
-  int       natom,i,j,k,nvdw;
+  int       natom,i,j,k;
   char      title[STRLEN];
   t_topology top;
   t_atoms   *atoms;
@@ -206,7 +205,6 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
   matrix    box;
   bool      bV,bX,bB,bFirst,bOut;
   real      r2,ekin,temp1,temp2,dist2,vdwfac2,bonlo2,bonhi2;
-  t_vdw     *vdw;
   real      *atom_vdw;
   
   fprintf(stderr,"Checking coordinate file %s\n",fn);
@@ -258,17 +256,11 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
 	    "Checking for atoms closer than %g and not between %g and %g,\n"
 	    "relative to sum of Van der Waals distance:\n",
 	    vdw_fac,bon_lo,bon_hi);
-    nvdw=read_vdw("radii.vdw",&vdw);
     snew(atom_vdw,natom);
     for (i=0; (i<natom); i++)
-      if ((atom_vdw[i]=get_vdw(nvdw,vdw,*(atoms->atomname[i])))==0.0)
-	if ( ((*atoms->atomname[i])[0]=='H') ||
-	     (isdigit((*(atoms->atomname[i]))[0]) && 
-	      ((*atoms->atomname[i])[1]=='H')) )
-	  atom_vdw[i]=0.1;
-	else
-	  atom_vdw[i]=0.2;
-      
+      atom_vdw[i]=get_vdw(*(atoms->resname[atoms->atom[i]]),
+			  *(atoms->atomname[i]),0.1)==0.0;
+    
     if (bB) 
       init_pbc(box,FALSE);
       

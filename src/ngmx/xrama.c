@@ -40,7 +40,7 @@ static char *SRCID_xrama_c = "$Id$";
 #include "smalloc.h"
 #include "statutil.h"
 #include "rama.bm"
-#include "gstat.h"
+#include "nrama.h"
 #include "lutab.h"
 
 #define MAXDEG 360

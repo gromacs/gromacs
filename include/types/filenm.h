@@ -40,7 +40,6 @@ enum {
   efTEX, efRTP, efATP, efHDB,
   efDAT, efDLG, 
   efMAP, efEPS, efMAT, efM2P,
-  efVDW,
   efMTX,
   efEDI, efEDO, 
   efHAT,

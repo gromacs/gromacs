@@ -37,7 +37,7 @@ static char *SRCID_manager_c = "$Id$";
 #include <tpxio.h>
 #include <macros.h>
 #include <maths.h>
-#include <vdw.h>
+#include <atomprop.h>
 #include <names.h>
 #include "bondf.h"
 #include "manager.h"
@@ -162,15 +162,13 @@ static void hide_label(t_x11 *x11,t_manager *man,int x,int y)
   do_label(x11,man,x,y,FALSE);
 }
 
-void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status,
-	      char *fnvdw)
+void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status)
 {
   char         buf[256];
   t_tpxheader  sh;
-  t_vdw        *vdw;
   t_atoms      *at;
   bool         *bB;
-  int          i,idum,nvdw;
+  int          i,idum;
   real         rdum;
 
   read_tpxheader(status,&sh);
@@ -199,7 +197,6 @@ void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status,
   sprintf(buf,"%s: %s",*man->top.name,cool_quote());
   man->title.text=strdup(buf);
   man->view=init_view(man->box);
-  nvdw=read_vdw(fnvdw,&vdw);
   at=&(man->top.atoms);
   for(i=0; (i<man->natom); i++) {
     char *aname=*(at->atomname[i]);
@@ -212,7 +209,7 @@ void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status,
     if ( man->bHydro[i] )
       man->vdw[i]=0;
     else
-      man->vdw[i]=get_vdw(nvdw,vdw,aname);
+      man->vdw[i]=get_vdw(*(at->resname[resnr]),aname,0);
   }
   add_bpl(man,&(man->top.idef),bB);
   for(i=0; (i<man->natom); i++)
