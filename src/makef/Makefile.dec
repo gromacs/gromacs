@@ -1,4 +1,4 @@
-#
+# Alpha/Dec UNIX
 #	@(#) Makefile.dec 1.2 5/15/97
 #
 #
@@ -9,23 +9,33 @@
 #
 # 	See README file for info
 #
-SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG# -DDOUBLE
+SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG -DC_INVSQRT -DFINVSQRT# -DDOUBLE 
 
-# Sun C compilers
-ALLOPT		= -fast -O5 -inline speed -tune host -math_library fast -non_shared -unroll 2 -arch host -pipeline 
+# Dec C compilers
+ALLOPT		= -fast -O5 -inline all -tune host -math_library fast -non_shared -unroll 2 -arch host -pipeline
+#ALLOPT		= -g
 CC		= cc.alt
 CCC		= cxx
-F77		= f77
+F77		= f90
 CFLAGS		= -std1 $(ALLOPT)
 CCFLAGS		= -O
 FFLAGS		= $(ALLOPT) -speculate all -assume noaccuracy_sensitive
+
+# Gnu compilers
+#OPT		= -O3 -funroll-loops -ffast-math -fschedule-insns -fschedule-insns2
+#CC		= gcc
+#CCC		= gcc
+#F77		= g77
+#CFLAGS		= $(OPT)
+#FFLAGS		= $(OPT)
+#CCFLAGS		= $(OPT)
 
 # Generic linking stuff
 LDFLAGS		= -L$(LIBDIR) -om -O3 -non_shared
 LD		= $(CC)  $(LDFLAGS) 
 CCLD		= $(CCC) $(LDFLAGS)
 
-SYSLIBS		= -lgmx.$(CPU) -ldnet_stub -lm_4sqrt -lm
+SYSLIBS		= -lgmx.$(CPU) -ldnet_stub -lm
 XLIBS		= $(SYSLIBS) -lX11
 AR		= $(RM) $(LIB); ar q
 RANLIB		= ranlib

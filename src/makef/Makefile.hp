@@ -1,11 +1,11 @@
-#
+# HP/PaRISC Double Prec.
 #	@(#) Makefile.hp 1.15 11/20/96
 #
 #
 #	GROMACS - Groningen Machine for Chemical Simulation
 #	Copyright (c) 1990, 1991, 1992, Groningen University
 #
-#	Makefile for gromacs on sparc processor
+#	Makefile for gromacs on PA-RISC processor
 #
 # 	See README file for info
 #
