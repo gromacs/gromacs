@@ -117,6 +117,7 @@ static void init_nblist(t_nblist *nl,int homenr,int solvent,int il_code)
   nl->gid     = NULL;
   nl->shift   = NULL;
   nl->jindex  = NULL;
+  nl->nsatoms = NULL;
   nl->solvent = solvent;
   reallocate_nblist(nl);
   nl->jindex[0] = 0;
@@ -466,7 +467,7 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
   nicg   = index[icg+1]-i0;
   bWater = (fr->solvent_type[icg] == esolWATER);
   bMNO   = (fr->solvent_type[icg] == esolMNO);
-  
+
   if ((bWater || bMNO) && fr->efep==efepNO)
     nicg = 1;
   
@@ -526,86 +527,132 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
   
   if (bWater && (fr->efep==efepNO)) {
     /* Loop over the atoms in the i charge group */    
-    for(i=0; (i<nicg); i++) {
-      i_atom  = i0;
-      igid    = cENER[i_atom];
-      gid     = GID(igid,jgid,ngid);
+    i       =  0;
+    i_atom  = i0;
+    igid    = cENER[i_atom];
+    gid     = GID(igid,jgid,ngid);
 #define MNO_ARGS bMNO,&(fr->mno_index[i*3])
-      /* Create new i_atom for each energy group */
-      if (!bCoulOnly && !bVDWOnly) {
-	new_i_nblist(vdwc,bLR ? F_LJLR : F_LJ,i_atom,shift,gid,MNO_ARGS);
+    /* Create new i_atom for each energy group */
+    if (!bCoulOnly && !bVDWOnly) {
+      new_i_nblist(vdwc,bLR ? F_LJLR : F_LJ,i_atom,shift,gid,MNO_ARGS);
 #ifndef DISABLE_WATERWATER_LOOPS
-	new_i_nblist(vdwc_ww,bLR ? F_LJLR : F_LJ,i_atom,shift,gid,MNO_ARGS);
+      new_i_nblist(vdwc_ww,bLR ? F_LJLR : F_LJ,i_atom,shift,gid,MNO_ARGS);
 #endif
-      }
-      if (!bCoulOnly)
-	new_i_nblist(vdw,bLR ? F_LJLR : F_LJ,i_atom,shift,gid,MNO_ARGS);
-      if (!bVDWOnly) {
-	new_i_nblist(coul,bLR ? F_LR : F_SR,i_atom,shift,gid,MNO_ARGS);
+    }
+    if (!bCoulOnly)
+      new_i_nblist(vdw,bLR ? F_LJLR : F_LJ,i_atom,shift,gid,MNO_ARGS);
+    if (!bVDWOnly) {
+      new_i_nblist(coul,bLR ? F_LR : F_SR,i_atom,shift,gid,MNO_ARGS);
 #ifndef DISABLE_WATERWATER_LOOPS
-	new_i_nblist(coul_ww,bLR ? F_LR : F_SR,i_atom,shift,gid,MNO_ARGS);
+      new_i_nblist(coul_ww,bLR ? F_LR : F_SR,i_atom,shift,gid,MNO_ARGS);
 #endif
-      }      
-      /* Loop over the j charge groups */
-      for(j=0; (j<nj); j++) {
-	jcg=jjcg[j];
-	
-	if (jcg==icg)
-	  continue;
-	
-	jj0 = index[jcg];
-	if (bWater && (fr->solvent_type[jcg] == esolWATER)) {
-	  if (bVDWOnly)
-	    add_j_to_nblist(vdw,jj0);
-	  else {
+    }      
+    /* Loop over the j charge groups */
+    for(j=0; (j<nj); j++) {
+      jcg=jjcg[j];
+      
+      if (jcg==icg)
+	continue;
+      
+      jj0 = index[jcg];
+      if (bWater && (fr->solvent_type[jcg] == esolWATER)) {
+	if (bVDWOnly)
+	  add_j_to_nblist(vdw,jj0);
+	else {
 #ifndef DISABLE_WATERWATER_LOOPS
-	    if (bCoulOnly)
-	      add_j_to_nblist(coul_ww,jj0);
-	    else
-	      add_j_to_nblist(vdwc_ww,jj0);
+	  if (bCoulOnly)
+	    add_j_to_nblist(coul_ww,jj0);
+	  else
+	    add_j_to_nblist(vdwc_ww,jj0);
 #else
-	    if (bCoulOnly)
-	      add_j_to_nblist(coul,jj0);
-	    else
-	      add_j_to_nblist(vdwc,jj0);
-            add_j_to_nblist(coul,jj0+1);
-            add_j_to_nblist(coul,jj0+2);	    
+	  if (bCoulOnly)
+	    add_j_to_nblist(coul,jj0);
+	  else
+	    add_j_to_nblist(vdwc,jj0);
+	  add_j_to_nblist(coul,jj0+1);
+	  add_j_to_nblist(coul,jj0+2);	    
 #endif
+	}
+      } else {
+	jj1 = index[jcg+1];
+	
+	if (bCoulOnly) {
+	  for(jj=jj0; (jj<jj1); jj++) {
+	    if (charge[jj] != 0)
+	      add_j_to_nblist(coul,jj);
 	  }
+	} else if (bVDWOnly) {
+	  for(jj=jj0; (jj<jj1); jj++) 
+	    if (bHaveLJ[type[jj]])
+	      add_j_to_nblist(vdw,jj);
 	} else {
-	  jj1 = index[jcg+1];
-	  
-	  if (bCoulOnly) {
-	    for(jj=jj0; (jj<jj1); jj++) {
+	  for(jj=jj0; (jj<jj1); jj++) {
+	    if (bHaveLJ[type[jj]]) {
 	      if (charge[jj] != 0)
-		add_j_to_nblist(coul,jj);
-	    }
-	  } else if (bVDWOnly) {
-	    for(jj=jj0; (jj<jj1); jj++) 
-	      if (bHaveLJ[type[jj]])
+		add_j_to_nblist(vdwc,jj);
+	      else
 		add_j_to_nblist(vdw,jj);
-	  } else {
-	    for(jj=jj0; (jj<jj1); jj++) {
-	      if (bHaveLJ[type[jj]]) {
-		if (charge[jj] != 0)
-		  add_j_to_nblist(vdwc,jj);
-		else
-		  add_j_to_nblist(vdw,jj);
-	      } else if (charge[jj] != 0)
-		add_j_to_nblist(coul,jj);
-	    }
+	    } else if (charge[jj] != 0)
+	      add_j_to_nblist(coul,jj);
 	  }
 	}
       }
-      close_i_nblist(vdw); 
-      close_i_nblist(coul); 
-      close_i_nblist(vdwc);  
+    }
+    close_i_nblist(vdw); 
+    close_i_nblist(coul); 
+    close_i_nblist(vdwc);  
 #ifndef DISABLE_WATERWATER_LOOPS
-      close_i_nblist(coul_ww);
-      close_i_nblist(vdwc_ww); 
+    close_i_nblist(coul_ww);
+    close_i_nblist(vdwc_ww); 
 #endif
-    } 
-  } else { /* no water as i charge group, or we are doing free energy */
+  } else if (bMNO && (fr->efep==efepNO)) {
+    /* MNO solvent as i charge group, no free energy */
+
+    i       = 0;
+    i_atom  = i0;
+    igid    = cENER[i_atom];
+    gid     = GID(igid,jgid,ngid);
+
+    /* Create new i_atom for each energy group */
+    if (!bCoulOnly && !bVDWOnly)
+      new_i_nblist(vdwc,bLR ? F_LJLR : F_LJ,i_atom,shift,gid,MNO_ARGS);
+    if (!bCoulOnly)
+      new_i_nblist(vdw,bLR ? F_LR : F_SR,i_atom,shift,gid,MNO_ARGS);
+    if (!bVDWOnly)
+      new_i_nblist(coul,bLR ? F_LR : F_SR,i_atom,shift,gid,MNO_ARGS);
+
+    /* Loop over the j charge groups */
+    for(j=0; (j<nj); j++) {
+      jcg=jjcg[j];
+      
+      if (jcg == icg)
+	continue;
+      
+      jj0 = index[jcg];
+      jj1=index[jcg+1];
+      /* Finally loop over the atoms in the j-charge group */
+      for(jj=jj0; (jj<jj1); jj++) {
+	if (bCoulOnly) {
+	  if (charge[jj] != 0)
+	    add_j_to_nblist(coul,jj);
+	} else if (bVDWOnly) {
+	  if (bHaveLJ[type[jj]])
+	    add_j_to_nblist(vdw,jj);
+	} else {
+	  if (bHaveLJ[type[jj]]) {
+	    if (charge[jj] != 0)
+	      add_j_to_nblist(vdwc,jj);
+	    else
+	      add_j_to_nblist(vdw,jj);
+	  } else if (charge[jj] != 0)
+	    add_j_to_nblist(coul,jj);
+	}
+      }
+      close_i_nblist(vdw);
+      close_i_nblist(coul);
+      close_i_nblist(vdwc);
+    }
+  } else { /* no solvent as i charge group, or we are doing free energy */
     /* Loop over the atoms in the i charge group */    
     for(i=0; (i<nicg); i++) {
       i_atom  = i0+i;
@@ -643,7 +690,7 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
 	    /* Complicated if, because the water H's should also
 	     * see perturbed j-particles
 	     */
-	    if (!bWater || i==0 || bFreeJ) {
+	    if ((!bWater && !bMNO) || i==0 || bFreeJ) {
 	      bNotEx = NOTEXCL(bExcl,i,jj);
 	      
 	      if (bNotEx) {
