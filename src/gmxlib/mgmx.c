@@ -50,15 +50,20 @@ static Arg      args[NARGS];
 static Widget   FdlgCaller;
 static int      helpw=-1,descw=-1,fdlgw=-1,gmxDialog;
 static int      *pa_index,*pa_set_index,*fnm_index;
-static bool     bFdlgUp=FALSE,bDone=FALSE;
+static bool     bFdlgUp=FALSE,bDone=FALSE,bDescSet=FALSE;
 extern XmString empty_str;
+static XmString desc_str;
 
-#define TOGGLECLASS "gmxtoggle"
-#define EDITCLASS   "gmxedit"
-#define BUTTONCLASS "gmxbutton"
-#define PDCLASS     "gmxpd"
-#define DESCCLASS   "gmxdesc"
-#define SEPCLASS    "gmxsep"
+#define GMXDLG    "gmxdlg"
+#define GMXTOGGLE "gmxtoggle"
+#define GMXEDIT   "gmxedit"
+#define GMXBUTTON "gmxbutton"
+#define GMXPD     "gmxpd"
+#define GMXDESC   "gmxdesc"
+#define GMXSEP    "gmxsep"
+#define GMXHELP   "gmxhelp"
+#define GMXSCROLL "gmxscroll"
+#define GMXFILE   "gmxfile"
 
 /* Height handling routines */
 static windex TopW=0,NewTopW=0;
@@ -114,17 +119,6 @@ static void help_ok_callback(Widget w,caddr_t client_data,caddr_t call_data)
   XtUnmanageChild(get_widget(helpw));
 }
 
-static void enter_callback(Widget www,int *which,caddr_t call_data)
-{
-  int narg;
-
-  if (descw != -1) {  
-    narg=0;
-    XtSetArg(args[narg],XmNlabelString,get_widget_desc(www));  narg++;
-    XtSetValues(get_widget(descw),args,narg);
-  }
-}
-
 static void file_callback(Widget www,caddr_t client_data,caddr_t call_data)
 {
   int      ftp,narg;
@@ -140,7 +134,7 @@ static void file_callback(Widget www,caddr_t client_data,caddr_t call_data)
 	xms  = char2xms(ftp2filter(ftp));
 	narg = 0;
 	XtSetArg(args[narg],XmNdirMask,xms);        narg++;
-	/*XtSetArg(args[narg],XmNpattern,xms);        narg++;*/
+	XtSetArg(args[narg],XmNpattern,xms);        narg++;
 	XtSetArg(args[narg],XmNlistUpdated, False); narg++;
 	
 	XtSetValues(fdlg,args,narg);
@@ -174,14 +168,31 @@ static void file_cancel_callback(Widget www,int *which,
   }
 }
 
+static void enter_callback(Widget www,int *which,caddr_t call_data)
+{
+  int narg;
+
+  if (descw != -1) {  
+    if (have_windex_desc(get_windex(www))) {
+      narg=0;
+      XtSetArg(args[narg],XmNlabelString,get_widget_desc(www));  narg++;
+      XtSetValues(get_widget(descw),args,narg);
+      bDescSet = TRUE;
+    }
+  }
+}
+
 static void leave_callback(Widget www,int *which,caddr_t call_data)
 {
   int narg;
 
   if (descw != -1) {  
-    narg=0;
-    XtSetArg(args[narg],XmNlabelString,NULL); narg++;
-    XtSetValues(get_widget(descw),args,narg);
+    if (bDescSet) {
+      narg=0;
+      XtSetArg(args[narg],XmNlabelString,desc_str); narg++;
+      XtSetValues(get_widget(descw),args,narg);
+      bDescSet = FALSE;
+    }
   }
 }
 
@@ -233,7 +244,7 @@ static int mk_toggle(int parent,char *title,int top,int left,
   }
   XtSetArg(args[narg],XmNlabelString, char2xms(title)); narg++;
   
-  return add_widget(XtCreateWidget(TOGGLECLASS,xmToggleButtonWidgetClass,
+  return add_widget(XtCreateWidget(GMXTOGGLE,xmToggleButtonWidgetClass,
 				   get_widget(parent),args,narg),desc);
 }
 
@@ -251,8 +262,8 @@ static void mk_editor(int paindex,int parent,int top,int left,
   /* Create & Position the label */
   wc[nwcTOGGLE]   = xmToggleButtonWidgetClass;
   wc[nwcTEXT]     = xmTextFieldWidgetClass;
-  wlab[nwcTOGGLE] = TOGGLECLASS;
-  wlab[nwcTEXT]   = EDITCLASS;
+  wlab[nwcTOGGLE] = GMXTOGGLE;
+  wlab[nwcTEXT]   = GMXEDIT;
   
   for(j=0; (j<NWC); j++) {  
     narg = 0;
@@ -304,8 +315,8 @@ static void mk_enumerated(int parent,int top,int left,
   /* Create & Position the label */
   wc[nwcTOGGLE]   = xmToggleButtonWidgetClass;
   wc[nwcBUTTON]   = 0; 
-  wlab[nwcTOGGLE] = TOGGLECLASS;
-  wlab[nwcBUTTON] = BUTTONCLASS;
+  wlab[nwcTOGGLE] = GMXTOGGLE;
+  wlab[nwcBUTTON] = GMXDLG;
 
   for(j=0; (j<NWC); j++) {  
     narg = 0;
@@ -325,7 +336,7 @@ static void mk_enumerated(int parent,int top,int left,
     XtSetArg(args[narg],XmNbottomAttachment,  XmATTACH_NONE);     narg++;
     
     if (j == nwcBUTTON) {
-      ww[j] = add_widget(XmCreateOptionMenu(get_widget(parent),BUTTONCLASS,
+      ww[j] = add_widget(XmCreateOptionMenu(get_widget(parent),wlab[j],
 					    args,narg),desc);
     }
     else {
@@ -335,7 +346,7 @@ static void mk_enumerated(int parent,int top,int left,
     }
   }
   /* Create the popup menu father */
-  pd = add_widget(XmCreatePulldownMenu(get_widget(parent),PDCLASS,NULL,0),
+  pd = add_widget(XmCreatePulldownMenu(get_widget(parent),GMXPD,NULL,0),
 		  desc);
   
   /* Now create the popup menu children */
@@ -347,7 +358,7 @@ static void mk_enumerated(int parent,int top,int left,
     sprintf(buf,"%s = %s",desc,but[i]);
     narg = 0;
     XtSetArg(args[narg],XmNlabelString,char2xms(but[i])); narg++;
-    wi = add_widget(XtCreateWidget(BUTTONCLASS,xmPushButtonWidgetClass,
+    wi = add_widget(XtCreateWidget(GMXBUTTON,xmPushButtonWidgetClass,
 				   get_widget(pd),args,narg),buf);
     set_parent(wi,get_widget(pd));
   }
@@ -390,7 +401,7 @@ static void mk_buttons(int parent,int top,int nb,t_button bbb[])
       XtSetArg(args[narg],XmNrightPosition,   right);              narg++;
     }
     XtSetArg(args[narg],XmNlabelString,char2xms(bbb[i].label));    narg++;
-    bw = add_widget(XtCreateWidget(BUTTONCLASS,xmPushButtonWidgetClass,
+    bw = add_widget(XtCreateWidget(GMXBUTTON,xmPushButtonWidgetClass,
 				   get_widget(parent),args,narg),
 		    bbb[i].desc);
     XtAddCallback(get_widget(bw),XmNactivateCallback,
@@ -445,7 +456,7 @@ static windex mk_separator(windex parent,windex topw)
   XtSetArg(args[narg],XmNleftAttachment,  XmATTACH_FORM);   narg++;
   XtSetArg(args[narg],XmNrightAttachment, XmATTACH_FORM);   narg++;
   
-  sep = add_widget(XtCreateWidget(SEPCLASS,xmSeparatorWidgetClass,
+  sep = add_widget(XtCreateWidget(GMXSEP,xmSeparatorWidgetClass,
 				  get_widget(parent),args,narg),NULL);
   
   set_top_windex(sep);
@@ -455,17 +466,19 @@ static windex mk_separator(windex parent,windex topw)
 
 static int mk_helplabel(int parent,int top)
 {
-  int narg;
+  int  narg;
+  char buf[] = "Place the mouse over an item to get information";
   
+  desc_str = char2xms(buf);
   narg = 0;
   XtSetArg(args[narg],XmNtopAttachment,   XmATTACH_WIDGET); narg++;
   XtSetArg(args[narg],XmNtopWidget,       get_widget(top)); narg++;
   XtSetArg(args[narg],XmNleftAttachment,  XmATTACH_FORM);   narg++;
   XtSetArg(args[narg],XmNrightAttachment, XmATTACH_FORM);   narg++;
-  XtSetArg(args[narg],XmNalignment,XmALIGNMENT_BEGINNING);  narg++;
-  
-  return add_widget(XtCreateWidget(DESCCLASS,xmLabelWidgetClass,
-				   get_widget(parent),args,narg),NULL);
+  XtSetArg(args[narg],XmNalignment,       XmALIGNMENT_BEGINNING);  narg++;
+  XtSetArg(args[narg],XmNlabelString,     desc_str);        narg++;
+
+  return add_widget(XmCreateLabel(get_widget(parent),GMXDESC,args,narg),NULL);
 }
 
 static windex mk_filedlgs(int parent,int top,int nfile,
@@ -484,9 +497,9 @@ static windex mk_filedlgs(int parent,int top,int nfile,
   wc[nwcFDLG]   = xmPushButtonWidgetClass;
   
   snew(wname,NWC);
-  wname[nwcLABEL]   = TOGGLECLASS;
-  wname[nwcTEXT]    = EDITCLASS;
-  wname[nwcFDLG]    = BUTTONCLASS;
+  wname[nwcLABEL]   = GMXTOGGLE;
+  wname[nwcTEXT]    = GMXEDIT;
+  wname[nwcFDLG]    = GMXBUTTON;
   for(i=0; (i<nfile); i++) {
     ftp = fnm[i].ftp;
     dx  = (i % 2)*50;
@@ -723,7 +736,7 @@ static char *concat_str(int ndesc,char *desc[],int nbugs,char *bugs[])
   descer = NULL;
   for(i=0; (i<ndesc); i++) {
     slen = strlen(desc[i])+1;
-    srenew(descer,dlen+slen);
+    srenew(descer,dlen+slen+4);
     descer[dlen] = '\0';
     dlen += slen;
     strcat(descer,desc[i]);
@@ -753,7 +766,7 @@ static void mk_help(Widget parent,int ndesc,char *desc[],
   sprintf(buf,"Gromacs Help - %s",ShortProgram());
   narg = 0;
   XtSetArg(args[narg],XmNdialogTitle,char2xms(buf)); narg++;
-  helpw  = add_widget(XmCreateFormDialog(parent,buf,args,narg),"Help Dialog");
+  helpw  = add_widget(XmCreateFormDialog(parent,GMXHELP,args,narg),buf);
   
   ptr = concat_str(ndesc,desc,nbugs,bugs);
   
@@ -768,9 +781,11 @@ static void mk_help(Widget parent,int ndesc,char *desc[],
   XtSetArg(args[narg],XmNleftAttachment,  XmATTACH_FORM);     narg++;
   XtSetArg(args[narg],XmNrightAttachment, XmATTACH_FORM);     narg++;
   XtSetArg(args[narg],XmNscrollingPolicy, XmAUTOMATIC);       narg++;
-  text   = add_widget(XmCreateScrolledText(get_widget(helpw),"HelpText",
-					   args,narg),"HelpText");
-  sw     = add_widget(XtParent(get_widget(text)),"ScrolledWindow");
+  XtSetArg(args[narg],XmNscrollBarDisplayPolicy,XmAUTOMATIC); narg++;
+  text   = add_widget(XmCreateScrolledText(get_widget(helpw),GMXHELP,
+					   args,narg),
+		      "There is supposed to be useful information in the help window");
+  sw     = add_widget(XtParent(get_widget(text)),NULL);
   sep    = mk_separator(helpw,sw);
   
   narg   = 0;
@@ -780,7 +795,10 @@ static void mk_help(Widget parent,int ndesc,char *desc[],
   XtSetArg(args[narg],XmNrightAttachment, XmATTACH_FORM);      narg++;
   XtSetArg(args[narg],XmNalignment,       XmALIGNMENT_CENTER); narg++;
   XtSetArg(args[narg],XmNbottomAttachment,XmATTACH_FORM);      narg++;
-  ok     = add_widget(XmCreatePushButton(get_widget(helpw),"OK",args,narg),"");
+  XtSetArg(args[narg],XmNlabelString,     char2xms("OK"));     narg++;
+  ok     = add_widget(XmCreatePushButton(get_widget(helpw),
+					 GMXBUTTON,args,narg),
+		      "Press OK to close the helpwindow");
   XtAddCallback(get_widget(ok),XmNactivateCallback,
 		(XtCallbackProc) help_ok_callback,NULL);
 		
@@ -796,8 +814,8 @@ static void mk_fdlg(Widget base)
   int narg;
   
   narg  = 0;
-  fdlgw = add_widget(XmCreateFileSelectionDialog(base,"GMX File Selector",
-						 args,narg),NULL);
+  XtSetArg(args[narg],XmNdialogTitle,char2xms("GMX File selector")); narg++;
+  fdlgw = add_widget(XmCreateFileSelectionDialog(base,GMXFILE,args,narg),NULL);
   XtAddCallback(get_widget(fdlgw),XmNokCallback,
 		(XtCallbackProc) file_ok_callback,NULL);
   XtAddCallback(XmFileSelectionBoxGetChild(get_widget(fdlgw),
@@ -806,8 +824,12 @@ static void mk_fdlg(Widget base)
 		(XtCallbackProc) file_cancel_callback,NULL);
   XtUnmanageChild(XmFileSelectionBoxGetChild(get_widget(fdlgw),
 					     XmDIALOG_HELP_BUTTON));
-  /*XtUnmanageChild(XmFileSelectionBoxGetChild(get_widget(fdlgw),
-    XmDIALOG_APPLY_BUTTON));*/
+
+  /* Make the filter fixed... */
+  narg = 0;
+  XtSetArg(args[narg],XmNeditable,False); narg++;
+  XtSetValues(XmFileSelectionBoxGetChild(get_widget(fdlgw),
+					 XmDIALOG_FILTER_TEXT),args,narg);
 }
 
 static void mk_gui(Widget gmxBase,
@@ -838,7 +860,7 @@ static void mk_gui(Widget gmxBase,
   mk_fdlg(gmxBase);
   
   /* Create the dialog box! */
-  gmxDialog = add_widget(XmCreateForm(gmxBase,"gmxDialog",NULL,0),NULL);
+  gmxDialog = add_widget(XmCreateForm(gmxBase,GMXDLG,NULL,0),NULL);
   XtManageChild(get_widget(gmxDialog));
 
   widg0 = nwidget();
@@ -1016,12 +1038,17 @@ void gmx_gui(int *argc,char *argv[],
   Widget           gmxBase;
   XtAppContext     appcontext;
   String           Fallbacks[] = {
-    "*gmxDialog.background: lightgrey",
-    "*gmxbutton.background: lightgrey",
-    "*gmxtoggle.background: lightgrey",
-    "*gmxedit.background:   lightgoldenrod1",
-    "*gmxdesc.background:   lightsalmon1",
-    "*gmxsep.background:    black",
+    /*"*gmx*background:           lightgrey",*/
+    "*gmxbutton.background:     lightskyblue",
+    "*gmxtoggle.background:     lightgrey",
+    "*gmxedit.background:       lightgoldenrod1",
+    "*gmxdesc.background:       lightsalmon1",
+    "*gmxsep.background:        darkgrey",
+    "*gmxhelp.background:       lightgoldenrod1",
+    "*gmxhelpSW.background:     lightgrey",
+    "*gmxhelpSW.*.background:  lightgrey",
+    "*gmxfile.*.background:     lightgrey",
+    "*gmxfile.Text.background:  lightgoldenrod1",
     NULL
   };
   
@@ -1033,7 +1060,3 @@ void gmx_gui(int *argc,char *argv[],
   XtRealizeWidget(gmxBase);
   MyMainLoop(appcontext,gmxBase,nfile,fnm,npargs,pa);
 }
-
-
-
-
