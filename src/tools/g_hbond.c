@@ -99,6 +99,17 @@ bool in_list(atom_id selection,int isize,atom_id *index)
   return bFound;
 }
 
+static char *mkatomname(t_atoms *atoms,int i)
+{
+  static char buf[32];
+  int rnr;
+  
+  rnr = atoms->atom[i].resnr;
+  sprintf(buf,"%4s%d%-4s",*atoms->resname[rnr],rnr+1,*atoms->atomname[i]);
+  
+  return buf;
+}
+
 void add_acc(int i, int *max_nr,int *nr,atom_id **a)
 {
   (*nr)++;
@@ -553,6 +564,7 @@ int main(int argc,char *argv[])
     { efTRX, "-f",   NULL,     ffREAD  },
     { efTPX, NULL,   NULL,     ffREAD  },
     { efNDX, NULL,   NULL,     ffOPTRD },
+    { efLOG, "-g",   "hbond",  ffOPTWR },
     { efNDX, "-sel", "select", ffOPTRD },
     { efXVG, "-num", "hbnum",  ffWRITE },
     { efXVG, "-ac",  "hbac",   ffOPTWR },
@@ -605,7 +617,7 @@ int main(int argc,char *argv[])
   t_hx    *nhx;
   int     max_nrhb,nrhb,nabin,nrbin,bin,resdist,idx;
   unsigned char **hbexist;
-  FILE       *fp,*fpins=NULL;
+  FILE       *fp,*fpins=NULL,*fplog;
   t_gridcell ***grid;
   t_ncell    *icell,*jcell,*kcell;
   t_icell    *danr;
@@ -1121,6 +1133,12 @@ int main(int argc,char *argv[])
   
   if (opt2bSet("-hbn",NFILE,fnm)) {
     fp = opt2FILE("-hbn",NFILE,fnm,"w");
+    if (opt2bSet("-g",NFILE,fnm)) {
+      fplog = ffopen(opt2fn("-g",NFILE,fnm),"w");
+      fprintf(fplog,"# %10s  %12s  %12s\n","Donor","Hydrogen","Acceptor");
+    }
+    else
+      fplog = NULL;
     for (grp=gr0; grp<=(bTwo?gr1:gr0); grp+=grINC) {
       fprintf(fp,"[ %s ]",grpnames[grp/grINC]);
       for (i=0; i<isize[grp/grINC]; i++) {
@@ -1147,11 +1165,20 @@ int main(int argc,char *argv[])
       fprintf(fp,"[ hbonds_%s ]\n",grpnames[0]);
     for (grp=gr0; grp<=(bTwo?gr1:gr0); grp+=grINC)
       for(i=0; i<nr_a[grp+grD]; i++)
-	for(j=0; j<donors[grp][i].nrhb; j++)
-	  fprintf(fp,"%6u %6u %6u\n",
-		  a[ grp+grD][i]+1,
-		  a[ grp+grH][i]+1,
-		  a[OGRP+grA][donors[grp][i].hb[j].a]+1);
+	for(j=0; j<donors[grp][i].nrhb; j++) {
+	  int  ddd,hhh,aaa;
+	  char ds[32],hs[32],as[32];
+	  
+	  ddd = a[ grp+grD][i];
+	  hhh = a[ grp+grH][i];
+	  aaa = a[OGRP+grA][donors[grp][i].hb[j].a];
+	  sprintf(ds,"%s",mkatomname(&top.atoms,ddd));
+	  sprintf(hs,"%s",mkatomname(&top.atoms,hhh));
+	  sprintf(as,"%s",mkatomname(&top.atoms,aaa));
+	  fprintf(fp,"%6u %6u %6u\n",ddd+1,hhh+1,aaa+1);
+	  if (fplog) 
+	    fprintf(fplog,"%12s  %12s  %12s\n",ds,hs,as);
+	}
     if (bInsert) {
       if (bTwo)
 	fprintf(fp,"[ insert_%s->%s-%s ]",
@@ -1168,6 +1195,8 @@ int main(int argc,char *argv[])
       fprintf(fp,"\n");
     }
     fclose(fp);
+    if (fplog)
+      fclose(fplog);
   }
   
   if (bDAnr) {
