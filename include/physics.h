@@ -66,8 +66,8 @@ static char *SRCID_physics_h = "$Id$";
 #define AMU              (1.6605402e-27)                /* kg           */
 #define BOLTZMANN	 (1.380658e-23)			/* (J/K)	*/
 #define AVOGADRO	 (6.0221367e23)			/* ()		*/
-#define RGAS             (BOLTZMANN*AVOGADRO)           /* (J/(mol K))  */
-#define BOLTZ            (RGAS/KILO)	                /* (kJ/(mol K))	*/
+#define RGAS             (BOLTZMANN*AVOGADRO/KILO)      /* (kJ/(mol K)) */
+#define BOLTZ            (RGAS)	                        /* (kJ/(mol K))	*/
 #define FARADAY          (E_CHARGE*AVOGADRO)            /* (C/mol)      */
 
 #define EPSILON0 	 (5.72765E-4)			/* (e^2 Na/(kJ nm))    */
