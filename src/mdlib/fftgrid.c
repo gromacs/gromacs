@@ -96,11 +96,11 @@ t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,int nz,
 #ifdef FFT_WORKSPACE
       snew(grid->workspace,grid->pfft.total_local_size);
 #endif
-  }
-#else
+  } else
+      snew(grid->workspace,grid->nptr);  
+#else /* no MPI */
 #ifdef FFT_WORKSPACE
-   else
-     snew(grid->workspace,grid->nptr);
+  snew(grid->workspace,grid->nptr);
 #endif
 #endif
 #ifndef FFT_WORKSPACE
