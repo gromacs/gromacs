@@ -121,7 +121,8 @@ extern void init_md(t_commrec *cr,t_inputrec *ir,tensor box,
 		    int *fp_ene,FILE **fp_dgdl,
 		    t_mdebin **mdebin,t_groups *grps,
 		    tensor force_vir,tensor shake_vir,t_mdatoms *mdatoms,
-		    rvec mu_tot,bool *bNEMD,t_vcm **vcm);
+		    rvec mu_tot,bool *bNEMD,t_vcm **vcm,
+		    t_nsborder *nsb);
 		    
 extern void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,
 			 t_graph *graph,rvec x[]);

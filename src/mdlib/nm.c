@@ -122,7 +122,8 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
             top->atoms.nr);
   }
 
-  vcm = init_vcm(stdlog,top,mdatoms,parm->ir.nstcomm);  
+  vcm = init_vcm(stdlog,top,mdatoms,
+		 START(nsb),HOMENR(nsb),parm->ir.nstcomm);  
   
   /* Call do_force once to make pairlist */
   clear_mat(force_vir);

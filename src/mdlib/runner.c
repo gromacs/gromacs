@@ -275,7 +275,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 	     int nfile,t_filenm fnm[],char **traj,char **xtc_traj,int *fp_ene,
 	     FILE **fp_dgdl,t_mdebin **mdebin,t_groups *grps,
 	     tensor force_vir,tensor shake_vir,t_mdatoms *mdatoms,rvec mu_tot,
-	     bool *bNEMD,t_vcm **vcm)
+	     bool *bNEMD,t_vcm **vcm,t_nsborder *nsb)
 {
   bool bBHAM,b14,bLR,bLJLR;
   int  i;
@@ -330,7 +330,8 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
   /* Set initial values for invmass etc. */
   init_mdatoms(mdatoms,*lambda,TRUE);
 
-  *vcm = init_vcm(stdlog,top,mdatoms);
+  *vcm = init_vcm(stdlog,top,mdatoms,
+		  START(nsb),HOMENR(nsb),ir->nstcomm);
     
   debug_gmx();
 

@@ -200,7 +200,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   /* Set some booleans for the epot routines  */
   set_pot_bools(&(parm->ir),top,&bLR,&bLJLR,&bBHAM,&b14);
   
-  vcm = init_vcm(stdlog,top,mdatoms,parm->ir.nstcomm);
+  vcm = init_vcm(stdlog,top,mdatoms,
+		 START(nsb),HOMENR(nsb),parm->ir.nstcomm);
   
   /* Init bin for energy stuff  */
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),bLR,bLJLR,
