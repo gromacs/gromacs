@@ -578,7 +578,7 @@ static void add_filters(char *filter,int *n,int nf,int ftp[])
   char buf[8];
   int  i;
 
-  sprintf(filter,"*.[");  
+  sprintf(filter,"*.{");  
   for(i=0; (i<nf); i++) {
     sprintf(buf,"%s",ftp2ext(ftp[i]));
     if (*n > 0)
@@ -586,7 +586,7 @@ static void add_filters(char *filter,int *n,int nf,int ftp[])
     strcat(filter,buf);
     (*n) ++;
   }
-  strcat(filter,"]");
+  strcat(filter,"}");
 }
 
 char *ftp2filter(int ftp)

@@ -46,9 +46,10 @@ bool is_hidden(t_pargs *pa)
 
 void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
 {
-  int  i,j;
+  int  i,j,k;
   bool *bKeep;
   char buf[32];
+  char *ptr;
   
   snew(bKeep,*argc+1);
   bKeep[0]     = TRUE;
@@ -83,6 +84,19 @@ void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
 	  break;
 	case etSTR:
 	  *(pa[j].u.c) = sscan(*argc,argv,&i);
+	  break;
+	case etENUM:
+	  ptr = sscan(*argc,argv,&i);
+	  for(k=0; (pa[j].u.c[k] != NULL); k++)
+	    if (strcasecmp(ptr,pa[j].u.c[k]) == 0) {
+	      /* Swap 0 and k */
+	      ptr          = pa[j].u.c[k];
+	      pa[j].u.c[k] = pa[j].u.c[0];
+	      pa[j].u.c[0] = ptr;
+	      break;
+	    }
+	  if (pa[j].u.c[k] == NULL)
+	    fatal_error(0,"Invalid value %s for option %s",ptr,pa[j].option);
 	  break;
 	case etRVEC:
 	  (*pa[j].u.rv)[0] = dscan(*argc,argv,&i);
@@ -182,6 +196,19 @@ bool opt2parg_bSet(char *option,int nparg,t_pargs pa[])
   return FALSE; /* Too make some compilers happy */
 }
 
+char *opt2parg_enum(char *option,int nparg,t_pargs pa[])
+{
+  int i;
+  
+  for(i=0; (i<nparg); i++)
+    if (strcmp(pa[i].option,option) == 0)
+      return pa[i].u.c[0];
+  
+  fatal_error(0,"No such option %s in pargs",option);
+  
+  return NULL;
+}
+
 char *pa_val(t_pargs *pa)
 {
   static char buf[256];
@@ -203,6 +230,9 @@ char *pa_val(t_pargs *pa)
 	fatal_error(0,"Argument too long: \"%d\"\n",*(pa->u.c));
       else
 	strcpy(buf,*(pa->u.c));
+    break;
+  case etENUM:
+    strcpy(buf,pa->u.c[0]);
     break;
   case etRVEC:
     sprintf(buf,"%g %g %g",(*pa->u.rv)[0],(*pa->u.rv)[1],(*pa->u.rv)[2]);

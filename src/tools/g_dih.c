@@ -39,7 +39,6 @@ static char *SRCID_g_dih_c = "$Id$";
 #include "physics.h"
 #include "macros.h"
 #include "xvgr.h"
-#include "maths.h"
 #include "vec.h"
 
 #define NOMIN 'X'

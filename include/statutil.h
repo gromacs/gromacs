@@ -52,6 +52,8 @@ extern void usage(char *prog,char *arg);
 
 extern char *Program(void);
 /* Return the name of the program */
+extern char *ShortProgram(void);
+/* Id. without leading directory */
 
 /************************************************
  *             Trajectory functions

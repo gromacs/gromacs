@@ -66,19 +66,20 @@ extern int get_eenum(int *ninp,t_inpfile **inp,char *name,char **defs);
 /* This last one prints a comment line where you can add some explanation */
 
 /* This structure is used for parsing arguments off the comand line */
-enum { etINT, etREAL, etSTR, etBOOL, etRVEC, etNR };
+enum { etINT, etREAL, etSTR, etBOOL, etRVEC, etENUM, etNR };
 /* names to print in help info */
-static char *argtp[etNR] = { "int", "real", "string", "bool", "vector" };
+static char *argtp[etNR] = { "int", "real", "string", "bool", "vector", "enum" };
 
 typedef struct {
   char *option;
   bool bSet;
   int  type;
   union {
-    void *v;  /* This is a nasty workaround, to be able to use initialized */
-    int  *i;  /* arrays */
+    void *v;   /* This is a nasty workaround, to be able to use initialized */
+    int  *i;   /* arrays */
     real *r;
-    char **c;
+    char **c;  /* Must be pointer to string (when type == etSTR)         */
+               /* or null terminated list of enums (when type == etENUM) */
     bool *b;
     rvec *rv;
   } u;
@@ -106,6 +107,8 @@ extern bool opt2parg_bool(char *option,int nparg,t_pargs pa[]);
 extern real opt2parg_real(char *option,int nparg,t_pargs pa[]);
 
 extern char *opt2parg_str(char *option,int nparg,t_pargs pa[]);
+
+extern char *opt2parg_enum(char *option,int nparg,t_pargs pa[]);
 
 extern bool opt2parg_bSet(char *option,int nparg,t_pargs pa[]);
 

@@ -9,7 +9,7 @@
 #
 #	See README file for info
 #
-SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG -D__INLINE_INTRINSICS -DHAVE_STRDUP -D_SGI_ 
+SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG -D__INLINE_INTRINSICS -DHAVE_STRDUP -D_SGI_ -DHAVE_STRCASECMP
 
 #
 #	USER MODIFIABLE SECTION
@@ -47,7 +47,7 @@ F77		= f77
 
 OPT		= -O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -LNO:opt=1 -LNO:ou_further=3 -OPT:Olimit=0:roundoff=3:alias=typed -fullwarn
 # All warnings except unused vars: -fullwarn -woff 1174
-CFLAGS		= $(ABI) $(OPT) -woff 1174
+CFLAGS		= $(ABI) $(OPT) -woff 1174 -woff 1233
 CCFLAGS		= $(ABI) $(OPT) -woff 1174 -DHAVE_BOOL 
 FFLAGS		= $(ABI) $(OPT) -OPT:cray_ivdep=TRUE
 #       Add the two GCM options to the FFLAGS for a 7% performance

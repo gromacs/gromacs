@@ -63,7 +63,7 @@ static char  *program=NULL;
 
 #define FF(arg) ((uFlags & arg)==arg)
 
-static char *ShortProgram(void)
+char *ShortProgram(void)
 {
   char *pr;
   
@@ -276,6 +276,9 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 		       int ndesc,char *desc[],int nbugs,char *bugs[])
 {
   static bool bHelp=FALSE,bHidden=FALSE,bQuiet=FALSE;
+  static char *not_nicestr[] = { "0", "4", "10", "19", NULL };
+  static char *nicestr[]     = { "19", "10", "4", "0", NULL };
+  static char *npri_str[]    = { "0", "100", "200", "250", NULL };
   static int  nicelevel=0;
   static int  mantp=0;
 #ifdef _SGI_
@@ -304,10 +307,10 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
       "HIDDENManual type: 0=none, 1=tex, 2=html, 3=nroff, 4=ascii, 5=java" },
     { "-debug",FALSE, etBOOL, &bDebug,
       "HIDDENwrite file with debug information" },
-    { "-nice", FALSE, etINT,  &nicelevel, 
+    { "-nice", FALSE, etENUM, NULL, 
       "Set the nicelevel" },
 #ifdef _SGI_
-    { "-npri", FALSE, etINT,  &npri,
+    { "-npri", FALSE, etENUM,  npri_str,
       "Set non blocking priority (SGI only) try 250" },
 #ifdef USE_SGI_FPE
     { "-exception", FALSE, etBOOL, &bExcept,
@@ -366,8 +369,13 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   bNo_get_pargs = (Flags & PCA_NOGET_PARGS) != PCA_NOGET_PARGS;
   
   /* Check ALL the flags ... */
-  if (bNice)
-    nicelevel = 19;
+  /* Please note this 5, which indicates the index in the pca_pa array 
+   * for the -nice option.
+   */
+  if (bNice) 
+    pca_pa[5].u.c = nicestr;
+  else
+    pca_pa[5].u.c = not_nicestr;
     
   /* Check whether we have to add -b -e or -w options */
   bFlags[NPCA_PA-3] = (bool) (Flags & PCA_CAN_BEGIN);
@@ -411,7 +419,9 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   if (bGUI)
     gmx_gui(argc,argv,nfile,fnm,npall,all_pa,ndesc,desc,nbugs,bugs);
 #endif
-    
+  
+  
+  
   if (bNo_get_pargs) {  
     /* Now copy the results back... */
     for(i=0,k=npall-npargs; (i<npargs); i++,k++) 
@@ -437,8 +447,14 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   }
   else
 #endif
-    if (nicelevel != 0)
-      nice(nicelevel);
+    {
+      if (bNice)
+	sscanf(nicestr[0],"%d",&nicelevel);
+      else
+	sscanf(not_nicestr[0],"%d",&nicelevel);
+      if (nicelevel != 0)
+	nice(nicelevel);
+    }
 #endif
 
   if (!(FF(PCA_QUIET) || bQuiet )) {

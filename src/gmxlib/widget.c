@@ -4,8 +4,8 @@
 #include "fatal.h"
 
 typedef struct {
-  Widget   w,other;
-  bool     bDesc;
+  Widget   w,other,parent;
+  bool     bDesc,bPopup;
   XmString desc;
   char     *directory;
   int      ftp;
@@ -31,7 +31,9 @@ windex add_widget(Widget new_widget,char *desc)
       w[i].ftp   = -1;
       w[i].w     = 0;
       w[i].other = 0;
+      w[i].parent= 0;
       w[i].bDesc = FALSE;
+      w[i].bPopup= FALSE;
       w[i].directory = NULL;
     }
   }
@@ -52,6 +54,38 @@ static void widget_range_check(windex win)
 {
   if (!((win>=0) && (win<nwindex)))
     fatal_error(0,"Widget index %d out of range, nwindex = %d",win,nwindex);
+}
+
+Widget get_parent(windex win)
+{
+  widget_range_check(win);
+  if (w[win].parent == 0)
+    fatal_error(0,"No parent widget known for widget %d. I'm an orphan!",win);
+
+  return w[win].parent;
+}
+
+void set_parent(windex win,Widget parent)
+{
+  widget_range_check(win);
+  if (w[win].parent != 0)
+    fatal_error(0,"Parent widget already set for widget %d",win);
+  
+  w[win].parent = parent;
+}
+
+void set_windex_popup(windex win,bool bPopup)
+{
+  widget_range_check(win);
+  
+  w[win].bPopup = bPopup;
+}
+
+bool get_windex_popup(windex win)
+{
+  widget_range_check(win);
+  
+  return w[win].bPopup;
 }
 
 Widget get_widget(windex win)

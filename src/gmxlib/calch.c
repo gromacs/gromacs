@@ -33,7 +33,7 @@ static char *SRCID_calch_c = "$Id$";
 #include "vec.h"
 #include "physics.h"
 	
-void gen_waterhydrogen(rvec x[3])
+void gen_waterhydrogen(rvec *x)
 {
 #define AA 0.081649
 #define BB 0.0
@@ -215,7 +215,7 @@ void calc_h_pos(int nht,int nh[],int a[],rvec x[])
     break;
   }
   case 7: /* two water hydrogens */
-    gen_waterhydrogen(&(x[AI]));
+    gen_waterhydrogen(x+AI);
     break;
   case 8: { /* two carboxyl oxygens, -COO- */
     for(d=0; (d<DIM); d++) {

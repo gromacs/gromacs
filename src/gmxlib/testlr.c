@@ -350,7 +350,7 @@ int main(int argc,char *argv[])
 		 opt2fn("-ptotcorr",NFILE,fnm));
   
   if (bPoisson && bFour) 
-    analyse_diff(log,"PPPM",
+    analyse_diff(log,"Poisson",
 		 top.atoms.nr,f_four,f_pois,phi_f,phi_pois,phi_s,
 		 opt2fn("-fcorr",NFILE,fnm),
 		 opt2fn("-pcorr",NFILE,fnm),

@@ -9,7 +9,7 @@
 #
 # 	See README file for info
 #
-SYSDEFS		= -DHAVE_ULONG -DCINVSQRT -DFINVSQRT
+SYSDEFS		= -DHAVE_ULONG -DCINVSQRT -DFINVSQRT -DHAVE_STRCASECMP -DHAVE_STRDUP
 
 #
 #	USER MODIFIABLE SECTION
@@ -43,7 +43,7 @@ HAVE_MOTIF	= yes
 #
 
 # Dec C compilers
-ALLOPT		= -fast -O5 -inline all -tune host -math_library fast -non_shared -unroll 2 -arch host -pipeline -fp_reorder
+ALLOPT		= -fast -O5 -inline all -tune host -math_library fast  -unroll 2 -arch host -pipeline -fp_reorder
 #ALLOPT		= -g
 # If you have cc.alt installed you can use it, it gives faster code
 # but is not guaranteed by DEC (let alone by the GROMACS crew)
@@ -64,9 +64,9 @@ FFLAGS		= $(ALLOPT) -speculate all -assume noaccuracy_sensitive
 #FFLAGS		= $(OPT)
 #CCFLAGS		= $(OPT)
 
-LDFLAGS		= -L$(LIBDIR) -non_shared
+LDFLAGS		= -L$(LIBDIR) 
 LD		= $(CC)  $(LDFLAGS) 
-RUNLDOPT	= -O4
+RUNLDOPT	= -O4 -non_shared
 FLD		= $(F77) $(LDFLAGS)
 CCLD		= -$(CCC) $(LDFLAGS)
 

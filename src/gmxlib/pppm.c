@@ -453,7 +453,7 @@ real do_pppm(FILE *log,       bool bVerbose,
     }
     if (bGenerGhat) {    
       fprintf(log,"Generating Ghat function\n");
-      beta[XX]=beta[YY]=beta[ZZ]= 4.0/3.0;
+      beta[XX]=beta[YY]=beta[ZZ]= 1.85;
       porder = 2;
       nx     = ir->nkx;
       ny     = ir->nky;
