@@ -83,7 +83,7 @@ int main(int argc,char *argv[])
   do_autocorr(opt2fn("-c",NFILE,fnm),str[datatp],
 	      nframes,1,&data,a,eacNormal,TRUE,NULL,NULL);
 	      
-  nlag = get_acflag();
+  nlag = get_acfnout();
   fp = xvgropen(opt2fn("-comb",NFILE,fnm),"testac","x","y");
   for(i=0; (i<nlag); i++) {
     fprintf(fp,"%10g  %10g  %10g\n",a*i,data2[i],data[i]);

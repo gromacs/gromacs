@@ -46,8 +46,8 @@ static char *SRCID_autocorr_c = "$Id$";
 
 typedef struct {
   unsigned long mode;
-  int  nrestart,nlag,P,nfitparm;
-  bool bFull,bFour,bNormalize;
+  int  nrestart,nout,P,nfitparm;
+  bool bFour,bNormalize;
   real tbeginfit,tendfit;
 } t_acf;
 
@@ -244,30 +244,23 @@ static void low_do_four_core(int nfour,int nframes,real c1[],fftreal cfour[],
   sfree(ans);
 }
 
-static void do_ac_core(int nframes,int nlag,
+static void do_ac_core(int nframes,int nout,
 		       real corr[],real c1[],int nrestart,
-		       unsigned long mode,bool bFull)
+		       unsigned long mode)
 {
   int     j,k,j3,jk3,m,n;
   fftreal ccc,c0,cth;
   rvec    xj,xk,rr;
 
-  if (bFull) {
-    if (nrestart != 1) 
-      fprintf(stderr,"WARNING: setting number of restarts to 1 for Full ACF\n");
+  if (nrestart < 1) {
+    fprintf(stderr,"WARNING: setting number of restarts to 1\n");
     nrestart = 1;
   }
-  else {
-    if (nrestart < 1) {
-      fprintf(stderr,"WARNING: setting number of restarts to 1\n");
-      nrestart = 1;
-    }
-  }
   if (debug)
-    fprintf(debug,"Starting do_ac_core: nframes=%d, nlag=%d, nrestart=%d,mode=%d\n",
-	    nframes,nlag,nrestart,mode);
+    fprintf(debug,"Starting do_ac_core: nframes=%d, nout=%d, nrestart=%d,mode=%d\n",
+	    nframes,nout,nrestart,mode);
   
-  for(j=0; (j<nlag); j++)
+  for(j=0; (j<nout); j++)
     corr[j]=0;
   
   /* Loop over starting points. */
@@ -275,7 +268,7 @@ static void do_ac_core(int nframes,int nlag,
     j3  = DIM*j;
     
     /* Loop over the correlation length for this starting point */
-    for(k=0; (k<nlag) && (j+k < nframes); k++) {
+    for(k=0; (k<nout) && (j+k < nframes); k++) {
       jk3 = DIM*(j+k);
       
       /* Switch over possible ACF types. 
@@ -336,21 +329,21 @@ static void do_ac_core(int nframes,int nlag,
     }
   }
   /* Correct for the number of points and copy results to the data array */
-  for(j=0; (j<nlag); j++) {
+  for(j=0; (j<nout); j++) {
     n = (nframes-j+(nrestart-1))/nrestart;
     c1[j] = corr[j]/n;
   }
 }
 
-void normalize_acf(int nframes,int nf2,int nlag,
-		   real corr[],bool bFull,bool bFour,bool bNormalize)
+void normalize_acf(int nframes,int nout,
+		   real corr[],bool bFour,bool bNormalize)
 {
   int  j;
   real c0;
 
   if (debug) {
     fprintf(debug,"Before normalization\n");
-    for(j=0; (j<nf2); j++) 
+    for(j=0; (j<nout); j++) 
       fprintf(debug,"%5d  %10f\n",j,corr[j]);
   }
   
@@ -362,30 +355,30 @@ void normalize_acf(int nframes,int nf2,int nlag,
       c0 = 1.0;
     else
       c0 = 1.0/corr[0];
-    for(j=0; (j<nlag); j++)
+    for(j=0; (j<nout); j++)
       corr[j] *= c0;
   }
   if (bFour) {
     if (debug)
-      fprintf(debug,"Correcting for FFT artefacts, nf2 = %d\n",nf2);
-    for(j=0; (j<nf2); j++)
-      corr[j] *= (real) nf2/(real) (nf2 - j);
+      fprintf(debug,"Correcting for FFT artefacts, nframes = %d\n",nframes);
+    for(j=0; (j<nout); j++)
+      corr[j] *= (real) nframes/(real) (nframes - j);
   }
   if (debug) {
     fprintf(debug,"After normalization\n");
-    for(j=0; (j<nf2); j++) 
+    for(j=0; (j<nout); j++) 
       fprintf(debug,"%5d  %10f\n",j,corr[j]);
   }
 }
 
-void average_acf(int ncorr,int nitem,real **c1)
+void average_acf(int n,int nitem,real **c1)
 {
   real c0;
   int  i,j;
   
   fprintf(stderr,"Averaging correlation functions\n");
   
-  for(j=0; (j<ncorr); j++) {
+  for(j=0; (j<n); j++) {
     c0 = 0;
     for(i=0; (i<nitem); i++)
       c0+=c1[i][j];
@@ -641,42 +634,31 @@ void fit_acf(int ncorr,int nfitparm,
 }
 
 void low_do_autocorr(char *fn,char *title,
-		     int nframes,int nitem,int nlag,real **c1,
+		     int nframes,int nitem,int nout,real **c1,
 		     real dt,unsigned long mode,int nrestart,
-		     bool bFull,bool bAver,bool bFour,bool bNormalize,
+		     bool bAver,bool bFour,bool bNormalize,
 		     char *fitfn,char *fittitle,bool bVerbose,
 		     real tbeginfit,real tendfit,
 		     int nfitparm)
 {
   FILE    *fp;
   const   real sqrtsqrt15=sqrt(sqrt(1.5));
-  int     i,j,j3,m,m1,k,ncorr,nfour;
+  int     i,j,j3,m,m1,k,nfour;
   fftreal *csum;
   char    buf[256];
   real    *ctmp,*rij,*sig;
   real    dc,c0,sum,rnorm,fac;
  
   /* Check flags and parameters */ 
-  nlag = get_acflag();
-  if (bFull || bFour) {
-    nlag  = acf.nlag = nframes;
-    ncorr = nframes;
-  }
-  else {
-    if (nlag == -1)
-      nlag = acf.nlag = (nframes+1)/2;
-    else if (nlag > nframes)
-      nlag=nframes;
-    ncorr = nlag;
-  }
+  nout = get_acfnout();
+  if (nout == -1)
+    nout = acf.nout = (nframes+1)/2;
+  else if (nout > nframes)
+    nout=nframes;
   
   if ((mode & eacCos) && (mode & eacVector))
     fatal_error(0,"Incompatible options bCos && bVector (%s, %d)",
 		__FILE__,__LINE__);
-  if (bFull && bFour) {
-    fprintf(stderr,"Turning off FFT! (Can't be done with Full)\n");
-    bFour=FALSE;
-  }
   if (((mode == eacP3) || (mode == eacRcross)) && bFour) {
     fprintf(stderr,"Cant combine mode %d with FFT, turning off FFT\n",mode);
     bFour = FALSE;
@@ -684,14 +666,13 @@ void low_do_autocorr(char *fn,char *title,
     
   /* Print flags and parameters */
   fprintf(stderr,"Will calculate %s of %d thingies for %d frames\n",
-	  title,nitem,ncorr);
-  fprintf(stderr,"bFull = %s, bAver = %s, bFour = %s bNormalize= %s\n",
-	  bool_names[bFull],bool_names[bAver],
-	  bool_names[bFour],bool_names[bNormalize]);
+	  title,nitem,nframes);
+  fprintf(stderr,"bAver = %s, bFour = %s bNormalize= %s\n",
+	  bool_names[bAver],bool_names[bFour],bool_names[bNormalize]);
   fprintf(stderr,"mode = %d, dt = %g, nrestart = %d\n",mode,dt,nrestart);
   
   if (bFour) {  
-    c0 = log((double)ncorr)/log(2.0);
+    c0 = log((double)nframes)/log(2.0);
     k  = c0;
     if (k < c0)
       k++;
@@ -719,9 +700,9 @@ void low_do_autocorr(char *fn,char *title,
     fprintf(stderr,"\rThingie %d",i);
     
     if (bFour)
-      do_four_core(mode,nfour,ncorr,nframes,c1[i],csum,ctmp);
+      do_four_core(mode,nfour,nframes,nframes,c1[i],csum,ctmp);
     else 
-      do_ac_core(nframes,nlag,ctmp,c1[i],nrestart,mode,bFull);
+      do_ac_core(nframes,nout,ctmp,c1[i],nrestart,mode);
   }
   fprintf(stderr,"\n");
   sfree(ctmp);
@@ -729,25 +710,25 @@ void low_do_autocorr(char *fn,char *title,
   
   fp=xvgropen(fn,title,"Time (ps)","C(t)");
   if (bAver) {
-    average_acf(ncorr,nitem,c1);
+    average_acf(nframes,nitem,c1);
     
-    normalize_acf(nframes,ncorr,nlag,c1[0],bFull,bFour,bNormalize);
+    normalize_acf(nframes,nout,c1[0],bFour,bNormalize);
     
     if (tbeginfit < tendfit)
-      fit_acf(ncorr,nfitparm,fitfn,fittitle,bVerbose,
+      fit_acf(nout,nfitparm,fitfn,fittitle,bVerbose,
 	      tbeginfit,tendfit,dt,c1[0]);
     else {
-      sum = print_and_integrate(fp,ncorr,dt,c1[0]);
+      sum = print_and_integrate(fp,nout,dt,c1[0]);
       fprintf(stderr,"Correlation time (integral over corrfn): %g (ps)\n",sum);
     }
   }
   else {
     /* Not averaging. Normalize individual ACFs */
     for(i=0; (i<nitem); i++) 
-      normalize_acf(nframes,ncorr,nlag,c1[i],bFull,bFour,bNormalize);
+      normalize_acf(nframes,nout,c1[i],bFour,bNormalize);
       
     /* Now dump them all */
-    for(j=0; (j<ncorr); j++) {
+    for(j=0; (j<nout); j++) {
       fprintf(fp,"%10f",j*dt);
       for(i=0; (i<nitem); i++) {
 	if (((mode == eacP1) || (mode == eacP2) || (mode == eacP3)) && bFour)
@@ -768,16 +749,14 @@ static char *Nparm[] = { "1", "2", NULL };
 t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
 {
   t_pargs acfpa[] = {
-    { "-fft",      FALSE, etBOOL, &acf.bFour,
-      "Use fast fourier transform for correlation function" },
-    { "-full",     FALSE, etBOOL,  &acf.bFull,
-      "HIDDENCompute full ACF leading to inaccurate tail" },
+    { "-acflen",     FALSE, etINT,  &acf.nout,
+      "Length of the ACF, default is half the number of frames" },
     { "-normalize",FALSE, etBOOL, &acf.bNormalize,
       "Normalize ACF" },
+    { "-fft",      FALSE, etBOOL, &acf.bFour,
+      "HIDDENUse fast fourier transform for correlation function" },
     { "-nrestart", FALSE, etINT,  &acf.nrestart,
-      "Number of frames between time origins for ACF when no FFT is used" },
-    { "-acflen",     FALSE, etINT,  &acf.nlag,
-      "Length of the ACF when no FFT is used, default is half the number of frames" },
+      "HIDDENNumber of frames between time origins for ACF when no FFT is used" },
     { "-P",        FALSE, etENUM, Leg,
       "Order of Legendre polynomial for ACF (0 indicates none)" },
     { "-nparm",    FALSE, etENUM, Nparm,
@@ -800,10 +779,9 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
 
   acf.mode       = 0;
   acf.nrestart   = 1;
-  acf.nlag       = -1;
+  acf.nout       = -1;
   acf.P          = 0;
   acf.nfitparm   = 1;
-  acf.bFull      = FALSE;
   acf.bFour      = TRUE;
   acf.bNormalize = TRUE;
   acf.tbeginfit  = 0.0;
@@ -840,16 +818,16 @@ void do_autocorr(char *fn,char *title,int nframes,int nitem,real **c1,
     break;
   }
   
-  low_do_autocorr(fn,title,nframes,nitem,acf.nlag,c1,dt,mode,
-		  acf.nrestart,acf.bFull,bAver,acf.bFour,acf.bNormalize,
+  low_do_autocorr(fn,title,nframes,nitem,acf.nout,c1,dt,mode,
+		  acf.nrestart,bAver,acf.bFour,acf.bNormalize,
 		  fitfn,fittitle,bDebugMode(),acf.tbeginfit,acf.tendfit,
 		  acf.nfitparm);
 }
 
-int get_acflag(void)
+int get_acfnout(void)
 {
   if (!bACFinit)
     fatal_error(0,"ACF data not initialized yet");
 
-  return acf.nlag;
+  return acf.nout;
 }

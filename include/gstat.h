@@ -220,9 +220,9 @@ extern void do_autocorr(char *fn,char *title,int nframes,int nitem,real **c1,
 /* Calls low_do_autocorr (see below). After calling add_acf_pargs */
 
 extern void low_do_autocorr(char *fn,char *title,
-			    int  nframes,int nitem,int nlag,real **c1,
+			    int  nframes,int nitem,int nout,real **c1,
 			    real dt,unsigned long mode,int nrestart,
-			    bool bFull,bool bAver,bool bFour,bool bNormalize,
+			    bool bAver,bool bFour,bool bNormalize,
 			    char *fitfn,char *fittitle,bool bVerbose,
 			    real tbeginfit,real tendfit,
 			    int nfitparm);
@@ -270,12 +270,6 @@ extern void low_do_autocorr(char *fn,char *title,
  *              (i.e. without FFT) When set to 1 all points are used as
  *              time origin for averaging
  * dt 		is the time between frames
- * bFull 	is an option (don't use it) to use all available points
- *       	to compute the correlation, this means the first point in the
- *       	C(t) has nframes contributions, the last only 1
- *       	If this option is not set, the correlation function will be
- *       	calc'ed over half the number of frames, each with the same
- *       	number of data points.
  * bAver 	If set, all ndih C(t) functions are averaged into a single 
  *       	C(t)
  * bFour      	If set, will use fast fourier transform (FFT) for evaluating
@@ -436,8 +430,8 @@ extern real print_and_integrate(FILE *fp,int n,real dt,real c[]);
  * If fp != NULL output is written to it
  */
  
-extern int get_acflag(void);
-/* Return the lag (length of the correlation function) 
+extern int get_acfnout(void);
+/* Return the output length for the correlation function 
  * Works only AFTER do_auto_corr has been called!
  */
  
