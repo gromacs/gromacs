@@ -1371,6 +1371,8 @@ inl0300_3dnow:
 .equ		_dx2,		104
 .equ		_dy2,		108
 .equ		_dz2,		112						
+        push ebp
+        mov ebp,esp
         push eax
         push ebx
         push ecx
@@ -6584,9 +6586,9 @@ inl1130_3dnow:
         movq mm2,mm1
         pfmul mm1,mm1
         pfrsqit1 mm1,mm0				
-        pfrcpit2 mm1,mm2	/* mm1=invsqrt */ OO
+        pfrcpit2 mm1,mm2	/* mm1=invsqrt */ 
 	movq  mm4, mm1
-	pfmul mm4, mm4		/* mm4=invsq */ OO
+	pfmul mm4, mm4		/* mm4=invsq */ 
 
 	movq mm2, mm4
 	pfmul mm2, mm4
@@ -8611,8 +8613,8 @@ inl3030_3dnow:
         movq mm2,mm1
         pfmul mm1,mm1
         pfrsqit1 mm1,mm0				
-        pfrcpit2 mm1,mm2	/* mm1=invsqrt */ OO
-	pfmul mm0, mm1		/* mm0=rsq */ OO
+        pfrcpit2 mm1,mm2	/* mm1=invsqrt */ 
+	pfmul mm0, mm1		/* mm0=rsq */ 
 
 	pfmul mm0, [esp + _tsc]
 	pf2iw mm4, mm0
@@ -11788,8 +11790,8 @@ inl3130_3dnow:
         movq mm2,mm1
         pfmul mm1,mm1
         pfrsqit1 mm1,mm0				
-        pfrcpit2 mm1,mm2	/* mm1=invsqrt */ OO
-	pfmul mm0, mm1		/* mm0=rsq */ OO
+        pfrcpit2 mm1,mm2	/* mm1=invsqrt */ 
+	pfmul mm0, mm1		/* mm0=rsq */ 
 
 	pfmul mm0, [esp + _tsc]
 	pf2iw mm4, mm0
@@ -14231,7 +14233,7 @@ inl3310_3dnow:
 	pfadd mm5, mm4	/*  mm5= VV */
 
 	movq mm6, [esp + _c12]
-	pfmul mm7, mm6	/* fijR */Toggle
+	pfmul mm7, mm6	/* fijR */
 	pfmul mm5, mm6	/* vnb12 */
 	pfadd mm3, mm7	/* total fscal fijD+ fijR */
 
@@ -14266,7 +14268,7 @@ inl3310_3dnow:
 	pfmul mm4, mm1   	/* mult by fs */ 
 	pfmul mm5, mm1
 	/* update i forces */
-
+	
 	movq mm0,  [esp + _fix]
 	movd mm1,  [esp + _fiz]
 	pfadd mm0, mm2
@@ -15277,8 +15279,8 @@ inl3330_3dnow:
         movq mm2,mm1
         pfmul mm1,mm1
         pfrsqit1 mm1,mm0				
-        pfrcpit2 mm1,mm2	/* mm1=invsqrt */ OO
-	pfmul mm0, mm1		/* mm0=rsq */ OO
+        pfrcpit2 mm1,mm2	/* mm1=invsqrt */ 
+	pfmul mm0, mm1		/* mm0=rsq */ 
 
 	pfmul mm0, [esp + _tsc]
 	pf2iw mm4, mm0
