@@ -122,8 +122,10 @@ static void do_update(int start,int homenr,double dt,
 	vb             = va + (1.0-lg)*uold;
 	v[n][d]        = vb;
 	xprime[n][d]   = x[n][d]+vb*dt;
-      } else
+      } else {
+	v[n][d]        = 0.0;
 	xprime[n][d]   = x[n][d];
+      }
     }
   }
 }
@@ -169,8 +171,10 @@ static void do_update_visc(int start,int homenr,double dt,
 	
 	v[n][d]        = vv;
 	xprime[n][d]   = x[n][d]+vv*dt;
-      } else
+      } else {
+	v[n][d]        = 0.0;
 	xprime[n][d]   = x[n][d];
+      }
     }
   }
 }
@@ -249,8 +253,10 @@ static void do_update_sd(int start,int homenr,double dt,
 	
 	v[n][d]        = vv + accel[ga][d]*dt;
 	xprime[n][d]   = x[n][d]+v[n][d]*dt;
-      } else
+      } else {
+	v[n][d]        = 0.0;
 	xprime[n][d]   = x[n][d];
+      }
     }
   }
 }
@@ -296,8 +302,10 @@ static void do_update_ld(int start,int homenr,double dt,
 	vv             = invfr*f[n][d] + rfac * jr - rhalf;
 	v[n][d]        = vv;
 	xprime[n][d]   = x[n][d]+v[n][d]*dt;
-      } else
+      } else {
+	v[n][d]        = 0.0;
 	xprime[n][d]   = x[n][d];
+      }
     }
   }
 }
