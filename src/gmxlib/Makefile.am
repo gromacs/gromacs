@@ -103,7 +103,7 @@ install-exec-hook:
 	fi; 
 
 # clean all libtool libraries, since the target names might have changed
-CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl axp_asm.S
+CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl 
 
 
 
