@@ -83,8 +83,8 @@ static char *get_asptp(int resnr)
   enum { easp, easpH, easpNR };
   static char *lh[easpNR] = { "ASP", "ASPH" };
   static char *expl[easpNR] = {
-    "Not protonated",
-    "Protonated"
+    "Not protonated (charge -1)",
+    "Protonated (charge 0)"
   };
 
   return select_res(easpNR,resnr,lh,expl,"ASPARTIC ACID");
@@ -95,8 +95,8 @@ static char *get_lystp(int resnr)
   enum { elys, elysH, elysNR };
   static char *lh[elysNR] = { "LYS", "LYSH" };
   static char *expl[elysNR] = {
-    "Not protonated",
-    "Protonated"
+    "Not protonated (charge 0)",
+    "Protonated (charge +1)"
   };
 
   return select_res(elysNR,resnr,lh,expl,"LYSINE");
@@ -623,9 +623,9 @@ int main(int argc, char *argv[])
     { "-ter",    FALSE, etBOOL, &bTerMan, 
       "Interactive termini selection, iso charged" },
     { "-lys",   FALSE, etBOOL, &bLysMan, 
-      "Interactive Lysine selection, iso charged (+1)" },
+      "Interactive Lysine selection, iso charged" },
     { "-asp",   FALSE, etBOOL, &bAspMan, 
-      "Interactive Aspartic Acid selection, iso charged (-1)" },
+      "Interactive Aspartic Acid selection, iso charged" },
     { "-his",    FALSE, etBOOL, &bHisMan,
       "Interactive Histidine selection, iso checking H-bonds" },
     { "-angle",  FALSE, etREAL, &angle, 
