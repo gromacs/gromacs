@@ -218,9 +218,11 @@ gmx_rng_gaussian_real(gmx_rng_t rng)
 
 
 /* Return a random unsigned integer, i.e. 0..4294967295 
-* Provided in header file for performace reasons.
-*/
-gmx_inline unsigned int
+ * Provided in header file for performace reasons.
+ * Unfortunately this function cannot be inlined, since
+ * it needs to refer the internal-linkage gmx_rng_update().
+ */
+unsigned int
 gmx_rng_uniform_uint32(gmx_rng_t rng)
 {
   unsigned int y;
@@ -242,7 +244,7 @@ gmx_rng_uniform_uint32(gmx_rng_t rng)
 
 
 /* Return a uniform floating point number on the interval 0<=x<1 */
-gmx_inline real
+real
 gmx_rng_uniform_real(gmx_rng_t rng)
 {
   if(sizeof(real)==sizeof(double))
