@@ -251,3 +251,52 @@ void dump_ana_struct(char *rmax,char *nion,char *gyr,
   fclose(gp);
   fclose(fp);
 }
+
+char *enms[eNR] = {
+  "Coulomb", "Repulsion", "Potential",
+  "EkHole",  "EkElectron", "EkLattice", "Kinetic",
+  "Total"
+};
+
+void add_ana_ener(t_ana_ener *ae,int nn,real e[])
+{
+  int i;
+ 
+  /* First time around we are constantly increasing the array size */ 
+  if (nn >= ae->nx) {
+    if (ae->nx == ae->maxx) {
+      ae->maxx += 1024;
+      srenew(ae->e,ae->maxx);
+    }
+    for(i=0; (i<eNR); i++)
+      ae->e[ae->nx][i] = e[i];
+    ae->nx++;
+  }
+  else {
+    for(i=0; (i<eNR); i++)
+      ae->e[nn][i] += e[i];
+  }
+}
+
+void dump_ana_ener(t_ana_ener *ae,int nsim,real dt,char *edump,
+		   t_ana_struct *total)
+{
+  FILE *fp;
+  int  i,j;
+  real fac;
+  
+  fac = 1.0/(nsim*ELECTRONVOLT);
+  fp=xvgropen(edump,"Energies","Time (fs)","E (eV)");
+  xvgr_legend(fp,eNR,enms);
+  fprintf(fp,"@ s%d legend \"Ek/Nelec\"\n",eNR);
+  fprintf(fp,"@ type nxy\n");
+  for(i=0; (i<ae->nx); i++) {
+    fprintf(fp,"%10f",1000.0*dt*i);
+    for(j=0; (j<eNR); j++)
+      fprintf(fp,"  %8.3f",ae->e[i][j]*fac);
+    fprintf(fp,"  %8.3f\n",ae->e[i][eELECTRON]/(ELECTRONVOLT*total->nion[i]));
+  }    
+  fprintf(fp,"&\n");
+  fclose(fp);
+}
+

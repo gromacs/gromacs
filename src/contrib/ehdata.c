@@ -268,7 +268,7 @@ static void read_cross(char *fn,int n,real **ener,real **cross,real factor)
   
 }
 
-real cross_inel(real ekin)
+real cross_inel(real ekin,real rho)
 {
   static real *ener  = NULL;
   static real *cross = NULL;
@@ -276,8 +276,8 @@ real cross_inel(real ekin)
   int eindex;
   
   /* Read data at first call, convert A^2 to nm^2 */
-  if (cross == NULL) 
-    read_cross("totpineld.dat",ninel,&ener,&cross,0.01);
+  if (cross == NULL)
+    read_cross("totpineld.dat",ninel,&ener,&cross,rho*0.01);
   
   /* Compute index with binary search */
   eindex = my_bsearch(ekin,ninel,ener);
@@ -285,7 +285,7 @@ real cross_inel(real ekin)
   return cross[eindex];
 }
 
-real cross_el(real ekin)
+real cross_el(real ekin,real rho)
 {
   static real *ener  = NULL;
   static real *cross = NULL;
@@ -293,11 +293,9 @@ real cross_el(real ekin)
   int eindex;
   
   /* Read data at first call, convert A^2 to nm^2  */
-  if (cross == NULL) {
-    real rho    = 3.51; /* g/cm^3 */
-    real factor = (rho/12.011)*AVOGADRO*1e-14*NANO;
-    read_cross("totpeldds.dat",nel,&ener,&cross,factor);
-  }
+  if (cross == NULL) 
+    read_cross("totpeldds.dat",nel,&ener,&cross,rho*0.01);
+  
   /* Compute index with binary search */
   eindex = my_bsearch(ekin,nel,ener);
   
@@ -356,23 +354,23 @@ static void test_theta_el(FILE *fp,int *seed)
   }
 }
 
-static void test_sigma_el(FILE *fp)
+static void test_sigma_el(FILE *fp,real rho)
 {
   int  i;
 
   fprintf(fp,"Testing the elastic cross sections table\n");
   for(i=0; (i<500); i++) {
-    fprintf(fp,"%3d  %8.3f\n",i,cross_el(i));
+    fprintf(fp,"%3d  %8.3f\n",i,cross_el(i,rho));
   }
 }
 
-static void test_sigma_inel(FILE *fp)
+static void test_sigma_inel(FILE *fp,real rho)
 {
   int  i;
 
   fprintf(fp,"Testing the inelastic cross sections table\n");
   for(i=0; (i<500); i++) {
-    fprintf(fp,"%3d  %8.3f\n",i,cross_inel(i));
+    fprintf(fp,"%3d  %8.3f\n",i,cross_inel(i,rho));
   }
 }
 
@@ -385,7 +383,7 @@ static void test_band_ener(int *seed,FILE *fp)
   }
 }
 
-void test_tables(int *seed,char *fn)
+void test_tables(int *seed,char *fn,real rho)
 {
   FILE *fp;
   
@@ -394,8 +392,8 @@ void test_tables(int *seed,char *fn)
   test_omega(fp,seed);
   test_q_inel(fp,seed);
   test_theta_el(fp,seed);
-  test_sigma_el(fp);
-  test_sigma_inel(fp);
+  test_sigma_el(fp,rho);
+  test_sigma_inel(fp,rho);
   test_band_ener(seed,fp);
   
   fclose(fp);

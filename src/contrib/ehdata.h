@@ -10,13 +10,13 @@ extern real get_q_inel(real ekin,real omega,int *seed,FILE *fp);
 
 extern real get_theta_el(real ekin,int *seed,FILE *fp);
 
-extern real cross_inel(real ekin);
+extern real cross_inel(real ekin,real rho);
 
-extern real cross_el(real ekin);
+extern real cross_el(real ekin,real rho);
 
 extern real band_ener(int *seed,FILE *fp);
 
-extern void test_tables(int *seed,char *fn);
+extern void test_tables(int *seed,char *fn,real rho);
 
 /*******************************************************************
  *
@@ -94,3 +94,24 @@ extern void analyse_structure(t_ana_struct *anal,real t,rvec center,
 
 extern void dump_ana_struct(char *rmax,char *nion,char *gyr,
 			    t_ana_struct *anal,int nsim);
+
+/*******************************************************************
+ *
+ * Functions to analyse energies
+ *
+ *******************************************************************/	
+			    
+enum { eCOUL, eREPULS, ePOT, eHOLE, eELECTRON, eLATTICE, eKIN, eTOT, eNR };
+extern char *enms[eNR];
+
+typedef real evec[eNR];
+
+typedef struct {
+  int  nx,maxx;
+  evec *e;
+} t_ana_ener;
+
+extern void add_ana_ener(t_ana_ener *ae,int nn,real e[]);
+
+extern void dump_ana_ener(t_ana_ener *ae,int nsim,real dt,char *edump,
+			  t_ana_struct *total);
