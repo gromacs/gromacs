@@ -229,11 +229,12 @@ void print_pdbatoms(FILE *out,int natom,t_pdbatom pdba[],matrix box)
 
 void renumber_pdb(int natom,t_pdbatom pdba[])
 {
-  int i,nres=-1;
+  int i,nres;
   char pdbnr[12],pdbnm[12];
   
   pdbnr[0]='\0';
   pdbnm[0]='\0';
+  nres=-1;
   for(i=0; (i<natom); i++) {
     if ((strcmp(pdba[i].pdbresnr,pdbnr) != 0) ||
 	(strcmp(pdba[i].resnm,pdbnm) != 0)) {
