@@ -43,6 +43,7 @@ static char *SRCID_g_mindist_c = "$Id$";
 #include "statutil.h"
 #include "rdgroup.h"
 #include "tpxio.h"
+#include "rmpbc.h"
 
 static void periodic_dist(matrix box,rvec x[],int n,atom_id index[],
 			  real *rmin,real *rmax)
@@ -91,7 +92,7 @@ static void periodic_dist(matrix box,rvec x[],int n,atom_id index[],
 }
 
 static void periodic_mindist_plot(char *trxfn,char *outfn,
-				  int n,atom_id index[])
+				  t_topology *top,int n,atom_id index[])
 {
   FILE   *out;
   char   *leg[5] = { "min per.","max int.","box1","box2","box3" };
@@ -115,6 +116,7 @@ static void periodic_mindist_plot(char *trxfn,char *outfn,
   tmint = 0;
 
   do {
+    rm_pbc(&(top->idef),natoms,box,x,x);
     periodic_dist(box,x,n,index,&rmin,&rmax);
     if (rmin < rmint) {
       rmint = rmin;
@@ -352,7 +354,7 @@ int main(int argc,char *argv[])
   
   if (bPer) {
     periodic_mindist_plot(ftp2fn(efTRX,NFILE,fnm),opt2fn("-od",NFILE,fnm),
-			  gnx[0],index[0]);
+			  &top,gnx[0],index[0]);
   } else {
     atm=ftp2FILE(efOUT,NFILE,fnm,"w");
     mindist_plot(ftp2fn(efTRX,NFILE,fnm),atm,mindist,
