@@ -304,8 +304,9 @@ void write_g96_conf(FILE *out,t_trxframe *fr,
       for(i=0; i<nout; i++) {
 	if (index) a = index[i]; else a = i;
 	fprintf(out,"%5d %-5s %-5s%7d%15.9f%15.9f%15.9f\n",
-		atoms->atom[a].resnr+1,*atoms->resname[atoms->atom[a].resnr],
-		*atoms->atomname[a],i+1,
+		(atoms->atom[a].resnr+1) % 100000,
+		*atoms->resname[atoms->atom[a].resnr],
+		*atoms->atomname[a],(i+1) % 10000000,
 		fr->x[a][XX],fr->x[a][YY],fr->x[a][ZZ]);
       }
     } else {
@@ -324,8 +325,9 @@ void write_g96_conf(FILE *out,t_trxframe *fr,
       for(i=0; i<nout; i++) {
 	if (index) a = index[i]; else a = i;
 	fprintf(out,"%5d %-5s %-5s%7d%15.9f%15.9f%15.9f\n",
-		atoms->atom[a].resnr+1,*atoms->resname[atoms->atom[a].resnr],
-		*atoms->atomname[a],i+1,
+		(atoms->atom[a].resnr+1) % 100000,
+		*atoms->resname[atoms->atom[a].resnr],
+		*atoms->atomname[a],(i+1) % 10000000,
 		fr->v[a][XX],fr->v[a][YY],fr->v[a][ZZ]);
       }
     } else {
