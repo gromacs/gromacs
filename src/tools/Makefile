@@ -127,6 +127,9 @@ g_dipoles:	g_dipoles.o  	$(ACOBJ)
 g_rotacf:	g_rotacf.o 	$(ACOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS)
 
+testacf:	testacf.o	$(ACOBJ)
+		$(LD) -o $@ $^ $(SYSLIBS)
+
 g_dielectric:	g_dielectric.o	$(ACOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS)
 
@@ -279,5 +282,4 @@ g_sas:		g_sas.o	nsc.o
 
 html_luck:	html_luck.o
 		$(LD) -Bstatic -o $@ $^ $(SYSLIBS)
-
 include	Make.dep
