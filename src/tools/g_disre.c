@@ -113,7 +113,7 @@ static void print5(FILE *fp)
 void check_viol(FILE *log,
 		t_ilist *bonds,t_iparams forceparams[],
 		t_functype functype[],
-		int natoms,rvec x[],rvec f[],
+		rvec x[],rvec f[],
 		t_forcerec *fr,matrix box,t_graph *g,
 		real *sumv,real *averv,
 		real *maxv,int *nv,
@@ -207,6 +207,7 @@ int main (int argc,char *argv[])
   t_atoms     *atoms=NULL;
   t_forcerec  *fr;
   t_nrnb      nrnb;
+  t_nsborder  *nsb;
   t_commrec   *cr;
   t_graph     *g;
   int         status,natoms,i,j,nv;
@@ -270,6 +271,7 @@ int main (int argc,char *argv[])
   numv=xvgropen(opt2fn("-dn",NFILE,fnm),"# Violations","Time (ps)","#");
   maxxv=xvgropen(opt2fn("-dm",NFILE,fnm),"Largest Violation","Time (ps)","nm");
 
+  snew(nsb,1);
   snew(atoms,1);
   atoms->nr=top->atoms.nr;
   atoms->nres=top->atoms.nres;
@@ -284,7 +286,7 @@ int main (int argc,char *argv[])
   fr=mk_forcerec();
   fprintf(stdlog,"Made forcerec...\n");
   init_forcerec(stdlog,fr,ir,&(top->blocks[ebMOLS]),cr,
-		&(top->blocks[ebCGS]),&(top->idef),mdatoms,box,FALSE);
+		&(top->blocks[ebCGS]),&(top->idef),mdatoms,nsb,box,FALSE);
   init_nrnb(&nrnb);
   j=0;
   do {
@@ -299,7 +301,7 @@ int main (int argc,char *argv[])
     check_viol(stdlog,
 	       &(top->idef.il[F_DISRES]),
 	       top->idef.iparams,top->idef.functype,
-	       natoms,x,f,fr,box,g,&sumv,&averv,&maxv,&nv,
+	       x,f,fr,box,g,&sumv,&averv,&maxv,&nv,
 	       isize,index,vvindex);
     if (isize > 0) {
       fprintf(xvg,"%10g",t);
