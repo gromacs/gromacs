@@ -6,10 +6,10 @@ if ( ! $?GMXHOME ) then
 endif
 
 if ($?GMXLIB) then
-  if ($LD_LIBRARY_PATH == $GMXHOME/lib/\$CPU) then
-    unsetenv LD_LIBRARY_PATH
-  endif
   if ($?LD_LIBRARY_PATH) then
+    if ($LD_LIBRARY_PATH == $GMXHOME/lib/\$CPU) then
+      unsetenv LD_LIBRARY_PATH
+    endif
     if ( "$1" != "-quiet" ) echo "You might want to remove the gmx path from "\$"LD_LIBRARY_PATH"
   endif
   if ( "$1" != "-quiet" ) echo "unsetenv GMXLIB ($GMXLIB)"
