@@ -134,16 +134,15 @@ real check_mol(t_atoms *atoms)
   return q;
 }
 
-static real sum_q(t_atoms *atoms)
+static void sum_q(t_atoms *atoms,int n,double *qt,double *qBt)
 {
   int     i;
-  real    q;
 
   /* sum charge */
-  q=0.0;
-  for (i=0; (i<atoms->nr); i++)
-    q += atoms->atom[i].q;
-  return q;
+  for (i=0; (i<atoms->nr); i++) {
+    *qt  += n*atoms->atom[i].q;
+    *qBt += n*atoms->atom[i].qB;
+  }
 }
 
   
@@ -243,7 +242,7 @@ static char **read_topol(char        *infile,
   t_block2   *block2;
   real       fudgeLJ=-1;    /* Multiplication factor to generate 1-4 from LJ */
   bool       bGenPairs=FALSE;
-  real       qt=0; /* total charge */
+  double     qt=0,qBt=0; /* total charge */
 
   /* open input and output file */
   if ((in = fopen(infile,"r")) == NULL)
@@ -461,7 +460,7 @@ static char **read_topol(char        *infile,
 	  fprintf(stderr,"Excluding %d bonded neighbours for %s\n",
 		    mi0->nrexcl,pline);
 	  if (!mi0->bProcessed) {
-	    qt+=nrcopies*sum_q(&mi0->atoms);
+	    sum_q(&mi0->atoms,nrcopies,&qt,&qBt);
 	    generate_excl(mi0->nrexcl,
 			  mi0->atoms.nr,
 			  mi0->plist,
@@ -488,6 +487,10 @@ static char **read_topol(char        *infile,
     title=put_symtab(symtab,"");
   if (fabs(qt) > 1e-5) {
     sprintf(errbuf,"System has non-zero total charge: %e\n",qt);
+    warning(errbuf);
+  }
+  if (fabs(qBt) > 1e-5 && qBt != qt) {
+    sprintf(errbuf,"State B has non-zero total charge: %e\n",qBt);
     warning(errbuf);
   }
   fclose (in);
