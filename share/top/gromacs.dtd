@@ -1,15 +1,55 @@
 <!--                                                              -->
-<!-- GROMACS Data type description (DTD).                         -->
-<!--                                                              -->
-<!-- $Id$      -->
-<!--                                                              -->
-<!-- David van der Spoel 07/2001, 03/2002                         -->
-<!-- The authorative version of this document can be found at     -->
-<!-- http://www.gromacs.org/gromacs3.1.dtd                        -->
-<!-- and also in the library directory of your local GROMACS      -->
-<!-- installation.                                                -->
+<!-- GROMACS Data type description (DTD). 
 
-<!ELEMENT gromacs (inputrec,system,masstype*,forcefield,cell,
+                This source code is part of
+ 
+                 G   R   O   M   A   C   S
+ 
+          GROningen MAchine for Chemical Simulations
+ 
+                        VERSION 3.1
+ 
+ Copyright (c) 1991-2002
+ BIOSON Research Institute, Dept. of Biophysical Chemistry
+ University of Groningen, The Netherlands
+ 
+ This program is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public License
+ as published by the Free Software Foundation; either version 2
+ of the License, or (at your option) any later version.
+ 
+ If you want to redistribute modifications, please consider that
+ scientific software is very special. Version control is crucial -
+ bugs must be traceable. We will be happy to consider code for
+ inclusion in the official distribution, but derived work must not
+ be called official GROMACS. Details are found in the README & COPYING
+ files - if they are missing, get the official version at www.gromacs.org.
+ 
+ To help us fund GROMACS development, we humbly ask that you cite
+ the papers on the package - you can find them in the top README file.
+ 
+ Do check out http://www.gromacs.org , or mail us at gromacs@gromacs.org .
+ 
+ And Hey:
+ GROningen Mixture of Alchemy and Childrens' Stories
+
+ $Id$      
+                                                            
+ David van der Spoel 07/2001, 03/2002                        
+ The authorative version of this document can be found at    
+ http://www.gromacs.org/gromacs3.1.dtd                       
+ and also in the library directory of your local GROMACS     
+ installation.                                                
+ 
+ Please use the following formal public identifier to identify it:
+     "-//GROMACS//DTD Gromacs XML V1.0//EN"
+
+ <!DOCTYPE gromacs PUBLIC "-//GROMACS//DTD Gromacs XML V3.1.0//EN"
+                   "http://www.gromacs.org/gromacs3.1.dtd"
+                   [...]>
+-->
+
+<!ELEMENT gromacs (inputrec,system,atomtypes,forcefield,cell,
                    coordinates,velocities?,forces?)>
 <!ATTLIST gromacs
           title     CDATA #REQUIRED>
@@ -84,40 +124,39 @@
 	  optfft      ( No | Yes ) "No">
 	  
 <!-- Description of the simulation system -->	  
-<!ELEMENT system    (composition+,molecule+)>
-<!ELEMENT composition EMPTY>
-<!ATTLIST composition
-          name      CDATA #REQUIRED
-	  number    CDATA #REQUIRED>
+<!ELEMENT system    (molecules+)>
 	  
 <!-- Description of a molecule holds the list of atoms, the topology  -->
 <!-- which means the connectivity. One attribute, the name            -->
 <!-- At least one atom is necessary, topology is optional (ions etc.) -->
-<!ELEMENT molecule (atom+,topology?)>
+<!ELEMENT molecules (molecule+)>
+<!ELEMENT molecule (atoms+,topology?)>
 <!ATTLIST molecule 
-          name   CDATA #REQUIRED>
+          name   CDATA #REQUIRED
+	  number CDATA #REQUIRED>
 
-<!ELEMENT atom (atomdef,atomdef?)>
-<!ATTLIST atom
+<!ELEMENT atoms (atom*)>
+<!ATTLIST atoms
 	  ptype    ( atom | dummy | shell ) "atom">
-<!ELEMENT atomdef EMPTY>	  
-<!ATTLIST atomdef
+<!ELEMENT atom EMPTY>	  
+<!ATTLIST atom
           name     CDATA #REQUIRED
 	  type     CDATA #REQUIRED
-	  charge   CDATA #REQUIRED
-	  masstype CDATA #REQUIRED>
+	  charge   CDATA #REQUIRED>
 
 <!ELEMENT topology (bonds*,angles*,dihedrals*)>
 
-<!ELEMENT bonds EMPTY>
-<!ATTLIST bonds
+<!ELEMENT bonds (bond*)>
+<!ELEMENT bond EMPTY>
+<!ATTLIST bond
           ai    CDATA #REQUIRED
 	  aj    CDATA #REQUIRED
 	  typeA CDATA #REQUIRED
 	  typeB CDATA #IMPLIED>
-		    
-<!ELEMENT angles EMPTY>
-<!ATTLIST angles
+
+<!ELEMENT angles (angle*)>
+<!ELEMENT angle EMPTY>
+<!ATTLIST angle
           ai    CDATA #REQUIRED
 	  aj    CDATA #REQUIRED
 	  ak    CDATA #REQUIRED
@@ -210,10 +249,12 @@
 
 <!-- Mass types for the atoms, to avoid repeating data and to enable e.g. -->
 <!-- a quick modification of masses towards heavy hydrogens               -->
-<!ELEMENT masstype EMPTY>
-<!ATTLIST masstype
+<!ELEMENT atomtypes (atomtype*)>
+<!ELEMENT atomtype EMPTY>
+<!ATTLIST atomtype
           name  CDATA #REQUIRED
-	  value CDATA #REQUIRED>
+	  ptype CDATA #REQUIRED
+	  mass  CDATA #REQUIRED>
 
 <!-- Computational cell (box) -->  
 <!ELEMENT cell        (tensor)>
