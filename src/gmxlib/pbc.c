@@ -76,7 +76,9 @@ void init_pbc(matrix box,bool bTruncOct)
 
   ptr = check_box(box);
   if (ptr) {
-    fprintf(stderr,"Warning: %s Can not fix pbc.\n",ptr);
+    fprintf(stderr,   "Warning: %s\n",ptr);
+    pr_rvecs(stderr,0,"         Box",box,DIM);
+    fprintf(stderr,   "         Can not fix pbc.\n");
     bSupported = FALSE;
   } else {
     bSupported = TRUE;
