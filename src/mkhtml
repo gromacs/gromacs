@@ -37,17 +37,17 @@ cat > $INDEX << EOD
 <br>
 EOD
 
-cd 	$GMXHOME/bin/$CPU
+cd 	$GMXHOME/bin/$GMXCPU
 foreach i ( * )
   if ( ( -x $i ) && ( $i != "my_dssp" ) && ( $i != "luck" ) ) then
     echo -n "$i "
     cd $HTMLOL
-    $GMXHOME/bin/$CPU/$i -quiet -man html >& /dev/null
+    $GMXHOME/bin/$GMXCPU/$i -quiet -man html >& /dev/null
       cat >> $INDEX << EOK
 <br><a href="$MANDIR/$i.html">$i</a>
 EOK
     endif
-    cd 	$GMXHOME/bin/$CPU
+    cd 	$GMXHOME/bin/$GMXCPU
   endif
 end
 
