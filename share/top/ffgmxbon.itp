@@ -140,6 +140,7 @@
   CH2   HO    1   0.19849     500000.
   CH1   HO    1   0.19849     500000.
    CB   HO    1   0.19849     500000.
+   P    HO    1   0.21260     500000.
 
 [ angletypes ]
   ; i    j    k func       th0         cth
