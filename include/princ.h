@@ -34,8 +34,6 @@ static char *SRCID_princ_h = "$Id$";
 
 #include "typedefs.h"
 
-extern void pr_jacobi(real **a,int n,real d[],real **v,int *nrot);
-
 extern void rotate_atoms(int gnx,atom_id index[],rvec x[],matrix trans);
 /* Rotate all atoms in index using matrix trans */
 
