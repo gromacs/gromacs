@@ -36,6 +36,7 @@ static char *SRCID_splitter_c = "$Id$";
 #include "typedefs.h"
 #include "mshift.h"
 #include "invblock.h"
+#include "txtdump.h"
 
 typedef struct {
   int     nr;
@@ -206,57 +207,117 @@ static int min_index(int start,t_block *b)
   return mi;
 }
 
-static void split_blocks(bool bVerbose,int nprocs,
-			 t_block *cgs,t_block *shakes)
+typedef struct {
+  int atom,ic,is;
+} t_border;
+
+void set_bor(t_border *b,int atom,int ic,int is)
 {
-  int     maxatom[MAXPROC];
-  int     i,ai,sbl;
-  int     pid;
-  double  load,tload;
+  b->atom = atom;
+  b->ic   = ic;
+  b->is   = is;
+}
+
+t_border *mk_border(bool bVerbose,int nprocs,t_block *cgs,
+		    t_block *shakes,int *nb)
+{
+  int i,ic,is,nbor,ac,as,as0;
+  t_border *border;
   
-  bool    bSHK;
-  atom_id *shknum;
-  
-  load  = (double)cgs->nra / (double)nprocs;  
-  tload = load;
-  
+  nbor = 1+max(cgs->nr,shakes->nr);
   if ((shakes->nr > 0) && (bVerbose)) {
     fprintf(stderr,
 	    "Going to use the WINKELHAAK Algorithm to split over %d cpus\n",
 	    nprocs);
+    fprintf(stderr,"There are %d possible border locations\n",nbor);
   }
-  shknum = make_invblock(shakes,cgs->nra+1);
-  if (debug)
-    for(i=0; (i<cgs->nra); i++)
-      fprintf(debug,"i: %5d, shknum: %5d\n",i,shknum[i]);
+  snew(border,nbor);
+  nbor = 0;
+  ic   = 0;
+  is   = 0;
+  while ((ic < cgs->nr) || (is < shakes->nr)) {
+    ac  = cgs->a[cgs->index[ic]];
+    as  = (is == shakes->nr) ? shakes->nra : shakes->a[shakes->index[is]];
+    as0 = (is == 0) ? 0 : (shakes->a[shakes->index[is]-1]); 
+    if (debug)
+      fprintf(debug,"mk_border: is=%6d ic=%6d as0=%6d as=%6d ac=%6d\n",
+	      is,ic,as0,as,ac);
+    if (ac == as) {
+      set_bor(&border[nbor],ac,ic,is);
+      nbor++;
+      ic++;
+      if (as < shakes->nra)
+	is++;
+    } 
+    else if ((ac >  as) && (as == shakes->nra)) {
+      set_bor(&border[nbor],ac,ic,is);
+      nbor++;
+      ic++;
+    } 
+    else if ((ac <  as) && (ac > as0)) {
+      set_bor(&border[nbor],ac,ic,is);
+      nbor++;
+      ic++;
+    } 
+    else if (ac < as) 
+      ic++;
+    else
+      is++;
+  }
+  set_bor(&border[nbor],cgs->nra,ic,is);
+  nbor++;
   
-  pid = 0;
-  sbl = 0;
-  for(i=0; (i<cgs->nr) && (tload < cgs->nra); i++) {
-    ai   = cgs->a[cgs->index[i]];
-    bSHK = ((i == 0) || 
-	    ((shknum[ai] == NO_ATID) || (shknum[ai] != shknum[ai-1])));
+  *nb = nbor;
 
-    /* Increase the shake-block number only if ai is a real shake block
-     * (not something unshaken, or settled), and if its sblock number
-     * is different from ai-1
-     */
-    if (ai > 0)
-      if ((shknum[ai] != shknum[ai-1]) && (shknum[ai] != NO_ATID))
-	sbl++;
-	
-    if (bSHK && (cgs->a[cgs->index[i+1]] > tload)) {
-      if (debug) 
-	fprintf(debug,"%s %d: tload = %g, ai = %d, i = %d, sbl = %d\n",
-		__FILE__,__LINE__,tload,ai,i,sbl);
-      cgs->multinr[pid]    = i;
-      shakes->multinr[pid] = sbl;
-      tload               += load;
-      maxatom[pid]         = ai;
-      pid++;
-    }
-    
+  if (debug) {
+    fprintf(debug,"There are %d actual border entries\n",nbor);
+    for(i=0; (i<nbor); i++) 
+      fprintf(debug,"border[%5d] = atom: %d  ic: %d  is: %d\n",i,
+	      border[i].atom,border[i].ic,border[i].is);
   }
+  
+  return border;
+}
+
+static void split_blocks(bool bVerbose,int nprocs,
+			 t_block *cgs,t_block *shakes)
+{
+  int      maxatom[MAXPROC];
+  int      i,ai,sbl,b0,b1;
+  int      pid,last_shk,nbor;
+  t_border *border;
+  double   load,tload;
+  
+  bool    bSHK;
+  atom_id *shknum,*cgsnum;
+  
+  if (debug) {
+    pr_block(debug,0,"cgs",cgs);
+    pr_block(debug,0,"shakes",shakes);
+  }
+  
+  shknum = make_invblock(shakes,cgs->nra+1);
+  cgsnum = make_invblock(cgs,cgs->nra+1);
+  border = mk_border(bVerbose,nprocs,cgs,shakes,&nbor);
+  
+  load  = (double)cgs->nra / (double)nprocs;  
+  tload = load;
+  
+  pid      = 0;
+  sbl      = 0;
+  for(i=0; (i<nbor) && (tload < cgs->nra); i++) {
+    b0 = border[i].atom;
+    
+    if (b0 >= tload) {
+      /* New pid time */
+      cgs->multinr[pid]    = border[i].ic;
+      shakes->multinr[pid] = border[i].is;
+      maxatom[pid] = b0;
+      pid++;
+      tload += load;
+    } 
+  }
+  
   /* Now the last one... */
   while (pid < nprocs) {
     cgs->multinr[pid]=cgs->nr;
@@ -278,6 +339,8 @@ static void split_blocks(bool bVerbose,int nprocs,
     fprintf(stderr,"\n");
   }
   sfree(shknum);
+  sfree(cgsnum);
+  sfree(border);
 }
 
 static void def_mnr(int nr,int mnr[])
