@@ -653,7 +653,7 @@ int main(int argc, char *argv[])
   static bool bInter=FALSE, bCysMan=FALSE; 
   static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan=FALSE;
   static bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
-  static bool bSort=TRUE, bMissing=FALSE, bRemoveH=FALSE;
+  static bool bSort=TRUE, bMissing=FALSE, bRemoveH=TRUE;
   static bool bDeuterate=FALSE;
   static real angle=135.0, distance=0.3,posre_fc=1000;
   static real long_bond_dist=0.25, short_bond_dist=0.05;
