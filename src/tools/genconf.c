@@ -120,7 +120,7 @@ static void move_x(int natoms,rvec x[],matrix box)
       x[i][m] += xcm[m];
 }
 
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   static char *desc[] = {
     "genconf multiplies a given coordinate file by simply stacking them",
@@ -134,43 +134,60 @@ void main(int argc, char *argv[])
     "The program should be more flexible, to allow for random displacement off lattice points (for each cartesian coordinate), and specify the (maximum) random rotation per coordinate to be useful for building membranes."
   };
 
-  int     nx,ny,nz,vol; /* nx,ny,nz number of gridpoints in x,y,z direction */
+  int     vol;          
   t_atoms *atoms;       /* list with all atoms */
   char    title[STRLEN];
-  real    dx,dy,dz;     /* space added between molecules ? */
   rvec    *x,*v;        /* coordinates? */
   vec4    *xrot,*vrot;  
   matrix  box;          /* box length matrix */
-  bool    bRandom;      /* False: no random rotations */
   rvec    shift;         
-  rvec    max_rot;      /* maximum rotation */
-  rvec    max_tr,tr;    /* maximum translation, actual translation */
-  int     seed;         /* seed for random number generator */
+  rvec    tr;           /* maximum translation, actual translation */
   int     natoms;       /* number of atoms in one molecule  */
   int     nres;         /* number of molecules? */
   int     i,j,k,l,m,ndx,nrdx;
+  
   t_filenm fnm[] = {
-    { efGCP, "-f",  NULL,     ffREAD  },
-    { efGCP, "-po", "gcout",  ffWRITE },
-    { efGRO, "-ci", "confin", ffREAD  },
-    { efGRO, "-co", "confout",ffWRITE }
+    { efSTX, "-f", "conf", ffREAD  },
+    { efSTO, "-o", "out",  ffWRITE }
   };
 #define NFILE asize(fnm)
-    
+  static int  nx=1,ny=1,nz=1;
+  static int  seed;               /* seed for random number generator */
+  static bool bRandom = FALSE;    /* False: no random rotations */
+  static real dx=0,dy=0,dz=0;     /* space added between molecules ? */
+  static rvec max_rot={90,90,90};    /* maximum rotation */
+  static rvec max_tr={0,0,0};     /* maximum translation */
+  t_pargs pa[] = { 
+    { "-nx", FALSE, etINT,  &nx,      "Number of boxes in X direction" },
+    { "-ny", FALSE, etINT,  &ny,      "Number of boxes in Y direction" },
+    { "-nz", FALSE, etINT,  &nz,      "Number of boxes in Z direction" },
+    { "-dx", FALSE, etREAL, &dx,      "Space between boxes in X direction" },
+    { "-dy", FALSE, etREAL, &dy,      "Space between boxes in Y direction" },
+    { "-dz", FALSE, etREAL, &dz,      "Space between boxes in Z direction" },
+    { "-s",  FALSE, etINT,  &seed,    "Random generator seed" },
+    { "-r",  FALSE, etBOOL, &bRandom, "Add random rotation to conformations" },
+    { "-mrx",FALSE, etREAL, &(max_rot[XX]), "Max rotation in X direction" },
+    { "-mry",FALSE, etREAL, &(max_rot[YY]), "Max rotation in Y direction" },
+    { "-mrz",FALSE, etREAL, &(max_rot[ZZ]), "Max rotation in Z direction" },
+    { "-mtx",FALSE, etREAL, &(max_tr[XX]),  "Max translation in X direction" },
+    { "-mty",FALSE, etREAL, &(max_tr[YY]),  "Max translation in Y direction" },
+    { "-mtz",FALSE, etREAL, &(max_tr[ZZ]),  "Max translation in Z direction" }
+  };
+  
   CopyRight(stdout,argv[0]);
-  parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,0,NULL,
+  parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,asize(bugs),bugs);
 
-  get_params(opt2fn("-f",NFILE,fnm),opt2fn("-po",NFILE,fnm),
-	     &nx,&ny,&nz,&dx,&dy,&dz,&seed,&bRandom,max_rot,max_tr);
-
+  /*get_params(opt2fn("-f",NFILE,fnm),opt2fn("-po",NFILE,fnm),
+    &nx,&ny,&nz,&dx,&dy,&dz,&seed,&bRandom,max_rot,max_tr);
+  */
   if ((nx <= 0) || (ny <= 0) || (nz <= 0)) {
     fprintf(stderr,"(nx <= 0) || (ny <= 0) || (nz <= 0)\n");
     exit(1);
   }
   vol=nx*ny*nz;     /* calculate volume in grid points (= nr. molecules) */
 
-  get_coordnum(opt2fn("-ci",NFILE,fnm),&natoms); 
+  get_stx_coordnum(opt2fn("-f",NFILE,fnm),&natoms); 
   snew(atoms,1); 
   snew(atoms->resname,natoms*vol); /* get space for _all_ atoms */
   snew(atoms->atomname,natoms*vol);
@@ -179,7 +196,7 @@ void main(int argc, char *argv[])
   snew(xrot,natoms);               /* get space for rotation matrix? */
   snew(v,natoms*vol);              /* velocities. not really needed? */ 
   snew(vrot,natoms); 
-  read_whole_conf(opt2fn("-ci",NFILE,fnm),title,atoms,x,v,box);
+  read_stx_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,v,box);
  
   nres=atoms->nres;                /* nr of residues in one element? */
 
@@ -202,7 +219,7 @@ void main(int argc, char *argv[])
 
 	  /* Random rotation on input coords */
 	  if (bRandom)
-	   rand_rot(natoms,x,v,xrot,vrot,&seed,max_rot);
+	    rand_rot(natoms,x,v,xrot,vrot,&seed,max_rot);
 	  
 	  for(l=0; (l<natoms); l++) {
 	    for(m=0; (m<DIM); m++) {
@@ -234,13 +251,9 @@ void main(int argc, char *argv[])
     
   atoms->nr*=vol;
   atoms->nres*=vol;
-  write_conf(opt2fn("-co",NFILE,fnm),title,atoms,x,v,box);
+  write_sto_conf(opt2fn("-o",NFILE,fnm),title,atoms,x,v,box);
   
   thanx(stdout);
+  
+  return 0;
 }
-
-
-
-
-
-

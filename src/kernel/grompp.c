@@ -119,10 +119,10 @@ static void double_check(t_inputrec *ir, matrix box, t_molinfo *mol)
 void check_water(bool bVerbose,int nmol,t_molinfo msys[],
 		 int Nsim,t_simsystem Sims[],t_inputrec *ir,char *watertype)
 {
-  int i,wmol;
+  int i,wmol,nwt;
   
   if (bVerbose)
-    fprintf(stderr,"checking for water... ");
+    fprintf(stderr,"checking for water...\n");
   ir->watertype=-1;
   if (strlen(watertype) == 0) {
     if (bVerbose)
@@ -133,17 +133,24 @@ void check_water(bool bVerbose,int nmol,t_molinfo msys[],
       wmol = Sims[i].whichmol;
       if ((strcmp(watertype,*(msys[wmol].name)) == 0) && 
 	  (Sims[i].nrcopies > 0)) {
-	if (ir->watertype != -1)
-	  fatal_error(0,"Twice the same moleculetype %s",watertype);
-	ir->watertype=msys[wmol].atoms.atom[0].type;
+	nwt = msys[wmol].atoms.atom[0].type;
+	if (ir->watertype == -1) 
+	  ir->watertype=nwt;
+	else if (ir->watertype == nwt) {
+	  sprintf(warn_buf,"Multiple topology entries for %s",watertype);
+	  warning(NULL);
+	}
+	else
+	  fatal_error(0,"Multiple non-matching topology entries for %s",
+		      watertype);
       }
     }
   }
   if (bVerbose) {
     if (ir->watertype != -1)
-      fprintf(stderr,"using atomtype %d for water oxygen\n",ir->watertype);
+      fprintf(stderr,"...using atomtype %d for water oxygen\n",ir->watertype);
     else
-      fprintf(stderr,"no water\n");
+      fprintf(stderr,"...no water\n");
   }
 }
 
