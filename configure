@@ -7012,17 +7012,13 @@ EOF
 
 fi
 
-if test "${prefix}" = "NONE"; then
-  cat >> confdefs.h <<EOF
-#define GMXLIBDIR "${ac_default_prefix}/top"
+echo "1: ${datadir}"
+echo '2: ${datadir}' 
+cat >> confdefs.h <<EOF
+#define GMXLIBDIR "${datadir}/top"
 EOF
 
-else
-  cat >> confdefs.h <<EOF
-#define GMXLIBDIR "${prefix}/top"
-EOF
 
-fi
 
 # Check if there are any optimizations and options for this arch and cpu
 
@@ -7246,7 +7242,7 @@ if test $ac_cv_prog_gcc = yes; then
   
 
 echo $ac_n "checking whether $CC accepts -malign-double""... $ac_c" 1>&6
-echo "configure:7250: checking whether $CC accepts -malign-double" >&5
+echo "configure:7246: checking whether $CC accepts -malign-double" >&5
 if eval "test \"`echo '$''{'ac_align_double'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -7303,7 +7299,7 @@ fi
 	
 
 echo $ac_n "checking whether $CC accepts -mcpu=$cputype""... $ac_c" 1>&6
-echo "configure:7307: checking whether $CC accepts -mcpu=$cputype" >&5
+echo "configure:7303: checking whether $CC accepts -mcpu=$cputype" >&5
 if eval "test \"`echo '$''{'ac_m_cpu_60x'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -7330,7 +7326,7 @@ fi
         
 
 echo $ac_n "checking whether $CC accepts -mcpu=750""... $ac_c" 1>&6
-echo "configure:7334: checking whether $CC accepts -mcpu=750" >&5
+echo "configure:7330: checking whether $CC accepts -mcpu=750" >&5
 if eval "test \"`echo '$''{'ac_m_cpu_750'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -7358,7 +7354,7 @@ fi
         
 
 echo $ac_n "checking whether $CC accepts -mcpu=powerpc""... $ac_c" 1>&6
-echo "configure:7362: checking whether $CC accepts -mcpu=powerpc" >&5
+echo "configure:7358: checking whether $CC accepts -mcpu=powerpc" >&5
 if eval "test \"`echo '$''{'ac_m_cpu_powerpc'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -7386,7 +7382,7 @@ fi
 	
 
 echo $ac_n "checking whether $CC accepts -mpowerpc""... $ac_c" 1>&6
-echo "configure:7390: checking whether $CC accepts -mpowerpc" >&5
+echo "configure:7386: checking whether $CC accepts -mpowerpc" >&5
 if eval "test \"`echo '$''{'ac_m_powerpc'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -7448,7 +7444,7 @@ if test "$ac_test_CFLAGS" != "set"; then
   
 
 echo $ac_n "checking whether $CC accepts ${CFLAGS}""... $ac_c" 1>&6
-echo "configure:7452: checking whether $CC accepts ${CFLAGS}" >&5
+echo "configure:7448: checking whether $CC accepts ${CFLAGS}" >&5
 if eval "test \"`echo '$''{'ac_guessed_cflags'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -7497,7 +7493,7 @@ if test "$enable_fortran" = "yes"; then
     
 
 echo $ac_n "checking whether $F77 accepts ${FFLAGS}""... $ac_c" 1>&6
-echo "configure:7501: checking whether $F77 accepts ${FFLAGS}" >&5
+echo "configure:7497: checking whether $F77 accepts ${FFLAGS}" >&5
 if eval "test \"`echo '$''{'ac_guessed_fflags'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -7554,6 +7550,7 @@ else
   bindir="\${exec_prefix}/bin/${host}"
   libdir="\${exec_prefix}/lib/${host}"
 fi
+
 
 
 
@@ -7666,23 +7663,26 @@ trap 'rm -fr `echo "Makefile
                  src/kernel/Makefile
                  src/tools/Makefile
                  src/ngmx/Makefile
-		 src/include/Makefile
-		 src/include/types/Makefile
-                 src/contrib/Makefile
-                 src/contrib/scripts/Makefile
-		 tutor/Makefile
-		 tutor/gmxdemo/Makefile
-		 tutor/nmr1/Makefile
-		 tutor/nmr2/Makefile
-		 tutor/water/Makefile
-		 tutor/speptide/Makefile
-		 tutor/template/Makefile
-		 tutor/template/Template.mak
-		 top/Makefile
-		 html/Makefile
-                 html/gif/Makefile
-                 html/online/Makefile
-                 man/Makefile src/include/config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
+		 src/contrib/Makefile
+                 include/Makefile
+		 include/types/Makefile
+                 scripts/Makefile
+		 admin/Makefile
+                 share/Makefile
+		 share/tutor/Makefile
+		 share/tutor/gmxdemo/Makefile
+		 share/tutor/nmr1/Makefile
+		 share/tutor/nmr2/Makefile
+		 share/tutor/water/Makefile
+		 share/tutor/speptide/Makefile
+		 share/template/Makefile
+		 share/template/Template.mak
+		 share/top/Makefile
+		 share/html/Makefile
+                 share/html/images/Makefile
+                 share/html/online/Makefile
+                 man/Makefile
+                 man/man1/Makefile include/config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
 EOF
 cat >> $CONFIG_STATUS <<EOF
 
@@ -7770,6 +7770,7 @@ s%@GMXLIB_COND_OBJ@%$GMXLIB_COND_OBJ%g
 s%@MDLIB_COND_OBJ@%$MDLIB_COND_OBJ%g
 s=XXX_SUFFIX_XXX=$SUFFIX=g
 s%@SUFFIX@%$SUFFIX%g
+s%@SHARED_VERSION_INFO@%$SHARED_VERSION_INFO%g
 
 CEOF
 EOF
@@ -7818,23 +7819,26 @@ CONFIG_FILES=\${CONFIG_FILES-"Makefile
                  src/kernel/Makefile
                  src/tools/Makefile
                  src/ngmx/Makefile
-		 src/include/Makefile
-		 src/include/types/Makefile
-                 src/contrib/Makefile
-                 src/contrib/scripts/Makefile
-		 tutor/Makefile
-		 tutor/gmxdemo/Makefile
-		 tutor/nmr1/Makefile
-		 tutor/nmr2/Makefile
-		 tutor/water/Makefile
-		 tutor/speptide/Makefile
-		 tutor/template/Makefile
-		 tutor/template/Template.mak
-		 top/Makefile
-		 html/Makefile
-                 html/gif/Makefile
-                 html/online/Makefile
-                 man/Makefile"}
+		 src/contrib/Makefile
+                 include/Makefile
+		 include/types/Makefile
+                 scripts/Makefile
+		 admin/Makefile
+                 share/Makefile
+		 share/tutor/Makefile
+		 share/tutor/gmxdemo/Makefile
+		 share/tutor/nmr1/Makefile
+		 share/tutor/nmr2/Makefile
+		 share/tutor/water/Makefile
+		 share/tutor/speptide/Makefile
+		 share/template/Makefile
+		 share/template/Template.mak
+		 share/top/Makefile
+		 share/html/Makefile
+                 share/html/images/Makefile
+                 share/html/online/Makefile
+                 man/Makefile
+                 man/man1/Makefile"}
 EOF
 cat >> $CONFIG_STATUS <<\EOF
 for ac_file in .. $CONFIG_FILES; do if test "x$ac_file" != x..; then
@@ -7915,7 +7919,7 @@ ac_eD='%g'
 if test "${CONFIG_HEADERS+set}" != set; then
 EOF
 cat >> $CONFIG_STATUS <<EOF
-  CONFIG_HEADERS="src/include/config.h"
+  CONFIG_HEADERS="include/config.h"
 EOF
 cat >> $CONFIG_STATUS <<\EOF
 fi
@@ -8006,7 +8010,7 @@ cat >> $CONFIG_STATUS <<EOF
 
 EOF
 cat >> $CONFIG_STATUS <<\EOF
-test -z "$CONFIG_HEADERS" || echo timestamp > src/include/stamp-h
+test -z "$CONFIG_HEADERS" || echo timestamp > include/stamp-h
 
 exit 0
 EOF

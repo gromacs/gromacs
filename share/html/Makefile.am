@@ -2,9 +2,9 @@
 #
 # Don't edit - this file is generated automatically from Makefile.am
 #
-SUBDIRS = .  gif  online
+SUBDIRS = .  images  online
 
-htmldir = ${prefix}/html
+htmldir = ${datadir}/html
 
 html_DATA = online.html 
 

@@ -2,9 +2,9 @@
 #
 # Don't edit - this file is generated automatically from Makefile.am
 #
-gifdir = ${prefix}/html/gif
+imagedir = ${datadir}/html/images
 
-gif_DATA = \
+image_DATA = \
 	annealdn.gif		features.gif		\
 	flow_leftrightup.gif	flow_vrule.gif 		\
 	annealup.gif     	flow_down.gif           \
@@ -21,8 +21,17 @@ gif_DATA = \
 	flow_vline.gif          topologies.gif		\
 	plotje.gif		xvgr.gif	
 
-EXTRA_DIST = ${gif_DATA}
+EXTRA_DIST = ${image_DATA}
 
 CLEANFILES = *~ \\\#*
+
+
+
+
+
+
+
+
+
 
 

@@ -2,7 +2,7 @@
 #
 # Don't edit - this file is generated automatically from Makefile.am
 #
-topoldir = ${prefix}/top
+topoldir = ${datadir}/top
 
 topol_DATA = \
 	FF.dat		ffgmx.itp	ffgmxnb.itp	ffgmxbon.itp	\

@@ -3,9 +3,9 @@
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
-SUBDIRS = nmr1 nmr2 speptide water gmxdemo template
+SUBDIRS = nmr1 nmr2 speptide water gmxdemo 
 
-tutordir = ${prefix}/share/tutor
+tutordir = ${datadir}/tutor
 
 tutor_SCRIPTS = cleanit
 

@@ -3,7 +3,7 @@
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
-gmxdemodir = ${prefix}/share/tutor/gmxdemo
+gmxdemodir = ${datadir}/tutor/gmxdemo
 
 gmxdemo_DATA = cpeptide.pdb
 gmxdemo_SCRIPTS = demo

@@ -9,7 +9,7 @@ dnl This is the version info according to the libtool versioning system.
 dnl It does *not* correspond to the release number.
 SHARED_VERSION_INFO="1:0:0"
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
-AM_CONFIG_HEADER(src/include/config.h)
+AM_CONFIG_HEADER(include/config.h)
 
 #######################################################################
 # User options
@@ -675,12 +675,9 @@ fi
 if test "$enable_vectorized_recip" = "yes"; then
   AC_DEFINE(VECTORIZE_RECIP,,[Vectorize the reciprocal calculation])
 fi
+ 
+AC_DEFINE_UNQUOTED(GMXLIBDIR,"${datadir}/top",[Default topology file location])
 
-if test "${prefix}" = "NONE"; then
-  AC_DEFINE_UNQUOTED(GMXLIBDIR,"${ac_default_prefix}/top",[Default topology file location])
-else
-  AC_DEFINE_UNQUOTED(GMXLIBDIR,"${prefix}/top",[Default topology file location])
-fi
 
 # Check if there are any optimizations and options for this arch and cpu
 ACX_COMPILER_MAXOPT
@@ -703,6 +700,7 @@ fi
 
 AC_SUBST(bindir)
 AC_SUBST(libdir)
+AC_SUBST(SHARED_VERSION_INFO)
 
 AC_OUTPUT([Makefile
                  src/Makefile
@@ -711,23 +709,26 @@ AC_OUTPUT([Makefile
                  src/kernel/Makefile
                  src/tools/Makefile
                  src/ngmx/Makefile
-		 src/include/Makefile
-		 src/include/types/Makefile
-                 src/contrib/Makefile
-                 src/contrib/scripts/Makefile
-		 tutor/Makefile
-		 tutor/gmxdemo/Makefile
-		 tutor/nmr1/Makefile
-		 tutor/nmr2/Makefile
-		 tutor/water/Makefile
-		 tutor/speptide/Makefile
-		 tutor/template/Makefile
-		 tutor/template/Template.mak
-		 top/Makefile
-		 html/Makefile
-                 html/gif/Makefile
-                 html/online/Makefile
-                 man/Makefile])
+		 src/contrib/Makefile
+                 include/Makefile
+		 include/types/Makefile
+                 scripts/Makefile
+		 admin/Makefile
+                 share/Makefile
+		 share/tutor/Makefile
+		 share/tutor/gmxdemo/Makefile
+		 share/tutor/nmr1/Makefile
+		 share/tutor/nmr2/Makefile
+		 share/tutor/water/Makefile
+		 share/tutor/speptide/Makefile
+		 share/template/Makefile
+		 share/template/Template.mak
+		 share/top/Makefile
+		 share/html/Makefile
+                 share/html/images/Makefile
+                 share/html/online/Makefile
+                 man/Makefile
+                 man/man1/Makefile])
 
 echo ""
 echo "GROMACS is ready to compile. Summary of main options:"

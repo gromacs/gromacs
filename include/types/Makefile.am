@@ -2,7 +2,7 @@
 #
 # Don't edit - this file is generated automatically from Makefile.am
 #
-includetypesdir = ${prefix}/include/types
+includetypesdir = ${includedir}/types
 
 includetypes_HEADERS = \
 	atoms.h    	edsams.h  	forcerec.h  	ifunc.h		\

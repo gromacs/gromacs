@@ -3,11 +3,11 @@
 # Note that Makefile is generated automatically from Makefile.in,
 # which is automatically generated from Makefile.am
 
-include $(srcdir)/../Makefile.inc
+
 # 
 # This is necessary for VPATH builds (and thus distcheck) to work, 
 # but it can probably be included in a nicer way...
-INCLUDES = @INCLUDES@ -I$(top_srcdir)/src/include
+INCLUDES = @INCLUDES@ -I$(top_srcdir)/include
 
 # produce the gmx library
 #
@@ -53,8 +53,10 @@ endif
 #
 
 libgmxXXX_SUFFIX_XXX_la_LIBADD = @GMXLIB_COND_OBJ@	
-
 libgmxXXX_SUFFIX_XXX_la_DEPENDENCIES = @GMXLIB_COND_OBJ@	
+libgmxXXX_SUFFIX_XXX_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
+
+
 
 # The inner loops
 innerf.f:	mkinl 
@@ -82,6 +84,8 @@ EXTRA_DIST 	 = \
 	mkinl_innerloop.c	mkinl_calcdist.c	mkinl_invsqrt.c	   \
 	mkinl_recip.c		mkinl_interactions.c	metacode.c	   \
 	mkinl.h			mkinl_fortrandata.h
+
+BUILD_COMPILE = $(BUILD_CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 
 metacode.o:	metacode.c
 		$(BUILD_COMPILE) -c $(srcdir)/metacode.c
@@ -112,4 +116,9 @@ mkinl:		$(MKINL_OBJ)
 
 # clean things explicitly, since the target names might have changed
 CLEANFILES     = ${lib_LTLIBRARIES} *_d.la *_mpi.la *~ \\\#* innerc.c innerf.f mkinl
+
+
+
+
+
 

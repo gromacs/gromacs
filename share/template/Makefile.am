@@ -3,7 +3,7 @@
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
-templatedir = ${prefix}/share/template
+templatedir = ${datadir}/template
 
 # we don't build this, it's meant for the user to play with.
 # Since a Makefile is used for the installation, we call the
@@ -20,5 +20,8 @@ install-data-hook:
 
 
 CLEANFILES = *~ \\\#* *.ene *.hat *.tr? *.xtc *.edr *.ene *.xvg core *.log mdout.mdp *.tp? mon.out confout.gro deshuf.ndx output.* *.gz *.ps *.dat *.g87 *~ \\\#*
+
+
+
 
 

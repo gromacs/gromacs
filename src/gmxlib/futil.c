@@ -36,12 +36,15 @@
 static char *SRCID_futil_c = "$Id$";
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include "sysstuff.h"
 #include "string2.h"
 #include "futil.h"
 #include "network.h"
 #include "fatal.h"
 #include "smalloc.h"
+#include "statutil.h"
 
 typedef struct t_pstack {
   FILE   *fp;
@@ -292,19 +295,130 @@ FILE *ffopen(char *file,char *mode)
   return ff;
 }
 
-char *low_libfn(char *file,bool bFatal)
+
+
+bool search_subdirs(char *parent, char *libdir)
+{
+  char *ptr;
+  bool found;
+
+  /* Search a few common subdirectory names for the gromacs library dir */
+  sprintf(libdir,"%s/share/top/FF.dat",parent);
+  found=fexist(libdir);
+  if(!found) {
+    sprintf(libdir,"%s/share/gromacs/top/FF.dat",parent);
+    found=fexist(libdir);
+  }    
+  if(!found) {
+    sprintf(libdir,"%s/share/gromacs-%s/top/FF.dat",parent,VERSION);
+    found=fexist(libdir);
+  }    
+  if(!found) {
+    sprintf(libdir,"%s/share/gromacs/gromacs-%s/top/FF.dat",parent,VERSION);
+    found=fexist(libdir);
+  }    
+  
+  /* Remove the FF.dat part from libdir if we found something */
+  if(found) {
+    ptr=rindex(libdir,'/'); /* slash always present, no check necessary */
+    *ptr='\0';
+  }
+  return found;
+}
+
+bool get_libdir(char *libdir)
+{
+  char bin_name[512];
+  char buf[512];
+  char full_path[512];
+  char test_file[512];
+  char *system_path;
+  char *dir,*ptr;
+  bool found=FALSE;
+  int i;
+
+  /* First - detect binary name */
+  strcpy(bin_name,Program());
+
+  /* Only do the smart search part if we got a real name */
+  if(bin_name && strcmp(bin_name,"GROMACS")) {
+  
+    if (!index(bin_name,'/')) {
+      /* No "/" in name means it must be in the path - search it! */
+      system_path=getenv("PATH");
+      found=FALSE;
+      while(!found && (dir=strsep(&system_path,":"))!=NULL) {
+	sprintf(full_path,"%s/%s",dir,bin_name);
+	found=fexist(full_path);
+      }
+      if(!found)
+	return FALSE;
+    } else if (bin_name[0]!='/') {
+      /* name is relative the current dir */
+      getcwd(buf,sizeof(buf)-1);
+      strcpy(full_path,buf);
+      strcat(full_path,bin_name+1);
+    }
+
+    /* Now we should have a full path and name in full_bin_name,
+     * but it might be a link, or a link to a link to a link...
+     */
+    while( (i=readlink(full_path,buf,sizeof(buf)-1)) > 0 ) {
+      buf[i]='\0';
+      /* If it doesn't start with "/" it is relative */
+      if(buf[0]!='/') {
+	strcpy(rindex(full_path,'/')+1,buf);
+      } else
+	strcpy(full_path,buf);
+    }
+    
+    /* Remove the executable name - it always contains at least one slash */
+    *(rindex(full_path,'/')+1)='\0';
+    
+    /* Now we have the full path to the gromacs executable.
+     * Use it to find the library dir. 
+     */
+    found=FALSE;
+    while(!found && ( (ptr=rindex(full_path,'/')) != NULL ) ) {
+      *ptr='\0';
+      found=search_subdirs(full_path,libdir);
+    }
+  }
+  /* End of smart searching. If we didn't find it in our parent tree,
+   * or if the program name wasn't set, at least try some standard 
+   * locations before giving up, in case we are running from e.g. 
+   * a users home directory:
+   */
+  if(!found) 
+    found=search_subdirs("/usr/local",libdir);
+  if(!found) 
+    found=search_subdirs("/usr",libdir);
+  if(!found) 
+    found=search_subdirs("/opt",libdir);
+
+  return found;
+}
+
+
+char *low_libfn(char *file, bool bFatal)
 {
   char *ret=NULL;
   char *lib;
   static char buf[1024];
   static char libdir[1024];
   static int  bFirst=1;
-  
+  static bool env_is_set;
+
   if(bFirst) {
-    if((lib=getenv("GMXLIB")) != NULL)
+    lib=getenv("GMXLIB");
+    if(lib!=NULL) {
+      env_is_set=TRUE;
       strcpy(libdir,lib);
-    else
-      strcpy(libdir,GMXLIBDIR);
+    } else {
+      env_is_set=FALSE;
+      if(get_libdir(libdir))
+	strcpy(libdir,GMXLIBDIR);
+    }
     bFirst=0;
   }
   
@@ -314,12 +428,16 @@ char *low_libfn(char *file,bool bFatal)
     sprintf(buf,"%s/%s",libdir,file);
     ret=buf;
     if (bFatal && !fexist(ret))
-      fatal_error(0,"Library file %s not found in current dir nor in libdir %s",
-		  ret,libdir);
+      fatal_error(0,"Library file %s not found in current dir nor in libdir %s\n"
+		  "%s\n",ret,libdir, 
+		  env_is_set ? "" : "(You can override libdir with the GMXLIB environment variable.)");
   }
     
   return ret;
 }
+
+
+
 
 FILE *low_libopen(char *file,bool bFatal)
 {

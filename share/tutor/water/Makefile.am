@@ -3,7 +3,7 @@
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
-waterdir = ${prefix}/share/tutor/water
+waterdir = ${datadir}/tutor/water
 
 water_DATA = oxygen.ndx  spc216.gro  spc216.pdb  water.mdp  water.top
 

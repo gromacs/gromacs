@@ -3,7 +3,7 @@
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
-nmr1dir = ${prefix}/share/tutor/nmr1
+nmr1dir = ${datadir}/tutor/nmr1
 
 nmr1_DATA = conf.gro grompp.mdp pep.pdb topol.top
 

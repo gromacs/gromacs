@@ -3,11 +3,8 @@
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
-include $(srcdir)/Makefile.inc
-
-SUBDIRS = include gmxlib mdlib kernel tools ngmx contrib
+SUBDIRS = gmxlib mdlib kernel tools ngmx contrib
 # don't do anything for the local directory
-EXTRA_DIST = Makefile.inc
 
 mdrun:		
 	(cd ${top_builddir}/src/gmxlib && $(MAKE))

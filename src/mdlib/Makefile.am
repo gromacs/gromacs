@@ -3,11 +3,9 @@
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
-include $(srcdir)/../Makefile.inc
-
 # This is necessary for VPATH to work, 
 # but it can probably be done in a nicer way...
-INCLUDES = @INCLUDES@ -I$(top_srcdir)/src/include
+INCLUDES = @INCLUDES@ -I$(top_srcdir)/include
 
 # Dependencies and extra objects should come before the target definition
 libmdXXX_SUFFIX_XXX_la_LIBADD         = @MDLIB_COND_OBJ@	

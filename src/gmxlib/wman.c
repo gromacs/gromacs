@@ -454,7 +454,7 @@ static void write_htmlman(FILE *out,
   fprintf(out,"<table WIDTH=\"800\" NOBORDER >\n<TR>\n");
   fprintf(out,"<td WIDTH=\"120\" HEIGHT=\"133\">\n"
 	  "<a href=\"http://www.gromacs.org/\">"
-	  "<img SRC=\"../gif/gmxlogo_small.jpg\""
+	  "<img SRC=\"../images/gmxlogo_small.jpg\""
 	  "BORDER=0 height=133 width=116></a></td>");
   fprintf(out,"<td ALIGN=LEFT VALIGN=TOP WIDTH=480>"
 	  "<br><br><h2>GROMACS Online Reference:<br>%s</h2>",program);
