@@ -2,6 +2,42 @@
 ; bonds  angles  dihedrals  impropers
     2       2          1          2
 
+[ ACE ]
+ [ atoms ]
+    CA   CH3   0.000     0
+     C     C   0.380     1
+     O     O  -0.380     1
+ [ bonds ]
+     C    CA   gb_26
+     C     O   gb_4
+     C    +N   gb_9
+ [ angles ]
+   CA     C    +N    ga_18
+    O     C    +N    ga_32
+ [ impropers ]
+    C    CA    +N     O    gi_1 
+
+[ NH2 ]
+ [ atoms ]
+     N    NT   -0.83	0
+     H1    H   0.415	0
+     H2    H   0.415   0
+ [ bonds ]
+      N    H1  gb_2
+      N    H2  gb_2   
+     -C    N   gb_8
+ [ angles ]
+     -O -C N  ga_32
+     -CA -C N ga_18
+     -C N H1  ga_22
+     -C N H2  ga_22
+     H1 N H2  ga_23
+ [ dihedrals ]
+    -CA -C N H1 gd_4
+ [ impropers ]
+    -C -O N -CA gi_1
+     N  H1 H2  -C gi_1
+
 [ ALA ]
  [ atoms ]
     N     N   -0.280     0

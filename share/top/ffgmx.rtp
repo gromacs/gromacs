@@ -3822,6 +3822,9 @@
     -C     N
      N	   H1
      N	   H2
+ [ impropers ]
+    -C     H1 	H2	N
+    -C 	-O 	N 	-CA
 
 [ PDG ]
  [ atoms ]
