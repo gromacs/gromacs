@@ -6,7 +6,7 @@ SUBDIRS = .  images  online
 
 htmldir = ${datadir}/html
 
-html_DATA = index.html gmxfaq.html
+html_DATA = online.html gmxfaq.html
 
 EXTRA_DIST = ${html_DATA}
 
