@@ -150,8 +150,10 @@ static int parse_names(char **string,int *n_names,char **names)
       while (isalnum_star((*string)[i])) {
 	names[*n_names][i]=(*string)[i];
 	i++;
-	if (i==5)
-	  fatal_error(0,"Name to long: %d characters\n",i);
+	if (i==5) {
+	  printf("Name to long: %d characters\n",i);	  
+	  return 0;
+	}
       }
       names[*n_names][i]='\0';
       *string += i;
@@ -611,6 +613,7 @@ static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
     while (string[0]==' ')
       string++;
 
+    nr=0;
     if (string[0] == 'h') {
       printf(" nr              : selects an index group.\n");
       printf(" 'a' nr1 [nr2]   : selects one atom or atoms in the range from nr1 to nr2,\n");
@@ -633,7 +636,7 @@ static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
       printf(" 'q'             : save and quit.\n");
       printf("\n");
       printf(" Examples:\n");
-      printf(" > 2 | 4 & res 3 5\n");
+      printf(" > 2 | 4 & r 3 5\n");
       printf(" will select all atoms from group 2 and 4 which have residue numbers\n 3, 4 or 5\n");
       printf(" > a C* & !a C CA\n");
       printf(" will select all atoms starting with 'C' but not the atoms 'C' and 'CA'\n");  
@@ -687,36 +690,37 @@ static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
     } else if (string[0] != 'q') {
       nr1=-1;
       nr2=-1;
-      parse_entry(&string,atoms,block,gn,&nr1,index1,gname1);
-      while (string[0]==' ')
-	string++;
-      
-      bAnd=FALSE;
-      bOr=FALSE;
-      if (string[0]=='&')
-	bAnd=TRUE;
-      else if (string[0]=='|')
-	bOr=TRUE;
-      
-      if (!bAnd && !bOr) {
-	nr=nr1;
-	for(i=0; i<nr; i++)
-	  index[i]=index1[i];
-	strcpy(gname,gname1);
-      }
-      else {
-	string++;
-	parse_entry(&string,atoms,block,gn,&nr2,index2,gname2);
-	if (bOr) {
-	  or_groups(nr1,index1,nr2,index2,&nr,index);
-	  sprintf(gname,"%s_%s",gname1,gname2);
+      if (parse_entry(&string,atoms,block,gn,&nr1,index1,gname1)) {
+	while (string[0]==' ')
+	  string++;
+	
+	bAnd=FALSE;
+	bOr=FALSE;
+	if (string[0]=='&')
+	  bAnd=TRUE;
+	else if (string[0]=='|')
+	  bOr=TRUE;
+	
+	if (!bAnd && !bOr) {
+	  nr=nr1;
+	  for(i=0; i<nr; i++)
+	    index[i]=index1[i];
+	  strcpy(gname,gname1);
 	}
 	else {
-	  and_groups(nr1,index1,nr2,index2,&nr,index);
-	  sprintf(gname,"%s_&_%s",gname1,gname2);
+	  string++;
+	  if (parse_entry(&string,atoms,block,gn,&nr2,index2,gname2)) {
+	    if (bOr) {
+	      or_groups(nr1,index1,nr2,index2,&nr,index);
+	      sprintf(gname,"%s_%s",gname1,gname2);
+	    }
+	    else {
+	      and_groups(nr1,index1,nr2,index2,&nr,index);
+	      sprintf(gname,"%s_&_%s",gname1,gname2);
+	    }
+	  }
 	}
       }
-
       while(string[0]==' ')
 	string++;
       if (string[0])
