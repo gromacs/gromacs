@@ -542,7 +542,7 @@ int main(int argc, char *argv[])
   bRho      = opt2parg_bSet("-density",NPA,pa);
   bRotate   = opt2parg_bSet("-rotate",NPA,pa);
   if (bScale && bRho)
-    fprintf(stderr,"WARNING: setting -density overrides -scale");
+    fprintf(stderr,"WARNING: setting -density overrides -scale\n");
   bScale    = bScale || bRho;
   bCalcGeom = bCenter || bRotate || bOrient || bScale;
   bCalcDiam = btype[0][0]=='c' || btype[0][0]=='d' || btype[0][0]=='o';
@@ -693,30 +693,35 @@ int main(int argc, char *argv[])
       printf("new system size : %6.3f %6.3f %6.3f\n",
 	     size[XX],size[YY],size[ZZ]);
   }
-
-  if (bSetSize || bDist) {
+  
+  if (bSetSize || bDist || (btype[0][0]=='t' && bSetAng)) {
+    if (!(bSetSize || bDist))
+      for (i=0; i<DIM; i++)
+	newbox[i] = norm(box[i]);
     clear_mat(box);
     /* calculate new boxsize */
     switch(btype[0][0]){
     case 't':
-      if (bSetSize) {
-	if (!bSetAng)
-	  for (i=0; i<DIM; i++)
-	    box[i][i]=newbox[i];
-	else {
-	  svmul(DEG2RAD,newang,newang);
-	  box[XX][XX] = newbox[XX];
-	  box[YY][XX] = newbox[XX]*cos(newang[ZZ]);
-	  box[YY][YY] = newbox[YY]*sin(newang[ZZ]);
-	  box[ZZ][XX] = newbox[ZZ]*cos(newang[YY]);
-	  box[ZZ][YY] = newbox[ZZ]
-	    *(cos(newang[XX])-cos(newang[YY])*cos(newang[ZZ]))/sin(newang[ZZ]);
-	  box[ZZ][ZZ] = sqrt(sqr(newbox[ZZ])
-			     -box[ZZ][XX]*box[ZZ][XX]-box[ZZ][YY]*box[ZZ][YY]);
-	}
-      } else
-	for (i=0; i<DIM; i++)
-	  box[i][i]=size[i]+2*dist;
+      if (bDist)
+	for(i=0; i<DIM; i++)
+	  newbox[i] = size[i]+2*dist;
+      if (!bSetAng) {
+	box[XX][XX] = newbox[XX];
+	box[YY][YY] = newbox[YY];
+	box[ZZ][ZZ] = newbox[ZZ];
+      } else {
+	svmul(DEG2RAD,newang,newang);
+	box[XX][XX] = newbox[XX];
+	box[YY][XX] = newbox[YY]*cos(newang[ZZ]);
+	box[YY][YY] = newbox[YY]*sin(newang[ZZ]);
+	box[ZZ][XX] = newbox[ZZ]*cos(newang[YY]);
+	box[ZZ][YY] = newbox[ZZ]
+	  *(cos(newang[XX])-cos(newang[YY])*cos(newang[ZZ]))/sin(newang[ZZ]);
+	box[ZZ][ZZ] = sqrt(sqr(newbox[ZZ])
+			   -box[ZZ][XX]*box[ZZ][XX]-box[ZZ][YY]*box[ZZ][YY]);
+      }
+      if (bDist && TRICLINIC(box))
+	fprintf(stderr,"WARNING: the box is triclinic, the minimum distance between the solute and the box might be less than %f\nYou can check this with g_mindist -pi\n",dist);
       break;
     case 'c':
     case 'd':
