@@ -169,20 +169,13 @@ static real calc_f_el(int start,int homenr,real charge[],rvec f[],t_cosines Ex[]
   int  i,m;
   
   Emu = 0;
-  if (Ex[XX].n || Ex[YY].n || Ex[ZZ].n) {
-    for(i=start; (i<start+homenr); i++) {
-      if (debug)
-	fprintf(debug,"FMU:");
-      for(m=0; (m<DIM); m++) {
+  for(m=0; (m<DIM); m++)
+    if (Ex[m].n)
+      for(i=start; (i<start+homenr); i++) {
 	fmu      = charge[i]*Ex[m].a[0];
 	f[i][m] += fmu;
-	if (debug)
-	  fprintf(debug,"  %10f",fmu);
-      }
-      if (debug)
-	fprintf(debug,"\n");
-    }
-  }
+      } 
+  
   return Emu;
 }
 
