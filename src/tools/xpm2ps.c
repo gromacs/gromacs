@@ -705,11 +705,44 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   ps_close(out);
 }
 
+void prune_mat(int nmat, t_matrix *mat,t_matrix *mat2, int skip)
+{
+  int i,x,y,xs,ys;
+  
+  for(i=0; i<nmat; i++) {
+    fprintf(stderr,"converting %dx%d matrix to %dx%d\n",
+	    mat[i].nx, mat[i].ny, 
+	    (mat[i].nx+skip-1)/skip, (mat[i].ny+skip-1)/skip);
+    /* walk through matrix */
+    xs=0;
+    for(x=0; (x<mat[i].nx); x++)
+      if (x % skip == 0) {
+	ys=0;
+	for(y=0; (y<mat[i].ny); y++)
+	  if (y % skip == 0) {
+	    mat [i].matrix[xs][ys] = mat [i].matrix[x][y];
+	    if (mat2)
+	      mat2[i].matrix[xs][ys] = mat2[i].matrix[x][y];
+	    ys++;
+	  }
+	xs++;
+      }
+    /* adjust parameters */
+    mat[i].nx = (mat[i].nx+skip-1)/skip;
+    mat[i].ny = (mat[i].ny+skip-1)/skip;
+    if (mat2) {
+      mat2[i].nx = (mat2[i].nx+skip-1)/skip;
+      mat2[i].ny = (mat2[i].ny+skip-1)/skip;
+    }
+  }
+}
+
 void do_mat(int nmat,t_matrix *mat,t_matrix *mat2,
 	    bool bFrame,
 	    bool bDiag,bool bFirstDiag,bool bTitle,char w_legend,
 	    real boxx,real boxy,
-	    char *epsfile,char *xpmfile,char *m2p,char *m2pout)
+	    char *epsfile,char *xpmfile,char *m2p,char *m2pout,
+	    int skip)
 {
   int      i,j,k,copy_start;
 
@@ -731,6 +764,8 @@ void do_mat(int nmat,t_matrix *mat,t_matrix *mat2,
   for(i=0; (i<nmat); i++) 
     fprintf(stderr,"Matrix %d is %d x %d\n",i,mat[i].nx,mat[i].ny);
 
+  if (skip > 1)
+    prune_mat(nmat,mat,mat2,skip);
   
   if (epsfile!=NULL)
     ps_mat(epsfile,nmat,mat,mat2,bFrame,bDiag,bFirstDiag,
@@ -821,15 +856,20 @@ int main(int argc,char *argv[])
   static char *legend[]  = { NULL, "both", "first", "second", "none", NULL };
   static char *diag[]    = { NULL, "first", "second", "none", NULL };
   static char *rainbow[] = { NULL, "no", "blue", "red", NULL };
+  static int skip=1;
   t_pargs pa[] = {
-    { "-frame",   FALSE, etBOOL, {&bFrame}, "Display frame, ticks, labels, title and legend" },
+    { "-frame",   FALSE, etBOOL, {&bFrame},
+      "Display frame, ticks, labels, title and legend" },
     { "-title",   FALSE, etENUM, {title},   "Show title at" },
     { "-legend",  FALSE, etENUM, {legend},  "Show legend" },
     { "-diag",    FALSE, etENUM, {diag},    "Diagonal" },
     { "-bx",      FALSE, etREAL, {&boxx},
       "Box x-size (also y-size when -by is not set)" },
     { "-by",      FALSE, etREAL, {&boxy},   "Box y-size" },
-    { "-rainbow", FALSE, etENUM, {rainbow}, "Rainbow colors, convert white to" }
+    { "-rainbow", FALSE, etENUM, {rainbow},
+      "Rainbow colors, convert white to" },
+    { "-skip",    FALSE, etINT,  {&skip},
+      "only write out every nr-th row and column" }
   };
   t_filenm  fnm[] = {
     { efXPM, "-f",  NULL,      ffREAD },
@@ -895,7 +935,8 @@ int main(int argc,char *argv[])
 
   do_mat(nmat,mat,mat2,bFrame,bDiag,bFirstDiag,bTitle,w_legend,
 	 boxx,boxy,epsfile,xpmfile,
-	 opt2fn_null("-di",NFILE,fnm),opt2fn_null("-do",NFILE,fnm));
+	 opt2fn_null("-di",NFILE,fnm),opt2fn_null("-do",NFILE,fnm),
+	 skip);
   
   if (bDoView())
     viewps(ftp2fn(efEPS,NFILE,fnm));
