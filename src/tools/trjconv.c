@@ -259,7 +259,7 @@ int main(int argc,char *argv[])
     { "-pfit", FALSE,  etBOOL, &bIFit,
       "progressive fit, to the previous fitted structure" },
     { "-prec", FALSE,  etENUM, prec_str,
-      "precision for .gro and .xtc writing in number of decimal places. More than 6 is useless in single precision." },
+      "precision for .gro and .xtc writing in number of decimal places" },
     { "-vel", FALSE, etBOOL, &bVels,
       "read and write velocities if possible" },
     { "-skip", FALSE,  etINT, &skip_nr,
@@ -308,7 +308,7 @@ int main(int argc,char *argv[])
   atom_id      *ind_fit,*ind_rms;
   char         *gn_fit,*gn_rms;
   real         t,pt,tshift,t0=-1,dt=0.001;
-  bool         bSelect,bDoIt,bIndex,bTDump,bSetTime,bTop=FALSE,bDTset=FALSE;
+  bool         bSelect,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bToldYouOnce=FALSE;
   bool         bHaveNextFrame,bHaveX,bHaveV,bSetBox;
   char         *grpnm;
@@ -410,13 +410,14 @@ int main(int argc,char *argv[])
     bCompress = bCompress && ((ftp == efGRO) || (ftp == efPDB));
     
     /* Determine whether to read a topology */
-    bTop = (ftp2bSet(efTPS,NFILE,fnm) || 
+    bTPS = (ftp2bSet(efTPS,NFILE,fnm) || 
 	    bPBC || bFit || (ftp == efGRO) || (ftp == efPDB));
 
     /* Determine if when can read index groups */
-    bIndex = (bIndex || bTop);
-     
-    bTop=read_tps_conf(top_file,title,&top,&atoms,&xp,NULL,box,bFit);
+    bIndex = (bIndex || bTPS);
+    
+    if (bTPS)
+      read_tps_conf(top_file,title,&top,&atoms,&xp,NULL,box,bFit);
 
     if (bFit) {
       printf("Select group for root least squares fit\n");
