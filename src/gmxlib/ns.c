@@ -202,7 +202,6 @@ static void put_in_list(FILE *log,t_iparams ip[],int atnr,int nWater,
 			t_excl bExcl[],int shift,
 			t_forcerec *fr,bool bLR,bool bCoulOnly)
 {
-  static bool bFirst = TRUE;
   t_nblist  *vdw,*coul,*free;
   
   int 	    i,j,jcg,nit,igid,jgid,gid,ind_ij;
@@ -254,10 +253,6 @@ static void put_in_list(FILE *log,t_iparams ip[],int atnr,int nWater,
       new_i_nblist(log,&free[gid],F_DVDL,i_atom,bWater,shift);
     }
 
-    if (bFirst && bWater && bCoulOnly) {
-      fprintf(log,"put_in_list: icg = %d\n",icg);
-      bFirst = FALSE;
-    }    
     /* Loop over the j charge groups */
     for(j=0; (j<nj); j++) {
       jcg=jjcg[j];
