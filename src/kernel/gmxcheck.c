@@ -388,7 +388,7 @@ int main(int argc,char *argv[])
     { "-bonhi",  FALSE, etREAL, {&bon_hi},
       "Max. fract. of sum of VdW radii for bonded atoms" },
     { "-tol",    FALSE, etREAL, {&ftol},
-      "Tolerance for comparing energy terms between different energy files" }
+      "Tolerance for comparing real values" }
   };
 
   CopyRight(stdout,argv[0]);
@@ -401,7 +401,7 @@ int main(int argc,char *argv[])
   fn1 = opt2fn_null("-s1",NFILE,fnm);
   fn2 = opt2fn_null("-s2",NFILE,fnm);
   if (fn1 && fn2)
-    comp_tpx(fn1,fn2);
+    comp_tpx(fn1,fn2,ftol);
   else if (fn1 || fn2)
     fprintf(stderr,"Please give me TWO run input (.tpr/.tpa/.tpb) files!\n");
 
