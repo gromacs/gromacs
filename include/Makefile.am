@@ -9,7 +9,7 @@ include_HEADERS = \
 	3dview.h    	do_md.h		invblock.h  	nrjac.h		\
 	tpxio.h		assert.h    	dihre.h		\
 	nrnb.h      	sheader.h     	transfer.h	\
-	atomprop.h  	ns.h        	\
+	atomprop.h  	ns.h        	gmx_thread.h	\
 	shift.h       	trnio.h		ebin.h 		\
 	macros.h    	nsb.h       	shift_util.h  	txtdump.h	\
 	edsam.h         magic.h     	nsgrid.h    	\
