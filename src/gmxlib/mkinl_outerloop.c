@@ -409,7 +409,7 @@ void outer_loop()
     
     coulsave=loop.coul;
     loop.coul=COUL_NO;
-    loop.invsqrt=loop.vectorize_invsqrt &&
+    loop.invsqrt=loop.vectorize_invsqrt ||
       ((loop.coul && (loop.coul_needs_rinv || loop.coul_needs_r)) ||
        (loop.vdw && (loop.vdw_needs_rinv || loop.vdw_needs_r)));
     loop.recip=!loop.invsqrt;
