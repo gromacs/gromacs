@@ -29,6 +29,7 @@
 
 \chapter{Special Topics}
 \label{ch:special}
+
 \section{Calculating potentials of mean force: the pull code}
 \label{sec:pull}
 There are a number of options to calculate \swapindex{potentials
@@ -38,7 +39,7 @@ and related topics. In the current version of {\gromacs} this is
 implemented through some extra files for {\tt mdrun}. 
 
 \subsection{Overview}
-Four different types of calculation are supported:
+Three different types of calculation are supported:
 
 \begin{enumerate}
 \item{\textbf{\swapindex{AFM}{pulling}}} A spring is connected to an atom and
@@ -66,7 +67,7 @@ harmonic umbrella potential that acts on the center of mass of a group
 of atoms.
 \end{enumerate}
 
-In the calculations, there has to be 1 reference group and 1 or 2
+In the calculations, there has to be 1 reference group and 1 to 4
 other groups of atoms. For constrained runs, the distance between the
 reference group and the other groups is kept constant at the distance
 they have in the input coordinate file ({\tt .tpr}) file.
@@ -201,7 +202,8 @@ The reference group. Distances are calculated betweeen {\tt group\_1}
 (and {\tt group\_2} if specified) and this group. If \emph{e.g.} the
 constraint force between two ions is needed, you would specifiy {\tt
 group\_1} as a group with 1 ion, and {\tt reference\_group} as the other
-ion.
+ion. If the reference group is left blank, then AFM and umbrella sampling
+can be performed in absolute coordinates.
 
 \item[\tt weights\_1                  = ]
 \item[\tt weights\_2                  = ]
@@ -271,11 +273,147 @@ The tolerance for the constraint distance, 1E-6 nm is the default.
 
 \end{description}
 
+
+\subsubsection{AFM options}
+
+AFM pulling attaches a spring to the center of mass of
+the pulled group. This spring moves in relation to the
+center of mass of the reference group. It the reference 
+group moves, then the spring does as well. If the
+{\tt reference\_group} is left blank, then pulling will be
+in absolute coordinates, with the reference group position
+taken to be [0 0 0].
+
+\begin{description}
+
+\item[\tt afm\_rate1                  = ]
+\item[\tt afm\_rate2                  = ]
+\item[\tt afm\_rate3                  = ]
+\item[\tt afm\_rate4                  = ]\mbox{}\\
+The rate at which the spring moves in nm/ps for each group.
+
+\item[\tt afm\_k1                  = ]
+\item[\tt afm\_k2                  = ]
+\item[\tt afm\_k3                  = ]
+\item[\tt afm\_k4                  = ]\mbox{}\\
+The force constant of the spring for each pulled group in
+kJ~mol$^{-1}$~nm$^{-2}$.
+
+\item[\tt afm\_dir1                  = ]
+\item[\tt afm\_dir2                  = ]
+\item[\tt afm\_dir3                  = ]
+\item[\tt afm\_dir4                  = ]\mbox{}\\
+Unit vector describing the direction of pulling.
+
+\item[\tt afm\_init1                  = ]
+\item[\tt afm\_init2                  = ]
+\item[\tt afm\_init3                  = ]
+\item[\tt afm\_init4                  = ]\mbox{}\\
+Vector describing the initial position of the spring
+relative to the reference group. To start a simulation with zero 
+initial force on the pulled group, the initial position should be set
+to the position of the pulled group relative to the reference
+group.
+
+\end{description}
+
+\subsubsection{Umbrella Sampling options}
+
+Umbrella sampling applies a simple harmonic force maintain the position
+of the pulled group relative to the reference group. If the reference group 
+moves, then the pulled group will move as well. If the
+{\tt reference\_group} is left blank, then pulling will be
+in absolute coordinates, with the reference group position
+taken to be [0 0 0].
+
+\begin{description}
+
+\item[\tt k1                          = ]
+\item[\tt k2                          = ]
+\item[\tt k3                          = ]
+\item[\tt k4                          = ]\mbox{}\\
+This option specifies the force constant for each pulled group in 
+kJ~mol$^{-1}$~nm$^{-2}$.
+
+
+\item[\tt pos1                        = ]
+\item[\tt pos2                        = ]
+\item[\tt pos3                        = ]
+\item[\tt pos4                       = ]\mbox{}\\
+This option specifies the position that the pulled group will be restrained to, relative
+to the reference group.
+\end{description}
+
 \subsection{Output}
-The output file is a text file with forces or positions, one per
-line. If there are two groups they alternate in the output
-file. Currently there is no supported analysis program to read this
-file, but it is simple to parse.
+\subsubsection{Header}
+The pull code begins with a header file. All lines in the header file are
+prepended with a {\tt \#} symbol.
+
+\begin{description}
+\item[\tt \# CONSTRAINT     3.0]
+\item[\tt \# AFM            3.0]
+\item[\tt \# UMBRELLA       3.0]\mbox{}\\
+The first line indicates the type of run and the version of the output file. Future
+versions of gromacs may change the output format and the version number will
+be updated to reflect this.
+
+\item[\tt \# Component selection: 0.0 0.0 1.0 ]\mbox{}\\
+The second line shows the value of {\tt pull\_dim} used
+in the simulation.
+
+\item[\tt \# Skip 1]\mbox{}\\
+The third line shows the output frequency.
+
+\item[\tt \# Ref. Group 'ref']\mbox{}\\
+The forth line shows the name of the reference group
+
+\item[\tt \# Nr. of pull groups 2]\mbox{}\\
+The fifth line shows the number of pulled groups.
+
+\item[\tt \# Group 1 grp\_1 0.0 0.0 1.0 0.01 500] \mbox{}\\
+For AFM, the sixth and further lines show the number of each pulled 
+group, its name, the x, y, and z components the direction vector, the pull rate, and
+the force constant.
+
+\item[\tt \# Group 1 grp\_1 1.2 500]\mbox{}\\
+For umbrella sampling, the sixth and further lines show the number of
+each pulled group, its name, the position relative the pulled group, and
+the force constant. Note that only the dimensions for which {\tt pulldim}
+is {\tt Y} are output.
+
+\item[\tt \# Group 1 grp\_1 1.0]\mbox{}\\
+For constraint runs, the sixth and further lines show the number of
+each pulled group, its name, and the initial position of the pulled
+group. Note that only the dimensions for which {\tt pulldim}
+is {\tt Y} are output.
+\end{description}
+
+\subsubsection{Constraint}
+\begin{description}
+\item[\tt 10.5     -81.2]\mbox{}\\
+The output file consists of the time and the force the constraint
+experiences for each group. A negative number means that the
+reference group and the pulled group attract each other.
+\end{description}
+
+\subsubsection{AFM}
+\begin{description}
+\item[\tt 10.5     3.5     3.63     3.6]\mbox{}\\
+The output file consists of the time, the position of the reference
+group, and the position of the pulled group, and the position
+of the spring. The position of the pulled group and spring are in
+absolute coordinates. Subtract the reference coordinate to get the
+position relative to the pulled group. Note that only the 
+dimensions for which {\tt pulldim} is {\tt Y} are output.
+\end{description}
+
+\subsubsection{Umbrella Sampling}
+\begin{description}
+\item[\tt 10.5     0.002]\mbox{}\\
+The output file consists of the time, and the deviation of each pulled
+group from its restrained position. Note that only the dimensions for which {\tt pulldim}
+is {\tt Y} are output.
+\end{description}
 
 \subsection{Limitations}
 Apart from obvious limitations that are simply not implemented (\emph{e.g.} a
