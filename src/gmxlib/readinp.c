@@ -153,6 +153,8 @@ static int get_einp(int *ninp,t_inpfile **inp,char *name)
 {
   int    i;
   
+  if (inp==NULL)
+    return -1;
   for(i=0; (i<(*ninp)); i++)
     if (strcasecmp_min(name,(*inp)[i].name) == 0)
       break;
@@ -163,14 +165,14 @@ static int get_einp(int *ninp,t_inpfile **inp,char *name)
     (*inp)[i].bSet=TRUE;
   }
   (*inp)[i].count = inp_count++;
-    (*inp)[i].bSet  = TRUE;
+  (*inp)[i].bSet  = TRUE;
   if (debug) 
     fprintf(debug,"Inp %d = %s\n",(*inp)[i].count,(*inp)[i].name);
-
-    if (i == (*ninp)-1)
-      return -1;
-    else
-      return i;
+  
+  if (i == (*ninp)-1)
+    return -1;
+  else
+    return i;
 }
 
 int get_eint(int *ninp,t_inpfile **inp,char *name,int def)
