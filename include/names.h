@@ -40,6 +40,7 @@ static char *SRCID_names_h = "$Id$";
 
 /* All string arrays are NULL terminated, and therefore have an
  * extra argument (the +1)
+ * these should correspond to names.c and include/types/enums.h
  */
 extern char *eblock_names[ebNR+1];
 extern char *eboxtype_names[ebtNR+1];
@@ -52,18 +53,20 @@ extern char *eel_names[eelNR+1];
 extern char *eshake_names[estNR+1];
 extern char *ptype_str[eptNR+1];
 extern char *egrp_nm[egNR+1];
+extern char *edisre_names[edrNR+1];
 
 #define	UNDEFINED		"UNDEFINED"
 #define ENUM_NAME(e,max,names)	((((e)<0)||((e)>=(max)))?UNDEFINED:(names)[e])
 
-#define	BOOL(e)			ENUM_NAME(e,BOOL_NR,bool_names)
-#define	ENS(e)			ENUM_NAME(e,enNR,ens_names)
-#define	EI(e)			ENUM_NAME(e,eiNR,ei_names)
-#define EBOXTYPE(e)             ENUM_NAME(e,ebtNR,eboxtype_names)
-#define EPCOUPLTYPE(e)          ENUM_NAME(e,epcNR,epcoupl_names)
-#define	EBLOCKS(e)		ENUM_NAME(e,ebNR,eblock_names)
-#define	EPARAM(e)		ENUM_NAME(e,epNR,eparam_names)
-#define EELTYPE(e)              ENUM_NAME(e,eelNR,eel_names)
-#define ESHAKETYPE(e)           ENUM_NAME(e,estNR,eshake_names)
+#define BOOL(e)        ENUM_NAME(e,BOOL_NR,bool_names)
+#define ENS(e)         ENUM_NAME(e,enNR,ens_names)
+#define EI(e)          ENUM_NAME(e,eiNR,ei_names)
+#define EBOXTYPE(e)    ENUM_NAME(e,ebtNR,eboxtype_names)
+#define EPCOUPLTYPE(e) ENUM_NAME(e,epcNR,epcoupl_names)
+#define EBLOCKS(e)     ENUM_NAME(e,ebNR,eblock_names)
+#define EPARAM(e)      ENUM_NAME(e,epNR,eparam_names)
+#define EELTYPE(e)     ENUM_NAME(e,eelNR,eel_names)
+#define ESHAKETYPE(e)  ENUM_NAME(e,estNR,eshake_names)
+#define EDISRETYPE(e)  ENUM_NAME(e,edrNR,edisre_names)
 
 #endif	/* _names_h */
