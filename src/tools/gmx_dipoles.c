@@ -394,9 +394,8 @@ static void compute_avercos(int n,rvec dip[],real *dd,real *dd2,rvec axis)
       d2 += dc*dc;
     }
   }
-  n5   = 0.5*n;
-  *dd  = (d+n5)/(k+n5);
-  *dd2 = (d2+n5)/(k+n5);
+  *dd  = d/k;
+  *dd2 = d2/k;
   axis[XX] = ddc1/n;
   axis[YY] = ddc2/n;
   axis[ZZ] = ddc3/n;
