@@ -68,7 +68,7 @@ static char *SRCID_xmdrun_c = "$Id$";
 #include "glaasje.h"
 #include "edsam.h"
 #include "calcmu.h"
-/* #include "ionize.h" */
+#include "ionize.h" 
 
 real mol_dipole(int k0,int k1,atom_id ma[],rvec x[],real q[])
 {
@@ -486,8 +486,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   if ((bMU) && MASTER(cr))
     fmu = opt2FILE("-mu",nfile,fnm,"w");
 
-  rd_index(ftp2fn(efNDX,nfile,fnm),1,&gnx,&grpindex,&grpname);
-    
+  /* Check whether we have to do dipole stuff */
+  if (ftp2bSet(efNDX,nfile,fnm))
+    rd_index(ftp2fn(efNDX,nfile,fnm),1,&gnx,&grpindex,&grpname);
+  else {
+    gnx = 0;
+  }
+  
   /* Initial values */
   t = t0       = parm->ir.init_t;
   if (parm->ir.bPert) {
@@ -630,7 +635,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   for (step=0; (step<parm->ir.nsteps); step++) {
     /* Stop Center of Mass motion */
     /*    bStopCM=do_per_step(step,parm->ir.nstcomm); */
-      /* Stop Center of Mass motion */
+    /* Stop Center of Mass motion */
     if (parm->ir.nstcomm == 0) {
       bStopCM=FALSE;
       bStopRot=FALSE;
@@ -642,7 +647,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       bStopRot=do_per_step(step,-parm->ir.nstcomm);
     }
     
-    /* ionize(log,md,top->atoms.atomname,t,&parm->ir); */
+    ionize(log,md,top->atoms.atomname,t,&parm->ir);
 
     /* Determine whether or not to do Neighbour Searching */
     bNS=((parm->ir.nstlist && ((step % parm->ir.nstlist)==0)) || (step==0));
@@ -803,12 +808,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   if (MASTER(cr)) {
     if (parm->ir.nstprint > 1)
-      print_ebin(ene,log,step-1,t,lambda,SAfactor,
+      print_ebin(fp_ene,log,step-1,t,lambda,SAfactor,
 		 eprNORMAL,bCompact,mdebin,grps,&(top->atoms));
     
-    print_ebin(NULL,log,step,t,lambda,SAfactor,
+    print_ebin(-1,log,step,t,lambda,SAfactor,
 	       eprAVER,FALSE,mdebin,grps,&(top->atoms));
-    print_ebin(NULL,log,step,t,lambda,SAfactor,
+    print_ebin(-1,log,step,t,lambda,SAfactor,
 	       eprRMS,FALSE,mdebin,grps,&(top->atoms));
   }
   fprintf(log,"Average number of force evaluations per MD step: %.2f\n",
@@ -865,7 +870,7 @@ int main(int argc,char *argv[])
   stdlog = stderr;
   
   get_pargs(&argc,argv,asize(pa),pa,TRUE);
-  cr = init_par(nprocs,argv);
+  cr = init_par(argv);
   bVerbose = bVerbose && MASTER(cr);
   edyn.bEdsam = FALSE;
   
