@@ -95,11 +95,9 @@ char *Program(void)
 bool bRmod(double a,double b)
 {
   int iq;
-#ifdef DOUBLE
-  double tol = 1e-12;
-#else
-  double tol = 1e-6;
-#endif
+  double tol;
+
+  tol = 5*GMX_REAL_EPS;
 
   iq = ((1.0+tol)*a)/b;
   
