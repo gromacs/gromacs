@@ -113,7 +113,7 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   if(epsilon_surface==0)
     dipole_coeff=0;
   else
-    dipole_coeff=M_PI/(1.5*epsilon_surface*ONE_4PI_EPS0*vol);
+    dipole_coeff=M_PI*ONE_4PI_EPS0/(1.5*epsilon_surface*vol);
   
   for(i=start; (i<end); i++) {
       /* Initiate local variables (for this i-particle) to 0 */
@@ -205,7 +205,10 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 	}
       }
       }
-      /* Dipole correction on force  */
+      /* Dipole correction on force
+       * Note that we have to transform back to gromacs units, since
+       * mu_tot contains the dipole in debye units (for output).
+       */
       if(epsilon_surface>0) 
 	for(j=0;j<DIM;j++)
 	  f_pme[i][j]-=2.0*dipole_coeff*DEBYE2ENM*mu_tot[j]*charge[i];
@@ -215,13 +218,18 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   if(MASTER(cr)) {
     /* Apply charge correction */
     /* use vc as a dummy variable */
-    vc=qsum*qsum*M_PI/(4.0*ONE_4PI_EPS0*vol*vol*ewc*ewc);
+    vc=qsum*qsum*M_PI*ONE_4PI_EPS0/(2.0*vol*vol*ewc*ewc);
     for(iv=0;iv<DIM;iv++)
       lr_vir[iv][iv]+=vc;
-    Vcharge=-2.0*vol*vc;
-    /* Apply surface dipole correction */
-    if(epsilon_surface>0)
-      Vdipole=-dipole_coeff*DEBYE2ENM*DEBYE2ENM*
+    Vcharge=-vol*vc;
+    
+    /* Apply surface dipole correction:
+     * correction = dipole_coeff * (dipole)^2
+     * Note that we have to transform back to gromacs units, since
+     * mu_tot contains the dipole in debye units (for output).
+     */
+    if(epsilon_surface>0) 
+      Vdipole=dipole_coeff*DEBYE2ENM*DEBYE2ENM*
 	(mu_tot[XX]*mu_tot[XX]+mu_tot[YY]*mu_tot[YY]+mu_tot[ZZ]*mu_tot[ZZ]);
   }
   
