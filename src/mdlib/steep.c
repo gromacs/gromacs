@@ -324,7 +324,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     Fmax[TRY]=f_max(cr->left,cr->right,nsb->nprocs,start,end,force[TRY]);
     Epot[TRY]=ener[F_EPOT];
     if (count == 0)
-      Epot[Min] = Epot[TRY];
+      Epot[Min] = Epot[TRY]+1;
       
     /* Print it if necessary  */
     if (bVerbose && MASTER(cr)) { 
