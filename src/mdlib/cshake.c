@@ -40,7 +40,7 @@ static char *SRCID_cshake_c = "$Id$";
 
 void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 	    real dist2[],real xp[],real rij[],real m2[],
-	    real invmass[],real tt[],int *nerror)
+	    real invmass[],real tt[],real lagr[],int *nerror)
 {
   const   real mytol=1e-6;
   
@@ -89,12 +89,13 @@ void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 	if (rrpr < toler*mytol) 
 	  error=ll;
 	else {
-	  acor    = diff*m2[ll]/rrpr;
-	  xh      = rijx*acor;
-	  yh      = rijy*acor;
-	  zh      = rijz*acor;
-	  im      = invmass[i];
-	  jm      = invmass[j];
+	  acor      = diff*m2[ll]/rrpr;
+	  lagr[ll] += acor;
+	  xh        = rijx*acor;
+	  yh        = rijy*acor;
+	  zh        = rijz*acor;
+	  im        = invmass[i];
+	  jm        = invmass[j];
 	  if ((im != 0) && (jm != 0)) {
 	    xp[ix] += xh*im;
 	    xp[iy] += yh*im;

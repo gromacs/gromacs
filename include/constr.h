@@ -62,7 +62,7 @@ extern void csettle(FILE *log,
 
 extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 		   real dist2[],real xp[],real rij[],real m2[],
-		   real invmass[],real tt[],int *nerror);
+		   real invmass[],real tt[],real lagr[],int *nerror);
 /* Regular iterative shake */
 
 extern void constrain(FILE *log,t_topology *top,t_inputrec *ir,int step,

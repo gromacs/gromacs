@@ -1,12 +1,12 @@
       subroutine FORSHAKE(iatom,ncon,nit,maxnit,
-     $     dist2,xp,rij,m2,invmass,tt,lambda,error)
+     $     dist2,xp,rij,m2,invmass,tt,lagr,error)
       
       implicit none
       
       integer*4 iatom(*)
       integer*4 ncon,nit,maxnit
       integer*4 error
-      real      dist2(*),xp(*),rij(*),m2(*),invmass(*),tt(*),lambda(*)
+      real      dist2(*),xp(*),rij(*),m2(*),invmass(*),tt(*),lagr(*)
       
       integer*4 ll,i,j,i3,j3,l3,nconv,iconv
       integer*4 ix,iy,iz,jx,jy,jz
@@ -54,7 +54,7 @@
                   error   = ll
                else
                   acor    = diff*m2(ll)/rrpr
-                  lambda(ll) = lambda(ll) + acor
+                  lagr(ll) = lagr(ll) + acor
                   xh      = rijx*acor
                   yh      = rijy*acor
                   zh      = rijz*acor
