@@ -286,7 +286,7 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
     STYPE(buf,              pos[i], "0.0 0.0 0.0");
   }
 
-  write_inpfile(outfile,ninp,inp);
+  write_inpfile(outfile,ninp,inp,TRUE);
   for(i=0; (i<ninp); i++) {
     sfree(inp[i].name);
     sfree(inp[i].value);

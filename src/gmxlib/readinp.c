@@ -138,7 +138,7 @@ static void sort_inp(int ninp,t_inpfile inp[])
   qsort(inp,ninp,(size_t)sizeof(inp[0]),inp_comp);
 }
 
-void write_inpfile(char *fn,int ninp,t_inpfile inp[])
+void write_inpfile(char *fn,int ninp,t_inpfile inp[],bool bHaltOnUnknown)
 {
   FILE *out;
   int  i;
@@ -155,10 +155,16 @@ void write_inpfile(char *fn,int ninp,t_inpfile inp[])
      } else {
       sprintf(warn_buf,"Unknown left-hand '%s' in parameter file\n",
 	      inp[i].name);
-      warning(NULL);
+      if (bHaltOnUnknown) {
+	warning_error(NULL);
+      } else {
+	warning(NULL);
+      }
     }
   }
   fclose(out);
+
+  check_warning_error(FARGS);
 }
 
 static int get_einp(int *ninp,t_inpfile **inp,const char *name)

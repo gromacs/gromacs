@@ -595,7 +595,7 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("userreal4",   ir->userreal4,  0);
 #undef CTYPE
 
-  write_inpfile(mdparout,ninp,inp);
+  write_inpfile(mdparout,ninp,inp,FALSE);
   for (i=0; (i<ninp); i++) {
     sfree(inp[i].name);
     sfree(inp[i].value);

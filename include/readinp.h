@@ -52,7 +52,8 @@ typedef struct {
 
 extern t_inpfile *read_inpfile(char *fn,int *ninp);
 
-extern void write_inpfile(char *fn,int ninp,t_inpfile inp[]);
+extern void write_inpfile(char *fn,int ninp,t_inpfile inp[],
+			  bool bHaltOnUnknown);
 
 extern int get_eint(int *ninp,t_inpfile **inp,const char *name,int def);
 
