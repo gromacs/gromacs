@@ -736,14 +736,7 @@ int main(int argc, char *argv[])
       *chains[i].pdba->resname[j] = strdup(*pdba_all.resname[k+j]);
     }
   }
-  
-  if ((nchain==2) && ((chains[0].chain==' ') || (chains[1].chain==' ')) ){
-    nchain=1;
-    srenew(chains,nchain);
-    chains[0].chain=' ';
-    chains[0].start=0;
-    chains[0].natom=natom;
-  }
+
   /* chains[nchain].start will simply contain the total natom */
   srenew(chains,nchain+1);
   chains[nchain].chain='\0';
