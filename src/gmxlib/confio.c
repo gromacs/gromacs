@@ -30,6 +30,10 @@
  * Great Red Owns Many ACres of Sand 
  */
 static char *SRCID_confio_c = "$Id$";
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <math.h>
 #include "sysstuff.h"
 #include "typedefs.h"
@@ -43,6 +47,7 @@ static char *SRCID_confio_c = "$Id$";
 #include "symtab.h"
 #include "assert.h"
 #include "futil.h"
+#include "xdrf.h"
 #include "filenm.h"
 #include "pdbio.h"
 #include "tpxio.h"
@@ -299,8 +304,9 @@ void write_g96_conf(FILE *out,t_trxframe *fr,
       for(i=0; i<nout; i++) {
 	if (index) a = index[i]; else a = i;
 	fprintf(out,"%5d %-5s %-5s%7d%15.9f%15.9f%15.9f\n",
-		atoms->atom[a].resnr+1,*atoms->resname[atoms->atom[a].resnr],
-		*atoms->atomname[a],i+1,
+		(atoms->atom[a].resnr+1) % 100000,
+		*atoms->resname[atoms->atom[a].resnr],
+		*atoms->atomname[a],(i+1) % 10000000,
 		fr->x[a][XX],fr->x[a][YY],fr->x[a][ZZ]);
       }
     } else {
@@ -319,8 +325,9 @@ void write_g96_conf(FILE *out,t_trxframe *fr,
       for(i=0; i<nout; i++) {
 	if (index) a = index[i]; else a = i;
 	fprintf(out,"%5d %-5s %-5s%7d%15.9f%15.9f%15.9f\n",
-		atoms->atom[a].resnr+1,*atoms->resname[atoms->atom[a].resnr],
-		*atoms->atomname[a],i+1,
+		(atoms->atom[a].resnr+1) % 100000,
+		*atoms->resname[atoms->atom[a].resnr],
+		*atoms->atomname[a],(i+1) % 10000000,
 		fr->v[a][XX],fr->v[a][YY],fr->v[a][ZZ]);
       }
     } else {
@@ -856,6 +863,7 @@ void get_stx_coordnum(char *infile,int *natoms)
   case efTPB:
   case efTPR: {
     t_tpxheader tpx;
+    
     read_tpxheader(infile,&tpx);
     *natoms = tpx.natoms;
     break;
@@ -920,9 +928,16 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
       snew(atoms->atom,atoms->nr);
     if (!atoms->atomname)
       snew(atoms->atomname,atoms->nr);
+    if (!atoms->atomtype)
+      snew(atoms->atomtype,atoms->nr);
+    if (!atoms->atomtypeB)
+      snew(atoms->atomtypeB,atoms->nr);
     for(i=0; (i<atoms->nr); i++) {
-      atoms->atom[i]     = top->atoms.atom[i];
-      atoms->atomname[i] = top->atoms.atomname[i];
+      atoms->atom[i]      = top->atoms.atom[i];
+      atoms->atomname[i]  = top->atoms.atomname[i];
+      atoms->atomtype[i]  = top->atoms.atomtype[i];
+      atoms->atomtypeB[i] = top->atoms.atomtypeB[i];
+
     }
     
     if (!atoms->resname)
