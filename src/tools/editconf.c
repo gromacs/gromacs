@@ -467,7 +467,7 @@ int main(int argc, char *argv[])
   static bool peratom=FALSE,bLegend=FALSE,bOrient=FALSE,bMead=FALSE,bGrasp=FALSE;
   static rvec scale={1,1,1},newbox={0,0,0},newang={90,90,90};
   static real rho=1000.0,rvdw=0.12;
-  static rvec center={0,0,0},rotangles={0,0,0};
+  static rvec center={0,0,0},translation={0,0,0},rotangles={0,0,0};
   static char *btype[]={ NULL, "tric", "cubic", "dodecahedron", "octahedron", NULL },*label="A";
   static rvec visbox={0,0,0};
   t_pargs pa[] = {
@@ -485,6 +485,8 @@ int main(int argc, char *argv[])
     { "-c",      FALSE, etBOOL, {&bCenter},
       "Center molecule in box (implied by -box and -d)" },
     { "-center", FALSE, etRVEC, {center}, "Coordinates of geometrical center"},
+    { "-translate", FALSE, etRVEC, {translation},
+      "Translation" },
     { "-rotate", FALSE, etRVEC, {rotangles},
       "Rotation around the X, Y and Z axes in degrees" },
     { "-princ",  FALSE, etBOOL, {&bOrient}, "Orient molecule(s) along their principal axes" },
@@ -521,7 +523,7 @@ int main(int argc, char *argv[])
   rvec       *x,*v,gc,min,max,size;
   matrix     box;
   bool       bIndex,bSetSize,bSetAng,bCubic,bDist,bSetCenter;
-  bool       bHaveV,bScale,bRho,bRotate,bCalcGeom,bCalcDiam;
+  bool       bHaveV,bScale,bRho,bTranslate,bRotate,bCalcGeom,bCalcDiam;
   real       xs,ys,zs,xcent,ycent,zcent,diam=0,mass=0,d,vdw;
   t_filenm fnm[] = {
     { efSTX, "-f", NULL, ffREAD },
@@ -543,11 +545,12 @@ int main(int argc, char *argv[])
   bCenter   = bCenter || bDist || bSetCenter || bSetSize;
   bScale    = opt2parg_bSet("-scale" ,NPA,pa);
   bRho      = opt2parg_bSet("-density",NPA,pa);
+  bTranslate= opt2parg_bSet("-translate",NPA,pa);
   bRotate   = opt2parg_bSet("-rotate",NPA,pa);
   if (bScale && bRho)
     fprintf(stderr,"WARNING: setting -density overrides -scale\n");
   bScale    = bScale || bRho;
-  bCalcGeom = bCenter || bRotate || bOrient || bScale;
+  bCalcGeom = bCenter || bTranslate || bRotate || bOrient || bScale;
   bCalcDiam = btype[0][0]=='c' || btype[0][0]=='d' || btype[0][0]=='o';
   
   infile  = ftp2fn(efSTX,NFILE,fnm);
@@ -687,6 +690,11 @@ int main(int argc, char *argv[])
     scale_conf(atoms.nr,x,box,scale);
   }
   
+  if (bTranslate) {
+    printf("Translating by %g %g %g nm\n",translation[XX],translation[YY],translation[ZZ]);
+    for(i=0; i<natom; i++)
+      rvec_inc(x[i],translation);
+  }
   if (bRotate) {
     /* Rotate */
     printf("Rotating %g, %g, %g degrees around the X, Y and Z axis respectively\n",rotangles[XX],rotangles[YY],rotangles[ZZ]);
