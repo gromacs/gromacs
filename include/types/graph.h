@@ -36,7 +36,7 @@
 #include "fatal.h"
 
 typedef struct {
-  int      maxbond;     /* Max number of bonds per atom                 */
+  int      maxedge;     /* Max number of edges per atom                 */
   int      nnodes;	/* The number of nodes				*/
   int      nbound;	/* The number of nodes with edges		*/
   int      start;	/* The first atom in this graph			*/

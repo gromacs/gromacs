@@ -71,9 +71,9 @@ static void add_gbond(t_graph *g,t_iatom ia[],int np)
 	  if (g->edge[inda][l] == ia[k])
 	    break;
 	if (l == g->nedge[inda]) {
-	  if (g->nedge[inda] == g->maxbond)
-	    fatal_error(0,"More than %d bonds per atom (atom %d)\n",
-			g->maxbond,aa+1);
+	  if (g->nedge[inda] == g->maxedge)
+	    fatal_error(0,"More than %d graph edges per atom (atom %d)\n",
+			g->maxedge,aa+1);
 	  g->edge[inda][g->nedge[inda]++]=ia[k];
 	}
       }
@@ -140,7 +140,7 @@ void p_graph(FILE *log,char *title,t_graph *g)
   int i,j;
 
   fprintf(log,"graph:  %s\n",title);
-  fprintf(log,"maxbond:%d\n",g->maxbond);
+  fprintf(log,"maxedge:%d\n",g->maxedge);
   fprintf(log,"nnodes: %d\n",g->nnodes);
   fprintf(log,"nbound: %d\n",g->nbound);
   fprintf(log,"start:  %d\n",g->start);
@@ -216,11 +216,11 @@ static void calc_start_end(t_graph *g,t_idef *idef,int natoms)
   for(i=g->start; (i<=g->end); i++)
     nnb=max(nnb,nbond[i]);
   if (stdlog)
-    fprintf(stdlog,"Max number of bonds per atom is %d\n",nnb);
+    fprintf(stdlog,"Max number of graph edges per atom is %d\n",nnb);
   
   sfree(nbond);
   
-  g->maxbond=nnb+6;
+  g->maxedge=nnb+6;
 }
 
 t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
@@ -245,12 +245,12 @@ t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
      * We calculate pointers... (Yuck Yuck)
      */
     if (debug)
-      fprintf(debug,"MSHIFT: nnodes=%d, maxbond=%d\n",g->nnodes,g->maxbond);
+      fprintf(debug,"MSHIFT: nnodes=%d, maxedge=%d\n",g->nnodes,g->maxedge);
     snew(g->edge,g->nnodes);
-    snew(g->edge[0],g->maxbond*g->nnodes);
+    snew(g->edge[0],g->maxedge*g->nnodes);
 
     for(i=1; (i<g->nnodes); i++)
-      g->edge[i]=g->edge[i-1]+g->maxbond;
+      g->edge[i]=g->edge[i-1]+g->maxedge;
 
     if (!bShakeOnly) {
       /* First add all the real bonds: they should determine the molecular 
