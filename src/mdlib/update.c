@@ -834,7 +834,8 @@ void update(int          natoms,  /* number of atoms in simulation */
     /* apply pull constraints when required. Act on xprime, the SHAKED
        coordinates.  Don't do anything to f */
     if(pulldata->bPull && pulldata->runtype == eConstraint)
-      pull(pulldata,xprime,force,state->box,top,dt,step,ir->init_t+step*dt,
+      pull(pulldata,xprime,force,NULL,state->box,
+	   top,dt,step,ir->init_t+step*dt,
 	   md,start,homenr,cr);
 
     where();      

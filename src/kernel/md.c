@@ -632,7 +632,6 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     /* Question: Is it correct to do the PME forces after this? */
     calc_virial(log,START(nsb),HOMENR(nsb),state->x,f,
 		force_vir,fr->vir_el_recip,graph,state->box,&mynrnb,fr);
-		  
     /* Spread the LR force on virtual sites to the other particles... 
      * This is parallellized. MPI communication is performed
      * if the constructing atoms aren't local.
@@ -670,7 +669,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
      */
     if (pulldata.bPull && 
 	(pulldata.runtype == eAfm || pulldata.runtype == eUmbrella))
-      pull(&pulldata,state->x,f,state->box,top,parm->ir.delta_t,step,t,
+      pull(&pulldata,state->x,f,force_vir,state->box,
+	   top,parm->ir.delta_t,step,t,
 	   mdatoms,START(nsb),HOMENR(nsb),cr); 
     
     if (bFFscan)
@@ -810,7 +810,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
         
     /* Add force and shake contribution to the virial */
     m_add(force_vir,shake_vir,parm->vir);
-  
+
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(parm->ir.opts),grps,ener);
 

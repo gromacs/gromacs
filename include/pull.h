@@ -110,6 +110,7 @@ typedef struct {
 extern void pull(t_pull *pull,    /* all pull data */
                  rvec *x,         /* coordinates, changed by constraint run */ 
                  rvec *f,         /* forces, changed by Afm run */
+		 tensor vir,      /* the virial */
                  matrix box,               
                  t_topology *top, /* needed to write out coordinate files */   
                  real dt,         /* time step */

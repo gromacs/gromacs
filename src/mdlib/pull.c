@@ -101,31 +101,45 @@ void update_COM(t_pull * pull, rvec * x, t_mdatoms * md, matrix box, int step)
 }
 
 /* Apply forces in a mass weighted fashion */
-void apply_forces(t_pull * pull, t_mdatoms * md, rvec * f, int start,
-		  int homenr)
+static void apply_forces_grp(t_pullgrp *pgrp, t_mdatoms * md, rvec * f,
+			     int start, int homenr, rvec f_pull, int sign)
 {
-  int i, j, ii, m;
+  int i, ii, m;
   double wmass,inv_wm;
-  t_pullgrp *pgrp;
   
+  inv_wm = pgrp->wscale*pgrp->invtm;
+  
+  for(i=0; i<pgrp->ngx; i++) {
+    ii=pgrp->idx[i];
+    wmass = md->massT[ii];
+    if (pgrp->nweight > 0)
+      wmass *= pgrp->weight[i];
+    
+    for(m=0; m<DIM; m++)
+      f[ii][m] += sign * wmass * f_pull[m] * inv_wm;
+  }
+}
+/* Apply forces in a mass weighted fashion */
+static void apply_forces(t_pull * pull, t_mdatoms * md, rvec * f,
+			 int start, int homenr)
+{
+  int i;
+  t_pullgrp *pgrp;
+
   for(i=0; i<pull->ngrp; i++) {
-    pgrp = &pull->grp[i];
-    inv_wm = pgrp->wscale*pgrp->invtm;
-
-    for(j=0; j<pgrp->ngx; j++) {
-      ii=pgrp->idx[j];
-      wmass = md->massT[ii];
-      if (pgrp->nweight > 0)
-	wmass *= pgrp->weight[i];
-
-      for(m=0; m<DIM; m++) {
-        f[ii][m] += wmass * pgrp->f[m] * inv_wm;
+    pgrp = &(pull->grp[i]);
+    apply_forces_grp(pgrp,md,f,start,homenr,pgrp->f,1);
+    if (!pull->AbsoluteRef) {
+      if (pull->bCyl) {
+	apply_forces_grp(&(pull->dyna[i]),md,f,start,homenr,pgrp->f,-1);
+      } else {
+	apply_forces_grp(&(pull->ref),md,f,start,homenr,pgrp->f,-1);
       }
     }
   }
 }
 
-static void do_umbrella(t_pull *pull, rvec *x,rvec *f,matrix box, 
+static void do_umbrella(t_pull *pull, rvec *x,rvec *f, tensor vir, matrix box, 
                         t_mdatoms *md, int start, int homenr) 
 {
   int i,ii=0,j,m,g;
@@ -159,6 +173,17 @@ static void do_umbrella(t_pull *pull, rvec *x,rvec *f,matrix box,
 
     /* f = um_width*dx */
     dsvmul(pull->grp[i].UmbCons,dr,pull->grp[i].f);
+
+    if (pull->bCyl) {
+      d_pbc_dx(box, pull->dyna[i].x_unc, pull->grp[i].x_unc, dr);
+    } else {
+      d_pbc_dx(box, pull->ref.x_unc, pull->grp[i].x_unc, dr);
+    }
+    for(m=0; m<DIM; m++)
+      dr[m] *= pull->dims[m];
+    for(j=0; j<DIM; j++)
+      for(m=0;m<DIM;m++)
+	vir[j][m] += 0.5*pull->grp[i].f[j]*dr[m];
   }
   apply_forces(pull, md, f, start, homenr);
 }
@@ -496,10 +521,11 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
 }
 
 /* mimicks an AFM experiment, groups are pulled via a spring */
-static void do_afm(t_pull *pull, rvec *f, matrix box, t_mdatoms *md,
+static void do_afm(t_pull *pull, rvec *f, tensor vir, 
+		   matrix box, t_mdatoms *md,
 		   int start, int homenr, real dt, int step)
 {
-  int i,m;
+  int i,j,m;
   dvec dr;     /* extension of the springs */
 
   /* loop over the groups that are being pulled */
@@ -521,13 +547,21 @@ static void do_afm(t_pull *pull, rvec *f, matrix box, t_mdatoms *md,
     /* calculate force from the spring on the pull group: f = - k*dr */
     for(m=0;m<DIM;m++)
       pull->grp[i].f[m] = pull->grp[i].AfmK*dr[m];
+
+    d_pbc_dx(box,pull->ref.x_unc, pull->grp[i].x_unc, dr);
+    for(m=DIM-1; m>=0; m--)
+      dr[m] *= pull->dims[m];
+    for(j=0; j<DIM; j++)
+      for(m=0;m<DIM;m++)
+	vir[j][m] += 0.5*pull->grp[i].f[j]*dr[m];
   }
   /* Distribute forces over pulled groups */
   apply_forces(pull, md, f, start, homenr);
 }
 
-void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top, 
-          real dt, int step, real time, t_mdatoms *md, int start, int homenr,
+void pull(t_pull *pull,rvec *x,rvec *f, tensor vir, 
+	  matrix box, t_topology *top, real dt, int step, real time,
+	  t_mdatoms *md, int start, int homenr,
           t_commrec * cr) 
 {
   int i,niter;
@@ -536,8 +570,7 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top,
 
   bShakeFirst = (f == NULL);
 
-  
-  snew(x_s,md->nr); /* can't rely on natoms */
+    snew(x_s,md->nr); /* can't rely on natoms */
 
   /* copy x to temp array x_s. We assume all molecules are whole already */
   for(i=0;i<md->nr;i++)
@@ -549,7 +582,7 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top,
   switch(pull->runtype) {
   case eAfm:
     if(!bShakeFirst) {
-      do_afm(pull,f,box,md,start,homenr, dt, step);
+      do_afm(pull,f,vir,box,md,start,homenr, dt, step);
       
       if(MASTER(cr))
         print_afm(pull,step,time);
@@ -564,7 +597,7 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top,
 
   case eUmbrella:
     if(!bShakeFirst) {
-      do_umbrella(pull,x,f,box,md,start,homenr);
+      do_umbrella(pull,x,f,vir,box,md,start,homenr);
 
       if(MASTER(cr))
         print_umbrella(pull,step,time);
