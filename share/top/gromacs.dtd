@@ -271,7 +271,7 @@
 <!ELEMENT forces      (rvec*)>
 <!ELEMENT rvec EMPTY>
 <!ATTLIST rvec 
-          id CDATA #REQUIRED
+          id IDREF #REQUIRED
           x  CDATA #REQUIRED
           y  CDATA #REQUIRED
           z  CDATA #REQUIRED>
