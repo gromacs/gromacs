@@ -62,7 +62,7 @@ static t_xlate_atom *get_xlatoms(int *nxlatom)
       fprintf(stderr,"Invalid line '%s' in %s\n",lines[i],xlfile);
     else {
       /* Use wildcards... */
-      if (strcmp(rbuf,"*") != NULL)
+      if (strcmp(rbuf,"*") != 0)
 	xl[n].res = strdup(rbuf);
       else
 	xl[n].res = NULL;

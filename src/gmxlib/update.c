@@ -344,7 +344,7 @@ void calc_ke_part(bool bFirstStep,int start,int homenr,
       tcstat[gt].ekin[ZZ][d]+=hm*v_corrt[ZZ]*v_corrt[d];
     }
     if (md->bPerturbed[n]) {
-      dvdl+=0.5*(md->massB[n]-md->massA[n])*iprod(v_corrt,v_corrt);
+      dvdl-=0.5*(md->massB[n]-md->massA[n])*iprod(v_corrt,v_corrt);
     }
   }
   *dvdlambda += dvdl;
