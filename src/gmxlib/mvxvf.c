@@ -82,35 +82,28 @@ void move_rvecs(FILE *log,bool bForward,bool bSum,
     }
     /* Forward pulse around the ring, to increasing NODE number */
     if (bForward) {
-      gmx_tx(right,  arrayp(vecs[nsb->index[cur]], nsb->homenr[cur]));
-      /* If we want to sum these arrays, we have to store the rvecs
-       * we receive in a temp buffer.
-       */
       if (bSum)
-	gmx_rx(left, arrayp(buf [nsb->index[prev]],nsb->homenr[prev]));
+	mpiio_tx_rx_real(right,vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
+			 left,buf [nsb->index[prev]],nsb->homenr[prev]*DIM);
       else
-	gmx_rx(left, arrayp(vecs[nsb->index[prev]],nsb->homenr[prev]));
+	mpiio_tx_rx_real(right,vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
+			 left, vecs[nsb->index[prev]],nsb->homenr[prev]*DIM);
+      /* Wait for communication to end */
+      mpiio_wait(right,left);
     }
     
     /* Backward pulse around the ring, to decreasing NODE number */
     else {
-      gmx_tx(left,    arrayp(vecs[nsb->index[cur]], nsb->homenr[cur]));
-      /* See above */
       if (bSum)
-	gmx_rx(right, arrayp(buf [nsb->index[next]],nsb->homenr[next]));
+	mpiio_tx_rx_real(left, vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
+			 right,buf [nsb->index[next]],nsb->homenr[next]*DIM);
       else
-	gmx_rx(right, arrayp(vecs[nsb->index[next]],nsb->homenr[next]));
+	mpiio_tx_rx_real(left, vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
+			 right,vecs[nsb->index[next]],nsb->homenr[next]*DIM);
+      /* Wait for communication to end */
+      mpiio_wait(left,right);
     }
-    /* Wait for communication to end */
-    if (bForward) {
-      gmx_tx_wait(right);
-      gmx_rx_wait(left);
-    }
-    else {
-      gmx_tx_wait(left);
-      gmx_rx_wait(right);
-    }
-    
+
     /* Actual summation */
     if (bSum) {
       for(j=j0; (j<j1); j++) {
@@ -133,25 +126,9 @@ void move_x(FILE *log,
 	    int left,int right,rvec x[],t_nsborder *nsb,
 	    t_nrnb *nrnb)
 {
-#ifdef TEST_MPI_X
-  static int *recvcounts=NULL,*displs;
-  int i;
-
-  if (recvcounts == NULL) {
-    snew(recvcounts,nsb->nnodes);
-    snew(displs,nsb->nnodes);
-    for(i=0; i<nsb->nnodes; i++) {
-      recvcounts[i] = nsb->homenr[i]*sizeof(x[0]);
-      displs[i]     = nsb->index[i]*sizeof(x[0]);
-    }
-  }
-  MPI_Allgatherv(arrayp(x[nsb->index[nsb->nodeid]],nsb->homenr[nsb->nodeid]),
-		 MPI_BYTE,x,recvcounts,displs,MPI_BYTE,MPI_COMM_WORLD);
-#else
   move_rvecs(log,FALSE,FALSE,left,right,x,NULL,nsb->shift,nsb,nrnb);
-  where();
   move_rvecs(log,TRUE, FALSE,left,right,x,NULL,nsb->bshift,nsb,nrnb);
-#endif
+
   where();
 }
 
@@ -159,18 +136,9 @@ void move_f(FILE *log,
 	    int left,int right,rvec f[],rvec fadd[],
 	    t_nsborder *nsb,t_nrnb *nrnb)
 {
-#ifdef MPI_TEST_F
-#ifdef DOUBLE
-#define mpi_type MPI_DOUBLE
-#else
-#define mpi_type MPI_FLOAT
-#endif
-  MPI_Allreduce(f,f,nsb->natoms*DIM,mpi_type,MPI_SUM,MPI_COMM_WORLD);
-#else
   move_rvecs(log,TRUE, TRUE,left,right,f,fadd,nsb->shift,nsb,nrnb);
-  where();
   move_rvecs(log,FALSE,TRUE,left,right,f,fadd,nsb->bshift,nsb,nrnb);
-#endif
+
   where();
 }
 

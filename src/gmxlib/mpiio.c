@@ -46,8 +46,6 @@ static char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
 
 static MPI_Request mpi_req_tx=MPI_REQUEST_NULL,mpi_req_rx;
 
-/*#define DEBUG*/
-
 /* Try setting MPI_TEST when you experience unexplainable crashes, *
  * up til now these crashes have only occured with IRIX 6.5        */
 /* #define MPI_TEST */
@@ -58,7 +56,8 @@ void mpiio_tx(int nodeid,void *buf,int bufsize)
   MPI_Status status;
   
 #ifdef DEBUG
-  fprintf(stderr,"mpiio_tx: nodeid=%d, buf=%x, bufsize=%d\n",nodeid,buf,bufsize);
+  fprintf(stderr,"mpiio_tx: nodeid=%d, buf=%x, bufsize=%d\n",
+	  nodeid,buf,bufsize);
 #endif
 #ifdef MPI_TEST
   /* workaround for crashes encountered with MPI on IRIX 6.5 */
@@ -90,7 +89,8 @@ void mpiio_txs(int nodeid,void *buf,int bufsize)
   int tag;
 
 #ifdef DEBUG
-  fprintf(stderr,"mpiio_txs: nodeid=%d, buf=%x, bufsize=%d\n",nodeid,buf,bufsize);
+  fprintf(stderr,"mpiio_txs: nodeid=%d, buf=%x, bufsize=%d\n",
+	  nodeid,buf,bufsize);
 #endif
   tag = 0;
   if (MPI_Send(buf,bufsize,MPI_BYTE,nodeid,tag,MPI_COMM_WORLD) != 0)
@@ -104,7 +104,8 @@ void mpiio_rx(int nodeid,void *buf,int bufsize)
   int        tag;
 
 #ifdef DEBUG
-  fprintf(stderr,"mpiio_rx: nodeid=%d, buf=%x, bufsize=%d\n",nodeid,buf,bufsize);
+  fprintf(stderr,"mpiio_rx: nodeid=%d, buf=%x, bufsize=%d\n",
+	  nodeid,buf,bufsize);
 #endif
   tag = 0;
   if (MPI_Irecv( buf, bufsize, MPI_BYTE, nodeid, tag, MPI_COMM_WORLD, &mpi_req_rx) != 0 )
@@ -137,7 +138,8 @@ void mpiio_rxs(int nodeid,void *buf,int bufsize)
   int        tag;
 
 #ifdef DEBUG
-  fprintf(stderr,"mpiio_rxs: nodeid=%d, buf=%x, bufsize=%d\n",nodeid,buf,bufsize);
+  fprintf(stderr,"mpiio_rxs: nodeid=%d, buf=%x, bufsize=%d\n",
+	  nodeid,buf,bufsize);
 #endif
   tag = 0;
   if (MPI_Recv( buf, bufsize, MPI_BYTE, nodeid, tag, MPI_COMM_WORLD, &stat) != 0 )
@@ -206,7 +208,25 @@ void mpiio_tx_rx(int send_nodeid,void *send_buf,int send_bufsize,
   MPI_Status stat;
   
   MPI_Sendrecv(send_buf,send_bufsize,MPI_BYTE,send_nodeid,tx_tag,
-	       rec_buf,rec_bufsize,MPI_BYTE,rec_nodeid,rx_tag,MPI_COMM_WORLD,&stat);
+	       rec_buf,rec_bufsize,MPI_BYTE,rec_nodeid,rx_tag,
+	       MPI_COMM_WORLD,&stat);
+}
+		 
+void mpiio_tx_rx_real(int send_nodeid,real *send_buf,int send_bufsize,
+		      int rec_nodeid,real *rec_buf,int rec_bufsize)
+{
+  int tx_tag = 0,rx_tag = 0;
+  MPI_Status stat;
+#ifdef DOUBLE
+#define mpi_type MPI_DOUBLE
+#else
+#define mpi_type MPI_FLOAT
+#endif
+  
+  MPI_Sendrecv(send_buf,send_bufsize,mpi_type,send_nodeid,tx_tag,
+	       rec_buf,rec_bufsize,mpi_type,rec_nodeid,rx_tag,
+	       MPI_COMM_WORLD,&stat);
+#undef mpi_type
 }
 		 
 void mpiio_wait(int left,int right)
@@ -230,6 +250,3 @@ void mpi_abort(int nodeid,int nnodes,int errorno)
   MPI_Abort(MPI_COMM_WORLD,errorno);
 }
 
-#ifdef DEBUG
-#undef DEBUG
-#endif
