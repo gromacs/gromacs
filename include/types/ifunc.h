@@ -49,10 +49,9 @@ typedef real t_ifunc(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
 #define IF_CONNECT 1<<3
 /* These flags tell to some of the routines what can be done with this
  * item in the list. If flags & IF_BOND, then bonded interactions will
- * be calculated. By specifying this information here, we can keep
- * all the information in one place.
- * If flags & IF_CONNECT this link specifies a connection (chemical bond)
- * between two particles.
+ * be calculated. If flags & IF_CONNECT this link specifies a connection 
+ * (chemical bond) between two particles. By specifying this here, we can 
+ * keep all the information in one place.
  */
 typedef struct
 {
