@@ -19,10 +19,8 @@ LDADD = -lmdXXX_SUFFIX_XXX -lgmxXXX_SUFFIX_XXX
 # issue "make <program>" and copy the binary to the correct location yourself! 
 # Add new entries in Makefile.am!
 
-EXTRA_PROGRAMS 		= xmdrun sigeps mk6_n copyrgt mkyaw prfn hrefify mkice \
+EXTRA_PROGRAMS 		= sigeps mk6_n copyrgt mkyaw prfn hrefify mkice \
                           total hexamer optwat addquote do_shift g_anavel my_dssp anaf 
-
-xmdrun_SOURCES  	= xmdrun.c do_gct.c init_sh.c gctio.c glaasje.c ionize.c relax_sh.c
 
 copyrgt_SOURCES 	= copyrgt.c
 
