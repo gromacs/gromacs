@@ -763,12 +763,13 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     ana_trans(clust, nf, transfn, ntransfn, log);
   
   if (clustidfn) {
-    fp=xvgropen(clustidfn,"Clusters","Structure #","Cluster #");
+    sprintf(buf,"Time (%s)",time_label());
+    fp=xvgropen(clustidfn,"Clusters",buf,"Cluster #");
     fprintf(fp,"@    s0 symbol 2\n");
     fprintf(fp,"@    s0 symbol size 0.2\n");
     fprintf(fp,"@    s0 linestyle 0\n");
     for(i=0; i<nf; i++)
-      fprintf(fp,"%8d %8d\n",i,clust->cl[i]);
+      fprintf(fp,"%8g %8d\n",time[i],clust->cl[i]);
     ffclose(fp);
   }
   if (sizefn) {
@@ -1041,10 +1042,10 @@ int main(int argc,char *argv[])
     { efTRX, "-cl",   "clusters.pdb", ffOPTWR }
   };
 #define NFILE asize(fnm)
-
+  
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT,
+		    TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
 
   /* parse options */
   bReadMat   = opt2bSet("-dm",NFILE,fnm);
@@ -1058,6 +1059,11 @@ int main(int argc,char *argv[])
     trx_out_fn = opt2fn("-cl",NFILE,fnm);
   else
     trx_out_fn = NULL;
+  if (bReadMat && time_factor()!=1) {
+    fprintf(stderr,
+	    "\nWarning: will not change times when reading matrix file\n");
+    default_time();
+  }
   if (trx_out_fn && !bReadTraj)
     fprintf(stderr,"\nWarning: "
 	    "cannot write cluster structures without reading trajectory\n"
@@ -1165,6 +1171,7 @@ int main(int argc,char *argv[])
     fn = opt2fn("-f",NFILE,fnm);
     
     xx = read_whole_trj(fn,isize,index,skip,&nf,&time);
+    convert_times(nf, time);
     if (!bRMSdist || bAnalyze) {
       /* Center all frames on zero */
       snew(mass,isize);
@@ -1323,10 +1330,12 @@ int main(int argc,char *argv[])
     write_xpm(fp,readmat[0].title,readmat[0].legend,readmat[0].label_x,
 	      readmat[0].label_y,nf,nf,readmat[0].axis_x,readmat[0].axis_y,
 	      rms->mat,0.0,rms->maxrms,rlo,rhi,&nlevels);
-  } else
+  } else {
+    sprintf(buf,"Time (%s)", time_label());
     write_xpm(fp,bRMSdist ? "RMS Distance Deviation" : "RMS Deviation",
-	      "RMSD (nm)","Time (ps)","Time (ps)",
+	      "RMSD (nm)",buf,buf,
 	      nf,nf,time,time,rms->mat,0.0,rms->maxrms,rlo,rhi,&nlevels);
+  }
   fprintf(stderr,"\n");
   ffclose(fp);
   
