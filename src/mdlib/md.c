@@ -403,18 +403,20 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	calc_vcm(log,HOMENR(nsb),START(nsb),mdatoms->massT,v,vcm);
     }
     
-    if (bGotTermSignal) {
-      terminate = 1;
-      fprintf(log,"\n\nReceived the TERM signal\n\n");
-      if (MASTER(cr))
-	fprintf(stderr,"\n\nReceived the TERM signal\n\n");
+    if (bGotTermSignal || bGotUsr1Signal) {
+      if (bGotTermSignal)
+	terminate = 1;
+      else
+	terminate = -1;
+      fprintf(log,"\n\nReceived the %s signal\n\n",
+	      bGotTermSignal ? "TERM" : "USR1");
+      fflush(log);
+      if (MASTER(cr)) {
+	fprintf(stderr,"\n\nReceived the %s signal\n\n",
+	      bGotTermSignal ? "TERM" : "USR1");
+	fflush(stderr);
+      }
       bGotTermSignal = FALSE;
-      bGotUsr1Signal = FALSE;
-    } else if (bGotUsr1Signal) {
-      terminate = -1;
-      fprintf(log,"\n\nReceived the USR1 signal\n\n");
-      if (MASTER(cr))
-	fprintf(stderr,"\n\nReceived the USR1 signal\n\n");
       bGotUsr1Signal = FALSE;
     }
 
@@ -451,8 +453,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       else
 	parm->ir.nsteps = step+1;
       fprintf(log,"\nSetting nsteps to %d\n\n",parm->ir.nsteps);
-      if (MASTER(cr))
+      fflush(log);
+      if (MASTER(cr)) {
 	fprintf(stderr,"\nSetting nsteps to %d\n\n",parm->ir.nsteps);
+	fflush(stderr);
+      }
       /* erase the terminate signal */
       terminate = 0;
     }
