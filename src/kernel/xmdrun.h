@@ -80,7 +80,7 @@ extern int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 			rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
 			rvec buf[],t_mdatoms *md,t_nsborder *nsb,t_nrnb *nrnb,
 			t_graph *graph,t_groups *grps,tensor vir_part,
-			tensor pme_vir_part,
+			tensor pme_vir_part,bool bShell,
 			int nshell,t_shell shells[],t_forcerec *fr,
 			char *traj,real t,real lambda,rvec mu_tot,
 			int natoms,matrix box,bool *bConverged);
