@@ -87,7 +87,7 @@ void write_xvgr_graphs(char *file,int ngraphs,
     ysp=tick_spacing(max-min,3);
     fprintf(out,"@ with g%d\n@ g%d on\n",ngraphs-1-g,ngraphs-1-g);
     fprintf(out,"@ g%d autoscale type AUTO\n",ngraphs-1-g);
-    if (g==0) 
+    if (g==0)
       fprintf(out,"@ title \"%s\"\n",title);
     if (g==ngraphs-1)
       fprintf(out,"@ xaxis  label \"%s\"\n",xlabel);
@@ -207,7 +207,7 @@ void project(char *trajfile,
 	     int noutvec,int *outvec)
 {
   FILE    *xvgrout;
-  int     status,out,nat,i,j,d,v,vec,nframes,snew_size,imin,imax,frame;
+  int     status,out,nat,i,j,d,v,vec,nfr,nframes,snew_size,imin,imax,frame;
   atom_id *all_at;
   matrix  box;
   rvec    *xread,*x;
@@ -215,15 +215,10 @@ void project(char *trajfile,
   char    str[STRLEN],str2[STRLEN],**ylabel;
 
   snew(x,natoms);
-  snew(all_at,natoms);
-  for(i=0; (i<natoms); i++)
-    all_at[i]=i;
 
   if (trajfile) {
     snew(inprod,noutvec+1);
     
-    for(i=0; (i<natoms); i++)
-      all_at[i]=i; 
     if (filterfile) {
       fprintf(stderr,"Writing a filtered trajectory to %s using eigenvectors\n",
 	      filterfile);
@@ -233,49 +228,55 @@ void project(char *trajfile,
       out=open_trx(filterfile,"w");
     }
     snew_size=0;
+    nfr=0;
     nframes=0;
     nat=read_first_x(&status,trajfile,&t,&xread,box);
+    snew(all_at,nat);
+    for(i=0; (i<nat); i++)
+      all_at[i]=i;
     do {
-      if (top)
-	rm_pbc(&(top->idef),nat,box,xread,xread);
-      if (nframes>=snew_size) {
-	snew_size+=100;
-	for(i=0; i<noutvec+1; i++)
-	  srenew(inprod[i],snew_size);
-      }
-      inprod[noutvec][nframes]=t;
-      /* calculate x: a fitted struture of the selected atoms */
-      if (xref==NULL) {
-	reset_x(nfit,ifit,nat,all_at,xread,w_rls);
-	do_fit(ntopatoms,w_rls,xtop,xread);
-      }
-      for (i=0; i<natoms; i++)
-	copy_rvec(xread[index[i]],x[i]);
-      if (xref) {
-	reset_x(natoms,all_at,natoms,all_at,x,w_rls);
-	do_fit(natoms,w_rls,xref,x);
-      }
-
-      for(v=0; v<noutvec; v++) {
-	vec=outvec[v];
-	/* calculate (mass-weighted) projection */
-	inp=0;
-	for (i=0; i<natoms; i++) {
-	  inp+=(eigvec[vec][i][0]*(x[i][0]-xav[i][0])+
-	  eigvec[vec][i][1]*(x[i][1]-xav[i][1])+
-	  eigvec[vec][i][2]*(x[i][2]-xav[i][2]))*sqrtm[i];
+      if (nfr % skip == 0) {
+	if (top)
+	  rm_pbc(&(top->idef),nat,box,xread,xread);
+	if (nframes>=snew_size) {
+	  snew_size+=100;
+	  for(i=0; i<noutvec+1; i++)
+	    srenew(inprod[i],snew_size);
 	}
-	inprod[v][nframes]=inp;
+	inprod[noutvec][nframes]=t;
+	/* calculate x: a fitted struture of the selected atoms */
+	if (xref==NULL) {
+	  reset_x(nfit,ifit,nat,all_at,xread,w_rls);
+	  do_fit(ntopatoms,w_rls,xtop,xread);
+	}
+	for (i=0; i<natoms; i++)
+	  copy_rvec(xread[index[i]],x[i]);
+	if (xref) {
+	  reset_x(natoms,all_at,natoms,all_at,x,w_rls);
+	  do_fit(natoms,w_rls,xref,x);
+	}
+	
+	for(v=0; v<noutvec; v++) {
+	  vec=outvec[v];
+	  /* calculate (mass-weighted) projection */
+	  inp=0;
+	  for (i=0; i<natoms; i++) {
+	    inp+=(eigvec[vec][i][0]*(x[i][0]-xav[i][0])+
+	    eigvec[vec][i][1]*(x[i][1]-xav[i][1])+
+	    eigvec[vec][i][2]*(x[i][2]-xav[i][2]))*sqrtm[i];
+	  }
+	  inprod[v][nframes]=inp;
+	  if (filterfile) 
+	    for(i=0; i<natoms; i++)
+	      for(d=0; d<DIM; d++)
+		xread[index[i]][d] = xav[i][d]+
+		  inprod[v][nframes]*eigvec[outvec[v]][i][d]/sqrtm[i];
+	}
 	if (filterfile && (nframes % skip == 0)) 
-	  for(i=0; i<natoms; i++)
-	    for(d=0; d<DIM; d++)
-	      xread[index[i]][d] = xav[i][d]+
-		inprod[v][nframes]*eigvec[outvec[v]][i][d]/sqrtm[i];
+	  write_trx(out,natoms,index,atoms,0,t,box,xread,NULL);
+	nframes++;
       }
-      if (filterfile && (nframes % skip == 0)) 
-	write_trx(out,natoms,index,atoms,0,t,box,xread,NULL);
-      
-      nframes++;
+      nfr++;
     } while (read_next_x(status,&t,nat,xread,box));
     close_trj(status);
      sfree(x);
@@ -473,7 +474,7 @@ int main(int argc,char *argv[])
     { "-last",  FALSE, etINT, &last, 
       "last eigenvector for analysis (-1 is till the last)" },
      { "-skip",  FALSE, etINT, &skip,
-      "only write a filtered frame every nr-th frame" },
+      "only analyse every nr-th frame" },
     { "-max",  FALSE, etREAL, &max, 
       "maximum for projection of the eigenvector on the average structure, max=0 gives the extremes" },
     { "-nframes",  FALSE, etINT, &nextr, 
