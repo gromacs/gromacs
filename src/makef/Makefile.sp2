@@ -1,4 +1,4 @@
-# IBM/SP2
+# IBM/SP2 Double Prec.
 #	@(#) Makefile.sp2 1.1 5/15/97
 #
 #
@@ -9,7 +9,7 @@
 #
 # 	See README file for info
 #
-SYSDEFS		= -DHAVE_ULONG -DNO_NICE -DPARALLEL -DC_INVSQRT -DFINVSQRT
+SYSDEFS		= -DHAVE_ULONG -DNO_NICE -DPARALLEL -DC_INVSQRT -DFINVSQRT -DDOUBLE
 
 # IBM C compilers
 CC              = xlc
@@ -18,7 +18,7 @@ F77             = xlf
 CFLAGS          = -O3 -qarch=pwr2 -qtune=pwr2 -langlvl=ansi -qmaxmem=16384 
 -qfloat=hsflt
 CCFLAGS         = -O3 -qarch=pwr2 -qtune=pwr2 -qmaxmem=16384 
-FFLAGS          = -O4 -qarch=pwr2 -qtune=pwr2 -qmaxmem=16384 -qfloat=hsflt -qhot
+FFLAGS          = -O4 -qarch=pwr2 -qtune=pwr2 -qmaxmem=16384 -qfloat=hsflt -qhot -qrealsize=8
 
 # Generic linking stuff
 LDFLAGS		= -L$(LIBDIR)
