@@ -37,7 +37,6 @@ static char *SRCID_dtools_c = "$Id$";
 #include "vec.h"
 #include "names.h"
 #include "disco.h"
-#include "pp2shift.h"
 
 char *edc_names[edcNR+1] = { "NONBND", "BOND", "DISRE", NULL };
 

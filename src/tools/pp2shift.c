@@ -38,7 +38,7 @@ static char *SRCID_pp2shift_c = "$Id$";
 #include "physics.h"
 #include "smalloc.h"
 #include "statutil.h"
-#include "pp2shift.h"
+#include "gstat.h"
 #include "matio.h"
 #include "copyrite.h"
 

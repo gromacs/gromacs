@@ -32,8 +32,8 @@
 static char *SRCID_dlist_c = "$Id$";
 #include <stdlib.h>
 #include "string2.h"
-#include "pp2shift.h"
 #include "smalloc.h"
+#include "gstat.h"
 	
 t_dlist *mk_dlist(FILE *log, 
 		  t_atoms *atoms, int *nlist,

@@ -53,7 +53,6 @@ static char *SRCID_g_chi_c = "$Id$";
 #include "vec.h"
 #include "strdb.h"
 #include "xvgr.h"
-#include "pp2shift.h"
 #include "matio.h"
 
 static bool bAllowed(real phi,real psi)
@@ -1051,7 +1050,7 @@ int main(int argc,char *argv[])
   int        i,j,**chi_lookup,*xity; 
   
   t_filenm  fnm[] = {
-    { efSTX, NULL,  NULL,     ffREAD  },
+    { efSTX, "-s",  NULL,     ffREAD  },
     { efTRX, "-f",  NULL,     ffREAD  },
     { efXVG, "-o",  "order",  ffWRITE },
     { efPDB, "-p",  "order",  ffOPTWR },
@@ -1166,7 +1165,7 @@ int main(int argc,char *argv[])
    * added multiplicity */ 
 
   snew(xity,ndih) ;
-  mk_multiplicity_lookup(xity, maxchi, dih, nlist, dlist); 
+  mk_multiplicity_lookup(xity, maxchi, dih, nlist, dlist,ndih); 
  
   strcpy(grpname, "All residues, "); 
   if(bPhi) 

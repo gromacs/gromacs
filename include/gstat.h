@@ -42,7 +42,6 @@ static char *SRCID_gstat_h = "$Id$";
 #include "typedefs.h"
 #include "statutil.h"
 #include "mshift.h"
-#include "pp2shift.h"
 #include "rmpbc.h"
 
 #ifdef CPLUSPLUS
@@ -71,6 +70,33 @@ enum {
   effnNONE, effnEXP1, effnEXP2, effnEXP3, effnVAC, 
   effnEXP5, effnEXP7, effnERREST, effnNR
 };
+
+/* must correspond with 'leg' g_chi.c:727 */
+enum { edPhi=0, edPsi, edOmega, edChi1, edChi2, edChi3, edChi4, edChi5, edChi6, edMax };
+
+enum { edPrintST=0,edPrintRO } ; 
+
+#define NHISTO 360
+#define NONCHI 3
+#define MAXCHI edMax-NONCHI
+#define NROT 4  /* number of rotamers: 1=g(-), 2=t, 3=g(+), 0=other */ 
+
+typedef struct {
+  int minO,minC,H,N,C,O,Cn[MAXCHI+3];
+} t_dihatms; /* Cn[0]=N, Cn[1]=Ca, Cn[2]=Cb etc. */
+
+typedef struct {
+  char name[12];
+  int  resnr;
+  int  index;       /* Index for amino acids (histograms) */
+  int  j0[edMax];   /* Index in dih array (phi angle is first...) */
+  t_dihatms  atm;
+  int  b[edMax];
+  int  ntr[edMax];
+  real S2[edMax];
+  real rot_occ[edMax][NROT];
+
+} t_dlist;
 
 extern int  nfp_ffn[effnNR];
 
@@ -271,10 +297,6 @@ extern void read_ang_dih(char *trj_fn,char *tpb_fn,
  * dih         all angles at each time frame
  */
  
-extern void mk_multiplicity_lookup (int *xity, int maxchi, real **dih, 
-				    int nlist, t_dlist dlist[]);
- /* Something to do with rotamers... */
-  
 extern void make_histo(FILE *log,
 		       int ndata,real data[],int npoints,int histo[],
 		       real minx,real maxx);
@@ -354,6 +376,37 @@ extern int  npoints_lsq(t_lsq *lsq);
 extern real aver_lsq(t_lsq *lsq);
 extern real sigma_lsq(t_lsq *lsq);
 extern real error_lsq(t_lsq *lsq);
+
+  /* Routines from pp2shift (anadih.c etc.) */
+
+extern void do_pp2shifts(FILE *fp,int nframes,
+			 int nlist,t_dlist dlist[],real **dih);
+
+extern bool has_dihedral(int Dih,t_dlist *dl);
+
+extern t_dlist *mk_dlist(FILE *log, 
+			 t_atoms *atoms, int *nlist,
+			 bool bPhi, bool bPsi, bool bChi, bool bHChi,
+			 int maxchi,int r0,int naa,char **aa);
+			 
+extern void pr_dlist(FILE *fp,int nl,t_dlist dl[],real dt,  int printtype,
+bool bPhi, bool bPsi,bool bChi,bool bOmega, int maxchi);
+
+extern int pr_trans(FILE *fp,int nl,t_dlist dl[],real dt,int Xi);
+
+extern void mk_chi_lookup (int **lookup, int maxchi, real **dih, 
+			   int nlist, t_dlist dlist[]) ; 
+
+extern void mk_multiplicity_lookup (int *xity, int maxchi, real **dih, 
+				    int nlist, t_dlist dlist[],int nangle) ; 
+
+extern void get_chi_product_traj (real **dih,int nframes,int nangles, 
+				  int nlist,int maxchi, t_dlist dlist[], real time[], 
+				  int **lookup,int *xity,bool bRb,bool bNormalize,
+				  real core_frac,bool bAll,char *fnall); 
+
+extern void print_one (char *base,char *name,char *title, char *ylabel,
+		      int nf,real time[],real data[]); 
 
 #ifdef CPLUSPLUS
 	     }

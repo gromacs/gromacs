@@ -42,7 +42,6 @@ static char *SRCID_anadih_c = "$Id$";
 #include "vec.h"
 #include "gstat.h"
 #include "confio.h"
-#include "pp2shift.h" 
 
 void print_one(char *base,char *name,char *title, char *ylabel,
 		      int nf,real time[],real data[])
@@ -273,7 +272,7 @@ void low_ana_dih_trans(bool bTrans, char *fn_trans,
 }
 
 void mk_multiplicity_lookup (int *xity, int maxchi, real **dih, 
-		    int nlist, t_dlist dlist[]) 
+			     int nlist, t_dlist dlist[],int nangles) 
 {
   /* new by grs - for dihedral j (as in dih[j]) get multiplicity from dlist
    * and store in xity[j] 
@@ -300,16 +299,16 @@ void mk_multiplicity_lookup (int *xity, int maxchi, real **dih,
 
 	/* dihedrals to aromatic rings, COO, CONH2 or guanidinium are 2fold*/
 	if (Dih > edOmega && (dlist[i].atm.Cn[Dih-NONCHI+3] != -1)) {
-	  if ( (strcmp(name,"PHE") == 0 && Dih == edChi2 ) ||   
-	       (strcmp(name,"TYR") == 0 && Dih == edChi2 ) ||   
-	       (strcmp(name,"PTR") == 0 && Dih == edChi2 ) ||   
-	       (strcmp(name,"TRP") == 0 && Dih == edChi2 ) ||   
-	       (strcmp(name,"HIS") == 0 && Dih == edChi2 ) ||   
-	       (strcmp(name,"GLU") == 0 && Dih == edChi3 ) ||   
-	       (strcmp(name,"ASP") == 0 && Dih == edChi2 ) ||   
-	       (strcmp(name,"GLN") == 0 && Dih == edChi3 ) ||   
-	       (strcmp(name,"ASN") == 0 && Dih == edChi2 ) ||   
-	       (strcmp(name,"ARG") == 0 && Dih == edChi4 ) ) {
+	  if ( ((strstr(name,"PHE") != NULL) && (Dih == edChi2))  ||   
+	       ((strstr(name,"TYR") != NULL) && (Dih == edChi2))  ||   
+	       ((strstr(name,"PTR") != NULL) && (Dih == edChi2))  ||   
+	       ((strstr(name,"TRP") != NULL) && (Dih == edChi2))  ||   
+	       ((strstr(name,"HIS") != NULL) && (Dih == edChi2))  ||   
+	       ((strstr(name,"GLU") != NULL) && (Dih == edChi3))  ||   
+	       ((strstr(name,"ASP") != NULL) && (Dih == edChi2))  ||   
+	       ((strstr(name,"GLN") != NULL) && (Dih == edChi3))  ||   
+	       ((strstr(name,"ASN") != NULL) && (Dih == edChi2))  ||   
+	       ((strstr(name,"ARG") != NULL) && (Dih == edChi4))  ) {
 	    xity[j] = 2; 
 	  }
 	}
@@ -317,7 +316,12 @@ void mk_multiplicity_lookup (int *xity, int maxchi, real **dih,
       }
     }
   }
-
+  if (j<nangles) 
+    fprintf(stderr,"WARNING: not all dihedrals found in topology (only %d out of %d)!\n",
+	    j,nangles);
+  /* Check for remaining dihedrals */
+  for(;(j < nangles); j++)
+    xity[j] = 3;
 
 }
 
