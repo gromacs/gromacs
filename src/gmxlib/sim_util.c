@@ -260,7 +260,7 @@ void calc_ljcorr(FILE *log,bool bLJcorr,t_forcerec *fr,int natoms,
     vol           = det(box);
     rc3           = fr->rshort*fr->rshort*fr->rshort;
     ener[F_LJLR]  = -2.0*natoms*natoms*M_PI*fr->avcsix/(3.0*vol*rc3);
-    spres         = 2.0*PRESFAC*ener[F_LJLR]/vol;
+    spres         = 2.0*ener[F_LJLR]/(PRESFAC*vol);
     ener[F_PRES]  = trace(pres)/3.0+spres;
     pres[XX][XX] += spres;
     pres[YY][YY] += spres;

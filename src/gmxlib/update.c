@@ -64,7 +64,7 @@ void calc_pres(matrix box,tensor ekin,tensor vir,tensor pres)
   /* Uitzoeken welke ekin hier van toepassing is, zie Evans & Morris - E. */ 
   /* Wrs. moet de druktensor gecorrigeerd worden voor de netto stroom in het */
   /* systeem...       */
-  fac=2.0*PRESFAC/det(box);
+  fac=2.0/(PRESFAC*det(box));
   for(n=0; (n<DIM); n++)
     for(m=0; (m<DIM); m++)
       pres[n][m]=(ekin[n][m]-vir[n][m])*fac;
