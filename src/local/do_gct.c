@@ -380,6 +380,13 @@ static real calc_dist(FILE *log,rvec x[])
     return 0.0;
 }
 
+real run_aver(real old,real cur,int step,int nmem)
+{
+  nmem   = max(1,nmem);
+  
+  return ((nmem-1)*old+cur)/nmem;
+}
+
 static void set_act_value(t_coupl_rec *tcr,int index,real val,int step)
 {
   tcr->act_value[index] = val;
