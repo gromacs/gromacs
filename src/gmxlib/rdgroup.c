@@ -38,6 +38,17 @@ static char *SRCID_rdgroup_c = "$Id$";
 #include "fatal.h"
 #include "index.h"
 
+void check_index(char *gname,int n,atom_id index[],char *traj,int natoms)
+{
+  int i;
+  
+  for(i=0; i<n; i++)
+    if (index[i] >= natoms)
+      fatal_error(0,"%s atom number (index[%d]=%d) is larger than the number of atoms in %s (%d)",
+		  gname ? gname : "Index",i+1, index[i]+1,
+		  traj ? traj : "the trajectory",natoms);
+}
+
 t_block *init_index(char *gfile, char ***grpname)
 {
   FILE     *in;

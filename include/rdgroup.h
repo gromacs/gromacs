@@ -41,6 +41,13 @@ static char *SRCID_rdgroup_h = "$Id$";
 extern "C" { 
 #endif
 
+extern void check_index(char *gname,int n,atom_id index[],
+			char *traj,int natoms);
+/* Checks if any index is smaller than zero or larger than natoms,
+ * if so a fatal_error is given with the gname (if gname=NULL, "Index" is used)
+ * and traj (if traj=NULL, "the trajectory" is used).
+ */
+
 t_block *init_index(char *gfile, char ***grpname);
 /* Lower level routine than the next */
 
