@@ -195,7 +195,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       
       for (jdum=0; (jdum<top->atoms.nr); jdum++) {
 	for (kdum=0; (kdum<DIM); kdum++) {
-	  dfdx[jdum][kdum]=(f[jdum][kdum]-dfdx[jdum][kdum])/2.0e-6;
+	  dfdx[jdum][kdum]=(f[jdum][kdum]-dfdx[jdum][kdum])/(2*der_range);
 	}
       }
 
