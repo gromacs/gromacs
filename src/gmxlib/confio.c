@@ -280,7 +280,8 @@ void write_g96_conf(FILE *out,t_trxframe *fr,
   if (fr->bTitle)
     fprintf(out,"TITLE\n%s\nEND\n",fr->title);
   if (fr->bStep || fr->bTime)
-    fprintf(out,"TIMESTEP\n%9d%15.9f\nEND\n",fr->step,fr->time);
+    /* Officially the time format is %15.9, which is not enough for 10 ns */
+    fprintf(out,"TIMESTEP\n%15d%15.6f\nEND\n",fr->step,fr->time);
   if (fr->bX) {
     if (fr->bAtoms) {
       fprintf(out,"POSITION\n");
