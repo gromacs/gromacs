@@ -182,11 +182,15 @@ void preprocess(char *infile,char *outfile,
 
   /* execute preprocessor */
   error=system(command);
-  if (error>0)
-    printf("cpp exit code: %d\n",error);
-  else if (error<0) {
-    perror(cpp);
-    exit(1);
+  if (error) {
+    if (error>0)
+      printf("cpp exit code: %d\n",error);
+    else if (error<0)
+      perror(cpp);
+    printf("Tried to execute: '%s'\n",command); 
+    printf("The '%s' command is defined in the .mdp file\n",cpp);
+    if (error<0)
+      exit(1);
   }
 }
 
