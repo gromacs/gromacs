@@ -51,12 +51,16 @@ extern int cpu_capabilities;
 #define X86_CPU               1
 #define X86_SSE_SUPPORT       (1 << 1)
 #define X86_3DNOW_SUPPORT     (1 << 2)
-#define X86_SSE2_SUPPORT      (1 << 3) /* not used yet */
-/* 3Dnow professional includes SSE support; treat it as 3DNOW 
- * or SSE (dont know which is faster), i.e. no specal flag.
- * Reserve bits 4,5,6 for future x86 stuff */
+#define X86_SSE2_SUPPORT      (1 << 3) 
+/* 3Dnow professional has SSE support, treat it as SSE (=IEEE ok) */
+/* Even if the system cant do SSE, we want to tell the user that
+ * his/her cpu could do it with an OS upgrade.
+ * (This is not an issue for 3DNow)
+ */
+#define CPU_SSE_SUPPORT       (1 << 4)
+#define CPU_SSE2_SUPPORT      (1 << 5) 
+/* bit 6 unused */
 #define IA64_CPU              (1 << 7)
-/* Reserve bits 8,9,10 for future ia64 stuff */
 #define PPC_CPU               (1 << 8)
 #define PPC_ALTIVEC_SUPPORT   (1 << 9)
 
@@ -64,15 +68,24 @@ extern int cpu_capabilities;
 #define VENDOR_AMD   0x68747541
 #define VENDOR_INTEL 0x756e6547
 #define FLAGS_SUPPORT_SSE 0x02000000
+#define FLAGS_SUPPORT_SSE2 0x04000000
 #define FLAGS_SUPPORT_EXT_3DNOW 0xc0000000
 
-#ifdef USE_X86_ASM
-
-#include <x86_sse.h>
-#include <x86_3dnow.h>
+#if ( defined USE_X86_SSE_AND_3DNOW || defined USE_X86_SSE2)
 /* x86 cpuid assembly routine in x86_cpuid.s */
 void x86_cpuid(int,unsigned long *,unsigned long *,unsigned long *,unsigned long *);
-#elif defined USE_PPC_ALTIVEC
+#endif
+
+#ifdef USE_X86_SSE_AND_3DNOW
+#include <x86_sse.h>
+#include <x86_3dnow.h>
+#endif
+
+#ifdef USE_X86_SSE2
+#include <x86_sse2.h>
+#endif
+
+#ifdef USE_PPC_ALTIVEC
 #include <ppc_altivec.h>
 #endif
 
