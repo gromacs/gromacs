@@ -43,12 +43,12 @@ static char *SRCID_matio_c = "$Id$";
 static char mapper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+{}|;:',<.>/?";
 #define NMAP strlen(mapper)
 
-bool matelmt_cmp(t_matelmt e1, t_matelmt e2) 
+bool matelmt_cmp(t_xpmelmt e1, t_xpmelmt e2) 
 { 
   return (e1.c1 == e2.c1) && (e1.c2 == e2.c2);
 }
     
-int searchcmap(int n,t_mapping map[],t_matelmt c)
+t_matelmt searchcmap(int n,t_mapping map[],t_xpmelmt c)
 {
   int i;
   
@@ -200,6 +200,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
   double u;
   char *fg;
   bool bGetOnWithIt;
+  t_xpmelmt c;
   
   mm->title[0]=0;
   mm->legend[0]=0;
@@ -289,6 +290,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
       m++;
     }
   }
+  mm->map = map;
   if (debug)
     for(m=0;m<mm->nmap;m++) 
       printf("%c %f %f %f %s\n",map[m].code.c1,map[m].rgb.r,map[m].rgb.g,
@@ -339,21 +341,19 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
       fatal_error(0,"Not enough caracters in row %d of the matrix\n",m+1);
     else {
       line++;
-      if (nch==1)
-	for(i=0; i<mm->nx; i++)
-	  mm->matrix[i][m].c1 = line[i];
-      else 
-	for(i=0; i<mm->nx; i++) {
-	  mm->matrix[i][m].c1 = line[2*i];
-	  mm->matrix[i][m].c2 = line[2*i+1];
+      for(i=0; i<mm->nx; i++) {
+	c.c1=line[nch*i];
+	if (nch==1)
+	  c.c2=0;
+	else
+	  c.c2=line[nch*i+1];
+	mm->matrix[i][m]=searchcmap(mm->nmap,mm->map,c);
 	}
       m--;
     }
   } while ((m>=0) && fgetline(&line,in));
   if (m>=0)
     fatal_error(0,"Not enough rows in the matrix\n");
-  
-  mm->map = map;
 }
 
 int read_xpm_matrix(char *fnm,t_matrix **matrix)
@@ -520,8 +520,9 @@ void write_xpm_m(FILE *out, t_matrix m)
 {
   /* Writes a t_matrix struct to .xpm file */ 
      
-  int i,j;
-  bool bOneChar;
+  int       i,j;
+  bool      bOneChar;
+  t_xpmelmt c;
 
   bOneChar=(m.map[0].code.c2 == 0);
   write_xpm_header(out,m.title,m.legend,m.label_x,m.label_y,
@@ -540,11 +541,13 @@ void write_xpm_m(FILE *out, t_matrix m)
   for(j=m.ny-1; (j>=0); j--) {
     fprintf(out,"\"");
     if (bOneChar)
-      for(i=0; (i<m.nx); i++) 
-	fprintf(out,"%c",m.matrix[i][j].c1);
+      for(i=0; (i<m.nx); i++)
+	fprintf(out,"%c",m.map[m.matrix[i][j]].code.c1);
     else
-      for(i=0; (i<m.nx); i++) 
-	fprintf(out,"%c%c",m.matrix[i][j].c1,m.matrix[i][j].c2);
+      for(i=0; (i<m.nx); i++) {
+	c=m.map[m.matrix[i][j]].code;
+	fprintf(out,"%c%c",c.c1,c.c2);
+      }
     if (j > 0)
       fprintf(out,"\",\n");
     else

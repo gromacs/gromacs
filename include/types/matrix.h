@@ -31,12 +31,17 @@ typedef struct {
 } t_rgb;
 
 typedef struct {
-  char c1;
-  char c2;
-} t_matelmt;
+  char c1; /* should all be non-zero (and printable and not '"') */
+  char c2; /* 
+	    * should all be zero (single char color names: smaller xpm's) 
+	    * or should all be non-zero (double char color names: more colors)
+	    */
+} t_xpmelmt;
+
+typedef short t_matelmt;
 
 typedef struct {
-  t_matelmt code;
+  t_xpmelmt code; /* see comment for t_xpmelmt */
   char *desc;
   t_rgb rgb;
 } t_mapping;

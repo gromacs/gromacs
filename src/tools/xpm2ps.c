@@ -451,20 +451,14 @@ void xpm_mat(char *outf,
        for(x=0; (x<mat[i].nx); x++) {
 	 for(y=0; (y<mat[i].nx); y++) {
 	   if (x<=y) { /* upper left  -> map1 */
-	     col=searchcmap(mat[i].nmap,mat[i].map,mat[i].matrix[x][y]);
+	     col=mat[i].matrix[x][y];
 	   } else  {   /* lower right -> map2 */
-	     col=nmap1+searchcmap(mat2[i].nmap,mat2[i].map,mat[i].matrix[x][y]);
+	     col=nmap1+mat[i].matrix[x][y];
 	   }
-	   if ((bDiag) || (x!=y)) {
-	     mat[i].matrix[x][y].c1=mapper[col % NMAP];
-	     if (nmap > NMAP)
-	       mat[i].matrix[x][y].c2=mapper[col / NMAP];
-	   }
-	   else {
-	     mat[i].matrix[x][y].c1=mapper[0];
-	     if (nmap > NMAP)
-	       mat[i].matrix[x][y].c2=mapper[0];
-	   }
+	   if ((bDiag) || (x!=y))
+	     mat[i].matrix[x][y]=col;
+	   else
+	     mat[i].matrix[x][y]=0;
 	 }
        }
        mat[i].nmap=nmap;
@@ -474,7 +468,7 @@ void xpm_mat(char *outf,
        if (mat2 && (strcmp(mat[i].legend,mat2[i].legend) != 0))
 	 sprintf(mat[i].legend,"%s / %s\0",mat[i].legend,mat2[i].legend); 
        write_xpm_m(out,mat[i]);
-     }
+       }
    }
    fclose(out);
 }
@@ -492,6 +486,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   real   w,h,dw,dh;
   int       nmap1,nmap2;
   t_mapping *map1,*map2;
+  bool   bMap1,bNextMap1;
   
   get_params(libfn(m2p),&psrec);
 
@@ -587,24 +582,29 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
       xx=x0+x*psr->xboxsize;
       ps_moveto(out,xx,y0);
       y=0;
+      bMap1=(!mat2 || (x<=y));
       if ((bDiag) || (x!=y))
-	col = searchcmap(mat[i].nmap,mat[i].map,mat[i].matrix[x][y]);
+	col = mat[i].matrix[x][y];
       else
 	col = -1;
       for(nexty=1; (nexty<=mat[i].ny); nexty++) {
+	bNextMap1=(!mat2 || (x<=nexty));
+	  /* TRUE:  upper left  -> map1 */
+	  /* FALSE: lower right -> map2 */
 	if ((bDiag) || (x!=nexty))
-	  if (!mat2 || (x<=nexty)) /* upper left  -> map1 */
-	    nextcol=searchcmap(mat[i].nmap,mat[i].map,mat[i].matrix[x][nexty]);
-	  else /* lower right -> map2 */
-	    nextcol=searchcmap(mat2[i].nmap,mat2[i].map,mat[i].matrix[x][nexty]);
+	  nextcol=mat[i].matrix[x][nexty];
 	else
 	  nextcol = -1;
-	if ( (nexty==mat[i].ny) || (col!=nextcol) ) {
+	if ( (nexty==mat[i].ny) || (col!=nextcol) || (bMap1!=bNextMap1) ) {
 	  if (col >= 0)
-	    ps_rgb_nbox(out,&(mat[i].map[col].rgb),nexty-y);
+	    if (bMap1)
+	      ps_rgb_nbox(out,&(mat[i].map[col].rgb),nexty-y);
+	    else
+	      ps_rgb_nbox(out,&(mat2[i].map[col].rgb),nexty-y);
 	  else
 	    ps_moverel(out,0,psr->yboxsize);
 	  y=nexty;
+	  bMap1=bNextMap1;
 	  col=nextcol;
 	  }
 	}

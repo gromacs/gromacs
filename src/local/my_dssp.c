@@ -60,6 +60,7 @@ static void strip_dssp(int nres,int r0,
   char SSTP;
   int  i,nr,iacc;
   real iaccf,iaccb;
+  t_xpmelmt c;
   
   /* Skip header */
   do {
@@ -116,8 +117,11 @@ static void strip_dssp(int nres,int r0,
   }
   mat->axis_x[frame]=t;
   snew(mat->matrix[frame],nr);
-  for(i=0; i<nr; i++)
-    mat->matrix[frame][i].c1=ssbuf[i];
+  c.c2=0;
+  for(i=0; i<nr; i++) {
+    c.c1=ssbuf[i];
+    mat->matrix[frame][i]=searchcmap(mat->nmap,mat->map,c);
+  }
   frame++;
   mat->nx=frame;
   

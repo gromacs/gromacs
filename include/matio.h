@@ -37,9 +37,9 @@ static char *SRCID_matio_h = "$Id$";
 #endif /* HAVE_IDENT */
 #include "typedefs.h"
 
-extern bool matelmt_cmp(t_matelmt e1, t_matelmt e2);
+extern bool matelmt_cmp(t_xpmelmt e1, t_xpmelmt e2);
 
-extern int searchcmap(int n,t_mapping map[],t_matelmt c);
+extern t_matelmt searchcmap(int n,t_mapping map[],t_xpmelmt c);
 /* Seach in the map for code 'c' and return entry number. 
  * return -1 if not found
  */
