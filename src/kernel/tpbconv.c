@@ -255,7 +255,7 @@ int main (int argc, char *argv[])
   char         *top_fn,*frame_fn;
   int          fp;
   t_trnheader head;
-  int          i,frame,step,run_step,nsteps_org;
+  int          i,frame,run_step,nsteps_org;
   real         run_t;
   bool         bOK,bFrame,bTime,bSel;
   t_topology   top;
@@ -305,7 +305,7 @@ int main (int argc, char *argv[])
   fprintf(stderr,"Reading toplogy and shit from %s\n",top_fn);
   
   snew(ir,1);
-  read_tpx_state(top_fn,&step,&run_t,ir,&state,NULL,&top);
+  read_tpx_state(top_fn,&run_step,&run_t,ir,&state,NULL,&top);
 
   if (ir->bUncStart != bUncStart)
     fprintf(stderr,"Modifying ir->bUncStart to %s\n",bool_names[bUncStart]);
@@ -383,27 +383,26 @@ int main (int argc, char *argv[])
 
   /* Determine total number of steps remaining */
   if (extend_t) {
-    ir->nsteps = ir->nsteps - run_step + (int)(extend_t/ir->delta_t + 0.5);
+    ir->nsteps = ir->nsteps - (run_step - ir->init_step) + (int)(extend_t/ir->delta_t + 0.5);
     printf("Extending remaining runtime of by %g ps (now %d steps)\n",
 	   extend_t,ir->nsteps);
   }
   else if (until_t) {
     printf("nsteps = %d, run_step = %d, current_t = %g, until = %g\n",
 	   ir->nsteps,run_step,run_t,until_t);
-    ir->nsteps = (int)((until_t-run_t)/ir->delta_t + 0.5);
+    ir->nsteps = (int)((until_t - run_t)/ir->delta_t + 0.5);
     printf("Extending remaining runtime until %g ps (now %d steps)\n",
 	   until_t,ir->nsteps);
   }
   else {
-    ir->nsteps -= run_step; 
+    ir->nsteps -= run_step - ir->init_step; 
     /* Print message */
     printf("%d steps (%g ps) remaining from first run.\n",
 	   ir->nsteps,ir->nsteps*ir->delta_t);
 	  
   }
   if (bZeroQ || (ir->nsteps > 0)) {
-    ir->init_t      = run_t;
-    ir->init_lambda = state.lambda;
+    ir->init_step = run_step;
     
     if (!ftp2bSet(efTRN,NFILE,fnm)) {
       get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
@@ -429,8 +428,10 @@ int main (int argc, char *argv[])
 	fprintf(stderr,"Will write full tpx file (no selection)\n");
     }    
     
-    fprintf(stderr,"Writing statusfile with starting time %g and %d steps...\n",
-	    ir->init_t,ir->nsteps);
+    fprintf(stderr,"Writing statusfile with starting step %10d and length %10d steps...\n",
+	    ir->init_step,ir->nsteps);
+    fprintf(stderr,"                                 time %10.3f and length %10.3f ps\n",
+	    ir->init_step*ir->delta_t,ir->nsteps*ir->delta_t);
     write_tpx_state(opt2fn("-o",NFILE,fnm),0,ir->init_t,ir,&state,&top);
   }
   else

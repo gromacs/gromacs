@@ -426,9 +426,13 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   
   /* loop over MD steps or if rerunMD to end of input trajectory */
   bFirstStep = TRUE;
-  step = 0;
-  while ((!bRerunMD && (step<=parm->ir.nsteps)) ||  
+  step = parm->ir.init_step;
+  while ((!bRerunMD && (step - parm->ir.init_step <= parm->ir.nsteps)) ||  
 	 (bRerunMD && bNotLastFrame)) {
+    
+    bLastStep = (step - parm->ir.init_step == parm->ir.nsteps);
+    
+    do_log = do_per_step(step,parm->ir.nstlog) || bLastStep;
     
     if (bRerunMD) {
       if (rerun_fr.bStep)
@@ -437,6 +441,22 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	t = rerun_fr.time;
       else
 	t = step;
+    } else {
+      t = t0 + step*parm->ir.delta_t;
+    }
+    if (parm->ir.efep != efepNO) {
+      if (bRerunMD && rerun_fr.bLambda)
+	state->lambda = rerun_fr.lambda;
+      else
+	state->lambda = lam0 + step*parm->ir.delta_lambda;
+    }
+    if (MASTER(cr) && do_log && !bFFscan)
+      print_ebin_header(log,step,t,state->lambda);
+
+    if (bSimAnn) 
+      update_annealing_target_temp(&(parm->ir.opts),t);
+    
+    if (bRerunMD) {
       for(i=0; i<mdatoms->nr; i++)
 	copy_rvec(rerun_fr.x[i],state->x[i]);
       if (rerun_fr.bV)
@@ -457,13 +477,10 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       
       /* for rerun MD always do Neighbour Searching */
       bNS = ((parm->ir.nstlist!=0) || bFirstStep);
-    } else
+    } else {
       /* Determine whether or not to do Neighbour Searching */
       bNS = ((parm->ir.nstlist && (step % parm->ir.nstlist==0)) || bFirstStep);
-    
-    bLastStep=(step==parm->ir.nsteps);
-    
-    do_log = do_per_step(step,parm->ir.nstlog) || bLastStep;
+    }
     
     /* Stop Center of Mass motion */
     bStopCM = do_per_step(step,abs(parm->ir.nstcomm));
@@ -538,7 +555,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       do_glas(log,START(nsb),HOMENR(nsb),state->x,f,
 	      fr,mdatoms,top->idef.atnr,&parm->ir,ener);
     
-    if (bTCR && (step == 0)) {
+    if (bTCR && bFirstStep) {
       tcr=init_coupling(log,nfile,fnm,cr,fr,mdatoms,&(top->idef));
       fprintf(log,"Done init_coupling\n"); 
       fflush(log);
@@ -549,21 +566,6 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
      * the update.
      * for RerunMD t is read from input trajectory
      */
-    if (!bRerunMD)
-      t        = t0   + step*parm->ir.delta_t;
-    
-    if (parm->ir.efep != efepNO) {
-      if (bRerunMD && rerun_fr.bLambda)
-	state->lambda = rerun_fr.lambda;
-      else
-	state->lambda = lam0 + step*parm->ir.delta_lambda;
-    }
-    if (bSimAnn) 
-      update_annealing_target_temp(&(parm->ir.opts),t);
-
-    if (MASTER(cr) && do_log && !bFFscan)
-      print_ebin_header(log,step,t,state->lambda);
-    
     if (bDummies) 
       spread_dummy_f(log,state->x,f,&mynrnb,&top->idef,dummycomm,cr);
       
@@ -696,11 +698,12 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		   vcm->group_p[0],
 		   mdatoms->massT,mdatoms->tmass,parm->ekin);
     
-    if ((terminate != 0) && (step < parm->ir.nsteps)) {
+    if ((terminate != 0) && (step - parm->ir.init_step < parm->ir.nsteps)) {
       if (terminate<0 && parm->ir.nstxout)
 	/* this is the USR1 signal and we are writing x to trr, 
 	   stop at next x frame in trr */
-	parm->ir.nsteps = (step / parm->ir.nstxout + 1) * parm->ir.nstxout;
+	parm->ir.nsteps =
+	  (step/parm->ir.nstxout + 1) * parm->ir.nstxout - parm->ir.init_step;
       else
 	parm->ir.nsteps = step+1;
       fprintf(log,"\nSetting nsteps to %d\n\n",parm->ir.nsteps);
