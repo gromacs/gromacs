@@ -45,8 +45,10 @@ static char *SRCID_filenm_c = "$Id$";
 #define un_set(fn) (fn.flag = (fn.flag & ~ffSET))
 #define do_set(fn) (fn.flag = (fn.flag |  ffSET))
 
+enum { eftASCII, eftBINARY, eftXDR, eftGENERIC, eftNR };
+
 typedef struct {
-  bool bBinary;
+  int  type;
   char *ext;
   char *defnm;
   char *defopt;
@@ -55,58 +57,52 @@ typedef struct {
 
 /* this array should correspond to the enum in include/types/filenm.h */
 static t_deffile deffile[efNR] = {
-  { FALSE, ".mdp", "grompp", "-f", "grompp input file with MD parameters"    },
-  { FALSE, ".gbp", "genbox", "-f", "genbox input file with parameters etc."  },
-  { FALSE, ".gcp", "genconf","-f", "genconf input file with parameters etc." },
-  { FALSE, ".gip", "genion", "-f", "genion input file with parameters etc."  },
-  { FALSE, ".gdp", "gendock","-f", "gendock input file with parameters etc." },
-  { FALSE, ".wdp", "widom",  "-f", "g_widom input parameters."               },
-  { FALSE, ".gct", "gct",    "-f", "general coupling stuff"                  },
-  { FALSE, ".gpp", "group",  "-g", "group related input for grompp"          },
-  { TRUE,  ".???", "traj",   "-f", "Generic trajectory: xtc trr trj gro pdb g87"},
-  { TRUE,  ".???", "traj",   NULL, "Full precision trajectory: trr trj"      },
-  { TRUE,  ".trr", "traj",   NULL, "Trajectory in portable xdr format"       },
-  { TRUE,  ".trj", "traj",   NULL, "Trajectory file (cpu specific)"          },
-  { TRUE , ".xtc", "traj",   NULL, "Compressed trajectory (portable xdr format)"},
-  { FALSE, ".g87", "gtraj",  NULL, "Gromos-87 ASCII trajectory format"       },
-  { TRUE,  ".???", "ener",   NULL, "Generic energy: edr ene"                 },
-  { TRUE,  ".edr", "ener",   NULL, "Energy file in portable XDR format"      },
-  { TRUE,  ".ene", "ener",   NULL, "Energy file"                             },
-  { FALSE, ".???", "conf",   "-c", "Generic structure: gro pdb tpr tpb tpa"  },
-  { FALSE, ".???", "out",    "-o", "Generic structure: gro pdb"              },
-  { FALSE, ".gro", "conf",   "-c", "Coordinate file in Gromos-87 format"     },
-  { FALSE, ".pdb", "eiwit",  "-f", "Protein data bank file"                  },
-  { FALSE, ".brk", "eiwit",  "-f", "Brookhaven data bank file"               },
-  { FALSE, ".ent", "eiwit",  "-f", "Entry in the protein date bank"          },
-  { TRUE , ".xdr", "cconf",  NULL, "Compressed coordinate (portable xdr format)"},
-  { FALSE, ".log", "run",    "-l", "Log file from MD/LD/EM/NM run"           },
-  { FALSE, ".xvg", "graph",  "-o", "xvgr file as produced by analysis tools" },
-  { FALSE, ".out", "hello",  "-o", "Generic output file"                     },
-  { FALSE, ".ndx", "index",  "-n", "Index file",                             },
-  { FALSE, ".top", "topol",  "-p", "Topology file"                           },
-  { FALSE, ".itp", "topinc", NULL, "Include file for topology"               },
-  { TRUE,  ".???", "topol",  "-s", "Generic run input: tpr tpb tpa"          },
-  { TRUE,  ".tpr", "topol",  "-s", "portable xdr run input file"             },
-  { FALSE, ".tpa", "topol",  "-s", "Ascii run input file"                    },
-  { TRUE,  ".tpb", "topol",  "-s", "Binary run input file"                   },
-  { FALSE, ".tex", "doc",    "-o", "LaTeX file"                              },
-  { FALSE, ".rtp", "residue",NULL, "Residue Type file used by pdb2gmx"       },
-  { FALSE, ".atp", "atomtp", NULL, "Atomtype file used by pdb2gmx"           },
-  { FALSE, ".hdb", "polar",  NULL, "Hydrogen data base"                      },
-  { FALSE, ".dat", "nnnice", NULL, "Generic data file"                       },
-  { FALSE, ".dlg", "user",   NULL, "Dialog Box data for ngmx"                },
-  { FALSE, ".gld", "atoms",  "-l", "Grompp Load Description"		     },
-  { FALSE, ".map", "ss",     NULL, "File that maps matrix data to colors"    },
-  { FALSE, ".eps", "plot",   NULL, "Encapsulated PostScript (tm) file"       },
-  { FALSE, ".mat", "ss",     NULL, "Matrix Data file"			     },
-  { FALSE, ".m2p", "ps",     NULL, "Input file for mat2ps"                   },
-  { FALSE, ".vdw", "radii",  NULL, "Database containing Van der Waals radii" },
-  { TRUE , ".mtx", "hessian","-m", "Hessian matrix"                          },
-  { FALSE, ".vec", "eigvec", NULL, "(Eigen)Vectors"                          },
-  { FALSE, ".edi", "sam",    NULL, "ED sampling input"                       },
-  { FALSE, ".edo", "sam",    NULL, "ED sampling output"                      },
-  { FALSE, ".hat", "gk",     NULL, "Fourier transform of spread function"    },
-  { FALSE, ".xpm", "root",   NULL, "X PixMap compatible matrix file"         }
+  { 0, ".mdp", "grompp", "-f", "grompp input file with MD parameters"    },
+  { 0, ".gip", "genion", "-f", "genion input file with parameters etc."  },
+  { 0, ".gct", "gct",    "-f", "general coupling stuff"                  },
+  { 0, ".gpp", "group",  "-g", "group related input for grompp"          },
+  { 3, ".???", "traj",   "-f", "Generic trajectory: xtc trr trj gro pdb g87"},
+  { 3, ".???", "traj",   NULL, "Full precision trajectory: trr trj"      },
+  { 2, ".trr", "traj",   NULL, "Trajectory in portable xdr format"       },
+  { 1, ".trj", "traj",   NULL, "Trajectory file (cpu specific)"          },
+  { 2, ".xtc", "traj",   NULL, "Compressed trajectory (portable xdr format)"},
+  { 0, ".g87", "gtraj",  NULL, "Gromos-87 ASCII trajectory format"       },
+  { 3, ".???", "ener",   NULL, "Generic energy: edr ene"                 },
+  { 2, ".edr", "ener",   NULL, "Energy file in portable XDR format"      },
+  { 1, ".ene", "ener",   NULL, "Energy file"                             },
+  { 3, ".???", "conf",   "-c", "Generic structure: gro pdb tpr tpb tpa"  },
+  { 3, ".???", "out",    "-o", "Generic structure: gro pdb"              },
+  { 0, ".gro", "conf",   "-c", "Coordinate file in Gromos-87 format"     },
+  { 0, ".pdb", "eiwit",  "-f", "Protein data bank file"                  },
+  { 0, ".brk", "eiwit",  "-f", "Brookhaven data bank file"               },
+  { 0, ".ent", "eiwit",  "-f", "Entry in the protein date bank"          },
+  { 0, ".log", "run",    "-l", "Log file from MD/LD/EM/NM run"           },
+  { 0, ".xvg", "graph",  "-o", "xvgr file as produced by analysis tools" },
+  { 0, ".out", "hello",  "-o", "Generic output file"                     },
+  { 0, ".ndx", "index",  "-n", "Index file",                             },
+  { 0, ".top", "topol",  "-p", "Topology file"                           },
+  { 0, ".itp", "topinc", NULL, "Include file for topology"               },
+  { 3, ".???", "topol",  "-s", "Generic run input: tpr tpb tpa"          },
+  { 2, ".tpr", "topol",  "-s", "portable xdr run input file"             },
+  { 0, ".tpa", "topol",  "-s", "Ascii run input file"                    },
+  { 1, ".tpb", "topol",  "-s", "Binary run input file"                   },
+  { 0, ".tex", "doc",    "-o", "LaTeX file"                              },
+  { 0, ".rtp", "residue",NULL, "Residue Type file used by pdb2gmx"       },
+  { 0, ".atp", "atomtp", NULL, "Atomtype file used by pdb2gmx"           },
+  { 0, ".hdb", "polar",  NULL, "Hydrogen data base"                      },
+  { 0, ".dat", "nnnice", NULL, "Generic data file"                       },
+  { 0, ".dlg", "user",   NULL, "Dialog Box data for ngmx"                },
+  { 0, ".map", "ss",     NULL, "File that maps matrix data to colors"    },
+  { 0, ".eps", "plot",   NULL, "Encapsulated PostScript (tm) file"       },
+  { 0, ".mat", "ss",     NULL, "Matrix Data file"			 },
+  { 0, ".m2p", "ps",     NULL, "Input file for mat2ps"                   },
+  { 0, ".vdw", "radii",  NULL, "Database containing Van der Waals radii" },
+  { 1, ".mtx", "hessian","-m", "Hessian matrix"                          },
+  { 0, ".vec", "eigvec", NULL, "(Eigen)Vectors"                          },
+  { 0, ".edi", "sam",    NULL, "ED sampling input"                       },
+  { 0, ".edo", "sam",    NULL, "ED sampling output"                      },
+  { 0, ".hat", "gk",     NULL, "Fourier transform of spread function"    },
+  { 0, ".xpm", "root",   NULL, "X PixMap compatible matrix file"         }
 };
 
 char *ftp2ext(int ftp)
@@ -127,14 +123,17 @@ char *ftp2desc(int ftp)
 
 char *ftp2ftype(int ftp)
 {
-  if ((0 <= ftp) && (ftp < efNR)) {
-    if (deffile[ftp].bBinary)
-      return "Binary";
-    else
-      return "ASCII";
+  if ((ftp >= 0) && (ftp < efNR)) {
+    switch (deffile[ftp].type) {
+    case eftASCII: return "ASCII";
+    case eftBINARY: return "Binary";
+    case eftXDR: return "XDR portable";
+    case eftGENERIC: return "";
+    default: fatal_error(0,"Some error");
+      break;
+    }
   }
-  else
-    return NULL;
+  return NULL;
 }
 
 char *ftp2defnm(int ftp)
@@ -152,11 +151,23 @@ char *ftp2defnm(int ftp)
 void pr_def(FILE *fp,int ftp)
 {
   t_deffile *df;
+  char c;
   
   df=&(deffile[ftp]);
-  fprintf(fp,"%8s & %5s & %3s & %5s & ",
-	  df->defnm,df->ext,df->bBinary ? "B" : "A",
-	  df->defopt ? df->defopt : "");
+  switch (df->type) {
+  case eftASCII: c='A';
+    break;
+  case eftBINARY: c='B';
+    break;
+  case eftXDR: c='P';
+    break;
+  case eftGENERIC: c=' ';
+    break;
+  default: fatal_error(0,"Some error, some ints %d %d",ftp,efNR);
+    break;
+  }
+  fprintf(fp,"%8s & %5s & %c & %5s & ",
+	  df->defnm,df->ext,c,df->defopt ? df->defopt : "");
   fprintf(fp,"%s \\\\\n",check_tex(df->descr));
 }
 

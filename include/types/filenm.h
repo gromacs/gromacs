@@ -29,17 +29,16 @@
  
 /* this enum should correspond to the array deffile in gmxlib/filenm.c */
 enum {
-  efMDP, efGBP, efGCP, efGIP, efGDP, efWDP, efGCT, efGPP,
+  efMDP, efGIP, efGCT, efGPP,
   efTRX, efTRN, efTRR, efTRJ, efXTC, efG87, 
   efENX, efEDR, efENE,
-  efSTX, efSTO, efGRO, efPDB, efBRK, efENT, efXDR,
+  efSTX, efSTO, efGRO, efPDB, efBRK, efENT,
   efLOG, efXVG, efOUT,
   efNDX, 
   efTOP, efITP,
-  efTPX, efTPR,  efTPA, efTPB,
+  efTPX, efTPR, efTPA, efTPB,
   efTEX, efRTP, efATP, efHDB,
   efDAT, efDLG, 
-  efGLD,
   efMAP, efEPS, efMAT, efM2P,
   efVDW,
   efMTX, efVEC,
