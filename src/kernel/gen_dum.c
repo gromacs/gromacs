@@ -390,10 +390,10 @@ void clean_dum_dihs(t_params *ps, int natom, char dihname[], t_params *plist,
 	  for(m=1; (m<4); m++)
 	    dumatoms[m-1]=plist[pindex[atom].i].param[pindex[atom].j].a[m];
 	  if (debug) {
-	    fprintf(debug,"dih w. dum: %d %d %d %d\n",
+	    fprintf(debug,"dih w. dum: %u %u %u %u\n",
 		    ps->param[i].AI+1,ps->param[i].AJ+1,
 		    ps->param[i].AK+1,ps->param[i].AL+1);
-	    fprintf(debug,"dum %d from: %d %d %d\n",
+	    fprintf(debug,"dum %u from: %u %u %u\n",
 		    atom+1,dumatoms[0]+1,dumatoms[1]+1,dumatoms[2]+1);
 	  }
 	} else 
@@ -425,7 +425,7 @@ void clean_dum_dihs(t_params *ps, int natom, char dihname[], t_params *plist,
 	    used=TRUE;
 	if (!used) {
 	  keep=TRUE;
-	  if (debug) fprintf(debug,"unused atom in dih: %d\n",atom+1);
+	  if (debug) fprintf(debug,"unused atom in dih: %u\n",atom+1);
 	}
       }
     }
@@ -488,7 +488,7 @@ static int get_atom(char *atnm, int incl,
 		    int nms, int *ms, int na2, int *a2, int *na3, int **a3, 
 		    int ak[4],char **aname[])
 {
-  int  i,j,k,atom,atnmlen;
+  int  i,j,atom,atnmlen;
   bool bWild;
   
   atnmlen=strlen(atnm);
@@ -754,7 +754,7 @@ void do_dum_top(t_params *psb, t_params *psd2, t_params *psd3,
 			     nms,ms,na2,a2,na3,a3,
 			     ak,at->atomname);
 	      if (ak[k]==NOTSET)
-		fatal_error(0,"Atom %d (%s) not found along bonds "
+		fatal_error(0,"Atom %u (%s) not found along bonds "
 			    "while adding dummy atoms (%s)\n",
 			    k,ddb[n].dum[m].na[k],ddb[n].bname);
 	    }
