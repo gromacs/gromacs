@@ -47,6 +47,7 @@
 #include "tpxio.h"
 #include "statutil.h"
 #include "futil.h"
+#include "fatal.h"
 #include "vec.h"
 #include "ewald_util.h"
 #include "nsb.h"
@@ -176,7 +177,7 @@ int main(int argc,char *argv[])
   t_nrnb      nrnb;
   t_nsborder  *nsb;
   char        title[STRLEN];
-  int         natoms,step,status,i,ncg;
+  int         natoms,step,status,i,ncg,root;
   real        t,lambda,ewaldcoeff,qtot;
   rvec        *x,*f,*xbuf;
   int         *index;
@@ -184,7 +185,8 @@ int main(int argc,char *argv[])
   real        *charge,*qbuf;
   matrix      box;
   
-  cr = init_par(&argc,&argv);
+  cr   = init_par(&argc,&argv);
+  root = 0;
 
   if (MASTER(cr)) 
     CopyRight(stderr,argv[0]);
@@ -248,27 +250,42 @@ int main(int argc,char *argv[])
   }
   if (PAR(cr)) {
     /* Distribute the data over processors */
-    MPI_Bcast(&natoms,1,MPI_INT,0,MPI_COMM_WORLD);
-    MPI_Bcast(&ir->nkx,1,MPI_INT,0,MPI_COMM_WORLD);
-    MPI_Bcast(&ir->nky,1,MPI_INT,0,MPI_COMM_WORLD);
-    MPI_Bcast(&ir->nkz,1,MPI_INT,0,MPI_COMM_WORLD);
-    MPI_Bcast(&ir->pme_order,1,MPI_INT,0,MPI_COMM_WORLD);
-    MPI_Bcast(&ir->rcoulomb,1,GMX_MPI_REAL,0,MPI_COMM_WORLD);
-    MPI_Bcast(&ir->ewald_rtol,1,GMX_MPI_REAL,0,MPI_COMM_WORLD);
-    MPI_Bcast(&qtot,1,GMX_MPI_REAL,0,MPI_COMM_WORLD);
-    MPI_Bcast(&(top.blocks[ebCGS].nr),1,MPI_INT,0,MPI_COMM_WORLD);
-    MPI_Bcast(&(top.blocks[ebCGS].nra),1,MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast(&natoms,1,MPI_INT,root,MPI_COMM_WORLD);
+    where();
+    MPI_Bcast(&(ir->nkx),1,MPI_INT,root,MPI_COMM_WORLD);
+    where();
+    MPI_Bcast(&(ir->nky),1,MPI_INT,root,MPI_COMM_WORLD);
+    where();
+    MPI_Bcast(&(ir->nkz),1,MPI_INT,root,MPI_COMM_WORLD);
+    where();
+    MPI_Bcast(&(ir->pme_order),1,MPI_INT,root,MPI_COMM_WORLD);
+    where();
+    MPI_Bcast(&(ir->rcoulomb),1,GMX_MPI_REAL,root,MPI_COMM_WORLD);
+    where();
+    MPI_Bcast(&(ir->ewald_rtol),1,GMX_MPI_REAL,root,MPI_COMM_WORLD);
+    where();
+    MPI_Bcast(&qtot,1,GMX_MPI_REAL,root,MPI_COMM_WORLD);
+    where();
+    MPI_Bcast(&(top.blocks[ebCGS].nr),1,MPI_INT,root,MPI_COMM_WORLD);
+    where();
+    MPI_Bcast(&(top.blocks[ebCGS].nra),1,MPI_INT,root,MPI_COMM_WORLD);
+    where();
     if (!MASTER(cr)) {
-      snew(top.blocks[ebCGS].index,top.blocks[ebCGS].nr);
+      snew(top.blocks[ebCGS].index,top.blocks[ebCGS].nr+1);
       snew(top.blocks[ebCGS].a,top.blocks[ebCGS].nra);
       snew(charge,natoms);
     }
-    MPI_Bcast(top.blocks[ebCGS].index,top.blocks[ebCGS].nr,
-	      MPI_INT,0,MPI_COMM_WORLD);
+    where();
+    MPI_Bcast(top.blocks[ebCGS].index,top.blocks[ebCGS].nr+1,
+	      MPI_INT,root,MPI_COMM_WORLD);
+    where();
     MPI_Bcast(top.blocks[ebCGS].a,top.blocks[ebCGS].nra,
-	      MPI_INT,0,MPI_COMM_WORLD);
-    MPI_Bcast(top.blocks[ebCGS].multinr,MAXNODES,MPI_INT,0,MPI_COMM_WORLD);
-    MPI_Bcast(charge,natoms,GMX_MPI_REAL,0,MPI_COMM_WORLD);
+	      MPI_INT,root,MPI_COMM_WORLD);
+    where();
+    MPI_Bcast(top.blocks[ebCGS].multinr,MAXNODES,MPI_INT,root,MPI_COMM_WORLD);
+    where();
+    MPI_Bcast(charge,natoms,GMX_MPI_REAL,root,MPI_COMM_WORLD);
+    where();
   }
   ewaldcoeff = calc_ewaldcoeff(ir->rcoulomb,ir->ewald_rtol);
   if (MASTER(cr))
@@ -278,6 +295,8 @@ int main(int argc,char *argv[])
 	    "ewaldcoeff = %12.5e\n"
 	    "grid       = %4d %4d %4d\n",
 	    ir->rcoulomb,ir->ewald_rtol,ewaldcoeff,ir->nkx,ir->nky,ir->nkz);
+  else
+    fprintf(stdlog,"Done communicating data\n");
   /* Allocate memory for temp arrays etc. */
   snew(xbuf,natoms);
   snew(f,natoms);
@@ -306,6 +325,11 @@ int main(int argc,char *argv[])
   if (MASTER(cr))
     fprintf(stdlog,"-----\n"
 	    "Results based on tpr file %s\n",ftp2fn(efTPX,NFILE,fnm));
+  if (PAR(cr)) {
+    MPI_Bcast(x,natoms*DIM,GMX_MPI_REAL,root,MPI_COMM_WORLD);
+    MPI_Bcast(box,DIM*DIM,GMX_MPI_REAL,root,MPI_COMM_WORLD);
+    MPI_Bcast(&t,1,GMX_MPI_REAL,root,MPI_COMM_WORLD);
+  }
   do_my_pme(stdlog,bVerbose,ir,x,xbuf,f,charge,qbuf,box,
 	    cr,nsb,&nrnb,ewaldcoeff,&(top.atoms.excl),qtot,index);
   
@@ -319,9 +343,9 @@ int main(int argc,char *argv[])
 	gmx_fatal(FARGS,"natoms in trx = %d, in tpr = %d",natoms,top.atoms.nr);
     }
     if (PAR(cr)) {
-      MPI_Bcast(x,natoms,GMX_MPI_REAL,0,MPI_COMM_WORLD);
-      MPI_Bcast(box,DIM*DIM,GMX_MPI_REAL,0,MPI_COMM_WORLD);
-      MPI_Bcast(&t,1,GMX_MPI_REAL,0,MPI_COMM_WORLD);
+      MPI_Bcast(x,natoms*DIM,GMX_MPI_REAL,root,MPI_COMM_WORLD);
+      MPI_Bcast(box,DIM*DIM,GMX_MPI_REAL,root,MPI_COMM_WORLD);
+      MPI_Bcast(&t,1,GMX_MPI_REAL,root,MPI_COMM_WORLD);
     }
     do {
       fprintf(stdlog,"-----\nTime: %.3f\n",t);
@@ -329,7 +353,7 @@ int main(int argc,char *argv[])
 		nsb,&nrnb,ewaldcoeff,&(top.atoms.excl),qtot,index);
       bCont = read_next_x(status,&t,natoms,x,box);
       if (PAR(cr))
-	MPI_Bcast(&bCont,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&bCont,1,MPI_INT,root,MPI_COMM_WORLD);
     } while (bCont);
     if (MASTER(cr)) 
       close_trx(status);
