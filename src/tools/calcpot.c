@@ -181,7 +181,7 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
       calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
   put_charge_groups_in_box(stdlog,0,top->blocks[ebCGS].nr,FALSE,
 			   parm->box,box_size,&(top->blocks[ebCGS]),x,
-			   fr->shift_vec,fr->cg_cm);
+			   fr->cg_cm);
   /* mk_mshift(stdlog,graph,parm->box,x);*/
   /* Do the actual neighbour searching and if twin range electrostatics
    * also do the calculation of long range forces and energies.
