@@ -106,6 +106,10 @@ testfft:	testfft.o
 		$(LD) -o $@ $^ $(SYSLIBS) -lcomplib.sgimath
 testtab:	testtab.o	tables.o	lrutil.o
 		$(LD) -o $@ $^ $(SYSLIBS)
+tstsqrtc:	tstsqrtc.o
+		$(LD) -o $@ $^ $(SYSLIBS)
+tstsqrtf:	tstsqrtf.o inloopf.o
+		$(F77) -o $@ $^ -lm
 libxdrf.o:	libxdrf.m4 $(M4FILE)
 #		$(RM) libxdrf.c
 		$(M4) $(M4FILE) libxdrf.m4 > libxdrf.c
@@ -130,7 +134,8 @@ repfirst:	repfirst.o
 testlr:		testlr.o	ewald.o		pppm.o	\
 		ghat.o		lrutil.o	fftgrid.o
 		$(LD) -o $@ $^  $(SYSLIBS) 
-
+gentab:		gentab.o
+		$(LD) -o $@ $^  $(SYSLIBS) 
 lfft:		lfft.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
