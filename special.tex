@@ -57,7 +57,7 @@ best be done by defining them as \swapindex{dummy}{atom}s in stead of
 normal atoms. Where a normal atoms is connected to the molecule with
 bonds, angles and dihedrals, a dummy atom's position is calculated
 from the position of three nearby heavy atoms in a predefined manner
-(see also ~\secref{dummy}). For the hydrogens in water and in
+(see also \secref{dummy}). For the hydrogens in water and in
 hydroxyl, sulfhydryl or amine groups, no degrees of freedom can be
 removed, because rotational freedom should be preserved. The only
 other option available to slow down these motions, is to increase the
@@ -66,7 +66,7 @@ heavy atom. This will increase the moment of inertia of the water
 molecules and the hydroxyl, sulfhydryl or amine groups, without
 affecting the equilibrium properties of the system and without
 affecting the dynamical properties too much. These constructions will
-shortly be described in~sub\secref{dummyhydro} and have previously
+shortly be described in \secref{dummyhydro} and have previously
 been described in full detail~\cite{feenstra99}.
 
 Using both dummy atoms and \swapindex{modified}{mass}es, the next
@@ -77,7 +77,7 @@ affecting the physical behavior of the protein. The improper dihedrals
 that preserve planarity, mostly deal with aromatic residues. Bonds,
 angles and dihedrals in these residues can also be replaced with
 somewhat elaborate dummy atom constructions, as will be described in
-sub~\secref{dummyaro}.
+\secref{dummyaro}~\cite{feenstra01}.
 
 All modifications described in this section can be performed using the
 {\gromacs} topology building tool {\tt \normindex{pdb2gmx}}. Separate
@@ -194,7 +194,7 @@ perfectly planar group without the inherently instable constraints
 that are necessary to keep normal atoms in a plane. The basic approach
 is to define three atoms or dummy masses with constraints between them
 to fix the geometry and create the rest of the atoms as simple dummy
-type 3 atoms (see section~\secref{dummy}) from these three. Each of
+type 3 atoms (see \secref{dummy}) from these three. Each of
 the aromatic residues require a different approach:
 
 \begin{itemize}
