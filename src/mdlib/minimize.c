@@ -67,6 +67,8 @@
 #include "vsite.h"
 #include "mdrun.h"
 #include "trnio.h"
+#include "sparsematrix.h"
+#include "mtxio.h"
 
 static void sp_header(FILE *out,const char *minimizer,real ftol,int nsteps)
 {
@@ -1754,192 +1756,248 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   return start_t;
 } /* That's all folks */
 
+
+
+
 time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
-	     bool bVerbose,bool bCompact,int stepout,
-	     t_parm *parm,t_groups *grps,
-	     t_topology *top,real ener[],t_fcdata *fcd,
-	     t_state *state,rvec vold[],rvec vt[],rvec f[],
-	     rvec buf[],t_mdatoms *mdatoms,
-	     t_nsborder *nsb,t_nrnb nrnb[],
-	     t_graph *graph,t_edsamyn *edyn,
-	     t_forcerec *fr,rvec box_size)
+             bool bVerbose,bool bCompact,int stepout,
+             t_parm *parm,t_groups *grps,
+             t_topology *top,real ener[],t_fcdata *fcd,
+             t_state *state,rvec vold[],rvec vt[],rvec f[],
+             rvec buf[],t_mdatoms *mdatoms,
+             t_nsborder *nsb,t_nrnb nrnb[],
+             t_graph *graph,t_edsamyn *edyn,
+             t_forcerec *fr,rvec box_size)
 {
-  t_mdebin   *mdebin;
-  int        fp_ene,step,nre;
-  time_t     start_t;
-  real       t,lambda,t0,lam0;
-  bool       bNS,bStopCM,bTYZ;
-  tensor     force_vir,shake_vir;
-  t_nrnb     mynrnb;
-  int        i,m,nfmax;
-  rvec       mu_tot;
-  rvec       *xx,*vv,*ff;
-  
-  /* added with respect to mdrun */
-  int        idum,jdum,kdum;
-  real       der_range=1.0e-6,fmax;
-  rvec       *dfdx;
-  snew(dfdx,top->atoms.nr);
-
-  vv=NULL;
-  ff=NULL; 
-
-  /* end nmrun differences */
-
+    t_mdebin   *mdebin;
+    int        fp_ene,step,nre;
+    time_t     start_t;
+    real       t,lambda,t0,lam0;
+    bool       bNS,bStopCM,bTYZ;
+    tensor     force_vir,shake_vir;
+    t_nrnb     mynrnb;
+    int        i,m,nfmax;
+    rvec       mu_tot;
+    rvec       *fneg,*fpos;
+    bool       bSparse; /* use sparse matrix storage format */
+    size_t     sz;
+    gmx_sparsematrix_t * sparse_matrix = NULL;
+    real *     full_matrix             = NULL;
+    
+    /* added with respect to mdrun */
+    int        idum,jdum,kdum,row,col;
+    real       der_range=10.0*sqrt(GMX_REAL_EPS);
+    real       fmax;
+    real       dfdx;
+    
+    snew(fneg,top->atoms.nr);
+    snew(fpos,top->atoms.nr);
+    
+    /* end nmrun differences */
+    
 #ifndef GMX_DOUBLE
-  fprintf(stderr,
-	  "WARNING: This version of GROMACS has been compiled in single precision,\n"
-	  "         which is usually not accurate enough for normal mode analysis.\n"
-	  "         For reliable results you should compile GROMACS in double precision.\n\n");
+    fprintf(stderr,
+            "NOTE: This version of Gromacs has been compiled in single precision,\n"
+            "      which MIGHT not be accurate enough for normal mode analysis.\n"
+            "      Gromacs now uses sparse matrix storage, so the memory requirements\n"
+            "      are fairly modest even if you recompile in double precision.\n\n");
 #endif
-
-  /* Initial values */
-  t0           = parm->ir.init_t;
-  lam0         = parm->ir.init_lambda;
-  t            = t0;
-  lambda       = lam0;
-
-  /* Check Environment variables */
-  bTYZ=getenv("TYZ") != NULL;
-  
-  init_nrnb(&mynrnb);
-
-  if (fr->ePBC != epbcNONE)
+    
+    /* Check if we can/should use sparse storage format.
+     *
+     * Sparse format is only useful when the Hessian itself is sparse, which it
+      * will be when we use a cutoff.    
+      * For small systems (n<1000) it is easier to always use full matrix format, though.
+      */
+    if(EEL_FULL(fr->eeltype) || fr->rlist==0.0)
+    {
+        fprintf(stderr,"Non-cutoff electrostatics used, forcing full Hessian format.\n");
+        bSparse = FALSE;
+    }
+    else if(top->atoms.nr < 1000)
+    {
+        fprintf(stderr,"Small system size (N=%d), using full Hessian format.\n",top->atoms.nr);
+        bSparse = FALSE;
+    }
+    else
+    {
+        fprintf(stderr,"Using compressed symmetric sparse Hessian format.\n");
+        bSparse = TRUE;
+    }
+    
+    sz = DIM*top->atoms.nr;
+    
+    fprintf(stderr,"Allocating Hessian memory...\n\n");
+    
+    if(bSparse)
+    {
+        sparse_matrix=gmx_sparsematrix_init(sz);
+        sparse_matrix->compressed_symmetric = TRUE;
+    }
+    else
+    {
+        snew(full_matrix,sz*sz);
+    }
+    
+    /* Initial values */
+    t0           = parm->ir.init_t;
+    lam0         = parm->ir.init_lambda;
+    t            = t0;
+    lambda       = lam0;
+    
+    /* Check Environment variables */
+    bTYZ=getenv("TYZ") != NULL;
+    
+    init_nrnb(&mynrnb);
+    
     /* Remove periodicity */
-    do_pbc_first(log,state->box,box_size,fr,graph,state->x);
-
-  fp_ene=-1;
-  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),&(parm->ir),cr);
-
-  ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
-
-  where();
-  
-  /* Write start time and temperature */
-  start_t=print_date_and_time(log,cr->nodeid,"Started nmrun");
-  if (MASTER(cr)) {
-    fprintf(stderr,"starting nmrun '%s'\n%d steps.\n\n",*(top->name),
-            top->atoms.nr);
-  }
-
-  /* Call do_force once to make pairlist */
-  clear_mat(force_vir);
+    if (fr->ePBC != epbcNONE)
+        do_pbc_first(log,state->box,box_size,fr,graph,state->x);
     
-  bNS=TRUE;
-  do_force(log,cr,NULL,parm,nsb,force_vir,0,&mynrnb,top,grps,
-	   state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
-	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
-  bNS=FALSE;
-  
-  if (graph)
+    fp_ene=-1;
+    mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),&(parm->ir),cr);
+    
+    ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
+    
+    where();
+    
+    /* Write start time and temperature */
+    start_t=print_date_and_time(log,cr->nodeid,"Started nmrun");
+    if (MASTER(cr)) 
+    {
+        fprintf(stderr,"starting normal mode calculation '%s'\n%d steps.\n\n",*(top->name),
+                top->atoms.nr);
+    }
+    
+    /* Call do_force once to make pairlist */
+    clear_mat(force_vir);
+    
+    bNS=TRUE;
+    do_force(log,cr,NULL,parm,nsb,force_vir,0,&mynrnb,top,grps,
+             state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
+             lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
+    bNS=FALSE;
+    
     /* Shift back the coordinates, since we're not calling update */
-    unshift_self(graph,state->box,state->x);
+    if (graph)
+        unshift_self(graph,state->box,state->x);
 
   
-  /* if forces not small, warn user */
-  fmax=f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,
-	     0,top->atoms.nr,f,&nfmax);
-  fprintf(stderr,"Maximum force:%12.5e\n",fmax);
-  if (fmax > 1.0e-3) {
-    fprintf(stderr,"Maximum force probably not small enough to");
-    fprintf(stderr," ensure that you are in a \nenergy well. ");
-    fprintf(stderr,"Be aware that negative eigenvalues may occur");
-    fprintf(stderr," when the\nresulting matrix is diagonalized.\n");
-  }
-
-  /***********************************************************
-   *
-   *      Loop over all pairs in matrix 
-   *
-   *      do_force called twice. Once with positive and 
-   *      once with negative displacement 
-   *
-   ************************************************************/
-
-  /* fudge nr of steps to nr of atoms */
-
-  parm->ir.nsteps=top->atoms.nr;
-
-  for (step=0; (step<parm->ir.nsteps); step++) {
-
-    for (idum=0; (idum<DIM); idum++) {
-
-      state->x[step][idum] = state->x[step][idum]-der_range;
-      
-      clear_mat(force_vir);
-
-      do_force(log,cr,NULL,parm,nsb,force_vir,2*(step*DIM+idum),
-	       &mynrnb,top,grps,
-	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
-	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
-      if (graph)
-	/* Shift back the coordinates, since we're not calling update */
-	unshift_self(graph,state->box,state->x);
-      
-      for (jdum=0; (jdum<top->atoms.nr); jdum++) {
-	for (kdum=0; (kdum<DIM); kdum++) {
-	  dfdx[jdum][kdum]=f[jdum][kdum];  
-	}
-      }
-      
-      state->x[step][idum] = state->x[step][idum]+2.0*der_range;
-      
-      clear_mat(force_vir);
-      
-      do_force(log,cr,NULL,parm,nsb,force_vir,2*(step*DIM+idum)+1,
-	       &mynrnb,top,grps,
-	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
-	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
-      if (graph)
-	/* Shift back the coordinates, since we're not calling update */
-	unshift_self(graph,state->box,state->x);
-      
-      for (jdum=0; (jdum<top->atoms.nr); jdum++) {
-	for (kdum=0; (kdum<DIM); kdum++) {
-	  dfdx[jdum][kdum]=(f[jdum][kdum]-dfdx[jdum][kdum])/(2*der_range);
-	}
-      }
-
-      /* store derivatives now, diagonalization later */
-      xx=dfdx;
-      write_traj(log,cr,ftp2fn(efMTX,nfile,fnm),
-		 nsb,step,t,lambda,nrnb,nsb->natoms,xx,vv,ff,state->box);
-
-      /* x is restored to original */
-      state->x[step][idum] = state->x[step][idum]-der_range;
-      
-      if (bVerbose)
-	fflush(log);
-      
-      /*if (MASTER(cr) && bVerbose && ((step % stepout)==0))
-	print_time(stderr,start_t,step,&parm->ir);*/
+    /* if forces not small, warn user */
+    fmax=f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,
+               0,top->atoms.nr,f,&nfmax);
+    fprintf(stderr,"Maximum force:%12.5e\n",fmax);
+    if (fmax > 1.0e-3) 
+    {
+        fprintf(stderr,"Maximum force probably not small enough to");
+        fprintf(stderr," ensure that you are in a \nenergy well. ");
+        fprintf(stderr,"Be aware that negative eigenvalues may occur");
+        fprintf(stderr," when the\nresulting matrix is diagonalized.\n");
     }
-    /* write progress */
-    if (MASTER(cr) && bVerbose) {
-      fprintf(stderr,"\rFinished step %d out of %d",step+1,top->atoms.nr); 
-      fflush(stderr);
-    }
-  }
-  t=t0+step*parm->ir.delta_t;
-  lambda=lam0+step*parm->ir.delta_lambda;
-  
-  if (MASTER(cr)) {
-    print_ebin(-1,FALSE,FALSE,FALSE,FALSE,log,step,t,eprAVER,
-	       FALSE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
-    print_ebin(-1,FALSE,FALSE,FALSE,FALSE,log,step,t,eprRMS,
-	       FALSE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
-  }
-  
-  /* Construct vsite particles, for last output frame */
-  /* NB: I have not included the communication for parallel
-   * vsites here, since the rest of nm doesn't seem to
-   * be parallelized. Be sure to copy the correct code from
-   * e.g. md.c or steep.c if you make nm parallel!
-   */
-  construct_vsites(log,state->x,&mynrnb,parm->ir.delta_t,state->v,&top->idef,
-		    graph,cr,state->box,NULL);
     
-  /*free_nslist(log);*/
-  
-  return start_t;
+    /***********************************************************
+     *
+     *      Loop over all pairs in matrix 
+     * 
+     *      do_force called twice. Once with positive and 
+     *      once with negative displacement 
+     *
+     ************************************************************/
+
+    /* fudge nr of steps to nr of atoms */
+    
+    parm->ir.nsteps=top->atoms.nr;
+
+    for (step=0; (step<parm->ir.nsteps); step++) 
+    {
+        
+        for (idum=0; (idum<DIM); idum++) 
+        {
+            row = DIM*step+idum;
+            
+            state->x[step][idum] = state->x[step][idum]-der_range;
+            
+            clear_mat(force_vir);
+            
+            do_force(log,cr,NULL,parm,nsb,force_vir,2*(step*DIM+idum),
+                     &mynrnb,top,grps,
+                     state->box,state->x,fneg,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
+                     lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
+            if (graph)
+            {
+                /* Shift back the coordinates, since we're not calling update */
+                unshift_self(graph,state->box,state->x);
+            }
+            
+            state->x[step][idum] = state->x[step][idum]+2.0*der_range;
+            
+            clear_mat(force_vir);
+            
+            do_force(log,cr,NULL,parm,nsb,force_vir,2*(step*DIM+idum)+1,
+                     &mynrnb,top,grps,
+                     state->box,state->x,fpos,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
+                     lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
+            if (graph)
+            {
+                /* Shift back the coordinates, since we're not calling update */
+                unshift_self(graph,state->box,state->x);
+            }
+            
+            for (jdum=0; (jdum<top->atoms.nr); jdum++) 
+            {
+                for (kdum=0; (kdum<DIM); kdum++) 
+                {
+                    dfdx=-(fpos[jdum][kdum]-fneg[jdum][kdum])/(2*der_range);
+                    col = DIM*jdum+kdum;
+                    
+                    if(bSparse)
+                    {
+                        if(col>=row && dfdx!=0.0)
+                            gmx_sparsematrix_increment_value(sparse_matrix,row,col,dfdx);
+                    }
+                    else
+                    {
+                        full_matrix[row*sz+col] = dfdx;
+                    }
+                }
+            }
+            
+            /* x is restored to original */
+            state->x[step][idum] = state->x[step][idum]-der_range;
+            
+            if (bVerbose)
+                fflush(log);            
+        }
+        /* write progress */
+        if (MASTER(cr) && bVerbose) 
+        {
+            fprintf(stderr,"\rFinished step %d out of %d",step+1,top->atoms.nr); 
+            fflush(stderr);
+        }
+    }
+    t=t0+step*parm->ir.delta_t;
+    lambda=lam0+step*parm->ir.delta_lambda;
+    
+    if (MASTER(cr)) 
+    {
+        print_ebin(-1,FALSE,FALSE,FALSE,FALSE,log,step,t,eprAVER,
+                   FALSE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
+        print_ebin(-1,FALSE,FALSE,FALSE,FALSE,log,step,t,eprRMS,
+                   FALSE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
+    }
+    
+    /* Construct vsite particles, for last output frame */
+    /* NB: I have not included the communication for parallel
+     * vsites here, since the rest of nm doesn't seem to
+     * be parallelized. Be sure to copy the correct code from
+     * e.g. md.c or steep.c if you make nm parallel!
+     */
+    construct_vsites(log,state->x,&mynrnb,parm->ir.delta_t,state->v,&top->idef,
+                     graph,cr,state->box,NULL);
+    
+    fprintf(stderr,"\n\nWriting Hessian...\n");
+    gmx_mtxio_write(ftp2fn(efMTX,nfile,fnm),sz,sz,full_matrix,sparse_matrix);
+    
+    
+    return start_t;
 }
