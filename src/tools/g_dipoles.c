@@ -383,10 +383,10 @@ static void do_dip(char *fn,char *topf,
 		   int gkatom,int skip)
 {
   static char *leg_mtot[] = { 
-    "< M\\sx \\N>", 
-    "< M\\sy \\N>",
-    "< M\\sz \\N>",
-    "< |M\\stot \\N| >"
+    "M\\sx \\N", 
+    "M\\sy \\N",
+    "M\\sz \\N",
+    "|M\\stot \\N|"
   };
 #define NLEGMTOT asize(leg_mtot)
   static char *leg_eps[] = { 
@@ -404,32 +404,26 @@ static void do_dip(char *fn,char *topf,
 #define NLEGAVER asize(leg_aver)
 
   FILE       *outdd,*outmtot,*outaver,*outeps;
-  rvec       *x,*dipole=NULL,mu_t,M_av,M_av2,quad;
+  rvec       *x,*dipole=NULL,mu_t,quad;
   t_gkrbin   *gkrbin;
   t_enxframe *fr;
   int        nframes=1000,fmu=0,nre,timecheck=0;
+  int        i,j,k,m,natom=0,nmol,status,teller,tel3;
+  int        *dipole_bin,ndipbin,ibin,iVol,natoms,step;
+  unsigned long mode;
   char       **enm=NULL;
-  real       rcut=0;
+  real       rcut=0,t,t0,t1,dt,volume,vol_aver,lambda;
   matrix     box;
   bool       bCont;
-  real       t,t0,t1,dt;
-  double     M_diff=0,epsilon;
-  double     mu_ave,mu_mol,M2_ave=0,M_ave2=0;
+  double     M_diff=0,epsilon,invtel;
+  double     mu_ave,mu_mol,M2_ave=0,M_ave2=0,M_av[DIM],M_av2[DIM];
+  double     M_XX,M_YY,M_ZZ,M_XX2,M_YY2,M_ZZ2,Gk=0,g_k=0;
   t_lsq      *Qlsq,mulsq;
   ivec       iMu;
-  int        iVol;
-  real       M_XX,M_YY,M_ZZ,M_XX2,M_YY2,M_ZZ2,Gk=0,g_k=0;
   real       **muall=NULL;
   t_topology *top;
   t_atom     *atom=NULL;
   t_block    *mols=NULL;
-  int        i,j,k,m,natom=0,nmol,status,teller,tel3;
-  int        *dipole_bin,ndipbin,ibin;
-  real       volume,vol_aver;
-  unsigned long mode;
-  /* PvM, I need these to be able to call read_tpx */
-  int        natoms,step;
-  real       lambda;
 
   snew(top,1);
   read_tpx(topf,&step,&t,&lambda,NULL,box,
@@ -534,10 +528,10 @@ static void do_dip(char *fn,char *topf,
   ndipbin = 1+(mu_max/0.01);
   snew(dipole_bin, ndipbin);
   epsilon    = 0.0;
+  mu_ave     = 0.0;
   M_XX=M_XX2 = 0.0;
   M_YY=M_YY2 = 0.0;
   M_ZZ=M_ZZ2 = 0.0;
-  mu_ave     = 0.0;
 
   if (bGkr) {
     /* Use 0.7 iso 0.5 to account for pressure scaling */
@@ -561,17 +555,17 @@ static void do_dip(char *fn,char *topf,
     }
     t1 = t;
 
-    /* Initialise */
-    clear_rvec(M_av);
-    clear_rvec(M_av2);
-
     if (bMU) {
-      for(m=0; (m<DIM); m++) {
-	M_av[m]  += mu_t[m];          /* M per frame */
-	M_av2[m] += mu_t[m]*mu_t[m];  /* M^2 per frame */
-      } 
+      /* Copy rvec into double precision local variable */
+      for(m=0; (m<DIM); m++)
+	M_av[m]  = mu_t[m];
     }
     else {
+      /* Initialise */
+      for(m=0; (m<DIM); m++) {
+	M_av[m] = 0;
+	M_av2[m] = 0;
+      }
       /* Begin loop of all molecules in frame */
       for(i=0; (i<gnx); i++) {
 	int gi = grpindex ? grpindex[i] : i;
@@ -594,7 +588,7 @@ static void do_dip(char *fn,char *topf,
 	  M_av[m]  += dipole[i][m];               /* M per frame */
 	  mu_mol   += dipole[i][m]*dipole[i][m];  /* calc. mu for distribution */
 	}
-
+	
 	mu_ave += sqrt(mu_mol);                   /* calc. the average mu */
 	
 	/* Update the dipole distribution */
@@ -602,11 +596,12 @@ static void do_dip(char *fn,char *topf,
 	if (ibin < ndipbin)
 	  dipole_bin[ibin]++;
       } /* End loop of all molecules in frame */
+    }
+    
+    /* Compute square of total dipole */
+    for(m=0; (m<DIM); m++)
+      M_av2[m] = M_av[m]*M_av[m];
       
-      /* Compute square of total dipole */
-      for(m=0; (m<DIM); m++)
-	M_av2[m] = sqr(M_av[m]);
-    }    
     if (bGkr) {
       init_pbc(box);
       do_gkr(gkrbin,gnx,grpindex,mols->index,mols->a,x,dipole,box,
@@ -614,7 +609,7 @@ static void do_dip(char *fn,char *topf,
     }
     
     if (bAverCorr) {
-      tel3=DIM*teller;
+      tel3 = DIM*teller;
       muall[0][tel3+XX] = M_av[XX];
       muall[0][tel3+YY] = M_av[YY];
       muall[0][tel3+ZZ] = M_av[ZZ];
@@ -625,23 +620,23 @@ static void do_dip(char *fn,char *topf,
      */
     if ((skip == 0) || ((teller % skip) == 0))
       fprintf(outmtot,"%10g  %12.8e %12.8e %12.8e %12.8e\n",
-	      t,M_av[XX],M_av[YY],M_av[ZZ],norm(M_av));
+	      t,M_av[XX],M_av[YY],M_av[ZZ],
+	      sqrt(M_av2[XX]+M_av2[YY]+M_av2[ZZ]));
 
-    M_XX      += M_av[XX];
-    M_XX2     += M_av2[XX];
-    M_YY      += M_av[YY];
-    M_YY2     += M_av2[YY];
-    M_ZZ      += M_av[ZZ];
-    M_ZZ2     += M_av2[ZZ];
+    M_XX  += M_av[XX];
+    M_XX2 += M_av2[XX];
+    M_YY  += M_av[YY];
+    M_YY2 += M_av2[YY];
+    M_ZZ  += M_av[ZZ];
+    M_ZZ2 += M_av2[ZZ];
 
     /* Increment loop counter */
     teller++;
     
     /* Calculate for output the running averages */
-    M2_ave  = (M_XX2+M_YY2+M_ZZ2)/teller;
-    
-    /* Strange construction because teller*teller may go beyond INT_MAX */
-    M_ave2  = (sqr(M_XX/teller)+sqr(M_YY/teller)+sqr(M_ZZ/teller));
+    invtel  = 1.0/teller;
+    M2_ave  = (M_XX2+M_YY2+M_ZZ2)*invtel;
+    M_ave2  = invtel*invtel*(M_XX*M_XX + M_YY*M_YY + M_ZZ*M_ZZ);
     M_diff  = M2_ave - M_ave2;
 
     /* Compute volume from box in traj, else we use the one from above */
@@ -653,7 +648,7 @@ static void do_dip(char *fn,char *topf,
 
     /* Calculate running average for dipole */
     if (mu_ave != 0) 
-      mu_aver = (mu_ave/gnx)/teller;
+      mu_aver = (mu_ave/gnx)*invtel;
     
     if ((skip == 0) || ((teller % skip) == 0)) {
       /* Write to file < |M|^2 >, < |M| >^2. And the difference between 
@@ -683,8 +678,7 @@ static void do_dip(char *fn,char *topf,
       bCont = read_mu_from_enx(fmu,iVol,iMu,mu_t,&volume,&t,nre,fr); 
     else
       bCont = read_next_x(status,&t,natom,x,box);
-    /*bCont = bCont && (check_times(t) == 0);*/
-  } while(bCont);
+  } while (bCont);
   
   if (!bMU)
     close_trj(status);
