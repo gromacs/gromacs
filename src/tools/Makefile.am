@@ -33,8 +33,9 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	correl.c	correl.h	gmx_sham.c	gmx_nmtraj.c	\
 	gmx_trjconv.c	gmx_trjcat.c	gmx_trjorder.c	gmx_xpm2ps.c	\
 	gmx_editconf.c	gmx_genbox.c	gmx_genion.c	gmx_genconf.c	\
-	gmx_genpr.c	gmx_eneconv.c	gmx_wheel.c
-
+	gmx_genpr.c	gmx_eneconv.c	gmx_wheel.c	\
+	genbox.c 	addconf.c 	addconf.h	\
+	genion.c 	calcpot.c 	calcpot.h 	edittop.c
 
 bin_PROGRAMS = \
 	average		do_dssp		editconf	eneconv		\
@@ -58,12 +59,8 @@ bin_PROGRAMS = \
 	g_clustsize 	g_mdmat     	g_wham
 
 
-
-genbox_SOURCES       = 	genbox.c addconf.c addconf.h
-genion_SOURCES       = 	genion.c calcpot.c calcpot.h edittop.c
 cdist_SOURCES        =  cdist.c smooth.c bondlist.c residues.c cdist.h
 disco_SOURCES        =  disco.c correct.c discopar.c dtools.c disco.h
-
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 	../gmxlib/libgmx@LIBSUFFIX@.la
