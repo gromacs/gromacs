@@ -37,7 +37,7 @@ int main(int argc,char *argv[])
     { efXVG, "-comb", "acf-comb.xvg", ffWRITE }
   };
 #define NFILE asize(fnm)
-  int     npargs,i;
+  int     npargs,i,nlag;
   int     seed=1993;
   real    *data,*data2,x;
   t_pargs *ppa;
@@ -83,8 +83,9 @@ int main(int argc,char *argv[])
   do_autocorr(opt2fn("-c",NFILE,fnm),str[datatp],
 	      nframes,1,&data,a,eacNormal,TRUE,NULL,NULL);
 	      
+  nlag = get_acflag();
   fp = xvgropen(opt2fn("-comb",NFILE,fnm),"testac","x","y");
-  for(i=0; (i<nframes); i++) {
+  for(i=0; (i<nlag); i++) {
     fprintf(fp,"%10g  %10g  %10g\n",a*i,data2[i],data[i]);
   }
   ffclose(fp);

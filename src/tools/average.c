@@ -35,8 +35,6 @@ static char *SRCID_average_c = "$Id$";
 #include "statutil.h"
 #include "vec.h"
 
-#define MAX 50000
-
 static void my_usage(char *prog,char *arg)
 {
   fprintf(stderr," Usage: %s [-p] [-s] [-c #columns]"
@@ -67,7 +65,7 @@ int main(int argc, char *argv[])
 {
   double *x,**y,value=0.001;
   double *yav,yyy,yyy2,ymin,ymax,aver,var,sd;
-  int    i,j,k,nav=100,ncol=1;
+  int    i,j,k,nav=100,ncol=1,MAX=50000;
   char   buf[STRLEN];
   bool   bSilent=FALSE;
   double   lsq_a,lsq_b,rms_res;
@@ -77,6 +75,9 @@ int main(int argc, char *argv[])
       switch (argv[i][1]) {
       case 'p':
 	value=1.0;
+	break;
+      case 'm':
+	MAX=iscan(argc,argv,&i);
 	break;
       case 'c':
 	ncol=iscan(argc,argv,&i);
@@ -128,7 +129,7 @@ int main(int argc, char *argv[])
     }
     else
       break;
-  } while ((int)strlen(buf) > 0);
+  } while (((int)strlen(buf) > 0) && (i<MAX));
 
 
   if (!bSilent)

@@ -550,7 +550,7 @@ typedef char *Anyptr;
 #endif
 
 typedef Signed   char schar;
-typedef unsigned char uchar;
+typedef unsigned char _uchar;
 typedef unsigned char boolean;
 
 #ifndef true

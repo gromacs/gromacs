@@ -9,6 +9,7 @@
 #include "statutil.h"
 #include "pp2shift.h"
 #include "matio.h"
+#include "copyrite.h"
 
 typedef struct {
   int  nx,ny;
@@ -20,17 +21,26 @@ static real interpolate(real phi,real psi,t_shiftdata *sd)
 {
   int  iphi,ipsi,iphi1,ipsi1;
   real fphi,fpsi,wx0,wx1,wy0,wy1;
+
+  /*phi  += M_PI;
+  if (phi > 2*M_PI) phi -= 2*M_PI;
+  psi  += M_PI;  
+  if (psi > 2*M_PI) psi -= 2*M_PI;
+  */
+  while(phi < 0)
+    phi += 2*M_PI;
+  while(psi < 0)
+    psi += 2*M_PI;
+  phi    = 2*M_PI-phi;
+      
+  fphi  = phi*sd->dx;
+  fpsi  = psi*sd->dy;
   
-  fphi  = phi/sd->dx;
-  fpsi  = psi/sd->dy;
-  while (fphi < 0)
-    fphi += 2.0*M_PI;
-  while (fpsi < 0)
-    fpsi += 2.0*M_PI;
   iphi  = (int)fphi;
   ipsi  = (int)fpsi;
   fphi -= iphi; /* Fraction (offset from gridpoint) */
   fpsi -= ipsi;
+    
   wx0   = 1.0-fphi;
   wx1   = fphi;
   wy0   = 1.0-fpsi;
@@ -55,7 +65,7 @@ static void dump_sd(char *fn,t_shiftdata *sd)
   real  phi,psi,*x_phi,*y_psi,**newdata;
   real  lo,hi;
   t_rgb rlo = { 1, 0, 0 }, rhi = { 0, 0, 1 };
-    
+  
   nnx = sd->nx*nfac+1;
   nny = sd->ny*nfac+1;
   snew(x_phi,nnx);
@@ -71,9 +81,9 @@ static void dump_sd(char *fn,t_shiftdata *sd)
       psi = j*2*M_PI/(nny-1);
       if (i == 0)
 	y_psi[j] = psi*RAD2DEG-180;
-      if (((i % nfac) == 0) && ((j % nfac) == 0))
+      /*if (((i % nfac) == 0) && ((j % nfac) == 0))
 	newdata[i][j] = sd->data[i/nfac][j/nfac];
-      else
+      else*/
 	newdata[i][j] = interpolate(phi,psi,sd);
       lo = min(lo,newdata[i][j]);
       hi = max(hi,newdata[i][j]);
@@ -102,8 +112,8 @@ static t_shiftdata *read_shifts(char *fn)
   fscanf(fp,"%d%d",&nx,&ny);
   sd->nx = nx;
   sd->ny = ny;
-  sd->dx = (2*M_PI/nx);
-  sd->dy = (2*M_PI/ny);
+  sd->dx = nx/(2*M_PI);
+  sd->dy = ny/(2*M_PI);
   snew(sd->data,nx+1);
   for(i=0; (i<=nx); i++) {
     snew(sd->data[i],ny+1);
@@ -148,7 +158,9 @@ void do_pp2shifts(FILE *fp,int nf,int nlist,t_dlist dlist[],real **dih)
   cb_sd = read_shifts("cb-shift.dat");
   ha_sd = read_shifts("ha-shift.dat");
   co_sd = read_shifts("co-shift.dat");
-  
+
+  fprintf(fp,"\n *** Chemical shifts from the chemical shift index ***\n");  
+  please_cite(fp,"Wishart98a");
   fprintf(fp,"%12s  %10s  %10s  %10s  %10s\n",
 	  "Residue","delta Ca","delta Ha","delta CO","delta Cb");
   for(i=0; (i<nlist); i++) {
@@ -170,5 +182,12 @@ void do_pp2shifts(FILE *fp,int nf,int nlist,t_dlist dlist[],real **dih)
 	      dlist[i].name,ca/nf,ha/nf,co/nf,cb/nf);
     }
   }
+  fprintf(fp,"\n");
+  
+  /* Free memory */
+  done_shifts(ca_sd);
+  done_shifts(cb_sd);
+  done_shifts(co_sd);
+  done_shifts(ha_sd);
 }
 

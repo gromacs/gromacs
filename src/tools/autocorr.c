@@ -44,6 +44,16 @@ static char *SRCID_autocorr_c = "$Id$";
 
 #define SWAP(a,b) tempr=(a);(a)=(b);(b)=tempr
 
+typedef struct {
+  unsigned long mode;
+  int  nrestart,nlag,P,nfitparm;
+  bool bFull,bFour,bNormalize;
+  real tbeginfit,tendfit;
+} t_acf;
+
+static bool  bACFinit = FALSE;
+static t_acf acf;
+
 typedef real fftreal;
 
 void four1(fftreal data[],int nn,int isign)
@@ -652,15 +662,17 @@ void low_do_autocorr(char *fn,char *title,
   real    dc,c0,sum,rnorm,fac;
  
   /* Check flags and parameters */ 
+  nlag = get_acflag();
   if (bFull || bFour) {
+    nlag  = acf.nlag = nframes;
     ncorr = nframes;
-    nlag  = nframes;
-  } 
+  }
   else {
     if (nlag == -1)
-      nlag=(nframes+1)/2;
-    ncorr=nlag;
+      nlag = acf.nlag = (nframes+1)/2;
+    ncorr = nlag;
   }
+  
   if ((mode & eacCos) && (mode & eacVector))
     fatal_error(0,"Incompatible options bCos && bVector (%s, %d)",
 		__FILE__,__LINE__);
@@ -752,16 +764,6 @@ void low_do_autocorr(char *fn,char *title,
   
 }
 
-typedef struct {
-  unsigned long mode;
-  int  nrestart,nlag,P,nfitparm;
-  bool bFull,bFour,bNormalize;
-  real tbeginfit,tendfit;
-} t_acf;
-
-static bool  bACFinit = FALSE;
-static t_acf acf;
-
 t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
 {
   t_pargs acfpa[] = {
@@ -837,4 +839,12 @@ void do_autocorr(char *fn,char *title,int nframes,int nitem,real **c1,
 		  acf.nrestart,acf.bFull,bAver,acf.bFour,acf.bNormalize,
 		  fitfn,fittitle,bDebugMode(),acf.tbeginfit,acf.tendfit,
 		  acf.nfitparm);
+}
+
+int get_acflag(void)
+{
+  if (!bACFinit)
+    fatal_error(0,"ACF data not initialized yet");
+
+  return acf.nlag;
 }

@@ -39,7 +39,7 @@ static char *SRCID_waterins_c = "$Id$";
 #include "pbc.h"
 #include "copyrite.h"
 #include "futil.h"
-#include "grid.h"
+#include "nsgrid.h"
 #include "statutil.h"
 #include "rdgroup.h"
 #include "ns.h"

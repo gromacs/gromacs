@@ -32,6 +32,7 @@ static char *SRCID_anadih_c = "$Id$";
 #include <stdio.h>
 #include "physics.h"
 #include "smalloc.h"
+#include "macros.h"
 #include "bondf.h"
 #include "xvgr.h"
 #include "typedefs.h"
@@ -208,7 +209,7 @@ void calc_distribution_props(int nh,int histo[],real start,
     tdc += dc;
     tds += ds;
     for(i=0; (i<nkkk); i++) {
-      c1   = cos(ang-kkk[i].offset);
+      c1   = cos(ang+kkk[i].offset);
       c2   = c1*c1;
       kkk[i].Jc += d*(kkk[i].A*c2 + kkk[i].B*c1 + kkk[i].C);
     }
@@ -250,8 +251,10 @@ static real calc_fraction(real angles[], int nangles, bool bRb)
     else if (tmp < -90 && tmp > -150)
       gauche += 1.0;
   }
-  
-  return trans/(trans+gauche);
+  if (trans+gauche > 0)
+    return trans/(trans+gauche);
+  else 
+    return 0;
 }
 
 static void calc_dihs(FILE *log,matrix box,
@@ -279,16 +282,19 @@ void make_histo(FILE *log,
   double dx;
   int    i,ind;
   
-  if ((minx == 0) && (maxx == 0)) {
+  if (minx == maxx) {
     minx=maxx=data[0];
-    for(i=1; (i<ndata); i++)
-      if (data[i] < minx)
-	minx=data[i];
-      else if (data[i] > maxx)
-	maxx=data[i];
+    for(i=1; (i<ndata); i++) {
+      minx=min(minx,data[i]);
+      maxx=max(maxx,data[i]);
+    }
     fprintf(log,"Min data: %10g  Max data: %10g\n",minx,maxx);
   }
-  dx=npoints/(maxx-minx);
+  dx=(double)npoints/(maxx-minx);
+  if (debug)
+    fprintf(debug,
+	    "Histogramming: ndata=%d, nhisto=%d, minx=%g,maxx=%g,dx=%g\n",
+	    ndata,npoints,minx,maxx,dx);
   for(i=0; (i<ndata); i++) {
     ind=(data[i]-minx)*dx;
     if ((ind >= 0) && (ind < npoints))
@@ -332,6 +338,8 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
   rvec       *x,*x_s;
   int        cur=0;
 #define prev (1-cur)
+  
+  init_lookup_table(stdout);
   
   /* Read topology */    
   top=read_top(tpb_fn);

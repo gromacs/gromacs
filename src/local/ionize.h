@@ -5,6 +5,6 @@
 #include "typedefs.h"
 	
 extern void ionize(FILE *log,t_mdatoms *md,char **atomname[],
-		   real t,t_inputrec *ir);
+		   real t,t_inputrec *ir,rvec v[]);
 
 #endif

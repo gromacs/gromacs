@@ -42,9 +42,7 @@
 #include "force.h"
 #include "macros.h"
 #include "names.h"
-/*#include "init.h"*/
 #include "mdrun.h"
-/*#include "stat.h"*/
 #include "fatal.h"
 #include "txtdump.h"
 #include "typedefs.h"
@@ -54,10 +52,6 @@
 #include "filenm.h"
 #include "statutil.h"
 #include "tgroup.h"
-/*#include "steep.h"
-#include "sim_util.h"
-#include "runner.h"
-#include "do_md.h"*/
 #include "vcm.h"
 #include "ebin.h"
 #include "mdebin.h"
@@ -69,6 +63,7 @@
 #include "block_tx.h"
 #include "rdgroup.h"
 #include "edsam.h"
+#include "calcmu.h"
 
 static void do_1pos(rvec xnew,rvec xold,rvec f,real k_1,real step)
 {
@@ -443,7 +438,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Construct dummy particles */
     construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef);
     
-/* Calculate total dipole moment if necessary */
+    /* Calculate total dipole moment if necessary */
     calc_mu(nsb,x,md->chargeT,mu_tot);
 
     /* Now is the time to relax the shells */
@@ -550,12 +545,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		fr,md->nr,parm->box,parm->pres,ener);
     
     if (bTCR)
-      /*  do_coupling(log,tcr,parm->ir.delta_t,t,
-	  ener[F_EPOT],PRESFAC*(trace(parm->pres)/3.0),fr,
-	  do_per_step(step,parm->ir.nstprint),MASTER(cr),md,
-	  &(top->idef)); */
-    do_coupling(log,tcr,t,step,ener,fr,
-		  &(parm->ir),MASTER(cr),md,&(top->idef),2.3);
+      do_coupling(log,tcr,t,step,ener,fr,
+		  &(parm->ir),MASTER(cr),md,&(top->idef),2.3,
+		  top->blocks[ebMOLS].nr);
 
     upd_mdebin(mdebin,md->tmass,step,ener,parm->box,shake_vir,
                force_vir,parm->vir,parm->pres,grps,mu_tot);

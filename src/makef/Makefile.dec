@@ -12,12 +12,12 @@
 SYSDEFS		= -DHAVE_ULONG -DCINVSQRT -DFINVSQRT
 
 # Dec C compilers
-ALLOPT		= -fast -O5 -inline all -tune host -math_library fast -non_shared -unroll 2 -arch host -pipeline
+ALLOPT		= -fast -O5 -inline all -tune host -math_library fast -non_shared -unroll 2 -arch host -pipeline -fp_reorder
 #ALLOPT		= -g
 CC		= cc#.alt
 CCC		= cxx
 F77		= f77
-CFLAGS		= -std1 $(ALLOPT) -w0 -trapuv
+CFLAGS		= -std1 $(ALLOPT) -w0 -warnprotos #-trapuv
 CCFLAGS		= -O
 FFLAGS		= $(ALLOPT) -speculate all -assume noaccuracy_sensitive
 
@@ -48,7 +48,7 @@ X11INC		= -I/usr/local/include
 # If you want to use fortran innerloops set this to yes
 # For most machines this will improve the performance quite a bit
 # because C-compilers are not as good as Fortran compilers
-USEF77		=no#yes
+USEF77		= yes
 #
 # If you want to run in *** P A R A L L E L ***
 # please select either PVM or MPI, check with your local hacker

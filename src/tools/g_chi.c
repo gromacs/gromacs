@@ -53,21 +53,32 @@ static char *SRCID_g_chi_c = "$Id$";
 #include "xvgr.h"
 #include "pp2shift.h"
 
-void pr_dlist(FILE *fp,int nl,t_dlist dl[])
+static void pr_props(FILE *fp,t_dlist *dl,int nDih,real dt)
+{
+  fprintf(fp,"  %6.2f  %6.2f\n",dl->ntr[nDih]/dt,dl->S2[nDih]);
+}
+
+void pr_dlist(FILE *fp,int nl,t_dlist dl[],real dt)
 {
   int i, Xi;
   
   for(i=0; (i<nl); i++) {
-    fprintf(fp,"%12s",dl[i].name);
-    fprintf(fp," Phi[%d,%d,%d,%d]",dl[i].atm.H,dl[i].atm.N,
+    fprintf(fp,"Residue %s\n",dl[i].name);
+    fprintf(fp," Angle [  AI,  AJ,  AK,  AL]  #tr/ns  S^2D  \n"
+	       "--------------------------------------------\n");
+    fprintf(fp,"   Phi [%4d,%4d,%4d,%4d]",dl[i].atm.H,dl[i].atm.N,
 	    dl[i].atm.Cn[1],dl[i].atm.C);
-    fprintf(fp," Psi[%d,%d,%d,%d]",dl[i].atm.N,dl[i].atm.Cn[1],
+    pr_props(fp,&dl[i],edPhi,dt);
+    fprintf(fp,"   Psi [%4d,%4d,%4d,%4d]",dl[i].atm.N,dl[i].atm.Cn[1],
 	    dl[i].atm.C,dl[i].atm.O);
+    pr_props(fp,&dl[i],edPsi,dt);
     for(Xi=0; Xi<MAXCHI; Xi++)
-      if (dl[i].atm.Cn[Xi+3] != -1)
-	fprintf(fp," Xi%d[%d,%d,%d,%d]",Xi,dl[i].atm.Cn[Xi],
+      if (dl[i].atm.Cn[Xi+3] != -1) {
+	fprintf(fp,"   Chi%d[%4d,%4d,%4d,%4d]",Xi,dl[i].atm.Cn[Xi],
 		dl[i].atm.Cn[Xi+1],dl[i].atm.Cn[Xi+2],
 		dl[i].atm.Cn[Xi+3]);
+	pr_props(fp,&dl[i],Xi+2,dt);
+      }
     fprintf(fp,"\n");
   }
 }
@@ -93,7 +104,7 @@ bool has_dihedral(int Dih,t_dlist *dl)
     b = (BBB(Cn[Dih-2]) && BBB(Cn[Dih-1]) && BBB(Cn[Dih]) && BBB(Cn[Dih+1]));
     break;
   default:
-    pr_dlist(stdout,1,dl);
+    pr_dlist(stdout,1,dl,1);
     fatal_error(0,"Non existant dihedral %d in file %s, line %d",
 		Dih,__FILE__,__LINE__);
   }
@@ -431,10 +442,10 @@ static void histogramming(FILE *log,int naa,char **aa,
 			  bool bPhi,bool bPsi,bool bChi)
 {
   t_karplus kkkphi[] = {
-    { "J_NHa",     6.4, -1.4,  6.7, -M_PI/3, 0.0 },
-    { "J_HaC'",    4.0,  1.1,  0.1, 0.0,     0.0 },
-    { "J_NHCb",    4.7, -1.5, -0.2, M_PI/3,  0.0 },
-    { "J_Ci-1Hai", 4.5, -1.3, -1.2, 2*M_PI/3,0.0 }
+    { "J_NHa",     6.51, -1.76,  1.6, -M_PI/3,   0.0 },
+    { "J_HaC'",    4.0,   1.1,   0.1,  0.0,      0.0 },
+    { "J_NHCb",    4.7,  -1.5,  -0.2,  M_PI/3,   0.0 },
+    { "J_Ci-1Hai", 4.5,  -1.3,  -1.2,  2*M_PI/3, 0.0 }
   };
   t_karplus kkkpsi[] = {
     { "J_HaN",   -0.88, -0.61,-0.27,M_PI/3,  0.0 }
@@ -442,14 +453,17 @@ static void histogramming(FILE *log,int naa,char **aa,
   t_karplus kkkchi1[] = {
     { "Jab",       9.5, -1.6, 1.8, 0, 0 }
   };
-#define NJC (asize(kkkphi)+asize(kkkpsi)+asize(kkkchi1))
+#define NKKKPHI asize(kkkphi)
+#define NKKKPSI asize(kkkpsi)
+#define NKKKCHI asize(kkkchi1)
+#define NJC (NKKKPHI+NKKKPSI+NKKKCHI)
   
   FILE *fp;
   real S2;
   real *normhisto;
   real **Jc;
   int  ***his_aa,**his_aa1,*histmp;
-  int  i,j,k,Dih;
+  int  i,j,k,m,Dih;
   char hisfile[256],title[256];
   
   snew(his_aa,edMax);
@@ -473,22 +487,22 @@ static void histogramming(FILE *log,int naa,char **aa,
 
 	switch (Dih) {
 	case edPhi:
-	  calc_distribution_props(NHISTO,histmp,-M_PI,
-				  asize(kkkphi),kkkphi,&S2);
-	  Jc[i][0] = kkkphi[0].Jc;
-	  Jc[i][1] = kkkphi[1].Jc;
-	  Jc[i][2] = kkkphi[2].Jc;
-	  Jc[i][3] = kkkphi[3].Jc;
+	  calc_distribution_props(NHISTO,histmp,-M_PI,NKKKPHI,kkkphi,&S2);
+	  
+	  for(m=0; (m<NKKKPHI); m++) 
+	    Jc[i][m] = kkkphi[m].Jc;
 	  break;
 	case edPsi:
-	  calc_distribution_props(NHISTO,histmp,-M_PI,
-				  asize(kkkpsi),kkkpsi,&S2);
-	  Jc[i][4] = kkkpsi[0].Jc;
+	  calc_distribution_props(NHISTO,histmp,-M_PI,NKKKPSI,kkkpsi,&S2);
+	  
+	  for(m=0; (m<NKKKPSI); m++)
+	    Jc[i][NKKKPHI+m] = kkkpsi[m].Jc;
 	  break;
 	case edChi1:
-	  calc_distribution_props(NHISTO,histmp,-M_PI,
-				  asize(kkkchi1),kkkchi1,&S2);
-	  Jc[i][5] = kkkchi1[0].Jc;
+	  calc_distribution_props(NHISTO,histmp,-M_PI,NKKKCHI,kkkchi1,&S2);
+	  
+	  for(m=0; (m<NKKKCHI); m++)
+	    Jc[i][NKKKPHI+NKKKPSI+m] = kkkchi1[m].Jc;
 	  break;
 	}
 	dlist[i].S2[Dih]        = S2;
@@ -507,11 +521,11 @@ static void histogramming(FILE *log,int naa,char **aa,
   /* Print out Jcouplings */
   fprintf(log,"\n *** J-Couplings from simulation ***\n\n");
   fprintf(log,"Residue   ");
-  for(i=0; (i<asize(kkkphi)); i++)
+  for(i=0; (i<NKKKPHI); i++)
     fprintf(log,"%10s",kkkphi[i].name);
-  for(i=0; (i<asize(kkkpsi)); i++)
+  for(i=0; (i<NKKKPSI); i++)
     fprintf(log,"%10s",kkkpsi[i].name);
-  for(i=0; (i<asize(kkkchi1)); i++)
+  for(i=0; (i<NKKKCHI); i++)
     fprintf(log,"%10s",kkkchi1[i].name);
   fprintf(log,"\n");
   for(i=0; (i<NJC+1); i++)
@@ -910,7 +924,7 @@ int main(int argc,char *argv[])
   if (bShift)
     do_pp2shifts(log,nf,nlist,dlist,dih);
   
-  pr_dlist(log,nlist,dlist);  
+  pr_dlist(log,nlist,dlist,time[nf]-time[0]);
   ffclose(log);
   
   /* Correlation comes last because it fucks up the angles */

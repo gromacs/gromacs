@@ -85,7 +85,7 @@ static void add_bonds(t_manager *man,t_functype func[],
       add_object(man,eOHBond,ai,aj);
       add_object(man,eOHBond,ai,ak);
     }
-    else if ((ftype == F_BONDS) || (ftype == F_SHAKE)) {
+    else if ((ftype == F_BONDS) || (ftype == F_SHAKE)  || (ftype == F_MORSE)) {
       aj=ia[2];
 #ifdef DEBUG
       fprintf(stderr,"Adding bond from %d to %d\n",ai,aj);
@@ -107,6 +107,7 @@ static void add_bonds(t_manager *man,t_functype func[],
 static void add_bpl(t_manager *man,t_idef *idef,bool bB[])
 {
   add_bonds(man,idef->functype,&idef->il[F_BONDS],bB);
+  add_bonds(man,idef->functype,&idef->il[F_MORSE],bB);
   add_bonds(man,idef->functype,&idef->il[F_SHAKE],bB);
   add_bonds(man,idef->functype,&idef->il[F_SETTLE],bB);
 }
