@@ -142,8 +142,8 @@ static void par_fn(char *base,int ftp,t_commrec *cr, char buf[], int bufsize)
 
   /* Copy to buf, and strip extension */
   strcpy(buf,base);
-  buf[strlen(buf)-4] = '\0';
-  
+  buf[strlen(base) - strlen(ftp2ext(fn2ftp(base))) - 1] = '\0';
+
   /* Add node info */
   if (PAR(cr)) 
     sprintf(buf+strlen(buf),"%d",cr->nodeid);
@@ -295,12 +295,10 @@ t_commrec *init_multisystem(t_commrec *cr,int nfile,t_filenm fnm[])
      * at the actual file name 
      */
     ftp = fn2ftp(fnm[i].fns[0]);
-    if (ftp != efLOG && ftp!= efTPX && ftp != efTPR && ftp != efTPS && ftp!=efTPA && ftp!=efTPB) {
-      /* fprintf(stderr,"Old file name: %s",fnm[i].fns[0]); */
+    if (ftp != efLOG) {
       par_fn(fnm[i].fns[0],ftp,mcr,buf,255);
       sfree(fnm[i].fns[0]);
       fnm[i].fns[0] = strdup(buf);
-      /* fprintf(stderr,", new: %s\n",fnm[i].fns[0]); */
     }
   }
 
