@@ -194,11 +194,9 @@ Coulomb cut-off <b>rlong</b> [nm].
 The dielectric constant is set with <b>epsilon_r</b>.
 <dt><b>PPPM</b>
 <dd>Particle-Particle Particle-Mesh algorithm for long range
-electrostatic interactions. Use for example <b>rshort</b> <tt>=
-0.0</TT> and <b>rlong</b> <tt>= 0.8</TT>.  Use the 
-<a href="mk_ghat.html"><tt>mk_ghat</tt></a> program with the 
-<a href="files.html"><tt>.tpr</tt></a> file
-to generate an optimized G<sub>k</sub> function (
+electrostatic interactions. See <b>shift</b> for the details of the 
+particle-particle potentials. 
+Use for example <b>rshort</b> <tt>=0.0</TT> and <b>rlong</b> <tt>= 0.8</TT>.
 <a href="hat.html"><tt>.hat</tt></a> file). 
 <dt><b>reaction-field</b>
 <dd>Reaction field with LJ and Coulomb cut-off <b>rshort</b> [nm].
@@ -212,12 +210,13 @@ The ionic strength is computed from the number of charged
 The temperature for the GRF potential is set with 
 <b><A HREF="#tc">ref_t</A></b> [K]. (Not thoroughly tested yet)
 <dt><b>shift</b>
-<dd>The Coulomb potential is decreased over the whole range.
-The potential and the forces decay smoothly to zero between 
+<dd>The Coulomb and Lennard-Jones potentials are decreased over the whole
+range. The potential and the forces decay smoothly to zero between 
 <b>rshort</b> [nm] and <b>rlong</b> [nm].
-The LJ cut-off is <b>rlong</b> [nm].
+The neighborsearch cut-off is slightly larger than <b>rlong</b> to
+accommodate for the size of charge groups and diffusion between
+neighbor list updates.   
 The dielectric constant is set with <b>epsilon_r</b>.
-(Not thoroughly tested yet)
 <dt><b>User</b>
 
 <dd>Specify <b>rshort</b> and <b>rlong</b> to the same value, mdrun
