@@ -528,7 +528,7 @@ void force(FILE       *log,
     }
     
     Vself = calc_LRcorrections(log,0,md->nr,fr->r1,fr->rc,
-			       md->chargeA,excl,x,f);
+			       md->chargeA,excl,x,f,TRUE);
     epot[F_LR] = Vlr - Vself;
     if (debug)
       fprintf(debug,"Vpppm = %g, Vself = %g, Vlr = %g\n",
