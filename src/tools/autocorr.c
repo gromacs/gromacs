@@ -442,6 +442,35 @@ real print_and_integrate(FILE *fp,int n,real dt,real c[],real *fit,int nskip)
   return sum*0.5;
 }
 
+real evaluate_integral(int n,real dx,real y[],real dy[],real aver_start,
+		       real *stddev)
+{
+  real c0,sum,dsum=0,dsum2;
+  int  j,ndsum=0;
+  
+  /* Use trapezoidal rule for calculating integral */
+  sum  = y[0]+y[n-1];
+  if (dy)
+    dsum2 = sqr(dy[0]) + sqr(dy[n-1]);
+  else
+    dsum2 = 0;
+  for(j=1; (j<n-1); j++) {
+    sum += 2*y[j];
+    if (dy)
+      dsum2 += sqr(dy[j]);
+    else if (j*dx >= aver_start) {
+      dsum  += sum;
+      dsum2 += sum*sum;
+      ndsum ++;
+    }
+  }
+  if (n > 1)
+    *stddev = sqrt(dsum2/(n-1.0));
+  else
+    *stddev = 0.0;
+  return sum*0.5*dx;
+}
+
 void do_four_core(unsigned long mode,int nfour,int nf2,int nframes,
 		  real c1[],real csum[],real ctmp[])
 {
