@@ -26,7 +26,7 @@ CCC             = xlC
 F77             = xlf
 CFLAGS          = -O3 -qarch=604 -qtune=604  -qmaxmem=16384 
 CCFLAGS         = -O3 -qarch=604 -qtune=604 -qmaxmem=16384 
-FFLAGS          = -O3 -Q -qarch=604 -qtune=604 -qmaxmem=16384 -qhot -qextname -qrealsize=8
+FFLAGS          = -O3 -Q -qarch=604 -qtune=604 -qmaxmem=16384 -qhot -qextname -qrealsize=4
 
 # Generic linking stuff
 LDFLAGS		= -L$(LIBDIR)
