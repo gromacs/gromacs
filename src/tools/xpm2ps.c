@@ -363,7 +363,7 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,real h,
 }
 
 static void box_dim(int nmat,t_matrix mat[],t_matrix *mat2,t_psrec *psr,
-		    real *w,real *h,real *dw,real *dh)
+		    char w_legend,real *w,real *h,real *dw,real *dh)
 {
   int i,maxytick;
   real ww,hh,dww,dhh;
@@ -388,10 +388,12 @@ static void box_dim(int nmat,t_matrix mat[],t_matrix *mat2,t_psrec *psr,
   dhh=0;
   if (mat[0].label_x[0])
     dhh+=psr->X.fontsize+2*DDD;
-  if ((mat[0].legend[0]==0) && (mat2==NULL || (mat2[0].legend[0]==0)))
-    dhh+=psr->legfontsize*FUDGE+2*DDD;
-  else
+  if (((w_legend == 'b') && (mat[0].legend[0] || mat2[0].legend[0])) ||
+      ((w_legend == 'f') && mat[0].legend[0]) ||
+      ((w_legend == 's') && mat2[0].legend[0]))
     dhh+=2*(psr->legfontsize*FUDGE+2*DDD);
+  else 
+    dhh+=psr->legfontsize*FUDGE+2*DDD;
   if (psr->X.major > 0)
     dhh+=psr->X.tickfontsize*FUDGE+2*DDD+psr->X.majorticklen;
   else if (psr->X.minor > 0)
@@ -472,19 +474,19 @@ void xpm_mat(char *outf,
 }
 
 void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
-	    bool bDiag,bool bFirstDiag,bool bTitle,bool bLegend,
+	    bool bDiag,bool bFirstDiag,bool bTitle,char w_legend,
 	    real boxx,real boxy,char *m2p,char *m2pout)
 {
-  char   buf[256];
+  char   buf[256],*legend;
   FILE   *out;
   t_psrec  psrec,*psr;
   int    W,H;
   int    i,x,y,col,leg;
   real   x0,y0,xx;
   real   w,h,dw,dh;
-  int       nmap1,nmap2;
-  t_mapping *map1,*map2;
-  bool   bMap1,bNextMap1;
+  int       nmap1,nmap2,leg_nmap;
+  t_mapping *map1,*map2,*leg_map;
+  bool   bMap1,bNextMap1,bDiscrete;
   
   get_params(libfn(m2p),m2pout,&psrec);
 
@@ -524,7 +526,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   psr->bTitle = bTitle;
 
   /* Set up size of box for nice colors */
-  box_dim(nmat,mat,mat2,psr,&w,&h,&dw,&dh);
+  box_dim(nmat,mat,mat2,psr,w_legend,&w,&h,&dw,&dh);
   
   /* Set up bounding box */
   W=w+dw;
@@ -610,15 +612,26 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
     y0+=box_height(&(mat[i]),psr)+box_dh(psr)+box_dh_top(psr);
   }
   
-  if (bLegend) {
+  if (w_legend != 'n') {
     ps_comment(out,"Now it's legend time!");
-    if (mat[0].bDiscrete)
-      leg_discrete(out,psr->legfontsize,DDD,mat[0].legend,
-		   psr->legfontsize,psr->legfont,nmap1,map1);
+    if ((mat2==NULL) || (w_legend != 's')) {
+      bDiscrete = mat[0].bDiscrete;
+      legend    = mat[0].legend;
+      leg_nmap  = nmap1;
+      leg_map   = map1;
+    } else {
+      bDiscrete = mat2[0].bDiscrete;
+      legend    = mat2[0].legend;
+      leg_nmap  = nmap2;
+      leg_map   = map2;
+    }
+    if (bDiscrete)
+      leg_discrete(out,psr->legfontsize,DDD,legend,
+		   psr->legfontsize,psr->legfont,leg_nmap,leg_map);
     else {
-      if ((mat2==NULL) || (!diff_maps(nmap1,map1,nmap2,map2)))
-	leg_continuous(out,x0+w/2,w/2,DDD,mat[0].legend,
-		       psr->legfontsize,psr->legfont,nmap1,map1);
+      if (w_legend != 'b')
+	leg_continuous(out,x0+w/2,w/2,DDD,legend,
+		       psr->legfontsize,psr->legfont,leg_nmap,leg_map);
       else
 	leg_bicontinuous(out,x0+w/2,w,DDD,mat[0].legend,mat2[0].legend,
 			 psr->legfontsize,psr->legfont,nmap1,map1,nmap2,map2);
@@ -630,7 +643,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
 }
 
 void do_mat(int nmat,t_matrix *mat,int nmat2,t_matrix *mat2,
-	    bool bDiag,bool bFirstDiag,bool bTitle,bool bLegend,
+	    bool bDiag,bool bFirstDiag,bool bTitle,char w_legend,
 	    real boxx,real boxy,
 	    char *epsfile,char *xpmfile,char *m2p,char *m2pout)
 {
@@ -657,7 +670,7 @@ void do_mat(int nmat,t_matrix *mat,int nmat2,t_matrix *mat2,
   
   if (epsfile!=NULL)
     ps_mat(epsfile,nmat,mat,mat2,bDiag,bFirstDiag,
-	   bTitle,bLegend,boxx,boxy,m2p,m2pout);
+	   bTitle,w_legend,boxx,boxy,m2p,m2pout);
   if (xpmfile!=NULL)
     xpm_mat(xpmfile,nmat,mat,mat2,bDiag,bFirstDiag);
 }
@@ -730,21 +743,22 @@ int main(int argc,char *argv[])
   };
 
   char      *fn,*epsfile=NULL,*xpmfile=NULL;
+  char      w_legend;
   int       i,nmat,nmat2;
   t_matrix *mat=NULL,*mat2=NULL;
   bool      bTitle,bDiag,bFirstDiag;
-  static bool bLegend=TRUE;
   static real boxx=0,boxy=0;
   static char *title[]   = { NULL, "top", "ylabel", "none", NULL };
+  static char *legend[]  = { NULL, "both", "first", "second", "none", NULL };
   static char *diag[]    = { NULL, "first", "second", "none", NULL };
   static char *rainbow[] = { NULL, "no", "blue", "red", NULL };
   t_pargs pa[] = {
     { "-title",   FALSE, etENUM, title,   "Show title at" },
-    { "-legend",  FALSE, etBOOL, &bLegend,"Show legend" },
-    { "-diag",    FALSE, etENUM, &diag,   "Diagonal" },
+    { "-legend",  FALSE, etENUM, legend,  "Show legend" },
+    { "-diag",    FALSE, etENUM, diag,    "Diagonal" },
     { "-bx",      FALSE, etREAL, &boxx,
       "Box x-size (also y-size when -by is not set)" },
-    { "-by",      FALSE, etREAL, &boxy,     "Box y-size" },
+    { "-by",      FALSE, etREAL, &boxy,   "Box y-size" },
     { "-rainbow", FALSE, etENUM, rainbow, "Rainbow colors, convert white to" }
   };
   t_filenm  fnm[] = {
@@ -800,7 +814,11 @@ int main(int argc,char *argv[])
     rainbow_map(rainbow[0],nmat2,mat2);
   }
 
-  do_mat(nmat,mat,nmat2,mat2,bDiag,bFirstDiag,bTitle,bLegend,
+  w_legend = legend[0][0];
+  if ((mat2 == NULL) && (w_legend != 'n'))
+    w_legend = 'f';
+
+  do_mat(nmat,mat,nmat2,mat2,bDiag,bFirstDiag,bTitle,w_legend,
 	 boxx,boxy,epsfile,xpmfile,
 	 opt2fn_null("-di",NFILE,fnm),opt2fn_null("-do",NFILE,fnm));
   
