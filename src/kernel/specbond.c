@@ -180,10 +180,10 @@ int mk_specbonds(int natoms,t_pdbatom pdba[],bool bInteractive,
   
   sb=get_specbonds(&nsb);
   
-  nres=pdba[natoms-1].resnr;
-  snew(cysp,nres+1);
-  snew(sgp,nres+1);
-  snew(nBonded,nres+1);
+  nres=pdba[natoms-1].resnr+1;
+  snew(cysp,nres);
+  snew(sgp,nres);
+  snew(nBonded,nres);
 
   ncys = 0;
   for(i=0;(i<natoms);i++) {
