@@ -91,7 +91,7 @@ int main(int argc,char *argv[])
     { efLOG, "-g", "md",      ffWRITE },
     { efTRX, "-rerun", "rerun", ffOPTRD },
     /* function "optRerunMDset" (in runner.c) checks if -rerun is specified */
-    { efHAT, "-hat","ghat",   ffOPTRD },
+    /* { efHAT, "-hat","ghat",   ffOPTRD }, currently useless */
     { efEDI, "-ei", "sam",    ffOPTRD },
     { efEDO, "-eo", "sam",    ffOPTWR },
     { efDAT, "-pi","pull",    ffOPTRD },
