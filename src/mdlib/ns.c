@@ -134,7 +134,7 @@ static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
     reallocate_nblist(nl);
     nl->jindex[0] = 0;
     nl->jindex[1] = 0;
-    nl->iinr[0] = -1;
+    nl->gid[0] = -1;
 #ifdef USE_THREADS
     nl->counter = 0;
     snew(nl->mtx,1);
@@ -261,7 +261,7 @@ static void reset_nblist(t_nblist *nl)
   nl->nrj       = 0;
   nl->maxlen    = 0;
   if (nl->maxnri > 0) {
-    nl->iinr[0]   = -1;
+    nl->gid[0]   = -1;
     if (nl->maxnrj > 1) {
       nl->jindex[0] = 0;
       nl->jindex[1] = 0;
@@ -282,7 +282,7 @@ static void reset_neighbor_list(t_forcerec *fr,bool bLR,int eNL)
 }
 
 static gmx_inline void new_i_nblist(t_nblist *nlist,
-				    int ftype,int i_atom,int shift,int gid,
+				    int ftype,atom_id i_atom,int shift,int gid,
 				    int *mno)
 {
   int    i,k,nri,nshift;
@@ -306,7 +306,7 @@ static gmx_inline void new_i_nblist(t_nblist *nlist,
      * been added in the list of the previous atom.
      */
     if ((nlist->jindex[nri+1] > nlist->jindex[nri]) && 
-	(nlist->iinr[nri] != -1)) {
+	(nlist->gid[nri] != -1)) {
       
       /* If so increase the counter */
       nlist->nri++;
@@ -382,7 +382,7 @@ static gmx_inline void close_nblist(t_nblist *nlist)
     int nri = nlist->nri;
     
     if ((nlist->jindex[nri+1] > nlist->jindex[nri]) && 
-	(nlist->iinr[nri] != -1)) {
+	(nlist->gid[nri] != -1)) {
       nlist->nri++;
       nlist->jindex[nri+2] = nlist->nrj;
     }
@@ -401,7 +401,7 @@ static gmx_inline void close_neighbor_list(t_forcerec *fr,bool bLR,int eNL)
   }
 }
 
-static void add_j_to_nblist(t_nblist *nlist,int j_atom)
+static void add_j_to_nblist(t_nblist *nlist,atom_id j_atom)
 {
   int nrj=nlist->nrj;
   

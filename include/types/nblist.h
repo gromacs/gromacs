@@ -34,11 +34,11 @@ typedef struct {
   int     nrj,maxnrj;	       /* Current/max number of j particles	*/
   int     maxlen;              /* maxnr of j atoms for a single i atom 	*/
   int     solvent;             /* type of solvent optimization          */
-  int     *iinr;	       /* The i-elements			*/
+  atom_id *iinr;	       /* The i-elements			*/
   int     *gid;                /* Index in energy arrays                */
   int     *shift;              /* Shift vector index                    */
   int     *jindex;             /* Index in jjnr                         */
-  int     *jjnr;	       /* The j-atom list                       */
+  atom_id *jjnr;	       /* The j-atom list                       */
   int     *nsatoms;            /* list with number of atoms for general */
                                /* solvents. There are two entries for 	*/
                                /* each molecule - first is total natoms */
@@ -53,13 +53,12 @@ typedef struct {
 #endif
 } t_nblist;
 
-/* For atom I =  nblist->iinr[N] (0 <= N < nblist->nri) we define
- * nblist->sindex[N+1] - nblist->sindex[N] different shift vector indices 
- * SI, i.e. (nblist->sindex[N] <= SI < nblist->sindex[N+1])
- * corresponding to atom I.
- * For shift vector S = nblist->shift[SI], the corresponding J atoms are
+/* For atom I =  nblist->iinr[N] (0 <= N < nblist->nri) there can be
+ * several neighborlists (N's), for different energy groups (gid) and
+ * different shifts (shift).
+ * For corresponding J atoms for each list are are:
  * nblist->jjnr[JI]
- * with nblist->jindex[SI] <= JI < nblist->jindex[SI+1]
+ * with nblist->jindex[N] <= JI < nblist->jindex[N+1]
  *
  * Clear?
  */
