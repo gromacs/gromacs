@@ -31,6 +31,7 @@ static char *SRCID_mkyaw_c = "$Id$";
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
+#include "assert.h"
 #include "pdbio.h"
 #include "confio.h"
 #include "symtab.h"
@@ -68,10 +69,12 @@ int main(int argc, char *argv[])
     "mkyaw adds to an existing conf file for every OW atom an DW and SW",
     "after the hydrogens (or the inverse with the -back option)."
   };
-  static bool bBack = FALSE;
+  static bool bBack=FALSE,bDW=TRUE;
   t_pargs pa[] = {
     { "-back",   FALSE, etBOOL, &bBack, 
-      "Remove SW and DW" }
+      "Remove SW and DW" },
+    { "-dw",     FALSE, etBOOL, &bDW,
+      "Use both dummy and shell" }
   };
 #define NPA asize(pa)
   t_filenm fnm[] = {
@@ -120,15 +123,18 @@ int main(int argc, char *argv[])
       iout++;
       if (i >= 2) {
 	if (strstr(*atoms.atomname[i-2],"OW") != NULL) {
-	  copy_atom(&tab,&atoms,i-2,&aout,iout,xin,xout,vin,vout);
-	  aout.atomname[iout] = put_symtab(&tab,"DW");
-	  iout++;
+	  if (bDW) {
+	    copy_atom(&tab,&atoms,i-2,&aout,iout,xin,xout,vin,vout);
+	    aout.atomname[iout] = put_symtab(&tab,"DW");
+	    iout++;
+	  }
 	  copy_atom(&tab,&atoms,i-2,&aout,iout,xin,xout,vin,vout);
 	  aout.atomname[iout] = put_symtab(&tab,"SW");
 	  iout++;
 	}
       }
     }
+    aout.nr = iout;
     close_symtab(&tab);
     fprintf(stderr,"iout = %d\n",iout);
     write_sto_conf(outfile,"Gravity Sucks",&aout,xout,vout,box); 
@@ -138,8 +144,3 @@ int main(int argc, char *argv[])
   
   return 0;
 }
-
-
-
-
-
