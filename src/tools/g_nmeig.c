@@ -45,6 +45,7 @@ static char *SRCID_g_nmeig_c = "$Id$";
 #include "xvgr.h"
 #include "gstat.h"
 #include "txtdump.h"
+#include "callf77.h"
 
 int main(int argc,char *argv[])
 {

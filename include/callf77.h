@@ -85,4 +85,6 @@ extern void flincsld(real *x,real *xp,int *nc,int *ncm,int *cmax,
 extern void fconerr(real *max,real *rms,int *imax,
 		    rvec *xprime,int *ncons,int *bla1,int *bla2,real *bllen);
 
+extern void fql77(int *n,real *x, real *d, real *e, int *nmax);
+
 #endif
