@@ -131,7 +131,7 @@ void vecinvsqrt(real in[],real out[],int n)
 #else  /* no gmx invsqrt */
     for(i=0;i<n;i++)
       out[i]=1.0f/sqrt(in[i]);
-#endif /* SOFTWARE_SQRT */
+#endif /* SOFTWARE_INVSQRT */
 #endif
 }
 
@@ -150,16 +150,6 @@ void vecrecip(real in[],real out[],int n)
 #  endif 
 #else /* not IBM with MASS */
 
-
-#ifdef SOFTWARE_RECIP
-  const real  two=2.0;
-  t_convert   result,bit_pattern;
-  unsigned int exp,fract;
-  float       lu,x;
-#ifdef DOUBLE
-  real        y;
-#endif
-#endif /* SOFTWARE_RECIP */
   int i;
 
 #if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
@@ -188,26 +178,8 @@ void vecrecip(real in[],real out[],int n)
     vecrecip_sse2(in,out,n);
   else
 #endif /* no sse2 optimizations */
-#ifdef SOFTWARE_RECIP
-    for(i=0;i<n;i++) {
-      x=in[i];
-      bit_pattern.fval=x;
-      exp   = EXP_ADDR(bit_pattern.bval);
-      fract = FRACT_ADDR(bit_pattern.bval);
-      result.bval=crecipexptab[exp] | crecipfracttab[fract];
-      lu    = result.fval;
-      
-#ifdef DOUBLE
-      y=lu*(two-x*lu);
-      out[i]=y*(two-x*y);
-#else
-      out[i]=lu*(two-x*lu);
-#endif
-    }
-#else /* No gmx recip */ 
     for(i=0;i<n;i++)
       out[i]=1.0f/(in[i]);
-#endif /* SOFTWARE_RECIP */
 #endif
 }
 

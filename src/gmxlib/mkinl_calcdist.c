@@ -44,19 +44,6 @@ void call_vectorized_routines()
   if(!bC)
     decrement("m","1");
   
-  /* some machines perform better if the can vectorize the
-   * square distance calculation. */
-  if(opt.decrease_square_latency) {
-    assign("m3", bC ? "0" : "1");
-    start_loop("k", bC ? "0" : "1" ,"m");
-    assign("dx11",ARRAY(drbuf,m3));
-    assign("dy11",ARRAY(drbuf,m3+1));
-    assign("dz11",ARRAY(drbuf,m3+2));
-    assign(ARRAY(buf1,k),"dx11*dx11+dy11*dy11+dz11*dz11");
-    increment("m3","3");
-    end_loop();
-  }
-  
   /* always start with vectorized invsqrt if we should do it
    */
   if(loop.vectorize_invsqrt) {
@@ -160,17 +147,11 @@ int calc_dist()
 	  increment("m3","1");
 	}
       }
-      if(!opt.decrease_square_latency)
-	nflop += calc_rsq(i,j);
-      else if(DO_VECTORIZE) /* calc square separately later, but we  */
+      nflop += calc_rsq(i,j);
+      if(DO_VECTORIZE) /* calc square separately later, but we  */
 	increment("m","1"); /* need to know the number of items      */
     }
   
-  if(opt.decrease_square_latency && !DO_VECTORIZE)
-    for(i=1;i<=loop.ni;i++)
-      for(j=1;j<=loop.nj;j++)
-	nflop += calc_rsq(i,j);
-
   return nflop;
 }
 
@@ -183,8 +164,17 @@ int calc_rinv_and_rinvsq()
   if(!DO_VECTORIZE && !opt.delay_invsqrt) {
     if(loop.invsqrt)
       nflop += calc_invsqrt();
-    else if(loop.recip) 
-      nflop += calc_recip();
+    else if(loop.recip) {
+      for(j=1;j<=loop.nj;j++)
+	for(i=1;i<=loop.ni;i++) {
+	  assign("rinvsq%d", "1.0/rsq%d",i*10+j,i*10+j);
+#ifdef DOUBLE
+	  nflop += 6;
+#else
+	  nflop += 3;
+#endif
+	}
+    }
   }
   return nflop;
 }

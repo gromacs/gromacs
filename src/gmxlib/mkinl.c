@@ -76,35 +76,25 @@ static char *SRCID_mkinl_c = "$Id$";
  *                     the processors due to e.g. other jobs on a machine. 
  *                     Only choose one of them!
  *
- * -DSOFTWARE_SQRT     Use the gromacs implementation of the inverse
+ * -DSOFTWARE_INVSQRT  Use the gromacs implementation of the inverse
  *                     square root.
  *                     This is probably a good thing to do on most 
  *                     computers except SGI and ibm power2/power3 which
  *                     have special hardware invsqrt instructions.
  *                     (but the PPC604 available in some ibm smp nodes doesnt)
  *
- * -DSOFTWARE_RECIP    Same as invsqrt, but this is for 1/x. This
- *                     should NOT be used without checking - most 
- *                     computers have a more efficient hardware
- *                     routine, but it may help on SOME x86 boxes.
- *
  * INNERLOOP OPTIMIZATION OPTIONS:  
  * 
- * -DDONT_INLINE_GMXCODE
+ * -DDONT_INLINE_INVSQRT
  *                     Turns off inlining of the gromacs inverse square root 
- *                     and/or reciprocal on architectures which use
+ *                     on architectures which use
  *                     it, which comes handy for debugging. It is
  *                     probably slightly slower, though.
  *
- * -DPREFETCH_F        Prefetching of forces in normal, solvent, water 
- * -DPREFETCH_F_S      and water-water loops. 
- * -DPREFETCH_F_W
- * -DPREFETCH_F_WW     
- * 
- * -DPREFETCH_X        Prefetching of coordinates in normal, solvent, water 
- * -DPREFETCH_X_S      and water-water loops. 
- * -DPREFETCH_X_W
- * -DPREFETCH_X_WW     
+ * -DPREFETCH        Prefetching of forces in normal, solvent, water 
+ * -DPREFETCH_S      and water-water loops. 
+ * -DPREFETCH_W
+ * -DPREFETCH_WW     
  *
  * -DVECTORIZE_INVSQRT    Vectorize the corresponding part of the force
  * -DVECTORIZE_INVSQRT_S  calculation. This can avoid cache trashing, and
@@ -114,9 +104,10 @@ static char *SRCID_mkinl_c = "$Id$";
  *                        interactions (requiring sqrt), so the reciprocal  
  *                        vectorization is only meaningful on normal loops.
  *
- * -DDECREASE_SQUARE_LATENCY  Try to hide latencies by doing some operations
- * -DDECREASE_LOOKUP_LATENCY  in parallel rather than serial in the innermost loop.
  * 
+ * -DDECREASE_LOOKUP_LATENCY  Hide 1/sqrt lookup table latency by doing them
+ *                            in parallel for water & water-water loops.
+ *
  * The special water-water loops can be turned off in ns.c by defining
  *
  * -DDISABLE_WATERWATER_LOOPS
@@ -273,25 +264,18 @@ int main(int argc,char *argv[])
 	         "    the control word this might affect the numerical result slightly.\n");
 #endif  
   
-#ifdef SOFTWARE_SQRT
+#ifdef SOFTWARE_INVSQRT
   arch.gmx_invsqrt = TRUE;
   fprintf(stderr,">>> Using gromacs invsqrt code\n");
 #else
   arch.gmx_invsqrt = FALSE;
 #endif
     
-#ifdef SOFTWARE_RECIP
-  arch.gmx_recip = TRUE;
-  fprintf(stderr,">>> Using gromacs reciprocal code\n");
+#if ((defined SOFTWARE_INVSQRT) && !defined DONT_INLINE)
+  opt.inline_invsqrt = TRUE;
+  fprintf(stderr,">>> Inlining gromacs invsqrt code\n");
 #else
-  arch.gmx_recip = FALSE;
-#endif
-    
-#if ((defined SOFTWARE_SQRT || defined SOFTWARE_RECIP) && !defined DONT_INLINE)
-  opt.inline_gmxcode = TRUE;
-  fprintf(stderr,">>> Inlining gromacs invsqrt and/or reciprocal code\n");
-#else
-  opt.inline_gmxcode = FALSE;  
+  opt.inline_invsqrt = FALSE;  
 #endif
 
 #ifdef SIMPLEWATER
@@ -302,61 +286,29 @@ int main(int argc,char *argv[])
   arch.simplewater = FALSE;
 #endif
 
-  fprintf(stderr,">>> Prefetching coordinates in loops: ");
-#if (!defined PREFETCH_X) && (!defined PREFETCH_X_S) && \
-    (!defined PREFETCH_X_W) && (!defined PREFETCH_X_WW)
-  fprintf(stderr,"none");
-#endif
-  opt.prefetch_x=0;
-#ifdef PREFETCH_X
-  fprintf(stderr,"normal ");
-  opt.prefetch_x |= TYPE_NORMAL;
-#endif
-#ifdef PREFETCH_X_S
-  fprintf(stderr,"solvent ");
-  opt.prefetch_x |= TYPE_SOLVENT;
-#endif
-#ifdef PREFETCH_X_W
-  fprintf(stderr,"water ");
-  opt.prefetch_x |= TYPE_WATER;
-#endif
-#ifdef PREFETCH_X_WW
-  fprintf(stderr,"water-water ");
-  opt.prefetch_x |= TYPE_WATERWATER;
-#endif
-  fprintf(stderr,"\n");
-  
   fprintf(stderr,">>> Prefetching forces in loops: ");
-#if (!defined PREFETCH_F) && (!defined PREFETCH_F_S) && \
-    (!defined PREFETCH_F_W) && (!defined PREFETCH_F_WW)
+#if (!defined PREFETCH) && (!defined PREFETCH_S) && \
+    (!defined PREFETCH_W) && (!defined PREFETCH_WW)
   fprintf(stderr,"none");
 #endif
-  opt.prefetch_f=0;
-#ifdef PREFETCH_F
+  opt.prefetch=0;
+#ifdef PREFETCH
   fprintf(stderr,"normal ");
-  opt.prefetch_f |= TYPE_NORMAL;
+  opt.prefetch |= TYPE_NORMAL;
 #endif
-#ifdef PREFETCH_F_S
+#ifdef PREFETCH_S
   fprintf(stderr,"solvent ");
-  opt.prefetch_f |= TYPE_SOLVENT;
+  opt.prefetch |= TYPE_SOLVENT;
 #endif
-#ifdef PREFETCH_F_W
+#ifdef PREFETCH_W
   fprintf(stderr,"water ");
-  opt.prefetch_f |= TYPE_WATER;
+  opt.prefetch |= TYPE_WATER;
 #endif
-#ifdef PREFETCH_F_WW
+#ifdef PREFETCH_WW
   fprintf(stderr,"water-water ");
-  opt.prefetch_f |= TYPE_WATERWATER;
+  opt.prefetch |= TYPE_WATERWATER;
 #endif
   fprintf(stderr,"\n");  
-
-
-#ifdef DECREASE_SQUARE_LATENCY
-  opt.decrease_square_latency = TRUE;
-  fprintf(stderr,">>> Will try to decrease square distance calculation latency\n");
-#else
-  opt.decrease_square_latency = FALSE;
-#endif
 
 #ifdef DECREASE_LOOKUP_LATENCY
   opt.decrease_lookup_latency = TRUE;
@@ -437,7 +389,7 @@ int main(int argc,char *argv[])
     fprintf(stderr,"Error: Can't use threads on a vector architecture\n");
     exit(-1);
   }
-  if(arch.vectorcpu && (opt.prefetch_x || opt.prefetch_f)) {
+  if(arch.vectorcpu || opt.prefetch) {
     fprintf(stderr,"Error: Prefetching on a vector architecture is bad\n");
     exit(-1);
   }
@@ -478,7 +430,7 @@ int main(int argc,char *argv[])
 	  for(loop.free=FREE_NO;loop.free<FREE_NR;loop.free++) {
 	    /* Exclude some impossible or unnecessary
 	       combinations. */
-	    
+
 	    if(!loop.coul && !loop.vdw)
 	      continue;   /* no interactions at all to calculate */
 	    if(loop.free &&

@@ -50,7 +50,6 @@ static char *SRCID_vec_h = "$Id$";
   lookup-table optimized scalar operations:
   real invsqrt(float x)
   void vecinvsqrt(real in[],real out[],int n)
-  real recip(float x)
   void vecrecip(real in[],real out[],int n)
   real sqr(real x)
   
@@ -112,15 +111,11 @@ static char *SRCID_vec_h = "$Id$";
 
 #define PR_VEC(a)       a[XX],a[YY],a[ZZ]
 
-#ifdef SOFTWARE_SQRT
+#ifdef SOFTWARE_INVSQRT
 extern const unsigned int cinvsqrtexptab[];
 extern const unsigned int cinvsqrtfracttab[];
 #endif
 
-#ifdef SOFTWARE_RECIP
-extern const unsigned int crecipexptab[];
-extern const unsigned int crecipfracttab[];
-#endif
 
 typedef union 
 {
@@ -129,7 +124,7 @@ typedef union
 } t_convert;
 
 
-#ifdef SOFTWARE_SQRT
+#ifdef SOFTWARE_INVSQRT
 static inline real invsqrt(float x)
 {
   const real  half=0.5;
@@ -166,34 +161,6 @@ static inline real invsqrt(float x)
 
 
 
-#ifdef SOFTWARE_RECIP
-static inline real recip(float x)
-{
-  const real  two=2.0;
-  t_convert   result,bit_pattern;
-  unsigned int exp,fract;
-  float       lu;
-  real        y;
-#ifdef DOUBLE
-  real        y2;
-#endif
- 
-  bit_pattern.fval=x;
-  exp   = EXP_ADDR(bit_pattern.bval);
-  fract = FRACT_ADDR(bit_pattern.bval);
-  result.bval=crecipexptab[exp] | crecipfracttab[fract];
-  lu    = result.fval;
-  
-  y=lu*(two-x*lu);
-#ifdef DOUBLE
-  y2=y*(two-x*y);
-  
-  return y2;                    /* 6 Flops */
-#else
-  return y;                     /* 3  Flops */
-#endif
-}
-#endif
 
 
 static inline real sqr(real x)

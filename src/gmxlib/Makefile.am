@@ -18,11 +18,10 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	enxio.c		ewald_util.c	fatal.c		ffscanf.c	\
 	filenm.c	futil.c		gbutil.c	fnbf.c		\
 	gmxfio.c	ifunc.c		index.c		cinvsqrtdata.c	\
-	crecipdata.c    invblock.c	macros.c	gmx_system_xdr.c \
+	invblock.c	macros.c	orires.c	gmx_system_xdr.c \
 	main.c		maths.c		matio.c		memdump.c	\
 	mshift.c	mvdata.c	mvxvf.c		names.c		\
 	network.c	nrama.c		nrjac.c		nrnb.c		\
-	orires.c	\
 	pargs.c		pbc.c		pdbio.c		princ.c		\
 	rando.c		random.c	rbin.c		rdgroup.c	\
 	readinp.c	replace.c	rmpbc.c		shift_util.c	\
@@ -62,9 +61,9 @@ innerc.c: mkinl
 EXTRA_DIST 	 =			mkinl_declarations.c	\
 		mkinl_outerloop.c	mkinl_innerloop.c	\
 		mkinl_invsqrt.c		mkinl_calcdist.c	\
-		mkinl_recip.c		mkinl_interactions.c	\
-		metacode.c		mkinl.h			\
-		mkinl_fortrandata.h	mkinl.c
+		mkinl_interactions.c	metacode.c		\
+		mkinl.h			mkinl_fortrandata.h	\
+		mkinl.c
 
 BUILD_COMPILE = $(CC_FOR_BUILD) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 
@@ -82,15 +81,12 @@ mkinl_calcdist.o: mkinl_calcdist.c
 		$(BUILD_COMPILE) -c $(srcdir)/mkinl_calcdist.c	
 mkinl_invsqrt.o: mkinl_invsqrt.c
 		$(BUILD_COMPILE) -c $(srcdir)/mkinl_invsqrt.c
-mkinl_recip.o:	mkinl_recip.c
-		$(BUILD_COMPILE) -c $(srcdir)/mkinl_recip.c
 mkinl_interactions.o: mkinl_interactions.c
 		$(BUILD_COMPILE) -c $(srcdir)/mkinl_interactions.c
 
 MKINL_OBJ	= \
 		mkinl.o mkinl_declarations.o mkinl_outerloop.o mkinl_innerloop.o \
-		mkinl_calcdist.o mkinl_invsqrt.o mkinl_recip.o mkinl_interactions.o \
-		metacode.o
+		mkinl_calcdist.o mkinl_invsqrt.o mkinl_interactions.o metacode.o
 
 mkinl:		$(MKINL_OBJ)
 		$(BUILD_COMPILE) -o $@ $(MKINL_OBJ)

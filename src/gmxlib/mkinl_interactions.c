@@ -73,7 +73,7 @@ int update_inner_forces(int i,int j)
 
 
   comment("Convert scalar force to cartesian coords");
-  if(DO_VECTORIZE && !DO_PREFETCH_X) {
+  if(DO_VECTORIZE) {
     assign("tx%d","%s*fs%d",ij,ARRAY(drbuf,m3),ij);
     increment("m3","1");
     assign("ty%d","%s*fs%d",ij,ARRAY(drbuf,m3),ij);
@@ -85,6 +85,7 @@ int update_inner_forces(int i,int j)
     assign("ty%d","dy%d*fs%d",ij,ij,ij);
     assign("tz%d","dz%d*fs%d",ij,ij,ij);
   }
+
   /* i forces */
   increment("fix%d","tx%d",i,ij);
   increment("fiy%d","ty%d",i,ij);
@@ -97,7 +98,7 @@ int update_inner_forces(int i,int j)
     offset = 3*(j-1)+m;
     
     /* determine source array or variable */
-    if(!DO_PREFETCH_F && i==1) /* source is faction or fbuf */      
+    if(!DO_PREFETCH && i==1) /* source is faction or fbuf */      
       sprintf(src, arch.vectorcpu ? _array("fbuf","kk+%d",offset) : _array("faction","j3+%d",offset));
     else  /* source is fj */
       sprintf(src,"fj%c%d",m+'x',j);
@@ -694,7 +695,7 @@ int do_bham(int i, int j)
 }
 
 
-int calc_interactions(bool prefetchx)
+int calc_interactions(void)
 {
   /* Remember to set need_invsqrt, need_reciprocal and need_exp 
    * to the correct needs for your new interaction already 
@@ -732,18 +733,9 @@ int calc_interactions(bool prefetchx)
 	if((loop.coul_needs_r) || (loop.vdw_needs_r && do_vdw))
 	  assign( "r%d" ,"%s*%s",ij,ARRAY(buf1,m),ARRAY(buf2,m));
 	increment("m","1");
-	/* get dr from buffer */
-	if(DO_PREFETCH_X && DO_FORCE) {
-	  assign("dx%d",ARRAY(drbuf,m3),ij);
-	  increment("m3","1");
-	  assign("dy%d",ARRAY(drbuf,m3),ij);
-	  increment("m3","1");
-	  assign("dz%d",ARRAY(drbuf,m3),ij);
-	  increment("m3","1");
-	}
       } else { /* no vectorization */
-	/* If we aren't trying to hide the latency of invsqrt or
-	 * rec, we calculate them here just before doing the
+	/* If we aren't trying to hide the latency of invsqrt 
+	 * we calculate it here just before doing the
 	 * interaction for each pair of atoms!
 	 */
 	if(opt.delay_invsqrt) {
@@ -803,10 +795,6 @@ int calc_interactions(bool prefetchx)
        * the scalar force to hide a flop.
        */
 
-      /* Prefetch next round of coordinates if this is the last interaction */
-      if((i==loop.ni && j==loop.nj) && prefetchx) 
-	fetch_coord(TRUE);
-
       if(DO_FORCE)
 	nflop += calc_scalar_force(i,j);
 
@@ -819,5 +807,6 @@ int calc_interactions(bool prefetchx)
     }       
   return nflop;
 }
+
 
 

@@ -53,22 +53,16 @@ static char *SRCID_mkinl_h = "$Id$";
  * the options in mkinl.c and most things should follow automatically.
  */
 
-#define DO_FORCE     (loop.do_force==TRUE)
-#define DO_RF        (loop.coul==COUL_RF)
+#define DO_FORCE       (loop.do_force==TRUE)
+#define DO_RF          (loop.coul==COUL_RF)
 #define DO_COULTAB     (loop.coul==COUL_TAB)
 #define DO_VDWTAB       ((loop.vdw==VDW_TAB) || (loop.vdw==VDW_BHAMTAB))
 #define DO_TAB         (DO_COULTAB || DO_VDWTAB)
 #define DO_BHAM        ((loop.vdw==VDW_BHAM) || (loop.vdw==VDW_BHAMTAB))
-
-#define DO_PREFETCH_X  ((loop.sol==SOL_NO && (opt.prefetch_x & TYPE_NORMAL)) || \
-                        (loop.sol==SOL_MNO && (opt.prefetch_x & TYPE_SOLVENT)) || \
-                        (loop.sol==SOL_WATER && (opt.prefetch_x & TYPE_WATER)) || \
-                        (loop.sol==SOL_WATERWATER && (opt.prefetch_x & TYPE_WATERWATER)))
-
-#define DO_PREFETCH_F  ((loop.sol==SOL_NO && (opt.prefetch_f & TYPE_NORMAL)) || \
-                        (loop.sol==SOL_MNO && (opt.prefetch_f & TYPE_SOLVENT)) || \
-                        (loop.sol==SOL_WATER && (opt.prefetch_f & TYPE_WATER)) || \
-                        (loop.sol==SOL_WATERWATER && (opt.prefetch_f & TYPE_WATERWATER)))
+#define DO_PREFETCH    ((loop.sol==SOL_NO && (opt.prefetch & TYPE_NORMAL)) || \
+                        (loop.sol==SOL_MNO && (opt.prefetch & TYPE_SOLVENT)) || \
+                        (loop.sol==SOL_WATER && (opt.prefetch & TYPE_WATER)) || \
+                        (loop.sol==SOL_WATERWATER && (opt.prefetch & TYPE_WATERWATER)))
   
 #define DO_SOL         (loop.sol==SOL_MNO) /* non-water solvent optimzations */
 #define DO_WATER       (loop.sol==SOL_WATER || loop.sol==SOL_WATERWATER)
@@ -79,8 +73,7 @@ static char *SRCID_mkinl_h = "$Id$";
 /* For pure LJ-only loops we can save some cycles by just calculating the
  * reciprocal. In all other cases we need to do the invsqrt
  */
-#define DO_INLINE_INVSQRT   (loop.invsqrt && !loop.vectorize_invsqrt && opt.inline_gmxcode)
-#define DO_INLINE_RECIP     (loop.recip && !loop.vectorize_recip && opt.inline_gmxcode)
+#define DO_INLINE_INVSQRT   (loop.invsqrt && !loop.vectorize_invsqrt && opt.inline_invsqrt)
 #define OVERWRITE_RSQ  (!arch.vectorcpu && !loop.vdw_needs_r && !loop.vdw_needs_rsq && \
                         !loop.coul_needs_r && !loop.coul_needs_rsq)
 			/* Can we overwrite the vectorization array
@@ -156,8 +149,7 @@ typedef int looptype_t;
 
 /* Global structure determining architectural options */
 typedef struct {
-  bool     gmx_invsqrt;    /* Use gmx software routines? */
-  bool     gmx_recip;    
+  bool     gmx_invsqrt;    /* Use gmx software invsqrt? */
   thread_t threads;
   bool     simplewater;
   bool     vectorcpu;          
@@ -167,18 +159,12 @@ typedef struct {
 
 /* Global structure determining optimization options */
 typedef struct {
-  bool         inline_gmxcode;            /* Inline gmx software routines */
-  looptype_t   prefetch_x;       
-  looptype_t   prefetch_f;
-  bool         decrease_square_latency;   /* Try to hide latencies */ 
-  bool         decrease_lookup_latency;   
+  bool         inline_invsqrt;            /* Inline gmx software invsqrt */
+  looptype_t   prefetch;
+  bool         decrease_lookup_latency;   /* try to hide invsqrt lookup penalty */
   bool         delay_invsqrt;
-  /* Dont try to hide latency for (hardware) invsqrt or reciprocal
-   * by calculating the before we need them. 
-   */
-  
   looptype_t   vectorize_invsqrt;         /* vectorize distance calculation when possible */
-  bool         vectorize_recip;           /* not meaningful on water loops */
+  bool         vectorize_recip;           /* vector recip is not meaningful on water loops */
 } opt_t;
 
 
@@ -191,7 +177,7 @@ typedef struct {
     vdw_t    vdw;
     sol_t    sol;
     free_t   free;
-    bool     do_force;     /* dont calc force in MC loop versions */
+    bool     do_force;           /* dont calc force in MC loop versions */
     bool     coul_needs_rinv;    /* Which power of r are needed for the */
     bool     coul_needs_rinvsq;  /* coulombic interactions?             */
     bool     coul_needs_rsq;
@@ -259,8 +245,6 @@ int calc_invsqrt(void);
 void invsqrt_vars(void);
 void fortran_invsqrt(void);
 int calc_recip(void);
-void recip_vars(void);
-void fortran_recip(void);
 void fortran_vecinvsqrt(void);
 void fortran_vecsqrt(void);
 
@@ -273,7 +257,7 @@ void close_stripmine_loop(void);
 
 void call_vectorized_routines(void);
 
-int calc_interactions(bool prefetchx);
+int calc_interactions(void);
 
 int calc_dist(void);
 int calc_rinv_and_rinvsq(void);
@@ -284,7 +268,7 @@ void prefetch_forces(void);
 
 void unpack_inner_data(bool calcdist, bool calcforce);
 
-void fetch_coord(bool bPrefetch);
+void fetch_coord(void);
 
 int update_inner_forces(int i,int j);
 

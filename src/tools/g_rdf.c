@@ -110,7 +110,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
       fatal_error(0,"Trajectory (%d atoms) does not match topology (%d atoms)",
 		  natoms,top.atoms.nr);
   /* check with index groups */
-  for (i=0; i<ng; i++)
+  for (i=0; i<=ng; i++)
     for (j=0; j<isize[i]; j++)
       if ( index[i][j] >= natoms )
 	fatal_error(0,"Atom index (%d) in index group %s (%d atoms) larger "

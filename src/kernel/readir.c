@@ -214,12 +214,12 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   
   /* First strict check, then easier */
   if (EEL_LR(ir->coulombtype)) {
-    sprintf(err_buf,"With coulombtype = %s rcoulomb must be == rlist",
+    sprintf(err_buf,"With coulombtype = %s rcoulomb must be <= rlist",
 	    eel_names[ir->coulombtype]);
-    CHECK(ir->rcoulomb != ir->rlist);
+    CHECK(ir->rcoulomb > ir->rlist);
   }
   else if ((ir->coulombtype != eelSHIFT) && (ir->coulombtype != eelSWITCH)) {
-    sprintf(err_buf,"rcoulomb must be >= rlist");
+    sprintf(err_buf,"rcoulomb must be >= rlist for coulombtype = %s ",eel_names[ir->coulombtype]);
     CHECK(ir->rlist > ir->rcoulomb);
   }
   
@@ -255,6 +255,14 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     sprintf(err_buf,"rvdw must be >= rlist");
     CHECK(ir->rlist > ir->rvdw);
   }
+  if((ir->coulombtype == eelSHIFT) || (ir->coulombtype == eelSWITCH) ||
+     (ir->vdwtype == evdwSWITCH) || (ir->vdwtype == evdwSHIFT)) 
+    if((ir->rlist == ir->rcoulomb) || (ir->rlist == ir->rvdw)) {
+      sprintf(warn_buf,"For strict energy conservation with switch/shift potentials, rlist should be 0.1 to 0.3 nm larger than rcoulomb/rvdw.");
+      warning(NULL);
+    }
+
+ 
 }
 
 static int str_nelem(char *str,int maxptr,char *ptr[])
@@ -262,7 +270,7 @@ static int str_nelem(char *str,int maxptr,char *ptr[])
   int  np=0;
   char *copy0,*copy;
   
-  copy0=strdup(str);
+  copy0=strdup(str); 
   copy=copy0;
   ltrim(copy);
   while (*copy != '\0') {
@@ -597,8 +605,7 @@ void get_ir(char *mdparin,char *mdparout,
 	ir->ref_p[i][m] = ir->ref_p[m][i];
 	ir->compress[i][m] = ir->compress[m][i];
       }
-  }
-  fprintf(stderr,"Warning: as of GMX v 2.0 unit of compressibility is truly 1/bar\n");
+  } 
 
   switch (ecm_mode) {
   case ecmNO:

@@ -843,6 +843,8 @@ void fio_flush(int fio)
   fio_check(fio);
   if (FIO[fio].fp)
     fflush(FIO[fio].fp);
+ if (FIO[fio].xdr)
+      (void) fflush ((FILE *) FIO[fio].xdr->x_private);
 }
   
 off_t fio_ftell(int fio)

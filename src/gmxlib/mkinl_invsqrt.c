@@ -142,7 +142,7 @@ int calc_invsqrt()
     int i,j,tmpflop;
 
     /* check if it should be inlined */
-    if(opt.inline_gmxcode && arch.gmx_invsqrt)
+    if(opt.inline_invsqrt && arch.gmx_invsqrt)
       inlined_invsqrt();
     else {    /* otherwise do the ordinary one */
       for(j=1;j<=loop.nj;j++)

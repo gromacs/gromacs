@@ -40,7 +40,7 @@ static char *SRCID_tables_c = "$Id$";
 #include "vec.h"
 #include "main.h"
 #include "network.h"
- 
+
 /* All the possible (implemented) table functions */
 enum { 
   etabLJ6,   etabLJ12, etabLJ6Shift, etabLJ12Shift, etabShift,
@@ -52,6 +52,7 @@ static char *tabnm[etabNR] = {
   "RF",    "COUL", "Ewald", "LJ6Switch", "LJ12Switch","COULSwitch", 
   "EXPMIN","USER" 
 };
+
 /* This flag tells whether this is a Coulomb type funtion */
 bool bCoulomb[etabNR] = { FALSE, FALSE, FALSE, FALSE, TRUE,
 			  TRUE,  TRUE, TRUE, FALSE, FALSE, TRUE, 
@@ -60,15 +61,49 @@ bool bCoulomb[etabNR] = { FALSE, FALSE, FALSE, FALSE, TRUE,
 /* Index in the table that says which function to use */
 enum { etiCOUL, etiLJ6, etiLJ12, etiNR };
 
+
 typedef struct {
   int  nx,nx0;
-  real tabscale;
-  real *x,*v,*v2;
+  double tabscale;
+  double *x,*v,*v2;
 } t_tabledata;
 
 #define pow2(x) ((x)*(x))
 #define pow3(x) ((x)*(x)*(x))
 #define pow4(x) ((x)*(x)*(x)*(x))
+#define pow5(x) ((x)*(x)*(x)*(x)*(x))
+
+/* Calculate the potential and force for an r value
+ * in exactly the same way it is done in the inner loop.
+ * VFtab is a pointer to the table data, offset is
+ * the point where we should begin and stride is 
+ * 4 if we have a buckingham table, 3 otherwise.
+ * If you want to evaluate table no N, set offset to 4*N.
+ *  
+ * We use normal precision here, since that is what we
+ * will use in the inner loops.
+ */
+static void evaluate_table(real VFtab[], int offset, int stride, 
+			   real tabscale, real r, real *y, real *yp)
+{
+  int n;
+  real rt,eps,eps2;
+  real Y,F,Geps,Heps2,Fp;
+
+  rt       =  r*tabscale;
+  n        =  (int)rt;
+  eps      =  rt - n;
+  eps2     =  eps*eps;
+  n        =  offset+stride*n;
+  Y        =  VFtab[n];
+  F        =  VFtab[n+1];
+  Geps     =  eps*VFtab[n+2];
+  Heps2    =  eps2*VFtab[n+3];
+  Fp       =  F+Geps+Heps2;
+  *y       =  Y+eps*Fp;
+  *yp      =  (Fp+Geps+2.0*Heps2)*tabscale;
+}
+
 
 static void splint(real xa[],real ya[],real y2a[],
 		   int n,real x,real *y,real *yp)
@@ -79,6 +114,7 @@ static void splint(real xa[],real ya[],real y2a[],
   
   klo=1;
   khi=n;
+
   while ((khi-klo) > 1) {
     k=(khi+klo) >> 1;
     if (xa[k] > x) 
@@ -102,13 +138,18 @@ static void splint(real xa[],real ya[],real y2a[],
   *yp = (F + 2*eps*G + 3*eps*eps*H)/h;
 }
 
+
 static void copy2table(int n,int offset,int stride,
-		       real x[],real Vtab[],real Vtab2[],
+		       double x[],double Vtab[],double Vtab2[],
 		       real dest[],real r_zeros)
 {
+/* Use double prec. for the intermediary variables
+ * and temporary x/vtab/vtab2 data to avoid unnecessary 
+ * loss of precision.
+ */
   int  i,nn0;
-  real F,G,H,h;
-    
+  double F,G,H,h;
+
   for(i=1; (i<n-1); i++) {
     h   = x[i+1]-x[i];
     F   = (Vtab[i+1]-Vtab[i]-(h*h/6.0)*(2*Vtab2[i]+Vtab2[i+1]));
@@ -204,10 +245,17 @@ static void done_tabledata(t_tabledata *td)
 
 static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
 {
-  /* Calculate potential and 2nd derivative and Force and
-   * second derivative!
+  /* Fill the table according to the formulas in the manual.
+   * In principle, we only need the potential and the second
+   * derivative, but then we would have to do lots of calculations
+   * in the inner loop. By precalculating some terms (see manual)
+   * we get better eventual performance, despite a larger table.
+   *
+   * Since some of these higher-order terms are very small,
+   * we always use double precision to calculate them here, in order
+   * to avoid unnecessary loss of precision.
    */
-#ifdef DEBSW
+#ifdef DEBUG_SWITCH
   FILE *fp;
 #endif
   int  i,p;
@@ -240,11 +288,11 @@ static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
     rc = fr->rvdw;
   }
   if (bSwitch)
-    ksw  = 1.0/pow3(rc-r1);
+    ksw  = 1.0/(pow5(rc-r1));
   else
     ksw  = 0.0;
   if (bShift) {
-    if (tp == etabShift) 
+    if (tp == etabShift)
       p=1;
     else if (tp == etabLJ6Shift) 
       p=6; 
@@ -253,7 +301,7 @@ static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
     
     A = p * ((p+1)*r1-(p+4)*rc)/(pow(rc,p+2)*pow2(rc-r1));
     B = -p * ((p+1)*r1-(p+3)*rc)/(pow(rc,p+2)*pow3(rc-r1));
-    C = 1.0/pow(rc,p)-A/3.0*pow(rc-r1,3)-B/4.0*pow4(rc-r1);
+    C = 1.0/pow(rc,p)-A/3.0*pow3(rc-r1)-B/4.0*pow4(rc-r1);
     if (tp == etabLJ6Shift) {
       A=-A;
       B=-B;
@@ -264,7 +312,7 @@ static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
   }
   if (debug) { fprintf(debug,"Further\n"); fflush(debug); }
     
-#ifdef DEBSW
+#ifdef DEBUG_SWITCH
   fp=xvgropen("switch.xvg","switch","r","s");
 #endif
   for(i=td->nx0; (i<td->nx); i++) {
@@ -277,14 +325,31 @@ static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
     Vtab2 = 0.0;
     Ftab2 = 0.0;
     if (bSwitch) {
-      swi      = (rc-r)*(rc-r)*(rc+2*r-3*r1)*ksw;
-      swi1     = 6*(rc-r)*(r1-r)*ksw;
-      swi2     = -6*(r1+rc-2*r)*ksw;
+      /* swi is function, swi1 1st derivative and swi2 2nd derivative */
+      /* The switch function is 1 for r<r1, 0 for r>rc, and smooth for
+       * r1<=r<=rc. The 1st and 2nd derivatives are both zero at
+       * r1 and rc.
+       * ksw is just the constant 1/(rc-r1)^5, to save some calculations...
+       */ 
+      if(r<=r1) {
+	swi = 1.0;
+	swi1 = swi2 = 0.0;
+      } else if (r>=rc) {
+	swi = swi1 = swi2 = 0.0;
+      } else {
+	swi      = 1 - 10*pow3(r-r1)*ksw*pow2(rc-r1) 
+	  + 15*pow4(r-r1)*ksw*(rc-r1) - 6*pow5(r-r1)*ksw;
+	swi1     = -30*pow2(r-r1)*ksw*pow2(rc-r1) 
+	  + 60*pow3(r-r1)*ksw*(rc-r1) - 30*pow4(r-r1)*ksw;
+	swi2     =  -60*(r-r1)*ksw*pow2(rc-r1) 
+	  + 180*pow2(r-r1)*ksw*(rc-r1) - 120*pow3(r-r1)*ksw;
+      }
     }
-    else {
-      swi = swi1 = swi2 = 1.0;
+    else { /* not really needed, but avoids compiler warnings... */
+      swi = 1.0;
+      swi1 = swi2 = 0.0;
     }
-#ifdef DEBSW
+#ifdef DEBUG_SWITCH
     fprintf(fp,"%10g  %10g  %10g  %10g\n",r,swi,swi1,swi2);
 #endif
     switch (tp) {
@@ -388,11 +453,12 @@ static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
       Vtab2  = VtabT2*swi + VtabT1*swi1 + VtabT1*swi1 + VtabT*swi2;
     }  
     
+    /* Convert to single precision when we store to mem */
     td->v[i]  = Vtab;
     td->v2[i] = Vtab2;
   }
 
-#ifdef DEBSW
+#ifdef DEBUG_SWITCH
   fclose(fp);
 #endif
 }
@@ -517,6 +583,13 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose,char *fn)
       nx = fr->ntab = fr->rtab*fr->tabscale;
     }
   }
+  /* Each table type (e.g. coul,lj6,lj12) requires four 
+   * numbers per datapoint. The exponential Buckingham table
+   * requires an extra one for accuracy. Since we still have
+   * the coulomb and dispersion, there will be four table
+   * types with four elements each when we use Buckingham.
+   */
+
   snew(fr->coulvdwtab,( fr->bBHAM ? 16 :12 )*(nx+1)+1);
   for(k=0; (k<etiNR); k++) {
     if (tabsel[k] != etabUSER) {
@@ -534,12 +607,11 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose,char *fn)
   
     if (bDebugMode() && bVerbose) {
       fp=xvgropen(fns[k],fns[k],"r","V"); 
-      for(i=td[k].nx0+1; (i<td[k].nx-1); i++) {
-	for(j=0; (j<4); j++) {
-	  x0=td[k].x[i]+0.25*j*(td[k].x[i+1]-td[k].x[i]);
-	  splint(td[k].x,td[k].v,td[k].v2,nx-3,x0,&y0,&yp);
-	  fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
-	}
+      /* plot the output 5 times denser than the table data */
+      for(i=5*nx0;i<5*fr->ntab;i++) {
+	x0=i*fr->rtab/(5*fr->ntab);
+	evaluate_table(fr->coulvdwtab,4*k,12,fr->tabscale,x0,&y0,&yp);
+	fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
       }
       ffclose(fp);
     }

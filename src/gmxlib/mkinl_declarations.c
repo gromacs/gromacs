@@ -42,18 +42,12 @@ void init_block_data(void)
 
   if(arch.gmx_invsqrt) 
     fprintf(output,"%scommon /finvsqrtdata/ finvsqrtexptab(256),finvsqrtfracttab(4096)\n",indent());
-  if(arch.gmx_recip) 
-    fprintf(output,"%scommon /frecipdata/ frecipexptab(256),frecipfracttab(4096)\n",indent());
   
   if(arch.gmx_invsqrt)
     fprintf(output,"%sinteger*4 finvsqrtexptab,finvsqrtfracttab\n",indent());
-  if(arch.gmx_recip)
-    fprintf(output,"%sinteger*4 frecipexptab,frecipfracttab\n",indent());
 
   if(arch.gmx_invsqrt)
     fprintf(output,finvsqrtdata);   
-  if(arch.gmx_recip)
-    fprintf(output,frecipdata);   
   
   fprintf(output,"%send\n\n\n",indent());
 }
@@ -76,13 +70,12 @@ void file_header(void)
 	    "#include <vec.h>\n");
   } else {
     /* Write some full fortran functions, performing the
-     * invsqrt and reciprocal
+     * software invsqrt code.
      * Corresponding c table routines are found in vec.h
      */
 
-      fortran_invsqrt();
-      fortran_recip();
-    if(arch.gmx_invsqrt || arch.gmx_recip)
+    fortran_invsqrt();
+    if(arch.gmx_invsqrt)
       init_block_data();
   } 
 
@@ -459,8 +452,6 @@ void func_localvars()
  
   declare_int("j3");
   declare_int("jnr");
-  declare_int("nextj3");
-  declare_int("nextjnr");
   
   /* shift vectors */
   declare_real("shX");
@@ -512,12 +503,6 @@ void func_localvars()
     sprintf(buf,"jy%d",j);
     declare_real(buf);
     sprintf(buf,"jz%d",j);
-    declare_real(buf);
-    sprintf(buf,"nextjx%d",j);
-    declare_real(buf);
-    sprintf(buf,"nextjy%d",j);
-    declare_real(buf);
-    sprintf(buf,"nextjz%d",j);
     declare_real(buf);
   }
   /* j charges and types */
@@ -597,11 +582,6 @@ void func_localvars()
   
   if(DO_INLINE_INVSQRT)
     invsqrt_vars();
-  if(DO_INLINE_RECIP ||
-     (loop.sol==SOL_MNO && !loop.vectorize_recip &&
-      opt.inline_gmxcode && loop.vdw &&
-      !(loop.vdw_needs_rinv || loop.vdw_needs_r)))
-     recip_vars();
 }
 
 

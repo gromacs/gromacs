@@ -130,14 +130,6 @@ if test "$enable_waterwater_loops" = "no"; then
 fi
 
 
-### Do software 1/x
-AC_ARG_ENABLE(software-recip,     
- [  --enable-software-recip       perform software 1/x],, enable_software_recip=no)
-if test "$enable_software_recip" = "yes"; then
-  AC_DEFINE(SOFTWARE_RECIP,,[Use the GROMACS software 1/x])
-fi
-
-
 ### Do software 1/sqrt(x)
 AC_ARG_ENABLE(software-sqrt,     
  [  --disable-software-sqrt       no software 1/sqrt (disabled on sgi,ibm,ia64)],,
@@ -146,7 +138,7 @@ AC_ARG_ENABLE(software-sqrt,
   *) enable_software_sqrt=yes ;;
 esac])
 if test "$enable_software_sqrt" = "yes"; then
-  AC_DEFINE(SOFTWARE_SQRT,,[Use the GROMACS software 1/sqrt(x)])
+  AC_DEFINE(SOFTWARE_INVSQRT,,[Use the GROMACS software 1/sqrt(x)])
 fi
 
 
@@ -171,32 +163,13 @@ AC_ARG_ENABLE(vectorized-sqrt,
 # The four options below used to improve code scheduling, but the newest CPUs can usually rearrange
 # instructions dynamically at runtime, so they might not make much difference now:
 
-### Coordinate prefetching
-AC_ARG_ENABLE(prefetch-x,     
- [  --enable-prefetch-x=A,B       prefetch coordinates in selected innerloops],, enable_prefetch_x=no)
-# processing of prefetch-x choices is done just before the final output stage!
-
-
 ### Force prefetching
-AC_ARG_ENABLE(prefetch-f,     
- [  --enable-prefetch-f=A,B       prefetch forces in selected innerloops],, enable_prefetch_f=no)
-# processing of prefetch-f choices is done just before the final output stage!
+AC_ARG_ENABLE(prefetch,     
+ [  --enable-prefetch=A,B         prefetch forces in selected innerloops],, enable_prefetch=no)
+# processing of prefetch choices is done just before the final output stage!
 
 
-### First load all coords in a water-water iteration, then square all pairs, then add the sums to get r2.
-AC_ARG_ENABLE(hide-square-latency,     
- [  --enable-hide-square-latency  load coords to cache in advance],, enable_hide_square_latency=no)
-if test "$enable_hide_square_latency" = "yes"; then
-  AC_DEFINE(DECREASE_SQUARE_LATENCY,,[Try to get coordinates to cache before using them])
-fi
 
-
-### Do the table lookups for all interactions between two water molecules before using the results
-AC_ARG_ENABLE(hide-table-latency,     
- [  --enable-hide-table-latency   load table data to cache in advance],, enable_hide_table_latency=no)
-if test "$enable_hide_table_latency" = "yes"; then
-  AC_DEFINE(DECREASE_LOOKUP_LATENCY,,[Try to get table data to cache before using it])
-fi
 
 AC_ARG_ENABLE(all-static,
  [  --enable-all-static           make completely static binaries],enable_all_static=yes, enable_all_static=no)
@@ -626,59 +599,32 @@ if test -z "$list_of_vectorized_sqrt"; then
 fi
 
 
-# check loops to prefetch coordinates in
-list_of_prefetch_x=""
-if test "$enable_prefetch_x" != "no"; then
-  if test "$enable_prefetch_x" = "yes" -o "$enable_prefetch_x" = "all"; then
-    enable_prefetch_x="normal,solvent,water,water-water"
-  fi
-  if echo $enable_prefetch_x | grep "normal" >/dev/null; then
-    list_of_prefetch_x="normal "
-    AC_DEFINE(PREFETCH_X,,[Prefetch coordinates in normal loops])
-  fi
-  if echo $enable_prefetch_x | grep "solvent" >/dev/null; then
-    list_of_prefetch_x="${list_of_prefetch_x}solvent "
-    AC_DEFINE(PREFETCH_X_S,,[Prefetch coordinates in solvent loops])
-  fi
-  if echo $enable_prefetch_x | sed 's/water-water//' | grep "water" >/dev/null; then
-    list_of_prefetch_x="${list_of_prefetch_x}water "
-    AC_DEFINE(PREFETCH_X_W,,[Prefetch coordinates in water loops])
-  fi
-  if echo $enable_prefetch_x | grep "water-water" >/dev/null; then
-    list_of_prefetch_x="${list_of_prefetch_x}water-water "
-    AC_DEFINE(PREFETCH_X_WW,,[Prefetch coordinates in water-water loops])
-  fi
-fi
-if test -z "$list_of_prefetch_x"; then
-  list_of_prefetch_x="no"
-fi
-
 
 # check loops to prefetch forces in
-list_of_prefetch_f=""
-if test "$enable_prefetch_f" != "no"; then
-  if test "$enable_prefetch_f" = "yes" -o "$enable_prefetch_f" = "all"; then
-    enable_prefetch_f="normal,solvent,water,water-water"
+list_of_prefetch=""
+if test "$enable_prefetch" != "no"; then
+  if test "$enable_prefetch" = "yes" -o "$enable_prefetch" = "all"; then
+    enable_prefetch="normal,solvent,water,water-water"
   fi
-  if echo $enable_prefetch_f | grep "normal" >/dev/null; then
-    list_of_prefetch_f="normal "
-    AC_DEFINE(PREFETCH_F,,[Prefetch coordinates in normal loops])
+  if echo $enable_prefetch | grep "normal" >/dev/null; then
+    list_of_prefetch="normal "
+    AC_DEFINE(PREFETCH,,[Prefetch coordinates in normal loops])
   fi
-  if echo $enable_prefetch_f | grep "solvent" >/dev/null; then
-    list_of_prefetch_f="${list_of_prefetch_f}solvent "
-    AC_DEFINE(PREFETCH_F_S,,[Prefetch coordinates in solvent loops])
+  if echo $enable_prefetch | grep "solvent" >/dev/null; then
+    list_of_prefetch="${list_of_prefetch}solvent "
+    AC_DEFINE(PREFETCH_S,,[Prefetch coordinates in solvent loops])
   fi
-  if echo $enable_prefetch_f | sed 's/water-water//' | grep "water"; then
-    list_of_prefetch_f="${list_of_prefetch_f}water "
-    AC_DEFINE(PREFETCH_F_W,,[Prefetch coordinates in water loops])
+  if echo $enable_prefetch | sed 's/water-water//' | grep "water"; then
+    list_of_prefetch="${list_of_prefetch}water "
+    AC_DEFINE(PREFETCH_W,,[Prefetch coordinates in water loops])
   fi
-  if echo $enable_prefetch_f | grep "water-water" >/dev/null; then
-    list_of_prefetch_f="${list_of_prefetch_f}water-water "
-    AC_DEFINE(PREFETCH_F_WW,,[Prefetch coordinates in water-water loops])
+  if echo $enable_prefetch | grep "water-water" >/dev/null; then
+    list_of_prefetch="${list_of_prefetch}water-water "
+    AC_DEFINE(PREFETCH_WW,,[Prefetch coordinates in water-water loops])
   fi
 fi
-if test -z "$list_of_prefetch_f"; then
-  list_of_prefetch_f="no"
+if test -z "$list_of_prefetch"; then
+  list_of_prefetch="no"
 fi
 
 
