@@ -421,6 +421,10 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
     for(i=0; (i<msys->atoms.nr); i++)
       mass[i]=msys->atoms.atom[i].m;
     
+    if (opts->seed == -1) {
+      opts->seed = make_seed();
+      fprintf(stderr,"Setting gen_seed to %d\n",opts->seed);
+    }
     maxwell_speed(opts->tempi,sys->atoms.nr*DIM,
 		  opts->seed,&(sys->atoms),*v);
     stop_cm(stdout,sys->atoms.nr,mass,*x,*v);
