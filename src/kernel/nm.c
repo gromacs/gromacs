@@ -93,7 +93,13 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   shift_self(graph,fr->shift_vec,x);
   
   mtx=ftp2fn(efMTX,nfile,fnm);
-  
+ 
+  /* Open the enrgy file */   
+  if (MASTER(cr)) 
+    fp_ene=open_enx(ftp2fn(efENX,nfile,fnm),"w"); 
+  else 
+    fp_ene=-1;
+ 
   bLR=(parm->ir.rlong > parm->ir.rshort);
   bBHAM=(top->idef.functype[0]==F_BHAM);
   b14=(top->idef.il[F_LJ14].nr > 0);
