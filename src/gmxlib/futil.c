@@ -264,6 +264,23 @@ char *backup_fn(char *file)
   return buf;
 }
 
+bool make_backup(char * name)
+{
+    char * backup;
+
+    if(fexist(name)) {
+      backup = backup_fn(name);
+      if(rename(name, backup) == 0) {
+        fprintf(stderr, "\nBack Off! I just backed up %s to %s\n",
+                name, backup);
+      } else {
+        fprintf(stderr, "Sorry couldn't backup %s to %s\n", name, backup);
+        return FALSE;
+      }
+    }
+    return TRUE;
+}
+
 FILE *ffopen(char *file,char *mode)
 {
   FILE *ff=NULL;
@@ -271,13 +288,8 @@ FILE *ffopen(char *file,char *mode)
   bool bRead;
   int  bs;
   
-  if ((mode[0]=='w') && fexist(file)) {
-    bf=backup_fn(file);
-    if (rename(file,bf) == 0) {
-      fprintf(stderr,"\nBack Off! I just backed up %s to %s\n",file,bf);
-    }
-    else
-      fprintf(stderr,"Sorry, I couldn't backup %s to %s\n",file,bf);
+  if (mode[0]=='w') {
+    make_backup(file);
   }
   where();
   

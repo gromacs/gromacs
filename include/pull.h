@@ -35,7 +35,7 @@
 
 static char *SRCID_pull_h = "$Id$";
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+  #include <config.h>
 #endif
 
 #include "vec.h"
@@ -44,8 +44,12 @@ static char *SRCID_pull_h = "$Id$";
 /* This file contains datatypes and function declarations necessary 
    for mdrun to interface with the pull code */
 
-typedef enum {eStart, eAfm, eConstraint, eUmbrella, eTest} t_runtype;
-typedef enum {eCom, eComT0, eDyn, eDynT0} t_reftype;
+typedef enum {
+  eStart, eAfm, eConstraint, eUmbrella, eTest
+} t_runtype;
+typedef enum {
+  eCom, eComT0, eDyn, eDynT0
+} t_reftype;
 
 typedef struct {
   int        n;         /* number of groups */
@@ -78,7 +82,10 @@ typedef struct {
   rvec       coor;      /* reaction coordinate */
   real       r;         /* radius of cylinder for dynamic COM */
   real       rc;        /* radius of cylinder including switch length */
-  real       xlt_rate;  /* rate of translation, for startstructure run */
+  real       start_k0;  /* starting force constant */
+  real       start_k1;  /* ending force constant */
+  real       k_rate;    /* switch between k0 and k1 over this many steps */
+  int        k_step;    /* current step */
   real       xlt_incr;  /* write out structure every xlt_incr nm */
   real       tolerance; /* tolerance for reaching desired coordinates (nm) */
   real       constr_tol;/* absolute tolerance for constraints in (nm) */
@@ -99,27 +106,31 @@ typedef struct {
 
 /* main pull routine that controls all the action */
 extern void pull(t_pull *pull,    /* all pull data */
-		 rvec *x,         /* coordinates, changed by constraint run */ 
-		 rvec *f,         /* forces, changed by Afm run */
-		 matrix box,               
-		 t_topology *top, /* needed to write out coordinate files */   
-		 real dt,         /* time step */
-		 int step,        /* step number in simulation */
-		 int natoms,      /* total number of atoms on this processor */
-		 t_mdatoms *md,   /* masses and charges of all atoms */
-		 int start,       /* number of first atom belonging to this node */
-		 int homenr       /* number of atoms that belong to this node */
-		 );
+                 rvec *x,         /* coordinates, changed by constraint run */ 
+                 rvec *f,         /* forces, changed by Afm run */
+                 matrix box,               
+                 t_topology *top, /* needed to write out coordinate files */   
+                 real dt,         /* time step */
+                 int step,        /* step number in simulation */
+                 int natoms,      /* total number of atoms on this processor */
+                 t_mdatoms *md,   /* masses and charges of all atoms */
+                 int start,       /* number of first atom belonging to this node */
+                 int homenr,      /* number of atoms that belong to this node */
+                 t_commrec * cr   /* Stuff for communication */
+                );
 
 
 /* get memory and initialize the fields of pull that still need it, and
    do runtype specific initialization */
 extern void init_pull(FILE *log,  
-		      int nfile,       
-		      t_filenm fnm[], /* standard filename struct */
-		      t_pull *pull,   /* all pull data */
-		      rvec *x,        /* all coordinates */
-		      t_mdatoms *md,  /* masses and charges of all atoms */
-		      matrix box);
-
+                      int nfile,       
+                      t_filenm fnm[], /* standard filename struct */
+                      t_pull *pull,   /* all pull data */
+                      rvec *x,        /* all coordinates */
+                      t_mdatoms *md,  /* masses and charges of all atoms */
+                      matrix box,     
+                      int start,      /* startinig index of this node */
+                      int homenr,     /* number of atoms on this node */
+                      t_commrec * cr  /* struct for communication info */
+                      );
 #endif

@@ -54,8 +54,16 @@ static char *SRCID_pullio_c = "$Id$";
 #include "pull_internal.h"
 #include "string.h"
 
+
+/*  None of the routines in this file check to see if we are
+    doing parallel pulling. It is the responsibility of the 
+    calling function to ensure that these routines only get
+    called by the master node.
+*/
+
+
 void dump_conf(t_pull *pull,rvec x[],matrix box,t_topology *top, 
-	       int nout, real time) 
+               int nout, real time) 
 {
   char buf[128],buf2[128];
   rvec tmp,tmp1,tmp2;
@@ -67,15 +75,15 @@ void dump_conf(t_pull *pull,rvec x[],matrix box,t_topology *top,
      printed is pull - reference, so position with respect to reference
      group 
   */
-  if (pull->pull.n == 2) {
+  if(pull->pull.n == 2) {
     rvec_sub(pull->pull.x_unc[0],pull->ref.x_unc[0],tmp1);
     rvec_sub(pull->pull.x_unc[1],pull->ref.x_unc[0],tmp2);
     sprintf(buf2,"grp1:%8.3f%8.3f%8.3f grp2:%8.3f%8.3f%8.3f t:%8.3f",
-	    tmp1[0],tmp1[1],tmp1[2],tmp2[0],tmp2[1],tmp2[2],time);
+            tmp1[0],tmp1[1],tmp1[2],tmp2[0],tmp2[1],tmp2[2],time);
   } else {
     rvec_sub(pull->pull.x_unc[0],pull->ref.x_unc[0],tmp1);
     sprintf(buf2,"grp1:%8.3f%8.3f%8.3f t:%8.3f",
-	    tmp1[XX],tmp1[YY],tmp1[ZZ],time);
+            tmp1[XX],tmp1[YY],tmp1[ZZ],time);
   }
   write_sto_conf(buf,buf2,&top->atoms,x,NULL,box);  
 }
@@ -83,21 +91,21 @@ void dump_conf(t_pull *pull,rvec x[],matrix box,t_topology *top,
 void print_start(t_pull *pull, int step) 
 {
   int i;
-  
-  for (i=0;i<pull->pull.n;i++)
+
+  for(i=0;i<pull->pull.n;i++)
     fprintf(pull->out,"%d:%d x:%8.3f%8.3f%8.3f\n",
-	    step,i,pull->pull.x_unc[i][XX],
-	    pull->pull.x_unc[i][YY],pull->pull.x_unc[i][ZZ]);
+            step,i,pull->pull.x_unc[i][XX],
+            pull->pull.x_unc[i][YY],pull->pull.x_unc[i][ZZ]);
 }
 
 void print_afm(t_pull *pull, int step)
 {
   int i,j;
   if(step % pull->nSkip) return;
-  for (i=0;i<pull->pull.n;i++) {
+  for(i=0;i<pull->pull.n;i++) {
     for(j=0;j<3;++j) {
       if(pull->dims[j]!=0) {
-	fprintf(pull->out,"%f\t%f\t",pull->pull.x_unc[i][j],pull->pull.spring[i][j]);
+        fprintf(pull->out,"%f\t%f\t",pull->pull.x_unc[i][j],pull->pull.spring[i][j]);
       }
     }
   }
@@ -109,47 +117,47 @@ void print_constraint(t_pull *pull, rvec *f, int step, matrix box, int niter)
 {
   int i,ii,m; 
   rvec tmp,tmp2,tmp3;
-  
+
   if(step % pull->nSkip) return;
-  for (i=0;i<pull->pull.n;i++) {
-    if (pull->bCyl) 
+  for(i=0;i<pull->pull.n;i++) {
+    if(pull->bCyl)
       rvec_sub(pull->pull.x_con[i],pull->dyna.x_con[i],tmp);
-    else 
+    else
       rvec_sub(pull->pull.x_con[i],pull->ref.x_con[0],tmp);
-    for (m=DIM-1; m>=0; m--) {
-      if (tmp[m] < -0.5*box[m][m]) rvec_inc(tmp,box[m]);
-      if (tmp[m] >  0.5*box[m][m]) rvec_dec(tmp,box[m]);
+    for(m=DIM-1; m>=0; m--) {
+      if(tmp[m] < -0.5*box[m][m]) rvec_inc(tmp,box[m]);
+      if(tmp[m] >  0.5*box[m][m]) rvec_dec(tmp,box[m]);
       tmp[m] *= pull->dims[m];
     }
-    if (pull->bVerbose) 
+    if(pull->bVerbose)
       fprintf(pull->out,"%d:%d ds:%e f:%e n:%d\n", step,i,norm(tmp),
-	      pull->pull.f[i][ZZ],niter);
+              pull->pull.f[i][ZZ],niter);
     else
       fprintf(pull->out,"%e ",pull->pull.f[i][ZZ]);
   }
 
-  if (!pull->bVerbose)
+  if(!pull->bVerbose)
     fprintf(pull->out,"\n");
 
   /* DEBUG */ /* this code doesn't correct for pbc, needs improvement */
-  if (pull->bVerbose) {
-    for (i=0;i<pull->pull.n;i++) {
-      if (pull->bCyl) 
-	fprintf(pull->out,"eConstraint: step %d. Refgroup = dynamic (%f,%f\n"
-		"Group %d (%s): ref. dist = %8.3f, unconstr. dist = %8.3f"
-		" con. dist = %8.3f f_i = %8.3f\n", step, pull->r,pull->rc,
-		i,pull->pull.grps[i],
-		pull->dyna.x_ref[i][ZZ]-pull->pull.x_ref[i][ZZ],
-		pull->dyna.x_unc[i][ZZ]-pull->pull.x_unc[i][ZZ],
-		pull->dyna.x_con[i][ZZ]-pull->pull.x_con[i][ZZ],
-		pull->pull.f[i][ZZ]);
+  if(pull->bVerbose) {
+    for(i=0;i<pull->pull.n;i++) {
+      if(pull->bCyl)
+        fprintf(pull->out,"eConstraint: step %d. Refgroup = dynamic (%f,%f\n"
+                "Group %d (%s): ref. dist = %8.3f, unconstr. dist = %8.3f"
+                " con. dist = %8.3f f_i = %8.3f\n", step, pull->r,pull->rc,
+                i,pull->pull.grps[i],
+                pull->dyna.x_ref[i][ZZ]-pull->pull.x_ref[i][ZZ],
+                pull->dyna.x_unc[i][ZZ]-pull->pull.x_unc[i][ZZ],
+                pull->dyna.x_con[i][ZZ]-pull->pull.x_con[i][ZZ],
+                pull->pull.f[i][ZZ]);
       else {
-	rvec_sub(pull->ref.x_ref[0],pull->pull.x_ref[i],tmp);
-	rvec_sub(pull->ref.x_unc[0],pull->pull.x_unc[i],tmp2);
-	rvec_sub(pull->ref.x_con[0],pull->pull.x_con[i],tmp3);
-	fprintf(stderr,"grp %d:ref (%8.3f,%8.3f,%8.3f) unc(%8.3f%8.3f%8.3f\n"
-		"con (%8.3f%8.3f%8.3f)\n",i, tmp[0],tmp[1],tmp[2],
-		tmp2[0],tmp2[1],tmp2[2],tmp3[0],tmp3[1],tmp3[2]);
+        rvec_sub(pull->ref.x_ref[0],pull->pull.x_ref[i],tmp);
+        rvec_sub(pull->ref.x_unc[0],pull->pull.x_unc[i],tmp2);
+        rvec_sub(pull->ref.x_con[0],pull->pull.x_con[i],tmp3);
+        fprintf(stderr,"grp %d:ref (%8.3f,%8.3f,%8.3f) unc(%8.3f%8.3f%8.3f\n"
+                "con (%8.3f%8.3f%8.3f)\n",i, tmp[0],tmp[1],tmp[2],
+                tmp2[0],tmp2[1],tmp2[2],tmp3[0],tmp3[1],tmp3[2]);
       }
     }
   } /* END DEBUG */
@@ -163,7 +171,7 @@ void print_umbrella(t_pull *pull, int step)
   for(i=0;i<pull->pull.n;++i) {    /* Loop over pulled groups */
     for(m=0;m<3;++m) {             /* Loop over dimensions */
       if(pull->dims[m]) {
-	fprintf(pull->out,"%f\t",-pull->pull.spring[i][m]);
+        fprintf(pull->out,"%f\t",-pull->pull.spring[i][m]);
       }
     }
   }
@@ -177,27 +185,35 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   char *tmp;           /* for the input parsing macros */
   char dummy[STRLEN];  /* idem */
   char grp1buf[STRLEN], grp2buf[STRLEN], grp3buf[STRLEN], grp4buf[STRLEN],
-    grp5buf[STRLEN],
-    bf[4][STRLEN],
-    refdir[4][STRLEN],
-    pos[4][STRLEN],
-    dir[STRLEN];
+  grp5buf[STRLEN],
+  bf[4][STRLEN],
+  refdir[4][STRLEN],
+  pos[4][STRLEN],
+  dir[STRLEN];
 
   int bReverse; int tmpref; int tmprun; 
 
-  enum {erunSTART, erunAFM, erunConstraint, erunUmbrella, erunTest, erunNR};
+  enum {
+    erunSTART, erunAFM, erunConstraint, erunUmbrella, erunTest, erunNR
+  };
   static char *runtypes[erunNR+1] = { 
     "start", "afm", "constraint", "umbrella", "test", NULL
   };
-  enum {erefCom, erefComT0, erefDyn, erefDynT0, erefNR};
+  enum {
+    erefCom, erefComT0, erefDyn, erefDynT0, erefNR
+  };
   static char *reftypes[erefNR+1] = {
     "com", "com_t0", "dynamic", "dynamic_t0", NULL
   };
-  enum {ereverseTO_REF, ereverseFROM_REF, ereverseNR};
+  enum {
+    ereverseTO_REF, ereverseFROM_REF, ereverseNR
+  };
   static char *reversetypes[ereverseNR+1] = {
     "from_reference", "to_reference", NULL
   };
-  enum {everboseYES, everboseNO, everboseNR};
+  enum {
+    everboseYES, everboseNO, everboseNR
+  };
   static char *verbosetypes[erefNR+1] = {
     "no", "yes", NULL
   };
@@ -273,21 +289,18 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   STYPE("r0_group2",        bf[1], "");
   STYPE("r0_group3",        bf[2], "");
   STYPE("r0_group4",        bf[3], "");
-  /*  CTYPE("Constrain rotations around principle axes? Needs work");
-      ITYPE("rotation_x",       pull->bRot[0], 0);
-      ITYPE("rotation_y",       pull->bRot[1], 0);
-      ITYPE("rotation_z",       pull->bRot[2], 0);
-      CTYPE("Rate of rotation (degrees/step)");
-      RTYPE("rotation_rate",    pull->rot_rate, 0.0);
-  */
   RTYPE("tolerance",        pull->tolerance, 0.05);
-  CTYPE("Rate of translation in all directions (nm/step)");
-  RTYPE("translation_rate", pull->xlt_rate, 0.0); 
+  CTYPE("Initial K (kJ/mol/nm^2)");
+  RTYPE("k0", pull->start_k0, 0.0);
+  CTYPE("Final K (kJ/mol/nm^2)");
+  RTYPE("k1", pull->start_k1, 3500);
+  CTYPE("Switch from K0 to K1 over this many steps");
+  RTYPE("rate", pull->k_rate, 1000);
   CTYPE("Write out structure every transstep nm");
   RTYPE("transstep",        pull->xlt_incr, 0.001);
 
   write_inpfile(outfile,ninp,inp);
-  for (i=0; (i<ninp); i++) {
+  for(i=0; (i<ninp); i++) {
     sfree(inp[i].name);
     sfree(inp[i].value);
   }
@@ -298,20 +311,20 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
 
   /* sort out the groups */
   fprintf(stderr,"Groups: %s %s %s %s %s\n",
-	  grp1buf,grp2buf,grp3buf,grp4buf,grp4buf);
+          grp1buf,grp2buf,grp3buf,grp4buf,grp4buf);
 
-  if (!strcmp(grp1buf,"") || !strcmp(grp5buf,"")) 
+  if(!strcmp(grp1buf,"") || !strcmp(grp5buf,""))
     fatal_error(0,"Need to specify at least group_1 and reference_group");
   pull->pull.n = 1;
-  if (strcmp(grp2buf,"")) 
+  if(strcmp(grp2buf,""))
     pull->pull.n += 1;
-  if (strcmp(grp3buf,"")) 
+  if(strcmp(grp3buf,""))
     pull->pull.n += 1;
-  if (strcmp(grp4buf,""))
+  if(strcmp(grp4buf,""))
     pull->pull.n += 1;
-     
+
   fprintf(stderr,"Using %d pull groups\n",pull->pull.n);
-     
+
   /* initialize the names of the groups */
   snew(pull->pull.grps,pull->pull.n);
   snew(pull->ref.grps,1);
@@ -330,6 +343,7 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
      }*/
   if(pull->runtype == eStart) {
     snew(pull->pull.xtarget,pull->pull.n);
+    pull->k_step = 0;
     for(i=0;i<pull->pull.n;++i) {
       string2rvec(bf[i],pull->pull.xtarget[i]);
     }
@@ -345,9 +359,9 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
 
   string2rvec(dir,pull->dims);
   fprintf(stderr,"Using distance components %2.1f %2.1f %2.1f\n",
-	  pull->dims[0],pull->dims[1],pull->dims[2]);
+          pull->dims[0],pull->dims[1],pull->dims[2]);
 
-  if (pull->r > 0.001) 
+  if(pull->r > 0.001)
     pull->bCyl = TRUE;
   else
     pull->bCyl = FALSE;
@@ -359,7 +373,7 @@ void print_pull_header(t_pull * pull)
   int i,j;
   int dims=0;
 
-	
+
   for(i=0;i<3;++i) {
     if(pull->dims[i]!=0) ++dims;
   }
@@ -370,28 +384,28 @@ void print_pull_header(t_pull * pull)
     fprintf(pull->out,"AFM\t3.0\n");
   else if(pull->runtype==eConstraint)
     fprintf(pull->out,"CONSTRAINT\t3.0\n");
-  
+
   for(i=0;i<3;++i) {
     fprintf(pull->out,"%f\t",pull->dims[i]);
   }
   fprintf(pull->out,"\n");
-  
+
   fprintf(pull->out,"%d\n",pull->nSkip);
-	
+
   fprintf(pull->out,"%s\n",pull->ref.grps[0]);
-  
+
   fprintf(pull->out,"%d\t%d\n",pull->pull.n,dims);
   for(i=0;i<pull->pull.n;i++) {
     fprintf(pull->out,"%s\t",pull->pull.grps[i]);
     for(j=0;j<3;++j) {
       if(pull->dims[j]!=0.0) {
-	if(pull->runtype==eUmbrella)
-	  fprintf(pull->out,"%f\t%f\t",pull->UmbPos[i][j],pull->UmbCons[i]);
-	else if(pull->runtype==eAfm)
-	  fprintf(pull->out,"%f\t%f\t",pull->k,pull->rate);
-	else if(pull->runtype==eConstraint)
-	  fprintf(pull->out,"%f\t",pull->pull.x_unc[i][j]);
-      }    
+        if(pull->runtype==eUmbrella)
+          fprintf(pull->out,"%f\t%f\t",pull->UmbPos[i][j],pull->UmbCons[i]);
+        else if(pull->runtype==eAfm)
+          fprintf(pull->out,"%f\t%f\t",pull->k,pull->rate);
+        else if(pull->runtype==eConstraint)
+          fprintf(pull->out,"%f\t",pull->pull.x_unc[i][j]);
+      }
     }
     fprintf(pull->out,"\n");
   }

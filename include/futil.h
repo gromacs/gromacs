@@ -63,6 +63,11 @@ extern bool is_pipe(FILE *fp);
 extern char *backup_fn(char *file);
 /* Return a backup name for file (name with # before and after) */
 
+/*  Make a backup of file if necessary.  
+    Return false if there was a problem.
+*/
+extern bool make_backup(char * file);
+
 extern FILE *ffopen(char *file,char *mode);
 /* Return a valid file pointer when succesfull, exits otherwise 
  * If the file is in compressed format, open a pipe which uncompresses
