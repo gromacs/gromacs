@@ -418,8 +418,21 @@ static int pcompar(const void *a, const void *b)
   d = pa->AI - pb->AI;
   if (d == 0) 
     d = pa->AJ - pb->AJ;
+  if (d == 0)
+    return strlen(pb->s) - strlen(pa->s);
+  else
+    return d;
+}
+
+static void cp_param(t_param *dest,t_param *src)
+{
+  int j;
   
-  return d;
+  for(j=0; (j<MAXATOMLIST); j++)
+    dest->a[j] = src->a[j];
+  for(j=0; (j<MAXFORCEPARAM); j++)
+    dest->c[j] = src->c[j];
+  strcpy(dest->s,src->s);
 }
 
 static void clean_bonds(t_params *ps)
@@ -439,20 +452,18 @@ static void clean_bonds(t_params *ps)
     /* Sort bonds */
     qsort(ps->param,ps->nr,(size_t)sizeof(ps->param[0]),pcompar);
     
-    /* remove doubles */
-    j=1;
-    for (i=1; (i<ps->nr); i++) {
-      if ( ps->param[i].AI != ps->param[j-1].AI ||
-	   ps->param[i].AJ != ps->param[j-1].AJ ) {
-	ps->param[j] = ps->param[i];
+    /* remove doubles, keep the first one always. */
+    j = 1;
+    for(i=1; (i<ps->nr); i++) {
+      if ((ps->param[i].AI != ps->param[j-1].AI) ||
+	  (ps->param[i].AJ != ps->param[j-1].AJ) ) {
+	cp_param(&(ps->param[j]),&(ps->param[i]));
 	j++;
       } 
-      else if (strlen(ps->param[j-1].s) > strlen(ps->param[i].s))
-	strcpy(ps->param[i].s,ps->param[j-1].s);
     }
     fprintf(stderr,"Number of bonds was %d, now %d\n",ps->nr,j);
     ps->nr=j;
-  } 
+  }
   else
     fprintf(stderr,"No bonds\n");
 }
@@ -672,8 +683,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   sfree(dummy_type);
   
   /* Cleanup bonds (sort and rm doubles) */ 
-  clean_bonds(&(plist[F_BONDS]));
-  
+  /* clean_bonds(&(plist[F_BONDS]));*/
+   
   fprintf(stderr,
 	  "There are %4d dihedrals, %4d impropers, %4d angles\n"
 	  "          %4d pairs,     %4d bonds and  %4d dummies\n",
