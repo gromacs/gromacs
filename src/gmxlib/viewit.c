@@ -54,7 +54,7 @@ void do_view(char *fn, char *opts)
       break;
     case efPDB:
       if ( ! (cmd=getenv("GMX_VIEW_PDB")) )
-	cmd="rasmol";
+	cmd="xterm -e rasmol";
       break;
     default:
       fprintf(stderr,"Cannot view file %s",fn);
