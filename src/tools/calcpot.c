@@ -247,7 +247,7 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   fprintf(stderr,"Using a coulomb cut-off of %g nm\n",parm->ir.rcoulomb); 
   
   /* Turn off free energy computation */
-  parm->ir.bPert = FALSE;
+  parm->ir.efep = 0;
 
   /* Set vanderwaals to shift, to force tables */
   parm->ir.vdwtype     = evdwSHIFT;
