@@ -91,7 +91,7 @@ void calc_weights(int nx,int ny,int nz,
       ttt-=nm;
       it -=nm;
     }
-    if ((it < 0) && (it >= nxyz[m]))
+    if ((it < 0) || (it >= nxyz[m]))
       fatal_error(0,"it = %d, x=%f, ttt=%f",it,x[m],ttt);
     ixyz[m]    = it;
     
