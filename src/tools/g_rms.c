@@ -464,7 +464,7 @@ int main (int argc,char *argv[])
       snew(mat_x2_j,natoms);
     for(i=0; i<tel_mat; i++) {
       axis[i]=time[freq*i];
-      fprintf(stderr,"\r %5.2f",axis[i]);
+      fprintf(stderr,"\r element %5d; time %5.2f  ",i,axis[i]);
       if (bMat) snew(rmsd_mat[i],tel_mat2);
       if (bBond) snew(bond_mat[i],tel_mat2); 
       for(j=0; j<tel_mat2; j++) {
