@@ -606,7 +606,7 @@ int main (int argc, char *argv[])
     { "-maxwarn", FALSE, etINT,  &maxwarn,
 	"Number of warnings after which input processing stops" }
   };
-#define NPA asize(pa)
+  
   CopyRight(stdout,argv[0]);
   
   /* Initiate some variables */
