@@ -576,7 +576,8 @@ int fio_open(char *fn,char *mode)
       break;
     }
   if (i == nFIO) {
-    srenew(FIO,++nFIO);
+    nFIO++;
+    srenew(FIO,nFIO);
     fio  = &(FIO[nFIO-1]);
     nfio = nFIO-1;
   }

@@ -107,16 +107,25 @@ static void predict_shells(FILE *log,rvec x[],rvec v[],real dt,int ns,t_shell s[
   }
 }
 
-static void print_epot(char *which,
-		       int mdstep,int count,real step,real epot,real df)
+static void print_epot(int mdstep,int count,real step,real epot,real df,
+		       bool bOptim,bool bLast)
 {
-  fprintf(stderr,"MDStep=%5d/%2d lamb: %6g, E-Pot: %12.8e",
-	  mdstep,count,step,epot);
-  
-  if (count != 0)
-    fprintf(stderr,", rmsF: %12.8e %s\n",df,which);
-  else
-    fprintf(stderr,"\n");
+  if (bOptim) {
+    if (bLast)
+      fprintf(stderr,"MDStep=%5d    EPot: %12.8e\n",mdstep,epot);
+    else if (count > 0)
+      fprintf(stderr,"MDStep=%5d/%2d lamb: %6g, RMSF: %12.8e\n",
+	      mdstep,count,step,df);
+  }
+  else {
+    fprintf(stderr,"MDStep=%5d/%2d lamb: %6g, EPot: %12.8e",
+	    mdstep,count,step,epot);
+    
+    if (count != 0)
+      fprintf(stderr,", rmsF: %12.8e\n",df);
+    else
+      fprintf(stderr,"\n");
+  }
 }
 
 
@@ -199,10 +208,10 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 char *traj,real t,real lambda,
 		 int natoms,matrix box,t_mdebin *mdebin,bool *bConverged)
 {
-  static bool bFirst=TRUE,bOPTIM=FALSE;
+  static bool bFirst=TRUE,bOptim=FALSE;
   static rvec *pos[2],*force[2];
-  real   Epot[2],df[2];
-  tensor my_vir[2];
+  real   Epot[2],df[2],Estore[F_NRE];
+  tensor my_vir[2],vir_last;
 #define NEPOT asize(Epot)
   real   ftol,step,step0,xiH,xiS;
   bool   bDone;
@@ -219,8 +228,8 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
       snew(pos[i],nsb->natoms);
       snew(force[i],nsb->natoms);
     }
-    bOPTIM = (getenv("OPTIMSHELL") != NULL);
-    fprintf(log,"bOPTIM = %s\n",bool_names[bOPTIM]);
+    bOptim = (getenv("NO_SHELL_OPTIM") == NULL);
+    fprintf(log,"bOptim = %s\n",bool_names[bOptim]);
     bFirst = FALSE;
   }
   
@@ -232,7 +241,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   predict_shells(log,x,v,parm->ir.delta_t,nshell,shells,md->massT,(mdstep == 0));
    
   /* Calculate the forces first time around */
-  if (bOPTIM)
+  if (bOptim)
     set_nbfmask(fr,md,parm->ir.opts.ngener,TRUE);
   clear_mat(my_vir[Min]);
   do_force(log,cr,parm,nsb,my_vir[Min],mdstep,nrnb,
@@ -261,7 +270,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   
   step=step0;
   if (bVerbose && MASTER(cr) && (nshell > 0))
-    print_epot("",mdstep,0,step,Epot[Min],df[Min]);
+    print_epot(mdstep,0,step,Epot[Min],df[Min],bOptim,FALSE);
 
   if (debug) {
     fprintf(debug,"%17s: %14.10e\n",
@@ -312,7 +321,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
       gmx_sum(NEPOT,Epot,cr);
     
     if (bVerbose && MASTER(cr))
-      print_epot("",mdstep,count,step,Epot[Try],df[Try]);
+      print_epot(mdstep,count,step,Epot[Try],df[Try],bOptim,FALSE);
 
     *bConverged = (df[Try] < ftol);
     bDone       = *bConverged || (step < 0.5);
@@ -328,18 +337,35 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     fprintf(stderr,"EM did not converge in %d steps\n",number_steps);
   
   /* Now compute the forces on the other particles (atom-atom) */
-  if (bOPTIM) {
+  if (bOptim) {
+    /* Store the old energies */
+    for(i=0; (i<F_NRE); i++)
+      Estore[i] = ener[i];
+    /* Set the mask to only do atom-atom interactions */
     set_nbfmask(fr,md,parm->ir.opts.ngener,FALSE);
-    do_force(log,cr,parm,nsb,my_vir[Try],1,nrnb,
+    /* Compute remaining forces and energies now */
+    do_force(log,cr,parm,nsb,vir_last,1,nrnb,
 	     top,grps,pos[Try],v,force[Try],buf,md,ener,bVerbose && !PAR(cr),
 	     lambda,graph,FALSE,TRUE,fr);
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(parm->ir.opts),grps,ener);
-    Epot[Try]=Epot[Min]+ener[F_EPOT];
+    
+    /* Sum over processors */
     if (PAR(cr)) 
       gmx_sum(NEPOT,Epot,cr);
-    if (bVerbose && MASTER(cr))
-      print_epot("",mdstep,count,step,Epot[Try],df[Try]);
+      
+    /* Add the stored energy contributions */
+    for(i=0; (i<F_NRE); i++)
+      ener[i] += Estore[i];
+      
+    /* Sum virial tensors */
+    m_add(vir_last,my_vir[Min],vir_part);
+    
+    /* Last output line */
+    if (bVerbose && MASTER(cr)) {
+      Epot[Try]=ener[F_EPOT];
+      print_epot(mdstep,count,step,Epot[Try],0.0,bOptim,TRUE);
+    }
     /* Sum the forces from the previous calc. (shells only) 
      * and the current calc (atoms only)
      */

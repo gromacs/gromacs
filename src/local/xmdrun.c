@@ -173,7 +173,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     t_forcerec *fr,rvec box_size)
 {
   t_mdebin   *mdebin;
-  int        fp_ene,fp_trn,step,count;
+  int        fp_ene=-1,fp_trn=-1,step,count;
   double     tcount;
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
@@ -184,7 +184,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   char       *traj,*xtc_traj; /* normal & compressed trajectory filename */
   int        i,nconverged=0;
   rvec       vcm,mu_tot;
-  t_coupl_rec *tcr;
+  t_coupl_rec *tcr=NULL;
   rvec       *xx,*vv,*ff;  
   bool       bTCR,bConverged;
   real       mu_aver;
@@ -394,7 +394,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     m_add(force_vir,shake_vir,parm->vir);
     
     /* Sum the potential energy terms from group contributions */
-    sum_epot(&(parm->ir.opts),grps,ener); 
+    /* Now done in relax_shells */
+    /* sum_epot(&(parm->ir.opts),grps,ener); */
     
     /* Sum the kinetic energies of the groups & calc temp */
     ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
@@ -460,10 +461,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	       eprAVER,FALSE,mdebin,grps,&(top->atoms));
     print_ebin(-1,log,step,t,lambda,SAfactor,
 	       eprRMS,FALSE,mdebin,grps,&(top->atoms));
-    close_enx(fp_ene);
+    if (fp_ene != -1)
+      close_enx(fp_ene);
     if (parm->ir.nstxtcout)
       close_xtc_traj();
-    close_trn(fp_trn);
+    if (fp_trn != -1)
+      close_trn(fp_trn);
   }
   
   fprintf(log,"Fraction of iterations that converged:           %.2f\n",

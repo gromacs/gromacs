@@ -177,8 +177,8 @@ t_shell *init_shells(FILE *log,int start,int homenr,
     for(i=0; (i<ns); i++)
       shell[i].k_1 = 1.0/shell[i].k;
 
-    /*if (debug)*/
-    pr_shell(log,ns,shell);
+    if (debug)
+      pr_shell(debug,ns,shell);
   }
   return shell;
 }

@@ -131,7 +131,6 @@ static void reset_forces(bool bNS,rvec f[],t_forcerec *fr,int natoms)
 static void reset_energies(t_grpopts *opts,t_groups *grp,
 			   t_forcerec *fr,bool bNS,real epot[])
 {
-  const real zero=0.0;
   int   i,j;
   
   /* First reset all energy components but the Long Range, except in
@@ -144,26 +143,25 @@ static void reset_energies(t_grpopts *opts,t_groups *grp,
   
   /* Normal potential energy components */
   for(i=0; (i<=F_EPOT); i++)
-    epot[i] = zero;
-  epot[F_DVDL]    = zero;
-  epot[F_DVDLKIN] = zero;
+    epot[i] = 0.0;
+  epot[F_DVDL]    = 0.0;
+  epot[F_DVDLKIN] = 0.0;
 }
 
-/* force is kJ mol^-1 nm^-1 = e * kJ mol^-1 nm^-1 / e 
+/* 
+ * calc_f_el calculates forces due to an electric field.
  *
- *                          = 
+ * force is kJ mol^-1 nm^-1 = e * kJ mol^-1 nm^-1 / e 
+ *
+ * Et[] contains the parameters for the time dependent 
+ * part of the field (not yet used). 
+ * Ex[] contains the parameters for
+ * the spatial dependent part of the field. You can have cool periodic
+ * fields in principle, but only a constant field is supported
+ * now. 
+ * The function should return the energy due to the electric field
+ * (if any) but for now returns 0.
  */
-/* do_elupdate is a function that takes into account electric field
-   parameters. Et[] contains the parameters for the time dependent
-   part of the field (not yet used). Ex[] contains the parameters for
-   the spatial dependent part of the field. You can have cool periodic
-   fields in principle, but only a constant field is supported
-   now. Only difference with do_update is the electric field, the two
-   should probably be merged when its working. Peter Tieleman, 30
-   Nov. 1995.
-   
-   Adapted to this routine Nov. 1998 DvdS
-*/
 
 static real calc_f_el(int start,int homenr,real charge[],rvec f[],t_cosines Ex[])
 {
@@ -194,7 +192,7 @@ void do_force(FILE *log,t_commrec *cr,
 	      rvec x[],rvec v[],rvec f[],rvec buf[],
 	      t_mdatoms *mdatoms,real ener[],bool bVerbose,
 	      real lambda,t_graph *graph,
-	      bool bNS,bool bMolEpot,t_forcerec *fr)
+	      bool bNS,bool bNBFonly,t_forcerec *fr)
 {
   static rvec box_size;
   int    pid,cg0,cg1;
@@ -205,8 +203,8 @@ void do_force(FILE *log,t_commrec *cr,
   homenr = HOMENR(nsb);
   cg0    = (pid == 0) ? 0 : nsb->cgload[pid-1];
   cg1    = nsb->cgload[pid];
-  
   where();
+  
   update_forcerec(log,fr,parm->box);
   where();
   
@@ -231,6 +229,8 @@ void do_force(FILE *log,t_commrec *cr,
 #endif
   }
   where();
+  
+  /* Communicate coordinates if necessary */
   if (PAR(cr)) 
     move_x(log,cr->left,cr->right,x,nsb,nrnb);
   where();
@@ -261,10 +261,11 @@ void do_force(FILE *log,t_commrec *cr,
   /* Compute the forces */    
   force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(parm->ir.opts),
-	x,f,vir_part,ener,bVerbose,parm->box,lambda,graph,&(top->atoms.excl),
-	FALSE);
+	x,f,ener,bVerbose,parm->box,lambda,graph,&(top->atoms.excl),
+	bNBFonly);
   where();
   
+  /* Compute forces due to electric field */
   calc_f_el(START(nsb),HOMENR(nsb),mdatoms->chargeT,f,parm->ir.ex);
   
 #ifdef DEBUG
@@ -272,6 +273,19 @@ void do_force(FILE *log,t_commrec *cr,
     print_nrnb(log,nrnb);
 #endif
 
+  /* The virial from surrounding boxes */
+  clear_mat(vir_part);
+  calc_vir(log,SHIFTS,fr->shift_vec,fr->fshift,vir_part,cr);
+  inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
+  where();
+#ifdef DEBUG
+  if (debug) {
+    pr_rvecs(debug,0,"fr->fshift",fr->fshift,SHIFTS);
+    pr_rvecs(debug,0,"in force.c vir",vir_part,DIM);
+  }
+#endif
+
+  /* Accumulate forces and compute virial */
   if (fr->eeltype != eelPPPM) {
     if (PAR(cr)) 
       move_f(log,cr->left,cr->right,f,buf,nsb,nrnb);
@@ -283,7 +297,7 @@ void do_force(FILE *log,t_commrec *cr,
   else {
     /* If we do PPPM the long range forces should not be taken into account
      * for computation of the virial. Rather a special formula
-     * due to Neumann is used.
+     * due to Neumann is used (implemented in calc_pres, coupling.c)
      */
     f_calc_vir(log,0,nsb->natoms,x,f,vir_part,cr,graph,fr->shift_vec);
     inc_nrnb(nrnb,eNR_VIRIAL,nsb->natoms);

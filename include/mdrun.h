@@ -169,7 +169,7 @@ extern void do_force(FILE *log,t_commrec *cr,
 		     rvec x[],rvec v[],rvec f[],rvec buf[],
 		     t_mdatoms *mdatoms,real ener[],bool bVerbose,
 		     real lambda,t_graph *graph,
-		     bool bNS,bool bMolEpot,t_forcerec *fr);
+		     bool bNS,bool bNBFonly,t_forcerec *fr);
 
 extern void nstop_cm(FILE *log,t_commrec *cr,
 		     int start,int nr_atoms,real mass[],rvec x[],rvec v[]);

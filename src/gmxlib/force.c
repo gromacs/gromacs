@@ -214,7 +214,7 @@ void init_forcerec(FILE *log,
 		   matrix     box,
 		   bool bMolEpot)
 {
-  int  i,j,m,natoms,nrdf;
+  int  i,j,m,natoms,nrdf,ngrp;
   real q,zsq,dr,T;
   rvec box_size;
   
@@ -308,6 +308,14 @@ void init_forcerec(FILE *log,
     snew(fr->flr,natoms);
     snew(fr->fshift_lr,SHIFTS);
   }
+  /* Mask that says whether or not this NBF list should be computed */
+  if (fr->bMask == NULL) {
+    ngrp = ir->opts.ngener*ir->opts.ngener;
+    snew(fr->bMask,ngrp);
+    /* Defaults to always */
+    for(i=0; (i<ngrp); i++)
+      fr->bMask[i] = TRUE;
+  }
 
   if (fr->cg_cm == NULL)
     snew(fr->cg_cm,cgs->nr);
@@ -326,8 +334,8 @@ void init_forcerec(FILE *log,
   }
   
   if (fr->nbfp == NULL) {
-    fr->bBHAM=(idef->functype[0] == F_BHAM);
-    fr->nbfp=mk_nbfp(idef,fr->bBHAM);
+    fr->bBHAM = (idef->functype[0] == F_BHAM);
+    fr->nbfp  = mk_nbfp(idef,fr->bBHAM);
   }
 
   set_avcsix(log,fr,idef,mdatoms);
@@ -437,12 +445,11 @@ void force(FILE       *log,     int        step,
 	   t_groups   *grps,    t_mdatoms  *md,
 	   int        ngener,   t_grpopts  *opts,
 	   rvec       x[],      rvec       f[],
-	   tensor     virial,   real       epot[], 
+	   real       epot[], 
 	   bool       bVerbose, matrix     box,
 	   real       lambda,   t_graph    *graph,
 	   t_block    *excl,    bool       bNBFonly)
 {
-  bool    bBHAM;
   int     i,nit;
   bool    bDoEpot;
   rvec    box_size;
@@ -450,8 +457,6 @@ void force(FILE       *log,     int        step,
   
   set_led(FORCE_LED);
 
-  bBHAM=(idef->functype[0] == F_BHAM);
-  
   /* Reset box */
   for(i=0; (i<DIM); i++)
     box_size[i]=box[i][i];
@@ -469,7 +474,7 @@ void force(FILE       *log,     int        step,
 	  lambda,&epot[F_DVDL]);
   where();
   
-  if (bBHAM) {
+  if (fr->bBHAM) {
     do_fnbf(log,F_BHAM,fr,x,f,md,
 	    grps->estat.ee[egBHAM],grps->estat.ee[egCOUL],box_size,nrnb,
 	    lambda,&epot[F_DVDL]);
@@ -487,7 +492,7 @@ void force(FILE       *log,     int        step,
   where();
 
   /* Shift the coordinates. Must be done before bonded forces and PPPM, 
-   * but is also necessary * for  shake and update, therefore it can NOT go when no
+   * but is also necessary for SHAKE and update, therefore it can NOT go when no
    * bonded forces have to be evaluated.
    */
   if (debug)
@@ -519,6 +524,7 @@ void force(FILE       *log,     int        step,
 		       box_size,fr->phi,cr,nrnb,&nit,TRUE);
       break;
     default:
+      Vlr = 0;
       fatal_error(0,"No such electrostatics method implemented %s",
 		  eel_names[fr->eeltype]);
     }
@@ -536,19 +542,11 @@ void force(FILE       *log,     int        step,
     print_nrnb(debug,nrnb);
   where();
   
-  calc_bonds(log,idef,x,f,fr,graph,epot,nrnb,box,lambda,md,
-	     opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14]);
-  where();
-  
-  /* Now the virial from surrounding boxes */
-  clear_mat(virial);
-  calc_vir(log,SHIFTS,fr->shift_vec,fr->fshift,virial,cr);
-#ifdef DEBUG
-  pr_rvecs(log,0,"fr->fshift",fr->fshift,SHIFTS);
-  pr_rvecs(log,0,"in force.c vir",virial,DIM);
-#endif
-  inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
-  where();
+  if (!bNBFonly) {
+    calc_bonds(log,idef,x,f,fr,graph,epot,nrnb,box,lambda,md,
+	       opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14]);
+    where();
+  }
   
   for(i=0; (i<F_EPOT); i++)
     if (i != F_DISRES)

@@ -86,15 +86,10 @@ static int NLI_INC = 2048;
 
 void init_neighbor_list(FILE *log,t_forcerec *fr,int nn)
 {
-  int i;
-  
   fr->nn = nn;
   snew(fr->vdw,nn);
   snew(fr->free,nn);
   snew(fr->coul,nn);
-  snew(fr->bMask,nn);
-  for(i=0; (i<nn); i++)
-    fr->bMask[i] = TRUE;
 }
 
 static void reset_neighbor_list(FILE *log,t_forcerec *fr)
