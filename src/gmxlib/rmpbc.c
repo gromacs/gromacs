@@ -35,7 +35,8 @@ static char *SRCID_rmpbc_c = "$Id$";
 #include "pbc.h"
 #include "gstat.h"
 #include "futil.h"
-	
+#include "vec.h"	
+
 void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
 {
 
@@ -49,8 +50,11 @@ void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
   static t_graph *graph;
   static bool bFirst=TRUE;
   rvec   sv[SHIFTS],box_size;
-  int n,i;
- 
+  int    n,i;
+  bool   bNeedToCopy;
+
+  bNeedToCopy = (x != x_s);
+
   if (box[0][0]) {
     if (idef->ntypes!=-1) {
       n=-1;
@@ -68,6 +72,7 @@ void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
       mk_mshift(stdout,mgraph[n].gr,box,x);
       calc_shifts(box,box_size,sv,FALSE);
       shift_x(mgraph[n].gr,sv,x,x_s);
+      bNeedToCopy=FALSE;
     } else
       if (bFirst) {
 	fprintf(stderr,
@@ -75,5 +80,8 @@ void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
 	bFirst=FALSE;
       }
   }
+  if (bNeedToCopy)
+    for (i=0; i<natoms; i++)
+      copy_rvec(x[i],x_s[i]);
 }
 
