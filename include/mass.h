@@ -28,16 +28,5 @@
  */
 static char *SRCID_mass_h = "$Id$";
 
-typedef struct {
-  char atomname[10];
-  real mass;
-} t_mass;
-
-extern int read_mass(char *massdata,t_mass **mass);
-/* read_mass() reads the masses. returns the number of entries read */
-
-extern void write_mass(char *massdata,t_mass mass[],int nmass);
-/* writes n masses to a file massdata */
-
-extern real get_mass(int nmass,t_mass mass[],char *atom);
+extern real get_mass(char *resnm, char *atomnm);
 /* search the mass belonging to atom */

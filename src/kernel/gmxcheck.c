@@ -244,7 +244,7 @@ void chk_ndx(char *fn)
 
 void chk_stx(char *fn)
 {
-  int       natom,i,j,k,nvdw,nmass;
+  int       natom,i,j,k,nvdw;
   char      title[STRLEN];
   t_atoms   atoms;
   rvec      *x,*v;
@@ -254,7 +254,6 @@ void chk_stx(char *fn)
   real      r2,ekin,temp1,temp2;
   t_vdw     *vdw;
   real      *atom_vdw;
-  t_mass    *mass;
   
   fprintf(stderr,"Checking coordinate file %s\n",fn);
   atoms.nr=0;
@@ -288,9 +287,9 @@ void chk_stx(char *fn)
   
   /* check velocities */
   if (bV) {
-    nmass=read_mass("atommass.dat",&mass);
     for (i=0; (i<natom); i++)
-      if ((atoms.atom[i].m=get_mass(nmass,mass,*(atoms.atomname[i])))==0.0)
+      if ((atoms.atom[i].m = get_mass(*atoms.resname[atoms.atom[i].resnr],
+				      *atoms.atomname[i])) == 0.0)
 	if ( ((*(atoms.atomname[i]))[0]=='H') ||
 	     (isdigit((*(atoms.atomname[i]))[0]) && 
 	      ((*(atoms.atomname[i]))[1]=='H')) )

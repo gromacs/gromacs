@@ -68,16 +68,13 @@ static char *pdbformat=
 
 real calc_mass(t_atoms *atoms)
 {
-  char *massdb="atommass.dat";
-  t_mass *mass;
   real tmass;
-  int  nmass;
   int i,j,k;
 
-  nmass=read_mass(massdb, &mass);
   tmass = 0;
   for(i=0; (i<atoms->nr); i++) {
-    if ((atoms->atom[i].m = get_mass(nmass, mass, *atoms->atomname[i]))==0.0) {
+    if ((atoms->atom[i].m = get_mass(*atoms->resname[atoms->atom[i].resnr], 
+				     *atoms->atomname[i])) == 0.0) {
       if ( ((*atoms->atomname[i])[0]=='H') ||
 	   (isdigit((*atoms->atomname[i])[0]) && 
 	    ((*atoms->atomname[i])[1]=='H')) ) {
