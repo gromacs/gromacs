@@ -683,13 +683,15 @@ void init_forcerec(FILE *fp,
   snew(fr->atype_radius,fr->ntype);
   snew(fr->atype_vol,fr->ntype);
   snew(fr->atype_surftens,fr->ntype);
-  for(i=0;i<fr->ntype;i++)
-    fr->atype_radius[i]=top->atomtypes.radius[i];
-  for(i=0;i<fr->ntype;i++)
-    fr->atype_vol[i]=top->atomtypes.vol[i];
-  for(i=0;i<fr->ntype;i++)
-    fr->atype_surftens[i]=top->atomtypes.surftens[i];
-    
+  if (top->atomtypes.nr > 0) {
+    for(i=0;i<fr->ntype;i++)
+      fr->atype_radius[i]=top->atomtypes.radius[i];
+    for(i=0;i<fr->ntype;i++)
+      fr->atype_vol[i]=top->atomtypes.vol[i];
+    for(i=0;i<fr->ntype;i++)
+      fr->atype_surftens[i]=top->atomtypes.surftens[i];
+  }    
+
   /* Now update the rest of the vars */
   update_forcerec(fp,fr,box);
   /* if we are using LR electrostatics, and they are tabulated,
