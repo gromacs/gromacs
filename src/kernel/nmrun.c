@@ -262,7 +262,7 @@ int main(int argc,char *argv[])
     "nmrun builds a Hessian matrix from single conformation.",
     "For usual Normal Modes-like calculations, make sure that",
     "the structure provided is properly energy-minimised.",
-    "The generated matrix can be diagonalized by nmeig."
+    "The generated matrix can be diagonalized by g_nmeig."
   };
   t_commrec    *cr;
   t_filenm fnm[] = {
