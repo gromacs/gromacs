@@ -45,14 +45,22 @@ static char *SRCID_g_analyze_c = "$Id$";
 #include "xvgr.h"
 
 static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
-		       int nsets_in,int *nset,int *nval,real *t0,real *dt)
+		       int nsets_in,int *nset,int *nval,real *t0,real *dt,
+		       int linelen)
 {
   FILE   *fp;
-  char   line0[4096],*line;
+  static int  llmax=0;
+  static char *line0=NULL;
+  char   *line;
   int    a,narg,n,sin,set,nchar;
   double dbl,tend=0;
   bool   bEndOfSet,bTimeInRange;
   real   **val;
+
+  if (linelen > llmax) {
+    llmax = linelen;
+    srenew(line0,llmax);
+  }
 
   val = NULL;
   fp  = ffopen(fn,"r");
@@ -63,7 +71,7 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
       narg = bHaveT ? 2 : 1;
     n = 0;
     bEndOfSet = FALSE;
-    while (!bEndOfSet && fgets(line0,STRLEN-1,fp)) {
+    while (!bEndOfSet && fgets(line0,linelen,fp)) {
       line = line0;
       bEndOfSet = (line[0] == '&');
       if ((line[0] != '#') && (line[0] != '@') && !bEndOfSet) {
@@ -320,11 +328,13 @@ int main(int argc,char *argv[])
   };
   static real tb=-1,te=-1,frac=0.5,binwidth=0.1;
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=FALSE,bAverCorr=FALSE;
-  static int  nsets_in=1,d=1,resol=8;
+  static int  linelen=4096,nsets_in=1,d=1,resol=8;
 
   static char *avbar_opt[] = { NULL, "none", "stddev", "error", "90", NULL };
 
   t_pargs pa[] = {
+    { "-linelen", FALSE, etINT, {&linelen},
+      "HIDDENMaximum input line length" },
     { "-time", FALSE, etBOOL, {&bHaveT},
       "Expect a time in the input" },
     { "-b", FALSE, etREAL, {&tb},
@@ -390,7 +400,7 @@ int main(int argc,char *argv[])
   val=read_val(opt2fn("-f",NFILE,fnm),bHaveT,
 	       opt2parg_bSet("-b",npargs,ppa),tb,
 	       opt2parg_bSet("-e",npargs,ppa),te,
-	       nsets_in,&nset,&n,&t0,&dt);
+	       nsets_in,&nset,&n,&t0,&dt,linelen);
   fprintf(stdout,"Read %d sets of %d points, dt = %g\n\n",nset,n,dt);
   if (bDer) {
     fprintf(stdout,"Calculating the derivative as (f[i+%d]-f[i])/(%d*dt)\n\n",
