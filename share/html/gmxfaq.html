@@ -101,18 +101,24 @@ and can also run in parallel (providing a good version of MPI or PVM is
 present).
 <multicol cols=3>
 <DL COMPACT>
+<DT>alx<DD>Alpha/Linux            
 <DT>cm5<DD>CM5
-<DT>dec<DD>Alpha/Dec UNIX
-<DT> hp<DD>HP/PaRISC
+<DT>dec<DD>Alpha/Dec (Tru64 unix) 
+<DT>hp<DD>HP/PaRISC               
 <DT>lnx<DD>Linux/x86
-<DT>s10<DD>SGI (IRIX)/R10k
-<DT>s5k<DD>SGI (IRIX)/R5k
-<DT>s8k<DD>SGI (IRIX)/R8k
-<DT>sgi<DD>SGI (IRIX)/R4k
-<DT>sol<DD>Sun/SOLARIS
+<DT>pgi<DD>Linux/x86 w Portland Compiler
+<DT>s10<DD>SGI/R10000/R12000
+<DT>s5k<DD>SGI/R5000
+<DT>s8k<DD>SGI/R8000
+<DT>sgi<DD>SGI/R4000 
+<DT>smp<DD>IBM SMP nodes           
+<DT>sol<DD>Sun/SOLARIS             
 <DT>sp2<DD>IBM/SP2
 <DT>spp<DD>Convex SPP
-<DT>ymp<DD>Cray/YMP
+<DT>sun<DD>Sun/SunOS               
+<DT>ult<DD>Sun Ultrasparc
+<DT>win<DD>Windows95/NT            
+<DT>ymp<DD>Cray/YMP                
 </DL>
 </multicol>
 
@@ -143,19 +149,18 @@ do the work you already did all over again.
 <P>
 <DD>
 You will need an up to date version of MPI or PVM.
-If you don't have single processor versions of the Gromacs binaries yet,
-make them. The only multi-processor binary you need is mdrun.
-To make this one, set <TT>USE_MPI</TT> or <TT>USE_PVM</TT> to <TT>yes</TT> 
-in your <TT>Makefile.cpu</TT> and type:
-<PRE>cd $GMXHOME/src/gmxlib
+Set <TT>USE_MPI</TT> or <TT>USE_PVM</TT> to <TT>yes</TT> 
+in your <TT>Makefile.$GMXCPU</TT> and type:
+<PRE>
+cd $GMXHOME/src
 gmake clean
-gmake lib
-cd $GMXHOME/src/kernel
-gmake clean
-gmake mdrun
+gmake
 </PRE>
-Now there sould be an MPI or PVM <TT>mdrun</TT> binary in the
-<TT>src/kernel</TT> directory.
+On most architectures you will now have new binaries in the
+$GMXHOME/bin/$GMXCPU directory. The mdrun in that directory will run
+both in parallel and non-parallel.
+On some architectures (e.g. IBM SP) you will have a parallel mdrun binary
+in $GMXHOME/bin/$GMXCPU_mpi (or _pvm).
 <P>
 The extra things needed to start a run on multiple processors are:
 you have to specify the <TT>-np &lt;nr&gt;</TT> option with
@@ -164,7 +169,7 @@ and you need to start <A HREF="online2.0/mdrun.html"><TT>mdrun</TT></A>
 with the appropriate options.
 For instance on an SGI with the newest verison of MPI:
 <PRE>
-grompp -np&lt;nr&gt; -o topol.tpr &lt;other options&gt;
+grompp -np &lt;nr&gt; -o topol.tpr &lt;other options&gt;
 mpirun -np &lt;nr&gt; &lt;dir&gt;/mdrun -s topol.tpr &lt;other options&gt;
 </PRE>
 NOTE: you have to specify the full path of the MPI mdrun binary.
@@ -298,6 +303,8 @@ section, you probably can start where it says "Ribonuclease S-Peptide".
 
 <DD> <TT>pdb2gmx</TT> can automatically process multimeric proteins,
 but won't be able to make inter-subunit cystine bridges.
+<TT>pdb2gmx</TT> will only recognize the units as different chains if they
+have different chain identifiers.
 
 <P>
 
