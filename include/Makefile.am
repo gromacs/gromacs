@@ -38,7 +38,7 @@ include_HEADERS = \
 	readinp.h   	sysstuff.h    	xvgr.h 		  	\
 	index.h         mvdata.h    \
 	disre.h     	orires.h	x86_sse2.h	\
-	init.h          nr.h        	reorder.h   	\
+	init.h          reorder.h   	\
 	tags.h		do_fit.h    	nrama.h     	\
 	rmpbc.h     	tgroup.h        ppc_altivec.h
 
