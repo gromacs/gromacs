@@ -187,6 +187,14 @@ AC_ARG_WITH(system_lapack,
 AM_CONDITIONAL([GMX_SYSTEM_LAPACK], [test "with_system_lapack" = "yes"])
 
 
+############################################################
+# Add some debug info: Who is building, and on what machine?
+############################################################
+AC_DEFINE_UNQUOTED([BUILD_TIME],["`date`"],[Date and time for build])
+AC_DEFINE_UNQUOTED([BUILD_USER],["`whoami`@`hostname`"],[User doing build])
+AC_DEFINE_UNQUOTED([BUILD_MACHINE],["`uname -srm`"],[Hardware and OS version for build host])
+
+
 
 ############################################################
 # Checks for programs
