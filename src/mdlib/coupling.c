@@ -348,18 +348,15 @@ void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,
   real   T,reft=0,lll; 
 
   for(i=0; (i<opts->ngtc); i++) {
-    reft=opts->ref_t[i]*SAfactor;
-    if (reft < 0)
-      reft=0;
-
     T = grps->tcstat[i].T;
     
-    if (T != 0.0) {
-      lll=sqrt(1.0 + (dt/opts->tau_t[i])*(reft/T-1.0));
-      grps->tcstat[i].lambda=max(min(lll,1.25),0.8);
+    if ((opts->tau_t[i] > 0) && (T > 0.0)) {
+      reft = max(0.0,opts->ref_t[i]*SAfactor);
+      lll  = sqrt(1.0 + (dt/opts->tau_t[i])*(reft/T-1.0));
+      grps->tcstat[i].lambda = max(min(lll,1.25),0.8);
     }
     else
-      grps->tcstat[i].lambda=1.0;
+      grps->tcstat[i].lambda = 1.0;
 #ifdef DEBUGTC
     fprintf(stdlog,"group %d: T: %g, Lambda: %g\n",
 	    i,T,grps->tcstat[i].lambda);
@@ -368,26 +365,26 @@ void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,
 }
 
 void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,
-		      real dt,real SAfactor)
+		       real dt,real SAfactor)
 {
-  int i;
-  real reft=0,xit,oldxi;
-  real *Q=NULL,*Qinv=NULL;
+  static real *Qinv=NULL;
+  int    i;
+  real   reft=0,xit,oldxi;
 
-  if(Qinv==NULL) {
-    snew(Q,opts->ngtc);
+  if (Qinv == NULL) {
     snew(Qinv,opts->ngtc);
-    for(i=0;i<opts->ngtc;i++) {
-      Q[i]=(opts->tau_t[i]*opts->tau_t[i]*opts->ref_t[i])/(4*M_PI*M_PI);
-      Qinv[i]=1.0/Q[i];
+    
     /* Use inputrec ref_t - Q shouldnt change during the run. */
+    for(i=0;i<opts->ngtc;i++) {
+      if ((opts->tau_t[i] > 0) && (opts->ref_t[i] > 0))
+	Qinv[i]=1.0/(opts->tau_t[i]*opts->tau_t[i]*opts->ref_t[i])/(4*M_PI*M_PI);
+      else
+	Qinv[i]=0.0;
     }
   }
 
   for(i=0; (i<opts->ngtc); i++) {
-    reft=opts->ref_t[i]*SAfactor;
-    if (reft < 0)
-      reft=0;
+    reft = max(0.0,opts->ref_t[i]*SAfactor);
     grps->tcstat[i].xi += dt*Qinv[i]*(grps->tcstat[i].T-reft);
   }
 }
