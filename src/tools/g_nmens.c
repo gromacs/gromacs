@@ -14,10 +14,10 @@
 #include "rdgroup.h"
 #include "pdbio.h"
 #include "tpxio.h"
-#include "trnio.h"
 #include "txtdump.h"
 #include "physics.h"
 #include "random.h"
+#include "eigio.h"
 
 int read_eigval(char *fn,int nmax,real eigval[])
 {
@@ -34,7 +34,7 @@ int read_eigval(char *fn,int nmax,real eigval[])
     bEndOfSet = (line[0] == '&');
     if ((line[0] != '#') && (line[0] != '@') && !bEndOfSet) {
       if ((sscanf(line,"%d %f",&num,&val) != 2) || ((num < 1) || (num > nmax)))
-	fprintf(stderr,"Invalid line in %s: '%s'\n",fn,line);
+fprintf(stderr,"Invalid line in %s: '%s'\n",fn,line);
       else {
 	eigval[num-1] = val;
 	n++;
@@ -44,78 +44,6 @@ int read_eigval(char *fn,int nmax,real eigval[])
   fclose(fp);
   
   return n;
-}
-
-void read_eigenvectors(char *file,int *natoms,bool *bFit,
-		       rvec **xref,bool *bDMR,
-		       rvec **xav,bool *bDMA,
-		       int *nvec, int **eignr, rvec ***eigvec)
-{
-  t_trnheader head;
-  int status,i,snew_size;
-  rvec *x;
-  matrix box;
-  bool bOK;
-
-  *bDMR=FALSE;
-
-  /* read (reference (t=-1) and) average (t=0) structure */
-  status=open_trn(file,"r");
-  fread_trnheader(status,&head,&bOK);
-  *natoms=head.natoms;
-  snew(*xav,*natoms);
-  fread_htrn(status,&head,box,*xav,NULL,NULL);
-  if ((head.t>=-1.1) && (head.t<=-0.9)) {
-    snew(*xref,*natoms);
-    for(i=0; i<*natoms; i++)
-      copy_rvec((*xav)[i],(*xref)[i]);
-    *bDMR = (head.lambda > 0.5);
-    *bFit = (head.lambda > -0.5);
-    if (*bFit)
-      fprintf(stderr,"Read %smass weighted reference structure with %d atoms from %s\n", *bDMR ? "" : "non ",*natoms,file);
-    else {
-       fprintf(stderr,"Eigenvectors in %s were determined without fitting\n",
-	       file);
-       sfree(*xref);
-       *xref=NULL;
-    }
-    fread_trnheader(status,&head,&bOK);
-    fread_htrn(status,&head,box,*xav,NULL,NULL);
-  }
-  else {
-    *bFit=TRUE;
-    *xref=NULL;
-  }
-  *bDMA = (head.lambda > 0.5);
-  if ((head.t<=-0.01) || (head.t>=0.01))
-    fatal_error(0,"%s does not start with t=0, which should be the average "
-		"structure. This might not be a eigenvector file.",file);
-  fprintf(stderr,"Read %smass weighted average structure with %d atoms from %s\n",
-	  *bDMA ? "" : "non ",*natoms,file);
-  
-  snew(x,*natoms);
-  snew_size=0;
-  *nvec=0;
-  while (fread_trnheader(status,&head,&bOK)) {
-    fread_htrn(status,&head,box,x,NULL,NULL);
-    if (*nvec >= snew_size) {
-      snew_size+=10;
-      srenew(*eignr,snew_size);
-      srenew(*eigvec,snew_size);
-    }
-    i=(int)(head.t+0.01);
-    if ((head.t-i<=-0.01) || (head.t-i>=0.01))
-      fatal_error(0,"%s contains a frame with non-integer time (%f), this "
-		  "time should be an eigenvector index. "
-		  "This might not be a eigenvector file.",file,head.t);
-    (*eignr)[*nvec]=i-1;
-    snew((*eigvec)[*nvec],*natoms);
-    for(i=0; i<*natoms; i++)
-      copy_rvec(x[i],(*eigvec)[*nvec][i]);
-    (*nvec)++;
-  }
-  sfree(x);
-  fprintf(stderr,"Read %d eigenvectors (dim=%d)\n\n",*nvec,*natoms*DIM);
 }
 
 int main(int argc,char *argv[])

@@ -180,16 +180,16 @@ g_saltbr:	g_saltbr.o
 g_rdens:        g_rdens.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
 
-g_nmeig:        g_nmeig.o ql77.o
+g_nmeig:        g_nmeig.o eigio.o ql77.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
 
-g_nmens:	g_nmens.o
+g_nmens:	g_nmens.o eigio.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
-g_covar:        g_covar.o ql77.o
+g_covar:        g_covar.o eigio.o ql77.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
-g_anaeig:       g_anaeig.o
+g_anaeig:       g_anaeig.o eigio.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
 
 g_dist:         g_dist.o

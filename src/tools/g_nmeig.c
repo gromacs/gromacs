@@ -46,7 +46,7 @@ static char *SRCID_g_nmeig_c = "$Id$";
 #include "gstat.h"
 #include "txtdump.h"
 #include "ql77.h"
-#include "trnio.h"
+#include "eigio.h"
 
 int main(int argc,char *argv[])
 {
@@ -75,7 +75,7 @@ int main(int argc,char *argv[])
   t_topology top;
   t_inputrec ir;
   rvec       *top_x,*x;
-  matrix     box,zerobox;
+  matrix     box;
   real       t,*hess,*eigv,rdum,mass_fac;
   int        natoms,ndim,count;
   char       *grpname,title[256];
@@ -206,21 +206,9 @@ int main(int argc,char *argv[])
     begin=1;
   if (end>ndim)
     end=ndim;
-  fprintf (stderr,
-	   "\nWriting structure and eigenvectors %d to %d to %s\n",
-	   begin,end,opt2fn("-v",NFILE,fnm));
 
-  clear_mat(zerobox);
-  trjout = open_tpx(opt2fn("-v",NFILE,fnm),"w");
-  /* misuse lambda: 0/1 mass weighted analysis no/yes */ 
-  fwrite_trn(trjout,0,0,bM,zerobox,natoms,top_x,NULL,NULL);
-  for(i=begin; i<=end; i++) {
-    for (j=0; j<natoms; j++)
-      for(d=0; d<DIM; d++)
-	x[j][d]=hess[(i-1)*ndim+DIM*j+d];
-    fwrite_trn(trjout,i,(real)i,0,zerobox,natoms,x,NULL,NULL);
-  }
-  close_trn(trjout);
+  write_eigenvectors(opt2fn("-v",NFILE,fnm),natoms,hess,FALSE,begin,end,
+		     eWXR_NO,NULL,FALSE,top_x,bM);
 
   thanx(stdout);
   

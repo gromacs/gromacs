@@ -48,6 +48,7 @@ static char *SRCID_g_nmeig_c = "$Id$";
 #include "do_fit.h"
 #include "rmpbc.h"
 #include "txtdump.h"
+#include "eigio.h"
 #include "ql77.h"
 
 int main(int argc,char *argv[])
@@ -83,9 +84,10 @@ int main(int argc,char *argv[])
   rvec       *x,*xread,*xref,*xav;
   matrix     box,zerobox;
   real       t,*mat,dev,trace,sum,*eigval,inv_nframes;
-  real       xj,*sqrtm,*w_rls,lambda;
+  real       xj,*sqrtm,*w_rls;
   int        ntopatoms,step;
   int        natoms,nat,ndim,count,nframes;
+  int        WriteXref;
   char       *grpname,*infile,str[STRLEN];
   int        i,j,k,l,d,dj,nfit;
   atom_id    *index,*all_at,*ifit;
@@ -278,31 +280,22 @@ int main(int argc,char *argv[])
       end=nframes-1;
     else
       end=ndim;
-  fprintf (stderr,
-	   "\nWriting %saverage structure\nand eigenvectors 1 to %d to %s\n",
-	   (nfit==natoms) ? "reference and " : "",
-	   end,opt2fn("-v",NFILE,fnm));
 
-  trjout = open_tpx(opt2fn("-v",NFILE,fnm),"w");
-  if (nfit==natoms) {
-    for(i=0; i<nfit; i++)
-      copy_rvec(xref[ifit[i]],x[i]);
-    /* misuse lambda: 0/1 mass weighted fit no/yes */  
-    fwrite_trn(trjout,-1,-1,bDiffMass1 ? 1 : 0,zerobox,natoms,x,NULL,NULL);
-  } else 
-    if (!bFit)
-      /* misuse lambda: -1 for no fit */  
-      fwrite_trn(trjout,-1,-1,-1,zerobox,natoms,xav,NULL,NULL);
-
-  /* misuse lambda: 0/1 mass weighted analysis no/yes */ 
-  fwrite_trn(trjout,0,0,bM ? 1 : 0,zerobox,natoms,xav,NULL,NULL);
-  for(i=1; i<=end; i++) {
-    for (j=0; j<natoms; j++)
-      for(d=0; d<DIM; d++)
-	x[j][d]=mat[(ndim-i)*ndim+DIM*j+d];
-    fwrite_trn(trjout,i,(real)i,0,zerobox,natoms,x,NULL,NULL);
+  if (bFit) {
+    /* misuse lambda: 0/1 mass weighted analysis no/yes */
+    if (nfit==natoms) {
+      WriteXref = eWXR_YES;
+      for(i=0; i<nfit; i++)
+	copy_rvec(xref[ifit[i]],x[i]);
+    } else
+      WriteXref = eWXR_NO;
+  } else {
+    /* misuse lambda: -1 for no fit */
+    WriteXref = eWXR_NOFIT;
   }
-  close_trn(trjout);
+
+  write_eigenvectors(opt2fn("-v",NFILE,fnm),natoms,mat,TRUE,1,end,
+		     WriteXref,x,bDiffMass1,xav,bM);
 
   thanx(stdout);
   

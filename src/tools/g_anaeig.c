@@ -45,13 +45,13 @@ static char *SRCID_g_nmeig_c = "$Id$";
 #include "pdbio.h"
 #include "confio.h"
 #include "tpxio.h"
-#include "trnio.h"
 #include "matio.h"
 #include "mshift.h"
 #include "xvgr.h"
 #include "do_fit.h"
 #include "rmpbc.h"
 #include "txtdump.h"
+#include "eigio.h"
 
 char *proj_unit;
 
@@ -168,7 +168,7 @@ void inprod_matrix(char *matfile,int natoms,
 }
 
 void overlap(char *outfile,int natoms,
-	     int nvec1,int *eignr1,rvec **eigvec1,
+	     rvec **eigvec1,
 	     int nvec2,int *eignr2,rvec **eigvec2,
 	     int noutvec,int *outvec)
 {
@@ -207,7 +207,7 @@ void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
 	     t_atoms *atoms,int natoms,atom_id *index,
 	     bool bFit,rvec *xref,int nfit,atom_id *ifit,real *w_rls,
 	     real *sqrtm,rvec *xav,
-	     int nvec,int *eignr,rvec **eigvec,
+	     int *eignr,rvec **eigvec,
 	     int noutvec,int *outvec)
 {
   FILE    *xvgrout;
@@ -414,7 +414,7 @@ void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
 }
 
 void components(char *outfile,int natoms,real *sqrtm,
-		int nvec,int *eignr,rvec **eigvec,
+		int *eignr,rvec **eigvec,
 		int noutvec,int *outvec)
 {
   int g,v,i;
@@ -439,82 +439,6 @@ void components(char *outfile,int natoms,real *sqrtm,
   write_xvgr_graphs(outfile,noutvec,"Atom displacements","Atom number",
 		    ylabel,natoms,x,y,TRUE);
   fprintf(stderr,"\n");
-}
-
-void read_eigenvectors(char *file,int *natoms,bool *bFit,
-		       rvec **xref,bool *bDMR,
-		       rvec **xav,bool *bDMA,
-		       int *nvec, int **eignr, rvec ***eigvec)
-{
-  t_trnheader head;
-  int status,i,snew_size;
-  rvec *x;
-  matrix box;
-  bool bOK;
-
-  *bDMR=FALSE;
-
-  /* read (reference (t=-1) and) average (t=0) structure */
-  status=open_trn(file,"r");
-  fread_trnheader(status,&head,&bOK);
-  *natoms=head.natoms;
-  snew(*xav,*natoms);
-  fread_htrn(status,&head,box,*xav,NULL,NULL);
-  if ((head.t>=-1.1) && (head.t<=-0.9)) {
-    snew(*xref,*natoms);
-    for(i=0; i<*natoms; i++)
-      copy_rvec((*xav)[i],(*xref)[i]);
-    *bDMR = (head.lambda > 0.5);
-    *bFit = (head.lambda > -0.5);
-    if (*bFit)
-      fprintf(stderr,"Read %smass weighted reference structure with %d atoms from %s\n", *bDMR ? "" : "non ",*natoms,file);
-    else {
-       fprintf(stderr,"Eigenvectors in %s were determined without fitting\n",
-	       file);
-       sfree(*xref);
-       *xref=NULL;
-    }
-    fread_trnheader(status,&head,&bOK);
-    fread_htrn(status,&head,box,*xav,NULL,NULL);
-  }
-  else {
-    *bFit=TRUE;
-    *xref=NULL;
-  }
-  *bDMA = (head.lambda > 0.5);
-  if ((head.t<=-0.01) || (head.t>=0.01))
-    fprintf(stderr,"WARNING: %s does not start with t=0, which should be the "
-	    "average structure. This might not be a eigenvector file. "
-	    "Can not calculate projections without an average structure.\n",
-	    file);
-  else
-    fprintf(stderr,
-	    "Read %smass weighted average structure with %d atoms from %s\n",
-	    *bDMA ? "" : "non ",*natoms,file);
-  
-  snew(x,*natoms);
-  snew_size=0;
-  *nvec=0;
-  while (fread_trnheader(status,&head,&bOK)) {
-    fread_htrn(status,&head,box,x,NULL,NULL);
-    if (*nvec >= snew_size) {
-      snew_size+=10;
-      srenew(*eignr,snew_size);
-      srenew(*eigvec,snew_size);
-    }
-    i=(int)(head.t+0.01);
-    if ((head.t-i<=-0.01) || (head.t-i>=0.01))
-      fatal_error(0,"%s contains a frame with non-integer time (%f), this "
-		  "time should be an eigenvector index. "
-		  "This might not be a eigenvector file.",file,head.t);
-    (*eignr)[*nvec]=i-1;
-    snew((*eigvec)[*nvec],*natoms);
-    for(i=0; i<*natoms; i++)
-      copy_rvec(x[i],(*eigvec)[*nvec][i]);
-    (*nvec)++;
-  }
-  sfree(x);
-  fprintf(stderr,"Read %d eigenvectors (dim=%d)\n\n",*nvec,*natoms*DIM);
 }
 
 int main(int argc,char *argv[])
@@ -792,7 +716,7 @@ int main(int argc,char *argv[])
   fprintf(stderr,"\n");
   
   if (CompFile)
-    components(CompFile,natoms,sqrtm,nvec1,eignr1,eigvec1,noutvec,outvec);
+    components(CompFile,natoms,sqrtm,eignr1,eigvec1,noutvec,outvec);
   
   if (bProj)
     project(bTraj ? opt2fn("-f",NFILE,fnm) : NULL,
@@ -800,11 +724,11 @@ int main(int argc,char *argv[])
 	    ProjOnVecFile,TwoDPlotFile,ThreeDPlotFile,FilterFile,skip,
 	    ExtremeFile,bExtremeAll,max,nextr,atoms,natoms,index,
 	    bFit1,xref1,nfit,ifit,w_rls,
-	    sqrtm,xav1,nvec1,eignr1,eigvec1,noutvec,outvec);
+	    sqrtm,xav1,eignr1,eigvec1,noutvec,outvec);
   
   if (OverlapFile)
     overlap(OverlapFile,natoms,
-	    nvec1,eignr1,eigvec1,nvec2,eignr2,eigvec2,noutvec,outvec);
+	    eigvec1,nvec2,eignr2,eigvec2,noutvec,outvec);
   
   if (InpMatFile)
     inprod_matrix(InpMatFile,natoms,
