@@ -609,7 +609,7 @@ static real fit_acf(int ncorr,int fitfn,bool bVerbose,
 
   /* Estimate the correlation time for better fitting */
   ct_estimate = 0.5*c1[0];
-  for(i=1; i<ncorr && c1[i]>0; i++)
+  for(i=1; (i<ncorr) && (c1[i]>0); i++)
       ct_estimate += c1[i];
   ct_estimate *= dt/c1[0];
 
@@ -639,6 +639,7 @@ static real fit_acf(int ncorr,int fitfn,bool bVerbose,
     fitparm[2] = 1.0;
   }
 
+  /* Generate more or less appropriate sigma's */
   snew(sig,ncorr);
   for(i=0; i<ncorr; i++)
     sig[i] = sqrt(ct_estimate+dt*i);
@@ -650,12 +651,12 @@ static real fit_acf(int ncorr,int fitfn,bool bVerbose,
     tail_corr = do_lmfit(ncorr,c1,sig,dt,NULL,tStart,tendfit,
 			 bDebugMode(),fitfn,fitparm,0);
     sumtot = sum+tail_corr;
-    if (fit && (jmax==1 || j==1))
-      for(i=0; i<ncorr; i++)
+    if (fit && ((jmax == 1) || (j == 1)))
+      for(i=0; (i<ncorr); i++)
 	fit[i] = fit_function(fitfn,fitparm,i*dt);
     if (bPrint) {
       printf("COR:%11.4e%11.4e%11.4e%11.4e",tStart,sum,tail_corr,sumtot);
-      for(i=0; i<nfp_ffn[fitfn]; i++)
+      for(i=0; (i<nfp_ffn[fitfn]); i++)
 	printf(" %11.4e",fitparm[i]);
       printf("\n");
     }

@@ -660,9 +660,9 @@ int fio_open(char *fn,char *mode)
   }
 
   /* Check if it should be opened as a binary file */
-  if(strncmp(ftp2ftype(fn2ftp(fn)),"ASCII",5)) {
+  if (strncmp(ftp2ftype(fn2ftp(fn)),"ASCII",5)) {
     /* Not ascii, add b to file mode */
-    if(strchr(newmode,'b')==NULL && strchr(newmode,'B')==NULL)
+    if ((strchr(newmode,'b')==NULL) && (strchr(newmode,'B')==NULL))
       strcat(newmode,"b");
   }
 
