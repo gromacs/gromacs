@@ -30,6 +30,7 @@ static char *SRCID_pargs_c = "$Id$";
 
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include "typedefs.h"
 #include "fatal.h"
 #include "statutil.h"
@@ -47,7 +48,7 @@ bool is_hidden(t_pargs *pa)
 
 void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
 {
-  int  i,j,k;
+  int  i,j,k,match;
   bool *bKeep;
   char buf[32];
   char *ptr;
@@ -87,26 +88,29 @@ void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
 	  *(pa[j].u.c) = sscan(*argc,argv,&i);
 	  break;
 	case etENUM:
+	  match=NOTSET;
 	  ptr = sscan(*argc,argv,&i);
-	  for(k=0; (pa[j].u.c[k] != NULL); k++)
-	    if (strcasecmp(ptr,pa[j].u.c[k]) == 0) {
-	      /* Swap 0 and k */
-	      ptr          = pa[j].u.c[k];
-	      pa[j].u.c[k] = pa[j].u.c[0];
-	      pa[j].u.c[0] = ptr;
-	      break;
-	    }
-	  if (pa[j].u.c[k] == NULL)
+	  for(k=1; (pa[j].u.c[k] != NULL); k++)
+	    /* only check ptr against beginning of pa[j].u.c[k] */
+	    if (strncasecmp(ptr,pa[j].u.c[k],strlen(ptr)) == 0)
+	      if ( ( match == NOTSET ) || 
+		   ( strlen(pa[j].u.c[k] ) > strlen(pa[j].u.c[match]) ) )
+		     match = k;
+	  if (match!=NOTSET)
+	    pa[j].u.c[0] = pa[j].u.c[match];
+	  else 
 	    fatal_error(0,"Invalid value %s for option %s",ptr,pa[j].option);
 	  break;
 	case etRVEC:
 	  (*pa[j].u.rv)[0] = dscan(*argc,argv,&i);
-	  if ( (i+1 == *argc) || (argv[i+1][0]=='-') )
+	  if ( (i+1 == *argc) || 
+	       ( (argv[i+1][0]=='-') && !isdigit(argv[i+1][1]) ) )
 	    (*pa[j].u.rv)[1] = (*pa[j].u.rv)[2] = (*pa[j].u.rv)[0];
 	  else {
 	    bKeep[i] = FALSE;
 	    (*pa[j].u.rv)[1] = dscan(*argc,argv,&i);
-	    if ( (i+1 == *argc) || (argv[i+1][0]=='-') )
+	    if ( (i+1 == *argc) || 
+		 ( (argv[i+1][0]=='-') && !isdigit(argv[i+1][1]) ) )
 	      fatal_error(0,"%s: vector must have 1 or 3 real parameters",
 			  pa[j].option);
 	    bKeep[i] = FALSE;
