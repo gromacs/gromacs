@@ -373,7 +373,7 @@ void update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr,
     }
     if (i == nparm) {
       fprintf(stdlog,"Finished with %d out of %d iterations\n",ntried+1,ntry);
-      if (gmx_parallel)
+      if (gmx_parallel_env)
 	gmx_finalize();
       exit(0);
     }
@@ -456,7 +456,7 @@ void print_forcefield(FILE *fp,real ener[],int natoms,rvec f[],rvec fshake[],
 	      ener[F_PRES],sqrt(msf1),ener[F_EPOT]/ff.nmol-ff.epot,
 	      cost(pres,msf1,ener[F_EPOT]/ff.nmol));
     if (print_ga(fp,ga,msf1,pres,scale,(ener[F_EPOT]/ff.nmol),range,ff.tol)) {
-      if (gmx_parallel)
+      if (gmx_parallel_env)
 	gmx_finalize();
       fprintf(stderr,"\n");
       exit(0);

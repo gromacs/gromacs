@@ -220,7 +220,7 @@ int main(int argc,char *argv[])
 
   mdrunner(cr,mcr,NFILE,fnm,bVerbose,bCompact,nDLB,nstepout,&edyn,Flags);
   
-  if (gmx_parallel)
+  if (gmx_parallel_env)
     gmx_finalize();
 
   if (MASTER(cr)) {

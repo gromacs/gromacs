@@ -42,7 +42,10 @@
 #include "network.h"
 
 extern FILE *stdlog;
-extern int  gmx_parallel; /* 1 when running in parallel */
+extern int  gmx_parallel_env; /* 1 when running in a parallel environment,
+			       * so could also be 1 when mdrun was started
+			       * with: mpirun -np 1 
+			       */
 
 extern void open_log(char *fn,t_commrec *cr);
 /* Open the log file, if necessary (nprocs > 1) the logfile name is

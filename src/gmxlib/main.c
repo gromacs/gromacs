@@ -57,7 +57,7 @@ pthread_mutex_t gmx_stdout_mtx  = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 FILE *stdlog=NULL;
-int  gmx_parallel=0;
+int  gmx_parallel_env=0;
 
 static int get_nodeid(FILE *log,int left,int right,int *nodeid,int *nnodes)
      /*
@@ -320,20 +320,20 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
   }
   
 #ifdef USE_MPI
-  gmx_parallel = 1;
+  gmx_parallel_env = 1;
 #ifdef CHECK_MPI_ENV
   /* Do not use MPI calls when env.var. CHECK_MPI_ENV is not set */
   if (getenv(CHECK_MPI_ENV) == NULL)
-    gmx_parallel = 0;
+    gmx_parallel_env = 0;
 #endif
-  if (gmx_parallel)
+  if (gmx_parallel_env)
     cr->nodeid = gmx_setup(argc,argv,&cr->nnodes);
   else
     cr->nodeid = 0;
 #else
   cr->nodeid   = 0;
   cr->nnodes   = 1;
-  gmx_parallel = 0; 
+  gmx_parallel_env = 0; 
 #endif
   
   if (!PAR(cr) && (cr->nodeid != 0))

@@ -149,8 +149,7 @@ void quit_gmx(int fatal_errno,char *msg)
     perror(msg);
   }
   
-#ifdef USE_MPI
-  if (gmx_parallel) {
+  if (gmx_parallel_env) {
     int  nnodes;
     int  nodeid;
     
@@ -160,17 +159,17 @@ void quit_gmx(int fatal_errno,char *msg)
     if (nnodes > 1) 
       fprintf(stderr,"Error on node %d, will try to stop all the nodes\n",nodeid);
     gmx_abort(nodeid,nnodes,-1);
+  } else {
+    if (debug)
+      fflush(debug);
+    if (bDebug) {
+      fprintf(stderr,"dump core (y/n):"); 
+      fflush(stderr);
+      if (toupper(getc(stdin))!='N') 
+	(void) abort(); 
+    }
   }
-#else
-  if (debug)
-    fflush(debug);
-  if (bDebug) {
-    fprintf(stderr,"dump core (y/n):"); 
-    fflush(stderr);
-    if (toupper(getc(stdin))!='N') 
-      (void) abort(); 
-  }
-#endif 
+
   exit(-1);
 }
 

@@ -139,7 +139,7 @@ int main(int argc,char *argv[])
 
   mdrunner(cr,NULL,NFILE,fnm,ff.bVerbose,FALSE,0,1,&edyn,Flags);
 
-  if (gmx_parallel)
+  if (gmx_parallel_env)
     gmx_finalize();
 
   return 0;
