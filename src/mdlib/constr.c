@@ -233,8 +233,7 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
   static int       nc,ncm,cmax;
 
   char             buf[STRLEN];
-  int              i;
-  int              warn,p_imax,error;
+  int              i,nit,warn,p_imax,error;
   real             wang,p_max,p_rms;
   real             dt,dt_2;
 
@@ -259,16 +258,23 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
     
     if (do_per_step(step,ir->nstLincsout))
       cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
+
+    if ((ir->eI == eiSteep) || (ir->eI == eiCG))
+      /* Use more iterations when doing energy minimization, *
+       * because we need very accurate positions and forces. */
+      nit = ir->nProjOrder;
+    else
+      nit = 1;
     
     if (ir->eI != eiLD) {
 #ifdef USEF77
       flincs(x[0],xprime[0],&nc,&ncm,&cmax,bla1,bla2,blnr,blbnb,
-	     bllen,blc,blcc,blm,&ir->nProjOrder,
+	     bllen,blc,blcc,blm,&nit,&ir->nProjOrder,
 	     md->invmass,r[0],tmp1,tmp2,tmp3,&wang,&warn,
 	     lincslam);
 #else
       clincs(x,xprime,nc,ncm,cmax,bla1,bla2,blnr,blbnb,
-	     bllen,blc,blcc,blm,ir->nProjOrder,
+	     bllen,blc,blcc,blm,nit,ir->nProjOrder,
 	     md->invmass,r,tmp1,tmp2,tmp3,wang,&warn,lincslam);
 #endif
       if (ir->bPert) {
@@ -283,11 +289,11 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
     if (ir->eI==eiLD) {
 #ifdef USEF77
       flincsld(x[0],xprime[0],&nc,&ncm,&cmax,bla1,bla2,blnr,
-	       blbnb,bllen,blcc,blm,&ir->nProjOrder,
+	       blbnb,bllen,blcc,blm,&nit,&ir->nProjOrder,
 	       r[0],tmp1,tmp2,tmp3,&wang,&warn);
 #else
       clincsld(x,xprime,nc,ncm,cmax,bla1,bla2,blnr,
-	       blbnb,bllen,blcc,blm,ir->nProjOrder,
+	       blbnb,bllen,blcc,blm,nit,ir->nProjOrder,
 	       r,tmp1,tmp2,tmp3,wang,&warn);
 #endif
     }

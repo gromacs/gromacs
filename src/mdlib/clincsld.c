@@ -35,10 +35,10 @@ static char *SRCID_clincsld_c = "$Id$";
 void clincsld(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
               int *bla1,int *bla2,int *blnr,int *blbnb,real *bllen,
 	      real *blcc,real *blm,
-              int nrec,rvec * r,
+              int nit,int nrec,rvec * r,
 	      real *rhs1,real *rhs2,real *sol,real wangle,int *warn)
 {
-  int     b,i,j,k,n,b4,rec,nr,n1,nc4;
+  int     b,i,j,k,n,b4,it,rec,nr,n1,nc4;
   real    tmp0,tmp1,tmp2,mvb,rlen,len,wfac;                      
   real    u0,u1,u2,v0,v1,v2;
   real    *tmp;
@@ -156,70 +156,73 @@ void clincsld(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
 
   wfac=cos(0.01745*wangle);
   wfac=wfac*wfac;
+
+  for(it=0; it<nit; it++) {
   
-  for(b=0;b<ncons;b++) {
-    len=bllen[b];
-    i=bla1[b];
-    j=bla2[b];
-    tmp0=xp[i][0]-xp[j][0];
-    tmp1=xp[i][1]-xp[j][1];
-    tmp2=xp[i][2]-xp[j][2];
-    u1=len*len;
-    u0=2.*u1-(tmp0*tmp0+tmp1*tmp1+tmp2*tmp2);
-    if (u0 < wfac*u1) *warn=b;  
-    if (u0 < 0) u0=0;
-    mvb=len-sqrt(u0);
-    rhs1[b]=mvb;
-    sol[b]=mvb;
-  }
-  
-  for(rec=0;rec<nrec;rec++) {
-    for(b=0;b<n1;b++) {
-      b4=4*b;
-      mvb=0;
-      for(n=0;n<4;n++) {
-	j=blbnb[b4+n];
-	mvb=mvb+blm[b4+n]*rhs1[j];
-      }
+    for(b=0;b<ncons;b++) {
+      len=bllen[b];
+      i=bla1[b];
+      j=bla2[b];
+      tmp0=xp[i][0]-xp[j][0];
+      tmp1=xp[i][1]-xp[j][1];
+      tmp2=xp[i][2]-xp[j][2];
+      u1=len*len;
+      u0=2.*u1-(tmp0*tmp0+tmp1*tmp1+tmp2*tmp2);
+      if (u0 < wfac*u1) *warn=b;  
+      if (u0 < 0) u0=0;
+      mvb=len-sqrt(u0);
+      rhs1[b]=mvb;
+      sol[b]=mvb;
+    }
+    
+    for(rec=0;rec<nrec;rec++) {
+      for(b=0;b<n1;b++) {
+	b4=4*b;
+	mvb=0;
+	for(n=0;n<4;n++) {
+	  j=blbnb[b4+n];
+	  mvb=mvb+blm[b4+n]*rhs1[j];
+	}
       rhs2[b]=mvb;
       sol[b]=sol[b]+mvb;
-    }
-    for(b=n1;b<ncons;b++) {
-      b4=cmax*b-nc4;
-      mvb=0;
-      nr=blnr[b];
-      for(n=0;n<nr;n++) {
-	j=blbnb[b4+n];
-	mvb=mvb+blm[b4+n]*rhs1[j];
       }
-      rhs2[b]=mvb;
-      sol[b]=sol[b]+mvb;
+      for(b=n1;b<ncons;b++) {
+	b4=cmax*b-nc4;
+	mvb=0;
+	nr=blnr[b];
+	for(n=0;n<nr;n++) {
+	  j=blbnb[b4+n];
+	  mvb=mvb+blm[b4+n]*rhs1[j];
+	}
+	rhs2[b]=mvb;
+	sol[b]=sol[b]+mvb;
+      }
+      tmp=rhs1;
+      rhs1=rhs2;
+      rhs2=tmp;
     }
-    tmp=rhs1;
-    rhs1=rhs2;
-    rhs2=tmp;
+    
+    for(b=0;b<ncons;b++) {
+      i=bla1[b];
+      j=bla2[b];
+      mvb=sol[b]*0.5;
+      tmp0=r[b][0]*mvb;
+      tmp1=r[b][1]*mvb;
+      tmp2=r[b][2]*mvb;
+      u0=xp[i][0]-tmp0;
+      u1=xp[i][1]-tmp1;
+      u2=xp[i][2]-tmp2;
+      v0=xp[j][0]+tmp0;
+      v1=xp[j][1]+tmp1;
+      v2=xp[j][2]+tmp2;
+      xp[i][0]=u0;
+      xp[i][1]=u1;
+      xp[i][2]=u2;
+      xp[j][0]=v0;
+      xp[j][1]=v1;
+      xp[j][2]=v2;
+    }
   }
-  
-  for(b=0;b<ncons;b++) {
-    i=bla1[b];
-    j=bla2[b];
-    mvb=sol[b]*0.5;
-    tmp0=r[b][0]*mvb;
-    tmp1=r[b][1]*mvb;
-    tmp2=r[b][2]*mvb;
-    u0=xp[i][0]-tmp0;
-    u1=xp[i][1]-tmp1;
-    u2=xp[i][2]-tmp2;
-    v0=xp[j][0]+tmp0;
-    v1=xp[j][1]+tmp1;
-    v2=xp[j][2]+tmp2;
-    xp[i][0]=u0;
-    xp[i][1]=u1;
-    xp[i][2]=u2;
-    xp[j][0]=v0;
-    xp[j][1]=v1;
-    xp[j][2]=v2;
-  }   
 }
 
 

@@ -87,13 +87,14 @@ extern void fshake(atom_id iatom[],int *ncon,int *nit,int *maxnit,
 extern void flincs(real *x,real *xp,int *nc,int *ncm,int *cmax,
 		   int *bla1,int *bla2,int *blnr,
 		   int *blbnb,real *bllen,real *blc,real *blcc,real *blm,
-		   int *nrec,real *invmass,real *r,real *temp1,
+		   int *nit,int *nrec,real *invmass,real *r,real *temp1,
 		   real *temp2,real *temp3,real *wangle,int *warn,
 		   real *lambda);
 
 extern void flincsld(real *x,real *xp,int *nc,int *ncm,int *cmax,
 		     int *bla1,int *bla2,int *blnr,
-		     int *blbnb,real *bllen,real *blcc,real *blm,int *nrec,
+		     int *blbnb,real *bllen,real *blcc,real *blm,
+		     int *nit,int *nrec,
 		     real *r,real *temp1,real *temp2,real *temp3,
 		     real *wangle,int *warn);
 
