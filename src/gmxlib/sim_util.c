@@ -214,40 +214,61 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
   tensor shake_vir;
   real   dt=parm->ir.delta_t;
   real   dt_1;
-  
-  /* Do a first SHAKE to reset particles... */
-  clear_mat(shake_vir);
-  update(nsb->natoms,START(nsb),HOMENR(nsb),
-	 -1,lambda,&ener[F_DVDL],
-	 &(parm->ir),FALSE,md,x,graph,
-	 fr->shift_vec,NULL,NULL,vold,x,NULL,parm->pres,parm->box,
-	 top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn);
-  
-  /* Compute coordinates at t=-dt, store them in buf */
-  for(i=0; (i<nsb->natoms); i++) {
-    for(m=0; (m<DIM); m++) {
-      f[i][m]=x[i][m];
-      buf[i][m]=x[i][m]-dt*v[i][m];
+
+  if ((top->idef.il[F_SHAKE].nr > 0)   ||
+      (top->idef.il[F_SETTLE].nr > 0)) {
+    /* Do a first SHAKE to reset particles... */
+    clear_mat(shake_vir);
+    update(nsb->natoms,START(nsb),HOMENR(nsb),
+	   -1,lambda,&ener[F_DVDL],
+	   &(parm->ir),FALSE,md,x,graph,
+	   fr->shift_vec,NULL,NULL,vold,x,NULL,parm->pres,parm->box,
+	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn);
+    
+    /* Compute coordinates at t=-dt, store them in buf */
+    for(i=0; (i<nsb->natoms); i++) {
+      for(m=0; (m<DIM); m++) {
+	f[i][m]=x[i][m];
+	buf[i][m]=x[i][m]-dt*v[i][m];
+      }
     }
-  }
+    
+    /* Shake the positions at t=-dt with the positions at t=0
+     * as reference coordinates.
+     */
+    clear_mat(shake_vir);
+    update(nsb->natoms,START(nsb),HOMENR(nsb),
+	   0,lambda,&ener[F_DVDL],&(parm->ir),FALSE,md,f,graph,
+	   fr->shift_vec,NULL,NULL,vold,buf,NULL,parm->pres,parm->box,
+	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn);
+    
+    /* Compute the velocities at t=-dt/2 using the coordinates at
+     * t=-dt and t=0
+     */
+    dt_1=1.0/dt;
+    for(i=0; (i<nsb->natoms); i++) {
+      for(m=0; (m<DIM); m++)
+	v[i][m]=(x[i][m]-f[i][m])*dt_1;
+    }
   
-  /* Shake the positions at t=-dt with the positions at t=0
-   * as reference coordinates.
-   */
-  clear_mat(shake_vir);
-  update(nsb->natoms,START(nsb),HOMENR(nsb),
-	 0,lambda,&ener[F_DVDL],&(parm->ir),FALSE,
-	 md,f,graph,
-	 fr->shift_vec,NULL,NULL,vold,buf,NULL,parm->pres,parm->box,
-	 top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn);
-  
-  /* Compute the velocities at t=-dt/2 using the coordinates at
-   * t=-dt and t=0
-   */
-  dt_1=1.0/dt;
-  for(i=0; (i<nsb->natoms); i++) {
-    for(m=0; (m<DIM); m++)
-      v[i][m]=(x[i][m]-f[i][m])*dt_1;
+    /* Shake the positions at t=-dt with the positions at t=0
+     * as reference coordinates.
+     */
+    clear_mat(shake_vir);
+    update(nsb->natoms,START(nsb),HOMENR(nsb),
+	   0,lambda,&ener[F_DVDL],&(parm->ir),FALSE,
+	   md,f,graph,
+	   fr->shift_vec,NULL,NULL,vold,buf,NULL,parm->pres,parm->box,
+	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn);
+    
+    /* Compute the velocities at t=-dt/2 using the coordinates at
+     * t=-dt and t=0
+     */
+    dt_1=1.0/dt;
+    for(i=0; (i<nsb->natoms); i++) {
+      for(m=0; (m<DIM); m++)
+	v[i][m]=(x[i][m]-f[i][m])*dt_1;
+    }
   }
 }
 
