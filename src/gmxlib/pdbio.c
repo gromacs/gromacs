@@ -105,14 +105,17 @@ void write_pdbfile_indexed(FILE *out,char *title,
 	    10*norm(box[XX]),10*norm(box[YY]),10*norm(box[ZZ]),
 	    alpha,beta,gamma);
   }
-  /* Check whether any occupancies are set, in that case leave it as is,
-   * otherwise set them all to one
-   */
-  bOccup = TRUE;
-  for (ii=0; (ii<nindex) && bOccup; ii++) {
-    i      = index[ii];
-    bOccup = bOccup && (atoms->pdbinfo[i].occup == 0.0);
-  }
+  if (atoms->pdbinfo) {
+    /* Check whether any occupancies are set, in that case leave it as is,
+     * otherwise set them all to one
+     */
+    bOccup = TRUE;
+    for (ii=0; (ii<nindex) && bOccup; ii++) {
+      i      = index[ii];
+      bOccup = bOccup && (atoms->pdbinfo[i].occup == 0.0);
+    }
+  } else
+    bOccup = FALSE;
   for (ii=0; ii<nindex; ii++) {
     i=index[ii];
     resnr=atoms->atom[i].resnr;
