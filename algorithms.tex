@@ -124,7 +124,7 @@ statisfied by subtracting and adding box vectors.
 
 Even when simulating using a triclinic box, {\gromacs} always puts the
 particles in a brick shaped volume, because of efficiency reasons.
-This is shown in \figref{pbc} for a 2-dimensional system.
+This is illustrated in \figref{pbc} for a 2-dimensional system.
 So from the output trajectory it might seem like the simulation was done in
 a rectangular box. The program {\tt trjconv} can be used to convert the
 trajectory to a different unit-cell representation.
@@ -146,6 +146,7 @@ system.
 
 \subsection{Some useful box types}
 \begin{table}
+\centerline{
 \begin{tabular}{|c|c|c|ccc|ccc|}
 \dline
 box type & image & box & \multicolumn{3}{c|}{box vectors} & \multicolumn{3}{c|}{box vector angles} \\
@@ -165,10 +166,11 @@ dodecahedron & $d$ & $\frac{1}{2}\sqrt{2}d^3$ & 0 & $\frac{1}{2}\sqrt{3}d$ & $\f
 (xy-hexagon) &     & $\approx 0.71 d^3$ & 0   & 0              & $\frac{1}{3}\sqrt{6}d$ & & & \\
 \hline
 truncated    &     &       & $d$ & $\frac{1}{3}d$ & -$\frac{1}{3}d$ & & & \\
-octahedron   & $d$ & $\frac{4}{9}\sqrt{3}d^3$ & 0   & $\frac{2}{3}\sqrt{2}d$ & $\frac{1}{3}\sqrt{2}d$ & $\approx70^\circ$ & $\approx70^\circ$ & $\approx70^\circ$ \\
+octahedron   & $d$ & $\frac{4}{9}\sqrt{3}d^3$ & 0   & $\frac{2}{3}\sqrt{2}d$ & $\frac{1}{3}\sqrt{2}d$ & $\approx71^\circ$ & $\approx71^\circ$ & $\approx71^\circ$ \\
              &     & $\approx 0.77 d^3$ & 0   & 0              & $\frac{1}{3}\sqrt{6}d$ & & & \\
 \dline
 \end{tabular}
+}
 \caption{The cubic box, the rhombic \normindex{dodecahedron} and the truncated
 \normindex{octahedron}.}
 \label{tab:boxtypes}
@@ -509,7 +511,7 @@ degrees of freedom which can be computed from:
 N_{df}  ~=~     3 N - N_c - N_{com}
 \eeq
 Here $N_c$ is the number of {\em constraints} imposed on the system.
-When performing Molecular Dynamics $N_{com}=3$ additional degrees of
+When performing molecular dynamics $N_{com}=3$ additional degrees of
 freedom must be removed, because the three
 center-of-mass velocities are constants of the motion, which are usually
 set to zero. When simulating in vacuo, the rotation around the center of mass
@@ -849,13 +851,13 @@ Although LINCS is based on matrices, no matrix-matrix multiplications are
 needed. The method is more stable and faster than SHAKE, 
 but it can only be used with bond \normindex{constraints} and 
 isolated angle constraints, such as the proton angle in OH. 
-Because of its stability LINCS is especially useful for Langevin Dynamics. 
+Because of its stability LINCS is especially useful for Brownian dynamics. 
 LINCS has two parameters, which are explained in the subsection parameters.
  
 \subsubsection*{The LINCS formulas}
 We consider a system of $N$ particles, with positions given by a
 $3N$ vector $\ve{r}(t)$.
-For Molecular Dynamics the equations of motion are given by Newton's law
+For molecular dynamics the equations of motion are given by Newton's law
 \fs{c1}
 {\de^2 \ve{r} \over \de t^2} = \iM \ve{F}
 \fe
@@ -971,7 +973,7 @@ Therefore LINCS should NOT be used with coupled angle-constraints.
 \subsubsection*{The LINCS Parameters}
 The accuracy of LINCS depends on the number of matrices used
 in the expansion \eqnref{m3}. For MD calculations a fourth order
-expansion is enough. For Position Langevin Dynamics with
+expansion is enough. For Brownian dynamics with
 large time steps an eighth order expansion may be necessary.
 The order is a parameter in the input file for \verb'mdrun'.
 The implementation of LINCS is done in such a way that the 
@@ -1023,34 +1025,75 @@ are taken the simulation proceeds at 0 K. Since the weak coupling scheme
 does not couple instantaneously, the actual temperature will
 always be slightly higher than 0 K.
 
-\section{Langevin Dynamics}
 \newcommand{\vrond}{\stackrel{\circ}{\ve{r}}}
 \newcommand{\rond}{\stackrel{\circ}{r}}
 \newcommand{\ruis}{\ve{r}^G}
-\label{sec:LD}
-The Position Langevin Dynamics algorithm is implemented in {\gromacs} is 
-(note: NOT {\em Velocity} Langevin Dynamics). 
+
+\section{\normindex{Stochastic Dynamics}}
+\label{sec:SD}
+Stochastic or velocity \normindex{Langevin dynamics} adds a friction
+and a noise term to Newton's equations of motion:
+\beq
+\label{SDeq}
+m_i {\de^2 \ve{r}_i \over \de t^2} =
+- m_i \xi_i {\de \ve{r}_i \over \de t} + \ve{F}_i(\ve{r}) + \vrond_i
+\eeq 
+where $\xi_i$ is the friction constant $[1/\mbox{ps}]$ and
+$\vrond_i\!(t)$  is a noise process with 
+$\langle \rond_i\!(t) \rond_j\!(t+s) \rangle = 
+    2 m_i \xi_i k_B T \delta(s) \delta_{ij}$.
+When $1/\xi_i$ is large compared to the time scales present in the system,
+one could see stochastic dynamics as molecular dynamics with stochastic
+temperature-coupling. The advantage compared to MD with Berendsen
+temperature-coupling is that in case of SD the generated ensemble is known.
+For vacuum simulations there is the additional advantage that there is no
+accumulation of errors for the overall translational and rotational
+degrees of freedom.
+When $1/\xi_i$ is small compared to the time scales present in the system,
+the dynamics will be completely different from MD, but the sampling is
+still correct.
+
+{\gromacs} uses a complicated third-order leap-frog
+algorithm~\cite{Gunsteren88} to integrate equation (\ref{SDeq}).
+When constraints are present in the system,
+two constraint steps are performed per time step.
+The kinetic energy is computed at the whole time step, this is done by
+averaging the velocities at minus and plus a half time step,
+with a correction for the friction:
+\beq
+\ve{v}(t) = \frac{1}{2} \left( \ve{v} \left(t-\frac{\Delta t}{2} \right) 
+                + \ve{v}\left(t+\frac{\Delta t}{2}\right)\right)
+\left( e^{-\xi\Delta t} + \sqrt{2}\left(1 - e^{-\xi\Delta t}\right) \right)
+\eeq
+Exact continuation of a stochastic dynamics simulation is not possible,
+since apart from the coordinates and the velocities one random term of the
+previous step in required, however, the error will be very small.
+
+\section{\normindex{Brownian Dynamics}}
+\label{sec:BD}
+In the limit of high friction stochastic dynamics reduces to 
+Brownian dynamics, also called position Langevin dynamics.
 This applies to over-damped systems, 
 {\ie} systems in which the inertia effects are negligible.
-The equations are
+The equation is:
 \beq
-{\de \ve{r} \over \de t} = {\ve{F}(\ve{r}) \over \gamma} + \vrond
+{\de \ve{r}_i \over \de t} = {\ve{F}_i(\ve{r}) \over \gamma} + \vrond_i
 \eeq 
 where $\gamma$ is the friction coefficient $[\mbox{amu/ps}]$ and
-$\vrond(t)$  is a noise process with 
-$\langle \rond_i\!(t) \rond_j\!(0) \rangle = 
-    2 \delta(t) \delta_{ij} k_b T / \gamma$.
-In {\gromacs} the equations are integrated with an explicit scheme
+$\vrond_i\!(t)$  is a noise process with 
+$\langle \rond_i\!(t) \rond_j\!(t+s) \rangle = 
+    2 \delta(s) \delta_{ij} k_B T / \gamma$.
+In {\gromacs} the equations are integrated with a simple, explicit scheme
 \beq
-\ve{r}_{n+1} = \ve{r}_{n} +
-        {\Delta t \over \gamma} \ve{F}(\ve{r}_n) 
-        + \sqrt{2 k_b T {\Delta t \over \gamma}}\, \ruis 
+\ve{r}(t+\Delta t) = \ve{r}(t) +
+        {\Delta t \over \gamma} \ve{F}(\ve{r}(t)) 
+        + \sqrt{2 k_B T {\Delta t \over \gamma}}\, \ruis 
 \eeq
-where $\ruis$ is  Gaussian distributed noise with $\mu = 0$, $\sigma = 1$.
+where $\ruis$ is Gaussian distributed noise with $\mu = 0$, $\sigma = 1$.
 Because the system is assumed to be over damped, large time-steps
 can be used. LINCS should be used for the constraints since SHAKE
 will not converge for large atomic displacements.
-LD is an option of the \verb'mdrun' program.
+BD is an option of the \verb'mdrun' program.
 
 \section{Energy Minimization}
 \label{sec:EM}
