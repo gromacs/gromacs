@@ -291,11 +291,11 @@ int main(int argc,char *argv[])
   
   t_pargs pa[] = {
     { "-inbox", FALSE,  etBOOL, &bInBox,
-      "make sure all atoms are inside box." },
+      "make sure all atoms are inside box" },
     { "-pbc", FALSE,  etBOOL, &bPBC,
-      "make sure molecules are not broken into parts in output." },
+      "make sure molecules are not broken into parts in output" },
     { "-center", FALSE,  etBOOL, &bCenter,
-      "center atoms in box." },
+      "center atoms in box" },
     { "-xshift", FALSE, etREAL, &xshift,
       "all coordinates will be shifted by framenr*xshift" },
     { "-box", FALSE, etREAL, &newbox,
@@ -315,7 +315,7 @@ int main(int argc,char *argv[])
     { "-skip", FALSE,  etINT, &skip_nr,
       "only write out every nr-th frame" },
     { "-dt", FALSE,  etREAL, &delta_t,
-      "only write out frame when (t MOD delta_t) == offset." },
+      "only write out frame when (t MOD delta_t) == offset" },
     { "-offset", FALSE, etREAL, &toffset,
       "time offset for -dt option" },
     { "-t0", FALSE,  etREAL, &tzero,
