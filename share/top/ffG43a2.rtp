@@ -15,7 +15,6 @@
     O     C    +N    ga_32
  [ impropers ]
     C    CA    +N     O    gi_1 
-
 [ NH2 ]
  [ atoms ]
      N    NT   -0.83	0
@@ -36,7 +35,6 @@
  [ impropers ]
     -C -O N -CA gi_1
      N  H H  -C gi_1
-
 [ ALA ]
  [ atoms ]
     N     N   -0.280     0
