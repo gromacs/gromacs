@@ -190,6 +190,27 @@ int strcasecmp_min(const char *str1, const char *str2)
   return 0; 
 }
 
+int strncasecmp_min(const char *str1, const char *str2, int n)
+{
+  char ch1,ch2;
+  char *stri1, *stri2;
+
+  stri1=(char *)str1;
+  stri2=(char *)str2;  
+  do
+    {
+      do
+	ch1=toupper(*(str1++));
+      while ((ch1=='-') || (ch1=='_'));
+      do 
+	ch2=toupper(*(str2++));
+      while ((ch2=='-') || (ch2=='_'));
+      if (ch1!=ch2) return (ch1-ch2);
+    }
+  while (ch1 && (str1-stri1<n) && (str2-stri2<n));
+  return 0; 
+}
+
 int gmx_strcasecmp(const char *str1, const char *str2)
 {
   char ch1,ch2;

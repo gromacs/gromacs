@@ -76,6 +76,7 @@ extern void trim (char *str);
 extern void nice_header (FILE *out,char *fn);
 
 extern int strcasecmp_min(const char *str1, const char *str2);
+extern int strncasecmp_min(const char *str1, const char *str2, int n);
 /* This funny version of strcasecmp, is not only case-insensitive,
  * but also ignores '-' and '_'.
  */
