@@ -1,1686 +1,1772 @@
-add_par.o: $(GMXHOME)/src/include/typedefs.h
-add_par.o: $(GMXHOME)/src/include/sysstuff.h
-add_par.o: $(GMXHOME)/src/include/types/simple.h
-add_par.o: $(GMXHOME)/src/include/types/enums.h
-add_par.o: $(GMXHOME)/src/include/types/block.h
-add_par.o: $(GMXHOME)/src/include/types/symtab.h
-add_par.o: $(GMXHOME)/src/include/types/idef.h
-add_par.o: $(GMXHOME)/src/include/types/atoms.h
-add_par.o: $(GMXHOME)/src/include/types/trx.h
-add_par.o: $(GMXHOME)/src/include/types/topology.h
-add_par.o: $(GMXHOME)/src/include/types/energy.h
-add_par.o: $(GMXHOME)/src/include/types/inputrec.h
-add_par.o: $(GMXHOME)/src/include/types/nsborder.h
-add_par.o: $(GMXHOME)/src/include/types/ishift.h
-add_par.o: $(GMXHOME)/src/include/types/graph.h
-add_par.o: $(GMXHOME)/src/include/fatal.h
-add_par.o: $(GMXHOME)/src/include/types/nrnb.h
-add_par.o: $(GMXHOME)/src/include/types/nblist.h
-add_par.o: $(GMXHOME)/src/include/types/nsgrid.h
-add_par.o: $(GMXHOME)/src/include/types/commrec.h
-add_par.o: $(GMXHOME)/src/include/types/forcerec.h
-add_par.o: $(GMXHOME)/src/include/types/mdatom.h
-add_par.o: $(GMXHOME)/src/include/types/ifunc.h
-add_par.o: $(GMXHOME)/src/include/types/filenm.h
-add_par.o: $(GMXHOME)/src/include/types/group.h
-add_par.o: $(GMXHOME)/src/include/types/drblock.h
-add_par.o: $(GMXHOME)/src/include/types/parm.h
-add_par.o: $(GMXHOME)/src/include/types/matrix.h
-add_par.o: $(GMXHOME)/src/include/types/edsams.h
-add_par.o: $(GMXHOME)/src/include/types/pulls.h
-add_par.o: $(GMXHOME)/src/include/smalloc.h
-add_par.o: $(GMXHOME)/src/include/grompp.h
-add_par.o: $(GMXHOME)/src/include/macros.h
-add_par.o: $(GMXHOME)/src/include/pdbio.h
-add_par.o: $(GMXHOME)/src/include/symtab.h
-add_par.o: $(GMXHOME)/src/include/string2.h
-calcgrid.o: $(GMXHOME)/src/include/typedefs.h
-calcgrid.o: $(GMXHOME)/src/include/sysstuff.h
-calcgrid.o: $(GMXHOME)/src/include/types/simple.h
-calcgrid.o: $(GMXHOME)/src/include/types/enums.h
-calcgrid.o: $(GMXHOME)/src/include/types/block.h
-calcgrid.o: $(GMXHOME)/src/include/types/symtab.h
-calcgrid.o: $(GMXHOME)/src/include/types/idef.h
-calcgrid.o: $(GMXHOME)/src/include/types/atoms.h
-calcgrid.o: $(GMXHOME)/src/include/types/trx.h
-calcgrid.o: $(GMXHOME)/src/include/types/topology.h
-calcgrid.o: $(GMXHOME)/src/include/types/energy.h
-calcgrid.o: $(GMXHOME)/src/include/types/inputrec.h
-calcgrid.o: $(GMXHOME)/src/include/types/nsborder.h
-calcgrid.o: $(GMXHOME)/src/include/types/ishift.h
-calcgrid.o: $(GMXHOME)/src/include/types/graph.h
-calcgrid.o: $(GMXHOME)/src/include/fatal.h
-calcgrid.o: $(GMXHOME)/src/include/types/nrnb.h
-calcgrid.o: $(GMXHOME)/src/include/types/nblist.h
-calcgrid.o: $(GMXHOME)/src/include/types/nsgrid.h
-calcgrid.o: $(GMXHOME)/src/include/types/commrec.h
-calcgrid.o: $(GMXHOME)/src/include/types/forcerec.h
-calcgrid.o: $(GMXHOME)/src/include/types/mdatom.h
-calcgrid.o: $(GMXHOME)/src/include/types/ifunc.h
-calcgrid.o: $(GMXHOME)/src/include/types/filenm.h
-calcgrid.o: $(GMXHOME)/src/include/types/group.h
-calcgrid.o: $(GMXHOME)/src/include/types/drblock.h
-calcgrid.o: $(GMXHOME)/src/include/types/parm.h
-calcgrid.o: $(GMXHOME)/src/include/types/matrix.h
-calcgrid.o: $(GMXHOME)/src/include/types/edsams.h
-calcgrid.o: $(GMXHOME)/src/include/types/pulls.h
-calcgrid.o: $(GMXHOME)/src/include/smalloc.h
-convparm.o: $(GMXHOME)/src/include/sysstuff.h
-convparm.o: $(GMXHOME)/src/include/physics.h
-convparm.o: $(GMXHOME)/src/include/vec.h
-convparm.o: $(GMXHOME)/src/include/maths.h
-convparm.o: $(GMXHOME)/src/include/typedefs.h
-convparm.o: $(GMXHOME)/src/include/types/simple.h
-convparm.o: $(GMXHOME)/src/include/types/enums.h
-convparm.o: $(GMXHOME)/src/include/types/block.h
-convparm.o: $(GMXHOME)/src/include/types/symtab.h
-convparm.o: $(GMXHOME)/src/include/types/idef.h
-convparm.o: $(GMXHOME)/src/include/types/atoms.h
-convparm.o: $(GMXHOME)/src/include/types/trx.h
-convparm.o: $(GMXHOME)/src/include/types/topology.h
-convparm.o: $(GMXHOME)/src/include/types/energy.h
-convparm.o: $(GMXHOME)/src/include/types/inputrec.h
-convparm.o: $(GMXHOME)/src/include/types/nsborder.h
-convparm.o: $(GMXHOME)/src/include/types/ishift.h
-convparm.o: $(GMXHOME)/src/include/types/graph.h
-convparm.o: $(GMXHOME)/src/include/fatal.h
-convparm.o: $(GMXHOME)/src/include/types/nrnb.h
-convparm.o: $(GMXHOME)/src/include/types/nblist.h
-convparm.o: $(GMXHOME)/src/include/types/nsgrid.h
-convparm.o: $(GMXHOME)/src/include/types/commrec.h
-convparm.o: $(GMXHOME)/src/include/types/forcerec.h
-convparm.o: $(GMXHOME)/src/include/types/mdatom.h
-convparm.o: $(GMXHOME)/src/include/types/ifunc.h
-convparm.o: $(GMXHOME)/src/include/types/filenm.h
-convparm.o: $(GMXHOME)/src/include/types/group.h
-convparm.o: $(GMXHOME)/src/include/types/drblock.h
-convparm.o: $(GMXHOME)/src/include/types/parm.h
-convparm.o: $(GMXHOME)/src/include/types/matrix.h
-convparm.o: $(GMXHOME)/src/include/types/edsams.h
-convparm.o: $(GMXHOME)/src/include/types/pulls.h
-convparm.o: $(GMXHOME)/src/include/macros.h
-convparm.o: $(GMXHOME)/src/include/lutab.h
-convparm.o: $(GMXHOME)/src/include/assert.h
-convparm.o: $(GMXHOME)/src/include/smalloc.h
-convparm.o: $(GMXHOME)/src/include/string2.h
-convparm.o: $(GMXHOME)/src/include/grompp.h
-convparm.o: $(GMXHOME)/src/include/names.h
-dum_parm.o: $(GMXHOME)/src/include/assert.h
-dum_parm.o: $(GMXHOME)/src/include/sysstuff.h
-dum_parm.o: $(GMXHOME)/src/include/typedefs.h
-dum_parm.o: $(GMXHOME)/src/include/types/simple.h
-dum_parm.o: $(GMXHOME)/src/include/types/enums.h
-dum_parm.o: $(GMXHOME)/src/include/types/block.h
-dum_parm.o: $(GMXHOME)/src/include/types/symtab.h
-dum_parm.o: $(GMXHOME)/src/include/types/idef.h
-dum_parm.o: $(GMXHOME)/src/include/types/atoms.h
-dum_parm.o: $(GMXHOME)/src/include/types/trx.h
-dum_parm.o: $(GMXHOME)/src/include/types/topology.h
-dum_parm.o: $(GMXHOME)/src/include/types/energy.h
-dum_parm.o: $(GMXHOME)/src/include/types/inputrec.h
-dum_parm.o: $(GMXHOME)/src/include/types/nsborder.h
-dum_parm.o: $(GMXHOME)/src/include/types/ishift.h
-dum_parm.o: $(GMXHOME)/src/include/types/graph.h
-dum_parm.o: $(GMXHOME)/src/include/fatal.h
-dum_parm.o: $(GMXHOME)/src/include/types/nrnb.h
-dum_parm.o: $(GMXHOME)/src/include/types/nblist.h
-dum_parm.o: $(GMXHOME)/src/include/types/nsgrid.h
-dum_parm.o: $(GMXHOME)/src/include/types/commrec.h
-dum_parm.o: $(GMXHOME)/src/include/types/forcerec.h
-dum_parm.o: $(GMXHOME)/src/include/types/mdatom.h
-dum_parm.o: $(GMXHOME)/src/include/types/ifunc.h
-dum_parm.o: $(GMXHOME)/src/include/types/filenm.h
-dum_parm.o: $(GMXHOME)/src/include/types/group.h
-dum_parm.o: $(GMXHOME)/src/include/types/drblock.h
-dum_parm.o: $(GMXHOME)/src/include/types/parm.h
-dum_parm.o: $(GMXHOME)/src/include/types/matrix.h
-dum_parm.o: $(GMXHOME)/src/include/types/edsams.h
-dum_parm.o: $(GMXHOME)/src/include/types/pulls.h
-dum_parm.o: $(GMXHOME)/src/include/grompp.h
-dum_parm.o: $(GMXHOME)/src/include/macros.h
-dum_parm.o: $(GMXHOME)/src/include/smalloc.h
-dum_parm.o: $(GMXHOME)/src/include/pdbio.h
-dum_parm.o: $(GMXHOME)/src/include/symtab.h
-dum_parm.o: $(GMXHOME)/src/include/vec.h
-dum_parm.o: $(GMXHOME)/src/include/maths.h
-dum_parm.o: $(GMXHOME)/src/include/lutab.h
-dum_parm.o: $(GMXHOME)/src/include/physics.h
-dum_parm.o: $(GMXHOME)/src/include/index.h
-dum_parm.o: $(GMXHOME)/src/include/names.h
-gen_ad.o: $(GMXHOME)/src/include/sysstuff.h
-gen_ad.o: $(GMXHOME)/src/include/macros.h
-gen_ad.o: $(GMXHOME)/src/include/typedefs.h
-gen_ad.o: $(GMXHOME)/src/include/types/simple.h
-gen_ad.o: $(GMXHOME)/src/include/types/enums.h
-gen_ad.o: $(GMXHOME)/src/include/types/block.h
-gen_ad.o: $(GMXHOME)/src/include/types/symtab.h
-gen_ad.o: $(GMXHOME)/src/include/types/idef.h
-gen_ad.o: $(GMXHOME)/src/include/types/atoms.h
-gen_ad.o: $(GMXHOME)/src/include/types/trx.h
-gen_ad.o: $(GMXHOME)/src/include/types/topology.h
-gen_ad.o: $(GMXHOME)/src/include/types/energy.h
-gen_ad.o: $(GMXHOME)/src/include/types/inputrec.h
-gen_ad.o: $(GMXHOME)/src/include/types/nsborder.h
-gen_ad.o: $(GMXHOME)/src/include/types/ishift.h
-gen_ad.o: $(GMXHOME)/src/include/types/graph.h
-gen_ad.o: $(GMXHOME)/src/include/fatal.h
-gen_ad.o: $(GMXHOME)/src/include/types/nrnb.h
-gen_ad.o: $(GMXHOME)/src/include/types/nblist.h
-gen_ad.o: $(GMXHOME)/src/include/types/nsgrid.h
-gen_ad.o: $(GMXHOME)/src/include/types/commrec.h
-gen_ad.o: $(GMXHOME)/src/include/types/forcerec.h
-gen_ad.o: $(GMXHOME)/src/include/types/mdatom.h
-gen_ad.o: $(GMXHOME)/src/include/types/ifunc.h
-gen_ad.o: $(GMXHOME)/src/include/types/filenm.h
-gen_ad.o: $(GMXHOME)/src/include/types/group.h
-gen_ad.o: $(GMXHOME)/src/include/types/drblock.h
-gen_ad.o: $(GMXHOME)/src/include/types/parm.h
-gen_ad.o: $(GMXHOME)/src/include/types/matrix.h
-gen_ad.o: $(GMXHOME)/src/include/types/edsams.h
-gen_ad.o: $(GMXHOME)/src/include/types/pulls.h
-gen_ad.o: $(GMXHOME)/src/include/smalloc.h
-gen_ad.o: $(GMXHOME)/src/include/string2.h
-gen_ad.o: $(GMXHOME)/src/include/confio.h
-gen_ad.o: $(GMXHOME)/src/include/vec.h
-gen_ad.o: $(GMXHOME)/src/include/maths.h
-gen_ad.o: $(GMXHOME)/src/include/lutab.h
-gen_ad.o: $(GMXHOME)/src/include/pbc.h
-gen_ad.o: $(GMXHOME)/src/include/grompp.h
-gen_ad.o: $(GMXHOME)/src/include/symtab.h
-gen_ad.o: $(GMXHOME)/src/include/pdbio.h
-gen_dum.o: $(GMXHOME)/src/include/assert.h
-gen_dum.o: $(GMXHOME)/src/include/sysstuff.h
-gen_dum.o: $(GMXHOME)/src/include/typedefs.h
-gen_dum.o: $(GMXHOME)/src/include/types/simple.h
-gen_dum.o: $(GMXHOME)/src/include/types/enums.h
-gen_dum.o: $(GMXHOME)/src/include/types/block.h
-gen_dum.o: $(GMXHOME)/src/include/types/symtab.h
-gen_dum.o: $(GMXHOME)/src/include/types/idef.h
-gen_dum.o: $(GMXHOME)/src/include/types/atoms.h
-gen_dum.o: $(GMXHOME)/src/include/types/trx.h
-gen_dum.o: $(GMXHOME)/src/include/types/topology.h
-gen_dum.o: $(GMXHOME)/src/include/types/energy.h
-gen_dum.o: $(GMXHOME)/src/include/types/inputrec.h
-gen_dum.o: $(GMXHOME)/src/include/types/nsborder.h
-gen_dum.o: $(GMXHOME)/src/include/types/ishift.h
-gen_dum.o: $(GMXHOME)/src/include/types/graph.h
-gen_dum.o: $(GMXHOME)/src/include/fatal.h
-gen_dum.o: $(GMXHOME)/src/include/types/nrnb.h
-gen_dum.o: $(GMXHOME)/src/include/types/nblist.h
-gen_dum.o: $(GMXHOME)/src/include/types/nsgrid.h
-gen_dum.o: $(GMXHOME)/src/include/types/commrec.h
-gen_dum.o: $(GMXHOME)/src/include/types/forcerec.h
-gen_dum.o: $(GMXHOME)/src/include/types/mdatom.h
-gen_dum.o: $(GMXHOME)/src/include/types/ifunc.h
-gen_dum.o: $(GMXHOME)/src/include/types/filenm.h
-gen_dum.o: $(GMXHOME)/src/include/types/group.h
-gen_dum.o: $(GMXHOME)/src/include/types/drblock.h
-gen_dum.o: $(GMXHOME)/src/include/types/parm.h
-gen_dum.o: $(GMXHOME)/src/include/types/matrix.h
-gen_dum.o: $(GMXHOME)/src/include/types/edsams.h
-gen_dum.o: $(GMXHOME)/src/include/types/pulls.h
-gen_dum.o: $(GMXHOME)/src/include/grompp.h
-gen_dum.o: $(GMXHOME)/src/include/macros.h
-gen_dum.o: $(GMXHOME)/src/include/pdbio.h
-gen_dum.o: $(GMXHOME)/src/include/symtab.h
-gen_dum.o: $(GMXHOME)/src/include/smalloc.h
-gen_dum.o: $(GMXHOME)/src/include/vec.h
-gen_dum.o: $(GMXHOME)/src/include/maths.h
-gen_dum.o: $(GMXHOME)/src/include/lutab.h
-gen_dum.o: $(GMXHOME)/src/include/physics.h
-gen_dum.o: $(GMXHOME)/src/include/index.h
-gen_dum.o: $(GMXHOME)/src/include/names.h
-genhydro.o: $(GMXHOME)/src/include/assert.h
-genhydro.o: $(GMXHOME)/src/include/sysstuff.h
-genhydro.o: $(GMXHOME)/src/include/typedefs.h
-genhydro.o: $(GMXHOME)/src/include/types/simple.h
-genhydro.o: $(GMXHOME)/src/include/types/enums.h
-genhydro.o: $(GMXHOME)/src/include/types/block.h
-genhydro.o: $(GMXHOME)/src/include/types/symtab.h
-genhydro.o: $(GMXHOME)/src/include/types/idef.h
-genhydro.o: $(GMXHOME)/src/include/types/atoms.h
-genhydro.o: $(GMXHOME)/src/include/types/trx.h
-genhydro.o: $(GMXHOME)/src/include/types/topology.h
-genhydro.o: $(GMXHOME)/src/include/types/energy.h
-genhydro.o: $(GMXHOME)/src/include/types/inputrec.h
-genhydro.o: $(GMXHOME)/src/include/types/nsborder.h
-genhydro.o: $(GMXHOME)/src/include/types/ishift.h
-genhydro.o: $(GMXHOME)/src/include/types/graph.h
-genhydro.o: $(GMXHOME)/src/include/fatal.h
-genhydro.o: $(GMXHOME)/src/include/types/nrnb.h
-genhydro.o: $(GMXHOME)/src/include/types/nblist.h
-genhydro.o: $(GMXHOME)/src/include/types/nsgrid.h
-genhydro.o: $(GMXHOME)/src/include/types/commrec.h
-genhydro.o: $(GMXHOME)/src/include/types/forcerec.h
-genhydro.o: $(GMXHOME)/src/include/types/mdatom.h
-genhydro.o: $(GMXHOME)/src/include/types/ifunc.h
-genhydro.o: $(GMXHOME)/src/include/types/filenm.h
-genhydro.o: $(GMXHOME)/src/include/types/group.h
-genhydro.o: $(GMXHOME)/src/include/types/drblock.h
-genhydro.o: $(GMXHOME)/src/include/types/parm.h
-genhydro.o: $(GMXHOME)/src/include/types/matrix.h
-genhydro.o: $(GMXHOME)/src/include/types/edsams.h
-genhydro.o: $(GMXHOME)/src/include/types/pulls.h
-genhydro.o: $(GMXHOME)/src/include/smalloc.h
-genhydro.o: $(GMXHOME)/src/include/copyrite.h
-genhydro.o: $(GMXHOME)/src/include/string2.h
-genhydro.o: $(GMXHOME)/src/include/confio.h
-genhydro.o: $(GMXHOME)/src/include/symtab.h
-genhydro.o: $(GMXHOME)/src/include/vec.h
-genhydro.o: $(GMXHOME)/src/include/maths.h
-genhydro.o: $(GMXHOME)/src/include/macros.h
-genhydro.o: $(GMXHOME)/src/include/lutab.h
-genhydro.o: $(GMXHOME)/src/include/statutil.h
-genhydro.o: $(GMXHOME)/src/include/filenm.h
-genhydro.o: $(GMXHOME)/src/include/futil.h
-genhydro.o: $(GMXHOME)/src/include/readinp.h
-genhydro.o: $(GMXHOME)/src/include/wman.h
-genhydro.o: $(GMXHOME)/src/include/physics.h
-genhydro.o: $(GMXHOME)/src/include/calch.h
-genhydro.o: $(GMXHOME)/src/include/pdbio.h
-genhydro.o: $(GMXHOME)/src/include/grompp.h
-gmxcheck.o: $(GMXHOME)/src/include/main.h
-gmxcheck.o: $(GMXHOME)/src/include/network.h
-gmxcheck.o: $(GMXHOME)/src/include/typedefs.h
-gmxcheck.o: $(GMXHOME)/src/include/sysstuff.h
-gmxcheck.o: $(GMXHOME)/src/include/types/simple.h
-gmxcheck.o: $(GMXHOME)/src/include/types/enums.h
-gmxcheck.o: $(GMXHOME)/src/include/types/block.h
-gmxcheck.o: $(GMXHOME)/src/include/types/symtab.h
-gmxcheck.o: $(GMXHOME)/src/include/types/idef.h
-gmxcheck.o: $(GMXHOME)/src/include/types/atoms.h
-gmxcheck.o: $(GMXHOME)/src/include/types/trx.h
-gmxcheck.o: $(GMXHOME)/src/include/types/topology.h
-gmxcheck.o: $(GMXHOME)/src/include/types/energy.h
-gmxcheck.o: $(GMXHOME)/src/include/types/inputrec.h
-gmxcheck.o: $(GMXHOME)/src/include/types/nsborder.h
-gmxcheck.o: $(GMXHOME)/src/include/types/ishift.h
-gmxcheck.o: $(GMXHOME)/src/include/types/graph.h
-gmxcheck.o: $(GMXHOME)/src/include/fatal.h
-gmxcheck.o: $(GMXHOME)/src/include/types/nrnb.h
-gmxcheck.o: $(GMXHOME)/src/include/types/nblist.h
-gmxcheck.o: $(GMXHOME)/src/include/types/nsgrid.h
-gmxcheck.o: $(GMXHOME)/src/include/types/commrec.h
-gmxcheck.o: $(GMXHOME)/src/include/types/forcerec.h
-gmxcheck.o: $(GMXHOME)/src/include/types/mdatom.h
-gmxcheck.o: $(GMXHOME)/src/include/types/ifunc.h
-gmxcheck.o: $(GMXHOME)/src/include/types/filenm.h
-gmxcheck.o: $(GMXHOME)/src/include/types/group.h
-gmxcheck.o: $(GMXHOME)/src/include/types/drblock.h
-gmxcheck.o: $(GMXHOME)/src/include/types/parm.h
-gmxcheck.o: $(GMXHOME)/src/include/types/matrix.h
-gmxcheck.o: $(GMXHOME)/src/include/types/edsams.h
-gmxcheck.o: $(GMXHOME)/src/include/types/pulls.h
-gmxcheck.o: $(GMXHOME)/src/include/macros.h
-gmxcheck.o: $(GMXHOME)/src/include/futil.h
-gmxcheck.o: $(GMXHOME)/src/include/statutil.h
-gmxcheck.o: $(GMXHOME)/src/include/filenm.h
-gmxcheck.o: $(GMXHOME)/src/include/readinp.h
-gmxcheck.o: $(GMXHOME)/src/include/wman.h
-gmxcheck.o: $(GMXHOME)/src/include/copyrite.h
-gmxcheck.o: $(GMXHOME)/src/include/txtdump.h
-gmxcheck.o: $(GMXHOME)/src/include/tpxio.h
-gmxcheck.o: $(GMXHOME)/src/include/xdrf.h
-gmxcheck.o: $(GMXHOME)/src/include/gmxfio.h
-gmxcheck.o: $(GMXHOME)/src/include/trnio.h
-gmxcheck.o: $(GMXHOME)/src/include/xtcio.h
-gmxcheck.o: $(GMXHOME)/src/include/atomprop.h
-gmxcheck.o: $(GMXHOME)/src/include/vec.h
-gmxcheck.o: $(GMXHOME)/src/include/maths.h
-gmxcheck.o: $(GMXHOME)/src/include/lutab.h
-gmxcheck.o: $(GMXHOME)/src/include/pbc.h
-gmxcheck.o: $(GMXHOME)/src/include/physics.h
-gmxcheck.o: $(GMXHOME)/src/include/smalloc.h
-gmxcheck.o: $(GMXHOME)/src/include/confio.h
-gmxcheck.o: $(GMXHOME)/src/include/enxio.h
-gmxdump.o: $(GMXHOME)/src/include/main.h
-gmxdump.o: $(GMXHOME)/src/include/network.h
-gmxdump.o: $(GMXHOME)/src/include/typedefs.h
-gmxdump.o: $(GMXHOME)/src/include/sysstuff.h
-gmxdump.o: $(GMXHOME)/src/include/types/simple.h
-gmxdump.o: $(GMXHOME)/src/include/types/enums.h
-gmxdump.o: $(GMXHOME)/src/include/types/block.h
-gmxdump.o: $(GMXHOME)/src/include/types/symtab.h
-gmxdump.o: $(GMXHOME)/src/include/types/idef.h
-gmxdump.o: $(GMXHOME)/src/include/types/atoms.h
-gmxdump.o: $(GMXHOME)/src/include/types/trx.h
-gmxdump.o: $(GMXHOME)/src/include/types/topology.h
-gmxdump.o: $(GMXHOME)/src/include/types/energy.h
-gmxdump.o: $(GMXHOME)/src/include/types/inputrec.h
-gmxdump.o: $(GMXHOME)/src/include/types/nsborder.h
-gmxdump.o: $(GMXHOME)/src/include/types/ishift.h
-gmxdump.o: $(GMXHOME)/src/include/types/graph.h
-gmxdump.o: $(GMXHOME)/src/include/fatal.h
-gmxdump.o: $(GMXHOME)/src/include/types/nrnb.h
-gmxdump.o: $(GMXHOME)/src/include/types/nblist.h
-gmxdump.o: $(GMXHOME)/src/include/types/nsgrid.h
-gmxdump.o: $(GMXHOME)/src/include/types/commrec.h
-gmxdump.o: $(GMXHOME)/src/include/types/forcerec.h
-gmxdump.o: $(GMXHOME)/src/include/types/mdatom.h
-gmxdump.o: $(GMXHOME)/src/include/types/ifunc.h
-gmxdump.o: $(GMXHOME)/src/include/types/filenm.h
-gmxdump.o: $(GMXHOME)/src/include/types/group.h
-gmxdump.o: $(GMXHOME)/src/include/types/drblock.h
-gmxdump.o: $(GMXHOME)/src/include/types/parm.h
-gmxdump.o: $(GMXHOME)/src/include/types/matrix.h
-gmxdump.o: $(GMXHOME)/src/include/types/edsams.h
-gmxdump.o: $(GMXHOME)/src/include/types/pulls.h
-gmxdump.o: $(GMXHOME)/src/include/macros.h
-gmxdump.o: $(GMXHOME)/src/include/futil.h
-gmxdump.o: $(GMXHOME)/src/include/statutil.h
-gmxdump.o: $(GMXHOME)/src/include/filenm.h
-gmxdump.o: $(GMXHOME)/src/include/readinp.h
-gmxdump.o: $(GMXHOME)/src/include/wman.h
-gmxdump.o: $(GMXHOME)/src/include/copyrite.h
-gmxdump.o: $(GMXHOME)/src/include/txtdump.h
-gmxdump.o: $(GMXHOME)/src/include/tpxio.h
-gmxdump.o: $(GMXHOME)/src/include/xdrf.h
-gmxdump.o: $(GMXHOME)/src/include/xtcio.h
-gmxdump.o: $(GMXHOME)/src/include/enxio.h
-gmxdump.o: $(GMXHOME)/src/include/assert.h
-gmxdump.o: $(GMXHOME)/src/include/smalloc.h
-gmxdump.o: $(GMXHOME)/src/include/names.h
-gmxdump.o: $(GMXHOME)/src/include/gmxfio.h
-gmxdump.o: $(GMXHOME)/src/include/trnio.h
-grompp.o: $(GMXHOME)/src/include/assert.h
-grompp.o: $(GMXHOME)/src/include/sysstuff.h
-grompp.o: $(GMXHOME)/src/include/smalloc.h
-grompp.o: $(GMXHOME)/src/include/macros.h
-grompp.o: $(GMXHOME)/src/include/typedefs.h
-grompp.o: $(GMXHOME)/src/include/types/simple.h
-grompp.o: $(GMXHOME)/src/include/types/enums.h
-grompp.o: $(GMXHOME)/src/include/types/block.h
-grompp.o: $(GMXHOME)/src/include/types/symtab.h
-grompp.o: $(GMXHOME)/src/include/types/idef.h
-grompp.o: $(GMXHOME)/src/include/types/atoms.h
-grompp.o: $(GMXHOME)/src/include/types/trx.h
-grompp.o: $(GMXHOME)/src/include/types/topology.h
-grompp.o: $(GMXHOME)/src/include/types/energy.h
-grompp.o: $(GMXHOME)/src/include/types/inputrec.h
-grompp.o: $(GMXHOME)/src/include/types/nsborder.h
-grompp.o: $(GMXHOME)/src/include/types/ishift.h
-grompp.o: $(GMXHOME)/src/include/types/graph.h
-grompp.o: $(GMXHOME)/src/include/fatal.h
-grompp.o: $(GMXHOME)/src/include/types/nrnb.h
-grompp.o: $(GMXHOME)/src/include/types/nblist.h
-grompp.o: $(GMXHOME)/src/include/types/nsgrid.h
-grompp.o: $(GMXHOME)/src/include/types/commrec.h
-grompp.o: $(GMXHOME)/src/include/types/forcerec.h
-grompp.o: $(GMXHOME)/src/include/types/mdatom.h
-grompp.o: $(GMXHOME)/src/include/types/ifunc.h
-grompp.o: $(GMXHOME)/src/include/types/filenm.h
-grompp.o: $(GMXHOME)/src/include/types/group.h
-grompp.o: $(GMXHOME)/src/include/types/drblock.h
-grompp.o: $(GMXHOME)/src/include/types/parm.h
-grompp.o: $(GMXHOME)/src/include/types/matrix.h
-grompp.o: $(GMXHOME)/src/include/types/edsams.h
-grompp.o: $(GMXHOME)/src/include/types/pulls.h
-grompp.o: $(GMXHOME)/src/include/string2.h
-grompp.o: $(GMXHOME)/src/include/grompp.h
-grompp.o: $(GMXHOME)/src/include/confio.h
-grompp.o: $(GMXHOME)/src/include/copyrite.h
-grompp.o: $(GMXHOME)/src/include/symtab.h
-grompp.o: $(GMXHOME)/src/include/names.h
-grompp.o: $(GMXHOME)/src/include/random.h
-grompp.o: $(GMXHOME)/src/include/vec.h
-grompp.o: $(GMXHOME)/src/include/maths.h
-grompp.o: $(GMXHOME)/src/include/lutab.h
-grompp.o: $(GMXHOME)/src/include/futil.h
-grompp.o: $(GMXHOME)/src/include/statutil.h
-grompp.o: $(GMXHOME)/src/include/filenm.h
-grompp.o: $(GMXHOME)/src/include/readinp.h
-grompp.o: $(GMXHOME)/src/include/wman.h
-grompp.o: $(GMXHOME)/src/include/sortwater.h
-grompp.o: $(GMXHOME)/src/include/rdgroup.h
-grompp.o: $(GMXHOME)/src/include/gmxfio.h
-grompp.o: $(GMXHOME)/src/include/xdrf.h
-grompp.o: $(GMXHOME)/src/include/trnio.h
-grompp.o: $(GMXHOME)/src/include/tpxio.h
-grompp.o: $(GMXHOME)/src/include/txtdump.h
-h_db.o: $(GMXHOME)/src/include/string2.h
-h_db.o: $(GMXHOME)/src/include/typedefs.h
-h_db.o: $(GMXHOME)/src/include/sysstuff.h
-h_db.o: $(GMXHOME)/src/include/types/simple.h
-h_db.o: $(GMXHOME)/src/include/types/enums.h
-h_db.o: $(GMXHOME)/src/include/types/block.h
-h_db.o: $(GMXHOME)/src/include/types/symtab.h
-h_db.o: $(GMXHOME)/src/include/types/idef.h
-h_db.o: $(GMXHOME)/src/include/types/atoms.h
-h_db.o: $(GMXHOME)/src/include/types/trx.h
-h_db.o: $(GMXHOME)/src/include/types/topology.h
-h_db.o: $(GMXHOME)/src/include/types/energy.h
-h_db.o: $(GMXHOME)/src/include/types/inputrec.h
-h_db.o: $(GMXHOME)/src/include/types/nsborder.h
-h_db.o: $(GMXHOME)/src/include/types/ishift.h
-h_db.o: $(GMXHOME)/src/include/types/graph.h
-h_db.o: $(GMXHOME)/src/include/fatal.h
-h_db.o: $(GMXHOME)/src/include/types/nrnb.h
-h_db.o: $(GMXHOME)/src/include/types/nblist.h
-h_db.o: $(GMXHOME)/src/include/types/nsgrid.h
-h_db.o: $(GMXHOME)/src/include/types/commrec.h
-h_db.o: $(GMXHOME)/src/include/types/forcerec.h
-h_db.o: $(GMXHOME)/src/include/types/mdatom.h
-h_db.o: $(GMXHOME)/src/include/types/ifunc.h
-h_db.o: $(GMXHOME)/src/include/types/filenm.h
-h_db.o: $(GMXHOME)/src/include/types/group.h
-h_db.o: $(GMXHOME)/src/include/types/drblock.h
-h_db.o: $(GMXHOME)/src/include/types/parm.h
-h_db.o: $(GMXHOME)/src/include/types/matrix.h
-h_db.o: $(GMXHOME)/src/include/types/edsams.h
-h_db.o: $(GMXHOME)/src/include/types/pulls.h
-h_db.o: $(GMXHOME)/src/include/smalloc.h
-h_db.o: $(GMXHOME)/src/include/futil.h
-h_db.o: $(GMXHOME)/src/include/symtab.h
-h_db.o: $(GMXHOME)/src/include/pdbio.h
-h_db.o: $(GMXHOME)/src/include/grompp.h
-h_db.o: $(GMXHOME)/src/include/macros.h
-hackblock.o: $(GMXHOME)/src/include/typedefs.h
-hackblock.o: $(GMXHOME)/src/include/sysstuff.h
-hackblock.o: $(GMXHOME)/src/include/types/simple.h
-hackblock.o: $(GMXHOME)/src/include/types/enums.h
-hackblock.o: $(GMXHOME)/src/include/types/block.h
-hackblock.o: $(GMXHOME)/src/include/types/symtab.h
-hackblock.o: $(GMXHOME)/src/include/types/idef.h
-hackblock.o: $(GMXHOME)/src/include/types/atoms.h
-hackblock.o: $(GMXHOME)/src/include/types/trx.h
-hackblock.o: $(GMXHOME)/src/include/types/topology.h
-hackblock.o: $(GMXHOME)/src/include/types/energy.h
-hackblock.o: $(GMXHOME)/src/include/types/inputrec.h
-hackblock.o: $(GMXHOME)/src/include/types/nsborder.h
-hackblock.o: $(GMXHOME)/src/include/types/ishift.h
-hackblock.o: $(GMXHOME)/src/include/types/graph.h
-hackblock.o: $(GMXHOME)/src/include/fatal.h
-hackblock.o: $(GMXHOME)/src/include/types/nrnb.h
-hackblock.o: $(GMXHOME)/src/include/types/nblist.h
-hackblock.o: $(GMXHOME)/src/include/types/nsgrid.h
-hackblock.o: $(GMXHOME)/src/include/types/commrec.h
-hackblock.o: $(GMXHOME)/src/include/types/forcerec.h
-hackblock.o: $(GMXHOME)/src/include/types/mdatom.h
-hackblock.o: $(GMXHOME)/src/include/types/ifunc.h
-hackblock.o: $(GMXHOME)/src/include/types/filenm.h
-hackblock.o: $(GMXHOME)/src/include/types/group.h
-hackblock.o: $(GMXHOME)/src/include/types/drblock.h
-hackblock.o: $(GMXHOME)/src/include/types/parm.h
-hackblock.o: $(GMXHOME)/src/include/types/matrix.h
-hackblock.o: $(GMXHOME)/src/include/types/edsams.h
-hackblock.o: $(GMXHOME)/src/include/types/pulls.h
-hackblock.o: $(GMXHOME)/src/include/pdbio.h
-hackblock.o: $(GMXHOME)/src/include/symtab.h
-hackblock.o: $(GMXHOME)/src/include/grompp.h
-hackblock.o: $(GMXHOME)/src/include/macros.h
-hackblock.o: $(GMXHOME)/src/include/smalloc.h
-hackblock.o: $(GMXHOME)/src/include/vec.h
-hackblock.o: $(GMXHOME)/src/include/maths.h
-hackblock.o: $(GMXHOME)/src/include/lutab.h
-hackblock.o: $(GMXHOME)/src/include/string2.h
-hizzie.o: $(GMXHOME)/src/include/typedefs.h
-hizzie.o: $(GMXHOME)/src/include/sysstuff.h
-hizzie.o: $(GMXHOME)/src/include/types/simple.h
-hizzie.o: $(GMXHOME)/src/include/types/enums.h
-hizzie.o: $(GMXHOME)/src/include/types/block.h
-hizzie.o: $(GMXHOME)/src/include/types/symtab.h
-hizzie.o: $(GMXHOME)/src/include/types/idef.h
-hizzie.o: $(GMXHOME)/src/include/types/atoms.h
-hizzie.o: $(GMXHOME)/src/include/types/trx.h
-hizzie.o: $(GMXHOME)/src/include/types/topology.h
-hizzie.o: $(GMXHOME)/src/include/types/energy.h
-hizzie.o: $(GMXHOME)/src/include/types/inputrec.h
-hizzie.o: $(GMXHOME)/src/include/types/nsborder.h
-hizzie.o: $(GMXHOME)/src/include/types/ishift.h
-hizzie.o: $(GMXHOME)/src/include/types/graph.h
-hizzie.o: $(GMXHOME)/src/include/fatal.h
-hizzie.o: $(GMXHOME)/src/include/types/nrnb.h
-hizzie.o: $(GMXHOME)/src/include/types/nblist.h
-hizzie.o: $(GMXHOME)/src/include/types/nsgrid.h
-hizzie.o: $(GMXHOME)/src/include/types/commrec.h
-hizzie.o: $(GMXHOME)/src/include/types/forcerec.h
-hizzie.o: $(GMXHOME)/src/include/types/mdatom.h
-hizzie.o: $(GMXHOME)/src/include/types/ifunc.h
-hizzie.o: $(GMXHOME)/src/include/types/filenm.h
-hizzie.o: $(GMXHOME)/src/include/types/group.h
-hizzie.o: $(GMXHOME)/src/include/types/drblock.h
-hizzie.o: $(GMXHOME)/src/include/types/parm.h
-hizzie.o: $(GMXHOME)/src/include/types/matrix.h
-hizzie.o: $(GMXHOME)/src/include/types/edsams.h
-hizzie.o: $(GMXHOME)/src/include/types/pulls.h
-hizzie.o: $(GMXHOME)/src/include/pdbio.h
-hizzie.o: $(GMXHOME)/src/include/symtab.h
-hizzie.o: $(GMXHOME)/src/include/smalloc.h
-hizzie.o: $(GMXHOME)/src/include/vec.h
-hizzie.o: $(GMXHOME)/src/include/maths.h
-hizzie.o: $(GMXHOME)/src/include/macros.h
-hizzie.o: $(GMXHOME)/src/include/lutab.h
-hizzie.o: $(GMXHOME)/src/include/physics.h
-hizzie.o: $(GMXHOME)/src/include/grompp.h
-hizzie.o: $(GMXHOME)/src/include/string2.h
-luck.o: $(GMXHOME)/src/include/copyrite.h
-mdrun.o: $(GMXHOME)/src/include/typedefs.h
-mdrun.o: $(GMXHOME)/src/include/sysstuff.h
-mdrun.o: $(GMXHOME)/src/include/types/simple.h
-mdrun.o: $(GMXHOME)/src/include/types/enums.h
-mdrun.o: $(GMXHOME)/src/include/types/block.h
-mdrun.o: $(GMXHOME)/src/include/types/symtab.h
-mdrun.o: $(GMXHOME)/src/include/types/idef.h
-mdrun.o: $(GMXHOME)/src/include/types/atoms.h
-mdrun.o: $(GMXHOME)/src/include/types/trx.h
-mdrun.o: $(GMXHOME)/src/include/types/topology.h
-mdrun.o: $(GMXHOME)/src/include/types/energy.h
-mdrun.o: $(GMXHOME)/src/include/types/inputrec.h
-mdrun.o: $(GMXHOME)/src/include/types/nsborder.h
-mdrun.o: $(GMXHOME)/src/include/types/ishift.h
-mdrun.o: $(GMXHOME)/src/include/types/graph.h
-mdrun.o: $(GMXHOME)/src/include/fatal.h
-mdrun.o: $(GMXHOME)/src/include/types/nrnb.h
-mdrun.o: $(GMXHOME)/src/include/types/nblist.h
-mdrun.o: $(GMXHOME)/src/include/types/nsgrid.h
-mdrun.o: $(GMXHOME)/src/include/types/commrec.h
-mdrun.o: $(GMXHOME)/src/include/types/forcerec.h
-mdrun.o: $(GMXHOME)/src/include/types/mdatom.h
-mdrun.o: $(GMXHOME)/src/include/types/ifunc.h
-mdrun.o: $(GMXHOME)/src/include/types/filenm.h
-mdrun.o: $(GMXHOME)/src/include/types/group.h
-mdrun.o: $(GMXHOME)/src/include/types/drblock.h
-mdrun.o: $(GMXHOME)/src/include/types/parm.h
-mdrun.o: $(GMXHOME)/src/include/types/matrix.h
-mdrun.o: $(GMXHOME)/src/include/types/edsams.h
-mdrun.o: $(GMXHOME)/src/include/types/pulls.h
-mdrun.o: $(GMXHOME)/src/include/macros.h
-mdrun.o: $(GMXHOME)/src/include/copyrite.h
-mdrun.o: $(GMXHOME)/src/include/main.h
-mdrun.o: $(GMXHOME)/src/include/network.h
-mdrun.o: $(GMXHOME)/src/include/statutil.h
-mdrun.o: $(GMXHOME)/src/include/filenm.h
-mdrun.o: $(GMXHOME)/src/include/futil.h
-mdrun.o: $(GMXHOME)/src/include/readinp.h
-mdrun.o: $(GMXHOME)/src/include/wman.h
-mdrun.o: $(GMXHOME)/src/include/edsam.h
-mdrun.o: $(GMXHOME)/src/include/mdrun.h
-mdrun.o: $(GMXHOME)/src/include/tgroup.h
-mdrun.o: $(GMXHOME)/src/include/nsb.h
-mdrun.o: $(GMXHOME)/src/include/mshift.h
-mdrun.o: $(GMXHOME)/src/include/force.h
-mdrun.o: $(GMXHOME)/src/include/pbc.h
-mdrun.o: $(GMXHOME)/src/include/mdebin.h
-mdrun.o: $(GMXHOME)/src/include/ebin.h
-mdrun.o: $(GMXHOME)/src/include/enxio.h
-mdrun.o: $(GMXHOME)/src/include/xdrf.h
-mdrun.o: $(GMXHOME)/src/include/pull.h
-mdrun.o: $(GMXHOME)/src/include/vec.h
-mdrun.o: $(GMXHOME)/src/include/maths.h
-mdrun.o: $(GMXHOME)/src/include/lutab.h
-mk_ghat.o: $(GMXHOME)/src/include/copyrite.h
-mk_ghat.o: $(GMXHOME)/src/include/macros.h
-mk_ghat.o: $(GMXHOME)/src/include/typedefs.h
-mk_ghat.o: $(GMXHOME)/src/include/sysstuff.h
-mk_ghat.o: $(GMXHOME)/src/include/types/simple.h
-mk_ghat.o: $(GMXHOME)/src/include/types/enums.h
-mk_ghat.o: $(GMXHOME)/src/include/types/block.h
-mk_ghat.o: $(GMXHOME)/src/include/types/symtab.h
-mk_ghat.o: $(GMXHOME)/src/include/types/idef.h
-mk_ghat.o: $(GMXHOME)/src/include/types/atoms.h
-mk_ghat.o: $(GMXHOME)/src/include/types/trx.h
-mk_ghat.o: $(GMXHOME)/src/include/types/topology.h
-mk_ghat.o: $(GMXHOME)/src/include/types/energy.h
-mk_ghat.o: $(GMXHOME)/src/include/types/inputrec.h
-mk_ghat.o: $(GMXHOME)/src/include/types/nsborder.h
-mk_ghat.o: $(GMXHOME)/src/include/types/ishift.h
-mk_ghat.o: $(GMXHOME)/src/include/types/graph.h
-mk_ghat.o: $(GMXHOME)/src/include/fatal.h
-mk_ghat.o: $(GMXHOME)/src/include/types/nrnb.h
-mk_ghat.o: $(GMXHOME)/src/include/types/nblist.h
-mk_ghat.o: $(GMXHOME)/src/include/types/nsgrid.h
-mk_ghat.o: $(GMXHOME)/src/include/types/commrec.h
-mk_ghat.o: $(GMXHOME)/src/include/types/forcerec.h
-mk_ghat.o: $(GMXHOME)/src/include/types/mdatom.h
-mk_ghat.o: $(GMXHOME)/src/include/types/ifunc.h
-mk_ghat.o: $(GMXHOME)/src/include/types/filenm.h
-mk_ghat.o: $(GMXHOME)/src/include/types/group.h
-mk_ghat.o: $(GMXHOME)/src/include/types/drblock.h
-mk_ghat.o: $(GMXHOME)/src/include/types/parm.h
-mk_ghat.o: $(GMXHOME)/src/include/types/matrix.h
-mk_ghat.o: $(GMXHOME)/src/include/types/edsams.h
-mk_ghat.o: $(GMXHOME)/src/include/types/pulls.h
-mk_ghat.o: $(GMXHOME)/src/include/smalloc.h
-mk_ghat.o: $(GMXHOME)/src/include/futil.h
-mk_ghat.o: $(GMXHOME)/src/include/xvgr.h
-mk_ghat.o: $(GMXHOME)/src/include/vec.h
-mk_ghat.o: $(GMXHOME)/src/include/maths.h
-mk_ghat.o: $(GMXHOME)/src/include/lutab.h
-mk_ghat.o: $(GMXHOME)/src/include/shift_util.h
-mk_ghat.o: $(GMXHOME)/src/include/complex.h
-mk_ghat.o: $(GMXHOME)/src/include/physics.h
-mk_ghat.o: $(GMXHOME)/src/include/statutil.h
-mk_ghat.o: $(GMXHOME)/src/include/filenm.h
-mk_ghat.o: $(GMXHOME)/src/include/readinp.h
-mk_ghat.o: $(GMXHOME)/src/include/wman.h
-mk_ghat.o: $(GMXHOME)/src/include/tpxio.h
-mk_ghat.o: $(GMXHOME)/src/include/xdrf.h
-mk_ghat.o: $(GMXHOME)/src/include/fftgrid.h
-mk_ghat.o: $(GMXHOME)/src/include/fftw.h
-mk_ghat.o: $(GMXHOME)/src/include/rfftw.h
-mk_ghat.o: $(GMXHOME)/src/include/network.h
-mk_ghat.o: $(GMXHOME)/src/include/main.h
-nm2type.o: $(GMXHOME)/src/include/maths.h
-nm2type.o: $(GMXHOME)/src/include/typedefs.h
-nm2type.o: $(GMXHOME)/src/include/sysstuff.h
-nm2type.o: $(GMXHOME)/src/include/types/simple.h
-nm2type.o: $(GMXHOME)/src/include/types/enums.h
-nm2type.o: $(GMXHOME)/src/include/types/block.h
-nm2type.o: $(GMXHOME)/src/include/types/symtab.h
-nm2type.o: $(GMXHOME)/src/include/types/idef.h
-nm2type.o: $(GMXHOME)/src/include/types/atoms.h
-nm2type.o: $(GMXHOME)/src/include/types/trx.h
-nm2type.o: $(GMXHOME)/src/include/types/topology.h
-nm2type.o: $(GMXHOME)/src/include/types/energy.h
-nm2type.o: $(GMXHOME)/src/include/types/inputrec.h
-nm2type.o: $(GMXHOME)/src/include/types/nsborder.h
-nm2type.o: $(GMXHOME)/src/include/types/ishift.h
-nm2type.o: $(GMXHOME)/src/include/types/graph.h
-nm2type.o: $(GMXHOME)/src/include/fatal.h
-nm2type.o: $(GMXHOME)/src/include/types/nrnb.h
-nm2type.o: $(GMXHOME)/src/include/types/nblist.h
-nm2type.o: $(GMXHOME)/src/include/types/nsgrid.h
-nm2type.o: $(GMXHOME)/src/include/types/commrec.h
-nm2type.o: $(GMXHOME)/src/include/types/forcerec.h
-nm2type.o: $(GMXHOME)/src/include/types/mdatom.h
-nm2type.o: $(GMXHOME)/src/include/types/ifunc.h
-nm2type.o: $(GMXHOME)/src/include/types/filenm.h
-nm2type.o: $(GMXHOME)/src/include/types/group.h
-nm2type.o: $(GMXHOME)/src/include/types/drblock.h
-nm2type.o: $(GMXHOME)/src/include/types/parm.h
-nm2type.o: $(GMXHOME)/src/include/types/matrix.h
-nm2type.o: $(GMXHOME)/src/include/types/edsams.h
-nm2type.o: $(GMXHOME)/src/include/types/pulls.h
-nm2type.o: $(GMXHOME)/src/include/macros.h
-nm2type.o: $(GMXHOME)/src/include/copyrite.h
-nm2type.o: $(GMXHOME)/src/include/bondf.h
-nm2type.o: $(GMXHOME)/src/include/nrnb.h
-nm2type.o: $(GMXHOME)/src/include/pbc.h
-nm2type.o: $(GMXHOME)/src/include/string2.h
-nm2type.o: $(GMXHOME)/src/include/smalloc.h
-nm2type.o: $(GMXHOME)/src/include/confio.h
-nm2type.o: $(GMXHOME)/src/include/physics.h
-nm2type.o: $(GMXHOME)/src/include/statutil.h
-nm2type.o: $(GMXHOME)/src/include/filenm.h
-nm2type.o: $(GMXHOME)/src/include/futil.h
-nm2type.o: $(GMXHOME)/src/include/readinp.h
-nm2type.o: $(GMXHOME)/src/include/wman.h
-nm2type.o: $(GMXHOME)/src/include/vec.h
-nm2type.o: $(GMXHOME)/src/include/lutab.h
-nm2type.o: $(GMXHOME)/src/include/random.h
-nm2type.o: $(GMXHOME)/src/include/3dview.h
-nm2type.o: $(GMXHOME)/src/include/txtdump.h
-nm2type.o: $(GMXHOME)/src/include/tpxio.h
-nm2type.o: $(GMXHOME)/src/include/xdrf.h
-nm2type.o: $(GMXHOME)/src/include/names.h
-nm2type.o: $(GMXHOME)/src/include/grompp.h
-nm2type.o: $(GMXHOME)/src/include/pdbio.h
-nm2type.o: $(GMXHOME)/src/include/symtab.h
-nmrun.o: $(GMXHOME)/src/include/typedefs.h
-nmrun.o: $(GMXHOME)/src/include/sysstuff.h
-nmrun.o: $(GMXHOME)/src/include/types/simple.h
-nmrun.o: $(GMXHOME)/src/include/types/enums.h
-nmrun.o: $(GMXHOME)/src/include/types/block.h
-nmrun.o: $(GMXHOME)/src/include/types/symtab.h
-nmrun.o: $(GMXHOME)/src/include/types/idef.h
-nmrun.o: $(GMXHOME)/src/include/types/atoms.h
-nmrun.o: $(GMXHOME)/src/include/types/trx.h
-nmrun.o: $(GMXHOME)/src/include/types/topology.h
-nmrun.o: $(GMXHOME)/src/include/types/energy.h
-nmrun.o: $(GMXHOME)/src/include/types/inputrec.h
-nmrun.o: $(GMXHOME)/src/include/types/nsborder.h
-nmrun.o: $(GMXHOME)/src/include/types/ishift.h
-nmrun.o: $(GMXHOME)/src/include/types/graph.h
-nmrun.o: $(GMXHOME)/src/include/fatal.h
-nmrun.o: $(GMXHOME)/src/include/types/nrnb.h
-nmrun.o: $(GMXHOME)/src/include/types/nblist.h
-nmrun.o: $(GMXHOME)/src/include/types/nsgrid.h
-nmrun.o: $(GMXHOME)/src/include/types/commrec.h
-nmrun.o: $(GMXHOME)/src/include/types/forcerec.h
-nmrun.o: $(GMXHOME)/src/include/types/mdatom.h
-nmrun.o: $(GMXHOME)/src/include/types/ifunc.h
-nmrun.o: $(GMXHOME)/src/include/types/filenm.h
-nmrun.o: $(GMXHOME)/src/include/types/group.h
-nmrun.o: $(GMXHOME)/src/include/types/drblock.h
-nmrun.o: $(GMXHOME)/src/include/types/parm.h
-nmrun.o: $(GMXHOME)/src/include/types/matrix.h
-nmrun.o: $(GMXHOME)/src/include/types/edsams.h
-nmrun.o: $(GMXHOME)/src/include/types/pulls.h
-nmrun.o: $(GMXHOME)/src/include/macros.h
-nmrun.o: $(GMXHOME)/src/include/copyrite.h
-nmrun.o: $(GMXHOME)/src/include/main.h
-nmrun.o: $(GMXHOME)/src/include/network.h
-nmrun.o: $(GMXHOME)/src/include/statutil.h
-nmrun.o: $(GMXHOME)/src/include/filenm.h
-nmrun.o: $(GMXHOME)/src/include/futil.h
-nmrun.o: $(GMXHOME)/src/include/readinp.h
-nmrun.o: $(GMXHOME)/src/include/wman.h
-nmrun.o: $(GMXHOME)/src/include/mdrun.h
-nmrun.o: $(GMXHOME)/src/include/tgroup.h
-nmrun.o: $(GMXHOME)/src/include/nsb.h
-nmrun.o: $(GMXHOME)/src/include/mshift.h
-nmrun.o: $(GMXHOME)/src/include/force.h
-nmrun.o: $(GMXHOME)/src/include/pbc.h
-nmrun.o: $(GMXHOME)/src/include/edsam.h
-nmrun.o: $(GMXHOME)/src/include/mdebin.h
-nmrun.o: $(GMXHOME)/src/include/ebin.h
-nmrun.o: $(GMXHOME)/src/include/enxio.h
-nmrun.o: $(GMXHOME)/src/include/xdrf.h
-opls2rtp.o: $(GMXHOME)/src/include/symtab.h
-opls2rtp.o: $(GMXHOME)/src/include/typedefs.h
-opls2rtp.o: $(GMXHOME)/src/include/sysstuff.h
-opls2rtp.o: $(GMXHOME)/src/include/types/simple.h
-opls2rtp.o: $(GMXHOME)/src/include/types/enums.h
-opls2rtp.o: $(GMXHOME)/src/include/types/block.h
-opls2rtp.o: $(GMXHOME)/src/include/types/symtab.h
-opls2rtp.o: $(GMXHOME)/src/include/types/idef.h
-opls2rtp.o: $(GMXHOME)/src/include/types/atoms.h
-opls2rtp.o: $(GMXHOME)/src/include/types/trx.h
-opls2rtp.o: $(GMXHOME)/src/include/types/topology.h
-opls2rtp.o: $(GMXHOME)/src/include/types/energy.h
-opls2rtp.o: $(GMXHOME)/src/include/types/inputrec.h
-opls2rtp.o: $(GMXHOME)/src/include/types/nsborder.h
-opls2rtp.o: $(GMXHOME)/src/include/types/ishift.h
-opls2rtp.o: $(GMXHOME)/src/include/types/graph.h
-opls2rtp.o: $(GMXHOME)/src/include/fatal.h
-opls2rtp.o: $(GMXHOME)/src/include/types/nrnb.h
-opls2rtp.o: $(GMXHOME)/src/include/types/nblist.h
-opls2rtp.o: $(GMXHOME)/src/include/types/nsgrid.h
-opls2rtp.o: $(GMXHOME)/src/include/types/commrec.h
-opls2rtp.o: $(GMXHOME)/src/include/types/forcerec.h
-opls2rtp.o: $(GMXHOME)/src/include/types/mdatom.h
-opls2rtp.o: $(GMXHOME)/src/include/types/ifunc.h
-opls2rtp.o: $(GMXHOME)/src/include/types/filenm.h
-opls2rtp.o: $(GMXHOME)/src/include/types/group.h
-opls2rtp.o: $(GMXHOME)/src/include/types/drblock.h
-opls2rtp.o: $(GMXHOME)/src/include/types/parm.h
-opls2rtp.o: $(GMXHOME)/src/include/types/matrix.h
-opls2rtp.o: $(GMXHOME)/src/include/types/edsams.h
-opls2rtp.o: $(GMXHOME)/src/include/types/pulls.h
-opls2rtp.o: $(GMXHOME)/src/include/string2.h
-opls2rtp.o: $(GMXHOME)/src/include/grompp.h
-opls2rtp.o: $(GMXHOME)/src/include/macros.h
-opls2rtp.o: $(GMXHOME)/src/include/smalloc.h
-opls2rtp.o: $(GMXHOME)/src/include/pdbio.h
-opls2rtp.o: $(GMXHOME)/src/include/copyrite.h
-opls2rtp.o: $(GMXHOME)/src/include/futil.h
-pdb2gmx.o: $(GMXHOME)/src/include/assert.h
-pdb2gmx.o: $(GMXHOME)/src/include/sysstuff.h
-pdb2gmx.o: $(GMXHOME)/src/include/typedefs.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/simple.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/enums.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/block.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/symtab.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/idef.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/atoms.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/trx.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/topology.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/energy.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/inputrec.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/nsborder.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/ishift.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/graph.h
-pdb2gmx.o: $(GMXHOME)/src/include/fatal.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/nrnb.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/nblist.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/nsgrid.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/commrec.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/forcerec.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/mdatom.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/ifunc.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/filenm.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/group.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/drblock.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/parm.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/matrix.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/edsams.h
-pdb2gmx.o: $(GMXHOME)/src/include/types/pulls.h
-pdb2gmx.o: $(GMXHOME)/src/include/smalloc.h
-pdb2gmx.o: $(GMXHOME)/src/include/copyrite.h
-pdb2gmx.o: $(GMXHOME)/src/include/string2.h
-pdb2gmx.o: $(GMXHOME)/src/include/confio.h
-pdb2gmx.o: $(GMXHOME)/src/include/symtab.h
-pdb2gmx.o: $(GMXHOME)/src/include/vec.h
-pdb2gmx.o: $(GMXHOME)/src/include/maths.h
-pdb2gmx.o: $(GMXHOME)/src/include/macros.h
-pdb2gmx.o: $(GMXHOME)/src/include/lutab.h
-pdb2gmx.o: $(GMXHOME)/src/include/statutil.h
-pdb2gmx.o: $(GMXHOME)/src/include/filenm.h
-pdb2gmx.o: $(GMXHOME)/src/include/futil.h
-pdb2gmx.o: $(GMXHOME)/src/include/readinp.h
-pdb2gmx.o: $(GMXHOME)/src/include/wman.h
-pdb2gmx.o: $(GMXHOME)/src/include/pdbio.h
-pdb2gmx.o: $(GMXHOME)/src/include/grompp.h
-pdb2gmx.o: $(GMXHOME)/src/include/physics.h
-pdb2gmx.o: $(GMXHOME)/src/include/calch.h
-pdb2gmx.o: $(GMXHOME)/src/include/strdb.h
-pdb2gmx.o: $(GMXHOME)/src/include/gbutil.h
-pdb2gmx.o: $(GMXHOME)/src/include/index.h
-pdb2top.o: $(GMXHOME)/src/include/vec.h
-pdb2top.o: $(GMXHOME)/src/include/maths.h
-pdb2top.o: $(GMXHOME)/src/include/typedefs.h
-pdb2top.o: $(GMXHOME)/src/include/sysstuff.h
-pdb2top.o: $(GMXHOME)/src/include/types/simple.h
-pdb2top.o: $(GMXHOME)/src/include/types/enums.h
-pdb2top.o: $(GMXHOME)/src/include/types/block.h
-pdb2top.o: $(GMXHOME)/src/include/types/symtab.h
-pdb2top.o: $(GMXHOME)/src/include/types/idef.h
-pdb2top.o: $(GMXHOME)/src/include/types/atoms.h
-pdb2top.o: $(GMXHOME)/src/include/types/trx.h
-pdb2top.o: $(GMXHOME)/src/include/types/topology.h
-pdb2top.o: $(GMXHOME)/src/include/types/energy.h
-pdb2top.o: $(GMXHOME)/src/include/types/inputrec.h
-pdb2top.o: $(GMXHOME)/src/include/types/nsborder.h
-pdb2top.o: $(GMXHOME)/src/include/types/ishift.h
-pdb2top.o: $(GMXHOME)/src/include/types/graph.h
-pdb2top.o: $(GMXHOME)/src/include/fatal.h
-pdb2top.o: $(GMXHOME)/src/include/types/nrnb.h
-pdb2top.o: $(GMXHOME)/src/include/types/nblist.h
-pdb2top.o: $(GMXHOME)/src/include/types/nsgrid.h
-pdb2top.o: $(GMXHOME)/src/include/types/commrec.h
-pdb2top.o: $(GMXHOME)/src/include/types/forcerec.h
-pdb2top.o: $(GMXHOME)/src/include/types/mdatom.h
-pdb2top.o: $(GMXHOME)/src/include/types/ifunc.h
-pdb2top.o: $(GMXHOME)/src/include/types/filenm.h
-pdb2top.o: $(GMXHOME)/src/include/types/group.h
-pdb2top.o: $(GMXHOME)/src/include/types/drblock.h
-pdb2top.o: $(GMXHOME)/src/include/types/parm.h
-pdb2top.o: $(GMXHOME)/src/include/types/matrix.h
-pdb2top.o: $(GMXHOME)/src/include/types/edsams.h
-pdb2top.o: $(GMXHOME)/src/include/types/pulls.h
-pdb2top.o: $(GMXHOME)/src/include/macros.h
-pdb2top.o: $(GMXHOME)/src/include/lutab.h
-pdb2top.o: $(GMXHOME)/src/include/copyrite.h
-pdb2top.o: $(GMXHOME)/src/include/assert.h
-pdb2top.o: $(GMXHOME)/src/include/smalloc.h
-pdb2top.o: $(GMXHOME)/src/include/symtab.h
-pdb2top.o: $(GMXHOME)/src/include/futil.h
-pdb2top.o: $(GMXHOME)/src/include/grompp.h
-pdb2top.o: $(GMXHOME)/src/include/pdbio.h
-pdb2top.o: $(GMXHOME)/src/include/string2.h
-pdb2top.o: $(GMXHOME)/src/include/physics.h
-pdb2top.o: $(GMXHOME)/src/include/filenm.h
-pdb2top.o: $(GMXHOME)/src/include/index.h
-pgutil.o: $(GMXHOME)/src/include/typedefs.h
-pgutil.o: $(GMXHOME)/src/include/sysstuff.h
-pgutil.o: $(GMXHOME)/src/include/types/simple.h
-pgutil.o: $(GMXHOME)/src/include/types/enums.h
-pgutil.o: $(GMXHOME)/src/include/types/block.h
-pgutil.o: $(GMXHOME)/src/include/types/symtab.h
-pgutil.o: $(GMXHOME)/src/include/types/idef.h
-pgutil.o: $(GMXHOME)/src/include/types/atoms.h
-pgutil.o: $(GMXHOME)/src/include/types/trx.h
-pgutil.o: $(GMXHOME)/src/include/types/topology.h
-pgutil.o: $(GMXHOME)/src/include/types/energy.h
-pgutil.o: $(GMXHOME)/src/include/types/inputrec.h
-pgutil.o: $(GMXHOME)/src/include/types/nsborder.h
-pgutil.o: $(GMXHOME)/src/include/types/ishift.h
-pgutil.o: $(GMXHOME)/src/include/types/graph.h
-pgutil.o: $(GMXHOME)/src/include/fatal.h
-pgutil.o: $(GMXHOME)/src/include/types/nrnb.h
-pgutil.o: $(GMXHOME)/src/include/types/nblist.h
-pgutil.o: $(GMXHOME)/src/include/types/nsgrid.h
-pgutil.o: $(GMXHOME)/src/include/types/commrec.h
-pgutil.o: $(GMXHOME)/src/include/types/forcerec.h
-pgutil.o: $(GMXHOME)/src/include/types/mdatom.h
-pgutil.o: $(GMXHOME)/src/include/types/ifunc.h
-pgutil.o: $(GMXHOME)/src/include/types/filenm.h
-pgutil.o: $(GMXHOME)/src/include/types/group.h
-pgutil.o: $(GMXHOME)/src/include/types/drblock.h
-pgutil.o: $(GMXHOME)/src/include/types/parm.h
-pgutil.o: $(GMXHOME)/src/include/types/matrix.h
-pgutil.o: $(GMXHOME)/src/include/types/edsams.h
-pgutil.o: $(GMXHOME)/src/include/types/pulls.h
-protonate.o: $(GMXHOME)/src/include/typedefs.h
-protonate.o: $(GMXHOME)/src/include/sysstuff.h
-protonate.o: $(GMXHOME)/src/include/types/simple.h
-protonate.o: $(GMXHOME)/src/include/types/enums.h
-protonate.o: $(GMXHOME)/src/include/types/block.h
-protonate.o: $(GMXHOME)/src/include/types/symtab.h
-protonate.o: $(GMXHOME)/src/include/types/idef.h
-protonate.o: $(GMXHOME)/src/include/types/atoms.h
-protonate.o: $(GMXHOME)/src/include/types/trx.h
-protonate.o: $(GMXHOME)/src/include/types/topology.h
-protonate.o: $(GMXHOME)/src/include/types/energy.h
-protonate.o: $(GMXHOME)/src/include/types/inputrec.h
-protonate.o: $(GMXHOME)/src/include/types/nsborder.h
-protonate.o: $(GMXHOME)/src/include/types/ishift.h
-protonate.o: $(GMXHOME)/src/include/types/graph.h
-protonate.o: $(GMXHOME)/src/include/fatal.h
-protonate.o: $(GMXHOME)/src/include/types/nrnb.h
-protonate.o: $(GMXHOME)/src/include/types/nblist.h
-protonate.o: $(GMXHOME)/src/include/types/nsgrid.h
-protonate.o: $(GMXHOME)/src/include/types/commrec.h
-protonate.o: $(GMXHOME)/src/include/types/forcerec.h
-protonate.o: $(GMXHOME)/src/include/types/mdatom.h
-protonate.o: $(GMXHOME)/src/include/types/ifunc.h
-protonate.o: $(GMXHOME)/src/include/types/filenm.h
-protonate.o: $(GMXHOME)/src/include/types/group.h
-protonate.o: $(GMXHOME)/src/include/types/drblock.h
-protonate.o: $(GMXHOME)/src/include/types/parm.h
-protonate.o: $(GMXHOME)/src/include/types/matrix.h
-protonate.o: $(GMXHOME)/src/include/types/edsams.h
-protonate.o: $(GMXHOME)/src/include/types/pulls.h
-protonate.o: $(GMXHOME)/src/include/macros.h
-protonate.o: $(GMXHOME)/src/include/copyrite.h
-protonate.o: $(GMXHOME)/src/include/smalloc.h
-protonate.o: $(GMXHOME)/src/include/statutil.h
-protonate.o: $(GMXHOME)/src/include/filenm.h
-protonate.o: $(GMXHOME)/src/include/futil.h
-protonate.o: $(GMXHOME)/src/include/readinp.h
-protonate.o: $(GMXHOME)/src/include/wman.h
-protonate.o: $(GMXHOME)/src/include/confio.h
-protonate.o: $(GMXHOME)/src/include/pdbio.h
-protonate.o: $(GMXHOME)/src/include/symtab.h
-protonate.o: $(GMXHOME)/src/include/grompp.h
-protonate.o: $(GMXHOME)/src/include/tpxio.h
-protonate.o: $(GMXHOME)/src/include/xdrf.h
-protonate.o: $(GMXHOME)/src/include/rdgroup.h
-protonate.o: $(GMXHOME)/src/include/vec.h
-protonate.o: $(GMXHOME)/src/include/maths.h
-protonate.o: $(GMXHOME)/src/include/lutab.h
-readir.o: $(GMXHOME)/src/include/sysstuff.h
-readir.o: $(GMXHOME)/src/include/smalloc.h
-readir.o: $(GMXHOME)/src/include/typedefs.h
-readir.o: $(GMXHOME)/src/include/types/simple.h
-readir.o: $(GMXHOME)/src/include/types/enums.h
-readir.o: $(GMXHOME)/src/include/types/block.h
-readir.o: $(GMXHOME)/src/include/types/symtab.h
-readir.o: $(GMXHOME)/src/include/types/idef.h
-readir.o: $(GMXHOME)/src/include/types/atoms.h
-readir.o: $(GMXHOME)/src/include/types/trx.h
-readir.o: $(GMXHOME)/src/include/types/topology.h
-readir.o: $(GMXHOME)/src/include/types/energy.h
-readir.o: $(GMXHOME)/src/include/types/inputrec.h
-readir.o: $(GMXHOME)/src/include/types/nsborder.h
-readir.o: $(GMXHOME)/src/include/types/ishift.h
-readir.o: $(GMXHOME)/src/include/types/graph.h
-readir.o: $(GMXHOME)/src/include/fatal.h
-readir.o: $(GMXHOME)/src/include/types/nrnb.h
-readir.o: $(GMXHOME)/src/include/types/nblist.h
-readir.o: $(GMXHOME)/src/include/types/nsgrid.h
-readir.o: $(GMXHOME)/src/include/types/commrec.h
-readir.o: $(GMXHOME)/src/include/types/forcerec.h
-readir.o: $(GMXHOME)/src/include/types/mdatom.h
-readir.o: $(GMXHOME)/src/include/types/ifunc.h
-readir.o: $(GMXHOME)/src/include/types/filenm.h
-readir.o: $(GMXHOME)/src/include/types/group.h
-readir.o: $(GMXHOME)/src/include/types/drblock.h
-readir.o: $(GMXHOME)/src/include/types/parm.h
-readir.o: $(GMXHOME)/src/include/types/matrix.h
-readir.o: $(GMXHOME)/src/include/types/edsams.h
-readir.o: $(GMXHOME)/src/include/types/pulls.h
-readir.o: $(GMXHOME)/src/include/physics.h
-readir.o: $(GMXHOME)/src/include/names.h
-readir.o: $(GMXHOME)/src/include/macros.h
-readir.o: $(GMXHOME)/src/include/rdgroup.h
-readir.o: $(GMXHOME)/src/include/symtab.h
-readir.o: $(GMXHOME)/src/include/string2.h
-readir.o: $(GMXHOME)/src/include/readinp.h
-readir.o: $(GMXHOME)/src/include/grompp.h
-readir.o: $(GMXHOME)/src/include/index.h
-readir.o: $(GMXHOME)/src/include/network.h
-readir.o: $(GMXHOME)/src/include/main.h
-readir.o: $(GMXHOME)/src/include/vec.h
-readir.o: $(GMXHOME)/src/include/maths.h
-readir.o: $(GMXHOME)/src/include/lutab.h
-readir.o: $(GMXHOME)/src/include/pbc.h
-resall.o: $(GMXHOME)/src/include/sysstuff.h
-resall.o: $(GMXHOME)/src/include/assert.h
-resall.o: $(GMXHOME)/src/include/string2.h
-resall.o: $(GMXHOME)/src/include/typedefs.h
-resall.o: $(GMXHOME)/src/include/types/simple.h
-resall.o: $(GMXHOME)/src/include/types/enums.h
-resall.o: $(GMXHOME)/src/include/types/block.h
-resall.o: $(GMXHOME)/src/include/types/symtab.h
-resall.o: $(GMXHOME)/src/include/types/idef.h
-resall.o: $(GMXHOME)/src/include/types/atoms.h
-resall.o: $(GMXHOME)/src/include/types/trx.h
-resall.o: $(GMXHOME)/src/include/types/topology.h
-resall.o: $(GMXHOME)/src/include/types/energy.h
-resall.o: $(GMXHOME)/src/include/types/inputrec.h
-resall.o: $(GMXHOME)/src/include/types/nsborder.h
-resall.o: $(GMXHOME)/src/include/types/ishift.h
-resall.o: $(GMXHOME)/src/include/types/graph.h
-resall.o: $(GMXHOME)/src/include/fatal.h
-resall.o: $(GMXHOME)/src/include/types/nrnb.h
-resall.o: $(GMXHOME)/src/include/types/nblist.h
-resall.o: $(GMXHOME)/src/include/types/nsgrid.h
-resall.o: $(GMXHOME)/src/include/types/commrec.h
-resall.o: $(GMXHOME)/src/include/types/forcerec.h
-resall.o: $(GMXHOME)/src/include/types/mdatom.h
-resall.o: $(GMXHOME)/src/include/types/ifunc.h
-resall.o: $(GMXHOME)/src/include/types/filenm.h
-resall.o: $(GMXHOME)/src/include/types/group.h
-resall.o: $(GMXHOME)/src/include/types/drblock.h
-resall.o: $(GMXHOME)/src/include/types/parm.h
-resall.o: $(GMXHOME)/src/include/types/matrix.h
-resall.o: $(GMXHOME)/src/include/types/edsams.h
-resall.o: $(GMXHOME)/src/include/types/pulls.h
-resall.o: $(GMXHOME)/src/include/strdb.h
-resall.o: $(GMXHOME)/src/include/futil.h
-resall.o: $(GMXHOME)/src/include/smalloc.h
-resall.o: $(GMXHOME)/src/include/symtab.h
-resall.o: $(GMXHOME)/src/include/macros.h
-resall.o: $(GMXHOME)/src/include/pdbio.h
-resall.o: $(GMXHOME)/src/include/grompp.h
-sorting.o: $(GMXHOME)/src/include/sysstuff.h
-sorting.o: $(GMXHOME)/src/include/smalloc.h
-sorting.o: $(GMXHOME)/src/include/typedefs.h
-sorting.o: $(GMXHOME)/src/include/types/simple.h
-sorting.o: $(GMXHOME)/src/include/types/enums.h
-sorting.o: $(GMXHOME)/src/include/types/block.h
-sorting.o: $(GMXHOME)/src/include/types/symtab.h
-sorting.o: $(GMXHOME)/src/include/types/idef.h
-sorting.o: $(GMXHOME)/src/include/types/atoms.h
-sorting.o: $(GMXHOME)/src/include/types/trx.h
-sorting.o: $(GMXHOME)/src/include/types/topology.h
-sorting.o: $(GMXHOME)/src/include/types/energy.h
-sorting.o: $(GMXHOME)/src/include/types/inputrec.h
-sorting.o: $(GMXHOME)/src/include/types/nsborder.h
-sorting.o: $(GMXHOME)/src/include/types/ishift.h
-sorting.o: $(GMXHOME)/src/include/types/graph.h
-sorting.o: $(GMXHOME)/src/include/fatal.h
-sorting.o: $(GMXHOME)/src/include/types/nrnb.h
-sorting.o: $(GMXHOME)/src/include/types/nblist.h
-sorting.o: $(GMXHOME)/src/include/types/nsgrid.h
-sorting.o: $(GMXHOME)/src/include/types/commrec.h
-sorting.o: $(GMXHOME)/src/include/types/forcerec.h
-sorting.o: $(GMXHOME)/src/include/types/mdatom.h
-sorting.o: $(GMXHOME)/src/include/types/ifunc.h
-sorting.o: $(GMXHOME)/src/include/types/filenm.h
-sorting.o: $(GMXHOME)/src/include/types/group.h
-sorting.o: $(GMXHOME)/src/include/types/drblock.h
-sorting.o: $(GMXHOME)/src/include/types/parm.h
-sorting.o: $(GMXHOME)/src/include/types/matrix.h
-sorting.o: $(GMXHOME)/src/include/types/edsams.h
-sorting.o: $(GMXHOME)/src/include/types/pulls.h
-specbond.o: $(GMXHOME)/src/include/typedefs.h
-specbond.o: $(GMXHOME)/src/include/sysstuff.h
-specbond.o: $(GMXHOME)/src/include/types/simple.h
-specbond.o: $(GMXHOME)/src/include/types/enums.h
-specbond.o: $(GMXHOME)/src/include/types/block.h
-specbond.o: $(GMXHOME)/src/include/types/symtab.h
-specbond.o: $(GMXHOME)/src/include/types/idef.h
-specbond.o: $(GMXHOME)/src/include/types/atoms.h
-specbond.o: $(GMXHOME)/src/include/types/trx.h
-specbond.o: $(GMXHOME)/src/include/types/topology.h
-specbond.o: $(GMXHOME)/src/include/types/energy.h
-specbond.o: $(GMXHOME)/src/include/types/inputrec.h
-specbond.o: $(GMXHOME)/src/include/types/nsborder.h
-specbond.o: $(GMXHOME)/src/include/types/ishift.h
-specbond.o: $(GMXHOME)/src/include/types/graph.h
-specbond.o: $(GMXHOME)/src/include/fatal.h
-specbond.o: $(GMXHOME)/src/include/types/nrnb.h
-specbond.o: $(GMXHOME)/src/include/types/nblist.h
-specbond.o: $(GMXHOME)/src/include/types/nsgrid.h
-specbond.o: $(GMXHOME)/src/include/types/commrec.h
-specbond.o: $(GMXHOME)/src/include/types/forcerec.h
-specbond.o: $(GMXHOME)/src/include/types/mdatom.h
-specbond.o: $(GMXHOME)/src/include/types/ifunc.h
-specbond.o: $(GMXHOME)/src/include/types/filenm.h
-specbond.o: $(GMXHOME)/src/include/types/group.h
-specbond.o: $(GMXHOME)/src/include/types/drblock.h
-specbond.o: $(GMXHOME)/src/include/types/parm.h
-specbond.o: $(GMXHOME)/src/include/types/matrix.h
-specbond.o: $(GMXHOME)/src/include/types/edsams.h
-specbond.o: $(GMXHOME)/src/include/types/pulls.h
-specbond.o: $(GMXHOME)/src/include/pdbio.h
-specbond.o: $(GMXHOME)/src/include/symtab.h
-specbond.o: $(GMXHOME)/src/include/strdb.h
-specbond.o: $(GMXHOME)/src/include/string2.h
-specbond.o: $(GMXHOME)/src/include/smalloc.h
-specbond.o: $(GMXHOME)/src/include/grompp.h
-specbond.o: $(GMXHOME)/src/include/macros.h
-specbond.o: $(GMXHOME)/src/include/vec.h
-specbond.o: $(GMXHOME)/src/include/maths.h
-specbond.o: $(GMXHOME)/src/include/lutab.h
-splitter.o: $(GMXHOME)/src/include/sysstuff.h
-splitter.o: $(GMXHOME)/src/include/assert.h
-splitter.o: $(GMXHOME)/src/include/macros.h
-splitter.o: $(GMXHOME)/src/include/typedefs.h
-splitter.o: $(GMXHOME)/src/include/types/simple.h
-splitter.o: $(GMXHOME)/src/include/types/enums.h
-splitter.o: $(GMXHOME)/src/include/types/block.h
-splitter.o: $(GMXHOME)/src/include/types/symtab.h
-splitter.o: $(GMXHOME)/src/include/types/idef.h
-splitter.o: $(GMXHOME)/src/include/types/atoms.h
-splitter.o: $(GMXHOME)/src/include/types/trx.h
-splitter.o: $(GMXHOME)/src/include/types/topology.h
-splitter.o: $(GMXHOME)/src/include/types/energy.h
-splitter.o: $(GMXHOME)/src/include/types/inputrec.h
-splitter.o: $(GMXHOME)/src/include/types/nsborder.h
-splitter.o: $(GMXHOME)/src/include/types/ishift.h
-splitter.o: $(GMXHOME)/src/include/types/graph.h
-splitter.o: $(GMXHOME)/src/include/fatal.h
-splitter.o: $(GMXHOME)/src/include/types/nrnb.h
-splitter.o: $(GMXHOME)/src/include/types/nblist.h
-splitter.o: $(GMXHOME)/src/include/types/nsgrid.h
-splitter.o: $(GMXHOME)/src/include/types/commrec.h
-splitter.o: $(GMXHOME)/src/include/types/forcerec.h
-splitter.o: $(GMXHOME)/src/include/types/mdatom.h
-splitter.o: $(GMXHOME)/src/include/types/ifunc.h
-splitter.o: $(GMXHOME)/src/include/types/filenm.h
-splitter.o: $(GMXHOME)/src/include/types/group.h
-splitter.o: $(GMXHOME)/src/include/types/drblock.h
-splitter.o: $(GMXHOME)/src/include/types/parm.h
-splitter.o: $(GMXHOME)/src/include/types/matrix.h
-splitter.o: $(GMXHOME)/src/include/types/edsams.h
-splitter.o: $(GMXHOME)/src/include/types/pulls.h
-splitter.o: $(GMXHOME)/src/include/smalloc.h
-splitter.o: $(GMXHOME)/src/include/mshift.h
-splitter.o: $(GMXHOME)/src/include/invblock.h
-splitter.o: $(GMXHOME)/src/include/txtdump.h
-splitter.o: $(GMXHOME)/src/include/tpxio.h
-splitter.o: $(GMXHOME)/src/include/xdrf.h
-ter_db.o: $(GMXHOME)/src/include/sysstuff.h
-ter_db.o: $(GMXHOME)/src/include/smalloc.h
-ter_db.o: $(GMXHOME)/src/include/typedefs.h
-ter_db.o: $(GMXHOME)/src/include/types/simple.h
-ter_db.o: $(GMXHOME)/src/include/types/enums.h
-ter_db.o: $(GMXHOME)/src/include/types/block.h
-ter_db.o: $(GMXHOME)/src/include/types/symtab.h
-ter_db.o: $(GMXHOME)/src/include/types/idef.h
-ter_db.o: $(GMXHOME)/src/include/types/atoms.h
-ter_db.o: $(GMXHOME)/src/include/types/trx.h
-ter_db.o: $(GMXHOME)/src/include/types/topology.h
-ter_db.o: $(GMXHOME)/src/include/types/energy.h
-ter_db.o: $(GMXHOME)/src/include/types/inputrec.h
-ter_db.o: $(GMXHOME)/src/include/types/nsborder.h
-ter_db.o: $(GMXHOME)/src/include/types/ishift.h
-ter_db.o: $(GMXHOME)/src/include/types/graph.h
-ter_db.o: $(GMXHOME)/src/include/fatal.h
-ter_db.o: $(GMXHOME)/src/include/types/nrnb.h
-ter_db.o: $(GMXHOME)/src/include/types/nblist.h
-ter_db.o: $(GMXHOME)/src/include/types/nsgrid.h
-ter_db.o: $(GMXHOME)/src/include/types/commrec.h
-ter_db.o: $(GMXHOME)/src/include/types/forcerec.h
-ter_db.o: $(GMXHOME)/src/include/types/mdatom.h
-ter_db.o: $(GMXHOME)/src/include/types/ifunc.h
-ter_db.o: $(GMXHOME)/src/include/types/filenm.h
-ter_db.o: $(GMXHOME)/src/include/types/group.h
-ter_db.o: $(GMXHOME)/src/include/types/drblock.h
-ter_db.o: $(GMXHOME)/src/include/types/parm.h
-ter_db.o: $(GMXHOME)/src/include/types/matrix.h
-ter_db.o: $(GMXHOME)/src/include/types/edsams.h
-ter_db.o: $(GMXHOME)/src/include/types/pulls.h
-ter_db.o: $(GMXHOME)/src/include/symtab.h
-ter_db.o: $(GMXHOME)/src/include/futil.h
-ter_db.o: $(GMXHOME)/src/include/pdbio.h
-ter_db.o: $(GMXHOME)/src/include/grompp.h
-ter_db.o: $(GMXHOME)/src/include/macros.h
-ter_db.o: $(GMXHOME)/src/include/string2.h
-ter_db.o: $(GMXHOME)/src/include/strdb.h
-tomorse.o: $(GMXHOME)/src/include/typedefs.h
-tomorse.o: $(GMXHOME)/src/include/sysstuff.h
-tomorse.o: $(GMXHOME)/src/include/types/simple.h
-tomorse.o: $(GMXHOME)/src/include/types/enums.h
-tomorse.o: $(GMXHOME)/src/include/types/block.h
-tomorse.o: $(GMXHOME)/src/include/types/symtab.h
-tomorse.o: $(GMXHOME)/src/include/types/idef.h
-tomorse.o: $(GMXHOME)/src/include/types/atoms.h
-tomorse.o: $(GMXHOME)/src/include/types/trx.h
-tomorse.o: $(GMXHOME)/src/include/types/topology.h
-tomorse.o: $(GMXHOME)/src/include/types/energy.h
-tomorse.o: $(GMXHOME)/src/include/types/inputrec.h
-tomorse.o: $(GMXHOME)/src/include/types/nsborder.h
-tomorse.o: $(GMXHOME)/src/include/types/ishift.h
-tomorse.o: $(GMXHOME)/src/include/types/graph.h
-tomorse.o: $(GMXHOME)/src/include/fatal.h
-tomorse.o: $(GMXHOME)/src/include/types/nrnb.h
-tomorse.o: $(GMXHOME)/src/include/types/nblist.h
-tomorse.o: $(GMXHOME)/src/include/types/nsgrid.h
-tomorse.o: $(GMXHOME)/src/include/types/commrec.h
-tomorse.o: $(GMXHOME)/src/include/types/forcerec.h
-tomorse.o: $(GMXHOME)/src/include/types/mdatom.h
-tomorse.o: $(GMXHOME)/src/include/types/ifunc.h
-tomorse.o: $(GMXHOME)/src/include/types/filenm.h
-tomorse.o: $(GMXHOME)/src/include/types/group.h
-tomorse.o: $(GMXHOME)/src/include/types/drblock.h
-tomorse.o: $(GMXHOME)/src/include/types/parm.h
-tomorse.o: $(GMXHOME)/src/include/types/matrix.h
-tomorse.o: $(GMXHOME)/src/include/types/edsams.h
-tomorse.o: $(GMXHOME)/src/include/types/pulls.h
-tomorse.o: $(GMXHOME)/src/include/string2.h
-tomorse.o: $(GMXHOME)/src/include/grompp.h
-tomorse.o: $(GMXHOME)/src/include/macros.h
-tomorse.o: $(GMXHOME)/src/include/futil.h
-tomorse.o: $(GMXHOME)/src/include/smalloc.h
-topcat.o: $(GMXHOME)/src/include/sysstuff.h
-topcat.o: $(GMXHOME)/src/include/smalloc.h
-topcat.o: $(GMXHOME)/src/include/string2.h
-topcat.o: $(GMXHOME)/src/include/typedefs.h
-topcat.o: $(GMXHOME)/src/include/types/simple.h
-topcat.o: $(GMXHOME)/src/include/types/enums.h
-topcat.o: $(GMXHOME)/src/include/types/block.h
-topcat.o: $(GMXHOME)/src/include/types/symtab.h
-topcat.o: $(GMXHOME)/src/include/types/idef.h
-topcat.o: $(GMXHOME)/src/include/types/atoms.h
-topcat.o: $(GMXHOME)/src/include/types/trx.h
-topcat.o: $(GMXHOME)/src/include/types/topology.h
-topcat.o: $(GMXHOME)/src/include/types/energy.h
-topcat.o: $(GMXHOME)/src/include/types/inputrec.h
-topcat.o: $(GMXHOME)/src/include/types/nsborder.h
-topcat.o: $(GMXHOME)/src/include/types/ishift.h
-topcat.o: $(GMXHOME)/src/include/types/graph.h
-topcat.o: $(GMXHOME)/src/include/fatal.h
-topcat.o: $(GMXHOME)/src/include/types/nrnb.h
-topcat.o: $(GMXHOME)/src/include/types/nblist.h
-topcat.o: $(GMXHOME)/src/include/types/nsgrid.h
-topcat.o: $(GMXHOME)/src/include/types/commrec.h
-topcat.o: $(GMXHOME)/src/include/types/forcerec.h
-topcat.o: $(GMXHOME)/src/include/types/mdatom.h
-topcat.o: $(GMXHOME)/src/include/types/ifunc.h
-topcat.o: $(GMXHOME)/src/include/types/filenm.h
-topcat.o: $(GMXHOME)/src/include/types/group.h
-topcat.o: $(GMXHOME)/src/include/types/drblock.h
-topcat.o: $(GMXHOME)/src/include/types/parm.h
-topcat.o: $(GMXHOME)/src/include/types/matrix.h
-topcat.o: $(GMXHOME)/src/include/types/edsams.h
-topcat.o: $(GMXHOME)/src/include/types/pulls.h
-topcat.o: $(GMXHOME)/src/include/assert.h
-topcat.o: $(GMXHOME)/src/include/macros.h
-topcat.o: $(GMXHOME)/src/include/grompp.h
-topdirs.o: $(GMXHOME)/src/include/sysstuff.h
-topdirs.o: $(GMXHOME)/src/include/smalloc.h
-topdirs.o: $(GMXHOME)/src/include/macros.h
-topdirs.o: $(GMXHOME)/src/include/typedefs.h
-topdirs.o: $(GMXHOME)/src/include/types/simple.h
-topdirs.o: $(GMXHOME)/src/include/types/enums.h
-topdirs.o: $(GMXHOME)/src/include/types/block.h
-topdirs.o: $(GMXHOME)/src/include/types/symtab.h
-topdirs.o: $(GMXHOME)/src/include/types/idef.h
-topdirs.o: $(GMXHOME)/src/include/types/atoms.h
-topdirs.o: $(GMXHOME)/src/include/types/trx.h
-topdirs.o: $(GMXHOME)/src/include/types/topology.h
-topdirs.o: $(GMXHOME)/src/include/types/energy.h
-topdirs.o: $(GMXHOME)/src/include/types/inputrec.h
-topdirs.o: $(GMXHOME)/src/include/types/nsborder.h
-topdirs.o: $(GMXHOME)/src/include/types/ishift.h
-topdirs.o: $(GMXHOME)/src/include/types/graph.h
-topdirs.o: $(GMXHOME)/src/include/fatal.h
-topdirs.o: $(GMXHOME)/src/include/types/nrnb.h
-topdirs.o: $(GMXHOME)/src/include/types/nblist.h
-topdirs.o: $(GMXHOME)/src/include/types/nsgrid.h
-topdirs.o: $(GMXHOME)/src/include/types/commrec.h
-topdirs.o: $(GMXHOME)/src/include/types/forcerec.h
-topdirs.o: $(GMXHOME)/src/include/types/mdatom.h
-topdirs.o: $(GMXHOME)/src/include/types/ifunc.h
-topdirs.o: $(GMXHOME)/src/include/types/filenm.h
-topdirs.o: $(GMXHOME)/src/include/types/group.h
-topdirs.o: $(GMXHOME)/src/include/types/drblock.h
-topdirs.o: $(GMXHOME)/src/include/types/parm.h
-topdirs.o: $(GMXHOME)/src/include/types/matrix.h
-topdirs.o: $(GMXHOME)/src/include/types/edsams.h
-topdirs.o: $(GMXHOME)/src/include/types/pulls.h
-topdirs.o: $(GMXHOME)/src/include/string2.h
-topdirs.o: $(GMXHOME)/src/include/grompp.h
-topexcl.o: $(GMXHOME)/src/include/assert.h
-topexcl.o: $(GMXHOME)/src/include/sysstuff.h
-topexcl.o: $(GMXHOME)/src/include/smalloc.h
-topexcl.o: $(GMXHOME)/src/include/macros.h
-topexcl.o: $(GMXHOME)/src/include/typedefs.h
-topexcl.o: $(GMXHOME)/src/include/types/simple.h
-topexcl.o: $(GMXHOME)/src/include/types/enums.h
-topexcl.o: $(GMXHOME)/src/include/types/block.h
-topexcl.o: $(GMXHOME)/src/include/types/symtab.h
-topexcl.o: $(GMXHOME)/src/include/types/idef.h
-topexcl.o: $(GMXHOME)/src/include/types/atoms.h
-topexcl.o: $(GMXHOME)/src/include/types/trx.h
-topexcl.o: $(GMXHOME)/src/include/types/topology.h
-topexcl.o: $(GMXHOME)/src/include/types/energy.h
-topexcl.o: $(GMXHOME)/src/include/types/inputrec.h
-topexcl.o: $(GMXHOME)/src/include/types/nsborder.h
-topexcl.o: $(GMXHOME)/src/include/types/ishift.h
-topexcl.o: $(GMXHOME)/src/include/types/graph.h
-topexcl.o: $(GMXHOME)/src/include/fatal.h
-topexcl.o: $(GMXHOME)/src/include/types/nrnb.h
-topexcl.o: $(GMXHOME)/src/include/types/nblist.h
-topexcl.o: $(GMXHOME)/src/include/types/nsgrid.h
-topexcl.o: $(GMXHOME)/src/include/types/commrec.h
-topexcl.o: $(GMXHOME)/src/include/types/forcerec.h
-topexcl.o: $(GMXHOME)/src/include/types/mdatom.h
-topexcl.o: $(GMXHOME)/src/include/types/ifunc.h
-topexcl.o: $(GMXHOME)/src/include/types/filenm.h
-topexcl.o: $(GMXHOME)/src/include/types/group.h
-topexcl.o: $(GMXHOME)/src/include/types/drblock.h
-topexcl.o: $(GMXHOME)/src/include/types/parm.h
-topexcl.o: $(GMXHOME)/src/include/types/matrix.h
-topexcl.o: $(GMXHOME)/src/include/types/edsams.h
-topexcl.o: $(GMXHOME)/src/include/types/pulls.h
-topexcl.o: $(GMXHOME)/src/include/string2.h
-topexcl.o: $(GMXHOME)/src/include/grompp.h
-topio.o: $(GMXHOME)/src/include/assert.h
-topio.o: $(GMXHOME)/src/include/sysstuff.h
-topio.o: $(GMXHOME)/src/include/typedefs.h
-topio.o: $(GMXHOME)/src/include/types/simple.h
-topio.o: $(GMXHOME)/src/include/types/enums.h
-topio.o: $(GMXHOME)/src/include/types/block.h
-topio.o: $(GMXHOME)/src/include/types/symtab.h
-topio.o: $(GMXHOME)/src/include/types/idef.h
-topio.o: $(GMXHOME)/src/include/types/atoms.h
-topio.o: $(GMXHOME)/src/include/types/trx.h
-topio.o: $(GMXHOME)/src/include/types/topology.h
-topio.o: $(GMXHOME)/src/include/types/energy.h
-topio.o: $(GMXHOME)/src/include/types/inputrec.h
-topio.o: $(GMXHOME)/src/include/types/nsborder.h
-topio.o: $(GMXHOME)/src/include/types/ishift.h
-topio.o: $(GMXHOME)/src/include/types/graph.h
-topio.o: $(GMXHOME)/src/include/fatal.h
-topio.o: $(GMXHOME)/src/include/types/nrnb.h
-topio.o: $(GMXHOME)/src/include/types/nblist.h
-topio.o: $(GMXHOME)/src/include/types/nsgrid.h
-topio.o: $(GMXHOME)/src/include/types/commrec.h
-topio.o: $(GMXHOME)/src/include/types/forcerec.h
-topio.o: $(GMXHOME)/src/include/types/mdatom.h
-topio.o: $(GMXHOME)/src/include/types/ifunc.h
-topio.o: $(GMXHOME)/src/include/types/filenm.h
-topio.o: $(GMXHOME)/src/include/types/group.h
-topio.o: $(GMXHOME)/src/include/types/drblock.h
-topio.o: $(GMXHOME)/src/include/types/parm.h
-topio.o: $(GMXHOME)/src/include/types/matrix.h
-topio.o: $(GMXHOME)/src/include/types/edsams.h
-topio.o: $(GMXHOME)/src/include/types/pulls.h
-topio.o: $(GMXHOME)/src/include/smalloc.h
-topio.o: $(GMXHOME)/src/include/macros.h
-topio.o: $(GMXHOME)/src/include/txtdump.h
-topio.o: $(GMXHOME)/src/include/tpxio.h
-topio.o: $(GMXHOME)/src/include/xdrf.h
-topio.o: $(GMXHOME)/src/include/physics.h
-topio.o: $(GMXHOME)/src/include/names.h
-topio.o: $(GMXHOME)/src/include/string2.h
-topio.o: $(GMXHOME)/src/include/symtab.h
-topio.o: $(GMXHOME)/src/include/grompp.h
-toppush.o: $(GMXHOME)/src/include/sysstuff.h
-toppush.o: $(GMXHOME)/src/include/smalloc.h
-toppush.o: $(GMXHOME)/src/include/macros.h
-toppush.o: $(GMXHOME)/src/include/typedefs.h
-toppush.o: $(GMXHOME)/src/include/types/simple.h
-toppush.o: $(GMXHOME)/src/include/types/enums.h
-toppush.o: $(GMXHOME)/src/include/types/block.h
-toppush.o: $(GMXHOME)/src/include/types/symtab.h
-toppush.o: $(GMXHOME)/src/include/types/idef.h
-toppush.o: $(GMXHOME)/src/include/types/atoms.h
-toppush.o: $(GMXHOME)/src/include/types/trx.h
-toppush.o: $(GMXHOME)/src/include/types/topology.h
-toppush.o: $(GMXHOME)/src/include/types/energy.h
-toppush.o: $(GMXHOME)/src/include/types/inputrec.h
-toppush.o: $(GMXHOME)/src/include/types/nsborder.h
-toppush.o: $(GMXHOME)/src/include/types/ishift.h
-toppush.o: $(GMXHOME)/src/include/types/graph.h
-toppush.o: $(GMXHOME)/src/include/fatal.h
-toppush.o: $(GMXHOME)/src/include/types/nrnb.h
-toppush.o: $(GMXHOME)/src/include/types/nblist.h
-toppush.o: $(GMXHOME)/src/include/types/nsgrid.h
-toppush.o: $(GMXHOME)/src/include/types/commrec.h
-toppush.o: $(GMXHOME)/src/include/types/forcerec.h
-toppush.o: $(GMXHOME)/src/include/types/mdatom.h
-toppush.o: $(GMXHOME)/src/include/types/ifunc.h
-toppush.o: $(GMXHOME)/src/include/types/filenm.h
-toppush.o: $(GMXHOME)/src/include/types/group.h
-toppush.o: $(GMXHOME)/src/include/types/drblock.h
-toppush.o: $(GMXHOME)/src/include/types/parm.h
-toppush.o: $(GMXHOME)/src/include/types/matrix.h
-toppush.o: $(GMXHOME)/src/include/types/edsams.h
-toppush.o: $(GMXHOME)/src/include/types/pulls.h
-toppush.o: $(GMXHOME)/src/include/assert.h
-toppush.o: $(GMXHOME)/src/include/string2.h
-toppush.o: $(GMXHOME)/src/include/names.h
-toppush.o: $(GMXHOME)/src/include/grompp.h
-toppush.o: $(GMXHOME)/src/include/symtab.h
-topshake.o: $(GMXHOME)/src/include/sysstuff.h
-topshake.o: $(GMXHOME)/src/include/physics.h
-topshake.o: $(GMXHOME)/src/include/macros.h
-topshake.o: $(GMXHOME)/src/include/typedefs.h
-topshake.o: $(GMXHOME)/src/include/types/simple.h
-topshake.o: $(GMXHOME)/src/include/types/enums.h
-topshake.o: $(GMXHOME)/src/include/types/block.h
-topshake.o: $(GMXHOME)/src/include/types/symtab.h
-topshake.o: $(GMXHOME)/src/include/types/idef.h
-topshake.o: $(GMXHOME)/src/include/types/atoms.h
-topshake.o: $(GMXHOME)/src/include/types/trx.h
-topshake.o: $(GMXHOME)/src/include/types/topology.h
-topshake.o: $(GMXHOME)/src/include/types/energy.h
-topshake.o: $(GMXHOME)/src/include/types/inputrec.h
-topshake.o: $(GMXHOME)/src/include/types/nsborder.h
-topshake.o: $(GMXHOME)/src/include/types/ishift.h
-topshake.o: $(GMXHOME)/src/include/types/graph.h
-topshake.o: $(GMXHOME)/src/include/fatal.h
-topshake.o: $(GMXHOME)/src/include/types/nrnb.h
-topshake.o: $(GMXHOME)/src/include/types/nblist.h
-topshake.o: $(GMXHOME)/src/include/types/nsgrid.h
-topshake.o: $(GMXHOME)/src/include/types/commrec.h
-topshake.o: $(GMXHOME)/src/include/types/forcerec.h
-topshake.o: $(GMXHOME)/src/include/types/mdatom.h
-topshake.o: $(GMXHOME)/src/include/types/ifunc.h
-topshake.o: $(GMXHOME)/src/include/types/filenm.h
-topshake.o: $(GMXHOME)/src/include/types/group.h
-topshake.o: $(GMXHOME)/src/include/types/drblock.h
-topshake.o: $(GMXHOME)/src/include/types/parm.h
-topshake.o: $(GMXHOME)/src/include/types/matrix.h
-topshake.o: $(GMXHOME)/src/include/types/edsams.h
-topshake.o: $(GMXHOME)/src/include/types/pulls.h
-topshake.o: $(GMXHOME)/src/include/string2.h
-topshake.o: $(GMXHOME)/src/include/grompp.h
-topshake.o: $(GMXHOME)/src/include/smalloc.h
-toputil.o: $(GMXHOME)/src/include/assert.h
-toputil.o: $(GMXHOME)/src/include/sysstuff.h
-toputil.o: $(GMXHOME)/src/include/smalloc.h
-toputil.o: $(GMXHOME)/src/include/macros.h
-toputil.o: $(GMXHOME)/src/include/typedefs.h
-toputil.o: $(GMXHOME)/src/include/types/simple.h
-toputil.o: $(GMXHOME)/src/include/types/enums.h
-toputil.o: $(GMXHOME)/src/include/types/block.h
-toputil.o: $(GMXHOME)/src/include/types/symtab.h
-toputil.o: $(GMXHOME)/src/include/types/idef.h
-toputil.o: $(GMXHOME)/src/include/types/atoms.h
-toputil.o: $(GMXHOME)/src/include/types/trx.h
-toputil.o: $(GMXHOME)/src/include/types/topology.h
-toputil.o: $(GMXHOME)/src/include/types/energy.h
-toputil.o: $(GMXHOME)/src/include/types/inputrec.h
-toputil.o: $(GMXHOME)/src/include/types/nsborder.h
-toputil.o: $(GMXHOME)/src/include/types/ishift.h
-toputil.o: $(GMXHOME)/src/include/types/graph.h
-toputil.o: $(GMXHOME)/src/include/fatal.h
-toputil.o: $(GMXHOME)/src/include/types/nrnb.h
-toputil.o: $(GMXHOME)/src/include/types/nblist.h
-toputil.o: $(GMXHOME)/src/include/types/nsgrid.h
-toputil.o: $(GMXHOME)/src/include/types/commrec.h
-toputil.o: $(GMXHOME)/src/include/types/forcerec.h
-toputil.o: $(GMXHOME)/src/include/types/mdatom.h
-toputil.o: $(GMXHOME)/src/include/types/ifunc.h
-toputil.o: $(GMXHOME)/src/include/types/filenm.h
-toputil.o: $(GMXHOME)/src/include/types/group.h
-toputil.o: $(GMXHOME)/src/include/types/drblock.h
-toputil.o: $(GMXHOME)/src/include/types/parm.h
-toputil.o: $(GMXHOME)/src/include/types/matrix.h
-toputil.o: $(GMXHOME)/src/include/types/edsams.h
-toputil.o: $(GMXHOME)/src/include/types/pulls.h
-toputil.o: $(GMXHOME)/src/include/string2.h
-toputil.o: $(GMXHOME)/src/include/grompp.h
-toputil.o: $(GMXHOME)/src/include/symtab.h
-tpbcmp.o: $(GMXHOME)/src/include/main.h
-tpbcmp.o: $(GMXHOME)/src/include/network.h
-tpbcmp.o: $(GMXHOME)/src/include/typedefs.h
-tpbcmp.o: $(GMXHOME)/src/include/sysstuff.h
-tpbcmp.o: $(GMXHOME)/src/include/types/simple.h
-tpbcmp.o: $(GMXHOME)/src/include/types/enums.h
-tpbcmp.o: $(GMXHOME)/src/include/types/block.h
-tpbcmp.o: $(GMXHOME)/src/include/types/symtab.h
-tpbcmp.o: $(GMXHOME)/src/include/types/idef.h
-tpbcmp.o: $(GMXHOME)/src/include/types/atoms.h
-tpbcmp.o: $(GMXHOME)/src/include/types/trx.h
-tpbcmp.o: $(GMXHOME)/src/include/types/topology.h
-tpbcmp.o: $(GMXHOME)/src/include/types/energy.h
-tpbcmp.o: $(GMXHOME)/src/include/types/inputrec.h
-tpbcmp.o: $(GMXHOME)/src/include/types/nsborder.h
-tpbcmp.o: $(GMXHOME)/src/include/types/ishift.h
-tpbcmp.o: $(GMXHOME)/src/include/types/graph.h
-tpbcmp.o: $(GMXHOME)/src/include/fatal.h
-tpbcmp.o: $(GMXHOME)/src/include/types/nrnb.h
-tpbcmp.o: $(GMXHOME)/src/include/types/nblist.h
-tpbcmp.o: $(GMXHOME)/src/include/types/nsgrid.h
-tpbcmp.o: $(GMXHOME)/src/include/types/commrec.h
-tpbcmp.o: $(GMXHOME)/src/include/types/forcerec.h
-tpbcmp.o: $(GMXHOME)/src/include/types/mdatom.h
-tpbcmp.o: $(GMXHOME)/src/include/types/ifunc.h
-tpbcmp.o: $(GMXHOME)/src/include/types/filenm.h
-tpbcmp.o: $(GMXHOME)/src/include/types/group.h
-tpbcmp.o: $(GMXHOME)/src/include/types/drblock.h
-tpbcmp.o: $(GMXHOME)/src/include/types/parm.h
-tpbcmp.o: $(GMXHOME)/src/include/types/matrix.h
-tpbcmp.o: $(GMXHOME)/src/include/types/edsams.h
-tpbcmp.o: $(GMXHOME)/src/include/types/pulls.h
-tpbcmp.o: $(GMXHOME)/src/include/macros.h
-tpbcmp.o: $(GMXHOME)/src/include/smalloc.h
-tpbcmp.o: $(GMXHOME)/src/include/futil.h
-tpbcmp.o: $(GMXHOME)/src/include/statutil.h
-tpbcmp.o: $(GMXHOME)/src/include/filenm.h
-tpbcmp.o: $(GMXHOME)/src/include/readinp.h
-tpbcmp.o: $(GMXHOME)/src/include/wman.h
-tpbcmp.o: $(GMXHOME)/src/include/txtdump.h
-tpbcmp.o: $(GMXHOME)/src/include/tpxio.h
-tpbcmp.o: $(GMXHOME)/src/include/xdrf.h
-tpbcmp.o: $(GMXHOME)/src/include/names.h
-tpbcmp.o: $(GMXHOME)/src/include/enxio.h
-tpbconv.o: $(GMXHOME)/src/include/rdgroup.h
-tpbconv.o: $(GMXHOME)/src/include/typedefs.h
-tpbconv.o: $(GMXHOME)/src/include/sysstuff.h
-tpbconv.o: $(GMXHOME)/src/include/types/simple.h
-tpbconv.o: $(GMXHOME)/src/include/types/enums.h
-tpbconv.o: $(GMXHOME)/src/include/types/block.h
-tpbconv.o: $(GMXHOME)/src/include/types/symtab.h
-tpbconv.o: $(GMXHOME)/src/include/types/idef.h
-tpbconv.o: $(GMXHOME)/src/include/types/atoms.h
-tpbconv.o: $(GMXHOME)/src/include/types/trx.h
-tpbconv.o: $(GMXHOME)/src/include/types/topology.h
-tpbconv.o: $(GMXHOME)/src/include/types/energy.h
-tpbconv.o: $(GMXHOME)/src/include/types/inputrec.h
-tpbconv.o: $(GMXHOME)/src/include/types/nsborder.h
-tpbconv.o: $(GMXHOME)/src/include/types/ishift.h
-tpbconv.o: $(GMXHOME)/src/include/types/graph.h
-tpbconv.o: $(GMXHOME)/src/include/fatal.h
-tpbconv.o: $(GMXHOME)/src/include/types/nrnb.h
-tpbconv.o: $(GMXHOME)/src/include/types/nblist.h
-tpbconv.o: $(GMXHOME)/src/include/types/nsgrid.h
-tpbconv.o: $(GMXHOME)/src/include/types/commrec.h
-tpbconv.o: $(GMXHOME)/src/include/types/forcerec.h
-tpbconv.o: $(GMXHOME)/src/include/types/mdatom.h
-tpbconv.o: $(GMXHOME)/src/include/types/ifunc.h
-tpbconv.o: $(GMXHOME)/src/include/types/filenm.h
-tpbconv.o: $(GMXHOME)/src/include/types/group.h
-tpbconv.o: $(GMXHOME)/src/include/types/drblock.h
-tpbconv.o: $(GMXHOME)/src/include/types/parm.h
-tpbconv.o: $(GMXHOME)/src/include/types/matrix.h
-tpbconv.o: $(GMXHOME)/src/include/types/edsams.h
-tpbconv.o: $(GMXHOME)/src/include/types/pulls.h
-tpbconv.o: $(GMXHOME)/src/include/string2.h
-tpbconv.o: $(GMXHOME)/src/include/smalloc.h
-tpbconv.o: $(GMXHOME)/src/include/macros.h
-tpbconv.o: $(GMXHOME)/src/include/names.h
-tpbconv.o: $(GMXHOME)/src/include/tpxio.h
-tpbconv.o: $(GMXHOME)/src/include/xdrf.h
-tpbconv.o: $(GMXHOME)/src/include/trnio.h
-tpbconv.o: $(GMXHOME)/src/include/grompp.h
-tpbconv.o: $(GMXHOME)/src/include/statutil.h
-tpbconv.o: $(GMXHOME)/src/include/filenm.h
-tpbconv.o: $(GMXHOME)/src/include/futil.h
-tpbconv.o: $(GMXHOME)/src/include/readinp.h
-tpbconv.o: $(GMXHOME)/src/include/wman.h
-tpbconv.o: $(GMXHOME)/src/include/copyrite.h
-tpbconv.o: $(GMXHOME)/src/include/assert.h
-tpbconv.o: $(GMXHOME)/src/include/vec.h
-tpbconv.o: $(GMXHOME)/src/include/maths.h
-tpbconv.o: $(GMXHOME)/src/include/lutab.h
-x2top.o: $(GMXHOME)/src/include/maths.h
-x2top.o: $(GMXHOME)/src/include/typedefs.h
-x2top.o: $(GMXHOME)/src/include/sysstuff.h
-x2top.o: $(GMXHOME)/src/include/types/simple.h
-x2top.o: $(GMXHOME)/src/include/types/enums.h
-x2top.o: $(GMXHOME)/src/include/types/block.h
-x2top.o: $(GMXHOME)/src/include/types/symtab.h
-x2top.o: $(GMXHOME)/src/include/types/idef.h
-x2top.o: $(GMXHOME)/src/include/types/atoms.h
-x2top.o: $(GMXHOME)/src/include/types/trx.h
-x2top.o: $(GMXHOME)/src/include/types/topology.h
-x2top.o: $(GMXHOME)/src/include/types/energy.h
-x2top.o: $(GMXHOME)/src/include/types/inputrec.h
-x2top.o: $(GMXHOME)/src/include/types/nsborder.h
-x2top.o: $(GMXHOME)/src/include/types/ishift.h
-x2top.o: $(GMXHOME)/src/include/types/graph.h
-x2top.o: $(GMXHOME)/src/include/fatal.h
-x2top.o: $(GMXHOME)/src/include/types/nrnb.h
-x2top.o: $(GMXHOME)/src/include/types/nblist.h
-x2top.o: $(GMXHOME)/src/include/types/nsgrid.h
-x2top.o: $(GMXHOME)/src/include/types/commrec.h
-x2top.o: $(GMXHOME)/src/include/types/forcerec.h
-x2top.o: $(GMXHOME)/src/include/types/mdatom.h
-x2top.o: $(GMXHOME)/src/include/types/ifunc.h
-x2top.o: $(GMXHOME)/src/include/types/filenm.h
-x2top.o: $(GMXHOME)/src/include/types/group.h
-x2top.o: $(GMXHOME)/src/include/types/drblock.h
-x2top.o: $(GMXHOME)/src/include/types/parm.h
-x2top.o: $(GMXHOME)/src/include/types/matrix.h
-x2top.o: $(GMXHOME)/src/include/types/edsams.h
-x2top.o: $(GMXHOME)/src/include/types/pulls.h
-x2top.o: $(GMXHOME)/src/include/macros.h
-x2top.o: $(GMXHOME)/src/include/copyrite.h
-x2top.o: $(GMXHOME)/src/include/bondf.h
-x2top.o: $(GMXHOME)/src/include/nrnb.h
-x2top.o: $(GMXHOME)/src/include/pbc.h
-x2top.o: $(GMXHOME)/src/include/string2.h
-x2top.o: $(GMXHOME)/src/include/smalloc.h
-x2top.o: $(GMXHOME)/src/include/strdb.h
-x2top.o: $(GMXHOME)/src/include/confio.h
-x2top.o: $(GMXHOME)/src/include/physics.h
-x2top.o: $(GMXHOME)/src/include/statutil.h
-x2top.o: $(GMXHOME)/src/include/filenm.h
-x2top.o: $(GMXHOME)/src/include/futil.h
-x2top.o: $(GMXHOME)/src/include/readinp.h
-x2top.o: $(GMXHOME)/src/include/wman.h
-x2top.o: $(GMXHOME)/src/include/vec.h
-x2top.o: $(GMXHOME)/src/include/lutab.h
-x2top.o: $(GMXHOME)/src/include/random.h
-x2top.o: $(GMXHOME)/src/include/3dview.h
-x2top.o: $(GMXHOME)/src/include/txtdump.h
-x2top.o: $(GMXHOME)/src/include/tpxio.h
-x2top.o: $(GMXHOME)/src/include/xdrf.h
-x2top.o: $(GMXHOME)/src/include/names.h
-x2top.o: $(GMXHOME)/src/include/grompp.h
-x2top.o: $(GMXHOME)/src/include/pdbio.h
-x2top.o: $(GMXHOME)/src/include/symtab.h
-xlate.o: $(GMXHOME)/src/include/typedefs.h
-xlate.o: $(GMXHOME)/src/include/sysstuff.h
-xlate.o: $(GMXHOME)/src/include/types/simple.h
-xlate.o: $(GMXHOME)/src/include/types/enums.h
-xlate.o: $(GMXHOME)/src/include/types/block.h
-xlate.o: $(GMXHOME)/src/include/types/symtab.h
-xlate.o: $(GMXHOME)/src/include/types/idef.h
-xlate.o: $(GMXHOME)/src/include/types/atoms.h
-xlate.o: $(GMXHOME)/src/include/types/trx.h
-xlate.o: $(GMXHOME)/src/include/types/topology.h
-xlate.o: $(GMXHOME)/src/include/types/energy.h
-xlate.o: $(GMXHOME)/src/include/types/inputrec.h
-xlate.o: $(GMXHOME)/src/include/types/nsborder.h
-xlate.o: $(GMXHOME)/src/include/types/ishift.h
-xlate.o: $(GMXHOME)/src/include/types/graph.h
-xlate.o: $(GMXHOME)/src/include/fatal.h
-xlate.o: $(GMXHOME)/src/include/types/nrnb.h
-xlate.o: $(GMXHOME)/src/include/types/nblist.h
-xlate.o: $(GMXHOME)/src/include/types/nsgrid.h
-xlate.o: $(GMXHOME)/src/include/types/commrec.h
-xlate.o: $(GMXHOME)/src/include/types/forcerec.h
-xlate.o: $(GMXHOME)/src/include/types/mdatom.h
-xlate.o: $(GMXHOME)/src/include/types/ifunc.h
-xlate.o: $(GMXHOME)/src/include/types/filenm.h
-xlate.o: $(GMXHOME)/src/include/types/group.h
-xlate.o: $(GMXHOME)/src/include/types/drblock.h
-xlate.o: $(GMXHOME)/src/include/types/parm.h
-xlate.o: $(GMXHOME)/src/include/types/matrix.h
-xlate.o: $(GMXHOME)/src/include/types/edsams.h
-xlate.o: $(GMXHOME)/src/include/types/pulls.h
-xlate.o: $(GMXHOME)/src/include/strdb.h
-xlate.o: $(GMXHOME)/src/include/string2.h
-xlate.o: $(GMXHOME)/src/include/smalloc.h
-xlate.o: $(GMXHOME)/src/include/symtab.h
-xlate.o: $(GMXHOME)/src/include/index.h
+add_par.o: add_par.c $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/grompp.h \
+ $(GMXHOME)/src/include/macros.h toputil.h hackblock.h \
+ $(GMXHOME)/src/include/pdbio.h \
+ $(GMXHOME)/src/include/symtab.h \
+ $(GMXHOME)/src/include/string2.h
+calcgrid.o: calcgrid.c $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/smalloc.h calcgrid.h
+convparm.o: convparm.c $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/physics.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/assert.h \
+ $(GMXHOME)/src/include/smalloc.h topio.h readir.h \
+ $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/grompp.h toputil.h convparm.h \
+ $(GMXHOME)/src/include/names.h
+dum_parm.o: dum_parm.c $(GMXHOME)/src/include/assert.h \
+ $(GMXHOME)/src/include/sysstuff.h dum_parm.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/grompp.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/smalloc.h resall.h hackblock.h \
+ $(GMXHOME)/src/include/pdbio.h \
+ $(GMXHOME)/src/include/symtab.h add_par.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
+ toputil.h $(GMXHOME)/src/include/physics.h \
+ $(GMXHOME)/src/include/index.h \
+ $(GMXHOME)/src/include/names.h
+dumpargs.o: dumpargs.c $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h
+gen_ad.o: gen_ad.c $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/confio.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
+ $(GMXHOME)/src/include/pbc.h toputil.h \
+ $(GMXHOME)/src/include/grompp.h topio.h readir.h topexcl.h \
+ $(GMXHOME)/src/include/symtab.h pgutil.h resall.h hackblock.h \
+ $(GMXHOME)/src/include/pdbio.h
+gen_dum.o: gen_dum.c $(GMXHOME)/src/include/assert.h \
+ $(GMXHOME)/src/include/sysstuff.h gen_dum.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/grompp.h \
+ $(GMXHOME)/src/include/macros.h hackblock.h \
+ $(GMXHOME)/src/include/pdbio.h \
+ $(GMXHOME)/src/include/symtab.h \
+ $(GMXHOME)/src/include/smalloc.h resall.h add_par.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
+ toputil.h $(GMXHOME)/src/include/physics.h \
+ $(GMXHOME)/src/include/index.h \
+ $(GMXHOME)/src/include/names.h
+genhydro.o: genhydro.c $(GMXHOME)/src/include/assert.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/copyrite.h \
+ $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/confio.h \
+ $(GMXHOME)/src/include/symtab.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/statutil.h \
+ $(GMXHOME)/src/include/filenm.h \
+ $(GMXHOME)/src/include/futil.h \
+ $(GMXHOME)/src/include/readinp.h \
+ $(GMXHOME)/src/include/wman.h \
+ $(GMXHOME)/src/include/physics.h \
+ $(GMXHOME)/src/include/calch.h genhydro.h \
+ $(GMXHOME)/src/include/pdbio.h hackblock.h \
+ $(GMXHOME)/src/include/grompp.h h_db.h ter_db.h resall.h
+gmxcheck.o: gmxcheck.c $(GMXHOME)/src/include/main.h \
+ $(GMXHOME)/src/include/network.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/macros.h /usr/include/math.h \
+ $(GMXHOME)/src/include/futil.h \
+ $(GMXHOME)/src/include/statutil.h \
+ $(GMXHOME)/src/include/filenm.h \
+ $(GMXHOME)/src/include/readinp.h \
+ $(GMXHOME)/src/include/wman.h \
+ $(GMXHOME)/src/include/copyrite.h \
+ $(GMXHOME)/src/include/txtdump.h \
+ $(GMXHOME)/src/include/tpxio.h \
+ $(GMXHOME)/src/include/xdrf.h \
+ $(GMXHOME)/src/include/gmxfio.h \
+ $(GMXHOME)/src/include/trnio.h \
+ $(GMXHOME)/src/include/xtcio.h tpbcmp.h \
+ $(GMXHOME)/src/include/atomprop.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
+ $(GMXHOME)/src/include/pbc.h \
+ $(GMXHOME)/src/include/physics.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/confio.h \
+ $(GMXHOME)/src/include/enxio.h
+gmxdump.o: gmxdump.c $(GMXHOME)/src/include/main.h \
+ $(GMXHOME)/src/include/network.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/futil.h \
+ $(GMXHOME)/src/include/statutil.h \
+ $(GMXHOME)/src/include/filenm.h \
+ $(GMXHOME)/src/include/readinp.h \
+ $(GMXHOME)/src/include/wman.h \
+ $(GMXHOME)/src/include/copyrite.h \
+ $(GMXHOME)/src/include/txtdump.h \
+ $(GMXHOME)/src/include/tpxio.h \
+ $(GMXHOME)/src/include/xdrf.h \
+ $(GMXHOME)/src/include/xtcio.h \
+ $(GMXHOME)/src/include/enxio.h \
+ $(GMXHOME)/src/include/assert.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/names.h \
+ $(GMXHOME)/src/include/gmxfio.h \
+ $(GMXHOME)/src/include/trnio.h
+grompp.o: grompp.c $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/string2.h readir.h \
+ $(GMXHOME)/src/include/grompp.h toputil.h topio.h \
+ $(GMXHOME)/src/include/confio.h topcat.h \
+ $(GMXHOME)/src/include/copyrite.h \
+ $(GMXHOME)/src/include/symtab.h \
+ $(GMXHOME)/src/include/names.h \
+ $(GMXHOME)/src/include/random.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
+ $(GMXHOME)/src/include/futil.h \
+ $(GMXHOME)/src/include/statutil.h \
+ $(GMXHOME)/src/include/filenm.h \
+ $(GMXHOME)/src/include/readinp.h \
+ $(GMXHOME)/src/include/wman.h splitter.h \
+ $(GMXHOME)/src/include/sortwater.h convparm.h \
+ $(GMXHOME)/src/include/rdgroup.h \
+ $(GMXHOME)/src/include/gmxfio.h \
+ $(GMXHOME)/src/include/xdrf.h \
+ $(GMXHOME)/src/include/trnio.h \
+ $(GMXHOME)/src/include/tpxio.h dum_parm.h \
+ $(GMXHOME)/src/include/txtdump.h calcgrid.h
+h_db.o: h_db.c $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/futil.h \
+ $(GMXHOME)/src/include/symtab.h h_db.h hackblock.h \
+ $(GMXHOME)/src/include/pdbio.h \
+ $(GMXHOME)/src/include/grompp.h \
+ $(GMXHOME)/src/include/macros.h\
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/pdbio.h \
+ $(GMXHOME)/src/include/symtab.h \
+ $(GMXHOME)/src/include/grompp.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
+ $(GMXHOME)/src/include/string2.h
+hizzie.o: hizzie.c $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/pdbio.h \
+ $(GMXHOME)/src/include/symtab.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/physics.h toputil.h \
+ $(GMXHOME)/src/include/grompp.h pdb2top.h hackblock.h \
+ $(GMXHOME)/src/include/string2.h
+luck.o: luck.c $(GMXHOME)/src/include/copyrite.h 
+mdrun.o: mdrun.c $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/copyrite.h \
+ $(GMXHOME)/src/include/main.h \
+ $(GMXHOME)/src/include/network.h \
+ $(GMXHOME)/src/include/statutil.h \
+ $(GMXHOME)/src/include/filenm.h \
+ $(GMXHOME)/src/include/futil.h \
+ $(GMXHOME)/src/include/readinp.h \
+ $(GMXHOME)/src/include/wman.h \
+ $(GMXHOME)/src/include/edsam.h \
+ $(GMXHOME)/src/include/mdrun.h \
+ $(GMXHOME)/src/include/tgroup.h \
+ $(GMXHOME)/src/include/nsb.h \
+ $(GMXHOME)/src/include/mshift.h \
+ $(GMXHOME)/src/include/force.h $(GMXHOME)/src/include/pbc.h \
+ $(GMXHOME)/src/include/mdebin.h \
+ $(GMXHOME)/src/include/ebin.h \
+ $(GMXHOME)/src/include/enxio.h \
+ $(GMXHOME)/src/include/xdrf.h $(GMXHOME)/src/include/vcm.h \
+ $(GMXHOME)/src/include/pull.h $(GMXHOME)/src/include/vec.h \
+ $(GMXHOME)/src/include/maths.h
+mk_ghat.o: mk_ghat.c $(GMXHOME)/src/include/copyrite.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/futil.h \
+ $(GMXHOME)/src/include/xvgr.h \
+ $(GMXHOME)/src/include/viewit.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
+ $(GMXHOME)/src/include/shift_util.h \
+ $(GMXHOME)/src/include/complex.h \
+ $(GMXHOME)/src/include/physics.h \
+ $(GMXHOME)/src/include/statutil.h \
+ $(GMXHOME)/src/include/filenm.h \
+ $(GMXHOME)/src/include/readinp.h \
+ $(GMXHOME)/src/include/wman.h \
+ $(GMXHOME)/src/include/tpxio.h \
+ $(GMXHOME)/src/include/xdrf.h \
+ $(GMXHOME)/src/include/fftgrid.h \
+ $(GMXHOME)/src/include/fftw.h \
+ $(GMXHOME)/src/include/rfftw.h \
+ $(GMXHOME)/src/include/network.h \
+ $(GMXHOME)/src/include/main.h
+nm2type.o: nm2type.c $(GMXHOME)/src/include/maths.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/copyrite.h \
+ $(GMXHOME)/src/include/bondf.h \
+ $(GMXHOME)/src/include/nrnb.h $(GMXHOME)/src/include/pbc.h \
+ $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/confio.h \
+ $(GMXHOME)/src/include/physics.h \
+ $(GMXHOME)/src/include/statutil.h \
+ $(GMXHOME)/src/include/filenm.h \
+ $(GMXHOME)/src/include/futil.h \
+ $(GMXHOME)/src/include/readinp.h \
+ $(GMXHOME)/src/include/wman.h $(GMXHOME)/src/include/vec.h \
+ $(GMXHOME)/src/include/random.h \
+ $(GMXHOME)/src/include/3dview.h \
+ $(GMXHOME)/src/include/txtdump.h \
+ $(GMXHOME)/src/include/tpxio.h \
+ $(GMXHOME)/src/include/xdrf.h \
+ $(GMXHOME)/src/include/names.h toppush.h toputil.h \
+ $(GMXHOME)/src/include/grompp.h pdb2top.h hackblock.h \
+ $(GMXHOME)/src/include/pdbio.h \
+ $(GMXHOME)/src/include/symtab.h topexcl.h topio.h readir.h 
+nmrun.o: nmrun.c $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/copyrite.h \
+ $(GMXHOME)/src/include/main.h \
+ $(GMXHOME)/src/include/network.h \
+ $(GMXHOME)/src/include/statutil.h \
+ $(GMXHOME)/src/include/filenm.h \
+ $(GMXHOME)/src/include/futil.h \
+ $(GMXHOME)/src/include/readinp.h \
+ $(GMXHOME)/src/include/wman.h \
+ $(GMXHOME)/src/include/mdrun.h \
+ $(GMXHOME)/src/include/tgroup.h \
+ $(GMXHOME)/src/include/nsb.h \
+ $(GMXHOME)/src/include/mshift.h \
+ $(GMXHOME)/src/include/force.h $(GMXHOME)/src/include/pbc.h \
+ $(GMXHOME)/src/include/edsam.h \
+ $(GMXHOME)/src/include/mdebin.h \
+ $(GMXHOME)/src/include/ebin.h \
+ $(GMXHOME)/src/include/enxio.h \
+ $(GMXHOME)/src/include/xdrf.h $(GMXHOME)/src/include/vcm.h
+opls2rtp.o: opls2rtp.c $(GMXHOME)/src/include/symtab.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/string2.h topio.h readir.h \
+ $(GMXHOME)/src/include/grompp.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/smalloc.h resall.h hackblock.h \
+ $(GMXHOME)/src/include/pdbio.h \
+ $(GMXHOME)/src/include/copyrite.h \
+ $(GMXHOME)/src/include/futil.h
+pdb2gmx.o: pdb2gmx.c $(GMXHOME)/src/include/assert.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/copyrite.h \
+ $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/confio.h \
+ $(GMXHOME)/src/include/symtab.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/statutil.h \
+ $(GMXHOME)/src/include/filenm.h \
+ $(GMXHOME)/src/include/futil.h \
+ $(GMXHOME)/src/include/readinp.h \
+ $(GMXHOME)/src/include/wman.h \
+ $(GMXHOME)/src/include/pdbio.h toputil.h \
+ $(GMXHOME)/src/include/grompp.h h_db.h hackblock.h \
+ $(GMXHOME)/src/include/physics.h pgutil.h \
+ $(GMXHOME)/src/include/calch.h resall.h pdb2top.h ter_db.h \
+ $(GMXHOME)/src/include/strdb.h \
+ $(GMXHOME)/src/include/gbutil.h genhydro.h xlate.h specbond.h \
+ $(GMXHOME)/src/include/index.h hizzie.h
+pdb2top.o: pdb2top.c $(GMXHOME)/src/include/vec.h \
+ $(GMXHOME)/src/include/maths.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/copyrite.h \
+ $(GMXHOME)/src/include/assert.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/symtab.h \
+ $(GMXHOME)/src/include/futil.h pdb2top.h toputil.h \
+ $(GMXHOME)/src/include/grompp.h hackblock.h \
+ $(GMXHOME)/src/include/pdbio.h topexcl.h topio.h readir.h \
+ $(GMXHOME)/src/include/string2.h topdirs.h h_db.h pgutil.h \
+ resall.h $(GMXHOME)/src/include/physics.h gen_ad.h \
+ $(GMXHOME)/src/include/filenm.h \
+ $(GMXHOME)/src/include/index.h gen_dum.h add_par.h
+pgutil.o: pgutil.c pgutil.h $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h /usr/include/string.h
+protonate.o: protonate.c $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/copyrite.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/statutil.h \
+ $(GMXHOME)/src/include/filenm.h \
+ $(GMXHOME)/src/include/futil.h \
+ $(GMXHOME)/src/include/readinp.h \
+ $(GMXHOME)/src/include/wman.h \
+ $(GMXHOME)/src/include/confio.h genhydro.h \
+ $(GMXHOME)/src/include/pdbio.h \
+ $(GMXHOME)/src/include/symtab.h hackblock.h \
+ $(GMXHOME)/src/include/grompp.h \
+ $(GMXHOME)/src/include/tpxio.h \
+ $(GMXHOME)/src/include/xdrf.h \
+ $(GMXHOME)/src/include/rdgroup.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h
+readir.o: readir.c $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/physics.h \
+ $(GMXHOME)/src/include/names.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/rdgroup.h \
+ $(GMXHOME)/src/include/symtab.h \
+ $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/readinp.h readir.h \
+ $(GMXHOME)/src/include/grompp.h toputil.h \
+ $(GMXHOME)/src/include/index.h \
+ $(GMXHOME)/src/include/network.h \
+ $(GMXHOME)/src/include/main.h $(GMXHOME)/src/include/vec.h \
+ $(GMXHOME)/src/include/maths.h $(GMXHOME)/src/include/pbc.h
+resall.o: resall.c $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/assert.h \
+ $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/strdb.h \
+ $(GMXHOME)/src/include/futil.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/symtab.h \
+ $(GMXHOME)/src/include/macros.h resall.h hackblock.h \
+ $(GMXHOME)/src/include/pdbio.h \
+ $(GMXHOME)/src/include/grompp.h pgutil.h
+runner.o: runner.c $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/network.h \
+ $(GMXHOME)/src/include/main.h \
+ $(GMXHOME)/src/include/confio.h \
+ $(GMXHOME)/src/include/copyrite.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/pbc.h $(GMXHOME)/src/include/force.h \
+ $(GMXHOME)/src/include/nsb.h \
+ $(GMXHOME)/src/include/tgroup.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/names.h \
+ $(GMXHOME)/src/include/txtdump.h \
+ $(GMXHOME)/src/include/tpxio.h \
+ $(GMXHOME)/src/include/xdrf.h \
+ $(GMXHOME)/src/include/update.h \
+ $(GMXHOME)/src/include/mshift.h \
+ $(GMXHOME)/src/include/pull.h $(GMXHOME)/src/include/vec.h \
+ $(GMXHOME)/src/include/maths.h \
+ $(GMXHOME)/src/include/random.h \
+ $(GMXHOME)/src/include/statutil.h \
+ $(GMXHOME)/src/include/filenm.h \
+ $(GMXHOME)/src/include/futil.h \
+ $(GMXHOME)/src/include/readinp.h \
+ $(GMXHOME)/src/include/wman.h $(GMXHOME)/src/include/nrnb.h \
+ $(GMXHOME)/src/include/disre.h \
+ $(GMXHOME)/src/include/mdatoms.h \
+ $(GMXHOME)/src/include/mdrun.h \
+ $(GMXHOME)/src/include/edsam.h \
+ $(GMXHOME)/src/include/mdebin.h \
+ $(GMXHOME)/src/include/ebin.h \
+ $(GMXHOME)/src/include/enxio.h $(GMXHOME)/src/include/vcm.h \
+ $(GMXHOME)/src/include/callf77.h \
+ $(GMXHOME)/src/include/pppm.h \
+ $(GMXHOME)/src/include/complex.h \
+ $(GMXHOME)/src/include/fftgrid.h \
+ $(GMXHOME)/src/include/fftw.h \
+ $(GMXHOME)/src/include/rfftw.h
+sorting.o: sorting.c $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/smalloc.h sorting.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h
+specbond.o: specbond.c $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/pdbio.h \
+ $(GMXHOME)/src/include/symtab.h \
+ $(GMXHOME)/src/include/strdb.h \
+ $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/smalloc.h specbond.h pdb2top.h toputil.h \
+ $(GMXHOME)/src/include/grompp.h \
+ $(GMXHOME)/src/include/macros.h hackblock.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h
+splitter.o: splitter.c $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/assert.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/mshift.h \
+ $(GMXHOME)/src/include/invblock.h \
+ $(GMXHOME)/src/include/txtdump.h \
+ $(GMXHOME)/src/include/tpxio.h \
+ $(GMXHOME)/src/include/xdrf.h /usr/include/math.h
+steep.o: steep.c $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/network.h \
+ $(GMXHOME)/src/include/main.h \
+ $(GMXHOME)/src/include/confio.h \
+ $(GMXHOME)/src/include/copyrite.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/nrnb.h $(GMXHOME)/src/include/pbc.h \
+ $(GMXHOME)/src/include/force.h $(GMXHOME)/src/include/nsb.h \
+ $(GMXHOME)/src/include/tgroup.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/random.h \
+ $(GMXHOME)/src/include/names.h \
+ $(GMXHOME)/src/include/txtdump.h \
+ $(GMXHOME)/src/include/tpxio.h \
+ $(GMXHOME)/src/include/xdrf.h \
+ $(GMXHOME)/src/include/update.h \
+ $(GMXHOME)/src/include/mshift.h \
+ $(GMXHOME)/src/include/pull.h $(GMXHOME)/src/include/vec.h \
+ $(GMXHOME)/src/include/maths.h \
+ $(GMXHOME)/src/include/enxio.h \
+ $(GMXHOME)/src/include/mdebin.h \
+ $(GMXHOME)/src/include/ebin.h \
+ $(GMXHOME)/src/include/mdrun.h \
+ $(GMXHOME)/src/include/filenm.h \
+ $(GMXHOME)/src/include/futil.h \
+ $(GMXHOME)/src/include/edsam.h $(GMXHOME)/src/include/vcm.h \
+ $(GMXHOME)/src/include/pppm.h \
+ $(GMXHOME)/src/include/complex.h \
+ $(GMXHOME)/src/include/fftgrid.h \
+ $(GMXHOME)/src/include/fftw.h \
+ $(GMXHOME)/src/include/rfftw.h \
+ $(GMXHOME)/src/include/dummies.h
+ter_db.o: ter_db.c $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/symtab.h \
+ $(GMXHOME)/src/include/futil.h resall.h hackblock.h \
+ $(GMXHOME)/src/include/pdbio.h \
+ $(GMXHOME)/src/include/grompp.h \
+ $(GMXHOME)/src/include/macros.h h_db.h \
+ $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/strdb.h ter_db.h toputil.h
+tomorse.o: tomorse.c $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/grompp.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/futil.h \
+ $(GMXHOME)/src/include/smalloc.h
+topcat.o: topcat.c $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/assert.h \
+ $(GMXHOME)/src/include/macros.h topio.h readir.h \
+ $(GMXHOME)/src/include/grompp.h toputil.h toppush.h topcat.h
+topdirs.o: topdirs.c $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/string2.h topdirs.h \
+ $(GMXHOME)/src/include/grompp.h
+topexcl.o: topexcl.c $(GMXHOME)/src/include/assert.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h topexcl.h topio.h readir.h \
+ $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/grompp.h toputil.h
+topio.o: topio.c $(GMXHOME)/src/include/assert.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/txtdump.h \
+ $(GMXHOME)/src/include/tpxio.h \
+ $(GMXHOME)/src/include/xdrf.h \
+ $(GMXHOME)/src/include/physics.h \
+ $(GMXHOME)/src/include/names.h \
+ $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/symtab.h dum_parm.h \
+ $(GMXHOME)/src/include/grompp.h toputil.h toppush.h topdirs.h
+toppush.o: toppush.c $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/assert.h \
+ $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/names.h toputil.h \
+ $(GMXHOME)/src/include/grompp.h toppush.h topdirs.h \
+ $(GMXHOME)/src/include/symtab.h
+topshake.o: topshake.c $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/physics.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h readir.h \
+ $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/grompp.h topshake.h topio.h toppush.h \
+ toputil.h topdirs.h $(GMXHOME)/src/include/smalloc.h
+toputil.o: toputil.c $(GMXHOME)/src/include/assert.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/string2.h topdirs.h \
+ $(GMXHOME)/src/include/grompp.h toputil.h \
+ $(GMXHOME)/src/include/symtab.h
+tpbcmp.o: tpbcmp.c $(GMXHOME)/src/include/main.h \
+ $(GMXHOME)/src/include/network.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/futil.h \
+ $(GMXHOME)/src/include/statutil.h \
+ $(GMXHOME)/src/include/filenm.h \
+ $(GMXHOME)/src/include/readinp.h \
+ $(GMXHOME)/src/include/wman.h \
+ $(GMXHOME)/src/include/txtdump.h \
+ $(GMXHOME)/src/include/tpxio.h \
+ $(GMXHOME)/src/include/xdrf.h \
+ $(GMXHOME)/src/include/names.h \
+ $(GMXHOME)/src/include/enxio.h
+tpbconv.o: tpbconv.c $(GMXHOME)/src/include/rdgroup.h \
+ $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/names.h \
+ $(GMXHOME)/src/include/tpxio.h \
+ $(GMXHOME)/src/include/xdrf.h \
+ $(GMXHOME)/src/include/trnio.h readir.h \
+ $(GMXHOME)/src/include/grompp.h \
+ $(GMXHOME)/src/include/statutil.h \
+ $(GMXHOME)/src/include/filenm.h \
+ $(GMXHOME)/src/include/futil.h \
+ $(GMXHOME)/src/include/readinp.h \
+ $(GMXHOME)/src/include/wman.h \
+ $(GMXHOME)/src/include/copyrite.h \
+ $(GMXHOME)/src/include/assert.h \
+ $(GMXHOME)/src/include/vec.h $(GMXHOME)/src/include/maths.h
+x2top.o: x2top.c $(GMXHOME)/src/include/maths.h \
+ $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/macros.h \
+ $(GMXHOME)/src/include/copyrite.h \
+ $(GMXHOME)/src/include/bondf.h \
+ $(GMXHOME)/src/include/nrnb.h $(GMXHOME)/src/include/pbc.h \
+ $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/strdb.h \
+ $(GMXHOME)/src/include/confio.h \
+ $(GMXHOME)/src/include/physics.h \
+ $(GMXHOME)/src/include/statutil.h \
+ $(GMXHOME)/src/include/filenm.h \
+ $(GMXHOME)/src/include/futil.h \
+ $(GMXHOME)/src/include/readinp.h \
+ $(GMXHOME)/src/include/wman.h $(GMXHOME)/src/include/vec.h \
+ $(GMXHOME)/src/include/random.h \
+ $(GMXHOME)/src/include/3dview.h \
+ $(GMXHOME)/src/include/txtdump.h \
+ $(GMXHOME)/src/include/tpxio.h \
+ $(GMXHOME)/src/include/xdrf.h \
+ $(GMXHOME)/src/include/names.h toppush.h toputil.h \
+ $(GMXHOME)/src/include/grompp.h pdb2top.h hackblock.h \
+ $(GMXHOME)/src/include/pdbio.h \
+ $(GMXHOME)/src/include/symtab.h gen_ad.h topio.h readir.h
+xlate.o: xlate.c $(GMXHOME)/src/include/typedefs.h \
+ $(GMXHOME)/src/include/sysstuff.h \
+ $(GMXHOME)/src/include/types/simple.h \
+ $(GMXHOME)/src/include/types/enums.h \
+ $(GMXHOME)/src/include/types/block.h \
+ $(GMXHOME)/src/include/types/symtab.h \
+ $(GMXHOME)/src/include/types/idef.h \
+ $(GMXHOME)/src/include/types/atoms.h \
+ $(GMXHOME)/src/include/types/trx.h \
+ $(GMXHOME)/src/include/types/topology.h \
+ $(GMXHOME)/src/include/types/energy.h \
+ $(GMXHOME)/src/include/types/inputrec.h \
+ $(GMXHOME)/src/include/types/nsborder.h \
+ $(GMXHOME)/src/include/types/ishift.h \
+ $(GMXHOME)/src/include/types/graph.h \
+ $(GMXHOME)/src/include/fatal.h \
+ $(GMXHOME)/src/include/types/nrnb.h \
+ $(GMXHOME)/src/include/types/nblist.h \
+ $(GMXHOME)/src/include/types/nsgrid.h \
+ $(GMXHOME)/src/include/types/commrec.h \
+ $(GMXHOME)/src/include/types/forcerec.h \
+ $(GMXHOME)/src/include/types/mdatom.h \
+ $(GMXHOME)/src/include/types/ifunc.h \
+ $(GMXHOME)/src/include/types/filenm.h \
+ $(GMXHOME)/src/include/types/group.h \
+ $(GMXHOME)/src/include/types/drblock.h \
+ $(GMXHOME)/src/include/types/parm.h \
+ $(GMXHOME)/src/include/types/matrix.h \
+ $(GMXHOME)/src/include/types/edsams.h \
+ $(GMXHOME)/src/include/types/pulls.h \
+ $(GMXHOME)/src/include/strdb.h \
+ $(GMXHOME)/src/include/string2.h \
+ $(GMXHOME)/src/include/smalloc.h \
+ $(GMXHOME)/src/include/symtab.h \
+ $(GMXHOME)/src/include/index.h

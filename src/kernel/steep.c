@@ -35,7 +35,6 @@ static char *SRCID_steep_c = "$Id$";
 #include <math.h>
 #include "sysstuff.h"
 #include "string2.h"
-#include "led.h"
 #include "network.h"
 #include "confio.h"
 #include "copyrite.h"
