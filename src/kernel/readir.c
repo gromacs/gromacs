@@ -161,19 +161,36 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
       (*nerror)++;
     }
   } else {
-    /* Single-Range, possibly shifted potentials */
-    bLR =  ((ir->eeltype==eelPPPM) || (ir->eeltype==eelPOISSON));
-    if ((ir->rcoulomb_switch >= ir->rcoulomb) && ((ir->rcoulomb < ir->rlist) ||
-						  bLR)) {
-      fprintf(stderr,
-	      "ERROR: rcoulomb (%g) must be larger than rcoulomb_switch (%g) "
-	      "when using %s",
-	      ir->rcoulomb,ir->rcoulomb_switch,eel_names[ir->eeltype]);
-      if (bLR)
-	fprintf(stderr,"\n");
-      else
-	fprintf(stderr," or both can be equal to rlist (%g)\n",ir->rlist);
-      (*nerror)++;
+    /* Tabulated potentials */
+    if ((ir->eeltype == eelRF) || (ir->eeltype == eelGRF)) {
+      /* Reaction-field */
+      if (ir->rcoulomb != ir->rlist) {
+	fprintf(stderr,
+		"ERROR: rcoulomb (%g) should be equal to "
+		"rlist (%g) when using %s\n",
+		ir->rcoulomb,ir->rlist,eel_names[ir->eeltype]);
+	(*nerror)++;
+      }
+      if (ir->epsilon_r == 1.0) {
+	sprintf(warn_buf,"Using epsilon_r = 1.0 with %s does not make sense",
+		eel_names[ir->eeltype]);
+	warning(NULL);
+      }
+    } else { 
+      /* Single-Range, possibly shifted potentials */
+      bLR =  ((ir->eeltype==eelPPPM) || (ir->eeltype==eelPOISSON));
+      if ((ir->rcoulomb_switch >= ir->rcoulomb) && 
+	  ((ir->rcoulomb < ir->rlist) || bLR)) {
+	fprintf(stderr,
+		"ERROR: rcoulomb (%g) must be larger than "
+		"rcoulomb_switch (%g) when using %s",
+		ir->rcoulomb,ir->rcoulomb_switch,eel_names[ir->eeltype]);
+	if (bLR)
+	  fprintf(stderr,"\n");
+	else
+	  fprintf(stderr," or both can be equal to rlist (%g)\n",ir->rlist);
+	(*nerror)++;
+      }
     }
     if ((ir->rvdw_switch >= ir->rvdw) && (ir->rvdw < ir->rlist)) {
       fprintf(stderr,
@@ -203,14 +220,6 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	      "The shift and switch can be turned off by making rvdw_switch "
 	      "equal to rvdw\n",
 	      ir->rlist,ir->rvdw_switch);
-      warning(NULL);
-    }
-  }
-  
-  if ((ir->eeltype == eelRF) || (ir->eeltype == eelGRF)) {
-    if (ir->epsilon_r == 1.0) {
-      sprintf(warn_buf,"Using epsilon_r = 1.0 with %s does not make sense",
-	      eel_names[ir->eeltype]);
       warning(NULL);
     }
   }
