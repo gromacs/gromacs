@@ -94,7 +94,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_bonded ("FOURDIHS", "Fourier Dih.",    4, 4, 4,  eNR_FOURDIH, rbdihs       ),
   def_bonded ("IDIHS",    "Improper Dih.",   4, 2, 2,  eNR_IMPROPER,idihs        ),
   def_bonded ("PIDIHS",   "Improper Dih.",   4, 3, 3,  eNR_PROPER, pdihs         ),
-  def_bondedg("LJ14",     "LJ-14",           2, 2, 2,  eNR_INL1100, do_14        ),
+  def_bondedg("LJ14",     "LJ-14",           2, 2, 2,  eNR_INL1100,unimplemented ),
   def_nofc   ("COUL14",   "Coulomb-14"                                           ),
   def_nb     ("LJ_SR",    "LJ (SR)",         2, 2                                ),
   def_nb     ("BHAM",     "Buck.ham (SR)",   2, 3                                ),

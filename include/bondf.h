@@ -79,11 +79,13 @@ extern void calc_bonds(FILE *fplog,const t_commrec *cr,const t_commrec *mcr,
  */
 
 extern real bond_angle(const rvec xi,const rvec xj,const rvec xk,
+		       int ePBC,
 		       rvec r_ij,rvec r_kj,real *costh,
 		       int *t1,int *t2);	/* out */
 /* Calculate bond-angle. No PBC is taken into account (use mol-shift) */
 
 extern real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
+		      int ePBC,
 		      rvec r_ij,rvec r_kj,rvec r_kl,rvec m,rvec n, /* out */
 		      real *cos_phi,real *sign,
 		      int *t1,int *t2,int *t3);
@@ -91,7 +93,8 @@ extern real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
 
 extern void do_dih_fup(int i,int j,int k,int l,real ddphi,
 		       rvec r_ij,rvec r_kj,rvec r_kl,
-		       rvec m,rvec n,rvec f[],t_forcerec *fr,const t_graph *g,
+		       rvec m,rvec n,rvec f[],rvec fshift[],
+		       int ePBC,const t_graph *g,
 		       const rvec *x,int t1,int t2,int t3);
 /* Do an update of the forces for dihedral potentials */
 
@@ -103,7 +106,7 @@ extern void do_dih_fup(int i,int j,int k,int l,real ddphi,
   extern t_ifunc bonds,g96bonds,morsebonds,cubicbonds;
   extern t_ifunc angles,g96angles,cross_bond_bond,cross_bond_angle,urey_bradley;
   extern t_ifunc pdihs,idihs,rbdihs;
-  extern t_ifunc polarize,water_pol,posres,angres,angresz,do_14,unimplemented;
+  extern t_ifunc polarize,water_pol,posres,angres,angresz,unimplemented;
 
 #ifdef CPLUSPLUS
 }

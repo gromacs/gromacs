@@ -56,7 +56,7 @@ extern void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
 
 extern real calc_orires_dev(const t_commrec *mcr,
 			    int nfa,const t_iatom fa[],const t_iparams ip[],
-			    const t_mdatoms *md,const rvec x[],bool bFullPBC,
+			    const t_mdatoms *md,const rvec x[],int ePBC,
 			    t_fcdata *fcd);
 /* 
  * Calculates the time averaged D matrices, the S matrix for each experiment.
@@ -73,11 +73,7 @@ extern void diagonalize_orires_tensors(t_oriresdata *od);
 extern void print_orires_log(FILE *log,t_oriresdata *od);
 /* Print order parameter, eigenvalues and eigenvectors to the log file */
 
-extern real orires(int nbonds,const t_iatom fa[],const t_iparams fp[],
-		   const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
-		   real lambda,real *dvdlambda,
-		   const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
-		   t_fcdata *fcd);
+extern t_ifunc orires;
 /* Does only the orientation restraint force calculation */
 
 #ifdef CPLUSPLUS

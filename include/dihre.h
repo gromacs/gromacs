@@ -53,11 +53,7 @@ void init_dihres(FILE *fplog,int nbonds,const t_iatom forceatoms[],
 		 const t_inputrec *ir,t_fcdata *fcd);
 
 
-extern real ta_dihres(int nbonds,const t_iatom fa[],const t_iparams fp[],
-		      const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
-		      real lambda,real *dvdlambda,
-		      const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
-		      t_fcdata *fcd);
+extern t_ifunc ta_dihres;
 /* Calculate the distance restraint forces, return the potential */
 
 #ifdef CPLUSPLUS

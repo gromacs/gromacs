@@ -83,6 +83,7 @@ static void calc_dihs(t_xrama *xr)
     dd=&(xr->dih[i]);
     dd->ang=dih_angle(xr->x[dd->ai[0]],xr->x[dd->ai[1]],
 		      xr->x[dd->ai[2]],xr->x[dd->ai[3]],
+		      epbcNONE,
 		      r_ij,r_kj,r_kl,m,n,&cos_phi,&sign,&t1,&t2,&t3);
   }
 }

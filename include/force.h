@@ -48,14 +48,14 @@
 #include "network.h"
 #include "tgroup.h"
 
-extern void calc_vir(FILE *log,int nxf,rvec x[],rvec f[],tensor vir);
+extern void calc_vir(FILE *fplog,int nxf,rvec x[],rvec f[],tensor vir);
 /* Calculate virial for nxf atoms, and add it to vir */
 
-extern void f_calc_vir(FILE *log,int i0,int i1,rvec x[],rvec f[],tensor vir,
+extern void f_calc_vir(FILE *fplog,int i0,int i1,rvec x[],rvec f[],tensor vir,
 		       t_graph *g,rvec shift_vec[]);
 /* Calculate virial taking periodicity into account */
 
-extern real RF_excl_correction(FILE *log,const t_nsborder *nsb,
+extern real RF_excl_correction(FILE *fplog,const t_nsborder *nsb,
 			       const t_forcerec *fr,t_graph *g,
 			       const t_mdatoms *mdatoms,const t_block *excl,
 			       rvec x[],rvec f[],rvec *fshift,
@@ -65,7 +65,7 @@ extern real RF_excl_correction(FILE *log,const t_nsborder *nsb,
  * and force correction for all excluded pairs, including self pairs.
  */
 
-extern void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
+extern void calc_rffac(FILE *fplog,int eel,real eps,real Rc,real Temp,
 		       real zsq,matrix box,
 		       real *kappa,real *krf,real *crf);
 /* Determine the reaction-field constants */
@@ -79,9 +79,9 @@ extern t_forcetable make_tables(FILE *fp,const t_forcerec *fr,
  * to .xvg files
  */
  
-extern void pr_forcerec(FILE *log,t_forcerec *fr,t_commrec *cr);
+extern void pr_forcerec(FILE *fplog,t_forcerec *fr,t_commrec *cr);
 
-extern void init_forcerec(FILE       *log,     
+extern void init_forcerec(FILE       *fplog,     
 			  t_forcerec *fr,   
 			  const t_inputrec *ir,   
 			  const t_topology *top,
@@ -98,14 +98,14 @@ extern void init_forcerec(FILE       *log,
  * bMolEpot: Use the free energy stuff per molecule
  */
  
-extern void update_forcerec(FILE *log,t_forcerec *fr,matrix box);
+extern void update_forcerec(FILE *fplog,t_forcerec *fr,matrix box);
 /* Updates parameters in the forcerec that are time dependent */
 
 /* Compute the average C6 and C12 params for LJ corrections */
-extern void set_avcsixtwelve(FILE *log,t_forcerec *fr,
+extern void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
 			     const t_mdatoms *mdatoms,const t_block *excl);
 
-extern void ns(FILE *log,
+extern void ns(FILE       *fplog,
 	       t_forcerec *fr,
 	       rvec       x[],
 	       rvec       f[],
@@ -122,7 +122,7 @@ extern void ns(FILE *log,
 	       real       *dvdlambda);
 /* Call the neighborsearcher */
 
-extern void force(FILE *log,  
+extern void force(FILE         *fplog,  
 		  int          step,
 		  t_forcerec   *fr,
 		  t_inputrec   *ir,
@@ -149,11 +149,18 @@ extern void force(FILE *log,
 		  bool         bGatherOnly);
 /* Call all the force routines */
 
-/* Routine from fnbf.m4 */
-extern void do_fnbf(FILE *log,t_commrec *cr,t_forcerec *fr,
+/* Routines from fnbf.c */
+extern void do_fnbf(FILE *fplog,t_commrec *cr,t_forcerec *fr,
 		    rvec x[],rvec f[],t_mdatoms *md,
 		    real egnb[],real egcoul[],rvec box_size,
 		    t_nrnb *nrnb,real lambda,real *dvdlambda,
 		    bool bLR,int eNL);
+
+extern real do_14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
+		  const rvec x[],rvec f[],rvec fshift[],
+		  int ePBC,const t_graph *g,
+		  real lambda,real *dvdlambda,
+		  const t_mdatoms *md,
+		  const t_forcerec *fr,int ngrp,real egnb[],real egcoul[]);
 
 #endif	/* _force_h */

@@ -57,16 +57,12 @@ void init_disres(FILE *fplog,int nbonds,const t_iatom *forceatoms,
 
 extern void calc_disres_R_6(const t_commrec *mcr,
 			    int nfa,const t_iatom *fa,const t_iparams ip[],
-			    const rvec *x,bool bFullPBC,t_fcdata *fcd);
+			    const rvec *x,int ePBC,t_fcdata *fcd);
 /* Calculates r and r^-3 (inst. and time averaged) for all pairs
  * and the ensemble averaged r^-6 (inst. and time averaged) for all restraints
  */
 
-extern real ta_disres(int nbonds,const t_iatom fa[],const t_iparams fp[],
-		      const rvec *x,rvec f[],t_forcerec *fr,const t_graph *g,
-		      real lambda,real *dvdlambda,
-		      const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
-		      t_fcdata *fcd);
+extern t_ifunc ta_disres;
 /* Calculate the distance restraint forces, return the potential */
 
 #ifdef CPLUSPLUS

@@ -88,10 +88,10 @@ void init_dihres(FILE *fplog,int nfa,const t_iatom forceatoms[],
 }
 
 real ta_dihres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
-	       const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+	       const rvec x[],rvec f[],rvec fshift[],
+	       int ePBC,const t_graph *g,
 	       real lambda,real *dvdlambda,
-	       const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
-	       t_fcdata *fcd)
+	       const t_mdatoms *md,t_fcdata *fcd)
 {
   real vtot = 0;
   int ai,aj,ak,al,i,k,type,typep,label,power;

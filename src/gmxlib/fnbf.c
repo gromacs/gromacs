@@ -944,10 +944,11 @@ static real *_buf2=NULL;
 }
 
 real do_14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
-	   const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+	   const rvec x[],rvec f[],rvec fshift[],
+	   int ePBC,const t_graph *g,
 	   real lambda,real *dvdlambda,
-	   const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
-	   t_fcdata *fcd)
+	   const t_mdatoms *md,
+	   const t_forcerec *fr,int ngrp,real egnb[],real egcoul[])
 {
   static    bool bWarn=FALSE;
   bool      bFullPBC;
@@ -972,9 +973,6 @@ real do_14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
   if(cpu_capabilities==UNKNOWN_CPU) 
     cpu_capabilities=detect_cpu(NULL);
 #endif
-
-  /* Full periodic boundary conditions ? */
-  bFullPBC = (fr->ePBC == epbcFULL);
   
   /* Reaction field stuff */  
   eps   = fr->epsfac*fr->fudgeQQ;
@@ -986,7 +984,7 @@ real do_14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
     ai    = iatoms[i++];
     aj    = iatoms[i++];
     
-    if (!bFullPBC) {
+    if (ePBC != epbcFULL) {
       /* This is a bonded interaction, atoms are in the same box */
       shift_f = CENTRAL;
       r2 = distance2(x[ai],x[aj]);
@@ -1038,7 +1036,7 @@ real do_14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
 	 * to atom pair ai-aj in topologies A and B respectively.
 	 */
 #undef COMMON_ARGS
-#define COMMON_ARGS SCAL(i1),&i0,j_index,&i1,&shift_f,fr->shift_vec[0],fr->fshift[0],&gid,x14[0],f14[0]
+#define COMMON_ARGS SCAL(i1),&i0,j_index,&i1,&shift_f,fr->shift_vec[0],fshift[0],&gid,x14[0],f14[0]
 	
 	if (fr->sc_alpha>0) {
 #if (defined VECTORIZE_INVSQRT || defined VECTORIZE_INVSQRT_S || defined VECTORIZE_INVSQRT_W || defined VECTORIZE_INVSQRT_WW || defined USE_THREADS)
@@ -1088,7 +1086,7 @@ real do_14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
 #else	
 #if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	if (cpu_capabilities & X86_3DNOW_SUPPORT) {
-	  inl3300_3dnow(i1,&i0,j_index,&i1,&shift_f,fr->shift_vec[0],fr->fshift[0],
+	  inl3300_3dnow(i1,&i0,j_index,&i1,&shift_f,fr->shift_vec[0],fshift[0],
 			&gid ,x14[0],f14[0] FBUF_ARG
 			,chargeA,eps,egcoul,typeA,SCAL(i1),
 			&(iparams[itype].lj14.c6A),egnb,
@@ -1113,8 +1111,8 @@ real do_14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
 	/* Correct the shift forces using the graph */
 	ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);    
 	shift_vir = IVEC2IS(dt);
-	rvec_inc(fr->fshift[shift_vir],f14[0]);
-	rvec_dec(fr->fshift[CENTRAL],f14[0]);
+	rvec_inc(fshift[shift_vir],f14[0]);
+	rvec_dec(fshift[CENTRAL],f14[0]);
       }
     }
   }

@@ -104,7 +104,7 @@ void init_disres(FILE *fplog,int nfa,const t_iatom forceatoms[],
 
 void calc_disres_R_6(const t_commrec *mcr,
 		     int nfa,const t_iatom forceatoms[],const t_iparams ip[],
-		     const rvec x[],bool bFullPBC,t_fcdata *fcd)
+		     const rvec x[],int ePBC,t_fcdata *fcd)
 {
   atom_id     ai,aj;
   int         fa,res,i,pair,ki,kj,m;
@@ -151,7 +151,7 @@ void calc_disres_R_6(const t_commrec *mcr,
       ai   = forceatoms[fa+1];
       aj   = forceatoms[fa+2];
 
-      if (bFullPBC)
+      if (ePBC == epbcFULL)
 	pbc_dx(x[ai],x[aj],dx);
       else
 	rvec_sub(x[ai],x[aj],dx);
@@ -181,10 +181,10 @@ void calc_disres_R_6(const t_commrec *mcr,
 }
 
 real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
-	       const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+	       const rvec x[],rvec f[],rvec fshift[],
+	       int ePBC,const t_graph *g,
 	       real lambda,real *dvdlambda,
-	       const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
-	       t_fcdata *fcd)
+	       const t_mdatoms *md,t_fcdata *fcd)
 {
   const real sixth=1.0/6.0;
   const real seven_three=7.0/3.0;
@@ -194,7 +194,6 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
   int         type,label;
   rvec        dx;
   real        weight_rt_1;
-  rvec        *fshift;
   real        smooth_fc,Rt,Rav,rt2,*Rtl_6,*Rt_6,*Rav_6;
   real        k0,f_scal=0,fmax_scal,fk_scal,fij;
   real        tav_viol,instant_viol,mixed_viol,violtot,vtot;
@@ -204,10 +203,8 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
   ivec        it,jt,dt;
   t_disresdata *dd;
   int         dr_weighting;
-  bool        dr_bMixed,bFullPBC;
+  bool        dr_bMixed;
   real        dr_fc;
-
-  bFullPBC = (fr->ePBC == epbcFULL);
 
   dd = &(fcd->disres);
   dr_weighting = dd->dr_weighting;
@@ -222,7 +219,6 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
    * when using time averaging                               */
   smooth_fc = dr_fc * (1.0 - dd->exp_min_t_tau); 
   
-  fshift  = fr->fshift; 
   violtot = 0;
   vtot    = 0;
   
@@ -322,7 +318,7 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
 	ai   = forceatoms[fa+1];
 	aj   = forceatoms[fa+2];
 
-	if (bFullPBC) 
+	if (ePBC == epbcFULL) 
 	  ki = pbc_dx(x[ai],x[aj],dx);
 	else
 	  rvec_sub(x[ai],x[aj],dx);

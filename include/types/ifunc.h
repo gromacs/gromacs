@@ -43,10 +43,11 @@
 
 typedef real t_ifunc(int nbonds,const t_iatom iatoms[],
 		     const t_iparams iparams[],
-                     const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+                     const rvec x[],rvec f[],rvec fshift[],
+		     int ePBC,const t_graph *g,
 		     real lambda,real *dvdlambda,
-		     const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
-		     t_fcdata *fcd);
+		     const t_mdatoms *md,t_fcdata *fcd);
+
 /*
  * The function type t_ifunc() calculates one interaction, using iatoms[] 
  * and iparams. Within the function the number of atoms to be used is 

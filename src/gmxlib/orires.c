@@ -237,7 +237,7 @@ void print_orires_log(FILE *log,t_oriresdata *od)
 
 real calc_orires_dev(const t_commrec *mcr,
 		     int nfa,const t_iatom forceatoms[],const t_iparams ip[],
-		     const t_mdatoms *md,const rvec x[],bool bFullPBC,
+		     const t_mdatoms *md,const rvec x[],int ePBC,
 		     t_fcdata *fcd)
 {
   int          fa,d,i,j,type,ex,nref;
@@ -292,7 +292,7 @@ real calc_orires_dev(const t_commrec *mcr,
   d = 0;
   for(fa=0; fa<nfa; fa+=3) {
     type = forceatoms[fa];
-    if (bFullPBC)
+    if (ePBC == epbcFULL)
       pbc_dx(x[forceatoms[fa+1]],x[forceatoms[fa+2]],r_unrot);
     else
       rvec_sub(x[forceatoms[fa+1]],x[forceatoms[fa+2]],r_unrot);
@@ -423,10 +423,10 @@ real calc_orires_dev(const t_commrec *mcr,
 }
 
 real orires(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
-	    const rvec x[],rvec f[],t_forcerec *fr,const t_graph *g,
+	    const rvec x[],rvec f[],rvec fshift[],
+	    int ePBC,const t_graph *g,
 	    real lambda,real *dvdlambda,
-	    const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
-	    t_fcdata *fcd)
+	    const t_mdatoms *md,t_fcdata *fcd)
 {
   atom_id      ai,aj;
   int          fa,d,i,type,ex,power,ki=CENTRAL;
@@ -435,14 +435,13 @@ real orires(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
   rvec         r,Sr,fij;
   real         vtot;
   const t_oriresdata *od;
-  bool         bTAV,bFullPBC;
+  bool         bTAV;
 
   vtot = 0;
   od = &(fcd->orires);
 
   if (od->fc != 0) {
     bTAV = (od->edt != 0);
-    bFullPBC = (fr->ePBC == epbcFULL);
 
     /* Smoothly switch on the restraining when time averaging is used */
     smooth_fc = od->fc*(1.0 - od->exp_min_t_tau);
@@ -452,7 +451,7 @@ real orires(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
       type  = forceatoms[fa];
       ai    = forceatoms[fa+1];
       aj    = forceatoms[fa+2];
-      if (bFullPBC)
+      if (ePBC == epbcFULL)
 	ki = pbc_dx(x[ai],x[aj],r);
       else
 	rvec_sub(x[ai],x[aj],r);
@@ -492,10 +491,10 @@ real orires(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
       }
 
       for(i=0; i<DIM; i++) {
-	f[ai][i]               += fij[i];
-	f[aj][i]               -= fij[i];
-	fr->fshift[ki][i]      += fij[i];
-	fr->fshift[CENTRAL][i] -= fij[i];
+	f[ai][i]           += fij[i];
+	f[aj][i]           -= fij[i];
+	fshift[ki][i]      += fij[i];
+	fshift[CENTRAL][i] -= fij[i];
       }
       d++;
     }

@@ -178,8 +178,9 @@ static void check_viol(FILE *log,t_commrec *mcr,
     
     ener=interaction_function[F_DISRES].ifunc(n,&forceatoms[i],
 					      forceparams,
-					      (const rvec*)x,f,fr,g,lam,&dvdl,
-					      NULL,0,NULL,NULL,fcd);
+					      (const rvec*)x,f,fr->fshift,
+					      fr->ePBC,g,lam,&dvdl,
+					      NULL,fcd);
     viol = fcd->disres.sumviol;
     
     
@@ -433,8 +434,6 @@ int gmx_disre(int argc,char *argv[])
     g = mk_graph(&top.idef,top.atoms.nr,FALSE,FALSE);
   } else {
     g = NULL;
-    if (ir.ePBC == epbcFULL)
-      set_gmx_full_pbc();
   }
   
   if (ftp2bSet(efNDX,NFILE,fnm)) {
