@@ -5,7 +5,7 @@
 
 methdir = ${datadir}/tutor/methanol
 
-meth_DATA = index.ndx  conf.gro  methanol.pdb  grompp.mdp  topol.top
+meth_DATA = index.ndx  conf.gro  methanol.pdb  grompp.mdp  topol.top methanol.itp
 
 EXTRA_DIST = ${meth_DATA}
 
