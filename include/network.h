@@ -176,7 +176,7 @@ extern void gmx_abort(int nodeid,int nnodes,int errorno);
 extern void gmx_finalize(t_commrec *cr);
 /* Finish the parallel run in an ordered manner */
 
-#ifdef DOUBLE
+#ifdef GMX_DOUBLE
 #define gmx_sum gmx_sumd
 #else
 #define gmx_sum gmx_sumf

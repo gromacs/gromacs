@@ -41,7 +41,7 @@
 #include <config.h>
 #endif
 
-#ifndef WITHOUT_FFTW
+#ifndef GMX_WITHOUT_FFTW
 
 #ifdef FFTW_NAME_FFTW
 #  include<fftw.h>

@@ -49,7 +49,7 @@
 
 /* Use FFTW */
 
-#ifndef WITHOUT_FFTW
+#ifndef GMX_WITHOUT_FFTW
 typedef t_complex t_fft_c;
 typedef real      t_fft_r;
 #else /* NO FFTW PRESENT! */
@@ -75,7 +75,7 @@ typedef struct {
     t_fft_r *workspace;    
     int      nx,ny,nz,la2r,la2c,la12r,la12c;
   int      nptr,nxyz;
-#ifndef WITHOUT_FFTW
+#ifndef GMX_WITHOUT_FFTW
     rfftwnd_plan     plan_fw;
     rfftwnd_plan     plan_bw;
 #ifdef USE_MPI
