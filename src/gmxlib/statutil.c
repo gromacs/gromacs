@@ -439,8 +439,11 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
       nice_paX.u.c = nicestr;
     npall = add_parg(npall,&(all_pa),&nice_paX);
   }
-  else
+  else {
+    if (bNice) 
+      nicelevel=19;
     npall = add_parg(npall,&(all_pa),&nice_pa);
+  }
 #endif
 
   if (FF(PCA_CAN_BEGIN)) 
