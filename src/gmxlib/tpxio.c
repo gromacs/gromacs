@@ -458,6 +458,9 @@ static void make_chain_identifiers(t_atoms *atoms,t_block *mols)
     for(a=a0; a<a1; a++)
       atoms->chain[mols->a[a]]=c;  
   }
+  if (chain == 'B')
+    for(a=0; a<atoms->nr; a++)
+      atoms->chain[a]=' ';
 }
   
 static void do_top(t_topology *top,bool bRead)
