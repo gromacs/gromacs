@@ -296,7 +296,11 @@ void set_grpfnm(t_filenm *fnm,char *name,int nopts,int ftps[])
 
 static void set_trxnm(t_filenm *fnm,char *name)
 {
-  static    int trxs[]={ efXTC, efTRR, efTRJ, efGRO, efPDB, efG87 };
+  static    int trxs[]={
+#ifdef USE_XDR 
+    efXTC, efTRR, 
+#endif
+    efTRJ, efGRO, efPDB, efG87 };
 #define NTRXS asize(trxs)
 
   set_grpfnm(fnm,name,NTRXS,trxs);
@@ -304,7 +308,11 @@ static void set_trxnm(t_filenm *fnm,char *name)
 
 static void set_trnnm(t_filenm *fnm,char *name)
 {
-  static    int trns[]={ efTRR, efTRJ };
+  static    int trns[]={ 
+#ifdef USE_XDR
+    efTRR, 
+#endif
+    efTRJ };
 #define NTRNS asize(trns)
 
   set_grpfnm(fnm,name,NTRNS,trns);
@@ -320,7 +328,11 @@ static void set_stonm(t_filenm *fnm,char *name)
 
 static void set_stxnm(t_filenm *fnm,char *name)
 {
-  static    int stxs[]={ efGRO, efPDB, efBRK, efENT, efTPR, efTPB, efTPA };
+  static    int stxs[]={ efGRO, efPDB, efBRK, efENT,
+#ifdef USE_XDR 
+			 efTPR, 
+#endif 
+			 efTPB, efTPA };
 #define NSTXS asize(stxs)
   
   set_grpfnm(fnm,name,NSTXS,stxs);
@@ -328,7 +340,11 @@ static void set_stxnm(t_filenm *fnm,char *name)
 
 static void set_enxnm(t_filenm *fnm,char *name)
 {
-  static    int enxs[]={ efEDR, efENE };
+  static    int enxs[]={ 
+#ifdef USE_XDR
+    efEDR, 
+#endif
+    efENE };
 #define ENTXS asize(enxs)
   
   set_grpfnm(fnm,name,ENTXS,enxs);
@@ -336,7 +352,11 @@ static void set_enxnm(t_filenm *fnm,char *name)
 
 static void set_tpxnm(t_filenm *fnm,char *name)
 {
-  static    int tpxs[]={ efTPR, efTPB, efTPA };
+  static    int tpxs[]={ 
+#ifdef USE_XDR
+    efTPR, 
+#endif
+    efTPB, efTPA };
 #define NTPXS asize(tpxs)
   
   set_grpfnm(fnm,name,NTPXS,tpxs);
