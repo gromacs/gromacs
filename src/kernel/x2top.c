@@ -34,6 +34,7 @@ static char *SRCID_x2top_c = "$Id$";
 #include "bondf.h"
 #include "string2.h"
 #include "smalloc.h"
+#include "strdb.h"
 #include "sysstuff.h"
 #include "confio.h"
 #include "physics.h"
@@ -50,10 +51,23 @@ static char *SRCID_x2top_c = "$Id$";
 #include "topexcl.h"
 #include "x2top.h"
 
-bool is_bond(char *ai,char *aj,real len)
+int get_atype(char *nm)
 {
   char atp[6] = "HCNOSX";
 #define NATP asize(atp)
+  int i,aai=NATP-1;
+
+  for(i=0; (i<NATP-1); i++) {
+    if (nm[0] == atp[i]) {
+      aai=i;
+      break;
+    }
+  }
+  return aai;
+}
+
+bool is_bond(int aai,int aaj,real len2)
+{
   real blen[6][6] = { 
     {  0.00,  0.108, 0.105, 0.10, 0.10, 0.10 },
     {  0.108, 0.15,  0.14,  0.14, 0.16, 0.15 },
@@ -62,57 +76,107 @@ bool is_bond(char *ai,char *aj,real len)
     {  0.10,  0.16,  0.16,  0.17, 0.20, 0.20 },
     {  0.10,  0.15,  0.15,  0.16, 0.20, 0.20 }
   };
-  int i,aai=NATP-1,aaj=NATP-1;
   bool bIsBond;
-  
-  if (len == 0.0)
+  real bl;
+    
+  if (len2 == 0.0)
     bIsBond = FALSE;
   else {
-    /* Check atom type: default unknown (X) */  
-    for(i=0; (i<NATP-1); i++) {
-      if (ai[0] == atp[i])
-	aai=i;
-      if (aj[0] == atp[i])
-	aaj=i;
-    }
     /* There is a bond when the deviation from ideal length is less than
      * 10 %
      */
-    bIsBond = (len < blen[aai][aaj]*1.1);
+    bl = blen[aai][aaj]*1.1;
+    bIsBond = (len2 < bl*bl);
   }
-  
+#ifdef DEBUG
   if (debug)
     fprintf(debug,"ai: %5s  aj: %5s  len: %8.3f  bond: %s\n",
 	    ai,aj,len,BOOL(bIsBond));
-	    
+#endif
   return bIsBond;
 }
 
-void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[])
+real get_amass(char *aname,int nmass,char **nm2mass)
+{
+  int    i;
+  char   nmbuf[32];
+  double mass;
+  real   m;
+  
+  m = 12;
+  for(i=0; (i<nmass); i++) {
+    sscanf(nm2mass[i],"%s%lf",nmbuf,&mass);
+    trim(nmbuf);
+    if (strcmp(aname,nmbuf) == 0) {
+      m = mass;
+      break;
+    }
+  }
+  return m;
+}
+
+void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff)
 {
   t_param b;
-  int     i,j;
+  t_atom  *atom;
+  char    **nm2mass=NULL,buf[128];
+  int     i,j,aai,nmass;
   rvec    dx;
-  real    len;
+  real    dx2;
   
   for(i=0; (i<MAXATOMLIST); i++)
     b.a[i] = -1;
   for(i=0; (i<MAXFORCEPARAM); i++)
     b.c[i] = 0.0;
-  for(i=0; (i<atoms->nr); i++)
+    
+  sprintf(buf,"%s.atp",ff);
+  nmass = get_file(buf,&nm2mass);
+  fprintf(stderr,"There are %d type to mass translations\n",nmass);
+  atom  = atoms->atom;
+  for(i=0; (i<atoms->nr); i++) {
+    atom[i].type = get_atype(*atoms->atomname[i]);
+    atom[i].m    = get_amass(*atoms->atomname[i],nmass,nm2mass);
+  }
+  for(i=0; (i<atoms->nr); i++) {
+    if ((i % 10) == 0)
+      fprintf(stderr,"\ratom %d",i);
+    aai = atom[i].type;
     for(j=i+1; (j<atoms->nr); j++) {
       rvec_sub(x[i],x[j],dx);
-      len = norm(dx);
-		
-      if (is_bond(*atoms->atomname[i],*atoms->atomname[j],len)) {
-	b.AI = i;
-	b.AJ = j;
-	b.C0 = len;
-	push_bondnow (bond,&b);
-	nbond[i]++;
-	nbond[j]++;
+      
+      if ((dx[XX] < 0.25) && (dx[YY] < 0.25) && (dx[ZZ] < 0.25)) {
+	dx2 = iprod(dx,dx);
+	
+	if (is_bond(aai,atom[j].type,dx2)) {
+	  b.AI = i;
+	  b.AJ = j;
+	  b.C0 = sqrt(dx2);
+	  push_bondnow (bond,&b);
+	  nbond[i]++;
+	  nbond[j]++;
+	}
       }
     }
+  }
+  fprintf(stderr,"\n");
+}
+
+int *set_cgnr(t_atoms *atoms)
+{
+  int    i,n=0;
+  int    *cgnr;
+  double qt = 0;
+  
+  snew(cgnr,atoms->nr);
+  for(i=0; (i<atoms->nr); i++) {
+    qt += atoms->atom[i].q;
+    cgnr[i] = n;
+    if (is_int(qt)) {
+      n++;
+      qt=0;
+    }
+  }
+  return cgnr;
 }
 
 t_atomtype *set_atom_type(t_atoms *atoms,int nbonds[],
@@ -120,7 +184,6 @@ t_atomtype *set_atom_type(t_atoms *atoms,int nbonds[],
 {
   static t_symtab symtab;
   t_atomtype *atype;
-  char elem[2];
   char *type;
   int  i,k;
   
@@ -129,15 +192,11 @@ t_atomtype *set_atom_type(t_atoms *atoms,int nbonds[],
   atype->nr       = 0;
   atype->atom     = NULL;
   atype->atomname = NULL;
-  elem[1]='\0';
   k=0;
   for(i=0; (i<atoms->nr); i++) {
-    elem[0] = (*atoms->atomname[i])[0];
-    if ((elem[0] >= 0) && (elem[0] <= 9))
-      elem[0] = (*atoms->atomname[i])[1];
-    if ((type = nm2type(nnm,nm2t,elem,nbonds[i])) == NULL)
-      fatal_error(0,"No forcefield type for element %s (atom %d) with %d bonds",
-		  elem,i+1,nbonds[i]);
+    if ((type = nm2type(nnm,nm2t,*atoms->atomname[i],nbonds[i])) == NULL)
+      fatal_error(0,"No forcefield type for atom %s (%d) with %d bonds",
+		  *atoms->atomname[i],i+1,nbonds[i]);
     else if (debug)
       fprintf(debug,"Selected atomtype %s for atom %s\n",
 	      type,*atoms->atomname[i]);
@@ -254,7 +313,8 @@ int main(int argc, char *argv[])
   static char *bugs[] = {
     "The atom type selection is primitive. Virtually no chemical knowledge is used",
     "Periodic boundary conditions screw up the bonding",
-    "No improper dihedrals are generated"
+    "No improper dihedrals are generated",
+    "The atoms to atomtype translation table is incomplete (ffG43a1.n2t file in de $GMXLIB directory). Please extend it and send the results back to the GROMACS crew."
   };
   FILE       *fp;
   t_params   plist[F_NRE];
@@ -285,21 +345,21 @@ int main(int argc, char *argv[])
   static bool bH14  = FALSE,bAllDih = FALSE, bRound = TRUE;
   static char *molnm="x2top";
   t_pargs pa[] = {
-    { "-kb",    FALSE, etREAL, &kb,
+    { "-kb",    FALSE, etREAL, {&kb},
       "Bonded force constant (kJ/mol/nm^2)" },
-    { "-kt",    FALSE, etREAL, &kt,
+    { "-kt",    FALSE, etREAL, {&kt},
       "Angle force constant (kJ/mol/rad^2)" },
-    { "-kp",    FALSE, etREAL, &kp,
+    { "-kp",    FALSE, etREAL, {&kp},
       "Dihedral angle force constant (kJ/mol/rad^2)" },
-    { "-nexcl", FALSE, etINT,  &nexcl,
+    { "-nexcl", FALSE, etINT,  {&nexcl},
       "Number of exclusions" },
-    { "-H14",    FALSE, etBOOL, &bH14, 
+    { "-H14",    FALSE, etBOOL, {&bH14}, 
       "Use 3rd neighbour interactions for hydrogen atoms" },
     { "-alldih", FALSE, etBOOL, {&bAllDih}, 
       "Generate all proper dihedrals" },
-    { "-round",  FALSE, etBOOL, &bRound,
+    { "-round",  FALSE, etBOOL, {&bRound},
       "Round off measured values" },
-    { "-name",   FALSE, etSTR,  &molnm,
+    { "-name",   FALSE, etSTR,  {&molnm},
       "Name of your molecule" }
   };
   
@@ -326,15 +386,14 @@ int main(int argc, char *argv[])
   snew(x,natoms);              
 
   read_stx_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,NULL,box);
- 
+
+  ff = choose_ff();
   
   snew(nbonds,atoms->nr);
   
   printf("Generating bonds from distances...\n");
-  mk_bonds(atoms,x,&(plist[F_BONDS]),nbonds);
+  mk_bonds(atoms,x,&(plist[F_BONDS]),nbonds,ff);
 
-  ff = choose_ff();
-  
   nm2t = rd_nm2type(ff,&nnm);
   printf("There are %d name to type translations\n",nnm);
   if (debug)
@@ -356,12 +415,13 @@ int main(int argc, char *argv[])
 	  plist[F_LJ14].nr, plist[F_BONDS].nr,atoms->nr);
 
   init_block(&excl);
-  snew(cgnr,atoms->nr);
 
   calc_angles_dihs(&plist[F_ANGLES],&plist[F_PDIHS],x);
   
   set_force_const(plist,kb,kt,kp,bRound);
-  
+
+  cgnr = set_cgnr(atoms);
+    
   fp = ftp2FILE(efTOP,NFILE,fnm,"w");
   print_top_header(fp,"Generated by x2top",TRUE, ff,1.0);
   

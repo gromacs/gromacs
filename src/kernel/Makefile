@@ -36,7 +36,7 @@ ifneq ($(PARALLEL_ONLY_MDRUN),yes)
 PROGRAMS	= \
 		pdb2gmx 	grompp		tpbconv		\
 		mdrun		nmrun		gmxcheck	\
-		gmxdump		luck
+		gmxdump		luck		x2top
 else
 PROGRAMS	= mdrun
 endif
