@@ -401,10 +401,11 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
       
       /* Change Ryckaert-Bellemans dihedrals to polymer convention */
       if (bRb)
-	if (angles[cur][i] <= 0.0) 
-	  angles[cur][i] += M_PI;
-	else
-	  angles[cur][i] -= M_PI;
+	for(i=0; (i<nangles); i++)
+	  if (angles[cur][i] <= 0.0) 
+	    angles[cur][i] += M_PI;
+	  else
+	    angles[cur][i] -= M_PI;
       
       /* Periodicity in dihedral space... */
       if (teller > 1) {
