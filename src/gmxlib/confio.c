@@ -588,7 +588,7 @@ int gro_first_x_or_v(FILE *status,t_trxframe *fr)
   fprintf(stderr,"Reading frames from gro file");
   get_coordnum_fp(status, title, &fr->natoms);
   frewind(status);
-  fprintf(stderr," '%s', %d atoms.\n",title, fr->natoms));
+  fprintf(stderr," '%s', %d atoms.\n",title, fr->natoms);
   fr->bTitle = TRUE;
   fr->title = title;
   if (fr->natoms==0)
