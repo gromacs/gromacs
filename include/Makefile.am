@@ -13,7 +13,7 @@ include_HEADERS = \
 	shift.h       	trnio.h		axp_asm.h   	ebin.h 		\
 	macros.h    	nsb.h       	shift_util.h  	txtdump.h	\
 	binio.h     	edsam.h         magic.h     	nsgrid.h    	\
-	sim_util.h    	typedefs.h	block_tx.h  	enxio.h         \
+	typedefs.h	block_tx.h  	enxio.h         \
 	main.h      	pbc.h       	smalloc.h     	update.h	\
 	bondf.h     	ewald.h         maths.h     	pdbio.h     	\
 	sortwater.h   	utils.h		buffer.h    	ewald_util.h    \
