@@ -5,7 +5,7 @@
 RM	=	/bin/rm -f
 RMDIR	=	/bin/rm -rf
 TOUCH	=	touch
-SHELL	=	/bin/csh -f
+# Do NOT set the make shell to csh ;-)
 
 CHMOD	=	chmod 664
 TEX	=	latex
@@ -14,9 +14,10 @@ BIB	=	bibtex
 IDX	=	makeindex -s hfill.ist
 DVIPS	=	dvips
 
-LOCAL	=	$(GMXHOME)/src/contrib
-HTML	=	$(GMXHOME)/html
-COPYRGT	=	$(LOCAL)/copyrgt
+# Binaries from the gromacs/src/contrib directory
+PRFN    =       prfn
+COPYRGT	=	copyrgt
+OPTIONS =       options
 
 TEXFS = algorithms	analyse		averages			\
 	defunits	files		forcefield	ieee		\
@@ -47,60 +48,138 @@ dvi:		gromacs.dvi
 #
 # make a booklet, i.e. 4 pages onto one double-sided page.
 # To get the booklet, rearrange the pages according to page numbering 
-# and fold in the middle
+# and fold in the middle. 
 #
 booklet.ps:	gromacs.ps
-		psbook $^ | psnup -2 > ! $@
+		psbook $^ | psnup -2 | pstops "2:0,1U(1w,1h)" > $@
+
+letterbooklet.ps: letter.ps
+		psbook $^ | psnup -2 | pstops "2:0,1U(1w,1h)" > $@
+
+# Texexec 2.1 (comes with debian) works to create pdf booklets,
+# but not the 1.2 version that comes with redhat. In the latter
+# case you get 250 copies of the front page and a 300 Mb file...
+booklet.pdf:	gromacs.pdf
+		texexec --pdf --pdfarrange --paper=a5a4 --print=up --result=booklet.pdf gromacs.pdf  
 
 gromacs.tex:	$(TEXFILES)
 
 gromacs.aux:	gromacs.tex $(AUXFILES)
 		$(TEX) gromacs
 
-bib+idx:	gromacs.tex
+dvi_bib+idx:	gromacs.tex
 		$(TEX) gromacs
 		$(BIB) gromacs
 		$(IDX) gromacs
 		./subindex gromacs.ind > gromacs.sind
 		mv gromacs.sind gromacs.ind
 
-gromacs.dvi:	bib+idx		gromacs.aux
+pdf_bib+idx:	gromacs.tex
+		$(PDFTEX) gromacs
+		$(BIB) gromacs
+		$(IDX) gromacs
+		./subindex gromacs.ind > gromacs.sind
+		mv gromacs.sind gromacs.ind
+
+gromacs.dvi:	dvi_bib+idx	gromacs.aux
 
 gromacs.ps:	gromacs.dvi
 		dvips -M -o $@ $^
 
-gromacs.pdf:	bib+idx		gromacs.aux
+# Need to run pdflatex an extra time to get hyperlinks right
+gromacs.pdf:	pdf_bib+idx	gromacs.aux
+		$(PDFTEX) gromacs
 		$(PDFTEX) gromacs
 
 letter.ps:	gromacs.dvi
-		dvips -M -t Letter -O 0cm,-0.9cm -o $@ $^
+		dvips -M -t Letter -O 0.3cm,-0.9cm -o $@ $^
 
 %.aux:		%.tex
 
 prog:		mdp_opt.tex proglist.tex
 
 man:		
+ifeq ($(GMXBIN),)
+		  @echo "Error: To create LaTeX manual pages, the GMXBIN" 
+		  @echo "variable must point to your binary directory." 
+		  @echo "(Source the GMXRC script in your installation)" 
+		  @exit 1; 
+endif
 		./mkman $(GMXBIN)
 
 files.tex:	
-		$(LOCAL)/prfn; $(RM) files.html; ./mkfiles
+		@if ./$(PRFN) >/dev/null 2>&1; then :; \
+		else \
+		  if $(PRFN) >/dev/null 2>&1; then :; \
+		  else \
+		    echo "Error: Can't find the executable '$(PRFN)' in the current"; \
+		    echo "ddirectory or in your path (I need it to create latex files)."; \
+		    echo "(Compile and copy it from the GROMACS contrib directory)"; \
+		    exit 1 ; \
+		  fi; \
+		fi
+# we will only get here if PRFN could be executed
+		$(RM) files.html; ./mkfiles ;
+
+options.tex:	
+		@if ./$(OPTIONS) -man tex >/dev/null 2>&1; then :; \
+		else \
+		  if $(OPTIONS) -man tex >/dev/null 2>&1; then :; \
+		  else \
+		    echo "Error: Can't find the executable '$(OPTIONS)' in the current"; \
+		    echo "ddirectory or in your path (I need it to create latex files)."; \
+		    echo "(Compile and copy it from the GROMACS contrib directory)"; \
+		    exit 1 ; \
+		  fi; \
+		fi;
 
 progman.tex:	
 		$(TOUCH) progman.tex
 
-mdp_opt.tex:	./mkmdp
-		./mkmdp $(GMXHOME)
+mdp_opt.tex:	mkmdp
+ifeq ($(GMXBIN),)
+		  @echo "Error: To create the LaTeX mdp options file, the" 
+		  @echo "GMXDATA variable must point to your GROMACS data directory" 
+		  @echo "in which we can find the GROMACS html directory."
+		  @echo "(Source the GMXRC script in your installation)" 
+		  @exit 1; 
+endif
+		./mkmdp $(GMXDATA)/html
 
-proglist.tex:	$(LOCAL)/scripts/mkonline $(LOCAL)/programs.txt
-		cd $(LOCAL)/scripts ; ./mkonline $(GMXHOME)
+proglist.tex:	./mk_proglist programs.txt
+# If you dont have programs.txt from the gromacs source, just touch it
+# and create the manual without the program descriptions.
+		./mk_proglist 
 
-#man:		
-#		mkman
-
-copyrgt:
-		$(COPYRGT) *.tex
+copyrgt:	
+		@if ./$(COPYRGT) *.tex >/dev/null 2>&1; then :; \
+		else \
+		  if $(COPYRGT) *.tex >/dev/null 2>&1; then :; \
+		  else \
+		    echo "Error: Can't find the executable '$(COPYRGT)' in the current"; \
+		    echo "ddirectory or in your path (I need it to create latex files)."; \
+		    echo "(Compile and copy it from the GROMACS contrib directory)"; \
+		    exit 1 ; \
+		  fi; \
+		fi;
 
 clean:
-		$(RM) *.log *.lof *.lot *.bbl *.blg *.toc *.dvi *.aux *.ps *~ #*# *.idx *.ilg *.ind 
+		$(RM) *.log *.lof *.lot *.bbl *.blg *.toc *.dvi *.aux *.ps *~ #*# *.idx *.ilg *.ind *.out
 		$(RM) progman.tex
 		$(RMDIR) progman
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

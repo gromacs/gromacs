@@ -29,7 +29,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%	AVERAGES AND FLUCTUATIONS
+%       AVERAGES AND FLUCTUATIONS
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Averages and fluctuations}
@@ -95,9 +95,9 @@ For $n=1$ one finds
 and for $n=1$ and $k=1$ ~(\eqnref{varpartial}) becomes
 \bea
 \sigma_{1,m+1}  &=& \sigma_{1,m} + 
-			\left[\frac{X_{1,m}}{m} - \frac{X_{1,m+1}}{m+1}\right]^2 m(m+1)\\
-          	&=& \sigma_{1,m} + 
-			\frac {[~X_{1,m} - m x_{m+1}~]^2}{m(m+1)}
+                        \left[\frac{X_{1,m}}{m} - \frac{X_{1,m+1}}{m+1}\right]^2 m(m+1)\\
+                &=& \sigma_{1,m} + 
+                        \frac {[~X_{1,m} - m x_{m+1}~]^2}{m(m+1)}
 \label{eqn:simplevar0}
 \eea
 where we have used the relation
@@ -136,22 +136,22 @@ by the initial drift towards equilibrium.
 Using~\eqnsref{Xpartial}{varpartial} the average and 
 standard deviation over part of the trajectory can be computed as:
 \bea
-X_{m+1,m+k}	&=& X_{1,m+k} - X_{1,m}			\\
+X_{m+1,m+k}     &=& X_{1,m+k} - X_{1,m}                 \\
 \sigma_{m+1,m+k} &=& \sigma_{1,m+k}-\sigma_{1,m} - \left[~\frac{X_{1,m}}{m} - \frac{X_{1,m+k}}{m+k}~\right]^{2}~ \frac{m(m+k)}{k}
 \eea
 
 or, more generally (with $p \geq 1$ and $q \geq p$):
 \bea
-X_{p,q}		&=&	X_{1,q} - X_{1,p-1}	\\
-\sigma_{p,q}	&=&	\sigma_{1,q}-\sigma_{1,p-1} - \left[~\frac{X_{1,p-1}}{p-1} - \frac{X_{1,q}}{q}~\right]^{2}~ \frac{(p-1)q}{q-p+1}
+X_{p,q}         &=&     X_{1,q} - X_{1,p-1}     \\
+\sigma_{p,q}    &=&     \sigma_{1,q}-\sigma_{1,p-1} - \left[~\frac{X_{1,p-1}}{p-1} - \frac{X_{1,q}}{q}~\right]^{2}~ \frac{(p-1)q}{q-p+1}
 \eea
 {\bf Note} that implementation of this is not entirely trivial, since energies
 are not stored every time step of the simulation. We therefore have to construct
 $X_{1,p-1}$ and $\sigma_{1,p-1}$ from the information at time $p$ using
 \eqnsref{simplevar0}{simplevar1}:
 \bea
-X_{1,p-1}	&=&	X_{1,p} - x_p	\\
-\sigma_{1,p-1}	&=&	\sigma_{1,p} - 	\frac {[~X_{1,p-1} - (p-1) x_{p}~]^2}{(p-1)p}
+X_{1,p-1}       &=&     X_{1,p} - x_p   \\
+\sigma_{1,p-1}  &=&     \sigma_{1,p} -  \frac {[~X_{1,p-1} - (p-1) x_{p}~]^2}{(p-1)p}
 \eea
 
 \subsection{Combining two simulations}
@@ -183,8 +183,8 @@ and thus
 \eeq
 or
 \bea
-\sum_{i=1}^{n+m}  \left[(x_i^{AB})^2 - 2 x_i^{AB}\frac{X^{AB}_{1,n+m}}{n+m} + \left(\frac{X^{AB}_{1,n+m}}{n+m}\right)^2  \right] &-&\\\nonumber
-\sum_{i=1}^{n}  \left[(x_i^{A})^2 - 2 x_i^{A}\frac{X^A_{1,n}}{n} + \left(\frac{X^A_{1,n}}{n}\right)^2  \right] &-&\\\nonumber
+\sum_{i=1}^{n+m}  \left[(x_i^{AB})^2 - 2 x_i^{AB}\frac{X^{AB}_{1,n+m}}{n+m} + \left(\frac{X^{AB}_{1,n+m}}{n+m}\right)^2  \right] &-& \nonumber \\
+\sum_{i=1}^{n}  \left[(x_i^{A})^2 - 2 x_i^{A}\frac{X^A_{1,n}}{n} + \left(\frac{X^A_{1,n}}{n}\right)^2  \right] &-& \nonumber \\
 \sum_{i=1}^{m}  \left[(x_i^{B})^2 - 2 x_i^{B}\frac{X^B_{1,m}}{m} + \left(\frac{X^B_{1,m}}{m}\right)^2  \right] &=& \Delta\sigma
 \eea
 all the $x_i^2$ terms drop out, and the terms independent of the summation
@@ -192,7 +192,7 @@ counter $i$ can be simplified:
 \bea
 \frac{\left(X^{AB}_{1,n+m}\right)^2}{n+m} \,-\, 
 \frac{\left(X^A_{1,n}\right)^2}{n} \,-\, 
-\frac{\left(X^B_{1,m}\right)^2}{m} &-& \\\nonumber
+\frac{\left(X^B_{1,m}\right)^2}{m} &-& \nonumber \\
 2\,\frac{X^{AB}_{1,n+m}}{n+m}\sum_{i=1}^{n+m}x_i^{AB} \,+\,
 2\,\frac{X^{A}_{1,n}}{n}\sum_{i=1}^{n}x_i^{A} \,+\,
 2\,\frac{X^{B}_{1,m}}{m}\sum_{i=1}^{m}x_i^{B} &=& \Delta\sigma
@@ -226,21 +226,21 @@ if we fill in \eqnref{sigma}:
 \eeq
 which we can expand to:
 \bea
-&~&\sum_{i=m}^n \left[\sum_{s=1}^S (x_i^s)^2 + \left(\frac{X_{m,n}^S}{m-n+1}\right)^2 -2\left(\frac{X_{m,n}^S}{m-n+1}\sum_{s=1}^S x_i^s + \sum_{s=1}^S \sum_{s'=s+1}^S x_i^s x_i^{s'} \right)\right]	\\\nonumber
+&~&\sum_{i=m}^n \left[\sum_{s=1}^S (x_i^s)^2 + \left(\frac{X_{m,n}^S}{m-n+1}\right)^2 -2\left(\frac{X_{m,n}^S}{m-n+1}\sum_{s=1}^S x_i^s + \sum_{s=1}^S \sum_{s'=s+1}^S x_i^s x_i^{s'} \right)\right]    \nonumber \\
 &-&\sum_{s=1}^S \sum_{i=m}^n \left[(x_i^s)^2 - 2\,\frac{X_{m,n}^s}{m-n+1}\,x_i^s + \left(\frac{X_{m,n}^s}{m-n+1}\right)^2\right] ~=~\Delta\sigma 
 \eea
 the terms with $(x_i^s)^2$ cancel, so that we can simplify to:
 \bea
-&~&\frac{\left(X_{m,n}^S\right)^2}{m-n+1} -2 \frac{X_{m,n}^S}{m-n+1}\sum_{i=m}^n\sum_{s=1}^S x_i^s -2\sum_{i=m}^n\sum_{s=1}^S \sum_{s'=s+1}^S x_i^s x_i^{s'}\, -	\\\nonumber
+&~&\frac{\left(X_{m,n}^S\right)^2}{m-n+1} -2 \frac{X_{m,n}^S}{m-n+1}\sum_{i=m}^n\sum_{s=1}^S x_i^s -2\sum_{i=m}^n\sum_{s=1}^S \sum_{s'=s+1}^S x_i^s x_i^{s'}\, -        \nonumber \\
 &~&\sum_{s=1}^S \sum_{i=m}^n \left[- 2\,\frac{X_{m,n}^s}{m-n+1}\,x_i^s + \left(\frac{X_{m,n}^s}{m-n+1}\right)^2\right] ~=~\Delta\sigma 
 \eea
 or
 \beq
--\frac{\left(X_{m,n}^S\right)^2}{m-n+1}  -2\sum_{i=m}^n\sum_{s=1}^S \sum_{s'=s+1}^S x_i^s x_i^{s'}\, +	\sum_{s=1}^S \frac{\left(X_{m,n}^s\right)^2}{m-n+1}  ~=~\Delta\sigma 
+-\frac{\left(X_{m,n}^S\right)^2}{m-n+1}  -2\sum_{i=m}^n\sum_{s=1}^S \sum_{s'=s+1}^S x_i^s x_i^{s'}\, +  \sum_{s=1}^S \frac{\left(X_{m,n}^s\right)^2}{m-n+1}  ~=~\Delta\sigma 
 \eeq
 If we now expand the first term using \eqnref{sumterms} we obtain:
 \beq
--\frac{\left(\sum_{s=1}^SX_{m,n}^s\right)^2}{m-n+1}  -2\sum_{i=m}^n\sum_{s=1}^S \sum_{s'=s+1}^S x_i^s x_i^{s'}\, +	\sum_{s=1}^S \frac{\left(X_{m,n}^s\right)^2}{m-n+1}  ~=~\Delta\sigma 
+-\frac{\left(\sum_{s=1}^SX_{m,n}^s\right)^2}{m-n+1}  -2\sum_{i=m}^n\sum_{s=1}^S \sum_{s'=s+1}^S x_i^s x_i^{s'}\, +      \sum_{s=1}^S \frac{\left(X_{m,n}^s\right)^2}{m-n+1}  ~=~\Delta\sigma 
 \eeq
 which we can reformulate to:
 \beq

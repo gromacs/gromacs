@@ -9,7 +9,7 @@
 % 
 %               VERSION 3.0
 % 
-% Copyright (c) 1991-1999
+% Copyright (c) 1991-2001
 % BIOSON Research Institute, Dept. of Biophysical Chemistry
 % University of Groningen, The Netherlands
 % 
@@ -24,14 +24,38 @@
 % Gnomes, ROck Monsters And Chili Sauce
 %
 
-\documentclass[11pt]{book}
-\usepackage{here,picins,fancy,graphicx,array,tabularx,makeidx,a4,citesort,multicol,dcolumn,times}
-\makeindex
+\documentclass[11pt,a4paper,twoside]{gmxmanual}
+\usepackage{here,picins,fancy,array,tabularx,multicol,dcolumn,makeidx,times}
+%citesort was old, deprecated in tex, and doesn't work with hyperref/pdftex.
+%it is rumored you could achieve the same functionality with natbib, but
+%after a couple of hours of trial I gave up... /EL
 \input{macros}
-\sloppy
-\hoffset -1cm
+
+\newif\ifpdf
+\ifx\pdfoutput\undefined
+  \pdffalse % not using pdflatex  
+\else
+  \pdfoutput=1 % using pdflatex
+  \pdftrue
+\fi
+
+\ifpdf
+  \usepackage[pdftex]{graphicx}
+  \usepackage[pdftex,plainpages=false,pdfpagelabels,colorlinks=true,urlcolor=blue,citecolor=blue,pdfstartview=FitV]{hyperref}
+\else
+  \usepackage{graphicx}
+  \usepackage[plainpages=false,colorlinks=true,urlcolor=blue,citecolor=blue]{hyperref}
+\fi
+
+\makeindex
+% The total a4 paper width is 210 mm, and the margins are defined
+% relative to the standard margin of 1 inch.
 \setlength{\textwidth}{15cm}
+\setlength{\oddsidemargin}{9.6mm}  %35mm-1inch
+\setlength{\evensidemargin}{-0.4mm} %25mm-1inch
+\setlength{\topmargin}{-4.4mm} % 21mm top margin
 \setlength{\textheight}{22cm}
+
 \renewcommand{\textfraction}{0.0}
 \newcommand{\qtw}{3.75cm}  % 1/4 of the textwidth
 \newcommand{\ttw}{4.33cm}  % 1/3 of the textwidth
@@ -47,81 +71,69 @@
 \newcommand{\ssecref}[1]{\ref{subsec:#1}}
 \newcommand{\chref}[1]{chapter~\ref{ch:#1}}
 \newcommand{\appref}[1]{Appendix~\ref{app:#1}}
-\newcommand{\wwwpage}{http://www.gromacs.org}
+\newcommand{\wwwpage}{\href{http://www.gromacs.org}{www.gromacs.org}}
 % NOTE: \wwwpage is explicitly included in the 'verbatim' citing instructions!
-\newcommand{\email}{{\tt gromacs@gromacs.org}}
+\newcommand{\email}{\href{mailto:gromacs@gromacs.org}{gromacs@gromacs.org}}
 \newcommand{\mcc}[2]{\multicolumn{#1}{c|}{#2}}
 \newcommand{\mcl}[2]{\multicolumn{#1}{l}{#2}}
 \setlength{\headwidth}{\textwidth}
 \setlength{\headheight}{1.0cm}
-%\addtolength{\headwidth}{\marginparsep}
-%\addtolength{\headwidth}{\marginparwidth}
-%\addtolength{\headheight}{7pt}
+
 
 \begin{document}
-\sloppy
+%roman pagenumbers for the preamble stuff
+\pagenumbering{roman}
+% Adjust margins on front page to make it
+% symmetrical. It is reset on the next page.
+\addtolength{\oddsidemargin}{-5mm}
 %
 %       F R O N T P A G E       
 %
-\thispagestyle{empty}
+\pagestyle{empty}
 \begin{center}
-{\Large
-\begin{tabular}{c}
-\hline
-{\bf Groningen Machine for Chemical Simulations}\\
-\hline
-\rule{13cm}{0cm}\\
-\end{tabular}
+
+{
+\fontsize{64}{70} \selectfont 
+GROMACS\\
+USER \\
+MANUAL\\
 }
-
-\vspace{0.5cm}
-
-{\LARGE
-{\bf GROMACS USER MANUAL}
-
-\vspace{0.5cm}
-
-{\bf Version \gmxver}
-}
-
 \vspace{1cm}
+{\Large \em Groningen Machine for Chemical Simulations}
 
-\rotatebox{-80}{\includegraphics[width=1.8cm]{plots/warning}}
+\vspace{0.75cm}
+\includegraphics[width=5in]{plots/fp-highres}
 
-\vspace{1cm}
+\vspace{0.25cm}
+{\fontsize{30}{36} \selectfont \bf Version \gmxver}
 
-\includegraphics[width=\ntw]{plots/fp-nolabel}
-
-\vspace{1ex}
-
-\vspace{1cm}
-\rule{13cm}{0.1mm}
 \end{center}
+\vfill
 
-\newpage
-\thispagestyle{empty}
+\cleardoublepage
+%reset to normal margins
+\addtolength{\oddsidemargin}{5mm}
 
 %
 %       P R E F A C E
 %
-\cleardoublepage
-\footrulewidth 0.4pt
-\pagestyle{fancyplain}
 \renewcommand{\chaptermark}[1]{\markboth{#1}{#1}} % remember chapter title
 \renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
                                                 % section number and title
-\lhead[\fancyplain{}{\bf\sf\thepage}]{\fancyplain{}{\bf\sf\rightmark}}
-\rhead[\fancyplain{}{\bf\sf\leftmark}]{\fancyplain{}{\bf\sf\thepage}}
+\lhead[\fancyplain{}{\em\thepage}]{\fancyplain{}{\em\rightmark}}
+\rhead[\fancyplain{}{\em\leftmark}]{\fancyplain{}{\em\thepage}}
 \cfoot{}
 
-%\pagenumbering{roman}
-\setcounter{page}{1}
 
 \begin{center}
-{\LARGE\bf GROMACS USER MANUAL}                         \\[1cm]
-{\LARGE\bf Version \gmxver}                             \\[1cm]
-{\LARGE\bf \today}                                      \\[1cm]
-{\large\bf 
+\phantom{ }
+\vspace{1cm}
+{\fontsize{40}{50} \selectfont 
+GROMACS\\
+USER MANUAL\\[1cm]
+}
+{\LARGE\bf Version \gmxver}\\[1cm]
+{\Large 
 David van der Spoel     \\
 Aldert R. van Buuren    \\
 Emile Apol              \\
@@ -132,38 +144,29 @@ Berk Hess               \\
 K. Anton Feenstra       \\
 Erik Lindahl            \\
 Rudi van Drunen         \\
-Herman J.C. Berendsen}
+Herman J.C. Berendsen \\
+}
 \end{center}
 
-\vspace{0.5cm}
+\vfill
 
-\centerline{\includegraphics[width=8cm]{plots/bioson}}
-
-\vspace{1cm}
-
-\centerline{
-\begin{tabular}{l}
-\hline
-(c) Copyright. \\
-{\sf BIOSON} Research Institute and \\
-Laboratory of Biophysical Chemistry \\
-University of Groningen \\ 
-Nijenborgh 4\\
-9747 AG Groningen \\
-The Netherlands \\
-Fax: +31 (0)50 63 4800       \\
-\hline
-\end{tabular}
+{\center
+Copyright (C) 1991--2001  \\
+Department of Biophysical Chemistry, University of Groningen. \\
+Nijenborgh 4, 9747 AG Groningen, The Netherlands.\\
 }
 
 \newpage
-\section*{Preface \& Disclaimer.}
-This manual is not complete and has no pretention to be complete, due
+\pagestyle{fancyplain}
+
+\section*{Preface \& Disclaimer}
+This manual is not complete and has no pretention to be so due
 to lack of time of the contributors -- our first priority is to improve
 the software. It is meant as a source of
 information and references for the {\gromacs} user.  It covers both the
 physical background of MD simulations in general and details of 
-the {\gromacs} software in particular. Iis continuously being worked on,
+the {\gromacs} software in particular. The manual is 
+continuously being worked on,
 which in some cases might mean the information is not entirely correct.
 
 When \normindex{citing} this document in any scientific publication
@@ -173,61 +176,76 @@ please refer to it as:
 \raggedright
 van der Spoel, D., A.~R. van Buuren, E. Apol, P.~J. Meulenhoff, D.~P.
 Tieleman, A.~L.~T.~M. Sij\-bers, B. Hess, K.~A. Feenstra, E. Lindahl,
-R. van Drunen and H.~J.~C. Berendsen
-\hspace{0.6em} Gromacs {U}ser {M}anual version \gmxver
-\hspace{0.6em} Nij\-enborgh 4, 9747 AG Groningen, The Netherlands.
-Internet: {\wwwpage} 2001
+R. van Drunen and H.~J.~C. Berendsen,
+\hspace{0.3em} {\em Gromacs {U}ser {M}anual version \gmxver},
+\hspace{0.3em} Nij\-enborgh 4, 9747 AG Groningen, The Netherlands.
+Internet: {\wwwpage} (2001)
 \end{quote}
 
 or, if you use BibTeX, you can directly copy the following:
 \begin{verbatim}
 @Manual{gmx30,
-  title =        "Gromacs {U}ser {M}anual version 3.0",
-  author =       "David van der Spoel and Aldert R. van Buuren and Emile
-                 Apol and Pieter J. Meulen\-hoff and D. Peter Tieleman and
-                 Alfons L. T. M. Sij\-bers and Berk Hess and K. Anton
-                 Feenstra and Erik Lindahl and Rudi van Drunen and 
-                 Herman J. C. Berendsen",
-  address =      "Nij\-enborgh 4, 9747 AG Groningen, The Netherlands.
-                 Internet: http://www.gromacs.org",
-  year =         "2001"
+  title =  "Gromacs {U}ser {M}anual version 3.0",
+  author = "David van der Spoel and Aldert R. van Buuren and 
+           Emile Apol and Pieter J. Meulen\-hoff and D. Peter 
+           Tieleman and Alfons L. T. M. Sij\-bers and Berk Hess 
+           and K. Anton Feenstra and Erik Lindahl and 
+           Rudi van Drunen and Herman J. C. Berendsen",
+  address= "Nij\-enborgh 4, 9747 AG Groningen, The Netherlands.
+           Internet: http://www.gromacs.org",
+  year =   "2001"
 }
 \end{verbatim}
 
-Please also cite the {\gromacs} papers~\cite{Berendsen95a,Lindahl2001a}.
+We humbly ask that you cite the {\gromacs} 
+papers~\cite{Berendsen95a,Lindahl2001a} when you publish your
+results. Any future developement depends on academic
+research grants, since the package is distributed as free software!
 
 
-Any comments are welcome, please send them by e-mail to {\email}
+Any comments are welcome, please send them by e-mail to {\email}.
 \medskip
 
-Groningen, \today
+Groningen, \today.
 \medskip
 
-{\sf BIOSON} Research Institute and Department of Biophysical Chemistry \\
+Department of Biophysical Chemistry \\
 University of Groningen \\ 
 Nijenborgh 4                            \\
 9747 AG Groningen                       \\
 The Netherlands                         \\
-Fax: 31-50-634800
+Fax: +31-503634800
 
 \newpage
-\subsection*{Online Manual}
-The {\gromacs} homepage is available at {\bf \wwwpage}.
+\section*{Online Resources}
+You can find more documentation and other material 
+at our homepage \wwwpage. Among other things there is
+ an online reference,
+several {\gromacs} mailing lists with archives and contributed 
+topologies/force fields. 
 
-\subsection*{Violated Copyrights}
-The following commercial thingies may be mentioned here and there in the
-text (plus some that we forgot here).
 
-\begin{tabularx}{\linewidth}{lX}
-\hline
-{\gromos} & is a trademark of Biomos B.V.\\
-SPARC     & is a trademark of Sun Microsystems inc. and Texas Instruments inc.\\
-CM5       & is a trademark of Thinking Machines inc.\\
-Quanta    & is a trademark of Molecular Simulations inc.\\
-Cerius    & is a trademark of Molecular Simulations inc.\\
-HyperChem & is a trademark of AutoDesk inc.\\
-\hline
-\end{tabularx}
+\section*{Manual and GROMACS versions}
+We try to release an updated version of the manual whenever
+we release a new version of the software, so in general 
+it is a good idea to use a manual with the same major and
+minor release number as your GROMACS installation. 
+Any revision numbers (like 3.0.1) are however independent, 
+to make it possible to implement bugfixes and manual
+improvements if necessary. 
+
+
+\section*{{\gromacs} is {\em Free Software}}
+The entire {\gromacs} package is available under the GNU 
+General Public License. This means it's free as 
+in free speech, not just that you can use it without
+paying us money. For details, check the COPYING file in the source code
+or consult 
+\href{http://www.gnu.org/copyleft/gpl.html}{www.gnu.org/copyleft/gpl.html}.
+
+The {\gromacs} source code and 
+Linux packages are available on our homepage!
+
 
 \vspace{0.5cm}
 
@@ -242,8 +260,7 @@ HyperChem & is a trademark of AutoDesk inc.\\
 %       R E A L   M A N U A L
 %
 \cleardoublepage
-%\setcounter{page}{1}
-%\pagenumbering{arabic}
+\pagenumbering{arabic}
 
 \include{intro}
 \include{defunits}
@@ -265,10 +282,19 @@ HyperChem & is a trademark of AutoDesk inc.\\
 \include{progman}
 
 %
+% The pdfdummy counter is a workaround to get correct
+% bookmarks for the index & bibliography in pdf files
+
+\newcounter{pdfdummy}
+
+%
 %       B I B L I O G R A P H Y
 %
 \cleardoublepage
+\refstepcounter{pdfdummy}
+
 \addcontentsline{toc}{chapter}{Bibliography}
+
 \bibliographystyle{proteins}
 \bibliography{monster,unpubl}
 
@@ -276,9 +302,22 @@ HyperChem & is a trademark of AutoDesk inc.\\
 %       I N D E X
 %
 \cleardoublepage
+\refstepcounter{pdfdummy}
 \addcontentsline{toc}{chapter}{Index}
+
 \renewcommand{\see}[2]{\mbox{} \mbox{\textit{see} #1}}
 \printindex
+
+\newpage
+\pagestyle{empty}
+\phantom{ }
+
+\vfill
+
+\begin{center}
+Don't forget to check out the online resources at \wwwpage.
+\end{center}
+\cleardoublepage
 
 \end{document}
 

@@ -111,7 +111,7 @@ the contribution of atoms between {\tt r} and {\tt rc} with
 distance. This smoothes the effects of atoms moving in and out of the
 cylinder (which causes jumps in the constraint forces). 
 \item[\tt dynamic\_t0]\mbox{}\\
-The same as {\tt dynamic}, but using the coordinates corrected for
+The same as {\tt dynamic}, but the coordinates are corrected for
 boxcrossings like in {\tt com\_t0}. Note that strictly speaking this is
 not correct if the reference group is not the whole system, including
 the groups defined with {\tt group\_1} and {\tt group\_2}.
@@ -166,8 +166,8 @@ calculates the distance in the z direction only.
 
 \item[\tt reverse                  = to\_reference]\mbox{}\\
 This option selects the direction in which the groups are moved with
-respect to the reference group for AFM pulling and starting structure
-calculations. The options are {\tt to\_reference, from\_reference}.
+respect to the reference group for AFM pull\-ing and start\-ing structure
+calcu\-lations. Choices are {\tt to\_reference, from\_reference}.
 
 \item[\tt r                        = 0]\mbox{}\\
 If dynamic reference groups are selected ({\tt dynamic, dynamic\_t0}),

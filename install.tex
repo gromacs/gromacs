@@ -27,17 +27,16 @@
 % Gnomes, ROck Monsters And Chili Sauce
 %
 
-\chapter{Technical Details.}
+\chapter{Technical Details}
 \label{ch:install}
-\section{Installation.}
-The {\gromacs} software is Free Software, licensed under the GNU
+\section{Installation}
+The entire {\gromacs} package is Free Software, licensed under the GNU
 General Public License. The main distribution site is our WWW server at
 {\wwwpage}. 
 
-
-The {\gromacs} code is distributed in SOURCE form by our WWW server at\\
-{\wwwpage}\\
-On this page you will find all the information you need to 
+The package is mainly distributed as source code, but we also provide
+RPM packages for Linux.
+On the home page you will find all the information you need to 
 \normindex{install} the package, mailing lists with archives,
 and several additional online resources like contributed topologies, etc.
 The default installation action is simply to unpack the source code and
@@ -49,7 +48,8 @@ make install
 \end{verbatim}
 The configuration script should automatically determine the best options
 for your platform, and it will tell you if anything is missing on
-your system.
+your system. You will also find detailed step-by-step installation
+instructions on the website.
 
 \section{Single or Double precision}
 {\gromacs} can be compiled in either single\index{single
@@ -94,7 +94,7 @@ diagonalization of the Hessian
 and without cut-off's)
 \end{itemize}
 
-\section{Porting {\gromacs}.}
+\section{Porting {\gromacs}}
 The {\gromacs} system is designed with portability as a major design
 goal. However there are a number of things we assume to be present on
 the system {\gromacs} is being ported on. We assume the following

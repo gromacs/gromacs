@@ -190,8 +190,14 @@ fourierspacing  = 0.075
 For details on the switch parameters see the section on modified
 long-range interactions in this manual. When using PPPM we recommend
 to take at most 0.075 nm per gridpoint ({\eg} 20 gridpoints for 1.5
-nm).  PPPM does not provide the same accuracy as PME but is faster in
-most cases. PPPM can not be used with pressure coupling.
+nm).  PPPM does not provide the same accuracy as PME but can be
+slightly faster in some cases. Due to the problem with the pressure
+tensor you shouldn't use it with pressure coupling.
+
+We're somewhat ambivalent about PPPM, so if you use it please contact
+us - otherwise it might be removed from future relases so we can concentrate
+our efforts on PME.
+
 
 \subsection{Optimizing Fourier transforms}
 To get the best possible performance you should try to avoid large
@@ -199,7 +205,8 @@ prime numbers for grid dimensions.
 The FFT code used in {\gromacs} is
 optimized for grid sizes of the form $2^a 3^b 5^c 7^d 11^e 13^f$,
 where $e+f$ is $0$ or $1$ and the other exponents arbitrary. (See
-further the documentation of the FFT algorithms at {\tt http://www.fftw.org}.)
+further the documentation of the FFT algorithms at 
+\href{http://www.fftw.org}{www.fftw.org}.
 
 It is also possible to optimize the transforms for the current problem
 by performing some calculations at the start of the run. This is not

@@ -35,7 +35,7 @@ a side excursion to parallel sorting.
 Please note the following which we use throughout this chapter:\\
 {\bf definition:} {\natom}: Number of particles, {\nproc} number of processors.\\
 {\gromacs} employs two different grids: the neighbor searching grid ({\nsgrid})
-and the charge/potential grid ({\fftgrid}), as will be described below.
+and the combined charge/po\-ten\-tial grid ({\fftgrid}), as will be described below.
 To maximize the confusion, 
 these two grids are mapped onto a grid of processors when {\gromacs} runs on a 
 parallel computer.
@@ -95,7 +95,7 @@ The algorithm for neighbor searching then becomes:
 \item   Divide this list into slabs, such that each slab has the same number of
         charge groups
 \item   Put the particles corresponding to the local slab on a 3D {\nsgrid} as 
-        described above (\secref{nsgrid})
+        described in \secref{nsgrid}.
 \item   Communicate the {\nsgrid} to neighboring processors (not necessarily to all
         processors). The amount of neighboring {\nsgrid} cells (N$_{gx}$) to 
         communicate is determined by the cut-off length $r_c$ according to
@@ -188,7 +188,7 @@ parallelized:
         
 \item   Doing the Fourier transform of the charge distribution $\rho(\ve{r})$ 
         in parallel to obtain $\hat{\rho}(\ve{k})$. This is done using
-        the FFTW library ({\tt http://lcs.theory.mit.edu/\~{ }fftw})
+        the FFTW library (see \href{http://www.fftw.org}{www.fftw.org})
         which employs the MPI library for message passing programs
         (note that there are also \swapindex{shared}{memory} versions
         of the FFTW code).\\

@@ -5,7 +5,7 @@
 % 
 %        G   R   O   M   A   C   S
 % 
-% GROningen MAchine for Chemical Simulations
+% GROningen MAchine for Chemical Simulations 
 % 
 %               VERSION 2.0
 % 
@@ -50,14 +50,12 @@ This Chapter describes the set up of the topology file, the
 {\tt *.top} file: what the parameters stand for and how/where to
 change them if needed.
 
-{\bf Note:} if you have constructed your own {\tt *.top}, please
-send a copy plus description to:
-\centerline{\email}
-
-so we can extend our topology database and prevent {\gromacs} users
-from ``inventing the wheel twice''. This also applies for {\em new
-force field parameters} that were originally not included in the
-{\gromacs} force field.
+{\bf Note:} if you construct your own topologies, we encourage you
+to upload them to our topology archive at www.gromacs.org! Just imagine
+how thankful you'd have been if your topology had been available
+there before you started. The same goes for new force field or
+modified versions of the standard force fields - contribute them
+to the force field archive!
 
 The files are grouped per force field type (named {\eg} {\tt gmx} for
 the {\gromacs} force field or {\tt G43a1} for the GROMOS96
@@ -76,10 +74,10 @@ polarizable force fields, which we don't yet have.
 \centerline{
 \begin{tabular}{|l|c|}
 \dline
-Particle	& Symbol	\\
+Particle        & Symbol        \\
 \hline
-\seeindex{atom}{particle}s	& A   \\
-\seeindex{nucleus}{particle}s	& N   \\
+\seeindex{atom}{particle}s      & A   \\
+\seeindex{nucleus}{particle}s   & N   \\
 \seeindex{shell}{particle}s     & S   \\
 \seeindex{bond shell}{particle}s& B   \\
 \seeindex{dummy}{particle}s     & D   \\
@@ -178,7 +176,7 @@ not} as a number (as {\eg} in {\gromos}).
 \label{sec:dummytop}
 Some \normindex{force field}s use \swapindex{dummy}{atom}s 
 (\normindex{virtual site}s that are constructed
-from real atoms) on which certain interaction functions are located
+from real atoms) on which certain interactions are located
 ({\eg} on benzene rings, to reproduce the correct
 \normindex{quadrupole}). This is described in~\secref{dummy}.
 
@@ -192,43 +190,43 @@ in~\secref{dummy}).
 Parameters for type 2 should look like this:
 {\small\begin{verbatim}
 [ dummies2 ] 
-; Dummy from          funct  a 
-5       1      2      1      0.7439756
+; Dummy from        funct  a 
+5       1     2     1      0.7439756
 \end{verbatim}}
 
 for type 3 like this:
 {\small\begin{verbatim}
 [ dummies3 ]
-; Dummy from                 funct   a          b
-5       1      2      3      1       0.7439756  0.128012
+; Dummy from               funct   a          b
+5       1     2     3      1       0.7439756  0.128012
 \end{verbatim}}
 
 for type 3fd like this:
 {\small\begin{verbatim}
 [ dummies3 ]
-; Dummy from                 funct   a          d
-5       1      2      3      2       0.5        -0.105
+; Dummy from               funct   a          d
+5       1     2     3      2       0.5        -0.105
 \end{verbatim}}
 
 for type 3fad like this:
 {\small\begin{verbatim}
 [ dummies3 ]
-; Dummy from                 funct   theta      d
-5       1      2      3      3       120        0.5
+; Dummy from               funct   theta      d
+5       1     2     3      3       120        0.5
 \end{verbatim}}
 
 for type 3out like this:
 {\small\begin{verbatim}
 [ dummies3 ]
-; Dummy from                 funct   a          b          c
-5       1      2      3      4       -0.4       -0.4       6.9281
+; Dummy from               funct   a          b          c
+5       1     2     3      4       -0.4       -0.4       6.9281
 \end{verbatim}}
 
 for type 4fd like this:
 {\small\begin{verbatim}
 [ dummies4 ]
-; Dummy from                         funct   a          b          d
-5       1      2      3      4       1       0.33333    0.33333    -0.105
+; Dummy from                      funct   a          b          d
+5       1     2     3     4       1       0.33333    0.33333    -0.105
 \end{verbatim}}
 
 This will result in the construction of a dummy `atom', number 5
@@ -262,13 +260,13 @@ combined.
 \centerline{
 \begin{tabular}{|l|c|c|}
 \dline
-Property	& Symbol	& Unit		\\
+Property        & Symbol        & Unit          \\
 \hline
-Type		& -		& -		\\
-Mass		& m		& a.m.u.	\\
-Charge		& q		& electron	\\
-epsilon		& $\epsilon$	& kJ/mol	\\
-sigma		& $\sigma$	& nm		\\
+Type            & -             & -             \\
+Mass            & m             & a.m.u.        \\
+Charge          & q             & electron      \\
+epsilon         & $\epsilon$    & kJ/mol        \\
+sigma           & $\sigma$      & nm            \\
 \dline
 \end{tabular}
 }
@@ -278,15 +276,15 @@ sigma		& $\sigma$	& nm		\\
 
 The following {\em dynamic} quantities are associated with an atom
 \begin{itemize}
-\item	Position {\bf x}
-\item	Velocity {\bf v}
+\item   Position {\bf x}
+\item   Velocity {\bf v}
 \end{itemize}
 These quantities are listed in the coordinate file, {\tt *.gro}
 (see section File format,~\ssecref{grofile}).
 
 \subsection{Bonded parameters}
 \label{subsec:bondparam}
-The \swapindex{bonded}{parameter}s ({\ie} bonds, angles, improper and proper
+The \swapindex{bonded}{parameter}s ({\ie} bonds, bond angles, improper and proper
 dihedrals) are listed in {\tt ff???bon.itp}. The term {\tt func} is 1 for
 harmonic and 2 for \gromosv{96} bond and angle potentials.
 For the dihedral, this is explained after this listing.
@@ -353,7 +351,7 @@ this new atom type in {\tt ff???.atp} as well.
 \subsection{Non-bonded parameters}
 \label{subsec:nbpar}
 The \swapindex{non-bonded}{parameter}s consist of the Van der Waals parameters
-$A$ and $C$, as listed in {\tt ff???nb.itp}, where {\tt ptype} is the
+$A$ and $C$, as listed in the file {\tt ff???nb.itp}, where {\tt ptype} is the
 particle type (see \tabref{ptype}):
 {\small\begin{verbatim}
 [ atomtypes ]
@@ -369,39 +367,40 @@ particle type (see \tabref{ptype}):
     .....
 
 [ pairtypes ]
-  ; i    j func         cs6          cs12    ; THESE ARE 1-4 INTERACTIONS
+  ; i    j func         cs6          cs12 ; THESE ARE 1-4 INTERACTIONS
     O    O    1 0.22617E-02   0.74158E-06
     O   OM    1 0.22617E-02   0.74158E-06
     .....
 \end{verbatim}}
 With $A$ and $C$ being defined as
 \beq
-	A_{ii} = 4\epsilon_i\sigma_i^{12}
+        A_{ii} = 4\epsilon_i\sigma_i^{12}
 \eeq
 \beq
-	C_{ii} = 4\epsilon_i\sigma_i^{6}
+        C_{ii} = 4\epsilon_i\sigma_i^{6}
 \eeq
 and computed according to the \swapindex{combination}{rule}s :
 \beq
-	A_{ij} = (A_{ii}A_{jj})^{\frac{1}{2}}
+        A_{ij} = (A_{ii}A_{jj})^{\frac{1}{2}}
 \eeq
 \beq
-	C_{ij} = (C_{ii}C_{jj})^{\frac{1}{2}}
+        C_{ij} = (C_{ii}C_{jj})^{\frac{1}{2}}
 \eeq
 It is also possible to use the combination rules where the $\sigma$'s are
 averaged:
 \beq
- 	\sigma_{ij} = \frac{1}{2}(\sigma_{ii}+\sigma_{jj})
+        \sigma_{ij} = \frac{1}{2}(\sigma_{ii}+\sigma_{jj})
 \eeq
 \beq
- 	\epsilon_{ij}=\sqrt{\epsilon_{ii} \epsilon_{jj}}
+        \epsilon_{ij}=\sqrt{\epsilon_{ii} \epsilon_{jj}}
 \eeq
 
 \subsection{1-4 interactions}
-The \swapindex{1-4}{interaction}s are also listed for the atom types
-in {\tt ff???nb.itp} under {\tt [~pairtypes~]}. It is possible to
-change them there of course, or add new parameters for different/new
-atom types.
+The \swapindex{1-4}{interaction}s for the atom types
+in {\tt ff???nb.itp} are listed in the {\tt [~pairtypes~]} section.
+The GROMACS and GROMOS force fields lists all these interactions 
+explicitly, but this section might be empty for force fields like
+OPLS that calculate the 1-4 interactions by scaling.
 
 \subsection{\normindex{Exclusions}}
 \label{subsec:excl}
@@ -662,7 +661,7 @@ on the code selected.
 
 \subsection{Termini database}
 The \swapindex{termini}{database}s are stored in {\tt ff???-n.tdb} and
-{\tt ff???-c.tdb} for the N- and C-terminus respectively. They contain
+{\tt ff???-c.tdb} for the N- and C-termini respectively. They contain
 information for the {\tt pdb2gmx} program on how to connect new atoms
 to existing ones, which atoms should be removed or changed and which
 bonded interactions should be added. The format of the is as follows
@@ -673,14 +672,14 @@ bonded interactions should be added. The format of the is as follows
 
 [ COO- ]
 [ replace ]
-C	C	C	12.011	0.27
+C       C       C       12.011  0.27
 [ add ]
-2	8	C	CA	N
-	O	OM	15.9994	-0.635
+2       8       C       CA      N
+        O       OM      15.9994 -0.635
 [ delete ]
 O
 [ impropers ]
-C	O1	O2	CA
+C       O1      O2      CA
 \end{verbatim}
 }
 
@@ -862,12 +861,12 @@ Urea         3
     1     3     6     2     2 0.000000e+00 1.673600e+02 
  
 [ position_restraints ]
-; This you wouldn't use normally for a molecule like Urea,
+; you wouldn't normally use this for a molecule like Urea,
 ; but it's here for didactical purposes
-;     ai   funct      fc
-       1       1      1000      1000      1000  ; Restrain to a point
-       2       1      1000         0      1000  ; Restrain to a line (Y-axis)
-       3       1      1000         0         0  ; Restrain to a plane (Y-Z-plane)
+; ai   funct    fc
+   1     1     1000    1000    1000 ; Restrain to a point
+   2     1     1000       0    1000 ; Restrain to a line (Y-axis)
+   3     1     1000       0       0 ; Restrain to a plane (Y-Z-plane)
 
 ; Include SPC water topology
 #include "spc.itp"
@@ -934,14 +933,14 @@ dihedrals. If you want to include Ryckaert-Bellemans type dihedrals
 in a topology, do the following (in case of {\eg} decane):
 \begin{verbatim}
 [ dihedrals ]
-;  ai    aj    ak    al funct           c0           c1           c2
+;  ai    aj    ak    al funct       c0       c1       c2
     1    2     3     4     3 
     2    3     4     5     3
 \end{verbatim}
 and do not forget to {\em erase the 1-4 interaction} 
 in {\tt [~pairs~]}!!
 
-{\bf {\tt [~position\_restraints~]} :} harmonically restrain particles
+{\bf {\tt [~position\_restraints~]} :} harmonically restrain the selected particles
 to reference positions (\secref{posre}). 
 The reference positions are read from a 
 separate coordinate file by \normindex{grompp}.
@@ -968,10 +967,10 @@ Urea       3
 
 [ atoms ]
 ;   nr    type   resnr  residu    atom    cgnr  charge
-     1       C       1    UREA      C1       1	 0.683	
+     1       C       1    UREA      C1       1   0.683  
      .................
      .................
-     8       H       1    UREA      H8       3	 0.276
+     8       H       1    UREA      H8       3   0.276
 
 [ bonds ]
 ;  ai    aj funct           c0           c1
@@ -1013,7 +1012,7 @@ previous section, but this time you only need to include files:
 {\small\begin{verbatim}
 ; The force field files to be included
 #include "ffgmx.itp"
-	
+        
 ; Include urea topology
 #include "urea.itp"
 
@@ -1051,25 +1050,25 @@ way to make use of the {\tt \#ifdef} option is as follows:
 ...
 
 [ atoms ]
-;   nr    type   resnr  residu    atom    cgnr        charge          mass
+; nr   type   resnr  residu   atom    cgnr    charge      mass
 #ifdef DeLoof
 ; Use Charges from DeLoof
-     1       C       1     TFE       C       1		 0.74
-     2       F       1     TFE       F       1		-0.25
-     3       F       1     TFE       F       1		-0.25
-     4       F       1     TFE       F       1		-0.25
-     5     CH2       1     TFE     CH2       1		 0.25
-     6      OA       1     TFE      OA       1		-0.65
-     7      HO       1     TFE      HO       1		 0.41
+   1      C      1    TFE       C       1       0.74
+   2      F      1    TFE       F       1      -0.25
+   3      F      1    TFE       F       1      -0.25
+   4      F      1    TFE       F       1      -0.25
+   5    CH2      1    TFE     CH2       1       0.25
+   6     OA      1    TFE      OA       1      -0.65
+   7     HO      1    TFE      HO       1       0.41
 #else
 ; Use Charges from VanBuuren
-     1       C       1     TFE       C       1		 0.59
-     2       F       1     TFE       F       1		-0.2
-     3       F       1     TFE       F       1		-0.2
-     4       F       1     TFE       F       1		-0.2
-     5     CH2       1     TFE     CH2       1		 0.26
-     6      OA       1     TFE      OA       1		-0.55
-     7      HO       1     TFE      HO       1		 0.3
+   1      C      1    TFE       C       1       0.59
+   2      F      1    TFE       F       1      -0.2
+   3      F      1    TFE       F       1      -0.2
+   4      F      1    TFE       F       1      -0.2
+   5    CH2      1    TFE     CH2       1       0.26
+   6     OA      1    TFE      OA       1      -0.55
+   7     HO      1    TFE      HO       1       0.3
 #endif
 
 [ bonds ]
@@ -1108,12 +1107,12 @@ Below is an example of a topology which changes from 200 propanols to
 PropPent          3
 
 [ atoms ]
-; nr  type  resnr  residue  atom  cgnr  charge     mass  typeB  chargeB   massB
-   1     H      1     PROP    PH     1   0.398    1.008    CH3      0.0  15.035
-   2    OA      1     PROP    PO     1  -0.548  15.9994    CH2      0.0  14.027
-   3   CH2      1     PROP   PC1     1   0.150   14.027    CH2      0.0  14.027
-   4   CH2      1     PROP   PC2     2   0.000   14.027
-   5   CH3      1     PROP   PC3     2   0.000   15.035
+; nr type resnr residue atom cgnr  charge    mass  typeB chargeB  massB
+  1    H    1     PROP    PH    1   0.398    1.008  CH3     0.0  15.035
+  2   OA    1     PROP    PO    1  -0.548  15.9994  CH2     0.0  14.027
+  3  CH2    1     PROP   PC1    1   0.150   14.027  CH2     0.0  14.027
+  4  CH2    1     PROP   PC2    2   0.000   14.027
+  5  CH3    1     PROP   PC3    2   0.000   15.035
 
 [ bonds ]
 ;  ai    aj funct    par_A  par_B 
@@ -1192,9 +1191,9 @@ used for generating exclusions (see~\ssecref{excl}).
 Methanes               1
 
 [ atoms ]
-;   nr    type   resnr  residu    atom    cgnr        charge          mass
-     1     CH4       1     CH4      C1       1             0        16.043
-     2     CH4       1     CH4      C2       2             0        16.043
+; nr   type   resnr  residu   atom    cgnr     charge    mass
+   1    CH4     1     CH4      C1       1          0    16.043
+   2    CH4     1     CH4      C2       2          0    16.043
 
 [ constraints ]
 ;  ai    aj funct   length_A  length_B

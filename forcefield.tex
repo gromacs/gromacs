@@ -1,4 +1,3 @@
-%
 % $Id$
 % 
 %       This source code is part of
@@ -84,7 +83,7 @@ act through the Coulomb term.
 
 \subsection{The Lennard-Jones interaction}
 \label{sec:lj}
-The \normindex{Lennard Jones} potential $V_{LJ}$ between two atoms equals
+The \normindex{Lennard-Jones} potential $V_{LJ}$ between two atoms equals
 \beq
 V_{LJ}(\rij) =  \frac{C_{ij}^{(12)}}{\rij^{12}} -
                         \frac{C_{ij}^{(6)}}{\rij^6}     
@@ -133,7 +132,7 @@ or, alternatively,
 \subsection{Buckingham potential}
 The \normindex{Buckingham} 
 potential has a more flexible and realistic repulsion term
-than the Lennard Jones interaction, but is also more expensive to
+than the Lennard-Jones interaction, but is also more expensive to
 compute. The potential form is:
 \beq
 V_{bh}(\rij) = A_{ij} \exp(-B_{ij} \rij) -
@@ -473,7 +472,7 @@ a cubic bond stretching potential for the O-H bond
 was developed by Ferguson~\cite{Ferguson95}. This model was found
 to yield a reasonable Infrared spectrum. The Ferguson water model is
 available in the {\gromacs} library. 
-It should be noted that the potential is assymetric, overstretching leads to
+It should be noted that the potential is asymetric, overstretching leads to
 infinitely low energies. The \swapindex{integration}{timestep} is therefore
 limited to 1 fs.
 
@@ -538,7 +537,7 @@ k^{\theta} \sin^2(\tijk^0) = k^{\theta,harm}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{\swapindex{Improper}{dihedral}s}
-Improper Dihedrals are meant to keep \swapindex{planar}{group}s planar ({\eg} 
+Improper dihedrals are meant to keep \swapindex{planar}{group}s planar ({\eg} 
 aromatic rings) or to prevent molecules from flipping over to their
 \normindex{mirror image}s, see \figref{imp}.
 
@@ -791,8 +790,8 @@ The forces are
 
 \subsubsection{Time averaging}
 
-Distance restraints based on instantaneous distances can greatly reduce
-the fluctuations in a molecule. This problem can be overcome by restraining
+Distance restraints based on instantaneous distances can potentially reduce
+the fluctuations in a molecule significantly. This problem can be overcome by restraining
 to a {\em time averaged} distance~\cite{Torda89}.
 The forces with time averaging are:
 \beq
@@ -906,12 +905,12 @@ A list of distance restrains based on NOE data can be added to a molecule
 definition in your topology file, like in the following example:
 \begin{verbatim}
 [ distance_restraints ]
-; ai    aj      type    index   type'   low      up1     up2     fac
-10      16      1       0       1       0.0      0.3     0.4     1.0 
-10      28      1       1       1       0.0      0.3     0.4     1.0 
-10      46      1       1       1       0.0      0.3     0.4     1.0 
-16      22      1       2       1       0.0      0.3     0.4     2.5 
-16      34      1       3       1       0.0      0.5     0.6     1.0 
+; ai   aj    type  index  type'   low    up1    up2    fac
+10     16     1      0      1     0.0    0.3    0.4    1.0 
+10     28     1      1      1     0.0    0.3    0.4    1.0 
+10     46     1      1      1     0.0    0.3    0.4    1.0 
+16     22     1      2      1     0.0    0.3    0.4    2.5 
+16     34     1      3      1     0.0    0.5    0.6    1.0 
 \end{verbatim}
 In this example a number of features can be found.  In columns {\tt
 ai} and {\tt aj} you find the atom numbers of the particles to be
@@ -942,11 +941,12 @@ Some parameters for NMR refinement can be specified in the
         can be turned on by setting {\tt disre = ensemble}.
 \item[{\tt disre\_weighting}: force-weighting in restraints with
          multiple pairs.]
-        The distance restraint force can be distributed equally
-        over all the pairs involved in the restraint by setting
-        {\tt disre\_weighting = equal}.
-        The option {\tt disre\_weighting = conservative}
-        gives conservative forces when {\tt disre\_tau = 0}.
+        By default, the force due to the distance restraint is distributed equally
+        over all the pairs involved in the restraint. This can also be
+        explicitly selected with
+        {\tt disre\_weighting = equal}. 
+        If you instead set this option to {\tt disre\_weighting = conservative}
+        you get conservative forces when {\tt disre\_tau = 0}.
 \item[{\tt disre\_mixed}: how to calculate the violations.]
         {\tt disre\_mixed = no} gives normal time averaged violations.
         When {\tt disre\_mixed = yes} the square root of the
@@ -1039,7 +1039,7 @@ defined using the dielectric
 constant $\epsrf$ of the medium (see \secref{coulrf}).
 
 \subsubsection{Lennard-Jones interaction}
-For the \normindex{Lennard Jones} interaction between two particles 
+For the \normindex{Lennard-Jones} interaction between two particles 
 of which the {\em atom type} varies with $\LAM$ we can write:
 \bea
 V_{LJ}  &=&     \frac{(\LL C_{12}^A + \LAM C_{12}^B)}{\rij^{12}} -
@@ -1509,4 +1509,4 @@ BOX (optional)
 \end{verbatim}
 \end{itemize}
 See the \gromosv{96} manual~\cite{gromos96} for a complete description of the
-blocks. Note that all {\gromacs} programs can read compressed or g-zipped files.
+blocks. Note that all {\gromacs} programs can read compressed or gzip:ed files.

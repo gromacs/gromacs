@@ -16,28 +16,23 @@ set INDEX	= $TEXMAN/all.tex
 cd $BINDIR
 echo -n "Generating manpage from gromacs binaries in "
 pwd
-set PROGRAMS    = 
-foreach program ( `\ls -1 | grep -v "#"` )
-  if ( ( $program != average ) && ( $program != luck ) && ( $program != my_dssp ) ) then
-    set PROGRAMS = "$PROGRAMS $program"
-  endif
-end
+set PROGRAMS    = [a-z]*
 
 if ( ! -d $TEXMAN ) mkdir $TEXMAN
 cd $TEXMAN
-\rm *
+\rm -f *
 touch $INDEX
-foreach prog ( $PROGRAMS )
-  set PROG = $BINDIR/$prog
-  if ( ( -x $PROG ) && ( $prog != "my_dssp" ) && ( $prog != "luck" ) ) then
-    echo -n "$prog "
+foreach program ( $PROGRAMS )
+  set PROG = $BINDIR/$program
+  if ( ( -x $PROG ) && ( $program != "my_dssp" ) && ( $program != "GMXRC" ) && ( $program != "completion.csh" ) && ( $program != "completion.zsh" ) && ( $program != "average" ) && ( $program != "completion.bash" ) && ( $program != "luck" ) ) then
+    echo -n "$program "
     $PROG -quiet -man tex >& /dev/null
     endif
-    if ( -f $prog.tex ) then
-      grep -v "Use dialog box GUI to edit command line options" $prog.tex >! mkman_temp.tex
-      grep -v "Set non blocking priority" mkman_temp.tex >! $prog.tex
+    if ( -f $program.tex ) then
+      grep -v "Use dialog box GUI to edit command line options" $program.tex >! mkman_temp.tex
+      grep -v "Set non blocking priority" mkman_temp.tex >! $program.tex
       \rm mkman_temp.tex
-      echo "\\input{"$MANDIR"/"$prog"}" >> $INDEX
+      echo "\\input{"$MANDIR"/"$program"}" >> $INDEX
     endif
   endif
 end

@@ -24,7 +24,9 @@ sed \
 -e 's/<[aA] [^>]*>//g' \
 -e 's/<\/[aA]>//g' \
 -e 's/<[iI][mM][gG] [^>]*>//g' \
+-e 's/<[pP]>//g' \
 -e 's/<\/[pP]>//g' \
+-e 's/&[nN][bB][sS][pP];/~/g' \
 -e 's/<[hH][rR]>//g' \
 $HTMLMDPOPT >! temp1
 

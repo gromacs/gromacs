@@ -31,19 +31,19 @@
 \newcommand{\rs}{$r_{short}$}
 \newcommand{\rl}{$r_{long}$}
 {\gromacs} is quite flexible in treating cut-offs, which implies
-that there are quite a number of parameters to set. The parameters are
-set in the input file for grompp. One should distinguish two parts of
-the parameters: firstly the parameters that describe the function
-(Coulomb / VDW,
-\tabref{funcparm}) and
-secondly the parameters that describe neighbor searching.
+there can be quite a number of parameters to set. These parameters are
+set in the input file for grompp. There are two sort of parameters
+that affect the cut-off interactions; you can select which type
+of interaction to use in each case, and which cut-offs should be
+used in the neighborsearching.
 
-In summary, for both Coulomb and VdW there are a type selector
-({\tt vdwtype} resp. {\tt coulombtype}) and two parameters,
-for a total of six parameters. See \secref{mdpopt} for a complete
+For both Coulomb and van der Waals interactions there are interaction
+type selectors
+(termed {\tt vdwtype} and {\tt coulombtype}) and two parameters,
+for a total of six nonbonded interaction parameters. See \secref{mdpopt} for a complete
 description of these parameters.
 
-The neighbor searching (NS) maybe done using a single-range, or a twin-range 
+The neighbor searching (NS) can be performed using a single-range, or a twin-range 
 approach. Since the former is merely a special case of the latter we will 
 discuss the more general twin-range. In this case NS is described by two
 radii {\tt rlist} and max({\tt rcoulomb},{\tt rvdw}).
@@ -85,20 +85,20 @@ charge group can diffuse within neighbor list updates).
 %{\tt rshort} and {\tt rlong} which are the two radii {\rs} and {\rl}
 %described above.
 
-\begin{table}[h]
+\begin{table}[ht]
 \centering
 \begin{tabular}{|ll|l|}
 \dline
-\multicolumn{2}{|c|}{Type}		& Parameters		\\
+\multicolumn{2}{|c|}{Type}              & Parameters            \\
 \hline
-Coulomb&Plain cut-off	& $r_c$, $\epsr$	\\
-&Reaction field		& $r_c$, $\epsrf$	\\
-&Shift function		& $r_1$, $r_c$, $\epsr$		\\
-&Switch function 	& $r_1$, $r_c$, $\epsr$		\\
+Coulomb&Plain cut-off   & $r_c$, $\epsr$        \\
+&Reaction field         & $r_c$, $\epsrf$       \\
+&Shift function         & $r_1$, $r_c$, $\epsr$         \\
+&Switch function        & $r_1$, $r_c$, $\epsr$         \\
 \hline
-VdW&Plain cut-off	& $r_c$ 	\\
-&Shift function	   	& $r_1$, $r_c$ 		\\
-&Switch function   	& $r_1$, $r_c$ 		\\
+VdW&Plain cut-off       & $r_c$         \\
+&Shift function         & $r_1$, $r_c$          \\
+&Switch function        & $r_1$, $r_c$          \\
 \dline
 \end{tabular}
 \caption[Parameters for the different functional forms of the

@@ -35,9 +35,9 @@
 \newcommand{\de}{\mbox{d}} 
   % defines a straight d for derivatives.
 \newcommand{\intel}{Intel {\em i\/}860}
-\newcommand{\gromacs}{{\sl GROMACS\/}}
-\newcommand{\gromosv}[1]{{\sl GROMOS-#1\/}}
-\newcommand{\gromos}{{\sl GROMOS\/}}
+\newcommand{\gromacs}{GROMACS}
+\newcommand{\gromosv}[1]{GROMOS-#1}
+\newcommand{\gromos}{GROMOS}
 \newcommand{\dline}{\hline\hline}
 \newcommand{\etal}{{\em et al.}}
 \newcommand{\beq}{\begin{equation}}
@@ -66,17 +66,17 @@
 \newcommand{\rni}{\ve{r}_i^n}
 \newcommand{\hdt}{\frac{\Delta t}{2}}
 \newcommand{\type}[1]{\\ {\tt \% #1}\\}
-\newcommand{\normindex}[1]{#1\lowercase{\index{#1}}}
-\newcommand{\swapindex}[2]{#1 #2\lowercase{\index{#1 #2}}\lowercase{\index{#2, #1|see{#1 #2}}}}
-\newcommand{\pawsindex}[2]{#1 #2\lowercase{\index{#1 #2|see{#2, #1}}}\lowercase{\index{#2, #1}}}
+\newcommand{\normindex}[1]{#1{\index{#1}}}
+\newcommand{\swapindex}[2]{#1 #2{\index{#1 #2}}{\index{#2, #1|see{#1 #2}}}}
+\newcommand{\pawsindex}[2]{#1 #2{\index{#1 #2|see{#2, #1}}}{\index{#2, #1}}}
 \newcommand{\boldindex}[1]{#1\index{#1@\textbf{#1}}}
-\newcommand{\seeindex}[2]{#1\lowercase{\index{#1|see{#2}}}}
+\newcommand{\seeindex}[2]{#1{\index{#1|see{#2}}}}
 \newcommand{\eg}{e.g.\@}
 \newcommand{\ie}{i.e.\@}
 \newcommand{\mc}[3]{\multicolumn{#1}{#2}{#3}}
 
 % Commands for correct spacing in tables
-% 	TeX and TUG News, Vol.2, No.3, p10, 1993. 
+%       TeX and TUG News, Vol.2, No.3, p10, 1993. 
 %
 \newcommand\T{\rule{0pt}{2.6ex}}         % Top strut
 \newcommand\B{\rule[-1.2ex]{0pt}{0pt}}   % Bottom strut

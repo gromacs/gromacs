@@ -3,7 +3,7 @@
 % 
 %       This source code is part of
 % 
-%        G   R   O   M   A   C   S
+%        G   R   O   M   A  C   S
 % 
 % GROningen MAchine for Chemical Simulations
 % 
@@ -125,16 +125,16 @@ Equations (\ref{box_shift1}) and (\ref{box_shift2}) can always be
 statisfied by adding and subtracting box vectors.
 
 Even when simulating using a triclinic box, {\gromacs} always puts the
-particles in a brick shaped volume, because of efficiency reasons.
+particles in a brick shaped volume, for efficiency reasons.
 This is illustrated in \figref{pbc} for a 2-dimensional system.
 So from the output trajectory it might seem like the simulation was done in
 a rectangular box. The program {\tt trjconv} can be used to convert the
 trajectory to a different unit-cell representation.
 
-It is also possible to simulate without periodic boundary conditions.
-But often is is more efficient to simulate an isolated cluster of molecules
-in a large periodic box, since grid search can only be used in a periodic
-system.
+It is also possible to simulate without periodic boundary conditions,
+but it is more efficient to simulate an isolated cluster of molecules
+in a large periodic box, since fast grid searching can only be used 
+in a periodic system.
 
 \begin{figure}
 \centerline{
@@ -259,8 +259,8 @@ non-equilibrium state and enables to perform
 \swapindex{non-equilibrium}{MD} to obtain transport properties.
 \item[\swapindex{Energy monitor}{group}]
 Mutual interactions between all energy monitor groups are compiled
-during the simulation. This is done for Lennard Jones and Coulomb
-terms separately.  In principle up to 256 groups could be defined, but
+during the simulation. This is done separately for Lennard-Jones and Coulomb
+terms.  In principle up to 256 groups could be defined, but
 that would lead to 256$\times$256 items! Better use this concept
 sparingly.
 
@@ -324,12 +324,12 @@ chapter does not describe how these are obtained; for the setup of an
 actual MD run check the online manual at {\wwwpage}.
 
 \subsection{Initial conditions}
-\subsubsection*{Topology and force field}
+\subsubsection{Topology and force field}
 The system topology, including a description of the force field, must
 be loaded. These items are described in \chref{ff}.
 All this information is static; it is never modified during the run.
 
-\subsubsection*{Coordinates and velocities}
+\subsubsection{Coordinates and velocities}
 \begin{figure}
 \centerline{\includegraphics[width=8cm,angle=270]{plots/maxwell}}
 \caption{A Maxwellian distribution, generated from random numbers.}
@@ -365,7 +365,7 @@ temperature $T$, a correction is made: first the center-of-mass motion
 is removed and then all velocities are scaled such that the total
 energy corresponds exactly to $T$ (see \eqnref{E-T}).
 
-\subsubsection*{Center-of-mass motion}
+\subsubsection{Center-of-mass motion}
 The \swapindex{center-of-mass}{velocity} is normally set to zero at
 every step.  Normally there is no net external force acting on the
 system and the center-of-mass velocity should remain constant. In
@@ -501,7 +501,7 @@ long-range electrostatics.
 \subsubsection{Potential energy}
 When forces are computed, the \swapindex{potential}{energy} of each
 interaction term is computed as well. The total potential energy is
-summed for various contributions, such as Lennard Jones, Coulomb, and
+summed for various contributions, such as Lennard-Jones, Coulomb, and
 bonded terms. It is also possible to compute these contributions for
 {\em groups} of atoms that are separately defined (see
 \secref{group}).
@@ -569,8 +569,7 @@ implementation  in {\gromacs} of the virial computation is described.
 \label{subsec:update}
 \begin{figure}
 \centerline{\includegraphics[width=8cm]{plots/leapfrog}}
-\caption[The Leap-Frog integration method.]{The Leap-Frog integration method. The algorithm is called
-Leap-Frog  (Haasje Over), because r and v are leaping
+\caption[The Leap-Frog integration method.]{The Leap-Frog integration method. The algorithm is called Leap-Frog because r and v are leaping
 like  frogs over each others back.}
 \label{fig:leapfrog}
 \end{figure}
@@ -599,7 +598,8 @@ The \swapindex{equations of}{motion} are modified for temperature coupling
  and pressure coupling, and extended to include the conservation of
 constraints, all of which are described below.
 
-\subsubsection{\swapindex{Temperature}{coupling}}
+\subsection{\swapindex{Temperature}{coupling}}
+\index{temperature coupling}
 For several reasons (drift during equilibration, drift as a result of
 force truncation and integration errors, heating due to external or
 frictional forces), it is necessary to control the temperature of the
@@ -607,10 +607,11 @@ system. {\gromacs} can use either
 the {\em weak coupling} scheme of Berendsen~\cite{Berendsen84} or
 the extended ensemble Nos{\'e}-Hoover scheme~\cite{Nose84,Hoover85}.
 
-\subsubsection{Berendsen temperature coupling}
+\subsubsection{\swapindex{Berendsen}{temperature coupling}}
+\index{weak coupling}
 The Berendsen algorithm mimics weak coupling with first-order 
 kinetics to an external heat bath with given temperature $T_0$. 
-See ref~\cite{Berendsen91} for a comparison with the
+See ref.~\cite{Berendsen91} for a comparison with the
 Nos{\'e}-Hoover scheme. The effect of this algorithm is
 that a deviation of the system temperature from $T_0$ is slowly
 corrected according to
@@ -662,19 +663,92 @@ perfectly all right since the coupling time constant is much longer
 than one time step. The Berendsen algorithm is stable up 
 to $\tau_T \approx \Dt$.
 
-\subsubsection{Nos{\'e}-Hoover temperature coupling}
+
+\subsubsection{\swapindex{Nos{\'e}-Hoover}{temperature coupling}}
+\index{extended ensemble}
+The Berendsen weak coupling algorithm is extremely efficient for relaxing
+a system to the target temperature, but once your system
+has reached equilibrium it might be more important to probe a
+correct canonical ensemble. This is unfortunately not the case for
+the weak coupling scheme, although the difference is usually negligible.
+
+To enable canonical ensemble simulations, \gromacs also supports the 
+extended-ensemble approach first proposed by Nos\'e\cite{Nose84} and later 
+modified by Hoover\cite{Hoover85}. The system Hamiltonian 
+is extended by introducing a 
+thermal reservoir and a friction term in the equations of motion.
+The friction force is proportional to the product of each particle's
+velocity and a friction parameter $\xi$. This friction
+parameter (or 'heat bath' variable) is a fully dynamic quantity with
+its own equation of motion; the time 
+derivative is calculated from the difference between the current
+kinetic energy and the reference temperature. 
+
+In the formulation of Hoover, the particles' equations of motion 
+in \figref{global} are replaced by
+
+\beq
+\frac {\de^2\ve{r}_i}{\de t^2} = \frac{\ve{F}_i}{m_i} - 
+\xi \frac{\de \ve{r}_i}{\de t} ,
+\label{eqn:NH-eqn-of-motion}
+\eeq
+
+where the equation of motion for the heat bath parameter $\xi$ is
+
+\beq
+\frac {\de \xi}{\de t} = \frac{1}{Q}\left( T - T_0 \right).
+\eeq
+
+The reference temperature is denoted $T_0$, while $T$ is the current
+momentary temperature of the system. The strength of the coupling is
+determined by the constant $Q$ (usually called the 'mass parameter' 
+of the reservoir) in combination with the reference temperature.
+
+In our opinion, the mass parameter is a somewhat awkward way of 
+describing coupling strength, especially due to its dependence on
+reference temperature (and some implementations even include the number
+of degrees of freedom in your system when defining $Q$). 
+To maintain the coupling strength, you would have to change $Q$  
+proportional to your change in reference temperature. For this reason,
+we prefer to let the \gromacs user work with the
+period $\tau_T$ of the oscillations of kinetic energy between the 
+system and the reservoir instead. It is directly related to $Q$ and $T_0$ as
+
+\beq
+Q = \frac {\tau_T^2 T_0}{4 \pi^2}.
+\eeq
+
+This provides a much more intuitive way of selecting the Nos{\'e}-Hoover
+coupling strength (similar to the weak coupling relaxation), 
+and in addition $\tau_T$ is independent of system size and reference
+temperature. 
+
+It is however important to keep the difference between the 
+weak coupling scheme and the Nos\'e-Hoover algorithm in mind: 
+Using weak coupling you get a
+strongly damped {\em exponential relaxation}, 
+while the Nos\'e-Hoover approach
+produces an {\em oscillatory relaxation}. 
+The actual time it takes to relax with Nos\'e-Hoover coupling is 
+several times larger than the period of the
+oscillations that you select. These oscillations (in contrast
+to exponential relaxation) also means that
+the time constant normally should be 4--5 times larger
+than the relaxation time used with weak coupling, but your 
+mileage may vary.
 
 
-
-\subsubsection*{\swapindex{Pressure}{coupling}}
+\subsection{\swapindex{Pressure}{coupling}}
 In the same spirit as the temperature coupling, the system can also be
 coupled to a 'pressure bath'. 
 {\gromacs} supports both the Berendsen algorithm~\cite{Berendsen84} 
 that scales coordinates and box vectors every step, and the 
-extended ensemble Parinello-Rahman approach. Both of these can be
+extended ensemble Parrinello-Rahman approach. Both of these can be
 combined with any of the temperature coupling methods above.
 
 \subsubsection{Berendsen pressure coupling}
+\label{sec:berendsen_pressure_coupling}
+\index{weak coupling}
 The Berendsen algorithm rescales the 
 coordinates and box vectors every step with a matrix {\boldmath $\mu$},
 which has the effect of a first-order kinetic relaxation of the pressure
@@ -688,6 +762,8 @@ The scaling matrix {\boldmath $\mu$} is given by
 = \delta_{ij} - \frac{\Delta t}{3\, \tau_p} \beta_{ij} \{P_{0ij} - P_{ij}(t) \}
 \label{eqn:mu}
 \eeq
+\index{isothermal compressibility}
+\index{compressibility}
 Here {\boldmath $\beta$} is the isothermal compressibility of the system.
 In most cases this will be a diagonal matrix, with equal elements on the
 diagonal, the value of which is generally not known.
@@ -720,12 +796,75 @@ In this case the $x/y$-directions are scaled isotropically and the $z$
 direction is scaled independently. The compressibility in the $x/y$ or
 $z$-direction can be set to zero, to scale only in the other direction(s).
 
-\subsubsection{Parinello-Rahman pressure coupling}
+If you allow full anisotropic deformations and use constraints
+you might have to scale slower or decrease your timestep to avoid 
+errors from the constraint algorithms. 
 
 
+\subsubsection{\swapindex{Parrinello-Rahman}{pressure coupling}}
+
+In cases where the fluctuations in pressure or volume 
+are important {\em per se} (e.g. to calculate thermodynamic
+properties) it might at least theoretically be a problem that the 
+exact ensemble is not well-defined for the weak coupling scheme. 
+
+For this reason, \gromacs also supports constant-pressure simulations using 
+the Parrinello-Rahman approach\cite{Parrinello81,Nose83}, which is similar
+to the Nos\'e-Hoover temperature coupling. With the Parrinello-Rahman 
+barostat, the box vectors as represented by the matrix \ve{b} obey
+the matrix equation of motion\footnote{The box matrix representation \ve{b} in 
+\gromacs corresponds to the transpose of the box matrix representation 
+\ve{h} in the paper by Nos\'e and Klein. Because of this, some of our 
+equations will look slightly different.}
+
+\beq
+\frac{\de \ve{b}^2}{\de t^2}= V \ve{W}^{-1} \ve{b}'^{-1} \left( \ve{P} - \ve{P}_{ref}\right).
+\eeq
+
+The volume of the box is denoted $V$, and $\ve{W}$ is a matrix parameter that determines
+the strength of the coupling. The matrices \ve{P} and \ve{P}$_{ref}$ are the 
+current and reference pressures, respectively.
+
+The equations of motion for the particles are also changed, just as
+for the Nos\'e-Hoover coupling. In most cases you would combine the 
+Parrinello-Rahman barostat with the Nos\'e-Hoover
+thermostat, but to keep it simple we only show the Parrinello-Rahman 
+modification here:
+
+\bea
+\frac {\de^2\ve{r}_i}{\de t^2} & = & \frac{\ve{F}_i}{m_i} - 
+\ve{M} \frac{\de \ve{r}_i}{\de t} , \\
+\ve{M} & = & \ve{b}^{-1} \left[ \ve{b} \frac{\de \ve{b}'}{\de t} + \frac{\de \ve{b}}{\de t} \ve{b}' \right] \ve{b}'^{-1}.
+\eea
+The (inverse) mass parameter matrix $\ve{W}^{-1}$ determines the
+strength of the coupling, and how the box can be deformed.
+The box restriction (\ref{box_rot}) will be fulfilled automatically
+if the corresponding elements of $\ve{W}^{-1}$ are zero. Since the
+coupling strength also depends on the size of your box, we prefer
+to calculate it automatically in \gromacs. 
+You only have to provide the approximate
+isothermal compressibilities {\boldmath $\beta$} 
+and the pressure time constant $\tau_p$ in the input file
+($L$ is the largest box matrix element):
+
+\beq
+\left( \ve{W}^{-1} \right)_{ij} = \frac{4 \pi^2 \beta_{ij}}{3 \tau_p^2 L}.
+\eeq
+
+Just as for the Nos\'e-Hoover thermostat, you should realize that
+the Parrinello-Rahman time constant is {\em not} equivalent to the 
+relaxation time used in the Berendsen pressure coupling algorithm. 
+In most cases you will need to use a 4--5
+times larger time constant with Parrinello-Rahman coupling. If
+your pressure is very far from equilibrium, the Parrinello-Rahman
+coupling may result in very
+large box oscillations that could even crash your run. 
+In that case you would have to increase the time constant, or (better)
+use the weak coupling scheme to reach the target pressure, and then
+switch to Parrinello-Rahman coupling once the system is in equilibrium.
 
 
-\subsubsection*{\swapindex{Surface tension}{coupling}}
+\subsubsection{\swapindex{Surface tension}{coupling}}
 When a periodic system consists of more than one phase, separated by
 surfaces which are parallel to the xy-plane,
 the surface tension and the z-component of the pressure can be coupled
@@ -768,7 +907,7 @@ When $\beta_{zz}$ is set to zero (constant box height), $\Delta P_z$ is also set
 to zero, which is necessary for obtaining the correct surface tension. 
 
 
-\subsubsection*{The complete update algorithm}
+\subsubsection{The complete update algorithm}
 \begin{figure}
 \begin{center}
 \addtolength{\fboxsep}{0.5cm}
@@ -837,7 +976,7 @@ are  mirrored with respect to the sampling frequency and appear as
 lower frequencies. 
 
 \section{Shell molecular dynamics}
-{\gromacs} can simulate \normindex{polarizability} using the {\em so-called}
+{\gromacs} can simulate \normindex{polarizability} using the 
 \normindex{shell model} of Dick and Overhauser~\cite{Dick58}. In such models
 a shell particle representing the electronic degrees of freedom is
 attached to a nucleus by a spring. The potential energy is minimized with
@@ -944,7 +1083,7 @@ algorithm~\cite{Miyamoto92} (\secref{constraints}).
 
 \subsection{\normindex{LINCS}}
 
-\subsubsection*{The LINCS algorithm}
+\subsubsection{The LINCS algorithm}
 LINCS is an algorithm that resets bonds to their correct lengths
 after an unconstrained update~\cite{Hess97}. 
 The method is non-iterative, as it always uses two steps.
@@ -955,7 +1094,7 @@ isolated angle constraints, such as the proton angle in OH.
 Because of its stability LINCS is especially useful for Brownian dynamics. 
 LINCS has two parameters, which are explained in the subsection parameters.
  
-\subsubsection*{The LINCS formulas}
+\subsubsection{The LINCS formulas}
 We consider a system of $N$ particles, with positions given by a
 $3N$ vector $\ve{r}(t)$.
 For molecular dynamics the equations of motion are given by Newton's law
@@ -1071,7 +1210,7 @@ multiple small ring structures are introduced.
 This gives a high connectivity, leading to large eigenvalues.
 Therefore LINCS should NOT be used with coupled angle-constraints.
 
-\subsubsection*{The LINCS Parameters}
+\subsubsection{The LINCS Parameters}
 The accuracy of LINCS depends on the number of matrices used
 in the expansion \eqnref{m3}. For MD calculations a fourth order
 expansion is enough. For Brownian dynamics with
@@ -1228,10 +1367,10 @@ $f=7.7$ kJ~mol$^{-1}$~nm$^{-1}$. A value for $\epsilon$ between 1 and
 10 is acceptable.   
 
 \subsection{\normindex{Conjugate Gradient}}
-Cojugate gradient is slower than steepest descent in the early stages of
+Conjugate gradient is slower than steepest descent in the early stages of
 the minimization, but becomes more efficient closer to the energy minimum.
 The parameters and stop criterion are the same as for steepest descent.
-Cojugate gradient can not be used with constraints or freeze groups.
+Conjugate gradient can not be used with constraints or freeze groups.
 
 
 \section{Normal Mode Analysis}
@@ -1383,7 +1522,7 @@ in a bath of 1000 water molecules at constant volume would produce an
 additional pressure of 22 bar and a correction to the Helmholtz free
 energy of -20 J/mol.
 
-In cartesian coordinates, the kinetic energy term in the hamiltonian
+In cartesian coordinates, the kinetic energy term in the Hamiltonian
 depends only on the momenta, and can be separately integrated and in
 fact removed from the equations. When masses do not change, there is
 no contribution from the kinetic energy at all; otherwise the
@@ -1474,7 +1613,7 @@ We list them here:
                 operate in parallel. Programming this way is much
                 like vectorizing: recurrence is not parallelized
                 ({\eg} {\tt for(i=1; (i<MAX); i++) a[i] = a[i-1] + 1;}
-                does not vectorise and not parallelize, because for
+                does not vectorize and not parallelize, because for
                 every i the result from the previous step is needed).
 
                 The advantage of data parallelism is that it is
@@ -1517,7 +1656,9 @@ For an $O(N^2)$ problem like MD, one of the best schemes for the
 interprocessor connections is a ring, so our software demands that a
 ring is present in the interprocessor connections. A ring can essentially
 always be mapped onto another network like a \normindex{hypercube}, a
-bus interface (Ethernet {\eg} using \seeindex{Message Passing Interface}{MPI} \normindex{MPI}~\cite{mpi}) or a \normindex{tree}
+bus interface (Ethernet {\eg} using 
+\seeindex{Message Passing Interface}{MPI} \normindex{MPI}) or 
+a \normindex{tree}
 (CM-5). Some hardware vendors have very luxurious connection schemes
 that connect every processor to every other processor, but we do not
 really need it and so do not use it even though it might come in handy
@@ -1612,12 +1753,14 @@ particles. The number of interactions per particle is dependent on the
 
 A flow chart of the algorithm is given in \figref{mdpar}.
 \begin{figure}
-\centerline{\includegraphics[height=19cm]{plots/mdpar}}
+\centerline{\includegraphics[height=18cm]{plots/mdpar}}
 \caption[The Parallel MD algorithm.]{The Parallel MD algorithm. If
 the steps marked * are left out we have the sequential algorithm
 again.}
 \label{fig:mdpar}
 \end{figure}
+\vfill
+
 It is the same as the sequential algorithm, except for two
 communication steps. After the particles have been reset in the box,
 each processor sends its coordinates left and then starts computation
@@ -1659,7 +1802,7 @@ void communicate_r(int nprocs,int pid,rvec vecs[],int start[],int homenr[])
 
 \end{footnotesize}
 
-The data flow around the ring is visualised in \figref{ring}. 
+The data flow around the ring is visualized in \figref{ring}. 
 Note that because of the ring topology each processor automatically 
 gets the proper particles to interact with.
 \begin {figure}

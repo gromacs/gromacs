@@ -216,14 +216,14 @@
 \def\ps@fancy{
 \let\@mkboth\markboth
 \@ifundefined{chapter}{\def\sectionmark##1{\markboth
-{\uppercase{\ifnum \c@secnumdepth>\z@
- \thesection\hskip 1em\relax \fi ##1}}{}}
+{\ifnum \c@secnumdepth>\z@
+ \thesection\hskip 1em\relax \fi ##1}{}}
 \def\subsectionmark##1{\markright {\ifnum \c@secnumdepth >\@ne
  \thesubsection\hskip 1em\relax \fi ##1}}}
-{\def\chaptermark##1{\markboth {\uppercase{\ifnum \c@secnumdepth>\m@ne
- \@chapapp\ \thechapter. \ \fi ##1}}{}}
-\def\sectionmark##1{\markright{\uppercase{\ifnum \c@secnumdepth >\z@
- \thesection. \ \fi ##1}}}}
+{\def\chaptermark##1{\markboth {\ifnum \c@secnumdepth>\m@ne
+ \@chapapp\ \thechapter. \ \fi ##1}{}}
+\def\sectionmark##1{\markright{\ifnum \c@secnumdepth >\z@
+ \thesection. \ \fi ##1}}}
 \def\@oddhead{\@fancyhead\relax\@olhead\@ochead\@orhead\hss}
 \def\@oddfoot{\@fancyfoot\relax\@olfoot\@ocfoot\@orfoot\hss}
 \def\@evenhead{\@fancyhead\hss\@elhead\@echead\@erhead\relax}
