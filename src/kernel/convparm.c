@@ -29,6 +29,7 @@
 static char *SRCID_convparm_c = "$Id$";
 
 #include <sysstuff.h>
+#include "physics.h"
 #include "assert.h"
 #include "smalloc.h"
 #include "typedefs.h"
@@ -114,9 +115,18 @@ static void assign_param(t_functype ftype,t_iparams *new,
     break;
   case F_DUMMY1:
   case F_DUMMY2:
+  case F_DUMMY2FD:
   case F_DUMMY3:
     new->dummy.a=old[0];
     new->dummy.b=old[1];
+    new->dummy.c=old[2];
+    new->dummy.d=old[3];
+    new->dummy.e=old[4];
+    new->dummy.f=old[5];
+    break;
+  case F_DUMMY2FAD:
+    new->dummy.a=old[1] * cos(DEG2RAD * old[0]);
+    new->dummy.b=old[1] * sin(DEG2RAD * old[0]);
     new->dummy.c=old[2];
     new->dummy.d=old[3];
     new->dummy.e=old[4];
