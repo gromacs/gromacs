@@ -1269,7 +1269,7 @@ void finnerloop(char *loopname)
 	p_state("tjB",buf);
 	p_state("c6a",ARR(nbfp,tjA));
 	p_state("c6b",ARR(nbfp,tjB));
-	p_state("c6","L14*c6a + L13*c6b");
+	p_state("c6","L13*c6a + lam3*c6b");
 	nflop += 3;
       }
       else 
