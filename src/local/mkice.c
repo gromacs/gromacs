@@ -46,7 +46,6 @@ static char *SRCID_mkice_c = "$Id$";
 #include "symtab.h"
 #include "confio.h"
 
-#define ODIST 0.274
 #define HDIST 0.1
 #define TET   109.47
 #define DCONS 0.117265878
@@ -70,7 +69,7 @@ static real yaw_lj[5][10] = {
   { 0, COS, 0, CHS, 0, CHS, 0, 0, 2.6e-3, 0   }
 };
 
-void unitcell(rvec x[],rvec box,bool bYaw)
+void unitcell(rvec x[],rvec box,bool bYaw,real odist)
 {
 #define cx  0.81649658
 #define cy  0.47140452
@@ -113,7 +112,7 @@ void unitcell(rvec x[],rvec box,bool bYaw)
       iout = 5*i;
     else
       iout = iin;
-    svmul(ODIST,xx[iin],x[iout]);
+    svmul(odist,xx[iin],x[iout]);
     svmul(-0.82,x[iout],t2);
     rvec_inc(dip,t2);
     for(j=1; (j<=2); j++) {
@@ -132,7 +131,7 @@ void unitcell(rvec x[],rvec box,bool bYaw)
   box[YY] = 2*(cy2+cy);
   box[ZZ] = 2*(1+cz);
   for(i=0; (i<DIM); i++)
-    box[i] *= ODIST;
+    box[i] *= odist;
     
   printf("Unitcell:  %10.5f  %10.5f  %10.5f\n",box[XX],box[YY],box[ZZ]);
   printf("Dipole:    %10.5f  %10.5f  %10.5f (e nm)\n",dip[XX],dip[YY],dip[ZZ]);
@@ -151,54 +150,6 @@ static real calc_ener(real c6,real c12,rvec dx,tensor vir)
       vir[m][n] -= 0.5*f*dx[m]*dx[n];
       
   return e;
-}
-
-void interactions(FILE *fp,rvec x[],matrix box,real rcut,bool bYaw)
-{
-  /* List of h bonds in the crystal unitcell */
-  typedef struct {
-    int d,h,a;
-  } t_hb;
-  t_hb hb[16] = {
-    {  0,  1, 12 },
-    {  0,  2,  3 },
-    {  3,  4, 15 },
-    {  3,  5,  0 },
-    {  6,  7,  9 },
-    {  6,  8,  3 },
-    {  9, 10,  6 },
-    {  9, 11,  0 },
-    { 12, 13, 15 },
-    { 12, 14, 21 },
-    { 15, 16, 12 },
-    { 15, 17, 18 },
-    { 18, 19,  6 },
-    { 18, 20, 21 },
-    { 21, 22,  9 },
-    { 21, 23, 18 }
-  };
-  int    i,ad,ah,aa;
-  rvec   dx[16];
-  real   elj;
-  tensor vir;
-  
-  init_pbc(box,FALSE);
-  /* Initiate the periodic boundary conditions. Set bTruncOct to
-   * TRUE when using a truncated octahedron box.
-   */
-
-  clear_mat(vir);
-  elj = 0;
-  for(i=0; (i<asize(hb)); i++) {
-    ad = hb[i].d;
-    ah = hb[i].h;
-    aa = hb[i].a;
-    pbc_dx(x[ah],x[aa],dx[i]);
-    elj += calc_ener(0.0,1.0e-8,dx[i],vir);
-  }
-  pr_rvecs(fp,0,"H-A dist",dx,16);
-  pr_rvecs(fp,0,"Virial",vir,3);
-  fprintf(fp,"LJ energy is %g\n",elj);
 }
 
 void virial(FILE *fp,bool bFull,int nmol,rvec x[],matrix box,real rcut,
@@ -289,10 +240,10 @@ void virial(FILE *fp,bool bFull,int nmol,rvec x[],matrix box,real rcut,
       }
     }
   }
-  fprintf(fp,"There were %d interactions between the %d molecules\n",
-	  ninter,nmol);
-  fprintf(fp,"Vcoul: %10.4e  V12: %10.4e  V6: %10.4e  Vtot: %10.4e\n",
-	  vctot,v12tot,v6tot,vctot+v12tot+v6tot);
+  fprintf(fp,"There were %d interactions between the %d molecules (%.2f %%)\n",
+	  ninter,nmol,(real)ninter/(0.5*nmol*(nmol-1)));
+  fprintf(fp,"Vcoul: %10.4e  V12: %10.4e  V6: %10.4e  Vtot: %10.4e (kJ/mol)\n",
+	  vctot/nmol,v12tot/nmol,v6tot/nmol,(vctot+v12tot+v6tot)/nmol);
   pr_rvec(fp,0,"vir ",vir,DIM);
   
   for(m=0; (m<DIM); m++) 
@@ -311,16 +262,20 @@ int main(int argc,char *argv[])
   };
   static int nx=1,ny=1,nz=1;
   static bool bYaw=FALSE,bLJ=TRUE,bFull=TRUE,bSeries=FALSE;
-  static real rcut=0.3;
+  static real rcut=0.3,odist=0.274;
   t_pargs pa[] = {
-    { "-nx", FALSE, etINT, {&nx}, "nx" },
-    { "-ny", FALSE, etINT, {&ny}, "ny" },
-    { "-nz", FALSE, etINT, {&nz}, "nz" },
-    { "-yaw",FALSE, etBOOL,{&bYaw},"Generate dummies and shell positions" },
-    { "-lj", FALSE, etBOOL,{&bLJ},"Use LJ as well as coulomb for virial calculation" },
-    { "-rcut",FALSE,etREAL,{&rcut},"Cut-off for virial calculations" },
-    { "-full",FALSE,etBOOL,{&bFull},"Full virial output" },
-    { "-series",FALSE, etBOOL, {&bSeries}, "Do a series of virial calculations with different cut-off (from 0.3 up till the specified one)" }
+    { "-nx",    FALSE, etINT,  {&nx}, "nx" },
+    { "-ny",    FALSE, etINT,  {&ny}, "ny" },
+    { "-nz",    FALSE, etINT,  {&nz}, "nz" },
+    { "-yaw",   FALSE, etBOOL, {&bYaw},
+      "Generate dummies and shell positions" },
+    { "-lj",    FALSE, etBOOL, {&bLJ},
+      "Use LJ as well as coulomb for virial calculation" },
+    { "-rcut",  FALSE,etREAL,  {&rcut},"Cut-off for virial calculations" },
+    { "-full",  FALSE,etBOOL,  {&bFull},"Full virial output" },
+    { "-odist", FALSE, etREAL, {&odist}, "Distance between oxygens" },
+    { "-series",FALSE, etBOOL, {&bSeries}, 
+      "Do a series of virial calculations with different cut-off (from 0.3 up till the specified one)" }
   };
   t_filenm fnm[] = {
     { efPDB, "-p", "ice", ffWRITE },
@@ -366,13 +321,12 @@ int main(int argc,char *argv[])
   }
   
   /* Generate the unit cell */
-  unitcell(xx,box,bYaw);
+  unitcell(xx,box,bYaw,odist);
   if (debug) {
     clear_mat(boxje);
     boxje[XX][XX] = box[XX];
     boxje[YY][YY] = box[YY];
     boxje[ZZ][ZZ] = box[ZZ];
-    /*interactions(debug,xx,boxje,0.9,bYaw);*/
   }
   n=0;
   for(i=0; (i<nx); i++) {
