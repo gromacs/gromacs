@@ -6,7 +6,12 @@ set TEXMAN	= $THISDIR/$MANDIR
 set INDEX	= $TEXMAN/all.tex
 
 cd $GMXHOME/bin/$GMXCPU
-set PROGRAMS 	= *
+set PROGRAMS    = 
+foreach program ( `\ls -1 | grep -v "#"` )
+  if ( ( $program != average ) && ( $program != luck ) && ( $program != my_dssp ) ) then
+    set PROGRAMS = "$PROGRAMS $program"
+  endif
+end
 
 if ( ! -d $TEXMAN ) mkdir $TEXMAN
 cd $TEXMAN
@@ -26,6 +31,7 @@ end
 
 cat >! $TEXMAN.tex << EOD
 \chapter{Manual Pages}
+\label{app:progman}
 
 {\small
 \input{$MANDIR/all}
