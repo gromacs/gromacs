@@ -166,8 +166,10 @@ static int *home_index(int nprocs,t_block *cgs)
   }
   /* Now verify that all hid's are not -1 */
   for(k=0; (k<cgs->nra); k++)
-    assert(hid[k] != -1);
-    
+    if (hid[k] == -1)
+      fatal_error(0,"hid[%d] = -1, cgs->nr = %d, cgs->nra = %d",
+		  k,cgs->nr,cgs->nra);
+  
   return hid;
 }
 
@@ -211,12 +213,12 @@ static void split_blocks(bool bVerbose,int nprocs,
   int     maxatom[MAXPROC];
   int     i,ai,sbl;
   int     pid;
-  real    load,tload;
+  double  load,tload;
   
   bool    bSHK;
   atom_id *shknum;
   
-  load  = cgs->nra / (real)nprocs;  
+  load  = (double)cgs->nra / (double)nprocs;  
   tload = load;
   
   if ((shakes->nr > 0) && (bVerbose)) {
@@ -231,7 +233,7 @@ static void split_blocks(bool bVerbose,int nprocs,
   
   pid = 0;
   sbl = 0;
-  for(i=0; (i<cgs->nr); i++) {
+  for(i=0; (i<cgs->nr) && (tload < cgs->nra); i++) {
     ai   = cgs->a[cgs->index[i]];
     bSHK = ((i == 0) || 
 	    ((shknum[ai] == NO_ATID) || (shknum[ai] != shknum[ai-1])));
@@ -240,6 +242,9 @@ static void split_blocks(bool bVerbose,int nprocs,
       sbl=max(sbl,shknum[ai]);
     
     if (bSHK && (cgs->a[cgs->index[i+1]] >= tload)) {
+      if (debug) 
+	fprintf(debug,"%s %d: tload = %g, ai = %d, i = %d, sbl = %d\n",
+		__FILE__,__LINE__,tload,ai,i,sbl);
       cgs->multinr[pid]    = i;
       shakes->multinr[pid] = sbl;
       tload               += load;
