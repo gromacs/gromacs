@@ -69,6 +69,7 @@ static char *SRCID_physics_h = "$Id$";
 #define RGAS             (BOLTZMANN*AVOGADRO)   /* (J/(mol K))  */
 #define BOLTZ            (RGAS/KILO)            /* (kJ/(mol K)) */
 #define FARADAY          (E_CHARGE*AVOGADRO)    /* (C/mol)      */
+#define ELECTRONVOLT     (E_CHARGE*AVOGADRO/KILO) /* (kJ/mol)   */     
 
 #define EPSILON0 	 (5.72765E-4)		/* (e^2 Na/(kJ nm))     */
 #define SPEEDOFLIGHT     (3.0e5)                /* nm/ps                */
