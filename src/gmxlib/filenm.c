@@ -81,7 +81,7 @@ static const int trns[]={
 #define NTRNS asize(trns)
 
 static const int stos[]={ efGRO, efG96, efPDB, efBRK, 
-#ifdef HAVE_XML
+#ifdef HAVE_LIBXML2
   efXML, 
 #endif
   efENT};
@@ -92,7 +92,7 @@ static const int stxs[]={ efGRO, efG96, efPDB, efBRK, efENT,
 		       efTPR, 
 #endif 
 		       efTPB, efTPA
-#ifdef HAVE_XML
+#ifdef HAVE_LIBXML2
 		       , efXML
 #endif
 		        };
@@ -110,7 +110,7 @@ static const int tpxs[]={
   efTPR, 
 #endif
   efTPB, efTPA
-#ifdef HAVE_XML
+#ifdef HAVE_LIBXML2
   , efXML 
 #endif
   };
@@ -121,7 +121,7 @@ static const int tpss[]={
   efTPR, 
 #endif
   efTPB, efTPA, 
-#ifdef HAVE_XML
+#ifdef HAVE_LIBXML2
   efXML, 
 #endif
   efGRO, efG96, efPDB, efBRK, efENT };
@@ -169,7 +169,7 @@ static t_deffile deffile[efNR] = {
   { eftXDR, ".tpr", "topol",  "-s", "Portable xdr run input file"            },
   { eftASC, ".tpa", "topol",  "-s", "Ascii run input file"                   },
   { eftBIN, ".tpb", "topol",  "-s", "Binary run input file"                  },
-#ifdef HAVE_XML
+#ifdef HAVE_LIBXML2
   { eftASC, ".xml", "gmx",    "-x", "Portable status file"                   },
 #endif
   { eftASC, ".tex", "doc",    "-o", "LaTeX file"                             },

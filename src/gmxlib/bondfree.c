@@ -557,10 +557,10 @@ real urey_bradley(int nbonds,
 		  t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 		  t_fcdata *fcd)
 {
-  int  i,ai,aj,ak,t1,t2,type;
-  rvec r_ij,r_kj;
-  real cos_theta,theta,dVdt,va,vtot;
-  ivec jt,dt_ij,dt_kj;
+  int  i,m,ai,aj,ak,t1,t2,type,ki;
+  rvec r_ij,r_kj,r_ik;
+  real cos_theta,theta,dVdt,va,vtot,kth,th0,kUB,r13,dr,dr2,vbond,fbond,fik;
+  ivec jt,dt_ij,dt_kj,dt_ik;
   
   fatal_error(0,"Not implemented yet");
   vtot = 0.0;
@@ -569,19 +569,24 @@ real urey_bradley(int nbonds,
     ai   = forceatoms[i++];
     aj   = forceatoms[i++];
     ak   = forceatoms[i++];
+    th0  = forceparams[type].u_b.theta*DEG2RAD;
+    kth  = forceparams[type].u_b.ktheta;
+    r13  = forceparams[type].u_b.r13;
+    kUB  = forceparams[type].u_b.kUB;
     
     theta  = bond_angle(box,x[ai],x[aj],x[ak],
 			r_ij,r_kj,&cos_theta,&t1,&t2);	/*  41		*/
   
-    *dvdlambda += harmonic(forceparams[type].harmonic.krA,
-			   forceparams[type].harmonic.krB,
-			   forceparams[type].harmonic.rA*DEG2RAD,
-			   forceparams[type].harmonic.rB*DEG2RAD,
-			   theta,lambda,&va,&dVdt);  /*  21  */
+    *dvdlambda += harmonic(kth,kth,th0,th0,theta,lambda,&va,&dVdt);  /*  21  */
     vtot += va;
     
+    ki   = pbc_rvec_sub(x[ai],x[ak],r_ik);	/*   3 		*/
+    dr2  = iprod(r_ik,r_ik);			/*   5		*/
+    dr   = dr2*invsqrt(dr2);		        /*  10		*/
+
+    *dvdlambda += harmonic(kUB,kUB,r13,r13,dr,lambda,&vbond,&fbond); /*  19  */
+
     {
-      int  m;
       real snt,st,sth;
       real cik,cii,ckk;
       real nrkj2,nrij2;
@@ -624,6 +629,24 @@ real urey_bradley(int nbonds,
       rvec_inc(fr->fshift[CENTRAL],f_j);
       rvec_inc(fr->fshift[t2],f_k);
     }                                           /* 168 TOTAL	*/
+    /* Time for the bond calculations */
+    if (dr2 == 0.0)
+      continue;
+
+    vtot  += vbond;  /* 1*/
+    fbond *= invsqrt(dr2);			/*   6		*/
+    
+    if (g) {
+      ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,ak),dt_ik);
+      ki=IVEC2IS(dt_ik);
+    }
+    for (m=0; (m<DIM); m++) {			/*  15		*/
+      fik=fbond*r_ik[m];
+      f[ai][m]+=fik;
+      f[ak][m]-=fik;
+      fr->fshift[ki][m]+=fik;
+      fr->fshift[CENTRAL][m]-=fik;
+    }
   }
   return vtot;
 }

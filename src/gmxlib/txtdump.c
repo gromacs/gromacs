@@ -623,8 +623,8 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
   }
 }
 
-static void pr_ilist(FILE *fp,int indent,char *title,
-                     t_idef *idef,t_ilist *ilist, bool bShowNumbers)
+void pr_ilist(FILE *fp,int indent,char *title,
+	      t_idef *idef,t_ilist *ilist, bool bShowNumbers)
 {
   int i,j,k,type,ftype;
   t_iatom *iatoms;
@@ -861,7 +861,8 @@ static void pr_strings2(FILE *fp,int indent,char *title,
     }
 }
 
-static void pr_atoms(FILE *fp,int indent,char *title,t_atoms *atoms, bool bShownumbers)
+void pr_atoms(FILE *fp,int indent,char *title,t_atoms *atoms, 
+	      bool bShownumbers)
 {
   if (available(fp,atoms,title))
     {
@@ -876,7 +877,8 @@ static void pr_atoms(FILE *fp,int indent,char *title,t_atoms *atoms, bool bShown
     }
 }
 
-static void pr_atomtypes(FILE *fp,int indent,char *title,t_atomtypes *atomtypes, bool bShowNumbers)
+void pr_atomtypes(FILE *fp,int indent,char *title,t_atomtypes *atomtypes, 
+		  bool bShowNumbers)
 {
   int i;
   if (available(fp,atomtypes,title)) {

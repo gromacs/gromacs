@@ -37,21 +37,10 @@ bin_PROGRAMS = \
 	trjorder	wheel		xpm2ps		genion		\
 	anadock		cdist		disco           
 
-
-genbox_SOURCES       = 	genbox.c addconf.c addconf.h
-genion_SOURCES       = 	genion.c calcpot.c calcpot.h edittop.c
-cdist_SOURCES        =  cdist.c smooth.c bondlist.c residues.c cdist.h
-disco_SOURCES        =  disco.c correct.c discopar.c dtools.c disco.h
-anadock_SOURCES	     =  anadock.c  
-gmx_ana_SOURCES      =  gmx-ana.c gmx-ana.h
-
-LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
-	../gmxlib/libgmx@LIBSUFFIX@.la
-
-# Create scripts. This is never done in a normal build - the script files
-# should be in CVS, so we can do it in the source directory.
-scripts:	
-	./gmx-ana.pl \
+# If you modify the file list below, you also have to do it in
+# ../../scripts/Makefile.am, otherwise the script won't be installed
+# It's still not clear how to treat double precision
+KKK = \
 	g_analyze	g_anaeig	g_angle		g_bond	\
 	g_bundle	g_chi		g_cluster	g_confrms	\
 	g_covar		g_density	g_dielectric	g_dih		\
@@ -66,6 +55,21 @@ scripts:
 	g_clustsize	g_mdmat		g_wham	
 
 
+genbox_SOURCES       = 	genbox.c addconf.c addconf.h
+genion_SOURCES       = 	genion.c calcpot.c calcpot.h edittop.c
+cdist_SOURCES        =  cdist.c smooth.c bondlist.c residues.c cdist.h
+disco_SOURCES        =  disco.c correct.c discopar.c dtools.c disco.h
+anadock_SOURCES	     =  anadock.c  
+gmx_ana_SOURCES      =  gmx-ana.c gmx-ana.h
+
+LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
+	../gmxlib/libgmx@LIBSUFFIX@.la
+
+# Create scripts. This is never done in a normal build - the script files
+# should be in CVS, so we can do it in the source directory.
+scripts:	
+	./gmx-ana.pl $(KKK)
+
 # link the mpi library to non-mpi names if the latter are not present
 install-exec-hook:
 	libname="libgmxana@LIBSUFFIX@"; \
@@ -75,6 +79,7 @@ install-exec-hook:
 	  (cd $$libdir && test -e $$libname.a -a ! -e $$nompi.a && $(LN_S) $$libname.a $$nompi.a ; exit 0); \
 	  (cd $$libdir && test -e $$libname.so -a ! -e $$nompi.so && $(LN_S) $$libname.so $$nompi.so ; exit 0); \
 	fi; 
+#	$(foreach sss,$(SCRIPT),install $(sss) $(bindir);)
 
 CLEANFILES   = *.la *~ \\\#*
 

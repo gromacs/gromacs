@@ -55,6 +55,7 @@
 #include "filenm.h"
 #include "gmxfio.h"
 #include "tpxio.h"
+#include "txtdump.h"
 #include "confio.h"
 #include "atomprop.h"
 #include "copyrite.h"
@@ -75,7 +76,7 @@ static const int tpx_version = 31;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 3;
+static const int tpx_generation = 4;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -95,22 +96,45 @@ typedef struct {
  * 1. ascending file version number
  * 2. ascending function type number
  */
+/*static const t_ftupd ftupd[] = {
+  { 20, F_CUBICBONDS        },
+  { 20, F_CONNBONDS         },
+  { 20, F_HARMONIC          },
+  { 20, F_EQM,              },
+  { 22, F_DISRESVIOL        },
+  { 22, F_ORIRES            },
+  { 22, F_ORIRESDEV         },
+  { 26, F_FOURDIHS          },
+  { 26, F_PIDIHS            },
+  { 26, F_DIHRES            },
+  { 26, F_DIHRESVIOL        },
+  { 30, F_CROSS_BOND_BONDS  },
+  { 30, F_CROSS_BOND_ANGLES },
+  { 30, F_UREY_BRADLEY      },
+  { 30, F_POLARIZATION      }
+  };*/
+  
+/* 
+ *The entries should be ordered in:
+ * 1. ascending function type number
+ * 2. ascending file version number
+ */
 static const t_ftupd ftupd[] = {
-  { 20, F_CUBICBONDS   },
-  { 20, F_CONNBONDS    },
-  { 20, F_HARMONIC     },
-  { 20, F_EQM,         },
-  { 22, F_DISRESVIOL   },
-  { 22, F_ORIRES       },
-  { 22, F_ORIRESDEV    },
-  { 26, F_FOURDIHS     },
-  { 26, F_PIDIHS       },
-  { 26, F_DIHRES       },
-  { 26, F_DIHRESVIOL   },
-  { 29, F_CROSS_BOND_BONDS },
-  { 29, F_CROSS_BOND_ANGLES },
-  { 30, F_UREY_BRADLEY },
-  { 30, F_POLARIZATION }
+  { 20, F_CUBICBONDS        },
+  { 20, F_CONNBONDS         },
+  { 20, F_HARMONIC          },
+  { 30, F_CROSS_BOND_BONDS  },
+  { 30, F_CROSS_BOND_ANGLES },
+  { 30, F_UREY_BRADLEY      },
+  { 26, F_FOURDIHS          },
+  { 26, F_PIDIHS            },
+  { 30, F_POLARIZATION      },
+  { 22, F_DISRESVIOL        },
+  { 22, F_ORIRES            },
+  { 22, F_ORIRESDEV         },
+  { 26, F_DIHRES            },
+  { 26, F_DIHRESVIOL        },
+  { 20, F_EQM               }
 };
 #define NFTUPD asize(ftupd)
 
@@ -664,7 +688,8 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     break;
   default:
     fatal_error(0,"unknown function type %d (%s) in %s line %d",
-		ftype,interaction_function[ftype].name,__FILE__,__LINE__);
+		
+    		ftype,interaction_function[ftype].name,__FILE__,__LINE__);
   }
   if (!bRead)
     unset_comment();
@@ -688,27 +713,49 @@ static void do_ilist(t_ilist *ilist,bool bRead,char *name)
 
 static void do_idef(t_idef *idef,bool bRead, int file_version)
 {
-  int i,j,k;
+  int i,j,k,renum[F_NRE];
   bool bDum=TRUE,bClear;
   
   do_int(idef->atnr);
   do_int(idef->nodeid);
   do_int(idef->ntypes);
+  if (bRead && debug)
+    fprintf(debug,"idef->atnr = %d, nodeid = %d, ntypes = %d\n",
+	    idef->atnr,idef->nodeid,idef->ntypes);
   if (bRead) {
     snew(idef->functype,idef->ntypes);
     snew(idef->iparams,idef->ntypes);
   }
+  /* Read/write all the function types */
   ndo_int(idef->functype,idef->ntypes,bDum);
-  
+  if (bRead && debug)
+    pr_ivec(debug,0,"functype",idef->functype,idef->ntypes,TRUE);
+    
+  /* Check whether all these function types are supported by the code.
+   * In practice the code is backwards compatible, which means that the
+   * numbering may have to be altered from old numbering to new numbering
+   */
   for (i=0; (i<idef->ntypes); i++) {
     if (bRead)
-      for (k=0; k<NFTUPD; k++)
+      /* Loop over file versions */
+      for (k=0; (k<NFTUPD); k++)
+	/* Compare the read file_version to the update table */
 	if ((file_version < ftupd[k].fvnr) && 
-	    (idef->functype[i] >= ftupd[k].ftype))
+	    (idef->functype[i] >= ftupd[k].ftype)) {
 	  idef->functype[i] += 1;
+	  if (debug) {
+	    fprintf(debug,"Incrementing function type %d to %d (due to %s)\n",
+		    i,idef->functype[i],
+		    interaction_function[ftupd[k].ftype].longname);
+	    fflush(debug);
+	  }
+	}
+    
     do_iparams(idef->functype[i],&idef->iparams[i],bRead,file_version);
+    if (bRead && debug)
+      pr_iparams(debug,idef->functype[i],&idef->iparams[i]);
   }
-
+  
   for(j=0; (j<F_NRE); j++) {
     bClear = FALSE;
     if (bRead)
@@ -722,7 +769,9 @@ static void do_idef(t_idef *idef,bool bRead, int file_version)
       idef->il[j].iatoms = NULL;
     } else
       do_ilist(&idef->il[j],bRead,interaction_function[j].name);
-  }
+    if (bRead && debug)
+      pr_ilist(debug,0,interaction_function[j].longname,
+	       idef,&idef->il[j],TRUE);  }
 }
 
 static void do_block(t_block *block,bool bRead)
@@ -835,7 +884,8 @@ static void do_atoms(t_atoms *atoms,bool bRead,t_symtab *symtab, int file_versio
   do_block(&(atoms->excl),bRead);
 }
 
-static void do_atomtypes(t_atomtypes *atomtypes,bool bRead,t_symtab *symtab, int file_version)
+static void do_atomtypes(t_atomtypes *atomtypes,bool bRead,
+			 t_symtab *symtab,int file_version)
 {
   int i,j;
   bool bDum = TRUE;
@@ -852,7 +902,9 @@ static void do_atomtypes(t_atomtypes *atomtypes,bool bRead,t_symtab *symtab, int
     ndo_real(atomtypes->vol,j,bDum);
     ndo_real(atomtypes->surftens,j,bDum);
   } else {
-    /* File versions prior to 26 cannot do GBSA, so they dont use this structure */
+    /* File versions prior to 26 cannot do GBSA, 
+     * so they dont use this structure 
+     */
     atomtypes->nr = 0;
     atomtypes->radius = NULL;
     atomtypes->vol = NULL;
@@ -919,12 +971,27 @@ static void do_top(t_topology *top,bool bRead, int file_version)
   int  i;
   
   do_symtab(&(top->symtab),bRead);
+  if (bRead && debug) 
+    pr_symtab(debug,0,"symtab",&top->symtab);
+  
   do_symstr(&(top->name),bRead,&(top->symtab));
+  
   do_atoms (&(top->atoms),bRead,&(top->symtab), file_version);
+  if (bRead && debug) 
+    pr_atoms(debug,0,"atoms",&top->atoms,TRUE);
+    
   do_atomtypes (&(top->atomtypes),bRead,&(top->symtab), file_version);
+  if (bRead && debug) 
+    pr_atomtypes(debug,0,"atomtypes",&top->atomtypes,TRUE);
+
+  /* Debug statements are inside do_idef */    
   do_idef  (&(top->idef),bRead,file_version);
-  for(i=0; (i<ebNR); i++)
+    
+  for(i=0; (i<ebNR); i++) {
     do_block(&(top->blocks[i]),bRead);
+    if (bRead && debug)
+      pr_block(debug,0,EBLOCKS(i),&(top->blocks[i]),TRUE);
+  }
   if (bRead) {
     close_symtab(&(top->symtab));
     make_chain_identifiers(&(top->atoms),&(top->blocks[ebMOLS]));
@@ -1091,13 +1158,19 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
     do_test(tpx.bIr,ir);
     do_section(eitemIR,bRead);
     if (tpx.bIr) {
-      if (ir)
+      if (ir) {
 	do_inputrec(ir,bRead,file_version);
+	if (bRead && debug) 
+	  pr_inputrec(debug,0,"inputrec",ir);
+      }
       else {
 	init_inputrec(&dum_ir);
 	do_inputrec  (&dum_ir,bRead,file_version);
+	if (bRead && debug) 
+	  pr_inputrec(debug,0,"inputrec",&dum_ir);
 	done_inputrec(&dum_ir);
       }
+      
     }
   }
   
@@ -1135,8 +1208,11 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
   if((file_version>=26) && (file_generation<=tpx_generation)) {
     do_test(tpx.bIr,ir);
     do_section(eitemIR,bRead);
-    if (tpx.bIr && ir)
+    if (tpx.bIr && ir) {
       do_inputrec(ir,bRead,file_version);
+      if (bRead && debug) 
+	pr_inputrec(debug,0,"inputrec",ir);
+    }
   }
 
   if (bRead && state->ngtc == 0 && tpx.bIr && ir) {

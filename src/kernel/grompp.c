@@ -552,7 +552,7 @@ static void read_posres(t_params *pr, char *fn, int offset,int *forward)
     for(j=0; (j<DIM); j++)
       pr->param[i].c[offset + j] = x[ai][j];
     /* Fix for shuffling! */
-    if (ai != forward[ai]) {
+    if (forward && (ai != forward[ai])) {
       pr->param[i].AI = forward[ai];
       if (bFirst) {
 	fprintf(stderr,"WARNING shuffling position restraints. Please scheck your results.\n");
@@ -935,11 +935,11 @@ int main (int argc, char *argv[])
   else 
     fatal_error(0,"invalid number of nodes %d\n",nnodes);
   
-  if (bShuffle && (opt2bSet("-r",NFILE,fnm) || opt2bSet("-rb",NFILE,fnm))) {
+  /*if (bShuffle && (opt2bSet("-r",NFILE,fnm) || opt2bSet("-rb",NFILE,fnm))) {
     fprintf(stderr,"Can not shuffle and do position restraints, "
 	    "turning off shuffle\n");
     bShuffle=FALSE;
-  }
+    }*/
 	       
   init_warning(maxwarn);
   

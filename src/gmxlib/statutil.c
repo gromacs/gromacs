@@ -53,6 +53,7 @@
 #include "assert.h"
 #include "fatal.h"
 #include "network.h"
+#include "vec.h"
 
 /* used for npri */
 #ifdef __sgi
@@ -388,10 +389,9 @@ static FILE *man_file(char *program,char *mantp)
   return fp;
 }
 
-static int add_parg(int npargs,t_pargs **pa,t_pargs *pa_add)
+static int add_parg(int npargs,t_pargs *pa,t_pargs *pa_add)
 {
-  srenew((*pa),npargs+1);
-  memcpy(&((*pa)[npargs]),pa_add,sizeof(*pa_add));
+  memcpy(&(pa[npargs]),pa_add,sizeof(*pa_add));
   
   return npargs+1;
 }
@@ -471,12 +471,6 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   static bool bGUI=FALSE,bDebug=FALSE;
   static char *deffnm=NULL;
      
-  FILE *fp;  
-  bool bPrint,bExit;
-  int  i,j,k,npall;
-  char *ptr,*newdesc;
-  char *envstr;
-
   t_pargs *all_pa=NULL;
   
   t_pargs motif_pa  = { "-X",    FALSE, etBOOL,  {&bGUI},
@@ -501,7 +495,9 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 		       "View output xvg, xpm, eps and pdb files" };
   t_pargs time_pa   = { "-tu",   FALSE, etENUM,  {timestr},
 			"Time unit" };
-  
+  /* Maximum number of extra arguments */
+#define EXTRA_PA 16
+
   t_pargs pca_pa[] = {
     { "-h",    FALSE, etBOOL, {&bHelp},     
       "Print help info and quit" }, 
@@ -515,6 +511,12 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
       "HIDDENWrite file with debug information" },
   };
 #define NPCA_PA asize(pca_pa)
+  FILE *fp;  
+  bool bPrint,bExit;
+  int  i,j,k,npall,max_pa;
+  char *ptr,*newdesc;
+  char *envstr;
+
 
   debug_gmx();
   if (debug) {
@@ -563,12 +565,17 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   set_program_name(argv[0]);
 
   /* Check ALL the flags ... */
-  snew(all_pa,NPCA_PA+npargs);
+  max_pa = NPCA_PA + EXTRA_PA + npargs;
+  snew(all_pa,max_pa);
+  
   for(i=npall=0; (i<NPCA_PA); i++)
-    npall = add_parg(npall,&(all_pa),&(pca_pa[i]));
+    npall = add_parg(npall,all_pa,&(pca_pa[i]));
 
+#ifdef HAVE_MOTIF
   /* Motif options */
-  npall = add_parg(npall,&(all_pa),&motif_pa);
+  if (!bGUI)
+    npall = add_parg(npall,all_pa,&motif_pa);
+#endif
 
 #ifdef __sgi
   envstr = getenv("GMXNPRIALL");
@@ -582,46 +589,46 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   if (bGUI) {
     if (npri)
       npri_paX.u.c = npristr;
-    npall = add_parg(npall,&(all_pa),&npri_paX);
+    npall = add_parg(npall,all_pa,&npri_paX);
   }
   else
-    npall = add_parg(npall,&(all_pa),&npri_pa);
+    npall = add_parg(npall,all_pa,&npri_pa);
 #endif
 
   if (bGUI) {
     /* Automatic nice or scheduling options */
     if (FF(PCA_BE_NICE)) 
       nice_paX.u.c = nicestr;
-    npall = add_parg(npall,&(all_pa),&nice_paX);
+    npall = add_parg(npall,all_pa,&nice_paX);
   }
   else {
     if (FF(PCA_BE_NICE)) 
       nicelevel=19;
-    npall = add_parg(npall,&(all_pa),&nice_pa);
+    npall = add_parg(npall,all_pa,&nice_pa);
   }
 
   if (FF(PCA_CAN_SET_DEFFNM)) 
-    npall = add_parg(npall,&(all_pa),&deffnm_pa);   
+    npall = add_parg(npall,all_pa,&deffnm_pa);   
   if (FF(PCA_CAN_BEGIN)) 
-    npall = add_parg(npall,&(all_pa),&begin_pa);
+    npall = add_parg(npall,all_pa,&begin_pa);
   if (FF(PCA_CAN_END))
-    npall = add_parg(npall,&(all_pa),&end_pa);
+    npall = add_parg(npall,all_pa,&end_pa);
   if (FF(PCA_CAN_DT))
-    npall = add_parg(npall,&(all_pa),&dt_pa);
+    npall = add_parg(npall,all_pa,&dt_pa);
   if (FF(PCA_TIME_UNIT)) {
     envstr = getenv("GMXTIMEUNIT");
     if ( envstr == NULL )
       envstr="ps";
     set_default_time_unit(envstr);
-    npall = add_parg(npall,&(all_pa),&time_pa);
+    npall = add_parg(npall,all_pa,&time_pa);
   } else
     set_default_time_unit("ps");
   if (FF(PCA_CAN_VIEW))
-    npall = add_parg(npall,&(all_pa),&view_pa);
+    npall = add_parg(npall,all_pa,&view_pa);
 
   /* Now append the program specific arguments */
   for(i=0; (i<npargs); i++)
-    npall = add_parg(npall,&(all_pa),&(pa[i]));
+    npall = add_parg(npall,all_pa,&(pa[i]));
 
   /* set etENUM options to default */
   for(i=0; (i<npall); i++)
