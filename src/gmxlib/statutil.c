@@ -253,19 +253,20 @@ bool bDoView(void)
   return bView;
 }
 
-static FILE *man_file(char *program,int mantp)
+static FILE *man_file(char *program,char *mantp)
 {
   FILE   *fp;
   char   buf[256],*pr;
-  static char *manext[eotNR] = 
-  { NULL, ".tex", ".html", ".1", ".txt", ".java" };
-  
+
   if ((pr=strrchr(program,'/')) == NULL)
     pr=program;
   else 
     pr+=1;
     
-  sprintf(buf,"%s%s",pr,manext[mantp]);
+  if (strcmp(mantp,"ascii") != 0)
+    sprintf(buf,"%s.%s",pr,mantp);
+  else
+    sprintf(buf,"%s.txt",pr);
   fp = ffopen(buf,"w");
   
   return fp;
@@ -284,6 +285,7 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 		       int ndesc,char *desc[],int nbugs,char *bugs[])
 {
   static bool bHelp=FALSE,bHidden=FALSE,bQuiet=FALSE;
+  static char *manstr[]      = { "no", "html", "tex", "java", "ascii", NULL };
   static char *not_nicestr[] = { "0", "4", "10", "19", NULL };
   static char *nicestr[]     = { "19", "10", "4", "0", NULL };
   static char *not_npristr[] = { "0", "100", "200", "250", NULL };
@@ -323,10 +325,10 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
       "HIDDENPrint hidden options" },
     { "-quiet",FALSE, etBOOL, &bQuiet,
       "HIDDENDo not print help info" },
-    { "-man",  FALSE, etINT,  &mantp,
-      "HIDDENManual type: 0=none, 1=tex, 2=html, 3=nroff, 4=ascii, 5=java" },
+    { "-man",  FALSE, etENUM,  &manstr,
+      "HIDDENWrite manual and quit" },
     { "-debug",FALSE, etBOOL, &bDebug,
-      "HIDDENwrite file with debug information" },
+      "HIDDENWrite file with debug information" },
   };
 #define NPCA_PA asize(pca_pa)
 
@@ -475,7 +477,7 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 
   if (!(FF(PCA_QUIET) || bQuiet )) {
     if (bHelp)
-      write_man(stdout,eotHelp,program,ndesc,desc,nfile,fnm,npall,all_pa,
+      write_man(stdout,"help",program,ndesc,desc,nfile,fnm,npall,all_pa,
 		nbugs,bugs,bHidden);
     else if (bPrint) {
       pr_fns(stdout,nfile,fnm);
@@ -483,9 +485,9 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
     }
   }
 
-  if (mantp != 0) {
-    fp=man_file(program,mantp);
-    write_man(fp,mantp,program,ndesc,desc,nfile,fnm,npall,all_pa,
+  if (strcmp(manstr[0],"no") != 0) {
+    fp=man_file(program,manstr[0]);
+    write_man(fp,manstr[0],program,ndesc,desc,nfile,fnm,npall,all_pa,
 	      nbugs,bugs,bHidden);
     fclose(fp);
     exit(0);

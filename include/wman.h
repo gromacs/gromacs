@@ -38,16 +38,13 @@ static char *SRCID_wman_h = "$Id$";
 
 #include "readinp.h"
 
-enum { eotNone, eotLaTeX, eotHTML, eotNroff, eotAscii, eotJava, eotHelp,
-       eotNR };
-       
 extern void write_java(FILE *out,char *program,
 		       int nldesc,char *desc[],
 		       int nfile,t_filenm fnm[],
 		       int npargs,t_pargs pa[],
 		       int nbug,char *bugs[]);
      
-extern void write_man(FILE *out,int otype,char *program,
+extern void write_man(FILE *out,char *mantp,char *program,
 		      int nldesc,char *desc[],
 		      int nfile,t_filenm fnm[],
 		      int npargs,t_pargs pa[],

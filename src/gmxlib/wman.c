@@ -487,7 +487,7 @@ static void write_htmlman(FILE *out,
   fprintf(out,"</BODY>\n");
 }
 
-void write_man(FILE *out,int otype,
+void write_man(FILE *out,char *mantp,
 	       char *program,
 	       int nldesc,char *desc[],
 	       int nfile,t_filenm fnm[],
@@ -516,28 +516,19 @@ void write_man(FILE *out,int otype,
     pr=program;
   else
     pr+=1;
-  switch (otype) {
-  case eotLaTeX:
+  if (strcmp(mantp,"tex")==0)
     write_texman(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs);
-    break;
-  case eotNroff:
+  if (strcmp(mantp,"nroff")==0)
     write_nroffman(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs);
-    break;
-  case eotAscii:
+  if (strcmp(mantp,"ascii")==0)
     write_ttyman(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs,TRUE);
-    break;
-  case eotHelp:
+  if (strcmp(mantp,"help")==0)
     write_ttyman(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs,FALSE);
-    break;
-  case eotHTML:
+  if (strcmp(mantp,"html")==0)
     write_htmlman(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs);
-    break;
-  case eotJava:
+  if (strcmp(mantp,"java")==0)
     write_java(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs);
-    break;
-  default:
-    break;
-  }
+
   if (!bHidden)
     sfree(par);
 }
