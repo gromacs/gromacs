@@ -157,7 +157,7 @@ void write_posres(char *fn,t_atoms *pdba)
 	  "; In this topology include file, you will find position restraint\n"
 	  "; entries for all the heavy atoms in your original pdb file.\n"
 	  "; This means that all the protons which were added by pdb2gmx are\n"
-	  "; not restraint. This is especially useful for crystal waters.\n"
+	  "; not restrained. This is especially useful for crystal waters.\n"
 	  "\n"
 	  "[ position_restraints ]\n"
 	  "; %6s%6s%8s%8s%8s\n","atom","type","fx","fy","fz"
