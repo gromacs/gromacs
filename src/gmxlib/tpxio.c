@@ -37,6 +37,7 @@
 #include "names.h"
 #include "symtab.h"
 #include "futil.h"
+#include "filenm.h"
 #include "gmxfio.h"
 #include "tpxio.h"
 #include "copyrite.h"
@@ -617,7 +618,18 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,real *lambda,
 
 int open_tpx(char *fn,char *mode)
 {
-  return fio_open(fn,mode);
+  char *m;
+
+  if (fn2ftp(fn)==efTPA)
+    m=mode;
+  else {
+    if (mode[0]=='r')
+      m="rb";
+    else
+      m="wb";
+  }
+
+  return fio_open(fn,m);
 }    
  
 void close_tpx(int fp)
@@ -628,7 +640,7 @@ void close_tpx(int fp)
 void read_tpxheader(char *fn,t_tpxheader *tpx)
 {
   int fp;
-  
+
   fp = open_tpx(fn,"r");
   do_tpxheader(fp,TRUE,tpx);
   close_tpx(fp);
@@ -639,7 +651,7 @@ void write_tpx(char *fn,int step,real t,real lambda,
 	       rvec *x,rvec *v,rvec *f,t_topology *top)
 {
   int fp;
-  
+
   fp = open_tpx(fn,"w");
   do_tpx(fp,FALSE,&step,&t,&lambda,ir,box,&natoms,x,v,f,top);
   close_tpx(fp);
@@ -650,7 +662,7 @@ void read_tpx(char *fn,int *step,real *t,real *lambda,
 	      rvec *x,rvec *v,rvec *f,t_topology *top)
 {
   int fp;
-
+  
   fp = open_tpx(fn,"r");
   do_tpx(fp,TRUE,step,t,lambda,ir,box,natoms,x,v,f,top);
   close_tpx(fp);

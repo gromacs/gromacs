@@ -137,14 +137,14 @@ static int pclose(FILE *fp)
 #endif
 
 
-FILE *uncompress(char *fn)
+FILE *uncompress(char *fn,char *mode)
 {
   FILE *fp;
   char buf[256];
   
   sprintf(buf,"uncompress -c < %s",fn);
   fprintf(stderr,"Going to execute '%s'\n",buf);
-  if ((fp=popen(buf,"r")) == NULL) {
+  if ((fp=popen(buf,mode)) == NULL) {
     perror(fn);
     exit(1);
   }
@@ -153,14 +153,14 @@ FILE *uncompress(char *fn)
   return fp;
 }
 
-FILE *gunzip(char *fn)
+FILE *gunzip(char *fn,char *mode)
 {
   FILE *fp;
   char buf[256];
   
   sprintf(buf,"gunzip -c < %s",fn);
   fprintf(stderr,"Going to execute '%s'\n",buf);
-  if ((fp=popen(buf,"r")) == NULL) {
+  if ((fp=popen(buf,mode)) == NULL) {
     perror(fn);
     exit(1);
   }
@@ -261,12 +261,12 @@ FILE *ffopen(char *file,char *mode)
   else {
     sprintf(buf,"%s.Z",file);
     if (fexist(buf)) {
-      ff=uncompress(buf);
+      ff=uncompress(buf,mode);
     }
     else {
       sprintf(buf,"%s.gz",file);
       if (fexist(buf)) {
-	ff=gunzip(buf);
+	ff=gunzip(buf,mode);
       }
       else 
 	fatal_error(0,"%s does not exist",file);

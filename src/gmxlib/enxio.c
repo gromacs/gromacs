@@ -106,7 +106,7 @@ int open_enx(char *fn,char *mode)
   int       nre;
   t_eheader *eh;
   
-  if (strcmp(mode,"r") == 0) {
+  if (mode[0]=='r') {
     fp=fio_open(fn,mode);
     fio_select(fp);
     fio_setprecision(fp,FALSE);

@@ -570,7 +570,7 @@ int fio_open(char *fn,char *mode)
     nfio = nFIO-1;
   }
 
-  bRead = (strcmp(mode,"r")==0);
+  bRead = (mode[0]=='r');
   fio->fp  = NULL;
   fio->xdr = NULL;
   if (fn) {
@@ -583,7 +583,7 @@ int fio_open(char *fn,char *mode)
       /* First check whether we have to make a backup,
        * only for writing, not for read or append.
        */
-      if (strcmp(mode,"w") == 0) {
+      if (mode[0]=='w') {
 	if (fexist(fn)) {
 	  bf=(char *)backup_fn(fn);
 	  if (rename(fn,bf) == 0) {

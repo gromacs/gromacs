@@ -334,13 +334,13 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
 	return 0;
     }
     if (*type == 'w' || *type == 'W') {
-      type = "w+";
+      type = "w+b";
       lmode = XDR_ENCODE;
     } else if (*type == 'a' || *type == "A") {
-      type = "a+";
+      type = "a+b";
       lmode = XDR_ENCODE;
     } else {
-      type = "r";
+      type = "rb";
       lmode = XDR_DECODE;
     }
     if ((xdrfiles[xdrid] = fopen(filename, type))==NULL) {
