@@ -988,24 +988,26 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 {
   static    real *nbfp14=NULL;
   static    bool bWarn=FALSE;
-  real      eps;
-  real      r2,rtab2;
-  rvec      fi,fj;
+  bool      bFullPBC;
+  real      eps,r2,rtab2;
+  rvec      fi,fj,dx;
   int       ai,aj,itype;
   t_iatom   *ia0,*iatom;
-  int       gid,shift14;
+  int       gid,shift_vir,shift_f;
   int       j_index[] = { 0, 1 };
-  int       i1=1,i3=3,si,i0;
+  int       i1=1,i3=3,i0;
   ivec      dt;
 #ifdef USE_VECTOR
   if (fbuf == NULL)
     snew(fbuf,md->nr*3);
 #endif  
 
-/* We don't do SSE or altivec here, due to large overhead for 4-fold unrolling on short lists */
+  /* We don't do SSE or altivec here, due to large overhead for 4-fold 
+   * unrolling on short lists 
+   */
 #if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
- if(cpu_capabilities==UNKNOWN_CPU) 
-	cpu_capabilities=detect_cpu(NULL);
+  if(cpu_capabilities==UNKNOWN_CPU) 
+    cpu_capabilities=detect_cpu(NULL);
 #endif
 
   if (nbfp14 == NULL) {
@@ -1013,10 +1015,11 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
     if (debug)
       pr_rvec(debug,0,"nbfp14",nbfp14,sqr(fr->ntype),TRUE);
   }
-  shift14 = CENTRAL;
+  /* Full periodic boundary conditions ? */
+  bFullPBC = (fr->ePBC == epbcFULL);
   
   /* Reaction field stuff */  
-  eps    = fr->epsfac*fr->fudgeQQ;
+  eps   = fr->epsfac*fr->fudgeQQ;
   
   rtab2 = sqr(fr->rtab);
     
@@ -1026,15 +1029,27 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
     itype = iatom[0];
     ai    = iatom[1];
     aj    = iatom[2];
-   
-    r2    = distance2(x[ai],x[aj]);
+    
+    if (bFullPBC) {
+      /* Apply full periodic boundary conditions */
+      shift_f   = pbc_dx(x[ai],x[aj],dx);
+      shift_vir = CENTRAL;
+      r2 = iprod(dx,dx);
+    }
+    else {
+      /* Use graph based algorithm */
+      ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);    
+      shift_vir = IVEC2IS(dt);	
+      shift_f   = CENTRAL;
+      r2 = distance2(x[ai],x[aj]);
+    }
     copy_rvec(f[ai],fi);
     copy_rvec(f[aj],fj);
 
-    
-/* We do not check if the neighbourlists fit in the buffer here, since I cant imagine
- * a particle having so many 1-4 interactions :-) /EL 
- */
+    /* We do not check if the neighbourlists fit in the buffer here, 
+     * since I can't imagine
+     * a particle having so many 1-4 interactions :-) /EL 
+     */
     
     if (r2 >= rtab2) {
       if (!bWarn) {
@@ -1076,67 +1091,88 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	C6(nbfp,4,1,2)  = iparams[itype].lj14.c6B;
 	C12(nbfp,4,0,2) = iparams[itype].lj14.c12A;
 	C12(nbfp,4,1,2) = iparams[itype].lj14.c12B;
-	
+     	
 #undef COMMON_ARGS
-#define COMMON_ARGS SCAL(i1),&ai,j_index,&aj,&shift14,fr->shift_vec[0],fr->fshift[0],&gid ,x[0],f[0]
+#define COMMON_ARGS SCAL(i1),&ai,j_index,&aj,&shift_f,fr->shift_vec[0],fr->fshift[0],&gid,x[0],f[0]
 	
-	if(fr->sc_alpha>0)
+	if (fr->sc_alpha>0) {
 #if (defined VECTORIZE_INVSQRT || defined VECTORIZE_INVSQRT_S || defined VECTORIZE_INVSQRT_W || defined VECTORIZE_INVSQRT_WW || defined USE_THREADS)
-	  FUNC(inl3302n,INL3302N)(COMMON_ARGS FBUF_ARG /* special version without some optimizations */
+	  /* special version without some optimizations */
+	  FUNC(inl3302n,INL3302N)(COMMON_ARGS FBUF_ARG, 
+				  md->chargeA,SCAL(eps),egcoul,
+				  md->typeA,SCAL(i3),nbfp,egnb,
+				  SCAL(fr->tabscale),fr->coulvdw14tab,
+				  SCAL(lambda),dvdlambda,md->chargeB,
+				  md->typeB,SCAL(fr->sc_alpha),
+				  SCAL(fr->sc_sigma6));
 #else
-	  FUNC(inl3302,INL3302)(COMMON_ARGS FBUF_ARG /* use normal innerloop */
-#endif
-				,md->chargeA,SCAL(eps),egcoul
-				,md->typeA,SCAL(i3),nbfp,egnb,
+	  /* use normal innerloop */
+	  FUNC(inl3302,INL3302)(COMMON_ARGS FBUF_ARG, 
+				md->chargeA,SCAL(eps),egcoul,
+				md->typeA,SCAL(i3),nbfp,egnb,
 				SCAL(fr->tabscale),fr->coulvdw14tab,
-				SCAL(lambda),dvdlambda,md->chargeB,md->typeB,SCAL(fr->sc_alpha),SCAL(fr->sc_sigma6));
-	else
-#if (defined VECTORIZE_INVSQRT || defined VECTORIZE_INVSQRT_S || defined VECTORIZE_INVSQRT_W || defined VECTORIZE_INVSQRT_WW || defined USE_THREADS)
-	FUNC(inl3301n,INL3301N)(COMMON_ARGS FBUF_ARG /* special version without some optimizations */
-#else	
-	FUNC(inl3301,INL3301)(COMMON_ARGS FBUF_ARG /* use normal innerloop */
+				SCAL(lambda),dvdlambda,md->chargeB,
+				md->typeB,SCAL(fr->sc_alpha),
+				SCAL(fr->sc_sigma6));
 #endif
-			      ,md->chargeA,SCAL(eps),egcoul
-			      ,md->typeA,SCAL(i3),nbfp,egnb,
-			      SCAL(fr->tabscale),fr->coulvdw14tab,
-			      SCAL(lambda),dvdlambda,md->chargeB,md->typeB);
-		 /* Restore old types */
-	md->typeA[ai] = tiA;
-	md->typeB[ai] = tiB;
-	md->typeA[aj] = tjA;
-	md->typeB[aj] = tjB;
 	}
-    else 
+	else {
 #if (defined VECTORIZE_INVSQRT || defined VECTORIZE_INVSQRT_S || defined VECTORIZE_INVSQRT_W || defined VECTORIZE_INVSQRT_WW || defined USE_THREADS)
-	FUNC(inl3300n,INL3300N)(COMMON_ARGS FBUF_ARG /* special version without some optimizations */
+	  /* special version without some optimizations */
+	  FUNC(inl3301n,INL3301N)(COMMON_ARGS FBUF_ARG, 
+				  md->chargeA,SCAL(eps),egcoul,
+				  md->typeA,SCAL(i3),nbfp,egnb,
+				  SCAL(fr->tabscale),fr->coulvdw14tab,
+				  SCAL(lambda),dvdlambda,md->chargeB,
+				  md->typeB);
+#else	
+	  /* use normal innerloop */
+	  FUNC(inl3301,INL3301)(COMMON_ARGS FBUF_ARG, 
+				md->chargeA,SCAL(eps),egcoul,
+				md->typeA,SCAL(i3),nbfp,egnb,
+				SCAL(fr->tabscale),fr->coulvdw14tab,
+				SCAL(lambda),dvdlambda,md->chargeB,md->typeB);
+#endif
+	  /* Restore old types */
+	  md->typeA[ai] = tiA;
+	  md->typeB[ai] = tiB;
+	  md->typeA[aj] = tjA;
+	  md->typeB[aj] = tjB;
+	}
+      }
+      else { 
+#if (defined VECTORIZE_INVSQRT || defined VECTORIZE_INVSQRT_S || defined VECTORIZE_INVSQRT_W || defined VECTORIZE_INVSQRT_WW || defined USE_THREADS)
+	/* special version without some optimizations */
+	FUNC(inl3300n,INL3300N)(COMMON_ARGS FBUF_ARG 
+				,md->chargeA,SCAL(eps),egcoul,md->typeA,SCAL(fr->ntype),
+				nbfp14,egnb,SCAL(fr->tabscale),fr->coulvdw14tab);
 #else	
 #if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
-				if(cpu_capabilities & X86_3DNOW_SUPPORT)
-	inl3300_3dnow(i1,&ai,j_index,&aj,&shift14,fr->shift_vec[0],fr->fshift[0],
-		      &gid ,x[0],f[0] FBUF_ARG
-		      ,md->chargeA,eps,egcoul,md->typeA,fr->ntype,
-		     nbfp14,egnb,fr->tabscale,fr->coulvdw14tab);
-        else
+	if (cpu_capabilities & X86_3DNOW_SUPPORT) {
+	  inl3300_3dnow(i1,&ai,j_index,&aj,&shift_f,fr->shift_vec[0],fr->fshift[0],
+			&gid ,x[0],f[0] FBUF_ARG
+			,md->chargeA,eps,egcoul,md->typeA,fr->ntype,
+			nbfp14,egnb,fr->tabscale,fr->coulvdw14tab);
+	}
+	/* NOTE: special constructions with else inside ifdef */
+	else 
 #endif /* 3dnow */
- 	  FUNC(inl3300,INL3300)(COMMON_ARGS FBUF_ARG  /* use normal innerloop */
+	  /* use normal innerloop */
+	  FUNC(inl3300,INL3300)(COMMON_ARGS FBUF_ARG  
+				,md->chargeA,SCAL(eps),egcoul,md->typeA,
+				SCAL(fr->ntype),nbfp14,egnb,
+				SCAL(fr->tabscale),fr->coulvdw14tab);
 #endif
-                     ,md->chargeA,SCAL(eps),egcoul,md->typeA,SCAL(fr->ntype),
-		     nbfp14,egnb,SCAL(fr->tabscale),fr->coulvdw14tab);
-
-    /* Now determine the 1-4 force in order to add it to the fshift array 
-     * Actually we are first computing minus the force.
-     */
-
-    rvec_sub(f[ai],fi,fi);
-    /*rvec_sub(f[aj],fj,fj);  */
-
-    ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);    
-    si=IVEC2IS(dt);	
-
-    rvec_inc(fr->fshift[si],fi);
-    rvec_dec(fr->fshift[CENTRAL],fi);
-  }	
+      }
+      /* Now determine the 1-4 force in order to add it to the fshift array 
+       * Actually we are first computing minus the force.
+       */
+      
+      rvec_sub(f[ai],fi,fi);
+      rvec_inc(fr->fshift[shift_vir],fi);
+      rvec_dec(fr->fshift[CENTRAL],fi);
+    }
   }
   return 0.0;
 }
-
+     

@@ -75,19 +75,21 @@ extern void calc_bonds(FILE *log,t_commrec *cr,t_commrec *mcr,t_idef *idef,
 
 extern real bond_angle(matrix box,
 		       rvec xi,rvec xj,rvec xk,	                /* in  */
-		       rvec r_ij,rvec r_kj,real *costh);	/* out */
+		       rvec r_ij,rvec r_kj,real *costh,
+		       int *t1,int *t2);	/* out */
 /* Calculate bond-angle. No PBC is taken into account (use mol-shift) */
 
 extern real dih_angle(matrix box,
 		      rvec xi,rvec xj,rvec xk,rvec xl,   /* in */
 		      rvec r_ij,rvec r_kj,rvec r_kl,rvec m,rvec n, /* out */
-		      real *cos_phi,real *sign);
+		      real *cos_phi,real *sign,
+		      int *t1,int *t2,int *t3);
 /* Calculate dihedral-angle. No PBC is taken into account (use mol-shift) */
 
 extern void do_dih_fup(int i,int j,int k,int l,real ddphi,
 		       rvec r_ij,rvec r_kj,rvec r_kl,
 		       rvec m,rvec n,rvec f[],t_forcerec *fr,t_graph *g,
-		       rvec x[]);
+		       rvec x[],int t1,int t2,int t3);
 /* Do an update of the forces for dihedral potentials */
 
 /*************************************************************************

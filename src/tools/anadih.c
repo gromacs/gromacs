@@ -540,13 +540,13 @@ void calc_distribution_props(int nh,int histo[],real start,
 static void calc_angles(FILE *log,matrix box,
 			int n3,atom_id index[],real ang[],rvec x_s[])
 {
-  int  i,ix;
+  int  i,ix,t1,t2;
   rvec r_ij,r_kj;
   real costh;
   
   for(i=ix=0; (ix<n3); i++,ix+=3) 
     ang[i]=bond_angle(box,x_s[index[ix]],x_s[index[ix+1]],x_s[index[ix+2]],
-		      r_ij,r_kj,&costh);
+		      r_ij,r_kj,&costh,&t1,&t2);
   if (debug) {
     fprintf(debug,"Angle[0]=%g, costh=%g, index0 = %d, %d, %d\n",
 	    ang[0],costh,index[0],index[1],index[2]);
@@ -582,7 +582,7 @@ static real calc_fraction(real angles[], int nangles)
 static void calc_dihs(FILE *log,matrix box,
 		      int n4,atom_id index[],real ang[],rvec x_s[])
 {
-  int  i,ix;
+  int  i,ix,t1,t2,t3;
   rvec r_ij,r_kj,r_kl,m,n;
   real cos_phi,sign,aaa;
   
@@ -591,7 +591,7 @@ static void calc_dihs(FILE *log,matrix box,
 		  x_s[index[ix]],x_s[index[ix+1]],x_s[index[ix+2]],
 		  x_s[index[ix+3]],
 		  r_ij,r_kj,r_kl,m,n,
-		  &cos_phi,&sign);
+		  &cos_phi,&sign,&t1,&t2,&t3);
     ang[i]=aaa;  /* not taking into account ryckaert bellemans yet */
   }
 }

@@ -126,8 +126,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     /* Every node (including the master) reads the data from the ring */
     init_parts(stdlog,cr,
 	       parm,top,state,&mdatoms,nsb,
-	       /* MASTER(cr) ? LIST_SCALARS | LIST_PARM : 0, */
-	       0,
+	       MASTER(cr) ? LIST_SCALARS | LIST_PARM : 0,
 	       &bParDummies,&dummycomm);
   } else {
     /* Read it up... */
@@ -268,7 +267,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   time_t     start_t;
   real       t,t0,lam0;
   bool       bNS,bSimAnn,bStopCM,bTYZ,bRerunMD,bNotLastFrame=FALSE,
-             bFirstStep,bLastStep,bNEMD,do_log,bRerunWarnNoV=TRUE;
+             bFirstStep,bLastStep,bNEMD,do_log,bRerunWarnNoV=TRUE,
+	     bFullPBC;
   tensor     force_vir,pme_vir,shake_vir;
   t_nrnb     mynrnb;
   char       *traj,*xtc_traj; /* normal and compressed trajectory filename */
@@ -315,6 +315,9 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	  force_vir,pme_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&bSimAnn,&vcm,nsb);
   debug_gmx();
 
+  /* Check for full periodicity calculations */
+  bFullPBC = (parm->ir.ePBC == epbcFULL);  
+  
   /* Check for polarizable models */
   shells     = init_shells(log,START(nsb),HOMENR(nsb),&top->idef,
 			   mdatoms,&nshell);
@@ -334,7 +337,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     fprintf(stderr,"Will do General Coupling Theory!\n");
 
   /* Remove periodicity */  
-  if (fr->ePBC == epbcXYZ)
+  if (fr->ePBC != epbcNONE)
     do_pbc_first(log,state->box,box_size,fr,graph,state->x);
   debug_gmx();
 
@@ -433,6 +436,9 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     bLastStep = (step - parm->ir.init_step == parm->ir.nsteps);
     
     do_log = do_per_step(step,parm->ir.nstlog) || bLastStep;
+
+    if (bFullPBC)
+      init_pbc(state->box);
     
     if (bRerunMD) {
       if (rerun_fr.bStep)

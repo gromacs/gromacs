@@ -169,7 +169,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
       ir->init_step=0;
 
     do_int(ir->ePBC);
-    if (file_version <= 15 && ir->ePBC == 2)
+    if ((file_version <= 15) && (ir->ePBC == 2))
       ir->ePBC = epbcNONE;
     do_int(ir->ns_type); 
     do_int(ir->nstlist); 

@@ -716,6 +716,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	if (ca[i].n < ca[i].z) {
 	  md->chargeA[i] += 1.0;
 	  md->chargeB[i] += 1.0;
+	  md->chargeT[i] += 1.0;
 	  ca[i].n++;
 	  dq ++;
 	}
@@ -742,6 +743,9 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
       if (khole_decay(fp,&(ca[i]),x,v,i,&ionize_seed,ir->delta_t)) {
 	nkdecay ++;
 	ndecay[i]++;
+	md->chargeA[i] += 1.0;
+	md->chargeB[i] += 1.0;
+	md->chargeT[i] += 1.0;
       }
     
     if (debug && (ca[i].n > 0))

@@ -533,15 +533,15 @@ void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
 void do_pbc_first(FILE *log,matrix box,rvec box_size,t_forcerec *fr,
 		  t_graph *graph,rvec x[])
 {
-  if (!graph)
-    fatal_error(0,"do_pbc_first called with NULL graph");
   fprintf(log,"Removing pbc first time\n");
   calc_shifts(box,box_size,fr->shift_vec);
-  mk_mshift(log,graph,box,x);
-  if (getenv ("NOPBC") == NULL)
-    shift_self(graph,box,x);
-  else
-    fprintf(log,"Not doing first shift_self\n");
+  if (graph) {
+    mk_mshift(log,graph,box,x);
+    if (getenv ("NOPBC") == NULL)
+      shift_self(graph,box,x);
+    else
+      fprintf(log,"Not doing first shift_self\n");
+  }
   fprintf(log,"Done rmpbc\n");
 }
 
@@ -613,7 +613,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
   for(i=0;i<ir->opts.ngtc;i++) {
     /* set bSimAnn if any group is being annealed */
     if(ir->opts.annealing[i]!=eannNO)
-      *bSimAnn = *bSimAnn || TRUE;
+      *bSimAnn = TRUE;
   }
   if(*bSimAnn) 
     update_annealing_target_temp(&(ir->opts),ir->init_t); 

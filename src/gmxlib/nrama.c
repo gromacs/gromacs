@@ -65,7 +65,7 @@ static int d_comp(const void *a,const void *b)
 
 static void calc_dihs(t_xrama *xr)
 {
-  int    i;
+  int    i,t1,t2,t3;
   rvec   r_ij,r_kj,r_kl,m,n;
   real   cos_phi,sign;
   t_dih  *dd;
@@ -77,7 +77,7 @@ static void calc_dihs(t_xrama *xr)
     dd->ang=dih_angle(xr->box,
 		      xr->x[dd->ai[0]],xr->x[dd->ai[1]],
 		      xr->x[dd->ai[2]],xr->x[dd->ai[3]],
-		      r_ij,r_kj,r_kl,m,n,&cos_phi,&sign);
+		      r_ij,r_kj,r_kl,m,n,&cos_phi,&sign,&t1,&t2,&t3);
   }
 }
 

@@ -211,14 +211,15 @@ bool mirror_xx(int n1,int n2,int n3,int n4,rvec x[],bool bViol[],real xi)
 void compute_dihs(FILE *log,int nq,t_quadruple q[],rvec x[],real phi[],
 		  matrix box)
 {
-  int    i;
+  int    i,t1,t2,t3;
   rvec   r_ij,r_kj,r_kl,m,n;
   real   cos_phi,sign;
   
   for(i=0; (i<nq); i++)
     phi[i] = RAD2DEG*dih_angle(box,
 			       x[q[i].ai],x[q[i].aj],x[q[i].ak],x[q[i].al],
-			       r_ij,r_kj,r_kl,m,n,&cos_phi,&sign);
+			       r_ij,r_kj,r_kl,m,n,&cos_phi,&sign,
+			       &t1,&t2,&t3);
 }
 
 int check_impropers(FILE *log,t_correct *c,int natom,rvec x[],matrix box)

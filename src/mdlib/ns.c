@@ -240,10 +240,12 @@ void correct_box(tensor box,t_forcerec *fr,t_graph *g)
   
   if (zy || zx || yx) {
     /* correct the graph */
-    for(i=0; i<g->nnodes; i++) {
-      g->ishift[i][YY] -= g->ishift[i][ZZ]*zy;
-      g->ishift[i][XX] -= g->ishift[i][ZZ]*zx;
-      g->ishift[i][XX] -= g->ishift[i][YY]*yx;
+    if (g) {
+      for(i=0; i<g->nnodes; i++) {
+	g->ishift[i][YY] -= g->ishift[i][ZZ]*zy;
+	g->ishift[i][XX] -= g->ishift[i][ZZ]*zx;
+	g->ishift[i][XX] -= g->ishift[i][YY]*yx;
+      }
     }
     /* correct the shift indices of the short-range neighborlists */
     for(l=0; l<eNL_NR; l++)

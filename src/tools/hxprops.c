@@ -164,7 +164,7 @@ real ca_phi(int gnx,atom_id index[],rvec x[],matrix box)
 /* Assume we have a list of Calpha atoms only! */
 {
   real phi,phitot;
-  int  i,ai,aj,ak,al;
+  int  i,ai,aj,ak,al,t1,t2,t3;
   rvec r_ij,r_kj,r_kl,m,n;
   real cos_phi,sign;
   
@@ -181,7 +181,7 @@ real ca_phi(int gnx,atom_id index[],rvec x[],matrix box)
       dih_angle(box,
 		x[ai],x[aj],x[ak],x[al],
 		r_ij,r_kj,r_kl,m,n,
-		&cos_phi,&sign);
+		&cos_phi,&sign,&t1,&t2,&t3);
     phitot+=phi;
   }
   
@@ -417,7 +417,7 @@ real pprms(FILE *fp,int nbb,t_bb bb[])
 
 void calc_hxprops(int nres,t_bb bb[],rvec x[],matrix box)
 {
-  int  i,ao,an;
+  int  i,ao,an,t1,t2,t3;
   rvec dx,r_ij,r_kj,r_kl,m,n;
   real cos_phi,sign;
   
@@ -444,12 +444,12 @@ void calc_hxprops(int nres,t_bb bb[],rvec x[],matrix box)
       dih_angle(box,
 		x[bb[i].Cprev],x[bb[i].N],x[bb[i].CA],x[bb[i].C],
 		r_ij,r_kj,r_kl,m,n,
-		&cos_phi,&sign);
+		&cos_phi,&sign,&t1,&t2,&t3);
     bb[i].psi=RAD2DEG*
       dih_angle(box,
 		x[bb[i].N],x[bb[i].CA],x[bb[i].C],x[bb[i].Nnext],
 		r_ij,r_kj,r_kl,m,n,
-		&cos_phi,&sign);
+		&cos_phi,&sign,&t1,&t2,&t3);
     bb[i].pprms2=sqr(bb[i].phi-PHI_AHX)+sqr(bb[i].psi-PSI_AHX);
     
     bb[i].jcaha+=

@@ -241,7 +241,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   clear_mat(force_vir);
   clear_mat(shake_vir);
   
-  if (fr->ePBC == epbcXYZ)
+  if (fr->ePBC != epbcNONE)
     /* Remove periodicity */
     do_pbc_first(log,state->box,box_size,fr,graph,state->x);
   
@@ -261,7 +261,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
    * We do not unshift, so molecules are always whole in congrad.c
    */
   do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,0,&(nrnb[cr->nodeid]),
-	   top,grps,state->x,buf,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
+	   top,grps,state->box,
+	   state->x,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
   where();
 
@@ -372,7 +373,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
        * gradients
        */
       do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,
-	       count,&(nrnb[cr->nodeid]),top,grps,xprime,buf,f,
+	       count,&(nrnb[cr->nodeid]),top,grps,state->box,xprime,f,
 	       buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
       
@@ -451,7 +452,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
        * We do not unshift, so molecules are always whole in congrad.c
        */
       do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,
-	       count,&(nrnb[cr->nodeid]),top,grps,xprime,buf,f,
+	       count,&(nrnb[cr->nodeid]),top,grps,state->box,xprime,f,
 	       buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
       
@@ -603,7 +604,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   clear_mat(force_vir); 
   clear_mat(shake_vir); 
 
-  if (fr->ePBC == epbcXYZ)
+  if (fr->ePBC != epbcNONE)
     /* Remove periodicity */
     do_pbc_first(log,state->box,box_size,fr,graph,state->x);
 
@@ -674,7 +675,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
      * We do not unshift, so molecules are always whole in steep.c
      */
     do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,
- 	     count,&(nrnb[cr->nodeid]),top,grps,pos[TRY],buf,force[TRY],buf,
+ 	     count,&(nrnb[cr->nodeid]),top,grps,state->box,pos[TRY],
+	     force[TRY],buf,
 	     mdatoms,ener,fcd,bVerbose && !(PAR(cr)), 
  	     lambda,graph,parm->ir.nstlist>0 || count==0,FALSE,fr,mu_tot,
 	     FALSE,0.0); 
@@ -867,7 +869,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   init_nrnb(&mynrnb);
 
-  if (fr->ePBC == epbcXYZ)
+  if (fr->ePBC != epbcNONE)
     /* Remove periodicity */
     do_pbc_first(log,state->box,box_size,fr,graph,state->x);
 

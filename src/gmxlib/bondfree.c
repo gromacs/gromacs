@@ -49,21 +49,24 @@
 #include "orires.h"
 #include "mdrun.h"
 
-static bool bPBC=FALSE;
+static bool bFullPBC=FALSE;
 
-static void pbc_rvec_sub(rvec xi,rvec xj,rvec dx)
+static int pbc_rvec_sub(rvec xi,rvec xj,rvec dx)
 {
-  if (bPBC)
-    pbc_dx(xi,xj,dx);
-  else
+  if (bFullPBC) {
+    return pbc_dx(xi,xj,dx);
+  }
+  else {
     rvec_sub(xi,xj,dx);
+    return CENTRAL;
+  }
 }
 
 void set_gmx_full_pbc(FILE *fp)
 {
-  bPBC   = (getenv("GMXFULLPBC") != NULL);
-  if (bPBC && fp)
-    fprintf(fp,"Full PBC calculation = %s\n",bool_names[bPBC]);
+  bFullPBC   = (getenv("GMXFULLPBC") != NULL);
+  if (bFullPBC && fp)
+    fprintf(fp,"Full PBC calculation = %s\n",bool_names[bFullPBC]);
 }
 
 void calc_bonds(FILE *log,t_commrec *cr,t_commrec *mcr,t_idef *idef,
@@ -83,13 +86,18 @@ void calc_bonds(FILE *log,t_commrec *cr,t_commrec *mcr,t_idef *idef,
     fprintf(log,"Step %d: bonded V and dVdl for node %d:\n",step,cr->nodeid);
 
   if (bFirst) {
-    bPBC   = (fr->ePBC == epbcFULL);
+    bFullPBC   = (fr->ePBC == epbcFULL);
+    fprintf(log,"PBC treatment for bonded interactions is %s\n",
+	    epbc_names[fr->ePBC]);
+    if (!bFullPBC)
+      set_gmx_full_pbc(log);
     bFirst = FALSE;
 #ifdef DEBUG
     if (g)
       p_graph(debug,"Bondage is fun",g);
 #endif
   }
+  
   /* Do pre force calculation stuff which might require communication */
   if (idef->il[F_ORIRES].nr)
     epot[F_ORIRESDEV] = calc_orires_dev(mcr,idef->il[F_ORIRES].nr,
@@ -163,7 +171,7 @@ real morsebonds(int nbonds,
     be   = forceparams[type].morse.beta;
     cb   = forceparams[type].morse.cb;
 
-    pbc_rvec_sub(x[ai],x[aj],dx);                   /*   3          */
+    ki   = pbc_rvec_sub(x[ai],x[aj],dx);            /*   3          */
     dr2  = iprod(dx,dx);                            /*   5          */
     dr   = dr2*invsqrt(dr2);                        /*  10          */
     temp = exp(-be*(dr-b0));                        /*  12          */
@@ -177,8 +185,10 @@ real morsebonds(int nbonds,
     fbond    = -two*be*temp*cbomtemp*invsqrt(dr2);      /*   9          */
     vtot    += vbond;       /* 1 */
     
-    ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
-    ki=IVEC2IS(dt);
+    if (g) {
+      ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+      ki = IVEC2IS(dt);
+    }
 
     for (m=0; (m<DIM); m++) {                          /*  15          */
       fij=fbond*dx[m];
@@ -216,8 +226,8 @@ real cubicbonds(int nbonds,
     kb   = forceparams[type].cubic.kb;
     kcub = forceparams[type].cubic.kcub;
 
-    pbc_rvec_sub(x[ai],x[aj],dx);                   /*   3          */
-    dr2        = iprod(dx,dx);                            /*   5          */
+    ki   = pbc_rvec_sub(x[ai],x[aj],dx);                /*   3          */
+    dr2  = iprod(dx,dx);                                /*   5          */
     
     if (dr2 == 0.0)
       continue;
@@ -232,8 +242,10 @@ real cubicbonds(int nbonds,
 
     vtot      += vbond;       /* 21 */
     
-    ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
-    ki=IVEC2IS(dt);
+    if (g) {
+      ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+      ki=IVEC2IS(dt);
+    }
     for (m=0; (m<DIM); m++) {                          /*  15          */
       fij=fbond*dx[m];
       f[ai][m]+=fij;
@@ -290,9 +302,9 @@ real bonds(int nbonds,
     ai   = forceatoms[i++];
     aj   = forceatoms[i++];
   
-    pbc_rvec_sub(x[ai],x[aj],dx);			/*   3 		*/
-    dr2=iprod(dx,dx);				/*   5		*/
-    dr=dr2*invsqrt(dr2);		       /*  10		*/
+    ki   = pbc_rvec_sub(x[ai],x[aj],dx);	/*   3 		*/
+    dr2  = iprod(dx,dx);			/*   5		*/
+    dr   = dr2*invsqrt(dr2);		        /*  10		*/
 
     *dvdlambda += harmonic(forceparams[type].harmonic.krA,
 			   forceparams[type].harmonic.krB,
@@ -311,9 +323,10 @@ real bonds(int nbonds,
       fprintf(debug,"BONDS: dr = %10g  vbond = %10g  fbond = %10g\n",
 	      dr,vbond,fbond);
 #endif
-    ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
-    ki=IVEC2IS(dt);
-
+    if (g) {
+      ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+      ki=IVEC2IS(dt);
+    }
     for (m=0; (m<DIM); m++) {			/*  15		*/
       fij=fbond*dx[m];
       f[ai][m]+=fij;
@@ -447,14 +460,15 @@ real water_pol(int nbonds,
 
 real bond_angle(matrix box,
 		rvec xi,rvec xj,rvec xk,	/* in  */
-		rvec r_ij,rvec r_kj,real *costh)		/* out */
+		rvec r_ij,rvec r_kj,real *costh,
+		int *t1,int *t2)		/* out */
 /* Return value is the angle between the bonds i-j and j-k */
 {
   /* 41 FLOPS */
   real th;
   
-  pbc_rvec_sub(xi,xj,r_ij);			/*  3		*/
-  pbc_rvec_sub(xk,xj,r_kj);			/*  3		*/
+  *t1 = pbc_rvec_sub(xi,xj,r_ij);			/*  3		*/
+  *t2 = pbc_rvec_sub(xk,xj,r_kj);			/*  3		*/
 
   *costh=cos_angle(r_ij,r_kj);		/* 25		*/
   th=acos(*costh);			/* 10		*/
@@ -482,7 +496,7 @@ real angles(int nbonds,
     ak   = forceatoms[i++];
     
     theta  = bond_angle(box,x[ai],x[aj],x[ak],
-			r_ij,r_kj,&cos_theta);	/*  41		*/
+			r_ij,r_kj,&cos_theta,&t1,&t2);	/*  41		*/
   
     *dvdlambda += harmonic(forceparams[type].harmonic.krA,
 			   forceparams[type].harmonic.krB,
@@ -523,13 +537,14 @@ real angles(int nbonds,
 	f[aj][m]+=f_j[m];
 	f[ak][m]+=f_k[m];
       }
-      copy_ivec(SHIFT_IVEC(g,aj),jt);
+      if (g) {
+	copy_ivec(SHIFT_IVEC(g,aj),jt);
       
-    ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
-    ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
-    t1=IVEC2IS(dt_ij);
-    t2=IVEC2IS(dt_kj);
-      
+	ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
+	ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
+	t1=IVEC2IS(dt_ij);
+	t2=IVEC2IS(dt_kj);
+      }
       rvec_inc(fr->fshift[t1],f_i);
       rvec_inc(fr->fshift[CENTRAL],f_j);
       rvec_inc(fr->fshift[t2],f_k);
@@ -541,13 +556,13 @@ real angles(int nbonds,
 real dih_angle(matrix box,
 	       rvec xi,rvec xj,rvec xk,rvec xl,
 	       rvec r_ij,rvec r_kj,rvec r_kl,rvec m,rvec n,
-	       real *cos_phi,real *sign)
+	       real *cos_phi,real *sign,int *t1,int *t2,int *t3)
 {
   real ipr,phi;
 
-  pbc_rvec_sub(xi,xj,r_ij);       		/*  3 		*/
-  pbc_rvec_sub(xk,xj,r_kj);			/*  3		*/
-  pbc_rvec_sub(xk,xl,r_kl);			/*  3		*/
+  *t1 = pbc_rvec_sub(xi,xj,r_ij);       		/*  3 		*/
+  *t2 = pbc_rvec_sub(xk,xj,r_kj);			/*  3		*/
+  *t3 = pbc_rvec_sub(xk,xl,r_kl);			/*  3		*/
 
   oprod(r_ij,r_kj,m); 			/*  9 		*/
   oprod(r_kj,r_kl,n);			/*  9		*/
@@ -563,14 +578,13 @@ real dih_angle(matrix box,
 void do_dih_fup(int i,int j,int k,int l,real ddphi,
 		rvec r_ij,rvec r_kj,rvec r_kl,
 		rvec m,rvec n,rvec f[],t_forcerec *fr,t_graph *g,
-		rvec x[])
+		rvec x[],int t1,int t2,int t3)
 {
   /* 143 FLOPS */
   rvec f_i,f_j,f_k,f_l;
-  rvec uvec,vvec,svec;
+  rvec uvec,vvec,svec,dx_jl;
   real ipr,nrkj,nrkj2;
   real a,p,q;
-  int  t1,t2,t3;
   ivec jt,dt_ij,dt_kj,dt_lj;  
   
   ipr   = iprod(m,m);		/*  5 	*/
@@ -595,19 +609,23 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
   rvec_dec(f[k],f_k);   	/*  3	*/
   rvec_inc(f[l],f_l);   	/*  3	*/
 
-  
-  copy_ivec(SHIFT_IVEC(g,j),jt);
-  ivec_sub(SHIFT_IVEC(g,i),jt,dt_ij);
-  ivec_sub(SHIFT_IVEC(g,k),jt,dt_kj);
-  ivec_sub(SHIFT_IVEC(g,l),jt,dt_lj);
-  t1=IVEC2IS(dt_ij);
-  t2=IVEC2IS(dt_kj);
-  t3=IVEC2IS(dt_lj);
-  
+  if (g) {
+    copy_ivec(SHIFT_IVEC(g,j),jt);
+    ivec_sub(SHIFT_IVEC(g,i),jt,dt_ij);
+    ivec_sub(SHIFT_IVEC(g,k),jt,dt_kj);
+    ivec_sub(SHIFT_IVEC(g,l),jt,dt_lj);
+    t1=IVEC2IS(dt_ij);
+    t2=IVEC2IS(dt_kj);
+    t3=IVEC2IS(dt_lj);
+  }    
+  else
+    t3 = pbc_dx(x[l],x[j],dx_jl);
+    
   rvec_inc(fr->fshift[t1],f_i);
   rvec_dec(fr->fshift[CENTRAL],f_j);
   rvec_dec(fr->fshift[t2],f_k);
   rvec_inc(fr->fshift[t3],f_l);
+  
   /* 112 TOTAL 	*/
 }
 
@@ -670,6 +688,7 @@ real pdihs(int nbonds,
 	   t_fcdata *fcd)
 {
   int  i,type,ai,aj,ak,al;
+  int  t1,t2,t3;
   rvec r_ij,r_kj,r_kl,m,n;
   real phi,cos_phi,sign,ddphi,vpd,vtot;
 
@@ -682,7 +701,7 @@ real pdihs(int nbonds,
     al   = forceatoms[i++];
     
     phi=dih_angle(box,x[ai],x[aj],x[ak],x[al],r_ij,r_kj,r_kl,m,n,
-		  &cos_phi,&sign);			/*  84 		*/
+		  &cos_phi,&sign,&t1,&t2,&t3);			/*  84 		*/
 		
     *dvdlambda += dopdihs(forceparams[type].pdihs.cpA,
 			  forceparams[type].pdihs.cpB,
@@ -693,7 +712,7 @@ real pdihs(int nbonds,
 		       
     vtot += vpd;
     do_dih_fup(ai,aj,ak,al,ddphi,r_ij,r_kj,r_kl,m,n,
-	       f,fr,g,x); 				/* 112		*/
+	       f,fr,g,x,t1,t2,t3);			/* 112		*/
 
 #ifdef DEBUG
     fprintf(debug,"pdih: (%d,%d,%d,%d) cp=%g, phi=%g\n",
@@ -714,6 +733,7 @@ real idihs(int nbonds,
 	   t_fcdata *fcd)
 {
   int  i,type,ai,aj,ak,al;
+  int  t1,t2,t3;
   real phi,phi0,cos_phi,ddphi,sign,vtot;
   rvec r_ij,r_kj,r_kl,m,n;
   real L1,kk,dp,dp2,kA,kB,pA,pB,dvdl;
@@ -730,7 +750,7 @@ real idihs(int nbonds,
     al   = forceatoms[i++];
     
     phi=dih_angle(box,x[ai],x[aj],x[ak],x[al],r_ij,r_kj,r_kl,m,n,
-		  &cos_phi,&sign);			/*  84		*/
+		  &cos_phi,&sign,&t1,&t2,&t3);			/*  84		*/
     
     /* phi can jump if phi0 is close to Pi/-Pi, which will cause huge
      * force changes if we just apply a normal harmonic.
@@ -763,7 +783,7 @@ real idihs(int nbonds,
     dvdl += 0.5*(kB-kA)*dp2 + (pA-pB)*kk*dp;
 
     do_dih_fup(ai,aj,ak,al,(real)(-ddphi),r_ij,r_kj,r_kl,m,n,
-	       f,fr,g,x);				/* 112		*/
+	       f,fr,g,x,t1,t2,t3);				/* 112		*/
     /* 217 TOTAL	*/
 #ifdef DEBUG
     fprintf("idih: (%d,%d,%d,%d) cp=%g, phi=%g\n",
@@ -817,7 +837,8 @@ static real low_angres(int nbonds,
 		       matrix box,real lambda,real *dvdlambda,
 		       bool bZAxis)
 {
-  int  i,m,type,ai,aj,ak,al,t;
+  int  i,m,type,ai,aj,ak,al;
+  int  t1,t2;
   real phi,cos_phi,vid,vtot,dVdphi;
   rvec r_ij,r_kl,f_i,f_k;
   real st,sth,sin_phi,nrij2,nrkl2,c,cij,ckl;
@@ -830,11 +851,11 @@ static real low_angres(int nbonds,
     type = forceatoms[i++];
     ai   = forceatoms[i++];
     aj   = forceatoms[i++];
-    pbc_rvec_sub(x[aj],x[ai],r_ij);            	/*  3		*/
+    t1   = pbc_rvec_sub(x[aj],x[ai],r_ij);            	/*  3		*/
     if (!bZAxis) {      
       ak   = forceatoms[i++];
       al   = forceatoms[i++];
-      pbc_rvec_sub(x[al],x[ak],r_kl);           /*  3		*/
+      t2   = pbc_rvec_sub(x[al],x[ak],r_kl);           /*  3		*/
     } else {
       r_kl[XX] = 0;
       r_kl[YY] = 0;
@@ -876,15 +897,18 @@ static real low_angres(int nbonds,
       }
     }
     
-    ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
-    t=IVEC2IS(dt);
-    
-    rvec_inc(fr->fshift[t],f_i);
+    if (g) {
+      ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+      t1=IVEC2IS(dt);
+    }
+    rvec_inc(fr->fshift[t1],f_i);
     rvec_dec(fr->fshift[CENTRAL],f_i);
     if (!bZAxis) {
-      ivec_sub(SHIFT_IVEC(g,ak),SHIFT_IVEC(g,al),dt);
-      t=IVEC2IS(dt);
-      rvec_inc(fr->fshift[t],f_k);
+      if (g) {
+	ivec_sub(SHIFT_IVEC(g,ak),SHIFT_IVEC(g,al),dt);
+	t2=IVEC2IS(dt);
+      }
+      rvec_inc(fr->fshift[t2],f_k);
       rvec_dec(fr->fshift[CENTRAL],f_k);
     }
   }
@@ -943,6 +967,7 @@ real rbdihs(int nbonds,
 {
   const real c0=0.0,c1=1.0,c2=2.0,c3=3.0,c4=4.0,c5=5.0;
   int  type,ai,aj,ak,al,i,j;
+  int  t1,t2,t3;
   rvec r_ij,r_kj,r_kl,m,n;
   real parmA[NR_RBDIHS];
   real parmB[NR_RBDIHS];
@@ -962,7 +987,7 @@ real rbdihs(int nbonds,
     al   = forceatoms[i++];
 
     phi=dih_angle(box,x[ai],x[aj],x[ak],x[al],r_ij,r_kj,r_kl,m,n,
-		  &cos_phi,&sign);			/*  84		*/
+		  &cos_phi,&sign,&t1,&t2,&t3);			/*  84		*/
 
     /* Change to polymer convention */
     if (phi < c0)
@@ -1021,7 +1046,7 @@ real rbdihs(int nbonds,
     ddphi = -ddphi*sin_phi;				/*  11		*/
     
     do_dih_fup(ai,aj,ak,al,ddphi,r_ij,r_kj,r_kl,m,n,
-	       f,fr,g,x);				/* 112		*/
+	       f,fr,g,x,t1,t2,t3);				/* 112		*/
     vtot += v;
   }  
   *dvdlambda += dvdl;
@@ -1078,8 +1103,8 @@ real g96bonds(int nbonds,
     ai   = forceatoms[i++];
     aj   = forceatoms[i++];
   
-    pbc_rvec_sub(x[ai],x[aj],dx);		/*   3 		*/
-    dr2=iprod(dx,dx);				/*   5		*/
+    ki   = pbc_rvec_sub(x[ai],x[aj],dx);		/*   3 		*/
+    dr2  = iprod(dx,dx);				/*   5		*/
       
     *dvdlambda += g96harmonic(forceparams[type].harmonic.krA,
 			      forceparams[type].harmonic.krB,
@@ -1094,8 +1119,10 @@ real g96bonds(int nbonds,
 	      sqrt(dr2),vbond,fbond);
 #endif
    
-    ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
-    ki=IVEC2IS(dt);
+    if (g) {
+      ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+      ki=IVEC2IS(dt);
+    }
     for (m=0; (m<DIM); m++) {			/*  15		*/
       fij=fbond*dx[m];
       f[ai][m]+=fij;
@@ -1109,13 +1136,14 @@ real g96bonds(int nbonds,
 
 real g96bond_angle(matrix box,
 		   rvec xi,rvec xj,rvec xk,	/* in  */
-		   rvec r_ij,rvec r_kj)		/* out */
+		   rvec r_ij,rvec r_kj,
+		   int *t1,int *t2)		/* out */
 /* Return value is the angle between the bonds i-j and j-k */
 {
   real costh;
   
-  pbc_rvec_sub(xi,xj,r_ij);			/*  3		*/
-  pbc_rvec_sub(xk,xj,r_kj);			/*  3		*/
+  *t1 = pbc_rvec_sub(xi,xj,r_ij);			/*  3		*/
+  *t2 = pbc_rvec_sub(xk,xj,r_kj);			/*  3		*/
 
   costh=cos_angle(r_ij,r_kj);		/* 25		*/
 					/* 41 TOTAL	*/
@@ -1143,7 +1171,7 @@ real g96angles(int nbonds,
     aj   = forceatoms[i++];
     ak   = forceatoms[i++];
     
-    cos_theta  = g96bond_angle(box,x[ai],x[aj],x[ak],r_ij,r_kj);	
+    cos_theta  = g96bond_angle(box,x[ai],x[aj],x[ak],r_ij,r_kj,&t1,&t2);	
     
     *dvdlambda += g96harmonic(forceparams[type].harmonic.krA,
 			      forceparams[type].harmonic.krB,
@@ -1171,13 +1199,15 @@ real g96angles(int nbonds,
       f[aj][m]+=f_j[m];
       f[ak][m]+=f_k[m];
     }
-    copy_ivec(SHIFT_IVEC(g,aj),jt);
     
-    ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
-    ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
-    t1=IVEC2IS(dt_ij);
-    t2=IVEC2IS(dt_kj);
-
+    if (g) {
+      copy_ivec(SHIFT_IVEC(g,aj),jt);
+      
+      ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
+      ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
+      t1=IVEC2IS(dt_ij);
+      t2=IVEC2IS(dt_kj);
+    }      
     rvec_inc(fr->fshift[t1],f_i);
     rvec_inc(fr->fshift[CENTRAL],f_j);
     rvec_inc(fr->fshift[t2],f_k);               /* 9 */

@@ -170,6 +170,8 @@ static void ld_idef(int src,t_idef *idef)
 
 static void ld_grpopts(int src,t_grpopts *g)
 {
+  int i,n;
+  
   blockrx(src,g->ngtc);
   blockrx(src,g->ngacc);
   blockrx(src,g->ngfrz);
@@ -186,6 +188,21 @@ static void ld_grpopts(int src,t_grpopts *g)
   nblockrx(src,g->ngacc,g->acc);
   nblockrx(src,g->ngfrz,g->nFreeze);
   nblockrx(src,g->ngener*g->ngener,g->eg_excl);
+  snew(g->annealing,g->ngtc);
+  snew(g->anneal_npoints,g->ngtc);
+  snew(g->anneal_time,g->ngtc);
+  snew(g->anneal_temp,g->ngtc);
+  nblockrx(src,g->ngtc,g->annealing);
+  nblockrx(src,g->ngtc,g->anneal_npoints);
+  for(i=0;(i<g->ngtc); i++) {
+    n = g->anneal_npoints[i];
+    if (n > 0) {
+      snew(g->anneal_time[i],n);
+      snew(g->anneal_temp[i],n);
+      nblockrx(src,n,g->anneal_time[i]);
+      nblockrx(src,n,g->anneal_temp[i]);
+    }
+  }
 }
 
 static void ld_cosines(int src,t_cosines *cs)
@@ -241,6 +258,8 @@ void ld_data(int left,int right,t_parm *parm,t_nsborder *nsb,
 
 static void mv_grpopts(int dest,t_grpopts *g)
 {
+  int i,n;
+  
   blocktx(dest,g->ngtc);
   blocktx(dest,g->ngacc);
   blocktx(dest,g->ngfrz);
@@ -251,6 +270,15 @@ static void mv_grpopts(int dest,t_grpopts *g)
   nblocktx(dest,g->ngacc,g->acc);
   nblocktx(dest,g->ngfrz,g->nFreeze);
   nblocktx(dest,g->ngener*g->ngener,g->eg_excl);
+  nblocktx(dest,g->ngtc,g->annealing);
+  nblocktx(dest,g->ngtc,g->anneal_npoints);
+  for(i=0;(i<g->ngtc); i++) {
+    n = g->anneal_npoints[i];
+    if (n > 0) {
+      nblocktx(dest,n,g->anneal_time[i]);
+      nblocktx(dest,n,g->anneal_temp[i]);
+    }
+  }
 }
 
 static void mv_cosines(int dest,t_cosines *cs)
