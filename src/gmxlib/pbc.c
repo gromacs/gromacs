@@ -364,15 +364,66 @@ void put_charge_groups_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
   }
 }
 
+void calc_box_center(matrix box,rvec box_center)
+{
+  int d;
+  
+  for(d=0; d<DIM; d++)
+    box_center[d] = 0.5*box[d][d];
+}
+
 void put_atoms_in_box(int natoms,matrix box,rvec x[])
 {
-  int i,m;
+  int i,m,d;
 
   for(i=0; (i<natoms); i++)
-    for(m=0; m < DIM; m++) {
+    for(m=DIM-1; m>=0; m--) {
       while (x[i][m] < 0) 
-	x[i][m] += box[m][m];
-      while (x[i][m] >= box[m][m]) 
-	x[i][m] -= box[m][m];
+	for(d=0; d<=m; d++)
+	  x[i][d] += box[m][d];
+      while (x[i][m] >= box[m][m])
+	for(d=0; d<=m; d++)
+	  x[i][d] -= box[m][d];
     }
 }
+
+void put_atoms_in_triclinic_unitcell(int natoms,matrix box,rvec x[])
+{
+  rvec   box_center;
+  matrix shift_mat;
+  real   shift;
+  int    i,m,d;
+  
+  calc_box_center(box,box_center);
+
+  for(m=DIM-1; m>=0; m--)
+    for(d=m+1; d<DIM; d++)
+      shift_mat[d][m] = box[d][m]/box[d][d];
+
+  for(i=0; (i<natoms); i++)
+    for(m=DIM-1; m>=0; m--) {
+      shift=0;
+      for(d=m+1; d<DIM; d++)
+	shift += (x[i][d]-box_center[d])*shift_mat[d][m];
+      while (x[i][m]-shift < 0) 
+	for(d=0; d<=m; d++)
+	  x[i][d] += box[m][d];
+      while (x[i][m]-shift >= box[m][m])
+	for(d=0; d<=m; d++)
+	  x[i][d] -= box[m][d];
+    }
+}
+
+void put_atoms_in_compact_unitcell(int natoms,matrix box,rvec x[])
+{
+  rvec box_center,dx;
+  int  i;
+
+  init_pbc(box,FALSE);
+  calc_box_center(box,box_center);
+  for(i=0; i<natoms; i++) {
+    pbc_dx(x[i],box_center,dx);
+    rvec_add(box_center,dx,x[i]);
+  }
+}
+

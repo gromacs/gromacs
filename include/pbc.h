@@ -118,9 +118,24 @@ extern void put_charge_groups_in_box (FILE *log,int cg0,int cg1,bool bTruncOct,
  * box is used. There are no checks: the first element of the box matrix
  * is taken to be the box edge.
  */
- 
+
+extern void calc_box_center(matrix box,rvec box_center);
+/* Calculates the center of the box */
+
 extern void put_atoms_in_box(int natoms,matrix box,rvec x[]);
-/* This puts ALL atoms in the box, not caring about charge gorups! */
+/* This puts ALL atoms in the box, not caring about charge groups!
+ * Also works for triclinic cells.
+ */
+
+void put_atoms_in_triclinic_unitcell(int natoms,matrix box,rvec x[]);
+/* This puts ALL atoms in the triclinic unit cell, centered around the
+ * box center as calculated by calc_box_center.
+ */
+
+void put_atoms_in_compact_unitcell(int natoms,matrix box,rvec x[]);
+/* This puts ALL atoms at the closest distance for the center of the box
+ * as calculated by calc_box_center.
+ */
 
 #ifdef CPLUSPLUS
 }

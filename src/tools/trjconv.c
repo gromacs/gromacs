@@ -205,9 +205,8 @@ int main(int argc,char *argv[])
     "regular fit method, e.g. when your protein undergoes large",
     "conformational transitions.[PAR]",
     "The option [TT]-pbc[tt] sets the type of periodic boundary condition",
-    "treatment. [TT]whole[tt] makes broken molecules whole (a run input",
-    "file is required). [TT]-pbc[tt] is changed form [TT]none[tt] to",
-    "[TT]whole[tt] when [TT]-fit[tt] or [TT]-pfit[tt] is set.",
+    "treatment. [TT]whole[tt] puts the atoms in the box and then makes",
+    "broken molecules whole (a run input file is required).",
     "[TT]inbox[tt] puts all the atoms in the box.",
     "[TT]nojump[tt] checks if atoms jump across the box and then puts",
     "them back. This has the effect that all molecules",
@@ -216,15 +215,17 @@ int main(int argc,char *argv[])
     "molecules may diffuse out of the box. The starting configuration",
     "for this procedure is taken from the structure file, if one is",
     "supplied, otherwise it is the first frame.",
-    "[TT]compact[tt] is only useful for triclinic boxes. It makes",
-    "molecules whole and puts them at the shortest distance from the center",
-    "of the box. This can be useful for visualizing truncated octahedrons.",
-    "[PAR]",
-    "Use [TT]-center[tt] to put the system in the center of the box.",
-    "This is especially useful for multimeric proteins, since this",
-    "procedure will ensure the subunits stay together in the trajectory",
-    "(due to PBC, they might be separated), providing they were together",
-    "in the initial conformation.[PAR]",
+    "[TT]-pbc[tt] is ignored when [TT]-fit[tt] of [TT]-pfit[tt] is set,",
+    "in that case molecules will be made whole.[PAR]",
+    "[TT]-ur[tt] sets the unit cell representation for options [TT]whole[tt]",
+    "and [TT]inbox[tt] of [TT]-pbc[tt].",
+    "All three options give different results for triclinc boxes and",
+    "identical results for rectangular boxes.",
+    "[TT]rect[tt] is the ordinary brick shape.",
+    "[TT]tric[tt] is the triclinic unit cell.", 
+    "[TT]compact[tt] puts all atoms at the closest distance from the center",
+    "of the box. This can be useful for visualizing e.g. truncated",
+    "octahedrons.[PAR]",
     "With the option [TT]-dt[tt] it is possible to reduce the number of ",
     "frames in the output. This option relies on the accuracy of the times",
     "in your input trajectory, so if these are inaccurate use the",
@@ -243,8 +244,9 @@ int main(int argc,char *argv[])
     "one specific time from your trajectory."
   };
   
-  static char *pbc_opt[] = { NULL, "none", "whole", "inbox", "nojump", 
-			     "compact", NULL };
+  static char *pbc_opt[] = { NULL, "none", "whole", "inbox", "nojump", NULL };
+  static char *unitcell_opt[] = { NULL, "rect", "tric", "compact",
+				  NULL };
 
   static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE;
   static bool  bCenter=FALSE,bFit=FALSE,bPFit=FALSE,bBox=TRUE;
@@ -257,6 +259,8 @@ int main(int argc,char *argv[])
   t_pargs pa[] = {
     { "-pbc", FALSE,  etENUM, {pbc_opt},
       "PBC treatment" },
+    { "-ur", FALSE,  etENUM, {unitcell_opt},
+      "Unit-cell representation" },
     { "-center", FALSE,  etBOOL, {&bCenter},
       "Center atoms in box" },
     { "-box", FALSE, etRVEC, {&newbox},
@@ -316,7 +320,7 @@ int main(int argc,char *argv[])
   atom_id      *ind_fit,*ind_rms;
   char         *gn_fit,*gn_rms;
   real         t,pt,tshift=0,t0=-1,dt=0.001;
-  bool         bPBC,bInBox,bNoJump,bCompact;
+  bool         bPBC,bInBox,bNoJump,bRect,bTric,bComp;
   bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bToldYouOnce=FALSE;
   bool         bHaveNextFrame,bHaveX=FALSE,bHaveV=FALSE,bSetBox;
@@ -358,11 +362,13 @@ int main(int argc,char *argv[])
     bPBC      = (strcmp(pbc_opt[0],"whole") == 0);
     bInBox    = (strcmp(pbc_opt[0],"inbox") == 0);
     bNoJump   = (strcmp(pbc_opt[0],"nojump") == 0);
-    bCompact  = (strcmp(pbc_opt[0],"compact") == 0);
+    bRect     = (strcmp(unitcell_opt[0],"rect") == 0);
+    bTric     = (strcmp(unitcell_opt[0],"tric") == 0);
+    bComp     = (strcmp(unitcell_opt[0],"compact") == 0);
     if (bFit && (strcmp(pbc_opt[0],"none") == 0))
       bPBC = TRUE;
-    if (bCompact)
-      bPBC = TRUE;
+    if (bPBC && !bFit)
+      bInBox = TRUE;
 
     /* prec is in nr of decimal places, xtcprec is a multiplication factor: */
     xtcpr=1;
@@ -619,21 +625,19 @@ int main(int argc,char *argv[])
 	  if ( ((outframe % SKIP) == 0) || (outframe < SKIP) )
 	    fprintf(stderr," ->  frame %6d time %8.3f      \r",outframe,t);
 	  
-	  if (bCompact) {
-	    init_pbc(box,FALSE);
-	    for(i=0; i<DIM; i++)
-	      box_center[i] = 0.5*box[i][i];
-	    for(i=0; i<natoms; i++) {
-	      pbc_dx(x[i],box_center,dx);
-	      rvec_add(box_center,dx,x[i]);
-	    }
-	    if (bPFit)
-	      rm_pbc(&(top.idef),natoms,box,x,x);
-	  }
-
 	  if (!bPFit) {
 	    /* Now modify the coords according to the flags,
 	       for PFit we did this already! */
+	    
+	    if (bInBox) {
+	      if (bRect)
+		put_atoms_in_box(natoms,box,x);
+	      else if (bTric)
+		put_atoms_in_triclinic_unitcell(natoms,box,x);
+	      else if (bComp)
+		put_atoms_in_compact_unitcell(natoms,box,x);
+	    }
+	    
 	    if (bPBC)
 	      rm_pbc(&(top.idef),natoms,box,x,x);
 	  
@@ -645,9 +649,8 @@ int main(int argc,char *argv[])
 	    }
 	  }
 	  
-	  if (bCenter) {
+	  if (bCenter)
 	    center_x(x,box,nout,index);
-	  } 
 	  
 	  if (bCopy) {
 	    for(i=0; (i<nout); i++) {
@@ -655,13 +658,6 @@ int main(int argc,char *argv[])
 	      if (bVels) copy_rvec(v[index[i]],vout[i]);
 	    }
 	  }
-	  
-	  /* this should make sure all atoms in output are really inside
-	     a rectangular box. Was needed to make movies.
-	     Peter Tieleman, Mon Jul 15 1996
-	     */
-	  if (bInBox)
-	    put_atoms_in_box(nout,box,xout);
 	  
 	  if (opt2parg_bSet("-shift",asize(pa),pa))
 	    for(i=0; (i<nout); i++)
