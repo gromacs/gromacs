@@ -121,6 +121,14 @@ a_x \geq |b_x| + |c_x|,~~~~b_y \geq |c_y|
 Equations (\ref{box_rot}) can always be statisfied by rotating the box.
 Equations (\ref{box_shift1}) and (\ref{box_shift2}) can always be
 statisfied by subtracting and adding box vectors.
+
+Even when simulating using a triclinic box, {\gromacs} always puts the
+particles in a brick shaped volume, because of efficiency reasons.
+This is shown in \figref{pbc} for a 2-dimensional system.
+So from the output trajectory it might seem like the simulation was done in
+a rectangular box. The program {\tt trjconv} can be used to convert the
+trajectory to a different unit-cell representation.
+
 It is also possible to simulate without periodic boundary conditions.
 But often is is more efficient to simulate an isolated cluster of molecules
 in a large periodic box, since grid search can only be used in a periodic
