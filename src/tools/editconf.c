@@ -48,7 +48,7 @@ static char *SRCID_editconf_c = "$Id$";
 #include "rdgroup.h"
 #include "physics.h"
 #include "mass.h"
-#include "3dview.h"
+#include "addconf.h"
 
 typedef struct {
   char   sanm[12];
@@ -256,33 +256,6 @@ void pdb_legend(FILE *out,int natoms,int nres,t_atoms *atoms,rvec x[])
   }
 }
 
-void simple_rotate_conf(int natom,rvec x[],rvec v[],matrix box,char *dir)
-{
-  real dum;
-  
-  switch (dir[0]) {
-  case 'X':
-    rotate_conf(natom,x,v,90,0,0);
-    dum = box[ZZ][ZZ];
-    box[ZZ][ZZ] = -box[YY][YY];
-    box[YY][YY] = dum;
-    break;
-  case 'Y':
-    rotate_conf(natom,x,v,0,90,0);
-    dum = box[XX][XX];
-    box[XX][XX] = -box[ZZ][ZZ];
-    box[ZZ][ZZ] = dum;
-    break;
-  case 'Z':
-    rotate_conf(natom,x,v,0,0,90);
-    dum = box[YY][YY];
-    box[YY][YY] = -box[XX][XX];
-    box[XX][XX] = dum;
-    break;
-  }
-  fprintf(stderr,"WARNING Rotating not debugged CHECK OUTPUT...\n");
-}
-
 int main(int argc, char *argv[])
 {
   static char *desc[] = {
@@ -293,6 +266,10 @@ int main(int argc, char *argv[])
     "center the coordinates relative to the new box.",
     "[TT]-dc[tt] takes precedent over [TT]-d[tt]. [TT]-box[tt]",
     "takes precedent over [TT]-dc[tt] and [TT]-d[tt].[PAR]",
+    "[TT]-rotate[tt] rotates the coordinates and velocities.",
+    "[TT]-princ[tt] aligns the principal axes of the system along the",
+    "coordinate axes, this may allow you to decrease the box volume,",
+    "but beware that molecules can rotate significantly in a nanosecond.[PAR]",
     "Scaling is applied before any of the other operations are",
     "performed. Boxes can be scaled to give a certain density (option",
     "[TT]-density[tt]).[PAR]",
@@ -322,9 +299,8 @@ int main(int argc, char *argv[])
   static bool peratom=FALSE,bLegend=FALSE,bOrient=FALSE;
   static rvec scale={1.0,1.0,1.0},newbox={0.0,0.0,0.0};
   static real rho=1000.0;
-  static rvec center={0.0,0.0,0.0};
+  static rvec center={0.0,0.0,0.0},rotangles={0.0,0.0,0.0};
   static char *label="A";
-  static char  *cRotate[] = { NULL, "no", "X", "Y", "Z", NULL };  
   t_pargs pa[] = {
     { "-ndef",   FALSE, etBOOL, &bNDEF, 
       "Choose output from default index groups" },    
@@ -336,6 +312,9 @@ int main(int argc, char *argv[])
     { "-c",      FALSE, etBOOL, &bCenter,
       "Center molecule in box (implied by -d -dc -box)" },
     { "-center", FALSE, etRVEC, &center, "Coordinates of geometrical center"},
+    { "-rotate", FALSE, etRVEC, rotangles,
+      "Rotation around the X, Y and Z axes in degrees" },
+    { "-princ",  FALSE, etBOOL, &bOrient, "Orient molecule(s) along their principal axes" },
     { "-scale",  FALSE, etRVEC, &scale, "Scaling factor" },
     { "-density",FALSE, etREAL, &rho, 
       "Density (g/l) of the output box achieved by scaling" },
@@ -343,10 +322,7 @@ int main(int argc, char *argv[])
       "Remove the periodicity (make molecule whole again)" },
     { "-atom",   FALSE, etBOOL, &peratom, "Force B-factor attachment per atom" },
     { "-legend", FALSE, etBOOL, &bLegend, "Make B-factor legend" },
-    { "-label",  FALSE, etSTR,  &label,   "Add chain label for all residues" },
-    { "-rotate", FALSE, etENUM, cRotate,
-      "Rotate around an axis" },
-    { "-princ",  FALSE, etBOOL, &bOrient, "Orient molecule(s) along their pricipal component axes" }
+    { "-label",  FALSE, etSTR,  &label,   "Add chain label for all residues" }
   };
 #define NPA asize(pa)
 
@@ -362,7 +338,7 @@ int main(int argc, char *argv[])
   rvec      *x,*v,gc,min,max,size;
   matrix    box;
   bool      bSetSize,bCubic,bDist,bSetCenter;
-  bool      bHaveV,bScale,bRho;
+  bool      bHaveV,bScale,bRho,bRotate;
   real      xs,ys,zs,xcent,ycent,zcent,d;
   t_filenm fnm[] = {
     { efSTX, "-f", NULL, ffREAD },
@@ -383,6 +359,7 @@ int main(int argc, char *argv[])
   bCenter   = bCenter || bDist || bSetCenter || bSetSize;
   bScale    = opt2parg_bSet("-scale" ,NPA,pa);
   bRho      = opt2parg_bSet("-density",NPA,pa);
+  bRotate   = opt2parg_bSet("-rotate",NPA,pa);
   if (bScale && bRho)
     fprintf(stderr,"WARNING: setting -density overrides -scale");
   bScale  = bScale || bRho;
@@ -407,9 +384,6 @@ int main(int argc, char *argv[])
   /* remove pbc */
   if (bRMPBC) 
     rm_gropbc(&atoms,x,box);
-    
-  if (bOrient)
-    orient_mol(&atoms,ftp2fn_null(efNDX,NFILE,fnm),x);
     
   /* calc geometrical center and max and min coordinates and size */
   calc_geom(natom, x, gc, min, max);
@@ -440,7 +414,21 @@ int main(int argc, char *argv[])
       fprintf(stderr,"Scaling all box edges by %g\n",scale[XX]);
     }
     scale_conf(atoms.nr,x,box,scale);
+  }
   
+  if (bOrient)
+    /* Orient the principal axes along the coordinate axes */
+    orient_mol(&atoms,ftp2fn_null(efNDX,NFILE,fnm),x,bHaveV ? v : NULL);
+  
+  if (bRotate) {
+    /* Rotate */
+    printf("Rotating %g, %g, %g degrees around the X, Y and Z axis respectively\n",rotangles[XX],rotangles[YY],rotangles[ZZ]);
+    for(i=0; i<DIM; i++)
+      rotangles[i] *= DEG2RAD;
+    rotate_conf(natom,x,v,rotangles[XX],rotangles[YY],rotangles[ZZ]);
+  }
+  
+  if (bScale || bOrient || bRotate) {
     /* recalc geometrical center and max and min coordinates and size */
     calc_geom(natom, x, gc, min, max);
     rvec_sub(max, min, size);
@@ -470,14 +458,10 @@ int main(int argc, char *argv[])
   if (bCenter)
     center_conf(natom, x,center,gc);
     
-  /* rotate it, if necessary */
-  if (cRotate[0][0] != 'n')
-    simple_rotate_conf(natom,x,v,box,cRotate[0]);
-    
   /* print some */
-  if (bCenter || bScale)
+  if (bCenter || bScale || bOrient || bRotate)
     printf("new center: %6.3f %6.3f %6.3f\n", 
-	   center[XX],center[YY],center[ZZ]);
+	   gc[XX],gc[YY],gc[ZZ]);
   if ( bScale || bDist || bSetSize )
     printf("new box   : %6.3f %6.3f %6.3f\n", 
 	   box[XX][XX], box[YY][YY], box[ZZ][ZZ]);
