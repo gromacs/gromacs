@@ -42,6 +42,8 @@ static char *SRCID_network_h = "$Id$";
 
 #include <stdio.h>
 #include "typedefs.h"
+#include "main.h"
+#include "fatal.h"
 
 #define LEFT     0          /* channel to the left processor  */
 #define RIGHT    1          /* channel to the right processor */
@@ -241,8 +243,9 @@ extern  void def_sumi(int nr,int r[],t_commrec *cr);
 #define gmx_sum gmx_sumf
 #endif
 
-#ifdef DEBUGPAR
-#define debug_gmx() fprintf(stderr,"PID=%d, %s  %d\n",gmx_cpu_id(),__FILE__,__LINE__)
+#ifdef DEBUG_GMX
+#define debug_gmx() do { FILE *fp=debug ? debug : (stdlog ? stdlog : stderr);\
+if (bDebugMode()) fprintf(fp,"PID=%d, %s  %d\n",gmx_cpu_id(),__FILE__,__LINE__); fflush(fp); } while (0)
 #else
 #define debug_gmx()
 #endif
