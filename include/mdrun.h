@@ -182,7 +182,8 @@ extern void do_force(FILE *log,t_commrec *cr,
 		     rvec x[],rvec v[],rvec f[],rvec buf[],
 		     t_mdatoms *mdatoms,real ener[],bool bVerbose,
 		     real lambda,t_graph *graph,
-		     bool bNS,bool bNBFonly,t_forcerec *fr, rvec mu_tot);
+		     bool bNS,bool bNBFonly,t_forcerec *fr, rvec mu_tot,
+		     bool bGatherOnly);
 
 extern void nstop_cm(FILE *log,t_commrec *cr,
 		     int start,int nr_atoms,real mass[],rvec x[],rvec v[]);
@@ -271,4 +272,11 @@ extern void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
 extern void get_cmparm(t_inputrec *ir,int step,bool *bStopCM,bool *bStopRot);
 /* Determine from the input whether or not to stop center of mass motion */
 
+extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
+				   int dimension,t_mdatoms *md,t_topology *top,
+				   rvec x[],rvec v[],matrix box);
+/* Perform load balancing, i.e. split the particles over processors
+ * based on their coordinates in the "dimension" direction.
+ */
+				   
 #endif	/* _mdrun_h */
