@@ -930,7 +930,7 @@ static real *_buf2=NULL;
 	case eNR_INL2010:
 	case eNR_INL3010:
 	  /* coul loops */
-	  nav = fr->nMNOav[0];
+	  nav = fr->nMNOav[1];
 	  inc_nrnb(nrnb,eNR_INL_IATOM,nav*nlist->nri);
 	  inc_nrnb(nrnb,nrnb_ind,nav*nlist->nrj);
           break;
@@ -939,7 +939,7 @@ static real *_buf2=NULL;
 	case eNR_INL0310:
 	case eNR_INL0410:
 	  /* vdw loops */
-	  nav = fr->nMNOav[0];
+	  nav = fr->nMNOav[2];
 	  inc_nrnb(nrnb,eNR_INL_IATOM,nav*nlist->nri);
 	  inc_nrnb(nrnb,nrnb_ind,nav*nlist->nrj);
           break;
