@@ -174,7 +174,6 @@ void set_widget_dir(Widget www,XmString label)
   Arg  args[4];
   int  i,narg;
   char *ptr,*clab,tmp;
-  XmString xms;
 
   i = get_windex(www);
   
