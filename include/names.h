@@ -69,7 +69,8 @@ extern const char *enbf_names[eNBF_NR+1];
 extern const char *ecomb_names[eCOMB_NR+1];
 extern const char *gtypes[egcNR+1];
 extern const char *efep_names[efepNR+1];
-extern const char *esolv_names[esolNR+1];
+extern const char *esol_names[esolNR+1];
+extern const char *enlist_names[enlistNR+1];
 extern const char *edispc_names[edispcNR+1];
 extern const char *ecm_names[ecmNR+1];
 extern const char *eann_names[eannNR+1];
@@ -96,7 +97,8 @@ extern const char *eis_names[eisNR+1];
 #define ENBFNAME(e)    ENUM_NAME(e,eNBF_NR,enbf_names)
 #define ECOMBNAME(e)   ENUM_NAME(e,eCOMB_NR,ecomb_names)
 #define EFEPTYPE(e)    ENUM_NAME(e,efepNR,efep_names)
-#define ESOLVTYPE(e)   ENUM_NAME(e,esolNR,esolv_names)
+#define ESOLTYPE(e)    ENUM_NAME(e,esolNR,esol_names)
+#define ENLISTTYPE(e)  ENUM_NAME(e,enlistNR,enlist_names)
 #define EDISPCORR(e)   ENUM_NAME(e,edispcNR,edispc_names)
 #define ECOM(e)        ENUM_NAME(e,ecmNR,ecm_names)
 #define EANNEAL(e)      ENUM_NAME(e,eannNR,eann_names)
