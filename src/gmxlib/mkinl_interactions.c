@@ -347,14 +347,14 @@ int do_table(int i,int j)
     /* determine the name of and set the charge parameter q_i*q_j */
     nflop += assign_chargeproduct(i,j,qq);
     if(loop.free) {
-      assign("qqq","L12*qqA + lam2*qqB");
+      assign("qqq","L1*qqA + lambda*qqB");
       nflop += 3;
     }
     nflop += extract_table("n1");
     assign("vcoul","%s*VV",qq);
     assign("fijC","%s*FF",qq);
     if(loop.free) {
-      increment("dvdl","two*(lambda*qqB - L1*qqA)*VV",j,j);
+      increment("dvdl","(qqB - qqA)*VV",j,j);
       nflop += 7;
     }
     add_to_buffer(f1buf,"fijC");
@@ -369,7 +369,7 @@ int do_table(int i,int j)
       assign("tjB","ntiB+%d*%s%s", N_VDWPARAM, ARRAY(typeB,jnr) , bC ? "" : "+1");
       assign("c6a",ARRAY(nbfp,tjA));
       assign("c6b",ARRAY(nbfp,tjB));
-      assign("c6","L13*c6a + lam3*c6b");
+      assign("c6","L1*c6a + lambda*c6b");
       nflop += 3;
       assign( DO_BHAM ? "cexp1a" : "c12a" ,ARRAY(nbfp,tjA+1));
       assign( DO_BHAM ? "cexp1b" : "c12b" ,ARRAY(nbfp,tjB+1));
@@ -377,7 +377,7 @@ int do_table(int i,int j)
 	assign("cexp2a",ARRAY(nbfp,tjA+2));
 	assign("cexp2b",ARRAY(nbfp,tjB+2));
       } else {
-	assign("c12","L14*c12a + lam4*c12b");
+	assign("c12","L1*c12a + lambda*c12b");
 	nflop += 3;
       }
     } else if(loop.sol!=SOL_WATERWATER) {
@@ -393,7 +393,7 @@ int do_table(int i,int j)
     assign("fijD","c6*FF");
     nflop += 2;
     if(loop.free) {
-      increment("dvdl","3.0*(lam2*c6b - L12*c6a)*VV");
+      increment("dvdl","(c6b - c6a)*VV");
       nflop += 3;
     }
     add_to_buffer(f1buf,"fijD");
@@ -418,9 +418,9 @@ int do_table(int i,int j)
 	
 	assign("vnbexpb","cexp1b*VV");
 	assign("fijRb","cexp1b*cexp2b*FF");
-	assign("fijR","L14*fijRa + lam4*fijRb");
-	increment("vnbtot","vnb6 + L14*vnbexpa + lam4*vnbexpb");
-	increment("dvdl","4.0*(lam3*vnbexpb - L13*vnbexpa)");
+	assign("fijR","L1*fijRa + lambda*fijRb");
+	increment("vnbtot","vnb6 + L1*vnbexpa + lambda*vnbexpb");
+	increment("dvdl","vnbexpb - vnbexpa");
 	nflop += 18;
       } else {
 	assign("vnbexp","cexp1*VV");
@@ -436,7 +436,7 @@ int do_table(int i,int j)
       assign("fijR","c12*FF");
       increment("vnbtot","vnb6 + vnb12");
       if(loop.free) {
-	increment("dvdl","4.0*(lam3*c12b - L13*c12a)*VV");
+	increment("dvdl","(c12b - c12a)*VV");
 	nflop += 3;
       }
       add_to_buffer(f1buf,"fijR");

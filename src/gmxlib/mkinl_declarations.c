@@ -366,11 +366,7 @@ void func_localvars()
   declare_real("dvdl");
   declare_real("L1");
   declare_real("L12");
-  declare_real("L13");
-  declare_real("L14");
   declare_real("lam2");
-  declare_real("lam3");
-  declare_real("lam4");
   declare_real("sigma6a");
   declare_real("sigma6b");
   declare_real("rA");
@@ -601,16 +597,12 @@ void func_init_vars()
   newline();
   
   if(loop.free) {
-      assign("dvdl","nul");
-      assign("L1","one - lambda");
-	assign("lam2","lambda*lambda");
-	assign("L12","L1*L1");
-      if(loop.free==FREE_LAMBDA && loop.vdw) {
-	assign("lam3","lambda*lam2");
-	assign("L13","L12*L1");
-	assign("lam4","lam2*lam2");
-    	assign("L14","L12*L12");
-      }
+    assign("dvdl","nul");
+    assign("L1","one - lambda");
+    if(loop.free==FREE_SOFTCORE) {
+      assign("lam2","lambda*lambda");
+      assign("L12","L1*L1");
+    }
   } 
   if(DO_WATER)
     init_water_data();
