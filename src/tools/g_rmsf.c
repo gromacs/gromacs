@@ -107,24 +107,24 @@ static int calc_xav(bool bAverX,
   return status;
 }
 
-static int find_pdb(int npdb,t_pdbatom pdba[],char *resnm,
-		    int resnr,char *atomnm)
+static real find_pdb_bfac(t_atoms *atoms,char *resnm,int resnr,char *atomnm)
 {
   int i;
   
   resnm[3]='\0';
-  for(i=0; (i<npdb); i++) {
-    if ((resnr == pdba[i].resnr) &&
-	(strcmp(pdba[i].resnm,resnm) == 0) &&
-	(strstr(atomnm,pdba[i].atomnm) != NULL))
+  for(i=0; (i<atoms->nr); i++) {
+    if ((resnr == atoms->atom[i].resnr) &&
+	(strcmp(*atoms->resname[i],resnm) == 0) &&
+	(strstr(*atoms->atomname[i],atomnm) != NULL))
       break;
   }
-  if (i == npdb) {
-    fprintf(stderr,"\rCan not find %s%d-%s in pdbfile\n",resnm,resnr,atomnm);
-    return -1;
+  if (i == atoms->nr) {
+    fprintf(stderr,"\rCan not find %s%d-%s in pdbfile\n",
+	    resnm,resnr,atomnm);
+    return 0.0;
   }
     
-  return i;
+  return atoms->pdbinfo[i].bfac;
 }
 
 int main (int argc,char *argv[])
@@ -154,28 +154,27 @@ int main (int argc,char *argv[])
   int          step,nre,natom,natoms,i,g,m,teller=0;
   real         t,lambda,*w_rls,*w_rms,tmas;
   
-  t_tpxheader header;
+  t_tpxheader  header;
   t_inputrec   ir;
   t_topology   top;
-  t_pdbatom    *pdba;
-  int          npdba;
+  t_atoms      *pdbatoms;
   bool         bCont;
 
-  matrix       box;
-  rvec         *x,*v,*xref;
-  int          status;
+  matrix       box,pdbbox;
+  rvec         *x,*pdbx,*v,*xref;
+  int          status,npdbatoms;
   char         buf[256];
   char         title[STRLEN];
   
   FILE         *fp;               /* the graphics file */
-  int          resnr,pdb_i;
+  int          resnr;
 
   bool         bReadPDB;  
   atom_id      *index;
   int          isize;
   char         *grpnames;
 
-  real         bfac;
+  real         bfac,pdb_bfac;
   matrix       *U;
   atom_id      aid;
   rvec         *rmsf_xx,*rmsf_x,tmp;
@@ -236,15 +235,16 @@ int main (int argc,char *argv[])
     snew(U,isize);
   
   if (bReadPDB) {
-    fp    = opt2FILE("-q",NFILE,fnm,"r");
-    npdba = read_pdbatoms(fp,title,&pdba,box,FALSE);
-    renumber_pdb(npdba,pdba);
-    fclose(fp);
-    pdba_trimnames(npdba,pdba);
+    get_stx_coordnum(opt2fn("-q",NFILE,fnm),&npdbatoms);
+    pdbatoms = new_atoms(npdbatoms);
+    snew(pdbx,npdbatoms);
+    read_stx_conf(opt2fn("-q",NFILE,fnm),title,pdbatoms,pdbx,NULL,pdbbox);    
   }
   else {
-    pdba  = atoms2pdba(&top.atoms,xref);
-    npdba = 0;
+    pdbatoms  = &top.atoms;
+    pdbx      = xref;
+    npdbatoms = pdbatoms->nr;
+    copy_mat(box,pdbbox);
   }
   
   /* This routine computes average coordinates. Input in xref is the
@@ -306,13 +306,13 @@ int main (int argc,char *argv[])
       for(d=0; (d<DIM); d++)
 	for(m=0; (m<DIM); m++)
 	  U[i][d][m] /= count;
-      pdba[aid].bAnisotropic = TRUE;
-      pdba[aid].uij[U11] = 1e6*U[i][XX][XX];
-      pdba[aid].uij[U22] = 1e6*U[i][YY][YY];
-      pdba[aid].uij[U33] = 1e6*U[i][ZZ][ZZ];
-      pdba[aid].uij[U12] = 1e6*U[i][XX][YY];
-      pdba[aid].uij[U13] = 1e6*U[i][XX][ZZ];
-      pdba[aid].uij[U23] = 1e6*U[i][YY][ZZ];
+      pdbatoms->pdbinfo[aid].bAnisotropic = TRUE;
+      pdbatoms->pdbinfo[aid].uij[U11] = 1e6*U[i][XX][XX];
+      pdbatoms->pdbinfo[aid].uij[U22] = 1e6*U[i][YY][YY];
+      pdbatoms->pdbinfo[aid].uij[U33] = 1e6*U[i][ZZ][ZZ];
+      pdbatoms->pdbinfo[aid].uij[U12] = 1e6*U[i][XX][YY];
+      pdbatoms->pdbinfo[aid].uij[U13] = 1e6*U[i][XX][ZZ];
+      pdbatoms->pdbinfo[aid].uij[U23] = 1e6*U[i][YY][ZZ];
     }
     sfree(U);
   }
@@ -321,37 +321,32 @@ int main (int argc,char *argv[])
 	       rmsf_xx[i][YY]/count - sqr(rmsf_x[i][YY]/count)+ 
 	       rmsf_xx[i][ZZ]/count - sqr(rmsf_x[i][ZZ]/count)); 
     if (bAniso)
-      pdba[index[i]].bfac = 800*M_PI/3.0*rmsf[i];
+      pdbatoms->pdbinfo[index[i]].bfac = 800*M_PI/3.0*rmsf[i];
   }
   
   /* Write RMSF output */
   if (bReadPDB) {
-    bfac=8.0*M_PI*M_PI/3.0*100;
-    fp=xvgropen(ftp2fn(efXVG,NFILE,fnm),"B-Factors",
-		"Atom","A\\b\\S\\So\\N\\S 2");
+    bfac = 8.0*M_PI*M_PI/3.0*100;
+    fp   = xvgropen(ftp2fn(efXVG,NFILE,fnm),"B-Factors",
+		    "Atom","A\\b\\S\\So\\N\\S 2");
     for(i=0;(i<isize);i++) {
-      resnr=top.atoms.atom[index[i]].resnr;
-      pdb_i=find_pdb(npdba,pdba,*(top.atoms.resname[resnr]),resnr,
-		     *(top.atoms.atomname[index[i]]));
+      resnr    = top.atoms.atom[index[i]].resnr;
+      pdb_bfac = find_pdb_bfac(pdbatoms,*(top.atoms.resname[resnr]),resnr,
+			       *(top.atoms.atomname[index[i]]));
       
-      fprintf(fp,"%5d  %10.5f  %10.5f\n",i,rmsf[i]*bfac,
-	      (pdb_i == -1) ? 0.0 : pdba[pdb_i].bfac);
+      fprintf(fp,"%5d  %10.5f  %10.5f\n",i,rmsf[i]*bfac,pdb_bfac);
     }
   }
   else {
-    fp=xvgropen(ftp2fn(efXVG,NFILE,fnm),"RMS fluctuation","Atom","nm");
+    fp = xvgropen(ftp2fn(efXVG,NFILE,fnm),"RMS fluctuation","Atom","nm");
     for(i=0;(i<isize);i++) 
       fprintf(fp,"%5d %8.4f\n",i,sqrt(rmsf[i]));
   }
   fclose(fp);
   
   /* Write a pdb file with anisou records */
-  if (bAniso) {
-    fp = opt2FILE("-oq",NFILE,fnm,"w");
-    print_pdbatoms(fp,"Anisotropic temperature factors generated by GROMACS g_rmsf",
-		   natom,pdba,box);
-    fclose(fp);
-  }
+  if (bAniso)
+    write_sto_conf(opt2fn("-oq",NFILE,fnm),title,pdbatoms,pdbx,NULL,pdbbox);
 
   xvgr_file(ftp2fn(efXVG,NFILE,fnm),"-nxy");
     
