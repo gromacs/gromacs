@@ -10,11 +10,6 @@ INCLUDES = @INCLUDES@ -I$(top_srcdir)/src/include
 LDFLAGS = @LDFLAGS@ -L${top_builddir}/src/gmxlib -L${top_builddir}/src/mdlib 
 LDADD = -lmdXXX_SUFFIX_XXX -lgmxXXX_SUFFIX_XXX
 
-XOBJ		= do_gct.o init_sh.o gctio.o glaasje.o ionize.o relax_sh.o
-ifneq ($(PARALLEL_ONLY_MDRUN),yes)
-PROGRAMS	= my_dssp xmdrun
-endif
-
 xmdrunXXX_SUFFIX_XXX_SOURCES = xmdrun.c do_gct.c init_sh.c gctio.c glaasje.c ionize.c relax_sh.c
 
 copyrgtXXX_SUFFIX_XXX_SOURCES 	= copyrgt.c
