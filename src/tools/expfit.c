@@ -210,7 +210,7 @@ static void lmfit_exp(int nframes,real x[],real y[],real dy[],real ftol,
   sfree(lista);
 }
 
-real do_lmfit(int ndata,real c1[],real sig[],real t0,real dt,real x0[],
+real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
 	      real begintimefit,real endtimefit,bool bVerbose,int nfitparm,
 	      real fit[],real fitparms[],char *fix)
 {
@@ -240,7 +240,7 @@ real do_lmfit(int ndata,real c1[],real sig[],real t0,real dt,real x0[],
 
   j=0;
   for(i=0; (i<ndata); i++) {
-    ttt = x0 ? x0[i] : t0+dt*i;
+    ttt = x0 ? x0[i] : dt*i;
     if ( (ttt >= begintimefit) && (ttt <= endtimefit) ) {
       x[j] = ttt;
       y[j] = c1[i];

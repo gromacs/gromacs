@@ -262,7 +262,7 @@ extern void normalize_histo(int npoints,int histo[],real dx,real normhisto[]);
 
 /* Use Levenberg-Marquardt method to fit to a one parameter exponential */
 /* Or: "There is no KILL like OVERKILL", Dr. Ir. D. van der Spoel */
-extern real do_lmfit(int ndata,real c1[],real sig[],real t0,real dt,real *x,
+extern real do_lmfit(int ndata,real c1[],real sig[],real dt,real *x,
 		     real begintimefit,real endtimefit,
 		     bool bVerbose,int nfitparm,
 		     real fit[],real fitparms[],char *fix);

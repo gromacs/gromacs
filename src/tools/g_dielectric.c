@@ -92,7 +92,7 @@ real numerical_deriv(int nx,real x[],real y[],real fity[],real dy[],
   }
   
   tmpfp = ffopen("integral_smth.xvg","w");
-  integralSmth=print_and_integrate(tmpfp,nx,x[1]-x[0],tmp);
+  integralSmth=print_and_integrate(tmpfp,nx,x[1]-x[0],tmp,1);
   fprintf(stderr,"SMOOTH integral = %10.5e\n",integralSmth);
 
   dy[0] = (tmp[1]-tmp[0])/(x[1]-x[0]);
@@ -190,7 +190,7 @@ int main(int argc,char *argv[])
     "The second file contains the real and imaginary parts of the",
     "frequency-dependent dielectric constant, the last gives a plot",
     "known as the Cole-Cole plot, in which the  imaginary",
-    "component is plotted as a fcuntion of the real component.",
+    "component is plotted as a function of the real component.",
     "For a pure exponential relaxation (Debye relaxation) the latter",
     "plot should be one half of a circle"
   };
@@ -286,9 +286,9 @@ int main(int argc,char *argv[])
     snew(y[4],nx);
   } 
   integral = print_and_integrate(NULL,calc_nbegin(nx,y[0],tbegin),
-				 y[0][1]-y[0][0],y[1]);
+				 y[0][1]-y[0][0],y[1],1);
   integral += do_lmfit(nx,y[1],y[2],y[0][1]-y[0][0],y[0],tbegin,tend,
-			TRUE,nfitparm,y[3],fitparms,fix);
+		       TRUE,nfitparm,y[3],fitparms,fix);
   if (epsRF == 0) {
     /* This means infinity! */
     lambda = 0;

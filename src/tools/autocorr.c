@@ -605,7 +605,7 @@ void fit_acf(int ncorr,int nfitparm,bool bVerbose,
     fitparm[0]=fitparm[1]=fitparm[2] = 1.0;
     nf_int = min(ncorr,(int)((tStart+1e-4)/dt));
     sum    = print_and_integrate(debug,nf_int,dt,c1,1);
-    tail_corr = do_lmfit(ncorr,c1,sig,tStart,dt,NULL,tStart,tendfit,
+    tail_corr = do_lmfit(ncorr,c1,sig,dt,NULL,tStart,tendfit,
 			 bVerbose,nfitparm,NULL,fitparm,NULL);
     sumtot = sum+tail_corr;
     if (nfitparm == 1)
