@@ -170,14 +170,13 @@ void spread_q_bsplines(t_fftgrid *grid,rvec invh,t_nsborder *nsb,
   }
 }
 
-
 real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
 	       splinevec bsp_mod,rvec invh,matrix vir,t_commrec *cr)
 {
   /* do recip sum over local cells in grid */
   t_fft_c *ptr,*p0;
   int     nx,ny,nz,la2,la12;
-  int     kx,ky,kz,idx,idx0,maxkx,maxky,maxkz;
+  int     kx,ky,kz,idx,idx0,maxkx,maxky,maxkz,kystart,kyend;
   real    m2,mx,my,mz;
   real    factor=M_PI*M_PI/(ewaldcoeff*ewaldcoeff);
   real    ets2,struct2,vfactor,ets2vf;
@@ -186,133 +185,90 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
   real    bx,by;
   real    invx,invy,invz;
   real    virxx=0,virxy=0,virxz=0,viryy=0,viryz=0,virzz=0;
+  bool    bPar = PAR(cr);
   
   unpack_fftgrid(grid,&nx,&ny,&nz,&la2,&la12,FALSE,(t_fft_r **)&ptr);
   clear_mat(vir);
     
-  invx=invh[XX]/nx;
-  invy=invh[YY]/ny;
-  invz=invh[ZZ]/nz;
+  invx  = invh[XX]/nx;
+  invy  = invh[YY]/ny;
+  invz  = invh[ZZ]/nz;
     
-  maxkx=(nx+1)/2;
-  maxky=(ny+1)/2;
-  maxkz=nz/2+1;
+  maxkx = (nx+1)/2;
+  maxky = (ny+1)/2;
+  maxkz = nz/2+1;
     
-  /* I use two completely different loops here to avoid an
-     * extra if statement inside the loop 
-     */
-  if(PAR(cr)) { /* transpose X & Y and only sum local cells */
+  if (bPar) { /* transpose X & Y and only sum local cells */
 #ifdef USE_MPI
-    int kystart=grid->pfft.local_y_start_after_transpose;
-    int kyend=kystart+grid->pfft.local_ny_after_transpose;
-     
-    for(ky=kystart;ky<kyend;ky++) {  /* our local cells */
-      if(ky<maxky)
-	my=(ky)*invy;
-      else
-	my=(ky-ny)*invy;
-      by=M_PI*vol*bsp_mod[YY][ky];
-
-      for(kx=0;kx<nx;kx++) {
-	if(kx<maxkx)
-	  mx=kx*invx;
-	else
-	  mx=(kx-nx)*invx;
-	bx=bsp_mod[XX][kx];
-	  
-	idx0 = INDEX(kx,ky,0);
-	for(kz=0;kz<maxkz;kz++)  {
-	  if ((kx==0) && (ky==0) && (kz==0))
-	    continue;
-	  idx    = idx0+kz; /* Transposed X & Y */
-	  p0     = ptr+idx;
-	  d1     = p0->re;
-	  d2     = p0->im;
-	  mz     = (kz)*invz;
-	  m2     = mx*mx+my*my+mz*mz;
-	  denom  = (m2*bx*by*bsp_mod[ZZ][kz]);
-	  eterm  = ONE_4PI_EPS0*exp(-factor*m2)/denom;
-	  p0->re = d1*eterm;
-	  p0->im = d2*eterm;
-		
-	  struct2=d1*d1+d2*d2;
-	  if ((kz>0) && (kz<(nz+1)/2))
-	    struct2*=2;
-	  ets2    = eterm*struct2;
-	  vfactor=(factor*m2+1)*2.0/m2;
-	  energy += ets2;
-	  
-	  ets2vf  = ets2*vfactor;
-	  virxx  += ets2vf*mx*mx-ets2;
-	  virxy  += ets2vf*mx*my;   
-	  virxz  += ets2vf*mx*mz;  
-	  viryy  += ets2vf*my*my-ets2;
-	  viryz  += ets2vf*my*mz;
-	  virzz  += ets2vf*mz*mz-ets2;
-	}
-      }
-    }
+    kystart = grid->pfft.local_y_start_after_transpose;
+    kyend   = kystart+grid->pfft.local_ny_after_transpose;
+    if (debug)
+      fprintf(debug,"solve_pme: kystart = %d, kyend=%d\n",kystart,kyend);
+#else
+    fatal_error(0,"Parallel PME attempted without MPI");
 #endif /* end of parallel case loop */
-  } else {/* not parallel */  
+  }
+  else {
+    kystart = 0;
+    kyend   = ny;
+  }
+  for(ky=kystart; (ky<kyend); ky++) {  /* our local cells */
+    if(ky<maxky)
+      my = ky*invy;
+    else
+      my = (ky-ny)*invy;
+    by = M_PI*vol*bsp_mod[YY][ky];
     
-    for(kx=0;kx<nx;kx++) {
-      if(kx<maxkx)
-	mx=kx*invx;
+    for(kx=0; (kx<nx); kx++) {
+      if(kx < maxkx)
+	mx = kx*invx;
       else
-	mx=(kx-nx)*invx;
-      bx=M_PI*vol*bsp_mod[XX][kx];	
-
-      for(ky=0;ky<ny;ky++) {  /* all cells */	  
-	if(ky<maxky)
-	  my=(ky)*invy;
-	else
-	  my=(ky-ny)*invy;
-	by=bsp_mod[YY][ky];
-
-	idx0 = INDEX(kx,ky,0);
-	for(kz=0;kz<maxkz;kz++)  {
-	  if ((kx==0) && (ky==0) && (kz==0))
-	    continue;
-	  idx    = idx0+kz;
-	  p0     = ptr+idx;
-	  d1     = p0->re;
-	  d2     = p0->im;
-	  mz     = (kz)*invz;
-	  m2     = mx*mx+my*my+mz*mz;
-	  denom  = (m2*bx*by*bsp_mod[ZZ][kz]);
-	  eterm  = ONE_4PI_EPS0*exp(-factor*m2)/denom;
-	  p0->re = d1*eterm;
-	  p0->im = d2*eterm;
-	    
-	  struct2 = d1*d1+d2*d2;
-	  if ((kz > 0) && (kz < ((nz+1)/2)))
-	    struct2 *= 2;
-	  ets2    = eterm*struct2;
-	  vfactor = (factor*m2+1)*2.0/m2;
-	  energy += ets2;
-	  
-	  ets2vf  = ets2*vfactor;
-	  virxx  += ets2vf*mx*mx-ets2;
-	  virxy  += ets2vf*mx*my;   
-	  virxz  += ets2vf*mx*mz;  
-	  viryy  += ets2vf*my*my-ets2;
-	  viryz  += ets2vf*my*mz;
-	  virzz  += ets2vf*mz*mz-ets2;
-	}
+	mx = (kx-nx)*invx;
+      bx = bsp_mod[XX][kx];
+      if (bPar)
+	p0 = ptr + INDEX(ky,kx,0); /* Pointer Arithmetic */
+      else
+	p0 = ptr + INDEX(kx,ky,0); /* Pointer Arithmetic */
+      for(kz=0; (kz<maxkz); kz++,p0++)  {
+	if ((kx==0) && (ky==0) && (kz==0))
+	  continue;
+	d1      = p0->re;
+	d2      = p0->im;
+	mz      = kz*invz;
+	m2      = mx*mx+my*my+mz*mz;
+	denom   = m2*bx*by*bsp_mod[ZZ][kz];
+	eterm   = ONE_4PI_EPS0*exp(-factor*m2)/denom;
+	p0->re  = d1*eterm;
+	p0->im  = d2*eterm;
+	
+	struct2 = d1*d1+d2*d2;
+	if ((kz > 0) && (kz < (nz+1)/2))
+	  struct2*=2;
+	ets2     = eterm*struct2;
+	vfactor  = (factor*m2+1)*2.0/m2;
+	energy  += ets2;
+	
+	ets2vf   = ets2*vfactor;
+	virxx   += ets2vf*mx*mx-ets2;
+	virxy   += ets2vf*mx*my;   
+	virxz   += ets2vf*mx*mz;  
+	viryy   += ets2vf*my*my-ets2;
+	viryz   += ets2vf*my*mz;
+	virzz   += ets2vf*mz*mz-ets2;
       }
     }
-  } /* end, nonparallel case loop */
+  }
     
   /* Update virial with local values */  
-  vir[XX][XX] += virxx;
-  vir[XX][YY] += virxy;
-  vir[XX][ZZ] += virxz;
-  vir[YY][XX] += virxy;
-  vir[YY][YY] += viryy;
-  vir[YY][ZZ] += viryz;
-  vir[ZZ][XX] += virxz; 
-  vir[ZZ][YY] += viryz;
-  vir[ZZ][ZZ] += virzz;
+  vir[XX][XX] = virxx;
+  vir[XX][YY] = virxy;
+  vir[XX][ZZ] = virxz;
+  vir[YY][XX] = virxy;
+  vir[YY][YY] = viryy;
+  vir[YY][ZZ] = viryz;
+  vir[ZZ][XX] = virxz; 
+  vir[ZZ][YY] = viryz;
+  vir[ZZ][ZZ] = virzz;
   
   for(nx=0;nx<DIM;nx++)
     for(ny=0;ny<DIM;ny++)
@@ -638,7 +594,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
 	   ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
 
   ntot  = grid->nxyz;  
-  npme  = ntot*log((real)ntot)/log(2.0);
+  npme  = ntot*log((real)ntot)/(cr->nprocs*log(2.0));
   inc_nrnb(nrnb,eNR_FFT,2*npme);
 
   return energy;  
