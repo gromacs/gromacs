@@ -122,7 +122,8 @@ real get_amass(char *aname,int nmass,char **nm2mass)
   return m;
 }
 
-void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff)
+void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
+	      bool bPBC,matrix box)
 {
   t_param b;
   t_atom  *atom;
@@ -144,12 +145,17 @@ void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff)
     atom[i].type = get_atype(*atoms->atomname[i]);
     atom[i].m    = get_amass(*atoms->atomname[i],nmass,nm2mass);
   }
+  if (bPBC)
+    init_pbc(box,FALSE);
   for(i=0; (i<atoms->nr); i++) {
     if ((i % 10) == 0)
       fprintf(stderr,"\ratom %d",i);
     aai = atom[i].type;
     for(j=i+1; (j<atoms->nr); j++) {
-      rvec_sub(x[i],x[j],dx);
+      if (bPBC)
+	pbc_dx(x[i],x[j],dx);
+      else
+	rvec_sub(x[i],x[j],dx);
       
       if ((dx[XX] < 0.25) && (dx[YY] < 0.25) && (dx[ZZ] < 0.25)) {
 	dx2 = iprod(dx,dx);
@@ -282,20 +288,25 @@ void set_force_const(t_params plist[],real kb,real kt,real kp,bool bRound)
   lo_set_force_const(&plist[F_PDIHS],c,3,bRound,TRUE);
 }
 
-void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[])
+void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],bool bPBC,
+		      matrix box)
 {
   int    i,ai,aj,ak,al;
   rvec   r_ij,r_kj,r_kl,m,n;
   real   sign,th,costh,ph,cosph;
-  matrix box;
-  
-  clear_mat(box);
-  box[XX][XX] = box[YY][YY] = box[ZZ][ZZ] = 1000;
+
+  if (!bPBC)
+    box[XX][XX] = box[YY][YY] = box[ZZ][ZZ] = 1000;
+  if (debug)
+    pr_rvecs(debug,0,"X2TOP",box,DIM);
   for(i=0; (i<ang->nr); i++) {
     ai = ang->param[i].AI;
     aj = ang->param[i].AJ;
     ak = ang->param[i].AK;
     th = RAD2DEG*bond_angle(box,x[ai],x[aj],x[ak],r_ij,r_kj,&costh);
+    if (debug)
+      fprintf(debug,"X2TOP: ai=%3d aj=%3d ak=%3d r_ij=%8.3f r_kj=%8.3f th=%8.3f\n",
+	      ai,aj,ak,norm(r_ij),norm(r_kj),th);
     ang->param[i].C0 = th;
   }
   for(i=0; (i<dih->nr); i++) {
@@ -305,6 +316,9 @@ void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[])
     al = dih->param[i].AL;
     ph = RAD2DEG*dih_angle(box,x[ai],x[aj],x[ak],x[al],
 			   r_ij,r_kj,r_kl,m,n,&cosph,&sign);
+    if (debug)
+      fprintf(debug,"X2TOP: ai=%3d aj=%3d ak=%3d al=%3d r_ij=%8.3f r_kj=%8.3f r_kl=%8.3f ph=%8.3f\n",
+	      ai,aj,ak,al,norm(r_ij),norm(r_kj),norm(r_kl),ph);
     dih->param[i].C0 = ph;
   }
 }
@@ -368,6 +382,7 @@ int main(int argc, char *argv[])
   static real kb    = 4e5,kt = 400,kp = 5;
   static int  nexcl = 3;
   static bool bH14  = FALSE,bAllDih = FALSE,bRound = TRUE,bPairs = TRUE;
+  static bool bPBC  = TRUE;
   static char *molnm = "ICE";
   t_pargs pa[] = {
     { "-kb",    FALSE, etREAL, {&kb},
@@ -387,7 +402,9 @@ int main(int argc, char *argv[])
     { "-pairs",  FALSE, etBOOL, {&bPairs},
       "Output 1-4 interactions (pairs) in topology file" },
     { "-name",   FALSE, etSTR,  {&molnm},
-      "Name of your molecule" }
+      "Name of your molecule" },
+    { "-pbc",    FALSE, etBOOL, {&bPBC},
+      "Use periodic boundary conditions. Please set the GMXFULLPBC environment variable as well." }
   };
   
   CopyRight(stdout,argv[0]);
@@ -398,7 +415,10 @@ int main(int argc, char *argv[])
   bTOP = opt2bSet("-o",NFILE,fnm);
   if (!bRTP && !bTOP)
     fatal_error(0,"Specify at least one output file");
-		    
+
+  if (bPBC)
+    set_gmx_full_pbc(stdout);
+    		    
   mymol.name = strdup(molnm);
   mymol.nr   = 1;
 	
@@ -420,7 +440,7 @@ int main(int argc, char *argv[])
   snew(nbonds,atoms->nr);
   
   printf("Generating bonds from distances...\n");
-  mk_bonds(atoms,x,&(plist[F_BONDS]),nbonds,ff);
+  mk_bonds(atoms,x,&(plist[F_BONDS]),nbonds,ff,bPBC,box);
 
   nm2t = rd_nm2type(ff,&nnm);
   printf("There are %d name to type translations\n",nnm);
@@ -445,7 +465,7 @@ int main(int argc, char *argv[])
 	  plist[F_PDIHS].nr, plist[F_IDIHS].nr, plist[F_ANGLES].nr,
 	  plist[F_LJ14].nr, plist[F_BONDS].nr,atoms->nr);
 
-  calc_angles_dihs(&plist[F_ANGLES],&plist[F_PDIHS],x);
+  calc_angles_dihs(&plist[F_ANGLES],&plist[F_PDIHS],x,bPBC,box);
   
   set_force_const(plist,kb,kt,kp,bRound);
 
