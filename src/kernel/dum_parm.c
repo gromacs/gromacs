@@ -443,8 +443,8 @@ static bool calc_dum3fd_param(t_params ptype[], t_param *param, t_atoms *at,
 		     param->AI, param->AJ, param->AL);
   bError = (bjk==NOTSET) || (bjl==NOTSET);
   
-  rk = bjk * sin(DEG2RAD*aijk);
-  rl = bjl * sin(DEG2RAD*aijl);
+  rk = bjk * sin(aijk);
+  rl = bjl * sin(aijl);
   param->C0 = rk / (rk + rl);
   param->C1 = -bij; /* 'bond'-length for fixed distance dummy */
   
@@ -473,8 +473,8 @@ static bool calc_dum3fad_param(t_params ptype[], t_param *param, t_atoms *at,
   bij = get_def_bond_length(&ptype[F_BONDS], at, param->AI, param->AJ);
   aijk = get_def_angle(&ptype[F_ANGLES], at, param->AI, param->AJ, param->AK);
   
-  param->C1 = bij; /* 'bond'-length for fixed distance dummy */
-  param->C0 = aijk; /* 'bond'-angle for fixed angle dummy */
+  param->C1 = bij;          /* 'bond'-length for fixed distance dummy */
+  param->C0 = RAD2DEG*aijk; /* 'bond'-angle for fixed angle dummy */
   
   if (bSwapParity)
     param->C0 = 360 - param->C0;
