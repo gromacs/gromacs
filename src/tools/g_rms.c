@@ -226,7 +226,11 @@ int gmx_rms (int argc,char *argv[])
   efit=nenum(fit);
   bFit      = efit==efFit;
   bReset    = efit==efReset;
-  if (bFit) bReset = TRUE; /* for fit, reset *must* be set */
+  if (bFit) {
+    bReset = TRUE; /* for fit, reset *must* be set */
+  } else {
+    bFitAll = FALSE;
+  }
   
   /* mark active cmdline options */
   bMirror= opt2bSet("-mir",NFILE,fnm); /* calc RMSD vs mirror of ref. */
