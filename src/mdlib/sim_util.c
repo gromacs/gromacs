@@ -178,7 +178,7 @@ void do_force(FILE *log,t_commrec *cr,
   static real dvdl_lr = 0;
   int    pid,cg0,cg1,i,j;
   int    start,homenr;
-  static matrix lr_vir; /* used for Twin-Range and PME long range virial */
+  matrix lr_vir; /* used for PME long range virial */
   
   pid    = cr->pid;
   start  = START(nsb);
@@ -237,13 +237,19 @@ void do_force(FILE *log,t_commrec *cr,
   }
   
   /* Reset forces or copy them from long range forces */
-  /* Need only be done for local atoms */
-  if (fr->eeltype == eelPPPM || 
-      fr->eeltype == eelPME || 
-      fr->eeltype == eelEWALD) 
-    clear_rvecs(homenr,fr->flr+start);
-  clear_rvecs(nsb->natoms,f);
-  clear_rvecs(SHIFTS,fr->fshift);
+  if (fr->bTwinRange) {
+    for(i=0; i<nsb->natoms; i++)
+      copy_rvec(fr->flr[i],f[i]);
+    for(i=0; i<SHIFTS; i++)
+      copy_rvec(fr->fshift_lr[i],fr->fshift[i]);
+  } else {
+    if (fr->eeltype == eelPPPM || 
+	fr->eeltype == eelPME || 
+	fr->eeltype == eelEWALD) 
+      clear_rvecs(homenr,fr->flr+start);
+    clear_rvecs(nsb->natoms,f);
+    clear_rvecs(SHIFTS,fr->fshift);
+  }
 
   /* Compute the forces */    
   force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,nrnb,grps,mdatoms,
@@ -266,23 +272,7 @@ void do_force(FILE *log,t_commrec *cr,
   clear_mat(vir_part);
   calc_vir(log,SHIFTS,fr->shift_vec,fr->fshift,vir_part,cr);
   inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
-  
-  if (bNS && fr->bTwinRange) {
-    /* The long-range virial from surrounding boxes */
-    clear_mat(lr_vir);
-    calc_vir(log,SHIFTS,fr->shift_vec,fr->fshift_lr,lr_vir,cr);
 
-    /* Communicate the long range forces, once only! */
-    if (PAR(cr))
-      move_f(log,cr->left,cr->right,fr->flr,buf,nsb,nrnb);
-      
-    /* Now that we have the long range forces gathered on all processors,
-     * we only need to consider the local contribution to virial etc.
-     * The long range virial from long range forces 
-     */
-    f_calc_vir(log,start,start+homenr,x,fr->flr,lr_vir,cr,graph,fr->shift_vec);
-    inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS+homenr);
-  }
 #ifdef DEBUG
   if (debug) {
     pr_rvecs(debug,0,"fr->fshift",fr->fshift,SHIFTS);
@@ -309,8 +299,7 @@ void do_force(FILE *log,t_commrec *cr,
   
   if ((fr->eeltype == eelPPPM) ||
       (fr->eeltype == eelPME)  ||
-      (fr->eeltype == eelEWALD) || 
-      (fr->bTwinRange)) {
+      (fr->eeltype == eelEWALD)) {
     /* Now add the forces from the PME calculation. Since this only produces
      * forces on the local atoms, this can be safely done after the
      * communication step. The same goes for the virial.
