@@ -225,7 +225,7 @@ int main(int argc,char *argv[])
   int        natoms,nre,nres,step;
   t_bb       *bb;
   int        i,j,ai,m,nall,nbb,nca,teller,nSel=0;
-  atom_id    *bbindex,*caindex,*nindex,*allindex;
+  atom_id    *bbindex,*caindex,*allindex;
   t_topology *top;
   rvec       *x,*xref,*xav;
   real       t,lambda;
@@ -261,7 +261,7 @@ int main(int argc,char *argv[])
     otrj=NULL;
     
   if (natoms != top->atoms.nr)
-    fprintf(stderr,"Warning! in tpx are %d atoms, in trj %d\n",
+    fatal_error(0,"Sorry can only run when the number of atoms in the run input file (%d) is equal to the number in the trajectory (%d)",
 	    top->atoms.nr,natoms);
 	    
   bb=mkbbind(ftp2fn(efNDX,NFILE,fnm),&nres,&nbb,r0,&nall,&allindex,
@@ -312,12 +312,8 @@ int main(int argc,char *argv[])
       rms=fit_ahx(nres,bb,natoms,nall,allindex,x,nca,caindex,box,bFit);
       
       if (teller == 1) {
-	snew(nindex,natoms);
-	for(i=0; i<natoms; i++)
-	  nindex[i] = i;
-	write_sto_conf_indexed(opt2fn("-cz",NFILE,fnm),
-			       "Helix fitted to Z-Axis",
-			       &(top->atoms),x,NULL,box,natoms,nindex);
+	write_sto_conf(opt2fn("-cz",NFILE,fnm),"Helix fitted to Z-Axis",
+		       &(top->atoms),x,NULL,box);
       }
             
       xf[efhRAD].val   = radius(xf[efhRAD].fp2,nca,caindex,x);
