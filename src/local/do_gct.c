@@ -55,6 +55,10 @@ t_coupl_rec *init_coupling(FILE *log,int nfile,t_filenm fnm[],
   read_gct (opt2fn("-j",nfile,fnm), tcr);
   write_gct(opt2fn("-jo",nfile,fnm),tcr,idef);
   
+  if ((tcr->dipole != 0.0) && (!ftp2bSet(efNDX,nfile,fnm))) {
+    fatal_error(0,"Trying to use polarization correction to energy without specifying an index file for molecule numbers. This will generate huge induced dipoles, and hence not work!");
+  }
+  
   copy_ff(tcr,fr,md,idef);
     
   /* Update all processors with coupling info */
@@ -439,8 +443,8 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 
     deviation[eoEpot] = (tcr->epot0 - Epol)*nmols - tcr->epot;
     if (debug) {
-      fprintf(debug,":  %g %g %g %g %g \n",mu_ind,mu_aver, d2e(tcr->dipole),
-	      d2e((2.27 - tcr->dipole)),(2.27 - tcr->dipole));
+      fprintf(debug,"mu_ind: %g (%g D) mu_aver: %g (%g D)\n",
+	      mu_ind,mu_ind*enm2Debye,mu_aver,mu_aver*enm2Debye);
       fprintf(debug,"Eref %g Epol %g Erunav %g Dev %g Eact %g\n",
 	      (tcr->epot0)*nmols, Epol*nmols, tcr->epot,
 	      deviation[eoEpot],ener[F_EPOT]);
@@ -543,7 +547,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
       if (tcq->xi_Q)     
 	ffq = 1.0 + (dt/tcq->xi_Q) * deviation[tcq->eObs];
       else
-	ffq=1.0;
+	ffq = 1.0;
       fq[tcq->at_i] *= ffq;
       
     }
@@ -553,7 +557,11 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
     for(j=0; (j<md->nr); j++) {
       md->chargeA[j] *= fq[md->typeA[j]];
     }
-    
+    /* Copy for printing */
+    for(i=0; (i<tcr->nQ); i++) {
+      tcq    = &(tcr->tcQ[i]);
+      tcq->Q = md->chargeA[tcq->at_i]; 
+    }
     
     for(i=0; (i<tcr->nIP); i++) {
       tip    = &(tcr->tIP[i]);
