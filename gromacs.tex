@@ -21,7 +21,7 @@
 \newcommand{\eqnsref}[2]{eqns.~\ref{eqn:#1} and \ref{eqn:#2}}
 \newcommand{\secref}[1]{sec.~\ref{sec:#1}}
 \newcommand{\chref}[1]{chapter~\ref{ch:#1}}
-\newcommand{\wwwpage}{\bf http://rugmd0.chem.rug.nl/$\sim$gmx}
+\newcommand{\wwwpage}{http://rugmd0.chem.rug.nl/\raisebox{-0.8ex}{\~{ }}gmx}
 % NOTE: \wwwpage is explicitly included in the 'verbatim' citing instructions!
 \newcommand{\undercons}{\centerline{\em Note: this section is still under construction}}
 \setlength{\headwidth}{\textwidth}
@@ -81,7 +81,7 @@ Emile Apol 		\\
 Pieter J. Meulenhoff 	\\
 D. Peter Tieleman	\\
 Alfons L.T.M. Sijbers 	\\
-Berk A. Hess		\\
+Berk Hess		\\
 K. Anton Feenstra	\\
 Rudi van Drunen 	\\
 Herman J.C. Berendsen}
@@ -118,7 +118,7 @@ the programs that are described in the online manual pages are not in
 the standard distribution, and therefore some of the file types that
 are listed in the appendix are obsolete.
 
-When \boldindex{citing} this document in any scientific publication
+When \normindex{citing} this document in any scientific publication
 please refer to it as:
 
 \begin{quote}
@@ -127,7 +127,7 @@ Tieleman, D.~P., Sij\-bers, A.~L.~T.~M., Hess, B., Feenstra, K.~A.,
 van Drunen, R. and Berendsen, H.~J.~C.  
 \hspace{1em} Gromacs {U}ser {M}anual version \gmxver
 \hspace{1em} Nij\-enborgh 4, 9747 AG Groningen, The
-Netherlands. Internet: http://rugmd0.chem.rug.nl/~gmx 1997
+Netherlands. Internet: {\wwwpage} 1997
 \end{quote}
 
 or, if you use bibtex, you can directly copy the following:
@@ -164,7 +164,7 @@ If you  have access to a WWW browser such as NCSA \normindex{mosaic}
 or \normindex{Netscape}
 please look up
 our HTML page: \\
-{\wwwpage}.
+{\bf \wwwpage}.
 
 \subsection*{Violated Copyrights}
 The following commercial thingies may be mentioned here and there in the
@@ -194,7 +194,8 @@ The figure on frontpage was made with Molscript~\cite{Kraulis91}.
 %
 %	R E A L   M A N U A L
 %
-\newpage
+\
+\cleardoublepage
 \setcounter{page}{1}
 \pagenumbering{arabic}
 
@@ -221,12 +222,16 @@ The figure on frontpage was made with Molscript~\cite{Kraulis91}.
 %
 % 	B I B L I O G R A P H Y
 %
+\cleardoublepage
+\addcontentsline{toc}{chapter}{Bibliography}
 \bibliographystyle{texutil/proteins}
 \bibliography{texutil/monster,texutil/unpubl}
 
 %
 %	I N D E X
 %
+\cleardoublepage
+\addcontentsline{toc}{chapter}{Index}
 \printindex
 
 \end{document}
