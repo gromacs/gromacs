@@ -149,42 +149,46 @@ void pr_rvecs_len(FILE *fp,int indent,char *title,rvec vec[],int n)
 {
   int i,j;
 
-  if (available(fp,vec,title))
-    {  
-      indent=pr_title_nxn(fp,indent,title,n,DIM);
-      for (i=0; i<n; i++)
-        {
-          (void) pr_indent(fp,indent);
-          (void) fprintf(fp,"%s[%5d]={",title,i);
-          for (j=0; j<DIM; j++)
-            {
-              if (j!=0) (void) fprintf(fp,", ");
-              fprintf(fp,"%12.5e",vec[i][j]);
-            }
-          (void) fprintf(fp,"} len=%12.5e\n",norm(vec[i]));
-        }
+  if (available(fp,vec,title)) {  
+    indent=pr_title_nxn(fp,indent,title,n,DIM);
+    for (i=0; i<n; i++) {
+      (void) pr_indent(fp,indent);
+      (void) fprintf(fp,"%s[%5d]={",title,i);
+      for (j=0; j<DIM; j++) {
+	if (j != 0) 
+	  (void) fprintf(fp,", ");
+	(void) fprintf(fp,"%12.5e",vec[i][j]);
+      }
+      (void) fprintf(fp,"} len=%12.5e\n",norm(vec[i]));
     }
+  }
 }
 
 void pr_rvecs(FILE *fp,int indent,char *title,rvec vec[],int n)
 {
+  char *fshort = "%12.5e";
+  char *flong  = "%15.8e";
+  char *format;
   int i,j;
 
-  if (available(fp,vec,title))
-    {  
-      indent=pr_title_nxn(fp,indent,title,n,DIM);
-      for (i=0; i<n; i++)
-        {
-          (void) pr_indent(fp,indent);
-          (void) fprintf(fp,"%s[%5d]={",title,i);
-          for (j=0; j<DIM; j++)
-            {
-              if (j!=0) (void) fprintf(fp,", ");
-              fprintf(fp,"%12.5e",vec[i][j]);
-            }
-          (void) fprintf(fp,"}\n");
-        }
+  if (getenv("LONGFORMAT") != NULL)
+    format = flong;
+  else
+    format = fshort;
+    
+  if (available(fp,vec,title)) {  
+    indent=pr_title_nxn(fp,indent,title,n,DIM);
+    for (i=0; i<n; i++) {
+      (void) pr_indent(fp,indent);
+      (void) fprintf(fp,"%s[%5d]={",title,i);
+      for (j=0; j<DIM; j++) {
+	if (j != 0) 
+	  (void) fprintf(fp,", ");
+	(void) fprintf(fp,format,vec[i][j]);
+      }
+      (void) fprintf(fp,"}\n");
     }
+  }
 }
 
 void pr_energies(FILE *fp,int indent,char *title,t_energy *e,int n)
