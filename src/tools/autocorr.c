@@ -336,7 +336,7 @@ static void do_ac_core(int nframes,int nlag,
   }
   /* Correct for the number of points and copy results to the data array */
   for(j=0; (j<nlag); j++) {
-    n = (nframes-j)/nrestart;
+    n = (nframes-j+(nrestart-1))/nrestart;
     c1[j] = corr[j]/n;
   }
 }
