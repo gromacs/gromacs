@@ -85,8 +85,7 @@ real calc_mass(t_atoms *atoms)
     }
     tmass += atoms->atom[i].m;
   }
-  sfree(mass);
-  
+
   return tmass;
 }
 
