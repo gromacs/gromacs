@@ -57,7 +57,7 @@ bool get_a_line(FILE *fp,char line[],int n)
       fprintf(stderr,"Warning: line length exceeds buffer length (%d), data might be corrupted\n",n);
       line0[n-1] ='\0';
     } else
-      fprintf(stderr,"Warning: file does end with a newline, last line:\n%s\n",
+      fprintf(stderr,"Warning: file does not end with a newline, last line:\n%s\n",
 	      line0);
     dum=strchr(line0,';');
     if (dum) 
