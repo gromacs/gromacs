@@ -13,7 +13,6 @@ HEAD|Running a simulation
 grompp|makes a run input file
 tpbconv|makes a run input file for restarting a crashed run
 mdrun|performs a simulation
-xmdrun|performs simulations with extra experimental features
 END
 
 HEAD|Viewing trajectories
@@ -44,6 +43,12 @@ g_traj|plots x, v and f of selected atoms/groups (and more) from a trajectory
 g_analyze|analyzes data sets
 trjorder|orders molecules according to their distance to a group
 g_filter|frequency filters trajectories, useful for making smooth movies
+g_lie|free energy estimate from linear combinations
+g_dyndom|interpolate and extrapolate structure rotations
+g_morph|linear interpolation of conformations 
+g_wham|weighted histogram analysis after umbrella sampling
+ffscan|scan and modify force field data for a single point energy calculation
+xpm2ps|convert XPM (XPixelMap) file to postscript
 END
 
 HEAD|Distances between structures
@@ -51,6 +56,8 @@ g_rms|calculates rmsd's with a reference structure and rmsd matrices
 g_confrms|fits two structures and calculates the rmsd 
 g_cluster|clusters structures
 g_rmsf|calculates atomic fluctuations
+disco|distance geometry calculation with the CONCOORD algorithm
+cdist|create input for disco
 END
 
 HEAD|Distances in structures over time
@@ -85,6 +92,10 @@ g_sgangle|computes the angle and distance between two groups
 g_sorient|analyzes solvent orientation around solutes
 g_bundle|analyzes bundles of axes, e.g. helices
 g_disre|analyzes distance restraints
+g_clustsize|calculate size distributions of atomic clusters
+disco|distance geometry calculation with the CONCOORD algorithm
+cdist|create input for disco
+anadock|cluster structures from Autodock runs
 END
 
 HEAD|Kinetic properties
