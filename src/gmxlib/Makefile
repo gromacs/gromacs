@@ -273,6 +273,10 @@ innerc.c:		mkinl inner.h Makefile $(CPUMAKEF)
 tst:			tst.o
 			$(FLD) -o tst tst.o $(SYSLIBS)
 
+tstsqrtc:               tstsqrtc.o
+			$(LD) -o tstsqrtc tstsqrtc.o $(SYSLIBS)
+ 
+
 $(GMXHOME)/src/makef/Makefile.def:
 	@echo "Wrong GROMACS environment, Please source GMXRC in this source tree"
 

@@ -35,7 +35,7 @@ int main(int argc,char *argv[])
   real x,y,z,diff,av;
   int  i;
 
-  printf("%12s  %12s  %12s  %12s  %12s\n","X","Y","Z","Dy","Dy/Z");
+  printf("%12s  %12s  %12s  %12s  %12s\n","X","invsqrt(X)","1/sqrt(X)","Abs. Diff.","Rel. Diff.");
   for(i=1; (i<1000); i++) {
     x = i*1.0;
     y = invsqrt(x);
@@ -44,4 +44,5 @@ int main(int argc,char *argv[])
     av   = 0.5*(y+z);
     printf("%12.5e  %12.5e  %12.5e  %12.5e  %12.5e\n",x,y,z,diff,diff/z);
   }
+  return 0;
 }
