@@ -258,7 +258,7 @@ int main(int argc,char *argv[])
     { "-pfit", FALSE,  etBOOL, &bIFit,
       "progressive fit, to the previous fitted structure" },
     { "-prec", FALSE,  etINT,  &prec,
-      "precision for .gro and .xtc writing in number of decimal places. More than 6 is useless in single precision." },
+      "precision for .xtc and .gro writing in number of decimal places" },
     { "-vel", FALSE, etBOOL, &bVels,
       "read and write velocities if possible" },
     { "-skip", FALSE,  etINT, &skip_nr,
