@@ -195,7 +195,7 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
 
   if (!do_eheader(fp,&eh,&bOK)) {
     if (bRead) {
-	fprintf(stderr,"\rLast frame %d                    ",framenr-1);
+	fprintf(stderr,"\rLast frame read %d                          ",framenr-1);
 	if (!bOK)
 	  fprintf(stderr,"\nWARNING: Incomplete frame: nr %6d time %8.3f\n",
 		  framenr,eh.t);
@@ -204,7 +204,7 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
   }
   if (bRead) {
     if ( ( framenr<10 ) || ( framenr%10 == 0) ) 
-      fprintf(stderr,"\rReading frame %6d time %8.3f   ",framenr,*t);
+      fprintf(stderr,"\rReading frame %6d time %8.3f           ",framenr,*t);
     framenr++;
   }
   *t    = eh.t;
@@ -238,8 +238,8 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
   }
   if (!bOK) {
     if (bRead) {
-      fprintf(stderr,"\nLast frame read %d                     ",framenr-1);
-      fprintf(stderr,"\nWARNING: Incomplete frame: nr %6d time %8.3f\n",
+      fprintf(stderr,"\nLast frame read %d                               ",framenr-1);
+      fprintf(stderr,"\nWARNING: Incomplete frame: nr %6d time %8.3f     \n",
 	      framenr,*t);
     } else 
       fatal_error(-1,"could not write energies");
