@@ -359,6 +359,49 @@ static void write_pdb_bfac(char *fname,char *title,t_atoms *atoms,matrix box,
   }
 }
 
+static void update_histo(int gnx,atom_id index[],rvec v[],
+			 int *nhisto,int **histo,real binwidth)
+{
+  int  i,m,in,nnn;
+  real vn,vnmax;
+  
+  if (histo == NULL) {
+    vnmax = 0;
+    for(i=0; (i<gnx); i++) {
+      vn = norm(v[index[i]]);
+      vnmax = max(vn,vnmax);
+    }
+    vnmax *= 2;
+    *nhisto = 1+(vnmax/binwidth);
+    snew(*histo,*nhisto);
+  }
+  for(i=0; (i<gnx); i++) {
+    vn = norm(v[index[i]]);
+    in = vn/binwidth;
+    if (in >= *nhisto) {
+      nnn = in+100;
+      fprintf(stderr,"Extending histogram from %d to %d\n",*nhisto,nnn);
+      
+      srenew(*histo,nnn);
+      for(m=*nhisto; (m<nnn); m++)
+	(*histo)[m] = 0;
+      *nhisto = nnn;
+    }
+    (*histo)[in]++;
+  }
+}
+
+static void print_histo(char *fn,int nhisto,int histo[],real binwidth)
+{
+  FILE *fp;
+  int i;
+  
+  fp = xvgropen(fn,"Velocity distribution","V (nm/ps)","arbitrary units");
+  for(i=0; (i<nhisto); i++) 
+    fprintf(fp,"%10.3e  %10d\n",i*binwidth,histo[i]);
+  fclose(fp);
+}
+
 int gmx_traj(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -383,12 +426,15 @@ int gmx_traj(int argc,char *argv[])
     "[TT]-scale[tt]. To get the velocities or forces of one",
     "frame set both [TT]-b[tt] and [TT]-e[tt] to the time of",
     "desired frame. When averaging over frames you might need to use",
-    "the [TT]-nojump[tt] option to obtain the correct average coordinates."
+    "the [TT]-nojump[tt] option to obtain the correct average coordinates.[PAR]",
+    "Option [TT]-vd[tt] computes a velocity distribution, i.e. the",
+    "norm of the vector is plotted. In addition in the same graph",
+    "the kinetic energy distribution is given."
   };
   static bool bMol=FALSE,bCom=FALSE,bNoJump=FALSE;
   static bool bX=TRUE,bY=TRUE,bZ=TRUE,bNorm=FALSE;
   static int  ngroups=1;
-  static real scale=0;
+  static real scale=0,binwidth=1;
   t_pargs pa[] = {
     { "-com", FALSE, etBOOL, {&bCom},
       "Plot data for the com of each group" },
@@ -406,6 +452,8 @@ int gmx_traj(int argc,char *argv[])
       "Number of groups to consider" },
     { "-len", FALSE, etBOOL, {&bNorm},
       "Plot vector length" },
+    { "-bin", FALSE, etREAL, {&binwidth},
+      "Binwidth for velocity histogram (nm/ps)" },
     { "-scale", FALSE, etREAL, {&scale},
       "Scale factor for pdb output, 0 is autoscale" }
     
@@ -416,7 +464,7 @@ int gmx_traj(int argc,char *argv[])
   real       *mass,time;
   char       title[STRLEN],*indexfn;
   t_trxframe fr;
-  int        flags;
+  int        flags,nvhisto=0,*vhisto=NULL;
   rvec       *xtop,*xp=NULL;
   rvec       *sumxv=NULL,*sumv=NULL,*sumxf=NULL,*sumf=NULL;
   matrix     topbox;
@@ -428,7 +476,7 @@ int gmx_traj(int argc,char *argv[])
   atom_id    **index0,**index;
   atom_id    *a,*atndx;
   t_block    *mols;
-  bool       bTop,bOX,bOV,bOF,bOB,bOT,bEKT,bEKR,bCV,bCF,bDim[4],bDum[4];
+  bool       bTop,bOX,bOV,bOF,bOB,bOT,bEKT,bEKR,bCV,bCF,bDim[4],bDum[4],bVD;
   char       *box_leg[6] = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
 
   t_filenm fnm[] = {
@@ -442,6 +490,7 @@ int gmx_traj(int argc,char *argv[])
     { efXVG, "-ot", "temp.xvg",  ffOPTWR },
     { efXVG, "-ekt","ektrans.xvg", ffOPTWR },
     { efXVG, "-ekr","ekrot.xvg", ffOPTWR },
+    { efXVG, "-vd", "veldist.xvg", ffOPTWR },
     { efPDB, "-cv", "veloc.pdb", ffOPTWR },
     { efPDB, "-cf", "force.pdb", ffOPTWR }
   };
@@ -465,6 +514,7 @@ int gmx_traj(int argc,char *argv[])
   bEKR = opt2bSet("-ekr",NFILE,fnm);
   bCV  = opt2bSet("-cv",NFILE,fnm);
   bCF  = opt2bSet("-cf",NFILE,fnm);
+  bVD  = opt2bSet("-vd",NFILE,fnm) || opt2parg_bSet("-bin",asize(pa),pa);
   if (bMol || bOT || bEKT || bEKR)
     bCom = TRUE;
 
@@ -572,11 +622,13 @@ int gmx_traj(int argc,char *argv[])
 		      xvgr_tlabel(),"Energy (kJ mol\\S-1\\N)");
     make_legend(outekr,ngroups,isize[0],index[0],grpname,bCom,bMol,bDum);
   }
+  if (bVD)
+    flags = flags | TRX_READ_V;
   if (bCV)
     flags = flags | TRX_READ_X | TRX_READ_V;
   if (bCF)
     flags = flags | TRX_READ_X | TRX_READ_F;
-  if (flags == 0 && !bOB) {
+  if ((flags == 0) && !bOB) {
     fprintf(stderr,"Please select one or more output file options\n");
     exit(0);
   }
@@ -609,6 +661,9 @@ int gmx_traj(int argc,char *argv[])
     if (fr.bX && bCom)
       rm_pbc(&(top.idef),fr.natoms,fr.box,fr.x,fr.x);
 
+    if (bVD && fr.bV) 
+      update_histo(isize[0],index[0],fr.v,&nvhisto,&vhisto,binwidth);
+      
     if (bOX && fr.bX)
       print_data(outx,time,fr.x,mass,bCom,ngroups,isize,index,bDim);
     if (bOV && fr.bV)
@@ -666,6 +721,9 @@ int gmx_traj(int argc,char *argv[])
   if (bEKT) fclose(outekt);
   if (bEKR) fclose(outekr);
 
+  if (bVD)
+    print_histo(opt2fn("-vd",NFILE,fnm),nvhisto,vhisto,binwidth);
+    
   if ((bCV || bCF) && (nr_vfr>1 || nr_ffr>1) && !bNoJump)
     fprintf(stderr,"WARNING: More than one frame was used for option -cv or -cf\n"
 	    "If atoms jump across the box you should use the -nojump option\n");
