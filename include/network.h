@@ -34,16 +34,16 @@
  * GRoups of Organic Molecules in ACtion for Science
  */
 
-#ifndef _network_h
-#define _network_h
+#ifndef _gmx_comm_h
+#define _gmx_comm_h
 
-static char *SRCID_network_h = "$Id$";
+static char *SRCID_gmx_comm_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #ifdef HAVE_IDENT
-#ident	"@(#) network.h 1.9 11/23/92"
+#ident	"@(#) gmx_comm.h 1.9 11/23/92"
 #endif /* HAVE_IDENT */
 
 /*
@@ -84,7 +84,7 @@ static char *SRCID_network_h = "$Id$";
  * The following 9 routines MUST be overridden !!!!!!!!
  * (for parallel processing)
  *
- * For sequential processing dummies are in Kernel/sys/libnet.c
+ * For sequential processing dummies are in src/gmxlib/libnet.c
  *
  ******************************************************/
 extern void gmx_tx(int chan,void *buf,int bufsize);
@@ -142,13 +142,6 @@ extern int gmx_node_id(void);
 extern void gmx_left_right(int nnodes,int nodeid,int *left,int *right);
 /* Get left and right proc id. */
 
-/****************************************************** 
- *
- * Here are some routines that are platform independent.
- * In principle they might be overridden by more efficient
- * routines for particular library packages (pvm, mpi?)
- *
- ******************************************************/
 extern void gmx_stat(FILE *fp,char *msg);
 /* Prints a overview of the status of the network, useful for debugging. */
 
@@ -157,8 +150,14 @@ extern void gmx_reset_idle(void);
 
 extern void gmx_tx_rx(int send_nodeid,void *send_buf,int send_bufsize,
 		      int rec_nodeid,void *rec_buf,int rec_bufsize);
+/* Communicate simultaneously left and right */
+		      
+extern void gmx_tx_rx_real(int send_nodeid,real *send_buf,int send_bufsize,
+			   int rec_nodeid,real *rec_buf,int rec_bufsize);
+/* Communicate simultaneously left and right, reals only */
 
 extern void gmx_wait(int send,int receive);
+/* Wait for communication to finish */
 
 extern void gmx_sync_ring(int nodeid,int nnodes,int left,int right);
 /* Synchronise the ring... */
@@ -172,64 +171,11 @@ extern void gmx_sumf(int nr,float r[],t_commrec *cr);
 extern void gmx_sumd(int nr,double r[],t_commrec *cr);
 /* Calculate the global sum of an array of doubles */
 
-/******************************************************
- *
- * These routines are now superseded by a macro...
- * Each of the communication libraries may override the
- * macros, hopefully the compiler will tell you!
- *
- ******************************************************/
+extern void gmx_abort(int nodeid,int nnodes,int errorno);
+/* Abort the parallel run */
 
-#ifdef USE_MPI
-#include "mpiio.h"
-#endif
-
-/********************************************************
- *
- * Some routines, do not have an implementation everywhere,
- * for these there are defaults using our low-level routines.
- *
- *******************************************************/
-#ifndef gmx_wait
-extern  void def_wait(int send,int receive);
-#define gmx_wait def_wait
-#endif
-
-#ifndef gmx_tx_rx
-extern  void def_tx_rx(int send_nodeid,void *send_buf,int send_bufsize,
-		       int rec_nodeid,void *rec_buf,int rec_bufsize);
-#define gmx_tx_rx def_tx_rx
-#endif 
-
-#ifndef gmx_sync_ring
-extern  void def_sync_ring(int nodeid,int nprocs,int left,int right);
-#define gmx_sync_ring def_sync_ring
-#endif
-
-#ifndef gmx_stat
-extern  void def_stat(FILE *fp,char *msg);
-#define gmx_stat def_stat
-#endif
-
-#ifndef gmx_reset_idle
-extern  void def_reset_idle(void);
-#define gmx_reset_idle def_reset_idle
-#endif
-
-#ifndef gmx_sumf
-extern  void def_sumf(int nr,float r[],t_commrec *cr);
-#define gmx_sumf def_sumf
-#endif
-
-#ifndef gmx_sumd
-extern  void def_sumd(int nr,double r[],t_commrec *cr);
-#define gmx_sumd def_sumd
-#endif
-
-#ifndef gmx_sumi
-extern  void def_sumi(int nr,int r[],t_commrec *cr);
-#define gmx_sumi def_sumi
-#endif
+extern void gmx_finalize(void);
+/* Finish the parallel run in an ordered manner */
 
 #ifdef DOUBLE
 #define gmx_sum gmx_sumd
@@ -244,4 +190,4 @@ if (bDebugMode()) fprintf(fp,"NODEID=%d, %s  %d\n",gmx_node_id(),__FILE__,__LINE
 #define debug_gmx()
 #endif
 
-#endif	/* _network_h */
+#endif	/* _gmx_comm_h */
