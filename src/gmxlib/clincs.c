@@ -29,6 +29,7 @@
 static char *SRCID_clincs_c = "$Id$";
 
 #include <math.h>
+#include "main.h"
 #include "update.h"
 #include "physics.h"
 #include "vec.h"
@@ -258,10 +259,40 @@ void cconerr(real *max,real *rms,int *imax,rvec *xprime,
   }
   *max=ma;
   *rms=sqrt(ms/ncons);
-  *imax=im-1;
+  *imax=im;
 }
 
+void lincs_warning(rvec *x,rvec *xprime,
+		   int ncons,int *bla1,int *bla2,real *bllen,real wangle)
+{
+  int b,i,j;
+  rvec v0,v1;
+  real wfac,d0,d1,ipr,cosine;
+  char buf[STRLEN];
+  
+  wfac=cos(DEG2RAD*wangle);
+  
+  sprintf(buf,"bonds that rotated more than %g degrees:\n"
+	  " atom 1 atom 2  angle  previous, current, constraint length\n",
+	  wangle);
+  fprintf(stderr,buf);
+  fprintf(stdlog,buf); 
 
-
+  for(b=0;b<ncons;b++) {
+    i=bla1[b];
+    j=bla2[b];
+    rvec_sub(x[i],x[j],v0);
+    rvec_sub(xprime[i],xprime[j],v1);
+    d0=norm(v0);
+    d1=norm(v1);
+    cosine=iprod(v0,v1)/(d0*d1);
+    if (cosine<wfac) {
+      sprintf(buf," %6d %6d  %5.1f  %8.4f %8.4f    %8.4f\n",
+	      i+1,j+1,RAD2DEG*acos(cosine),d0,d1,bllen[b]);
+      fprintf(stderr,buf);
+      fprintf(stdlog,buf);
+    }
+  }
+}
 
 

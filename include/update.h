@@ -144,6 +144,8 @@ extern void clincsld(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
 extern void cconerr(real *max,real *rms,int *imax,rvec *xprime,
 		    int ncons,int *bla1,int *bla2,real *bllen);
 
+void lincs_warning(rvec *x,rvec *xprime,
+		   int ncons,int *bla1,int *bla2,real *bllen,real wangle);
 	     
 /* Routines from coupling.c to do with Temperature, Pressure and coupling
  * algorithms.

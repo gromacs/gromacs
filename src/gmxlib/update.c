@@ -848,13 +848,8 @@ void update(int          natoms, 	/* number of atoms in simulation */
 
 	wang=ir->LincsWarnAngle;
 
-	if (do_per_step(step,ir->nstLincsout)) {
-#ifdef USEF77
-	  fconerr(&p_max,&p_rms,&p_imax,xprime,&nc,bla1,bla2,bllen);
-#else
+	if (do_per_step(step,ir->nstLincsout))
 	  cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
-#endif
-	}
 
 	if (ir->eI==eiMD) {
 #ifdef USEF77
@@ -892,30 +887,21 @@ void update(int          natoms, 	/* number of atoms in simulation */
 	  fprintf(stdlog,"Step %d\nRel. Constraint Deviation:  Max    between atoms     RMS\n",step);
 	  fprintf(stdlog,"    Before LINCS         %.6f %6d %6d   %.6f\n",
 		  p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
-#ifdef USEF77
-	  fconerr(&p_max,&p_rms,&p_imax,xprime,&nc,bla1,bla2,bllen);
-#else
 	  cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
-#endif
 	  fprintf(stdlog,"     After LINCS         %.6f %6d %6d   %.6f\n\n",
 		  p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
 	}
 
 	if (warn > 0) {
-#ifdef USEF77
-	  fconerr(&p_max,&p_rms,&p_imax,xprime,&nc,bla1,bla2,bllen);
-#else
 	  cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
-#endif
-	  sprintf(buf,"Step %d, time %g (ps)  WARNING\n"
-		  "bond between atoms %d and %d rotated more than %.1f degrees\n"
+	  sprintf(buf,"\nStep %d, time %g (ps)  LINCS WARNING\n"
 		  "relative constraint deviation after LINCS:\n"
-		  "max %.6f (between atoms %d and %d) rms %.6f\n\n",
+		  "max %.6f (between atoms %d and %d) rms %.6f\n",
 		  step,ir->init_t+step*dt,
-		  bla1[warn-1]+1,bla2[warn-1]+1,wang,
 		  p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
 	  fprintf(stdlog,"%s",buf);
 	  fprintf(stderr,"%s",buf);
+	  lincs_warning(x,xprime,nc,bla1,bla2,bllen,wang);
 	  if (p_max > 0.5) {
 	    dump_confs(step,&(top->atoms),x,xprime,box);
 	    fatal_error(0,"Bond deviates more than half its own length");
