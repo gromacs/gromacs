@@ -76,10 +76,10 @@ int main(int argc,char *argv[])
     "(e.g. residue number)in the [BB]-groups[bb] will be ignored",
     "in the comparison."
   };
-  static bool bSum=FALSE,bVerbose=TRUE;
+  static bool bSum=FALSE;
   static bool bMeanEmtx=TRUE;
   static int  skip=0,nlevels=20;
-  static real cuthi=1e20,cutlo=-1e20,rangehi=0.0,rangelo=0.0,reftemp=300.0;
+  static real cutmax=1e20,cutmin=-1e20,reftemp=300.0;
   static bool bCoul=TRUE,bCoulLR=FALSE,bCoul14=FALSE;
   static bool bLJ=TRUE,bLJ14=FALSE,bBham=FALSE,bFree=TRUE;
   t_pargs pa[] = {
@@ -87,15 +87,12 @@ int main(int argc,char *argv[])
       "Sum the energy terms selected rather than display them all" },
     { "-skip", FALSE, etINT,  &skip,
       "Skip number of frames between data points" },
-    { "-v",    FALSE, etBOOL, &bVerbose,"Print frame counter" },
     { "-mean", FALSE, etBOOL, &bMeanEmtx,
       "with -groups calculates matrix of mean energies in stead of "
       "matrix for each timestep" },
     { "-nl",   FALSE, etINT,  &nlevels,"number of levels for matrix colors"},
-    { "-cuthi",FALSE, etREAL, &cuthi,"high-level cutoff for energies"},
-    { "-cutlo",FALSE, etREAL, &cutlo,"low-level cutoff for energies"},
-    { "-rangehi",FALSE, etREAL, &rangehi,"high range for energies"},
-    { "-rangelo",FALSE, etREAL, &rangelo,"low range for energies"},
+    { "-max",FALSE, etREAL, &cutmax,"max value for energies"},
+    { "-min",FALSE, etREAL, &cutmin,"min value for energies"},
     { "-coul", FALSE, etBOOL, &bCoul,"calculate Coulomb SR energies"},
     { "-coulr", FALSE, etBOOL, &bCoulLR,"calculate Coulomb LR energies"},
     { "-coul14",FALSE, etBOOL, &bCoul14,"calculate Coulomb 1-4 energies"},
@@ -119,7 +116,7 @@ int main(int argc,char *argv[])
   int        teller=0,nre,step;
   real       t,sum;
   bool       bCont,bEDR,bRef;
-  bool       bRhi,bRlo;
+  bool       bCutmax,bCutmin;
   real       **eneset,*time=NULL;
   int        *set,i,j,k,prevk,m,n,nset,nenergy;
   char       **enm,**groups;
@@ -173,8 +170,8 @@ int main(int argc,char *argv[])
     exit(1);
   }
   
-  bRhi=opt2parg_bSet("-rangehi",asize(pa),pa);
-  bRlo=opt2parg_bSet("-rangelo",asize(pa),pa);
+  bCutmax=opt2parg_bSet("-max",asize(pa),pa);
+  bCutmin=opt2parg_bSet("-min",asize(pa),pa);
 
   snew(ee,nre);
   nenergy = 0;
@@ -236,9 +233,7 @@ int main(int argc,char *argv[])
 #define DONTSKIP(cnt) (skip) ? ((cnt % skip) == 0) : TRUE
       
       if (bCont) {
-	if (bVerbose && (teller % 10) == 0) {
-	  fprintf(stderr,"\rTime: %.3f",t);
-	}
+	fprintf(stderr,"\rRead frame: %d, Time: %.3f",teller,t);
 	
 	if ((nenergy % 1000) == 0) {
 	  srenew(time,nenergy+1000);
@@ -364,10 +359,10 @@ int main(int argc,char *argv[])
 	else {
 	  fprintf(stderr,"Matrix of %s energy ranges from %f to %f\n",
 		  egrp_nm[m],emin,emax);
-	  if (emax>cuthi) emax=cuthi;
-	  if (emin<cutlo) emin=cutlo;
-	  if (bRhi) emax=rangehi;
-	  if (bRlo) emin=rangelo;
+	  if ((bCutmax) || (emax>cutmax)) emax=cutmax;
+	  if ((bCutmin) || (emin<cutmin)) emin=cutmin;
+	  if ((emax==cutmax) || (emin==cutmin))
+	    fprintf(stderr,"Energy range adjusted: %f to %f\n",emin,emax);
 	  
 	  sprintf(fn,"%s%s",egrp_nm[m],ftp2fn(efXPM,NFILE,fnm));
 	  sprintf(label,"%s Interaction Energies\0",egrp_nm[m]);
@@ -432,7 +427,8 @@ int main(int argc,char *argv[])
     }
     fclose(out);
   } else {
-    fprintf(stderr,"While typing at your keyboard, suddenly...\n...nothing happens.\nWARNING: Not Implemented Yet\n");
+    fprintf(stderr,"While typing at your keyboard, suddenly...\n"
+	    "...nothing happens.\nWARNING: Not Implemented Yet\n");
 /*
     out=ftp2FILE(efMAT,NFILE,fnm,"w");
     n=0;
@@ -457,4 +453,3 @@ int main(int argc,char *argv[])
   
   return 0;
 }
-
