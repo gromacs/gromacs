@@ -22,7 +22,7 @@
  * have to generate new initialization data for the table in
  * gmx_random_gausstable.h
  *
- * We have included the routine generate_gaussian_table() in this file
+ * We have included the routine print_gaussian_table() in this file
  * for convenience - use it if you need a different size of the table.
  */
 #define GAUSS_TABLE 14 /* the size of the gauss table is 2^GAUSS_TABLE */
@@ -262,15 +262,11 @@ real
 gmx_rng_gaussian_table(gmx_rng_t rng)
 {
   unsigned int i;
-  float f;
   
-  
-  f = gmx_rng_uniform_real(rng);
-  
-  i = f*(1 << GAUSS_TABLE);
+  i = gmx_rng_uniform_uint32(rng);
   
   /* The Gaussian table is a static constant in this file */
-  return gaussian_table[i];
+  return gaussian_table[i >> GAUSS_SHIFT];
 }
 
 
