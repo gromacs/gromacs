@@ -252,7 +252,7 @@ static void add_dum_atoms(t_params plist[], int dummy_type[],
 #define acosrule(a,b,c) ( (sqr(b)+sqr(c)-sqr(a))/(2*b*c) )
 
 static int gen_dums_6ring(t_atoms *at, int *dummy_type[], t_params plist[], 
-			  int nrfound, int *ats, bool bDoHZ)
+			  int nrfound, int *ats, bool bDoZ)
 {
   /* these MUST correspond to the atnms array in do_dum_aromatics! */
   enum { atCG, atCD1, atHD1, atCD2, atHD2, atCE1, atHE1, atCE2, atHE2, 
@@ -262,7 +262,7 @@ static int gen_dums_6ring(t_atoms *at, int *dummy_type[], t_params plist[],
   real a,b,dCGCE,tmp1,tmp2,mtot;
   /* CG, CE1 and CE2 stay and each get 1/3 of the total mass, 
      rest gets dummified */
-  if (bDoHZ)
+  if (bDoZ)
     assert(atNR == nrfound);
   
   /* constraints between CG, CE1 and CE2: */
@@ -276,7 +276,7 @@ static int gen_dums_6ring(t_atoms *at, int *dummy_type[], t_params plist[],
   ndum=0;
   for(i=0; i<atNR; i++) {
     mtot+=at->atom[ats[i]].m;
-    if (i!=atCG && i!=atCE1 && i!=atCE2 && (bDoHZ || i!=atHZ) ) {
+    if ( i!=atCG && i!=atCE1 && i!=atCE2 && (bDoZ || (i!=atHZ && i!=atCZ) ) ) {
       at->atom[ats[i]].m = at->atom[ats[i]].mB = 0;
       (*dummy_type)[ats[i]]=F_DUMMY3;
       ndum++;
@@ -302,15 +302,16 @@ static int gen_dums_6ring(t_atoms *at, int *dummy_type[], t_params plist[],
 		 ats[atCD1],ats[atCE2],ats[atCE1],ats[atCG], a,b);
   add_dum3_param(&plist[F_DUMMY3],
 		 ats[atCD2],ats[atCE1],ats[atCE2],ats[atCG], a,b);
-  add_dum3_param(&plist[F_DUMMY3],
-		 ats[atCZ], ats[atCG], ats[atCE1],ats[atCE2],a,b);
+  if (bDoZ)
+    add_dum3_param(&plist[F_DUMMY3],
+		   ats[atCZ], ats[atCG], ats[atCE1],ats[atCE2],a,b);
   /* HD1, HD2 and HZ: */
   a = b = ( bCH + tmp2 ) / tmp1;
   add_dum3_param(&plist[F_DUMMY3],
 		 ats[atHD1],ats[atCE2],ats[atCE1],ats[atCG], a,b);
   add_dum3_param(&plist[F_DUMMY3],
 		 ats[atHD2],ats[atCE1],ats[atCE2],ats[atCG], a,b);
-  if (bDoHZ)
+  if (bDoZ)
     add_dum3_param(&plist[F_DUMMY3],
 		   ats[atHZ], ats[atCG], ats[atCE1],ats[atCE2],a,b);
   
@@ -365,7 +366,7 @@ static int gen_dums_trp(t_atomtype *atype, rvec *newx[],
   assert(atNR == nrfound);
   
   /* get dummy mass type */
-  tpM=nm2type("MTYR",atype);
+  tpM=nm2type("MTRP",atype);
   /* make space for 2 masses: shift all atoms starting with CB */
   i0=ats[atCB];
   for(j=0; j<NMASS; j++)
@@ -499,7 +500,7 @@ static int gen_dums_tyr(t_atoms *at, int *dummy_type[], t_params plist[],
 			int nrfound, int *ats)
 {
   int ndum;
-  real dCGCE,dCEOH,dCGHH,tmp1;
+  real dCGCE,dCEOH,dCGHH,tmp1,a,b;
   
   /* these MUST correspond to the atnms array in do_dum_aromatics! */
   enum { atCG, atCD1, atHD1, atCD2, atHD2, atCE1, atHE1, atCE2, atHE2, 
@@ -509,8 +510,16 @@ static int gen_dums_tyr(t_atoms *at, int *dummy_type[], t_params plist[],
      Now we have two linked triangles with one improper keeping them flat */
   assert(atNR == nrfound);
 
-  /* first do 6 ring as default, but without HZ (we don't have that): */
+  /* first do 6 ring as default, 
+     except CZ (we'll do that different) and HZ (we don't have that): */
   ndum = gen_dums_6ring(at, dummy_type, plist, nrfound, ats, FALSE);
+  
+  /* then construct CZ from the 2nd triangle */
+  /* dummy3 construction: r_d = r_i + a r_ij + b r_ik */
+  a = b = 0.5 * bCO / ( bCO - bR6*cos(aR6) );
+  add_dum3_param(&plist[F_DUMMY3],
+		 ats[atCZ],ats[atOH],ats[atCE1],ats[atCE2],a,b);
+  at->atom[ats[atCZ]].m = at->atom[ats[atCZ]].mB = 0;
   
   /* constraints between CE1, CE2 and OH */
   dCGCE = sqrt( cosrule(bR6,bR6,aR6) );
