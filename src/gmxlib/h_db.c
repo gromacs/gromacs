@@ -36,13 +36,13 @@ static char *SRCID_h_db_c = "$Id$";
 #include "symtab.h"
 #include "h_db.h"
 
-/* There are 7 types of adding hydrogens, numbered from
+/* There are 10 types of adding hydrogens, numbered from
  * 1 thru 7. Each of these has a specific number of
  * control atoms, that determine how the hydrogens are added.
  * Here these number are given. Because arrays start at 0 an
  * extra dummy for index 0 is added 
  */
-int ncontrol[10] = { -1, 3, 3, 3, 3, 4, 3, 1, 3, 3 };
+int ncontrol[11] = { -1, 3, 3, 3, 3, 4, 3, 1, 3, 3, 3 };
 
 int compaddh(const void *a,const void *b)
 {
@@ -71,13 +71,13 @@ t_addh *search_ter_hb(char *key,int nh,t_addh ah[])
 			   (size_t)sizeof(ahkey),compaddh);
 }
 
-void read_ab(FILE *in,t_add_block *ab)
+void read_ab(FILE *in,char *fn,t_add_block *ab)
 {
   int  i,nh,tp,ncntl;
   char buf[80];
 
   if (fscanf(in,"%d%d",&nh,&tp) != 2)
-    fatal_error(0,"error in input file\n");
+    fatal_error(0,"error in input file %s\n",fn);
   ab->nh=nh;
   ab->tp=tp;
   ncntl=ncontrol[tp];
@@ -106,7 +106,7 @@ int read_h_db(char *fn,t_addh **ah)
     snew(aah[nah-1].ab,nab);
     aah[nah-1].n_add=nab;
     for(i=0; (i<nab); i++) 
-      read_ab(in,&(aah[nah-1].ab[i]));
+      read_ab(in,hfn,&(aah[nah-1].ab[i]));
   }
   fclose(in);
   
