@@ -225,12 +225,12 @@ int main (int argc,char *argv[])
     "g_confrms computes the root mean square deviation (RMSD) of two",
     "structure files after LSQ fitting the structures on top of each other.",
     "The two structures do NOT need to have the same number of atoms,",
-    "only the two index groups need to be identical",
+    "only the two index groups used for the fit need to be identical",
     "[PAR]",
     "Option -o2 produces a Gromos file with the second structure fitted on",
     "the first structure,",
     "[PAR]",
-    "Option -op produces a PDB file with the superimposed strutures"
+    "Option -op produces a PDB file with the superimposed structures"
   };
   static bool bRmpbc=FALSE;
   
