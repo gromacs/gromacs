@@ -53,11 +53,11 @@ static void read_atom(FILE *in,t_atom *a,t_atomtype *atype,char nnew[])
   a->type=at2type(type,atype);
 }
 
-int read_ter_db(char *inf,t_terblock **tbptr,t_atomtype *atype)
+int read_ter_db(char *inf,t_hackblock **tbptr,t_atomtype *atype)
 {
   FILE       *in;
   char       bname[124],nnew[24],oldnm[24],buf[24];
-  t_terblock *tb=NULL;
+  t_hackblock *tb=NULL;
   int        i,j,nb=0;
 
   in=libopen(inf);
@@ -88,13 +88,13 @@ int read_ter_db(char *inf,t_terblock **tbptr,t_atomtype *atype)
     snew(tb[nb].adder,tb[nb].nadd);
     snew(tb[nb].add_nm,tb[nb].nadd);
     for(i=0; (i<tb[nb].nadd); i++) {
-      read_ab(in,&(tb[nb].ab[i]));
+      read_ab(in,inf,&(tb[nb].ab[i]));
       read_atom(in,&(tb[nb].adder[i]),atype,nnew);
       tb[nb].add_nm[i]=strdup(nnew);
     }
     /* Number of impropers */
-    if (debug) printf("# impropers %d\n",tb[nb].nidih);
     fscanf(in,"%d",&(tb[nb].nidih));
+    if (debug) printf("# impropers %d\n",tb[nb].nidih);
     snew(tb[nb].idih,tb[nb].nidih);
     for(i=0; (i<tb[nb].nidih); i++) {
       for(j=0; (j<MAXATOMLIST); j++) {
@@ -103,8 +103,8 @@ int read_ter_db(char *inf,t_terblock **tbptr,t_atomtype *atype)
       }
     }
     /* Number of delete atoms! */
-    if (debug) printf("# delete %d\n",tb[nb].ndel);
     if (fscanf(in,"%d",&(tb[nb].ndel)) != 1) FATAL();
+    if (debug) printf("# delete %d\n",tb[nb].ndel);
     snew(tb[nb].nm_del,tb[nb].ndel);
     for(i=0; (i<tb[nb].ndel); i++) {
       if (fscanf(in,"%s",nnew) != 1) FATAL();
@@ -119,7 +119,7 @@ int read_ter_db(char *inf,t_terblock **tbptr,t_atomtype *atype)
   return nb;
 }
 
-t_terblock *choose_ter(int nb,t_terblock tb[],char *title)
+t_hackblock *choose_ter(int nb,t_hackblock tb[],char *title)
 {
   int i,sel;
   
@@ -142,7 +142,7 @@ static void print_atom(FILE *out,t_atom *a,t_atomtype *atype,char *newnm)
 	  newnm,type2nm(a->type,atype),a->m,a->q);
 }
 
-void print_ter_db(FILE *out,int nb,t_terblock tb[],t_atomtype *atype) 
+void print_ter_db(FILE *out,int nb,t_hackblock tb[],t_atomtype *atype) 
 {
   int i,j,k;
   
@@ -175,7 +175,7 @@ int main(int argc,char *argv[])
 {
   t_symtab   tab;
   t_atomtype *atype;
-  t_terblock *tb,*seltb;
+  t_hackblock *tb,*seltb;
   int nb;
   
   open_symtab(&tab);
