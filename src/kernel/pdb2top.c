@@ -171,7 +171,7 @@ static void name2type(t_atoms *at, int **cgnr, t_atomtype *atype,
       bProt=is_protein(*(at->resname[resnr]));
       bNterm=bProt && (resnr == 0);
       if (resnr>0)
-	missing_atoms(&restp[prevresnr],resnr,at,i0,i,
+	missing_atoms(&restp[prevresnr],prevresnr,at,i0,i,
 		      (!bProt && is_protein(restp[prevresnr].resname)));
       i0=i;
     }
