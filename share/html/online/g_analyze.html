@@ -1,0 +1,103 @@
+<TITLE>g_analyze</TITLE>
+<LINK rel=stylesheet href="style.css" type="text/css">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000EF" vlink="#650065" alink="#FF0000">
+<H2>g_analyze</H2>
+<CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 COLS=2 WIDTH="98%">
+<TR>
+<TD><font size=-1><A HREF="../online.html">Main Table of Contents</A></font></TD>
+<TD ALIGN=RIGHT><B>VERSION 3.0</B></TR>
+<TR><TD><font size=-1><A HREF="http://www.gromacs.org">GROMACS homepage</A></font></TD>
+<TD ALIGN=RIGHT><B>Tue 15 May 2001</B></TR></TABLE></CENTER><HR>
+<H3>Description</H3>
+g_analyze reads an ascii file and analyzes data sets.
+A line in the input file may start with a time
+(see option <tt>-time</tt>) and any number of y values may follow.
+Multiple sets can also be
+read when they are seperated by & (option <tt>-n</tt>),
+in this case only one y value is read from each line.
+All lines starting with # and @ are skipped.
+All analyses can also be done for the derivative of a set
+(option <tt>-d</tt>).<p>
+All options, except for <tt>-av</tt> and <tt>-power</tt> assume that the
+points are equidistant in time.<p>
+g_analyze always shows the average and standard deviation of each
+set. For each set it also shows the relative deviation of the third
+and forth cumulant from those of a Gaussian distribution with the same
+standard deviation.<p>
+Option <tt>-ac</tt> produces the autocorrelation function(s).<p>
+Option <tt>-cc</tt> plots the resemblance of set i with a cosine of
+i/2 periods. The formula is:<br>2 (int0-T y(t) cos(pi t/i) dt)^2 / int0-T y(t) y(t) dt<br>
+This is useful for principal components obtained from covariance
+analysis, since the principal components of random diffusion are
+pure cosines.<p>
+Option <tt>-msd</tt> produces the mean square displacement(s).<p>
+Option <tt>-dist</tt> produces distribution plot(s).<p>
+Option <tt>-av</tt> produces the average over the sets.
+Error bars can be added with the option <tt>-errbar</tt>.
+The errorbars can represent the standard deviation, the error
+(assuming the points are independent) or the interval containing
+90% of the points, by discarding 5% of the points at the <a href="top.html">top</a> and
+the bottom.<p>
+Option <tt>-ee</tt> produces error estimates using block averaging.
+A set is divided in a number of blocks and averages are calculated for
+each block. The error for the total average is calculated from
+the variance between averages of the m blocks B_i as follows:
+error^2 = Sum (B_i - &lt;B&gt;)^2 / (m*(m-1)).
+These errors are plotted as a function of the block size.
+Also an analytical block average curve is plotted, assuming
+that the autocorrelation is a sum of two exponentials.
+The analytical curve for the block average BA is:<br>
+BA(t) = sigma sqrt(2/T (  a   (tau1 ((exp(-t/tau1) - 1) tau1/t + 1)) +<br>
+                        (1-a) (tau2 ((exp(-t/tau2) - 1) tau2/t + 1)))),<br>where T is the total time.
+a, tau1 and tau2 are obtained by fitting BA(t) to the calculated block
+average.
+When the actual block average is very close to the analytical curve,
+the error is sigma*sqrt(2/T (a tau1 + (1-a) tau2)).<p>
+Option <tt>-power</tt> fits the data to b t^a, which is accomplished
+by fitting to a t + b on log-log scale. All points after the first
+zero or negative value are ignored.
+<P>
+<H3>Files</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   graph.xvg</a></tt> </TD><TD> Input </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ac</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">autocorr.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-msd</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">     msd.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-cc</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> coscont.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-dist</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   distr.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-av</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> average.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ee</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  errest.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+</TABLE>
+<P>
+<H3>Other options</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]X</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use dialog box GUI to edit command line options </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]time</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Expect a time in the input </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First time to read from set </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last time to read from set </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Read # sets seperated by & </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]d</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use the derivative </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-bw</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   0.1</tt> </TD><TD> Binwidth for the distribution </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-errbar</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Error bars for -av: none, stddev, error or 90 </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]power</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Fit data to: b t^a </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]subav</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Subtract the average before autocorrelating </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]oneacf</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Calculate one ACF over all sets </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-acflen</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Length of the ACF, default is half the number of frames </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]normalize</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Normalize ACF </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-P</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Order of Legendre polynomial for ACF (0 indicates none): 0, 1, 2 or 3 </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-fitfn</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Fit function: none, exp, aexp, exp_exp or vac </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ncskip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Skip N points in the output file of correlation functions </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-beginfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Time where to begin the exponential fit of the correlation function </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-endfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Time where to end the exponential fit of the correlation function, -1 is till the end </TD></TD>
+</TABLE>
+<P>
+<hr>
+<div ALIGN=RIGHT>
+<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
+</div>
+</BODY>

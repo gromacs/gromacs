@@ -1,0 +1,109 @@
+.TH g_covar 1 "Tue 15 May 2001"
+.SH NAME
+g_covar
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_covar\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-n" " index.ndx "
+.BI "-o" " eigenval.xvg "
+.BI "-v" " eigenvec.trr "
+.BI "-av" " average.pdb "
+.BI "-l" " covar.log "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]fit" ""
+.BI "-[no]ref" ""
+.BI "-[no]mwa" ""
+.BI "-last" " int "
+.SH DESCRIPTION
+
+.B g_covar
+calculates and diagonalizes the (mass-weighted)
+covariance matrix.
+All structures are fitted to the structure in the structure file.
+When this is not a run input file periodicity will not be taken into
+account. When the fit and analysis groups are identical and the analysis
+is non mass-weighted, the fit will also be non mass-weighted.
+
+
+The eigenvectors are written to a trajectory file (
+.B -v
+).
+When the same atoms are used for the fit and the covariance analysis,
+the reference structure for the fit is written first with t=-1.
+The average (or reference when 
+.B -ref
+is used) structure is
+written with t=0, the eigenvectors
+are written as frames with the eigenvector number as timestamp.
+
+
+The eigenvectors can be analyzed with 
+.B g_anaeig
+.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-o" " eigenval.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-v" " eigenvec.trr" 
+.B Output
+ Full precision trajectory: trr trj 
+
+.BI "-av" " average.pdb" 
+.B Output
+ Generic structure: gro g96 pdb 
+
+.BI "-l" " covar.log" 
+.B Output
+ Log file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]fit"  "   yes"
+ Fit to a reference structure
+
+.BI "-[no]ref"  "    no"
+ Use the deviation from the conformation in the structure file instead of from the average
+
+.BI "-[no]mwa"  "    no"
+ Mass-weighted covariance analysis
+
+.BI "-last"  " int" " -1" 
+ Last eigenvector to write away (-1 is till the last)
+

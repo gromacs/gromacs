@@ -19,6 +19,6 @@ install-data-hook:
 	$(INSTALL_DATA) Template.mak $(DESTDIR)$(templatedir)/Makefile; 
 
 
-CLEANFILES = *~ \\\#* *.ene *.hat *.tr? *.xtc *.edr *.ene *.xvg core *.log mdout.mdp *.tp? mon.out confout.gro deshuf.ndx output.* *.gz *.ps *.dat *.g87 *~ \\\#* Template.mak
+CLEANFILES = *~ \\\#* *.ene *.hat *.tr? *.xtc *.edr *.ene *.xvg core *.log mdout.mdp *.tp? mon.out confout.gro deshuf.ndx output.* *.gz *.ps *.dat *.g87 *~ \\\#*
 
 

@@ -1,0 +1,69 @@
+.TH trjcat 1 "Tue 15 May 2001"
+.SH NAME
+trjcat
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3trjcat\fP
+.BI "-o" " trajout.xtc "
+.BI "-n" " index.ndx "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " real "
+.BI "-e" " real "
+.BI "-dt" " real "
+.BI "-prec" " int "
+.BI "-[no]vel" ""
+.BI "-[no]settime" ""
+.BI "-[no]sort" ""
+.SH DESCRIPTION
+trjcat concatenates several input trajectory files in sorted order. 
+In case of double time frames the one in the later file is used. 
+By specifying 
+.B -settime
+you will be asked for the start time 
+of each file. The input files are taken from the command line, 
+such that a command like 
+.B trjcat -o fixed.trr *.trr
+should do 
+the trick.
+.SH FILES
+.BI "-o" " trajout.xtc" 
+.B Output
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " real" "     -1" 
+ First time to use
+
+.BI "-e"  " real" "     -1" 
+ Last time to use
+
+.BI "-dt"  " real" "      0" 
+ Only write frame when t MOD dt = first time
+
+.BI "-prec"  " int" " 3" 
+ Precision for .xtc and .gro writing in number of decimal places
+
+.BI "-[no]vel"  "   yes"
+ Read and write velocities if possible
+
+.BI "-[no]settime"  "    no"
+ Change starting time interactively
+
+.BI "-[no]sort"  "   yes"
+ Sort trajectory files (not frames)
+

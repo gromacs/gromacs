@@ -1,0 +1,95 @@
+.TH g_disre 1 "Tue 15 May 2001"
+.SH NAME
+g_disre
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_disre\fP
+.BI "-s" " topol.tpr "
+.BI "-f" " traj.xtc "
+.BI "-ds" " drsum.xvg "
+.BI "-da" " draver.xvg "
+.BI "-dn" " drnum.xvg "
+.BI "-dm" " drmax.xvg "
+.BI "-dr" " restr.xvg "
+.BI "-l" " disres.log "
+.BI "-n" " viol.ndx "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]w" ""
+.BI "-ntop" " int "
+.SH DESCRIPTION
+g_disre computes violations of distance restraints. If necessary
+all protons can be added to a protein molecule. The program allways
+computes the instantaneous violations rather than time-averaged,
+because this analysis is done from a trajectory file afterwards
+it does not make sense to use time averaging.
+
+
+An index file may be used to select specific restraints for
+printing.
+.SH FILES
+.BI "-s" " topol.tpr" 
+.B Input
+ Generic run input: tpr tpb tpa 
+
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-ds" " drsum.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-da" " draver.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-dn" " drnum.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-dm" " drmax.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-dr" " restr.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-l" " disres.log" 
+.B Output
+ Log file 
+
+.BI "-n" " viol.ndx" 
+.B Input, Opt.
+ Index file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-ntop"  " int" " 6" 
+ Number of large violations that are stored in the log file every step
+

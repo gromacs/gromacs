@@ -1,0 +1,81 @@
+.TH g_h2order 1 "Tue 15 May 2001"
+.SH NAME
+g_h2order
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_h2order\fP
+.BI "-f" " traj.xtc "
+.BI "-n" " index.ndx "
+.BI "-nm" " index.ndx "
+.BI "-s" " topol.tpr "
+.BI "-o" " order.xvg "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]w" ""
+.BI "-d" " string "
+.BI "-sl" " int "
+.SH DESCRIPTION
+Compute the orientation of water molecules with respect to the normal
+of the box. The program determines the average cosine of the angle
+between de dipole moment of water and an axis of the box. The box is
+divided in slices and the average orientation per slice is printed.
+Each water molecule is assigned to a slice, per time frame, based on the
+position of the oxygen. When -nm  is used the angle between the water
+dipole and the axis from the center of mass to the oxygen is calculated
+instead of the angle between the dipole and a box axis.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-n" " index.ndx" 
+.B Input
+ Index file 
+
+.BI "-nm" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Generic run input: tpr tpb tpa 
+
+.BI "-o" " order.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-d"  " string" " Z" 
+ Take the normal on the membrane in direction X, Y or Z.
+
+.BI "-sl"  " int" " 0" 
+ Calculate order parameter as function of boxlength, dividing the box in nr slices.
+
+.SH DIAGNOSTICS
+\- The program assigns whole water molecules to a slice, based on the firstatom of three in the index file group. It assumes an order O,H,H.Name is not important, but the order is. If this demand is not met,assigning molecules to slices is different.
+

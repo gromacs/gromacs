@@ -1,0 +1,110 @@
+.TH g_sas 1 "Tue 15 May 2001"
+.SH NAME
+g_sas
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_sas\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-o" " area.xvg "
+.BI "-r" " resarea.xvg "
+.BI "-q" " connelly.pdb "
+.BI "-ao" " atomarea.xvg "
+.BI "-n" " index.ndx "
+.BI "-i" " surfat.itp "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]w" ""
+.BI "-solsize" " real "
+.BI "-ndots" " int "
+.BI "-qmax" " real "
+.BI "-minarea" " real "
+.BI "-skip" " int "
+.BI "-[no]prot" ""
+.SH DESCRIPTION
+g_sas computes hydrophobic and total solvent accessible surface area.
+As a side effect the Connolly surface can be generated as well in
+a pdb file where the nodes are represented as atoms and the vertices
+connecting the nearest nodes as CONECT records. The area can be plotted
+per atom and per residue as well (option -ao). In combination with
+the latter option an 
+.B itp
+file can be generated (option -i)
+which can be used to restrain surface atoms.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Generic run input: tpr tpb tpa 
+
+.BI "-o" " area.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-r" " resarea.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-q" " connelly.pdb" 
+.B Output, Opt.
+ Protein data bank file 
+
+.BI "-ao" " atomarea.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-i" " surfat.itp" 
+.B Output, Opt.
+ Include file for topology 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-solsize"  " real" "   0.14" 
+ Radius of the solvent probe (nm)
+
+.BI "-ndots"  " int" " 24" 
+ Number of dots per sphere, more dots means more accuracy
+
+.BI "-qmax"  " real" "    0.2" 
+ The maximum charge (e, absolute value) of a hydrophobic atom
+
+.BI "-minarea"  " real" "    0.5" 
+ The maximum charge (e, absolute value) of a hydrophobic atom
+
+.BI "-skip"  " int" " 1" 
+ Do only every nth frame
+
+.BI "-[no]prot"  "   yes"
+ Output the protein to the connelly pdb file too
+

@@ -1,0 +1,115 @@
+.TH eneconv 1 "Tue 15 May 2001"
+.SH NAME
+eneconv
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3eneconv\fP
+.BI "-f" " ener.edr "
+.BI "-o" " fixed.edr "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " real "
+.BI "-e" " real "
+.BI "-dt" " real "
+.BI "-offset" " real "
+.BI "-[no]settime" ""
+.BI "-[no]sort" ""
+.BI "-scalefac" " real "
+.BI "-[no]error" ""
+.SH DESCRIPTION
+When 
+.B -f
+is 
+.I not
+specified:
+
+Concatenates several energy files in sorted order.
+In case of double time frames the one
+in the later file is used. By specifying 
+.B -settime
+you will be
+asked for the start time of each file. The input files are taken
+from the command line,
+such that the command 
+.B eneconv -o fixed.edr *.edr
+should do
+the trick. 
+
+
+With 
+.B -f
+specified:
+
+Reads one energy file and writes another, applying the 
+.B -dt
+,
+
+.B -offset
+, 
+.B -t0
+and 
+.B -settime
+options and
+converting to a different format if necessary (indicated by file
+extentions).
+
+
+
+.B -settime
+is applied first, then 
+.B -dt
+/
+.B -offset
+
+followed by 
+.B -b
+and 
+.B -e
+to select which frames to write.
+.SH FILES
+.BI "-f" " ener.edr" 
+.B Input
+ Generic energy: edr ene 
+
+.BI "-o" " fixed.edr" 
+.B Output, Opt.
+ Generic energy: edr ene 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " real" "     -1" 
+ First time to use
+
+.BI "-e"  " real" "     -1" 
+ Last time to use
+
+.BI "-dt"  " real" "      0" 
+ Only write out frame when t MOD dt = offset
+
+.BI "-offset"  " real" "      0" 
+ Time offset for -dt option
+
+.BI "-[no]settime"  "    no"
+ Change starting time interactively
+
+.BI "-[no]sort"  "   yes"
+ Sort energy files (not frames)
+
+.BI "-scalefac"  " real" "      1" 
+ Multiply energy component by this factor
+
+.BI "-[no]error"  "   yes"
+ Stop on errors in the file
+
+.SH DIAGNOSTICS
+\- When combining trajectories the sigma and E2 (necessary for statistics) are not updated correctly. Only the actual energy is correct. One thus has to compute statistics in another way.
+

@@ -1,0 +1,94 @@
+.TH g_mindist 1 "Tue 15 May 2001"
+.SH NAME
+g_mindist
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_mindist\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-n" " index.ndx "
+.BI "-od" " mindist.xvg "
+.BI "-on" " numcont.xvg "
+.BI "-o" " atm-pair.out "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]w" ""
+.BI "-[no]matrix" ""
+.BI "-d" " real "
+.BI "-[no]pi" ""
+.SH DESCRIPTION
+g_mindist computes the distance between one group and a number of
+other groups.
+Both the minimum distance and the number of contacts within a given
+distance are written to two separate output files.
+
+
+With option 
+.B -pi
+the minimum distance of a group to its
+periodic image is plotted. This is useful for checking if a protein
+has seen its periodic image during a simulation. Only one shift in
+each direction is considered, giving a total of 26 shifts.
+It also plots the maximum distance within the group and the lengths
+of the three box vectors.
+This option is very slow.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input, Opt.
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-od" " mindist.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-on" " numcont.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-o" " atm-pair.out" 
+.B Output
+ Generic output file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-[no]matrix"  "    no"
+ Calculate half a matrix of group-group distances
+
+.BI "-d"  " real" "    0.6" 
+ Distance for contacts
+
+.BI "-[no]pi"  "    no"
+ Calculate minimum distance with periodic images
+

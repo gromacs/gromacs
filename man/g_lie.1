@@ -1,0 +1,58 @@
+.TH g_lie 1 "Tue 15 May 2001"
+.SH NAME
+g_lie
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_lie\fP
+.BI "-f" " ener.edr "
+.BI "-o" " lie.xvg "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-[no]w" ""
+.BI "-Elj" " real "
+.BI "-Eqq" " real "
+.BI "-Clj" " real "
+.BI "-Cqq" " real "
+.BI "-ligand" " string "
+.SH DESCRIPTION
+g_lie computes a free energy estimate based on an energy analysis
+from. One needs an energy file with the following components:
+Coul (A-B) LJ-SR (A-B) etc.
+.SH FILES
+.BI "-f" " ener.edr" 
+.B Input
+ Generic energy: edr ene 
+
+.BI "-o" " lie.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-Elj"  " real" "      0" 
+ Lennard-Jones interaction between ligand and solvent
+
+.BI "-Eqq"  " real" "      0" 
+ Coulomb interaction between ligand and solvent
+
+.BI "-Clj"  " real" "  0.181" 
+ Factor in the LIE equation for Lennard-Jones component of energy
+
+.BI "-Cqq"  " real" "      0" 
+ Factor in the LIE equation for Coulomb component of energy
+
+.BI "-ligand"  " string" " " 
+ Name of the ligand in the energy file
+

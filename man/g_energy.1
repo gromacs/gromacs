@@ -1,0 +1,195 @@
+.TH g_energy 1 "Tue 15 May 2001"
+.SH NAME
+g_energy
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_energy\fP
+.BI "-f" " ener.edr "
+.BI "-f2" " ener.edr "
+.BI "-s" " topol.tpr "
+.BI "-o" " energy.xvg "
+.BI "-viol" " violaver.xvg "
+.BI "-pairs" " pairs.xvg "
+.BI "-corr" " enecorr.xvg "
+.BI "-vis" " visco.xvg "
+.BI "-ravg" " runavgdf.xvg "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-[no]w" ""
+.BI "-[no]fee" ""
+.BI "-fetemp" " real "
+.BI "-zero" " real "
+.BI "-[no]sum" ""
+.BI "-[no]dp" ""
+.BI "-[no]mutot" ""
+.BI "-skip" " int "
+.BI "-[no]aver" ""
+.BI "-nmol" " int "
+.BI "-ndf" " int "
+.BI "-[no]fluc" ""
+.BI "-acflen" " int "
+.BI "-[no]normalize" ""
+.BI "-P" " enum "
+.BI "-fitfn" " enum "
+.BI "-ncskip" " int "
+.BI "-beginfit" " real "
+.BI "-endfit" " real "
+.SH DESCRIPTION
+g_energy extracts energy components or distance restraint
+data from an energy file. The user is prompted to interactively
+select the energy terms she wants.
+
+
+When the 
+.B -viol
+option is set, the time averaged
+violations are plotted and the running time-averaged and
+instantaneous sum of violations are recalculated. Additionally
+running time-averaged and instantaneous distances between
+selected pairs can be plotted with the 
+.B -pairs
+option.
+
+
+Average and RMSD are calculated with full precision from the
+simulation (see printed manual). Drift is calculated by performing
+a LSQ fit of the data to a straight line. Total drift is drift
+multiplied by total time.
+
+
+With 
+.B -fee
+a free energy estimate is calculated using
+the formula: G = -ln  e  (E/kT)  * kT, where k is Boltzmann's
+constant, T is set by 
+.B -fetemp
+and the average is over the
+ensemble (or time in a trajectory). Note that this is in principle
+only correct when averaging over the whole (Boltzmann) ensemble
+and using the potential energy. This also allows for an entropy
+estimate using G = H - T S, where H is the enthalpy (H = U + p V)
+and S entropy.
+
+
+When a second energy file is specified (
+.B -f2
+), a free energy
+difference is calculated dF = -kT ln  e  -(EB-EA)/kT A ,
+where EA and EB are the energies from the first and second energy
+files, and the average is over the ensemble A. 
+.B NOTE
+that
+the energies must both be calculated from the same trajectory.
+.SH FILES
+.BI "-f" " ener.edr" 
+.B Input
+ Generic energy: edr ene 
+
+.BI "-f2" " ener.edr" 
+.B Input, Opt.
+ Generic energy: edr ene 
+
+.BI "-s" " topol.tpr" 
+.B Input, Opt.
+ Generic run input: tpr tpb tpa 
+
+.BI "-o" " energy.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-viol" " violaver.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-pairs" " pairs.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-corr" " enecorr.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-vis" " visco.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-ravg" " runavgdf.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-[no]fee"  "    no"
+ Do a free energy estimate
+
+.BI "-fetemp"  " real" "    300" 
+ Reference temperature for free energy calculation
+
+.BI "-zero"  " real" "      0" 
+ Subtract a zero-point energy
+
+.BI "-[no]sum"  "    no"
+ Sum the energy terms selected rather than display them all
+
+.BI "-[no]dp"  "    no"
+ Print energies in high precision
+
+.BI "-[no]mutot"  "    no"
+ Compute the total dipole moment from the components
+
+.BI "-skip"  " int" " 0" 
+ Skip number of frames between data points
+
+.BI "-[no]aver"  "    no"
+ Print also the X1,t and sigma1,t, only if only 1 energy is requested
+
+.BI "-nmol"  " int" " 1" 
+ Number of molecules in your sample: the energies are divided by this number
+
+.BI "-ndf"  " int" " 3" 
+ Number of degrees of freedom per molecule. Necessary for calculating the heat capacity
+
+.BI "-[no]fluc"  "    no"
+ Calculate autocorrelation of energy fluctuations rather than energy itself
+
+.BI "-acflen"  " int" " -1" 
+ Length of the ACF, default is half the number of frames
+
+.BI "-[no]normalize"  "   yes"
+ Normalize ACF
+
+.BI "-P"  " enum" " 0" 
+ Order of Legendre polynomial for ACF (0 indicates none): 0, 1, 2 or 3
+
+.BI "-fitfn"  " enum" " none" 
+ Fit function: none, exp, aexp, exp_exp or vac
+
+.BI "-ncskip"  " int" " 0" 
+ Skip N points in the output file of correlation functions
+
+.BI "-beginfit"  " real" "      0" 
+ Time where to begin the exponential fit of the correlation function
+
+.BI "-endfit"  " real" "     -1" 
+ Time where to end the exponential fit of the correlation function, -1 is till the end
+

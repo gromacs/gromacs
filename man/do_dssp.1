@@ -1,0 +1,147 @@
+.TH do_dssp 1 "Tue 15 May 2001"
+.SH NAME
+do_dssp
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3do_dssp\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-n" " index.ndx "
+.BI "-ssdump" " ssdump.dat "
+.BI "-map" " ss.map "
+.BI "-o" " ss.xpm "
+.BI "-sc" " scount.xvg "
+.BI "-a" " area.xpm "
+.BI "-ta" " totarea.xvg "
+.BI "-aa" " averarea.xvg "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]w" ""
+.BI "-sss" " string "
+.SH DESCRIPTION
+do_dssp 
+reads a trajectory file and computes the secondary structure for
+each time frame 
+calling the dssp program. If you do not have the dssp program,
+get it. do_dssp assumes that the dssp executable is in
+/home/mdgroup/dssp/dssp. If that is not the case, then you should
+set an environment variable 
+.B DSSP
+pointing to the dssp
+executable as in: 
+
+
+
+.B setenv DSSP /usr/local/bin/dssp
+
+
+
+The structure assignment for each residue and time is written to an
+
+.B .xpm
+matrix file. This file can be visualized with for instance
+
+.B xv
+and can be converted to postscript with 
+.B xpm2ps
+.
+The number of residues with each secondary structure type and the
+total secondary structure (
+.B -sss
+) count as a function of
+time are also written to file (
+.B -sc
+).
+
+
+Solvent accessible surface (SAS) per residue can be calculated, both in
+absolute values (A2) and in fractions of the maximal accessible
+surface of a residue. The maximal accessible surface is defined as
+the accessible surface of a residue in a chain of glycines.
+[B]Note[b] that the program 
+.B g_sas
+can also compute SAS
+and that is more efficient.
+
+
+Finally, this program can dump the secondary structure in a special file
+
+.B ssdump.dat
+for usage in the program 
+.B g_chi
+. Together
+these two programs can be used to analyze dihedral properties as a
+function of secondary structure type.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-ssdump" " ssdump.dat" 
+.B Output, Opt.
+ Generic data file 
+
+.BI "-map" " ss.map" 
+.B Input, Lib.
+ File that maps matrix data to colors 
+
+.BI "-o" " ss.xpm" 
+.B Output
+ X PixMap compatible matrix file 
+
+.BI "-sc" " scount.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-a" " area.xpm" 
+.B Output, Opt.
+ X PixMap compatible matrix file 
+
+.BI "-ta" " totarea.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-aa" " averarea.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-sss"  " string" " HEBT" 
+ Secondary structures for structure count
+
+.SH DIAGNOSTICS
+\- The program is very slow
+

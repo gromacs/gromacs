@@ -1,0 +1,117 @@
+.TH gmxcheck 1 "Tue 15 May 2001"
+.SH NAME
+gmxcheck
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3gmxcheck\fP
+.BI "-f" " traj.xtc "
+.BI "-f2" " traj.xtc "
+.BI "-s1" " top1.tpr "
+.BI "-s2" " top2.tpr "
+.BI "-c" " topol.tpr "
+.BI "-e" " ener.edr "
+.BI "-e2" " ener2.edr "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-vdwfac" " real "
+.BI "-bonlo" " real "
+.BI "-bonhi" " real "
+.BI "-tol" " real "
+.SH DESCRIPTION
+gmxcheck reads a trajectory (
+.B .trj
+, 
+.B .trr
+or 
+
+.B .xtc
+) or an energy file (
+.B .ene
+or 
+.B .edr
+)
+and prints out useful information about them.
+
+
+Option 
+.B -c
+checks for presence of coordinates,
+velocities and box in the file, for close contacts (smaller than
+
+.B -vdwfac
+and not bonded, i.e. not between 
+.B -bonlo
+
+and 
+.B -bonhi
+, all relative to the sum of both Van der Waals
+radii) and atoms outside the box (these may occur often and are
+no problem). If velocities are present, an estimated temperature
+will be calculated from them.
+
+
+The program will compare run input (
+.B .tpr
+, 
+.B .tpb
+or
+
+.B .tpa
+) files
+when both 
+.B -s1
+and 
+.B -s2
+are supplied.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input, Opt.
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-f2" " traj.xtc" 
+.B Input, Opt.
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s1" " top1.tpr" 
+.B Input, Opt.
+ Generic run input: tpr tpb tpa 
+
+.BI "-s2" " top2.tpr" 
+.B Input, Opt.
+ Generic run input: tpr tpb tpa 
+
+.BI "-c" " topol.tpr" 
+.B Input, Opt.
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
+
+.BI "-e" " ener.edr" 
+.B Input, Opt.
+ Generic energy: edr ene 
+
+.BI "-e2" " ener2.edr" 
+.B Input, Opt.
+ Generic energy: edr ene 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-vdwfac"  " real" "    0.8" 
+ Fraction of sum of VdW radii used as warning cutoff
+
+.BI "-bonlo"  " real" "    0.4" 
+ Min. fract. of sum of VdW radii for bonded atoms
+
+.BI "-bonhi"  " real" "    0.7" 
+ Max. fract. of sum of VdW radii for bonded atoms
+
+.BI "-tol"  " real" "      0" 
+ Tolerance for comparing real values
+

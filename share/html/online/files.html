@@ -1,24 +1,29 @@
 <TITLE>File formats</TITLE>
-<BODY>
-
+<LINK rel=stylesheet href="style.css" type="text/css">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000EF" vlink="#650065" alink="#FF0000">
 <h2>File formats</h2>
-<p>
+<CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 COLS=2 WIDTH="98%">
+<TR>
+<TD><font size=-1><A HREF="../online.html">Main Table of Contents</A></font></TD>
+<TD ALIGN=RIGHT><B>VERSION 3.0</B></TR>
+<TR><TD><font size=-1><A HREF="http://www.gromacs.org">GROMACS homepage</A></font></TD>
+<TD ALIGN=RIGHT><B>Tue 15 May 2001</B></TR></TABLE></CENTER><HR>
 <dl>
-<dt>Parameter files: 
-<dd> <dl compact>
-<dt><a href="mdp.html">mdp</a>
+<dt><h3>Parameter files</h3> 
+<dl compact>
+<a href="mdp.html">mdp</a>
 <dd>run parameters, input for <a href="grompp.html">grompp</a> and 
 <a href="tpbconv.html">tpbconv</a>
 <dt><a href="m2p.html">m2p</a>
 <dd>input for <a href="xpm2ps.html">xpm2ps</a>
 </dl>
 
-<br><dt>Structure files:
+<br><dt><h3>Structure files</h3>
 <dd> <dl compact>
 <dt><a href="gro.html">gro</a> <dd>GROMACS format
 <dt><a href="g96.html">g96</a> <dd>GROMOS-96 format
 <dt><a href="pdb.html">pdb</a> <dd>brookhaven Protein DataBank format
-<dt><b>Generic structure format:</b>
+<dt><b>Generic structure formats:</b>
 <a href="gro.html">gro</a>,
 <a href="g96.html">g96</a>,
 <a href="pdb.html">pdb</a>,
@@ -36,7 +41,7 @@
 When gro or pdb is used approximate masses will be read from the mass database.
 </dl>
 
-<br><dt>Topology files:
+<br><dt><h3>Topology files</h3>
 <dd><dl compact>
 <dt><a href="top.html">top</a> <dd>system topology (ascii)
 <dt><a href="itp.html">itp</a> <dd>include topology (ascii)
@@ -44,7 +49,7 @@ When gro or pdb is used approximate masses will be read from the mass database.
 <dt><a href="ndx.html">ndx</a> <dd>index file
 </dl>
 
-<br><dt>Run Input files:
+<br><dt><h3>Run Input files</h3>
 <dd><dl compact>
 <dt><a href="tpr.html">tpr</a> <dd>system topology, parameters, coordinates 
 and velocities (binary, portable)
@@ -52,14 +57,14 @@ and velocities (binary, portable)
 and velocities (ascii)
 <dt><a href="tpb.html">tpb</a> <dd>system topology, parameters, coordinates 
 and velocities (binary)
-<dt><b>Generic run input file format:</b>
+<dt><b>Generic run input file formats:</b>
 <a href="tpr.html">tpr</a>,
 <a href="tpb.html">tpb</a> or
 <a href="tpa.html">tpa</a>
 
 </dl>
 
-<br><dt>Trajectory files:
+<br><dt><h3>Trajectory files</h3>
 <dd><dl compact>
 <dt><a href="trj.html">trj</a> <dd>x, v and f (binary, full precision)
 <dt><a href="trr.html">trr</a> <dd>x, v and f (binary, full precision, portable)
@@ -68,10 +73,10 @@ and velocities (binary)
 <dt><a href="gro.html">gro</a> <dd>x and v (ascii, any precision)
 <dt><a href="g96.html">g96</a> <dd>x only (ascii, fixed high precision)
 <dt><a href="pdb.html">pdb</a> <dd>x only (ascii, reduced precision)
-<dt><b>Full precision format:</b>
+<dt><b>Full precision formats:</b>
 <a href="trr.html">trr</a> or
 <a href="trj.html">trj</a>
-<dt><b>Generic trajectory format:</b>
+<dt><b>Generic trajectory formats:</b>
 <a href="xtc.html">xtc</a>,
 <a href="trr.html">trr</a>,
 <a href="trj.html">trj</a>,
@@ -81,18 +86,18 @@ and velocities (binary)
 <a href="g87.html">g87</a>
 </dl>
 
-<br><dt>Energy files:
+<br><dt><h3>Energy files</h3>
 <dd><dl compact>
 <dt><a href="ene.html">ene</a> <dd>energies, temperature, pressure, box size,
 density and virials (binary)
 <dt><a href="edr.html">edr</a> <dd>energies, temperature, pressure, box size,
 density and virials (binary, portable)
-<dt><b>Generic energy format:</b>
+<dt><b>Generic energy formats:</b>
 <a href="edr.html">edr</a> or
 <a href="ene.html">ene</a>
 </dl>
 
-<br><dt>Other files:
+<br><dt><h3>Other files</h3>
 <dd><dl compact>
 <dt><a href="dat.html">dat</a> <dd>generic, preferred for input
 <dt><a href="edi.html">edi</a>
@@ -109,5 +114,10 @@ density and virials (binary, portable)
 <dt><a href="xvg.html">xvg</a> <dd>xvgr input
 </dl>
 </dl>
+<hr>
+<div ALIGN=RIGHT>
+<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
+</div>
 
 </BODY>

@@ -449,10 +449,14 @@ static void write_htmlman(FILE *out,
 #define NSR(s) check_html(s,program)
   
   fprintf(out,"<TITLE>%s</TITLE>\n",program);
-  fprintf(out,"<LINK rel=stylesheet href=\"style.css\" type=\"text/css\">");
-  fprintf(out,"<BODY text=\"#000000\" bgcolor=\"#FFFFFF\" link=\"#0000EF\" vlink=\"#006500\" alink=\"#FF0000\">\n");
+  fprintf(out,"<LINK rel=stylesheet href=\"style.css\" type=\"text/css\">\n");
+  fprintf(out,"<BODY text=\"#000000\" bgcolor=\"#FFFFFF\" link=\"#0000EF\" vlink=\"#650065\" alink=\"#FF0000\">\n");
   fprintf(out,"<H2>%s</H2>\n",program);
-  fprintf(out,"<B>%s</B><BR>\n<B>%s</B><P>",GromacsVersion(),mydate());
+  fprintf(out,"<CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 COLS=2 WIDTH=\"98%\">\n");
+  fprintf(out,"<TR>\n<TD><font size=-1><A HREF=\"../online.html\">Main Table of Contents</A></font></TD>\n");
+  fprintf(out,"<TD ALIGN=RIGHT><B>%s</B></TR>\n",GromacsVersion());
+  fprintf(out,"<TR><TD><font size=-1><A HREF=\"http://www.gromacs.org\">GROMACS homepage</A></font></TD>\n");
+  fprintf(out,"<TD ALIGN=RIGHT><B>%s</B></TR></TABLE></CENTER><HR>\n",mydate());
   
   if (nldesc > 0) {
     fprintf(out,"<H3>Description</H3>\n");
@@ -518,6 +522,12 @@ static void write_htmlman(FILE *out,
     fprintf(out,"</UL>\n");
   }
   fprintf(out,"<P>\n");
+  fprintf(out,"<hr>\n<div ALIGN=RIGHT>\n");
+  fprintf(out,"<font size=\"-1\"><a href=\"http://www.gromacs.org\">"
+	  "http://www.gromacs.org</a></font><br>\n");
+  fprintf(out,"<font size=\"-1\"><a href=\"mailto:gromacs@gromacs.org\">"
+	  "gromacs@gromacs.org</a></font><br>\n");
+  fprintf(out,"</div>\n");
   fprintf(out,"</BODY>\n");
 }
 

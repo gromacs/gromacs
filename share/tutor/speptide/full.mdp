@@ -7,7 +7,6 @@ title               =  Yo
 cpp                 =  /lib/cpp
 constraints         =  all-bonds
 integrator          =  md
-tinit               =  0.0
 dt                  =  0.002	; ps !
 nsteps              =  5000	; total 10 ps.
 nstcomm             =  1
@@ -18,19 +17,19 @@ nstlog              =  100
 nstenergy           =  100
 nstlist             =  10
 ns_type             =  grid
-deltagrid           =  2
 rlist               =  1.0
 rcoulomb            =  1.0
 rvdw                =  1.0
-; Temperature coupling is on in two groups
-Tcoupl              =  yes
+; Berendsen temperature coupling is on in two groups
+Tcoupl              =  berendsen
 tc-grps		    =  Protein	SOL
 tau_t               =  0.1	0.1
 ref_t               =  300	300
 ; Energy monitoring
 energygrps          =  Protein  SOL
-; Pressure coupling is now on
-Pcoupl              =  isotropic
+; Isotropic pressure coupling is now on
+Pcoupl              =  berendsen
+Pcoupltype          = isotropic
 tau_p               =  0.5
 compressibility     =  4.5e-5
 ref_p               =  1.0

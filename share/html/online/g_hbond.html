@@ -1,0 +1,101 @@
+<TITLE>g_hbond</TITLE>
+<LINK rel=stylesheet href="style.css" type="text/css">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000EF" vlink="#650065" alink="#FF0000">
+<H2>g_hbond</H2>
+<CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 COLS=2 WIDTH="98%">
+<TR>
+<TD><font size=-1><A HREF="../online.html">Main Table of Contents</A></font></TD>
+<TD ALIGN=RIGHT><B>VERSION 3.0</B></TR>
+<TR><TD><font size=-1><A HREF="http://www.gromacs.org">GROMACS homepage</A></font></TD>
+<TD ALIGN=RIGHT><B>Tue 15 May 2001</B></TR></TABLE></CENTER><HR>
+<H3>Description</H3>
+g_hbond computes and analyzes hydrogen bonds. Hydrogen bonds are
+determined based on cutoffs for the angle Donor - Hydrogen - Acceptor
+(zero is extended) and the distance Hydrogen - Acceptor.
+OH and NH groups are regarded as donors, O is an acceptor always,
+N is an acceptor by default, but this can be switched using
+<tt>-nitacc</tt>. Dummy hydrogen atoms are assumed to be connected
+to the first preceding non-hydrogen atom.<p>
+You need to specify two groups for analysis, which must be either
+identical or non-overlapping. All hydrogen bonds between the two
+groups are analyzed.<p>
+If you set -shell, you will be asked for an additional index group
+which should contain exactly one atom. In this case, only hydrogen
+bonds between atoms within the shell distance from the one atom are
+considered.<p>It is also possible to analyse specific hydrogen bonds with
+<tt>-sel</tt>. This index file must contain a group of atom triplets
+Donor Hydrogen Acceptor, in the following way:<p>
+<tt>
+[ selected ]<br>
+     20    21    24<br>
+     25    26    29<br>
+      1     3     6<br>
+</tt><br>
+Note that the triplets need not be on separate lines.
+Each atom triplet specifies a hydrogen bond to be analyzed,
+note also that no check is made for the types of atoms.<p>
+<tt>-ins</tt> turns on computing solvent insertion into hydrogen bonds.
+In this case an additional group must be selected, specifying the
+solvent molecules.<p>
+<b>Output:</b><br>
+<tt>-num</tt>:  number of hydrogen bonds as a function of time.<br>
+<tt>-ac</tt>:   average over all autocorrelations of the existence
+functions (either 0 or 1) of all hydrogen bonds.<br>
+<tt>-dist</tt>: distance distribution of all hydrogen bonds.<br>
+<tt>-ang</tt>:  angle distribution of all hydrogen bonds.<br>
+<tt>-hx</tt>:   the number of n-n+i hydrogen bonds as a function of time
+where n and n+i stand for residue numbers and i ranges from 0 to 6.
+This includes the n-n+3, n-n+4 and n-n+5 hydrogen bonds associated
+with helices in proteins.<br>
+<tt>-hbn</tt>:  all selected groups, donors, hydrogens and acceptors
+for selected groups, all hydrogen bonded atoms from all groups and
+all solvent atoms involved in insertion.<br>
+<tt>-hbm</tt>:  existence matrix for all hydrogen bonds over all
+frames, this also contains information on solvent insertion
+into hydrogen bonds. Ordering is identical to that in <tt>-hbn</tt>
+index file.<br>
+<tt>-da</tt>: write out the number of donors and acceptors analyzed for
+each timeframe. This is especially usefull when using <tt>-shell</tt>.
+<P>
+<H3>Files</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.xtc</a></tt> </TD><TD> Input </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input </TD><TD> Generic run input: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-g</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="log.html">   hbond.log</a></tt> </TD><TD> Output, Opt. </TD><TD> Log file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-sel</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">  select.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-num</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   hbnum.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ac</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    hbac.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-dist</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  hbdist.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ang</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   hbang.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-hx</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> hbhelix.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-hbn</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   hbond.ndx</a></tt> </TD><TD> Output, Opt. </TD><TD> Index file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-hbm</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xpm.html">   hbmap.xpm</a></tt> </TD><TD> Output, Opt. </TD><TD> X PixMap compatible matrix file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-da</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   danum.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+</TABLE>
+<P>
+<H3>Other options</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]X</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use dialog box GUI to edit command line options </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ins</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Analyze solvent insertion </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-a</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    60</tt> </TD><TD> Cutoff angle (degrees, Donor - Hydrogen - Acceptor) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-r</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>  0.25</tt> </TD><TD> Cutoff radius (nm, Hydrogen - Acceptor) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-abin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     1</tt> </TD><TD> Binwidth angle distribution (degrees) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-rbin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt> 0.005</tt> </TD><TD> Binwidth distance distribution (nm) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]nitacc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Regard nitrogen atoms as acceptors </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-shell</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> when &gt; 0, only calculate hydrogen bonds within # nm shell around one particle </TD></TD>
+</TABLE>
+<P>
+<hr>
+<div ALIGN=RIGHT>
+<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
+</div>
+</BODY>

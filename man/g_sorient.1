@@ -1,0 +1,130 @@
+.TH g_sorient 1 "Tue 15 May 2001"
+.SH NAME
+g_sorient
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_sorient\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-n" " index.ndx "
+.BI "-o" " sori.xvg "
+.BI "-no" " snor.xvg "
+.BI "-ro" " sord.xvg "
+.BI "-co" " scum.xvg "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]w" ""
+.BI "-[no]com" ""
+.BI "-rmin" " real "
+.BI "-rmax" " real "
+.BI "-nbin" " int "
+.SH DESCRIPTION
+g_sorient analyzes solvent orientation around solutes.
+It calculates two angles between the vector from one or more
+reference positions to the first atom of each solvent molecule:
+theta1: the angle with the vector from the first atom of the solvent
+molecule to the midpoint between atoms 2 and 3.
+
+theta2: the angle with the normal of the solvent plane, defined by the
+same three atoms.
+
+The reference can be a set of atoms or
+the center of mass of a set of atoms. The group of solvent atoms should
+consist of 3 atoms per solvent molecule.
+Only solvent molecules between 
+.B -rmin
+and 
+.B -rmax
+are
+considered each frame.
+
+
+
+.B -o
+: angle distribution of theta1.
+
+
+
+.B -no
+: angle distribution of theta2.
+
+
+
+.B -ro
+: cos(theta1) and 3cos2(theta2)-1 as a function of the
+distance.
+
+
+
+.B -ro
+: the sum over all solvent molecules within distance r
+of cos(theta1) and 3cos2(theta2)-1 as a function of r.
+
+
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-o" " sori.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-no" " snor.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-ro" " sord.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-co" " scum.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-[no]com"  "    no"
+ Use the center of mass as the reference postion
+
+.BI "-rmin"  " real" "      0" 
+ Minimum distance
+
+.BI "-rmax"  " real" "    0.5" 
+ Maximum distance
+
+.BI "-nbin"  " int" " 20" 
+ Number of bins
+

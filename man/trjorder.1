@@ -1,0 +1,78 @@
+.TH trjorder 1 "Tue 15 May 2001"
+.SH NAME
+trjorder
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3trjorder\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-n" " index.ndx "
+.BI "-o" " ordered.xtc "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-na" " int "
+.BI "-da" " int "
+.SH DESCRIPTION
+trjorder orders molecules according to the smallest distance
+to atoms in a reference group. It will ask for a group of reference
+atoms and a group of molecules. For each frame of the trajectory
+the selected molecules will be reordered according to the shortest
+distance between atom number 
+.B -da
+in the molecule and all the
+atoms in the reference group. All atoms in the trajectory are written
+to the output trajectory.
+
+
+trjorder can be useful for e.g. analyzing the n waters closest to a
+protein.
+In that case the reference group would be the protein and the group
+of molecules would consist of all the water atoms. When an index group
+of the first n waters is made, the ordered trajectory can be used
+with any Gromacs program to analyze the n closest waters.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-o" " ordered.xtc" 
+.B Output
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-na"  " int" " 3" 
+ Number of atoms in a molecule
+
+.BI "-da"  " int" " 1" 
+ Atom used for the distance calculation
+

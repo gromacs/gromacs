@@ -1,0 +1,208 @@
+.TH g_rms 1 "Tue 15 May 2001"
+.SH NAME
+g_rms
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_rms\fP
+.BI "-s" " topol.tpr "
+.BI "-f" " traj.xtc "
+.BI "-f2" " traj.xtc "
+.BI "-n" " index.ndx "
+.BI "-o" " rmsd.xvg "
+.BI "-mir" " rmsdmir.xvg "
+.BI "-a" " avgrp.xvg "
+.BI "-dist" " rmsd-dist.xvg "
+.BI "-m" " rmsd.xpm "
+.BI "-bin" " rmsd.dat "
+.BI "-bm" " bond.xpm "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-tu" " enum "
+.BI "-[no]w" ""
+.BI "-what" " enum "
+.BI "-[no]pbc" ""
+.BI "-[no]fit" ""
+.BI "-prev" " int "
+.BI "-[no]split" ""
+.BI "-skip" " int "
+.BI "-skip2" " int "
+.BI "-max" " real "
+.BI "-min" " real "
+.BI "-bmax" " real "
+.BI "-bmin" " real "
+.BI "-nlevels" " int "
+.SH DESCRIPTION
+g_rms compares two structures by computing the root mean square
+deviation (RMSD), the size-independent 'rho' similarity parameter
+(rho) or the scaled rho (rhosc), 
+reference Maiorov & Crippen, PROTEINS 22, 273 (1995).
+This is selected by 
+.B -what
+.
+
+Each structure from a trajectory (
+.B -f
+) is compared to a
+reference structure from a run input file by least-squares fitting
+the structures on top of each other. The reference structure is taken
+from the structure file (
+.B -s
+).
+
+
+With option 
+.B -mir
+also a comparison with the mirror image of
+the reference structure is calculated.
+
+
+Option 
+.B -prev
+produces the comparison with a previous frame.
+
+
+Option 
+.B -m
+produces a matrix in 
+.B .xpm
+format of
+comparison values of each structure in the trajectory with respect to
+each other structure. This file can be visualized with for instance
+
+.B xv
+and can be converted to postscript with 
+.B xpm2ps
+.
+
+
+All the structures are fitted pairwise.
+
+
+With 
+.B -f2
+, the 'other structures' are taken from a second
+trajectory.
+
+
+Option 
+.B -bin
+does a binary dump of the comparison matrix.
+
+
+Option 
+.B -bm
+produces a matrix of average bond angle deviations
+analogously to the 
+.B -m
+option. Only bonds between atoms in the
+comparison group are considered.
+.SH FILES
+.BI "-s" " topol.tpr" 
+.B Input
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
+
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-f2" " traj.xtc" 
+.B Input, Opt.
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-o" " rmsd.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-mir" " rmsdmir.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-a" " avgrp.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-dist" " rmsd-dist.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-m" " rmsd.xpm" 
+.B Output, Opt.
+ X PixMap compatible matrix file 
+
+.BI "-bin" " rmsd.dat" 
+.B Output, Opt.
+ Generic data file 
+
+.BI "-bm" " bond.xpm" 
+.B Output, Opt.
+ X PixMap compatible matrix file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-tu"  " enum" " ps" 
+ Time unit: ps, fs, ns, us, ms, s, m or h
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-what"  " enum" " rmsd" 
+ Structural difference measure: rmsd, rho or rhosc
+
+.BI "-[no]pbc"  "   yes"
+ PBC check
+
+.BI "-[no]fit"  "   yes"
+ Fit to reference structure
+
+.BI "-prev"  " int" " 0" 
+ Compare with previous frame
+
+.BI "-[no]split"  "    no"
+ Split graph where time is zero
+
+.BI "-skip"  " int" " 1" 
+ Only write every nr-th frame to matrix
+
+.BI "-skip2"  " int" " 1" 
+ Only write every nr-th frame to matrix
+
+.BI "-max"  " real" "     -1" 
+ Maximum level in comparison matrix
+
+.BI "-min"  " real" "     -1" 
+ Minimum level in comparison matrix
+
+.BI "-bmax"  " real" "     -1" 
+ Maximum level in bond angle matrix
+
+.BI "-bmin"  " real" "     -1" 
+ Minimum level in bond angle matrix
+
+.BI "-nlevels"  " int" " 80" 
+ Number of levels in the matrices
+

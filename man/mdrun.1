@@ -1,0 +1,213 @@
+.TH mdrun 1 "Tue 15 May 2001"
+.SH NAME
+mdrun
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3mdrun\fP
+.BI "-s" " topol.tpr "
+.BI "-o" " traj.trr "
+.BI "-x" " traj.xtc "
+.BI "-c" " confout.gro "
+.BI "-e" " ener.edr "
+.BI "-g" " md.log "
+.BI "-dgdl" " dgdl.xvg "
+.BI "-table" " table.xvg "
+.BI "-rerun" " rerun.xtc "
+.BI "-ei" " sam.edi "
+.BI "-eo" " sam.edo "
+.BI "-pi" " pull.ppa "
+.BI "-po" " pullout.ppa "
+.BI "-pd" " pull.pdo "
+.BI "-pn" " pull.ndx "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-deffnm" " string "
+.BI "-[no]v" ""
+.BI "-[no]compact" ""
+.SH DESCRIPTION
+The mdrun program performs Molecular Dynamics simulations.
+It reads the run input file (
+.B -s
+) and distributes the
+topology over nodes if needed. The coordinates are passed
+around, so that computations can begin.
+First a neighborlist is made, then the forces are computed.
+The forces are globally summed, and the velocities and
+positions are updated. If necessary shake is performed to constrain
+bond lengths and/or bond angles.
+Temperature and Pressure can be controlled using weak coupling to a
+bath.
+
+
+mdrun produces at least three output file, plus one log file
+(
+.B -g
+) per node.
+The trajectory file (
+.B -o
+), contains coordinates, velocities and
+optionally forces.
+The structure file (
+.B -c
+) contains the coordinates and
+velocities of the last step.
+The energy file (
+.B -e
+) contains energies, the temperature,
+pressure, etc, a lot of these things are also printed in the log file
+of node 0.
+Optionally coordinates can be written to a compressed trajectory file
+(
+.B -x
+).
+
+
+When running in parallel with PVM or an old version of MPI the
+
+.B -np
+option must be given to indicate the number of
+nodes.
+
+
+The option 
+.B -dgdl
+is only used when free energy perturbation is
+turned on.
+
+
+With 
+.B -rerun
+an input trajectory can be given for which 
+forces and energies will be (re)calculated. Neighbor searching will be
+performed for every frame, unless 
+.B nstlist
+is zero
+(see the 
+.B .mdp
+file).
+
+
+ED (essential dynamics) sampling is switched on by using the 
+.B -ei
+
+flag followed by an 
+.B .edi
+file.
+The 
+.B .edi
+file can be produced using options in the essdyn
+menu of the WHAT IF program. mdrun produces a 
+.B .edo
+file that
+contains projections of positions, velocities and forces onto selected
+eigenvectors.
+
+
+The -table option can be used to pass mdrun a formatted table with
+user-defined potential functions. The file is read from either the
+current directory or from the GMXLIB directory. A number of preformatted
+tables are presented in the GMXLIB dir, for 6-8, 6-9, 6-10, 6-11, 6-12
+Lennard Jones potentials with normal Coulomb.
+
+
+The options 
+.B -pi
+, 
+.B -po
+, 
+.B -pd
+, 
+.B -pn
+are used
+for potential of mean force calculations and umbrella sampling.
+See manual.
+
+
+When mdrun receives a TERM signal, it will set nsteps to the current
+step plus one. When mdrun receives a USR1 signal, it will set nsteps
+to the next multiple of nstxout after the current step.
+In both cases all the usual output will be written to file.
+When running with MPI, a signal to one of the mdrun processes
+is sufficient, this signal should not be sent to mpirun or
+the mdrun process that is the parent of the others.
+.SH FILES
+.BI "-s" " topol.tpr" 
+.B Input
+ Generic run input: tpr tpb tpa 
+
+.BI "-o" " traj.trr" 
+.B Output
+ Full precision trajectory: trr trj 
+
+.BI "-x" " traj.xtc" 
+.B Output, Opt.
+ Compressed trajectory (portable xdr format) 
+
+.BI "-c" " confout.gro" 
+.B Output
+ Generic structure: gro g96 pdb 
+
+.BI "-e" " ener.edr" 
+.B Output
+ Generic energy: edr ene 
+
+.BI "-g" " md.log" 
+.B Output
+ Log file 
+
+.BI "-dgdl" " dgdl.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-table" " table.xvg" 
+.B Input, Opt.
+ xvgr/xmgr file 
+
+.BI "-rerun" " rerun.xtc" 
+.B Input, Opt.
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-ei" " sam.edi" 
+.B Input, Opt.
+ ED sampling input 
+
+.BI "-eo" " sam.edo" 
+.B Output, Opt.
+ ED sampling output 
+
+.BI "-pi" " pull.ppa" 
+.B Input, Opt.
+ Pull parameters 
+
+.BI "-po" " pullout.ppa" 
+.B Output, Opt.
+ Pull parameters 
+
+.BI "-pd" " pull.pdo" 
+.B Output, Opt.
+ Pull data output 
+
+.BI "-pn" " pull.ndx" 
+.B Input, Opt.
+ Index file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-deffnm"  " string" " " 
+ Set the default filename for all file options
+
+.BI "-[no]v"  "    no"
+ Be loud and noisy
+
+.BI "-[no]compact"  "   yes"
+ Write a compact log file
+

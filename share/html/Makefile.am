@@ -6,7 +6,7 @@ SUBDIRS = .  gif  online
 
 htmldir = ${prefix}/html
 
-html_DATA = gmxfaq.html  online.html   style.css
+html_DATA = online.html 
 
 EXTRA_DIST = ${html_DATA}
 

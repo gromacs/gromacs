@@ -1,0 +1,10 @@
+P          { text-indent: 0em; font-family: helvetica,verdana,arial,sans-serif }
+H1         { text-indent: 0em; font-size: 24pt; font-family: serif }
+H2         { text-indent: 0em; font-size: 24pt; font-weight: bold; font-family: helvetica,verdana,arial,sans-serif }
+H3         { text-indent: 0em; font-size: 18pt; font-weight: bold; font-family: helvetica,verdana,arial,sans-serif }
+A:link     { text-decoration: none; font-family: helvetica,verdana,arial,sans-serif  }
+A:active   { text-decoration: none; font-family: helvetica,verdana,arial,sans-serif  }
+A:visited  { text-decoration: none; font-family: helvetica,verdana,arial,sans-serif  } 
+body       { text-indent: 0em; font-family: helvetica,verdana,arial,sans-serif }
+td         { font-family: helvetica,verdana,arial,sans-serif }
+th         { font-family: helvetica,verdana,arial,sans-serif }

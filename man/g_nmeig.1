@@ -1,0 +1,69 @@
+.TH g_nmeig 1 "Tue 15 May 2001"
+.SH NAME
+g_nmeig
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_nmeig\fP
+.BI "-f" " hessian.mtx "
+.BI "-s" " topol.tpr "
+.BI "-o" " eigenval.xvg "
+.BI "-v" " eigenvec.trr "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-[no]m" ""
+.BI "-first" " int "
+.BI "-last" " int "
+.SH DESCRIPTION
+g_nmeig calculates the eigenvectors/values of a (Hessian) matrix,
+which can be calculated with 
+.B nmrun
+.
+The eigenvectors are written to a trajectory file (
+.B -v
+).
+The structure is written first with t=0. The eigenvectors
+are written as frames with the eigenvector number as timestamp.
+The eigenvectors can be analyzed with 
+.B g_anaeig
+.
+An ensemble of structures can be generated from the eigenvectors with
+
+.B g_nmens
+.
+.SH FILES
+.BI "-f" " hessian.mtx" 
+.B Input
+ Hessian matrix 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
+
+.BI "-o" " eigenval.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-v" " eigenvec.trr" 
+.B Output
+ Full precision trajectory: trr trj 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-[no]m"  "   yes"
+ Divide elements of Hessian by product of sqrt(mass) of involved atoms prior to diagonalization. This should be used for 'Normal Modes' analysis
+
+.BI "-first"  " int" " 1" 
+ First eigenvector to write away
+
+.BI "-last"  " int" " 100" 
+ Last eigenvector to write away
+

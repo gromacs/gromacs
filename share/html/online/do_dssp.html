@@ -1,0 +1,76 @@
+<TITLE>do_dssp</TITLE>
+<LINK rel=stylesheet href="style.css" type="text/css">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000EF" vlink="#650065" alink="#FF0000">
+<H2>do_dssp</H2>
+<CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 COLS=2 WIDTH="98%">
+<TR>
+<TD><font size=-1><A HREF="../online.html">Main Table of Contents</A></font></TD>
+<TD ALIGN=RIGHT><B>VERSION 3.0</B></TR>
+<TR><TD><font size=-1><A HREF="http://www.gromacs.org">GROMACS homepage</A></font></TD>
+<TD ALIGN=RIGHT><B>Tue 15 May 2001</B></TR></TABLE></CENTER><HR>
+<H3>Description</H3>
+do_dssp 
+reads a trajectory file and computes the secondary structure for
+each time frame 
+calling the dssp program. If you do not have the dssp program,
+get it. do_dssp assumes that the dssp executable is in
+/home/mdgroup/dssp/dssp. If that is not the case, then you should
+set an environment variable <b>DSSP</b> pointing to the dssp
+executable as in: <p>
+<tt>setenv DSSP /usr/local/bin/dssp</tt><p>
+The structure assignment for each residue and time is written to an
+<tt>.<a href="xpm.html">xpm</a></tt> matrix file. This file can be visualized with for instance
+<tt>xv</tt> and can be converted to postscript with <tt><a href="xpm2ps.html">xpm2ps</a></tt>.
+The number of residues with each secondary structure type and the
+total secondary structure (<tt>-sss</tt>) count as a function of
+time are also written to file (<tt>-sc</tt>).<p>
+Solvent accessible surface (SAS) per residue can be calculated, both in
+absolute values (A^2) and in fractions of the maximal accessible
+surface of a residue. The maximal accessible surface is defined as
+the accessible surface of a residue in a chain of glycines.
+[B]Note[b] that the program <tt><a href="g_sas.html">g_sas</a></tt> can also compute SAS
+and that is more efficient.<p>
+Finally, this program can dump the secondary structure in a special file
+<tt>ssdump.<a href="dat.html">dat</a></tt> for usage in the program <tt><a href="g_chi.html">g_chi</a></tt>. Together
+these two programs can be used to analyze dihedral properties as a
+function of secondary structure type.
+<P>
+<H3>Files</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.xtc</a></tt> </TD><TD> Input </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input </TD><TD> Structure+mass(db): <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ssdump</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="dat.html">  ssdump.dat</a></tt> </TD><TD> Output, Opt. </TD><TD> Generic data file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-map</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="map.html">      ss.map</a></tt> </TD><TD> Input, Lib. </TD><TD> File that maps matrix data to colors </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xpm.html">      ss.xpm</a></tt> </TD><TD> Output </TD><TD> X PixMap compatible matrix file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-sc</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  scount.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-a</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xpm.html">    area.xpm</a></tt> </TD><TD> Output, Opt. </TD><TD> X PixMap compatible matrix file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ta</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> totarea.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-aa</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">averarea.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+</TABLE>
+<P>
+<H3>Other options</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]X</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use dialog box GUI to edit command line options </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-sss</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt>HEBT</tt> </TD><TD> Secondary structures for structure count </TD></TD>
+</TABLE>
+<P>
+<H3>Diagnostics</H3>
+<UL>
+<LI>The program is very slow
+</UL>
+<P>
+<hr>
+<div ALIGN=RIGHT>
+<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
+</div>
+</BODY>

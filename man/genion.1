@@ -1,0 +1,105 @@
+.TH genion 1 "Tue 15 May 2001"
+.SH NAME
+genion
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3genion\fP
+.BI "-s" " topol.tpr "
+.BI "-n" " index.ndx "
+.BI "-o" " out.gro "
+.BI "-g" " genion.log "
+.BI "-pot" " pot.pdb "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-np" " int "
+.BI "-pname" " string "
+.BI "-pq" " real "
+.BI "-nn" " int "
+.BI "-nname" " string "
+.BI "-nq" " real "
+.BI "-rmin" " real "
+.BI "-[no]random" ""
+.BI "-seed" " int "
+.SH DESCRIPTION
+genion replaces solvent molecules by monoatomic ions at
+the position of the first atoms with the most favorable electrostatic
+potential or at random. The potential is calculated on all atoms, using
+normal GROMACS particle based methods (in contrast to other methods
+based on solving the Poisson-Boltzmann equation).
+The potential is recalculated after every ion insertion.
+If specified in the run input file, a reaction field or shift function
+can be used.
+The group of solvent molecules should be continuous and all molecules
+should have the same number of atoms.
+The user should add the ion molecules to the topology file and include
+the file 
+.B ions.itp
+.
+Ion names for Gromos96 should include the charge.
+
+
+The potential can be written as B-factors
+in a pdb file (for visualisation using e.g. rasmol).
+The unit of the potential is 0.001 kJ/(mol e).
+
+
+For larger ions, e.g. sulfate we recommended to use genbox.
+.SH FILES
+.BI "-s" " topol.tpr" 
+.B Input
+ Generic run input: tpr tpb tpa 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-o" " out.gro" 
+.B Output
+ Generic structure: gro g96 pdb 
+
+.BI "-g" " genion.log" 
+.B Output
+ Log file 
+
+.BI "-pot" " pot.pdb" 
+.B Output, Opt.
+ Protein data bank file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-np"  " int" " 0" 
+ Number of positive ions
+
+.BI "-pname"  " string" " Na" 
+ Name of the positive ion
+
+.BI "-pq"  " real" "      1" 
+ Charge of the positive ion
+
+.BI "-nn"  " int" " 0" 
+ Number of negative ions
+
+.BI "-nname"  " string" " Cl" 
+ Name of the negative ion
+
+.BI "-nq"  " real" "     -1" 
+ Charge of the negative ion
+
+.BI "-rmin"  " real" "    0.6" 
+ Minimum distance between ions
+
+.BI "-[no]random"  "    no"
+ Use random placement of ions instead of based on potential. The rmin option should still work
+
+.BI "-seed"  " int" " 1993" 
+ Seed for random number generator
+

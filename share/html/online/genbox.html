@@ -1,0 +1,98 @@
+<TITLE>genbox</TITLE>
+<LINK rel=stylesheet href="style.css" type="text/css">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000EF" vlink="#650065" alink="#FF0000">
+<H2>genbox</H2>
+<CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 COLS=2 WIDTH="98%">
+<TR>
+<TD><font size=-1><A HREF="../online.html">Main Table of Contents</A></font></TD>
+<TD ALIGN=RIGHT><B>VERSION 3.0</B></TR>
+<TR><TD><font size=-1><A HREF="http://www.gromacs.org">GROMACS homepage</A></font></TD>
+<TD ALIGN=RIGHT><B>Tue 15 May 2001</B></TR></TABLE></CENTER><HR>
+<H3>Description</H3>
+Genbox can do one of 3 things:<p>
+1) Generate a box of solvent. Specify -cs and -box. Or specify -cs and
+-cp with a structure file with a box, but without atoms.<p>
+2) Solvate a solute configuration, eg. a protein, in a bath of solvent 
+molecules. Specify <tt>-cp</tt> (solute) and <tt>-cs</tt> (solvent). 
+The box specified in the solute coordinate file (<tt>-cp</tt>) is used,
+unless <tt>-box</tt> is set, which also centers the solute.
+The program <tt><a href="editconf.html">editconf</a></tt> has more sophisticated options to change
+the box and center the solute.
+Solvent molecules are removed from the box where the 
+distance between any atom of the solute molecule(s) and any atom of 
+the solvent molecule is less than the sum of the VanderWaals radii of 
+both atoms. A database (<tt>vdwradii.<a href="dat.html">dat</a></tt>) of VanderWaals radii is 
+read by the program, atoms not in the database are 
+assigned a default distance <tt>-vdw</tt>.<p>
+3) Insert a number (<tt>-nmol</tt>) of extra molecules (<tt>-ci</tt>) 
+at random positions.
+The program iterates until <tt>nmol</tt> molecules
+have been inserted in the box. To test whether an insertion is 
+successful the same VanderWaals criterium is used as for removal of 
+solvent molecules. When no appropriately 
+sized holes (holes that can hold an extra molecule) are available the 
+program tries for <tt>-nmol</tt> * <tt>-try</tt> times before giving up. 
+Increase -try if you have several small holes to fill.<p>
+The default solvent is Simple Point Charge water (SPC). The coordinates 
+for this are read from <tt>$GMXLIB/spc216.<a href="gro.html">gro</a></tt>. Other
+solvents are also supported, as well as mixed solvents. The
+only restriction to solvent types is that a solvent molecule consists
+of exactly one residue. The residue information in the coordinate
+files is used, and should therefore be more or less consistent.
+In practice this means that two subsequent solvent molecules in the 
+solvent coordinate file should have different residue number.
+The box of solute is built by stacking the coordinates read from
+the coordinate file. This means that these coordinates should be 
+equlibrated in periodic boundary conditions to ensure a good
+alignment of molecules on the stacking interfaces.<p>
+The program can optionally rotate the solute molecule to align the
+longest molecule axis along a box edge. This way the amount of solvent
+molecules necessary is reduced.
+It should be kept in mind that this only works for
+short simulations, as eg. an alpha-helical peptide in solution can 
+rotate over 90 degrees, within 500 ps. In general it is therefore 
+better to make a more or less cubic box.<p>
+Setting -shell larger than zero will place a layer of water of
+the specified thickness (nm) around the solute. Hint: it is a good
+idea to put the protein in the center of a box first (using <a href="editconf.html">editconf</a>).
+<p>
+Finally, genbox will optionally remove lines from your topology file in 
+which a number of solvent molecules is already added, and adds a 
+line with the total number of solvent molecules in your coordinate file.
+<P>
+<H3>Files</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-cp</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html"> protein.gro</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-cs</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">  spc216.gro</a></tt> </TD><TD> Input, Opt., Lib. </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ci</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">  insert.gro</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">     out.gro</a></tt> </TD><TD> Output </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-p</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="top.html">   topol.top</a></tt> </TD><TD> In/Out, Opt. </TD><TD> Topology file </TD></TR>
+</TABLE>
+<P>
+<H3>Other options</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]X</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use dialog box GUI to edit command line options </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-box</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> box size </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nmol</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> no of extra molecules to insert </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-try</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>10</tt> </TD><TD> try inserting -nmol*-try times </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-seed</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1997</tt> </TD><TD> random generator seed </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-vdwd</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt> 0.105</tt> </TD><TD> default vdwaals distance </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-shell</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> thickness of optional water layer around solute </TD></TD>
+</TABLE>
+<P>
+<H3>Diagnostics</H3>
+<UL>
+<LI>Molecules must be whole in the initial configurations.
+<LI>At the moment -ci only works when inserting one molecule.
+</UL>
+<P>
+<hr>
+<div ALIGN=RIGHT>
+<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
+</div>
+</BODY>

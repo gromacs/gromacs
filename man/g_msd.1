@@ -1,0 +1,122 @@
+.TH g_msd 1 "Tue 15 May 2001"
+.SH NAME
+g_msd
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_msd\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-n" " index.ndx "
+.BI "-o" " msd.xvg "
+.BI "-mol" " diff_mol.xvg "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-tu" " enum "
+.BI "-[no]w" ""
+.BI "-type" " enum "
+.BI "-lateral" " enum "
+.BI "-ngroup" " int "
+.BI "-[no]mw" ""
+.BI "-trestart" " time "
+.BI "-beginfit" " time "
+.BI "-endfit" " time "
+.SH DESCRIPTION
+g_msd computes the mean square displacement (MSD) of atoms from
+their initial positions. This provides an easy way to compute
+the diffusion constant using the Einstein relation.
+The diffusion constant is calculated by least squares fitting a
+straight line through the MSD from 
+.B -beginfit
+to
+
+.B -endfit
+. An error estimate given, which is the difference
+of the diffusion coefficients obtained from fits over the two halfs
+of the fit interval.
+
+
+Option 
+.B -mol
+plots the MSD for molecules, this implies
+
+.B -mw
+, i.e. for each inidividual molecule an diffusion constant
+is computed. When using an index file, it should contain molecule
+numbers instead of atom numbers.
+Using this option one also gets an accurate error estimate
+based on the statistics between individual molecules. Since one usually
+is interested in self-diffusion at infinite dilution this is probably
+the most useful number.
+
+
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-o" " msd.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-mol" " diff_mol.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-tu"  " enum" " ps" 
+ Time unit: ps, fs, ns, us, ms, s, m or h
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-type"  " enum" " no" 
+ Compute diffusion coefficient in one direction: no, x, y or z
+
+.BI "-lateral"  " enum" " no" 
+ Calculate the lateral diffusion in a plane perpendicular to: no, x, y or z
+
+.BI "-ngroup"  " int" " 1" 
+ Number of groups to calculate MSD for
+
+.BI "-[no]mw"  "   yes"
+ Mass weighted MSD
+
+.BI "-trestart"  " time" "      0" 
+ Time between restarting points in trajectory (ps)
+
+.BI "-beginfit"  " time" "      0" 
+ Start time for fitting the MSD (ps)
+
+.BI "-endfit"  " time" "     -1" 
+ End time for fitting the MSD (ps), -1 is till end
+

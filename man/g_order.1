@@ -1,0 +1,93 @@
+.TH g_order 1 "Tue 15 May 2001"
+.SH NAME
+g_order
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_order\fP
+.BI "-f" " traj.xtc "
+.BI "-n" " index.ndx "
+.BI "-s" " topol.tpr "
+.BI "-o" " order.xvg "
+.BI "-od" " deuter.xvg "
+.BI "-os" " sliced.xvg "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]w" ""
+.BI "-d" " enum "
+.BI "-sl" " int "
+.BI "-[no]szonly" ""
+.BI "-[no]unsat" ""
+.SH DESCRIPTION
+Compute the order parameter per atom for carbon tails. For atom i the
+vector i-1, i+1 is used together with an axis. The index file has to contain
+a group with all equivalent atoms in all tails for each atom the
+order parameter has to be calculated for. The program can also give all
+diagonal elements of the order tensor and even calculate the deuterium
+order parameter Scd (default). If the option -szonly is given, only one
+order tensor component (specified by the -d option) is given and the
+order parameter per slice is calculated as well. If -szonly is not
+selected, all diagonal elements and the deuterium order parameter is
+given.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-n" " index.ndx" 
+.B Input
+ Index file 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Generic run input: tpr tpb tpa 
+
+.BI "-o" " order.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-od" " deuter.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-os" " sliced.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-d"  " enum" " z" 
+ Direction of the normal on the membrane: z, x or y
+
+.BI "-sl"  " int" " 1" 
+ Calculate order parameter as function of boxlength, dividing the box in nr slices.
+
+.BI "-[no]szonly"  "    no"
+ Only give Sz element of order tensor. (axis can be specified with -d)
+
+.BI "-[no]unsat"  "    no"
+ Calculate order parameters for unsaturated carbons. Note that this cannot be mixed with normal order parameters.
+

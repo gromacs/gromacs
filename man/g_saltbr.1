@@ -1,0 +1,57 @@
+.TH g_saltbr 1 "Tue 15 May 2001"
+.SH NAME
+g_saltbr
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_saltbr\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-t" " real "
+.BI "-[no]sep" ""
+.SH DESCRIPTION
+g_saltbr plots the difference between all combination of charged groups
+as a function of time. The groups are combined in different ways.A minimum distance can be given, (eg. the cut-off), then groups
+that are never closer than that distance will not be plotted.
+
+Output will be in a number of fixed filenames, min-min.xvg,min-plus.xvg
+and plus-plus.xvg, or files for every individual ion-pair if selected
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Generic run input: tpr tpb tpa 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-t"  " real" "   1000" 
+ trunc distance
+
+.BI "-[no]sep"  "    no"
+ Use separate files for each interaction (may be MANY)
+

@@ -1,0 +1,138 @@
+.TH g_traj 1 "Tue 15 May 2001"
+.SH NAME
+g_traj
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_traj\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-n" " index.ndx "
+.BI "-ox" " coord.xvg "
+.BI "-ov" " veloc.xvg "
+.BI "-of" " force.xvg "
+.BI "-ob" " box.xvg "
+.BI "-ot" " temp.xvg "
+.BI "-ekr" " ekrot.xvg "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]w" ""
+.BI "-[no]com" ""
+.BI "-[no]mol" ""
+.BI "-[no]nojump" ""
+.BI "-[no]x" ""
+.BI "-[no]y" ""
+.BI "-[no]z" ""
+.BI "-[no]len" ""
+.SH DESCRIPTION
+g_traj plots coordinates, velocities, forces and/or the box.
+With 
+.B -com
+the coordinates, velocities and forces are
+calculated for the center of mass of each group.
+When 
+.B -mol
+is set, the numbers in the index file are
+interpreted as molecule numbers and the same procedure as with
+
+.B -com
+is used for each molecule.
+
+
+Option 
+.B -ot
+plots the temperature of each group.
+This implies 
+.B -com
+.
+
+
+Option 
+.B -ekr
+plots the rotational kinetic energy of each group.
+This implies 
+.B -com
+.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-ox" " coord.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-ov" " veloc.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-of" " force.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-ob" " box.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-ot" " temp.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-ekr" " ekrot.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-[no]com"  "    no"
+ Plot data for the com of each group
+
+.BI "-[no]mol"  "    no"
+ Index contains molecule numbers iso atom numbers
+
+.BI "-[no]nojump"  "    no"
+ Remove jumps of atoms across the box
+
+.BI "-[no]x"  "   yes"
+ Plot X-component
+
+.BI "-[no]y"  "   yes"
+ Plot Y-component
+
+.BI "-[no]z"  "   yes"
+ Plot Z-component
+
+.BI "-[no]len"  "    no"
+ Plot vector length
+

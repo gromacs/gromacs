@@ -1,0 +1,151 @@
+.TH g_angle 1 "Tue 15 May 2001"
+.SH NAME
+g_angle
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_angle\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-n" " angle.ndx "
+.BI "-od" " angdist.xvg "
+.BI "-ov" " angaver.xvg "
+.BI "-of" " dihfrac.xvg "
+.BI "-ot" " dihtrans.xvg "
+.BI "-oh" " trhisto.xvg "
+.BI "-oc" " dihcorr.xvg "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]w" ""
+.BI "-type" " enum "
+.BI "-[no]all" ""
+.BI "-binwidth" " real "
+.BI "-[no]chandler" ""
+.BI "-[no]avercorr" ""
+.BI "-acflen" " int "
+.BI "-[no]normalize" ""
+.BI "-P" " enum "
+.BI "-fitfn" " enum "
+.BI "-ncskip" " int "
+.BI "-beginfit" " real "
+.BI "-endfit" " real "
+.SH DESCRIPTION
+g_angle computes the angle distribution for a number of angles
+or dihedrals. This way you can check whether your simulation
+is correct. With option -ov you can plot the average angle of
+a group of angles as a function of time. With the -all option
+the first graph is the average, the rest are the individual angles.
+
+
+With the -of option g_angle also calculates the fraction of trans
+dihedrals (only for dihedrals) as function of time, but this is
+probably only fun for a selected few.
+
+
+With option -oc a dihedral correlation function is calculated.
+
+
+It should be noted that the indexfile should contain
+atom-triples for angles or atom-quadruplets for dihedrals.
+If this is not the case, the program will crash.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Generic run input: tpr tpb tpa 
+
+.BI "-n" " angle.ndx" 
+.B Input
+ Index file 
+
+.BI "-od" " angdist.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-ov" " angaver.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-of" " dihfrac.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-ot" " dihtrans.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-oh" " trhisto.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-oc" " dihcorr.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-type"  " enum" " angle" 
+ Type of angle to analyse: angle, dihedral, improper or ryckaert-bellemans
+
+.BI "-[no]all"  "    no"
+ Plot all angles separately in the averages file, in the order of appearance in the index file.
+
+.BI "-binwidth"  " real" "      1" 
+ binwidth (degrees) for calculating the distribution
+
+.BI "-[no]chandler"  "    no"
+ Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine correlation function. Trans is defined as phi  -60 || phi  60.
+
+.BI "-[no]avercorr"  "    no"
+ Average the correlation functions for the individual angles/dihedrals
+
+.BI "-acflen"  " int" " -1" 
+ Length of the ACF, default is half the number of frames
+
+.BI "-[no]normalize"  "   yes"
+ Normalize ACF
+
+.BI "-P"  " enum" " 0" 
+ Order of Legendre polynomial for ACF (0 indicates none): 0, 1, 2 or 3
+
+.BI "-fitfn"  " enum" " none" 
+ Fit function: none, exp, aexp, exp_exp or vac
+
+.BI "-ncskip"  " int" " 0" 
+ Skip N points in the output file of correlation functions
+
+.BI "-beginfit"  " real" "      0" 
+ Time where to begin the exponential fit of the correlation function
+
+.BI "-endfit"  " real" "     -1" 
+ Time where to end the exponential fit of the correlation function, -1 is till the end
+
+.SH DIAGNOSTICS
+\- Counting transitions only works for dihedrals with multiplicity 3
+

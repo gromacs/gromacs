@@ -1,0 +1,193 @@
+.TH g_chi 1 "Tue 15 May 2001"
+.SH NAME
+g_chi
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_chi\fP
+.BI "-c" " conf.gro "
+.BI "-f" " traj.xtc "
+.BI "-o" " order.xvg "
+.BI "-p" " order.pdb "
+.BI "-ss" " ssdump.dat "
+.BI "-jc" " Jcoupling.xvg "
+.BI "-corr" " dihcorr.xvg "
+.BI "-g" " chi.log "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]w" ""
+.BI "-r0" " int "
+.BI "-[no]phi" ""
+.BI "-[no]psi" ""
+.BI "-[no]omega" ""
+.BI "-[no]rama" ""
+.BI "-[no]viol" ""
+.BI "-[no]all" ""
+.BI "-[no]shift" ""
+.BI "-run" " int "
+.BI "-maxchi" " enum "
+.BI "-[no]normhisto" ""
+.BI "-[no]ramomega" ""
+.BI "-bfact" " real "
+.BI "-bmax" " real "
+.BI "-acflen" " int "
+.BI "-[no]normalize" ""
+.BI "-P" " enum "
+.BI "-fitfn" " enum "
+.BI "-ncskip" " int "
+.BI "-beginfit" " real "
+.BI "-endfit" " real "
+.SH DESCRIPTION
+g_chi computes phi, psi, omega and chi dihedrals for all your 
+amino acid backbone and sidechains.
+It can compute dihedral angle as a function of time, and as
+histogram distributions.
+Output is in form of xvgr files, as well as a LaTeX table of the
+number of transitions per nanosecond.
+
+
+Order parameters S2 for each of the dihedrals are calculated and
+output as xvgr file and optionally as a pdb file with the S2
+values as B-factor.
+
+
+If option 
+.B -c
+is given, the program will
+calculate dihedral autocorrelation functions. The function used
+is C(t) =  cos(chi(tau)) cos(chi(tau+t)) . The use of cosines
+rather than angles themselves, resolves the problem of periodicity.
+(Van der Spoel & Berendsen (1997), 
+.B Biophys. J. 72
+, 2032-2041).
+
+
+The option 
+.B -r
+generates a contour plot of the average omega angle
+as a function of the phi and psi angles, that is, in a Ramachandran plot
+the average omega angle is plotted using color coding.
+.SH FILES
+.BI "-c" " conf.gro" 
+.B Input
+ Generic structure: gro g96 pdb tpr tpb tpa 
+
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-o" " order.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-p" " order.pdb" 
+.B Output, Opt.
+ Protein data bank file 
+
+.BI "-ss" " ssdump.dat" 
+.B Input, Opt.
+ Generic data file 
+
+.BI "-jc" " Jcoupling.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-corr" " dihcorr.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-g" " chi.log" 
+.B Output
+ Log file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-r0"  " int" " 1" 
+ starting residue
+
+.BI "-[no]phi"  "    no"
+ Output for Phi dihedral angles
+
+.BI "-[no]psi"  "    no"
+ Output for Psi dihedral angles
+
+.BI "-[no]omega"  "    no"
+ Output for Omega dihedrals (peptide bonds)
+
+.BI "-[no]rama"  "    no"
+ Generate Phi/Psi and Chi1/Chi2 ramachandran plots
+
+.BI "-[no]viol"  "    no"
+ Write a file that gives 0 or 1 for violated Ramachandran angles
+
+.BI "-[no]all"  "    no"
+ Output separate files for every dihedral.
+
+.BI "-[no]shift"  "    no"
+ Compute chemical shifts from Phi/Psi angles
+
+.BI "-run"  " int" " 1" 
+ perform running average over ndeg degrees for histograms
+
+.BI "-maxchi"  " enum" " 0" 
+ calculate first ndih Chi dihedrals: 0, 1, 2, 3, 4, 5 or 6
+
+.BI "-[no]normhisto"  "   yes"
+ Normalize histograms
+
+.BI "-[no]ramomega"  "    no"
+ compute average omega as a function of phi/psi and plot it in an xpm plot
+
+.BI "-bfact"  " real" "     -1" 
+ B-factor value for pdb file for atoms with no calculated dihedral order parameter
+
+.BI "-bmax"  " real" "      0" 
+ Maximum B-factor on any of the atoms that make up a dihedral, for the dihedral angle to be considere in the statistics. Applies to database work where a number of X-Ray structures is analyzed. -bmax = 0 means no limit.
+
+.BI "-acflen"  " int" " -1" 
+ Length of the ACF, default is half the number of frames
+
+.BI "-[no]normalize"  "   yes"
+ Normalize ACF
+
+.BI "-P"  " enum" " 0" 
+ Order of Legendre polynomial for ACF (0 indicates none): 0, 1, 2 or 3
+
+.BI "-fitfn"  " enum" " none" 
+ Fit function: none, exp, aexp, exp_exp or vac
+
+.BI "-ncskip"  " int" " 0" 
+ Skip N points in the output file of correlation functions
+
+.BI "-beginfit"  " real" "      0" 
+ Time where to begin the exponential fit of the correlation function
+
+.BI "-endfit"  " real" "     -1" 
+ Time where to end the exponential fit of the correlation function, -1 is till the end
+
+.SH DIAGNOSTICS
+\- Produces MANY output files (up to about 4 times the number of residues in the protein, twice that if autocorrelation functions are calculated). Typically several hundred files are output.
+

@@ -1,0 +1,145 @@
+<TITLE>trjconv</TITLE>
+<LINK rel=stylesheet href="style.css" type="text/css">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000EF" vlink="#650065" alink="#FF0000">
+<H2>trjconv</H2>
+<CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 COLS=2 WIDTH="98%">
+<TR>
+<TD><font size=-1><A HREF="../online.html">Main Table of Contents</A></font></TD>
+<TD ALIGN=RIGHT><B>VERSION 3.0</B></TR>
+<TR><TD><font size=-1><A HREF="http://www.gromacs.org">GROMACS homepage</A></font></TD>
+<TD ALIGN=RIGHT><B>Tue 15 May 2001</B></TR></TABLE></CENTER><HR>
+<H3>Description</H3>
+trjconv can convert trajectory files in many ways:<br>
+<b>1.</b> from one format to another<br>
+<b>2.</b> select a subset of atoms<br>
+<b>3.</b> remove periodicity from molecules<br>
+<b>4.</b> keep multimeric molecules together<br>
+<b>5.</b> center atoms in the box<br>
+<b>6.</b> fit atoms to reference structure<br>
+<b>7.</b> reduce the number of frames<br>
+<b>8.</b> change the timestamps of the frames 
+(<tt>-t0</tt> and <tt>-timestep</tt>)
+<p>
+The program <tt><a href="trjcat.html">trjcat</a></tt> can concatenate multiple trajectory files.
+<p>
+Currently seven formats are supported for input and output:
+<tt>.<a href="xtc.html">xtc</a></tt>, <tt>.<a href="trr.html">trr</a></tt>, <tt>.<a href="trj.html">trj</a></tt>, <tt>.<a href="gro.html">gro</a></tt>, <tt>.<a href="g96.html">g96</a></tt>,
+<tt>.<a href="pdb.html">pdb</a></tt> and <tt>.<a href="g87.html">g87</a></tt>.
+The file formats are detected from the file extension.
+The precision of <tt>.<a href="xtc.html">xtc</a></tt> and <tt>.<a href="gro.html">gro</a></tt> output is taken from the
+input file for <tt>.<a href="xtc.html">xtc</a></tt>, <tt>.<a href="gro.html">gro</a></tt> and <tt>.<a href="pdb.html">pdb</a></tt>,
+and from the <tt>-ndec</tt> option for other input formats. The precision
+is always taken from <tt>-ndec</tt>, when this option is set.
+All other formats have fixed precision. <tt>.<a href="trr.html">trr</a></tt> and <tt>.<a href="trj.html">trj</a></tt>
+output can be single or double precision, depending on the precision
+of the trjconv binary.
+Note that velocities are only supported in
+<tt>.<a href="trr.html">trr</a></tt>, <tt>.<a href="trj.html">trj</a></tt>, <tt>.<a href="gro.html">gro</a></tt> and <tt>.<a href="g96.html">g96</a></tt> files.<p>
+Option <tt>-app</tt> can be used to
+append output to an existing trajectory file.
+No checks are performed to ensure integrity
+of the resulting combined trajectory file.
+<tt>.<a href="pdb.html">pdb</a></tt> files with all frames concatenated can be viewed with
+<tt>rasmol -nmrpdb</tt>.<p>
+It is possible to select part of your trajectory and write it out
+to a new trajectory file in order to save disk space, e.g. for leaving
+out the water from a trajectory of a protein in water.
+<b>ALWAYS</b> put the original trajectory on tape!
+We recommend to use the portable <tt>.<a href="xtc.html">xtc</a></tt> format for your analysis
+to save disk space and to have portable files.<p>
+There are two options for fitting the trajectory to a reference
+either for essential dynamics analysis or for whatever.
+The first option is just plain fitting to a reference structure
+in the structure file, the second option is a progressive fit
+in which the first timeframe is fitted to the reference structure 
+in the structure file to obtain and each subsequent timeframe is 
+fitted to the previously fitted structure. This way a continuous
+trajectory is generated, which might not be the case when using the
+regular fit method, e.g. when your protein undergoes large
+conformational transitions.<p>
+Option <tt>-pbc</tt> sets the type of periodic boundary condition
+treatment. <tt>whole</tt> puts the atoms in the box and then makes
+broken molecules whole (a run input file is required).
+<tt>inbox</tt> puts all the atoms in the box.
+<tt>nojump</tt> checks if atoms jump across the box and then puts
+them back. This has the effect that all molecules
+will remain whole (provided they were whole in the initial
+conformation), note that this ensures a continuous trajectory but
+molecules may diffuse out of the box. The starting configuration
+for this procedure is taken from the structure file, if one is
+supplied, otherwise it is the first frame.
+<tt>-pbc</tt> is ignored when <tt>-fit</tt> of <tt>-pfit</tt> is set,
+in that case molecules will be made whole.<p>
+Option <tt>-ur</tt> sets the unit cell representation for options
+<tt>whole</tt> and <tt>inbox</tt> of <tt>-pbc</tt>.
+All three options give different results for triclinc boxes and
+identical results for rectangular boxes.
+<tt>rect</tt> is the ordinary brick shape.
+<tt>tric</tt> is the triclinic unit cell.
+<tt>compact</tt> puts all atoms at the closest distance from the center
+of the box. This can be useful for visualizing e.g. truncated
+octahedrons.<p>
+Option <tt>-center</tt> centers the system in the box. The user can
+select the group which is used to determine the geometrical center.
+Use option <tt>-pbc whole</tt> in addition to <tt>-center</tt> when you
+want all molecules in the box after the centering.<p>
+With <tt>-dt</tt> it is possible to reduce the number of 
+frames in the output. This option relies on the accuracy of the times
+in your input trajectory, so if these are inaccurate use the
+<tt>-timestep</tt>
+option to modify the time (this can be done simultaneously).<p>
+Using <tt>-trunc</tt> trjconv can truncate <tt>.<a href="trj.html">trj</a></tt> in place, i.e.
+without copying the file. This is useful when a run has crashed
+during disk I/O (one more disk full), or when two contiguous
+trajectories must be concatenated without have double frames.<p>
+<tt><a href="trjcat.html">trjcat</a></tt> is more suitable for concatenating trajectory files.<p>
+Option <tt>-dump</tt> can be used to extract a frame at or near
+one specific time from your trajectory.
+<P>
+<H3>Files</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.xtc</a></tt> </TD><TD> Input </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html"> trajout.xtc</a></tt> </TD><TD> Output </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input, Opt. </TD><TD> Structure+mass(db): <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-fr</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">  frames.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
+</TABLE>
+<P>
+<H3>Other options</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]X</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use dialog box GUI to edit command line options </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: ps, fs, ns, us, ms, s, m or h </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-skip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Only write every nr-th frame </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Only write frame when t MOD dt = first time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dump</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Dump frame nearest specified time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-t0</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Starting time (ps) (default: don't change) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-timestep</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Change time step between input frames (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-pbc</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> PBC treatment: none, whole, inbox or nojump </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ur</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>rect</tt> </TD><TD> Unit-cell representation: rect, tric or compact </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]center</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Center atoms in box </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-box</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Size for new cubic box (default: read from input) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-shift</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> All coordinates will be shifted by framenr*shift </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]fit</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Fit molecule to ref structure in the structure file </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]pfit</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Progressive fit, to the previous fitted structure </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ndec</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>3</tt> </TD><TD> Precision for .<a href="xtc.html">xtc</a> and .<a href="gro.html">gro</a> writing in number of decimal places </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]vel</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Read and write velocities if possible </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]force</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Read and write forces if possible </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-trunc</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Truncate input <a href="trj.html">trj</a> file after this time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-exec</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Execute command for every output frame with the frame number as argument </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]app</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Append output </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]sep</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Write each frame to a separate .<a href="gro.html">gro</a> or .<a href="pdb.html">pdb</a> file </TD></TD>
+</TABLE>
+<P>
+<hr>
+<div ALIGN=RIGHT>
+<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
+</div>
+</BODY>

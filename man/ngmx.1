@@ -1,0 +1,72 @@
+.TH ngmx 1 "Tue 15 May 2001"
+.SH NAME
+ngmx
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3ngmx\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-n" " index.ndx "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.SH DESCRIPTION
+ngmx is the Gromacs trajectory viewer. This program reads a
+trajectory file, a run input file and an index file and plots a
+3D structure of your molecule on your standard X Window
+screen. No need for a high end graphics workstation, it even
+works on Monochrome screens.
+
+
+The following features have been implemented:
+3D view, rotation, translation and scaling of your molecule(s),
+labels on atoms, animation of trajectories,
+hardcopy in PostScript format, user defined atom-filters
+runs on MIT-X (real X), open windows and motif,
+user friendly menus, option to remove periodicity, option to
+show computational box.
+
+
+Some of the more common X command line options can be used:
+
+-bg, -fg change colors, -font fontname, changes the font.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Generic run input: tpr tpb tpa 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 0" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.SH DIAGNOSTICS
+\- Balls option does not work
+
+\- Some times dumps core without a good reason
+

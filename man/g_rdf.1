@@ -1,0 +1,141 @@
+.TH g_rdf 1 "Tue 15 May 2001"
+.SH NAME
+g_rdf
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_rdf\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-n" " index.ndx "
+.BI "-o" " rdf.xvg "
+.BI "-sq" " sq.xvg "
+.BI "-cn" " rdf_cn.xvg "
+.BI "-hq" " hq.xvg "
+.BI "-image" " sq.xpm "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]w" ""
+.BI "-bin" " real "
+.BI "-[no]com" ""
+.BI "-cut" " real "
+.BI "-fade" " real "
+.BI "-grid" " real "
+.BI "-nlevel" " int "
+.BI "-wave" " real "
+.SH DESCRIPTION
+The structure of liquids can be studied by either neutron or X-ray
+scattering. The most common way to describe liquid structure is by a
+radial distribution function. However, this is not easy to obtain from
+a scattering experiment.
+
+
+g_rdf calculates radial distribution functions in different ways.
+The normal method is around a (set of) particle(s), the other method
+is around the center of mass of a set of particles.
+
+
+If a run input file is supplied (
+.B -s
+), exclusions defined
+in that file are taken into account when calculating the rdf.
+The option 
+.B -cut
+is meant as an alternative way to avoid
+intramolecular peaks in the rdf plot.
+It is however better to supply a run input file with a higher number of
+exclusions. For eg. benzene a topology with nrexcl set to 5
+would eliminate all intramolecular contributions to the rdf.
+Note that all atoms in the selected groups are used, also the ones
+that don't have Lennard-Jones interactions.
+
+
+Option 
+.B -cn
+produces the cumulative number rdf.
+
+To bridge the gap between theory and experiment structure factors can
+be computed (option 
+.B -sq
+). The algorithm uses FFT, the gridspacing of which is determined by option 
+.B -grid
+.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input, Opt.
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-o" " rdf.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-sq" " sq.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-cn" " rdf_cn.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-hq" " hq.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-image" " sq.xpm" 
+.B Output, Opt.
+ X PixMap compatible matrix file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-bin"  " real" "  0.001" 
+ Binwidth (nm)
+
+.BI "-[no]com"  "    no"
+ RDF with respect to the center of mass of first group
+
+.BI "-cut"  " real" "      0" 
+ Shortest distance (nm) to be considered
+
+.BI "-fade"  " real" "      0" 
+ From this distance onwards the RDF is tranformed by g'(r) = 1 + [g(r)-1] exp(-(r/fade-1)2 to make it go to 1 smoothly. If fade is 0.0 nothing is done.
+
+.BI "-grid"  " real" "   0.05" 
+ Grid spacing (in nm) for FFTs when computing structure factors
+
+.BI "-nlevel"  " int" " 20" 
+ Number of different colors in the diffraction image
+
+.BI "-wave"  " real" "    0.1" 
+ Wavelength for X-rays/Neutrons for scattering. 0.1 nm corresponds to roughly 12 keV
+

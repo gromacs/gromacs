@@ -1,0 +1,58 @@
+.TH g_rama 1 "Tue 15 May 2001"
+.SH NAME
+g_rama
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_rama\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-o" " rama.xvg "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]w" ""
+.SH DESCRIPTION
+g_rama selects the Phi/Psi dihedral combinations from your topology file
+and computes these as a function of time.
+Using simple Unix tools such as 
+.I grep
+you can select out
+specific residues.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Generic run input: tpr tpb tpa 
+
+.BI "-o" " rama.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+

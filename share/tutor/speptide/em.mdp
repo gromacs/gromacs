@@ -16,7 +16,6 @@ emstep              =  0.01
 
 nstcomm             =  1
 ns_type             =  grid
-deltagrid           =  2
 rlist               =  1
 rcoulomb            =  1.0
 rvdw                =  1.0

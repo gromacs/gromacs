@@ -4,15 +4,24 @@
 <TITLE>Getting Started</TITLE>
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso_8859_1">
 </HEAD>
-<BODY >
-<h2>Contents</h2>
+<LINK rel=stylesheet href="style.css" type="text/css">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000EF" vlink="#650065" alink="#FF0000">
+<h2>Getting Started</h2>
+<CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 COLS=2 WIDTH="98%">
+<TR>
+<TD><font size=-1><A HREF="../online.html">Main Table of Contents</A></font></TD>
+<TD ALIGN=RIGHT><B>VERSION 3.0</B></TR>
+<TR><TD><font size=-1><A HREF="http://www.gromacs.org">GROMACS homepage</A></font></TD>
+<TD ALIGN=RIGHT><B>Tue 15 May 2001</B></TR></TABLE></CENTER><HR>
+<H3>Contents</H3>
+
 <ul>
-<li><a href="#start">Getting started</a>
+<li><a href="#start">Introduction</a>
 <ul>
 	<li><a href="#setup">Setting up your environment</a>
 	<li><a href="#examples">Examples</a>
 </ul>
-<li><a href="#demo">GMX demo</a>
+<li><a href="#demo">The GROMACS demo</a>
 <ul>
 	<li><a href="#top">Molecular topology file</a>
 	<li><a href="#gro">Molecular structure file</a>
@@ -46,13 +55,13 @@ More info can be found in the
 
 <br><hr><br>
 
-<a name="start"><H1>Getting started.</A></H1>
+<a name="start"><H2>Introduction</A></H2>
 
 In this chapter we assume the reader is familiar with Molecular
 Dynamics and familiar with Unix, including the use of a text editor
 such as <tt>emacs</tt> or <tt>vi</tt>. We furthermore assume the
 software is installed properly on your system. When you see a line
-like
+like<p>
 <PRE>
 % ls -l 
 </PRE>
@@ -60,40 +69,30 @@ you are supposed to type the contents of that line (not the
 <TT>%</TT>) on your computer.
 
 <P>We will also assume that you know where your version of GROMACS is
-installed. For local users in the Groningen MD group that is simply
-'~gmx', e.g. the GMXRC is located in ~gmx/GMXRC. For other users that 
+installed. The default location is '/usr/local/gromacs', but for 
+local users in the Groningen MD group it is simply
+'~gmx'. In the default case, the binaries are located in 
+'/usr/local/gromacs/bin/<arch>', where <arch>
+is the architecture of your computer. For other users that 
 is probably not the case, contact your local system administrator for
-more information. The directories named in this section are valid for the 
-Groningen MD group.
+more information..
 
-<P><H2><A NAME="setup">Setting up your environment</A></H2>
+<P><H3><A NAME="setup">Setting up your environment</A></H3>
 
-Edit your <TT>.cshrc</TT> file to include the following statement:
+The first step is to make sure the GROMACS binaries are in your path.
+On some systems they will simply be linked to /usr/local/bin and found
+automatically. If this is not the case on your machine you will have
+to edit the login file for your shell. If you use the C shell, this
+file is called <TT>.cshrc</TT> or <TT>.tcshrc</TT>, and located in
+your home directory. Add a line like:
 <PRE>
-source ~gmx/GMXRC
+setenv PATH "/usr/local/gromacs/bin/<arch>:${PATH}".
 </PRE>
-which has some (system dependent) PATH settings etcetera. Then type
-<PRE>
-% source ~gmx/GMXRC
-</PRE>
-to start right away, or, alternatively 
-log off and on again to automatically source the environment.
+Issue this command at the prompt too, or
+log off and on again to automatically get the environment.
 <P>
-Check if you now have the proper environment by
-<PRE>
-% echo $GMXHOME
-</PRE>
-It should read something like: 
-<PRE>
-/home/gmx/gmx2.0
-</PRE>
-This is the directory in which the binaries and
-library files live. If you see nothing (a blank line) something is
-wrong with the installation, check with your system manager, or (if
-<EM>you</EM> are the system manager) you did something wrong 
-somewhere <b>:(</b>
 
-<P><H2><A NAME="examples">Examples.</A></H2>
+<P><H3><A NAME="examples">Examples</A></H3>
 Before starting the examples, you have to copy all the neccesary
 files, to your own directory. Chdir to the directory you want to put
 the examples directory. This directory (named <tt>tutor</tt>) 
@@ -104,7 +103,7 @@ about 20 MB of disk space, when it is completely filled.
 </PRE> 
 then copy the examples: 
 <PRE>
-% cp -r ~gmx/home2.0/tutor .
+% cp -r /usr/local/gromacs/share/tutor .
 </PRE> 
 (NOTE: include the ``<TT>.</TT>'') You now have a subdirectory
 <tt>tutor</tt>. Move there
@@ -125,13 +124,16 @@ the online manual</a> while you are browsing through the examples.</p>
 
 <br><hr><br>
 
-<P><H1><A NAME="demo">GMX demo.</A></H1>
+<P><H2><A NAME="demo">The GROMACS demo</A></H2>
 The demo is designed to demonstrate the user-friendlyness
-of the GROMACS software package. Start the demo by going
+of the GROMACS software package. The only non-friendly part is
+that it requires the C shell to run the script. If your shell
+is e.g. bash (common on Linux), first start the C shell with the
+command 'tcsh'. To run the demo, first move
 to your <tt>tutor/gmxdemo</tt> directory:
 <PRE>
 % cd tutor/gmxdemo
-</PRE> Start the demo: 
+</PRE> And then start the demo script: 
 <PRE>
 % demo
 </PRE>
@@ -143,7 +145,7 @@ following file formats:
 
 <DL>
 <DT>
-<B><A NAME="top">Molecular Topology file (<TT><a href="top.html">.top</a></TT>)</A></B>
+<h3><A NAME="top">Molecular Topology file (<TT><a href="top.html">.top</a></TT>)</A></h3>
 <DD>
 The molecular topology file is generated by the program <TT>
 <a href="pdb2gmx.html">pdb2gmx</a></TT>. <a href="pdb2gmx.html">pdb2gmx</a> translates a <a href="pdb.html">pdb</a> structure file of any peptide
@@ -153,7 +155,7 @@ description of all the interactions in your peptide or protein.
 <P></P>
 	
 <DT>
-<B><A NAME="gro">Molecular Structure file (<TT><a href="gro.html">.gro</a></TT>, <TT><a href="pdb.html">.pdb</a></TT>)</A></B>
+<h3><A NAME="gro">Molecular Structure file (<TT><a href="gro.html">.gro</a></TT>, <TT><a href="pdb.html">.pdb</a></TT>)</A></h3>
 <DD>
 When the <a href="pdb2gmx.html">pdb2gmx</a> program is executed to generate a molecular
 topology, it also translates the structure file (<TT><a href="pdb.html">.pdb</a></TT> file) 
@@ -176,7 +178,7 @@ to the topology.
 <P></P>
 
 <DT>
-<B><A NAME="mdp">Molecular Dynamics parameter file (<TT><a href="mdp_opt.html">.mdp</a></TT>)</A></B>
+<h3><A NAME="mdp">Molecular Dynamics parameter file (<TT><a href="mdp_opt.html">.mdp</a></TT>)</A></h3>
 <DD>
 The Molecular Dynamics Parameter (<TT><a href="mdp_opt.html">.mdp</a></TT>) file contains all
 information about the Molecular Dynamics simulation itself 
@@ -187,7 +189,7 @@ can be found online.
 <P></P>
 
 <DT>
-<B><A NAME="ndx">Index file (<TT><a href="ndx.html">.ndx</a></TT>)</A></B>
+<h3><A NAME="ndx">Index file (<TT><a href="ndx.html">.ndx</a></TT>)</A></h3>
 <DD>
 Sometimes you may need an index file to specify actions on groups of atoms
 (e.g. Temperature coupling, accelerations, freezing). Usually the default ibdex
@@ -196,7 +198,7 @@ not consider the use of index files.
 <P></P>
 
 <DT>
-<B><A NAME="tpr">Run input file (<TT><a href="tpr.html">.tpr</a></TT>)</A></B>
+<h3><A NAME="tpr">Run input file (<TT><a href="tpr.html">.tpr</a></TT>)</A></h3>
 <DD>
 The next step is to combine the molecular structure (<TT><a href="gro.html">.gro</a></TT> file),
 topology (<TT><a href="top.html">.top</a></TT> file) MD-parameters (<TT><a href="mdp_opt.html">.mdp</a></TT> file) and 
@@ -210,7 +212,7 @@ grompp</a> program processes all input files and generates the run input
 <P></P>
 
 <DT>
-<B><A NAME="trx">Trajectory file (<TT><a href="trr.html">.trr</a></TT></A>)</B>
+<h3><A NAME="trx">Trajectory file (<TT><a href="trr.html">.trr</a></TT></A>)</h3>
 <DD>
 Once the run input file is available, we can start the
 simulation. The program which starts the simulation is called 
@@ -228,7 +230,7 @@ or <TT><a href="trj.html">.trj</a></TT> if you don't have XDR) and a logfile (
 
 <br><hr><br>
 
-<P><H1><A NAME="water">Water</A></H1>
+<P><H2><A NAME="water">Water</A></H2>
 Now you are going to simulate 216 molecules of SPC water 
 (<A HREF=#berendsen81>Berendsen <it>et al.</it>, 1981</A>)
 in a rectangular box. In this example the GROMACS
@@ -299,17 +301,20 @@ contains one group with all the oxygen atoms.
 <PRE>
 % <a href="g_rdf.html">g_rdf</a> -f <a href="trr.html">water.trr</a> -n <a href="ndx.html">oxygen.ndx</a> -o <a href="xvg.html">rdf.xvg</a> -s <a href="tpr.html">water.tpr</a>
 </PRE>
-view the output graph of <TT><a href="g_rdf.html">g_rdf</a></TT>
+view the output graph of <TT><a href="g_rdf.html">g_rdf</a></TT>.
+The file is already prepared to produce a nice graph in Grace 
+(formerly Xmgr). Just type (<TT>xmgr</TT> works fine too)
 <PRE>
-% xvgr <a href="xvg.html">rdf.xvg</a> 
+% xmgrace <a href="xvg.html">rdf.xvg</a> 
 </PRE>
 Which shows you the radial distribution function for Oxygen-Oxygen in
 SPC water. </p>
 
 <br><hr><br>
 
-<P><H1><A NAME="spep">Ribonuclease S-peptide.</A></H1>
-Ribonuclease A is a digestive enzyme, secreted by the pancreas. The enzyme
+<A NAME="spep"><H2>Ribonuclease S-peptide</A></H2>
+
+<p>Ribonuclease A is a digestive enzyme, secreted by the pancreas. The enzyme
 can be cleaved by subtilisin at a single peptide bond to yield 
 Ribonuclease-S, a catalytically active complex of an S-peptide moiety
 (residues 1-20) and an S-protein moiety (residues 21-124), bound together
@@ -330,14 +335,14 @@ first 20 residues, and stored it in
 Have a look at the file 
 <PRE>
 % more <a href="pdb.html">speptide.pdb</a>
-</PRE>
+</PRE><p>
 If you have access to a molecular
 graphics program such as rasmol, xmol, 
 or a commercial package,
 you can look at the molecule on screen, eg: 
 <PRE>
 % rasmol <a href="pdb.html">speptide.pdb</a>
-</PRE>
+</PRE><p>
 
 The following steps have to be taken to perform a simulation of the peptide.
 <ol>
@@ -349,7 +354,7 @@ The following steps have to be taken to perform a simulation of the peptide.
 <li>	Perform a short MD run with position restraints on the peptide
 <li>	Perform full MD without restraints
 <li>	Analysis
-</ol>
+</ol><p>
 
 We will describe in detail how such a simulation can be done,
 starting from a pdb-file.
@@ -362,7 +367,7 @@ Generate a molecular topology and a structure file in
 format. This can be done with the <a href="pdb2gmx.html">pdb2gmx</a> program: 
 <PRE>
 % <a href="pdb2gmx.html">pdb2gmx</a> -f <a href="pdb.html">speptide.pdb</a> -p <a href="top.html">speptide.top</a> -o <a href="gro.html">speptide.gro</a>
-</PRE>
+</PRE><p>
 Note that the correct file extension are added automatically to the
 filenames on the command line. 
 You will only be asked to choose a forcefield, choose 0, but you can also 
@@ -371,7 +376,7 @@ about protonation of residues, and about protonation of N- and C-terminus.
 You can type
 <PRE>
 % <a href="pdb2gmx.html">pdb2gmx</a> -h
-</PRE>
+</PRE><p>
 to see the available options.
 <P>
 The <a href="pdb2gmx.html">
@@ -385,18 +390,18 @@ filenames are optional; without them the files <TT><a href="top.html">topol.top<
 Now have a look at the output from <a href="pdb2gmx.html">pdb2gmx</a>,
 <PRE>
 % more <a href="gro.html">speptide.gro</a>
-</PRE>
+</PRE><p>
 You will see a close resemblance to the <a href="pdb.html">pdb</a> file, only the layout of
 the file is a bit different.
 Also do have a look at the topology 
 <PRE>
 % more <a href="top.html">speptide.top</a>
-</PRE>
+</PRE><p>
 You will see a large file containing the atom types, the physical
 bonds between atoms, etcetera.
 
 <P><H3><A NAME="solvate">
-Solvate the peptide in a periodic box filled with water</A></H3>
+Solvate the peptide in a periodic box filled with water</A></H3><p>
 This is done using the programs
 <a href="editconf.html">editconf</a> and
 <a href="genbox.html">genbox</a>.
@@ -408,7 +413,7 @@ will read the structure file and fill the box with water.
 <PRE>
 % <a href="editconf.html">editconf</a> -f speptide -o -dc 0.5<BR>
 % <a href="genbox.html">genbox</a> -cp out -cs -p speptide -o b4em
-</PRE>
+</PRE><p>
 The program prints some lines of user information, like the volume of
 the box and the number of water molecules added to your
 peptide. <TT><a href="genbox.html">genbox</a></TT>
@@ -419,14 +424,14 @@ at the bottom of the
 <TT><a href="top.html">speptide.top</a></TT> file
 <PRE>
 % tail <a href="top.html">speptide.top</a>
-</PRE>
+</PRE><p>
 You will see some lines like 
 <PRE>
 [ system ]
 ; Name		Number
 Protein		1
 SOL		N
-</PRE>
+</PRE><p>
 where <tt>N</tt> is the number of water molecules added to your system by
 <TT><a href="genbox.html">genbox</a></TT>.
 <P>
@@ -436,6 +441,7 @@ dimethylsulfoxide (DMSO), as has been done by
 <A HREF=#mierke91>Mierke & Kessler, 1991</A>.
 
 <P><H3><A NAME="indexfile">Generate index file (<TT><a href="ndx.html">.ndx</a></TT> extension)</A></H3>
+<p>
 By default, most GROMACS programs generate a set of index groups to select
 the most common subsets of atoms from your system (e.g. Protein, Backbone,
 C-alpha's, Solute, etc.).
@@ -447,11 +453,11 @@ residues and atom. It's use should be self-explanatory.  To invoke the
 program you would
 <PRE>
 % <a href="make_ndx.html">make_ndx</a> -f b4em
-</PRE>
+</PRE><p>
 but don't bother for now.
 
 <P><H3><A NAME="em">Perform an energy minimization of the peptide in solvent</A></H3>
-
+<p>
 Now we have to perform an <EM>energy minimization</EM> of the
 structure to remove the local strain in the peptide (due to generation
 of hydrogen positions) and to remove bad Van der Waals contacts
@@ -467,14 +473,14 @@ special parameter file (<TT><a href="mdp_opt.html">em.mdp</a></TT>). Check
 the contents of this file 
 <PRE>
 % more <a href="mdp_opt.html">em.mdp</a>
-</PRE>
+</PRE><p>
 Preprocessing is done with the preprocessor called 
 <TT><a href="grompp.html">grompp</a></TT>. This reads
 up the files just mentioned:
 
 <PRE>
 % <a href="grompp.html">grompp</a> -v -f em -c b4em -o em -p speptide
-</PRE>
+</PRE><p>
 In this command the <tt>-v</tt> option turns on verbose mode, which
 gives a little bit of clarifying info on what the program is doing.
 We now have made a <EM>run input file</EM> (<TT><a href="tpr.html">em.tpr</a></TT>) which
@@ -483,7 +489,7 @@ serves as input for the
 we can do the energy minimization:
 <PRE>
 % <a href="mdrun.html">mdrun</a> -v -s em -o em -c after_em -g emlog
-</PRE>
+</PRE><p>
 In this command the <tt>-v</tt> option turns on verbose mode again.
 The <tt>-o</tt> option sets the filename for the trajectory file,
 which is not very important in energy minimizations. The <tt>-c</tt>
@@ -509,12 +515,12 @@ the program prints something like:
 <PRE>
 STEEPEST DESCENTS converged to 2000
   Potential Energy  = -1.19482e+05
-</PRE>
+</PRE><p>
 which means our criterium is met, and we can proceed to the next step.
 
 <P><H3><A NAME="posres">
 Perform a short MD run with position restraints on the peptide</A>
-</H3>
+</H3><p>
 Position restrained MD means Molecular Dynamics in which a part of the
 system is not allowed to move far off their starting positions.  To be
 able to run with position restraints we must add a section to the
@@ -527,7 +533,7 @@ topology file it looks like
 #ifdef POSRES<BR>
 #include "<a href="itp.html">posres.itp</a>"<BR>
 #endif
-</PRE>
+</PRE><p>
 In the <a href="top.html">topology file</a> we use
 conditional inclusion, i.e. only if a variable <TT>POSRES</TT> is set
 in the preprocessor do we include the file, this allows us to use the
@@ -541,46 +547,47 @@ define              =  -DPOSRES
 At last we can generate the input for the position restrained mdrun:
 <PRE>
 % <a href="grompp.html">grompp</a> -f pr -o pr -c after_em -r after_em -p speptide
-</PRE>
+</PRE><p>
 Now it's <a href="mdrun.html">MDrun</a> time:
 <PRE>
 % <a href="mdrun.html">mdrun</a> -v -s pr -e pr -o pr -c after_pr -g prlog >& pr.job &
-</PRE>
+</PRE><p>
 This run is started in the background (it will take a while), you
 can watch how long it will take by typing:
 <PRE>
 % tail -f pr.job
-</PRE>
+</PRE><p>
 With the <tt>Ctrl-C</tt> key you can kill the <tt>tail</tt> command.
 A good check of your simulation is to see whether density and potential
 energies have converged:
 <PRE>
 % <a href="g_energy.html">g_energy</a> -f pr -o out -w
-</PRE>
+</PRE><p>
 The <a href="g_energy.html">
 g_energy</a> program will prompt you to select a number of energy terms
 from a list. For potential energy type:
 <PRE>
 9 0
-</PRE>
+</PRE><p>
 If you have the xmgr program installed it will automatically pop up on your
 screen with the energy plot. You can do the same for the density
 and other energy terms, such as Solvent-Protein interactions.
 
 <P><H3><A NAME="full">Perform full MD without restraints</A></H3>
-Full MD is very similar to the restrained MD as far as GROMACS is
+<p>Full MD is very similar to the restrained MD as far as GROMACS is
 concerned. Check out the <TT><a href="mdp_opt.html">full.mdp</a></TT> for details.
 <PRE>
 % <a href="grompp.html">grompp</a> -v -f full -o full -c after_pr -p speptide
-</PRE>
+</PRE><p>
 Then we can start mdrunning
 <PRE>
 % <a href="mdrun.html">mdrun</a> -v -s full -e full -o full -c after_full -g flog >& full.job &
-</PRE>
+</PRE><p>
 You should do similar convergence checks (and more!) as for the position
 restrained simulation.
 
 <P><H3><A NAME="analysis">Analysis</A></H3>
+<p>
 We will not describe analysis in detail, because most analysis tools
 are described in the Analysis chapter of the printed manual.
 We just list a few of the possibilities within GROMACS. By now you should be
@@ -616,7 +623,7 @@ itself and not in the software (at least, that's our opinion).</p>
 
 <br><hr><br>
 
-<P><H1><A NAME="you">Your own System.</A></H1>
+<P><H2><A NAME="you">Your own System</A></H2>
 <P>
 For proteins in water (or other solvent) the route is described above. 
 For other systemd (eg. pure liquids or mixtures) one needs:
@@ -651,7 +658,7 @@ For other systemd (eg. pure liquids or mixtures) one needs:
 </ul>
 <br><hr><br>
 
-<P><H1><A NAME="info">More Info</A></h1>
+<P><H2><A NAME="info">More Info</A></h2>
 
 <P>
 More info can be found in the 
@@ -662,7 +669,7 @@ More info can be found in the
 
 <br><hr><br>
 
-<P><H1><A NAME="ref">References</A></h1>
+<P><H2><A NAME="ref">References</A></h2>
 
 <blockquote>
 <dl>
@@ -688,6 +695,11 @@ vol. 1, p. 211. New York: Freeman, 3 edition.</dd><p>
 </dl>
 </blockquote>
 
-<br><hr><br>
+<br>
+<hr>
+<div ALIGN=RIGHT>
+<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
+</div>
 </BODY>
 </HTML>

@@ -1,0 +1,67 @@
+.TH g_gyrate 1 "Tue 15 May 2001"
+.SH NAME
+g_gyrate
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_gyrate\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-o" " gyrate.xvg "
+.BI "-n" " index.ndx "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]w" ""
+.BI "-[no]q" ""
+.BI "-[no]p" ""
+.SH DESCRIPTION
+g_gyrate computes the radius of gyration of a group of atoms
+and the radii of gyration about the x, y and z axes,as a function of time. The atoms are explicitly mass weighted.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
+
+.BI "-o" " gyrate.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-[no]q"  "    no"
+ Use absolute value of the charge of an atom as weighting factor instead of mass
+
+.BI "-[no]p"  "    no"
+ Calculate the radii of gyration about the principal axes.
+

@@ -1,0 +1,91 @@
+.TH g_density 1 "Tue 15 May 2001"
+.SH NAME
+g_density
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_density\fP
+.BI "-f" " traj.xtc "
+.BI "-n" " index.ndx "
+.BI "-s" " topol.tpr "
+.BI "-ei" " electrons.dat "
+.BI "-o" " density.xvg "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]w" ""
+.BI "-d" " string "
+.BI "-sl" " int "
+.BI "-[no]number" ""
+.BI "-[no]ed" ""
+.BI "-[no]count" ""
+.SH DESCRIPTION
+Compute partial densities across the box, using an index file. Densities
+in gram/cubic centimeter, number densities or electron densities can be
+calculated. For electron densities, each atom is weighed by its atomic
+partial charge.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Generic run input: tpr tpb tpa 
+
+.BI "-ei" " electrons.dat" 
+.B Output
+ Generic data file 
+
+.BI "-o" " density.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-d"  " string" " Z" 
+ Take the normal on the membrane in direction X, Y or Z.
+
+.BI "-sl"  " int" " 10" 
+ Divide the box in nr slices.
+
+.BI "-[no]number"  "    no"
+ Calculate number density instead of mass density. Hydrogens are not counted!
+
+.BI "-[no]ed"  "    no"
+ Calculate electron density instead of mass density
+
+.BI "-[no]count"  "    no"
+ Only count atoms in slices, no densities. Hydrogens are not counted
+
+.SH DIAGNOSTICS
+\- When calculating electron densities, atomnames are used instead of types. This is bad.
+
+\- When calculating number densities, atoms with names that start with H are not counted. This may be surprising if you use hydrogens with names like OP3.
+

@@ -8,7 +8,6 @@ cpp                 =  /lib/cpp
 define              =  -DPOSRES
 constraints         =  all-bonds
 integrator          =  md
-tinit               =  0.0
 dt                  =  0.002	; ps !
 nsteps              =  5000	; total 10 ps.
 nstcomm             =  1
@@ -19,12 +18,11 @@ nstlog              =  10
 nstenergy           =  10
 nstlist             =  10
 ns_type             =  grid
-deltagrid           =  2
 rlist               =  1.0
 rcoulomb            =  1.0
 rvdw                =  1.0
-; Temperature coupling is on in two groups
-Tcoupl              =  yes
+; Berendsen temperature coupling is on in two groups
+Tcoupl              =  berendsen
 tc-grps		    =  Protein	SOL
 tau_t               =  0.1	0.1
 ref_t               =  300	300

@@ -15,14 +15,21 @@ ns_type             =  simple			; pairlist method
 rlist               =  0.85			; cut-off for ns
 rvdw                =  0.85			; cut-off for vdw
 rcoulomb            =  0.85			; cut-off for coulomb
-Tcoupl              =  yes			; temperature bath (yes,no)
+Tcoupl              =  berendsen	        ; temperature coupling
 ref_t		    =  300
 tc-grps		    =  System
 tau_t		    =  0.1
-Pcoupl              =  isotropic		; pressure bath
+Pcoupl              = berendsen                 ; pressure bath
+Pcoupltype          =  isotropic		; pressure geometry
 tau_p               =  0.5			; p-coupoling time
 compressibility     =  4.5e-5
 ref_p               =  1.0
 gen_vel             =  yes			; generate initial velocities
 gen_temp            =  300			; initial temperature
 gen_seed            =  1993			; random seed
+
+
+
+
+
+

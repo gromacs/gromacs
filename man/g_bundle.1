@@ -1,0 +1,111 @@
+.TH g_bundle 1 "Tue 15 May 2001"
+.SH NAME
+g_bundle
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_bundle\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-n" " index.ndx "
+.BI "-ol" " bun_len.xvg "
+.BI "-od" " bun_dist.xvg "
+.BI "-ot" " bun_tilt.xvg "
+.BI "-otr" " bun_tiltr.xvg "
+.BI "-otl" " bun_tiltl.xvg "
+.BI "-oa" " axes.pdb "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-na" " int "
+.BI "-[no]z" ""
+.SH DESCRIPTION
+g_bundle analyzes bundles of axes. The axes can be for instance
+helix axes. The program reads two index groups and divides both
+of them in 
+.B -na
+parts. The groups define the tops and
+bottoms of the axes. Several quantities are written to file:
+the axis length, the distance from the axis centers to the average
+center of all axes, the total tilt, the radial tilt and the lateral
+tilt with respect to the average axis.
+
+
+
+With option 
+.B -oa
+the top, mid and bottom points of each axis
+are written to a pdb file each frame. The residue numbers correspond
+to the axis numbers. When viewing this file with 
+.B rasmol
+use the
+command line option 
+.B -nmrpdb
+, and type 
+.B set axis true
+to
+display the reference axis.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-ol" " bun_len.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-od" " bun_dist.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-ot" " bun_tilt.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-otr" " bun_tiltr.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-otl" " bun_tiltl.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-oa" " axes.pdb" 
+.B Output, Opt.
+ Protein data bank file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-na"  " int" " 0" 
+ Number of axes
+
+.BI "-[no]z"  "    no"
+ Use the Z-axis as reference iso the average axis
+

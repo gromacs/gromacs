@@ -1,0 +1,228 @@
+.TH g_hbond 1 "Tue 15 May 2001"
+.SH NAME
+g_hbond
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_hbond\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-n" " index.ndx "
+.BI "-g" " hbond.log "
+.BI "-sel" " select.ndx "
+.BI "-num" " hbnum.xvg "
+.BI "-ac" " hbac.xvg "
+.BI "-dist" " hbdist.xvg "
+.BI "-ang" " hbang.xvg "
+.BI "-hx" " hbhelix.xvg "
+.BI "-hbn" " hbond.ndx "
+.BI "-hbm" " hbmap.xpm "
+.BI "-da" " danum.xvg "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]ins" ""
+.BI "-a" " real "
+.BI "-r" " real "
+.BI "-abin" " real "
+.BI "-rbin" " real "
+.BI "-[no]nitacc" ""
+.BI "-shell" " real "
+.SH DESCRIPTION
+g_hbond computes and analyzes hydrogen bonds. Hydrogen bonds are
+determined based on cutoffs for the angle Donor - Hydrogen - Acceptor
+(zero is extended) and the distance Hydrogen - Acceptor.
+OH and NH groups are regarded as donors, O is an acceptor always,
+N is an acceptor by default, but this can be switched using
+
+.B -nitacc
+. Dummy hydrogen atoms are assumed to be connected
+to the first preceding non-hydrogen atom.
+
+
+You need to specify two groups for analysis, which must be either
+identical or non-overlapping. All hydrogen bonds between the two
+groups are analyzed.
+
+
+If you set -shell, you will be asked for an additional index group
+which should contain exactly one atom. In this case, only hydrogen
+bonds between atoms within the shell distance from the one atom are
+considered.
+
+It is also possible to analyse specific hydrogen bonds with
+
+.B -sel
+. This index file must contain a group of atom triplets
+Donor Hydrogen Acceptor, in the following way:
+
+
+
+.B 
+[ selected ]
+
+     20    21    24
+
+     25    26    29
+
+      1     3     6
+
+
+
+
+Note that the triplets need not be on separate lines.
+Each atom triplet specifies a hydrogen bond to be analyzed,
+note also that no check is made for the types of atoms.
+
+
+
+.B -ins
+turns on computing solvent insertion into hydrogen bonds.
+In this case an additional group must be selected, specifying the
+solvent molecules.
+
+
+
+.B Output:
+
+
+
+.B -num
+:  number of hydrogen bonds as a function of time.
+
+
+.B -ac
+:   average over all autocorrelations of the existence
+functions (either 0 or 1) of all hydrogen bonds.
+
+
+.B -dist
+: distance distribution of all hydrogen bonds.
+
+
+.B -ang
+:  angle distribution of all hydrogen bonds.
+
+
+.B -hx
+:   the number of n-n+i hydrogen bonds as a function of time
+where n and n+i stand for residue numbers and i ranges from 0 to 6.
+This includes the n-n+3, n-n+4 and n-n+5 hydrogen bonds associated
+with helices in proteins.
+
+
+.B -hbn
+:  all selected groups, donors, hydrogens and acceptors
+for selected groups, all hydrogen bonded atoms from all groups and
+all solvent atoms involved in insertion.
+
+
+.B -hbm
+:  existence matrix for all hydrogen bonds over all
+frames, this also contains information on solvent insertion
+into hydrogen bonds. Ordering is identical to that in 
+.B -hbn
+
+index file.
+
+
+.B -da
+: write out the number of donors and acceptors analyzed for
+each timeframe. This is especially usefull when using 
+.B -shell
+.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Generic run input: tpr tpb tpa 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-g" " hbond.log" 
+.B Output, Opt.
+ Log file 
+
+.BI "-sel" " select.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-num" " hbnum.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-ac" " hbac.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-dist" " hbdist.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-ang" " hbang.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-hx" " hbhelix.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-hbn" " hbond.ndx" 
+.B Output, Opt.
+ Index file 
+
+.BI "-hbm" " hbmap.xpm" 
+.B Output, Opt.
+ X PixMap compatible matrix file 
+
+.BI "-da" " danum.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]ins"  "    no"
+ Analyze solvent insertion
+
+.BI "-a"  " real" "     60" 
+ Cutoff angle (degrees, Donor - Hydrogen - Acceptor)
+
+.BI "-r"  " real" "   0.25" 
+ Cutoff radius (nm, Hydrogen - Acceptor)
+
+.BI "-abin"  " real" "      1" 
+ Binwidth angle distribution (degrees)
+
+.BI "-rbin"  " real" "  0.005" 
+ Binwidth distance distribution (nm)
+
+.BI "-[no]nitacc"  "   yes"
+ Regard nitrogen atoms as acceptors
+
+.BI "-shell"  " real" "     -1" 
+ when  0, only calculate hydrogen bonds within  nm shell around one particle
+

@@ -1,0 +1,101 @@
+.TH g_velacc 1 "Tue 15 May 2001"
+.SH NAME
+g_velacc
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3g_velacc\fP
+.BI "-f" " traj.trr "
+.BI "-s" " topol.tpr "
+.BI "-n" " index.ndx "
+.BI "-o" " vac.xvg "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]w" ""
+.BI "-[no]mol" ""
+.BI "-acflen" " int "
+.BI "-[no]normalize" ""
+.BI "-P" " enum "
+.BI "-fitfn" " enum "
+.BI "-ncskip" " int "
+.BI "-beginfit" " real "
+.BI "-endfit" " real "
+.SH DESCRIPTION
+g_velacc computes the velocity autocorrelation function.
+When the 
+.B -s
+option is used, the momentum autocorrelation
+function is calculated.
+
+
+With option 
+.B -mol
+the momentum autocorrelation function of
+molecules is calculated. In this case the index group should consist
+of molecule numbers instead of atom numbers.
+.SH FILES
+.BI "-f" " traj.trr" 
+.B Input
+ Full precision trajectory: trr trj 
+
+.BI "-s" " topol.tpr" 
+.B Input, Opt.
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-o" " vac.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-[no]mol"  "    no"
+ Calculate vac of molecules
+
+.BI "-acflen"  " int" " -1" 
+ Length of the ACF, default is half the number of frames
+
+.BI "-[no]normalize"  "   yes"
+ Normalize ACF
+
+.BI "-P"  " enum" " 0" 
+ Order of Legendre polynomial for ACF (0 indicates none): 0, 1, 2 or 3
+
+.BI "-fitfn"  " enum" " none" 
+ Fit function: none, exp, aexp, exp_exp or vac
+
+.BI "-ncskip"  " int" " 0" 
+ Skip N points in the output file of correlation functions
+
+.BI "-beginfit"  " real" "      0" 
+ Time where to begin the exponential fit of the correlation function
+
+.BI "-endfit"  " real" "     -1" 
+ Time where to end the exponential fit of the correlation function, -1 is till the end
+

@@ -18,7 +18,8 @@ gif_DATA = \
 	charts_up.gif    	flow_leftright.gif      \
 	flow_uprightleft.gif    software.gif		\
 	faq.gif          	flow_leftrightdown.gif  \
-	flow_vline.gif          topologies.gif
+	flow_vline.gif          topologies.gif		\
+	plotje.gif		xvgr.gif	
 
 EXTRA_DIST = ${gif_DATA}
 

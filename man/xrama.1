@@ -1,0 +1,52 @@
+.TH xrama 1 "Tue 15 May 2001"
+.SH NAME
+xrama
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3xrama\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.SH DESCRIPTION
+xrama shows a Ramachandran movie, that is, it shows
+the Phi/Psi angles as a function of time in an X-Window.
+
+Static Phi/Psi plots for printing can be made with g_rama.
+
+
+Some of the more common X command line options can be used:
+
+-bg, -fg change colors, -font fontname, changes the font.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Generic run input: tpr tpb tpa 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 0" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "     -1" 
+ Only use frame when t MOD dt = first time (ps)
+

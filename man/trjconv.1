@@ -1,0 +1,374 @@
+.TH trjconv 1 "Tue 15 May 2001"
+.SH NAME
+trjconv
+.B VERSION 3.0
+.SH SYNOPSIS
+\f3trjconv\fP
+.BI "-f" " traj.xtc "
+.BI "-o" " trajout.xtc "
+.BI "-s" " topol.tpr "
+.BI "-n" " index.ndx "
+.BI "-fr" " frames.ndx "
+.BI "-[no]h" ""
+.BI "-[no]X" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-tu" " enum "
+.BI "-[no]w" ""
+.BI "-skip" " int "
+.BI "-dt" " time "
+.BI "-dump" " time "
+.BI "-t0" " time "
+.BI "-timestep" " time "
+.BI "-pbc" " enum "
+.BI "-ur" " enum "
+.BI "-[no]center" ""
+.BI "-box" " vector "
+.BI "-shift" " vector "
+.BI "-[no]fit" ""
+.BI "-[no]pfit" ""
+.BI "-ndec" " int "
+.BI "-[no]vel" ""
+.BI "-[no]force" ""
+.BI "-trunc" " time "
+.BI "-exec" " string "
+.BI "-[no]app" ""
+.BI "-[no]sep" ""
+.SH DESCRIPTION
+trjconv can convert trajectory files in many ways:
+
+
+.B 1.
+from one format to another
+
+
+.B 2.
+select a subset of atoms
+
+
+.B 3.
+remove periodicity from molecules
+
+
+.B 4.
+keep multimeric molecules together
+
+
+.B 5.
+center atoms in the box
+
+
+.B 6.
+fit atoms to reference structure
+
+
+.B 7.
+reduce the number of frames
+
+
+.B 8.
+change the timestamps of the frames 
+(
+.B -t0
+and 
+.B -timestep
+)
+
+
+
+The program 
+.B trjcat
+can concatenate multiple trajectory files.
+
+
+
+Currently seven formats are supported for input and output:
+
+.B .xtc
+, 
+.B .trr
+, 
+.B .trj
+, 
+.B .gro
+, 
+.B .g96
+,
+
+.B .pdb
+and 
+.B .g87
+.
+The file formats are detected from the file extension.
+The precision of 
+.B .xtc
+and 
+.B .gro
+output is taken from the
+input file for 
+.B .xtc
+, 
+.B .gro
+and 
+.B .pdb
+,
+and from the 
+.B -ndec
+option for other input formats. The precision
+is always taken from 
+.B -ndec
+, when this option is set.
+All other formats have fixed precision. 
+.B .trr
+and 
+.B .trj
+
+output can be single or double precision, depending on the precision
+of the trjconv binary.
+Note that velocities are only supported in
+
+.B .trr
+, 
+.B .trj
+, 
+.B .gro
+and 
+.B .g96
+files.
+
+
+Option 
+.B -app
+can be used to
+append output to an existing trajectory file.
+No checks are performed to ensure integrity
+of the resulting combined trajectory file.
+
+.B .pdb
+files with all frames concatenated can be viewed with
+
+.B rasmol -nmrpdb
+.
+
+
+It is possible to select part of your trajectory and write it out
+to a new trajectory file in order to save disk space, e.g. for leaving
+out the water from a trajectory of a protein in water.
+
+.B ALWAYS
+put the original trajectory on tape!
+We recommend to use the portable 
+.B .xtc
+format for your analysis
+to save disk space and to have portable files.
+
+
+There are two options for fitting the trajectory to a reference
+either for essential dynamics analysis or for whatever.
+The first option is just plain fitting to a reference structure
+in the structure file, the second option is a progressive fit
+in which the first timeframe is fitted to the reference structure 
+in the structure file to obtain and each subsequent timeframe is 
+fitted to the previously fitted structure. This way a continuous
+trajectory is generated, which might not be the case when using the
+regular fit method, e.g. when your protein undergoes large
+conformational transitions.
+
+
+Option 
+.B -pbc
+sets the type of periodic boundary condition
+treatment. 
+.B whole
+puts the atoms in the box and then makes
+broken molecules whole (a run input file is required).
+
+.B inbox
+puts all the atoms in the box.
+
+.B nojump
+checks if atoms jump across the box and then puts
+them back. This has the effect that all molecules
+will remain whole (provided they were whole in the initial
+conformation), note that this ensures a continuous trajectory but
+molecules may diffuse out of the box. The starting configuration
+for this procedure is taken from the structure file, if one is
+supplied, otherwise it is the first frame.
+
+.B -pbc
+is ignored when 
+.B -fit
+of 
+.B -pfit
+is set,
+in that case molecules will be made whole.
+
+
+Option 
+.B -ur
+sets the unit cell representation for options
+
+.B whole
+and 
+.B inbox
+of 
+.B -pbc
+.
+All three options give different results for triclinc boxes and
+identical results for rectangular boxes.
+
+.B rect
+is the ordinary brick shape.
+
+.B tric
+is the triclinic unit cell.
+
+.B compact
+puts all atoms at the closest distance from the center
+of the box. This can be useful for visualizing e.g. truncated
+octahedrons.
+
+
+Option 
+.B -center
+centers the system in the box. The user can
+select the group which is used to determine the geometrical center.
+Use option 
+.B -pbc whole
+in addition to 
+.B -center
+when you
+want all molecules in the box after the centering.
+
+
+With 
+.B -dt
+it is possible to reduce the number of 
+frames in the output. This option relies on the accuracy of the times
+in your input trajectory, so if these are inaccurate use the
+
+.B -timestep
+
+option to modify the time (this can be done simultaneously).
+
+
+Using 
+.B -trunc
+trjconv can truncate 
+.B .trj
+in place, i.e.
+without copying the file. This is useful when a run has crashed
+during disk I/O (one more disk full), or when two contiguous
+trajectories must be concatenated without have double frames.
+
+
+
+.B trjcat
+is more suitable for concatenating trajectory files.
+
+
+Option 
+.B -dump
+can be used to extract a frame at or near
+one specific time from your trajectory.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-o" " trajout.xtc" 
+.B Output
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input, Opt.
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-fr" " frames.ndx" 
+.B Input, Opt.
+ Index file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-[no]X"  "    no"
+ Use dialog box GUI to edit command line options
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "     -1" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "     -1" 
+ Last frame (ps) to read from trajectory
+
+.BI "-tu"  " enum" " ps" 
+ Time unit: ps, fs, ns, us, ms, s, m or h
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-skip"  " int" " 1" 
+ Only write every nr-th frame
+
+.BI "-dt"  " time" "      0" 
+ Only write frame when t MOD dt = first time (ps)
+
+.BI "-dump"  " time" "     -1" 
+ Dump frame nearest specified time (ps)
+
+.BI "-t0"  " time" "      0" 
+ Starting time (ps) (default: don't change)
+
+.BI "-timestep"  " time" "      0" 
+ Change time step between input frames (ps)
+
+.BI "-pbc"  " enum" " none" 
+ PBC treatment: none, whole, inbox or nojump
+
+.BI "-ur"  " enum" " rect" 
+ Unit-cell representation: rect, tric or compact
+
+.BI "-[no]center"  "    no"
+ Center atoms in box
+
+.BI "-box"  " vector" " 0 0 0" 
+ Size for new cubic box (default: read from input)
+
+.BI "-shift"  " vector" " 0 0 0" 
+ All coordinates will be shifted by framenr*shift
+
+.BI "-[no]fit"  "    no"
+ Fit molecule to ref structure in the structure file
+
+.BI "-[no]pfit"  "    no"
+ Progressive fit, to the previous fitted structure
+
+.BI "-ndec"  " int" " 3" 
+ Precision for .xtc and .gro writing in number of decimal places
+
+.BI "-[no]vel"  "   yes"
+ Read and write velocities if possible
+
+.BI "-[no]force"  "    no"
+ Read and write forces if possible
+
+.BI "-trunc"  " time" "     -1" 
+ Truncate input trj file after this time (ps)
+
+.BI "-exec"  " string" " " 
+ Execute command for every output frame with the frame number as argument
+
+.BI "-[no]app"  "    no"
+ Append output
+
+.BI "-[no]sep"  "    no"
+ Write each frame to a separate .gro or .pdb file
+
