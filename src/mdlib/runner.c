@@ -312,8 +312,8 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
       if (ir->bPert)
 	*fp_dvdl =
 	  xvgropen(opt2fn("-dvdl",nfile,fnm),
-		   "dV/d\\8l\\4","Time (ps)",
-		   "dV/d\\8l\\4 (kJ mol\\S-1\\N nm\\S-2\\N \\8l\\4\\S-1\\N)");
+		   "dG/d\\8l\\4","Time (ps)",
+		   "dG/d\\8l\\4 (kJ mol\\S-1\\N nm\\S-2\\N \\8l\\4\\S-1\\N)");
       *mdebin = init_mdebin(*fp_ene,grps,&(top->atoms),&(top->idef),
 			    bLR,bLJLR,bBHAM,b14,ir->bPert,ir->epc,
 			    ir->bDispCorr);
