@@ -122,12 +122,6 @@ void print_constraint(t_pull *pull, rvec *f, int step, matrix box)
   
   fprintf(pull->out,"\n");
 
-  if (pull->bVerbose) {
-    ii = pull->pull.idx[0][0];
-    fprintf(stderr,"F[%d]:%8.3f %8.3f %8.3f\n",ii,
-	    f[ii][XX],f[ii][YY],f[ii][ZZ]);
-  }
-
   /* DEBUG */ /* this code doesn't correct for pbc, needs improvement */
   if (pull->bVerbose) {
     for (i=0;i<pull->pull.n;i++) {

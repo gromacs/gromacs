@@ -65,7 +65,7 @@ static bool check_convergence(t_pull *pull) {
 }
 
 static void do_start(t_pull *pull, rvec *x, matrix box, t_mdatoms *md, 
-	      real dt, int step, t_topology *top) 
+		     real dt, int step, t_topology *top) 
 {
   int i,j,ii,m;
   rvec dr,dx,tmp;     
@@ -528,6 +528,9 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top,
 {
   int i;
   static rvec *x_s = NULL;
+  bool bShakeFirst;
+
+  bShakeFirst = (f == NULL);
 
   if (!x_s)
     snew(x_s,md->nr); /* can't rely on natoms */
@@ -538,25 +541,29 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top,
   
   switch (pull->runtype) {
   case eAfm:
-    /* calculate center of mass of the pull groups */
-    for (i=0;i<pull->pull.n;i++) 
-      (void)calc_com(x_s,pull->pull.ngx[i],pull->pull.idx[i],md,
-		     pull->pull.x_unc[i],box);
-    do_afm(pull,f,box,md);
-    print_afm(pull,step);
+    if (!bShakeFirst) {
+      /* calculate center of mass of the pull groups */
+      for (i=0;i<pull->pull.n;i++) 
+	(void)calc_com(x_s,pull->pull.ngx[i],pull->pull.idx[i],md,
+		       pull->pull.x_unc[i],box);
+      do_afm(pull,f,box,md);
+      print_afm(pull,step);
+    }
     break;
     
   case eStart:
-    for (i=0;i<pull->pull.n;i++) 
-      (void)calc_com(x_s,pull->pull.ngx[i],pull->pull.idx[i],md,
-		     pull->pull.x_unc[i],box);
-    if (pull->bCyl)
-      make_refgrps(pull,x_s,md);
-    else 
-      (void)calc_com(x_s,pull->ref.ngx[0],pull->ref.idx[0],md,
-		     pull->ref.x_unc[0],box);
-    do_start(pull,x,box,md,dt,step,top);
-    print_start(pull,step);
+    if (!bShakeFirst) {
+      for (i=0;i<pull->pull.n;i++) 
+	(void)calc_com(x_s,pull->pull.ngx[i],pull->pull.idx[i],md,
+		       pull->pull.x_unc[i],box);
+      if (pull->bCyl)
+	make_refgrps(pull,x_s,md);
+      else 
+	(void)calc_com(x_s,pull->ref.ngx[0],pull->ref.idx[0],md,
+		       pull->ref.x_unc[0],box);
+      do_start(pull,x,box,md,dt,step,top);
+      print_start(pull,step);
+    }
     break; 
     
   case eConstraint:
@@ -632,23 +639,27 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top,
     break;
     
   case eUmbrella:
-    do_umbrella(pull,x,f,box,md);
-    print_umbrella(pull,step);
+    if (!bShakeFirst) {
+      do_umbrella(pull,x,f,box,md);
+      print_umbrella(pull,step);
+    }
     break;
     
   case eTest:
-    /* code to test reference groups, without actually doing anything 
-       else 
-    */
-    (void)calc_com(x,pull->ref.ngx[0],pull->ref.idx[0],
-		   md,pull->ref.x_unc[0],box);
-    fprintf(stderr,"ref: %8.3f %8.3f %8.3f\n",pull->ref.x_unc[0][XX],
-	    pull->ref.x_unc[0][YY],pull->ref.x_unc[0][ZZ]);
-    correct_t0_pbc(pull,x,md,box);
-    (void)calc_com2(pull->ref.x0[0],pull->ref.ngx[0],pull->ref.idx[0],
-		    md,pull->ref.x_unc[0],box);
-    fprintf(stderr,"ref_t0: %8.3f %8.3f %8.3f\n",pull->ref.x_unc[0][XX],
-	    pull->ref.x_unc[0][YY],pull->ref.x_unc[0][ZZ]);
+    if (!bShakeFirst) {
+      /* code to test reference groups, without actually doing anything 
+	 else 
+	 */
+      (void)calc_com(x,pull->ref.ngx[0],pull->ref.idx[0],
+		     md,pull->ref.x_unc[0],box);
+      fprintf(stderr,"ref: %8.3f %8.3f %8.3f\n",pull->ref.x_unc[0][XX],
+	      pull->ref.x_unc[0][YY],pull->ref.x_unc[0][ZZ]);
+      correct_t0_pbc(pull,x,md,box);
+      (void)calc_com2(pull->ref.x0[0],pull->ref.ngx[0],pull->ref.idx[0],
+		      md,pull->ref.x_unc[0],box);
+      fprintf(stderr,"ref_t0: %8.3f %8.3f %8.3f\n",pull->ref.x_unc[0][XX],
+	      pull->ref.x_unc[0][YY],pull->ref.x_unc[0][ZZ]);
+    }
     break;
 
   default:
