@@ -61,10 +61,12 @@ static int *mk_windex(int w1,int nw)
   return index;
 }
 
-static void insert_ion(real q,int *nwater,bool bSet[],int index[],
+static void insert_ion(real q,int *nwater,bool bSet[],real repl_q[],
+		       int index[],
 		       real pot[],rvec x[],matrix box,
 		       char *anm,char *resnm,
-		       t_topology *top,real rmin,bool bRandom,int *seed)
+		       t_topology *top,t_mdatoms *mdatoms,
+		       real rmin,bool bRandom,int *seed)
 {
   int  i,ii,ei,owater,wlast,m,nw;
   real extr_e,poti,rmin2;
@@ -106,9 +108,18 @@ static void insert_ion(real q,int *nwater,bool bSet[],int index[],
   }
   if (ei == -1)
     fatal_error(0,"No More replacable waters!");
-  fprintf(stderr,"Replacing water %d (atom %d)\n",ei,index[ei]);
-    
+  fprintf(stderr,"Replacing water %d (atom %d) with %s\n",
+	  ei,index[ei],resnm);
+  
+  /* Replace water charges with ion charge */
+  bSet[ei] = TRUE;
+  repl_q[ei] = q;
+  mdatoms->chargeA[index[ei]] = q;
+  mdatoms->chargeA[index[ei]+1] = 0;
+  mdatoms->chargeA[index[ei]+2] = 0;
+
   /* Swap ei water at index ei with water at last index */
+  /*
   owater = index[ei];
   wlast  = index[nw-1];
   for(m=0; (m<3); m++) {
@@ -117,30 +128,35 @@ static void insert_ion(real q,int *nwater,bool bSet[],int index[],
     copy_rvec(xei,x[wlast+m]);
     pot[owater+m] = pot[wlast+m];
   }
-  
+
   nw--;
   *nwater = nw;
-    
+   
+  */ 
   /* Mark all waters within rmin as unavailable for substitution */
+
   if (rmin > 0) {
-    copy_rvec(x[wlast],xei);
     rmin2=rmin*rmin;
     for(i=0; (i<nw); i++) {
       if (!bSet[i]) {
-	pbc_dx(xei,x[index[i]],dx);
+	pbc_dx(x[index[ei]],x[index[i]],dx);
 	if (iprod(dx,dx) < rmin2)
 	  bSet[i] = TRUE;
       }
     }
   }
   /* Replace the oxygen with the ion */
+  /*
   natoms=top->atoms.nr;
   replace_atom(top,wlast,anm,resnm,q,1,1);
   delete_atom(top,wlast+2);
   delete_atom(top,wlast+1);
+  */
   /* Now copy all the remaining coordinates two places down the x array */
+  /*
   for(i=wlast+3; (i<natoms); i++)
     copy_rvec(x[i],x[i-2]);
+    */
 }
 
 static void copy_atom(t_atoms *at1,int a1,t_atoms *at2,int a2,int r)
@@ -162,34 +178,91 @@ static void copy_atom(t_atoms *at1,int a1,t_atoms *at2,int a2,int r)
   }
 }  
 
+void sort_ions(int nw,real repl_q[],int index[],t_atoms *atoms,rvec x[],
+	       char *p_name,char *n_name)
+{
+  int i,j,k,np,nn,starta,startr,npi,nni;
+  real q;
+  rvec *xt;
+  char **pptr,**nptr;
+
+  snew(xt,atoms->nr);
+
+  /* Put all the water in front and count the added ions */
+  np=0;
+  nn=0;
+  j=0;
+  for(i=0; i<nw; i++) {
+    q = repl_q[i];
+    if (q == 0)
+      for(k=0; k<3; k++)
+	copy_rvec(x[index[i]+k],xt[j++]);
+    else if (q>0)
+      np++;
+    else if (q<0)
+      nn++;
+  }
+
+  if (np+nn > 0) {
+    /* Put the positive and negative ions at the end */
+    starta = index[nw - np - nn];
+    startr = atoms->atom[starta].resnr;
+    if (np) {
+      snew(pptr,1);
+      pptr[0] = p_name;
+    }
+    if (nn) {
+      snew(nptr,1);
+      nptr[0] = n_name;
+    }
+    npi = 0;
+    nni = 0;
+    for(i=0; i<nw; i++) {
+      q = repl_q[i];
+      if (q > 0) {
+	j = starta+npi;
+	k = startr+npi;
+	copy_rvec(x[index[i]],xt[j]);
+	atoms->atomname[j] = pptr;
+	atoms->atom[j].resnr = k ;
+	atoms->resname[k] = pptr;
+	npi++;
+      } else if (q < 0) {
+	j = starta+np+nni;
+	k = startr+np+nni;
+	copy_rvec(x[index[i]],xt[j]);
+	atoms->atomname[j] = nptr;
+	atoms->atom[j].resnr = k;
+	atoms->resname[k] = nptr;
+	nni++;
+      }
+    }
+    atoms->nr -= 2*(np+nn);
+  }
+  /* Copy the new positions back */
+  for(i=index[0]; i<atoms->nr; i++)
+    copy_rvec(xt[i],x[i]);
+  sfree(xt);
+}
+
 int main(int argc, char *argv[])
 {
   static char *desc[] = {
-    "genion calculates the electrostatic potential on all atoms, using",
+    "genion replaces water molecules by monoatomic ions. Ions can be placed",
+    "at the water oxygen positions with the most favorable electrostatic",
+    "potential or at random. The potential is calculated on all atoms, using",
     "normal GROMACS particle based methods (in contrast to other methods",
     "based on solving the Poisson-Boltzmann equation).",
-    "If specified in the [TT]tpr[tt] file, a reaction field or",
+    "The potential is recalculated after every ion insertion.",
+    "If specified in the  run input file, a reaction field or",
     "generalized reaction field can be used, check out the manual of",
-    "grompp for more information. The potential can be written as B-factors"
-    "in a pdb file (for visualisation using e.g. rasmol)[PAR]",
-    "When the potential has been calculated, ions can be generated",
-    "at the positions of water molecules. This can be used to simulate",
-    "a solution with a given ionic strength, or to neutralize the simulation",
-    "system which is necessary when using e.g. the PPPM electrostatics",
-    "method in the simulation. Note that PPPM can not be used in the",
-    "genion program[PAR]",
-    "To avoid",
-    "clustering of ions it is advisable to set rmin (the radius around",
-    "an ion in which no other ion will be placed) to a value high enough",
-    "to allow solvent around the ion (> 0.6 nm)."
-  };
-  static char *bugs[] = {
-    "Only monatomic ions can be used. For larger ions, e.g. sulfate we recommended to use genbox.",
-    "The rmin option is currently out of order"
+    "grompp for more information. The potential can be written as B-factors",
+    "in a pdb file (for visualisation using e.g. rasmol)[PAR]"
+    "For larger ions, e.g. sulfate we recommended to use genbox."
   };
   static int  p_num=0,n_num=0,nw=0,w1=1;
   static char *p_name="Na",*n_name="Cl";
-  static real p_q=1,n_q=-1,rcut=0;
+  static real p_q=1,n_q=-1,rmin=0.6;
   static int  seed=1993;
   static bool bRandom=FALSE;
   static t_pargs pa[] = {
@@ -199,10 +272,10 @@ int main(int argc, char *argv[])
     { "-n",    FALSE, etINT,  &n_num, "Number of negative ions"       },
     { "-nn",   FALSE, etSTR,  &n_name,"Name of the negative ion"      },
     { "-nq",   FALSE, etREAL, &n_q,   "Charge of the negative ion"    },
-    { "-rmin", FALSE, etREAL, &rcut,  "Minimum distance between ions" },
+    { "-rmin", FALSE, etREAL, &rmin,  "Minimum distance between ions" },
     { "-w1",   FALSE, etINT,  &w1,    "First water atom to be cosidered (counting from 1)" },
     { "-nw",   FALSE, etINT,  &nw,    "Number of water molecules" },
-    { "-random",FALSE,etBOOL, &bRandom,"Use random placement of waters instead of based on potential. The rmin option should still work" },
+    { "-random",FALSE,etBOOL, &bRandom,"Use random placement of ions instead of based on potential. The rmin option should still work" },
     { "-seed", FALSE, etINT,  &seed,  "Seed for random number generator" }
   };
   t_topology  *top;
@@ -214,7 +287,7 @@ int main(int argc, char *argv[])
   t_graph     *graph;
   t_forcerec  *fr;
   rvec        *x,*v;
-  real        *pot;
+  real        *pot,*repl_q;
   matrix      box;
   int         *index;
   bool        *bSet,bPDB;
@@ -223,7 +296,7 @@ int main(int argc, char *argv[])
     { efTPX, NULL,  NULL,     ffREAD  },
     { efSTO, "-o",  NULL,     ffWRITE },
     { efLOG, "-g",  "genion", ffWRITE },
-    { efPDB, "-q",  "conf",   ffOPTWR },
+    { efPDB, "-q",  "pot",   ffOPTWR },
     { efXTC, "-x",  "ctraj",  ffOPTRD },
     { efTRN, "-t",  "traj",   ffOPTRD },
     { efENX, "-e",  "ener",   ffOPTRD }
@@ -232,7 +305,7 @@ int main(int argc, char *argv[])
   
   CopyRight(stdout,argv[0]);
   parse_common_args(&argc,argv,0,TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,
-		    asize(bugs),bugs);
+		    0,NULL);
   bPDB = ftp2bSet(efPDB,NFILE,fnm);
   if (bRandom && bPDB) {
     fprintf(stderr,"Not computing potential with random option!\n");
@@ -240,6 +313,8 @@ int main(int argc, char *argv[])
   }
     
   /* Check input for something sensible */
+  if (p_num+n_num<0)
+    fatal_error(0,"No ions to add");
   w1--;
   if (nw <= 0) {
 #define NOWAT "No water molecules in your system."
@@ -253,17 +328,19 @@ int main(int argc, char *argv[])
   else 
     fprintf(stderr,"First water atom: %d  Number of water molecules: %d\n",
 	    w1+1,nw);
-  
+
   index  = mk_windex(w1,nw);
   snew(bSet,nw);
+  snew(repl_q,nw);
   snew(top,1);
   init_calcpot(NFILE,fnm,top,&x,&parm,&cr,
 	       &graph,&mdatoms,&nsb,&grps,&fr,&pot,box);
   
   snew(v,top->atoms.nr);
   snew(top->atoms.pdbinfo,top->atoms.nr);
-  
+
   /* Calculate potential once only */
+  /*
   if (!bRandom) {
     calc_pot(stdlog,&nsb,&cr,&grps,&parm,top,x,fr,graph,mdatoms,pot);
     if (bPDB) {
@@ -273,26 +350,44 @@ int main(int argc, char *argv[])
 		     &top->atoms,x,v,box);
     }
   }
+  */
   /* Now loop over the ions that have to be placed */
-  if ((p_num > 0) || (n_num > 0)) {
-    do {
-      if ((p_num > 0) && (p_num >= n_num))  {
-	fprintf(stderr,"+");
-	insert_ion(p_q,&nw,bSet,index,pot,x,box,
-		   p_name,p_name,top,rcut,bRandom,&seed);
-	p_num--;
+  do {
+    if (!bRandom) {
+      calc_pot(stdlog,&nsb,&cr,&grps,&parm,top,x,fr,graph,mdatoms,pot);
+      if (bPDB || debug) {
+	char buf[STRLEN];
+	
+	if (debug)
+	  sprintf(buf,"%d_%s",p_num+n_num,ftp2fn(efPDB,NFILE,fnm));
+	else
+	  strcpy(buf,ftp2fn(efPDB,NFILE,fnm));
+	for(i=0; (i<top->atoms.nr); i++)
+	    top->atoms.pdbinfo[i].bfac = pot[i]*0.001;
+	write_sto_conf(buf,"Potential calculated by genion",
+		       &top->atoms,x,v,box);
+	bPDB = FALSE;
       }
-      else if (n_num > 0) {
-	fprintf(stderr,"-");
-	insert_ion(n_q,&nw,bSet,index,pot,x,box,
-		   n_name,n_name,top,rcut,bRandom,&seed);
-	n_num--;
-      }
-    } while (p_num+n_num > 0);
-    fprintf(stderr,"\n");
-    
-    write_sto_conf(ftp2fn(efSTO,NFILE,fnm),*top->name,&top->atoms,x,v,box);
-  }
+    }
+    if ((p_num > 0) && (p_num >= n_num))  {
+      insert_ion(p_q,&nw,bSet,repl_q,index,pot,x,box,
+		 p_name,p_name,top,mdatoms,rmin,bRandom,&seed);
+      p_num--;
+    }
+    else if (n_num > 0) {
+      insert_ion(n_q,&nw,bSet,repl_q,index,pot,x,box,
+		 n_name,n_name,top,mdatoms,rmin,bRandom,&seed);
+      n_num--;
+    }
+  } while (p_num+n_num > 0);
+  fprintf(stderr,"\n");
+
+  sort_ions(nw,repl_q,index,&top->atoms,x,p_name,n_name);
+  
+  sfree(top->atoms.pdbinfo);
+  top->atoms.pdbinfo = NULL;
+  write_sto_conf(ftp2fn(efSTO,NFILE,fnm),*top->name,&top->atoms,x,NULL,box);
+
   thanx(stdout);
   
   return 0;
