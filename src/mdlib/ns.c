@@ -471,8 +471,9 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
 		add_j_to_nblist(coul,jj);
 	    }
 	  } else if (bVDWOnly) {
-	    if (bHaveLJ[type[jj0]])
-	      add_j_to_nblist(vdw,jj0);
+	    for(jj=jj0; (jj<jj1); jj++) 
+	      if (bHaveLJ[type[jj]])
+		add_j_to_nblist(vdw,jj);
 	  } else {
 	    for(jj=jj0; (jj<jj1); jj++) {
 	      if (bHaveLJ[type[jj]]) {
