@@ -86,7 +86,7 @@ void pr_difftime(FILE *out,double dt)
   fprintf(out,"\n");
 }
 
-bool be_cool()
+bool be_cool(void)
 {
   static int cool=-1;
   
@@ -165,7 +165,7 @@ static char *pukeit(char *db,char *defstring)
 char *bromacs(void)
 {
   return pukeit("bromacs.dat",
-		"Groningen Machine for Chemical Simulation");
+                "Groningen Machine for Chemical Simulation");
 }
 
 char *cool_quote(void)
@@ -234,21 +234,28 @@ void thanx(FILE *fp)
     fprintf(fp,"\n%s\n",cq);
 }
 
-void wrap_lines(char *buf,int line_width)
+char *wrap_lines(char *buf,int line_width)
 {
-  int i,j;
+  char *b2;
+  int i,i0,lspace;
 
-  i=0;
-  while (i+line_width<strlen(buf)) {
-    j=strchr(&(buf[i]),'\n')-buf;
-    if ((j<i) || (j>i+line_width))
-      j=i+line_width;
-    while ((j>i) && (buf[j]!=' ') && (buf[j]!='\n'))
-      j--;
-    if (j!=i)
-      buf[j]='\n';
-    i=j+1;
-  }
+  snew(b2,strlen(buf)+1);
+  i0 = 0;
+  do {
+    i=i0;
+    for( ; (i<i0+line_width) && (buf[i]); i++) {
+      b2[i] = buf[i];
+      if (buf[i] == ' ')
+        lspace = i;
+    }
+    if (buf[i]) {
+      b2[lspace] = '\n';
+      i0 = lspace+1;
+    }
+  } while (buf[i]);
+  b2[i] = '\0';
+  
+  return b2;
 }
 
 void please_cite(FILE *fp,char *key)
@@ -300,7 +307,7 @@ void please_cite(FILE *fp,char *key)
 #define NSTR asize(citedb)
   
   int  j,index,year,vol,p1,p2;
-  char *ptr;
+  char *ptr[3];
 #define LINE_WIDTH 79
   
   index = search_str(NSTR,citedb,key);
@@ -310,12 +317,14 @@ void please_cite(FILE *fp,char *key)
     if (sscanf(citedb[index+4],"%d%d%d%d",&vol,&year,&p1,&p2) != 4) {
       vol=year=p1=p2=0;
     }
-    for(j=1; (j<=3); j++) {
-      wrap_lines(citedb[index+j],LINE_WIDTH);
-    }
+    /* Insert newlines */
+    for(j=1; (j<=3); j++) 
+      ptr[j-1] = wrap_lines(citedb[index+j],LINE_WIDTH);
     fprintf(fp,"%s\n%s\n%s %d (%d) pp. %d-%d\n",
-	    citedb[index+1],citedb[index+2],citedb[index+3],
-	    vol,year,p1,p2);
+            ptr[0],ptr[1],ptr[2],
+            vol,year,p1,p2);
+    for(j=0; (j<3); j++)
+      sfree(ptr[j]);
   }
   else {
     fprintf(fp,"Entry %s not found in citation database\n",key);
