@@ -31,10 +31,10 @@ static char *SRCID_pgutil_c = "$Id$";
 #include "pgutil.h"
 #include "string.h"
 	
-int search_atom(char *type,int start,int natoms,t_atom at[],char **anm[])
+atom_id search_atom(char *type,int start,int natoms,t_atom at[],char **anm[])
 {
-  int  i,resnr=-1;
-  bool bPrevious;
+  int     i,resnr=-1;
+  bool    bPrevious;
 
   bPrevious = (strchr(type,'-') != NULL);
 
@@ -50,7 +50,7 @@ int search_atom(char *type,int start,int natoms,t_atom at[],char **anm[])
     }
     for(i=start; (i<natoms) && (at[i].resnr == resnr); i++)
       if (strcasecmp(type,*(anm[i]))==0)
-	return i;
+	return (atom_id) i;
   }
   else {
     /* The previous residue */
@@ -59,9 +59,9 @@ int search_atom(char *type,int start,int natoms,t_atom at[],char **anm[])
       resnr = at[start-1].resnr;
     for(i=start-1; (i>=0) && (at[i].resnr == resnr); i--)
       if (strcasecmp(type,*(anm[i]))==0)
-	return i;
+	return (atom_id) i;
   }
-  return -1;
+  return NO_ATID;
 }
 
 void set_at(t_atom *at,real m,real q,int type,int resnr)

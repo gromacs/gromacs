@@ -321,8 +321,8 @@ void write_top(FILE *out, char *pr,char *molname,
   }
 }
 
-static int search_res_atom(char *type,int resnr,
-			   int natom,t_atom at[],char **aname[])
+static atom_id search_res_atom(char *type,int resnr,
+			       int natom,t_atom at[],char **aname[])
 {
   int i;
 
@@ -330,20 +330,21 @@ static int search_res_atom(char *type,int resnr,
     if (at[i].resnr == resnr)
       return search_atom(type,i,natom,at,aname);
   
-  return -1;
+  return NO_ATID;
 }
 
 static void do_ssbonds(t_params *ps,int natoms,t_atom atom[],char **aname[],
 		       int nssbonds,t_ssbond *ssbonds)
 {
-  int i,ri,rj,ai,aj;
+  int     i,ri,rj;
+  atom_id ai,aj;
   
   for(i=0; (i<nssbonds); i++) {
     ri = ssbonds[i].res1;
     rj = ssbonds[i].res2;
     ai = search_res_atom(ssbonds[i].a1,ri,natoms,atom,aname);
     aj = search_res_atom(ssbonds[i].a2,rj,natoms,atom,aname);
-    if ((ai == -1) || (aj == -1))
+    if ((ai == NO_ATID) || (aj == NO_ATID))
       fatal_error(0,"Trying to make impossible special bond (%s-%s)!",
 		  ssbonds[i].a1,ssbonds[i].a2);
     add_param(ps,ai,aj,NULL,NULL);
@@ -356,7 +357,7 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
 		     real long_bond_dist, real short_bond_dist)
 {
   int     resnr,i,j,k;
-  int     ai,aj;
+  atom_id ai,aj;
   real    dist2, long_bond_dist2, short_bond_dist2;
   
   long_bond_dist2  = sqr(long_bond_dist);
@@ -369,7 +370,7 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
     for(j=0; j < hb[resnr].rb[ebtsBONDS].nb; j++) {
       ai=search_atom(hb[resnr].rb[ebtsBONDS].b[j].AI,i,natoms,atom,aname);
       aj=search_atom(hb[resnr].rb[ebtsBONDS].b[j].AJ,i,natoms,atom,aname);
-      if ( ai != -1 && aj != -1 ) {
+      if ( ai != NO_ATID && aj != NO_ATID ) {
 	dist2 = distance2(x[ai],x[aj]);
 	if (dist2 > long_bond_dist2 )
 	  fprintf(stderr,"Warning: Long Bond (%d-%d = %g nm)\n",

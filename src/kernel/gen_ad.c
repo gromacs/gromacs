@@ -308,8 +308,7 @@ static void sort_id(int nr,t_param ps[])
 static t_rbonded *is_imp(t_param *p,t_atoms *atoms,t_hackblock hb[])
 {
   int        j,n,maxresnr,start;
-  atom_id    a0[MAXATOMLIST];
-  int        aa0;
+  atom_id    aa0,a0[MAXATOMLIST];
   char      *atom;
   t_rbondeds *idihs;
 
@@ -331,7 +330,7 @@ static t_rbonded *is_imp(t_param *p,t_atoms *atoms,t_hackblock hb[])
     for(j=0; (j<4); j++) {
       atom=idihs->b[n].a[j];
       aa0=search_atom(atom,start,atoms->nr,atoms->atom,atoms->atomname);
-      if (aa0 == -1) {
+      if (aa0 == NO_ATID) {
 	if (debug) 
 	  fprintf(debug,"Atom %s not found in res %d (maxresnr=%d) "
 		  "in is_imp\n",atom,atoms->atom[start].resnr,maxresnr);
@@ -391,7 +390,7 @@ static void pdih2idih(t_param *alldih, int *nalldih,t_param idih[],int *nidih,
 	for(k=0; (k<4) && !bStop; k++) {
 	  ai[k]=search_atom(idihs->b[j].a[k],start,
 			    atoms->nr,atoms->atom,atoms->atomname);
-	  if (ai[k] == -1) {
+	  if (ai[k] == NO_ATID) {
 	    if (debug) 
 	      fprintf(debug,"Atom %s (%d) not found in res %d in pdih2idih\n",
 		      idihs->b[j].a[k], k, atoms->atom[start].resnr);
