@@ -474,8 +474,6 @@ void init_update(FILE *log,t_topology *top,t_inputrec *ir,
     }
     sfree(sb);
     sfree(inv_sblock);
-    
-    please_cite(log,"Ryckaert77a");
   }
   
   /* Copy pointers */
@@ -486,15 +484,15 @@ void init_update(FILE *log,t_topology *top,t_inputrec *ir,
 }
 
 
-void init_project(FILE *log,t_topology *top,t_inputrec *ir,
-		  t_mdatoms *md,int start,int homenr,
-		  int *nbl,int **sbl,
-		  int *nset,int **owp,int *settle_tp,
-		  int *ncm,int *cmax,
-		  rvec **r,int **bla1,int **bla2,int **blnr,int **blbnb,
-		  real **bllen,real **blc,real **blcc,real **blm,
-		  real **tmp1,real **tmp2,real **tmp3,
-		  real **lincslam,real **bllen0,real **ddist)
+static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
+		       t_mdatoms *md,int start,int homenr,
+		       int *nbl,int **sbl,
+		       int *nset,int **owp,int *settle_tp,
+		       int *ncm,int *cmax,
+		       rvec **r,int **bla1,int **bla2,int **blnr,int **blbnb,
+		       real **bllen,real **blc,real **blcc,real **blm,
+		       real **tmp1,real **tmp2,real **tmp3,
+		       real **lincslam,real **bllen0,real **ddist)
 {
   t_idef      *idef=&(top->idef);
   t_iatom     *iatom;
@@ -716,9 +714,11 @@ void update(int          natoms, 	/* number of atoms in simulation */
 		start,homenr,
 		&nblocks,&sblock,
 		&nsettle,&owptr,&settle_type);
-    if (ir->eConstrAlg == estLINCS) {
-      please_cite(stdlog,"Hess97a");
-      init_project(stdlog,top,ir,md,
+
+    if (idef->il[F_SHAKE].nr)
+      if (ir->eConstrAlg == estLINCS) {
+	please_cite(stdlog,"Hess97a");
+	init_lincs(stdlog,top,ir,md,
 		   start,homenr,
 		   &nblocks,&sblock,
 		   &nsettle,&owptr,&settle_type,
@@ -726,7 +726,9 @@ void update(int          natoms, 	/* number of atoms in simulation */
 		   &r,&bla1,&bla2,&blnr,&blbnb,
 		   &bllen,&blc,&blcc,&blm,&tmp1,&tmp2,&tmp3,&lincslam,
 		   &bllen0,&ddist);
-    }
+      } else
+	please_cite(stdlog,"Ryckaert77a");
+    
     if (edyn->bEdsam) 
       init_edsam(stdlog,top,md,start,homenr,&nblocks,&sblock,x,box,
 		 edyn,&edpar);
