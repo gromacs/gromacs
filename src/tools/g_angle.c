@@ -62,7 +62,7 @@ int main(int argc,char *argv[])
     "If this is not the case, the program will crash."
   };
   static char *opt[] = { "angles", "dihedrals", "impropers", "ryckaert-bellemans", NULL };
-  static bool bALL=FALSE,bChandler=FALSE;
+  static bool bALL=FALSE,bChandler=FALSE,bAverCorr=FALSE;
   static real binwidth=1;
   t_pargs pa[] = {
     { "-type", FALSE, etENUM, opt,
@@ -73,6 +73,8 @@ int main(int argc,char *argv[])
       "binwidth (degrees) for calculating the distribution" },
     { "-chandler", FALSE,  etBOOL, &bChandler,
       "Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine correlation function. Trans is defined as phi < -60 || phi > 60." },
+    { "-avercorr", FALSE,  etBOOL, &bAverCorr,
+      "Average the correlation functions for the individual angles/dihedrals" }
   };
   static char *bugs[] = {
     "Counting transitions only works for dihedrals with multiplicity 3"
@@ -244,7 +246,7 @@ int main(int argc,char *argv[])
       else
 	mode = eacCos;
       do_autocorr(opt2fn("-oc",NFILE,fnm),"Dihedral Autocorrelation Function",
-		  nframes,nangles,dih,dt,mode,FALSE,NULL,NULL);
+		  nframes,nangles,dih,dt,mode,bAverCorr,NULL,NULL);
     }
   }
 

@@ -187,8 +187,9 @@ void correl(fftreal data1[],fftreal data2[],int n,fftreal ans[])
   twofft(data1,data2,fft,ans,n);
   no2=n/2;
   for (i=2;i<=n+2;i+=2) {
-    ans[i-1]=(fft[i-1]*(dum=ans[i-1])+fft[i]*ans[i])/no2;
-    ans[i]=(fft[i]*dum-fft[i-1]*ans[i])/no2;
+    dum      = ans[i-1];
+    ans[i-1] = (fft[i-1]*dum+fft[i]*ans[i])/no2;
+    ans[i]   = (fft[i]*dum-fft[i-1]*ans[i])/no2;
   }
   ans[2]=ans[n+1];
   realft(ans,no2,-1);
@@ -364,6 +365,12 @@ void normalize_acf(int nframes,int nf2,int nlag,
     for(j=0; (j<nlag); j++)
       corr[j] *= c0;
   }
+  if (bFour) {
+    if (debug)
+      fprintf(debug,"Correcting for FFT artefacts, nf2 = %d\n",nf2);
+    /*for(j=0; (j<nf2); j++)
+      corr[j] *= (real) nf2/(real) (nf2 - j);*/
+  }
   if (debug) {
     fprintf(debug,"After normalization\n");
     for(j=0; (j<nf2); j++) 
@@ -410,7 +417,7 @@ void dump_tmp(char *s,int n,real c[])
   ffclose(fp);
 }
 
-real integrate(FILE *fp,int n,real dt,real c[])
+real print_and_integrate(FILE *fp,int n,real dt,real c[])
 {
   real c0,sum;
   int  j;
@@ -596,7 +603,7 @@ void fit_acf(int ncorr,int nfitparm,
   fprintf(stderr,"CORR:\n");    
   
   nf_int = min(ncorr,(int)(tendfit/dt));
-  sum    = integrate(debug,ncorr,dt,c1);
+  sum    = print_and_integrate(debug,ncorr,dt,c1);
   
   fprintf(stderr,"CORR: Correlation time (plain integral from %6.3f to %6.3f ps) = %8.5f ps\n", 
 	  0.0,dt*nf_int,sum);
@@ -616,7 +623,7 @@ void fit_acf(int ncorr,int nfitparm,
     snew(sig,ncorr);
     fitparm[0]=fitparm[1]=fitparm[2] = 1.0;
     nf_int = min(ncorr,(int)((tStart+1e-4)/dt));
-    sum    = integrate(debug,nf_int,dt,c1);
+    sum    = print_and_integrate(debug,nf_int,dt,c1);
     tail_corr = do_lmfit(ncorr,c1,sig,dt,tStart,tendfit,
 			 fitfn,fittitle,bVerbose,nfitparm,
 			 NULL,fitparm,NULL);
@@ -720,12 +727,12 @@ void low_do_autocorr(char *fn,char *title,
     average_acf(ncorr,nitem,c1);
     
     normalize_acf(nframes,ncorr,nlag,c1[0],bFull,bFour,bNormalize);
-
+    
     if (tbeginfit < tendfit)
       fit_acf(ncorr,nfitparm,fitfn,fittitle,bVerbose,
 	      tbeginfit,tendfit,dt,c1[0]);
     else {
-      sum = integrate(fp,ncorr,dt,c1[0]);
+      sum = print_and_integrate(fp,ncorr,dt,c1[0]);
       fprintf(stderr,"Correlation time (integral over corrfn): %g (ps)\n",sum);
     }
   }
@@ -750,7 +757,7 @@ void low_do_autocorr(char *fn,char *title,
   
 }
 
-static char *Leg[]   = { "1", "2", "3", NULL };
+static char *Leg[]   = { "0", "1", "2", "3", NULL };
 static char *Nparm[] = { "1", "2", NULL };
 
 t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
@@ -766,9 +773,9 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
       "Number of frames between time origins for ACF when no FFT is used" },
     { "-acflen",     FALSE, etINT,  &acf.nlag,
       "Length of the ACF when no FFT is used, default is half the number of frames" },
-    { "-P",        FALSE, etENUM, &Leg,
-      "Order of Legendre polynomial for ACF" },
-    { "-nparm",    FALSE, etENUM, &Nparm,
+    { "-P",        FALSE, etENUM, Leg,
+      "Order of Legendre polynomial for ACF (0 indicates none)" },
+    { "-nparm",    FALSE, etENUM, Nparm,
       "Number of parameters in exponential fit" },
     { "-beginfit", FALSE, etREAL, &acf.tbeginfit,
       "Time where to begin the exponential fit of the correlation function" },

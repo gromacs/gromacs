@@ -89,7 +89,9 @@ int main(int argc,char *argv[])
     fprintf(fp,"%10g  %10g  %10g\n",a*i,data2[i],data[i]);
   }
   ffclose(fp);
-  
+
+  xvgr_file(opt2fn("-comb",NFILE,fnm),"-nxy");
+    
   thanx(stdout);
 
   return 0;

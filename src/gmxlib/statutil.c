@@ -280,6 +280,45 @@ static int add_parg(int npargs,t_pargs **pa,t_pargs *pa_add)
   return npargs+1;
 }
 
+static char *mk_desc(t_pargs *pa)
+{
+  char *newdesc,*ptr;
+  int  len,k;
+  
+  /* First compute length for description */
+  len = strlen(pa->desc);
+  if ((ptr = strstr(pa->desc,"HIDDEN")) != NULL)
+    len += 4;
+  if (pa->type == etENUM) {
+    len += 10;
+    for(k=0; (pa->u.c[k] != NULL); k++) {
+      len += strlen(pa->u.c[k])+4;
+    }
+  }
+  snew(newdesc,len);
+  
+  if (is_hidden(pa)) 
+    sprintf(newdesc,"[hidden] %s",ptr+6);
+  else
+    strcpy(newdesc,pa->desc);
+    
+  /* Add extra comment for enumerateds */
+  if (pa->type == etENUM) {
+    strcat(newdesc,": ");
+    for(k=0; (pa->u.c[k] != NULL); k++) {
+      strcat(newdesc,pa->u.c[k]);
+      /* Print a comma everywhere but at the last one */
+      if (pa->u.c[k+1] != NULL) {
+	if (pa->u.c[k+2] == NULL)
+	  strcat(newdesc," or ");
+	else
+	  strcat(newdesc,", ");
+      }
+    }
+  }
+  return newdesc;
+}
+
 void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 		       int nfile,t_filenm fnm[],int npargs,t_pargs pa[],
 		       int ndesc,char *desc[],int nbugs,char *bugs[])
@@ -441,32 +480,8 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   for(i=0,k=npall-npargs; (i<npargs); i++,k++) 
     memcpy(&(pa[i]),&(all_pa[k]),(size_t)sizeof(pa[i]));
   
-  newdesc=NULL;
   for(i=0; (i<npall); i++) {
-    sfree(newdesc);
-    if (is_hidden(&all_pa[i])) {
-      ptr = strstr(all_pa[i].desc,"HIDDEN");
-      snew(newdesc,strlen(ptr)+4);
-      sprintf(newdesc,"[hidden] %s",ptr+6);
-    } else
-      newdesc=strdup(all_pa[i].desc);
-    
-    /* Add extra comment for enumerateds */
-    if (all_pa[i].type == etENUM) {
-      srenew(newdesc,strlen(newdesc)+10);
-      strcat(newdesc,": ");
-      for(k=0; (all_pa[i].u.c[k] != NULL); k++) {
-	srenew(newdesc,strlen(newdesc)+strlen(all_pa[i].u.c[k])+4);
-	strcat(newdesc,all_pa[i].u.c[k]);
-	/* Print a comma everywhere but at the last one */
-	if (all_pa[i].u.c[k+1] != NULL)
-	  if (all_pa[i].u.c[k+2] == NULL)
-	    strcat(newdesc," or ");
-	  else
-	    strcat(newdesc,", ");
-      }
-    }
-    all_pa[i].desc=strdup(newdesc);
+    all_pa[i].desc = mk_desc(&(all_pa[i]));
   }
     
 #ifdef _SGI_
