@@ -558,7 +558,7 @@ int main (int argc, char *argv[])
     "The last frame with coordinates and velocities will be read,",
     "unless the [TT]-time[tt] option is used.",
     "Note that these velocities will not be used when [TT]gen_vel = yes[tt]",
-    "in your [TT].mdp[tt] file. If you want to continue a crashed it is",
+    "in your [TT].mdp[tt] file. If you want to continue a crashed run, it is",
     "easier to use [TT]tpbconv[tt].[PAR]",
     "Using the [TT]-morse[tt] option grompp can convert the harmonic bonds",
     "in your topology to morse potentials. This makes it possible to break",
