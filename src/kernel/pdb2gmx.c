@@ -520,7 +520,7 @@ int main(int argc, char *argv[])
     "convert a Gromos trajectory and coordinate file to Gromos. There is",
     "one limitation: reordering is done after the hydrogens are stripped",
     "from the input and before new hydrogens are added. This means that",
-    "should not turn off [TT]-reth[tt].[PAR]",
+    "you should not turn off [TT]-reth[tt].[PAR]",
 
     "The [TT].gro[tt] and [TT].g96[tt] file formats do not support chain",
     "identifiers. Therefore it is useful to enter a pdb file name at",
@@ -654,7 +654,7 @@ int main(int argc, char *argv[])
     { "-sort",   FALSE, etBOOL, {&bSort}, 
       "Sort the residues according to database" },
     { "-H14",    FALSE, etBOOL, {&bH14}, 
-      "Use 3rd neighbor interactions for hydrogen atoms" },
+      "Use 1-4 interactions for hydrogen atoms" },
     { "-reth",   FALSE, etBOOL, {&bRetainH}, 
       "Retain hydrogen atoms that are in the pdb file" },
     { "-alldih", FALSE, etBOOL, {&bAlldih}, 
