@@ -124,9 +124,10 @@ gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
   re->nattempt[0] = 0;
   re->nattempt[1] = 0;
   snew(re->prob_sum,re->nrepl);
+  snew(re->nexchange,re->nrepl);
 
   fprintf(fplog,
-	  "Repl  below: x=exchange, pr=probability, av=average probability\n");
+	  "Repl  below: x=exchange, pr=probability\n");
 
   return re;
 }
@@ -193,21 +194,59 @@ static void scale_velocities(t_state *state,real fac)
       svmul(fac,state->v[i],state->v[i]);
 }
 
+static void print_ind(FILE *fplog,char *leg,int n,int *ind,bool *bEx)
+{
+  int i;
+
+  fprintf(fplog,"Repl %2s %2d",leg,ind[0]);
+  for(i=1; i<n; i++) {
+    fprintf(fplog," %c %2d",(bEx!=0 && bEx[i]) ? 'x' : ' ',ind[i]);
+  }
+  fprintf(fplog,"\n");
+}
+
+static void print_prob(FILE *fplog,char *leg,int n,real *prob)
+{
+  int  i;
+  char buf[8];
+  
+  fprintf(fplog,"Repl %2s ",leg);
+  for(i=1; i<n; i++) {
+    if (prob[i] >= 0) {
+      sprintf(buf,"%4.2f",prob[i]);
+      fprintf(fplog,"  %3s",buf[0]=='1' ? "1.0" : buf+1);
+    } else {
+      fprintf(fplog,"     ");
+    }
+  }
+  fprintf(fplog,"\n");
+}
+
+static void print_count(FILE *fplog,char *leg,int n,int *count)
+{
+  int i;
+
+  fprintf(fplog,"Repl %2s ",leg);
+  for(i=1; i<n; i++) {
+    fprintf(fplog," %4d",count[i]);
+  }
+  fprintf(fplog,"\n");
+}
+
 bool replica_exchange(FILE *fplog,const t_commrec *mcr,gmx_repl_ex_t *re,
 		      t_state *state,real epot,int step,real time)
 {
   int  m,i,a,b;
   real *Epot,*prob,ediff;
-  bool bEx,bExchanged;
-  char buf[8];
+  bool *bEx,bExchanged;
 
   fprintf(fplog,"Replica exchange at step %d time %g\n",step,time);
-  fprintf(fplog,"Repl ex %2d",re->ind[0]);
 
   snew(Epot,re->nrepl);
   Epot[re->repl] = epot;
   gmx_sum(re->nrepl,Epot,mcr);
 
+  snew(bEx,re->nrepl);
   snew(prob,re->nrepl);
 
   bExchanged = FALSE;
@@ -219,12 +258,13 @@ bool replica_exchange(FILE *fplog,const t_commrec *mcr,gmx_repl_ex_t *re,
       ediff = Epot[b] - Epot[a];
       if (ediff <= 0) {
 	prob[i] = 1;
-	bEx = TRUE;
+	bEx[i] = TRUE;
       } else {
 	prob[i] = exp((1/re->temp[b] - 1/re->temp[a])/BOLTZ*ediff);
-	bEx = (rando(&(re->seed)) < prob[i]);
+	bEx[i] = (rando(&(re->seed)) < prob[i]);
       }
-      if (bEx) {
+      re->prob_sum[i] += prob[i];    
+      if (bEx[i]) {
 	exchange_state(mcr,a,b,state);
 	if (a == re->repl) {
 	  scale_velocities(state,sqrt(re->temp[a]/re->temp[b]));
@@ -233,35 +273,62 @@ bool replica_exchange(FILE *fplog,const t_commrec *mcr,gmx_repl_ex_t *re,
 	  scale_velocities(state,sqrt(re->temp[b]/re->temp[a]));
 	  bExchanged = TRUE;
 	}
+	re->nexchange[i]++;
       }
-      fprintf(fplog," %c %2d",bEx ? 'x' : ' ',b);
     } else {
-      fprintf(fplog,"   %2d",b);
+      prob[i] = -1;
+      bEx[i] = FALSE;
     }
   }
+  print_ind(fplog,"ex",re->nrepl,re->ind,bEx);
+  print_prob(fplog,"pr",re->nrepl,prob);
   fprintf(fplog,"\n");
-  fprintf(fplog,"Repl pr ");
-  for(i=1; i<re->nrepl; i++) {
-    if (i % 2 == m) {
-      re->prob_sum[i] += prob[i];
-      sprintf(buf,"%4.2f",prob[i]);
-      fprintf(fplog,"  %3s",buf[0]=='1' ? "1.0" : buf+1);
-    } else {
-      fprintf(fplog,"     ");
-    }
-  }
-  fprintf(fplog,"\n");
-  re->nattempt[m]++;
-  fprintf(fplog,"Repl av ");
-  for(i=1; i<re->nrepl; i++) {
-    sprintf(buf,"%4.2f",
-	    re->nattempt[i%2]==0 ? 0.0 : re->prob_sum[i]/re->nattempt[i%2]);
-    fprintf(fplog,"  %3s",buf[0]=='1' ? "1.0" : buf+1);
-  }
-  fprintf(fplog,"\n\n");
 
+  sfree(bEx);
   sfree(prob);
   sfree(Epot);
 
+  re->nattempt[m]++;
+
   return bExchanged;
+}
+
+void print_replica_exchange_statistics(FILE *fplog,gmx_repl_ex_t *re)
+{
+  real *prob;
+  int  i;
+  
+  fprintf(fplog,"\nReplica exchange statistics\n");
+  fprintf(fplog,"Repl  %d attempts, %d odd, %d even\n",
+	  re->nattempt[0]+re->nattempt[1],re->nattempt[1],re->nattempt[0]);
+
+  snew(prob,re->nrepl);
+  
+  fprintf(fplog,"Repl  average probabilities:\n");
+  for(i=1; i<re->nrepl; i++) {
+    if (re->nattempt[i%2] == 0)
+      prob[i] = 0;
+    else
+      prob[i] =  re->prob_sum[i]/re->nattempt[i%2];
+  }
+  print_ind(fplog,"",re->nrepl,re->ind,NULL);
+  print_prob(fplog,"",re->nrepl,prob);
+
+  fprintf(fplog,"Repl  number of exchanges:\n");
+  print_ind(fplog,"",re->nrepl,re->ind,NULL);
+  print_count(fplog,"",re->nrepl,re->nexchange);
+  
+  fprintf(fplog,"Repl  average number of exchanges:\n");
+  for(i=1; i<re->nrepl; i++) {
+    if (re->nattempt[i%2] == 0)
+      prob[i] = 0;
+    else
+      prob[i] =  ((real)re->nexchange[i])/re->nattempt[i%2];
+  }
+  print_ind(fplog,"",re->nrepl,re->ind,NULL);
+  print_prob(fplog,"",re->nrepl,prob);
+
+  sfree(prob);
+  
+  fprintf(fplog,"\n");
 }

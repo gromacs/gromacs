@@ -956,5 +956,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	    tcount/(parm->ir.nsteps+1));
   }
 
+  if (repl_ex_nst > 0)
+    print_replica_exchange_statistics(log,repl_ex);
+  
   return start_t;
 }

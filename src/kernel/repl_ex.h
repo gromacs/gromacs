@@ -48,6 +48,7 @@ typedef struct {
   int  seed;
   int  nattempt[2];
   real *prob_sum;
+  int  *nexchange;
 } gmx_repl_ex_t;
 
 extern gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
@@ -63,5 +64,7 @@ extern bool replica_exchange(FILE *fplog,
 /* Attempts replica exchange.
  * Returns TRUE if this state has been exchanged.
  */
+
+extern void print_replica_exchange_statistics(FILE *fplog,gmx_repl_ex_t *re);
 
 #endif	/* _repl_ex_h */
