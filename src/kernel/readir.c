@@ -888,10 +888,23 @@ static void check_disre(t_topology *sys)
   }
 }
 
-void triple_check(t_inputrec *ir,t_topology *sys,int *nerror)
+int count_pert_constraint_types(t_idef *idef)
+{
+  int count,i;
+
+  count = 0;
+  for (i=0; i<idef->ntypes; i++)
+    if ((idef->functype[i] == F_SHAKE) &&
+	(idef->iparams[i].shake.dB != idef->iparams[i].shake.dA))
+      count++;
+
+  return count;
+}
+
+void triple_check(char *mdparin,t_inputrec *ir,t_topology *sys,int *nerror)
 {
   char err_buf[256];
-  int  i,m;
+  int  i,m,npct;
   real *mgrp,mt;
   rvec acc;
 
@@ -906,6 +919,23 @@ void triple_check(t_inputrec *ir,t_topology *sys,int *nerror)
 	    " ref_t for temperature coupling should be > 0",
 	    eel_names[eelGRF]);
     CHECK((ir->coulombtype == eelGRF) && (ir->opts.ref_t[0] <= 0));
+  }
+
+  if (ir->bPert && ((ir->eConstrAlg == estSHAKE) || (ir->eI == eiLD))) {
+    int npc;
+    npc = count_pert_constraint_types(&sys->idef);
+    if (npc) {
+      if (ir->eConstrAlg == estSHAKE) {
+	set_warning_line(mdparin,-1);
+	sprintf(warn_buf,"Can not calculate the contribution of perturbed constraints to the free energy with SHAKE, use LINCS if you want the free energy");
+	warning(NULL);
+      }
+      if (ir->eI == eiLD) {
+	set_warning_line(mdparin,-1);
+	sprintf(warn_buf,"Can not calculate the contribution of perturbed constraints to the free energy with LD");
+	warning(NULL);
+      }
+    }
   }
   
   clear_rvec(acc);

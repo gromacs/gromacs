@@ -615,7 +615,7 @@ int main (int argc, char *argv[])
   rvec         *x=NULL,*v=NULL;
   matrix       box;
   real         max_spacing;
-  char         fn[STRLEN];
+  char         fn[STRLEN],*mdparin;
   int          nerror;
   bool         bNeedVel,bGenVel;
 
@@ -680,8 +680,9 @@ int main (int argc, char *argv[])
   init_warning(maxwarn);
   
   /* PARAMETER file processing */
-  set_warning_line(ftp2fn(efMDP,NFILE,fnm),-1);    
-  get_ir(ftp2fn(efMDP,NFILE,fnm),opt2fn("-po",NFILE,fnm),ir,opts,&nerror);
+  mdparin = opt2fn("-f",NFILE,fnm);
+  set_warning_line(mdparin,-1);    
+  get_ir(mdparin,opt2fn("-po",NFILE,fnm),ir,opts,&nerror);
 
   if (bVerbose) 
     fprintf(stderr,"checking input for internal consistency...\n");
@@ -789,7 +790,7 @@ int main (int argc, char *argv[])
 	   forward);
   if (debug)
     pr_symtab(debug,0,"After index",&sys->symtab);
-  triple_check(ir,sys,&nerror);
+  triple_check(mdparin,ir,sys,&nerror);
   close_symtab(&sys->symtab);
   if (debug)
     pr_symtab(debug,0,"After close",&sys->symtab);
@@ -806,7 +807,7 @@ int main (int argc, char *argv[])
     max_spacing = calc_grid(box,opts->fourierspacing,
 			    &(ir->nkx),&(ir->nky),&(ir->nkz),nprocs);
     if ((ir->coulombtype == eelPPPM) && (max_spacing > 0.1)) {
-      set_warning_line(ftp2fn(efMDP,NFILE,fnm),-1);
+      set_warning_line(mdparin,-1);
       sprintf(warn_buf,"Grid spacing larger then 0.1 while using PPPM.");
       warning(NULL);
     }

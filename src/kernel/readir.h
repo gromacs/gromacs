@@ -77,7 +77,8 @@ extern void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror);
 extern void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror);
 /* Do more checks */
 
-extern void triple_check(t_inputrec *ir,t_topology *sys,int *nerror);
+extern void triple_check(char *mdparin,t_inputrec *ir,t_topology *sys,
+			 int *nerror);
 /* Do even more checks */
 
 extern void get_ir(char *mdparin,char *mdparout,
