@@ -71,7 +71,7 @@ t_coupl_rec *init_coupling(FILE *log,int nfile,t_filenm fnm[],
   return tcr;
 }
 
-real Ecouple(t_coupl_rec *tcr,real ener[])
+static real Ecouple(t_coupl_rec *tcr,real ener[])
 {
   if (tcr->bInter)
     return ener[F_SR]+ener[F_LJ]+ener[F_LR]+ener[F_LJLR];
@@ -79,7 +79,7 @@ real Ecouple(t_coupl_rec *tcr,real ener[])
     return ener[F_EPOT];
 }
 
-char *mk_gct_nm(char *fn,int ftp,int ati,int atj)
+static char *mk_gct_nm(char *fn,int ftp,int ati,int atj)
 {
   static char buf[256];
   
@@ -262,13 +262,13 @@ static void upd_nbfplj(FILE *log,real **nbfp,int atnr,real f6[],real f12[])
 }
 
 static void upd_nbfpbu(FILE *log,real **nbfp,int atnr,
-			real fa[],real fb[],real fc[])
+		       real fa[],real fb[],real fc[])
 {
   int n,m,k;
   
   /* Update the nonbonded force parameters */
   for(k=n=0; (n<atnr); n++) {
-    for(m=0; (m<atnr); m++) {
+    for(m=0; (m<atnr); m++,k++) {
       (nbfp)[n][3*m]   *= fa[k];
       (nbfp)[n][3*m+1] *= fb[k];
       (nbfp)[n][3*m+2] *= fc[k];
@@ -296,7 +296,7 @@ void gprod(t_commrec *cr,int n,real f[])
   sfree(buf);
 }
 
-void set_factor_matrix(int ntypes,real f[],real fmult,int ati,int atj)
+static void set_factor_matrix(int ntypes,real f[],real fmult,int ati,int atj)
 {
 #define FMIN 0.95
 #define FMAX 1.05
@@ -317,7 +317,7 @@ void set_factor_matrix(int ntypes,real f[],real fmult,int ati,int atj)
 #undef FMAX
 }
 
-real calc_deviation(real xav,real xt,real x0)
+static real calc_deviation(real xav,real xt,real x0)
 {
   real dev;
   
@@ -365,10 +365,22 @@ static real calc_dist(FILE *log,rvec x[])
     return 0.0;
 }
 
-void set_act_value(t_coupl_rec *tcr,int index,real val,int step)
+static void set_act_value(t_coupl_rec *tcr,int index,real val,int step)
 {
   tcr->act_value[index] = val;
   tcr->av_value[index]  = run_aver(tcr->av_value[index],val,step,tcr->nmemory);
+}
+
+static void upd_f_value(FILE *log,int atnr,real xi,real dt,real factor,real ff[],
+			int ati,int atj)
+{
+  real fff;
+  
+  if (xi != 0) {
+    fff = 1 + (dt/xi)  * factor;
+    if (fff > 0) 
+      set_factor_matrix(atnr,ff,sqrt(fff),ati,atj);
+  }
 }
 
 void do_coupling(FILE *log,int nfile,t_filenm fnm[],
@@ -487,9 +499,9 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
     }
   }
 
-  if (bPrint)
+  if (bPrint) {
     pr_ff(tcr,t,idef,cr,nfile,fnm);
-
+  }
   /* Calculate the deviation of average value from the target value */
   for(i=0; (i<eoObsNR); i++) {
     deviation[i] = calc_deviation(tcr->av_value[i],tcr->act_value[i],
@@ -532,7 +544,12 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 	  ff12 += xiS; 
 	}
 	else
-	  fatal_error(0,"No H, no Shell, edit code at %s, line %d\n",__FILE__,__LINE__);
+	  fatal_error(0,"No H, no Shell, edit code at %s, line %d\n",
+		      __FILE__,__LINE__);
+	if (ff6 > 0)
+	  set_factor_matrix(idef->atnr,f6, sqrt(ff6), ati,atj);
+	if (ff12 > 0)
+	  set_factor_matrix(idef->atnr,f12,sqrt(ff12),ati,atj);
       }
       else {
 	if (debug)
@@ -540,17 +557,9 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 		  tclj->xi_6,tclj->xi_12,deviation[tclj->eObs]);
 	factor=deviation[tclj->eObs];
 	
-	xi6  = tclj->xi_6;
-	xi12 = tclj->xi_12;
-	
-	if (xi6)      
-	  ff6  += (dt/xi6)  * factor;
-	if (xi12)     
-	  ff12 += (dt/xi12) * factor;
+	upd_f_value(log,idef->atnr,tclj->xi_6, dt,factor,f6, ati,atj);
+	upd_f_value(log,idef->atnr,tclj->xi_12,dt,factor,f12,ati,atj);
       }
-
-      set_factor_matrix(idef->atnr,f6, sqrt(ff6), ati,atj);
-      set_factor_matrix(idef->atnr,f12,sqrt(ff12),ati,atj);
     }
     if (PAR(cr)) {
       gprod(cr,atnr2,f6);
@@ -567,22 +576,14 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   }
   else {
     for(i=0; (i<tcr->nBU); i++) {
-      tcbu=&(tcr->tcBU[i]);
+      tcbu   = &(tcr->tcBU[i]);
+      factor = deviation[tcbu->eObs];
+      ati    = tcbu->at_i;
+      atj    = tcbu->at_j;
       
-      factor=deviation[tcbu->eObs];
-      
-      if (tcbu->xi_a)      
-	ffa = 1 + (dt/tcbu->xi_a)  * factor;
-      if (tcbu->xi_b)      
-	  ffb = 1 + (dt/tcbu->xi_b)  * factor;
-      if (tcbu->xi_c)      
-	ffc = 1 + (dt/tcbu->xi_c)  * factor;
-      
-      ati=tcbu->at_i;
-      atj=tcbu->at_j;
-      set_factor_matrix(idef->atnr,fa,sqrt(ffa),ati,atj);
-      set_factor_matrix(idef->atnr,fa,sqrt(ffb),ati,atj);
-      set_factor_matrix(idef->atnr,fc,sqrt(ffc),ati,atj);
+      upd_f_value(log,idef->atnr,tcbu->xi_a,dt,factor,fa,ati,atj);
+      upd_f_value(log,idef->atnr,tcbu->xi_b,dt,factor,fb,ati,atj);
+      upd_f_value(log,idef->atnr,tcbu->xi_c,dt,factor,fc,ati,atj);
     }
     if (PAR(cr)) {
       gprod(cr,atnr2,fa);
@@ -590,6 +591,19 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
       gprod(cr,atnr2,fc);
     }
     upd_nbfpbu(log,fr->nbfp,idef->atnr,fa,fb,fc);
+    /* Copy for printing */
+#define BUCK_A(nbfp,ai,aj) (nbfp[ai][3*aj])
+#define BUCK_B(nbfp,ai,aj) (nbfp[ai][3*aj+1])
+#define BUCK_C(nbfp,ai,aj) (nbfp[ai][3*aj+2])
+    for(i=0; (i<tcr->nBU); i++) {
+      tcbu=&(tcr->tcBU[i]);
+      tcbu->a = BUCK_A(fr->nbfp,tcbu->at_i,tcbu->at_i);
+      tcbu->b = BUCK_B(fr->nbfp,tcbu->at_i,tcbu->at_i);
+      tcbu->c = BUCK_C(fr->nbfp,tcbu->at_i,tcbu->at_i);
+      if (debug)
+	fprintf(debug,"buck (type=%d) = %e, %e, %e\n",
+		tcbu->at_i,tcbu->a,tcbu->b,tcbu->c);
+    }
   }
   
   for(i=0; (i<tcr->nQ); i++) {

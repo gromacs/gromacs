@@ -16,7 +16,6 @@ void calc_force(int natom,rvec f[],rvec fff[])
     for(i=jindex[j]; (i<jindex[j+1]); i++) {
       for(m=0; (m<DIM); m++) {
 	fff[j][m] += f[i][m];
-	xcm[j][m] += 
       }
     }
   }
