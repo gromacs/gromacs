@@ -74,12 +74,15 @@ int main(int argc,char *argv[])
     "eigenvectors.[PAR]",
     "With [TT]-rerun[tt] an input trajectory can be given for which ",
     "forces and energies will be (re)calculated.[PAR]",
+    "The options [TT]-pi, -po, -pd, -pn[tt] are used for potential of",
+    "mean force calculations and umbrella sampling. See manual.[PAR]",
     "When mdrun receives a TERM signal it will set nsteps to the current",
     "step plus one, which causes the run to end after one step and write",
     "all the usual output.",
     "When running with MPI, a TERM signal to one of the mdrun processes",
     "is sufficient, this signal should not be sent to mpirun or",
-    "the mdrun process that is the parent of the others." 
+    "the mdrun process that is the parent of the others."
+    
   };
   t_commrec    *cr;
   static t_filenm fnm[] = {
@@ -97,7 +100,7 @@ int main(int argc,char *argv[])
     { efPPA, "-pi", "pull",    ffOPTRD },
     { efPPA, "-po", "pullout", ffOPTWR },
     { efPDO, "-pd", "pull",    ffOPTWR },
-    { efNDX, "-n",  "pull",    ffOPTRD },
+    { efNDX, "-pn",  "pull",    ffOPTRD },
   };
 #define NFILE asize(fnm)
 
