@@ -233,7 +233,7 @@ static int correct_box_elem(tensor box,int v,int d)
   return shift;
 }
 
-void correct_box(tensor box,t_forcerec *fr)
+void correct_box(tensor box,t_forcerec *fr,t_graph *g)
 {
   int zy,zx,yx,x,y,z,shift,l,i;
 
@@ -242,7 +242,13 @@ void correct_box(tensor box,t_forcerec *fr)
   zx = correct_box_elem(box,ZZ,XX);
   yx = correct_box_elem(box,YY,XX);
   
-  if (zy || zx || yx)
+  if (zy || zx || yx) {
+    /* correct the graph */
+    for(i=0; i<g->nnodes; i++) {
+      g->ishift[i][YY] -= g->ishift[i][ZZ]*zy;
+      g->ishift[i][XX] -= g->ishift[i][ZZ]*zx;
+      g->ishift[i][XX] -= g->ishift[i][YY]*yx;
+    }
     /* correct the shift indices of the short-range neighborlists */
     for(l=0; l<eNL_NR; l++)
       for(i=0; i<fr->nlist_sr[l].nri; i++) {
@@ -258,6 +264,7 @@ void correct_box(tensor box,t_forcerec *fr)
 	  fatal_error(0,"Could not correct too skewed box");
 	fr->nlist_sr[l].shift[i] = shift;
       }
+  }
 }
 
 void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
