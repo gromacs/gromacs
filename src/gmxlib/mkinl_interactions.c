@@ -167,6 +167,7 @@ int do_softcore(int i, int j)
 {
     int nflop = 0;
     char fabuf[50],fbbuf[50],dvdlbuf[100];
+    char ifbuf[100];
     int ij=10*i+j;
     
     fabuf[0]=fbbuf[0]=dvdlbuf[0]=0;
@@ -183,7 +184,7 @@ int do_softcore(int i, int j)
       assign("cexp2a",ARRAY(nbfp,tjA+2));
       assign("cexp2b",ARRAY(nbfp,tjB+2));
       assign("sigma6a","defsigma6");
-      assign("sigma6b","defsigma6");      
+      assign("sigma6b","defsigma6");       
     } 
 
     if(!DO_BHAM) {
@@ -210,24 +211,31 @@ int do_softcore(int i, int j)
     assign("rfour","rsq%d*rsq%d",ij,ij);
     assign("rsix","rfour*rsq%d",ij);
 
-    /* since this might be linked with a c compiler it might
-     * not find the pow f77 library call corresponding to **.
-     * Use a c wrapper routine instead.
-     */
+    ifbuf[0]=0;
+    
+    if(DO_COULTAB) {
+      assign("qqA","iqA*%s",ARRAY(charge,jnr));
+      sprintf(ifbuf, bC ? "(qqA != 0)" : "(qqA.neq.0)");
+    }
+    if(DO_VDWTAB) {
+      if(strlen(ifbuf)>0)
+	strcat(ifbuf, bC ? " || " : ".or.");
+      strcat(ifbuf, bC ? "(c6a > 0) || " : "(c6a.gt.0).or.");
+      if(DO_BHAM)
+	strcat(ifbuf, bC ? "(cexp1a > 0)" : "(cexp1a.gt.0)");
+      else
+	strcat(ifbuf, bC ? "(c12a > 0)" : "(c12a.gt.0)");
+    }
+    
+    start_if(ifbuf);
+    /* do state A */
     assign("rA", bC ? "pow(Alpha*sigma6a*lam2+rsix,onesixth)" :
 	   "cpow(Alpha*sigma6a*lam2+rsix,onesixth)");
-    assign("rB", bC ? "pow(Alpha*sigma6b*L12+rsix,onesixth)" :
-	   "cpow(Alpha*sigma6b*L12+rsix,onesixth)");   
-
     assign("rinva","1.0/rA");
-    assign("rinvb","1.0/rB");
-
-    /* temporarily store r^-2 in rinv6a/b */
     assign("rinv5a","rinva*rinva");
     assign("rinv5a","rinv5a*rinv5a*rinva");
-    assign("rinv5b","rinvb*rinvb");
-    assign("rinv5b","rinv5b*rinv5b*rinvb");
-    /* Now do the table lookups! Start with r_A */
+     
+    /* Do the table lookup on r_A */
     comment("Lookup on rA");
     nflop += 22;
     nflop += table_index("rA*tabscale");    
@@ -235,7 +243,6 @@ int do_softcore(int i, int j)
     
     if(DO_COULTAB) {
       comment("Coulomb table");
-      assign("qqA","iqA*%s",ARRAY(charge,jnr));
       nflop += extract_table("n1");
       assign("VVCa","qqA*VV");
       assign("FFCa","qqA*tabscale*FF");
@@ -264,13 +271,51 @@ int do_softcore(int i, int j)
 	nflop += 3;
       }
     }
+    do_else(); /* If all A interaction parameters are 0 */
+    if(DO_COULTAB) {
+      assign("VVCa","0");
+      assign("FFCa","0");
+    }
+    if(DO_VDWTAB) {
+      assign("VVDa","0");
+      assign("FFDa","0");
+      assign("VVRa","0");
+      assign("FFRa","0");
+    }
+    assign("rinv5a","0");    
+    end_if(); /* finished A */
+
+    ifbuf[0]=0;
+ 
+    /* now do B */
+    if(DO_COULTAB) {
+      assign("qqB","iqB*%s",ARRAY(chargeB,jnr));
+      sprintf(ifbuf, bC ? "(qqB != 0)" : "(qqB.neq.0)");
+    }
+    if(DO_VDWTAB) {
+      if(strlen(ifbuf)>0)
+	strcat(ifbuf, bC ? " || " : ".or.");
+      strcat(ifbuf, bC ? "(c6b > 0) || " : "(c6b.gt.0).or.");
+      if(DO_BHAM)
+	strcat(ifbuf, bC ? "(cexp1b > 0)" : "(cexp1b.gt.0)");
+      else
+	strcat(ifbuf, bC ? "(c12b > 0)" : "(c12b.gt.0)");
+    }
+    
+    start_if(ifbuf);
+    
+    assign("rB", bC ? "pow(Alpha*sigma6b*L12+rsix,onesixth)" :
+	   "cpow(Alpha*sigma6b*L12+rsix,onesixth)");
+    assign("rinvb","1.0/rB");
+    assign("rinv5b","rinvb*rinvb");
+    assign("rinv5b","rinv5b*rinv5b*rinvb");
+    /* do the B table */
     comment("Lookup on rB");
     nflop += 1 + table_index("rB*tabscale");    
-
+    
     assign("n1","%d*n0%s",table_element_size, bC ? "" : "+1");
     if(DO_COULTAB) {
       comment("Coulomb table");
-      assign("qqB","iqB*%s",ARRAY(chargeB,jnr));
       nflop += extract_table("n1");
       assign("VVCb","qqB*VV");
       assign("FFCb","qqB*tabscale*FF");
@@ -299,6 +344,20 @@ int do_softcore(int i, int j)
 	nflop += 3;
       }
     }
+    do_else(); /* If all B interaction parameters are 0 */
+    if(DO_COULTAB) {
+      assign("VVCb","0");
+      assign("FFCb","0");
+    }
+    if(DO_VDWTAB) {
+      assign("VVDb","0");
+      assign("FFDb","0");
+      assign("VVRb","0");
+      assign("FFRb","0");
+    }
+    assign("rinv5b","0");
+    end_if(); /* finished B */
+    
     /* OK. Now we have all potential and force lookup values,
      * all that is left is to calculate the actual force, potential
      * and dv/dlambda.

@@ -179,12 +179,12 @@ void set_loop_options(void)
    * mkinl_interactions.c
    */
   loop.coul_needs_rinv=TRUE;
-  /* all current coulomb stuff needs 1/r */
+
   loop.coul_needs_rinvsq=(loop.coul && !DO_COULTAB);
   /* non-table coul also need r^-2 */
   loop.coul_needs_rsq=(DO_RF || (loop.coul && loop.free));
   /* reaction field and softcore need r^2 */
-  loop.coul_needs_r=DO_COULTAB;
+  loop.coul_needs_r=DO_COULTAB && !DO_SOFTCORE;
   /* tabulated coulomb needs r */ 
 
   /* If we are vectorizing the invsqrt it is probably faster to
@@ -192,22 +192,22 @@ void set_loop_options(void)
    * result to get rinvsq. Just tell the generator we want rinv for
    * those atoms too:
    */
-  loop.vdw_needs_rinv=DO_VDWTAB || (loop.coul && loop.vectorize_invsqrt);
+  loop.vdw_needs_rinv=(DO_VDWTAB || (loop.coul && loop.vectorize_invsqrt));
   
   /* table nb needs 1/r */
   loop.vdw_needs_rinvsq=(loop.vdw && !DO_VDWTAB);
   /* all other need r^-2 */
   loop.vdw_needs_rsq=(loop.vdw && loop.free);
   /* softcore needs r^2 */
-  loop.vdw_needs_r=(DO_BHAM || DO_VDWTAB || (loop.vdw && loop.free));
+  loop.vdw_needs_r=(DO_BHAM || DO_VDWTAB || (loop.vdw && loop.free)) && !DO_SOFTCORE;
   /* softcore and buckingham need r */
 
   /* Now, what shall we calculate? */ 
-  loop.invsqrt=
-    (loop.coul && (loop.coul_needs_rinv || loop.coul_needs_r)) ||
-    (loop.vdw && (loop.vdw_needs_rinv || loop.vdw_needs_r));
+  loop.invsqrt=!DO_SOFTCORE &&
+    ((loop.coul && (loop.coul_needs_rinv || loop.coul_needs_r)) ||
+     (loop.vdw && (loop.vdw_needs_rinv || loop.vdw_needs_r)));
   
-  loop.recip=!loop.invsqrt;
+  loop.recip=!DO_SOFTCORE && !loop.invsqrt;
 
   loop.vectorize_invsqrt=loop.invsqrt && 
     (opt.vectorize_invsqrt==YES_WW || 
@@ -471,8 +471,8 @@ int main(int argc,char *argv[])
 			  opt. */
 	  if(DO_WATER && !loop.coul)
 	    continue;    /* No point with LJ only water loops */	      
-	  /* (but we have LJ only general solvent loops) */
-	  
+	  /* (but we have LJ only general solvent loops) */	  
+
 	  /* Write metacode to buffer */
 	  make_func("");
 	  flush_buffers();
