@@ -69,15 +69,15 @@ void print_time(FILE *out,time_t start,int step,t_inputrec *ir)
   double dt;
   char buf[48];
 
-  fprintf(out,"\rstep %d",step);
+  fprintf(out,"\rstep %d",step - ir->init_step);
   if ((step >= ir->nstlist)) {
     if ((ir->nstlist == 0) || ((step % ir->nstlist) == 0)) {
       /* We have done a full cycle let's update time_per_step */
       end=time(NULL);
       dt=difftime(end,start);
-      time_per_step=dt/(step+1);
+      time_per_step=dt/(step - ir->init_step + 1);
     }
-    dt=(ir->nsteps-step)*time_per_step;
+    dt=(ir->nsteps + ir->init_step - step)*time_per_step;
 
     if (dt >= 300) {    
       finish = end+(time_t)dt;

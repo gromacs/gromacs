@@ -262,7 +262,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	     unsigned long Flags)
 {
   t_mdebin   *mdebin;
-  int        fp_ene=0,fp_trn=0,step;
+  int        fp_ene=0,fp_trn=0,step,step_rel;
   FILE       *fp_dgdl=NULL;
   time_t     start_t;
   real       t,t0,lam0;
@@ -429,27 +429,32 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   
   /* loop over MD steps or if rerunMD to end of input trajectory */
   bFirstStep = TRUE;
+  bLastStep = FALSE;
   step = parm->ir.init_step;
-  while ((!bRerunMD && (step - parm->ir.init_step <= parm->ir.nsteps)) ||  
+  step_rel = 0;
+  while ((!bRerunMD && (step_rel <= parm->ir.nsteps)) ||  
 	 (bRerunMD && bNotLastFrame)) {
     
-    bLastStep = (step - parm->ir.init_step == parm->ir.nsteps);
-    
-    do_log = do_per_step(step,parm->ir.nstlog) || bLastStep;
-
-    if (bFullPBC)
-      init_pbc(state->box);
-    
     if (bRerunMD) {
-      if (rerun_fr.bStep)
+      if (rerun_fr.bStep) {
 	step = rerun_fr.step;
+	step_rel = step - parm->ir.init_step;
+      }
       if (rerun_fr.bTime)
 	t = rerun_fr.time;
       else
 	t = step;
     } else {
+      bLastStep = (step_rel == parm->ir.nsteps);
+
       t = t0 + step*parm->ir.delta_t;
     }
+    
+    do_log = do_per_step(step,parm->ir.nstlog) || bLastStep;
+
+    if (bFullPBC)
+      init_pbc(state->box);
+
     if (parm->ir.efep != efepNO) {
       if (bRerunMD && rerun_fr.bLambda)
 	state->lambda = rerun_fr.lambda;
@@ -799,14 +804,14 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     }
 
     /* Time for performance */
-    if (((step % 10) == 0) || bLastStep)
+    if (((step % stepout) == 0) || bLastStep)
       update_time();
 
     /* Output stuff */
     if (MASTER(cr)) {
       bool do_ene,do_dr,do_or,do_dihr;
       
-      upd_mdebin(mdebin,fp_dgdl,mdatoms->tmass,step,t,ener,state,shake_vir,
+      upd_mdebin(mdebin,fp_dgdl,mdatoms->tmass,step_rel,t,ener,state,shake_vir,
 		 force_vir,parm->vir,parm->pres,grps,mu_tot);
       do_ene = do_per_step(step,parm->ir.nstenergy) || bLastStep;
       do_dr  = do_per_step(step,parm->ir.nstdisreout) || bLastStep;
@@ -831,9 +836,11 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       /* read next frame from input trajectory */
       bNotLastFrame = read_next_frame(status,&rerun_fr);
     
-    if (!bRerunMD || !rerun_fr.bStep)
+    if (!bRerunMD || !rerun_fr.bStep) {
       /* increase the MD step number */
       step++;
+      step_rel++;
+    }
   }
   /* End of main MD loop */
   debug_gmx();
