@@ -224,9 +224,9 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
   
   clear_fftgrid(grid);
   unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
-  ii0   = nnx+nx2+1-order;
-  jj0   = nny+ny2+1-order;
-  kk0   = nnz+nz2+1-order;
+  ii0   = nnx+nx2+1-order/2;
+  jj0   = nny+ny2+1-order/2;
+  kk0   = nnz+nz2+1-order/2;
   thx   = theta[XX];
   thy   = theta[YY];
   thz   = theta[ZZ];
@@ -422,9 +422,9 @@ void gather_f_bsplines(t_fftgrid *grid,matrix recipbox,
   dthx = dtheta[XX];
   dthy = dtheta[YY];
   dthz = dtheta[ZZ];
-  ii0  = nnx+nx2+1-order;
-  jj0  = nny+ny2+1-order;
-  kk0  = nnz+nz2+1-order;
+  ii0  = nnx+nx2+1-order/2;
+  jj0  = nny+ny2+1-order/2;
+  kk0  = nnz+nz2+1-order/2;
   
   rxx = recipbox[XX][XX];
   ryx = recipbox[YY][XX];

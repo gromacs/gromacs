@@ -250,6 +250,18 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
       warning(NULL);
     }
   }
+
+  if (ir->coulombtype == eelPME) {
+    if ((ir->pme_order < 4) || ((ir->pme_order % 2) == 1)) {
+      if (ir->pme_order < 4)
+	ir->pme_order = 4;
+      else if ((ir->pme_order % 2) == 1)
+	ir->pme_order++;
+      sprintf(err_buf,"pme_order should be even and at least 4, modified to %d",
+	      ir->pme_order);
+      warning(NULL);
+    }
+  }
   
   if ((ir->vdwtype == evdwSWITCH) || (ir->vdwtype == evdwSHIFT)) {
     sprintf(err_buf,"With vdwtype = %s rvdw_switch must be < rvdw",
