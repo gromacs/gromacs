@@ -135,7 +135,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
                
   /* Calculate Temperature coupling parameters lambda */
   ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
-  tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,lam0);
+  tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,lam0,0
+	 parm->ir.ntcmemory);
   where();
   
   /* Write start time and temperature */
