@@ -30,6 +30,8 @@ typedef int bool;
 #define FALSE 0
 #define TRUE  1
 
+/* #define PAUL*/
+
 #ifndef USEVECTOR
 #define PREFETCH 1
 #endif
@@ -237,7 +239,11 @@ void p_finvsqrt(void)
   p_line("function invsqrt(x)");
   fseed();
   p_line("real*8    invsqrt,x,y,y2");
+#ifdef PAUL
+  p_line("real*4    luO,luH1,luH2,rsqluO,rsqluH1,rsqluH2,tmpO,tmpH1,tmpH2,xin");
+#else
   p_line("real*4    lu,xin");
+#endif /* PAUL */
   p_line("integer*4 exp,addr,bval,result");
   newline();
   
@@ -306,70 +312,137 @@ void p_finvsqrt(void)
   }
 }
 
-int p_invsqrt(char *left,char *right)
+void p_invsqrt1(char *tmp,char *right)
 {
-  char ibuf[256];
-  char nbuf[256];
-
-  sprintf(ibuf,"invsqrt(%s)",right);
-  sprintf(nbuf,"1.0/sqrt(%s)",right);
-#ifdef HAVE_SQRTF
-#ifndef DOUBLE
-  if (bC)
-    sprintf(nbuf,"1.0/sqrtf(%s)",right);
-#endif
-#endif
-
+  comment("Doing fast invsqrt");
   if (bC) {
-#ifdef CINVSQRT
-    if (bInline) {
-      comment("Doing fast invsqrt");
-      p_state("bit_pattern.fval",right);
-      p_state("exp_addr","EXP_ADDR(bit_pattern.bval)");
-      p_state("fract","FRACT_ADDR(bit_pattern.bval)");
-      p_state("result.bval","lookup_table.exp_seed[exp_addr] | lookup_table.fract_seed[fract]");
-      p_state("lu","result.fval");
-      sprintf(buf,"(half*lu*(three-((%s*lu)*lu)))",right);
-#ifdef DOUBLE
-      p_state("y1",buf);
-      sprintf(buf,"y2=(half*y1*(three-((%s*y1)*y1)))",right);
-      p_state(left,buf);
-#else
-      p_state(left,buf);
-#endif /* DOUBLE */
-    }
-    else 
-      p_state(left,ibuf);
-#else
-    p_state(left,nbuf);
-#endif /* CINVSQRT */
+    p_state("bit_pattern.fval",right);
+    p_state("exp_addr","EXP_ADDR(bit_pattern.bval)");
+    p_state("fract","FRACT_ADDR(bit_pattern.bval)");
+    p_state("result.bval","lookup_table.exp_seed[exp_addr] | lookup_table.fract_seed[fract]");
+    p_state(tmp,"result.fval");
   }
   else {
-#ifdef FINVSQRT
-    if (bInline) {
-      p_state("xin",right);
-      p_state("iexp","rshift(and(bval,expmask),expshift)");
-      p_state("addr","rshift(and(bval,or(fractmask,explsb)),fractshift)");
-      p_state("result","or(expseed(iexp+1),fracseed(addr+1))");
-      sprintf(buf,"(half*lu*(three-((%s*lu)*lu)))",right);
+    p_state("xin",right);
+    p_state("iexp","rshift(and(bval,expmask),expshift)");
+    p_state("addr","rshift(and(bval,or(fractmask,explsb)),fractshift)");
+    p_state("result","or(expseed(iexp+1),fracseed(addr+1))");
+  }
+}
+
+void p_invsqrt2(char *left,char *tmp,char *right)
+{
+  /* Language independent! */
+  sprintf(buf,"(half*%s*(three-((%s*lu)*lu)))",tmp,right);
 #ifdef DOUBLE
-      p_state("y1",buf);
-      sprintf(buf,"y2=(half*y1*(three-((%s*y1)*y1)))",right);
-      p_state(left,buf);
+  p_state("y1",buf);
+  sprintf(buf,"y2=(half*y1*(three-((%s*y1)*y1)))",right);
+  p_state(left,buf);
 #else
-      p_state(left,buf);
+  p_state(left,buf);
 #endif /* DOUBLE */
-    }
-    else
-      p_state(left,ibuf);
-#else
-    p_state(left,nbuf);
+}
+
+int p_invsqrt(char *left,char *right)
+{
+  bool bInvsqrt = FALSE;
+  
+#ifdef CINVSQRT
+  bInvsqrt = bC;
 #endif
+#ifdef FINVSQRT
+  bInvsqrt = !bC;
+#endif
+
+  if (bInvsqrt) {
+    if (bInline) {
+      p_invsqrt1("lu",right);
+      p_invsqrt2(left,"lu",right);
+    }
+    else {
+      sprintf(buf,"invsqrt(%s)",right);
+      p_state(left,buf);
+    }
+  }
+  else {
+    sprintf(buf,"1.0/sqrt(%s)",right);
+#ifdef HAVE_SQRTF
+#ifndef DOUBLE
+    if (bC)
+      sprintf(buf,"1.0/sqrtf(%s)",right);
+#endif
+#endif
+    p_state(left,buf);
   }
 #ifdef DOUBLE
   return 10;
 #else
   return 5;
+#endif
+}
+
+int p_waterinvsqrt(void)
+{
+  char *w[] = { "O", "H1", "H2" };
+  char vbuf[16],rbuf[32];
+  int  m;
+  bool bInvsqrt = FALSE;
+  
+#ifdef CINVSQRT
+  bInvsqrt = bC;
+#endif
+#ifdef FINVSQRT
+  bInvsqrt = !bC;
+#endif
+
+  if (bInvsqrt) {
+    if (bInline) {
+      for(m=0; (m<3); m++) {
+	sprintf(vbuf,"lu%s",w[m]);
+	sprintf(rbuf,"rsq%s",w[m]);
+	p_invsqrt1(vbuf,rbuf);
+      }
+      for(m=0; (m<3); m++) {
+	sprintf(vbuf,"rsqlu%s",w[m]);
+	sprintf(rbuf,"rsq%s*lu%s",w[m],w[m]);
+	p_state(vbuf,rbuf);
+      }
+      for(m=0; (m<3); m++) {
+	sprintf(vbuf,"tmp%s",w[m]);
+	sprintf(rbuf,"rsqlu%s*lu%s",w[m],w[m]);
+	p_state(vbuf,rbuf);
+      }
+      for(m=0; (m<3); m++) {
+	sprintf(vbuf,"rinv1%s",w[m]);
+	sprintf(rbuf,"half*lu%s*(three-tmp%s)",w[m],w[m]);
+	p_state(vbuf,rbuf);
+      }
+    }
+    else {
+      for(m=0; (m<3); m++) {
+	sprintf(vbuf,"rinv1%s",w[m]);
+	sprintf(rbuf,"invsqrt(rsq%s)",w[m]);
+	p_state(vbuf,rbuf);
+      }
+    }
+  }
+  else {
+    for(m=0; (m<3); m++) {
+      sprintf(vbuf,"rinv1%s",w[m]);
+      sprintf(rbuf,"1.0/sqrt(rsq%s)",w[m]);
+#ifdef HAVE_SQRTF
+#ifndef DOUBLE
+      if (bC)
+	sprintf(rbuf,"1.0/sqrtf(rsq%s)",w[m]);
+#endif
+#endif
+      p_state(vbuf,rbuf);
+    }
+  }
+#ifdef DOUBLE
+  return 30;
+#else
+  return 15;
 #endif
 }
 
@@ -658,7 +731,11 @@ void flocal(void)
     p_creal("three",3.0);
     fprintf(fp,"%st_convert   result,bit_pattern;\n",indent());
     fprintf(fp,"%sword        exp_addr,fract;\n",indent());
+#ifdef PAUL
+    fprintf(fp,"%sfloat       lu,luO,luH1,luH2,rsqluO,rsqluH1,rsqluH2,tmpO,tmpH1,tmpH2;\n",indent());
+#else
     fprintf(fp,"%sfloat       lu;\n",indent());
+#endif /* PAUL */
 #ifdef DOUBLE
     p_real("y1,y2");
 #endif /* DOUBLE */
@@ -869,6 +946,21 @@ void finnerloop(char *loopname)
   p_state("jy",ARR(pos,j3+1));
   p_state("jz",ARR(pos,j3+2));  
   
+#ifdef PAUL
+  bDelayInvsqrt = FALSE;
+  if (bWater) {
+    comment("Ramones forever");
+    nflop += p_sqr("O");
+    nflop += p_sqr("H1");
+    nflop += p_sqr("H2");
+    nflop += p_waterinvsqrt();
+  }
+  else {
+    comment("First one is for oxygen, with LJ");
+    nflop += p_sqr("O");
+    nflop += p_invsqrt("rinv1O","rsqO");
+  }
+#else
   comment("First one is for oxygen, with LJ");
   nflop += p_sqr("O");
   nflop += p_invsqrt("rinv1O","rsqO");
@@ -884,7 +976,7 @@ void finnerloop(char *loopname)
       nflop += p_invsqrt("rinv1H2","rsqH2");
     }
   }
-  
+#endif  
 #ifdef PREFETCH
   comment("Prefetch the forces");
   p_state("fxJ",ARR(faction,j3));
