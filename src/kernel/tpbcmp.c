@@ -466,6 +466,7 @@ void comp_trx(char *fn1, char *fn2, real ftol)
   
   fn[0]=fn1;
   fn[1]=fn2;
+  fprintf(stderr,"Comparing trajectory files %s and %s\n",fn1,fn2);
   for (i=0; i<2; i++)
     read_first_frame(&status[i],fn[i],&fr[i],TRX_READ_X|TRX_READ_V|TRX_READ_F);
   

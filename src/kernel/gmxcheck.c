@@ -367,7 +367,9 @@ int main(int argc,char *argv[])
     "will be calculated from them.[PAR]",
     "The program will compare run input ([TT].tpr[tt], [TT].tpb[tt] or",
     "[TT].tpa[tt]) files",
-    "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied."
+    "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied.",
+    "Similarly a pair of trajectory files can be compared (using the [TT]-f2[tt]",
+    "option), or a pair of energy files (using the [TT]-e2[tt] option)."
   };
   t_filenm fnm[] = {
     { efTRX, "-f",  NULL, ffOPTRD },
