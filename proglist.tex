@@ -1,37 +1,9 @@
-%
-% $Id$
-% 
-%       This source code is part of
-% 
-%        G   R   O   M   A   C   S
-% 
-% GROningen MAchine for Chemical Simulations
-% 
-%               VERSION 2.0
-% 
-% Copyright (c) 1991-1999
-% BIOSON Research Institute, Dept. of Biophysical Chemistry
-% University of Groningen, The Netherlands
-% 
-% Please refer to:
-% GROMACS: A message-passing parallel molecular dynamics implementation
-% H.J.C. Berendsen, D. van der Spoel and R. van Drunen
-% Comp. Phys. Comm. 91, 43-56 (1995)
-% 
-% Also check out our WWW page:
-% http://md.chem.rug.nl/~gmx
-% or e-mail to:
-% gromacs@chem.rug.nl
-% 
-% And Hey:
-% Giving Russians Opium May Alter Current Situation
-%
-
 \begin{description}
 \item {\large\bf Generating topologies and coordinates}
 \vspace{-2ex}\begin{tabbing}
 {\bf mk\_angndx} \= \kill
-{\bf pdb2gmx} \> converts pdb files to topology and coordinate files  \\
+{\bf pdb2gmx} \> converts pdb files to topology and coordinate files \\
+{\bf x2top} \> generates a primitive topology from coordinates  \\
 {\bf editconf} \> edits the box and writes subgroups  \\
 {\bf genbox} \> solvates a system \\
 {\bf genion} \> generates mono atomic ions on energetically favorable positions \\
@@ -80,7 +52,9 @@
 {\bf mk\_angndx} \> generates index files for g\_angle \\
 {\bf gmxcheck} \> checks and compares files \\
 {\bf gmxdump} \> makes binary files human readable \\
+{\bf g\_traj} \> plots x, v and f of selected atoms/groups (and more) from a trajectory \\
 {\bf g\_analyze} \> analyzes data sets \\
+{\bf trjorder} \> orders molecules according to their distance to a group \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Distances between structures}
@@ -104,7 +78,7 @@
 \item {\large\bf Mass distribution properties over time}
 \vspace{-2ex}\begin{tabbing}
 {\bf mk\_angndx} \= \kill
-{\bf g\_com} \> calculates the center of mass \\
+{\bf g\_traj} \> plots x, v, f, box, temperature and rotational energy \\
 {\bf g\_gyrate} \> calculates the radius of gyration \\
 {\bf g\_msd} \> calculates mean square displacements \\
 {\bf g\_rotacf} \> calculates the rotational correlation function for molecules \\
@@ -129,13 +103,17 @@
 {\bf g\_sas} \> computes solvent accessible surface area \\
 {\bf g\_order} \> computes the order parameter per atom for carbon tails \\
 {\bf g\_sgangle} \> computes the angle and distance between two groups \\
+{\bf g\_sorient} \> analyzes solvent orientation around solutes \\
+{\bf g\_bundle} \> analyzes bundles of axes, {\eg} helices \\
 {\bf g\_disre} \> analyzes distance restraints \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Kinetic properties}
 \vspace{-2ex}\begin{tabbing}
 {\bf mk\_angndx} \= \kill
+{\bf g\_traj} \> plots x, v, f, box, temperature and rotational energy \\
 {\bf g\_velacc} \> calculates velocity autocorrelation functions \\
+{\bf g\_tcaf} \> calculates viscosities of liquids \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Electrostatic properties}
@@ -165,6 +143,7 @@
 {\bf g\_density} \> calculates the density of the system \\
 {\bf g\_order} \> computes the order parameter per atom for carbon tails \\
 {\bf g\_h2order} \> computes the orientation of water molecules \\
+{\bf g\_bundle} \> analyzes bundles of axes, {\eg} transmembrane helices \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Covariance analysis}

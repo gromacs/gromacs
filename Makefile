@@ -4,7 +4,7 @@
 #
 RM	=	/bin/rm -f
 RMDIR	=	/bin/rm -rf
-TOUCH	=	/usr/bin/touch
+TOUCH	=	touch
 SHELL	=	/bin/csh
 
 CHMOD	=	chmod 664
@@ -17,7 +17,7 @@ LOCAL	=	$(GMXHOME)/src/local
 HTML	=	$(GMXHOME)/html
 COPYRGT	=	$(LOCAL)/copyrgt
 
-TEXFS = algorithms	analyse		averages	cutoff		\
+TEXFS = algorithms	analyse		averages			\
 	defunits	files		forcefield	ieee		\
 	implement	install		intro		lr-corr		\
 	lr_elstat	macros		mdp_opt		par-md		\

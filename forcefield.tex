@@ -1237,10 +1237,23 @@ can be written in tensor notation:
 \partd{x_d}{y} & \partd{y_d}{y} & \partd{z_d}{y}        \\[1ex]
 \partd{x_d}{z} & \partd{y_d}{z} & \partd{z_d}{z}
 \end{array}\right]\Fdum
+\label{eqn:fdum}
 \eeq
 where $\Fdum$ is the force on the dummy particle and $x_d$, $y_d$ and
 $z_d$ are the coordinates of the dummy particle. In this way the total
 force and the total torque are conserved~\cite{Berendsen84b}.
+
+As a further note, the computation of the virial (\eqnref{Xi})
+\normindex{virial} is
+non-trivial when dummy atoms are used. Since the virial involves a
+summation over all the atoms (rather than virtual particles) the forces
+most be redistributed from the dummies to the atoms (using
+~\eqnref{fdum}) {\em before} computation of the virial. In some
+special cases where the forces on the atoms can be written as a linear
+combination of the forces on the dummies (types 2 and 3 below) there
+is no difference between computing the virial before and after the
+redistribution of forces.  However, in the general case redistribution
+should be done first.
 
 \begin{figure}
 \centerline{\psfig{figure=plots/dummies.eps,width=15cm}}
