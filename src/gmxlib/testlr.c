@@ -81,10 +81,9 @@ void test_pppm(FILE *log,       bool bVerbose,
   init_nrnb(&nrnb);
   
   /* First time only setup is done! */
-  ener = do_pppm(log,bVerbose,bGenerGhat,ghatfn,ir,atoms->nr,  
-		 x,f,charge,box,phi,cr,&nrnb,bOld);
-  ener = do_pppm(log,bVerbose,bGenerGhat,NULL,NULL,atoms->nr,  
-		 x,f,charge,box,phi,cr,&nrnb,bOld);
+  init_pppm(log,cr,bVerbose,bOld,box,ghatfn,ir);
+  
+  ener = do_pppm(log,bVerbose,atoms->nr,x,f,charge,box,phi,cr,&nrnb);
   fprintf(log,"Vpppm = %g\n",ener);
   
   sprintf(buf,"PPPM-%d.pdb",ir->nkx);
@@ -125,14 +124,11 @@ void test_poisson(FILE *log,       bool bVerbose,
       phi_f[i] -= phi_s[i];
     ener = do_optimize_poisson(log,bVerbose,ir,atoms->nr,x,f,charge,
 			       box,phi,cr,&nrnb,f_four,phi_f,beta,bOld);
-    ener = do_optimize_poisson(log,bVerbose,ir,atoms->nr,x,f,charge,box,
-			       phi,cr,&nrnb,f_four,phi_f,beta,bOld);
     for(i=0; (i<atoms->nr); i++)
       phi_f[i] += phi_s[i];
+    nit = 0;
   }
   else {
-    ener = do_poisson(log,bVerbose,ir,atoms->nr,x,f,charge,box,phi,
-		      cr,&nrnb,&nit,bOld);
     ener = do_poisson(log,bVerbose,ir,atoms->nr,x,f,charge,box,phi,
 		      cr,&nrnb,&nit,bOld);
   }

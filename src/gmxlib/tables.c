@@ -353,6 +353,7 @@ void make_tables(t_forcerec *fr,bool bVerbose)
     /* Check which table we have to use */
     switch (fr->eeltype) {
     case eelPPPM:
+    case eelPOISSON:
     case eelSHIFT:
       tabsel = pppmtab[k];
       break;

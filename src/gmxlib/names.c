@@ -69,7 +69,7 @@ char *ptype_str[eptNR+1] = {
 
 char *eel_names[eelNR+1] = {
   "Twin-Range", "Reaction-Field", "Generalized-Reaction-Field",
-  "PME", "PPPM", "Switch", "Shift", "User", NULL
+  "PME", "PPPM", "Poisson", "Switch", "Shift", "User", NULL
 };
 
 char *eshake_names[estNR+1] = {

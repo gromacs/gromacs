@@ -422,111 +422,101 @@ void solve_pppm(FILE *fp,t_commrec *cr,
   inc_nrnb(nrnb,eNR_CONV,ntot);
 }
 
-real do_pppm(FILE *log,       bool bVerbose,
-	     bool bGenerGhat, char *ghatfn,
-	     t_inputrec *ir,  int natoms,
-	     rvec x[],        rvec f[],
-	     real charge[],   rvec box,
-	     real phi[],      t_commrec *cr,
-	     t_nrnb *nrnb,    bool bOld)
-{
-  static  bool bFirst = TRUE;
-  static  real      ***ghat;
-  static  t_fftgrid *grid;
-  static  rvec      beta;
-  static  int       porder;
-  
-  const     real tol = 1e-5;
-  int       m;
-  real      ener,r1,rc;
-  ivec      grids;
-  rvec      spacing;
-  
-  ener = 0.0;
-  
-  if (bFirst) {
-    int nx,ny,nz;
-    
-    if (cr != NULL) {
-      if (cr->nprocs > 1)
-	fatal_error(0,"No parallel PPPM yet...");
-    }
-    if (bGenerGhat) {    
-      fprintf(log,"Generating Ghat function\n");
-      beta[XX]=beta[YY]=beta[ZZ]= 1.85;
-      porder = 2;
-      nx     = ir->nkx;
-      ny     = ir->nky;
-      nz     = ir->nkz;
-      ghat   = mk_rgrid(nx,ny,nz);
-      mk_ghat(NULL,nx,ny,nz,ghat,box,ir->rshort,ir->rlong,TRUE,bOld);
-      
-      pr_scalar_gk("generghat.xvg",nx,ny,nz,box,ghat);
-    }
-    else {
-      fprintf(stderr,"Reading Ghat function from %s\n",ghatfn);
-      ghat = rd_ghat(log,ghatfn,grids,spacing,beta,&porder,&r1,&rc);
-      
-      /* Check whether cut-offs correspond */
-      if ((fabs(r1-ir->rshort) > tol) || (fabs(rc-ir->rlong) > tol)) {
-	fprintf(log,"rshort = %10.3e  rlong = %10.3e"
-		"  r1 = %10.3e  rc = %10.3e\n",ir->rshort,ir->rlong,r1,rc);
-	fflush(log);
-	fatal_error(0,"Cut-off lengths in tpb file and Ghat file %s "
-		    "do not match\nCheck your log file!",ghatfn);
-      }
-      
-      /* Check whether boxes correspond */
-      for(m=0; (m<DIM); m++)
-	if (fabs(box[m]-grids[m]*spacing[m]) > tol) {
-	  pr_rvec(log,0,"box",box,DIM);
-	  pr_rvec(log,0,"grid-spacing",spacing,DIM);
-	  pr_ivec(log,0,"grid size",grids,DIM);
-	  fflush(log);
-	  fatal_error(0,"Box sizes in tpb file and Ghat file %s do not match\n"
-		      "Check your log file!",ghatfn);
-	}
-      nx = grids[XX];
-      ny = grids[YY];
-      nz = grids[ZZ];
-      
-      pr_scalar_gk("optimghat.xvg",nx,ny,nz,box,ghat);
-    }
+static rvec      beta;
+static real      ***ghat=NULL;
+static t_fftgrid *grid=NULL;
 
-    fprintf(log,"Will use the PPPM algorithm for long-range electrostatics\n");
+void init_pppm(FILE *log,t_commrec *cr,bool bVerbose,bool bOld,
+	       rvec box,char *ghatfn,t_inputrec *ir)
+{
+  int   nx,ny,nz,m,porder;
+  ivec  grids;
+  real  r1,rc;
+  const real tol = 1e-5;
+  rvec  spacing;
+    
+  if (cr != NULL) {
+    if (cr->nprocs > 1)
+      fatal_error(0,"No parallel PPPM yet...");
+  }
+  fprintf(log,"Will use the PPPM algorithm for long-range electrostatics\n");
+ 
+  if (!fexist(ghatfn)) {    
+    beta[XX]=beta[YY]=beta[ZZ]= 1.85;
+    nx     = ir->nkx;
+    ny     = ir->nky;
+    nz     = ir->nkz;
+    
+    fprintf(log,"Generating Ghat function\n");
     fprintf(log,"Grid size is %d x %d x %d\n",nx,ny,nz);
 
     if ((nx < 4) || (ny < 4) || (nz < 4)) 
       fatal_error(0,"Grid must be at least 4 points in all directions");
+      
+    ghat   = mk_rgrid(nx,ny,nz);
+    mk_ghat(NULL,nx,ny,nz,ghat,box,ir->rshort,ir->rlong,TRUE,bOld);
     
-    if (porder != 2)
-      fatal_error(0,"porder = %d, should be 2 in %s",porder,ghatfn);
-    
-    grid = mk_fftgrid(nx,ny,nz);
-
-    bFirst = FALSE;
+    if (bVerbose)
+      pr_scalar_gk("generghat.xvg",nx,ny,nz,box,ghat);
   }
   else {
-    /* We don't do PPPM the first time around, that is only
-     * for setting things up.
-     */
-
-    /* Now start the actual PPPM procedure.
-     * First step: spreading the charges over the grid.
-     */
-    /* Make the grid empty */
-    clear_fftgrid(grid);
-
-    spread_q(log,bVerbose,natoms,x,charge,box,grid,nrnb);
+    fprintf(stderr,"Reading Ghat function from %s\n",ghatfn);
+    ghat = rd_ghat(log,ghatfn,grids,spacing,beta,&porder,&r1,&rc);
     
-    /* Second step: solving the poisson equation in Fourier space */
-    solve_pppm(log,NULL,grid,ghat,box,bVerbose,nrnb);
+    /* Check whether cut-offs correspond */
+    if ((fabs(r1-ir->rshort) > tol) || (fabs(rc-ir->rlong) > tol)) {
+      fprintf(log,"rshort = %10.3e  rlong = %10.3e"
+	      "  r1 = %10.3e  rc = %10.3e\n",ir->rshort,ir->rlong,r1,rc);
+      fflush(log);
+      fatal_error(0,"Cut-off lengths in tpb file and Ghat file %s "
+		  "do not match\nCheck your log file!",ghatfn);
+    }
+      
+    /* Check whether boxes correspond */
+    for(m=0; (m<DIM); m++)
+      if (fabs(box[m]-grids[m]*spacing[m]) > tol) {
+	pr_rvec(log,0,"box",box,DIM);
+	pr_rvec(log,0,"grid-spacing",spacing,DIM);
+	pr_ivec(log,0,"grid size",grids,DIM);
+	fflush(log);
+	fatal_error(0,"Box sizes in tpb file and Ghat file %s do not match\n"
+		    "Check your log file!",ghatfn);
+      }
+
+    if (porder != 2)
+      fatal_error(0,"porder = %d, should be 2 in %s",porder,ghatfn);
+      
+    nx = grids[XX];
+    ny = grids[YY];
+    nz = grids[ZZ];
     
-    /* Third and last step: gather the forces, energies and potential
-     * from the grid.
-     */
-    ener=gather_f(log,bVerbose,natoms,x,f,charge,box,phi,grid,beta,nrnb);
+    if (bVerbose)
+      pr_scalar_gk("optimghat.xvg",nx,ny,nz,box,ghat);
   }
+  grid = mk_fftgrid(nx,ny,nz);
+}
+
+real do_pppm(FILE *log,       bool bVerbose,
+	     int natoms,      rvec x[],
+	     rvec f[],        real charge[],
+	     rvec box,        real phi[],
+	     t_commrec *cr,   t_nrnb *nrnb)
+{
+  real    ener;
+  
+  /* Make the grid empty */
+  clear_fftgrid(grid);
+  
+  /* First step: spreading the charges over the grid. */
+  spread_q(log,bVerbose,natoms,x,charge,box,grid,nrnb);
+  
+  /* Second step: solving the poisson equation in Fourier space */
+  solve_pppm(log,NULL,grid,ghat,box,bVerbose,nrnb);
+  
+  /* Third and last step: gather the forces, energies and potential
+   * from the grid.
+   */
+  ener=gather_f(log,bVerbose,natoms,x,f,charge,box,phi,grid,beta,nrnb);
   
   return ener;
 }

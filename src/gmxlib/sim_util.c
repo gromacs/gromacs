@@ -221,7 +221,7 @@ void do_force(FILE *log,t_commrec *cr,
   }
   
   /* Compute the forces */    
-  force(log,step,fr,&(top->idef),nsb,cr,nrnb,grps,mdatoms,
+  force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(parm->ir.opts),
 	x,f,vir_part,ener,bVerbose,parm->box,lambda,graph,&(top->atoms.excl));
   where();

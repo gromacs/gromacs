@@ -35,7 +35,8 @@ OBJ		= 	\
 		network.o	nrama.o		nrjac.o		\
 		nrnb.o		ns.o		nsb.o		\
 		nsgrid.o	pargs.o		pbc.o		\
-		pdbio.o		pppm.o		princ.o		\
+		pdbio.o		poisson.o	pppm.o		\
+		princ.o		psgather.o	psspread.o	pssolve.o	\
 		rando.o		random.o	rbin.o		\
 		rdgroup.o	readinp.o	replace.o	\
 		rmpbc.o		shakef.o	\

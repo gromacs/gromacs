@@ -173,6 +173,8 @@ bool fexist(char *fname)
 {
   FILE *test;
   
+  if (fname == NULL)
+    return FALSE;
   test=fopen(fname,"r");
   if (test == NULL) 
     return FALSE;

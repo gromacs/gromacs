@@ -54,6 +54,7 @@ static char *SRCID_force_c = "$Id$";
 #include "txtdump.h"
 #include "lrutil.h"
 #include "pppm.h"
+#include "poisson.h"
 
 t_forcerec *mk_forcerec(void)
 {
@@ -272,7 +273,8 @@ void init_forcerec(FILE *log,
   else if (fr->eeltype == eelSWITCH) {
     fr->rshort     = fr->rlong;
   }
-  else if ((fr->eeltype == eelPPPM) || (fr->eeltype == eelSHIFT)) {
+  else if ((fr->eeltype == eelPPPM) || (fr->eeltype == eelSHIFT) ||
+	   (fr->eeltype == eelPOISSON)) {
     /* We must use the long range cut-off for neighboursearching...
      * An extra range of e.g. 0.1 nm (half the size of a charge group)
      * is necessary for neighboursearching. This allows diffusion 
@@ -298,7 +300,8 @@ void init_forcerec(FILE *log,
   
   
   /* Initiate arrays */
-  if ((fr->bTwinRange || (fr->eeltype == eelPPPM)) && (fr->flr==NULL)) {
+  if ((fr->bTwinRange || (fr->eeltype == eelPPPM) || (fr->eeltype == eelPOISSON)) 
+      && (fr->flr==NULL)) {
     snew(fr->flr,natoms);
     snew(fr->fshift_lr,SHIFTS);
   }
@@ -425,9 +428,10 @@ void ns(FILE *log,
   clr_led(NS_LED);
 }
 
-void force(FILE *log,  
+void force(FILE       *log,  
 	   int        step,
 	   t_forcerec *fr,
+	   t_inputrec *ir,
 	   t_idef     *idef,
 	   t_nsborder *nsb,
 	   t_commrec  *cr,
@@ -447,9 +451,10 @@ void force(FILE *log,
 	   t_block    *excl)
 {
   bool    bBHAM;
-  int     i;
-  bool    bDoEpot,bDebug=FALSE;
+  int     i,nit;
+  bool    bDoEpot;
   rvec    box_size;
+  real    Vlr,Vself;
   
   set_led(FORCE_LED);
 
@@ -498,33 +503,35 @@ void force(FILE *log,
     p_graph(debug,"DeBUGGGG",graph);
   
   shift_self(graph,fr->shift_vec,x);
-  if (bDebug) {
-    fprintf(log,"BBBBBBBBBBBBBBBB\n");
-    fprintf(log,"%5d\n",graph->nnodes);
+  if (debug) {
+    fprintf(debug,"BBBBBBBBBBBBBBBB\n");
+    fprintf(debug,"%5d\n",graph->nnodes);
     for(i=graph->start; (i<=graph->end); i++)
-      fprintf(log,"%5d%5s%5s%5d%8.3f%8.3f%8.3f\n",
+      fprintf(debug,"%5d%5s%5s%5d%8.3f%8.3f%8.3f\n",
 	      i,"A","B",i,x[i][XX],x[i][YY],x[i][ZZ]);
-    fprintf(log,"%10.5f%10.5f%10.5f\n",box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
+    fprintf(debug,"%10.5f%10.5f%10.5f\n",box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
   }
   inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
   where();
-  if (fr->eeltype == eelPPPM) {
-    real Vpppm,Vself;
-    Vpppm = do_pppm(log,FALSE,FALSE,NULL,NULL,md->nr,x,fr->flr,md->chargeA,
-		    box_size,fr->phi,cr,nrnb,TRUE);
+  
+  if ((fr->eeltype == eelPPPM) || (fr->eeltype == eelPOISSON)) {
+    if (fr->eeltype == eelPPPM)
+      Vlr = do_pppm(log,FALSE,md->nr,x,fr->flr,md->chargeA,box_size,fr->phi,cr,nrnb);
+    else
+      Vlr = do_poisson(log,FALSE,ir,md->nr,x,fr->flr,md->chargeA,box_size,fr->phi,
+		       cr,nrnb,&nit,FALSE);
+      
     Vself = calc_LRcorrections(log,0,md->nr,fr->r1,fr->rc,
 			       md->chargeA,excl,x,f);
-    epot[F_LR] = Vpppm - Vself;
-#ifdef DEBUG    
-    fprintf(log,"Vpppm = %g, Vself = %g, Vlr = %g\n",
-	    Vpppm,Vself,epot[F_LR]);
-#endif
+    epot[F_LR] = Vlr - Vself;
+    if (debug)
+      fprintf(debug,"Vpppm = %g, Vself = %g, Vlr = %g\n",
+	      Vlr,Vself,epot[F_LR]);
   }
   where();
-      
-#ifdef DEBUG
-  print_nrnb(log,nrnb);
-#endif
+  
+  if (debug)    
+    print_nrnb(debug,nrnb);
   where();
   
   calc_bonds(log,idef,x,f,fr,graph,epot,nrnb,box,lambda,md,

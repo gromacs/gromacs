@@ -633,17 +633,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   }
   
   /* Initiate PPPM if necessary */
-  if (fr->eeltype == eelPPPM) {
-    char *ghatfn = ftp2fn(efHAT,nfile,fnm);
-    bool bGGhat = !fexist(ghatfn);
+  if (fr->eeltype == eelPPPM)
+    init_pppm(log,cr,FALSE,TRUE,box_size,ftp2fn(efHAT,nfile,fnm),&parm->ir);
     
-    fprintf(stderr,"Ghat function '%s' does %sexist\n",
-	    ghatfn,bGGhat ? "not " : "");
-    (void)do_pppm(log,FALSE,bGGhat,ghatfn,
-		  &parm->ir,top->atoms.nr,x,f,md->chargeT,box_size,
-		  fr->phi,cr,&mynrnb,TRUE);
-  }
-  
 
   /***********************************************************
    *

@@ -37,13 +37,18 @@ static char *SRCID_pppm_h = "$Id$";
 #include "complex.h"
 #include "fftgrid.h"
 
+extern void init_pppm(FILE *log,t_commrec *cr,bool bVerbose,bool bOld,
+		      rvec box,char *ghatfn,t_inputrec *ir);
+/* Setup stuff for PPPM. 
+ * Either reads a ghat function from file (when the file exists)
+ * or generate a ghat function from scratch.
+ */
+
 extern real do_pppm(FILE *log,       bool bVerbose,
-		    bool bGenerGhat, char *ghatfn,
-		    t_inputrec *ir,  int natoms,
-		    rvec x[],        rvec f[],
-		    real charge[],   rvec box,
-		    real phi[],      t_commrec *cr,
-		    t_nrnb *nrnb,    bool bOld);
+		    int natoms,      rvec x[],
+		    rvec f[],        real charge[],   
+		    rvec box,        real phi[],      
+		    t_commrec *cr,   t_nrnb *nrnb);
 /* Do a PPPM calculation for the long range electrostatics.
  */
  

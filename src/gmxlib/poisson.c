@@ -133,7 +133,6 @@ real do_poisson(FILE *log,       bool bVerbose,
 		bool bOld)
 {
   static  bool bFirst  = TRUE;
-  static  bool bSecond = TRUE;
   static  t_PSgrid *pot,*rho;
   static  int       maxnit;
   static  real      r1,rc;
@@ -165,29 +164,37 @@ real do_poisson(FILE *log,       bool bVerbose,
     for(m=0; (m<DIM); m++)
       beta[m] = 1.85;
       
-    bFirst = FALSE;
   }
-  else {
-    /* Make the grid empty */
-    clear_PSgrid(rho);
-    spread_q_poisson(log,bVerbose,TRUE,natoms,x,charge,box,rc,rho,nrnb,
-		     bOld,r1);
-    
-    symmetrize_PSgrid(log,rho,0.0);
-    if (bSecond) 
-      copy_PSgrid(pot,rho);
 
-    /* Second step: solving the poisson equation in real space */
-    *nit = solve_poisson(log,pot,rho,bVerbose,nrnb,maxnit,tol,box);
-    
-    symmetrize_PSgrid(log,pot,0.0);
-    /* Third and last step: gather the forces, energies and potential
-     * from the grid.
-     */
-    ener = ps_gather_f(log,bVerbose,natoms,x,f,charge,box,phi,pot,beta,nrnb);
-
-    bSecond = FALSE;
-  }
+  /* Make the grid empty and spread the charges */
+  clear_PSgrid(rho);
+  spread_q_poisson(log,bVerbose,TRUE,natoms,x,charge,box,rc,rho,nrnb,bOld,r1);
+  
+  /* Subtract average charge distribution from each grid point. This does not
+   * influence the forces, but it may influence the potential and the energy.
+   * On the other hand the charge distribution should sum up to zero if the
+   * system is neutral!
+   */
+  symmetrize_PSgrid(debug,rho,0.0);
+  
+  /* For the first time we solve the potential we copy the charge distribution to
+   * the potential as a start for the solver. Later we use the previous step's
+   * solution.
+   */
+  if (bFirst)
+    copy_PSgrid(pot,rho);
+  
+  /* Second step: solving the poisson equation in real space */
+  *nit = solve_poisson(log,pot,rho,bVerbose,nrnb,maxnit,tol,box);
+  
+  symmetrize_PSgrid(debug,pot,0.0);
+  
+  /* Third and last step: gather the forces, energies and potential
+   * from the grid.
+   */
+  ener = ps_gather_f(log,bVerbose,natoms,x,f,charge,box,phi,pot,beta,nrnb);
+  
+  bFirst = FALSE;
   
   return ener;
 }
@@ -241,46 +248,44 @@ real do_optimize_poisson(FILE *log,       bool bVerbose,
       
     bFirst = FALSE;
   }
-  else {
-    /* Make the grid empty */
-    clear_PSgrid(rho);
-    spread_q_poisson(log,bVerbose,TRUE,natoms,x,charge,box,rc,rho,nrnb,
-		     bOld,r1);
 
-    symmetrize_PSgrid(log,rho,0.0);
-    if (bSecond) 
-      copy_PSgrid(pot,rho);
-
-    /* Second step: solving the poisson equation in real space */
-    (void) solve_poisson(log,pot,rho,bVerbose,nrnb,maxnit,tol,box);
-    
-    symmetrize_PSgrid(log,pot,0.0);
-    /* Third and last step: gather the forces, energies and potential
-     * from the grid.
-     */
+  /* Make the grid empty */
+  clear_PSgrid(rho);
+  spread_q_poisson(log,bVerbose,TRUE,natoms,x,charge,box,rc,rho,nrnb,
+		   bOld,r1);
+  
+  symmetrize_PSgrid(log,rho,0.0);
+  if (bSecond) 
+    copy_PSgrid(pot,rho);
+  
+  /* Second step: solving the poisson equation in real space */
+  (void) solve_poisson(log,pot,rho,bVerbose,nrnb,maxnit,tol,box);
+  
+  symmetrize_PSgrid(log,pot,0.0);
+  /* Third and last step: gather the forces, energies and potential
+   * from the grid.
+   */
 #define BETA(n) (BMIN+n*DB)
-    /* Optimization of beta in progress */
-    for(bx=0; (bx<NB); bx++) {
-      beta[XX] = BETA(bx);
-      for(by=0; (by<NB); by++) {
-	beta[YY] = BETA(by);
-	for(bz=0; (bz<NB); bz++) {
-	  beta[ZZ] = BETA(bz);
+  /* Optimization of beta in progress */
+  for(bx=0; (bx<NB); bx++) {
+    beta[XX] = BETA(bx);
+    for(by=0; (by<NB); by++) {
+      beta[YY] = BETA(by);
+      for(bz=0; (bz<NB); bz++) {
+	beta[ZZ] = BETA(bz);
 	  
-	  for(i=0; (i<natoms); i++) {
-	    phi[i] = 0.0;
-	    clear_rvec(f[i]);
-	  }
-	  ener = ps_gather_f(log,bVerbose,natoms,x,f,charge,box,
-			     phi,pot,beta,nrnb);
-	  sprintf(buf,"Poisson, beta = %g\n",beta[XX]);
-	  rmsf[bx][by][bz] = 
-	    analyse_diff(log,buf,natoms,f_ref,f,phi_ref,phi,NULL,
-			 /*"fcorr.xvg","pcorr.xvg"*/NULL,NULL,NULL,NULL);
+	for(i=0; (i<natoms); i++) {
+	  phi[i] = 0.0;
+	  clear_rvec(f[i]);
 	}
+	ener = ps_gather_f(log,bVerbose,natoms,x,f,charge,box,
+			   phi,pot,beta,nrnb);
+	sprintf(buf,"Poisson, beta = %g\n",beta[XX]);
+	rmsf[bx][by][bz] = 
+	  analyse_diff(log,buf,natoms,f_ref,f,phi_ref,phi,NULL,
+		       /*"fcorr.xvg","pcorr.xvg"*/NULL,NULL,NULL,NULL);
       }
     }
-    bSecond = FALSE;
   }
   rmsf_min = rmsf[0][0][0];
   minimum[XX] = minimum[YY] = minimum[ZZ] = 0;
@@ -317,4 +322,3 @@ real do_optimize_poisson(FILE *log,       bool bVerbose,
 
   return ener;
 }
-

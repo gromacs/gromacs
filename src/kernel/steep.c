@@ -273,13 +273,9 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     copy_rvec(x[i],pos[TRY][i]); 
   } 
   /* Initiate PPPM if necessary */
-  if (fr->eeltype == eelPPPM) {
-    bool bGGhat = ! fexist(ftp2fn(efOUT,nfile,fnm));
-    (void)do_pppm(log,FALSE,bGGhat,ftp2fn(efOUT,nfile,fnm),
-		  &parm->ir,top->atoms.nr,x,force[Min],
-		  mdatoms->chargeT,box_size,fr->phi,cr,&mynrnb,TRUE);
-  }
-  
+  if (fr->eeltype == eelPPPM) 
+    init_pppm(log,cr,FALSE,TRUE,box_size,ftp2fn(efHAT,nfile,fnm),&parm->ir);
+    
   /* Set variables for stepsize (in nm). This is the largest  
    * step that we are going to make in any direction. 
    */
