@@ -93,7 +93,8 @@ extern time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		    t_forcerec *fr,rvec box_size);
 
 /* ROUTINES from steep.c */
-extern real f_norm(int left,int right,int nprocs,
+extern real f_norm(t_commrec *cr,
+		   t_grpopts *opts,t_mdatoms *mdatoms,
 		   int start,int end,rvec grad[]);
 /* Calculates norm of force */
 

@@ -97,28 +97,28 @@ real f_max(int left,int right,int nnodes,
   return sqrt(fmax2);
 }
 
-real f_norm(int left,int right,int nnodes,
+real f_norm(t_commrec *cr,
+	    t_grpopts *opts,t_mdatoms *mdatoms,
 	    int start,int end,rvec grad[])
 {
-  real fnorm;
-  int  i,m;
+  double fnorm2;
+  int    i,m,gf;
 
   /* This routine finds the norm of the force
    * and returns it. Parallel machines not supported.
    */
-  fnorm = 0;
+  fnorm2 = 0;
   
-  for(i=start; (i<end); i++) 
-    for(m=0; (m<DIM); m++) { 
-      fnorm=fnorm+grad[i][m]*grad[i][m]; 
-    } 
-  fnorm=sqrt(fnorm); 
+  for(i=start; i<end; i++) {
+    gf = mdatoms->cFREEZE[i];
+    for(m=0; m<DIM; m++)
+      if (!opts->nFreeze[gf][m])
+	fnorm2 += sqr(grad[i][m]); 
+  } 
   
-  if (nnodes == 1) 
-    return fnorm; 
-  
-  fatal_error(0,"This version of Steepest Descents cannot be run in parallel"); 
-  return fnorm; 
+  gmx_sumd(1,&fnorm2,cr);
+
+  return sqrt(fnorm2); 
 } 
 
 static void do_step(int start,int end,rvec x[],rvec f[], 

@@ -82,7 +82,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   static char *CG="Conjugate Gradients";
   real   step0,lambda,ftol,fmax,testf,zet,w,smin;
   rvec   *p,*f,*xprime,*xx,*ff;
-  real   EpotA=0.0,EpotB=0.0,a=0.0,b,beta=0.0,gpa,gpb;
+  real   EpotA=0.0,EpotB=0.0,a=0.0,b,beta=0.0;
+  double gpa,gpb;
   real   fnorm,pnorm,fnorm_old;
   t_vcm      *vcm;
   t_mdebin   *mdebin;
@@ -120,7 +121,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   snew(xprime,nsb->natoms);
 
   start = nsb->index[cr->nodeid];
-  end   = nsb->homenr[cr->nodeid]-start;
+  end   = nsb->homenr[cr->nodeid] + start;
 
   /* Set some booleans for the epot routines */
   set_pot_bools(&(parm->ir),top,&bLR,&bLJLR,&bBHAM,&b14);
@@ -240,7 +241,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   /* normalising step size, this saves a few hundred steps in the
    * beginning of the run.
    */
-  fnorm=f_norm(cr->left,cr->right,nsb->nnodes,start,end,f);
+  fnorm=f_norm(cr,&(parm->ir.opts),mdatoms,start,end,f);
   fnorm_old=fnorm;
   
   /* Print stepsize */
@@ -266,7 +267,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	  gpa     = gpa - p[i][m]*f[i][m];
 	}
     }
-    pnorm=f_norm(cr->left,cr->right,nsb->nnodes,start,end,p);
+    pnorm=f_norm(cr,&(parm->ir.opts),mdatoms,start,end,p);
 
     a    = 0.0;
     b    = step0/pnorm;
@@ -275,9 +276,9 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     /* search a,b iteratively, if necessary */
     brerun=TRUE;
     while (brerun) {
-      for (i=start;i<end;i++) {
-	for(m=0;m<DIM;m++) {
-	  xprime[i][m]=x[i][m] + b*p[i][m];
+      for (i=start; i<end; i++) {
+	for(m=0; m<DIM; m++) {
+	  xprime[i][m] = x[i][m] + b*p[i][m];
 	}
       }
       bNS = ((parm->ir.nstlist > 0) || (count==0));
@@ -329,13 +330,12 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       bNS = (parm->ir.nstlist > 0);
       /*bNS=FALSE;*/
       gpb=0.0;
-      for(i=start;i<end;i++) {
-	gf = mdatoms->cFREEZE[i];
+      for(i=start; i<end; i++)
 	for(m=0; m<DIM; m++) 
-	  if (!parm->ir.opts.nFreeze[gf][m])
-	    gpb=gpb-p[i][m]*f[i][m];
-      } 
+	  gpb -= p[i][m]*f[i][m];
       
+      gmx_sumd(1,&gpb,cr);
+
       /* Sum the potential energy terms from group contributions */
       sum_epot(&(parm->ir.opts),grps,ener);
       
@@ -430,7 +430,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(parm->ir.opts),grps,ener); 
-    fnorm = f_norm(cr->left,cr->right,nsb->nnodes,start,end,f);
+    fnorm = f_norm(cr,&(parm->ir.opts),mdatoms,start,end,f);
     
     /* Clear stuff again */
     clear_mat(force_vir);
@@ -451,7 +451,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       beta=fnorm*fnorm/(fnorm_old*fnorm_old);
 
     /* update x, fnorm_old */
-    for (i=start;i<end;i++)
+    for (i=start; i<end; i++)
       copy_rvec(xprime[i],x[i]);
     fnorm_old=fnorm;
 
@@ -482,17 +482,20 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   } /* End of the loop */
 
   /* Print some shit... */
-  if (MASTER(cr)) {
+  if (MASTER(cr))
     fprintf(stderr,"\nwriting lowest energy coordinates.\n");
-    xx=x;
-    ff=f;
-    write_traj(log,cr,ftp2fn(efTRN,nfile,fnm),
-	       nsb,count,(real) count,
-	       lambda,nrnb,nsb->natoms,xx,NULL,ff,parm->box);
+  xx=x;
+  ff=f;
+  write_traj(log,cr,ftp2fn(efTRN,nfile,fnm),
+	     nsb,count,(real) count,
+	     lambda,nrnb,nsb->natoms,xx,NULL,ff,parm->box);
+  if (MASTER(cr))
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		   *top->name, &(top->atoms),xx,NULL,parm->box);
-    fmax=f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,
-	       start,end,f);
+
+  fmax=f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,
+	     start,end,f);
+  if (MASTER(cr)) {
     fprintf(stderr,"Maximum force: %12.5e\n",fmax);
     if (bDone) {
       fprintf(stderr,"\n%s converged to %8.6f in %d steps\n",CG,ftol,count-1);
