@@ -43,33 +43,6 @@ static char *SRCID_genconf_c = "$Id$";
 #include "readinp.h"
 #include "names.h"
 
-void get_params(char *gcin,char *gcout,
-		int *nx,int *ny,int *nz,real *dx,real *dy,real *dz,
-		int *seed,bool *bRandom,rvec max_rot,rvec max_tr)
-{
-  t_inpfile *inp;
-  int       ninp;
-
-  inp=read_inpfile(gcin,&ninp);
-
-  ITYPE("nx",                 *nx,         1);
-  ITYPE("ny",                 *ny,         1);
-  ITYPE("nz",                 *nz,         1);
-  RTYPE("dx",                 *dx,      0.15);
-  RTYPE("dy",                 *dy,      0.15);
-  RTYPE("dz",                 *dz,      0.15);
-  ITYPE("seed",               *seed,    1993);
-  ETYPE("randomize",          *bRandom,   yesno_names);
-  RTYPE("max_x_rotation",     max_rot[0], 0.0);
-  RTYPE("max_y_rotation",     max_rot[1], 0.0);
-  RTYPE("max_z_rotation",     max_rot[2], 0.0);
-  RTYPE("max_x_translation",  max_tr[0],  0.0);
-  RTYPE("max_y_translation",  max_tr[1],  0.0);
-  RTYPE("max_z_translation",  max_tr[2],  0.0);
-
-  write_inpfile(gcout,ninp,inp);
-}
-
 static void rand_rot(int natoms,rvec x[],rvec v[],vec4 xrot[],vec4 vrot[],
                      int *seed,rvec max_rot)
 {
@@ -141,7 +114,6 @@ int main(int argc, char *argv[])
   vec4    *xrot,*vrot;  
   matrix  box;          /* box length matrix */
   rvec    shift;         
-  rvec    tr;           /* maximum translation, actual translation */
   int     natoms;       /* number of atoms in one molecule  */
   int     nres;         /* number of molecules? */
   int     i,j,k,l,m,ndx,nrdx;
@@ -156,7 +128,7 @@ int main(int argc, char *argv[])
   static bool bRandom = FALSE;    /* False: no random rotations */
   static real dx=0,dy=0,dz=0;     /* space added between molecules ? */
   static rvec max_rot={90,90,90};    /* maximum rotation */
-  static rvec max_tr={0,0,0};     /* maximum translation */
+/*  static rvec max_tr={0,0,0}; */    /* maximum translation */
   t_pargs pa[] = { 
     { "-nx", FALSE, etINT,  &nx,      "Number of boxes in X direction" },
     { "-ny", FALSE, etINT,  &ny,      "Number of boxes in Y direction" },
@@ -169,18 +141,17 @@ int main(int argc, char *argv[])
     { "-mrx",FALSE, etREAL, &(max_rot[XX]), "Max rotation in X direction" },
     { "-mry",FALSE, etREAL, &(max_rot[YY]), "Max rotation in Y direction" },
     { "-mrz",FALSE, etREAL, &(max_rot[ZZ]), "Max rotation in Z direction" },
+    /*
     { "-mtx",FALSE, etREAL, &(max_tr[XX]),  "Max translation in X direction" },
     { "-mty",FALSE, etREAL, &(max_tr[YY]),  "Max translation in Y direction" },
     { "-mtz",FALSE, etREAL, &(max_tr[ZZ]),  "Max translation in Z direction" }
+    */
   };
   
   CopyRight(stdout,argv[0]);
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,asize(bugs),bugs);
 
-  /*get_params(opt2fn("-f",NFILE,fnm),opt2fn("-po",NFILE,fnm),
-    &nx,&ny,&nz,&dx,&dy,&dz,&seed,&bRandom,max_rot,max_tr);
-  */
   if ((nx <= 0) || (ny <= 0) || (nz <= 0)) {
     fprintf(stderr,"(nx <= 0) || (ny <= 0) || (nz <= 0)\n");
     exit(1);
@@ -209,9 +180,6 @@ int main(int argc, char *argv[])
       for(k=0; (k<nz); k++)  {
 	shift[ZZ]=k*(dz+box[ZZ][ZZ]);
 	
-	for(l=0; (l<DIM); l++)  /* to get negative values too */
-	    tr[l] = (rando(&seed)-0.5)*2*max_tr[l];
- 
 	ndx=(i*ny*nz+j*nz+k)*natoms;
 	nrdx=(i*ny*nz+j*nz+k)*nres;
 	
