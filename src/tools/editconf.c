@@ -404,12 +404,20 @@ int main(int argc, char *argv[])
   /* remove pbc */
   if (bRMPBC) 
     rm_gropbc(&atoms,x,box);
-    
+
+  if (bScale || bOrient || bRotate || bDist || bCenter) {
+    calc_geom(ftp2fn_null(efNDX,NFILE,fnm),&atoms,x, gc, min, max);
+    rvec_sub(max, min, size);
+    printf("size      : %6.3f %6.3f %6.3f\n", size[XX], size[YY], size[ZZ]);
+    printf("center    : %6.3f %6.3f %6.3f\n", gc[XX], gc[YY], gc[ZZ]);
+    printf("box       : %6.3f %6.3f %6.3f  (%.3f nm^3)\n", 
+	   box[XX][XX], box[YY][YY], box[ZZ][ZZ], det(box));
+  }
+
   if (bOrient)
     /* Orient the principal axes along the coordinate axes */
     orient_mol(&atoms,ftp2fn_null(efNDX,NFILE,fnm),x,bHaveV ? v : NULL);
   
-    
   if ( bScale ) {
     /* scale coordinates and box */
     if (bRho) {
@@ -442,7 +450,7 @@ int main(int argc, char *argv[])
   }
   
   clear_rvec(size);
-  if (bScale || bOrient || bRotate || bDist) {
+  if (bScale || bOrient || bRotate) {
     /* recalc geometrical center and max and min coordinates and size */
     calc_geom(ftp2fn_null(efNDX,NFILE,fnm),&atoms,x, gc, min, max);
     rvec_sub(max, min, size);
