@@ -40,9 +40,9 @@ ac_help="$ac_help
 ac_help="$ac_help
   --disable-cpu-detection       Don't extend detection with exact cpu type"
 ac_help="$ac_help
-  --enable-softwarerecip        Do software 1/x (might be slower)"
+  --enable-software-recip       Do software 1/x (might be slower)"
 ac_help="$ac_help
-  --disable-softwaresqrt        No software 1/sqrt (default on sgi,rs6000)"
+  --disable-software-sqrt       No software 1/sqrt (default on sgi,rs6000)"
 ac_help="$ac_help
   --enable-vectorized-recip     Vectorize the reciprocal in LJ-only loops"
 ac_help="$ac_help
@@ -1040,9 +1040,9 @@ fi
 
 #####
 
-# Check whether --enable-softwarerecip or --disable-softwarerecip was given.
-if test "${enable_softwarerecip+set}" = set; then
-  enableval="$enable_softwarerecip"
+# Check whether --enable-software-recip or --disable-software-recip was given.
+if test "${enable_software_recip+set}" = set; then
+  enableval="$enable_software_recip"
   enable_softwarerecip=$enableval
 else
   enable_softwarerecip=no
@@ -1052,9 +1052,9 @@ fi
 
 #####
 
-# Check whether --enable-softwaresqrt or --disable-softwaresqrt was given.
-if test "${enable_softwaresqrt+set}" = set; then
-  enableval="$enable_softwaresqrt"
+# Check whether --enable-software-sqrt or --disable-software-sqrt was given.
+if test "${enable_software_sqrt+set}" = set; then
+  enableval="$enable_software_sqrt"
   enable_softwaresqrt=$enableval
 else
   enable_softwaresqrt=check
@@ -6190,7 +6190,7 @@ EOF
 fi
 
 cat >> confdefs.h <<EOF
-#define GMXLIBDIR "${ac_default_prefix}/top"
+#define GMXLIBDIR "${prefix}/top"
 EOF
 
 
@@ -6250,26 +6250,29 @@ if test "$ac_test_CFLAGS" != "set" -o "$ac_test_FFLAGS" != "set"; then
 	;;
 
   rs6000*-aix*)
+	# dont use inter-procedure analysis for the innerloops - they take
+        # forever to compile with it, and it doesnt help at all.
 	case "${gmxcpu}" in
 	power4*)
 		CFLAGS="-O3 -qarch=pwr4 -qtune=pwr4 -qlanglvl=ansi -qmaxmem=16384"
-		FFLAGS="-O3 -Q -qarch=pwr4 -qtune=pwr4 -qmaxmem=16384 -qhot"
+		FFLAGS="-O3 -Q -qarch=pwr4 -qtune=pwr4 -qmaxmem=16384 -qhot -qnoipa"
 		;;
 	power3*)
 		CFLAGS="-O3 -qarch=pwr3 -qtune=pwr3 -qlanglvl=ansi -qmaxmem=16384"
-		FFLAGS="-O3 -Q -qarch=pwr3 -qtune=pwr3 -qmaxmem=16384 -qhot"
+		FFLAGS="-O3 -Q -qarch=pwr3 -qtune=pwr3 -qmaxmem=16384 -qhot -qnoipa"
 		;;
 	power2*)
 		CFLAGS="-O3 -qarch=pwr2 -qtune=pwr2 -qlanglvl=ansi -qmaxmem=16384"
-		FFLAGS="-O3 -Q -qarch=pwr2 -qtune=pwr2 -qmaxmem=16384 -qhot"
+		FFLAGS="-O3 -Q -qarch=pwr2 -qtune=pwr2 -qmaxmem=16384 -qhot -qnoipa"
 		;;
 	power)
 		CFLAGS="-O3 -qarch=pwr -qtune=pwr -qlanglvl=ansi -qmaxmem=16384"
-		FFLAGS="-O3 -Q -qarch=pwr -qtune=pwr -qmaxmem=16384 -qhot"
+		FFLAGS="-O3 -Q -qarch=pwr -qtune=pwr -qmaxmem=16384 -qhot -qnoipa"
 		;;
 	*)
 		# I don't think people are using anything older than power2, so we tune for
-                # pwr, but dont set the arch since it is nice to have common binaries that run also on powerpc.
+                # pwr, but dont set the arch since it is nice to have common binaries 
+                # that run also on powerpc.
 		CFLAGS="-O3 -qlanglvl=ansi -qtune=pwr -qmaxmem=16384"
 		FFLAGS="-O3 -Q -qtune=pwr -qmaxmem=16384 -qhot"
 		;;
@@ -6419,7 +6422,7 @@ if test "$ac_test_CFLAGS" != "set" -o "$ac_test_FFLAGS" != "set"; then
     
 
 echo $ac_n "checking whether $CC accepts -malign-double""... $ac_c" 1>&6
-echo "configure:6423: checking whether $CC accepts -malign-double" >&5
+echo "configure:6426: checking whether $CC accepts -malign-double" >&5
 if eval "test \"`echo '$''{'ac_align_double'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6464,7 +6467,7 @@ fi
 			
 
 echo $ac_n "checking whether $CC accepts -mcpu=$cputype""... $ac_c" 1>&6
-echo "configure:6468: checking whether $CC accepts -mcpu=$cputype" >&5
+echo "configure:6471: checking whether $CC accepts -mcpu=$cputype" >&5
 if eval "test \"`echo '$''{'ac_m_cpu_60x'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6491,7 +6494,7 @@ fi
                         
 
 echo $ac_n "checking whether $CC accepts -mcpu=750""... $ac_c" 1>&6
-echo "configure:6495: checking whether $CC accepts -mcpu=750" >&5
+echo "configure:6498: checking whether $CC accepts -mcpu=750" >&5
 if eval "test \"`echo '$''{'ac_m_cpu_750'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6519,7 +6522,7 @@ fi
 		        
 
 echo $ac_n "checking whether $CC accepts -mcpu=powerpc""... $ac_c" 1>&6
-echo "configure:6523: checking whether $CC accepts -mcpu=powerpc" >&5
+echo "configure:6526: checking whether $CC accepts -mcpu=powerpc" >&5
 if eval "test \"`echo '$''{'ac_m_cpu_powerpc'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6547,7 +6550,7 @@ fi
 			
 
 echo $ac_n "checking whether $CC accepts -mpowerpc""... $ac_c" 1>&6
-echo "configure:6551: checking whether $CC accepts -mpowerpc" >&5
+echo "configure:6554: checking whether $CC accepts -mpowerpc" >&5
 if eval "test \"`echo '$''{'ac_m_powerpc'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6590,7 +6593,7 @@ fi
   
 
 echo $ac_n "checking whether $CC accepts ${CFLAGS}""... $ac_c" 1>&6
-echo "configure:6594: checking whether $CC accepts ${CFLAGS}" >&5
+echo "configure:6597: checking whether $CC accepts ${CFLAGS}" >&5
 if eval "test \"`echo '$''{'ac_guessed_cflags'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6632,7 +6635,7 @@ fi
     
 
 echo $ac_n "checking whether $F77 accepts ${FFLAGS}""... $ac_c" 1>&6
-echo "configure:6636: checking whether $F77 accepts ${FFLAGS}" >&5
+echo "configure:6639: checking whether $F77 accepts ${FFLAGS}" >&5
 if eval "test \"`echo '$''{'ac_guessed_fflags'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else

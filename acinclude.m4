@@ -570,26 +570,29 @@ if test "$ac_test_CFLAGS" != "set" -o "$ac_test_FFLAGS" != "set"; then
 	;;
 
   rs6000*-aix*)
+	# dont use inter-procedure analysis for the innerloops - they take
+        # forever to compile with it, and it doesnt help at all.
 	case "${gmxcpu}" in
 	power4*)
 		CFLAGS="-O3 -qarch=pwr4 -qtune=pwr4 -qlanglvl=ansi -qmaxmem=16384"
-		FFLAGS="-O3 -Q -qarch=pwr4 -qtune=pwr4 -qmaxmem=16384 -qhot"
+		FFLAGS="-O3 -Q -qarch=pwr4 -qtune=pwr4 -qmaxmem=16384 -qhot -qnoipa"
 		;;
 	power3*)
 		CFLAGS="-O3 -qarch=pwr3 -qtune=pwr3 -qlanglvl=ansi -qmaxmem=16384"
-		FFLAGS="-O3 -Q -qarch=pwr3 -qtune=pwr3 -qmaxmem=16384 -qhot"
+		FFLAGS="-O3 -Q -qarch=pwr3 -qtune=pwr3 -qmaxmem=16384 -qhot -qnoipa"
 		;;
 	power2*)
 		CFLAGS="-O3 -qarch=pwr2 -qtune=pwr2 -qlanglvl=ansi -qmaxmem=16384"
-		FFLAGS="-O3 -Q -qarch=pwr2 -qtune=pwr2 -qmaxmem=16384 -qhot"
+		FFLAGS="-O3 -Q -qarch=pwr2 -qtune=pwr2 -qmaxmem=16384 -qhot -qnoipa"
 		;;
 	power)
 		CFLAGS="-O3 -qarch=pwr -qtune=pwr -qlanglvl=ansi -qmaxmem=16384"
-		FFLAGS="-O3 -Q -qarch=pwr -qtune=pwr -qmaxmem=16384 -qhot"
+		FFLAGS="-O3 -Q -qarch=pwr -qtune=pwr -qmaxmem=16384 -qhot -qnoipa"
 		;;
 	*)
 		# I don't think people are using anything older than power2, so we tune for
-                # pwr, but dont set the arch since it is nice to have common binaries that run also on powerpc.
+                # pwr, but dont set the arch since it is nice to have common binaries 
+                # that run also on powerpc.
 		CFLAGS="-O3 -qlanglvl=ansi -qtune=pwr -qmaxmem=16384"
 		FFLAGS="-O3 -Q -qtune=pwr -qmaxmem=16384 -qhot"
 		;;

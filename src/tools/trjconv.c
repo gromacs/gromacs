@@ -713,7 +713,7 @@ int main(int argc,char *argv[])
 		out=ffopen(out_file2,"w");
 	      }
 	      switch(ftp) {
-	      case efGRO:
+	      case efGRO: 
 		write_hconf_p(out,title,&useatoms,prec2ndec(frout.prec),
 			      frout.x,fr.bV?frout.v:NULL,frout.box);
 		break;

@@ -97,15 +97,15 @@ AC_ARG_ENABLE(cpu-detection,
 
 #####
 
-AC_ARG_ENABLE(softwarerecip,     
-[  --enable-softwarerecip        Do software 1/x (might be slower)], 
+AC_ARG_ENABLE(software-recip,     
+[  --enable-software-recip       Do software 1/x (might be slower)], 
  enable_softwarerecip=$enableval, enable_softwarerecip=no)
 
 
 #####
 
-AC_ARG_ENABLE(softwaresqrt,     
-[  --disable-softwaresqrt        No software 1/sqrt (default on sgi,rs6000)], 
+AC_ARG_ENABLE(software-sqrt,     
+[  --disable-software-sqrt       No software 1/sqrt (default on sgi,rs6000)], 
  enable_softwaresqrt=$enableval, enable_softwaresqrt=check)
 
 
@@ -652,7 +652,7 @@ if test "$enable_vectorized_recip" = "yes"; then
   AC_DEFINE(VECTORIZE_RECIP,,[Vectorize the reciprocal calculation])
 fi
 
-AC_DEFINE_UNQUOTED(GMXLIBDIR,"${ac_default_prefix}/top",[Default topology file location])
+AC_DEFINE_UNQUOTED(GMXLIBDIR,"${prefix}/top",[Default topology file location])
 
 AC_SUBST(PAR_OBJ)
 AC_SUBST(INNER_F77_OBJ)
