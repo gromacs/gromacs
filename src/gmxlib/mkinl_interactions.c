@@ -595,7 +595,7 @@ int do_coul(int i, int j)
      * This is later multiplied by 1/r to get the force once
      * all interactions for this pair have been calculated
      */
-    nflop = 1;
+    nflop += 1;
     if(DO_FORCE) {
       nflop ++;
       add_to_buffer(forcebuf,"vcoul");
