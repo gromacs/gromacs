@@ -177,35 +177,32 @@ char *xvgr_tlabel(void)
   return label;
 }
 
-#define INIT_TIME_FACTOR \
-  if (timefactor==NOTSET) timefactor = timefactors[nenum(timestr)]
+static void init_time_factor()
+{
+  if (timefactor == NOTSET) 
+    timefactor = timefactors[nenum(timestr)];
+}
 
 real time_factor(void)
 {
-  INIT_TIME_FACTOR;
+  init_time_factor();
   
   return timefactor;
 }
 
 real convert_time(real time)
 {
-  INIT_TIME_FACTOR;
+  init_time_factor();
   
-  return time*timefactor;
+  return (time*timefactor);
 }
 
-static real inv_convert_time(real time)
-{
-  INIT_TIME_FACTOR;
-  
-  return time/timefactor;
-}
 
 void convert_times(int n, real *time)
 {
   int i;
   
-  INIT_TIME_FACTOR;
+  init_time_factor();
  
   if (timefactor!=1)
     for(i=0; i<n; i++)
@@ -721,11 +718,12 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   }
   
   /* convert time options, must be done after printing! */
-#define pca_convert_time(t) if (t>=0.0) t=(double)inv_convert_time((real)(t))
-  for(i=0; i<npall; i++)
-    if (all_pa[i].type == etTIME)
-      pca_convert_time(*all_pa[i].u.r);
-#undef pca_convert_time
+  init_time_factor();
+  for(i=0; i<npall; i++) {
+    if ((all_pa[i].type == etTIME) && (*all_pa[i].u.r >= 0)) {
+      *all_pa[i].u.r /= timefactor;
+    }
+  }
   
   /* clear memory */
   for(i=0; i<npall; i++)
