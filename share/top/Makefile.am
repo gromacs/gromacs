@@ -30,7 +30,9 @@ topol_DATA = \
 	gurgle.dat	ha-shift.dat	links.dat	phbres.dat	\
 	random.dat	refi_aa.dat	specbond.dat	surface.dat	\
 	vdwradii.dat	xlateat.dat					\
-	export.dlg	bonds.dlg	ss.map		ps.m2p
+	export.dlg	bonds.dlg	ss.map		ps.m2p		\
+	table6-10.xvg  	table6-11.xvg  	table6-12.xvg  	table6-8.xvg  	\
+	table6-9.xvg 
 
 EXTRA_DIST = ${topol_DATA}
 
