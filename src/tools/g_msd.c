@@ -629,7 +629,7 @@ int main(int argc,char *argv[])
   }
 
   if (normtype[0][0]!='n') {
-    type = normtype[0][0] - 'x'+1; /* See defines above */
+    type = normtype[0][0] - 'x' + X; /* See defines above */
     dim_factor = 2.0;
   }
   else {
