@@ -790,10 +790,10 @@ account the update algorithm for the velocities becomes:
 \eeq
 where $g$ and $h$ are group indices which differ per atom.
 
-\subsection{Constraint algorithms}
+\subsection{\normindex{Constraint} algorithms}
 
 \subsubsection*{SHAKE}
-\normindex{Constraint}s can be imposed in {\gromacs} using the traditional 
+Constraints can be imposed in {\gromacs} using the traditional 
 \normindex{SHAKE}
 method~\cite{Ryckaert77}. The SHAKE routine changes a set of unconstrained
 coordinates $\ve{r}^{'}$ to a set of coordinates $\ve{r}''$ that
@@ -833,7 +833,7 @@ solved iteratively by SHAKE.
 For the special case of rigid water molecules, that often make up more
 than 80\% of the simulation system we have implemented the 
 \normindex{SETTLE}
-algorithm~\cite{Miyamoto92} (\secref{settle}).
+algorithm~\cite{Miyamoto92} (\ssecref{constraints}).
 
 
 \newcommand{\fs}[1]{\begin{equation} \label{eqn:#1}}
@@ -854,7 +854,7 @@ after an unconstrained update~\cite{Hess97}.
 The method is non-iterative, as it always uses two steps.
 Although LINCS is based on matrices, no matrix-matrix multiplications are 
 needed. The method is more stable and faster than SHAKE, 
-but it can only be used with bond \normindex{constraint}s and 
+but it can only be used with bond constraints and 
 isolated angle constraints, such as the proton angle in OH. 
 Because of its stability LINCS is especially useful for Brownian dynamics. 
 LINCS has two parameters, which are explained in the subsection parameters.
