@@ -209,7 +209,7 @@ static real ekrot(rvec x[],rvec v[],real mass[],int isize,atom_id index[])
   for(m=0; (m<DIM); m++) {
     for(n=0; (n<DIM); n++)
       ocm[m]+=TCM[m][n]*acm[n];
-    ekrot+=ocm[m]*acm[m];
+    ekrot+=0.5*ocm[m]*acm[m];
   }
   return ekrot;
 }
