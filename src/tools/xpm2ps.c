@@ -528,44 +528,42 @@ void xpm_mat(char *outf,
    fclose(out);
 }
 
-static real tick_spacing(int n, real axis[], real offset)
+static void tick_spacing(int n, real axis[], real offset, char axisnm, 
+			 real *major, real *minor)
 {
   real space;
   bool bTryAgain,bFive;
-  int  i,j,prev_i;
+  int  i,j,t,f,ten;
+#define NFACT 6
+  int major_fact[NFACT] = {1, 2, 2.5, 4, 5, 7.5};
+  int minor_fact[NFACT] = {5, 4, 5,   4, 5, 2.5};
   
   /* start with interval between 10 matrix points: */
   space = max(10*axis[1]-axis[0], axis[min(10,n-1)]-axis[0]);
-  /* round up to power of 10 */
-  space = pow(10,ceil(log(space)/log(10)));
+  /* get power of 10 */
+  ten = (int)ceil(log(space)/log(10))-1;
   bTryAgain = TRUE;
-  bFive = TRUE;
-  prev_i = 0;
-  while ( bTryAgain ) {
-    /* count how many ticks we would get: */
-    i = 0;
-    for(j=0; j<n; j++)
-      if ( bRmod(axis[j] - offset, space) )
-	i++;
-    /* do we have a reasonable number of ticks ? */
-    if ( i < min(10, n-1) ) {
-      if ( prev_i > 25 ) {
-	/* we've whizzed past our window of 10-25 ticks */
-	space *= 0.5;
-      } else {
-	/* need more ticks -> smaller interval */
-	space *= bFive ? 0.5 : 0.2;
-      }
-    } else if ( i > 25 ) {
-      /* need more ticks -> larger interval */
-      space *= bFive ? 5 : 2;
-    } else
-      /* it's OK, get on with it! */
-      bTryAgain = FALSE;
-    prev_i = i;
-    bFive = !bFive;
+  for(t=ten-2; t<ten+3 && bTryAgain; t++) {
+    for(f=0; f<NFACT && bTryAgain; f++) {
+      space = pow(10,t) * major_fact[f];
+      /* count how many ticks we would get: */
+      i = 0;
+      for(j=0; j<n; j++)
+	if ( bRmod(axis[j] - offset, space) )
+	  i++;
+      /* do we have a reasonable number of ticks ? */
+      bTryAgain = i > min(10, n-1) || i < 5;
+    }
   }
-  return space;
+  if (bTryAgain) {
+    space = max(10*axis[1]-axis[0], axis[min(10,n-1)]-axis[0]);
+    fprintf(stderr,"Auto tick spacing failed for %c-axis, guessing %g\n",
+	    axisnm,space);
+  }
+  *major = space;
+  *minor = space / minor_fact[f-1];
+  fprintf(stderr,"Auto tick spacing for %c-axis: major %g, minor %g\n", 
+	  axisnm, *major, *minor);
 }
 
 void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
@@ -589,16 +587,14 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
 
   psr=&psrec;
 
-  if (psr->X.major <= 0 ) {
-    psr->X.major = tick_spacing(mat[0].nx, mat[0].axis_x, psr->X.offset);
-    psr->X.minor = psr->X.major / 2;
-  }
+  if (psr->X.major <= 0 )
+    tick_spacing(mat[0].nx, mat[0].axis_x, psr->X.offset, 'X', 
+		 &(psr->X.major), &(psr->X.minor) );
   if (psr->X.minor <= 0 )
     psr->X.minor = psr->X.major / 2;
-  if (psr->Y.major <= 0) {
-    psr->Y.major = tick_spacing(mat[0].ny, mat[0].axis_y, psr->Y.offset);
-    psr->Y.minor = psr->Y.major / 2;
-  }
+  if (psr->Y.major <= 0)
+    tick_spacing(mat[0].ny, mat[0].axis_y, psr->Y.offset, 'Y',
+		 &(psr->Y.major), &(psr->Y.minor) );
   if (psr->Y.minor <= 0)
     psr->Y.minor = psr->Y.major / 2;
   
@@ -812,8 +808,30 @@ void prune_mat(int nmat, t_matrix *mat,t_matrix *mat2, int skip)
   }
 }
 
+void zero_lines(int nmat, t_matrix *mat, t_matrix *mat2)
+{
+  int i, x, y, m;
+  t_matrix *mats;
+  
+  for(i=0; i<nmat; i++)
+    for(m=0; m < (mat2 ? 2 : 1) ; m++) {
+      if (m==0) 
+	mats=mat;
+      else 
+	mats=mat2;
+      for(x=0; x<mats[i].nx-1; x++)
+	if (abs(mats[i].axis_x[x+1]) < 1e-5)
+	  for(y=0; y<mats[i].ny; y++)
+	    mats[i].matrix[x][y]=0;
+      for(y=0; y<mats[i].ny-1; y++)
+	if (abs(mats[i].axis_y[y+1]) < 1e-5)
+	  for(x=0; x<mats[i].nx; x++)
+	    mats[i].matrix[x][y]=0;
+    }
+}
+
 void do_mat(int nmat,t_matrix *mat,t_matrix *mat2,
-	    bool bFrame,
+	    bool bFrame, bool bZeroLine,
 	    bool bDiag,bool bFirstDiag,bool bTitle,char w_legend,
 	    real boxx,real boxy,
 	    char *epsfile,char *xpmfile,char *m2p,char *m2pout,
@@ -843,6 +861,9 @@ void do_mat(int nmat,t_matrix *mat,t_matrix *mat2,
   
   if (skip > 1)
     prune_mat(nmat,mat,mat2,skip);
+    
+  if (bZeroLine)
+    zero_lines(nmat,mat,mat);
   
   if (epsfile!=NULL)
     ps_mat(epsfile,nmat,mat,mat2,bFrame,bDiag,bFirstDiag,
@@ -927,7 +948,7 @@ int main(int argc,char *argv[])
   int       i,nmat,nmat2;
   t_matrix *mat=NULL,*mat2=NULL;
   bool      bTitle,bDiag,bFirstDiag;
-  static bool bFrame=TRUE;
+  static bool bFrame=TRUE,bZeroLine=FALSE;
   static real boxx=0,boxy=0;
   static char *title[]   = { NULL, "top", "ylabel", "none", NULL };
   static char *legend[]  = { NULL, "both", "first", "second", "none", NULL };
@@ -946,7 +967,9 @@ int main(int argc,char *argv[])
     { "-rainbow", FALSE, etENUM, {rainbow},
       "Rainbow colors, convert white to" },
     { "-skip",    FALSE, etINT,  {&skip},
-      "only write out every nr-th row and column" }
+      "only write out every nr-th row and column" },
+    { "-zeroline",FALSE, etBOOL, {&bZeroLine},
+      "insert line in xpm matrix where axis label is zero"}
   };
   t_filenm  fnm[] = {
     { efXPM, "-f",  NULL,      ffREAD },
@@ -1012,7 +1035,7 @@ int main(int argc,char *argv[])
   if ((mat2 == NULL) && (w_legend != 'n'))
     w_legend = 'f';
 
-  do_mat(nmat,mat,mat2,bFrame,bDiag,bFirstDiag,bTitle,w_legend,
+  do_mat(nmat,mat,mat2,bFrame,bZeroLine,bDiag,bFirstDiag,bTitle,w_legend,
 	 boxx,boxy,epsfile,xpmfile,
 	 opt2fn_null("-di",NFILE,fnm),opt2fn_null("-do",NFILE,fnm),
 	 skip);
