@@ -66,6 +66,20 @@ char *type2nm(int nt, t_atomtype *at)
   return *(at->atomname[nt]);
 }
 
+void set_p_string(t_param *p,char *s)
+{
+  if (s) {
+    if (strlen(s) < sizeof(p->s)-1)
+      strcpy(p->s,s);
+    else
+      fatal_error(0,"Increase MAXSLEN in src/kernel/grompp.h to at least %d,"
+		  " or shorten your definition of bonds like %s to at most %d",
+		  strlen(s)+1,s,MAXSLEN-1);
+  }
+  else
+    strcpy(p->s,"");
+}
+
 void pr_alloc (int extra, t_params *pr)
 {
   int i,j;
@@ -86,7 +100,7 @@ void pr_alloc (int extra, t_params *pr)
       pr->param[i].a[j]=0;
     for(j=0; (j<MAXFORCEPARAM); j++)
       pr->param[i].c[j]=0;
-    pr->param[i].s = NULL;
+    set_p_string(&(pr->param[i]),"");
   }
 }
 

@@ -189,14 +189,13 @@ static void rm2par(t_param p[], int *np, peq eq)
 		"Something VERY strange is going on in rm2par (gen_ad.c)\n"
 		"a[0] %u a[1] %u a[2] %u a[3] %u\n",
 		p[i].a[0],p[i].a[1],p[i].a[2],p[i].a[3]);
-      p[i].s = strdup(""); 
+      strcpy(p[i].s,"");
     } else if (index[i] > i) {
       /* Copy the string only if it comes from somewhere else 
        * otherwise we will end up copying a random (newly freed) pointer.
        * Since the index is sorted we only have to test for index[i] > i.
        */ 
-      sfree(p[i].s);
-      p[i].s = strdup(p[index[i]].s);
+      strcpy(p[i].s,p[index[i]].s);
     }
   }
   (*np)=nind;
@@ -220,7 +219,7 @@ static void cppar(t_param p[], int np, t_params plist[], int ftype)
       ps->param[ps->nr].a[j] = p[i].a[j];
     for(j=0; (j<nrfp); j++)
       ps->param[ps->nr].c[j] = p[i].c[j];
-    ps->param[ps->nr].s=strdup(p[i].s);
+    set_p_string(&(ps->param[ps->nr]),p[i].s);
     ps->nr++;
   }
 }
@@ -233,7 +232,7 @@ static void cpparam(t_param *dest, t_param *src)
     dest->a[j]=src->a[j];
   for(j=0; (j<MAXFORCEPARAM); j++)
     dest->c[j]=src->c[j];
-  dest->s=strdup(src->s);
+  strcpy(dest->s,src->s);
 }
 
 static void set_p(t_param *p, atom_id ai[4], real *c, char *s)
@@ -247,11 +246,8 @@ static void set_p(t_param *p, atom_id ai[4], real *c, char *s)
       p->c[j]=c[j];
     else
       p->c[j]=NOTSET;
-  sfree(p->s);
-  if (s)
-    p->s=strdup(s);
-  else
-    p->s=strdup("");
+
+  set_p_string(p,s);
 }
 
 static int int_comp(const void *a,const void *b)
@@ -478,17 +474,14 @@ static void pdih2idih(t_param *alldih, int *nalldih,t_param idih[],int *nidih,
 	alldih[k].a[j] = dih[bestl].a[j];
       for(j=0; (j<MAXFORCEPARAM); j++)
 	alldih[k].c[j] = dih[bestl].c[j];
-      sfree(alldih[k].s);
-      alldih[k].s = strdup(dih[bestl].s);
+      set_p_string(&(alldih[k]),dih[bestl].s);
       k++;
     }
   }
   for (i=k; i < *nalldih; i++)
-    sfree(alldih[i].s);
+    strcpy(alldih[i].s,"");
   *nalldih = k;
 
-  for(i=0; i<ndih; i++)
-    sfree(dih[i].s);
   sfree(dih);
   sfree(index);
 }
@@ -592,7 +585,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, bool bH14,
 	  }
 	  ang[nang].C0=NOTSET;
 	  ang[nang].C1=NOTSET;
-	  ang[nang].s=strdup("");
+	  set_p_string(&(ang[nang]),"");
 	  if (hb) {
 	    minres = atoms->atom[ang[nang].a[0]].resnr;
 	    maxres = minres;
@@ -612,12 +605,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, bool bH14,
 		    bFound=(bFound ||
 			    ((strcmp(anm[m],hbang->b[l].AI)==0) &&
 			     (strcmp(anm[2-m],hbang->b[l].AK)==0)));
-		  if (bFound) { 
-		    sfree(ang[nang].s);
-		    if (hbang->b[l].s)
-		      ang[nang].s = strdup(hbang->b[l].s);
-		    else
-		      ang[nang].s = strdup("");
+		  if (bFound) {
+		    set_p_string(&(ang[nang]),hbang->b[l].s);
 		  }
 		}
 	      }
@@ -651,7 +640,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, bool bH14,
 	      }
 	      for (m=0; m<MAXFORCEPARAM; m++)
 		dih[ndih].c[m]=NOTSET;
-	      dih[ndih].s=strdup("");
+	      set_p_string(&(dih[ndih]),"");
 	      if (hb) {
 		minres = atoms->atom[dih[ndih].a[0]].resnr;
 		maxres = minres;
@@ -673,11 +662,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, bool bH14,
 			       (strcmp(anm[2-m],  hbdih->b[n].AK)==0) &&
 			       (strcmp(anm[3-3*m],hbdih->b[n].AL)==0)));
 		    if (bFound) {
-		      sfree(dih[ndih].s);
-		      if (hbdih->b[n].s)
-		      dih[ndih].s = strdup(hbdih->b[n].s);
-		      else
-			dih[ndih].s = strdup("");
+		      set_p_string(&dih[ndih],hbdih->b[n].s);
+			
 		      /* Set the last parameter to be able to see
 			 if the dihedral was in the rtp list */
 		      dih[ndih].c[MAXFORCEPARAM-1] = 0;
@@ -693,8 +679,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, bool bH14,
 		pai[npai].AJ=max(i,l1);
 		pai[npai].C0=NOTSET;
 		pai[npai].C1=NOTSET;
-		sfree(pai[npai].s);
-		pai[npai].s =strdup("");
+		set_p_string(&(pai[npai]),"");
 		if (bH14 || !(is_hydro(atoms,pai[npai].AI) &&
 			      is_hydro(atoms,pai[npai].AJ)))
 		  npai++;
@@ -739,21 +724,9 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, bool bH14,
   cppar(idih,nidih,plist,F_IDIHS);
   cppar(pai, npai, plist,F_LJ14);
 
-  
-  for(i=0; i<nang; i++)
-    sfree(ang[i].s);
   sfree(ang);
-  
-  for(i=0; i<ndih; i++)
-    sfree(dih[i].s);
   sfree(dih);
-  
-  for(i=0; i<nidih; i++)
-    sfree(idih[i].s);
   sfree(idih);
-  
-  for(i=0; i<npai; i++)
-    sfree(pai[i].s);
   sfree(pai);
 }
 

@@ -56,10 +56,10 @@ typedef struct {
 extern char *choose_ff(void);
 /* Strange place for this function... */
 
-extern void print_top_comment(FILE *out, char *title, bool bITP);
+extern void print_top_comment(FILE *out,char *filename,char *title,bool bITP);
 
-extern void print_top_header(FILE *out, char *title, bool bITP, 
-			     char *ff, real mHmult);
+extern void print_top_header(FILE *out,char *filename,char *title,bool bITP, 
+			     char *ff,real mHmult);
 
 extern void print_top_mols(FILE *out, char *title, int nincl, char **incls,
 			   int nmol, t_mols *mols);

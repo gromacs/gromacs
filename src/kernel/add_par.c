@@ -67,10 +67,7 @@ void add_param(t_params *ps,int ai,int aj, real *c, char *s)
   else
     for(i=0; (i < MAXFORCEPARAM); i++)
       ps->param[ps->nr].c[i]=c[i];
-  if (s)
-    ps->param[ps->nr].s = strdup(s);
-  else
-    ps->param[ps->nr].s = strdup("");
+  set_p_string(&(ps->param[ps->nr]),s);
   ps->nr++;
 }
 
@@ -86,10 +83,7 @@ void add_imp_param(t_params *ps,int ai,int aj,int ak,int al,real c0, real c1,
   ps->param[ps->nr].C0=c0;
   ps->param[ps->nr].C1=c1;
   clear_force_param(2, ps->param[ps->nr].c);
-  if (s)
-    ps->param[ps->nr].s = strdup(s);
-  else
-    ps->param[ps->nr].s = strdup("");
+  set_p_string(&(ps->param[ps->nr]),s);
   ps->nr++;
 }
 
@@ -106,10 +100,7 @@ void add_dih_param(t_params *ps,int ai,int aj,int ak,int al,real c0, real c1,
   ps->param[ps->nr].C1=c1;
   ps->param[ps->nr].C2=c2;
   clear_force_param(3, ps->param[ps->nr].c);
-  if (s)
-    ps->param[ps->nr].s = strdup(s);
-  else
-    ps->param[ps->nr].s = strdup("");
+  set_p_string(&(ps->param[ps->nr]),s);
   ps->nr++;
 }
 
@@ -121,7 +112,7 @@ void add_dum2_atoms(t_params *ps,int ai,int aj,int ak)
   ps->param[ps->nr].AK=ak;
   clear_atom_list  (3, ps->param[ps->nr].a);
   clear_force_param(0, ps->param[ps->nr].c);
-  ps->param[ps->nr].s = strdup("");
+  set_p_string(&(ps->param[ps->nr]),"");
   ps->nr++;
 }
 
@@ -137,7 +128,7 @@ void add_dum3_param(t_params *ps,int ai,int aj,int ak,int al,
   ps->param[ps->nr].C0=c0;
   ps->param[ps->nr].C1=c1;
   clear_force_param(2, ps->param[ps->nr].c);
-  ps->param[ps->nr].s = strdup("");
+  set_p_string(&(ps->param[ps->nr]),"");
   ps->nr++;
 }
 
@@ -152,7 +143,7 @@ void add_dum3_atoms(t_params *ps,int ai,int aj,int ak,int al, bool bSwapParity)
   clear_force_param(0, ps->param[ps->nr].c);
   if (bSwapParity)
     ps->param[ps->nr].C1=-1;
-  ps->param[ps->nr].s = strdup("");
+  set_p_string(&(ps->param[ps->nr]),"");
   ps->nr++;
 }
 
@@ -166,7 +157,7 @@ void add_dum4_atoms(t_params *ps,int ai,int aj,int ak,int al,int am)
   ps->param[ps->nr].AM=am;
   clear_atom_list  (5, ps->param[ps->nr].a);
   clear_force_param(0, ps->param[ps->nr].c);
-  ps->param[ps->nr].s = strdup("");
+  set_p_string(&(ps->param[ps->nr]),"");
   ps->nr++;
 }
 

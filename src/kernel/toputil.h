@@ -46,6 +46,8 @@ extern char *type2nm(int nt, t_atomtype *at);
 
 extern void pr_alloc (int extra, t_params *pr);
 
+extern void set_p_string(t_param *p,char *s);
+
 /* INITIATE */
 
 extern void init_plist(t_params plist[]);

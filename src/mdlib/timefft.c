@@ -30,6 +30,7 @@ static char *SRCID_testfft_c = "$Id$";
 
 #include <math.h>
 #include <stdio.h>
+#include <time.h>
 #include "typedefs.h"
 #include "macros.h"
 #include "smalloc.h"
@@ -43,23 +44,27 @@ static char *SRCID_testfft_c = "$Id$";
 
 int main(int argc,char *argv[])
 {
-  int       nnn[] = { 8, 10, 12, 15, 16, 18, 20, 24, 25, 27, 30, 32, 36, 40,
+  int       mmm[] = { 8, 10, 12, 15, 16, 18, 20, 24, 25, 27, 30, 32, 36, 40,
 		      45, 48, 50, 54, 60, 64, 72, 75, 80, 81, 90, 100 };
+  int       nnn[] = { 24, 32, 48, 60, 72, 84, 96 };
 #define NNN asize(nnn)
   FILE      *fp;
   int       *niter;
   int       i,j,n,nit,ntot,n3,rsize;
-  double    t,nflop;
+  double    t,nflop,start;
   double    *rt,*ct;
   t_fftgrid *g;
   t_commrec *cr;
   static bool bOptFFT = FALSE;
   static int  ncpu    = 1;
+  static int  nitfac  = 1;
   t_pargs pa[] = {
     { "-opt",   FALSE, etBOOL, {&bOptFFT}, 
       "Optimize FFT" },
-    { "-np",    FALSE, etBOOL, {&ncpu},
-      "Number of CPUs" }
+    { "-np",    FALSE, etINT, {&ncpu},
+      "Number of CPUs" },
+    { "-itfac", FALSE, etINT, {&nitfac},
+      "Multiply number of iterations by this" }
   };
   static t_filenm fnm[] = {
     { efLOG, "-g", "fft",      ffWRITE },
@@ -82,13 +87,14 @@ int main(int argc,char *argv[])
   for(i=0; (i<NNN); i++) {
     n  = nnn[i];
     if (n < 16)
-      niter[i] = 100;
-    else if (n < 26)
       niter[i] = 50;
+    else if (n < 26)
+      niter[i] = 20;
     else if (n < 51)
       niter[i] = 10;
     else
       niter[i] = 5;
+    niter[i] *= nitfac;
     nit = niter[i];
     
     if (MASTER(cr))
@@ -97,24 +103,30 @@ int main(int argc,char *argv[])
     
     g  = mk_fftgrid(stdlog,(ncpu > 1),n,n,n,bOptFFT);
 
-    start_time();
+    if (PAR(cr))
+      start = time(NULL);
+    else
+      start_time();
     for(j=0; (j<nit); j++) {
       gmxfft3D(g,FFTW_FORWARD,cr);
       gmxfft3D(g,FFTW_BACKWARD,cr);
     }
-    update_time();
-    rt[i] = cpu_time();
-    
+    if (PAR(cr)) 
+      rt[i] = time(NULL)-start;
+    else {
+      update_time();
+      rt[i] = cpu_time();
+    }
     done_fftgrid(g);
     sfree(g);
   }
   if (MASTER(cr)) {
     fprintf(stderr,"\n");
     fp=xvgropen(ftp2fn(efXVG,NFILE,fnm),
-		"FFT timings per grid point","n","t (s)");
+		"FFT timings","n^3","t (s)");
     for(i=0; (i<NNN); i++) {
       n3 = 2*niter[i]*nnn[i]*nnn[i]*nnn[i];
-      fprintf(fp,"%10d  %10g  %10g\n",nnn[i],rt[i]/n3,ct[i]/n3);
+      fprintf(fp,"%10d  %10g\n",nnn[i],rt[i]/(2*niter[i]));
     }
     fclose(fp);
   }

@@ -329,7 +329,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     xx = (do_per_step(step,parm->ir.nstxout) || bLastStep) ? x : NULL;
     vv = (do_per_step(step,parm->ir.nstvout) || bLastStep) ? v : NULL;
-    ff = (do_per_step(step,parm->ir.nstfout)) ? f : NULL;
+    ff = (do_per_step(step,parm->ir.nstfout)) ?
+#ifdef XMDRUN
+      fbuf[next] : NULL
+#else
+      f : NULL
+#endif
+      ;
     fp_trn = write_traj(log,cr,traj,nsb,step,t,lambda,
 			nrnb,nsb->natoms,xx,vv,ff,parm->box);
     debug_gmx();

@@ -883,7 +883,7 @@ int main(int argc, char *argv[])
   
   top_fn=ftp2fn(efTOP,NFILE,fnm);
   top_file=ffopen(top_fn,"w");
-  print_top_header(top_file,title,FALSE,ff,mHmult);
+  print_top_header(top_file,top_fn,title,FALSE,ff,mHmult);
 
   nincl=0;
   nmol=0;
@@ -1020,7 +1020,7 @@ int main(int argc, char *argv[])
     nmol++;
 
     if (bITP)
-      print_top_comment(itp_file,title,TRUE);
+      print_top_comment(itp_file,itp_fn,title,TRUE);
 
     if (cc->bAllWat)
       top_file2=NULL;

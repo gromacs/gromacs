@@ -46,6 +46,7 @@ static char *SRCID_pdb2top_c = "$Id$";
 #include "pgutil.h"
 #include "resall.h"
 #include "topio.h"
+#include "string2.h"
 #include "physics.h"
 #include "pdbio.h"
 #include "gen_ad.h"
@@ -218,15 +219,18 @@ static void print_top_heavy_H(FILE *out, real mHmult)
   }
 }
 
-void print_top_comment(FILE *out, char *title, bool bITP)
+void print_top_comment(FILE *out,char *filename,char *title,bool bITP)
 {
-  fprintf(out,"; This is your %stopology file\n",bITP ? "include " : "");
-  fprintf(out,"; %s\n\n",title[0]?title:cool_quote());
+  nice_header(out,filename);
+  fprintf(out,";\tThis is your %stopology file\n",bITP ? "include " : "");
+  fprintf(out,";\t%s\n",title[0]?title:cool_quote());
+  fprintf(out,";\n");
 }
 
-void print_top_header(FILE *out, char *title, bool bITP, char *ff, real mHmult)
+void print_top_header(FILE *out,char *filename, 
+		      char *title,bool bITP,char *ff,real mHmult)
 {
-  print_top_comment(out,title,bITP);
+  print_top_comment(out,filename,title,bITP);
 
   print_top_heavy_H(out, mHmult);
   fprintf(out,"; Include forcefield parameters\n");
@@ -412,13 +416,9 @@ static int pcompar(const void *a, const void *b)
   pb=(t_param *)b;
   
   d = pa->AI - pb->AI;
-  if (d == 0) {
+  if (d == 0) 
     d = pa->AJ - pb->AJ;
-    if (d == 0)
-      /* we'll keep the first bond in the list, 
-	 doing inverse sort will put the bond with the longest string first */
-      d = -strcmp(pa->s, pb->s);
-  }
+  
   return d;
 }
 
@@ -446,12 +446,14 @@ static void clean_bonds(t_params *ps)
 	   ps->param[i].AJ != ps->param[j-1].AJ ) {
 	ps->param[j] = ps->param[i];
 	j++;
-      } else
-	sfree(ps->param[i].s);
+      } 
+      else if (strlen(ps->param[j-1].s) > strlen(ps->param[i].s))
+	strcpy(ps->param[i].s,ps->param[j-1].s);
     }
     fprintf(stderr,"Number of bonds was %d, now %d\n",ps->nr,j);
     ps->nr=j;
-  } else
+  } 
+  else
     fprintf(stderr,"No bonds\n");
 }
 

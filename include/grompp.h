@@ -40,11 +40,12 @@ static char *SRCID_grompp_h = "$Id$";
 #include "typedefs.h"
 #include "macros.h"
 
+#define MAXSLEN 8
 typedef struct {
   atom_id a[MAXATOMLIST];	/* The atom list (eg. bonds: particle	*/
 				/* i = a[0] (AI), j = a[1] (AJ))	*/
   real 	  c[MAXFORCEPARAM];	/* Force parameters (eg. b0 = c[0])	*/
-  char    *s;                   /* A string (instead of parameters),    *
+  char    s[MAXSLEN];           /* A string (instead of parameters),    *
 				 * read from the .rtp file in pdb2gmx   */
 } t_param;
 

@@ -15,7 +15,7 @@ else
 include		$(GMXHOME)/src/makef/Makefile.def
 #
 # Common object files
-PGOBJ		= toputil.o 	topdirs.o 	topexcl.o
+PGOBJ		= add_par.o	toputil.o 	topdirs.o 	topexcl.o
 MDLIBS		= $(LIBDIR)/libgmx.$(GMXCPU).a	\
 		  $(LIBDIR)/libmd.$(GMXCPU).a	\
 		  $(LIBDIR)/libfftw.$(GMXCPU).a
@@ -31,7 +31,7 @@ POBJ		= \
 		pdb2top.o 	gen_ad.o 	\
 		pgutil.o	resall.o	ter_db.o	\
 		hizzie.o	xlate.o		specbond.o	\
-		add_par.o	gen_dum.o	$(PGOBJ)	
+		gen_dum.o	$(PGOBJ)	
 ifneq ($(PARALLEL_ONLY_MDRUN),yes)
 PROGRAMS	= \
 		pdb2gmx 	grompp		tpbconv		\

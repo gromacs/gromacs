@@ -29,7 +29,8 @@ all:		bin
 
 david:		all	xmdrun	total	do_shift
 
-xmdrun:		xmdrun.o $(XOBJ) #calcfdev.o
+xmdrun.o:	xmdrun.c ../mdlib/md.c ../kernel/mdrun.c
+xmdrun:		xmdrun.o $(XOBJ) 
 		$(LD) -o $@ $^ $(RUNSYSLIBS)
 
 copyrgt:	copyrgt.o
