@@ -60,6 +60,7 @@ static char *SRCID_pdb2gmx_c = "$Id$";
 #include "specbond.h"
 #include "index.h"
 
+#define NREXCL 3
 char *hh[ehisNR]   = { "HISA", "HISB", "HISH", "HIS1" };
 
 static char *select_res(int nr,int resnr,char *name[],char *expl[],char *title)
@@ -171,16 +172,14 @@ int read_pdball(char *inf, char *outf,char *title,
 		t_atoms *atoms, rvec **x,matrix box, bool bRetainH)
 /* Read a pdb file. (containing proteins) */
 {
-  FILE      *in;
   int       natom,new_natom,i;
   
   /* READ IT */
-  printf("Reading pdb file...\n");
+  printf("Reading %s...\n",inf);
   get_stx_coordnum(inf,&natom);
   init_t_atoms(atoms,natom,FALSE);
   snew(*x,natom);
-  in=ffopen(inf,"r");
-  read_pdbfile(in,title,atoms,*x,box,TRUE);
+  read_stx_conf(inf,title,atoms,*x,NULL,box);
   if (!bRetainH) {
     new_natom=0;
     for(i=0; i<atoms->nr; i++)
@@ -194,7 +193,6 @@ int read_pdball(char *inf, char *outf,char *title,
     natom=new_natom;
   }
     
-  ffclose(in);
   printf("'%s': %d atoms\n",title,natom);
   
   /* Rename residues */
@@ -229,7 +227,7 @@ void process_chain(t_atoms *pdba, rvec *x,
     rename_pdbres(pdba,"LYS","LYSH",FALSE);
   else
     rename_pdbresint(pdba,"LYS",get_lystp,FALSE);
-  
+
   *nssbonds=mk_specbonds(pdba,x,bCysMan,ssbonds);
   rename_pdbres(pdba,"CYS","CYSH",FALSE);
   for(i=0; i<*nssbonds; i++) {
@@ -432,8 +430,7 @@ void find_nc_ter(int natom,t_atoms *pdba,int *rn,int *rc/*,int ter_type[]*/)
     if ((*rc != rnr) && (is_protein(*pdba->resname[rnr])))
       *rc=rnr;
   }
-  if (debug)
-    fprintf(debug,"nres: %d, rN: %d, rC: %d\n",pdba->nres,*rn,*rc);
+  if (debug) fprintf(debug,"nres: %d, rN: %d, rC: %d\n",pdba->nres,*rn,*rc);
 }
 
 int main(int argc, char *argv[])
@@ -444,10 +441,12 @@ int main(int argc, char *argv[])
     "and generates coordinates in Gromacs (Gromos) format and a topology",
     "in Gromacs format. These files can subsequently be processed to generate",
     "a status file.[PAR]",
+    
     "Note that a pdb file is nothing more than a file format, and it need",
     "not necessarily contain a protein structure. Every kind of molecule",
     "for which there is support in the database can be converted. If there",
     "is no support in the database, you can add it yourself.[PAR]",
+    
     "The program has limited intelligence, it reads a number of",
     "database files, that allow it to make special bonds",
     "(Cys-Cys, Heme-His, etc.), if necessary this can be done manually.",
@@ -456,6 +455,7 @@ int main(int argc, char *argv[])
     "NZ) or LYSH (three protons), for HIS the proton can be either on ND1",
     "(HISA), on NE2 (HISB) or on both (HISH). By default these selections",
     "are done automatically.[PAR]",
+    
     "During processing the atoms will be reordered according to Gromacs",
     "conventions.",
     "With [TT]-n[tt] an index file can be generated that contains",
@@ -464,11 +464,25 @@ int main(int argc, char *argv[])
     "limitation: reordering is done after the hydrogens are stripped",
     "from the input and before new hydrogens are added. This means that",
     "if you have hydrogens in your input file, you [BB]must[bb] select",
-    "the [TT]-reth[tt] option to obtain a useful index file."
+    "the [TT]-reth[tt] option to obtain a useful index file.[PAR]",
+    
+    "The option -dummies removes or slows down hydrogen motions.",
+    "Angular and out-of-plane motions can be removed by changing",
+    "hydrogens into dummy atoms and fixing angles,",
+    "which fixes their position relative to",
+    "neighboring atoms. Slowing down of dihedral motion is done by",
+    "increasing the hydrogen-mass by a factor of 4. This is also done",
+    "for water hydrogens to slow down the rotational motion of water.",
+    "The increase in mass of the hydrogens is subtracted from the bonded",
+    "(heavy) atom.",
+    "Three options are available: 0: normal topology, 1: dummy hydrogens",
+    "and fixed angles, 2: same as 1 and also heavy hydrogens in water",
+    "and OH and SH groups."
   };
   static char *bugs[] = {
-    "Generation of N-terminal hydrogen atoms on OPLS files does not work",
-    "Deuterium (D) is not recognized as a hydrogen and will crash the program.",
+    "Generation of N-terminal hydrogen atoms on OPLS files does not work.",
+    "Deuterium (D) is not recognized as a hydrogen and will crash the "
+    "program.",
     "It is assumed that atomic coordinates in pdb files are in Angstrom.",
     "The program should be able to select the protonation on pH, and also "
     "should allow for selection of ASPH instead of ASP.",
@@ -510,18 +524,22 @@ int main(int argc, char *argv[])
   char       molname[STRLEN],title[STRLEN];
   char       *c;
   int        nah,nNtdb,nCtdb;
-  t_terblock *ntdb,*ctdb,*sel_ntdb,*sel_ctdb;
+  t_hackblock *ntdb,*ctdb,*sel_ntdb,*sel_ctdb;
+  int        nddb;
+  t_dumblock *ddb;
   int        nssbonds;
   t_ssbond   *ssbonds;
-  rvec       *pdbx,*x,*dummy;
-  bool       bTopWritten;
+  rvec       *pdbx,*x;
+  bool       bTopWritten,bDummies;
+  real       mHmult;
+  
   t_filenm   fnm[] = { 
-    { efPDB, "-f", NULL,    ffREAD  },
-    { efSTO, "-o", "conf",  ffWRITE },
-    { efTOP, NULL, NULL,    ffWRITE },
-    { efITP, "-i", "posre", ffWRITE },
-    { efNDX, "-n", "clean", ffOPTWR },
-    { efPDB, "-q", "clean", ffOPTWR }
+    { efSTX, "-f", "eiwit.pdb", ffREAD  },
+    { efSTO, "-o", "conf",      ffWRITE },
+    { efTOP, NULL, NULL,        ffWRITE },
+    { efITP, "-i", "posre",     ffWRITE },
+    { efNDX, "-n", "clean",     ffOPTWR },
+    { efSTO, "-q", "clean.pdb", ffOPTWR }
   };
 #define NFILE asize(fnm)
 
@@ -530,44 +548,47 @@ int main(int argc, char *argv[])
   static bool bInter=FALSE, bLysH=TRUE, bFFMan=FALSE, bCysMan=FALSE; 
   static bool bTerMan=FALSE, bUnA=FALSE;
   static bool bH14= FALSE,bSort=TRUE, bRetainH=FALSE;
-  static bool bAlldih=FALSE,bHisMan = FALSE; 
+  static bool bAlldih=FALSE,bHisMan = FALSE;
+  static int  dumtp=0; 
   static real angle=135.0,distance=0.3;
   t_pargs pa[] = {
     { "-newrtp", FALSE,   etBOOL, &bNewRTP,
-        "HIDDENWrite the residue database in new format to 'new.rtp'"},
+      "HIDDENWrite the residue database in new format to 'new.rtp'"},
     { "-inter", FALSE,    etBOOL, &bInter,
-        "Overrides the next 5 options and makes their selections interactive"},
+      "Overrides the next 5 options and makes their selections interactive"},
     { "-ff", FALSE,    etBOOL, &bFFMan, 
-	"Interactive Force Field selection, instead of the first one" },
+      "Interactive Force Field selection, instead of the first one" },
     { "-ss", FALSE,    etBOOL, &bCysMan, 
-	"Interactive SS bridge selection" },
+      "Interactive SS bridge selection" },
     { "-ter", FALSE,    etBOOL, &bTerMan, 
-	"Interactive termini selection, instead of charged" },
+      "Interactive termini selection, instead of charged" },
     { "-lysh", FALSE,  etBOOL, &bLysH,
-        "Selects the LysH (charge +1) residue type, instead of interactive "
-        "selection" },
+      "Selects the LysH (charge +1) residue type, instead of interactive "
+      "selection" },
     { "-his", FALSE, etBOOL, &bHisMan,
-	"Interactive Histidine selection, instead of checking H-bonds" },
+      "Interactive Histidine selection, instead of checking H-bonds" },
     { "-angle", FALSE, etREAL, &angle,
-	"Minimum angle for a hydrogen bond (180 = ideal)" },
+      "Minimum angle for a hydrogen bond (180 = ideal)" },
     { "-dist", FALSE, etREAL,  &distance,
-	"Maximum distance for a hydrogen bond  (in nm)" },
+      "Maximum distance for a hydrogen bond  (in nm)" },
     { "-una", FALSE,  etBOOL, &bUnA, 
-	"Selects aromatic rings with united CH atoms on Phenylalanine, "
-	"Tryptophane and Tyrosine. " },
+      "Selects aromatic rings with united CH atoms on Phenylalanine, "
+      "Tryptophane and Tyrosine. " },
     { "-sort", FALSE,  etBOOL, &bSort,  
-	"Sort the residues according to database, sometimes this is necessary "
-	"to get charge groups together" },
+      "Sort the residues according to database, sometimes this is necessary "
+      "to get charge groups together" },
     { "-H14",  FALSE,  etBOOL, &bH14, 
       "Use 3rd neighbour interactions for hydrogen atoms" },
     { "-reth", FALSE,  etBOOL, &bRetainH, 
-        "Retain hydrogen atoms that are in the pdb file. Their names *must* "
-        "match names in the database files used by pdb2gmx. Except for "
-        "residues Tyr, Trp, Phe, Lys and His, no additional "
-        "hydrogen atoms will be added." },
+      "Retain hydrogen atoms that are in the pdb file. Their names *must* "
+      "match names in the database files used by pdb2gmx. Except for "
+      "residues Tyr, Trp, Phe, Lys and His, no additional "
+      "hydrogen atoms will be added." },
     { "-alldih",FALSE, etBOOL, &bAlldih, 
-        "Generate all proper dihedrals instead of only those with as few "
-	"hydrogens as possible (useful for use with Charmm)" }
+      "Generate all proper dihedrals instead of only those with as few "
+      "hydrogens as possible (useful for use with Charmm)" },
+    { "-dummies",FALSE,etINT, &dumtp,
+      "1: dummy hydrogens, 2: also heavy hydrogens" }
   };
 #define NPARGS asize(pa)
 
@@ -583,12 +604,29 @@ int main(int argc, char *argv[])
     bHisMan=TRUE;
   }
   
+  switch(dumtp) {
+  case 0: 
+    bDummies=FALSE;
+    mHmult=1.0;
+    break;
+  case 1:
+    bDummies=TRUE;
+    mHmult=1.0;
+    break;
+  case 2:
+    bDummies=TRUE;
+    mHmult=4.0;
+    break;
+  default:
+    fatal_error(0,"Illegal argument -dummies %d (must be 0,1 or 2)",dumtp);
+  }/* end switch */
+  
   clear_mat(box);
   natom=read_pdball(opt2fn("-f",NFILE,fnm),opt2fn_null("-q",NFILE,fnm),title,
 		    &pdba_all,&pdbx,box,bRetainH);
   
   if (natom==0)
-    fatal_error(0,"No atoms found in pdb file %s\n",opt2fn("-f",NFILE,fnm));
+    fatal_error(0,"No atoms found in pdb file %s.\n",opt2fn("-f",NFILE,fnm));
 
   printf("Analyzing pdb file\n");
   pchain='\0';
@@ -733,6 +771,13 @@ int main(int argc, char *argv[])
   sprintf(fn,"%s-c.tdb",ff);
   nCtdb=read_ter_db(fn,&ctdb,atype);
   
+  /* Read dummies database */
+  nddb=0;
+  ddb=NULL;
+  if (bDummies)
+    nddb=read_dum_db(ff,&ddb);
+  if (debug) print_dum_db(stderr,nddb,ddb);
+  
   bTopWritten=FALSE;
   nincl=0;
   nmol=0;
@@ -769,53 +814,54 @@ int main(int argc, char *argv[])
 		  ftp2fn(efNDX,NFILE,fnm));
 	write_index(ftp2fn(efNDX,NFILE,fnm),block,gnames);
       }
-      sfree(block[0].index);
-      sfree(block);
+      done_block(block);
       sfree(gnames);
     } else 
       fprintf(stderr,"WARNING: "
 	      "without sorting no check for double atoms can be done\n");
     
     if (debug) {
-      sprintf(fn,"%c.pdb",chains[chain].chain);
+      if (chains[chain].chain == ' ')
+	sprintf(fn,"chain.pdb");
+      else
+	sprintf(fn,"chain_%c.pdb",chains[chain].chain);
       write_sto_conf(fn,title,pdba,x,NULL,box);
     }
-
+    
     find_nc_ter(natom,pdba,&rN,&rC);
-
+    
     if ( (rN<0) || (rC<0) ) {
       printf("No N- or C-terminus found: "
-	     "assuming this chain contains no protein\n");
+	     "this chain appears to contain no protein\n");
     } else {
       /* set termini */
       if ( (rN>=0) && (bTerMan || (nNtdb<4)) )
 	sel_ntdb=choose_ter(nNtdb,ntdb,"Select N-terminus type (start)");
-      else {
+      else
 	if (strncmp(*pdba->resname[pdba->atom[rN].resnr],"PRO",3))
 	  sel_ntdb=&(ntdb[1]);
 	else
 	  sel_ntdb=&(ntdb[3]);
-	printf("N-terminus: %s\n",sel_ntdb->bname);
-      }
-    
+      printf("N-terminus: %s\n",sel_ntdb->bname);
+      
       if ( (rC>=0) && (bTerMan || (nCtdb<2)) )
 	sel_ctdb=choose_ter(nCtdb,ctdb,"Select C-terminus type (end)");
-      else {
+      else
 	sel_ctdb=&(ctdb[1]);
-	printf("C-terminus: %s\n",ctdb[1].bname);
-      }
+      printf("C-terminus: %s\n",sel_ctdb->bname);
     }
+    
     /* Generate Hydrogen atoms (and termini) in the sequence */
     natom=add_h(&pdba,&x,nah,ah,sel_ntdb,sel_ctdb,rN,rC);
     printf("Now there are %d residues with %d atoms\n",
 	   pdba->nres,pdba->nr);
-    if (debug)
-      write_pdbfile(debug,title,pdba,x,box,0,TRUE);
-    
+    if (debug) write_pdbfile(debug,title,pdba,x,box,0,TRUE);
+
     if (debug)
       for(i=0; (i<natom); i++)
-	fprintf(debug,"Res %d atom %d %s\n",
-		pdba->atom[i].resnr,i,*pdba->atomname[i]);
+	fprintf(debug,"Res %s%d atom %d %s\n",
+		*(pdba->resname[pdba->atom[i].resnr]),
+		pdba->atom[i].resnr+1,i+1,*pdba->atomname[i]);
     
     strcpy(top_fn,ftp2fn(efTOP,NFILE,fnm));
     strcpy(itp_fn,ftp2fn(efITP,NFILE,fnm));
@@ -827,7 +873,7 @@ int main(int argc, char *argv[])
       sprintf(molname,"Protein");
     else
       sprintf(molname,"Protein_%c",chains[chain].chain);
-      
+    
     /* make filenames for topol.top/.itp and for posre.itp */
     if ( ! ( (nchain==1) || 
 	     ( (chain==nchain-1) && chains[chain].bAllWat ) ) ) {
@@ -848,17 +894,17 @@ int main(int argc, char *argv[])
       incls[nincl-1]=strdup(top_fn);
     } else  
       bTopWritten=TRUE;
-      
+    
     nmol++;
     srenew(mols,nmol);
     mols[nmol-1]=strdup(molname);
-
+    
     write_posres(itp_fn,pdba);
     
-    pdb2top(ff,top_fn,itp_fn,title,molname,
-	    nincl,incls,nmol,mols,pdba,nah,ah,x,
-	    atype,&tab,nrtp,rb,nrtp,restp,nrtp,ra,nrtp,idih,
-	    sel_ntdb,sel_ctdb,bH14,rN,rC,bAlldih,nssbonds,ssbonds);
+    pdb2top(ff,top_fn,itp_fn,title,molname,nincl,incls,nmol,mols,pdba,nah,ah,
+	    &x,atype,&tab,nrtp,rb,nrtp,restp,nrtp,ra,nrtp,idih,
+	    sel_ntdb,sel_ctdb,bH14,rN,rC,bAlldih,
+	    nddb,ddb,bDummies,mHmult,nssbonds,ssbonds,NREXCL);
     
     /* pdba and natom have been reassigned somewhere so: */
     chains[chain].pdba = pdba;
@@ -866,14 +912,17 @@ int main(int argc, char *argv[])
     chains[chain].x = x;
     
     if (debug) {
-      sprintf(fn,"%c.gro",chains[chain].chain);
-      write_conf(fn,cool_quote(),pdba,x,NULL,box);
+      if (chains[chain].chain == ' ')
+	sprintf(fn,"chain.pdb");
+      else
+	sprintf(fn,"chain_%c.pdb",chains[chain].chain);
+      write_sto_conf(fn,cool_quote(),pdba,x,NULL,box);
     }
   }
   /* check if .top file was already written */
   if (!bTopWritten)
     write_top(ff,ftp2fn(efTOP,NFILE,fnm),NULL,title,NULL,
-	      nincl,incls,nmol,mols,NULL,NULL,0,NULL,NULL,NULL);
+	      nincl,incls,nmol,mols,NULL,NULL,NULL,NULL,NULL,NREXCL,mHmult);
 	      
   /* now merge all chains back together */
   natom=0;
