@@ -139,7 +139,7 @@ static char *get_histp(int resnr)
 }
 
 static void rename_pdbres(t_atoms *pdba,char *oldnm,char *newnm,
-			  bool bFullCompare)
+			  bool bFullCompare,t_symtab *symtab)
 {
   char *resnm;
   int i;
@@ -148,14 +148,14 @@ static void rename_pdbres(t_atoms *pdba,char *oldnm,char *newnm,
     resnm=*pdba->resname[i];
     if ((bFullCompare && (strcasecmp(resnm,oldnm) == 0)) ||
 	(!bFullCompare && strstr(resnm,oldnm) != NULL)) {
-      sfree(*pdba->resname[i]);
-      *pdba->resname[i]=strdup(newnm);
+      pdba->resname[i] = put_symtab(symtab,newnm);
     }
   }
 }
 
 static void rename_pdbresint(t_atoms *pdba,char *oldnm,
-			     char *gettp(int),bool bFullCompare)
+			     char *gettp(int),bool bFullCompare,
+			     t_symtab *symtab)
 {
   int  i;
   char *ptr,*resnm;
@@ -165,8 +165,7 @@ static void rename_pdbresint(t_atoms *pdba,char *oldnm,
     if ((bFullCompare && (strcmp(resnm,oldnm) == 0)) ||
 	(!bFullCompare && strstr(resnm,oldnm) != NULL)) {
       ptr=gettp(i);
-      sfree(*pdba->resname[i]);
-      *pdba->resname[i]=strdup(ptr);
+      pdba->resname[i]=put_symtab(symtab,ptr);
     }
   }
 }
@@ -254,9 +253,9 @@ int read_pdball(char *inf, char *outf,char *title,
   printf(" %d atoms\n",natom);
   
   /* Rename residues */
-  rename_pdbres(atoms,"SOL","HOH",FALSE);
-  rename_pdbres(atoms,"WAT","HOH",FALSE);
-  rename_pdbres(atoms,"HEM","HEME",FALSE);
+  rename_pdbres(atoms,"SOL","HOH",FALSE,symtab);
+  rename_pdbres(atoms,"WAT","HOH",FALSE,symtab);
+  rename_pdbres(atoms,"HEM","HEME",FALSE,symtab);
 
   rename_atoms(atoms,symtab);
   
@@ -274,34 +273,34 @@ void process_chain(t_atoms *pdba, rvec *x,
 		   bool bLysMan,bool bAspMan,bool bGluMan,
 		   bool bHisMan,bool bCysMan,
 		   int *nssbonds,t_ssbond **ssbonds,
-		   real angle,real distance)
+		   real angle,real distance,t_symtab *symtab)
 {
   /* Rename aromatics, lys, asp and histidine */
-  if (bTyrU) rename_pdbres(pdba,"TYR","TYRU",FALSE);
-  if (bTrpU) rename_pdbres(pdba,"TRP","TRPU",FALSE);
-  if (bPheU) rename_pdbres(pdba,"PHE","PHEU",FALSE);
+  if (bTyrU) rename_pdbres(pdba,"TYR","TYRU",FALSE,symtab);
+  if (bTrpU) rename_pdbres(pdba,"TRP","TRPU",FALSE,symtab);
+  if (bPheU) rename_pdbres(pdba,"PHE","PHEU",FALSE,symtab);
   if (bLysMan) 
-    rename_pdbresint(pdba,"LYS",get_lystp,FALSE);
+    rename_pdbresint(pdba,"LYS",get_lystp,FALSE,symtab);
   else
-    rename_pdbres(pdba,"LYS","LYSH",FALSE);
+    rename_pdbres(pdba,"LYS","LYSH",FALSE,symtab);
   if (bAspMan) 
-    rename_pdbresint(pdba,"ASP",get_asptp,FALSE);
+    rename_pdbresint(pdba,"ASP",get_asptp,FALSE,symtab);
   else
-    rename_pdbres(pdba,"ASPH","ASP",FALSE);
+    rename_pdbres(pdba,"ASPH","ASP",FALSE,symtab);
   if (bGluMan) 
-    rename_pdbresint(pdba,"GLU",get_glutp,FALSE);
+    rename_pdbresint(pdba,"GLU",get_glutp,FALSE,symtab);
   else
-    rename_pdbres(pdba,"GLUH","GLU",FALSE);
+    rename_pdbres(pdba,"GLUH","GLU",FALSE,symtab);
 
   /* Make sure we don't have things like CYS? */ 
-  rename_pdbres(pdba,"CYS","CYS",FALSE);
+  rename_pdbres(pdba,"CYS","CYS",FALSE,symtab);
   *nssbonds=mk_specbonds(pdba,x,bCysMan,ssbonds);
-  rename_pdbres(pdba,"CYS","CYSH",TRUE);
+  rename_pdbres(pdba,"CYS","CYSH",TRUE,symtab);
 
   if (!bHisMan)
     set_histp(pdba,x,angle,distance);
   else
-    rename_pdbresint(pdba,"HIS",get_histp,TRUE);
+    rename_pdbresint(pdba,"HIS",get_histp,TRUE,symtab);
 }
 
 /* struct for sorting the atoms from the pdb file */
@@ -921,7 +920,7 @@ int main(int argc, char *argv[])
 	      chain+1,natom,nres);
 
     process_chain(pdba,x,bUnA,bUnA,bUnA,bLysMan,bAspMan,bGluMan,
-		  bHisMan,bCysMan,&nssbonds,&ssbonds,angle,distance);
+		  bHisMan,bCysMan,&nssbonds,&ssbonds,angle,distance,&symtab);
 		  
     if (bSort) {
       block = new_block();
