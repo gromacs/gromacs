@@ -41,6 +41,11 @@ static double erf2(double x)
   return -(4*x/(sqrt(M_PI)))*exp(-x*x);
 }
 
+static double erf1(double x)
+{
+  return (2/sqrt(M_PI))*exp(-x*x);
+}
+
 static void do_guillot(FILE *fp,int eel,double resolution)
 {
   double qO     = -0.888;
@@ -60,10 +65,13 @@ static void do_guillot(FILE *fp,int eel,double resolution)
       vc = vc2 = vd = vd2 = vrep = vrep2 = 0;
     }
     else {
-      r1    = r/(2.0*xi);
-      r2    = r/(sqrt(2.0*xi));
-      vc    = (1+f0*f0*erf(r1)+2*f0*erf(r2))/r;
-      vc2   = (2*vc/(r*r)) + (f0*f0*erf2(r1) + 2*f0*erf2(r2))/r;
+      r1    = r/(2*xi);
+      r2    = r/(sqrt(2*xi));
+      vc    = (1+sqr(f0)*erf(r1) + 2*f0*erf(r2))/r;
+      vc2   = ((2/sqr(r))*(vc -
+			   sqr(f0)*erf1(r1)/(2*xi) -
+			   4*f0*erf1(r2)/sqrt(2*xi)) + 
+	       (1/r)*(sqr(f0/(2.0*xi))*erf2(r1) + (2*f0/xi))*erf2(r2));
       vd    = -1.0/(r*r*r*r*r*r);
       vd2   = 42.0*vd/(r*r);
       z     = r/(2.0*xir);
