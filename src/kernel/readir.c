@@ -299,7 +299,7 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("emtol",       ir->em_tol,     100.0);
   RTYPE ("emstep",      ir->em_stepsize,0.01);
   CTYPE ("Max number of iterations in relax_shells");
-  ITYPE ("niter",       ir->niter,      0);
+  ITYPE ("niter",       ir->niter,      20);
   CTYPE ("Frequency of steepest descents steps when doing CG");
   ITYPE ("nstcgsteep",	ir->nstcgsteep,	1000);
   
