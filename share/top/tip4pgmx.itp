@@ -4,10 +4,10 @@ SOL		1
 
 [ atoms ]
 ; id	at type	res nr 	residu name	at name		cg nr	charge
-1	OP113	1	SOL		OW1		1	0
-2	OP114	1	SOL		HW2		1	0.52
-3	OP114	1	SOL		HW3		1	0.52
-4	OP115	1	SOL		MW4		1	-1.04
+1	OP113	1	SOL		 OW		1	0
+2	OP114	1	SOL		HW1		1	0.52
+3	OP114	1	SOL		HW2		1	0.52
+4	OP115	1	SOL		 MW		1      -1.04
  
 [ settles ]
 ; i	funct	doh	dhh
