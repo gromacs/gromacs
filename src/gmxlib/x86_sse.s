@@ -9040,8 +9040,8 @@ inl2100_sse:
 .equ		_charge,	48
 .equ		_facel,		52
 .equ		_Vc,		56			
-.equ		_krf,		60	
-.equ		_crf,		64	
+.equ		_argkrf,	60	
+.equ		_argcrf,	64	
 .equ		_type,		68
 .equ		_ntype,		72
 .equ		_nbfp,		76	
@@ -9067,8 +9067,8 @@ inl2100_sse:
 .equ		_half,          256
 .equ		_three,         272
 .equ		_two,           288
-.equ		_krf,	        304	 
-.equ		_crf,	        320	 
+.equ		_krf,		304	 
+.equ		_crf,		320	 
 .equ		_is3,           336
 .equ		_ii3,           340
 .equ		_ntia,	        344
@@ -9096,8 +9096,8 @@ inl2100_sse:
 	movups xmm2, [sse_six]
 	movups xmm3, [sse_twelve]
 	movups xmm4, [sse_two]
-	movss xmm5, [ebp + _krf]
-	movss xmm6, [ebp + _crf]
+	movss xmm5, [ebp + _argkrf]
+	movss xmm6, [ebp + _argcrf]
 	
 	movaps [esp + _half],  xmm0
 	movaps [esp + _three], xmm1
@@ -9836,8 +9836,8 @@ inl2000_sse:
 .equ		_charge,	48
 .equ		_facel,		52
 .equ		_Vc,		56			
-.equ		_krf,		60	
-.equ		_crf,		64
+.equ		_argkrf,	60	
+.equ		_argcrf,	64
 	/* stack offsets for local variables */ 
 	/* bottom of stack is cache-aligned for sse use */
 .equ		_ix,	        0
@@ -9880,8 +9880,8 @@ inl2000_sse:
 	movups xmm0, [sse_half]
 	movups xmm1, [sse_three]
 	movups xmm4, [sse_two]
-	movss xmm5, [ebp + _krf]
-	movss xmm6, [ebp + _crf]
+	movss xmm5, [ebp + _argkrf]
+	movss xmm6, [ebp + _argcrf]
 	
 	movaps [esp + _half],  xmm0
 	movaps [esp + _three], xmm1
@@ -14669,8 +14669,8 @@ inl2120_sse:
 .equ		_charge,	48
 .equ		_facel,		52
 .equ		_Vc,		56			
-.equ		_krf,		60	
-.equ		_crf,		64	
+.equ		_argkrf,	60	
+.equ		_argcrf,	64	
 .equ		_type,		68
 .equ		_ntype,		72
 .equ		_nbfp,		76	
@@ -14752,8 +14752,8 @@ inl2120_sse:
 	movups xmm2, [sse_six]
 	movups xmm3, [sse_twelve]
 	movups xmm4, [sse_two]
-	movss xmm5, [ebp + _krf]
-	movss xmm6, [ebp + _crf]
+	movss xmm5, [ebp + _argkrf]
+	movss xmm6, [ebp + _argcrf]
 
 	movaps [esp + _half],  xmm0
 	movaps [esp + _three], xmm1
@@ -15651,8 +15651,8 @@ inl2130_sse:
 .equ		_charge,	48
 .equ		_facel,		52
 .equ		_Vc,		56			
-.equ		_krf,		60
-.equ		_crf,		64
+.equ		_argkrf,	60
+.equ		_argcrf,	64
 .equ		_type,		68
 .equ		_ntype,		72
 .equ		_nbfp,		76	
@@ -15780,8 +15780,8 @@ inl2130_sse:
 	movups xmm2, [sse_six]
 	movups xmm3, [sse_twelve]
 	movups xmm4, [sse_two]
-	movss xmm5, [ebp + _krf]
-	movss xmm6, [ebp + _crf]
+	movss xmm5, [ebp + _argkrf]
+	movss xmm6, [ebp + _argcrf]
 	
 	movaps [esp + _half],  xmm0
 	movaps [esp + _three], xmm1
@@ -17181,8 +17181,8 @@ inl2020_sse:
 .equ		_charge,	48
 .equ		_facel,		52
 .equ		_Vc,		56			
-.equ		_krf,		60	
-.equ		_crf,		64	
+.equ		_argkrf,	60	
+.equ		_argcrf,	64	
 	/* stack offsets for local variables */ 
 	/* bottom of stack is cache-aligned for sse use */
 .equ		_ixO,		0
@@ -17252,8 +17252,8 @@ inl2020_sse:
 	movups xmm0, [sse_half]
 	movups xmm1, [sse_three]
 	movups xmm4, [sse_two]
-	movss xmm5, [ebp + _krf]
-	movss xmm6, [ebp + _crf]
+	movss xmm5, [ebp + _argkrf]
+	movss xmm6, [ebp + _argcrf]
 
 	movaps [esp + _half],  xmm0
 	movaps [esp + _three], xmm1
@@ -18046,8 +18046,8 @@ inl2030_sse:
 .equ		_charge,	48
 .equ		_facel,		52
 .equ		_Vc,		56			
-.equ		_krf,		60
-.equ		_crf,		64
+.equ		_argkrf,	60
+.equ		_argcrf,	64
 	/* stack offsets for local variables */ 
 	/* bottom of stack is cache-aligned for sse use */
 .equ		_ixO,		0
@@ -18164,8 +18164,8 @@ inl2030_sse:
 	movups xmm0, [sse_half]
 	movups xmm1, [sse_three]
 	movups xmm4, [sse_two]
-	movss xmm5, [ebp + _krf]
-	movss xmm6, [ebp + _crf]
+	movss xmm5, [ebp + _argkrf]
+	movss xmm6, [ebp + _argcrf]
 	
 	movaps [esp + _half],  xmm0
 	movaps [esp + _three], xmm1
