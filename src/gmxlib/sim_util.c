@@ -196,24 +196,24 @@ void do_force(FILE *log,t_commrec *cr,
   homenr = HOMENR(nsb);
   cg0    = (pid == 0) ? 0 : nsb->cgload[pid-1];
   cg1    = nsb->cgload[pid];
-  where();
+  debug_gmx();
   
   update_forcerec(log,fr,parm->box);
-  where();
+  debug_gmx();
   
   /* Compute shift vectors every step, because of pressure coupling! */
   if (parm->ir.epc != epcNO)
     calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
-  where();
+  debug_gmx();
   
   if (bNS) {
     put_charge_groups_in_box(log,cg0,cg1,FALSE,
 			     parm->box,box_size,&(top->blocks[ebCGS]),x,
-			     fr->shift_vec,fr->cg_cm,mdatoms->ptype);
+			     fr->shift_vec,fr->cg_cm);
     inc_nrnb(nrnb,eNR_RESETX,homenr);
     inc_nrnb(nrnb,eNR_CGCM,cg1-cg0);
 
-    where();    
+    debug_gmx();    
     if (PAR(cr))
       move_cgcm(log,cr,fr->cg_cm,nsb->cgload);
     /*#define DEBUG*/
@@ -222,12 +222,12 @@ void do_force(FILE *log,t_commrec *cr,
       pr_rvecs(debug,0,"cgcm",fr->cg_cm,nsb->cgtotal);
 #endif
   }
-  where();
+  debug_gmx();
   
   /* Communicate coordinates if necessary */
   if (PAR(cr)) 
     move_x(log,cr->left,cr->right,x,nsb,nrnb);
-  where();
+  debug_gmx();
   
   /* Reset energies */
   reset_energies(&(parm->ir.opts),grps,fr,bNS,ener);    
@@ -250,14 +250,14 @@ void do_force(FILE *log,t_commrec *cr,
   
   /* Reset forces or copy them from long range forces */
   reset_forces(bNS,f,fr,nsb->natoms);
-  where();
+  debug_gmx();
   
   /* Compute the forces */    
   force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(parm->ir.opts),
 	x,f,ener,bVerbose,parm->box,lambda,graph,&(top->atoms.excl),
 	bNBFonly);
-  where();
+  debug_gmx();
   
   /* Compute forces due to electric field */
   calc_f_el(START(nsb),HOMENR(nsb),mdatoms->chargeT,f,parm->ir.ex);
@@ -271,7 +271,7 @@ void do_force(FILE *log,t_commrec *cr,
   clear_mat(vir_part);
   calc_vir(log,SHIFTS,fr->shift_vec,fr->fshift,vir_part,cr);
   inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
-  where();
+  debug_gmx();
 #ifdef DEBUG
   if (debug) {
     pr_rvecs(debug,0,"fr->fshift",fr->fshift,SHIFTS);
@@ -299,7 +299,7 @@ void do_force(FILE *log,t_commrec *cr,
     if (PAR(cr)) 
       move_f(log,cr->left,cr->right,f,buf,nsb,nrnb);
   }
-  where(); 
+  debug_gmx(); 
 }
 
 #ifdef NO_CLOCK 

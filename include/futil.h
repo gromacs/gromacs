@@ -43,7 +43,7 @@ extern "C" {
 #endif
 
 extern void no_buffers(void);
-/* turns off buffers */ 
+/* Turn off buffering of files (which is default) for debugging purposes */
 
 extern bool fexist(char *fname);
 /* Return TRUE when fname exists, FALSE otherwise */
