@@ -14,13 +14,21 @@ if ( $shell == "/bin/tcsh" ) then
   endif
 endif
 
-if ($?GMXLIB) then
-  if ($?LD_LIBRARY_PATH) then
-    if ( ($LD_LIBRARY_PATH == $GMXHOME/lib/\$CPU) || ($LD_LIBRARY_PATH == $GMXHOME/lib/\$GMXCPU) ) then
-      unsetenv LD_LIBRARY_PATH
-    endif
-    if ( "$1" != "-quiet" ) echo "You might want to remove the gmx path from "\$"LD_LIBRARY_PATH"
+if ( ($?LD_LIBRARY_PATH) && ($?CPU) ) then
+  if ($LD_LIBRARY_PATH == $GMXHOME/lib/$CPU) then
+    if ( "$1" != "-quiet" ) echo "Removed $LD_LIBRARY_PATH from "\$"LD_LIBRARY_PATH"
+    unsetenv LD_LIBRARY_PATH
   endif
+endif
+if ( ($?LD_LIBRARY_PATH) && ($?GMXCPU) ) then 
+  if ($LD_LIBRARY_PATH == $GMXHOME/lib/$GMXCPU) then
+    if ( "$1" != "-quiet" ) echo "Removed $LD_LIBRARY_PATH from "\$"LD_LIBRARY_PATH"
+    unsetenv LD_LIBRARY_PATH
+  endif
+endif
+if ( ($?LD_LIBRARY_PATH) && ( "$1" != "-quiet" ) ) echo "You might want to remove the gmx path from "\$"LD_LIBRARY_PATH"
+
+if ($?GMXLIB) then
   if ( "$1" != "-quiet" ) echo "unsetenv GMXLIB ($GMXLIB)"
   unsetenv GMXLIB 
 endif
@@ -39,14 +47,6 @@ endif
 if ($?GMXHOME) then
   if ( "$1" != "-quiet" ) echo "unsetenv GMXHOME ($GMXHOME)"
   unsetenv GMXHOME
-endif
-if ($?VER) then
-  if ( "$1" != "-quiet" ) echo "unsetenv VER ($VER)"
-  unsetenv VER
-endif
-if ($?CPUGMX) then
-  if ( "$1" != "-quiet" ) echo "unsetenv GMXCPU ($GMXCPU)"
-  unsetenv GMXCPU
 endif
 if ($?GMXROOT) then
   if ( "$1" != "-quiet" ) echo "unsetenv GMXROOT ($GMXROOT)"
@@ -67,6 +67,22 @@ if ($?GMXBIN) then
   if ( "$1" != "-quiet" ) echo Removed $GMXBIN from path
   if ( "$1" != "-quiet" ) echo "unsetenv GMXBIN ($GMXBIN)"
   unsetenv GMXBIN
+endif
+if ($?VER) then
+  if ( "$1" != "-quiet" ) echo "unsetenv VER ($VER)"
+  unsetenv VER
+endif
+if ($?GMXVER) then
+  if ( "$1" != "-quiet" ) echo "unsetenv GMXVER ($GMXVER)"
+  unsetenv GMXVER
+endif
+if ($?GMXCPU) then
+  if ( "$1" != "-quiet" ) echo "unsetenv GMXCPU ($GMXCPU)"
+  unsetenv GMXCPU
+endif
+if ($?GMXNPRI) then
+  if ( "$1" != "-quiet" ) echo "unsetenv GMXNPRI ($GMXNPRI)"
+  unsetenv GMXNPRI
 endif
 if ($?GMXFONT) then
   if ( "$1" != "-quiet" ) echo "unsetenv GMXFONT ($GMXFONT)"
