@@ -78,13 +78,13 @@ real calc_gyro(rvec x[],int gnx,atom_id index[],t_atom atom[],real tm,
   for(m=0; (m<DIM); m++)
     gvec[m]=sqrt((gyro-comp[m])/tm);
     
-  return sqrt(gyro*(DIM-1)/(DIM*tm));
+  return sqrt(gyro/tm);
 }
 
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "g_gyrate computes the average radius of gyration of a group of atoms",
+    "g_gyrate computes the radius of gyration of a group of atoms",
     "and the radii of gyration about the x, y and z axes,"
     "as a function of time. The atoms are explicitly mass weighted."
   };
@@ -107,7 +107,7 @@ int main(int argc,char *argv[])
   char       *grpname;
   int        i,j,gnx;
   atom_id    *index;
-  char       *leg[] = { "RgAv", "RgX", "RgY", "RgZ" }; 
+  char       *leg[] = { "Rg", "RgX", "RgY", "RgZ" }; 
 #define NLEG asize(leg) 
   t_filenm fnm[] = { 
     { efTRX, "-f", NULL, ffREAD }, 
