@@ -15,15 +15,16 @@ typedef struct {
   atom_id blocknr;
 } t_sortblock;
 
-int pcomp(const void *p1, const void *p2)
+static int pcount=0;
+
+static int pcomp(const void *p1, const void *p2)
 {
   int     db;
   atom_id min1,min2,max1,max2;
   t_sortblock *a1=(t_sortblock *)p1;
   t_sortblock *a2=(t_sortblock *)p2;
-#ifdef DEBUG
+
   pcount++;
-#endif
   
   db=a1->blocknr-a2->blocknr;
   
@@ -325,6 +326,17 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
   }
 }
      
+static void pr_sortblock(FILE *fp,char *title,int nsb,t_sortblock sb[])
+{
+  int i;
+  
+  fprintf(fp,"%s\n",title);
+  for(i=0; (i<nsb); i++)
+    fprintf(fp,"i: %5d, iatom: (%5d %5d %5d), blocknr: %5d\n",
+	    i,sb[i].iatom[0],sb[i].iatom[1],sb[i].iatom[2],
+	    sb[i].blocknr);
+}
+
 static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
 			  int step,t_mdatoms *md,int start,int homenr,
 			  rvec *x,rvec *xprime,matrix box,
@@ -376,11 +388,9 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
     if (ncons > 0) {
       bstart=(idef->pid > 0) ? blocks->multinr[idef->pid-1] : 0;
       nblocks=blocks->multinr[idef->pid] - bstart;
-#ifdef DEBUGIDEF
-      fprintf(stdlog,"ncons: %d, bstart: %d, nblocks: %d\n",
-	      ncons,bstart,nblocks);
-      fflush(stdlog);
-#endif
+      if (debug) 
+	fprintf(debug,"ncons: %d, bstart: %d, nblocks: %d\n",
+		ncons,bstart,nblocks);
       
       /* Calculate block number for each atom */
       inv_sblock=make_invblock(blocks,md->nr);
@@ -401,17 +411,17 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
       }
       
       /* Now sort the blocks */
-#ifdef DEBUG
-      pr_sortblock(log,"Before sorting",ncons,sb);
-      fprintf(log,"Going to sort constraints\n");
-#endif
+      if (debug) {
+	pr_sortblock(debug,"Before sorting",ncons,sb);
+	fprintf(debug,"Going to sort constraints\n");
+      }
       
       qsort(sb,ncons,(size_t)sizeof(*sb),pcomp);
       
-#ifdef DEBUG
-      fprintf(log,"I used %d calls to pcomp\n",pcount);
-      pr_sortblock(log,"After sorting",ncons,sb);
-#endif
+      if (debug) {
+	fprintf(debug,"I used %d calls to pcomp\n",pcount);
+	pr_sortblock(debug,"After sorting",ncons,sb);
+      }
       
       iatom=idef->il[F_SHAKE].iatoms;
       for(i=0; (i<ncons); i++,iatom+=3) 
@@ -434,7 +444,7 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
       sblock[j++]=3*ncons;
       
       if (j != (nblocks+1)) {
-	fprintf(stdlog,"bstart: %d\n",bstart);
+	fprintf(log,"bstart: %d\n",bstart);
 	fprintf(log,"j: %d, nblocks: %d, ncons: %d\n",
 		j,nblocks,ncons);
 	for(i=0; (i<ncons); i++)
