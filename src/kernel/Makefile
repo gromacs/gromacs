@@ -55,7 +55,7 @@ mdrun:		mdrun.o $(RUNOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS) -lm
 
 mk_ghat:	mk_ghat.o
-		$(OPTLD) -o $@ $^ $(SYSLIBS) $(FFTLIBS) -lm
+		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS) -lm
 
 nmrun:		nmrun.o $(RUNOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS) -lm
