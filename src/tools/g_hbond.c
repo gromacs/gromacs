@@ -70,7 +70,9 @@ typedef struct {
   int nr;
   int maxnr;
   atom_id *atoms;
-} t_gridcell;
+} t_ncell;
+
+typedef t_ncell t_gridcell[grNR];
 
 typedef struct {
   int a;
@@ -141,7 +143,8 @@ void search_donors(t_topology *top, int isize, atom_id *index,
   atom_id nr1,nr2;
   bool stop;
   
-  max_nr_d=*nr_d;
+
+    max_nr_d=*nr_d;
   for(func_type=0; func_type < F_NRE; func_type++) {
     interaction=&top->idef.il[func_type];
     for(i=0; i < interaction->nr; i+=interaction_function[top->idef.functype[interaction->iatoms[i]]].nratoms+1 /* next function */) {
@@ -190,7 +193,7 @@ void search_donors(t_topology *top, int isize, atom_id *index,
 }
 
 void init_grid(bool bBox, matrix box, real rcut, 
-	       ivec ngrid, t_gridcell *****grid)
+	       ivec ngrid, t_gridcell ****grid)
 {
   int i,x,y,z;
   
@@ -207,11 +210,8 @@ void init_grid(bool bBox, matrix box, real rcut,
   snew(*grid,ngrid[XX]);
   for (x=0; x<ngrid[XX]; x++) {
     snew((*grid)[x],ngrid[YY]);
-    for (y=0; y<ngrid[YY]; y++) {
+    for (y=0; y<ngrid[YY]; y++)
       snew((*grid)[x][y],ngrid[ZZ]);
-      for (z=0; z<ngrid[ZZ]; z++)
-	snew((*grid)[x][y][z],grNR);
-    }
   }
 }
 
@@ -219,12 +219,12 @@ char *grpnames[grNR] = {"0D","0H","0A","1D","1H","1A","iD","iH","iA"};
 
 void build_grid(int *nr, atom_id **a, rvec x[], 
 		bool bBox, matrix box, rvec hbox, real rcut,
-		ivec ngrid, t_gridcell ****grid)
+		ivec ngrid, t_gridcell ***grid)
 {
-  int i,m,gr,xi,yi,zi;
-  ivec grididx;
-  rvec invdelta;
-  t_gridcell *newgrid;
+  int     i,m,gr,xi,yi,zi;
+  ivec    grididx;
+  rvec    invdelta;
+  t_ncell *newgrid;
   
   for(m=0; m<DIM; m++) {
     hbox[m]=box[m][m]*0.5;
@@ -284,7 +284,7 @@ void build_grid(int *nr, atom_id **a, rvec x[],
        }\
      }\
 
-void dump_grid(FILE *fp, ivec ngrid, t_gridcell ****grid)
+void dump_grid(FILE *fp, ivec ngrid, t_gridcell ***grid)
 {
   int gr,x,y,z,sum[grNR];
   
@@ -315,23 +315,22 @@ void dump_grid(FILE *fp, ivec ngrid, t_gridcell ****grid)
   fprintf(fp,"\n");
 }
 
-/* New GMX record! 5 * in a row. Congratulations! */
-void free_grid(ivec ngrid, t_gridcell *****grid)
+/* New GMX record! 5 * in a row. Congratulations! 
+ * Sorry, only four left.
+ */
+void free_grid(ivec ngrid, t_gridcell ****grid)
 {
   int x,y,z,i;
+  t_gridcell ***g = *grid;
   
   for (x=0; x<ngrid[XX]; x++) {
     for (y=0; y<ngrid[YY]; y++) {
-      for (z=0; z<ngrid[ZZ]; z++) {
-	for (i=0; i<grNR; i++)
-	  sfree((*grid)[x][y][z][i].atoms);
-	sfree((*grid)[x][y][z]);
-      }
-      sfree((*grid)[x][y]);
+      sfree(g[x][y]);
     }
-    sfree((*grid)[x]);
+    sfree(g[x]);
   }
-  sfree(*grid);
+  sfree(g);
+  g=NULL;
 }
 
 bool is_hbond(atom_id d, atom_id h, atom_id a, 
@@ -538,11 +537,12 @@ int main(int argc,char *argv[])
   t_hx    *nhx;
   int     max_nrhb,nrhb,nabin,nrbin,bin,resdist,idx;
   unsigned char **hbexist;
-  FILE    *fp,*fpins;
-  t_gridcell ****grid,*icell,*jcell,*kcell;
-  ivec    ngrid;
-  t_donor *donors[grNR];
-  real    **rhbex;
+  FILE       *fp,*fpins;
+  t_gridcell ***grid;
+  t_ncell    *icell,*jcell,*kcell;
+  ivec       ngrid;
+  t_donor    *donors[grNR];
+  real       **rhbex;
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME,TRUE,NFILE,fnm,asize(pa),pa,
