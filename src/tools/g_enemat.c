@@ -216,7 +216,7 @@ int main(int argc,char *argv[])
     do {
       bCont=do_enx(in,&t,&step,&nre,ee,&ndr,&dr);
       if (bCont) {
-	timecheck=check_times(t,t);
+	timecheck=check_times(t);
 	
 	/* It is necessary for statistics to start counting from 1 */
 	step += 1; 

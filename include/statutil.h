@@ -110,11 +110,20 @@ extern bool bRmod(double a,double b);
  * larger than the float/double precision.
  */
 
-extern int check_times(real t,real t0);
+extern int check_times2(real t,real t0,real tp,real tpp);
 /* This routine checkes if the read-in time is correct or not;
  * returns -1 if t<tbegin or t MOD dt = t0,
- *         0  if tbegin <= t <=tend,
- *         1  if t>tend
+ *          0 if tbegin <= t <=tend+margin,
+ *          1 if t>tend
+ * where margin is 0.1*min(t-tp,tp-tpp), if this positive, 0 otherwise.
+ * tp and tpp should be the time of the previous frame and the one before.
+ */
+
+extern int check_times(real t);
+/* This routine checkes if the read-in time is correct or not;
+ * returns -1 if t<tbegin,
+ *          0 if tbegin <= t <=tend,
+ *          1 if t>tend
  */
 
 extern char *time_label(void);

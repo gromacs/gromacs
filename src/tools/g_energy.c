@@ -541,7 +541,7 @@ void fec(char *ene2fn, char *runavgfn,
       bCont = do_enx(enx,&t,&step,&nre,ee,&ndr,&dr);
       
       if (bCont)
-	timecheck = check_times(t,t);
+	timecheck = check_times(t);
       
     } while (bCont && (timecheck < 0));
     
@@ -802,7 +802,7 @@ int main(int argc,char *argv[])
       bCont = do_enx(fp,&(t[NEXT]),&(step[NEXT]),&nre,ee[NEXT],&ndr,&dr);
       
       if (bCont)
-	timecheck = check_times(t[NEXT],t[NEXT]);
+	timecheck = check_times(t[NEXT]);
       
     } while (bCont && (timecheck < 0));
     
