@@ -757,7 +757,11 @@ int main(int argc,char *argv[])
   if (InpMatFile)
     inprod_matrix(InpMatFile,natoms,
 		  nvec1,eignr1,eigvec1,nvec2,eignr2,eigvec2);
-  
+
+  if (!CompFile && !bProj && !OverlapFile && !InpMatFile)
+    fprintf(stderr,"\nIf you want some output,"
+	    " set one (or two or ...) of the output file options\n");
+
   return 0;
 }
   
