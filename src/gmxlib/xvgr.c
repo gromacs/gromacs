@@ -38,6 +38,11 @@ static char *SRCID_xvgr_c = "$Id$";
 #include "smalloc.h"
 #include "xvgr.h"
 
+bool bXmGrace(void)
+{
+  return (getenv("XMGRACE") != NULL);
+}
+
 FILE *xgopen(char *fn,char *header,char *title,char *xaxis,char *yaxis)
 {
   FILE *xg;
@@ -92,7 +97,8 @@ void xvgr_file(char *fn,char *opts)
   char   doit[STRLEN];
 
   if (bDoView()) {
-    sprintf(doit,"xmgr -geometry +100+100 %s %s &",opts ? opts : "",fn);
+    sprintf(doit,"%s -geometry +100+100 %s %s &",
+	    bXmGrace() ? "xmgrace" : "xmgr",opts ? opts : "",fn);
     system(doit);
   }
 }
@@ -131,7 +137,10 @@ void xvgr_legend(FILE *out,int nsets,char *setname[])
   fprintf(out,"@ legend %g, %g\n",0.78,0.8);
   fprintf(out,"@ legend length %d\n",2);
   for(i=0; (i<nsets); i++)
-    fprintf(out,"@ legend string %d \"%s\"\n",i,setname[i]);
+    if (bXmGrace())
+      fprintf(out,"@ s%d legend \"%s\"\n",i,setname[i]);
+    else
+      fprintf(out,"@ legend string %d \"%s\"\n",i,setname[i]);
 }
 
 void xvgr_line_props(FILE *out, int NrSet, int LineStyle, int LineColor)
