@@ -28,7 +28,7 @@
 %
 
 \section{Parallel Molecular Dynamics}
-In this chapter we describe some details of the \normindex{parallel MD}  
+In this chapter we describe some details of the \swapindex{parallel}{MD}  
 algorithm used 
 in {\gromacs}. This also includes some other information on neighbor searching and
 a side excursion to parallel sorting.
@@ -190,7 +190,7 @@ parallelized:
 	in parallel to obtain $\hat{\rho}(\ve{k})$. This is done using
 	the FFTW library ({\tt http://lcs.theory.mit.edu/\~{ }fftw})
 	which employs the MPI library for message passing programs
-	(note that there are also \normindex{shared memory} versions
+	(note that there are also \swapindex{shared}{memory} versions
 	of the FFTW code).\\
 	This FFT algorithm actually use slabs as well (good
 	thinking!).  Each processor does 2D FFTS on its slab, and then
@@ -229,8 +229,9 @@ right communication, {\ie}  using two communication channels. The FFTW
 routines actually use other forms of communication as well, and these
 routines are coded with MPI routines for message passing. This implies
 that {\gromacs} can only perform the PPPM algorithm on parallel
-computers computers that support MPI. However, most \normindex{shared
-memory} computers, such as the SGI Origin also support MPI using the
+computers computers that support MPI. However, most
+\swapindex{shared}{memory} computers, such as the SGI Origin also
+support MPI using the 
 shared memory for communication.
 
 \subsection{Parallel sorting}

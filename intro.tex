@@ -35,8 +35,8 @@
 
 {\gromacs} is an engine to perform molecular dynamics simulations and 
 energy minimization. These are two of the many techniques that belong 
-to the realm of \normindex{computational chemistry} and 
-\normindex{molecular modeling}. 
+to the realm of \swapindex{computational}{chemistry} and 
+\swapindex{molecular}{modeling}. 
 {\em Computational Chemistry} is just a name to indicate the use of 
 computational techniques in chemistry, ranging from quantum mechanics 
 of molecules to dynamics of large complex molecular aggregates. {\em 
@@ -57,7 +57,7 @@ changes, reaction kinetics, or the dynamics of defects in crystals.
 The choice of technique depends on the question asked and on the 
 feasibility of the method to yield reliable results at the present 
 state of the art. Ideally, the (relativistic) time-dependent 
-\normindex{Schr{\"o}dinger equation} 
+\swapindex{Schr{\"o}dinger}{equation} 
 describes the properties of molecular systems 
 with high accuracy, but anything more complex than the equilibrium 
 state of a few atoms cannot be handled at this {\em ab initio} level. 
@@ -75,7 +75,7 @@ structural and chemical data. The \normindex{QSAR} methods (Quantitative
 Structure-Activity Relations) and many homology-based protein structure  
 predictions belong to the latter category.
 
-Macroscopic properties are always \normindex{ensemble average}s over a 
+Macroscopic properties are always \swapindex{ensemble}{average}s over a 
 representative statistical ensemble (either equilibrium or 
 non-equilibrium) of molecular systems. For molecular modeling this has 
 two important consequences:
@@ -93,7 +93,7 @@ two important consequences:
         of the structures and motions, such details are often not relevant for 
         the macroscopic properties of interest. This opens the way to simplify 
         the description of interactions and average over irrelevant details. 
-        The science of \normindex{statistical mechanics} 
+        The science of \swapindex{statistical}{mechanics} 
         provides the theoretical framework 
         for such simplifications. There is a hierarchy of methods ranging from 
         considering groups of atoms as one unit, describing motion in a 
@@ -101,8 +101,8 @@ two important consequences:
         number of collective coordinates, averaging over solvent molecules 
         with 
         potentials of mean force combined with 
-        \normindex{stochastic dynamics}~\cite{Gunsteren90}, to {\em 
-        \normindex{mesoscopic dynamics}} 
+        \swapindex{stochastic}{dynamics}~\cite{Gunsteren90}, to {\em 
+        \swapindex{mesoscopic}{dynamics}} 
         describing densities rather than atoms and fluxes 
         as response to thermodynamic gradients rather than velocities or 
         accelerations as response to forces~\cite{Fraaije93}.
@@ -126,7 +126,7 @@ potential energies,  so that they can be compared better.
 
 \section{Molecular Dynamics Simulations}
 \label{sec:MDsimulations}
-MD simulations solve Newton's \normindex{equations of motion} 
+MD simulations solve Newton's \swapindex{equations of}{motion} 
 for a system of $N$ interacting atoms:
 \beq
   m_i \frac{\partial^2 \ve{r}_i}{\partial t^2}  = \ve{F}_i, \;i=1 \ldots N.
@@ -215,7 +215,7 @@ are:~\cite{McQuarrie76}
 where $x=h\nu /kT$. The classical oscillator absorbs too much energy
 ($kT$), while the high-frequency quantum oscillator is in its ground
 state at the zero-point energy level of $\frac{1}{2} h\nu$. \\ (b) We
-can treat the bonds (and bond angles) as {\em \normindex{constraints}}
+can treat the bonds (and bond angles) as {\em \normindex{constraint}s}
 in the equation of motion. The rational behind this is that a quantum
 oscillator in its ground state resembles a constrained bond more
 closely than a classical oscillator. A good practical reason for this

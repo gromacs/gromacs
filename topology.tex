@@ -33,7 +33,7 @@
 {\gromacs} must know on which atoms and combinations of atoms the
 various contributions to the potential functions (see
 \chref{ff}) must act. It must
-also know what \normindex{parameters} must be applied to the various
+also know what \normindex{parameter}s must be applied to the various
 functions. All this is described in the {\em \normindex{topology}} file
 \verb'*.top', which lists the {\em constant attributes} of each atom.
 There are many more atom types than elements, but only atom types
@@ -67,7 +67,7 @@ force field). All files for one force field have names beginning with
 \section{Particle type}
 \label{sec:parttype}
 
-In {\gromacs} there are 5 types of \normindex{particles}, see
+In {\gromacs} there are 5 types of \normindex{particle}s, see
 \tabref{ptype}. Only regular atoms and dummy particles are used
 in {\gromacs}, nuclei, shells and bond shells are necessary for
 polarizable force fields, which we don't yet have.
@@ -78,11 +78,11 @@ polarizable force fields, which we don't yet have.
 \dline
 Particle	& Symbol	\\
 \hline
-\seeindex{atom}{particles}	& A   \\
-\seeindex{nucleus}{particles}	& N   \\
-\seeindex{shell}{particles}     & S   \\
-\seeindex{bond shell}{particles}& B   \\
-\seeindex{dummy}{particles}     & D   \\
+\seeindex{atom}{particle}s	& A   \\
+\seeindex{nucleus}{particle}s	& N   \\
+\seeindex{shell}{particle}s     & S   \\
+\seeindex{bond shell}{particle}s& B   \\
+\seeindex{dummy}{particle}s     & D   \\
 \dline
 \end{tabular}
 }
@@ -92,7 +92,7 @@ Particle	& Symbol	\\
 
 \subsection{Atom types}
 \label{subsec:atomtype}
-{\gromacs} uses 47 different \normindex{atom types}, 
+{\gromacs} uses 47 different \swapindex{atom}{type}s, 
 as listed below, with their
 corresponding masses (in a.m.u.). This is the same listing as in the
 file {\tt ff???.atp} (.atp = {\bf a}tom {\bf t}ype {\bf p}arameter
@@ -147,7 +147,7 @@ file), therefore in this file you can change and/or add an atom type.
    CD  15.03500 ;     DMSO Carbon
 \end{verbatim}}
 Atomic detail is used except for hydrogen atoms bound to (aliphatic)
-carbon atoms, which are treated as {\em \normindex{united atoms}}. No
+carbon atoms, which are treated as {\em \swapindex{united}{atom}s}. No
 special \normindex{hydrogen-bond} term is included.
 
 The last 10 atom types are extra atom types with respect to the \gromosv{87}
@@ -176,7 +176,7 @@ not} as a number (as {\eg} in {\gromos}).
 
 \subsection{Dummy atoms}
 \label{sec:dummytop}
-Some \normindex{force field}s use \normindex{dummy atom}s 
+Some \normindex{force field}s use \swapindex{dummy}{atom}s 
 (\normindex{virtual site}s that are constructed
 from real atoms) on which certain interaction functions are located
 ({\eg} on benzene rings, to reproduce the correct
@@ -286,7 +286,7 @@ These quantities are listed in the coordinate file, {\tt *.gro}
 
 \subsection{Bonded parameters}
 \label{subsec:bondparam}
-The \normindex{bonded parameters} ({\ie} bonds, angles, improper and proper
+The \swapindex{bonded}{parameter}s ({\ie} bonds, angles, improper and proper
 dihedrals) are listed in {\tt ff???bon.itp}. The term {\tt func} is 1 for
 harmonic and 2 for \gromosv{96} bond and angle potentials.
 For the dihedral, this is explained after this listing.
@@ -337,13 +337,13 @@ $C_1$ & $=$ & $ 12.16$ & $C_3$ & $=$ & $~-3.06$ & $C_5$ & $=$ & $-31.5 $ \\
 
 ({\bf Note:} The use of this potential implies exclusions of LJ-interactions
 between the first and the last atom of the dihedral, and $\psi$ is defined
-according to the '\normindex{polymer convention}' ($\psi_{trans}=0$)).
+according to the '\swapindex{polymer}{convention}' ($\psi_{trans}=0$)).
 
 So there are three types of dihedrals in the {\gromacs} force field:
 \begin{itemize}
-\item \normindex{proper dihedral} : funct = 1, with mult = multiplicity, so the
+\item \swapindex{proper}{dihedral} : funct = 1, with mult = multiplicity, so the
                                    number of possible angles
-\item \normindex{improper dihedral} : funct = 2
+\item \swapindex{improper}{dihedral} : funct = 2
 \item Ryckaert-Bellemans dihedral : funct = 3
 \end{itemize}
 In the file {\tt ff???bon.itp} you can add bonded parameters. If you
@@ -352,7 +352,7 @@ this new atom type in {\tt ff???.atp} as well.
 
 \subsection{Non-bonded parameters}
 \label{subsec:nbpar}
-The \normindex{non-bonded parameters} consist of the Van der Waals parameters
+The \swapindex{non-bonded}{parameter}s consist of the Van der Waals parameters
 $A$ and $C$, as listed in {\tt ff???nb.itp}, where {\tt ptype} is the
 particle type (see \tabref{ptype}):
 {\small\begin{verbatim}
@@ -381,7 +381,7 @@ With $A$ and $C$ being defined as
 \beq
 	C_{ii} = 4\epsilon_i\sigma_i^{6}
 \eeq
-and computed according to the \normindex{combination rules} :
+and computed according to the \swapindex{combination}{rule}s :
 \beq
 	A_{ij} = (A_{ii}A_{jj})^{\frac{1}{2}}
 \eeq
@@ -416,7 +416,7 @@ in a {\tt [~exclusions~]} section. Each line should start with one
 atom index, followed by one or more atom indices. All non-bonded
 interactions between the first atom and the other atoms will be excluded.
 
-The \normindex{1-4 interactions} are also listed for the atom types
+The \swapindex{1-4}{interaction}s are also listed for the atom types
 in {\tt ff???nb.itp} under {\tt [~pairtypes~]}. It is possible to
 change them there of course, or add new parameters for different/new
 atom types.
@@ -536,7 +536,7 @@ between these atoms will be excluded.
 
 \subsection{Hydrogen database}
 \label{subsec:hdb}
-The \normindex{hydrogen database} is stored in {\tt ff???.hdb}. It
+The \swapindex{hydrogen}{database} is stored in {\tt ff???.hdb}. It
 contains information for the {\tt pdb2gmx} program on how to connect
 hydrogen atoms to existing atoms. Hydrogen atoms are named after the
 atom they are connected to: the first letter of the atom name is
@@ -606,7 +606,7 @@ on the code selected.
 \end{itemize}
 
 \subsection{Termini database}
-The \normindex{termini database}s are stored in {\tt ff???-n.tdb} and
+The \swapindex{termini}{database}s are stored in {\tt ff???-n.tdb} and
 {\tt ff???-c.tdb} for the N- and C-terminus respectively. They contain
 information for the {\tt pdb2gmx} program on how to connect new atoms
 to existing ones, which atoms should be removed or changed and which
@@ -690,7 +690,7 @@ in the {\tt ff???.rtp}, see~\ssecref{rtp}.
 \end{itemize}
 
 \section{File formats}
-\subsection{\normindex{Topology file}}
+\subsection{\swapindex{Topology}{file}}
 \label{subsec:topfile}
 The topology file is built following the {\gromacs} specification for a
 molecular topology.  A {\tt *.top} file can be generated by
@@ -1021,7 +1021,7 @@ way to make use of the {\tt \#ifdef} option is as follows:
 ...
 \end{verbatim}}
 
-\subsection{\normindex{Free energy perturbation}}
+\subsection{\swapindex{Free energy}{perturbation}}
 
 Free energy differences between two systems A and B can be calculated as
 described in \secref{fep}. The systems A and B are described by topologies
@@ -1104,7 +1104,7 @@ files contain lines like:
 #define gd_17     0.000       5.86          3
 \end{verbatim}}
 
-\subsection{\normindex{Constraint force}}
+\subsection{\swapindex{Constraint}{force}}
 The constraint force between two atoms in one molecule can be calculated
 with the free energy perturbation code by adding a constraint between the
 two atoms, with a different length in the A and B topology. When the B length

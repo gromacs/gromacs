@@ -1,7 +1,9 @@
 \section{Calculating potentials of mean force: the pull code}
 \label{sec:pull}
-There are a number of options to calculate \normindex{potentials of mean force}
-\index{free energy calculation}
+There are a number of options to calculate \swapindex{potentials
+of}{mean force}\index{force, potential of mean|see{potentials of mean force}}
+\index{free energy calculation}\index{calculation, free
+energy|see{free energy calculation}}
 and related topics. In the current version of {\gromacs} this is
 implemented through some extra files for {\tt mdrun}. 
 
@@ -11,15 +13,15 @@ Four different types of calculation are supported:
 \begin{enumerate}
 \item{\textbf{Constraint forces}} The distance between the centers of
 mass of two groups of atoms can be constrained and the 
-\normindex{constraint force} monitored.
+\swapindex{constraint}{force} monitored.
 The distance can be in 1, 2, or 3 dimensions. This method
 uses the SHAKE algorithm but only needs 1 iteration to be
 exact if only two groups are constrained. 
 \item{\textbf{Umbrella sampling}} A simple
-\normindex{umbrella sampling} with an
+\swapindex{umbrella}{sampling} with an
 harmonic umbrella potential that acts on the center of mass of a group
 of atoms.
-\item{\textbf{\normindex{AFM pulling}}} A spring is connected to an atom and
+\item{\textbf{\swapindex{AFM}{pulling}}} A spring is connected to an atom and
 slowly retracted. This has the effect of pulling an atom or group of
 atoms away from its initial location. The rate constant and spring
 constant for the spring can be varied to study e.g. the unbinding of a

@@ -70,7 +70,7 @@ specify a series of angles by {\em triples} of {\em atom numbers},
 dihedrals by {\em quadruples} of {\em atom numbers} and bonds or
 vectors (in a molecule) by {\em pairs} of {\em atom numbers}. When
 appropriate the type of index file will be specified for the following
-analysis programs.  To help creating such \normindex{index file}s ({\tt
+analysis programs.  To help creating such \swapindex{index}{file}s ({\tt
 index.ndx}), there are a couple of programs to generate them, using
 either your input configuration or the topology.  To generate an
 index file consisting of a series of {\em atom numbers} (as in the
@@ -249,7 +249,7 @@ up to $r_{max}$, so angle dependent, see \figref{rdfex}D.
 The theory of correlation functions is well established~\cite{Allen87}.
 However we want to describe here the implementation of the various 
 \normindex{correlation} function flavors in the {\gromacs} code.
-The definition of the \normindex{autocorrelation function} (ACF)
+The definition of the \swapindex{autocorrelation}{function} (ACF)
 $C_f(t)$ for a property $f(t)$ is
 \beq
 C_f(t)	~=~	\left<f(\xi) f(\xi+t)\right>_{\xi}
@@ -378,7 +378,7 @@ accurate (actually the values do not converge...).
 
 \subsection{Mean Square Displacement}
 \label{sec:msd}
-To determine the self \normindex{diffusion coefficient} $D_A$ of particles $A$ one
+To determine the self \swapindex{diffusion}{coefficient} $D_A$ of particles $A$ one
 can use the Einstein relation~\cite{Allen87} \beq \lim_{t \rightarrow
 \infty} <|{\bf r}_i(t) - {\bf r}_i(0)|^2>_{i \in A} ~=~ 6 D_A t \eeq
 This {\em Mean Square Displacement} and $D_A$ are calculated by the
@@ -586,9 +586,9 @@ in the mobility as a function of $\tau$. Use the program {\tt g\_run\_rms}.
 
 \section{Covariance analysis}
 \label{sec:covanal}
-\normindex{Covariance analysis}, also called
-\normindex{principal component analysis}
-or \normindex{essential dynamics}
+\swapindex{Covariance}{analysis}, also called
+\swapindex{principal component}{analysis}
+or \swapindex{essential}{dynamics}
 \cite{Amadei93}{,} can find correlated motions.
 It uses the covariance matrix $C$ of the atomic coordinates:
 \beq

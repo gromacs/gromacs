@@ -117,7 +117,7 @@ can be obtained by one sweep through the data.
 
 \section{Implementation}
 In {\gromacs} the instantaneous
-energies $E(m)$ are stored in the \normindex{energy file}, along with the 
+energies $E(m)$ are stored in the \swapindex{energy}{file}, along with the 
 values of $\sigma_{1,m}$ and $X_{1,m}$. Although the steps are counted from 0,
 for the energy and fluctuations steps are counted from 1. This means that the
 equations presented here are the ones that are implemented.
@@ -127,7 +127,7 @@ to simplify checking of code and equations later on.
 \subsection{Part of a Simulation}
 It is not uncommon to perform a simulation where the first part,
 {\eg} 100 ps, is taken as \normindex{equilibration}. However, the
-averages and fluctuations as printed in the \normindex{log file}
+averages and fluctuations as printed in the \swapindex{log}{file}
 are computed over the whole simulation. The equilibration time,
 which is now part of the simulation, may in such a case invalidate the
 averages and fluctuations, because these numbers are now dominated
