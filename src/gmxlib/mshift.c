@@ -38,6 +38,7 @@ static char *SRCID_mshift_c = "$Id$";
 #include "copyrite.h"
 #include "mshift.h"
 #include "main.h"
+#include "pbc.h"
 
 /************************************************************
  *
@@ -303,6 +304,33 @@ void done_graph(t_graph *g)
  *
  ************************************************************/
 
+static int mk_1shift_tric(matrix box,rvec hbox,rvec xi,int mi,rvec xj)
+{
+  /* Calculate periodicity for triclinic box... */
+  int  m,d;
+  ivec mj;
+  rvec dx;
+  
+  rvec_sub(xi,xj,dx);
+
+  for(m=DIM-1; (m>=0); m--) {
+    /* If dx < hbox, then xj will be reduced by box, so that
+     * xi - xj will be bigger
+     */
+    if (dx[m] < -hbox[m]) {
+      mj[m]=iv_shift[mi][m]-1;
+      for(d=m-1; d>=0; d--)
+	dx[d]+=box[m][d];
+    } else if (dx[m] >= hbox[m]) {
+      mj[m]=iv_shift[mi][m]+1;
+      for(d=m-1; d>=0; d--)
+	dx[d]-=box[m][d];
+    } else
+      mj[m]=iv_shift[mi][m];
+  }
+  return IVEC2IS(mj);
+}
+
 static int mk_1shift(rvec hbox,rvec xi,int mi,rvec xj)
 {
   /* Calculate periodicity for rectangular box... */
@@ -331,10 +359,12 @@ static int mk_grey(FILE *log,int nnodes,egCol egc[],t_graph *g,int *AtomI,
 {
   int      m,j,ng,ai,aj,g0,is_aj;
   rvec     hbox;
-  
+  bool     bTriclinic;
+
   for(m=0; (m<DIM); m++)
     hbox[m]=box[m][m]*0.5;
-
+  bTriclinic = TRICLINIC(box);
+  
   ng=0;
   ai=*AtomI;
   
@@ -343,7 +373,10 @@ static int mk_grey(FILE *log,int nnodes,egCol egc[],t_graph *g,int *AtomI,
   for(j=0; (j<g->nedge[ai]); j++) {
     aj=g->edge[ai][j]-g0;
     /* If there is a white one, make it gray and set pbc */
-    is_aj=mk_1shift(hbox,x[g0+ai],g->ishift[ai],x[g0+aj]);
+    if (bTriclinic)
+      is_aj=mk_1shift_tric(box,hbox,x[g0+ai],g->ishift[ai],x[g0+aj]);
+    else
+      is_aj=mk_1shift(hbox,x[g0+ai],g->ishift[ai],x[g0+aj]);
     if ((is_aj >= N_IVEC) || (is_aj < 0))
       fatal_error(0,"a molecule has exploded (is_aj out of range (%d))",is_aj);
     

@@ -46,6 +46,7 @@ static char *SRCID_readir_c = "$Id$";
 #include "index.h"
 #include "network.h"
 #include "vec.h"
+#include "pbc.h"
 
 #define MAXPTR 254
 #define NOGID  255
@@ -945,6 +946,18 @@ void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
 {
   real bmin;
 
+  if (TRIC_NOT_SUP(box)) {
+    fprintf(stderr,"ERROR: %s\n",tric_not_sup_str);
+    (*nerror)++;
+  }
+  if ((ir->ns_type==ensGRID) && 
+      ((fabs(box[YY][XX])+fabs(box[ZZ][XX]) > 1.001*box[XX][XX]) ||
+       (fabs(box[ZZ][YY]) > 1.001*box[YY][YY]))) {
+    fprintf(stderr,
+	    "ERROR: box to skewed for grid search, use simple search\n");
+    (*nerror)++;
+  }  
+      
   if( (ir->eConstrAlg==estSHAKE) && 
       (mol->plist[F_SHAKE].nr > 0) && 
       (ir->shake_tol <= 0.0) ) {

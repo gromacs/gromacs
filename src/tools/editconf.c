@@ -282,10 +282,15 @@ int main(int argc, char *argv[])
     "editconf converts generic structure format to [TT].gro[tt] or",
     "[TT].pdb[tt].[PAR]",
     "A number of options is present to modify the coordinates",
-    "and box. [TT]-d[tt], [TT]-dc[tt] and [TT]-box[tt] modify the box and",
-    "center the coordinates relative to the new box.",
+    "and box. [TT]-d[tt], [TT]-dc[tt], [TT]-box[tt] and [TT]-to[tt] modify",
+    "the box and center the coordinates relative to the new box.",
     "[TT]-dc[tt] takes precedent over [TT]-d[tt]. [TT]-box[tt]",
     "takes precedent over [TT]-dc[tt] and [TT]-d[tt].[PAR]",
+    "[TT]-to[tt] generates a truncated octahedron. This is a special case",
+    "of a triclinic box. The diameter is the diameter of an inscribed sphere,",
+    "which is equal to the distance between two opposite hexagons.",
+    "The volume of this box is 3/4 of that of a cubic box with the same",
+    "diameter.[PAR]",
     "[TT]-rotate[tt] rotates the coordinates and velocities.",
     "[TT]-princ[tt] aligns the principal axes of the system along the",
     "coordinate axes, this may allow you to decrease the box volume,",
@@ -319,7 +324,7 @@ int main(int argc, char *argv[])
     "For complex molecules, the periodicity removal routine may break down, "
     "in that case you can use trjconv"
   };
-  static real dist   = 0.0,rbox=0.0;
+  static real dist=0.0,rbox=0.0,to_diam=0.0;
   static bool bNDEF=FALSE,bRMPBC=FALSE,bCenter=FALSE;
   static bool peratom=FALSE,bLegend=FALSE,bOrient=FALSE;
   static rvec scale={1.0,1.0,1.0},newbox={0.0,0.0,0.0};
@@ -334,8 +339,10 @@ int main(int argc, char *argv[])
     { "-dc",     FALSE, etREAL, {&dist},
       "Distance between the solute and the cubic box" },
     { "-box",    FALSE, etRVEC, {&newbox}, "Size of box" },
+    { "-to",     FALSE, etREAL, {&to_diam}, 
+      "Diameter of the truncated octahedron" },
     { "-c",      FALSE, etBOOL, {&bCenter},
-      "Center molecule in box (implied by -d -dc -box)" },
+      "Center molecule in box (implied by -d -dc -box -to)" },
     { "-center", FALSE, etRVEC, {&center}, "Coordinates of geometrical center"},
     { "-rotate", FALSE, etRVEC, {rotangles},
       "Rotation around the X, Y and Z axes in degrees" },
@@ -362,7 +369,7 @@ int main(int argc, char *argv[])
   atom_id   *index;
   rvec      *x,*v,gc,min,max,size;
   matrix    box;
-  bool      bSetSize,bCubic,bDist,bSetCenter;
+  bool      bSetSize,bCubic,bDist,bSetCenter,bTruncOct;
   bool      bHaveV,bScale,bRho,bRotate,bCalcGeom;
   real      xs,ys,zs,xcent,ycent,zcent,d;
   t_filenm fnm[] = {
@@ -381,7 +388,8 @@ int main(int argc, char *argv[])
   bSetCenter= opt2parg_bSet("-center" ,NPA,pa);
   bCubic    = opt2parg_bSet("-dc",NPA,pa);
   bDist     = opt2parg_bSet("-d" ,NPA,pa) || bCubic;
-  bCenter   = bCenter || bDist || bSetCenter || bSetSize;
+  bTruncOct = opt2parg_bSet("-to" ,NPA,pa);
+  bCenter   = bCenter || bDist || bSetCenter || bSetSize || bTruncOct;
   bScale    = opt2parg_bSet("-scale" ,NPA,pa);
   bRho      = opt2parg_bSet("-density",NPA,pa);
   bRotate   = opt2parg_bSet("-rotate",NPA,pa);
@@ -477,6 +485,16 @@ int main(int argc, char *argv[])
     for (i=0; (i<DIM); i++)
       box[i][i]=d;
   }
+  if (bTruncOct) {
+    clear_mat(box);
+    box[XX][XX] = to_diam;
+    box[YY][XX] = to_diam/3;
+    box[YY][YY] = to_diam*sqrt(2)*3/4;
+    box[ZZ][XX] = -to_diam*sqrt(6)/6;
+    box[ZZ][YY] = to_diam*sqrt(2)*3/8;
+    box[ZZ][ZZ] = to_diam*sqrt(2)/2;
+  }
+
   /* calculate new coords for geometrical center */
   if (!bSetCenter) 
     for (i=0; (i<DIM); i++)

@@ -39,6 +39,8 @@ static char *SRCID_pdbio_c = "$Id$";
 #include "vec.h"
 #include "copyrite.h"
 #include "futil.h"
+#include "physics.h"
+#include "pbc.h"
 	
 static char *pdbtp[epdbNR]={
   "ATOM  ","HETATM", "ANISOU", "CRYST1",
@@ -86,7 +88,10 @@ void write_pdbfile_indexed(FILE *out,char *title,
   if (box) {
     fprintf(out,"REMARK    THIS IS A SIMULATION BOX\n");
     fprintf(out,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",
-	    10*box[XX][XX],10*box[YY][YY],10*box[ZZ][ZZ],90.0,90.0,90.0);
+	    10*norm(box[XX]),10*norm(box[YY]),10*norm(box[ZZ]),
+	    RAD2DEG*acos(cos_angle_no_table(box[YY],box[ZZ])),
+	    RAD2DEG*acos(cos_angle_no_table(box[XX],box[ZZ])),
+	    RAD2DEG*acos(cos_angle_no_table(box[XX],box[YY])));
   }
   for (ii=0; ii<nindex; ii++) {
     i=index[ii];
@@ -358,8 +363,8 @@ int read_pdbfile(FILE *in,char *title,
   static bool bFirst=TRUE;
   bool bCOMPND;
   char line[STRLEN+1];
-  char xc[12],yc[12],zc[12];
-  double xa,ya,za;
+  char sa[12],sb[12],sc[12];
+  double fa,fb,fc,alpha,beta,gamma;
   int  line_type;
   char *c,*d;
   int  natom;
@@ -392,13 +397,26 @@ int read_pdbfile(FILE *in,char *title,
 
     case epdbCRYST1:      
       if (box) {
-	sscanf(line,"%*s%s%s%s%lf%lf%lf",xc,yc,zc,&xa,&ya,&za);
-	if (xa==90 || ya==90 || za==90) {
-	  box[XX][XX] = atof(xc)*0.1;
-	  box[YY][YY] = atof(yc)*0.1;
-	  box[ZZ][ZZ] = atof(zc)*0.1;
-	} else
-	  clear_mat(box);
+	sscanf(line,"%*s%s%s%s%lf%lf%lf",sa,sb,sc,&alpha,&beta,&gamma);
+	fa = atof(sa)*0.1;
+	fb = atof(sb)*0.1;
+	fc = atof(sc)*0.1;
+	clear_mat(box);
+	box[XX][XX] = fa;
+	if ((alpha!=90.0) || (beta!=90.0) || (gamma!=90.0)) {
+	  alpha *= DEG2RAD;
+	  beta  *= DEG2RAD;
+	  gamma *= DEG2RAD;
+	  box[YY][XX] = fb*cos(gamma);
+	  box[YY][YY] = fb*sin(gamma);
+	  box[ZZ][XX] = fc*cos(beta);
+	  box[ZZ][YY] = fc*(cos(alpha)-cos(beta)*cos(gamma))/sin(gamma);
+	  box[ZZ][ZZ] = sqrt(fc*fc
+			     -box[ZZ][XX]*box[ZZ][XX]-box[ZZ][YY]*box[ZZ][YY]);
+	} else {
+	  box[YY][YY] = fb;
+	  box[ZZ][ZZ] = fc;
+	}
       }
       break;
 

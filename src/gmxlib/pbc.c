@@ -45,61 +45,53 @@ static char *SRCID_pbc_c = "$Id$";
 
 /* Global variables */
 static bool bInit=FALSE;
-static bool bTrunc;
-/* static bool bTriclinic; */
-static real side,side_2,side3_4;
-/* static real diag; */
+static bool bTriclinic,bSupported;
 static rvec gl_fbox,gl_hbox,gl_mhbox;
+static matrix gl_box;
 
 void init_pbc(matrix box,bool bTruncOct)
 {
   int i;
-/*   int j; */
 
   bInit   = TRUE;
-  bTrunc  = bTruncOct;
-  side    = box[0][0];
-  side_2  = 0.5*side;
-  side3_4 = 0.75*side;
-  /*
-  diag    = side_2*sqrt(3.0);
-  bTriclinic=FALSE;
-  for(i=0; (i<DIM); i++)
-    for(j=0; (j<DIM); j++)
-      if ((i != j) && (box[i][j] != 0.0))
-	bTriclinic=TRUE;
-	*/
+
   for(i=0; (i<DIM); i++) {
     gl_fbox[i]  =  box[i][i];
     gl_hbox[i]  =  gl_fbox[i]*0.5;
     gl_mhbox[i] = -gl_hbox[i];
   }
-}
-
-static void do_trunc(rvec x)
-{
-  int i;
-
-  if (fabs(x[XX]-side_2)+fabs(x[YY]-side_2)+fabs(x[ZZ]-side_2) > side3_4)
-    for(i=0; (i<DIM); i++)
-      x[i] -= sign(side_2,x[i]);
+  bSupported = !TRIC_NOT_SUP(box);
+  if (!bSupported)
+    fprintf(stderr,"Warning: %s Can not fix pbc.\n",tric_not_sup_str);
+  bTriclinic = TRICLINIC(box);
+  if (bTriclinic)
+    copy_mat(box,gl_box);
 }
 
 void pbc_dx(rvec x1, rvec x2, rvec dx)
 {
-  int i;
-  
+  int i,j;
+
   if (!bInit)
     fatal_error(0,"pbc_dx called before init_pbc");
   rvec_sub(x1,x2,dx);
-  for(i=0; (i<DIM); i++) {
-    if (dx[i] > gl_hbox[i])
-      dx[i] -= gl_fbox[i];
-    else if (dx[i] <= gl_mhbox[i])
-      dx[i] += gl_fbox[i];
+  if (bSupported) {
+    if (bTriclinic) {
+      for(i=DIM-1; i>=0; i--)
+	if (dx[i] > gl_hbox[i])
+	  for (j=i; j>=0; j--)
+	    dx[j] -= gl_box[i][j];
+	else if (dx[i] <= gl_mhbox[i])
+	  for (j=i; j>=0; j--)
+	  dx[j] += gl_box[i][j];
+    } else {
+      for(i=0; i<DIM; i++)
+	if (dx[i] > gl_hbox[i])
+	  dx[i] -= gl_fbox[i];
+      else if (dx[i] <= gl_mhbox[i])
+	dx[i] += gl_fbox[i];
+    }
   }
-  if (bTrunc)
-    do_trunc(dx);
 }
 
 bool image_rect(ivec xi,ivec xj,ivec box_size,real rlong2,int *shift,real *r2)
@@ -170,13 +162,6 @@ bool image_cylindric(ivec xi,ivec xj,ivec box_size,real rlong2,
   return TRUE;
 }
 
-bool image_tri(ivec xi,ivec xj,imatrix box,real rlong2,int *shift,real *r2)
-{
-  fatal_error(0,"image_tri not implemented");
-  
-  return FALSE; /* To make the compiler happy */
-}
-
 void calc_shifts(matrix box,rvec box_size,rvec shift_vec[],bool bTruncOct)
 {
   int k,l,m,d,n,test;
@@ -192,15 +177,8 @@ void calc_shifts(matrix box,rvec box_size,rvec shift_vec[],bool bTruncOct)
 	test=XYZ2IS(k,l,m);
 	if (n != test) 
 	  fprintf(stdlog,"n=%d, test=%d\n",n,test);
-	if (bTrunc && (k!=0) && (l!=0) && (m!=0)) {
-	  /* Truncated edges... */
-	  shift_vec[n][XX]=k*side_2;
-	  shift_vec[n][YY]=l*side_2;
-	  shift_vec[n][ZZ]=m*side_2;
-	}
-	else if (!bTrunc || (((k+l+m) % 2)!=0) || ((k==0) && (l==0) && (m==0)))
-	  for(d = 0; d < DIM; d++)
-	    shift_vec[n][d]=k*box[XX][d] + l*box[YY][d] + m*box[ZZ][d];
+	for(d = 0; d < DIM; d++)
+	  shift_vec[n][d]=k*box[XX][d] + l*box[YY][d] + m*box[ZZ][d];
       }
 }
 
@@ -248,17 +226,20 @@ void put_charge_groups_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
 			      rvec pos[],rvec shift_vec[],rvec cg_cm[])
 			      
 {
-  int  icg,ai,k,k0,k1,d;
+  int  icg,ai,k,k0,k1,d,e;
   rvec cg;
   real nrcg,inv_ncg;
   atom_id *cga,*cgindex;
-  
+  bool bTric;
+
 #ifdef DEBUG
   fprintf(log,"Putting cgs %d to %d in box\n",cg0,cg1);
 #endif
   cga     = cgs->a;
   cgindex = cgs->index;
-  
+
+  bTric = TRICLINIC(box);
+
   for(icg=cg0; (icg<cg1); icg++) {
     /* First compute the center of geometry for this charge group */
     k0      = cgindex[icg];
@@ -273,18 +254,38 @@ void put_charge_groups_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
 	cg[d] += inv_ncg*pos[ai][d];
     }
     /* Now check pbc for this cg */
-    for(d=0; d<DIM; d++) {
-      while(cg[d] < 0) {
-	cg[d] += box[d][d];
-	for(k=k0; (k<k1); k++) 
-	  pos[cga[k]][d] += box[d][d];
+    if (bTric) {
+      for(d=DIM-1; d>=0; d--) {
+	while(cg[d] < 0) {
+	  for(e=d; e>=0; e--) {
+	    cg[e] += box[d][e];
+	    for(k=k0; (k<k1); k++) 
+	      pos[cga[k]][e] += box[d][e];
+	  }
+	}
+	while(cg[d] >= box[d][d]) {
+	  for(e=d; e>=0; e--) {
+	    cg[e] -= box[d][e];
+	    for(k=k0; (k<k1); k++) 
+	      pos[cga[k]][e] -= box[d][e];
+	  }
+	}
+	cg_cm[icg][d] = cg[d];
       }
-      while(cg[d] >= box[d][d]) {
-	cg[d] -= box[d][d];
-	for(k=k0; (k<k1); k++) 
-	  pos[cga[k]][d] -= box[d][d];
+    } else {
+      for(d=0; d<DIM; d++) {
+	while(cg[d] < 0) {
+	  cg[d] += box[d][d];
+	  for(k=k0; (k<k1); k++) 
+	    pos[cga[k]][d] += box[d][d];
+	}
+	while(cg[d] >= box[d][d]) {
+	  cg[d] -= box[d][d];
+	  for(k=k0; (k<k1); k++) 
+	    pos[cga[k]][d] -= box[d][d];
+	}
+	cg_cm[icg][d] = cg[d];
       }
-      cg_cm[icg][d] = cg[d];
     }
 #ifdef DEBUG_PBC
     for(d=0; (d<DIM); d++) {
@@ -301,7 +302,7 @@ void put_charge_groups_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
 void put_atoms_in_box(int natoms,matrix box,rvec x[])
 {
   int i,m;
- 
+
   for(i=0; (i<natoms); i++)
     for(m=0; m < DIM; m++) {
       while (x[i][m] < 0) 

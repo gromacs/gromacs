@@ -44,8 +44,6 @@ static char *SRCID_ns_c = "$Id$";
 #include "names.h"
 #include "fatal.h"
 #include "nrnb.h"
-#include "ns.h"
-#include "force.h"
 #include "txtdump.h"
 
 #define MAX_CG 1024
@@ -417,7 +415,7 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
     new_i_nblist(coul,bLR ? F_LR : F_SR,i_atom,shift,gid);
     if (fr->bPert)
       new_i_nblist(free,F_DVDL,i_atom,shift,gid);
-
+    
     /* Loop over the j charge groups */
     for(j=0; (j<nj); j++) {
       jcg=jjcg[j];
@@ -550,6 +548,45 @@ int calc_naaj(int icg,int cgtot)
  *
  ************************************************/
 
+static real calc_image_tric(rvec xi,rvec xj,matrix box,
+			    rvec b_inv,int *shift)
+{
+  const real h15=1.5;
+  real dx,dy,dz;
+  real r2;
+  int  tx,ty,tz;
+  
+  /* Compute diff vector */
+  dz=xj[ZZ]-xi[ZZ];
+  dy=xj[YY]-xi[YY];
+  dx=xj[XX]-xi[XX];
+  
+  /* Perform NINT operation, using trunc operation, therefore
+   * we first add 1.5 then subtract 1 again
+   */
+  tz=dz*b_inv[ZZ]+h15;
+  tz--;
+  dz-=tz*box[ZZ][ZZ];
+  dy-=tz*box[ZZ][YY];
+  dx-=tz*box[ZZ][XX];
+
+  ty=dy*b_inv[YY]+h15;
+  ty--;
+  dy-=ty*box[YY][YY];
+  dx-=ty*box[YY][XX];
+
+  tx=dx*b_inv[XX]+h15;
+  tx--;
+  dx-=tx*box[XX][XX];
+  
+  /* Distance squared */
+  r2=(dx*dx)+(dy*dy)+(dz*dz);
+  
+  *shift=XYZ2IS(tx,ty,tz);
+
+  return r2;
+}
+
 static real calc_image_rect(rvec xi,rvec xj,rvec box_size,
 			    rvec b_inv,int *shift)
 {
@@ -585,6 +622,32 @@ static real calc_image_rect(rvec xi,rvec xj,rvec box_size,
   *shift=XYZ2IS(tx,ty,tz);
 
   return r2;
+}
+
+static void ns_inner_tric(rvec x[],int icg,int njcg,atom_id jcg[],
+			  matrix box,rvec b_inv,real rcut2,
+			  t_block *cgs,t_ns_buf **ns_buf,ushort gid[])
+{
+  int      shift;
+  int      j,nrj,jgid;
+  atom_id  cg_j,*cgindex,*cga;
+  t_ns_buf *nsbuf;
+  
+  cgindex = cgs->index;
+  cga     = cgs->a;
+  shift = CENTRAL;
+  for(j=0; (j<njcg); j++) {
+    cg_j   = jcg[j];
+    nrj    = cgindex[cg_j+1]-cgindex[cg_j];
+    if (calc_image_tric(x[icg],x[cg_j],box,b_inv,&shift) < rcut2) {
+      jgid  = gid[cga[cgindex[cg_j]]];
+      nsbuf = &ns_buf[jgid][shift];
+      if (nsbuf->ncg >= MAX_CG) 
+	fatal_error(0,"Too many charge groups (%d) in buffer",nsbuf->ncg);
+      nsbuf->jcg[nsbuf->ncg++]=cg_j;
+      nsbuf->nj += nrj;
+    }
+  }
 }
 
 static void ns_inner_rect(rvec x[],int icg,int njcg,atom_id jcg[],
@@ -631,7 +694,8 @@ static void ns_inner_rect(rvec x[],int icg,int njcg,atom_id jcg[],
 static int ns_simple_core(t_forcerec *fr,
 			  t_topology *top,
 			  t_mdatoms *md,
-			  rvec box_size,t_excl bexcl[],
+			  matrix box,rvec box_size,
+			  t_excl bexcl[],
 			  int ngid,t_ns_buf **ns_buf,
 			  bool bHaveLJ[])
 {
@@ -645,7 +709,7 @@ static int ns_simple_core(t_forcerec *fr,
   t_block  *excl=&(top->atoms.excl);
   rvec     b_inv;
   int      m;
-  bool     bBox;
+  bool     bBox,bTriclinic;
   
   if (aaj==NULL) {
     snew(aaj,2*cgs->nr);
@@ -660,6 +724,7 @@ static int ns_simple_core(t_forcerec *fr,
   if (bBox)
     for(m=0; (m<DIM); m++)
       b_inv[m]=divide(1.0,box_size[m]);
+  bTriclinic = TRICLINIC(box);
 
   nsearch=0;
   for (icg=fr->cg0; (icg<fr->hcg); icg++) {
@@ -669,14 +734,18 @@ static int ns_simple_core(t_forcerec *fr,
     setexcl(nri,i_atoms,excl,TRUE,bexcl);
     
     naaj=calc_naaj(icg,cgs->nr);
-    ns_inner_rect(fr->cg_cm,icg,naaj,&(aaj[icg]),
-		  bBox,box_size,b_inv,rlist2,cgs,ns_buf,md->cENER);
+    if (bTriclinic)
+      ns_inner_tric(fr->cg_cm,icg,naaj,&(aaj[icg]),
+		    box,b_inv,rlist2,cgs,ns_buf,md->cENER);
+    else
+      ns_inner_rect(fr->cg_cm,icg,naaj,&(aaj[icg]),
+		    bBox,box_size,b_inv,rlist2,cgs,ns_buf,md->cENER);
     nsearch += naaj;
     
     for(nn=0; (nn<ngid); nn++) {
       for(k=0; (k<SHIFTS); k++) {
 	nsbuf = &(ns_buf[nn][k]);
-	if (nsbuf->ncg > 0) { 
+	if (nsbuf->ncg > 0) {
 	  put_in_list(bHaveLJ,fr->nWater,
 		      ngid,md,icg,nn,nsbuf->ncg,nsbuf->jcg,
 		      cgs->index,cgs->a,bexcl,k,fr,FALSE,FALSE);
@@ -696,34 +765,34 @@ static int ns_simple_core(t_forcerec *fr,
  *    N S 5     G R I D     S T U F F
  *
  ************************************************/
-static bool get_dx(int cx,int Nx,int tx,int delta,int *dx0,int *dx1)
+static bool get_dx(int cx0,int cx1,int Nx,int tx,int delta,
+		   int *dx0,int *dx1)
 {
   if (tx == 1) {
-    if (cx >= delta)
+    if (cx0 >= delta)
       return TRUE;
     else {
-      *dx0=Nx+cx-delta;
+      *dx0=Nx+cx0-delta;
       *dx1=Nx-1;
     }
   } else if (tx == 0) {
-    if (cx < delta)
+    if (cx0 < delta)
       *dx0=0;
     else
-      *dx0=cx-delta;
-    if (cx < Nx-delta)
-      *dx1=cx+delta;
+      *dx0=cx0-delta;
+    if (cx1 < Nx-delta)
+      *dx1=cx1+delta;
     else
       *dx1=Nx-1;
-  }
-  else {
-    if (cx < Nx-delta)
+  } else {
+    if (cx1 < Nx-delta)
       return TRUE;
     else {
       *dx0=0;
-      *dx1=cx+delta-Nx;
+      *dx1=cx1+delta-Nx;
     }
   }
- 
+
   return FALSE; 
 }
 
@@ -772,7 +841,7 @@ static void do_longrange(FILE *log,t_topology *top,t_forcerec *fr,
 }
 
 static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
-		    rvec box_size,int ngid,
+		    matrix box,rvec box_size,int ngid,
 		    t_topology *top,t_groups *grps,
 		    t_grid *grid,rvec x[],t_excl bexcl[],
 		    t_nrnb *nrnb,t_mdatoms *md,
@@ -785,13 +854,15 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
   t_block *cgs=&(top->blocks[ebCGS]);
   unsigned short  *gid=md->cENER;
   atom_id *i_atoms,*cgsatoms=cgs->a,*cgsindex=cgs->index;
-  int     tx,ty,tz,cx,cy,cz,dx,dy,dz,cj;
+  int     tx,ty,tz,cx,cy,cz,dx,dy,dz,cj,cx0,cx1,cy0,cy1;
   int     dx0,dx1,dy0,dy1,dz0,dz1;
   int     Nx,Ny,Nz,delta,shift=-1,j,nrj,nns,nn=-1;
+  real    grid_x,grid_y,margin_x,margin_y,sh_zx,sh_zy,sh_x;
   int     icg=-1,iicg,cgsnr,i0,nri,naaj,min_icg,icg_naaj,jjcg,cgj0,jgid;
   int     *grida,*gridnra,*gridind;
   rvec    xi,*cgcm,*svec;
   real    r2,rs2,rvdw2,rcoul2,XI,YI,ZI;
+  bool    bTriclinic;
   
   cgsnr    = cgs->nr;
   rs2      = sqr(fr->rlist);
@@ -837,7 +908,14 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
   gridnra = grid->nra;
   delta   = grid->delta;
   nns     = 0;
-  
+
+  /* Triclinic stuff */
+  bTriclinic = TRICLINIC(box);
+  grid_x     = grid->nrx/box[XX][XX];
+  grid_y     = grid->nry/box[YY][YY];
+  margin_x   = delta - fr->rlistlong*grid_x;
+  margin_y   = delta - fr->rlistlong*grid_y;
+
   /* Loop over charge groups */
   for(iicg=fr->cg0; (iicg < fr->hcg); iicg++) {
     icg      = cg_index[iicg];
@@ -870,19 +948,35 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 	    icg,naaj,cx,cy,cz);
 #endif
     /* Loop over shift vectors in three dimensions */
-    for (tx=-1; (tx<=1); tx++) {
-      /* Calculate range of cells in X direction that have the shift tx */
-      if (get_dx(cx,Nx,tx,delta,&dx0,&dx1))
+    for (tz=-1; (tz<=1); tz++) {
+      /* Calculate range of cells in Z direction that have the shift tz */
+      if (get_dx(cz,cz,Nz,tz,delta,&dz0,&dz1))
 	continue;
+      if (bTriclinic) {
+	sh_zx = tz*box[ZZ][XX]*grid_x;
+	sh_zy = tz*box[ZZ][YY]*grid_y;
+	cy0 = cy+(int)(floor(sh_zy+margin_y));
+	cy1 = cy+(int)(ceil(sh_zy-margin_y));
+      } else {
+	cy0 = cy;
+	cy1 = cy;
+      }
       for (ty=-1; (ty<=1); ty++) {
 	/* Calculate range of cells in Y direction that have the shift ty */
-	if (get_dx(cy,Ny,ty,delta,&dy0,&dy1))
+	if (get_dx(cy0,cy1,Ny,ty,delta,&dy0,&dy1))
 	  continue;
-	for (tz=-1; (tz<=1); tz++) {
-	  /* Calculate range of cells in Z direction that have the shift tz */
-	  if (get_dx(cz,Nz,tz,delta,&dz0,&dz1))
+	if (bTriclinic) {
+	  sh_x = sh_zx + ty*box[YY][XX]*grid_x;
+	  cx0 = cx+(int)(floor(sh_x+margin_x));
+	  cx1 = cx+(int)(ceil(sh_x-margin_x));
+	} else {
+	  cx0 = cx;
+	  cx1 = cx;
+	}
+	for (tx=-1; (tx<=1); tx++) {
+	  /* Calculate range of cells in X direction that have the shift tx */
+	  if (get_dx(cx0,cx1,Nx,tx,delta,&dx0,&dx1))
 	    continue;
-
 	  /* Get shift vector */	  
 	  shift=XYZ2IS(tx,ty,tz);
 #ifdef NS5DB
@@ -1211,7 +1305,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   
   /* Do the core! */
   if (bGrid)
-    nsearch = ns5_core(log,fr,cg_index,box_size,ngid,top,grps,
+    nsearch = ns5_core(log,fr,cg_index,box,box_size,ngid,top,grps,
 		       grid,x,bexcl,nrnb,md,lambda,dvdlambda,bHaveLJ);
   else {
     /* Only allocate this when necessary, saves 100 kb */
@@ -1220,7 +1314,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
       for(i=0; (i<ngid); i++)
 	snew(ns_buf[i],SHIFTS);
     }
-    nsearch = ns_simple_core(fr,top,md,box_size,
+    nsearch = ns_simple_core(fr,top,md,box,box_size,
 			     bexcl,ngid,ns_buf,bHaveLJ);
   }
   debug_gmx();
