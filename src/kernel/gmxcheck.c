@@ -51,6 +51,7 @@ static char *SRCID_gmxcheck_c = "$Id$";
 #include "physics.h"
 #include "smalloc.h"
 #include "confio.h"
+#include "enxio.h"
 
 void chk_trj(char *fn)
 {
@@ -153,17 +154,7 @@ void chk_trj(char *fn)
 
   fprintf(stderr,"\n\n");
   fprintf(stderr,"\n# Atoms     %d\n",natoms);
-  /*
-  if (bShowTimestep) {
-    fprintf(stderr,"\nItem        Timestep (ps)\n");
-    if ((bShowTimestep) && (count.x_size > 1))
-      fprintf(stderr,"Coords      %g\n",(t-t0)/(count.x_size-1));
-    if (count.v_size > 1)
-      fprintf(stderr,"Velocities  %g\n",(t-t0)/(count.v_size-1));
-    if (count.f_size > 1)
-      fprintf(stderr,"Forces      %g\n",(t-t0)/(count.f_size-1));
-  }
-  */
+  
   fprintf(stderr,"\nItem        #frames");
   if (bShowTimestep)
     fprintf(stderr," Timestep (ps)");
@@ -176,15 +167,6 @@ void chk_trj(char *fn)
   PRINTITEM ( "Coords",     x_size );
   PRINTITEM ( "Velocities", v_size );
   PRINTITEM ( "Forces",     f_size );
-  /*
-    fprintf(stderr,"Energies    %d\n",count.e_size);
-    fprintf(stderr,"Box         %d\n",count.box_size);
-    fprintf(stderr,"Virial      %d\n",count.vir_size);
-    fprintf(stderr,"Pressure    %d\n",count.pres_size);
-    fprintf(stderr,"Coords      %d\n",count.x_size);
-    fprintf(stderr,"Velocities  %d\n",count.v_size);
-    fprintf(stderr,"Forces      %d\n",count.f_size);
-    */
 }  
 
 void chk_ndx(char *fn)
@@ -236,8 +218,16 @@ void chk_ndx(char *fn)
 	nLab=2;
     }
   }
-  fprintf(stderr,"\nFound %6d groups, should be %6d\n",ng_cnt,ngrp);
-  fprintf(stderr,"Found %6d atoms,  should be %6d\n",na_cnt,nat);
+  fprintf(stderr,"\nFound %6d groups, ",ng_cnt);
+  if (ng_cnt != ngrp)
+    fprintf(stderr,"should be %6d\n",ngrp);
+  else
+    fprintf(stderr,"as it should be.\n");
+  fprintf(stderr,"Found %6d atoms,  ",na_cnt);
+  if (na_cnt != nat)
+    fprintf(stderr,"should be %6d\n",nat);
+  else
+    fprintf(stderr,"as it should be.\n");
   
   ffclose(in);
 }
@@ -395,6 +385,49 @@ void chk_stx(char *fn)
   }
 }
 
+void chk_enx(char *fn)
+{
+  int      in,nre,frame,fnr;
+  char     **enm=NULL;
+  t_energy *ee=NULL;
+  bool     bShowTStep;
+  real     t,t0,old_t1,old_t2;
+  
+  fprintf(stderr,"Checking energy file %s\n\n",fn);
+
+  in = open_enx(fn,"r");
+  do_enxnms(in,&nre,&enm);
+  fprintf(stderr,"%d groups in energy file",nre);
+  old_t2=-2.0;
+  old_t1=-1.0;
+  fnr=0;
+  t0=BOGUSTIME;
+  bShowTStep=TRUE;
+  snew(ee,nre);
+  while (do_enx(in,&t,&frame,&nre,ee,NULL)) {
+    if (fnr>=2) {
+      if ( fabs((t-old_t1)-(old_t1-old_t2)) > 
+	   0.1*(fabs(t-old_t1)+fabs(old_t1-old_t2)) ) {
+	bShowTStep=FALSE;
+	fprintf(stderr,"\nTimesteps at t=%g don't match (%g, %g)\n",
+		old_t1,old_t1-old_t2,t-old_t1);
+      }
+    }
+    old_t2=old_t1;
+    old_t1=t;
+    if (t0 == BOGUSTIME) t0=t;
+    fprintf(stderr,"\rframe: %6d (index %6d), t: %10.3f",frame,fnr,t);
+    if (fnr == 0)
+      fprintf(stderr,"\n");
+    fnr++;
+  }
+  fprintf(stderr,"\n\nFound %d frames",fnr);
+  if (bShowTStep)
+    fprintf(stderr," with a timestep of %g ps",(t-t0)/(fnr-1));
+  fprintf(stderr,".\n",fnr);
+
+}
+
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -415,8 +448,8 @@ int main(int argc,char *argv[])
     { efNDX, "-n", NULL, ffOPTRD },
     { efTPX, "-s1", "top1", ffOPTRD },
     { efTPX, "-s2", "top2", ffOPTRD },
-    { efSTX, "-c", NULL, ffOPTRD }
-
+    { efSTX, "-c", NULL, ffOPTRD },
+    { efENX, "-e", NULL, ffOPTRD }
   };
 #define NFILE asize(fnm)
   char *fn1=NULL,*fn2=NULL;
@@ -442,6 +475,9 @@ int main(int argc,char *argv[])
   
   if (ftp2bSet(efSTX,NFILE,fnm))
     chk_stx(ftp2fn(efSTX,NFILE,fnm));
+  
+  if (ftp2bSet(efENX, NFILE,fnm))
+    chk_enx(ftp2fn(efENX,NFILE,fnm));
   
   thanx(stderr);
   
