@@ -318,7 +318,7 @@ int main(int argc,char *argv[])
   static int  nslices = 1;                    /* nr of slices defined       */
   static bool bSzonly = FALSE;                /* True if only Sz is wanted  */
   static bool bUnsat = FALSE;                 /* True if carbons are unsat. */
-  static char *normal_axis[] = { NULL, "x", "y", "z", NULL };
+  static char *normal_axis[] = { NULL, "z", "x", "y", NULL };
   t_pargs pa[] = {
     { "-d",      FALSE, etENUM, {normal_axis}, 
       "Direction of the normal on the membrane" },
@@ -360,9 +360,9 @@ int main(int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0, NULL);
 
   /* Calculate axis */
-  if (strcmp(normal_axis[0],"x") == 0) axis = 0;
-  else if (strcmp(normal_axis[0],"y") == 0) axis = 1;
-  else if (strcmp(normal_axis[0],"z") == 0) axis = 2;
+  if (strcmp(normal_axis[0],"x") == 0) axis = XX;
+  else if (strcmp(normal_axis[0],"y") == 0) axis = YY;
+  else if (strcmp(normal_axis[0],"z") == 0) axis = ZZ;
   else fatal_error(0,"Invalid axis, use x, y or z");
   
   switch (axis) {
