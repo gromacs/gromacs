@@ -43,7 +43,7 @@ static char *SRCID_gctio_c = "$Id$";
 #include "names.h"
 
 char *eoNames[eoNR] = { 
-  "Pres", "Epot", "Vir", 
+  "Pres", "Epot", "Vir", "Dist", "Mu",
   "Polarizability", "Dipole", "Memory", "UseEinter", "UseVirial"
 };
 
@@ -203,6 +203,10 @@ void write_gct(char *fn,t_coupl_rec *tcr,t_idef *idef)
 	  eoNames[eoPres],tcr->pres0);
   fprintf(fp,"%-15s = %12g  ; Reference potential energy\n",
 	  eoNames[eoEpot],tcr->epot0);
+  fprintf(fp,"%-15s = %12g  ; Reference distance\n",
+	  eoNames[eoDist],tcr->dist0);
+  fprintf(fp,"%-15s = %12g  ; Reference dipole\n",
+	  eoNames[eoMu],tcr->mu0);
   fprintf(fp,"%-15s = %12g  ; Polarizability used for the Epot correction\n",
 	  eoNames[eoPolarizability],tcr->polarizability);
   fprintf(fp,"%-15s = %12g  ; Gas phase dipole moment used for Epot correction\n", 
@@ -413,6 +417,8 @@ void read_gct(char *fn,t_coupl_rec *tcr)
   inp=read_inpfile(fn,&ninp);
   RTYPE (eoNames[eoPres],	tcr->pres0,	1.0);
   RTYPE (eoNames[eoEpot],	tcr->epot0,	0.0);
+  RTYPE (eoNames[eoMu],         tcr->mu0,       0.0);
+  RTYPE (eoNames[eoDist],       tcr->dist0,     0.0);
   RTYPE (eoNames[eoPolarizability],	tcr->polarizability,	0.0);
   RTYPE (eoNames[eoDipole],	tcr->dipole,	0.0);
   ITYPE (eoNames[eoMemory],     tcr->nmemory,   1);
