@@ -532,8 +532,12 @@ int main(int argc, char *argv[])
     "convert a Gromos trajectory and coordinate file to Gromos. There is",
     "one limitation: reordering is done after the hydrogens are stripped",
     "from the input and before new hydrogens are added. This means that",
-    "if you have hydrogens in your input file, you [BB]must[bb] select",
-    "the [TT]-reth[tt] option to obtain a useful index file.[PAR]",
+    "should not turn off [TT]-reth[tt].[PAR]",
+
+    "The [TT].gro[tt] and [TT].g96[tt] file formats do not support chain",
+    "identifiers. Therefore it is useful to enter a pdb file name at",
+    "the [TT]-o[tt] option when you want to convert a multichain pdb file.",
+    "[PAR]",
     
     "When using [TT]-reth[tt] to keep all hydrogens from the [TT].pdb[tt]",
     "file, the names of the hydrogens in the [TT].pdb[tt] file [IT]must[it]",
