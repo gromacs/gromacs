@@ -417,6 +417,7 @@ static void write_htmlman(FILE *out,
 			  int nbug,char *bugs[])
 {
   int i;
+  char link[10];
   
 #define NSR(s) check_html(s,program)
   
@@ -440,7 +441,10 @@ static void write_htmlman(FILE *out,
 	    "<TH>type</TH>"
 	    "<TH>description</TH>"
 	    "</TR>\n");
-    for(i=0; (i<nfile); i++)
+    for(i=0; (i<nfile); i++) {
+      strcpy(link,ftp2ext(fnm[i].ftp));
+      if (strcmp(link,"???")==0)
+	strcpy(link,"files");
       fprintf(out,
 	      "<TR>"
 	      "<TD ALIGN=RIGHT> <b>%s</b> </TD>"
@@ -448,8 +452,9 @@ static void write_htmlman(FILE *out,
 	      "<TD> %s </TD>"
 	      "<TD> %s </TD>"
 	      "</TR>\n",
-	      fnm[i].opt,ftp2ext(fnm[i].ftp),fnm[i].fn,fileopt(fnm[i].flag),
+	      fnm[i].opt,link,fnm[i].fn,fileopt(fnm[i].flag),
 	      NSR(ftp2desc(fnm[i].ftp)));
+    }
     fprintf(out,"</TABLE>\n");
     /*
     fprintf(out,"Remember that filenames are not fixed, but \n");
