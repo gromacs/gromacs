@@ -15,7 +15,7 @@ CC		= cc
 CCC		= CC
 F77		= f77
 
-OPT		= -O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -LNO:opt=1 -LNO:ou_further=3 -OPT:Olimit=0:roundoff=3:alias=typed -fullwarn
+OPT		= -O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -LNO:opt=1 -LNO:ou_further=3 -OPT:Olimit=0:roundoff=3:alias=typed -fullwarn -woff 1174
 # All warnings except unused vars: -fullwarn -woff 1174
 CFLAGS		= $(ABI) $(OPT) -woff 1174
 CCFLAGS		= $(ABI) $(OPT) -DHAVE_BOOL 
