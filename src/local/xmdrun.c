@@ -236,7 +236,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		  graph,cr,nrnb,grps,fr,top,edyn,&pulldata);
   
   /* Compute initial EKin for all.. */
-  calc_ke_part(TRUE,0,top->atoms.nr,
+  calc_ke_part(TRUE,START(nsb),HOMENR(nsb),
                vold,v,vt,&(parm->ir.opts),
                mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
   if (PAR(cr)) 

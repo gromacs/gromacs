@@ -526,16 +526,17 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   /* Now add random velocities corresponding to the energy depositied by 
    * the leaving electrons.
    */ 
+  delta_ekin = 0;
   if (bExtraKinetic && (dq > 0)) {
-    delta_ekin = 0;
     for(i=0; (i<dq); i++) {
       delta_ekin += FACEL*ztot/protein_radius;
       ztot+=1;
     }
     delta_ekin=fabs(delta_ekin);
-    fprintf(log,
-	    "%d leaving electrons deposited %g kJ/mol in the protein. Z=%.0f\n",
-	    dq,delta_ekin,ztot);
+    if (debug)
+      fprintf(debug,
+	      "%d leaving electrons deposited %g kJ/mol in the protein. Z=%.0f\n",
+	      dq,delta_ekin,ztot);
     delta_ekin /= md->nr;
     for(i=0; (i<md->nr); i++) {
       rand_vector(dv,&seed);
@@ -545,8 +546,12 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   }
   
   fprintf(ion,"\n");
-  fprintf(xvg,"%10.5f  %10.3e  %6d  %6d  %6d  %6d\n",
+  fprintf(xvg,"%10.5f  %10.3e  %6d  %6d  %6d  %6d",
 	  t,pt,(int)dq,(int)dq_tot,(int)nkdecay,(int)nkd_tot);
+  if (bExtraKinetic)
+    fprintf(xvg,"%10g\n",delta_ekin);
+  else
+    fprintf(xvg,"\n");
   fflush(ion);
   fflush(xvg);
 }
