@@ -36,6 +36,7 @@ static char *SRCID_ionize_c = "$Id$";
 #include "physics.h"
 #include "xvgr.h"
 #include "vec.h"
+#include "pbc.h"
 #include "txtdump.h"
 #include "ionize.h"
 #include "names.h"
@@ -47,9 +48,6 @@ static char *SRCID_ionize_c = "$Id$";
 
 enum { eionCYL, eionSURF, eionGAUSS, eionNR };
 
-static int   Energies[] = { 6, 8, 10, 12, 15, 20 };
-#define NENER asize(Energies)
-
 enum { ecollPHOTO, ecollINELASTIC, ecollNR };
 
 typedef struct {
@@ -60,6 +58,15 @@ typedef struct {
 typedef struct {
   int nelec,maxelec,elec0,elmin_type;
 } t_electron_db;
+
+/* BEGIN GLOBAL VARIABLES */
+static int   Energies[] = { 6, 8, 10, 12, 15, 20 };
+static int   ionize_seed = 1993;
+#define NENER asize(Energies)
+
+static t_electron_db edb;
+
+/* END GLOBAL VARIABLES */
 
 void dump_ca(FILE *fp,t_cross_atom *ca,int i,char *file,int line)
 {
@@ -140,7 +147,7 @@ int number_L(t_cross_atom *ca)
   return ca->k-2+ca->z-ca->n;
 }
 
-real cross(int eColl,t_cross_atom *ca)
+real xray_cross_section(int eColl,t_cross_atom *ca)
 {
   real c=0;
   int  nK,nL;
@@ -365,8 +372,8 @@ void add_electron(FILE *fp,t_mdatoms *md,t_electron_db *edb,int ion,
 
     /* Velocity! */
     svmul(-md->massA[ion]*md->invmass[ee],dv,v[ee]);
-    /* Do a first step to prevent the elctron from being on top of the 
-     * nucleus, move it 1 A from the nucleus 
+    /* Do a first step to prevent the electron from being on top of the 
+     * nucleus, move it 0.05 nm from the nucleus 
      */
     nv = 1.0/norm(v[ee]);
     for(m=0; (m<DIM); m++) 
@@ -413,6 +420,55 @@ bool khole_decay(FILE *fp,t_cross_atom *ca,rvec x[],rvec v[],int ion,
     return FALSE;
 }
 
+real electron_atom_interactions(FILE *fp,t_mdatoms *md,t_inputrec *ir,
+				int start,int end,
+				rvec x[],rvec v[],rvec f[],matrix box)
+{
+  /* Compute what the name says... */
+  int  i,j,m,elec1,e1;
+  rvec dx;
+  real mindist2,vc,vtot,fscal,fc,dx2,dx_1,qi,*q;
+  
+  mindist2 = sqr(0.05);
+  vtot     = 0;
+  
+  if (edb.nelec > 0) {
+    /* Do a search... */
+    q = md->chargeT;
+    if (ir->ePBC != epbcNONE) 
+      init_pbc(box,FALSE);
+    /* the end variable usually includes electrons */
+    e1 = min(end,edb.elec0);
+    for(i=start; (i<e1); i++) {
+      elec1 = edb.elec0 + edb.nelec;
+      qi = q[i]*ONE_4PI_EPS0;
+      for(j=edb.elec0; (j<elec1); j++) {
+	if (ir->ePBC == epbcNONE) 
+	  rvec_sub(x[i],x[j],dx);
+	else
+	  pbc_dx(x[i],x[j],dx);
+	dx2 = iprod(dx,dx);
+	if (dx2 < mindist2) {
+	  /* Model collision */
+	}
+	else {
+	  /* Do normal coulomb */
+	  dx_1  = invsqrt(dx2);
+	  vc    = qi*q[j]*dx_1;
+	  vtot += vc;
+	  fscal = vc*dx_1*dx_1;
+	  for(m=0; (m<DIM); m++) {
+	    fc       = fscal*dx[m];
+	    f[i][m] += fc;
+	    f[j][m] -= fc;
+	  }
+	}
+      }
+    }
+  }
+  return vtot;
+}
+
 void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	    rvec x[],rvec v[],int start,int end,matrix box,t_commrec *cr)
 {
@@ -421,10 +477,9 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   static bool  bFirst = TRUE,bElectron = FALSE;
   static real  t0,imax,width,inv_nratoms,rho,nphot;
   static real  interval;
-  static int   seed,dq_tot,nkd_tot,ephot,mode;
+  static int   dq_tot,nkd_tot,ephot,mode;
   static t_cross_atom *ca;
   static int   Eindex=-1;
-  static t_electron_db edb;
     
   real r,factor,ndv,E_lost=0,cross_atom,dvz,rrc;
   real pt,ptot,pphot,pcoll[ecollNR],tmax;
@@ -441,7 +496,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     nphot    = ir->userreal2;  /* Intensity                             */
     width    = ir->userreal3;  /* Width of the peak (in time)           */
     rho      = ir->userreal4;  /* Diameter of the focal spot (nm)       */
-    seed     = ir->userint1;   /* Random seed for stochastic ionization */
+    ionize_seed = ir->userint1;   /* Random seed for stochastic ionization */
     ephot    = ir->userint2;   /* Energy of the photons                 */
     mode     = ir->userint3;   /* Mode of ionizing                      */
     interval = 0.001*ir->userint4;   /* Interval between pulses (ps)    */
@@ -463,13 +518,13 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
       imax  = (nphot/(M_PI*sqr(rho/2)))*1e-10*1.0/(width*sqrt(2.0*M_PI));
       break;
     }
-    if (seed == 0)
-      seed = make_seed();
+    if (ionize_seed == 0)
+      ionize_seed = make_seed();
     if (PAR(cr)) {
       for(i=0; (i<cr->nodeid); i++)
-	seed = INT_MAX*rando(&seed);
+	ionize_seed = INT_MAX*rando(&ionize_seed);
       fprintf(fp,PREFIX"Modifying seed on parallel processor to %d\n",
-	      seed);
+	      ionize_seed);
     }
           
     for(Eindex=0; (Eindex < NENER) && (Energies[Eindex] != ephot); Eindex++)
@@ -491,7 +546,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     fprintf(fp,PREFIX"Parameters for ionization events:\n");
     fprintf(fp,PREFIX"Imax = %g, t0 = %g, width = %g, seed = %d\n"
 	    PREFIX"# Photons = %g, rho = %g, ephot = %d (keV), Electrons = %s\n",
-	    imax,t0,width,seed,nphot,rho,ephot,yesno_names[bElectron]);
+	    imax,t0,width,ionize_seed,nphot,rho,ephot,yesno_names[bElectron]);
     fprintf(fp,PREFIX"Electron_mass: %10.3e(keV) Atomic_mass: %10.3e(keV)\n"
 	    PREFIX"Speed_of_light: %10.3e(nm/ps)\n",
 	    ELECTRONMASS_keV,ATOMICMASS_keV,SPEED_OF_LIGHT);
@@ -511,7 +566,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
    *    H E R E    S T A R T S   I O N I Z A T I O N
    *
    ******************************************************/
-        
+
   /* Calculate probability */
   tmax        = t0;
   if (interval > 0)
@@ -541,7 +596,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     bKHole = FALSE;
     for(k=0; (k<ecollNR); k++) 
       /* Determine cross section for this collision type */
-      pcoll[k]= pt*cross(k,&(ca[i]));
+      pcoll[k]= pt*xray_cross_section(k,&(ca[i]));
     
     /* Total probability of ionisation */
     ptot = 1 - (1-pcoll[ecollPHOTO])*(1-pcoll[ecollINELASTIC]);
@@ -552,7 +607,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     bDOIT = FALSE;
     switch (mode) {
     case eionCYL:
-      bDOIT = (((rando(&seed) < ptot) && (ca[i].n < ca[i].z)) && 
+      bDOIT = (((rando(&ionize_seed) < ptot) && (ca[i].n < ca[i].z)) && 
 	       ((sqr(x[i][XX] - hboxx) + sqr(x[i][YY] - hboxy)) < rho2));
       break;
     case eionSURF:
@@ -569,7 +624,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
       /* The relative probability for a photoellastic event is given by: */
       pphot = pcoll[ecollPHOTO]/(pcoll[ecollPHOTO]+pcoll[ecollINELASTIC]);
       
-      if (rando(&seed) < pphot) 
+      if (rando(&ionize_seed) < pphot) 
 	k = ecollPHOTO;
       else
 	k = ecollINELASTIC;
@@ -580,7 +635,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
        */
       nK = number_K(&ca[i]);
       nL = number_L(&ca[i]);
-      bL = (nK == 0) || ( (nL > 0) && (rando(&seed) > prob_K(k,&(ca[i]))));
+      bL = (nK == 0) || ( (nL > 0) && (rando(&ionize_seed) > prob_K(k,&(ca[i]))));
 
       switch (k) {
       case ecollPHOTO: {
@@ -589,8 +644,8 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	
 	/* Get parameters for photoelestic effect */
 	/* Note that in the article this is called 2 theta */
-	theta = DEG2RAD*gauss(70.0,26.0,&seed);
-	phi   = 2*M_PI*rando(&seed);
+	theta = DEG2RAD*gauss(70.0,26.0,&ionize_seed);
+	phi   = 2*M_PI*rando(&ionize_seed);
 	
 	if (bL)
 	  E_lost = ephot-recoil[ca[i].z].E_L*(ca[i].n+1);
@@ -636,7 +691,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	  if ((ca[i].z > 2) && (nL > 0))
 	    bKHole = TRUE;
 	}
-	theta      = DEG2RAD*rand_theta_incoh(Eindex,&seed);
+	theta      = DEG2RAD*rand_theta_incoh(Eindex,&ionize_seed);
 	Eelec      = (sqr(ephot)/512)*(1-cos(2*theta));
 	bIonize    = (Ebind <= Eelec);
 	bKHole     = bKHole && bIonize;
@@ -644,7 +699,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	  fprintf(debug,PREFIX"Ebind: %g, Eelectron: %g\n",Ebind,Eelec);
 	if (!bIonize) {
 	  /* Subtract momentum of recoiling photon */
-	  /*phi     = 2*M_PI*rando(&seed);
+	  /*phi     = 2*M_PI*rando(&ionize_seed);
  	    bKHole  = FALSE;  
 	    factor  = ephot*438;  
 	    dv[XX] -= factor*cos(phi)*sin(theta);
@@ -687,7 +742,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     /* Now check old event: Loop over k holes! */
     nkh = ca[i].k;
     for (kk = 0; (kk < nkh); kk++) 
-      if (khole_decay(fp,&(ca[i]),x,v,i,&seed,ir->delta_t,
+      if (khole_decay(fp,&(ca[i]),x,v,i,&ionize_seed,ir->delta_t,
 		      bElectron,md,&edb)) {
 	nkdecay ++;
 	ndecay[i]++;

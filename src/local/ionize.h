@@ -39,4 +39,9 @@ extern void ionize(FILE *log,t_mdatoms *md,char **atomname[],
 		   real t,t_inputrec *ir,rvec x[],rvec v[],
 		   int start,int end,matrix box,t_commrec *cr);
 
+extern real electron_atom_interactions(FILE *fp,t_mdatoms *md,t_inputrec *ir,
+				       int start,int end,
+				       rvec x[],rvec v[],rvec f[],matrix box);
+/* Calculate what the name says. */
+
 #endif

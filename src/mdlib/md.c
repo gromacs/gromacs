@@ -226,6 +226,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   while ((!bRerunMD && (step<=parm->ir.nsteps)) ||  
 	 (bRerunMD && bNotLastFrame)) {
     
+    /*dynamic_load_balancing(bVerbose,cr,&(top->blocks[ebCGS]),
+			   &(top->blocks[ebSBLOCKS]),NULL,x,parm->box,XX);
+    */
     if (bRerunMD) {
       if (rerun_fr.bStep)
 	step = rerun_fr.step;
@@ -295,6 +298,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (bConverged)
       nconverged++;
 
+    if (bIonize)
+      ener[F_SR] += 
+	electron_atom_interactions(log,mdatoms,&parm->ir,START(nsb),START(nsb)+HOMENR(nsb),
+				   x,v,f,parm->box);
+    
 #else
 
     /* The coordinates (x) are shifted (to get whole molecules) in do_force
