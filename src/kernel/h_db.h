@@ -51,7 +51,7 @@ extern void read_ab(char *line,char *fn,t_hack *ab);
 extern int read_h_db(char *fn,t_hackblock **ah);
 /* Read the database from file */
 
-extern void print_ab(FILE *out,t_hack *ab);
+extern void print_ab(FILE *out,t_hack *ab,char *nname);
 /* print one add block */
 
 extern void print_h_db(FILE *out,int nh,t_hackblock ah[]);

@@ -75,20 +75,88 @@ int find_kw(char *keyw)
 
 #define FATAL() gmx_fatal(FARGS,"Reading Termini Database: not enough items on line\n%s",line)
 
-static void read_atom(char *line, t_atom *a, t_atomtype *atype, 
-		      char nnew[], int *cgnr)
+static void read_atom(char *line, t_atom *a, t_atomtype *atype, int *cgnr)
 {
   int    i, n;
   char   type[12];
   double m, q;
   
-  if ( (i=sscanf(line,"%s%s%lf%lf%n", nnew, type, &m, &q, &n)) != 4 ) 
-    gmx_fatal(FARGS,"Reading Termini Database: expected %d items of atom data in stead of %d on line\n%s", 4, i, line);
+  if ( (i=sscanf(line,"%s%lf%lf%n", type, &m, &q, &n)) != 3 ) 
+    gmx_fatal(FARGS,"Reading Termini Database: expected %d items of atom data in stead of %d on line\n%s", 3, i, line);
   a->m=m;
   a->q=q;
   a->type=at2type(type,atype);
   if ( sscanf(line+n,"%d", cgnr) != 1 )
     *cgnr = NOTSET;
+}
+
+static void print_atom(FILE *out,t_atom *a,t_atomtype *atype,char *newnm)
+{
+  fprintf(out,"\t%s\t%g\t%g\n",
+	  type2nm(a->type,atype),a->m,a->q);
+}
+
+static void print_ter_db(char *ff,char C,int nb,t_hackblock tb[],t_atomtype *atype) 
+{
+  FILE *out;
+  int i,j,k,bt,nrepl,nadd,ndel;
+  char buf[STRLEN],nname[STRLEN];
+  
+  sprintf(buf,"%s-%c_new.tdb",ff,C);
+  out = ffopen(buf,"w");
+  
+  for(i=0; (i<nb); i++) {
+    fprintf(out,"[ %s ]\n",tb[i].name);
+    
+    /* first count: */
+    nrepl=0;
+    nadd=0;
+    ndel=0;
+    for(j=0; j<tb[i].nhack; j++) 
+      if ( tb[i].hack[j].oname!=NULL && tb[i].hack[j].nname!=NULL )
+	nrepl++;
+      else if ( tb[i].hack[j].oname==NULL && tb[i].hack[j].nname!=NULL )
+	nadd++;
+      else if ( tb[i].hack[j].oname!=NULL && tb[i].hack[j].nname==NULL )
+	ndel++;
+      else if ( tb[i].hack[j].oname==NULL && tb[i].hack[j].nname==NULL )
+	gmx_fatal(FARGS,"invalid hack (%s) in termini database",tb[i].name);
+    if (nrepl) {
+      fprintf(out,"[ %s ]\n",kw_names[ekwRepl-ebtsNR-1]);
+      for(j=0; j<tb[i].nhack; j++) 
+	if ( tb[i].hack[j].oname!=NULL && tb[i].hack[j].nname!=NULL ) {
+	  fprintf(out,"%s\t",tb[i].hack[j].oname);
+	  print_atom(out,tb[i].hack[j].atom,atype,tb[i].hack[j].nname);
+	}
+    }
+    if (nadd) {
+      fprintf(out,"[ %s ]\n",kw_names[ekwAdd-ebtsNR-1]);
+      for(j=0; j<tb[i].nhack; j++) 
+	if ( tb[i].hack[j].oname==NULL && tb[i].hack[j].nname!=NULL ) {
+	  print_ab(out,&(tb[i].hack[j]),tb[i].hack[j].nname);
+	  print_atom(out,tb[i].hack[j].atom,atype,tb[i].hack[j].nname);
+	}
+    }
+    if (ndel) {
+      fprintf(out,"[ %s ]\n",kw_names[ekwDel-ebtsNR-1]);
+      for(j=0; j<tb[i].nhack; j++)
+	if ( tb[i].hack[j].oname!=NULL && tb[i].hack[j].nname==NULL )
+	  fprintf(out,"%s\n",tb[i].hack[j].oname);
+    }
+    for(bt=0; bt<ebtsNR; bt++)
+      if (tb[i].rb[bt].nb) {
+	fprintf(out,"[ %s ]\n", btsNames[bt]);
+	for(j=0; j<tb[i].rb[bt].nb; j++) {
+	  for(k=0; k<btsNiatoms[bt]; k++) 
+	    fprintf(out,"%s%s",k?"\t":"",tb[i].rb[bt].b[j].a[k]);
+	  if ( tb[i].rb[bt].b[j].s )
+	    fprintf(out,"\t%s",tb[i].rb[bt].b[j].s);
+	  fprintf(out,"\n");
+	}
+      }
+    fprintf(out,"\n");
+  }
+  fclose(out);
 }
 
 int read_ter_db(char *FF,char ter,t_hackblock **tbptr,t_atomtype *atype)
@@ -160,8 +228,13 @@ int read_ter_db(char *FF,char ter,t_hackblock **tbptr,t_atomtype *atype)
 	if ( kwnr==ekwRepl || kwnr==ekwAdd ) {
 	  snew(tb[nb].hack[nh].atom, 1);
 	  read_atom(line+n, tb[nb].hack[nh].atom, atype, 
-		    buf, &tb[nb].hack[nh].cgnr);
-	  tb[nb].hack[nh].nname = strdup(buf);
+		    &tb[nb].hack[nh].cgnr);
+	  if (!tb[nb].hack[nh].nname) {
+	    if (tb[nb].hack[nh].oname)
+	      tb[nb].hack[nh].nname = strdup(tb[nb].hack[nh].oname);
+	    else
+	      gmx_fatal(FARGS,"Don't know which name the new atom should have");
+	    }
 	}
       } else if (kwnr >= 0 && kwnr < ebtsNR) {
 	/* this is bonded data: bonds, angles, dihedrals or impropers */
@@ -191,7 +264,8 @@ int read_ter_db(char *FF,char ter,t_hackblock **tbptr,t_atomtype *atype)
   
   fclose(in);
   
-  if (debug) print_ter_db(debug, nb, tb, atype);
+  if (debug) 
+    print_ter_db(FF,ter,nb,tb,atype);
   
   *tbptr=tb;
   return nb;
@@ -296,86 +370,3 @@ t_hackblock *choose_ter(int nb,t_hackblock **tb,char *title)
   return tb[sel];
 }
 
-static void print_atom(FILE *out,t_atom *a,t_atomtype *atype,char *newnm)
-{
-  fprintf(out,"%s\t%s\t%g\t%g\n",
-	  newnm,type2nm(a->type,atype),a->m,a->q);
-}
-
-void print_ter_db(FILE *out,int nb,t_hackblock tb[],t_atomtype *atype) 
-{
-  int i,j,k,bt,nrepl,nadd,ndel;
-  
-  for(i=0; (i<nb); i++) {
-    fprintf(out,"[ %s ]\n",tb[i].name);
-    
-    /* first count: */
-    nrepl=0;
-    nadd=0;
-    ndel=0;
-    for(j=0; j<tb[i].nhack; j++) 
-      if ( tb[i].hack[j].oname!=NULL && tb[i].hack[j].nname!=NULL )
-	nrepl++;
-      else if ( tb[i].hack[j].oname==NULL && tb[i].hack[j].nname!=NULL )
-	nadd++;
-      else if ( tb[i].hack[j].oname!=NULL && tb[i].hack[j].nname==NULL )
-	ndel++;
-      else if ( tb[i].hack[j].oname==NULL && tb[i].hack[j].nname==NULL )
-	gmx_fatal(FARGS,"invalid hack (%s) in termini database",tb[i].name);
-    if (nrepl) {
-      fprintf(out,"[ %s ]\n",kw_names[ekwRepl-ebtsNR-1]);
-      for(j=0; j<tb[i].nhack; j++) 
-	if ( tb[i].hack[j].oname!=NULL && tb[i].hack[j].nname!=NULL ) {
-	  fprintf(out,"%s\t",tb[i].hack[j].oname);
-	  print_atom(out,tb[i].hack[j].atom,atype,tb[i].hack[j].nname);
-	}
-    }
-    if (nadd) {
-      fprintf(out,"[ %s ]\n",kw_names[ekwAdd-ebtsNR-1]);
-      for(j=0; j<tb[i].nhack; j++) 
-	if ( tb[i].hack[j].oname==NULL && tb[i].hack[j].nname!=NULL ) {
-	  print_ab(out,&(tb[i].hack[j]));
-	  fprintf(out,"\t");
-	  print_atom(out,tb[i].hack[j].atom,atype,tb[i].hack[j].nname);
-	}
-    }
-    if (ndel) {
-      fprintf(out,"[ %s ]\n",kw_names[ekwDel-ebtsNR-1]);
-      for(j=0; j<tb[i].nhack; j++)
-	if ( tb[i].hack[j].oname!=NULL && tb[i].hack[j].nname==NULL )
-	  fprintf(out,"%s\n",tb[i].hack[j].oname);
-    }
-    for(bt=0; bt<ebtsNR; bt++)
-      if (tb[i].rb[bt].nb) {
-	fprintf(out,"[ %s ]\n", btsNames[bt]);
-	for(j=0; j<tb[i].rb[bt].nb; j++) {
-	  for(k=0; k<btsNiatoms[bt]; k++) 
-	    fprintf(out,"%s%s",k?"\t":"",tb[i].rb[bt].b[j].a[k]);
-	  if ( tb[i].rb[bt].b[j].s )
-	    fprintf(out,"\t%s",tb[i].rb[bt].b[j].s);
-	  fprintf(out,"\n");
-	}
-      }
-    fprintf(out,"\n");
-  }
-}
-
-
-
-#ifdef DBTDB
-int main(int argc,char *argv[])
-{
-  t_symtab   tab;
-  t_atomtype *atype;
-  t_hackblock *tb,*seltb;
-  int nb;
-  
-  open_symtab(&tab);
-  atype=read_atype("ffgmx",&tab);
-  nb=read_ter_db("ffgmx-c.tdb",&tb,atype);
-  seltb=choose_ter(nb,tb,"What do you want ?");
-  print_ter_db(stdout,1,seltb,atype);
-  
-  return 0; 
-}
-#endif

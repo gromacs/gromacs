@@ -51,7 +51,4 @@ extern t_hackblock **filter_ter(int nb,t_hackblock tb[],char *resname,int *nret)
 extern t_hackblock *choose_ter(int nb,t_hackblock **tb,char *title);
 /* Interactively select one.. */
 
-extern void print_ter_db(FILE *out,int nb,t_hackblock tb[],t_atomtype *atype);
-/* Print the stuff */
-
 #endif	/* _ter_db_h */

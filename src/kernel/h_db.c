@@ -63,28 +63,59 @@ int compaddh(const void *a,const void *b)
   return strcasecmp(ah->name,bh->name);
 }
 
+void print_ab(FILE *out,t_hack *hack,char *nname)
+{
+  int i;
+
+  fprintf(out,"%d\t%d\t%s",hack->nr,hack->tp,nname);
+  for(i=0; (i < hack->nctl); i++)
+    fprintf(out,"\t%s",hack->a[i]);
+  fprintf(out,"\n");
+}
+
+
 void read_ab(char *line,char *fn,t_hack *hack)
 {
   int  i,nh,tp,ns;
   char a[4][12];
+  char hn[32];
   
-  ns = sscanf(line,"%d%d%s%s%s%s",&nh,&tp,a[0],a[1],a[2],a[3]);
-  if (ns < 3)
+  ns = sscanf(line,"%d%d%s%s%s%s%s",&nh,&tp,hn,a[0],a[1],a[2],a[3]);
+  if (ns < 4)
     gmx_fatal(FARGS,"wrong format in input file %s on line\n%s\n",fn,line);
   
   hack->nr=nh;
   hack->tp=tp;
-  hack->nctl = ns - 2;
+  hack->nctl = ns - 3;
   for(i=0; (i<hack->nctl); i++) 
     hack->a[i]=strdup(a[i]);
   for(   ; i<4; i++)
     hack->a[i]=NULL;
   hack->oname=NULL;
-  hack->nname=NULL;
+  hack->nname=strdup(hn);
   hack->atom=NULL;
   hack->cgnr=NOTSET;
   for(i=0; i<DIM; i++)
     hack->newx[i]=NOTSET;
+}
+
+void dump_h_db(char *fn,int nah,t_hackblock *ah)
+{
+  FILE *fp;
+  char buf[STRLEN],nname[STRLEN];
+  int  i,j,k;
+  
+  sprintf(buf,"%s_new.hdb",fn);
+  fp = ffopen(buf,"w");
+  for(i=0; (i<nah); i++) {
+    fprintf(fp,"%-8s%-8d\n",ah[i].name,ah[i].nhack);
+    for(k=0; (k<ah[i].nhack); k++) {
+      strcpy(nname,ah[i].hack[k].a[0]);
+      nname[0] = 'H';
+      print_ab(fp,&ah[i].hack[k],nname);
+    }
+  }
+  fclose(fp);
 }
 
 int read_h_db(char *fn,t_hackblock **ah)
@@ -121,7 +152,6 @@ int read_h_db(char *fn,t_hackblock **ah)
 		      nab, i-1, aah[nah].name, hfn);
 	fgets(buf, STRLEN, in);
 	read_ab(buf,hfn,&(aah[nah].hack[i]));
-	if (debug) print_ab(debug, &(aah[nah].hack[i]));
       }
     }
     nah++;
@@ -131,31 +161,11 @@ int read_h_db(char *fn,t_hackblock **ah)
   /* Sort the list (necessary to be able to use bsearch */
   qsort(aah,nah,(size_t)sizeof(**ah),compaddh);
 
+  if (debug)
+    dump_h_db(fn,nah,aah);
+  
   *ah=aah;
   return nah;
-}
-
-void print_ab(FILE *out,t_hack *hack)
-{
-  int i;
-
-  fprintf(out,"%d\t%d",hack->nr,hack->tp);
-  for(i=0; (i < hack->nctl); i++)
-    fprintf(out,"\t%s",hack->a[i]);
-  fprintf(out,"\n");
-}
-
-void print_h_db(FILE *out,int nh,t_hackblock ah[])
-{
-  int i,j;
-
-  for(i=0; (i<nh); i++) {
-    fprintf(out,"%s\t%d\n",ah[i].name,ah[i].nhack);
-    for(j=0; (j<ah[i].nhack); j++) {
-      fprintf(out,"\t");
-      print_ab(out,&(ah[i].hack[j]));
-    }
-  }
 }
 
 t_hackblock *search_h_db(int nh,t_hackblock ah[],char *key)
