@@ -190,7 +190,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   } 
 
   start=nsb->index[cr->pid]; 
-  end=nsb->homenr[cr->pid]-start; 
+  end=nsb->homenr[cr->pid]+start; 
   
   /* Open the enrgy file */   
   if (MASTER(cr)) 
@@ -212,7 +212,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 
   /* Initiate constraint stuff */
   bConstrain=init_constraints(stdlog,top,&(parm->ir),mdatoms,
-			      start,start+end);
+			      start,end);
   
   if (bConstrain)
     snew(xcf,nsb->natoms); 
