@@ -545,7 +545,7 @@ int main(int argc,char *argv[])
   int        teller=0,nre,step[2],oldstep;
   real       t[2],oldt;
   int        cur=0;
-#define next (1-cur)
+#define NEXT (1-cur)
   real       *bounds,*violaver=NULL;
   int        *index;
   int        nbounds;
@@ -582,7 +582,7 @@ int main(int argc,char *argv[])
   dr.ndr=0;  
   snew(ee,2);
   snew(ee[cur],nre);
-  snew(ee[next],nre);
+  snew(ee[NEXT],nre);
   snew(oldee,nre);
   nenergy = 0;
 
@@ -642,10 +642,10 @@ int main(int argc,char *argv[])
      * or when this has been found it reads just one energy frame
      */
     do {
-      bCont = do_enx(fp,&(t[next]),&(step[next]),&nre,ee[next],&dr);
+      bCont = do_enx(fp,&(t[NEXT]),&(step[NEXT]),&nre,ee[NEXT],&dr);
       
       if (bCont)
-	timecheck = check_times(t[next]);
+	timecheck = check_times(t[NEXT]);
       
     } while (bCont && (timecheck < 0));
     
@@ -654,7 +654,7 @@ int main(int argc,char *argv[])
        * Only copy the values we just read, if we are within the time bounds
        * It is necessary for statistics to start counting from 1 
        */
-      cur  = next;
+      cur  = NEXT;
       step[cur]++;
       
       if (oldstep == -1) {
