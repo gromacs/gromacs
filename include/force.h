@@ -51,13 +51,11 @@ static char *SRCID_force_h = "$Id$";
 #include "network.h"
 #include "tgroup.h"
 
-
-extern void calc_vir(FILE *log,int nxf,rvec x[],rvec f[],tensor vir,
-		     t_commrec *cr);
+extern void calc_vir(FILE *log,int nxf,rvec x[],rvec f[],tensor vir);
 /* Calculate virial for nxf atoms, and add it to vir */
 
 extern void f_calc_vir(FILE *log,int i0,int i1,rvec x[],rvec f[],tensor vir,
-		       t_commrec *cr,t_graph *g,rvec shift_vec[]);
+		       t_graph *g,rvec shift_vec[]);
 /* Calculate virial taking periodicity into account */
 
 extern t_forcerec *mk_forcerec(void);

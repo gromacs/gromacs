@@ -55,8 +55,7 @@ static void upd_vir(rvec vir,real dvx,real dvy,real dvz)
   vir[ZZ]-=0.5*dvz;
 }
 
-void calc_vir(FILE *log,int nxf,rvec x[],rvec f[],tensor vir,
-	      t_commrec *cr)
+void calc_vir(FILE *log,int nxf,rvec x[],rvec f[],tensor vir)
 {
   int    i;
   real   dvxx=0,dvxy=0,dvxz=0,dvyx=0,dvyy=0,dvyz=0,dvzx=0,dvzy=0,dvzz=0;
@@ -200,7 +199,7 @@ static void lo_fcv2(int i0,int i1,
 }
 
 void f_calc_vir(FILE *log,int i0,int i1,rvec x[],rvec f[],tensor vir,
-		t_commrec *cr,t_graph *g,matrix box)
+		t_graph *g,matrix box)
 {
   int start,end;
   
@@ -221,10 +220,10 @@ void f_calc_vir(FILE *log,int i0,int i1,rvec x[],rvec f[],tensor vir,
      * Note the nifty pointer arithmetic...
      */
     if (start > i0) 
-      calc_vir(log,start-i0,x + i0,f + i0,vir,cr);
+      calc_vir(log,start-i0,x + i0,f + i0,vir);
     if (end < i1)
-      calc_vir(log,i1-end,x + end,f + end,vir,cr);
+      calc_vir(log,i1-end,x + end,f + end,vir);
   }
   else
-    calc_vir(log,i1-i0,x + i0,f + i0,vir,cr);
+    calc_vir(log,i1-i0,x + i0,f + i0,vir);
 }

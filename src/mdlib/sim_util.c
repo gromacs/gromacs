@@ -289,7 +289,7 @@ void do_force(FILE *log,t_commrec *cr,
 
   /* The short-range virial from surrounding boxes */
   clear_mat(vir_part);
-  calc_vir(log,SHIFTS,fr->shift_vec,fr->fshift,vir_part,cr);
+  calc_vir(log,SHIFTS,fr->shift_vec,fr->fshift,vir_part);
   inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
 
   if (debug) 
@@ -320,7 +320,7 @@ void sum_lrforces(rvec f[],t_forcerec *fr,int start,int homenr)
 
 void calc_virial(FILE *log,int start,int homenr,rvec x[],rvec f[],
 		 tensor vir_part,tensor pme_vir,
-		 t_commrec *cr,t_graph *graph,matrix box,
+		 t_graph *graph,matrix box,
 		 t_nrnb *nrnb,t_forcerec *fr,bool bTweak)
 {
   int i,j;
@@ -331,7 +331,7 @@ void calc_virial(FILE *log,int start,int homenr,rvec x[],rvec f[],
    * Calculate partial virial, for local atoms only, based on short range. 
    * Total virial is computed in global_stat, called from do_md 
    */
-  f_calc_vir(log,start,start+homenr,x,f,vir_part,cr,graph,box);
+  f_calc_vir(log,start,start+homenr,x,f,vir_part,graph,box);
   inc_nrnb(nrnb,eNR_VIRIAL,homenr);
 
   /* Add up the long range forces if necessary */
@@ -343,7 +343,7 @@ void calc_virial(FILE *log,int start,int homenr,rvec x[],rvec f[],
   if (EEL_LR(fr->eeltype) && (fr->eeltype != eelPPPM)) {
     if (debug && bTweak) {
       clear_mat(virtest);
-      f_calc_vir(log,start,start+homenr,x,fr->f_pme,virtest,cr,graph,box);
+      f_calc_vir(log,start,start+homenr,x,fr->f_pme,virtest,graph,box);
       pr_rvecs(debug,0,"virtest",virtest,DIM);
       pr_rvecs(debug,0,"pme_vir",pme_vir,DIM);
     }    

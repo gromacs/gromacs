@@ -431,24 +431,6 @@ static void do_update_bd(int start,int homenr,double dt,
   }
 }
 
-static void shake_calc_vir(FILE *log,int nxf,rvec x[],rvec f[],tensor vir,
-                           t_commrec *cr)
-{
-  int    i,m,n;
-  matrix dvir;
-  
-  clear_mat(dvir);
-  for(i=0; (i<nxf); i++) {
-    for(m=0; (m<DIM); m++)
-      for(n=0; (n<DIM); n++)
-        dvir[m][n]+=x[i][m]*f[i][n];
-  }
-  
-  for(m=0; (m<DIM); m++)
-    for(n=0; (n<DIM); n++)
-      vir[m][n]-=0.5*dvir[m][n];
-}
-
 static void dump_it_all(FILE *fp,char *title,
 		 int natoms,rvec x[],rvec xp[],rvec v[],
 		 rvec vold[],rvec f[])
@@ -813,7 +795,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
       where();
       
       /* Calculate virial due to constraints (for this node) */
-      calc_vir(stdlog,homenr,x+start,delta_f+start,vir_part,cr);
+      calc_vir(stdlog,homenr,&(x[start]),&(delta_f[start]),vir_part);
       inc_nrnb(nrnb,eNR_SHAKE_VIR,homenr);
       where();
     }  
