@@ -41,12 +41,13 @@ static char *SRCID_vec_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #define gmx_inline inline
-#elif define __GNUC__
+#else
+#ifdef __GNUC__
 #define gmx_inline __inline
 #else
 #define inline
 #endif
-
+#endif
 /*
   collection of in-line ready operations:
   
