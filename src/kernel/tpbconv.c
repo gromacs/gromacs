@@ -53,8 +53,9 @@
 #include "statutil.h"
 #include "copyrite.h"
 #include "futil.h"
-#include "assert.h"
 #include "vec.h"
+
+#define RANGECHK(i,n) if ((i)>=(n)) fatal_error(0,"Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)",(i),(n))
 
 static bool *bKeepIt(int gnx,int natoms,atom_id index[])
 {
@@ -63,7 +64,7 @@ static bool *bKeepIt(int gnx,int natoms,atom_id index[])
   
   snew(b,natoms);
   for(i=0; (i<gnx); i++) {
-    assert(index[i] < natoms);
+    RANGECHK(index[i],natoms);
     b[index[i]] = TRUE;
   }
   
@@ -77,7 +78,7 @@ static atom_id *invind(int gnx,int natoms,atom_id index[])
   
   snew(inv,natoms);
   for(i=0; (i<gnx); i++) {
-    assert(index[i] < natoms);
+    RANGECHK(index[i],natoms);
     inv[index[i]] = i;
   }
   
