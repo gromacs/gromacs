@@ -197,16 +197,15 @@ int main(int argc,char *argv[])
   }
   else {
     /* scan trajectory for all hydrogen bonds */
-    fprintf(stderr,"\n");
+    fprintf(stderr,"Scanning for all hydrogen bonds\n");
     read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&this_time,&x,box);
     do {
-      fprintf(stderr,"\r %6.3f %5d",this_time,list.search(dah,nr_dah));
+      fprintf(stderr," # hbonds: %5d",list.search(dah,nr_dah));
     } while (read_next_x(status,&this_time,natoms,x,box));           
     for(i=0;(i<nr_dah);i++)
       delete (dah[i]);
     free(dah);
     
-    fprintf(stderr,"\n");
     rewind_trj(status);
   }
 
@@ -214,13 +213,17 @@ int main(int argc,char *argv[])
   list.analyse_init();
 
   /* do the final analysis */
+  fprintf(stderr,"Analysing hydrogens bonds\n");
   read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&this_time,&x,box);
   for(i=0;(i<nr_frames) ;i++) {
-    fprintf(stderr,"\r %6.3f ",this_time);
     list.analyse();
     if (!read_next_x(status,&this_time,natoms,x,box))
       break;
   }         
+  if (i != nr_frames)
+    fprintf("WARNING: trajectory does not contain the same number of frames"
+	    "as when it was read for the first time!\n");
+    
   nr_frames=i;
 
   close_trj(status);
