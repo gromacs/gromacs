@@ -863,10 +863,11 @@ static int gen_dums_his(t_atoms *at, int *dummy_type[], t_params plist[],
   real xG, xD, yD, xE, xHD, yHD, xHE, yHE;
   
   /* these MUST correspond to the atnms array in do_dum_aromatics! */
-  enum { atCG, atND1, atHD1, atCD2, atCE1, atNE2, atHE2, atNR };
+  enum { atCG, atND1, atHD1, atCD2, atHD2, atCE1, atHE1, atNE2, atHE2, atNR };
   /* CG, CE1 and NE2 stay, each gets part of the total mass,
      rest gets dummified */
-  assert(atNR == nrfound || atNR == nrfound+1);
+  /* check number of atoms, 3 hydrogens may be missing: */
+  assert( nrfound >= atNR-3 || nrfound <= atNR );
   
   /* bonds between CG, CE1 and NE1 */
   for(i=0; i<MAXFORCEPARAM; i++)
@@ -910,14 +911,16 @@ static int gen_dums_his(t_atoms *at, int *dummy_type[], t_params plist[],
   yE  = sin(alpha)*dCENE; /* perp to r_CG-CE1 or r_CG_NE2 */
   
   /* HE2 */
-  if (ats[atHE2]!=NOTSET) {
-    yHE = sin(M_2PI-alpha-aR5H)*bNH;
-    xHE = sin(aR5H)*bNH;
-    a = - yHE / yE;
-    b = - xHE / xCG;
+  yHE = sin(M_2PI-alpha-aR5H)*bNH;
+  xHE = sin(aR5H)*bNH;
+  a = - yHE / yE;
+  b = - xHE / xCG;
+  if (ats[atHE1]!=NOTSET)
+    add_dum3_param(&plist[F_DUMMY3],
+		   ats[atHE1],ats[atCE1],ats[atNE2],ats[atCG],a,b);
+  if (ats[atHE2]!=NOTSET)
     add_dum3_param(&plist[F_DUMMY3],
 		   ats[atHE2],ats[atNE2],ats[atCE1],ats[atCG],a,b);
-  }
   
   /* ND1, CD2 */
   xD = sin(aR5)*bR5;
@@ -930,14 +933,16 @@ static int gen_dums_his(t_atoms *at, int *dummy_type[], t_params plist[],
 		 ats[atCD2],ats[atCE1],ats[atNE2],ats[atCG],a,b);
   
   /* HD1 */
-  if (ats[atHD1]!=NOTSET) {
-    xHD = xD + sin(aR5H-aR5)*bNH;
-    yHD = yD + sin(alpha+aR5-aR5H)*bNH;
-    a = yHD / yE;
-    b = xHD / xCG;
+  xHD = xD + sin(aR5H-aR5)*bNH;
+  yHD = yD + sin(alpha+aR5-aR5H)*bNH;
+  a = yHD / yE;
+  b = xHD / xCG;
+  if (ats[atHD1]!=NOTSET)
     add_dum3_param(&plist[F_DUMMY3],
-		   ats[atHD1],ats[atNE2],ats[atCE1],ats[atCG],a,b); 
-  }
+		   ats[atHD1],ats[atNE2],ats[atCE1],ats[atCG],a,b);
+  if (ats[atHD2]!=NOTSET)
+    add_dum3_param(&plist[F_DUMMY3],
+		   ats[atHD2],ats[atCE1],ats[atNE2],ats[atCG],a,b);
   
   return ndum;
 }
@@ -980,8 +985,8 @@ void do_dum_aromatics(int nrtp, t_restp rtp[], t_atomtype *atype,
       "CE1", "HE1", "CE2", "HE2", 
       "CZ", "OH", "HH", NULL },
     { "CG", /* HIS */
-      "ND1", "HD1", "CD2", 
-      "CE1", "NE2", "HE2", NULL }
+      "ND1", "HD1", "CD2", "HD2",
+      "CE1", "HE1", "NE2", "HE2", NULL }
   };
   
   ndum=0;
@@ -1033,7 +1038,7 @@ void do_dum_aromatics(int nrtp, t_restp rtp[], t_atomtype *atype,
 	  }
 	  /* now k is number of atom names in atnms[j] */
 	  if (j==resHIS)
-	    needed = k-1;
+	    needed = k-3;
 	  else
 	    needed = k;
 	  if (nrfound<needed)
