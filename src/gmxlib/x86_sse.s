@@ -797,7 +797,7 @@ inl0100_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rcpss xmm5, xmm4
+	rcpps xmm5, xmm4
 	/* 1/x lookup seed in xmm5 */
 	movaps xmm0, [esp + _two]
 	mulps xmm4, xmm5
@@ -815,7 +815,7 @@ inl0100_sse:
 	mulps  xmm2, [esp + _c12]
 	movaps xmm5, xmm2
 	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
-	addps  xmm5, [esp + _vnbtot]
+	addss  xmm5, [esp + _vnbtot]
 	mulps  xmm1, [esp + _six]
 	mulps  xmm2, [esp + _twelve]
 	subps  xmm2, xmm1
@@ -827,7 +827,7 @@ inl0100_sse:
 	movaps xmm1, [esp + _dy]
 	movaps xmm2, [esp + _dz]
 
-	movaps [esp + _vnbtot], xmm5
+	movss [esp + _vnbtot], xmm5
 
 	mulps  xmm0, xmm4
 	mulps  xmm1, xmm4
@@ -837,9 +837,9 @@ inl0100_sse:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -1524,7 +1524,7 @@ inl0110_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rcpss xmm5, xmm4
+	rcpps xmm5, xmm4
 	/* 1/x lookup seed in xmm5 */
 	movaps xmm0, [esp + _two]
 	mulps xmm4, xmm5
@@ -1542,7 +1542,7 @@ inl0110_sse:
 	mulps  xmm2, [esp + _c12]
 	movaps xmm5, xmm2
 	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
-	addps  xmm5, [esp + _vnbtot]
+	addss  xmm5, [esp + _vnbtot]
 	mulps  xmm1, [esp + _six]
 	mulps  xmm2, [esp + _twelve]
 	subps  xmm2, xmm1
@@ -1554,7 +1554,7 @@ inl0110_sse:
 	movaps xmm1, [esp + _dy]
 	movaps xmm2, [esp + _dz]
 
-	movaps [esp + _vnbtot], xmm5
+	movss [esp + _vnbtot], xmm5
 
 	mulps  xmm0, xmm4
 	mulps  xmm1, xmm4
@@ -1564,9 +1564,9 @@ inl0110_sse:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -2090,7 +2090,7 @@ inl0110_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rcpss xmm5, xmm4
+	rcpps xmm5, xmm4
 	/* 1/x lookup seed in xmm5 */
 	movaps xmm0, [esp + _two]
 	mulps xmm4, xmm5
@@ -2108,7 +2108,7 @@ inl0110_sse:
 	mulps  xmm2, [esp + _c12]
 	movaps xmm5, xmm2
 	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
-	addps  xmm5, [esp + _vnbtot]
+	addss  xmm5, [esp + _vnbtot]
 	mulps  xmm1, [esp + _six]
 	mulps  xmm2, [esp + _twelve]
 	subps  xmm2, xmm1
@@ -2120,7 +2120,7 @@ inl0110_sse:
 	movaps xmm1, [esp + _dy]
 	movaps xmm2, [esp + _dz]
 
-	movaps [esp + _vnbtot], xmm5
+	movss [esp + _vnbtot], xmm5
 
 	mulps  xmm0, xmm4
 	mulps  xmm1, xmm4
@@ -2130,9 +2130,9 @@ inl0110_sse:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -2945,7 +2945,7 @@ inl0300_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtss xmm5, xmm4
+	rsqrtps xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -2995,9 +2995,9 @@ inl0300_sse:
 	mulps  xmm5, xmm4	 /* vnb6 */
 
 	/* put scalar force on stack Update vnbtot directly */
-	addps  xmm5, [esp + _vnbtot]
+	addss  xmm5, [esp + _vnbtot]
 	movaps [esp + _fscal], xmm7
-	movaps [esp + _vnbtot], xmm5
+	movss [esp + _vnbtot], xmm5
 
 	/* repulsion */
 	movlps xmm4, [esi + ebx*4 + 16]
@@ -3023,8 +3023,8 @@ inl0300_sse:
 	mulps  xmm5, xmm4 /* vnb12 */
 	addps  xmm7, [esp + _fscal] 
 	
-	addps  xmm5, [esp + _vnbtot]
-	movaps [esp + _vnbtot], xmm5
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
 	xorps  xmm4, xmm4
 
 	mulps xmm7, [esp + _tsc]
@@ -3044,9 +3044,9 @@ inl0300_sse:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -3890,7 +3890,7 @@ inl0310_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtss xmm5, xmm4
+	rsqrtps xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -3940,9 +3940,9 @@ inl0310_sse:
 	mulps  xmm5, xmm4	 /* vnb6 */
 
 	/* put scalar force on stack Update vnbtot directly */
-	addps  xmm5, [esp + _vnbtot]
+	addss  xmm5, [esp + _vnbtot]
 	movaps [esp + _fscal], xmm7
-	movaps [esp + _vnbtot], xmm5
+	movss [esp + _vnbtot], xmm5
 
 	/* repulsion */
 	movlps xmm4, [esi + ebx*4 + 16]
@@ -3968,8 +3968,8 @@ inl0310_sse:
 	mulps  xmm5, xmm4 /* vnb12 */
 	addps  xmm7, [esp + _fscal] 
 	
-	addps  xmm5, [esp + _vnbtot]
-	movaps [esp + _vnbtot], xmm5
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
 	xorps  xmm4, xmm4
 
 	mulps xmm7, [esp + _tsc]
@@ -3989,9 +3989,9 @@ inl0310_sse:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -4669,7 +4669,7 @@ inl0310_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtss xmm5, xmm4
+	rsqrtps xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -4719,9 +4719,9 @@ inl0310_sse:
 	mulps  xmm5, xmm4	 /* vnb6 */
 
 	/* put scalar force on stack Update vnbtot directly */
-	addps  xmm5, [esp + _vnbtot]
+	addss  xmm5, [esp + _vnbtot]
 	movaps [esp + _fscal], xmm7
-	movaps [esp + _vnbtot], xmm5
+	movss [esp + _vnbtot], xmm5
 
 	/* repulsion */
 	movlps xmm4, [esi + ebx*4 + 16]
@@ -4747,8 +4747,8 @@ inl0310_sse:
 	mulps  xmm5, xmm4 /* vnb12 */
 	addps  xmm7, [esp + _fscal] 
 	
-	addps  xmm5, [esp + _vnbtot]
-	movaps [esp + _vnbtot], xmm5
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
 	xorps  xmm4, xmm4
 
 	mulps xmm7, [esp + _tsc]
@@ -4768,9 +4768,9 @@ inl0310_sse:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -5344,7 +5344,7 @@ i1000_dosingle:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtss xmm5, xmm4
+	rsqrtps xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -5360,7 +5360,7 @@ i1000_dosingle:
 	movaps xmm5, [esp + _vctot]
 	mulps  xmm3, xmm0	/* xmm3=vcoul */
 	mulps  xmm4, xmm3	/* xmm4=fscal */
-	addps  xmm5, xmm3
+	addss  xmm5, xmm3
 
 	movaps xmm0, [esp + _dx]
 	movaps xmm1, [esp + _dy]
@@ -5376,9 +5376,9 @@ i1000_dosingle:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -5985,7 +5985,7 @@ i1010_dosingle_coul:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtss xmm5, xmm4
+	rsqrtps xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -6001,7 +6001,7 @@ i1010_dosingle_coul:
 	movaps xmm5, [esp + _vctot]
 	mulps  xmm3, xmm0	/* xmm3=vcoul */
 	mulps  xmm4, xmm3	/* xmm4=fscal */
-	addps  xmm5, xmm3
+	addss  xmm5, xmm3
 
 	movaps xmm0, [esp + _dx]
 	movaps xmm1, [esp + _dy]
@@ -6017,9 +6017,9 @@ i1010_dosingle_coul:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -8850,7 +8850,7 @@ i1100_dosingle:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtss xmm5, xmm4
+	rsqrtps xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -8872,13 +8872,13 @@ i1100_dosingle:
 	mulps  xmm2, [esp + _c12]
 	movaps xmm5, xmm2
 	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
-	addps  xmm5, [esp + _vnbtot]
+	addss  xmm5, [esp + _vnbtot]
 	mulps  xmm1, [esp + _six]
 	mulps  xmm2, [esp + _twelve]
 	subps  xmm2, xmm1
 	addps  xmm2, xmm3
 	mulps  xmm4, xmm2	/* xmm4=total fscal */
-	addps  xmm3, [esp + _vctot]
+	addss  xmm3, [esp + _vctot]
 	
 	mov    edi, [ebp + _faction]
 
@@ -8886,8 +8886,8 @@ i1100_dosingle:
 	movaps xmm1, [esp + _dy]
 	movaps xmm2, [esp + _dz]
 
-	movaps [esp + _vctot], xmm3
-	movaps [esp + _vnbtot], xmm5
+	movss [esp + _vctot], xmm3
+	movss [esp + _vnbtot], xmm5
 
 	mulps  xmm0, xmm4
 	mulps  xmm1, xmm4
@@ -8897,9 +8897,9 @@ i1100_dosingle:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -9640,7 +9640,7 @@ inl2100_sse:
 	/* rsq in xmm4 */
 
 	movaps xmm7, [esp + _krf]
-	rsqrtss xmm5, xmm4
+	rsqrtps xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -9667,7 +9667,7 @@ inl2100_sse:
 	mulps  xmm2, [esp + _c12]
 	movaps xmm5, xmm2
 	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
-	addps  xmm5, [esp + _vnbtot]
+	addss  xmm5, [esp + _vnbtot]
 	mulps  xmm1, [esp + _six]
 	mulps  xmm2, [esp + _twelve]
 	subps  xmm2, xmm1
@@ -9675,7 +9675,7 @@ inl2100_sse:
 	mulps  xmm3, xmm0
 	addps  xmm2, xmm3
 	mulps  xmm4, xmm2	/* xmm4=total fscal */
-	addps  xmm6, [esp + _vctot]
+	addss  xmm6, [esp + _vctot]
 	
 	mov    edi, [ebp + _faction]
 
@@ -9683,8 +9683,8 @@ inl2100_sse:
 	movaps xmm1, [esp + _dy]
 	movaps xmm2, [esp + _dz]
 
-	movaps [esp + _vctot], xmm6
-	movaps [esp + _vnbtot], xmm5
+	movss [esp + _vctot], xmm6
+	movss [esp + _vnbtot], xmm5
 
 	mulps  xmm0, xmm4
 	mulps  xmm1, xmm4
@@ -9694,9 +9694,9 @@ inl2100_sse:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -10319,7 +10319,7 @@ inl2000_sse:
 	/* rsq in xmm4 */
 
 	movaps xmm7, [esp + _krf]
-	rsqrtss xmm5, xmm4
+	rsqrtps xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -10343,7 +10343,7 @@ inl2000_sse:
 	subps  xmm0, xmm7
 	mulps  xmm3, xmm0
 	mulps  xmm4, xmm3	/* xmm4=total fscal */
-	addps  xmm6, [esp + _vctot]
+	addss  xmm6, [esp + _vctot]
 	
 	mov    edi, [ebp + _faction]
 
@@ -10351,7 +10351,7 @@ inl2000_sse:
 	movaps xmm1, [esp + _dy]
 	movaps xmm2, [esp + _dz]
 
-	movaps [esp + _vctot], xmm6
+	movss [esp + _vctot], xmm6
 
 	mulps  xmm0, xmm4
 	mulps  xmm1, xmm4
@@ -10361,9 +10361,9 @@ inl2000_sse:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -11102,7 +11102,7 @@ i1110_dosingle_vdwc:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtss xmm5, xmm4
+	rsqrtps xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -11124,13 +11124,13 @@ i1110_dosingle_vdwc:
 	mulps  xmm2, [esp + _c12]
 	movaps xmm5, xmm2
 	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
-	addps  xmm5, [esp + _vnbtot]
+	addss  xmm5, [esp + _vnbtot]
 	mulps  xmm1, [esp + _six]
 	mulps  xmm2, [esp + _twelve]
 	subps  xmm2, xmm1
 	addps  xmm2, xmm3
 	mulps  xmm4, xmm2	/* xmm4=total fscal */
-	addps  xmm3, [esp + _vctot]
+	addss  xmm3, [esp + _vctot]
 	
 	mov    edi, [ebp + _faction]
 
@@ -11138,8 +11138,8 @@ i1110_dosingle_vdwc:
 	movaps xmm1, [esp + _dy]
 	movaps xmm2, [esp + _dz]
 
-	movaps [esp + _vctot], xmm3
-	movaps [esp + _vnbtot], xmm5
+	movss [esp + _vctot], xmm3
+	movss [esp + _vnbtot], xmm5
 
 	mulps  xmm0, xmm4
 	mulps  xmm1, xmm4
@@ -11149,9 +11149,9 @@ i1110_dosingle_vdwc:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -11611,7 +11611,7 @@ i1110_dosingle_coul:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtss xmm5, xmm4
+	rsqrtps xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -11624,7 +11624,7 @@ i1110_dosingle_coul:
 	movaps xmm4, xmm0
 	mulps  xmm4, xmm4	/* xmm4=rinvsq */
 	mov    edi, [ebp + _faction]
-	movaps xmm5, [esp + _vctot]
+	movss xmm5, [esp + _vctot]
 	mulps  xmm3, xmm0	/* xmm3=vcoul */
 	mulps  xmm4, xmm3	/* xmm4=fscal */
 	addps  xmm5, xmm3
@@ -11633,7 +11633,7 @@ i1110_dosingle_coul:
 	movaps xmm1, [esp + _dy]
 	movaps xmm2, [esp + _dz]
 
-	movaps [esp + _vctot], xmm5
+	movss [esp + _vctot], xmm5
 
 	mulps  xmm0, xmm4
 	mulps  xmm1, xmm4
@@ -11643,9 +11643,9 @@ i1110_dosingle_coul:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -12165,7 +12165,7 @@ i1110_dosingle_vdw:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rcpss xmm5, xmm4
+	rcpps xmm5, xmm4
 	/* 1/x lookup seed in xmm5 */
 	movaps xmm0, [esp + _two]
 	mulps xmm4, xmm5
@@ -12183,7 +12183,7 @@ i1110_dosingle_vdw:
 	mulps  xmm2, [esp + _c12]
 	movaps xmm5, xmm2
 	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
-	addps  xmm5, [esp + _vnbtot]
+	addss  xmm5, [esp + _vnbtot]
 	mulps  xmm1, [esp + _six]
 	mulps  xmm2, [esp + _twelve]
 	subps  xmm2, xmm1
@@ -12195,7 +12195,7 @@ i1110_dosingle_vdw:
 	movaps xmm1, [esp + _dy]
 	movaps xmm2, [esp + _dz]
 
-	movaps [esp + _vnbtot], xmm5
+	movss [esp + _vnbtot], xmm5
 
 	mulps  xmm0, xmm4
 	mulps  xmm1, xmm4
@@ -12205,9 +12205,9 @@ i1110_dosingle_vdw:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -20072,7 +20072,7 @@ inl3000_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtss xmm5, xmm4
+	rsqrtps xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -20121,8 +20121,8 @@ inl3000_sse:
 	/* at this point mm5 contains vcoul and mm3 fijC */
 	/* increment vcoul - then we can get rid of mm5 */
 	/* update vctot */
-	addps  xmm5, [esp + _vctot]
-	movaps [esp + _vctot], xmm5 
+	addss  xmm5, [esp + _vctot]
+	movss [esp + _vctot], xmm5 
 
 	xorps xmm4, xmm4
 
@@ -20143,9 +20143,9 @@ inl3000_sse:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -20879,7 +20879,7 @@ inl3010_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtss xmm5, xmm4
+	rsqrtps xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -20928,8 +20928,8 @@ inl3010_sse:
 	/* at this point mm5 contains vcoul and mm3 fijC */
 	/* increment vcoul - then we can get rid of mm5 */
 	/* update vctot */
-	addps  xmm5, [esp + _vctot]
-	movaps [esp + _vctot], xmm5 
+	addss  xmm5, [esp + _vctot]
+	movss [esp + _vctot], xmm5 
 
 	xorps xmm4, xmm4
 
@@ -20950,9 +20950,9 @@ inl3010_sse:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -24881,7 +24881,7 @@ inl3100_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtss xmm5, xmm4
+	rsqrtps xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -24934,25 +24934,25 @@ inl3100_sse:
 	/* at this point mm5 contains vcoul and mm3 fijC */
 	/* increment vcoul - then we can get rid of mm5 */
 	/* update vctot */
-	addps  xmm5, [esp + _vctot]
+	addss  xmm5, [esp + _vctot]
 
 	movaps xmm6, xmm4
 	mulps  xmm6, xmm4
 
-	movaps [esp + _vctot], xmm5 
+	movss [esp + _vctot], xmm5 
 
 	mulps  xmm6, xmm4	/* xmm6=rinvsix */
 	movaps xmm4, xmm6
 	mulps  xmm4, xmm4	/* xmm4=rinvtwelve */
 	mulps  xmm6, [esp + _c6]
 	mulps  xmm4, [esp + _c12]
-	movaps xmm7, [esp + _vnbtot]
+	movss xmm7, [esp + _vnbtot]
 	addps  xmm7, xmm4
 	mulps  xmm4, [esp + _twelve]
 	subps  xmm7, xmm6
 	mulps  xmm3, [esp + _tsc]
 	mulps  xmm6, [esp + _six]
-	movaps [esp + _vnbtot], xmm7
+	movss [esp + _vnbtot], xmm7
 	subps  xmm4, xmm6
 	mulps  xmm4, xmm0
 	subps  xmm4, xmm3
@@ -24971,9 +24971,9 @@ inl3100_sse:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -25857,7 +25857,7 @@ inl3110_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtss xmm5, xmm4
+	rsqrtps xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -25910,25 +25910,25 @@ inl3110_sse:
 	/* at this point mm5 contains vcoul and mm3 fijC */
 	/* increment vcoul - then we can get rid of mm5 */
 	/* update vctot */
-	addps  xmm5, [esp + _vctot]
+	addss  xmm5, [esp + _vctot]
 
 	movaps xmm6, xmm4
 	mulps  xmm6, xmm4
 
-	movaps [esp + _vctot], xmm5 
+	movss [esp + _vctot], xmm5 
 
 	mulps  xmm6, xmm4	/* xmm6=rinvsix */
 	movaps xmm4, xmm6
 	mulps  xmm4, xmm4	/* xmm4=rinvtwelve */
 	mulps  xmm6, [esp + _c6]
 	mulps  xmm4, [esp + _c12]
-	movaps xmm7, [esp + _vnbtot]
+	movss xmm7, [esp + _vnbtot]
 	addps  xmm7, xmm4
 	mulps  xmm4, [esp + _twelve]
 	subps  xmm7, xmm6
 	mulps  xmm3, [esp + _tsc]
 	mulps  xmm6, [esp + _six]
-	movaps [esp + _vnbtot], xmm7
+	movss [esp + _vnbtot], xmm7
 	subps  xmm4, xmm6
 	mulps  xmm4, xmm0
 	subps  xmm4, xmm3
@@ -25948,9 +25948,9 @@ inl3110_sse:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -26524,7 +26524,7 @@ inl3110_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtss xmm5, xmm4
+	rsqrtps xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -26573,8 +26573,8 @@ inl3110_sse:
 	/* at this point mm5 contains vcoul and mm3 fijC */
 	/* increment vcoul - then we can get rid of mm5 */
 	/* update vctot */
-	addps  xmm5, [esp + _vctot]
-	movaps [esp + _vctot], xmm5 
+	addss  xmm5, [esp + _vctot]
+	movss [esp + _vctot], xmm5 
 
 	xorps xmm4, xmm4
 
@@ -26595,9 +26595,9 @@ inl3110_sse:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -27112,7 +27112,7 @@ inl3110_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rcpss xmm5, xmm4
+	rcpps xmm5, xmm4
 	/* 1/x lookup seed in xmm5 */
 	movaps xmm0, [esp + _two]
 	mulps xmm4, xmm5
@@ -27130,7 +27130,7 @@ inl3110_sse:
 	mulps  xmm2, [esp + _c12]
 	movaps xmm5, xmm2
 	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
-	addps  xmm5, [esp + _vnbtot]
+	addss  xmm5, [esp + _vnbtot]
 	mulps  xmm1, [esp + _six]
 	mulps  xmm2, [esp + _twelve]
 	subps  xmm2, xmm1
@@ -27142,7 +27142,7 @@ inl3110_sse:
 	movaps xmm1, [esp + _dy]
 	movaps xmm2, [esp + _dz]
 
-	movaps [esp + _vnbtot], xmm5
+	movss [esp + _vnbtot], xmm5
 
 	mulps  xmm0, xmm4
 	mulps  xmm1, xmm4
@@ -27154,9 +27154,9 @@ inl3110_sse:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -31402,7 +31402,7 @@ inl3300_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtss xmm5, xmm4
+	rsqrtps xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -31453,8 +31453,8 @@ inl3300_sse:
 	/* at this point mm5 contains vcoul and mm3 fijC */
 	/* increment vcoul - then we can get rid of mm5 */
 	/* update vctot */
-	addps  xmm5, [esp + _vctot]
-	movaps [esp + _vctot], xmm5 
+	addss  xmm5, [esp + _vctot]
+	movss [esp + _vctot], xmm5 
 
 	/* put scalar force on stack temporarily */
 	movaps [esp + _fscal], xmm3
@@ -31484,9 +31484,9 @@ inl3300_sse:
 	addps  xmm7, [esp + _fscal] /* add to fscal */
 
 	/* put scalar force on stack Update vnbtot directly */
-	addps  xmm5, [esp + _vnbtot]
+	addss  xmm5, [esp + _vnbtot]
 	movaps [esp + _fscal], xmm7
-	movaps [esp + _vnbtot], xmm5
+	movss [esp + _vnbtot], xmm5
 
 	/* repulsion */
 	movlps xmm4, [esi + ebx*4 + 32]
@@ -31512,8 +31512,8 @@ inl3300_sse:
 	mulps  xmm5, xmm4 /* vnb12 */
 	addps  xmm7, [esp + _fscal] 
 	
-	addps  xmm5, [esp + _vnbtot]
-	movaps [esp + _vnbtot], xmm5
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
 	xorps  xmm4, xmm4
 
 	mulps xmm7, [esp + _tsc]
@@ -31533,9 +31533,9 @@ inl3300_sse:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -32523,7 +32523,7 @@ inl3310_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtss xmm5, xmm4
+	rsqrtps xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -32574,8 +32574,8 @@ inl3310_sse:
 	/* at this point mm5 contains vcoul and mm3 fijC */
 	/* increment vcoul - then we can get rid of mm5 */
 	/* update vctot */
-	addps  xmm5, [esp + _vctot]
-	movaps [esp + _vctot], xmm5 
+	addss  xmm5, [esp + _vctot]
+	movss [esp + _vctot], xmm5 
 
 	/* put scalar force on stack temporarily */
 	movaps [esp + _fscal], xmm3
@@ -32605,9 +32605,9 @@ inl3310_sse:
 	addps  xmm7, [esp + _fscal] /* add to fscal */
 
 	/* put scalar force on stack Update vnbtot directly */
-	addps  xmm5, [esp + _vnbtot]
+	addss  xmm5, [esp + _vnbtot]
 	movaps [esp + _fscal], xmm7
-	movaps [esp + _vnbtot], xmm5
+	movss [esp + _vnbtot], xmm5
 
 	/* repulsion */
 	movlps xmm4, [esi + ebx*4 + 32]
@@ -32633,8 +32633,8 @@ inl3310_sse:
 	mulps  xmm5, xmm4 /* vnb12 */
 	addps  xmm7, [esp + _fscal] 
 	
-	addps  xmm5, [esp + _vnbtot]
-	movaps [esp + _vnbtot], xmm5
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
 	xorps  xmm4, xmm4
 
 	mulps xmm7, [esp + _tsc]
@@ -32654,9 +32654,9 @@ inl3310_sse:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -33238,7 +33238,7 @@ inl3310_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtss xmm5, xmm4
+	rsqrtps xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -33289,8 +33289,8 @@ inl3310_sse:
 	/* at this point mm5 contains vcoul and mm3 fijC */
 	/* increment vcoul - then we can get rid of mm5 */
 	/* update vctot */
-	addps  xmm5, [esp + _vctot]
-	movaps [esp + _vctot], xmm5 
+	addss  xmm5, [esp + _vctot]
+	movss [esp + _vctot], xmm5 
 
 	xorps xmm4, xmm4
 
@@ -33311,9 +33311,9 @@ inl3310_sse:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
@@ -34000,7 +34000,7 @@ inl3310_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtss xmm5, xmm4
+	rsqrtps xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -34052,9 +34052,9 @@ inl3310_sse:
 	mulps  xmm5, xmm4	 /* vnb6 */
 
 	/* put scalar force on stack Update vnbtot directly */
-	addps  xmm5, [esp + _vnbtot]
+	addss  xmm5, [esp + _vnbtot]
 	movaps [esp + _fscal], xmm7
-	movaps [esp + _vnbtot], xmm5
+	movss [esp + _vnbtot], xmm5
 
 	/* repulsion */
 	movlps xmm4, [esi + ebx*4 + 16]
@@ -34080,8 +34080,8 @@ inl3310_sse:
 	mulps  xmm5, xmm4 /* vnb12 */
 	addps  xmm7, [esp + _fscal] 
 	
-	addps  xmm5, [esp + _vnbtot]
-	movaps [esp + _vnbtot], xmm5
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
 	xorps  xmm4, xmm4
 
 	mulps xmm7, [esp + _tsc]
@@ -34101,9 +34101,9 @@ inl3310_sse:
 	movaps xmm3, [esp + _fix]
 	movaps xmm4, [esp + _fiy]
 	movaps xmm5, [esp + _fiz]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	addps  xmm5, xmm2
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
 	movaps [esp + _fix], xmm3
 	movaps [esp + _fiy], xmm4
 	movaps [esp + _fiz], xmm5
