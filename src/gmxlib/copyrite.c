@@ -235,30 +235,6 @@ void thanx(FILE *fp)
     fprintf(fp,"\n%s\n",cq);
 }
 
-char *wrap_lines(char *buf,int line_width)
-{
-  char *b2;
-  int i,i0,lspace;
-
-  snew(b2,strlen(buf)+1);
-  i0 = 0;
-  do {
-    i=i0;
-    for( ; (i<i0+line_width) && (buf[i]); i++) {
-      b2[i] = buf[i];
-      if (buf[i] == ' ')
-        lspace = i;
-    }
-    if (buf[i]) {
-      b2[lspace] = '\n';
-      i0 = lspace+1;
-    }
-  } while (buf[i]);
-  b2[i] = '\0';
-  
-  return b2;
-}
-
 void please_cite(FILE *fp,char *key)
 {
   static char *citedb[] = {
@@ -320,7 +296,7 @@ void please_cite(FILE *fp,char *key)
     }
     /* Insert newlines */
     for(j=1; (j<=3); j++) 
-      ptr[j-1] = wrap_lines(citedb[index+j],LINE_WIDTH);
+      ptr[j-1] = wrap_lines(citedb[index+j],LINE_WIDTH,0);
     fprintf(fp,"%s\n%s\n%s %d (%d) pp. %d-%d\n",
             ptr[0],ptr[1],ptr[2],
             vol,year,p1,p2);

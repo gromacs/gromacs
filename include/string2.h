@@ -89,6 +89,11 @@ char *gmx_strdup(const char *src);
 #define strdup gmx_strdup
 #endif
 
+extern char *wrap_lines(char *buf,int line_width, int indent);
+/* wraps lines at 'linewidth', indenting all following
+ * lines by 'indent' spaces 
+ */
+
 #ifdef CPLUSPLUS
 }
 #endif
