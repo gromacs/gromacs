@@ -285,10 +285,12 @@ void do_force(FILE *log,t_commrec *cr,
 #endif
 
   /* Accumulate forces and compute virial */
-  if (fr->eeltype != eelPPPM && fr->eeltype != eelPME && fr->eeltype != eelEWALD) {
+  if ((fr->eeltype != eelPPPM) && 
+      (fr->eeltype != eelPME) && 
+      (fr->eeltype != eelEWALD)) {
     if (PAR(cr)) 
       move_f(log,cr->left,cr->right,f,buf,nsb,nrnb);
-  
+    
     /* Calculate virial */
     f_calc_vir(log,start,start+homenr,x,f,vir_part,cr,graph,fr->shift_vec);
     inc_nrnb(nrnb,eNR_VIRIAL,homenr);
@@ -300,15 +302,23 @@ void do_force(FILE *log,t_commrec *cr,
      */
     /* This also applies to PME/Ewald, but in this case the virial is 
      * calculated directly in the routine and added to the total vir 
-     */    
-    f_calc_vir(log,start,start+homenr,x,f,vir_part,cr,graph,fr->shift_vec);
+     */
+     
+    /* PARALLELLISE THIS BITCH */
+    if (debug) {
+      pr_rvecs(debug,0,"vir_part",vir_part,DIM);
+      pr_rvecs(debug,0,"lr_vir  ",lr_vir,DIM);
+    }
+    f_calc_vir(log,0,nsb->natoms,x,f,vir_part,cr,graph,fr->shift_vec);
     inc_nrnb(nrnb,eNR_VIRIAL,homenr);
     sum_forces(start,start+homenr,f,fr->flr);
     if ((fr->eeltype == eelPME) || (fr->eeltype == eelEWALD)) {
-	for(i=0;i<DIM;i++) 
-	  for(j=0;j<DIM;j++) 
- 	      vir_part[i][j]+=lr_vir[i][j];
+      for(i=0; (i<DIM); i++) 
+	for(j=0; (j<DIM); j++) 
+	  vir_part[i][j]+=lr_vir[i][j];
     }
+    if (debug)
+      pr_rvecs(debug,0,"vir_part",vir_part,DIM);
     if (PAR(cr)) 
       move_f(log,cr->left,cr->right,f,buf,nsb,nrnb);
   }
