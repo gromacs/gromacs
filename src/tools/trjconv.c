@@ -471,7 +471,7 @@ int main(int argc,char *argv[])
       
       /* Restore reference structure and set to origin, 
          store original location (to put structure back) */
-      rm_pbc(&(top.idef),atoms->nr,fr.box,xp,xp);
+      rm_pbc(&(top.idef),atoms->nr,top_box,xp,xp);
       copy_rvec(xp[index[0]],x_shift);
       reset_x(ifit,ind_fit,atoms->nr,NULL,xp,w_rls);
       rvec_dec(x_shift,xp[index[0]]);
