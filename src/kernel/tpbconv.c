@@ -222,22 +222,17 @@ static void reduce_topology_x(int gnx,atom_id index[],
 int main (int argc, char *argv[])
 {
   static char *desc[] = {
-    "tpbconv can edit tpx files in multiple ways.[PAR]"
+    "tpbconv can edit run input files in two ways.[PAR]"
     "[BB]1st.[bb] by creating a run input file",
     "for a continuation run when your simulation has crashed due to e.g.",
     "a full disk, or by making a continuation run input file.",
-    "Note that both velocities and coordinates are needed,",
+    "Note that a frame with coordinates and velocities is needed,",
     "which means that when you never write velocities, you can not use",
     "tpbconv and you have to start the run again from the beginning.[PAR]",
     "[BB]2nd.[bb] by creating a tpx file for a subset of your original",
     "tpx file, which is useful when you want to remove the solvent from",
     "your tpx file, or when you want to make e.g. a pure Ca tpx file.",
-    "[BB]WARNING: this tpx file is not fully functional[bb].[PAR]",
-    "[BB]3rd.[bb] If the optional mdp file is [BB]explicitly[bb] given, ",
-    "the inputrec",
-    "will be read from there, and some options may be overruled this way.",
-    "Note that this is a fast way to make a continuation tpx",
-    "as the topology does not have to be processed again."
+    "[BB]WARNING: this tpx file is not fully functional[bb]."
   };
 
   char         *top_fn,*frame_fn;
@@ -246,7 +241,7 @@ int main (int argc, char *argv[])
   t_trnheader head;
   int          i,natoms,frame,step,run_step;
   real         run_t,run_lambda;
-  bool         bMDP,bOK,bFrame;
+  bool         bOK,bFrame,bTime;
   t_topology   top;
   t_inputrec   *ir,*irnew=NULL;
   t_gromppopts *gopts;
@@ -256,12 +251,10 @@ int main (int argc, char *argv[])
   char         *grpname;
   atom_id      *index=NULL;
   t_filenm fnm[] = {
-    { efMDP, "-pi",  NULL,   ffOPTRD },
-    { efMDP, "-po", "mdout", ffOPTWR },
-    { efTRN, "-f",  NULL,    ffOPTRD },
     { efTPX, NULL,  NULL,    ffREAD  },
-    { efTPX, "-o",  "tpxout",ffWRITE },
+    { efTRN, "-f",  NULL,    ffOPTRD },
     { efNDX, NULL,  NULL,    ffOPTRD },
+    { efTPX, "-o",  "tpxout",ffWRITE }
   };
 #define NFILE asize(fnm)
 
@@ -270,7 +263,7 @@ int main (int argc, char *argv[])
   static bool bSel=FALSE;
   static t_pargs pa[] = {
     { "-time", FALSE, etREAL, &max_t, 
-      "time in the trajectory from which you want to continue." },
+      "Continue from frame at this time instead of the last frame" },
   };
   int nerror = 0;
   
@@ -280,7 +273,8 @@ int main (int argc, char *argv[])
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
 
-  bSel = (bSel || ftp2bSet(efNDX,NFILE,fnm));
+  bSel  = (bSel || ftp2bSet(efNDX,NFILE,fnm));
+  bTime = opt2parg_bSet("-time",asize(pa),pa);
   
   top_fn = ftp2fn(efTPX,NFILE,fnm);
   fprintf(stderr,"Reading toplogy and shit from %s\n",top_fn);
@@ -292,19 +286,6 @@ int main (int argc, char *argv[])
   read_tpx(top_fn,&step,&run_t,&run_lambda,ir,box,&natoms,x,v,NULL,&top);
   run_step   = 0;
 
-  bMDP=(ftp2bSet(efMDP,NFILE,fnm));
-  if (bMDP) {
-    fprintf(stderr,"Reading new inputrec from %s\n",ftp2fn(efMDP,NFILE,fnm));
-    
-    /* Initiate some variables */
-    snew(irnew,1);
-    snew(gopts,1);
-    init_ir(irnew,gopts);
-    
-    /* PARAMETER file processing */
-    get_ir(ftp2fn(efMDP,NFILE,fnm),opt2fn("-po",NFILE,fnm),irnew,gopts,&nerror);
-  }
-  
   if (ftp2bSet(efTRN,NFILE,fnm)) {
     frame_fn = ftp2fn(efTRN,NFILE,fnm);
     fprintf(stderr,
@@ -351,7 +332,7 @@ int main (int argc, char *argv[])
 	run_lambda = head.lambda;
 	copy_mat(newbox,box);
       }
-      if ((max_t != -1.0) && (head.t >= max_t))
+      if (bTime && (head.t >= max_t))
 	bFrame=FALSE;
     }
     close_trn(fp);
@@ -367,22 +348,9 @@ int main (int argc, char *argv[])
 	    ftp2fn(efTPX,NFILE,fnm));
   }
 
-  /* change the input record to the actual data */
-  if (bMDP) {
-    ir = irnew;
-    if (ir->init_t != run_t)
-      fprintf(stderr,"WARNING: I'm using t_init in mdp-file (%g),\n"
-	      "         while in %s it is (%g)\n",ir->init_t,frame_fn,run_t);
-    if (ir->init_lambda != run_lambda)
-      fprintf(stderr,"WARNING: I'm using lambda_init in mdp-file (%g),\n"
-	      "         while in %s it is (%g)\n",
-	      ir->init_lambda,frame_fn,run_lambda);
-  }
-  else {
-    ir->nsteps     -= run_step;
-    ir->init_t      = run_t;
-    ir->init_lambda = run_lambda;
-  }
+  ir->nsteps     -= run_step;
+  ir->init_t      = run_t;
+  ir->init_lambda = run_lambda;
   
   if (!ftp2bSet(efTRN,NFILE,fnm)) {
     get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
