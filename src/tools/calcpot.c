@@ -12,13 +12,13 @@
 #include "ns.h"
 #include "txtdump.h"
 
-void c_tabpot(real tabscale,   real VFtab[],
-	      int  nri,        int  iinr[],
-	      int  shift[],    int  gid[],
-	      int  jindex[],   int  jjnr[],
-	      real pos[],      
-	      real facel,      real charge[],
-	      real pot[],      real shiftvec[])
+static void c_tabpot(real tabscale,   real VFtab[],
+		     int  nri,        int  iinr[],
+		     int  shift[],
+		     int  jindex[],   int  jjnr[],
+		     real pos[],      
+		     real facel,      real charge[],
+		     real pot[],      real shiftvec[])
 {
   /* Local variables */
   const real nul = 0.000000;
@@ -31,7 +31,7 @@ void c_tabpot(real tabscale,   real VFtab[],
 
   /* General and coulomb stuff */
   int  ii,k,n,jnr,ii3,nj0,nj1,is3,j3,ggid;
-  real fxJ,fyJ,fzJ,vctot,fxO,fyO,fzO;
+  real fxJ,fyJ,fzJ,fxO,fyO,fzO;
   real ixO,iyO,izO,dxO,dyO,dzO;
   real txO,tyO,tzO,vcO,fsO,qO,rsqO,rinv1O,rinv2O;
   real qqO,qj;
@@ -49,9 +49,6 @@ void c_tabpot(real tabscale,   real VFtab[],
     /* Unpack I particle */
     ii                = iinr[n];
     ii3               = 3*ii;
-
-    /* Local variables for energy */
-    vctot             = nul;
 
     /* Charge of i particle(s) divided by 4 pi eps0 */
     qO                = facel*charge[ii];
@@ -110,7 +107,7 @@ void c_tabpot(real tabscale,   real VFtab[],
 }
 
 static void low_calc_pot(FILE *log,int ftype,t_forcerec *fr,
-			 rvec x[],t_mdatoms *mdatoms,rvec box_size,real pot[])
+			 rvec x[],t_mdatoms *mdatoms,real pot[])
 {
   t_nblist *nlist;
   
@@ -120,7 +117,7 @@ static void low_calc_pot(FILE *log,int ftype,t_forcerec *fr,
     nlist = &fr->nlist_sr[eNL_VDW];
   
   c_tabpot(fr->tabscale,fr->VFtab,nlist->nri,nlist->iinr,
-	   nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,
+	   nlist->shift,nlist->jindex,nlist->jjnr,
 	   x[0],fr->epsfac,mdatoms->chargeA,pot,fr->shift_vec[0]);
 
   fprintf(log,"There were %d interactions\n",nlist->nrj);
@@ -128,7 +125,7 @@ static void low_calc_pot(FILE *log,int ftype,t_forcerec *fr,
 
 void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
 	      t_parm *parm,t_topology *top,rvec x[],t_forcerec *fr,
-	      t_graph *graph,t_mdatoms *mdatoms,real pot[])
+	      t_mdatoms *mdatoms,real pot[])
 {
   static bool        bFirst=TRUE;
   static t_nrnb      nrnb;
@@ -171,9 +168,9 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
     pr_rvecs(debug,0,"cgcm",fr->cg_cm,top->blocks[ebCGS].nr);
   }
   /* electrostatics from any atom to atoms without LJ */
-  low_calc_pot(logf,F_SR,fr,x,mdatoms,box_size,pot);
+  low_calc_pot(logf,F_SR,fr,x,mdatoms,pot);
   /* electrostatics from any atom to atoms with LJ */
-  low_calc_pot(logf,F_LJ,fr,x,mdatoms,box_size,pot); 
+  low_calc_pot(logf,F_LJ,fr,x,mdatoms,pot); 
 }
 
 void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
