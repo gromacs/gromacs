@@ -446,7 +446,15 @@ int main(int argc, char *argv[])
     "residue she wants. For LYS the choice is between LYS (two protons on NZ)", 
     "or LYSH (three protons), ",
     "for HIS the proton can be either on ND1 (HISA), on NE2 (HISB)",
-    "or on both (HISH)."
+    "or on both (HISH). By default these selections are done automatically.[PAR]",
+    "During processing the atoms will be reorderd according to Gromacs",
+    "conventions. With -n an index file can be generated that contains",
+    "one groups reordered in the same way. This allows you to convert a",
+    "GROMOS trajectory and coordinate file to GROMACS. There is one",
+    "limitation: reordering is done after the hydrogens are stripped",
+    "from the input and before new hydrogens are added. This means that",
+    "if you have hydrogens in your input file, you [BB]must[bb] select",
+    "the -reth option to obtain a usefull index file."
   };
   static char *bugs[] = {
     "Generation of N-terminal hydrogen atoms on OPLS files does not work",
