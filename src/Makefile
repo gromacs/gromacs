@@ -3,7 +3,13 @@
 #
 include		$(GMXHOME)/src/makef/Makefile.def
 #
+#this is a dirty hack to stop gmake from trying to go to directory 'fftw'
+#when it is not present. THIS IS NOT FOOL-PROOF!
+ifeq ($(USE_SGI_FFT),yes)
+DIRS	=	include	gmxlib kernel	tools	ngmx
+else
 DIRS	=	include	gmxlib fftw	kernel	tools	ngmx
+endif
 LOCAL	=	local
 LDIRS	=	$(DIRS)	$(LOCAL)
 TELLDIRS=	$(LDIRS)
