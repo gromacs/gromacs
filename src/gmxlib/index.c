@@ -250,24 +250,25 @@ static void analyse_prot(int nres,eRestp restp[],t_atoms *atoms,
   static char *mch[]     = { "N","CA","C","O","O1","O2","OT","OXT",
 			     "H1","H2","H3","H" };
   /* array of arrays of atomnames: */
-  static char **chains[] = { NULL,pnoh,pnodum,calpha,bb,mc,mcb,mch,mch,mch };
+  static char **chains[] = { NULL,pnoh,calpha,bb,mc,mcb,mch,mch,mch,pnodum };
 #define NCH asize(chains)
   /* array of sizes of arrays of atomnames: */
   static int       sizes[NCH] = { 
-    0, asize(pnoh), asize(pnodum), asize(calpha), asize(bb), 
-    asize(mc), asize(mcb), asize(mch), asize(mch), asize(mch)
+    0, asize(pnoh), asize(calpha), asize(bb), 
+    asize(mc), asize(mcb), asize(mch), asize(mch), asize(mch), asize(pnodum)
   };
   /* descriptive names of index groups */
   static char   *ch_name[NCH] = { 
-    "Protein", "Protein-H", "Prot-Dummies", "C-Alpha", "Backbone", 
-    "MainChain", "MainChain+Cb", "MainChain+H", "SideChain", "SideChain-H" 
+    "Protein", "Protein-H", "C-Alpha", "Backbone", 
+    "MainChain", "MainChain+Cb", "MainChain+H", "SideChain", "SideChain-H", 
+    "Prot-Dummies"
   };
   /* construct index group containing (TRUE) or excluding (FALSE)
      given atom names */
   static bool complement[NCH] = { 
-    TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE
+    TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE
   };
-  static int  wholename[NCH]  = { -1, 0,-1,-1,-1,-1,-1,-1,-1, 11 };
+  static int  wholename[NCH]  = { -1, 0,-1,-1,-1,-1,-1,-1, 11,-1 };
   /* the index in wholename gives the first item in the arrays of 
    * atomtypes that should be tested with 'strncasecmp' in stead of
    * strcasecmp, or -1 if all items should be tested with strcasecmp
@@ -276,7 +277,7 @@ static void analyse_prot(int nres,eRestp restp[],t_atoms *atoms,
    */
   /* only add index group if it differs from the specified one, 
      specify -1 to always add group */
-  static int compareto[NCH] = { -1,-1, 0,-1,-1,-1,-1,-1,-1,-1 };
+  static int compareto[NCH] = { -1,-1,-1,-1,-1,-1,-1,-1,-1, 0 };
 
   int     i,n,j;
   atom_id *aid;
