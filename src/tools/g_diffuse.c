@@ -42,39 +42,7 @@
 #include "copyrite.h"
 #include "typedefs.h"
 #include "xvgr.h"
-
-typedef struct {
-  double yx,xx,sx,sy;
-  int    np;
-} t_lsq;
-
-void init_lsq(t_lsq *lsq)
-{
-  lsq->yx=lsq->xx=lsq->sx=lsq->sy=0.0;
-  lsq->np=0;
-}
-
-void add_lsq(t_lsq *lsq,real x,real y)
-{
-  lsq->yx+=y*x;
-  lsq->xx+=x*x;
-  lsq->sx+=x;
-  lsq->sy+=y;
-  lsq->np++;
-}
-
-void get_lsq_ab(t_lsq *lsq,real *a,real *b)
-{
-  real yx,xx,sx,sy;
-  
-  yx=lsq->yx/lsq->np;
-  xx=lsq->xx/lsq->np;
-  sx=lsq->sx/lsq->np;
-  sy=lsq->sy/lsq->np;
-  
-  (*a)=(yx-sx*sy)/(xx-sx*sx);
-  (*b)=(sy)-(*a)*(sx);
-}
+#include "gstat.h"
 
 void prepare_data(int gnx,atom_id index[],rvec xcur[],rvec xprev[],
 		  matrix box)

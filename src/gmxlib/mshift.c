@@ -108,37 +108,18 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,bool bAll)
     tp=ftype[ia[0]];
     np=interaction_function[tp].nratoms;
 
-        
-    switch (tp) {
-    case F_SETTLE:
-      /* Modified DvdS 4 juni 98, but I don't really understand... */
-      /*if (!bAll) {*/
-	settle[0]=ia[1];
-	settle[1]=settle[0]+1;
-	settle[2]=settle[0]+2;
-	add_gbond(g,settle,3);
-	/*}*/
-      break;
-      /*case F_BONDS:
-	case F_MORSE:
-	case F_SHAKE:
+    if (interaction_function[tp].flags & (IF_BOND | IF_SHAKE)) {
+      if (bAll) {
 	add_gbond(g,&(ia[1]),np);
-	break;*/
-    default:
-      if (interaction_function[tp].flags & (IF_BOND | IF_SHAKE)) {
-	if (bAll) {
-	  add_gbond(g,&(ia[1]),np);
-	}
-	else {
-	  /* Check whether all atoms are bonded now! */
-	  for(j=0; (j<np); j++)
-	    if (g->nedge[ia[1+j]-g->start] == 0)
-	      break;
-	  if (j < np)
-	    add_gbond(g,&(ia[1]),np);
-	}
       }
-      break;
+      else {
+	/* Check whether all atoms are bonded now! */
+	for(j=0; (j<np); j++)
+	  if (g->nedge[ia[1+j]-g->start] == 0)
+	    break;
+	if (j < np)
+	  add_gbond(g,&(ia[1]),np);
+      }
     }
     ia+=np+1;
     i+=np+1;
@@ -267,20 +248,23 @@ t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly)
       g->edge[i]=g->edge[i-1]+g->maxbond;
 
     if (!bShakeOnly) {
+      /* First add all the real bonds: they should determine the molecular 
+       * graph.
+       */
       for(i=0; (i<F_NRE); i++)
-	if (interaction_function[i].flags & (IF_CONNECT))
+	if (interaction_function[i].flags & IF_CONNECT)
 	  mk_igraph(g,idef->functype,&(idef->il[i]),TRUE);
+      /* Then add all the other interactions in fixed lists, but first
+       * check to see what's there already.
+       */
       for(i=0; (i<F_NRE); i++)
-	if (interaction_function[i].flags & (IF_BOND | ~IF_CONNECT))
+	if (interaction_function[i].flags & ~IF_CONNECT)
 	  mk_igraph(g,idef->functype,&(idef->il[i]),FALSE);
-      
-      /*mk_igraph(g,idef->functype,&(idef->il[F_MORSE]));
-	mk_igraph(g,idef->functype,&(idef->il[F_SETTLE]));
-	mk_igraph(g,idef->functype,&(idef->il[F_LJ14]));*/
     }
-    else
+    else {
+      /* This is a special thing used in grompp to generate shake-blocks */
       mk_igraph(g,idef->functype,&(idef->il[F_SHAKE]),TRUE);
-
+    }
     g->nbound=0;
     for(i=0; (i<g->nnodes); i++)
       if (g->nedge[i] > 0)

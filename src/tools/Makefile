@@ -93,7 +93,7 @@ trjconv:	trjconv.o
 g_rmsdist:	g_rmsdist.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-g_diffuse:	g_diffuse.o
+g_diffuse:	g_diffuse.o lsq.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 editconf:	editconf.o
@@ -132,7 +132,7 @@ testacf:	testacf.o	$(ACOBJ)
 g_dielectric:	g_dielectric.o	$(ACOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-g_bond:		g_bond.o
+g_bond:		g_bond.o 	lsq.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_com:		g_com.o  
@@ -261,7 +261,7 @@ g_rdf:		g_rdf.o 	do_rdf.o	rdfn.o	rdfang.o
 corrutil.o:	corrutil.h	corrutil.cc
 g_msd.o:	corrutil.h	g_msd.cc
 
-g_msd:		corrutil.o	g_msd.o
+g_msd:		corrutil.o	g_msd.o	lsq.o
 		$(CCLD) -o $@ $^ $(SYSLIBS)
 
 g_hbond:	g_hbond.o	$(ACOBJ)
@@ -283,4 +283,8 @@ g_multipoles:	g_multipoles.o
 
 html_luck:	html_luck.o
 		$(LD) -Bstatic -o $@ $^ $(SYSLIBS)
+chkbang:	chkbang.o
+		$(LD) -o $@ $^ $(SYSLIBS)
+tf:		tf.o
+		$(LD) -o $@ $^ $(SYSLIBS)
 include	Make.dep

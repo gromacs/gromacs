@@ -7,6 +7,7 @@
 #include "network.h"
 #include "fftgrid.h"
 
+#ifdef USE_MPI
 static void print_parfft(FILE *fp,char *title,t_parfft *pfft)
 {
   fprintf(fp,"PARALLEL FFT DATA (%s):\n"
@@ -16,6 +17,7 @@ static void print_parfft(FILE *fp,char *title,t_parfft *pfft)
 	  pfft->local_nx,pfft->local_x_start,pfft->local_ny_after_transpose,
 	  pfft->local_y_start_after_transpose,pfft->total_local_size);
 }
+#endif
 
 t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,int nz)
 {
@@ -66,12 +68,13 @@ t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,int nz)
 				       FFTW_BACKWARD,flags);
   }
   snew(grid->ptr,grid->nptr);
-  
+#ifdef USE_MPI
   if (bParallel && fp) {
     print_parfft(fp,"Forward", &grid->pfft_fw);
     print_parfft(fp,"Backward",&grid->pfft_bw);
     assert(grid->pfft_fw.total_local_size == grid->pfft_bw.total_local_size);
   }
+#endif
   return grid;
 }
 

@@ -58,22 +58,20 @@ static char *SRCID_g_diff_c = "$Id$";
 static int axis = 2; /* use Z-axis as default. */
 static matrix box;   /* box (3x3)                               */
 
-
-/* lsq things stolen from g_msd.cc. */
 typedef struct {
   double yx,xx,sx,sy;
   double sigw_y;     /* sum of the weight factors */
   int    np;
 } t_lsq;
 
-void init_lsq(t_lsq *lsq)
+static void init_lsq(t_lsq *lsq)
 {
   lsq->yx=lsq->xx=lsq->sx=lsq->sy=0.0;
   lsq->sigw_y=0.0;
   lsq->np=0;
 }
 
-void add_lsq(t_lsq *lsq,real x,real y,real w_y)
+static void add_lsq(t_lsq *lsq,real x,real y,real w_y)
 {
 #ifdef MYDEBUG
   fprintf(bug,"Adding x,y,w_y: %f %f %f\n",x,y,w_y);
@@ -86,7 +84,7 @@ void add_lsq(t_lsq *lsq,real x,real y,real w_y)
   lsq->sigw_y+=w_y;
 }
 
-void get_lsq_ab(t_lsq *lsq,real *a,real *b)
+static void get_lsq_ab(t_lsq *lsq,real *a,real *b)
 {
   real yx,xx,sx,sy;
  

@@ -273,6 +273,7 @@ int main (int argc, char *argv[])
     { "-time", FALSE, etREAL, &max_t, 
       "time in the trajectory from which you want to continue." },
   };
+  int nerror = 0;
   
   CopyRight(stdout,argv[0]);
   
@@ -301,7 +302,7 @@ int main (int argc, char *argv[])
     init_ir(irnew,gopts);
     
     /* PARAMETER file processing */
-    get_ir(ftp2fn(efMDP,NFILE,fnm),opt2fn("-po",NFILE,fnm),irnew,gopts);
+    get_ir(ftp2fn(efMDP,NFILE,fnm),opt2fn("-po",NFILE,fnm),irnew,gopts,&nerror);
   }
   
   if (ftp2bSet(efTRN,NFILE,fnm)) {

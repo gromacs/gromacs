@@ -273,8 +273,7 @@ void init_forcerec(FILE *log,
   else if (fr->eeltype == eelSWITCH) {
     fr->rshort     = fr->rlong;
   }
-  else if ((fr->eeltype == eelPPPM) || (fr->eeltype == eelSHIFT) ||
-	   (fr->eeltype == eelPOISSON)) {
+  else if (EEL_LR(fr->eeltype)) {
     /* We must use the long range cut-off for neighboursearching...
      * An extra range of e.g. 0.1 nm (half the size of a charge group)
      * is necessary for neighboursearching. This allows diffusion 
@@ -300,8 +299,7 @@ void init_forcerec(FILE *log,
   
   
   /* Initiate arrays */
-  if ((fr->bTwinRange || (fr->eeltype == eelPPPM) || (fr->eeltype == eelPOISSON)) 
-      && (fr->flr==NULL)) {
+  if (fr->bTwinRange || (EEL_LR(fr->eeltype))) {
     snew(fr->flr,natoms);
     snew(fr->fshift_lr,SHIFTS);
   }
@@ -514,13 +512,21 @@ void force(FILE       *log,
   inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
   where();
   
-  if ((fr->eeltype == eelPPPM) || (fr->eeltype == eelPOISSON)) {
-    if (fr->eeltype == eelPPPM)
-      Vlr = do_pppm(log,FALSE,x,fr->flr,md->chargeA,box_size,fr->phi,cr,nsb,nrnb);
-    else
-      Vlr = do_poisson(log,FALSE,ir,md->nr,x,fr->flr,md->chargeA,box_size,fr->phi,
-		       cr,nrnb,&nit,TRUE);
-      
+  if (EEL_LR(fr->eeltype)) {
+    switch (fr->eeltype) {
+    case eelPPPM:
+      Vlr = do_pppm(log,FALSE,x,fr->flr,md->chargeA,
+		    box_size,fr->phi,cr,nsb,nrnb);
+      break;
+    case eelPOISSON:
+      Vlr = do_poisson(log,FALSE,ir,md->nr,x,fr->flr,md->chargeA,
+		       box_size,fr->phi,cr,nrnb,&nit,TRUE);
+      break;
+    default:
+      fatal_error(0,"No such electrostatics method implemented %s",
+		  eel_names[fr->eeltype]);
+    }
+    
     Vself = calc_LRcorrections(log,0,md->nr,fr->r1,fr->rc,
 			       md->chargeA,excl,x,f);
     epot[F_LR] = Vlr - Vself;

@@ -203,7 +203,7 @@ void do_force(FILE *log,t_commrec *cr,
   if (PAR(cr)) 
     move_x(log,cr->left,cr->right,x,nsb,nrnb);
   where();
-
+  
   /* Reset the forces and the enrgies */
   reset_forces(bNS,f,fr,nsb->natoms);
   reset_energies(&(parm->ir.opts),grps,fr,bNS,ener);    

@@ -68,6 +68,10 @@ typedef struct {
   t_idef    *idef;
 } t_xrama;
 
+#ifdef CPLUSPLUS
+extern "C" {
+#endif
+
 extern void init_rama(char *infile,char *topfile,t_xrama *xr);
 
 extern bool new_data(t_xrama *xr);
@@ -434,6 +438,26 @@ extern int get_acfnout(void);
 /* Return the output length for the correlation function 
  * Works only AFTER do_auto_corr has been called!
  */
+ 
+ 
+/* Least squares method of computing statistics */
+typedef struct {
+  double yy,yx,xx,sx,sy;
+  int    np;
+} t_lsq;
+
+extern void init_lsq(t_lsq *lsq);
+extern void done_lsq(t_lsq *lsq);
+extern void add_lsq(t_lsq *lsq,real x,real y);
+extern void get_lsq_ab(t_lsq *lsq,real *a,real *b);
+extern int  npoints_lsq(t_lsq *lsq);
+extern real aver_lsq(t_lsq *lsq);
+extern real sigma_lsq(t_lsq *lsq);
+extern real error_lsq(t_lsq *lsq);
+
+#ifdef CPLUSPLUS
+	     }
+#endif
  
 #endif
 

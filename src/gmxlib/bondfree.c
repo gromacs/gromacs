@@ -80,11 +80,8 @@ void calc_bonds(FILE *log,t_idef *idef,
       nbonds=idef->il[ftype].nr;
       if (nbonds > 0) {
 	epot[ftype]+=
-	  interaction_function[ftype].ifunc(log,
-					    nbonds,
-					    idef->il[ftype].iatoms,
-					    idef->iparams,
-					    x_s,f,fr,g,box,
+	  interaction_function[ftype].ifunc(log,nbonds,idef->il[ftype].iatoms,
+					    idef->iparams,x_s,f,fr,g,box,
 					    lambda,&epot[F_DVDL],
 					    md,ngrp,egnb,egcoul);
 	ind = interaction_function[ftype].nrnb_ind;
@@ -102,7 +99,7 @@ void calc_bonds(FILE *log,t_idef *idef,
  * Three parameters needed:
  *
  * b0 = equilibrium distance in nm
- * be = beta in nm-1 (actually, it's nu_e*Sqrt(2*pi*pi*mu/D_e))
+ * be = beta in nm^-1 (actually, it's nu_e*Sqrt(2*pi*pi*mu/D_e))
  * cb = well depth in kJ/mol
  *
  * Note: the potential is referenced to be +cb at infinite separation
@@ -131,23 +128,23 @@ real morsebonds(FILE *log,int nbonds,
     be   = forceparams[type].morse.beta;
     cb   = forceparams[type].morse.cb;
 
-    pbc_rvec_sub(box,x[ai],x[aj],dx);                     /*   3          */
-    dr2=iprod(dx,dx);                             /*   5          */
-    dr=sqrt(dr2);                                 /*  10          */
-    temp=exp(be*(b0-dr));                         /*  12          */
+    pbc_rvec_sub(box,x[ai],x[aj],dx);               /*   3          */
+    dr2  = iprod(dx,dx);                            /*   5          */
+    dr   = sqrt(dr2);                               /*  10          */
+    temp = exp(-be*(dr-b0));                        /*  12          */
     
     if (temp == one)
       continue;
 
-    omtemp   = temp-one;                              /*   1          */
-    cbomtemp = cb*omtemp;                           /*   1          */
+    omtemp   = one-temp;                               /*   1          */
+    cbomtemp = cb*omtemp;                              /*   1          */
     vbond    = cbomtemp*omtemp;                        /*   1          */
-    fbond    = two*be*temp*cbomtemp*invsqrt(dr2);      /*   9          */
+    fbond    = -two*be*temp*cbomtemp*invsqrt(dr2);      /*   9          */
     vtot    += vbond;       /* 1 */
     
     ki=SHIFT_INDEX(g,ai);
     kj=SHIFT_INDEX(g,aj);
-    for (m=0; (m<DIM); m++) {                     /*  15          */
+    for (m=0; (m<DIM); m++) {                          /*  15          */
       fij=fbond*dx[m];
       f[ai][m]+=fij;
       f[aj][m]-=fij;
@@ -204,7 +201,8 @@ real bonds(FILE *log,int nbonds,
     pbc_rvec_sub(box,x[ai],x[aj],dx);			/*   3 		*/
     dr2=iprod(dx,dx);				/*   5		*/
     dr=sqrt(dr2);					/*  10		*/
-  
+
+      
     *dvdlambda += harmonic(forceparams[type].harmonic.krA,
 			   forceparams[type].harmonic.krB,
 			   forceparams[type].harmonic.rA,
@@ -216,6 +214,10 @@ real bonds(FILE *log,int nbonds,
     
     vtot  += vbond;/* 1*/
     fbond *= invsqrt(dr2);			/*   6		*/
+    
+    if (debug)
+      fprintf(debug,"BONDS: dr = %10g  vbond = %10g  fbond = %10g\n",
+	      dr,vbond,fbond);
     
     ki=SHIFT_INDEX(g,ai);
     kj=SHIFT_INDEX(g,aj);
@@ -286,6 +288,10 @@ real angles(FILE *log,int nbonds,
 	snt=1e-12;
       st  = dVdt/snt;				/*  11		*/
       sth = st*cos_theta;				/*   1		*/
+
+      if (debug)
+	fprintf(debug,"ANGLES: theta = %10g  vth = %10g  dV/dtheta = %10g\n",
+		theta*RAD2DEG,va,dVdt);
       
       nrkj2=iprod(r_kj,r_kj);			/*   5		*/
       nrij2=iprod(r_ij,r_ij);

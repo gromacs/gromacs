@@ -475,7 +475,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     ener[F_ETOT]=ener[F_EPOT]+ener[F_EKIN];
     
     /* Check for excessively large energies */
-    if (fabs(ener[F_ETOT]) > 1e10) {
+    if (fabs(ener[F_ETOT]) > 1e18) {
       fprintf(stderr,"Energy too large (%g), giving up\n",ener[F_ETOT]);
       break;
     }

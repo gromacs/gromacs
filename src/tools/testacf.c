@@ -81,7 +81,7 @@ int main(int argc,char *argv[])
   fclose(fp);
   
   do_autocorr(opt2fn("-c",NFILE,fnm),str[datatp],
-	      nframes,1,&data,a,eacNormal,TRUE,NULL,NULL);
+	      nframes,1,&data,a,eacNormal,FALSE,NULL,NULL);
 	      
   nlag = get_acfnout();
   fp = xvgropen(opt2fn("-comb",NFILE,fnm),"testac","x","y");
@@ -90,7 +90,7 @@ int main(int argc,char *argv[])
   }
   ffclose(fp);
 
-  xvgr_file(opt2fn("-comb",NFILE,fnm),"-nxy");
+  xvgr_file(opt2fn("-c",NFILE,fnm),"-nxy");
     
   thanx(stdout);
 

@@ -84,7 +84,9 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	    "Using morse bond-potentials while constraining bonds is useless");
     warning(NULL);
   }
- 
+
+  BS(((ir->eBox == ebtNONE) && (ir->ns_type == ensGRID)),
+     "Can only use box type None with simple neighboursearching","");
   BS(((ir->shake_tol<=0.0) && (opts->nshake>0) && (ir->eConstrAlg==estSHAKE)),
      "shake_tol must be > 0 instead of %g while using shake\n",
      ir->shake_tol);

@@ -131,7 +131,7 @@ inloopf.o:	inloopf.m4
 		$(F77) $(FFLAGS) -c inloopf.f
 		$(RM) inloopf.f
 
-libxtcf.a:	xtciof.o	libxdrf.o	ftocstr.o	xdrf.o
+libxtcf.a:	xtciof.o	libxdrf.o	ftocstr.o	#xdrf.o
 		$(AR) $@ $^
 		$(RANLIB) $@
 		$(RM) $(LIBDIR)/$@

@@ -43,6 +43,7 @@ static char *SRCID_g_msd_cc = "$Id$";
 #include "typedefs.h"
 #include "xvgr.h"
 #include "corrutil.h"
+#include "gstat.h"
 
 /* NORMAL = total diffusion coefficient (default). X,Y,Z is diffusion 
    coefficient in X,Y,Z direction. LATERAL is diffusion coefficient in
@@ -56,39 +57,6 @@ static char *SRCID_g_msd_cc = "$Id$";
 
 static int type = NORMAL;
 static int axis = 2;            // default is perpendicular to z-axis
-
-typedef struct {
-  double yx,xx,sx,sy;
-  int    np;
-} t_lsq;
-
-void init_lsq(t_lsq *lsq)
-{
-  lsq->yx=lsq->xx=lsq->sx=lsq->sy=0.0;
-  lsq->np=0;
-}
-
-void add_lsq(t_lsq *lsq,real x,real y)
-{
-  lsq->yx+=y*x;
-  lsq->xx+=x*x;
-  lsq->sx+=x;
-  lsq->sy+=y;
-  lsq->np++;
-}
-
-void get_lsq_ab(t_lsq *lsq,real *a,real *b)
-{
-  real yx,xx,sx,sy;
-  
-  yx=lsq->yx/lsq->np;
-  xx=lsq->xx/lsq->np;
-  sx=lsq->sx/lsq->np;
-  sy=lsq->sy/lsq->np;
-  
-  (*a)=(yx-sx*sy)/(xx-sx*sx);
-  (*b)=(sy)-(*a)*(sx);
-}
 
 class c_msd: public c_corr {
 public:

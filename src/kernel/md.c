@@ -359,7 +359,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
       /* Calculate pressure ! */
       calc_pres(parm->box,parm->ekin,parm->vir,parm->pres,
-		(fr->eeltype == eelPPPM) ? ener[F_LR] : 0.0);
+		EEL_LR(fr->eeltype) ? ener[F_LR] : 0.0);
     }
     
     /* Calculate long range corrections to pressure and energy */

@@ -588,7 +588,8 @@ static void histogramming(FILE *log,int naa,char **aa,
     { "J_HaN",   -0.88, -0.61,-0.27,M_PI/3,  0.0 }
   };
   t_karplus kkkchi1[] = {
-    { "Jab",       9.5, -1.6, 1.8, 0, 0 }
+    { "JHaHb2",       9.5, -1.6, 1.8, -M_PI/3, 0 },
+    { "JHaHb3",       9.5, -1.6, 1.8, 0, 0 }
   };
 #define NKKKPHI asize(kkkphi)
 #define NKKKPSI asize(kkkpsi)
@@ -771,10 +772,10 @@ static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
   bool bOm;
   char fn[256];
   int  i,j,k,Xi1,Xi2,Phi,Psi,Om,nlevels;
-#define NMAT 60
+#define NMAT 120
   real **mat,phi,psi,omega,axis[NMAT],lo,hi;
-  t_rgb rlo = { 1.0, 1.0, 0.0 };
-  t_rgb rmid= { 0.0, 1.0, 0.0 };
+  t_rgb rlo = { 1.0, 0.0, 0.0 };
+  t_rgb rmid= { 1.0, 1.0, 1.0 };
   t_rgb rhi = { 0.0, 0.0, 1.0 };
   
   for(i=0; (i<nlist); i++) {
@@ -806,7 +807,8 @@ static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
 	  fprintf(gp,"%d\n",!bAllowed(dih[Phi][j],RAD2DEG*dih[Psi][j]));
 	if (bOm) {
 	  omega = RAD2DEG*dih[Om][j];
-	  mat[(int)(phi/6)+30][(int)(psi/6)+30] += omega;
+	  mat[(int)((phi*NMAT)/360)+NMAT/2][(int)((psi*NMAT)/360)+NMAT/2] 
+	    += omega;
 	}
       }
       if (bViol)

@@ -43,7 +43,7 @@ HAVE_MOTIF	= yes
 #
 
 # Dec C compilers
-ALLOPT		= -fast -O5 -inline all -tune host -math_library fast  -unroll 2 -arch host -pipeline -fp_reorder
+ALLOPT		= -O5 -tune host -fast -math_library fast  -unroll 2 -arch host -pipeline -fp_reorder -inline all 
 #ALLOPT		= -g
 # If you have cc.alt installed you can use it, it gives faster code
 # but is not guaranteed by DEC (let alone by the GROMACS crew)
@@ -80,7 +80,7 @@ SYSLIBS		= $(LINKLIB) -ldnet_stub -lm
 XLIBS		= $(SYSLIBS) -lX11 
 endif
 
-ARFLAGS		= q
+ARFLAGS		= ruv
 RANLIB		= ranlib
 
 ifeq ($(USE_MPI),yes)

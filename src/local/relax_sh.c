@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "typedefs.h"
 #include "smalloc.h"
 #include "fatal.h"

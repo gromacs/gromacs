@@ -82,7 +82,9 @@ void read_ab(FILE *in,char *fn,t_add_block *ab)
   ab->nh=nh;
   ab->tp=tp;
   ncntl=ncontrol[tp];
-  if (debug) printf("will read %d elements for type %d\n",ncntl,tp);
+  if (debug) 
+    fprintf(debug,"%s, %d: will read %d elements for type %d\n",
+	    __FILE__,__LINE__,ncntl,tp);
   for(i=0; (i<ncntl); i++) {
     if (fscanf(in,"%s",buf) != 1) 
       fatal_error(0,"%d instead of %d (ncntl) elements found in input file\n",i,ncntl);
