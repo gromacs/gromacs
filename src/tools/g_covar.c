@@ -64,11 +64,13 @@ int gmx_covar(int argc,char *argv[])
 {
   static char *desc[] = {
     "[TT]g_covar[tt] calculates and diagonalizes the (mass-weighted)",
-    "covariance matrix.",
+    "covariance matrix. This is always done in double precision,",
+    "independent of the compilation options.",
     "All structures are fitted to the structure in the structure file.",
     "When this is not a run input file periodicity will not be taken into",
     "account. When the fit and analysis groups are identical and the analysis",
-    "is non mass-weighted, the fit will also be non mass-weighted.[PAR]",
+    "is non mass-weighted, the fit will also be non mass-weighted.",
+    "[PAR]",
     "The eigenvectors are written to a trajectory file ([TT]-v[tt]).",
     "When the same atoms are used for the fit and the covariance analysis,",
     "the reference structure for the fit is written first with t=-1.",
@@ -103,9 +105,9 @@ int gmx_covar(int argc,char *argv[])
   drvec      *xav;
   rvec       *x,*xread,*xref,*xproj;
   matrix     box,zerobox;
-  double     *matd;
-  real       t,tstart,tend,*mat,**mat2,dev,trace,sum,*eigval,inv_nframes;
-  real       xj,*sqrtm,*w_rls=NULL;
+  double     *sqrtm,*mat,*eigval,sum,trace,inv_nframes;
+  real       t,tstart,tend,**mat2;
+  real       xj,*w_rls=NULL;
   real       min,max,*axis;
   int        ntopatoms,step;
   int        natoms,nat,ndim,count,nframes,nlevels;
@@ -205,12 +207,7 @@ int gmx_covar(int argc,char *argv[])
   snew(xav,natoms);
   snew(xproj,natoms);
   ndim=natoms*DIM;
-  snew(matd,ndim*ndim);
-#ifndef DOUBLE
   snew(mat,ndim*ndim);
-#else
-  mat = matd;
-#endif
 
   fprintf(stderr,"Constructing covariance matrix (%dx%d)...\n",ndim,ndim);
 
@@ -244,7 +241,7 @@ int gmx_covar(int argc,char *argv[])
 	for (i=j; i<natoms; i++) {
 	  l=k+DIM*i;
 	  for(d=0; d<DIM; d++)
-	    matd[l+d] += x[i][d]*xj;
+	    mat[l+d] += x[i][d]*xj;
 	}
       }
     }
@@ -271,7 +268,7 @@ int gmx_covar(int argc,char *argv[])
 	for (i=j; i<natoms; i++) { 
 	  k = ndim*(DIM*j+dj)+DIM*i;
 	  for (d=0; d<DIM; d++)
-	    mat[k+d] = matd[k+d]*inv_nframes*sqrtm[i]*sqrtm[j];
+	    mat[k+d] = mat[k+d]*inv_nframes*sqrtm[i]*sqrtm[j];
 	}
   } else {
     /* copy the average structure to the ouput array x */
@@ -284,14 +281,10 @@ int gmx_covar(int argc,char *argv[])
 	for (i=j; i<natoms; i++) { 
 	  k = ndim*(DIM*j+dj)+DIM*i;
 	  for (d=0; d<DIM; d++)
-	    mat[k+d] = (matd[k+d]*inv_nframes-xav[i][d]*xav[j][dj])
+	    mat[k+d] = (mat[k+d]*inv_nframes-xav[i][d]*xav[j][dj])
 	      *sqrtm[i]*sqrtm[j];
 	}
   }
-
-#ifndef DOUBLE
-  sfree(matd);
-#endif
 
   /* symmetrize the matrix */
   for (j=0; j<ndim; j++) 
@@ -319,7 +312,13 @@ int gmx_covar(int argc,char *argv[])
     max = 0;
     snew(mat2,ndim);
     for (j=0; j<ndim; j++) {
+#ifndef DOUBLE
+      snew(mat2[j],ndim);
+      for(i=0; i<ndim; i++)
+	mat2[j][i] = mat[ndim*j + i];
+#else
       mat2[j] = &(mat[ndim*j]);
+#endif
       for (i=0; i<=j; i++) {
 	if (mat2[j][i] < min)
 	  min = mat2[j][i];
@@ -340,6 +339,10 @@ int gmx_covar(int argc,char *argv[])
 	       mat2,min,0.0,max,rlo,rmi,rhi,&nlevels);
     fclose(out);
     sfree(axis);
+#ifndef DOUBLE
+    for(i=0; i<ndim; i++)
+      sfree(mat2[i]);
+#endif
     sfree(mat2);
   }
 

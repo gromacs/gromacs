@@ -115,7 +115,7 @@ void read_eigenvectors(char *file,int *natoms,bool *bFit,
   fprintf(stderr,"Read %d eigenvectors (dim=%d)\n\n",*nvec,*natoms*DIM);
 }
 
-void write_eigenvectors(char *trnname,int natoms,real mat[],
+void write_eigenvectors(char *trnname,int natoms,double mat[],
 			bool bReverse,int begin,int end,
 			int WriteXref,rvec *xref,bool bDMR,
 			rvec xav[],bool bDMA)

@@ -53,7 +53,7 @@ extern void read_eigenvectors(char *file,int *natoms,bool *bFit,
 /* xav is the average/minimum structure is written (t=0).             */
 /* bDMA indicates mass weighted analysis/eigenvectors.                */ 
 
-extern void write_eigenvectors(char *trnname,int natoms,real mat[],
+extern void write_eigenvectors(char *trnname,int natoms,double mat[],
 			       bool bReverse,int begin,int end,
 			       int WriteXref,rvec *xref,bool bDMR,
 			       rvec xav[],bool bDMA);

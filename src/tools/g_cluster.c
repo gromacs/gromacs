@@ -1013,7 +1013,7 @@ int gmx_cluster(int argc,char *argv[])
   char         *fn,*trx_out_fn;
   t_clusters   clust;
   t_mat        *rms;
-  real         *eigval;
+  double       *eigval,*matd;
   t_topology   top;
   t_atoms      useatoms;
   t_matrix     *readmat;
@@ -1331,12 +1331,24 @@ int gmx_cluster(int argc,char *argv[])
   case m_diagonalize:
     /* Do a diagonalization */
     snew(eigval,nf);
-    ql77(nf,rms->mat[0],eigval); 
+#ifndef DOUBLE
+    snew(matd,nf*nf);
+    for(i1=0; i1<nf; i1++)
+      for(i2=0; i2<nf; i2++)
+	matd[nf*i1 + i2] = rms->mat[i1][i2];
+#else
+    matd = rms->mat[0];
+#endif
+    ql77(nf,matd,eigval); 
     fp = xvgropen(opt2fn("-ev",NFILE,fnm),"RMSD matrix Eigenvalues",
 		  "Eigenvector index","Eigenvalues (nm\\S2\\N)");
     for(i=0; (i<nf); i++)
       fprintf(fp,"%10d  %10g\n",i,eigval[i]);
     ffclose(fp);
+#ifndef DOUBLE
+    sfree(matd);
+#endif
+    sfree(eigval);
     break;
   case m_monte_carlo:
     mc_optimize(log,rms,niter,&seed,kT);

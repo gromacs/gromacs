@@ -83,7 +83,8 @@ int gmx_nmeig(int argc,char *argv[])
   t_inputrec ir;
   rvec       *top_x,*x;
   matrix     box;
-  real       t,*hess,*eigv,rdum,mass_fac;
+  real       t;
+  double     *hess,*eigv,rdum,mass_fac;
   int        natoms,ndim,count;
   char       *grpname,title[256];
   int        i,j,k,l,d,gnx;
