@@ -717,6 +717,9 @@ $(LIB)(init.o): $(GMXHOME)/src/include/edsam.h
 $(LIB)(init.o): $(GMXHOME)/src/include/mdebin.h
 $(LIB)(init.o): $(GMXHOME)/src/include/ebin.h
 $(LIB)(init.o): $(GMXHOME)/src/include/enxio.h
+$(LIB)(init.o): $(GMXHOME)/src/include/statutil.h
+$(LIB)(init.o): $(GMXHOME)/src/include/readinp.h
+$(LIB)(init.o): $(GMXHOME)/src/include/wman.h
 $(LIB)(md.o): $(GMXHOME)/src/include/typedefs.h
 $(LIB)(md.o): $(GMXHOME)/src/include/sysstuff.h
 $(LIB)(md.o): $(GMXHOME)/src/include/types/simple.h
@@ -1068,6 +1071,9 @@ $(LIB)(pme.o): $(GMXHOME)/src/include/types/parm.h
 $(LIB)(pme.o): $(GMXHOME)/src/include/types/matrix.h
 $(LIB)(pme.o): $(GMXHOME)/src/include/types/edsams.h
 $(LIB)(pme.o): $(GMXHOME)/src/include/types/pulls.h
+$(LIB)(pme.o): $(GMXHOME)/src/include/txtdump.h
+$(LIB)(pme.o): $(GMXHOME)/src/include/tpxio.h
+$(LIB)(pme.o): $(GMXHOME)/src/include/xdrf.h
 $(LIB)(pme.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(pme.o): $(GMXHOME)/src/include/maths.h
 $(LIB)(pme.o): $(GMXHOME)/src/include/macros.h

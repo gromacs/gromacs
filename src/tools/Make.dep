@@ -1483,6 +1483,8 @@ g_disre.o: $(GMXHOME)/src/include/rdgroup.h
 g_disre.o: $(GMXHOME)/src/include/mdatoms.h
 g_disre.o: $(GMXHOME)/src/include/tpxio.h
 g_disre.o: $(GMXHOME)/src/include/xdrf.h
+g_disre.o: $(GMXHOME)/src/include/init.h
+g_disre.o: $(GMXHOME)/src/include/mvdata.h
 g_dist.o: $(GMXHOME)/src/include/typedefs.h
 g_dist.o: $(GMXHOME)/src/include/sysstuff.h
 g_dist.o: $(GMXHOME)/src/include/types/simple.h
@@ -2986,6 +2988,7 @@ genion.o: $(GMXHOME)/src/include/mdebin.h
 genion.o: $(GMXHOME)/src/include/ebin.h
 genion.o: $(GMXHOME)/src/include/enxio.h
 genion.o: $(GMXHOME)/src/include/random.h
+genion.o: $(GMXHOME)/src/include/rdgroup.h
 genpr.o: $(GMXHOME)/src/include/sysstuff.h
 genpr.o: $(GMXHOME)/src/include/statutil.h
 genpr.o: $(GMXHOME)/src/include/typedefs.h
