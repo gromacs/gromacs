@@ -671,7 +671,7 @@ int main(int argc, char *argv[])
 		    &pdba_all,&pdbx,box,bRetainH);
   
   if (natom==0)
-    fatal_error(0,"No atoms found in pdb file %s.\n",opt2fn("-f",NFILE,fnm));
+    fatal_error(0,"No atoms found in pdb file %s\n",opt2fn("-f",NFILE,fnm));
 
   printf("Analyzing pdb file\n");
   nchain=0;
@@ -767,8 +767,10 @@ int main(int argc, char *argv[])
     }
   }
 
-  printf("There are %d chains and %d blocks of water and %d residues with %d atoms\n",
-	  nchain-nwaterchain,nwaterchain,pdba_all.atom[natom-1].resnr+1,natom);
+  printf("There are %d chains and %d blocks of water and "
+	 "%d residues with %d atoms\n",
+	  nchain-nwaterchain,nwaterchain,
+	 pdba_all.atom[natom-1].resnr+1,natom);
 	  
   printf("\n  %5s  %4s %6s\n","chain","#res","#atoms");
   for (i=0; (i<nchain); i++)
@@ -916,11 +918,6 @@ int main(int argc, char *argv[])
     else
       sprintf(molname,"Protein_%c",chains[chain].chain);
     
-    /* make filenames for topol.top/.itp and for posre.itp */
-    /*
-    if ( ! ( (nchain==1) || 
-	     ( (chain==nchain-1) && chains[chain].bAllWat ) ) ) {
-	     */
     if ((nchain-nwaterchain>1) && !chains[chain].bAllWat) {
       bITP=TRUE;
       strcpy(itp_fn,top_fn);
@@ -987,12 +984,7 @@ int main(int argc, char *argv[])
       write_sto_conf(fn,cool_quote(),pdba,x,NULL,box);
     }
   }
-  /* check if .top file was already written */
-  /*
-  if (!bTopWritten)
-    write_top(ff,ftp2fn(efTOP,NFILE,fnm),NULL,title,NULL,
-	      nincl,incls,nmol,mols,NULL,NULL,NULL,NULL,NULL,NREXCL,mHmult);
-	      */
+  
   print_top_mols(top_file,title,nincl,incls,nmol,mols);
   fclose(top_file);
   
