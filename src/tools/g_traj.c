@@ -227,7 +227,7 @@ void remove_jump(matrix box,int natoms,rvec xp[],rvec x[])
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "g_traj plots coordinates, velocities and/or forces.",
+    "g_traj plots coordinates, velocities, forces and/or the box.",
     "With [TT]-com[tt] the coordinates, velocities and forces are",
     "calculated for the center of mass of each group.",
     "When [TT]-mol[tt] is set, the numbers in the index file are",
@@ -255,7 +255,7 @@ int main(int argc,char *argv[])
       "Plot vector length" }
     
   };
-  FILE       *outx,*outv,*outf,*outekr;
+  FILE       *outx,*outv,*outf,*outb,*outekr;
   t_topology top;
   real       *mass;
   char       title[STRLEN],*indexfn;
@@ -271,7 +271,8 @@ int main(int argc,char *argv[])
   atom_id    **index0,**index;
   atom_id    *a,*atndx;
   t_block    *mols;
-  bool       bTop,bOX,bOV,bOF,bEKR,bDim[4],bDum[4];
+  bool       bTop,bOX,bOV,bOF,bOB,bEKR,bDim[4],bDum[4];
+  char       *box_leg[6] = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
 
   t_filenm fnm[] = {
     { efTRX, "-f", NULL, ffREAD },
@@ -280,6 +281,7 @@ int main(int argc,char *argv[])
     { efXVG, "-ox", "coord.xvg", ffOPTWR },
     { efXVG, "-ov", "veloc.xvg", ffOPTWR },
     { efXVG, "-of", "force.xvg", ffOPTWR },
+    { efXVG, "-ob", "box.xvg",   ffOPTWR },
     { efXVG, "-ekr", "ekrot.xvg", ffOPTWR }
   };
 #define NFILE asize(fnm)
@@ -295,6 +297,7 @@ int main(int argc,char *argv[])
   bOX = opt2bSet("-ox",NFILE,fnm);
   bOV = opt2bSet("-ov",NFILE,fnm);
   bOF = opt2bSet("-of",NFILE,fnm);
+  bOB = opt2bSet("-ob",NFILE,fnm);
   bEKR = opt2bSet("-ekr",NFILE,fnm);
   if (bMol || bEKR)
     bCom = TRUE;
@@ -370,6 +373,11 @@ int main(int argc,char *argv[])
 		    "Time (ps)","Force (kJ mol\\S-1\\N nm\\S-1\\N)");
     make_legend(outf,ngrps,isize[0],index[0],grpname,bCom,bMol,bDim);
   }
+  if (bOB) {
+    outb = xvgropen(opt2fn("-ob",NFILE,fnm),"Box vector elements",
+		    "Time (ps)","(nm)");
+    xvgr_legend(outb,6,box_leg);
+  }
   if (bEKR) {
     bDum[XX] = FALSE;
     bDum[YY] = FALSE;
@@ -380,7 +388,7 @@ int main(int argc,char *argv[])
 		      "Time (ps)","Energy (kJ mol\\S-1\\N)");
     make_legend(outekr,ngrps,isize[0],index[0],grpname,bCom,bMol,bDum);
   }
-  if (flags == 0) {
+  if (flags == 0 && !bOB) {
     fprintf(stderr,"Please select one or more output file options\n");
     exit(0);
   }
@@ -406,6 +414,10 @@ int main(int argc,char *argv[])
       print_data(outv,fr.time,fr.v,mass,bCom,ngrps,isize,index,bDim);
     if (bOF && fr.bF)
       print_data(outf,fr.time,fr.f,NULL,bCom,ngrps,isize,index,bDim);
+    if (bOB && fr.bBox)
+      fprintf(outb,"\t%g\t%g\t%g\t%g\t%g\t%g\t%g\n",fr.time,
+	      fr.box[XX][XX],fr.box[YY][YY],fr.box[ZZ][ZZ],
+	      fr.box[YY][XX],fr.box[ZZ][XX],fr.box[ZZ][YY]);
     if (bEKR && fr.bX && fr.bV) {
       fprintf(outekr," %g",fr.time);
       for(i=0; i<ngrps; i++)
@@ -428,6 +440,10 @@ int main(int argc,char *argv[])
   if (bOF) {
     fclose(outf);
     xvgr_file(opt2fn("-of",NFILE,fnm), NULL);
+  }
+  if (bOB) {
+    fclose(outb);
+    xvgr_file(opt2fn("-ob",NFILE,fnm), NULL);
   }
   if (bEKR) {
     fclose(outekr);
