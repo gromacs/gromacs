@@ -71,6 +71,7 @@ static bool do_trnheader(int fp,bool bRead,t_trnheader *sh, bool *bOK)
   static char *version = "GMX_trn_file";
   static bool bFirst=TRUE;
   char buf[256];
+  bool bDouble;
   
   *bOK=TRUE;
 
@@ -80,10 +81,8 @@ static bool do_trnheader(int fp,bool bRead,t_trnheader *sh, bool *bOK)
   
   if (bRead) {
     *bOK = *bOK && do_string(buf);
-    if (bFirst) {
-      fprintf(stderr,"trn version: %s\n",buf);
-      bFirst = FALSE;
-    }
+    if (bFirst)
+      fprintf(stderr,"trn version: %s ",buf);
   }
   else
     *bOK = *bOK && do_string(version);
@@ -99,7 +98,12 @@ static bool do_trnheader(int fp,bool bRead,t_trnheader *sh, bool *bOK)
   *bOK = *bOK && do_int(sh->f_size); 
   
   if (!*bOK) return *bOK; 
-  fio_setprecision(fp,(nFloatSize(sh) == sizeof(double)));
+  bDouble = (nFloatSize(sh) == sizeof(double));
+  fio_setprecision(fp,bDouble);
+  if (bRead && bFirst) {
+    fprintf(stderr,"(%s precision)\n",bDouble ? "double" : "single");
+    bFirst = FALSE;
+  }
   
   *bOK = *bOK && do_int(sh->natoms); 
   *bOK = *bOK && do_int(sh->step); 
