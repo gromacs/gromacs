@@ -368,7 +368,7 @@ void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,int *cgnr)
   int  i;
   int  itype;
   char *as;
-  real qtot;
+  double qtot;
   
   as=dir2str(d_atoms);
   fprintf(out,"[ %s ]\n",as);
@@ -399,7 +399,7 @@ void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,int *cgnr)
 		*(atype->atomname[at->atom[i].typeB]),
 		at->atom[i].qB,at->atom[i].mB);
       }
-      qtot+=at->atom[i].q;
+      qtot += at->atom[i].q;
       fprintf(out,"   ; qtot %g\n",qtot);
     }
   }
