@@ -69,26 +69,14 @@ extern bool gro_next_x_or_v(FILE *status,t_trxframe *fr);
 extern int gro_first_x_or_v(FILE *status,t_trxframe *fr);
 /* read first/next x and/or v frame from gro file */
 
-extern void write_hconf(FILE *out,char *title,
-			t_atoms *atoms,rvec *x, 
-			rvec *v,matrix box);
-			
-extern void write_hconf_indexed(FILE *out,char *title,t_atoms *atoms,
-				int nx,atom_id index[],
-				rvec *x,rvec *v,matrix box);
-
-extern void write_hconf_p(FILE *out,char *title,t_atoms *atoms, int pr,
+extern void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
+				  int nx,atom_id index[],int ndec,
+				  rvec *x,rvec *v,matrix box);
+		
+extern void write_hconf_p(FILE *out,char *title,t_atoms *atoms, int ndec,
 			  rvec *x,rvec *v,matrix box); 
-/* Write a Gromos file with precision pr: number of decimal places in x,
+/* Write a Gromos file with precision ndec: number of decimal places in x,
  * v has one place more. */ 
-
-extern void write_xdr_conf(char *outfile,char *title,t_atoms *atoms,
-			   rvec x[],rvec *v,matrix box);
-
-extern void read_xdr_coordnum(char *infile,int *natoms);
-
-extern void read_xdr_conf(char *infile,char *title,t_atoms *atoms,
-			  rvec x[],rvec *v,matrix box);
 
 void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms, 
 			    rvec x[],rvec *v,matrix box,

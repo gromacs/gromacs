@@ -349,7 +349,7 @@ static void get_coordnum (char *infile,int *natoms)
 }
 
 static bool get_w_conf(FILE *in, char *infile, char *title,
-		       t_atoms *atoms, rvec x[],rvec *v, matrix box)
+		       t_atoms *atoms, int *ndec, rvec x[],rvec *v, matrix box)
 {
   static t_symtab *symtab=NULL;
   char   name[6];
@@ -358,13 +358,13 @@ static bool get_w_conf(FILE *in, char *infile, char *title,
   char   format[30];
   double x1,y1,z1,x2,y2,z2;
   rvec   xmin,xmax;
-  int    natoms,i,m,resnr,newres,oldres,prec;
+  int    natoms,i,m,resnr,newres,oldres,ddist;
   bool   bFirst,bVel;
   char   *p1,*p2;
   
   newres  = 0;
   oldres  = NOTSET; /* Unlikely number for the first residue! */
-  prec    = 0;
+  ddist   = 0;
   
   if (!symtab) {
     snew(symtab,1);
@@ -403,15 +403,16 @@ static bool get_w_conf(FILE *in, char *infile, char *title,
 	fatal_error(0,"A coordinate in file %s does not contain a '.'",infile);
       p2=strchr(&p1[1],'.');
       if (p1 || p2)
-	prec=p2-p1;
+	ddist=p2-p1;
       else
-	prec=8;
-      if (prec<0)
-	prec=8;
-      if (prec>30)
-	prec=30;
-      sprintf(format,"%%%dlf%%%dlf%%%dlf",prec,prec,prec);
+	ddist=8;
+      if (ddist<0)
+	ddist=8;
+      if (ddist>30)
+	ddist=30;
+      sprintf(format,"%%%dlf%%%dlf%%%dlf",ddist,ddist,ddist);
       /* this will be something like "%8lf%8lf%8lf" */
+      *ndec = ddist-5;
     }
     
     /* residue number*/
@@ -451,7 +452,7 @@ static bool get_w_conf(FILE *in, char *infile, char *title,
     /* velocities (start after residues and coordinates) */
     /* 'format' was built previously */
     if (v) {
-      if (sscanf (line+20+(3*prec),format,&x1,&y1,&z1) != 3) {
+      if (sscanf (line+20+(3*ddist),format,&x1,&y1,&z1) != 3) {
 	v[i][XX] = 0.0;
 	v[i][YY] = 0.0;
 	v[i][ZZ] = 0.0;
@@ -510,11 +511,12 @@ static void read_whole_conf(char *infile, char *title,
 			    t_atoms *atoms, rvec x[],rvec *v, matrix box)
 {
   FILE   *in;
+  int    ndec;
   
   /* open file */
   in=ffopen(infile,"r");
 
-  get_w_conf(in, infile, title, atoms, x, v, box);
+  get_w_conf(in, infile, title, atoms, &ndec, x, v, box);
   
   fclose(in);
 }
@@ -523,6 +525,7 @@ static void get_conf(FILE *in, char *title, int *natoms,
 		     rvec x[],rvec *v,matrix box)
 {
   t_atoms  atoms;
+  int      ndec;
 
   atoms.nr=*natoms;
   snew(atoms.atom,*natoms);
@@ -530,7 +533,7 @@ static void get_conf(FILE *in, char *title, int *natoms,
   snew(atoms.resname,*natoms);
   snew(atoms.atomname,*natoms);
   
-  get_w_conf(in,title,title,&atoms,x,v,box);
+  get_w_conf(in,title,title,&atoms,&ndec,x,v,box);
   
   sfree(atoms.atom);
   sfree(atoms.resname);
@@ -539,9 +542,10 @@ static void get_conf(FILE *in, char *title, int *natoms,
 
 bool gro_next_x_or_v(FILE *status,t_trxframe *fr)
 {
-  t_atoms  atoms;
-  char   title[STRLEN],*p;
-  double tt;
+  t_atoms atoms;
+  char    title[STRLEN],*p;
+  double  tt;
+  int     ndec,i;
 
   if (eof(status))
     return FALSE;
@@ -552,7 +556,11 @@ bool gro_next_x_or_v(FILE *status,t_trxframe *fr)
   snew(atoms.resname,fr->natoms);
   snew(atoms.atomname,fr->natoms);
   
-  fr->bV = get_w_conf(status,title,title,&atoms,fr->x,fr->v,fr->box);
+  fr->bV = get_w_conf(status,title,title,&atoms,&ndec,fr->x,fr->v,fr->box);
+  fr->bPrec = TRUE;
+  fr->prec = 1;
+  for(i=0; i<ndec; i++)
+    fr->prec *= 10;
   fr->title = title;
   fr->bTitle = TRUE;
   fr->bX = TRUE;
@@ -666,13 +674,6 @@ void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
   }
   fflush(out);
 }
-		 
-void write_hconf_indexed(FILE *out,char *title,t_atoms *atoms,
-			 int nx,atom_id index[],
-			 rvec *x,rvec *v,matrix box)
-{
-  write_hconf_indexed_p(out,title,atoms,nx,index,3,x,v,box);
-}
 
 void write_hconf_p(FILE *out,char *title,t_atoms *atoms, int pr,
 		   rvec *x,rvec *v,matrix box)
@@ -685,12 +686,6 @@ void write_hconf_p(FILE *out,char *title,t_atoms *atoms, int pr,
     aa[i]=i;
   write_hconf_indexed_p(out,title,atoms,atoms->nr,aa,pr,x,v,box);
   sfree(aa);
-}
-
-void write_hconf(FILE *out,char *title,t_atoms *atoms,
-		 rvec *x,rvec *v,matrix box)
-{
-  write_hconf_p(out, title, atoms, 3, x, v, box);
 }
 
 void write_conf_p(char *outfile, char *title, t_atoms *atoms, int pr,
@@ -710,116 +705,6 @@ static void write_conf(char *outfile, char *title, t_atoms *atoms,
   write_conf_p(outfile, title, atoms, 3, x, v, box);
 }
 
-void write_xdr_conf(char *outfile,char *title,t_atoms *atoms,
-		    rvec x[],rvec *v,matrix box)
-{
-  XDR xd;
-  int i;
-  real prec;
-
-  int num_of_coord;
-  
-  xdropen(&xd,outfile,"w");
-  
-  xdr_string(&xd,&title,strlen(title));
-  xdr_int(&xd,&atoms->nr);
-  
-  for(i=0;(i<atoms->nr);i++) {
-    xdr_string(&xd,&(*atoms->atomname[i]),6);
-    xdr_int(&xd,&(atoms->atom[i].resnr));
-    xdr_string(&xd,&(*atoms->resname[atoms->atom[i].resnr]),6);
-  }
- 
-  /* write the coordinates */
-  prec=1000.0;
-  xdr3drcoord(&xd, x[0], &atoms->nr, &prec);
-
-  /* write the velocities */
-  prec=10000.0;
-  xdr3drcoord(&xd, v[0], &atoms->nr, &prec);
-
-  /* write the box */
-  num_of_coord = DIM;
-  prec=1000.0;
-  xdr3drcoord(&xd, box[0], &num_of_coord, &prec);
-
-  xdrclose(&xd);
-}
-
-void read_xdr_coordnum(char *infile,int *natoms)
-{
-  XDR xd;
-  char *title;
-  
-  /* */
-  snew(title,STRLEN);
-
-  /* read the xdr file */
-  xdropen(&xd, infile,"r");
-  xdr_string(&xd, &title, STRLEN);
-  xdr_int(&xd,natoms);
-  xdrclose(&xd);
-}
-
-void read_xdr_conf(char *infile,char *title,t_atoms *atoms,rvec x[],rvec *v,matrix box)
-{
-  XDR xd;
-  int n;
-  real prec;
-  int num_of_coord;
-  char *line;
-  
-  static t_symtab symtab;
-  char name[6];
-  
-  /* */
-  snew(line,STRLEN);
-  open_symtab(&symtab);
-  
-  /* read the xdr file */
-  xdropen(&xd, infile,"r");
-  *line = '\0';
-  xdr_string(&xd, &title, STRLEN);
-  xdr_int(&xd, &atoms->nr);
-  
-  /* read the titles and strings */
-  atoms->nres=0;
-  for(n=0;(n<atoms->nr);n++) {
-    /* atomname */
-    xdr_string(&xd,&line,STRLEN);
-    memcpy(name,line,5);
-    name[5]='\0';
-    atoms->atomname[n]=put_symtab(&symtab,name);
-    
-    /* residue number */
-    xdr_int(&xd,&(atoms->atom[n].resnr));
-    if ( atoms->atom[n].resnr > atoms->nres) 
-      atoms->nres=atoms->atom[n].resnr;
-
-    /* residue name */
-    xdr_string(&xd,&line,STRLEN);
-    memcpy(name,line,5);
-    name[5]='\0';
-    atoms->resname[atoms->atom[n].resnr]=put_symtab(&symtab,name);
-
-  }
-  atoms->nres++;
-
-  /* read coordinates */
-  xdr3drcoord(&xd, x[0], &atoms->nr, &prec);
-
-
-  /* read velocities */
-  xdr3drcoord(&xd, v[0], &atoms->nr, &prec);
-
-  /* read the box */
-  num_of_coord = DIM;
-  xdr3drcoord(&xd, box[0], &num_of_coord, &prec);
-  
-  xdrclose(&xd);
-  close_symtab(&symtab);
-}
-
 void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms, 
 			    rvec x[],rvec *v,matrix box,
 			    atom_id nindex,atom_id index[])
@@ -832,7 +717,7 @@ void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms,
   switch (ftp) {
   case efGRO:
     out=ffopen(outfile,"w");
-    write_hconf_indexed(out, title, atoms, nindex, index, x, v, box);
+    write_hconf_indexed_p(out, title, atoms, nindex, index, 3, x, v, box);
     fclose(out);
     break;
   case efG96:

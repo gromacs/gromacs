@@ -73,6 +73,8 @@ int write_trxframe(int status,t_trxframe *fr);
  * Only entries for which the boolean is TRUE will be written,
  * except for step, time, lambda and/or box, which may not be
  * omitted for certain trajectory formats.
+ * The precision for .xtc and .gro is fr->prec, when fr->bPrec=FALSE,
+ * the precision is set to 1000.
  */
 
 int write_trx(int status,int nind,atom_id *ind,t_atoms *atoms,

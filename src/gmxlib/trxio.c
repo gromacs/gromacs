@@ -87,6 +87,14 @@ static void printincomp(t_trxframe *fr)
 	    frame+1,fr->time);
 }
 
+static int prec2ndec(real prec)
+{
+  if (prec <= 0)
+    fatal_error(0,"DEATH HORROR prec (%g) <= 0 in prec2ndec",prec);
+
+  return (int)(log(prec)/log(10)+0.5);
+}
+
 /* Globals for gromos-87 input */
 typedef enum { effXYZ, effXYZBox, effG87, effG87Box, effNR } eFileFormat;
 static eFileFormat eFF;
@@ -102,6 +110,7 @@ void clear_trxframe(t_trxframe *fr,bool bFirst)
   fr->bTime   = FALSE;
   fr->bLambda = FALSE;
   fr->bAtoms  = FALSE;
+  fr->bPrec   = FALSE;
   fr->bX      = FALSE;
   fr->bV      = FALSE;
   fr->bF      = FALSE;
@@ -115,6 +124,7 @@ void clear_trxframe(t_trxframe *fr,bool bFirst)
     fr->time   = 0;
     fr->lambda = 0;
     fr->atoms  = NULL;
+    fr->prec   = 0;
     fr->x      = NULL;
     fr->v      = NULL;
     fr->f      = NULL;
@@ -126,7 +136,13 @@ int write_trxframe_indexed(int fnum,t_trxframe *fr,int nind,atom_id *ind)
 {
   char title[STRLEN];
   rvec *xout=NULL,*vout=NULL,*fout=NULL;
-  int i;
+  int  i;
+  real prec;
+
+  if (fr->bPrec)
+    prec = fr->prec;
+  else
+    prec = 1000.0;
   
   switch (fio_getftp(fnum)) {
   case efTRJ:
@@ -166,7 +182,7 @@ int write_trxframe_indexed(int fnum,t_trxframe *fr,int nind,atom_id *ind)
 
   switch (fio_getftp(fnum)) {
   case efXTC: 
-    write_xtc(fnum,nind,fr->step,fr->time,fr->box,xout,1000);
+    write_xtc(fnum,nind,fr->step,fr->time,fr->box,xout,prec);
     break;
   case efTRJ:
   case efTRR:  
@@ -182,8 +198,9 @@ int write_trxframe_indexed(int fnum,t_trxframe *fr,int nind,atom_id *ind)
 		  ftp2ext(fio_getftp(fnum)));
     sprintf(title,"frame t= %.3f",fr->time);
     if (fio_getftp(fnum) == efGRO)
-      write_hconf_indexed(fio_getfp(fnum),title,fr->atoms,nind,ind,
-			  fr->x,fr->bV ? fr->v : NULL,fr->box);
+      write_hconf_indexed_p(fio_getfp(fnum),title,fr->atoms,nind,ind,
+			    prec2ndec(prec),
+			    fr->x,fr->bV ? fr->v : NULL,fr->box);
     else
       write_pdbfile_indexed(fio_getfp(fnum),title,fr->atoms,
 			    fr->x,fr->box,0,fr->step,nind,ind);
@@ -220,6 +237,12 @@ int write_trxframe_indexed(int fnum,t_trxframe *fr,int nind,atom_id *ind)
 int write_trxframe(int fnum,t_trxframe *fr)
 {
   char title[STRLEN];
+  real prec;
+
+  if (fr->bPrec)
+    prec = fr->prec;
+  else
+    prec = 1000.0;
 
   switch (fio_getftp(fnum)) {
   case efTRJ:
@@ -234,8 +257,7 @@ int write_trxframe(int fnum,t_trxframe *fr)
 
   switch (fio_getftp(fnum)) {
   case efXTC:
-    write_xtc(fnum,fr->natoms,fr->step,fr->time,fr->box,
-	      fr->x,1000);
+    write_xtc(fnum,fr->natoms,fr->step,fr->time,fr->box,fr->x,prec);
     break;
   case efTRJ:
   case efTRR:  
@@ -251,8 +273,8 @@ int write_trxframe(int fnum,t_trxframe *fr)
 		  ftp2ext(fio_getftp(fnum)));
     sprintf(title,"frame t= %.3f",fr->time);
     if (fio_getftp(fnum) == efGRO)
-      write_hconf(fio_getfp(fnum),title,
-		  fr->atoms,fr->x,fr->bV ? fr->v : NULL,fr->box);
+      write_hconf_p(fio_getfp(fnum),title,fr->atoms,
+		    prec2ndec(prec),fr->x,fr->bV ? fr->v : NULL,fr->box);
     else
       write_pdbfile(fio_getfp(fnum),title,
 		    fr->atoms,fr->x,fr->box,0,fr->step);
@@ -505,6 +527,8 @@ static bool pdb_next_x(FILE *status,t_trxframe *fr)
   na=read_pdbfile(status, title, &model_nr, &atoms, fr->x, fr->box, TRUE);
   if (nframes_read()==0)
     fprintf(stderr," '%s', %d atoms\n",title, fr->natoms);
+  fr->bPrec = TRUE;
+  fr->prec = 10000;
   fr->bX = TRUE;
   fr->bBox = fr->box[XX][XX] == 0;
   
@@ -554,7 +578,7 @@ static int pdb_first_x(FILE *status, t_trxframe *fr)
 
 bool read_next_frame(int status,t_trxframe *fr)
 {
-  real pt,prec;
+  real pt;
   int  ct;
   bool bOK,bRet,bMissingData,bSkip;
 
@@ -582,7 +606,8 @@ bool read_next_frame(int status,t_trxframe *fr)
       break;
     case efXTC:
       bRet = read_next_xtc(status,&fr->natoms,&fr->step,&fr->time,fr->box,
-			   fr->x,&prec,&bOK);
+			   fr->x,&fr->prec,&bOK);
+      fr->bPrec = bRet;
       fr->bStep = bRet;
       fr->bTime = bRet;
       fr->bX    = bRet;
@@ -632,7 +657,6 @@ bool read_next_frame(int status,t_trxframe *fr)
 int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
 {
   int  fp;
-  real prec;
   bool bFirst,bOK;
 
   clear_trxframe(fr,TRUE);
@@ -670,8 +694,9 @@ int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
     break;
   case efXTC:
     if (read_first_xtc(fp,&fr->natoms,&fr->step,&fr->time,fr->box,&fr->x,
-		       &prec,&bOK) == 0)
+		       &fr->prec,&bOK) == 0)
       fatal_error(0,"No XTC!\n");
+    fr->bPrec = TRUE;
     fr->bStep = TRUE;
     fr->bTime = TRUE;
     fr->bX    = TRUE;

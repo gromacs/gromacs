@@ -48,6 +48,8 @@ typedef struct
   real lambda;    /* free energy perturbation lambda  */
   bool bAtoms;
   t_atoms *atoms; /* atoms struct (natoms)            */
+  bool bPrec;
+  real prec;      /* precision of x, fraction of 1 nm */
   bool bX;
   rvec *x;        /* coordinates (natoms)             */
   bool bV;

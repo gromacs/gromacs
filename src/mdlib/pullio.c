@@ -50,13 +50,11 @@ static char *SRCID_pullio_c = "$Id$";
 void dump_conf(t_pull *pull,rvec x[],matrix box,t_topology *top, 
 	       int nout, real time) 
 {
-  FILE *confout;
   char buf[128];
   rvec tmp,tmp1,tmp2;
 
   sprintf(buf,"out_%d.gro",nout);
   nout++;
-  confout = ffopen(buf,"w");
 
   /* calculate the current positions of the center of mass of the grps 
      printed is pull - reference, so position with respect to reference
@@ -72,7 +70,7 @@ void dump_conf(t_pull *pull,rvec x[],matrix box,t_topology *top,
     sprintf(buf,"grp1:%8.3f%8.3f%8.3f t:%8.3f",
 	    tmp1[XX],tmp1[YY],tmp1[ZZ],time);
   }
-  write_hconf(confout,buf,&top->atoms,x,NULL,box);  
+  write_sto_conf(buf,buf,&top->atoms,x,NULL,box);  
 }
 
 void print_start(t_pull *pull, int step) 

@@ -95,8 +95,11 @@ void chk_trj(char *fn)
   read_first_frame(&status,fn,&fr,TRX_READ_X | TRX_READ_V | TRX_READ_F);
 
   do {
-    if (j == 0)
+    if (j == 0) {
       fprintf(stderr,"\n# Atoms  %d\n",fr.natoms);
+      if (fr.bPrec)
+	fprintf(stderr,"Precision %g (nm)\n",1/fr.prec);
+    }
     newline=TRUE;
     if ((natoms > 0) && (new_natoms != natoms)) {
       fprintf(stderr,"\nNumber of atoms at t=%g don't match (%d, %d)\n",

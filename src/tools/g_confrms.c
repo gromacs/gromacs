@@ -233,8 +233,8 @@ int main (int argc,char *argv[])
   fp=ffopen(opt2fn("-o",NFILE,fnm),"w");
   if (fn2ftp(opt2fn("-o",NFILE,fnm))==efGRO) {
     if (!bOne)
-      write_hconf(fp,title1,&atoms1,x1,v1,box1);
-    write_hconf(fp,title2,&atoms2,x2,v2,box2);
+      write_hconf_p(fp,title1,&atoms1,3,x1,v1,box1);
+    write_hconf_p(fp,title2,&atoms2,3,x2,v2,box2);
   } else {
     if (!bOne)
       write_pdbfile(fp,title1,&atoms1,x1,box1,0,1);
