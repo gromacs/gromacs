@@ -93,8 +93,8 @@ static real *mk_nbfp(t_idef *idef,bool bBHAM)
   atnr=idef->atnr;
   if (bBHAM) {
     snew(nbfp,3*atnr*atnr);
-    for(i=k=0; (i<atnr*atnr); i++) {
-      for(j=0; (j<idef->atnr); j++,k++) {
+    for(i=k=0; (i<atnr); i++) {
+      for(j=0; (j<atnr); j++,k++) {
 	BHAMA(nbfp,atnr,i,j) = idef->iparams[k].bham.a;
 	BHAMB(nbfp,atnr,i,j) = idef->iparams[k].bham.b;
 	BHAMC(nbfp,atnr,i,j) = idef->iparams[k].bham.c;
@@ -294,7 +294,7 @@ void init_forcerec(FILE *log,
   fprintf(log,"Table routines are used: %s\n",bool_names[fr->bTab]);
   
   if(fr->bEwald)
-      fr->ewaldcoeff=calc_ewaldcoeff(ir->rcoulomb, ir->ewald_rtol);
+    fr->ewaldcoeff=calc_ewaldcoeff(ir->rcoulomb, ir->ewald_rtol);
   /* Tables are used for direct ewald sum */
 
   /* Domain decomposition parallellism... */
@@ -460,12 +460,14 @@ void init_forcerec(FILE *log,
       fr->VFtab=NULL;
     }
     fr->rtab = max(fr->rlistlong+TAB_EXT,MAX_14_DIST);
-  } else
+  } 
+  else
     fr->rtab = MAX_14_DIST;
+    
   /* make tables for ordinary interactions */
   make_tables(fr,MASTER(cr));
   if(!(EEL_LR(fr->eeltype) && fr->bTab))
-      fr->VFtab14=fr->VFtab;
+    fr->VFtab14=fr->VFtab;
 }
 
 #define pr_real(fp,r) fprintf(fp,"%s: %e\n",#r,r)
