@@ -160,7 +160,7 @@ void analyse_energies(int nre,int nrf,t_fixe f[])
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "with only [TT]-o[tt] specified:[BR]",
+    "With [TT]-f[tt] is [IT]not[it] specified:[BR]",
     "repairs energy files, by checking the contents and",
     "concatenating the files in the right order. In case of double", 
     "time frames one of these is skipped.",
@@ -169,9 +169,10 @@ int main(int argc,char *argv[])
     "(note that in this case the -o option should come first and ",
     "should include a filename)",
     "[PAR]",
-    "With [TT]-f[tt] and [TT]-od[tt] specified: converts edr to ene.",
-    "[PAR]",
-    "With [TT]-fd[tt] and [TT]-o[tt] specified: converts ene to edr."
+    "With [TT]-f[tt] specified: reads one enrgy file and writes another,",
+    "applying the [TT]-dt[tt], [TT]-offset[tt], [TT]-t0[tt] and",
+    "[TT]-timestep[tt] options and converting to a different format",
+    "if necessary (indicated by file extentions)."
   };
   
   static char *bugs[] = {
