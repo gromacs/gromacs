@@ -152,7 +152,7 @@ AC_ARG_ENABLE(hide_table_latency,
 
 AC_ARG_WITH(mpi-environment,     
  [  --with-mpi-environment=VAR    Only start MPI mdrun when VAR is set], 
- with_mpi_environment=$enableval, with_mpi_environment=no)
+ with_mpi_environment="$withval", with_mpi_environment=no)
 
 
 ########################################################################
@@ -577,7 +577,7 @@ if test "$enable_hide_table_latency" = "yes"; then
 fi
 
 if test "$with_mpi_environment" != "no" -a "$enable_mpi" = "yes"; then
-	AC_DEFINE(CHECK_MPI_ENV,"$with_mpi_environment",
+	AC_DEFINE_UNQUOTED(CHECK_MPI_ENV,"$with_mpi_environment",
                  [If defined, only start MPI runs when this variable is set])
 fi
 
