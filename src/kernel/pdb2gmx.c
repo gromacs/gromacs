@@ -267,19 +267,11 @@ void process_chain(t_atoms *pdba, rvec *x,
   else
     rename_pdbres(pdba,"GLUH","GLU",FALSE);
 
+  /* Make sure we don't have things like CYS? */ 
+  rename_pdbres(pdba,"CYS","CYS",FALSE);
   *nssbonds=mk_specbonds(pdba,x,bCysMan,ssbonds);
-  rename_pdbres(pdba,"CYS","CYSH",FALSE);
-  for(i=0; i<*nssbonds; i++) {
-    if (strcmp(*pdba->resname[(*ssbonds)[i].res1],"CYSH")==0) {
-      sfree(*pdba->resname[(*ssbonds)[i].res1]);
-      *pdba->resname[(*ssbonds)[i].res1]=strdup("CYS");
-    }
-    if (strcmp(*pdba->resname[(*ssbonds)[i].res2],"CYSH")==0) {
-      sfree(*pdba->resname[(*ssbonds)[i].res2]);
-      *pdba->resname[(*ssbonds)[i].res2]=strdup("CYS");
-    }
-  }
-  
+  rename_pdbres(pdba,"CYS","CYSH",TRUE);
+
   if (!bHisMan)
     set_histp(pdba,x,angle,distance);
   else
