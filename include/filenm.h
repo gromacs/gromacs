@@ -119,6 +119,12 @@ extern char *ftp2fn_null(int ftp,int nfile,t_filenm fnm[]);
 extern bool is_optional(t_filenm *fnm);
 /* Return whether or not this filenm is optional */
 
+extern bool is_output(t_filenm *fnm);
+/* Return whether or not this filenm is output */
+
+extern bool is_set(t_filenm *fnm);
+/* Return whether or not this filenm is set */
+
 #ifdef CPLUSPLUS
 }
 #endif

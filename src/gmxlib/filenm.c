@@ -40,10 +40,10 @@ static char *SRCID_filenm_c = "$Id$";
 #include "macros.h"
 
 /* Use bitflag ... */
-#define is_set(fn) ((fn.flag & ffSET) != 0)
-#define is_opt(fn) ((fn.flag & ffOPT) != 0)
-#define un_set(fn) (fn.flag = (fn.flag & ~ffSET))
-#define do_set(fn) (fn.flag = (fn.flag |  ffSET))
+#define IS_SET(fn) ((fn.flag & ffSET) != 0)
+#define IS_OPT(fn) ((fn.flag & ffOPT) != 0)
+#define UN_SET(fn) (fn.flag = (fn.flag & ~ffSET))
+#define DO_SET(fn) (fn.flag = (fn.flag |  ffSET))
 
 enum { eftASC, eftBIN, eftXDR, eftGEN, eftNR };
 
@@ -448,7 +448,7 @@ static void set_filenms(int nf,t_filenm fnm[])
   int i;
 
   for(i=0; (i<nf); i++)
-    if (!is_set(fnm[i]))
+    if (!IS_SET(fnm[i]))
       set_filenm(&(fnm[i]),fnm[i].fn,FALSE);
 }
 
@@ -461,7 +461,7 @@ void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
   check_opts(nf,fnm);
   
   for(i=0; (i<nf); i++)
-    un_set(fnm[i]);
+    UN_SET(fnm[i]);
     
   if (*argc > 1) {
     snew(bRemove,(*argc)+1);
@@ -469,7 +469,7 @@ void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
     do {
       for(j=0; (j<nf); j++) {
 	if (strcmp(argv[i],fnm[j].opt) == 0) {
-	  do_set(fnm[j]);
+	  DO_SET(fnm[j]);
 	  bRemove[i]=TRUE;
 	  i++;
 	  if ((i < *argc) && (argv[i][0] != '-')) {
@@ -532,7 +532,7 @@ bool ftp2bSet(int ftp,int nfile,t_filenm fnm[])
   
   for(i=0; (i<nfile); i++)
     if (ftp == fnm[i].ftp)
-      return (bool) is_set(fnm[i]);
+      return (bool) IS_SET(fnm[i]);
       
   fprintf(stderr,"ftp2bSet: No filetype %s\n",deffile[ftp].ext);
   
@@ -545,7 +545,7 @@ bool opt2bSet(char *opt,int nfile,t_filenm fnm[])
   
   for(i=0; (i<nfile); i++)
     if (strcmp(opt,fnm[i].opt)==0)
-      return (bool) is_set(fnm[i]);
+      return (bool) IS_SET(fnm[i]);
 
   fprintf(stderr,"No option %s\n",opt);
   
@@ -558,7 +558,7 @@ char *opt2fn_null(char *opt,int nfile,t_filenm fnm[])
   
   for(i=0; (i<nfile); i++)
     if (strcmp(opt,fnm[i].opt)==0) {
-      if (is_opt(fnm[i]) && !is_set(fnm[i]))
+      if (IS_OPT(fnm[i]) && !IS_SET(fnm[i]))
 	return NULL;
       else
 	return fnm[i].fn;
@@ -573,7 +573,7 @@ char *ftp2fn_null(int ftp,int nfile,t_filenm fnm[])
   
   for(i=0; (i<nfile); i++)
     if (ftp == fnm[i].ftp) {
-      if (is_opt(fnm[i]) && !is_set(fnm[i]))
+      if (IS_OPT(fnm[i]) && !IS_SET(fnm[i]))
 	return NULL;
       else
 	return fnm[i].fn;
@@ -635,3 +635,15 @@ bool is_optional(t_filenm *fnm)
 {
   return ((fnm->flag & ffOPT) == ffOPT);
 }
+
+bool is_output(t_filenm *fnm)
+{
+  return ((fnm->flag & ffWRITE) == ffWRITE);
+}
+
+bool is_set(t_filenm *fnm)
+{
+  return ((fnm->flag & ffSET) == ffSET);
+}  
+
+

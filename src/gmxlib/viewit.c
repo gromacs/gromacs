@@ -31,41 +31,58 @@ static char *SRCID_viewit_c = "$Id$";
 #include <string.h>
 #include "statutil.h"
 #include "viewit.h"
+#include "string2.h"
+#include "filenm.h"
+#include "macros.h"
+
+static int can_view_ftp[] = { 0,
+  efEPS,           efXPM,         efXVG,          efPDB };
+#define NVIEW asize(can_view_ftp)
+static char* view_program[] = { NULL,
+  "ghostview",    "xv",           NULL,           "xterm -e rasmol" };
+
+int can_view(int ftp)
+{
+  int i;
+  
+  for(i=1; i<NVIEW; i++)
+    if ( ftp == can_view_ftp[i] )
+      return i;
+  
+  return 0;
+}
 
 void do_view(char *fn, char *opts)
 {
-  char buf[256], *cmd;
-
+#define N_EXT 3
+  char buf[STRLEN], env[20], ext[N_EXT], *cmd;
+  int ftp, n;
+  
   if (bDoView() && fn) {
     if (getenv("DISPLAY") == NULL) {
-      fprintf(stderr,"Can not view %s, no DISPLAY environment variable.\n",
-	      fn);
-    }
-    else {
-      switch(fn2ftp(fn)) {
-      case efEPS:
-	if ( ! (cmd=getenv("GMX_VIEW_EPS")) )
-	  cmd="ghostview";
-	break;
-      case efXPM:
-	if ( ! (cmd=getenv("GMX_VIEW_XPM")) )
-	  cmd="xv";
-	break;
+      fprintf(stderr,"Can not view %s, no DISPLAY environment variable.\n",fn);
+    } else {
+      ftp=fn2ftp(fn);
+      strncpy(ext, ftp2ext(ftp), N_EXT);
+      upstring(ext);
+      sprintf(env, "GMX_VIEW_%s", ext);
+      switch(ftp) {
       case efXVG:
-	if ( ! (cmd=getenv("GMX_VIEW_XVG")) ) {
+	if ( ! (cmd=getenv(env)) ) {
 	  if ( getenv("XMGRACE") )
 	    cmd="xmgrace";
 	  else
 	    cmd="xmgr";
 	}
 	break;
-      case efPDB:
-	if ( ! (cmd=getenv("GMX_VIEW_PDB")) )
-	  cmd="xterm -e rasmol";
-	break;
       default:
-	fprintf(stderr,"Don't know how to view file %s",fn);
-	return;
+	if ( n=can_view(ftp) ) {
+	  if ( ! (cmd=getenv(env)) )
+	    cmd=view_program[n];
+	} else {
+	  fprintf(stderr,"Don't know how to view file %s",fn);
+	  return;
+	}
       }
       if ( strlen(cmd) ) {
 	sprintf(buf,"%s %s %s &",cmd,opts ? opts : "",fn);
@@ -76,3 +93,12 @@ void do_view(char *fn, char *opts)
   }
 }
 
+void view_all(int nf, t_filenm fnm[])
+{
+  int i;
+  
+  for(i=0; i<nf; i++)
+    if ( can_view(fnm[i].ftp) && is_output(&(fnm[i])) && 
+	 ( ! is_optional(&(fnm[i])) || is_set(&(fnm[i])) ) )
+      do_view(fnm[i].fn, NULL);
+}
