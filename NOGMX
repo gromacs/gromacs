@@ -1,5 +1,10 @@
 # remove all environment variables set by GMXRC
 
+if ( ! $?GMXHOME ) then
+  if ( "$1" != "-quiet" ) echo "no GROMACS environment"
+  exit
+endif
+
 if ($?GMXLIB) then
   if ($LD_LIBRARY_PATH == $GMXHOME/lib/\$CPU) then
     unsetenv LD_LIBRARY_PATH
