@@ -92,7 +92,7 @@ void xvgr_file(char *fn,char *opts)
   char   doit[STRLEN];
 
   if (bDoView()) {
-    sprintf(doit,"%s -geometry +100+100 %s %s &",
+    sprintf(doit,"%s %s %s &",
 	    bXmGrace() ? "xmgrace" : "xmgr",opts ? opts : "",fn);
     system(doit);
   }
