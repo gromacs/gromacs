@@ -48,9 +48,9 @@ static char *SRCID_g_rmsf_c = "$Id$";
 #include "rmpbc.h"
 #include "confio.h"
 
-static int calc_xav(bool bAverX,
-		    char *fn,rvec xref[],t_topology *top,matrix box,
-		    real w_rls[],int isize,atom_id index[])
+void calc_xav(bool bAverX,
+	      char *fn,rvec xref[],t_topology *top,matrix box,
+	      real w_rls[],int isize,atom_id index[])
 {
   rvec *x,*xav;
   rvec xcm;
@@ -65,7 +65,7 @@ static int calc_xav(bool bAverX,
 
   /* read first frame  */
   natoms = read_first_x(&status,fn,&t,&x,box);
-  if (natoms != top->atoms.nr) 
+  if (natoms > top->atoms.nr) 
     fatal_error(0,"Topology (%d atoms) does not match trajectory (%d atoms)",
 		top->atoms.nr,natoms);
 		
@@ -74,23 +74,23 @@ static int calc_xav(bool bAverX,
     teller = 0;
     do {
       /* remove periodic boundary */
-      rm_pbc(&(top->idef),top->atoms.nr,box,x,x);
+      rm_pbc(&(top->idef),natoms,box,x,x);
       
       /* set center of mass to zero */
       sub_xcm(x,isize,index,top->atoms.atom,xcm,FALSE);
       
       /* fit to reference structure */
-      do_fit(top->atoms.nr,w_rls,xref,x);
+      do_fit(natoms,w_rls,xref,x);
       
       for(i=0; (i<natoms); i++)
 	rvec_inc(xav[i],x[i]);
       
       teller++;
     } while (read_next_x(status,&t,natoms,x,box));
-
+    
     tfac = 1.0/teller;    
     rmsd = 0;
-    for(i=0; (i<natoms); i++) {
+    for(i=0; i<natoms; i++) {
       for(m=0; (m<DIM); m++) {
 	xxx        = xav[i][m] * tfac;
 	rmsd      += sqr(xref[i][m] - xxx);
@@ -104,9 +104,7 @@ static int calc_xav(bool bAverX,
   }
   sfree(x);
 
-  rewind_trj(status);
-  
-  return status;
+  close_trj(status);
 }
 
 static real find_pdb_bfac(t_atoms *atoms,char *resnm,int resnr,char *atomnm)
@@ -146,6 +144,30 @@ void correlate_aniso(char *fn,t_atoms *ref,t_atoms *calc)
   fclose(fp);
 }
 
+void average_residues(real f[],int isize,atom_id index[],real w_rls[],
+		      t_atoms *atoms)
+{
+  int i,j,start;
+  real av,m;
+  
+  start = 0;
+  av = 0;
+  m = 0;
+  for(i=0; i<isize; i++) {
+    av += w_rls[index[i]]*f[i];
+    m += w_rls[index[i]];
+    if (i+1==isize || 
+	atoms->atom[index[i]].resnr!=atoms->atom[index[i+1]].resnr) {
+      av /= m;
+      for(j=start; j<=i; j++)
+	f[j] = av;
+      start = i+1;
+      av = 0;
+      m = 0;
+    }
+  }
+}
+
 int main (int argc,char *argv[])
 {
   static char *desc[] = {
@@ -154,10 +176,12 @@ int main (int argc,char *argv[])
     "after first fitting to a reference frame.[PAR]",
     "With option [TT]-oq[tt] the RMSF values are converted to B-factor",
     "values, which are written to a pdb file with the coordinates of the",
-    "run input file.[PAR]",
+    "structure file, or of a pdb file when [TT]-q[tt] is specified.[PAR]",
     "With option -aver the average coordinates will be calculated and used",
     "as reference for fitting (which is useless usually). ",
-    "They are also saved to a gro file (which may be usefull).[PAR]",
+    "They are also written to file.[PAR]",
+    "With the option [TT]-od[tt] the root mean square deviation with",
+    "respect to the reference structure is calculated.[PAR]",
     "With the option -aniso g_rmsf will compute anisotropic temperature",
     "factors and then it will also output average coordinates and a pdb file",
     "with ANISOU records (corresonding to the -oq option).",
@@ -167,12 +191,14 @@ int main (int argc,char *argv[])
     "When a pdb input file is passed to the program and the [TT]-aniso[tt]",
     "flag is set",
     "a correlation plot of the Uij will be created, if any anisotropic",
-    "temperature factors are present in the pdb file."
+    "temperature factors are present in the pdb file.[PAR]"
   };
-  static bool bAverX=FALSE,bAniso=FALSE;
+  static bool bAverX=FALSE,bRes=FALSE,bAniso=FALSE,bdevX=FALSE;
   t_pargs pargs[] = { 
     { "-aver", FALSE, etBOOL, {&bAverX},
       "Calculate average coordinates first. Requires reading the coordinates twice" },
+    { "-res", FALSE, etBOOL, {&bRes},
+      "Calculate averages for each residue" },
     { "-aniso",FALSE, etBOOL, {&bAniso},
       "Compute anisotropic termperature factors" }
   };
@@ -188,10 +214,11 @@ int main (int argc,char *argv[])
   matrix       box,pdbbox;
   rvec         *x,*pdbx,*xref;
   int          status,npdbatoms,res0;
-  char         buf[256];
+  char         buf[256],*label;
   char         title[STRLEN];
   
   FILE         *fp;               /* the graphics file */
+  char         *devfn;
   int          resnr;
 
   bool         bReadPDB;  
@@ -202,21 +229,22 @@ int main (int argc,char *argv[])
   real         bfac,pdb_bfac;
   matrix       *U=NULL;
   atom_id      aid;
-  rvec         *rmsf_xx,*rmsf_x,tmp;
+  rvec         *rmsf_xx,*rmsf_x,*rmsd_x,tmp;
   real         *rmsf;
   int          d;
   real         count=0;
   rvec         xcm;
 
   t_filenm fnm[] = {
-    { efTPX, NULL,  NULL,     ffREAD  },
     { efTRX, "-f",  NULL,     ffREAD  },
+    { efTPS, NULL,  NULL,     ffREAD  },
     { efPDB, "-q",  NULL,     ffOPTRD },
     { efPDB, "-oq", "bfac",   ffOPTWR },
     { efNDX, NULL,  NULL,     ffOPTRD },
     { efXVG, "-o",  "rmsf",   ffWRITE },
+    { efXVG, "-od", "rmsdev", ffOPTWR },
     { efXVG, "-oc", "correl", ffOPTWR },
-    { efSTO, "-ox", "xaver",  ffOPTWR }
+    { efSTO, "-ox", "xaver.pdb",  ffOPTWR }
   };
 #define NFILE asize(fnm)
 
@@ -232,14 +260,13 @@ int main (int argc,char *argv[])
       bAverX = TRUE;
     }
   }
-  bReadPDB = ftp2bSet(efPDB,NFILE,fnm);
+   
   
-  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header);
-  snew(x,header.natoms);
-  snew(xref,header.natoms);
-  snew(w_rls,header.natoms);
-  read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
-	   box,&natom,xref,NULL,NULL,&top);
+  bReadPDB = ftp2bSet(efPDB,NFILE,fnm);
+  devfn    = opt2fn_null("-od",NFILE,fnm);
+
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xref,NULL,box,TRUE);
+  snew(w_rls,top.atoms.nr);
 
   /* Set box type*/
   init_pbc(box,FALSE);
@@ -248,13 +275,15 @@ int main (int argc,char *argv[])
   get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpnames);
 
   /* Set the weight */
-  for(i=0;(i<isize);i++) 
+  for(i=0; i<isize; i++) 
     w_rls[index[i]]=top.atoms.atom[index[i]].m;
 
   /* Malloc the rmsf arrays */
   snew(rmsf_xx,isize);
   snew(rmsf_x, isize);
   snew(rmsf,isize);
+  if (devfn)
+    snew(rmsd_x, isize);
   
   if (bAniso)
     snew(U,isize);
@@ -269,8 +298,7 @@ int main (int argc,char *argv[])
     /* Read coordinates twice */
     read_stx_conf(opt2fn("-q",NFILE,fnm),title,pdbatoms,pdbx,NULL,pdbbox);    
     read_stx_conf(opt2fn("-q",NFILE,fnm),title,refatoms,pdbx,NULL,pdbbox);    
-  }
-  else {
+  } else {
     pdbatoms  = &top.atoms;
     refatoms  = &top.atoms;
     pdbx      = xref;
@@ -283,8 +311,9 @@ int main (int argc,char *argv[])
    * reference structure, output the average.
    * Also input is the file name, returns the file number.
    */
-  status = calc_xav(bAverX,
-		    ftp2fn(efTRX,NFILE,fnm),xref,&top,box,w_rls,isize,index);
+  calc_xav(bAverX,ftp2fn(efTRX,NFILE,fnm),xref,&top,box,w_rls,isize,index);
+  
+  natom = read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
     
   if (bAverX)
     write_sto_conf_indexed(opt2fn("-ox",NFILE,fnm),
@@ -293,7 +322,7 @@ int main (int argc,char *argv[])
   
   /* Now read the trj again to compute fluctuations */
   teller = 0;
-  while (read_next_x(status,&t,natom,x,box)) {
+  do {
     /* Remove periodic boundary */
     rm_pbc(&(top.idef),top.atoms.nr,box,x,x);
     
@@ -303,10 +332,6 @@ int main (int argc,char *argv[])
     /* Fit to reference structure */
     do_fit(top.atoms.nr,w_rls,xref,x);
  
-    /* Print time of frame*/
-    if ((teller % 10) == 0)
-      fprintf(stderr,"\r %5.2f",t);
-    
     /* Calculate Anisotropic U Tensor */  
     if (bAniso) {
       for(i=0;(i<isize);i++) {
@@ -318,6 +343,7 @@ int main (int argc,char *argv[])
       }
     }
     /* Calculate RMS Fluctuations */
+    
     for(i=0;(i<isize);i++) {
       aid = index[i];
       for(d=0;(d<DIM);d++) {
@@ -325,11 +351,20 @@ int main (int argc,char *argv[])
 	rmsf_x[i][d] +=x[aid][d];
       }
     }
+    if (devfn) {
+      /* Calculate RMS Deviation */
+      for(i=0;(i<isize);i++) {
+	aid = index[i];
+	for(d=0;(d<DIM);d++) {
+	  rmsd_x[i][d] += sqr(x[aid][d]-xref[aid][d]);
+	}
+      }
+    } 
     count += 1.0;
     teller++;
-  } 
+  } while(read_next_x(status,&t,natom,x,box));
   close_trj(status);
-
+  
   if (bAniso) {
     for(i=0;(i<isize);i++) {
       aid = index[i];
@@ -346,32 +381,58 @@ int main (int argc,char *argv[])
     }
     sfree(U);
   }
-  for(i=0;(i<isize);i++) {
+  if (bRes) {
+    average_residues(rmsf,isize,index,w_rls,&top.atoms);
+    label = "Residue";
+  } else
+    label = "Atom";
+  for(i=0; i<isize; i++) {
     rmsf[i] = (rmsf_xx[i][XX]/count - sqr(rmsf_x[i][XX]/count)+ 
 	       rmsf_xx[i][YY]/count - sqr(rmsf_x[i][YY]/count)+ 
 	       rmsf_xx[i][ZZ]/count - sqr(rmsf_x[i][ZZ]/count)); 
     pdbatoms->pdbinfo[index[i]].bfac = 800*M_PI/3.0*rmsf[i];
   }
-  
   /* Write RMSF output */
   if (bReadPDB) {
     bfac = 8.0*M_PI*M_PI/3.0*100;
     fp   = xvgropen(ftp2fn(efXVG,NFILE,fnm),"B-Factors",
-		    "Atom","A\\b\\S\\So\\N\\S 2");
+		    label,"(A\\b\\S\\So\\N\\S2\\N)");
     for(i=0;(i<isize);i++) {
-      resnr    = top.atoms.atom[index[i]].resnr;
-      pdb_bfac = find_pdb_bfac(pdbatoms,*(top.atoms.resname[resnr]),resnr,
-			       *(top.atoms.atomname[index[i]]));
-      
-      fprintf(fp,"%5d  %10.5f  %10.5f\n",i,rmsf[i]*bfac,pdb_bfac);
+      if (!bRes || i+1==isize ||
+	  top.atoms.atom[index[i]].resnr!=top.atoms.atom[index[i+1]].resnr) {
+	resnr    = top.atoms.atom[index[i]].resnr;
+	pdb_bfac = find_pdb_bfac(pdbatoms,*(top.atoms.resname[resnr]),resnr,
+				 *(top.atoms.atomname[index[i]]));
+	
+	fprintf(fp,"%5d  %10.5f  %10.5f\n",
+		bRes ? top.atoms.atom[index[i]].resnr+1 : i+1,rmsf[i]*bfac,
+		pdb_bfac);
+      }
     }
+    fclose(fp);
+  } else {
+    fp = xvgropen(ftp2fn(efXVG,NFILE,fnm),"RMS fluctuation",label,"(nm)");
+    for(i=0; i<isize; i++)
+      if (!bRes || i+1==isize ||
+	  top.atoms.atom[index[i]].resnr!=top.atoms.atom[index[i+1]].resnr)
+	fprintf(fp,"%5d %8.4f\n",
+		bRes ? top.atoms.atom[index[i]].resnr+1 : i+1,sqrt(rmsf[i]));
+    fclose(fp);
   }
-  else {
-    fp = xvgropen(ftp2fn(efXVG,NFILE,fnm),"RMS fluctuation","Atom","nm");
-    for(i=0;(i<isize);i++) 
-      fprintf(fp,"%5d %8.4f\n",i,sqrt(rmsf[i]));
+  if (devfn) {
+    for(i=0; i<isize; i++)
+      rmsf[i] = (rmsd_x[i][XX]+rmsd_x[i][YY]+rmsd_x[i][ZZ])/count;
+      if (bRes)
+      average_residues(rmsf,isize,index,w_rls,&top.atoms); 
+    /* Write RMSD output */
+    fp = xvgropen(devfn,"RMS Deviation",label,"(nm)");
+    for(i=0; i<isize; i++)
+      if (!bRes || i+1==isize ||
+	  top.atoms.atom[index[i]].resnr!=top.atoms.atom[index[i+1]].resnr)
+	fprintf(fp,"%5d %8.4f\n",
+		bRes ? top.atoms.atom[index[i]].resnr+1 : i+1,sqrt(rmsf[i]));
+    fclose(fp);
   }
-  fclose(fp);
   
   if (opt2bSet("-oq",NFILE,fnm)) {
     /* Write a pdb file with B-factors and optionally anisou records */
@@ -384,6 +445,8 @@ int main (int argc,char *argv[])
     xvgr_file(opt2fn("-oc",NFILE,fnm),"-nxy");
   }
   xvgr_file(opt2fn("-o",NFILE,fnm),"-nxy");
+  if (devfn)
+    xvgr_file(opt2fn("-od",NFILE,fnm),"-nxy");
     
   thanx(stdout);
   
