@@ -50,7 +50,6 @@ static bool bTrunc;
 static real side,side_2,side3_4;
 /* static real diag; */
 static rvec gl_fbox,gl_hbox,gl_mhbox;
-static matrix box_inv;
 
 void init_pbc(matrix box,bool bTruncOct)
 {
@@ -64,9 +63,6 @@ void init_pbc(matrix box,bool bTruncOct)
   side3_4 = 0.75*side;
   /*
   diag    = side_2*sqrt(3.0);
-  */
-  m_inv(box,box_inv);
-  /*
   bTriclinic=FALSE;
   for(i=0; (i<DIM); i++)
     for(j=0; (j<DIM); j++)
