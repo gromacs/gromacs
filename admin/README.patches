@@ -1,0 +1,224 @@
+
+To support special compiler and OS combinations like the Portland
+compilers on Linux/x86, Compaq compilers on Linux/Alpha, and enable
+shared libraries when using wrapper scripts like mpcc we are using
+a prerelease version of libtool (1.4b), and the libtool.m4 script has been
+patched and included at the end of acinclude.m4.
+
+To be able to use fortran and assembly code in the libraries we
+unfortunately also have to use a prerelease version of automake (1.4h)
+To fix a problem with dependency tracking for Compaq Compilers on
+Linux/Alpha we have also patched the depcomp and depend.m4 files.
+
+PLEASE NOTE - you do NOT have to install these programs to compile GROMACS.
+You NEVER have to install libtool, and autoconf/automake are only 
+necessary for developers who change the Makefile.in's. You can find
+the software at ftp.gromacs.org/developers.
+
+This file summarizes the patches/extensions we made so we can check it
+if we ever update the files in GROMACS:
+
+
+*******************************************************************
+
+A. Changes in automake-1.4h:
+1. m4/depend.m4 - This file is not directly included in GROMACS, but
+   the macro AM_DEPENDENCIES is used when you run aclocal.
+   The depmode is erroneously identified as gcc for ccc/linux. This 
+   compiler uses the same flags as gcc, but the resulting dependency
+   file can't be included directly. Add a check where we try to 
+   include it in a makefile:
+
+NB: This is now in the automake CVS!
+
+m4/depend.m4:
+=====================================================================
+    # We need to recreate these files for each test, as the compiler may
+    # overwrite some of them when testing with obscure command lines.
+    # This happens at least with the AIX C compiler.
+    echo '#include "conftest.h"' > conftest.c
+    echo 'int i;' > conftest.h
++    echo 'include conftest.Po' > Makefile
+
+    case $depmode in
+    nosideeffect)
+      # after this tag, mechanisms are not by side-effect, so they'll
+      # only be used when explicitly requested
+
+    case $depmode in
+    nosideeffect)
+      # after this tag, mechanisms are not by side-effect, so they'll
+      # only be used when explicitly requested
+      if test "x$enable_dependency_tracking" = xyes; then
+	continue
+      else
+	break
+      fi
+      ;;
+    none) break ;;
+    esac
+    # We check with `-c' and `-o' for the sake of the "dashmstdout"
+    # mode.  It turns out that the SunPro C++ compiler does not properly
+    # handle `-M -o', and we need to detect this.
+    if depmode=$depmode \
+       source=conftest.c object=conftest.o \
+       depfile=conftest.Po tmpdepfile=conftest.TPo \
+       $SHELL ./depcomp $depcc -c conftest.c -o conftest.o >/dev/null 2>&1 &&
+-       grep conftest.h conftest.Po > /dev/null 2>&1; then
++       grep conftest.h conftest.Po > /dev/null 2>&1 &&
++       ${MAKE-make} > /dev/null 2>&1; then
+      am_cv_$1_dependencies_compiler_type=$depmode
+      break
+    fi
+  done
+==========================================================================
+
+2. The generated dependencies are named file.o.d on tru64 unix, but
+   just file.d at least on some version of ccc on Linux. Check for both
+   extensions in depcomp:
+
+NB: This is in the automake CVS now.
+
+lib/depcomp: (also present in GROMACS as config/depcomp)
+==========================================================================
+tru64)
+   # The Tru64 AIX compiler uses -MD to generate dependencies as a side
+   # effect.  `cc -MD -o foo.o ...' puts the dependencies into `foo.o.d'.
++   # At least on Alpha/Redhat 6.1, Compaq CCC V6.2-504 seems to put 
++   # dependencies in `foo.d' instead, so we check for that too.
+   # Subdirectories are respected.
+
+-   tmpdepfile="$object.d"
++   tmpdepfile1="$object.d"
++   tmpdepfile2=`echo "$object" | sed -e 's/.o$/.d/'` 
+   if test "$libtool" = yes; then
+      "$@" -Wc,-MD
+   else
+      "$@" -MD
+   fi
+
+   stat=$?
+   if test $stat -eq 0; then :
+   else
+-      rm -f "$tmpdepfile"
++      rm -f "$tmpdepfile1" "$tmpdepfile2" 
+         exit $stat
+   fi
+
++   if test -f "$tmpdepfile1"; then
++     tmpdepfile="$tmpdepfile1"
++   else
++     tmpdepfile="$tmpdepfile2"
++   fi
++
+   if test -f "$tmpdepfile"; then
+      sed -e "s,^.*\.[a-z]*:,$object:," < "$tmpdepfile" > "$depfile"
+      # That's a space and a tab in the [].
+      sed -e 's,^.*\.[a-z]*:[ 	]*,,' -e 's,$,:,' < "$tmpdepfile" >> "$depfile"
+   else
+==================================================================
+
+
+
+
+
+
+
+**********************************************************************
+
+B. Changes in libtool-1.4b:
+   All these changes should go in libtool.m4. This file is included
+   in the GROMACS acinclude.m4 to make sure we use the right version.
+
+1. I have implemented Fortran 77 support in libtool. This involves
+   the AC_LIBTOOL_LANG_F77_CONFIG macro, and all supporting routines
+   with "F77" in the name :-) 
+   Since a couple of f77 compilers (ibm xlf notably) dont accept -DPIC
+   I also separated the compiler flag test into one for -fPIC and
+   a separate one for -DPIC.
+   I have changed echo to printf for the lt_simple.. variables, to
+   get the fortran formatting right.
+   I removed the --with-tags argument from _LT_AC_TAGCONFIG, 
+   to fix libtool always creating the F77 and CXX macros, 
+   and replaced it with a check for ac_cv_prog_**_g to determine
+   whether we should use CXX and/or F77. Don't care about GCJ...
+   To avoid AC_PROG_CXX always being expanded, I introduced the macro 
+   inside an always-false test in our configure.ac.
+  
+2. To support dynamic libraries on Alpha/Linux with the Compaq Compilers,
+   I have added some flag specifications in the non-gcc compiler section 
+   of the AC_LIBTOOL_PROG_COMPILER_PIC macro. I added the linux*) case:
+
+=============================================================
+  irix5* | irix6*)
+    _LT_AC_TAGVAR(lt_prog_compiler_wl, $1)='-Wl,'
+    # PIC (with -KPIC) is the default.
+    _LT_AC_TAGVAR(lt_prog_compiler_static, $1)='-non_shared'
+    ;;
+
++  linux*)
++    # Check flags for non-gnu compilers on Linux 
++    case "$host_cpu" in
++    alpha*)
++      # The only non-gnu compiler on Linux/Alpha is the Compaq one:
++      _LT_AC_TAGVAR(lt_prog_compiler_wl, $1)='-Wl,'
++      _LT_AC_TAGVAR(lt_prog_compiler_static, $1)='-non_shared'
++      ;;
++    *)
++      _LT_AC_TAGVAR(lt_prog_compiler_can_build_shared, $1)=no
++      ;;
++    esac
++    ;;
+
+  newsos6)
+    _LT_AC_TAGVAR(lt_prog_compiler_pic, $1)='-KPIC'
+    _LT_AC_TAGVAR(lt_prog_compiler_static, $1)='-Bstatic'
+    ;;
+===============================================================
+
+3. When we use the mpcc wrapper script for MPI compile on aix,
+   the MPI library directory is added by the script, but the normal
+   -blibpath option to the compiler overrides all -L flags, so the
+   MPI dynamic libs are not found at runtime, although the libtool
+   script thinks dynamic libraries work.
+
+   I have worked around this by trying to link a small program, and
+   use dump -H to check for the libpath encoded in the executable.
+   This default aix libpath is extended with $libdir, and encoded
+   with -blibpath. (added AC_CHECK_AIX_LIBPATH, and four calls to it)
+   
+
+*********************************************************************
+
+C. Changes in config/config.guess:
+
+The Portland compilers write "Linking:" on standard out, which
+fscked up the host detection completely... I work around this by
+discarding standard error too in a lot of places all over the file,
+e.g.: 	
+
+$CC_FOR_BUILD $dummy.c -o $dummy 2>/dev/null >/dev/null
+
+********************************************************************
+
+That's it. I've submitted all patches and extensions to 
+automake/libtool mailing lists, so hopefully the next release will be 
+easier if they are included in future versions :-)
+
+Erik Lindahl <lindahl@gromacs.org>, 2001-07-17
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -45,7 +45,7 @@ static char *SRCID_x86_cpu_h = "$Id$";
 extern int cpu_capabilities;
 #define UNKNOWN_CPU           0
 
-#if (defined USE_SSE || defined USE_3DNOW)
+#ifdef USE_X86_ASM
 
 #define VENDOR_AMD   0x68747541
 #define VENDOR_INTEL 0x756e6547

@@ -33,7 +33,10 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
+
+/* This line is only for CVS version info */
 static char *SRCID_template_c = "$Id$";
+
 #include "statutil.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -74,8 +77,9 @@ int main(int argc,char *argv[])
   t_trxframe fr;
   rvec       *xtop;
   matrix     box;
-  int        status,flags;
- 
+  int        status;
+  int        flags = TRX_READ_X;
+
   t_filenm fnm[] = {
     { efTPS,  NULL,  NULL, ffREAD },   /* this is for the topology */
     { efTRX, "-f", NULL, ffREAD }      /* and this for the trajectory */
@@ -87,7 +91,7 @@ int main(int argc,char *argv[])
 
   /* This is the routine responsible for adding default options,
    * calling the X/motif interface, etc. */
-  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
+  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
 
   /* We don't need any topology information to write the coordinates,
@@ -112,12 +116,13 @@ int main(int argc,char *argv[])
   
   /* The first time we read data is a little special */
   read_first_frame(&status,ftp2fn(efTRX,NFILE,fnm),&fr,flags);
-  
+   
   /* This is the main loop over frames */
   do {
     /* coordinates are available in the vector fr.x
      * you can find this and all other structures in
      * the types directory under the gromacs include dir.
+     * Note how flags determines wheter to read x/v/f!
      */
     printf("Coordinates at t=%8.3f : %8.5f %8.5f %8.5f\n",fr.time,fr.x[n][XX],fr.x[n][YY],fr.x[n][ZZ]);
   } while(read_next_frame(status,&fr));

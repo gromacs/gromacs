@@ -48,11 +48,6 @@ typedef struct
   int  natoms;    /* number of atoms (atoms, x, v, f) */
   real t0;        /* time of the first frame, needed  *
 		   * for skipping frames with -dt     */
-  real tpf;       /* time of the previous frame, not  */
-                  /* the read, but real file frames   */
-  real tppf;      /* time of two frames ago           */
-                  /* tpf and tppf are needed to       */
-                  /* correct rounding errors for -e   */
   bool bTitle;
   char *title;    /* title of the frame               */
   bool bStep;

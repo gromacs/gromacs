@@ -42,7 +42,7 @@ static char *SRCID_x86_3dnow_h = "$Id$";
 #include <config.h>
 #endif
 
-#if (defined USE_3DNOW && !defined DOUBLE)
+#if (defined USE_X86_ASM && !defined DOUBLE)
 
 void check3dnow();
 void vecinvsqrt_3dnow(float in[],float out[],int n);

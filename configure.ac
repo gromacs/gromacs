@@ -2,26 +2,19 @@
 # Process this file wth autoconf to produce a configure script.
 #######################################################################
 
-# Disable caching to avoid stupid mistakes 
-define([AC_CACHE_LOAD], )
-define([AC_CACHE_SAVE], )
-
-AC_INIT(src/gmxlib/3dview.c)
-AC_PREREQ(2.13)
+AC_PREREQ(2.50)
+AC_INIT(GROMACS, 3.0, gromacs@gromacs.org)
+AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
 
 AM_INIT_AUTOMAKE(gromacs, 3.0)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
-AM_CONFIG_HEADER(include/config.h)
+AM_CONFIG_HEADER(src/config.h)
 dnl This is the version info according to the libtool versioning system.
 dnl It does *not* correspond to the release number.
 SHARED_VERSION_INFO="1:0:0"
 AC_SUBST(SHARED_VERSION_INFO)
-
-
-
-
 
 
 
@@ -38,6 +31,7 @@ AC_ARG_ENABLE(float,
  [  --disable-float               use double instead of single precision],, enable_float=yes)
 if test "$enable_float" = "no"; then
   AC_DEFINE(DOUBLE,,[Compile in double precision])
+  AM_CONDITIONAL(DOUBLE,true)
 fi
 
 ### Fortran or not
@@ -68,13 +62,13 @@ AC_ARG_ENABLE(mpi,
 
 ### MPI environment
 AC_ARG_WITH(mpi-environment,
- [  --with-mpi-environment=VAR    only start parallel runs when VAR is set],,
+ [  --enable-mpi-environment=VAR  only start parallel runs when VAR is set],,
 [case "${host_cpu}" in
-  mips*-irix*) with_mpi_environment="MPI_ENVIRONMENT" ;;
-  *) with_mpi_environment=no ;;
+  mips*-irix*) enable_mpi_environment="MPI_ENVIRONMENT" ;;
+  *) enable_mpi_environment=no ;;
 esac])
-if test "$with_mpi_environment" != "no"; then
-  AC_DEFINE_UNQUOTED(CHECK_MPI_ENV,"$with_mpi_environment",[If defined, only start MPI runs when this variable is set])
+if test "$enable_mpi_environment" != "no"; then
+  AC_DEFINE_UNQUOTED(CHECK_MPI_ENV,"$enable_mpi_environment",[If defined, only start MPI runs when this variable is set])
 fi
 
 
@@ -116,8 +110,8 @@ fi
 AC_ARG_ENABLE(waterwater-loops,     
  [  --disable-waterwater-loops    turn off double unrolled loops (hack for sgi)],,
 [case "${host_cpu}-${host_os}" in
-  mips*-irix*) enable_waterwater_loops=yes ;;
-  *) enable_waterwater_loops=no ;;
+  mips*-irix*) enable_waterwater_loops=no ;;
+  *) enable_waterwater_loops=yes ;;
 esac])
 if test "$enable_waterwater_loops" = "no"; then
   AC_DEFINE(DISABLE_WATERWATER_LOOPS,,[Don't use special loops for water-water interactions])
@@ -197,7 +191,7 @@ fi
 ### Compile without FFTW - disabling it means you can't use PME or PPPM!
 ### N.B.: This is only intended as a last resort, or for tests - don't use it!
 AC_ARG_WITH(fftw,
- [  --without-fftw                if you turn this off you can't use PME/PPPM],, with_fftw=yes)
+ [  --without-fftw          if you turn this off you cannot use PME/PPPM],, with_fftw=yes)
 if test "$with_fftw" = "no"; then
   AC_DEFINE(WITHOUT_FFTW,,[Disable all FFTW (and thus PME/PPPM) support])
 fi
@@ -224,30 +218,37 @@ case "${host_cpu}-${host_os}" in
     f77_names="f77 xlf xlf77 cf77 fl32 g77 fort77 f90 xlf90 pgf77 cf77 fort fort77 pgf90"
     ;;
 esac
-
-if test "$enable_fortran" = "yes"; then
-  AC_CHECK_PROGS(F77, $f77_names)
-  AC_PROG_F77
-  if test -z "$F77"; then
-    AC_MSG_ERROR([No fortran compiler found])
-  fi
-fi
-
 # the (non-mpi) c compiler, which is also used for programs executed during build stage
-AC_CHECK_PROGS(CC, $cc_names)
-AC_PROG_CC
+AC_PROG_CC( $cc_names )
 # Check for environment variable CC_FOR_BUILD before overwriting it
 if test -z "$CC_FOR_BUILD"; then
   CC_FOR_BUILD=$CC
 fi
 AC_SUBST(CC_FOR_BUILD) 
 
+
+if test "$enable_fortran" = "yes"; then
+  AC_PROG_F77( $f77_names )
+  if test -z "$F77"; then
+    AC_MSG_ERROR([No fortran compiler found])
+  fi
+fi
+
+# This is a libtool hack. We never use c++, but libtool supports it and
+# thus there are macros that require it. For some reason, these macros are
+# always expanded by the libtool scripts, unless the are already present 
+# in the file. Thus, we include them here but never run them...
+if test 1 = 0; then
+  AC_PROG_CXX
+  AC_PROG_CXXCPP
+fi
+
 # if we are using mpi, also get an MPICC. We cannot set that in the PROG_CC macro
 # above, since autoconf checks that the created file can be executed. This would
 # fail on platforms where MPI executables can only be run through a batchqueue.
 
 if test "$enable_mpi" = "yes"; then
-  AC_CHECK_PROGS(MPICC, mpicc mpcc mpxlf hcc, $CC)	
+  AC_CHECK_PROGS(MPICC, mpxlc mpicc mpcc hcc, $CC)	
 # now change the normal cc to the MPI one - see the comment above.
   CC=$MPICC
   AC_MSG_CHECKING([whether the MPI cc command works]) # be paranoid
@@ -261,7 +262,7 @@ fi
 
 if test "$enable_fortran" = "yes"; then
   AC_F77_LIBRARY_LDFLAGS  
-  ACX_F77_NAME_MANGLING  
+  AC_F77_WRAPPERS 
 fi
 
 AC_PROG_CPP
@@ -297,8 +298,25 @@ EOF
                    [from www.gromacs.org, or disable assembly loops.])
     fi
     GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} x86_cpuid.lo x86_sse.lo x86_3dnow.lo"
+    AC_DEFINE([USE_X86_ASM],,[Use X86 SSE/3DNow multimedia assembly code])
   fi
 fi
+
+case "${host_cpu}" in
+  alpha*) 
+    AC_DEFINE([USE_AXP_ASM],,[Use Alpha assembly for vectorized 1/sqrt])
+    cat > conftest.s << EOF
+#ifdef __ELF__
+.section .rodata
+#else			
+	 .rdata
+#endif	
+EOF
+    AM_CONDITIONAL(AXP_ASM_CAPITAL_S,!(AC_TRY_COMMAND($CC -c conftest.s)))
+    GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} axp_asm.lo"
+     ;;
+  *) ;;
+esac
 
 AC_PATH_PROG(IDENT,ident,no)
 if test "$IDENT" != "no"; then
@@ -311,7 +329,7 @@ if test "$IDENT" != "no"; then
     AC_MSG_RESULT([no]))
 fi
 
-AM_PROG_LIBTOOL
+AC_PROG_LIBTOOL
 AC_PROG_LN_S
 
 
@@ -346,30 +364,36 @@ if test "${host_vendor}" = "ibm"; then
   if test "$vectmass" = "yes"; then
     AC_DEFINE(HAVE_LIBMASSV_ANY,,[Use vectorized routines in the IBM MASS library])
     if test "$enable_vectorized_recip" = "not_selected"; then
-      echo "Note: vector MASS lib present - vectorizing 1/x inner loops"
+      AC_MSG_NOTICE([vector MASS lib present - vectorizing 1/x inner loops])
       enable_vectorized_recip="yes"
     fi
     if test "$enable_vectorized_sqrt" = "not_selected"; then
-      echo "Note: vector MASS lib present - vectorizing 1/sqrt inner loops"
+      AC_MSG_NOTICE([vector MASS lib present - vectorizing 1/sqrt inner loops])
       enable_vectorized_sqrt="yes"
     fi    
   else
     echo "******************************************************************************"
     echo "*Didn't find the IBM MASS library. It's not necessary, but can provide 20%   *"
     echo "*performance improvement by loop vectorization. Add the library search path  *"
-    echo "*with -L in the LDFLAGS variable. If you can't find MASS, download it from   *"
+    echo "*with -L in the LDFLAGS variable. If you cannot find MASS, download it from  *"
     echo "*http://www.research.ibm.com/mass                                            *"
     echo "******************************************************************************"
   fi
 fi 
 
 if test "$with_fftw" = "yes"; then
-  ACX_CHECK_FFTW(fftw,$enable_float)
-  ACX_CHECK_FFTW(rfftw,$enable_float)
+  if test "$enable_float" = "yes"; then
+    sizeof_real=4
+  else 
+    sizeof_real=8
+  fi
+
+  ACX_CHECK_FFTW(fftw,$sizeof_real)
+  ACX_CHECK_FFTW(rfftw,$sizeof_real)
 
   if test "$enable_mpi" = "yes"; then
-    ACX_CHECK_FFTW(fftw_mpi,$enable_float)
-    ACX_CHECK_FFTW(rfftw_mpi,$enable_float)
+    ACX_CHECK_FFTW(fftw_mpi,$sizeof_real)
+    ACX_CHECK_FFTW(rfftw_mpi,$sizeof_real)
   fi
 
   case ${ac_fftw_savedprefix} in
@@ -383,7 +407,7 @@ else
   echo "* You will not be able to use PME (Particle Mesh Ewald) summation *"
   echo "* in your simulations. Unless you are absolutely sure you won't   *"
   echo "* ever need this we suggest you install FFTW instead of compiling *"
-  echo "* a version of GROMACS that won't be fully functional.            *"
+  echo "* a version of GROMACS that will be crippled!                     *"
   echo "*******************************************************************"
 fi # end of fftw check
 
@@ -401,7 +425,7 @@ if test "$have_xdr" = "yes"; then
   AC_DEFINE(USE_XDR,,[Use portable trajectory routines])
 else
   echo "*****************************************************************************"
-  echo "*WARNING - XDR not found. This cripples GROMACS significantly - you can't   *"
+  echo "*WARNING - XDR not found. This cripples GROMACS significantly - you cannot  *"
   echo "*read/write portable trajectories. No choice on windows, but locate the RPC *"
   echo "*header files and libraries if you run UNIX - they do exist!                *"
   echo "*****************************************************************************"
@@ -423,13 +447,13 @@ AC_PATH_XTRA
 # try to find motif headers and libraries
 AC_FIND_MOTIF
 use_motif=no
-if test "$motif_libraries" != "none"; then
-  if test "$motif_includes" != "none"; then
+if test "$motif_libraries" != "no"; then
+  if test "$motif_includes" != "no"; then
     GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} mgmx.lo widget.lo"
     use_motif=yes
   else
-    AC_MSG_WARN([ Sorry, we need both Motif/Lesstif libraries and includes. Disabling.])
-    motif_include=none
+    AC_MSG_NOTICE([Both libraries and includes are needed for Motif - disabling.])
+    motif_includes=no
   fi
 fi
 if test "$no_x" != "yes"; then
@@ -581,7 +605,6 @@ fi
 ########################################################################
 # Final output stage
 ########################################################################
-ASFLAGS="$ASFLAGS $CFLAGS"
 AS="$CC"
 AC_SUBST(ASFLAGS)
 AC_SUBST(AS)
@@ -628,16 +651,17 @@ if test "$exec_prefix" = "NONE"; then
 fi
 AC_SUBST(exec_prefix)
 
-AC_OUTPUT([Makefile include/Makefile include/types/Makefile src/Makefile
-           src/gmxlib/Makefile src/mdlib/Makefile src/kernel/Makefile
-           src/tools/Makefile src/ngmx/Makefile src/contrib/Makefile
-           scripts/Makefile admin/Makefile share/Makefile share/tutor/Makefile
-           share/tutor/gmxdemo/Makefile share/tutor/nmr1/Makefile 
-           share/tutor/nmr2/Makefile share/tutor/water/Makefile
-           share/tutor/speptide/Makefile share/template/Makefile 
-           share/top/Makefile share/html/Makefile share/html/images/Makefile 
-           share/html/online/Makefile man/Makefile man/man1/Makefile])
+AC_CONFIG_FILES([Makefile include/Makefile include/types/Makefile 
+src/Makefile src/gmxlib/Makefile src/mdlib/Makefile src/kernel/Makefile
+src/tools/Makefile src/ngmx/Makefile src/contrib/Makefile
+scripts/Makefile admin/Makefile share/Makefile share/tutor/Makefile
+share/tutor/gmxdemo/Makefile share/tutor/nmr1/Makefile 
+share/tutor/nmr2/Makefile share/tutor/water/Makefile
+share/tutor/speptide/Makefile share/template/Makefile 
+share/top/Makefile share/html/Makefile share/html/images/Makefile 
+share/html/online/Makefile man/Makefile man/man1/Makefile])
 
+AC_OUTPUT 
 
 
 
@@ -651,31 +675,56 @@ AC_OUTPUT([Makefile include/Makefile include/types/Makefile src/Makefile
 
 echo ""
 echo "GROMACS is ready to compile."
-echo ""
+
 eval "show_path=`echo ${exec_prefix} | sed -e s,NONE,${ac_default_prefix},`"
 echo ""
 echo "* Binaries and libraries for this host will be installed under"
 echo "  ${show_path}" 
-echo "  (You can change it with the --exec-prefix option.)"
+echo "  (You can set it with the --prefix and --exec-prefix options.)"
 
 if test "$enable_float" = "no" -a "$name_transform_provided" = "no"; then
   echo ""
   echo "* You are compiling a double precision version of the package -"
   echo "  program names will be suffixed with _d to avoid overwriting single"
-  echo "  precision files. You can override this with --program-suffix"
+  echo "  precision files. You can override it with --program-suffix"
 fi
 
 if test "$name_transform_provided" = "no" -a "$enable_mpi" = "yes"; then
   echo ""
   echo "* Seems you are compiling with MPI support. You can install the MPI-"
   echo "  enabled programs with suffixed names to have both MPI and non-MPI"
-  echo "  versions. This is useful when you need a charge queue to run"
-  echo "  MPI-linked programs (common on supercomputers)."
+  echo "  versions. This is useful e.g. on supercomputers where you usually"
+  echo "  cannot run MPI-linked programs on the login node."
   echo "  Set a suffix with e.g. --program-suffix=_mpi (or _mpi_d for double)."
   echo "  You only need MPI for mdrun, so if you already have non-MPI stuff"
-  echo "  installed you can issue make mdrun; make mdrun-install."
+  echo "  installed you can issue make mdrun; make install-mdrun."
+fi
+
+if test "$enable_shared" = "yes"; then
+  echo ""
+  echo "* To save space, we use shared libraries. If this causes any problems,"
+  echo "  you can turn it off with --disable-shared."
 fi
 echo ""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -8,31 +8,38 @@ templatedir = ${datadir}/template
 # we don't build this, it's meant for the user to play with.
 # Since a Makefile is used for the installation, we call the
 # template makefile Template.mak, and rename it to Makefile when installing.
-LDFLAGS = @LDFLAGS@
-LIBS = @LIBS@
-CPPFLAGS = @CPPFLAGS@
-CFLAGS = @CFLAGS@
+# We add the DOUBLE define to CPPFLAGS, so users can do without config.h
+LDFLAGS = -L@libdir@ @LDFLAGS@
+LIBS = -lmd@LIBSUFFIX@ -lgmx@LIBSUFFIX@ @LIBS@ 
 CC = @CC@
+if DOUBLE
+CFLAGS = @CFLAGS@ -DDOUBLE @INCLUDES@ -I@includedir@ 
+else
+CFLAGS = @CFLAGS@ @INCLUDES@ -I@includedir@ 
+endif
 
+if DOUBLE
+template_DATA = template.c README Makefile.@host@_double
+else
 template_DATA = template.c README Makefile.@host@
+endif
 EXTRA_DIST = template.c README Template.mak
 
-#BUILT_SOURCES = Makefile.@host@
-
-Makefile.@host@: Template.mak Makefile 
-	cat $(srcdir)/Template.mak | sed 's,@libdir\@,$(libdir),' | \
+Makefile.@host@ Makefile.@host@_double: Template.mak Makefile 
+	cat $(srcdir)/Template.mak | \
 	sed 's,@LDFLAGS\@,$(LDFLAGS),' | \
 	sed 's,@LIBS\@,$(LIBS),' | \
-	sed 's,@CPPFLAGS\@,$(CPPFLAGS),' | \
 	sed 's,@CFLAGS\@,$(CFLAGS),' | \
 	sed 's,@CC\@,$(CC),' | \
-	sed 's,@includedir\@,$(includedir),' | \
 	sed 's,@host\@,@host@,' >$@
 
 install-data-hook:
+if DOUBLE
+	(cd $(DESTDIR)$(templatedir) && test ! -f Makefile && $(LN_S) Makefile.@host@_double Makefile ; exit 0)
+else
 	(cd $(DESTDIR)$(templatedir) && test ! -f Makefile && $(LN_S) Makefile.@host@ Makefile ; exit 0)
-
-CLEANFILES = Makefile.@host@ *~ \\\#*
+endif
+CLEANFILES = Makefile.@host@ Makefile.@host@_double *~ \\\#*
 
 
 

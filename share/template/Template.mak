@@ -11,13 +11,9 @@
 #
 
 # Variables set by the configuration script:
-prefix       = @prefix@
-exec_prefix  = @exec_prefix@
-INCLUDES     = -I@includedir@ @INCLUDES@
-LIBS         = -L@libdir@ -lmdXXX_SUFFIX_XXX -lgmxXXX_SUFFIX_XXX @LIBS@
+LIBS         = @LIBS@
 LDFLAGS      = @LDFLAGS@
-CFLAGS	     = @CFLAGS@	$(INCLUDES)
-CPPFLAGS     = @CPPFLAGS@
+CFLAGS	     = @CFLAGS@	
 CC           = @CC@
 LD           = $(CC)
 

@@ -13,13 +13,9 @@ SUBDIRS = src admin scripts share include man
 
 #
 # Most files in the config subdir is included automatically when
-# we issue "make dist", but some versions of automake seem to have
-# problems with it, so just include them all...
+# we issue "make dist", but not depcomp
 
-EXTRA_DIST = config/depcomp 	config/ltconfig 	config/ltcf-c.sh   \
-	     config/ltcf-f77.sh config/config.guess	config/config.sub  \
-	     config/install-sh  config/missing          config/ltmain.sh   \
-	     config/mkinstalldirs                               
+EXTRA_DIST = config/depcomp 	                               
 
 install-hook:
 	@echo ""
@@ -39,6 +35,8 @@ mdrun:
 	(cd $(top_builddir)/src/kernel && $(MAKE) mdrun ; exit 0)
 
 install-mdrun:
+	(cd $(top_builddir)/src/gmxlib && $(MAKE) install ; exit 0)
+	(cd $(top_builddir)/src/mdlib && $(MAKE) install ; exit 0)
 	(cd $(top_builddir)/src/kernel && $(MAKE) install-mdrun ; exit 0)
 
 links:

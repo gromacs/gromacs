@@ -184,18 +184,13 @@ static inline void vecinvsqrt(real in[],real out[],int n)
 #endif /* INVSQRT_DONE */
   int i;
   
-#ifndef DOUBLE
-#ifdef USE_3DNOW
-  if(cpu_capabilities & X86_3DNOW_SUPPORT)
-    vecinvsqrt_3dnow(in,out,n);
-  else
-#endif
-#ifdef USE_SSE
+#if (defined USE_X86_ASM && !defined DOUBLE)
   if((cpu_capabilities & X86_SSE_SUPPORT) && !((unsigned long int)in & 0x1f) && !((unsigned long int)out & 0x1f)) /* SSE data must be cache aligned */
     vecinvsqrt_sse(in,out,n);
+  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
+    vecinvsqrt_3dnow(in,out,n);
   else
 #endif /* no x86 optimizations */
-#endif /* not double */    
 #ifdef INVSQRT_DONE
     for(i=0;i<n;i++) {
       x=in[i];
@@ -261,18 +256,13 @@ static inline void vecrecip(real in[],real out[],int n)
 #endif /* SOFTWARE_RECIP */
   int i;
 
-#ifndef DOUBLE  
-#ifdef USE_3DNOW
-  if(cpu_capabilities & X86_3DNOW_SUPPORT)
-    vecrecip_3dnow(in,out,n);
-  else
-#endif
-#ifdef USE_SSE
+#if (defined USE_X86_ASM && !defined DOUBLE)
   if((cpu_capabilities & X86_SSE_SUPPORT) && !((unsigned long int)in & 0x1f) && !((unsigned long int)out & 0x1f)) /* SSE data must be cache aligned */
     vecrecip_sse(in,out,n);
+  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
+    vecrecip_3dnow(in,out,n);
   else
 #endif /* no x86 optimizations */
-#endif /* not double */    
 #ifdef SOFTWARE_RECIP
     for(i=0;i<n;i++) {
       x=in[i];

@@ -56,7 +56,7 @@ the default prefix!
 # but since the development package puts a lot of include files in {prefix}/include we
 # default to /usr/local/gromacs. Will try to fix that in gromacs 4.0 :-)
 
-./configure
+./configure --enable-shared
 make 
 
 %install

@@ -42,7 +42,7 @@ static char *SRCID_x86_sse_h = "$Id$";
 #include <config.h>
 #endif
 
-#if (defined USE_SSE && !defined DOUBLE)
+#if (defined USE_X86_ASM && !defined DOUBLE)
 
 void checksse();
 void vecinvsqrt_sse(float in[],float out[],int n);

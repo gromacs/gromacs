@@ -61,7 +61,12 @@ extern char *Program(void);
 /* Return the name of the program */
 extern char *ShortProgram(void);
 /* Id. without leading directory */
-
+extern void set_program_name(char *argvzero);
+/* set the program name to the provided string, but note
+ * that it must be a real file - we determine the library
+ * directory from its location!
+ */
+ 
 /************************************************
  *             Trajectory functions
  ************************************************/
@@ -110,30 +115,15 @@ extern bool bRmod(double a,double b);
  * larger than the float/double precision.
  */
 
-extern int check_times2(real t,real t0,real tp,real tpp);
+extern int check_times(real t,real t0);
 /* This routine checkes if the read-in time is correct or not;
  * returns -1 if t<tbegin or t MOD dt = t0,
- *          0 if tbegin <= t <=tend+margin,
- *          1 if t>tend
- * where margin is 0.1*min(t-tp,tp-tpp), if this positive, 0 otherwise.
- * tp and tpp should be the time of the previous frame and the one before.
+ *         0  if tbegin <= t <=tend,
+ *         1  if t>tend
  */
-
-extern int check_times(real t);
-/* This routine checkes if the read-in time is correct or not;
- * returns -1 if t<tbegin,
- *          0 if tbegin <= t <=tend,
- *          1 if t>tend
- */
-
-extern char *time_unit(void);
-/* return time unit (e.g. ps or ns) */
 
 extern char *time_label(void);
-/* return time unit label (e.g. "Time (ps)") */
-
-extern char *xvgr_tlabel(void);
-/* retrun x-axis time label for xmgr */
+/* return time unit label (e.g. ps or ns) */
 
 extern real time_factor(void);
 /* return time conversion factor from ps (i.e. 1e-3 for ps->ns) */

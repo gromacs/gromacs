@@ -1,4 +1,3 @@
-# Generated automatically from Makefile.in by configure.
 # Makefile.in generated automatically by automake 1.4f from Makefile.am.
 
 # Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001
@@ -22,6 +21,7 @@ SHELL = /bin/sh
 
 srcdir = .
 top_srcdir = ..
+
 prefix = /usr/local/gromacs
 exec_prefix = ${prefix}/i686-pc-linux-gnu
 
@@ -50,7 +50,7 @@ AUTOHEADER = ${SHELL} /tmp_mnt/etc/gromacs/cvs/gmx/config/missing --run autohead
 INSTALL = /usr/bin/install -c
 INSTALL_PROGRAM = ${INSTALL}
 INSTALL_DATA = ${INSTALL} -m 644
-INSTALL_SCRIPT = ${INSTALL_PROGRAM}
+INSTALL_SCRIPT = ${INSTALL}
 INSTALL_HEADER = $(INSTALL_DATA)
 transform = s,x,x,
 NORMAL_INSTALL = :
@@ -59,7 +59,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-host_alias = i686-pc-linux-gnu
+host_alias = @host_alias@
 host_triplet = i686-pc-linux-gnu
 AMTAR = ${SHELL} /tmp_mnt/etc/gromacs/cvs/gmx/config/missing --run tar
 AS = cc
@@ -68,10 +68,11 @@ AWK = gawk
 CC = cc
 CC_FOR_BUILD = cc
 CPP = cc -E
-CXX = @CXX@
-CXXCPP = @CXXCPP@
+CXX = 
+CXXCPP = 
 DEPDIR = .deps
 DLLTOOL = @DLLTOOL@
+ECHO = echo
 EXEEXT = 
 F77 = 
 FLIBS = 
@@ -106,14 +107,14 @@ EXTRA_SCRIPTS = mkcompl  mkhtml  mknroff  mktex
 EXTRA_DIST = gromacs.spec  gromacs-mpi.spec  programs.txt $(EXTRA_SCRIPTS)
 subdir = admin
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
-CONFIG_HEADER = $(top_builddir)/include/config.h
+CONFIG_HEADER = $(top_builddir)/src/config.h
 CONFIG_CLEAN_FILES =
 DIST_SOURCES =
 DIST_COMMON = Makefile.am Makefile.in
 all: all-am
 
 .SUFFIXES:
-$(srcdir)/Makefile.in:  Makefile.am  $(top_srcdir)/configure.in $(ACLOCAL_M4)
+$(srcdir)/Makefile.in:  Makefile.am  $(top_srcdir)/configure.ac $(ACLOCAL_M4)
 	cd $(top_srcdir) && \
 	  $(AUTOMAKE) --gnu  admin/Makefile
 Makefile:  $(srcdir)/Makefile.in  $(top_builddir)/config.status
