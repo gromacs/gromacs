@@ -120,24 +120,20 @@ static void insert_ion(int nsa,int *nwater,
   }
 }
 
-static void copy_atom(t_atoms *at1,int a1,t_atoms *at2,int a2,int r)
+static char *aname(char *mname)
 {
-  int r1,r2;
+  char *str;
+  int  i;
 
-  at2->atom[a2]=at1->atom[a1];
-  snew(at2->atomname[a2],1);
-  *at2->atomname[a2]=strdup(*at1->atomname[a1]);
-  r1=at1->atom[a1].resnr;
-  if (r == -1)
-    r2=r1;
-  else
-    r2=r;
-  at2->atom[a2].resnr=r2;
-  if (at2->resname[r2] == NULL) {
-    snew(at2->resname[r2],1);
-    *at2->resname[r2]=strdup(*at1->resname[r1]);
+  str = strdup(mname);
+  i=strlen(str)-1;
+  while (i>1 && (isdigit(str[i]) || (str[i]=='+') || (str[i]=='-'))) {
+    str[i]='\0';
+    i--;
   }
-}  
+
+  return str;
+}
 
 void sort_ions(int nsa,int nw,int repl[],atom_id index[],
 	       t_atoms *atoms,rvec x[],
@@ -145,7 +141,7 @@ void sort_ions(int nsa,int nw,int repl[],atom_id index[],
 {
   int i,j,k,r,np,nn,starta,startr,npi,nni;
   rvec *xt;
-  char **pptr=NULL,**nptr=NULL;
+  char **pptr=NULL,**nptr=NULL,**paptr=NULL,**naptr=NULL;
 
   snew(xt,atoms->nr);
 
@@ -172,10 +168,14 @@ void sort_ions(int nsa,int nw,int repl[],atom_id index[],
     if (np) {
       snew(pptr,1);
       pptr[0] = p_name;
+      snew(paptr,1);
+      paptr[0] = aname(p_name);
     }
     if (nn) {
       snew(nptr,1);
       nptr[0] = n_name;
+      snew(naptr,1);
+      naptr[0] = aname(n_name);
     }
     npi = 0;
     nni = 0;
@@ -185,7 +185,7 @@ void sort_ions(int nsa,int nw,int repl[],atom_id index[],
 	j = starta+npi;
 	k = startr+npi;
 	copy_rvec(x[index[nsa*i]],xt[j]);
-	atoms->atomname[j] = pptr;
+	atoms->atomname[j] = paptr;
 	atoms->atom[j].resnr = k ;
 	atoms->resname[k] = pptr;
 	npi++;
@@ -193,7 +193,7 @@ void sort_ions(int nsa,int nw,int repl[],atom_id index[],
 	j = starta+np+nni;
 	k = startr+np+nni;
 	copy_rvec(x[index[nsa*i]],xt[j]);
-	atoms->atomname[j] = nptr;
+	atoms->atomname[j] = naptr;
 	atoms->atom[j].resnr = k;
 	atoms->resname[k] = nptr;
 	nni++;
@@ -228,8 +228,8 @@ int main(int argc, char *argv[])
     "The group of solvent molecules should be continuous and all molecules",
     "should have the same number of atoms.",
     "The user should add the ion molecules to the topology file and include",
-    "the file [TT]ions.itp[tt]. Note that the ion names are different in the",
-    "Gromacs and Gromos96 forcefields.[PAR]",
+    "the file [TT]ions.itp[tt].",
+    "Ion names for Gromos96 should include the charge.[PAR]",
     "The potential can be written as B-factors",
     "in a pdb file (for visualisation using e.g. rasmol)[PAR]"
     "For larger ions, e.g. sulfate we recommended to use genbox."
