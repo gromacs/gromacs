@@ -51,23 +51,6 @@ static char *SRCID_main_c = "$Id$";
 FILE *stdlog=NULL;
 int  gmx_parallel=0;
 
-static void mem_init(void)
-{
-#ifdef _860_
-  void *p;
-  unsigned long avail;
-
-  avail=maxavail();
-  if ((p=malloc(avail))==NULL)
-    fatal_error(errno,"mem init");
-  else
-    {
-      memset(p,0,avail);
-      free(p);
-    }
-#endif
-}
-
 static int get_nodeid(FILE *log,int left,int right,int *nodeid,int *nnodes)
      /*
       * The ring of nodes is only defined by the interconnection
@@ -272,26 +255,15 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
     gmx_parallel = 0;
 #endif
   if (gmx_parallel)
-    cr->nodeid=gmx_setup(argc,argv,&cr->nnodes);
+    cr->nodeid = gmx_setup(argc,argv,&cr->nnodes);
   else
-    cr->nodeid=0;
+    cr->nodeid = 0;
 #else
-  cr->nodeid=0;
-  if (cr->nnodes > 1) {
-    gmx_parallel = 1; 
-#ifdef USE_PVM3
-    cr->nodeid=pvmio_setup(argv,cr->nnodes);
-#else
-    cr->nodeid=gmx_node_id();
-#endif
-  }
+  cr->nodeid   = 0;
+  cr->nnodes   = 1;
+  gmx_parallel = 0; 
 #endif
   
-#ifdef _amb_
-  pageMode(1);
-#endif
-  mem_init();
-
   if (!PAR(cr) && (cr->nodeid != 0))
     fatal_error(0,"(!PAR(cr) && (cr->nodeid != 0))");
   

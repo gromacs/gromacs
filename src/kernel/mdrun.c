@@ -42,21 +42,14 @@ static char *SRCID_mdrun_c = "$Id$";
 #include "futil.h"
 #include "edsam.h"
 #include "mdrun.h"
+#include "xmdrun.h"
 /* afm stuf */
 #include "pull.h"
 
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-#ifdef XMDRUN
-    "xmdrun is the experimental MD program. New features are tested in this",
-    "program before being implemented in the default mdrun. Currently under",
-    "investigation are: polarizibility, glass simulations, ",
-    "Free energy perturbation, X-Ray bombardments",
-    "and parallel independent simulations."
-#else
     "The mdrun program performs Molecular Dynamics simulations.",
-#endif
     "It reads the run input file ([TT]-s[tt]) and distributes the",
     "topology over nodes if needed. The coordinates are passed",
     "around, so that computations can begin.",
@@ -106,7 +99,12 @@ int main(int argc,char *argv[])
     "In both cases all the usual output will be written to file.",
     "When running with MPI, a signal to one of the mdrun processes",
     "is sufficient, this signal should not be sent to mpirun or",
-    "the mdrun process that is the parent of the others."
+    "the mdrun process that is the parent of the others.",
+    "Finally some experimental algorithms can be tested when the",
+    "appropriate options have been given. Currently under",
+    "investigation are: polarizibility, glass simulations, ",
+    "Free energy perturbation, X-Ray bombardments",
+    "and parallel independent simulations."
   };
   t_commrec    *cr;
   static t_filenm fnm[] = {
@@ -121,13 +119,11 @@ int main(int argc,char *argv[])
     { efTRX, "-rerun",  "rerun",    ffOPTRD },
     { efEDI, "-ei",     "sam",      ffOPTRD },
     { efEDO, "-eo",     "sam",      ffOPTWR },
-#ifdef XMDRUN
     { efGCT, "-j",      "wham",     ffOPTRD },
     { efGCT, "-jo",     "bam",      ffOPTRD },
     { efXVG, "-ffout",  "gct",      ffOPTWR },
     { efXVG, "-devout", "deviatie", ffOPTWR },
     { efXVG, "-runav",  "runaver",  ffOPTWR },
-#endif
     { efPPA, "-pi",     "pull",     ffOPTRD },
     { efPPA, "-po",     "pullout",  ffOPTWR },
     { efPDO, "-pd",     "pull",     ffOPTWR },
@@ -138,39 +134,35 @@ int main(int argc,char *argv[])
   /* Command line options ! */
   static bool bVerbose     = FALSE;
   static bool bCompact     = TRUE;
+  static bool bLateVir     = TRUE;
   static bool bSepDVDL     = FALSE;
-
-  /*  static bool bLateVir     = TRUE; */
-  /*  static bool bTweak       = FALSE; */
-  static int nDLB=0; 
-
-#ifdef XMDRUN
   static bool bMultiSim    = FALSE;
   static bool bGlas        = FALSE;
   static bool bIonize      = FALSE;
-#endif
+  static bool bPolarize    = FALSE;
+  
+  static int  nDLB=0; 
   static int  nnodes=1;
   static int  nstepout=10;
   static t_pargs pa[] = {
     { "-np",      FALSE, etINT, {&nnodes},
       "Number of nodes, must be the same as used for grompp" },
-    { "-v",       FALSE, etBOOL,{&bVerbose}, "Be loud and noisy" },
-    { "-compact", FALSE, etBOOL,{&bCompact}, "Write a compact log file" },
-#ifdef XMDRUN
-    { "-multi",   FALSE, etBOOL,{&bMultiSim}, "Do multiple simulations in parallel (only with -np > 1)" },
+    { "-v",       FALSE, etBOOL,{&bVerbose},  
+      "Be loud and noisy" },
+    { "-compact", FALSE, etBOOL,{&bCompact},  
+      "Write a compact log file" },
+    { "-multi",   FALSE, etBOOL,{&bMultiSim}, 
+      "Do multiple simulations in parallel (only with -np > 1)" },
+    { "-polarize",FALSE, etBOOL,{&bPolarize},
+      "Do polarization simulations using a shell model" },
     { "-glas",    FALSE, etBOOL,{&bGlas},
       "Do glass simulation with special long range corrections" },
     { "-ionize",  FALSE, etBOOL,{&bIonize},
       "Do a simulation including the effect of an X-Ray bombardment on your system" },
-#endif
     { "-sepdvdl", FALSE, etBOOL,{&bSepDVDL},
       "HIDDENWrite separate V and dVdl terms for each interaction and node(!) to log file(s)" },
-    /*    { "-latevir", FALSE, etBOOL,{&bLateVir},
-	  "HIDDENCalculate virial late in the algorithm" },   */
-    /*    { "-tweak",   FALSE, etBOOL,{&bTweak},
-	  "HIDDENModify PME virial computation" },                */
-    /*    { "-dlb",     FALSE, etINT, {&nDLB},
-	  "HIDDENUse dynamic load balancing every ... step. BUGGY do not use" },    */
+    { "-latevir", FALSE, etBOOL,{&bLateVir},
+      "HIDDENCalculate virial late in the algorithm" },
     { "-stepout", FALSE, etINT, {&nstepout},
       "HIDDENFrequency of writing the remaining runtime" }
   };
@@ -191,16 +183,14 @@ int main(int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
     
 #ifndef USE_MPI
-  if (nnodes>1) 
+  if (nnodes > 1) 
     fatal_error(0,"GROMACS compiled without MPI support - can't do parallel runs");
 #endif
 
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
 
-#ifdef XMDRUN
   if (bMultiSim && PAR(cr))
     cr = init_msim(cr,NFILE,fnm);
-#endif
 
   if (MASTER(cr)) {
     CopyRight(stdlog,argv[0]);
@@ -212,19 +202,19 @@ int main(int argc,char *argv[])
     ed_open(NFILE,fnm,&edyn);
     
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
-  /*  Flags = Flags | (bLateVir ? MD_LATEVIR : 0); */
-  /*  Flags = Flags | (bTweak ? MD_TWEAK : 0);     */
+  Flags = Flags | (bLateVir ? MD_LATEVIR : 0);
   Flags = Flags | (bSepDVDL ? MD_SEPDVDL : 0);
   
-#ifdef XMDRUN
   Flags = (Flags | 
 	   (bIonize   ? MD_IONIZE   : 0) |
 	   (bMultiSim ? MD_MULTISIM : 0) |
 	   (bGlas     ? MD_GLAS     : 0));
-#endif
-
+  
+  if (bPolarize || bIonize || bMultiSim || bGlas)
+    Flags = Flags | MD_XMDRUN;
+	   
   mdrunner(cr,NFILE,fnm,bVerbose,bCompact,nDLB,FALSE,nstepout,&edyn,Flags);
-
+  
   if (gmx_parallel)
     gmx_finalize();
 
