@@ -276,6 +276,18 @@ static void check_pairs(int nrmols,t_molinfo mi[],int ntype,t_param *nb)
   }
 }
 
+static void check_vel(t_atoms *atoms,rvec v[])
+{
+  int i;
+  
+  for(i=0; (i<atoms->nr); i++) {
+    if ((atoms->atom[i].ptype == eptShell) ||
+	(atoms->atom[i].ptype == eptBond)  ||
+	(atoms->atom[i].ptype == eptDummy))
+      clear_rvec(v[i]);
+  }
+}
+
 static int *new_status(char *topfile,char *topppfile,char *confin,
 		       char *ndxout,
 		       t_gromppopts *opts,t_inputrec *ir,
@@ -869,7 +881,10 @@ int main (int argc, char *argv[])
     if (debug)
       pr_symtab(debug,0,"After dummy",&sys->symtab);
   }
-  
+  /* Check velocity for dummies and shells */
+  if (bGenVel) 
+    check_vel(&sys->atoms,v);
+    
   /* check masses */
   check_mol(&(sys->atoms));
   
