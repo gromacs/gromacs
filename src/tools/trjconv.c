@@ -547,6 +547,7 @@ int main(int argc,char *argv[])
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
   bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSetUR,bSplit;
   char         *top_file,*in_file,*out_file=NULL,out_file2[256],*charpt;
+  char         *outf_base,*outf_ext;
   char         top_title[256],title[256],command[256],filemode[5];
   int          xdr=0;
 
@@ -645,7 +646,14 @@ int main(int argc,char *argv[])
       bVels= (ftp==efTRR || ftp==efTRJ || ftp==efGRO || ftp==efG96) 
 	&& (ftpin==efTRR || ftpin==efTRJ || ftpin==efGRO || ftp==efG96);
     }
-     
+    if (bSeparate) {
+      outf_ext = strrchr(out_file,'.');
+      if (outf_ext == NULL)
+	fatal_error(0,"Output file name '%s' does not contain a '.'",out_file);
+      outf_base = strdup(out_file);
+      outf_base[outf_ext - out_file] = '\0';
+    }
+
     /* skipping */  
     if (skip_nr <= 0) {
     } 
@@ -799,18 +807,6 @@ int main(int argc,char *argv[])
       case efGRO:
       case efG96:
       case efPDB:
-	if (bSeparate && strstr(out_file,"%d")==NULL) {
-	  /* if no '%d' in out_file for file nr, prepend '%d_' */
-	  charpt = strrchr(out_file, '/');
-	  while(charpt>=out_file && charpt[0]!='/') {
-	    charpt[3] = charpt[0];
-	    charpt--;
-	  }
-	  charpt-=3;
-	  charpt[0]='%';
-	  charpt[1]='d';
-	  charpt[2]='_';
-	}
 	if ( !bSeparate && split_t == 0 )
 	  out=ffopen(out_file,filemode);
 	break;
@@ -998,7 +994,7 @@ int main(int argc,char *argv[])
 	  
 	    bSplit = split_t!=0 && bRmod(fr.time-tzero, split_t);
 	    if (bSeparate || bSplit)
-	      sprintf(out_file2,out_file,file_nr);/* out_file contains '%d' */
+	      sprintf(out_file2,"%s_%d%s",outf_base,file_nr,outf_ext);
 	    switch(ftp) {
 	    case efTRJ:
 	    case efTRR:
