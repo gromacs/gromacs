@@ -47,12 +47,12 @@ static char *SRCID_g_analyze_c = "$Id$";
 real **read_val(char *fn,bool bHaveT,int nsets_in,
 		int *nset,int *nval,real *t0,real *dt)
 {
-  FILE *fp;
-  char line0[4096],*line,*format;
-  int  a,narg,n,sin,set,nchar;
+  FILE   *fp;
+  char   line0[4096],*line,*format;
+  int    a,narg,n,sin,set,nchar;
   double dbl,tend;
-  bool bEndOfSet;
-  real **val;
+  bool   bEndOfSet;
+  real   **val;
 
   val = NULL;
   fp  = ffopen(fn,"r");
@@ -172,10 +172,10 @@ int real_comp(const void *a,const void *b)
 void average(char *avfile,char **avbar_opt,
 	     int n, int nset,real **val,real t0,real dt)
 {
-  FILE *fp;
-  int  i,s,edge;
-  real av,var,err,*tmp;
-  char c;
+  FILE   *fp;
+  int    i,s,edge;
+  double av,var,err,*tmp;
+  char   c;
   
   c = avbar_opt[0][0];
 
@@ -225,12 +225,12 @@ void average(char *avfile,char **avbar_opt,
 }
 
 void estimate_error(char *eefile,int resol,int n,int nset,
-		    real *av,real **val,real dt)
+		    double *av,real **val,real dt)
 {
   FILE *fp;
   int log2max,rlog2,bs,prev_bs,nb;
   int s,i,j;
-  real blav,var;
+  double blav,var;
   char **leg;
 
   log2max = (int)(log(n)/log(2));
@@ -339,7 +339,8 @@ int main(int argc,char *argv[])
 
   FILE     *out;
   int      n,nlast,s,nset,i,t;
-  real     **val,t0,dt,tot,*av;
+  real     **val,t0,dt,tot;
+  double   *av;
   char     *acfile,*msdfile,*distfile,*avfile,*eefile;
   
   t_filenm fnm[] = { 
