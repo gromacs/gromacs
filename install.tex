@@ -15,6 +15,41 @@ updates, bug-fixes etc.
 For \normindex{commercial use} of the software, please contact us
 directly: {\email}
 
+\section{Single or Double precision}
+{\gromacs} can be compiled in both single\index{single precision}
+and \normindex{double precision}.
+Double precision will be 0 to 50\% slower than single precision depending
+on the architecture you are running on. Double precision will use somewhat more
+memory and run input, energy and full-precision trajectory files will be
+almost twice as large.
+
+The energies in single precision are accurate up to the last decimal,
+the last one or two decimals of the forces are non-significant.
+The virial is less accurate than the forces, since it is calculated
+using a single sum (\secref{virial}).
+In this sum forces are weighted proportional to the distance, so the long-range
+forces are more important, but in the force sum the small long-range forces
+are dominated by the larger short-range forces.
+In periodic charged systems these errors are often negligible.
+Especially cut-off's for the Coulomb interactions cause large errors
+in the energies, forces and virial.
+Even when using a reaction-field or lattice sum method the errors
+are larger than or comparable to the errors due to the single precision.
+Since MD is chaotic, trajectories with very similar starting conditions will
+diverge rapidly, the divergence is faster in single precision than in double
+precision.
+
+For most simulations single precision is accurate enough.
+In some cases double precision is required to get reasonable results:
+\begin{itemize}
+\item normal mode analysis,
+for the conjugate gradient minimization and the calculation and
+diagonalization of the Hessian
+\item calculation of the constraint force between two large groups of atoms
+\item energy conservation (this can only be done without temperature coupling
+and without cut-off's)
+\end{itemize}
+
 \section{Porting {\gromacs}.}
 The {\gromacs} system is designed with portability as one major design
 goal. However there are a number of things we assume to be present on
@@ -25,7 +60,7 @@ features:
 \item 	the UNIX operating system (BSD 4.x or SYSTEM V rev.3 or higher) 
 	or UNIX-like libraries
 \item 	an ANSI C compiler 
-\item	a Fortran-77 compiler or Fortran-90 compiler
+\item	optionally a Fortran-77 compiler or Fortran-90 compiler
 	for faster (on some computers) inner loop routines
 \item 	If you want to use the graphics, the X-window system version 
 	11 Release 4 or higher and the X-lib graphics libraries
@@ -99,26 +134,25 @@ file.
 \end{description}
 
 \section{Environment Variables}
-{\gromacs} programs may be influenced by the use of \normindex{environment} 
+{\gromacs} programs may be influenced by the use of environment 
 variables. First of all, the variables set in the \normindex{GMXRC} file
 are essential for running and compiling {\gromacs}. Other variables are:
 \begin{enumerate}
-\item	\normindex{DUMP\_NL}, dump \normindex{neighbor list}. 
+\item	DUMP\_NL, dump neighbor list. 
 	If set to a positive number the {\em entire}
 	neighbor list is printed in the log file (may be many megabytes).
 	Mainly for debugging purposes, but may also be handy for
-	\normindex{porting} to other platforms.
-\item	\normindex{IAMCOOL}, when set prints \normindex{cool quotes}, otherwise
+	porting to other platforms.
+\item	IAMCOOL, when set prints cool quotes, otherwise
 	your {\gromacs} life will be dull and boring.
-\item	\normindex{WHERE}, when set print debugging info on line numbers.
-\item	\normindex{LOG\_BUFS}. The size of the buffer for file I/O. When set
+\item	WHERE, when set print debugging info on line numbers.
+\item	LOG\_BUFS, the size of the buffer for file I/O. When set
 	to 0, all file I/O will be unbuffered and therefore very slow.
 	This can be handy for debugging purposes, because it ensures
 	that all files are always totally up-to-date.
-\item   \normindex{GMXNPRI}, for SGI systems only. When set, gives the
+\item   GMXNPRI, for SGI systems only. When set, gives the
 	default non-degrading priority (npri) for {\tt
-	\normindex{mdrun}}, {\tt \normindex{nmrun}}, {\tt
-	\normindex{g\_covar}} and {\tt \normindex{g\_nmeig}},
+	mdrun}, {\tt nmrun}, {\tt g\_covar} and {\tt g\_nmeig},
 	{\eg}\@ setting \verb'setenv GMXNPRI 250' causes all
 	runs to be performed at near-lowest priority by default.
 \end{enumerate}
@@ -127,10 +161,13 @@ Some other environment variables are specific to one program, such as
 \normindex{TOTAL} for the {\tt \normindex{do\_shift}} program, and
 \normindex{DSPP} for the {\tt \normindex{do\_dssp}} program.
 
-\section{File types.}
+\section{\normindex{File types}}
 \label{sec:fileformats}
 \tabref{form} lists the file types used by {\gromacs} along with
-a short description.
+a short description. A more elaborate description of the file types can
+be found in your {\gromacs} directory at
+{\tt \$GMXHOME/html/online/files.html} and online at
+{\tt {\wwwpage}/online2.0/files.html}.
 \input{files}
 
 \section{Data types}
