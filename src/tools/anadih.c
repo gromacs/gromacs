@@ -230,26 +230,21 @@ static void calc_angles(FILE *log,matrix box,
 		      r_ij,r_kj,&costh);
 }
 
-static real calc_fraction(real angles[], int nangles, bool bRb)
+static real calc_fraction(real angles[], int nangles)
 {
   int i;
   real trans = 0, gauche = 0;
-  real tmp;
+  real angle;
 
   for (i = 0; i < nangles; i++)
   {
-    tmp = angles[i] * RAD2DEG;
-    if (bRb)   /* ryckaert bellemans use the polymer convention, trans = 0 */
-    {
-      if (tmp > 0.0) tmp -= 180;
-      if (tmp < 0.0) tmp += 180;
-    }
+    angle = angles[i] * RAD2DEG;
 
-    if (tmp > -45 && tmp < 45)
+    if (angle > -45 && angle < 45)
       trans += 1.0;
-    else if (tmp > 90 && tmp < 150)
+    else if (angle > 90 && angle < 150)
       gauche += 1.0;
-    else if (tmp < -90 && tmp > -150)
+    else if (angle < -90 && angle > -150)
       gauche += 1.0;
   }
   if (trans+gauche > 0)
@@ -259,8 +254,7 @@ static real calc_fraction(real angles[], int nangles, bool bRb)
 }
 
 static void calc_dihs(FILE *log,matrix box,
-		      int n4,atom_id index[],real ang[],rvec x_s[],
-		      bool bRb)
+		      int n4,atom_id index[],real ang[],rvec x_s[])
 {
   int  i,ix;
   rvec r_ij,r_kj,r_kl,m,n;
@@ -393,18 +387,25 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
     if (bAngles)
       calc_angles(stdout,box,isize,index,angles[cur],x_s);
     else {
-      calc_dihs(stdout,box,isize,index,angles[cur],x_s,bRb);
+      calc_dihs(stdout,box,isize,index,angles[cur],x_s);
 
       /* Trans fraction */
-      fraction = calc_fraction(angles[cur], nangles, bRb);
+      fraction = calc_fraction(angles[cur], nangles);
       (*trans_frac)[teller] = fraction;
+      
+      /* Change Ryckaert-Bellemans dihedrals to polymer convention */
+      if (bRb)
+	if (angles[cur][i] <= 0.0) 
+	  angles[cur][i] += M_PI;
+	else
+	  angles[cur][i] -= M_PI;
       
       /* Periodicity in dihedral space... */
       if (teller > 1) {
 	for(i=0; (i<nangles); i++) {
-	  if (angles[cur][i] - angles[prev][i] < -M_PI)
+	  while (angles[cur][i] <= angles[prev][i] - M_PI)
 	    angles[cur][i]+=2*M_PI;
-	  else if (angles[cur][i] - angles[prev][i] > M_PI)
+	  while (angles[cur][i] > angles[prev][i] + M_PI)
 	    angles[cur][i]-=2*M_PI;
 	}
       }
@@ -413,14 +414,6 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
     /* Average angles */      
     aa=0;
     for(i=0; (i<nangles); i++) {
-      /* Change to polymer convention */
-      if (bRb) {
-	if (angles[cur][i] < 0.0) 
-	  angles[cur][i] += M_PI;
-	else if (angles[cur][i] > 0.0)
-	  angles[cur][i] -= M_PI;
-      }
-    
       aa=aa+angles[cur][i];
       
       /* angle in rad / 2Pi * max determines bin. bins go from 0 to maxangstat,
@@ -431,9 +424,9 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
 
       angle = angles[cur][i];
       if (!bAngles) {
-	if (angle < -M_PI) 
+	while (angle < -M_PI) 
 	  angle += 2*M_PI;
-	else if (angle > M_PI) 
+	while (angle >= M_PI) 
 	  angle -= 2*M_PI;
 	  
 	angle+=M_PI;
