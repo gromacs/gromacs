@@ -67,7 +67,7 @@ LJ-parameters.
 
 \begin{figure}
 \centerline{\psfig {figure=plots/f_lj.eps,angle=270,width=8cm}}
-\caption {The Lennard-Jones interaction}
+\caption {The Lennard-Jones interaction.}
 \label{fig:lj}
 \end{figure}
  
@@ -112,13 +112,13 @@ V_{bh}(\rij) = A_{ij} \exp(-B_{ij} \rij) -
 \eeq
 \begin{figure}
 \centerline{\psfig {figure=plots/f_bham.eps,angle=270,width=8cm}}
-\caption {The Buckingham interaction}
+\caption {The Buckingham interaction.}
 \label{fig:bham}
 \end{figure}
 
 see also \figref{bham}, the force derived from this is:
 \beq
- \ve{F}_i(\rij) = \left[ -A_{ij}B_{ij}\rij exp(-B_{ij} \rij) -
+ \ve{F}_i(\rij) = \left[ -A_{ij}B_{ij}\rij \exp(-B_{ij} \rij) -
                                  6\frac{C_{ij}}{\rij^6} \right] \rnorm
 \eeq
 
@@ -136,12 +136,11 @@ see also \figref{coul}, where $f = \frac{1}{4\pi \varepsilon_0} =
 
 \begin{figure}
 \centerline{\psfig {figure=plots/vcrf.eps,width=8cm}}
-\caption[The Coulomb interaction (for particles with equal signed
-charge) with and without reaction field.]{The Coulomb interaction (for
-particles with equal signed charge) with and without reaction
-field. In the latter case $\epsrf$ was 78, and $r_c$ was 0.9 nm. The
-dot-dashed line is the same as the dashed line, except for a
-constant.}
+\caption[The Coulomb interaction with and without reaction field.]{The
+Coulomb interaction (for particles with equal signed charge) with and
+without reaction field. In the latter case $\epsrf$ was 78, and $r_c$
+was 0.9 nm. The dot-dashed line is the same as the dashed line, except
+for a constant.}
 \label{fig:coul}
 \end{figure}
 
@@ -304,7 +303,9 @@ see also \figref{shift}.
 
 \begin{figure}
 \centerline{\psfig {figure=plots/shiftf.eps,angle=270,width=10cm}}
-\caption {The Coulomb Force, Shifted Force and Shift Function $S(r)$, using r$_1$ = 2 and r$_c$ = 4.}
+\caption[The Coulomb Force, Shifted Force and Shift Function
+$S(r)$,.]{The Coulomb Force, Shifted Force and Shift Function $S(r)$,
+using r$_1$ = 2 and r$_c$ = 4.} 
 \label{fig:shift}
 \end{figure}
 
@@ -340,8 +341,8 @@ $i$ and $j$ is represented by a harmonic potential
 
 \begin{figure}
 \centerline{\raisebox{-1.8cm}{\psfig{figure=plots/bstretch.eps,angle=270,width=5cm}}\psfig{figure=plots/f_bond.eps,angle=270,width=7cm}}
-\caption{Principle of the Bond stretch potential (left), and Bond
-Stretching Potential (right)}
+\caption[Bond stretching.]{Principle of bond stretching (left), and the bond
+stretching potential (right).}
 \label{fig:bstretch1}
 \end{figure}
 
@@ -385,13 +386,13 @@ in {\gromacs}. This potential differs from the harmonic potential in
 having an asymmetric potential well and a zero force at infinite
 distance The functional form is:
 \beq
-\displaystyle V_{morse} (r_{ij}) = D_{ij} [1 - exp(-\beta_{ij}(r_{ij}-b_{ij}))]^2,
+\displaystyle V_{morse} (r_{ij}) = D_{ij} [1 - \exp(-\beta_{ij}(r_{ij}-b_{ij}))]^2,
 \eeq
 see also \figref{morse}, and the corresponding force is:
 \beq
 \begin{array}{rcl}
-\displaystyle {\bf F}_{morse} ({\bf r}_{ij})&=&2 D_{ij} \beta_{ij} r_{ij} exp(-\beta_{ij}(r_{ij}-b_{ij})) * \\
-\displaystyle \: & \: &[1 - exp(-\beta_{ij}(r_{ij}-b_{ij}))] \frac{\displaystyle {\bf r}_{ij}}{\displaystyle r_{ij}},
+\displaystyle {\bf F}_{morse} ({\bf r}_{ij})&=&2 D_{ij} \beta_{ij} r_{ij} \exp(-\beta_{ij}(r_{ij}-b_{ij})) * \\
+\displaystyle \: & \: &[1 - \exp(-\beta_{ij}(r_{ij}-b_{ij}))] \frac{\displaystyle {\bf r}_{ij}}{\displaystyle r_{ij}},
 \end{array}
 \eeq
 where \( \displaystyle D_{ij} \) is the depth of the well in kJ/mol,
@@ -408,14 +409,14 @@ and because \( \displaystyle \omega = \sqrt{k/\mu} \), one can rewrite \( \displ
 \beq
 \displaystyle \beta_{ij}= \sqrt{\frac{k_{ij}}{2 D_{ij}}}
 \eeq
-For small deviations \( \displaystyle (r_{ij}-b_{ij}) \), one can expand the \( \displaystyle exp \)-term to first-order in the Taylor expansion: 
+For small deviations \( \displaystyle (r_{ij}-b_{ij}) \), one can expand the \( \displaystyle \exp \)-term to first-order in the Taylor expansion: 
 \beq
-\displaystyle exp(-x) \approx 1-x
+\displaystyle \exp(-x) \approx 1-x
 \eeq
 Substituting this in the functional from;
 \beq
 \begin{array}{rcl}
-\displaystyle V_{morse} (r_{ij})&=&D_{ij} [1 - exp(-\beta_{ij}(r_{ij}-b_{ij}))]^2\\
+\displaystyle V_{morse} (r_{ij})&=&D_{ij} [1 - \exp(-\beta_{ij}(r_{ij}-b_{ij}))]^2\\
 \displaystyle \:&=&D_{ij} [1 - (1 -\sqrt{\frac{k_{ij}}{2 D_{ij}}}(r_{ij}-b_{ij}))]^2\\
 \displaystyle \:&=&\frac{1}{2} k_{ij} (r_{ij}-b_{ij}))^2,
 \end{array}
@@ -424,7 +425,7 @@ one recovers the harmonic bond stretching potential.
 
 \begin{figure}
 \centerline{\psfig {figure=plots/f_morse.eps,width=7cm}}
-\caption {The Morse potential well, with bond length 0.15 nm}
+\caption{The Morse potential well, with bond length 0.15 nm.}
 \label{fig:morse}
 \end{figure}
 
@@ -437,7 +438,8 @@ is also represented by a harmonic potential on the angle $\tijk$
 
 \begin{figure}
 \centerline{\raisebox{-1.5cm}{\psfig {figure=plots/angle.eps,angle=270,width=5cm}}\psfig {figure=plots/f_angle.eps,angle=270,width=7cm}}
-\caption {Principle of the angle vibration (left) and bond angle potential (right).}
+\caption[Angle vibration.]{Principle of angle vibration (left) and the
+bond angle potential (right).}
 \label{fig:angle}
 \end{figure}
 
@@ -491,7 +493,11 @@ aromatic rings) or to prevent molecules from flipping over to their
 \begin {figure}
 \centerline{\psfig{figure=plots/ring-imp.eps,angle=270,width=4cm}\hspace{1cm}
 \psfig{figure=plots/subst-im.eps,angle=270,width=3cm}\hspace{1cm}\psfig{figure=plots/tetra-im.eps,angle=270,width=3cm}}
-\caption[Improper dihedral types.]{Out of plane bending for rings (left), substituents of rings (middle), out of tetrahedral (right). The improper dihedral angle $\xi$ is defined as the angle between planes (i,j,k) and (j,k,l) in all cases.}
+\caption[Improper dihedral angles.]{Principle of improper
+dihedral angles. Out of plane bending for rings (left), substituents
+of rings (middle), out of tetrahedral (right). The improper dihedral
+angle $\xi$ is defined as the angle between planes (i,j,k) and (j,k,l)
+in all cases.}
 \label{fig:imp}
 \end {figure}
 
@@ -505,7 +511,7 @@ to have a $\xi_0$ as far away from $\pm 180^\circ$ as you can manage.
 
 \begin{figure}
 \centerline{\psfig{figure=plots/f_imps.eps,angle=270,width=8cm}}
-\caption {Improper dihedral potential.}
+\caption{Improper dihedral potential.}
 \label{fig:imps}
 \end{figure}
 
@@ -527,13 +533,13 @@ planes, with {\bf zero} corresponding to the {\em cis} configuration
 
 \begin{figure}
 \centerline{\raisebox{-1cm}{\psfig {figure=plots/dih.eps,angle=270,width=5cm}}\psfig {figure=plots/f_dih.eps,angle=270,width=7cm}}
-\caption {Principle of the proper dihedral (left, in {\em trans} form)
-and dihedral potential (right).} 
+\caption[Proper dihedral angle.]{Principle of proper dihedral angle
+(left, in {\em trans} form) and the dihedral angle potential (right).} 
 \label{fig:pdihf}
 \end{figure}
 
 \beq
-V_d(\phi_{ijkl}) = k_{\phi}(1 + cos(n \phi - \phi_0))
+V_d(\phi_{ijkl}) = k_{\phi}(1 + \cos(n \phi - \phi_0))
 \eeq
 
 \subsubsection{Proper dihedrals: Ryckaert-Bellemans function}
@@ -550,7 +556,7 @@ by \( \displaystyle (-1)^n \).
 An example of constants for $C$ is given in \tabref{crb}.
 
 \begin{table}
-\caption{Constants for Ryckaert-Bellemans potential (kJ mol$^{-1}$)}
+\caption{Constants for Ryckaert-Bellemans potential (kJ mol$^{-1}$).}
 \label{tab:crb}
 \vspace{2mm}
 \centerline{
@@ -565,7 +571,7 @@ $C_1$   & 12.16 & $C_3$   & -3.06   & $C_5$   & -31.5   \\
 
 \begin{figure}
 \centerline{\psfig {figure=plots/f_rbs.eps,angle=270,width=8cm}}
-\caption {Ryckaert-Bellemans dihedral potential}
+\caption{Ryckaert-Bellemans dihedral potential.}
 \label{fig:rbdih}
 \end{figure}
 
@@ -636,7 +642,7 @@ The potential is plotted in \figref{posres}.
 
 \begin{figure}
 \centerline{\psfig {figure=plots/f_pr.eps,angle=270,width=8cm}}
-\caption {Position restraint potential}
+\caption{Position restraint potential.}
 \label{fig:posres}
 \end{figure}
 
@@ -668,7 +674,7 @@ The functional form is similar to that of a proper dihedral.
 For two pairs of atoms: 
 \beq
 V_{ar}(\ve{r}_i,\ve{r}_j,\ve{r}_k,\ve{r}_l)
-        = k_{ar}(1 - cos(n (\theta - \theta_0))
+        = k_{ar}(1 - \cos(n (\theta - \theta_0))
         )
 ,~~~~\mbox{where}~~
 \theta = \arccos\left(\frac{\ve{r}_j -\ve{r}_i}{\|\ve{r}_j -\ve{r}_i\|}
@@ -676,7 +682,7 @@ V_{ar}(\ve{r}_i,\ve{r}_j,\ve{r}_k,\ve{r}_l)
 \eeq
 For one pair of atoms and the Z-axis: 
 \beq
-V_{ar}(\ve{r}_i,\ve{r}_j) = k_{ar}(1 - cos(n (\theta - \theta_0))
+V_{ar}(\ve{r}_i,\ve{r}_j) = k_{ar}(1 - \cos(n (\theta - \theta_0))
         )
 ,~~~~\mbox{where}~~
 \theta = \arccos\left(\frac{\ve{r}_j -\ve{r}_i}{\|\ve{r}_j -\ve{r}_i\|}
@@ -713,7 +719,7 @@ V_{dr}(r_{ij}) ~=~ \left\{
 
 \begin{figure}
 \centerline{\psfig {figure=plots/f_dr.eps,angle=270,width=8cm}}
-\caption {Distance Restraint potential}
+\caption{Distance Restraint potential.}
 \label{fig:dist}
 \end{figure}
 
@@ -997,7 +1003,6 @@ defined using the dielectric
 constant $\epsrf$ of the medium (see \secref{coulrf}).
 
 \subsubsection{Lennard-Jones interaction}
-{\undercons}
 For the \normindex{Lennard Jones} interaction between two particles 
 of which the {\em atom type} varies with $\LAM$ we can write:
 \bea
@@ -1046,7 +1051,6 @@ still can be large forces and/or energies, and therefore careful equilibration
 should be done.
 
 \subsubsection{Kinetic Energy}
-%{\undercons}
 When the mass of a particle changes there is also a contribution of
 the kinetic energy to the free energy (note that we can not write 
 the momentum \ve{p} as m\ve{v} since that would result 
@@ -1094,7 +1098,7 @@ interactions of atom {\bf i} with {\bf i+1}
 
 \begin{figure}
 \centerline{\psfig {figure=plots/chain.eps,angle=270,width=8cm}}
-\caption{Atoms along an alkane chain}
+\caption{Atoms along an alkane chain.}
 \label{fig:chain}
 \end{figure}
 
@@ -1190,9 +1194,9 @@ force and the total torque are conserved~\cite{Berendsen84b}.
 
 \begin{figure}
 \centerline{\psfig{figure=plots/dummies.eps,width=15cm}}
-\caption{The six different types of dummy atom construction in
-\protect{\gromacs}, the constructing atoms are shown as black circles,
-the dummy atoms in grey.}
+\caption[Dummy atom construction.]{The six different types of dummy
+atom construction in \protect{\gromacs}, the constructing atoms are
+shown as black circles, the dummy atoms in grey.}
 \label{fig:dummies}
 \end{figure}
 

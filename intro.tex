@@ -145,8 +145,6 @@ bond-angle vibrations are suspect, and even hydrogen-bonded motions as
 translational or librational H-bond vibrations are beyond the
 classical limit (see \tabref{vibrations}). What can we do?
 
-\newcommand{\mcc}[2]{\multicolumn{#1}{c|}{#2}}
-\newcommand{\mcl}[2]{\multicolumn{#1}{l}{#2}}
 \begin{table}
 \begin{center} 
 \begin{tabular}{|l|l|r@{--}rl|}
@@ -165,8 +163,9 @@ O-H$\cdots$O    & stretch	&   50	& 200	& \\
 \dline
 \end{tabular} 
 \end{center} 
-\caption{Typical vibrational frequencies (wavenumbers) in molecules
-and hydrogen-bonded liquids. Compare $kT/h = 200$ cm$^{-1}$ at 300~K.}
+\caption[Typical vibrational frequencies.]{Typical vibrational
+frequencies (wavenumbers) in molecules and hydrogen-bonded
+liquids. Compare $kT/h = 200$ cm$^{-1}$ at 300~K.}
 \label{tab:vibrations}
 \end{table}
 
@@ -186,18 +185,18 @@ are:~\cite{McQuarrie76}
 \eeq
 where $x=h\nu /kT$. The classical oscillator absorbs too much energy
 ($kT$), while the high-frequency quantum oscillator is in its ground
-state at the zero-point energy level of $\frac{1}{2} h\nu$. \\ 
-(b) We can treat the bonds (and bond angles) as {\em \normindex{constraints}} in
-the equation of motion. The rational behind this is that a quantum
+state at the zero-point energy level of $\frac{1}{2} h\nu$. \\ (b) We
+can treat the bonds (and bond angles) as {\em \normindex{constraints}}
+in the equation of motion. The rational behind this is that a quantum
 oscillator in its ground state resembles a constrained bond more
 closely than a classical oscillator. A good practical reason for this
 choice is that the algorithm can use larger time steps when the
 highest frequencies are removed. In practice the time step can be made
-four times larger when bonds are constrained than when they are
+four times as large when bonds are constrained than when they are
 oscillators~\cite{Gunsteren77}. {\gromacs} has this option for the
 bonds, and for the bond angles.  The flexibility of the latter is
 rather essential to allow for the realistic motion and coverage of
-configurational space~\cite{Gunsteren77}.    
+configurational space~\cite{Gunsteren77}.
 
 \item[{\bf Electrons are in the ground state}]\mbox{}\\
 In MD we use a {\em conservative} force field that is a

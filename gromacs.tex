@@ -1,5 +1,5 @@
 \documentclass[11pt,dvips]{book}
-\usepackage{here,picins,fancy,epsfig,array,tabularx,makeidx,a4,citesort,multicol}
+\usepackage{here,picins,fancy,epsfig,array,tabularx,makeidx,a4,citesort,multicol,dcolumn}
 %\setpapersize{USletter}
 \makeindex
 \input{macros}
@@ -24,9 +24,10 @@
 \newcommand{\chref}[1]{chapter~\ref{ch:#1}}
 \newcommand{\appref}[1]{Appendix~\ref{app:#1}}
 \newcommand{\wwwpage}{http://md.chem.rug.nl/\raisebox{-0.8ex}{\~{ }}gmx}
-\newcommand{\email}{{\tt gromacs@chem.rug.nl}}
 % NOTE: \wwwpage is explicitly included in the 'verbatim' citing instructions!
-\newcommand{\undercons}{\centerline{\em Note: this section is still under construction}}
+\newcommand{\email}{{\tt gromacs@chem.rug.nl}}
+\newcommand{\mcc}[2]{\multicolumn{#1}{c|}{#2}}
+\newcommand{\mcl}[2]{\multicolumn{#1}{l}{#2}}
 \setlength{\headwidth}{\textwidth}
 \setlength{\headheight}{1.0cm}
 %\addtolength{\headwidth}{\marginparsep}
@@ -45,27 +46,36 @@
 \hline
 {\bf Groningen Machine for Chemical Simulations}\\
 \hline
+\rule{13cm}{0cm}\\
 \end{tabular}
 }
 
-\vspace{1cm}
+\vspace{0.5cm}
 
 {\LARGE
-\begin{tabular}{c}
-				\\
-{\bf GROMACS USER MANUAL}	\\
-				\\
-{\bf Version \gmxver}		\\
-				\\
-\end{tabular}
+{\bf GROMACS USER MANUAL}
+
+\vspace{0.5cm}
+
+{\bf Version \gmxver}
 }
+
+\vspace{1cm}
+
+\psfig {figure=plots/warning.eps,width=1.8cm,angle=-80}
+
+\vspace{1cm}
+
+\psfig {figure=plots/pla.eps,width=\ntw}
+
+\vspace{1ex}
+
+{\em Phospholipase A2 ready to attack a lecithin \quad
+\quad mono layer \quad ~}
+
+\vspace{1cm}
+\rule{13cm}{0.1mm}
 \end{center}
-\vspace{1cm}
-\centerline{\psfig {figure=plots/warning.eps,width=1.8cm,angle=-80}}
-\vspace{1cm}
-\centerline{\psfig {figure=plots/pla.eps,width=\ntw}}
-\centerline{\em Phospholipase A2 ready to attack a lecithin \quad
-\quad mono layer. \quad ~}
 
 \newpage
 \thispagestyle{empty}
@@ -114,12 +124,13 @@ Herman J.C. Berendsen}
 \begin{tabular}{l}
 \hline
 (c) Copyright. \\
-{\sf BIOSON} Research Institute and Laboratory of Biophysical Chemistry \\
+{\sf BIOSON} Research Institute and \\
+Laboratory of Biophysical Chemistry \\
 University of Groningen \\ 
 Nijenborgh 4\\
 9747 AG Groningen \\
 The Netherlands \\
-Fax: 31-50-634800       \\
+Fax: +31 (0)50 63 4800       \\
 \hline
 \end{tabular}
 }
@@ -138,7 +149,7 @@ please refer to it as:
 \begin{quote}
 \raggedright
 van der Spoel, D., A.~R. van Buuren, E. Apol, P.~J. Meulenhoff, D.~P.
-Tieleman, A.~L.~T.~M. Sij\-bers, B. Hess, K.~A. Feenstra, E.Lindahl,
+Tieleman, A.~L.~T.~M. Sij\-bers, B. Hess, K.~A. Feenstra, E. Lindahl,
 R. van Drunen and H.~J.~C. Berendsen
 \hspace{0.6em} Gromacs {U}ser {M}anual version \gmxver
 \hspace{0.6em} Nij\-enborgh 4, 9747 AG Groningen, The Netherlands.
