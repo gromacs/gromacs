@@ -47,6 +47,7 @@ static char *SRCID_genion_c = "$Id$";
 #include "mdrun.h"
 #include "calcpot.h"
 #include "main.h"
+#include "random.h"
 
 static int *mk_windex(int w1,int nw)
 {
@@ -60,22 +61,30 @@ static int *mk_windex(int w1,int nw)
   return index;
 }
 
-static void insert_ion(real q,int nw,bool bSet[],int index[],
-		       int nSubs[],real pot[],rvec x[],char *anm,char *resnm,
-		       t_topology *top)
-     /*rvec x[],matrix box,real rlong2,int natoms)*/
+static void insert_ion(real q,int *nwater,bool bSet[],int index[],
+		       real pot[],rvec x[],matrix box,
+		       char *anm,char *resnm,
+		       t_topology *top,real rmin,bool bRandom,int *seed)
 {
-  int  i,ii,ei,m;
-  real extr_e,poti;
-  rvec xei;
+  int  i,ii,ei,owater,wlast,m,nw;
+  real extr_e,poti,rmin2;
+  rvec xei,dx;
   bool bSub=FALSE;
-
+  int  maxrand,natoms;
+  
   ei=-1;
-
-  for(i=0; (i<nw); i++) {
-    if (!bSet[i]) {
-      ii=index[i];
-      if (nSubs[ii] == 0) {
+  nw = *nwater;
+  maxrand = 100*nw;
+  if (bRandom) {
+    do {
+      ei = nw*rando(seed);
+      maxrand--;
+    } while (bSet[ei] && (maxrand > 0));
+  }
+  else {
+    for(i=0; (i<nw); i++) {
+      if (!bSet[i]) {
+	ii=index[i];
 	poti=pot[ii];
 	if (q > 0) {
 	  if ((poti <= extr_e) || !bSub) {
@@ -96,16 +105,41 @@ static void insert_ion(real q,int nw,bool bSet[],int index[],
   }
   if (ei == -1)
     fatal_error(0,"No More replacable waters!");
+  fprintf(stderr,"Replacing water %d (atom %d)\n",ei,index[ei]);
+    
   /* Swap ei water at index ei with water at last index */
+  owater = index[ei];
+  wlast  = index[nw-1];
   for(m=0; (m<3); m++) {
-    copy_rvec(x[index[ei]+m],xei);
-    copy_rvec(x[index[nw-1]+m],x[index[ei]+m]);
-    copy_rvec(xei,x[index[nw-1]+m]);
+    copy_rvec(x[owater+m],xei);
+    copy_rvec(x[wlast+m],x[owater+m]);
+    copy_rvec(xei,x[wlast+m]);
+    pot[owater+m] = pot[wlast+m];
+  }
+  
+  nw--;
+  *nwater = nw;
+    
+  /* Mark all waters within rmin as unavailable for substitution */
+  if (rmin > 0) {
+    copy_rvec(x[wlast],xei);
+    rmin2=rmin*rmin;
+    for(i=0; (i<nw); i++) {
+      if (!bSet[i]) {
+	pbc_dx(xei,x[index[i]],dx);
+	if (iprod(dx,dx) < rmin2)
+	  bSet[i] = TRUE;
+      }
+    }
   }
   /* Replace the oxygen with the ion */
-  replace_atom(top,index[nw-1],anm,resnm,q,1,1);
-  delete_atom(top,index[nw-1]+2);
-  delete_atom(top,index[nw-1]+1);
+  natoms=top->atoms.nr;
+  replace_atom(top,wlast,anm,resnm,q,1,1);
+  delete_atom(top,wlast+2);
+  delete_atom(top,wlast+1);
+  /* Now copy all the remaining coordinates two places down the x array */
+  for(i=wlast+3; (i<natoms); i++)
+    copy_rvec(x[i],x[i-2]);
 }
 
 static void copy_atom(t_atoms *at1,int a1,t_atoms *at2,int a2,int r)
@@ -154,7 +188,9 @@ int main(int argc, char *argv[])
   };
   static int  p_num=0,n_num=0,nw=0,w1=1;
   static char *p_name="Na",*n_name="Cl";
-  static real p_q=1,n_q=-1,rcut;
+  static real p_q=1,n_q=-1,rcut=0;
+  static int  seed=1993;
+  static bool bRandom=FALSE;
   static t_pargs pa[] = {
     { "-p",    FALSE, etINT,  &p_num, "Number of positive ions"       },
     { "-pn",   FALSE, etSTR,  &p_name,"Name of the positive ion"      },
@@ -164,7 +200,9 @@ int main(int argc, char *argv[])
     { "-nq",   FALSE, etREAL, &n_q,   "Charge of the negative ion"    },
     { "-rmin", FALSE, etREAL, &rcut,  "Minimum distance between ions" },
     { "-w1",   FALSE, etINT,  &w1,    "First water atom to be cosidered" },
-    { "-nw",   FALSE, etINT,  &nw,    "Number of water molecules" }
+    { "-nw",   FALSE, etINT,  &nw,    "Number of water molecules" },
+    { "-random",FALSE,etBOOL, &bRandom,"Use random placement of waters instead of based on potential. The rmin option should still work" },
+    { "-seed", FALSE, etINT,  &seed,  "Seed for random number generator" }
   };
   t_topology  *top;
   t_parm      parm;
@@ -178,7 +216,6 @@ int main(int argc, char *argv[])
   real        *pot;
   matrix      box;
   int         *index;
-  int         *nSubs;
   bool        *bSet,bPDB;
   int         i;
   t_filenm fnm[] = {
@@ -196,7 +233,11 @@ int main(int argc, char *argv[])
   parse_common_args(&argc,argv,0,TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    asize(bugs),bugs);
   bPDB = ftp2bSet(efPDB,NFILE,fnm);
-  
+  if (bRandom && bPDB) {
+    fprintf(stderr,"Not computing potential with random option!\n");
+    bPDB = FALSE;
+  }
+    
   /* Check input for something sensible */
   w1--;
   if (nw <= 0) {
@@ -217,10 +258,11 @@ int main(int argc, char *argv[])
   snew(top,1);
   init_calcpot(NFILE,fnm,top,&x,&parm,&cr,
 	       &graph,&mdatoms,&nsb,&grps,&fr,&pot,box);
-  snew(nSubs,top->atoms.nr);
   snew(v,top->atoms.nr);
   snew(top->atoms.pdbinfo,top->atoms.nr);
-  do {
+  
+  /* Calculate potential once only */
+  if (!bRandom) {
     calc_pot(stdlog,&nsb,&cr,&grps,&parm,top,x,fr,graph,mdatoms,pot);
     if (bPDB) {
       for(i=0; (i<top->atoms.nr); i++)
@@ -228,23 +270,27 @@ int main(int argc, char *argv[])
       write_sto_conf(ftp2fn(efPDB,NFILE,fnm),"Potential calculated by genion",
 		     &top->atoms,x,v,box);
     }
-    if ((p_num > 0) && (p_num >= n_num))  {
-      insert_ion(p_q,nw,bSet,index,nSubs,pot,x,p_name,p_name,top);
-      nw--;
-      fprintf(stderr,"+");
-      p_num--;
-    }
-    else if (n_num > 0) {
-      insert_ion(n_q,nw,bSet,index,nSubs,pot,x,n_name,n_name,top);
-      nw--;
-      fprintf(stderr,"-");
-      n_num--;
-    }
-  } while (p_num+n_num > 0);
-  fprintf(stderr,"\n");
-
-  write_sto_conf(ftp2fn(efSTO,NFILE,fnm),*top->name,&top->atoms,x,v,box);
-  
+  }
+  /* Now loop over the ions that have to be placed */
+  if ((p_num > 0) || (n_num > 0)) {
+    do {
+      if ((p_num > 0) && (p_num >= n_num))  {
+	fprintf(stderr,"+");
+	insert_ion(p_q,&nw,bSet,index,pot,x,box,
+		   p_name,p_name,top,rcut,bRandom,&seed);
+	p_num--;
+      }
+      else if (n_num > 0) {
+	fprintf(stderr,"-");
+	insert_ion(n_q,&nw,bSet,index,pot,x,box,
+		   n_name,n_name,top,rcut,bRandom,&seed);
+	n_num--;
+      }
+    } while (p_num+n_num > 0);
+    fprintf(stderr,"\n");
+    
+    write_sto_conf(ftp2fn(efSTO,NFILE,fnm),*top->name,&top->atoms,x,v,box);
+  }
   thanx(stdout);
   
   return 0;
