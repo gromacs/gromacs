@@ -522,9 +522,9 @@ int main(int argc,char *argv[])
 	val[s][i] = (val[s][i+d]-val[s][i])/(d*dt);
   }
 
-  fprintf(stdout,"                                                  relative deviation of\n");
-  fprintf(stdout,"                       standard                   cumulants from those of\n");
-  fprintf(stdout,"set      average       deviation       error      a Gaussian distribition\n");
+  fprintf(stdout,"                                      std. dev.    relative deviation of\n");
+  fprintf(stdout,"                       standard       ---------   cumulants from those of\n");
+  fprintf(stdout,"set      average       deviation      sqrt(n-1)   a Gaussian distribition\n");
   fprintf(stdout,"                                                      cum. 3   cum. 4\n");
   snew(av,nset);
   snew(sig,nset);
@@ -547,7 +547,10 @@ int main(int argc,char *argv[])
     cum4  /= n;
     av[s]  = cum1;
     sig[s] = sqrt(cum2);
-    error  = sqrt(cum2/(n-1));
+    if (n > 1)
+      error = sqrt(cum2/(n-1));
+    else
+      error = 0;
     fprintf(stdout,"%3d  %13.6e   %12.6e   %12.6e      %6.3f   %6.3f\n",
 	    s+1,av[s],sig[s],error,
 	    sig[s] ? cum3/(sig[s]*sig[s]*sig[s]*sqrt(8/M_PI)) : 0,
