@@ -48,6 +48,7 @@ anaf.o: $(GMXHOME)/src/include/gmxfio.h
 anaf.o: $(GMXHOME)/src/include/trnio.h
 anaf.o: $(GMXHOME)/src/include/vec.h
 anaf.o: $(GMXHOME)/src/include/maths.h
+anaf.o: $(GMXHOME)/src/include/x86cpu.h
 calcfdev.o: $(GMXHOME)/src/include/typedefs.h
 calcfdev.o: $(GMXHOME)/src/include/sysstuff.h
 calcfdev.o: $(GMXHOME)/src/include/types/simple.h
@@ -83,6 +84,7 @@ calcfdev.o: $(GMXHOME)/src/include/network.h
 calcfdev.o: $(GMXHOME)/src/include/vec.h
 calcfdev.o: $(GMXHOME)/src/include/maths.h
 calcfdev.o: $(GMXHOME)/src/include/macros.h
+calcfdev.o: $(GMXHOME)/src/include/x86cpu.h
 calcfdev.o: $(GMXHOME)/src/include/txtdump.h
 calcfdev.o: $(GMXHOME)/src/include/tpxio.h
 calcfdev.o: $(GMXHOME)/src/include/xdrf.h
@@ -156,6 +158,7 @@ do_gct.o: $(GMXHOME)/src/include/network.h
 do_gct.o: $(GMXHOME)/src/include/main.h
 do_gct.o: $(GMXHOME)/src/include/block_tx.h
 do_gct.o: $(GMXHOME)/src/include/xvgr.h
+do_gct.o: $(GMXHOME)/src/include/viewit.h
 do_gct.o: $(GMXHOME)/src/include/macros.h
 do_gct.o: $(GMXHOME)/src/include/physics.h
 do_gct.o: $(GMXHOME)/src/include/smalloc.h
@@ -172,10 +175,12 @@ do_gct.o: $(GMXHOME)/src/include/mdebin.h
 do_gct.o: $(GMXHOME)/src/include/ebin.h
 do_gct.o: $(GMXHOME)/src/include/enxio.h
 do_gct.o: $(GMXHOME)/src/include/xdrf.h
+do_gct.o: $(GMXHOME)/src/include/vcm.h
 do_gct.o: $(GMXHOME)/src/include/update.h
 do_gct.o: $(GMXHOME)/src/include/pull.h
 do_gct.o: $(GMXHOME)/src/include/vec.h
 do_gct.o: $(GMXHOME)/src/include/maths.h
+do_gct.o: $(GMXHOME)/src/include/x86cpu.h
 do_gct.o: $(GMXHOME)/src/include/txtdump.h
 do_gct.o: $(GMXHOME)/src/include/tpxio.h
 do_shift.o: $(GMXHOME)/src/include/sysstuff.h
@@ -221,6 +226,7 @@ do_shift.o: $(GMXHOME)/src/include/wman.h
 do_shift.o: $(GMXHOME)/src/include/copyrite.h
 do_shift.o: $(GMXHOME)/src/include/confio.h
 do_shift.o: $(GMXHOME)/src/include/xvgr.h
+do_shift.o: $(GMXHOME)/src/include/viewit.h
 do_shift.o: $(GMXHOME)/src/include/gstat.h
 do_shift.o: $(GMXHOME)/src/include/rmpbc.h
 do_shift.o: $(GMXHOME)/src/include/rdgroup.h
@@ -271,8 +277,10 @@ g_anavel.o: $(GMXHOME)/src/include/matio.h
 g_anavel.o: $(GMXHOME)/src/include/physics.h
 g_anavel.o: $(GMXHOME)/src/include/vec.h
 g_anavel.o: $(GMXHOME)/src/include/maths.h
+g_anavel.o: $(GMXHOME)/src/include/x86cpu.h
 g_anavel.o: $(GMXHOME)/src/include/copyrite.h
 g_anavel.o: $(GMXHOME)/src/include/xvgr.h
+g_anavel.o: $(GMXHOME)/src/include/viewit.h
 g_anavel.o: $(GMXHOME)/src/include/string2.h
 g_anavel.o: $(GMXHOME)/src/include/rdgroup.h
 g_anavel.o: $(GMXHOME)/src/include/tpxio.h
@@ -313,6 +321,7 @@ gctio.o: $(GMXHOME)/src/include/network.h
 gctio.o: $(GMXHOME)/src/include/main.h
 gctio.o: $(GMXHOME)/src/include/block_tx.h
 gctio.o: $(GMXHOME)/src/include/xvgr.h
+gctio.o: $(GMXHOME)/src/include/viewit.h
 gctio.o: $(GMXHOME)/src/include/macros.h
 gctio.o: $(GMXHOME)/src/include/physics.h
 gctio.o: $(GMXHOME)/src/include/smalloc.h
@@ -418,6 +427,7 @@ hrefify.o: $(GMXHOME)/src/include/string2.h
 hrefify.o: $(GMXHOME)/src/include/confio.h
 hrefify.o: $(GMXHOME)/src/include/vec.h
 hrefify.o: $(GMXHOME)/src/include/maths.h
+hrefify.o: $(GMXHOME)/src/include/x86cpu.h
 hrefify.o: $(GMXHOME)/src/include/statutil.h
 hrefify.o: $(GMXHOME)/src/include/filenm.h
 hrefify.o: $(GMXHOME)/src/include/futil.h
@@ -494,13 +504,18 @@ ionize.o: $(GMXHOME)/src/include/macros.h
 ionize.o: $(GMXHOME)/src/include/random.h
 ionize.o: $(GMXHOME)/src/include/physics.h
 ionize.o: $(GMXHOME)/src/include/xvgr.h
+ionize.o: $(GMXHOME)/src/include/viewit.h
 ionize.o: $(GMXHOME)/src/include/vec.h
 ionize.o: $(GMXHOME)/src/include/maths.h
+ionize.o: $(GMXHOME)/src/include/x86cpu.h
+ionize.o: $(GMXHOME)/src/include/pbc.h
 ionize.o: $(GMXHOME)/src/include/txtdump.h
 ionize.o: $(GMXHOME)/src/include/tpxio.h
 ionize.o: $(GMXHOME)/src/include/xdrf.h
 ionize.o: $(GMXHOME)/src/include/names.h
 ionize.o: $(GMXHOME)/src/include/futil.h
+ionize.o: $(GMXHOME)/src/include/network.h
+ionize.o: $(GMXHOME)/src/include/main.h
 mkice.o: $(GMXHOME)/src/include/typedefs.h
 mkice.o: $(GMXHOME)/src/include/sysstuff.h
 mkice.o: $(GMXHOME)/src/include/types/simple.h
@@ -543,6 +558,7 @@ mkice.o: $(GMXHOME)/src/include/macros.h
 mkice.o: $(GMXHOME)/src/include/smalloc.h
 mkice.o: $(GMXHOME)/src/include/vec.h
 mkice.o: $(GMXHOME)/src/include/maths.h
+mkice.o: $(GMXHOME)/src/include/x86cpu.h
 mkice.o: $(GMXHOME)/src/include/pbc.h
 mkice.o: $(GMXHOME)/src/include/physics.h
 mkice.o: $(GMXHOME)/src/include/names.h
@@ -552,8 +568,9 @@ mkice.o: $(GMXHOME)/src/include/xdrf.h
 mkice.o: $(GMXHOME)/src/include/trnio.h
 mkice.o: $(GMXHOME)/src/include/atomprop.h
 mkice.o: $(GMXHOME)/src/include/confio.h
-mkyaw.o: $(GMXHOME)/src/include/pdbio.h
+mkyaw.o: $(GMXHOME)/src/include/assert.h
 mkyaw.o: $(GMXHOME)/src/include/sysstuff.h
+mkyaw.o: $(GMXHOME)/src/include/pdbio.h
 mkyaw.o: $(GMXHOME)/src/include/typedefs.h
 mkyaw.o: $(GMXHOME)/src/include/types/simple.h
 mkyaw.o: $(GMXHOME)/src/include/types/enums.h
@@ -598,6 +615,7 @@ mkyaw.o: $(GMXHOME)/src/include/strdb.h
 mkyaw.o: $(GMXHOME)/src/include/rdgroup.h
 mkyaw.o: $(GMXHOME)/src/include/vec.h
 mkyaw.o: $(GMXHOME)/src/include/maths.h
+mkyaw.o: $(GMXHOME)/src/include/x86cpu.h
 mkyaw.o: $(GMXHOME)/src/include/gbutil.h
 mkyaw.o: $(GMXHOME)/src/include/physics.h
 mkyaw.o: $(GMXHOME)/src/include/atomprop.h
@@ -645,6 +663,7 @@ my_dssp.o: $(GMXHOME)/src/include/copyrite.h
 my_dssp.o: $(GMXHOME)/src/include/pdbio.h
 my_dssp.o: $(GMXHOME)/src/include/symtab.h
 my_dssp.o: $(GMXHOME)/src/include/xvgr.h
+my_dssp.o: $(GMXHOME)/src/include/viewit.h
 my_dssp.o: $(GMXHOME)/src/include/matio.h
 my_dssp.o: $(GMXHOME)/src/include/rdgroup.h
 my_dssp.o: $(GMXHOME)/src/include/gstat.h
@@ -685,6 +704,7 @@ optwat.o: $(GMXHOME)/src/include/smalloc.h
 optwat.o: $(GMXHOME)/src/include/vec.h
 optwat.o: $(GMXHOME)/src/include/maths.h
 optwat.o: $(GMXHOME)/src/include/macros.h
+optwat.o: $(GMXHOME)/src/include/x86cpu.h
 optwat.o: $(GMXHOME)/src/include/txtdump.h
 optwat.o: $(GMXHOME)/src/include/tpxio.h
 optwat.o: $(GMXHOME)/src/include/xdrf.h
@@ -766,6 +786,7 @@ relax_sh.o: $(GMXHOME)/src/include/smalloc.h
 relax_sh.o: $(GMXHOME)/src/include/vec.h
 relax_sh.o: $(GMXHOME)/src/include/maths.h
 relax_sh.o: $(GMXHOME)/src/include/macros.h
+relax_sh.o: $(GMXHOME)/src/include/x86cpu.h
 relax_sh.o: $(GMXHOME)/src/include/txtdump.h
 relax_sh.o: $(GMXHOME)/src/include/tpxio.h
 relax_sh.o: $(GMXHOME)/src/include/xdrf.h
@@ -783,6 +804,7 @@ relax_sh.o: $(GMXHOME)/src/include/edsam.h
 relax_sh.o: $(GMXHOME)/src/include/mdebin.h
 relax_sh.o: $(GMXHOME)/src/include/ebin.h
 relax_sh.o: $(GMXHOME)/src/include/enxio.h
+relax_sh.o: $(GMXHOME)/src/include/vcm.h
 relax_sh.o: $(GMXHOME)/src/include/mdatoms.h
 relax_sh.o: $(GMXHOME)/src/include/names.h
 sigeps.o: $(GMXHOME)/src/include/typedefs.h
@@ -822,12 +844,14 @@ sigeps.o: $(GMXHOME)/src/include/readinp.h
 sigeps.o: $(GMXHOME)/src/include/wman.h
 sigeps.o: $(GMXHOME)/src/include/copyrite.h
 sigeps.o: $(GMXHOME)/src/include/xvgr.h
+sigeps.o: $(GMXHOME)/src/include/viewit.h
 sigeps.o: $(GMXHOME)/src/include/pdbio.h
 sigeps.o: $(GMXHOME)/src/include/symtab.h
 sigeps.o: $(GMXHOME)/src/include/macros.h
 sigeps.o: $(GMXHOME)/src/include/smalloc.h
 sigeps.o: $(GMXHOME)/src/include/vec.h
 sigeps.o: $(GMXHOME)/src/include/maths.h
+sigeps.o: $(GMXHOME)/src/include/x86cpu.h
 sigeps.o: $(GMXHOME)/src/include/pbc.h
 sigeps.o: $(GMXHOME)/src/include/physics.h
 sigeps.o: $(GMXHOME)/src/include/names.h
@@ -889,17 +913,18 @@ xmdrun.o: $(GMXHOME)/src/include/mdebin.h
 xmdrun.o: $(GMXHOME)/src/include/ebin.h
 xmdrun.o: $(GMXHOME)/src/include/enxio.h
 xmdrun.o: $(GMXHOME)/src/include/xdrf.h
+xmdrun.o: $(GMXHOME)/src/include/vcm.h
 xmdrun.o: $(GMXHOME)/src/include/txtdump.h
 xmdrun.o: $(GMXHOME)/src/include/tpxio.h
 xmdrun.o: $(GMXHOME)/src/include/update.h
 xmdrun.o: $(GMXHOME)/src/include/pull.h
 xmdrun.o: $(GMXHOME)/src/include/vec.h
 xmdrun.o: $(GMXHOME)/src/include/maths.h
+xmdrun.o: $(GMXHOME)/src/include/x86cpu.h
 xmdrun.o: $(GMXHOME)/src/include/random.h
 xmdrun.o: $(GMXHOME)/src/include/statutil.h
 xmdrun.o: $(GMXHOME)/src/include/readinp.h
 xmdrun.o: $(GMXHOME)/src/include/wman.h
-xmdrun.o: $(GMXHOME)/src/include/vcm.h
 xmdrun.o: $(GMXHOME)/src/include/trnio.h
 xmdrun.o: $(GMXHOME)/src/include/disre.h
 xmdrun.o: $(GMXHOME)/src/include/dummies.h
