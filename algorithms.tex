@@ -785,6 +785,25 @@ where $\Tm = \iM \Bm^T (\Bm \iM \Bm^T)^{-1}$.
 The derivation of this equation from \ref{c1} and \ref{c2} can be found
 in \cite{Hess97}.
 
+This first step does not set the real bond lengths to the prescribed lengths,
+but the projection of the new bonds onto the old directions of the bonds.
+To correct for the rotation of bond $i$, the projection of the
+bond on the old direction is set to 
+\fs{m1a}
+p_i=\sqrt{2 d_i^2 - l_i^2}
+\fe
+where $l_i$ is the bond length after the first projection.
+The corrected positions are 
+\fs{m1b}
+\ve{r}_{n+1}^*=(\ve{I}-\Tm_n \Bm_n)\ve{r}_{n+1} + \Tm_n \ve{p} 
+\fe
+This correction for rotational effects is actually an iterative process,
+but during MD only one iteration is applied.
+The relative constraint deviation after this procedure will be less than
+0.0001 for every constraint.
+In energy minimization this might not be accurate enough, so the number
+of iterations is equal to the order of the expansion (see below).
+
 Half of the CPU time goes to inverting the constraint coupling 
 matrix $\Bm_n \iM \Bm_n^T$, which has to be done every time step.
 This $K \times K$ matrix
@@ -830,7 +849,7 @@ Therefore LINCS should NOT be used with coupled angle-constraints.
 The accuracy of LINCS depends on the number of matrices used
 in the expansion \ref{m3}. For MD calculations a fourth order
 expansion is enough. For Position Langevin Dynamics with
-large timesteps an eighth order expansion may be neccesary.
+large timesteps an eighth order expansion may be necessary.
 The order is a parameter in the input file for \verb'mdrun'.
 The implementation of LINCS is done in such a way that the 
 algorithm will never crash. Even when it is impossible to
