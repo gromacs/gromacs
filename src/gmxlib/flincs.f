@@ -1,4 +1,4 @@
-      subroutine flincs(x,xp,ncons,ncm,cmax,
+      subroutine forlincs(x,xp,ncons,ncm,cmax,
      $     bla1,bla2,blnr,blbnb,bllen,blc,blcc,blm,
      $     nrec,invmass,r,rhs1,rhs2,sol,wangle,warn,
      $     lambda)
@@ -257,7 +257,7 @@ c     ********  Correction for centripetal effects  ********
       end
 
 
-      subroutine fconerr(max,rms,imax,xprime,ncons,bla1,bla2,bllen)
+      subroutine forconerr(max,rms,imax,xprime,ncons,bla1,bla2,bllen)
 
       implicit none
 

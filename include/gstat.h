@@ -418,9 +418,6 @@ extern void normalize_histo(int npoints,int histo[],real dx,real normhisto[]);
  * normhisto  normalized output histogram
  */
 
-/* Matrix diagonalization routine in FORTRAN */ 
-DECLAREF77(fql77) (int *n,real *x, real *d, real *e, int *nmax);
-
 /* Use Levenberg-Marquardt method to fit to a one parameter exponential */
 /* Or: "There is no KILL like OVERKILL", Dr. Ir. D. van der Spoel */
 extern real do_lmfit_exp_one_parm(int ndata,real c1[],real dt,
@@ -439,6 +436,11 @@ extern real do_lmfit(int ndata,real c1[],real sig[],real dt,
 extern real integrate(FILE *fp,int n,real dt,real c[]);
 /* Integrate the data in c[] from 0 to n using trapezium rule.
  * If fp != NULL output is written to it
+ */
+ 
+extern int get_acflag(void);
+/* Return the lag (length of the correlation function) 
+ * Works only AFTER do_auto_corr has been called!
  */
  
 #endif

@@ -55,6 +55,7 @@ static char *SRCID_update_c = "$Id$";
 #include "mdrun.h"
 #include "copyrite.h"
 #include "edsam.h"
+#include "callf77.h"
 
 void calc_pres(matrix box,tensor ekin,tensor vir,tensor pres)
 {
@@ -1024,7 +1025,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
 
 	if (do_per_step(step,ir->nstLincsout)) {
 #ifdef USEF77
-	  CALLF77(fconerr)(&p_max,&p_rms,&p_imax,xprime,&nc,bla1,bla2,bllen);
+	  fconerr(&p_max,&p_rms,&p_imax,xprime,&nc,bla1,bla2,bllen);
 #else
 	  cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
 #endif
@@ -1032,10 +1033,10 @@ void update(int          natoms, 	/* number of atoms in simulation */
 
 	if (ir->eI==eiMD) {
 #ifdef USEF77
-	  CALLF77(flincs) (x[0],xprime[0],&nc,&ncm,&cmax,bla1,bla2,blnr,blbnb,
-			   bllen,blc,blcc,blm,&ir->nProjOrder,
-			   md->invmass,r[0],tmp1,tmp2,tmp3,&wang,&warn,
-			   lincslam);
+	  flincs(x[0],xprime[0],&nc,&ncm,&cmax,bla1,bla2,blnr,blbnb,
+		 bllen,blc,blcc,blm,&ir->nProjOrder,
+		 md->invmass,r[0],tmp1,tmp2,tmp3,&wang,&warn,
+		 lincslam);
 #else
 	  clincs(x,xprime,nc,ncm,cmax,bla1,bla2,blnr,blbnb,
 		 bllen,blc,blcc,blm,ir->nProjOrder,
@@ -1052,9 +1053,9 @@ void update(int          natoms, 	/* number of atoms in simulation */
 
 	if (ir->eI==eiLD) {
 #ifdef USEF77
-	  CALLF77(flincsld) (x[0],xprime[0],&nc,&ncm,&cmax,bla1,bla2,blnr,
-			     blbnb,bllen,blcc,blm,&ir->nProjOrder,
-			     r[0],tmp1,tmp2,tmp3,&wang,&warn);
+	  flincsld(x[0],xprime[0],&nc,&ncm,&cmax,bla1,bla2,blnr,
+		   blbnb,bllen,blcc,blm,&ir->nProjOrder,
+		   r[0],tmp1,tmp2,tmp3,&wang,&warn);
 #else
 	  clincsld(x,xprime,nc,ncm,cmax,bla1,bla2,blnr,
 		   blbnb,bllen,blcc,blm,ir->nProjOrder,
@@ -1066,7 +1067,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
 	  fprintf(stdlog,"Step %d\nRel. Constraint Deviation:  Max    between atoms     RMS\n",step);
 	  fprintf(stdlog,"    Before LINCS         %.6f %6d %6d   %.6f\n",p_max,bla1[p_imax],bla2[p_imax],p_rms);
 #ifdef USEF77
-	  CALLF77(fconerr)(&p_max,&p_rms,&p_imax,xprime,&nc,bla1,bla2,bllen);
+	  fconerr(&p_max,&p_rms,&p_imax,xprime,&nc,bla1,bla2,bllen);
 #else
 	  cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
 #endif
@@ -1076,7 +1077,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
 
 	if (warn > 0) {
 #ifdef USEF77
-	  CALLF77(fconerr)(&p_max,&p_rms,&p_imax,xprime,&nc,bla1,bla2,bllen);
+	  fconerr(&p_max,&p_rms,&p_imax,xprime,&nc,bla1,bla2,bllen);
 #else
 	  cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
 #endif
@@ -1118,7 +1119,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
       dOH  = top->idef.iparams[settle_type].settle.doh;
       dHH  = top->idef.iparams[settle_type].settle.dhh;
 #ifdef USEF77
-      CALLF77(fsettle) (&nsettle,owptr,x[0],xprime[0],&dOH,&dHH,&mO,&mH);
+      fsettle(&nsettle,owptr,x[0],xprime[0],&dOH,&dHH,&mO,&mH);
 #else
       csettle(stdlog,nsettle,owptr,x[0],xprime[0],dOH,dHH,mO,mH);
 #endif

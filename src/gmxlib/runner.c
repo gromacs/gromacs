@@ -126,7 +126,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   /* Initiate invsqrt routines */
 #ifdef USEF77
 #ifdef FINVSQRT
-  CALLF77(fillbuf)();
+  fillbuf();
 #endif
 #endif
 #ifdef CINVSQRT

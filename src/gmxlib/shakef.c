@@ -286,14 +286,10 @@ int vec_shakef(FILE *log,
 
   /* We have a FORTRAN shake now! */  
 #ifdef USEF77
-  CALLF77(fshake) (iatom,&ncon,&nit,&maxnit,
-		   dist2,xp[0],rij[0],M2,
-		   invmass,tt,&error);
+  fshake(iatom,&ncon,&nit,&maxnit,dist2,xp[0],rij[0],M2,invmass,tt,&error);
 #else
   /* And a c shake also ! */
-  cshake(iatom,ncon,&nit,maxnit,
-	 dist2,xp[0],rij[0],M2,
-	 invmass,tt,&error);
+  cshake(iatom,ncon,&nit,maxnit,dist2,xp[0],rij[0],M2,invmass,tt,&error);
 #endif
   if (nit >= maxnit) {
     fprintf(log,"Shake did not converge in %d steps\n",maxnit);

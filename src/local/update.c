@@ -54,6 +54,7 @@ static char *SRCID_update_c = "$Id$";
 #include "mdrun.h"
 #include "copyrite.h"
 #include "do_gct.h"
+#include "names.h"
 
 void calc_pres(matrix box,tensor ekin,tensor vir,tensor pres)
 {
@@ -63,7 +64,7 @@ void calc_pres(matrix box,tensor ekin,tensor vir,tensor pres)
   /* Uitzoeken welke ekin hier van toepassing is, zie Evans & Morris - E. */ 
   /* Wrs. moet de druktensor gecorrigeerd worden voor de netto stroom in het */
   /* systeem...       */
-  fac=2.0/det(box);
+  fac=2.0*PRESFAC/det(box);
   for(n=0; (n<DIM); n++)
     for(m=0; (m<DIM); m++)
       pres[n][m]=(ekin[n][m]-vir[n][m])*fac;
@@ -133,27 +134,27 @@ static void do_pcoupl(t_inputrec *ir,tensor pres,int step,
     scalar_pressure += PPP[m]/3.0;
   }
 
-  if (ir->bpc && (scalar_pressure != 0.0)) {
+  if ((ir->epc != epcNO) && (scalar_pressure != 0.0)) {
     for(m=0; (m<DIM); m++)
       factor[m] = ir->compress[m]*ir->delta_t/ir->tau_p;
     clear_mat(mu);
-    switch (ir->eBox) {
-    case ebtCUBIC:
+    switch (ir->epc) {
+    case epcISOTROPIC:
       for(m=0; (m<DIM); m++)
 	mu[m][m] = 
 	  pow(1.0-factor[m]*(ir->ref_p[m]-scalar_pressure),1.0/3.0);
       break;
-    case ebtRECT:
+    case epcANISOTROPIC:
       for (m=0; (m<DIM); m++)
 	mu[m][m] = pow(1.0-factor[m]*(ir->ref_p[m] - PPP[m]),1.0/3.0);
       break;
+    case epcTRICLINIC:
     default:
-      fprintf(stderr,"Box Type %d not supported with Pressure coupling\n",
-	      ir->eBox);
+      fprintf(stderr,"Pressure coupling type %s not supported yet\n",
+	      EPCOUPLTYPE(ir->epc));
       exit(1);
     }
 #ifdef DEBUG
-    fprintf(stdlog,"Scalar_pres = %g\n",scalar_pressure);
     pr_rvecs(stdlog,0,"mu  ",mu,DIM);
 #endif
     /* Scale the positions using matrix operation */
@@ -556,7 +557,7 @@ void init_update(FILE *log,t_topology *top,t_inputrec *ir,
   int         nsettle=0;
   int         *owptr=NULL;
 
-  if ((ir->btc) || (ir->bpc))
+  if ((ir->btc) || (ir->epc != epcNO))
     please_cite(log,"Berendsen84");
     
   /* Put the oxygen atoms in the owptr array */
@@ -1013,7 +1014,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
 
 	if (do_per_step(step,ir->nstLincsout)) {
 #ifdef USEF77
-	  CALLF77(fconerr)(&p_max,&p_rms,&p_imax,xprime,&nc,bla1,bla2,bllen);
+	  fconerr(&p_max,&p_rms,&p_imax,xprime,&nc,bla1,bla2,bllen);
 #else
 	  cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
 #endif
@@ -1021,10 +1022,9 @@ void update(int          natoms, 	/* number of atoms in simulation */
 
 	if (ir->eI==eiMD) {
 #ifdef USEF77
-	  CALLF77(flincs) (x[0],xprime[0],&nc,&ncm,&cmax,bla1,bla2,blnr,blbnb,
-			   bllen,blc,blcc,blm,&ir->nProjOrder,
-			   md->invmass,r[0],tmp1,tmp2,tmp3,&wang,&warn,
-			   lincslam);
+	  flincs(x[0],xprime[0],&nc,&ncm,&cmax,bla1,bla2,blnr,blbnb,
+		 bllen,blc,blcc,blm,&ir->nProjOrder,
+		 md->invmass,r[0],tmp1,tmp2,tmp3,&wang,&warn,lincslam);
 #else
 	  clincs(x,xprime,nc,ncm,cmax,bla1,bla2,blnr,blbnb,
 		 bllen,blc,blcc,blm,ir->nProjOrder,
@@ -1041,9 +1041,9 @@ void update(int          natoms, 	/* number of atoms in simulation */
 
 	if (ir->eI==eiLD) {
 #ifdef USEF77
-	  CALLF77(flincsld) (x[0],xprime[0],&nc,&ncm,&cmax,bla1,bla2,blnr,
-			     blbnb,bllen,blcc,blm,&ir->nProjOrder,
-			     r[0],tmp1,tmp2,tmp3,&wang,&warn);
+	  flincsld(x[0],xprime[0],&nc,&ncm,&cmax,bla1,bla2,blnr,
+		   blbnb,bllen,blcc,blm,&ir->nProjOrder,
+		   r[0],tmp1,tmp2,tmp3,&wang,&warn);
 #else
 	  clincsld(x,xprime,nc,ncm,cmax,bla1,bla2,blnr,
 		   blbnb,bllen,blcc,blm,ir->nProjOrder,
@@ -1055,7 +1055,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
 	  fprintf(stdlog,"Step %d\nRel. Constraint Deviation:  Max    between atoms     RMS\n",step);
 	  fprintf(stdlog,"    Before LINCS         %.6f %6d %6d   %.6f\n",p_max,bla1[p_imax],bla2[p_imax],p_rms);
 #ifdef USEF77
-	  CALLF77(fconerr)(&p_max,&p_rms,&p_imax,xprime,&nc,bla1,bla2,bllen);
+	  fconerr(&p_max,&p_rms,&p_imax,xprime,&nc,bla1,bla2,bllen);
 #else
 	  cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
 #endif
@@ -1065,7 +1065,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
 
 	if (warn > 0) {
 #ifdef USEF77
-	  CALLF77(fconerr)(&p_max,&p_rms,&p_imax,xprime,&nc,bla1,bla2,bllen);
+	  fconerr(&p_max,&p_rms,&p_imax,xprime,&nc,bla1,bla2,bllen);
 #else
 	  cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
 #endif
@@ -1098,7 +1098,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
       dOH  = top->idef.iparams[settle_type].settle.doh;
       dHH  = top->idef.iparams[settle_type].settle.dhh;
 #ifdef USEF77
-      CALLF77(fsettle) (&nsettle,owptr,x[0],xprime[0],&dOH,&dHH,&mO,&mH);
+      fsettle(&nsettle,owptr,x[0],xprime[0],&dOH,&dHH,&mO,&mH);
 #else
       csettle(stdlog,nsettle,owptr,x[0],xprime[0],dOH,dHH,mO,mH);
 #endif

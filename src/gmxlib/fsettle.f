@@ -1,4 +1,4 @@
-      subroutine FSETTLE(nshake,owptr,b4,after,
+      subroutine FORSETTLE(nshake,owptr,b4,after,
      &     dOH,dHH,mO,mH)
       implicit none
 c*****************************************************************

@@ -119,14 +119,14 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
       case F_SR:
 #ifdef USEF77
 	if (bTab)
-	  CALLF77(forcoultab)(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
-			      x[0],&nj,typeA,nl_j,
-			      chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb,
-			      &fr->ntab,&fr->tabscale,fr->VFtab);
+	  forcoultab(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
+		     x[0],&nj,typeA,nl_j,
+		     chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb,
+		     &fr->ntab,&fr->tabscale,fr->VFtab);
 	else 
-	  CALLF77(forcoul)(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
-			   x[0],&nj,nl_j,
-			   chargeA,f[0],f_ip,&Vc);
+	  forcoul(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
+		  x[0],&nj,nl_j,
+		  chargeA,f[0],f_ip,&Vc);
 #else
 	if (bTab) 
 	  c_coultab(r_i[XX],r_i[YY],r_i[ZZ],qi,
@@ -143,17 +143,17 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
       case F_LJ:
 #ifdef USEF77
 	if (bTab) 
-	  CALLF77(fortab)(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
-			  x[0],&nj,typeA,nl_j,
-			  chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb,
-			  &fr->ntab,&fr->tabscale,fr->VFtab);
+	  fortab(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
+		 x[0],&nj,typeA,nl_j,
+		 chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb,
+		 &fr->ntab,&fr->tabscale,fr->VFtab);
 	else if (bWater)
-	  CALLF77(forwater)(&inr,xw[0],&eps,x[0],&nj,typeA,nl_j,
-			    chargeA,fr->nbfp[itpA],f[0],fw[0],&Vc,&Vnb);
+	  forwater(&inr,xw[0],&eps,x[0],&nj,typeA,nl_j,
+		   chargeA,fr->nbfp[itpA],f[0],fw[0],&Vc,&Vnb);
 	else
-	  CALLF77(forljc)(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
-			  x[0],&nj,typeA,nl_j,
-			  chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
+	  forljc(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
+		 x[0],&nj,typeA,nl_j,
+		 chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
 #else
 	if (bTab)
 	  c_tab(r_i[XX],r_i[YY],r_i[ZZ],qi,
@@ -318,8 +318,8 @@ void fdo_flr(FILE *log,int nri,atom_id i_atoms[],int shift,
       
 #ifdef USEF77
       iaa=i_atoms[0];
-      CALLF77(forwcoul) (&(iaa),xw[0],&eps,x[0],&nj[gid],nlj[gid],
-			charge,flr[0],fw[0],&Vc);
+      forwcoul(&(iaa),xw[0],&eps,x[0],&nj[gid],nlj[gid],
+	       charge,flr[0],fw[0],&Vc);
 #else
       c_wcoul(i_atoms[0],xw[0],eps,x[0],nj[gid],nlj[gid],
 	      charge,flr[0],fw[0],&Vc);
@@ -361,9 +361,9 @@ void fdo_flr(FILE *log,int nri,atom_id i_atoms[],int shift,
 	/* Reset force vector for particle ip */
 	clear_rvec(f_ip);
 #ifdef USEF77
-	CALLF77(forcoul) (&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
-			 x[0],&nj[gid],nlj[gid],
-			 charge,flr[0],f_ip,&Vc);
+	forcoul(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
+		x[0],&nj[gid],nlj[gid],
+		charge,flr[0],f_ip,&Vc);
 #else
 	c_coul(r_i[XX],r_i[YY],r_i[ZZ],qi,
 	       x[0],nj[gid],nlj[gid],

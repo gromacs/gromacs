@@ -1,4 +1,4 @@
-      subroutine FSHAKE(iatom,ncon,nit,maxnit,
+      subroutine FORSHAKE(iatom,ncon,nit,maxnit,
      $     dist2,xp,rij,m2,invmass,tt,error)
       
       implicit none

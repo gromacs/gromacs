@@ -180,7 +180,7 @@ int main(int argc,char *argv[])
   fflush(stderr);
 
 #ifdef USEF77
-  CALLF77(fql77)(&ndim,hess,rdum1,rdum2,&ndim);
+  fql77(&ndim,hess,rdum1,rdum2,&ndim);
 #else
   /*ql77(int n,real **x,real *d,real *e,int nmax)*/
   /*fprintf(stderr,"Calling ql77...\n");

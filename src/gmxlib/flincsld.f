@@ -1,4 +1,4 @@
-      subroutine flincsld(x,xp,ncons,ncm,cmax,
+      subroutine forlincsld(x,xp,ncons,ncm,cmax,
      $     bla1,bla2,blnr,blbnb,bllen,blcc,blm,
      $     nrec,r,rhs1,rhs2,sol,wangle,warn)
 

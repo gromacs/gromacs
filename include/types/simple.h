@@ -81,29 +81,6 @@ typedef unsigned long   ulong;
 typedef unsigned short  ushort;
 #endif
 
-
-/* These very nasty macros modify the name of the fortran routines
- * so that they may be prototyped and called from C.
- * These definitions must be used when calling *and* when declaring
- * the functions.
- * The macros are very critical as to the use of () etc, so modify with 
- * utmost care! (make backups!!!!)
- */
-#ifdef F77UNDERSCORE
-
-#define DOCLF77(function,und)    (void) ##function##und
-#define DODECLF77(function,und)  extern void (##function##und)
-
-#define CALLF77(function)        DOCLF77(function,_)
-#define DECLAREF77(function)     DODECLF77(function,_)
-
-#else   /* No underscore needed */
-
-#define CALLF77(function)        function
-#define DECLAREF77(function)     extern void function
-
-#endif
-
 #ifdef CPLUSPLUS
 }
 #endif

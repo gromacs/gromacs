@@ -135,14 +135,6 @@ extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 		   real invmass[],real tt[],int *nerror);
 /* Regular iterative shake */
 
-/* Fortran versions of shake and settle */
-DECLAREF77(fsettle) (int *nshake,int owptr[],
-		     real b4[],real after[],
-		     real *dOH,real *dHH,real *mO,real *mH);
-		     
-DECLAREF77(fshake)  (atom_id iatom[],int *ncon,int *nit,int *maxnit,
-		     real dist2[],real xp[],real rij[],real m2[],
-		     real invmass[],real tt[],int *error);
 
 /* C routines for LINCS algorithm */ 
 void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
@@ -160,23 +152,6 @@ void clincsld(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
 
 void cconerr(real *max,real *rms,int *imax,rvec *xprime,
 	     int ncons,int *bla1,int *bla2,real *bllen);
-
-/* Fortran routines for LINCS algorithm */ 
-DECLAREF77(flincs) (real *x,real *xp,int *nc,int *ncm,int *cmax,
-		     int *bla1,int *bla2,int *blnr,
-		     int *blbnb,real *bllen,real *blc,real *blcc,real *blm,
-		     int *nrec,real *invmass,real *r,real *temp1,
-		     real *temp2,real *temp3,real *wangle,int *warn,
-		     real *lambda);
-
-DECLAREF77(flincsld)  (real *x,real *xp,int *nc,int *ncm,int *cmax,
-		     int *bla1,int *bla2,int *blnr,
-		     int *blbnb,real *bllen,real *blcc,real *blm,int *nrec,
-		     real *r,real *temp1,real *temp2,real *temp3,
-		     real *wangle,int *warn);
-
-DECLAREF77(fconerr) (real *max,real *rms,int *imax,
-		     rvec *xprime,int *ncons,int *bla1,int *bla2,real *bllen);
 
 #endif	/* _update_h */
 
