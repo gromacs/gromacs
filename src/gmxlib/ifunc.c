@@ -35,31 +35,34 @@ static char *SRCID_ifunc_c = "$Id$";
 #include "disre.h"
 #include "orires.h"
 
-#define def_bonded(str,lstr,nra,nrpa,nrpb,ind,func)\
+#define  def_bonded(str,lstr,nra,nrpa,nrpb,ind,func)\
    {str,lstr,(nra),(nrpa),(nrpb),IF_BOND,                        (ind),(func)}
+
+#define def_bondedg(str,lstr,nra,nrpa,nrpb,ind,func)\
+   {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_GRAPH,             (ind),(func)}
    
-#define  def_angle(str,lstr,nra,nrpa,nrpb,ind,func)\
+#define   def_angle(str,lstr,nra,nrpa,nrpb,ind,func)\
    {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_ATYPE,(ind),(func)}
    
-#define   def_bond(str,lstr,nra,nrpa,nrpb,ind,func)\
-   {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_CONNECT | IF_BTYPE,(ind),(func)}
+#define    def_bond(str,lstr,nra,nrpa,nrpb,ind,func)\
+   {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_GRAPH | IF_CHEMBOND | IF_BTYPE,(ind),(func)}
 
-#define def_bondnb(str,lstr,nra,nrpa,nrpb,ind,func)\
-   {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_CONNECT,(ind),(func)}
+#define  def_bondnb(str,lstr,nra,nrpa,nrpb,ind,func)\
+   {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_GRAPH | IF_CHEMBOND,(ind),(func)}
 
-#define  def_dummy(str,lstr,nra,nrpa)\
-   {str,lstr,(nra),(nrpa),     0,IF_DUMMY | IF_CONNECT,     -1, unimplemented}
+#define   def_dummy(str,lstr,nra,nrpa)\
+   {str,lstr,(nra),(nrpa),     0,IF_DUMMY | IF_GRAPH,       -1, unimplemented}
    
-#define    def_shk(str,lstr,nra,nrpa,nrpb)\
-   {str,lstr,(nra),(nrpa),(nrpb),IF_CONSTRAINT,             -1, unimplemented}
+#define     def_shk(str,lstr,nra,nrpa,nrpb)\
+   {str,lstr,(nra),(nrpa),(nrpb),IF_CONSTRAINT | IF_GRAPH,  -1, unimplemented}
 
-#define def_shkcon(str,lstr,nra,nrpa,nrpb)\
-   {str,lstr,(nra),(nrpa),(nrpb),IF_CONSTRAINT | IF_CONNECT,-1, unimplemented}
+#define   def_shkcb(str,lstr,nra,nrpa,nrpb)\
+   {str,lstr,(nra),(nrpa),(nrpb),IF_CONSTRAINT | IF_GRAPH | IF_CHEMBOND,-1, unimplemented}
    
-#define     def_nb(str,lstr,nra, nrp)\
+#define      def_nb(str,lstr,nra, nrp)\
    {str,lstr,(nra), (nrp),     0,IF_NULL,                    -1,unimplemented}
    
-#define   def_nofc(str,lstr)\
+#define    def_nofc(str,lstr)\
    {str,lstr,    0,     0,     0,IF_NULL,                    -1,unimplemented}
 
 /* this MUST correspond to the enum in include/types/idef.h */
@@ -70,7 +73,7 @@ t_interaction_function interaction_function[F_NRE]=
   def_bond   ("MORSE",    "Morse",           2, 3, 0,  eNR_MORSE, morsebonds),
   def_bond   ("CUBICBONDS","Cubic Bonds",    2, 3, 0,  eNR_CUBICBONDS, cubicbonds),
   def_bondnb ("CONNBONDS","Connect Bonds",   2, 0, 0,  0,      unimplemented),
-  def_bonded ("HARMONIC", "Harmonic Pot.",   2, 2, 2,  eNR_BONDS,  bonds    ),
+  def_bondedg("HARMONIC", "Harmonic Pot.",   2, 2, 2,  eNR_BONDS,  bonds    ),
   def_angle  ("ANGLES",   "Angle",           3, 2, 2,  eNR_ANGLES, angles   ),
   def_angle  ("G96ANGLES","G96Angle",        3, 2, 2,  eNR_ANGLES, g96angles),
   def_bonded ("PDIHS",    "Proper Dih.",     4, 3, 3,  eNR_PROPER, pdihs    ),
@@ -86,15 +89,15 @@ t_interaction_function interaction_function[F_NRE]=
   def_nofc   ("LR",       "Coulomb (LR)"     ),
   def_bonded ("WATERPOL", "Water Pol.",      1, 6, 0,  eNR_WPOL,   water_pol),
   def_bonded ("POSRES",   "Position Rest.",  1, 3, 0,  eNR_POSRES, posres   ),
-  def_bondnb ("DISRES",   "Dis. Rest.",      2, 6, 0,  eNR_DISRES, ta_disres),
+  def_bondedg("DISRES",   "Dis. Rest.",      2, 6, 0,  eNR_DISRES, ta_disres),
   def_nofc   ("DRVIOL",   "D. R. Viol. (nm)" ),    
-  def_bonded ("ORIRES",   "Orient. Rest.",   2, 6, 0,  eNR_ORIRES, orires   ),
+  def_bondedg("ORIRES",   "Orient. Rest.",   2, 6, 0,  eNR_ORIRES, orires   ),
   def_nofc   ("ORDEV",    "Ori. R. RMSD"     ),  
-  def_bonded ("ANGRES",   "Angle Rest.",     4, 3, 3,  eNR_ANGRES, angres   ),
-  def_bonded ("ANGRESZ",  "Angle Rest. Z",   2, 3, 3,  eNR_ANGRESZ,angresz  ),
-  def_shkcon ("CONSTR",   "Constraint",      2, 1, 1   ),
+  def_bondedg("ANGRES",   "Angle Rest.",     4, 3, 3,  eNR_ANGRES, angres   ),
+  def_bondedg("ANGRESZ",  "Angle Rest. Z",   2, 3, 3,  eNR_ANGRESZ,angresz  ),
+  def_shkcb  ("CONSTR",   "Constraint",      2, 1, 1   ),
   def_shk    ("CONSTRNC", "Constr. No Conn.",2, 1, 1   ),
-  def_shkcon ("SETTLE",   "Settle",          1, 2, 0   ),
+  def_shkcb  ("SETTLE",   "Settle",          1, 2, 0   ),
   def_dummy  ("DUMMY2",   "Dummy2",          3, 1      ),
   def_dummy  ("DUMMY3",   "Dummy3",          4, 2      ),
   def_dummy  ("DUMMY3FD", "Dummy3fd",        4, 2      ),

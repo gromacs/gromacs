@@ -55,14 +55,15 @@ typedef real t_ifunc(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 #define IF_BOND       1
 #define IF_DUMMY      1<<1
 #define IF_CONSTRAINT 1<<2
-#define IF_CONNECT    1<<3
+#define IF_GRAPH      1<<3
+#define IF_CHEMBOND   1<<4
 #define IF_BTYPE      1<<5
 #define IF_ATYPE      1<<6
 /* These flags tell to some of the routines what can be done with this
  * item in the list. If flags & IF_BOND, then bonded interactions will
- * be calculated. If flags & IF_CONNECT this link specifies a connection 
- * (chemical bond) between two particles. By specifying this here, we can 
- * keep all the information in one place.
+ * be calculated. If flags & IF_GRAPH this link is added to the graph
+ * used for pbc operations. By specifying this here, we can keep all
+ * the information in one place.
  */
 typedef struct
 {
@@ -81,11 +82,10 @@ typedef struct
 #define NRFP(ftype) (interaction_function[(ftype)].nrfpA+interaction_function[(ftype)].nrfpB)
 #define NRAL(ftype) (interaction_function[(ftype)].nratoms)
 
-#define IS_CHEMBOND(ftype) (interaction_function[(ftype)].nratoms==2 && interaction_function[(ftype)].flags & IF_CONNECT)
+#define IS_CHEMBOND(ftype) (interaction_function[(ftype)].nratoms==2 && interaction_function[(ftype)].flags & IF_CHEMBOND)
 /* IS_CHEMBOND tells if function type ftype represents a chemical bond */
 
 extern t_interaction_function interaction_function[F_NRE];
 /* initialised interaction functions descriptor				*/
 
 #endif
-

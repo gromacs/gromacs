@@ -96,7 +96,7 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,
     tp=ftype[ia[0]];
     np=interaction_function[tp].nratoms;
     
-    if ((ia[1] < natoms) && (interaction_function[tp].flags & IF_CONNECT)) {
+    if ((ia[1] < natoms) && (interaction_function[tp].flags & IF_GRAPH)) {
       if (ia[np] >= natoms)
 	fatal_error(0,"Molecule in topology has atom numbers below and "
 		    "above natoms (%d).\n"
@@ -190,7 +190,7 @@ static void calc_1se(t_graph *g,t_ilist *il,t_functype ftype[],
 	if (iaa<natoms) {
 	  g->start=min(g->start,iaa);
 	  g->end  =max(g->end,  iaa);
-	  if (interaction_function[tp].flags & IF_CONNECT)
+	  if (interaction_function[tp].flags & IF_GRAPH)
 	    nbond[iaa]++;
 	}
       }
@@ -208,7 +208,7 @@ static void calc_start_end(t_graph *g,t_idef *idef,int natoms)
 
   snew(nbond,natoms);
   for(i=0; (i<F_NRE); i++) {
-    if (interaction_function[i].flags & IF_CONNECT)
+    if (interaction_function[i].flags & IF_GRAPH)
       calc_1se(g,&idef->il[i],idef->functype,nbond,natoms);
   }
   
@@ -257,13 +257,13 @@ t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
        * graph.
        */
       for(i=0; (i<F_NRE); i++)
-	if (interaction_function[i].flags & IF_CONNECT)
+	if (interaction_function[i].flags & IF_GRAPH)
 	  mk_igraph(g,idef->functype,&(idef->il[i]),natoms,TRUE);
       /* Then add all the other interactions in fixed lists, but first
        * check to see what's there already.
        */
       for(i=0; (i<F_NRE); i++) {
-	if (!(interaction_function[i].flags & IF_CONNECT)) {
+	if (!(interaction_function[i].flags & IF_GRAPH)) {
 	  mk_igraph(g,idef->functype,&(idef->il[i]),natoms,FALSE);
 	}
       }
