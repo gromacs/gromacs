@@ -480,7 +480,7 @@ int main(int argc,char *argv[])
       fatal_error(0,"Index has more atoms (%d) than trajectory file (%d)",
 		  isize,natoms);
     else {
-      bSelect=(natoms != isize);
+      bSelect=(natoms > isize);
       for(i=0; ((i<isize) && !bSelect); i++)
 	bSelect=(i != index[i]);
       if (bSelect) {
