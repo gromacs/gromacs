@@ -400,7 +400,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
   static char *deffnm=NULL;
   
   FILE *fp;  
-  bool bPrint;
+  bool bPrint,bExit;
   int  i,j,k,npall;
   char *ptr,*newdesc;
   char *envstr;
@@ -600,7 +600,9 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
   
   for(i=0; (i<npall); i++)
     all_pa[i].desc = mk_desc(&(all_pa[i]), time_label() );
-    
+
+  bExit = bHelp || (strcmp(manstr[0],"no") != 0);
+
 #ifdef __sgi
 #ifdef USE_SGI_FPE
   /* Install exception handler if necessary */
@@ -616,7 +618,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
       sscanf(npristr[0],"%d",&npri);
     else
       sscanf(not_npristr[0],"%d",&npri);
-  if (npri != 0) {
+  if (npri != 0 && !bExit) {
     (void) schedctl(MPTS_RTPRI,0,npri);
   }
   else
@@ -628,7 +630,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
       else
 	sscanf(not_nicestr[0],"%d",&nicelevel);
     }
-  if (nicelevel != 0)
+  if (nicelevel != 0 && !bExit)
     nice(nicelevel);
   
 #endif
@@ -669,7 +671,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
       fatal_error(0,"Program %s halted",Program());
     }
   } 
-  if (bHelp || (strcmp(manstr[0],"no") != 0)) {
+  if (bExit) {
 #ifdef USE_MPI
     if (gmx_parallel)
       gmx_abort(gmx_node_id(),gmx_node_num(),0);
