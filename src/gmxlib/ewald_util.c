@@ -73,7 +73,7 @@ real calc_ewaldcoeff(real rc,real dtol)
 real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 			real charge[],t_block *excl,rvec x[],
 			rvec box_size,rvec mu_tot,real qsum,
-			bool bDipoleCorr,matrix lr_vir)
+			real epsilon_surface,matrix lr_vir)
 {
   static  bool bFirst=TRUE;
   static  real Vself;
@@ -103,9 +103,12 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   q2sum =0; 
   Vdipole=0;
   Vcharge=0;
-  
-  dipole_coeff=M_PI/(1.5*ONE_4PI_EPS0*vol);
 
+  if(epsilon_surface==0)
+    dipole_coeff=0;
+  else
+    dipole_coeff=M_PI/(1.5*epsilon_surface*ONE_4PI_EPS0*vol);
+  
   for(i=start; (i<end); i++) {
       /* Initiate local variables (for this i-particle) to 0 */
       qi  = charge[i]*ONE_4PI_EPS0;
@@ -200,9 +203,9 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
       }
       }
       /* Dipole correction on force  */
-      if(bDipoleCorr) 
+      if(epsilon_surface>0) 
 	for(j=0;j<DIM;j++)
-	  flr[i][j]+=2.0*dipole_coeff*DEBYE2ENM*mu_tot[j]*charge[i];
+	  flr[i][j]-=2.0*dipole_coeff*DEBYE2ENM*mu_tot[j]*charge[i];
   }
 
   /* Global corrections only on master process */
@@ -214,8 +217,8 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
       lr_vir[iv][iv]+=vc;
     Vcharge=-2.0*vol*vc;
     /* Apply surface dipole correction */
-    if(bDipoleCorr)
-      Vdipole=dipole_coeff*DEBYE2ENM*DEBYE2ENM*
+    if(epsilon_surface>0)
+      Vdipole=-dipole_coeff*DEBYE2ENM*DEBYE2ENM*
 	(mu_tot[XX]*mu_tot[XX]+mu_tot[YY]*mu_tot[YY]+mu_tot[ZZ]*mu_tot[ZZ]);
   }
   
@@ -228,8 +231,8 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
     fprintf(debug,"Long Range correction: Vexcl=%g\n",Vexcl);
     if(MASTER(cr)) {
       fprintf(debug,"Total charge correction: Vcharge=%g\n",Vcharge);
-      if(bDipoleCorr)
-      fprintf(debug,"Total dipole correction: Vdipole=%g\n",Vdipole);
+      if(epsilon_surface>0)
+	fprintf(debug,"Total dipole correction: Vdipole=%g\n",Vdipole);
     }
   }
   /* Return the correction to the energy */
