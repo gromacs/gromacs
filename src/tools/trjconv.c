@@ -61,6 +61,7 @@
 #include "magic.h"
 #include "pbc.h"
 #include "viewit.h"
+#include "xvgr.h"
 
 static void calc_pbc_cluster(int nrefat,t_topology *top,rvec x[],
 			     atom_id index[],
@@ -361,13 +362,15 @@ int main(int argc,char *argv[])
     "[BB]6.[bb] fit atoms to reference structure[BR]",
     "[BB]7.[bb] reduce the number of frames[BR]",
     "[BB]8.[bb] change the timestamps of the frames ",
-    "([TT]-t0[tt] and [TT]-timestep[tt])",
+    "([TT]-t0[tt] and [TT]-timestep[tt])[BR]",
     "[BB]9.[bb] cut the trajectory in small subtrajectories according",
     "to information in an index file. This allows subsequent analysis of",
     "the subtrajectories that could, for example be the result of a",
     "cluster analysis. Use option [TT]-sub[tt].",
     "This assumes that the entries in the index file are frame numbers and",
-    "dumps each group in the index file to a separate trajectory file.[PAR]",
+    "dumps each group in the index file to a separate trajectory file.[BR]",
+    "[BB]10.[bb] select frames within a certain range of a quantity given",
+    "in an [TT].xvg[tt] file.[PAR]",
     "The program [TT]trjcat[tt] can concatenate multiple trajectory files.",
     "[PAR]",
     "Currently seven formats are supported for input and output:",
@@ -456,7 +459,11 @@ int main(int argc,char *argv[])
     "trajectories must be concatenated without have double frames.[PAR]",
     "[TT]trjcat[tt] is more suitable for concatenating trajectory files.[PAR]",
     "Option [TT]-dump[tt] can be used to extract a frame at or near",
-    "one specific time from your trajectory."
+    "one specific time from your trajectory.[PAR]",
+    "Option [TT]-drop[tt] reads an [TT].xvg[tt] file with times and values.",
+    "When options [TT]-dropunder[tt] and/or [TT]-dropover[tt] are set,",
+    "frames with a value below and above the value of the respective options",
+    "will not be written."
   };
   
   int pbc_enum;
@@ -483,6 +490,7 @@ int main(int argc,char *argv[])
   static real  tzero=0,delta_t=0,timestep=0,ttrunc=-1,tdump=-1,split_t=0;
   static rvec  newbox = {0,0,0}, shift = {0,0,0};
   static char  *exec_command=NULL;
+  static real  dropunder=0,dropover=0;
 
   t_pargs pa[] = {
     { "-skip", FALSE,  etINT, {&skip_nr},
@@ -527,7 +535,11 @@ int main(int argc,char *argv[])
     { "-sep", FALSE,  etBOOL, {&bSeparate},
       "Write each frame to a separate .gro, .g96 or .pdb file"},
     { "-ter",  FALSE, etBOOL, {&bTer},
-      "Use 'TER' in pdb file as end of frame in stead of default 'ENDMDL'" }
+      "Use 'TER' in pdb file as end of frame in stead of default 'ENDMDL'" },
+    { "-dropunder", FALSE, etREAL, {&dropunder},
+      "Drop all frames below this value"},
+    { "-dropover", FALSE, etREAL, {&dropover},
+      "Drop all frames above this value"}
   };
 #define NPA asize(pa)
       
@@ -555,12 +567,15 @@ int main(int argc,char *argv[])
   int          *clust_status=NULL;
   int          ntrxopen=0;
   int          *nfwritten=NULL;
+  int          ndrop=0,ncol,drop0=0,drop1=0,dropuse=0;
+  double       **dropval;
   real         tshift=0,t0=-1,dt=0.001,prec;
   bool         bPBC,bPBCcom,bInBox,bNoJump,bRect,bTric,bComp,bCluster;
   bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
   bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSetUR,bSplit=FALSE;
-  bool         bSubTraj=FALSE;
+  bool         bSubTraj=FALSE,bDropUnder=FALSE,bDropOver=FALSE;
+  bool         bWriteFrame;
   char         *top_file,*in_file,*out_file=NULL,out_file2[256],*charpt;
   char         *outf_base=NULL,*outf_ext=NULL;
   char         top_title[256],title[256],command[256],filemode[5];
@@ -574,7 +589,8 @@ int main(int argc,char *argv[])
     { efTPS, NULL,   NULL,      ffOPTRD },
     { efNDX, NULL,   NULL,      ffOPTRD },
     { efNDX, "-fr",  "frames",  ffOPTRD },
-    { efNDX, "-sub", "cluster", ffOPTRD }
+    { efNDX, "-sub", "cluster", ffOPTRD },
+    { efXVG, "-drop","drop",    ffOPTRD }
   };
 #define NFILE asize(fnm)
   
@@ -603,6 +619,8 @@ int main(int argc,char *argv[])
     bExec     = opt2parg_bSet("-exec", NPA, pa);
     bTimeStep = opt2parg_bSet("-timestep", NPA, pa);
     bTDump    = opt2parg_bSet("-dump", NPA, pa);
+    bDropUnder= opt2parg_bSet("-dropunder", NPA, pa);
+    bDropOver = opt2parg_bSet("-dropover", NPA, pa);
 
     /* parse enum options */    
     fit_enum  = nenum(fit);
@@ -783,6 +801,18 @@ int main(int argc,char *argv[])
       rvec_dec(x_shift,xp[index[0]]);
     } else
       clear_rvec(x_shift);
+
+    if (bDropUnder || bDropOver) {
+      /* Read the xvg file with the drop values */
+      fprintf(stderr,"\nReading drop file ...");
+      ndrop = read_xvg(opt2fn("-drop",NFILE,fnm),&dropval,&ncol);
+      fprintf(stderr," %d time points\n",ndrop);
+      if (ndrop == 0 || ncol < 2)
+	gmx_fatal(FARGS,"Found no data points in %s",
+		  opt2fn("-drop",NFILE,fnm));
+      drop0 = 0;
+      drop1 = 0;
+    }
     
     /* Make atoms struct for output in GRO or PDB files */
     if ((ftp == efGRO) || ((ftp == efG96) && bTPS) || (ftp == efPDB)) {
@@ -965,8 +995,27 @@ int main(int argc,char *argv[])
 	    bDumpFrame = frame == frindex[i];
 	if (debug && bDumpFrame)
 	  fprintf(debug,"dumping %d\n",frame);
+
+	bWriteFrame =
+	  ( ( !bTDump && !frindex && frame % skip_nr == 0 ) || bDumpFrame );
+
+	if (bWriteFrame && (bDropUnder || bDropOver)) {
+	  while (dropval[0][drop1]<fr.time && drop1+1<ndrop) {
+	    drop0 = drop1;
+	    drop1++;
+	  }
+	  if (fabs(dropval[0][drop0] - fr.time)
+	      < fabs(dropval[0][drop1] - fr.time)) {
+	    dropuse = drop0;
+	  } else {
+	    dropuse = drop1;
+	  }
+	  if ((bDropUnder && dropval[1][dropuse] < dropunder) ||
+	      (bDropOver && dropval[1][dropuse] > dropover))
+	    bWriteFrame = FALSE;
+	}
 	
-	if ( ( !bTDump && !frindex && frame % skip_nr == 0 ) || bDumpFrame ) {
+	if (bWriteFrame) {
 	  
 	  /* calc new time */
 	  if (bTimeStep) 
