@@ -327,7 +327,7 @@ int main(int argc,char *argv[])
 				  NULL };
 
   static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE;
-  static bool  bCenter=FALSE,bFit=FALSE,bPFit=FALSE;
+  static bool  bCenter=FALSE,bFit=FALSE,bPFit=FALSE,bTer=FALSE;
   static int   skip_nr=1,ndec=3;
   static real  tzero=0,delta_t=0,timestep=0,ttrunc=-1,tdump=-1,split_t=0;
   static rvec  newbox = {0,0,0}, shift = {0,0,0};
@@ -376,7 +376,9 @@ int main(int argc,char *argv[])
     { "-split",FALSE, etTIME, {&split_t},
       "Start writing new file when t MOD split = first time (%t)" },
     { "-sep", FALSE,  etBOOL, {&bSeparate},
-      "Write each frame to a separate .gro, .g96 or .pdb file"}
+      "Write each frame to a separate .gro, .g96 or .pdb file"},
+    { "-ter", FALSE, etBOOL, &bTer,
+      "Use 'TER' in pdb file as end of frame in stead of default 'ENDMDL'" }
   };
       
   FILE         *out=NULL;
@@ -423,7 +425,7 @@ int main(int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    0,NULL);
 
-  top_file=ftp2fn(efTPS,NFILE,fnm);
+  top_file=ftp2fn_null(efTPS,NFILE,fnm);
 
   /* Check command line */
   in_file=opt2fn("-f",NFILE,fnm);
@@ -452,6 +454,8 @@ int main(int argc,char *argv[])
       bPBC = TRUE;
     if (bPBC && !bFit)
       bInBox = TRUE;
+    /* set flag for pdbio to terminate frames at 'TER' (iso 'ENDMDL') */
+    pdb_use_ter(bTer);
 
     /* ndec is in nr of decimal places, prec is a multiplication factor: */
     prec = 1;
@@ -480,8 +484,11 @@ int main(int argc,char *argv[])
     } 
     
     /* Determine whether to read a topology */
-    bTPS = (ftp2bSet(efTPS,NFILE,fnm) || 
-	    bPBC || bCluster || bFit || (ftp == efGRO) || (ftp == efPDB));
+    bTPS = (top_file || bPBC || bFit || (ftp == efGRO) || (ftp == efPDB));
+    if (bTPS && !top_file) {
+      top_file = in_file;
+      printf("Will try to read Structure + Mass info from %s\n",top_file);
+    }
 
     /* Determine if when can read index groups */
     bIndex = (bIndex || bTPS);
