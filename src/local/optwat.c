@@ -9,29 +9,27 @@
 #include "names.h"
 #include "statutil.h"
 #include "copyrite.h"
+#include "random.h"
 
-real ener(matrix P,real e,real e0,int nmol)
+real ener(matrix P,real e,real e0,int nmol,real kp,real ke)
 {
-  real kp = 1;
-  real ke = 100;
-  
   return (kp*(sqr(P[XX][XX]-1)+sqr(P[YY][YY]-1)+sqr(P[ZZ][ZZ]-1)+
 	      sqr(P[XX][YY])+sqr(P[XX][ZZ])+sqr(P[YY][ZZ])) +
-	  ke*(e-e0)/nmol);
+	  ke*(e/nmol-e0));
 }
 
 void do_sim(char *enx,
 	    t_topology *top,rvec *x,rvec *v,t_inputrec *ir,matrix box)
 {
-  char *tpx = "optwat.tpx";
+  char *tpx = "optwat.tpr";
   char buf[128];
   
   write_tpx(tpx,0,0.0,0.0,ir,box,top->atoms.nr,x,v,NULL,top);
-  sprintf(buf,"xmdrun -s %s -e %s",tpx,enx);
+  sprintf(buf,"xmdrun -s %s -e %s >& /dev/null",tpx,enx);
   system(buf);
 }
 
-void get_results(char *enx,real P[],real *e,int pstart)
+void get_results(char *enx,real P[],real *epot,int pindex,int eindex)
 {
   int      fp_ene;
   char     **nms=NULL;
@@ -49,11 +47,50 @@ void get_results(char *enx,real P[],real *e,int pstart)
   
   close_enx(fp_ene);
   
-  *e = ener[F_EPOT].e;
-  for(i=pstart; (i<pstart+9); i++)
-    P[i-pstart] = ener[i].e;
+  *epot = ener[eindex].e;
+  for(i=pindex; (i<pindex+9); i++)
+    P[i-pindex] = ener[i].e;
     
   sfree(ener);
+}
+
+void copy_iparams(int nr,t_iparams dest[],t_iparams src[])
+{
+  memcpy(dest,src,nr*sizeof(dest[0]));
+}
+
+void rand_step(FILE *fp,int nr,t_iparams ip[],int *seed,real frac)
+{
+  int  i;
+  real ff;
+  
+  do {
+    i = (int) (rando(seed)*nr);
+  } while (ip[i].lj.c12 == 0.0);
+
+  do {
+    ff = frac*rando(seed);
+  } while (ff == 0.0);
+  
+  if (rando(seed) > 0.5) {
+    ip[i].lj.c12 *= 1.0+ff;
+    fprintf(fp,"Increasing c12[%d] by %g%% to %g\n",i,100*ff,ip[i].lj.c12);
+  }
+  else {
+    ip[i].lj.c12 *= 1.0-ff;
+    fprintf(fp,"Decreasing c12[%d] by %g%% to %g\n",i,100*ff,ip[i].lj.c12);
+  }
+}
+
+void pr_progress(FILE *fp,int nit,tensor P,real epot,real eFF,
+		 double mc_crit,bool bConv,bool bAccept)
+{
+  fprintf(fp,"Iter %3d, eFF = %g, Converged = %s,  Accepted = %s\n",
+	  nit,eFF,yesno_names[bConv],yesno_names[bAccept]);
+  fprintf(fp,"Epot = %g  mc_crit = %g\n",epot,mc_crit);
+  pr_rvecs(fp,0,"Pres",P,DIM);
+  fprintf(fp,"-----------------------------------------------------\n");
+  fflush(fp);
 }
 
 int main(int argc,char *argv[])
@@ -66,33 +103,52 @@ int main(int argc,char *argv[])
   };
   t_filenm fnm[] = {
     { efTPX, NULL,      NULL,       ffREAD },
-    { efENX, NULL,      NULL,       ffRW },
+    { efENX, "-e",      NULL,       ffRW },
     { efLOG, "-g",      NULL,       ffWRITE }
   };
 #define NFILE asize(fnm)
 
-  static real e0    = 57,tol = 1;
-  static int maxnit = 100,pstart=23;
+  static real epot0    = -57, tol    = 1,   kT     = 0.0;
+  static real kp       = 1,   ke     = 100, frac   = 0.1;
+  static int  maxnit   = 100, eindex = 5,   pindex = 19;
+  static int  seed     = 1993;
+  
   static t_pargs pa[] = {
-    { "-e0",  FALSE, etREAL, {&e0},
+    { "-epot0",  FALSE, etREAL, {&epot0},
       "Potential energy in kJ/mol" },
-    { "-tol", FALSE, etREAL, {&tol},
+    { "-tol",    FALSE, etREAL, {&tol},
       "Tolerance for converging" },
-    { "-nit", FALSE, etINT, {&maxnit},
+    { "-nit",    FALSE, etINT,  {&maxnit},
       "Max number of iterations" },
-    { "-pstart", FALSE, etINT, {&pstart},
-      "Index of P[X][X] in the energy file (check with g_energy and subtract 1)" }
+    { "-seed",   FALSE, etINT,  {&seed},
+      "Random seed for MC steps" },
+    { "-frac",   FALSE, etREAL, {&frac},
+      "Maximum fraction by which to change parameters. Actual fraction is random between 0 and this parameter" },
+    { "-pindex", FALSE, etINT,  {&pindex},
+      "Index of P[X][X] in the energy file (check with g_energy and subtract 1)" },
+    { "-eindex", FALSE, etINT,  {&pindex},
+      "Index of Epot in the energy file (check with g_energy and subtract 1)" },
+    { "-kp",     FALSE, etREAL, {&kp},
+      "Force constant for pressure components"},
+    { "-ke",     FALSE, etREAL, {&ke},
+      "Force constant for energy component"},
+    { "-kT",     FALSE, etREAL, {&kT},
+      "Boltzmann Energy for Monte Carlo" } 
   };
 
   FILE        *fp;  
   t_topology  top;
   t_tpxheader sh;
   t_inputrec  ir;
+  t_iparams   *ip[2];
+  int         cur=0;
+#define next  (1-cur)
   rvec        *xx,*vv;
   matrix      box;
-  int         i,step,natoms,nmol,nit;
-  real        t,lambda,epot,eFF;
-  bool        bConverged;
+  int         i,step,natoms,nmol,nit,atnr2;
+  real        t,lambda,epot,eFF[2];
+  double      mc_crit=0;
+  bool        bConverged,bAccept;
   tensor      P;
   
   CopyRight(stdout,argv[0]);
@@ -106,30 +162,67 @@ int main(int argc,char *argv[])
   read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,box,&natoms,
 	   xx,vv,NULL,&top);
 
-	   
-  fp   = ftp2FILE(efLOG,NFILE,fnm,"w");
-  nmol = top.blocks[ebMOLS].nr;
-	   
+  /* Open log file and print options */   
+  fp    = ftp2FILE(efLOG,NFILE,fnm,"w");
+  fprintf(fp,"%s started with the following parameters\n",argv[0]);
+  fprintf(fp,"epot   = %8g  ke     = %8g  kp     = %8g\n",epot0,ke,kp);
+  fprintf(fp,"maxnit = %8d  tol    = %8g  seed   = %8d\n",maxnit,tol,seed);
+  fprintf(fp,"frac   = %8g  pindex = %8d  eindex = %8d\n",frac,pindex,eindex);
+  fprintf(fp,"kT     = %8g\n",kT);
+  
+  /* Unpack some topology numbers */
+  nmol  = top.blocks[ebMOLS].nr;
+  atnr2 = top.idef.atnr*top.idef.atnr;
+  
+  /* Copy input params */
+  snew(ip[cur],atnr2);
+  snew(ip[next],atnr2);
+  copy_iparams(atnr2,ip[cur],top.idef.iparams);
+  copy_iparams(atnr2,ip[next],top.idef.iparams);
+  
   /* Loop over iterations */
   nit = 0;
   do {
+    if (nit > 0) {
+      /* Do random step */
+      rand_step(fp,atnr2,ip[next],&seed,frac);
+      copy_iparams(atnr2,top.idef.iparams,ip[next]);
+    }
     do_sim(ftp2fn(efENX,NFILE,fnm),&top,xx,vv,&ir,box);
-    get_results(ftp2fn(efENX,NFILE,fnm),P[0],&epot,pstart);
 
-    eFF = ener(P,epot,e0,nmol);
-    bConverged = (eFF < tol);
+    get_results(ftp2fn(efENX,NFILE,fnm),P[0],&epot,pindex,eindex);
+
+    /* Calculate penalty */
+    eFF[(nit > 0) ? next : cur]  = ener(P,epot,epot0,nmol,kp,ke);
     
-    fprintf(stderr,"Iter %3d eFF = %g, Converged = %s\n",nit,eFF,
-	    yesno_names[bConverged]);
-    fprintf(fp,"Iter %3d eFF = %g, Converged = %s\n",nit,eFF,
-	    yesno_names[bConverged]);
-    fprintf(fp,"Epot = %g\n",epot);
-    pr_rvecs(fp,0,"Pres",P,DIM);
-    fprintf(fp,"\n");
-	        
+    bConverged = (eFF[(nit > 0) ? next : cur] < tol);
+    
+    if (nit > 0) {
+      /* Do Metropolis criterium */
+      if (kT > 0)
+	mc_crit = exp(-(eFF[next]-eFF[cur])/kT);
+      bAccept = ((eFF[next] < eFF[cur]) || 
+		 ((kT > 0) && (mc_crit > rando(&seed))));
+      pr_progress(fp,nit,P,epot/nmol,eFF[next],mc_crit,
+		  bConverged,bAccept);
+      if (bAccept) {
+	/* Better params! */
+	cur = next;
+      }
+      else {
+	/* Restore old parameters */
+	copy_iparams(atnr2,ip[next],ip[cur]);
+      }
+    }
+    else
+      pr_progress(fp,nit,P,epot/nmol,eFF[cur],mc_crit,bConverged,FALSE);
+		
     nit++;
   } while (!bConverged && (nit < maxnit));
 
+  for(i=0; (i<atnr2); i++)
+    pr_iparams(fp,F_LJ,&ip[cur][i]);
+  
   fclose(fp);
     
   thanx(stdout);
