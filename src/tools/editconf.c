@@ -420,9 +420,11 @@ int main(int argc, char *argv[])
     "otherwise the whole system is used.",
     "[PAR]",
     "[TT]-rotate[tt] rotates the coordinates and velocities.",
+    "[PAR]",
     "[TT]-princ[tt] aligns the principal axes of the system along the",
     "coordinate axes, this may allow you to decrease the box volume,",
-    "but beware that molecules can rotate significantly in a nanosecond.[PAR]",
+    "but beware that molecules can rotate significantly in a nanosecond.",
+    "[PAR]",
     "Scaling is applied before any of the other operations are",
     "performed. Boxes can be scaled to give a certain density (option",
     "[TT]-density[tt]). A special feature of the scaling option, when the",
@@ -433,9 +435,6 @@ int main(int argc, char *argv[])
     "Periodicity can be removed in a crude manner.",
     "It is important that the box sizes at the bottom of your input file",
     "are correct when the periodicity is to be removed.",
-    "[PAR]",
-    "The program can optionally rotate the solute molecule to align the",
-    "molecule along its principal axes ([TT]-rotate[tt])",
     "[PAR]",
     "When writing [TT].pdb[tt] files, B-factors can be",
     "added with the [TT]-bf[tt] option. B-factors are read",
@@ -462,7 +461,7 @@ int main(int argc, char *argv[])
     "[PAR]",
     "To convert a truncated octrahedron file produced by a package which uses",
     "a cubic box with the corners cut off (such as Gromos) use:[BR]",
-    "[TT]editconf -f <in> -rotate 0 -45 -35.264 -bt o -box <veclen> -o <out>[tt][BR]",
+    "[TT]editconf -f <in> -rotate 0 45 35.264 -bt o -box <veclen> -o <out>[tt][BR]",
     "where [TT]veclen[tt] is the size of the cubic box times sqrt(3)/2."
   };
   static char *bugs[] = {
