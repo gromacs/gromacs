@@ -32,10 +32,9 @@ PROGRAMS	= average	do_dssp		editconf	\
 		g_rmsdist	g_rmsf		g_rotacf	\
 		g_saltbr	g_sas		g_sgangle	\
 		g_velacc	genbox		genconf		\
-		gendr		genpr		\
+		gendr		genion		genpr		\
 		make_ndx	mk_angndx	protonate	\
 		trjconv		wheel		xpm2ps
-# We should add genion again when it works!
 endif
 
 ACOBJ	=	autocorr.o	expfit.o	polynomials.o	\
