@@ -30,7 +30,7 @@ Makefile.@host@: Template.mak Makefile
 	sed 's,@host\@,@host@,' >$@
 
 install-data-hook:
-	(cd $(DESTDIR)$(templatedir) && test ! -e Makefile && $(LN_S) Makefile.@host@ Makefile ; exit 0)
+	(cd $(DESTDIR)$(templatedir) && test ! -f Makefile && $(LN_S) Makefile.@host@ Makefile ; exit 0)
 
 CLEANFILES = Makefile.@host@ *~ \\\#*
 

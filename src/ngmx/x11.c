@@ -73,17 +73,17 @@ static XFontStruct *GetFont(FILE *err, Display *disp, char *name)
   bool bFont = FALSE;
 
   if (name)
-    bFont=(bool) (font=XLQF(err,disp,name));
+    bFont=(bool) ((font=XLQF(err,disp,name))!=NULL);
   else
     font=NULL;
     
   for (i=0; (!bFont && (i<MAXNAMES)); i++) 
-    bFont=(bool) (font=XLQF(err,disp,fontnames[i]));
+    bFont=(bool) ((font=XLQF(err,disp,fontnames[i]))!=NULL);
 
   if (!bFont) {
     fontlist=XListFonts(disp,"?",1,&count);
     if (count!=0) 
-      bFont=(bool) (font=XLQF(err,disp,fontlist[0]));
+      bFont=(bool) ((font=XLQF(err,disp,fontlist[0]))!=NULL);
   }
   if (!bFont) 
     fprintf (err, "Cannot load any suitable font\n");

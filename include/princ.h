@@ -54,7 +54,7 @@ extern void principal_comp(int n,atom_id index[],t_atom atom[],rvec x[],
  */
 
 extern void orient_princ(t_atoms *atoms, int isize, atom_id *index,
-			 int natoms, rvec x[], rvec *v, rvec *d);
+			 int natoms, rvec x[], rvec *v, rvec d);
 /* rotates molecule to align principal axes with coordinate axes */
 
 extern real calc_xcm(rvec x[],int gnx,atom_id *index,t_atom *atom,rvec xcm,

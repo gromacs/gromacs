@@ -255,7 +255,7 @@ static void dump_shit(FILE *out,matrix trans,rvec prcomp,real totmass)
 
 
 void orient_princ(t_atoms *atoms,int isize,atom_id *index,
-		  int natoms, rvec x[], rvec *v, rvec *d)
+		  int natoms, rvec x[], rvec *v, rvec d)
 {
   int     m;
   rvec    xcm,prcomp;
@@ -263,7 +263,7 @@ void orient_princ(t_atoms *atoms,int isize,atom_id *index,
   
   principal_comp(isize,index,atoms->atom,x,trans,prcomp);
   if (d) 
-    copy_rvec(prcomp, *d);
+    copy_rvec(prcomp, d);
   
   /* Check whether this trans matrix mirrors the molecule */
   if (det(trans) < 0) {

@@ -150,8 +150,8 @@ int main(int argc, char *argv[])
   static rvec dist     = {0,0,0};    /* space added between molecules ? */
   static rvec max_rot  = {90,90,90}; /* maximum rotation */
   t_pargs pa[] = {
-    { "-nbox",   FALSE, etRVEC, {&nrbox},   "Number of boxes" },
-    { "-dist",   FALSE, etRVEC, {&dist},    "Distance between boxes" },
+    { "-nbox",   FALSE, etRVEC, {nrbox},   "Number of boxes" },
+    { "-dist",   FALSE, etRVEC, {dist},    "Distance between boxes" },
     { "-seed",   FALSE, etINT,  {&seed},   
       "Random generator seed, if 0 generated from the time" },
     { "-rot",    FALSE, etBOOL, {&bRandom}, "Randomly rotate conformations" },
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
     { "-nmolat", FALSE, etINT,  {&nmolat}, 
       "Number of atoms per molecule, assumed to start from 0. "
       "If you set this wrong, it will screw up your system!" },
-    { "-maxrot", FALSE, etRVEC, {&max_rot}, "Maximum random rotation" },
+    { "-maxrot", FALSE, etRVEC, {max_rot}, "Maximum random rotation" },
     { "-renumber",FALSE,etBOOL, {&bRenum},  "Renumber residues" }
   };
   

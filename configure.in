@@ -341,7 +341,7 @@ if test "${host_vendor}" = "ibm"; then
     power2*)
       AC_SEARCH_LIBS(vsrsqrt,massvp2 massv,[vectmass=yes]) ;;
     *)
-      AC_CHECK_LIB(vsrsqrt,main,[vectmass=yes LIBS="$LIBS -lmassv"]) ;;
+      AC_CHECK_LIB(massv,vsrsqrt,[vectmass=yes LIBS="$LIBS -lmassv"]) ;;
   esac
   if test "$vectmass" = "yes"; then
     AC_DEFINE(HAVE_LIBMASSV_ANY,,[Use vectorized routines in the IBM MASS library])
@@ -442,9 +442,13 @@ fi
 
 #### 
 # And collect the f77 libs to the linker - on Solaris, f77 stuff must go first,
-# but on e.g. ibm the mass libraries must come before -lm... 
+# and we need -L/usr/ucblib to find libucb... (stupid OS)
+# On e.g. ibm the mass libraries must come before -lm... 
 case "${host_cpu}-${host_os}" in
-  sparc*-solaris*) LIBS="$FLIBS $LIBS" ;;
+  *-solaris*) 
+    LIBS="$FLIBS $LIBS" 
+    LDFLAGS="$LDFLAGS -L/usr/ucblib"
+    ;;
   *) LIBS="$LIBS $FLIBS" ;;
 esac
 

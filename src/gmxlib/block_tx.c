@@ -57,7 +57,7 @@ void _blocktx(int dest,int nelem,int size,void *data)
 
   for (i=0; i<nelem; i++)
     {
-      gmx_txs(dest,record(size));
+      gmx_txs(dest,&size,sizeof(size));
       if (size > 0)
 	gmx_txs(dest,buf,size);
       buf+=size;      
@@ -79,7 +79,7 @@ void _blockrx(int src,int nelem,int size,void *data)
 #endif
   for (i=0; i<nelem; i++)
     {
-      gmx_rxs(src,record(len));
+      gmx_rxs(src,&len,sizeof(len));
       if (size!=len)
         fatal_error(0,"%d: size=%d, len=%d, rx_count=%d\n",
                     0,size,len,0);

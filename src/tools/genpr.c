@@ -63,7 +63,7 @@ int main(int argc,char *argv[])
   };
   static rvec    fc={1000.0,1000.0,1000.0};
   t_pargs pa[] = {
-    { "-fc", FALSE, etRVEC, {&fc}, 
+    { "-fc", FALSE, etRVEC, {fc}, 
       "force constants (kJ mol-1 nm-2)" }
   };
   

@@ -55,7 +55,7 @@ c      to change to other similarly!
       real*8  r(*),rhs1(*),rhs2(*),sol(*)
       integer*4 ncons,nrec,bla1(*),bla2(*),blnr(*),blbnb(*)
 
-      integer*4 b,i,j,k,n,b3,i3,j3,it,rec
+      integer*4 b,i,j,k,n,b3,i3,j3,rec
       real*8  tmp0,tmp1,tmp2,im1,im2,mvb,rlen 
       real*8  u0,u1,u2,v0,v1,v2
 

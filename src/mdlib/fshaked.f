@@ -59,8 +59,6 @@ c      to change to other similarly!
       integer*4 ix,iy,iz,jx,jy,jz
       real*8  toler,rpij2,rrpr,tx,ty,tz,diff,acor,im,jm
       real*8  xh,yh,zh,rijx,rijy,rijz
-      real*8  tix,tiy,tiz
-      real*8  tjx,tjy,tjz
       real*8  mytol
       
       parameter(mytol=1e-6)

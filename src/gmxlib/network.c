@@ -45,12 +45,12 @@ void def_sync_ring(int nodeid,int nnodes,int left,int right)
 
   for (i=0; (i<nnodes); i++) {
     if (nodeid == 0) {
-      gmx_txs(right,record(tag));
-      gmx_rxs(left,record(tag));
+      gmx_txs(right,&tag,sizeof(tag));
+      gmx_rxs(left,&tag,sizeof(tag));
     }
     else {
-      gmx_rxs(left,record(tag));
-      gmx_txs(right,record(tag));
+      gmx_rxs(left,&tag,sizeof(tag));
+      gmx_txs(right,&tag,sizeof(tag));
     }
   }
 }

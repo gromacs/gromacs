@@ -239,7 +239,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[])
     copy_rvec(xAI, xa2[1]); /* new j = i  */
     copy_rvec(xAJ, xa2[2]); /* new k = j  */
     copy_rvec(xAK, xa2[3]); /* new l = k, not used */
-    calc_h_pos(2, xa2, &(xH3));
+    calc_h_pos(2, xa2, (xh+2));
     
     break;
   }

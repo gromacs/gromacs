@@ -1,3 +1,4 @@
+
 #### This script is meant to be sourced by ltconfig.
 
 # ltcf-c.sh - Create a C compiler specific configuration
@@ -221,6 +222,10 @@ EOF
     hardcode_shlibpath_var=no
     ;;
 
+  linux-gnuaout*)
+  # This catches the Portland compilers on linux/intel
+  ld_shlibs=no 
+  ;;
   *)
     if $LD --help 2>&1 | egrep ': supported targets:.* elf' > /dev/null; then
       archive_cmds='$CC -shared $libobjs $deplibs $compiler_flags ${wl}-soname $wl$soname -o $lib'

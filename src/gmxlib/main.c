@@ -96,8 +96,8 @@ static int get_nodeid(FILE *log,int left,int right,int *nodeid,int *nnodes)
 #ifdef DEBUGPAR
     fprintf(log,"Sending: %d\n",send_nodeid);
 #endif
-    gmx_tx(left,record(send_nodeid));
-    gmx_rx(right,record(receive_nodeid));
+    gmx_tx(left,&send_nodeid,sizeof(send_nodeid));
+    gmx_rx(right,&receive_nodeid,sizeof(receive_nodeid));
     gmx_tx_wait(left);
     gmx_rx_wait(right);
 #ifdef DEBUGPAR
@@ -165,8 +165,8 @@ void open_log(char *lognm,t_commrec *cr)
   if (cr->nnodes > 1) {
     if (MASTER(cr)) {
       len = strlen(lognm)+1;
-      gmx_txs(cr->right,record(len));
-      gmx_rxs(cr->left,record(testlen));
+      gmx_txs(cr->right,&len,sizeof(len));
+      gmx_rxs(cr->left,&testlen,sizeof(testlen));
       
       debug_gmx();
       
@@ -177,10 +177,10 @@ void open_log(char *lognm,t_commrec *cr)
       
     }
     else {
-      gmx_rxs(cr->left,record(len));
+      gmx_rxs(cr->left,&len,sizeof(len));
       debug_gmx();
       
-      gmx_txs(cr->right,record(len));
+      gmx_txs(cr->right,&len,sizeof(len));
       snew(lognm,len);
       gmx_rxs(cr->left,lognm,len);
       gmx_txs(cr->right,lognm,len);

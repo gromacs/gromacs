@@ -757,13 +757,13 @@ else
     esac
   fi
   case "$host_os" in
-      # Platforms which do not suport PIC and -DPIC is meaningless
+      # Platforms which do not suport PIC 
       # on them:
       *djgpp*)
         ac_cv_prog_cc_pic=
         ;;
       *)
-        ac_cv_prog_cc_pic="$ac_cv_prog_cc_pic -DPIC"
+        ac_cv_prog_cc_pic="$ac_cv_prog_cc_pic"
         ;;
   esac
 fi

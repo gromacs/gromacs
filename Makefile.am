@@ -44,7 +44,7 @@ install-mdrun:
 links:
 	programs=$(bindir)/* 
 	(cd /usr/local/bin && for i in $(programs); do \
-	   (test ! -e $$i && $(LN_S) $$i . ; exit 0); \
+	   (test ! -f $$i && $(LN_S) $$i . ; exit 0); \
 	done)
 
 rpm:

@@ -648,7 +648,7 @@ int main(int argc,char *argv[])
   static rvec new_box={0.0,0.0,0.0};
   static bool bReadV=FALSE;
   t_pargs pa[] = {
-    { "-box",    FALSE, etRVEC, {&new_box},   
+    { "-box",    FALSE, etRVEC, {new_box},   
       "box size" },
     { "-nmol",   FALSE, etINT , {&nmol_ins},  
       "no of extra molecules to insert" },

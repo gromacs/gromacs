@@ -708,12 +708,12 @@ case "${host_cpu}-${host_os}" in
       alphaev*)
         # extract the processor from cpu type (e.g. alphaev56 -> ev56)
         evtype=`echo ${host_cpu} | sed 's/alpha//'`
-        xCFLAGS="-fast -O4 -no_ifo -arch $evtype -unroll 2 -fp_reorder"
+        xCFLAGS="-std1 -fast -O4 -no_ifo -arch $evtype -unroll 2 -fp_reorder"
         xFFLAGS="$xCFLAGS -assume noaccuracy_sensitive"
         xLDFLAGS="-O4"
         ;;
       *)
-	xCFLAGS="-fast -O4 -no_ifo -arch host -unroll 2 -fp_reorder"
+	xCFLAGS="-std1 -fast -O4 -no_ifo -arch host -unroll 2 -fp_reorder"
 	xFFLAGS="$xCFLAGS -assume noaccuracy_sensitive"
 	xLDFLAGS="-O4"
 	;;
@@ -725,12 +725,12 @@ case "${host_cpu}-${host_os}" in
       alphaev*)
 	# extract the processor from cpu type (e.g. alphaev56 -> ev56)
 	evtype=`echo ${host_cpu} | sed 's/alpha//'`
-	tmpCFLAGS="-fast -O4 -no_ifo -arch $evtype -unroll 2 -fp_reorder"
+	tmpCFLAGS="-std1 -fast -O4 -no_ifo -arch $evtype -unroll 2 -fp_reorder"
 	tmpFFLAGS="$tmpCFLAGS -assume noaccuracy_sensitive"
 	tmpLDFLAGS="-O4"
 	;;
       *)
-	tmpCFLAGS="-fast -O4 -no_ifo -arch host -unroll 2 -fp_reorder"
+	tmpCFLAGS="-std1 -fast -O4 -no_ifo -arch host -unroll 2 -fp_reorder"
 	tmpFFLAGS="$tmpCFLAGS -assume noaccuracy_sensitive"
 	tmpLDFLAGS="-O4"
 	;;
@@ -758,11 +758,11 @@ case "${host_cpu}-${host_os}" in
 	  pgiopt="-tp p6" 
  	  ;;
       esac
-      xCFLAGS="$pgiopt -fast -Minfo=loop -pc 32"
+      xCFLAGS="$pgiopt -fast -pc 32"
     fi
     if test "$enable_fortran" = "yes"; then
       if $F77 -V 2>  /dev/null | grep Portland > /dev/null 2>&1; then
-	xFFLAGS="$xCFLAGS -Mneginfo=loop"
+	xFFLAGS="$xCFLAGS"
       fi	
     fi
     ;;

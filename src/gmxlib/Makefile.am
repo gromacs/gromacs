@@ -32,8 +32,8 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	x86_cpu.c	libxdrf.c	
 
 EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = \
-	mpiio.c		libnet.c	x86_sse.S	x86_3dnow.S  	\
-	mgmx.c		widget.c	widget.h	x86_cpuid.S	\
+	mpiio.c		libnet.c	x86_sse.s	x86_3dnow.s  	\
+	mgmx.c		widget.c	widget.h	x86_cpuid.s	\
 	axp_asm.s	f77_wrappers.c	
 
 nodist_EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = innerf.f innerc.c
@@ -87,11 +87,13 @@ mkinl:		$(MKINL_OBJ)
 
 # link the mpi library to non-mpi names if the latter are not present after install
 install-exec-hook:
-	libname="libgmx@LIBSUFFIX@"; nompi="`echo $$libname | sed -e 's,_mpi,,'`";
-	if test `echo $$libname|grep _mpi`; then \
-	  (cd $(libdir) && test -e $$libname.a -a ! -e $$nompi.a && $(LN_S) $$libname.a $$nompi.a ; exit 0); \
-	  (cd $(libdir) && test -e $$libname.so -a ! -e $$nompi.so && $(LN_S) $$libname.so $$nompi.so ; exit 0);\
-	fi;
+	libname="libgmx@LIBSUFFIX@"; \
+	nompi="`echo $$libname | sed -e 's,_mpi,,'`"; \
+	libdir="$(libdir)"; \
+	if echo $$libname | grep mpi >/dev/null ; then \
+	  (cd $$libdir && test -f $$libname.a -a ! -f $$nompi.a && $(LN_S) $$libname.a $$nompi.a ; exit 0); \
+	  (cd $$libdir && test -f $$libname.so -a ! -f $$nompi.so && $(LN_S) $$libname.so $$nompi.so ; exit 0); \
+	fi; 
 
 # clean all libtool libraries, since the target names might have changed
 CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl

@@ -115,7 +115,7 @@ void calc_idx(int natoms,matrix recipbox,
   int  *idxptr,tix,tiy,tiz;
   real *xptr,tx,ty,tz;
   real rxx,ryx,ryy,rzx,rzy,rzz;
-#if (defined __GNUC__ && defined _lnx_ && !defined DISABLE_X86TRUNC)
+#if (defined __GNUC__ && (defined i386 || defined __386__) && !defined DISABLE_X86TRUNC)
   int x86_cw,x86_cwsave;
 
   asm("fnstcw %0" : "=m" (*&x86_cwsave));
@@ -142,7 +142,7 @@ void calc_idx(int natoms,matrix recipbox,
     ty = ny + ny * (                  xptr[YY] * ryy + xptr[ZZ] * rzy );
     tz = nz + nz * (                                   xptr[ZZ] * rzz );
     
-#if (defined __GNUC__ && defined _lnx_ && !defined DISABLE_X86TRUNC)
+#if (defined __GNUC__ && (defined i386 || defined __386__) && !defined DISABLE_X86TRUNC)
     x86trunc(tx,tix);
     x86trunc(ty,tiy);
     x86trunc(tz,tiz);
@@ -165,7 +165,7 @@ void calc_idx(int natoms,matrix recipbox,
     range_check(idxptr[ZZ],nz);
 #endif
   }  
-#if (defined __GNUC__ && defined _lnx_ && !defined DISABLE_X86TRUNC)  
+#if (defined __GNUC__ && (defined i386 || defined __386__) && !defined DISABLE_X86TRUNC)  
   asm("fldcw %0" : : "m" (*&x86_cwsave));
 #endif
 }

@@ -1086,7 +1086,7 @@ int main(int argc,char *argv[])
     { "-by",      FALSE, etREAL, {&boxy},   "Box y-size" },
     { "-rainbow", FALSE, etENUM, {rainbow},
       "Rainbow colors, convert white to" },
-    { "-gradient",FALSE, etRVEC, {&grad},
+    { "-gradient",FALSE, etRVEC, {grad},
       "Re-scale colormap to a smooth gradient from white {1,1,1} to {r,g,b}" },
     { "-skip",    FALSE, etINT,  {&skip},
       "only write out every nr-th row and column" },

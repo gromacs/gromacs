@@ -63,7 +63,7 @@ static void norm_princ(t_atoms *atoms, int isize, atom_id *index,
   
   /* equalize principal components: */
   /* orient principal axes, get principal components */
-  orient_princ(atoms, isize, index, natoms, x, NULL, &princ);
+  orient_princ(atoms, isize, index, natoms, x, NULL, princ);
   
   /* calc our own principal components */
   clear_rvec(vec);

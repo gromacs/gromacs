@@ -605,7 +605,7 @@ int main(int argc,char *argv[])
       "HIDDENThe derivative is the difference over # points" },
     { "-bw",      FALSE, etREAL, {&binwidth},
       "Binwidth for the distribution" },
-    { "-errbar",  FALSE, etENUM, {&avbar_opt},
+    { "-errbar",  FALSE, etENUM, {avbar_opt},
       "Error bars for -av" },
     { "-nbmin",   FALSE, etINT, {&nb_min},
       "HIDDENMinimum number of blocks for block averaging" },

@@ -342,7 +342,7 @@ static real calc_deviation(real xav,real xt,real x0)
   
   if (xav > x0) {
     if (xt > x0)
-      dev = /*max(x0-xav,x0-xt);*/ min(xav-x0,xt-x0);
+      dev = min(xav-x0,xt-x0);
     else
       dev = 0;
   }

@@ -813,7 +813,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
       where();
       
       /* Calculate virial due to constraints (for this node) */
-      calc_vir(stdlog,homenr,&(x[start]),&(delta_f[start]),vir_part,cr);
+      calc_vir(stdlog,homenr,x+start,delta_f+start,vir_part,cr);
       inc_nrnb(nrnb,eNR_SHAKE_VIR,homenr);
       where();
     }  
