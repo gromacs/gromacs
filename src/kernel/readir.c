@@ -199,15 +199,16 @@ void get_ir(char *mdparin,char *mdparout,
   /* Output options */
   CCTYPE ("OUTPUT CONTROL OPTIONS");
   CTYPE ("Output frequency for coords (x), velocities (v) and forces (f)");
-  ITYPE ("nstxout",	ir->nstxout,	1);
-  ITYPE ("nstvout",	ir->nstvout,	1);
+  ITYPE ("nstxout",	ir->nstxout,	100);
+  ITYPE ("nstvout",	ir->nstvout,	100);
   ITYPE ("nstfout",	ir->nstfout,	0);
-  CTYPE ("Output frequency for group stuff and for energies (nstprint)");
-  ITYPE ("nstprint",	ir->nstprint,	1);
-  CTYPE ("Output frequency for xtc files, and associated precision");
+  CTYPE ("Output frequency for energies to log file and energy file");
+  ITYPE ("nstlog",	ir->nstlog,	100);
+  ITYPE ("nstenergy",   ir->nstenergy,  100);
+  CTYPE ("Output frequency and precision for xtc file");
   ITYPE ("nstxtcout",   ir->nstxtcout,  0);
   RTYPE ("xtc_precision",ir->xtcprec,   1000.0);
-  CTYPE ("This selects the subset of atoms for the XTC file.");
+  CTYPE ("This selects the subset of atoms for the xtc file.");
   CTYPE ("Only the first group gets written out, it does not make sense");
   CTYPE ("to have multiple groups. By default all atoms will be written");
   STYPE ("xtc_grps",    xtc_grps,       NULL);
