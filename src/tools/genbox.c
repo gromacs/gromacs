@@ -92,17 +92,19 @@ typedef struct {
   int  i,i0;
 } t_moltypes;
 
-void sort_molecule(t_atoms *atoms,rvec *x,real *r,int left, int right)
+void sort_molecule(t_atoms **atoms_solvt,rvec *x,real *r)
 {
   int molnr,atnr,i,j,moltp=0,nrmoltypes,resnr;
   t_moltypes *moltypes;
   int *tps;
-  t_atoms *newatoms;
+  t_atoms *atoms,*newatoms;
   rvec *newx;
   real *newr;
   
   fprintf(stderr,"Sorting configuration\n");
   
+  atoms = *atoms_solvt;
+
   /* copy each residue from *atoms to a molecule in *molecule */
   snew(tps,atoms->nr);
   moltypes=NULL;
@@ -110,11 +112,11 @@ void sort_molecule(t_atoms *atoms,rvec *x,real *r,int left, int right)
   molnr=0;
   atnr=0;
   for (i=0; i<atoms->nr; i++) {
-    if ( (i>0) && (atoms->atom[i].resnr != atoms->atom[i-1].resnr) ) {
+    if ( (i==0) || (atoms->atom[i].resnr != atoms->atom[i-1].resnr) ) {
       /* see if this was a molecule type we haven't had yet: */
       moltp=NOTSET;
       for (j=0; (j<nrmoltypes) && (moltp==NOTSET); j++)
-	if (strcmp(*(atoms->resname[atoms->atom[i-1].resnr]),
+	if (strcmp(*(atoms->resname[atoms->atom[i].resnr]),
 		   moltypes[j].name)==0)
 	  moltp=j;
       if (moltp==NOTSET) {
@@ -122,18 +124,16 @@ void sort_molecule(t_atoms *atoms,rvec *x,real *r,int left, int right)
 	nrmoltypes++;
 	srenew(moltypes,nrmoltypes);
 	moltypes[moltp].name=*(atoms->resname[atoms->atom[i].resnr]);
+	atnr = 0;
+	while ((i+atnr<atoms->nr) && 
+	       (atoms->atom[i].resnr == atoms->atom[i+atnr].resnr))
+	  atnr++;
 	moltypes[moltp].natoms=atnr;
 	moltypes[moltp].nmol=0;
       }
       moltypes[moltp].nmol++;
-      
-      /* get ready for the next residue */
-      atnr=0;
-      molnr++;
-      assert(molnr < atoms->nres);
     }
     tps[i]=moltp;
-    atnr++;
   }
   
   fprintf(stderr,"Found %d%s molecule type%s:\n",
@@ -177,14 +177,15 @@ void sort_molecule(t_atoms *atoms,rvec *x,real *r,int left, int right)
     sfree(atoms->resname);
     sfree(atoms->atom);
     sfree(atoms);
-    atoms = newatoms;
-    for (i=0; i<atoms->nr; i++) {
+    *atoms_solvt = newatoms;
+    for (i=0; i<(*atoms_solvt)->nr; i++) {
       copy_rvec(newx[i],x[i]);
       r[i]=newr[i];
     }
     sfree(newx);
     sfree(newr);
   }
+  sfree(moltypes);
 }
 
 void rm_res_pbc(t_atoms *atoms, rvec *x, matrix box)
@@ -322,7 +323,7 @@ void add_solv(char *fn,int ntb,t_atoms *atoms,rvec **x,real **r,matrix box,
   ivec    n_box;
   char    filename[STRLEN];
   char    title_solvt[STRLEN];
-  t_atoms atoms_solvt;
+  t_atoms *atoms_solvt;
   rvec    *x_solvt;
   real    *r_solvt;
   matrix  box_solvt;
@@ -330,27 +331,28 @@ void add_solv(char *fn,int ntb,t_atoms *atoms,rvec **x,real **r,matrix box,
   rvec    xmin;
 
   strncpy(filename,libfn(fn),STRLEN);
-  get_stx_coordnum(filename,&atoms_solvt.nr); 
-  if (atoms_solvt.nr == 0)
+  snew(atoms_solvt,1);
+  get_stx_coordnum(filename,&(atoms_solvt->nr)); 
+  if (atoms_solvt->nr == 0)
     fatal_error(0,"No solvent in %s, please check your input\n",filename);
-  snew(x_solvt,atoms_solvt.nr);
-  snew(r_solvt,atoms_solvt.nr);
-  snew(atoms_solvt.resname,atoms_solvt.nr);
-  snew(atoms_solvt.atomname,atoms_solvt.nr);
-  snew(atoms_solvt.atom,atoms_solvt.nr);
-  atoms_solvt.pdbinfo = NULL;
+  snew(x_solvt,atoms_solvt->nr);
+  snew(r_solvt,atoms_solvt->nr);
+  snew(atoms_solvt->resname,atoms_solvt->nr);
+  snew(atoms_solvt->atomname,atoms_solvt->nr);
+  snew(atoms_solvt->atom,atoms_solvt->nr);
+  atoms_solvt->pdbinfo = NULL;
   fprintf(stderr,"Reading solvent configuration \n");
-  read_stx_conf(filename,title_solvt,&atoms_solvt,x_solvt,NULL,box_solvt);
+  read_stx_conf(filename,title_solvt,atoms_solvt,x_solvt,NULL,box_solvt);
   fprintf(stderr,"\"%s\"\n",title_solvt);
   fprintf(stderr,"solvent configuration contains %d atoms in %d residues\n",
-	  atoms_solvt.nr,atoms_solvt.nres);
+	  atoms_solvt->nr,atoms_solvt->nres);
   fprintf(stderr,"\n");
   
   /* apply pbc for solvent configuration for whole molecules */
-  rm_res_pbc(&atoms_solvt,x_solvt,box_solvt);
+  rm_res_pbc(atoms_solvt,x_solvt,box_solvt);
   
   /* initialise van der waals arrays of solvent configuration */
-  mk_vdw(&atoms_solvt,r_solvt,r_distance);
+  mk_vdw(atoms_solvt,r_solvt,r_distance);
   
   /* calculate the box multiplication factors n_box[0...DIM] */
   nmol=1;
@@ -362,30 +364,29 @@ void add_solv(char *fn,int ntb,t_atoms *atoms,rvec **x,real **r,matrix box,
 	  n_box[XX],n_box[YY],n_box[ZZ]);
   
   /* realloc atoms_solvt for the new solvent configuration */
-  srenew(atoms_solvt.resname,atoms_solvt.nres*nmol);
-  srenew(atoms_solvt.atomname,atoms_solvt.nr*nmol);
-  srenew(atoms_solvt.atom,atoms_solvt.nr*nmol);
-  srenew(x_solvt,atoms_solvt.nr*nmol);
-  srenew(r_solvt,atoms_solvt.nr*nmol);
+  srenew(atoms_solvt->resname,atoms_solvt->nres*nmol);
+  srenew(atoms_solvt->atomname,atoms_solvt->nr*nmol);
+  srenew(atoms_solvt->atom,atoms_solvt->nr*nmol);
+  srenew(x_solvt,atoms_solvt->nr*nmol);
+  srenew(r_solvt,atoms_solvt->nr*nmol);
   
   /* generate a new solvent configuration */
-  genconf(&atoms_solvt,x_solvt,r_solvt,box_solvt,n_box);
+  genconf(atoms_solvt,x_solvt,r_solvt,box_solvt,n_box);
 
 #ifdef DEBUG
-  print_stat(x_solvt,atoms_solvt.nr,box_solvt);
+  print_stat(x_solvt,atoms_solvt->nr,box_solvt);
 #endif
   
 #ifdef DEBUG
-  print_stat(x_solvt,atoms_solvt.nr,box_solvt);
+  print_stat(x_solvt,atoms_solvt->nr,box_solvt);
 #endif
   /* Sort the solvent mixture, not the protein... */
-  sort_molecule(&atoms_solvt,x_solvt,r_solvt,
-		atoms_solvt.atom[atoms_solvt.nr].resnr,atoms_solvt.nres-1);
+  sort_molecule(&atoms_solvt,x_solvt,r_solvt);
   
   /* add the two configurations */
   onr=atoms->nr;
   onres=atoms->nres;
-  add_conf(atoms,x,r,TRUE,ntb,box,&atoms_solvt,x_solvt,r_solvt,TRUE);
+  add_conf(atoms,x,r,TRUE,ntb,box,atoms_solvt,x_solvt,r_solvt,TRUE);
   *atoms_added=atoms->nr-onr;
   *residues_added=atoms->nres-onres;
   
