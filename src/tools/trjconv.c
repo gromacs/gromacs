@@ -119,7 +119,7 @@ void do_trunc(char *fn, real t0)
   t_trnheader  sh;
   long         fpos;
   char         yesno[256];
-  int          j,natoms,nre,step;
+  int          j,nre,step;
   real         t,lambda;
   
   if (t0 == -1)
@@ -512,6 +512,10 @@ int main(int argc,char *argv[])
       isize=natoms; 
     }
     
+    /* if xp was not snew-ed before, do it now */
+    if (!xp)
+      snew(xp, natoms);
+    
     if (bFit) {
       snew(w_rls,header.natoms);
       for(i=0; (i<ifit); i++)
@@ -602,7 +606,8 @@ int main(int argc,char *argv[])
       }
       
       /* determine if an atom jumped across the box and reset it if so */
-      if (bNoJump) {
+      /* don't do this for first frame! */
+      if (bNoJump && (frame!=0)) {
 	for(i=0; (i<natoms); i++)
 	  for(d=0; (d<DIM); d++)
 	    if ( x[i][d]-xp[i][d] > 0.5*box[d][d] )
