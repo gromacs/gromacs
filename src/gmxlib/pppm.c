@@ -39,7 +39,6 @@ static char *SRCID_pppm_c = "$Id$";
 #include "txtdump.h"
 #include "network.h"
 #include "nr.h"
-#include "grids.h"
 #include "nrnb.h"
 #include "ghat.h"
 #include "pppm.h"

@@ -42,7 +42,7 @@ static char *SRCID_mk_ghat_c = "$Id$";
 #include "physics.h"
 #include "statutil.h"
 #include "tpxio.h"
-#include "grids.h"
+#include "fftgrid.h"
 #include "copyrite.h"
 
 const real tol = 1e-8;

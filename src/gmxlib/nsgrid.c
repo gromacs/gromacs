@@ -26,14 +26,14 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_grid_c = "$Id$";
+static char *SRCID_nsgrid_c = "$Id$";
 
 #include "assert.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"
 #include "smalloc.h"
-#include "grid.h"
+#include "nsgrid.h"
 #include "fatal.h"
 #include "vec.h"
 

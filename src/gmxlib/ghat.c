@@ -34,7 +34,7 @@ static char *SRCID_ghat_c = "$Id$";
 #include "vec.h"
 #include "physics.h"
 #include "lrutil.h"
-#include "grids.h"
+#include "fftgrid.h"
 #include "ghat.h"
 
 void symmetrize_ghat(int nx,int ny,int nz,real ***ghat)

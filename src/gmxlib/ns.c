@@ -37,7 +37,7 @@ static char *SRCID_ns_c = "$Id$";
 #include "maths.h"
 #include "vec.h"
 #include "network.h"
-#include "grid.h"
+#include "nsgrid.h"
 #include "force.h"
 #include "ns.h"
 #include "pbc.h"

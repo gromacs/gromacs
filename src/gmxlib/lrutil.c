@@ -36,7 +36,7 @@ static char *SRCID_lrutil_c = "$Id$";
 #include "smalloc.h"
 #include "physics.h"
 #include "futil.h"
-#include "grids.h"
+#include "fftgrid.h"
 #include "writeps.h"
 #include "macros.h"
 

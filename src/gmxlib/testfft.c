@@ -35,7 +35,7 @@ static char *SRCID_testfft_c = "$Id$";
 #include "smalloc.h"
 #include "xvgr.h"
 #include "complex.h"
-#include "grids.h"
+#include "fftgrid.h"
 #include "mdrun.h"
 #ifdef USE_SGI_FFT
 #include <fft.h>
