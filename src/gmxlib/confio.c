@@ -367,7 +367,9 @@ static void get_w_conf(FILE *in, char *infile, char *title,
     if ((fgets2 (line,STRLEN,in)) == NULL) {
       unexpected_eof(infile,i+2);
     }
-    
+    if (strlen(line) < 39)
+      fatal_error(0,"Invalid line in %s for atom %d:\n%s",infile,i+1,line);
+
     /* determine read precision from distance between periods 
        (decimal points) */
     if (bFirst) {
@@ -1030,4 +1032,5 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
     fatal_error(0,"Not supported in read_stx_conf: %s",infile);
   }
 }
+
 
