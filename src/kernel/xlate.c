@@ -35,6 +35,7 @@ static char *SRCID_xlate_c = "$Id$";
 #include "strdb.h"
 #include "string2.h"
 #include "smalloc.h"
+#include "index.h"
 #include "xlate.h"
 
 typedef struct {
@@ -119,7 +120,8 @@ void xlate_atom(char *res,char atom[])
     atom[i]=c;
   }
   for(i=0; (i<nxlate); i++) {
-    if ((xlatom[i].res == NULL) || (strcasecmp(res,xlatom[i].res) == 0))
+    if ((xlatom[i].res == NULL) || (strcasecmp(res,xlatom[i].res) == 0) ||
+	((strcasecmp("protein",xlatom[i].res) == 0) && is_protein(res)))
       if (strcasecmp(atom,xlatom[i].atom) == 0) {
 	strcpy(atom,xlatom[i].replace);
 	return;
