@@ -143,10 +143,9 @@ void do_disco(FILE *log,char *outfn,char *keepfn,t_correct *c,
       write_trx(bConverged ? status : kstatus,
 		natom,wr_ind,atoms,k,(real) k,wrbox,x,NULL);
 	
-      if (bConverged) {
-	check_final(log,c,x);
+      if (bConverged) 
 	nconv++;
-      }
+      
       k++;
     }
     if (bPrintViol) {
