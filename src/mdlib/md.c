@@ -298,7 +298,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       do_glas(log,START(nsb),HOMENR(nsb),x,f,
 	      fr,mdatoms,top->idef.atnr,&parm->ir,ener);
 	         
-    if (bTCR && MASTER(cr) && (step == 0)) {
+    if (bTCR && (step == 0)) {
       tcr=init_coupling(log,nfile,fnm,cr,fr,mdatoms,&(top->idef));
       fprintf(log,"Done init_coupling\n"); 
       fflush(log);

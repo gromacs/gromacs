@@ -57,9 +57,10 @@ t_coupl_rec *init_coupling(FILE *log,int nfile,t_filenm fnm[],
   t_coupl_rec *tcr;
   
   snew(tcr,1);
-  read_gct (opt2fn("-j",nfile,fnm), tcr);
-  write_gct(opt2fn("-jo",nfile,fnm),tcr,idef);
-  
+  if (MASTER(cr)) {
+    read_gct (opt2fn("-j",nfile,fnm), tcr);
+    write_gct(opt2fn("-jo",nfile,fnm),tcr,idef);
+  }
   if ((tcr->dipole != 0.0) && (!ftp2bSet(efNDX,nfile,fnm))) {
     fatal_error(0,"Trying to use polarization correction to energy without specifying an index file for molecule numbers. This will generate huge induced dipoles, and hence not work!");
   }
@@ -471,7 +472,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
     bFirst = FALSE;
   }
   
-  bPrint = do_per_step(step,ir->nstlog);
+  bPrint = MASTER(cr) && do_per_step(step,ir->nstlog);
   dt     = ir->delta_t;
 
   /* Initiate coupling to the reference pressure and temperature to start

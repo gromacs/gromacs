@@ -431,11 +431,14 @@ void read_gct(char *fn,t_coupl_rec *tcr)
   int       i,j,ninp,nQ,nLJ,nBU,nIP;
   bool      bWrong;
   
+  fprintf(stdlog,"%s  %d\n",__FILE__,__LINE__); fflush(stdlog);
   inp=read_inpfile(fn,&ninp);
+  fprintf(stdlog,"%s  %d\n",__FILE__,__LINE__); fflush(stdlog);
   for(i=0; (i<eoObsNR); i++) {
     tcr->bObsUsed[i] = FALSE;
     RTYPE (eoNames[i],	tcr->ref_value[i],	0.0);
   }
+  fprintf(stdlog,"%s  %d\n",__FILE__,__LINE__); fflush(stdlog);
   ITYPE (eoNames[eoMemory],     tcr->nmemory,   1);
   ETYPE (eoNames[eoInter],      tcr->bInter,    yesno_names);
   ETYPE (eoNames[eoUseVirial],  tcr->bVirial,   yesno_names);
@@ -446,6 +449,7 @@ void read_gct(char *fn,t_coupl_rec *tcr)
   tcr->tIP=NULL;
   nQ=nLJ=nBU=nIP=0;
   
+  fprintf(stdlog,"%s  %d\n",__FILE__,__LINE__); fflush(stdlog);
   for(i=0; (i<ninp); i++) {
     bWrong=FALSE;
     if (strcasecmp(inp[i].name,"LJ") == 0) 
@@ -461,14 +465,16 @@ void read_gct(char *fn,t_coupl_rec *tcr)
       fprintf(stderr,"Wrong line in %s: '%s = %s'\n",
 	      fn,inp[i].name,inp[i].value);
     /*sfree(inp[i].name);
-    sfree(inp[i].value);*/
+      sfree(inp[i].value);*/
   }
+  fprintf(stdlog,"%s  %d\n",__FILE__,__LINE__); fflush(stdlog);
   /* Check which ones have to be printed */
   for(i=1; (i<nQ); i++)
     for(j=0; (j<i); j++) {
       if (tcr->tcQ[i].at_i == tcr->tcQ[j].at_i)
 	tcr->tcQ[j].bPrint=FALSE;
     }
+  fprintf(stdlog,"%s  %d\n",__FILE__,__LINE__); fflush(stdlog);
   for(i=1; (i<nLJ); i++)
     for(j=0; (j<i); j++) {
       if (((tcr->tcLJ[i].at_i == tcr->tcLJ[j].at_i) &&
@@ -477,6 +483,7 @@ void read_gct(char *fn,t_coupl_rec *tcr)
 	   (tcr->tcLJ[i].at_j == tcr->tcLJ[j].at_i))) 
 	tcr->tcLJ[j].bPrint=FALSE;
     }
+  fprintf(stdlog,"%s  %d\n",__FILE__,__LINE__); fflush(stdlog);
   
   for(i=1; (i<nBU); i++)
     for(j=0; (j<i); j++) {
@@ -486,6 +493,7 @@ void read_gct(char *fn,t_coupl_rec *tcr)
 	   (tcr->tcBU[i].at_j == tcr->tcBU[j].at_i))) 
 	tcr->tcBU[j].bPrint=FALSE;
     }
+  fprintf(stdlog,"%s  %d\n",__FILE__,__LINE__); fflush(stdlog);
   
   tcr->nQ  = nQ;
   tcr->nLJ = nLJ;
@@ -493,5 +501,6 @@ void read_gct(char *fn,t_coupl_rec *tcr)
   tcr->nIP = nIP;
   
   sfree(inp);
+  fprintf(stdlog,"%s  %d\n",__FILE__,__LINE__); fflush(stdlog);
 }
 
