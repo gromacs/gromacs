@@ -63,8 +63,8 @@ extern void sum_epot(t_grpopts *opts,t_groups *grps,real epot[]);
 /* Sum the epot from the group contributions */
 
 extern void update_grps(int start,int homenr,t_groups *grps,
-			t_grpopts *opts,rvec v[],t_mdatoms *md);
-/* Do the update of group velocities and
+			t_grpopts *opts,rvec v[],t_mdatoms *md,bool bNEMD);
+/* Do the update of group velocities (if bNEMD) and
  * (partial) group ekin.
  */
 
