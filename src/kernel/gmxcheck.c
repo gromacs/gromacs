@@ -86,7 +86,7 @@ void chk_trj(char *fn)
     t      = -1;
     old_t2 = -2.0;
     old_t1 = -1.0;
-    fpos   = fio_ftell(status);
+    fpos   = 0;
     while (fread_trnheader(status,&sh,&bOK)) {
       if (j>=2) {
 	if ( fabs((sh.t-old_t1)-(old_t1-old_t2)) > 
@@ -103,7 +103,7 @@ void chk_trj(char *fn)
       if (j == 0)
 	fprintf(stderr,"\n");
       if (!fread_htrn(status,&sh,NULL,NULL,NULL,NULL))
-	fprintf(stderr,"\nIncomplete frame at t=%g\n",sh.t);
+	fprintf(stderr,"\nframe %d at t=%g is incomplete\n",j,sh.t);
       
       j++;
 #define INC(s,n,item) if (s.item  != 0) n.item++
@@ -113,9 +113,10 @@ void chk_trj(char *fn)
       INC(sh,count,x_size);
       INC(sh,count,v_size);
       INC(sh,count,f_size);
+      fpos   = fio_ftell(status);
     }
     if (!bOK)
-      fprintf(stderr,"\nIncomplete frame header at t=%g\n",sh.t);
+      fprintf(stderr,"\nheader of frame %d at t=%g is incomplete\n",j,sh.t);
     close_trn(status);
     t=sh.t;
     break;
@@ -154,8 +155,7 @@ void chk_trj(char *fn)
     fprintf(stderr,"Sorry %s not supported yet\n",fn);
   }
 
-  fprintf(stderr,"\n\n");
-  fprintf(stderr,"\n# Atoms     %d\n",natoms);
+  fprintf(stderr,"\n\n\n# Atoms     %d\n",natoms);
   
   fprintf(stderr,"\nItem        #frames");
   if (bShowTimestep)
