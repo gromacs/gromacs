@@ -620,7 +620,7 @@ static real fit_acf(int ncorr,int fitfn,bool bVerbose,
     jmax = 3;
   else
     jmax = 1;
-  if (sum > 0)
+  if (sum>0 && fitfn!=effnEXP3)
     /* Good initial guess, this increases the probability of convergence */
     fitparm[0] = sum;
   else
