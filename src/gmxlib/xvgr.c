@@ -89,6 +89,7 @@ void xvgr_legend(FILE *out,int nsets,char *setname[])
 {
   int i;
   
+  xvgr_view(out,0.15,0.15,0.75,0.85);
   fprintf(out,"@ legend on\n");
   fprintf(out,"@ legend box on\n");
   fprintf(out,"@ legend loctype view\n");
