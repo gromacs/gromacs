@@ -149,11 +149,6 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   snew(nrnb,cr->nprocs);
 
   /* Initiate invsqrt routines */
-#ifdef USEF77
-#ifdef FINVSQRT
-  fillbuf();
-#endif
-#endif
 #ifdef CINVSQRT
   init_lookup_table(stdlog);
 #endif

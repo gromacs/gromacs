@@ -40,24 +40,16 @@ static char *SRCID_wnblist_c = "$Id$";
 
 #define header "Neighborlist:"
 
-static void write_nblist(FILE *out,t_nblist *nblist,rvec sv[SHIFTS],
-			 bool bFull)
+static void write_nblist(FILE *out,t_nblist *nblist)
 {
-  int j,j0,k,i_atom,jid;
+  int i,j,j0,k,i_atom,jid;
   
-  fatal_error(0,"write_nblist temporarily out of order");
-  fprintf(out,"nri=%8u\n",nblist->nri);
-  for(j=0; j<(int)nblist->nri; j++) {
-    /*  i_atom=nblist->nl_i[j].i_atom;
-    fprintf(out,"i_atom=%5d  nj=%8u  shift=%4d\n",
-	    i_atom,nblist->nl_i[j].nj,nblist->nl_i[j].shift);
-    fprintf(out,"%5s  %4s\n","jid","grp");
-    j0=nblist->nl_i[j].j_index;
-    for (k=0; k<(int)nblist->nl_i[j].nj; k++) {
-      jid=nblist->nl_j[j0+k];
-      fprintf(out,"%5d\n",jid);
-    }
-    */
+  fprintf(out,"nri=%d  nrj=%d\n",nblist->nri,nblist->nrj);
+  for(i=0; i<nblist->nri; i++) {
+    fprintf(out,"i: %d, shift: %d, gid: %d\n",
+	    nblist->iinr[i],nblist->shift[i],nblist->gid[i]);
+    for(j=nblist->jindex[i]; (j<nblist->jindex[i+1]); j++)
+      fprintf(out,"  j: %d\n",nblist->jjnr[j]);
   }
   fflush(out);
 }
@@ -104,15 +96,10 @@ void read_nblist(FILE *in,FILE *log,int **mat,int natoms)
 void dump_nblist(FILE *out,t_forcerec *fr,int nDNL)
 {
   int  i;
-  rvec *sv;
   
   fprintf(out,"%s\n",header);
-  /*  fprintf(out,"%d\n",fr->nn*2);*/
 
-  sv=fr->shift_vec;
-  /*for(i=0; (i<fr->nn); i++) {
-    write_nblist(out,&fr->coul[i],sv,(nDNL > 1));
-    write_nblist(out,&fr->vdw[i],sv,(nDNL > 1));
-    }*/
+  for(i=0; (i<eNL_NR); i++) 
+    write_nblist(out,&fr->nlist_sr[i]);
 }
 

@@ -100,11 +100,15 @@ clean:	oclean
 
 .cxx.o:
 		$(CCC) $(CC-FLAGS) -c $<
-
+.c.cpp:
+		$(CC) $(C-FLAGS) -E $<		
 .f.s:
 		$(F77) $(FFLAGS) -s $<
 
 .f.o:
+		$(F77) $(FFLAGS) -c $<
+
+.F.o:
 		$(F77) $(FFLAGS) -c $<
 
 .f90.o:

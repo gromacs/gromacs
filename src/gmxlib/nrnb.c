@@ -86,10 +86,12 @@ static t_nrnb_data nbdata[eNRNB] = {
   { "CG-CoM",          29 },
   { "Sum Forces",       1 },
   { "Bonds",           43 },
-  { "Angles",         168 },
-  { "Propers",        223 },
-  { "Impropers",      217 },
-  { "RB-Dihedrals",   241 },
+  { "G96Bonds",        40 },
+  { "Angles",         163 },
+  { "G96Angles",      150 },
+  { "Propers",        229 },
+  { "Impropers",      208 },
+  { "RB-Dihedrals",   247 },
   { "Dist. Restr.",   200 },
   { "Pos. Restr.",     50 },
   { "Angle Restr.",   191 },
@@ -199,7 +201,7 @@ void print_perf(FILE *out,double cputime,double realtime,real runtime,
     frac   = 100.0*mni*nbdata[i].flop/tflop;
     tfrac += frac;
     if (mni != 0)
-      fprintf(out,"%15s  %12.5f  %12.5f  %6.1f\n",
+      fprintf(out,"%15s  %12.6f  %12.6f  %6.1f\n",
 	      nbdata[i].name,mni,mni*nbdata[i].flop,frac);
   }
   fprintf(out,"%15s  %12s  %12.5f  %6.1f\n\n",

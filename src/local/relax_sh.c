@@ -134,6 +134,8 @@ static real rms_force(rvec f[],int ns,t_shell s[])
   int  i,shell;
   real df2;
   
+  if (!ns)
+    return 0;
   df2=0.0;
   for(i=0; (i<ns); i++) {
     shell = s[i].shell;

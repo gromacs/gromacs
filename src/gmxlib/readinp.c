@@ -265,7 +265,7 @@ int get_eeenum(int *ninp,t_inpfile **inp,char *name,char **defs,
 
 int get_eenum(int *ninp,t_inpfile **inp,char *name,char **defs)
 {
-  int dum;
+  int dum=0;
 
   return get_eeenum(ninp,inp,name,defs,&dum,FALSE);
 }

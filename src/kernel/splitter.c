@@ -267,6 +267,7 @@ static void split_blocks(bool bVerbose,int nprocs,
       fprintf(stderr,"%6d",maxatom[i]);
     fprintf(stderr,"\n");
   }
+  sfree(shknum);
 }
 
 static void def_mnr(int nr,int mnr[])

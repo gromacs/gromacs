@@ -9,7 +9,7 @@
 #
 # 	See README file for info
 #
-SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG -DCINVSQRT
+SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG -DCINVSQRT -DFINVSQRT -DHAVE_STRDUP
 
 #
 #	USER MODIFIABLE SECTION
@@ -25,7 +25,8 @@ USEF77		= no
 # set both to no. If you select both, something will break!!!
 #
 USE_PVM3	= no
-USE_MPI		= no
+HOME		= /usr/local
+USE_MPI		= yes
 #
 # If you want to use compressed data files set this to yes
 # This uses the xdr libraries of your UNIX system, which is virtually
@@ -51,29 +52,33 @@ HAVE_MOTIF	= no
 
 # GNU C compiler
 MKDEP		= $(CC) -MM
-CC		= gcc
-CCC		= gcc
-F77		= g77
-CFLAGS		= -g -fPIC -O3 -ffast-math -m486 -fPIC -funroll-all-loops -Wall -Wno-unused
-#  Assume Intel 486 for now 
+CC		= $(HOME)/bin/hcc
+F77		= $(HOME)/bin/hf77
+LAMHF77		= g77
+CFLAGS		= -O3 -ffast-math -finline-functions -Winline -fPIC -funroll-all-loops  -Wall -Wno-unused -mcpu=i486 -march=i486 #-fomit-frame-pointer
+# -mcpu=pentiumpro -march=pentiumpro
+#
+# Assume Intel 486 for now. Tested with egcs 1.1.2: -mpentium or -mpentiumpro
+# yields 10% slower code than -m486 !!!
+#
+FFLAGS		= $(CFLAGS)
 CCFLAGS		= $(CFLAGS)
-FFLAGS		= -fPIC
 
 # Generic linking stuff
 LDFLAGS		= -L$(LIBDIR)
-LD		= $(CC) $(LDFLAGS) 
-FLD		= $(F77) $(LDFLAGS) 
+LD		= $(CC)  $(LDFLAGS) 
+FLD		= $(F77) $(LDFLAGS)
 CCLD		= $(CCC) $(LDFLAGS)
-ifeq ($(USE_MPI),yes)
-LDFLAGS		+= -L/usr/mpi/lib/LINUX/ch_p4 
-endif
+
 ifeq ($(HAVE_MOTIF),yes)
 SYSDEFS		+= -DHAVE_MOTIF
+
 XLIBS		= -L/usr/X11R6/lib -lXm -lXt -lX11
-SYSLIBS		= $(XLIBS) -lm
+SYSLIBS		= $(XLIBS)  -lm 
+
 else
 XLIBS		= -L/usr/X11R6/lib -lX11 
-SYSLIBS		=  -lm
+SYSLIBS		= -lm
 endif
 SHAREIT		= (cd $(LIBDIR); ar x $(LIB); $(CC) $(LDFLAGS) -shared -Wl,-soname,$(SONAME) -o $(LIBDIR)/$(SONAME) *.o; $(RM) *.o)
 RANLIB		= ranlib

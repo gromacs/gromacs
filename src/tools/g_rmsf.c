@@ -293,7 +293,7 @@ int main (int argc,char *argv[])
   while (read_next_x(status,&t,natom,x,box)) {
     /* Remove periodic boundary */
     rm_pbc(&(top.idef),top.atoms.nr,box,x,x);
-
+    
     /* Set center of mass to zero */
     sub_xcm(x,isize,index,top.atoms.atom,xcm,FALSE);
     

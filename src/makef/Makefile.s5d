@@ -1,5 +1,5 @@
 # SGI/R5000 Double Prec.
-#	@(#) Makefile.s5d 1.1 4/16/97
+#	@(#) Makefile.s18 1.1 15 Sep 1996
 #
 #
 #	GROMACS - Groningen Machine for Chemical Simulation
@@ -10,3 +10,4 @@
 include		$(GMXHOME)/src/makef/Makefile.s5k
 SYSDEFS		+= -DDOUBLE -D_s5k_
 FFLAGS		+= -r8
+

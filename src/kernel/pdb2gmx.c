@@ -342,8 +342,8 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
 	j=1;
       else 
 	fatal_error(0,"Atom %s in residue %s %d not found in database"
-		    " while sorting atoms",atomnm,
-		    rptr->resname,pdba->atom[i].resnr+1);
+		    " while sorting atoms at %s, line %d",atomnm,
+		    rptr->resname,pdba->atom[i].resnr+1,__FILE__,__LINE__);
     }
     /* make shadow array to be sorted into indexgroup */
     pdbi[i].resnr  = pdba->atom[i].resnr;

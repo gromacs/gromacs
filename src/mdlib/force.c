@@ -626,12 +626,17 @@ void force(FILE       *log,     int        step,
   if (debug)    
     print_nrnb(debug,nrnb);
   debug_gmx();
-  
+
+  if (debug) 
+    pr_rvecs(debug,0,"fshift",fr->fshift,SHIFTS);
+    
   if (!bNBFonly) {
     calc_bonds(log,idef,x,f,fr,graph,epot,nrnb,box,lambda,md,
 	       opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14]);
     debug_gmx();
   }
+  if (debug) 
+    pr_rvecs(debug,0,"fshift after bondeds",fr->fshift,SHIFTS);
   
   for(i=0; (i<F_EPOT); i++)
     if (i != F_DISRES)

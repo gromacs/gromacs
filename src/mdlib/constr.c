@@ -448,7 +448,7 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
       sfree(inv_sblock);
     }
     
-    if (idef->il[F_SHAKE].nr)
+    if (idef->il[F_SHAKE].nr) {
       if (ir->eConstrAlg == estLINCS) {
 	please_cite(stdlog,"Hess97a");
 	constrain_lincs(stdlog,top,ir,0,md,
@@ -457,6 +457,7 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
 			NULL,NULL,NULL,0,NULL,TRUE);
       } else
 	please_cite(stdlog,"Ryckaert77a");
+    }
   } else {
     if (nblocks > 0) {
       where();

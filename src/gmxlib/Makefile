@@ -20,6 +20,7 @@ M4DIR		= .
 M4FILE		= $(M4DIR)/$(GMXCPU).m4
 M4MAC		= $(M4DIR)/gmxmac.m4
 LIB		= $(LIBDIR)/libgmx.$(GMXCPU).a
+XTCLIB		= $(LIBDIR)/libxtcf.a
 SONAME		= libgmx.$(GMXCPU).so
 OBJ		= \
 		3dview.o	atomprop.o	block_tx.o	\
@@ -105,6 +106,16 @@ endif
 include		$(STDTARGET)
 #
 
+$(XTCLIB)(libxdrf.o):	libxdrf.m4 $(M4FILE)
+		$(M4) $(M4FILE) libxdrf.m4 > libxdrf.c
+		$(CC) $(C-FLAGS) -c libxdrf.c
+		$(AR) $(ARFLAGS) $(LIB) libxdrf.o
+		$(RM) libxdrf.c libxdrf.o
+$(XTCLIB):	$(XTCLIB)(ftocstr.o)	$(XTCLIB)(libxdrf.o)	\
+		$(XTCLIB)(xtciof.o)
+
+xtclib:		$(XTCLIB)
+
 testfft:	testfft.o
 		$(LD) -o $@ $^ $(SYSLIBS) -lcomplib.sgimath
 testtab:	testtab.o
@@ -164,23 +175,36 @@ $(LIB)(fnbf.o):		fnbf.m4 inner.m4 $(M4MAC) $(M4FILE) $(CPUMAKEF)
 			$(AR) $(ARFLAGS) $(LIB) fnbf.o
 			$(RM) fnbf.c inner.h fnbf.o
 
-$(LIB)(innerf.o):	mkinl.c Makefile $(CPUMAKEF)
+mkinl.o:		mkinl.c $(CPUMAKEF)
 			$(CC) $(C-FLAGS) -g -c $(SYSDEFS) mkinl.c 
-			$(CC) $(C-FLAGS) -g -o mkinl mkinl.o
+
+mkinl:			mkinl.o 
+			$(LD) -o mkinl mkinl.o
+
+$(LIB)(innerf.o):	mkinl Makefile $(CPUMAKEF)
+			$(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) inner.m4 > inner.h
 			./mkinl 0 1
 			$(F77) $(FFLAGS) -c innerf.f
 			$(AR) $(ARFLAGS) $(LIB) innerf.o
-			$(RM) innerf.f innerf.o mkinl.o mkinl
+#			$(RM) innerf.f innerf.o mkinl.o mkinl
 
-$(LIB)(innerc.o):	mkinl.c inner.m4 Makefile $(CPUMAKEF)
+$(LIB)(innerc.o):	mkinl inner.m4 Makefile $(CPUMAKEF)
 			$(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) inner.m4 > inner.h
-			$(CC) $(C-FLAGS) -g -c $(SYSDEFS) mkinl.c 
-			$(CC) $(C-FLAGS) -g -o mkinl mkinl.o
 			./mkinl 1 1
 			$(RM) mkinl
 			$(CC) $(C-FLAGS) -c innerc.c
 			$(AR) $(ARFLAGS) $(LIB) innerc.o
-			$(RM) innerc.c inner.h innerc.o mkinl.o mkinl
+#			$(RM) innerc.c inner.h innerc.o mkinl.o mkinl
 
+innerf.f:		mkinl Makefile $(CPUMAKEF)
+			./mkinl 0 1
+			$(RM) mkinl.o mkinl
+
+innerc.c:		mkinl inner.m4 Makefile $(CPUMAKEF)
+			./mkinl 1 1
+			$(RM) mkinl mkinl.o
+
+tst:			tst.o
+			$(FLD) -o tst tst.o $(SYSLIBS)
 include	Make.dep
 endif

@@ -283,8 +283,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 {
   static FILE  *xvg,*ion;
   static char  *leg[] = { "Probability", "Primary Ionization", "Integral over PI", "KHole-Decay", "Integral over KD" };
-  static bool  bFirst = TRUE;
-  static bool  bImpulse = TRUE;
+  static bool  bFirst = TRUE,bImpulse = TRUE,bExtraKinetic=TRUE;
   static real  t0,imax,width,inv_nratoms,rho,nphot,nkdecay,nkd_tot,
     ztot,protein_radius;
   static int   seed,dq_tot,ephot;
@@ -329,6 +328,9 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     nkd_tot = 0;
     inv_nratoms = 1.0/md->nr;
 
+    if (getenv("NOEKIN") != NULL)
+      bExtraKinetic = FALSE;
+    
     /* compute total charge of the system */
     ztot = 0;
     mtot = 0;
@@ -352,6 +354,9 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     fprintf(log,"Total charge on system: %g e. Total mass: %g u\n",
 	    ztot,mtot);
     fprintf(log,"Estimated system radius to be %g nm\n",protein_radius);
+    fprintf(log,
+	    "Adding extra kinetic energy because of leaving electrons: %s\n",
+	    bool_names[bExtraKinetic]);
     fflush(log);
     bFirst = FALSE;
   }
@@ -521,7 +526,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   /* Now add random velocities corresponding to the energy depositied by 
    * the leaving electrons.
    */ 
-  if (dq > 0) {
+  if (bExtraKinetic && (dq > 0)) {
     delta_ekin = 0;
     for(i=0; (i<dq); i++) {
       delta_ekin += FACEL*ztot/protein_radius;

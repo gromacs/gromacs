@@ -198,35 +198,41 @@ static void measure_dist(FILE *log,t_dist *d,t_atoms *atoms,rvec x[],
     for(aj=ai+1; (aj<natom); aj++) {
       rvec_sub(x[ai],x[aj],dx);
       ideal = 10*norm(dx);
-      if (!dist_set(d,natom,ai,aj)) {
-	/* This distance is not determined by the database. */
-	vdw = 0; /*vdwlen(atoms,ai,aj);*/
-	if ((ideal < cutoff)  || (cutoff == 0)) {
-	  set_dist(d,natom,ai,aj,max(vdw,ideal*lbfac),ideal*ubfac,ideal);
-	  nm++;
-	}
+      if (ideal == 0.0) {
+	fprintf(stderr,"Warning distance between atoms %s and %s is zero\n",
+		atomname(atoms,ai),atomname(atoms,aj));
       }
       else {
-	/* These distances are already set by the database routines.
-	 * However, we override the distances with the measured ones
-	 * while keeping the original margins.
-	 */
-	lb = d_lb(d,natom,ai,aj);
-	ub = d_ub(d,natom,ai,aj);
-	if ((ideal < lb) || (ideal > ub)) {
-	  if (debug)
-	    fprintf(debug,"Warning: d(%s,%s) = %8.4f. According to E&H"
-		    " it should be %8.4f (dev. %.1f%%)\n",
-		    atomname(atoms,ai),
-		    atomname(atoms,aj),
-		    ideal,(lb+ub)*0.5,50*fabs(ideal*2-lb-ub));
-	  msd += (ideal < lb) ? sqr(ideal-lb) : sqr(ideal-ub);
-	  nnotideal++;
+	if (!dist_set(d,natom,ai,aj)) {
+	  /* This distance is not determined by the database. */
+	  vdw = 0; /*vdwlen(atoms,ai,aj);*/
+	  if ((ideal < cutoff)  || (cutoff == 0)) {
+	    set_dist(d,natom,ai,aj,max(vdw,ideal*lbfac),ideal*ubfac,ideal);
+	    nm++;
+	  }
 	}
-	nmargin = (ub-lb)/(ub+lb);
-	set_dist(d,natom,ai,aj,ideal*(1-nmargin),ideal*(1+nmargin),ideal);
-	nm++;
-	nover++;
+	else {
+	  /* These distances are already set by the database routines.
+	   * However, we override the distances with the measured ones
+	   * while keeping the original margins.
+	   */
+	  lb = d_lb(d,natom,ai,aj);
+	  ub = d_ub(d,natom,ai,aj);
+	  if ((ideal < lb) || (ideal > ub)) {
+	    if (debug)
+	      fprintf(debug,"Warning: d(%s,%s) = %8.4f. According to E&H"
+		      " it should be %8.4f (dev. %.1f%%)\n",
+		      atomname(atoms,ai),
+		      atomname(atoms,aj),
+		      ideal,(lb+ub)*0.5,50*fabs(ideal*2-lb-ub));
+	    msd += (ideal < lb) ? sqr(ideal-lb) : sqr(ideal-ub);
+	    nnotideal++;
+	  }
+	  nmargin = (ub-lb)/(ub+lb);
+	  set_dist(d,natom,ai,aj,ideal*(1-nmargin),ideal*(1+nmargin),ideal);
+	  nm++;
+	  nover++;
+	}
       }
     }
   /* Now we have set all the distances. We have to verify though

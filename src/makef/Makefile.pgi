@@ -59,10 +59,10 @@ MKDEP		= $(CC) -MM
 CC		= $(PGI)/linux86/bin/pgcc
 F77		= $(PGI)/linux86/bin/pgf77
 CFLAGS		= -tp p6 -fast -Minfo=loop -pc 32 
-FFLAGS		= $(CFLAGS) -mp -Mconcur -Mneginfo=loop
+FFLAGS		= $(CFLAGS) -Mneginfo=loop
 
 # Generic linking stuff
-LDFLAGS		= -mp -v -L$(LIBDIR) -L$(PGI)/linux86/lib -L/usr/local/lib/gcc-lib/i686-pc-linux-gnu/egcs-2.91.66
+LDFLAGS		= -v -L$(LIBDIR) -L$(PGI)/linux86/lib -L/usr/local/lib/gcc-lib/i686-pc-linux-gnu/egcs-2.91.66
 LD		= $(CC) $(LDFLAGS) 
 FLD		= $(F77) $(LDFLAGS) 
 CCLD		= $(CCC) $(LDFLAGS)
