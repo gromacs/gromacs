@@ -1,4 +1,5 @@
 #define _FF_GROMACS
+#define _FF_GROMACS1
 
 [ defaults ]
 ; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ
