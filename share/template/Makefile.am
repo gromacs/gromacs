@@ -13,7 +13,7 @@ template_DATA = template.c README
 
 EXTRA_DIST = Template.mak.in ${template_DATA}
 
-install-hook:
+install-data-hook:
 	$(mkinstalldirs) $(DESTDIR)$(templatedir)
 	echo "$(INSTALL_DATA) Template.mak $(DESTDIR)$(templatedir)/Makefile"; \
 	$(INSTALL_DATA) Template.mak $(DESTDIR)$(templatedir)/Makefile; 

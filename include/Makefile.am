@@ -29,7 +29,7 @@ include_HEADERS = \
 	pvmio.h     	string2.h     	writeps.h	complex.h   	\
 	futil.h         metacode.h  	random.h    	struc2.h      	\
 	x86_3dnow.h	comtest.h   	gbutil.h        mpiio.h     	\
-	rbin.h      	superb.h      	x86_cpu.h	config.h    	\
+	rbin.h      	superb.h      	x86_cpu.h	tgroup.h	\
 	general.h       mshift.h    	rdgroup.h   	symtab.h      	\
 	x86_sse.h	confio.h    	gmxfio.h        mvdata.h    	\
 	rdklib.h    	sync.h        	xdrf.h		constr.h    	\

@@ -5939,8 +5939,26 @@ if test "$enable_fortran" = "yes"; then
 EOF
 
 	INNER_F77_OBJ='${inner_f77_obj}'
+	
+
+if true; then
+  USE_F77_TRUE=
+  USE_F77_FALSE='#'
+else
+  USE_F77_TRUE='#'
+  USE_F77_FALSE=
+fi
 else
 	INNER_C_OBJ='${inner_c_obj}'
+	
+
+if false; then
+  USE_F77_TRUE=
+  USE_F77_FALSE='#'
+else
+  USE_F77_TRUE='#'
+  USE_F77_FALSE=
+fi
 fi
 
 if test "$enable_double" = "yes"; then
@@ -6422,7 +6440,7 @@ if test "$ac_test_CFLAGS" != "set" -o "$ac_test_FFLAGS" != "set"; then
     
 
 echo $ac_n "checking whether $CC accepts -malign-double""... $ac_c" 1>&6
-echo "configure:6426: checking whether $CC accepts -malign-double" >&5
+echo "configure:6444: checking whether $CC accepts -malign-double" >&5
 if eval "test \"`echo '$''{'ac_align_double'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6467,7 +6485,7 @@ fi
 			
 
 echo $ac_n "checking whether $CC accepts -mcpu=$cputype""... $ac_c" 1>&6
-echo "configure:6471: checking whether $CC accepts -mcpu=$cputype" >&5
+echo "configure:6489: checking whether $CC accepts -mcpu=$cputype" >&5
 if eval "test \"`echo '$''{'ac_m_cpu_60x'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6494,7 +6512,7 @@ fi
                         
 
 echo $ac_n "checking whether $CC accepts -mcpu=750""... $ac_c" 1>&6
-echo "configure:6498: checking whether $CC accepts -mcpu=750" >&5
+echo "configure:6516: checking whether $CC accepts -mcpu=750" >&5
 if eval "test \"`echo '$''{'ac_m_cpu_750'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6522,7 +6540,7 @@ fi
 		        
 
 echo $ac_n "checking whether $CC accepts -mcpu=powerpc""... $ac_c" 1>&6
-echo "configure:6526: checking whether $CC accepts -mcpu=powerpc" >&5
+echo "configure:6544: checking whether $CC accepts -mcpu=powerpc" >&5
 if eval "test \"`echo '$''{'ac_m_cpu_powerpc'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6550,7 +6568,7 @@ fi
 			
 
 echo $ac_n "checking whether $CC accepts -mpowerpc""... $ac_c" 1>&6
-echo "configure:6554: checking whether $CC accepts -mpowerpc" >&5
+echo "configure:6572: checking whether $CC accepts -mpowerpc" >&5
 if eval "test \"`echo '$''{'ac_m_powerpc'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6593,7 +6611,7 @@ fi
   
 
 echo $ac_n "checking whether $CC accepts ${CFLAGS}""... $ac_c" 1>&6
-echo "configure:6597: checking whether $CC accepts ${CFLAGS}" >&5
+echo "configure:6615: checking whether $CC accepts ${CFLAGS}" >&5
 if eval "test \"`echo '$''{'ac_guessed_cflags'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6635,7 +6653,7 @@ fi
     
 
 echo $ac_n "checking whether $F77 accepts ${FFLAGS}""... $ac_c" 1>&6
-echo "configure:6639: checking whether $F77 accepts ${FFLAGS}" >&5
+echo "configure:6657: checking whether $F77 accepts ${FFLAGS}" >&5
 if eval "test \"`echo '$''{'ac_guessed_fflags'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6884,6 +6902,8 @@ s%@X_EXTRA_LIBS@%$X_EXTRA_LIBS%g
 s%@LIBOBJS@%$LIBOBJS%g
 s%@USE_X11_TRUE@%$USE_X11_TRUE%g
 s%@USE_X11_FALSE@%$USE_X11_FALSE%g
+s%@USE_F77_TRUE@%$USE_F77_TRUE%g
+s%@USE_F77_FALSE@%$USE_F77_FALSE%g
 s%@USE_DOUBLE_TRUE@%$USE_DOUBLE_TRUE%g
 s%@USE_DOUBLE_FALSE@%$USE_DOUBLE_FALSE%g
 s%@PAR_OBJ@%$PAR_OBJ%g

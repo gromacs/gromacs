@@ -36,10 +36,16 @@ libgmxXXX_SUFFIX_XXX_a_SOURCES = \
 	x86_cpu.c	
 
 EXTRA_libgmxXXX_SUFFIX_XXX_a_SOURCES = \
-	mpiio.c		libnet.c	innerf.f	innerc.c	\
+	mpiio.c		libnet.c	x86_3dnow.asm	f77_wrappers.c  \
 	libxdrf.c	ftocstr.c	dumxdrf.c	mgmx.c		\
 	widget.c	widget.h	x86_cpuid.asm	axp_asm.S	\
-	x86_sse.asm	x86_3dnow.asm	f77_wrappers.c  
+	x86_sse.asm	
+
+if USE_F77
+BUILT_SOURCES = innerf.f
+else
+BUILT_SOURCES = innerc.c
+endif
 
 mpi_obj 	= mpiio.o
 libnet_obj 	= libnet.o

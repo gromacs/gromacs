@@ -10,13 +10,12 @@ limited to:
 
 ./configure   
 make
-make install          (libraries & binaries)
-make install-data     (architecture-independent files)
+make install          
 
 That's it! Most compiler flags and required libraries are checked
 automatically by configure, and it will tell you if something is
 missing. The default installation location is /usr/local/gromacs
-(change it with --prefix). 
+(change it with --prefix).  
 
 The FFTW library has been removed from the distribution since it 
 is not part of our package, but it is very easy to install separately
