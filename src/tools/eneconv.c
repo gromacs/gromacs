@@ -140,98 +140,98 @@ static int scan_ene_files(char **fnms,int nfiles,real *readtime, real *timestep)
 }
 
 
-static void edit_files(char **fnms,int nfiles,real *readtime, real
-		       *settime, int *cont_type, bool bSetTime,bool bSort)
+static void edit_files(char **fnms,int nfiles,real *readtime, 
+		       real *settime,int *cont_type,bool bSetTime,bool bSort)
 {
-    int i;
-    bool ok;
-    char inputstring[STRLEN],*chptr;
-    
-    if(bSetTime) {
-      if(nfiles==1)
-	fprintf(stderr,"\n\nEnter the new start time:\n\n");
-      else
-	fprintf(stderr,"\n\nEnter the new start time for each file.\n"
-		"There are two special options, both disables sorting:\n\n"
-		"c (continue) - The start time is taken from the end\n"
-		"of the previous file. Use it when your continuation run\n"
-		"restarts with t=0 and there is no overlap.\n\n"
-		"l (last) - The time in this file will be changed the\n"
-		"same amount as in the previous. Use it when the time in the\n"
+  int i;
+  bool ok;
+  char inputstring[STRLEN],*chptr;
+  
+  if(bSetTime) {
+    if(nfiles==1)
+      fprintf(stderr,"\n\nEnter the new start time:\n\n");
+    else
+      fprintf(stderr,"\n\nEnter the new start time for each file.\n"
+	      "There are two special options, both disables sorting:\n\n"
+	      "c (continue) - The start time is taken from the end\n"
+	      "of the previous file. Use it when your continuation run\n"
+	      "restarts with t=0 and there is no overlap.\n\n"
+	      "l (last) - The time in this file will be changed the\n"
+	      "same amount as in the previous. Use it when the time in the\n"
 		"new run continues from the end of the previous one,\n"
-		"since this takes possible overlap into account.\n\n");
+	      "since this takes possible overlap into account.\n\n");
+    
+    fprintf(stderr,"          File             Current start       New start\n"
+	    "---------------------------------------------------------\n");
+    
+    for(i=0;i<nfiles;i++) {
+      fprintf(stderr,"%25s   %10.3f             ",fnms[i],readtime[i]);
+      ok=FALSE;
+      do {
+	fgets(inputstring,STRLEN-1,stdin);
+	inputstring[strlen(inputstring)-1]=0;
 	
-      fprintf(stderr,"          File             Current start       New start\n"
-	      "---------------------------------------------------------\n");
-      
-      for(i=0;i<nfiles;i++) {
-	fprintf(stderr,"%25s   %10.3f             ",fnms[i],readtime[i]);
-	ok=FALSE;
-	do {
-	  fgets(inputstring,STRLEN-1,stdin);
-	  inputstring[strlen(inputstring)-1]=0;
-	  
-	  if(inputstring[0]=='c' || inputstring[0]=='C') {
-	    cont_type[i]=TIME_CONTINUE;
-	    bSort=FALSE;
-	    ok=TRUE;
-	    settime[i]=FLT_MAX;
-	  }
-	  else if(inputstring[0]=='l' ||
-		  inputstring[0]=='L') {
-	    cont_type[i]=TIME_LAST;
-	    bSort=FALSE;
-	    ok=TRUE;
-	    settime[i]=FLT_MAX;			  
+	if(inputstring[0]=='c' || inputstring[0]=='C') {
+	  cont_type[i]=TIME_CONTINUE;
+	  bSort=FALSE;
+	  ok=TRUE;
+	  settime[i]=FLT_MAX;
+	}
+	else if(inputstring[0]=='l' ||
+		inputstring[0]=='L') {
+	  cont_type[i]=TIME_LAST;
+	  bSort=FALSE;
+	  ok=TRUE;
+	  settime[i]=FLT_MAX;			  
+	}
+	else {
+	  settime[i]=strtod(inputstring,&chptr);
+	  if(chptr==inputstring) {
+	    fprintf(stderr,"Try that again: ");
 	  }
 	  else {
-	    settime[i]=strtod(inputstring,&chptr);
-	    if(chptr==inputstring) {
-	      fprintf(stderr,"Try that again: ");
-	    }
-	    else {
-	      cont_type[i]=TIME_EXPLICIT;
-	      ok=TRUE;
-	    }
+	    cont_type[i]=TIME_EXPLICIT;
+	    ok=TRUE;
 	  }
-	} while (!ok);
-      }
-      if(cont_type[0]!=TIME_EXPLICIT) {
-	cont_type[0]=TIME_EXPLICIT;
-	settime[0]=0;
-      }
-    }
-    else 
-	for(i=0;i<nfiles;i++)
-	    settime[i]=readtime[i];
-    
-    if(bSort && (nfiles>1)) 
-	sort_files(fnms,settime,nfiles);
-    else
-	fprintf(stderr,"Sorting disabled.\n");
-  
-    
-    /* Write out the new order and start times */
-    fprintf(stderr,"\nSummary of files and start times used:\n\n"
-	    "          File                Start time\n"
-	    "-----------------------------------------\n");
-    for(i=0;i<nfiles;i++)
-	switch(cont_type[i]) {
-	case TIME_EXPLICIT:
-	    fprintf(stderr,"%25s   %10.3f\n",fnms[i],settime[i]);
-	    break;
-	case TIME_CONTINUE:
-	    fprintf(stderr,"%25s        Continue from end of last file\n",fnms[i]);
-	    break;	      
-	case TIME_LAST:
-	    fprintf(stderr,"%25s        Change by same amount as last file\n",fnms[i]);
-	    break;
 	}
-    fprintf(stderr,"\n");
-
-    settime[nfiles]=FLT_MAX;
-    cont_type[nfiles]=TIME_EXPLICIT;
-    readtime[nfiles]=FLT_MAX;
+      } while (!ok);
+    }
+    if(cont_type[0]!=TIME_EXPLICIT) {
+      cont_type[0]=TIME_EXPLICIT;
+      settime[0]=0;
+    }
+  }
+  else 
+    for(i=0;i<nfiles;i++)
+      settime[i]=readtime[i];
+  
+  if(bSort && (nfiles>1)) 
+    sort_files(fnms,settime,nfiles);
+  else
+    fprintf(stderr,"Sorting disabled.\n");
+  
+  
+  /* Write out the new order and start times */
+  fprintf(stderr,"\nSummary of files and start times used:\n\n"
+	  "          File                Start time\n"
+	  "-----------------------------------------\n");
+  for(i=0;i<nfiles;i++)
+    switch(cont_type[i]) {
+    case TIME_EXPLICIT:
+      fprintf(stderr,"%25s   %10.3f\n",fnms[i],settime[i]);
+      break;
+    case TIME_CONTINUE:
+      fprintf(stderr,"%25s        Continue from end of last file\n",fnms[i]);
+      break;	      
+    case TIME_LAST:
+      fprintf(stderr,"%25s        Change by same amount as last file\n",fnms[i]);
+      break;
+    }
+  fprintf(stderr,"\n");
+  
+  settime[nfiles]=FLT_MAX;
+  cont_type[nfiles]=TIME_EXPLICIT;
+  readtime[nfiles]=FLT_MAX;
 }
 
 
@@ -367,26 +367,28 @@ int main(int argc,char *argv[])
   };
 
 #define NFILE asize(fnm)  
-  
+  bool   bWrite;
   static real  delta_t=0.0, toffset=0;
   static bool  bSetTime=FALSE;
-  static bool  bSort=TRUE;
+  static bool  bSort=TRUE,bError=TRUE;
   static real  begin=-1;
   static real  end=-1;
   
   t_pargs pa[] = {
-      { "-b",        FALSE, etREAL, {&begin},
-	"First time to use"},
-      { "-e",        FALSE, etREAL, {&end},
-	"Last time to use"},
-      { "-dt",       FALSE, etREAL, {&delta_t},
-	"Only write out frame when t MOD dt = offset" },
-      { "-offset",   FALSE, etREAL, {&toffset},
-	"Time offset for -dt option" }, 
-      { "-settime",  FALSE, etBOOL, {&bSetTime}, 
-	"Change starting time interactively" },
-      { "-sort",     FALSE, etBOOL, {&bSort},
-	"Sort energy files (not frames)"}
+    { "-b",        FALSE, etREAL, {&begin},
+      "First time to use"},
+    { "-e",        FALSE, etREAL, {&end},
+      "Last time to use"},
+    { "-dt",       FALSE, etREAL, {&delta_t},
+      "Only write out frame when t MOD dt = offset" },
+    { "-offset",   FALSE, etREAL, {&toffset},
+      "Time offset for -dt option" }, 
+    { "-settime",  FALSE, etBOOL, {&bSetTime}, 
+      "Change starting time interactively" },
+    { "-sort",     FALSE, etBOOL, {&bSort},
+      "Sort energy files (not frames)"},
+    { "-error",    FALSE, etBOOL, {&bError},
+      "Stop on errors in the file" }
   };
   
   CopyRight(stderr,argv[0]);
@@ -398,7 +400,7 @@ int main(int argc,char *argv[])
   outstep=laststep=startstep=0;
   
   for(i=1; (i<argc); i++)
-	fnms[nfile++]=argv[i];
+    fnms[nfile++]=argv[i];
   if(nfile==0)
     nfile=1;
   snew(settime,nfile+1);
@@ -407,7 +409,7 @@ int main(int argc,char *argv[])
   
   if (!opt2bSet("-f",NFILE,fnm)) {
     if(!nfile)
-	  fatal_error(0,"No input files!");
+      fatal_error(0,"No input files!");
  }
   else {
     /* get the single filename */
@@ -433,63 +435,68 @@ int main(int argc,char *argv[])
   bFirst=TRUE;
 
   for(i=0;i<nfile;i++) {
-      bNewFile=TRUE;
-      bNewOutput=TRUE;
+    bNewFile=TRUE;
+    bNewOutput=TRUE;
     in=open_enx(fnms[i],"r");
     do_enxnms(in,&nre,&enm);
     if(i==0) {
-	/* write names to the output file */
-	out=open_enx(opt2fn("-o",NFILE,fnm),"w");  
-	do_enxnms(out,&nre,&enm);
+      /* write names to the output file */
+      out=open_enx(opt2fn("-o",NFILE,fnm),"w");  
+      do_enxnms(out,&nre,&enm);
     }
     
     /* start reading from the next file */
     while((t<(settime[i+1]-GMX_REAL_EPS)) &&
 	  do_enx(in,&t1,&step,&nre,ee,&ndr,dr)) {
       if(bNewFile) {
-	  tadjust=settime[i]-t1;	  
-	  if(cont_type[i+1]==TIME_LAST) {
-	      settime[i+1]=readtime[i+1]-readtime[i]+settime[i];
-	      cont_type[i+1]=TIME_EXPLICIT;
-	  }
+	tadjust=settime[i]-t1;	  
+	if(cont_type[i+1]==TIME_LAST) {
+	  settime[i+1]=readtime[i+1]-readtime[i]+settime[i];
+	  cont_type[i+1]=TIME_EXPLICIT;
+	}
 	bNewFile=FALSE;
       }
       t=tadjust+t1;
-      
-      if((end>0) && (t>(end+GMX_REAL_EPS))) {
+
+      bWrite = ((begin < 0) || ((begin >= 0) && (t >= (begin-GMX_REAL_EPS)))&& 
+		(end   < 0) || ((end   >= 0) && (t <= (end+GMX_REAL_EPS))));
+		
+      if (bError)      
+	if((end > 0) && (t>(end+GMX_REAL_EPS))) {
 	  i=nfile;
 	  break;
-      }
+	}
       
-      if(t>=(begin-GMX_REAL_EPS)) {
-	  if((bFirst)) {
-	      bFirst=FALSE;
-	      if(startee!=NULL)
-		  copy_ee(ee,startee,nre);
-	      startstep=step;		
-	  }
-	  update_ee(lastee,laststep,startee,startstep,ee,step,outee,nre);
-	  outstep=laststep+step-startstep;
+      if (t >= (begin-GMX_REAL_EPS)) {
+	if((bFirst)) {
+	  bFirst=FALSE;
+	  if(startee!=NULL)
+	    copy_ee(ee,startee,nre);
+	  startstep=step;		
+	}
+	update_ee(lastee,laststep,startee,startstep,ee,step,outee,nre);
+	outstep=laststep+step-startstep;
       }	  
       
       /* determine if we should write it */
-      if((t<(settime[i+1]-GMX_REAL_EPS)) && (t>=begin) &&
-	 ((delta_t==0) || (bRmod(t-toffset,delta_t)))) {
-	  outt=t;
-	  if(bNewOutput) {
-	      bNewOutput=FALSE;
-	      fprintf(stderr,"\nContinue writing frames from t=%g, step=%d\n",
-		      t,outstep);
-	  }
-	  do_enx(out,&outt,&outstep,&nre,outee,&ndr,dr);
-	  fprintf(stderr,"\rWriting step %d, time %f        ",outstep,outt);
+      if (bWrite && ((delta_t==0) || (bRmod(t-toffset,delta_t)))) {
+	outt=t;
+	if(bNewOutput) {
+	  bNewOutput=FALSE;
+	  fprintf(stderr,"\nContinue writing frames from t=%g, step=%d\n",
+		  t,outstep);
+	}
+	do_enx(out,&outt,&outstep,&nre,outee,&ndr,dr);
+	fprintf(stderr,"\rWriting step %d, time %f        ",outstep,outt);
       }
     }
     /* copy statistics to old */
     if(lastee!=NULL) {
 	update_last_ee(lastee,laststep,ee,step,nre);
 	laststep+=step;
-	/* remove the last frame from statistics since gromacs2.0 repeats it in the next file */
+	/* remove the last frame from statistics since gromacs2.0 
+	 * repeats it in the next file 
+	 */
 	remove_last_eeframe(lastee,laststep,ee,nre);
 	/* the old part now has (laststep) values, and the new (step+1) */
 	printf("laststep=%d step=%d\n",laststep,step);
