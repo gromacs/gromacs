@@ -86,6 +86,11 @@ int main(int argc,char *argv[])
     "menu of the WHAT IF program. mdrun produces a [TT].edo[tt] file that",
     "contains projections of positions, velocities and forces onto selected",
     "eigenvectors.[PAR]",
+    "The -table option can be used to pass mdrun a formatted table with",
+    "user-defined potential functions. The file is read from either the",
+    "current directory or from the GMXLIB directory. A number of preformatted",
+    "tables are presented in the GMXLIB dir, for 6-8, 6-9, 6-10, 6-11, 6-12",
+    "Lennard Jones potentials with normal Coulomb.[PAR]",
     "The options [TT]-pi[tt], [TT]-po[tt], [TT]-pd[tt], [TT]-pn[tt] are used",
     "for potential of mean force calculations and umbrella sampling.",
     "See manual.[PAR]",
@@ -185,6 +190,7 @@ int main(int argc,char *argv[])
 
   if (MASTER(cr)) {
     CopyRight(stdlog,argv[0]);
+    please_cite(stdlog,"Lindahl2001a");
     please_cite(stdlog,"Berendsen95a");
   }
   

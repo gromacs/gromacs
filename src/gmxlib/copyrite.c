@@ -234,108 +234,109 @@ void thanx(FILE *fp)
     fprintf(fp,"\n%s\n",cq);
 }
 
+typedef struct {
+  char *key;
+  char *author;
+  char *title;
+  char *journal;
+  int volume,year,p0,p1;
+} t_citerec;
+
 void please_cite(FILE *fp,char *key)
 {
-  static char *citedb[] = {
-   "Berendsen95a",
-   "H. J. C. Berendsen, D. van der Spoel and R. van Drunen",
-   "GROMACS: A message-passing parallel molecular dynamics implementation",
-   "Comp. Phys. Comm.",
-   "91 1995 43 56",
-   
-   "Berendsen84a",
-   "H. J. C. Berendsen, J. P. M. Postma, A. DiNola and J. R. Haak",
-   "Molecular dynamics with coupling to an external bath",
-   "J. Chem. Phys.",
-   "81 1984 3684 3690",
-   
-   "Ryckaert77a",
-   "J. P. Ryckaert and G. Ciccotti and H. J. C. Berendsen",
-   "Numerical Integration of the Cartesian Equations of Motion of a System with Constraints; Molecular Dynamics of n-Alkanes",
-   "J. Comp. Phys.",
-   "23 1977 327 341",
-   
-   "Miyamoto92a",
-   "S. Miyamoto and P. A. Kollman",
-   "SETTLE: An Analytical Version of the SHAKE and RATTLE Algorithms for Rigid Water Models",
-   "J. Comp. Chem.",
-   "13 1992 952 962",
-   
-   "Barth95a",
-   "E. Barth and K. Kuczera and B. Leimkuhler and R. D. Skeel",
-   "Algorithms for Constrained Molecular Dynamics",
-   "J. Comp. Chem.",
-   "16 1995 1192 1209",
-   
-   "Torda89a",
-   "A. E. Torda and R. M. Scheek and W. F. van Gunsteren",
-   "Time-dependent distance restraints in molecular dynamics simulations",
-   "Chem. Phys. Lett.",
-   "157 1989 289 294",
-   
-   "Tironi95a",
-   "I. G. Tironi and R. Sperb and P. E. Smith and W. F. van Gunsteren",
-   "Generalized reaction field method for molecular dynamics simulations",
-   "J. Chem. Phys",
-   "102 1995 5451 5459",
-   
-   "Hess97a",
-   "B. Hess and H. Bekker and H. J. C. Berendsen and J. G. E. M. Fraaije",
-   "LINCS: A Linear Constraint Solver for molecular simulations",
-   "J. Comp. Chem.",
-   "18 1997 1463 1472",
-   
-   "DeGroot97a",
-   "B. L. de Groot and D. M. F. van Aalten and R. M. Scheek and A. Amadei and G. Vriend and H. J. C. Berendsen",
-   "Prediction of Protein Conformational Freedom From Distance Constrains",
-   "Proteins",
-   "29 1997 240 251",
-   
-   "Spoel98a",
-   "D. van der Spoel and P. J. van Maaren and H. J. C. Berendsen",
-   "A systematic study of water models for molecular simulation. Derivation of models optimized for use with a reaction-field.",
-   "J. Chem. Phys.",
-   "108 1998 10220 10230",
-   
-   "Wishart98a",
-   "D. S. Wishart and A. M. Nip",
-   "Protein Chemical Shift Analysis: A Practical Guide",
-   "Biochem. Cell Biol.",
-   "76 1998 153-163",
-   
-   "Maiorov95",
-   "V. N. Maiorov and G. M. Crippen",
-   "Size-Independent Comparison of Protein Three-Dimensional Structures",
-   "PROTEINS: Struct. Funct. Gen.",
-   "22 1995 273 283",
-   
-   "Feenstra99",
-   "K. A. Feenstra and B. Hess and H. J. C. Berendsen",
-   "Improving Efficiency of Large Time-scale Molecular Dynamics Simulations of Hydrogen-rich Systems",
-   "J. Comput. Chem.",
-   "20 1999 786 798"
+  static t_citerec citedb[] = {
+    { "Berendsen95a",
+      "H. J. C. Berendsen, D. van der Spoel and R. van Drunen",
+      "GROMACS: A message-passing parallel molecular dynamics implementation",
+      "Comp. Phys. Comm.",
+      91, 1995, 43, 56 },
+    { "Berendsen84a",
+      "H. J. C. Berendsen, J. P. M. Postma, A. DiNola and J. R. Haak",
+      "Molecular dynamics with coupling to an external bath",
+      "J. Chem. Phys.",
+      81, 1984, 3684, 3690 },
+    { "Ryckaert77a",
+      "J. P. Ryckaert and G. Ciccotti and H. J. C. Berendsen",
+      "Numerical Integration of the Cartesian Equations of Motion of a System with Constraints; Molecular Dynamics of n-Alkanes",
+      "J. Comp. Phys.",
+      23, 1977, 327, 341 },
+    { "Miyamoto92a",
+      "S. Miyamoto and P. A. Kollman",
+      "SETTLE: An Analytical Version of the SHAKE and RATTLE Algorithms for Rigid Water Models",
+      "J. Comp. Chem.",
+      13, 1992, 952, 962 },
+    { "Barth95a",
+      "E. Barth and K. Kuczera and B. Leimkuhler and R. D. Skeel",
+      "Algorithms for Constrained Molecular Dynamics",
+      "J. Comp. Chem.",
+      16, 1995, 1192, 1209 },
+    { "Torda89a",
+      "A. E. Torda and R. M. Scheek and W. F. van Gunsteren",
+      "Time-dependent distance restraints in molecular dynamics simulations",
+      "Chem. Phys. Lett.",
+      157, 1989, 289, 294 },
+    { "Tironi95a",
+      "I. G. Tironi and R. Sperb and P. E. Smith and W. F. van Gunsteren",
+      "Generalized reaction field method for molecular dynamics simulations",
+      "J. Chem. Phys",
+      102, 1995, 5451, 5459 },
+    { "Hess97a",
+      "B. Hess and H. Bekker and H. J. C. Berendsen and J. G. E. M. Fraaije",
+      "LINCS: A Linear Constraint Solver for molecular simulations",
+      "J. Comp. Chem.",
+      18, 1997, 1463, 1472 },
+    { "DeGroot97a",
+      "B. L. de Groot and D. M. F. van Aalten and R. M. Scheek and A. Amadei and G. Vriend and H. J. C. Berendsen",
+      "Prediction of Protein Conformational Freedom From Distance Constrains",
+      "Proteins",
+      29, 1997, 240, 251 },
+    { "Spoel98a",
+      "D. van der Spoel and P. J. van Maaren and H. J. C. Berendsen",
+      "A systematic study of water models for molecular simulation. Derivation of models optimized for use with a reaction-field.",
+      "J. Chem. Phys.",
+      108, 1998, 10220, 10230 },
+    { "Wishart98a",
+      "D. S. Wishart and A. M. Nip",
+      "Protein Chemical Shift Analysis: A Practical Guide",
+      "Biochem. Cell Biol.",
+      76, 1998, 153, 163 },
+    { "Maiorov95",
+      "V. N. Maiorov and G. M. Crippen",
+      "Size-Independent Comparison of Protein Three-Dimensional Structures",
+      "PROTEINS: Struct. Funct. Gen.",
+      22, 1995, 273, 283 },
+    { "Feenstra99",
+      "K. A. Feenstra and B. Hess and H. J. C. Berendsen",
+      "Improving Efficiency of Large Time-scale Molecular Dynamics Simulations of Hydrogen-rich Systems",
+      "J. Comput. Chem.",
+      20, 1999, 786, 798 },
+    { "Lindahl2001a",
+      "E. Lindahl and B. Hess and D. van der Spoel",
+      "GROMACS 3.0: A package for molecular simulation and trajectory analysis",
+      "Submitted",
+      0, 2001, 0, 0 }
   };
 #define NSTR (int)asize(citedb)
   
-  int  j,index,year,vol,p1,p2;
-  char *ptr[3];
+  int  j,index;
+  char *author;
+  char *title;
 #define LINE_WIDTH 79
   
-  index = search_str(NSTR,citedb,key);
+  for(index=0; (index<NSTR) && (strcmp(citedb[index].key,key) != 0); index++)
+    ;
   
   fprintf(fp,"\n++++++++ PLEASE CITE THE FOLLOWING REFERENCE ++++++++\n");
-  if ((index != -1) && (index+4 < NSTR)) {
-    if (sscanf(citedb[index+4],"%d%d%d%d",&vol,&year,&p1,&p2) != 4) {
-      vol=year=p1=p2=0;
-    }
+  if (index < NSTR) {
     /* Insert newlines */
-    for(j=1; (j<=3); j++) 
-      ptr[j-1] = wrap_lines(citedb[index+j],LINE_WIDTH,0);
+    author = wrap_lines(citedb[index].author,LINE_WIDTH,0);
+    title  = wrap_lines(citedb[index].title,LINE_WIDTH,0);
     fprintf(fp,"%s\n%s\n%s %d (%d) pp. %d-%d\n",
-            ptr[0],ptr[1],ptr[2],
-            vol,year,p1,p2);
-    for(j=0; (j<3); j++)
-      sfree(ptr[j]);
+	    author,title,citedb[index].journal,
+	    citedb[index].volume,citedb[index].year,
+	    citedb[index].p0,citedb[index].p1);
+    sfree(author);
+    sfree(title);
   }
   else {
     fprintf(fp,"Entry %s not found in citation database\n",key);
