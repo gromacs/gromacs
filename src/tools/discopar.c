@@ -38,6 +38,9 @@
 #endif
 
 #include "typedefs.h"
+#ifdef GMX_MPI
+#include "mpi.h"
+#endif
 #include "network.h"
 #include "smalloc.h"
 #include "vec.h"
@@ -199,7 +202,7 @@ static int recv_coords(t_commrec *cr,int *nviol,int *nit,int *k,
   gmx_rx(MPI_ANY_SOURCE,record(nodeid));
   do {
     usleep(1000);
-  } while (!mpiio_rx_probe(MPI_ANY_SOURCE));
+  } while (!gmx_rx_probe(MPI_ANY_SOURCE));
 #endif
   
   debug_gmx();
