@@ -167,14 +167,22 @@ static void reset_energies(t_grpopts *opts,t_groups *grp,
  * now. 
  * The function should return the energy due to the electric field
  * (if any) but for now returns 0.
+ *
+ * WARNING:
+ * There can be problems with the virial.
+ * Since the field is not self-consistent this is unavoidable.
+ * For neutral molecules the virial is correct within this approximation.
+ * For neutral systems with many charged molecules the error is small.
+ * But for systems with a net charge or a few charged molecules
+ * the error can be significant when the field is high.
+ * Solution: implement a self-consitent electric field into PME.
  */
 static void calc_f_el(FILE *fp,int  start,int homenr,
 		      real charge[],rvec x[],rvec f[],
-		      t_cosines Ex[],t_cosines Et[],real t,
-		      tensor vir_part)
+		      t_cosines Ex[],t_cosines Et[],real t)
 {
   rvec Ext;
-  real t0,f_el;
+  real t0;
   int  i,m;
   
   for(m=0; (m<DIM); m++) {
@@ -191,16 +199,8 @@ static void calc_f_el(FILE *fp,int  start,int homenr,
     if (Ex[m].n) {
       /* Convert the field strength from V/nm to MD-units */
       Ext[m] *= Ex[m].a[0]*FIELDFAC;
-      for(i=start; (i<start+homenr); i++) {
-	f_el = charge[i]*Ext[m];
-	f[i][m] += f_el;
-	/* Because the virial is calculated later from the forces
-	 * we need to subtract the contribution of the electric field.
-	 */
-	vir_part[XX][m] += 0.5*x[i][XX]*f_el;
-	vir_part[YY][m] += 0.5*x[i][YY]*f_el;
-	vir_part[ZZ][m] += 0.5*x[i][ZZ]*f_el;
-      }
+      for(i=start; (i<start+homenr); i++)
+	f[i][m] += charge[i]*Ext[m];
     }
     else
       Ext[m] = 0;
@@ -341,8 +341,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 
   /* Compute forces due to electric field */
   calc_f_el(MASTER(cr) ? field : NULL,
-	    start,homenr,mdatoms->chargeA,x,f,parm->ir.ex,parm->ir.et,t,
-	    vir_part);
+	    start,homenr,mdatoms->chargeA,x,f,parm->ir.ex,parm->ir.et,t);
 
   /* When using PME/Ewald we compute the long range virial (pme_vir) there.
    * otherwise we do it based on long range forces from twin range
