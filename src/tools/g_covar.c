@@ -71,9 +71,9 @@ int main(int argc,char *argv[])
     { "-mwa",  FALSE, etBOOL, &bM,
       "Mass weighted covariance analysis"},
     { "-first", FALSE, etINT, &begin,     
-      "first eigenvector to write away" },
+      "First eigenvector to write away" },
     { "-last",  FALSE, etINT, &end, 
-      "last eigenvector to write away (-1 is till the last)" }
+      "Last eigenvector to write away (-1 is till the last)" }
   };
   FILE       *out;
   int        status,trjout;
@@ -143,8 +143,10 @@ int main(int argc,char *argv[])
     for (i=0; (i<natoms) && !bDiffMass1; i++)
       bDiffMass1 = index[i] != ifit[i];
     if (!bDiffMass1) {
-      fprintf(stderr,"\nNote: the fit and analysis group are identical, while the fit is mass weighted\n"
-	               "      and the analysis is not. Making the fit non mass weighted.\n\n");
+      fprintf(stderr,"\n"
+	      "Note: the fit and analysis group are identical,\n"
+	      "      while the fit is mass weighted and the analysis is not.\n"
+	      "      Making the fit non mass weighted.\n\n");
       for(i=0; (i<nfit); i++)
 	w_rls[ifit[i]]=1.0;
     }

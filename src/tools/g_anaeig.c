@@ -463,9 +463,10 @@ int main(int argc,char *argv[])
     "writing a [TT].pdb[tt] file with two or three strcutures",
     "(you can use [TT]rasmol -nmrpdb[tt] to view such a pdb file).[PAR]",
     "[TT]-over[tt]: calculate the subspace overlap of the eigenvectors in",
-    "file [TT]-v2[tt] with eigenvectors [TT]-first[tt] to [TT]-last[tt].[PAR]",
-    "[TT]-inpr[tt]: calculate a matrix of inner-products between two sets",
-    "of eigenvectors."
+    "file [TT]-v2[tt] with eigenvectors [TT]-first[tt] to [TT]-last[tt]",
+    "in file [TT]-v[tt].[PAR]",
+    "[TT]-inpr[tt]: calculate a matrix of inner-products between eigenvectors",
+    "in files [TT]-v[tt] and [TT]-v2[tt]."
   };
   static int  first=1,last=8,skip=1,nextr=2;
   static real max=0.0;
@@ -501,18 +502,18 @@ int main(int argc,char *argv[])
   char       *OverlapFile,*InpMatFile;
   bool       bM,bIndex,bTPS,bTop,bVec2,bProj,bFirstToLast,bTraj;
   t_filenm fnm[] = { 
-    { efTRN, "-v", "eigenvec", ffREAD },
-    { efTRN, "-v2", "eigenvec2", ffOPTRD },
-    { efTRX, "-f", NULL, ffOPTRD }, 
-    { efTPS, NULL, NULL, ffOPTRD },
-    { efNDX, NULL, NULL, ffOPTRD },
-    { efXVG, "-comp", "eigcomp", ffOPTWR },
-    { efXVG, "-proj", "proj", ffOPTWR },
-    { efXVG, "-2d", "2dplot", ffOPTWR },
-    { efTRX, "-filt", "filtered", ffOPTWR },
+    { efTRN, "-v",    "eigenvec",    ffREAD  },
+    { efTRN, "-v2",   "eigenvec2",   ffOPTRD },
+    { efTRX, "-f",    NULL,          ffOPTRD }, 
+    { efTPS, NULL,    NULL,          ffOPTRD },
+    { efNDX, NULL,    NULL,          ffOPTRD },
+    { efXVG, "-comp", "eigcomp",     ffOPTWR },
+    { efXVG, "-proj", "proj",        ffOPTWR },
+    { efXVG, "-2d",   "2dproj",      ffOPTWR },
+    { efTRX, "-filt", "filtered",    ffOPTWR },
     { efTRX, "-extr", "extreme.pdb", ffOPTWR },
-    { efXVG, "-over", "overlap", ffOPTWR },
-    { efXPM, "-inpr", "inprod", ffOPTWR }
+    { efXVG, "-over", "overlap",     ffOPTWR },
+    { efXPM, "-inpr", "inprod",      ffOPTWR }
   }; 
 #define NFILE asize(fnm) 
 
