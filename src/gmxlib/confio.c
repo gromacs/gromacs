@@ -179,10 +179,8 @@ int read_g96_conf(FILE *fp,char *infile,t_trxframe *fr)
   static char line[STRLEN+1]; /* VERY DIRTY, you can not read two       *
 		               * Gromos96 trajectories at the same time */  
   bool   bAtStart,bTime,bAtoms,bPos,bVel,bBox,bEnd,bFinished;
-  int    nwanted,natoms;
+  int    natoms;
   double db1,db2,db3;
-
-  nwanted = fr->natoms;
 
   bAtStart = (ftell(fp) == 0);
 
@@ -1004,7 +1002,7 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
   case efTPB:
   case efTPA: 
     snew(top,1);
-    read_tpx(infile,&i1,&r1,&r2,NULL,box,&i1,x,v,NULL,top);
+    read_tpx(infile,&i1,&r1,&r2,NULL,box,&natoms,x,v,NULL,top);
     
     strcpy(title,*(top->name));
     /* Scalars */
