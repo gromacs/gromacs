@@ -207,11 +207,11 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   int        fp_ene; 
   t_mdebin   *mdebin; 
   t_nrnb mynrnb; 
-  bool   bNS=TRUE,bDone,bLR,bLJLR,bBHAM,b14; 
+  bool   bNS=TRUE,bDone,bAbort,bLR,bLJLR,bBHAM,b14; 
   time_t start_t; 
   tensor force_vir,shake_vir; 
   rvec   mu_tot;
-  int    number_steps;
+  int    nsteps;
   int    count=0; 
   int    i,m,start,end; 
   int    Min=0; 
@@ -274,7 +274,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   ftol=parm->ir.em_tol; 
   
   /* Max number of steps  */
-  number_steps=parm->ir.nsteps; 
+  nsteps=parm->ir.nsteps; 
   
   if (MASTER(cr)) { 
     /* Print to the screen  */
@@ -285,12 +285,17 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     fprintf(log,"   Tolerance         = %12.5g\n",ftol); 
     } 
     
-  /* Here starts the loop, count is the counter for the number of steps 
-   * bDone is a BOOLEAN variable, which will be set TRUE when 
-   * the minimization has converged. 
+  /**** HERE STARTS THE LOOP ****
+   * count is the counter for the number of steps 
+   * bDone will be TRUE when the minimization has converged
+   * bAbort will be TRUE when nsteps steps have been performed or when
+   * the stepsize becomes smaller than is reasonable for machine precision
    */
-  for(count=0,bDone=FALSE;  
-      !(bDone || ((number_steps > 0) && (count==number_steps))); count++) { 
+  count=0;
+  bDone=FALSE;
+  bAbort=FALSE;
+  while( !bDone && !bAbort ) {
+    bAbort = (nsteps > 0) && (count==nsteps);
     
     /* set new coordinates, except for first step */
     if (count>0)
@@ -329,55 +334,42 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     /* This is the new energy  */
 #ifdef FORCE_CRIT 
-    Fsqrt[TRY]=f_sqrt(log,cr->left,cr->right,nsb->nprocs,start,end,force[TRY]); 
+    Fsqrt[TRY]=f_sqrt(log,cr->left,cr->right,nsb->nprocs,start,end,force[TRY]);
 #endif 
     Epot[TRY]=ener[F_EPOT]; 
     
+#ifdef FORCE_CRIT
+#define ACCEPT_STEP (Fsqrt[TRY] < Fsqrt[Min])
+#else
+#define ACCEPT_STEP (Epot[TRY] < Epot[Min])
+#endif
+    
     /* Print it if necessary  */
-#ifdef FORCE_CRIT 
     if (bVerbose && MASTER(cr)) { 
-      fprintf(stderr,
-	      "Step = %5d, Dx = %12.5e, Epot = %12.5e rmsF = %12.5e%c",
-	      count,step,Epot[TRY],Fsqrt[TRY], 
- 	      (Fsqrt[TRY] < Fsqrt[Min])?'\n':'\r');
-      
-      if (Fsqrt[TRY] < Fsqrt[Min]) {
+#ifdef FORCE_CRIT 
+      fprintf(stderr,"Step = %5d, Dx = %12.5e, Epot = %12.5e rmsF = %12.5e%c",
+	      count,step,Epot[TRY],Fsqrt[TRY],ACCEPT_STEP?'\n':'\r');
+#else 
+      fprintf(stderr,"Step = %5d, Dx = %12.5e, E-Pot = %30.20e%c", 
+ 	      count,step,Epot[TRY],ACCEPT_STEP?'\n':'\r' ); 
+#endif 
+      if ( ACCEPT_STEP ) {
 	/* Store the new (lower) energies  */
 	upd_mdebin(mdebin,mdatoms->tmass,count,ener,parm->box,shake_vir, 
- 		 force_vir,parm->vir,parm->pres,grps,mu_tot); 
+		   force_vir,parm->vir,parm->pres,grps,mu_tot); 
 	/* Print the energies allways when we should be verbose  */
 	if (MASTER(cr)) 
 	  print_ebin(fp_ene,TRUE,FALSE,log,count,count,lambda,
 		     0.0,eprNORMAL,TRUE,mdebin,grps,&(top->atoms));
       }
     } 
-#else 
-    if (bVerbose && MASTER(cr)) { 
-      fprintf(stderr,"Step = %5d, Dx = %12.5e, E-Pot = %30.20e%c", 
- 	      count,step,Epot[TRY],(Epot[TRY] < Epot[Min])?'\n':'\r' ); 
-      
-      if (Epot[TRY] < Epot[Min]) {
-	/* Store the new (lower) energies  */
-	upd_mdebin(mdebin,mdatoms->tmass,count,ener,parm->box,shake_vir, 
-		   force_vir,parm->vir,parm->pres,grps); 
-	/* Print the energies allways when we should be verbose  */
-	if (MASTER(cr)) 
-	  print_ebin(fp_ene,log,count,count,lambda,0.0,eprNORMAL,TRUE, 
-		     mdebin,grps,&(top->atoms)); 
-      }
-    } 
-#endif 
     
     /* Now if the new energy is smaller than the previous...  
      * or if this is the first step!
      * or if we did random steps! 
      */
     
-#ifdef FORCE_CRIT 
-    if ( (count==0) || (Fsqrt[TRY] < Fsqrt[Min]) ) { 
-#else 
-    if ( (count==0) || (Epot[TRY] < Epot[Min]) ) { 
-#endif 
+    if ( (count==0) || ACCEPT_STEP ) {
       steps_accepted++; 
       if (do_per_step(steps_accepted,parm->ir.nstfout)) 
 	ff=force[TRY];  
@@ -410,21 +402,25 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       if (count>0)
 	ustep *= 1.2; 
       
-      /*if (MASTER(cr)) 
-	fprintf(stderr,"\n"); */
-    } 
-    else { 
+    } else
       /* If energy is not smaller make the step smaller...  */
-      if (ustep > 1.0e-14)
-	ustep *= 0.5;
-      else
-	ustep = 1.0e-14;
-    }
-     
+      ustep *= 0.5;
+    
     /* Determine new step  */
     fnorm = f_norm(log,cr->left,cr->right,nsb->nprocs,start,end,force[Min]); 
     step=ustep/fnorm;
     
+    /* Check if stepsize is too small
+     * NOTE: this involves machine precision and some compilers might not 
+     * recognize that the expression could return TRUE for small step */
+    if ( 1.0+step == 1.0 ) {
+      fprintf(stderr,"Stepsize too small: "
+	      "ustep=%g (kJ mol-1) fnorm=%g (kJ mol-1 nm-1) step=%g (nm)\n",
+	      ustep,fnorm,step);
+      bAbort=TRUE;
+    }
+    
+    count++;
   } /* End of the loop  */
     
   /* Print some shit...  */
@@ -445,8 +441,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       fprintf(log,"%s converged to %8.6f \n",SD,ftol); 
     } 
     else { 
-      fprintf(stderr,"\n%s did not converge in %d steps\n",SD,number_steps); 
-      fprintf(log,"%s did not converge in %d steps\n",SD,number_steps); 
+      fprintf(stderr,"\n%s did not converge in %d steps\n",SD,nsteps); 
+      fprintf(log,"%s did not converge in %d steps\n",SD,nsteps); 
     } 
 #ifdef FORCE_CRIT 
     fprintf(stderr,"  Minimum Root Mean Square Force  = %12.4e\n",Fsqrt[Min]); 
