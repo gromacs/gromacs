@@ -39,6 +39,8 @@
 #include "mshift.h"
 #include "xvgr.h"
 #include "vec.h"
+#include "do_fit.h"
+#include "confio.h"
 #include "smalloc.h"
 #include "nrnb.h"
 #include "disre.h"
@@ -367,7 +369,7 @@ int gmx_disre(int argc,char *argv[])
   int         status,ntopatoms,natoms,i,j,nv,step,kkk,m;
   real        t,sumv,averv,maxv,lambda;
   real        *aver1,*aver2,*aver_3;
-  rvec        *x,*f,*xav;
+  rvec        *x,*f,*xav=NULL;
   matrix      box;
   bool        bPDB;
   int         isize;
@@ -485,8 +487,13 @@ int gmx_disre(int argc,char *argv[])
     if (bPDB) {
       reset_x(top.atoms.nr,ind_fit,top.atoms.nr,NULL,x,w_rls);
       do_fit(top.atoms.nr,w_rls,x,x);
-      for(kkk=0; (kkk<top.atoms.nr); kkk++)
-	rvec_inc(xav[kkk],x[kkk]);
+      if (j == 0) {
+	/* Store the first frame of the trajectory as 'characteristic'
+	 * for colouring with violations.
+	 */
+	for(kkk=0; (kkk<top.atoms.nr); kkk++)
+	  copy_rvec(x[kkk],xav[kkk]);
+      }
     }
     if (isize > 0) {
       fprintf(xvg,"%10g",t);
@@ -507,12 +514,9 @@ int gmx_disre(int argc,char *argv[])
 	     top.idef.iparams,aver1,aver2,aver_3,isize,index,
 	     bPDB ? (&top.atoms) : NULL);
   if (bPDB) {
-    for(kkk=0; (kkk<top.atoms.nr); kkk++)
-      for(m=0; (m<DIM); m++)
-	xav[kkk][m] /= (double)j;
     write_sto_conf(opt2fn("-q",NFILE,fnm),
 		   "Coloured by average violation in Angstrom",
-		   &(top.atoms),xtop,NULL,box);
+		   &(top.atoms),xav,NULL,box);
   }
   fclose(out);
   fclose(aver);
