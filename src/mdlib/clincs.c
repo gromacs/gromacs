@@ -153,7 +153,7 @@ void clincs(rvec *x,rvec *xp,t_pbc *pbc,int ncons,
       for(n=blnr[b]; n<blnr[b+1]; n++) {
 	blm[n] = blcc[n]*iprod(r[b],r[blbnb[n]]);
       }
-      pbc_dx(pbc,xp[bla1[b]],x[bla2[b]],dx);
+      pbc_dx(pbc,xp[bla1[b]],xp[bla2[b]],dx);
       mvb = blc[b]*(iprod(r[b],dx) - bllen[b]);
       rhs1[b] = mvb;
       sol[b]  = mvb;
