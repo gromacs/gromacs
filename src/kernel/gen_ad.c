@@ -578,12 +578,13 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[])
 	anm = hbexcl->b[e].a[0];
 	i1 = search_atom(anm,astart,atoms->nr,atoms->atom,atoms->atomname);
 	if (i1 == NO_ATID)
-	  fatal_error(0,"atom name %s not found in residue %s %d while generating exclusions",anm,*atoms->resname[r],r+1);
+	  fatal_error(0,"atom name %s not found in residue %s %d while "
+		      "generating exclusions",anm,*atoms->resname[r],r+1);
 	anm = hbexcl->b[e].a[1];
 	i2 = search_atom(anm,astart,atoms->nr,atoms->atom,atoms->atomname);
 	if (i2 == NO_ATID)
-	  fatal_error(0,"atom name %s not found in residue %s %d while generating exclusions",anm,*atoms->resname[r],r+1);
-	srenew(excls[i1].e,excls[i1].nr+1);
+	  fatal_error(0,"atom name %s not found in residue %s %d while "
+		      "generating exclusions",anm,*atoms->resname[r],r+1);
 	if (i1 > i2) {
 	  itmp = i1;
 	  i1 = i2;
