@@ -196,7 +196,11 @@ void mpi_left_right(int nnodes,int nodeid,int *left,int *right)
 void mpiio_tx_rx(int send_nodeid,void *send_buf,int send_bufsize,
 		 int rec_nodeid,void *rec_buf,int rec_bufsize)
 {
-  fatal_error(0,"mpiio_tx_rx not implemented!");
+  int tx_tag = 0,rx_tag = 0;
+  MPI_Status stat;
+  
+  MPI_Sendrecv(send_buf,send_bufsize,MPI_BYTE,send_nodeid,tx_tag,
+	       rec_buf,rec_bufsize,MPI_BYTE,rec_nodeid,rx_tag,MPI_COMM_WORLD,&stat);
 }
 		 
 void mpiio_wait(int left,int right)
