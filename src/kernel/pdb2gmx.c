@@ -519,9 +519,7 @@ int main(int argc, char *argv[])
     "The increase in mass of the hydrogens is subtracted from the bonded",
     "(heavy) atom so that the total mass of the system remains the same."
   };
-  static char *bugs[] = {
-    "It is assumed that atomic coordinates in pdb files are in Angstrom."
-  };
+
   typedef struct {
     char chain;
     int  start;
@@ -635,7 +633,7 @@ int main(int argc, char *argv[])
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,asize(desc),desc,
-		    asize(bugs),bugs);
+		    0,NULL);
   if (bInter) {
     /* if anything changes here, also change description of -inter */
     bCysMan = TRUE;
