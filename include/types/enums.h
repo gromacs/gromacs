@@ -46,6 +46,8 @@ enum {
   eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelNR
 };
 
+#define EEL_LR(e) ((e == eelPPPM) || (e == eelPOISSON) || (e == eelPME))
+
 enum { 
   ensGRID, ensSIMPLE, enNR
 };
