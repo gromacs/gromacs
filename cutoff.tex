@@ -1,49 +1,32 @@
 \subsection{Treatment of cut-offs}
 \newcommand{\rs}{$r_{short}$}
 \newcommand{\rl}{$r_{long}$}
-This section is involved with the practical aspects of treating
-cut-offs.  {\gromacs} is quite flexible in this respect, which implies
+{\gromacs} is quite flexible in treating cut-offs, which implies
 that there are quite a number of parameters to set. The parameters are
 set in the input file for grompp. One should distinguish two parts of
-the parameters: 1$^{st}$ the parameters that describe the function
+the parameters: firstly the parameters that describe the function
 (Coulomb / VDW,
 \tabref{funcparm}) and
-2$^{nd}$ the parameters that describe neighbor searching.
+secondly the parameters that describe neighbor searching.
 
-\begin{table}[b]
-\centering
-\caption[Parameters for the different functional forms of the
-non-bonded interactions.]{Parameters for the different functional
-forms of the non-bonded interactions. Column VDW indicates whether
-this applies to Van der Waals forces as well as to Coulomb.}
-\label{tab:funcparm}
-\begin{tabular}{|l|c|c|l|}
-\dline
-Type		& VDW	& \# params 	& Description		\\
-\hline
-Plain cut-off	& X	& 2		& $r_c$, $\epsr$	\\
-\normindex{Reaction field}
-		&	& 2		& $r_c$, $\epsrf$	\\
-Shift function	& X	& 2		& $r_1$, $r_c$ 		\\
-Switch function &	& 2		& $r_1$, $r_c$ 		\\
-\dline
-\end{tabular}
-\end{table}
-In summary, for both VDW and Coulomb there are a type selector
-({\tt vdw\_type} resp. {\tt eel\_type}) and two parameters (see above), for
-a total of six parameters.
+In summary, for both Coulomb and VdW there are a type selector
+({\tt vdwtype} resp. {\tt coulombtype}) and two parameters,
+for a total of six parameters. See \secref{mdpopt} for a complete
+description of these parameters.
 
 The neighbor searching (NS) maybe done using a single-range, or a twin-range 
 approach. Since the former is merely a special case of the latter we will 
 discuss the more general twin-range. In this case NS is described by two
-radii {\rs} and {\rl}. Usually one builds the neighbor list
-every 10 time steps
+radii {\tt rlist} and max({\tt rcoulomb},{\tt rvdw}).
+Usually one builds the neighbor list every 10 time steps
 or every 20 fs (parameter {\tt nstlist}). In the neighbor list all interaction 
-pairs that  fall within {\rs} are stored. Furthermore, the 
+pairs that  fall within {\tt rlist} are stored. Furthermore, the 
 interactions between pairs that do not
-fall within {\rs} but do fall within {\rl} are computed during NS, and the
+fall within {\tt rlist} but do fall within and max({\tt rcoulomb},{\tt rvdw})
+are computed during NS, and the
 forces and energy are stored separately, and added to short-range forces
-at every time step between successive NS. If {\rs} = {\rl} no forces
+at every time step between successive NS. If {\tt rlist} = 
+max({\tt rcoulomb},{\tt rvdw}) no forces
 are evaluated during neighbor list generation.
 
 Except for the plain cut-off,
@@ -53,15 +36,38 @@ specified for the functional form, because of the use of charge groups.
 The extra radius is typically of the order of 0.25 nm (roughly the 
 largest distance between two atoms in a charge group plus the distance a 
 charge group can diffuse within neighbor list updates).
-If your charge groups are very large it may be interesting to turn off charge
-groups, by setting the option 
-{\tt bAtomList = yes} in your {\tt grompp.mdp} file.
-In this case only a small extra radius to account for diffusion needs to be 
-added (0.1 nm). Do not however use this together with the plain cut-off
-method, as it will generate large artifacts (\secref{cg}).
-In summary, there are four parameters that describe NS behavior:
-{\tt nstlist} (update frequency in number of time steps),
-{\tt bAtomList} (whether or not charge groups are used to generate neighbor list, the default is to use charge groups, so {\tt bAtomList = no}),
-{\tt rshort} and {\tt rlong} which are the two radii {\rs} and {\rl}
-described above.
+
+%If your charge groups are very large it may be interesting to turn off charge
+%groups, by setting the option 
+%{\tt bAtomList = yes} in your {\tt grompp.mdp} file.
+%In this case only a small extra radius to account for diffusion needs to be 
+%added (0.1 nm). Do not however use this together with the plain cut-off
+%method, as it will generate large artifacts (\secref{cg}).
+%In summary, there are four parameters that describe NS behavior:
+%{\tt nstlist} (update frequency in number of time steps),
+%{\tt bAtomList} (whether or not charge groups are used to generate neighbor list, the default is to use charge groups, so {\tt bAtomList = no}),
+%{\tt rshort} and {\tt rlong} which are the two radii {\rs} and {\rl}
+%described above.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|ll|l|}
+\dline
+\multicolumn{2}{|c|}{Type}		& Parameters		\\
+\hline
+Coulomb&Plain cut-off	& $r_c$, $\epsr$	\\
+&Reaction field		& $r_c$, $\epsrf$	\\
+&Shift function		& $r_1$, $r_c$, $\epsr$		\\
+&Switch function 	& $r_1$, $r_c$, $\epsr$		\\
+\hline
+VdW&Plain cut-off	& $r_c$ 	\\
+&Shift function	   	& $r_1$, $r_c$ 		\\
+&Switch function   	& $r_1$, $r_c$ 		\\
+\dline
+\end{tabular}
+\caption[Parameters for the different functional forms of the
+non-bonded interactions.]{Parameters for the different functional
+forms of the non-bonded interactions.}
+\label{tab:funcparm}
+\end{table}
 
