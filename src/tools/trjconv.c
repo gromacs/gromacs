@@ -60,6 +60,52 @@ static char *SRCID_trjconv_c = "$Id$";
 #include "pbc.h"
 #include "viewit.h"
 
+static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],atom_id index[],
+			 rvec xref,matrix box)
+{
+  const real tol=1e-4;
+  bool  bChanged;
+  int   m,j,ai,iter;
+  real  mass,mtot;
+  rvec  dx,xtest;
+  
+  /* First simple calculation */
+  clear_rvec(xref);
+  mtot = 0;
+  for(m=0; (m<nrefat); m++) {
+    ai = index[m];
+    mass = top->atoms.atom[ai].m;
+    for(j=0; (j<DIM); j++)
+      xref[j] += mass*x[ai][j];
+    mtot += mass;
+  }
+  svmul(1/mtot,xref,xref);
+  /* Now check if any atom is more than half the box from the COM */
+  if (box) {
+    iter = 0;
+    do {
+      bChanged = FALSE;
+      for(m=0; (m<nrefat); m++) {
+	ai   = index[m];
+	mass = top->atoms.atom[ai].m/mtot;
+	pbc_dx(x[ai],xref,dx);
+	rvec_add(xref,dx,xtest);
+	for(j=0; (j<DIM); j++)
+	  if (fabs(xtest[j]-x[ai][j]) > tol) {
+	    /* Here we have used the wrong image for contributing to the COM */
+	    xref[j] += mass*(xtest[j]-x[ai][j]);
+	    x[ai][j] = xtest[j];
+	    bChanged = TRUE;
+	  }
+      }
+      if (bChanged && (iter > 0))
+	printf("COM: %8.3f  %8.3f  %8.3f  iter = %d\n",
+	       xref[XX],xref[YY],xref[ZZ],iter);
+      iter++;
+    } while (bChanged);
+  }
+}
+
 static void center_x(rvec x[],matrix box,int n,int nc,atom_id ci[])
 {
   int i,m,ai;
@@ -219,6 +265,11 @@ int main(int argc,char *argv[])
     "molecules may diffuse out of the box. The starting configuration",
     "for this procedure is taken from the structure file, if one is",
     "supplied, otherwise it is the first frame.",
+    "[TT]cluster[tt] clusters all the atoms in the selected index",
+    "such that they are all closest to the center of mass of the cluster",
+    "which is iteratively updated. Note that this will only give meaningful",
+    "results if you in fact have a cluster. Luckily that can be checked",
+    "afterwards using a trajectory viewer.",
     "[TT]-pbc[tt] is ignored when [TT]-fit[tt] of [TT]-pfit[tt] is set,",
     "in that case molecules will be made whole.[PAR]",
     "Option [TT]-ur[tt] sets the unit cell representation for options",
@@ -248,7 +299,7 @@ int main(int argc,char *argv[])
     "one specific time from your trajectory."
   };
   
-  static char *pbc_opt[] = { NULL, "none", "whole", "inbox", "nojump", NULL };
+  static char *pbc_opt[] = { NULL, "none", "whole", "inbox", "nojump", "cluster", NULL };
   static char *unitcell_opt[] = { NULL, "rect", "tric", "compact",
 				  NULL };
 
@@ -271,7 +322,7 @@ int main(int argc,char *argv[])
     { "-timestep", FALSE,  etTIME, {&timestep},
       "Change time step between input frames (%t)" },
     { "-pbc", FALSE,  etENUM, {pbc_opt},
-      "PBC treatment" },
+      "PBC treatment (see help text for full description)" },
     { "-ur", FALSE,  etENUM, {unitcell_opt},
       "Unit-cell representation" },
     { "-center", FALSE,  etBOOL, {&bCenter},
@@ -326,7 +377,7 @@ int main(int argc,char *argv[])
   atom_id      *ind_fit,*ind_rms;
   char         *gn_fit,*gn_rms;
   real         tshift=0,t0=-1,dt=0.001,prec;
-  bool         bPBC,bInBox,bNoJump,bRect,bTric,bComp;
+  bool         bPBC,bInBox,bNoJump,bRect,bTric,bComp,bCluster;
   bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
   bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSplit;
@@ -370,6 +421,7 @@ int main(int argc,char *argv[])
     bPBC      = (strcmp(pbc_opt[0],"whole") == 0);
     bInBox    = (strcmp(pbc_opt[0],"inbox") == 0);
     bNoJump   = (strcmp(pbc_opt[0],"nojump") == 0);
+    bCluster  = (strcmp(pbc_opt[0],"cluster") == 0);
     bRect     = (strcmp(unitcell_opt[0],"rect") == 0);
     bTric     = (strcmp(unitcell_opt[0],"tric") == 0);
     bComp     = (strcmp(unitcell_opt[0],"compact") == 0);
@@ -406,7 +458,7 @@ int main(int argc,char *argv[])
     
     /* Determine whether to read a topology */
     bTPS = (ftp2bSet(efTPS,NFILE,fnm) || 
-	    bPBC || bFit || (ftp == efGRO) || (ftp == efPDB));
+	    bPBC || bCluster || bFit || (ftp == efGRO) || (ftp == efPDB));
 
     /* Determine if when can read index groups */
     bIndex = (bIndex || bTPS);
@@ -440,6 +492,11 @@ int main(int argc,char *argv[])
 
       if (ifit < 3) 
 	fatal_error(0,"Need at least 3 points to fit!\n");
+    }
+    else if (bCluster) {
+      printf("Select group for clustering\n");
+      get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),
+		1,&ifit,&ind_fit,&gn_fit);
     }
     
     if (bIndex) {
@@ -571,6 +628,9 @@ int main(int argc,char *argv[])
       bDTset   = FALSE;
     
       do {
+	if (bCluster)
+	  init_pbc(fr.box);
+	
 	if (!fr.bStep) {
 	  /* set the step */
 	  fr.step = newstep;
@@ -612,6 +672,11 @@ int main(int argc,char *argv[])
 		  for(d=0; d<=m; d++)
 		    fr.x[i][d] -= fr.box[m][d];
 	      }
+	}
+	else if (bCluster && bTPS) {
+	  rvec com;
+	  
+	  calc_com_pbc(ifit,&top,fr.x,ind_fit,com,fr.box);
 	}
       
 	if (bPFit) {
