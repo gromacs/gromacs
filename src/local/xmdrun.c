@@ -69,6 +69,7 @@ static char *SRCID_xmdrun_c = "$Id$";
 #include "edsam.h"
 #include "calcmu.h"
 #include "ionize.h" 
+#include "pppm.h"
 
 real mol_dipole(int k0,int k1,atom_id ma[],rvec x[],real q[])
 {
@@ -91,7 +92,7 @@ real calc_mu_aver(t_commrec *cr,t_nsborder *nsb,rvec x[],real q[],rvec mu,
   real    mu_mol,mu_ave;
   t_atom  *atom;
   t_block *mols;
- 
+  
   start = START(nsb);
   end   = start + HOMENR(nsb);  
   
@@ -453,12 +454,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 {
   t_forcerec *fr;
   t_mdebin   *mdebin;
-  FILE       *ene,*fmu;
+  FILE       *ene;
   int        fp_ene,step,k,n,count;
   double     tcount;
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
-  bool       bNS,bStopCM,bStopRot,bTYZ,bLR,bBHAM,b14,bMU;
+  bool       bNS,bStopCM,bStopRot,bTYZ,bLR,bBHAM,b14;
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
   char       strbuf[256];
@@ -480,11 +481,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   int         nbs;
   t_atomshell *as;
   t_bondshell *bs;
-
-  /* check if "-mu" is used */
-  bMU = opt2bSet("-mu",nfile,fnm);
-  if ((bMU) && MASTER(cr))
-    fmu = opt2FILE("-mu",nfile,fnm,"w");
 
   /* Check whether we have to do dipole stuff */
   if (ftp2bSet(efNDX,nfile,fnm))
@@ -585,7 +581,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
                md,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,
-		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm);
+		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
   clear_rvec(vcm);
 
   /* Compute initial EKin for all.. dit zat er in gmx151 nog wel in???? 
@@ -596,7 +592,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
                md,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,
-		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm);
+		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
   clear_rvec(vcm);
   */
 
@@ -617,15 +613,19 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     printf("starting %s '%s'\n%d steps, %8.1f ps.\n\n",strbuf,
 	   *(top->name),parm->ir.nsteps,parm->ir.nsteps*parm->ir.delta_t);
   }
-
-  /* Initiate PPPM if necessary 
+  
+  /* Initiate PPPM if necessary */
   if (fr->eeltype == eelPPPM) {
-    bool bGGhat = ! fexist(ftp2fn(efHAT,nfile,fnm));
-    (void)do_pppm(log,FALSE,bGGhat,ftp2fn(efHAT,nfile,fnm),
+    char *ghatfn = ftp2fn(efHAT,nfile,fnm);
+    bool bGGhat = !fexist(ghatfn);
+    
+    fprintf(stderr,"Ghat function '%s' does %sexist\n",
+	    ghatfn,bGGhat ? "not " : "");
+    (void)do_pppm(log,FALSE,bGGhat,ghatfn,
 		  &parm->ir,top->atoms.nr,x,f,md->chargeT,box_size,
 		  fr->phi,cr,&mynrnb);
   }
-  */
+  
 
   /***********************************************************
    *
@@ -647,7 +647,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       bStopRot=do_per_step(step,-parm->ir.nstcomm);
     }
     
-    ionize(log,md,top->atoms.atomname,t,&parm->ir);
+    ionize(log,md,top->atoms.atomname,t,&parm->ir,v);
 
     /* Determine whether or not to do Neighbour Searching */
     bNS=((parm->ir.nstlist && ((step % parm->ir.nstlist)==0)) || (step==0));
@@ -665,11 +665,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     */
 
     /* Calculate total dipole moment if necessary */
-    if (bMU) {
-      calc_mu(cr,nsb,x,md->chargeT,mu_tot);
-      if (MASTER(cr))
-	write_mu(fmu,mu_tot,parm->box);
-    }
+    calc_mu(nsb,x,md->chargeT,mu_tot);
 
     mu_aver=calc_mu_aver(cr,nsb,x,md->chargeA,mu_tot,top,md,gnx,grpindex);
     
@@ -743,7 +739,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Copy the partial virial to the global virial (to be summed) */
     if (PAR(cr)) {
       global_stat(log,cr,ener,force_vir,shake_vir,
-                  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm);
+                  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
       if (!bNS)
         for(i=0; (i<grps->estat.nn); i++)
           grps->estat.ee[egLR][i] /= cr->nprocs;
@@ -790,7 +786,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		  &(parm->ir),MASTER(cr),md,&(top->idef),mu_aver);
     
     upd_mdebin(mdebin,md->tmass,step,ener,parm->box,shake_vir,
-               force_vir,parm->vir,parm->pres,grps);
+               force_vir,parm->vir,parm->pres,grps,mu_tot);
                
     where();
     if ((MASTER(cr) && do_per_step(step,parm->ir.nstprint))) {
@@ -828,9 +824,6 @@ int main(int argc,char *argv[])
     "xmdrun is the experimental MD program. New features are tested in this",
     "program before being implemented in the default mdrun. Currently under",
     "investigation are: polarizibility, glass and Free energy perturbation.",
-    "When the [BB]-mu[bb] option is given the total dipole of the simulation",
-    "box will be written to a file at every step of the simulation.",
-    "This file is in binary and can only be read by [TT]g_dipoles[tt]."
   };
 
   t_commrec    *cr;
@@ -839,11 +832,11 @@ int main(int argc,char *argv[])
     { efTRJ, "-o", NULL,       ffWRITE },
     { efXTC, "-x", NULL,       ffOPTWR },
     { efGRO, "-c",  "confout", ffWRITE },
-    { efGCT, "-j",  "wham",    FALSE },
-    { efGCT, "-jo", "bam",     FALSE },
+    { efGCT, "-j",  "wham",    ffOPTRD },
+    { efGCT, "-jo", "bam",     ffOPTRD },
+    { efHAT, "-hat","ghat",    ffOPTRD },
     { efENX, "-e",  "ener",    ffWRITE },
     { efLOG, "-g",  "md",      ffWRITE },
-    { efDAT, "-mu", "dipole",  ffOPTWR },
     { efNDX, "-n",  "mols",    ffREAD }
   };
 #define NFILE asize(fnm)
@@ -867,19 +860,18 @@ int main(int argc,char *argv[])
 
   t_edsamyn edyn;
   
-  stdlog = stderr;
-  
-  get_pargs(&argc,argv,asize(pa),pa,TRUE);
-  cr = init_par(argv);
-  bVerbose = bVerbose && MASTER(cr);
+  cr          = init_par(argv);
+  bVerbose    = bVerbose && MASTER(cr);
   edyn.bEdsam = FALSE;
   
-  if (MASTER(cr)) {
+  if (MASTER(cr)) 
     CopyRight(stderr,argv[0]);
-    parse_common_args(&argc,argv,
-		      PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_NOGET_PARGS,
-		      TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
-  }	      
+    
+  parse_common_args(&argc,argv,
+		    PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | 
+		    (MASTER(cr) ? 0 : PCA_QUIET),
+		    TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
   
   if (MASTER(cr)) {
@@ -887,6 +879,9 @@ int main(int argc,char *argv[])
     please_cite(stdlog,"Berendsen95a");
   }
 
+  if (opt2bSet("-ei",NFILE,fnm)) 
+    ed_open(NFILE,fnm,&edyn);
+    
   mdrunner(cr,NFILE,fnm,bVerbose,bCompact,nDLB,FALSE,nstepout,&edyn);
   
   exit(0);
