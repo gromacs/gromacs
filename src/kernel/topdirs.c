@@ -37,34 +37,6 @@ static char *SRCID_topdirs_c = "$Id$";
 #include "string2.h"
 #include "topdirs.h"
 
-static char *ds[d_maxdir+1] = {
-  "defaults",
-  "atomtypes",
-  "bondtypes",
-  "pairtypes",
-  "angletypes",
-  "dihedraltypes",
-  "nonbond_params",
-  "blocktype",
-  "moleculetype",
-  "atoms",
-  "dummies2",
-  "dummies3",
-  "dummies4",
-  "bonds",
-  "exclusions",
-  "pairs",
-  "angles",
-  "dihedrals",
-  "constraints",
-  "settles",
-  "system",
-  "molecules",
-  "position_restraints",
-  "distance_restraints",
-  "invalid"
-  };
-
 int ifunc_index(directive d,int type)
 {
   switch (d) {

@@ -99,6 +99,34 @@ typedef enum {
   d_none
 } directive;
 
+static char *ds[d_maxdir+1] = {
+  "defaults",
+  "atomtypes",
+  "bondtypes",
+  "pairtypes",
+  "angletypes",
+  "dihedraltypes",
+  "nonbond_params",
+  "blocktype",
+  "moleculetype",
+  "atoms",
+  "dummies2",
+  "dummies3",
+  "dummies4",
+  "bonds",
+  "exclusions",
+  "pairs",
+  "angles",
+  "dihedrals",
+  "constraints",
+  "settles",
+  "system",
+  "molecules",
+  "position_restraints",
+  "distance_restraints",
+  "invalid"
+  };
+
 extern void convert_harmonics(int nrmols,t_molinfo mols[],t_atomtype *atype);
 
 #endif	/* _grompp_h */
