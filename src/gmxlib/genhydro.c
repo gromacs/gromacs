@@ -224,7 +224,7 @@ static int check_atoms_present(t_atoms *pdba, int nab[], t_hack *ab[])
 	  /* we found the added atom, so move the hack there: */
 	  srenew(ab[k], nab[k]+1);
 	  ab[k][nab[k]] = ab[i][j];
-	  ab[k][nab[k]].oname = ab[k][nab[k]].nname;
+	  ab[k][nab[k]].oname = strdup(ab[k][nab[k]].nname);
 	  /* reset any possible new coordinates: */
 	  for(d=0; d<DIM; d++)
 	    ab[k][nab[k]].newx[d]=NOTSET;
