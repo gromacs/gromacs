@@ -88,11 +88,8 @@ void init_nnb(t_nextnb *nnb, int nr, int nrex)
 
 static void add_nnb (t_nextnb *nnb, int nre, int i, int j)
 {
-  /* Just a little shortcut into nnb array */
-  int index = nnb->nrexcl[i][nre];
-
-  srenew(nnb->a[i][nre],index+1);
-  nnb->a[i][nre][index] = j;
+  srenew(nnb->a[i][nre],nnb->nrexcl[i][nre]+1);
+  nnb->a[i][nre][nnb->nrexcl[i][nre]] = j;
   nnb->nrexcl[i][nre]++;
 }
 
@@ -101,7 +98,7 @@ void done_nnb (t_nextnb *nnb)
   int i,nre;
   
   for (i=0; (i < nnb->nr); i++) {
-    for (nre=0; (nre < nnb->nrex); nre++)
+    for (nre=0; (nre <= nnb->nrex); nre++)
       if (nnb->nrexcl[i][nre] > 0)
 	sfree (nnb->a[i][nre]);
     sfree (nnb->nrexcl[i]);
