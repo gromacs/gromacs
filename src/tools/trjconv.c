@@ -310,7 +310,7 @@ int main(int argc,char *argv[])
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bToldYouOnce=FALSE;
   bool         bHaveNextFrame,bHaveX,bHaveV,bSetBox;
   char         *grpnm;
-  char         *top_file,*in_file,*out_file,out_file2[256];
+  char         *top_file,*in_file,*out_file,out_file2[256],*charpt;
   char         top_title[256],title[256],command[256],filemode[5];
   int          xdr;
 
@@ -419,8 +419,14 @@ int main(int argc,char *argv[])
     bIndex = (bIndex || bTPS);
     
     if (bTPS) {
-      read_tps_conf(top_file,title,&top,&xp,NULL,box,bFit);
+      read_tps_conf(top_file,top_title,&top,&xp,NULL,box,bFit);
       atoms=&top.atoms;
+      /* top_title is only used for gro and pdb,
+       * the header in such a file is top_title t= ...
+       * to prevent a double t=, remove it from top_title
+       */
+      if (charpt=strstr(top_title," t= "))
+	  charpt[0]='\0';
     }
 
     if (bFit) {

@@ -573,9 +573,6 @@ static bool pdb_next_x(FILE *status,real *t,int natoms,rvec x[],matrix box)
   na=read_pdbfile(status, title, &atoms, x, box, TRUE);
   if (box[XX][XX] == 0)
     box[XX][XX]=box[YY][YY]=box[ZZ][ZZ]=10;
-  /*
-  fprintf(stderr,"\rRead frame %6d",frame++);
-  */
   time=strstr(title," t= ");
   if (time)
     sscanf(time+4,"%g",t);
@@ -647,6 +644,8 @@ int read_first_x(int *status,char *fn,
     break;
   case efPDB:
     natoms=pdb_first_x(fio_getfp(fp),t,x,box);
+    if (natoms)
+      printread(*t);
     break;
   case efGRO:
     natoms=gro_first_x(fio_getfp(fp),t,x,box);
