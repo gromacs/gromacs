@@ -245,7 +245,10 @@ void write_xtc_traj(FILE *log,t_commrec *cr,
 	}
       }
     }
-    write_xtc(xd,natoms,step,t,box,x_sel,prec);
+    if (write_xtc(xd,natoms,step,t,box,x_sel,prec) != 0) {
+      fprintf(stderr,"XTC error. Quitting %s\n",Program());
+      exit(1);
+    }
   }
 }
 
