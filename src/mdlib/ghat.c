@@ -33,7 +33,7 @@ static char *SRCID_ghat_c = "$Id$";
 #include "futil.h"
 #include "vec.h"
 #include "physics.h"
-#include "lrutil.h"
+#include "shift_util.h"
 #include "fftgrid.h"
 #include "xvgr.h"
 

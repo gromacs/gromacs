@@ -2,7 +2,7 @@
 #include <math.h>
 #include "poisson.h"
 #include "nrnb.h"
-#include "lrutil.h"
+#include "shift_util.h"
 	
 real ps_gather_inner(int JCXYZ[],real WXYZ[],int ixw[],int iyw[],int izw[],
 		     real c1x,real c1y,real c1z,real c2x,real c2y,real c2z,

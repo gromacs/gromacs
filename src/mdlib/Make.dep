@@ -555,7 +555,7 @@ $(LIB)(ewald.o): $(GMXHOME)/src/include/macros.h
 $(LIB)(ewald.o): $(GMXHOME)/src/include/complex.h
 $(LIB)(ewald.o): $(GMXHOME)/src/include/smalloc.h
 $(LIB)(ewald.o): $(GMXHOME)/src/include/futil.h
-$(LIB)(ewald.o): $(GMXHOME)/src/include/lrutil.h
+$(LIB)(ewald.o): $(GMXHOME)/src/include/ewald_util.h
 $(LIB)(ewald.o): $(GMXHOME)/src/include/fftgrid.h
 $(LIB)(ewald.o): $(GMXHOME)/src/include/fftw.h
 $(LIB)(ewald.o): $(GMXHOME)/src/include/rfftw.h
@@ -651,7 +651,8 @@ $(LIB)(force.o): $(GMXHOME)/src/include/mshift.h
 $(LIB)(force.o): $(GMXHOME)/src/include/txtdump.h
 $(LIB)(force.o): $(GMXHOME)/src/include/tpxio.h
 $(LIB)(force.o): $(GMXHOME)/src/include/xdrf.h
-$(LIB)(force.o): $(GMXHOME)/src/include/lrutil.h
+$(LIB)(force.o): $(GMXHOME)/src/include/shift_util.h
+$(LIB)(force.o): $(GMXHOME)/src/include/ewald_util.h
 $(LIB)(force.o): $(GMXHOME)/src/include/complex.h
 $(LIB)(force.o): $(GMXHOME)/src/include/pppm.h
 $(LIB)(force.o): $(GMXHOME)/src/include/fftgrid.h
@@ -694,7 +695,7 @@ $(LIB)(ghat.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(ghat.o): $(GMXHOME)/src/include/maths.h
 $(LIB)(ghat.o): $(GMXHOME)/src/include/macros.h
 $(LIB)(ghat.o): $(GMXHOME)/src/include/physics.h
-$(LIB)(ghat.o): $(GMXHOME)/src/include/lrutil.h
+$(LIB)(ghat.o): $(GMXHOME)/src/include/shift_util.h
 $(LIB)(ghat.o): $(GMXHOME)/src/include/complex.h
 $(LIB)(ghat.o): $(GMXHOME)/src/include/fftgrid.h
 $(LIB)(ghat.o): $(GMXHOME)/src/include/fftw.h
@@ -1113,7 +1114,7 @@ $(LIB)(pme.o): $(GMXHOME)/src/include/macros.h
 $(LIB)(pme.o): $(GMXHOME)/src/include/complex.h
 $(LIB)(pme.o): $(GMXHOME)/src/include/smalloc.h
 $(LIB)(pme.o): $(GMXHOME)/src/include/futil.h
-$(LIB)(pme.o): $(GMXHOME)/src/include/lrutil.h
+$(LIB)(pme.o): $(GMXHOME)/src/include/ewald_util.h
 $(LIB)(pme.o): $(GMXHOME)/src/include/fftgrid.h
 $(LIB)(pme.o): $(GMXHOME)/src/include/fftw.h
 $(LIB)(pme.o): $(GMXHOME)/src/include/rfftw.h
@@ -1154,7 +1155,7 @@ $(LIB)(poisson.o): $(GMXHOME)/src/include/types/parm.h
 $(LIB)(poisson.o): $(GMXHOME)/src/include/types/matrix.h
 $(LIB)(poisson.o): $(GMXHOME)/src/include/types/edsams.h
 $(LIB)(poisson.o): $(GMXHOME)/src/include/types/pulls.h
-$(LIB)(poisson.o): $(GMXHOME)/src/include/lrutil.h
+$(LIB)(poisson.o): $(GMXHOME)/src/include/shift_util.h
 $(LIB)(poisson.o): $(GMXHOME)/src/include/complex.h
 $(LIB)(poisson.o): $(GMXHOME)/src/include/macros.h
 $(LIB)(poisson.o): $(GMXHOME)/src/include/physics.h
@@ -1214,7 +1215,7 @@ $(LIB)(pppm.o): $(GMXHOME)/src/include/complex.h
 $(LIB)(pppm.o): $(GMXHOME)/src/include/fftgrid.h
 $(LIB)(pppm.o): $(GMXHOME)/src/include/fftw.h
 $(LIB)(pppm.o): $(GMXHOME)/src/include/rfftw.h
-$(LIB)(pppm.o): $(GMXHOME)/src/include/lrutil.h
+$(LIB)(pppm.o): $(GMXHOME)/src/include/shift_util.h
 $(LIB)(pppm.o): $(GMXHOME)/src/include/mdrun.h
 $(LIB)(pppm.o): $(GMXHOME)/src/include/tgroup.h
 $(LIB)(pppm.o): $(GMXHOME)/src/include/filenm.h
@@ -1258,7 +1259,7 @@ $(LIB)(psgather.o): $(GMXHOME)/src/include/types/matrix.h
 $(LIB)(psgather.o): $(GMXHOME)/src/include/types/edsams.h
 $(LIB)(psgather.o): $(GMXHOME)/src/include/types/pulls.h
 $(LIB)(psgather.o): $(GMXHOME)/src/include/nrnb.h
-$(LIB)(psgather.o): $(GMXHOME)/src/include/lrutil.h
+$(LIB)(psgather.o): $(GMXHOME)/src/include/shift_util.h
 $(LIB)(psgather.o): $(GMXHOME)/src/include/complex.h
 $(LIB)(pssolve.o): $(GMXHOME)/src/include/typedefs.h
 $(LIB)(pssolve.o): $(GMXHOME)/src/include/sysstuff.h
@@ -1327,7 +1328,7 @@ $(LIB)(psspread.o): $(GMXHOME)/src/include/types/edsams.h
 $(LIB)(psspread.o): $(GMXHOME)/src/include/types/pulls.h
 $(LIB)(psspread.o): $(GMXHOME)/src/include/macros.h
 $(LIB)(psspread.o): $(GMXHOME)/src/include/nrnb.h
-$(LIB)(psspread.o): $(GMXHOME)/src/include/lrutil.h
+$(LIB)(psspread.o): $(GMXHOME)/src/include/shift_util.h
 $(LIB)(psspread.o): $(GMXHOME)/src/include/complex.h
 $(LIB)(psspread.o): $(GMXHOME)/src/include/physics.h
 $(LIB)(pull.o): $(GMXHOME)/src/include/fatal.h

@@ -42,7 +42,7 @@ static char *SRCID_pppm_c = "$Id$";
 #include "assert.h"
 #include "nrnb.h"
 #include "pppm.h"
-#include "lrutil.h"
+#include "shift_util.h"
 #include "mdrun.h"
 #include "fftgrid.h"
 #include "pme.h"

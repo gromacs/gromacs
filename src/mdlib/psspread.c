@@ -3,7 +3,7 @@
 #include "smalloc.h"
 #include "vec.h"
 #include "nrnb.h"
-#include "lrutil.h"
+#include "shift_util.h"
 #include "poisson.h"
 #include "physics.h"
 

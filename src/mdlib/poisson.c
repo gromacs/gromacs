@@ -2,7 +2,7 @@
 #include <math.h>
 #include "smalloc.h"
 #include "typedefs.h"
-#include "lrutil.h"
+#include "shift_util.h"
 #include "macros.h"
 #include "physics.h"
 #include "nrnb.h"

@@ -25,7 +25,7 @@
  * And Hey:
  * GROningen MAchine for Chemical Simulation
  */
-static char *SRCID_pme_c = "$Id$";
+static char *SRCID_ewald_c = "$Id$";
 
 #include <stdio.h>
 #include <math.h>
@@ -34,7 +34,8 @@ static char *SRCID_pme_c = "$Id$";
 #include "complex.h"
 #include "smalloc.h"
 #include "futil.h"
-#include "lrutil.h"
+#include "ewald_util.h"
+#include "shift_util.h"
 #include "fftgrid.h"
 #include "fatal.h"
 #include "physics.h"

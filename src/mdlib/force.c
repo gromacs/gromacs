@@ -50,7 +50,8 @@ static char *SRCID_force_c = "$Id$";
 #include "bondf.h"
 #include "mshift.h"
 #include "txtdump.h"
-#include "lrutil.h"
+#include "ewald_util.h"
+#include "shift_util.h"
 #include "pppm.h"
 #include "poisson.h"
 #include "ewald.h"
@@ -370,9 +371,9 @@ void init_forcerec(FILE *log,
     if (fr->phi == NULL)
       snew(fr->phi,mdatoms->nr);
     
-    if (EEL_LR(fr->eeltype) || 
+    if ((fr->eeltype==eelPPPM) || (fr->eeltype==eelPOISSON) || 
 	(fr->eeltype == eelSHIFT && fr->rcoulomb > fr->rcoulomb_switch))
-      set_LRconsts(log,fr->rcoulomb_switch,fr->rcoulomb,box_size,fr);
+	set_shift_consts(log,fr->rcoulomb_switch,fr->rcoulomb,box_size,fr);
   }
 
   /* Initiate arrays */
@@ -655,8 +656,11 @@ void force(FILE       *log,     int        step,
       fatal_error(0,"No such electrostatics method implemented %s",
 		  eel_names[fr->eeltype]);
     }
-    
-    Vself = calc_LRcorrections(log,nsb,cr,fr,
+    if(fr->bEwald)
+	Vself = ewald_LRcorrection(log,nsb,cr,fr,
+				   md->chargeA,excl,x,box_size,lr_vir);
+    else
+	Vself = shift_LRcorrection(log,nsb,cr,fr,
 			       md->chargeA,excl,x,TRUE,box_size,lr_vir);
     epot[F_LR] = Vlr - Vself;
     if (debug)
