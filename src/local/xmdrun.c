@@ -466,7 +466,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		  &(parm->ir),MASTER(cr) || bMultiSim,
 		  mdatoms,&(top->idef),mu_aver,
 		  top->blocks[ebMOLS].nr,bMultiSim ? cr_msim : cr,
-		  parm->box,parm->vir,mu_tot,x,fbuf[next],bConverged);
+		  parm->box,parm->vir,parm->pres,
+		  mu_tot,x,fbuf[next],bConverged);
     debug_gmx();
     
     if ( MASTER(cr) ) {

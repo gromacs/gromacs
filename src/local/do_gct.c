@@ -413,7 +413,8 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 		 t_coupl_rec *tcr,real t,int step,real ener[],
 		 t_forcerec *fr,t_inputrec *ir,bool bMaster,
 		 t_mdatoms *md,t_idef *idef,real mu_aver,int nmols,
-		 t_commrec *cr,matrix box,tensor virial,rvec mu_tot,
+		 t_commrec *cr,matrix box,tensor virial,
+		 tensor pres,rvec mu_tot,
 		 rvec x[],rvec f[],bool bDoIt)
 {
 #define enm2Debye 48.0321
@@ -509,6 +510,9 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   set_act_value(tcr,eoFx,   fmol[0][XX], step);
   set_act_value(tcr,eoFy,   fmol[0][YY], step);
   set_act_value(tcr,eoFz,   fmol[0][ZZ], step);
+  set_act_value(tcr,eoPx,   pres[XX][XX],step);
+  set_act_value(tcr,eoPy,   pres[YY][YY],step);
+  set_act_value(tcr,eoPz,   pres[ZZ][ZZ],step);
   
   epot0 = tcr->ref_value[eoEpot];
   /* If dipole != 0.0 assume we want to use polarization corrected coupling */

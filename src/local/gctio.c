@@ -44,6 +44,7 @@ static char *SRCID_gctio_c = "$Id$";
 
 char *eoNames[eoNR] = { 
   "Pres", "Epot", "Vir", "Dist", "Mu", "Force", "Fx", "Fy", "Fz",
+  "Px", "Py", "Pz",
   "Polarizability", "Dipole", "Memory", "UseEinter", "UseVirial"
 };
 
@@ -213,6 +214,12 @@ void write_gct(char *fn,t_coupl_rec *tcr,t_idef *idef)
 	  eoNames[eoFy],tcr->ref_value[eoFy]);
   fprintf(fp,"%-15s = %12g  ; Reference force in Z dir\n",
 	  eoNames[eoFz],tcr->ref_value[eoFz]);
+  fprintf(fp,"%-15s = %12g  ; Reference pres in X dir\n",
+	  eoNames[eoPx],tcr->ref_value[eoPx]);
+  fprintf(fp,"%-15s = %12g  ; Reference pres in Y dir\n",
+	  eoNames[eoPy],tcr->ref_value[eoPy]);
+  fprintf(fp,"%-15s = %12g  ; Reference pres in Z dir\n",
+	  eoNames[eoPz],tcr->ref_value[eoPz]);
   fprintf(fp,"%-15s = %12g  ; Polarizability used for the Epot correction\n",
 	  eoNames[eoPolarizability],tcr->polarizability);
   fprintf(fp,"%-15s = %12g  ; Gas phase dipole moment used for Epot correction\n", 
