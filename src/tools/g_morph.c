@@ -66,8 +66,8 @@ int main(int argc,char *argv[])
   };
   char     *leg[] = { "Ref = 1\\Sst\\N conf", "Ref = 2\\Snd\\N conf" };
   FILE     *fp;
-  int      i,isize,status,nat1,nat2;
-  atom_id  *index,*dummy;
+  int      i,isize,is_lsq,status,nat1,nat2;
+  atom_id  *index,*index_lsq,*index_all,*dummy;
   t_atoms  atoms;
   rvec     *x1,*x2,*xx,*v;
   matrix   box;
@@ -95,11 +95,20 @@ int main(int argc,char *argv[])
   read_stx_conf(opt2fn("-f2",NFILE,fnm),title,&atoms,x2,v,box);
 
   snew(mass,nat1);
-  for(i=0; (i<nat1); i++)
+  snew(index_all,nat1);
+  for(i=0; (i<nat1); i++) {
     mass[i] = 1;
-  if (bFit)
+    index_all[i] = i;
+  }
+  if (bFit) {
+    printf("Select group for LSQ superposition:\n");
+    get_index(&atoms,opt2fn_null("-n",NFILE,fnm),1,&is_lsq,&index_lsq,
+	      &grpname);
+    reset_x(is_lsq,index_lsq,nat1,index_all,x1,mass);
+    reset_x(is_lsq,index_lsq,nat1,index_all,x2,mass);
     do_fit(nat1,mass,x1,x2);
-    
+  }
+  
   bRMS = opt2bSet("-or",NFILE,fnm);
   if (bRMS) {
     fp = xvgropen(opt2fn("-or",NFILE,fnm),"RMSD","Conf","(nm)");
@@ -107,6 +116,8 @@ int main(int argc,char *argv[])
     printf("Select group for RMSD calculation:\n");
     get_index(&atoms,opt2fn_null("-n",NFILE,fnm),1,&isize,&index,&grpname);
     printf("You selected group %s, containing %d atoms\n",grpname,isize);
+    rms1 = rmsdev_ind(isize,index,mass,x1,x2);  
+    fprintf(stderr,"RMSD between input conformations is %g nm\n",rms1);
   }
   
   snew(dummy,nat1);
