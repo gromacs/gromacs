@@ -817,7 +817,8 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
   /* Set initial values for invmass etc. */
   update_mdatoms(mdatoms,*lambda,TRUE);
 
-  *vcm = init_vcm(stdlog,top,cr,mdatoms,START(nsb),HOMENR(nsb),ir->nstcomm);
+  *vcm = init_vcm(stdlog,top,cr,mdatoms,START(nsb),HOMENR(nsb),ir->nstcomm,
+		  ir->comm_mode);
     
   debug_gmx();
 

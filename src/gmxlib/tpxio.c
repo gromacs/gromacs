@@ -63,7 +63,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 34;
+static const int tpx_version = 35;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -211,7 +211,15 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
     do_int(ir->bDomDecomp);
     do_int(ir->decomp_dir);
     do_int(ir->nstcomm); 
-
+    if (file_version > 34)
+      do_int(ir->comm_mode);
+    else if (ir->nstcomm < 0) {
+      ir->comm_mode = ecmANGULAR;
+      ir->nstcomm = -ir->nstcomm;
+    }
+    else
+      ir->comm_mode = ecmLINEAR;
+    
     if(file_version > 25)
       do_int(ir->nstcheckpoint);
     else

@@ -210,7 +210,7 @@ void init_em(FILE *log,const char *title,t_parm *parm,
   update_mdatoms(mdatoms,*lambda,TRUE);
 
   *vcm = init_vcm(log,top,cr,mdatoms,
-		  *start,HOMENR(nsb),parm->ir.nstcomm);
+		  *start,HOMENR(nsb),parm->ir.nstcomm,parm->ir.comm_mode);
 }
 
 

@@ -47,7 +47,7 @@
 #include "network.h"
  
 t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_mdatoms *md,
-		int start,int homenr,int nstcomm)
+		int start,int homenr,int nstcomm,int comm_mode)
 {
   t_vcm *vcm;
   real  *mass;
@@ -55,13 +55,8 @@ t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_mdatoms *md,
   
   snew(vcm,1);
   
-  if (nstcomm < 0)
-    vcm->mode = ecmANGULAR;
-  else if (nstcomm > 0)
-    vcm->mode = ecmLINEAR;
-  else
-    vcm->mode = ecmNO;
-    
+  vcm->mode = (nstcomm > 0) ? comm_mode : ecmNO;
+  
   if (vcm->mode != ecmNO) {
     vcm->nr = top->atoms.grps[egcVCM].nr;
     if (vcm->mode == ecmANGULAR) {

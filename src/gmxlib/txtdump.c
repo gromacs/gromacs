@@ -356,6 +356,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir)
     PS("bDomDecomp",BOOL(ir->bDomDecomp));
     PI("decomp_dir",ir->decomp_dir);
     PI("nstcomm",ir->nstcomm);
+    PS("comm_mode",ECOM(ir->comm_mode));
     PI("nstcheckpoint",ir->nstcheckpoint);
     PI("nstlog",ir->nstlog);
     PI("nstxout",ir->nstxout);

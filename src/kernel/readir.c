@@ -171,10 +171,8 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     warning("Removing the rotation around the center of mass in a periodic system (this is not a problem when you have only one molecule).");
     
   if ((ir->eI == eiMD) && (ir->ePBC == epbcNONE)) {
-    if (ir->nstcomm > 0)
-      warning("Tumbling ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should set nstcomm = -1.");
-    if (ir->nstcomm == 0)
-      warning("Flying ice-cubes: We are not removing center of mass motion in a non-periodic system. You should set nstcomm = -1 (will also stop rotation).");
+    if ((ir->nstcomm == 0) || (ir->comm_mode != ecmANGULAR))
+      warning("Tumbling and or flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should set comm_mode = ANGULAR.");
   }
   
   sprintf(err_buf,"Free-energy not implemented for Ewald and PPPM");
@@ -347,7 +345,7 @@ void get_ir(char *mdparin,char *mdparout,
   char      epsbuf[STRLEN];
   t_inpfile *inp;
   char      *tmp;
-  int       i,j,m,ninp,ecm_mode;
+  int       i,j,m,ninp;
   char      dummy[STRLEN];
   double    epsje;
   
@@ -371,7 +369,7 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("For exact run continuation or redoing part of a run");
   ITYPE ("init_step",   ir->init_step,  0);
   CTYPE ("mode for center of mass motion removal");
-  EETYPE("comm-mode",   ecm_mode,       ecm_names, nerror, TRUE);
+  EETYPE("comm-mode",   ir->comm_mode,  ecm_names, nerror, TRUE);
   CTYPE ("number of steps for center of mass motion removal");
   ITYPE ("nstcomm",	ir->nstcomm,	1);
   CTYPE ("group(s) for center of mass motion removal");
@@ -690,21 +688,9 @@ void get_ir(char *mdparin,char *mdparout,
 	ir->compress[i][m] = ir->compress[m][i];
       }
   } 
-
-  switch (ecm_mode) {
-  case ecmNO:
+  
+  if (ir->comm_mode == ecmNO)
     ir->nstcomm = 0;
-    break;
-  case ecmLINEAR:
-    sprintf(warn_buf,"mdrun will apply removal of angular momentum when nstcomm < 0");
-    if (ir->nstcomm < 0)
-      warning(NULL);
-    break;
-  case ecmANGULAR:
-    if (ir->nstcomm > 0)
-      ir->nstcomm = -ir->nstcomm;
-    break;
-  }
   
   if (opts->bOrire && str_nelem(orirefitgrp,MAXPTR,NULL)!=1) {
     fprintf(stderr,"ERROR: Need one orientation restraint fit group\n");
@@ -836,7 +822,7 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
 }
 
 static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
-		      char **gnames,int nstcomm)
+		      char **gnames,int nstcomm,int comm_mode)
 {
   int     ai,aj,i,j,d,g,imin,jmin;
   t_iatom *ia;
@@ -922,10 +908,16 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
      * when com translation is removed and 6 when rotation is removed
      * as well.
      */
-    if (nstcomm > 0)
+    switch (comm_mode) {
+    case ecmLINEAR:
       n_sub = 3;
-    else
+      break;
+    case ecmANGULAR:
       n_sub = 6;
+      break;
+    default:
+      gmx_incons("Checking comm_mode");
+    }
     
     for(i=0; i<atoms->grps[egcTC].nr; i++) {
       /* Count the number of atoms of TC group i for every VCM group */
@@ -1221,7 +1213,7 @@ void do_index(char *ndx,
 	       restnm,forward,FALSE,bVerbose);
 
   /* Now we have filled the freeze struct, so we can calculate NRDF */ 
-  calc_nrdf(atoms,idef,&(ir->opts),gnames,ir->nstcomm);
+  calc_nrdf(atoms,idef,&(ir->opts),gnames,ir->nstcomm,ir->comm_mode);
   if (v && NULL) {
     real fac,ntot=0;
     

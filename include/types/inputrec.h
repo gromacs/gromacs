@@ -80,6 +80,7 @@ typedef struct {
   int  decomp_dir;      /* Direction of decomposition (may not be opt.) */
   int  nstcomm;		/* number of steps after which center of mass	*/
                         /* motion is removed				*/
+  int  comm_mode;       /* Center of mass motion removal algorithm      */
   int nstcheckpoint;    /* checkpointing frequency                      */
   int nstlog;		/* number of steps after which print to logfile	*/
   int nstxout;		/* number of steps after which X is output	*/
