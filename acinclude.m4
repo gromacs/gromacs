@@ -115,6 +115,116 @@ fi
 
 
 
+
+
+dnl Check for floating-point format and double precision word order.
+dnl We dont require IEEE, but there are optimizations we can only do with it.
+dnl Just as for integers, the bytes in a word can be small of big endian.
+dnl There is already a standard autoconf macro (AC_C_BIGENDIAN) that you 
+dnl should use to check this for integers - I have never heard of a machine
+dnl where it is not the same for integer and fp variables, but we still check
+dnl it separately for fp variables here to be sure.
+dnl
+dnl However, in double precision there are also two ways to arrange the words
+dnl forming a double (8-byte=2-word) variable.
+dnl Normally this order is the same as the endian, but there are 
+dnl exceptions (e.g. ARM)
+dnl We detect it by compiling a small test program and grepping into it.
+dnl
+AC_DEFUN([ACX_FLOAT_FORMAT],
+[AC_CACHE_CHECK(floating-point format, acx_float_format,
+[cat >conftest.$ac_ext <<EOF
+[/* Check that a double is 8 bytes - die if it isnt */
+extern char xyz [sizeof(double) == 8 ? 1 : -1];
+double abc [] = {
+  /* "GROMACSX" in ascii    */
+  (double)  3.80279098314984902657e+35 , 
+  /* "GROMACSX" in ebcdic   */
+  (double) -1.37384666579378297437e+38 , 
+  /* "D__float" (vax)       */
+  (double)  3.53802595280598432000e+18 , 
+  /* "IBMHEXFP" s390/ascii  */
+  (double)  1.77977764695171661377e+10 , 
+  /* "IBMHEXFP" s390/ebcdic */
+  (double) -5.22995989424860458374e+10 };
+]
+EOF
+if AC_TRY_EVAL(ac_compile); then
+# dont match first and last letter because of rounding errors.
+# next: big-endian - string is GROMACSX 
+  if   grep 'ROMACS' conftest.o >/dev/null 2>&1; then
+    acx_float_format='IEEE754 (big-endian byte and word order)'
+# next: big-endian byte order, but little-endian word order - ACSXGROM
+  elif grep 'CSXGRO' conftest.o >/dev/null 2>&1; then
+    acx_float_format='IEEE754 (big-endian byte, little-endian word order)'
+# next: little-endian - XSCAMORG
+  elif grep 'SCAMOR' conftest.o >/dev/null 2>&1; then
+    acx_float_format='IEEE754 (little-endian byte and word order)'
+# next: little-endian byte order, but big-endian word order - MORGXSCA
+  elif grep 'ORGXSC' conftest.o >/dev/null 2>&1; then
+    acx_float_format='IEEE754 (big-endian byte, little-endian word order)'
+  elif grep '__floa' conftest.o >/dev/null 2>&1; then
+    acx_float_format='VAX D-float'
+  elif grep 'BMHEXF' conftest.o >/dev/null 2>&1; then
+    acx_float_format='IBM 370 hex'
+  else
+    AC_MSG_WARN([Unknown floating-point format])
+  fi
+else
+  AC_MSG_ERROR(compile failed)
+fi
+rm -rf conftest*])
+case $acx_float_format in
+    'IEEE754 (big-endian byte and word order)' )
+       format=IEEE754
+       byteorder=big
+       wordorder=big            
+       ;;
+    'IEEE754 (little-endian byte and word order)' )
+       format=IEEE754
+       byteorder=little
+       wordorder=little
+       ;;
+    'IEEE754 (big-endian byte, little-endian word order)' )
+       format=IEEE754
+       byteorder=big
+       wordorder=little
+       ;;
+    'IEEE754 (litte-endian byte, big-endian word order)' )
+       format=IEEE754
+       byteorder=little
+       wordorder=big            
+       ;;
+    'VAX D-float' )
+       AC_DEFINE(FLOAT_FORMAT_VAX,,[VAX floating-point format if set])
+       ;;
+    'IBM 370 hex' )
+       AC_DEFINE(FLOAT_FORMAT_IBM_HEX,,[IBM HEX floating-point format if set (s390?)])
+       ;;   
+     * )
+       format=Unknown   
+       ;;
+esac
+if test "$format" = "IEEE754"; then
+       AC_DEFINE(FLOAT_FORMAT_IEEE754,,[IEEE754 floating-point format. Memory layout is defined by
+macros IEEE754_BIG_ENDIAN_BYTE_ORDER and IEEE754_BIG_ENDIAN_WORD_ORDER.])
+fi
+if test "$byteorder" = "big"; then
+  AC_DEFINE(IEEE754_BIG_ENDIAN_BYTE_ORDER,,[Bytes in IEEE fp word are in big-endian order if set,
+ little-endian if not. Only relevant when FLOAT_FORMAT_IEEE754 is defined.])
+fi
+if test "$wordorder" = "big"; then
+  AC_DEFINE(IEEE754_BIG_ENDIAN_WORD_ORDER,,[The two words in a double precision variable are in b
+ig-endian order if set, little-endian if not. Do NOT assume this is the same as the byte order! 
+Only relevant when FLOAT_FORMAT_IEEE754 is defined.])
+fi
+])
+
+
+
+
+
+
 dnl
 dnl
 dnl AC_FIND_MOTIF : find OSF/Motif or LessTif, and provide variables
@@ -761,10 +871,10 @@ esac
 
 # use default flags for gcc/g77 on all systems
 if test $ac_cv_prog_gcc = yes; then
-  # mac os x only goes to -O4, so check -O6 first, then -O4 and finally -O3.
-  ACX_CHECK_CC_FLAGS(-O6,o6,xCFLAGS="$xCFLAGS -O6",[
-    ACX_CHECK_CC_FLAGS(-O4,o4,xCFLAGS="$xCFLAGS -O4",[
-      ACX_CHECK_CC_FLAGS(-O3,o3,xCFLAGS="$xCFLAGS -O3")])])
+  # gcc can add debug info even when optimizing, and
+  # it does not reduce performance - what a deal!
+  ACX_CHECK_CC_FLAGS(-g,g,xCFLAGS="$xCFLAGS -g")
+  ACX_CHECK_CC_FLAGS(-O3,o3,xCFLAGS="$xCFLAGS -O3")
   xCFLAGS="$xCFLAGS -fomit-frame-pointer -finline-functions -Wall -Wno-unused"
   # For alpha axp assembly we need the preprocessor to tell elf from ecoff.
   # The compaq ccc compiler only knows .s files, and always runs them
@@ -798,11 +908,10 @@ if test "$GCC" = "yes"; then
     powerpc*)
         # don't use the separate apple cpp on OS X
         ACX_CHECK_CC_FLAGS(-no-cpp-precomp,no_cpp_precomp,xCFLAGS="$xCFLAGS -no-cpp-precomp")
-        ACX_CHECK_CC_FLAGS(-finline-limit=1000,finline_limit_1000,xCFLAGS="$xCFLAGS -finline-limit=1000")
         if test "$enable_ppc_altivec" = "yes"; then
           # And try to add -fvec or -faltivec to get altivec extensions!
           ACX_CHECK_CC_FLAGS(-fvec,fvec,xCFLAGS="$xCFLAGS -fvec",
- 	        ACX_CHECK_CC_FLAGS(-faltivec,faltivec,xCFLAGS="$xCFLAGS -faltivec"))
+          ACX_CHECK_CC_FLAGS(-faltivec,faltivec,xCFLAGS="$xCFLAGS -faltivec"))
         fi
         # -funroll-all-loops exposes a bug in altivec-enabled gcc-2.95.3
         # on powerpc, so we only enable it on other platforms or gcc3.    
@@ -815,11 +924,9 @@ if test "$GCC" = "yes"; then
           echo "* running OS X, download the latest devtools from http://developer.apple.com*"
 	  echo "*****************************************************************************"
           ACX_CHECK_CC_FLAGS(-fno-schedule-insns,fno_schedule_insns,xCFLAGS="$xCFLAGS -fno-schedule-insns")
-        else
-          ACX_CHECK_CC_FLAGS(-funroll-all-loops,funroll_all_loops,xCFLAGS="$xCFLAGS -funroll-all-loops")
         fi
 	ACX_CHECK_CC_FLAGS(-mcpu=7450,m_cpu_7450,CPU_FLAGS="-mcpu=7450")
-	ACX_CHECK_CC_FLAGS(-mtune=970,m_tune_970,CPU_FLAGS="$CPU_FLAGS -mtune=970")
+	ACX_CHECK_CC_FLAGS(-mtune=G5,m_tune_G5,CPU_FLAGS="$CPU_FLAGS -mtune=G5")
 	if test -z "$CPU_FLAGS"; then
   	  ACX_CHECK_CC_FLAGS(-mcpu=powerpc,m_cpu_powerpc,CPU_FLAGS="-mcpu=powerpc")
         fi	

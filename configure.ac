@@ -3,13 +3,14 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(GROMACS, 3.2.90_beta_20040828, gmx-users@gromacs.org)
+AC_INIT(GROMACS, 3.3_beta_20041226, gmx-users@gromacs.org)
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(gromacs, 3.2.90_beta_20040828)
+AM_INIT_AUTOMAKE(gromacs, 3.3_beta_20041226)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
+
 AM_CONFIG_HEADER(src/config.h)
 dnl This is the version info according to the libtool versioning system.
 dnl It does *not* correspond to the release number.
@@ -25,12 +26,18 @@ AC_SUBST(SHARED_VERSION_INFO)
 ### Single/Double
 AC_ARG_ENABLE(float,
  [  --disable-float               use double instead of single precision],, enable_float=yes)
-if test "$enable_float" = "no"; then
-  AC_DEFINE(DOUBLE,,[Compile in double precision])
-  AM_CONDITIONAL(DOUBLE,true)
-else
-  AM_CONDITIONAL(DOUBLE,false)
+
+AC_ARG_ENABLE(double,
+ [  --enable-double               same effect as --disable-float],, enable_double=no)
+if test "$enable_double" = "yes"; then
+   enable_float=no;
 fi
+if test "$enable_float" = "no"; then
+  AC_DEFINE(GMX_DOUBLE,,[Compile in double precision])
+fi
+AM_CONDITIONAL([GMX_DOUBLE],[test "$enable_float" = "no"])
+
+
 
 ### Fortran or not
 AC_ARG_ENABLE(fortran,
@@ -39,19 +46,9 @@ AC_ARG_ENABLE(fortran,
   sparc*-solaris* | alpha*-* | rs6000*-aix* | powerpc*-aix* | mips*-irix*) enable_fortran=yes ;;
   *) enable_fortran=no ;;
  esac])
+AM_CONDITIONAL([GMX_FORTRAN],[test "$enable_fortran" = "yes"])
 if test "$enable_fortran" = "yes"; then
-  AC_DEFINE(USE_FORTRAN,,[Use Fortran for innerloops and some other core stuff])
-  GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} innerf.lo f77_wrappers.lo"
-  if test "$enable_float" = "yes"; then
-    MDLIB_LIBOBJS="${MDLIB_LIBOBJS} flincs.lo fsettle.lo fshake.lo"
-  else
-    MDLIB_LIBOBJS="${MDLIB_LIBOBJS} flincsd.lo fsettled.lo fshaked.lo"
-  fi
-  GMXANA_LIBOBJS=""
-else
-  GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} innerc.lo"
-  MDLIB_LIBOBJS="${MDLIB_LIBOBJS} clincs.lo csettle.lo"
-  GMXANA_LIBOBJS=""
+  AC_DEFINE(GMX_FORTRAN,,[Use Fortran innerloops])
 fi
 # always use CC for linking:
 AC_SUBST(F77LINK,"\$(LINK)")
@@ -63,7 +60,8 @@ AC_ARG_ENABLE(mpi,
 
 ### Threads
 AC_ARG_ENABLE(threads,
- [  --disable-threads             don't try to use multithreading],,enable_threads=yes)
+ [  --disable-threads             don't try to use multithreading],,enable_threads=no)
+AM_CONDITIONAL([GMX_THREAD],[test "$enable_threads" = "yes"])
 
 
 ### MPI environment
@@ -74,66 +72,67 @@ AC_ARG_ENABLE(mpi-environment,
   *) enable_mpi_environment=no ;;
 esac])
 if test "$enable_mpi_environment" != "no"; then
-  AC_DEFINE_UNQUOTED(CHECK_MPI_ENV,"$enable_mpi_environment",[If defined, only start MPI runs when this variable is set])
+  AC_DEFINE_UNQUOTED(GMX_CHECK_MPI_ENV,"$enable_mpi_environment",[If defined, only start MPI runs when this variable is set])
 fi
 
-
-### X86 assembly code
-AC_ARG_ENABLE(x86_asm,     
- [  --disable-x86-asm             don't build assembly loops on x86],,enable_x86_asm=yes)
+### IA32 assembly code
+AC_ARG_ENABLE(ia32_3dnow,    
+ [  --disable-ia32-3dnow          don't build 3DNow! assembly loops on ia32],,enable_ia32_3dnow=yes)
 case "${host_cpu}" in
-   i?86) ;;	
-   *) enable_x86_asm=no ;;
+   i?86) ;;     
+   *) enable_ia32_3dnow=no ;;
 esac
+
+
+### IA32 assembly code
+AC_ARG_ENABLE(ia32_sse,    
+ [  --disable-ia32-sse            don't build SSE/SSE2 assembly loops on ia32],,enable_ia32_sse=yes)
+case "${host_cpu}" in
+   i?86) ;;     
+   *) enable_ia32_sse=no ;;
+esac
+
+### AMD64 assembly code
+AC_ARG_ENABLE(x86_64_sse,
+ [  --disable-x86-64-sse           don't build SSE assembly loops on X86_64],,enable_x86_64_sse=yes)
+case "${host_cpu}" in
+   x86_64 | amd64) ;;
+   *) enable_x86_64_sse=no ;;
+esac
+
 
 ### Altivec on powerpc (motorola)
 AC_ARG_ENABLE(ppc_altivec,
- [  --disable-ppc-altivec         don't build Altivec loops on PowerPC],,enable_ppc_altivec=yes)
-case "${host_cpu}-${host_vendor}" in
-   ppc*-ibm* | powerpc*-ibm*) enable_ppc_altivec=no ;;
-   ppc*-* | powerpc*-*) ;; 
-   *) enable_ppc_altivec=no ;;
-esac
+ [  --disable-ppc-altivec         don't build Altivec loops on PowerPC],,enable_ppc_altivec=undef)
+#We will probably see ppc970 boxes from ibm with altivec support soon, so make it possible to override...
+if test "$enable_ppc_altivec" = "undef"; then
+  case "${host_cpu}-${host_vendor}" in
+    ppc*-ibm* | powerpc*-ibm*) enable_ppc_altivec=no ;;
+    ppc*-* | powerpc*-*) enable_ppc_altivec=yes ;; 
+    *) enable_ppc_altivec=no ;;
+  esac
+fi
 
-AC_ARG_ENABLE(axp_asm,
- [  --enable-axp-asm              include vectorized sqrt routines for alpha],,enable_axp_asm=no)
+
+### ia64 assembly code
+AC_ARG_ENABLE(ia64_asm,
+ [  --disable-ia64-asm            don't build assembly loops on ia64],,enable_ia64_asm=yes)
+case "${host_cpu}" in
+   ia64) ;;
+   *) enable_ia64_asm=no ;;
+esac
+if test "$enable_ia64_asm" = "yes"; then
+  AC_DEFINE(GMX_IA64_ASM,,[Use ia64 assembly tuned for Itanium2])
+  AC_DEFINE(DISABLE_WATER_NLIST,,[Turn off all water neighborlist optimization])
+  AC_DEFINE(DISABLE_WATERWATER_NLIST,,[Turn off water-water neighborlist optimization only])
+fi
+
 
 
 ### Optimize for host cpu version
 AC_ARG_ENABLE(cpu-optimization,     
  [  --disable-cpu-optimization    no detection or tuning flags for cpu version],, enable_cpu_optimization=yes)
 
-
-### Vector machine inner loops
-AC_ARG_ENABLE(vector,     
- [  --enable-vector               create inner loops for a vector machine],, enable_vector=no)
-if test "$enable_vector" = "yes"; then
-  AC_DEFINE(USE_VECTOR,,[Optimize for a vector architecture])
-fi
-
-
-### Simplewater hack for SGI - disabled unrolling is the same as simplewater=yes
-AC_ARG_ENABLE(waterloop-unrolling,     
- [  --disable-waterloop-unrolling expand the loops instead (hack for sgi)],, 
-[case "${host_cpu}-${host_os}" in
-  mips*-irix*) enable_waterloop_unrolling=yes ;;
-  *) enable_waterloop_unrolling=no ;;
-esac])
-if test "$enable_waterloops_unrolling" = "no"; then
-  AC_DEFINE(SIMPLEWATER,,[Expand the water loops to three inner loops])
-fi
-
-
-### Turn off the special water-water loops on SGI...
-AC_ARG_ENABLE(waterwater-loops,     
- [  --disable-waterwater-loops    turn off double unrolled loops (hack for sgi)],,
-[case "${host_cpu}-${host_os}" in
-  mips*-irix*) enable_waterwater_loops=no ;;
-  *) enable_waterwater_loops=yes ;;
-esac])
-if test "$enable_waterwater_loops" = "no"; then
-  AC_DEFINE(DISABLE_WATERWATER_LOOPS,,[Don't use special loops for water-water interactions])
-fi
 
 
 ### Do software 1/sqrt(x)
@@ -144,26 +143,9 @@ AC_ARG_ENABLE(software-sqrt,
   *) enable_software_sqrt=yes ;;
 esac])
 if test "$enable_software_sqrt" = "yes"; then
-  AC_DEFINE(SOFTWARE_INVSQRT,,[Use the GROMACS software 1/sqrt(x)])
+  AC_DEFINE(GMX_SOFTWARE_SQRT,,[Use the GROMACS software 1/sqrt(x)])
 fi
-
-
-### Vectorize 1/x
-AC_ARG_ENABLE(vectorized-recip,     
- [  --enable-vectorized-recip     vectorize LJ-only inner loops],, enable_vectorized_recip=no)
-if test "$enable_vectorized_recip" = "yes"; then
-  AC_DEFINE(VECTORIZE_RECIP,,[Vectorize the reciprocal calculation])
-else 
-  if test "$enable_vectorized_recip" != "no"; then
-    AC_MSG_ERROR([Vectorized reciprocal is only meaningful for normal LJ-only loops])
-  fi
-fi
-
-### Vectorize 1/sqrt(x)
-AC_ARG_ENABLE(vectorized-sqrt,     
- [  --enable-vectorized-sqrt=A,B  vectorize selected inner loops (default none)
-                                choices: normal,solvent,water,water-water],, enable_vectorized_sqrt=not_selected)
-# processing of vectorized_sqrt choices is done just before the final output stage!
+AM_CONDITIONAL([GMX_SOFTWARE_SQRT],[test "$enable_software_sqrt" = "yes"])
 
 
 # The four options below used to improve code scheduling, but the newest CPUs can usually rearrange
@@ -171,8 +153,9 @@ AC_ARG_ENABLE(vectorized-sqrt,
 
 ### Force prefetching
 AC_ARG_ENABLE(prefetch,     
- [  --enable-prefetch=A,B         prefetch forces in selected innerloops],, enable_prefetch=no)
+ [  --enable-prefetch-forces      prefetch forces in innerloops],, enable_prefetch=no)
 # processing of prefetch choices is done just before the final output stage!
+AM_CONDITIONAL([GMX_PREFETCH_FORCES],[test "$enable_prefetch" = "yes"])
 
 
 
@@ -186,7 +169,7 @@ AC_ARG_ENABLE(all-static,
 AC_ARG_WITH(fftw,
  [  --without-fftw          if you turn this off you cannot use PME/PPPM],, with_fftw=yes)
 if test "$with_fftw" = "no"; then
-  AC_DEFINE(WITHOUT_FFTW,,[Disable all FFTW (and thus PME/PPPM) support])
+  AC_DEFINE(GMX_WITHOUT_FFTW,,[Disable all FFTW (and thus PME/PPPM) support])
 fi
 
 
@@ -203,8 +186,8 @@ case "${host_cpu}-${host_os}" in
     f77_names="fort f77 g77"
     ;;
   *) 
-    cc_names="cc xlc gcc"
-    f77_names="f77 xlf xlf77 cf77 fl32 g77 fort77 f90 xlf90 pgf77 cf77 fort fort77 pgf90"
+    cc_names="cc xlc icc gcc"
+    f77_names="f77 xlf ifort xlf77 cf77 fl32 g77 fort77 f90 xlf90 pgf77 cf77 fort fort77 pgf90"
     ;;
 esac
 # the (non-mpi) c compiler, which is also used for programs executed during build stage
@@ -233,19 +216,35 @@ if test "$enable_mpi" = "yes"; then
   AC_MSG_CHECKING([whether the MPI cc command works]) # be paranoid
   AC_TRY_LINK([#include <mpi.h>],[int argc; char **argv; MPI_Init(&argc,&argv);],
     AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
-  AC_DEFINE(USE_MPI,,[Make a parallel version of GROMACS using MPI])
+  AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
 fi
 
 if test "$enable_threads" = "yes"; then
    AC_MSG_CHECKING([for pthreads])
    AC_MSG_RESULT([yes])
+   AC_DEFINE([GMX_THREAD_PTHREAD],,[Use pthreads for Gromacs multithreading])
 #  ACX_PTHREAD([],AC_MSG_ERROR([Cannot compile with pthreads; use --disable-threads])
 fi
+
+
+
+AH_TEMPLATE([F77_OR_C_FUNC],
+            [Set to F77_FUNC(name,NAME) if Fortran used, otherwise 'name' for C.])
+AH_TEMPLATE([F77_OR_C_FUNC_],
+            [Set to F77_FUNC_(name,NAME) if Fortran used, otherwise 'name' for C.])
+
+
 
 if test "$enable_fortran" = "yes"; then
   AC_F77_LIBRARY_LDFLAGS
   AC_F77_WRAPPERS
+  AC_DEFINE([F77_OR_C_FUNC(name,NAME)],[F77_FUNC(name,NAME)])
+  AC_DEFINE([F77_OR_C_FUNC_(name,NAME)],[F77_FUNC_(name,NAME)])
+else
+  AC_DEFINE([F77_OR_C_FUNC(name,NAME)],[name])
+  AC_DEFINE([F77_OR_C_FUNC_(name,NAME)],[name])
 fi
+
 
 AC_PROG_CPP
 
@@ -256,126 +255,24 @@ else
 fi
 ACX_COMPILER_MAXOPT
 
-# Check x86 asm prerequisites and the capabilities of as
-if test "$enable_x86_asm" = "yes"; then
-  AC_MSG_CHECKING([whether your compiler can handle assembly files (*.s)])
-cat > conftestasm.s << EOF
-checkasm:
-	movl	%esp, %ebp
-	ret
-EOF
-  if AC_TRY_COMMAND($CC -c conftestasm.s); then
-    if test -f conftestasm.o; then
-      AC_MSG_RESULT([yes])
-    else
-      AC_MSG_RESULT([no])
-      AC_MSG_ERROR([Upgrade your compiler (or disable assembly loops).])
-    fi
-  else
-    AC_MSG_RESULT([no])
-    AC_MSG_ERROR([Upgrade your compiler (or disable assembly loops).])
-  fi
 
-# ok, gcc understands assembly, but can it handle SSE/3DNow/SSE2 instructions?
 
-  if test "$enable_float" = "no"; then
-    AC_MSG_CHECKING([whether as fully supports intel syntax SSE2])
-cat > conftest.s << EOF
-.intel_syntax noprefix 
-checkasm:
-	emms
-	movupd xmm0,[[checkasm]]
-	emms
-	ret
-EOF
-    if AC_TRY_COMMAND($CC -c conftest.s); then
-      AC_MSG_RESULT([yes])
-    else
-      AC_MSG_RESULT([no]) 
-      AC_MSG_ERROR([Upgrade to a more recent binutils (or disable assembly loops).])
-    fi
-    GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} x86_cpuid.lo x86_sse2.lo"
-    AC_DEFINE([USE_X86_SSE2],,[Use X86 SSE2 multimedia assembly code])
-  else 
-    AC_MSG_CHECKING([whether as fully supports intel syntax SSE & 3DNow])
-cat > conftest.s << EOF
-.intel_syntax noprefix 
-checkasm:
-	emms
-	pswapd mm0,mm0
-	movups xmm0,[[checkasm]]
-	emms
-	ret
-EOF
-    if AC_TRY_COMMAND($CC -c conftest.s); then
-      AC_MSG_RESULT([yes])
-    else
-      AC_MSG_RESULT([no]) 
-      AC_MSG_ERROR([Upgrade to a more recent binutils (or disable assembly loops).])
-    fi
-    GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} x86_cpuid.lo x86_sse.lo x86_3dnow.lo"
-    AC_DEFINE([USE_X86_SSE_AND_3DNOW],,[Use X86 SSE/3DNow multimedia assembly code])
-  fi
-fi
 
-if test "$enable_ppc_altivec" = "yes"; then
-  if test "$enable_float" = "no"; then
-    AC_MSG_WARN([PowerPC Altivec loops can only be used in single precision - disabling])
-    enable_ppc_altivec=no
-  else 
-    AC_MSG_CHECKING([whether the compiler supports altivec extensions])
-    AC_TRY_COMPILE([],[
-#ifndef __VEC__
-choke_me
-#endif
-],[
-    AC_MSG_RESULT([yes])
-    GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} inner_altivec.lo"
-    AC_DEFINE([USE_PPC_ALTIVEC],,[Use PowerPC Altivec inner loops])],[
-      AC_MSG_RESULT([no])
-      AC_MSG_WARN([no altivec support found - On G4 and later Motorola PowerPC]
-[CPUs you can get a HUGE performance gain by using an altivec-enabled compiler.]
-[Download the latest devtools from Apple, or gcc-3.1 from ftp.gnu.org])
-      enable_ppc_altivec=no])
-  fi  
-fi
+#############
+# Check integer endian
+#############
+AC_C_BIGENDIAN([AC_DEFINE([GMX_INTEGER_BIG_ENDIAN],,[Integer byte order is big endian.])],[],[
+AC_MSG_ERROR([Cannot determine endian in compiled output])])
+# Little endian implied if GMX_INTEGER_BIG_ENDIAN not defined in source.
 
-if test "$enable_axp_asm" = "yes"; then
-  case "${host_cpu}" in
-    alpha*) 
-      AC_DEFINE([USE_AXP_ASM],,[Use Alpha assembly for vectorized 1/sqrt])
-      cat > conftest.s << EOF
-#ifdef __ELF__
-.section .rodata
-#else			
-	 .rdata
-#endif	
-EOF
-      if AC_TRY_COMMAND($CC -c conftest.s); then
-        AM_CONDITIONAL(AXP_ASM_CAPITAL_S,false)
-      else
-        AM_CONDITIONAL(AXP_ASM_CAPITAL_S,true)
-      fi
-      GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} axp_asm.lo"
-       ;;
-    *) ;;
-  esac
-else
-  AM_CONDITIONAL(AXP_ASM_CAPITAL_S,false)
-fi
 
-AC_PATH_PROG(IDENT,ident,no)
-if test "$IDENT" != "no"; then
-  # seems as if we have the ident program, but does the
-  # compiler support it?
-  AC_MSG_CHECKING([whether the compiler supports ident])	
-  AC_TRY_CPP([#ident  "@(#) file.h 1.1 12/16/92"],[
-    AC_MSG_RESULT([yes]) 
-    AC_DEFINE(HAVE_IDENT,,[Does this machine have the ident command])],
-    AC_MSG_RESULT([no]))
-fi
+#############
+# Check floating-point format and endian
+#############
+ACX_FLOAT_FORMAT
 
-# MPI builds on aix break with shared libs.
+
+# MPI builds on aix break with shared libs, so they are disabled by default.
 AC_DISABLE_SHARED
 AC_PROG_LIBTOOL
 AC_PROG_LN_S
@@ -578,81 +475,215 @@ AC_C_INLINE
 
 
 
+# Test stuff for ia32 and x86_64 assembly, and add objects/libraries.
+# 
+if test "$enable_ia32_sse" = "yes" -o "$enable_ia32_3dnow" = "yes" -o "$enable_x86_64_sse" = "yes"; then
+  AC_MSG_CHECKING([whether your compiler can handle assembly files (*.s)])
+cat > conftestasm.s << EOF
+checkasm:
+        movl    %esp, %ebp
+        ret
+EOF
+  if AC_TRY_COMMAND($CC -c conftestasm.s); then
+    if test -f conftestasm.o; then
+      AC_MSG_RESULT([yes])
+    else
+      AC_MSG_RESULT([no])
+      AC_MSG_ERROR([Upgrade your compiler (or disable assembly loops).])
+    fi
+  else
+    AC_MSG_RESULT([no])
+    AC_MSG_ERROR([Upgrade your compiler (or disable assembly loops).])
+  fi
+
+# ok, cc understands assembly.
+# But does it understand the lock cmpxchg instruction (needed for atomicity on SMP)?
+  AC_MSG_CHECKING([whether as understands 'lock cmpxchg'])
+   cat > conftest.s << EOF
+.intel_syntax noprefix 
+checkasm:
+        lock cmpxchg [[esi]], ebx 
+        emms
+        ret
+EOF
+    if AC_TRY_COMMAND($CC -c conftest.s); then
+      AC_MSG_RESULT([yes])
+    else
+      AC_MSG_RESULT([no]) 
+      AC_MSG_ERROR([Upgrade to binutils >= 2.12.1 (or disable assembly loops).])
+    fi
+#
+# If we are using double precision we need SSE2
+  if test "$enable_float" = "no"; then
+#   test SSE2 on ia32:
+    if test "$enable_ia32_sse" = "yes"; then
+      AC_MSG_CHECKING([whether as fully supports ia32 SSE2])
+cat > conftest.s << EOF
+.intel_syntax noprefix 
+checkasm:
+        emms
+        movupd xmm0,[[esp]]
+        emms
+        ret
+EOF
+      if AC_TRY_COMMAND($CC -c conftest.s); then
+        AC_MSG_RESULT([yes])
+      else
+        AC_MSG_RESULT([no]) 
+        AC_MSG_ERROR([Upgrade to a more recent binutils (or disable assembly loops).])
+      fi
+      AC_DEFINE([GMX_IA32_SSE2],,[Double-precision SSE2 instructions on ia32])
+    fi
+#   test SSE2 on X86_64:
+    if test "$enable_x86_64_sse" = "yes"; then
+      AC_MSG_CHECKING([whether as fully supports X86_64 SSE2])
+cat > conftest.s << EOF
+.intel_syntax noprefix 
+checkasm:
+        emms
+        movupd xmm0,[[rsp]]
+        emms
+        ret
+EOF
+      if AC_TRY_COMMAND($CC -c conftest.s); then
+        AC_MSG_RESULT([yes])
+      else
+        AC_MSG_RESULT([no]) 
+        AC_MSG_ERROR([Upgrade to a more recent binutils (or disable assembly loops).])
+      fi
+      AC_DEFINE([GMX_X86_64_SSE2],,[Double-precision SSE2 instructions on X86_64])
+    fi
+  else 
+# end of double precision testing, now do single.
+    if test "$enable_ia32_sse" = "yes"; then
+      AC_MSG_CHECKING([whether as fully supports ia32 SSE])
+cat > conftest.s << EOF
+.intel_syntax noprefix 
+checkasm:
+        emms
+        movups xmm0,[[esp]]
+        emms
+        ret
+EOF
+      if AC_TRY_COMMAND($CC -c conftest.s); then
+        AC_MSG_RESULT([yes])
+      else
+        AC_MSG_RESULT([no]) 
+        AC_MSG_ERROR([Upgrade to a more recent binutils (or disable assembly loops).])
+      fi
+      AC_DEFINE([GMX_IA32_SSE],,[Single-precision SSE instructions on ia32])
+    fi
+#   test SSE2 on X86_64:
+    if test "$enable_x86_64_sse" = "yes"; then
+      AC_MSG_CHECKING([whether as fully supports X86_64 SSE instructions])
+cat > conftest.s << EOF
+.intel_syntax noprefix 
+checkasm:
+        emms
+        movups xmm0,[[rsp]]
+        emms
+        ret
+EOF
+      if AC_TRY_COMMAND($CC -c conftest.s); then
+        AC_MSG_RESULT([yes])
+      else
+        AC_MSG_RESULT([no]) 
+        AC_MSG_ERROR([Upgrade to a more recent binutils (or disable assembly loops).])
+      fi
+      AC_DEFINE([GMX_X86_64_SSE],,[Single-precision SSE instructions on X86_64])
+    fi
+    if test "$enable_ia32_3dnow" = "yes"; then
+      AC_MSG_CHECKING([whether as fully supports ia32 3DNow! instructions])
+cat > conftest.s << EOF
+.intel_syntax noprefix 
+checkasm:
+        emms
+        pswapd mm0, mm0
+        emms
+        ret
+EOF
+      if AC_TRY_COMMAND($CC -c conftest.s); then
+        AC_MSG_RESULT([yes])
+      else
+        AC_MSG_RESULT([no]) 
+        AC_MSG_ERROR([Upgrade to a more recent binutils (or disable assembly loops).])
+      fi
+      AC_DEFINE([GMX_IA32_3DNOW],,[Single-precision 3DNow! instructions on ia32])
+    fi
+  fi  
+fi
+        
+
+# Test stuff for ia64 assembly
+#
+# Nothing to test right now.
+
+
+#
+# Test altivec support.
+#
+if test "$enable_ppc_altivec" = "yes"; then
+  if test "$enable_float" = "no"; then
+    AC_MSG_WARN([PowerPC Altivec loops can only be used in single precision - disabling])
+    enable_ppc_altivec=no
+  else 
+    AC_MSG_CHECKING([whether the compiler supports altivec extensions])
+    AC_TRY_COMPILE([],[
+#ifndef __VEC__
+choke_me
+#endif
+],[
+    AC_MSG_RESULT([yes])
+###    GMX_LIBOBJS="${GMX_LIBOBJS} inner_altivec.lo"
+    AC_DEFINE([GMX_PPC_ALTIVEC],,[Use PowerPC Altivec inner loops])],[
+      AC_MSG_RESULT([no])
+      AC_MSG_WARN([no altivec support found - On recent PowerPC CPUs]
+[you can get a huge performance gain by using an altivec-enabled compiler.]
+[Download the latest devtools from Apple, or gcc-3.3 from ftp.gnu.org])
+      enable_ppc_altivec=no])
+  fi  
+fi
+
+
+
+##
+# Add the appropriate assembly loops 
+#
+AM_CONDITIONAL([GMX_IA32_SSE],[test "$enable_ia32_sse" = "yes" -a "$enable_float" = "yes"])
+AM_CONDITIONAL([GMX_IA32_SSE2],[test "$enable_ia32_sse" = "yes" -a "$enable_float" = "no"])
+AM_CONDITIONAL([GMX_X86_64_SSE],[test "$enable_x86_64_sse" = "yes" -a "$enable_float" = "yes"])
+AM_CONDITIONAL([GMX_X86_64_SSE2],[test "$enable_x86_64_sse" = "yes" -a "$enable_float" = "no"])
+AM_CONDITIONAL([GMX_IA32_3DNOW],[test "$enable_ia32_3dnow" = "yes" -a "$enable_float" = "yes"])
+AM_CONDITIONAL([GMX_PPC_ALTIVEC],[test "$enable_ppc_altivec" = "yes" -a "$enable_float" = "yes"])
+AM_CONDITIONAL([GMX_IA64_ASM_SINGLE],[test "$enable_ia64_asm" = "yes" -a "$enable_float" = "yes"])
+AM_CONDITIONAL([GMX_IA64_ASM_DOUBLE],[test "$enable_ia64_asm" = "yes" -a "$enable_float" = "no"])
+
+
+
+#############
+# Check integer endian
+#############
+AC_C_BIGENDIAN([AC_DEFINE([GMX_INTEGER_BIG_ENDIAN],,[Integer byte order is big endian.])],[],[
+AC_MSG_ERROR([Cannot determine endian in compiled output])])
+# Little endian implied if GMX_INTEGER_BIG_ENDIAN not defined in source.
+
 
 
 case "${host_cpu}" in
    i?86) 
-      # disable x86trunc if inlined assembly doesnt work 
-      AC_MSG_CHECKING(if the C compiler supports inline assembly)
+         # Check if inline assembly works
+         AC_MSG_CHECKING(if the compiler supports gcc inline assembly)
       AC_TRY_LINK([],[float f;int i; asm("fld %1\nfistpl %0\n" : "=m" (*&i) : "f" (f));],[AC_MSG_RESULT(yes)
-AC_DEFINE(USE_X86TRUNC,,[Use inline assembly truncation for x86 cpu])],[AC_MSG_RESULT(no)])
-        ;;	
-   *) enable_x86_asm=no ;;
+AC_DEFINE(GMX_X86_GCC_INLINE_ASM,,[Enable x86 gcc inline assembly])],[AC_MSG_RESULT(no)])
+         # Check for MSVC inline assembly
+     AC_MSG_CHECKING(if the compiler supports MSVC inline assembly)
+      AC_TRY_LINK([],[float f;int i; _asm { fld f } ; _asm { fistpl i };],[AC_MSG_RESULT(yes)
+AC_DEFINE(GMX_X86_MSVC_INLINE_ASM,,[Enable x86 MSVC inline assembly])],[AC_MSG_RESULT(no)])
+        ;;              
+   *) ;;
 esac
 
 
-
-
-
-
-########################################################################
-# Process vectorization and prefetch options for inner loops
-########################################################################
-# check which loops to vectorize
-list_of_vectorized_sqrt=""
-if test "$enable_vectorized_sqrt" != "no"; then
-  if test "$enable_vectorized_sqrt" = "yes" -o "$enable_vectorized_sqrt" = "all" ; then
-    enable_vectorized_sqrt="normal,solvent,water,water-water"
-  fi
-  if echo $enable_vectorized_sqrt | grep "normal" >/dev/null; then
-    list_of_vectorized_sqrt="normal "
-    AC_DEFINE(VECTORIZE_INVSQRT,,[Vectorize 1/sqrt(x) in normal loops])
-  fi
-  if echo $enable_vectorized_sqrt | grep "solvent" >/dev/null; then
-    list_of_vectorized_sqrt="${list_of_vectorized_sqrt}solvent "
-    AC_DEFINE(VECTORIZE_INVSQRT_S,,[Vectorize 1/sqrt(x) in solvent loops])
-  fi
-  if echo $enable_vectorized_sqrt | sed 's/water-water//' | grep "water" >/dev/null; then
-    list_of_vectorized_sqrt="${list_of_vectorized_sqrt}water "
-    AC_DEFINE(VECTORIZE_INVSQRT_W,,[Vectorize 1/sqrt(x) in water loops])
-  fi
-  if echo $enable_vectorized_sqrt | grep "water-water" >/dev/null; then
-    list_of_vectorized_sqrt="${list_of_vectorized_sqrt}water-water "
-    AC_DEFINE(VECTORIZE_INVSQRT_WW,,[Vectorize 1/sqrt(x) in water-water loops])
-  fi
-fi
-if test -z "$list_of_vectorized_sqrt"; then
-  list_of_vectorized_sqrt="no"
-fi
-
-
-
-# check loops to prefetch forces in
-list_of_prefetch=""
-if test "$enable_prefetch" != "no"; then
-  if test "$enable_prefetch" = "yes" -o "$enable_prefetch" = "all"; then
-    enable_prefetch="normal,solvent,water,water-water"
-  fi
-  if echo $enable_prefetch | grep "normal" >/dev/null; then
-    list_of_prefetch="normal "
-    AC_DEFINE(PREFETCH,,[Prefetch coordinates in normal loops])
-  fi
-  if echo $enable_prefetch | grep "solvent" >/dev/null; then
-    list_of_prefetch="${list_of_prefetch}solvent "
-    AC_DEFINE(PREFETCH_S,,[Prefetch coordinates in solvent loops])
-  fi
-  if echo $enable_prefetch | sed 's/water-water//' | grep "water"; then
-    list_of_prefetch="${list_of_prefetch}water "
-    AC_DEFINE(PREFETCH_W,,[Prefetch coordinates in water loops])
-  fi
-  if echo $enable_prefetch | grep "water-water" >/dev/null; then
-    list_of_prefetch="${list_of_prefetch}water-water "
-    AC_DEFINE(PREFETCH_WW,,[Prefetch coordinates in water-water loops])
-  fi
-fi
-if test -z "$list_of_prefetch"; then
-  list_of_prefetch="no"
-fi
 
 
 
@@ -700,45 +731,6 @@ else
   name_transform_provided=yes;
 fi
 
-# Set exec-prefix from the architecture and cpu, unless it was 
-# explicitly given by the user.
-if test "$exec_prefix" = "NONE"; then
-  arch_exec_prefix=yes;	
-  if test -n "$gmxcpu"; then
-    exec_prefix="\${prefix}/${host}/${gmxcpu}"
-  else
-    exec_prefix="\${prefix}/${host}"
-  fi
-fi
-AC_SUBST(exec_prefix)
-
-
-
-#If the prefix doesn't contain "gromacs" or "gmx" and the datadir
-#wasn't explicitly specified we add gromacs to the end of datadir:
-if test "$datadir" = "\${prefix}/share" -a -z "`echo ${prefix} | grep gromacs`"; then
-  if test "${prefix}" != "NONE" -a -z "`echo ${prefix} | grep gromacs`" -a -z "`echo ${prefix} | grep gmx`"; then
-    datadir="\${prefix}/share/gromacs"
-  fi
-fi
-AC_SUBST(datadir)
-
-#If the prefix doesn't contain "gromacs" or "gmx" and the includedir
-#wasn't explicitly specified we add gromacs to the end of includedir:
-if test "$includedir" = "\${prefix}/include" -a -z "`echo ${prefix} | grep gromacs`"; then
-  if test "${prefix}" != "NONE" -a -z "`echo ${prefix} | grep gromacs`" -a -z "`echo ${prefix} | grep gmx`"; then
-    includedir="\${prefix}/include/gromacs"
-  fi
-fi
-AC_SUBST(includedir)
-
-# automake has started to put the man pages under share, and says it
-# should be so according to FHS, but this is still debated so we keep
-# the old setup unless the user says different.
-if test "$mandir" = "\${prefix}/share/man"; then
-  mandir="\${prefix}/man"
-  AC_SUBST(mandir)
-fi
 
 # Use a variable for RPM - this way it can be 
 # overridden with make RPM=rpm3 rpm
@@ -757,7 +749,43 @@ CCASFLAGS=$CFLAGS
 AC_SUBST(CCAS)
 AC_SUBST(CCASFLAGS)
 
-AC_CONFIG_FILES([ Makefile src/Makefile src/gmxlib/Makefile include/Makefile include/types/Makefile src/mdlib/Makefile src/kernel/Makefile src/tools/Makefile src/ngmx/Makefile src/contrib/Makefile scripts/Makefile admin/Makefile share/Makefile share/tutor/Makefile share/tutor/gmxdemo/Makefile share/tutor/nmr1/Makefile share/tutor/nmr2/Makefile share/tutor/water/Makefile share/tutor/mixed/Makefile share/tutor/methanol/Makefile share/tutor/speptide/Makefile share/template/Makefile share/top/Makefile share/html/Makefile share/html/images/Makefile share/html/online/Makefile man/Makefile man/man1/Makefile ])
+AC_CONFIG_FILES([ Makefile ])
+AC_CONFIG_FILES([ src/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/nonbonded/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ia32_3dnow/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ia32_sse/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ia32_sse2/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_x86_64_sse/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_x86_64_sse2/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ppc_altivec/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ia64_single/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ia64_double/Makefile ])
+AC_CONFIG_FILES([ include/Makefile ])
+AC_CONFIG_FILES([ include/types/Makefile ])
+AC_CONFIG_FILES([ src/mdlib/Makefile ])
+AC_CONFIG_FILES([ src/kernel/Makefile ])
+AC_CONFIG_FILES([ src/tools/Makefile ])
+AC_CONFIG_FILES([ src/ngmx/Makefile ])
+AC_CONFIG_FILES([ src/contrib/Makefile ])
+AC_CONFIG_FILES([ scripts/Makefile ])
+AC_CONFIG_FILES([ admin/Makefile ])
+AC_CONFIG_FILES([ share/Makefile ])
+AC_CONFIG_FILES([ share/tutor/Makefile ])
+AC_CONFIG_FILES([ share/tutor/gmxdemo/Makefile ])
+AC_CONFIG_FILES([ share/tutor/nmr1/Makefile ])
+AC_CONFIG_FILES([ share/tutor/nmr2/Makefile ])
+AC_CONFIG_FILES([ share/tutor/water/Makefile ])
+AC_CONFIG_FILES([ share/tutor/mixed/Makefile ])
+AC_CONFIG_FILES([ share/tutor/methanol/Makefile ])
+AC_CONFIG_FILES([ share/tutor/speptide/Makefile ])
+AC_CONFIG_FILES([ share/template/Makefile ])
+AC_CONFIG_FILES([ share/top/Makefile ])
+AC_CONFIG_FILES([ share/html/Makefile ])
+AC_CONFIG_FILES([ share/html/images/Makefile ])
+AC_CONFIG_FILES([ share/html/online/Makefile ])
+AC_CONFIG_FILES([ man/Makefile man/man1/Makefile ])
 
 AC_OUTPUT
 
@@ -771,23 +799,9 @@ AC_OUTPUT
 # Echo some important info, to avoid stupid mistakes
 #
 
-echo ""
-echo "GROMACS is ready to compile."
-
-eval "show_path=`echo ${exec_prefix} | sed -e s,NONE,${ac_default_prefix},`"
-eval "show_datadir=`echo ${datadir} | sed -e s,NONE,${ac_default_prefix},`"
-echo ""
-echo "* Binaries and libraries for this host will be installed in"
-echo "    ${show_path}/bin" 
-echo "    ${show_path}/lib" 
-echo "  and shared data will placed in"
-echo "    ${show_datadir}"
-echo "  (You can set this with --prefix, --exec-prefix and --datadir)"
-
-
 if test "$enable_float" = "no" -a "$name_transform_provided" = "no"; then
   echo ""
-  echo "* You are compiling a double precision version of the package -"
+  echo "* You are compiling a double precision version of Gromacs -"
   echo "  program names will be suffixed with _d to avoid overwriting single"
   echo "  precision files. You can override it with --program-suffix"
 fi
@@ -803,13 +817,6 @@ if test "$name_transform_provided" = "no" -a "$enable_mpi" = "yes"; then
   echo "  installed you can issue make mdrun; make install-mdrun."
 fi
 
-if test "$enable_shared" = "yes"; then
-  echo ""
-  echo "* To save space, you might want to use shared libraries."
-  echo "  This should work on almost any platform, but since there are"
-  echo "  a few exceptions (MPI builds on aix) it is not used by default."
-  echo "  Turn it on with --enable-shared."
-fi
 echo ""
 
 
