@@ -88,15 +88,6 @@ enum {
 extern FILE *xvgropen(char *fn,char *title,char *xaxis,char *yaxis);
 /* Open a file, and write a title, and axis-labels in Xvgr format */
 
-  /*extern void xvgr_file(char *fn,char *opts);*/
-/* ! - - - DEPRECATED - - - !
- * use do_view now instead!
- * optional support for xmgrace now via env. GMX_VIEW_XVG
- * see viewit.c/.h (gmxlib)
- * Starts xvgr with a file fn in the background,
- * opts (options to xvgr) may be NULL
- */
-
 extern void xvgr_view(FILE *out,real xmin,real ymin,real xmax,real ymax);
 /* Set the view in xvgr */
 

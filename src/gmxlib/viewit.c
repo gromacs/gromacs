@@ -74,8 +74,8 @@ void do_view(char *fn, char *opts)
       sprintf(env, "GMX_VIEW_%s", ext);
       switch(ftp) {
       case efXVG:
-	if ( ! (cmd=getenv(env)) ) {
-	  if ( getenv("XMGRACE") )
+	if (!(cmd=getenv(env))) {
+	  if (getenv("XMGR") == NULL)
 	    cmd="xmgrace";
 	  else
 	    cmd="xmgr";

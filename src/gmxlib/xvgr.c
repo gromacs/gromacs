@@ -46,11 +46,6 @@ static char *SRCID_xvgr_c = "$Id$";
 #include "viewit.h"
 #include "vec.h"
 
-bool bXmGrace(void)
-{
-  return (getenv("XMGRACE") != NULL);
-}
-
 FILE *xvgropen(char *fn,char *title,char *xaxis,char *yaxis)
 {
   FILE *xvgr;
@@ -66,17 +61,9 @@ FILE *xvgropen(char *fn,char *title,char *xaxis,char *yaxis)
   fprintf(xvgr,"@    title \"%s\"\n",title);
   fprintf(xvgr,"@    xaxis  label \"%s\"\n",xaxis);
   fprintf(xvgr,"@    yaxis  label \"%s\"\n",yaxis);
-  fprintf(xvgr,"@TYPE nxy\n");
+  fprintf(xvgr,"@TYPE xy\n");
   
   return xvgr;
-}
-
-/* don't use xvgr_file, use do_view in stead */
-/* optional support for xmgrace now via env. GMX_VIEW_XVG */
-/* see viewit.c/.h (gmxlib) */
-static void xvgr_file(char *fn,char *opts)
-{
-  do_view(fn,opts);
 }
 
 void xvgr_view(FILE *out,real xmin,real ymin,real xmax,real ymax)
@@ -104,7 +91,7 @@ void xvgr_legend(FILE *out,int nsets,char *setname[])
   fprintf(out,"@ legend length %d\n",2);
   for(i=0; (i<nsets); i++)
     if (setname[i]) {
-      if (bXmGrace())
+      if (getenv("XMGR") == NULL)
 	fprintf(out,"@ s%d legend \"%s\"\n",i,setname[i]);
       else
 	fprintf(out,"@ legend string %d \"%s\"\n",i,setname[i]);
