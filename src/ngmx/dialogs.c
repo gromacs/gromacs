@@ -45,6 +45,7 @@ static char *SRCID_dialogs_c = "$Id$";
 #include "names.h"
 #include "nmol.h"
 #include "manager.h"
+#include "futil.h"
 
 #define MBFLAGS /* MB_APPLMODAL | */ MB_DONTSHOW
 
