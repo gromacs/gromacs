@@ -293,6 +293,7 @@ static char **read_topol(char        *infile,
   real       npow=12.0;     /* Default value for repulsion power */
   bool       bReadDefaults,bReadMolType,bGenPairs;
   double     qt=0,qBt=0; /* total charge */
+  t_bond_atomtype *batype;
 
   /* open input and output file */
   if ((in = fopen(infile,"r")) == NULL)
@@ -309,6 +310,8 @@ static char **read_topol(char        *infile,
   block2   = NULL;		/* the extra exclusions			 */
   nb_funct = F_LJ;
   
+  snew(batype,1);
+  init_bond_atomtype(batype);
   /* parse the actual file */
   bReadDefaults = FALSE;
   bGenPairs     = FALSE;
@@ -410,11 +413,11 @@ static char **read_topol(char        *infile,
 	  
 	  break;
 	case d_atomtypes:
-	  push_at(symtab,atype,pline,nb_funct,
+	  push_at(symtab,atype,batype,pline,nb_funct,
 		  &nbparam,bGenPairs ? &pair : NULL);
 	  break;
 
-#define PUSHBT(nral) push_bt(d,plist,nral,atype,pline)
+#define PUSHBT(nral) push_bt(d,plist,nral,batype->atomname,batype->nr,pline)
 	case d_bondtypes:
 	  PUSHBT(2);
 	  break;
@@ -425,14 +428,14 @@ static char **read_topol(char        *infile,
 	  if (bGenPairs)
 	    push_nbt(d,pair,atype,pline,nb_funct);
 	  else
-	    PUSHBT(2);
+	    push_bt(d,plist,2,atype->atomname,atype->nr,pline);
 	  break;
 	case d_angletypes:
 	  PUSHBT(3);
 	  break;
 	case d_dihedraltypes:
 	  /* Special routine that can read both 2 and 4 atom dihedral definitions. */
-	  push_dihedraltype(d,plist,atype,pline);
+	  push_dihedraltype(d,plist,batype->atomname,batype->nr,pline);
 	  break;
 #undef PUSHBT
 
@@ -482,11 +485,14 @@ static char **read_topol(char        *infile,
 	  push_atom(symtab,&(mi0->cgs),&(mi0->atoms),atype,pline);
 	  break;
 	  
+	case d_pairs: 
+	  push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,FALSE);
+	  break;
+	  
 	case d_dum2:
 	case d_dum3:
 	case d_dum4:
         case d_bonds:
-	case d_pairs: 
 	case d_angles:
 	case d_constraints:
 	case d_settles:
@@ -496,8 +502,9 @@ static char **read_topol(char        *infile,
 	case d_distance_restraints: 
 	case d_orientation_restraints:
 	case d_dihedrals:
-	  push_bond(d,plist,mi0->plist,&(mi0->atoms),pline);
+	  push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,TRUE);
 	  break;
+
 	case d_exclusions:
 	  if (!block2[nmol-1].nr)
 	    init_block2(&(block2[nmol-1]),mi0->atoms.nr);

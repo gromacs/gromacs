@@ -52,14 +52,14 @@ typedef struct {
 extern void generate_nbparams(int comb,int funct,t_params plist[],
 			      t_atomtype *atype,real npow);
 			      
-extern void push_at (t_symtab *symtab,t_atomtype *at,char *line,int nb_funct,
+extern void push_at (t_symtab *symtab,t_atomtype *at,t_bond_atomtype *bat,char *line,int nb_funct,
 		     t_nbparam ***nbparam,t_nbparam ***pair);
 
 extern void push_bt(directive d,t_params bt[], int nral, 
-		    t_atomtype *at, char *line);
+		    char ***typenames, int ntypes, char *line);
 
 extern void push_dihedraltype(directive d,t_params bt[],
-			      t_atomtype *at, char *line);
+			      char ***typenames, int ntypes,char *line);
 
 extern void push_nbt(directive d,t_nbparam **nbt,t_atomtype *atype,
 		     char *plines,int nb_funct);
@@ -73,7 +73,7 @@ extern void push_atom(t_symtab   *symtab,
 extern void push_bondnow (t_params *bond, t_param *b);
 
 extern void push_bond(directive d,t_params bondtype[],t_params bond[],
-		      t_atoms *at,char *line);
+		      t_atoms *at,t_atomtype *atype,char *line,bool bBonded);
 
 extern void push_mol(int nrmols,t_molinfo mols[],char *pline,
 		     int *whichmol,int *nrcopies);

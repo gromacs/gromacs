@@ -36,7 +36,7 @@ AC_MSG_RESULT(no))
 if test -n "$fftwname"; then
 # we cannot run the code since an MPI program might not be allowed 
 # on a login node of a supercomputer
-AC_TRY_COMPILE([#include <$fftwname.h>],
+AC_TRY_COMPILE([#include <$fftwname.h>], 
 [int _array_ [1 - 2 * !((sizeof(fftw_real)) == $sizeof_real)]; ],
 [
 ok=yes
@@ -64,10 +64,10 @@ AC_MSG_ERROR([Cannot find any $prec precision $xfftwname.h or $1.h]
 [/usr/local/include and /usr/local/lib by default.]
 [You can find information at www.gromacs.org, or in the INSTALL file.])
 ])
-AC_TRY_COMPILE([#include <$fftwname.h>],
+AC_TRY_COMPILE([#include <$1.h>],
 [int _array_ [1 - 2 * !((sizeof(fftw_real)) == $sizeof_real)];],
 [
-usedprefix=$fftwcheckprefix
+usedprefix=""
 fftwname=$1
 ],
 [

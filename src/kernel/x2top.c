@@ -224,6 +224,7 @@ t_atomtype *set_atom_type(t_atoms *atoms,int nbonds[],
   atype->nr       = 0;
   atype->atom     = NULL;
   atype->atomname = NULL;
+  atype->bondatomtype = NULL;
   k=0;
   for(i=0; (i<atoms->nr); i++) {
     if ((type = nm2type(nnm,nm2t,*atoms->atomname[i],nbonds[i])) == NULL)
@@ -244,7 +245,9 @@ t_atomtype *set_atom_type(t_atoms *atoms,int nbonds[],
       atype->nr++;
       srenew(atype->atomname,atype->nr);
       srenew(atype->atom,atype->nr);
+      srenew(atype->bondatomtype,atype->nr);
       atype->atomname[k]   = put_symtab(&symtab,type);
+      atype->bondatomtype[k] = k; /* Set bond_atomtype identical to atomtype */
       atype->atom[k].type  = k;
       atoms->atom[i].type  = k;
       atype->atom[k].typeB = k;
