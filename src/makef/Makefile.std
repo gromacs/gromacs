@@ -18,8 +18,10 @@ SYSDEFS         += -DUSE_MPI -DPARALLEL
 ifneq ($(MPIR_HOME),)
 INCDIR		+= -I$(MPIR_HOME)/include
 endif
+ifneq ($(CC),mpicc)
 SYSLIBS         += -lmpi
 RUNSYSLIBS      += -lmpi
+endif
 endif
 
 ifeq ($(USE_PVM3),yes)
