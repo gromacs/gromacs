@@ -38,21 +38,30 @@ static char *SRCID_calcmu_c = "$Id$";
 #include "nsb.h"
 #include "main.h"
 
-void calc_mu(t_nsborder *nsb,rvec x[],real q[],rvec mu)
+void calc_mu_and_q(t_nsborder *nsb,rvec x[],real q[],rvec mu,real *qsum)
 {
   int i,start,end,m;
+  /* temporary double prec. to maintain precision */
+  double tmpmu[3];
+  double tmpq;
   
   start = START(nsb);
   end   = start + HOMENR(nsb);  
-  
-  clear_rvec(mu);
+
+  tmpq=0;
+  for(m=0;m<DIM;m++)
+    tmpmu[m]=0;
+
   for(i=start; (i<end); i++) {
     for(m=0; (m<DIM); m++) {
-      mu[m] += q[i]*x[i][m];
+      tmpmu[m] += q[i]*x[i][m];
     }
+    tmpq+=q[i];
   }
   for(m=0; (m<DIM); m++)
-    mu[m] *= ENM2DEBYE;
+    mu[m] = tmpmu[m] * ENM2DEBYE;
+
+  *qsum=tmpq;
 }
 
 bool read_mu(FILE *fp,rvec mu,real *vol)

@@ -59,7 +59,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
   int        i,m;
-  rvec       vcm;
+  rvec       vcm,mu_tot;
   rvec       *xx,*vv,*ff;
   
   /* added with respect to mdrun */
@@ -125,7 +125,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   bNS=TRUE;
   do_force(log,cr,parm,nsb,force_vir,0,&mynrnb,
 	   top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
-	   lambda,graph,bNS,FALSE,fr);
+	   lambda,graph,bNS,FALSE,fr,mu_tot);
   bNS=FALSE;
   if (bBox)
     /* Shift back the coordinates, since we're not calling update */
@@ -165,7 +165,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
       do_force(log,cr,parm,nsb,force_vir,2*(step*DIM+idum),&mynrnb,
 	       top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
-	       lambda,graph,bNS,FALSE,fr);
+	       lambda,graph,bNS,FALSE,fr,mu_tot);
       if (bBox)
 	/* Shift back the coordinates, since we're not calling update */
 	unshift_self(graph,parm->box,x);
@@ -182,7 +182,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       
       do_force(log,cr,parm,nsb,force_vir,2*(step*DIM+idum)+1,&mynrnb,
 	       top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
-	       lambda,graph,bNS,FALSE,fr);
+	       lambda,graph,bNS,FALSE,fr,mu_tot);
       if (bBox)
 	/* Shift back the coordinates, since we're not calling update */
 	unshift_self(graph,parm->box,x);

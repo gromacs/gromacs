@@ -152,7 +152,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
    */
   do_force(log,cr,parm,nsb,force_vir,0,&(nrnb[cr->pid]),top,grps,
 	   x,buf,f,buf,mdatoms,ener,bVerbose && !(PAR(cr)),
-	   lambda,graph,bNS,FALSE,fr);
+	   lambda,graph,bNS,FALSE,fr,mu_tot);
   where();
 
   /* Spread the force on dummy particle to the other particles... */
@@ -249,7 +249,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       do_force(log,cr,parm,nsb,force_vir,
 	       count,&(nrnb[cr->pid]),top,grps,xprime,buf,f,
 	       buf,mdatoms,ener,bVerbose && !(PAR(cr)),
-	       lambda,graph,bNS,FALSE,fr);
+	       lambda,graph,bNS,FALSE,fr,mu_tot);
       
       /* Spread the force on dummy particle to the other particles... */
       spread_dummy_f(log,xprime,f,&(nrnb[cr->pid]),&top->idef); 
@@ -322,7 +322,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     do_force(log,cr,parm,nsb,force_vir,
 	     count,&(nrnb[cr->pid]),top,grps,xprime,buf,f,
 	     buf,mdatoms,ener,bVerbose && !(PAR(cr)),
-	     lambda,graph,bNS,FALSE,fr);
+	     lambda,graph,bNS,FALSE,fr,mu_tot);
     
     /* Spread the force on dummy particle to the other particles... */
     spread_dummy_f(log,xprime,f,&(nrnb[cr->pid]),&top->idef); 

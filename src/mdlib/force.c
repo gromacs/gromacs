@@ -593,12 +593,13 @@ void force(FILE       *fp,     int        step,
 	   bool       bVerbose, matrix     box,
 	   real       lambda,   t_graph    *graph,
 	   t_block    *excl,    bool       bNBFonly,
-	   matrix lr_vir)
+	   matrix lr_vir,       rvec       mu_tot,
+	   real       qsum)
 {
   int     i,nit;
   bool    bDoEpot;
   rvec    box_size;
-  real    Vlr,Vself=0;
+  real    Vlr,Vcorr=0;
   
   /* Reset box */
   for(i=0; (i<DIM); i++)
@@ -672,15 +673,15 @@ void force(FILE       *fp,     int        step,
 		  eel_names[fr->eeltype]);
     }
     if(fr->bEwald)
-	Vself = ewald_LRcorrection(fp,nsb,cr,fr,
-				   md->chargeA,excl,x,box_size,lr_vir);
+      Vcorr =
+	ewald_LRcorrection(fp,nsb,cr,fr,md->chargeA,excl,x,box_size,
+			   mu_tot,qsum,ir->surface_dipole,lr_vir);
     else
-	Vself = shift_LRcorrection(fp,nsb,cr,fr,
-			       md->chargeA,excl,x,TRUE,box_size,lr_vir);
-    epot[F_LR] = Vlr - Vself;
+      Vcorr = shift_LRcorrection(fp,nsb,cr,fr,md->chargeA,excl,x,TRUE,box_size,lr_vir);
+    epot[F_LR] = Vlr + Vcorr;
     if (debug)
-      fprintf(debug,"Vlr = %g, Vself = %g, Vlr_corr = %g\n",
-	      Vlr,Vself,epot[F_LR]);
+      fprintf(debug,"Vlr = %g, Vcorr = %g, Vlr_corr = %g\n",
+	      Vlr,Vcorr,epot[F_LR]);
     if (debug) {
       pr_rvecs(debug,0,"lr_vir after corr",lr_vir,DIM);
       pr_rvecs(debug,0,"fshift after LR Corrections",fr->fshift,SHIFTS);
@@ -691,7 +692,7 @@ void force(FILE       *fp,     int        step,
   if (debug)    
     print_nrnb(debug,nrnb); 
   debug_gmx();
-
+  
   if (!bNBFonly) {
     calc_bonds(fp,idef,x,f,fr,graph,epot,nrnb,box,lambda,md,
 	       opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14]);    

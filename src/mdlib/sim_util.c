@@ -47,6 +47,7 @@ static char *SRCID_sim_util_c = "$Id$";
 #include "physics.h"
 #include "main.h"
 #include "network.h"
+#include "calcmu.h"
 
 #define difftime(end,start) ((double)(end)-(double)(start))
 
@@ -173,12 +174,14 @@ void do_force(FILE *log,t_commrec *cr,
 	      rvec x[],rvec v[],rvec f[],rvec buf[],
 	      t_mdatoms *mdatoms,real ener[],bool bVerbose,
 	      real lambda,t_graph *graph,
-	      bool bNS,bool bNBFonly,t_forcerec *fr)
+	      bool bNS,bool bNBFonly,t_forcerec *fr, rvec mu_tot)
 {
   static rvec box_size;
   static real dvdl_lr = 0;
   int    pid,cg0,cg1,i,j;
   int    start,homenr;
+  static real mu_and_q[DIM+1]; 
+  real   qsum;
   matrix lr_vir; /* used for PME long range virial */
   
   pid    = cr->pid;
@@ -188,7 +191,12 @@ void do_force(FILE *log,t_commrec *cr,
   cg1    = CG1(nsb);
   
   update_forcerec(log,fr,parm->box);
- 
+
+  /* Calculate total (local) dipole moment in a temporary common array. 
+   * This makes it possible to sum them over processors faster.
+   */
+  calc_mu_and_q(nsb,x,mdatoms->chargeT,mu_and_q,mu_and_q+DIM);
+  
   if (fr->ePBC != epbcNONE) { 
     /* Compute shift vectors every step, because of pressure coupling! */
     if (parm->ir.epc != epcNO)
@@ -214,9 +222,14 @@ void do_force(FILE *log,t_commrec *cr,
       pr_rvecs(debug,0,"cgcm",fr->cg_cm,nsb->cgtotal);
   }
     
-  /* Communicate coordinates if necessary */
-  if (PAR(cr)) 
+  /* Communicate coordinates and sum dipole and net charge if necessary */
+  if (PAR(cr)) {
     move_x(log,cr->left,cr->right,x,nsb,nrnb);
+    gmx_sum(DIM+1,mu_and_q,cr);
+  }
+  for(i=0;i<DIM;i++)
+    mu_tot[i]=mu_and_q[i];
+  qsum=mu_and_q[DIM];
   
   /* Reset energies */
   reset_energies(&(parm->ir.opts),grps,fr,bNS,ener);    
@@ -259,7 +272,7 @@ void do_force(FILE *log,t_commrec *cr,
   force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(parm->ir.opts),
 	x,f,ener,bVerbose,parm->box,lambda,graph,&(top->atoms.excl),
-	bNBFonly,lr_vir);
+	bNBFonly,lr_vir,mu_tot,qsum);
 	
   /* Take long range contribution to free energy into account */
   ener[F_DVDL] += dvdl_lr;

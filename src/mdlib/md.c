@@ -295,19 +295,14 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
      */
     do_force(log,cr,parm,nsb,force_vir,step,&mynrnb,
 	     top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
-	     lambda,graph,bNS,FALSE,fr);
+	     lambda,graph,bNS,FALSE,fr,mu_tot);
     debug_gmx();
 #ifdef DEBUG
     pr_rvecs(log,0,"force_vir",force_vir,DIM);
 #endif     
 
 #endif
-
-    /* Calculate total (local) dipole moment if necessary. 
-     * This is parallellized 
-     */
-    calc_mu(nsb,x,mdatoms->chargeT,mu_tot);
-    
+   
 #ifdef XMDRUN
     mu_aver=calc_mu_aver(cr,nsb,x,mdatoms->chargeA,mu_tot,top,mdatoms,
 			 gnx,grpindex);
