@@ -963,15 +963,16 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
     setexcl(nri,i_atoms,&top->atoms.excl,FALSE,bexcl);
   }
   /* Perform any left over force calculations */
-  if (rvdw2 > rs2)
-    do_longrange(log,top,fr,0,md,icg,nn,nlr_ljc[nn],
-		 nl_lr_ljc[nn],bexcl,shift,x,box_size,nrnb,
-		 lambda,dvdlambda,grps,FALSE,TRUE,bHaveLJ);
-  if (rcoul2 > rvdw2)
-    do_longrange(log,top,fr,0,md,icg,nn,nlr_coul[nn],
-		 nl_lr_coul[nn],bexcl,shift,x,box_size,nrnb,
-		 lambda,dvdlambda,grps,TRUE,TRUE,bHaveLJ);
-		 
+  for (nn=0; (nn<ngid); nn++) {
+    if (rvdw2 > rs2)
+      do_longrange(log,top,fr,0,md,icg,nn,nlr_ljc[nn],
+		   nl_lr_ljc[nn],bexcl,shift,x,box_size,nrnb,
+		   lambda,dvdlambda,grps,FALSE,TRUE,bHaveLJ);
+    if (rcoul2 > rvdw2)
+      do_longrange(log,top,fr,0,md,icg,nn,nlr_coul[nn],
+		   nl_lr_coul[nn],bexcl,shift,x,box_size,nrnb,
+		   lambda,dvdlambda,grps,TRUE,TRUE,bHaveLJ);
+  }
   /* Close off short range neighbourlists */
   close_neighbor_list(fr,FALSE,-1);
   
