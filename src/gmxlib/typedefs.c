@@ -17,7 +17,7 @@ void init_block(t_block *block)
     block->multinr[i]=0;
 }
 
-void init_atom (t_atoms *at)
+void init_atom(t_atoms *at)
 {
   int i;
   
@@ -29,6 +29,7 @@ void init_atom (t_atoms *at)
   at->resname  = NULL;
   at->atomname = NULL;
   at->grpname  = NULL;
+  at->pdbinfo  = NULL;
   for(i=0; (i<egcNR); i++) {
     at->grps[i].nr=0;
     at->grps[i].nm_ind=NULL;
@@ -115,3 +116,20 @@ void done_inputrec(t_inputrec *ir)
   if (ir->opts.nFreeze) sfree(ir->opts.nFreeze);
 }
 
+t_atoms *new_atoms(int natoms)
+{
+  t_atoms *a;
+  
+  /* Allocate and set everything to 0 or NULL */
+  snew(a,1);
+
+  /* Allocate space for natoms */
+  snew(a->atom,     natoms);
+  snew(a->pdbinfo,  natoms);
+  snew(a->atomname, natoms);
+  snew(a->resname,  natoms);
+
+  init_block(&a->excl);
+      
+  return a;
+}
