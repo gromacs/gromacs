@@ -504,7 +504,7 @@ void init_pme(FILE *log,t_commrec *cr,t_nsborder *nsb,t_inputrec *ir)
 {
     int i;
     
-    fprintf(log,"Will do PME sum in reciprocal space.");
+    fprintf(log,"Will do PME sum in reciprocal space.\n");
     nx = ir->nkx;
     ny = ir->nky;
     nz = ir->nkz;
