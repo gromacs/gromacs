@@ -193,8 +193,9 @@ static void enter_function(t_params *p,t_functype ftype,
                            t_idef *idef,int *maxtypes,bool bNB)
 {
   int     k,type,nr,nral,nrfp,delta,start;
-  t_ilist *il=&(idef->il[ftype]);
+  t_ilist *il;
   
+  il    = &(idef->il[ftype]);
   start = idef->ntypes;
   nr    = p->nr;
   nral  = NRAL(ftype);
