@@ -351,6 +351,7 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PR("ld_temp",ir->ld_temp);
     PR("ld_fric",ir->ld_fric);
     PI("ld_seed",ir->ld_seed);
+    PR("cos_accel",ir->cos_accel);
     PI("userint1",ir->userint1);
     PI("userint2",ir->userint2);
     PI("userint3",ir->userint3);

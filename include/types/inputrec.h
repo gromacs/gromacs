@@ -117,6 +117,7 @@ typedef struct {
   real ld_temp;         /* Temperature for Langevin Dynamics (LD)       */
   real ld_fric;         /* Friction coefficient for LD (amu / ps)       */
   int  ld_seed;         /* Random seed for LD                           */
+  real cos_accel;       /* Acceleration for viscosity calculation       */
   int  userint1;        /* User determined parameters                   */
   int  userint2;
   int  userint3;

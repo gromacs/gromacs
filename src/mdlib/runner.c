@@ -186,6 +186,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 
   /* Group stuff (energies etc) */
   init_groups(stdlog,mdatoms,&(parm->ir.opts),grps);
+  /* Copy the cos acceleration to the groups struct */
+  grps->cosacc.cos_accel = parm->ir.cos_accel;
   
   /* Periodicity stuff */  
   graph=mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
@@ -215,7 +217,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     init_pppm(stdlog,cr,nsb,FALSE,TRUE,box_size,getenv("GMXGHAT"),&parm->ir);
   if (fr->eeltype == eelPME)
     init_pme(stdlog,cr,nsb,&parm->ir);
-		
+
   /* Now do whatever the user wants us to do (how flexible...) */
   if (bNM) {
     start_t=do_nm(stdlog,cr,nfile,fnm,

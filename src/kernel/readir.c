@@ -422,6 +422,7 @@ void get_ir(char *mdparin,char *mdparout,
   STYPE ("accelerate",  acc,            NULL);
   STYPE ("freezegrps",  freeze,         NULL);
   STYPE ("freezedim",   frdim,          NULL);
+  RTYPE ("cos-acceleration", ir->cos_accel, 0);
   STYPE ("energygrp_excl", egexcl,      NULL);
   
   /* Electric fields */

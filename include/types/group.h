@@ -51,9 +51,16 @@ typedef struct {
 } t_grp_acc;
 
 typedef struct {
+  real    cos_accel;    /* The acceleration for the cosine profile      */
+  real    mvcos;        /* The cos momenta of home particles            */
+  real    vcos;         /* The velocity of the cosine profile           */
+} t_cos_acc;
+
+typedef struct {
   t_grp_ener   estat;		/* Energy logging stuff			*/
-  t_grp_tcstat *tcstat;         /* T Coupling Data 			*/
+  t_grp_tcstat *tcstat;         /* T-coupling data 			*/
   t_grp_acc    *grpstat;	/* Acceleration data			*/
+  t_cos_acc    cosacc;          /* Cosine acceleration data             */
 } t_groups;
 
 #define GID(igid,jgid,gnr) ((igid < jgid) ? (igid*gnr+jgid) : (jgid*gnr+igid))

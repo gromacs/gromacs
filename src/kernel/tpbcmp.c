@@ -319,6 +319,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CIR(ld_temp);
   CIR(ld_fric);
   CII(ld_seed);
+  CIR(cos_accel);
   CII(userint1);
   CII(userint2);
   CII(userint3);

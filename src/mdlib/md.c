@@ -105,8 +105,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   debug_gmx();
     
   /* Compute initial EKin for all.. */
-  calc_ke_part(TRUE,START(nsb),HOMENR(nsb),vold,v,vt,&(parm->ir.opts),
-	       mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
+  if (grps->cosacc.cos_accel == 0)
+    calc_ke_part(TRUE,START(nsb),HOMENR(nsb),vold,v,vt,&(parm->ir.opts),
+		 mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
+  else
+    calc_ke_part_visc(TRUE,START(nsb),HOMENR(nsb),
+		      parm->box,x,vold,v,vt,&(parm->ir.opts),
+		      mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
   debug_gmx();
 	
   if (PAR(cr)) 
@@ -271,8 +276,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       /* Calculate partial Kinetic Energy (for this processor) 
        * per group! Parallelized
        */
-      calc_ke_part(FALSE,START(nsb),HOMENR(nsb),vold,v,vt,&(parm->ir.opts),
-		   mdatoms,grps,&mynrnb,lambda,&ener[F_DVDL]);
+      if (grps->cosacc.cos_accel == 0)
+	calc_ke_part(TRUE,START(nsb),HOMENR(nsb),vold,v,vt,&(parm->ir.opts),
+		     mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
+      else
+	calc_ke_part_visc(TRUE,START(nsb),HOMENR(nsb),
+			  parm->box,x,vold,v,vt,&(parm->ir.opts),
+			  mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
       debug_gmx();
       /* Calculate center of mass velocity if necessary, also parallellized */
       if (bStopCM)
@@ -352,7 +362,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(parm->ir.opts),grps,ener);
-    
+
+    /* Calculate the amplitude of the cosine velocity profile */
+    grps->cosacc.vcos = grps->cosacc.mvcos/mdatoms->tmass;
+
     if (!bRerunMD) {
       /* Sum the kinetic energies of the groups & calc temp */
       ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);

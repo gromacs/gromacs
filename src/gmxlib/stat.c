@@ -62,7 +62,7 @@ void global_stat(FILE *log,
 {
   static t_bin *rb=NULL; 
   static int   *itc;
-  int    iterminate,imu,ie,ifv,isv,icm,in[MAXPROC],inn[egNR];
+  int    iterminate,imu,ie,ifv,isv,icm,ica,in[MAXPROC],inn[egNR];
   int    j;
   
   if (rb==NULL) {
@@ -100,6 +100,8 @@ void global_stat(FILE *log,
   where();
   imu = add_binr(log,rb,DIM,mu_tot);
   where();
+  ica = add_binr(log,rb,1,&(grps->cosacc.mvcos));
+  where();
   iterminate = add_binr(log,rb,1,terminate);
   
   /* Global sum it all */
@@ -119,6 +121,10 @@ void global_stat(FILE *log,
   extract_binr(rb,icm,DIM,vcm);
   where();
   extract_binr(rb,imu,DIM,mu_tot);
+  where();
+  extract_binr(rb,imu,1,mu_tot);
+  where();
+  extract_binr(rb,ica,1,&(grps->cosacc.mvcos));
   where();
   extract_binr(rb,iterminate,1,terminate);
   where();

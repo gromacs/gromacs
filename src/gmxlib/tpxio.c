@@ -47,7 +47,7 @@ static char *SRCID_tpxio_c = "$Id$";
 #include "copyrite.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version = 13;
+static int tpx_version = 14;
 /* This number should be the most recent incompatible version */
 static int tpx_incompatible_version = 9;
 /* This is the version of the file we are reading */
@@ -175,13 +175,17 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
       fprintf(stderr,"Note: niter not in run input file, setting it to %d\n",
 	      ir->niter);
     }
-    do_int(ir->eConstrAlg); 
-    do_int(ir->nProjOrder); 
-    do_real(ir->LincsWarnAngle); 
-    do_int(ir->nstLincsout); 
-    do_real(ir->ld_temp); 
-    do_real(ir->ld_fric); 
-    do_int(ir->ld_seed); 
+    do_int(ir->eConstrAlg);
+    do_int(ir->nProjOrder);
+    do_real(ir->LincsWarnAngle);
+    do_int(ir->nstLincsout);
+    do_real(ir->ld_temp);
+    do_real(ir->ld_fric);
+    do_int(ir->ld_seed);
+    if (file_version >= 14)
+      do_real(ir->cos_accel);
+    else if (bRead)
+      ir->cos_accel = 0;
     do_int(ir->userint1); 
     do_int(ir->userint2); 
     do_int(ir->userint3); 

@@ -85,6 +85,12 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
   static char *mu_nm[] = {
     "Mu-X", "Mu-Y", "Mu-Z"
   };
+  static char *vcos_nm[] = {
+    "2CosZ*Vel-X"
+  };
+  static char *visc_nm[] = {
+    "1/Viscosity"
+  };
   static   char   **grpnms;
   char     **gnm;
   char     buf[256];
@@ -146,6 +152,10 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
   md->ipres  = get_ebin_space(md->ebin,asize(pres_nm),pres_nm);
   md->isurft = get_ebin_space(md->ebin,asize(surft_nm),surft_nm);
   md->imu    = get_ebin_space(md->ebin,asize(mu_nm),mu_nm);
+  if (grps->cosacc.cos_accel != 0) {
+    md->ivcos = get_ebin_space(md->ebin,asize(vcos_nm),vcos_nm);
+    md->ivisc = get_ebin_space(md->ebin,asize(visc_nm),visc_nm);
+  }
   if (bLR) 
     bEInd[egLR]   = TRUE;
   if (bLJLR)
@@ -267,15 +277,16 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
   
   copy_energy(ener,ecopy);
   add_ebin(md->ebin,md->ie,f_nre,ecopy,step);
-  if (bPC) {
+  if (bPC || grps->cosacc.cos_accel != 0) {
     for(m=0; (m<DIM); m++) 
       bs[m]=box[m][m];
     /* This is the volume */
     bs[3] = bs[XX]*bs[YY]*bs[ZZ];
     
     /* This is the density */
-    bs[4] = (tmass*AMU)/(bs[3]*NANO*NANO*NANO*KILO);
-    
+    bs[4] = (tmass*AMU)/(bs[3]*NANO*NANO*NANO);
+  }
+  if (bPC) {
     /* This is pV (in kJ/mol) */  
     bs[5] = bs[3]*ener[F_PRES]/PRESFAC;
     add_ebin(md->ebin,md->ib,NBOXS,bs,step);
@@ -289,6 +300,13 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
   tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ];
   add_ebin(md->ebin,md->isurft,1,&tmp,step);
   add_ebin(md->ebin,md->imu,3,mu_tot,step);
+  if (grps->cosacc.cos_accel != 0) {
+    add_ebin(md->ebin,md->ivcos,1,&(grps->cosacc.vcos),step);
+    /* 1/viscosity, unit 1/(kg m^-1 s^-1) */
+    tmp = 1/(grps->cosacc.cos_accel/(grps->cosacc.vcos*PICO)
+	     *bs[4]*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
+    add_ebin(md->ebin,md->ivisc,1,&tmp,step);
+  }
   
   if (md->nE > 1) {
     n=0;

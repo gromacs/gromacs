@@ -42,7 +42,7 @@ static char *SRCID_mdebin_h = "$Id$";
 
 typedef struct {
   t_ebin *ebin;
-  int    ie,ib,isvir,ifvir,ipres,ivir,isurft,itc,iu,imu;
+  int    ie,ib,isvir,ifvir,ipres,ivir,isurft,itc,iu,imu,ivcos,ivisc;
   int    nE,nEg,nEc,nTC,nU;
   int    *igrp;
 } t_mdebin;

@@ -128,6 +128,53 @@ static void do_update(int start,int homenr,double dt,
   }
 }
 
+static void do_update_visc(int start,int homenr,double dt,
+			   rvec lamb[],
+			   real invmass[],unsigned short ptype[],
+			   unsigned short cTC[],
+			   rvec x[],rvec xprime[],
+			   rvec v[],rvec vold[],rvec f[],
+			   matrix box,real cos_accel,real vcos)
+{
+  double w_dt;
+  int    gt;
+  real   vn,vv,va,vc;
+  real   lg;
+  real   fac,cosz,mvcos;
+  int    n,d;
+  
+  fac = 2*M_PI/(box[ZZ][ZZ]);
+
+  mvcos = 0;
+  
+  for (n=start; n<start+homenr; n++) {  
+    w_dt = invmass[n]*dt;
+    gt   = cTC[n];
+    cosz = cos(fac*x[n][ZZ]);
+    
+    for (d=0; d<DIM; d++) {
+      vn             = v[n][d];
+      lg             = lamb[gt][d];
+      vold[n][d]     = vn;
+      
+      if ((ptype[n] != eptDummy) && (ptype[n] != eptShell)) {
+	if (d == XX) {
+	  vc           = cosz*vcos;
+	  /* Do not scale the cosine velocity profile */
+	  vv           = vc + lg*(vn - vc + f[n][d]*w_dt);
+	  /* Add the cosine accelaration profile */
+	  vv          += dt*cosz*cos_accel;
+	} else
+	  vv           = lg*(vn + f[n][d]*w_dt);
+	
+	v[n][d]        = vv;
+	xprime[n][d]   = x[n][d]+vv*dt;
+      } else
+	xprime[n][d]   = x[n][d];
+    }
+  }
+}
+
 static void do_update_sd(int start,int homenr,double dt,
 			 rvec accel[],ivec nFreeze[],
 			 real mass[],real invmass[],unsigned short ptype[],
@@ -355,6 +402,60 @@ void calc_ke_part(bool bFirstStep,int start,int homenr,
   inc_nrnb(nrnb,eNR_EKIN,homenr);
 }
 
+void calc_ke_part_visc(bool bFirstStep,int start,int homenr,
+		       matrix box,rvec x[],
+		       rvec vold[],rvec v[],rvec vt[],
+		       t_grpopts *opts,t_mdatoms *md,t_groups *grps,
+		       t_nrnb *nrnb,real lambda,real *dvdlambda)
+{
+  int          g,d,n,ga,gt;
+  rvec         v_corrt;
+  real         hm,vvt;
+  t_grp_tcstat *tcstat=grps->tcstat;
+  t_cos_acc    *cosacc=&(grps->cosacc);
+  real         dvdl;
+  real         fac,cosz;
+
+  for (g=0; g<opts->ngtc; g++)
+    clear_mat(grps->tcstat[g].ekin); 
+    
+  if (bFirstStep)
+    for(n=start; n<start+homenr; n++)
+      copy_rvec(v[n],vold[n]);
+
+  fac = 2*M_PI/box[ZZ][ZZ];
+  cosacc->mvcos = 0;
+  dvdl = 0;
+  for(n=start; n<start+homenr; n++) {  
+    ga   = md->cACC[n];
+    gt   = md->cTC[n];
+    hm   = 0.5*md->massT[n];
+    
+    for(d=0; d<DIM; d++) {
+      vvt        = 0.5*(v[n][d]+vold[n][d]);
+      vt[n][d]   = vvt;
+      v_corrt[d] = vvt;
+    }
+    cosz           = cos(fac*x[n][ZZ]);
+    /* Subtract the profile for the kinetic energy */
+    v_corrt[XX]   -= cosz*cosacc->vcos;
+    /* Calculate the amplitude of the new velocity profile */
+    cosacc->mvcos += 2*cosz*md->massT[n]*v[n][XX];
+
+    for(d=0; d<DIM; d++) {
+      tcstat[gt].ekin[XX][d]+=hm*v_corrt[XX]*v_corrt[d];
+      tcstat[gt].ekin[YY][d]+=hm*v_corrt[YY]*v_corrt[d];
+      tcstat[gt].ekin[ZZ][d]+=hm*v_corrt[ZZ]*v_corrt[d];
+    }
+    if (md->bPerturbed[n]) {
+      dvdl-=0.5*(md->massB[n]-md->massA[n])*iprod(v_corrt,v_corrt);
+    }
+  }
+  *dvdlambda += dvdl;
+
+  inc_nrnb(nrnb,eNR_EKIN,homenr);
+}
+
 void update(int          natoms, 	/* number of atoms in simulation */
 	    int      	 start,
 	    int          homenr,	/* number of home particles 	*/
@@ -447,15 +548,23 @@ void update(int          natoms, 	/* number of atoms in simulation */
     /* Now do the actual update of velocities and positions */
     where();
     dump_it_all(stdlog,"Before update",natoms,x,xprime,v,vold,force);
-    if (ir->eI==eiMD)
-      /* use normal version of update */
-      do_update(start,homenr,dt,
-		lamb,grps->grpstat,
-		ir->opts.acc,ir->opts.nFreeze,
-		md->invmass,md->ptype,
-		md->cFREEZE,md->cACC,md->cTC,
-		x,xprime,v,vold,force);
-    else if (ir->eI==eiSD)
+    if (ir->eI==eiMD) {
+      if (grps->cosacc.cos_accel == 0)
+	/* use normal version of update */
+	do_update(start,homenr,dt,
+		  lamb,grps->grpstat,
+		  ir->opts.acc,ir->opts.nFreeze,
+		  md->invmass,md->ptype,
+		  md->cFREEZE,md->cACC,md->cTC,
+		  x,xprime,v,vold,force);
+      else
+	do_update_visc(start,homenr,dt,
+		       lamb,
+		       md->invmass,md->ptype,
+		       md->cTC,
+		       x,xprime,v,vold,force,
+		       box,grps->cosacc.cos_accel,grps->cosacc.vcos);
+    } else if (ir->eI==eiSD)
       do_update_sd(start,homenr,dt,
 		   ir->opts.acc,ir->opts.nFreeze,
 		   md->massT,md->invmass,md->ptype,
