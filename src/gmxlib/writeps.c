@@ -327,14 +327,6 @@ void ps_close(FILE *ps)
   fclose(ps);
 }
 
-void viewps(char *fn)
-{
-  char buf[256];
-  
-  sprintf(buf,"ghostview %s &",fn);
-  system(buf);
-}
-
 void ps_comment(FILE *ps,char *s)
 {
   fprintf(ps,"%%%% %s\n",s);
