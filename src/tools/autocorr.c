@@ -701,10 +701,11 @@ void low_do_autocorr(char *fn,char *title,
     
     normalize_acf(nframes,nout,c1[0],bFour,bNormalize);
     
-    if (tbeginfit < tendfit)
+    if (tbeginfit < tendfit) {
       fit_acf(nout,nfitparm,fitfn,fittitle,bVerbose,
 	      tbeginfit,tendfit,dt,c1[0]);
-    else {
+      (void)print_and_integrate(fp,nout,dt,c1[0]);
+    } else {
       sum = print_and_integrate(fp,nout,dt,c1[0]);
       fprintf(stderr,"Correlation time (integral over corrfn): %g (ps)\n",sum);
     }
@@ -713,30 +714,18 @@ void low_do_autocorr(char *fn,char *title,
     /* Not averaging. Normalize individual ACFs */
     for(i=0; (i<nitem); i++) {
       normalize_acf(nframes,nout,c1[i],bFour,bNormalize);
-      if (tbeginfit < tendfit)
+      if (tbeginfit < tendfit) {
 	fit_acf(nout,nfitparm,fitfn,fittitle,bVerbose,
 		tbeginfit,tendfit,dt,c1[i]);
-      else {
+	(void)print_and_integrate(fp,nout,dt,c1[0]);
+      } else {
 	sum = print_and_integrate(fp,nout,dt,c1[i]);
 	fprintf(stderr,"CORRelation time (integral over corrfn %d): %g (ps)\n",
 		i,sum);
       }
     }
-
-    /* Now dump them all */
-    for(j=0; (j<nout); j++) {
-      fprintf(fp,"%10f",j*dt);
-      for(i=0; (i<nitem); i++) {
-	if (((mode == eacP1) || (mode == eacP2) || (mode == eacP3)) && bFour)
-	  fprintf(fp,"  %10.5f",c1[i][j]);
-	else
-	  fprintf(fp,"  %10.5f",c1[i][j]);
-      }
-      fprintf(fp,"\n");
-    }
   }
   ffclose(fp);
-  
 }
 
 static char *Leg[]   = { NULL, "0", "1", "2", "3", NULL };
