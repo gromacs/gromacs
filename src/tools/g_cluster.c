@@ -417,7 +417,7 @@ static void jarvis_patrick(FILE *log,int n1,real **mat,int M,int P,
     fprintf(log,"Nearest neighborlist. M = %d, P = %d\n",M,P);
     for(i=0; (i<n1); i++) {
       fprintf(log,"i: %5d nbs:",i);
-      for(j=0; (j<P) && (nnb[i][j] >= 0); j++)
+      for(j=0; nnb[i][j]>=0; j++)
 	fprintf(log,"  %5d[%6.3f]",nnb[i][j],mat[i][nnb[i][j]]);
       fprintf(log,"\n");
     }
@@ -622,9 +622,9 @@ int main(int argc,char *argv[])
     "can be used to define the distance between structures.[PAR]",
     "full linkage: add a structure to a cluster when its distance to any",
     "element of the cluster is less than [TT]rmscut[tt].[PAR]",
-    "Jarvis Patrick: add a structure to a cluster when a neighboring",
-    "structure is an element of the cluster and it has a least [TT]P[tt]",
-    "neighbors in common with that structure and vice versa. The neighbors",
+    "Jarvis Patrick: add a structure to a cluster when this structure",
+    "and a structure in the cluster have each other as neighbors and",
+    "they have a least [TT]P[tt] neighbors in common. The neighbors",
     "of a structure are the M closest structures or all structures within",
     "[TT]rmscut[tt].[PAR]",
     "Monte Carlo: reorder the RMSD matrix using Monte Carlo.[PAR]",
