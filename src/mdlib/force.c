@@ -131,6 +131,7 @@ static void check_solvent(FILE *fp,t_topology *top,t_forcerec *fr,
   t_block *cgs,*excl,*mols;
   atom_id *cgid;
   int     i,j,m,j0,j1,nj,k,aj,ak,tjA,tjB,nl_m,nl_n,nl_o;
+  int     warncount;
   bool    bOneCG;
   bool    *bAllExcl,bAE,bOrder;
   bool    *bHaveLJ,*bHaveCoul;
@@ -147,6 +148,8 @@ static void check_solvent(FILE *fp,t_topology *top,t_forcerec *fr,
   /* Generate charge group number for all atoms */
   cgid = make_invblock(cgs,cgs->nra);
   
+  warncount=0;
+
   /* Loop over molecules */
   if (fp)
     fprintf(fp,"There are %d molecules, %d charge groups and %d atoms\n",
@@ -247,9 +250,14 @@ static void check_solvent(FILE *fp,t_topology *top,t_forcerec *fr,
 	     * we shouldn't issue a warning. Only if we suspect something
 	     * could be better.
 	     */
-	    if (nl_n != nj)
-	      fprintf(fp,"The order in molecule %d could be optimized"
-		      " for better performance\n",i);
+	    if (nl_n != nj) {
+	      warncount++;
+	      if(warncount<11) 
+ 	        fprintf(fp,"The order in molecule %d could be optimized"
+		        " for better performance\n",i);
+	      if(warncount==10)
+                fprintf(fp,"(More than 10 molecules where the order can be optimized)\n");
+	    }
 	    nl_m = nl_n = nl_o = nj;
 	  }
 	  fr->mno_index[cgid[aj]*3]   = nl_m;
