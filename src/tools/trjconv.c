@@ -248,7 +248,7 @@ int main(int argc,char *argv[])
   static char  *exec_command=NULL;
 
   t_pargs pa[] = {
-        { "-skip", FALSE,  etINT, {&skip_nr},
+    { "-skip", FALSE,  etINT, {&skip_nr},
       "Only write every nr-th frame" },
     { "-dt", FALSE,  etREAL, {&delta_t},
       "Only write frame when t MOD dt = first time" },
@@ -306,7 +306,9 @@ int main(int argc,char *argv[])
   t_atoms      *atoms=NULL,useatoms;
   matrix       top_box;
   atom_id      *index,*cindex;
-  char         *grpname;
+  char         *grpnm;
+  int          *frindex,nrfri;
+  char         *frname;
   int          ifit,irms;
   atom_id      *ind_fit,*ind_rms;
   char         *gn_fit,*gn_rms;
@@ -315,7 +317,6 @@ int main(int argc,char *argv[])
   bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
   bool         bHaveFirstFrame,bHaveNextFrame,bSetBox;
-  char         *grpnm;
   char         *top_file,*in_file,*out_file=NULL,out_file2[256],*charpt;
   char         top_title[256],title[256],command[256],filemode[5];
   int          xdr=0;
@@ -324,8 +325,9 @@ int main(int argc,char *argv[])
     { efTRX, "-f",  NULL, ffREAD },
     { efTRX, "-o", "trajout", ffWRITE },
     { efTPS, NULL,  NULL, ffOPTRD },
-    { efNDX, NULL,  NULL, ffOPTRD }
-  };  
+    { efNDX, NULL,  NULL, ffOPTRD },
+    { efNDX, "-fr", "frames", ffOPTRD }
+  };
 #define NFILE asize(fnm)
   
   CopyRight(stderr,argv[0]);
@@ -405,7 +407,18 @@ int main(int argc,char *argv[])
       if ((charpt=strstr(top_title," t= ")))
 	charpt[0]='\0';
     }
-
+    
+    /* get frame number index */
+    frindex=NULL;
+    if (opt2bSet("-fr",NFILE,fnm)) {
+      printf("Select groups of frame number indices:\n");
+      rd_index(opt2fn("-fr",NFILE,fnm),1,&nrfri,(atom_id **)&frindex,&frname);
+      if (debug)
+	for(i=0; i<nrfri; i++)
+	  fprintf(debug,"frindex[%4d]=%4d\n",i,frindex[i]);
+    }
+    
+      /* get index groups etc. */
     if (bFit) {
       printf("Select group for root least squares fit\n");
       get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),
@@ -567,7 +580,8 @@ int main(int argc,char *argv[])
 	    }
 	  }
 	  bDumpFrame = (fr.time >= tdump-0.5*dt) && (fr.time <= tdump+0.5*dt);
-	}
+	} else
+	  bDumpFrame = FALSE;
 	
 	/* determine if an atom jumped across the box and reset it if so */
 	if (bNoJump && (bTPS || frame!=0)) {
@@ -601,7 +615,14 @@ int main(int argc,char *argv[])
 	  }
 	}
 	
-	if ( ( ( !bTDump && (frame % skip_nr == 0) ) || bDumpFrame  ) ) {
+	if ( frindex )
+	  /* see if we have a frame from the frame index group */
+	  for(i=0; i<nrfri && !bDumpFrame; i++)
+	    bDumpFrame = frame == frindex[i];
+	if (debug && bDumpFrame)
+	  fprintf(debug,"dumping %d\n",frame);
+	
+	if ( ( !bTDump && !frindex && frame % skip_nr == 0 ) || bDumpFrame ) {
 	  
 	  /* calc new time */
 	  if (bTimeStep) 
@@ -738,7 +759,7 @@ int main(int argc,char *argv[])
 	}
 	frame++;
 	bHaveNextFrame=read_next_frame(status,&fr);
-      } while (!bDumpFrame && bHaveNextFrame);
+      } while (!(bTDump && bDumpFrame) && bHaveNextFrame);
     }
     
     if (!bHaveFirstFrame || (bTDump && !bDumpFrame))
