@@ -107,7 +107,7 @@ F77_FUNC(xdrfchar,XDRFCHAR)(int *xdrid, char *cp, int *ret)
 }
 
 void
-F77_FUNC(xdrfdouble,XDRFGMX_DOUBLE)(int *xdrid, double *dp, int *ret)
+F77_FUNC(xdrfdouble,XDRFDOUBLE)(int *xdrid, double *dp, int *ret)
 {
 	*ret = xdr_double(xdridptr[*xdrid], dp);
 	cnt += sizeof(double);
