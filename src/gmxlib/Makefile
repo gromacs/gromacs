@@ -169,5 +169,3 @@ fitter:		fitter.o
 mgmxtest:	mgmxtest.o 	mgmx.o	widget.o statutil.o
 		$(LD) -o $@ $^  $(SYSLIBS) 
 
-include	Make.dep
-
