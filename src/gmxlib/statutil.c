@@ -286,12 +286,13 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   static bool bHelp=FALSE,bHidden=FALSE,bQuiet=FALSE;
   static char *not_nicestr[] = { "0", "4", "10", "19", NULL };
   static char *nicestr[]     = { "19", "10", "4", "0", NULL };
-  static char *npri_str[]    = { "0", "100", "200", "250", NULL };
+  static char *not_npristr[] = { "0", "100", "200", "250", NULL };
+  static char *npristr[]     = { "250", "200", "100", "0", NULL };
   static int  nicelevel=0,mantp=0,npri=0;
   static bool bExcept=FALSE,bGUI=FALSE,bDebug=FALSE;
   
   FILE *fp;  
-  bool bPrint,bNo_get_pargs,bAddNice;
+  bool bPrint,bNo_get_pargs;
   int  i,j,k,npall;
   
   t_pargs *all_pa=NULL;
@@ -300,11 +301,11 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 		       "Use dialog box GUI to edit command line options" };
   t_pargs fpe_pa   = { "-exception", FALSE, etBOOL, &bExcept,
 		       "HIDDENTurn on exception handling" };
-  t_pargs npri_paX = { "-npri", FALSE, etENUM,  npri_str,
+  t_pargs npri_paX = { "-npri", FALSE, etENUM,  not_npristr,
 		       "Set non blocking priority" };
   t_pargs npri_pa  = { "-npri", FALSE, etINT,  &npri,
 		       "Set non blocking priority (try 250)" };
-  t_pargs nice_paX = { "-nice", FALSE, etENUM, NULL, 
+  t_pargs nice_paX = { "-nice", FALSE, etENUM, not_nicestr, 
 		       "Set the nicelevel" };
   t_pargs nice_pa  = { "-nice", FALSE, etINT,  &nicelevel, 
 		       "Set the nicelevel" };
@@ -373,37 +374,32 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   npall = add_parg(npall,&(all_pa),&motif_pa);
 #endif
 
-  bAddNice = TRUE;    
 #ifdef _SGI_
 #ifdef USE_SGI_FPE
   npall = add_parg(npall,&(all_pa),&fpe_pa);
 #endif
 #ifndef NO_NICE
-  if (bGUI)
+  if (FF(PCA_SET_NPRI))
+    npri=atoi(getenv("GMXNPRI"));
+  if (bGUI) {
+    if (npri)
+      npri_paX.u.c = npristr;
     npall = add_parg(npall,&(all_pa),&npri_paX);
-  else {
-    if (FF(PCA_SET_NPRI) && !opt2parg_bSet("-npri",npall,all_pa)) {
-      npri=atoi(getenv("GMXNPRI"));
-      bAddNice = FALSE;
-    }
-    npall = add_parg(npall,&(all_pa),&npri_pa);
   }
+  else
+    npall = add_parg(npall,&(all_pa),&npri_pa);
 #endif
 #endif
 
 #ifndef NO_NICE
-  if (bAddNice) {
-    if (bGUI) {
-      /* Automatic nice or scheduling options */
-      if (bNice) 
-	nice_paX.u.c = nicestr;
-      else
-	nice_paX.u.c = not_nicestr;
-      npall = add_parg(npall,&(all_pa),&nice_paX);
-    }
-    else
-      npall = add_parg(npall,&(all_pa),&nice_pa);
+  if (bGUI) {
+    /* Automatic nice or scheduling options */
+    if (bNice) 
+      nice_paX.u.c = nicestr;
+    npall = add_parg(npall,&(all_pa),&nice_paX);
   }
+  else
+    npall = add_parg(npall,&(all_pa),&nice_pa);
 #endif
 
   if (FF(PCA_CAN_BEGIN)) 
@@ -456,7 +452,10 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   /* Set the nice level */
 #ifdef _SGI_
   if (bGUI)
-    sscanf(npri_str[0],"%d",&npri);
+    if (npri)
+      sscanf(npristr[0],"%d",&npri);
+    else
+      sscanf(not_npristr[0],"%d",&npri);
   if (npri != 0) {
     (void) schedctl(MPTS_RTPRI,0,npri);
   }
