@@ -97,23 +97,13 @@ static void rm_atoms(t_atoms *atoms)
 
 void init_single(FILE *log,t_parm *parm,
 		 char *tpxfile,t_topology *top, 
-                 rvec **x,rvec **v,t_mdatoms **mdatoms,
+                 t_state *state,t_mdatoms **mdatoms,
 		 t_nsborder *nsb)
 {
-  int         step,natoms;
-  real        t,lambda;
-  t_tpxheader *tpx;
-
-  snew(tpx,1);
+  int         step;
+  real        t;
   
-  read_tpxheader(tpxfile,tpx,FALSE,NULL,NULL);
-  snew(*x,tpx->natoms);
-  snew(*v,tpx->natoms);
-  
-  sfree(tpx);
-  
-  read_tpx(tpxfile,&step,&t,&lambda,&parm->ir,
-	   parm->box,&natoms,*x,*v,NULL,top);
+  read_tpx_state(tpxfile,&step,&t,&parm->ir,state,top);
   check_nnodes_top(tpxfile,top,1);
 
   *mdatoms=atoms2md(log,&top->atoms,parm->ir.opts.nFreeze,
@@ -129,38 +119,32 @@ void init_single(FILE *log,t_parm *parm,
 void distribute_parts(int left,int right,int nodeid,int nnodes,t_parm *parm,
 		      char *tpxfile,int nstDlb)
 {
-  int         natoms,step;
-  real        t,lambda;
-  t_tpxheader tpx;
+  int         step;
+  real        t;
   t_topology  top;
   t_nsborder  nsb;
-  rvec        *x,*v;
+  t_state     state;
   
-  read_tpxheader(tpxfile,&tpx,FALSE,NULL,NULL);
-  snew(x,tpx.natoms);
-  snew(v,tpx.natoms);
-  read_tpx(tpxfile,&step,&t,&lambda,&parm->ir,parm->box,
-	   &natoms,x,v,NULL,&top);
+  read_tpx_state(tpxfile,&step,&t,&parm->ir,&state,&top);
   check_nnodes_top(tpxfile,&top,nnodes);
   
   calc_nsb(stdlog,&(top.blocks[ebCGS]),nnodes,&nsb,nstDlb);
-  mv_data(left,right,parm,&nsb,&top,x,v);
+  mv_data(left,right,parm,&nsb,&top,&state);
   done_top(&top);
-  sfree(x);
-  sfree(v);
+  done_state(&state);
 }
 
 void init_parts(FILE *log,t_commrec *cr,
 		t_parm *parm,t_topology *top,
-		rvec **x,rvec **v,t_mdatoms **mdatoms,
+		t_state *state,t_mdatoms **mdatoms,
 		t_nsborder *nsb,int list, bool *bParallelDummies,
 		t_comm_dummies *dummycomm)
 {
   char buf[256];
   
-  ld_data(cr->left,cr->right,parm,nsb,top,x,v);
+  ld_data(cr->left,cr->right,parm,nsb,top,state);
   if (cr->nodeid != 0)
-    mv_data(cr->left,cr->right,parm,nsb,top,*x,*v);
+    mv_data(cr->left,cr->right,parm,nsb,top,state);
 
   /* Make sure the random seeds are different on each node */
   parm->ir.ld_seed += cr->nodeid;
@@ -173,9 +157,13 @@ void init_parts(FILE *log,t_commrec *cr,
     if (list&LIST_PARM)
       write_parm(log,"parameters of the run",cr->nodeid,parm);
     if (list&LIST_X)
-      pr_rvecs(log,0,int_title("x",0,buf,255),*x,nsb->natoms);
+      pr_rvecs(log,0,"box",state->box,DIM);
     if (list&LIST_V)
-      pr_rvecs(log,0,int_title("v",0,buf,255),*v,nsb->natoms);
+      pr_rvecs(log,0,"boxv",state->boxv,DIM);
+    if (list&LIST_X)
+      pr_rvecs(log,0,int_title("x",0,buf,255),state->x,nsb->natoms);
+    if (list&LIST_V)
+      pr_rvecs(log,0,int_title("v",0,buf,255),state->v,nsb->natoms);
     if (list&LIST_TOP)
       pr_top(log,0,int_title("topology",cr->nodeid,buf,255),top,TRUE);
     fflush(log);
@@ -190,7 +178,6 @@ void write_parm(FILE *log,char *title,int nodeid,t_parm *parm)
 {
   fprintf(log,"%s (nodeid=%d):\n",title,nodeid);
   pr_inputrec(log,0,"input record",&parm->ir);
-  pr_rvecs(log,0,"box",parm->box,DIM);
   pr_rvecs(log,0,"ekin",parm->ekin,DIM);
   pr_rvecs(log,0,"pres",parm->pres,DIM);
   pr_rvecs(log,0,"vir",parm->vir,DIM);

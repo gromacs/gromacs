@@ -67,7 +67,7 @@ extern time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,
 		    t_comm_dummies *dummycomm,int stepout,
 		    t_parm *parm,t_groups *grps,
 		    t_topology *top,real ener[],t_fcdata *fcd,
-		    rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
+		    t_state *state,rvec vold[],rvec vt[],rvec f[],
 		    rvec buf[],t_mdatoms *mdatoms,
 		    t_nsborder *nsb,t_nrnb nrnb[],
 		    t_graph *graph,t_edsamyn *edyn,
@@ -78,7 +78,7 @@ extern time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,
 extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		       t_parm *parm,t_topology *top,
 		       t_groups *grps,t_nsborder *nsb,
-		       rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
+		       t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		       tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
 		       bool bVerbose,bool bDummies,t_comm_dummies *dummycomm,
 		       t_commrec *cr,t_commrec *mcr,
@@ -88,7 +88,7 @@ extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 extern time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		    t_parm *parm,t_topology *top,
 		    t_groups *grps,t_nsborder *nsb,
-		    rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
+		    t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		    tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
 		    bool bVerbose,bool bDummies,t_comm_dummies *dummycomm,
 		    t_commrec *cr,t_commrec *mcr,
@@ -99,7 +99,7 @@ extern time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		    bool bVerbose,bool bCompact,int stepout,
 		    t_parm *parm,t_groups *grps,
 		    t_topology *top,real ener[],t_fcdata *fcd,
-		    rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
+		    t_state *state,rvec vold[],rvec vt[],rvec f[],
 		    rvec buf[],t_mdatoms *mdatoms,
 		    t_nsborder *nsb,t_nrnb nrnb[],
 		    t_graph *graph,t_edsamyn *edyn,
@@ -109,7 +109,7 @@ extern time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 /* ROUTINES from runner.c */
 extern bool optRerunMDset (int nfile, t_filenm fnm[]);
 
-extern void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,
+extern void do_pbc_first(FILE *log,matrix box,rvec box_size,t_forcerec *fr,
 			 t_graph *graph,rvec x[]);
 		     
 extern void set_pot_bools(t_inputrec *ir,t_topology *top,
@@ -164,7 +164,7 @@ extern void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 		     t_parm *parm,t_nsborder *nsb,
 		     tensor vir_part,tensor pme_vir,
 		     int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
-		     rvec x[],rvec v[],rvec f[],rvec buf[],
+		     matrix box,rvec x[],rvec f[],rvec buf[],
 		     t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,
 		     bool bVerbose,real lambda,t_graph *graph,
 		     bool bNS,bool bNBFonly,t_forcerec *fr, rvec mu_tot,
@@ -205,7 +205,7 @@ typedef enum
 
 extern void init_single(FILE *log,
                         t_parm *parm, char *tpbfile, t_topology *top,
-			rvec **x,rvec **v,t_mdatoms **mdatoms,
+			t_state *state,t_mdatoms **mdatoms,
 			t_nsborder *nsb);
      /*
       * Allocates space for the topology (top), the coordinates x, the
@@ -232,7 +232,7 @@ extern void distribute_parts(int left,int right,int pid,int nprocs,
 
 extern void init_parts(FILE *log,t_commrec *cr,
 		       t_parm *parm,t_topology *top,
-		       rvec **x,rvec **v,t_mdatoms **mdatoms,
+		       t_state *state,t_mdatoms **mdatoms,
 		       t_nsborder *nsb,int list,
 		       bool *bParallelDummies,
 		       t_comm_dummies *dummycomm);
@@ -264,10 +264,10 @@ extern void update_time(void);
 extern double node_time(void);
 /* Return the node time so far in seconds. */
 
-extern void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
+extern void do_shakefirst(FILE *log,bool bTYZ,real ener[],
 			  t_parm *parm,t_nsborder *nsb,t_mdatoms *md,
-			  rvec x[],rvec vold[],rvec buf[],rvec f[],
-			  rvec v[],t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
+			  t_state *state,rvec vold[],rvec buf[],rvec f[],
+			  t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
 			  t_groups *grps,t_forcerec *fr,t_topology *top,
 			  t_edsamyn *edyn,t_pull *pulldata);
 			  
@@ -296,7 +296,8 @@ extern void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 /* Routine in sim_util.c */
 
 extern void init_em(FILE *log,const char *title,t_parm *parm,
-		    real *lambda,t_nrnb *mynrnb,rvec mu_tot,rvec box_size,
+		    real *lambda,t_nrnb *mynrnb,rvec mu_tot,
+		    matrix box,rvec box_size,
 		    t_forcerec *fr,t_mdatoms *mdatoms,t_topology *top,
 		    t_nsborder *nsb,
 		    t_commrec *cr,t_vcm **vcm,int *start,int *end);

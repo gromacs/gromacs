@@ -979,9 +979,9 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, int
   }
 }
 
-static void do_tpx(int fp,bool bRead,int *step,real *t,real *lambda,
-		   t_inputrec *ir,rvec *box,int *natoms,
-		   rvec *x,rvec *v,rvec *f,t_topology *top)
+static void do_tpx(int fp,bool bRead,int *step,real *t,
+		   t_inputrec *ir,t_state *state,rvec *f,t_topology *top,
+		   bool bXVallocated)
 {
   t_tpxheader tpx;
   t_inputrec  dum_ir;
@@ -990,16 +990,16 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,real *lambda,
   int         file_version,file_generation;
   
   if (!bRead) {
-    tpx.natoms = *natoms;
+    tpx.natoms = state->natoms;
     tpx.step   = *step;
     tpx.t      = *t;
-    tpx.lambda = *lambda;
-    tpx.bIr  = (ir  != NULL);
-    tpx.bTop = (top != NULL);
-    tpx.bX   = (x   != NULL);
-    tpx.bV   = (v   != NULL);
-    tpx.bF   = (f   != NULL);
-    tpx.bBox = (box != NULL);
+    tpx.lambda = state->lambda;
+    tpx.bIr  = (ir       != NULL);
+    tpx.bTop = (top      != NULL);
+    tpx.bX   = (state->x != NULL);
+    tpx.bV   = (state->v != NULL);
+    tpx.bF   = (f        != NULL);
+    tpx.bBox = TRUE;
   }
   
   TopOnlyOK = (ir==NULL);
@@ -1007,17 +1007,25 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,real *lambda,
   do_tpxheader(fp,bRead,&tpx,TopOnlyOK,&file_version,&file_generation);
 
   if (bRead) {
-    *natoms = tpx.natoms;
-    *step   = tpx.step;
-    *t      = tpx.t;
-    *lambda = tpx.lambda;
+    state->natoms = tpx.natoms;
+    *step         = tpx.step;
+    *t            = tpx.t;
+    state->lambda = tpx.lambda;
   }
 
 #define do_test(b,p) if (bRead && (p!=NULL) && !b) fatal_error(0,"No %s in %s",#p,fio_getname(fp)) 
 
-  do_test(tpx.bBox,box);
+  do_test(tpx.bBox,state->box);
   do_section(eitemBOX,bRead);
-  if (tpx.bBox) ndo_rvec(box,DIM);
+  if (tpx.bBox) ndo_rvec(state->box,DIM);
+  /* Needs to be implemented */
+  if (bRead) {
+    clear_mat(state->boxv);
+    clear_mat(state->pcoupl_mu);
+    state->pcoupl_mu[XX][XX] = 1.0;
+    state->pcoupl_mu[YY][YY] = 1.0;
+    state->pcoupl_mu[ZZ][ZZ] = 1.0;
+  }
 
   /* Prior to tpx version 26, the inputrec was here.
    * I moved it to enable partial forward-compatibility
@@ -1047,17 +1055,19 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,real *lambda,
       done_top(&dum_top);
     }
   }
-  do_test(tpx.bX,x);  
+  do_test(tpx.bX,state->x);  
   do_section(eitemX,bRead);
-  if (tpx.bX) ndo_rvec(x,*natoms);
+  if (bRead && !bXVallocated) snew(state->x,state->natoms);
+  if (tpx.bX) ndo_rvec(state->x,state->natoms);
   
-  do_test(tpx.bV,v);
+  do_test(tpx.bV,state->v);
   do_section(eitemV,bRead);
-  if (tpx.bV) ndo_rvec(v,*natoms);
+  if (bRead && !bXVallocated) snew(state->v,state->natoms);
+  if (tpx.bV) ndo_rvec(state->v,state->natoms);
 
   do_test(tpx.bF,f);
   do_section(eitemF,bRead);
-  if (tpx.bF) ndo_rvec(f,*natoms);
+  if (tpx.bF) ndo_rvec(f,state->natoms);
 
   /* Starting with tpx version 26, we have the inputrec
    * at the end of the file, so we can ignore it 
@@ -1071,6 +1081,21 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,real *lambda,
     do_section(eitemIR,bRead);
     if (tpx.bIr && ir)
       do_inputrec(ir,bRead,file_version);
+  }
+  /* Needs to be implemented */
+  if (bRead) {
+    int i;
+
+    if (tpx.bIr && ir)
+      state->ngtc = ir->opts.ngtc;
+    else
+      state->ngtc = 0;
+    snew(state->nosehoover_xi,state->ngtc);
+    snew(state->tcoupl_lambda,state->ngtc);
+    for(i=0; i<state->ngtc; i++) {
+      state->nosehoover_xi[i] = 0.0;
+      state->tcoupl_lambda[i] = 1.0;
+    }
   }
 }
 
@@ -1108,30 +1133,41 @@ void read_tpxheader(char *fn,t_tpxheader *tpx, bool TopOnlyOK,int *file_version,
 #endif
 }
 
-void write_tpx(char *fn,int step,real t,real lambda,
-	       t_inputrec *ir,rvec *box,int natoms,
-	       rvec *x,rvec *v,rvec *f,t_topology *top)
+void write_tpx_state(char *fn,int step,real t,
+		     t_inputrec *ir,t_state *state,t_topology *top)
 {
   int fp;
 
 #ifdef HAVE_XML
   if (fn2ftp(fn) == efXML)
-    write_xml(fn,*top->name,ir,box,natoms,x,v,f,1,&top->atoms,&top->idef);
+    write_xml(fn,*top->name,ir,state->box,state->natoms,
+	      state->x,state->v,NULL,1,&top->atoms,&top->idef);
   else {
 #endif
     fp = open_tpx(fn,"w");
-    do_tpx(fp,FALSE,&step,&t,&lambda,ir,box,&natoms,x,v,f,top);
+    do_tpx(fp,FALSE,&step,&t,ir,state,NULL,top,FALSE);
     close_tpx(fp);
 #ifdef HAVE_XML
   }
 #endif
 }
 
+void read_tpx_state(char *fn,int *step,real *t,
+		    t_inputrec *ir,t_state *state,t_topology *top)
+{
+  int fp;
+
+  fp = open_tpx(fn,"r");
+  do_tpx(fp,TRUE,step,t,ir,state,NULL,top,FALSE);
+  close_tpx(fp);
+}
+
 void read_tpx(char *fn,int *step,real *t,real *lambda,
-	      t_inputrec *ir,rvec *box,int *natoms,
+	      t_inputrec *ir, matrix box,int *natoms,
 	      rvec *x,rvec *v,rvec *f,t_topology *top)
 {
   int fp;
+  t_state state;
 
 #ifdef HAVE_XML
   if (fn2ftp(fn) == efXML) {
@@ -1150,9 +1186,17 @@ void read_tpx(char *fn,int *step,real *t,real *lambda,
   }
   else {
 #endif
+    state.x = x;
+    state.v = v;
     fp = open_tpx(fn,"r");
-    do_tpx(fp,TRUE,step,t,lambda,ir,box,natoms,x,v,f,top);
+    do_tpx(fp,TRUE,step,t,ir,&state,f,top,TRUE);
     close_tpx(fp);
+    *natoms = state.natoms;
+    if (*lambda) *lambda = state.lambda;
+    if (*box) copy_mat(state.box,box);
+    state.x = NULL;
+    state.v = NULL;
+    done_state(&state);
 #ifdef HAVE_XML
   }
 #endif

@@ -1,5 +1,4 @@
-/*
- * $Id$
+/* * $Id$
  * 
  *                This source code is part of
  * 
@@ -156,7 +155,8 @@ static real f_norm(t_commrec *cr,
 } 
 
 void init_em(FILE *log,const char *title,t_parm *parm,
-	     real *lambda,t_nrnb *mynrnb,rvec mu_tot,rvec box_size,
+	     real *lambda,t_nrnb *mynrnb,rvec mu_tot,
+	     matrix box,rvec box_size,
 	     t_forcerec *fr,t_mdatoms *mdatoms,t_topology *top,t_nsborder *nsb,
 	     t_commrec *cr,t_vcm **vcm,int *start,int *end)
 {
@@ -171,7 +171,7 @@ void init_em(FILE *log,const char *title,t_parm *parm,
   init_nrnb(mynrnb);
     
   clear_rvec(mu_tot);
-  calc_shifts(parm->box,box_size,fr->shift_vec);
+  calc_shifts(box,box_size,fr->shift_vec);
   
   *start = nsb->index[cr->nodeid];
   *end   = nsb->homenr[cr->nodeid] + *start;
@@ -186,7 +186,7 @@ void init_em(FILE *log,const char *title,t_parm *parm,
 time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     t_parm *parm,t_topology *top,
 	     t_groups *grps,t_nsborder *nsb,
-	     rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
+	     t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 	     tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
 	     bool bVerbose,bool bDummies,t_comm_dummies *dummycomm,
 	     t_commrec *cr,t_commrec *mcr,t_graph *graph,
@@ -201,18 +201,18 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   t_vcm      *vcm;
   t_mdebin   *mdebin;
   t_nrnb mynrnb;
-  bool   bNS=TRUE,bDone,bLR,bLJLR,bBHAM,b14,bRand,brerun,bBeta0=FALSE;
+  bool   bNS=TRUE,bLR,bLJLR,bBHAM,b14,bRand,brerun,bBeta0=FALSE;
   rvec   mu_tot;
   time_t start_t;
   tensor force_vir,shake_vir,pme_vir;
-  int    number_steps,naccept=0,nstcg=parm->ir.nstcgsteep;
+  int    number_steps,nstcg=parm->ir.nstcgsteep;
   int    fp_ene,count=0;
   int    i,m,nfmax,start,end,niti,gf;
   /* not used */
   real   terminate=0;
 
-  init_em(log,CG,parm,&lambda,&mynrnb,mu_tot,box_size,fr,mdatoms,top,
-	  nsb,cr,&vcm,&start,&end);
+  init_em(log,CG,parm,&lambda,&mynrnb,mu_tot,state->box,box_size,
+	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end);
   
   /* Print to log file */
   start_t=print_date_and_time(log,cr->nodeid,"Started Conjugate Gradients");
@@ -243,7 +243,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   
   if (fr->ePBC == epbcXYZ)
     /* Remove periodicity */
-    do_pbc_first(log,parm,box_size,fr,graph,x);
+    do_pbc_first(log,state->box,box_size,fr,graph,state->x);
   
   /* Max number of steps */
   number_steps=parm->ir.nsteps;
@@ -253,21 +253,21 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   sp_header(log,CG,parm->ir.em_tol,number_steps);
 
   if (bDummies)
-    construct_dummies(log,x,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
-		      graph,cr,parm->box,dummycomm);
+    construct_dummies(log,state->x,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
+		      graph,cr,state->box,dummycomm);
   
   /* Call the force routine and some auxiliary (neighboursearching etc.) */
   /* do_force always puts the charge groups in the box and shifts again
    * We do not unshift, so molecules are always whole in congrad.c
    */
   do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,0,&(nrnb[cr->nodeid]),
-	   top,grps,x,buf,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
+	   top,grps,state->x,buf,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
   where();
 
   /* Spread the force on dummy particle to the other particles... */
   if (bDummies)
-    spread_dummy_f(log,x,f,&(nrnb[cr->nodeid]),&top->idef,dummycomm,cr);
+    spread_dummy_f(log,state->x,f,&(nrnb[cr->nodeid]),&top->idef,dummycomm,cr);
 
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(parm->ir.opts),grps,ener);
@@ -286,7 +286,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   if (MASTER(cr)) {
     /* Copy stuff to the energy bin for easy printing etc. */
     upd_mdebin(mdebin,NULL,mdatoms->tmass,count,(real)count,
-	       ener,parm->box,shake_vir,
+	       ener,state,shake_vir,
 	       force_vir,parm->vir,parm->pres,grps,mu_tot,
 	       (parm->ir.etc==etcNOSEHOOVER));
     
@@ -304,6 +304,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
    */
   fnorm = f_norm(cr,&(parm->ir.opts),mdatoms,start,end,f);
   fnorm_old=fnorm;
+  fmax = f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,
+	       start,end,f,&nfmax);
 
   /* Print stepsize */
   if (MASTER(cr)) {
@@ -311,13 +313,24 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     fprintf(stderr,"\n");
   }
   
-  /* Here starts the loop, count is the counter for the number of steps
-   * bDone is a BOOLEAN variable, which will be set TRUE when
-   * the minimization has converged.
-   */
-  bDone=FALSE; 
-  for(count=1; (!bDone && (count < number_steps)); count++) {
+  /* Here starts the loop, count is the counter for the number of steps */
+  for(count=1; fmax >= parm->ir.em_tol && count < number_steps; count++) {
     
+    /* Write the previous frame */
+    if (do_per_step(count-1,parm->ir.nstxout)) 
+      xx=state->x;  
+    else 
+      xx=NULL;
+    if (do_per_step(count-1,parm->ir.nstfout)) 
+      ff=f;  
+    else 
+      ff=NULL;
+    if (xx || ff) {
+      write_traj(log,cr,ftp2fn(efTRN,nfile,fnm),
+		 nsb,count,(real)(count - 1),
+		 lambda,nrnb,nsb->natoms,xx,NULL,ff,state->box);
+    }
+
     /* start conjugate gradient, determine search interval a,b */
     gpa = 0.0;
     for(i=start; (i<end); i++) {
@@ -344,14 +357,14 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     while (brerun) {
       for (i=start; (i<end); i++) {
 	for(m=0; (m<DIM); m++) {
-	  xprime[i][m] = x[i][m] + b*p[i][m];
+	  xprime[i][m] = state->x[i][m] + b*p[i][m];
 	}
       }
       bNS = (parm->ir.nstlist > 0);
 
       if (bDummies)
 	construct_dummies(log,xprime,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
-			  graph,cr,parm->box,dummycomm);
+			  graph,cr,state->box,dummycomm);
 
       
       /* Calc force & energy on new trial position  */
@@ -428,11 +441,11 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       /* new positions */
       for (i=start; i<end; i++)
 	for(m=0; m<DIM; m++) 
-	  xprime[i][m] = x[i][m] + smin*p[i][m];
+	  xprime[i][m] = state->x[i][m] + smin*p[i][m];
       
       if (bDummies) 
 	construct_dummies(log,xprime,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
-			  graph,cr,parm->box,dummycomm);
+			  graph,cr,state->box,dummycomm);
       
       /* new energy, forces
        * do_force always puts the charge groups in the box and shifts again
@@ -476,7 +489,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     
     /* update x, fnorm_old */
     for (i=start; i<end; i++)
-      copy_rvec(xprime[i],x[i]);
+      copy_rvec(xprime[i],state->x[i]);
     fnorm_old=fnorm;
     
     /* Test whether the convergence criterion is met */
@@ -489,7 +502,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	      count,EpotA,fmax,nfmax);
 	/* Store the new (lower) energies */
       upd_mdebin(mdebin,NULL,mdatoms->tmass,count,(real)count,
-		 ener,parm->box,shake_vir,
+		 ener,state,shake_vir,
 		 force_vir,parm->vir,parm->pres,grps,mu_tot,
 		 (parm->ir.etc==etcNOSEHOOVER));
       /* Print the energies allways when we should be verbose */
@@ -497,29 +510,22 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       print_ebin(fp_ene,TRUE,FALSE,FALSE,FALSE,log,count,count,eprNORMAL,
 		 TRUE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
     }
-    
-    /* Stop when the maximum force lies below tolerance */
-    bDone=(fmax < parm->ir.em_tol);
   } /* End of the loop */
   
   /* Print some shit... */
   if (MASTER(cr))
     fprintf(stderr,"\nwriting lowest energy coordinates.\n");
-  xx=x;
-  ff=f;
   write_traj(log,cr,ftp2fn(efTRN,nfile,fnm),
 	     nsb,count,(real) count,
-	     lambda,nrnb,nsb->natoms,xx,NULL,ff,parm->box);
+	     lambda,nrnb,nsb->natoms,state->x,NULL,f,state->box);
   if (MASTER(cr))
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
-		   *top->name, &(top->atoms),xx,NULL,parm->box);
+		   *top->name, &(top->atoms),state->x,NULL,state->box);
 
-  fmax=f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,
-	     start,end,f,&nfmax);
   if (MASTER(cr)) {
-    print_converged(stderr,CG,parm->ir.em_tol,count,bDone,
+    print_converged(stderr,CG,parm->ir.em_tol,count,fmax<parm->ir.em_tol,
 		    number_steps,EpotA,fmax);
-    print_converged(log,CG,parm->ir.em_tol,count,bDone,
+    print_converged(log,CG,parm->ir.em_tol,count,fmax<parm->ir.em_tol,
 		    number_steps,EpotA,fmax);
     close_enx(fp_ene);
   }
@@ -533,7 +539,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 time_t do_steep(FILE *log,int nfile,t_filenm fnm[], 
 		    t_parm *parm,t_topology *top, 
 		    t_groups *grps,t_nsborder *nsb, 
-		    rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms, 
+		    t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms, 
 		    tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[], 
 		    bool bVerbose,bool bDummies, t_comm_dummies *dummycomm,
 		    t_commrec *cr,t_commrec *mcr,t_graph *graph,
@@ -568,8 +574,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   real   terminate=0;
 #define  TRY (1-Min)
 
-  init_em(log,SD,parm,&lambda,&mynrnb,mu_tot,box_size,fr,mdatoms,top,
-	  nsb,cr,&vcm,&start,&end);
+  init_em(log,SD,parm,&lambda,&mynrnb,mu_tot,state->box,box_size,
+	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end);
    
   /* Print to log file  */
   start_t=print_date_and_time(log,cr->nodeid,"Started Steepest Descents"); 
@@ -601,7 +607,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 
   if (fr->ePBC == epbcXYZ)
     /* Remove periodicity */
-    do_pbc_first(log,parm,box_size,fr,graph,x);
+    do_pbc_first(log,state->box,box_size,fr,graph,state->x);
 
   /* Initiate constraint stuff */
   bConstrain=init_constraints(stdlog,top,&(parm->ir),mdatoms,
@@ -612,8 +618,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 
   /* Copy coord vectors to our temp array  */
   for(i=0; (i<nsb->natoms); i++) { 
-    copy_rvec(x[i],pos[Min][i]); 
-    copy_rvec(x[i],pos[TRY][i]); 
+    copy_rvec(state->x[i],pos[Min][i]); 
+    copy_rvec(state->x[i],pos[TRY][i]); 
   } 
     
   /* Set variables for stepsize (in nm). This is the largest  
@@ -657,13 +663,13 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     if (bConstrain) {
       dvdlambda=0;
       constrain(stdlog,top,&(parm->ir),count,mdatoms,start,end,
-		pos[Min],pos[TRY],NULL,parm->box,lambda,&dvdlambda,nrnb,
+		pos[Min],pos[TRY],NULL,state->box,lambda,&dvdlambda,nrnb,
 		TRUE);
     }
     
     if (bDummies)
       construct_dummies(log,pos[TRY],&(nrnb[cr->nodeid]),1,NULL,&top->idef,
-			graph,cr,parm->box,dummycomm);
+			graph,cr,state->box,dummycomm);
     
     /* Calc force & energy on new positions
      * do_force always puts the charge groups in the box and shifts again
@@ -697,7 +703,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       
       dvdlambda=0;
       constrain(stdlog,top,&(parm->ir),count,mdatoms,start,end,
-		pos[TRY],xcf,NULL,parm->box,lambda,&dvdlambda,nrnb,TRUE);
+		pos[TRY],xcf,NULL,state->box,lambda,&dvdlambda,nrnb,TRUE);
       
       for(i=start; (i<end); i++)  
 	for(m=0;(m<DIM);m++) 
@@ -731,7 +737,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       if (Epot[TRY] < Epot[Min]) {
 	/* Store the new (lower) energies  */
 	upd_mdebin(mdebin,NULL,mdatoms->tmass,count,(real)count,
-		   ener,parm->box,shake_vir, 
+		   ener,state,shake_vir, 
 		   force_vir,parm->vir,parm->pres,grps,mu_tot,(parm->ir.etc==etcNOSEHOOVER)); 
 	print_ebin(fp_ene,TRUE,
 		   do_per_step(steps_accepted,parm->ir.nstdisreout),
@@ -757,7 +763,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	xx=pos[TRY];   
 	write_traj(log,cr,ftp2fn(efTRN,nfile,fnm), 
 		   nsb,count,(real) count, 
-		   lambda,nrnb,nsb->natoms,xx,NULL,ff,parm->box); 
+		   lambda,nrnb,nsb->natoms,xx,NULL,ff,state->box); 
       } else 
 	xx=NULL; 
       
@@ -791,10 +797,10 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   ff=force[Min]; 
   write_traj(log,cr,ftp2fn(efTRN,nfile,fnm), 
 	     nsb,count,(real) count, 
-	     lambda,nrnb,nsb->natoms,xx,NULL,ff,parm->box); 
+	     lambda,nrnb,nsb->natoms,xx,NULL,ff,state->box); 
   if (MASTER(cr)) {
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
-		   *top->name, &(top->atoms),xx,NULL,parm->box);
+		   *top->name, &(top->atoms),xx,NULL,state->box);
     
     print_converged(stderr,SD,parm->ir.em_tol,count,bDone,nsteps,Epot[Min],Fmax[Min]);
     print_converged(log,SD,parm->ir.em_tol,count,bDone,nsteps,Epot[Min],Fmax[Min]);
@@ -805,7 +811,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
    * minimization would be in vain)
    */
   for(i=0; (i<nsb->natoms); i++)
-    copy_rvec(pos[Min][i],x[i]);
+    copy_rvec(pos[Min][i],state->x[i]);
   
   /* To print the actual number of steps we needed somewhere */
   parm->ir.nsteps=count;
@@ -817,7 +823,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,int stepout,
 	     t_parm *parm,t_groups *grps,
 	     t_topology *top,real ener[],t_fcdata *fcd,
-	     rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
+	     t_state *state,rvec vold[],rvec vt[],rvec f[],
 	     rvec buf[],t_mdatoms *mdatoms,
 	     t_nsborder *nsb,t_nrnb nrnb[],
 	     t_graph *graph,t_edsamyn *edyn,
@@ -865,7 +871,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   if (fr->ePBC == epbcXYZ)
     /* Remove periodicity */
-    do_pbc_first(log,parm,box_size,fr,graph,x);
+    do_pbc_first(log,state->box,box_size,fr,graph,state->x);
 
   fp_ene=-1;
   set_pot_bools(&(parm->ir),top,&bLR,&bLJLR,&bBHAM,&b14);
@@ -873,11 +879,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		     bBHAM,b14,parm->ir.efep!=efepNO,parm->ir.epc,
 		     parm->ir.eDispCorr,TRICLINIC(parm->ir.compress),(parm->ir.etc==etcNOSEHOOVER),cr);
 
-   ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
-  if(parm->ir.etc==etcBERENDSEN)
-    berendsen_tcoupl(&(parm->ir.opts),grps,parm->ir.delta_t);
-  else if(parm->ir.etc==etcNOSEHOOVER)
-    nosehoover_tcoupl(&(parm->ir.opts),grps,parm->ir.delta_t);
+  ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
 
   where();
   
@@ -892,14 +894,14 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   clear_mat(force_vir);
     
   bNS=TRUE;
-  do_force(log,cr,NULL,parm,nsb,force_vir,pme_vir,0,&mynrnb,
-	   top,grps,x,v,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
+  do_force(log,cr,NULL,parm,nsb,force_vir,pme_vir,0,&mynrnb,top,grps,
+	   state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
   bNS=FALSE;
   
   if (graph)
     /* Shift back the coordinates, since we're not calling update */
-    unshift_self(graph,parm->box,x);
+    unshift_self(graph,state->box,state->x);
 
   
   /* if forces not small, warn user */
@@ -930,17 +932,17 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     for (idum=0; (idum<DIM); idum++) {
 
-      x[step][idum]=x[step][idum]-der_range;
+      state->x[step][idum] = state->x[step][idum]-der_range;
       
       clear_mat(force_vir);
 
       do_force(log,cr,NULL,parm,nsb,force_vir,pme_vir,2*(step*DIM+idum),
-	       &mynrnb,
-	       top,grps,x,v,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
+	       &mynrnb,top,grps,
+	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
       if (graph)
 	/* Shift back the coordinates, since we're not calling update */
-	unshift_self(graph,parm->box,x);
+	unshift_self(graph,state->box,state->x);
       
       for (jdum=0; (jdum<top->atoms.nr); jdum++) {
 	for (kdum=0; (kdum<DIM); kdum++) {
@@ -948,17 +950,17 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	}
       }
       
-      x[step][idum]=x[step][idum]+2.0*der_range;
+      state->x[step][idum] = state->x[step][idum]+2.0*der_range;
       
       clear_mat(force_vir);
       
       do_force(log,cr,NULL,parm,nsb,force_vir,pme_vir,2*(step*DIM+idum)+1,
-	       &mynrnb,
-	       top,grps,x,v,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
+	       &mynrnb,top,grps,
+	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
       if (graph)
 	/* Shift back the coordinates, since we're not calling update */
-	unshift_self(graph,parm->box,x);
+	unshift_self(graph,state->box,state->x);
       
       for (jdum=0; (jdum<top->atoms.nr); jdum++) {
 	for (kdum=0; (kdum<DIM); kdum++) {
@@ -969,10 +971,10 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       /* store derivatives now, diagonalization later */
       xx=dfdx;
       write_traj(log,cr,ftp2fn(efMTX,nfile,fnm),
-		 nsb,step,t,lambda,nrnb,nsb->natoms,xx,vv,ff,parm->box);
+		 nsb,step,t,lambda,nrnb,nsb->natoms,xx,vv,ff,state->box);
 
       /* x is restored to original */
-      x[step][idum]=x[step][idum]-der_range;
+      state->x[step][idum] = state->x[step][idum]-der_range;
       
       if (bVerbose)
 	fflush(log);
@@ -1002,8 +1004,8 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
    * be parallelized. Be sure to copy the correct code from
    * e.g. md.c or steep.c if you make nm parallel!
    */
-  construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef,
-		    graph,cr,parm->box,NULL);
+  construct_dummies(log,state->x,&mynrnb,parm->ir.delta_t,state->v,&top->idef,
+		    graph,cr,state->box,NULL);
     
   /*free_nslist(log);*/
   

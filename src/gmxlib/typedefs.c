@@ -33,6 +33,7 @@
 #include "smalloc.h"
 #include "assert.h"
 #include "symtab.h"
+#include "vec.h"
 #include <string.h>
 
 void init_block(t_block *block)
@@ -152,6 +153,36 @@ void done_inputrec(t_inputrec *ir)
   if (ir->opts.tau_t)   sfree(ir->opts.tau_t);
   if (ir->opts.acc)     sfree(ir->opts.acc);
   if (ir->opts.nFreeze) sfree(ir->opts.nFreeze);
+}
+
+void init_state(t_state *state,int natoms,int ngtc)
+{
+  int i;
+
+  state->natoms = natoms;
+  state->ngtc = ngtc;
+  state->lambda = 0;
+  clear_mat(state->box);
+  clear_mat(state->boxv);
+  clear_mat(state->pcoupl_mu);
+  for(i=0; i<DIM; i++)
+    state->pcoupl_mu[i][i] = 1.0;
+  snew(state->nosehoover_xi,state->ngtc);
+  snew(state->tcoupl_lambda,state->ngtc);
+  for(i=0; i<state->ngtc; i++) {
+    state->nosehoover_xi[i] = 0.0;
+    state->tcoupl_lambda[i] = 1.0;
+  }
+  snew(state->x,state->natoms);
+  snew(state->v,state->natoms);
+}
+
+void done_state(t_state *state)
+{
+  if (state->nosehoover_xi) sfree(state->nosehoover_xi);
+  if (state->tcoupl_lambda) sfree(state->tcoupl_lambda);
+  if (state->x) sfree(state->x);
+  if (state->v) sfree(state->v);
 }
 
 void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)

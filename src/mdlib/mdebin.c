@@ -276,7 +276,7 @@ static void copy_energy(real e[],real ecpy[])
 void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 		real tmass,int step,real time,
 		real ener[],
-		matrix box,
+		t_state *state,
 		tensor svir,
 		tensor fvir,
 		tensor vir,
@@ -297,19 +297,19 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
   add_ebin(md->ebin,md->ie,f_nre,ecopy,step);
   if (bPC || grps->cosacc.cos_accel != 0) {
     if(bTricl) {
-      tricl_bs[0]=box[XX][XX];
-      tricl_bs[1]=box[YY][XX];
-      tricl_bs[2]=box[YY][YY];
-      tricl_bs[3]=box[ZZ][XX];
-      tricl_bs[4]=box[ZZ][YY];
-      tricl_bs[5]=box[ZZ][ZZ];
+      tricl_bs[0]=state->box[XX][XX];
+      tricl_bs[1]=state->box[YY][XX];
+      tricl_bs[2]=state->box[YY][YY];
+      tricl_bs[3]=state->box[ZZ][XX];
+      tricl_bs[4]=state->box[ZZ][YY];
+      tricl_bs[5]=state->box[ZZ][ZZ];
       /* This is the volume */
       tricl_bs[6]=tricl_bs[0]*tricl_bs[2]*tricl_bs[5];
       /* This is the density */
       tricl_bs[7] = (tmass*AMU)/(tricl_bs[6]*NANO*NANO*NANO);
     } else {
       for(m=0; (m<DIM); m++) 
-	bs[m]=box[m][m];
+	bs[m]=state->box[m][m];
       /* This is the volume */
       bs[3] = bs[XX]*bs[YY]*bs[ZZ];      
       /* This is the density */
@@ -332,7 +332,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
   }
   add_ebin(md->ebin,md->ivir,9,vir[0],step);
   add_ebin(md->ebin,md->ipres,9,pres[0],step);
-  tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ];
+  tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*state->box[ZZ][ZZ];
   add_ebin(md->ebin,md->isurft,1,&tmp,step);
   add_ebin(md->ebin,md->imu,3,mu_tot,step);
 
@@ -341,10 +341,10 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
     /* 1/viscosity, unit 1/(kg m^-1 s^-1) */
     if(bTricl) 
       tmp = 1/(grps->cosacc.cos_accel/(grps->cosacc.vcos*PICO)
-	       *tricl_bs[7]*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
+	       *tricl_bs[7]*sqr(state->box[ZZ][ZZ]*NANO/(2*M_PI)));
     else 
       tmp = 1/(grps->cosacc.cos_accel/(grps->cosacc.vcos*PICO)
-	       *bs[4]*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
+	       *bs[4]*sqr(state->box[ZZ][ZZ]*NANO/(2*M_PI)));
     add_ebin(md->ebin,md->ivisc,1,&tmp,step);    
   }
   if (md->nE > 1) {
@@ -366,9 +366,9 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
   for(i=0; (i<md->nTC); i++) {
     ttt[2*i]   = grps->tcstat[i].T;
     if(bNoseHoover)
-      ttt[2*i+1] = grps->tcstat[i].xi;
+      ttt[2*i+1] = state->nosehoover_xi[i];
     else
-      ttt[2*i+1] = grps->tcstat[i].lambda;
+      ttt[2*i+1] = state->tcoupl_lambda[i];
   }
   add_ebin(md->ebin,md->itc,2*md->nTC,ttt,step);  
   

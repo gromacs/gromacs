@@ -292,13 +292,13 @@ static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,int step,
 int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 		 int mdstep,t_parm *parm,bool bDoNS,bool bStopCM,
 		 t_topology *top,real ener[],t_fcdata *fcd,
-		 rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
+		 t_state *state,rvec vold[],rvec vt[],rvec f[],
 		 rvec buf[],t_mdatoms *md,t_nsborder *nsb,t_nrnb *nrnb,
 		 t_graph *graph,t_groups *grps,tensor vir_part,
 		 tensor pme_vir_part,bool bShell,
 		 int nshell,t_shell shells[],t_forcerec *fr,
-		 char *traj,real t,real lambda,rvec mu_tot,
-		 int natoms,matrix box,bool *bConverged,
+		 char *traj,real t,rvec mu_tot,
+		 int natoms,bool *bConverged,
 		 bool bDummies,t_comm_dummies *dummycomm)
 {
   static bool bFirst=TRUE,bForceInit=FALSE,bNoPredict=FALSE;
@@ -332,7 +332,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     }
     else {
       /* Copy pointers */
-      pos[Min]   = x;
+      pos[Min]   = state->x;
       force[Min] = f;
     }
     bNoPredict = getenv("NOPREDICT") != NULL;
@@ -356,34 +356,35 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
       snew(acc_dir,homenr);
       snew(x_old,homenr);
     }
-    init_pbc(parm->box);
+    init_pbc(state->box);
     for(i=0; i<homenr; i++) {
       for(d=0; d<DIM; d++)
-        x_old[i][d] = x[start+i][d] - v[start+i][d]*parm->ir.delta_t;
+        x_old[i][d] =
+	  state->x[start+i][d] - state->v[start+i][d]*parm->ir.delta_t;
     }
   }
   
   /* Do a prediction of the shell positions */
   if (!bNoPredict)
-    predict_shells(log,x,v,parm->ir.delta_t,nshell,shells,
+    predict_shells(log,state->x,state->v,parm->ir.delta_t,nshell,shells,
 		   md->massT,bInit);
    
   /* Calculate the forces first time around */
   clear_mat(my_vir[Min]);
   clear_mat(pme_vir[Min]);
   if (debug) {
-    pr_rvecs(debug,0,"x b4 do_force",x + start,homenr);
+    pr_rvecs(debug,0,"x b4 do_force",state->x + start,homenr);
   }
-  do_force(log,cr,mcr,parm,nsb,my_vir[Min],pme_vir[Min],mdstep,nrnb,
-	   top,grps,x,v,force[Min],buf,md,ener,fcd,bVerbose && !PAR(cr),
-	   lambda,graph,bDoNS,FALSE,fr,mu_tot,FALSE,t);
+  do_force(log,cr,mcr,parm,nsb,my_vir[Min],pme_vir[Min],mdstep,nrnb,top,grps,
+	   state->box,state->x,force[Min],buf,md,ener,fcd,bVerbose && !PAR(cr),
+	   state->lambda,graph,bDoNS,FALSE,fr,mu_tot,FALSE,t);
   sum_lrforces(force[Min],fr,start,homenr);
 
   sf_dir = 0;
   if (ndir) {
     init_adir(log,top,&(parm->ir),mdstep,md,start,end,
-	      x_old-start,x,x,force[Min],acc_dir-start,
-	      parm->box,lambda,&dum,nrnb);
+	      x_old-start,state->x,state->x,force[Min],acc_dir-start,
+	      state->box,state->lambda,&dum,nrnb);
 
     for(i=start; i<end; i++)
       sf_dir += md->massT[i]*norm2(acc_dir[i-start]);
@@ -410,8 +411,8 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
      * shell positions are updated, therefore the other particles must
      * be set here.
      */
-    memcpy(pos[Min],x,nsb->natoms*sizeof(x[0]));
-    memcpy(pos[Try],x,nsb->natoms*sizeof(x[0]));
+    memcpy(pos[Min],state->x,nsb->natoms*sizeof(state->x[0]));
+    memcpy(pos[Try],state->x,nsb->natoms*sizeof(state->x[0]));
   }
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(parm->ir.opts),grps,ener);
@@ -443,18 +444,18 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   for(count=1; (!bDone && (count < number_steps)); count++) {
 
     if (bDummies) {
-      shift_self(graph,parm->box,pos[Try]);
+      shift_self(graph,state->box,pos[Try]);
       
-      construct_dummies(log,pos[Try],nrnb,parm->ir.delta_t,v,&top->idef,
-			graph,cr,parm->box,dummycomm);
+      construct_dummies(log,pos[Try],nrnb,parm->ir.delta_t,state->v,&top->idef,
+			graph,cr,state->box,dummycomm);
       
-      unshift_self(graph,parm->box,pos[Try]);
+      unshift_self(graph,state->box,pos[Try]);
     }
      
     if (ndir) {
       init_adir(log,top,&(parm->ir),mdstep,md,start,end,
-		x_old-start,x,pos[Min],force[Min],acc_dir-start,
-		parm->box,lambda,&dum,nrnb);
+		x_old-start,state->x,pos[Min],force[Min],acc_dir-start,
+		state->box,state->lambda,&dum,nrnb);
       
       directional_sd(log,step,pos[Min],pos[Try],acc_dir-start,start,end,
 		     fr->fc_stepsize);
@@ -471,16 +472,16 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     clear_mat(my_vir[Try]);
     clear_mat(pme_vir[Try]);
     do_force(log,cr,mcr,parm,nsb,my_vir[Try],pme_vir[Try],1,nrnb,
-	     top,grps,pos[Try],v,force[Try],buf,md,ener,fcd,
+	     top,grps,pos[Try],state->v,force[Try],buf,md,ener,fcd,
 	     bVerbose && !PAR(cr),
-	     lambda,graph,FALSE,FALSE,fr,mu_tot,FALSE,t);
+	     state->lambda,graph,FALSE,FALSE,fr,mu_tot,FALSE,t);
     if (bDummies) 
       spread_dummy_f(log,pos[Try],force[Try],nrnb,&top->idef,dummycomm,cr);
       
     /* Calculation of the virial must be done after dummies!    */
     /* Question: Is it correct to do the PME forces after this? */
     /*    calc_virial(log,START(nsb),HOMENR(nsb),pos[Try],force[Try],
-		my_vir[Try],pme_vir[Try],graph,parm->box,nrnb,fr,FALSE);
+		my_vir[Try],pme_vir[Try],graph,state->box,nrnb,fr,FALSE);
     */	  
     /* Spread the LR force on dummy particle to the other particles... 
      * This is parallellized. MPI communication is performed
@@ -498,8 +499,8 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     sf_dir = 0;
     if (ndir) {
       init_adir(log,top,&(parm->ir),mdstep,md,start,end,
-		x_old-start,x,pos[Try],force[Try],acc_dir-start,
-		parm->box,lambda,&dum,nrnb);
+		x_old-start,state->x,pos[Try],force[Try],acc_dir-start,
+		state->box,state->lambda,&dum,nrnb);
 
       for(i=start; i<end; i++)
 	sf_dir += md->massT[i]*norm2(acc_dir[i-start]);
@@ -562,14 +563,14 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   }
 
   if (nshell+ndir > 0)
-    memcpy(x,pos[Min],nsb->natoms*sizeof(x[0]));
+    memcpy(state->x,pos[Min],nsb->natoms*sizeof(state->x[0]));
   if (ndir > 0) {
     constrain(log,top,&(parm->ir),mdstep,md,start,end,
-	      x-start,x_old-start,NULL,parm->box,
-	      lambda,&dum,nrnb,TRUE);
+	      state->x-start,x_old-start,NULL,state->box,
+	      state->lambda,&dum,nrnb,TRUE);
     for(i=0; i<homenr; i++) {
-      pbc_dx(x[start+i],x_old[i],dx);
-      svmul(1/parm->ir.delta_t,dx,v[start+i]);
+      pbc_dx(state->x[start+i],x_old[i],dx);
+      svmul(1/parm->ir.delta_t,dx,state->v[start+i]);
     }
   }
 

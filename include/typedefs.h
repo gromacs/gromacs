@@ -70,6 +70,7 @@ extern "C" {
 #include <types/filenm.h>
 #include <types/group.h>
 #include <types/parm.h>
+#include <types/state.h>
 #include <types/matrix.h>
 #include <types/edsams.h>
 
@@ -80,10 +81,12 @@ extern void init_block(t_block *block);
 extern void init_atom (t_atoms *at);
 extern void init_top (t_topology *top);
 extern void init_inputrec(t_inputrec *ir);
+extern void init_state(t_state *state,int natoms,int ngtc);
 extern void done_block(t_block *block);
 extern void done_atom (t_atoms *at);
 extern void done_top(t_topology *top);
 extern void done_inputrec(t_inputrec *ir);
+extern void done_state(t_state *state);
 
 extern void stupid_fill(t_block *grp, int natom,bool bOneIndexGroup);
 /* Fill a block structure with numbers identical to the index

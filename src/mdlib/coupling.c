@@ -222,119 +222,121 @@ void parrinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
   mtmul(t2,invbox,M);
 }
 
-void berendsen_pcoupl(t_inputrec *ir,int step,tensor pres,
+void berendsen_pcoupl(t_inputrec *ir,int step,tensor pres,matrix box,
+		      matrix mu)
+{
+  int    d,n;
+  real   scalar_pressure, xy_pressure, p_corr_z;
+  char   *ptr,buf[STRLEN];
+
+  /*
+   *  Calculate the scaling matrix mu
+   */
+  scalar_pressure=0;
+  xy_pressure=0;
+  for(d=0; d<DIM; d++) {
+    scalar_pressure += pres[d][d]/DIM;
+    if (d != ZZ)
+      xy_pressure += pres[d][d]/(DIM-1);
+  }
+  /* Pressure is now in bar, everywhere. */
+#define factor(d,m) (ir->compress[d][m]*ir->delta_t/ir->tau_p)
+  
+  /* mu has been changed from pow(1+...,1/3) to 1+.../3, since this is
+   * necessary for triclinic scaling
+   */
+  clear_mat(mu);
+  switch (ir->epct) {
+  case epctISOTROPIC:
+    for(d=0; d<DIM; d++)
+      mu[d][d] = 1.0 - factor(d,d)*(ir->ref_p[d][d] - scalar_pressure)/DIM;
+    break;
+  case epctSEMIISOTROPIC:
+    for(d=0; d<ZZ; d++)
+      mu[d][d] = 1.0 - factor(d,d)*(ir->ref_p[d][d]-xy_pressure)/DIM;
+    mu[ZZ][ZZ] = 
+      1.0 - factor(ZZ,ZZ)*(ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ])/DIM;
+    break;
+  case epctANISOTROPIC:
+    for(d=0; d<DIM; d++)
+      for(n=0; n<DIM; n++)
+	mu[d][n] = (d==n ? 1.0 : 0.0) 
+	  -factor(d,n)*(ir->ref_p[d][n] - pres[d][n])/DIM;
+    break;
+  case epctSURFACETENSION:
+    /* ir->ref_p[0/1] is the reference surface-tension times *
+     * the number of surfaces                                */
+    if (ir->compress[ZZ][ZZ])
+      p_corr_z = ir->delta_t/ir->tau_p*(ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ]);
+    else
+      /* when the compressibity is zero, set the pressure correction   *
+       * in the z-direction to zero to get the correct surface tension */
+      p_corr_z = 0;
+    mu[ZZ][ZZ] = 1.0 - ir->compress[ZZ][ZZ]*p_corr_z;
+    for(d=0; d<DIM-1; d++)
+      mu[d][d] = 1.0 + factor(d,d)*(ir->ref_p[d][d]/(mu[ZZ][ZZ]*box[ZZ][ZZ])
+				    - (pres[ZZ][ZZ]+p_corr_z - xy_pressure))/(DIM-1);
+    break;
+  default:
+    fatal_error(0,"Berendsen pressure coupling type %s not supported yet\n",
+		EPCOUPLTYPETYPE(ir->epct));
+    break;
+  }
+  /* To fullfill the orientation restrictions on triclinic boxes
+   * set mu_yx, mu_zx and mu_zy to 0 and correct the other elements
+   * of mu to first order.
+   */
+  mu[XX][YY] += mu[YY][XX];
+  mu[XX][ZZ] += mu[ZZ][XX];
+  mu[YY][ZZ] += mu[ZZ][YY];
+  
+  if (debug) {
+    pr_rvecs(debug,0,"PC: pres ",pres,3);
+    pr_rvecs(debug,0,"PC: mu   ",mu,3);
+  }
+  
+  if (mu[XX][XX]<0.99 || mu[XX][XX]>1.01 ||
+      mu[YY][YY]<0.99 || mu[YY][YY]>1.01 ||
+      mu[ZZ][ZZ]<0.99 || mu[ZZ][ZZ]>1.01) {
+    sprintf(buf,"\nStep %d  Warning: pressure scaling more than 1%%, "
+	    "mu: %g %g %g\n",step,mu[XX][XX],mu[YY][YY],mu[ZZ][ZZ]);
+    fprintf(stdlog,"%s",buf);
+    fprintf(stderr,"%s",buf);
+  }
+}
+
+void berendsen_pscale(matrix mu,
 		      matrix box,int start,int nr_atoms,
 		      rvec x[],unsigned short cFREEZE[],
 		      t_nrnb *nrnb,ivec nFreeze[])
 {
   int    n,d,g;
-  real   scalar_pressure, xy_pressure, p_corr_z;
-  matrix mu;
-  char   *ptr,buf[STRLEN];
-
-  /*
-   *  PRESSURE SCALING 
-   *  Step (2P)
-   */
-    scalar_pressure=0;
-    xy_pressure=0;
-    for(d=0; d<DIM; d++) {
-      scalar_pressure += pres[d][d]/DIM;
-      if (d != ZZ)
-	xy_pressure += pres[d][d]/(DIM-1);
-    }
-    /* Pressure is now in bar, everywhere. */
-#define factor(d,m) (ir->compress[d][m]*ir->delta_t/ir->tau_p)
+      
+  /* Scale the positions */
+  for (n=start; n<start+nr_atoms; n++) {
+    g=cFREEZE[n];
     
-    /* mu has been changed from pow(1+...,1/3) to 1+.../3, since this is
-     * necessary for triclinic scaling
-     */
-    if (scalar_pressure != 0.0) {
-      clear_mat(mu);
-      switch (ir->epct) {
-      case epctISOTROPIC:
-	for(d=0; d<DIM; d++)
-	  mu[d][d] = 1.0 - factor(d,d)*(ir->ref_p[d][d] - scalar_pressure)/DIM;
-	break;
-      case epctSEMIISOTROPIC:
-	for(d=0; d<ZZ; d++)
-	  mu[d][d] = 1.0 - factor(d,d)*(ir->ref_p[d][d]-xy_pressure)/DIM;
-	mu[ZZ][ZZ] = 
-	  1.0 - factor(ZZ,ZZ)*(ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ])/DIM;
-	break;
-      case epctANISOTROPIC:
-	for(d=0; d<DIM; d++)
-	  for(n=0; n<DIM; n++)
-	    mu[d][n] = (d==n ? 1.0 : 0.0) 
-	      -factor(d,n)*(ir->ref_p[d][n] - pres[d][n])/DIM;
-	break;
-      case epctSURFACETENSION:
-	/* ir->ref_p[0/1] is the reference surface-tension times *
-	 * the number of surfaces                                */
-	if (ir->compress[ZZ][ZZ])
-	  p_corr_z = ir->delta_t/ir->tau_p*(ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ]);
-	else
-	  /* when the compressibity is zero, set the pressure correction   *
-	   * in the z-direction to zero to get the correct surface tension */
-	  p_corr_z = 0;
-	mu[ZZ][ZZ] = 1.0 - ir->compress[ZZ][ZZ]*p_corr_z;
-	for(d=0; d<DIM-1; d++)
-	  mu[d][d] = 1.0 + factor(d,d)*(ir->ref_p[d][d]/(mu[ZZ][ZZ]*box[ZZ][ZZ])
-					- (pres[ZZ][ZZ]+p_corr_z - xy_pressure))/(DIM-1);
-	break;
-      default:
-	fatal_error(0,"Berendsen pressure coupling type %s not supported yet\n",
-		    EPCOUPLTYPETYPE(ir->epct));
-	break;
-      }
-      /* To fullfill the orientation restrictions on triclinic boxes
-       * set mu_yx, mu_zx and mu_zy to 0 and correct the other elements
-       * of mu to first order.
-       */
-      mu[XX][YY] += mu[YY][XX];
-      mu[XX][ZZ] += mu[ZZ][XX];
-      mu[YY][ZZ] += mu[ZZ][YY];
-      
-      if (debug) {
-	pr_rvecs(debug,0,"PC: pres ",pres,3);
-	pr_rvecs(debug,0,"PC: mu   ",mu,3);
-      }
-      
-      if (mu[XX][XX]<0.99 || mu[XX][XX]>1.01 ||
-	  mu[YY][YY]<0.99 || mu[YY][YY]>1.01 ||
-	  mu[ZZ][ZZ]<0.99 || mu[ZZ][ZZ]>1.01) {
-	sprintf(buf,"\nStep %d  Warning: pressure scaling more than 1%%, "
-	      "mu: %g %g %g\n",step,mu[XX][XX],mu[YY][YY],mu[ZZ][ZZ]);
-	fprintf(stdlog,"%s",buf);
-	fprintf(stderr,"%s",buf);
-      }
-      
-      /* Scale the positions */
-      for (n=start; n<start+nr_atoms; n++) {
-	g=cFREEZE[n];
-	
-	if (!nFreeze[g][XX])
-	  x[n][XX] = mu[XX][XX]*x[n][XX]+mu[XX][YY]*x[n][YY]+mu[XX][ZZ]*x[n][ZZ];
-	if (!nFreeze[g][YY])
-	  x[n][YY] = mu[YY][YY]*x[n][YY]+mu[YY][ZZ]*x[n][ZZ];
-	if (!nFreeze[g][ZZ])
-	  x[n][ZZ] = mu[ZZ][ZZ]*x[n][ZZ];
-      }
-      /* compute final boxlengths */
-      for (d=0; d<DIM; d++) {
-	box[d][XX] = mu[XX][XX]*box[d][XX]+mu[XX][YY]*box[d][YY]+mu[XX][ZZ]*box[d][ZZ];
-	box[d][YY] = mu[YY][YY]*box[d][YY]+mu[YY][ZZ]*box[d][ZZ];
-	box[d][ZZ] = mu[ZZ][ZZ]*box[d][ZZ];
-      }      
-
-      /* (un)shifting should NOT be done after this,
-       * since the box vectors might have changed
-       */
-      inc_nrnb(nrnb,eNR_PCOUPL,nr_atoms);
-    }
+    if (!nFreeze[g][XX])
+      x[n][XX] = mu[XX][XX]*x[n][XX]+mu[XX][YY]*x[n][YY]+mu[XX][ZZ]*x[n][ZZ];
+    if (!nFreeze[g][YY])
+      x[n][YY] = mu[YY][YY]*x[n][YY]+mu[YY][ZZ]*x[n][ZZ];
+    if (!nFreeze[g][ZZ])
+      x[n][ZZ] = mu[ZZ][ZZ]*x[n][ZZ];
+  }
+  /* compute final boxlengths */
+  for (d=0; d<DIM; d++) {
+    box[d][XX] = mu[XX][XX]*box[d][XX]+mu[XX][YY]*box[d][YY]+mu[XX][ZZ]*box[d][ZZ];
+    box[d][YY] = mu[YY][YY]*box[d][YY]+mu[YY][ZZ]*box[d][ZZ];
+    box[d][ZZ] = mu[ZZ][ZZ]*box[d][ZZ];
+  }      
+  
+  /* (un)shifting should NOT be done after this,
+   * since the box vectors might have changed
+   */
+  inc_nrnb(nrnb,eNR_PCOUPL,nr_atoms);
 }
 
-void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,real dt)
+void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,real dt,real lambda[])
 {
   int    i;
   
@@ -347,18 +349,18 @@ void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,real dt)
  
       reft = max(0.0,opts->ref_t[i]);
       lll  = sqrt(1.0 + (dt/opts->tau_t[i])*(reft/T-1.0));
-      grps->tcstat[i].lambda = max(min(lll,1.25),0.8);
+      lambda[i] = max(min(lll,1.25),0.8);
     }
     else
-      grps->tcstat[i].lambda = 1.0;
+      lambda[i] = 1.0;
 
     if (debug)
       fprintf(debug,"TC: group %d: T: %g, Lambda: %g\n",
-	      i,T,grps->tcstat[i].lambda);
+	      i,T,lambda[i]);
   }
 }
 
-void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt)
+void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt,real xi[])
 {
   real  Qinv;
   int   i;
@@ -370,7 +372,7 @@ void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt)
     else
       Qinv=0.0;
     reft = max(0.0,opts->ref_t[i]);
-    grps->tcstat[i].xi += dt*Qinv*(grps->tcstat[i].T-reft);
+    xi[i] += dt*Qinv*(grps->tcstat[i].T-reft);
   }
 }
   

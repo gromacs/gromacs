@@ -198,7 +198,7 @@ static void calc_f_el(FILE *fp,int  start,int homenr,
 void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 	      t_parm *parm,t_nsborder *nsb,tensor vir_part,tensor pme_vir,
 	      int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
-	      rvec x[],rvec v[],rvec f[],rvec buf[],
+	      matrix box,rvec x[],rvec f[],rvec buf[],
 	      t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,bool bVerbose,
 	      real lambda,t_graph *graph,
 	      bool bNS,bool bNBFonly,t_forcerec *fr, rvec mu_tot,
@@ -216,7 +216,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   cg0    = CG0(nsb);
   cg1    = CG1(nsb);
   
-  update_forcerec(log,fr,parm->box);
+  update_forcerec(log,fr,box);
 
   /* Calculate total (local) dipole moment in a temporary common array. 
    * This makes it possible to sum them over nodes faster.
@@ -226,15 +226,15 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   if (fr->ePBC != epbcNONE) { 
     /* Compute shift vectors every step, because of pressure coupling! */
     if (parm->ir.epc != epcNO)
-      calc_shifts(parm->box,box_size,fr->shift_vec);
+      calc_shifts(box,box_size,fr->shift_vec);
     
     if (bNS) { 
-      put_charge_groups_in_box(log,cg0,cg1,parm->box,box_size,
+      put_charge_groups_in_box(log,cg0,cg1,box,box_size,
 			       &(top->blocks[ebCGS]),x,fr->cg_cm);
       inc_nrnb(nrnb,eNR_RESETX,homenr);
     } 
     else if ((parm->ir.eI==eiSteep || parm->ir.eI==eiCG) && graph)
-      unshift_self(graph,parm->box,x);
+      unshift_self(graph,box,x);
     
   }
   else if (bNS)
@@ -262,7 +262,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   if (bNS) {
     if (fr->ePBC == epbcXYZ)
       /* Calculate intramolecular shift vectors to make molecules whole */
-      mk_mshift(log,graph,parm->box,x);
+      mk_mshift(log,graph,box,x);
 	       
     /* Reset long range forces if necessary */
     if (fr->bTwinRange) {
@@ -274,7 +274,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
      */
     dvdl_lr = 0; 
 
-    ns(log,fr,x,f,parm->box,grps,&(parm->ir.opts),top,mdatoms,
+    ns(log,fr,x,f,box,grps,&(parm->ir.opts),top,mdatoms,
        cr,nrnb,nsb,step,lambda,&dvdl_lr);
   }
   /* Reset PME/Ewald forces if necessary */
@@ -296,7 +296,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   /* Compute the forces */    
   force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,mcr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(parm->ir.opts),
-	x,f,ener,fcd,bVerbose,parm->box,lambda,graph,&(top->atoms.excl),
+	x,f,ener,fcd,bVerbose,box,lambda,graph,&(top->atoms.excl),
 	bNBFonly,pme_vir,mu_tot,qsum,bGatherOnly);
 	
   /* Take long range contribution to free energy into account */
@@ -403,10 +403,10 @@ double node_time(void)
   return runtime;
 }
 
-void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
+void do_shakefirst(FILE *log,bool bTYZ,real ener[],
 		   t_parm *parm,t_nsborder *nsb,t_mdatoms *md,
-		   rvec x[],rvec vold[],rvec buf[],rvec f[],
-		   rvec v[],t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
+		   t_state *state,rvec vold[],rvec buf[],rvec f[],
+		   t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
 		   t_groups *grps,t_forcerec *fr,t_topology *top,
 		   t_edsamyn *edyn,t_pull *pulldata)
 {
@@ -415,6 +415,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
   double mass,tmass,vcm[4];
   real   dt=parm->ir.delta_t;
   real   dt_1;
+  rvec   *xptr;
 
   if (count_constraints(top,cr)) {
     start  = START(nsb);
@@ -426,16 +427,15 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
     step = -2;
     fprintf(log,"\nConstraining the starting coordinates (step %d)\n",step);
     clear_mat(shake_vir);
-    update(nsb->natoms,start,homenr,step,lambda,&ener[F_DVDL],
-	   parm,md,x,graph,
-	   NULL,NULL,vold,NULL,x,top,grps,shake_vir,cr,nrnb,bTYZ,
-	   FALSE,edyn,pulldata,FALSE);
+    update(nsb->natoms,start,homenr,step,&ener[F_DVDL],
+	   parm,md,state,graph,
+	   NULL,NULL,vold,top,grps,shake_vir,cr,nrnb,bTYZ,
+	   edyn,pulldata,FALSE,FALSE,FALSE,state->x);
     /* Compute coordinates at t=-dt, store them in buf */
     /* for(i=0; (i<nsb->natoms); i++) {*/
     for(i=start; (i<end); i++) {
-      for(m=0; (m<DIM); m++) { 
-	f[i][m]=x[i][m];
-	buf[i][m]=x[i][m]-dt*v[i][m];
+      for(m=0; (m<DIM); m++) {
+	buf[i][m] = state->x[i][m] - dt*state->v[i][m];
       }
     }
     
@@ -445,11 +445,11 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
     step = -1;
     fprintf(log,"\nConstraining the coordinates at t0-dt (step %d)\n",step);
     clear_mat(shake_vir);
-    update(nsb->natoms,start,homenr,
-	   step,lambda,&ener[F_DVDL],parm,md,f,graph,
-	   NULL,NULL,vold,NULL,buf,top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,
-	   edyn,pulldata,FALSE);
-    
+    update(nsb->natoms,start,homenr,step,&ener[F_DVDL],
+	   parm,md,state,graph,
+	   NULL,NULL,vold,top,grps,shake_vir,cr,nrnb,bTYZ,
+	   edyn,pulldata,FALSE,FALSE,FALSE,buf);
+
     /* Compute the velocities at t=-dt/2 using the coordinates at
      * t=-dt and t=0
      * Compute velocity of center of mass and total mass
@@ -461,8 +461,8 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
       /*for(i=0; (i<nsb->natoms); i++) {*/
       mass = md->massA[i];
       for(m=0; (m<DIM); m++) {
-	v[i][m]=(x[i][m]-f[i][m])*dt_1;
-	vcm[m] += v[i][m]*mass;
+	state->v[i][m] = (state->x[i][m] - buf[i][m])*dt_1;
+	vcm[m] += state->v[i][m]*mass;
       }
       vcm[3] += mass;
     }
@@ -481,7 +481,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
     /* Now we have the velocity of center of mass, let's remove it */
     for(i=start; (i<end); i++) {
       for(m=0; (m<DIM); m++)
-	v[i][m] -= vcm[m];
+	state->v[i][m] -= vcm[m];
     }
   }
 }
@@ -530,16 +530,16 @@ void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
   ener[F_ETOT] += ener[F_DISPCORR];
 }
 
-void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,
+void do_pbc_first(FILE *log,matrix box,rvec box_size,t_forcerec *fr,
 		  t_graph *graph,rvec x[])
 {
   if (!graph)
     fatal_error(0,"do_pbc_first called with NULL graph");
   fprintf(log,"Removing pbc first time\n");
-  calc_shifts(parm->box,box_size,fr->shift_vec);
-  mk_mshift(log,graph,parm->box,x);
+  calc_shifts(box,box_size,fr->shift_vec);
+  mk_mshift(log,graph,box,x);
   if (getenv ("NOPBC") == NULL)
-    shift_self(graph,parm->box,x);
+    shift_self(graph,box,x);
   else
     fprintf(log,"Not doing first shift_self\n");
   fprintf(log,"Done rmpbc\n");

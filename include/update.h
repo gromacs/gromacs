@@ -48,27 +48,26 @@ extern void update(int          natoms,	/* number of atoms in simulation */
 		   int      	start,
 		   int          homenr,	/* number of home particles 	*/
 		   int          step,
-		   real         lambda, /* FEP scaling parameter */
 		   real         *dvdlambda, /* FEP stuff */
 		   t_parm       *parm,    /* input record and box stuff	*/
 		   t_mdatoms    *md,
-		   rvec         x[],	/* coordinates of home particles */
+		   t_state      *state,
 		   t_graph      *graph,	
 		   rvec         force[],/* forces on home particles 	*/
 		   rvec         delta_f[],
 		   rvec         vold[],	/* Old velocities		   */
-		   rvec         vt[], 	/* velocities at whole steps */
-		   rvec         v[],  	/* velocity at next halfstep   	*/
 		   t_topology   *top,
 		   t_groups     *grps,
 		   tensor       vir_part,
 		   t_commrec    *cr,
 		   t_nrnb       *nrnb,
 		   bool         bTYZ,
-		   bool         bDoUpdate,
 		   t_edsamyn    *edyn,
 		   t_pull       *pulldata,
-		   bool         bNEMD);
+		   bool         bNEMD,
+		   bool         bDoUpdate,
+		   bool         bFirstStep,
+		   rvec         *shakefirst_x);
 /* Return TRUE if OK, FALSE in case of Shake Error */
      
 extern void calc_ke_part(bool bFirstStep,bool bSD,int start,int homenr,
@@ -115,8 +114,11 @@ extern void init_sd_consts(int ngtc,real tau_t[],real dt);
  */
 extern real run_aver(real old,real cur,int step,int nmem);
 
-extern void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,real dt);
-extern void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt);
+extern void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,real dt,
+			     real lambda[]);
+
+extern void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt,
+			      real xi[]);
 /* Compute temperature scaling. For Nose-Hoover it is done in update. */
 
 /* Set reference temp for simulated annealing at time t*/
@@ -134,7 +136,11 @@ extern void calc_pres(int ePBC,matrix box,
 extern void parrinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
 				   tensor box,tensor boxv,tensor M);
   
-extern void berendsen_pcoupl(t_inputrec *ir,int step,tensor pres,
+extern void berendsen_pcoupl(t_inputrec *ir,int step,tensor pres,matrix box,
+			     matrix mu);
+
+
+extern void berendsen_pscale(matrix mu,
 			     matrix box,int start,int nr_atoms,
 			     rvec x[],unsigned short cFREEZE[],
 			     t_nrnb *nrnb,ivec nFreeze[]);

@@ -133,13 +133,17 @@ static void ld_atoms(int src,t_symtab *symtab,t_atoms *atoms)
   ld_block(src,&atoms->excl);
 }
 
-static void ld_vectors(int src,rvec x[],rvec v[])
+static void ld_state(int src,t_state *state)
 {
-  int natoms;
-  
-  blockrx(src,natoms);
-  nblockrx(src,natoms,x);
-  nblockrx(src,natoms,v);
+  blockrx(src,state->natoms);
+  blockrx(src,state->ngtc);
+  blockrx(src,state->box);
+  blockrx(src,state->boxv);
+  blockrx(src,state->pcoupl_mu);
+  nblockrx(src,state->ngtc,state->nosehoover_xi);
+  nblockrx(src,state->ngtc,state->tcoupl_lambda);
+  nblockrx(src,state->natoms,state->x);
+  nblockrx(src,state->natoms,state->v);
 }
 
 static void ld_ilist(int src,t_ilist *ilist)
@@ -208,7 +212,7 @@ static void ld_parm(int src,t_parm *parm)
 }
 
 void ld_data(int left,int right,t_parm *parm,t_nsborder *nsb,
-	     t_topology *top,rvec **x,rvec **v)
+	     t_topology *top,t_state *state)
 {
   int i;
   
@@ -227,10 +231,12 @@ void ld_data(int left,int right,t_parm *parm,t_nsborder *nsb,
   for (i=0; (i<ebNR); i++) 
     ld_block(left,&top->blocks[i]);
   if (debug) fprintf(stdlog,"after ld_block");
-  snew(*x,top->atoms.nr);
-  snew(*v,top->atoms.nr);
-  ld_vectors(left,*x,*v);
-  if (debug) fprintf(stdlog,"after ld_vectors");
+  snew(state->nosehoover_xi,parm->ir.opts.ngtc);
+  snew(state->tcoupl_lambda,parm->ir.opts.ngtc);
+  snew(state->x,top->atoms.nr);
+  snew(state->v,top->atoms.nr);
+  ld_state(left,state);
+  if (debug) fprintf(stdlog,"after ld_state");
 }
 
 static void mv_grpopts(int dest,t_grpopts *g)
@@ -351,11 +357,17 @@ static void mv_atoms(int dest,t_symtab *symtab,t_atoms *atoms)
   mv_block(dest,&atoms->excl);
 }
 
-static void mv_vectors(int dest,int natoms,rvec x[],rvec v[])
+static void mv_state(int dest,t_state *state)
 {
-  blocktx(dest,natoms);
-  nblocktx(dest,natoms,x);
-  nblocktx(dest,natoms,v);
+  blocktx(dest,state->natoms);
+  blocktx(dest,state->ngtc);
+  blocktx(dest,state->box);
+  blocktx(dest,state->boxv);
+  blocktx(dest,state->pcoupl_mu);
+  nblocktx(dest,state->ngtc,state->nosehoover_xi);
+  nblocktx(dest,state->ngtc,state->tcoupl_lambda);
+  nblocktx(dest,state->natoms,state->x);
+  nblocktx(dest,state->natoms,state->v);
 }
 
 static void mv_ilist(int dest,t_ilist *ilist)
@@ -378,7 +390,7 @@ static void mv_idef(int dest,t_idef *idef)
 }
 
 void mv_data(int left,int right,t_parm *parm,t_nsborder *nsb,
-             t_topology *top,rvec x[],rvec v[])
+             t_topology *top,t_state *state)
 {
   int i;
   
@@ -390,6 +402,6 @@ void mv_data(int left,int right,t_parm *parm,t_nsborder *nsb,
   mv_idef(right,&top->idef);
   for (i=0; (i<ebNR); i++) 
     mv_block(right,&top->blocks[i]);
-  mv_vectors(right,top->atoms.nr,x,v);
+  mv_state(right,state);
 }
 

@@ -349,8 +349,7 @@ static void check_vel(t_atoms *atoms,rvec v[])
 static int *new_status(char *topfile,char *topppfile,char *confin,
 		       t_gromppopts *opts,t_inputrec *ir,
 		       bool bGenVel,bool bVerbose,
-		       bool bSort,int *natoms,
-		       rvec **x,rvec **v,matrix box,
+		       bool bSort,t_state *state,
 		       t_atomtype *atype,t_topology *sys,
 		       t_molinfo *msys,t_params plist[],
 		       int nnodes,bool bEnsemble,bool bMorse,
@@ -414,25 +413,24 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
   if (bVerbose) 
     fprintf(stderr,"processing coordinates...\n");
   
-  get_stx_coordnum(confin,natoms);
-  if (*natoms != sys->atoms.nr)
+  get_stx_coordnum(confin,&state->natoms);
+  if (state->natoms != sys->atoms.nr)
     fatal_error(0,"number of coordinates in coordinate file (%s, %d)\n"
 		"             does not match topology (%s, %d)",
-		confin,*natoms,topfile,sys->atoms.nr);
+		confin,state->natoms,topfile,sys->atoms.nr);
   else {
     /* make space for coordinates and velocities */
     snew(confat,1);
-    init_t_atoms(confat,*natoms,FALSE);
-    snew(*x,*natoms);
-    snew(*v,*natoms);
-    read_stx_conf(confin,opts->title,confat,*x,*v,box);
+    init_t_atoms(confat,state->natoms,FALSE);
+    init_state(state,state->natoms,ir->opts.ngtc);
+    read_stx_conf(confin,opts->title,confat,state->x,state->v,state->box);
 
     if (ntab > 0) {
       if (bVerbose)
 	fprintf(stderr,"Shuffling coordinates...\n");
       forward=shuffle_xv(bSort,bVerbose,
 			 ntab,tab,nrmols,molinfo,
-			 *natoms,*x,*v,Nsim,Sims);
+			 state->natoms,state->x,state->v,Nsim,Sims);
     }
     
     nmismatch=check_atom_names(topfile, confin, &(sys->atoms), confat,forward);
@@ -448,7 +446,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
     }    
     if (bVerbose) 
       fprintf(stderr,"double-checking input for internal consistency...\n");
-    double_check(ir,box,msys,nerror);
+    double_check(ir,state->box,msys,nerror);
   }
   
   if (bGenVel) {
@@ -463,8 +461,8 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
       fprintf(stderr,"Setting gen_seed to %d\n",opts->seed);
     }
     maxwell_speed(opts->tempi,sys->atoms.nr*DIM,
-		  opts->seed,&(sys->atoms),*v);
-    stop_cm(stdout,sys->atoms.nr,mass,*x,*v);
+		  opts->seed,&(sys->atoms),state->v);
+    stop_cm(stdout,sys->atoms.nr,mass,state->x,state->v);
     sfree(mass);
   }
   for(i=0; (i<nrmols); i++)
@@ -476,8 +474,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
 }
 
 static void cont_status(char *slog,bool bNeedVel,bool bGenVel, real fr_time,
-			t_inputrec *ir,int *natoms,
-			rvec **x,rvec **v,matrix box,
+			t_inputrec *ir,t_state *state,
 			t_topology *sys)
      /* If fr_time == -1 read the last frame available which is complete */
 {
@@ -499,9 +496,9 @@ static void cont_status(char *slog,bool bNeedVel,bool bGenVel, real fr_time,
   } else
     read_first_frame(&fp,slog,&fr,TRX_NEED_X | TRX_NEED_V);
   
-  *natoms = fr.natoms;
+  state->natoms = fr.natoms;
 
-  if(sys->atoms.nr != *natoms)
+  if(sys->atoms.nr != state->natoms)
     fatal_error(0,"Number of atoms in Topology "
 		"is not the same as in Trajectory");
 
@@ -513,10 +510,10 @@ static void cont_status(char *slog,bool bNeedVel,bool bGenVel, real fr_time,
   if (fr.not_ok & FRAME_NOT_OK)
     fatal_error(0,"Can not start from an incomplete frame");
 
-  *x = fr.x;
+  state->x = fr.x;
   if (bNeedVel && !bGenVel)
-    *v = fr.v;
-  copy_mat(fr.box,box);
+    state->v = fr.v;
+  copy_mat(fr.box,state->box);
 
   fprintf(stderr,"Using frame at t = %g ps\n",fr.time);
   fprintf(stderr,"Starting time for run is %g ps\n",ir->init_t); 
@@ -845,8 +842,7 @@ int main (int argc, char *argv[])
   int          natoms,ndum;
   int          *forward=NULL;
   t_params     *plist;
-  rvec         *x=NULL,*v=NULL;
-  matrix       box;
+  t_state      state;
   real         max_spacing,*capacity;
   char         fn[STRLEN],fnB[STRLEN],*mdparin;
   int          nerror;
@@ -958,7 +954,7 @@ int main (int argc, char *argv[])
   if (!fexist(fn)) 
     fatal_error(0,"%s does not exist",fn);
   forward=new_status(fn,opt2fn_null("-pp",NFILE,fnm),opt2fn("-c",NFILE,fnm),
-		     opts,ir,bGenVel,bVerbose,bSort,&natoms,&x,&v,box,
+		     opts,ir,bGenVel,bVerbose,bSort,&state,
 		     &atype,sys,&msys,plist,bShuffle ? nnodes : 1,
 		     (opts->eDisre==edrEnsemble),opts->bMorse,
 		     bCheckPairs,&nerror);
@@ -1068,7 +1064,7 @@ int main (int argc, char *argv[])
   }
   /* Check velocity for dummies and shells */
   if (bGenVel) 
-    check_vel(&sys->atoms,v);
+    check_vel(&sys->atoms,state.v);
     
   /* check masses */
   check_mol(&(sys->atoms));
@@ -1083,7 +1079,7 @@ int main (int argc, char *argv[])
     fprintf(stderr,"initialising group options...\n");
   do_index(ftp2fn_null(efNDX,NFILE,fnm),
 	   &sys->symtab,&(sys->atoms),bVerbose,ir,&sys->idef,
-	   forward,bGenVel ? v : NULL);
+	   forward,bGenVel ? state.v : NULL);
 
   if (bVerbose)
     fprintf(stderr,"Checking consistency between energy and charge groups...\n");
@@ -1101,14 +1097,14 @@ int main (int argc, char *argv[])
   if (ftp2bSet(efTRN,NFILE,fnm)) {
     if (bVerbose)
       fprintf(stderr,"getting data from old trajectory ...\n");
-    cont_status(ftp2fn(efTRN,NFILE,fnm),bNeedVel,bGenVel,fr_time,ir,&natoms,
-		&x,&v,box,sys);
+    cont_status(ftp2fn(efTRN,NFILE,fnm),bNeedVel,bGenVel,fr_time,ir,&state,
+		sys);
   }
   
   if ((ir->coulombtype == eelPPPM) || (ir->coulombtype == eelPME) ||
       (ir->coulombtype == eelEWALD)) {
     /* Calculate the optimal grid dimensions */
-    max_spacing = calc_grid(box,opts->fourierspacing,
+    max_spacing = calc_grid(state.box,opts->fourierspacing,
 			    &(ir->nkx),&(ir->nky),&(ir->nkz),nnodes);
     if ((ir->coulombtype == eelPPPM) && (max_spacing > 0.1)) {
       set_warning_line(mdparin,-1);
@@ -1125,9 +1121,8 @@ int main (int argc, char *argv[])
   if (bVerbose) 
     fprintf(stderr,"writing run input file...\n");
 
-  write_tpx(ftp2fn(efTPX,NFILE,fnm),
-	    0,ir->init_t,ir->init_lambda,ir,box,
-	    natoms,x,v,NULL,sys);
+  state.lambda = ir->init_lambda;
+  write_tpx_state(ftp2fn(efTPX,NFILE,fnm),0,ir->init_t,ir,&state,sys);
   
   print_warn_num();
   

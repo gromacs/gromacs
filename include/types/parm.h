@@ -36,8 +36,6 @@
 typedef struct
 {
   t_inputrec 	ir;	/* input rec, see typedefs.h			*/
-  matrix 	box;    /* box vector coordinates                      	*/
-  matrix 	boxv;   /* box vector velocities                      	*/
   tensor        vir;    /* the virial                                   */
   tensor        pres;   /* the pressure                                 */
   tensor        ekin;   /* Kinetic energy				*/

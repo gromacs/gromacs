@@ -445,6 +445,7 @@ typedef struct {
   t_forcerec     *fr;
   t_fcdata       *fcd;
   t_comm_dummies *dummy_comm;
+  t_state        *state;
   rvec           *f,*buf;
   real           *ener,lambda;
 } t_bulk;
@@ -464,7 +465,7 @@ real fletch_func(real *x)
   
   if (bulk.bDummies)
     construct_dummies(bulk.fp,xp,bulk.nrnb,1,NULL,&bulk.top->idef,
-		      bulk.graph,bulk.cr,bulk.parm->box,bulk.dummy_comm);
+		      bulk.graph,bulk.cr,bulk.state->box,bulk.dummy_comm);
   
   /* Calc force & energy on new positions
    * do_force always puts the charge groups in the box and shifts again
@@ -505,7 +506,7 @@ void fletch_dfunc(real *x,real *dx)
 time_t do_steep_new(FILE *log,int nfile,t_filenm fnm[], 
  		t_parm *parm,t_topology *top, 
  		t_groups *grps,t_nsborder *nsb, 
- 		rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms, 
+ 		t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms, 
  		tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[], 
  		bool bVerbose,bool bDummies, t_comm_dummies *dummycomm,
 		t_commrec *cr,t_commrec *mcr,t_graph *graph,
@@ -532,8 +533,8 @@ time_t do_steep_new(FILE *log,int nfile,t_filenm fnm[],
   real   terminate=0;
 #define  TRY (1-Min)
   
-  init_em(log,SD,parm,&lambda,&mynrnb,mu_tot,box_size,fr,mdatoms,top,
-	  nsb,cr,&vcm,&start,&end);
+  init_em(log,SD,parm,&lambda,&mynrnb,mu_tot,state->box,box_size,
+	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end);
    
   /* Print to log file  */
   start_t=print_date_and_time(log,cr->nodeid,"Started Fletcher"); 
@@ -555,7 +556,7 @@ time_t do_steep_new(FILE *log,int nfile,t_filenm fnm[],
   
   if (fr->ePBC != epbcNONE)
     /* Remove periodicity */
-    do_pbc_first(log,parm,box_size,fr,graph,x);
+    do_pbc_first(log,state->box,box_size,fr,graph,state->x);
 
   /* Copy data to global arrays */
   bulk.fp       = stdlog;
@@ -576,13 +577,14 @@ time_t do_steep_new(FILE *log,int nfile,t_filenm fnm[],
   bulk.fr       = fr;
   bulk.fcd      = fcd;
   bulk.dummy_comm = dummycomm;
+  bulk.state    = state;
   bulk.f        = grad;
   bulk.buf      = buf;
   bulk.ener     = ener;
   bulk.lambda   = lambda;
     
   /* Do the actual minimization */
-  xptr = (real *)x[0];
+  xptr = (real *)state->x[0];
   /*frprmn(xptr-1,mdatoms->nr*DIM,parm->ir.em_tol,&count,&epot,
 	 fletch_func,fletch_dfunc);*/
   dfpmin(xptr-1,mdatoms->nr*DIM,parm->ir.em_tol,&count,&epot,
@@ -593,10 +595,10 @@ time_t do_steep_new(FILE *log,int nfile,t_filenm fnm[],
 
   write_traj(log,cr,ftp2fn(efTRN,nfile,fnm), 
 	     nsb,count,(real) count, 
-	     lambda,nrnb,nsb->natoms,x,NULL,bulk.f,parm->box); 
+	     lambda,nrnb,nsb->natoms,state->x,NULL,bulk.f,state->box); 
   if (MASTER(cr)) 
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
-		   *top->name, &(top->atoms),x,NULL,parm->box);
+		   *top->name, &(top->atoms),state->x,NULL,state->box);
   
   /* To print the actual number of steps we needed somewhere */
   parm->ir.nsteps=bulk.count;

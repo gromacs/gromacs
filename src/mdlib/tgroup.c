@@ -50,9 +50,7 @@ static void init_grptcstat(int ngtc,t_grp_tcstat tcstat[])
   
   for(i=0; (i<ngtc); i++) {
     tcstat[i].T=0;
-    tcstat[i].lambda=1;
     clear_mat(tcstat[i].ekin);
-    tcstat[i].xi=0;
   }
 }
 

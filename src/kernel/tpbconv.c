@@ -251,16 +251,16 @@ int main (int argc, char *argv[])
 
   char         *top_fn,*frame_fn;
   int          fp;
-  t_tpxheader  tpx;
   t_trnheader head;
-  int          i,natoms,frame,step,run_step,nsteps_org;
-  real         run_t,run_lambda;
+  int          i,frame,step,run_step,nsteps_org;
+  real         run_t;
   bool         bOK,bFrame,bTime,bSel;
   t_topology   top;
   t_inputrec   *ir,*irnew=NULL;
   t_gromppopts *gopts;
-  rvec         *x=NULL,*v=NULL,*newx,*newv,*tmpx,*tmpv;
-  matrix       box,newbox;
+  t_state      state;
+  rvec         *newx=NULL,*newv=NULL,*tmpx,*tmpv;
+  matrix       newbox;
   int          gnx;
   char         *grpname;
   atom_id      *index=NULL;
@@ -300,11 +300,8 @@ int main (int argc, char *argv[])
   top_fn = ftp2fn(efTPX,NFILE,fnm);
   fprintf(stderr,"Reading toplogy and shit from %s\n",top_fn);
   
-  read_tpxheader(top_fn,&tpx,FALSE,NULL,NULL);
-  snew(x,tpx.natoms);
-  snew(v,tpx.natoms);
   snew(ir,1);
-  read_tpx(top_fn,&step,&run_t,&run_lambda,ir,box,&natoms,x,v,NULL,&top);
+  read_tpx_state(top_fn,&step,&run_t,ir,&state,&top);
 
   if (ir->bUncStart != bUncStart)
     fprintf(stderr,"Modifying ir->bUncStart to %s\n",bool_names[bUncStart]);
@@ -319,45 +316,43 @@ int main (int argc, char *argv[])
 	    frame_fn);
     
     fp=open_trn(frame_fn,"r");
-    fread_trnheader(fp,&head,&bOK);
-    if (top.atoms.nr != head.natoms) 
-      fatal_error(0,"Number of atoms in Topology (%d) "
-		  "is not the same as in Trajectory (%d)\n",
-		  top.atoms.nr,head.natoms);
-    snew(newx,head.natoms);
-    snew(newv,head.natoms);
-    run_t      = head.t;
-    run_step   = head.step;
-    run_lambda = head.lambda;
-    bOK        = fread_htrn(fp,&head,box,x,v,NULL);
 
     /* Now scan until the last set of x and v (step == 0)
      * or the ones at step step.
      */
-    bFrame = bOK;
+    bFrame = TRUE;
     frame  = 0;
     while (bFrame) {
-      fprintf(stderr,"\rRead frame %6d: step %6d time %8.3f",
-	      frame,run_step,run_t);
       bFrame=fread_trnheader(fp,&head,&bOK);
-      if (bFrame || !bOK)
-	frame++;
+      if (bOK && frame == 0) {
+	if (top.atoms.nr != head.natoms) 
+	  fatal_error(0,"Number of atoms in Topology (%d) "
+		      "is not the same as in Trajectory (%d)\n",
+		      top.atoms.nr,head.natoms);
+	snew(newx,head.natoms);
+	snew(newv,head.natoms);
+      }
       bFrame=bFrame && bOK;
-      if (bFrame)
+      if (bFrame) {
+	
 	bOK=fread_htrn(fp,&head,newbox,newx,newv,NULL);
+      }
       bFrame=bFrame && bOK;
       if (bFrame && (head.x_size) && (head.v_size)) {
-	tmpx = newx;
-	newx = x;
-	x    = tmpx;
-	tmpv = newv;
-	newv = v;
-	v    = tmpv;
-	run_t      = head.t;
-	run_step   = head.step;
-	run_lambda = head.lambda;
-	copy_mat(newbox,box);
+	tmpx    = newx;
+	newx    = state.x;
+	state.x = tmpx;
+	tmpv    = newv;
+	newv    = state.v;
+	state.v = tmpv;
+	run_t        = head.t;
+	run_step     = head.step;
+	state.lambda = head.lambda;
+	copy_mat(newbox,state.box);
       }
+      fprintf(stderr,"\rRead frame %6d: step %6d time %8.3f",
+	      frame,run_step,run_t);
+      frame++;
       if (bTime && (head.t >= start_t))
 	bFrame=FALSE;
     }
@@ -365,7 +360,7 @@ int main (int argc, char *argv[])
     fprintf(stderr,"\n");
     if (!bOK)
       fprintf(stderr,"Frame %d (step %d, time %g) is incomplete\n",
-	      frame,head.step,head.t);
+	      frame-1,head.step,head.t);
     fprintf(stderr,"\nUsing frame of step %d time %g\n",run_step,run_t);
   } 
   else {
@@ -396,13 +391,13 @@ int main (int argc, char *argv[])
   }
   if (bZeroQ || (ir->nsteps > 0)) {
     ir->init_t      = run_t;
-    ir->init_lambda = run_lambda;
+    ir->init_lambda = state.lambda;
     
     if (!ftp2bSet(efTRN,NFILE,fnm)) {
       get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
 		&gnx,&index,&grpname);
       if (!bZeroQ) {
-	bSel = (gnx != natoms);
+	bSel = (gnx != state.natoms);
 	for (i=0; ((i<gnx) && (!bSel)); i++)
 	  bSel = (i!=index[i]);
       }
@@ -411,8 +406,8 @@ int main (int argc, char *argv[])
       if (bSel) {
 	fprintf(stderr,"Will write subset %s of original tpx containg %d "
 		"atoms\n",grpname,gnx);
-	reduce_topology_x(gnx,index,&top,x,v);
-	natoms = gnx;
+	reduce_topology_x(gnx,index,&top,state.x,state.v);
+	state.natoms = gnx;
       } 
       else if (bZeroQ) {
 	zeroq(gnx,index,&top);
@@ -424,9 +419,7 @@ int main (int argc, char *argv[])
     
     fprintf(stderr,"Writing statusfile with starting time %g and %d steps...\n",
 	    ir->init_t,ir->nsteps);
-    write_tpx(opt2fn("-o",NFILE,fnm),
-	      0,ir->init_t,ir->init_lambda,ir,box,
-	      natoms,x,v,NULL,&top);
+    write_tpx_state(opt2fn("-o",NFILE,fnm),0,ir->init_t,ir,&state,&top);
   }
   else
     printf("You've simulated long enough. Not writing tpr file\n");

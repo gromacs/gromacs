@@ -27,36 +27,28 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Getting the Right Output Means no Artefacts in Calculating Stuff
+ * Gnomes, ROck Monsters And Chili Sauce
  */
-
-#ifndef _mvdata_h
-#define _mvdata_h
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include "typedefs.h"
-#include "nsb.h"
+/*
+ * The t_state struct should contain all the (possibly) non-static
+ * information required to define the state of the system.
+ * Currently the random seeds for SD and BD are missing.
+ */
 
-extern void ld_data(int left,int right,t_parm *parm,t_nsborder *nsb,
-		    t_topology *top,t_state *state);
-
-extern void mv_data(int left,int right,t_parm *parm,t_nsborder *nsb,
-		    t_topology *top,t_state *state);
-
-extern void move_cgcm(FILE *log,t_commrec *cr,rvec cg_cm[],int nload[]);
-		     
-extern void move_rvecs(FILE *log,bool bForward,bool bSum,
-		       int left,int right,rvec vecs[],rvec buf[],
-		       int shift,t_nsborder *nsb,t_nrnb *nrnb);
-
-extern void move_x(FILE *log,
-		   int left,int right,rvec x[],t_nsborder *nsb,t_nrnb *nrnb);
-		    
-extern void move_f(FILE *log,
-		   int left,int right,rvec f[],rvec fadd[],
-		   t_nsborder *nsb,t_nrnb *nrnb);
-		    
-#endif	/* _mvdata_h */
+typedef struct
+{
+  int           natoms;
+  int           ngtc;
+  real          lambda; /* the free energy switching parameter          */
+  matrix 	box;    /* box vector coordinates                      	*/
+  matrix 	boxv;   /* box velocitites for Parrinello-Rahman pcoupl */
+  matrix        pcoupl_mu; /* for Berendsen pcoupl                      */
+  real          *nosehoover_xi; /* for Nose-Hoover tcoupl (ngtc)        */
+  real          *tcoupl_lambda; /* for Berendsen tcoupl (ngtc)          */
+  rvec          *x;     /* the coordinates (natoms)                     */
+  rvec          *v;     /* the velocities (natoms)                      */
+} t_state;
