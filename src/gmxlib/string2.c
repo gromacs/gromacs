@@ -198,8 +198,13 @@ char *wrap_lines(char *buf,int line_width, int indent)
         lspace = i;
 	l2space = i2-1;
       }
-      if (buf[i]=='\n') 
+      if (buf[i]=='\n' && buf[i+1]) { 
 	i0=i+1;
+	b2len+=indent;
+	srenew(b2, b2len);
+	for(j=0; (j<indent); j++)
+	  b2[i2++]=' ';
+      }
     }
     if (buf[i]) {
       b2[l2space] = '\n';
