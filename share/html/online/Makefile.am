@@ -32,7 +32,9 @@ online_DATA = \
   g_dielectric.html  g_saltbr.html     mdrun.html            xrama.html      \
   g_dih.html         g_sas.html        mk_angndx.html        xtc.html        \
   g_dipoles.html     g_sgangle.html    mtx.html              xvg.html        \
-  style.css
+  style.css		\
+  water.html	gmxdemo.html	speptide.html	yourown.html \
+  methanol.html
 
 
 EXTRA_DIST = ${online_DATA}
