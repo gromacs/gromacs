@@ -117,7 +117,6 @@ static void rd_groups(t_block *grps,char **grpname,char *gnames[],
 {
   int i,j,gnr1;
 
-  fprintf(stderr,"Reading groups\n");
   if (grps->nr==0) {
     fprintf(stderr,"Error: no groups in indexfile\n");
     exit(1);
@@ -186,7 +185,6 @@ void get_index(t_atoms *atoms, char *fnm, int ngrps,
     grps=init_index(fnm,gnames);
   }
   else {
-    fprintf(stderr,"Making index\n");
     snew(grps,1);
     snew(grps->index,1);
     analyse(atoms,grps,gnames,FALSE,FALSE);
