@@ -32,7 +32,7 @@ enum {
   efMDP, efGBP, efGCP, efGIP, efGDP, efWDP, efGCT, efGPP,
   efTRX, efTRN, efTRR, efTRJ, efXTC, efG87, 
   efENX, efEDR, efENE,
-  efSTX, efGRO, efPDB, efBRK, efENT, efXDR,
+  efSTX, efSTO, efGRO, efPDB, efBRK, efENT, efXDR,
   efLOG, efXVG, efOUT,
   efNDX, 
   efTOP, efITP,
