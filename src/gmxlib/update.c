@@ -984,8 +984,8 @@ void update(int          natoms, 	/* number of atoms in simulation */
 		  p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
 	  fprintf(stdlog,"%s",buf);
 	  fprintf(stderr,"%s",buf);
-	  if (p_max >= 1.0)
-	    fatal_error(0,"Bond deviates more than its own length");
+	  if (p_max > 0.5)
+	    fatal_error(0,"Bond deviates more than half its own length");
 	}
       }
 
