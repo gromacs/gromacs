@@ -352,7 +352,14 @@ extern real print_and_integrate(FILE *fp,int n,real dt,
  * (written when i % nskip == 0)
  * If fit != NULL the fit is also written.
  */
- 
+
+extern real evaluate_integral(int n,real dt,real y[],real dy[],
+			      real aver_start,real *stddev);
+/* Integrate function y, and if dy is given, estimate the stddev in the
+ * integral. If dy is not given, return the stddev in the cumulative sum
+ * starting from aver_start.
+ */ 
+
 extern int get_acfnout(void);
 /* Return the output length for the correlation function 
  * Works only AFTER do_auto_corr has been called!
