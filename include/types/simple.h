@@ -98,6 +98,8 @@ typedef float           real;
 #endif  
 typedef real        	rvec[DIM];
 
+typedef double       	dvec[DIM];
+
 typedef real	    	matrix[DIM][DIM];
 
 typedef real        	tensor[DIM][DIM];
