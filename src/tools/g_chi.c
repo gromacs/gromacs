@@ -35,6 +35,7 @@ static char *SRCID_g_chi_c = "$Id$";
 #include "copyrite.h"
 #include "fatal.h"
 #include "futil.h"
+#include "assert.h"
 #include "gstat.h"
 #include "macros.h"
 #include "maths.h"
@@ -329,7 +330,7 @@ static void histogramming(FILE *log,int naa,char **aa,
 			  int nf,int maxchi,real **dih,
 			  int nlist,t_dlist dlist[],
 			  bool bPhi,bool bPsi,bool bOmega,bool bChi,
-			  bool bNormalize)
+			  bool bNormalize,bool bSSHisto,char *ssdump)
 {
   t_karplus kkkphi[] = {
     { "J_NHa",     6.51, -1.76,  1.6, -M_PI/3,   0.0 },
@@ -349,19 +350,38 @@ static void histogramming(FILE *log,int naa,char **aa,
 #define NKKKCHI asize(kkkchi1)
 #define NJC (NKKKPHI+NKKKPSI+NKKKCHI)
   
-  FILE *fp;
+  FILE *fp,*ssfp[3];
+  char *sss[3] = { "sheet", "helix", "coil" };
   real S2;
   real *normhisto;
   real **Jc;
+  int  ****his_aa_ss;
   int  ***his_aa,**his_aa1,*histmp;
-  int  i,j,k,m,Dih;
-  char hisfile[256],title[256];
+  int  i,j,k,m,Dih,nres,hindex;
+  char hisfile[256],hhisfile[256],sshisfile[256],title[256],*ss_str;
   
+  if (bSSHisto) {
+    fp = ffopen(ssdump,"r");
+    fscanf(fp,"%d",&nres);
+    snew(ss_str,nres+1);
+    fscanf(fp,"%s",ss_str);
+    ffclose(fp);
+    /* Four dimensional array... Very cool */
+    snew(his_aa_ss,3);
+    for(i=0; (i<3); i++) {
+      snew(his_aa_ss[i],naa+1);
+      for(j=0; (j<=naa); j++) {
+	snew(his_aa_ss[i][j],edMax);
+	for(Dih=0; (Dih<edMax); Dih++)
+	  snew(his_aa_ss[i][j][Dih],NHISTO+1);
+      }
+    }
+  }
   snew(his_aa,edMax);
   for(Dih=0; (Dih<edMax); Dih++) {
     snew(his_aa[Dih],naa+1);
     for(i=0; (i<=naa); i++) {
-      snew(his_aa[Dih][i],NHISTO);
+      snew(his_aa[Dih][i],NHISTO+1);
     }
   }
   snew(histmp,NHISTO);
@@ -377,7 +397,28 @@ static void histogramming(FILE *log,int naa,char **aa,
 	  ((Dih == edOmega) && (has_dihedral(edOmega,&(dlist[i])))) ||
 	  ((Dih  > edOmega) && (dlist[i].atm.Cn[Dih-NONCHI+3] != -1))) {
       	make_histo(log,nf,dih[j],NHISTO,histmp,-M_PI,M_PI);
-	
+
+	if (bSSHisto) {
+	  /* Assume there is only one structure, the first. 
+	   * Compute index in histogram.
+	   */
+	  hindex = ((dih[j][0]+M_PI)*NHISTO)/(2*M_PI);
+	  assert(hindex >= 0);
+	  assert(hindex < NHISTO);
+	  /* Assign dihedral to either of the structure determined histograms*/
+	  switch(ss_str[dlist[i].resnr]) {
+	  case 'E':
+	    his_aa_ss[0][dlist[i].index][Dih][hindex]++;
+	    break;
+	  case 'H':
+	    his_aa_ss[1][dlist[i].index][Dih][hindex]++;
+	    break;
+	  default:
+	    his_aa_ss[2][dlist[i].index][Dih][hindex]++;
+	    break;
+	  }
+	}
+		
 	switch (Dih) {
 	case edPhi:
 	  calc_distribution_props(NHISTO,histmp,-M_PI,NKKKPHI,kkkphi,&S2);
@@ -451,23 +492,25 @@ static void histogramming(FILE *log,int naa,char **aa,
 	
 	switch (Dih) {
 	case edPhi:
-	  sprintf(hisfile,"histo-phi%s.xvg",aa[i]);
+	  sprintf(hisfile,"histo-phi%s",aa[i]);
 	  sprintf(title,"\\8f\\4 Distribution for %s",aa[i]);
 	  break;
 	case edPsi:
-	  sprintf(hisfile,"histo-psi%s.xvg",aa[i]);
+	  sprintf(hisfile,"histo-psi%s",aa[i]);
 	  sprintf(title,"\\8y\\4 Distribution for %s",aa[i]);
 	  break;
 	case edOmega:
-	  sprintf(hisfile,"histo-omega%s.xvg",aa[i]);
+	  sprintf(hisfile,"histo-omega%s",aa[i]);
 	  sprintf(title,"\\8w\\4 Distribution for %s",aa[i]);
 	  break;
 	default:
-	  sprintf(hisfile,"histo-chi%d%s.xvg",Dih-NONCHI+1,aa[i]);
+	  sprintf(hisfile,"histo-chi%d%s",Dih-NONCHI+1,aa[i]);
 	  sprintf(title,"\\8c\\4\\s%d\\N Distribution for %s",
 		  Dih-NONCHI+1,aa[i]);
 	}
-	fp=xvgropen(hisfile,title,"Degrees","");
+	strcpy(hhisfile,hisfile);
+	strcat(hhisfile,".xvg");
+	fp=xvgropen(hhisfile,title,"Degrees","");
 	fprintf(fp,"@ with g0\n");
 	xvgr_world(fp,-180,0,180,0.1);
 	fprintf(fp,"@ xaxis tick on\n");
@@ -477,17 +520,48 @@ static void histogramming(FILE *log,int naa,char **aa,
 	fprintf(fp,"@ yaxis tick off\n");
 	fprintf(fp,"@ yaxis ticklabel off\n");
 	fprintf(fp,"@ type xy\n");
-	for(j=0; (j<NHISTO); j++)
+	if (bSSHisto) {
+	  for(k=0; (k<3); k++) {
+	    sprintf(sshisfile,"%s-%s.xvg",hisfile,sss[k]);
+	    ssfp[k] = ffopen(sshisfile,"w");
+	  }
+	}
+	for(j=0; (j<NHISTO); j++) {
 	  if (bNormalize)
 	    fprintf(fp,"%5d  %10g\n",j-180,normhisto[j]);
 	  else
 	    fprintf(fp,"%5d  %10d\n",j-180,his_aa[Dih][i][j]);
+	  if (bSSHisto)
+	    for(k=0; (k<3); k++) 
+	      fprintf(ssfp[k],"%5d  %10d\n",j-180,
+		      his_aa_ss[k][i][Dih][j]);
+	}
 	fprintf(fp,"&\n");
 	ffclose(fp);
+	if (bSSHisto) {
+	  for(k=0; (k<3); k++) {
+	    fprintf(ssfp[k],"&\n");
+	    ffclose(ssfp[k]);
+	  }
+	}
       }
     }
   }
   sfree(normhisto);
+  
+  if (bSSHisto) {
+    /* Four dimensional array... Very cool */
+    for(i=0; (i<3); i++) {
+      for(j=0; (j<=naa); j++) {
+	for(Dih=0; (Dih<edMax); Dih++)
+	  sfree(his_aa_ss[i][j][Dih]);
+	sfree(his_aa_ss[i][j]);
+      }
+      sfree(his_aa_ss[i]);
+    }
+    sfree(his_aa_ss);
+    sfree(ss_str);
+  }
 }
 
 static FILE *rama_file(char *fn,char *title,char *xaxis,char *yaxis)
@@ -791,7 +865,7 @@ int main(int argc,char *argv[])
   char       title[256];
   t_dlist    *dlist;
   char       **aa;
-  bool       bChi,bCorr;
+  bool       bChi,bCorr,bSSHisto;
   real       dt=0;
 
   atom_id    isize,*index;
@@ -803,6 +877,7 @@ int main(int argc,char *argv[])
     { efTRX, "-f",  NULL,     ffREAD  },
     { efXVG, "-o",  "order",  ffWRITE },
     { efPDB, "-p",  "order",  ffOPTWR },
+    { efDAT, "-ss", "ssdump", ffOPTRD },
     { efXVG, "-jc", "Jcoupling", ffWRITE },
     { efXVG, "-corr",  "dihcorr",ffOPTWR },
     { efLOG, "-g",  "chi",    ffWRITE }
@@ -839,7 +914,8 @@ int main(int argc,char *argv[])
 	    MAXCHI, maxchi);
     maxchi=MAXCHI;
   }
-
+  bSSHisto = opt2bSet("-ss",NFILE,fnm);
+  
   /* Find the chi angles using atoms struct and a list of amino acids */
   get_stx_coordnum(ftp2fn(efSTX,NFILE,fnm),&natoms);
   init_t_atoms(&atoms,natoms,TRUE);
@@ -881,7 +957,7 @@ int main(int argc,char *argv[])
   
   /* Histogramming & J coupling constants */
   histogramming(log,naa,aa,nf,maxchi,dih,nlist,dlist,bPhi,bPsi,bOmega,bChi,
-		bNormHisto);
+		bNormHisto,bSSHisto,opt2fn("-ss",NFILE,fnm));
 
   /* Order parameters */  
   order_params(log,opt2fn("-o",NFILE,fnm),maxchi,nlist,dlist,

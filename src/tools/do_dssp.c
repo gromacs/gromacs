@@ -320,10 +320,16 @@ int main(int argc,char *argv[])
     "The number of residues with each secondary structure type and the",
     "total secondary structure ([TT]-sss[tt]) count as a function of",
     "time are also written to file ([TT]-sc[tt]).[PAR]",
-    "Solvent accessible surface per residue can be calculated, both in",
+    "Solvent accessible surface (SAS) per residue can be calculated, both in",
     "absolute values (A^2) and in fractions of the maximal accessible",
     "surface of a residue. The maximal accessible surface is defined as",
     "the accessible surface of a residue in a chain of glycines.",
+    "[B]Note[b] that the program [TT]g_sas[tt] can also compute SAS",
+    "and that is more efficient.[PAR]",
+    "Finally, this program can dump the secondary structure in a special file",
+    "[TT]ssdump.dat[tt] for usage in the program [TT]g_chi[tt]. Together",
+    "these two programs can be used to analyze dihedral properties as a",
+    "function of secondary structure type."
   };
   static real dt=0.0;
   static bool bVerbose;
@@ -359,7 +365,7 @@ int main(int argc,char *argv[])
   int        i,j,natoms,nframe=0;
   matrix     box;
   int        gnx;
-  char       *grpnm;
+  char       *grpnm,*ss_str;
   atom_id    *index;
   rvec       *xp,*x;
   int        *average_area;
@@ -376,6 +382,7 @@ int main(int argc,char *argv[])
     { efTRX, "-f",   NULL,      ffREAD },
     { efTPS, NULL,   NULL,      ffREAD },
     { efNDX, NULL,   NULL,      ffOPTRD },
+    { efDAT, "-ssdump", "ssdump", ffOPTWR },
     { efMAP, "-map", "ss",      ffLIBRD },
     { efXPM, "-o",   "ss",      ffWRITE },
     { efXVG, "-sc",  "scount",  ffWRITE },
@@ -504,6 +511,16 @@ int main(int argc,char *argv[])
   write_xpm_m(ss,mat);
   ffclose(ss);
   
+  if (opt2fn("-ssdump",NFILE,fnm)) {
+    snew(ss_str,nres+1);
+    for(i=0; (i<nres); i++)
+      ss_str[i] = mat.map[mat.matrix[0][i]].code.c1;
+    ss_str[i] = '\0';
+    ss = opt2FILE("-ssdump",NFILE,fnm,"w");
+    fprintf(ss,"%d\n%s\n",nres,ss_str);
+    fclose(ss);
+    sfree(ss_str);
+  }
   analyse_ss(fnSCount,&mat,ss_string);
 
   if (bDoAccSurf) {
