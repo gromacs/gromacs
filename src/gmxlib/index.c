@@ -99,7 +99,6 @@ void add_grp(t_block *b,char ***gnames,int nra,atom_id a[],char *name)
 {
   int i;
 
-
   srenew(b->index,b->nr+2);
   srenew(*gnames,b->nr+1);
   (*gnames)[b->nr]=strdup(name);
