@@ -44,6 +44,7 @@
 #include "names.h"
 #include "vec.h"
 #include "physics.h"
+#include "copyrite.h"
 	
 static void pr_shell(FILE *log,int ns,t_shell s[])
 {
@@ -211,3 +212,29 @@ t_shell *init_shells(FILE *log,int start,int homenr,
   return shell;
 }
 
+int count_flexible_constraints(FILE* log,t_forcerec *fr,t_idef *idef)
+{
+  int nflexcon,i;
+  
+  nflexcon = 0;
+  
+  for(i=0; i<idef->il[F_SHAKE].nr; i+=3)
+    if (idef->iparams[idef->il[F_SHAKE].iatoms[i]].shake.dA == 0 &&
+	idef->iparams[idef->il[F_SHAKE].iatoms[i]].shake.dB == 0)
+      nflexcon++;
+  
+  if (nflexcon > 0) {
+    fprintf(log,"There are %d flexible constraints\n",nflexcon);
+    if (fr->fc_stepsize == 0) {
+      fprintf(log,"WARNING: step size for flexible constraining = 0\n"
+	          "         All flexible constraints will be rigid.\n"
+	          "         Will try to keep all flexible constraints at their original length,\n"
+	          "         but the lengths may exhibit some drift.\n\n");
+      nflexcon = 0;
+    } else {
+      please_cite(log,"Hess2002");
+    }
+  }
+  
+  return nflexcon;
+}

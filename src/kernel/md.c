@@ -297,11 +297,11 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
  
   /* XMDRUN stuff: shell, general coupling etc. */
   bool        bFFscan;
-  int         nshell,nshell_tot,count,nconverged=0;
+  int         nshell,nflexcon,nshell_flexcon_tot,count,nconverged=0;
   t_shell     *shells=NULL;
   real        timestep=0;
   double      tcount=0;
-  bool        bShell,bIonize=FALSE,bGlas=FALSE;
+  bool        bShell_FlexCon,bIonize=FALSE,bGlas=FALSE;
   bool        bTCR=FALSE,bConverged=TRUE,bOK;
   real        mu_aver=0,fmax;
   int         gnx,ii;
@@ -335,10 +335,14 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   /* Check for polarizable models */
   shells     = init_shells(log,START(nsb),HOMENR(nsb),&top->idef,
 			   mdatoms,&nshell);
-  nshell_tot = nshell;
+
+  /* Check for flexible constraints */
+  nflexcon = count_flexible_constraints(log,fr,&top->idef);
+
+  nshell_flexcon_tot = nshell + nflexcon;
   if (PAR(cr))
-    gmx_sumi(1,&nshell_tot,cr);
-  bShell = nshell_tot > 0;
+    gmx_sumi(1,&nshell_flexcon_tot,cr);
+  bShell_FlexCon = nshell_flexcon_tot > 0;
   
   gnx = top->blocks[ebMOLS].nr;
   snew(grpindex,gnx);
@@ -549,13 +553,13 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     if (bFFscan) 
       update_forcefield(nfile,fnm,fr,mdatoms->nr,state->x,state->box);
     
-    if (bShell) {
+    if (bShell_FlexCon) {
       /* Now is the time to relax the shells */
       count=relax_shells(log,cr,mcr,bVerbose,bFFscan ? step+1 : step,
 			 parm,bNS,bStopCM,top,ener,fcd,
 			 state,vold,vt,f,buf,mdatoms,nsb,&mynrnb,graph,
-			 grps,force_vir,pme_vir,bShell,
-			 nshell,shells,fr,traj,t,mu_tot,
+			 grps,force_vir,pme_vir,
+			 nshell,shells,nflexcon,fr,traj,t,mu_tot,
 			 nsb->natoms,&bConverged,bDummies,dummycomm,
 			 fp_field);
       tcount+=count;
@@ -815,7 +819,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		  fr,mdatoms->nr,lastbox,parm->pres,parm->vir,ener);
 
     /* The coordinates (x) were unshifted in update */
-    if (bFFscan && (!bShell || bConverged))
+    if (bFFscan && (!bShell_FlexCon || bConverged))
       print_forcefield(log,ener,HOMENR(nsb),f,buf,xcopy,
 		       &(top->blocks[ebMOLS]),mdatoms->massT,
 		       parm->pres); 
@@ -861,7 +865,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     
     /* Remaining runtime */
     if (MASTER(cr) && bVerbose && ( ((step % stepout)==0) || bLastStep)) {
-      if (bShell)
+      if (bShell_FlexCon)
 	fprintf(stderr,"\n");
       print_time(stderr,start_t,step,&parm->ir);
     }
@@ -917,7 +921,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   }
   debug_gmx();
 
-  if (bShell) {
+  if (bShell_FlexCon) {
     fprintf(log,"Fraction of iterations that converged:           %.2f %%\n",
 	    (nconverged*100.0)/(parm->ir.nsteps+1));
     fprintf(log,"Average number of force evaluations per MD step: %.2f\n",
